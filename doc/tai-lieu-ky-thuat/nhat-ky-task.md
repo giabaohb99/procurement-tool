@@ -111,6 +111,29 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## kh-AI-ket-noi-hdsd | Sắp lại hướng dẫn Kết nối AI riêng: nối bằng đăng nhập ERP là Cách 1
+- status: xong
+- date: 2026-10-26
+- list: Kế hoạch hệ agent
+- tag: Agent 4
+**Bối cảnh:** chốt ngày 26/10: nối bằng đăng nhập ERP (OAuth) là cách ưu tiên; khóa dán tay chỉ dùng khi ứng dụng không có
+mục Connectors. Màn Kết nối AI riêng của giao diện v2 sửa cùng hướng, câu chữ Cách 1 / Cách 2.
+
+**Đã làm**
+- Bài gốc của cây mở đầu bằng khuyến nghị chọn Cách 1, kèm bảng so sánh hai cách (ứng dụng, thao tác, giữ bí mật, hạn).
+- Bài nối ChatGPT và claude.ai đổi tên thành *Cách 1 (khuyên dùng): nối bằng đăng nhập ERP*, viết gọn thành các bước đánh
+  số cho claude.ai / Claude Desktop và ChatGPT, giữ phần đọc kỹ màn Cho phép và bảng lỗi; đứng đầu cây.
+- Bài tạo khóa đổi tên thành *Cách 2 (nâng cao): sửa tệp cấu hình bằng khóa riêng*, thêm đoạn nói rõ khi nào dùng; đứng thứ hai.
+- Script mới chỉ ghi đè ba bài này (tìm theo tên mới hoặc tên cũ), đặt lại thứ tự, sửa mọi liên kết trỏ tới tên cũ trong
+  Trung tâm trợ giúp rồi nạp kho vector. Script dựng cả cây và bài *AI riêng làm được gì* lấy tên và nội dung từ script mới.
+
+**Kết quả:** chạy thật trên bản local hai lần: lần đầu đổi tên, sắp thứ tự, sửa liên kết ở bốn bài; lần hai không đổi gì thêm.
+Chưa chạy trên prod.
+
+**Còn lại:** chạy script trên prod rồi chạy lại script bài *AI riêng làm được gì*.
+
+Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_cach_1.py`, `backend/scripts/seed_help_ket_noi_ai_mcp.py`, `backend/scripts/seed_help_ai_rieng_lam_duoc_gi.py`
+
 ## kh-AI2-6 | AI lập phiếu đặt xe và phiếu duyệt dấu có bước xác nhận
 - status: xong
 - date: 2026-10-26

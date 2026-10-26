@@ -15,13 +15,13 @@ from help_seed_common import ref, run_article_upsert
 ROOT = "Hướng dẫn sử dụng Kết nối AI riêng và Kho skill AI"
 TITLE = "AI riêng của bạn làm được gì trong ERP: công cụ và skill"
 NHAT_KY = "Nhật ký lượt gọi của AI riêng và lỗi thường gặp khi nối"
-TAO_KHOA = "Tạo khóa kết nối AI riêng ở Trang cá nhân"
+from seed_help_ket_noi_ai_cach_1 import OAUTH, TAO_KHOA  # noqa: E402 — tiêu đề Cách 1 / Cách 2 (26/10)
 
 SUMMARY = ("Công cụ theo nhóm (nhóm nào đang bật, nhóm nào nhờ quản trị bật), việc có xác nhận hai bước, câu hỏi mẫu theo "
            "phòng và những việc AI chưa làm được")
 
 CONTENT = f"""<h2>AI riêng của bạn làm được gì trong ERP: công cụ và skill</h2>
-<p>Nối xong ({ref(TAO_KHOA, "cách tạo khóa")}), ứng dụng AI của bạn (Claude, ChatGPT, Cursor…) thấy hai loại thứ từ ERP:</p>
+<p>Nối xong ({ref(OAUTH, "Cách 1: đăng nhập ERP")}, hoặc {ref(TAO_KHOA, "Cách 2: khóa riêng")}), ứng dụng AI của bạn (Claude, ChatGPT, Cursor…) thấy hai loại thứ từ ERP:</p>
 <ul>
 <li><strong>Công cụ</strong>: hàm AI gọi vào ERP để lấy dữ liệu hoặc soạn phiếu. Có sẵn trong hệ thống, quản trị bật / tắt theo nhóm.</li>
 <li><strong>Skill</strong>: cẩm nang công ty viết cho AI (quy trình, mẫu báo cáo, nguyên tắc so giá). Quản trị và trưởng phòng soạn

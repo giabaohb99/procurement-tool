@@ -43,6 +43,8 @@ from sqlalchemy import text  # noqa: E402
 
 import app.core.all_models  # noqa: F401,E402 — nạp đủ mapper trước khi query
 from app.core.database import SessionLocal  # noqa: E402
+from seed_help_ket_noi_ai_cach_1 import (OAUTH, OAUTH_CONTENT, OAUTH_SUMMARY, ROOT_CONTENT,  # noqa: E402
+                                         ROOT_SUMMARY, TAO_KHOA, TAO_KHOA_CONTENT, TAO_KHOA_SUMMARY)
 from seed_help_ai_rieng_lam_duoc_gi import CONTENT as AI_RIENG_CONTENT  # noqa: E402
 from seed_help_ai_rieng_lam_duoc_gi import SUMMARY as AI_RIENG_SUMMARY  # noqa: E402
 from app.modules.help_center.model import (  # noqa: E402
@@ -72,13 +74,11 @@ def ref(target_title: str, label: str) -> str:
     )
 
 
-TAO_KHOA = "Tạo khóa kết nối AI riêng ở Trang cá nhân"
 CLAUDE_DESKTOP = "Nối Claude Desktop với ERP"
 CLIENT_KHAC = "Nối Claude Code, Cursor và Gemini CLI với ERP"
 CONG_CU = "AI riêng của bạn làm được gì trong ERP: công cụ và skill"
 QUAN_TRI = "Dành cho quản trị — Kho skill AI: bộ skill, xuất bản, ai được đọc"
 NHAT_KY = "Nhật ký lượt gọi của AI riêng và lỗi thường gặp khi nối"
-OAUTH = "Nối ChatGPT và claude.ai bằng đăng nhập ERP"
 
 #  Chỗ giữ khóa + tên máy chủ đúng như `mcp_setup.py` (KEY_PLACEHOLDER, SERVER_NAME) — người dùng thấy cùng một chữ ở hai nơi.
 KEY = "&lt;KHÓA_CỦA_BẠN&gt;"
@@ -113,103 +113,21 @@ CLAUDE_CODE_CMD = f'claude mcp add --transport http --scope user {SERVER} {URL} 
 TREE = {
     "title": ROOT_TITLE,
     "icon": "rocket",
-    "summary": "Dùng Claude, Cursor, Gemini của chính bạn để hỏi dữ liệu ERP và đọc cẩm nang công ty",
-    "content": f"""<h2>Kết nối AI riêng là gì?</h2>
-<p>Bạn đang dùng một ứng dụng AI của riêng mình (ChatGPT, claude.ai, Claude Desktop, Claude Code, Cursor, Gemini CLI…). <strong>Kết nối AI riêng</strong> cho ứng dụng đó <strong>vào ERP dưới đúng tài khoản của bạn</strong>: tra phiếu của bạn, xem báo cáo bạn được giao, đọc cẩm nang công ty — tất cả trong phạm vi quyền bạn đang có trên ERP, không hơn.</p>
-<p>Khác với <em>Trợ lý AI</em> trên web và bot Telegram (công ty chạy model), ở đây <strong>model chạy bằng gói AI của chính bạn</strong>: bạn hỏi bằng Claude của bạn, ERP chỉ cung cấp dữ liệu và cẩm nang. Chuẩn kết nối tên là MCP — bạn không cần nhớ chữ này, màn hình gọi là <strong>Kết nối AI riêng</strong>.</p>
-
-<h2>Hai thứ bạn sẽ gặp</h2>
-<table>
-<thead><tr><th>Thứ</th><th>Là gì</th><th>Ở đâu</th></tr></thead>
-<tbody>
-<tr><td><strong>Khóa kết nối</strong></td><td>Chuỗi bí mật bắt đầu bằng <code>dego_mcp_</code>, thay cho mật khẩu khi AI gọi vào ERP. Hai kiểu: <strong>dán tay</strong> (bạn tạo rồi dán vào Claude Desktop, Cursor…) hoặc <strong>kết nối qua đăng nhập</strong> (ChatGPT, claude.ai tự mở trang ERP, bạn bấm Cho phép). Gỡ hay tạm tắt được bất cứ lúc nào.</td><td>Trang cá nhân ▸ nhóm <strong>Trợ lý AI của tôi</strong> ▸ <strong>Kết nối AI riêng</strong></td></tr>
-<tr><td><strong>Kho skill AI</strong></td><td>Cẩm nang công ty viết cho AI đọc: quy trình thu mua, quy định nghỉ phép, mẫu báo cáo… Quản trị soạn một lần trên web, gán cho phòng ban; AI của bạn tự tra trước khi trả lời.</td><td>Phân hệ <strong>Kho skill AI</strong> (quản trị) · thẻ <em>Skill bạn được đọc</em> trong màn AI của tôi (mọi người)</td></tr>
-</tbody>
-</table>
-
-<h2>Ba bước để bắt đầu</h2>
-<ol>
-<li>{ref(TAO_KHOA, "Tạo khóa kết nối")} ở Trang cá nhân — chọn mức <strong>Chỉ đọc</strong> cho lần đầu.</li>
-<li>Nối ứng dụng: {ref(OAUTH, "ChatGPT, claude.ai")} chỉ cần đăng nhập ERP rồi bấm Cho phép (không cần khóa); {ref(CLAUDE_DESKTOP, "Claude Desktop")} chọn một trong hai cách; {ref(CLIENT_KHAC, "Claude Code, Cursor, Gemini CLI")} dán đoạn cấu hình có khóa.</li>
-<li>Quay lại màn AI của tôi bấm <strong>Kiểm tra lại</strong> — thấy <em>Đã nối</em> là xong. Hỏi thử: <em>«Tôi còn bao nhiêu ngày phép?»</em>, <em>«Quy trình xin báo giá của công ty thế nào?»</em>.</li>
-</ol>
-
-<h2>Điều quan trọng nhất phải nhớ</h2>
-<p>⚠️ <strong>Khóa kết nối là chìa vào dữ liệu ERP của chính bạn.</strong> Không dán khóa vào khung chat, không gửi cho ai, không chụp màn hình có khóa. Nghi ngờ lộ thì <strong>gỡ khóa</strong> ngay rồi tạo khóa khác — gỡ có hiệu lực tức thì.</p>
-<p>Mọi lượt AI gọi vào ERP đều <strong>ghi nhật ký</strong> (ai, khóa nào, ứng dụng nào, công cụ gì, lúc nào), kể cả lượt bị từ chối. Bạn xem được 20 lượt gần nhất của mình ngay trong màn AI của tôi.</p>
-
-<h2>Đọc theo việc bạn cần làm</h2>
-<p><strong>Nhân sự:</strong> {ref(TAO_KHOA, "tạo khóa")} · {ref(OAUTH, "nối ChatGPT, claude.ai")} · {ref(CLAUDE_DESKTOP, "nối Claude Desktop")} · {ref(CLIENT_KHAC, "nối Claude Code, Cursor, Gemini CLI")} · {ref(CONG_CU, "AI làm được gì")} · {ref(NHAT_KY, "nhật ký và lỗi thường gặp")}.</p>
-<p><strong>Quản trị, trưởng phòng:</strong> {ref(QUAN_TRI, "Kho skill AI: bộ skill, xuất bản, ai được đọc, phát khóa, ứng dụng đã kết nối, cấu hình")}.</p>""",
+    #  Bài gốc + Cách 1 + Cách 2 sở hữu ở seed_help_ket_noi_ai_cach_1.py (26/10: đăng nhập ERP là cách ưu tiên).
+    "summary": ROOT_SUMMARY,
+    "content": ROOT_CONTENT,
     "children": [
+        {
+            "title": OAUTH,
+            "icon": "shield-check",
+            "summary": OAUTH_SUMMARY,
+            "content": OAUTH_CONTENT,
+        },
         {
             "title": TAO_KHOA,
             "icon": "key-round",
-            "summary": "Mức Chỉ đọc / Được ghi, tạo, xem lại, tạm tắt, gỡ khóa, nhận khóa quản trị phát hộ, kết nối qua đăng nhập, kiểm tra kết nối",
-            "content": f"""<h2>Tạo khóa kết nối AI riêng ở Trang cá nhân</h2>
-<p>Vào <strong>Trang cá nhân</strong> (bấm tên bạn góc trên phải) ▸ thanh bên trái nhóm <strong>Trợ lý AI của tôi</strong> ▸ mục <strong>Kết nối AI riêng</strong>. Màn này ai đăng nhập cũng có, đi theo ba bước đánh số.</p>
-
-<h2>Bước 1 — Chọn ứng dụng AI bạn đang dùng</h2>
-<p>Ô <strong>Ứng dụng AI</strong> liệt kê: Claude Desktop · Claude Code · Cursor · Gemini CLI · claude.ai (trình duyệt) · ChatGPT. Chọn một cái, màn hiện ngay <strong>từng bước cài, tệp cần sửa, điều kiện cần có và đoạn cấu hình mẫu</strong> của đúng ứng dụng đó. Hai kiểu nối:</p>
-<ul>
-<li><strong>Dán khóa</strong> (Claude Desktop qua tệp cấu hình, Claude Code, Cursor, Gemini CLI): đoạn mẫu còn chỗ giữ <code>{KEY}</code>; tạo khóa ở bước 2 xong, <strong>đoạn mẫu tự điền sẵn khóa</strong> để bạn chép.</li>
-<li><strong>Đăng nhập ERP</strong> (ChatGPT, claude.ai, Claude Desktop qua Connectors): không cần khóa, chỉ dán <strong>địa chỉ cổng</strong> hiện ở đây rồi bấm Cho phép trên trang ERP — xem {ref(OAUTH, "bài Nối ChatGPT và claude.ai")}.</li>
-</ul>
-
-<h2>Bước 2 — Khóa của bạn</h2>
-<h3>Tạo khóa mới</h3>
-<ol>
-<li>Ô <strong>Tên khóa</strong>: đặt tên theo máy / ứng dụng, ví dụ <em>«Claude máy công ty»</em>, để sau này biết khóa nào ở đâu mà gỡ.</li>
-<li>Ô <strong>Mức</strong>: chọn <strong>Chỉ đọc</strong> hay <strong>Được ghi</strong> (bảng dưới).</li>
-<li>Bấm <strong>Tạo khóa</strong>. Khóa <code>dego_mcp_…</code> hiện ra kèm nút chép; đoạn cấu hình ở bước 1 cũng đã điền sẵn khóa này.</li>
-</ol>
-<table>
-<thead><tr><th>Mức</th><th>AI làm được</th><th>Dùng khi</th></tr></thead>
-<tbody>
-<tr><td><strong>Chỉ đọc</strong> (mặc định)</td><td>Tra cứu: phiếu của bạn, nghỉ phép, danh bạ, báo cáo được giao, đọc skill, báo lỗi.</td><td>Lần đầu nối; máy dùng chung; chỉ cần hỏi đáp.</td></tr>
-<tr><td><strong>Được ghi</strong></td><td>Thêm: soạn nháp phiếu (yêu cầu báo giá, mua hàng, nghỉ phép, việc dự án…), lập phiếu hỗ trợ, ghi chú. Tạo phiếu luôn <strong>hai bước</strong>: AI soạn nháp đưa bạn xem, bạn gật thì AI mới gửi lệnh tạo. Đề nghị thanh toán vẫn chỉ tạo trên web.</td><td>Bạn muốn nhờ AI lập phiếu thay vì gõ trên web.</td></tr>
-</tbody>
-</table>
-<ul>
-<li>Khóa có hạn <strong>90 ngày</strong>; hết hạn thì tạo khóa mới rồi dán lại vào ứng dụng.</li>
-<li>Mỗi tài khoản tối đa <strong>5 khóa dán tay còn hiệu lực</strong> (kể cả khóa đang tắt). Đủ 5 thì nút tạo báo lỗi — gỡ bớt khóa không dùng. Kết nối qua đăng nhập không tính vào trần này.</li>
-<li>Mỗi lượt AI gọi, khóa ghi <em>dùng lần cuối</em>. Nghỉ việc thì mọi khóa đóng cùng tài khoản.</li>
-</ul>
-
-<h3>Xem lại khóa</h3>
-<p>Quên chưa chép, hay cần dán sang máy thứ hai? Khóa dán tay <strong>xem lại được</strong> ngay trong khối Khóa của bạn — chỉ <strong>chính chủ khóa</strong>, đăng nhập web, mới xem được; quản trị ở màn Khóa nhân sự chỉ thấy bốn ký tự cuối; qua AI không có cách nào lấy. <strong>Mỗi lần xem lại ghi một dòng nhật ký</strong> (ứng dụng <em>ERP web</em>), nên bạn tra được ai đã xem lúc nào. Không xem lại được trong bốn trường hợp: khóa tạo trước ngày 19/10/2026 (tạo khóa mới để có bản xem lại), kết nối qua đăng nhập (ứng dụng tự giữ, bạn không cần khóa), khóa phát hộ chưa bấm Nhận, khóa đã hết hạn.</p>
-
-<h3>Tạm tắt và bật lại</h3>
-<p>Mỗi khóa và mỗi kết nối qua đăng nhập có công tắc <strong>tạm tắt</strong>: trạng thái chuyển sang <em>Đang tắt</em>, AI gọi bằng nó bị từ chối ngay (nhật ký ghi <em>Khóa đang tắt</em>), nhưng khóa không mất — <strong>bật lại là chạy tiếp</strong>, không phải dán lại gì. Dùng khi đi công tác, cho mượn máy, hay muốn tạm dừng AI mà chưa muốn gỡ. Khác với <strong>Gỡ khóa</strong>: gỡ là thu hồi hẳn, muốn dùng lại phải tạo khóa mới.</p>
-
-<h3>Nhận khóa quản trị phát hộ</h3>
-<p>Người quản lý khóa có thể phát hộ khóa cho bạn (hoặc cả phòng). Bạn nhận <strong>thông báo chuông</strong> <em>«Bạn có khóa kết nối AI chờ nhận»</em>; trong màn này khối <strong>Khóa quản trị phát cho bạn, chờ nhận</strong> có nút <strong>Nhận khóa</strong>. Bấm là khóa hiện đúng một lần, y như tự tạo. ⚠️ <strong>Chưa bấm Nhận khóa thì khóa đó chưa dùng được</strong> — AI gọi bằng nó bị từ chối. Khóa phát hộ luôn ở mức <em>Chỉ đọc</em>.</p>
-
-<h3>Gỡ khóa</h3>
-<p>Mỗi khóa đang dùng có nút <strong>Gỡ khóa</strong>. Gỡ có hiệu lực <strong>tức thì</strong>: ứng dụng AI còn giữ khóa cũ sẽ bị từ chối ở lượt gọi kế tiếp. Dùng khi đổi máy, nghi lộ khóa, hoặc thôi dùng.</p>
-
-<h3>Kết nối qua đăng nhập cũng nằm ở đây</h3>
-<p>Mỗi lần bạn bấm <strong>Cho phép</strong> cho ChatGPT, claude.ai hay Claude Desktop (Connectors) là một dòng mới trong khối Khóa của bạn, tên <em>Qua ChatGPT</em>, <em>Qua Claude</em>…, cùng mức, cùng hạn 90 ngày, cùng nút gỡ và công tắc tạm tắt. Gỡ ở đây là cắt kết nối đó ngay; muốn nối lại thì bấm Cho phép lần nữa. Cách nối: {ref(OAUTH, "bài Nối ChatGPT và claude.ai")}.</p>
-
-<h2>Bước 3 — Kiểm tra kết nối</h2>
-<p>Với mỗi khóa còn hiệu lực, màn hiện <em>Đã nối, lượt thành công gần nhất lúc…</em> hoặc <em>Chưa thấy AI gọi lần nào</em>. Dán cấu hình vào ứng dụng xong, hỏi AI một câu bất kỳ về ERP rồi quay lại bấm <strong>Kiểm tra lại</strong>. Vẫn <em>chưa thấy</em> thì xem {ref(NHAT_KY, "bài lỗi thường gặp")}.</p>
-
-<h2>Hai khối dưới cùng</h2>
-<ul>
-<li><strong>Skill bạn được đọc</strong>: danh sách cẩm nang công ty mà AI của bạn tra được — do quản trị gán theo phòng ban, chức vụ. Thiếu cẩm nang bạn cần thì hỏi trưởng phòng, không phải lỗi kết nối.</li>
-<li><strong>20 lượt AI tra cứu gần nhất</strong>: AI của bạn vừa gọi công cụ gì, lúc nào, thành công hay bị từ chối. Thấy lượt lạ (ứng dụng bạn không dùng, giờ bạn không ngồi máy) thì <strong>gỡ khóa ngay</strong>.</li>
-</ul>
-<p>Nút <strong>Xem cách hoạt động</strong> góc trên mở bản demo chín chương, dữ liệu trong demo là giả.</p>
-
-<h2>Đừng nhầm với hai mục bên cạnh</h2>
-<table>
-<thead><tr><th>Mục</th><th>Dùng cho</th></tr></thead>
-<tbody>
-<tr><td><strong>Kết nối AI riêng</strong> (bài này)</td><td>AI <em>của bạn</em> vào ERP, bằng khóa dán tay hoặc kết nối qua đăng nhập. Bạn trả tiền model.</td></tr>
-<tr><td><strong>Khóa model AI</strong></td><td>Khóa Gemini / Claude để <em>bot và Trợ lý AI của công ty</em> suy nghĩ. Không liên quan tới bài này.</td></tr>
-<tr><td><strong>Liên kết Telegram</strong></td><td>Nhận bản tin, nhắc việc qua bot Telegram của công ty.</td></tr>
-</tbody>
-</table>""",
+            "summary": TAO_KHOA_SUMMARY,
+            "content": TAO_KHOA_CONTENT,
         },
         {
             "title": CLAUDE_DESKTOP,
@@ -309,63 +227,6 @@ TREE = {
 
 <h2>Sau khi nối</h2>
 <p>Hỏi một câu về ERP (<em>«Tôi còn bao nhiêu ngày phép?»</em>), rồi về màn AI của tôi bấm <strong>Kiểm tra lại</strong>. Mọi lỗi chung xem {ref(NHAT_KY, "bài Nhật ký và lỗi thường gặp")}; AI làm được gì xem {ref(CONG_CU, "bài Công cụ và skill")}.</p>""",
-        },
-        {
-            "title": OAUTH,
-            "icon": "shield-check",
-            "summary": "Thêm kết nối tùy chỉnh, dán địa chỉ cổng, đăng nhập ERP, đọc kỹ tên miền quay về rồi bấm Cho phép; kết nối sống 90 ngày, gỡ ở Khóa của bạn",
-            "content": f"""<h2>Nối ChatGPT và claude.ai bằng đăng nhập ERP</h2>
-<p>ChatGPT và claude.ai (bản chạy trên trình duyệt, kể cả Claude Desktop qua mục Connectors) <strong>không dán khóa</strong>. Bạn chỉ đưa cho chúng <strong>địa chỉ cổng</strong> của ERP; khi bấm Connect, ứng dụng mở trang ERP, bạn <strong>đăng nhập bằng tài khoản ERP của mình</strong>, chọn mức và bấm <strong>Cho phép</strong>. Từ đó ứng dụng gọi ERP dưới đúng tài khoản bạn, không cần khóa nào trên tay.</p>
-<p>Địa chỉ cổng lấy ở Trang cá nhân ▸ Kết nối AI riêng ▸ bước 1, chọn <em>ChatGPT</em> hoặc <em>claude.ai</em> — màn hiện địa chỉ kèm nút chép (ví dụ <code>{URL}</code>; môi trường thử là <code>deverp.degoholding.vn</code>).</p>
-
-<h2>claude.ai (và Claude Desktop qua Connectors)</h2>
-<ol>
-<li>Mở claude.ai ▸ <strong>Settings</strong> (Cài đặt) ▸ <strong>Connectors</strong> ▸ <strong>Add custom connector</strong>.</li>
-<li>Đặt tên (ví dụ <em>DEGO ERP</em>), dán địa chỉ cổng vào ô <strong>Remote MCP server URL</strong> ▸ <strong>Add</strong>.</li>
-<li>Bấm <strong>Connect</strong>: trang ERP mở ra — đăng nhập nếu chưa, chọn <strong>Chỉ đọc</strong> hoặc <strong>Được ghi</strong>, bấm <strong>Cho phép</strong>.</li>
-<li>Quay lại claude.ai, trong ô chat bật <em>DEGO ERP</em> ở nút công cụ là dùng được.</li>
-</ol>
-<p>Gói Team / Enterprise: chủ tổ chức thêm kết nối trong <em>Organization settings</em> trước, rồi từng người mới bấm Connect. Claude Desktop làm y hệt ở <strong>Settings ▸ Connectors</strong> của ứng dụng.</p>
-
-<h2>ChatGPT</h2>
-<p>Cần tài khoản ChatGPT <strong>trả phí</strong> (Plus, Pro, Business); gói Free có thể không có mục này.</p>
-<ol>
-<li>Mở ChatGPT ▸ <strong>Settings</strong> (Cài đặt) ▸ <strong>Connectors</strong> — hoặc vào thẳng <code>chatgpt.com/#settings/Connectors</code>. Chưa thấy nút tạo thì bật <strong>Developer mode</strong> trước (Settings ▸ Security and login, hoặc Connectors ▸ Advanced settings).</li>
-<li>Bấm <strong>Create</strong>: hộp <strong>New Connector</strong> (đang ghi Beta) mở ra. <strong>Name</strong> ghi <em>DEGO ERP</em>; <strong>Description</strong> bỏ trống cũng được; <strong>MCP Server URL</strong> dán địa chỉ cổng; <strong>Authentication</strong> chọn <strong>OAuth</strong>; tick <strong>I trust this application</strong> ▸ <strong>Create</strong>.</li>
-<li>Trang ERP mở ra — kiểm tên miền quay về là <em>chatgpt.com</em> hoặc <em>openai.com</em>, đăng nhập nếu chưa, chọn mức <strong>Chỉ đọc</strong> (hoặc Được ghi), bấm <strong>Cho phép</strong>.</li>
-<li>Trong ô chat bấm nút <strong>+</strong> (hoặc <em>Apps</em>), bật <em>DEGO ERP</em> rồi hỏi như bình thường. Hỏi thử: <em>«Liệt kê các skill công ty mà bạn đọc được»</em>.</li>
-</ol>
-<p>Dòng chữ đỏ <em>Beta intended for developer use only</em> trong hộp là của ChatGPT, không phải lỗi. Tên mục đổi theo phiên bản ChatGPT (bản cũ gọi là <em>Apps &amp; Connectors</em>); tìm chữ <em>Connectors</em> hoặc <em>MCP</em> là ra.</p>
-
-<h2>Màn Cho phép của ERP: đọc kỹ trước khi bấm</h2>
-<p>Trang ERP mở ra có tiêu đề <strong>Cho phép ứng dụng AI dùng ERP thay bạn</strong>, ghi tên ứng dụng xin kết nối, <strong>tên miền nơi dữ liệu sẽ quay về</strong> (ví dụ <em>chatgpt.com</em>, <em>claude.ai</em>, hoặc <em>máy tính của bạn</em> với ứng dụng cài trên máy) và tài khoản ERP đang đăng nhập.</p>
-<ul>
-<li>⚠️ <strong>Tên ứng dụng là do ứng dụng tự khai</strong>, ai cũng khai được chữ ChatGPT. <strong>Tên miền quay về mới là bằng chứng.</strong> Tên miền không thuộc ứng dụng AI quen (chatgpt.com, openai.com, claude.ai, anthropic.com, claude.com, máy của bạn) thì màn hiện <strong>hộp cảnh báo đỏ</strong>: <em>Nơi quay về … không thuộc ứng dụng AI quen</em>. Gặp cảnh báo này mà <strong>không phải chính bạn vừa thêm kết nối đó</strong> thì bấm <strong>Từ chối</strong> và báo quản trị — có người đang dụ bạn cấp quyền cho ứng dụng của họ.</li>
-<li>Chọn mức: <strong>Chỉ đọc</strong> (tra cứu phiếu, báo cáo, cẩm nang; không tạo hay sửa gì) hoặc <strong>Được ghi</strong> (thêm soạn nháp và tạo phiếu, luôn hai bước xem nháp rồi mới tạo). Mức giống {ref(TAO_KHOA, "khóa dán tay")}.</li>
-<li>Màn Cho phép <strong>không bao giờ mở bên trong trang khác</strong>; thấy nó nằm trong khung của một trang lạ thì đóng lại, mở ở cửa sổ riêng.</li>
-<li>Mỗi lượt Cho phép chỉ dùng được trong <strong>10 phút</strong>; để lâu thì bấm Connect lại.</li>
-</ul>
-
-<h2>Sau khi Cho phép</h2>
-<ul>
-<li>Trang cá nhân ▸ Khóa của bạn có thêm một dòng <em>Qua ChatGPT</em> / <em>Qua Claude</em>: cùng mức, cùng nhật ký với khóa dán tay. <strong>Gỡ</strong> ở đó là cắt kết nối ngay (cả mã làm mới); <strong>tạm tắt</strong> thì ứng dụng dừng tới khi bạn bật lại.</li>
-<li>Kết nối sống <strong>90 ngày</strong> kể từ lúc Cho phép, không tự kéo dài. Hết hạn thì ứng dụng báo mất kết nối — bấm <strong>Connect</strong> lại là xong. Cho phép lần nữa cho cùng ứng dụng thì kết nối cũ chết.</li>
-<li>Kết nối qua đăng nhập <strong>không tính vào trần 5 khóa</strong> dán tay.</li>
-<li>Quản trị thấy mọi ứng dụng đã tự đăng ký ở Kho skill AI ▸ <strong>Ứng dụng AI đã kết nối</strong> và có thể xóa ứng dụng lạ — lúc đó mọi kết nối qua ứng dụng đó bị cắt; xem {ref(QUAN_TRI, "bài dành cho quản trị")}.</li>
-</ul>
-
-<h2>Không nối được?</h2>
-<table>
-<thead><tr><th>Hiện tượng</th><th>Làm gì</th></tr></thead>
-<tbody>
-<tr><td>Bấm Connect mà không thấy trang ERP mở</td><td>Trình duyệt chặn cửa sổ bật lên — cho phép rồi bấm lại. Kiểm địa chỉ cổng kết thúc bằng <code>/api/mcp</code>.</td></tr>
-<tr><td>Trang ERP đòi đăng nhập rồi quay về trang chủ, không thấy màn Cho phép</td><td>Đăng nhập xong hệ tự quay lại màn Cho phép; nếu không, bấm Connect lại trong ứng dụng (lượt cũ quá 10 phút).</td></tr>
-<tr><td>Ứng dụng báo <em>access_denied</em></td><td>Bạn (hoặc ai đó) đã bấm Từ chối. Bấm Connect lại nếu đúng là bạn muốn nối.</td></tr>
-<tr><td>Nối được vài tuần rồi đột nhiên AI báo mất kết nối</td><td>Hết 90 ngày, hoặc kết nối bị gỡ / tạm tắt ở Trang cá nhân, hoặc quản trị xóa ứng dụng. Xem khối Khóa của bạn, rồi Connect lại.</td></tr>
-<tr><td>Quản trị: ứng dụng báo lỗi đăng ký <em>429</em></td><td>Trần tự đăng ký 5 lượt / phút mỗi địa chỉ mạng và 200 lượt / ngày toàn hệ — đợi rồi thử lại.</td></tr>
-</tbody>
-</table>
-<p>Các lỗi chung khác: {ref(NHAT_KY, "bài Nhật ký và lỗi thường gặp")}.</p>""",
         },
         {
             "title": CONG_CU,
