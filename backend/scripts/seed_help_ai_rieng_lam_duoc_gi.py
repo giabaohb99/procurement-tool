@@ -48,7 +48,7 @@ gọi thì bị từ chối kèm tên nhóm. Nhóm cần dùng mà đang tắt: 
 <tr><td><strong>Xuất tệp Excel / Word mẫu công ty</strong></td><td>Xuất bảng số ra Excel, báo cáo trình bày ra Word mẫu DEGO; đường tải dùng một lần, hết hạn sau 15 phút.</td><td>Bật</td></tr>
 <tr><td><strong>Quản trị Kho skill và khóa AI bằng lời</strong></td><td>Soạn / xuất bản skill, gán quyền đọc, cấp / thu hồi khóa — chỉ người có quyền quản trị tương ứng, khóa được ghi.</td><td>Bật</td></tr>
 <tr><td>Lập phiếu đặt xe, duyệt dấu</td><td>Soạn phiếu đặt xe (chọn người phê duyệt và công ty, gửi duyệt luôn được) và phiếu duyệt dấu (chỉ lưu Nháp — tải chứng từ và gửi duyệt trên web).</td><td>Tắt — nhờ quản trị bật</td></tr>
-<tr><td>Duyệt phiếu qua AI (đợt 1)</td><td>Duyệt / từ chối phiếu đặt xe, đặt phòng họp, đơn nghỉ phép đang chờ CHÍNH bạn duyệt — mỗi phiếu một lần xác nhận, từ chối phải có lý do.</td><td>Tắt — nhờ quản trị bật</td></tr>
+<tr><td><strong>Duyệt phiếu qua AI (đợt 1)</strong></td><td>Duyệt / từ chối phiếu đặt xe, đặt phòng họp, đơn nghỉ phép đang chờ CHÍNH bạn duyệt — mỗi phiếu một lần xác nhận, từ chối phải có lý do. Cần khóa được ghi.</td><td>Bật</td></tr>
 <tr><td>Văn thư</td><td>Tìm và đọc văn bản, xem cấu hình luồng duyệt.</td><td>Tắt — nhờ quản trị bật</td></tr>
 <tr><td><strong>Công việc và dự án</strong></td><td>Soạn việc, soạn cả kế hoạch nhiều giai đoạn, gợi ý ai nên giao, thống kê tốc độ theo loại việc.</td><td>Bật</td></tr>
 <tr><td>Sửa và xóa phiếu của chính mình</td><td>Đề xuất sửa / xóa phiếu mình lập (có xác nhận, xem dưới).</td><td>Tắt — nhờ quản trị bật</td></tr>
