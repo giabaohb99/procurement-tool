@@ -159,8 +159,39 @@ export interface ConfirmAccountSetupResult {
   url: string
 }
 
+/**
+ * Đề xuất DUYỆT / TỪ CHỐI một phiếu đang chờ chính người hỏi duyệt, do tool `propose_approval` sinh (kh-AI2-7) — chỉ
+ * là đề xuất, chưa ghi gì. `confirm_token` gửi lên `POST /api/assistant/confirm-update` (cùng đường với thẻ sửa);
+ * backend kiểm lại người duyệt + chặng tại lúc bấm, phiếu đã đổi thì trả 409.
+ */
+export interface ApprovalProposal {
+  kind: 'approval_proposal'
+  action: 'approve' | 'reject'
+  entity: string
+  entity_label: string
+  code: string
+  /** Tóm tắt phiếu (Mã, Người đặt / Người nghỉ, Mục đích, Thời gian…) — chữ do backend dựng. */
+  summary: { label: string; value: string }[]
+  /** Lý do từ chối (bắt buộc khi từ chối) hoặc ghi chú khi duyệt; rỗng = không có. */
+  note: string
+  /** `chặng 2` hoặc `duyệt một bước`. */
+  step: string
+  confirm_token: string
+  url: string
+}
+
+/** Kết quả bấm xác nhận duyệt / từ chối. */
+export interface ConfirmApprovalResult {
+  entity: string
+  entity_label: string
+  code: string
+  approved: boolean
+  updated_fields: string[]
+  url: string
+}
+
 /** Mọi loại đề xuất có xác nhận mà backend gắn vào `tool_calls[].proposal`. */
-export type AssistantProposal = UpdateProposal | AccountSetupProposal
+export type AssistantProposal = UpdateProposal | AccountSetupProposal | ApprovalProposal
 
 /** Một lần trợ lý gọi công cụ trong lượt trả lời (backend chỉ trả tên + tham số). */
 export interface AssistantToolCall {

@@ -111,6 +111,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## kh-AI2-7-giao-dien | Trợ lý web: thẻ xác nhận duyệt hoặc từ chối phiếu do AI đề xuất
+- status: xong
+- date: 2026-10-26
+- list: Kế hoạch hệ agent
+- tag: Agent 3
+**Bối cảnh:** công cụ AI đề xuất duyệt / từ chối phiếu đặt xe, đặt phòng họp, đơn nghỉ phép (kh-AI2-7) đã có ở backend,
+nhưng Trợ lý web chưa vẽ thẻ cho loại đề xuất này nên người dùng không có nút để xác nhận.
+
+**Đã làm**
+- Thẻ mới dưới khung chat: tóm tắt phiếu (loại, mã, người đặt / người nghỉ, nội dung chính, chặng duyệt), hành động duyệt
+  hay từ chối, lý do; một nút *Xác nhận duyệt* hoặc *Xác nhận từ chối* và một nút *Bỏ qua*. Không có nút duyệt hàng loạt.
+- Bấm xác nhận gửi đúng mã đề xuất lên đường xác nhận sẵn có; chặn bấm đúp ngay trong lượt bấm. Phiếu đã đổi trạng thái
+  từ lúc đề xuất thì thẻ báo *phiếu đã thay đổi, hỏi lại AI* và gỡ nút xác nhận; lỗi khác hiện câu của máy chủ tại thẻ.
+- Vá kèm: đề xuất xóa phiếu trước đây không hiện thẻ trên Trợ lý web vì công cụ xóa thiếu trong danh sách công cụ đề xuất.
+
+**Kết quả:** kiểu dữ liệu 0 lỗi, lint 0 lỗi, 77 bài kiểm của phân hệ Trợ lý xanh (9 bài mới), build qua.
+
+Mã nguồn: `frontend-v2/src/modules/assistant/components/approval-proposal-card.tsx`, `components/reply-offers.tsx`,
+`utils/reply-offers.ts`, `api/assistant-api.ts`, `types/assistant.ts`
+
 ## kh-AI-ket-noi-giao-dien | Sắp lại màn Kết nối AI: đăng nhập ERP là Cách 1, khóa riêng là Cách 2 Nâng cao
 - status: xong
 - date: 2026-10-26

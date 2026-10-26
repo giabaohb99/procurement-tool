@@ -1,9 +1,12 @@
+import type { AxiosRequestConfig } from 'axios'
+
 import { apiDelete, apiGet, apiPost } from '@/core/api'
 import type {
   AssistantAttachment,
   ChatReply,
   ChatRequest,
   ConfirmAccountSetupResult,
+  ConfirmApprovalResult,
   ConfirmUpdateResult,
   ConversationDetail,
   ConversationSummary,
@@ -43,6 +46,13 @@ export const assistantApi = {
    */
   confirmUpdate: (token: string) =>
     apiPost<ConfirmUpdateResult>(`${BASE_URL}/confirm-update`, { token }),
+
+  /**
+   * Bấm 'Xác nhận duyệt / từ chối' trên thẻ đề xuất duyệt (kh-AI2-7) — cùng đường `confirm-update`, backend rẽ theo
+   * loại token. Tắt toast tự động: thẻ tự báo lỗi tại chỗ (409 = phiếu đã đổi, phải hỏi lại AI).
+   */
+  confirmApproval: (token: string) =>
+    apiPost<ConfirmApprovalResult>(`${BASE_URL}/confirm-update`, { token }, { _silent: true } as AxiosRequestConfig),
 
   /**
    * Bấm 'Xác nhận' trên thẻ đề xuất lập bộ tài khoản (bao-CR-435) — cùng khuôn: chỉ gửi
