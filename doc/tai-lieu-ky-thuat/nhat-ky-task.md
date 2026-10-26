@@ -17365,3 +17365,21 @@ Tham chiếu: doc/erp/nghien-cuu/07-san-xuat-khao-sat-tra-loi-chung-2610.md
 **Kết quả:** văn bản số 05 trên nhánh erp-v2, nay có 8 câu đã thống nhất và 9 câu chưa.
 
 Tham chiếu: doc/erp/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
+
+## nc-08-cau-tra-loi-trich-duoc | Gom các câu trả lời lấy được của khảo sát Sản xuất trả lời chung
+- status: xong
+- date: 2026-10-26
+- tag: Nghiên cứu, Sản xuất
+
+**Bối cảnh:** Phòng Sản xuất chỉ trả lời khảo sát một lần (113 câu). Được giao gom mọi câu trả lời lấy được và nội dung bot đã trích từ tệp đính kèm thành một tệp riêng, viết gọn.
+
+**Đã làm**
+- Tìm được mục *nguồn* trên trang kết quả của ứng dụng khảo sát, lấy đủ câu hỏi và câu trả lời của 22 câu, cộng câu 12 từ ảnh màn trả lời.
+- Gom thêm 9 câu chỉ có ý rút gọn và nội dung bot trích từ ba tệp (đầu vào đầu ra với Kinh doanh, nhóm Zalo, danh sách nhận hàng).
+- Câu về điều khoản hợp đồng với nhà gia công chỉ ghi là điểm nhạy cảm, trao đổi riêng.
+
+**Kết quả:** văn bản số 08 trên nhánh erp-v2.
+
+**Còn lại:** còn khoảng 81 câu chưa lấy được vì trang quản trị chỉ hiện các câu ứng dụng khảo sát đã dùng để tổng hợp.
+
+Tham chiếu: doc/erp/nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md
