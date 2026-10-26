@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/button'
 import type { DraftOffer, DraftTarget, FileOffer, UpdateOffer } from '../utils/reply-offers'
 import { draftNavigation } from '../utils/reply-offers'
 import { AccountSetupProposalCard } from './account-setup-proposal-card'
+import { ApprovalProposalCard } from './approval-proposal-card'
 import { UpdateProposalCard } from './update-proposal-card'
 
 const DRAFT_LABELS: Record<DraftTarget, string> = {
@@ -58,6 +59,14 @@ export function ReplyOffers({
           trạng thái "đã sửa" của đề xuất cũ. */}
       {showUpdate && update.proposal.kind === 'account_setup_proposal' ? (
         <AccountSetupProposalCard
+          key={update.proposal.confirm_token}
+          proposal={update.proposal}
+          onDismiss={() => onDismissUpdate?.()}
+          onNavigate={onNavigate}
+        />
+      ) : null}
+      {showUpdate && update.proposal.kind === 'approval_proposal' ? (
+        <ApprovalProposalCard
           key={update.proposal.confirm_token}
           proposal={update.proposal}
           onDismiss={() => onDismissUpdate?.()}

@@ -97,7 +97,13 @@ export interface UpdateOffer {
 }
 
 /** Bộ tool tầng GHI có xác nhận — tool nào cũng trả khối `proposal` có `kind` + `confirm_token`. */
-const PROPOSAL_TOOLS = new Set(['propose_document_update', 'propose_account_setup'])
+//  `propose_document_delete` (AI-0006) dùng chung thẻ sửa — từng thiếu ở đây nên đề xuất xóa không hiện thẻ.
+const PROPOSAL_TOOLS = new Set([
+  'propose_document_update',
+  'propose_document_delete',
+  'propose_account_setup',
+  'propose_approval',
+])
 
 /**
  * Lấy đề xuất có xác nhận từ lượt trả lời — chỉ các tool trong `PROPOSAL_TOOLS` có khối

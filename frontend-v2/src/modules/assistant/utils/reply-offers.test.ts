@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { AccountSetupProposal, ChatReply, UpdateProposal } from '../types/assistant'
+import type { AccountSetupProposal, ApprovalProposal, ChatReply, UpdateProposal } from '../types/assistant'
 import type { DraftOffer } from './reply-offers'
 import { draftNavigation, pickDraftOffer, pickFileOffer, pickUpdateOffer } from './reply-offers'
 
@@ -167,6 +167,24 @@ describe('pickUpdateOffer', () => {
     expect(
       pickUpdateOffer(reply([{ name: 'propose_account_setup', args: {}, rows: 0 }])),
     ).toBeNull()
+  })
+
+  it('kh-AI2-7: an approval proposal builds its own confirm card', () => {
+    const approval: ApprovalProposal = {
+      kind: 'approval_proposal', action: 'reject', entity: 'leave_request', entity_label: 'Đơn nghỉ phép',
+      code: 'NP00012', summary: [{ label: 'Mã', value: 'NP00012' }], note: 'Thiếu người thay', step: 'duyệt một bước',
+      confirm_token: 'tok-a', url: '/hr/leave-requests/12',
+    }
+    const offer = pickUpdateOffer(reply([{ name: 'propose_approval', args: {}, rows: 1, proposal: approval }]))
+    expect(offer).toEqual({ conversationId: 7, proposal: approval })
+  })
+
+  it('a delete proposal also builds a card (it used to be dropped, so the AI asked for a click on nothing)', () => {
+    //  AI-0006: `propose_document_delete` dùng chung thẻ sửa nhưng từng thiếu trong bộ tool đề xuất — trợ lý bảo
+    //  bấm Xác nhận xóa mà dưới chat không có thẻ nào.
+    const del: UpdateProposal = { ...proposal, action: 'delete', changes: [] }
+    const offer = pickUpdateOffer(reply([{ name: 'propose_document_delete', args: {}, rows: 1, proposal: del }]))
+    expect(offer).toEqual({ conversationId: 7, proposal: del })
   })
 })
 
