@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Boolean, Integer, String
+from sqlalchemy import BigInteger, Boolean, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
@@ -35,5 +35,7 @@ class Permission(Base, AuditMixin):
     can_cancel: Mapped[bool] = mapped_column(Boolean, default=False)
     can_print: Mapped[bool] = mapped_column(Boolean, default=False)
     can_export: Mapped[bool] = mapped_column(Boolean, default=False)
-    can_import: Mapped[bool] = mapped_column(Boolean, default=False)   # duoc-CR-660: nhập file hàng loạt
+    #  duoc-CR-660: nhập file hàng loạt. `server_default` khớp migration `cr660imp01` — thiếu nó thì migration cũ chèn
+    #  thẳng `tab_permission` (không kể cột này) hỏng trên DB dựng từ model (bộ test SQLite).
+    can_import: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
     scope: Mapped[str] = mapped_column(String(10), default="own")  # own | dept | company | all
