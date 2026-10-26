@@ -63,20 +63,33 @@ beforeEach(() => {
 })
 
 describe('ConnectAiPage', () => {
-  it('uses only the public setup endpoint and keeps the key placeholder in the config', async () => {
+  it('shows the ERP-login way (OAuth) first and keeps the key way folded', async () => {
+    //  kh-AI-ket-noi-giao-dien: mở màn là thấy Cách 1 — đăng nhập ERP, không cần khóa. Cách 2 (khóa riêng) là phần
+    //  Nâng cao, thu gọn và CHƯA gọi chi tiết ứng dụng dùng khóa.
     mockPublic()
     const { container } = renderPage()
+    expect(await screen.findByText('Địa chỉ kết nối')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /ChatGPT/ })).toHaveAttribute('aria-pressed', 'true')
+    const advanced = screen.getByRole('button', { name: /Nâng cao/ })
+    expect(advanced).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('button', { name: /Cursor/ })).not.toBeInTheDocument()
+    expect(container.textContent).not.toMatch(/dego_mcp_|KHÓA_CỦA_BẠN/)
+  })
+
+  it('opens the key way on demand, with the placeholder kept and only the public endpoint called', async () => {
+    mockPublic()
+    const { container } = renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /Nâng cao/ }))
     expect(await screen.findByText(/Bearer <KHÓA_CỦA_BẠN>/)).toBeInTheDocument()
     expect(apiGet.mock.calls.every(([url]) => url === '/api/agent-hub/mcp-setup/public')).toBe(true)
     expect(container.textContent).not.toMatch(/dego_mcp_/)
   })
 
-  it('opens the app named in ?client= and shows only the address for an OAuth app', async () => {
+  it('opens the key way straight away when ?client= names a key app', async () => {
     mockPublic()
-    const { container } = renderPage('/connect-ai?client=chatgpt')
-    expect(await screen.findByText('Địa chỉ kết nối')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /ChatGPT/ })).toHaveAttribute('aria-pressed', 'true')
-    expect(container.textContent).not.toMatch(/dego_mcp_|KHÓA_CỦA_BẠN/)
+    renderPage('/connect-ai?client=cursor')
+    expect(await screen.findByRole('button', { name: /Cursor/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /Nâng cao/ })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('copies the config with the placeholder, never asking for a key', async () => {
@@ -89,9 +102,31 @@ describe('ConnectAiPage', () => {
     expect(apiGet.mock.calls.every(([url]) => url === '/api/agent-hub/mcp-setup/public')).toBe(true)
   })
 
-  it('ignores an unknown ?client= and falls back to the first supported app', async () => {
+  it('ignores an unknown ?client= and falls back to the first ERP-login app', async () => {
     mockPublic()
     renderPage('/connect-ai?client=<script>')
+    expect(await screen.findByRole('button', { name: /ChatGPT/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /Nâng cao/ })).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('keeps one plain list against an older server that does not say which apps use OAuth', async () => {
+    apiGet.mockImplementation((url: string, config?: { params?: { client?: string } }) => {
+      if (url === '/api/agent-hub/mcp-setup/public' && config?.params?.client) {
+        return Promise.resolve({ client: 'cursor', label: 'Cursor', supported: true, format: 'json', snippet: '{}',
+          steps: [], endpoint: 'https://erp.test/api/mcp', placeholder: PLACEHOLDER })
+      }
+      return Promise.resolve({ endpoint: 'https://erp.test/api/mcp', placeholder: PLACEHOLDER,
+        clients: [{ client: 'cursor', label: 'Cursor', supported: true }] })
+    })
+    renderPage()
     expect(await screen.findByRole('button', { name: /Cursor/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('button', { name: /Nâng cao/ })).not.toBeInTheDocument()
+  })
+
+  it('keeps the intro short and links to the full help article', async () => {
+    mockPublic()
+    renderPage()
+    const link = await screen.findByRole('link', { name: /AI riêng của bạn làm được gì trong ERP/ })
+    expect(link.getAttribute('href')).toMatch(/\/ai-rieng-cua-ban-lam-duoc-gi-trong-erp-cong-cu-va-skill$/)
   })
 })

@@ -104,10 +104,16 @@ beforeEach(() => {
 })
 
 describe('ProfileAiConnectSection (AI của tôi)', () => {
-  it('opens straight on step 1 with the first supported app and its config, titles free of the word MCP', async () => {
+  it('opens straight on step 1 with the OAuth way first, the key config folded under Nâng cao, titles free of the word MCP', async () => {
     mockServer()
     renderSection()
     expect(await screen.findByText('Bước 1 · Chọn ứng dụng AI bạn đang dùng')).toBeInTheDocument()
+    //  kh-AI-ket-noi-giao-dien: chưa chọn khóa thì Cách 1 (đăng nhập ERP) đứng trước, Cách 2 thu gọn.
+    expect(await screen.findByRole('button', { name: /claude\.ai/ })).toHaveAttribute('aria-pressed', 'true')
+    const advanced = screen.getByRole('button', { name: /Nâng cao/ })
+    expect(advanced).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('button', { name: /Claude Desktop/ })).not.toBeInTheDocument()
+    await userEvent.click(advanced)
     expect(await screen.findByRole('button', { name: /Claude Desktop/ })).toHaveAttribute('aria-pressed', 'true')
     expect(await screen.findByText(/"DEGO_MCP_KEY":"<KHÓA_CỦA_BẠN>"/)).toBeInTheDocument()
     expect(screen.getByText(/Cần cài trước: Node.js/)).toBeInTheDocument()
@@ -117,6 +123,7 @@ describe('ProfileAiConnectSection (AI của tôi)', () => {
   it('shows the reason instead of an empty config for an app that cannot connect', async () => {
     mockServer()
     renderSection()
+    await userEvent.click(await screen.findByRole('button', { name: /Nâng cao/ }))
     await userEvent.click(await screen.findByRole('button', { name: /ChatGPT/ }))
     expect(await screen.findByText(/ChatGPT chưa nối được/)).toBeInTheDocument()
     expect(screen.queryByText('Đoạn cấu hình dán vào tệp')).not.toBeInTheDocument()

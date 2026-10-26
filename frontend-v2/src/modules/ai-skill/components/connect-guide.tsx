@@ -1,4 +1,4 @@
-import { Copy, Download, Globe, MonitorSmartphone, Plug, SquareTerminal } from 'lucide-react'
+import { ChevronDown, Copy, Download, Globe, MonitorSmartphone, Plug, SquareTerminal } from 'lucide-react'
 import { useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 
@@ -8,7 +8,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
 import { fillKeyInSnippet } from '../config/ai-skill-constants'
 import { usePublicSetup, usePublicSetupClients, useSetup, useSetupClients } from '../hooks/use-my-ai'
-import type { McpSetupDetail } from '../types/ai-skill'
+import type { McpSetupClient, McpSetupDetail } from '../types/ai-skill'
 
 const CLIENT_ICONS: Record<string, typeof Plug> = {
   claude_desktop: MonitorSmartphone,
@@ -42,6 +42,10 @@ interface ConnectGuideProps {
  * Hướng dẫn nối AI riêng theo từng ứng dụng (bao-CR-638) — DÙNG CHUNG cho ba chỗ: bước 1 màn AI của tôi (có khóa thật của
  * dòng đang chọn), cột phải màn Khóa nhân sự và trang công khai /connect-ai (hai chỗ sau KHÔNG BAO GIỜ có khóa: đoạn cấu
  * hình giữ nguyên chỗ giữ `<KHÓA_CỦA_BẠN>`). Ứng dụng nối bằng OAuth (ChatGPT, claude.ai) chỉ cần địa chỉ cổng.
+ *
+ * kh-AI-ket-noi-giao-dien (26/10/2026): chia hai cách. **Cách 1** — đăng nhập ERP (OAuth), hiện ngay khi mở màn. **Cách 2
+ * (Nâng cao)** — sửa tệp cấu hình bằng khóa riêng, thu gọn sẵn và chỉ gọi chi tiết khi mở; tự mở khi link chỉ thẳng một
+ * ứng dụng dùng khóa (`?client=`) hoặc khi màn AI của tôi đã chọn khóa. Máy chủ cũ chưa trả `auth` thì giữ một danh sách.
  */
 export function ConnectGuide({ source, keySlot = null, initialClient = '', footer, className }: ConnectGuideProps) {
   const isPublic = source === 'public'
@@ -49,6 +53,71 @@ export function ConnectGuide({ source, keySlot = null, initialClient = '', foote
   const publicClients = usePublicSetupClients(isPublic)
   const list = isPublic ? publicClients : privateClients
   const clients = list.data?.clients ?? []
+  const oauthClients = clients.filter((c) => c.auth === 'oauth')
+  const keyClients = clients.filter((c) => c.auth !== 'oauth')
+  const split = oauthClients.length > 0
+  //  `null` = chưa ai bấm: tự mở khi link chỉ một ứng dụng dùng khóa hoặc khi đã chọn khóa ở màn AI của tôi.
+  const [advancedOpen, setAdvancedOpen] = useState<boolean | null>(null)
+  const autoOpen = keyClients.some((c) => c.client === initialClient) || Boolean(keySlot?.label)
+  const showAdvanced = advancedOpen ?? autoOpen
+
+  let body: ReactNode
+  if (list.isLoading) body = <Skeleton className="h-10 w-full" />
+  else if (list.isError) body = <p className="text-muted-foreground">Chưa tải được danh sách ứng dụng AI. Thử lại sau ít phút.</p>
+  else if (!split)
+    body = <ClientChooser clients={clients} source={source} initialClient={initialClient} keySlot={keySlot} />
+  else
+    body = (
+      <>
+        <section className="space-y-3" aria-label="Cách 1: đăng nhập bằng tài khoản ERP">
+          <div>
+            <p className="font-medium">Cách 1 · Đăng nhập bằng tài khoản ERP (khuyên dùng)</p>
+            <p className="text-xs text-muted-foreground">Cho claude.ai, ChatGPT — không cần khóa.</p>
+          </div>
+          <ClientChooser clients={oauthClients} source={source} initialClient={initialClient} keySlot={keySlot} />
+        </section>
+        <section className="space-y-3 border-t pt-3" aria-label="Cách 2: sửa tệp cấu hình bằng khóa riêng">
+          <div>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-auto w-full justify-between px-0 py-1 text-left font-medium hover:bg-transparent"
+              aria-expanded={showAdvanced}
+              onClick={() => setAdvancedOpen(!showAdvanced)}
+            >
+              Cách 2 · Sửa tệp cấu hình bằng khóa riêng (Nâng cao)
+              <ChevronDown className={cn('size-4 shrink-0 transition-transform', showAdvanced && 'rotate-180')} />
+            </Button>
+            <p className="text-xs text-muted-foreground">Cho Claude Desktop, Claude Code, Cursor… — cần khóa riêng.</p>
+          </div>
+          {showAdvanced && (
+            <ClientChooser clients={keyClients} source={source} initialClient={initialClient} keySlot={keySlot} />
+          )}
+        </section>
+      </>
+    )
+
+  return (
+    <div className={cn('space-y-4 text-sm', className)}>
+      {body}
+      {footer}
+    </div>
+  )
+}
+
+/** Hàng nút chọn ứng dụng + hướng dẫn của ứng dụng đang chọn. Chỉ gọi chi tiết của đúng một ứng dụng. */
+function ClientChooser({
+  clients,
+  source,
+  initialClient,
+  keySlot,
+}: {
+  clients: McpSetupClient[]
+  source: 'private' | 'public'
+  initialClient: string
+  keySlot: ConnectKeySlot | null
+}) {
+  const isPublic = source === 'public'
   const [chosen, setChosen] = useState(initialClient)
   const client =
     (clients.some((c) => c.client === chosen) ? chosen : '') ||
@@ -60,38 +129,31 @@ export function ConnectGuide({ source, keySlot = null, initialClient = '', foote
   const detail = isPublic ? publicDetail : privateDetail
 
   return (
-    <div className={cn('space-y-4 text-sm', className)}>
-      {list.isLoading ? (
-        <Skeleton className="h-10 w-full" />
-      ) : list.isError ? (
-        <p className="text-muted-foreground">Chưa tải được danh sách ứng dụng AI. Thử lại sau ít phút.</p>
-      ) : (
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Ứng dụng AI">
-          {clients.map((c) => {
-            const Icon = CLIENT_ICONS[c.client] ?? Plug
-            const active = c.client === client
-            return (
-              <button
-                key={c.client}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setChosen(c.client)}
-                className={cn(
-                  'flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent',
-                  active && 'border-primary bg-accent font-medium',
-                  !c.supported && 'text-muted-foreground',
-                )}
-              >
-                <Icon className="size-4" />
-                {c.label}
-              </button>
-            )
-          })}
-        </div>
-      )}
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Ứng dụng AI">
+        {clients.map((c) => {
+          const Icon = CLIENT_ICONS[c.client] ?? Plug
+          const active = c.client === client
+          return (
+            <button
+              key={c.client}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setChosen(c.client)}
+              className={cn(
+                'flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent',
+                active && 'border-primary bg-accent font-medium',
+                !c.supported && 'text-muted-foreground',
+              )}
+            >
+              <Icon className="size-4" />
+              {c.label}
+            </button>
+          )
+        })}
+      </div>
       {detail.isLoading && client && <Skeleton className="h-32 w-full" />}
       {detail.data && <GuideDetail detail={detail.data} keySlot={keySlot} />}
-      {footer}
     </div>
   )
 }

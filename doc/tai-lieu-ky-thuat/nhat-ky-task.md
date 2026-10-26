@@ -111,6 +111,29 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## kh-AI-ket-noi-giao-dien | Sắp lại màn Kết nối AI: đăng nhập ERP là Cách 1, khóa riêng là Cách 2 Nâng cao
+- status: xong
+- date: 2026-10-26
+- list: Kế hoạch hệ agent
+- tag: Agent 3
+**Bối cảnh:** màn Kết nối AI (trang công khai /connect-ai, bước 1 ở AI của tôi, cột phải màn Khóa nhân sự) để mọi ứng
+dụng trong một hàng nên người dùng hay chọn nhầm cách dùng khóa, phần giới thiệu dài quá một màn hình. Đã chốt: nối bằng
+đăng nhập ERP đứng trước, sửa tệp cấu hình bằng khóa là cách nâng cao.
+
+**Đã làm**
+- Hướng dẫn chia hai cách: Cách 1 đăng nhập bằng tài khoản ERP cho claude.ai và ChatGPT, hiện ngay khi mở màn, có các
+  bước đánh số và địa chỉ kết nối chép một chạm; Cách 2 sửa tệp cấu hình bằng khóa riêng (Nâng cao) cho Claude Desktop,
+  Claude Code, Cursor, thu gọn sẵn và chỉ tải hướng dẫn khi mở.
+- Cách 2 tự mở khi đường dẫn chỉ thẳng một ứng dụng dùng khóa hoặc khi ở AI của tôi đã chọn một khóa; máy chủ cũ chưa
+  báo kiểu nối thì giữ một danh sách như trước.
+- Trang công khai: giới thiệu còn ba ý ngắn việc AI làm được và liên kết sang bài hướng dẫn *AI riêng của bạn làm được
+  gì trong ERP*; thêm một dòng chỉ chỗ lấy khóa cho Cách 2. Không đổi API, không đổi backend.
+
+**Kết quả:** kiểu dữ liệu 0 lỗi, lint 0 lỗi, 206 bài kiểm của ba thư mục vừa sửa đều xanh, build qua.
+
+Mã nguồn: `frontend-v2/src/modules/ai-skill/components/connect-guide.tsx`, `frontend-v2/src/app/pages/connect-ai-page.tsx`
+Kiểm: `connect-ai-page.test.tsx`, `profile-ai-connect-section.test.tsx`
+
 ## kh-AI2-7 | AI duyệt phiếu đợt 1: đặt xe, đặt phòng họp, nghỉ phép
 - status: xong
 - date: 2026-10-26
