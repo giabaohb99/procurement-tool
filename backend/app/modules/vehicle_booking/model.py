@@ -168,6 +168,9 @@ class VehicleBooking(Base, AuditMixin, LegacyIdMixin):
     requester_role: Mapped[str] = mapped_column(String(255), default="")
     department_id: Mapped[int] = mapped_column(BigInteger, default=0)
     company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    #  duoc-CR-681: pháp nhân của NGƯỜI TẠO, chụp lúc tạo. `company_id` = công ty CHỌN trên phiếu (có thể khác);
+    #  phạm vi «Công ty» khớp một trong hai (`SCOPE_FIELDS["vehicle_booking"]["company_alt"]`).
+    requester_company_id: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0", index=True)
 
     first_approver_id: Mapped[int] = mapped_column(BigInteger, default=0)
     #  NGƯỜI phê duyệt THẬT (tài khoản bấm Duyệt) + thời điểm duyệt. Khác `first_approver_id`

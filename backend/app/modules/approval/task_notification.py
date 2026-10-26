@@ -23,7 +23,7 @@ from app.modules.employee.model import Employee
 from app.modules.notification.model import Notification
 from app.modules.user.model import User
 
-from . import delegation_service
+from . import delegation_service, entity_hooks
 from .instance_model import TASK_PENDING, ApprovalInstance, ApprovalTask
 
 #  Nhãn loại chứng từ. Bộ máy duyệt chỉ giữ `entity` dạng chuỗi, nên đây là chỗ
@@ -136,7 +136,10 @@ def notify_new_tasks(db: Session, instance: ApprovalInstance,
             link = ENTITY_LINKS.get(instance.entity, "").format(id=instance.entity_id)
             title = f"Chờ bạn duyệt: {instance.entity_title or instance.entity_code}"
 
-            for user in _recipients(db, instance, task):
+            users = _recipients(db, instance, task)
+            #  duoc-CR-681: thư theo mẫu của phân hệ (nếu khai) — mọi chặng + người nhận ủy quyền.
+            entity_hooks.mail_new_task(db, instance, task, users)
+            for user in users:
                 on_behalf_of = ""
                 if user.employee_id != task.assignee_employee_id:
                     on_behalf_of = _name_of(db, task.assignee_employee_id)

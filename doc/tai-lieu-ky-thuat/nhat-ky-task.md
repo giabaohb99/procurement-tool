@@ -17021,3 +17021,72 @@ Tham chiếu: doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md �
 **Kết quả:** văn bản số 05 trên nhánh erp-v2, đủ 108 câu (B1 đến B108).
 
 Tham chiếu: doc/erp/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
+
+## duoc-CR-681 | Phiếu đặt xe chọn công ty và người duyệt, thư báo tới đúng người được chọn
+- status: xong
+- date: 2026-10-23
+- pic: NSU265
+- tag: Được
+**Bối cảnh:** anh Được muốn phiếu đặt xe có thêm hai ô chọn công ty và chọn người phê duyệt, hai ô độc lập; danh sách người duyệt lấy theo cấu hình ai có quyền duyệt, và thư báo đi tới đúng người được chọn.
+
+**Đã làm**
+- Thêm khối «Công ty và người duyệt» vào form đặt xe; công ty mặc định theo hồ sơ người tạo, người duyệt lấy từ những ai có quyền duyệt phiếu đặt xe ở màn Phân quyền.
+- Thư báo gửi duyệt tới đúng người được chọn ở cả hai đường: chưa bật luồng duyệt, và luồng có bước «Người có quyền duyệt»; người được chọn mở và duyệt được phiếu dù phiếu ngoài phạm vi dữ liệu của họ.
+- Ép tải tìm ra lỗi có sẵn: nhiều người tạo phiếu cùng lúc thì hầu hết bị lỗi do tranh mã phiếu; đã sửa để mã được cấp lần lượt.
+- Rà mã tìm ra một lỗi cao và bốn lỗi trung bình, đã sửa hết; viết bài hướng dẫn sử dụng mới và cập nhật tài liệu chức năng Đặt xe.
+
+**Kết quả:** bài kiểm máy chủ, giao diện, kiểm kiểu và kiểm mã đều xanh; bấm thử trên local đúng người; ép tải trên MySQL thật sáu mươi phiếu gửi cùng lúc ở mỗi đường đều đúng người, mã phiếu không trùng.
+
+**Còn lại:** khi lên dev phải chạy migration, seed bài hướng dẫn và nạp lại kho tìm kiếm của trợ lý; worker Celery phải đang chạy thì thư mới đi.
+
+Mã nguồn: backend/app/modules/vehicle_booking/approver_picker.py · service.py · notify.py · approval_bridge.py · backend/app/modules/notification/email_queue.py · frontend-v2/src/modules/vehicle-booking/components/booking-approval-routing-fields.tsx
+Deploy: migration cr681vbrqco01 · scripts/seed_help_dat_xe_chon_nguoi_duyet.py · scripts/seed_help_phe_duyet_theo_quyen.py · scripts/reindex_help_rag.py --purge-orphans
+
+### duoc-CR-681-1 | Danh sách công ty, người duyệt và chốt kiểm ở máy chủ
+- status: xong
+Một đường API trả cả danh sách công ty đang hoạt động lẫn người có quyền duyệt đặt xe, mở cho người tạo hoặc sửa phiếu. Lúc lưu và gửi, công ty phải đang dùng, người duyệt phải còn quyền, hồ sơ còn làm việc và không phải người tạo hay người bấm gửi.
+Mã nguồn: backend/app/modules/vehicle_booking/approver_picker.py · controller.py · service.py
+
+### duoc-CR-681-2 | Thư báo và quyền xem của người được chọn
+- status: xong
+Chưa bật luồng thì chuông và thư chỉ tới người được chọn, người đó xem và bấm duyệt được khi phiếu đang chờ. Có luồng với bước «Người có quyền duyệt» thì bước chỉ giao người được chọn và gửi thư cho người nhận việc.
+Mã nguồn: backend/app/modules/vehicle_booking/notify.py · approval_bridge.py · backend/app/modules/approval/permission_approvers.py
+
+### duoc-CR-681-3 | Hai ô chọn trên form đặt xe
+- status: xong
+Form có khối «Công ty và người duyệt», bỏ chính người đang lập khỏi danh sách, báo rõ người đã chọn mà mất quyền và báo lỗi khi tải danh sách hỏng; trang chi tiết phiếu hiện tên công ty.
+Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-form.tsx · booking-approval-routing-fields.tsx · utils/booking-pick-options.ts
+
+### duoc-CR-681-4 | Sửa lỗi tranh mã phiếu khi nhiều người tạo cùng lúc
+- status: xong
+Phiếu mới ghi mã tạm duy nhất rồi mới cấp mã DX lần lượt từng người một; đường đồng bộ phiếu từ app cũ cũng ghi mã tạm. Trước khi sửa sáu mươi người gửi cùng lúc thì năm mươi bảy người gặp lỗi.
+Mã nguồn: backend/app/modules/vehicle_booking/service.py · backend/app/modules/legacy_datxe/service.py
+
+### duoc-CR-681-5 | Rà mã, ép tải và tài liệu
+- status: xong
+Rà mã tìm ra người được chọn mở phiếu ra trang trống, hồ sơ nghỉ việc vẫn chọn được, tự chọn mình qua tài khoản thứ hai và lưu nháp bị chặn nhầm; đã sửa và có bài kiểm nhắc lại. Ép tải trên MySQL thật đạt ở cả hai đường. Viết bài hướng dẫn sử dụng và cập nhật tài liệu chức năng Đặt xe.
+Mã nguồn: test/backend/test_dat_xe_chon_nguoi_duyet_cr681.py · plans/261023-1352-dat-xe-chon-nguoi-duyet-cr681/scripts/stress-booking-picked-approver-cr681.py · doc/tai-lieu-chuc-nang/16-dat-xe.md
+
+### duoc-CR-681-6 | Chọn công ty khác thì cả hai bên đều thấy phiếu
+- status: xong
+- date: 2026-10-24
+Phiếu lưu thêm công ty của người tạo, chụp lúc tạo; người có phạm vi «Công ty» ở công ty người tạo hoặc công ty đã chọn đều thấy và duyệt được phiếu, công ty thứ ba thì không. Bước «Người có quyền duyệt» chưa chọn người thì giao người giữ quyền ở cả hai công ty. Phiếu cũ được lấp công ty người tạo từ hồ sơ nhân sự.
+Mã nguồn: backend/app/core/scoping.py · backend/app/modules/vehicle_booking/model.py · migration cr681vbrqco01 · backend/app/modules/legacy_datxe/builder.py
+
+### duoc-CR-681-7 | Thư báo cho mọi chặng duyệt và người nhận ủy quyền
+- status: xong
+- date: 2026-10-24
+Mỗi lần bộ máy duyệt mở việc mới ở bất kỳ chặng nào, người nhận việc và người đang nhận ủy quyền của họ đều có thư. Thư được ghi trong cùng giao dịch và chỉ đẩy sang worker sau khi lưu xong, nên giao dịch hủy thì không có thư nào đi, worker lỗi thì thư nằm chờ để tra.
+Mã nguồn: backend/app/modules/notification/email_queue.py · backend/app/modules/approval/entity_hooks.py · task_notification.py · backend/app/modules/vehicle_booking/approval_bridge.py
+
+### duoc-CR-681-8 | Ô chọn người duyệt hiện mọi người có quyền duyệt
+- status: xong
+- date: 2026-10-24
+Anh Được báo ô chọn người duyệt trống. Nguyên nhân là danh sách đang lọc như lúc bộ máy tự giao việc, bỏ phạm vi «Của mình» và vai trò Quản trị, mà trên hệ chỉ có đúng hai nhóm đó giữ quyền duyệt đặt xe. Nay ô chọn hiện mọi người được tick quyền duyệt ở bất kỳ phạm vi nào; người được chọn vẫn xem và duyệt được phiếu của công ty khác, bước «Người có quyền duyệt» giao đúng người đó.
+Mã nguồn: backend/app/modules/approval/permission_approvers.py · backend/app/modules/vehicle_booking/approver_picker.py
+
+### duoc-CR-681-9 | Ô chọn có tìm kiếm, ảnh đại diện và logo; người phê duyệt đứng trước công ty
+- status: xong
+- date: 2026-10-24
+Ô chọn dùng chung có tìm kiếm nay hiện được ảnh đầu dòng và dòng chữ phụ; ô «Người phê duyệt» hiện ảnh đại diện, «Mã - Tên» và vai trò cấp quyền duyệt kèm phạm vi, ô «Công ty» hiện logo và mã số thuế, tìm được theo cả mã nhân viên lẫn mã số thuế. Theo mẫu anh Được gửi, ô người phê duyệt đứng trước ô công ty.
+Mã nguồn: frontend-v2/src/shared/ui/search-select.tsx · option-avatar.tsx · frontend-v2/src/modules/vehicle-booking/components/booking-approval-routing-fields.tsx · utils/booking-pick-options.ts

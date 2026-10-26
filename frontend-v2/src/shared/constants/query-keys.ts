@@ -782,6 +782,8 @@ export const queryKeys = {
     bookings: (params?: Record<string, unknown>) =>
       ['vehicle-booking', 'bookings', params ?? {}] as const,
     booking: (id: number) => ['vehicle-booking', 'bookings', id] as const,
+    /** Hai ô «Công ty» + «Người duyệt» của form đặt xe (duoc-CR-681). */
+    pickOptions: () => ['vehicle-booking', 'pick-options'] as const,
     /** Số liệu trang Tổng quan Đặt xe (`/api/vehicle-bookings/overview`). */
     overview: (params?: Record<string, unknown>) =>
       ['vehicle-booking', 'overview', params ?? {}] as const,

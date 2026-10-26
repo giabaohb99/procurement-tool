@@ -152,6 +152,18 @@ def mcp_all_groups(monkeypatch):
                         lambda db: {**real(db), "groups": {g.key: True for g in mcp_settings.GROUPS}})
 
 
+# ── Hàng đợi thư sau commit: KHÔNG đẩy sang Redis/Celery thật trong test (duoc-CR-681) ──────
+@pytest.fixture(autouse=True)
+def email_queue_sent(monkeypatch):
+    """`notification.email_queue.dispatch` gọi `send_email_task.delay` — trong test là đi tìm Redis thật
+    (treo / nổ tùy máy). Thay bằng bộ ghi: bài nào cần biết thư nào đã được đẩy thì nhận fixture này."""
+    from app.modules.notification import email_queue
+
+    sent: list[dict] = []
+    monkeypatch.setattr(email_queue, "dispatch", sent.append)
+    return sent
+
+
 # ── Fixture db ──────────────────────────────────────────────────────────────────
 @pytest.fixture(scope="function")
 def db():

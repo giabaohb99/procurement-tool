@@ -25,6 +25,7 @@ nói dối thì không còn dùng để tra sự cố được nữa.
 """
 import collections
 import logging
+from uuid import uuid4
 
 from sqlalchemy import select
 
@@ -314,6 +315,9 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
 
     # --- chưa có: tạo mới -------------------------------------------------
     if existing is None:
+        #  Mã TẠM duy nhất: cột `code` UNIQUE, chèn cùng lúc nhiều phiếu mang `""` là khóa chờ lẫn nhau rồi
+        #  deadlock (cùng lỗi phiếu đặt xe tạo trên ERP — ép tải duoc-CR-681).
+        fresh.code = f"~{uuid4().hex[:24]}"
         db.add(fresh)
         db.flush()
         #  Mã sinh SAU `flush()` vì tới lúc đó mới có id.

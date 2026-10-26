@@ -1,7 +1,7 @@
 import { Check, ChevronDown, ChevronUp, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
+import { OptionAvatar } from '@/shared/ui/option-avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -384,12 +384,3 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
 }
 
 /** Avatar nhỏ đứng trước nhãn; ảnh rỗng/hỏng thì hiện chữ cái đầu của nhãn. */
-function OptionAvatar({ src, label }: { src: string; label: string }) {
-  const initial = (label.trim()[0] || '?').toUpperCase()
-  return (
-    <Avatar size="sm" className="size-5 shrink-0">
-      {src && <AvatarImage src={src} alt="" className="object-contain" />}
-      <AvatarFallback className="text-[10px]">{initial}</AvatarFallback>
-    </Avatar>
-  )
-}

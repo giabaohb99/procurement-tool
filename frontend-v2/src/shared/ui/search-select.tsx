@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
+import { OptionAvatar } from '@/shared/ui/option-avatar'
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { cn } from '@/shared/utils/cn'
 //  Bỏ dấu để so — hàm dùng chung, xem `shared/utils/vn-text.ts`.
@@ -11,6 +12,13 @@ import { stripDiacritics } from '@/shared/utils/vn-text'
 export interface SearchSelectOption {
   value: string
   label: string
+  /** Chữ phụ mờ sau nhãn (mã nhân viên, MST…). Tìm kiếm khớp cả chữ này. */
+  hint?: string
+  /**
+   * URL ảnh đầu dòng (avatar người, logo công ty). KHAI khóa này — kể cả chuỗi rỗng — là bật cột ảnh
+   * (rỗng thì hiện chữ cái đầu); bỏ hẳn thì dòng vẫn thuần chữ như mọi ô đang dùng.
+   */
+  avatar?: string
 }
 
 interface SearchSelectProps {
@@ -101,16 +109,16 @@ export function SearchSelect({
   const inputRef = useRef<HTMLInputElement>(null)
   const anchorRef = useRef<HTMLDivElement>(null)
 
-  const selectedLabel = useMemo(
-    () => options.find((option) => option.value === value)?.label ?? value,
-    [options, value],
-  )
+  const selectedOption = useMemo(() => options.find((option) => option.value === value), [options, value])
+  const selectedLabel = selectedOption?.label ?? value
 
   const { matches, remaining } = useMemo(() => {
     const needle = stripDiacritics(keyword.trim())
     const rows = needle
       ? options.filter((option) =>
-          [option.label, option.value].some((field) => stripDiacritics(field).includes(needle)),
+          [option.label, option.value, option.hint ?? ''].some((field) =>
+            stripDiacritics(field).includes(needle),
+          ),
         )
       : options
     return { matches: rows.slice(0, MAX_VISIBLE), remaining: Math.max(rows.length - MAX_VISIBLE, 0) }
@@ -139,7 +147,13 @@ export function SearchSelect({
           )}
         >
           <Check className={cn('mt-0.5 size-4 shrink-0', option.value !== value && 'invisible')} />
-          <span className="flex-1 whitespace-pre-wrap break-words">{option.label}</span>
+          {option.avatar !== undefined && (
+            <OptionAvatar src={option.avatar} label={option.label} className="size-6" />
+          )}
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="whitespace-pre-wrap break-words">{option.label}</span>
+            {option.hint && <span className="text-xs text-muted-foreground">{option.hint}</span>}
+          </span>
         </button>
       ))}
 
@@ -264,6 +278,9 @@ export function SearchSelect({
             className,
           )}
         >
+          {value && selectedOption?.avatar !== undefined && (
+            <OptionAvatar src={selectedOption.avatar} label={selectedOption.label} />
+          )}
           <span className={cn('flex-1', wrap ? 'whitespace-pre-wrap break-words' : 'truncate')}>
             {value ? selectedLabel : placeholder}
           </span>

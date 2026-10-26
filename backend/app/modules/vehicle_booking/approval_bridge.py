@@ -41,7 +41,7 @@ def entity_context(booking: VehicleBooking) -> dict:
     Chỉ những ô thật sự có nghĩa để rẽ nhánh / định tuyến người duyệt.
     """
     db = object_session(booking)
-    return {
+    context = {
         #  `id` để khai được luồng riêng cho MỘT phiếu (bộ chọn "Áp dụng cho" sinh
         #  điều kiện `id in [...]`). Thiếu ô này lựa chọn đó không bao giờ khớp.
         "id": booking.id,
@@ -55,6 +55,10 @@ def entity_context(booking: VehicleBooking) -> dict:
         "first_approver_employee_id": (
             (_employee_id_of_user(db, booking.first_approver_id) or 0) if db else 0),
     }
+    #  duoc-CR-681: người duyệt chọn trên phiếu — bước «Người có quyền duyệt» chỉ giao cho đúng người này
+    #  (khóa chung `picked_approver_employee_id`, xem `approval/permission_approvers.resolve`).
+    context["picked_approver_employee_id"] = context["first_approver_employee_id"]
+    return context
 
 
 def is_enabled(db: Session) -> bool:
@@ -281,9 +285,24 @@ def booking_for_approver(db: Session, booking_id: int, user) -> VehicleBooking |
     booking = db.get(VehicleBooking, booking_id)
     if booking is None or booking.is_deleted:
         return None
+    if is_picked_legacy_approver(db, booking, user):
+        return booking
     if not is_pending_approver(db, ENTITY, booking_id, user):
         return None
     return booking
+
+
+def is_picked_legacy_approver(db: Session, booking: VehicleBooking, user) -> bool:
+    """Người này là NGƯỜI DUYỆT CHỌN TRÊN PHIẾU và phiếu đang chờ duyệt theo ĐƯỜNG CŨ (duoc-CR-681).
+
+    Đường cũ (bộ máy tắt / không luồng khớp) gửi thư «Gửi duyệt» CHỈ cho người được chọn, mà danh sách
+    chọn không soi phạm vi dữ liệu (công ty và người duyệt là hai ô độc lập) — không có cửa này thì thư
+    trỏ tới trang 404 và người đó không bấm được Duyệt (review H1). Chỉ nới lúc phiếu CHỜ DUYỆT và không
+    có phiên nhiều bước nào đang chạy (đang chạy thì đọc qua việc treo như mọi người duyệt khác).
+    """
+    return (booking.status == BK_PENDING and bool(booking.first_approver_id)
+            and int(booking.first_approver_id) == int(getattr(user, "id", 0) or 0)
+            and running_instance(db, booking.id) is None)
 
 
 def _can_read_booking(db: Session, booking_id: int, user) -> bool:
@@ -319,3 +338,21 @@ def _can_read_booking(db: Session, booking_id: int, user) -> bool:
 
 
 entity_hooks.register_reader(ENTITY, _can_read_booking)
+
+
+def _mail_new_task(db: Session, instance, task, users: list) -> None:
+    """Thư «YCĐX … chờ bạn duyệt» (mẫu `dx_submitted`) cho người vừa nhận việc ở BẤT KỲ chặng nào, kể cả
+    người nhận ủy quyền (duoc-CR-681). Gửi sau commit qua worker — xem `notification.email_queue`."""
+    from app.modules.notification.email_queue import queue_event_email
+
+    from .notify import booking_mail_context
+
+    booking = db.get(VehicleBooking, instance.entity_id)
+    if booking is None or booking.is_deleted:
+        return
+    ctx = booking_mail_context(db, booking)
+    ctx["actor_id"] = instance.updated_by or 0
+    queue_event_email(db, "dx_submitted", users, ctx)
+
+
+entity_hooks.register_task_mailer(ENTITY, _mail_new_task)

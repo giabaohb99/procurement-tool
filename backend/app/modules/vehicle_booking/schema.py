@@ -235,6 +235,8 @@ class VehicleBookingResponse(VehicleBookingBase):
     #  Khối "Thông tin phê duyệt": tên người duyệt + mốc duyệt (backend nối/chụp).
     #  (first_approver_id đã có ở VehicleBookingBase.)
     approver_name: str = ""
+    company_name: str = ""   # duoc-CR-681: công ty chọn trên phiếu (chi tiết phiếu hiện tên)
+    first_approver_name: str = ""   # duoc-CR-681: người duyệt CHỌN trên phiếu (khác approver_name = người đã ký)
     approved_at: str = ""
     assigned_vehicle_id: int | None = None
     assigned_driver_id: int | None = None

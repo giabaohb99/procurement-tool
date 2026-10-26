@@ -208,3 +208,35 @@ describe('SearchSelect', () => {
     expect(screen.queryByText(/Còn \d+ mục nữa/)).not.toBeInTheDocument()
   })
 })
+
+describe('SearchSelect — dòng có ảnh + chữ phụ (duoc-CR-681)', () => {
+  const PEOPLE = [
+    { value: '40', label: 'Trần Điều Phối', hint: 'NSU100 · Điều phối viên', avatar: '' },
+    { value: '41', label: 'Lê Văn Duyệt', hint: 'NSU101 · Quản trị hệ thống', avatar: '' },
+  ]
+
+  it('tìm được theo CHỮ PHỤ (mã nhân viên), không chỉ theo tên', async () => {
+    const nguoi = userEvent.setup()
+    render(<SearchSelect value="" onChange={vi.fn()} options={PEOPLE} searchPlaceholder="Tìm theo tên hoặc mã…" />)
+    await nguoi.click(screen.getByRole('combobox'))
+    await nguoi.type(screen.getByPlaceholderText(/Tìm theo tên/), 'nsu101')
+    expect(screen.getByText('Lê Văn Duyệt')).toBeInTheDocument()
+    expect(screen.queryByText('Trần Điều Phối')).not.toBeInTheDocument()
+  })
+
+  it('dòng có khóa avatar hiện chữ cái đầu khi chưa có ảnh, kèm chữ phụ bên dưới tên', async () => {
+    const nguoi = userEvent.setup()
+    render(<SearchSelect value="" onChange={vi.fn()} options={PEOPLE} />)
+    await nguoi.click(screen.getByRole('combobox'))
+    expect(screen.getByText('T')).toBeInTheDocument()
+    expect(screen.getByText('NSU100 · Điều phối viên')).toBeInTheDocument()
+  })
+
+  it('ô đã chọn hiện ảnh + tên; ô không khai avatar giữ nguyên thuần chữ', () => {
+    const { unmount } = render(<SearchSelect value="41" onChange={vi.fn()} options={PEOPLE} />)
+    expect(screen.getByRole('combobox')).toHaveTextContent('LLê Văn Duyệt')
+    unmount()
+    render(<SearchSelect value="1" onChange={vi.fn()} options={[{ value: '1', label: 'Công văn · CV' }]} />)
+    expect(screen.getByRole('combobox')).toHaveTextContent(/^Công văn · CV$/)
+  })
+})

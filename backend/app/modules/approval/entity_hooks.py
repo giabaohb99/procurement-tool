@@ -165,3 +165,31 @@ def entity_context(db: Session, entity: str, entity_id: int) -> dict:
         logging.getLogger(__name__).exception(
             "Không dựng được bối cảnh của %s #%s", entity, entity_id)
         return {}
+
+
+#  entity → hàm `(db, instance, task, users) -> None` gửi THƯ khi bộ máy vừa mở một việc ĐANG CHỜ
+#  (duoc-CR-681). `users` = tài khoản nhận việc: người được giao + người đang nhận ủy quyền của họ.
+#
+#  Bộ máy tự ghi CHUÔNG cho mọi loại chứng từ (`task_notification.notify_new_tasks`); thư thì mỗi phân hệ
+#  một mẫu riêng nên phân hệ tự khai. Chưa khai = chỉ chuông, như trước. Gọi ở MỌI chỗ mở việc: chặng đầu
+#  lúc gửi, chặng sau khi chặng trước xong, giao lại khi sửa luồng — nên thư không còn chỉ tới chặng đầu.
+_TASK_MAILERS: dict[str, Callable] = {}
+
+
+def register_task_mailer(entity: str, fn: Callable) -> None:
+    """Khai hàm gửi thư việc duyệt mới cho loại chứng từ này. Xem `_TASK_MAILERS`."""
+    _TASK_MAILERS[entity] = fn
+
+
+def mail_new_task(db: Session, instance, task, users: list) -> None:
+    """Gửi thư việc mới qua hàm phân hệ đã khai. Nuốt lỗi — thư không được làm hỏng phiên duyệt."""
+    fn = _TASK_MAILERS.get(instance.entity)
+    if fn is None or not users:
+        return
+    try:
+        fn(db, instance, task, users)
+    except Exception:   # noqa: BLE001 — xem docstring
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "Không gửi được thư việc duyệt %s #%s", instance.entity, instance.entity_id)

@@ -7,6 +7,7 @@ controller), xem chi tiết, sửa khi còn nháp / bị trả về. Điều ph�
 
 import json
 import re
+from uuid import uuid4
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
@@ -38,6 +39,7 @@ from .model import (
     Vehicle,
     VehicleBooking,
 )
+from . import approver_picker
 from .notify import notify, notify_approved, notify_completed
 from .schema import (
     CompleteIn,
@@ -141,7 +143,8 @@ def _after_submit(db: Session, booking: VehicleBooking, user, background_tasks) 
     if is_enabled(db):
         instance = submit_for_approval(db, booking, getattr(user, "id", 0))
         if instance is not None:
-            return  # bộ máy nhiều bước lo tiếp + tự báo người duyệt
+            #  Bộ máy lo cả chuông lẫn thư cho mọi chặng (duoc-CR-681: `approval_bridge._mail_new_task`).
+            return
     notify(db, "dx_submitted", booking, background_tasks, actor=user)
 
 
@@ -152,7 +155,15 @@ def _next_booking_code(db: Session) -> str:
     demo có mã kiểu `DXTC10` (chữ sắp cao hơn số) làm nó rơi về `DX001` → trùng khóa.
     Ở đây chỉ xét mã đúng dạng `DX<số>`, lấy số lớn nhất + 1, và nhảy tiếp nếu đụng.
     """
-    rows = db.query(VehicleBooking.code).filter(VehicleBooking.code.like("DX%")).all()
+    #  ⚠️ CẤP MÃ LẦN LƯỢT (duoc-CR-681, ép tải 23/10/2026: 60 người gửi cùng lúc → 57 lỗi 500 — hai người
+    #  cùng nhận DX394, cộng deadlock vì mọi phiếu chèn tạm mã rỗng trên cột UNIQUE). Khóa GHI dòng DX
+    #  có id nhỏ nhất làm «cửa xoay»: người sau đợi người trước commit. Đọc danh sách mã bằng câu đọc CÓ
+    #  KHÓA (`FOR SHARE`) vì REPEATABLE READ cho câu đọc thường thấy ảnh chụp cũ — không thấy mã người
+    #  trước vừa cấp. Phiếu đầu tiên của hệ (chưa có dòng DX nào) không có cửa xoay — chấp nhận.
+    (db.query(VehicleBooking.id).filter(VehicleBooking.code.like("DX%"))
+     .order_by(VehicleBooking.id.asc()).limit(1).with_for_update().first())
+    rows = (db.query(VehicleBooking.code).filter(VehicleBooking.code.like("DX%"))
+            .with_for_update(read=True).all())
     existing = {code for (code,) in rows if code}
     max_num = 0
     for code in existing:
@@ -177,6 +188,8 @@ def create_booking(db: Session, data: VehicleBookingCreate, user, submit: bool,
 
     req_type = _normalize_type(data.request_type)
     ctx = _requester_context(db, user)
+    approver_picker.check_company(db, data.company_id)
+    approver_picker.check_approver(db, data.first_approver_id, getattr(user, "id", 0))
 
     booking = VehicleBooking(
         request_type=req_type,
@@ -210,12 +223,16 @@ def create_booking(db: Session, data: VehicleBookingCreate, user, submit: bool,
         requester_role=ctx.role,
         department_id=data.department_id or ctx.dept_id,
         company_id=data.company_id or ctx.company_id,
+        requester_company_id=ctx.company_id or data.company_id or 0,
         first_approver_id=data.first_approver_id or 0,
         status=BK_PENDING if submit else BK_DRAFT,
         note=data.note or "",
         created_by=getattr(user, "id", 0),
         updated_by=getattr(user, "id", 0),
     )
+    #  Mã TẠM duy nhất lúc chèn: để `code=""` thì mọi phiếu chèn cùng lúc tranh nhau một giá trị trên cột
+    #  UNIQUE → MySQL khóa chờ lẫn nhau rồi báo deadlock (xem `_next_booking_code`).
+    booking.code = f"~{uuid4().hex[:24]}"
     db.add(booking)
     db.flush()  # có id để sinh mã
     booking.code = _next_booking_code(db)
@@ -236,6 +253,13 @@ def update_booking(db: Session, booking: VehicleBooking, data: VehicleBookingUpd
         raise HTTPException(400, "Phiếu đã vào luồng duyệt/điều phối — không sửa được nữa")
 
     patch = data.model_dump(exclude_unset=True)
+    if patch.get("company_id") and patch["company_id"] != booking.company_id:
+        approver_picker.check_company(db, patch["company_id"])
+    #  Kiểm người duyệt theo giá trị SAU khi sửa: khi ĐỔI người hoặc khi GỬI (mất quyền giữa chừng). Lưu nháp
+    #  không đổi người thì không chặn — giao diện luôn gửi lại ô này (review M4).
+    approver_after = patch.get("first_approver_id", booking.first_approver_id)
+    if submit or approver_after != booking.first_approver_id:
+        approver_picker.check_approver(db, approver_after, booking.requester_id, getattr(user, "id", 0))
     if "request_type" in patch:
         booking.request_type = _normalize_type(patch.pop("request_type"))
     if "stops" in patch:
@@ -660,6 +684,12 @@ def serialize_booking(db: Session, obj: VehicleBooking, viewer=None) -> dict:
     #  chưa có thì lùi về người được CHỌN duyệt (first_approver_id).
     out.approver_name = _emp_name_of_user(db, obj.approved_by or obj.first_approver_id)
     out.dispatched_by_name = _emp_name_of_user(db, obj.dispatched_by or 0)
+    out.first_approver_name = _emp_name_of_user(db, obj.first_approver_id or 0)
+    if obj.company_id:
+        from app.modules.company.model import Company
+
+        company = db.get(Company, obj.company_id)
+        out.company_name = company.name if company else ""
     #  Phiên duyệt nhiều bước gần nhất. Còn mở → frontend ẩn nút duyệt một bước;
     #  đã đóng → frontend vẫn cần ID để vẽ thẻ Lịch sử phê duyệt. Một câu truy vấn
     #  trả cả hai: bộ máy chỉ mở phiên mới khi không còn phiên nào mở, nên phiên

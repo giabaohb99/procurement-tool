@@ -20,7 +20,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 
-from . import approval_bridge, service
+from . import approval_bridge, approver_picker, service
 from .model import Driver, Vehicle, VehicleBooking
 from .schema import (
     CompleteIn,
@@ -173,6 +173,18 @@ def booking_timeline(
     return success({"items": items})
 
 
+@router.get("/pick-options")
+def pick_options(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Hai ô «Công ty» + «Người duyệt» trên phiếu (duoc-CR-681). Người duyệt = người có quyền Duyệt
+    đặt xe theo màn Phân quyền; công ty mặc định = pháp nhân trên hồ sơ người tạo. Mở cho người TẠO
+    hoặc SỬA phiếu (người chỉ có `write` cũng dùng form)."""
+    if not (user_has_permission(db, user, "vehicle_booking", "create")
+            or user_has_permission(db, user, "vehicle_booking", "write")):
+        raise HTTPException(403, "Không có quyền tạo hoặc sửa phiếu đặt xe")
+    ctx = service._requester_context(db, user)
+    return success(approver_picker.pick_options(db, ctx.company_id))
+
+
 @router.get("/{bid}")
 def get_booking(bid: int, db: Session = Depends(get_db),
                 user=Depends(get_current_user)):
@@ -302,6 +314,12 @@ def dispatch_reject_booking(bid: int, data: ReasonIn, background_tasks: Backgrou
 def _scoped_or_404(db: Session, bid: int, user, action: str) -> VehicleBooking:
     obj = get_scoped(db, VehicleBooking, "vehicle_booking", bid,
                      user, get_perm_profile(db, user), action)
+    if obj is None and action == "approve":
+        #  duoc-CR-681: người duyệt CHỌN TRÊN PHIẾU duyệt / trả / từ chối được dù phiếu ngoài phạm vi của họ
+        #  (đường cũ — xem `approval_bridge.is_picked_legacy_approver`). Route vẫn đòi `approve`.
+        candidate = db.get(VehicleBooking, bid)
+        if candidate is not None and approval_bridge.is_picked_legacy_approver(db, candidate, user):
+            obj = candidate
     if obj is None or obj.is_deleted:
         raise HTTPException(404, "Không tìm thấy yêu cầu đặt xe")
     return obj

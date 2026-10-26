@@ -104,8 +104,10 @@ SCOPE_FIELDS = {
     "goods_receipt":    {"company": "company_id", "owner": "created_by"},
     "seal_request":     {"company": "company_id", "dept_id": "department_id",
                          "owner": "created_by"},
-    "vehicle_booking":  {"company": "company_id", "dept_id": "department_id",
-                         "owner": "created_by"},
+    #  duoc-CR-681: `company_alt` = cột pháp nhân THỨ HAI — phiếu chọn công ty khác công ty người tạo thì
+    #  người phạm vi «Công ty» ở cả hai bên đều thấy (bậc Công ty + ô «chọn công ty» khớp một trong hai).
+    "vehicle_booking":  {"company": "company_id", "company_alt": "requester_company_id",
+                         "dept_id": "department_id", "owner": "created_by"},
 
     # --- Nhóm 2: CỐ Ý công khai (xem `PUBLIC`) ---
     # 2a. Dữ liệu gốc dùng chung MỌI pháp nhân. Sản phẩm và nhà cung cấp là chỗ
@@ -627,7 +629,12 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
     if scope == "dept":
         cs = []
         if f.get("company") and company_id:
-            cs.append(getattr(model, f["company"]) == company_id)
+            company_cond = getattr(model, f["company"]) == company_id
+            if f.get("company_alt"):
+                #  duoc-CR-681: phòng của phiếu đặt xe là phòng NGƯỜI TẠO, thuộc công ty người tạo — phiếu chọn
+                #  công ty khác vẫn phải hiện với người cùng phòng (review lượt 2).
+                company_cond = or_(company_cond, getattr(model, f["company_alt"]) == company_id)
+            cs.append(company_cond)
         if f.get("dept_id") or f.get("dept_name"):
             dc = _dept_match(model, f, dept_ids, dept_names)
             # Người dùng chưa gắn phòng nào → không có gì để so → không thấy gì. (Luật cũ so
@@ -693,7 +700,10 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             # ⚠️ Trước khi đưa lên môi trường thật phải gắn `company_id` cho nhân sự — xem
             # phần B-07 trong `doc/erp/nen-tang/15-do-be-tong-nen-v2.md`, đã đếm sẵn số người dính.
             return _chan(entity, scope, user, "nguoi dung chua gan phap nhan (company_id=0)")
-        return getattr(model, f["company"]) == company_id
+        cond = getattr(model, f["company"]) == company_id
+        if f.get("company_alt"):
+            cond = or_(cond, getattr(model, f["company_alt"]) == company_id)
+        return cond
 
     return _chan(entity, scope, user, "pham vi la khong hieu duoc")
 
@@ -737,8 +747,13 @@ def _explicit_cond(model, entity, scopeconf, profile=None):
         raw_exc = (scopeconf.get("exc") or {}).get(dim) or []
         inc = _parse_int_values(entity, dim, "chon", raw_inc)
         exc = _parse_int_values(entity, dim, "loai tru", raw_exc)
+        #  «Loại trừ công ty» CHỈ so cột chính (`company_id` = công ty chọn trên phiếu đặt xe), cố ý không so
+        #  `company_alt`: loại trừ là thu hẹp, so cả hai cột là giấu luôn phiếu người công ty bị loại đặt hộ
+        #  công ty được xem.
         if inc:
-            cs.append(column.in_(inc))
+            #  duoc-CR-681: «chọn công ty» khớp cả cột pháp nhân thứ hai (vd công ty người tạo phiếu đặt xe).
+            alt = getattr(model, f["company_alt"]) if dim == "company" and f.get("company_alt") else None
+            cs.append(column.in_(inc) if alt is None else or_(column.in_(inc), alt.in_(inc)))
         elif raw_inc:
             #  Ô CHỌN có giá trị nhưng KHÔNG giá trị nào dùng được. Bỏ qua ô này
             #  là phạm vi NỞ ra đúng bằng bậc vai trò — ngược hẳn ý người khai.

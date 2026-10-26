@@ -1,6 +1,7 @@
 import {
   ArrowDown,
   ArrowUp,
+  Building2,
   IdCard,
   Loader2,
   MapPin,
@@ -29,9 +30,11 @@ import { RequiredMark } from '@/shared/ui/required-mark'
 import { Textarea } from '@/shared/ui/textarea'
 
 import { cn } from '@/shared/utils/cn'
+import { BookingApprovalRoutingFields } from './booking-approval-routing-fields'
 import { BookingDateTimePicker } from './booking-date-time-picker'
 import { BookingPageHeader } from './booking-page-header'
 import {
+  useBookingPickOptions,
   useCreateVehicleBooking,
   useMyDriver,
   useUpdateVehicleBooking,
@@ -44,6 +47,7 @@ import {
   type VehicleBookingPayload,
 } from '../types/vehicle-booking'
 import { CarBookingIcon, DeliveryBookingIcon } from './booking-type-icons'
+import { initialCompanyId, pickValidationMessage } from '../utils/booking-pick-options'
 
 function labelsFor(isDelivery: boolean) {
   return {
@@ -163,6 +167,18 @@ export function BookingForm({
   const [receiverName, setReceiverName] = useState(source?.receiver_name ?? '')
   const [receiverPhone, setReceiverPhone] = useState(source?.receiver_phone ?? '')
 
+  //  duoc-CR-681 — Công ty + Người duyệt, hai ô độc lập. `null` = người dùng chưa tự chọn công ty:
+  //  lùi về công ty của phiếu nguồn / pháp nhân người tạo ngay khi dữ liệu về (tính lúc render,
+  //  không effect + setState).
+  const pickOptions = useBookingPickOptions()
+  const [companyPick, setCompanyPick] = useState<number | null>(null)
+  const companyId = companyPick ?? initialCompanyId(source?.company_id, pickOptions.data)
+  //  Nhân bản giữ người duyệt của phiếu nguồn cho đỡ chọn lại; lúc gửi mà người đó đã mất quyền
+  //  (hoặc là chính người tạo) thì form + backend cùng chặn, bảo chọn lại.
+  const [approverUserId, setApproverUserId] = useState<number>(
+    booking?.first_approver_id ?? duplicateFrom?.first_approver_id ?? 0,
+  )
+
 
   function setStopField(index: number, field: keyof Stop, value: string) {
     setStops((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)))
@@ -198,6 +214,8 @@ export function BookingForm({
       start_time: startTime,
       end_time: endTime,
       note: note.trim(),
+      company_id: companyId,
+      first_approver_id: approverUserId,
     }
     if (isDelivery) {
       return {
@@ -221,6 +239,8 @@ export function BookingForm({
 
   function validate(): string {
     if (!purpose.trim()) return 'Vui lòng nhập mục đích.'
+    const pickMessage = pickValidationMessage(pickOptions.data, companyId, approverUserId)
+    if (pickMessage) return pickMessage
     if (!startLocation.trim()) return `Vui lòng nhập ${L.start.toLowerCase()}.`
     if (!endLocation.trim()) return `Vui lòng nhập ${L.end.toLowerCase()}.`
     if (!startTime) return `Vui lòng chọn ${L.startTime.toLowerCase()}.`
@@ -350,6 +370,22 @@ export function BookingForm({
           <Field label="Mục đích" required>
             <Input value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="VD: Đi thăm khách hàng quận 7" />
           </Field>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <BlockHeading icon={Building2}>Người phê duyệt và công ty</BlockHeading>
+          <BookingApprovalRoutingFields
+            data={pickOptions.data}
+            isLoading={pickOptions.isLoading}
+            companyId={companyId}
+            approverUserId={approverUserId}
+            savedCompanyName={source?.company_name}
+            savedApproverName={booking?.first_approver_name}
+            selfUserId={user?.id}
+            isError={pickOptions.isError}
+            onCompanyChange={setCompanyPick}
+            onApproverChange={setApproverUserId}
+          />
         </div>
 
         {/* GPLX của người yêu cầu — chỉ khi TỰ LÁI (bắt buộc; tự điền nếu đã là tài xế) */}

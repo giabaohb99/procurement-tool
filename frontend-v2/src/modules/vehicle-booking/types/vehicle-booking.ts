@@ -204,6 +204,10 @@ export interface VehicleBooking {
   // Thông tin phê duyệt
   /** Tên Trưởng bộ phận phê duyệt (backend nối từ first_approver_id). */
   approver_name: string
+  /** Tên công ty chọn trên phiếu (duoc-CR-681). Rỗng ở danh sách. */
+  company_name?: string
+  /** Người duyệt CHỌN trên phiếu — khác `approver_name` (người đã ký thật). Rỗng ở danh sách. */
+  first_approver_name?: string
   /** Thời điểm duyệt (ISO), rỗng nếu chưa duyệt. */
   approved_at: string
   // Điều phối / chạy chuyến
@@ -267,6 +271,36 @@ export interface VehicleBookingPayload {
   receiver_name?: string
   receiver_phone?: string
   special_instructions?: string
+  /** Công ty và người duyệt chọn trên phiếu — hai ô độc lập (duoc-CR-681). */
+  company_id?: number
   first_approver_id?: number
   note?: string
+}
+
+/** Một người chọn được làm người duyệt — `user_id` là giá trị lưu vào `first_approver_id`. */
+export interface BookingApproverOption {
+  user_id: number
+  employee_id: number
+  code: string
+  name: string
+  /** URL ảnh đại diện (bản thu nhỏ); rỗng = hiện chữ cái đầu. */
+  avatar: string
+  roles: { role: string; scope: string; scope_label: string }[]
+}
+
+export interface BookingCompanyOption {
+  id: number
+  name: string
+  short_name: string
+  tax_code: string
+  /** URL logo công ty; rỗng = hiện chữ cái đầu. */
+  logo: string
+}
+
+/** `GET /api/vehicle-bookings/pick-options` — dữ liệu hai ô «Công ty» + «Người duyệt». */
+export interface BookingPickOptions {
+  companies: BookingCompanyOption[]
+  approvers: BookingApproverOption[]
+  /** Pháp nhân trên hồ sơ người tạo — mặc định cho phiếu mới. 0 = hồ sơ chưa gắn. */
+  default_company_id: number
 }

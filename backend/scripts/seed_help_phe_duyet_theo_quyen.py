@@ -56,6 +56,7 @@ trò phù hợp trước.</li>
 <h3>3. Lưu ý</h3>
 <ul>
 <li>Đổi phân quyền thì <strong>phiếu gửi duyệt sau đó</strong> tự theo. Phiếu đang chờ ở bước này giữ người đã được giao lúc mở bước (giống cách «Theo vai trò»).</li>
+<li><strong>Phiếu đặt xe</strong> có ô chọn <em>Người duyệt</em> (danh sách chính là những người giữ quyền ở trên). Phiếu đã chọn người thì bước «Người có quyền duyệt» chỉ giao cho đúng người đó, bất kể công ty trên phiếu (hai ô độc lập); người đó mất quyền trước lúc mở bước thì bước tính như phiếu chưa chọn.</li>
 <li>Không ai thỏa cả bốn điều kiện thì bước xử lý theo ô <strong>«Không tìm được người duyệt thì»</strong> trong «Tùy chỉnh thêm» — nên khai người dự phòng.</li>
 <li>Danh sách hiện trong lúc khai luồng là <strong>chưa lọc theo phiếu</strong> (lúc đó chưa có phiếu nào); khi chạy thật hệ mới lọc theo phạm vi của từng người.</li>
 </ul>"""),

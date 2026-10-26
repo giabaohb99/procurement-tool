@@ -81,6 +81,16 @@ export function useDriverOptions() {
   })
 }
 
+/** Công ty + người duyệt chọn được trên form (duoc-CR-681). Người duyệt đổi theo phân quyền nên
+ *  giữ 1 phút chứ không vô hạn. */
+export function useBookingPickOptions() {
+  return useQuery({
+    queryKey: queryKeys.vehicleBooking.pickOptions(),
+    queryFn: vehicleBookingApi.pickOptions,
+    staleTime: 60 * 1000,
+  })
+}
+
 /** Hồ sơ tài xế của chính người đăng nhập — để form TỰ LÁI tự điền GPLX. */
 export function useMyDriver(enabled = true) {
   return useQuery({

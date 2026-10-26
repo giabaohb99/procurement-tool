@@ -62,6 +62,12 @@ export function BookingRequesterCard({ booking }: { booking: VehicleBooking }) {
         {booking.created_at && (
           <span className="tabular-nums">Tạo lúc {formatStamp(booking.created_at)}</span>
         )}
+        {/*  duoc-CR-681: công ty chọn trên phiếu — quyết định luồng duyệt và ai thấy phiếu. */}
+        {booking.company_name && (
+          <span>
+            · Công ty <span className="font-medium text-foreground">{booking.company_name}</span>
+          </span>
+        )}
       </div>
     </Card>
   )

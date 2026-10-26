@@ -6,7 +6,7 @@ dung email lấy từ mẫu sửa được `tab_email_template` theo event; chu�
 việc chuyển trạng thái phiếu.
 
 Người nhận theo event (MỖI EVENT = MỘT nhóm người nhận, để mỗi nhóm một mẫu email):
-  dx_submitted            → người duyệt (TBP phòng của người tạo)
+  dx_submitted            → người duyệt ĐÃ CHỌN trên phiếu (duoc-CR-681); chưa chọn → TBP phòng người tạo
   dx_approved_dispatcher  → vai trò Điều phối viên   ("có chuyến cần điều phối")
   dx_approved_creator     → người tạo                ("phiếu đã được duyệt")
   dx_returned/rejected    → người tạo
@@ -61,6 +61,14 @@ def _approvers(db: Session, booking: VehicleBooking):
         get_approvers_for_entity,
         get_dept_approver_recipients,
     )
+    from app.modules.user.model import User
+
+    #  duoc-CR-681: phiếu đã CHỌN người duyệt → thư chỉ tới người đó (tài khoản còn mở). Chốt quyền
+    #  của họ nằm ở `approver_picker.check_approver` lúc lưu / gửi.
+    if booking.first_approver_id:
+        picked = db.get(User, booking.first_approver_id)
+        if picked is not None and picked.is_active:
+            return [picked]
     people = get_dept_approver_recipients(db, "", booking.department_id or 0)
     if not people:
         #  Không xác định được TBP phòng → lùi về người có quyền duyệt entity.
@@ -148,6 +156,11 @@ def notify(db: Session, event: str, booking: VehicleBooking, background_tasks=No
         send_event_email(db, event, background_tasks, recipients, ctx)
     except Exception:  # noqa: BLE001 — thông báo không được làm hỏng nghiệp vụ
         logger.exception("notify %s thất bại cho phiếu %s", event, getattr(booking, "id", None))
+
+
+def booking_mail_context(db: Session, booking: VehicleBooking) -> dict:
+    """Bối cảnh mẫu thư của một phiếu — dùng chung cho đường cũ và thư việc duyệt của bộ máy."""
+    return _context(db, booking)
 
 
 def notify_approved(db: Session, booking: VehicleBooking, background_tasks=None, actor=None) -> None:

@@ -174,6 +174,39 @@ vào luồng thì khóa.
 
 ---
 
+### 10. Công ty và Người duyệt chọn trên phiếu (`company_id`, `first_approver_id`) — duoc-CR-681
+
+- Hai ô **độc lập**, bắt buộc khi gửi duyệt (lưu nháp không chặn). Form đọc cả hai danh sách qua
+  `GET /api/vehicle-bookings/pick-options` (gác `vehicle_booking.create` — nhân viên không cần `company.read`).
+- **Công ty**: mọi pháp nhân đang hoạt động; mặc định pháp nhân trên hồ sơ người tạo. Chốt `approver_picker.check_company`
+  (tồn tại + đang dùng; phiếu cũ giữ công ty đã ngừng vẫn sửa được nếu không đổi ô này).
+- **Người duyệt**: `first_approver_id` = id TÀI KHOẢN. Danh sách = MỌI người có ô Duyệt đặt xe, mọi phạm vi, kể cả
+  Quản trị (`permission_approvers.pickable_role_ids`; tài khoản mở + hồ sơ còn làm). Anh Được 24/10/2026: bản đầu lọc
+  như lúc bộ máy tự giao (Phòng ban/Công ty/Tất cả, không admin) nên ô chọn trống trên hệ chỉ có «Quản lý thu mua · Của
+  mình» + Quản trị. Bước «Người có quyền duyệt» nhận người được chọn theo cùng tập này; chưa chọn thì vẫn luật cũ.
+  Chốt `check_approver`: phải trong danh sách, không phải chính người tạo — kiểm khi tạo, khi đổi ô và khi gửi.
+- **Thư «Gửi duyệt» (`dx_submitted`)**: bộ máy TẮT → chuông + thư chỉ tới người được chọn (`notify._approvers`).
+  Bộ máy BẬT → bước «Người có quyền duyệt» chỉ giao người được chọn (bối cảnh `picked_approver_employee_id`, bỏ soi
+  phạm vi vì hai ô độc lập); `_after_submit` gửi thư cho người nhận việc chặng đầu (`notify_task_assignees`, chỉ thư —
+  chuông do bộ máy ghi). Bước khai cách khác thì đi theo cấu hình luồng.
+- **Người được chọn xem + duyệt được dù ngoài phạm vi** (đường cũ): `approval_bridge.is_picked_legacy_approver` — phiếu
+  Chờ duyệt, đúng `first_approver_id`, không phiên nhiều bước đang chạy. Nới ĐỌC (`booking_for_approver`) và ba nút
+  duyệt / trả / từ chối (`_scoped_or_404(..., "approve")`); sửa / điều phối vẫn theo phạm vi. Duyệt xong cửa đóng.
+- **Hai bên đều thấy phiếu** (anh Được chốt 24/10/2026): cột `requester_company_id` = pháp nhân NGƯỜI TẠO, chụp lúc tạo
+  (migration `cr681vbrqco01`, lấp dữ liệu cũ từ hồ sơ người tạo). `SCOPE_FIELDS["vehicle_booking"]["company_alt"]` → bậc
+  «Công ty», bậc «Phòng ban» (vế công ty) và ô «chọn công ty» của người dùng khớp `company_id` HOẶC `requester_company_id`;
+  ô «loại trừ công ty» chỉ so `company_id` (thu hẹp). Đồng bộ app cũ không ghi đè cột này (`LEGACY_READONLY_FIELDS`).
+  Báo cáo / tổng quan nhóm theo công ty vẫn dùng `company_id` (công ty chọn trên phiếu). Bước «Người có quyền duyệt» chưa chọn người thì giao người giữ quyền ở cả hai công ty.
+- **Thư mọi chặng + người nhận ủy quyền**: `entity_hooks.register_task_mailer` — bộ máy gọi ở `notify_new_tasks` mỗi lần mở
+  việc đang chờ (chặng đầu, chặng sau, giao lại khi sửa luồng); Đặt xe khai `_mail_new_task` (mẫu `dx_submitted`).
+  Thư đi qua `notification.email_queue`: ghi `EmailLog` trong giao dịch, đẩy task Celery `notification.send_email` SAU
+  commit giao dịch NGOÀI CÙNG (bỏ qua sự kiện của savepoint — `in_nested_transaction()`; hủy giao dịch thì không thư nào);
+  worker chết thì dòng nằm `pending`. Tiêu đề cắt 255 ký tự, chống trùng theo địa chỉ thư.
+- Chốt «tự chọn mình» so theo HỒ SƠ nhân sự với cả người tạo lẫn người bấm gửi; hồ sơ đã nghỉ việc không chọn được.
+  Lưu nháp không đổi người duyệt thì không kiểm lại. `first_approver_name` = người được chọn (khác `approver_name`).
+- **Cấp mã DX khi nhiều người tạo cùng lúc** (sửa cùng CR): chèn mã tạm duy nhất `~<uuid>` rồi cấp mã qua «cửa xoay»
+  (khóa ghi dòng DX id nhỏ nhất + đọc có khóa). Trước đó 60 người gửi cùng lúc → 57 lỗi 500 (deadlock + trùng DX394).
+
 ## B. Khối riêng theo loại
 
 ### B.1 Đặt xe công tác (`request_type = 1`)

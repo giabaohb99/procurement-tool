@@ -1,6 +1,10 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
-import type { VehicleBooking, VehicleBookingPayload } from '../types/vehicle-booking'
+import type {
+  BookingPickOptions,
+  VehicleBooking,
+  VehicleBookingPayload,
+} from '../types/vehicle-booking'
 
 const BASE_URL = '/api/vehicle-bookings'
 
@@ -9,6 +13,9 @@ export const vehicleBookingApi = {
     apiGet<PaginatedResult<VehicleBooking>>(BASE_URL, { params }),
 
   get: (id: number) => apiGet<VehicleBooking>(`${BASE_URL}/${id}`),
+
+  /** Hai ô «Công ty» + «Người duyệt» của form (duoc-CR-681). */
+  pickOptions: () => apiGet<BookingPickOptions>(`${BASE_URL}/pick-options`),
 
   /** `submit=true` gửi duyệt luôn; ngược lại lưu nháp. */
   create: (payload: VehicleBookingPayload, submit: boolean) =>

@@ -1,0 +1,61 @@
+{
+  "A_engine_on_60_submits": {
+    "calls": 60,
+    "ok": 60,
+    "codes": [
+      201
+    ],
+    "p50_ms": 2423.8,
+    "p95_ms": 3523.4,
+    "max_ms": 3550.2,
+    "wall_s": 3.6,
+    "wrong": []
+  },
+  "F_both_companies_see": {
+    "cross_company_bookings": 44,
+    "both_see": 44,
+    "third_company_404": 44
+  },
+  "G_worker_processed": {
+    "logs": 60,
+    "still_pending": 0,
+    "statuses": [
+      "failed"
+    ]
+  },
+  "B_engine_off_60_submits": {
+    "calls": 60,
+    "ok": 60,
+    "codes": [
+      201
+    ],
+    "p50_ms": 1595.7,
+    "p95_ms": 2328.5,
+    "max_ms": 2355.3,
+    "wall_s": 2.4,
+    "wrong": []
+  },
+  "B2_picked_can_open_and_approve": {
+    "checked": 60,
+    "open_200": 60,
+    "approve_200": 60
+  },
+  "C_pick_options_150": {
+    "ok": 150,
+    "p50_ms": 947.9,
+    "p95_ms": 1629.5
+  },
+  "D_bad_picks": {
+    "codes": {
+      "creator_as_approver": 422,
+      "self": 422,
+      "bad_company": 422
+    },
+    "created": 0
+  },
+  "E_codes": {
+    "bookings": 120,
+    "unique": 120,
+    "all_dx": true
+  }
+}

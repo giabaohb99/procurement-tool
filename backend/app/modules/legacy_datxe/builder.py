@@ -529,6 +529,8 @@ def build_booking(db, key: str, node: dict, people: PeopleResolver,
         #  phòng ban chỉ có một nguồn: hồ sơ nhân sự người tạo.
         department_id=snap["department_id"],
         company_id=company_ids[0] if company_ids else 0,
+        #  duoc-CR-681: pháp nhân NGƯỜI TẠO (hồ sơ nhân sự), lùi về công ty trên phiếu — phạm vi «Công ty» khớp cả hai.
+        requester_company_id=snap["company_id"] or (company_ids[0] if company_ids else 0),
         first_approver_id=people.user_id(details.get("firstApproverUid") or ""),
         approved_by=people.user_id((gate or {}).get("userId") or ""),
         approved_at=_utc_iso((gate or {}).get("timestamp")),
@@ -612,6 +614,8 @@ def fit_to_columns(obj, stats: collections.Counter) -> None:
 LEGACY_READONLY_FIELDS = frozenset({
     "id", "code", "legacy_id", "created_at", "created_by",
     "updated_at", "updated_by",
+    #  duoc-CR-681: pháp nhân người tạo là ẢNH CHỤP lúc tạo — lượt đồng bộ sau không kéo theo công ty mới của họ.
+    "requester_company_id",
 })
 
 
