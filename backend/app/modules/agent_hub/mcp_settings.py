@@ -56,6 +56,10 @@ GROUPS: tuple[ToolGroup, ...] = (
         "draft_work_task", "draft_work_plan", "team_capacity", "task_type_stats", "plan_context"})),
     #  kh-AI2-3: đọc phiếu văn phòng — tắt mặc định như các nhóm nghiệp vụ khác, quản trị bật ở G7.
     ToolGroup("office", "Đặt xe, duyệt dấu, tồn kho, diễn đàn (chỉ đọc)", False, frozenset({"office_read"})),
+    #  kh-AI2-6: LẬP phiếu đặt xe / duyệt dấu — nhóm RIÊNG, tắt mặc định: nhóm đọc «office» đang bật trên prod, gộp vào đó
+    #  là mở quyền tạo phiếu cho mọi khóa được ghi mà quản trị không chủ động bật.
+    ToolGroup("office_write", "Lập phiếu đặt xe, duyệt dấu (khóa được ghi, có xác nhận)", False, frozenset({
+        "draft_vehicle_booking", "draft_seal_request"})),
     ToolGroup("customs", "Tra cứu thị trường (tờ khai hải quan)", False, frozenset({
         "customs_price_stats", "customs_buy_timing", "customs_market", "customs_legal_check"})),
     ToolGroup("google", "Lịch và Drive Google cá nhân", False, frozenset({

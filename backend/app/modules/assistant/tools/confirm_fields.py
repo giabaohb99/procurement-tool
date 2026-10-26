@@ -21,7 +21,8 @@ USER_TEXT_ARG = "_user_text"
 ASKED_ARG = "asked_fields"
 #  Các tool soạn nháp nhận câu chữ của người dùng (Trợ lý chèn vào trước khi chạy tool).
 TOOLS_WITH_USER_TEXT = frozenset({"draft_leave_request", "draft_purchase_request", "draft_survey_request",
-                                  "draft_work_task", "draft_work_plan"})
+                                  "draft_work_task", "draft_work_plan", "draft_vehicle_booking",
+                                  "draft_seal_request"})
 USER_TEXT_MAX = 3000
 
 ASKED_PARAM = {

@@ -47,6 +47,7 @@ gọi thì bị từ chối kèm tên nhóm. Nhóm cần dùng mà đang tắt: 
 <tr><td><strong>Đặt xe, duyệt dấu, tồn kho, diễn đàn</strong></td><td>Đọc phiếu đặt xe, phiếu duyệt dấu, tồn kho theo kho / mã hàng, tìm và đọc bài diễn đàn (chỉ đọc).</td><td>Bật</td></tr>
 <tr><td><strong>Xuất tệp Excel / Word mẫu công ty</strong></td><td>Xuất bảng số ra Excel, báo cáo trình bày ra Word mẫu DEGO; đường tải dùng một lần, hết hạn sau 15 phút.</td><td>Bật</td></tr>
 <tr><td><strong>Quản trị Kho skill và khóa AI bằng lời</strong></td><td>Soạn / xuất bản skill, gán quyền đọc, cấp / thu hồi khóa — chỉ người có quyền quản trị tương ứng, khóa được ghi.</td><td>Bật</td></tr>
+<tr><td>Lập phiếu đặt xe, duyệt dấu</td><td>Soạn phiếu đặt xe (chọn người phê duyệt và công ty, gửi duyệt luôn được) và phiếu duyệt dấu (chỉ lưu Nháp — tải chứng từ và gửi duyệt trên web).</td><td>Tắt — nhờ quản trị bật</td></tr>
 <tr><td>Văn thư</td><td>Tìm và đọc văn bản, xem cấu hình luồng duyệt.</td><td>Tắt — nhờ quản trị bật</td></tr>
 <tr><td><strong>Công việc và dự án</strong></td><td>Soạn việc, soạn cả kế hoạch nhiều giai đoạn, gợi ý ai nên giao, thống kê tốc độ theo loại việc.</td><td>Bật</td></tr>
 <tr><td>Sửa và xóa phiếu của chính mình</td><td>Đề xuất sửa / xóa phiếu mình lập (có xác nhận, xem dưới).</td><td>Tắt — nhờ quản trị bật</td></tr>
@@ -66,7 +67,7 @@ gọi thì bị từ chối kèm tên nhóm. Nhóm cần dùng mà đang tắt: 
 <table>
 <thead><tr><th>Việc</th><th>Bước 1 (chưa ghi gì)</th><th>Bước 2 (ghi thật)</th></tr></thead>
 <tbody>
-<tr><td>Lập đơn nghỉ, YCMH, YCBG, phiếu hỗ trợ</td><td>AI soạn <strong>bản nháp</strong> và đưa bạn xem.</td><td>Bạn gật ▸ AI xác nhận nháp; nói <em>tạo và gửi duyệt</em> thì gửi duyệt luôn.</td></tr>
+<tr><td>Lập đơn nghỉ, YCMH, YCBG, phiếu hỗ trợ, phiếu đặt xe, phiếu duyệt dấu</td><td>AI soạn <strong>bản nháp</strong> và đưa bạn xem.</td><td>Bạn gật ▸ AI xác nhận nháp; nói <em>tạo và gửi duyệt</em> thì gửi duyệt luôn.</td></tr>
 <tr><td>Sửa phiếu của mình</td><td>AI đưa bảng <strong>cũ → mới</strong>.</td><td>Bạn gật ▸ AI xác nhận. ERP kiểm lại quyền, phạm vi, trạng thái, trường được sửa; đề xuất hết hạn sau 15 phút.</td></tr>
 <tr><td>Xóa phiếu của mình</td><td>AI nêu phiếu sẽ xóa.</td><td>Bạn gật ▸ AI xác nhận. Chỉ xóa phiếu chính bạn lập, còn Nháp hoặc Bị trả lại.</td></tr>
 <tr><td>Quản trị skill / khóa AI</td><td>AI soạn bản nháp thao tác.</td><td>Bạn gật ▸ AI xác nhận; ERP kiểm lại quyền quản trị.</td></tr>
@@ -121,7 +122,7 @@ gọi thì bị từ chối kèm tên nhóm. Nhóm cần dùng mà đang tắt: 
 
 <h2>Chưa làm được</h2>
 <ul>
-<li><strong>Lập phiếu đặt xe, phiếu duyệt dấu</strong> qua AI: chưa có công cụ soạn — AI chỉ đọc. Lập trên web.</li>
+<li><strong>Gửi duyệt phiếu duyệt dấu</strong> qua AI: AI chỉ lưu Nháp, vì gửi duyệt cần tệp chứng từ tải lên trên web.</li>
 <li><strong>Duyệt, trả lại, từ chối phiếu thay bạn</strong>: AI chỉ cho biết phiếu nào chờ bạn duyệt; bấm duyệt trên web.</li>
 <li><strong>Tạo đề nghị thanh toán</strong>: AI chỉ trả link mở form điền sẵn trên web.</li>
 <li><strong>Xóa đề nghị thanh toán, phiếu hỗ trợ</strong>, xóa phiếu của người khác hoặc phiếu đã gửi duyệt.</li>

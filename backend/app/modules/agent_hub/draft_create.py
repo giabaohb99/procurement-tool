@@ -31,6 +31,8 @@ KIND_BY_TOOL = {
     "draft_payment_request": "payment",
     "draft_work_task": "work_task",      # ai-CR-080
     "draft_work_plan": "work_plan",      # bao-CR-616 (phase 24.1): cả cây kế hoạch → một bảng Dự án
+    "draft_vehicle_booking": "vehicle_booking",   # kh-AI2-6
+    "draft_seal_request": "seal_request",         # kh-AI2-6
 }
 LABELS = {
     "leave": "đơn nghỉ phép",
@@ -40,6 +42,8 @@ LABELS = {
     "payment": "đề nghị thanh toán",
     "work_task": "công việc (Dự án)",
     "work_plan": "kế hoạch việc (Dự án)",
+    "vehicle_booking": "phiếu đặt xe",
+    "seal_request": "phiếu duyệt dấu",
 }
 #  Khóa QUYỀN để tạo từng loại (kế hoạch = quyền tạo việc Dự án).
 PERM_ENTITIES = {"work_plan": "work_task"}
@@ -53,6 +57,8 @@ ENTITIES = {
     #  Sổ thay đổi ghi theo bảng (không hoàn tác được — `change_service` từ chối loại lạ), còn quyền kiểm theo
     #  `PERM_ENTITIES`.
     "work_plan": "work_list",
+    "vehicle_booking": "vehicle_booking",
+    "seal_request": "seal_request",
 }
 DETAIL_PATHS = {
     "leave": "/hr/leave-requests/{id}",
@@ -61,6 +67,8 @@ DETAIL_PATHS = {
     "purchase": "/procurement/purchase-requests/{id}",
     "work_task": "/project/tasks/{id}",
     "work_plan": "/project/lists/{id}",
+    "vehicle_booking": "/vehicle-booking/{id}",
+    "seal_request": "/approval-seal/{id}",
 }
 SESSION_LABELS = {1: "cả ngày", 2: "buổi sáng", 3: "buổi chiều", 4: "theo giờ"}
 
@@ -137,6 +145,16 @@ def summarize(kind: str, draft: dict) -> list[str]:
         from . import work_plan
 
         return work_plan.summary_lines(draft)
+    if kind == "vehicle_booking":
+        return [f"Loại: {draft.get('request_type_label', '')}", f"Mục đích: {draft.get('purpose', '')}",
+                f"Lộ trình: {draft.get('start_location', '')} → {draft.get('end_location', '')}",
+                f"Thời gian: {draft.get('start_time', '')} → {draft.get('end_time', '')}",
+                f"Công ty: {draft.get('company_name') or '(công ty của bạn)'}",
+                f"Người phê duyệt: {draft.get('approver_name') or '(chưa chọn)'}"]
+    if kind == "seal_request":
+        return [f"Mục đích: {draft.get('purpose', '')}", f"Chứng từ: {draft.get('title') or '(chưa ghi)'}",
+                f"Số bản: {draft.get('copies', 1)}", f"Công ty: {', '.join(draft.get('company_names') or []) or '(trống)'}",
+                f"Người phê duyệt: {draft.get('approver_name') or '(mặc định trưởng bộ phận)'}"]
     if kind in ("survey", "purchase"):
         items = draft.get("lines") or []
         out = [f"Mục đích: {draft.get('purpose') or '(trống)'}"]
@@ -203,6 +221,10 @@ def _doc_of(db: Session, kind: str, oid: int):
         from app.modules.work.task_model import WorkTask as model
     elif kind == "work_plan":
         from app.modules.work.model import WorkList as model
+    elif kind == "vehicle_booking":
+        from app.modules.vehicle_booking.model import VehicleBooking as model
+    elif kind == "seal_request":
+        from app.modules.seal_request.model import SealRequest as model
     else:
         return None
     return db.get(model, int(oid or 0)) if oid else None
@@ -253,6 +275,10 @@ def create(db: Session, user, kind: str, draft: dict, source: int = 0) -> tuple[
             from app.modules.ai_plan import service as ai_plan
 
             code, oid = ai_plan.create_direct(db, user, draft)     # như bao-CR-616 + ghi đề xuất «Tạo thẳng» (kh-AI1-3)
+        elif kind == "vehicle_booking":
+            code, oid = _create_vehicle_booking(db, user, draft)
+        elif kind == "seal_request":
+            code, oid = _create_seal_request(db, user, draft)
         else:
             code, oid = _create_purchase(db, user, draft)
     except HTTPException as e:
@@ -281,6 +307,30 @@ def _hold_plan_for_review(db: Session, user, draft: dict) -> None:
     raise DraftError(f"Kế hoạch CHƯA tạo việc: đã lưu thành đề xuất #{row.id} chờ duyệt. Mở "
                      f"{ai_plan.REVIEW_PATH.format(id=row.id)} trên ERP để xem, sửa người / giờ rồi bấm Duyệt — duyệt xong "
                      "mới tạo việc trong Dự án.")
+
+
+#  kh-AI2-6: phiếu đặt xe / duyệt dấu — ĐÚNG service tạo phiếu của màn web, luôn lưu Nháp (gửi duyệt là bước `submit`).
+#  Service tự kiểm công ty + người duyệt (duoc-CR-681); khuôn Pydantic của form chặn độ dài / kiểu như form web.
+def _create_vehicle_booking(db: Session, user, draft: dict) -> tuple[str, int]:
+    from app.core.audit import record as audit_record
+    from app.modules.vehicle_booking import service
+    from app.modules.vehicle_booking.schema import VehicleBookingCreate
+
+    fields = set(VehicleBookingCreate.model_fields) - {"department_id", "license_number", "license_class", "is_self_drive"}
+    obj = service.create_booking(db, VehicleBookingCreate(**{k: v for k, v in draft.items() if k in fields}), user, False)
+    audit_record(db, user.id, "vehicle_booking", obj.id, "create", f"Tạo yêu cầu đặt xe {obj.code} (qua AI)")
+    return obj.code, obj.id
+
+
+def _create_seal_request(db: Session, user, draft: dict) -> tuple[str, int]:
+    from app.core.audit import record as audit_record
+    from app.modules.seal_request import service
+    from app.modules.seal_request.schema import SealRequestCreate
+
+    fields = set(SealRequestCreate.model_fields) - {"department_id"}
+    obj = service.create_seal_request(db, SealRequestCreate(**{k: v for k, v in draft.items() if k in fields}), user, False)
+    audit_record(db, user.id, "seal_request", obj.id, "create", f"Tạo yêu cầu đóng dấu {obj.code} (qua AI)")
+    return obj.code, obj.id
 
 
 def _create_leave(db: Session, user, draft: dict) -> tuple[str, int]:
@@ -395,9 +445,9 @@ def _create_purchase(db: Session, user, draft: dict) -> tuple[str, int]:
 # Gửi duyệt ngay sau khi tạo — «tạo và gửi duyệt» (ai-CR-047)
 # ---------------------------------------------------------------------------
 #  Phiếu hỗ trợ không có bước duyệt (tạo là tới nhóm hỗ trợ) nên không nằm đây.
-SUBMITTABLE = ("leave", "survey", "purchase")
+SUBMITTABLE = ("leave", "survey", "purchase", "vehicle_booking")   # duyệt dấu cần tệp đính kèm → gửi trên web
 #  Quyền mà đường API gửi duyệt của web đòi (`require(...)` ở controller).
-_SUBMIT_ACTION = {"leave": "write", "survey": "read", "purchase": "read"}
+_SUBMIT_ACTION = {"leave": "write", "survey": "read", "purchase": "read", "vehicle_booking": "write"}
 
 
 def missing_for_submit(kind: str, draft: dict) -> str:
@@ -417,6 +467,12 @@ def missing_for_submit(kind: str, draft: dict) -> str:
                        if not ok]
             if missing:
                 return f"Sản phẩm «{ln.get('product_name')}» còn thiếu: {', '.join(missing)}."
+    if kind == "vehicle_booking":
+        #  duoc-CR-681: Công ty + Người phê duyệt bắt buộc khi GỬI DUYỆT (giao diện chặn, backend chỉ kiểm hợp lệ).
+        if not int(draft.get("first_approver_id") or 0):
+            return "Còn thiếu Người phê duyệt."
+        if not int(draft.get("company_id") or 0):
+            return "Còn thiếu Công ty."
     if kind == "survey":
         if not str(draft.get("purpose") or "").strip():
             return "Còn thiếu Mục đích khảo sát."
@@ -449,6 +505,10 @@ def submit(db: Session, user, kind: str, obj_id: int, source: int = 0) -> None:
         elif kind == "survey":
             from app.modules.survey_request import controller as sr_controller
             sr_controller.submit_(obj_id, tasks, db=db, user=user)
+        elif kind == "vehicle_booking":
+            from app.modules.vehicle_booking import controller as vb_controller
+            from app.modules.vehicle_booking.schema import VehicleBookingUpdate
+            vb_controller.update_booking(obj_id, VehicleBookingUpdate(), tasks, submit=True, db=db, user=user)
         else:
             from app.modules.purchase_request import controller as pr_controller
             pr_controller.submit_pr(obj_id, tasks, db=db, user=user)

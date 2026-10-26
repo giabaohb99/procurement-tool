@@ -194,6 +194,9 @@ TOOL_GHI = {
     "draft_work_task": ("work_task", "create", {"title": "Gọi NCC"}),
     #  bao-CR-616 — cả cây kế hoạch cũng chỉ soạn nháp; «tạo» đi qua draft_create (quyền + thành viên dự án như web).
     "draft_work_plan": ("work_task", "create", {"title": "Kế hoạch X", "phases": [{"name": "GĐ1", "tasks": [{"title": "Việc 1"}]}]}),
+    #  kh-AI2-6 — chỉ soạn nháp; tạo thật qua draft_create bằng service tạo phiếu của web (kiểm lại quyền + người duyệt).
+    "draft_vehicle_booking": ("vehicle_booking", "create", {"purpose": "Đi Cần Thơ"}),
+    "draft_seal_request": ("seal_request", "create", {"purpose": "Đóng dấu hợp đồng"}),
 }
 
 #  Tool GHI ra NGOÀI ERP (ai-CR-064): ghi vào tài khoản Google của CHÍNH người hỏi qua

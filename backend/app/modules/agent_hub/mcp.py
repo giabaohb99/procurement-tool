@@ -81,13 +81,15 @@ DOWNLOAD_TTL_SEC = 15 * 60
 CONFIRM_DRAFT_DEF = {
     "name": "confirm_draft",
     "description": ("Tạo thật phiếu từ bản nháp do tool draft_* trả về (leave = đơn nghỉ phép, survey = yêu cầu báo giá, "
-                    "purchase = yêu cầu mua hàng, ticket = phiếu hỗ trợ; skill / skill_publish / skill_access / key_issue / "
+                    "purchase = yêu cầu mua hàng, ticket = phiếu hỗ trợ, vehicle_booking = phiếu đặt xe, seal_request = phiếu duyệt "
+                    "dấu (chỉ lưu nháp); skill / skill_publish / skill_access / key_issue / "
                     "key_revoke = quản trị Kho skill và khóa AI, lấy `kind` từ kết quả draft_*; update / delete = sửa / xóa phiếu, "
                     "`draft` là đúng đối tượng `proposal` do propose_document_update / propose_document_delete trả về). "
                     "CHỈ gọi sau khi người "
                     "dùng đã xem bản nháp và đồng ý. submit=true thì gửi duyệt ngay sau khi tạo (leave/survey/purchase)."),
     "inputSchema": {"type": "object", "properties": {
-        "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket", "update", "delete",
+        "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket", "vehicle_booking", "seal_request",
+                                            "update", "delete",
                                             *mcp_admin.KIND_TOOL]},
         "draft": {"type": "object", "description": "Đúng đối tượng draft mà tool draft_* trả về."},
         "submit": {"type": "boolean", "default": False}}, "required": ["kind", "draft"]},
@@ -271,6 +273,11 @@ def _confirm_draft(db: Session, user, args: dict) -> dict:
         return mcp_admin.confirm(db, user, mcp_keys.SCOPE_WRITE, kind, draft)
     if kind in PROPOSAL_KINDS:
         return _confirm_proposal(db, user, kind, draft)
+    if kind in ("vehicle_booking", "seal_request"):         # kh-AI2-6: nhóm «office_write» tắt thì chặn cả bước tạo
+        from . import mcp_settings
+
+        if blocked := mcp_settings.tool_blocked(db, f"draft_{kind}"):
+            return {"denied": True, "error": blocked}
     if kind not in draft_create.LABELS or draft is None:
         return {"error": "Cần kind (leave/survey/purchase/ticket) và draft là đối tượng do tool draft_* trả về."}
     if kind == "payment":

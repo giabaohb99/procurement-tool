@@ -111,6 +111,31 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## kh-AI2-6 | AI lập phiếu đặt xe và phiếu duyệt dấu có bước xác nhận
+- status: xong
+- date: 2026-10-26
+- list: Kế hoạch hệ agent
+- tag: Agent 4
+**Bối cảnh:** AI riêng, Trợ lý web và bot mới đọc được phiếu đặt xe / duyệt dấu, chưa lập được. Việc giao ngày 26/10 qua Agent 1.
+
+**Đã làm**
+- Hai công cụ soạn nháp: phiếu đặt xe (mục đích, lộ trình, giờ đi / về, người phê duyệt, công ty) và phiếu duyệt dấu (mục
+  đích, chứng từ, số bản, các công ty cần đóng dấu, người phê duyệt). Thiếu thông tin thì hỏi lại; tên người hoặc công ty
+  mơ hồ thì đưa lựa chọn. Người phê duyệt đặt xe chỉ chọn trong danh sách người có quyền duyệt, không tự chọn mình.
+- Xác nhận nháp mới tạo phiếu, bằng đúng hàm tạo phiếu của màn web; lúc đó kiểm lại quyền tạo, công ty và người duyệt.
+  Phiếu đặt xe gửi duyệt luôn được nếu đủ người phê duyệt và công ty; phiếu duyệt dấu chỉ lưu Nháp vì gửi duyệt cần tệp
+  chứng từ tải lên trên web.
+- Ở cổng nối AI hai công cụ nằm ở nhóm riêng *Lập phiếu đặt xe, duyệt dấu*, tắt mặc định, tách khỏi nhóm đọc phiếu văn
+  phòng đang bật để không tự mở quyền tạo phiếu; nhóm tắt thì bước xác nhận cũng bị chặn.
+- Bài hướng dẫn *AI riêng của bạn làm được gì trong ERP* thêm dòng nhóm mới và sửa mục chưa làm được.
+
+**Kết quả:** 5 bài kiểm mới cùng ba bảng canh cửa vừa sửa chạy một lần, đạt (83 bài). Các bộ canh cửa khác chưa chạy.
+
+**Còn lại:** dựng dev; quyết bật nhóm lập phiếu cho cổng nối AI; chạy lại script bài hướng dẫn khi lên prod.
+
+Mã nguồn: `assistant/tools/office_draft_tool.py`, `agent_hub/draft_create.py` (kind vehicle_booking, seal_request), `agent_hub/mcp.py`, `agent_hub/mcp_settings.py` (nhóm office_write)
+Bài kiểm: `test_assistant_lap_phieu_dat_xe_duyet_dau_kh_ai2_6.py`
+
 ## kh-AI-hdsd-106 | Viết lại bài HDSD AI riêng làm được gì trong ERP cho khớp prod
 - status: xong
 - date: 2026-10-26
