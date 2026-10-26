@@ -17434,3 +17434,15 @@ Anh Được muốn một đơn nghỉ phép khai được nhiều ngày không 
 Anh Được gửi tệp cấu hình Tra cứu thị trường gồm ba sheet: từ khóa thành phẩm và nguyên liệu, nhóm từ đồng nghĩa khi tìm kiếm, và bảng mã dạng chế phẩm thuốc bảo vệ thực vật. Việc là nạp ba sheet vào màn Cấu hình của Tra cứu thị trường trên ERP v2, làm luôn phần tương ứng ở giao diện cũ, chạy thử ở máy local rồi xuất tệp dữ liệu để chạy lên prod.
 Đã nạp ở máy local: bốn từ khóa mới (sáu từ đã có sẵn), mười nhóm từ đồng nghĩa và mười tám mã dạng chế phẩm. Hệ thống chưa có chỗ chứa mã dạng chế phẩm nên thêm một danh mục mới, hiện thành thẻ thứ tư ở tab Cấu hình của cả giao diện mới lẫn giao diện cũ. Dữ liệu nằm trong một tệp JSON đi kèm script nạp; script chạy lại không sinh trùng và tự gắn lại nhãn khi có từ khóa mới. Cách chạy lên prod ghi ở mục 11 của tài liệu thiết kế hải quan.
 Mã nguồn: backend/scripts/load_customs_lookup_config_cr684.py · backend/scripts/data/cau-hinh-tra-cuu-thi-truong-cr684.json · migration cr684fmcode01
+
+## kh-prod-2610-chieu | Chiều 26/10 trên prod: bật nhóm công cụ AI, nạp từ đồng nghĩa, đưa CR-684 lên
+- status: xong
+- date: 2026-10-26
+- tag: Agent 1
+**Bối cảnh:** sau đợt prod năm, người dùng phòng Thu mua và Hành chính bắt đầu thử AI riêng nối qua cổng MCP; cần mở thêm các nhóm công cụ duyệt và lập phiếu, và cần Tra cứu thị trường tìm được theo từ đồng nghĩa giống trên web.
+
+**Đã làm:** bật trên prod các nhóm công cụ duyệt phiếu, lập phiếu văn phòng, việc dự án, yêu cầu hỗ trợ, hải quan và văn phòng; nhóm sửa và xóa phiếu vẫn tắt. Nạp mười nhóm từ đồng nghĩa và bốn từ khóa nguyên liệu (NLSX, NGUYÊN LIỆU SẢN XUẤT, TECHNICAL GRADE, TK); chạy lại không sinh trùng. Đưa duoc-CR-684 lên prod: lưu dump, dựng lại api, hai dịch vụ celery và hai giao diện, migration thêm danh mục mã dạng chế phẩm (CSDL lên 224 bảng), chạy script nạp cấu hình (thêm 18 mã dạng chế phẩm, từ khóa và từ đồng nghĩa đã có đủ). Chạy gắn lại nhãn toàn bộ dòng hàng hải quan để các từ khóa nạp tay có hiệu lực với dữ liệu cũ.
+
+**Kết quả:** gắn lại nhãn 243.727 dòng, 61.272 dòng có nhãn, 38.875 dòng là nguyên liệu kỹ thuật. Kiểm sức khỏe prod đạt, migration ở đầu cr684fmcode01.
+
+Commit: 77c7bf59 (main = erp-v2) · Deploy: prod api, celery-worker, celery-beat, web, erp, 26/10/2026 chiều
