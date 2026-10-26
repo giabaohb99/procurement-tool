@@ -110,6 +110,34 @@ const SEARCH_SYNONYMS: Catalog = {
   deleteWarning: 'Xóa nhóm thì gõ các từ trong nhóm không còn ra nhau nữa. Muốn tạm tắt thì chuyển sang «Ngừng dùng».',
 }
 
+// duoc-CR-684: mã dạng chế phẩm (EC, SC, WG…) — danh mục tra cứu, không điều khiển gắn nhãn / tìm kiếm.
+const FORMULATION_CODES: Catalog = {
+  title: 'Mã dạng chế phẩm',
+  description: 'Mã dạng chế phẩm thuốc BVTV trên tên hàng (EC, SC, WG…), theo CropLife Technical Monograph n°2. Số đứng trước mã: dạng rắn (WP, WG, SG, SP, GR) là % khối lượng, dạng lỏng (EC, SC, SL, EW…) thường là g/L. Danh mục chỉ để tra cứu.',
+  entity: 'customs_price',
+  apiPath: '/api/customs-formulation-codes',
+  unitLabel: 'mã dạng',
+  searchParam: 'code',
+  searchPlaceholder: 'Tìm mã…',
+  quickFilters: [{ key: 'is_active', label: 'Trạng thái', options: ACTIVE_OPTIONS }],
+  columns: [
+    { key: 'code', label: 'Mã', render: (r) => <b>{r.code}</b> },
+    { key: 'name_en', label: 'Tên tiếng Anh' },
+    { key: 'name_vi', label: 'Tên tiếng Việt' },
+    { key: 'description', label: 'Đặc điểm' },
+    { key: 'is_active', label: 'Trạng thái', render: (r) => activeBadge(r.is_active) },
+  ],
+  fields: [
+    { key: 'code', label: 'Mã', hint: 'Viết hoa, tối đa 20 ký tự, vd «EC».' },
+    { key: 'name_en', label: 'Tên tiếng Anh', fullWidth: true },
+    { key: 'name_vi', label: 'Tên tiếng Việt', fullWidth: true },
+    { key: 'description', label: 'Đặc điểm', type: 'textarea', fullWidth: true },
+    { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, default: 'true' },
+  ],
+  itemName: (r) => r.code,
+  deleteWarning: 'Xóa mã thì chỉ mất dòng tra cứu này. Muốn tạm tắt thì chuyển sang «Ngừng dùng».',
+}
+
 // Danh mục hóa chất dùng lại NGUYÊN cột + ô nhập của màn CRUD cũ (config/cruds.tsx), khỏi chép hai nơi.
 const REGULATION_CFG = cruds['customs-regulations']
 const REGULATIONS: Catalog = {
@@ -137,6 +165,7 @@ export default function CustomsConfigTab({ canConfigure, canReadRegulations }: {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {canConfigure && <CatalogCard catalog={KIND_KEYWORDS} />}
       {canConfigure && <CatalogCard catalog={SEARCH_SYNONYMS} />}
+      {canConfigure && <CatalogCard catalog={FORMULATION_CODES} />}
       {canReadRegulations && <CatalogCard catalog={REGULATIONS} />}
     </div>
   )

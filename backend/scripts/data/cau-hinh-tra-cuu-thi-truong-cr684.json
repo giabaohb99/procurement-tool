@@ -1,0 +1,261 @@
+{
+  "_meta": {
+    "cr": "duoc-CR-684",
+    "source_file": "CauHinh_TraCuuThiTruong_20261026.xlsx",
+    "formulation_source": {
+      "url": "https://cipac.org/index.php/m-p/further-information/formulation-codes",
+      "collected": "Thu thập 26/10/2026"
+    },
+    "reading": "Nguồn chân lý của bộ nạp scripts/load_customs_lookup_config_cr684.py. kind: 1 Thành phẩm · 2 Nguyên liệu. proposed=true là dòng đề xuất thêm (chưa có trên hệ). Mã ghép «WG / WDG» của tệp gốc được tách thành hai dòng."
+  },
+  "kind_keywords": [
+    {
+      "keyword": "NGUYÊN LIỆU",
+      "kind": 2,
+      "note": "«… nguyên liệu dùng SX thuốc …»",
+      "proposed": false
+    },
+    {
+      "keyword": "KỸ THUẬT",
+      "kind": 2,
+      "note": "«Thuốc kỹ thuật …»",
+      "proposed": false
+    },
+    {
+      "keyword": "TECHNICAL",
+      "kind": 2,
+      "note": "",
+      "proposed": false
+    },
+    {
+      "keyword": "TG",
+      "kind": 2,
+      "note": "Technical grade",
+      "proposed": false
+    },
+    {
+      "keyword": "TECH",
+      "kind": 2,
+      "note": "Thuốc kỹ thuật, vd «MANCOZEB TECH 86%»",
+      "proposed": false
+    },
+    {
+      "keyword": "TC",
+      "kind": 2,
+      "note": "Thuốc kỹ thuật, vd «ATRAZINE 97% TC»",
+      "proposed": false
+    },
+    {
+      "keyword": "NLSX",
+      "kind": 2,
+      "note": "Viết tắt nguyên liệu sản xuất, vd «NLSX Thuốc trừ cỏ GLUFOSINATE 95% TECH»",
+      "proposed": true
+    },
+    {
+      "keyword": "NGUYÊN LIỆU SẢN XUẤT",
+      "kind": 2,
+      "note": "Cách viết đầy đủ",
+      "proposed": true
+    },
+    {
+      "keyword": "TECHNICAL GRADE",
+      "kind": 2,
+      "note": "Vd «… technical grade 97%»",
+      "proposed": true
+    },
+    {
+      "keyword": "TK",
+      "kind": 2,
+      "note": "Technical concentrate — thuốc kỹ thuật cô đặc. Thử trước; nếu gắn nhầm do chữ \"TK\" khác thì tắt",
+      "proposed": true
+    }
+  ],
+  "synonym_groups": [
+    {
+      "term": "WG",
+      "synonyms": [
+        "WDG",
+        "CỐM PHÂN TÁN",
+        "DẠNG CỐM"
+      ],
+      "note": "Cốm phân tán trong nước"
+    },
+    {
+      "term": "SC",
+      "synonyms": [
+        "FLOWABLE",
+        "HUYỀN PHÙ"
+      ],
+      "note": "Huyền phù đậm đặc"
+    },
+    {
+      "term": "EC",
+      "synonyms": [
+        "NHŨ DẦU"
+      ],
+      "note": "Nhũ dầu"
+    },
+    {
+      "term": "SL",
+      "synonyms": [
+        "DUNG DỊCH ĐẬM ĐẶC"
+      ],
+      "note": "Dung dịch đậm đặc"
+    },
+    {
+      "term": "WP",
+      "synonyms": [
+        "BỘT THẤM NƯỚC"
+      ],
+      "note": "Bột thấm nước"
+    },
+    {
+      "term": "SG",
+      "synonyms": [
+        "CỐM TAN"
+      ],
+      "note": "Cốm tan trong nước"
+    },
+    {
+      "term": "EW",
+      "synonyms": [
+        "NHŨ TƯƠNG"
+      ],
+      "note": "Nhũ tương dầu trong nước"
+    },
+    {
+      "term": "TC",
+      "synonyms": [
+        "TECH",
+        "TECHNICAL",
+        "KỸ THUẬT"
+      ],
+      "note": "Thuốc kỹ thuật"
+    },
+    {
+      "term": "GLUFOSINATE AMMONIUM",
+      "synonyms": [
+        "GLUFOSINATE-AMMONIUM",
+        "GLUFOSINATE"
+      ],
+      "note": "Các cách viết trên tờ khai"
+    },
+    {
+      "term": "GLUFOSINATE-P",
+      "synonyms": [
+        "L-GLUFOSINATE"
+      ],
+      "note": "Đồng phân L — mặt hàng khác, giá cao hơn"
+    }
+  ],
+  "formulation_codes": [
+    {
+      "code": "TC",
+      "name_en": "Technical material",
+      "name_vi": "Thuốc kỹ thuật (nguyên liệu)",
+      "description": "Hoạt chất tinh khiết cao (95–98%), dùng để gia công"
+    },
+    {
+      "code": "TK",
+      "name_en": "Technical concentrate",
+      "name_vi": "Thuốc kỹ thuật cô đặc",
+      "description": "Hoạt chất đậm đặc, hàm lượng thấp hơn TC"
+    },
+    {
+      "code": "EC",
+      "name_en": "Emulsifiable concentrate",
+      "name_vi": "Nhũ dầu",
+      "description": "Tan trong dung môi hữu cơ, pha nước thành sữa"
+    },
+    {
+      "code": "SC",
+      "name_en": "Suspension concentrate (flowable)",
+      "name_vi": "Huyền phù đậm đặc",
+      "description": "Hạt rắn mịn lơ lửng trong nước"
+    },
+    {
+      "code": "SL",
+      "name_en": "Soluble concentrate",
+      "name_vi": "Dung dịch đậm đặc",
+      "description": "Tan hoàn toàn trong nước, dung dịch trong"
+    },
+    {
+      "code": "WP",
+      "name_en": "Wettable powder",
+      "name_vi": "Bột thấm nước",
+      "description": "Dạng bột, pha nước thành huyền phù"
+    },
+    {
+      "code": "WG",
+      "name_en": "Water dispersible granules",
+      "name_vi": "Cốm phân tán trong nước",
+      "description": "Dạng hạt, ít bụi hơn WP"
+    },
+    {
+      "code": "WDG",
+      "name_en": "Water dispersible granules",
+      "name_vi": "Cốm phân tán trong nước",
+      "description": "Dạng hạt, ít bụi hơn WP"
+    },
+    {
+      "code": "SG",
+      "name_en": "Water soluble granules",
+      "name_vi": "Cốm tan trong nước",
+      "description": "Dạng hạt, tan hoàn toàn"
+    },
+    {
+      "code": "SP",
+      "name_en": "Water soluble powder",
+      "name_vi": "Bột tan trong nước",
+      "description": "Dạng bột, tan hoàn toàn"
+    },
+    {
+      "code": "EW",
+      "name_en": "Emulsion, oil in water",
+      "name_vi": "Nhũ tương dầu trong nước",
+      "description": "Ít dung môi hơn EC"
+    },
+    {
+      "code": "ME",
+      "name_en": "Micro-emulsion",
+      "name_vi": "Vi nhũ tương",
+      "description": "Dung dịch trong, hạt rất mịn"
+    },
+    {
+      "code": "OD",
+      "name_en": "Oil dispersion",
+      "name_vi": "Huyền phù trong dầu",
+      "description": "Hạt rắn lơ lửng trong dầu"
+    },
+    {
+      "code": "CS",
+      "name_en": "Capsule suspension",
+      "name_vi": "Huyền phù vi nang",
+      "description": "Hoạt chất bọc vi nang, tác dụng kéo dài"
+    },
+    {
+      "code": "SE",
+      "name_en": "Suspo-emulsion",
+      "name_vi": "Huyền phù – nhũ tương",
+      "description": "Kết hợp SC và EW"
+    },
+    {
+      "code": "FS",
+      "name_en": "Flowable concentrate for seed treatment",
+      "name_vi": "Huyền phù xử lý hạt giống",
+      "description": "Xử lý hạt giống"
+    },
+    {
+      "code": "GR",
+      "name_en": "Granule",
+      "name_vi": "Thuốc hạt",
+      "description": "Rải trực tiếp, không pha"
+    },
+    {
+      "code": "DP",
+      "name_en": "Dustable powder",
+      "name_vi": "Bột rắc",
+      "description": "Rắc trực tiếp"
+    }
+  ]
+}

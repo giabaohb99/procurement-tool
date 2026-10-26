@@ -1,6 +1,6 @@
-// bao-CR-501 — thẻ «Cấu hình» của màn Tra cứu thị trường: gom BA danh mục vào NGAY màn tra
+// bao-CR-501 — thẻ «Cấu hình» của màn Tra cứu thị trường: gom BỐN danh mục vào NGAY màn tra
 // cứu — từ khóa nhãn Thành phẩm / Nguyên liệu (bao-CR-494), từ đồng nghĩa tìm kiếm (bao-CR-495)
-// và danh mục hóa chất theo văn bản (bao-CR-470). Đại ca chốt 26/09: chức năng này càng ít màn
+// danh mục hóa chất theo văn bản (bao-CR-470) và mã dạng chế phẩm (duoc-CR-684). Đại ca chốt 26/09: chức năng này càng ít màn
 // hình càng tốt, không đẻ màn / mục menu riêng.
 //
 // Không nhúng `CrudListPage`: nó ghi ô tìm vào tham số `q` (trùng ô tìm tên hàng của màn tra
@@ -20,6 +20,7 @@ import { Card } from '@/shared/ui/card'
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 
+import { CUSTOMS_FORMULATION_CODE_CRUD_CONFIG } from '../../config/customs-formulation-code-crud'
 import { CUSTOMS_KIND_KEYWORD_CRUD_CONFIG } from '../../config/customs-kind-keyword-crud'
 import { CUSTOMS_REGULATION_CRUD_CONFIG } from '../../config/customs-regulation-crud'
 import { CUSTOMS_SEARCH_SYNONYM_CRUD_CONFIG } from '../../config/customs-search-synonym-crud'
@@ -27,7 +28,7 @@ import { CUSTOMS_SEARCH_SYNONYM_CRUD_CONFIG } from '../../config/customs-search-
 const PAGE_SIZE = 10
 
 /**
- * Hai khối đầu thuộc khóa `customs_price` (hiện khi sửa được — `canConfigure`), khối hóa chất
+ * Ba khối đầu (từ khóa, đồng nghĩa, mã dạng chế phẩm) thuộc khóa `customs_price` (hiện khi sửa được — `canConfigure`), khối hóa chất
  * thuộc khóa riêng `customs_regulation` (hiện khi XEM được — trước đây nút «Danh mục hóa chất»
  * trên đầu màn cũng mở cho người chỉ có quyền đọc).
  */
@@ -42,6 +43,7 @@ export function CustomsConfigTab({
     <div className="flex flex-col gap-3">
       {canConfigure && <CustomsCatalogCard config={CUSTOMS_KIND_KEYWORD_CRUD_CONFIG} />}
       {canConfigure && <CustomsCatalogCard config={CUSTOMS_SEARCH_SYNONYM_CRUD_CONFIG} />}
+      {canConfigure && <CustomsCatalogCard config={CUSTOMS_FORMULATION_CODE_CRUD_CONFIG} />}
       {canReadRegulations && <CustomsCatalogCard config={CUSTOMS_REGULATION_CRUD_CONFIG} />}
     </div>
   )

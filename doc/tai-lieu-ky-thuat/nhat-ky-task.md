@@ -17418,3 +17418,19 @@ Tham chiếu: doc/erp/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
 **Còn lại:** còn khoảng 81 câu chưa lấy được vì trang quản trị chỉ hiện các câu ứng dụng khảo sát đã dùng để tổng hợp.
 
 Tham chiếu: doc/erp/nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md
+
+## duoc-CR-683 | Đơn nghỉ phép khai được nhiều khoảng ngày không liền kề
+- status: đang làm
+- date: 2026-10-26
+- pic: NSU231
+- tag: Được
+Anh Được muốn một đơn nghỉ phép khai được nhiều ngày không liền kề, ví dụ nghỉ ngày 27/10 và từ chiều 3/11 tới hết 7/11 trong cùng một đơn. Anh chốt cách khai là nhiều khoảng ngày, mỗi khoảng có từ ngày, đến ngày và buổi; nghỉ theo giờ vẫn chỉ một ngày. Anh cũng chốt bỏ việc cho luồng duyệt đọc đủ mọi loại nghỉ của đơn nhiều loại: luồng coi mọi đơn là nghỉ phép.
+
+## duoc-CR-684 | Nạp cấu hình Tra cứu thị trường từ tệp Excel ba sheet
+- status: xong
+- date: 2026-10-26
+- pic: NSU231
+- tag: Được
+Anh Được gửi tệp cấu hình Tra cứu thị trường gồm ba sheet: từ khóa thành phẩm và nguyên liệu, nhóm từ đồng nghĩa khi tìm kiếm, và bảng mã dạng chế phẩm thuốc bảo vệ thực vật. Việc là nạp ba sheet vào màn Cấu hình của Tra cứu thị trường trên ERP v2, làm luôn phần tương ứng ở giao diện cũ, chạy thử ở máy local rồi xuất tệp dữ liệu để chạy lên prod.
+Đã nạp ở máy local: bốn từ khóa mới (sáu từ đã có sẵn), mười nhóm từ đồng nghĩa và mười tám mã dạng chế phẩm. Hệ thống chưa có chỗ chứa mã dạng chế phẩm nên thêm một danh mục mới, hiện thành thẻ thứ tư ở tab Cấu hình của cả giao diện mới lẫn giao diện cũ. Dữ liệu nằm trong một tệp JSON đi kèm script nạp; script chạy lại không sinh trùng và tự gắn lại nhãn khi có từ khóa mới. Cách chạy lên prod ghi ở mục 11 của tài liệu thiết kế hải quan.
+Mã nguồn: backend/scripts/load_customs_lookup_config_cr684.py · backend/scripts/data/cau-hinh-tra-cuu-thi-truong-cr684.json · migration cr684fmcode01

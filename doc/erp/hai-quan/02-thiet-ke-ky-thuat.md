@@ -453,3 +453,35 @@ Vẫn không có gì tính sẵn (§3.6). `service.compute_stats` / `compare_ter
 - `customs_market` → `service.market_overview`: `rank_importers` + gom đối tác (`partner_id`) và nước xuất xứ trong ĐÚNG một đơn vị, cộng 5 dòng mới nhất từ `list_lines`. Tool bỏ `importer_id` nội bộ khỏi kết quả.
 - `customs_legal_check` → `lookup_regulations` (xếp cấm · PL III · PL IV · TT 01 · PL I · PL II) + `lookup_tariff`; luôn kèm câu nhắc «không có mức phạt».
 - `customs_buy_timing` + `now` = `service.assess_current_price(stats, today)`: tứ phân vị + xu hướng chỉ trên tháng có ≥ `MIN_LINES_FOR_BEST` dòng (không tháng nào đủ thì dùng tất cả nhưng `reliable=False`); tháng gần nhất ít dòng → `reference_month`; `STALE_DATA_DAYS = 45`. Lý do chỉ dùng tháng đủ dữ liệu: dữ liệu thật 24/09 ATRAZINE 09/2026 chỉ có 1 dòng, tính cả vào thì ra «đang giảm» từ đúng một lô.
+
+## 11. Nạp cấu hình Tra cứu thị trường — duoc-CR-684 (26/10/2026)
+
+Thẻ «Cấu hình» của màn Tra cứu thị trường (v2 `/procurement/customs-prices/config`; bản cũ `frontend/` cùng thẻ) giờ có **bốn** khối: từ khóa Thành phẩm / Nguyên liệu · từ đồng nghĩa tìm kiếm · **mã dạng chế phẩm (mới)** · danh mục hóa chất. Cả ba khối đầu cùng khóa quyền `customs_price` (xem = đọc, thêm/sửa/xóa = `write`), không mở khóa mới.
+
+**Mã dạng chế phẩm** — trước CR này chưa có danh mục nào (cột `formulation` của dòng hàng chỉ suy ra bằng regex, `ingredient.extract_formulation`). Thêm bảng `tab_customs_formulation_code` (`code` duy nhất ≤ 20 · `name_en` · `name_vi` · `description` · `is_active`), đường `/api/customs-formulation-codes` (khung CRUD chung), migration `cr684fmcode01`. Chỉ để tra cứu, không điều khiển gắn nhãn hay tìm kiếm.
+
+**Nguồn dữ liệu duy nhất:** `backend/scripts/data/cau-hinh-tra-cuu-thi-truong-cr684.json` (chuyển từ tệp Excel `CauHinh_TraCuuThiTruong_20261026.xlsx`; mã ghép «WG / WDG» tách thành hai dòng). Đổi nội dung thì sửa JSON rồi chạy lại bộ nạp — không giữ bản xlsx thứ hai.
+
+**Bộ nạp** `backend/scripts/load_customs_lookup_config_cr684.py` (qua ORM, chạy lại nhiều lần không trùng, không đè chỗ người dùng đã sửa):
+
+| Nhóm | Luật |
+|---|---|
+| Từ khóa nhãn (10 dòng) | Chỉ THÊM dòng chưa có (so không phân biệt hoa/thường). Đã có nhưng khác loại hoặc đang tắt → giữ nguyên, ghi vào mục «bỏ qua». |
+| Nhóm đồng nghĩa (10 nhóm) | Chưa có từ gốc → tạo. Có rồi → GỘP thêm cách viết mới (không lặp, giữ thứ tự cũ), không đổi ghi chú / trạng thái. |
+| Mã dạng chế phẩm (18 mã) | Chưa có → tạo. Có rồi → chỉ điền ô còn trống. |
+
+Tệp nguồn dặn **không** thêm EC/SC/WP… làm từ khóa Thành phẩm (hệ đã mặc định không khớp từ khóa nguyên liệu = thành phẩm) — JSON không có các từ đó. Từ khóa `TK` là đề xuất «thử trước»: nếu gắn nhầm do chữ «TK» mang nghĩa khác thì vào Cấu hình → Từ khóa → chuyển «Ngừng dùng» rồi bấm «Gắn lại nhãn».
+
+### Chạy lên PROD (chỉ làm khi đã deploy bản có migration `cr684fmcode01`)
+
+```bash
+# 1. Migration (deploy thường đã chạy; kiểm tra)
+docker compose -f docker-compose.yml -f docker-compose.production.yml exec -T api alembic current
+# 2. Chạy thử — không ghi gì, đọc báo cáo mới/đã có/gộp/bỏ qua
+docker compose -f docker-compose.yml -f docker-compose.production.yml exec -T api python scripts/load_customs_lookup_config_cr684.py --dry-run
+# 3. Chạy thật (tự gắn lại nhãn cho MỌI dòng hàng nếu có từ khóa mới; thêm --no-retag để tự bấm tay)
+docker compose -f docker-compose.yml -f docker-compose.production.yml exec -T api python scripts/load_customs_lookup_config_cr684.py
+# 4. Kiểm: mở Tra cứu thị trường → Cấu hình → 4 khối có dữ liệu; chạy lại lệnh 3 phải ra «mới 0» ở cả ba nhóm.
+```
+
+Nếu dùng `--no-retag` (hoặc không có từ khóa mới) thì bấm **«Gắn lại nhãn»** ở khối Từ khóa. Không dán dữ liệu tiếng Việt qua `mysql -e` (hỏng dấu).

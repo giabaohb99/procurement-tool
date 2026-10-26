@@ -317,3 +317,19 @@ class CustomsSavedFilter(Base, AuditMixin):
     name: Mapped[str] = mapped_column(String(120), default="")
     params: Mapped[str] = mapped_column(Text, default="")
     is_shared: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class CustomsFormulationCode(Base, AuditMixin):
+    """Mã dạng chế phẩm thuốc BVTV (CropLife Technical Monograph n°2) — duoc-CR-684.
+
+    Danh mục TRA CỨU để người dùng hiểu `EC`, `SC`, `WG`… trên tên hàng: tên tiếng Anh, tên
+    tiếng Việt, đặc điểm. Không điều khiển phép gắn nhãn hay tìm kiếm (việc đó do từ khóa và
+    từ đồng nghĩa); mã dạng trong cột `formulation` của dòng hàng vẫn suy ra bằng regex.
+    """
+    __tablename__ = "tab_customs_formulation_code"
+
+    code: Mapped[str] = mapped_column(String(20), unique=True)
+    name_en: Mapped[str] = mapped_column(String(100), default="")
+    name_vi: Mapped[str] = mapped_column(String(100), default="")
+    description: Mapped[str] = mapped_column(String(255), default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)

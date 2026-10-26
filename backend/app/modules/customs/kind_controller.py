@@ -20,8 +20,9 @@ from app.core.response import success
 
 from . import search_service
 from .ingredient import retag_all
-from .model import CustomsKindKeyword, CustomsSearchSynonym
-from .schema import (KindKeywordCreate, KindKeywordOut, KindKeywordUpdate,
+from .model import CustomsFormulationCode, CustomsKindKeyword, CustomsSearchSynonym
+from .schema import (FormulationCodeCreate, FormulationCodeOut, FormulationCodeUpdate,
+                     KindKeywordCreate, KindKeywordOut, KindKeywordUpdate,
                      SearchSynonymCreate, SearchSynonymOut, SearchSynonymUpdate)
 
 ENTITY = "customs_price"
@@ -39,6 +40,14 @@ search_synonym_router = make_crud_router(
     ["term", "is_active"], unique_field="term",
     csv_headers={"id": "ID", "term": "Từ gốc", "synonyms": "Từ đồng nghĩa (ngăn bằng ;)",
                  "note": "Ghi chú", "is_active": "Đang dùng"})
+
+#  duoc-CR-684 — danh mục tra cứu mã dạng chế phẩm (EC, SC, WG…), cùng khóa `customs_price`.
+formulation_code_router = make_crud_router(
+    "/api/customs-formulation-codes", ENTITY, CustomsFormulationCode,
+    FormulationCodeCreate, FormulationCodeUpdate, FormulationCodeOut,
+    ["code", "is_active"], unique_field="code",
+    csv_headers={"id": "ID", "code": "Mã", "name_en": "Tên tiếng Anh", "name_vi": "Tên tiếng Việt",
+                 "description": "Đặc điểm", "is_active": "Đang dùng"})
 
 router = APIRouter(prefix="/api/customs", tags=["customs"])
 

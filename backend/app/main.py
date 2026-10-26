@@ -120,7 +120,8 @@ from app.modules.survey_request.report_controller import report_router as survey
 from app.modules.import_tool.controller import router as import_tool_router
 from app.modules.customs.controller import regulation_router as customs_regulation_router
 from app.modules.customs.controller import router as customs_router
-from app.modules.customs.kind_controller import (kind_keyword_router as customs_kind_keyword_router,
+from app.modules.customs.kind_controller import (formulation_code_router as customs_formulation_code_router,
+                                                 kind_keyword_router as customs_kind_keyword_router,
                                                  router as customs_kind_router,
                                                  search_synonym_router as customs_search_synonym_router)
 from app.modules.customs.saved_filter_controller import router as customs_saved_filter_router
@@ -386,6 +387,7 @@ app.include_router(customs_regulation_router)
 app.include_router(customs_kind_router)            # bao-CR-494/495
 app.include_router(customs_kind_keyword_router)
 app.include_router(customs_search_synonym_router)
+app.include_router(customs_formulation_code_router)   # duoc-CR-684
 app.include_router(customs_saved_filter_router)     # bao-CR-496
 app.include_router(customs_pesticide_router)        # mục «Thuốc BVTV» (29/09/2026)
 app.include_router(export_log_router)

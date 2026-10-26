@@ -42,6 +42,16 @@ export type CustomsSearchSynonym = {
   is_active: boolean
 }
 
+/** Một mã dạng chế phẩm thuốc BVTV (EC, SC, WG…) — `tab_customs_formulation_code`, duoc-CR-684. */
+export type CustomsFormulationCode = {
+  id: number
+  code: string
+  name_en: string
+  name_vi: string
+  description: string
+  is_active: boolean
+}
+
 /** Kết quả `POST /api/customs/kinds/retag`. */
 export interface CustomsRetagResult {
   total: number

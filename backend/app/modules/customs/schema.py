@@ -315,3 +315,42 @@ class CustomsLineUpdate(BaseModel):
         if v is None:
             raise ValueError("Ngày đăng ký không được để trống")
         return v
+
+
+# ── duoc-CR-684: mã dạng chế phẩm ─────────────────────────────────────────────────────────
+
+class FormulationCodeCreate(BaseModel):
+    code: str = Field(..., min_length=1, max_length=20)
+    name_en: str = Field("", max_length=100)
+    name_vi: str = Field("", max_length=100)
+    description: str = Field("", max_length=255)
+    is_active: bool = True
+
+    @field_validator("code")
+    @classmethod
+    def _code(cls, v):
+        return _clean_keyword(v).upper()
+
+
+class FormulationCodeUpdate(BaseModel):
+    code: str | None = Field(None, min_length=1, max_length=20)
+    name_en: str | None = Field(None, max_length=100)
+    name_vi: str | None = Field(None, max_length=100)
+    description: str | None = Field(None, max_length=255)
+    is_active: bool | None = None
+
+    @field_validator("code")
+    @classmethod
+    def _code(cls, v):
+        return None if v is None else _clean_keyword(v).upper()
+
+
+class FormulationCodeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    code: str = ""
+    name_en: str = ""
+    name_vi: str = ""
+    description: str = ""
+    is_active: bool = True
