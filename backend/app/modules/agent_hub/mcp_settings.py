@@ -66,6 +66,9 @@ GROUPS: tuple[ToolGroup, ...] = (
         "forget_fact", "manage_briefs", "list_my_groups", "read_group_messages", "read_group_file", "list_my_meetings",
         "latest_meeting_report", "rewrite_meeting_minutes", "save_meeting_template"})),
     ToolGroup("ticket", "Tạo phiếu hỗ trợ", False, frozenset({"ticket_create"})),
+    #  kh-AI2-5: sửa / xóa phiếu của chính mình qua MCP — chỉ khóa được ghi, xác nhận bằng confirm_draft (update / delete).
+    ToolGroup("edit", "Sửa và xóa phiếu của chính mình (khóa được ghi, có xác nhận)", False, frozenset({
+        "propose_document_update", "propose_document_delete"})),
     ToolGroup("research", "Nghiên cứu sâu nhiều nguồn (tốn phí công ty)", False, frozenset({"deep_research"})),
     ToolGroup("export", "Xuất tệp Excel / Word mẫu công ty", False, frozenset({"export_report_file", "export_excel_file"})),
     #  bao-CR-634 (K9): quản trị bằng lời — bật sẵn vì đã gác kép (khóa được ghi + quyền ai_skill / ai_mcp_key_admin).

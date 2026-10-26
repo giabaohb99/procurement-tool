@@ -111,6 +111,32 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## kh-AI2-5 | Sửa và xóa phiếu qua cổng nối AI có bước xác nhận
+- status: xong
+- date: 2026-10-26
+- list: Kế hoạch hệ agent
+- tag: Agent 4
+**Bối cảnh:** cổng nối AI (MCP) trước đây ẩn hai công cụ đề xuất sửa và xóa phiếu vì cổng chưa có nút xác nhận như Trợ
+lý web. Việc giao ngày 26/10 qua Agent 1.
+
+**Đã làm**
+- Mở hai công cụ đề xuất sửa phiếu và đề xuất xóa phiếu qua cổng nối AI. Công cụ chỉ trả bảng cũ → mới kèm mã xác nhận,
+  chưa ghi gì; ứng dụng AI được dặn đưa bảng cho người dùng và chỉ xác nhận khi họ đồng ý rõ.
+- Bước xác nhận đi qua công cụ xác nhận nháp sẵn có với loại *sửa* hoặc *xóa*. Lúc đó máy chủ kiểm lại từ đầu quyền
+  sửa / xóa, phạm vi, người lập, trạng thái và danh sách trường được sửa, đúng đường nút Xác nhận của Trợ lý web; mã xác
+  nhận hết hạn sau 15 phút, loại xác nhận không khớp đề xuất thì không ghi.
+- Giữ luật cũ: chỉ xóa phiếu của chính mình còn Nháp hoặc Bị trả lại; đề nghị thanh toán và phiếu hỗ trợ không xóa qua AI.
+- Chỉ khóa được ghi mới dùng được; hai công cụ nằm trong nhóm cấu hình mới *Sửa và xóa phiếu của chính mình*, tắt mặc
+  định, nhóm tắt thì cả bước xác nhận cũng bị chặn.
+- Phương thức `server/discover` mà Claude gọi nay trả rỗng thay vì báo lỗi, cho nhật ký cổng sạch.
+
+**Kết quả:** 5 bài kiểm mới chạy một lần, đạt. Các bộ canh cửa khác chưa chạy.
+
+**Còn lại:** dựng dev; quyết bật nhóm sửa / xóa cho cổng nối AI trên dev; lên prod theo đợt phát hành.
+
+Mã nguồn: `agent_hub/mcp.py` (HIDDEN, PROPOSAL_TOOLS, `_confirm_proposal`, `server/discover`), `agent_hub/mcp_settings.py` (nhóm edit)
+Bài kiểm: `test_agent_hub_mcp_sua_xoa_kh_ai2_5.py`
+
 ## bao-CR-661 | Gộp phiếu đặt xe trùng mã app cũ trên prod và cho hàm tra chịu được trùng
 - status: xong
 - date: 2026-10-23

@@ -66,8 +66,11 @@ MCP_RETIRED = {
 #  tạm (Trợ lý web + bot đang dùng), dự kiến gỡ khỏi cổng khi app AI ngoài đã quen report_summary.
 #  Đề xuất sửa phiếu / lập bộ tài khoản / thuật ngữ (propose_*) cố ý KHÔNG mở qua MCP: xác nhận bằng nút trên web /
 #  Telegram, cổng này chưa có nút. report_missing_feature trùng việc với report_issue của cổng.
-HIDDEN = {"propose_document_update", "propose_document_delete", "propose_account_setup", "propose_glossary_term",
-          "report_missing_feature"}
+#  kh-AI2-5 (26/10): đề xuất sửa / xóa phiếu MỞ qua MCP — xác nhận bằng confirm_draft(kind="update" / "delete"), ERP kiểm lại
+#  từ đầu (quyền, phạm vi, trạng thái, trường được sửa) như nút Xác nhận của Trợ lý web.
+HIDDEN = {"propose_account_setup", "propose_glossary_term", "report_missing_feature"}
+PROPOSAL_TOOLS = frozenset({"propose_document_update", "propose_document_delete"})
+PROPOSAL_KINDS = {"update": "propose_document_update", "delete": "propose_document_delete"}
 #  ai-CR-213: tool đọc nhiều dòng — tính vào ngân sách dữ liệu mỗi phút mỗi khóa (`AGENT_MCP_ROW_BUDGET_PER_MIN`).
 ROW_BUDGET_TOOLS = frozenset({"erp_read", "office_read"})
 #  Tool trả kèm `structuredContent` (kết quả gọn, có khuôn cố định) — ai-CR-208.
@@ -79,10 +82,13 @@ CONFIRM_DRAFT_DEF = {
     "name": "confirm_draft",
     "description": ("Tạo thật phiếu từ bản nháp do tool draft_* trả về (leave = đơn nghỉ phép, survey = yêu cầu báo giá, "
                     "purchase = yêu cầu mua hàng, ticket = phiếu hỗ trợ; skill / skill_publish / skill_access / key_issue / "
-                    "key_revoke = quản trị Kho skill và khóa AI, lấy `kind` từ kết quả draft_*). CHỈ gọi sau khi người "
+                    "key_revoke = quản trị Kho skill và khóa AI, lấy `kind` từ kết quả draft_*; update / delete = sửa / xóa phiếu, "
+                    "`draft` là đúng đối tượng `proposal` do propose_document_update / propose_document_delete trả về). "
+                    "CHỈ gọi sau khi người "
                     "dùng đã xem bản nháp và đồng ý. submit=true thì gửi duyệt ngay sau khi tạo (leave/survey/purchase)."),
     "inputSchema": {"type": "object", "properties": {
-        "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket", *mcp_admin.KIND_TOOL]},
+        "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket", "update", "delete",
+                                            *mcp_admin.KIND_TOOL]},
         "draft": {"type": "object", "description": "Đúng đối tượng draft mà tool draft_* trả về."},
         "submit": {"type": "boolean", "default": False}}, "required": ["kind", "draft"]},
 }
@@ -181,7 +187,8 @@ def call_tool(db: Session, user, scope: int, name: str, args: dict) -> dict:
         return _confirm_draft(db, user, args)
     if name in HIDDEN or (scope != mcp_keys.SCOPE_WRITE and is_write_tool(name)):
         return {"denied": True, "error": f"Công cụ '{name}' không mở cho khóa này."}
-    return _mark_paging(_absolute_downloads(erp.run_tool(db, user, name, args or {})))
+    result = _mark_paging(_absolute_downloads(erp.run_tool(db, user, name, args or {})))
+    return _proposal_note(result) if name in PROPOSAL_TOOLS else result
 
 
 def _absolute_downloads(result):
@@ -262,6 +269,8 @@ def _confirm_draft(db: Session, user, args: dict) -> dict:
     draft = args.get("draft") if isinstance(args.get("draft"), dict) else None
     if kind in mcp_admin.KIND_TOOL:                      # bao-CR-634: bản nháp quản trị — token + dấu trạng thái
         return mcp_admin.confirm(db, user, mcp_keys.SCOPE_WRITE, kind, draft)
+    if kind in PROPOSAL_KINDS:
+        return _confirm_proposal(db, user, kind, draft)
     if kind not in draft_create.LABELS or draft is None:
         return {"error": "Cần kind (leave/survey/purchase/ticket) và draft là đối tượng do tool draft_* trả về."}
     if kind == "payment":
@@ -281,6 +290,45 @@ def _confirm_draft(db: Session, user, args: dict) -> dict:
     return {"ok": True, "code": code, "id": oid, "submitted": bool(submit and kind in draft_create.SUBMITTABLE),
             "details": erp.created_details(db, kind, oid),
             "link": draft_create.DETAIL_PATHS.get(kind, "").format(id=oid) if hasattr(draft_create, "DETAIL_PATHS") else ""}
+
+
+def _confirm_proposal(db: Session, user, kind: str, proposal: dict | None) -> dict:
+    """kh-AI2-5: ghi đề xuất sửa / xóa phiếu sau khi người dùng đồng ý. Token mã hóa nằm trong đề xuất; ERP giải mã, kiểm
+    lại từ đầu quyền write / delete, phạm vi, người lập, trạng thái, trường được sửa (`update_tool.confirm_update` — đúng
+    đường nút Xác nhận của Trợ lý web), hết hạn sau 15 phút."""
+    from fastapi import HTTPException
+
+    from . import erp, mcp_settings
+
+    if blocked := mcp_settings.tool_blocked(db, PROPOSAL_KINDS[kind]):
+        return {"denied": True, "error": blocked}
+    token = str((proposal or {}).get("confirm_token") or "")
+    if not token:
+        return {"error": "Cần draft = đúng đối tượng `proposal` (có confirm_token) do propose_document_update / "
+                         "propose_document_delete trả về."}
+    if (str((proposal or {}).get("action") or "") == "delete") != (kind == "delete"):
+        return {"error": "kind không khớp đề xuất: đề xuất xóa dùng kind=delete, đề xuất sửa dùng kind=update. Chưa ghi gì."}
+    try:
+        out = erp.confirm_proposal(db, user, token, source=int(_change_source_mcp()))
+    except HTTPException as e:
+        return {"error": f"{e.detail} Chưa ghi gì."}
+    return {"ok": True, **(out or {})}
+
+
+def _change_source_mcp() -> int:
+    from app.modules.assistant.change_model import ChangeSource
+
+    return int(ChangeSource.MCP)
+
+
+def _proposal_note(result):
+    """Đề xuất sửa / xóa qua MCP: thay lời dặn «bấm nút» của Trợ lý web bằng cách xác nhận của cổng."""
+    if isinstance(result, dict) and isinstance(result.get("proposal"), dict):
+        kind = "delete" if result["proposal"].get("action") == "delete" else "update"
+        result["reminder"] = (f"Phiếu CHƯA bị {'xóa' if kind == 'delete' else 'sửa'}. Đưa bảng cũ → mới cho người dùng; chỉ "
+                              f"khi họ đồng ý rõ thì gọi confirm_draft với kind=\"{kind}\" và draft = đúng đối tượng "
+                              "`proposal` này. Đề xuất hết hạn sau 15 phút.")
+    return result
 
 
 def _report_issue(db: Session, user, args: dict) -> dict:
@@ -368,6 +416,8 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
                          "capabilities": {"tools": {"listChanged": False}, "prompts": {"listChanged": False}},
                          "serverInfo": SERVER_INFO, "instructions": instructions})
     if method == "ping":
+        return _ok(rid, {})
+    if method == "server/discover":          # kh-AI2-5: Claude gọi phương thức này — trả rỗng cho sạch nhật ký
         return _ok(rid, {})
     if method == "prompts/list":
         return _ok(rid, {"prompts": list_prompts(db, user)})
