@@ -17420,7 +17420,7 @@ Tham chiếu: doc/erp/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
 Tham chiếu: doc/erp/nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md
 
 ## duoc-CR-683 | Đơn nghỉ phép khai được nhiều khoảng ngày không liền kề
-- status: đang làm
+- status: dang-lam
 - date: 2026-10-26
 - pic: NSU231
 - tag: Được
