@@ -73,6 +73,9 @@ GROUPS: tuple[ToolGroup, ...] = (
     #  kh-AI2-5: sửa / xóa phiếu của chính mình qua MCP — chỉ khóa được ghi, xác nhận bằng confirm_draft (update / delete).
     ToolGroup("edit", "Sửa và xóa phiếu của chính mình (khóa được ghi, có xác nhận)", False, frozenset({
         "propose_document_update", "propose_document_delete"})),
+    #  kh-AI2-7: duyệt / từ chối phiếu đặt xe, phòng họp, nghỉ phép — mỗi phiếu một lần xác nhận; tắt mặc định.
+    ToolGroup("approve", "Duyệt phiếu qua AI, đợt 1: đặt xe, phòng họp, nghỉ phép (khóa được ghi, có xác nhận)", False,
+              frozenset({"propose_approval"})),
     ToolGroup("research", "Nghiên cứu sâu nhiều nguồn (tốn phí công ty)", False, frozenset({"deep_research"})),
     ToolGroup("export", "Xuất tệp Excel / Word mẫu công ty", False, frozenset({"export_report_file", "export_excel_file"})),
     #  bao-CR-634 (K9): quản trị bằng lời — bật sẵn vì đã gác kép (khóa được ghi + quyền ai_skill / ai_mcp_key_admin).

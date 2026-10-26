@@ -197,6 +197,8 @@ TOOL_GHI = {
     #  kh-AI2-6 — chỉ soạn nháp; tạo thật qua draft_create bằng service tạo phiếu của web (kiểm lại quyền + người duyệt).
     "draft_vehicle_booking": ("vehicle_booking", "create", {"purpose": "Đi Cần Thơ"}),
     "draft_seal_request": ("seal_request", "create", {"purpose": "Đóng dấu hợp đồng"}),
+    #  kh-AI2-7 — chỉ đề xuất; người không được giao duyệt (kể cả có quyền đọc) nhận denied, duyệt thật khi xác nhận token.
+    "propose_approval": ("leave_request", "approve", {"entity": "leave_request", "id": 1, "action": "approve"}),
 }
 
 #  Tool GHI ra NGOÀI ERP (ai-CR-064): ghi vào tài khoản Google của CHÍNH người hỏi qua

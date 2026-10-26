@@ -45,7 +45,7 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
                           "dataset_query"}),
      r"cong no|con no|tien no|no qua han|thanh toan|yctt|de nghi thanh toan|chi tien|hoa don|tra tien|chuyen khoan"
      r"|qua han"),
-    ("approval", frozenset({"my_approval_tasks", "my_requests_status", "approval_flow_lookup",
+    ("approval", frozenset({"my_approval_tasks", "my_requests_status", "approval_flow_lookup", "propose_approval",
                             "pending_procurement_approvals"}),
      r"duyet|phe duyet|trinh ky|luong duyet|cho ky"),
     ("leave", frozenset({"my_leave_summary", "draft_leave_request"}),

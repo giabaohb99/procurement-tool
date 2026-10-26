@@ -111,6 +111,35 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## kh-AI2-7 | AI duyệt phiếu đợt 1: đặt xe, đặt phòng họp, nghỉ phép
+- status: xong
+- date: 2026-10-26
+- list: Kế hoạch hệ agent
+- tag: Agent 4
+**Bối cảnh:** người duyệt hỏi AI *hôm nay tôi cần duyệt gì*, nghe tư vấn rồi duyệt / từ chối luôn trong khung chat. Giao 26/10 qua Agent 1.
+
+**Đã làm**
+- Công cụ *đề xuất duyệt* cho đúng ba loại: phiếu đặt xe, phiếu đặt phòng họp, đơn nghỉ phép; loại khác bị từ chối với câu
+  nói rõ phải duyệt trên web. Công cụ chỉ trả tóm tắt phiếu kèm mã xác nhận, chưa ghi gì; từ chối phải có lý do.
+- Chỉ người đang được giao duyệt đúng chặng mới đề xuất và xác nhận được: phiếu đang chạy luồng nhiều bước thì phải có việc
+  chờ của mình (kể cả nhận ủy quyền); chưa chạy luồng thì theo đúng cửa nút duyệt thẳng trên web (quyền duyệt, phạm vi, không
+  tự duyệt phiếu của mình). Không thấy phiếu, không phải người duyệt, phiếu hết chờ đều trả cùng một câu.
+- Xác nhận đi qua đường xác nhận đề xuất sẵn có (cổng nối AI: loại *approval*), kiểm lại từ đầu, mã hết hạn sau 15 phút,
+  phiếu đổi trạng thái / sang chặng khác thì chặn; ghi bằng đúng hàm duyệt của màn web. Lịch sử duyệt và nhật ký ghi *qua AI*.
+- Mỗi phiếu một lần xác nhận, không có tham số duyệt hàng loạt; mô tả công cụ dặn chỉ xác nhận khi người dùng đồng ý rõ,
+  ghi chú trên phiếu chỉ là dữ liệu.
+- Nhóm cấu hình mới *Duyệt phiếu qua AI, đợt 1*, tắt mặc định. Bài hướng dẫn *AI riêng làm được gì* thêm dòng nhóm và việc xác nhận.
+
+**Kết quả:** 7 bài kiểm mới (người được giao duyệt qua hai bước, người không được giao bị chặn, luồng nhiều bước chỉ người có
+việc chờ, loại ngoài danh sách bị chặn, từ chối phải có lý do, phiếu đổi giữa hai bước bị chặn, nhóm tắt bị chặn) cùng các
+bảng canh cửa vừa sửa chạy một lần, đạt. Ca dữ liệu chỉ dựng cho phiếu đặt xe; phòng họp và nghỉ phép mới canh chữ ký hàm.
+
+**Còn lại:** dựng dev, thử tay phòng họp và nghỉ phép; nút xác nhận duyệt trên Trợ lý web chưa có (giao diện mới hiện nút cho
+đề xuất sửa / xóa); quyết bật nhóm duyệt cho cổng nối AI.
+
+Mã nguồn: `assistant/tools/approval_action_tool.py`, `assistant/tools/update_tool.py` (rẽ token approval), `agent_hub/mcp.py`, `agent_hub/mcp_settings.py` (nhóm approve)
+Bài kiểm: `test_assistant_ai_duyet_phieu_kh_ai2_7.py`
+
 ## kh-AI-ket-noi-hdsd | Sắp lại hướng dẫn Kết nối AI riêng: nối bằng đăng nhập ERP là Cách 1
 - status: xong
 - date: 2026-10-26

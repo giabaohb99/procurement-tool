@@ -824,6 +824,9 @@ def confirm_update(db, user, token: str, source: int = 0) -> dict:
                                  "soạn lại đề xuất mới.") from e
     if not isinstance(payload, dict) or payload.get("u") != user.id:
         raise HTTPException(403, "Đề xuất sửa không thuộc về bạn.")
+    if payload.get("a") == "approval":          # kh-AI2-7: duyệt / từ chối một phiếu — kiểm lại từ đầu ở đó
+        from .approval_action_tool import confirm_approval
+        return confirm_approval(db, user, payload, source=source)
     if payload.get("a") == "delete":
         return _confirm_delete(db, user, payload, source=source)
     entity = payload.get("e")
