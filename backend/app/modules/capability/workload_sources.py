@@ -125,9 +125,12 @@ def docs_pending_issue(db: Session, emp_ids: list[int]) -> dict[int, int]:
 
 
 def leaves_in_window(db: Session, emp_ids: list[int], start: date, end: date) -> list:
-    """Q10 — đơn nghỉ ĐÃ DUYỆT giao khoảng `[start, end]`: `(employee_id, from_date, to_date)`."""
-    lv = _t("tab_leave_request")
-    q = select(lv.c.employee_id, lv.c.from_date, lv.c.to_date).where(
-        lv.c.employee_id.in_(emp_ids), lv.c.status == LR_APPROVED, lv.c.is_deleted.is_(False),
-        lv.c.from_date <= end, lv.c.to_date >= start)
+    """Q10 — đơn nghỉ ĐÃ DUYỆT giao khoảng `[start, end]`: `(employee_id, from_date, to_date)` — mỗi KHOẢNG một bộ."""
+    lv, pd = _t("tab_leave_request"), _t("tab_leave_request_period")
+    # OUTER JOIN khoảng: mỗi khoảng một bộ (khe không tính); đơn chưa có dòng khoảng → đầu đơn.
+    f, t = func.coalesce(pd.c.from_date, lv.c.from_date), func.coalesce(pd.c.to_date, lv.c.to_date)
+    q = (select(lv.c.employee_id, f, t)
+         .select_from(lv.outerjoin(pd, pd.c.request_id == lv.c.id))
+         .where(lv.c.employee_id.in_(emp_ids), lv.c.status == LR_APPROVED, lv.c.is_deleted.is_(False),
+                lv.c.from_date <= end, lv.c.to_date >= start, f <= end, t >= start))
     return list(db.execute(q).all())

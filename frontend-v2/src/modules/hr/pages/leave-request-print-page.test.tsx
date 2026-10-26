@@ -242,6 +242,31 @@ describe('LeaveRequestPrintPage', () => {
     expect(screen.getByText(/3 ngày\./)).toBeInTheDocument()
   })
 
+  it('prints one «Từ ngày … đến hết ngày …» sentence per period, never the outer range', () => {
+    //  duoc-CR-683 — in bao ngoài «27/10 → 07/11» là tờ giấy xin nghỉ cả tuần người đó đi làm.
+    testRequest.current = mockRequest({
+      from_date: '2026-10-27',
+      to_date: '2026-11-07',
+      total_days: 5.5,
+      periods: [
+        { id: 1, from_date: '2026-10-27', from_session: LEAVE_SESSION.FULL, to_date: '2026-10-27', to_session: LEAVE_SESSION.FULL, days: 1, sort_order: 0 },
+        { id: 2, from_date: '2026-11-03', from_session: LEAVE_SESSION.AFTERNOON, to_date: '2026-11-07', to_session: LEAVE_SESSION.FULL, days: 4.5, sort_order: 1 },
+      ],
+    })
+    render(
+      <MemoryRouter>
+        <LeaveRequestPrintPage />
+      </MemoryRouter>,
+    )
+    expect(
+      screen.getByText(
+        /Từ ngày 27\/10\/2026 đến hết ngày 27\/10\/2026; Từ ngày 03\/11\/2026 \(buổi chiều\) đến hết ngày 07\/11\/2026/,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Từ ngày 27\/10\/2026 đến hết ngày 07\/11\/2026/)).not.toBeInTheDocument()
+    expect(screen.getByText(/5\.5 ngày\./)).toBeInTheDocument()
+  })
+
   it('prints no attachment line and fetches nothing when the request has no files', () => {
     testRequest.current = mockRequest()
     render(

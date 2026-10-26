@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 1.1 — 23/10/2026 (thêm `04-hop-dong-lao-dong.md`, hết bảng «chưa có tài liệu riêng» — duoc-CR-673) · 1.0 — 22/10/2026 (duoc-CR-658: gom tài liệu chức năng Nhân sự về một thư mục) |
+| Bản | 1.2 — 26/10/2026 (§5: gỡ «In Phiếu» và «Nhân viên tự khai» đã xong ở duoc-CR-676, gỡ «luồng duyệt chỉ đọc loại chính» vì đã chốt bỏ ở duoc-CR-683) · 1.1 — 23/10/2026 (thêm `04-hop-dong-lao-dong.md`, hết bảng «chưa có tài liệu riêng» — duoc-CR-673) · 1.0 — 22/10/2026 (duoc-CR-658: gom tài liệu chức năng Nhân sự về một thư mục) |
 | Dùng để làm gì | Cửa vào duy nhất cho người mới nhận việc ở phân hệ Nhân sự: đã có gì, nằm ở đâu, luật nào không được phá, việc nào đang cần người làm tiếp |
 | Ai đọc | Người (hoặc trợ lý AI) sắp sửa mã hay viết tài liệu cho phân hệ Nhân sự |
 | Giao diện | Chỉ có trên `frontend-v2/` (cổng 8083), menu *Nhân sự*. `frontend/` cũ đã đóng băng, không thêm màn nhân sự ở đó |
@@ -64,17 +64,17 @@ Chi tiết từng luật ở các tệp luật cho trợ lý AI (tự nạp khi 
 
 | Việc | Chỗ ghi gốc | Tình trạng |
 |---|---|---|
-| **In «Phiếu thông tin nhân viên»** theo mẫu BM00../QT01/NS (việc C5) | `01` §7.10 | Chưa làm |
 | **Che cột nhạy cảm khi xuất CSV / Excel** (việc C7) | `01` §7 Đợt 4 | Mã đã xong và đã rà (duoc-CR-660, HR1-1): xuất đòi quyền `export`, cột nhạy cảm để rỗng khi thiếu `employee_sensitive.read`. Đã commit 23/10/2026; lên prod phải tick lại quyền Xuất cho vai trò đang chỉ có Xem |
-| **Nhân viên tự khai hồ sơ** (việc C6) | `01` §7.9 | Mới mở nhóm Liên hệ; các nhóm còn lại chưa |
-| **Luồng duyệt chỉ đọc loại nghỉ CHÍNH** của đơn nhiều loại nghỉ | `02` §7.1 | Hạn chế đã biết, chưa có phương án |
 | **Nhập bù `hire_date`** cho hồ sơ cũ | `02` §10 | Việc dữ liệu, không phải việc mã; thiếu thì thâm niên phép tính bằng 0 và báo cáo biến động lấy ngày tạo hồ sơ thay ngày vào làm. Cách nhanh nhất: cột «Ngày vào làm» của Nhập Excel (`04` §C.3). Nên xong trước khi cấp quỹ phép năm 2027 |
 | **Phiếu Quyết định đầy đủ (V1-8)**: một phiếu nhiều người, tờ trình, duyệt | `01` §4 | Mới có bản gọn ghi tay theo từng người (duoc-CR-585) |
 
-**Vừa xong (22–23/10/2026), đã gỡ khỏi bảng trên:**
+**Vừa xong (22–26/10/2026), đã gỡ khỏi bảng trên:**
 
 | Việc | Mã | Kết quả |
 |---|---|---|
+| Một đơn nghỉ khai nhiều khoảng ngày không liền kề; **bỏ** việc «luồng duyệt đọc đủ loại nghỉ» (HR3-3) | duoc-CR-683 (26/10/2026) | Nút «+ Thêm khoảng ngày», bảng con `tab_leave_request_period`, đầu đơn là bao ngoài; luồng duyệt coi mọi đơn là nghỉ phép, không rẽ nhánh theo loại (đã chốt bỏ). Chi tiết `02` §7.3, §7.1 |
+| **In «Phiếu thông tin nhân viên»** theo mẫu BM00../QT01/NS (C5) | duoc-CR-676 (HR2-2, 23/10/2026) | In từ hồ sơ hoặc Trang cá nhân; khuôn dựng theo danh sách trường vì chưa có tệp mẫu gốc (thay khi có mẫu). Chi tiết `01` §7.14 |
+| **Nhân viên tự khai hồ sơ** (C6) | duoc-CR-676 (HR2-2, 23/10/2026) | Bốn nhóm Cá nhân · Ngân hàng · Giấy tờ · Hộ gia đình đi qua đề nghị, phòng Nhân sự duyệt rồi mới áp; nhóm Liên hệ áp ngay. Chi tiết `01` §7.9, §7.14 |
 | Tài liệu Hợp đồng lao động, quyền theo chức vụ, nhập Excel | duoc-CR-673 (HR1-5, phần tài liệu) | Tệp `04-hop-dong-lao-dong.md`; hai mục HĐLĐ cuối `01` chuyển về đó |
 | Cờ «Bắt buộc đính kèm» của loại nghỉ | duoc-CR-661 (HR1-2) | Có tác dụng: đơn thiếu tệp bị chặn **lúc Gửi duyệt** (lưu nháp không chặn). Chi tiết `02` |
 | Báo cáo đối chiếu trước / sau kết sổ phép cuối năm | duoc-CR-664 (HR2-3) | Hộp «Đối chiếu kết sổ phép năm …» tự mở sau kết sổ, nút mở lại, Xuất Excel. Số cũ tính lại lúc xem, không chụp ảnh. Chi tiết `02` |

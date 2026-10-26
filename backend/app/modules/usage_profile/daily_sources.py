@@ -19,7 +19,8 @@ from app.modules.employee.model import Employee
 from app.modules.export_log.model import ExportLog
 from app.modules.leave.constants import LR_APPROVED
 from app.modules.leave.holiday_calendar import holiday_names_many
-from app.modules.leave.request_model import LeaveRequest
+from app.modules.leave.period_spans import span_of
+from app.modules.leave.request_model import LeaveRequest, LeaveRequestPeriod
 from app.modules.login_session.model import LoginSession
 from app.modules.purchase_request.model import PurchaseRequest
 from app.modules.request_log.model import RequestLog
@@ -45,7 +46,7 @@ class DaySources:
     ui_events: list = field(default_factory=list)      # (user_id, occurred_at, event_type, route, form_key, duration_ms, result_count)
     plans: object = None
     holidays: dict = field(default_factory=dict)       # company_id -> {date: name}
-    leaves: dict = field(default_factory=dict)         # employee_id -> [LeaveRequest]
+    leaves: dict = field(default_factory=dict)         # employee_id -> [LeaveSpan]
     proxy_docs: list = field(default_factory=list)     # (created_by_user_id, requester_employee_id)
     approval_proxies: list = field(default_factory=list)   # (actor_employee_id, on_behalf_of_employee_id)
 
@@ -115,11 +116,15 @@ def load_day_sources(db: Session, day: date) -> DaySources:
     emp_ids = {e.id for e in emps}
     leaves: dict = defaultdict(list)
     if emp_ids:
-        for req in db.execute(select(LeaveRequest).where(
-                LeaveRequest.employee_id.in_(emp_ids), LeaveRequest.status == LR_APPROVED,
-                LeaveRequest.is_deleted.is_(False), LeaveRequest.from_date <= day,
-                LeaveRequest.to_date >= day)).scalars():
-            leaves[req.employee_id].append(req)
+        P = LeaveRequestPeriod
+        # OUTER JOIN khoảng: ngày D nằm trong KHE giữa hai khoảng thì không phải ngày nghỉ.
+        for req, period in db.execute(
+                select(LeaveRequest, P).outerjoin(P, P.request_id == LeaveRequest.id).where(
+                    LeaveRequest.employee_id.in_(emp_ids), LeaveRequest.status == LR_APPROVED,
+                    LeaveRequest.is_deleted.is_(False), LeaveRequest.from_date <= day,
+                    LeaveRequest.to_date >= day,
+                    or_(P.id.is_(None), and_(P.from_date <= day, P.to_date >= day)))).all():
+            leaves[req.employee_id].append(span_of(req, period))
     src.leaves = dict(leaves)
 
     # Q13 bấm hộ: phiếu tạo trong D mà người đề nghị ≠ người tạo (cột thứ hai LUÔN là id NHÂN SỰ của người đề nghị)

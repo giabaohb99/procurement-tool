@@ -20,6 +20,8 @@ from fastapi import HTTPException
 from app.core.leave_codes import (END_DAY_WORK_CREDIT, START_DAY_WORK_CREDIT,
                                   same_day_work_credit, LEAVE_SESSION_SET,
                                   LEAVE_TYPE_SET)
+#  Trần khoảng ngày ghi vào giấy — dùng chung MỘT nguồn với `leave/schema.MAX_PERIODS`.
+from app.modules.leave.schema import MAX_PERIODS as MAX_LEAVE_PERIODS
 
 #  Mã loại văn bản — dùng ở nhiều nơi nên đặt hằng, đừng gõ chuỗi rải rác.
 LEAVE_DOC_TYPE = "GNP"
@@ -139,6 +141,9 @@ def _check_leave(payload: dict, creator_employee_id: int | None) -> dict:
     lines = _leave_lines(payload.get("leave_lines"))
     if lines:
         cleaned["leave_lines"] = lines
+    periods = _leave_periods(payload.get("leave_periods"))
+    if periods:
+        cleaned["leave_periods"] = periods
     return cleaned
 
 
@@ -178,6 +183,41 @@ def _leave_lines(raw) -> list[dict]:
             "days": days,
         })
     return lines if len(lines) > 1 else []
+
+
+
+
+def _leave_periods(raw) -> list[dict]:
+    """Bản kê các khoảng ngày của đơn nghỉ NHIỀU khoảng (duoc-CR-683).
+
+    Cùng tiền lệ `_leave_lines`: chỉ ghi khi có từ hai khoảng; phần tử hỏng (không phải dict,
+    ngày sai, đến trước từ, buổi lạ) bị bỏ chứ không làm hỏng việc sinh giấy cho một quyết định
+    đã ký. Đây là bản chép của tờ đơn đã duyệt nên không kiểm lại luật chồng ngày.
+    """
+    if not isinstance(raw, list):
+        return []
+    periods = []
+    for item in raw[:MAX_LEAVE_PERIODS]:
+        if not isinstance(item, dict):
+            continue
+        try:
+            start = _date(item.get("from_date"), "Từ ngày")
+            end = _date(item.get("to_date"), "Đến ngày")
+            days = float(item.get("days") or 0)
+        except (HTTPException, TypeError, ValueError):
+            continue
+        if end < start:  # chuỗi ISO so sánh đúng thứ tự ngày
+            continue
+        periods.append({
+            "from_date": start,
+            "from_session": item.get("from_session") if item.get("from_session") in LEAVE_SESSION_SET.values
+            else SESSION_FULL_DAY,
+            "to_date": end,
+            "to_session": item.get("to_session") if item.get("to_session") in LEAVE_SESSION_SET.values
+            else SESSION_FULL_DAY,
+            "days": days,
+        })
+    return periods if len(periods) > 1 else []
 
 
 #  mã loại → hàm kiểm. Loại không có mặt ở đây thì KHÔNG nhận metadata.

@@ -28,14 +28,26 @@ backend ở `app/modules/leave/`. Tài liệu đầy đủ: `doc/erp/hrm/02-nghi
   không-duyệt (từ chối · trả về · rút) đều phải TRẢ LẠI** — gộp chung một hàm
   `_release_and_set`, đừng tách ba bản chép.
 - ⚠️ **MỘT ĐƠN KHAI NHIỀU LOẠI NGHỈ** (07/09/2026, `tab_leave_request_line`). Cả đơn
-  dùng chung một khoảng ngày, dòng chỉ chia SỐ NGÀY. Hai cột đầu đơn thành **dẫn
+  dùng chung các khoảng ngày (một hoặc nhiều, xem bullet dưới), dòng chỉ chia SỐ NGÀY,
+  không gắn khoảng. Hai cột đầu đơn thành **dẫn
   xuất**: `total_days` = tổng các dòng, `leave_type_id` = loại của dòng nhiều ngày
   nhất. **Sổ quỹ phải chạy THEO DÒNG ở cả bốn nhịp** — dùng `reserve_lines` ·
   `consume_lines` · `release_lines` · `refund_lines` của `request_service`, đừng gọi
   thẳng `balance_service` với `obj.total_days` (trừ tổng vào loại chính là cộng ngày
-  không lương vào quỹ phép năm). Chốt xóa loại nghỉ phải hỏi **cả hai bảng**. Điều
-  kiện rẽ nhánh luồng duyệt chỉ thấy loại CHÍNH — hạn chế đã biết, xem §7.1 của
-  `doc/erp/hrm/02-nghi-phep.md`.
+  không lương vào quỹ phép năm). Chốt xóa loại nghỉ phải hỏi **cả hai bảng**. Luồng
+  duyệt chỉ thấy loại CHÍNH — **đã chốt bỏ 26/10/2026 (HR3-3)**: luồng duyệt coi mọi
+  đơn là nghỉ phép, đừng thêm điều kiện rẽ nhánh theo loại nghỉ của dòng (§7.1 của
+  `doc/erp/hrm/02-nghi-phep.md`).
+- ⚠️ **MỘT ĐƠN KHAI NHIỀU KHOẢNG NGÀY** (duoc-CR-683, 26/10/2026, bảng con
+  `tab_leave_request_period`, ≥1 dòng mỗi đơn). **Đầu đơn `from_*`/`to_*` là BAO NGOÀI dẫn
+  xuất** (khoảng đầu → khoảng cuối) và nuốt cả KHE giữa các khoảng. Mọi chỗ hỏi *"ngày D có
+  nghỉ không"* (lịch nghỉ, ai làm/ai nghỉ, hồ sơ làm việc, tải việc, chốt trùng ngày) PHẢI đọc
+  qua `leave/period_spans.py` (`LeaveSpan`, `span_of`, `periods_by_request`) bằng OUTER JOIN —
+  đơn chưa có dòng khoảng rơi về đầu đơn. Đọc thẳng `[from_date, to_date]` của đầu đơn là
+  ngày khe hiện nghỉ, im lặng. Ghi khoảng chỉ qua `leave/request_periods.py`; ≥2 khoảng phải
+  cùng năm (422), nghỉ theo giờ chỉ 1 khoảng, tối đa 20; đơn ≥2 khoảng sửa ngày thì PATCH phải
+  gửi đủ `periods`. Chỉ tổng được sửa đè, không sửa đè từng khoảng. Báo cáo theo tháng neo
+  ngày bắt đầu đơn (đã chốt). Chi tiết `02-nghi-phep.md` §7.3.
 - ⚠️ **Số phép còn lại KHÔNG lưu thành cột** — `balance_service.remaining()` là nơi duy
   nhất tính. **Số ngày nghỉ** chỉ tính ở `workday_service.count_leave_days()` — **SỬ DỤNG LỊCH LÀM VIỆC của người nghỉ** (`work_schedule/resolver.load_day_plans`), không còn `WEEKEND_DAYS`. Gọi `count_leave_days()` hoặc `count_hourly_days()` **PHẢI truyền `employee=`**, nếu quên thì sẽ tính theo lịch mặc định cho người có lịch riêng, dẫn tới sai âm thầm. Xem chi tiết ở `doc/erp/hrm/03-lich-lam-viec.md` §7, §12.
 - ⚠️ **Hủy đơn KHÔNG được gọi `block_legacy_path`** (chốt đó chỉ dành cho duyệt/từ chối

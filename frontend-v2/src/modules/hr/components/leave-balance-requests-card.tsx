@@ -9,6 +9,7 @@ import { useLeaveRequests } from '../hooks/use-leave'
 import type { LeaveBalance, LeaveRequest } from '../types/leave'
 import { LeaveRequestCard } from './leave-request-card'
 import { LeaveStatusCell } from './leave-status-cell'
+import { LeaveToDateCell } from './leave-to-date-cell'
 
 interface LeaveBalanceRequestsCardProps {
   balance: LeaveBalance
@@ -66,8 +67,8 @@ export function LeaveBalanceRequestsCard({ balance }: LeaveBalanceRequestsCardPr
       {
         key: 'to_date',
         header: 'Đến ngày',
-        cell: (r) => <span className="tabular-nums">{formatDate(r.to_date)}</span>,
-        width: 110,
+        cell: (r) => <LeaveToDateCell request={r} />,
+        width: 150,
       },
       {
         key: 'total_days',

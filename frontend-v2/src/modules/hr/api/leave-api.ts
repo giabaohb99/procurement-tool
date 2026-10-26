@@ -25,6 +25,21 @@ const HOLIDAYS = '/api/holidays'
 const APPROVALS = '/api/approvals'
 const APPROVAL_STEPS = `${APPROVALS}/steps`
 
+/** Một khoảng ngày gửi lên — buổi dùng đúng bộ mã `LEAVE_SESSION`. */
+export interface LeavePeriodPayload {
+  from_date: string
+  from_session: number
+  to_date: string
+  to_session: number
+}
+
+/** Kết quả ước lượng số ngày theo khoảng — `periods` theo thứ tự đã SẮP THEO NGÀY. */
+export interface LeavePeriodsEstimate {
+  periods: { from_date?: string; to_date?: string; days: number }[]
+  total_days: number
+  schedule_name?: string
+}
+
 export interface LeaveRequestPayload {
   employee_id?: number
   /**
@@ -36,6 +51,12 @@ export interface LeaveRequestPayload {
    * từ khoảng ngày, đúng hành vi của `total_days = 0` thời một loại.
    */
   lines: { leave_type_id: number; days: number }[]
+  /**
+   * Các khoảng ngày (duoc-CR-683). Gửi lên là GHI ĐÈ cả danh sách; đầu đơn (`from_date` …
+   * `to_session`) do backend dẫn xuất và bị bỏ qua khi có khóa này. Tối đa 20 khoảng; ≥2
+   * khoảng thì không được theo giờ, không chồng ngày, cùng một năm.
+   */
+  periods?: LeavePeriodPayload[]
   from_date: string
   to_date: string
   from_session?: number
@@ -84,7 +105,25 @@ export const leaveApi = {
     from_session?: number
     to_session?: number
     employee_id?: number
+    from_time?: string
+    to_time?: string
   }) => apiGet<{ total_days: number; schedule_name?: string }>(`${REQUESTS}/tools/estimate-days`, { params }),
+
+  /**
+   * Số ngày GỢI Ý cho từng khoảng của đơn nhiều khoảng (duoc-CR-683) — một lượt cho cả danh
+   * sách. Lỗi kiểm (chồng ngày, vắt năm…) trả 400/422 như lúc lưu; `_silent` để KHÔNG bật
+   * toast mỗi lần gõ dở một ngày — form tự hiện câu lỗi dưới danh sách khoảng.
+   */
+  estimatePeriods: (body: {
+    employee_id?: number
+    leave_type_id?: number
+    periods: LeavePeriodPayload[]
+    from_time?: string | null
+    to_time?: string | null
+  }) =>
+    apiPost<LeavePeriodsEstimate>(`${REQUESTS}/tools/estimate-periods`, body, {
+      _silent: true,
+    } as never),
 
   /**
    * Số phép còn lại — ràng buộc §6.1: form phải hiện con số này lúc nộp.

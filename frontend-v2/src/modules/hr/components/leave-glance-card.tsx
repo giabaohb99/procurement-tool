@@ -7,6 +7,7 @@ import { ChartCard } from '@/shared/ui/chart'
 import { formatDate } from '@/shared/utils/format-date'
 import { LEAVE_GLANCE_DAYS, type LeaveGlance } from '../hooks/use-hr-leave-glance'
 import type { LeaveRequest } from '../types/leave'
+import { coversDay, formatRequestPeriods, hasMultiplePeriods } from '../utils/leave-periods'
 
 /** Số dòng bày ra; phần dư chỉ đếm lại thành một câu. */
 const MAX_ROWS = 6
@@ -84,8 +85,8 @@ export function LeaveGlanceCard({ glance, className }: LeaveGlanceCardProps) {
 }
 
 function LeaveRow({ request, today }: { request: LeaveRequest; today: string }) {
-  //  So chuỗi `YYYY-MM-DD` — xem ghi chú ở `use-hr-leave-glance.ts`.
-  const isOffToday = request.from_date <= today && request.to_date >= today
+  //  Theo KHOẢNG, không theo bao ngoài: ngày khe giữa hai khoảng không phải «Hôm nay» nghỉ.
+  const isOffToday = coversDay(request, today)
 
   return (
     <li className="py-2.5 first:pt-0">
@@ -116,6 +117,7 @@ function LeaveRow({ request, today }: { request: LeaveRequest; today: string }) 
 
 /** Nghỉ trong một ngày thì viết một ngày, đừng viết "10/09 – 10/09". */
 function formatRange(request: LeaveRequest): string {
+  if (hasMultiplePeriods(request)) return formatRequestPeriods(request)
   const from = formatDate(request.from_date)
   if (request.from_date === request.to_date) return from
   return `${from} – ${formatDate(request.to_date)}`

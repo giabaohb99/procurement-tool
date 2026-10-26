@@ -4,8 +4,13 @@ import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LeaveRequestForm } from './leave-request-form'
-import { emptyLeaveForm, type LeaveFormValues } from '../utils/leave-form-values'
-import { LEAVE_SESSION } from '../types/leave'
+import {
+  emptyLeaveForm,
+  formValuesOf,
+  toLeavePayload,
+  type LeaveFormValues,
+} from '../utils/leave-form-values'
+import { LEAVE_SESSION, LEAVE_STATUS, LEAVE_UNIT, type LeaveRequest } from '../types/leave'
 
 /**
  * Ô SỐ NGÀY — con số tự tính KHÔNG được đè lên con số người dùng đã gõ.
@@ -19,8 +24,8 @@ import { LEAVE_SESSION } from '../types/leave'
  * loại), và tự điền CHỈ áp cho đơn một dòng — xem nhóm bài cuối tệp.
  */
 
-const { useEstimateLeaveDays } = vi.hoisted(() => ({
-  useEstimateLeaveDays: vi.fn(),
+const { useEstimateLeavePeriods } = vi.hoisted(() => ({
+  useEstimateLeavePeriods: vi.fn(),
 }))
 
 vi.mock('../hooks/use-leave', () => ({
@@ -32,7 +37,7 @@ vi.mock('../hooks/use-leave', () => ({
       ],
     },
   }),
-  useEstimateLeaveDays,
+  useEstimateLeavePeriods,
   useLeaveBalanceHint: () => ({ data: undefined, isLoading: true }),
 }))
 
@@ -58,6 +63,26 @@ function Harness({ initial }: { initial: LeaveFormValues }) {
   return <LeaveRequestForm value={value} onChange={setValue} />
 }
 
+/** Như `Harness`, nhưng chuyển bản form mới nhất ra ngoài để kiểm thân yêu cầu sẽ gửi. */
+function SpyHarness({
+  initial,
+  onValue,
+}: {
+  initial: LeaveFormValues
+  onValue: (v: LeaveFormValues) => void
+}) {
+  const [value, setValue] = useState(initial)
+  return (
+    <LeaveRequestForm
+      value={value}
+      onChange={(next) => {
+        onValue(next)
+        setValue(next)
+      }}
+    />
+  )
+}
+
 function daysInput(line = 1) {
   return screen.getByLabelText(`Số ngày dòng ${line}`)
 }
@@ -71,14 +96,20 @@ function formWith(overrides: Partial<LeaveFormValues> = {}): LeaveFormValues {
   }
 }
 
+/** Một khoảng nghỉ THEO GIỜ trong ngày hôm nay của form rỗng. */
+function hourlyPeriods() {
+  const [p] = emptyLeaveForm().periods
+  return [{ ...p, from_session: LEAVE_SESSION.HOURLY, to_session: LEAVE_SESSION.HOURLY }]
+}
+
 /** Form một dòng «Phép năm» với số ngày đã có sẵn. */
 function formWithDays(days: number, overrides: Partial<LeaveFormValues> = {}) {
   return formWith({ lines: [{ leave_type_id: 1, days }], ...overrides })
 }
 
 beforeEach(() => {
-  useEstimateLeaveDays.mockReset()
-  useEstimateLeaveDays.mockReturnValue({ data: { total_days: 3 } })
+  useEstimateLeavePeriods.mockReset()
+  useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 3 } })
   can.mockReset()
   can.mockReturnValue(true)
 })
@@ -110,7 +141,7 @@ describe('LeaveRequestForm — ô Số ngày', () => {
     expect(daysInput()).toHaveValue('4')
 
     //  Đổi ngày → backend trả con số gợi ý khác. Số người dùng gõ phải còn.
-    useEstimateLeaveDays.mockReturnValue({ data: { total_days: 5 } })
+    useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 5 } })
     rerender(<Harness initial={formWithDays(0)} />)
     expect(daysInput()).toHaveValue('4')
   })
@@ -137,12 +168,11 @@ describe('LeaveRequestForm — nghỉ theo GIỜ', () => {
   })
 
   it('số ngày của đơn theo giờ là ô CHỈ XEM — không cho gõ đè', () => {
-    useEstimateLeaveDays.mockReturnValue({ data: { total_days: 0.25 } })
+    useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 0.25 } })
     render(
       <Harness
         initial={formWithDays(0.25, {
-          from_session: LEAVE_SESSION.HOURLY,
-          to_session: LEAVE_SESSION.HOURLY,
+          periods: hourlyPeriods(),
           from_time: '09:00',
           to_time: '11:00',
         })}
@@ -156,12 +186,11 @@ describe('LeaveRequestForm — nghỉ theo GIỜ', () => {
     //  Bắt được lúc test tay 07/09/2026: mở đơn theo giờ đã lưu 0.38 rồi đổi
     //  «Đến ngày», ô số ngày đứng im — vì con số đã lưu bị coi là "người dùng gõ
     //  tay", mà đơn theo giờ thì không có đường gõ tay nào cả.
-    useEstimateLeaveDays.mockReturnValue({ data: { total_days: 2.31 } })
+    useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 2.31 } })
     render(
       <Harness
         initial={formWithDays(0.38, {
-          from_session: LEAVE_SESSION.HOURLY,
-          to_session: LEAVE_SESSION.HOURLY,
+          periods: hourlyPeriods(),
           from_time: '09:30',
           to_time: '12:30',
         })}
@@ -175,8 +204,7 @@ describe('LeaveRequestForm — nghỉ theo GIỜ', () => {
     render(
       <Harness
         initial={formWith({
-          from_session: LEAVE_SESSION.HOURLY,
-          to_session: LEAVE_SESSION.HOURLY,
+          periods: hourlyPeriods(),
           from_time: '09:00',
           to_time: '11:00',
         })}
@@ -293,3 +321,181 @@ describe('LeaveRequestForm — lập hộ người khác', () => {
     expect(screen.queryByText('Người nghỉ')).not.toBeInTheDocument()
   })
 })
+
+describe('LeaveRequestForm — nhiều khoảng ngày (duoc-CR-683)', () => {
+  const owner = [
+    { from_date: '2026-10-27', from_session: LEAVE_SESSION.FULL, to_date: '2026-10-27', to_session: LEAVE_SESSION.FULL },
+    { from_date: '2026-11-03', from_session: LEAVE_SESSION.AFTERNOON, to_date: '2026-11-07', to_session: LEAVE_SESSION.FULL },
+  ]
+
+  it('the TOTAL of all periods auto-fills the single leave-type line', () => {
+    useEstimateLeavePeriods.mockReturnValue({
+      data: { total_days: 5.5, periods: [{ days: 1 }, { days: 4.5 }] },
+    })
+    render(<Harness initial={formWith({ periods: owner })} />)
+    //  Ô số ngày hiện theo kiểu Việt Nam (dấu phẩy thập phân).
+    expect(daysInput()).toHaveValue('5,5')
+    expect(screen.getByText('Cộng 2 khoảng: 5.5 ngày')).toBeInTheDocument()
+    expect(screen.getByText('· 4.5 ngày')).toBeInTheDocument()
+  })
+
+  it('asks for ONE estimate covering every period, for the leave taker and first type', () => {
+    render(<Harness initial={formWith({ periods: owner })} />)
+    expect(useEstimateLeavePeriods).toHaveBeenLastCalledWith(
+      expect.objectContaining({ periods: owner, leave_type_id: 1, employee_id: 7, enabled: true }),
+    )
+  })
+
+  it('does NOT ask the server while two rows overlap — the red hint already says so', () => {
+    const overlapping = [owner[1], { ...owner[1], from_date: '2026-11-05', to_date: '2026-11-05' }]
+    render(<Harness initial={formWith({ periods: overlapping })} />)
+    expect(useEstimateLeavePeriods).toHaveBeenLastCalledWith(
+      expect.objectContaining({ enabled: false }),
+    )
+  })
+
+  it('shows the server message when the estimate is refused (e.g. periods across two years)', () => {
+    useEstimateLeavePeriods.mockReturnValue({
+      data: undefined,
+      error: { response: { data: { success: false, error: { code: 'HTTP_422', message: 'Đơn nhiều khoảng ngày phải nằm trong cùng một năm.' } } } },
+    })
+    render(<Harness initial={formWith({ periods: owner })} />)
+    expect(screen.getByText('Đơn nhiều khoảng ngày phải nằm trong cùng một năm.')).toBeInTheDocument()
+  })
+
+  it('adding a period from a single-period request turns the layout into numbered rows', async () => {
+    const user = userEvent.setup()
+    render(<Harness initial={formWith()} />)
+    await user.click(screen.getByRole('button', { name: /Thêm khoảng ngày/ }))
+    expect(screen.getByText('Khoảng ngày 2')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Bỏ khoảng ngày 2' })).toBeInTheDocument()
+  })
+
+  it('switching to «Theo giờ» on a single period hides «Thêm khoảng ngày»', async () => {
+    const user = userEvent.setup()
+    render(<Harness initial={formWith()} />)
+    await user.click(screen.getByRole('combobox', { name: 'Buổi bắt đầu' }))
+    await user.click(screen.getByRole('option', { name: 'Theo giờ' }))
+    expect(screen.queryByRole('button', { name: /Thêm khoảng ngày/ })).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * MỞ LẠI ĐƠN ĐÃ LƯU rồi đổi ngày (duoc-CR-683 M3). Trước bản vá, mọi đơn đã lưu đều bị coi là
+ * «số gõ tay»: đổi 27/10 + 03/11→07/11 thành 27/10 + 01/11→05/11 mà ô vẫn 5.5 (đúng ra 5), và
+ * lưu là giữ quỹ 5.5 ngày. Số đã gõ đè thật thì vẫn phải đứng yên.
+ */
+describe('LeaveRequestForm — reopening a saved request (duoc-CR-683 M3)', () => {
+  const periods = [
+    { id: 1, from_date: '2026-10-27', from_session: 1, to_date: '2026-10-27', to_session: 1, days: 1, sort_order: 0 },
+    { id: 2, from_date: '2026-11-03', from_session: 3, to_date: '2026-11-07', to_session: 1, days: 4.5, sort_order: 1 },
+  ]
+
+  function saved(days: number, overrides: Partial<LeaveRequest> = {}): LeaveFormValues {
+    return formValuesOf({
+      id: 9,
+      code: 'NP009',
+      company_id: 1,
+      department_id: 1,
+      employee_id: 7,
+      leave_type_id: 1,
+      from_date: '2026-10-27',
+      to_date: '2026-11-07',
+      from_session: 1,
+      to_session: 1,
+      unit: LEAVE_UNIT.DAY,
+      total_days: days,
+      reason: 'Việc nhà',
+      contact_phone: '',
+      contact_address: '',
+      status: LEAVE_STATUS.DRAFT,
+      approval_instance_id: 0,
+      document_id: 0,
+      decision_note: '',
+      lines: [{ id: 1, leave_type_id: 1, days, sort_order: 0 }],
+      periods,
+      ...overrides,
+    })
+  }
+
+  it('a saved multi-period total that was machine-computed follows the new dates', () => {
+    useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 5.5 } })
+    let latest = saved(5.5)
+    const onValue = (v: LeaveFormValues) => {
+      latest = v
+    }
+    const initial = latest
+    const { rerender } = render(<SpyHarness initial={initial} onValue={onValue} />)
+    expect(daysInput()).toHaveValue('5,5')
+
+    //  Người dùng dời khoảng 2 → backend ước lượng lại ra 5.
+    useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 5 } })
+    rerender(<SpyHarness initial={initial} onValue={onValue} />)
+    expect(daysInput()).toHaveValue('5')
+    //  …và vẫn là số máy: lưu thì để backend tự tính (giữ chốt khoảng 0 ngày công).
+    expect(toLeavePayload(latest).lines).toEqual([{ leave_type_id: 1, days: 0 }])
+  })
+
+  it('a saved multi-period total the user had overridden stays put when the estimate moves', () => {
+    useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 5.5 } })
+    let latest = saved(6)
+    const onValue = (v: LeaveFormValues) => {
+      latest = v
+    }
+    const initial = latest
+    const { rerender } = render(<SpyHarness initial={initial} onValue={onValue} />)
+    expect(daysInput()).toHaveValue('6')
+
+    useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 5 } })
+    rerender(<SpyHarness initial={initial} onValue={onValue} />)
+    expect(daysInput()).toHaveValue('6')
+    expect(toLeavePayload(latest).lines).toEqual([{ leave_type_id: 1, days: 6 }])
+  })
+
+  it('a saved single-period request matching the first estimate follows later date changes', () => {
+    //  Đơn một khoảng: chỉ nhận ra «số máy» bằng cách so với con số ước lượng đầu tiên.
+    const single = saved(3, { periods: [{ ...periods[0], to_date: '2026-10-29', days: 3 }] })
+    useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 3 } })
+    const { rerender } = render(<Harness initial={single} />)
+    expect(daysInput()).toHaveValue('3')
+
+    useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 4 } })
+    rerender(<Harness initial={single} />)
+    expect(daysInput()).toHaveValue('4')
+  })
+
+  it('a saved single-period override (NP025: typed 4, schedule says 3) survives later estimates', () => {
+    const single = saved(4, { periods: [{ ...periods[0], to_date: '2026-10-30', days: 4 }] })
+    useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 3 } })
+    const { rerender } = render(<Harness initial={single} />)
+    expect(daysInput()).toHaveValue('4')
+
+    useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 5 } })
+    rerender(<Harness initial={single} />)
+    expect(daysInput()).toHaveValue('4')
+  })
+})
+
+describe('LeaveRequestForm — what a fresh form sends (duoc-CR-683 M2)', () => {
+  it('an auto-filled single line is sent as days 0, a typed one as the typed number', async () => {
+    const user = userEvent.setup()
+    useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 3 } })
+    let latest = formWith()
+    render(
+      <SpyHarness
+        initial={latest}
+        onValue={(v) => {
+          latest = v
+        }}
+      />,
+    )
+    expect(daysInput()).toHaveValue('3')
+    expect(toLeavePayload(latest).lines).toEqual([{ leave_type_id: 1, days: 0 }])
+
+    await user.clear(daysInput())
+    await user.type(daysInput(), '4')
+    await user.tab()
+    expect(toLeavePayload(latest).lines).toEqual([{ leave_type_id: 1, days: 4 }])
+  })
+})
+

@@ -129,6 +129,7 @@ Nháp  ─────────────────────►  Chờ
 <li><strong>«Vừa nộp đơn xong sao phép còn lại hụt luôn?»</strong> — đúng như vậy, và là cố ý. Xem {ref(QUY_PHEP, "Hiểu số ngày phép còn lại")}.</li>
 <li><strong>«Nộp rồi sửa được không?»</strong> — không. Chỉ sửa được lúc <em>Nháp</em> và <em>Trả về chỉnh sửa</em>. Xem {ref(THEO_DOI, "Theo dõi, sửa và hủy đơn")}.</li>
 <li><strong>«Không thấy menu Nghỉ phép»</strong> — gần như luôn là phân quyền, xem {ref(NS_QUYEN, "bài Phân quyền")}.</li>
+<li><strong>«Nghỉ hai đợt không liền nhau trong một đơn được không?»</strong> — được, bấm <strong>«+ Thêm khoảng ngày»</strong> ngay trên form. Xem {ref(NOP_DON, "Nộp đơn nghỉ phép")}.</li>
 </ul>
 
 <h2>Đọc theo việc bạn cần làm</h2>
@@ -203,6 +204,29 @@ Nháp  ─────────────────────►  Chờ
 <h2>Nghỉ nửa ngày</h2>
 <p>Đặt <strong>Từ ngày = Đến ngày</strong>, rồi chọn <strong>Buổi bắt đầu</strong> và <strong>Buổi kết thúc</strong> là <em>Buổi sáng</em> (hoặc cả hai là <em>Buổi chiều</em>). Tổng số ngày ra <strong>0,5</strong> và quỹ trừ đúng nửa ngày.</p>
 <p>⚠️ Nghỉ <strong>từ buổi chiều đến buổi sáng cùng ngày</strong> là một khoảng trống — hệ chặn.</p>
+
+<h2>Nghỉ nhiều đợt không liền nhau trong một đơn</h2>
+<p>Ví dụ: nghỉ <strong>27/10</strong> cả ngày, rồi nghỉ tiếp từ <strong>chiều 03/11 đến hết 07/11</strong>. Không cần lập hai đơn — khai cả hai đợt trong <strong>một</strong> tờ đơn.</p>
+<ol>
+<li>Điền khoảng đầu như bình thường (Từ ngày / Đến ngày, kèm buổi).</li>
+<li>Bấm nút <strong>«+ Thêm khoảng ngày»</strong> dưới ô ngày. Mỗi khoảng hiện trong một khung riêng, tiêu đề dạng <strong>«Khoảng ngày 2 · 4,5 ngày»</strong> (số ngày của khoảng do hệ tính sẵn). Nút <strong>X</strong> ở góc khung để bỏ khoảng đó.</li>
+<li>Dòng cuối danh sách cộng giúp bạn: <strong>«Cộng 2 khoảng: 5,5 ngày»</strong>. Đây cũng là <strong>Tổng số ngày</strong> của đơn; gõ đè được ở ô Tổng số ngày như mọi đơn khác (không gõ đè riêng từng khoảng).</li>
+<li>Lưu nháp rồi Gửi duyệt như bình thường.</li>
+</ol>
+<p>Những ngày <strong>nằm giữa hai khoảng</strong> (trong ví dụ là 28/10 – 02/11) là ngày đi làm: <strong>không bị trừ phép</strong>, và không hiện nghỉ ở Lịch nghỉ hay «Ai làm / ai nghỉ».</p>
+<table>
+<thead><tr><th>Cần biết</th><th>Chi tiết</th></tr></thead>
+<tbody>
+<tr><td>Tối đa</td><td><strong>20 khoảng</strong> mỗi đơn. Đủ 20 thì nút «+ Thêm khoảng ngày» tắt, có dòng chú thích.</td></tr>
+<tr><td>Không chồng ngày</td><td>Hai khoảng trong cùng một đơn không được trùng ngày. Trùng thì khung hiện chữ đỏ <em>«Khoảng này chồng ngày với một khoảng khác — các khoảng không được trùng ngày.»</em></td></tr>
+<tr><td>Cùng một năm</td><td>Đơn có <strong>từ hai khoảng trở lên</strong> thì mọi khoảng phải cùng một năm (vì phép trừ theo năm). Ví dụ 29/12 và 05/01 sang năm: hệ báo <em>«Đơn nhiều khoảng ngày phải nằm trong cùng một năm. Tách thành hai đơn…»</em> — lập một đơn cho năm trước, một đơn cho năm sau. Đơn chỉ <strong>một</strong> khoảng vắt sang năm mới thì vẫn như trước.</td></tr>
+<tr><td>Nghỉ theo giờ</td><td>Nghỉ <strong>theo giờ chỉ khai được một khoảng</strong>. Chọn «Theo giờ» thì nút «+ Thêm khoảng ngày» ẩn; đang có từ hai khoảng thì không chọn được «Theo giờ».</td></tr>
+<tr><td>Nhiều loại nghỉ</td><td>Vẫn dùng bảng loại nghỉ như cũ: các khoảng chỉ cho ra tổng số ngày, bạn chia tổng đó vào từng loại. Loại nghỉ <strong>không gắn</strong> với một khoảng cụ thể.</td></tr>
+<tr><td>Trùng đơn khác</td><td>Hệ kiểm trùng ngày <strong>theo từng khoảng</strong>: một đơn khác nằm gọn trong khe giữa hai khoảng thì vẫn gửi được; chạm vào một khoảng thì bị chặn.</td></tr>
+</tbody>
+</table>
+<p>Sau khi gửi, người duyệt thấy mục <strong>«Thời gian nghỉ»</strong> liệt kê từng khoảng (thay cho hai dòng Từ ngày / Đến ngày). Ở danh sách đơn, cột <em>Đến ngày</em> ghi thêm chữ mờ, ví dụ <strong>«07/11/2026 · 2 khoảng»</strong>. Bản in liệt kê đủ các khoảng.</p>
+<p><strong>Nhờ Trợ lý AI soạn:</strong> bạn có thể nói «nghỉ 27/10 và chiều 3/11 tới 7/11» — Trợ lý soạn nháp có đủ hai khoảng, bạn kiểm lại rồi bấm tạo đơn.</p>
 
 <h2>Nộp hộ người khác</h2>
 <p>Hành chính hoặc trợ lý nộp hộ được: điền <strong>người nghỉ</strong> vào ô riêng trên đơn. Bỏ trống ô đó thì người nghỉ chính là người đang gõ.</p>
@@ -425,6 +449,8 @@ Nháp  ─────────────────────►  Chờ
 <li>Tìm không ra ai khớp bộ lọc thì câu báo <strong>khác hẳn</strong> câu «không ai nghỉ», để bạn biết là do bộ lọc.</li>
 </ul>
 
+<p>Đơn nghỉ <strong>nhiều khoảng ngày</strong> chỉ tô đúng những ngày nằm trong từng khoảng; các ngày nằm giữa hai khoảng để trống (người đó đi làm).</p>
+
 <h2>Lịch KHÔNG hiện những đơn nào</h2>
 <p><strong>Nháp · Từ chối · Đã hủy</strong> — ba loại này không dẫn tới ai nghỉ cả, vẽ lên lịch chỉ làm người xem tưởng phòng vắng người.</p>
 
@@ -503,6 +529,10 @@ Nháp  ─────────────────────►  Chờ
 <thead><tr><th>Câu bạn nhìn thấy</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
 <tr><td><em>«Đến ngày» phải bằng hoặc sau «Từ ngày»</em></td><td>Chọn ngược ngày.</td><td>Đổi lại hai ô.</td></tr>
+<tr><td><em>«Khoảng thứ 2 (01/11 → 01/11) không có ngày làm việc nào theo lịch làm việc … Bỏ khoảng này khỏi đơn.»</em></td><td>Đơn nhiều khoảng có một khoảng rơi trọn vào ngày nghỉ (Chủ nhật, ngày lễ).</td><td>Bỏ khoảng đó khỏi đơn — ngày nghỉ sẵn thì không cần xin. Đơn nhiều khoảng không cho gõ đè tổng để vượt qua chốt này.</td></tr>
+<tr><td><em>«Khoảng thứ 1 (27/10 → 29/10) và Khoảng thứ 2 (29/10 → 30/10) chồng ngày nhau — các khoảng không được trùng ngày.»</em></td><td>Hai khoảng trong cùng một đơn có ngày trùng nhau.</td><td>Dời ngày để các khoảng không trùng (sát nhau thì được), hoặc gộp thành một khoảng.</td></tr>
+<tr><td><em>«Đơn nhiều khoảng ngày phải nằm trong cùng một năm. Tách thành hai đơn…»</em></td><td>Đơn có từ hai khoảng trở lên mà các khoảng rơi vào hai năm khác nhau.</td><td>Lập hai đơn: một đơn cho phần năm trước, một đơn cho phần năm sau.</td></tr>
+<tr><td><em>«Nghỉ theo giờ chỉ khai được một khoảng ngày…»</em></td><td>Đơn có từ hai khoảng mà một khoảng chọn «Theo giờ».</td><td>Bỏ bớt khoảng, hoặc chọn lại buổi nghỉ (Cả ngày / Sáng / Chiều).</td></tr>
 <tr><td><em>«Nghỉ từ buổi chiều đến buổi sáng cùng ngày là khoảng trống»</em></td><td>Buổi bắt đầu là chiều, buổi kết thúc là sáng, cùng một ngày — không có khoảng nào.</td><td>Chọn cùng một buổi cho cả hai ô.</td></tr>
 <tr><td><em>«Khoảng ngày này không có ngày làm việc nào (rơi trọn vào cuối tuần hoặc ngày lễ). Sửa lại ngày, hoặc nhập tay «Tổng số ngày».»</em></td><td>Cả khoảng bạn chọn đều là ngày nghỉ sẵn.</td><td>Không cần xin phép thì thôi. Bộ phận có làm ngày đó thì <strong>gõ đè Tổng số ngày</strong>.</td></tr>
 <tr><td><em>«Tổng số ngày» phải lớn hơn 0</em></td><td>Bạn xóa trắng hoặc gõ 0 vào ô số ngày.</td><td>Nhập số đúng, hoặc xóa ô để hệ tính lại.</td></tr>

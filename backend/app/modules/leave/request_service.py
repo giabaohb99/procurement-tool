@@ -15,18 +15,19 @@ Chốt "nhập đủ" đặt ở lúc **GỬI DUYỆT**, không phải lúc lưu
 from datetime import date, datetime, time
 
 from fastapi import HTTPException
-from sqlalchemy import and_, or_
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.utils import generate_code
 from app.modules.employee.model import Employee
 
-from . import balance_service, workday_service
+from . import balance_service, request_periods, workday_service
 from .catalog_model import LeaveType
-from .constants import (EDITABLE_STATUSES, GENDER_UNKNOWN, HOLDING_STATUSES,
+from .constants import (EDITABLE_STATUSES, GENDER_UNKNOWN,
                         LR_APPROVED, LR_CANCELLED, LR_DRAFT, LR_PENDING,
                         SESSION_AFTERNOON, SESSION_HOURLY, SESSION_MORNING,
                         UNIT_DAY, UNIT_HOUR)
+from .period_spans import PeriodView
 from .request_model import LeaveHandover, LeaveRequest, LeaveRequestLine
 
 #  Bộ lọc danh sách (whitelist của `apply_filters`). `code` để ô tìm nhanh lo.
@@ -218,29 +219,18 @@ def check_max_days(leave_type: LeaveType, days: float) -> None:
 
 def check_overlap(db: Session, employee_id: int, from_date: date, to_date: date,
                   exclude_id: int = 0) -> None:
-    """Chặn hai đơn CHỒNG NGÀY của cùng một người.
+    """Chặn hai đơn CHỒNG NGÀY của cùng một người (bản một khoảng — lớp mỏng).
 
     Không có chốt này thì cùng một ngày bị trừ phép hai lần, và màn Lịch nghỉ
     hiện một người nghỉ hai loại cùng lúc. Chỉ xét đơn còn GIỮ CHỖ (chờ duyệt /
-    đã duyệt) — nháp và đơn đã hủy thì không tính.
+    đã duyệt) — nháp và đơn đã hủy thì không tính. Nửa ngày không xét tới: chặn
+    thừa một trường hợp hiếm an toàn hơn là để lọt trường hợp trừ đúp.
 
-    Hai khoảng chồng nhau khi `a.from <= b.to` VÀ `b.from <= a.to`. Nửa ngày
-    không xét tới: chặn thừa một trường hợp hiếm (sáng nghỉ ốm, chiều nghỉ phép)
-    an toàn hơn là để lọt trường hợp trừ đúp.
+    Đơn nhiều khoảng (CR-683) so từng khoảng × từng khoảng ở
+    `request_periods.raise_if_overlap`; hàm này giữ tên cũ cho nơi gọi một khoảng.
     """
-    q = (db.query(LeaveRequest)
-         .filter(LeaveRequest.employee_id == employee_id,
-                 LeaveRequest.is_deleted.is_(False),
-                 LeaveRequest.status.in_(HOLDING_STATUSES),
-                 and_(LeaveRequest.from_date <= to_date,
-                      from_date <= LeaveRequest.to_date)))
-    if exclude_id:
-        q = q.filter(LeaveRequest.id != exclude_id)
-    other = q.first()
-    if other is not None:
-        raise HTTPException(
-            400, f"Đã có đơn «{other.code}» nghỉ từ {other.from_date} đến {other.to_date} "
-                 "trùng khoảng ngày này.")
+    request_periods.raise_if_overlap(
+        db, employee_id, [request_periods.single_period(from_date, to_date)], exclude_id)
 
 
 # ── Tính số ngày ───────────────────────────────────────────────────────────────
@@ -296,6 +286,67 @@ def hourly_days(db: Session, from_date: date, to_date: date,
             400, "Khoảng giờ này không rơi vào giờ làm việc nào theo lịch làm việc của người "
                  "nghỉ (ngày nghỉ, ngoài khung giờ, giờ nghỉ trưa hoặc ngày lễ) — kiểm lại ngày và giờ.")
     return days
+
+
+# ── Khoảng ngày (duoc-CR-683) ──────────────────────────────────────────────────
+
+def validate_periods(periods: list[PeriodView], from_time: time | None,
+                     to_time: time | None) -> list[PeriodView]:
+    """Kiểm cả danh sách khoảng, trả về danh sách đã sắp theo ngày.
+
+    Từng khoảng đi qua `check_date_range` (một luật, một câu báo); đơn nhiều khoảng
+    thì câu lỗi gắn tên khoảng. Rồi tới luật toàn đơn ở `request_periods.check_layout`.
+    """
+    request_periods.check_count_and_hourly(periods)
+    multi = len(periods) > 1
+    for i, p in enumerate(periods):
+        try:
+            check_date_range(p.from_date, p.to_date, p.from_session, p.to_session,
+                             from_time, to_time)
+        except HTTPException as exc:
+            if not multi:
+                raise
+            raise HTTPException(
+                exc.status_code, f"{request_periods.label_of(i, p)}: {exc.detail}") from None
+    return request_periods.check_layout(periods)
+
+
+def resolve_period_days(db: Session, pairs: list[tuple[LeaveType, float]], employee: Employee,
+                        periods: list[PeriodView], from_time: time | None,
+                        to_time: time | None) -> tuple[list[tuple[LeaveType, float]], list[float]]:
+    """(dòng đã chốt ngày, số ngày TỪNG khoảng).
+
+    Một khoảng: đúng đường cũ `resolve_days`, ngày của khoảng = tổng các dòng. Nhiều
+    khoảng (không theo giờ): lịch + ngày lễ nạp một lần (`count_leave_days_periods`);
+    khoảng nào ước tính 0 ngày làm việc thì LUÔN chặn (kể cả khi dòng có số sửa đè —
+    form luôn gửi `days`, nên chặn theo cờ sửa đè thì không bao giờ chạy). Một dòng
+    không sửa đè → tổng = Σ ngày khoảng; có sửa đè hoặc nhiều dòng → giữ số người
+    dùng, ngày khoảng lưu là số ước tính.
+    """
+    first = periods[0]
+    if len(periods) == 1:
+        resolved = resolve_days(db, pairs, employee, first.from_date, first.to_date,
+                                first.from_session, first.to_session, from_time, to_time)
+        return resolved, [round(sum(d for _, d in resolved), 2)]
+
+    leave_type, requested = pairs[0]
+    per_days = workday_service.count_leave_days_periods(
+        db, periods, company_id=employee.company_id or 0,
+        exclude_holiday=bool(leave_type.exclude_holiday), employee=employee)
+    for i, (p, d) in enumerate(zip(periods, per_days)):
+        if d <= 0:
+            raise HTTPException(
+                400, f"{request_periods.label_of(i, p)} không có ngày làm việc nào theo lịch "
+                     f"làm việc áp cho «{employee.full_name}» (rơi trọn vào ngày nghỉ hoặc "
+                     "ngày lễ). Bỏ khoảng này khỏi đơn.")
+    if len(pairs) > 1:
+        resolved = resolve_days(db, pairs, employee, first.from_date, first.to_date,
+                                first.from_session, first.to_session, from_time, to_time)
+    elif requested and requested > 0:
+        resolved = [(leave_type, round(float(requested), 2))]
+    else:
+        resolved = [(leave_type, round(sum(per_days), 2))]
+    return resolved, per_days
 
 
 # ── Dòng loại nghỉ (07/09/2026) ────────────────────────────────────────────────
@@ -365,15 +416,15 @@ def resolve_days(db: Session, pairs: list[tuple[LeaveType, float]], employee: Em
     return resolved
 
 
-def check_lines(pairs: list[tuple[LeaveType, float]],
-                from_date: date, to_date: date) -> float:
+def check_lines(pairs: list[tuple[LeaveType, float]], periods: list[PeriodView]) -> float:
     """Bốn chốt trên danh sách dòng. Trả TỔNG số ngày của đơn.
 
-    Chốt cuối là **trần theo khoảng ngày**: tổng số ngày nghỉ không vượt quá số
-    ngày dương lịch của khoảng đã chọn. Trần này cố ý đếm cả T7/CN/lễ nên nó
-    không bao giờ chặn nhầm một ca hợp lệ — kể cả công trường chạy Chủ nhật —
-    nhưng nó chặn được ca gõ nhầm 30 ngày trên khoảng hai ngày, thứ mà trước đây
-    lọt thẳng vào sổ quỹ vì `total_days` cho sửa đè tự do.
+    Chốt cuối là **trần theo khoảng ngày**: tổng số ngày nghỉ không vượt quá TỔNG số
+    ngày dương lịch của các khoảng đã chọn (khe giữa các khoảng không tính — bao ngoài
+    sẽ nuốt cả khe). Trần này cố ý đếm cả T7/CN/lễ nên nó không bao giờ chặn nhầm một
+    ca hợp lệ — kể cả công trường chạy Chủ nhật — nhưng nó chặn được ca gõ nhầm 30 ngày
+    trên khoảng hai ngày, thứ mà trước đây lọt thẳng vào sổ quỹ vì `total_days` cho
+    sửa đè tự do.
     """
     seen: set[int] = set()
     for leave_type, days in pairs:
@@ -387,7 +438,7 @@ def check_lines(pairs: list[tuple[LeaveType, float]],
         check_max_days(leave_type, days)
 
     total = round(sum(days for _, days in pairs), 2)
-    ceiling = (to_date - from_date).days + 1
+    ceiling = request_periods.calendar_days(periods)
     if total > ceiling:
         raise HTTPException(
             400, f"Tổng {total} ngày nhiều hơn số ngày của khoảng đã chọn "
@@ -485,24 +536,25 @@ def create(db: Session, data, user) -> LeaveRequest:
     employee = resolve_leave_taker(db, user, data.employee_id)
     ensure_can_create_for(db, user, employee)
 
-    check_date_range(data.from_date, data.to_date, data.from_session, data.to_session,
-                     data.from_time, data.to_time)
+    periods = validate_periods(request_periods.normalize_create(data),
+                               data.from_time, data.to_time)
     pairs = collect_lines(db, data.lines, data.leave_type_id, data.total_days)
     for leave_type, _ in pairs:
         check_gender(leave_type, employee)
-    pairs = resolve_days(db, pairs, employee, data.from_date, data.to_date,
-                         data.from_session, data.to_session, data.from_time, data.to_time)
-    days = check_lines(pairs, data.from_date, data.to_date)
+    pairs, per_days = resolve_period_days(db, pairs, employee, periods,
+                                          data.from_time, data.to_time)
+    days = check_lines(pairs, periods)
+    periods = request_periods.with_days(periods, per_days)
 
-    hourly = is_hourly(data.from_session, data.to_session)
+    hourly = request_periods.is_hourly_period(periods[0])
     obj = LeaveRequest(
         code=generate_code(db, LeaveRequest, CODE_PREFIX),
         company_id=employee.company_id or 0,
         department_id=employee.department_id or 0,
         employee_id=employee.id,
         leave_type_id=primary_type_id(pairs),
-        from_date=data.from_date, to_date=data.to_date,
-        from_session=data.from_session, to_session=data.to_session,
+        #  Đầu đơn là DẪN XUẤT của danh sách khoảng (khoảng đầu ↔ khoảng cuối).
+        **request_periods.header_of(periods),
         from_time=data.from_time, to_time=data.to_time,
         #  `unit` bám theo cách khai, không để người gửi tự đặt: đơn theo giờ mà
         #  ghi đơn vị «Ngày» thì mọi báo cáo đọc sau này hiểu sai bản chất.
@@ -516,6 +568,7 @@ def create(db: Session, data, user) -> LeaveRequest:
     db.add(obj)
     db.flush()
     replace_lines(db, obj.id, pairs, user.id)
+    request_periods.replace_periods(db, obj.id, periods, user.id)
     _replace_handovers(db, obj.id, data.handovers, user.id)
     db.commit()
     db.refresh(obj)
@@ -570,6 +623,7 @@ def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
     #  vắng mặt là giữ nguyên dòng đang có.
     has_lines = "lines" in values
     values.pop("lines", None)
+    values.pop("periods", None)
 
     employee = (resolve_leave_taker(db, user, values["employee_id"])
                 if "employee_id" in values else get_employee(db, obj.employee_id))
@@ -577,16 +631,13 @@ def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
     #  cho mình rồi sửa sang tên người khác là đi vòng qua đúng cái chốt đó.
     ensure_can_create_for(db, user, employee)
 
-    from_date = values.get("from_date", obj.from_date)
-    to_date = values.get("to_date", obj.to_date)
-    from_session = values.get("from_session", obj.from_session)
-    to_session = values.get("to_session", obj.to_session)
+    periods = request_periods.normalize_update(db, obj, values, data)
     #  Đổi buổi mà KHÔNG gửi kèm giờ thì đọc giờ cũ trên phiếu — trừ khi vừa
     #  chuyển ra khỏi «Theo giờ», lúc đó giờ cũ phải bị xóa chứ không giữ lại.
-    hourly = is_hourly(from_session, to_session)
+    hourly = any(request_periods.is_hourly_period(p) for p in periods)
     from_time = values.get("from_time", obj.from_time if hourly else None)
     to_time = values.get("to_time", obj.to_time if hourly else None)
-    check_date_range(from_date, to_date, from_session, to_session, from_time, to_time)
+    periods = validate_periods(periods, from_time, to_time)
 
     #  `total_days` chỉ coi là "sửa đè" khi người dùng GỬI LÊN nó. Không gửi thì
     #  tính lại — sửa ngày mà giữ nguyên số ngày cũ là sai ngay lập tức.
@@ -595,11 +646,14 @@ def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
                               values.get("leave_type_id"), requested)
     for line_type, _ in pairs:
         check_gender(line_type, employee)
-    pairs = resolve_days(db, pairs, employee, from_date, to_date,
-                         from_session, to_session, from_time, to_time)
-    days = check_lines(pairs, from_date, to_date)
+    pairs, per_days = resolve_period_days(db, pairs, employee, periods, from_time, to_time)
+    days = check_lines(pairs, periods)
+    periods = request_periods.with_days(periods, per_days)
 
     for key, value in values.items():
+        if key not in request_periods.HEADER_KEYS:   # đầu đơn dẫn xuất từ `periods`
+            setattr(obj, key, value)
+    for key, value in request_periods.header_of(periods).items():
         setattr(obj, key, value)
     obj.employee_id = employee.id
     obj.company_id = employee.company_id or 0
@@ -612,6 +666,7 @@ def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
     obj.updated_by = user.id
 
     replace_lines(db, obj.id, pairs, user.id)
+    request_periods.replace_periods(db, obj.id, periods, user.id)
     if has_handovers:
         _replace_handovers(db, obj.id, handovers, user.id)
     db.commit()
@@ -685,7 +740,8 @@ def prepare_submit(db: Session, obj: LeaveRequest, user) -> Employee:
     check_required_attachment(db, obj)
 
     employee = get_employee(db, obj.employee_id)
-    check_overlap(db, obj.employee_id, obj.from_date, obj.to_date, exclude_id=obj.id)
+    request_periods.raise_if_overlap(db, obj.employee_id, request_periods.periods_of(db, obj),
+                                     exclude_id=obj.id)
     #  Kiểm TỪNG DÒNG, không kiểm tổng: mỗi loại nghỉ có sổ quỹ riêng, nên
     #  4 ngày = 3 phép năm + 1 không lương có thể qua trong khi 4 ngày phép năm
     #  thì hết phép.

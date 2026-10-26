@@ -10,8 +10,8 @@
  * thiếu phần cốt lõi (ngày nghỉ, lý do, loại nghỉ) thì trả `null` — trang mở form trắng
  * như thường chứ không vỡ. Người dùng rà lại rồi tự bấm Lưu, đơn KHÔNG tự sinh.
  */
-import { LEAVE_SESSION } from '../types/leave'
-import { REASON_MAX, type LeaveFormValues } from './leave-form-values'
+import { LEAVE_SESSION, MAX_LEAVE_PERIODS } from '../types/leave'
+import { REASON_MAX, type LeaveFormValues, type LeavePeriodValue } from './leave-form-values'
 
 //  Bộ buổi nghỉ hợp lệ, lấy thẳng từ bộ mã dùng chung để đổi một chỗ là cả hai bên theo.
 const SESSIONS: number[] = Object.values(LEAVE_SESSION)
@@ -23,6 +23,11 @@ export interface AssistantLeaveDraft {
   to_date: string
   from_session: number
   to_session: number
+  /**
+   * Các khoảng ngày (duoc-CR-683) — LUÔN ≥1 phần tử. Bản nháp thiếu / hỏng khóa `periods`
+   * thì dựng một khoảng từ bốn ô đầu đơn ở trên, đúng đường tương thích của backend.
+   */
+  periods: LeavePeriodValue[]
   from_time: string
   to_time: string
   reason: string
@@ -55,6 +60,32 @@ function asSession(value: unknown): number {
   return typeof value === 'number' && SESSIONS.includes(value) ? value : LEAVE_SESSION.FULL
 }
 
+/**
+ * Đọc khóa `periods` của bản nháp. Phần tử hỏng (sai ngày, đến trước từ) bị BỎ chứ không làm
+ * hỏng cả bản nháp; cắt ở trần 20; nghỉ theo giờ chỉ giữ một khoảng (luật R3 của backend).
+ */
+function asPeriods(value: unknown): LeavePeriodValue[] {
+  if (!Array.isArray(value)) return []
+  const out: LeavePeriodValue[] = []
+  for (const item of value.slice(0, MAX_LEAVE_PERIODS)) {
+    if (typeof item !== 'object' || item === null) continue
+    const raw = item as Record<string, unknown>
+    const fromDate = asDate(raw.from_date)
+    const toDate = asDate(raw.to_date)
+    if (!fromDate || !toDate || toDate < fromDate) continue
+    out.push({
+      from_date: fromDate,
+      from_session: asSession(raw.from_session),
+      to_date: toDate,
+      to_session: asSession(raw.to_session),
+    })
+  }
+  const hourly = out.some(
+    (p) => p.from_session === LEAVE_SESSION.HOURLY || p.to_session === LEAVE_SESSION.HOURLY,
+  )
+  return hourly ? out.slice(0, 1) : out
+}
+
 /** `null` nghĩa là state không phải bản nháp đơn nghỉ phép hợp lệ. */
 export function parseAssistantLeaveDraft(raw: unknown): AssistantLeaveDraft | null {
   if (typeof raw !== 'object' || raw === null) return null
@@ -77,7 +108,13 @@ export function parseAssistantLeaveDraft(raw: unknown): AssistantLeaveDraft | nu
   const days = typeof lineData.days === 'number' && lineData.days > 0 ? lineData.days : 0
   const fromSession = asSession(data.from_session)
   const toSession = asSession(data.to_session)
-  const hourly = fromSession === LEAVE_SESSION.HOURLY || toSession === LEAVE_SESSION.HOURLY
+  const parsed = asPeriods(data.periods)
+  const periods = parsed.length
+    ? parsed
+    : [{ from_date: fromDate, from_session: fromSession, to_date: toDate, to_session: toSession }]
+  const hourly = periods.some(
+    (p) => p.from_session === LEAVE_SESSION.HOURLY || p.to_session === LEAVE_SESSION.HOURLY,
+  )
 
   return {
     leave_type_id: leaveTypeId,
@@ -86,6 +123,7 @@ export function parseAssistantLeaveDraft(raw: unknown): AssistantLeaveDraft | nu
     to_date: toDate,
     from_session: fromSession,
     to_session: toSession,
+    periods,
     //  Giờ chỉ có nghĩa khi nghỉ theo giờ; giữ lại ở ca khác là form gửi kèm hai ô thừa.
     from_time: hourly ? asTime(data.from_time) : '',
     to_time: hourly ? asTime(data.to_time) : '',
@@ -101,10 +139,7 @@ export function applyAssistantLeaveDraft(
 ): LeaveFormValues {
   return {
     ...base,
-    from_date: draft.from_date,
-    to_date: draft.to_date,
-    from_session: draft.from_session,
-    to_session: draft.to_session,
+    periods: draft.periods.map((p) => ({ ...p })),
     from_time: draft.from_time,
     to_time: draft.to_time,
     reason: draft.reason,

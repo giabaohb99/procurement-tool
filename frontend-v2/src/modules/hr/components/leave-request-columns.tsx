@@ -4,6 +4,7 @@ import { formatDate } from '@/shared/utils/format-date'
 import type { ApprovalFlowStrip as FlowStrip, LeaveRequest } from '../types/leave'
 import { leaveLinesText, leaveTypeLabel } from '../utils/leave-type-label'
 import { LeaveStatusCell } from './leave-status-cell'
+import { LeaveToDateCell } from './leave-to-date-cell'
 
 /**
  * Các cột DÙNG CHUNG cho ba tab của màn Đơn nghỉ phép (CR-260).
@@ -132,8 +133,9 @@ export function dateColumns<T extends LeaveRequest>(): DataTableColumn<T>[] {
     {
       key: 'to_date',
       header: 'Đến ngày',
-      cell: (r) => <span className="tabular-nums">{formatDate(r.to_date)}</span>,
-      width: 110,
+      //  Đơn nhiều khoảng thêm chữ mờ «· 2 khoảng» (duoc-CR-683) — cột này là bao ngoài.
+      cell: (r) => <LeaveToDateCell request={r} />,
+      width: 150,
     },
     {
       key: 'total_days',

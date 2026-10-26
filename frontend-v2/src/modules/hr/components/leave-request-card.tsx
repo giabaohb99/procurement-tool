@@ -3,6 +3,7 @@ import { CalendarDays, ChevronRight, MessageSquareWarning } from 'lucide-react'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import type { LeaveRequest } from '../types/leave'
 import { decisionNoteLabelOf, decisionNoteOf } from '../utils/leave-decision-note'
+import { formatRequestPeriods, hasMultiplePeriods } from '../utils/leave-periods'
 import { leaveLinesText, leaveTypeLabel } from '../utils/leave-type-label'
 import { LeaveStatusBadge } from './leave-status-badge'
 
@@ -81,8 +82,12 @@ export function LeaveRequestCard({
              chấm giữa mồ côi treo ở mép phải. */}
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
           <CalendarDays className="size-3.5 shrink-0" aria-hidden="true" />
+          {/*  Đơn nhiều khoảng kê ĐỦ các khoảng (duoc-CR-683): «27/10 – 07/11» thì người
+               đọc hiểu là nghỉ liền mười hai ngày, trong khi giữa đó có cả tuần đi làm. */}
           <span className="tabular-nums">
-            {formatDate(request.from_date)} – {formatDate(request.to_date)}
+            {hasMultiplePeriods(request)
+              ? formatRequestPeriods(request)
+              : `${formatDate(request.from_date)} – ${formatDate(request.to_date)}`}
           </span>
           <span className="font-medium text-foreground tabular-nums">
             <span aria-hidden="true">· </span>

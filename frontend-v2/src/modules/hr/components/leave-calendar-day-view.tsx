@@ -20,6 +20,7 @@ import {
   type LeaveRequest,
 } from '../types/leave'
 import { holidayNamesOn, isWeekend, toISODate } from '../utils/calendar-grid'
+import { periodOn } from '../utils/leave-periods'
 import {
   ALL_OPTION,
   filterLeaveRows,
@@ -113,10 +114,14 @@ export function LeaveCalendarDayView({
         //  mà cả hai đều "đang nghỉ hôm nay".
         key: 'position',
         header: 'Trong đợt nghỉ',
+        //
+        //  Tính theo KHOẢNG chứa ngày đang xem, không theo bao ngoài của đơn (duoc-CR-683):
+        //  đơn 27/10 + 03/11→07/11 thì 27/10 là «Nghỉ một ngày», 03/11 là «Ngày đầu».
         cell: (r) => {
-          if (r.from_date === r.to_date) return 'Nghỉ một ngày'
-          if (r.from_date === iso) return 'Ngày đầu'
-          if (r.to_date === iso) return 'Ngày cuối'
+          const p = periodOn(r, iso) ?? { from_date: r.from_date, to_date: r.to_date }
+          if (p.from_date === p.to_date) return 'Nghỉ một ngày'
+          if (p.from_date === iso) return 'Ngày đầu'
+          if (p.to_date === iso) return 'Ngày cuối'
           return 'Đang giữa đợt'
         },
         width: 140,

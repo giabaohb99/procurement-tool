@@ -5,13 +5,15 @@ có nghĩa là thấy được đơn nghỉ của người đó (đơn có thể
 """
 from datetime import date, time
 
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.core.scoping import apply_scope
 from app.modules.leave.catalog_model import LeaveType
 from app.modules.leave.constants import (HOLDING_STATUSES, LEAVE_REQUEST_STATUS_LABELS, LR_APPROVED,
                                          SESSION_HOURLY)
-from app.modules.leave.request_model import LeaveRequest
+from app.modules.leave.period_spans import LeaveSpan, span_of
+from app.modules.leave.request_model import LeaveRequest, LeaveRequestPeriod
 from app.modules.leave.workday_service import leave_mask
 
 from .day_rules import AM, PM, DaySpec, work_mask
@@ -19,7 +21,7 @@ from .day_rules import AM, PM, DaySpec, work_mask
 _LUNCH_START, _LUNCH_END = time(12, 0), time(13, 0)   # lịch chưa khai giờ nghỉ trưa → mốc chuẩn
 
 
-def _hourly_window(req: LeaveRequest, day: date, spec: DaySpec) -> tuple[time, time]:
+def _hourly_window(req: LeaveSpan, day: date, spec: DaySpec) -> tuple[time, time]:
     """Khoảng giờ [lo, hi] của đơn THEO GIỜ trên `day`: ngày đầu từ `from_time` tới hết giờ làm,
     ngày cuối từ đầu giờ làm tới `to_time`, ngày giữa cả ngày; một ngày duy nhất = [from, to]."""
     lo = req.from_time if day == req.from_date else spec.start
@@ -27,7 +29,7 @@ def _hourly_window(req: LeaveRequest, day: date, spec: DaySpec) -> tuple[time, t
     return max(lo, spec.start), min(hi, spec.end)   # cắt theo khung giờ làm: 17:30–19:00 không tô gì
 
 
-def leave_mask_on(req: LeaveRequest, day: date, spec: DaySpec) -> int:
+def leave_mask_on(req: LeaveSpan, day: date, spec: DaySpec) -> int:
     """Nửa buổi nào của `day` bị đơn này chiếm. Nghỉ THEO GIỜ: so khoảng giờ của riêng ngày đó
     với mốc nghỉ trưa của lịch (`leave_mask` coi buổi `HOURLY` là cả ngày — sai với «khám 9–10h»).
     Chạm đúng mốc trưa (12–13h) không tô nửa nào."""
@@ -45,18 +47,22 @@ def leave_mask_on(req: LeaveRequest, day: date, spec: DaySpec) -> int:
 
 
 def load_leaves(db: Session, user, profile: dict, emp_ids: list[int], p: dict):
-    """`{employee_id: [(đơn, tên loại chính)]}` — đã qua phạm vi `leave_request`."""
+    """`{employee_id: [(LeaveSpan của từng khoảng, tên loại chính)]}` — đã qua phạm vi `leave_request`."""
     if not emp_ids:
         return {}
-    q = (db.query(LeaveRequest, LeaveType.name)
+    P = LeaveRequestPeriod
+    # OUTER JOIN khoảng: mỗi khoảng một span (ngày KHE không nghỉ); đơn chưa có dòng khoảng → đầu đơn.
+    q = (db.query(LeaveRequest, P, LeaveType.name)
+         .outerjoin(P, P.request_id == LeaveRequest.id)
          .outerjoin(LeaveType, LeaveType.id == LeaveRequest.leave_type_id)
          .filter(LeaveRequest.employee_id.in_(emp_ids), LeaveRequest.is_deleted.is_(False),
                  LeaveRequest.status.in_(HOLDING_STATUSES),
-                 LeaveRequest.from_date <= p["to_date"], LeaveRequest.to_date >= p["from_date"]))
+                 LeaveRequest.from_date <= p["to_date"], LeaveRequest.to_date >= p["from_date"],
+                 or_(P.id.is_(None), and_(P.from_date <= p["to_date"], P.to_date >= p["from_date"]))))
     q = apply_scope(q, LeaveRequest, "leave_request", user, profile)
     out: dict[int, list] = {}
-    for req, type_name in q.all():
-        out.setdefault(req.employee_id, []).append((req, type_name or ""))
+    for req, period, type_name in q.all():
+        out.setdefault(req.employee_id, []).append((span_of(req, period), type_name or ""))
     return out
 
 

@@ -114,7 +114,12 @@ def _summary(db, entity: str, doc) -> list[dict]:
         rows += [("Người đặt", _employee_name(db, doc.requester_employee_id)), ("Cuộc họp", doc.title or doc.purpose),
                  ("Thời gian", f"{doc.start_at} → {doc.end_at}")]
     else:
-        rows += [("Người nghỉ", _employee_name(db, doc.employee_id)), ("Từ ngày", doc.from_date), ("Đến ngày", doc.to_date)]
+        from app.modules.leave.period_spans import period_text
+        from app.modules.leave.request_periods import periods_of
+
+        total = f"{float(doc.total_days or 0):g}".replace(".", ",")
+        rows += [("Người nghỉ", _employee_name(db, doc.employee_id)),
+                 ("Thời gian nghỉ", period_text(periods_of(db, doc))), ("Số ngày", f"{total} ngày")]
     return [{"label": k, "value": str(v if v is not None else "")} for k, v in rows]
 
 

@@ -6,7 +6,9 @@ Quy ước chung của bộ ERP: cột trạng thái/loại/buổi ra API là **
 """
 from datetime import date, datetime, time
 
-from pydantic import BaseModel, Field, field_validator
+from typing import Annotated
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.modules.employee.field_limits import Str30, Str100, Str150, Str255, Str500, Str1000
 from .constants import (GENDER_LABELS, LEAVE_REQUEST_STATUS_LABELS,
@@ -229,6 +231,32 @@ class LeaveLineItem(BaseModel):
     days: float = 0.0
 
 
+#  Trần số khoảng ngày của một đơn (duoc-CR-683) — danh sách con phải có trần số dòng.
+MAX_PERIODS = 20
+#  Dải năm hợp lý cho ngày nghỉ; MySQL nhận tới 9999 nhưng gõ nhầm năm là lỗi phổ biến.
+LeaveDate = Annotated[date, Field(ge=date(2000, 1, 1), le=date(2100, 12, 31))]
+SessionCode = Annotated[int, Field(ge=1, le=4)]
+
+
+class LeavePeriodItem(BaseModel):
+    """Một khoảng ngày liền của đơn. Luật buổi y như hai ô buổi ở đầu đơn."""
+
+    from_date: LeaveDate
+    to_date: LeaveDate
+    from_session: SessionCode = SESSION_FULL
+    to_session: SessionCode = SESSION_FULL
+
+
+class LeaveEstimateIn(BaseModel):
+    """Body của đường ước lượng số ngày theo nhiều khoảng (phase 2)."""
+
+    employee_id: int = 0
+    leave_type_id: int = 0
+    periods: list[LeavePeriodItem] = Field(..., min_length=1, max_length=MAX_PERIODS)
+    from_time: time | None = None
+    to_time: time | None = None
+
+
 class LeaveRequestBase(BaseModel):
     #  Bỏ trống = người đang lập đơn. Lập hộ vẫn được — hành chính lập hộ là việc
     #  có thật, cùng luật với `_check_leave` của giấy GNP.
@@ -240,8 +268,12 @@ class LeaveRequestBase(BaseModel):
     #  xem `request_service.build_lines`.
     leave_type_id: int = 0
     lines: list[LeaveLineItem] = Field(default_factory=list)
-    from_date: date
-    to_date: date
+    #  Không gửi `periods` thì backend dựng MỘT khoảng từ cặp `from_date`/`to_date`
+    #  (đường tương thích: Trợ lý AI, agent_hub, bài kiểm cũ). Có `periods` thì
+    #  hai ô ngày này bị bỏ qua — đầu đơn là dẫn xuất của danh sách khoảng.
+    periods: list[LeavePeriodItem] = Field(default_factory=list, max_length=MAX_PERIODS)
+    from_date: date | None = None
+    to_date: date | None = None
     from_session: int = SESSION_FULL
     to_session: int = SESSION_FULL
     #  Chỉ khai khi buổi là «Theo giờ» (`SESSION_HOURLY`). `None` = không nghỉ
@@ -258,7 +290,11 @@ class LeaveRequestBase(BaseModel):
 
 
 class LeaveRequestCreate(LeaveRequestBase):
-    pass
+    @model_validator(mode="after")
+    def _need_periods_or_dates(self):
+        if not self.periods and (self.from_date is None or self.to_date is None):
+            raise ValueError("Cần khai danh sách khoảng ngày (periods) hoặc cặp from_date + to_date")
+        return self
 
 
 class LeaveRequestUpdate(BaseModel):
@@ -267,6 +303,8 @@ class LeaveRequestUpdate(BaseModel):
     #  `None` = không đụng tới danh sách dòng; gửi lên là GHI ĐÈ cả danh sách,
     #  cùng quy ước với `handovers`.
     lines: list[LeaveLineItem] | None = None
+    #  `None` = không gửi. Gửi lên là GHI ĐÈ cả danh sách khoảng (đầu đơn tự tính lại).
+    periods: list[LeavePeriodItem] | None = Field(None, max_length=MAX_PERIODS)
     from_date: date | None = None
     to_date: date | None = None
     from_session: int | None = None

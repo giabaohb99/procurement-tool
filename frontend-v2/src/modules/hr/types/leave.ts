@@ -197,8 +197,8 @@ export interface LeaveHandover {
 /**
  * MỘT LOẠI NGHỈ trong tờ đơn — *"3 ngày phép năm + 1 ngày không lương"*.
  *
- * ⚠️ **Không có ngày riêng.** Cả đơn dùng chung một khoảng ngày ở đầu phiếu;
- * dòng chỉ chia SỐ NGÀY. Quỹ phép trừ theo (người × năm × loại nghỉ) nên hai
+ * ⚠️ **Không có ngày riêng.** Dòng chỉ chia TỔNG SỐ NGÀY của cả đơn, không gắn với
+ * khoảng ngày nào (`LeavePeriod`, duoc-CR-683). Quỹ phép trừ theo (người × năm × loại nghỉ) nên hai
  * loại là hai lượt trừ vào hai sổ khác nhau — đó là lý do có bảng dòng.
  */
 export interface LeaveRequestLine {
@@ -208,6 +208,29 @@ export interface LeaveRequestLine {
   days: number
   sort_order: number
 }
+
+/**
+ * MỘT KHOẢNG NGÀY LIỀN của tờ đơn (duoc-CR-683) — *"27/10 cả ngày + 03/11 chiều → 07/11"*
+ * là một đơn hai khoảng. Backend luôn trả ≥1 khoảng; đơn cũ = đúng một khoảng bằng đầu đơn.
+ *
+ * ⚠️ Đầu đơn (`from_date` … `to_date`) là BAO NGOÀI của các khoảng, nuốt cả ngày khe ở
+ * giữa. Hỏi «ngày D có nghỉ không» thì đi qua `utils/leave-periods.ts`, đừng so đầu đơn.
+ */
+export interface LeavePeriod {
+  id: number
+  from_date: string
+  from_session: number
+  from_session_label?: string
+  to_date: string
+  to_session: number
+  to_session_label?: string
+  /** Số ngày tính cho riêng khoảng này — chỉ để hiện, quỹ phép trừ theo dòng loại nghỉ. */
+  days: number
+  sort_order: number
+}
+
+/** Trần số khoảng ngày của một đơn — khớp `MAX_PERIODS` ở `leave/schema.py`. */
+export const MAX_LEAVE_PERIODS = 20
 
 export interface LeaveRequest {
   id: number
@@ -227,10 +250,16 @@ export interface LeaveRequest {
   leave_type_name?: string
   /** Rỗng ở những đường trả về không gom bản kê — luôn đọc kèm `?? []`. */
   lines?: LeaveRequestLine[]
+  /** Bao ngoài: ngày đầu của khoảng ĐẦU và ngày cuối của khoảng CUỐI — xem `LeavePeriod`. */
   from_date: string
   to_date: string
   from_session: number
   to_session: number
+  /**
+   * Các khoảng ngày của đơn. Có thể vắng ở bản dump cũ / tab trình duyệt cũ — luôn đọc qua
+   * `periodsOf(request)` (rơi về một khoảng dựng từ đầu đơn), đừng đọc thẳng.
+   */
+  periods?: LeavePeriod[]
   /** `HH:MM:SS` — chỉ có khi buổi là «Theo giờ». */
   from_time?: string | null
   to_time?: string | null

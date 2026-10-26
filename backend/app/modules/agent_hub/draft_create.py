@@ -123,8 +123,18 @@ def summarize(kind: str, draft: dict) -> list[str]:
         session = SESSION_LABELS.get(draft.get("from_session"), "")
         if draft.get("to_session") not in (None, draft.get("from_session")):
             session += f" → {SESSION_LABELS.get(draft.get('to_session'), '')}"
-        out = [f"Ngày nghỉ: {span}", f"Buổi: {session or 'cả ngày'}", f"Loại nghỉ: {types or 'chưa rõ'}",
-               f"Lý do: {draft.get('reason') or '(trống)'}"]
+        draft_periods = _draft_periods(draft)
+        if len(draft_periods) > 1:
+            #  Đơn nhiều khoảng: một dòng liệt kê từng khoảng (kèm buổi), thay hai dòng «Ngày nghỉ» + «Buổi».
+            from app.modules.leave.period_spans import PeriodView, period_text
+
+            shown = period_text([PeriodView(from_date=p.from_date, to_date=p.to_date, from_session=p.from_session,
+                                            to_session=p.to_session) for p in draft_periods])
+            out = [f"Ngày nghỉ ({len(draft_periods)} khoảng): {shown}", f"Loại nghỉ: {types or 'chưa rõ'}",
+                   f"Lý do: {draft.get('reason') or '(trống)'}"]
+        else:
+            out = [f"Ngày nghỉ: {span}", f"Buổi: {session or 'cả ngày'}", f"Loại nghỉ: {types or 'chưa rõ'}",
+                   f"Lý do: {draft.get('reason') or '(trống)'}"]
         if draft.get("contact_phone"):
             out.append(f"Liên hệ: {draft['contact_phone']}")
         return out
@@ -333,6 +343,17 @@ def _create_seal_request(db: Session, user, draft: dict) -> tuple[str, int]:
     return obj.code, obj.id
 
 
+def _draft_periods(draft: dict) -> list:
+    """Khoảng ngày của bản nháp (duoc-CR-683) -> `LeavePeriodItem`; nháp cũ không có `periods` -> [] để
+    service dựng MỘT khoảng từ from_date/to_date như trước."""
+    from app.modules.leave.schema import LeavePeriodItem
+
+    return [LeavePeriodItem(from_date=date.fromisoformat(str(p.get("from_date"))),
+                            to_date=date.fromisoformat(str(p.get("to_date") or p.get("from_date"))),
+                            from_session=int(p.get("from_session") or 1), to_session=int(p.get("to_session") or 1))
+            for p in draft.get("periods") or [] if isinstance(p, dict)]
+
+
 def _create_leave(db: Session, user, draft: dict) -> tuple[str, int]:
     from app.core.audit import record as audit_record
     from app.modules.leave import request_service
@@ -344,6 +365,7 @@ def _create_leave(db: Session, user, draft: dict) -> tuple[str, int]:
         from_date=date.fromisoformat(str(draft.get("from_date"))),
         to_date=date.fromisoformat(str(draft.get("to_date") or draft.get("from_date"))),
         from_session=int(draft.get("from_session") or 1), to_session=int(draft.get("to_session") or 1),
+        periods=_draft_periods(draft),
         from_time=_as_time(draft.get("from_time")), to_time=_as_time(draft.get("to_time")),
         reason=str(draft.get("reason") or "")[:1000], contact_phone=str(draft.get("contact_phone") or "")[:30],
     )
@@ -570,15 +592,21 @@ def created_details(db: Session, kind: str, oid: int) -> list[str]:
             return []
         types = type_names(db)
         lines = db.query(LeaveRequestLine).filter(LeaveRequestLine.request_id == oid).all()
+        from app.modules.leave.period_spans import period_text
+        from app.modules.leave.request_periods import periods_of
+
+        periods = periods_of(db, obj)
         span = obj.from_date.strftime("%d/%m/%Y")
         if obj.to_date != obj.from_date:
             span += f" → {obj.to_date.strftime('%d/%m/%Y')}"
         sessions = LEAVE_SESSION_LABELS.get(obj.from_session, "")
         if obj.to_session != obj.from_session:
             sessions += f" → {LEAVE_SESSION_LABELS.get(obj.to_session, '')}"
+        when = (f"{period_text(periods)} ({len(periods)} khoảng)" if len(periods) > 1
+                else f"{span} ({sessions.lower()})")
         return [f"Mã: {obj.code} · Trạng thái: {LEAVE_REQUEST_STATUS_LABELS.get(obj.status, '?')}",
                 f"Người nghỉ: {names_of(db, {obj.employee_id}).get(obj.employee_id, '')}",
-                f"Ngày nghỉ: {span} ({sessions.lower()}) · {_vn_num(obj.total_days)} ngày",
+                f"Ngày nghỉ: {when} · {_vn_num(obj.total_days)} ngày",
                 "Loại: " + (", ".join(f"{types.get(ln.leave_type_id, '?')} {_vn_num(ln.days)} ngày" for ln in lines) or "?"),
                 f"Lý do: {obj.reason or '(trống)'}"]
     if kind in ("purchase", "survey"):
@@ -620,16 +648,28 @@ def list_mine(db: Session, user, limit: int = MINE_MAX) -> list[dict]:
     from app.modules.purchase_request.model import PurchaseRequest
     from app.modules.survey_request.model import SurveyRequest
 
+    from app.modules.leave.period_spans import header_period, period_text, periods_by_request
+
     uid = int(getattr(user, "id", 0) or 0)
     out: list[dict] = []
-    for r in (db.query(LeaveRequest).filter(LeaveRequest.created_by == uid, LeaveRequest.status == LR_DRAFT,
+    leaves = (db.query(LeaveRequest).filter(LeaveRequest.created_by == uid, LeaveRequest.status == LR_DRAFT,
                                             LeaveRequest.is_deleted.is_(False))
-              .order_by(LeaveRequest.id.desc()).limit(limit)):
-        span = f"{r.from_date:%d/%m}" + (f"–{r.to_date:%d/%m}" if r.to_date and r.to_date != r.from_date else "")
+              .order_by(LeaveRequest.id.desc()).limit(limit).all())
+    all_periods = periods_by_request(db, [r.id for r in leaves])   # 1 truy vấn cho cả danh sách
+    for r in leaves:
+        periods = all_periods.get(r.id) or [header_period(r)]
+        if len(periods) > 1:
+            span = period_text(periods)
+        else:
+            span = f"{r.from_date:%d/%m}" + (f"–{r.to_date:%d/%m}" if r.to_date and r.to_date != r.from_date else "")
         out.append({"kind": "leave", "id": r.id, "code": r.code or f"#{r.id}",
                     "title": f"Nghỉ {span} · {(r.reason or '').strip()[:60] or 'chưa có lý do'}",
                     "from_date": r.from_date.isoformat() if r.from_date else "",
-                    "to_date": r.to_date.isoformat() if r.to_date else "", "created_at": r.created_at})
+                    "to_date": r.to_date.isoformat() if r.to_date else "",
+                    #  Từng khoảng thật (bao ngoài `from_date`/`to_date` nuốt cả khe giữa các khoảng).
+                    "periods": [{"from_date": p.from_date.isoformat(), "to_date": p.to_date.isoformat()}
+                                for p in periods],
+                    "created_at": r.created_at})
     for r in (db.query(PurchaseRequest).filter(PurchaseRequest.created_by == uid, PurchaseRequest.status == "draft",
                                                PurchaseRequest.is_deleted.is_(False))
               .order_by(PurchaseRequest.id.desc()).limit(limit)):
@@ -648,9 +688,16 @@ def list_mine(db: Session, user, limit: int = MINE_MAX) -> list[dict]:
 
 def same_days_leave(mine: list[dict], draft: dict) -> dict | None:
     """Đơn nghỉ NHÁP của mình trùng khoảng ngày với bản nháp mới → dùng lại đơn đó thay vì lập đơn thứ hai."""
-    lo, hi = str(draft.get("from_date") or ""), str(draft.get("to_date") or draft.get("from_date") or "")
+    spans = [(str(p.get("from_date") or ""), str(p.get("to_date") or p.get("from_date") or ""))
+             for p in draft.get("periods") or [] if isinstance(p, dict)]
+    if not spans:
+        spans = [(str(draft.get("from_date") or ""), str(draft.get("to_date") or draft.get("from_date") or ""))]
     for x in mine:
-        if x["kind"] == "leave" and x.get("from_date") and x["from_date"] <= hi and lo <= (x.get("to_date") or ""):
+        if x["kind"] != "leave" or not x.get("from_date"):
+            continue
+        theirs = [(p["from_date"], p["to_date"]) for p in x.get("periods") or []] or [(x["from_date"], x.get("to_date") or "")]
+        #  Khe giữa hai khoảng KHÔNG tính trùng: so từng khoảng với từng khoảng.
+        if any(a <= d_hi and d_lo <= b for d_lo, d_hi in spans for a, b in theirs):
             return x
     return None
 
@@ -671,17 +718,21 @@ def update_leave(db: Session, user, oid: int, draft: dict, source: int = 0) -> s
         raise DraftError("Đơn nháp đó không còn (đã gửi duyệt hoặc đã xóa).")
     _check_permission(db, user, "leave")
     before = change_service.snapshot(db, "leave_request", obj)
-    data = LeaveRequestUpdate(
-        lines=[LeaveLineItem(leave_type_id=int(ln.get("leave_type_id") or 0), days=float(ln.get("days") or 0))
-               for ln in draft.get("lines") or []],
-        from_date=date.fromisoformat(str(draft.get("from_date"))),
-        to_date=date.fromisoformat(str(draft.get("to_date") or draft.get("from_date"))),
-        from_session=int(draft.get("from_session") or 1), to_session=int(draft.get("to_session") or 1),
-        from_time=_as_time(draft.get("from_time")), to_time=_as_time(draft.get("to_time")),
-        reason=str(draft.get("reason") or "")[:1000], contact_phone=str(draft.get("contact_phone") or "")[:30],
-    )
     try:
+        data = LeaveRequestUpdate(
+            lines=[LeaveLineItem(leave_type_id=int(ln.get("leave_type_id") or 0), days=float(ln.get("days") or 0))
+                   for ln in draft.get("lines") or []],
+            from_date=date.fromisoformat(str(draft.get("from_date"))),
+            to_date=date.fromisoformat(str(draft.get("to_date") or draft.get("from_date"))),
+            from_session=int(draft.get("from_session") or 1), to_session=int(draft.get("to_session") or 1),
+            periods=_draft_periods(draft) or None,
+            from_time=_as_time(draft.get("from_time")), to_time=_as_time(draft.get("to_time")),
+            reason=str(draft.get("reason") or "")[:1000], contact_phone=str(draft.get("contact_phone") or "")[:30],
+        )
         obj = request_service.update(db, obj, data, user)
+    except (ValueError, TypeError) as e:
+        db.rollback()
+        raise DraftError(f"Bản nháp có khoảng ngày không hợp lệ: {e}") from None
     except HTTPException as e:
         db.rollback()
         raise DraftError(str(e.detail)) from None

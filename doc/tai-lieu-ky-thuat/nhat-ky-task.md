@@ -17420,11 +17420,14 @@ Tham chiếu: doc/erp/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
 Tham chiếu: doc/erp/nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md
 
 ## duoc-CR-683 | Đơn nghỉ phép khai được nhiều khoảng ngày không liền kề
-- status: dang-lam
+- status: xong
 - date: 2026-10-26
 - pic: NSU231
 - tag: Được
 Anh Được muốn một đơn nghỉ phép khai được nhiều ngày không liền kề, ví dụ nghỉ ngày 27/10 và từ chiều 3/11 tới hết 7/11 trong cùng một đơn. Anh chốt cách khai là nhiều khoảng ngày, mỗi khoảng có từ ngày, đến ngày và buổi; nghỉ theo giờ vẫn chỉ một ngày. Anh cũng chốt bỏ việc cho luồng duyệt đọc đủ mọi loại nghỉ của đơn nhiều loại: luồng coi mọi đơn là nghỉ phép.
+Đã làm xong: một đơn nghỉ khai được tối đa hai mươi khoảng ngày, khoảng không được chồng nhau, đơn từ hai khoảng phải nằm trong cùng một năm, nghỉ theo giờ vẫn một khoảng. Ngày trống giữa các khoảng không bị tính là nghỉ ở lịch nghỉ, bảng ai làm ai nghỉ, hồ sơ làm việc theo ngày, tải việc và chốt trùng đơn. Màn lập đơn có nút thêm khoảng ngày, trang chi tiết, bản in và giấy nghỉ phép bên Văn bản hiện đủ các khoảng; trợ lý AI soạn, sửa và hoàn tác được đơn nhiều khoảng. Rà mã ra bốn lỗi mức trung bình và bốn lỗi nhỏ, đã sửa hết; bài kiểm phần nghỉ phép và các chỗ liên quan chạy xanh. Hướng dẫn sử dụng và cẩm nang trợ lý đã cập nhật.
+Mã nguồn: backend/app/modules/leave/request_periods.py · backend/app/modules/leave/period_spans.py · migration cr683nghiphep01 · frontend-v2/src/modules/hr/components/leave-request-periods-editor.tsx
+
 
 ## duoc-CR-684 | Nạp cấu hình Tra cứu thị trường từ tệp Excel ba sheet
 - status: xong

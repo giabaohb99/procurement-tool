@@ -36,6 +36,15 @@ describe('parseAssistantLeaveDraft', () => {
       to_date: '2026-09-03',
       from_session: LEAVE_SESSION.FULL,
       to_session: LEAVE_SESSION.FULL,
+      //  Bản nháp không có `periods` → một khoảng dựng từ bốn ô đầu đơn (duoc-CR-683).
+      periods: [
+        {
+          from_date: '2026-09-01',
+          from_session: LEAVE_SESSION.FULL,
+          to_date: '2026-09-03',
+          to_session: LEAVE_SESSION.FULL,
+        },
+      ],
       from_time: '',
       to_time: '',
       reason: 'Về quê có việc gia đình',
@@ -155,8 +164,14 @@ describe('applyAssistantLeaveDraft', () => {
     expect(draft).not.toBeNull()
     const form = applyAssistantLeaveDraft(base, draft!)
 
-    expect(form.from_date).toBe('2026-09-01')
-    expect(form.to_date).toBe('2026-09-03')
+    expect(form.periods).toEqual([
+      {
+        from_date: '2026-09-01',
+        from_session: LEAVE_SESSION.FULL,
+        to_date: '2026-09-03',
+        to_session: LEAVE_SESSION.FULL,
+      },
+    ])
     expect(form.reason).toBe('Về quê có việc gia đình')
     expect(form.contact_phone).toBe('0900000001')
     expect(form.lines).toEqual([{ leave_type_id: 7, days: 3 }])
@@ -180,5 +195,66 @@ describe('applyAssistantLeaveDraft', () => {
     const snapshot = structuredClone(base)
     applyAssistantLeaveDraft(base, parseAssistantLeaveDraft(draftOf())!)
     expect(base).toEqual(snapshot)
+  })
+})
+
+/**
+ * NHIỀU KHOẢNG NGÀY (duoc-CR-683) — `draft_leave_request` nay soạn được `periods`. Đầu vào vẫn
+ * là chữ model điền, nên phần tử hỏng phải bị bỏ chứ không làm đổ cả bản nháp.
+ */
+describe('assistant draft — periods', () => {
+  const two = [
+    { from_date: '2026-10-27', to_date: '2026-10-27', from_session: 1, to_session: 1 },
+    { from_date: '2026-11-03', to_date: '2026-11-07', from_session: 3, to_session: 1 },
+  ]
+
+  it('carries every period of the draft into the form, gap days stay out', () => {
+    const draft = parseAssistantLeaveDraft(
+      draftOf({ from_date: '2026-10-27', to_date: '2026-11-07', periods: two }),
+    )
+    const form = applyAssistantLeaveDraft(emptyLeaveForm(), draft!)
+    expect(form.periods).toEqual([
+      { from_date: '2026-10-27', from_session: 1, to_date: '2026-10-27', to_session: 1 },
+      { from_date: '2026-11-03', from_session: 3, to_date: '2026-11-07', to_session: 1 },
+    ])
+  })
+
+  it('drops malformed periods instead of rejecting the whole draft', () => {
+    const draft = parseAssistantLeaveDraft(
+      draftOf({
+        periods: [
+          'rác',
+          null,
+          { from_date: '2026-13-45x', to_date: '2026-11-07' },
+          { from_date: '2026-11-07', to_date: '2026-11-03' },
+          two[1],
+        ],
+      }),
+    )
+    expect(draft?.periods).toEqual([
+      { from_date: '2026-11-03', from_session: 3, to_date: '2026-11-07', to_session: 1 },
+    ])
+  })
+
+  it('falls back to ONE period from the header when periods is missing, empty or not a list', () => {
+    for (const periods of [undefined, [], 'x', { a: 1 }]) {
+      const draft = parseAssistantLeaveDraft(draftOf({ periods }))
+      expect(draft?.periods).toEqual([
+        { from_date: '2026-09-01', from_session: 1, to_date: '2026-09-03', to_session: 1 },
+      ])
+    }
+  })
+
+  it('caps at 20 periods so a runaway model cannot bloat the form', () => {
+    const many = Array.from({ length: 50 }, (_, i) => {
+      const d = `2026-01-${String((i % 28) + 1).padStart(2, '0')}`
+      return { from_date: d, to_date: d, from_session: 1, to_session: 1 }
+    })
+    expect(parseAssistantLeaveDraft(draftOf({ periods: many }))?.periods).toHaveLength(20)
+  })
+
+  it('an hourly draft keeps a single period only', () => {
+    const hourly = two.map((p) => ({ ...p, from_session: 4, to_session: 4 }))
+    expect(parseAssistantLeaveDraft(draftOf({ periods: hourly }))?.periods).toHaveLength(1)
   })
 })

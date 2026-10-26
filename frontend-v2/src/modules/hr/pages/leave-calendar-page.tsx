@@ -10,6 +10,7 @@ import { LeaveCalendarWeekGrid } from '../components/leave-calendar-week-grid'
 import { useHolidays, useLeaveRequests } from '../hooks/use-leave'
 import { LEAVE_STATUS, type LeaveRequest } from '../types/leave'
 import { rangeOf, shiftAnchor, toISODate, type CalendarMode } from '../utils/calendar-grid'
+import { groupRequestsByDay } from '../utils/leave-periods'
 
 /**
  * LỊCH NGHỈ — trả lời câu *"ai nghỉ ngày nào"*, ba mức phóng to: ngày · tuần ·
@@ -82,23 +83,9 @@ export function LeaveCalendarPage() {
 
   //  Gom theo NGÀY một lượt thay vì để mỗi ô tự quét cả danh sách: lưới tháng có
   //  42 ô × 500 đơn là 21.000 lượt so sánh cho mỗi lần vẽ lại.
-  const byDay = useMemo(() => {
-    const map = new Map<string, LeaveRequest[]>()
-    for (const r of shown) {
-      //  Rải đơn ra từng ngày nó phủ. Cắt theo khoảng đang xem để đơn nghỉ dài
-      //  ba tháng không sinh ra chín chục khóa vô ích.
-      const from = r.from_date > range.from ? r.from_date : range.from
-      const to = r.to_date < range.to ? r.to_date : range.to
-      const [fy, fm, fd] = from.split('-').map(Number)
-      for (let d = new Date(fy, fm - 1, fd); toISODate(d) <= to; d.setDate(d.getDate() + 1)) {
-        const iso = toISODate(d)
-        const list = map.get(iso)
-        if (list) list.push(r)
-        else map.set(iso, [r])
-      }
-    }
-    return map
-  }, [shown, range])
+  //  Rải theo KHOẢNG NGÀY (duoc-CR-683): đơn 27/10 + 03/11→07/11 KHÔNG hiện vào 28/10→02/11.
+  //  API lọc theo bao ngoài nên vẫn trả đơn có khe trùng cửa sổ — trải theo khoảng ở đây là đủ.
+  const byDay = useMemo(() => groupRequestsByDay(shown, range.from, range.to), [shown, range])
 
   //  `useCallback` để hàm này ỔN ĐỊNH giữa các lần vẽ: màn con dùng nó bên
   //  trong `useMemo`, mà một hàm mới mỗi render thì mọi memo bên dưới thành vô

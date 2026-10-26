@@ -175,6 +175,28 @@ describe('LeaveDecisionDialog', () => {
     expect(screen.getByText('Lê Thị C: Trực tổng đài · Trần Văn D')).toBeInTheDocument()
   })
 
+  it('a multi-period request lists every period so the approver sees the gap days', () => {
+    //  duoc-CR-683 — «27/10 → 07/11» giấu mất cả tuần đi làm ở giữa.
+    render(
+      <LeaveDecisionDialog
+        row={row({
+          from_date: '2026-10-27',
+          to_date: '2026-11-07',
+          periods: [
+            { id: 1, from_date: '2026-10-27', from_session: 1, to_date: '2026-10-27', to_session: 1, days: 1, sort_order: 0 },
+            { id: 2, from_date: '2026-11-03', from_session: 3, to_date: '2026-11-07', to_session: 1, days: 4.5, sort_order: 1 },
+          ],
+        })}
+        decision="approve"
+        isPending={false}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    )
+    expect(screen.getByText('27/10/2026 · 03/11 (chiều) → 07/11/2026')).toBeInTheDocument()
+    expect(screen.queryByText('27/10/2026 → 07/11/2026')).not.toBeInTheDocument()
+  })
+
   it('không có đơn thì không dựng hộp', () => {
     render(
       <LeaveDecisionDialog

@@ -20,13 +20,13 @@ from app.modules.company.model import Company
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 
-from . import (approval_bridge, balance_service, request_serializer,
+from . import (approval_bridge, balance_service, request_periods, request_serializer,
                request_service, workday_service)
 from .balance_model import LeaveBalance
 from .catalog_model import LeaveType
 from .constants import LR_APPROVED, LR_CANCELLED, LR_PENDING, LR_REJECTED
 from .request_model import LeaveRequest
-from .schema import LeaveRequestCreate, LeaveRequestUpdate
+from .schema import LeaveEstimateIn, LeaveRequestCreate, LeaveRequestUpdate
 
 router = APIRouter(prefix="/api/leave-requests", tags=["leave"])
 
@@ -50,7 +50,8 @@ def _dump(db: Session, obj: LeaveRequest, names: dict[int, str],
     sách KHÔNG đi qua đây — nó gom trước bằng `lines_by_request`.
     """
     return request_serializer.dump_request(
-        obj, names, types, request_serializer.lines_by_request(db, {obj.id}))
+        obj, names, types, request_serializer.lines_by_request(db, {obj.id}),
+        request_serializer.periods_for(db, {obj.id}))
 
 
 def _type_names(db: Session) -> dict[int, str]:
@@ -95,8 +96,10 @@ def list_requests(
     names = _names(db, {i.employee_id for i in items})
     types = _type_names(db)
     lines = request_serializer.lines_by_request(db, {i.id for i in items})
+    #  Khoảng ngày của cả trang: +1 truy vấn cố định (duoc-CR-683), không theo số dòng.
+    periods = request_serializer.periods_for(db, {i.id for i in items})
     return success({"total": total,
-                    "items": [request_serializer.dump_request(i, names, types, lines)
+                    "items": [request_serializer.dump_request(i, names, types, lines, periods)
                               for i in items]})
 
 
@@ -293,7 +296,24 @@ def cancel_request(rid: int, reason: str = Query("", max_length=500),
                    "Đã hủy đơn")
 
 
-# ── Hai endpoint phụ trợ cho FORM ──────────────────────────────────────────────
+# ── Endpoint phụ trợ cho FORM ──────────────────────────────────────────────────
+
+def _visible_schedule_name(db: Session, user, employee, exclude_holiday: bool, on_date) -> str:
+    """Tên lịch áp cho người nghỉ — rỗng khi loại nghỉ bỏ qua lịch hoặc người đó ngoài phạm vi.
+
+    Loại nghỉ `exclude_holiday=False` (thai sản) bỏ qua lịch nên không có tên lịch để hiện.
+    Tên lịch của người khác chỉ trả khi họ nằm trong phạm vi `employee` của người gọi (bug L1);
+    `resolve_leave_taker` cố ý không gác nên chốt ở đây. Số ngày vẫn tính như cũ.
+    """
+    if not exclude_holiday:
+        return ""
+    name = workday_service.schedule_name_on(db, employee, on_date)
+    if name and employee.id != (getattr(user, "employee_id", 0) or 0):
+        if get_scoped(db, Employee, "employee", employee.id, user,
+                      get_perm_profile(db, user)) is None:
+            return ""
+    return name
+
 
 @router.get("/tools/estimate-days")
 def estimate_days(from_date: str, to_date: str,
@@ -320,16 +340,7 @@ def estimate_days(from_date: str, to_date: str,
     #  sớm muộn lệch nhau.
     d_from, d_to = _date.fromisoformat(from_date), _date.fromisoformat(to_date)
     exclude_holiday = bool(leave_type.exclude_holiday) if leave_type else True
-    #  Loại nghỉ `exclude_holiday=False` (thai sản) bỏ qua lịch nên không có tên lịch để hiện.
-    schedule_name = (workday_service.schedule_name_on(db, employee, d_from)
-                     if exclude_holiday else "")
-    #  Tên lịch của người khác chỉ trả khi họ nằm trong phạm vi `employee` của người gọi (bug L1);
-    #  `resolve_leave_taker` cố ý không gác nên chốt ở đây. Số ngày vẫn tính như cũ.
-    if schedule_name and employee.id != (getattr(user, "employee_id", 0) or 0):
-        from app.core.scoping import get_perm_profile, get_scoped
-        if get_scoped(db, Employee, "employee", employee.id, user,
-                      get_perm_profile(db, user)) is None:
-            schedule_name = ""
+    schedule_name = _visible_schedule_name(db, user, employee, exclude_holiday, d_from)
     if request_service.is_hourly(from_session, to_session):
         return success({"total_days": request_service.hourly_days(
             db, d_from, d_to,
@@ -343,6 +354,38 @@ def estimate_days(from_date: str, to_date: str,
         company_id=employee.company_id or 0, exclude_holiday=exclude_holiday,
         employee=employee)
     return success({"total_days": days, "schedule_name": schedule_name})
+
+
+@router.post("/tools/estimate-periods")
+def estimate_periods(body: LeaveEstimateIn, db: Session = Depends(get_db),
+                     user=Depends(require(ENTITY, "read"))):
+    """Số ngày GỢI Ý cho từng khoảng của đơn nhiều khoảng (duoc-CR-683).
+
+    Dùng đúng bộ kiểm của lúc lập đơn (`validate_periods`) nên lỗi trả 400/422 y như `create`;
+    kết quả theo thứ tự đã SẮP THEO NGÀY (kèm ngày để đối chiếu). Theo giờ: đúng một khoảng.
+    """
+    employee = request_service.resolve_leave_taker(db, user, body.employee_id)
+    leave_type = db.get(LeaveType, body.leave_type_id) if body.leave_type_id else None
+    exclude_holiday = bool(leave_type.exclude_holiday) if leave_type else True
+    periods = request_service.validate_periods(
+        request_periods.normalize_create(body), body.from_time, body.to_time)
+    schedule_name = _visible_schedule_name(db, user, employee, exclude_holiday,
+                                           periods[0].from_date)
+    first = periods[0]
+    if request_service.is_hourly(first.from_session, first.to_session):
+        per_days = [request_service.hourly_days(
+            db, first.from_date, first.to_date, body.from_time, body.to_time,
+            company_id=employee.company_id or 0, exclude_holiday=exclude_holiday,
+            employee=employee)]
+    else:
+        per_days = workday_service.count_leave_days_periods(
+            db, periods, company_id=employee.company_id or 0,
+            exclude_holiday=exclude_holiday, employee=employee)
+    return success({
+        "periods": [{"from_date": p.from_date, "to_date": p.to_date, "days": d}
+                    for p, d in zip(periods, per_days)],
+        "total_days": round(sum(per_days), 2),
+        "schedule_name": schedule_name})
 
 
 def _ensure_balance_in_scope(db: Session, user, employee, row) -> None:

@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { usePermission } from '@/core/authorization/use-permission'
 import { toDateInputValue } from '@/shared/utils/format-date'
 import { LEAVE_STATUS, type LeaveRequest } from '../types/leave'
+import { coversDay } from '../utils/leave-periods'
 import { useLeaveRequests } from './use-leave'
 
 /** Số ngày nhìn tới của khối "Nghỉ phép sắp tới". */
@@ -61,12 +62,10 @@ export function useHrLeaveGlance(): LeaveGlance {
 
   const upcoming = useMemo(() => upcomingQuery.data?.items ?? [], [upcomingQuery.data])
 
-  //  So sánh CHUỖI `YYYY-MM-DD` thay vì dựng `Date`: dạng này so theo thứ tự từ
-  //  điển là ra đúng thứ tự thời gian, và không dính chuyện chuỗi ngày trần bị
-  //  hiểu là mốc UTC rồi lùi mất một ngày ở múi giờ dương.
-  const offToday = upcoming.filter(
-    (request) => request.from_date <= today && request.to_date >= today,
-  ).length
+  //  Theo KHOẢNG NGÀY (duoc-CR-683), không theo bao ngoài `from_date..to_date`: đơn 27/10 +
+  //  03/11→07/11 không phải "đang nghỉ" vào 30/10. `coversDay` so CHUỖI `YYYY-MM-DD` — thứ
+  //  tự từ điển trùng thứ tự thời gian, khỏi dính chuyện ngày trần bị hiểu là mốc UTC.
+  const offToday = upcoming.filter((request) => coversDay(request, today)).length
 
   return {
     pending: pendingQuery.data?.total ?? 0,

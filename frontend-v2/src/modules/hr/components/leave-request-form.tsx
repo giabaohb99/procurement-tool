@@ -1,34 +1,28 @@
 import { CalendarDays } from 'lucide-react'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
-import { cn } from '@/shared/utils/cn'
-import { DatePicker } from '@/shared/ui/date-picker'
+import { extractErrorMessage } from '@/core/api'
 import { FormCard } from '@/shared/ui/form-card'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { RequiredMark } from '@/shared/ui/required-mark'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
 import { SearchSelect } from '@/shared/ui/search-select'
 import { useEmployees } from '../hooks/use-employees'
-import { useEstimateLeaveDays, useLeaveTypes } from '../hooks/use-leave'
-import { REASON_MAX, type LeaveFormValues } from '../utils/leave-form-values'
+import { useEstimateLeavePeriods, useLeaveTypes } from '../hooks/use-leave'
+import {
+  REASON_MAX,
+  isHourlyForm,
+  outerRangeOf,
+  type LeaveFormValues,
+} from '../utils/leave-form-values'
+import { daysInRowOrder, overlappingPeriodIndexes } from '../utils/leave-periods'
 import { LeaveHandoverEditor } from './leave-handover-editor'
 import { LeaveRequestLinesEditor } from './leave-request-lines-editor'
-import {
-  LEAVE_SESSION,
-  LEAVE_SESSION_LABELS,
-  isHourlyLeave,
-  type LeaveRequest,
-} from '../types/leave'
+import { LeaveRequestPeriodsEditor } from './leave-request-periods-editor'
+import type { LeaveRequest } from '../types/leave'
 
 interface LeaveRequestFormProps {
   value: LeaveFormValues
@@ -84,7 +78,7 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
     label: `${e.full_name} (${e.code})`,
   }))
 
-  const isHourly = isHourlyLeave(value.from_session, value.to_session)
+  const isHourly = isHourlyForm(value)
   //  NGƯỜI NGHỈ mặc định là CHÍNH MÌNH — đó là đường đi của gần như mọi tờ đơn.
   //  Thứ tự: ô trên form → người của tờ đơn đang sửa → hồ sơ của người đăng nhập.
   //  Để ô trống kèm câu gợi ý "mặc định là bạn" thì người dùng vẫn phải tự đoán
@@ -97,42 +91,30 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
   //  con số gợi ý cũng chỉ là mốc đối chiếu, không phải con số đi vào sổ.
   const firstTypeId = value.lines[0]?.leave_type_id ?? 0
 
-  const estimateParams = useMemo(
-    () => ({
-      from_date: value.from_date,
-      to_date: value.to_date,
-      leave_type_id: firstTypeId || undefined,
-      from_session: value.from_session,
-      to_session: value.to_session,
-      from_time: isHourly ? value.from_time || undefined : undefined,
-      to_time: isHourly ? value.to_time || undefined : undefined,
-      employee_id: takerId || undefined,
-    }),
-    //  Chỉ mấy ô này mới đổi con số gợi ý. Phụ thuộc cả `value` thì gõ một chữ
-    //  trong ô lý do cũng dựng lại tham số và chạy lại hook truy vấn.
-    [
-      value.from_date,
-      value.to_date,
-      firstTypeId,
-      value.from_session,
-      value.to_session,
-      value.from_time,
-      value.to_time,
-      isHourly,
-      takerId,
-    ],
-  )
-  const { data: estimate } = useEstimateLeaveDays(estimateParams)
+  //  Hai khoảng chồng ngày thì form đã báo đỏ dưới hàng — gọi ước lượng chỉ để ăn đúng câu
+  //  lỗi đó lần nữa, nên tắt.
+  const overlaps = overlappingPeriodIndexes(value.periods)
+  const estimateQuery = useEstimateLeavePeriods({
+    employee_id: takerId || undefined,
+    leave_type_id: firstTypeId || undefined,
+    periods: value.periods,
+    from_time: isHourly ? value.from_time || undefined : undefined,
+    to_time: isHourly ? value.to_time || undefined : undefined,
+    enabled: overlaps.size === 0,
+  })
+  const estimate = estimateQuery.data
+  const rowDays = daysInRowOrder(value.periods, estimate?.periods)
+  const estimateError = estimateQuery.error ? extractErrorMessage(estimateQuery.error) : undefined
   const suggestedDays = estimate?.total_days
   //  Tùy chọn: backend cũ chưa trả tên lịch thì câu chữ rơi về dạng chung, form vẫn chạy.
   const scheduleName = estimate?.schedule_name
 
-  //  Con số máy vừa tự điền lần gần nhất. So với ô hiện tại để biết người dùng
-  //  đã gõ đè hay chưa — KHÔNG dùng cờ `useState` như trước (lỗi báo 05/09/2026):
-  //  cờ đó chết theo component, nên mở lại một tờ đơn đã lưu số ngày gõ tay là
-  //  cờ về `false` và con số gợi ý đè mất số đã lưu. Người dùng nhập 4, mở lại
-  //  thấy 3, lưu xong lại nhảy về 4 — màn hình nói một đằng, sổ sách một nẻo.
-  const lastAutoDays = useRef<number | null>(null)
+  //  Con số máy vừa tự điền lần gần nhất nằm ở `value.auto_days` (trong giá trị form, không
+  //  phải cờ `useState` như trước — lỗi báo 05/09/2026: cờ đó chết theo component, nên mở lại
+  //  một tờ đơn đã lưu số ngày gõ tay là cờ về `false` và con số gợi ý đè mất số đã lưu).
+  //  So ô hiện tại với nó để biết người dùng đã gõ đè hay chưa. `formValuesOf` gieo sẵn nó cho
+  //  đơn nhiều khoảng đã lưu mà chưa gõ đè (duoc-CR-683 M3); đơn một khoảng thì xem
+  //  `firstEstimate` bên dưới.
 
   //  Giá trị form MỚI NHẤT, để effect bên dưới không ghi đè bằng bản chụp cũ:
   //  effect chỉ chạy khi `suggestedDays` đổi, mà giữa hai lần đó người dùng có
@@ -146,8 +128,20 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
     latestValue.current = value
   })
 
+  //  Con số ước lượng ĐẦU TIÊN của lần mở form. Đơn đã lưu mà số ngày trùng đúng con số đó thì
+  //  coi như máy điền (chưa gõ đè) — cách duy nhất nhận ra ở đơn MỘT khoảng, vì backend lưu ngày
+  //  của khoảng = tổng dòng nên `formValuesOf` không phân biệt được (duoc-CR-683 M3).
+  //  Khác con số đó thì vẫn là số gõ tay, để yên — đúng ca NP025 (gõ 4, máy tính 3).
+  const firstEstimate = useRef(true)
+  //  Con số máy điền lần gần nhất CỦA LẦN MỞ FORM NÀY. Lưu đơn mới xong trang nạp lại form từ
+  //  bản đã lưu (`formValuesOf`) — với đơn một khoảng thì `auto_days` về `null`, nhưng con số
+  //  trên ô vẫn là con số máy vừa điền, nên đổi ngày sau đó vẫn phải bám theo.
+  const lastAutoDays = useRef<number | null>(null)
+
   useEffect(() => {
     if (typeof suggestedDays !== 'number') return
+    const isFirst = firstEstimate.current
+    firstEstimate.current = false
     const current = latestValue.current
     //  ⚠️ CHỈ đơn MỘT dòng mới tự điền. Nhiều loại nghỉ thì máy không đoán được
     //  chia 4 ngày thành 3+1 hay 2+2 — đè con số gợi ý lên một dòng bất kỳ là
@@ -158,50 +152,30 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
     //  Đơn THEO GIỜ không có "số người dùng gõ" để mà giữ — ô đó chỉ xem, con số
     //  là phép chia từ hai đầu giờ. Nên nó luôn bám con số mới.
     //  ⚠️ Thiếu nhánh này thì mở một đơn theo giờ đã lưu rồi đổi ngày/giờ, ô số
-    //  ngày đứng im ở giá trị cũ: `lastAutoDays` khởi tạo `null` nên bản thân
-    //  con số đã lưu bị coi là "người dùng gõ tay" (bắt được lúc test tay
-    //  07/09/2026 — đổi «Đến ngày» sang 09/09 mà vẫn hiện 0.38).
+    //  ngày đứng im ở giá trị cũ (bắt được lúc test tay 07/09/2026 — đổi «Đến
+    //  ngày» sang 09/09 mà vẫn hiện 0.38).
     //
     //  Ngoài ra: `0` = ô trống, chưa ai quyết con số nào. Khác `0` mà cũng khác
     //  con số máy điền lần trước nghĩa là người dùng đã gõ đè — để yên.
     const untouched =
-      isHourlyLeave(current.from_session, current.to_session) ||
+      isHourlyForm(current) ||
       line.days === 0 ||
-      line.days === lastAutoDays.current
+      line.days === current.auto_days ||
+      line.days === lastAutoDays.current ||
+      (isFirst && line.days === suggestedDays)
     if (!untouched) return
     lastAutoDays.current = suggestedDays
-    onChange({ ...current, lines: [{ ...line, days: suggestedDays }] })
+    if (line.days === suggestedDays && current.auto_days === suggestedDays) return
+    onChange({ ...current, auto_days: suggestedDays, lines: [{ ...line, days: suggestedDays }] })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy khi con số gợi ý đổi
   }, [suggestedDays])
 
   const set = <K extends keyof LeaveFormValues>(key: K, v: LeaveFormValues[K]) =>
     onChange({ ...value, [key]: v })
 
-  /**
-   * Đổi ô BUỔI — hai ô buổi và hai ô ngày phải đi cùng nhau khi chọn «Theo giờ».
-   *
-   * Chọn «Theo giờ» ở một đầu thì đầu kia theo luôn — backend đòi hai ô buổi
-   * khai giống nhau, và bắt người dùng chọn hai lần cùng một thứ là thừa. Hai ô
-   * NGÀY giữ nguyên: nghỉ theo giờ vắt qua nhiều ngày là hợp lệ.
-   * Bỏ «Theo giờ» thì XÓA khoảng giờ: giữ lại là lưu một khoảng giờ mà tờ đơn
-   * không còn khai theo giờ nữa.
-   */
-  const setSession = (which: 'from_session' | 'to_session', next: number) => {
-    const other = which === 'from_session' ? 'to_session' : 'from_session'
-    if (next === LEAVE_SESSION.HOURLY) {
-      onChange({ ...value, [which]: next, [other]: next })
-      return
-    }
-    const leavingHourly = value[other] === LEAVE_SESSION.HOURLY
-    onChange({
-      ...value,
-      [which]: next,
-      ...(leavingHourly ? { [other]: LEAVE_SESSION.FULL } : null),
-      ...(leavingHourly || isHourly ? { from_time: '', to_time: '' } : null),
-    })
-  }
-
-  const year = value.from_date ? Number(value.from_date.slice(0, 4)) : new Date().getFullYear()
+  //  Năm của quỹ phép đối chiếu = năm của ngày nghỉ ĐẦU TIÊN (đơn nhiều khoảng phải cùng năm).
+  const firstDate = outerRangeOf(value.periods).from_date
+  const year = firstDate ? Number(firstDate.slice(0, 4)) : new Date().getFullYear()
 
   return (
     <FormCard title="Đơn nghỉ phép" icon={CalendarDays} iconClassName="text-primary">
@@ -256,31 +230,16 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
           isHourly={isHourly}
         />
 
-        {/*  Hai đầu ngày GIỮ NGUYÊN khi chọn «Theo giờ», chỉ mọc thêm ô giờ:
-             nghỉ *từ 14:00 ngày 07 đến 10:00 ngày 09* là tờ đơn có thật, gộp hai
-             ô ngày làm một là cắt mất đúng ca đó. */}
-        <DateSessionField
-          label="Từ ngày"
-          date={value.from_date}
-          session={value.from_session}
-          sessionLabel="Buổi bắt đầu"
-          time={isHourly ? value.from_time : undefined}
-          timeLabel="Từ giờ"
-          onDateChange={(v) => set('from_date', v)}
-          onSessionChange={(v) => setSession('from_session', v)}
-          onTimeChange={(v) => set('from_time', v)}
-        />
-
-        <DateSessionField
-          label="Đến ngày"
-          date={value.to_date}
-          session={value.to_session}
-          sessionLabel="Buổi kết thúc"
-          time={isHourly ? value.to_time : undefined}
-          timeLabel="Đến giờ"
-          onDateChange={(v) => set('to_date', v)}
-          onSessionChange={(v) => setSession('to_session', v)}
-          onTimeChange={(v) => set('to_time', v)}
+        {/*  KHOẢNG NGÀY (duoc-CR-683) — đơn một khoảng vẫn là hai ô «Từ ngày» · «Đến
+             ngày» như cũ; «+ Thêm khoảng ngày» mọc thêm hàng cho đơn nghỉ không liền. */}
+        <LeaveRequestPeriodsEditor
+          periods={value.periods}
+          fromTime={value.from_time}
+          toTime={value.to_time}
+          rowDays={rowDays}
+          totalDays={estimate?.total_days}
+          estimateError={estimateError}
+          onChange={(patch) => onChange({ ...value, ...patch })}
         />
 
         {isHourly && (
@@ -340,88 +299,5 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
         </div>
       </div>
     </FormCard>
-  )
-}
-
-/**
- * Một ô ngày + ô buổi đứng cùng hàng. Hai ô này luôn đi đôi (nghỉ nửa ngày là
- * chuyện thường), tách rời ra hai dòng thì người dùng chọn ngày xong không thấy
- * ô buổi ở đâu.
- *
- * Ngày dùng `DatePicker`, **không** `<input type="date">` — xem `docs/ui/date.md`:
- * ô ngày của trình duyệt mỗi hệ điều hành vẽ một kiểu, trên Windows còn hiện
- * `mm/dd/yyyy` trong khi cả hệ đọc `dd/mm/yyyy`.
- */
-function DateSessionField({
-  label,
-  date,
-  session,
-  sessionLabel,
-  time,
-  timeLabel,
-  onDateChange,
-  onSessionChange,
-  onTimeChange,
-}: {
-  label: string
-  date: string
-  session: number
-  sessionLabel: string
-  /** Có giá trị = buổi đang là «Theo giờ» → mọc thêm ô giờ ở cuối hàng. */
-  time?: string
-  timeLabel?: string
-  onDateChange: (value: string) => void
-  onSessionChange: (value: number) => void
-  onTimeChange?: (value: string) => void
-}) {
-  const withTime = time !== undefined
-  return (
-    <div className="space-y-1.5">
-      <Label>
-        {label}
-        <RequiredMark />
-      </Label>
-      {/*  Ô giờ chen vào CÙNG MỘT HÀNG với ngày và buổi: ba thứ đó là một câu
-           trả lời («nghỉ từ lúc nào»), tách xuống dòng thì mắt phải ghép lại.
-           ⚠️ Chỉ đúng từ `sm` trở lên. Ba ô cứng trên màn 390px thì hai ô sau
-           chiếm 240px, ô NGÀY còn chưa tới 60px — không đọc nổi ngày nào. Dưới
-           `sm` thì ô ngày trải hết hàng, buổi và giờ chia đôi hàng dưới: vẫn
-           đọc thành một câu, chỉ là câu đó ngắt làm hai dòng. */}
-      <div
-        className={cn(
-          'grid gap-2',
-          withTime
-            ? 'grid-cols-2 [&>*:first-child]:col-span-2 sm:grid-cols-[minmax(0,1fr)_8rem_7rem] sm:[&>*:first-child]:col-span-1'
-            : 'grid-cols-[minmax(0,1fr)_7.5rem] sm:grid-cols-[minmax(0,1fr)_9rem]',
-        )}
-      >
-        {/*  Ô bắt buộc thì bỏ nút ✕: cho xóa là để người dùng tự tay tạo ra lỗi
-             validate (docs/ui/date.md §1). */}
-        <DatePicker value={date} onChange={onDateChange} clearable={false} />
-        <Select value={String(session)} onValueChange={(v) => onSessionChange(Number(v))}>
-          {/*  `SelectValue` sao chép children của mục đang chọn vào ô kích hoạt
-               nếu không truyền children tường minh — với mục có phần chú thích
-               thì ô hiện hai dòng cụt. Truyền thẳng nhãn (CR-258). */}
-          <SelectTrigger className="w-full" aria-label={sessionLabel}>
-            <SelectValue>{LEAVE_SESSION_LABELS[session]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {Object.values(LEAVE_SESSION).map((s) => (
-              <SelectItem key={s} value={String(s)}>
-                {LEAVE_SESSION_LABELS[s]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {withTime && (
-          <Input
-            type="time"
-            aria-label={timeLabel}
-            value={time}
-            onChange={(e) => onTimeChange?.(e.target.value)}
-          />
-        )}
-      </div>
-    </div>
   )
 }

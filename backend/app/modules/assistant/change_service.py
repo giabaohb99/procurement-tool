@@ -92,6 +92,7 @@ def _fit(data: dict | None) -> dict | None:
 
 def _leave_full(db, doc) -> dict:
     """Ảnh ĐỦ của đơn nghỉ để ghi lại nguyên vẹn qua `request_service.update` (dòng loại nghỉ, buổi, giờ…)."""
+    from app.modules.leave.request_periods import periods_of
     from app.modules.leave.request_service import lines_of
 
     iso = lambda v: v.isoformat() if v else None   # noqa: E731
@@ -99,6 +100,10 @@ def _leave_full(db, doc) -> dict:
             "from_date": iso(doc.from_date), "to_date": iso(doc.to_date),
             "from_session": int(doc.from_session or 1), "to_session": int(doc.to_session or 1),
             "from_time": iso(doc.from_time), "to_time": iso(doc.to_time),
+            #  duoc-CR-683: từng khoảng ngày, hoàn tác ghi lại ĐÚNG các khoảng (không gộp thành bao ngoài).
+            "periods": [{"from_date": iso(p.from_date), "to_date": iso(p.to_date),
+                         "from_session": int(p.from_session or 1), "to_session": int(p.to_session or 1)}
+                        for p in periods_of(db, doc)],
             "reason": doc.reason or "", "contact_phone": doc.contact_phone or "",
             "total_days": float(doc.total_days or 0)}
 
@@ -455,13 +460,21 @@ def restore_soft_deleted(db, entity: str, doc, user) -> None:
 
 def _restore_leave(db, user, doc, full: dict) -> None:
     from app.modules.leave import request_service
-    from app.modules.leave.schema import LeaveLineItem, LeaveRequestUpdate
+    from app.modules.leave.schema import LeaveLineItem, LeavePeriodItem, LeaveRequestUpdate
 
     as_time = lambda v: time.fromisoformat(v) if v else None   # noqa: E731
     lines = [LeaveLineItem(leave_type_id=int(ln.get("leave_type_id") or 0), days=float(ln.get("days") or 0))
              for ln in full.get("lines") or []]
+    #  Luôn gửi `periods` tường minh: đơn đang ≥2 khoảng mà chỉ gửi from/to thì service chặn (R11),
+    #  còn nếu cho qua thì gộp nhầm thành một khoảng liền. Ảnh cũ (trước CR-683) không có khóa → 1 khoảng.
+    raw_periods = full.get("periods") or [
+        {k: full.get(k) for k in ("from_date", "to_date", "from_session", "to_session")}]
+    periods = [LeavePeriodItem(
+        from_date=date.fromisoformat(pr["from_date"]), to_date=date.fromisoformat(pr["to_date"]),
+        from_session=int(pr.get("from_session") or 1), to_session=int(pr.get("to_session") or 1))
+        for pr in raw_periods]
     data = LeaveRequestUpdate(
-        lines=lines or None,
+        lines=lines or None, periods=periods,
         from_date=date.fromisoformat(full["from_date"]), to_date=date.fromisoformat(full["to_date"]),
         from_session=int(full.get("from_session") or 1), to_session=int(full.get("to_session") or 1),
         from_time=as_time(full.get("from_time")), to_time=as_time(full.get("to_time")),
