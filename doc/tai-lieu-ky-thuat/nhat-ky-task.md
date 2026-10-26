@@ -111,6 +111,31 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## kh-AI-hdsd-106 | Viết lại bài HDSD AI riêng làm được gì trong ERP cho khớp prod
+- status: xong
+- date: 2026-10-26
+- list: Kế hoạch hệ agent
+- tag: Agent 4
+**Bối cảnh:** bài *AI riêng của bạn làm được gì trong ERP: công cụ và skill* (cây Kết nối AI riêng và Kho skill AI) còn
+mô tả bộ công cụ cũ, chưa có các nhóm mới đã lên prod ngày 26/10.
+
+**Đã làm**
+- Bảng công cụ theo đúng các nhóm ở màn cấu hình cổng nối AI, mỗi nhóm một dòng nói làm được gì và đang bật hay phải nhờ
+  quản trị bật (khớp cấu hình prod: tra cứu của tôi, nghỉ phép, danh bạ, báo cáo, Kho skill, thu mua, công nợ, xuất tệp,
+  quản trị, tra cứu thị trường, đặt xe / duyệt dấu / tồn kho / diễn đàn đang bật).
+- Mục việc có xác nhận hai bước: soạn nháp rồi xác nhận; sửa / xóa phiếu của mình; quản trị skill và khóa; nơi xem và hoàn
+  tác trong 24 giờ.
+- Mục câu hỏi mẫu theo năm phòng (Thu mua, Kế toán, Nhân sự, Văn thư, Quản lý), có câu tra hải quan, so giá web, xuất Excel.
+- Mục những việc AI chưa làm được (lập phiếu đặt xe / duyệt dấu, duyệt thay, tạo đề nghị thanh toán, đọc tệp đính kèm…).
+- Script mới chỉ ghi đè đúng bài này rồi nạp kho vector; script dựng cả cây lấy nội dung từ script mới để không lệch.
+
+**Kết quả:** chạy thử không ghi trên bản local: tìm đúng bài để cập nhật. Chưa chạy trên prod.
+
+**Còn lại:** chạy script trên prod.
+
+Mã nguồn: `backend/scripts/seed_help_ai_rieng_lam_duoc_gi.py`, `backend/scripts/seed_help_ket_noi_ai_mcp.py`
+Deploy: chưa — chạy `python scripts/seed_help_ai_rieng_lam_duoc_gi.py` trong container api prod
+
 ## kh-AI2-5 | Sửa và xóa phiếu qua cổng nối AI có bước xác nhận
 - status: xong
 - date: 2026-10-26

@@ -43,6 +43,8 @@ from sqlalchemy import text  # noqa: E402
 
 import app.core.all_models  # noqa: F401,E402 — nạp đủ mapper trước khi query
 from app.core.database import SessionLocal  # noqa: E402
+from seed_help_ai_rieng_lam_duoc_gi import CONTENT as AI_RIENG_CONTENT  # noqa: E402
+from seed_help_ai_rieng_lam_duoc_gi import SUMMARY as AI_RIENG_SUMMARY  # noqa: E402
 from app.modules.help_center.model import (  # noqa: E402
     HelpArticle,
     HelpHomeItem,
@@ -368,60 +370,9 @@ TREE = {
         {
             "title": CONG_CU,
             "icon": "lightbulb",
-            "summary": "Công cụ là hàm AI gọi vào ERP, skill là cẩm nang AI đọc; khóa chỉ đọc thấy gì, khóa được ghi tạo phiếu ra sao, câu mẫu để hỏi",
-            "content": f"""<h2>AI riêng của bạn làm được gì trong ERP: công cụ và skill</h2>
-<p>Nối xong, ứng dụng AI của bạn thấy hai loại thứ từ ERP. <strong>Đừng lẫn hai thứ này</strong>:</p>
-<table>
-<thead><tr><th></th><th>Công cụ</th><th>Skill</th></tr></thead>
-<tbody>
-<tr><td>Là gì</td><td>Hàm AI gọi vào ERP để <strong>lấy dữ liệu hoặc soạn phiếu</strong> (tra phiếu của tôi, báo cáo, danh bạ, đọc skill…).</td><td>Bài <strong>cẩm nang công ty</strong> viết cho AI: quy trình, quy định, mẫu báo cáo, nguyên tắc so sánh giá.</td></tr>
-<tr><td>Ai làm ra</td><td>Có sẵn trong hệ thống; quản trị bật / tắt theo nhóm.</td><td>Quản trị, trưởng phòng soạn trong phân hệ Kho skill AI và gán ai được đọc.</td></tr>
-<tr><td>Bạn thấy ở đâu</td><td>Danh sách công cụ trong ứng dụng AI (biểu tượng công cụ).</td><td>Thẻ <em>Skill bạn được đọc</em> ở màn AI của tôi; AI liệt kê khi bạn hỏi.</td></tr>
-<tr><td>Số lượng</td><td>Tùy mức khóa và nhóm đang bật — ví dụ khóa <em>Chỉ đọc</em> với 7 nhóm bật thấy khoảng 34 công cụ.</td><td>Tùy phòng ban, chức vụ của bạn.</td></tr>
-</tbody>
-</table>
-
-<h2>Công cụ chia theo nhóm</h2>
-<p>Quản trị bật / tắt từng <strong>nhóm</strong> ở Kho skill AI ▸ Cấu hình. Nhóm tắt thì công cụ không xuất hiện trong ứng dụng; AI cố gọi thì bị từ chối kèm tên nhóm.</p>
-<table>
-<thead><tr><th>Nhóm</th><th>AI làm được</th><th>Mặc định</th></tr></thead>
-<tbody>
-<tr><td><strong>Việc của tôi</strong></td><td>Phiếu tôi lập hay được giao đang ở đâu, việc chờ tôi duyệt, việc dự án của tôi, phiếu hỗ trợ của tôi, văn bản của tôi.</td><td>Bật</td></tr>
-<tr><td><strong>Nghỉ phép</strong></td><td>Quỹ phép còn bao nhiêu, đơn nghỉ của tôi.</td><td>Bật</td></tr>
-<tr><td><strong>Danh bạ</strong></td><td>Tra nhân sự, thuật ngữ công ty, tìm bài hướng dẫn sử dụng.</td><td>Bật</td></tr>
-<tr><td><strong>Báo cáo</strong></td><td>13 báo cáo gom sẵn của phân hệ Báo cáo (mua hàng, tiến độ, nghỉ phép, phê duyệt, công việc…) và bảng số tổng hợp tự ghép. <strong>Chỉ báo cáo bạn được giao quyền xem</strong> — như trên web.</td><td>Bật</td></tr>
-<tr><td><strong>Kho skill</strong></td><td>Liệt kê skill, đọc skill, đọc tệp đi kèm.</td><td>Bật</td></tr>
-<tr><td>Thu mua · Công nợ và thanh toán · Văn thư · Soạn việc · Tra cứu thị trường · Lịch và Drive · Sổ nhớ</td><td>Đọc danh sách và chi tiết phiếu thu mua, công nợ, văn bản…; soạn việc; giá thị trường.</td><td>Tắt, quản trị bật khi cần</td></tr>
-</tbody>
-</table>
-<p>⚠️ <strong>Nhóm bật không có nghĩa bạn thấy tất cả.</strong> Mọi công cụ chạy <strong>dưới quyền của chính bạn</strong>: AI chỉ tra được phiếu bạn được xem trên web, báo cáo bạn được giao. Người không có quyền công nợ thì hỏi công nợ AI sẽ báo bị từ chối, nêu rõ thiếu quyền gì.</p>
-
-<h2>Khóa chỉ đọc và khóa được ghi</h2>
-<ul>
-<li><strong>Chỉ đọc</strong>: chỉ các công cụ tra cứu, đọc skill và <em>báo lỗi</em> (AI lập giúp phiếu hỗ trợ khi bạn gặp lỗi). Nhờ AI tạo đơn nghỉ phép bằng khóa này, AI sẽ nói không có công cụ tạo.</li>
-<li><strong>Được ghi</strong>: thêm các công cụ <em>soạn nháp</em> (yêu cầu báo giá, yêu cầu mua hàng, đơn nghỉ phép, việc dự án, phiếu hỗ trợ, ghi chú) và <em>xác nhận nháp</em>. Luồng luôn là: AI soạn <strong>bản nháp</strong> và đưa bạn xem ▸ bạn gật ▸ AI gửi lệnh tạo (có thể gửi duyệt luôn nếu bạn bảo). Phiếu tạo ra ghi tên bạn, đi đúng luồng duyệt như lập trên web. Đề nghị thanh toán không tạo qua AI — AI chỉ trả link mở form điền sẵn trên web.</li>
-</ul>
-
-<h2>Skill: AI tự đọc cẩm nang trước khi trả lời</h2>
-<p>Cổng dặn AI: <em>trước khi làm việc nghiệp vụ, xem cẩm nang công ty liên quan rồi làm theo, áp dụng vào việc chứ không đọc lại nguyên văn</em>. Nên khi bạn hỏi <em>«mua 10 thùng giấy A4 thì làm thế nào»</em>, AI tự liệt kê skill, mở <em>Quy trình xin báo giá và mua hàng</em> và trả lời theo cách làm của công ty (lập yêu cầu báo giá, trưởng phòng duyệt, Thu mua liên hệ nhà cung cấp) thay vì bảo bạn tự gọi nhà cung cấp.</p>
-<ul>
-<li>AI chỉ đọc được skill <strong>đã xuất bản</strong> và <strong>được gán cho bạn</strong> (theo phòng ban, chức vụ, cấp bậc, hoặc đích danh). Đổi phòng là đổi bộ skill ngay, không phải tạo khóa mới.</li>
-<li>Skill không được gán trả về cùng một câu với skill không tồn tại — AI không dò được tên cẩm nang của phòng khác.</li>
-<li>Bộ skill mức <em>Bảo vệ</em> thì AI đọc được nội dung nhưng <strong>không đọc tệp đi kèm</strong>; mức <em>Khóa</em> thì chỉ thấy tên và tóm tắt.</li>
-<li>AI không tự mở skill? Nhắc nó: <em>«Hãy xem cẩm nang công ty trước khi trả lời»</em>.</li>
-<li>Ai cũng có sẵn bộ <strong>Cẩm nang hệ thống</strong> (7 skill: quy trình thu mua, văn thư, dự án công việc, nghỉ phép, đặt phòng họp, hồ sơ nhân sự, hệ thống công việc nhà máy) — đó là cách dùng ERP và quy định công ty viết cho AI. Trợ lý AI trên web và bot Telegram đọc cùng bộ này.</li>
-</ul>
-
-<h2>Câu mẫu để hỏi</h2>
-<ul>
-<li><em>«Liệt kê các skill công ty mà bạn đọc được»</em></li>
-<li><em>«Tôi còn bao nhiêu ngày phép? Đơn nghỉ gần nhất của tôi được duyệt chưa?»</em></li>
-<li><em>«Yêu cầu mua hàng tôi lập tuần trước đang ở bước nào?»</em></li>
-<li><em>«Lập báo cáo mua hàng tháng 9 theo nhà cung cấp, xuất Excel»</em> — AI đọc skill mẫu báo cáo, lấy số từ công cụ báo cáo, tự dựng bảng trong ứng dụng của bạn.</li>
-<li><em>«Số điện thoại của anh Khôi phòng Dego Organic»</em></li>
-<li>Khóa được ghi: <em>«Soạn cho tôi đơn nghỉ phép thứ Sáu tuần sau, lý do việc gia đình»</em> ▸ xem nháp ▸ <em>«tạo và gửi duyệt»</em>.</li>
-</ul>
-<p>Số AI trả về là số ERP tính, cùng phạm vi với màn web. Nhưng <strong>câu chữ là của AI</strong>: trước khi gửi báo cáo cho sếp, đối chiếu lại với màn web một lần.</p>""",
+            #  Nội dung bài sở hữu ở seed_help_ai_rieng_lam_duoc_gi.py (viết lại 26/10 cho khớp prod) — sửa ở đó.
+            "summary": AI_RIENG_SUMMARY,
+            "content": AI_RIENG_CONTENT,
         },
         {
             "title": QUAN_TRI,
