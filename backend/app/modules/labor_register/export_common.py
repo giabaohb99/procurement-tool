@@ -37,6 +37,11 @@ class CompanyInfo:
     name: str
     tax_code: str
     address: str
+    short_name: str = ""      # tên ngắn: ưu tiên làm tên sheet (tên đầy đủ dễ bị cắt trùng ở 31 ký tự)
+
+    @property
+    def sheet_label(self) -> str:
+        return self.short_name or self.name
 
 
 def load_export_people(employees_q, contracts_q, period, company_id, department_id) -> list[PersonRow]:
@@ -51,8 +56,9 @@ def split_by_company(db: Session, people: list[PersonRow]) -> list[tuple[Company
     by_co: dict[int, list[PersonRow]] = {}
     for p in people:
         by_co.setdefault(p.company_id, []).append(p)
-    info = {c.id: CompanyInfo(c.id, c.name or "", c.tax_code or "", c.address or "")
-            for c in db.query(Company.id, Company.name, Company.tax_code, Company.address)
+    info = {c.id: CompanyInfo(c.id, c.name or "", c.tax_code or "", c.address or "",
+                                (c.short_name or "").strip())
+            for c in db.query(Company.id, Company.name, Company.tax_code, Company.address, Company.short_name)
             .filter(Company.id.in_([k for k in by_co if k])).all()} if by_co else {}
     out = [(info.get(cid) or CompanyInfo(cid, UNASSIGNED, "", ""), rows) for cid, rows in by_co.items()]
     #  Người chưa gắn pháp nhân (hoặc pháp nhân không còn trong bảng) xếp CUỐI.

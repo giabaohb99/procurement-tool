@@ -14,6 +14,8 @@ interface ReportDrilldownTableProps {
   data: ReportDrilldownResponse
   /** Nhớ bố cục cột theo TỪNG chỉ số — bộ cột mỗi chỉ số một khác. */
   storageKey: string
+  /** Câu khi danh sách rỗng — ngăn nói rõ chỉ số đang xem để người dùng biết đổi chỉ số. */
+  emptyMessage?: string
 }
 
 /**
@@ -21,7 +23,11 @@ interface ReportDrilldownTableProps {
  * tay), định dạng ô theo `kind`. Dòng có `link` nội bộ thì bấm mở trang đó (hồ sơ nhân
  * sự, đơn nghỉ…). Tối đa 500 dòng, không phân trang.
  */
-export function ReportDrilldownTable({ data, storageKey }: ReportDrilldownTableProps) {
+export function ReportDrilldownTable({
+  data,
+  storageKey,
+  emptyMessage = 'Không có ai trong danh sách này.',
+}: ReportDrilldownTableProps) {
   const navigate = useNavigate()
 
   const rows = useMemo<Row[]>(
@@ -57,7 +63,7 @@ export function ReportDrilldownTable({ data, storageKey }: ReportDrilldownTableP
       columns={columns}
       rows={rows}
       getRowId={(r) => r.__rowKey}
-      emptyMessage="Không có ai trong danh sách này."
+      emptyMessage={emptyMessage}
       storageKey={storageKey}
       filtersActive={false}
       onRowClick={

@@ -71,7 +71,7 @@ USAGE = ReportKind(
         "job_other": ("Vị trí việc làm khác", None, _cat(JOB_CATEGORY_OTHER)),
         "ct_indefinite": ("HĐ không xác định thời hạn", None, lambda r: r.contract_type == int(_T.INDEFINITE)),
         "ct_fixed": ("HĐ xác định thời hạn", None, lambda r: r.contract_type == int(_T.FIXED_TERM)),
-        "ct_other": ("HĐ khác (thử việc, khoán, CTV, chưa có HĐ)", None,
+        "ct_other": ("HĐ khác (thử việc, chưa có HĐ)", None,
                      lambda r: r.contract_type not in (int(_T.INDEFINITE), int(_T.FIXED_TERM))),
     },
     notes=_COMMON_NOTES + (

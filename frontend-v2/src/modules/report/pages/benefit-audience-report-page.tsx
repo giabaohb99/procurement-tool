@@ -2,7 +2,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 
 import { BenefitAudienceFilters } from '../components/benefit-audience-filters'
 import type { ReportPageConfig } from '../types/report-analytics'
-import { BENEFIT_DEFAULT_PRESET } from '../utils/benefit-occasion-presets'
+import { BENEFIT_DEFAULT_PRESET, BENEFIT_PARAM } from '../utils/benefit-occasion-presets'
 import { ReportAnalyticsPage } from './report-analytics-page'
 
 const CONFIG: ReportPageConfig = {
@@ -25,6 +25,8 @@ const CONFIG: ReportPageConfig = {
   defaultGroupBy: 'company',
   defaultPreset: BENEFIT_DEFAULT_PRESET,
   extraFilters: BenefitAudienceFilters,
+  //  Tắt «Tính người đang nghỉ» đòi `leave_request.read` — thiếu quyền thì bỏ tham số (link chia sẻ).
+  paramsRequirePermission: { [BENEFIT_PARAM.includeOnLeave]: ['leave_request', 'read'] },
   hideTrend: true,
   //  Kỳ = MỘT ngày dịp, chọn ở ô «Ngày dịp» trong khung lọc — ẩn nút Kỳ báo cáo để không có
   //  hai chỗ cùng đặt một thứ.

@@ -145,11 +145,27 @@ def build_rows(db: Session, user, prof: dict, period: Period, metric: str, group
             columns = [*_COLUMNS, Col("months", "Số tháng từ lúc vào làm")]
     lines = filter_group(lines, dims.get(group_by) if group_by else None, group_key)
     lines.sort(key=lambda r: (r.from_date, r.line_id), reverse=True)
+    move_counts: dict[int, int] = {}
+    if metric == "people_moved":
+        #  Thẻ đếm NGƯỜI nên danh sách mỗi người một dòng: lấy sự kiện mới nhất trong kỳ + «Số lượt».
+        for r in lines:
+            move_counts[r.employee_id] = move_counts.get(r.employee_id, 0) + 1
+        seen: set[int] = set()
+        latest = []
+        for r in lines:       # đã xếp mới nhất trước
+            if r.employee_id not in seen:
+                seen.add(r.employee_id)
+                latest.append(r)
+        lines = latest
+        columns = [*_COLUMNS, Col("move_count", "Số lượt")]
     out = [{"employee_code": r.code, "employee_name": r.name,
             "event": WORK_EVENT_TYPE_LABELS.get(r.event_type, "Khác"), "from_date": r.from_date,
             "to_date": r.to_date, "from_department": _dept_label(department_name, r.from_department_id),
             "department": _dept_label(department_name, r.department_id), "position": r.position,
             "decision_no": r.decision_no, "link": f"/hr/employees/{r.employee_id}"} for r in lines]
+    if metric == "people_moved":
+        for row, r in zip(out, lines):
+            row["move_count"] = move_counts[r.employee_id]
     if metric == "avg_months_to_appoint":     # cột số tháng chỉ có ở danh sách này; giá trị là SỐ
         for row, r in zip(out, lines):
             row["months"] = round(_months_to_appoint(r) or 0, 1)

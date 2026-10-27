@@ -216,3 +216,15 @@ def test_hop_dong_khoan_viec_cong_tac_vien_khong_vao_mau(db, world, client_as):
     eq, cq = db.query(Employee).filter(Employee.department_id == dept), db.query(LaborContract)
     book = svc.build_summary(db, svc.BOOK, eq, cq, parse_period(QS), None)
     assert book["totals"]["current"]["people"] == 6
+
+
+def test_ten_sheet_uu_tien_ten_ngan_phap_nhan(db, world, client_as):
+    """Sheet đặt theo `short_name` (thiếu thì tên đầy đủ), không quá 31 ký tự, không trùng."""
+    from app.modules.company.model import Company
+    _dataset(db, world)
+    db.get(Company, world.co["A"]).short_name = "CTA"
+    db.commit()
+    client = _actor(db, world, client_as)
+    wb = load_workbook(BytesIO(_get(client, SUM + "/export").content))
+    assert set(wb.sheetnames) == {"CTA", "Công ty B"}
+    assert all(len(n) <= 31 for n in wb.sheetnames)

@@ -49,6 +49,8 @@ function Field({ id, label, children }: { id: string; label: string; children: R
 export function BenefitAudienceFilters() {
   const { can } = usePermission()
   const canUseSensitive = can('employee_sensitive', 'read')
+  //  Tắt «Tính người đang nghỉ» làm backend đọc đơn nghỉ phép → đòi `leave_request.read`.
+  const canReadLeave = can('leave_request', 'read')
   const [searchParams] = useSearchParams()
   const setParams = useSetUrlParams()
   const occasionDate = resolveOccasionDate(searchParams)
@@ -137,7 +139,9 @@ export function BenefitAudienceFilters() {
           <div className="flex items-center gap-2 self-end pb-2">
             <Switch
               id="benefit-include-on-leave"
-              checked={onLeave !== '0'}
+              //  Thiếu quyền: tham số URL bị bỏ khi gọi API nên công tắc luôn hiện «bật».
+              checked={!canReadLeave || onLeave !== '0'}
+              disabled={!canReadLeave}
               onCheckedChange={(checked) => setOnLeave(checked ? '1' : '0')}
             />
             <Label htmlFor="benefit-include-on-leave">Tính người đang nghỉ</Label>
@@ -148,6 +152,11 @@ export function BenefitAudienceFilters() {
         {!canUseSensitive && (
           <p className="text-xs text-muted-foreground">
             Lọc theo tuổi, tháng sinh và tuổi con cần quyền xem ngày sinh và người thân của nhân sự.
+          </p>
+        )}
+        {!canReadLeave && (
+          <p className="text-xs text-muted-foreground">
+            Tắt «Tính người đang nghỉ» cần quyền xem đơn nghỉ phép của nhân sự.
           </p>
         )}
       </section>

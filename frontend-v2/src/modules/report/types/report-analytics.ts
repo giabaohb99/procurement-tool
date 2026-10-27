@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 
-import type { PermissionEntity } from '@/core/authorization/permission-types'
+import type { PermissionAction, PermissionEntity } from '@/core/authorization/permission-types'
 
 /**
  * Hợp đồng JSON chuẩn của MỌI đường `/summary` báo cáo kiểu Haravan — khớp
@@ -198,6 +198,12 @@ export interface ReportPageConfig {
   breakdowns?: ReportBreakdownConfig[]
   /** Ô lọc riêng của trang, chèn vào thanh lọc TRƯỚC ô Công ty. */
   extraFilters?: ComponentType<ReportExtraFiltersProps>
+  /**
+   * Tham số URL chỉ gửi đi khi người xem có quyền (`[entity, action]`); thiếu quyền thì BỎ khỏi
+   * lời gọi API (link chia sẻ mang tham số đó không làm hỏng trang bằng 403). Chỉ là tiện ích
+   * giao diện, backend vẫn là chỗ chặn.
+   */
+  paramsRequirePermission?: Record<string, [PermissionEntity, PermissionAction]>
   /** Nguồn không lọc theo công ty (vd Báo cáo khảo sát) — ẩn ô Công ty. */
   hideCompany?: boolean
   /**

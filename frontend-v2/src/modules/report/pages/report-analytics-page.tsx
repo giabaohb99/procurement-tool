@@ -1,6 +1,8 @@
 import type { AxiosError } from 'axios'
+import { useMemo } from 'react'
 
 import { extractErrorMessage } from '@/core/api'
+import { usePermission } from '@/core/authorization/use-permission'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { toDateInputValue } from '@/shared/utils/format-date'
@@ -67,10 +69,17 @@ export function ReportAnalyticsPage({ config }: ReportAnalyticsPageProps) {
     FLEXIBLE_CHART_URL_PARAMS.metric,
     config.chartMetric,
   )
-  const { data, isLoading, isError, error } = useReportAnalytics(
-    config.endpoint,
-    filters.queryParams,
-  )
+  const { can } = usePermission()
+  const queryParams = useMemo(() => {
+    const required = config.paramsRequirePermission
+    if (!required) return filters.queryParams
+    const params = { ...filters.queryParams }
+    for (const [name, [entity, action]] of Object.entries(required)) {
+      if (!can(entity, action)) delete params[name]
+    }
+    return params
+  }, [config.paramsRequirePermission, filters.queryParams, can])
+  const { data, isLoading, isError, error } = useReportAnalytics(config.endpoint, queryParams)
   const chartMetric = resolveChartMetric(rawChartMetric, config.chartMetric, data?.meta.metrics)
   const drilldown = useReportDrilldownState({
     endpoint: config.drilldownEndpoint,
@@ -99,7 +108,7 @@ export function ReportAnalyticsPage({ config }: ReportAnalyticsPageProps) {
             <ReportExportButton
               endpoint={config.exportEndpoint}
               entity={config.entity}
-              params={filters.queryParams}
+              params={queryParams}
               filename={buildExportFilename(config.slug, data?.period)}
               label={config.exportLabel}
             />
@@ -140,7 +149,7 @@ export function ReportAnalyticsPage({ config }: ReportAnalyticsPageProps) {
       {config.drilldownEndpoint && (
         <ReportDrilldownSheet
           endpoint={config.drilldownEndpoint}
-          baseParams={filters.queryParams}
+          baseParams={queryParams}
           target={drilldown.target}
           metricOptions={drilldown.metricOptions}
           onMetricChange={drilldown.changeMetric}

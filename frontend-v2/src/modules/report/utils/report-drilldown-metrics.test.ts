@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ReportMeta, ReportMetricMeta } from '../types/report-analytics'
-import { listDrilldownMetrics, pickDefaultDrilldownMetric } from './report-drilldown-metrics'
+import {
+  listDrilldownMetrics,
+  pickDefaultDrilldownMetric,
+  pickDrilldownMetricForRow,
+} from './report-drilldown-metrics'
 
 function metric(key: string, label: string): ReportMetricMeta {
   return { key, label, kind: 'int', good: null, helper: false, snapshot: false }
@@ -45,5 +49,31 @@ describe('pickDefaultDrilldownMetric', () => {
   it('falls back to the first backend option, then to null', () => {
     expect(pickDefaultDrilldownMetric(options, ['complete_rate'])).toBe('active')
     expect(pickDefaultDrilldownMetric([], ['active'])).toBeNull()
+  })
+})
+
+describe('pickDrilldownMetricForRow', () => {
+  const options = [
+    { key: 'hires', label: 'Vào mới' },
+    { key: 'headcount', label: 'Định biên' },
+    { key: 'leavers', label: 'Nghỉ việc' },
+  ]
+
+  it('keeps the chart metric when the row has a value for it', () => {
+    expect(pickDrilldownMetricForRow(options, ['hires', 'headcount'], { hires: 2, headcount: 9 })).toBe('hires')
+  })
+
+  it('skips a chart metric that is 0 or null in this row and takes the next one above 0', () => {
+    expect(pickDrilldownMetricForRow(options, ['hires', 'headcount'], { hires: 0, headcount: 103 })).toBe('headcount')
+    expect(pickDrilldownMetricForRow(options, ['hires'], { hires: null, leavers: 4 })).toBe('leavers')
+  })
+
+  it('skips a chart metric that has no list at all', () => {
+    expect(pickDrilldownMetricForRow(options, ['rate', 'hires'], { rate: 5, hires: 0, headcount: 7 })).toBe('headcount')
+  })
+
+  it('falls back to the default choice when every metric of the row is 0', () => {
+    expect(pickDrilldownMetricForRow(options, ['headcount'], { hires: 0, headcount: 0 })).toBe('headcount')
+    expect(pickDrilldownMetricForRow([], ['x'], {})).toBeNull()
   })
 })

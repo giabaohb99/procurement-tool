@@ -17489,3 +17489,12 @@ Anh Được bảo làm tiếp đợt 3 của kho mẫu báo cáo Nhân sự. Đ
 Vì anh chưa chốt phần kế hoạch nên quỹ lương chỉ tính số thực tế từ hợp đồng, còn mức quà phúc lợi nhập tay trên màn và không lưu lại đợt phát.
 Đã làm xong trên máy local: bốn báo cáo mới chạy trên dữ liệu thật, biểu đồ của mọi báo cáo đổi được kiểu, bấm vào cột là ra danh sách người và tải được ảnh. Phần che nhóm ít người được gom thành một chỗ dùng chung; khi lọc hẹp tới mức không che an toàn được thì báo cáo thôi chia nhóm. Rà mã tìm ra hai lỗi làm sai số liệu hoặc lộ thông tin, đều đã sửa. Bộ hướng dẫn trên Trung tâm trợ giúp nay có mười lăm bài. Hơn một nghìn ba trăm bài kiểm backend và bốn trăm ba mươi mốt bài kiểm giao diện đều đạt, trừ hai bài kiểm cổng MCP đã đỏ sẵn từ trước.
 Mã nguồn: core/report_small_group.py · labor_contract/payroll_report_*.py · employee/benefit_report_*.py · employee/management_report_*.py · employee/work_move_report_*.py · frontend-v2/src/modules/report/components/report-flexible-chart*.tsx · backend/scripts/seed_help_bao_cao_nhan_su.py
+
+## duoc-CR-688-kiem-thu | Kiểm thử kỹ ba đợt báo cáo Nhân sự và sửa lỗi tìm ra
+- status: xong
+- date: 2026-10-27
+- pic: NSU231
+- tag: Được
+Anh Được bảo kiểm kỹ lại ba đợt báo cáo Nhân sự trước khi đẩy lên dev.
+Đã chạy toàn bộ mười nghìn tám trăm bốn mươi lăm bài kiểm backend, chia thành mười hai nhóm cho máy khỏi quá tải: có hai mươi lăm bài đỏ, đem chạy lại trên bản trước ba đợt thì đỏ y hệt, nên đều là lỗi có sẵn, không bài nào do ba đợt này gây ra. Soát trên trình duyệt mười một màn báo cáo với ba kiểu người dùng (quản trị, nhân sự có quyền xem dữ liệu nhạy cảm, người không có quyền đó), kèm mở từng tệp Excel: không có lỗi chặn; tìm ra ba lỗi nên sửa (danh sách đơn chờ duyệt quá ba ngày không lọc mốc ba ngày, số người có biến động đếm theo lượt, công tắc tính người đang nghỉ bấm được khi thiếu quyền) và các lỗi nhỏ về màn điện thoại, tên trang Excel, nhãn — đều đã sửa và có bài kiểm. Kiểm lại màn điện thoại ba trăm chín mươi điểm ảnh. Cổng giao diện đạt: kiểm kiểu không lỗi, lint không lỗi, bốn trăm ba mươi tám bài kiểm phân hệ Báo cáo đạt.
+Mã nguồn: plans/reports/tester-261027-1545-cr686-688-full-regression.md · plans/reports/tai-lieu-kiem-thu-261027-1545-cr686-688-e2e.md · plans/reports/fullstack-developer-261027-1630-sua-loi-e2e.md

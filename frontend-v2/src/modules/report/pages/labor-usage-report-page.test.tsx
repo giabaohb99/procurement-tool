@@ -36,7 +36,7 @@ const METRICS = [
   metric('job_other', 'Vị trí việc làm khác'),
   metric('ct_indefinite', 'HĐ không xác định thời hạn'),
   metric('ct_fixed', 'HĐ xác định thời hạn'),
-  metric('ct_other', 'HĐ khác (thử việc, khoán, CTV, chưa có HĐ)'),
+  metric('ct_other', 'HĐ khác (thử việc, chưa có HĐ)'),
 ]
 
 function summary(): ReportAnalyticsResponse {
@@ -101,7 +101,7 @@ describe('LaborUsageReportPage (mẫu 01/PLI, khóa 20)', () => {
       'Công ty',
       'Tổng lao động', 'Nữ', 'Nhà quản lý', 'Chuyên môn kỹ thuật bậc cao',
       'Chuyên môn kỹ thuật bậc trung', 'Vị trí việc làm khác',
-      'HĐ không xác định thời hạn', 'HĐ xác định thời hạn', 'HĐ khác (thử việc, khoán, CTV, chưa có HĐ)',
+      'HĐ không xác định thời hạn', 'HĐ xác định thời hạn', 'HĐ khác (thử việc, chưa có HĐ)',
       'Danh sách',
     ])
   })

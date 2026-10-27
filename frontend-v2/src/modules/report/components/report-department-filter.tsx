@@ -22,7 +22,7 @@ export function ReportDepartmentFilter() {
   if (!canRead) return null
   return (
     <Select value={departmentId} onValueChange={setDepartmentId}>
-      <SelectTrigger className="w-auto min-w-40 max-md:min-w-0 max-md:flex-1" aria-label="Phòng ban">
+      <SelectTrigger className="w-auto min-w-40 max-md:min-w-36 max-md:flex-1" aria-label="Phòng ban">
         <Network className="size-4 shrink-0 text-muted-foreground" aria-hidden />
         <SelectValue placeholder="Phòng ban" />
       </SelectTrigger>

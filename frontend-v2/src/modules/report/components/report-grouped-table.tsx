@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Card } from '@/shared/ui/card'
 import { cn } from '@/shared/utils/cn'
 
@@ -64,6 +65,8 @@ export function ReportGroupedTable({
   storageKey,
   onDrilldownRow,
 }: ReportGroupedTableProps) {
+  //  Điện thoại: cột nhóm ghim hẹp lại để chừa chỗ cho cột số (bảng cuộn ngang, không giấu cột).
+  const isMobile = useIsMobile()
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
@@ -84,8 +87,8 @@ export function ReportGroupedTable({
       {
         key: 'label',
         header: dimensionLabel,
-        width: 220,
-        minWidth: 180,
+        width: isMobile ? 128 : 220,
+        minWidth: isMobile ? 104 : 180,
         hideable: false,
         defaultPinned: true,
         wrap: true,
@@ -143,7 +146,7 @@ export function ReportGroupedTable({
     }
 
     return cols
-  }, [visibleMetrics, kpiKeys, dimensionLabel, compare, onDrilldownRow])
+  }, [visibleMetrics, kpiKeys, dimensionLabel, compare, onDrilldownRow, isMobile])
 
   return (
     <Card className="flex min-h-0 flex-1 flex-col p-4">

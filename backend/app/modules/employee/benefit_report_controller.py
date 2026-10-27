@@ -22,6 +22,7 @@ from app.modules.report_access.guard import require_report
 from . import benefit_report_service as svc
 from .benefit_report_export import benefit_export
 from .benefit_report_inputs import LEAVE_MSG, SENSITIVE_MSG, parse_filters
+from app.modules.company.model import Company
 from .model import Employee
 from .sensitive import can_read_sensitive
 
@@ -53,7 +54,9 @@ def benefit_summary_export(request: Request, db: Session = Depends(get_db),
                            user=Depends(require("employee", "export"))):
     q, period, flt = _inputs(request, db, user, "export")
     rows, company_name, department_name = svc.load_list(db, q, period, flt)
-    return benefit_export(rows, flt, company_name, department_name)
+    short = {c.id: c.short_name.strip() for c in db.query(Company.id, Company.short_name).all()
+             if (c.short_name or "").strip()}
+    return benefit_export(rows, flt, company_name, department_name, short)
 
 
 @router.get("/summary/rows", dependencies=_GUARD)

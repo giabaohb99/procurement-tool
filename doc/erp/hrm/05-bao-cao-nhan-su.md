@@ -467,7 +467,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 - **Đếm và gom nhóm**
   - Số người theo pháp nhân × phòng ban ✅
   - Số người theo chức vụ, cấp bậc ✅
-  - So với cùng dịp năm trước (đếm lại tại ngày đó của năm trước) ✅
+  - So với cùng dịp năm trước (đếm lại tại ngày đó của năm trước) ⏳ chưa làm
 - **Dự trù kinh phí**
   - Mức chi mỗi người, được khác nhau theo nhóm (quản lý / nhân viên, theo thâm niên…) ✅ (nhập ngay trên màn)
   - **Tổng tiền theo pháp nhân**, để mỗi công ty hạch toán đúng phần của mình ✅

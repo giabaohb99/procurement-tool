@@ -64,7 +64,9 @@ def _sheet(ws, company: str, rows: list[BenefitRow], flt: Filters, department_na
         text_cell(ws, r + 1, col, "(Ký, ghi rõ họ tên)", alignment=CENTER)
 
 
-def build_workbook(rows: list[BenefitRow], flt: Filters, company_name: dict, department_name: dict) -> Workbook:
+def build_workbook(rows: list[BenefitRow], flt: Filters, company_name: dict, department_name: dict,
+                   company_short: dict | None = None) -> Workbook:
+    """`company_short`: {id: tên ngắn} — tên sheet ưu tiên tên ngắn, thiếu thì dùng tên đầy đủ."""
     if not rows:
         return empty_workbook("Không có ai thuộc diện nhận quà theo các điều kiện đã chọn.")
     by_co: dict[int, list[BenefitRow]] = {}
@@ -76,10 +78,11 @@ def build_workbook(rows: list[BenefitRow], flt: Filters, company_name: dict, dep
         name = company_name.get(cid) or UNASSIGNED
         ws = wb.active if first else wb.create_sheet()
         first = False
-        ws.title = unique_sheet_name(name, used)
+        ws.title = unique_sheet_name((company_short or {}).get(cid) or name, used)
         _sheet(ws, name, by_co[cid], flt, department_name)
     return wb
 
 
-def benefit_export(rows: list[BenefitRow], flt: Filters, company_name: dict, department_name: dict) -> Response:
-    return xlsx_download(build_workbook(rows, flt, company_name, department_name), "danh-sach-ky-nhan-phuc-loi")
+def benefit_export(rows: list[BenefitRow], flt: Filters, company_name: dict, department_name: dict,
+                   company_short: dict | None = None) -> Response:
+    return xlsx_download(build_workbook(rows, flt, company_name, department_name, company_short), "danh-sach-ky-nhan-phuc-loi")

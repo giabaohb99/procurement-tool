@@ -166,7 +166,7 @@ describe('ReportDrilldownSheet', () => {
   it('says the list is empty instead of showing an empty grid silently', async () => {
     vi.mocked(apiGet).mockResolvedValue(response({ rows: [], total: 0 }))
     renderSheet()
-    expect(await screen.findByText('Không có ai trong danh sách này.')).toBeInTheDocument()
+    expect(await screen.findByText(/^Không có ai theo chỉ số «.+» — đổi chỉ số ở ô phía trên\.$/)).toBeInTheDocument()
   })
 
   it('shows the backend error and retries on demand', async () => {

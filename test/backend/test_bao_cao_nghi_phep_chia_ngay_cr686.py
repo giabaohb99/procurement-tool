@@ -354,6 +354,23 @@ class TestDanhSachBamSo:
         assert {r["code"] for r in d["rows"]} == {"NP-A", "NP-B", "NP-C"}
         assert d["rows"][0]["link"].startswith("/hr/leave-requests/")
 
+    def test_danh_sach_cho_qua_3_ngay_khop_the_so(self, db, world, gan_bao_cao, http):
+        """E2E 27/10/2026: phép trừ 72 giờ lọt vào chú thích nên danh sách ra cả đơn mới gửi —
+        thẻ ghi 1, danh sách ra 2. Danh sách phải bằng đúng con số trên thẻ."""
+        actor = self._setup(db, world, gan_bao_cao)
+        lt = _type(db, "PN")
+        now = datetime.utcnow()
+        _req(db, world, "NP-CU", actor, lt, date(2026, 9, 7), date(2026, 9, 7), 1, status=LR_PENDING,
+             submitted_at=now - timedelta(days=5))
+        _req(db, world, "NP-MOI", actor, lt, date(2026, 9, 8), date(2026, 9, 8), 1, status=LR_PENDING,
+             submitted_at=now - timedelta(hours=10))
+        db.commit()
+        kpi = http(actor.user, "/api/leave-requests/summary", **SEP).json()["data"]["totals"]["current"]
+        r = http(actor.user, "/api/leave-requests/summary/rows", metric="requests_pending_over_3d",
+                 **SEP).json()["data"]
+        assert [x["code"] for x in r["rows"]] == ["NP-CU"]
+        assert r["total"] == kpi["requests_pending_over_3d"] == 1
+
     def test_loc_nhom_phong_ban_va_don_cho_qua_3_ngay(self, db, world, gan_bao_cao, http):
         actor = self._setup(db, world, gan_bao_cao)
         lt = _type(db, "PN")

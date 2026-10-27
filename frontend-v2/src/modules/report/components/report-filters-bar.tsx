@@ -62,7 +62,7 @@ export function ReportFiltersBar({
       {canReadCompany && (
         <Select value={filters.companyId} onValueChange={filters.setCompanyId}>
           <SelectTrigger
-            className="w-auto min-w-40 max-md:min-w-0 max-md:flex-1"
+            className="w-auto min-w-40 max-md:min-w-36 max-md:flex-1"
             aria-label="Công ty"
           >
             <Building2 className="size-4 shrink-0 text-muted-foreground" aria-hidden />

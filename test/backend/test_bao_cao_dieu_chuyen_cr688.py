@@ -221,7 +221,7 @@ def test_rows_dieu_chuyen_va_khong_tra_tep(db, world, client_as):
     assert p2["decision_no"] == "QĐ-01" and p2["event"] == "Điều chuyển" and p2["link"].startswith("/hr/employees/")
     assert not {"file", "files", "file_url", "attachments"} & set(p2)
     body = _get(client, SUM + "/rows", department_id=dept, metric="people_moved").json()["data"]
-    assert body["total"] == 10                                                  # mỗi hàng là một dòng sự kiện trong kỳ
+    assert body["total"] == 10                                                  # mỗi người một dòng
     body = _get(client, SUM + "/rows", department_id=dept, metric="avg_months_to_appoint").json()["data"]
     assert sorted(r["employee_code"] for r in body["rows"]) == ["p4", "p5"]
     assert body["columns"][-1]["key"] == "months"
@@ -313,3 +313,21 @@ def test_so_truy_van_co_dinh(db, world):
     c5 = count()
     add(50, "b")
     assert c5 > 0 and c5 == count()
+
+
+def test_nguoi_co_bien_dong_danh_sach_mot_dong_moi_nguoi_bang_the(db, world, client_as):
+    """N2: một người có 3 sự kiện trong kỳ -> thẻ đếm 1 người, danh sách đúng 1 dòng (mới nhất) + «Số lượt» = 3."""
+    p = _emp(db, world, "multi")
+    _line(db, p, T.APPOINT, -18, dept="B.hc", world=world)
+    _line(db, p, T.CONCURRENT, -12, dept="B.hc", world=world)
+    _line(db, p, T.TRANSFER, -5, dept="B.hc", world=world)
+    db.commit()
+    _, client = _actor(db, world, client_as)
+    dept = world.dept["B.hc"]
+    kpi = _get(client, department_id=dept).json()["data"]["totals"]["current"]["people_moved"]
+    body = _get(client, SUM + "/rows", department_id=dept, metric="people_moved").json()["data"]
+    assert body["total"] == kpi == len(body["rows"])
+    assert [c["key"] for c in body["columns"]][-1] == "move_count"
+    row = next(r for r in body["rows"] if r["employee_code"] == "multi")
+    assert row["move_count"] == 3 and row["event"] == "Điều chuyển"
+    assert sum(r["employee_code"] == "multi" for r in body["rows"]) == 1

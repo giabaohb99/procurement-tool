@@ -18,10 +18,12 @@ vi.mock('@/core/api', async (importOriginal) => {
 //  Có quyền xuất + nhạy cảm; KHÔNG có `department.read`/`company.read` — ô mượn danh mục tự ẩn.
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
-    can: (entity: string, action: string) => action === 'export' || entity === 'employee_sensitive',
+    can: (entity: string, action: string) =>
+      action === 'export' || entity === 'employee_sensitive' || (entity === 'leave_request' && perm.leave),
   }),
 }))
 
+const perm = vi.hoisted(() => ({ leave: false }))
 const SUMMARY = '/api/benefit-audience/summary'
 const SENSITIVE_403 =
   'Bạn chưa có quyền xem ngày sinh và người thân của nhân sự nên không lọc được theo tuổi, tháng sinh hay tuổi con.'
@@ -54,6 +56,7 @@ function summary(): ReportAnalyticsResponse {
 }
 
 beforeEach(() => {
+  perm.leave = false
   localStorage.clear()
   vi.mocked(apiGet).mockReset().mockImplementation(async () => summary() as never)
   vi.mocked(downloadFile).mockReset().mockResolvedValue(undefined)
@@ -123,5 +126,19 @@ describe('BenefitAudienceReportPage (Phúc lợi & sự kiện, khóa 22)', () =
     await user.click(screen.getByRole('button', { name: 'Bỏ hết điều kiện' }))
     await screen.findAllByText('Số người')
     expect(lastSummaryParams()).not.toHaveProperty('child_max_age')
+  })
+
+  it('drops include_on_leave=0 from the API calls when the viewer cannot read leave requests', async () => {
+    renderPage('/report/benefit-audience?include_on_leave=0')
+    await screen.findAllByText('Số người')
+    expect(lastSummaryParams()).not.toHaveProperty('include_on_leave')
+    expect(screen.getByRole('switch', { name: 'Tính người đang nghỉ' })).toBeDisabled()
+  })
+
+  it('keeps include_on_leave=0 when the viewer can read leave requests', async () => {
+    perm.leave = true
+    renderPage('/report/benefit-audience?include_on_leave=0')
+    await screen.findAllByText('Số người')
+    expect(lastSummaryParams()).toMatchObject({ include_on_leave: '0' })
   })
 })

@@ -106,7 +106,13 @@ export function ReportDrilldownSheet({
             </div>
           ) : (
             <Card className="flex min-h-0 flex-1 flex-col p-3">
-              <ReportDrilldownTable data={data} storageKey={`${storageKey}.rows.${data.metric.key}`} />
+              <ReportDrilldownTable
+                data={data}
+                storageKey={`${storageKey}.rows.${data.metric.key}`}
+                emptyMessage={`Không có ai theo chỉ số «${data.metric.label}»${
+                  target?.group ? ' ở nhóm này' : ''
+                } — đổi chỉ số ở ô phía trên.`}
+              />
             </Card>
           )}
         </div>

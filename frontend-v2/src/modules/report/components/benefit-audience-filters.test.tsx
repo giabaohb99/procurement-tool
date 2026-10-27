@@ -6,14 +6,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BenefitAudienceFilters } from './benefit-audience-filters'
 
-const perm = vi.hoisted(() => ({ sensitive: true }))
+const perm = vi.hoisted(() => ({ sensitive: true, leave: true }))
 //  Không có `department.read` → ô phòng ban tự ẩn, không gọi API danh mục.
 vi.mock('@/core/authorization/use-permission', () => ({
-  usePermission: () => ({ can: (entity: string) => entity === 'employee_sensitive' && perm.sensitive }),
+  usePermission: () => ({ can: (entity: string) =>
+      (entity === 'employee_sensitive' && perm.sensitive) || (entity === 'leave_request' && perm.leave),
+  }),
 }))
 
 beforeEach(() => {
   perm.sensitive = true
+  perm.leave = true
 })
 
 /**
@@ -115,5 +118,14 @@ describe('BenefitAudienceFilters', () => {
     }
     expect(screen.getByLabelText('Tuổi tại ngày dịp (từ – đến)')).toBeDisabled()
     expect(screen.getByText(/cần quyền xem ngày sinh và người thân/)).toBeInTheDocument()
+  })
+
+  it('without leave_request.read, the on-leave switch is locked with an explanation', () => {
+    perm.leave = false
+    renderFilters('?include_on_leave=0')
+    const sw = screen.getByRole('switch', { name: 'Tính người đang nghỉ' })
+    expect(sw).toBeDisabled()
+    expect(sw).toBeChecked()
+    expect(screen.getByText(/cần quyền xem đơn nghỉ phép/)).toBeInTheDocument()
   })
 })

@@ -180,7 +180,7 @@ TREE = {
 <tr><td>Định biên đầu kỳ, Thay đổi ròng</td><td>Có trong bảng bên dưới</td></tr>
 </tbody>
 </table>
-<p>Ô <strong>Xem theo</strong> cho chia số theo Công ty, Phòng ban (mặc định), Cấp bậc, Loại hình, Giới tính, Chức vụ, Thâm niên, Nhóm tuổi, Trình độ, Địa điểm làm việc hoặc Nhóm vị trí việc làm. Kỳ không có ai vào, ai nghỉ thì trang báo <em>Kỳ này chưa có dữ liệu</em> và ẩn bảng; bấm <strong>Xem cả năm nay</strong> hoặc chọn kỳ dài hơn.</p>
+<p>Ô <strong>Xem theo</strong> cho chia số theo Công ty, Phòng ban (mặc định), Cấp bậc, Loại hình, Giới tính, Chức vụ, Thâm niên, Nhóm tuổi, Trình độ, Địa điểm làm việc hoặc Nhóm vị trí việc làm. Kỳ không có ai vào, ai nghỉ thì bảng vẫn hiện định biên theo từng nhóm, riêng biểu đồ ghi <em>Kỳ này chưa có phát sinh</em>; chọn kỳ dài hơn (ví dụ <strong>Năm nay</strong>) để thấy biến động.</p>
 
 <h2>Xem cơ cấu đội ngũ: tuổi, trình độ, nơi làm việc</h2>
 <p>Bốn cách chia ở cuối ô <strong>Xem theo</strong> cho biết đội ngũ đang trông như thế nào:</p>

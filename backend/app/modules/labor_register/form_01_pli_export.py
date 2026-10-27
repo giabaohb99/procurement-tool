@@ -112,7 +112,7 @@ def export_form_01_pli(db: Session, employees_q, contracts_q, period, company_id
         wb, used = Workbook(), set()
         wb.remove(wb.active)
         for co, rows in xc.split_by_company(db, people):
-            ws = wb.create_sheet(xc.unique_sheet_name(co.name, used))
+            ws = wb.create_sheet(xc.unique_sheet_name(co.sheet_label, used))
             _top_block(ws, co, period, excluded[co.id])
             _header(ws)
             _footer(ws, _body(ws, rows, dept_name))

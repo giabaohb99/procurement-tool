@@ -92,5 +92,5 @@ def export_labor_book(db: Session, employees_q, contracts_q, period, company_id,
         wb, used = Workbook(), set()
         wb.remove(wb.active)
         for co, rows in xc.split_by_company(db, people):
-            _fill_sheet(wb.create_sheet(xc.unique_sheet_name(co.name, used)), co, rows, period, leave)
+            _fill_sheet(wb.create_sheet(xc.unique_sheet_name(co.sheet_label, used)), co, rows, period, leave)
     return xc.xlsx_download(wb, f"so-quan-ly-lao-dong-{period.date_from}-{period.date_to}")

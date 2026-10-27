@@ -87,7 +87,9 @@ def build_rows(db: Session, user, prof: dict, period: Period, params, company_id
     else:
         q = scoped_requests(db, user, prof, d_from, d_to, company_id, department_id)
         if metric == "requests_pending_over_3d":
-            cutoff = datetime.now()  # cùng đồng hồ với `submitted_at`, xem report_sql_metrics - timedelta(hours=PENDING_OVERDUE_HOURS)
+            #  Cùng đồng hồ với `submitted_at` (xem report_sql_metrics). ⚠️ Bản CR-686 để phép trừ lọt vào
+            #  chú thích nên danh sách KHÔNG lọc mốc 72 giờ — thẻ ghi 0, danh sách ra 1 (E2E 27/10/2026).
+            cutoff = datetime.now() - timedelta(hours=PENDING_OVERDUE_HOURS)
             q = q.filter(LeaveRequest.status == LR_PENDING, LeaveRequest.submitted_at < cutoff)
         rows = q.with_entities(
             LeaveRequest.id, LeaveRequest.status, LeaveRequest.code, LeaveRequest.from_date,
