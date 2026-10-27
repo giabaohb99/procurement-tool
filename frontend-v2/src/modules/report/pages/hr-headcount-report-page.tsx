@@ -1,11 +1,13 @@
 import { appRoutes } from '@/shared/constants/app-routes'
 
+import { ReportDepartmentFilter } from '../components/report-department-filter'
 import type { ReportPageConfig } from '../types/report-analytics'
 import { ReportAnalyticsPage } from './report-analytics-page'
 
 const CONFIG: ReportPageConfig = {
   endpoint: '/api/employees/summary',
   exportEndpoint: '/api/employees/summary/export',
+  drilldownEndpoint: '/api/employees/summary/rows',
   entity: 'employee',
   title: 'Biến động nhân sự',
   description:
@@ -19,6 +21,7 @@ const CONFIG: ReportPageConfig = {
   chartMetric: 'new_hires',
   defaultGroupBy: 'department',
   breakdowns: [{ key: 'status', title: 'Theo trạng thái' }],
+  extraFilters: ReportDepartmentFilter,
 }
 
 /**

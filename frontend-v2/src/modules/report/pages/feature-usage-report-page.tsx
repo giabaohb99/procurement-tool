@@ -19,7 +19,7 @@ import {
   buildScreenColumns,
   buildSearchColumns,
 } from '../components/feature-usage/feature-usage-columns'
-import { ALL_DEPARTMENTS, FeatureUsageDepartmentFilter } from '../components/feature-usage/feature-usage-department-filter'
+import { ALL_DEPARTMENTS, ReportDepartmentFilter } from '../components/report-department-filter'
 import { FeatureUsageOverviewCards } from '../components/feature-usage/feature-usage-overview-cards'
 import { ReportExportButton } from '../components/report-export-button'
 import { ReportFiltersBar } from '../components/report-filters-bar'
@@ -134,7 +134,7 @@ export function FeatureUsageReportPage() {
         {data?.has_data && data.tracking_since && data.tracking_since > data.period.date_from && (
           <p className="text-sm text-muted-foreground">Số liệu chỉ có từ ngày {formatDate(data.tracking_since)}.</p>
         )}
-        <ReportFiltersBar filters={filters} ExtraFilters={FeatureUsageDepartmentFilter} />
+        <ReportFiltersBar filters={filters} ExtraFilters={ReportDepartmentFilter} />
       </div>
 
       {isLoading && <Skeleton className="h-64 w-full" />}

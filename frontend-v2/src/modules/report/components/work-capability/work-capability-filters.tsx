@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CYCLE_KIND, CYCLE_ROLE } from '@/shared/constants/statuses'
 import { useActiveTaskTypes } from '@/modules/work/hooks/use-task-types'
 
-import { FeatureUsageDepartmentFilter } from '../feature-usage/feature-usage-department-filter'
+import { ReportDepartmentFilter } from '../report-department-filter'
 
 export const ALL = 'all'
 /** `CycleKind.WORK_TASK` (backend) = 10 — chỉ task Dự án mới có loại việc. */
@@ -43,7 +43,7 @@ export function WorkCapabilityFilters() {
   const { data: taskTypes } = useActiveTaskTypes()
   return (
     <>
-      <FeatureUsageDepartmentFilter />
+      <ReportDepartmentFilter />
       <Pick label="Loại phiếu" value={kind} onChange={setKind} all="Tất cả loại phiếu" options={CYCLE_KIND.map((k) => ({ value: k.value, label: k.label }))} />
       {kind === WORK_TASK_KIND && (
         <Pick

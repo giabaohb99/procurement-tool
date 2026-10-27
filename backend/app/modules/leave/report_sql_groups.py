@@ -97,13 +97,15 @@ def breakdown_by_status(db: Session, scoped_query, label_of: Callable[[int], str
     return _rank_items(out)
 
 
-def breakdown_leave_type_by_days(db: Session, header_subq, type_name: dict) -> list[dict]:
+def breakdown_leave_type_by_days(db: Session, header_subq, type_name: dict,
+                                 deltas: dict[str, float] | None = None) -> list[dict]:
     """Mục 5 — "Top loại nghỉ" xếp theo TỔNG NGÀY ĐÃ DUYỆT (`days_approved`, tính từ DÒNG —
     có mặt ở CẢ loại chính lẫn loại phụ của đơn), KHÔNG xếp theo `rank_by` mặc định của khung
     ("requests", chỉ đếm loại CHÍNH) — loại nghỉ chỉ xuất hiện ở DÒNG PHỤ của mọi đơn (không
     bao giờ là loại chính) trước đây luôn rơi xuống đáy bất kể dùng bao nhiêu ngày (xem
     `TestBreakdownLoaiNghiXepTheoNgay`). Nạp theo `first_date` TĂNG DẦN — cùng tiêu chí hòa
-    điểm với `groups_for_dim`."""
+    điểm với `groups_for_dim`. `deltas` (CR-686) = chênh lệch do chia ngày theo kỳ, xem
+    `report_day_split_apply.leave_type_approved_deltas`."""
     rows = line_aggregate(db, header_subq, group_col=LeaveRequestLine.leave_type_id,
                           with_first_date=True)
     out = {}
@@ -111,4 +113,7 @@ def breakdown_leave_type_by_days(db: Session, header_subq, type_name: dict) -> l
         k = "" if not r.key else str(r.key)
         out[k] = {"label": type_name.get(r.key, "") if k else EMPTY_LABEL,
                   "value": float(r.days_approved or 0)}
+    for k, delta in (deltas or {}).items():
+        item = out.setdefault(k, {"label": type_name.get(int(k), "") if k else EMPTY_LABEL, "value": 0.0})
+        item["value"] = round(max(item["value"] + delta, 0.0), 6)
     return _rank_items(out)

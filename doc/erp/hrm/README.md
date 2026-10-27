@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 1.2 — 26/10/2026 (§5: gỡ «In Phiếu» và «Nhân viên tự khai» đã xong ở duoc-CR-676, gỡ «luồng duyệt chỉ đọc loại chính» vì đã chốt bỏ ở duoc-CR-683) · 1.1 — 23/10/2026 (thêm `04-hop-dong-lao-dong.md`, hết bảng «chưa có tài liệu riêng» — duoc-CR-673) · 1.0 — 22/10/2026 (duoc-CR-658: gom tài liệu chức năng Nhân sự về một thư mục) |
+| Bản | 1.3 — 27/10/2026 (thêm `05-bao-cao-nhan-su.md`: kho mẫu báo cáo Nhân sự) · 1.2 — 26/10/2026 (§5: gỡ «In Phiếu» và «Nhân viên tự khai» đã xong ở duoc-CR-676, gỡ «luồng duyệt chỉ đọc loại chính» vì đã chốt bỏ ở duoc-CR-683) · 1.1 — 23/10/2026 (thêm `04-hop-dong-lao-dong.md`, hết bảng «chưa có tài liệu riêng» — duoc-CR-673) · 1.0 — 22/10/2026 (duoc-CR-658: gom tài liệu chức năng Nhân sự về một thư mục) |
 | Dùng để làm gì | Cửa vào duy nhất cho người mới nhận việc ở phân hệ Nhân sự: đã có gì, nằm ở đâu, luật nào không được phá, việc nào đang cần người làm tiếp |
 | Ai đọc | Người (hoặc trợ lý AI) sắp sửa mã hay viết tài liệu cho phân hệ Nhân sự |
 | Giao diện | Chỉ có trên `frontend-v2/` (cổng 8083), menu *Nhân sự*. `frontend/` cũ đã đóng băng, không thêm màn nhân sự ở đó |
@@ -24,12 +24,13 @@
 | [`02-nghi-phep.md`](02-nghi-phep.md) | **Nghỉ phép**: đơn nghỉ (nhiều loại nghỉ trong một đơn, nửa ngày, theo giờ), quỹ phép năm và kết sổ cuối năm, loại nghỉ, lịch ngày lễ, duyệt, bốn khóa phân quyền | `/hr/leave-requests` · `/hr/leave-balances` · `/hr/leave-calendar` · `/hr/leave-types` · `/hr/holidays` | `modules/leave/` |
 | [`03-lich-lam-viec.md`](03-lich-lam-viec.md) | **Lịch làm việc**: mẫu lịch tuần, gán theo bốn cấp (hệ thống, pháp nhân, phòng ban, nhân sự), xem ai làm ai nghỉ, và **nối vào cách tính số ngày nghỉ phép** | `/hr/work-roster` · `/hr/work-schedules` · `/hr/work-schedule-assignments` | `modules/work_schedule/` |
 | [`04-hop-dong-lao-dong.md`](04-hop-dong-lao-dong.md) | **Hợp đồng lao động** (mẫu Word theo pháp nhân, biến mẫu, sinh tệp, ký, bản lưu trữ ở Văn bản, cảnh báo sắp hết hạn, «Hợp đồng của tôi») · **Quyền mặc định theo chức vụ** · **Nhập Excel nhân sự** | `/hr/employees/:id?tab=labor-contracts` · `/hr/labor-contract-templates` · `/hr/job-positions/:id` (tab «Quyền mặc định») · nút «Nhập Excel» ở `/hr/employees` | `modules/labor_contract/` · `modules/employee/position_role_*.py` · `modules/import_tool/employee_import*.py` |
+| [`05-bao-cao-nhan-su.md`](05-bao-cao-nhan-su.md) | **Kho mẫu báo cáo Nhân sự**: 8 nhóm, 19 mẫu (3 đã có: Biến động nhân sự, Tình hình nghỉ phép, Quỹ phép năm; còn lại là đề xuất, chưa chốt), chỗ thiếu của 3 báo cáo đang chạy, phiếu khai một mẫu báo cáo | `/report` nhóm «Nhân sự» | `modules/employee/report_*.py` · `modules/leave/*report*` |
 
 **Hai tệp `02` và `03` dời từ `doc/tai-lieu-chuc-nang/` sang đây ngày 22/10/2026** (trước là `17-nghi-phep.md` và `21-lich-lam-viec.md`). Tệp cũ chỉ còn một dòng trỏ sang đây để các liên kết trong sổ thay đổi và kế hoạch cũ khỏi gãy. Viết tài liệu Nhân sự mới thì đặt vào thư mục này, đánh số tiếp `04`, `05`…
 
 ### Báo cáo nhân sự
 
-Biến động nhân sự, tình hình nghỉ phép, quỹ phép năm thuộc **phân hệ Báo cáo**, tài liệu ở `doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md`; mã ở `modules/employee/report_*.py` và `modules/leave/*report*`. Mỗi báo cáo gác kép: quyền của phân hệ gốc và quyền xem từng báo cáo (`require_report`).
+Biến động nhân sự, tình hình nghỉ phép, quỹ phép năm thuộc **phân hệ Báo cáo**; tổng hợp kèm đề xuất báo cáo mới ở [`05-bao-cao-nhan-su.md`](05-bao-cao-nhan-su.md), khung báo cáo chung ở `doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md`; mã ở `modules/employee/report_*.py` và `modules/leave/*report*`. Mỗi báo cáo gác kép: quyền của phân hệ gốc và quyền xem từng báo cáo (`require_report`).
 
 Bảng «Chức năng đã có mã nhưng chưa có tài liệu riêng» của bản 1.0 đã hết dòng: Hợp đồng lao động, Quyền mặc định theo chức vụ và Nhập Excel nhân sự nay ở `04` (23/10/2026, duoc-CR-673).
 

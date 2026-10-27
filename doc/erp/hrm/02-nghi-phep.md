@@ -459,7 +459,7 @@ Ví dụ: 27/10/2026 (T3) cả ngày  +  03/11 (T3) chiều → 07/11 (T7) cả 
 
 **Trợ lý AI** soạn và sửa được nhiều khoảng qua `periods` (`draft_leave_request`, `update_tool`); hoàn tác giữ nguyên các khoảng. Đơn từ 2 khoảng thì `update_tool` từ chối sửa bằng `from_date`/`to_date`, phải gửi `periods`.
 
-**Hạn chế đã chốt, không phải lỗi:** báo cáo theo tháng neo **ngày bắt đầu** của đơn (đơn 31/10 + 03/11 dồn cả vào tháng 10, giống đơn liền vắt tháng).
+**Báo cáo theo kỳ (đổi ngày 27/10/2026, duoc-CR-686):** số **ngày** nghỉ chia theo ngày thật rơi vào kỳ / mốc (đơn 31/10 + 03/11 thì tháng 10 nhận 1 ngày, tháng 11 nhận 1 ngày), trọng số theo lịch làm việc, ngày lễ và nửa buổi. Số **đơn**, số người nghỉ, tỷ lệ từ chối, thời gian duyệt vẫn neo ngày bắt đầu, để một đơn không bị đếm hai lần. Bản trước (CR-683) neo cả số ngày vào ngày bắt đầu.
 
 ## 8. Duyệt
 

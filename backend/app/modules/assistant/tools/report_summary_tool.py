@@ -80,6 +80,12 @@ REPORTS: dict[str, ReportRoute] = {
                             no_company=True),
     "work": ReportRoute(ReportKey.WORK, _route("work.report_controller", "work_summary"), "/report/work",
                         extra=("list_id",)),
+    #  duoc-CR-686: hai báo cáo Nhân sự mới. `/summary` chỉ trả số đếm (lương chỉ nằm ở `/summary/rows`,
+    #  công cụ này không gọi tới) nên mở cho trợ lý như các báo cáo Nhân sự khác.
+    "labor_contract": ReportRoute(ReportKey.LABOR_CONTRACT, _route("labor_contract.report_controller",
+                                                                   "labor_contract_summary"), "/report/labor-contract"),
+    "hr_profile_gaps": ReportRoute(ReportKey.HR_PROFILE_GAPS, _route("employee.profile_gaps_report_controller",
+                                                                     "profile_gaps_summary"), "/report/hr-profile-gaps"),
 }
 _BY_NUMBER = {int(r.key): name for name, r in REPORTS.items()}
 

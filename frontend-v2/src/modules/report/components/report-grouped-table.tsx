@@ -6,6 +6,7 @@ import { cn } from '@/shared/utils/cn'
 
 import {
   buildReportTableRows,
+  REPORT_OTHER_GROUP_KEY,
   REPORT_TOTAL_ROW_KEY,
   type ReportTableRow,
 } from '../utils/build-report-table-rows'
@@ -16,6 +17,7 @@ import type {
   ReportMeta,
   ReportMetricValues,
 } from '../types/report-analytics'
+import { ReportDrilldownRowButton } from './report-drilldown-row-button'
 import { ReportGroupBySelect } from './report-group-by-select'
 import { ReportMetricValueCell } from './report-metric-value-cell'
 
@@ -32,6 +34,11 @@ interface ReportGroupedTableProps {
   isError: boolean
   /** `report.<slug>.v4` — nhớ bố cục cột riêng cho từng báo cáo (`docs/ui/table.md`). */
   storageKey: string
+  /**
+   * Mở «Danh sách người» của MỘT dòng (duoc-CR-686) — bỏ trống thì không có cột hành động.
+   * Dòng «Các nhóm khác» (`__other__`) không có nút: backend không có danh sách riêng cho nó.
+   */
+  onDrilldownRow?: (row: ReportTableRow) => void
 }
 
 /**
@@ -55,6 +62,7 @@ export function ReportGroupedTable({
   isLoading,
   isError,
   storageKey,
+  onDrilldownRow,
 }: ReportGroupedTableProps) {
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -110,8 +118,23 @@ export function ReportGroupedTable({
       })
     }
 
+    if (onDrilldownRow) {
+      cols.push({
+        key: '__drilldown',
+        header: 'Danh sách',
+        width: 104,
+        minWidth: 96,
+        align: 'center',
+        hideable: false,
+        cell: (row) =>
+          row.key === REPORT_OTHER_GROUP_KEY ? null : (
+            <ReportDrilldownRowButton label={row.label} onClick={() => onDrilldownRow(row)} />
+          ),
+      })
+    }
+
     return cols
-  }, [visibleMetrics, kpiKeys, dimensionLabel, compare])
+  }, [visibleMetrics, kpiKeys, dimensionLabel, compare, onDrilldownRow])
 
   return (
     <Card className="flex min-h-0 flex-1 flex-col p-4">

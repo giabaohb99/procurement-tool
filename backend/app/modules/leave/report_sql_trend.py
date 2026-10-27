@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.core.report_compute import compute_derived
 from app.core.report_period import bucket_of
 from app.modules.leave.constants import LR_APPROVED
+from app.modules.leave.report_day_split_apply import apply_to_trend
 from app.modules.leave.report_sql_metrics import DERIVED, ZERO_METRICS, header_aggregate, line_aggregate
 from app.modules.leave.request_model import LeaveRequest
 
@@ -31,10 +32,13 @@ def people_on_leave_points(scoped_query) -> list[tuple[date, int]]:
 
 
 def trend_for_period(db: Session, scoped_query, header_subq, axis: list[dict], granularity: str,
-                     shift=None) -> list[dict]:
+                     shift=None, split=None) -> list[dict]:
     """`trend` cho MỘT kỳ — gọi 1 lần cho kỳ này; gọi lại kèm `shift`
     (`report_compute.compare_shift`, H1) cho kỳ so sánh để dồn đúng lên trục kỳ NÀY thay vì tự
-    tính độ hạt riêng rồi ghép theo chỉ số mốc."""
+    tính độ hạt riêng rồi ghép theo chỉ số mốc.
+
+    `split` = `(đơn vắt biên, d_from, d_to, loại nghỉ không lương)` (CR-686): số ngày của các
+    đơn đó được CHIA về đúng mốc thay vì dồn hết vào mốc chứa ngày bắt đầu."""
     by_bucket = {a["key"]: dict(ZERO_METRICS) for a in axis}
 
     def _bucket_key(d: date) -> str | None:
@@ -51,6 +55,7 @@ def trend_for_period(db: Session, scoped_query, header_subq, axis: list[dict], g
         b["requests_reject_return"] += int(r.requests_reject_return or 0)
         b["turnaround_hours_sum"] += float(r.turnaround_hours_sum or 0)
         b["turnaround_hours_count"] += int(r.turnaround_hours_count or 0)
+        b["requests_pending_over_3d"] += int(r.requests_pending_over_3d or 0)
     for r in line_aggregate(db, header_subq, group_col=header_subq.c.from_date):
         k = _bucket_key(r.key)
         if k is None:
@@ -58,6 +63,10 @@ def trend_for_period(db: Session, scoped_query, header_subq, axis: list[dict], g
         b = by_bucket[k]
         b["days_approved"] += float(r.days_approved or 0)
         b["days_pending"] += float(r.days_pending or 0)
+        b["days_unpaid"] += float(r.days_unpaid or 0)
+    if split:
+        srs, d_from, d_to, unpaid_types = split
+        apply_to_trend(by_bucket, srs, d_from, d_to, _bucket_key, unpaid_types)
 
     people_sets: dict[str, set[int]] = {a["key"]: set() for a in axis}
     for d, emp_id in people_on_leave_points(scoped_query):

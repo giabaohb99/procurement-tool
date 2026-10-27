@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Line, LineChart, ResponsiveContainer, YAxis } from 'recharts'
 
 import { Card } from '@/shared/ui/card'
@@ -36,6 +37,11 @@ interface KpiTrendCardProps {
   onClick?: () => void
   /** Đang là chỉ số được chọn — viền nổi bật. Chỉ có nghĩa cùng `onClick`. */
   selected?: boolean
+  /**
+   * Nút phụ ở chân thẻ (vd «Xem danh sách», duoc-CR-686). Cú bấm / phím của nó KHÔNG
+   * nổi lên thẻ — bấm nút không được đổi luôn chỉ số biểu đồ.
+   */
+  action?: ReactNode
 }
 
 /** "so với kỳ trước" → "kỳ trước" — đuôi cho câu "Bằng kỳ trước". */
@@ -63,6 +69,7 @@ export function KpiTrendCard({
   className,
   onClick,
   selected = false,
+  action,
 }: KpiTrendCardProps) {
   const changeKind = changeDescription?.kind ?? 'unavailable'
   const points = sparkline?.map((v, i) => ({ i, v }))
@@ -141,6 +148,12 @@ export function KpiTrendCard({
             </p>
           )}
         </>
+      )}
+      {action && !loading && (
+        //  Chặn nổi bọt cả click LẪN keydown: thẻ cha nghe Enter/Space để đổi biểu đồ.
+        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+          {action}
+        </div>
       )}
       {/* Toàn số 0 thì không vẽ: một đường phẳng ở đáy trông như dữ liệu thật. */}
       {showSparkline && (

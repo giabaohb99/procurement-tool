@@ -266,6 +266,8 @@ export const REPORT_KEY: readonly StatusOption[] = [
   {"value": "14", "label": "Hồ sơ cách làm việc", "sort_order": 14, "is_terminal": false, "is_exception": false},
   {"value": "15", "label": "Mức dùng chức năng", "sort_order": 15, "is_terminal": false, "is_exception": false},
   {"value": "16", "label": "Năng lực theo loại việc", "sort_order": 16, "is_terminal": false, "is_exception": false},
+  {"value": "17", "label": "Hợp đồng lao động", "sort_order": 17, "is_terminal": false, "is_exception": false},
+  {"value": "18", "label": "Hồ sơ & tài khoản còn thiếu", "sort_order": 18, "is_terminal": false, "is_exception": false},
 ]
 
 /** Loại hình pháp lý NCC */

@@ -49,6 +49,11 @@ export interface ReportMeta {
   group_by: string
   /** Chỉ số xếp hạng nhóm + giá trị của các khối "Top" (breakdowns). */
   rank_by?: string | null
+  /**
+   * Chỉ số có «Xem danh sách» (duoc-CR-686) — gọi `<gốc>/summary/rows?metric=…`.
+   * Vắng mặt = máy chủ cũ / báo cáo chưa có danh sách: không hiện nút nào.
+   */
+  drilldown_metrics?: string[]
 }
 
 export type ReportCompareMode = 'previous' | 'year' | 'none'
@@ -176,4 +181,17 @@ export interface ReportPageConfig {
   extraFilters?: ComponentType<ReportExtraFiltersProps>
   /** Nguồn không lọc theo công ty (vd Báo cáo khảo sát) — ẩn ô Công ty. */
   hideCompany?: boolean
+  /**
+   * Đường `<gốc>/summary/rows` của ngăn «Danh sách người» (duoc-CR-686). Bỏ trống
+   * = báo cáo không có danh sách; khai rồi thì chỉ số nào bấm được do
+   * `meta.drilldown_metrics` backend trả quyết định.
+   */
+  drilldownEndpoint?: string
+  /** Báo cáo không có trục thời gian (backend luôn trả `trend: []`) — không vẽ biểu đồ xu hướng. */
+  hideTrend?: boolean
+  /**
+   * Báo cáo tình trạng HIỆN TẠI, bỏ qua kỳ (vd Hồ sơ còn thiếu) — ẩn nút Kỳ báo cáo
+   * và màn «Kỳ này chưa có dữ liệu». Lời gọi vẫn gửi tham số kỳ mặc định, backend bỏ qua.
+   */
+  hidePeriod?: boolean
 }

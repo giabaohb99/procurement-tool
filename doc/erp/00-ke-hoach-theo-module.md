@@ -198,6 +198,7 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 |---|---|---|---|
 | HR1-3 | Khai luồng duyệt nghỉ phép cho các pháp nhân đang dùng ngoài AGC (hiện chỉ AGC có chuông người duyệt, công ty khác đi đường cũ) | Mỗi pháp nhân có người dùng thật có luồng trên `/approval/flows`; đơn gửi đi có chuông tới đúng người duyệt | Dữ kiện prod 21/10 |
 | HR1-5 | Nhập bù `hire_date` cho hồ sơ cũ (việc dữ liệu — phần tài liệu `04` đã xong ở duoc-CR-673). Thiếu ngày này thì thâm niên phép tính bằng 0, báo cáo biến động lấy ngày tạo hồ sơ. Đường nhập: ô trên hồ sơ hoặc cột «Ngày vào làm» của Nhập Excel | Không còn hồ sơ đang làm thiếu `hire_date`; nên xong trước khi cấp quỹ phép năm 2027 | `doc/erp/hrm/README.md` §5 · `doc/erp/hrm/04-hop-dong-lao-dong.md` §C.3 |
+| HR1-6 | Báo cáo Nhân sự **đợt 1** (duoc-CR-686, đang làm): sửa số ngày nghỉ của đơn vắt qua kỳ, quỹ phép bỏ người đã nghỉ + đếm người chưa được cấp quỹ, bù chỗ thiếu ba báo cáo đang chạy, lọc phòng ban, bấm số ra danh sách người, báo cáo **Hợp đồng lao động** (khóa 17) và **Hồ sơ & tài khoản còn thiếu** (khóa 18) | Năm báo cáo Nhân sự chạy trên dev, giao cho trưởng phòng Nhân sự ở tab «Báo cáo» | `doc/erp/hrm/05-bao-cao-nhan-su.md` · `plans/261027-1045-kho-mau-bao-cao-nhan-su/` |
 
 **Phase 2**
 
@@ -206,6 +207,8 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 | HR2-1 | Nhận việc / nghỉ việc có danh sách việc vào–ra, quyết định thôi việc có thẻ bàn giao, tài sản cấp phát (cấp, thu hồi, biên bản) — V2-1, V2-2, V2-3 | Người nghỉ có phiếu bàn giao và danh sách tài sản phải trả; tài sản tra được đang ở tay ai | `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0.1 bước 1 |
 | HR2-4 | Tuyển dụng (V3-3): định biên, nhu cầu tuyển có duyệt, ứng viên, phỏng vấn, offer thành nhân viên | Ứng viên đạt chuyển thành hồ sơ qua sự kiện HIRE | `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0.1 bước 2 |
 | HR2-5 | Quyết định đầy đủ: phiếu nhiều người, tờ trình, duyệt (V1-8); khen thưởng / kỷ luật, đi làm lại, phụ lục HĐLĐ (V2-5) | Một phiếu áp được cho nhiều người sau duyệt | `doc/erp/hrm/01-ho-so-nhan-su.md` §4 · `10-de-xuat-ap-dung.md` §0.1 bước 4 |
+| HR2-6 | Báo cáo Nhân sự **đợt 2**: Sổ quản lý lao động (B2), mẫu 01/PLI nộp cơ quan lao động (B3, chốt số theo tháng, xuất đúng mẫu), Cơ cấu nhân sự (A2) | Xuất được 01/PLI từng pháp nhân trước 05/12/2026 | `doc/erp/hrm/05-bao-cao-nhan-su.md` B2, B3, A2 |
+| HR2-7 | Báo cáo Nhân sự **đợt 3**: Phúc lợi & sự kiện (H1, ví dụ 8/3), Quỹ lương theo pháp nhân (A5), biểu đồ linh hoạt, Cơ cấu quản lý (A3), Điều chuyển & bổ nhiệm (D1) | Lọc được đối tượng theo dịp và ra tổng tiền theo pháp nhân; so được quỹ lương các pháp nhân | `doc/erp/hrm/05-bao-cao-nhan-su.md` H1, A5, §3.4 |
 
 **Phase 3 — khi cần**
 
@@ -213,6 +216,7 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 |---|---|---|---|
 | HR3-1 | Đánh giá KPI / OKR (V3-2) | Công ty chốt cách đánh giá trước | `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0.1 bước 3 |
 | HR3-2 | Bảo hiểm xã hội (V3-4), đào tạo LMS, góp ý ẩn danh | Phòng Nhân sự xác nhận có nhu cầu thật | `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0 |
+| HR3-4 | Báo cáo Nhân sự **đợt 4**: Có mặt theo ngày (C3), Yêu cầu sửa hồ sơ (E2), Lịch nhắc (E3), Phòng họp (F1), Đối tượng theo luật (B4), Định biên kế hoạch (A4) + bảng định biên / quỹ lương kế hoạch. Phần tuyển dụng của A1 và Tài sản cấp phát (G1) đi theo HR2-4 / HR2-1 | Chốt bảng định biên kế hoạch | `doc/erp/hrm/05-bao-cao-nhan-su.md` |
 | ~~HR3-3~~ | ~~Luồng duyệt đọc đủ mọi loại nghỉ của đơn nhiều loại (nay chỉ đọc loại chính)~~ | **Đã chốt bỏ 26/10/2026** (duoc-CR-683): luồng duyệt coi mọi đơn là nghỉ phép, không rẽ nhánh theo loại | `doc/erp/hrm/02-nghi-phep.md` §7.1 |
 
 **Câu chờ quyết:**

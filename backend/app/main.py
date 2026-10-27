@@ -75,6 +75,8 @@ from app.modules.labor_contract.variable_controller import router as labor_contr
 #  `/work-history`), nhưng giữ đúng thứ tự theo chỉ dẫn của phase cho dễ dò.
 from app.modules.employee.work_history_controller import router as employee_work_history_router
 from app.modules.employee.report_controller import router as employee_report_router
+from app.modules.employee.profile_gaps_report_controller import router as profile_gaps_report_router  # duoc-CR-686
+from app.modules.labor_contract.report_controller import router as labor_contract_report_router  # duoc-CR-686
 from app.modules.employee.org_chart_controller import router as employee_org_chart_router  # duoc-CR-669
 from app.modules.leave.report_controller import router as leave_report_router
 from app.modules.leave.balance_report_controller import router as leave_balance_report_router
@@ -280,6 +282,8 @@ app.include_router(auth_router)
 #  Báo cáo kiểu Haravan (phase 04–06): mỗi router chỉ có `/summary` + `/summary/export`,
 #  đăng ký SỚM để không bị `/{id}` của router chính cùng tiền tố nuốt mất.
 app.include_router(employee_report_router)
+app.include_router(profile_gaps_report_router)  # duoc-CR-686: TRƯỚC employee_router (/{eid} nuốt profile-gaps)
+app.include_router(labor_contract_report_router)  # duoc-CR-686: TRƯỚC labor_contract_router (/{cid})
 app.include_router(employee_org_chart_router)  # duoc-CR-669: /api/org-chart
 app.include_router(leave_report_router)
 app.include_router(leave_balance_report_router)

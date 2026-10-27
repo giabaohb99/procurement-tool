@@ -17458,3 +17458,13 @@ Commit: 77c7bf59 (main = erp-v2) · Deploy: prod api, celery-worker, celery-beat
 Anh Được báo người dùng in phiếu trên giao diện cũ thì bản in dính luôn khung thông báo «Đã có phiên bản mới» với nút Tải lại. Anh muốn bỏ khung đó khỏi bản in, và nếu có bản mới thì ứng dụng tự tải lại vào cuối ngày.
 Đã làm xong: khung thông báo được ẩn khi in. Khi có bản mới mà người dùng chưa bấm Tải lại, kể cả đã bấm Để sau, ứng dụng tự tải lại lúc 0 giờ đêm đó; máy ngủ qua 0 giờ thì lúc thức dậy sẽ tải lại ngay. Ứng dụng cũng tự dò bản mới mỗi giờ, vì trước đây tab mở cả ngày không biết là đã có deploy. Khung thông báo ghi thêm một dòng báo giờ tự tải lại. Kiểm kiểu giao diện cũ vẫn đúng bốn lỗi cũ, không có lỗi mới. Phần này chỉ chạy ở bản build nên chưa thử được ở máy local.
 Mã nguồn: frontend/src/components/PwaReloadPrompt.tsx
+
+## duoc-CR-686 | Kho mẫu báo cáo Nhân sự và đợt 1: sửa số liệu nghỉ phép, thêm báo cáo hợp đồng lao động và hồ sơ còn thiếu
+- status: dang-lam
+- date: 2026-10-27
+- pic: NSU231
+- tag: Được
+Anh Được muốn có đủ các mẫu báo cáo cho phân hệ Nhân sự, nhìn từ vai trưởng phòng Nhân sự, rồi làm luôn phần mã.
+Đã gom thành kho mẫu tám nhóm, mười chín mẫu, kèm chỗ còn thiếu của ba báo cáo đang chạy, phiếu khai một mẫu báo cáo, phần biểu đồ linh hoạt và lộ trình bốn đợt.
+Đợt 1 đã chạy trên máy local: thêm báo cáo Hợp đồng lao động và báo cáo Hồ sơ và tài khoản còn thiếu; năm báo cáo Nhân sự có ô lọc phòng ban và bấm vào con số là ra danh sách người. Báo cáo nghỉ phép nay chia số ngày nghỉ theo đúng ngày rơi vào từng kỳ, còn số đơn vẫn tính theo ngày bắt đầu. Quỹ phép năm bỏ người đã nghỉ việc ra khỏi số mặc định, đếm người chưa được cấp quỹ và tách quỹ thành từng phần. Rà mã không có lỗi chặn; năm chỗ nên sửa đã sửa hết. Viết bộ hướng dẫn trên Trung tâm trợ giúp gồm một thẻ và bảy bài, đã nạp ở local. Bảy trăm ba mươi hai bài kiểm backend và ba trăm lẻ bốn bài kiểm giao diện đều đạt. Còn chờ anh duyệt để commit, rồi giao quyền xem hai báo cáo mới cho trưởng phòng Nhân sự và nạp lại kho tìm kiếm của Trợ lý AI trên dev.
+Mã nguồn: doc/erp/hrm/05-bao-cao-nhan-su.md · plans/261027-1045-kho-mau-bao-cao-nhan-su/ · backend/app/core/report_drilldown.py · backend/app/modules/labor_contract/report_*.py · backend/app/modules/employee/profile_gaps_report_*.py · backend/app/modules/leave/report_day_split*.py · frontend-v2/src/modules/report/ · backend/scripts/seed_help_bao_cao_nhan_su.py

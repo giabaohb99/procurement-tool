@@ -46,8 +46,10 @@ backend ở `app/modules/leave/`. Tài liệu đầy đủ: `doc/erp/hrm/02-nghi
   đơn chưa có dòng khoảng rơi về đầu đơn. Đọc thẳng `[from_date, to_date]` của đầu đơn là
   ngày khe hiện nghỉ, im lặng. Ghi khoảng chỉ qua `leave/request_periods.py`; ≥2 khoảng phải
   cùng năm (422), nghỉ theo giờ chỉ 1 khoảng, tối đa 20; đơn ≥2 khoảng sửa ngày thì PATCH phải
-  gửi đủ `periods`. Chỉ tổng được sửa đè, không sửa đè từng khoảng. Báo cáo theo tháng neo
-  ngày bắt đầu đơn (đã chốt). Chi tiết `02-nghi-phep.md` §7.3.
+  gửi đủ `periods`. Chỉ tổng được sửa đè, không sửa đè từng khoảng. Báo cáo «Tình hình nghỉ phép»
+  (duoc-CR-686, đổi luật cũ của CR-683): số ĐƠN / người / tỷ lệ neo ngày bắt đầu; số NGÀY chia
+  theo ngày thật rơi vào kỳ / mốc — chỉ đơn vắt qua biên mới tính lại bằng Python
+  (`leave/report_day_split*.py`), đừng thêm đường tính ngày thứ hai. Chi tiết `02-nghi-phep.md` §7.3.
 - ⚠️ **Số phép còn lại KHÔNG lưu thành cột** — `balance_service.remaining()` là nơi duy
   nhất tính. **Số ngày nghỉ** chỉ tính ở `workday_service.count_leave_days()` — **SỬ DỤNG LỊCH LÀM VIỆC của người nghỉ** (`work_schedule/resolver.load_day_plans`), không còn `WEEKEND_DAYS`. Gọi `count_leave_days()` hoặc `count_hourly_days()` **PHẢI truyền `employee=`**, nếu quên thì sẽ tính theo lịch mặc định cho người có lịch riêng, dẫn tới sai âm thầm. Xem chi tiết ở `doc/erp/hrm/03-lich-lam-viec.md` §7, §12.
 - ⚠️ **Hủy đơn KHÔNG được gọi `block_legacy_path`** (chốt đó chỉ dành cho duyệt/từ chối

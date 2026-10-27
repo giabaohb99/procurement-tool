@@ -23,19 +23,19 @@ giá trị thật trong gói tệp `report_sql_*`, tránh hai công thức lệc
 """
 from __future__ import annotations
 
-from typing import Callable
+from datetime import datetime, timedelta
 
 from sqlalchemy import and_, case, cast, Float, func, literal_column
 from sqlalchemy.orm import Session
 
-from app.core.report_aggregate import EMPTY_LABEL, DerivedSpec
+from app.core.report_aggregate import DerivedSpec
+from app.modules.leave.catalog_model import LeaveType
 from app.modules.leave.constants import LR_APPROVED, LR_PENDING, LR_REJECTED, LR_RETURNED
+from app.modules.leave.report_sql_merge import ZERO_METRICS, merge_dim_rows, totals_dict  # noqa: F401 (tái xuất)
 from app.modules.leave.request_model import LeaveRequest, LeaveRequestLine
 
-#  7 khóa số thô (chưa gồm 2 khóa DẪN XUẤT, tính sau bằng `compute_derived(.., DERIVED)`) —
-#  giá trị mặc định cho một NHÓM/MỐC chưa có hàng nào khớp.
-ZERO_METRICS = {"requests": 0, "days_approved": 0.0, "days_pending": 0.0, "people_on_leave": 0,
-                "requests_reject_return": 0, "turnaround_hours_sum": 0.0, "turnaround_hours_count": 0}
+#  Đơn chờ duyệt quá bấy nhiêu giờ kể từ lúc nộp thì tính là «chờ quá 3 ngày».
+PENDING_OVERDUE_HOURS = 72
 
 DERIVED = [
     DerivedSpec("reject_return_rate", "Tỷ lệ từ chối/trả về", num="requests_reject_return",
@@ -43,6 +43,9 @@ DERIVED = [
     #  `scale=1`: TRUNG BÌNH giờ, không phải tỷ lệ % (mặc định ×100 của DerivedSpec).
     DerivedSpec("avg_turnaround_hours", "Thời gian duyệt TB", num="turnaround_hours_sum",
                den="turnaround_hours_count", kind="hours", good="down", scale=1),
+    #  Ngày nghỉ đã duyệt BÌNH QUÂN mỗi người nghỉ (không phải %, nên scale=1).
+    DerivedSpec("avg_days_per_person", "Ngày nghỉ TB/người", num="days_approved",
+               den="people_on_leave", kind="days", scale=1, ndigits=2),
 ]
 
 #  Cột GOM theo CHIỀU, phía header (copy sẵn trên `LeaveRequest`) — `leave_type` KHÔNG nằm ở
@@ -83,7 +86,14 @@ def header_aggregate(db: Session, scoped_query, group_col=None, with_first_date:
     thêm `MIN(from_date)` — KHÔNG phải một chỉ số nghiệp vụ, mà là CHÌA KHÓA sắp lại thứ tự
     HÒA ĐIỂM đúng như bản cũ, xem docstring `merge_dim_rows`."""
     expr = turnaround_hours_expr(db)
+    #  Mốc 72 giờ trước, so với CÙNG loại đồng hồ đã ghi `submitted_at`: tiến trình ghi bằng
+    #  `datetime.now()` (giờ máy), nên dùng `now()` chứ không `utcnow()` để khỏi lệch khi
+    #  container không chạy UTC.
+    overdue_cutoff = datetime.now() - timedelta(hours=PENDING_OVERDUE_HOURS)
     cols = [
+        func.count(case((and_(LeaveRequest.status == LR_PENDING,
+                              LeaveRequest.submitted_at < overdue_cutoff), 1))
+                  ).label("requests_pending_over_3d"),
         func.count().label("requests"),
         func.count(case((LeaveRequest.status.in_((LR_REJECTED, LR_RETURNED)), 1))
                   ).label("requests_reject_return"),
@@ -102,7 +112,7 @@ def header_aggregate(db: Session, scoped_query, group_col=None, with_first_date:
 
 def line_aggregate(db: Session, header_subq, group_col=None, with_first_date: bool = False,
                    extra_filter=None):
-    """2 chỉ số NGÀY, GOM trên `LeaveRequestLine` JOIN `header_subq` (trạng thái/ngày/chiều
+    """3 chỉ số NGÀY (đã duyệt/chờ/không lương), GOM trên `LeaveRequestLine` JOIN `header_subq` (trạng thái/ngày/chiều
     lấy từ ĐƠN — bảng dòng không tự có các cột này). `with_first_date` — xem `header_aggregate`.
     `extra_filter` — lọc THÊM (vd `cap_groups` tính lại tổng của phần "(Các nhóm khác)"); không
     có ở `header_aggregate` vì caller tự `.filter()` thẳng lên `scoped_query` composable sẵn."""
@@ -110,10 +120,15 @@ def line_aggregate(db: Session, header_subq, group_col=None, with_first_date: bo
                                   else_=0.0)).label("days_approved")
     days_pending = func.sum(case((header_subq.c.status == LR_PENDING, LeaveRequestLine.days),
                                  else_=0.0)).label("days_pending")
-    cols = [days_approved, days_pending]
+    #  Ngày KHÔNG LƯƠNG: dòng đã duyệt của loại nghỉ `is_paid = False` (JOIN loại — 1 khóa/dòng,
+    #  không nhân hàng, số truy vấn không đổi).
+    days_unpaid = func.sum(case((and_(header_subq.c.status == LR_APPROVED, LeaveType.is_paid.is_(False)),
+                                 LeaveRequestLine.days), else_=0.0)).label("days_unpaid")
+    cols = [days_approved, days_pending, days_unpaid]
     if with_first_date:
         cols.append(func.min(header_subq.c.from_date).label("first_date"))
-    q = db.query(LeaveRequestLine).join(header_subq, LeaveRequestLine.request_id == header_subq.c.id)
+    q = (db.query(LeaveRequestLine).join(header_subq, LeaveRequestLine.request_id == header_subq.c.id)
+         .outerjoin(LeaveType, LeaveType.id == LeaveRequestLine.leave_type_id))
     if extra_filter is not None:
         q = q.filter(extra_filter)
     if group_col is None:
@@ -129,56 +144,3 @@ def dim_columns(dim: str, header_subq):
     if dim == "leave_type":
         return LeaveRequest.leave_type_id, LeaveRequestLine.leave_type_id
     return _HEADER_DIM_COLS[dim], getattr(header_subq.c, _HEADER_DIM_COLS[dim].key)
-
-
-def totals_dict(h_row, l_row) -> dict:
-    """Dựng dict 7 khóa THÔ cho TỔNG (không chia nhóm) từ 2 dòng gộp `header_aggregate`/
-    `line_aggregate(group_col=None)`."""
-    return {"requests": int(h_row.requests or 0),
-            "requests_reject_return": int(h_row.requests_reject_return or 0),
-            "people_on_leave": int(h_row.people_on_leave or 0),
-            "turnaround_hours_sum": float(h_row.turnaround_hours_sum or 0),
-            "turnaround_hours_count": int(h_row.turnaround_hours_count or 0),
-            "days_approved": float(l_row.days_approved or 0),
-            "days_pending": float(l_row.days_pending or 0)}
-
-
-def merge_dim_rows(header_rows, line_rows, label_of: Callable[[int], str]) -> dict[str, dict]:
-    """Hợp (UNION) 2 tập kết quả GOM theo CÙNG một chiều — một khóa có thể chỉ xuất hiện ở
-    MỘT bên (vd loại nghỉ chỉ từng là loại PHỤ, chưa bao giờ là loại CHÍNH của đơn nào, xem
-    `TestBreakdownLoaiNghiXepTheoNgay`); bên vắng mặt giữ nguyên `ZERO_METRICS`. Khóa rỗng/0
-    gộp về `""`/`EMPTY_LABEL` — cùng luật chuẩn hóa của `report_compute.bucket_rows`.
-
-    ⚠️ **Bẫy thứ tự hòa điểm** (cùng bài học `survey/report_grouped_fetch.py`): bản cũ xếp
-    nhóm theo `rank_by` rồi dùng THỨ TỰ LẦN ĐẦU GẶP trong hàng thô làm tiêu chí phụ khi HÒA
-    ĐIỂM (Python `sort` ổn định) — mà thứ tự đó, đo thực tế, là theo `from_date` TĂNG DẦN (nhờ
-    chỉ số `ix_leave_request_range`). `GROUP BY` ở SQL không giữ thứ tự đó, nên hàm này giữ
-    thêm `first_date` (yêu cầu gọi `header_aggregate`/`line_aggregate` với
-    `with_first_date=True`) để `groups_for_dim`/breakdown SẮP LẠI đúng thứ tự "lần đầu gặp"
-    trước khi đưa cho `report_compute.merge_groups_by_key`/`sorted()`."""
-    out: dict[str, dict] = {}
-
-    def _bucket(raw) -> dict:
-        k = "" if raw in (None, "", 0) else str(raw)
-        if k not in out:
-            out[k] = {"label": label_of(raw) if k else EMPTY_LABEL, "first_date": None, **ZERO_METRICS}
-        return out[k]
-
-    def _track_date(b: dict, first_date) -> None:
-        if first_date is not None and (b["first_date"] is None or first_date < b["first_date"]):
-            b["first_date"] = first_date
-
-    for r in header_rows:
-        b = _bucket(r.key)
-        b["requests"] = int(r.requests or 0)
-        b["requests_reject_return"] = int(r.requests_reject_return or 0)
-        b["people_on_leave"] = int(r.people_on_leave or 0)
-        b["turnaround_hours_sum"] = float(r.turnaround_hours_sum or 0)
-        b["turnaround_hours_count"] = int(r.turnaround_hours_count or 0)
-        _track_date(b, getattr(r, "first_date", None))
-    for r in line_rows:
-        b = _bucket(r.key)
-        b["days_approved"] = float(r.days_approved or 0)
-        b["days_pending"] = float(r.days_pending or 0)
-        _track_date(b, getattr(r, "first_date", None))
-    return out

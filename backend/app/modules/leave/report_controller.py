@@ -13,10 +13,10 @@ from app.core.report_export import report_xlsx
 from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
 from app.core.response import success
-from app.modules.report.procurement_summary_rows import valid_company_id
+from app.modules.report.procurement_summary_rows import valid_company_id, valid_department_id
 from app.modules.report_access.guard import require_report
 
-from . import report_service
+from . import report_drill_rows, report_service
 
 router = APIRouter(prefix="/api/leave-requests", tags=["leave"])
 
@@ -27,8 +27,9 @@ def leave_request_summary(request: Request, db: Session = Depends(get_db),
     prof = get_perm_profile(db, user)
     period = parse_period(request.query_params)
     cid = valid_company_id(request.query_params.get("company_id"))
+    did = valid_department_id(request.query_params.get("department_id"))
     data = report_service.build_summary(db, user, prof, period,
-                                        request.query_params.get("group_by") or None, cid)
+                                        request.query_params.get("group_by") or None, cid, did)
     return success(data)
 
 
@@ -38,6 +39,19 @@ def leave_request_summary_export(request: Request, db: Session = Depends(get_db)
     prof = get_perm_profile(db, user)
     period = parse_period(request.query_params)
     cid = valid_company_id(request.query_params.get("company_id"))
+    did = valid_department_id(request.query_params.get("department_id"))
     data = report_service.build_summary(db, user, prof, period,
-                                        request.query_params.get("group_by") or None, cid)
+                                        request.query_params.get("group_by") or None, cid, did)
     return report_xlsx("nghi-phep-tinh-hinh", data)
+
+
+@router.get("/summary/rows", dependencies=[Depends(require_report(ReportKey.LEAVE_USAGE))])
+def leave_request_summary_rows(request: Request, db: Session = Depends(get_db),
+                               user=Depends(require("leave_request", "read"))):
+    """Bấm một con số ra danh sách đơn — cùng cổng quyền/phạm vi với `/summary` (CR-686)."""
+    prof = get_perm_profile(db, user)
+    period = parse_period(request.query_params)
+    cid = valid_company_id(request.query_params.get("company_id"))
+    did = valid_department_id(request.query_params.get("department_id"))
+    return success(report_drill_rows.build_rows(db, user, prof, period, request.query_params,
+                                                cid, did))

@@ -36,6 +36,8 @@ REPORT_SUMMARY_PATHS = frozenset({
     "/api/survey-report/summary", "/api/employees/summary", "/api/leave-requests/summary",
     "/api/leave-balances/summary", "/api/vehicle-bookings/summary", "/api/seal-requests/summary",
     "/api/documents/summary", "/api/approvals/summary", "/api/work/summary",
+    #  duoc-CR-686: Hợp đồng lao động + Hồ sơ & tài khoản còn thiếu.
+    "/api/labor-contracts/summary", "/api/employees/profile-gaps/summary",
 })
 
 _SOCKET_TIMEOUT = 0.2   # giây — Redis chết thì fail NHANH, đừng kéo cả request theo

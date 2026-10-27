@@ -1,4 +1,4 @@
-import { CalendarOff, IdCard, Wallet } from 'lucide-react'
+import { CalendarOff, FileSignature, IdCard, UserX, Wallet } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 
@@ -6,7 +6,8 @@ import type { ReportCatalogEntry } from './report-catalog'
 
 /**
  * Nhóm NHÂN SỰ của danh mục báo cáo (phase 04) — Nhân sự (biến động & cơ cấu) ·
- * Nghỉ phép (tình hình nghỉ) · Quỹ phép năm. Mỗi báo cáo = một `ReportPageConfig`
+ * Nghỉ phép (tình hình nghỉ) · Quỹ phép năm · Hợp đồng lao động · Hồ sơ còn thiếu
+ * (duoc-CR-686). Mỗi báo cáo = một `ReportPageConfig`
  * (`pages/hr-headcount-report-page.tsx`/`leave-usage-report-page.tsx`/
  * `leave-balance-report-page.tsx`) — xem các tệp đó để biết KPI/chỉ số xu
  * hướng/breakdown/nhóm mặc định.
@@ -55,5 +56,36 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
     endpoint: '/api/leave-balances/summary',
     overviewKpis: ['remaining'],
     load: async () => (await import('../pages/leave-balance-report-page')).LeaveBalanceReportPage,
+  },
+  {
+    label: 'Hợp đồng lao động',
+    description: 'HĐ đang hiệu lực, sắp hết hạn, quá hạn mà vẫn đi làm, nhân sự chưa có HĐ.',
+    path: appRoutes.report.laborContract,
+    //  HĐLĐ không có màn danh sách riêng (nằm ở tab của hồ sơ nhân sự) nên nguồn là danh
+    //  sách nhân sự — khóa gác báo cáo vẫn là `labor_contract` của `/api/labor-contracts/summary`
+    //  (ngoại lệ có ghi ở `report-catalog.test.ts`).
+    sourcePath: appRoutes.hr.employees,
+    icon: FileSignature,
+    //  ReportKey.LABOR_CONTRACT (backend) = 17.
+    key: 17,
+    entity: 'labor_contract',
+    group: 'Nhân sự',
+    endpoint: '/api/labor-contracts/summary',
+    overviewKpis: ['expiring_30', 'overdue'],
+    load: async () => (await import('../pages/labor-contract-report-page')).LaborContractReportPage,
+  },
+  {
+    label: 'Hồ sơ & tài khoản còn thiếu',
+    description: 'Hồ sơ đang làm còn thiếu thông tin, tài khoản chưa mở hoặc còn mở sau khi nghỉ.',
+    path: appRoutes.report.hrProfileGaps,
+    sourcePath: appRoutes.hr.employees,
+    icon: UserX,
+    //  ReportKey.HR_PROFILE_GAPS (backend) = 18.
+    key: 18,
+    entity: 'employee',
+    group: 'Nhân sự',
+    endpoint: '/api/employees/profile-gaps/summary',
+    overviewKpis: ['complete_rate'],
+    load: async () => (await import('../pages/hr-profile-gaps-report-page')).HrProfileGapsReportPage,
   },
 ]

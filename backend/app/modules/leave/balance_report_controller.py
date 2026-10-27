@@ -13,10 +13,11 @@ from app.core.report_export import report_xlsx
 from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
 from app.core.response import success
-from app.modules.report.procurement_summary_rows import valid_company_id
+from app.modules.report.procurement_summary_rows import valid_company_id, valid_department_id
 from app.modules.report_access.guard import require_report
 
-from . import balance_report_service
+from . import balance_report_drill_rows, balance_report_service
+from .balance_report_spec import valid_employee_status
 
 router = APIRouter(prefix="/api/leave-balances", tags=["leave"])
 
@@ -27,8 +28,11 @@ def leave_balance_summary(request: Request, db: Session = Depends(get_db),
     prof = get_perm_profile(db, user)
     period = parse_period(request.query_params)
     cid = valid_company_id(request.query_params.get("company_id"))
+    did = valid_department_id(request.query_params.get("department_id"))
+    status = valid_employee_status(request.query_params.get("employee_status"))
     data = balance_report_service.build_summary(db, user, prof, period,
-                                                request.query_params.get("group_by") or None, cid)
+                                                request.query_params.get("group_by") or None,
+                                                cid, did, status)
     return success(data)
 
 
@@ -38,6 +42,22 @@ def leave_balance_summary_export(request: Request, db: Session = Depends(get_db)
     prof = get_perm_profile(db, user)
     period = parse_period(request.query_params)
     cid = valid_company_id(request.query_params.get("company_id"))
+    did = valid_department_id(request.query_params.get("department_id"))
+    status = valid_employee_status(request.query_params.get("employee_status"))
     data = balance_report_service.build_summary(db, user, prof, period,
-                                                request.query_params.get("group_by") or None, cid)
+                                                request.query_params.get("group_by") or None,
+                                                cid, did, status)
     return report_xlsx("quy-phep-nam", data)
+
+
+@router.get("/summary/rows", dependencies=[Depends(require_report(ReportKey.LEAVE_BALANCE))])
+def leave_balance_summary_rows(request: Request, db: Session = Depends(get_db),
+                               user=Depends(require("leave_balance", "read"))):
+    """Bấm một con số ra danh sách người/dòng quỹ — cùng cổng với `/summary` (CR-686)."""
+    prof = get_perm_profile(db, user)
+    period = parse_period(request.query_params)
+    cid = valid_company_id(request.query_params.get("company_id"))
+    did = valid_department_id(request.query_params.get("department_id"))
+    status = valid_employee_status(request.query_params.get("employee_status"))
+    return success(balance_report_drill_rows.build_rows(db, user, prof, period, request.query_params,
+                                                        cid, did, status))

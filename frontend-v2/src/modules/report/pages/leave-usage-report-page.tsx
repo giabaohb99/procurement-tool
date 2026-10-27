@@ -1,11 +1,13 @@
 import { appRoutes } from '@/shared/constants/app-routes'
 
+import { ReportDepartmentFilter } from '../components/report-department-filter'
 import type { ReportPageConfig } from '../types/report-analytics'
 import { ReportAnalyticsPage } from './report-analytics-page'
 
 const CONFIG: ReportPageConfig = {
   endpoint: '/api/leave-requests/summary',
   exportEndpoint: '/api/leave-requests/summary/export',
+  drilldownEndpoint: '/api/leave-requests/summary/rows',
   entity: 'leave_request',
   title: 'Tình hình nghỉ phép',
   description:
@@ -20,6 +22,7 @@ const CONFIG: ReportPageConfig = {
     { key: 'leave_type', title: 'Top loại nghỉ', rankMetric: 'days_approved' },
     { key: 'status', title: 'Theo trạng thái' },
   ],
+  extraFilters: ReportDepartmentFilter,
 }
 
 /**

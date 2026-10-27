@@ -351,6 +351,10 @@ export const appRoutes = {
     hrHeadcount: '/report/hr-headcount',
     leaveUsage: '/report/leave-usage',
     leaveBalance: '/report/leave-balance',
+    /** Hợp đồng lao động (duoc-CR-686, khóa 17). */
+    laborContract: '/report/labor-contract',
+    /** Hồ sơ & tài khoản còn thiếu (duoc-CR-686, khóa 18). */
+    hrProfileGaps: '/report/hr-profile-gaps',
     vehicleBooking: '/report/vehicle-booking',
     sealRequest: '/report/seal-request',
     document: '/report/document',

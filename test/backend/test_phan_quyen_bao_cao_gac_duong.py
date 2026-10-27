@@ -52,7 +52,20 @@ GATED: dict[str, ReportKey] = {
     "/api/feature-usage/summary/export": ReportKey.FEATURE_USAGE,
     "/api/work-capability/summary": ReportKey.WORK_CAPABILITY,
     "/api/work-capability/summary/export": ReportKey.WORK_CAPABILITY,
+    #  duoc-CR-686: hai báo cáo Nhân sự mới (khóa 17, 18).
+    "/api/labor-contracts/summary": ReportKey.LABOR_CONTRACT,
+    "/api/labor-contracts/summary/export": ReportKey.LABOR_CONTRACT,
+    "/api/employees/profile-gaps/summary": ReportKey.HR_PROFILE_GAPS,
+    "/api/employees/profile-gaps/summary/export": ReportKey.HR_PROFILE_GAPS,
+    #  duoc-CR-686: đường «bấm số ra danh sách» — gác KÉP y hệt `/summary` của nó.
+    "/api/employees/summary/rows": ReportKey.HR_HEADCOUNT,
+    "/api/leave-requests/summary/rows": ReportKey.LEAVE_USAGE,
+    "/api/leave-balances/summary/rows": ReportKey.LEAVE_BALANCE,
+    "/api/labor-contracts/summary/rows": ReportKey.LABOR_CONTRACT,
+    "/api/employees/profile-gaps/summary/rows": ReportKey.HR_PROFILE_GAPS,
 }
+#  Khóa có thêm đường `/summary/rows` (3 route) — còn lại chỉ `/summary` + `/summary/export` (2 route).
+ROWS_KEYS = {v for k, v in GATED.items() if k.endswith("/summary/rows")}
 
 #  KHÔNG thuộc phân hệ Báo cáo — đã grep, không gán khóa nào (bảng phase-02).
 NOT_REPORT = {
@@ -99,6 +112,10 @@ ROUTE_SPECS = [
     #  duoc-CR-657: Năng lực theo loại việc gác `setting` (khóa 16, số theo từng người).
     (ReportKey.WORK_CAPABILITY, "setting",
      "/api/work-capability/summary", "/api/work-capability/summary/export"),
+    (ReportKey.LABOR_CONTRACT, "labor_contract",
+     "/api/labor-contracts/summary", "/api/labor-contracts/summary/export"),
+    (ReportKey.HR_PROFILE_GAPS, "employee",
+     "/api/employees/profile-gaps/summary", "/api/employees/profile-gaps/summary/export"),
 ]
 
 PRESET_QS = {"preset": "this_month", "compare": "none"}
@@ -106,7 +123,8 @@ PRESET_QS = {"preset": "this_month", "compare": "none"}
 
 def _summary_routes() -> list[APIRoute]:
     return [r for r in app.routes if isinstance(r, APIRoute)
-            and (r.path.endswith("/summary") or r.path.endswith("/summary/export"))]
+            and (r.path.endswith("/summary") or r.path.endswith("/summary/export")
+                 or r.path.endswith("/summary/rows"))]
 
 
 def _route_report_key(path: str):
@@ -134,7 +152,7 @@ def test_moi_duong_summary_duoc_phan_loai_gated_hoac_not_report():
 def test_moi_report_key_gac_dung_hai_duong():
     from collections import Counter
     counts = Counter(GATED.values())
-    assert counts == {k: 2 for k in ReportKey}, counts
+    assert counts == {k: 3 if k in ROWS_KEYS else 2 for k in ReportKey}, counts
 
 
 def test_khoa_gac_tren_route_khop_bang_khai():
