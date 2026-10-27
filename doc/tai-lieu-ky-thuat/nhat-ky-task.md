@@ -17457,7 +17457,8 @@ Commit: 77c7bf59 (main = erp-v2) · Deploy: prod api, celery-worker, celery-beat
 - tag: Được
 Anh Được báo người dùng in phiếu trên giao diện cũ thì bản in dính luôn khung thông báo «Đã có phiên bản mới» với nút Tải lại. Anh muốn bỏ khung đó khỏi bản in, và nếu có bản mới thì ứng dụng tự tải lại vào cuối ngày.
 Đã làm xong: khung thông báo được ẩn khi in. Khi có bản mới mà người dùng chưa bấm Tải lại, kể cả đã bấm Để sau, ứng dụng tự tải lại lúc 0 giờ đêm đó; máy ngủ qua 0 giờ thì lúc thức dậy sẽ tải lại ngay. Ứng dụng cũng tự dò bản mới mỗi giờ, vì trước đây tab mở cả ngày không biết là đã có deploy. Khung thông báo ghi thêm một dòng báo giờ tự tải lại. Kiểm kiểu giao diện cũ vẫn đúng bốn lỗi cũ, không có lỗi mới. Phần này chỉ chạy ở bản build nên chưa thử được ở máy local.
-Mã nguồn: frontend/src/components/PwaReloadPrompt.tsx
+Lượt hai: anh Được thấy người dùng không biết bấm Tải lại nên cứ kẹt ở bản cũ, mà bản cũ không có hẹn 0 giờ. Nay bản mới tự cài ngay, không chờ ai bấm. Lúc cài, nó hỏi từng tab đang mở; tab nào không trả lời là đang chạy bản cũ và được tự tải lại ngay. Tab chạy bản mới thì vẫn hiện thông báo và hẹn tải lại lúc 0 giờ như lượt một. Tab bản cũ chỉ bị tải lại một lần, nếu đúng lúc đó đang nhập dở thì sẽ mất phần chưa lưu.
+Mã nguồn: frontend/src/components/PwaReloadPrompt.tsx · frontend/public/sw-update-old-clients.js · frontend/vite.config.ts
 
 ## duoc-CR-686 | Kho mẫu báo cáo Nhân sự và đợt 1: sửa số liệu nghỉ phép, thêm báo cáo hợp đồng lao động và hồ sơ còn thiếu
 - status: dang-lam
@@ -17478,3 +17479,12 @@ Anh Được duyệt đợt 1 và bảo làm tiếp. Đợt 2 làm ba mẫu: s�
 Đã tra lại văn bản luật: mẫu 01/PLI là danh sách từng người gồm hai mươi bảy cột chứ không phải bảng số tổng như tài liệu ghi trước đó, nên đã sửa lại tài liệu; bản sửa nghị định mới là dự thảo nên vẫn dùng mẫu cũ. Anh chốt: nhóm vị trí việc làm tự suy từ cấp bậc và trình độ, cột nào hệ thống chưa có dữ liệu thì để trống cho phòng Nhân sự điền tay, nhóm tuổi dưới ba người thì che số.
 Đã làm xong trên máy local: hai báo cáo mới xuất được tệp Excel đúng khuôn, mỗi pháp nhân một trang; chỉ người có quyền xem dữ liệu nhạy cảm và hợp đồng lao động mới mở được. Báo cáo biến động nhân sự xem được theo nhóm tuổi, trình độ, địa điểm và nhóm vị trí việc làm. Rà mã tìm ra chỗ che nhóm tuổi còn lấy tổng trừ ra được và chỗ xuất tệp chưa theo phạm vi xuất, đều đã sửa. Viết thêm hai bài hướng dẫn và sửa hai bài cũ. Chín trăm mười bài kiểm backend và ba trăm mười tám bài kiểm giao diện đều đạt. Còn chờ đẩy lên dev, giao quyền xem cho trưởng phòng Nhân sự và nạp lại kho tìm kiếm của Trợ lý AI.
 Mã nguồn: backend/app/modules/labor_register/ · backend/app/modules/employee/report_headcount_dims.py · report_headcount_privacy.py · frontend-v2/src/modules/report/pages/labor-register-report-page.tsx · labor-usage-report-page.tsx · backend/scripts/seed_help_bao_cao_nhan_su.py
+
+## duoc-CR-688 | Báo cáo Nhân sự đợt 3: quỹ lương theo pháp nhân, phúc lợi theo dịp, cơ cấu quản lý, điều chuyển, biểu đồ linh hoạt
+- status: dang-lam
+- date: 2026-10-27
+- pic: NSU231
+- tag: Được
+Anh Được bảo làm tiếp đợt 3 của kho mẫu báo cáo Nhân sự. Đợt này làm bốn báo cáo: quỹ lương theo từng pháp nhân để chọn công ty tuyển người, đối tượng và kinh phí theo từng dịp phúc lợi như 8/3, cơ cấu quản lý, điều chuyển và bổ nhiệm; kèm biểu đồ đổi được kiểu cho mọi báo cáo.
+Vì anh chưa chốt phần kế hoạch nên quỹ lương chỉ tính số thực tế từ hợp đồng, còn mức quà phúc lợi nhập tay trên màn và không lưu lại đợt phát.
+Mã nguồn: plans/261027-1045-kho-mau-bao-cao-nhan-su/phase-10…15
