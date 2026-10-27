@@ -1,7 +1,7 @@
 import type { AxiosError } from 'axios'
-import { useState } from 'react'
 
 import { extractErrorMessage } from '@/core/api'
+import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { toDateInputValue } from '@/shared/utils/format-date'
 
@@ -9,6 +9,10 @@ import { useReportAnalytics } from '../hooks/use-report-analytics'
 import { useReportDrilldownState } from '../hooks/use-report-drilldown-state'
 import { useReportFilters } from '../hooks/use-report-filters'
 import type { ReportPageConfig, ReportPeriod } from '../types/report-analytics'
+import {
+  FLEXIBLE_CHART_URL_PARAMS,
+  resolveChartMetric,
+} from '../utils/report-flexible-chart-options'
 import { ReportAnalyticsBody } from '../components/report-analytics-body'
 import { ReportDrilldownSheet } from '../components/report-drilldown-sheet'
 import { ReportErrorCard } from '../components/report-error-card'
@@ -57,11 +61,17 @@ export function ReportAnalyticsPage({ config }: ReportAnalyticsPageProps) {
     defaultGroupBy: config.defaultGroupBy,
     defaultPreset: config.defaultPreset,
   })
-  const [chartMetric, setChartMetric] = useState(config.chartMetric)
+  //  Chỉ số đang vẽ nằm trên URL (`chart_metric`, duoc-CR-688) để link chia sẻ mở đúng góc
+  //  nhìn. `useUrlParamState` ghi MỘT lượt và xóa tham số khi trùng mặc định của trang.
+  const [rawChartMetric, setChartMetric] = useUrlParamState(
+    FLEXIBLE_CHART_URL_PARAMS.metric,
+    config.chartMetric,
+  )
   const { data, isLoading, isError, error } = useReportAnalytics(
     config.endpoint,
     filters.queryParams,
   )
+  const chartMetric = resolveChartMetric(rawChartMetric, config.chartMetric, data?.meta.metrics)
   const drilldown = useReportDrilldownState({
     endpoint: config.drilldownEndpoint,
     meta: data?.meta ?? { metrics: [], dimensions: [], group_by: config.defaultGroupBy },

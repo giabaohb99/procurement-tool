@@ -270,6 +270,10 @@ export const REPORT_KEY: readonly StatusOption[] = [
   {"value": "18", "label": "Hồ sơ & tài khoản còn thiếu", "sort_order": 18, "is_terminal": false, "is_exception": false},
   {"value": "19", "label": "Sổ quản lý lao động", "sort_order": 19, "is_terminal": false, "is_exception": false},
   {"value": "20", "label": "Báo cáo sử dụng lao động (01/PLI)", "sort_order": 20, "is_terminal": false, "is_exception": false},
+  {"value": "21", "label": "Quỹ lương theo pháp nhân", "sort_order": 21, "is_terminal": false, "is_exception": false},
+  {"value": "22", "label": "Phúc lợi & sự kiện", "sort_order": 22, "is_terminal": false, "is_exception": false},
+  {"value": "23", "label": "Cơ cấu quản lý", "sort_order": 23, "is_terminal": false, "is_exception": false},
+  {"value": "24", "label": "Điều chuyển & bổ nhiệm", "sort_order": 24, "is_terminal": false, "is_exception": false},
 ]
 
 /** Loại hình pháp lý NCC */

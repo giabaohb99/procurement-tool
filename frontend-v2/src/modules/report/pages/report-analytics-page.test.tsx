@@ -196,6 +196,22 @@ describe('ReportAnalyticsPage — clicking a KPI card switches the trend chart m
     //  `ReportGroupedTable`) — chuỗi thứ hai là tiêu đề cột của bảng.
     await user.click(screen.getAllByText('Giá trị')[0])
     expect(await screen.findByText('Xu hướng Giá trị')).toBeInTheDocument()
+    //  duoc-CR-688: đổi chỉ số vẽ là đổi cách VẼ — không gọi lại `/summary`, không gửi `chart_metric`.
+    const summaryCalls = vi.mocked(apiGet).mock.calls.filter(([u]) => u === TEST_CONFIG.endpoint)
+    expect(summaryCalls).toHaveLength(1)
+    for (const [, c] of summaryCalls) {
+      expect((c as { params: Record<string, string> }).params).not.toHaveProperty('chart_metric')
+    }
+  })
+
+  it('opens a shared link on the metric named by chart_metric', async () => {
+    renderPage('/report/test?chart_metric=amount')
+    expect(await screen.findByText('Xu hướng Giá trị')).toBeInTheDocument()
+  })
+
+  it('falls back to config.chartMetric for an unknown chart_metric in the link', async () => {
+    renderPage('/report/test?chart_metric=khong_ton_tai')
+    expect(await screen.findByText('Xu hướng Dòng hàng')).toBeInTheDocument()
   })
 })
 

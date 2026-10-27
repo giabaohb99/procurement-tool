@@ -10,6 +10,7 @@ import {
   type ReportPresetKey,
 } from '../config/report-period-presets'
 import type { ReportCompareMode } from '../types/report-analytics'
+import { FLEXIBLE_CHART_URL_PARAM_NAMES } from '../utils/report-flexible-chart-options'
 
 export const ALL_COMPANY = 'all'
 const DEFAULT_COMPARE: ReportCompareMode = 'previous'
@@ -123,8 +124,10 @@ export function useReportFilters({
   const queryParams = useMemo(() => {
     const params: Record<string, string> = {}
     for (const [key, value] of searchParams.entries()) {
-      //  `year` đã được dịch sang `preset=custom` ở trên — không gửi cả hai.
-      if (key !== 'year') params[key] = value
+      //  `year` đã được dịch sang `preset=custom` ở trên — không gửi cả hai. Tham số của biểu
+      //  đồ linh hoạt (`chart_*`, duoc-CR-688) chỉ đổi cách VẼ: gửi đi là đổi khóa truy vấn,
+      //  đổi kiểu biểu đồ thành một lượt gọi `/summary` thừa.
+      if (key !== 'year' && !FLEXIBLE_CHART_URL_PARAM_NAMES.has(key)) params[key] = value
     }
     params.preset = preset
     if (preset === 'custom') {

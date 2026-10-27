@@ -70,6 +70,19 @@ GATED: dict[str, ReportKey] = {
     "/api/labor-usage-report/summary": ReportKey.LABOR_USAGE_REPORT,
     "/api/labor-usage-report/summary/export": ReportKey.LABOR_USAGE_REPORT,
     "/api/labor-usage-report/summary/rows": ReportKey.LABOR_USAGE_REPORT,
+    #  duoc-CR-688: quỹ lương, phúc lợi, cơ cấu quản lý, điều chuyển.
+    "/api/payroll-fund/summary": ReportKey.PAYROLL_FUND,
+    "/api/payroll-fund/summary/export": ReportKey.PAYROLL_FUND,
+    "/api/payroll-fund/summary/rows": ReportKey.PAYROLL_FUND,
+    "/api/benefit-audience/summary": ReportKey.BENEFIT_AUDIENCE,
+    "/api/benefit-audience/summary/export": ReportKey.BENEFIT_AUDIENCE,
+    "/api/benefit-audience/summary/rows": ReportKey.BENEFIT_AUDIENCE,
+    "/api/management-span/summary": ReportKey.MANAGEMENT_SPAN,
+    "/api/management-span/summary/export": ReportKey.MANAGEMENT_SPAN,
+    "/api/management-span/summary/rows": ReportKey.MANAGEMENT_SPAN,
+    "/api/work-moves/summary": ReportKey.WORK_MOVES,
+    "/api/work-moves/summary/export": ReportKey.WORK_MOVES,
+    "/api/work-moves/summary/rows": ReportKey.WORK_MOVES,
 }
 #  Khóa có thêm đường `/summary/rows` (3 route) — còn lại chỉ `/summary` + `/summary/export` (2 route).
 ROWS_KEYS = {v for k, v in GATED.items() if k.endswith("/summary/rows")}
@@ -123,6 +136,14 @@ ROUTE_SPECS = [
      "/api/labor-contracts/summary", "/api/labor-contracts/summary/export"),
     (ReportKey.HR_PROFILE_GAPS, "employee",
      "/api/employees/profile-gaps/summary", "/api/employees/profile-gaps/summary/export"),
+    (ReportKey.PAYROLL_FUND, "labor_contract",
+     "/api/payroll-fund/summary", "/api/payroll-fund/summary/export"),
+    (ReportKey.BENEFIT_AUDIENCE, "employee",
+     "/api/benefit-audience/summary", "/api/benefit-audience/summary/export"),
+    (ReportKey.MANAGEMENT_SPAN, "employee",
+     "/api/management-span/summary", "/api/management-span/summary/export"),
+    (ReportKey.WORK_MOVES, "employee",
+     "/api/work-moves/summary", "/api/work-moves/summary/export"),
 ]
 
 PRESET_QS = {"preset": "this_month", "compare": "none"}

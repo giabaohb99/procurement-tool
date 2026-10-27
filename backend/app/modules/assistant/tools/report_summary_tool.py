@@ -1,4 +1,4 @@
-"""Tool `report_summary` — một cửa vào 13 báo cáo gom sẵn của phân hệ Báo cáo (ai-CR-208, K11 của doc/erp/21 §T1).
+"""Tool `report_summary` — một cửa vào các báo cáo gom sẵn của phân hệ Báo cáo (ai-CR-208, K11 của doc/erp/21 §T1).
 
 Không viết lại phép tính, không gọi HTTP vòng: gọi THẲNG hàm route `/summary` của từng báo cáo, với một `Request` giả
 mang bộ lọc làm chuỗi truy vấn. Gác quyền giống hệt màn web:
@@ -92,6 +92,14 @@ REPORTS: dict[str, ReportRoute] = {
                                                            "labor_register_summary"), "/report/labor-register"),
     "labor_usage_report": ReportRoute(ReportKey.LABOR_USAGE_REPORT, _route("labor_register.usage_report_controller",
                                                                            "labor_usage_summary"), "/report/labor-usage-report"),
+    #  duoc-CR-688: phúc lợi, cơ cấu quản lý, điều chuyển — `/summary` chỉ trả số đếm. «Quỹ lương theo pháp nhân»
+    #  (khóa 21) CỐ Ý KHÔNG mở cho trợ lý: số lương, chỉ người được giao xem trên màn riêng.
+    "benefit_audience": ReportRoute(ReportKey.BENEFIT_AUDIENCE, _route("employee.benefit_report_controller",
+                                                                       "benefit_summary"), "/report/benefit-audience"),
+    "management_span": ReportRoute(ReportKey.MANAGEMENT_SPAN, _route("employee.management_report_controller",
+                                                                     "management_span_summary"), "/report/management-span"),
+    "work_moves": ReportRoute(ReportKey.WORK_MOVES, _route("employee.work_move_report_controller",
+                                                           "work_moves_summary"), "/report/work-moves"),
 }
 _BY_NUMBER = {int(r.key): name for name, r in REPORTS.items()}
 
@@ -235,7 +243,7 @@ def _filters_schema() -> dict:
 
 REPORT_SUMMARY_SPEC = ToolSpec(
     name="report_summary",
-    description=("Số liệu TỔNG HỢP của 13 báo cáo ở phân hệ Báo cáo, đúng số màn web hiện (kỳ + so sánh kỳ trước, xu hướng, "
+    description=("Số liệu TỔNG HỢP của các báo cáo ở phân hệ Báo cáo (danh sách ở report_key), đúng số màn web hiện (kỳ + so sánh kỳ trước, xu hướng, "
                  "phân rã, Xem theo). Mã báo cáo: " + "; ".join(f"{k} = {REPORT_META[r.key][0]} ({REPORT_META[r.key][1]})"
                                                              for k, r in REPORTS.items())
                  + ". Cần được giao xem báo cáo đó VÀ có quyền xem phân hệ gốc; thiếu thì trả denied kèm lý do. Tiền là VND; "

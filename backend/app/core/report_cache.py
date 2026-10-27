@@ -28,7 +28,7 @@ from app.core.config import settings
 
 logger = logging.getLogger("app.report_cache")
 
-#  13 đường `/summary` tổng hợp (verify ở `main.py`/`modules/*/report_controller.py`, 01/10/2026).
+#  Các đường `/summary` tổng hợp (verify ở `main.py`/`modules/*/report_controller.py`, 01/10/2026).
 #  KHÔNG gồm `/summary/export` hay `/api/survey-requests/{sid}/report/summary` (path ĐỘNG).
 REPORT_SUMMARY_PATHS = frozenset({
     "/api/reports/procurement/summary", "/api/reports/pr-lines/summary",
@@ -40,6 +40,10 @@ REPORT_SUMMARY_PATHS = frozenset({
     "/api/labor-contracts/summary", "/api/employees/profile-gaps/summary",
     #  duoc-CR-687: Sổ quản lý lao động + mẫu 01/PLI.
     "/api/labor-register/summary", "/api/labor-usage-report/summary",
+    #  duoc-CR-688: phúc lợi, cơ cấu quản lý, điều chuyển. KHÔNG gồm `/api/payroll-fund/summary`: tổng quỹ
+    #  lương không được nằm trong Redis (gỡ quyền xem phải có hiệu lực ngay, không đợi hết hạn bộ nhớ đệm).
+    "/api/benefit-audience/summary", "/api/management-span/summary",
+    "/api/work-moves/summary",
 })
 
 _SOCKET_TIMEOUT = 0.2   # giây — Redis chết thì fail NHANH, đừng kéo cả request theo

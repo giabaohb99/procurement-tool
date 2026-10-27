@@ -28,7 +28,7 @@ from app.core.status_catalog import Code, CodeSet, register
 
 
 class ReportKey(IntEnum):
-    """20 báo cáo của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
+    """24 báo cáo của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
     phase-02 của plan `261002-0836-phan-quyen-tung-bao-cao`."""
 
     PURCHASE_REPORT = 1      # Báo cáo mua hàng (Thu mua)
@@ -51,6 +51,10 @@ class ReportKey(IntEnum):
     HR_PROFILE_GAPS = 18      # Hồ sơ & tài khoản còn thiếu (Nhân sự) — duoc-CR-686
     LABOR_BOOK = 19           # Sổ quản lý lao động (Nhân sự) — duoc-CR-687; có CCCD, BHXH, lương
     LABOR_USAGE_REPORT = 20   # Báo cáo sử dụng lao động mẫu 01/PLI (Nhân sự) — duoc-CR-687
+    PAYROLL_FUND = 21         # Quỹ lương theo pháp nhân (Nhân sự) — duoc-CR-688; số lương, mặc định chỉ admin
+    BENEFIT_AUDIENCE = 22     # Phúc lợi & sự kiện (Nhân sự) — duoc-CR-688
+    MANAGEMENT_SPAN = 23      # Cơ cấu quản lý (Nhân sự) — duoc-CR-688
+    WORK_MOVES = 24           # Điều chuyển & bổ nhiệm (Nhân sự) — duoc-CR-688
 
 
 #  {khóa: (nhãn, nhóm phân hệ)} — nhãn KHỚP `label`, nhóm KHỚP `group` ở danh
@@ -76,6 +80,10 @@ REPORT_META: dict[ReportKey, tuple[str, str]] = {
     ReportKey.HR_PROFILE_GAPS: ("Hồ sơ & tài khoản còn thiếu", "Nhân sự"),
     ReportKey.LABOR_BOOK: ("Sổ quản lý lao động", "Nhân sự"),
     ReportKey.LABOR_USAGE_REPORT: ("Báo cáo sử dụng lao động (01/PLI)", "Nhân sự"),
+    ReportKey.PAYROLL_FUND: ("Quỹ lương theo pháp nhân", "Nhân sự"),
+    ReportKey.BENEFIT_AUDIENCE: ("Phúc lợi & sự kiện", "Nhân sự"),
+    ReportKey.MANAGEMENT_SPAN: ("Cơ cấu quản lý", "Nhân sự"),
+    ReportKey.WORK_MOVES: ("Điều chuyển & bổ nhiệm", "Nhân sự"),
 }
 
 #  `value` là SỐ VIẾT DƯỚI DẠNG CHUỖI — khung `status_catalog` dùng mã chuỗi,

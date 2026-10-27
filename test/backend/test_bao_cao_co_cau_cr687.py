@@ -205,6 +205,27 @@ class TestCheNhomNho:
         assert total == 5 and total - shown >= 3 and total - shown != 1     # không tách riêng được người 61 tuổi
         assert g["55+"]["suppressed"] is True and g["25-34"]["suppressed"] is True
 
+    def test_phong_2_nguoi_cung_nhom_tuoi_bo_ca_bang_nhom_tuoi(self, db, world, plain):
+        _band(db, world, "Z", 2, date(1996, 1, 1))              # cả phòng 2 người, cùng 25–34
+        db.commit()
+        data, g = _groups(db, plain, "age_band", department_id=world.dept["A.kt"])
+        assert g == {} and data["groups"] == []
+        assert data["totals"]["current"]["headcount_end"] == 2
+        assert any("Không đủ người để xem theo nhóm tuổi" in n for n in data["notes"])
+
+    def test_hai_nhom_tuoi_moi_nhom_1_nguoi_bo_ca_bang(self, db, world, plain):
+        _emp(db, world, "U1", date_of_birth=date(1996, 1, 1))
+        _emp(db, world, "U2", date_of_birth=date(1965, 1, 1))
+        db.commit()
+        data, _ = _groups(db, plain, "age_band", department_id=world.dept["A.kt"])
+        assert data["groups"] == []
+
+    def test_co_quyen_nhay_cam_khong_bi_bo_bang(self, db, world, hr):
+        _band(db, world, "Z", 2, date(1996, 1, 1))
+        db.commit()
+        data, g = _groups(db, hr, "age_band", department_id=world.dept["A.kt"])
+        assert g["25-34"]["current"]["headcount_end"] == 2
+
     def test_co_quyen_nhay_cam_thay_het_ca_nhom_mot_nguoi(self, db, world, hr):
         _band(db, world, "Y", 4, date(1996, 1, 1))
         _emp(db, world, "OLD", date_of_birth=date(1965, 1, 1))
@@ -233,6 +254,20 @@ class TestCheNhomNho:
         data = report_service.build_summary(db, plain.user, plain.profile(), period, "age_band")
         g = {x["key"]: x for x in data["groups"]}
         assert g["35-44"]["current"]["headcount_end"] is None and g["35-44"]["suppressed"] is True
+
+    def test_nhom_chi_co_nguoi_nghi_o_ky_so_sanh_van_che_va_che_phu(self, db, world, plain):
+        #  CR-688: nhóm 55+ không còn ai ở kỳ này, chỉ có 1 người nghỉ việc ở kỳ trước (tháng 8) ->
+        #  che cả nhóm, và che phụ theo KỲ TRƯỚC để Tổng kỳ trước − Σ nhóm hiện không lộ người đó.
+        _band(db, world, "BIG", 6, date(1990, 1, 1))
+        _band(db, world, "MID", 4, date(1996, 1, 1))
+        _emp(db, world, "LV", date_of_birth=date(1965, 1, 1), status="resigned", is_active=False,
+             resign_date=date(2026, 8, 20))
+        db.commit()
+        period = parse_period({**SEP, "compare": "previous"})
+        data = report_service.build_summary(db, plain.user, plain.profile(), period, "age_band")
+        g = {x["key"]: x for x in data["groups"]}
+        assert g["55+"]["suppressed"] and g["25-34"]["suppressed"] and not g["35-44"].get("suppressed")
+        assert all(v is None for v in g["55+"]["compare"].values())
 
     def test_xuat_xlsx_nhom_bi_che_de_trong_khong_phai_0(self, db, world, plain, http, gan_bao_cao):
         gan_bao_cao(SUBJECT_ROLE, plain.roles[-1].id, ReportKey.HR_HEADCOUNT)

@@ -229,6 +229,17 @@ describe('useReportFilters — extra page filters ride along on the URL', () => 
     const params = JSON.parse(screen.getByTestId('queryParams').textContent ?? '{}')
     expect(params.department_id).toBe('12')
   })
+
+  it('keeps the flexible-chart params (chart_metric/by/type/top) out of queryParams', () => {
+    //  duoc-CR-688: lọt vào khóa truy vấn thì mỗi lần đổi kiểu biểu đồ gọi lại `/summary`.
+    build('/report/test?chart_metric=amount&chart_by=group&chart_type=donut&chart_top=5&department_id=3')
+    const params = JSON.parse(screen.getByTestId('queryParams').textContent ?? '{}')
+    expect(params).not.toHaveProperty('chart_metric')
+    expect(params).not.toHaveProperty('chart_by')
+    expect(params).not.toHaveProperty('chart_type')
+    expect(params).not.toHaveProperty('chart_top')
+    expect(params.department_id).toBe('3')
+  })
 })
 
 describe('useReportFilters — compare / groupBy / company', () => {

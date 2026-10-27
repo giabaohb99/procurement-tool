@@ -9,7 +9,7 @@ kiện VÀO (ngày hiệu lực = `hire_date`, hoặc `created_at` khi hồ sơ 
 
 ⚠️ Review 01/10/2026 (M3): "đang làm" = `status ≠ resigned` (Q4.3) — hồ sơ
 `status=resigned` mà THIẾU `resign_date` trước đây bị tính nhầm là đang làm
-(nhánh `resign_date IS NULL` của `OR` cũ luôn đúng). `_not_resigned_cond` sửa
+(nhánh `resign_date IS NULL` của `OR` cũ luôn đúng). `not_resigned_cond` sửa
 lại: thiếu `resign_date` thì KHÔNG coi là đang làm nữa, ở MỌI mốc `as_of`.
 
 `employees_as_of` (mới, phục vụ "Xem theo" cơ cấu — xem `report_service.py`)
@@ -116,11 +116,15 @@ def _row_common(row, on: date) -> dict:
                position_name=row.position or "", status=row.status or "")
 
 
-def _not_resigned_cond(as_of: date):
+def not_resigned_cond(as_of: date):
     """M3 (Q4.3): "đang làm" = `status ≠ resigned`. `status=resigned` mà THIẾU `resign_date`
     KHÔNG được coi là đang làm nữa (trước đây `resign_date IS NULL` luôn đúng → tính nhầm)."""
     return or_(Employee.status != STATUS_RESIGNED,
               and_(Employee.resign_date.isnot(None), Employee.resign_date > as_of))
+
+
+#  Tên cũ (có gạch dưới) giữ làm bí danh cho mã đã nhập — module khác nhập tên công khai ở trên.
+_not_resigned_cond = not_resigned_cond
 
 
 def hire_events(db: Session, user, prof: dict, d_from: date, d_to: date, today: date,
@@ -163,10 +167,10 @@ def resign_events(db: Session, user, prof: dict, d_from: date, d_to: date,
     return out
 
 
-def _as_of_filtered(base, as_of: date):
+def as_of_filtered(base, as_of: date):
     """Hai nhánh (có/không `hire_date`) ĐÃ VÀO ≤ `as_of` VÀ ĐANG LÀM tại `as_of` — dùng chung
     cho `employees_as_of`/`headcount_as_of`."""
-    not_resigned = _not_resigned_cond(as_of)
+    not_resigned = not_resigned_cond(as_of)
     as_of_next = as_of + timedelta(days=1)
     utc_cutoff = datetime.combine(as_of_next, time.min) - VN_OFFSET
     with_date = base.filter(Employee.hire_date.isnot(None), Employee.hire_date < as_of_next,
@@ -176,13 +180,16 @@ def _as_of_filtered(base, as_of: date):
     return with_date, fallback
 
 
+_as_of_filtered = as_of_filtered
+
+
 def employees_as_of(db: Session, user, prof: dict, as_of: date,
                     company_id: int | None = None, department_id: int | None = None) -> list[HeadcountEvent]:
     """Toàn bộ nhân sự ĐANG LÀM tại `as_of`, dạng `HeadcountEvent(kind="snapshot")` để gom
     nhóm lại bằng `DimensionSpec.key_of` CÓ SẴN (xem `report_service._merge_group_headcount`).
     Đúng 2 câu SQL, KHÔNG tăng theo số nhân sự."""
     base = scoped_employee_query(db, user, prof, company_id, department_id)
-    with_date, fallback = _as_of_filtered(base, as_of)
+    with_date, fallback = as_of_filtered(base, as_of)
     out = []
     for row in with_date.with_entities(*_DIM_COLS, Employee.hire_date).all():
         sen_key, sen_label = seniority_bucket(row.hire_date, as_of)

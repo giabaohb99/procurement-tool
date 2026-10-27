@@ -41,11 +41,23 @@ Quyết định 27/10/2026 (anh Được): «vị trí việc làm» của 01/PL
 | 08 | [A2 Cơ cấu nhân sự (mở rộng A1)](phase-08-co-cau-nhan-su.md) | 3h | done | BE-1 |
 | 09 | [Giao diện + kiểm thử + HDSD đợt 2](phase-09-giao-dien-kiem-thu-dot-2.md) | 4h | done | FE + điều phối |
 
+## Đợt 3 — phases (duoc-CR-688, đang làm)
+Mặc định 27/10/2026 (anh Được «tiếp đi», chưa trả lời câu 9–10 → chọn hẹp nhất, mở rộng sau được): A5 chỉ quỹ lương THỰC TẾ từ HĐ (kế hoạch + BHXH công ty đóng để sau); H1 mức chi nhập tay trên màn, KHÔNG lưu đợt phát.
+
+| # | Phase | Effort | Status | Chủ tệp |
+|---|-------|--------|--------|---------|
+| 10 | Nền đợt 3: khóa 21–24, router khung, cache | 0.5h | done | điều phối |
+| 11 | [A5 Quỹ lương + che nhóm nhỏ dùng chung + vá kỳ so sánh A2](phase-11-quy-luong-che-nhom-nho.md) | 6h | done | BE-4 |
+| 12 | [H1 Phúc lợi & sự kiện](phase-12-phuc-loi-su-kien.md) | 5h | done | BE-5 |
+| 13 | [A3 Cơ cấu quản lý + D1 Điều chuyển & bổ nhiệm](phase-13-co-cau-quan-ly-dieu-chuyen.md) | 6h | done | BE-6 |
+| 14 | [Biểu đồ linh hoạt (dùng chung)](phase-14-bieu-do-linh-hoat.md) | 5h | done | FE-a |
+| 15 | [Giao diện 4 trang mới + kiểm thử + HDSD](phase-15-giao-dien-kiem-thu-dot-3.md) | 5h | done | FE-b + điều phối |
+
 ## Lộ trình các đợt sau (chưa làm)
 | Đợt | Mẫu | Điều kiện |
 |---|---|---|
 | 2 | B2 · B3 · A2 — **đang làm, xem bảng trên** (bỏ «chốt số theo tháng»: 01/PLI là danh sách tại ngày cuối kỳ, không cần bảng chụp) | Hạn nộp 05/12/2026 |
-| 3 | H1 Phúc lợi & sự kiện · A5 Quỹ lương theo pháp nhân · biểu đồ linh hoạt (§3.4) · A3 · D1 | Chốt câu 9, 10 ở cuối tài liệu 05 |
+| 3 | **đang làm, xem bảng trên** | Phần kế hoạch của A5 chờ chốt câu 9 |
 | 4 | C3 Có mặt theo ngày · E2 · E3 · F1 · B4 · A4 + bảng định biên / quỹ lương kế hoạch | Chốt câu 5 |
 | Chờ phân hệ | Tuyển dụng (phần 🔴 của A1, HR2-4) · G1 Tài sản cấp phát (HR2-1) | Làm phân hệ trước |
 

@@ -49,7 +49,7 @@ class MetricSpec:
     """Một chỉ số CỘNG ĐƯỢC. Đúng 1 trong `value_of`/`distinct_of`."""
     key: str
     label: str
-    kind: str = "int"          # int|money|days|hours|percent
+    kind: str = "int"          # int|money|days|hours|percent|number (số lẻ không đơn vị)
     good: str | None = None    # "up"|"down"|None — chiều tốt cho mũi tên ±%
     value_of: Callable[[Any], float] | None = None    # cộng dồn
     distinct_of: Callable[[Any], Any] | None = None    # đếm SỐ GIÁ TRỊ KHÁC NHAU (bỏ falsy)

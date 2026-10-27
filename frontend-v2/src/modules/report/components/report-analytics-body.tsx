@@ -8,11 +8,11 @@ import type {
   ReportPageConfig,
 } from '../types/report-analytics'
 import { ReportBreakdownCharts } from './report-breakdown-charts'
+import { ReportFlexibleChart } from './report-flexible-chart'
 import { ReportGroupedTable } from './report-grouped-table'
 import { ReportKpiRow } from './report-kpi-row'
 import { ReportNotes } from './report-notes'
 import { ReportPeriodEmptyState } from './report-period-empty-state'
-import { ReportTrendChart } from './report-trend-chart'
 
 const EMPTY_METRICS: ReportMetricValues = {}
 
@@ -47,11 +47,40 @@ export function ReportAnalyticsBody({
     () => [...config.kpis, ...(config.tableMetrics ?? [])],
     [config.kpis, config.tableMetrics],
   )
+  //  Bấm cột/lát → ngăn «Danh sách» của nhóm đó, chỉ khi chỉ số đang vẽ có danh sách. Chặn thêm
+  //  lúc `meta.group_by` (số đang hiện, `keepPreviousData`) còn lệch «Xem theo» vừa đổi — không
+  //  thì mở danh sách với chiều MỚI nhưng khóa nhóm của chiều CŨ.
+  const canDrillGroup =
+    drilldown.enabled && drilldown.metricKeys.has(chartMetric) && meta.group_by === filters.groupBy
+  const openGroupDrilldown = (group: { key: string; label: string }) =>
+    drilldown.openRow({
+      ...group,
+      current: {},
+      compare: null,
+      isTotal: false,
+      isEmpty: false,
+      isSuppressed: false,
+    })
+  //  Chỉ số thời điểm mà nhóm có số (vd «Định biên cuối kỳ» theo phòng ban) — thẻ KPI của nó
+  //  bấm được để biểu đồ linh hoạt vẽ theo nhóm (duoc-CR-688).
+  const groupedSnapshotMetrics = useMemo(
+    () =>
+      new Set(
+        meta.metrics
+          .filter((m) => m.snapshot)
+          .filter((m) => (data?.groups ?? []).some((g) => typeof g.current[m.key] === 'number'))
+          .map((m) => m.key),
+      ),
+    [meta.metrics, data?.groups],
+  )
   //  Kỳ không phát sinh gì: mọi chỉ số THEO KỲ ở dòng Tổng bằng 0/`null`. Bỏ qua
   //  chỉ số `snapshot` (công nợ còn lại…) — số dư vẫn còn dù kỳ này chẳng mua gì.
+  //  duoc-CR-688: nhóm còn mang số thời điểm (vd «Định biên cuối kỳ» theo phòng ban) thì kỳ
+  //  KHÔNG trống — tháng không ai vào/nghỉ vẫn phải xem được quân số từng phòng.
   const isPeriodEmpty =
     !config.hidePeriod &&
     !!data &&
+    groupedSnapshotMetrics.size === 0 &&
     meta.metrics.filter((m) => !m.snapshot).every((m) => !totals.current[m.key])
 
   return (
@@ -67,11 +96,12 @@ export function ReportAnalyticsBody({
         trend={trend}
         compareMode={filters.compare}
         selectedMetric={chartMetric}
-        //  Không có biểu đồ thì bấm thẻ chẳng đổi được gì — thẻ tĩnh.
-        onSelectMetric={config.hideTrend ? undefined : onChartMetricChange}
+        //  Biểu đồ linh hoạt có mặt ở MỌI trang (trang `hideTrend` vẽ theo nhóm) nên thẻ luôn bấm được.
+        onSelectMetric={onChartMetricChange}
         isLoading={isLoading}
         drilldownMetrics={drilldown.metricKeys}
         onDrilldown={drilldown.enabled ? drilldown.openMetric : undefined}
+        groupedSnapshotMetrics={groupedSnapshotMetrics}
       />
 
       {isPeriodEmpty ? (
@@ -83,15 +113,18 @@ export function ReportAnalyticsBody({
         />
       ) : (
         <>
-          {!config.hideTrend && (
-            <ReportTrendChart
-              meta={meta}
-              trend={trend}
-              metric={chartMetric}
-              compareMode={filters.compare}
-              isLoading={isLoading}
-            />
-          )}
+          <ReportFlexibleChart
+            slug={config.slug}
+            hideTrend={config.hideTrend}
+            meta={meta}
+            trend={trend}
+            groups={data?.groups ?? []}
+            period={data?.period}
+            metric={chartMetric}
+            compareMode={filters.compare}
+            isLoading={isLoading}
+            onSelectGroup={canDrillGroup ? openGroupDrilldown : undefined}
+          />
 
           {config.breakdowns && config.breakdowns.length > 0 && (
             <ReportBreakdownCharts

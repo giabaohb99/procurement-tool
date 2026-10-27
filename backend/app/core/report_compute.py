@@ -148,11 +148,15 @@ def merge_groups_by_key(cur: list, cmp: list | None, spec: "ReportSpec", rank: s
 
 def meta_of(spec: "ReportSpec", group_by: str | None) -> dict:
     """`meta` trả cho FE: nhãn/loại từng chỉ số + cờ `helper` (chỉ số PHỤ, không đứng riêng)
-    và `snapshot` (số THỜI ĐIỂM, chỉ đúng ở Tổng) — FE/Excel dựa vào hai cờ này để ẩn cột."""
+    và `snapshot` (số THỜI ĐIỂM, chỉ đúng ở Tổng) — FE/Excel dựa vào hai cờ này để ẩn cột.
+    `additive` (duoc-CR-688): CỘNG các nhóm lại được không — chỉ số `value_of` thì được; đếm
+    PHÂN BIỆT (`distinct_of`, một người có thể ở nhiều nhóm) và chỉ số DẪN XUẤT (tỷ lệ, bình
+    quân) thì không. Biểu đồ dựa vào cờ này khi gộp phần dư thành «Khác»."""
     metrics = [{"key": m.key, "label": m.label, "kind": m.kind, "good": m.good,
-               "helper": m.helper, "snapshot": m.snapshot} for m in spec.metrics]
+               "helper": m.helper, "snapshot": m.snapshot, "additive": m.value_of is not None}
+               for m in spec.metrics]
     metrics += [{"key": d.key, "label": d.label, "kind": d.kind, "good": d.good,
-                "helper": d.helper, "snapshot": d.snapshot} for d in spec.derived]
+                "helper": d.helper, "snapshot": d.snapshot, "additive": False} for d in spec.derived]
     dims = [{"key": k, "label": d.label} for k, d in spec.dimensions.items()]
     gb = group_by if group_by and group_by != "none" else None
     return {"metrics": metrics, "dimensions": dims, "group_by": gb, "rank_by": spec.rank_key()}

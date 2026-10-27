@@ -82,6 +82,8 @@ export function KpiTrendCard({
     // bề rộng tối thiểu và nong cả lưới ra trên điện thoại.
     <Card
       role={onClick ? 'button' : undefined}
+      //  Thẻ đang chọn (chỉ số đang vẽ) phải đọc được bằng trình đọc màn hình, không chỉ bằng viền màu.
+      aria-pressed={onClick ? selected : undefined}
       tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
       onKeyDown={

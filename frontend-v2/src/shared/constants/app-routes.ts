@@ -359,6 +359,14 @@ export const appRoutes = {
     laborRegister: '/report/labor-register',
     /** Báo cáo sử dụng lao động mẫu 01/PLI (duoc-CR-687, khóa 20). */
     laborUsageReport: '/report/labor-usage-report',
+    /** Quỹ lương theo pháp nhân (duoc-CR-688, khóa 21). */
+    payrollFund: '/report/payroll-fund',
+    /** Phúc lợi & sự kiện — danh sách nhận quà theo dịp (duoc-CR-688, khóa 22). */
+    benefitAudience: '/report/benefit-audience',
+    /** Cơ cấu quản lý — số cấp dưới, người chưa gán quản lý (duoc-CR-688, khóa 23). */
+    managementSpan: '/report/management-span',
+    /** Điều chuyển & bổ nhiệm (duoc-CR-688, khóa 24). */
+    workMoves: '/report/work-moves',
     vehicleBooking: '/report/vehicle-booking',
     sealRequest: '/report/seal-request',
     document: '/report/document',

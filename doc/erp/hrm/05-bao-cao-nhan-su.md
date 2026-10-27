@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Bản | 2.7 — 27/10/2026 (đợt 2 duoc-CR-687: B2, B3 đã có — khóa 19, 20; A2 đã có trong Biến động nhân sự) · 2.6 — 27/10/2026 (đính chính B3: mẫu 01/PLI là danh sách từng người 27 cột, nộp Sở Nội vụ; B2 liệt kê đủ thông tin bắt buộc của sổ) · 2.5 — 27/10/2026 (đợt 1 duoc-CR-686 lên mã: B1, E1 đã có; A1/C1/C2 bù các chỗ thiếu; lọc phòng ban + danh sách người cho 5 báo cáo) · 2.4 — 27/10/2026 (thêm §3.4 «Biểu đồ linh hoạt» dùng chung cho mọi mẫu, kèm biểu đồ gợi ý từng mẫu) · 2.3 — 27/10/2026 (thêm nhóm H «Phúc lợi & sự kiện», mẫu H1: lọc đối tượng theo dịp như 8/3 và dự trù kinh phí) · 2.2 — 27/10/2026 (thêm mẫu A5 «Quỹ lương theo pháp nhân» để chọn công ty tuyển người) · 2.1 — 27/10/2026 (thêm ý «Tuyển dụng» vào A1; thêm nhóm G «Tài sản cấp phát» với mẫu G1) · 2.0 — 27/10/2026 (viết lại thành kho mẫu: 6 nhóm, 16 mẫu, mỗi mẫu chia ý nhỏ; gộp các mục lẻ vào mẫu lớn; bỏ danh sách mẫu chưa có phân hệ; soát mã 3 báo cáo đang chạy, ghi «Còn thiếu so với bản đang chạy» ở A1, C1, C2) · 1.1 — 27/10/2026 (thêm góc nhìn trưởng phòng Nhân sự) · 1.0 — 27/10/2026 (3 báo cáo đã có + 6 đề xuất) |
-| Tình trạng | 8 mẫu **đã có** trên ERP (A1, C1, C2 từ trước; B1, E1 từ duoc-CR-686; A2, B2, B3 từ duoc-CR-687); các mẫu còn lại là **đề xuất**. Lộ trình các đợt: `plans/261027-1045-kho-mau-bao-cao-nhan-su/plan.md` |
+| Bản | 2.8 — 27/10/2026 (đợt 3 duoc-CR-688: A3, A5, D1, H1 đã có — khóa 21–24; biểu đồ linh hoạt phần một) · 2.7 — 27/10/2026 (đợt 2 duoc-CR-687: B2, B3 đã có — khóa 19, 20; A2 đã có trong Biến động nhân sự) · 2.6 — 27/10/2026 (đính chính B3: mẫu 01/PLI là danh sách từng người 27 cột, nộp Sở Nội vụ; B2 liệt kê đủ thông tin bắt buộc của sổ) · 2.5 — 27/10/2026 (đợt 1 duoc-CR-686 lên mã: B1, E1 đã có; A1/C1/C2 bù các chỗ thiếu; lọc phòng ban + danh sách người cho 5 báo cáo) · 2.4 — 27/10/2026 (thêm §3.4 «Biểu đồ linh hoạt» dùng chung cho mọi mẫu, kèm biểu đồ gợi ý từng mẫu) · 2.3 — 27/10/2026 (thêm nhóm H «Phúc lợi & sự kiện», mẫu H1: lọc đối tượng theo dịp như 8/3 và dự trù kinh phí) · 2.2 — 27/10/2026 (thêm mẫu A5 «Quỹ lương theo pháp nhân» để chọn công ty tuyển người) · 2.1 — 27/10/2026 (thêm ý «Tuyển dụng» vào A1; thêm nhóm G «Tài sản cấp phát» với mẫu G1) · 2.0 — 27/10/2026 (viết lại thành kho mẫu: 6 nhóm, 16 mẫu, mỗi mẫu chia ý nhỏ; gộp các mục lẻ vào mẫu lớn; bỏ danh sách mẫu chưa có phân hệ; soát mã 3 báo cáo đang chạy, ghi «Còn thiếu so với bản đang chạy» ở A1, C1, C2) · 1.1 — 27/10/2026 (thêm góc nhìn trưởng phòng Nhân sự) · 1.0 — 27/10/2026 (3 báo cáo đã có + 6 đề xuất) |
+| Tình trạng | 12 mẫu **đã có** trên ERP (A1, C1, C2 từ trước; B1, E1 từ duoc-CR-686; A2, B2, B3 từ duoc-CR-687; A3, A5, D1, H1 từ duoc-CR-688); các mẫu còn lại là **đề xuất**. Lộ trình các đợt: `plans/261027-1045-kho-mau-bao-cao-nhan-su/plan.md` |
 | Giao diện | `frontend-v2/` (cổng 8083), menu *Báo cáo* ▸ nhóm «Nhân sự» |
 | Mã nguồn backend | `modules/employee/report_*.py` · `modules/leave/report_*.py` · `modules/leave/balance_report_*.py` · khóa ở `core/report_keys.py` |
 | Mã nguồn frontend | `modules/report/config/report-catalog-hr.ts` · `modules/report/pages/*-report-page.tsx` |
@@ -24,9 +24,9 @@ Không làm chấm công và lương (đại ca chốt bỏ ngày 16/10/2026).
 |---|---|---|---|
 | **A. Quy mô & cơ cấu** | A1. Biến động nhân sự (gồm cả tuyển dụng) | Đã có (khóa 6), mở rộng thêm; phần tuyển dụng 🔴 chờ phân hệ | 4 |
 | | A2. Cơ cấu nhân sự | **Đã có trong A1 (duoc-CR-687)** | — |
-| | A3. Cơ cấu quản lý | Đề xuất | 7 |
+| | A3. Cơ cấu quản lý | **Đã có (khóa 23, duoc-CR-688)** | — |
 | | A4. Định biên kế hoạch so với thực tế | Đề xuất, 🟡 thiếu dữ liệu | Chờ chốt |
-| | A5. Quỹ lương theo pháp nhân | Đề xuất; số thực tế ✅, kế hoạch 🟡 | 4 |
+| | A5. Quỹ lương theo pháp nhân | **Đã có phần thực tế (khóa 21, duoc-CR-688)**; kế hoạch 🟡 | — |
 | **B. Hợp đồng & tuân thủ pháp luật** | B1. Hợp đồng lao động | **Đã có (khóa 17, duoc-CR-686)** | — |
 | | B2. Sổ quản lý lao động | **Đã có (khóa 19, duoc-CR-687)** | — |
 | | B3. Báo cáo tình hình sử dụng lao động (mẫu 01/PLI) | **Đã có (khóa 20, duoc-CR-687)** | — |
@@ -34,13 +34,13 @@ Không làm chấm công và lương (đại ca chốt bỏ ngày 16/10/2026).
 | **C. Nghỉ phép & có mặt** | C1. Tình hình nghỉ phép | Đã có (khóa 7), mở rộng thêm | 6 |
 | | C2. Quỹ phép năm | Đã có (khóa 8), mở rộng thêm | 6 |
 | | C3. Có mặt theo ngày | Đề xuất | 8 |
-| **D. Quá trình công tác** | D1. Điều chuyển & bổ nhiệm | Đề xuất | 5 |
+| **D. Quá trình công tác** | D1. Điều chuyển & bổ nhiệm | **Đã có (khóa 24, duoc-CR-688)** | — |
 | **E. Dữ liệu & vận hành phòng Nhân sự** | E1. Hồ sơ & tài khoản còn thiếu | **Đã có (khóa 18, duoc-CR-686)** | — |
 | | E2. Yêu cầu sửa hồ sơ | Đề xuất | 8 |
 | | E3. Lịch nhắc trong tháng | Đề xuất (ô ở Trang chủ, không phải báo cáo) | 9 |
 | **F. Tiện ích văn phòng** | F1. Sử dụng phòng họp | Đề xuất | 9 |
 | **G. Tài sản cấp phát** | G1. Quản lý tài sản cấp phát | Đề xuất, 🔴 chờ phân hệ Tài sản | Chờ phân hệ |
-| **H. Phúc lợi & sự kiện** | H1. Đối tượng theo dịp và dự trù kinh phí | Đề xuất | **3** |
+| **H. Phúc lợi & sự kiện** | H1. Đối tượng theo dịp và dự trù kinh phí | **Đã có (khóa 22, duoc-CR-688)** | — |
 
 Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối tiếp số lớn nhất (17, 18 đã cấp cho B1, E1; mẫu kế tiếp nhận 19). Không giữ chỗ số trước. Mẫu mở rộng (A2, các phần mở rộng của A1/C1/C2) dùng lại khóa của báo cáo gốc.
 
@@ -130,7 +130,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 *Đã làm (duoc-CR-687):* «Xem theo» của Biến động nhân sự có thêm Nhóm tuổi (dưới 25 · 25–34 · 35–44 · 45–54 · 55 trở lên), Trình độ, Địa điểm làm việc, Nhóm vị trí việc làm. Tuổi tính tại ngày của mốc. Người không có quyền xem dữ liệu nhạy cảm: nhóm tuổi có số nhỏ (1–2 người, ở kỳ này hoặc kỳ so sánh) bị che, kèm che thêm một nhóm để không lấy Tổng trừ ra được; không mở được danh sách theo nhóm tuổi. Tỷ lệ nữ theo cấp bậc, tuổi trung bình theo phòng ⏳ chưa làm (đi cùng biểu đồ linh hoạt).
 *Nguồn:* `tab_employee` (`date_of_birth`, `gender`, `education_level`, `major`, `job_level`, `work_location`, `employment_type`)
 
-#### A3. Cơ cấu quản lý — đề xuất
+#### A3. Cơ cấu quản lý — đã có (khóa 23, duoc-CR-688)
 
 > **Trả lời:** bộ máy quản lý có hợp lý không.
 
@@ -155,7 +155,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 *Cần chốt:* có làm bảng định biên không, ai nhập, bao lâu nhập một lần.
 
-#### A5. Quỹ lương theo pháp nhân — đề xuất, dùng khi quyết định tuyển vào công ty nào
+#### A5. Quỹ lương theo pháp nhân — đã có phần thực tế (khóa 21, duoc-CR-688); kế hoạch và thử tính chưa làm
 
 > **Trả lời:** mỗi pháp nhân đang gánh quỹ lương bao nhiêu, còn dư bao nhiêu so với kế hoạch, tuyển người mới vào công ty nào thì các công ty cân bằng nhất.
 
@@ -182,6 +182,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 - Lương là số nhạy cảm. Hiện màn HĐLĐ trả lương cho bất kỳ ai có `labor_contract.read`, không che
 - Báo cáo này nên mặc định **chỉ admin và Ban Giám đốc**, giống khóa 14 và 16; ai khác muốn xem thì admin giao ở tab «Báo cáo»
 - Chỉ hiện số tổng và số bình quân. Nhóm dưới 3 người thì ẩn bình quân, vì nhìn bình quân của nhóm 1–2 người là đoán ra lương từng người
+- *Đã làm (duoc-CR-688):* che cả nhóm (mọi người xem, kể cả admin) + che phụ chống lấy Tổng trừ, xét riêng kỳ này và kỳ so sánh. Dòng Tổng và danh sách không che: người mở được báo cáo là người được xem lương (báo cáo mặc định chỉ admin; lọc hẹp còn 1–2 người thì Tổng = lương của họ — chấp nhận). Lớp chặn chính là quyền xem báo cáo 21, không phải việc che nhóm. Trợ lý AI không đọc báo cáo này.
 - Danh sách lương từng người (khi bấm vào con số) chỉ mở cho người được giao riêng
 
 ---
@@ -329,7 +330,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 ### D. Quá trình công tác
 
-#### D1. Điều chuyển & bổ nhiệm — đề xuất, ưu tiên 5
+#### D1. Điều chuyển & bổ nhiệm — đã có (khóa 24, duoc-CR-688)
 
 > **Trả lời:** người đi đâu, ai được lên, đề bạt nội bộ có nhiều không.
 
@@ -450,7 +451,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 ### H. Phúc lợi & sự kiện
 
-#### H1. Đối tượng theo dịp và dự trù kinh phí — đề xuất, ưu tiên 3
+#### H1. Đối tượng theo dịp và dự trù kinh phí — đã có (khóa 22, duoc-CR-688)
 
 > **Trả lời:** một dịp (8/3, 20/10, 1/6, Trung thu, Tết, du lịch…) thì phát cho ai, bao nhiêu người, ở pháp nhân và phòng nào, chức vụ gì, tổng tiền bao nhiêu, mỗi pháp nhân chịu bao nhiêu.
 >
@@ -490,6 +491,9 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 *Bảo mật:*
 - Ngày sinh và người thân là dữ liệu nhạy cảm (`employee_sensitive`). Chỉ dùng để **lọc**; danh sách xuất ra không in ngày sinh, không in thông tin người thân ngoài số con được tính
 - Người xem chỉ thấy nhân sự trong phạm vi của mình, như mọi báo cáo khác
+
+
+*Đã chốt mặc định 27/10/2026 (duoc-CR-688):* mức quà nhập tay trên màn mỗi lần, **không lưu** đợt phát; người ký hợp đồng khoán việc / cộng tác viên mặc định không tính; «Kỷ niệm năm làm việc» = cùng tháng vào làm và tròn 1 / 3 / 5 / 10 năm; ngày dịp 8/3, 20/10, 1/6 tự nhảy tới lần gần nhất sắp tới; Trung thu / Tết chọn ngày tay. Lập Yêu cầu thanh toán từ tổng dự trù, hiếu hỉ theo đơn nghỉ, du lịch kèm người thân ⏳ chưa làm.
 
 ---
 
@@ -554,6 +558,8 @@ Thiếu ô 4, 5 hoặc 11 thì chưa sinh được mẫu; các ô còn lại đ�
 Việc 1 và 2 nhỏ, nên làm cùng B1. Việc 3, 4, 5 nên làm cùng B3 vì đều cần số đã chốt và tệp đúng mẫu. Việc 6, 7, 8 làm sau.
 
 ### 3.4. Biểu đồ linh hoạt
+
+> **duoc-CR-688 đã làm phần một** (mọi báo cáo): vẽ theo thời gian hoặc theo chiều «Xem theo» đang chọn; kiểu đường / cột / cột ngang / vành khuyên (≤ 6 nhóm); Top 5 / 10 / 20 / tất cả, phần dư gộp «Khác» chỉ khi chỉ số cộng được (cờ `additive` của `meta`); bỏ nhóm bị che, nhóm 0; bấm cột / lát mở danh sách người; tải ảnh PNG; lựa chọn nằm trên đường dẫn. **Chưa làm** (cần máy chủ xem theo hai chiều): tách màu theo chiều thứ hai, bảng nhiệt, tháp tuổi, lưu và ghim góc nhìn, Excel kèm biểu đồ.
 
 Áp cho **mọi mẫu** trong tài liệu này. Một khung biểu đồ dùng chung; mẫu nào cũng chỉ khai biểu đồ mặc định, còn người xem tự đổi.
 

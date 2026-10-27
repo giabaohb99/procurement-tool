@@ -10,7 +10,8 @@ import type { PermissionEntity } from '@/core/authorization/permission-types'
  */
 
 /** Đơn vị của một chỉ số — quyết định cách định dạng số (`format-report-metric.ts`). */
-export type ReportMetricKind = 'int' | 'money' | 'days' | 'hours' | 'percent'
+/** `number` (duoc-CR-688): số không đơn vị có phần lẻ — hiện 1 chữ số lẻ (vd «4,2»). */
+export type ReportMetricKind = 'int' | 'money' | 'days' | 'hours' | 'percent' | 'number'
 
 /** Chiều nào là TỐT khi chỉ số tăng. `null` = trung tính, không tô màu ±%. */
 export type ReportMetricGoodDirection = 'up' | 'down' | null
@@ -35,6 +36,13 @@ export interface ReportMetricMeta {
    * hiện trên dòng Tổng, các dòng nhóm hiện "—".
    */
   snapshot: boolean
+  /**
+   * Cộng các nhóm lại có ra đúng số của phần gộp không (duoc-CR-688). `false` = chỉ số dẫn
+   * xuất (tỷ lệ, bình quân), đếm phân biệt, min/max — biểu đồ linh hoạt KHÔNG cộng phần dư
+   * Top N thành «Khác» và không cho vẽ vành khuyên. Vắng mặt (máy chủ cũ) = coi như `true`,
+   * riêng `kind: 'percent'` vẫn coi là không cộng được.
+   */
+  additive?: boolean
 }
 
 export interface ReportDimensionMeta {

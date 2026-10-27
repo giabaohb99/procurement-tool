@@ -142,7 +142,15 @@ describe('ReportAnalyticsPage — drilldown', () => {
 })
 
 describe('ReportAnalyticsPage — hideTrend / hidePeriod', () => {
-  it('draws the trend chart by default and drops it with hideTrend', async () => {
+  it('draws the trend chart by default and switches to the by-group chart with hideTrend', async () => {
+    //  duoc-CR-688: biểu đồ linh hoạt — trục thời gian chỉ khi `trend` có mốc; `hideTrend`
+    //  (hoặc `trend` rỗng) thì vẽ theo chiều «Xem theo» thay vì bỏ hẳn biểu đồ.
+    vi.mocked(apiGet).mockImplementation(async (url) => {
+      if (url === ROWS) return ROWS_RESPONSE as never
+      const base = summary(drilldownMetrics)
+      const point = { key: '2026-10-01', label: '01/10', current: { active: 40 }, compare: null }
+      return { ...base, trend: [point] } as never
+    })
     const { unmount } = renderPage()
     expect(await screen.findByText('Xu hướng Đang hiệu lực')).toBeInTheDocument()
     unmount()
@@ -150,6 +158,7 @@ describe('ReportAnalyticsPage — hideTrend / hidePeriod', () => {
     renderPage({ ...CONFIG, hideTrend: true })
     await screen.findAllByText('Đang hiệu lực')
     expect(screen.queryByText(/^Xu hướng/)).not.toBeInTheDocument()
+    expect(screen.getByText('Đang hiệu lực theo Phòng ban')).toBeInTheDocument()
   })
 
   it('hides the period control with hidePeriod but still sends the default period', async () => {

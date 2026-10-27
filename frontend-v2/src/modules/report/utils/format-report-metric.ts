@@ -57,8 +57,10 @@ export function formatReportMetricValue(
       return formatReportHours(value)
     case 'percent':
       return formatPercent(value)
+    case 'number':
+      return round1(value)
     default:
-      //  `ReportMetricKind` đã liệt kê đủ 5 nhánh — đây chỉ là lưới an toàn nếu
+      //  `ReportMetricKind` đã liệt kê đủ 6 nhánh — đây chỉ là lưới an toàn nếu
       //  backend gửi một `kind` mới chưa khai ở tầng frontend: hiện nguyên số
       //  thay vì vỡ trang.
       return formatMoney(value)

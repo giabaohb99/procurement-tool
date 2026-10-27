@@ -79,6 +79,10 @@ from app.modules.employee.profile_gaps_report_controller import router as profil
 from app.modules.labor_contract.report_controller import router as labor_contract_report_router  # duoc-CR-686
 from app.modules.labor_register.register_controller import router as labor_register_router  # duoc-CR-687
 from app.modules.labor_register.usage_report_controller import router as labor_usage_report_router  # duoc-CR-687
+from app.modules.labor_contract.payroll_report_controller import router as payroll_fund_report_router  # duoc-CR-688
+from app.modules.employee.benefit_report_controller import router as benefit_audience_report_router  # duoc-CR-688
+from app.modules.employee.management_report_controller import router as management_span_report_router  # duoc-CR-688
+from app.modules.employee.work_move_report_controller import router as work_move_report_router  # duoc-CR-688
 from app.modules.employee.org_chart_controller import router as employee_org_chart_router  # duoc-CR-669
 from app.modules.leave.report_controller import router as leave_report_router
 from app.modules.leave.balance_report_controller import router as leave_balance_report_router
@@ -287,6 +291,10 @@ app.include_router(employee_report_router)
 app.include_router(profile_gaps_report_router)  # duoc-CR-686: TRƯỚC employee_router (/{eid} nuốt profile-gaps)
 app.include_router(labor_contract_report_router)  # duoc-CR-686: TRƯỚC labor_contract_router (/{cid})
 app.include_router(labor_register_router)  # duoc-CR-687: sổ quản lý lao động (khóa 19)
+app.include_router(payroll_fund_report_router)  # duoc-CR-688: quỹ lương theo pháp nhân (khóa 21)
+app.include_router(benefit_audience_report_router)  # duoc-CR-688: phúc lợi & sự kiện (khóa 22)
+app.include_router(management_span_report_router)  # duoc-CR-688: cơ cấu quản lý (khóa 23)
+app.include_router(work_move_report_router)  # duoc-CR-688: điều chuyển & bổ nhiệm (khóa 24)
 app.include_router(labor_usage_report_router)  # duoc-CR-687: mẫu 01/PLI (khóa 20)
 app.include_router(employee_org_chart_router)  # duoc-CR-669: /api/org-chart
 app.include_router(leave_report_router)

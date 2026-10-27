@@ -15,7 +15,8 @@ from openpyxl import load_workbook
 from app.core.export_xlsx import Col, xlsx_response
 
 #  Loại chỉ số của báo cáo -> loại cột Excel (`export_xlsx.Col.kind`).
-_KIND_MAP = {"int": "int", "money": "money", "days": "qty", "hours": "qty", "percent": "percent"}
+#  `number` (duoc-CR-688): số không đơn vị có phần lẻ (bình quân cấp dưới, số tháng…) → cột `qty`.
+_KIND_MAP = {"int": "int", "money": "money", "days": "qty", "hours": "qty", "percent": "percent", "number": "qty"}
 
 
 def _fmt_delta(cur, cmp) -> str:

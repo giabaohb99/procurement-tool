@@ -1,4 +1,16 @@
-import { BookUser, CalendarOff, ClipboardList, FileSignature, IdCard, UserX, Wallet } from 'lucide-react'
+import {
+  ArrowRightLeft,
+  Banknote,
+  BookUser,
+  CalendarOff,
+  ClipboardList,
+  FileSignature,
+  Gift,
+  IdCard,
+  Network,
+  UserX,
+  Wallet,
+} from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 
@@ -7,7 +19,8 @@ import type { ReportCatalogEntry } from './report-catalog'
 /**
  * Nhóm NHÂN SỰ của danh mục báo cáo (phase 04) — Nhân sự (biến động & cơ cấu) ·
  * Nghỉ phép (tình hình nghỉ) · Quỹ phép năm · Hợp đồng lao động · Hồ sơ còn thiếu
- * (duoc-CR-686) · Sổ quản lý lao động · Mẫu 01/PLI (duoc-CR-687). Mỗi báo cáo = một `ReportPageConfig`
+ * (duoc-CR-686) · Sổ quản lý lao động · Mẫu 01/PLI (duoc-CR-687) · Quỹ lương · Phúc lợi & sự kiện ·
+ * Cơ cấu quản lý · Điều chuyển & bổ nhiệm (duoc-CR-688). Mỗi báo cáo = một `ReportPageConfig`
  * (`pages/hr-headcount-report-page.tsx`/`leave-usage-report-page.tsx`/
  * `leave-balance-report-page.tsx`) — xem các tệp đó để biết KPI/chỉ số xu
  * hướng/breakdown/nhóm mặc định.
@@ -119,5 +132,66 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
     //  Như Sổ quản lý lao động ở trên — không lên dải KPI Tổng quan.
     overviewKpis: [],
     load: async () => (await import('../pages/labor-usage-report-page')).LaborUsageReportPage,
+  },
+  {
+    label: 'Quỹ lương theo pháp nhân',
+    description: 'Lương cơ bản, phụ cấp, lương đóng BHXH theo hợp đồng đang hiệu lực; nhóm dưới 3 người bị che.',
+    path: appRoutes.report.payrollFund,
+    //  Như Hợp đồng lao động (khóa 17): HĐLĐ không có màn danh sách riêng, nguồn là danh sách
+    //  nhân sự còn khóa gác là `labor_contract` (ngoại lệ ghi ở `report-catalog.test.ts`).
+    sourcePath: appRoutes.hr.employees,
+    icon: Banknote,
+    //  ReportKey.PAYROLL_FUND (backend) = 21.
+    key: 21,
+    entity: 'labor_contract',
+    group: 'Nhân sự',
+    endpoint: '/api/payroll-fund/summary',
+    //  Không lên dải KPI Tổng quan: số lương là số nhạy cảm, trang Tổng quan hay được mở
+    //  trước đám đông (họp giao ban) — ai được giao thì vào hẳn trang này mà xem.
+    overviewKpis: [],
+    load: async () => (await import('../pages/payroll-fund-report-page')).PayrollFundReportPage,
+  },
+  {
+    label: 'Phúc lợi & sự kiện',
+    description: 'Danh sách nhận quà theo dịp (8/3, 20/10, 1/6, Trung thu, Tết, sinh nhật…), kinh phí theo pháp nhân.',
+    path: appRoutes.report.benefitAudience,
+    sourcePath: appRoutes.hr.employees,
+    icon: Gift,
+    //  ReportKey.BENEFIT_AUDIENCE (backend) = 22.
+    key: 22,
+    entity: 'employee',
+    group: 'Nhân sự',
+    endpoint: '/api/benefit-audience/summary',
+    //  Không lên dải KPI Tổng quan: số chỉ có nghĩa khi đã chọn dịp + nhập mức quà.
+    overviewKpis: [],
+    load: async () => (await import('../pages/benefit-audience-report-page')).BenefitAudienceReportPage,
+  },
+  {
+    label: 'Cơ cấu quản lý',
+    description: 'Số quản lý, cấp dưới bình quân, người chưa gán quản lý, quản lý quá ít hoặc quá nhiều cấp dưới.',
+    path: appRoutes.report.managementSpan,
+    sourcePath: appRoutes.hr.employees,
+    icon: Network,
+    //  ReportKey.MANAGEMENT_SPAN (backend) = 23.
+    key: 23,
+    entity: 'employee',
+    group: 'Nhân sự',
+    endpoint: '/api/management-span/summary',
+    overviewKpis: ['unassigned_manager'],
+    load: async () => (await import('../pages/management-span-report-page')).ManagementSpanReportPage,
+  },
+  {
+    label: 'Điều chuyển & bổ nhiệm',
+    description: 'Điều chuyển, bổ nhiệm, kiêm nhiệm, miễn nhiệm trong kỳ; dòng người giữa các phòng ban.',
+    path: appRoutes.report.workMoves,
+    sourcePath: appRoutes.hr.employees,
+    icon: ArrowRightLeft,
+    //  ReportKey.WORK_MOVES (backend) = 24.
+    key: 24,
+    entity: 'employee',
+    group: 'Nhân sự',
+    endpoint: '/api/work-moves/summary',
+    overviewKpis: ['transfers', 'appoints'],
+    load: async () => (await import('../pages/work-moves-report-page')).WorkMovesReportPage,
   },
 ]

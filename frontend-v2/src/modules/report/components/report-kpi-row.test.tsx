@@ -74,6 +74,29 @@ describe('ReportKpiRow — snapshot metric: no sparkline, not clickable', () => 
   })
 })
 
+//  duoc-CR-688 — chỉ số thời điểm mà nhóm có số (vd «Định biên cuối kỳ» theo phòng ban) bấm
+//  được để biểu đồ linh hoạt vẽ THEO NHÓM; nhóm không có số thì thẻ vẫn tĩnh như trên.
+describe('ReportKpiRow — snapshot metric drawable by group', () => {
+  it('makes the snapshot card selectable when groups carry it, and reports its key', async () => {
+    const onSelectMetric = vi.fn()
+    renderRow({ onSelectMetric, groupedSnapshotMetrics: new Set(['debt']) })
+    const card = screen.getByRole('button', { name: /Công nợ/ })
+    card.click()
+    expect(onSelectMetric).toHaveBeenCalledWith('debt')
+    expect(screen.getByText('Số dư hiện tại — bấm để vẽ theo nhóm')).toBeInTheDocument()
+  })
+
+  it('shows the selected ring on a grouped snapshot card', () => {
+    renderRow({ selectedMetric: 'debt', groupedSnapshotMetrics: new Set(['debt']) })
+    expect(screen.getByRole('button', { name: /Công nợ/ })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('keeps the snapshot card static when the set names a different metric', () => {
+    renderRow({ groupedSnapshotMetrics: new Set(['spend']) })
+    expect(screen.queryByRole('button', { name: /Công nợ/ })).not.toBeInTheDocument()
+  })
+})
+
 describe('ReportKpiRow — null derived metric (zero denominator) renders — with no change badge', () => {
   it('shows the dash instead of 0% and skips the ±change line entirely', () => {
     renderRow()

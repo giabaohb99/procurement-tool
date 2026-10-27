@@ -63,3 +63,15 @@ describe('formatReportMetricValue — percent', () => {
     expect(formatReportMetricValue(0, 'percent')).toBe('0%')
   })
 })
+
+describe('formatReportMetricValue — number (duoc-CR-688)', () => {
+  //  Bình quân cấp dưới / số tháng tới lần bổ nhiệm từng bị làm tròn thành số nguyên (4,2 → 4) vì khai `int`.
+  it('keeps one decimal instead of rounding an average to a whole number', () => {
+    expect(formatReportMetricValue(4.2, 'number')).toBe(formatReportMetricValue(4.2, 'days').replace(' ngày', ''))
+    expect(formatReportMetricValue(4.2, 'number')).not.toBe(formatReportMetricValue(4.2, 'int'))
+  })
+
+  it('shows a dash for a missing average, not zero', () => {
+    expect(formatReportMetricValue(null, 'number')).toBe('—')
+  })
+})
