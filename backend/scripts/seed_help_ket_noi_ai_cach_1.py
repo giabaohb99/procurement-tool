@@ -59,13 +59,19 @@ trang ERP, bạn đăng nhập và bấm <strong>Cho phép</strong>. Lấy đị
 ví dụ <code>{URL}</code>.</p>
 
 <h2>claude.ai và Claude Desktop</h2>
+<p>Không cần cài Node.js, không cần khóa, không sửa tệp nào. Khoảng 2 phút.</p>
 <ol>
-<li>Mở <strong>Settings ▸ Connectors ▸ Add custom connector</strong>.</li>
-<li>Tên: <em>DEGO ERP</em>; dán địa chỉ cổng vào <strong>Remote MCP server URL</strong> ▸ <strong>Add</strong>.</li>
-<li>Bấm <strong>Connect</strong> ▸ trang ERP mở ra ▸ đăng nhập ▸ chọn <strong>Chỉ đọc</strong> (hoặc Được ghi) ▸ <strong>Cho phép</strong>.</li>
-<li>Trong ô chat bật <em>DEGO ERP</em> ở nút công cụ rồi hỏi.</li>
+<li>Mở Claude (Claude Desktop hoặc claude.ai trên trình duyệt). Bấm tên bạn ở góc dưới bên trái ▸ <strong>Settings ▸ Connectors</strong>.</li>
+<li>Bấm <strong>Add custom connector</strong>. Tên: <em>DEGO ERP</em>; dán địa chỉ cổng vào <strong>Remote MCP server URL</strong> ▸ <strong>Add</strong>.</li>
+<li>Bấm <strong>Connect</strong> ở dòng DEGO ERP. Trình duyệt mở trang ERP ▸ đăng nhập nếu được hỏi ▸ chọn mức ▸ <strong>Cho phép</strong>.</li>
+<li>Quay lại Claude, mở cuộc trò chuyện mới. Bật <em>DEGO ERP</em> ở nút công cụ trong ô chat rồi hỏi.</li>
 </ol>
-<p>Gói Team / Enterprise: chủ tổ chức thêm kết nối ở <em>Organization settings</em> trước, rồi từng người bấm Connect.</p>
+<ul>
+<li>Thêm ở claude.ai hay ở Claude Desktop đều được: cùng một tài khoản Claude thì hai nơi dùng chung kết nối.</li>
+<li><strong>Muốn AI soạn phiếu hoặc xuất tệp Excel / Word thì chọn mức Được ghi</strong>. Mức Chỉ đọc chỉ tra cứu.</li>
+<li>Trước đây đã nối bằng tệp cấu hình ({ref(TAO_KHOA, "Cách 2")})? Nối xong Cách 1 thì xóa khối <code>dego-erp</code> trong tệp <code>claude_desktop_config.json</code> và gỡ khóa cũ ở Khóa của bạn, kẻo Claude thấy hai bộ công cụ trùng nhau.</li>
+<li>Gói Team / Enterprise: có thể chỉ chủ tổ chức mới thêm được kết nối (ở <em>Organization settings</em>), sau đó từng người bấm Connect.</li>
+</ul>
 
 <h2>ChatGPT (gói trả phí)</h2>
 <ol>
@@ -93,6 +99,16 @@ nháp rồi mới tạo ({ref(CONG_CU, "AI làm được gì")}).</li>
 <strong>tạm tắt</strong> thì dừng tới khi bật lại.</li>
 <li>Kết nối sống <strong>90 ngày</strong>; hết hạn thì bấm Connect lại. Không tính vào trần 5 khóa của Cách 2.</li>
 </ul>
+
+<h2>Hỏi thử</h2>
+<p>Hỏi bằng lời thường, AI tự chọn công cụ. Vài câu mẫu:</p>
+<ul>
+<li><em>Liệt kê các skill công ty mà bạn đọc được.</em> Ra danh sách cẩm nang là đã nối đúng.</li>
+<li><em>Nguyên liệu [tên] tháng này đã giao chưa? Các đơn mua hàng có nguyên liệu này đặt bao nhiêu, đã nhận bao nhiêu, còn bao nhiêu chưa giao? Trong kho còn bao nhiêu, ở kho nào?</em></li>
+<li><em>Tra dữ liệu hải quan nhập khẩu [mặt hàng] 3 tháng gần nhất: giá trung bình, nhà nhập khẩu chính, nước xuất xứ. Rồi tìm trên web giá thị trường hiện tại và so sánh.</em> Phần tìm trên web là Claude tự tìm, cần bật tìm kiếm web trong khung chat.</li>
+<li>Thêm <em>Xuất ra Excel giúp tôi</em> vào cuối câu: AI trả về đường tải tệp, tải được một lần trong 15 phút. Cần mức Được ghi.</li>
+</ul>
+<p>AI chỉ thấy dữ liệu trong phạm vi quyền của bạn. Dữ liệu hải quan chỉ tra được, không nạp thêm qua AI: nạp vẫn ở màn nhập tệp của ERP. Danh sách đủ: {ref(CONG_CU, "AI làm được gì")}.</p>
 
 <h2>Không nối được?</h2>
 <table>

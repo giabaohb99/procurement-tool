@@ -299,6 +299,19 @@ lý web. Việc giao ngày 26/10 qua Agent 1.
 Mã nguồn: `agent_hub/mcp.py` (HIDDEN, PROPOSAL_TOOLS, `_confirm_proposal`, `server/discover`), `agent_hub/mcp_settings.py` (nhóm edit)
 Bài kiểm: `test_agent_hub_mcp_sua_xoa_kh_ai2_5.py`
 
+## bao-CR-663 | Viết lại bài hướng dẫn nối AI riêng bằng Connector theo lần chạy thật trên prod
+- status: xong
+- date: 2026-10-27
+Người chủ đã nối Claude Desktop với ERP prod bằng Connector (đăng nhập ERP, không khóa, không Node.js) thành công ngày 26/10
+và chốt đây là cách chính; cách dán khóa vào tệp cấu hình hay hỏng ở máy người dùng. Bài Cách 1 trên Trung tâm trợ giúp được
+viết lại: các bước từ chỗ mở Settings tới lúc bật DEGO ERP trong ô chat, thêm ở claude.ai hay Claude Desktop đều dùng chung,
+muốn soạn phiếu hoặc xuất tệp Excel / Word thì chọn mức Được ghi, đã nối bằng tệp cấu hình thì gỡ khối cũ kẻo trùng công cụ,
+và mục hỏi thử với câu mẫu về giao hàng, tồn kho, dữ liệu hải quan so với giá trên web, xuất Excel. Ghi rõ dữ liệu hải quan
+chỉ tra qua AI, không nạp qua AI (người chủ chốt 27/10). Tài liệu chức năng 22 lên bản 1.3 với ghi chú lần chạy thật. Đã nạp
+bài mới lên dev và prod kèm kho vector (prod người chủ gật 27/10).
+Mã nguồn: backend/scripts/seed_help_ket_noi_ai_cach_1.py, backend/scripts/seed_help_ket_noi_ai_mcp.py, doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md
+Deploy: dev 27/10 (seed_help_ket_noi_ai_cach_1.py, 7 bài nạp lại kho vector); prod 27/10 (3 bài: gốc, Cách 1, Cách 2)
+
 ## bao-CR-661 | Gộp phiếu đặt xe trùng mã app cũ trên prod và cho hàm tra chịu được trùng
 - status: xong
 - date: 2026-10-23

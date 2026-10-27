@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 1.2 — 19/10/2026 (bao-CR-631; 1.1 bao-CR-636; 1.2 bao-CR-639 bước ChatGPT mới: OAuth ChatGPT / claude.ai, xem lại khóa + tạm tắt, màn Ứng dụng AI đã kết nối, bộ Cẩm nang hệ thống) |
+| Bản | 1.3 — 27/10/2026 (1.3 bao-CR-663: Connector là cách chính, ghi chú chạy thật trên prod, mức Được ghi cho xuất tệp, hải quan chỉ tra; bao-CR-631; 1.1 bao-CR-636; 1.2 bao-CR-639 bước ChatGPT mới: OAuth ChatGPT / claude.ai, xem lại khóa + tạm tắt, màn Ứng dụng AI đã kết nối, bộ Cẩm nang hệ thống) |
 | CR | **bao-CR-631** + **bao-CR-636** — bài Trung tâm trợ giúp + tài liệu này; mã của cụm ở ai-CR-063, 207–225 (cổng MCP, OAuth, xem lại khóa), bao-CR-620–625 (Trang cá nhân, Kho skill K1–K6), bao-CR-635 (Ứng dụng AI đã kết nối) |
 | Giao diện | **chỉ có trên `frontend-v2/`**: Trang cá nhân ▸ *Trợ lý AI của tôi* ▸ *Kết nối AI riêng* (`/me?tab=ai-connect`, mọi người) · phân hệ **Kho skill AI** (`/ai-skill/*`, quản trị) |
 | Bài Help Center | `backend/scripts/seed_help_ket_noi_ai_mcp.py` — thẻ *Hướng dẫn sử dụng Kết nối AI riêng và Kho skill AI* + 7 bài theo tác vụ (a–g). **Nội dung ở đây và ở seed phải khớp nhau** |
@@ -134,6 +134,14 @@ Bước người dùng (từ `mcp_setup.py`):
 - **claude.ai** (và Claude Desktop ▸ Settings ▸ Connectors): Settings ▸ Connectors ▸ Add custom connector → đặt tên, dán địa
   chỉ cổng vào *Remote MCP server URL* → Add → Connect → trang ERP: đăng nhập, chọn Chỉ đọc / Được ghi, **Cho phép** → về
   claude.ai bật DEGO ERP ở nút công cụ. Team / Enterprise: chủ tổ chức thêm ở Organization settings trước.
+  Đã chạy thật trên prod 26/10/2026 (Claude Desktop, tài khoản quản trị): đăng ký 201 → authorize 302 → Cho phép → token 200
+  → `initialize` + `tools/list` thành công; client tự đăng ký 2 lần (một bản thừa, vô hại); Claude gọi thêm `server/discover`
+  (cổng trả lỗi phương thức, vô hại). Đây là **cách chính** đại ca chốt 26/10: không cần Node.js, không khóa, không sửa tệp —
+  cách dán khóa + `npx mcp-remote` hay hỏng ở máy người dùng (thiếu Node, JSON sai, chưa thoát hẳn Claude, `npx` tải chậm).
+  Ghi chú cho bài HDSD: thêm ở claude.ai hay Desktop đều dùng chung theo tài khoản Claude; **xuất Excel / Word cần mức Được
+  ghi** (`export_*` không nằm trong `READ_TOOLS`); đã nối Cách 2 trước đó thì xóa khối `dego-erp` trong tệp cấu hình + gỡ
+  khóa cũ kẻo trùng công cụ. Dữ liệu hải quan chỉ tra qua AI (nhóm `customs` 4 tool đều chỉ đọc), không nạp qua AI — đại ca
+  chốt 27/10.
 - **ChatGPT** (bao-CR-639, theo ảnh đại ca chụp 19/10/2026; cần gói trả phí Plus / Pro / Business): Settings ▸
   **Connectors** (`chatgpt.com/#settings/Connectors`; chưa có nút tạo thì bật **Developer mode** ở Security and login hoặc
   Connectors ▸ Advanced settings) ▸ **Create** → hộp **New Connector (Beta)**: Name, Description (tùy chọn), **MCP Server
