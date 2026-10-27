@@ -190,12 +190,19 @@ export default function PurchaseRequestDetail() {
       .catch(() => {})
   }, [])
 
-  // Tải danh sách ĐMH tạo từ phiếu này (lọc theo mã PYC). Lỗi/không quyền xem ĐMH → ẩn khối.
+  // Tải danh sách ĐMH tạo từ phiếu này (lọc theo mã PYC). Không quyền xem ĐMH → ẩn khối.
+  // bao-CR-686: không quyền thì KHÔNG gọi — trước đây gọi rồi nhận 403 ngầm, mỗi lần mở phiếu
+  // cộng một lượt bị chặn và chuông Bất thường báo nhầm "bị chặn quyền nhiều lần liên tiếp".
+  const canReadPO = can('purchase_order', 'read')
   useEffect(() => {
     if (isNew || !pr.code) { setPos(null); return }
-    api.get('/api/purchase-orders', { params: { pr_code: pr.code, page_size: 200 }, _silent: true } as any)
-      .then((r) => setPos((r.data.data.items || []).slice().sort((a: any, b: any) => b.id - a.id)))
-      .catch(() => setPos(null))
+    if (canReadPO) {
+      api.get('/api/purchase-orders', { params: { pr_code: pr.code, page_size: 200 }, _silent: true } as any)
+        .then((r) => setPos((r.data.data.items || []).slice().sort((a: any, b: any) => b.id - a.id)))
+        .catch(() => setPos(null))
+    } else {
+      setPos(null)
+    }
     // SL đã đặt theo mã hàng → prefill 'còn thiếu' + cảnh báo đặt vượt khi tạo ĐMH
     api.get(`${API}/${id}/order-progress`, { _silent: true } as any)
       .then((r) => {
@@ -204,7 +211,7 @@ export default function PurchaseRequestDetail() {
         setOrderProgress({ ordered: d.ordered || {}, pending: d.pending || {}, orders: d.orders || {} })
       })
       .catch(() => { setOrderedMap({}); setOrderProgress(EMPTY_PROGRESS) })
-  }, [isNew, pr.code])
+  }, [isNew, pr.code, canReadPO])
 
   // bao-CR-376: chờ DS nhân sự trả lời XONG rồi mới điền, và bỏ chốt `isStaff` ở nhánh
   // tài khoản — người có quyền duyệt/xóa phiếu nhưng KHÔNG xem được DS nhân sự (DS rỗng)
