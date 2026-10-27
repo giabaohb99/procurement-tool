@@ -17449,3 +17449,12 @@ Mã nguồn: backend/scripts/load_customs_lookup_config_cr684.py · backend/scri
 **Kết quả:** gắn lại nhãn 243.727 dòng, 61.272 dòng có nhãn, 38.875 dòng là nguyên liệu kỹ thuật. Kiểm sức khỏe prod đạt, migration ở đầu cr684fmcode01.
 
 Commit: 77c7bf59 (main = erp-v2) · Deploy: prod api, celery-worker, celery-beat, web, erp, 26/10/2026 chiều
+
+## duoc-CR-685 | Thông báo tải lại bản mới không còn lọt vào bản in, tự tải lại lúc 0h
+- status: xong
+- date: 2026-10-27
+- pic: NSU231
+- tag: Được
+Anh Được báo người dùng in phiếu trên giao diện cũ thì bản in dính luôn khung thông báo «Đã có phiên bản mới» với nút Tải lại. Anh muốn bỏ khung đó khỏi bản in, và nếu có bản mới thì ứng dụng tự tải lại vào cuối ngày.
+Đã làm xong: khung thông báo được ẩn khi in. Khi có bản mới mà người dùng chưa bấm Tải lại, kể cả đã bấm Để sau, ứng dụng tự tải lại lúc 0 giờ đêm đó; máy ngủ qua 0 giờ thì lúc thức dậy sẽ tải lại ngay. Ứng dụng cũng tự dò bản mới mỗi giờ, vì trước đây tab mở cả ngày không biết là đã có deploy. Khung thông báo ghi thêm một dòng báo giờ tự tải lại. Kiểm kiểu giao diện cũ vẫn đúng bốn lỗi cũ, không có lỗi mới. Phần này chỉ chạy ở bản build nên chưa thử được ở máy local.
+Mã nguồn: frontend/src/components/PwaReloadPrompt.tsx
