@@ -86,6 +86,12 @@ REPORTS: dict[str, ReportRoute] = {
                                                                    "labor_contract_summary"), "/report/labor-contract"),
     "hr_profile_gaps": ReportRoute(ReportKey.HR_PROFILE_GAPS, _route("employee.profile_gaps_report_controller",
                                                                      "profile_gaps_summary"), "/report/hr-profile-gaps"),
+    #  duoc-CR-687: sổ lao động + mẫu 01/PLI. `/summary` chỉ trả số đếm (CCCD, BHXH, lương chỉ ở tệp Excel); route tự
+    #  đòi thêm `employee_sensitive.read` + `labor_contract.read` nên trợ lý không vượt được quyền người hỏi.
+    "labor_book": ReportRoute(ReportKey.LABOR_BOOK, _route("labor_register.register_controller",
+                                                           "labor_register_summary"), "/report/labor-register"),
+    "labor_usage_report": ReportRoute(ReportKey.LABOR_USAGE_REPORT, _route("labor_register.usage_report_controller",
+                                                                           "labor_usage_summary"), "/report/labor-usage-report"),
 }
 _BY_NUMBER = {int(r.key): name for name, r in REPORTS.items()}
 

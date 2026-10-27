@@ -5,7 +5,8 @@ from __future__ import annotations
 
 from app.core.report_aggregate import DimensionSpec, MetricSpec, ReportSpec
 from app.core.status_codes import EMPLOYEE_STATUS
-from app.modules.employee.constants import EMPLOYMENT_TYPE_LABELS, GENDER_LABELS, JOB_LEVEL_LABELS
+from app.modules.employee.constants import (EDUCATION_LEVEL_LABELS, EMPLOYMENT_TYPE_LABELS,
+                                            GENDER_LABELS, JOB_LEVEL_LABELS)
 
 #  Chỉ số bấm được ra danh sách nhân sự (`GET /api/employees/summary/rows`).
 DRILLDOWN_METRICS = {"new_hires": "Vào mới", "departures": "Nghỉ việc",
@@ -44,6 +45,16 @@ def build_spec(company_name: dict, department_name: dict) -> tuple[ReportSpec, D
             [(r.position_id, r.position_name)] if r.position_id else [])),
         "seniority": DimensionSpec("seniority", "Thâm niên", key_of=lambda r: (
             [(r.seniority_key, r.seniority_label)] if r.seniority_key else [])),
+        #  duoc-CR-687 (A2 Cơ cấu) — khóa rỗng = thiếu dữ liệu → «(Chưa gắn)».
+        "age_band": DimensionSpec("age_band", "Nhóm tuổi", key_of=lambda r: (
+            [(r.age_key, r.age_label)] if r.age_key else [])),
+        "education": DimensionSpec("education", "Trình độ", key_of=lambda r: (
+            [(r.education_level, EDUCATION_LEVEL_LABELS.get(r.education_level, ""))]
+            if r.education_level else [])),
+        "work_location": DimensionSpec("work_location", "Địa điểm làm việc", key_of=lambda r: (
+            [(r.location_key, r.location_label)] if r.location_key else [])),
+        "job_category": DimensionSpec("job_category", "Nhóm vị trí việc làm", key_of=lambda r: (
+            [(r.job_category, r.job_category_label)] if r.job_category else [])),
     }
     status_dim = DimensionSpec("status", "Trạng thái", key_of=lambda r: (
         [(r.status, EMPLOYEE_STATUS.label_of(r.status) or r.status)] if r.status else []))

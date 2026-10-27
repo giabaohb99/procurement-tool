@@ -18,6 +18,8 @@ interface ReportExportButtonProps {
   /** Giá trị mảng được lặp khóa (`label=1&label=2`) — xem `httpClient.paramsSerializer`. */
   params: Record<string, string | string[]>
   filename: string
+  /** Chữ trên nút — bỏ trống là «Xuất Excel» (`ReportPageConfig.exportLabel`). */
+  label?: string
 }
 
 /**
@@ -34,6 +36,7 @@ export function ReportExportButton({
   entity,
   params,
   filename,
+  label = 'Xuất Excel',
 }: ReportExportButtonProps) {
   const { can } = usePermission()
   const [isExporting, setIsExporting] = useState(false)
@@ -58,7 +61,7 @@ export function ReportExportButton({
   return (
     <Button variant="outline" onClick={handleExport} disabled={isExporting}>
       {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
-      Xuất Excel
+      {label}
     </Button>
   )
 }

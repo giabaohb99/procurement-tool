@@ -65,7 +65,8 @@ class TestKhongLoDuLieuNhayCam:
         data = report_service.build_summary(db, actor.user, actor.profile(), _period(), "company")
         _assert_no_sensitive_keys(data)
         dim_keys = {d["key"] for d in data["meta"]["dimensions"]}
-        assert not any("age" in k or "birth" in k or "tuoi" in k for k in dim_keys)
+        #  duoc-CR-687: chỉ có chiều GOM NHÓM `age_band` (nhóm tuổi), tuyệt không có ngày sinh/tuổi thô.
+        assert not any(("age" in k and k != "age_band") or "birth" in k or "tuoi" in k for k in dim_keys)
 
 
 class TestNghiViecThieuNgay:

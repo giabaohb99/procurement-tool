@@ -355,6 +355,10 @@ export const appRoutes = {
     laborContract: '/report/labor-contract',
     /** Hồ sơ & tài khoản còn thiếu (duoc-CR-686, khóa 18). */
     hrProfileGaps: '/report/hr-profile-gaps',
+    /** Sổ quản lý lao động (duoc-CR-687, khóa 19). */
+    laborRegister: '/report/labor-register',
+    /** Báo cáo sử dụng lao động mẫu 01/PLI (duoc-CR-687, khóa 20). */
+    laborUsageReport: '/report/labor-usage-report',
     vehicleBooking: '/report/vehicle-booking',
     sealRequest: '/report/seal-request',
     document: '/report/document',

@@ -152,3 +152,42 @@ describe('ReportGroupedTable — rows with all-zero current values are muted and
     expect(inactiveLabel).toHaveClass('text-muted-foreground')
   })
 })
+
+//  duoc-CR-687 — nhóm bị che (mọi số `null`, vd nhóm tuổi dưới 3 người) phải ra «—», không
+//  được ra «0»/«0 đ», và không có nút «Xem» danh sách (backend cũng trả 403 cho danh sách đó).
+describe('ReportGroupedTable — suppressed group (all values null)', () => {
+  const SUPPRESSED: ReportGroupRow[] = [
+    ...GROUPS,
+    { key: 'u25', label: 'Dưới 25', current: { spend: null, lines: null }, compare: { spend: null, lines: null } },
+  ]
+
+  it('renders a dash in every metric cell instead of 0', () => {
+    renderTable({ groups: SUPPRESSED })
+    const row = screen.getAllByRole('row').find((r) => r.textContent?.includes('Dưới 25'))
+    expect(row).toBeDefined()
+    if (!row) return
+    //  Hai cột hiện sẵn (spend, debt) — cả hai là «—».
+    expect(within(row).getAllByText('—')).toHaveLength(2)
+    expect(row).not.toHaveTextContent(/\b0\b/)
+  })
+
+  it('shows a dash instead of the «Xem» button on the suppressed row only', () => {
+    renderTable({ groups: SUPPRESSED, onDrilldownRow: vi.fn() })
+    expect(screen.getByRole('button', { name: 'Xem danh sách Kinh doanh' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Xem danh sách Dưới 25' })).not.toBeInTheDocument()
+    const row = screen.getAllByRole('row').find((r) => r.textContent?.includes('Dưới 25'))
+    if (!row) throw new Error('missing suppressed row')
+    //  2 cột số + 1 cột Danh sách.
+    expect(within(row).getAllByText('—')).toHaveLength(3)
+  })
+
+  it('does not crash or show 0 when the Tổng row itself carries nulls', () => {
+    renderTable({
+      groups: SUPPRESSED,
+      totals: { current: { spend: null, debt: null, lines: null }, compare: null },
+    })
+    const totalRow = screen.getAllByRole('row')[1]
+    expect(totalRow).toHaveTextContent('Tổng')
+    expect(within(totalRow).getAllByText('—')).toHaveLength(2)
+  })
+})

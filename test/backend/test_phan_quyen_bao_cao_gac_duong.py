@@ -63,6 +63,13 @@ GATED: dict[str, ReportKey] = {
     "/api/leave-balances/summary/rows": ReportKey.LEAVE_BALANCE,
     "/api/labor-contracts/summary/rows": ReportKey.LABOR_CONTRACT,
     "/api/employees/profile-gaps/summary/rows": ReportKey.HR_PROFILE_GAPS,
+    #  duoc-CR-687: sổ lao động + mẫu 01/PLI (gác kép + đòi thêm quyền nhạy cảm/HĐLĐ — test riêng ở cr687).
+    "/api/labor-register/summary": ReportKey.LABOR_BOOK,
+    "/api/labor-register/summary/export": ReportKey.LABOR_BOOK,
+    "/api/labor-register/summary/rows": ReportKey.LABOR_BOOK,
+    "/api/labor-usage-report/summary": ReportKey.LABOR_USAGE_REPORT,
+    "/api/labor-usage-report/summary/export": ReportKey.LABOR_USAGE_REPORT,
+    "/api/labor-usage-report/summary/rows": ReportKey.LABOR_USAGE_REPORT,
 }
 #  Khóa có thêm đường `/summary/rows` (3 route) — còn lại chỉ `/summary` + `/summary/export` (2 route).
 ROWS_KEYS = {v for k, v in GATED.items() if k.endswith("/summary/rows")}

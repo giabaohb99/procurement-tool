@@ -28,7 +28,7 @@ from app.core.status_catalog import Code, CodeSet, register
 
 
 class ReportKey(IntEnum):
-    """18 báo cáo của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
+    """20 báo cáo của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
     phase-02 của plan `261002-0836-phan-quyen-tung-bao-cao`."""
 
     PURCHASE_REPORT = 1      # Báo cáo mua hàng (Thu mua)
@@ -49,6 +49,8 @@ class ReportKey(IntEnum):
     WORK_CAPABILITY = 16      # Năng lực theo loại việc (Quản trị) — duoc-CR-657; số theo TỪNG NGƯỜI, mặc định chỉ admin
     LABOR_CONTRACT = 17       # Hợp đồng lao động (Nhân sự) — duoc-CR-686; danh sách có lương
     HR_PROFILE_GAPS = 18      # Hồ sơ & tài khoản còn thiếu (Nhân sự) — duoc-CR-686
+    LABOR_BOOK = 19           # Sổ quản lý lao động (Nhân sự) — duoc-CR-687; có CCCD, BHXH, lương
+    LABOR_USAGE_REPORT = 20   # Báo cáo sử dụng lao động mẫu 01/PLI (Nhân sự) — duoc-CR-687
 
 
 #  {khóa: (nhãn, nhóm phân hệ)} — nhãn KHỚP `label`, nhóm KHỚP `group` ở danh
@@ -72,6 +74,8 @@ REPORT_META: dict[ReportKey, tuple[str, str]] = {
     ReportKey.WORK_CAPABILITY: ("Năng lực theo loại việc", "Quản trị"),
     ReportKey.LABOR_CONTRACT: ("Hợp đồng lao động", "Nhân sự"),
     ReportKey.HR_PROFILE_GAPS: ("Hồ sơ & tài khoản còn thiếu", "Nhân sự"),
+    ReportKey.LABOR_BOOK: ("Sổ quản lý lao động", "Nhân sự"),
+    ReportKey.LABOR_USAGE_REPORT: ("Báo cáo sử dụng lao động (01/PLI)", "Nhân sự"),
 }
 
 #  `value` là SỐ VIẾT DƯỚI DẠNG CHUỖI — khung `status_catalog` dùng mã chuỗi,

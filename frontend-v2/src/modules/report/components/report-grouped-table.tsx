@@ -126,10 +126,19 @@ export function ReportGroupedTable({
         minWidth: 96,
         align: 'center',
         hideable: false,
-        cell: (row) =>
-          row.key === REPORT_OTHER_GROUP_KEY ? null : (
-            <ReportDrilldownRowButton label={row.label} onClick={() => onDrilldownRow(row)} />
-          ),
+        cell: (row) => {
+          if (row.key === REPORT_OTHER_GROUP_KEY) return null
+          //  Nhóm bị che (mọi số `null`) — danh sách của nó lộ đúng thứ vừa che, backend cũng
+          //  trả 403; hiện «—» thay cho nút để khỏi bấm vào một ngõ cụt.
+          if (row.isSuppressed) {
+            return (
+              <span className="text-muted-foreground" title="Nhóm quá ít người — không hiện danh sách">
+                —
+              </span>
+            )
+          }
+          return <ReportDrilldownRowButton label={row.label} onClick={() => onDrilldownRow(row)} />
+        },
       })
     }
 

@@ -1,4 +1,4 @@
-import { CalendarOff, FileSignature, IdCard, UserX, Wallet } from 'lucide-react'
+import { BookUser, CalendarOff, ClipboardList, FileSignature, IdCard, UserX, Wallet } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 
@@ -7,7 +7,7 @@ import type { ReportCatalogEntry } from './report-catalog'
 /**
  * Nhóm NHÂN SỰ của danh mục báo cáo (phase 04) — Nhân sự (biến động & cơ cấu) ·
  * Nghỉ phép (tình hình nghỉ) · Quỹ phép năm · Hợp đồng lao động · Hồ sơ còn thiếu
- * (duoc-CR-686). Mỗi báo cáo = một `ReportPageConfig`
+ * (duoc-CR-686) · Sổ quản lý lao động · Mẫu 01/PLI (duoc-CR-687). Mỗi báo cáo = một `ReportPageConfig`
  * (`pages/hr-headcount-report-page.tsx`/`leave-usage-report-page.tsx`/
  * `leave-balance-report-page.tsx`) — xem các tệp đó để biết KPI/chỉ số xu
  * hướng/breakdown/nhóm mặc định.
@@ -87,5 +87,37 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
     endpoint: '/api/employees/profile-gaps/summary',
     overviewKpis: ['complete_rate'],
     load: async () => (await import('../pages/hr-profile-gaps-report-page')).HrProfileGapsReportPage,
+  },
+  {
+    label: 'Sổ quản lý lao động',
+    description: 'Sổ theo luật: mỗi người một dòng, mỗi pháp nhân một sheet; người còn thiếu thông tin bắt buộc.',
+    path: appRoutes.report.laborRegister,
+    sourcePath: appRoutes.hr.employees,
+    icon: BookUser,
+    //  ReportKey.LABOR_BOOK (backend) = 19.
+    key: 19,
+    entity: 'employee',
+    group: 'Nhân sự',
+    endpoint: '/api/labor-register/summary',
+    //  Không góp mặt ở dải KPI Tổng quan: backend đòi thêm `employee_sensitive.read` +
+    //  `labor_contract.read` trong service, người được giao báo cáo mà thiếu hai quyền đó sẽ
+    //  thấy thẻ Tổng quan hỏng; sổ/mẫu là biểu mẫu nộp định kỳ, không phải số theo dõi hằng ngày.
+    overviewKpis: [],
+    load: async () => (await import('../pages/labor-register-report-page')).LaborRegisterReportPage,
+  },
+  {
+    label: 'Báo cáo sử dụng lao động (01/PLI)',
+    description: 'Mẫu 01/PLI nộp Sở Nội vụ (05/6, 05/12): tổng lao động, nữ, nhóm vị trí việc làm, loại HĐ.',
+    path: appRoutes.report.laborUsageReport,
+    sourcePath: appRoutes.hr.employees,
+    icon: ClipboardList,
+    //  ReportKey.LABOR_USAGE_REPORT (backend) = 20.
+    key: 20,
+    entity: 'employee',
+    group: 'Nhân sự',
+    endpoint: '/api/labor-usage-report/summary',
+    //  Như Sổ quản lý lao động ở trên — không lên dải KPI Tổng quan.
+    overviewKpis: [],
+    load: async () => (await import('../pages/labor-usage-report-page')).LaborUsageReportPage,
   },
 ]

@@ -91,6 +91,7 @@ export function ReportAnalyticsPage({ config }: ReportAnalyticsPageProps) {
               entity={config.entity}
               params={filters.queryParams}
               filename={buildExportFilename(config.slug, data?.period)}
+              label={config.exportLabel}
             />
           )
         }

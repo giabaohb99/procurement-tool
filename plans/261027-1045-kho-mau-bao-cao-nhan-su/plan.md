@@ -27,14 +27,24 @@ Khung báo cáo dùng lại: plan [`260928-0841-bao-cao-kieu-haravan-da-phan-he`
 | 02 | [Sửa + bù 3 báo cáo đang chạy (A1, C1, C2)](phase-02-sua-bao-cao-dang-chay.md) | 9h | done | BE-1 |
 | 03 | [B1 Hợp đồng lao động + E1 Hồ sơ & tài khoản còn thiếu](phase-03-bao-cao-hdld-va-ho-so-thieu.md) | 8h | done | BE-2 |
 | 04 | [Giao diện: lọc phòng ban, ngăn danh sách người, 2 trang mới](phase-04-giao-dien.md) | 6h | done | FE |
-| 05 | [Kiểm thử chéo, rà mã, HDSD + RAG, tài liệu, nhật ký](phase-05-kiem-thu-tai-lieu.md) | 4h | done (chờ commit) | điều phối |
+| 05 | [Kiểm thử chéo, rà mã, HDSD + RAG, tài liệu, nhật ký](phase-05-kiem-thu-tai-lieu.md) | 4h | done | điều phối |
 
 02 · 03 · 04 chạy song song sau 01 (hợp đồng API chốt ở 01, không phase nào chung tệp).
+
+## Đợt 2 — phases (duoc-CR-687, đang làm)
+Quyết định 27/10/2026 (anh Được): «vị trí việc làm» của 01/PLI **tự suy** từ cấp bậc + trình độ; cột ERP chưa có dữ liệu **để trống** trong Excel; nhóm tuổi **không cần** quyền nhạy cảm nhưng **che nhóm < 3 người**. Không migration.
+
+| # | Phase | Effort | Status | Chủ tệp |
+|---|-------|--------|--------|---------|
+| 06 | [Nền đợt 2: khóa 19/20, đăng ký](phase-06-nen-dot-2.md) | 1h | done | điều phối |
+| 07 | [B2 Sổ quản lý lao động + B3 mẫu 01/PLI](phase-07-so-quan-ly-va-mau-01-pli.md) | 9h | done | BE-3 |
+| 08 | [A2 Cơ cấu nhân sự (mở rộng A1)](phase-08-co-cau-nhan-su.md) | 3h | done | BE-1 |
+| 09 | [Giao diện + kiểm thử + HDSD đợt 2](phase-09-giao-dien-kiem-thu-dot-2.md) | 4h | done | FE + điều phối |
 
 ## Lộ trình các đợt sau (chưa làm)
 | Đợt | Mẫu | Điều kiện |
 |---|---|---|
-| 2 | B2 Sổ quản lý lao động · B3 mẫu 01/PLI (chốt số theo tháng, xuất đúng mẫu) · A2 Cơ cấu nhân sự | Có tệp mẫu 01/PLI gốc; chốt nhóm tuổi có cần quyền nhạy cảm. Hạn nộp 05/12/2026 |
+| 2 | B2 · B3 · A2 — **đang làm, xem bảng trên** (bỏ «chốt số theo tháng»: 01/PLI là danh sách tại ngày cuối kỳ, không cần bảng chụp) | Hạn nộp 05/12/2026 |
 | 3 | H1 Phúc lợi & sự kiện · A5 Quỹ lương theo pháp nhân · biểu đồ linh hoạt (§3.4) · A3 · D1 | Chốt câu 9, 10 ở cuối tài liệu 05 |
 | 4 | C3 Có mặt theo ngày · E2 · E3 · F1 · B4 · A4 + bảng định biên / quỹ lương kế hoạch | Chốt câu 5 |
 | Chờ phân hệ | Tuyển dụng (phần 🔴 của A1, HR2-4) · G1 Tài sản cấp phát (HR2-1) | Làm phân hệ trước |

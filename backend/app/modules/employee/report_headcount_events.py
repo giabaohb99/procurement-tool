@@ -38,15 +38,17 @@ from app.core.scoping import apply_scope
 #  từ MODULE NÀY (`from .report_headcount_events import (..., vn_today)`).
 from app.core.vn_time import vn_today  # noqa: F401
 from app.modules.employee.model import Employee
+from app.modules.employee.report_headcount_dims import row_dims
 from app.modules.employee.service import STATUS_RESIGNED
 
 #  (trần số năm — nửa mở, trần cuối = None nghĩa "trở lên", nhãn hiển thị)
 _SENIORITY_BUCKETS = ((1, "Dưới 1 năm"), (3, "1-3 năm"), (5, "3-5 năm"), (None, "Trên 5 năm"))
-#  Cột chiều DÙNG CHUNG cho mọi truy vấn sự kiện — `with_entities` chỉ nạp đúng 9 cột này,
+#  Cột chiều DÙNG CHUNG cho mọi truy vấn sự kiện — `with_entities` chỉ nạp đúng 12 cột này,
 #  không nạp cả dòng Employee (~40 cột, có cột JSON `extra_fields`).
 _DIM_COLS = (Employee.id, Employee.company_id, Employee.department_id, Employee.job_level,
             Employee.employment_type, Employee.gender, Employee.position_id, Employee.position,
-            Employee.status)
+            Employee.status, Employee.date_of_birth, Employee.education_level,
+            Employee.work_location)
 
 
 def effective_hire_date(hire_date, created_at) -> date | None:
@@ -84,6 +86,14 @@ class HeadcountEvent:
     seniority_key: str
     seniority_label: str
     employee_id: int = 0   # để danh sách «bấm số» (duoc-CR-686) tra lại hồ sơ
+    #  Chiều cơ cấu (duoc-CR-687, `report_headcount_dims.row_dims`) — KHÔNG giữ ngày sinh.
+    age_key: str = ""
+    age_label: str = "(Chưa gắn)"
+    education_level: int = 0
+    location_key: str = ""
+    location_label: str = ""
+    job_category: int = 0
+    job_category_label: str = ""
 
 
 def scoped_employee_query(db: Session, user, prof: dict, company_id: int | None = None,
@@ -98,8 +108,9 @@ def scoped_employee_query(db: Session, user, prof: dict, company_id: int | None 
     return q
 
 
-def _row_common(row) -> dict:
-    return dict(employee_id=row.id, company_id=row.company_id or 0, department_id=row.department_id or 0,
+def _row_common(row, on: date) -> dict:
+    """`on` = ngày sự kiện/mốc — để tính nhóm tuổi tại đúng thời điểm đó."""
+    return dict(**row_dims(row, on), employee_id=row.id, company_id=row.company_id or 0, department_id=row.department_id or 0,
                job_level=row.job_level or 0, employment_type=row.employment_type or 0,
                gender=row.gender or 0, position_id=row.position_id or 0,
                position_name=row.position or "", status=row.status or "")
@@ -123,14 +134,14 @@ def hire_events(db: Session, user, prof: dict, d_from: date, d_to: date, today: 
                .with_entities(*_DIM_COLS, Employee.hire_date).all()):
         sen_key, sen_label = seniority_bucket(row.hire_date, today)
         out.append(HeadcountEvent(kind="hire", event_date=row.hire_date, seniority_key=sen_key,
-                                  seniority_label=sen_label, **_row_common(row)))
+                                  seniority_label=sen_label, **_row_common(row, row.hire_date)))
     for row in (base.filter(Employee.hire_date.is_(None))
                .filter(range_filter(Employee.created_at, "datetime_utc", d_from, d_to))
                .with_entities(*_DIM_COLS, Employee.created_at).all()):
         eff = to_local_date(row.created_at)
         sen_key, sen_label = seniority_bucket(eff, today)
         out.append(HeadcountEvent(kind="hire", event_date=eff, seniority_key=sen_key,
-                                  seniority_label=sen_label, **_row_common(row)))
+                                  seniority_label=sen_label, **_row_common(row, eff)))
     return out
 
 
@@ -148,7 +159,7 @@ def resign_events(db: Session, user, prof: dict, d_from: date, d_to: date,
         eff_hire = effective_hire_date(row.hire_date, row.created_at)
         sen_key, sen_label = seniority_bucket(eff_hire, row.resign_date)
         out.append(HeadcountEvent(kind="resign", event_date=row.resign_date, seniority_key=sen_key,
-                                  seniority_label=sen_label, **_row_common(row)))
+                                  seniority_label=sen_label, **_row_common(row, row.resign_date)))
     return out
 
 
@@ -176,10 +187,10 @@ def employees_as_of(db: Session, user, prof: dict, as_of: date,
     for row in with_date.with_entities(*_DIM_COLS, Employee.hire_date).all():
         sen_key, sen_label = seniority_bucket(row.hire_date, as_of)
         out.append(HeadcountEvent(kind="snapshot", event_date=as_of, seniority_key=sen_key,
-                                  seniority_label=sen_label, **_row_common(row)))
+                                  seniority_label=sen_label, **_row_common(row, as_of)))
     for row in fallback.with_entities(*_DIM_COLS, Employee.created_at).all():
         eff = to_local_date(row.created_at)
         sen_key, sen_label = seniority_bucket(eff, as_of)
         out.append(HeadcountEvent(kind="snapshot", event_date=as_of, seniority_key=sen_key,
-                                  seniority_label=sen_label, **_row_common(row)))
+                                  seniority_label=sen_label, **_row_common(row, as_of)))
     return out

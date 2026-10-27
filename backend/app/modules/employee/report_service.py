@@ -17,8 +17,9 @@ Hiệu năng: Số truy vấn CỐ ĐỊNH, không tăng theo số nhân sự (x
 vấn). `company_id` (H1) lọc SAU `apply_scope` ở MỌI truy vấn (chỉ thu hẹp).
 Tên công ty/phòng ban chỉ tra khi `group_by` thật sự cần.
 
-Không đọc cột nào trong `employee.sensitive.SENSITIVE_FIELDS`, không có chiều
-độ tuổi — các chiều ở đây chỉ dùng cột phân loại công khai.
+Ngoại lệ DUY NHẤT trong `SENSITIVE_FIELDS`: `date_of_birth`, đọc chỉ để chọn «Nhóm tuổi»
+(duoc-CR-687, `report_headcount_dims.py`) và không bao giờ trả ra; nhóm tuổi < 3 người bị che
+với người thiếu `employee_sensitive.read` (`report_headcount_privacy.py`).
 """
 from __future__ import annotations
 
@@ -35,6 +36,7 @@ from app.modules.employee.report_headcount_events import (employees_as_of, hire_
                                                            resign_events, vn_today)
 from app.modules.employee.report_headcount_gaps import missing_hire_count, missing_resign_count
 from app.modules.employee.report_headcount_spec import DRILLDOWN_METRICS, build_spec
+from app.modules.employee.report_headcount_privacy import suppress_small_age_groups
 from app.modules.employee.report_headcount_groups import (apply_headcount, merge_group_headcount,
                                                            merge_status_breakdown)
 
@@ -99,5 +101,7 @@ def build_summary(db: Session, user, prof: dict, period: Period, group_by: str |
                      "không tính vào chỉ số Nghỉ việc VÀ không được coi là đang làm trong Định "
                      "biên (Q4.3), cần Nhân sự bổ sung ngày.")
     data["notes"] = notes
+    if group_by == "age_band":
+        suppress_small_age_groups(data, prof)
     data["meta"]["drilldown_metrics"] = list(DRILLDOWN_METRICS)
     return data

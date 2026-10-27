@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Seed Trung tâm trợ giúp cho nhóm báo cáo NHÂN SỰ của phân hệ Báo cáo — duoc-CR-686 (27/10/2026).
+"""Seed Trung tâm trợ giúp cho nhóm báo cáo NHÂN SỰ của phân hệ Báo cáo — duoc-CR-686, mở rộng duoc-CR-687
+(27/10/2026).
 
-Dựng 1 thẻ phân hệ + 7 bài theo TÁC VỤ cho năm báo cáo ở menu Báo cáo ▸ nhóm «Nhân sự»:
+Dựng 1 thẻ phân hệ + 9 bài theo TÁC VỤ cho bảy báo cáo ở menu Báo cáo ▸ nhóm «Nhân sự»:
 Biến động nhân sự · Tình hình nghỉ phép · Quỹ phép năm (đã có, mở rộng) · Hợp đồng lao động ·
-Hồ sơ & tài khoản còn thiếu (mới). Phần chung: ô lọc «Phòng ban» và ngăn «Danh sách» mở từ nút
-«Xem danh sách» ở thẻ số / nút «Xem» ở bảng «Xem theo».
+Hồ sơ & tài khoản còn thiếu (CR-686) · Sổ quản lý lao động · Báo cáo sử dụng lao động (01/PLI) (CR-687).
+Phần chung: ô lọc «Phòng ban» và ngăn «Danh sách» mở từ nút «Xem danh sách» ở thẻ số / nút «Xem» ở
+bảng «Xem theo». CR-687 thêm 4 chiều cơ cấu vào Biến động nhân sự (Nhóm tuổi · Trình độ · Địa điểm làm
+việc · Nhóm vị trí việc làm) và khóa 19/20 vào bài giao quyền.
 
-Nhãn nút và tên chỉ số chép từ màn thật (localhost:8083, 27/10/2026) và từ `meta.metrics` của năm đường
-`/summary`; đổi nhãn ở màn hay ở backend thì soát lại bài tương ứng.
+Nhãn nút và tên chỉ số chép từ màn thật (localhost:8083, 27/10/2026) và từ `meta.metrics` / `meta.dimensions`
+/ `notes` của các đường `/summary`; đổi nhãn ở màn hay ở backend thì soát lại bài tương ứng. Nhãn tiêu đề
+cột của tệp 01/PLI chưa đối chiếu được từng chữ với bản mẫu chính thức (xem báo cáo phase 07 của CR-687):
+bài dặn Nhân sự so lại trước khi nộp.
 
 Chạy trong container api:
     docker compose exec -T api python scripts/seed_help_bao_cao_nhan_su.py
@@ -15,7 +20,7 @@ Chạy trong container api:
 
 Idempotent: xóa nguyên cây cùng tiêu đề gốc rồi dựng lại ở đúng vị trí cũ (xem `help_seed_common.py`).
 
-⚠️ Phải KHỚP với `doc/erp/hrm/05-bao-cao-nhan-su.md` (mục A1, B1, C1, C2, E1). Nội dung ở đây và ở tài liệu
+⚠️ Phải KHỚP với `doc/erp/hrm/05-bao-cao-nhan-su.md` (mục A1, A2, B1, B2, B3, C1, C2, E1). Nội dung ở đây và ở tài liệu
 đó phải khớp nhau.
 """
 from help_seed_common import SessionLocal, HelpArticle, _descendants, rebuild_tree, ref, slugify
@@ -27,29 +32,33 @@ LEAVE_USAGE_TITLE = "Báo cáo Nhân sự — Đọc báo cáo Tình hình ngh�
 LEAVE_BALANCE_TITLE = "Báo cáo Nhân sự — Đọc báo cáo Quỹ phép năm"
 LABOR_CONTRACT_TITLE = "Báo cáo Nhân sự — Theo dõi hợp đồng lao động sắp hết hạn"
 PROFILE_GAPS_TITLE = "Báo cáo Nhân sự — Tìm hồ sơ và tài khoản còn thiếu"
+LABOR_BOOK_TITLE = "Báo cáo Nhân sự — Xuất Sổ quản lý lao động"
+LABOR_USAGE_TITLE = "Báo cáo Nhân sự — Lập báo cáo sử dụng lao động mẫu 01/PLI nộp Sở Nội vụ"
 ADMIN_ACCESS_TITLE = "Báo cáo Nhân sự — Dành cho quản trị: giao quyền xem báo cáo"
 
 TREE = {
     "title": ROOT_TITLE,
     "icon": "bar-chart",
-    "summary": "Năm báo cáo Nhân sự: biến động, nghỉ phép, quỹ phép, hợp đồng lao động, hồ sơ còn thiếu — lọc phòng ban và bấm ra danh sách người sau mỗi con số",
+    "summary": "Bảy báo cáo Nhân sự: biến động và cơ cấu, nghỉ phép, quỹ phép, hợp đồng lao động, hồ sơ còn thiếu, sổ quản lý lao động, mẫu 01/PLI — lọc phòng ban và bấm ra danh sách người sau mỗi con số",
     "content": f"""<h2>Báo cáo Nhân sự dùng để làm gì</h2>
 <p>Nhóm <strong>Nhân sự</strong> trong phân hệ <strong>Báo cáo</strong> giúp phòng Nhân sự và Ban Giám đốc trả lời nhanh những câu hỏi hằng tuần, hằng tháng mà không phải lọc tay từng danh sách:</p>
 <table>
 <thead><tr><th>Báo cáo</th><th>Trả lời câu hỏi</th><th>Bài hướng dẫn</th></tr></thead>
 <tbody>
-<tr><td><strong>Biến động nhân sự</strong></td><td>Công ty đang có bao nhiêu người, kỳ này vào bao nhiêu, nghỉ bao nhiêu</td><td>{ref(HEADCOUNT_TITLE, "Đọc báo cáo Biến động nhân sự")}</td></tr>
+<tr><td><strong>Biến động nhân sự</strong></td><td>Công ty đang có bao nhiêu người, kỳ này vào bao nhiêu, nghỉ bao nhiêu; đội ngũ chia theo tuổi, trình độ, nơi làm việc ra sao</td><td>{ref(HEADCOUNT_TITLE, "Đọc báo cáo Biến động nhân sự")}</td></tr>
 <tr><td><strong>Tình hình nghỉ phép</strong></td><td>Kỳ này nghỉ bao nhiêu ngày, ai nghỉ, đơn có được duyệt nhanh không</td><td>{ref(LEAVE_USAGE_TITLE, "Đọc báo cáo Tình hình nghỉ phép")}</td></tr>
 <tr><td><strong>Quỹ phép năm</strong></td><td>Mỗi người còn bao nhiêu phép, ai chưa được cấp quỹ, ai dùng vượt</td><td>{ref(LEAVE_BALANCE_TITLE, "Đọc báo cáo Quỹ phép năm")}</td></tr>
 <tr><td><strong>Hợp đồng lao động</strong></td><td>Tuần này phải xử lý hợp đồng nào, có chỗ nào đang sai luật không</td><td>{ref(LABOR_CONTRACT_TITLE, "Theo dõi hợp đồng lao động sắp hết hạn")}</td></tr>
 <tr><td><strong>Hồ sơ &amp; tài khoản còn thiếu</strong></td><td>Hồ sơ của ai chưa đủ, phòng nào khai kém, tài khoản nào đang để hở</td><td>{ref(PROFILE_GAPS_TITLE, "Tìm hồ sơ và tài khoản còn thiếu")}</td></tr>
+<tr><td><strong>Sổ quản lý lao động</strong></td><td>Thanh tra lao động hỏi thì đưa ngay được sổ, mỗi pháp nhân một bản</td><td>{ref(LABOR_BOOK_TITLE, "Xuất Sổ quản lý lao động")}</td></tr>
+<tr><td><strong>Báo cáo sử dụng lao động (01/PLI)</strong></td><td>Lập báo cáo 6 tháng và báo cáo năm nộp Sở Nội vụ</td><td>{ref(LABOR_USAGE_TITLE, "Lập báo cáo sử dụng lao động mẫu 01/PLI")}</td></tr>
 </tbody>
 </table>
 
 <h2>Mở báo cáo ở đâu</h2>
-<p>Vào phân hệ <strong>Báo cáo</strong>, menu bên trái có nhóm <strong>Nhân sự</strong> với năm mục trên. Bạn chỉ thấy mục nào mình đã được giao quyền xem. Không thấy báo cáo cần dùng thì nhờ quản trị giao quyền theo bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</p>
+<p>Vào phân hệ <strong>Báo cáo</strong>, menu bên trái có nhóm <strong>Nhân sự</strong> với bảy mục trên. Bạn chỉ thấy mục nào mình đã được giao quyền xem. Không thấy báo cáo cần dùng thì nhờ quản trị giao quyền theo bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</p>
 
-<h2>Điểm chung của cả năm báo cáo</h2>
+<h2>Điểm chung của cả bảy báo cáo</h2>
 <ul>
 <li>Lọc theo <strong>Phòng ban</strong>, <strong>Công ty</strong> và kỳ báo cáo ngay trên đầu trang.</li>
 <li>Bấm <strong>Xem danh sách</strong> dưới một thẻ số, hoặc nút <strong>Xem</strong> ở một dòng của bảng, để ra đúng những người hay những phiếu làm nên con số đó.</li>
@@ -116,7 +125,26 @@ TREE = {
 <tr><td>Định biên đầu kỳ, Thay đổi ròng</td><td>Có trong bảng bên dưới</td></tr>
 </tbody>
 </table>
-<p>Ô <strong>Xem theo</strong> cho chia số theo Công ty, Phòng ban (mặc định), Cấp bậc, Loại hình, Giới tính, Chức vụ hoặc Thâm niên.</p>
+<p>Ô <strong>Xem theo</strong> cho chia số theo Công ty, Phòng ban (mặc định), Cấp bậc, Loại hình, Giới tính, Chức vụ, Thâm niên, Nhóm tuổi, Trình độ, Địa điểm làm việc hoặc Nhóm vị trí việc làm. Kỳ không có ai vào, ai nghỉ thì trang báo <em>Kỳ này chưa có dữ liệu</em> và ẩn bảng; bấm <strong>Xem cả năm nay</strong> hoặc chọn kỳ dài hơn.</p>
+
+<h2>Xem cơ cấu đội ngũ: tuổi, trình độ, nơi làm việc</h2>
+<p>Bốn cách chia ở cuối ô <strong>Xem theo</strong> cho biết đội ngũ đang trông như thế nào:</p>
+<table>
+<thead><tr><th>Xem theo</th><th>Chia thành</th><th>Lấy từ hồ sơ</th></tr></thead>
+<tbody>
+<tr><td><strong>Nhóm tuổi</strong></td><td>Dưới 25 · 25–34 · 35–44 · 45–54 · 55 trở lên</td><td>Ngày sinh. Tuổi tính tại ngày cuối kỳ với <em>Định biên</em>, tại ngày vào làm với <em>Vào mới</em>, tại ngày nghỉ với <em>Nghỉ việc</em></td></tr>
+<tr><td><strong>Trình độ</strong></td><td>Phổ thông · Trung cấp · Cao đẳng · Đại học · Sau đại học</td><td>Ô Trình độ học vấn</td></tr>
+<tr><td><strong>Địa điểm làm việc</strong></td><td>Từng nơi làm việc khai trong hồ sơ (văn phòng, kho, xưởng…)</td><td>Ô Nơi làm việc. Chữ hoa, chữ thường và khoảng trắng thừa được coi là một</td></tr>
+<tr><td><strong>Nhóm vị trí việc làm</strong></td><td>Nhà quản lý · Chuyên môn kỹ thuật bậc cao · Chuyên môn kỹ thuật bậc trung · Khác</td><td>Tự suy từ cấp bậc và trình độ, cùng cách chia với mẫu 01/PLI (xem bài {ref(LABOR_USAGE_TITLE, "Lập báo cáo sử dụng lao động mẫu 01/PLI")})</td></tr>
+</tbody>
+</table>
+<p>Hồ sơ chưa khai ô tương ứng nằm ở dòng <em>(Chưa gắn)</em>. Dòng này lớn thì nên bổ sung hồ sơ trước khi đọc tỷ lệ.</p>
+<p><strong>Che số nhóm tuổi nhỏ.</strong> Nhóm tuổi có dưới 3 người có thể làm lộ tuổi của từng người, nhất là khi lọc thêm một phòng ban. Vì vậy, với người <strong>không có quyền xem thông tin nhạy cảm của nhân sự</strong>:</p>
+<ul>
+<li>nhóm tuổi có 1–2 người (ở kỳ đang xem hoặc kỳ so sánh, tính cả số vào mới, nghỉ việc) hiện <strong>—</strong> thay cho số. Nếu chỉ một nhóm bị che, hệ thống che thêm nhóm nhỏ kế tiếp để không lấy Tổng trừ các nhóm khác mà ra được. Cột <strong>Danh sách</strong> của dòng đó cũng là <strong>—</strong> (không có nút <strong>Xem</strong>), và mục <strong>Cách tính số liệu</strong> có thêm lưu ý <em>Nhóm tuổi dưới 3 người được che số…</em>. Dòng <em>Tổng</em> vẫn hiện đủ. Tệp <strong>Xuất Excel</strong> để trống các ô bị che;</li>
+<li>không mở được danh sách người của bất kỳ nhóm tuổi nào: bấm <strong>Xem</strong> thì ngăn báo <em>Danh sách theo nhóm tuổi cần quyền xem thông tin nhạy cảm của nhân sự</em>. Danh sách ở thẻ số trên đầu trang vẫn mở được bình thường.</li>
+</ul>
+<p>Người có quyền xem thông tin nhạy cảm thấy đủ số và mở được danh sách như các cách chia khác.</p>
 
 <h2>Xem ai vào, ai nghỉ</h2>
 <ol>
@@ -284,9 +312,131 @@ TREE = {
 <p>Với người đã nghỉ mà tài khoản còn mở, mở hồ sơ rồi khóa tài khoản theo bài {ref("Nhân sự — Khóa tài khoản hoặc cho nghỉ việc khi còn việc duyệt treo", "Khóa tài khoản hoặc cho nghỉ việc khi còn việc duyệt treo")}.</p>""",
         },
         {
+            "title": LABOR_BOOK_TITLE,
+            "icon": "book-open",
+            "summary": "Sổ theo luật: ai có trong sổ, bốn thẻ số, nút Xuất sổ (Excel) mỗi pháp nhân một sheet, cột Nhân sự điền tay, dòng tô vàng thiếu thông tin bắt buộc, quyền cần có",
+            "content": f"""<h2>Sổ quản lý lao động là gì</h2>
+<p>Luật lao động buộc mỗi đơn vị sử dụng lao động lập <strong>sổ quản lý lao động</strong> trong vòng <strong>30 ngày</strong> kể từ ngày bắt đầu hoạt động, bằng giấy hoặc bản điện tử, và đưa ra được khi thanh tra lao động hỏi. Báo cáo <strong>Sổ quản lý lao động</strong> dựng sẵn sổ đó từ hồ sơ nhân sự, hợp đồng lao động và đơn nghỉ phép: mỗi người một dòng, mỗi pháp nhân một sheet, đủ các cột luật yêu cầu.</p>
+
+<h2>Ai có trong sổ</h2>
+<p>Sổ gồm <strong>mọi người đã làm việc ở bất kỳ lúc nào trong kỳ</strong> bạn chọn, kể cả người đã nghỉ giữa kỳ. Kỳ mặc định là <strong>Năm nay</strong>.</p>
+<table>
+<thead><tr><th>Thẻ số</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><strong>Người trong sổ</strong></td><td>Số người làm việc ở bất kỳ lúc nào trong kỳ</td></tr>
+<tr><td><strong>Đang làm cuối kỳ</strong></td><td>Số người vẫn đang làm tại ngày cuối kỳ</td></tr>
+<tr><td><strong>Nghỉ việc trong kỳ</strong></td><td>Số người có ngày nghỉ việc nằm trong kỳ</td></tr>
+<tr><td><strong>Thiếu thông tin bắt buộc</strong></td><td>Số người còn thiếu một trong: ngày sinh, CCCD, địa chỉ thường trú, trình độ, ngày vào làm, loại hợp đồng</td></tr>
+</tbody>
+</table>
+<p>Người có tình trạng <em>Đã nghỉ</em> mà hồ sơ không ghi ngày nghỉ việc thì <strong>không có trong sổ</strong>, vì không biết họ nghỉ lúc nào. Hãy bổ sung ngày nghỉ việc cho các hồ sơ đó.</p>
+<p>Ô <strong>Xem theo</strong> cho chia theo Công ty, Phòng ban (mặc định) hoặc Nhóm vị trí việc làm. Bấm <strong>Xem danh sách</strong> ở thẻ số, hoặc <strong>Xem</strong> ở một dòng, để ra danh sách người với mã nhân viên, họ tên, công ty, phòng ban, chức vụ, nhóm vị trí việc làm, loại hợp đồng, ngày bắt đầu và kết thúc hợp đồng, ngày vào làm, ngày nghỉ việc và cột <strong>Thiếu</strong> ghi rõ thiếu mục nào. Danh sách trên màn <strong>không hiện</strong> số CCCD, số BHXH, ngày sinh, địa chỉ hay lương; các giá trị đó chỉ có trong tệp Excel.</p>
+
+<h2>Xuất sổ ra Excel</h2>
+<ol>
+<li>Mở <strong>Báo cáo</strong> ▸ <strong>Sổ quản lý lao động</strong>.</li>
+<li>Chọn kỳ: để <strong>Năm nay</strong> cho sổ của năm, hoặc chọn <strong>Tùy chọn khoảng ngày</strong> rồi bấm <strong>Áp dụng</strong>. Để <em>Tất cả phòng ban</em> và <em>Tất cả công ty</em> nếu cần sổ đầy đủ; tệp xuất theo đúng bộ lọc đang chọn.</li>
+<li>Bấm <strong>Xuất sổ (Excel)</strong>. Tệp tải về có <strong>mỗi pháp nhân một sheet</strong>, đầu sheet ghi tên đơn vị, mã số thuế, địa chỉ và kỳ.</li>
+<li>Mở tệp, lọc các dòng <strong>tô vàng</strong> ở cột STT và Họ và tên: đó là người còn thiếu thông tin bắt buộc, cột cuối <strong>Thiếu thông tin bắt buộc</strong> ghi rõ thiếu gì. Bổ sung trong hồ sơ nhân sự rồi xuất lại.</li>
+<li>Điền tay các cột hệ thống chưa có dữ liệu (bảng dưới), rồi lưu hoặc in sổ theo quy định của đơn vị.</li>
+</ol>
+
+<h2>Các cột của sổ</h2>
+<table>
+<thead><tr><th>Nhóm cột</th><th>Các cột</th></tr></thead>
+<tbody>
+<tr><td>Hệ thống điền sẵn</td><td>STT · Mã NV · Họ và tên · Giới tính · Ngày sinh · Nơi cư trú · Số CCCD · Trình độ chuyên môn · Vị trí việc làm (chức vụ) · Loại hợp đồng lao động · Thời điểm bắt đầu làm việc · Số sổ BHXH · Tiền lương (theo HĐ) · Nâng lương · Số ngày nghỉ có lương trong năm · Số ngày nghỉ không lương trong năm · Thời điểm chấm dứt HĐLĐ · Lý do chấm dứt HĐLĐ</td></tr>
+<tr><td><strong>Để trống, Nhân sự điền tay</strong></td><td>Quốc tịch · Bậc trình độ kỹ năng nghề · Số giờ làm thêm · Học nghề, đào tạo, bồi dưỡng · Kỷ luật lao động, trách nhiệm vật chất · Tai nạn lao động, bệnh nghề nghiệp</td></tr>
+<tr><td>Cột đánh dấu</td><td>Thiếu thông tin bắt buộc</td></tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Nâng lương</strong> ghi các lần mức lương đổi giữa những hợp đồng nối tiếp, dạng <em>ngày: mức cũ → ngày: mức mới</em>. Người chỉ có một mức lương thì để trống.</li>
+<li>Số ngày nghỉ có lương và không lương lấy từ các đơn nghỉ <strong>đã duyệt</strong>, chỉ tính phần ngày nằm trong kỳ.</li>
+<li>Hợp đồng dùng cho mỗi người là hợp đồng đã ký còn hiệu lực tại ngày cuối kỳ (hoặc hôm nay nếu kỳ chưa hết); không có thì lấy hợp đồng bắt đầu gần nhất trước đó.</li>
+</ul>
+
+<h2>Quyền cần có</h2>
+<p>Sổ chứa CCCD, số BHXH, ngày sinh, địa chỉ và lương, nên ngoài việc được giao xem báo cáo, bạn cần thêm <strong>quyền xem thông tin nhạy cảm của nhân sự</strong> và <strong>quyền xem hợp đồng lao động</strong>. Thiếu quyền nào thì trang báo rõ còn thiếu quyền đó thay vì hiện số; nhờ quản trị cấp theo bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}. Nút <strong>Xuất sổ (Excel)</strong> cần thêm quyền xuất hồ sơ nhân sự và quyền xuất hợp đồng lao động; tệp chỉ có những người nằm trong phạm vi bạn được xuất.</p>
+<p>⚠️ Tệp Excel có dữ liệu cá nhân và lương. Không gửi tệp qua nhóm chat chung, xóa bản tải về khi không còn dùng.</p>""",
+        },
+        {
+            "title": LABOR_USAGE_TITLE,
+            "icon": "clipboard-list",
+            "summary": "Mẫu số 01/PLI: thẻ Tổng lao động, Nữ, Nhà quản lý, Chuyên môn kỹ thuật bậc cao; nút Xuất mẫu 01/PLI; chọn kỳ 6 tháng / năm; cột phải điền tay; nộp Sở Nội vụ trước 05/6 và 05/12",
+            "content": f"""<h2>Báo cáo này dùng để làm gì</h2>
+<p>Mỗi năm hai lần, mỗi pháp nhân phải nộp <strong>Báo cáo tình hình sử dụng lao động</strong> theo <strong>Mẫu số 01/PLI</strong> (Phụ lục I Nghị định 145/2020). Trong ERP, mục <strong>Báo cáo sử dụng lao động (01/PLI)</strong> tổng hợp số liệu trên màn và xuất sẵn tệp Excel đúng khung của mẫu để Nhân sự hoàn thiện rồi nộp.</p>
+
+<h2>Đọc số trên màn</h2>
+<p>Người được tính giống Sổ quản lý lao động: mọi người đã làm việc ở bất kỳ lúc nào trong kỳ. Bảng mặc định <strong>Xem theo</strong> Công ty, vì mỗi pháp nhân nộp một bản riêng; có thể đổi sang Phòng ban hoặc Nhóm vị trí việc làm.</p>
+<table>
+<thead><tr><th>Thẻ số / cột</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><strong>Tổng lao động</strong></td><td>Số người trong báo cáo</td></tr>
+<tr><td><strong>Nữ</strong></td><td>Số lao động nữ</td></tr>
+<tr><td><strong>Nhà quản lý</strong>, <strong>Chuyên môn kỹ thuật bậc cao</strong></td><td>Hai nhóm đầu của cột «Vị trí việc làm» trong mẫu</td></tr>
+<tr><td>Chuyên môn kỹ thuật bậc trung, Vị trí việc làm khác</td><td>Hai nhóm còn lại, có sẵn trên bảng</td></tr>
+<tr><td>HĐ không xác định thời hạn, HĐ xác định thời hạn, HĐ khác (thử việc, chưa có HĐ)</td><td>Số người theo loại hợp đồng đang áp, có sẵn trên bảng</td></tr>
+</tbody>
+</table>
+<p><strong>Không có trong mẫu:</strong> người ký <strong>hợp đồng khoán việc</strong> hoặc <strong>cộng tác viên</strong> — đây là hợp đồng dân sự, không phải hợp đồng lao động. Mục <strong>Cách tính số liệu</strong> ghi số người bị loại để bạn xem lại; vẫn có trong Sổ quản lý lao động.</p>
+
+<h2>Nhóm vị trí việc làm được tính thế nào</h2>
+<p>Hệ thống không có ô «vị trí việc làm» riêng mà <strong>tự suy</strong> từ hồ sơ, theo chú thích của mẫu:</p>
+<table>
+<thead><tr><th>Nhóm</th><th>Điều kiện</th></tr></thead>
+<tbody>
+<tr><td>Nhà quản lý</td><td>Cấp bậc từ <em>Phó phòng</em> trở lên</td></tr>
+<tr><td>Chuyên môn kỹ thuật bậc cao</td><td>Không phải nhà quản lý, trình độ <em>Đại học</em> hoặc <em>Sau đại học</em></td></tr>
+<tr><td>Chuyên môn kỹ thuật bậc trung</td><td>Không phải nhà quản lý, trình độ <em>Trung cấp</em> hoặc <em>Cao đẳng</em></td></tr>
+<tr><td>Khác</td><td>Còn lại, kể cả hồ sơ chưa khai trình độ</td></tr>
+</tbody>
+</table>
+<p>Vì vậy hãy giữ ô <strong>Cấp bậc</strong> và <strong>Trình độ học vấn</strong> trong hồ sơ nhân sự cho đúng. Số <em>Khác</em> lớn bất thường thường là do nhiều hồ sơ chưa khai trình độ: mở báo cáo {ref(HEADCOUNT_TITLE, "Biến động nhân sự")}, chọn <strong>Xem theo</strong> ▸ Trình độ để thấy dòng <em>(Chưa gắn)</em>.</p>
+
+<h2>Xuất mẫu 01/PLI</h2>
+<ol>
+<li>Mở <strong>Báo cáo</strong> ▸ <strong>Báo cáo sử dụng lao động (01/PLI)</strong>.</li>
+<li>Chọn kỳ:
+<ul>
+<li><strong>Báo cáo năm</strong>: để <strong>Năm nay</strong> (từ 01/01 đến hôm nay).</li>
+<li><strong>Báo cáo 6 tháng</strong>: bấm nút kỳ, chọn <strong>Tùy chọn khoảng ngày</strong>, chọn từ 01/01 đến 30/06 rồi bấm <strong>Áp dụng</strong>.</li>
+</ul></li>
+<li>Để <em>Tất cả phòng ban</em> và <em>Tất cả công ty</em> (tệp xuất theo đúng bộ lọc đang chọn), rồi bấm <strong>Xuất mẫu 01/PLI</strong>.</li>
+<li>Tệp tải về có <strong>mỗi pháp nhân một sheet</strong>: phần đầu (tên doanh nghiệp, quốc hiệu, tiêu đề, <em>Kính gửi: Sở Nội vụ</em>, thông tin chung), bảng 27 cột mỗi người một dòng, dòng <em>Tổng</em>, khối ký <em>Đại diện doanh nghiệp, cơ quan, tổ chức</em> và chú thích.</li>
+</ol>
+
+<h2>Việc phải làm trước khi nộp</h2>
+<ol>
+<li><strong>Điền tay các cột để trống</strong> (hệ thống chưa có dữ liệu):
+<ul>
+<li>cột 13–15 và 17: phụ cấp chức vụ, thâm niên vượt khung, thâm niên nghề, các khoản bổ sung (hệ thống chỉ có một ô phụ cấp tổng trên hợp đồng, đã ghi vào cột 16 «Phụ cấp lương»);</li>
+<li>cột 18–19: ngành, nghề nặng nhọc, độc hại;</li>
+<li>cột 25–26: thời điểm đơn vị bắt đầu và kết thúc đóng BHXH.</li>
+</ul></li>
+<li>Điền phần đầu còn chấm chấm: tên Sở Nội vụ, điện thoại, email, ngành nghề kinh doanh chính.</li>
+<li><strong>So phần tiêu đề bảng với mẫu chính thức</strong> đang đăng trên Cổng Dịch vụ công trước khi nộp; thấy chữ nào khác thì báo bộ phận phần mềm để sửa mẫu.</li>
+<li>Người nghỉ việc trong kỳ có ghi chú <em>Nghỉ việc ngày …</em> ở cột 27; kiểm lại cho khớp.</li>
+<li>Trình ký, đóng dấu.</li>
+</ol>
+
+<h2>Nộp ở đâu, hạn nào</h2>
+<table>
+<thead><tr><th>Báo cáo</th><th>Hạn nộp</th></tr></thead>
+<tbody>
+<tr><td>Báo cáo 6 tháng đầu năm</td><td>Trước ngày <strong>05/6</strong></td></tr>
+<tr><td>Báo cáo năm</td><td>Trước ngày <strong>05/12</strong></td></tr>
+</tbody>
+</table>
+<p>Nộp cho <strong>Sở Nội vụ</strong> qua <strong>Cổng Dịch vụ công quốc gia</strong>, mỗi pháp nhân một bản, rồi báo cho <strong>cơ quan bảo hiểm xã hội khu vực</strong> nơi đặt trụ sở hoặc chi nhánh.</p>
+
+<h2>Quyền cần có</h2>
+<p>Giống Sổ quản lý lao động: được giao xem báo cáo, có thêm <strong>quyền xem thông tin nhạy cảm của nhân sự</strong> và <strong>quyền xem hợp đồng lao động</strong>; xuất tệp cần thêm quyền xuất hồ sơ nhân sự và quyền xuất hợp đồng lao động. Xem bài {ref(LABOR_BOOK_TITLE, "Xuất Sổ quản lý lao động")} và {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</p>""",
+        },
+        {
             "title": ADMIN_ACCESS_TITLE,
             "icon": "shield-check",
-            "summary": "Hai báo cáo mới chỉ admin thấy; giao cho trưởng phòng Nhân sự, Ban Giám đốc ở Phân quyền tài khoản ▸ tab Báo cáo; quyền phân hệ gốc vẫn cần",
+            "summary": "Bốn báo cáo mới chỉ admin thấy (Hợp đồng lao động, Hồ sơ còn thiếu, Sổ quản lý lao động, mẫu 01/PLI); giao cho trưởng phòng Nhân sự, Ban Giám đốc ở Phân quyền tài khoản ▸ tab Báo cáo; quyền phân hệ gốc vẫn cần",
             "content": f"""<h2>Ai xem được báo cáo nào</h2>
 <p>Muốn mở một báo cáo Nhân sự, người dùng cần đủ <strong>hai lớp quyền</strong>:</p>
 <ol>
@@ -300,27 +450,29 @@ TREE = {
 <tr><td>Tình hình nghỉ phép</td><td>Xem đơn nghỉ phép</td></tr>
 <tr><td>Quỹ phép năm</td><td>Xem quỹ phép năm</td></tr>
 <tr><td>Hợp đồng lao động</td><td>Xem hợp đồng lao động (người có quyền này xem được cả các cột lương)</td></tr>
+<tr><td>Sổ quản lý lao động · Báo cáo sử dụng lao động (01/PLI)</td><td>Xem hồ sơ nhân sự, <strong>và thêm</strong> xem thông tin nhạy cảm của nhân sự, xem hợp đồng lao động. Thiếu một trong hai quyền thêm thì trang báo rõ thiếu quyền nào</td></tr>
 </tbody>
 </table>
-<p>Nút <strong>Xuất Excel</strong> trên báo cáo cần thêm quyền xuất của phân hệ gốc. Báo cáo <em>Hồ sơ &amp; tài khoản còn thiếu</em> hiện thêm nhóm giấy tờ cá nhân với người có quyền xem thông tin nhạy cảm, và nhóm tài khoản với người có quyền xem tài khoản.</p>
+<p>Nút <strong>Xuất Excel</strong> trên báo cáo cần thêm quyền xuất của phân hệ gốc. Hai nút <strong>Xuất sổ (Excel)</strong> và <strong>Xuất mẫu 01/PLI</strong> cần quyền xuất hồ sơ nhân sự và quyền xuất hợp đồng lao động. Báo cáo <em>Hồ sơ &amp; tài khoản còn thiếu</em> hiện thêm nhóm giấy tờ cá nhân với người có quyền xem thông tin nhạy cảm, và nhóm tài khoản với người có quyền xem tài khoản. Ở báo cáo <em>Biến động nhân sự</em>, người không có quyền xem thông tin nhạy cảm thấy nhóm tuổi dưới 3 người bị che số và không mở được danh sách theo nhóm tuổi.</p>
 
-<h2>Giao hai báo cáo mới cho trưởng phòng Nhân sự và Ban Giám đốc</h2>
-<p>Hai báo cáo <strong>Hợp đồng lao động</strong> và <strong>Hồ sơ &amp; tài khoản còn thiếu</strong> lúc mới lên <strong>chỉ quản trị hệ thống thấy</strong>. Quản trị giao cho người cần dùng như sau:</p>
+<h2>Giao các báo cáo mới cho trưởng phòng Nhân sự và Ban Giám đốc</h2>
+<p>Bốn báo cáo <strong>Hợp đồng lao động</strong>, <strong>Hồ sơ &amp; tài khoản còn thiếu</strong>, <strong>Sổ quản lý lao động</strong> và <strong>Báo cáo sử dụng lao động (01/PLI)</strong> lúc mới lên <strong>chỉ quản trị hệ thống thấy</strong>. Quản trị giao cho người cần dùng như sau:</p>
 <ol>
 <li>Vào màn <strong>Phân quyền tài khoản</strong>, chọn tab <strong>Báo cáo</strong>. Bảng liệt kê mọi báo cáo theo phân hệ, kèm cột <strong>Được xem</strong> và <strong>Bị cấm</strong>.</li>
 <li>Ở dòng <em>Hợp đồng lao động</em>, bấm nút bút chì ở cột <strong>Sửa</strong>. Hộp <strong>Quyền xem «Hợp đồng lao động»</strong> mở ra.</li>
 <li>Ở ô <strong>Thêm người · phòng ban · pháp nhân · vai trò</strong>, chọn người (ví dụ trưởng phòng Nhân sự) hoặc vai trò (ví dụ Ban Giám đốc).</li>
 <li>Để <strong>Chiều tác động</strong> là <strong>Cho phép</strong>. Ghi <strong>Lý do</strong> nếu muốn (không bắt buộc).</li>
-<li>Bấm <strong>Thêm</strong>, rồi <strong>Đóng</strong>. Làm lại cho dòng <em>Hồ sơ &amp; tài khoản còn thiếu</em>.</li>
+<li>Bấm <strong>Thêm</strong>, rồi <strong>Đóng</strong>. Làm lại cho các dòng <em>Hồ sơ &amp; tài khoản còn thiếu</em>, <em>Sổ quản lý lao động</em> và <em>Báo cáo sử dụng lao động (01/PLI)</em>.</li>
 </ol>
 <p>Muốn chặn riêng một người dù vai trò của họ được xem, thêm người đó với chiều <strong>Cấm</strong>: cấm luôn thắng cho phép. Người được giao tải lại trang (hoặc đăng nhập lại) thì menu hiện báo cáo mới.</p>
 <p>⚠️ Báo cáo Hợp đồng lao động có cột lương. Chỉ giao cho người được phép xem lương.</p>
+<p>⚠️ <strong>Sổ quản lý lao động</strong> và <strong>Báo cáo sử dụng lao động (01/PLI)</strong> xuất ra tệp có <strong>số CCCD, mã số BHXH, ngày sinh, địa chỉ và lương</strong> của từng người. Chỉ giao hai báo cáo này cho <strong>trưởng phòng Nhân sự</strong> và <strong>Ban Giám đốc</strong>, không giao theo cả phòng ban hay pháp nhân. Người được giao cũng phải có sẵn quyền xem thông tin nhạy cảm và quyền xem hợp đồng lao động thì mới mở được (xem bảng ở trên).</p>
 <p>Quyền ở tab này chỉ quyết định ai mở được trang báo cáo trong phân hệ Báo cáo. Màn danh sách gốc ở từng phân hệ (hồ sơ nhân sự, đơn nghỉ…) vẫn theo quyền vai trò như cũ.</p>""",
         },
     ],
 }
 
-EXPECTED_ARTICLES = 8
+EXPECTED_ARTICLES = 10
 
 
 def check_unique_titles() -> None:

@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Bản | 2.5 — 27/10/2026 (đợt 1 duoc-CR-686 lên mã: B1, E1 đã có; A1/C1/C2 bù các chỗ thiếu; lọc phòng ban + danh sách người cho 5 báo cáo) · 2.4 — 27/10/2026 (thêm §3.4 «Biểu đồ linh hoạt» dùng chung cho mọi mẫu, kèm biểu đồ gợi ý từng mẫu) · 2.3 — 27/10/2026 (thêm nhóm H «Phúc lợi & sự kiện», mẫu H1: lọc đối tượng theo dịp như 8/3 và dự trù kinh phí) · 2.2 — 27/10/2026 (thêm mẫu A5 «Quỹ lương theo pháp nhân» để chọn công ty tuyển người) · 2.1 — 27/10/2026 (thêm ý «Tuyển dụng» vào A1; thêm nhóm G «Tài sản cấp phát» với mẫu G1) · 2.0 — 27/10/2026 (viết lại thành kho mẫu: 6 nhóm, 16 mẫu, mỗi mẫu chia ý nhỏ; gộp các mục lẻ vào mẫu lớn; bỏ danh sách mẫu chưa có phân hệ; soát mã 3 báo cáo đang chạy, ghi «Còn thiếu so với bản đang chạy» ở A1, C1, C2) · 1.1 — 27/10/2026 (thêm góc nhìn trưởng phòng Nhân sự) · 1.0 — 27/10/2026 (3 báo cáo đã có + 6 đề xuất) |
-| Tình trạng | 5 mẫu **đã có** trên ERP (A1, C1, C2 từ trước; B1, E1 từ duoc-CR-686); các mẫu còn lại là **đề xuất**. Lộ trình các đợt: `plans/261027-1045-kho-mau-bao-cao-nhan-su/plan.md` |
+| Bản | 2.7 — 27/10/2026 (đợt 2 duoc-CR-687: B2, B3 đã có — khóa 19, 20; A2 đã có trong Biến động nhân sự) · 2.6 — 27/10/2026 (đính chính B3: mẫu 01/PLI là danh sách từng người 27 cột, nộp Sở Nội vụ; B2 liệt kê đủ thông tin bắt buộc của sổ) · 2.5 — 27/10/2026 (đợt 1 duoc-CR-686 lên mã: B1, E1 đã có; A1/C1/C2 bù các chỗ thiếu; lọc phòng ban + danh sách người cho 5 báo cáo) · 2.4 — 27/10/2026 (thêm §3.4 «Biểu đồ linh hoạt» dùng chung cho mọi mẫu, kèm biểu đồ gợi ý từng mẫu) · 2.3 — 27/10/2026 (thêm nhóm H «Phúc lợi & sự kiện», mẫu H1: lọc đối tượng theo dịp như 8/3 và dự trù kinh phí) · 2.2 — 27/10/2026 (thêm mẫu A5 «Quỹ lương theo pháp nhân» để chọn công ty tuyển người) · 2.1 — 27/10/2026 (thêm ý «Tuyển dụng» vào A1; thêm nhóm G «Tài sản cấp phát» với mẫu G1) · 2.0 — 27/10/2026 (viết lại thành kho mẫu: 6 nhóm, 16 mẫu, mỗi mẫu chia ý nhỏ; gộp các mục lẻ vào mẫu lớn; bỏ danh sách mẫu chưa có phân hệ; soát mã 3 báo cáo đang chạy, ghi «Còn thiếu so với bản đang chạy» ở A1, C1, C2) · 1.1 — 27/10/2026 (thêm góc nhìn trưởng phòng Nhân sự) · 1.0 — 27/10/2026 (3 báo cáo đã có + 6 đề xuất) |
+| Tình trạng | 8 mẫu **đã có** trên ERP (A1, C1, C2 từ trước; B1, E1 từ duoc-CR-686; A2, B2, B3 từ duoc-CR-687); các mẫu còn lại là **đề xuất**. Lộ trình các đợt: `plans/261027-1045-kho-mau-bao-cao-nhan-su/plan.md` |
 | Giao diện | `frontend-v2/` (cổng 8083), menu *Báo cáo* ▸ nhóm «Nhân sự» |
 | Mã nguồn backend | `modules/employee/report_*.py` · `modules/leave/report_*.py` · `modules/leave/balance_report_*.py` · khóa ở `core/report_keys.py` |
 | Mã nguồn frontend | `modules/report/config/report-catalog-hr.ts` · `modules/report/pages/*-report-page.tsx` |
@@ -23,13 +23,13 @@ Không làm chấm công và lương (đại ca chốt bỏ ngày 16/10/2026).
 | Nhóm | Mẫu | Tình trạng | Ưu tiên |
 |---|---|---|---|
 | **A. Quy mô & cơ cấu** | A1. Biến động nhân sự (gồm cả tuyển dụng) | Đã có (khóa 6), mở rộng thêm; phần tuyển dụng 🔴 chờ phân hệ | 4 |
-| | A2. Cơ cấu nhân sự | Đề xuất, làm bằng cách mở rộng A1 | 4 |
+| | A2. Cơ cấu nhân sự | **Đã có trong A1 (duoc-CR-687)** | — |
 | | A3. Cơ cấu quản lý | Đề xuất | 7 |
 | | A4. Định biên kế hoạch so với thực tế | Đề xuất, 🟡 thiếu dữ liệu | Chờ chốt |
 | | A5. Quỹ lương theo pháp nhân | Đề xuất; số thực tế ✅, kế hoạch 🟡 | 4 |
 | **B. Hợp đồng & tuân thủ pháp luật** | B1. Hợp đồng lao động | **Đã có (khóa 17, duoc-CR-686)** | — |
-| | B2. Sổ quản lý lao động | Đề xuất | **3** |
-| | B3. Báo cáo tình hình thay đổi lao động (mẫu 01/PLI) | Đề xuất | **3** |
+| | B2. Sổ quản lý lao động | **Đã có (khóa 19, duoc-CR-687)** | — |
+| | B3. Báo cáo tình hình sử dụng lao động (mẫu 01/PLI) | **Đã có (khóa 20, duoc-CR-687)** | — |
 | | B4. Đối tượng cần chú ý theo luật | Đề xuất | 7 |
 | **C. Nghỉ phép & có mặt** | C1. Tình hình nghỉ phép | Đã có (khóa 7), mở rộng thêm | 6 |
 | | C2. Quỹ phép năm | Đã có (khóa 8), mở rộng thêm | 6 |
@@ -109,7 +109,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 *Nguồn:* `GET /api/employees/summary` (+ `/summary/export`), quyền `employee.read` / `export`; mã `employee/report_service.py`, `report_headcount_*.py`
 
-#### A2. Cơ cấu nhân sự — đề xuất, mở rộng A1
+#### A2. Cơ cấu nhân sự — đã có trong A1 (duoc-CR-687)
 
 > **Trả lời:** đội ngũ đang trông như thế nào: tuổi, giới, trình độ, cấp bậc, làm ở đâu.
 
@@ -127,7 +127,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
   - Theo loại hình lao động, theo pháp nhân ✅
   - Theo thâm niên ✅
 
-*Cách làm:* thêm chiều xem «Nhóm tuổi», «Trình độ», «Địa điểm» vào A1. Không cần khóa mới.
+*Đã làm (duoc-CR-687):* «Xem theo» của Biến động nhân sự có thêm Nhóm tuổi (dưới 25 · 25–34 · 35–44 · 45–54 · 55 trở lên), Trình độ, Địa điểm làm việc, Nhóm vị trí việc làm. Tuổi tính tại ngày của mốc. Người không có quyền xem dữ liệu nhạy cảm: nhóm tuổi có số nhỏ (1–2 người, ở kỳ này hoặc kỳ so sánh) bị che, kèm che thêm một nhóm để không lấy Tổng trừ ra được; không mở được danh sách theo nhóm tuổi. Tỷ lệ nữ theo cấp bậc, tuổi trung bình theo phòng ⏳ chưa làm (đi cùng biểu đồ linh hoạt).
 *Nguồn:* `tab_employee` (`date_of_birth`, `gender`, `education_level`, `major`, `job_level`, `work_location`, `employment_type`)
 
 #### A3. Cơ cấu quản lý — đề xuất
@@ -212,34 +212,42 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 *Đã chốt 27/10/2026:* danh sách (bấm số) hiện Lương cơ bản, Lương đóng BHXH, Phụ cấp cho người có quyền xem HĐLĐ — giống màn HĐLĐ. Báo cáo mặc định chỉ admin; chỉ giao cho người được xem lương (trưởng phòng Nhân sự, Ban Giám đốc).
 *Ký hiệu trong mẫu đã có:* ✔ đã làm · ⏳ chưa làm, để đợt sau.
 
-#### B2. Sổ quản lý lao động — đề xuất, ưu tiên 3
+#### B2. Sổ quản lý lao động — đã có (khóa 19, duoc-CR-687)
 
-> **Trả lời:** khi thanh tra lao động hỏi thì đưa ngay được sổ. Bộ luật Lao động bắt buộc mọi doanh nghiệp lập sổ này, bằng giấy hoặc điện tử.
+> **Trả lời:** khi thanh tra lao động hỏi thì đưa ngay được sổ. Bộ luật Lao động (Điều 12) bắt buộc lập sổ trong 30 ngày kể từ khi bắt đầu hoạt động, bằng giấy hoặc điện tử, ở nơi đặt trụ sở / chi nhánh / văn phòng đại diện (Điều 3 Nghị định 145/2020).
 
-- **Nội dung sổ**
-  - Mỗi người một dòng, đủ các cột luật yêu cầu: thông tin cá nhân, trình độ, vị trí, loại HĐ, ngày bắt đầu, BHXH, ngày và lý do nghỉ việc ✅ (cần đối chiếu đúng danh sách cột ở Điều 3 Nghị định 145/2020)
-  - Mỗi pháp nhân một sổ ✅
-- **Kiểm sổ**
+- **Thông tin từng người phải có trong sổ** (theo các trang tổng hợp Điều 3 khoản 2 Nghị định 145/2020 — đối chiếu văn bản gốc trước khi chốt mẫu)
+  - Có sẵn trong ERP ✅: họ tên · giới tính · ngày sinh · nơi cư trú · số CCCD · trình độ chuyên môn · vị trí việc làm (chức vụ) · loại HĐLĐ · thời điểm bắt đầu làm việc · số BHXH · tiền lương (theo HĐ) · nâng lương (suy từ các HĐ nối tiếp) · số ngày nghỉ trong năm, có lương / không lương (từ Nghỉ phép) · thời điểm chấm dứt HĐ và lý do
+  - Chưa có, để trống cho Nhân sự điền tay 🟡: quốc tịch · bậc trình độ kỹ năng nghề · học nghề / đào tạo · kỷ luật, trách nhiệm vật chất · tai nạn lao động, bệnh nghề nghiệp
+  - Không có vì đã bỏ chấm công ⛔: số giờ làm thêm
+- **Cách dùng**
+  - Mỗi pháp nhân một sổ, xuất Excel, xem trên màn được
   - Đánh dấu người thiếu thông tin bắt buộc (nối sang E1) ✅
 
-*Cách làm:* thực chất là một bản xuất có định dạng cố định từ hồ sơ nhân sự. Dữ liệu nhạy cảm vẫn gác bằng `employee_sensitive.read`.
+*Quyền:* sổ chứa ngày sinh, CCCD, địa chỉ, lương → chỉ người có `employee_sensitive.read` và `labor_contract.read`; xuất Excel theo phạm vi **xuất** và đòi thêm `labor_contract.export`. Danh sách trên màn không hiện các giá trị nhạy cảm, chỉ tệp Excel mới có.
 
-#### B3. Báo cáo tình hình thay đổi lao động (mẫu 01/PLI) — đề xuất, ưu tiên 3
+#### B3. Báo cáo tình hình sử dụng lao động (mẫu 01/PLI) — đã có (khóa 20, duoc-CR-687)
 
-> **Trả lời:** số liệu phải nộp cơ quan quản lý lao động 2 lần mỗi năm. Đây là Mẫu số 01 Phụ lục I của Nghị định 145/2020.
+> **Trả lời:** báo cáo phải nộp 2 lần mỗi năm. Mẫu số 01/PLI Phụ lục I Nghị định 145/2020 — bản sửa nghị định của Bộ Nội vụ (7/2026) mới là dự thảo, vẫn dùng mẫu này.
 
-- **Lịch nộp**
-  - Báo cáo 6 tháng đầu năm nộp trước 05/6; báo cáo cả năm nộp trước 05/12. Hạn gần nhất: **05/12/2026**
-  - Mỗi pháp nhân nộp một bản
-  - Nơi nhận: cơ quan lao động cấp tỉnh. Từ 2025, Bộ Lao động – Thương binh và Xã hội đã sáp nhập vào Bộ Nội vụ, nên nhiều khả năng giờ là **Sở Nội vụ**; **cần kiểm lại**
-- **Số liệu trong mẫu**
-  - Tổng lao động, lao động nữ, lao động trên 35 tuổi ✅
-  - Theo trình độ chuyên môn ✅
-  - Theo vị trí việc làm (nhà quản lý / chuyên môn bậc cao / chuyên môn bậc trung / khác) 🟡 (phải gán từng Chức vụ vào một trong 4 nhóm)
-  - Theo loại HĐ ✅
-  - Số lao động tăng / giảm trong kỳ ✅
+- **Lịch và nơi nộp** (đã kiểm 27/10/2026)
+  - Báo cáo 6 tháng nộp trước 05/6; báo cáo năm nộp trước 05/12. Hạn gần nhất: **05/12/2026**
+  - Nộp **Sở Nội vụ** qua Cổng Dịch vụ công quốc gia, rồi báo cơ quan BHXH khu vực nơi đặt trụ sở / chi nhánh. Doanh nghiệp trong khu công nghiệp nộp Ban quản lý khu
+  - Mỗi pháp nhân một bản
+- **Nội dung mẫu — danh sách TỪNG NGƯỜI, 27 cột** (đính chính: không phải bảng số tổng như bản 2.x của tài liệu này ghi)
+  - Phần đầu: tên, địa chỉ, mã số doanh nghiệp, ngành nghề chính của pháp nhân ✅
+  - Cột 2–7: họ tên · mã số BHXH · ngày sinh · giới tính · số CCCD · cấp bậc, chức vụ, nơi làm việc ✅
+  - Cột 8–11 «Vị trí việc làm»: Nhà quản lý / Chuyên môn kỹ thuật bậc cao (đại học trở lên) / bậc trung (cao đẳng, trung cấp) / Khác 🟡 (chưa có cột phân nhóm — xem câu hỏi mở)
+  - Cột 12–17 «Tiền lương»: mức lương ✅ · phụ cấp chức vụ, thâm niên vượt khung, thâm niên nghề, phụ cấp lương, các khoản bổ sung 🟡 (ERP chỉ có MỘT ô phụ cấp tổng trên HĐ → ghi vào «Phụ cấp lương»)
+  - Cột 18–19 «Ngành nghề nặng nhọc, độc hại» từ / đến 🟡 (không có dữ liệu → để trống)
+  - Cột 20–24 «Loại và hiệu lực HĐLĐ»: không xác định thời hạn (ngày bắt đầu) · xác định thời hạn (bắt đầu / kết thúc) · khác — dưới 1 tháng, thử việc (bắt đầu / kết thúc) ✅
+  - Cột 25–26 thời điểm bắt đầu / kết thúc đóng BHXH 🟡 (chưa có cột) · cột 27 ghi chú
 - **Xuất tệp**
-  - Excel đúng bố cục mẫu để nộp luôn. Cần lấy tệp mẫu gốc, hoặc tệp phòng Nhân sự đã nộp kỳ trước, để đối chiếu
+  - Một tệp Excel, **mỗi pháp nhân một sheet**: bố cục 27 cột, dòng Tổng, chỗ ký «Đại diện doanh nghiệp, cơ quan, tổ chức»
+  - Danh sách gồm **mọi người làm việc ở bất kỳ lúc nào trong kỳ** (người nghỉ giữa kỳ có ghi chú «Nghỉ việc ngày …»). Báo cáo năm: chọn «Năm nay» lúc lập (đầu tháng 12); báo cáo 6 tháng: chọn khoảng 01/01–30/06
+
+*Quyền:* như B2 — có CCCD, mã số BHXH, ngày sinh, lương.
+*Đã chốt 27/10/2026:* nhóm vị trí việc làm tự suy (Phó phòng trở lên = Nhà quản lý; Đại học+ = bậc cao; Trung cấp / Cao đẳng = bậc trung; còn lại = Khác); cột ERP chưa có dữ liệu để trống; người ký hợp đồng khoán việc / cộng tác viên **không** đưa vào 01/PLI (không phải HĐLĐ), báo cáo ghi số người bị loại. Nhãn 27 cột đã đối chiếu bản PDF mẫu gốc.
 
 #### B4. Đối tượng cần chú ý theo luật — đề xuất
 

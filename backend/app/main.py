@@ -77,6 +77,8 @@ from app.modules.employee.work_history_controller import router as employee_work
 from app.modules.employee.report_controller import router as employee_report_router
 from app.modules.employee.profile_gaps_report_controller import router as profile_gaps_report_router  # duoc-CR-686
 from app.modules.labor_contract.report_controller import router as labor_contract_report_router  # duoc-CR-686
+from app.modules.labor_register.register_controller import router as labor_register_router  # duoc-CR-687
+from app.modules.labor_register.usage_report_controller import router as labor_usage_report_router  # duoc-CR-687
 from app.modules.employee.org_chart_controller import router as employee_org_chart_router  # duoc-CR-669
 from app.modules.leave.report_controller import router as leave_report_router
 from app.modules.leave.balance_report_controller import router as leave_balance_report_router
@@ -284,6 +286,8 @@ app.include_router(auth_router)
 app.include_router(employee_report_router)
 app.include_router(profile_gaps_report_router)  # duoc-CR-686: TRƯỚC employee_router (/{eid} nuốt profile-gaps)
 app.include_router(labor_contract_report_router)  # duoc-CR-686: TRƯỚC labor_contract_router (/{cid})
+app.include_router(labor_register_router)  # duoc-CR-687: sổ quản lý lao động (khóa 19)
+app.include_router(labor_usage_report_router)  # duoc-CR-687: mẫu 01/PLI (khóa 20)
 app.include_router(employee_org_chart_router)  # duoc-CR-669: /api/org-chart
 app.include_router(leave_report_router)
 app.include_router(leave_balance_report_router)

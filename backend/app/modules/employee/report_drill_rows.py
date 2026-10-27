@@ -21,6 +21,7 @@ from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 from app.modules.employee.report_headcount_events import (employees_as_of,
                                                            hire_events, resign_events, vn_today)
+from app.modules.employee.report_headcount_privacy import require_age_rows_allowed
 from app.modules.employee.report_headcount_spec import DRILLDOWN_METRICS, build_spec
 
 COLUMNS = [Col("code", "Mã NV"), Col("full_name", "Họ tên"), Col("company", "Công ty"),
@@ -33,6 +34,7 @@ _CHUNK = 900
 def build_rows(db: Session, user, prof: dict, period: Period, params, company_id: int | None,
                department_id: int | None) -> dict:
     metric, group_by, group_key = parse_rows_params(params, DRILLDOWN_METRICS)
+    require_age_rows_allowed(prof, group_by, group_key)   # duoc-CR-687: danh sách theo tuổi lộ tuổi
     company_name = {c.id: c.name for c in db.query(Company.id, Company.name).all()}
     department_name = {d.id: d.name for d in db.query(Department.id, Department.name).all()}
     spec, _status_dim = build_spec(company_name, department_name)

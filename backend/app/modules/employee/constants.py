@@ -124,6 +124,38 @@ JOB_LEVEL_LABELS = {
 }
 
 # --------------------------------------------------------------------------
+# Nhóm vị trí việc làm của Mẫu số 01/PLI (Nghị định 145/2020) — duoc-CR-687
+# --------------------------------------------------------------------------
+#  KHÔNG lưu thành cột: tự suy từ cấp bậc + trình độ theo đúng chú thích (2) của
+#  mẫu (anh Được chốt 27/10/2026). Nhà quản lý = người giữ chức vụ quản lý,
+#  điều hành; bậc cao = nghề đòi trình độ đại học trở lên; bậc trung = cao đẳng,
+#  trung cấp. Đổi luật ở đây là đổi số trên báo cáo nộp Sở Nội vụ.
+JOB_CATEGORY_MANAGER = 1
+JOB_CATEGORY_HIGH_SKILL = 2
+JOB_CATEGORY_MID_SKILL = 3
+JOB_CATEGORY_OTHER = 9
+
+JOB_CATEGORY_LABELS = {
+    JOB_CATEGORY_MANAGER: "Nhà quản lý",
+    JOB_CATEGORY_HIGH_SKILL: "Chuyên môn kỹ thuật bậc cao",
+    JOB_CATEGORY_MID_SKILL: "Chuyên môn kỹ thuật bậc trung",
+    JOB_CATEGORY_OTHER: "Khác",
+}
+
+
+def job_category_of(job_level: int | None, education_level: int | None) -> int:
+    """Nhóm vị trí việc làm của một người: Phó phòng trở lên → Nhà quản lý; còn lại
+    Đại học / Sau đại học → bậc cao; Trung cấp / Cao đẳng → bậc trung; còn lại → Khác."""
+    if (job_level or 0) >= JOB_LEVEL_DEPUTY_MANAGER:
+        return JOB_CATEGORY_MANAGER
+    edu = education_level or 0
+    if edu in (EDUCATION_UNIVERSITY, EDUCATION_POSTGRADUATE):
+        return JOB_CATEGORY_HIGH_SKILL
+    if edu in (EDUCATION_INTERMEDIATE, EDUCATION_COLLEGE):
+        return JOB_CATEGORY_MID_SKILL
+    return JOB_CATEGORY_OTHER
+
+# --------------------------------------------------------------------------
 # Quan hệ nhân thân — dùng cho CẢ HAI bảng con
 # --------------------------------------------------------------------------
 #  Bản đầu (duoc-CR-314) để `relation` là chữ TỰ DO với lý lẽ "quan hệ gia đình

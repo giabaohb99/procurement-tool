@@ -268,6 +268,8 @@ export const REPORT_KEY: readonly StatusOption[] = [
   {"value": "16", "label": "Năng lực theo loại việc", "sort_order": 16, "is_terminal": false, "is_exception": false},
   {"value": "17", "label": "Hợp đồng lao động", "sort_order": 17, "is_terminal": false, "is_exception": false},
   {"value": "18", "label": "Hồ sơ & tài khoản còn thiếu", "sort_order": 18, "is_terminal": false, "is_exception": false},
+  {"value": "19", "label": "Sổ quản lý lao động", "sort_order": 19, "is_terminal": false, "is_exception": false},
+  {"value": "20", "label": "Báo cáo sử dụng lao động (01/PLI)", "sort_order": 20, "is_terminal": false, "is_exception": false},
 ]
 
 /** Loại hình pháp lý NCC */

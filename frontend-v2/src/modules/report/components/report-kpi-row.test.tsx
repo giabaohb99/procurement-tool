@@ -83,3 +83,20 @@ describe('ReportKpiRow — null derived metric (zero denominator) renders — wi
     expect(card).not.toHaveTextContent('điểm')
   })
 })
+
+//  duoc-CR-687 — một số ĐẾM (`int`) có thể về `null` khi backend che nhóm; thẻ phải ra «—»,
+//  không «0», và không vẽ mức thay đổi dù kỳ trước có số.
+describe('ReportKpiRow — null count metric renders a dash', () => {
+  it('shows — for a null int total even when the compare period has a value', () => {
+    renderRow({
+      meta: { metrics: [metric({ key: 'people', label: 'Tổng lao động', kind: 'int' })], dimensions: [], group_by: 'none' },
+      kpis: ['people'],
+      totals: { current: { people: null }, compare: { people: 12 } },
+      trend: [],
+    })
+    const card = screen.getByText('Tổng lao động').closest('[data-slot="card"]')
+    expect(card).toHaveTextContent('—')
+    expect(card).not.toHaveTextContent('0')
+    expect(card).not.toHaveTextContent('%')
+  })
+})

@@ -149,6 +149,11 @@ export interface ReportPageConfig {
   endpoint: string
   /** Đường xuất Excel (cùng bộ lọc, `require(entity,'export')`). Bỏ trống = ẩn nút Xuất Excel. */
   exportEndpoint?: string
+  /**
+   * Chữ trên nút xuất — bỏ trống là «Xuất Excel». Khai khi tệp xuất là một BIỂU MẪU có tên
+   * riêng chứ không phải bảng số liệu (vd «Xuất sổ (Excel)», «Xuất mẫu 01/PLI» — duoc-CR-687).
+   */
+  exportLabel?: string
   /** Khóa quyền gác nút Xuất Excel — `can(entity, 'export')`. */
   entity: PermissionEntity
   title: string
@@ -162,6 +167,12 @@ export interface ReportPageConfig {
   sourcePath?: string
   /** Khóa chỉ số hiện thành thẻ KPI, ĐÚNG THỨ TỰ trái sang phải. */
   kpis: string[]
+  /**
+   * Chỉ số KHÔNG lên thẻ nhưng vẫn HIỆN SẴN ở bảng «Xem theo», đứng sau các cột `kpis`
+   * (duoc-CR-687, mẫu 01/PLI: cơ cấu vị trí + loại HĐ là phần chính của bảng). Bỏ trống =
+   * bảng chỉ hiện sẵn cột `kpis`, chỉ số khác bật qua menu «Cột».
+   */
+  tableMetrics?: string[]
   /** Chỉ số mặc định vẽ trên biểu đồ xu hướng — bấm thẻ KPI khác để đổi. */
   chartMetric: string
   /** `group_by` mặc định khi mở trang lần đầu — phải khớp một khóa `meta.dimensions` backend trả. */

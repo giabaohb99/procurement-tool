@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+
 import type { ReportFiltersState } from '../hooks/use-report-filters'
 import type { useReportDrilldownState } from '../hooks/use-report-drilldown-state'
 import type {
@@ -41,6 +43,10 @@ export function ReportAnalyticsBody({
   const meta = data?.meta ?? { metrics: [], dimensions: [], group_by: config.defaultGroupBy }
   const totals = data?.totals ?? { current: EMPTY_METRICS, compare: null }
   const trend = data?.trend ?? []
+  const tableColumns = useMemo(
+    () => [...config.kpis, ...(config.tableMetrics ?? [])],
+    [config.kpis, config.tableMetrics],
+  )
   //  Kỳ không phát sinh gì: mọi chỉ số THEO KỲ ở dòng Tổng bằng 0/`null`. Bỏ qua
   //  chỉ số `snapshot` (công nợ còn lại…) — số dư vẫn còn dù kỳ này chẳng mua gì.
   const isPeriodEmpty =
@@ -98,7 +104,8 @@ export function ReportAnalyticsBody({
 
           <ReportGroupedTable
             meta={meta}
-            kpis={config.kpis}
+            //  Cột hiện sẵn = thẻ KPI rồi tới `tableMetrics` (cùng thứ tự đó).
+            kpis={tableColumns}
             totals={totals}
             groups={data?.groups ?? []}
             compare={filters.compare}

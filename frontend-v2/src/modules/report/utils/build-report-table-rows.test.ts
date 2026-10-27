@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { ReportGroupRow } from '../types/report-analytics'
 import {
   buildReportTableRows,
+  isMetricValuesSuppressed,
   REPORT_OTHER_GROUP_KEY,
   REPORT_TOTAL_ROW_KEY,
 } from './build-report-table-rows'
@@ -97,5 +98,43 @@ describe('buildReportTableRows — "nhóm khác" (gói A3, backend report_aggreg
     ]
     const rows = buildReportTableRows(TOTALS, groupsWithOther, null)
     expect(rows.map((r) => r.key)).toEqual([REPORT_TOTAL_ROW_KEY, 'z', REPORT_OTHER_GROUP_KEY])
+  })
+})
+
+//  duoc-CR-687 — «Xem theo Nhóm tuổi»: nhóm dưới 3 người bị backend che, mọi số thành `null`.
+describe('buildReportTableRows — suppressed groups (every value null)', () => {
+  it('flags an all-null group as suppressed but never a zero group, a mixed group or Tổng', () => {
+    const rows = buildReportTableRows(
+      { current: { lines: null, amount: null }, compare: null },
+      [
+        { key: 'u25', label: 'Dưới 25', current: { lines: null, amount: null }, compare: null },
+        { key: 'zero', label: 'Rỗng', current: { lines: 0, amount: 0 }, compare: null },
+        //  Chỉ số dẫn xuất mẫu số 0 là `null` LẺ cạnh số đếm thật — không phải nhóm bị che.
+        { key: 'mix', label: 'Có số', current: { lines: 4, amount: null }, compare: null },
+      ],
+      null,
+    )
+    const byKey = Object.fromEntries(rows.map((r) => [r.key, r]))
+    expect(byKey[REPORT_TOTAL_ROW_KEY].isSuppressed).toBe(false)
+    expect(byKey.u25.isSuppressed).toBe(true)
+    expect(byKey.zero.isSuppressed).toBe(false)
+    expect(byKey.mix.isSuppressed).toBe(false)
+  })
+
+  it('keeps a suppressed row after active rows whichever way a column is sorted', () => {
+    const groups: ReportGroupRow[] = [
+      { key: 'u25', label: 'Dưới 25', current: { lines: null, amount: null }, compare: null },
+      { key: 'a', label: '25–34', current: { lines: 5, amount: 1 }, compare: null },
+    ]
+    for (const dir of ['asc', 'desc'] as const) {
+      const rows = buildReportTableRows(TOTALS, groups, 'lines', dir)
+      expect(rows.map((r) => r.key)).toEqual([REPORT_TOTAL_ROW_KEY, 'a', 'u25'])
+    }
+  })
+
+  it('treats an empty values object as not suppressed (nothing to hide)', () => {
+    expect(isMetricValuesSuppressed({})).toBe(false)
+    expect(isMetricValuesSuppressed({ a: null })).toBe(true)
+    expect(isMetricValuesSuppressed({ a: null, b: 0 })).toBe(false)
   })
 })
