@@ -17474,7 +17474,7 @@ Lượt hai: anh Được thấy người dùng không biết bấm Tải lại 
 Mã nguồn: frontend/src/components/PwaReloadPrompt.tsx · frontend/public/sw-update-old-clients.js · frontend/vite.config.ts
 
 ## duoc-CR-686 | Kho mẫu báo cáo Nhân sự và đợt 1: sửa số liệu nghỉ phép, thêm báo cáo hợp đồng lao động và hồ sơ còn thiếu
-- status: dang-lam
+- status: xong
 - date: 2026-10-27
 - pic: NSU231
 - tag: Được
@@ -17484,7 +17484,7 @@ Anh Được muốn có đủ các mẫu báo cáo cho phân hệ Nhân sự, nh
 Mã nguồn: doc/erp/hrm/05-bao-cao-nhan-su.md · plans/261027-1045-kho-mau-bao-cao-nhan-su/ · backend/app/core/report_drilldown.py · backend/app/modules/labor_contract/report_*.py · backend/app/modules/employee/profile_gaps_report_*.py · backend/app/modules/leave/report_day_split*.py · frontend-v2/src/modules/report/ · backend/scripts/seed_help_bao_cao_nhan_su.py
 
 ## duoc-CR-687 | Báo cáo Nhân sự đợt 2: sổ quản lý lao động, mẫu 01/PLI nộp Sở Nội vụ, cơ cấu nhân sự
-- status: dang-lam
+- status: xong
 - date: 2026-10-27
 - pic: NSU231
 - tag: Được
@@ -17494,7 +17494,7 @@ Anh Được duyệt đợt 1 và bảo làm tiếp. Đợt 2 làm ba mẫu: s�
 Mã nguồn: backend/app/modules/labor_register/ · backend/app/modules/employee/report_headcount_dims.py · report_headcount_privacy.py · frontend-v2/src/modules/report/pages/labor-register-report-page.tsx · labor-usage-report-page.tsx · backend/scripts/seed_help_bao_cao_nhan_su.py
 
 ## duoc-CR-688 | Báo cáo Nhân sự đợt 3: quỹ lương theo pháp nhân, phúc lợi theo dịp, cơ cấu quản lý, điều chuyển, biểu đồ linh hoạt
-- status: dang-lam
+- status: xong
 - date: 2026-10-27
 - pic: NSU231
 - tag: Được
@@ -17511,3 +17511,4 @@ Mã nguồn: core/report_small_group.py · labor_contract/payroll_report_*.py ·
 Anh Được bảo kiểm kỹ lại ba đợt báo cáo Nhân sự trước khi đẩy lên dev.
 Đã chạy toàn bộ mười nghìn tám trăm bốn mươi lăm bài kiểm backend, chia thành mười hai nhóm cho máy khỏi quá tải: có hai mươi lăm bài đỏ, đem chạy lại trên bản trước ba đợt thì đỏ y hệt, nên đều là lỗi có sẵn, không bài nào do ba đợt này gây ra. Soát trên trình duyệt mười một màn báo cáo với ba kiểu người dùng (quản trị, nhân sự có quyền xem dữ liệu nhạy cảm, người không có quyền đó), kèm mở từng tệp Excel: không có lỗi chặn; tìm ra ba lỗi nên sửa (danh sách đơn chờ duyệt quá ba ngày không lọc mốc ba ngày, số người có biến động đếm theo lượt, công tắc tính người đang nghỉ bấm được khi thiếu quyền) và các lỗi nhỏ về màn điện thoại, tên trang Excel, nhãn — đều đã sửa và có bài kiểm. Kiểm lại màn điện thoại ba trăm chín mươi điểm ảnh. Cổng giao diện đạt: kiểm kiểu không lỗi, lint không lỗi, bốn trăm ba mươi tám bài kiểm phân hệ Báo cáo đạt.
 Mã nguồn: plans/reports/tester-261027-1545-cr686-688-full-regression.md · plans/reports/tai-lieu-kiem-thu-261027-1545-cr686-688-e2e.md · plans/reports/fullstack-developer-261027-1630-sua-loi-e2e.md
+Deploy: dev 27/10/2026 — commit 03cec1c5, build api, celery-worker, celery-beat, erp; seed 15 bài HDSD và nạp lại kho tìm kiếm Trợ lý AI (124/124 bài); 12 đường báo cáo Nhân sự trả 200.
