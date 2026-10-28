@@ -111,6 +111,25 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## ai-CR-232 | Bot Telegram ERP hỏng sau khi đổi khóa Claude: bỏ tham số temperature với model mới
+- status: xong
+- date: 2026-10-28
+- list: Kế hoạch hệ agent
+- tag: Agent 4
+**Bối cảnh:** sáng 28/10 trên prod, sau khi đổi khóa Claude mới, bot Telegram của ERP trả lỗi ở mọi câu hỏi cần luồng nặng.
+Đọc log prod thấy khóa vẫn chạy; Anthropic từ chối vì model mới không còn nhận tham số `temperature`.
+
+**Đã làm**
+- Khi Claude trả đúng lỗi *temperature không còn dùng cho model này*, bot gửi lại câu hỏi một lần không kèm tham số đó và nhớ
+  model này, các lượt sau không gửi nữa nên không tốn thêm lượt gọi hỏng.
+- Lỗi khác của Claude vẫn báo như cũ; model đời trước vẫn nhận `temperature` bình thường.
+
+**Kết quả:** ba bài kiểm mới đạt.
+
+**Còn lại:** vá lên prod (gộp vào main rồi dựng dịch vụ AI) khi chủ dự án đồng ý.
+
+Mã nguồn: `backend/app/modules/assistant/provider/claude.py` · `test/backend/test_claude_bo_temperature_cr232.py`
+
 ## kh-AI-an-gioi-thieu | Tạm ẩn mục Giới thiệu của phân hệ Kho skill AI để làm lại
 - status: xong
 - date: 2026-10-26
