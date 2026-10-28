@@ -27,7 +27,7 @@ interface ReportOverviewKpiStripProps {
  * (`ReportCatalogEntry.overviewKpis`), gom theo PHÂN HỆ (`report.group`). Bấm
  * một thẻ để đổi biểu đồ xu hướng chính (`ReportOverviewPage`) sang chỉ số đó;
  * `eyebrow` luôn hiện TÊN BÁO CÁO vì hai báo cáo khác nhau có thể trùng nhãn chỉ
- * số (vd "Giao đúng hạn" của cả Báo cáo mua hàng lẫn Tiến độ mua hàng).
+ * số (vd "Giao đúng hạn" của cả Báo cáo mua hàng lẫn Tiến độ đơn mua hàng).
  */
 export function ReportOverviewKpiStrip({
   entries,

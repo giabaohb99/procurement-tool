@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryKeys } from '@/shared/constants/query-keys'
-import { purchaseReportApi, type ReportScope } from '../api/purchase-report-api'
+import { purchaseReportApi, type PrLinesFilter, type ReportScope } from '../api/purchase-report-api'
 import type { LandedCostParams } from '../types/import-landed-cost'
 import type { ReportMatrix } from '../types/purchase-report'
 
@@ -88,14 +88,7 @@ export function useShippingDetail(
 
 /** Chi tiết YC mua hàng theo dòng hàng (bao-CR-295/299) — phân trang server. */
 export function usePrLines(
-  params: ReportScope & {
-    status?: string
-    line_status?: string
-    assignee?: string
-    search?: string
-    page: number
-    page_size: number
-  },
+  params: PrLinesFilter & { page: number; page_size: number },
   enabled: boolean,
 ) {
   return useQuery({

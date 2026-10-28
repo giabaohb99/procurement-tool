@@ -1,5 +1,5 @@
 /**
- * Tiến độ mua hàng — `/api/purchase-progress`.
+ * Tiến độ đơn mua hàng — `/api/purchase-progress`.
  *
  * KHÔNG phải một bảng trong DB mà là báo cáo phẳng theo TỪNG LẦN GIAO của từng
  * dòng đơn mua hàng: một ĐMH có 3 dòng, mỗi dòng giao 2 lần -> 6 dòng ở đây.

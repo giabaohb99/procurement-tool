@@ -365,6 +365,46 @@ export interface PrLineRow {
   /** Mã nhân viên NSTM; `assignee_name` rỗng khi mã không tra ra hồ sơ nhân sự. */
   assignee: string
   assignee_name: string
+  //  bao-CR-691 — mười chín trường bổ sung. Đều có thể `null` (chưa có dữ liệu)
+  //  và đều có thể VẮNG hẳn (máy chủ bản cũ chưa trả), nên khai `?: ... | null`
+  //  để mọi chỗ đọc buộc phải phòng cả hai.
+  company_name?: string | null
+  purpose?: string | null
+  is_urgent?: boolean | null
+  need_date?: string | null
+  head_of_dept_name?: string | null
+  approver_name?: string | null
+  handler_dept_name?: string | null
+  unit?: string | null
+  required_date?: string | null
+  qty_ordered?: number | null
+  qty_received?: number | null
+  progress_note?: string | null
+  line_note?: string | null
+  /** `null` khi người xem không có quyền `supplier.read` — máy chủ xóa trắng. */
+  suggested_supplier?: string | null
+  /** Mã các ĐMH chứa dòng này, nối bằng dấu phẩy. */
+  po_codes?: string | null
+  po_count?: number | null
+  /** `null` khi người xem không có quyền `supplier.read`. */
+  latest_po_supplier?: string | null
+  latest_delivery_date?: string | null
+  delivery_count?: number | null
+}
+
+/**
+ * Tách chuỗi mã ĐMH nối dấu phẩy (`"PO-1, PO-2"`) thành danh sách mã — bỏ khoảng
+ * trắng thừa, bỏ mục rỗng (`"PO-1,,"`), bỏ mã trùng (một dòng giao nhiều lần vào
+ * cùng một đơn thì máy chủ có thể nối lặp).
+ */
+export function splitPoCodes(raw: string | null | undefined): string[] {
+  if (!raw) return []
+  const seen = new Set<string>()
+  for (const part of raw.split(',')) {
+    const code = part.trim()
+    if (code) seen.add(code)
+  }
+  return [...seen]
 }
 
 export interface PrLinesResult {

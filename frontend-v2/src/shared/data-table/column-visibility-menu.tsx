@@ -77,7 +77,7 @@ export function ColumnVisibilityMenu<T>({
         <DropdownMenuSeparator />
 
         {/*
-          Bảng nhiều cột (Tiến độ mua hàng ~24 cột) -> danh sách tự cuộn.
+          Bảng nhiều cột (Tiến độ đơn mua hàng ~24 cột) -> danh sách tự cuộn.
           `data-column-list` là mốc để `useColumnListDrag` dò dòng đang bị trỏ tới.
         */}
         <div data-column-list className="max-h-80 overflow-y-auto">

@@ -158,7 +158,7 @@ export interface DataTableLayout {
   columnOrder: string[]
   /**
    * Cột được GHIM sang trái: luôn đứng đầu bảng và dính lại khi cuộn ngang.
-   * Dành cho bảng nhiều cột (vd Tiến độ mua hàng) — cuộn tới cột thứ 20 mà vẫn
+   * Dành cho bảng nhiều cột (vd Tiến độ đơn mua hàng) — cuộn tới cột thứ 20 mà vẫn
    * biết đang xem đơn nào.
    */
   pinnedColumns: string[]
