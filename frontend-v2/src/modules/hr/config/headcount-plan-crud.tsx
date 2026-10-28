@@ -1,45 +1,44 @@
 import { Banknote, CalendarDays, Users } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
-import type { CrudConfig, CrudFormField, CrudOption } from '@/shared/crud'
+import type { CrudConfig, CrudOption } from '@/shared/crud'
 import { CrudRecordCard } from '@/shared/crud/crud-record-card'
 import type { DataTableColumn } from '@/shared/data-table'
+import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
-import { HeadcountPlanCsvActions } from '../components/headcount-plan-csv-actions'
 import { HEADCOUNT_PLAN_API_PATH } from '../api/headcount-plan-api'
-import type { HeadcountPlan } from '../types/headcount-plan'
-import { buildHeadcountPlanDepartmentOptions, normalizeHeadcountPlanPayload } from '../utils/headcount-plan-options'
-
-interface DepartmentLike {
-  id: number
-  name: string
-}
+import { HeadcountPlanCsvActions } from '../components/headcount-plan-csv-actions'
+import { PLAN_PERIOD_TYPE } from '@/shared/constants/statuses'
+import { WHOLE_COMPANY_LABEL, type HeadcountPlanListItem } from '../types/headcount-plan'
+import { formatPeriodLabel } from '../utils/headcount-plan-periods'
 
 export interface HeadcountPlanCrudOptions {
-  /** `can('labor_contract','read')` — có thì mới có cột + ô «Quỹ lương kế hoạch / tháng». */
+  /** `can('labor_contract','read')` — có thì mới dựng cột «Tổng chi phí». */
   canSeePayroll: boolean
   yearOptions: CrudOption[]
   companyOptions: CrudOption[]
-  departments: readonly DepartmentLike[]
-  /** Năm mặc định khi THÊM mới. */
-  defaultYear: number
+  departmentOptions: CrudOption[]
 }
 
-const PAYROLL_HEADER = 'Quỹ lương KH / tháng'
+const COST_HEADER = 'Tổng chi phí'
+
+const periodOf = (r: HeadcountPlanListItem) => formatPeriodLabel(r.period_type, r.period_no, r.year)
+const basisOf = (r: HeadcountPlanListItem) =>
+  [r.basis_no, r.basis_date ? formatDate(r.basis_date) : ''].filter(Boolean).join(' · ')
 
 /**
- * Cột của bảng — tách ra để có bài kiểm canh cột lương. Cột tiền chỉ dựng khi người xem có
- * `labor_contract.read`; backend đã che số (`null`) cho người thiếu quyền, nhưng một cột toàn
- * «—» thì người đọc tưởng chưa ai khai quỹ lương.
+ * Cột của danh sách kế hoạch — tách ra để bài kiểm canh cột tiền. Cột «Tổng chi phí» chỉ dựng khi
+ * người xem có `labor_contract.read`; có quyền mà bị che ở pháp nhân này thì ô hiện gạch (backend
+ * trả `null`), KHÔNG hiện 0 — 0 đọc ra «kế hoạch không tốn đồng nào».
  */
-export function buildHeadcountPlanColumns(canSeePayroll: boolean): DataTableColumn<HeadcountPlan>[] {
+export function buildHeadcountPlanColumns(canSeePayroll: boolean): DataTableColumn<HeadcountPlanListItem>[] {
   return [
     {
-      key: 'year',
-      header: 'Năm',
-      width: 80,
+      key: 'period',
+      header: 'Kỳ',
+      width: 110,
       hideable: false,
-      cell: (r) => <span className="font-semibold tabular-nums text-primary">{r.year}</span>,
+      cell: (r) => <span className="font-semibold tabular-nums text-primary">{periodOf(r)}</span>,
     },
     { key: 'company_name', header: 'Pháp nhân', width: 240, wrap: true, cell: (r) => r.company_name || `#${r.company_id}` },
     {
@@ -52,139 +51,89 @@ export function buildHeadcountPlanColumns(canSeePayroll: boolean): DataTableColu
         r.department_id ? (
           r.department_name || `#${r.department_id}`
         ) : (
-          <span className="font-medium">{r.department_name || 'Toàn pháp nhân'}</span>
+          <span className="font-medium">{r.department_name || WHOLE_COMPANY_LABEL}</span>
         ),
     },
     {
-      key: 'planned_headcount',
-      header: 'Định biên kế hoạch',
-      width: 150,
+      key: 'headcount_end',
+      header: 'Định biên cuối kỳ',
+      width: 140,
       align: 'right',
-      cell: (r) => <span className="tabular-nums">{r.planned_headcount}</span>,
+      cell: (r) => <span className="tabular-nums">{r.headcount_end ?? 0}</span>,
     },
     ...(canSeePayroll
       ? [
           {
-            key: 'planned_payroll_monthly',
-            header: PAYROLL_HEADER,
-            width: 180,
+            key: 'total_cost',
+            header: COST_HEADER,
+            width: 170,
             align: 'right' as const,
-            cell: (r: HeadcountPlan) =>
-              r.planned_payroll_monthly == null ? (
-                <span className="text-muted-foreground/50">—</span>
+            cell: (r: HeadcountPlanListItem) =>
+              r.total_cost == null ? (
+                <span className="text-muted-foreground/50" title="Bạn không được xem lương của pháp nhân này">
+                  —
+                </span>
               ) : (
-                <span className="tabular-nums">{formatMoney(r.planned_payroll_monthly)}</span>
+                <span className="tabular-nums">{formatMoney(r.total_cost)}</span>
               ),
           },
         ]
       : []),
-    { key: 'note', header: 'Ghi chú', width: 260, minWidth: 160, wrap: true, cell: (r) => r.note || '' },
+    { key: 'basis', header: 'Căn cứ', width: 200, wrap: true, cell: basisOf },
+    { key: 'note', header: 'Lý do / ghi chú', width: 260, minWidth: 160, wrap: true, defaultHidden: true, cell: (r) => r.note || '' },
   ]
-}
-
-/** Ô nhập — ô tiền chỉ có khi người xem đọc được hợp đồng lao động. */
-export function buildHeadcountPlanFormFields(
-  opts: Pick<HeadcountPlanCrudOptions, 'canSeePayroll' | 'yearOptions' | 'companyOptions' | 'departments' | 'defaultYear'>,
-): CrudFormField[] {
-  const fields: CrudFormField[] = [
-    {
-      name: 'year',
-      label: 'Năm',
-      type: 'select',
-      required: true,
-      readonlyOnEdit: true,
-      options: opts.yearOptions,
-      defaultValue: String(opts.defaultYear),
-    },
-    {
-      name: 'company_id',
-      label: 'Pháp nhân',
-      type: 'select',
-      required: true,
-      readonlyOnEdit: true,
-      options: opts.companyOptions,
-    },
-    {
-      name: 'department_id',
-      label: 'Phòng ban',
-      type: 'select',
-      readonlyOnEdit: true,
-      options: buildHeadcountPlanDepartmentOptions(opts.departments),
-      defaultValue: '0',
-      hint: '«Toàn pháp nhân» = định biên của cả pháp nhân, so với tổng người của pháp nhân (không cộng với các dòng phòng). Phòng ban dùng chung cho mọi pháp nhân.',
-    },
-    {
-      name: 'planned_headcount',
-      label: 'Định biên kế hoạch (người)',
-      type: 'number',
-      required: true,
-    },
-  ]
-  if (opts.canSeePayroll) {
-    fields.push({
-      name: 'planned_payroll_monthly',
-      label: 'Quỹ lương kế hoạch / tháng (đồng)',
-      type: 'number',
-      hint: 'Lương + phụ cấp của cả nhóm trong một tháng. Để 0 nếu chưa lập.',
-    })
-  }
-  fields.push({ name: 'note', label: 'Ghi chú', type: 'textarea', fullWidth: true })
-  return fields
 }
 
 /**
- * KẾ HOẠCH NHÂN SỰ theo năm (duoc-CR-689) — mỗi dòng là định biên + quỹ lương kế hoạch / tháng
- * của một pháp nhân × phòng trong một năm. Báo cáo «Định biên kế hoạch so với thực tế» (khóa 25)
- * và cột kế hoạch của «Quỹ lương theo pháp nhân» đọc từ đây.
+ * KẾ HOẠCH NHÂN SỰ THEO KỲ (duoc-CR-690) — danh sách lọc Năm · Loại kỳ · Pháp nhân · Phòng. Thêm /
+ * mở là TRANG RIÊNG (`createRoute` + `detailRoute`): kế hoạch có bốn khối, hộp thoại không chứa nổi.
+ * Báo cáo «Định biên kế hoạch so với thực tế» và «Quỹ lương theo pháp nhân» đọc từ đây.
  *
- * Dựng bằng HÀM (không phải hằng) vì hai thứ chỉ biết lúc chạy: quyền xem lương (cột + ô tiền) và
- * danh mục pháp nhân / phòng (ô chọn và ô lọc). Sửa bằng hộp thoại ngay trên
- * danh sách — form sáu ô, không đáng một trang riêng.
- *
- * ⚠️ Năm / pháp nhân / phòng là KHÓA của dòng (backend UNIQUE) nên khóa lại khi sửa: đổi khóa
- * của một dòng là chuyển kế hoạch sang phòng khác mà lịch sử vẫn ghi «sửa».
+ * Dựng bằng HÀM vì hai thứ chỉ biết lúc chạy: quyền xem lương và danh mục pháp nhân / phòng.
  */
-export function buildHeadcountPlanCrudConfig(opts: HeadcountPlanCrudOptions): CrudConfig<HeadcountPlan> {
-  const departmentOptions = buildHeadcountPlanDepartmentOptions(opts.departments)
+export function buildHeadcountPlanCrudConfig(opts: HeadcountPlanCrudOptions): CrudConfig<HeadcountPlanListItem> {
   return {
     entity: 'headcount_plan',
     title: 'Kế hoạch nhân sự',
     description:
-      'Định biên và quỹ lương kế hoạch theo năm của từng pháp nhân, phòng ban — nguồn của báo cáo «Định biên kế hoạch so với thực tế».',
-    unitLabel: 'dòng kế hoạch',
+      'Định biên theo vị trí và chi phí nhân sự theo kỳ (năm, bán niên, quý, tháng) của từng pháp nhân, phòng ban.',
+    unitLabel: 'kế hoạch',
     apiPath: HEADCOUNT_PLAN_API_PATH,
-    storageKey: 'hr.headcount-plans',
+    storageKey: 'hr.headcount-plans.v2',
     listRoute: appRoutes.hr.headcountPlans,
-    openFormOnRowClick: true,
-    deleteInForm: true,
-    dialogMaxWidth: 'sm:max-w-xl',
-    //  API chỉ lọc năm / pháp nhân / phòng và tự sắp (năm mới trước → pháp nhân → phòng): không
-    //  có ô tìm chữ, cột không bấm sắp xếp được — bày ra thì bấm mà bảng đứng im.
+    createRoute: appRoutes.hr.headcountPlanNew,
+    detailRoute: (id) => appRoutes.hr.headcountPlanDetail(id),
+    //  API chỉ lọc năm / loại kỳ / pháp nhân / phòng và tự sắp: không có ô tìm chữ.
     hideSearch: true,
     quickFilters: [
       { key: 'year', label: 'Năm', type: 'select', options: opts.yearOptions },
+      {
+        key: 'period_type',
+        label: 'Loại kỳ',
+        type: 'select',
+        options: PLAN_PERIOD_TYPE.map((o) => ({ value: o.value, label: o.label })),
+      },
       { key: 'company_id', label: 'Pháp nhân', type: 'select', options: opts.companyOptions },
-      { key: 'department_id', label: 'Phòng ban', type: 'select', options: departmentOptions },
+      { key: 'department_id', label: 'Phòng ban', type: 'select', options: opts.departmentOptions },
     ],
-    getItemName: (r) => `${r.year} · ${r.company_name} · ${r.department_name}`,
-    deleteWarning: 'Xóa rồi thì báo cáo định biên năm đó coi phòng này là «chưa có kế hoạch».',
+    getItemName: (r) => `${periodOf(r)} · ${r.company_name} · ${r.department_name}`,
+    deleteWarning: 'Xóa rồi thì báo cáo định biên và quỹ lương coi pháp nhân × phòng này là «chưa có kế hoạch» cho kỳ đó.',
     renderToolbarExtra: () => <HeadcountPlanCsvActions />,
     mobileCard: (r) => (
       <CrudRecordCard
-        title={r.department_name || 'Toàn pháp nhân'}
+        title={r.department_name || WHOLE_COMPANY_LABEL}
         subtitle={<span className="block truncate">{r.company_name}</span>}
         chips={[
-          { icon: CalendarDays, text: String(r.year), tone: 'code' },
-          { icon: Users, text: `${r.planned_headcount} người`, tone: 'ok' },
-          ...(opts.canSeePayroll && r.planned_payroll_monthly
-            ? [{ icon: Banknote, text: `${formatMoney(r.planned_payroll_monthly)} đ/tháng`, tone: 'muted' as const }]
+          { icon: CalendarDays, text: periodOf(r), tone: 'code' },
+          { icon: Users, text: `${r.headcount_end ?? 0} người`, tone: 'ok' },
+          ...(opts.canSeePayroll && r.total_cost
+            ? [{ icon: Banknote, text: `${formatMoney(r.total_cost)} đ`, tone: 'muted' as const }]
             : []),
         ]}
       />
     ),
     columns: buildHeadcountPlanColumns(opts.canSeePayroll),
-    formFields: buildHeadcountPlanFormFields(opts),
-    buildPayload: (payload) => normalizeHeadcountPlanPayload(payload),
+    //  Thêm / sửa ở trang riêng — khung CRUD không dựng hộp thoại nào cho màn này.
+    formFields: [],
   }
 }
-

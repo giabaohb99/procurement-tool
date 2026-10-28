@@ -74,6 +74,30 @@ export const CONTRACT_TYPE: readonly StatusOption[] = [
   {"value": "other", "label": "Khác", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Nguồn số thực tế của khoản chi phí */
+export const COST_ACTUAL_SOURCE: readonly StatusOption[] = [
+  {"value": "0", "label": "Không có", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "1", "label": "Lương cơ bản trên HĐLĐ", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Phụ cấp trên HĐLĐ", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "% × lương đóng BHXH trên HĐLĐ", "sort_order": 3, "is_terminal": false, "is_exception": false},
+]
+
+/** Khoản chi phí áp cho */
+export const COST_APPLIES_TO: readonly StatusOption[] = [
+  {"value": "1", "label": "Mọi vị trí", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Chỉ các vị trí đã chọn", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Cả phòng (không theo người)", "sort_order": 3, "is_terminal": false, "is_exception": false},
+]
+
+/** Cách tính khoản chi phí nhân sự */
+export const COST_CALC_METHOD: readonly StatusOption[] = [
+  {"value": "1", "label": "Số tiền / người / tháng (nhập theo vị trí)", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "% trên các khoản khác", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Số tháng của một khoản", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Số tiền / người / lần", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Số tiền cả phòng", "sort_order": 5, "is_terminal": false, "is_exception": false},
+]
+
 /** Loại phiếu có vòng đời */
 export const CYCLE_KIND: readonly StatusOption[] = [
   {"value": "1", "label": "Yêu cầu mua hàng", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -202,6 +226,14 @@ export const PAYABLE_STATUS: readonly StatusOption[] = [
   {"value": "unpaid", "label": "Chờ thanh toán", "sort_order": 1, "is_terminal": false, "is_exception": false},
   {"value": "partial", "label": "Thanh toán một phần", "sort_order": 2, "is_terminal": false, "is_exception": false},
   {"value": "paid", "label": "Đã thanh toán", "sort_order": 3, "is_terminal": false, "is_exception": false},
+]
+
+/** Loại kỳ kế hoạch nhân sự */
+export const PLAN_PERIOD_TYPE: readonly StatusOption[] = [
+  {"value": "1", "label": "Năm", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Bán niên", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Quý", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Tháng", "sort_order": 4, "is_terminal": false, "is_exception": false},
 ]
 
 /** Trạng thái lần giao */
@@ -416,6 +448,30 @@ export const AI_CLIENT_CODE = {
   OTHER: 9,
 } as const
 
+/** Nguồn số thực tế của khoản chi phí — khóa → mã gửi lên backend. */
+export const COST_ACTUAL_SOURCE_CODE = {
+  NONE: 0,
+  BASE_SALARY: 1,
+  ALLOWANCE: 2,
+  PERCENT_OF_INSURANCE_SALARY: 3,
+} as const
+
+/** Khoản chi phí áp cho — khóa → mã gửi lên backend. */
+export const COST_APPLIES_TO_CODE = {
+  ALL_POSITIONS: 1,
+  SELECTED_POSITIONS: 2,
+  WHOLE_DEPARTMENT: 3,
+} as const
+
+/** Cách tính khoản chi phí nhân sự — khóa → mã gửi lên backend. */
+export const COST_CALC_METHOD_CODE = {
+  PER_HEAD_MONTH: 1,
+  PERCENT_OF: 2,
+  MONTHS_OF: 3,
+  PER_HEAD_ONCE: 4,
+  LUMP_SUM: 5,
+} as const
+
 /** Loại chức năng đo — khóa → mã gửi lên backend. */
 export const FEATURE_KIND_CODE = {
   ACTION: 1,
@@ -423,6 +479,14 @@ export const FEATURE_KIND_CODE = {
   SCREEN: 3,
   SEARCH: 4,
   CLIENT_ERROR: 5,
+} as const
+
+/** Loại kỳ kế hoạch nhân sự — khóa → mã gửi lên backend. */
+export const PLAN_PERIOD_TYPE_CODE = {
+  YEAR: 1,
+  HALF: 2,
+  QUARTER: 3,
+  MONTH: 4,
 } as const
 
 /** Chức năng được bấm — khóa → mã gửi lên backend. */
@@ -500,6 +564,9 @@ export const STATUS_SETS = {
   contract_party_type: CONTRACT_PARTY_TYPE,
   contract_status: CONTRACT_STATUS,
   contract_type: CONTRACT_TYPE,
+  cost_actual_source: COST_ACTUAL_SOURCE,
+  cost_applies_to: COST_APPLIES_TO,
+  cost_calc_method: COST_CALC_METHOD,
   cycle_kind: CYCLE_KIND,
   cycle_outcome: CYCLE_OUTCOME,
   cycle_role: CYCLE_ROLE,
@@ -515,6 +582,7 @@ export const STATUS_SETS = {
   leave_session: LEAVE_SESSION,
   leave_type: LEAVE_TYPE,
   payable_status: PAYABLE_STATUS,
+  plan_period_type: PLAN_PERIOD_TYPE,
   po_delivery_status: PO_DELIVERY_STATUS,
   po_document_status: PO_DOCUMENT_STATUS,
   po_item_line_status: PO_ITEM_LINE_STATUS,

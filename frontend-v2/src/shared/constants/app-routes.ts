@@ -516,10 +516,19 @@ export const appRoutes = {
     /** Sơ đồ tổ chức tự vẽ từ dữ liệu (duoc-CR-669) — pháp nhân › phòng ban › người. */
     orgChart: '/hr/org-chart',
     /**
-     * Kế hoạch nhân sự theo năm (duoc-CR-689) — định biên + quỹ lương / tháng của từng pháp nhân × phòng.
-     * Sửa bằng hộp thoại ngay trên danh sách nên không có trang chi tiết.
+     * Kế hoạch nhân sự THEO KỲ (duoc-CR-690, thay bản một-dòng của CR-689): một kỳ × pháp nhân × phòng,
+     * bốn khối (kỳ & căn cứ · khoản chi phí · định biên theo vị trí · bảng tự tính). Form dài nên
+     * thêm / mở là TRANG RIÊNG, không hộp thoại. `/new` phải khai trước `/:id` ở `routes.tsx`.
      */
     headcountPlans: '/hr/headcount-plans',
+    headcountPlanNew: '/hr/headcount-plans/new',
+    headcountPlanDetail: (id: number | string) => `/hr/headcount-plans/${id}`,
+    /** Nhóm chi phí nhân sự do người dùng tự đặt (duoc-CR-690) — CRUD hộp thoại. */
+    hrCostGroups: '/hr/hr-cost-groups',
+    /** Mẫu khoản chi phí (duoc-CR-690) — bộ khoản chép vào kế hoạch lúc tạo. Trang riêng vì có bảng khoản. */
+    hrCostTemplates: '/hr/hr-cost-templates',
+    hrCostTemplateNew: '/hr/hr-cost-templates/new',
+    hrCostTemplateDetail: (id: number | string) => `/hr/hr-cost-templates/${id}`,
     /** Danh mục Chức vụ — nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ. */
     jobPositions: '/hr/job-positions',
     /** Thêm chức vụ mở TRANG RIÊNG, không phải hộp thoại — xem `CrudConfig.createRoute`. */

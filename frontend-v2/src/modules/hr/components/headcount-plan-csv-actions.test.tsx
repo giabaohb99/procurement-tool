@@ -8,7 +8,6 @@ import type * as CoreApi from '@/core/api'
 import { HeadcountPlanCsvActions } from './headcount-plan-csv-actions'
 
 const downloadFile = vi.fn()
-const httpPost = vi.fn()
 let granted: string[] = []
 
 vi.mock('@/core/api', async (importOriginal) => {
@@ -16,7 +15,6 @@ vi.mock('@/core/api', async (importOriginal) => {
   return {
     ...actual,
     downloadFile: (...args: unknown[]) => downloadFile(...args),
-    httpClient: { post: (...args: unknown[]) => httpPost(...args) },
   }
 })
 vi.mock('@/core/authorization/use-permission', () => ({
@@ -37,7 +35,6 @@ function build(url = '/hr/headcount-plans') {
 
 beforeEach(() => {
   downloadFile.mockReset().mockResolvedValue(undefined)
-  httpPost.mockReset()
   granted = []
 })
 
@@ -50,33 +47,32 @@ describe('HeadcountPlanCsvActions', () => {
 
   it('exports exactly the filters on screen, keeping the real 0 and dropping "all" and paging', async () => {
     granted = ['headcount_plan.export']
-    build('/hr/headcount-plans?year=2026&company_id=all&department_id=0&page=3')
+    build('/hr/headcount-plans?year=2026&period_type=3&company_id=all&department_id=0&page=3')
     fireEvent.click(screen.getByRole('button', { name: /Xuất CSV/ }))
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalled())
     expect(downloadFile).toHaveBeenCalledWith('/api/headcount-plans/export/csv', 'ke-hoach-nhan-su.csv', {
       year: '2026',
+      period_type: '3',
       department_id: '0',
     })
+  })
+
+  it('no longer offers the old one-row-per-plan CSV import — lines are imported inside each plan', () => {
+    //  Backend bỏ `POST /api/headcount-plans/import/csv` ở gốc (duoc-CR-690); nút cũ còn thì bấm ra 404.
+    granted = ['headcount_plan.export', 'headcount_plan.create', 'headcount_plan.write']
+    build()
     expect(screen.queryByRole('button', { name: /Nhập CSV/ })).not.toBeInTheDocument()
   })
 
-  it('hides import unless the viewer can both create and update — the backend asks for both', () => {
-    granted = ['headcount_plan.create']
-    const { container } = build()
-    expect(container).toBeEmptyDOMElement()
-  })
-
-  it('lists every rejected CSV row in a dialog — nothing was written', async () => {
-    granted = ['headcount_plan.create', 'headcount_plan.write']
-    httpPost.mockRejectedValue({
-      response: { data: { success: false, error: { message: 'Tệp CSV có lỗi, chưa ghi dòng nào: Dòng 2: mã pháp nhân không tồn tại | Dòng 4: trùng' } } },
-    })
+  it('downloads only once on a double click', async () => {
+    granted = ['headcount_plan.export']
+    let release: () => void = () => undefined
+    downloadFile.mockReturnValue(new Promise<void>((r) => (release = r)))
     build()
-    const input = screen.getByLabelText('Chọn tệp CSV kế hoạch nhân sự')
-    fireEvent.change(input, { target: { files: [new File(['year\n'], 'kh.csv', { type: 'text/csv' })] } })
-    expect(await screen.findByText('Chưa nhập được tệp')).toBeInTheDocument()
-    expect(screen.getByText('Dòng 2: mã pháp nhân không tồn tại')).toBeInTheDocument()
-    expect(screen.getByText('Dòng 4: trùng')).toBeInTheDocument()
-    expect(httpPost.mock.calls[0]?.[0]).toBe('/api/headcount-plans/import/csv')
+    const btn = screen.getByRole('button', { name: /Xuất CSV/ })
+    fireEvent.click(btn)
+    fireEvent.click(btn)
+    release()
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledTimes(1))
   })
 })

@@ -1,8 +1,9 @@
 """Báo cáo A4 «Định biên kế hoạch so với thực tế» (khóa 25, duoc-CR-689) — `GET /api/headcount-plan-report/summary`.
 
-Năm kế hoạch = năm của CUỐI KỲ; thực tế = người đang làm tại `as_of = min(cuối kỳ, hôm nay)` (luật A1).
-Ảnh chụp một mốc: không xu hướng, không kỳ so sánh (như A3). Dòng dữ liệu + luật chống cộng đôi ở
-`headcount_plan_report_data.py`; `/summary/rows` dùng đúng `key_of` của chiều gom nên danh sách khớp bảng.
+Định biên kế hoạch = định biên của kế hoạch CÓ HIỆU LỰC ở THÁNG CUỐI KỲ báo cáo (kỳ hẹp thay kỳ rộng, `headcount_plan/effective`);
+thực tế = người đang làm tại `as_of = min(cuối kỳ, hôm nay)` (luật A1). Ảnh chụp một mốc: không xu hướng, không kỳ so sánh
+(như A3). Dòng dữ liệu + luật chống cộng đôi ở `headcount_plan_report_data.py`; chiều Vị trí ở `headcount_plan_report_positions.py`;
+`/summary/rows` dùng đúng `key_of` của chiều gom nên danh sách khớp bảng.
 """
 from __future__ import annotations
 
@@ -16,7 +17,9 @@ from app.core.report_drilldown import Col, filter_group, rows_response
 from app.core.report_period import Period
 from app.core.vn_time import vn_today
 from app.modules.employee.headcount_plan_report_data import (
-    PlanRow, build_plan_rows, counts_of, load_counts, load_people, load_plans)
+    PlanRow, build_plan_rows, counts_of, dept_counts, load_counts, load_people, load_plan_entries)
+from app.modules.employee.headcount_plan_report_positions import (
+    PositionUnits, load_position_names)
 from app.modules.employee.profile_gaps_report_data import load_group_names
 
 METRICS = {"actual": "Đang có", "unplanned": "Đang làm ở phòng chưa có kế hoạch"}   # chỉ số có danh sách /rows
@@ -25,7 +28,8 @@ COLUMNS = [Col("code", "Mã NV"), Col("name", "Họ tên"), Col("department", "P
 NO_PLAN = " (chưa có kế hoạch)"
 
 
-def _spec(company_name: dict, department_name: dict) -> tuple[ReportSpec, dict[str, DimensionSpec]]:
+def _spec(company_name: dict, department_name: dict, position_name: dict | None = None,
+          units: PositionUnits | None = None) -> tuple[ReportSpec, dict[str, DimensionSpec]]:
     metrics = [
         MetricSpec("planned", "Định biên kế hoạch", value_of=lambda r: r.planned),
         MetricSpec("actual", METRICS["actual"], value_of=lambda r: r.actual),
@@ -51,24 +55,33 @@ def _spec(company_name: dict, department_name: dict) -> tuple[ReportSpec, dict[s
             keys.append((f"c{r.company_id}", f"{co} — Toàn pháp nhân"))
         return keys
 
+    def position_key(r):
+        """Dòng kế hoạch mang `position_id`; người thì xếp theo `PositionUnits` để cùng khóa với bảng."""
+        pos = units.key_of_person(r) if getattr(r, "level", "") == "person" and units else r.position_id
+        return [(pos or "", (position_name or {}).get(pos, ""))]      # khóa "" hiện «(Chưa gắn)» như mọi chiều
+
     dims = {"company": DimensionSpec("company", "Pháp nhân", key_of=company_key),
-            "department": DimensionSpec("department", "Phòng ban", key_of=department_key)}
+            "department": DimensionSpec("department", "Phòng ban", key_of=department_key),
+            "position": DimensionSpec("position", "Vị trí", key_of=position_key)}
     return ReportSpec(date_of=lambda r: None, metrics=metrics, derived=derived, dimensions=dims,
                       rank_by="planned"), dims
 
 
 def _context(period: Period):
+    """(năm, tháng) của kế hoạch có hiệu lực = tháng cuối kỳ báo cáo; mốc đếm người thực tế."""
     as_of = min(period.date_to, vn_today())
-    return period.date_to.year, as_of
+    return period.date_to.year, period.date_to.month, as_of
 
 
-def _notes(rows: list[PlanRow], year: int, as_of, department_name: dict, company_name: dict) -> list[str]:
+def _notes(rows: list[PlanRow], year: int, month: int, as_of, department_name: dict, company_name: dict) -> list[str]:
     notes = [
-        f"Kế hoạch năm {year}; thực tế tại {as_of:%d/%m/%Y} (cuối kỳ hoặc hôm nay nếu kỳ chưa kết thúc). "
-        "Không có xu hướng và không so sánh kỳ trước.",
+        f"Định biên kế hoạch lấy ở tháng {month:02d}/{year} (tháng cuối kỳ báo cáo) từ «Kế hoạch nhân sự»; kỳ hẹp "
+        f"(tháng, quý) thay kỳ rộng (bán niên, năm) cho đúng các tháng nó phủ. Thực tế tại {as_of:%d/%m/%Y} "
+        "(cuối kỳ hoặc hôm nay nếu kỳ chưa kết thúc). Không có xu hướng và không so sánh kỳ trước.",
         "Pháp nhân có dòng kế hoạch «Toàn pháp nhân» thì dòng đó so với TỔNG người của pháp nhân và là số duy nhất "
         "tính vào Tổng cộng và nhóm Pháp nhân; các dòng phòng của pháp nhân đó chỉ hiện khi Xem theo Phòng ban "
-        "(không cộng dồn thêm).",
+        "(không cộng dồn thêm). Xem theo Vị trí: dòng vị trí so với người giữ đúng vị trí; người ở vị trí kế hoạch không "
+        "liệt kê gộp vào nhóm «(Chưa gắn)».",
         "Tỷ lệ lấp đầy = số vị trí kế hoạch đã có người (không tính phần vượt) ÷ định biên kế hoạch. "
         "«Còn thiếu» / «Vượt» cộng theo từng dòng kế hoạch nên thiếu ở phòng này không bù được bằng thừa ở phòng khác.",
     ]
@@ -77,7 +90,7 @@ def _notes(rows: list[PlanRow], year: int, as_of, department_name: dict, company
         names = [f"{department_name.get(r.department_id) or '(chưa gắn phòng)'} — {company_name.get(r.company_id, '')} "
                  f"({r.actual})" for r in unplanned[:10]]
         more = f" và {len(unplanned) - 10} nơi khác" if len(unplanned) > 10 else ""
-        notes.append(f"Có {len(unplanned)} nơi có người nhưng chưa có kế hoạch năm {year}: "
+        notes.append(f"Có {len(unplanned)} nơi có người nhưng chưa có kế hoạch hiệu lực ở tháng {month:02d}/{year}: "
                      + "; ".join(names) + more + ". Số người này nằm trong «Đang có» và «Đang làm ở phòng chưa có kế hoạch».")
     return notes
 
@@ -85,35 +98,39 @@ def _notes(rows: list[PlanRow], year: int, as_of, department_name: dict, company
 def build_summary(db: Session, user, prof: dict, period: Period, group_by: str | None,
                   company_id: int | None = None, department_id: int | None = None,
                   action: str = "read") -> dict:
-    year, as_of = _context(period)
+    year, month, as_of = _context(period)
     company_name, department_name = load_group_names(db, group_by, always=True)
-    rows = build_plan_rows(load_plans(db, user, prof, year, company_id, department_id, action),
-                           load_counts(db, user, prof, as_of, company_id, department_id, action))
+    entries = load_plan_entries(db, user, prof, year, month, company_id, department_id, action)
+    position_counts = load_counts(db, user, prof, as_of, company_id, department_id, action)
+    rows = build_plan_rows(entries, dept_counts(position_counts))
     top = [r for r in rows if r.top]
-    spec, _ = _spec(company_name, department_name)
+    units = PositionUnits(entries)
+    spec, _ = _spec(company_name, department_name, load_position_names(db, group_by), units)
     flat = replace(period, compare="none", compare_from=None, compare_to=None)
-    shown = rows if group_by == "department" else top
+    shown = rows if group_by == "department" else units.build_rows(position_counts) if group_by == "position" else top
     data = build_report(lambda _f, _t: shown, spec, flat, group_by=group_by)
-    if shown is not top:      # Xem theo Phòng ban liệt kê cả dòng phòng lẫn «toàn pháp nhân» -> Tổng tính riêng, không cộng đôi
+    if shown is not top:      # Xem theo Phòng ban / Vị trí liệt kê dòng khác tập `top` -> Tổng tính riêng, không cộng đôi
         data["totals"] = build_report(lambda _f, _t: top, spec, flat)["totals"]
     data["period"] = period.as_dict()
     data["trend"] = []
     data["meta"]["drilldown_metrics"] = list(METRICS)
-    data["notes"] = _notes(rows, year, as_of, department_name, company_name)
+    data["notes"] = _notes(rows, year, month, as_of, department_name, company_name)
     return data
 
 
 def build_rows(db: Session, user, prof: dict, period: Period, metric: str, group_by: str | None,
                group_key: str | None, company_id: int | None, department_id: int | None) -> dict:
-    year, as_of = _context(period)
+    year, month, as_of = _context(period)
     company_name, department_name = load_group_names(db, group_by, always=True)
-    _, dims = _spec(company_name, department_name)
+    entries = load_plan_entries(db, user, prof, year, month, company_id, department_id)
+    units = PositionUnits(entries)
+    _, dims = _spec(company_name, department_name, load_position_names(db, group_by), units)
     if group_by and group_by not in dims:
         raise HTTPException(422, f"Xem theo không hợp lệ: {group_by}")
     people = load_people(db, user, prof, as_of, company_id, department_id)
     picked = people
     if metric == "unplanned":
-        rows = build_plan_rows(load_plans(db, user, prof, year, company_id, department_id), counts_of(people))
+        rows = build_plan_rows(entries, counts_of(people))
         #  KHỚP KPI: Tổng / nhóm Pháp nhân chỉ đếm dòng `top` — phòng chưa kế hoạch của pháp nhân đã có dòng
         #  «Toàn pháp nhân» KHÔNG tính. Chỉ khi bấm vào MỘT nhóm Phòng ban (không phải nhóm `c<id>`) mới liệt kê cả
         #  những phòng đó, vì bảng «Xem theo Phòng ban» có hiện chúng.

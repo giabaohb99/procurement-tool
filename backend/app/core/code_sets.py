@@ -11,6 +11,7 @@ from app.core import capability_codes  # noqa: F401
 from app.core import contract_types  # noqa: F401
 from app.core import document_template_codes  # noqa: F401
 from app.core import forum_codes  # noqa: F401
+from app.core import headcount_plan_codes  # noqa: F401  duoc-CR-690
 from app.core import hr_work_history_codes  # noqa: F401
 from app.core import hr_change_request_codes  # noqa: F401  duoc-CR-676
 from app.core import labor_contract_codes  # noqa: F401

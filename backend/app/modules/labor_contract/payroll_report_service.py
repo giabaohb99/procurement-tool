@@ -24,7 +24,7 @@ from app.modules.employee.profile_gaps_report_data import load_group_names
 
 from .payroll_report_data import PayRecord, load_records, rows_at
 from .payroll_report_extras import add_minmax, build_trend
-from .payroll_report_plan import add_plan_columns
+from .payroll_report_plan import add_plan_columns, hide_total_after_suppression
 from .report_data import type_label
 
 METRICS = {"people_paid": "Số người hưởng lương"}   # chỉ số có danh sách `/rows`
@@ -93,7 +93,9 @@ def _summary(db: Session, records: list[PayRecord], period: Period, group_by: st
     gb = group_by if group_by in dims else None
     add_minmax(data, dims.get(gb) if gb else None, seen[period.date_to],
                seen.get(period.compare_to) if has_cmp else None)
-    add_plan_columns(data, plan_sets, group_by, company_name if group_by == "company" else department_name)   # TRƯỚC khi che nhóm nhỏ: còn dư = kế hoạch − lương thật
+    #  TRƯỚC khi che nhóm nhỏ: thực tế phần so được / còn dư suy ngược được lương
+    plan_notes = add_plan_columns(data, plan_sets, group_by, company_name if group_by == "company" else department_name,
+                                  records, today)
     data["trend"] = build_trend(records, period, today)
     data["meta"]["drilldown_metrics"] = list(METRICS)
     data["notes"] = [
@@ -102,13 +104,12 @@ def _summary(db: Session, records: list[PayRecord], period: Period, group_by: st
         "Số liệu tính tại ngày cuối kỳ (hoặc hôm nay nếu kỳ chưa kết thúc); xu hướng lấy cuối mỗi tháng.",
         "Một người có hợp đồng còn hiệu lực ở hai pháp nhân được tính ở cả hai (số «người hưởng lương» "
         "đếm hợp đồng); dòng Tổng cộng cả hai.",
-        "Quỹ lương kế hoạch lấy từ «Kế hoạch nhân sự» của năm cuối kỳ (chỉ hiện khi bạn có quyền xem kế hoạch): "
-        "pháp nhân có dòng «Toàn pháp nhân» thì lấy dòng đó, không thì cộng các dòng phòng; chỉ gắn theo nhóm khi "
-        "Xem theo Pháp nhân hoặc Phòng ban, còn lại chỉ có ở dòng Tổng. «—» = chưa khai quỹ lương kế hoạch.",
         "Chưa có khoản BHXH công ty đóng — báo cáo chỉ có lương đóng BHXH trên hợp đồng.",
+        *plan_notes,   # cột kế hoạch chỉ hiện khi bạn có quyền xem kế hoạch; theo nhóm khi Xem theo Pháp nhân / Phòng ban
     ]
     res = suppress_small_groups(data, lambda v: [int(v.get("people_paid") or 0)],
                                 lambda v: int(v.get("people_paid") or 0), NOTE_SMALL, NOTE_EXTRA)
+    hide_total_after_suppression(data)    # nhóm bị che thì Tổng không hiện phần so được (không suy ngược được lương nhóm)
     if res.unsafe_sides:     # che xong Tổng vẫn lộ lương -> bỏ cả bảng «Xem theo»
         drop_unsafe_breakdown(data, gb, dims[gb].label)
     return data

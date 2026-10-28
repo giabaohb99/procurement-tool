@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Seed Trung tâm trợ giúp cho nhóm báo cáo NHÂN SỰ của phân hệ Báo cáo — duoc-CR-686, mở rộng duoc-CR-687,
-duoc-CR-688 (27/10/2026) và duoc-CR-689 (28/10/2026).
+duoc-CR-688 (27/10/2026), duoc-CR-689 và duoc-CR-690 (28/10/2026).
 
-Dựng 1 thẻ phân hệ + 21 bài theo TÁC VỤ cho mười sáu báo cáo ở menu Báo cáo ▸ nhóm «Nhân sự»:
+Dựng 1 thẻ phân hệ + 22 bài theo TÁC VỤ cho mười sáu báo cáo ở menu Báo cáo ▸ nhóm «Nhân sự»:
 Biến động nhân sự · Tình hình nghỉ phép · Quỹ phép năm (đã có, mở rộng) · Hợp đồng lao động ·
 Hồ sơ & tài khoản còn thiếu (CR-686) · Sổ quản lý lao động · Báo cáo sử dụng lao động (01/PLI) (CR-687) ·
 Quỹ lương theo pháp nhân · Phúc lợi & sự kiện · Cơ cấu quản lý · Điều chuyển & bổ nhiệm (CR-688) ·
@@ -20,6 +20,14 @@ CR-689: nhãn chép từ màn local 28/10/2026 (`/hr/headcount-plans`, `/report/
 `/summary` mới. ⚠️ Lúc viết, nhập CSV kế hoạch có dòng phòng ban bị từ chối «mã phòng ban không tồn
 tại trong pháp nhân» (phòng ban dùng chung, `company_id = 0`); bài viết theo cách chạy đúng (mọi
 phòng chọn được) — soát lại sau khi bên backend sửa.
+
+CR-690 (28/10/2026): bài «Kế hoạch nhân sự» viết lại theo khuôn kỳ (Năm / Bán niên / Quý / Tháng, định biên
+theo vị trí, căn cứ, văn bản liên kết, bảng tự tính, dòng Thực tế, nhập CSV dòng vị trí), thêm bài «Mẫu khoản chi
+phí và Nhóm chi phí», sửa phần kế hoạch của A4 / A5 và bài giao quyền. Nhãn đối chiếu bằng ĐỌC MÃ (không soát
+trình duyệt): `frontend-v2/src/modules/hr/{pages,components,config}/headcount-plan-*`, `hr-cost-*`,
+`report/pages/{headcount-plan,payroll-fund}-report-page.tsx`, backend `headcount_plan/*`,
+`labor_contract/payroll_report_plan.py`, `employee/headcount_plan_report_service.py`. Nguồn nghiệp vụ:
+`doc/erp/hrm/06-ke-hoach-nhan-su.md`. Soát lại trên màn thật khi lên dev.
 
 Nhãn nút và tên chỉ số chép từ mã màn (`frontend-v2/src/modules/report/`) và từ `meta.metrics` /
 `meta.dimensions` / `notes` của các đường `/summary` gọi trên local (27/10/2026); đổi nhãn ở màn hay ở
@@ -54,7 +62,9 @@ BENEFIT_TITLE = "Báo cáo Nhân sự — Lập danh sách nhận quà và dự 
 SPAN_TITLE = "Báo cáo Nhân sự — Rà cơ cấu quản lý và người chưa gán quản lý trực tiếp"
 MOVES_TITLE = "Báo cáo Nhân sự — Theo dõi điều chuyển, bổ nhiệm và kiêm nhiệm"
 #  duoc-CR-689
-PLAN_TITLE = "Báo cáo Nhân sự — Lập kế hoạch định biên và quỹ lương theo năm"
+#  duoc-CR-690: bài kế hoạch viết lại theo kỳ (tiêu đề cũ «… quỹ lương theo năm» đã bỏ) + bài mẫu khoản chi phí.
+PLAN_TITLE = "Báo cáo Nhân sự — Lập kế hoạch nhân sự theo kỳ: định biên theo vị trí và chi phí nhân sự"
+COST_TEMPLATE_TITLE = "Báo cáo Nhân sự — Khai mẫu khoản chi phí và nhóm chi phí cho kế hoạch nhân sự"
 PLAN_REPORT_TITLE = "Báo cáo Nhân sự — So định biên kế hoạch với số người đang có"
 ATTENDANCE_TITLE = "Báo cáo Nhân sự — Xem số người có mặt theo ngày ở từng phòng"
 PROFILE_CHANGES_TITLE = "Báo cáo Nhân sự — Theo dõi tốc độ duyệt yêu cầu sửa hồ sơ"
@@ -68,7 +78,7 @@ ROOM_ROOT_TITLE = "Hướng dẫn sử dụng Đặt phòng họp"
 TREE = {
     "title": ROOT_TITLE,
     "icon": "bar-chart",
-    "summary": "Mười sáu báo cáo Nhân sự (biến động, nghỉ phép, hợp đồng, sổ lao động, quỹ lương, định biên kế hoạch, có mặt, sửa hồ sơ, phòng họp, đối tượng theo luật…), màn Kế hoạch nhân sự và ô Lịch nhắc trong tháng",
+    "summary": "Mười sáu báo cáo Nhân sự (biến động, nghỉ phép, hợp đồng, sổ lao động, quỹ lương, định biên kế hoạch, có mặt, sửa hồ sơ, phòng họp, đối tượng theo luật…), màn Kế hoạch nhân sự theo kỳ, Mẫu khoản chi phí và ô Lịch nhắc trong tháng",
     "content": f"""<h2>Báo cáo Nhân sự dùng để làm gì</h2>
 <p>Nhóm <strong>Nhân sự</strong> trong phân hệ <strong>Báo cáo</strong> giúp phòng Nhân sự và Ban Giám đốc trả lời nhanh những câu hỏi hằng tuần, hằng tháng mà không phải lọc tay từng danh sách:</p>
 <table>
@@ -94,7 +104,8 @@ TREE = {
 </table>
 <p>Hai chỗ khác của phân hệ <strong>Nhân sự</strong> đi cùng nhóm báo cáo này:</p>
 <ul>
-<li>Màn <strong>Kế hoạch nhân sự</strong> (Nhân sự ▸ Danh mục): nơi nhập định biên và quỹ lương kế hoạch của từng năm, làm nguồn cho báo cáo định biên và cột kế hoạch của báo cáo quỹ lương. Xem bài {ref(PLAN_TITLE, "Lập kế hoạch định biên và quỹ lương theo năm")}.</li>
+<li>Màn <strong>Kế hoạch nhân sự</strong> (Nhân sự ▸ Danh mục): nơi lập kế hoạch theo kỳ (năm, bán niên, quý, tháng) cho từng pháp nhân và phòng, gồm định biên theo vị trí và chi phí nhân sự; đây là nguồn của báo cáo định biên và phần kế hoạch của báo cáo quỹ lương. Xem bài {ref(PLAN_TITLE, "Lập kế hoạch nhân sự theo kỳ")}.</li>
+<li>Hai màn <strong>Mẫu khoản chi phí</strong> và <strong>Nhóm chi phí</strong> (cũng ở Nhân sự ▸ Danh mục): nơi khai các khoản chi phí (lương, bảo hiểm, thưởng, phúc lợi…) để chép vào kế hoạch. Xem bài {ref(COST_TEMPLATE_TITLE, "Khai mẫu khoản chi phí và nhóm chi phí")}.</li>
 <li>Ô <strong>Lịch nhắc trong tháng</strong> ở trang <strong>Tổng quan</strong> của phân hệ Nhân sự: sinh nhật, kỷ niệm năm làm việc, hợp đồng và thử việc hết hạn trong tháng. Xem bài {ref(REMINDERS_TITLE, "Xem lịch nhắc sinh nhật, kỷ niệm và hợp đồng hết hạn trong tháng")}.</li>
 </ul>
 
@@ -522,7 +533,7 @@ TREE = {
         {
             "title": PAYROLL_TITLE,
             "icon": "banknote",
-            "summary": "Quỹ lương thỏa thuận trên hợp đồng theo pháp nhân, phòng, chức vụ, loại HĐ; bình quân, thấp nhất / cao nhất cùng chức vụ; so với quỹ lương kế hoạch: còn dư, % dùng; nhóm dưới 3 người bị che; chỉ giao người được xem lương",
+            "summary": "Quỹ lương thỏa thuận trên hợp đồng theo pháp nhân, phòng, chức vụ, loại HĐ; thấp nhất / cao nhất cùng chức vụ; so với kế hoạch: chi phí kế hoạch, phần so được, còn dư, % dùng; nhóm dưới 3 người bị che; chỉ giao người được xem lương",
             "content": f"""<h2>Báo cáo cho biết gì</h2>
 <p>Báo cáo <strong>Quỹ lương theo pháp nhân</strong> cộng tiền lương ghi trên các hợp đồng lao động đang hiệu lực, để Ban Giám đốc biết mỗi công ty đang gánh bao nhiêu tiền lương mỗi tháng.</p>
 <p>⚠️ Đây là <strong>lương thỏa thuận ghi trên hợp đồng</strong>, không phải lương thực trả. ERP không có chấm công và bảng lương, nên báo cáo không tính làm thêm giờ, thưởng hay khấu trừ. Chỉ hợp đồng đã ký, còn hiệu lực, của người còn làm mới được cộng.</p>
@@ -558,23 +569,28 @@ TREE = {
 </ol>
 <p>Chức vụ nào ở một công ty chỉ có 1–2 người thì bị che số (xem mục dưới). Khi đó để ô <strong>Công ty</strong> ở <em>Tất cả công ty</em> để so trên cả tập đoàn.</p>
 
-<h2>So quỹ lương với kế hoạch: còn dư bao nhiêu</h2>
-<p>Khi phòng Nhân sự đã nhập <strong>quỹ lương kế hoạch / tháng</strong> ở màn <strong>Kế hoạch nhân sự</strong> (bài {ref(PLAN_TITLE, "Lập kế hoạch định biên và quỹ lương theo năm")}), báo cáo có thêm:</p>
+<h2>So với kế hoạch chi phí nhân sự: còn dư bao nhiêu</h2>
+<p>Khi phòng Nhân sự đã lập kế hoạch ở màn <strong>Kế hoạch nhân sự</strong> (bài {ref(PLAN_TITLE, "Lập kế hoạch nhân sự theo kỳ")}), báo cáo có thêm năm chỉ số:</p>
 <table>
 <thead><tr><th>Thẻ số / cột</th><th>Ý nghĩa</th></tr></thead>
 <tbody>
-<tr><td><strong>Quỹ lương kế hoạch / tháng</strong></td><td>Quỹ lương (lương + phụ cấp) mỗi tháng đã duyệt trong kế hoạch của năm cuối kỳ</td></tr>
-<tr><td><strong>% dùng</strong></td><td>Quỹ lương đang có chia cho quỹ lương kế hoạch. Trên 100% là đang vượt kế hoạch</td></tr>
-<tr><td><strong>Còn dư so với kế hoạch</strong></td><td>Quỹ lương kế hoạch trừ quỹ lương đang có, có sẵn trên bảng. Số âm là đang vượt</td></tr>
+<tr><td><strong>Chi phí nhân sự kế hoạch</strong> (thẻ số)</td><td>Tổng mọi khoản của kế hoạch cho <strong>mọi tháng</strong> của kỳ báo cáo, kể cả tháng chưa tới và các khoản không có nguồn thực tế (thưởng, phúc lợi…)</td></tr>
+<tr><td><strong>Kế hoạch phần so được</strong></td><td>Chỉ các khoản có ô <em>Lấy thực tế từ</em> khác <em>Không có</em>, và chỉ các tháng đã bắt đầu</td></tr>
+<tr><td><strong>Thực tế phần so được</strong></td><td>Cộng từ hợp đồng lao động đúng nguồn của các khoản đó (lương cơ bản, phụ cấp, hoặc % × lương đóng BHXH với đúng % và trần của khoản), cùng các tháng, cùng pháp nhân và phòng với kế hoạch</td></tr>
+<tr><td><strong>Còn dư so với kế hoạch</strong></td><td>Kế hoạch phần so được trừ thực tế phần so được. Số âm là đang vượt</td></tr>
+<tr><td><strong>% dùng</strong> (thẻ số)</td><td>Thực tế phần so được chia cho kế hoạch phần so được. Trên 100% là đang vượt kế hoạch</td></tr>
 </tbody>
 </table>
+<p><strong>Vì sao phải có «phần so được»:</strong> ERP không có bảng lương nên thực tế chỉ có cho những khoản ghi trên hợp đồng. Đem cả tổng kế hoạch (có thưởng, phúc lợi) ra so với lương trên hợp đồng thì luôn thấy «còn dư» giả. Mục <strong>Cách tính số liệu</strong> liệt kê <em>Thực tế chưa gồm các khoản không có nguồn trên hợp đồng: …</em>.</p>
+<p>Ví dụ: tháng 10 mở kỳ <strong>Năm nay</strong>. <em>Chi phí nhân sự kế hoạch</em> là chi phí cả 12 tháng; hai chỉ số «phần so được» chỉ cộng tháng 1 tới tháng 10; <em>% dùng</em> cho biết mười tháng đó đã dùng bao nhiêu phần kế hoạch của chính mười tháng đó.</p>
 <ul>
-<li>Pháp nhân có dòng kế hoạch <em>Toàn pháp nhân</em> thì lấy đúng dòng đó; không có thì cộng các dòng phòng của pháp nhân.</li>
-<li>Pháp nhân hoặc phòng đã có kế hoạch mà chưa có hợp đồng lao động nào vẫn hiện thành một dòng riêng, lương thực tế 0 và % dùng 0, để cộng các dòng ra đúng số kế hoạch ở dòng <em>Tổng</em>.</li>
-<li>Số kế hoạch chỉ hiện với người được xem hợp đồng lao động của đúng pháp nhân đó ở phạm vi <em>Tất cả</em> hoặc <em>Công ty</em>.</li>
-<li>Ba cột này chỉ chia theo nhóm khi <strong>Xem theo</strong> là <em>Pháp nhân</em> hoặc <em>Phòng ban</em>. Xem theo chức vụ, nhóm vị trí hay loại hợp đồng thì chỉ dòng <em>Tổng</em> có số kế hoạch.</li>
-<li>Ô hiện <strong>—</strong> nghĩa là nhóm đó chưa khai quỹ lương kế hoạch (dòng kế hoạch để 0 được coi là chưa khai), hoặc nhóm dưới 3 người bị che số.</li>
-<li>Không thấy hai thẻ và cột kế hoạch: bạn chưa có quyền xem kế hoạch nhân sự. Nhờ quản trị cấp theo bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</li>
+<li>Kế hoạch lấy theo từng tháng của kỳ báo cáo: kỳ hẹp thay kỳ rộng (kế hoạch quý 3 thay kế hoạch năm cho tháng 7–9). Pháp nhân có kế hoạch <em>Toàn pháp nhân</em> thì không cộng thêm các kế hoạch phòng của pháp nhân đó.</li>
+<li>Pháp nhân hoặc phòng đã có kế hoạch mà chưa có hợp đồng lao động nào vẫn hiện thành một dòng riêng, lương thực tế 0, để cộng các dòng ra đúng số kế hoạch ở dòng <em>Tổng</em>.</li>
+<li>Chỉ cộng pháp nhân mà bạn được xem hợp đồng lao động ở phạm vi <em>Tất cả</em> hoặc <em>Công ty</em>.</li>
+<li>Các cột kế hoạch chỉ chia theo nhóm khi <strong>Xem theo</strong> là <em>Pháp nhân</em> hoặc <em>Phòng ban</em>. Xem theo chức vụ, nhóm vị trí hay loại hợp đồng thì chỉ dòng <em>Tổng</em> có số kế hoạch.</li>
+<li>Ô hiện <strong>—</strong> nghĩa là nhóm đó chưa có kế hoạch, hoặc chưa có gì để so (kế hoạch không có khoản nào khai nguồn thực tế, hoặc mọi tháng của kỳ đều chưa tới), hoặc nhóm dưới 3 người bị che số. Ba chỉ số sau để trống, không phải 0.</li>
+<li>Dòng <em>Tổng</em> để trống <em>Thực tế phần so được</em>, <em>Còn dư so với kế hoạch</em> và <em>% dùng</em> khi còn nơi có người hưởng lương mà chưa có kế hoạch, hoặc khi có nhóm nhỏ bị che: lấy tổng lương trừ đi là ra lương của nơi đó. Mục <strong>Cách tính số liệu</strong> ghi <em>Tổng phần so được không hiện vì có nơi chưa có kế hoạch hoặc nhóm nhỏ bị che</em>. Lập đủ kế hoạch cho mọi nơi có người thì dòng Tổng có lại số.</li>
+<li>Không thấy hai thẻ và các cột kế hoạch: bạn chưa có quyền xem kế hoạch nhân sự. Nhờ quản trị cấp theo bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</li>
 </ul>
 
 <h2>Nhóm dưới 3 người bị che số</h2>
@@ -592,7 +608,7 @@ TREE = {
 <ul>
 <li>⚠️ Ai mở được báo cáo này là xem được lương. Báo cáo lúc mới lên <strong>chỉ quản trị thấy</strong>; chỉ giao cho người được phép xem lương (bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}). Báo cáo không hiện ở trang Tổng quan của phân hệ Báo cáo.</li>
 <li><strong>Trợ lý AI không đọc được báo cáo này</strong>, kể cả khi bạn có quyền xem. Cần số lương thì mở thẳng báo cáo.</li>
-<li>Chưa có phần BHXH công ty phải đóng; báo cáo chỉ có lương đóng BHXH ghi trên hợp đồng. Chưa có ô thử tính «tuyển thêm một người vào công ty nào thì còn dư nhiều nhất».</li>
+<li>Phần thực tế chưa có thẻ riêng cho BHXH công ty phải đóng; khoản này chỉ được so khi kế hoạch có khoản % khai <em>Lấy thực tế từ</em> là <em>% × lương đóng BHXH trên HĐLĐ</em>. Chưa có ô thử tính «tuyển thêm một người vào công ty nào thì còn dư nhiều nhất».</li>
 </ul>""",
         },
         {
@@ -746,95 +762,326 @@ TREE = {
         {
             "title": PLAN_TITLE,
             "icon": "clipboard-list",
-            "summary": "Màn Nhân sự ▸ Kế hoạch nhân sự: mỗi dòng là năm × pháp nhân × phòng (hoặc Toàn pháp nhân), định biên và quỹ lương kế hoạch / tháng; thêm, sửa, xóa; Xuất CSV, Nhập CSV nguyên khối báo lỗi từng dòng; ai được sửa",
+            "summary": "Màn Nhân sự ▸ Kế hoạch nhân sự: chọn loại kỳ Năm, Bán niên, Quý, Tháng; căn cứ, văn bản liên kết, tệp; định biên theo vị trí; bảng tự tính và dòng Thực tế; kỳ hẹp thay kỳ rộng; nhập CSV dòng vị trí, xuất Excel; ai thấy số tiền",
             "content": f"""<h2>Màn này dùng để làm gì</h2>
-<p>Màn <strong>Kế hoạch nhân sự</strong> là nơi phòng Nhân sự ghi lại số người và quỹ lương đã được duyệt cho từng năm. Hai báo cáo đọc từ đây:</p>
+<p>Màn <strong>Kế hoạch nhân sự</strong> là nơi phòng Nhân sự ghi lại kế hoạch đã được duyệt cho từng kỳ: mỗi pháp nhân, mỗi phòng được bao nhiêu người, ở vị trí nào, tuyển dần theo lộ trình nào, và chi phí nhân sự của kỳ đó gồm những khoản gì. Đây là <strong>dự toán</strong> để trình duyệt và theo dõi; màn không tính lương tháng và không làm phiếu lương.</p>
+<p>Một kế hoạch là <strong>một kỳ × một pháp nhân × một phòng ban</strong> (hoặc <em>Toàn pháp nhân</em>). Hai báo cáo đọc số từ đây:</p>
 <ul>
-<li><strong>Định biên kế hoạch so với thực tế</strong>: so số người kế hoạch với số người đang có (bài {ref(PLAN_REPORT_TITLE, "So định biên kế hoạch với số người đang có")}).</li>
-<li><strong>Quỹ lương theo pháp nhân</strong>: thêm cột quỹ lương kế hoạch, còn dư, % dùng (bài {ref(PAYROLL_TITLE, "Đọc báo cáo Quỹ lương theo pháp nhân")}).</li>
+<li><strong>Định biên kế hoạch so với thực tế</strong>: so định biên kế hoạch với số người đang có (bài {ref(PLAN_REPORT_TITLE, "So định biên kế hoạch với số người đang có")}).</li>
+<li><strong>Quỹ lương theo pháp nhân</strong>: thêm chi phí nhân sự kế hoạch, phần so được với thực tế, còn dư và % dùng (bài {ref(PAYROLL_TITLE, "Đọc báo cáo Quỹ lương theo pháp nhân")}).</li>
 </ul>
-<p>Mở màn ở phân hệ <strong>Nhân sự</strong>, menu <strong>Danh mục</strong> ▸ <strong>Kế hoạch nhân sự</strong>. Không thấy mục này là bạn chưa được cấp quyền (xem mục cuối bài).</p>
+<p>Mở màn ở phân hệ <strong>Nhân sự</strong>, menu <strong>Danh mục</strong> ▸ <strong>Kế hoạch nhân sự</strong>. Cùng nhóm <strong>Danh mục</strong> có hai màn đi kèm là <strong>Mẫu khoản chi phí</strong> và <strong>Nhóm chi phí</strong>. Muốn lập kế hoạch phải có ít nhất một mẫu đang dùng; hệ thống có sẵn mẫu <em>Mẫu gợi ý</em>. Cách khai mẫu xem bài {ref(COST_TEMPLATE_TITLE, "Khai mẫu khoản chi phí và nhóm chi phí cho kế hoạch nhân sự")}. Không thấy các mục này là bạn chưa được cấp quyền (xem mục cuối bài).</p>
 
-<h2>Một dòng kế hoạch gồm gì</h2>
+<h2>Danh sách kế hoạch</h2>
+<p>Bảng có các cột <strong>Kỳ</strong> (ví dụ <em>2026</em>, <em>H2-2026</em>, <em>Q3-2026</em>, <em>07/2026</em>), <strong>Pháp nhân</strong>, <strong>Phòng ban</strong>, <strong>Định biên cuối kỳ</strong>, <strong>Tổng chi phí</strong> và <strong>Căn cứ</strong> (số và ngày căn cứ). Cột <strong>Lý do / ghi chú</strong> ẩn sẵn, bật lên khi cần. Bốn ô lọc <strong>Năm</strong>, <strong>Loại kỳ</strong>, <strong>Pháp nhân</strong>, <strong>Phòng ban</strong> trên đầu bảng giúp tìm nhanh. Bấm một dòng để mở trang của kế hoạch đó.</p>
+<p>Cột <strong>Tổng chi phí</strong> chỉ có với người được xem hợp đồng lao động. Ô hiện <strong>—</strong> nghĩa là bạn không được xem lương của pháp nhân đó, không phải kế hoạch không tốn đồng nào.</p>
+
+<h2>Lập một kế hoạch</h2>
+<ol>
+<li>Bấm <strong>Thêm kế hoạch</strong>. Trang <strong>Lập kế hoạch nhân sự</strong> mở ra với bốn khối: <strong>Kỳ và căn cứ</strong>, <strong>Khoản chi phí của kế hoạch này</strong>, <strong>Định biên theo vị trí</strong> và <strong>Hệ thống tự tính</strong>.</li>
+<li>Ở khối <strong>Kỳ và căn cứ</strong>, chọn <strong>Năm</strong>, chọn <strong>Loại kỳ</strong> (<em>Năm</em>, <em>Bán niên</em>, <em>Quý</em> hoặc <em>Tháng</em>), rồi chọn <strong>Kỳ</strong>: <em>Cả năm</em>; <em>H1 (6 tháng đầu năm)</em> hoặc <em>H2 (6 tháng cuối năm)</em>; <em>Quý 1</em> tới <em>Quý 4</em>; <em>Tháng 1</em> tới <em>Tháng 12</em>. Dòng nhỏ dưới ô ghi tên kỳ, ví dụ <em>Kế hoạch: Q3-2026</em>.</li>
+<li>Chọn <strong>Pháp nhân</strong> và <strong>Phòng ban</strong>. Để <em>Toàn pháp nhân</em> nếu duyệt một kế hoạch chung cho cả pháp nhân. Phòng ban dùng chung cho mọi pháp nhân nên chọn được mọi phòng đang dùng.</li>
+<li>Chọn <strong>Mẫu khoản chi phí</strong>. Hệ thống <strong>chép</strong> bộ khoản của mẫu vào khối <strong>Khoản chi phí của kế hoạch này</strong>; ở đó bạn thêm, bớt khoản hay đổi tỷ lệ mà không ảnh hưởng mẫu hay kế hoạch khác.</li>
+<li>Điền căn cứ nếu có (xem mục <em>Căn cứ, văn bản liên kết và tệp đính kèm</em> bên dưới).</li>
+<li>Ở khối <strong>Định biên theo vị trí</strong>, chọn một chức vụ ở ô <strong>Chọn vị trí để thêm</strong> rồi bấm <strong>Thêm vị trí</strong>. Nhập định biên của từng kỳ con và số tiền của từng khoản trên dòng đó.</li>
+<li>Đọc bảng <strong>Hệ thống tự tính</strong> ở cuối trang, rồi bấm <strong>Tạo kế hoạch</strong>. Góc màn báo <em>Đã tạo kế hoạch nhân sự</em> và trang chuyển sang trang của kế hoạch vừa tạo, nơi có thêm các nút <strong>Xuất Excel</strong>, <strong>Nhập CSV dòng vị trí</strong>, <strong>Xóa</strong> và khung tệp đính kèm.</li>
+</ol>
+<p>Chưa chọn pháp nhân hoặc chưa chọn mẫu mà bấm lưu thì màn báo <em>Chọn pháp nhân trước khi lưu.</em> hoặc <em>Chọn mẫu khoản chi phí trước khi lưu.</em> Đã có kế hoạch cùng năm, cùng loại kỳ, cùng kỳ, cùng pháp nhân và phòng thì màn báo <em>Đã có kế hoạch cho kỳ, pháp nhân và phòng này</em>; hãy mở kế hoạch cũ ra sửa.</p>
+<p>Năm, loại kỳ, kỳ, pháp nhân và phòng ban là khóa của kế hoạch. Sau khi tạo, các ô này khóa lại và chỉ còn hiện ở hai ô <strong>Kỳ kế hoạch</strong> và <strong>Pháp nhân · Phòng ban</strong>; ô <strong>Mẫu khoản chi phí</strong> cũng chỉ có lúc tạo. Nhập nhầm khóa thì xóa kế hoạch rồi lập lại.</p>
+
+<h2>Loại kỳ: form đổi theo lựa chọn</h2>
 <table>
-<thead><tr><th>Ô</th><th>Ý nghĩa</th></tr></thead>
+<thead><tr><th>Loại kỳ</th><th>Cột định biên và cột của bảng tự tính</th><th>Tháng chọn được ở ô «Rơi vào tháng» của khoản</th></tr></thead>
 <tbody>
-<tr><td><strong>Năm</strong></td><td>Năm của kế hoạch. Ô chọn có từ ba năm trước tới năm sau</td></tr>
-<tr><td><strong>Pháp nhân</strong></td><td>Công ty được duyệt kế hoạch</td></tr>
-<tr><td><strong>Phòng ban</strong></td><td>Để <strong>Toàn pháp nhân</strong> (mặc định) nếu duyệt chung một con số cho cả công ty; chọn một phòng nếu duyệt theo từng phòng. Phòng ban dùng chung cho mọi pháp nhân nên chọn được mọi phòng đang dùng</td></tr>
-<tr><td><strong>Định biên kế hoạch (người)</strong></td><td>Số người được duyệt</td></tr>
-<tr><td><strong>Quỹ lương kế hoạch / tháng (đồng)</strong></td><td>Lương + phụ cấp của cả nhóm trong một tháng. Để 0 nếu chưa lập. Ô và cột <strong>Quỹ lương KH / tháng</strong> chỉ hiện số với người được xem hợp đồng lao động của đúng pháp nhân đó ở phạm vi <em>Tất cả</em> hoặc <em>Công ty</em> (phạm vi phòng ban hay bản thân thì không thấy, hiện «—»). Người không thấy số vẫn sửa được định biên, số quỹ lương đang có được giữ nguyên</td></tr>
-<tr><td><strong>Ghi chú</strong></td><td>Ví dụ số quyết định duyệt kế hoạch</td></tr>
+<tr><td>Năm</td><td>Q1 · Q2 · Q3 · Q4</td><td>T1 tới T12</td></tr>
+<tr><td>Bán niên</td><td>Hai quý của nửa năm đó, ví dụ H2 là Q3 · Q4</td><td>Sáu tháng của nửa năm</td></tr>
+<tr><td>Quý</td><td>Ba tháng của quý, ví dụ Q3 là T7 · T8 · T9</td><td>Ba tháng của quý</td></tr>
+<tr><td>Tháng</td><td>Một cột</td><td>Đúng tháng đó</td></tr>
 </tbody>
 </table>
-<p>Mỗi bộ ba <em>năm · pháp nhân · phòng</em> chỉ có một dòng. Lưu trùng thì màn báo <em>Đã có kế hoạch cho năm, pháp nhân và phòng này</em>; hãy mở dòng cũ ra sửa.</p>
-<p><strong>Toàn pháp nhân hay theo phòng?</strong> Dòng <em>Toàn pháp nhân</em> được so với tổng số người của pháp nhân và <strong>không cộng</strong> với các dòng phòng của cùng pháp nhân. Nếu đã duyệt theo từng phòng thì chỉ cần nhập các dòng phòng; nhập cả hai thì báo cáo lấy dòng <em>Toàn pháp nhân</em> làm số của pháp nhân, còn các dòng phòng chỉ hiện khi xem theo phòng ban.</p>
+<p>Bên trong, hệ thống luôn tính theo <strong>từng tháng</strong>: định biên của một kỳ con áp cho mọi tháng trong kỳ con đó, khoản «mỗi tháng» được cộng từng tháng, khoản rơi vào một tháng chỉ được cộng ở tháng đó; sau cùng mới gộp lên kỳ con và tổng kỳ. Nhờ vậy chi phí Q2 là chi phí thật của Q2 (người vào giữa năm, thưởng rơi vào một tháng), không phải một phần tư chi phí cả năm.</p>
+<ul>
+<li>Đổi loại kỳ khi đang lập thì số cột định biên đổi theo. Nếu số cột khác đi, mọi ô định biên lấy con số của kỳ con cuối cũ để bạn sửa lại.</li>
+<li>Nếu bảng khoản còn nguyên như vừa chép từ mẫu, hệ thống chép lại theo kỳ mới. Nếu bạn đã sửa tay bảng khoản, hệ thống giữ nguyên và báo <em>Có tháng rơi vào nằm ngoài kỳ của kế hoạch.</em> dưới tên khoản bị lệch để bạn tự gỡ tháng đó.</li>
+<li>Lập kế hoạch không phải loại Năm: khoản mà <strong>mọi</strong> tháng rơi vào đều nằm ngoài kỳ thì bị bỏ khi chép, kéo theo khoản tính dựa trên nó. Ví dụ kế hoạch Q1 không có <em>Thưởng tháng 13</em> rơi vào T12. Khối khoản chi phí hiện dòng vàng <em>Không chép từ mẫu vì mọi tháng rơi vào nằm ngoài kỳ Q1-2026: Thưởng tháng 13.</em></li>
+</ul>
 
-<h2>Thêm, sửa, xóa một dòng</h2>
+<h2>Điều chỉnh giữa năm: kỳ hẹp thay kỳ rộng</h2>
+<p>Không cần sửa đè kế hoạch năm đã duyệt. Ví dụ đã có kế hoạch <em>2026</em> của AGRIPLANT · Kế toán, tới tháng 6 Ban Giám đốc duyệt tăng người từ quý 3:</p>
 <ol>
-<li>Bấm <strong>Thêm dòng kế hoạch</strong>. Hộp <strong>Thêm dòng kế hoạch</strong> mở ra, năm mặc định là năm nay.</li>
-<li>Chọn <strong>Pháp nhân</strong>, <strong>Phòng ban</strong> (hoặc để <em>Toàn pháp nhân</em>), nhập <strong>Định biên kế hoạch (người)</strong>, quỹ lương nếu có, rồi bấm <strong>Tạo mới</strong>.</li>
-<li>Muốn sửa, bấm vào dòng trong bảng. Hộp <strong>Sửa dòng kế hoạch</strong> chỉ cho sửa định biên, quỹ lương và ghi chú; <strong>Năm</strong>, <strong>Pháp nhân</strong>, <strong>Phòng ban</strong> bị khóa vì đó là khóa của dòng. Nhập nhầm phòng thì xóa dòng rồi thêm dòng mới. Sửa xong bấm <strong>Lưu thay đổi</strong>.</li>
-<li>Muốn xóa, mở dòng rồi bấm <strong>Xóa</strong>. Xóa rồi thì báo cáo định biên năm đó coi phòng này là <em>chưa có kế hoạch</em>.</li>
+<li>Lập thêm một kế hoạch loại <strong>Quý</strong>, kỳ <strong>Quý 3</strong>, cùng pháp nhân và cùng phòng, ghi số quyết định điều chỉnh ở ô <strong>Số căn cứ</strong>.</li>
+<li>Từ đó báo cáo dùng số của <em>Q3-2026</em> cho tháng 7, 8, 9; các tháng còn lại vẫn theo kế hoạch năm. Kế hoạch năm gốc giữ nguyên làm lịch sử.</li>
 </ol>
-<p>Ba ô lọc <strong>Tất cả năm</strong>, <strong>Tất cả pháp nhân</strong>, <strong>Tất cả phòng ban</strong> trên đầu bảng giúp tìm nhanh dòng cần sửa.</p>
+<p>Thứ tự ưu tiên từ hẹp tới rộng: Tháng, Quý, Bán niên, Năm. Hai kế hoạch cùng loại kỳ, cùng kỳ, cùng pháp nhân và phòng thì bị chặn vì trùng.</p>
 
-<h2>Nhập cả năm bằng tệp CSV</h2>
-<p>Khi có nhiều phòng, nhập bằng tệp nhanh hơn từng dòng:</p>
+<h2>Căn cứ, văn bản liên kết và tệp đính kèm</h2>
+<table>
+<thead><tr><th>Ô</th><th>Ghi chú</th></tr></thead>
+<tbody>
+<tr><td><strong>Số căn cứ</strong></td><td>Ví dụ <em>12/QĐ-BGĐ</em></td></tr>
+<tr><td><strong>Ngày căn cứ</strong></td><td>Ngày ký quyết định hay tờ trình</td></tr>
+<tr><td><strong>Người duyệt</strong></td><td>Chọn nhân sự. Ô chọn chỉ có với người được xem hồ sơ nhân sự</td></tr>
+<tr><td><strong>Văn bản liên kết</strong></td><td>Văn bản có sẵn ở phân hệ <strong>Văn bản</strong> (quyết định duyệt ngân sách, tờ trình, biên bản)</td></tr>
+<tr><td><strong>Lý do / ghi chú</strong></td><td>Ví dụ <em>Mở thêm mảng kế toán thuế</em></td></tr>
+</tbody>
+</table>
+<p>Không ô nào bắt buộc. Bản này chỉ ghi căn cứ duyệt ngoài hệ thống; kế hoạch chưa có bước trình và duyệt trên ERP.</p>
+<p><strong>Gắn văn bản liên kết:</strong></p>
 <ol>
-<li>Bấm <strong>Xuất CSV</strong> để tải tệp mẫu (tệp chứa các dòng đang lọc). Mở bằng Excel hoặc Google Sheets.</li>
-<li>Giữ nguyên hàng tiêu đề với sáu cột: <strong>year</strong> (năm), <strong>company_code</strong> (mã pháp nhân), <strong>department_code</strong> (mã phòng ban; để trống là <em>Toàn pháp nhân</em>), <strong>planned_headcount</strong> (định biên), <strong>planned_payroll_monthly</strong> (quỹ lương / tháng, đồng, không dấu chấm), <strong>note</strong> (ghi chú).</li>
-<li>Lưu thành CSV mã UTF-8, rồi bấm <strong>Nhập CSV</strong> và chọn tệp.</li>
-<li>Thành công thì góc màn báo <em>Đã nhập kế hoạch: … dòng mới, … dòng cập nhật</em>. Dòng trùng năm, pháp nhân, phòng với dòng đã có thì được <strong>cập nhật</strong>, không tạo thêm.</li>
+<li>Gõ ít nhất hai ký tự của số hiệu hoặc trích yếu vào ô <em>Gõ số hiệu hoặc trích yếu để tìm văn bản…</em>.</li>
+<li>Bấm văn bản cần gắn trong danh sách kết quả. Chỉ những văn bản <strong>bạn đọc được</strong> ở phân hệ Văn bản mới hiện ra; không có thì màn báo <em>Không tìm thấy văn bản nào bạn đọc được khớp «…»</em>.</li>
+<li>Văn bản đã gắn hiện số hiệu, trích yếu, trạng thái và nút <strong>Mở</strong> (mở trang văn bản ở tab mới). Bấm dấu ✕ ở cuối dòng để gỡ khỏi kế hoạch; văn bản vẫn còn nguyên ở phân hệ Văn bản.</li>
+<li>Bấm <strong>Lưu</strong> (hoặc <strong>Tạo kế hoạch</strong>) để ghi lại.</li>
 </ol>
-<p>Nhập là <strong>nguyên khối</strong>: chỉ cần một dòng lỗi là <strong>không dòng nào được ghi</strong>. Hộp <strong>Chưa nhập được tệp</strong> liệt kê từng lỗi kèm số dòng trong tệp (dòng 2 là dòng đầu tiên sau tiêu đề). Sửa hết các dòng đó rồi nhập lại cùng tệp.</p>
+<ul>
+<li>Một kế hoạch gắn được nhiều văn bản, tối đa 20.</li>
+<li>Người xem kế hoạch mà không đọc được một văn bản đã gắn thì chỉ thấy dòng <em>Văn bản bạn chưa được xem</em>, không thấy số, trích yếu hay tệp. Văn bản đã bị xóa hiện <em>Văn bản đã xóa</em>. Gắn văn bản vào kế hoạch <strong>không cấp thêm</strong> quyền đọc văn bản cho ai.</li>
+<li>Chưa có quyền xem phân hệ Văn bản thì màn ghi <em>Bạn chưa có quyền xem phân hệ Văn bản nên chưa gắn thêm được.</em></li>
+</ul>
+<p><strong>Tệp đính kèm</strong> (khung <strong>Chứng từ &amp; Tài liệu đính kèm</strong>, nút <strong>Upload chứng từ</strong>) dùng cho bảng tính gốc hay tệp lẻ chưa đưa vào phân hệ Văn bản. Khi đang lập, khung báo <em>Vui lòng lưu chứng từ trước khi đính kèm tài liệu.</em>: lưu kế hoạch trước rồi mới tải tệp. Tệp có thể chứa bảng tính chi phí nên <strong>chỉ người được xem lương của pháp nhân đó</strong> mới thấy và tải được; người khác thấy dòng <em>Tệp đính kèm chỉ hiện với người được xem lương của pháp nhân này.</em></p>
+
+<h2>Định biên theo vị trí</h2>
+<p>Mỗi dòng là một vị trí trong danh mục <strong>Chức vụ</strong>. Ai chỉ muốn nhập tổng người của phòng thì bấm <strong>Dòng «Không theo vị trí»</strong>.</p>
+<table>
+<thead><tr><th>Cột</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><strong>Vị trí</strong></td><td>Chức vụ của dòng</td></tr>
+<tr><td><strong>Định biên Q1</strong>, <strong>Định biên Q2</strong>…</td><td>Số người được duyệt ở từng kỳ con. Số cột đổi theo loại kỳ</td></tr>
+<tr><td><strong>Đang có</strong></td><td>Hệ thống đếm người đang làm có đúng pháp nhân × phòng × vị trí. Kế hoạch <em>Toàn pháp nhân</em> đếm cả pháp nhân. Dòng <em>Không theo vị trí</em> đếm những người không thuộc vị trí nào đã có dòng riêng, để không đếm một người hai lần</td></tr>
+<tr><td><strong>Cần tuyển</strong></td><td>Định biên của kỳ con cuối trừ <strong>Đang có</strong>. Số âm màu cam là đang dư người</td></tr>
+<tr><td><strong>… / người / tháng</strong></td><td>Mỗi khoản có cách tính <em>Số tiền / người / tháng (nhập theo vị trí)</em> mọc một cột, ví dụ <em>Lương vị trí / người / tháng</em>. Dưới ô có dòng nhỏ <strong>BQ hiện tại …</strong>: bình quân trên hợp đồng lao động đang hiệu lực của vị trí đó, để nhập có căn cứ. Dòng này chỉ có ở khoản khai <strong>Lấy thực tế từ</strong> là <em>Lương cơ bản trên HĐLĐ</em> hoặc <em>Phụ cấp trên HĐLĐ</em>. Khoản chỉ áp cho vài vị trí thì ô của vị trí khác hiện <strong>—</strong></td></tr>
+<tr><td><strong>Ghi chú</strong></td><td>Ghi chú riêng của dòng</td></tr>
+<tr><td><strong>Thao tác</strong></td><td>Nút thùng rác để bỏ dòng</td></tr>
+</tbody>
+</table>
+<p>Ví dụ kế hoạch Năm 2026 của AGRIPLANT · Kế toán:</p>
+<table>
+<thead><tr><th>Vị trí</th><th>Định biên Q1</th><th>Định biên Q2</th><th>Định biên Q3</th><th>Định biên Q4</th><th>Lương vị trí</th><th>PC chức vụ</th><th>Ăn trưa</th></tr></thead>
+<tbody>
+<tr><td>Kế toán trưởng</td><td>0</td><td>1</td><td>1</td><td>1</td><td>25.000.000</td><td>3.000.000</td><td>730.000</td></tr>
+<tr><td>Kế toán viên</td><td>4</td><td>4</td><td>5</td><td>5</td><td>12.000.000</td><td>1.000.000</td><td>730.000</td></tr>
+</tbody>
+</table>
+<p>Kế toán trưởng tuyển từ quý 2, kế toán viên thứ năm vào từ quý 3. Một kế hoạch có tối đa 200 dòng vị trí.</p>
+
+<h2>Bảng Hệ thống tự tính</h2>
+<p>Bảng chỉ đọc, tính lại ngay khi bạn sửa bất kỳ ô nào (góc bảng hiện <em>Đang tính…</em>). Cột là <strong>Khoản mục</strong>, từng kỳ con và <strong>Tổng kỳ</strong>. Các dòng:</p>
+<ul>
+<li>Mỗi <strong>nhóm</strong> chi phí một dòng (ví dụ <em>Quỹ lương</em>, <em>Bắt buộc theo luật</em>, <em>Phúc lợi</em>). Bấm mũi tên ở đầu dòng để mở ra từng khoản của nhóm.</li>
+<li><strong>Tổng chi phí nhân sự</strong> của từng kỳ con và cả kỳ.</li>
+<li><strong>Định biên cuối kỳ con</strong>: tổng định biên các dòng vị trí.</li>
+<li><strong>Bình quân / người</strong> (ở cột <strong>Tổng kỳ</strong>): tổng chi phí cả kỳ chia cho số người bình quân của các tháng trong kỳ.</li>
+</ul>
+<p>Ví dụ trên, Q1 có 4 kế toán viên: lương, PC chức vụ và ăn trưa là 4 × 3 tháng × 13.730.000 đ; cộng các khoản bảo hiểm tính theo % trên lương và phụ cấp; cộng quà 8/3 (4 người × 500.000 đ ở T3). Thưởng tháng 13 chỉ có ở Q4. Chưa chọn pháp nhân thì khối này báo <em>Chọn pháp nhân để hệ thống tính chi phí theo kỳ.</em></p>
+
+<h2>So với thực tế ở kế hoạch đã lưu</h2>
+<p>Mở lại một kế hoạch đã lưu của kỳ đã qua hay đang chạy, bảng tự tính có thêm bốn dòng:</p>
+<table>
+<thead><tr><th>Dòng</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><strong>Định biên thực tế</strong></td><td>Số người đang làm ở cuối kỳ con (hoặc hôm nay nếu kỳ con đang chạy), đếm theo pháp nhân × phòng của kế hoạch</td></tr>
+<tr><td><strong>Kế hoạch phần so được</strong></td><td>Phần kế hoạch của các khoản có nguồn thực tế, chỉ các tháng đã bắt đầu</td></tr>
+<tr><td><strong>Thực tế (phần so được)</strong></td><td>Cộng từ hợp đồng lao động đang hiệu lực theo ô <strong>Lấy thực tế từ</strong> của từng khoản</td></tr>
+<tr><td><strong>Còn dư / vượt</strong></td><td>Kế hoạch phần so được trừ thực tế. Số âm chữ đỏ là đang vượt</td></tr>
+</tbody>
+</table>
+<ul>
+<li>ERP không có bảng lương nên thực tế chỉ lấy được từ hợp đồng lao động: lương cơ bản, phụ cấp và lương đóng BHXH. Khoản không có nguồn (thưởng, phúc lợi…) không nằm trong phần so được; dưới bảng có dòng <em>Thực tế chưa gồm: …</em> liệt kê các khoản đó để không ai đem cả tổng kế hoạch ra so.</li>
+<li>Kỳ con <strong>đang chạy</strong> chỉ so các tháng đã bắt đầu, ở cả kế hoạch lẫn thực tế; dưới bảng ghi, ví dụ, <em>Q4 đang chạy: tính 1 tháng đã qua.</em> Kỳ con chưa tới hiện <strong>—</strong>.</li>
+<li>Kế hoạch không có khoản nào khai nguồn thực tế thì chỉ có dòng <strong>Định biên thực tế</strong>.</li>
+<li>Thực tế chỉ cộng hợp đồng lao động trong phạm vi bạn được xem.</li>
+</ul>
+
+<h2>Sửa, xóa một kế hoạch</h2>
+<ol>
+<li>Bấm vào dòng trong danh sách để mở trang <strong>Kế hoạch …</strong> (ví dụ <em>Kế hoạch Q3-2026</em>).</li>
+<li>Sửa định biên, số tiền, khoản chi phí hay căn cứ, rồi bấm <strong>Lưu</strong>. Góc màn báo <em>Đã lưu kế hoạch nhân sự</em>.</li>
+<li>Muốn xóa, bấm <strong>Xóa</strong> rồi xác nhận. Xóa rồi thì báo cáo định biên và quỹ lương coi pháp nhân × phòng này là <em>chưa có kế hoạch</em> cho kỳ đó.</li>
+</ol>
+<p>Sửa khoản chi phí ở đây chỉ đổi kế hoạch này. Hai người cùng sửa một kế hoạch thì người lưu sau nhận câu <em>Kế hoạch vừa được người khác sửa, tải lại trang</em>. Bạn chỉ mở được kế hoạch trong phạm vi dữ liệu của mình; ngoài phạm vi thì trang báo <em>Không tìm thấy kế hoạch này, hoặc nó nằm ngoài phạm vi dữ liệu của bạn.</em></p>
+
+<h2>Nhập dòng vị trí bằng tệp CSV</h2>
+<p>Nút <strong>Nhập CSV dòng vị trí</strong> chỉ có ở kế hoạch đã lưu. Tệp nhập vào <strong>chính kế hoạch đang mở</strong>:</p>
+<ol>
+<li>Lưu kế hoạch với đủ bộ khoản trước, vì cột tiền của tệp phải khớp mã khoản của kế hoạch.</li>
+<li>Lập tệp với hàng tiêu đề gồm:
+<ul>
+<li><strong>position_code</strong>: mã chức vụ trong danh mục Chức vụ (mở chức vụ để xem mã). Để trống là dòng <em>Không theo vị trí</em>.</li>
+<li><strong>hc_1</strong> … <strong>hc_n</strong>: định biên từng kỳ con, n là số kỳ con (Năm 4, Bán niên 2, Quý 3, Tháng 1). Ví dụ kế hoạch Năm cần hc_1, hc_2, hc_3, hc_4.</li>
+<li>Một cột cho mỗi khoản <em>Số tiền / người / tháng</em>, tiêu đề là <strong>mã khoản</strong> ở cột <strong>Mã</strong> của bảng khoản, ví dụ <strong>LUONG</strong>, <strong>PC_BH</strong>, <strong>PC_KHONG_BH</strong> với kế hoạch lập từ <em>Mẫu gợi ý</em>. Số tiền ghi bằng đồng; dấu chấm, dấu phẩy ngăn nghìn được bỏ qua.</li>
+<li><strong>note</strong> (không bắt buộc): ghi chú của dòng.</li>
+</ul></li>
+<li>Lưu thành CSV mã UTF-8, bấm <strong>Nhập CSV dòng vị trí</strong> rồi chọn tệp. Thành công thì góc màn báo <em>Đã nhập dòng vị trí từ tệp CSV</em> và trang nạp lại kế hoạch.</li>
+</ol>
+<ul>
+<li>Vị trí có trong tệp mà kế hoạch đã có dòng thì định biên được <strong>thay</strong> theo tệp; vị trí chưa có thì được <strong>thêm</strong>; vị trí không có trong tệp <strong>giữ nguyên</strong>.</li>
+<li>Ô tiền để trống thì giữ nguyên số đang có. Nếu tệp có cột <strong>note</strong> thì ghi chú của dòng được thay theo tệp, kể cả ô trống.</li>
+<li>Phần đang sửa dở trên trang mà chưa lưu sẽ mất khi nhập; lưu trước rồi hãy nhập.</li>
+</ul>
+<p>Nhập là <strong>nguyên khối</strong>: chỉ cần một dòng lỗi là <strong>không dòng nào được ghi</strong>. Hộp <strong>Chưa nhập được tệp</strong> liệt kê từng lỗi kèm số dòng trong tệp (dòng 2 là dòng đầu tiên sau tiêu đề). Sửa hết rồi nhập lại cùng tệp.</p>
 <table>
 <thead><tr><th>Lỗi thường gặp</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td><em>mã pháp nhân không tồn tại</em></td><td>Ô company_code gõ sai mã</td><td>Chép mã từ tệp vừa xuất hoặc từ danh mục Công ty</td></tr>
-<tr><td><em>mã phòng ban không tồn tại…</em></td><td>Ô department_code gõ sai mã</td><td>Chép mã từ danh mục Phòng ban; muốn nhập cho cả pháp nhân thì để trống ô này</td></tr>
-<tr><td><em>trùng (năm, pháp nhân, phòng) với dòng trước trong tệp</em></td><td>Tệp có hai dòng cho cùng một chỗ</td><td>Giữ một dòng</td></tr>
-<tr><td><em>Cần quyền xem hợp đồng lao động để khai quỹ lương kế hoạch</em></td><td>Bạn không được xem lương mà tệp có ô quỹ lương</td><td>Để trống cột planned_payroll_monthly; ô trống không xóa số quỹ lương đang có</td></tr>
-<tr><td><em>Tệp CSV thiếu cột…</em>, <em>phải mã hóa UTF-8</em></td><td>Tệp đổi tiêu đề hoặc lưu sai mã chữ</td><td>Xuất lại tệp mẫu, lưu dạng CSV UTF-8</td></tr>
+<tr><td><em>Tệp CSV thiếu cột: …</em></td><td>Thiếu position_code hoặc thiếu cột hc của một kỳ con</td><td>Thêm đủ cột theo số kỳ con của kế hoạch</td></tr>
+<tr><td><em>mã chức vụ «…» không tồn tại</em></td><td>Ô position_code gõ sai mã</td><td>Chép mã từ danh mục Chức vụ</td></tr>
+<tr><td><em>trùng vị trí với dòng trước trong tệp</em></td><td>Hai dòng cho cùng một vị trí</td><td>Giữ một dòng</td></tr>
+<tr><td><em>«…» không phải số nguyên</em></td><td>Ô định biên hay ô tiền có chữ hoặc số lẻ</td><td>Ghi số nguyên</td></tr>
+<tr><td><em>Cần quyền xem hợp đồng lao động để khai chi phí nhân sự kế hoạch</em></td><td>Bạn không được xem lương của pháp nhân này mà tệp có ô tiền khác 0</td><td>Để trống các cột tiền; ô trống không xóa số đang có</td></tr>
+<tr><td><em>Tệp CSV phải mã hóa UTF-8</em></td><td>Tệp lưu sai mã chữ</td><td>Lưu lại dạng CSV UTF-8</td></tr>
 </tbody>
 </table>
-<p>Tệp tối đa 2000 dòng. Người không được xem lương xuất tệp thì cột quỹ lương để trống.</p>
+<p>Tệp tối đa 1.000 KB và 200 dòng.</p>
+
+<h2>Xuất Excel và xuất CSV</h2>
+<ul>
+<li><strong>Xuất Excel</strong> (trên trang một kế hoạch) tải về tệp như <em>ke-hoach-nhan-su-Q3-2026.xlsx</em> với sheet <strong>Định biên</strong> (vị trí, định biên từng kỳ con, số tiền từng khoản) và sheet <strong>Bảng tính</strong> (số hệ thống tự tính theo nhóm và kỳ con). Người không được xem lương chỉ nhận định biên, không có cột tiền và không có sheet <strong>Bảng tính</strong>. Tệp ghi <strong>tên</strong> vị trí và tên khoản nên không dùng lại để nhập; tệp nhập phải theo khuôn CSV ở mục trên.</li>
+<li><strong>Xuất CSV</strong> (trên danh sách) tải về các kế hoạch theo đúng bốn ô lọc đang chọn, mỗi kế hoạch một dòng với các cột year, period_type (1 Năm, 2 Bán niên, 3 Quý, 4 Tháng), period_no, period_label, company_code, department_code, headcount_end (định biên cuối kỳ), total_cost (để trống nếu bạn không được xem lương), basis_no, basis_date, note. Danh sách không còn nút nhập CSV kiểu cũ (một dòng năm × pháp nhân × phòng).</li>
+</ul>
 
 <h2>Ai xem được, ai sửa được</h2>
 <ul>
-<li>Màn và báo cáo dùng khóa quyền <strong>Nhân sự › Kế hoạch nhân sự</strong>: xem để mở màn; thêm, sửa, xóa để nhập; nhập CSV cần cả thêm lẫn sửa; xuất CSV cần quyền xuất.</li>
-<li>Nên để trưởng phòng Nhân sự và quản trị nhập; trưởng các phòng và Ban Giám đốc chỉ cần xem.</li>
-<li>Số tiền chỉ hiện với người có quyền xem <strong>Hợp đồng lao động (có lương)</strong>. Người không có quyền này thấy định biên, không thấy cột tiền.</li>
+<li>Màn này, hai màn <strong>Mẫu khoản chi phí</strong>, <strong>Nhóm chi phí</strong> và báo cáo định biên dùng khóa quyền <strong>Nhân sự › Kế hoạch nhân sự</strong>: xem để mở màn; thêm để lập kế hoạch; sửa để lưu thay đổi và nhập CSV dòng vị trí; xóa để xóa; xuất để <strong>Xuất Excel</strong> và <strong>Xuất CSV</strong>. Nên để trưởng phòng Nhân sự và quản trị ghi; trưởng các phòng và Ban Giám đốc chỉ cần xem.</li>
+<li><strong>Mọi số tiền</strong> (cột tiền ở khối định biên, gợi ý BQ hiện tại, cột <strong>Trần / người</strong> và <strong>Số tiền</strong> của bảng khoản, bảng tự tính, các dòng thực tế bằng tiền, cột <strong>Tổng chi phí</strong>, tệp đính kèm) chỉ hiện với người xem được hợp đồng lao động của <strong>đúng pháp nhân đó</strong> ở phạm vi <em>Tất cả</em> hoặc <em>Công ty</em>, và phòng của kế hoạch không bị loại trừ trong phân quyền đó. Phạm vi phòng ban hay bản thân thì không thấy.</li>
+<li>Người không thấy tiền gặp dải <em>Số tiền của kế hoạch đang ẩn với bạn…</em>. Họ vẫn xem và sửa được <strong>định biên</strong>, vị trí và căn cứ; bấm <strong>Lưu</strong> không làm mất số tiền người khác đã nhập. Họ <strong>không sửa được khoản chi phí</strong>: bảng khoản chỉ để xem, và máy chủ từ chối mọi thay đổi khoản với câu <em>Cần quyền xem lương của pháp nhân này để sửa khoản chi phí</em>.</li>
 </ul>
 <p>Quản trị bật khóa này cho vai trò theo bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</p>""",
         },
         {
+            "title": COST_TEMPLATE_TITLE,
+            "icon": "list-checks",
+            "summary": "Màn Mẫu khoản chi phí và Nhóm chi phí: năm cách tính kèm ví dụ (lương theo vị trí, BHXH 17,5% có trần, thưởng tháng 13, quà 8/3, du lịch cả phòng), ô Lấy thực tế từ, chép mẫu vào kế hoạch, Mẫu gợi ý, nhân bản mẫu, xóa nhóm",
+            "content": f"""<h2>Vì sao cần mẫu khoản chi phí</h2>
+<p>Chi phí nhân sự không chỉ có lương và phụ cấp: còn bảo hiểm công ty đóng, kinh phí công đoàn, thưởng, phúc lợi. Bỏ sót các khoản này thì kế hoạch thiếu tới khoảng 30%. Hệ thống <strong>không ghi cứng</strong> khoản nào hay tỷ lệ nào: bạn tự khai.</p>
+<p>Mỗi <strong>mẫu</strong> là một bộ khoản dùng lại được, ví dụ <em>Mẫu văn phòng</em>, <em>Mẫu nhà máy</em>, <em>Mẫu cửa hàng</em>. Khi lập kế hoạch nhân sự, bạn chọn một mẫu và hệ thống chép bộ khoản đó vào kế hoạch (bài {ref(PLAN_TITLE, "Lập kế hoạch nhân sự theo kỳ")}).</p>
+
+<h2>Tạo một mẫu</h2>
+<ol>
+<li>Vào <strong>Nhân sự</strong> ▸ <strong>Danh mục</strong> ▸ <strong>Mẫu khoản chi phí</strong>. Bảng có các cột <strong>Tên mẫu</strong>, <strong>Số khoản</strong>, <strong>Ghi chú</strong>, <strong>Trạng thái</strong>.</li>
+<li>Bấm <strong>Thêm mẫu</strong>. Trang <strong>Thêm mẫu khoản chi phí</strong> mở ra.</li>
+<li>Ở khối <strong>Thông tin mẫu</strong>, gõ <strong>Tên mẫu</strong> (bắt buộc, ví dụ <em>Mẫu văn phòng</em>), để công tắc <strong>Đang dùng</strong> bật, ghi <strong>Ghi chú</strong> nếu cần. Mẫu ngừng dùng không hiện ở ô chọn mẫu khi lập kế hoạch.</li>
+<li>Ở khối <strong>Khoản chi phí của mẫu</strong>, bấm <strong>Thêm khoản</strong> cho từng khoản rồi khai các cột ở bảng dưới.</li>
+<li>Bấm <strong>Tạo mẫu</strong>. Góc màn báo <em>Đã tạo mẫu khoản chi phí</em>.</li>
+</ol>
+<p>Chưa đặt tên mà bấm lưu thì màn báo <em>Đặt tên mẫu trước khi lưu.</em> Tên đã có mẫu khác dùng thì màn báo <em>Tên «…» đã được dùng</em>. Muốn làm một mẫu gần giống mẫu có sẵn, mở mẫu đó rồi bấm <strong>Nhân bản mẫu</strong>: bản sao tên <em>… (bản sao)</em> mở ra ngay để bạn sửa.</p>
+<table>
+<thead><tr><th>Cột của bảng khoản</th><th>Khai gì</th></tr></thead>
+<tbody>
+<tr><td><strong>Mã *</strong></td><td>Mã ngắn, chữ in hoa không dấu, ví dụ <em>LUONG</em>. Gõ có dấu hay có khoảng trắng thì hệ thống tự đổi. Mã là tên cột tiền trong tệp CSV nhập dòng vị trí; đổi mã thì các khoản tính dựa trên nó đổi theo</td></tr>
+<tr><td><strong>Tên khoản *</strong></td><td>Tên hiện trên bảng tự tính, ví dụ <em>Lương vị trí</em></td></tr>
+<tr><td><strong>Nhóm</strong></td><td>Nhóm chi phí để gộp dòng trên bảng tự tính (xem mục cuối bài)</td></tr>
+<tr><td><strong>Cách tính</strong></td><td>Một trong năm cách ở mục dưới</td></tr>
+<tr><td><strong>Tỷ lệ %</strong>, <strong>Hệ số</strong>, <strong>Trần / người</strong>, <strong>Số tiền</strong>, <strong>Khoản gốc</strong></td><td>Tùy cách tính. Ô không dùng với cách tính đang chọn hiện <strong>—</strong></td></tr>
+<tr><td><strong>Rơi vào tháng</strong></td><td>Để trống là <em>Mỗi tháng</em>; hoặc chọn các tháng có khoản này, ví dụ T3, T12</td></tr>
+<tr><td><strong>Áp cho</strong></td><td><em>Mọi vị trí</em>, <em>Chỉ các vị trí đã chọn</em> (chọn thêm ở ô <em>Chọn vị trí</em>) hoặc <em>Cả phòng (không theo người)</em></td></tr>
+<tr><td><strong>Lấy thực tế từ</strong></td><td>Nguồn để so kế hoạch với thực tế (xem mục dưới)</td></tr>
+<tr><td><strong>Thao tác</strong></td><td>Hai nút mũi tên đưa khoản lên, xuống; nút thùng rác để bỏ khoản</td></tr>
+</tbody>
+</table>
+<p>Khai thiếu hay sai thì ngay dưới tên khoản có dòng đỏ, ví dụ <em>Chưa chọn khoản gốc.</em>, <em>Chưa chọn tháng rơi vào.</em>, <em>Nguồn thực tế không dùng được với cách tính này.</em> Một mẫu có tối đa 50 khoản.</p>
+
+<h2>Năm cách tính, kèm ví dụ</h2>
+<table>
+<thead><tr><th>Cách tính</th><th>Một tháng tính thế nào</th><th>Ô cần khai</th><th>Ví dụ</th></tr></thead>
+<tbody>
+<tr><td><strong>Số tiền / người / tháng (nhập theo vị trí)</strong></td><td>Số người của vị trí × số tiền nhập ở dòng vị trí</td><td>Không ô nào trên khoản. Số tiền nhập ở khối <strong>Định biên theo vị trí</strong> của từng kế hoạch, mỗi khoản một cột</td><td><em>Lương vị trí</em>: kế toán viên 12.000.000 đ/người/tháng, 4 người → 48.000.000 đ mỗi tháng. Cũng dùng cho PC chức vụ, ăn trưa</td></tr>
+<tr><td><strong>% trên các khoản khác</strong></td><td>Số người × (tổng các khoản gốc của một người, không quá trần) × %</td><td><strong>Tỷ lệ %</strong>, <strong>Khoản gốc</strong> (một hay nhiều), <strong>Trần / người</strong> (để trống là không trần)</td><td><em>BHXH công ty 17,5%</em> × (Lương vị trí + PC đóng BH), trần 46.800.000 đ: người lương 12 tr và PC 1 tr → 17,5% × 13 tr = 2.275.000 đ mỗi tháng; người lương 50 tr và PC 3 tr → 17,5% × 46,8 tr = 8.190.000 đ mỗi tháng. Cũng dùng cho BHYT 3%, BHTN 1%, KPCĐ 2%</td></tr>
+<tr><td><strong>Số tháng của một khoản</strong></td><td>Số người × hệ số × khoản gốc của một người, chỉ ở tháng rơi vào</td><td><strong>Hệ số</strong>, đúng <strong>một</strong> khoản gốc, <strong>Rơi vào tháng</strong> (bắt buộc)</td><td><em>Thưởng tháng 13</em> = 1 × Lương vị trí, rơi vào T12: 5 kế toán viên × 12 tr = 60.000.000 đ ở T12</td></tr>
+<tr><td><strong>Số tiền / người / lần</strong></td><td>Số người × số tiền, chỉ ở tháng rơi vào</td><td><strong>Số tiền</strong>, <strong>Rơi vào tháng</strong> (bắt buộc)</td><td><em>Quà 8/3</em> 500.000 đ/người, rơi vào T3: Q1 có 4 người → 2.000.000 đ ở T3. Cũng dùng cho khám sức khỏe 1.500.000 đ/người</td></tr>
+<tr><td><strong>Số tiền cả phòng</strong></td><td>Số tiền chia đều cho các tháng rơi vào (để trống là chia đều cho mọi tháng của kỳ)</td><td><strong>Số tiền</strong>; ô <strong>Áp cho</strong> chọn được <em>Cả phòng (không theo người)</em></td><td><em>Du lịch</em> cả phòng 50.000.000 đ, rơi vào T6 → cả 50 tr ở T6 (thuộc Q2). Chọn T6 và T12 thì mỗi tháng 25 tr. Cũng dùng cho chi phí tuyển dụng</td></tr>
+</tbody>
+</table>
+<ul>
+<li>Số người dùng cho một tháng là định biên của kỳ con chứa tháng đó.</li>
+<li>Khoản <em>%</em> chỉ chọn được khoản gốc có cách tính <em>Số tiền / người / tháng</em> hoặc <em>Số tháng của một khoản</em>; khoản <em>Số tháng của một khoản</em> chỉ chọn được khoản gốc <em>Số tiền / người / tháng</em>. Luật này để không có vòng tham chiếu.</li>
+<li><em>Cả phòng (không theo người)</em> chỉ dùng với cách tính <em>Số tiền cả phòng</em>. Chọn <em>Chỉ các vị trí đã chọn</em> thì phải chọn ít nhất một vị trí.</li>
+<li>Trần nhập tay ở từng khoản; hệ thống không nhớ con số nào của luật. Ví dụ trần 46,8 tr dùng cho kế hoạch nửa đầu 2026, còn kế hoạch từ 01/7/2026 dùng trần 50,6 tr: luật đổi thì bạn tự sửa mẫu và các kế hoạch cần sửa.</li>
+</ul>
+
+<h2>Ô «Lấy thực tế từ»</h2>
+<p>ERP không có bảng lương, nên số thực tế chỉ lấy được từ hợp đồng lao động đang hiệu lực. Ô này cho biết khoản nào so được với hợp đồng:</p>
+<table>
+<thead><tr><th>Giá trị</th><th>Nghĩa</th><th>Dùng với cách tính</th></tr></thead>
+<tbody>
+<tr><td><em>Không có</em></td><td>Khoản chỉ có số kế hoạch (thưởng, phúc lợi…), không tham gia so sánh</td><td>Mọi cách tính</td></tr>
+<tr><td><em>Lương cơ bản trên HĐLĐ</em></td><td>So với lương cơ bản ghi trên hợp đồng. Bật dòng gợi ý <strong>BQ hiện tại</strong> ở khối định biên</td><td>Chỉ <em>Số tiền / người / tháng</em></td></tr>
+<tr><td><em>Phụ cấp trên HĐLĐ</em></td><td>So với phụ cấp ghi trên hợp đồng. Bật dòng gợi ý <strong>BQ hiện tại</strong></td><td>Chỉ <em>Số tiền / người / tháng</em></td></tr>
+<tr><td><em>% × lương đóng BHXH trên HĐLĐ</em></td><td>Lấy lương đóng BHXH trên hợp đồng, áp đúng tỷ lệ % và trần của khoản</td><td>Chỉ <em>% trên các khoản khác</em></td></tr>
+</tbody>
+</table>
+<p>Chọn nguồn không hợp với cách tính thì hiện dòng đỏ <em>Nguồn thực tế không dùng được với cách tính này.</em> và lưu bị từ chối. Đổi cách tính làm nguồn cũ hết hợp lệ thì ô tự về <em>Không có</em>.</p>
+
+<h2>Chép mẫu vào kế hoạch</h2>
+<ul>
+<li>Lập kế hoạch rồi chọn mẫu: hệ thống <strong>chép</strong> toàn bộ khoản của mẫu vào kế hoạch, như một bản chụp. Trong kế hoạch bạn thêm, bớt, sửa khoản tự do; mẫu và các kế hoạch khác không đổi.</li>
+<li><strong>Sửa hay xóa mẫu về sau không làm đổi kế hoạch đã lập</strong>, nên con số đã duyệt không tự trôi. Muốn một kế hoạch cũ theo mẫu mới thì sửa tay khoản trong kế hoạch đó.</li>
+<li>Lập kế hoạch không phải loại Năm thì tháng rơi ngoài kỳ bị bỏ khi chép. Khoản mà mọi tháng rơi vào đều ngoài kỳ thì bị bỏ hẳn, kèm khoản tính dựa trên nó (khoản % chỉ bớt khoản gốc đó, hết khoản gốc mới bị bỏ). Trang kế hoạch hiện dòng vàng <em>Không chép từ mẫu vì mọi tháng rơi vào nằm ngoài kỳ …</em>, và khi tạo xong góc màn báo <em>Không chép các khoản ngoài kỳ: …</em>.</li>
+<li>Lúc lưu, mẫu được kiểm như một kế hoạch Năm (đủ 12 tháng): trùng mã, thiếu khoản gốc, tháng sai… thì màn báo lỗi và chưa lưu.</li>
+</ul>
+
+<h2>«Mẫu gợi ý» có sẵn</h2>
+<p>Hệ thống gieo sẵn mẫu <em>Mẫu gợi ý</em> với tám khoản để bạn sửa thành mẫu của mình:</p>
+<table>
+<thead><tr><th>Mã</th><th>Tên khoản</th><th>Nhóm</th><th>Cách tính</th><th>Lấy thực tế từ</th></tr></thead>
+<tbody>
+<tr><td>LUONG</td><td>Lương vị trí</td><td>Quỹ lương</td><td>Số tiền / người / tháng</td><td>Lương cơ bản trên HĐLĐ</td></tr>
+<tr><td>PC_BH</td><td>PC đóng BH</td><td>Quỹ lương</td><td>Số tiền / người / tháng</td><td>Phụ cấp trên HĐLĐ</td></tr>
+<tr><td>PC_KHONG_BH</td><td>PC không đóng BH</td><td>Quỹ lương</td><td>Số tiền / người / tháng</td><td>Không có</td></tr>
+<tr><td>BHXH</td><td>BHXH công ty 17,5%</td><td>Bắt buộc theo luật</td><td>17,5% × (Lương vị trí + PC đóng BH), trần 46.800.000 đ</td><td>% × lương đóng BHXH trên HĐLĐ</td></tr>
+<tr><td>BHYT</td><td>BHYT công ty 3%</td><td>Bắt buộc theo luật</td><td>3%, cùng khoản gốc và trần</td><td>% × lương đóng BHXH trên HĐLĐ</td></tr>
+<tr><td>BHTN</td><td>BHTN công ty 1%</td><td>Bắt buộc theo luật</td><td>1%, cùng khoản gốc và trần</td><td>% × lương đóng BHXH trên HĐLĐ</td></tr>
+<tr><td>KPCD</td><td>Kinh phí công đoàn 2%</td><td>Bắt buộc theo luật</td><td>2%, cùng khoản gốc và trần</td><td>% × lương đóng BHXH trên HĐLĐ</td></tr>
+<tr><td>THUONG_13</td><td>Thưởng tháng 13</td><td>Phúc lợi</td><td>1 × Lương vị trí, rơi vào T12</td><td>Không có</td></tr>
+</tbody>
+</table>
+<p>Mẫu này là <strong>dữ liệu</strong>, không phải mã: sửa, đổi tên, nhân bản hay xóa đều được, và hệ thống không gieo lại khi đã có mẫu. Tỷ lệ và trần là con số gợi ý lúc gieo; kiểm lại theo luật đang áp dụng trước khi dùng. Mẫu chưa có quà 8/3 hay du lịch: thêm khoản theo ví dụ ở mục trên nếu công ty có.</p>
+
+<h2>Nhóm chi phí</h2>
+<p>Bảng tự tính của kế hoạch gộp khoản theo <strong>nhóm</strong>, mỗi nhóm một dòng. Danh mục ở <strong>Nhân sự</strong> ▸ <strong>Danh mục</strong> ▸ <strong>Nhóm chi phí</strong>, có sẵn bốn nhóm <em>Quỹ lương</em>, <em>Bắt buộc theo luật</em>, <em>Phúc lợi</em>, <em>Khác</em>.</p>
+<ol>
+<li>Bấm <strong>Thêm nhóm</strong>. Hộp <strong>Thêm nhóm</strong> có ô <strong>Tên nhóm</strong>, <strong>Thứ tự trên bảng tự tính</strong> (số nhỏ đứng trên) và công tắc <strong>Đang dùng</strong>. Bấm <strong>Tạo mới</strong>.</li>
+<li>Muốn sửa, bấm vào dòng nhóm; hộp <strong>Sửa nhóm</strong> mở ra. Sửa xong bấm <strong>Lưu thay đổi</strong>.</li>
+<li>Muốn xóa, mở nhóm rồi bấm <strong>Xóa</strong>. Nhóm đang có khoản ở một mẫu hay một kế hoạch thì không xóa được: màn báo <em>Nhóm chi phí đang được mẫu hoặc kế hoạch dùng — hãy ngừng dùng thay vì xóa</em>. Khi đó tắt <strong>Đang dùng</strong>, hoặc chuyển các khoản sang nhóm khác trước.</li>
+</ol>
+<p>Bảng tự tính của kế hoạch xếp các nhóm theo ô <strong>Thứ tự trên bảng tự tính</strong> (số nhỏ đứng trên). Hai nhóm cùng thứ tự thì nhóm có khoản đứng trên trong bảng khoản lên trước.</p>
+
+<h2>Ai sửa được</h2>
+<p>Mẫu và nhóm chi phí là danh mục không chứa lương của ai, nên ai được xem <strong>Nhân sự › Kế hoạch nhân sự</strong> đều xem được, kể cả cột <strong>Trần / người</strong> và <strong>Số tiền</strong> của mẫu. Thêm mới và nhân bản mẫu hay nhóm cần quyền thêm của khóa đó, sửa cần quyền sửa, xóa cần quyền xóa. Người chỉ có quyền xem thấy trang mẫu ở dạng chỉ đọc.</p>""",
+        },
+        {
             "title": PLAN_REPORT_TITLE,
             "icon": "users",
-            "summary": "Báo cáo mới: Định biên kế hoạch, Đang có, Còn thiếu, Vượt, Tỷ lệ lấp đầy theo pháp nhân hoặc phòng ban; dòng Toàn pháp nhân không cộng dồn với dòng phòng; phòng có người mà chưa có kế hoạch; xem ai đang làm",
+            "summary": "Định biên kế hoạch (kế hoạch có hiệu lực ở tháng cuối kỳ), Đang có, Còn thiếu, Vượt, Tỷ lệ lấp đầy theo pháp nhân, phòng ban hoặc vị trí; dòng Toàn pháp nhân không cộng dồn; nơi có người mà chưa có kế hoạch; xem ai đang làm",
             "content": f"""<h2>Báo cáo cho biết gì</h2>
-<p>Báo cáo <strong>Định biên kế hoạch so với thực tế</strong> trả lời câu Ban Giám đốc hay hỏi nhất: «Phòng Kinh doanh được duyệt 20 người, đang có bao nhiêu?». Kế hoạch lấy từ màn <strong>Kế hoạch nhân sự</strong> (bài {ref(PLAN_TITLE, "Lập kế hoạch định biên và quỹ lương theo năm")}); thực tế là số người đang làm.</p>
+<p>Báo cáo <strong>Định biên kế hoạch so với thực tế</strong> trả lời câu Ban Giám đốc hay hỏi nhất: «Phòng Kinh doanh được duyệt 20 người, đang có bao nhiêu?». Kế hoạch lấy từ màn <strong>Kế hoạch nhân sự</strong> (bài {ref(PLAN_TITLE, "Lập kế hoạch nhân sự theo kỳ")}); thực tế là số người đang làm.</p>
 <table>
 <thead><tr><th>Thẻ số / cột</th><th>Ý nghĩa</th></tr></thead>
 <tbody>
-<tr><td><strong>Định biên kế hoạch</strong></td><td>Số người được duyệt trong kế hoạch</td></tr>
+<tr><td><strong>Định biên kế hoạch</strong></td><td>Số người được duyệt ở tháng cuối kỳ báo cáo, theo kế hoạch có hiệu lực ở tháng đó</td></tr>
 <tr><td><strong>Đang có</strong></td><td>Số người đang làm tại cuối kỳ (hoặc hôm nay nếu kỳ chưa hết). Có nút <strong>Xem danh sách</strong></td></tr>
 <tr><td><strong>Còn thiếu</strong></td><td>Số vị trí kế hoạch chưa có người</td></tr>
 <tr><td><strong>Tỷ lệ lấp đầy</strong></td><td>Số vị trí kế hoạch đã có người (không tính phần vượt) chia cho định biên kế hoạch</td></tr>
 <tr><td>Chênh (thực tế − kế hoạch)</td><td>Đang có trừ kế hoạch. Số âm là thiếu, số dương là thừa</td></tr>
 <tr><td>Vượt</td><td>Số người vượt quá kế hoạch</td></tr>
-<tr><td>Đang làm ở phòng chưa có kế hoạch</td><td>Người đang làm ở những phòng chưa lập kế hoạch cho năm đó. Có danh sách</td></tr>
+<tr><td>Đang làm ở phòng chưa có kế hoạch</td><td>Người đang làm ở những nơi chưa có kế hoạch hiệu lực ở tháng cuối kỳ. Có danh sách</td></tr>
 </tbody>
 </table>
 <p><em>Còn thiếu</em> và <em>Vượt</em> cộng theo từng dòng kế hoạch, nên thiếu ở phòng này không bù được bằng thừa ở phòng khác.</p>
 
-<h2>Đọc theo pháp nhân hay theo phòng ban</h2>
-<p>Kỳ mở sẵn là <strong>Năm nay</strong>. Báo cáo dùng kế hoạch của <strong>năm chứa ngày cuối kỳ</strong>. Báo cáo chụp tình hình tại một ngày nên không có biểu đồ xu hướng và không so với kỳ trước; biểu đồ vẽ <em>Còn thiếu</em> theo nhóm.</p>
+<h2>Định biên kế hoạch lấy ở tháng nào</h2>
+<p>Kỳ mở sẵn là <strong>Năm nay</strong>. Định biên kế hoạch lấy ở <strong>tháng cuối kỳ báo cáo</strong>, từ kế hoạch có hiệu lực ở tháng đó: kế hoạch kỳ hẹp (tháng, quý) thay kế hoạch kỳ rộng (bán niên, năm) cho đúng các tháng nó phủ. Định biên của một kế hoạch ở tháng đó là định biên của kỳ con chứa tháng đó (ví dụ tháng 12 của kế hoạch năm là định biên Q4).</p>
+<ul>
+<li>Kỳ <strong>Năm nay</strong> so định biên tháng 12 (đích cuối năm) với số người hôm nay, nên giữa năm thường thấy <em>Còn thiếu</em> lớn. Muốn so với lộ trình của tháng đang chạy, chọn kỳ <strong>Tháng này</strong>.</li>
+<li>Đã lập kế hoạch điều chỉnh <em>Q4-2026</em> cho một phòng thì với phòng đó, kỳ kết thúc trong tháng 10–12 dùng số của kế hoạch quý thay cho kế hoạch năm.</li>
+</ul>
+<p>Mục <strong>Cách tính số liệu</strong> ghi rõ tháng kế hoạch đang dùng, ví dụ <em>Định biên kế hoạch lấy ở tháng 12/2026 (tháng cuối kỳ báo cáo)…</em>, và ngày lấy số thực tế. Báo cáo chụp tình hình tại một ngày nên không có biểu đồ xu hướng và không so với kỳ trước; biểu đồ vẽ <em>Còn thiếu</em> theo nhóm.</p>
+
+<h2>Đọc theo pháp nhân, phòng ban hay vị trí</h2>
 <ul>
 <li><strong>Xem theo</strong> ▸ <strong>Pháp nhân</strong> (mặc định): mỗi công ty một dòng. Pháp nhân có dòng kế hoạch <em>Toàn pháp nhân</em> thì lấy đúng dòng đó so với tổng người của pháp nhân; không có thì cộng các dòng phòng.</li>
-<li><strong>Xem theo</strong> ▸ <strong>Phòng ban</strong>: mỗi dòng kế hoạch một dòng. Dòng <em>Toàn pháp nhân</em> hiện dạng <em>Tên công ty — Toàn pháp nhân</em>. Phòng có người mà chưa có kế hoạch hiện kèm chữ <em>(chưa có kế hoạch)</em>, ví dụ <em>Xây dựng (chưa có kế hoạch)</em>.</li>
+<li><strong>Xem theo</strong> ▸ <strong>Phòng ban</strong>: mỗi kế hoạch một dòng. Dòng <em>Toàn pháp nhân</em> hiện dạng <em>Tên công ty — Toàn pháp nhân</em>. Phòng có người mà chưa có kế hoạch hiện kèm chữ <em>(chưa có kế hoạch)</em>, ví dụ <em>Xây dựng (chưa có kế hoạch)</em>.</li>
+<li><strong>Xem theo</strong> ▸ <strong>Vị trí</strong>: mỗi vị trí của khối <em>Định biên theo vị trí</em> một dòng, so với số người đang giữ đúng vị trí đó. Người ở vị trí mà kế hoạch không có dòng riêng được gộp vào nhóm <em>(Chưa gắn)</em>. Đây là chỗ xem nhanh vị trí nào còn phải tuyển.</li>
 </ul>
-<p>Mục <strong>Cách tính số liệu</strong> ghi rõ năm kế hoạch đang dùng, ngày lấy số thực tế và liệt kê những nơi có người mà chưa có kế hoạch, kèm số người mỗi nơi. Danh sách đó dài thì nên bổ sung kế hoạch trước khi đọc tỷ lệ.</p>
+<p>Dòng <em>Toàn pháp nhân</em> so với <strong>tổng</strong> người của pháp nhân và là số duy nhất của pháp nhân đó ở dòng <em>Tổng</em> và khi xem theo pháp nhân; các kế hoạch phòng của cùng pháp nhân chỉ hiện khi xem theo phòng ban, không cộng dồn thêm. Mục <strong>Cách tính số liệu</strong> còn liệt kê những nơi có người mà chưa có kế hoạch hiệu lực, kèm số người mỗi nơi. Danh sách đó dài thì nên bổ sung kế hoạch trước khi đọc tỷ lệ.</p>
 
 <h2>Xem ai đang làm ở một phòng</h2>
 <ol>
@@ -847,7 +1094,7 @@ TREE = {
 <h2>Lưu ý</h2>
 <ul>
 <li>Số thực tế đếm người theo đúng cặp <em>pháp nhân · phòng</em> ghi trên hồ sơ nhân sự hiện tại. Hồ sơ gắn sai công ty hay phòng thì số lệch theo.</li>
-<li>Báo cáo chưa có cột vị trí đang tuyển: <em>Còn thiếu</em> chỉ là số chỗ trống so với kế hoạch.</li>
+<li><em>Còn thiếu</em> là số chỗ trống so với kế hoạch, không phải số vị trí đang mở tuyển. Cột <strong>Cần tuyển</strong> theo từng vị trí có sẵn ngay trên trang kế hoạch.</li>
 </ul>""",
         },
         {
@@ -1031,7 +1278,7 @@ TREE = {
         {
             "title": ADMIN_ACCESS_TITLE,
             "icon": "shield-check",
-            "summary": "Mười ba báo cáo mới lúc đầu chỉ admin thấy; giao ở Phân quyền tài khoản ▸ tab Báo cáo; vẫn cần quyền ở phân hệ gốc; tick khóa Kế hoạch nhân sự cho vai trò Nhân sự rồi đăng nhập lại",
+            "summary": "Mười ba báo cáo mới lúc đầu chỉ admin thấy; giao ở Phân quyền tài khoản ▸ tab Báo cáo; vẫn cần quyền ở phân hệ gốc; tick khóa Kế hoạch nhân sự (cả Mẫu khoản chi phí, Nhóm chi phí) cho vai trò Nhân sự rồi đăng nhập lại",
             "content": f"""<h2>Ai xem được báo cáo nào</h2>
 <p>Muốn mở một báo cáo Nhân sự, người dùng cần đủ <strong>hai lớp quyền</strong>:</p>
 <ol>
@@ -1056,7 +1303,7 @@ TREE = {
 <tr><td>Đối tượng cần chú ý theo luật</td><td>Xem hồ sơ nhân sự, <strong>và thêm</strong> xem thông tin nhạy cảm của nhân sự (ngày sinh, người thân). Thiếu thì trang báo không tải được kèm lý do</td></tr>
 </tbody>
 </table>
-<p>Cột <strong>Quỹ lương kế hoạch / tháng</strong> và cột kế hoạch của báo cáo <em>Quỹ lương theo pháp nhân</em> cần thêm quyền xem kế hoạch nhân sự. Số tiền kế hoạch, ở cả màn <strong>Kế hoạch nhân sự</strong> lẫn báo cáo Quỹ lương, chỉ hiện với người được xem hợp đồng lao động của đúng pháp nhân đó ở phạm vi <em>Tất cả</em> hoặc <em>Công ty</em> (phạm vi phòng ban hay bản thân thì không thấy, hiện «—»).</p>
+<p>Phần kế hoạch của báo cáo <em>Quỹ lương theo pháp nhân</em> (<strong>Chi phí nhân sự kế hoạch</strong>, <strong>Kế hoạch phần so được</strong>, <strong>Thực tế phần so được</strong>, <strong>Còn dư so với kế hoạch</strong>, <strong>% dùng</strong>) cần thêm quyền xem kế hoạch nhân sự; xuất Excel có các cột đó cần quyền xuất kế hoạch nhân sự. Số tiền kế hoạch, ở cả màn <strong>Kế hoạch nhân sự</strong> lẫn báo cáo Quỹ lương, chỉ hiện với người được xem hợp đồng lao động của đúng pháp nhân đó ở phạm vi <em>Tất cả</em> hoặc <em>Công ty</em>, và phòng của kế hoạch không bị loại trừ trong phân quyền đó (phạm vi phòng ban hay bản thân thì không thấy, hiện «—»).</p>
 <p>Nút <strong>Xuất Excel</strong> trên báo cáo cần thêm quyền xuất của phân hệ gốc. Hai nút <strong>Xuất sổ (Excel)</strong> và <strong>Xuất mẫu 01/PLI</strong> cần quyền xuất hồ sơ nhân sự và quyền xuất hợp đồng lao động. Nút <strong>Xuất danh sách ký nhận</strong> của báo cáo Phúc lợi &amp; sự kiện cần quyền xuất hồ sơ nhân sự. Báo cáo <em>Hồ sơ &amp; tài khoản còn thiếu</em> hiện thêm nhóm giấy tờ cá nhân với người có quyền xem thông tin nhạy cảm, và nhóm tài khoản với người có quyền xem tài khoản. Ở báo cáo <em>Biến động nhân sự</em>, người không có quyền xem thông tin nhạy cảm thấy nhóm tuổi dưới 3 người bị che số và không mở được danh sách theo nhóm tuổi.</p>
 
 <h2>Giao các báo cáo mới cho trưởng phòng Nhân sự và Ban Giám đốc</h2>
@@ -1094,20 +1341,20 @@ TREE = {
 <p>Quyền ở tab này chỉ quyết định ai mở được trang báo cáo trong phân hệ Báo cáo. Màn danh sách gốc ở từng phân hệ (hồ sơ nhân sự, đơn nghỉ…) vẫn theo quyền vai trò như cũ.</p>
 
 <h2>Bật quyền mới «Kế hoạch nhân sự» cho vai trò Nhân sự</h2>
-<p>Màn <strong>Kế hoạch nhân sự</strong> và báo cáo <em>Định biên kế hoạch so với thực tế</em> dùng một khóa quyền mới. Trên hệ thống đang chạy, vai trò cũ <strong>không tự có</strong> khóa này (lần cập nhật không ghi đè phân quyền đã chỉnh trên màn), nên ngay cả trưởng phòng Nhân sự cũng chưa thấy mục <strong>Kế hoạch nhân sự</strong> trong menu cho tới khi quản trị bật:</p>
+<p>Màn <strong>Kế hoạch nhân sự</strong>, hai màn <strong>Mẫu khoản chi phí</strong> và <strong>Nhóm chi phí</strong>, báo cáo <em>Định biên kế hoạch so với thực tế</em> và phần kế hoạch của báo cáo <em>Quỹ lương theo pháp nhân</em> cùng dùng một khóa quyền mới. Trên hệ thống đang chạy, vai trò cũ <strong>không tự có</strong> khóa này (lần cập nhật không ghi đè phân quyền đã chỉnh trên màn), nên ngay cả trưởng phòng Nhân sự cũng chưa thấy mục <strong>Kế hoạch nhân sự</strong> trong menu cho tới khi quản trị bật:</p>
 <ol>
 <li>Vào <strong>Quản trị</strong> ▸ <strong>Phân quyền tài khoản</strong>, tab <strong>Vai trò &amp; quyền</strong>, chọn vai trò của phòng Nhân sự (ví dụ vai trò giữ hồ sơ nhân sự).</li>
 <li>Trong nhóm <strong>Nhân sự</strong>, tìm dòng <strong>Nhân sự › Kế hoạch nhân sự</strong>.</li>
-<li>Tick các quyền cần: xem; thêm, sửa, xóa cho người nhập kế hoạch; xuất cho người cần tải tệp CSV. Người chỉ cần đọc (ví dụ trưởng các phòng) thì chỉ tick xem.</li>
+<li>Tick các quyền cần: xem; thêm, sửa, xóa cho người lập kế hoạch và khai mẫu khoản chi phí (nhập CSV dòng vị trí cần quyền sửa); xuất cho người cần tải tệp Excel, CSV. Người chỉ cần đọc (ví dụ trưởng các phòng) thì chỉ tick xem.</li>
 <li>Bấm <strong>Lưu quyền</strong>, rồi nhờ người được cấp <strong>đăng xuất và đăng nhập lại</strong> để menu hiện mục mới.</li>
 </ol>
-<p>Muốn thấy và nhập <strong>quỹ lương kế hoạch</strong>, vai trò còn phải có quyền xem <strong>Hợp đồng lao động (có lương)</strong>. Ai chỉ có khóa kế hoạch mà không có quyền này thì thấy định biên nhưng không thấy cột tiền.</p>
+<p>Muốn thấy và nhập <strong>số tiền của kế hoạch</strong> (lương theo vị trí, các khoản chi phí, bảng tự tính, tệp đính kèm), vai trò còn phải có quyền xem <strong>Hợp đồng lao động (có lương)</strong> ở phạm vi <em>Tất cả</em> hoặc <em>Công ty</em>. Ai chỉ có khóa kế hoạch mà không có quyền này thì thấy và sửa được định biên, căn cứ, nhưng không thấy tiền và không sửa được khoản chi phí.</p>
 <p>Sau đó giao năm báo cáo mới (định biên, có mặt, sửa hồ sơ, phòng họp, đối tượng theo luật) ở tab <strong>Báo cáo</strong> như các bước ở trên.</p>""",
         },
     ],
 }
 
-EXPECTED_ARTICLES = 22
+EXPECTED_ARTICLES = 23
 
 
 def check_unique_titles() -> None:

@@ -156,6 +156,9 @@ def parent_records(db: Session, entity: str, entity_id: int):
     #  Ba loại dưới đây chưa có mặt trong `SCOPE_FIELDS` nên `apply_scope` không
     #  sinh mệnh đề nào — vẫn khai ở đây để ngày B-07 khai thêm là đính kèm siết
     #  theo, không phải mở lại tệp này.
+    if entity == "headcount_plan":   # duoc-CR-690
+        from app.modules.headcount_plan.model import HeadcountPlan
+        return HeadcountPlan, [entity_id]
     if entity == "product":
         from app.modules.product.model import Product
         return Product, [entity_id]
@@ -249,6 +252,20 @@ def _ensure_leave_request(db: Session, user, request_id: int, mode: str):
     raise HTTPException(403, "Đơn nghỉ phép của tệp nằm ngoài phạm vi được phép xem")
 
 
+def _ensure_headcount_plan_money(db: Session, user, plan_id: int):
+    """Tệp đính kèm kế hoạch nhân sự (duoc-CR-690) có thể là bảng tính CHI PHÍ: chỉ liệt kê / xem / tải được khi người
+    xem đọc được HĐLĐ của pháp nhân của kế hoạch (`can_see_payroll`) — cùng luật che tiền của chi tiết kế hoạch.
+    Kế hoạch không còn → để lớp phạm vi trả 404. Gắn / gỡ tệp (mode `manage`) cũng chặn như đọc: người không xem được tiền
+    không tải lên / gỡ tệp của kế hoạch (đồng bộ với đọc)."""
+    from app.modules.headcount_plan.model import HeadcountPlan
+    from app.modules.headcount_plan.serializer import can_see_payroll
+
+    plan = db.get(HeadcountPlan, plan_id)
+    if plan is not None and not can_see_payroll(get_perm_profile(db, user), plan.company_id, plan.department_id or 0):
+        log.warning("Chan tep ke hoach nhan su khi khong xem duoc tien: user=%s plan=%s", getattr(user, "id", "?"), plan_id)
+        raise HTTPException(403, "Tệp của kế hoạch có thể chứa chi phí nhân sự — cần quyền xem hợp đồng lao động của pháp nhân này")
+
+
 def ensure_in_scope(db: Session, user, entity: str, entity_id: int, mode: str = "read"):
     """Ném 403/404 nếu chứng từ cha của tệp nằm ngoài phạm vi dữ liệu của người này.
 
@@ -269,6 +286,9 @@ def ensure_in_scope(db: Session, user, entity: str, entity_id: int, mode: str = 
     if parent == "leave_request":
         _ensure_leave_request(db, user, entity_id, mode)
         return
+
+    if entity == "headcount_plan":
+        _ensure_headcount_plan_money(db, user, entity_id)
 
     model, ids = parent_records(db, entity, entity_id)
     if model is None:

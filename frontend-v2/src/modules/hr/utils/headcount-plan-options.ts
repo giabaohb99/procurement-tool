@@ -1,4 +1,4 @@
-import type { CrudOption, CrudRecord } from '@/shared/crud'
+import type { CrudOption } from '@/shared/crud'
 
 import { WHOLE_COMPANY_DEPARTMENT_ID, WHOLE_COMPANY_LABEL } from '../types/headcount-plan'
 
@@ -25,7 +25,7 @@ interface DepartmentLike {
 }
 
 /**
- * Ô chọn phòng của kế hoạch nhân sự: «Toàn pháp nhân» (`0`) đứng đầu, rồi MỌI phòng đang dùng,
+ * Ô chọn phòng của kế hoạch nhân sự (dùng cho cả ô lọc lẫn ô nhập ở trang kế hoạch): «Toàn pháp nhân» (`0`) đứng đầu, rồi MỌI phòng đang dùng,
  * xếp theo tên tiếng Việt, mỗi phòng một lần.
  *
  * ⚠️ Không lọc theo pháp nhân: phòng ban DÙNG CHUNG cho mọi pháp nhân (dev + local không có ánh xạ
@@ -40,36 +40,6 @@ export function buildHeadcountPlanDepartmentOptions(departments: readonly Depart
     .sort((a, b) => a[1].localeCompare(b[1], 'vi'))
     .map(([id, name]) => ({ value: String(id), label: name }))
   return [{ value: String(WHOLE_COMPANY_DEPARTMENT_ID), label: WHOLE_COMPANY_LABEL }, ...rows]
-}
-
-/** Ép số nguyên không âm; rỗng / rác → `fallback`. */
-function toNonNegativeInt(raw: unknown, fallback: number): number {
-  if (raw === '' || raw === null || raw === undefined) return fallback
-  const n = Number(raw)
-  return Number.isFinite(n) && n >= 0 ? Math.trunc(n) : fallback
-}
-
-/**
- * Chỉnh payload trước khi gửi: ô chọn của khung CRUD giữ CHUỖI (`'12'`), backend khai `int`
- * và `extra="forbid"`. Phòng bỏ trống = `0` (toàn pháp nhân). Số lương chỉ có mặt khi biểu mẫu
- * có ô đó (người xem có `labor_contract.read`) — vắng thì KHÔNG thêm khóa, kẻo backend 403
- * «cần quyền xem hợp đồng» cho người chỉ sửa định biên.
- *
- * Không đặt luật nghiệp vụ ở đây — chặn số âm / năm ngoài dải là việc của backend (422).
- */
-export function normalizeHeadcountPlanPayload(payload: CrudRecord): CrudRecord {
-  const out: CrudRecord = {
-    ...payload,
-    year: Number(payload.year),
-    company_id: Number(payload.company_id),
-    department_id: toNonNegativeInt(payload.department_id, WHOLE_COMPANY_DEPARTMENT_ID),
-    planned_headcount: toNonNegativeInt(payload.planned_headcount, 0),
-  }
-  if ('planned_payroll_monthly' in payload) {
-    const raw = payload.planned_payroll_monthly
-    out.planned_payroll_monthly = raw === '' || raw === null || raw === undefined ? null : Number(raw)
-  }
-  return out
 }
 
 /** Đuôi backend gắn khi có hơn 20 lỗi: « (và 7 lỗi khác)». */

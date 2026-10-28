@@ -65,6 +65,16 @@ Chốt 28/10/2026 (anh Được): **làm bảng kế hoạch theo năm** — ph�
 | 20 | [Giao diện: màn kế hoạch, 5 trang báo cáo, ô Lịch nhắc](phase-20-giao-dien-dot-4.md) | 6h | in_progress | FE-c |
 | 21 | Kiểm thử, rà mã, HDSD, deploy dev, xóa dữ liệu thử | 4h | in_progress | điều phối |
 
+## Đợt 5 — phases (duoc-CR-690, xong 28/10/2026)
+Chốt 28/10/2026 (anh Được, sau khi soát đợt 4): làm lại Kế hoạch nhân sự theo `doc/erp/hrm/06-ke-hoach-nhan-su.md` — loại kỳ người dùng chọn (Năm/Bán niên/Quý/Tháng), định biên theo vị trí × kỳ con, căn cứ + văn bản liên kết sang phân hệ Văn bản + tệp, khoản chi phí tự định nghĩa theo mẫu (chép vào từng kế hoạch), bộ tính theo tháng.
+
+| # | Phase | Effort | Status | Chủ tệp |
+|---|-------|--------|--------|---------|
+| 22 | [Backend: bảng, mẫu khoản, bộ tính, API](phase-22-ke-hoach-theo-ky-backend.md) | 10h | done | BE-10 |
+| 23 | [Giao diện: nhóm, mẫu, trang kế hoạch 4 khối](phase-23-ke-hoach-theo-ky-giao-dien.md) | 10h | done | FE-d |
+| 24 | [A4 + A5 đọc kế hoạch theo kỳ, bỏ cột cũ](phase-24-bao-cao-doc-ke-hoach-theo-ky.md) | 5h | done | BE-11 |
+| 25 | Kiểm thử, rà mã, HDSD, deploy dev | 4h | done | điều phối |
+
 ## Lộ trình các đợt sau (chưa làm)
 | Đợt | Mẫu | Điều kiện |
 |---|---|---|

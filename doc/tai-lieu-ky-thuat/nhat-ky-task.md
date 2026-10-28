@@ -17526,3 +17526,16 @@ Soát trên trình duyệt với ba vai thì thấy báo cáo Quỹ lương vẫ
 Bài kiểm backend 716 bài xanh, giao diện 1823 bài xanh, kiểm kiểu và lint 0 lỗi. Có thêm 1 bài hướng dẫn tổng và 21 bài con cho nhóm báo cáo Nhân sự.
 Lưu ý khi deploy: vai trò Nhân sự trên hệ đang chạy không tự có khóa quyền «Nhân sự › Kế hoạch nhân sự», phải tick tay; báo cáo 25 tới 29 lúc đầu chỉ quản trị thấy, giao thêm ở tab Báo cáo; người dùng đăng nhập lại mới thấy.
 Mã nguồn: plans/261027-1045-kho-mau-bao-cao-nhan-su/phase-16…21, backend/app/modules/headcount_plan/, migration hcplan01
+
+## duoc-CR-690 | Kế hoạch nhân sự theo kỳ: định biên theo vị trí, khoản chi phí tự định nghĩa, căn cứ duyệt
+- status: xong
+- date: 2026-10-28
+- pic: NSU231
+- tag: Được
+Anh Được soát màn Kế hoạch nhân sự của đợt 4 và thấy form quá ít thông tin: chỉ có một số định biên và một số quỹ lương mỗi tháng, không có căn cứ, quỹ lương tính theo tháng là sai vì kế hoạch còn lập theo quý, bán niên và năm, và mỗi kế hoạch có các khoản chi phí khác nhau.
+Làm lại theo thiết kế đã chốt: người dùng chọn loại kỳ năm, bán niên, quý hay tháng và form đổi theo; định biên nhập theo từng vị trí và từng kỳ con; ghi số quyết định, ngày, người duyệt và tệp đính kèm làm căn cứ; khoản chi phí do người dùng tự tạo trong mẫu, chọn mẫu khi lập kế hoạch thì hệ thống chép sang để sửa riêng; hệ thống tính từng tháng rồi cộng lên kỳ; hai báo cáo định biên và quỹ lương đọc bảng mới.
+Đã làm xong ba màn mới là Kế hoạch nhân sự, Mẫu khoản chi phí và Nhóm chi phí, có sẵn một mẫu gợi ý tám khoản để người dùng sửa. Kế hoạch đã lưu có thêm dòng thực tế và còn dư so với hợp đồng lao động. Báo cáo định biên lấy kế hoạch có hiệu lực ở tháng cuối kỳ và xem được theo vị trí; báo cáo quỹ lương có năm chỉ số kế hoạch mới. Kế hoạch nhập ở đợt 4 đã tự chuyển sang khuôn mới.
+Rà mã tìm ra hai chỗ lộ lương: dòng thực tế ở trang kế hoạch và gợi ý lương bình quân đọc hợp đồng không qua phạm vi người xem. Đã chặn, kèm khóa cấu trúc khoản với người không xem được lương, bắt buộc chọn tháng cho khoản tính theo lần, và che dòng tổng của báo cáo quỹ lương khi có thể suy ngược ra lương nhóm nhỏ. Soát trên trình duyệt với tài khoản không được xem lương và tài khoản bị loại trừ một phòng đều đạt; dữ liệu thử ở local đã xóa.
+Bài kiểm backend 718 bài xanh, giao diện hơn 2200 bài xanh, kiểm kiểu 0 lỗi. Bài hướng dẫn có 23 bài, thêm bài về mẫu khoản chi phí.
+Lưu ý khi deploy: khóa quyền vẫn là «Nhân sự › Kế hoạch nhân sự»; vai trò nào cần lập kế hoạch phải có thêm, sửa, xóa của khóa đó.
+Mã nguồn: doc/erp/hrm/06-ke-hoach-nhan-su.md, plans/261027-1045-kho-mau-bao-cao-nhan-su/phase-22…25, backend/app/modules/headcount_plan/, migration hcplan02, hcplan03

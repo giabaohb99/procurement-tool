@@ -155,6 +155,8 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 *Đã chốt 28/10/2026:* bảng **Kế hoạch nhân sự** (Nhân sự ▸ Danh mục) theo năm × pháp nhân × phòng ban (hoặc «Toàn pháp nhân»): định biên + quỹ lương kế hoạch / tháng (tiền chỉ hiện với người được xem HĐLĐ của pháp nhân đó), nhập tay hoặc CSV; khóa quyền `headcount_plan` (trưởng phòng Nhân sự / admin). Phòng ban dùng chung cho mọi pháp nhân nên chọn phòng nào cũng được; số thực tế đếm người có đúng cặp pháp nhân × phòng. A5 Quỹ lương có thêm Quỹ lương kế hoạch / Còn dư / % dùng.
 
+*Thiết kế lại 28/10/2026:* bảng kế hoạch trên chưa đủ (không có vị trí, chỉ một số «quỹ lương / tháng», thiếu các khoản chi phí, không có căn cứ). Thiết kế thay thế (loại kỳ Năm / Bán niên / Quý / Tháng, định biên theo vị trí và kỳ con, khoản chi phí do người dùng tự định nghĩa theo mẫu, căn cứ duyệt) ở [`06-ke-hoach-nhan-su.md`](06-ke-hoach-nhan-su.md); **đã làm ở duoc-CR-690**: A4 đọc kế hoạch có hiệu lực ở tháng cuối kỳ và có thêm «Xem theo» Vị trí.
+
 #### A5. Quỹ lương theo pháp nhân — đã có phần thực tế (khóa 21, duoc-CR-688); kế hoạch và thử tính chưa làm
 
 > **Trả lời:** mỗi pháp nhân đang gánh quỹ lương bao nhiêu, còn dư bao nhiêu so với kế hoạch, tuyển người mới vào công ty nào thì các công ty cân bằng nhất.
@@ -175,6 +177,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
   - Lương của cùng một chức vụ ở các pháp nhân (thấp nhất / trung bình / cao nhất), để chào lương người mới không lệch giữa các công ty ✅
   - Thử tính: nhập chức vụ và mức lương dự kiến → quỹ lương từng pháp nhân sau khi tuyển, pháp nhân nào còn dư nhiều nhất 🟡 (cần kế hoạch)
 
+*Lưu ý 28/10/2026:* «quỹ lương» ở bản đang chạy chỉ là lương + phụ cấp ghi trên HĐ, chưa phải chi phí nhân sự. Chi phí theo kỳ và các khoản do người dùng định nghĩa xem [`06-ke-hoach-nhan-su.md`](06-ke-hoach-nhan-su.md) §4, §6. **Đã làm ở duoc-CR-690:** cột kế hoạch của A5 thay bằng Chi phí nhân sự kế hoạch · Kế hoạch phần so được · Thực tế phần so được · Còn dư · % dùng (§10 của tài liệu 06).
 *Xem theo:* Pháp nhân (mặc định) · Phòng ban · Chức vụ · Loại HĐ
 *Nguồn:* `tab_labor_contract` (`base_salary`, `allowance`, `insurance_salary`, `start_date`, `end_date`, `status`, `company_id`). Đây là **lương thỏa thuận ghi trên HĐ**, không phải lương thực trả, vì ERP không có chấm công và bảng lương.
 *Không trái quyết định bỏ lương ngày 16/10/2026:* mẫu này chỉ cộng số lương đã ghi trên HĐ; không tính lương, không làm phiếu lương.

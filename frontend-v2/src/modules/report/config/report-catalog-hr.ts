@@ -141,7 +141,7 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
   },
   {
     label: 'Quỹ lương theo pháp nhân',
-    description: 'Lương cơ bản, phụ cấp, lương đóng BHXH theo hợp đồng đang hiệu lực; nhóm dưới 3 người bị che.',
+    description: 'Lương cơ bản, phụ cấp, lương đóng BHXH theo hợp đồng đang hiệu lực, so với chi phí nhân sự của Kế hoạch nhân sự theo kỳ; nhóm dưới 3 người bị che.',
     path: appRoutes.report.payrollFund,
     //  Như Hợp đồng lao động (khóa 17): HĐLĐ không có màn danh sách riêng, nguồn là danh sách
     //  nhân sự còn khóa gác là `labor_contract` (ngoại lệ ghi ở `report-catalog.test.ts`).
@@ -202,7 +202,7 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
   },
   {
     label: 'Định biên kế hoạch so với thực tế',
-    description: 'Định biên kế hoạch năm so với người đang có theo pháp nhân, phòng ban: còn thiếu, vượt, tỷ lệ lấp đầy.',
+    description: 'Định biên theo Kế hoạch nhân sự (năm, bán niên, quý, tháng) so với người đang có theo pháp nhân, phòng ban, vị trí: còn thiếu, vượt, tỷ lệ lấp đầy.',
     path: appRoutes.report.headcountPlan,
     sourcePath: appRoutes.hr.headcountPlans,
     icon: Target,

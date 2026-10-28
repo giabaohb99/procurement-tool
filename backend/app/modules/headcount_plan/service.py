@@ -1,15 +1,24 @@
-"""Luật nghiệp vụ kế hoạch nhân sự: pháp nhân / phòng phải có thật, bộ ba (năm, pháp nhân, phòng) duy nhất,
-và CHẶN ghi số lương khi người ghi không đọc được HĐLĐ của pháp nhân đó (`labor_contract.read` trong phạm vi)."""
+"""Luật nghiệp vụ kế hoạch nhân sự: pháp nhân / phòng phải có thật, bộ khóa (năm, loại kỳ, kỳ, pháp nhân, phòng) duy
+nhất, CHẶN ghi tiền khi người ghi không đọc được HĐLĐ của pháp nhân đó, văn bản liên kết chỉ gắn được khi đọc được."""
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.scoping import apply_scope
 from app.modules.company.model import Company
+from app.modules.employee.model import Employee
 from app.modules.department.model import Department
+from app.modules.document.access_service import can as can_read_document
+from app.modules.document.model import Document
 
-from .model import HeadcountPlan
+from .model import HeadcountPlan, HeadcountPlanDocument
 from .serializer import can_see_payroll
 
-PAYROLL_DENIED = "Cần quyền xem hợp đồng lao động để khai quỹ lương kế hoạch"
+PAYROLL_DENIED = "Cần quyền xem hợp đồng lao động để khai chi phí nhân sự kế hoạch"
+STRUCTURE_DENIED = "Cần quyền xem lương của pháp nhân này để sửa khoản chi phí"
+DOCUMENT_DENIED = "Không gắn được văn bản này"
+APPROVER_INVALID = "Người duyệt không hợp lệ"
+CONFLICT_MESSAGE = "Kế hoạch vừa được người khác sửa, tải lại trang"
+DUPLICATE_MESSAGE = "Đã có kế hoạch cho kỳ, pháp nhân và phòng này"
 
 
 def check_refs(db: Session, company_id: int, department_id: int) -> None:
@@ -25,26 +34,48 @@ def check_refs(db: Session, company_id: int, department_id: int) -> None:
         raise HTTPException(422, "Phòng ban không tồn tại")
 
 
-def ensure_unique(db: Session, year: int, company_id: int, department_id: int, exclude_id: int = 0) -> None:
-    q = db.query(HeadcountPlan.id).filter(HeadcountPlan.year == year, HeadcountPlan.company_id == company_id,
-                                          HeadcountPlan.department_id == department_id)
+def ensure_unique(db: Session, year: int, period_type: int, period_no: int, company_id: int, department_id: int,
+                  exclude_id: int = 0) -> None:
+    q = db.query(HeadcountPlan.id).filter(
+        HeadcountPlan.year == year, HeadcountPlan.period_type == period_type, HeadcountPlan.period_no == period_no,
+        HeadcountPlan.company_id == company_id, HeadcountPlan.department_id == department_id)
     if exclude_id:
         q = q.filter(HeadcountPlan.id != exclude_id)
     if q.first() is not None:
-        raise HTTPException(400, "Đã có kế hoạch cho năm, pháp nhân và phòng này")
+        raise HTTPException(400, DUPLICATE_MESSAGE)
 
 
-def guard_payroll_write(profile: dict, payroll, company_id: int) -> None:
-    """Khai số lương KHÁC 0 cho pháp nhân mà người ghi không đọc được HĐLĐ của nó → 403.
+def check_approver(db: Session, user, profile: dict, approver_employee_id: int) -> None:
+    """Người duyệt (0 = chưa chọn) phải tồn tại và nằm trong phạm vi `employee.read` của người ghi, không thì 422."""
+    if not approver_employee_id:
+        return
+    q = apply_scope(db.query(Employee.id).filter(Employee.id == approver_employee_id), Employee, "employee", user, profile)
+    if q.first() is None:
+        raise HTTPException(422, APPROVER_INVALID)
 
-    0 / None không bị chặn: biểu mẫu luôn gửi ô số (trống = 0), nên chặn 0 là người chỉ sửa định biên không lưu nổi.
-    Ở đường SỬA, bên gọi phải bỏ số 0 đó đi (`drop_blind_payroll`) — không thì đè mất quỹ lương thật đang bị che."""
-    if payroll and not can_see_payroll(profile, company_id):
+
+def deny_blind_money(profile: dict, company_id: int, department_id: int, *amounts) -> None:
+    """Khai tiền KHÁC 0 cho pháp nhân mà người ghi không đọc được HĐLĐ của nó → 403. 0 / None không bị chặn:
+    biểu mẫu của người không thấy tiền luôn gửi lại ô trống, và bên gọi GIỮ NGUYÊN số đang lưu cho các ô đó."""
+    if any(a for a in amounts) and not can_see_payroll(profile, company_id, department_id):
         raise HTTPException(403, PAYROLL_DENIED)
 
 
-def drop_blind_payroll(profile: dict, values: dict, company_id: int) -> None:
-    """Người không xem được lương của pháp nhân gửi 0 / None → coi như KHÔNG đổi ô lương (giữ số thật bị che)."""
-    if "planned_payroll_monthly" in values and not values["planned_payroll_monthly"] \
-            and not can_see_payroll(profile, company_id):
-        values.pop("planned_payroll_monthly")
+def link_documents(db: Session, plan_id: int, document_ids: list[int], user, profile: dict, actor_id: int) -> None:
+    """Thay tập văn bản liên kết. Văn bản MỚI gắn phải tồn tại và người lưu phải ĐỌC được (không thì 403); văn bản
+    đã gắn từ trước (có thể người lưu không đọc được) được giữ nếu còn trong danh sách gửi lên."""
+    wanted = list(dict.fromkeys(document_ids))
+    current = {d.document_id: d for d in db.query(HeadcountPlanDocument).filter(
+        HeadcountPlanDocument.plan_id == plan_id).all()}
+    for doc_id in wanted:
+        if doc_id in current:
+            continue
+        doc = db.get(Document, doc_id)
+        #  Không tồn tại / đã xóa / không đọc được cùng MỘT câu 403 — không cho dò xem số văn bản nào có thật
+        if doc is None or doc.is_deleted or not can_read_document(db, doc, user, profile, "read"):
+            raise HTTPException(403, DOCUMENT_DENIED)
+        db.add(HeadcountPlanDocument(plan_id=plan_id, document_id=doc_id, created_by=actor_id, updated_by=actor_id))
+    for doc_id, row in current.items():
+        if doc_id not in wanted:
+            db.delete(row)
+

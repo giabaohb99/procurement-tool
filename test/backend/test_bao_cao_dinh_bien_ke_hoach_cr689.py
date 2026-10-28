@@ -1,4 +1,4 @@
-"""duoc-CR-689 (phase 17) — báo cáo A4 «Định biên kế hoạch so với thực tế» (khóa 25) và cột kế hoạch của A5.
+"""duoc-CR-689 (phase 17) · CR-690 (phase 24) — báo cáo A4 «Định biên kế hoạch so với thực tế» (khóa 25) và cột kế hoạch của A5.
 
 Canh A4: định nghĩa chỉ số (planned · actual · gap · vacancies · over · unplanned · fill_rate), luật chống cộng
 đôi giữa dòng «toàn pháp nhân» và dòng phòng, phòng có người mà chưa có kế hoạch, phạm vi, `/rows`, gác khóa báo
@@ -24,7 +24,7 @@ from app.main import app
 from app.modules.department.model import Department
 from app.modules.employee import headcount_plan_report_service as svc
 from app.modules.employee.model import Employee
-from app.modules.headcount_plan.model import HeadcountPlan
+from headcount_plan_factory import add_costed_plan
 from app.modules.labor_contract.model import LaborContract
 from app.modules.report_access.model import ReportAccess
 
@@ -58,11 +58,9 @@ def _emp(db, world, tag, dept="B.hc", **kw) -> Employee:
     return e
 
 
-def _plan(db, world, dept, n, pay=0, year=None, co="B"):
-    db.add(HeadcountPlan(year=year or TODAY.year, company_id=world.co[co],
-                         department_id=world.dept[dept] if dept else 0, planned_headcount=n,
-                         planned_payroll_monthly=pay))
-    db.commit()
+def _plan(db, world, dept, n, year=None, co="B", **kw):
+    """Kế hoạch Năm (định biên n cả 4 quý); `kw` chuyển cho `add_costed_plan` (kỳ khác, khoản chi phí…)."""
+    return add_costed_plan(db, world, dept, [n] * 4, co=co, year=year or TODAY.year, **kw)
 
 
 def _dataset(db, world, extra=0):
@@ -117,7 +115,7 @@ def test_dinh_nghia_chi_so_khi_chi_co_dong_phong(db, world, client_as):
     data = resp.json()["data"]
     assert data["totals"]["compare"] is None and data["trend"] == []
     assert data["meta"]["drilldown_metrics"] == ["actual", "unplanned"]
-    assert [d["key"] for d in data["meta"]["dimensions"]] == ["company", "department"]
+    assert [d["key"] for d in data["meta"]["dimensions"]] == ["company", "department", "position"]
     assert not any(m["key"] == "filled" and not m["helper"] for m in data["meta"]["metrics"])
 
 
@@ -285,7 +283,11 @@ def test_so_truy_van_co_dinh(db, world):
     assert c > 0 and c == count()
 
 
-# ── A5: cột kế hoạch ─────────────────────────────────────────────────────────
+# ── A5: cột kế hoạch theo kỳ (CR-690) ───────────────────────────────────────
+
+L_ITEM = {"code": "L", "name": "Lương", "calc_method": 1, "actual_source": 1}        # nhập theo vị trí, thực tế = lương cơ bản
+AN_ITEM = {"code": "AN", "name": "Ăn trưa", "calc_method": 1, "actual_source": 0}    # không có nguồn thực tế
+
 
 def _hd(db, world, emp, base=10_000_000, allow=1_000_000):
     _seq["n"] += 1
@@ -295,82 +297,85 @@ def _hd(db, world, emp, base=10_000_000, allow=1_000_000):
                          insurance_salary=0))
 
 
-def _a5_actor(db, world, client_as, *, plan=True, lc_scope="all"):
-    world.grant("a1", "labor_contract", lc_scope, actions=("read", "export"))
+def _a5_plan(db, world, dept, n=5, per_head=10_000_000, co="B", year=2026, items=(L_ITEM,), **kw):
+    """Kế hoạch Năm: `n` người, lương `per_head` / người / tháng (khoản L), khoản khác theo `items`."""
+    subs = {1: 4, 2: 2, 3: 3, 4: 1}[kw.get("period_type", 1)]       # số kỳ con của loại kỳ
+    amounts = {"L": per_head, "AN": 730_000}
+    return add_costed_plan(db, world, dept, [n] * subs, co=co, year=year, items=list(items),
+                           amounts={i["code"]: amounts[i["code"]] for i in items}, **kw)
+
+
+def _a5_actor(db, world, client_as, *, plan=True, lc_scope="all", key="a1"):
+    world.grant(key, "labor_contract", lc_scope, actions=("read", "export"))
     if plan:
-        world.grant("a1", "headcount_plan", "all", actions=("read", "export"))
-    actor = world.actor("a1")
+        world.grant(key, "headcount_plan", "all", actions=("read", "export"))
+    actor = world.actor(key)
     db.add(ReportAccess(report_key=int(ReportKey.PAYROLL_FUND), subject_kind=SUBJECT_EMPLOYEE,
                         subject_id=actor.employee.id, effect=1, reason="t", created_by=0, updated_by=0))
     db.commit()
     return client_as(actor.user)
+
+
+PLAN_KEYS = ["planned_cost", "planned_comparable", "actual_comparable", "payroll_remaining", "payroll_use_rate"]
 
 
 def test_a5_cot_ke_hoach_theo_phong_va_tong(db, world, client_as):
     for i in range(3):
         _hd(db, world, _emp(db, world, f"s{i}"))
-    _plan(db, world, "B.hc", 5, pay=50_000_000, year=2026)
+    _a5_plan(db, world, "B.hc", items=(L_ITEM, AN_ITEM))      # Jun–Aug: 3 tháng × (5 × 10tr + 5 × 730k)
     client = _a5_actor(db, world, client_as)
-    resp = _get(client, A5, qs=QS5, company_id=world.co["B"], group_by="department")
-    data = resp.json()["data"]
+    data = _get(client, A5, qs=QS5, company_id=world.co["B"], group_by="department").json()["data"]
     cur = data["totals"]["current"]
-    assert cur["payroll_total"] == 33_000_000 and cur["planned_payroll"] == 50_000_000
-    assert cur["payroll_remaining"] == 17_000_000 and cur["payroll_use_rate"] == 66.0
+    assert cur["payroll_total"] == 33_000_000
+    assert cur["planned_cost"] == 3 * (50_000_000 + 3_650_000)
+    assert cur["planned_comparable"] == 150_000_000                       # chỉ khoản Lương (có nguồn)
+    assert cur["actual_comparable"] == 90_000_000                         # 3 HĐ × 10tr × 3 tháng, KHÔNG gồm phụ cấp
+    assert cur["payroll_remaining"] == 60_000_000 and cur["payroll_use_rate"] == 60.0
     grp = data["groups"][0]["current"]
-    assert grp["planned_payroll"] == 50_000_000 and grp["payroll_use_rate"] == 66.0
-    keys = [m["key"] for m in data["meta"]["metrics"]]
-    assert keys[-3:] == ["planned_payroll", "payroll_remaining", "payroll_use_rate"]
+    assert grp["planned_cost"] == cur["planned_cost"] and grp["payroll_use_rate"] == 60.0
+    assert [m["key"] for m in data["meta"]["metrics"]][-5:] == PLAN_KEYS
+    assert any("Ăn trưa" in n and "không có nguồn" in n for n in data["notes"])
 
 
-def test_a5_hdld_pham_vi_phong_khong_thay_quy_luong_ke_hoach(db, world, client_as):
+def test_a5_hdld_pham_vi_phong_khong_thay_chi_phi_ke_hoach(db, world, client_as):
     #  E2E CR-689 B1: HĐLĐ phạm vi phòng vẫn đọc ra quỹ lương kế hoạch cả pháp nhân trong khi màn kế hoạch che.
     for i in range(3):
         _hd(db, world, _emp(db, world, f"s{i}"))
-    _plan(db, world, None, 5, pay=90_000_000, year=2026)
+    _a5_plan(db, world, None)
     client = _a5_actor(db, world, client_as, lc_scope="dept")
     for gb in ("none", "company"):
         data = _get(client, A5, qs=QS5, group_by=gb).json()["data"]
-        assert data["totals"]["current"]["planned_payroll"] is None
-        assert all(g["current"]["planned_payroll"] is None for g in data.get("groups") or [])
+        for k in PLAN_KEYS:
+            assert data["totals"]["current"][k] is None
+            assert all(g["current"][k] is None for g in data.get("groups") or [])
 
 
 def test_a5_dong_toan_phap_nhan_uu_tien_va_chi_gan_theo_nhom_phap_nhan_phong(db, world, client_as):
     for i in range(3):
         _hd(db, world, _emp(db, world, f"s{i}"))
-    _plan(db, world, "B.hc", 5, pay=50_000_000, year=2026)
-    _plan(db, world, None, 5, pay=90_000_000, year=2026)
+    _a5_plan(db, world, "B.hc", per_head=10_000_000)                      # 150tr
+    _a5_plan(db, world, None, per_head=8_000_000)                         # 120tr, thay các phòng của B
     client = _a5_actor(db, world, client_as)
     comp = _get(client, A5, qs=QS5, company_id=world.co["B"], group_by="company").json()["data"]
-    assert comp["totals"]["current"]["planned_payroll"] == 90_000_000      # không cộng 50 + 90
-    assert comp["groups"][0]["current"]["planned_payroll"] == 90_000_000
+    assert comp["totals"]["current"]["planned_cost"] == 120_000_000       # không cộng 150 + 120
+    assert comp["groups"][0]["current"]["planned_cost"] == 120_000_000
+    assert comp["groups"][0]["current"]["actual_comparable"] == 90_000_000   # kế hoạch cả pháp nhân so với mọi HĐ của B
     dept = _get(client, A5, qs=QS5, company_id=world.co["B"], group_by="department").json()["data"]
-    assert dept["groups"][0]["current"]["planned_payroll"] == 50_000_000
-    pos = _get(client, A5, qs=QS5, company_id=world.co["B"], group_by="contract_type").json()["data"]
-    assert pos["groups"][0]["current"]["planned_payroll"] is None and pos["totals"]["current"]["planned_payroll"] == 90_000_000
+    assert dept["groups"][0]["current"]["planned_cost"] == 150_000_000
+    ct = _get(client, A5, qs=QS5, company_id=world.co["B"], group_by="contract_type").json()["data"]
+    assert ct["groups"][0]["current"]["planned_cost"] is None and ct["totals"]["current"]["planned_cost"] == 120_000_000
 
 
-def test_a5_khong_co_cot_khi_thieu_quyen_xem_ke_hoach_hoac_chua_khai_luong(db, world, client_as):
+def test_a5_khong_co_cot_khi_thieu_quyen_xem_ke_hoach_va_none_khi_chua_co_ke_hoach(db, world, client_as):
     for i in range(3):
         _hd(db, world, _emp(db, world, f"s{i}"))
-    _plan(db, world, "B.hc", 5, pay=50_000_000, year=2026)
+    _a5_plan(db, world, "B.hc")
     client = _a5_actor(db, world, client_as, plan=False)
     keys = [m["key"] for m in _get(client, A5, qs=QS5).json()["data"]["meta"]["metrics"]]
-    assert "planned_payroll" not in keys
-    db.query(HeadcountPlan).update({"planned_payroll_monthly": 0})
-    db.commit()
-    client2 = _a5_actor_second(db, world, client_as)
-    cur = _cur(_get(client2, A5, qs=QS5, company_id=world.co["B"]))
-    assert cur["planned_payroll"] is None and cur["payroll_remaining"] is None and cur["payroll_use_rate"] is None
-
-
-def _a5_actor_second(db, world, client_as):
-    world.grant("a2", "labor_contract", "all", actions=("read",))
-    world.grant("a2", "headcount_plan", "all", actions=("read",))
-    actor = world.actor("a2")
-    db.add(ReportAccess(report_key=int(ReportKey.PAYROLL_FUND), subject_kind=SUBJECT_EMPLOYEE,
-                        subject_id=actor.employee.id, effect=1, reason="t", created_by=0, updated_by=0))
-    db.commit()
-    return client_as(actor.user)
+    assert not set(PLAN_KEYS) & set(keys)
+    client2 = _a5_actor(db, world, client_as, key="a2")
+    cur = _cur(_get(client2, A5, qs={**QS5, "date_from": "2024-01-01", "date_to": "2024-03-31"}, company_id=world.co["B"]))
+    assert all(cur[k] is None for k in PLAN_KEYS)                         # không có kế hoạch nào phủ kỳ -> «—», không phải 0
 
 
 def test_a5_nhom_duoi_3_nguoi_bi_che_ca_cot_ke_hoach(db, world, client_as):
@@ -378,33 +383,31 @@ def test_a5_nhom_duoi_3_nguoi_bi_che_ca_cot_ke_hoach(db, world, client_as):
         _hd(db, world, _emp(db, world, f"s{i}"))
     for i in range(2):
         _hd(db, world, _emp(db, world, f"k{i}", dept="B.kt"))
-    _plan(db, world, "B.hc", 5, pay=50_000_000, year=2026)
-    _plan(db, world, "B.kt", 2, pay=20_000_000, year=2026)
+    _a5_plan(db, world, "B.hc")
+    _a5_plan(db, world, "B.kt", n=2)
     client = _a5_actor(db, world, client_as)
     data = _get(client, A5, qs=QS5, company_id=world.co["B"], group_by="department").json()["data"]
-    by = {g["label"]: g for g in data["groups"]}
-    hidden = by["Phòng Kế toán"]
-    assert hidden.get("suppressed") and hidden["current"]["planned_payroll"] is None
-    assert hidden["current"]["payroll_remaining"] is None and hidden["current"]["payroll_use_rate"] is None
+    hidden = {g["label"]: g for g in data["groups"]}["Phòng Kế toán"]
+    assert hidden.get("suppressed") and all(hidden["current"][k] is None for k in PLAN_KEYS)
 
 
 def test_a5_nhom_phong_ban_cong_dong_ke_hoach_cua_cung_phong_o_nhieu_phap_nhan(db, world, client_as):
     for i in range(3):
         _hd(db, world, _emp(db, world, f"s{i}"))
-    _plan(db, world, "B.hc", 5, pay=50_000_000, year=2026)
-    _plan(db, world, "B.hc", 5, pay=30_000_000, year=2026, co="A")   # phòng dùng chung: cùng phòng, pháp nhân khác
+    _a5_plan(db, world, "B.hc")                                           # 150tr
+    _a5_plan(db, world, "B.hc", co="A", per_head=6_000_000)               # 90tr; phòng dùng chung, pháp nhân khác
     client = _a5_actor(db, world, client_as)
     data = _get(client, A5, qs=QS5, group_by="department").json()["data"]
     hc = next(g for g in data["groups"] if g["label"] == "Phòng Hành chính")
-    assert hc["current"]["planned_payroll"] == 80_000_000
+    assert hc["current"]["planned_cost"] == 240_000_000
 
 
 def test_a5_phap_nhan_co_ke_hoach_nhung_khong_co_hdld_ra_dong_rieng_va_khop_tong(db, world, client_as):
-    #  CR-689 N2: quỹ kế hoạch của pháp nhân không có HĐ nào trong kỳ vẫn ra dòng nhóm, cộng nhóm = Tổng.
+    #  CR-689 N2: kế hoạch của pháp nhân không có HĐ nào trong kỳ vẫn ra dòng nhóm, cộng nhóm = Tổng.
     for i in range(3):
         _hd(db, world, _emp(db, world, f"s{i}"))
-    _plan(db, world, None, 5, pay=40_000_000, year=2026, co="B")
-    _plan(db, world, None, 5, pay=25_000_000, year=2026, co="A")        # A không có HĐ
+    _a5_plan(db, world, None, per_head=8_000_000)                         # B: 120tr
+    _a5_plan(db, world, None, co="A", n=1, per_head=5_000_000)            # A: 15tr, không có HĐ
     client = _a5_actor(db, world, client_as)
     data = _get(client, A5, qs=QS5, group_by="company").json()["data"]
     by = {g["key"]: g for g in data["groups"]}
@@ -413,28 +416,58 @@ def test_a5_phap_nhan_co_ke_hoach_nhung_khong_co_hdld_ra_dong_rieng_va_khop_tong
     assert a["label"] and not a.get("suppressed")
     cur = a["current"]
     assert cur["people_paid"] == 0 and cur["payroll_total"] == 0 and cur["avg_payroll"] is None
-    assert cur["planned_payroll"] == 25_000_000 and cur["payroll_remaining"] == 25_000_000
-    assert cur["payroll_use_rate"] == 0
-    assert sum(g["current"]["planned_payroll"] for g in data["groups"]) == data["totals"]["current"]["planned_payroll"] == 65_000_000
+    assert cur["planned_cost"] == 15_000_000 and cur["actual_comparable"] == 0
+    assert cur["payroll_remaining"] == 15_000_000 and cur["payroll_use_rate"] == 0
+    assert sum(g["current"]["planned_cost"] for g in data["groups"]) == data["totals"]["current"]["planned_cost"] == 135_000_000
 
 
 def test_a5_phong_co_ke_hoach_chua_co_hdld_ra_dong_rieng(db, world, client_as):
     for i in range(3):
         _hd(db, world, _emp(db, world, f"s{i}"))
-    _plan(db, world, "B.hc", 5, pay=50_000_000, year=2026)
-    _plan(db, world, "B.kt", 2, pay=20_000_000, year=2026)               # Kế toán không có HĐ
+    _a5_plan(db, world, "B.hc")
+    _a5_plan(db, world, "B.kt", n=2, per_head=10_000_000)                 # Kế toán không có HĐ: 60tr
     client = _a5_actor(db, world, client_as)
     data = _get(client, A5, qs=QS5, company_id=world.co["B"], group_by="department").json()["data"]
-    by = {g["label"]: g for g in data["groups"]}
-    kt = by["Phòng Kế toán"]["current"]
-    assert kt["people_paid"] == 0 and kt["planned_payroll"] == 20_000_000 and kt["payroll_use_rate"] == 0
-    assert sum(g["current"]["planned_payroll"] for g in data["groups"]) == data["totals"]["current"]["planned_payroll"]
+    kt = {g["label"]: g for g in data["groups"]}["Phòng Kế toán"]["current"]
+    assert kt["people_paid"] == 0 and kt["planned_cost"] == 60_000_000 and kt["payroll_use_rate"] == 0
+    assert sum(g["current"]["planned_cost"] for g in data["groups"]) == data["totals"]["current"]["planned_cost"]
 
 
 def test_a5_khong_co_cot_ke_hoach_thi_khong_them_dong_rieng(db, world, client_as):
     for i in range(3):
         _hd(db, world, _emp(db, world, f"s{i}"))
-    _plan(db, world, None, 5, pay=25_000_000, year=2026, co="A")
+    _a5_plan(db, world, None, co="A", n=1)
     client = _a5_actor(db, world, client_as, plan=False)
     data = _get(client, A5, qs=QS5, group_by="company").json()["data"]
     assert [g["key"] for g in data["groups"]] == [str(world.co["B"])]
+
+
+def test_a5_ky_hep_thay_ky_rong_theo_tung_thang(db, world, client_as):
+    for i in range(3):
+        _hd(db, world, _emp(db, world, f"s{i}"))
+    _a5_plan(db, world, "B.hc", per_head=10_000_000)                      # Năm: 150tr cho Jun–Aug
+    _a5_plan(db, world, "B.hc", per_head=20_000_000, period_type=4, period_no=7)   # Tháng 7 thay: 100tr
+    client = _a5_actor(db, world, client_as)
+    cur = _cur(_get(client, A5, qs=QS5, company_id=world.co["B"]))
+    assert cur["planned_cost"] == 50_000_000 + 100_000_000 + 50_000_000   # Jun (Năm) + Jul (Tháng) + Aug (Năm)
+    assert cur["actual_comparable"] == 90_000_000 and cur["payroll_remaining"] == 110_000_000
+
+
+def test_a5_thang_tuong_lai_co_chi_phi_ke_hoach_nhung_chua_co_phan_so_duoc(db, world, client_as):
+    for i in range(3):
+        _hd(db, world, _emp(db, world, f"s{i}"))
+    nxt = TODAY.year + 1
+    _a5_plan(db, world, "B.hc", year=nxt)
+    client = _a5_actor(db, world, client_as)
+    qs = {**QS5, "date_from": f"{nxt}-01-01", "date_to": f"{nxt}-12-31"}
+    cur = _cur(_get(client, A5, qs=qs, company_id=world.co["B"]))
+    assert cur["planned_cost"] == 12 * 50_000_000
+    assert cur["planned_comparable"] is None and cur["actual_comparable"] is None
+    assert cur["payroll_remaining"] is None and cur["payroll_use_rate"] is None
+    #  kỳ vắt qua hôm nay: chi phí đủ cả kỳ, phần so được chỉ gồm các tháng đã bắt đầu
+    last = date(TODAY.year, 12, 31)
+    mixed = {**QS5, "date_from": TODAY.replace(day=1).isoformat(), "date_to": last.isoformat()}
+    _a5_plan(db, world, "B.hc", year=TODAY.year)
+    cur = _cur(_get(client, A5, qs=mixed, company_id=world.co["B"]))
+    assert cur["planned_cost"] == (13 - TODAY.month) * 50_000_000
+    assert cur["planned_comparable"] == 50_000_000 and cur["actual_comparable"] == 30_000_000

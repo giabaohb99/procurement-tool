@@ -84,6 +84,7 @@ from app.modules.employee.benefit_report_controller import router as benefit_aud
 from app.modules.employee.management_report_controller import router as management_span_report_router  # duoc-CR-688
 from app.modules.employee.work_move_report_controller import router as work_move_report_router  # duoc-CR-688
 from app.modules.employee.headcount_plan_report_controller import router as headcount_plan_report_router  # duoc-CR-689
+from app.modules.headcount_plan.catalog_controller import groups_router as hr_cost_group_router, templates_router as hr_cost_template_router  # duoc-CR-690
 from app.modules.headcount_plan.controller import router as headcount_plan_router  # duoc-CR-689
 from app.modules.work_schedule.attendance_report_controller import router as attendance_report_router  # duoc-CR-689
 from app.modules.employee.change_request_report_controller import router as profile_change_report_router  # duoc-CR-689
@@ -323,6 +324,8 @@ app.include_router(employee_work_history_router)
 #  HĐLĐ: chung tiền tố `/api/employees/{eid}/...` — PHẢI trước `employee_router` (nó có `/{eid}`).
 app.include_router(labor_contract_router)
 app.include_router(headcount_plan_router)  # duoc-CR-689: kế hoạch nhân sự (`/api/headcount-plans`)
+app.include_router(hr_cost_group_router)  # duoc-CR-690: nhóm chi phí nhân sự
+app.include_router(hr_cost_template_router)  # duoc-CR-690: mẫu khoản chi phí nhân sự
 app.include_router(my_labor_contract_router)
 app.include_router(labor_contract_template_router)
 app.include_router(labor_contract_variable_router)

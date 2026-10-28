@@ -9,7 +9,9 @@ import {
   CalendarOff,
   CalendarRange,
   IdCard,
+  Layers,
   LayoutDashboard,
+  ListChecks,
   Network,
   Target,
   Users,
@@ -101,12 +103,29 @@ export const hrModule: ErpModule = {
       group: 'Danh mục',
     },
     {
-      //  duoc-CR-689: Kế hoạch nhân sự theo năm (định biên + quỹ lương / tháng). ⚠️ `entity` ở đây
-      //  LÀ hàng rào của route (gác điều hướng mặc định MỞ) — thiếu mục này thì ai đăng nhập cũng gõ
-      //  URL vào được. Không `manage`: người chỉ được XEM kế hoạch (trưởng phòng) vẫn cần mở màn.
+      //  duoc-CR-690: Kế hoạch nhân sự THEO KỲ (định biên theo vị trí + chi phí theo kỳ). ⚠️ `entity`
+      //  ở đây LÀ hàng rào của route (gác điều hướng mặc định MỞ) cho cả `/new` và `/:id` — thiếu mục
+      //  này thì ai đăng nhập cũng gõ URL vào được. Không `manage`: người chỉ được XEM kế hoạch
+      //  (trưởng phòng) vẫn cần mở màn.
       label: 'Kế hoạch nhân sự',
       path: appRoutes.hr.headcountPlans,
       icon: Target,
+      entity: 'headcount_plan',
+      group: 'Danh mục',
+    },
+    {
+      //  duoc-CR-690: hai danh mục của kế hoạch — không chứa lương ai nên đọc theo `headcount_plan.read`.
+      //  Hai mục này cũng là hàng rào route của chính chúng (và của `/hr/hr-cost-templates/*`).
+      label: 'Mẫu khoản chi phí',
+      path: appRoutes.hr.hrCostTemplates,
+      icon: ListChecks,
+      entity: 'headcount_plan',
+      group: 'Danh mục',
+    },
+    {
+      label: 'Nhóm chi phí',
+      path: appRoutes.hr.hrCostGroups,
+      icon: Layers,
       entity: 'headcount_plan',
       group: 'Danh mục',
     },
@@ -427,6 +446,43 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.headcountPlans,
       lazy: async () => ({
         Component: (await import('./pages/headcount-plan-list-page')).HeadcountPlanListPage,
+      }),
+    },
+    //  duoc-CR-690 — trang kế hoạch dùng CHUNG cho `/new` và `/:id`. ⚠️ `/new` phải đứng TRƯỚC `:id`.
+    {
+      path: appRoutes.hr.headcountPlanNew,
+      lazy: async () => ({
+        Component: (await import('./pages/headcount-plan-detail-page')).HeadcountPlanDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.headcountPlanDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/headcount-plan-detail-page')).HeadcountPlanDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.hrCostGroups,
+      lazy: async () => ({
+        Component: (await import('./pages/hr-cost-group-list-page')).HrCostGroupListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.hrCostTemplates,
+      lazy: async () => ({
+        Component: (await import('./pages/hr-cost-template-list-page')).HrCostTemplateListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.hrCostTemplateNew,
+      lazy: async () => ({
+        Component: (await import('./pages/hr-cost-template-detail-page')).HrCostTemplateDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.hrCostTemplateDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/hr-cost-template-detail-page')).HrCostTemplateDetailPage,
       }),
     },
     {

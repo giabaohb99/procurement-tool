@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   buildHeadcountPlanDepartmentOptions,
   buildHeadcountPlanYearOptions,
-  normalizeHeadcountPlanPayload,
   splitImportErrorMessage,
 } from './headcount-plan-options'
 
@@ -56,34 +55,6 @@ describe('buildHeadcountPlanDepartmentOptions', () => {
 
   it('still offers the whole-company row when the department list is empty or not loaded', () => {
     expect(buildHeadcountPlanDepartmentOptions([])).toEqual([{ value: '0', label: 'Toàn pháp nhân' }])
-  })
-})
-
-describe('normalizeHeadcountPlanPayload', () => {
-  it('turns select strings into the ints the backend schema forbids otherwise', () => {
-    expect(
-      normalizeHeadcountPlanPayload({ year: '2026', company_id: '3', department_id: '12', planned_headcount: 7, note: '' }),
-    ).toEqual({ year: 2026, company_id: 3, department_id: 12, planned_headcount: 7, note: '' })
-  })
-
-  it('keeps department 0 (whole company) and maps an empty department to 0, not NaN', () => {
-    expect(normalizeHeadcountPlanPayload({ year: '2026', company_id: '3', department_id: '0' }).department_id).toBe(0)
-    expect(normalizeHeadcountPlanPayload({ year: '2026', company_id: '3', department_id: '' }).department_id).toBe(0)
-  })
-
-  it('does not add a payroll key when the form had no payroll field — backend would 403', () => {
-    const out = normalizeHeadcountPlanPayload({ year: '2026', company_id: '3', planned_headcount: 2 })
-    expect('planned_payroll_monthly' in out).toBe(false)
-  })
-
-  it('sends payroll as a number when present, null when cleared', () => {
-    expect(normalizeHeadcountPlanPayload({ year: '2026', company_id: '1', planned_payroll_monthly: '150000000' }).planned_payroll_monthly).toBe(150000000)
-    expect(normalizeHeadcountPlanPayload({ year: '2026', company_id: '1', planned_payroll_monthly: '' }).planned_payroll_monthly).toBeNull()
-  })
-
-  it('falls back to 0 for blank or garbage headcount instead of sending NaN', () => {
-    expect(normalizeHeadcountPlanPayload({ year: '2026', company_id: '1', planned_headcount: '' }).planned_headcount).toBe(0)
-    expect(normalizeHeadcountPlanPayload({ year: '2026', company_id: '1', planned_headcount: 'abc' }).planned_headcount).toBe(0)
   })
 })
 

@@ -1,33 +1,70 @@
 import type { AxiosRequestConfig } from 'axios'
 
-import { downloadFile, httpClient } from '@/core/api'
+import { apiDelete, apiGet, apiPost, apiPut, downloadFile, httpClient } from '@/core/api'
 
-import type { HeadcountPlanImportResult } from '../types/headcount-plan'
+import type {
+  HeadcountPlanComputed,
+  HeadcountPlanCreatePayload,
+  HeadcountPlanCreateResult,
+  HeadcountPlanDetail,
+  HeadcountPlanDraftPayload,
+  HeadcountPlanLinesImportResult,
+  HeadcountPlanPayload,
+  HeadcountPlanPositionStat,
+} from '../types/headcount-plan'
 
-/** Gốc API danh mục kế hoạch nhân sự (duoc-CR-689). Danh sách / thêm / sửa / xóa đi qua khung CRUD chung. */
+/**
+ * API KẾ HOẠCH NHÂN SỰ THEO KỲ (duoc-CR-690). Danh sách đi qua khung CRUD chung (`CrudListPage`
+ * đọc `GET /api/headcount-plans`); trang chi tiết đi qua các hàm dưới đây.
+ */
 export const HEADCOUNT_PLAN_API_PATH = '/api/headcount-plans'
 
-/**
- * Xuất CSV theo ĐÚNG bộ lọc đang xem (năm / pháp nhân / phòng). Cột lương để trống khi người
- * xem thiếu `labor_contract.read` — backend lo, giao diện không cần biết.
- */
-export function exportHeadcountPlansCsv(params: Record<string, string>) {
-  return downloadFile(`${HEADCOUNT_PLAN_API_PATH}/export/csv`, 'ke-hoach-nhan-su.csv', params)
+export const headcountPlanApi = {
+  get: (id: number) => apiGet<HeadcountPlanDetail>(`${HEADCOUNT_PLAN_API_PATH}/${id}`),
+
+  create: (payload: HeadcountPlanCreatePayload) =>
+    apiPost<HeadcountPlanCreateResult>(HEADCOUNT_PLAN_API_PATH, payload),
+
+  /** Thay header + khoản + dòng vị trí + văn bản liên kết. */
+  update: (id: number, payload: HeadcountPlanPayload) =>
+    apiPut<HeadcountPlanDetail>(`${HEADCOUNT_PLAN_API_PATH}/${id}`, payload),
+
+  remove: (id: number) => apiDelete<null>(`${HEADCOUNT_PLAN_API_PATH}/${id}`),
+
+  /**
+   * Xem trước bảng tự tính — KHÔNG lưu. `_silent`: gọi theo nhịp gõ, lỗi kiểm hợp lệ (422) bày ngay
+   * tại khối khoản chi phí; để `httpClient` bật toast thì mỗi lần dừng tay là một toast đỏ.
+   */
+  compute: (payload: HeadcountPlanDraftPayload) =>
+    apiPost<HeadcountPlanComputed>(`${HEADCOUNT_PLAN_API_PATH}/compute`, payload, { _silent: true } as AxiosRequestConfig),
+
+  positionStats: (companyId: number, departmentId: number) =>
+    apiGet<HeadcountPlanPositionStat[]>(`${HEADCOUNT_PLAN_API_PATH}/position-stats`, {
+      params: { company_id: companyId, department_id: departmentId },
+    }),
+
+  /** Xuất MỘT kế hoạch ra Excel (dòng vị trí + bảng tính). */
+  exportXlsx: (id: number, filename: string) =>
+    downloadFile(`${HEADCOUNT_PLAN_API_PATH}/${id}/export`, filename),
+
+  /**
+   * Nhập CSV dòng vị trí vào MỘT kế hoạch (`position_code, hc_1..hc_n, <mã khoản>…`). `httpClient`
+   * thẳng vì `multipart/form-data` — KHÔNG đặt tay `Content-Type`, trình duyệt tự sinh `boundary`.
+   * `_silent`: lỗi là DANH SÁCH theo dòng, nút nhập tự bày hộp thoại thay cho toast một câu.
+   */
+  importLinesCsv: async (id: number, file: File): Promise<HeadcountPlanLinesImportResult> => {
+    const body = new FormData()
+    body.append('file', file)
+    const res = await httpClient.post<{ data: HeadcountPlanLinesImportResult }>(
+      `${HEADCOUNT_PLAN_API_PATH}/${id}/import/csv`,
+      body,
+      { _silent: true } as AxiosRequestConfig,
+    )
+    return res.data.data
+  },
 }
 
-/**
- * Nhập CSV — có rồi thì cập nhật, chưa có thì tạo (theo năm × pháp nhân × phòng), NGUYÊN KHỐI:
- * một dòng lỗi là không ghi dòng nào. `httpClient` thẳng vì `multipart/form-data`; KHÔNG đặt tay
- * `Content-Type` — trình duyệt tự sinh `boundary`. `_silent`: lỗi tệp là DANH SÁCH nhiều dòng,
- * nút nhập tự bày hộp thoại liệt kê từng dòng thay cho toast một câu của `httpClient`.
- */
-export async function importHeadcountPlansCsv(file: File): Promise<HeadcountPlanImportResult> {
-  const body = new FormData()
-  body.append('file', file)
-  const res = await httpClient.post<{ data: HeadcountPlanImportResult }>(
-    `${HEADCOUNT_PLAN_API_PATH}/import/csv`,
-    body,
-    { _silent: true } as AxiosRequestConfig,
-  )
-  return res.data.data
+/** Xuất danh sách (header) theo ĐÚNG bộ lọc đang xem. */
+export function exportHeadcountPlansCsv(params: Record<string, string>) {
+  return downloadFile(`${HEADCOUNT_PLAN_API_PATH}/export/csv`, 'ke-hoach-nhan-su.csv', params)
 }
