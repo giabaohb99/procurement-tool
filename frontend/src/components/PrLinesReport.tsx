@@ -6,7 +6,7 @@ import Pagination from './Pagination'
 import SearchSelect from './SearchSelect'
 import { prBadge, PR_STATUS } from '../config/cruds'
 import { fmt } from './report-table'
-import { PR_LINE_STATUSES, prLineStatusLabel } from '../utils/statusLabels'
+import { PR_LINE_STATUSES, PR_LINE_STATUS_COLOR, prLineStatusLabel } from '../utils/statusLabels'
 
 // bao-CR-295/296 — báo cáo "Chi tiết Yêu cầu mua hàng" theo DÒNG hàng, dùng chung cho
 // tab trong Báo cáo mua hàng và trang riêng /pr-lines-report (soi mã hàng chưa được đặt).
@@ -84,7 +84,7 @@ export default function PrLinesReport({ year, companyId }: { year: string; compa
                 <td style={{ textAlign: 'right' }}>{fmtPrice(r.price)}</td>
                 <td style={{ textAlign: 'right' }}>{r.vat_pct ? `${fmt(r.vat_pct)}%` : ''}</td>
                 <td style={{ textAlign: 'right' }}>{fmtVND(r.amount)}</td>
-                <td>{prLineStatusLabel(r.line_status)}</td><td>{prBadge(r.status)}</td>
+                <td><span className="badge wrap" style={{ background: (PR_LINE_STATUS_COLOR[r.line_status] || '#94a3b8') + '22', color: PR_LINE_STATUS_COLOR[r.line_status] || '#64748b' }}>{prLineStatusLabel(r.line_status)}</span></td><td>{prBadge(r.status)}</td>
                 <td>{r.expected_date}</td><td>{r.assignee_name || r.assignee}</td>
               </tr>))}
             {(prlData.total || 0) === 0 && <tr><td colSpan={18} style={{ textAlign: 'center', color: '#999', padding: 14 }}>{(prlF.status || prlF.line_status || prlF.assignee || prlF.search) ? 'Không có dòng khớp bộ lọc' : 'Chưa có dữ liệu'}</td></tr>}

@@ -31,7 +31,7 @@ import { fmtSize, fileIcon } from '../utils/file-type'
 import { normGroup, regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
 import { newDupCodes } from '../utils/lines'
 import { describeOrdered, EMPTY_PROGRESS, type LineProgress, type OrderProgress } from '../utils/over-order'
-import { prLineStatusLabel } from '../utils/statusLabels'
+import { prLineStatusLabel, PR_LINE_STATUS_COLOR } from '../utils/statusLabels'
 
 const API = '/api/purchase-requests'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
@@ -48,10 +48,7 @@ const fmtVNDBlank = (n: any) => { const v = Math.round(Number(n) || 0); return v
 // B-06: cột `line_status` lưu MÃ; nhãn lấy ở `statusLabels.ts`, ở đây chỉ còn bảng màu.
 const LS_NO_PO = 'no_po'
 const LS_CANCELLED = 'cancelled'
-const LS_COLOR: Record<string, string> = {
-  no_po: '#94a3b8', not_ordered: '#d97706', ordered: '#00AEEF',
-  received: '#0d9488', completed: '#16a34a', cancelled: '#b91c1c',
-}
+const LS_COLOR = PR_LINE_STATUS_COLOR
 const emptyItem = {
   product_code: '', product_name: '', item_group: '', group_desc: '', qty: 0, unit: '',
   price: 0, vat_pct: 8, warehouse: '', required_date: '', assignee: '', line_status: LS_NO_PO, progress_note: '', note: '',
