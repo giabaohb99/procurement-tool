@@ -5,12 +5,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/shared/utils/cn'
 import { formatMoney } from '@/shared/utils/format-money'
 import type { HeadcountPlanActual, HeadcountPlanComputed, HeadcountPlanPeriod } from '../types/headcount-plan'
+import type { HrCostItem } from '../types/hr-cost'
+import { buildCostBucketRows, type CostBucketKey } from '../utils/headcount-plan-cost-buckets'
 import { HeadcountPlanActualRows } from './headcount-plan-actual-rows'
 
 interface HeadcountPlanComputedTableProps {
   computed: HeadcountPlanComputed | null | undefined
-  /** Kỳ con dựng ở giao diện — dùng làm tiêu đề cột khi bộ tính chưa trả lời. */
+  /** Kỳ con dựng ở giao diện — tiêu đề cột. */
   periods: readonly HeadcountPlanPeriod[]
+  /** «Cả năm» (kỳ Năm) · «Tổng kỳ». */
+  totalLabel: string
+  /** Khoản trên form — để biết khoản nào thuộc dòng Lương / Bảo hiểm / Thưởng. */
+  costItems: readonly Pick<HrCostItem, 'code' | 'calc_method'>[]
+  /** Số người cần có từng kỳ con (cộng ở giao diện). */
+  headcounts: readonly number[]
   showMoney: boolean
   isFetching: boolean
   /** Thực tế so với kế hoạch — chỉ kế hoạch ĐÃ LƯU có (không có ở bản xem trước). */
@@ -26,35 +34,38 @@ function Money({ value, strong }: { value: number | null | undefined; strong?: b
 }
 
 /**
- * Khối 4 — HỆ THỐNG TỰ TÍNH (chỉ đọc, tài liệu 06 §2.4). Mỗi NHÓM một dòng, bấm mở ra từng khoản;
- * dưới cùng là Tổng chi phí, Định biên cuối kỳ con, Bình quân / người. Không được xem lương thì chỉ
- * còn dòng định biên — mọi dòng tiền bị gỡ, không phải dựng toàn gạch.
+ * Khối ③ TỔNG (tự tính, chỉ đọc — duoc-CR-690): Số người · Lương + phụ cấp · Bảo hiểm · Thưởng, quà, chi
+ * khác · TỔNG; dưới đó các dòng Thực tế / Còn dư của kế hoạch đã lưu. Bấm một dòng tiền để mở ra từng chi
+ * phí. Không được xem lương thì chỉ còn dòng số người.
  *
- * Con số là của BỘ TÍNH ở backend (`POST /compute`), giao diện không tự cộng nhân — tự cộng là sớm
- * muộn lệch với báo cáo A4 / A5 đọc cùng bộ tính đó.
+ * Con số là của BỘ TÍNH ở backend (`POST /compute`) — giao diện chỉ CỘNG các khoản bộ tính trả về theo
+ * cách tính, không tự nhân lương × người (tự tính là sớm muộn lệch với báo cáo đọc cùng bộ tính đó).
  */
 export function HeadcountPlanComputedTable({
   computed,
   periods,
+  totalLabel,
+  costItems,
+  headcounts,
   showMoney,
   isFetching,
   actual,
   notes = [],
 }: HeadcountPlanComputedTableProps) {
-  const [open, setOpen] = useState<Set<number>>(() => new Set())
-  const heads = computed?.periods?.length ? computed.periods : periods
-  const toggle = (groupId: number) =>
+  const [open, setOpen] = useState<Set<CostBucketKey>>(() => new Set())
+  const buckets = showMoney && computed && !computed.money_hidden ? buildCostBucketRows(computed.items, costItems, periods.length) : []
+  const toggle = (key: CostBucketKey) =>
     setOpen((prev) => {
       const next = new Set(prev)
-      if (next.has(groupId)) next.delete(groupId)
-      else next.add(groupId)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
       return next
     })
 
   return (
-    <div className="relative overflow-x-auto rounded-md border">
+    <div className="relative rounded-md border">
       {isFetching && (
-        <span className="absolute top-2 right-2 flex items-center gap-1 text-xs text-muted-foreground">
+        <span className="absolute top-2 right-2 z-10 flex items-center gap-1 text-xs text-muted-foreground">
           <Loader2 className="size-3 animate-spin" />
           Đang tính…
         </span>
@@ -62,65 +73,66 @@ export function HeadcountPlanComputedTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="min-w-56">Khoản mục</TableHead>
-            {heads.map((p) => (
-              <TableHead key={p.key} className="min-w-32 text-right">
+            <TableHead className="min-w-44" />
+            {periods.map((p) => (
+              <TableHead key={p.key} className="min-w-28 text-right">
                 {p.label}
               </TableHead>
             ))}
-            <TableHead className="min-w-36 text-right">Tổng kỳ</TableHead>
+            <TableHead className="min-w-32 text-right">{totalLabel}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {showMoney &&
-            (computed?.groups ?? []).map((g) => {
-              const gid = g.group_id ?? 0
-              const expanded = open.has(gid)
-              const children = (computed?.items ?? []).filter((i) => (i.group_id ?? 0) === gid)
-              return (
-                <Fragment key={`g${gid}`}>
-                  <TableRow>
-                    <TableCell>
-                      <button
-                        type="button"
-                        className="flex items-center gap-1 font-medium"
-                        aria-expanded={expanded}
-                        onClick={() => toggle(gid)}
-                      >
-                        {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                        {g.name || 'Chưa xếp nhóm'}
-                      </button>
+          <TableRow>
+            <TableCell>Số người</TableCell>
+            {periods.map((p, i) => (
+              <TableCell key={p.key} className="text-right tabular-nums">
+                {headcounts[i] ?? 0}
+              </TableCell>
+            ))}
+            <TableCell className="text-right tabular-nums">{headcounts.length ? headcounts[headcounts.length - 1] : 0}</TableCell>
+          </TableRow>
+          {buckets.map((b) => {
+            const expanded = open.has(b.key)
+            return (
+              <Fragment key={b.key}>
+                <TableRow>
+                  <TableCell>
+                    <button type="button" className="flex items-center gap-1" aria-expanded={expanded} onClick={() => toggle(b.key)}>
+                      {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                      {b.label}
+                    </button>
+                  </TableCell>
+                  {periods.map((p, i) => (
+                    <TableCell key={p.key} className="text-right">
+                      <Money value={b.values[i]} />
                     </TableCell>
-                    {heads.map((p, i) => (
-                      <TableCell key={p.key} className="text-right">
-                        <Money value={g.values[i]} />
-                      </TableCell>
-                    ))}
-                    <TableCell className="text-right">
-                      <Money value={g.total} strong />
-                    </TableCell>
-                  </TableRow>
-                  {expanded &&
-                    children.map((it) => (
-                      <TableRow key={`i${it.code}`} className="text-muted-foreground">
-                        <TableCell className="pl-9">{it.name}</TableCell>
-                        {heads.map((p, i) => (
-                          <TableCell key={p.key} className="text-right">
-                            <Money value={it.values[i]} />
-                          </TableCell>
-                        ))}
-                        <TableCell className="text-right">
-                          <Money value={it.total} />
+                  ))}
+                  <TableCell className="text-right">
+                    <Money value={b.total} />
+                  </TableCell>
+                </TableRow>
+                {expanded &&
+                  b.items.map((it) => (
+                    <TableRow key={`i${it.code}`} className="text-muted-foreground">
+                      <TableCell className="pl-9 whitespace-normal">{it.name}</TableCell>
+                      {periods.map((p, i) => (
+                        <TableCell key={p.key} className="text-right">
+                          <Money value={it.values[i]} />
                         </TableCell>
-                      </TableRow>
-                    ))}
-                </Fragment>
-              )
-            })}
+                      ))}
+                      <TableCell className="text-right">
+                        <Money value={it.total} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </Fragment>
+            )
+          })}
           {showMoney && (
             <TableRow className="bg-muted/40">
-              <TableCell className="font-semibold">Tổng chi phí nhân sự</TableCell>
-              {heads.map((p, i) => (
+              <TableCell className="font-semibold">TỔNG</TableCell>
+              {periods.map((p, i) => (
                 <TableCell key={p.key} className="text-right">
                   <Money value={computed?.total?.values[i]} strong />
                 </TableCell>
@@ -130,29 +142,7 @@ export function HeadcountPlanComputedTable({
               </TableCell>
             </TableRow>
           )}
-          <TableRow>
-            <TableCell>Định biên cuối kỳ con</TableCell>
-            {heads.map((p, i) => (
-              <TableCell key={p.key} className="text-right tabular-nums">
-                {computed?.headcount[i] ?? ''}
-              </TableCell>
-            ))}
-            <TableCell className="text-right tabular-nums">
-              {computed?.headcount.length ? computed.headcount[computed.headcount.length - 1] : ''}
-            </TableCell>
-          </TableRow>
-          {showMoney && (
-            <TableRow>
-              <TableCell>Bình quân / người</TableCell>
-              {heads.map((p) => (
-                <TableCell key={p.key} />
-              ))}
-              <TableCell className="text-right">
-                <Money value={computed?.avg_per_head} />
-              </TableCell>
-            </TableRow>
-          )}
-          {actual && <HeadcountPlanActualRows actual={actual} periods={heads} showMoney={showMoney} />}
+          {actual && <HeadcountPlanActualRows actual={actual} periods={periods} showMoney={showMoney} />}
         </TableBody>
       </Table>
       {notes.length > 0 && (

@@ -321,12 +321,12 @@ def test_xuat_xlsx_co_hai_sheet_va_nguoi_khong_thay_tien_chi_co_dinh_bien(db, wo
     resp = grant_hr(world, client_as).get(f"{URL}/{plan['id']}/export")
     assert resp.status_code == 200 and "spreadsheetml" in resp.headers["content-type"]
     wb = load_workbook(BytesIO(resp.content))
-    assert wb.sheetnames == ["Định biên", "Bảng tính"]
+    assert wb.sheetnames == ["Số người", "Bảng tính"]
     assert [c.value for c in wb["Bảng tính"][1]][0] == "Khoản"
     blind = grant_hr(world, client_as, key="a2", pay=False).get(f"{URL}/{plan['id']}/export")
     wb = load_workbook(BytesIO(blind.content))
-    assert wb.sheetnames == ["Định biên"]
-    assert all(10_000_000 not in [c.value for c in r] for r in wb["Định biên"].iter_rows())
+    assert wb.sheetnames == ["Số người"]
+    assert all(10_000_000 not in [c.value for c in r] for r in wb["Số người"].iter_rows())
 
 
 def test_xuat_csv_danh_sach_header_va_chong_cong_thuc(db, world, client_as):
@@ -358,7 +358,7 @@ def test_nhap_csv_dong_vi_tri_thay_va_them(db, world, client_as):
 
 
 @pytest.mark.parametrize("bad_row,needle", [
-    ("KHONG_CO,1,1,1,1,5", "mã chức vụ"), ("KTV,1,1,1,x,5", "không phải số nguyên"), ("KTV,1,1,1,-1,5", "Định biên"),
+    ("KHONG_CO,1,1,1,1,5", "mã chức vụ"), ("KTV,1,1,1,x,5", "không phải số nguyên"), ("KTV,1,1,1,-1,5", "Số người"),
     ("KTV,1,1,1,1,abc", "không phải số nguyên"),
 ])
 def test_nhap_csv_nguyen_khoi_bao_loi_theo_dong(db, world, client_as, bad_row, needle):

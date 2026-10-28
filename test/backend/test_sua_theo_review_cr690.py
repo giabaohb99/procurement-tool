@@ -202,7 +202,7 @@ def _ci(code, method, **kw):
 
 
 def test_cach_tinh_4_bat_buoc_chon_thang():
-    with pytest.raises(PlanCalcError, match="ít nhất một tháng"):
+    with pytest.raises(PlanCalcError, match="chưa chọn tháng chi"):
         compute_plan(1, 1, YEAR, [_ci("A", 4, amount=1)], [PlanLine(0, (1, 1, 1, 1))])
     assert compute_plan(1, 1, YEAR, [_ci("A", 4, amount=1, months=(1,))], [PlanLine(0, (1, 1, 1, 1))])["total"]["total"] == 1
 

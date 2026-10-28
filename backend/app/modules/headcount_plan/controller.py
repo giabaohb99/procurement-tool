@@ -7,13 +7,13 @@ CHE tiền theo pháp nhân. Mọi đường qua `require` + `apply_scope` / `ge
 from contextlib import contextmanager
 from datetime import date
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
-from app.core.auth import require
+from app.core.auth import get_current_user, require, user_has_permission
 from app.core.base_controller import pagination
 from app.core.crud import commit_or_conflict
 from app.core.database import get_db
@@ -22,7 +22,7 @@ from app.core.scoping import apply_scope, get_perm_profile, get_scoped
 from app.core.vn_time import vn_today
 from app.modules.attachment.model import FileLink
 
-from . import catalog_service, csv_service, export_service, plan_save_service, service
+from . import catalog_service, csv_service, document_upload_service, export_service, plan_save_service, service
 from .cost_model import HeadcountPlanCostItem
 from .costing import PlanCalcError
 from .detail_serializer import load_children, serialize_detail
@@ -111,6 +111,15 @@ def position_stats(company_id: int, department_id: int = 0, as_of: date | None =
                    user=Depends(require(ENTITY, "read"))):
     prof = get_perm_profile(db, user)
     return success(get_position_stats(db, user, prof, company_id, department_id, as_of or vn_today()))
+
+
+@router.post("/documents/upload")
+def upload_basis_document(file: UploadFile = File(...), title: str = Form(""), db: Session = Depends(get_db),
+                          user=Depends(get_current_user)):
+    """Tải tệp căn cứ -> tạo văn bản KÍN ở phân hệ Văn bản, trả dòng để thêm vào `documents` của bản nháp (không cần id kế hoạch)."""
+    if not (user_has_permission(db, user, ENTITY, "write") or user_has_permission(db, user, ENTITY, "create")):
+        raise HTTPException(403, f"Không có quyền: write {ENTITY}")
+    return success(document_upload_service.create_from_upload(db, user, file, title), "Đã tạo văn bản từ tệp", 201)
 
 
 @router.get("/{oid}")

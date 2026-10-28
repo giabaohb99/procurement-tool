@@ -11,7 +11,7 @@ export function PayrollHiddenNotice() {
       <Lock className="mt-0.5 size-4 shrink-0" />
       <span>
         Số tiền của kế hoạch đang ẩn với bạn: chỉ người đọc được hợp đồng lao động của pháp nhân này mới
-        thấy lương, các khoản chi phí và bảng tự tính. Bạn vẫn xem và sửa được <strong>định biên</strong> và
+        thấy lương, chi phí khác và bảng Tổng. Bạn vẫn xem và sửa được <strong>số người cần có</strong> và
         căn cứ; bấm Lưu <strong>không làm mất</strong> số tiền người khác đã nhập.
       </span>
     </div>

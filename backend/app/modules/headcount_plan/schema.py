@@ -79,7 +79,7 @@ class CostTemplatePatch(_Strict):
 class PlanLineIn(_Strict):
     position_id: Id = 0
     headcounts: Annotated[list[Annotated[int, Field(ge=0, le=MAX_HEADCOUNT)]],
-                          Field(min_length=1, max_length=4, title="Định biên")]
+                          Field(min_length=1, max_length=4, title="Số người kế hoạch")]
     #  None = người xem không thấy tiền (giữ nguyên số đang lưu).
     amounts: Annotated[dict[Annotated[str, Field(max_length=30)], Money], Field(max_length=MAX_COST_ITEMS)] | None = None
     note: Str500 = ""

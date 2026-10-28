@@ -5,11 +5,13 @@ import type { HeadcountPlanLine, HeadcountPlanPositionStat } from '../types/head
 import type { HrCostItem } from '../types/hr-cost'
 import {
   addDraftLine,
+  applySeedToDraft,
   applyTemplateToDraft,
   changeDraftPeriod,
   computeNeedToHire,
   countCurrentForLine,
   createEmptyDraft,
+  fillLineHeadcounts,
   normalizeCostItem,
 } from './headcount-plan-draft'
 
@@ -131,5 +133,48 @@ describe('current headcount and hires needed', () => {
     expect(computeNeedToHire(ln(5, [0, 1, 1, 5]), 4)).toBe(1)
     expect(computeNeedToHire(ln(5, [3]), 4)).toBe(-1)
     expect(computeNeedToHire(ln(5, []), 2)).toBe(-2)
+  })
+})
+
+describe('filling a new plan without a template picker', () => {
+  const PHU_CAP = item('PHU_CAP', M.PER_HEAD_MONTH)
+
+  it('copies a complete template as is and lets the backend copy it on create (template_id kept)', () => {
+    const d = applySeedToDraft(createEmptyDraft(2026), { key: 't9', templateId: 9, items: [TEMPLATE[0], PHU_CAP] }, [])
+    expect(d.template_id).toBe(9)
+    expect(d.cost_items.map((i) => i.code)).toEqual(['LUONG', 'PHU_CAP'])
+  })
+
+  it('adds Lương / Phụ cấp when the template lacks them and then sends the whole set (template_id 0)', () => {
+    const d = applySeedToDraft(createEmptyDraft(2026), { key: 't9', templateId: 9, items: TEMPLATE }, [])
+    expect(d.cost_items.map((i) => i.code)).toEqual(['LUONG', 'PHU_CAP', 'BHXH', 'THUONG_13'])
+    expect(d.template_id).toBe(0)
+    //  Vẫn giữ bộ gốc để đổi kỳ thì chép lại (Q1 không có thưởng T12).
+    expect(changeDraftPeriod(d, { period_type: PLAN_PERIOD_TYPE_CODE.QUARTER, period_no: 1 }).skipped_items).toEqual(['THUONG_13'])
+  })
+
+  it('a set built on screen (no template on the server) is sent as is', () => {
+    const d = applySeedToDraft(createEmptyDraft(2026), { key: 'ui', templateId: 0, items: [TEMPLATE[0], PHU_CAP] }, [])
+    expect(d.template_id).toBe(0)
+    expect(d.cost_items).toHaveLength(2)
+  })
+
+  it('an empty template still ends up with the two salary columns', () => {
+    const d = applySeedToDraft(createEmptyDraft(2026), { key: 't1', templateId: 1, items: [] }, [])
+    expect(d.cost_items.map((i) => i.code)).toEqual(['LUONG', 'PHU_CAP'])
+  })
+})
+
+describe('«Giống nhau cả năm»', () => {
+  const line: HeadcountPlanLine = { position_id: 5, headcounts: [0, 1, 4, 4], amounts: null, note: 'x' }
+
+  it('puts the same headcount into every sub-period and keeps the rest of the line', () => {
+    expect(fillLineHeadcounts(line, 5)).toEqual({ ...line, headcounts: [5, 5, 5, 5] })
+  })
+
+  it('cleans a negative or fractional number to a non-negative int (backend rejects both)', () => {
+    expect(fillLineHeadcounts(line, -3).headcounts).toEqual([0, 0, 0, 0])
+    expect(fillLineHeadcounts(line, 2.7).headcounts).toEqual([2, 2, 2, 2])
+    expect(fillLineHeadcounts({ ...line, headcounts: [] }, 3).headcounts).toEqual([])
   })
 })

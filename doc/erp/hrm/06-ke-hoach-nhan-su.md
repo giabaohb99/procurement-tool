@@ -8,6 +8,8 @@
 | Báo cáo dùng số này | A4 «Định biên kế hoạch so với thực tế» và A5 «Quỹ lương theo pháp nhân» (`05-bao-cao-nhan-su.md`) |
 | Mã nguồn hiện có | `backend/app/modules/headcount_plan/` · `frontend-v2/src/modules/hr/pages/headcount-plan-list-page.tsx` |
 
+> ⚠️ **Đọc §10 trước (28/10/2026):** giao diện cuối cùng là **form 3 khối** (Người và lương · Chi phí khác · Tổng). Các màn «Mẫu khoản chi phí», «Nhóm chi phí», ô chọn mẫu và hộp thoại khoản tả ở §2.2, §4.1 **đã gỡ khỏi menu** — bảng dữ liệu, API và 5 cách tính ở backend vẫn giữ; kế hoạch mới tự lấy «Mẫu gợi ý».
+
 Không trái chốt 16/10/2026 «không làm chấm công, không tính lương»: đây là **dự toán chi phí nhân sự** để duyệt và so sánh, không tính lương tháng, không làm phiếu lương.
 
 ---
@@ -43,7 +45,7 @@ Một kế hoạch = **một kỳ × một pháp nhân × một phòng ban** (ho
 | **Số căn cứ** | Không | Ví dụ «12/QĐ-BGĐ» |
 | **Ngày căn cứ** | Không | |
 | **Người duyệt** | Không | Chọn nhân sự |
-| **Văn bản liên kết** | Không | Chọn văn bản **có sẵn ở phân hệ Văn bản** (quyết định duyệt ngân sách, tờ trình, biên bản). Hiện số / ký hiệu, trích yếu, trạng thái; bấm mở sang trang văn bản. Liên kết được nhiều văn bản |
+| **Văn bản liên kết** | Không | Chọn văn bản **có sẵn ở phân hệ Văn bản** (quyết định duyệt ngân sách, tờ trình, biên bản). Hiện số / ký hiệu, trích yếu, trạng thái; bấm mở sang trang văn bản. Liên kết được nhiều văn bản. Nút **«Tải tệp lên»**: chọn tệp (quyết định, tờ trình…) → hệ thống **tự tạo văn bản** loại «Căn cứ kế hoạch nhân sự» (`CCKHNS`) có tệp đó rồi thêm vào danh sách (dùng được cả lúc tạo mới) |
 | **Tệp đính kèm** | Không | Bảng tính gốc, tệp lẻ chưa vào Văn bản. Dùng kho tệp chung |
 | **Lý do / ghi chú** | Không | Ví dụ «Mở thêm mảng kế toán thuế» |
 
@@ -161,7 +163,9 @@ Dòng **Thực tế** chỉ cộng các khoản có nguồn, và ghi rõ «thự
 
 | `tab_headcount_plan_document` | Kế hoạch × văn bản liên kết (`plan_id`, `document_id`), duy nhất theo cặp |
 
-**Văn bản liên kết và quyền:** chỉ chọn được văn bản mà người lập **đọc được** (luật đọc của phân hệ Văn bản: `document/access_service`). Người xem kế hoạch mà không đọc được văn bản đó thì chỉ thấy «Văn bản bạn chưa được xem», không lộ số, trích yếu hay tệp. Văn bản bị xóa thì liên kết hiện «Văn bản đã xóa». Kế hoạch không cấp thêm quyền đọc văn bản cho ai. Người sửa kế hoạch **gỡ được** cả liên kết tới văn bản mình không đọc được (gỡ không làm lộ nội dung; kế hoạch thuộc quyền người lập).
+**Văn bản liên kết và quyền:** chỉ chọn được văn bản mà người lập **đọc được** (luật đọc của phân hệ Văn bản: `document/access_service`). Người xem kế hoạch mà không đọc được văn bản đó thì chỉ thấy «Văn bản bạn chưa được xem», không lộ số, trích yếu hay tệp. Văn bản bị xóa thì liên kết hiện «Văn bản đã xóa». Kế hoạch không cấp thêm quyền đọc văn bản cho ai.
+
+**Tải tệp lên (`POST /api/headcount-plans/documents/upload`, multipart `file` + `title` tùy chọn):** gác `headcount_plan.write` HOẶC `create` + `document.read`. Tạo văn bản loại `CCKHNS` (mã bất biến cấp ngay, ví dụ `DEGO-CCKHNS-001`; pháp nhân / phòng lấy từ hồ sơ người tải; thư mục mặc định của pháp nhân; không sổ, không duyệt, không ký), phiên bản 1.0 có đúng tệp tải lên, trích yếu mặc định «Căn cứ kế hoạch nhân sự – <tên tệp>». Loại bật `is_personal` nên văn bản **kín**: phạm vi vai trò (kể cả «công ty») không mở được; chỉ người tạo, người được chia đích danh, người duyệt và vai trò phạm vi «tất cả» đọc. Luật tệp (đuôi, 50 MB, byte đầu) là của đính kèm Văn bản. Người dùng tải rồi không lưu kế hoạch thì văn bản vẫn nằm ở phân hệ Văn bản của người đó (chấp nhận, xóa tay được). Người sửa kế hoạch **gỡ được** cả liên kết tới văn bản mình không đọc được (gỡ không làm lộ nội dung; kế hoạch thuộc quyền người lập).
 
 Mọi cột loại / cách tính lưu **SMALLINT + IntEnum** (luật R2). Không lưu chữ tiếng Việt cho trạng thái.
 
@@ -188,4 +192,6 @@ Mọi cột loại / cách tính lưu **SMALLINT + IntEnum** (luật R2). Không
 - **Người xem thấy thiếu một phần HĐ** (vd quyền HĐLĐ loại trừ một phòng mà xem kế hoạch toàn pháp nhân): không so Thực tế, ghi «Không so thực tế: bạn chỉ được xem hợp đồng của một phần nơi này». Phòng bị loại trừ thì kế hoạch của phòng đó ẩn hết tiền.
 - **Người không xem được tiền** chỉ sửa được định biên, vị trí, căn cứ, văn bản; đổi cấu trúc khoản chi phí bị chặn.
 - Nhóm trên bảng tự tính xếp theo ô «Thứ tự» của Nhóm chi phí. Mẫu và nhóm: thêm / nhân bản cần quyền thêm, sửa cần quyền sửa, xóa cần quyền xóa.
+- **Giao diện khoản chi phí tối giản (28/10/2026, anh Được «nhiều quá loạn»):** mỗi khoản một dòng (tên + câu mô tả). Hộp thoại chỉ có Tên và «Tính thế nào»: **Hằng tháng theo người** (ô «Số tiền mỗi người mỗi tháng» = MỨC CHUNG lưu ở `amount`; ô tiền của vị trí trống / 0 thì dùng mức chung, > 0 thì số riêng thắng), **Phần trăm trên lương** (Tỷ lệ %, Tối đa đ/người; luôn tính trên MỌI khoản hằng tháng), **Theo đợt** (Chi vào tháng + Mức: mỗi người · cả phòng · số tháng lương). Không còn mục «Nâng cao»: mã, nhóm (theo cách tính), nguồn thực tế, áp cho, thứ tự hệ thống tự đặt. Khoản cũ có cấu hình riêng được giữ nguyên, có nhãn riêng. Màn **Nhóm chi phí đã gỡ** khỏi menu (bảng dữ liệu còn, hệ thống tự gán). «Mẫu gợi ý» gọn còn 4 khoản (Lương, Phụ cấp, Bảo hiểm + công đoàn 23,5% trần 50,6 tr, Thưởng tháng 13) — `hcplan04` thay bộ 8 khoản cũ nếu mẫu chưa bị sửa. Chữ «Định biên» đổi thành **«Số người kế hoạch»** ở màn kế hoạch và báo cáo A4. **Văn bản liên kết** có nút «Tải tệp lên»: tự tạo văn bản loại «Căn cứ kế hoạch nhân sự» (`CCKHNS`, cá nhân + mật) ở phân hệ Văn bản rồi gắn vào kế hoạch; khối «Tệp đính kèm» riêng đã bỏ khỏi trang. Mô hình dữ liệu và 5 cách tính ở §4 không đổi.
+- **Form 3 khối (28/10/2026, anh Được chốt sau khi thấy «khoản chi phí / cách tính» khó hiểu) — thay §2.2, §2.3 ở phía giao diện:** ① **Người và lương**: Vị trí · Hiện có · Cần có theo kỳ con · Cần tuyển · Lương/người (khoản `LUONG`) · Phụ cấp/người (`PHU_CAP`); «+ Thêm vị trí» (tìm chức vụ), «+ Nhập tổng cả phòng», «Giống nhau cả năm». ② **Chi phí khác**: mỗi khoản một câu có ô số + bật/tắt — «% trên lương» (cách 2, tính trên mọi khoản lương/phụ cấp), «Số tháng lương» (cách 3), «Theo đợt mỗi người» (cách 4), «Cả phòng» (cách 5). ③ **Tổng (tự tính)**: Số người · Lương + phụ cấp · Bảo hiểm · Thưởng, quà, chi khác · TỔNG (gom theo cách tính, không theo nhóm) + Thực tế / Còn dư. Không còn ô chọn mẫu: kế hoạch mới tự lấy «Mẫu gợi ý». Màn «Mẫu khoản chi phí» và «Nhóm chi phí» gỡ khỏi menu (bảng dữ liệu, API và 5 cách tính ở backend giữ nguyên). Cột «Ghi chú» của dòng vị trí không còn trên bảng (dữ liệu cũ giữ khi lưu).
 

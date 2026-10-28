@@ -32,7 +32,7 @@ export type HeadcountPlanListItem = {
   updated_at?: string | null
 }
 
-/** Một dòng vị trí. `position_id = 0` = dòng «Không theo vị trí» (chỉ nhập tổng phòng). */
+/** Một dòng vị trí. `position_id = 0` = dòng «Cả phòng (không chia vị trí)» (chỉ nhập tổng phòng). */
 export interface HeadcountPlanLine {
   id?: number
   position_id: number
@@ -188,6 +188,6 @@ export interface HeadcountPlanLinesImportResult {
 /** Giá trị «Toàn pháp nhân» của ô phòng ban — `0` là giá trị THẬT, không phải «chưa chọn». */
 export const WHOLE_COMPANY_DEPARTMENT_ID = 0
 export const WHOLE_COMPANY_LABEL = 'Toàn pháp nhân'
-/** Dòng «Không theo vị trí» mang `position_id = 0`. */
+/** Dòng «Cả phòng (không chia vị trí)» mang `position_id = 0` — chỉ nhập tổng người của phòng. */
 export const NO_POSITION_ID = 0
-export const NO_POSITION_LABEL = 'Không theo vị trí'
+export const NO_POSITION_LABEL = 'Cả phòng (không chia vị trí)'

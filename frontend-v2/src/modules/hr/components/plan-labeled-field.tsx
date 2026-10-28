@@ -10,6 +10,8 @@ interface PlanLabeledFieldProps {
   htmlFor?: string
   required?: boolean
   hint?: ReactNode
+  /** Câu lỗi kiểm hợp lệ — hiện ngay dưới ô (sau câu gợi ý), chữ đỏ. */
+  error?: string
   fullWidth?: boolean
   children: ReactNode
   className?: string
@@ -24,6 +26,7 @@ export function PlanLabeledField({
   htmlFor,
   required,
   hint,
+  error,
   fullWidth,
   children,
   className,
@@ -36,6 +39,11 @@ export function PlanLabeledField({
       </Label>
       {children}
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

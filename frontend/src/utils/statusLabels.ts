@@ -52,6 +52,11 @@ export const PR_LINE_STATUSES = [
   { value: 'completed', label: 'Hoàn thành' },
   { value: 'cancelled', label: 'Hủy đơn' },
 ]
+// Màu nhãn tiến độ dòng — dùng chung cho chi tiết YCMH và báo cáo Chi tiết YC mua hàng (bao-CR-691)
+export const PR_LINE_STATUS_COLOR: Record<string, string> = {
+  no_po: '#94a3b8', not_ordered: '#d97706', ordered: '#00AEEF',
+  received: '#0d9488', completed: '#16a34a', cancelled: '#b91c1c',
+}
 
 // Hồ sơ chứng từ của ĐMH. ⚠️ Nhãn cũ lưu trong DB viết THƯỜNG ('đã đủ chứng từ') vì màn cũ
 // dựa vào `first-letter:uppercase` của CSS; nhãn ở đây viết hoa đầu câu như mọi bộ khác.

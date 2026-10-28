@@ -7,6 +7,8 @@ import type {
 } from '../types/headcount-plan'
 import type { HrCostItem } from '../types/hr-cost'
 import type { HeadcountPlanDraft } from './headcount-plan-draft'
+import { finalizeCostItems } from './hr-cost-item-custom'
+import { dropExcludedCostItems } from './hr-cost-item-rules'
 
 /**
  * GÓI PAYLOAD của kế hoạch nhân sự. Backend khai `extra="forbid"` cho mọi schema nên chỉ gửi ĐÚNG các
@@ -20,7 +22,10 @@ import type { HeadcountPlanDraft } from './headcount-plan-draft'
 
 const toInt = (v: unknown) => Math.max(0, Math.trunc(Number(v) || 0))
 
-/** Khoản chi phí → thân gửi lên. Dùng chung cho kế hoạch và mẫu. */
+/**
+ * Khoản chi phí → thân gửi lên, ĐÚNG 14 khóa (không `id`, không `custom_parts`, không `excluded`). Gọi
+ * trên bộ đã qua `finalizeCostItems` để khoản gốc / thứ tự tự đặt khớp bộ hiện tại.
+ */
 export function toCostItemPayload(item: HrCostItem, canSeeMoney: boolean): HeadcountPlanCostItemPayload {
   return {
     code: item.code,
@@ -52,8 +57,12 @@ function toLinePayload(line: HeadcountPlanDraft['lines'][number], canSeeMoney: b
   return { position_id: line.position_id, headcounts: line.headcounts.map(toInt), amounts, note: line.note }
 }
 
-/** Bản nháp `POST /compute` — header + khoản + dòng. */
+/**
+ * Bản nháp `POST /compute` — header + khoản + dòng. Khoản người dùng đã TẮT ở khối «Chi phí khác» bị bỏ
+ * ở đây, nên nó vừa không vào bảng Tổng vừa biến khỏi kế hoạch khi lưu.
+ */
 export function buildDraftPayload(draft: HeadcountPlanDraft, canSeeMoney: boolean): HeadcountPlanDraftPayload {
+  const { items, lines } = dropExcludedCostItems(draft.cost_items, draft.lines)
   return {
     year: draft.year,
     period_type: draft.period_type,
@@ -64,8 +73,8 @@ export function buildDraftPayload(draft: HeadcountPlanDraft, canSeeMoney: boolea
     basis_date: draft.basis_date || null,
     approver_employee_id: draft.approver_employee_id,
     note: draft.note.trim(),
-    cost_items: draft.cost_items.map((i) => toCostItemPayload(i, canSeeMoney)),
-    lines: draft.lines.map((l) => toLinePayload(l, canSeeMoney)),
+    cost_items: finalizeCostItems(items).map((i) => toCostItemPayload(i, canSeeMoney)),
+    lines: lines.map((l) => toLinePayload(l, canSeeMoney)),
   }
 }
 
@@ -80,8 +89,9 @@ export function buildPlanPayload(draft: HeadcountPlanDraft, canSeeMoney: boolean
 }
 
 /**
- * `POST /` lúc tạo. Bảng khoản còn nguyên như vừa chép từ mẫu → KHÔNG gửi `cost_items`, để backend tự
- * chép (và trả `skipped_items`). Người dùng đã sửa → gửi đúng bộ đã sửa, không thì phần sửa mất im lặng.
+ * `POST /` lúc tạo. Chi phí còn nguyên như vừa điền sẵn từ mẫu gợi ý → KHÔNG gửi `cost_items`, để backend
+ * tự chép (giữ đúng số tiền của mẫu cả khi người lập không được xem tiền). Người dùng đã sửa, hoặc bộ dựng
+ * ở giao diện (`template_id = 0`) → gửi đúng bộ trên form, không thì phần sửa mất im lặng.
  */
 export function buildCreatePayload(draft: HeadcountPlanDraft, canSeeMoney: boolean): HeadcountPlanCreatePayload {
   const { cost_items: items, ...rest } = buildPlanPayload(draft, canSeeMoney)

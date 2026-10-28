@@ -36,7 +36,7 @@ LEGACY_ITEM_CODE = "QUY_LUONG"
 LEGACY_ITEM_NAME = "Quỹ lương (nhập tổng)"
 SUGGESTED_GROUPS = ("Quỹ lương", "Bắt buộc theo luật", "Phúc lợi", "Khác")
 SUGGESTED_TEMPLATE = "Mẫu gợi ý"
-SUGGESTED_CAP = 46_800_000   # trần lương đóng BHXH nửa đầu 2026; người dùng tự cập nhật khi luật đổi
+SUGGESTED_CAP = 50_600_000   # trần lương đóng BHXH từ 01/7/2026 (46,8 tr trước đó); người dùng tự cập nhật khi luật đổi
 
 
 def _is_empty(conn: sa.Connection, table: sa.TableClause) -> bool:
@@ -50,12 +50,18 @@ def seed_suggestions(conn: sa.Connection) -> None:
                                        "updated_by": 0} for i, n in enumerate(SUGGESTED_GROUPS)])
     if not _is_empty(conn, TEMPLATE):
         return
-    gid = dict(conn.execute(sa.select(GROUP.c.name, GROUP.c.id)).all())
     conn.execute(TEMPLATE.insert(), {"name": SUGGESTED_TEMPLATE, "is_active": True, "created_by": 0, "updated_by": 0,
                                      "note": "Bộ khoản gợi ý — sửa tự do; con số (tỷ lệ, trần) do người dùng cập nhật khi luật đổi"})
     tid = conn.execute(sa.select(TEMPLATE.c.id).where(TEMPLATE.c.name == SUGGESTED_TEMPLATE)).scalar()
+    conn.execute(TEMPLATE_ITEM.insert(), _suggested_items(conn, tid))
+
+
+def _suggested_items(conn: sa.Connection, tid: int) -> list[dict]:
+    """Bộ khoản gợi ý GỌN (anh Được 28/10/2026 «nhiều quá loạn»): Lương · Phụ cấp · Bảo hiểm + công đoàn 23,5% (một khoản,
+    tính trên MỌI khoản hằng tháng) · Thưởng tháng 13 — khớp đúng 3 lựa chọn «Tính thế nào» của giao diện, không cấu hình riêng."""
+    gid = dict(conn.execute(sa.select(GROUP.c.name, GROUP.c.id)).all())
     M, A, S = CostCalcMethod, CostAppliesTo, ActualSource
-    wage, law, welfare = gid.get("Quỹ lương", 0), gid.get("Bắt buộc theo luật", 0), gid.get("Phúc lợi", 0)
+    wage, law = gid.get("Quỹ lương", 0), gid.get("Bắt buộc theo luật", 0)
 
     def item(code, name, group, method, sort, **kw):
         return {"template_id": tid, "code": code, "name": name, "group_id": group, "calc_method": int(method),
@@ -63,21 +69,31 @@ def seed_suggestions(conn: sa.Connection) -> None:
                 "months": [], "applies_to": int(A.ALL_POSITIONS), "actual_source": int(S.NONE), "sort_order": sort,
                 "created_by": 0, "updated_by": 0, **kw}
 
-    def insurance(code, name, rate, sort):
-        return item(code, name, law, M.PERCENT_OF, sort, rate=rate, base_codes=["LUONG", "PC_BH"],
-                    cap_amount=SUGGESTED_CAP, actual_source=int(S.PERCENT_OF_INSURANCE_SALARY))
+    return [
+        item("LUONG", "Lương", wage, M.PER_HEAD_MONTH, 10, actual_source=int(S.BASE_SALARY)),
+        item("PHU_CAP", "Phụ cấp", wage, M.PER_HEAD_MONTH, 20, actual_source=int(S.ALLOWANCE)),
+        item("BAO_HIEM", "Bảo hiểm + công đoàn công ty đóng", law, M.PERCENT_OF, 30, rate=23.5,
+             base_codes=["LUONG", "PHU_CAP"], cap_amount=SUGGESTED_CAP,
+             actual_source=int(S.PERCENT_OF_INSURANCE_SALARY)),
+        item("THUONG_13", "Thưởng tháng 13", wage, M.MONTHS_OF, 40, factor=1, base_codes=["LUONG"], months=[12]),
+    ]
 
-    conn.execute(TEMPLATE_ITEM.insert(), [
-        item("LUONG", "Lương vị trí", wage, M.PER_HEAD_MONTH, 10, actual_source=int(S.BASE_SALARY)),
-        item("PC_BH", "PC đóng BH", wage, M.PER_HEAD_MONTH, 20, actual_source=int(S.ALLOWANCE)),
-        item("PC_KHONG_BH", "PC không đóng BH", wage, M.PER_HEAD_MONTH, 30),
-        insurance("BHXH", "BHXH công ty 17,5%", 17.5, 40),
-        insurance("BHYT", "BHYT công ty 3%", 3, 50),
-        insurance("BHTN", "BHTN công ty 1%", 1, 60),
-        insurance("KPCD", "Kinh phí công đoàn 2%", 2, 70),
-        item("THUONG_13", "Thưởng tháng 13", welfare, M.MONTHS_OF, 80, factor=1, base_codes=["LUONG"], months=[12]),
-    ])
 
+#  Mã của bộ gợi ý bản đầu (hcplan02) — chỉ thay khi «Mẫu gợi ý» còn ĐÚNG bộ mã này (người dùng chưa thêm / bớt khoản).
+_FIRST_SUGGESTED_CODES = {"LUONG", "PC_BH", "PC_KHONG_BH", "BHXH", "BHYT", "BHTN", "KPCD", "THUONG_13"}
+
+
+def simplify_suggested_template(conn: sa.Connection) -> bool:
+    """Thay bộ 8 khoản gợi ý bản đầu bằng bộ gọn. Kế hoạch đã lập KHÔNG đổi (khoản đã chép riêng vào từng kế hoạch)."""
+    tid = conn.execute(sa.select(TEMPLATE.c.id).where(TEMPLATE.c.name == SUGGESTED_TEMPLATE)).scalar()
+    if tid is None:
+        return False
+    codes = {c for (c,) in conn.execute(sa.select(TEMPLATE_ITEM.c.code).where(TEMPLATE_ITEM.c.template_id == tid))}
+    if codes != _FIRST_SUGGESTED_CODES:
+        return False
+    conn.execute(TEMPLATE_ITEM.delete().where(TEMPLATE_ITEM.c.template_id == tid))
+    conn.execute(TEMPLATE_ITEM.insert(), _suggested_items(conn, tid))
+    return True
 
 def move_legacy_rows(conn: sa.Connection) -> int:
     """Mỗi kế hoạch đợt 4 (một dòng năm × pháp nhân × phòng) → kế hoạch loại Năm có: một dòng «Không theo vị trí» với

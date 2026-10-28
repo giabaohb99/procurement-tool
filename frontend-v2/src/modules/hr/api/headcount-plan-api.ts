@@ -7,6 +7,7 @@ import type {
   HeadcountPlanCreatePayload,
   HeadcountPlanCreateResult,
   HeadcountPlanDetail,
+  HeadcountPlanDocumentLink,
   HeadcountPlanDraftPayload,
   HeadcountPlanLinesImportResult,
   HeadcountPlanPayload,
@@ -59,6 +60,28 @@ export const headcountPlanApi = {
       `${HEADCOUNT_PLAN_API_PATH}/${id}/import/csv`,
       body,
       { _silent: true } as AxiosRequestConfig,
+    )
+    return res.data.data
+  },
+
+  /**
+   * TẢI TỆP CĂN CỨ → backend tự tạo một văn bản KÍN ở phân hệ Văn bản có tệp đó, trả dòng để thêm vào
+   * `documents` của bản nháp (không cần id kế hoạch). `httpClient` thẳng vì `multipart/form-data` — KHÔNG đặt tay
+   * `Content-Type`. `_silent`: nút tải tự bày lỗi ngay dưới nút thay cho toast.
+   */
+  uploadBasisDocument: async (
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<HeadcountPlanDocumentLink> => {
+    const body = new FormData()
+    body.append('file', file)
+    const res = await httpClient.post<{ data: HeadcountPlanDocumentLink }>(
+      `${HEADCOUNT_PLAN_API_PATH}/documents/upload`,
+      body,
+      {
+        _silent: true,
+        onUploadProgress: (e) => onProgress?.(e.total ? Math.round((e.loaded / e.total) * 100) : 0),
+      } as AxiosRequestConfig,
     )
     return res.data.data
   },

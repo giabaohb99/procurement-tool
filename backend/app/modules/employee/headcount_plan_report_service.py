@@ -31,7 +31,7 @@ NO_PLAN = " (chưa có kế hoạch)"
 def _spec(company_name: dict, department_name: dict, position_name: dict | None = None,
           units: PositionUnits | None = None) -> tuple[ReportSpec, dict[str, DimensionSpec]]:
     metrics = [
-        MetricSpec("planned", "Định biên kế hoạch", value_of=lambda r: r.planned),
+        MetricSpec("planned", "Số người kế hoạch", value_of=lambda r: r.planned),
         MetricSpec("actual", METRICS["actual"], value_of=lambda r: r.actual),
         MetricSpec("gap", "Chênh (thực tế − kế hoạch)", value_of=lambda r: r.actual - r.planned),
         MetricSpec("vacancies", "Còn thiếu", good="down", value_of=lambda r: r.vacancies),
@@ -75,14 +75,14 @@ def _context(period: Period):
 
 def _notes(rows: list[PlanRow], year: int, month: int, as_of, department_name: dict, company_name: dict) -> list[str]:
     notes = [
-        f"Định biên kế hoạch lấy ở tháng {month:02d}/{year} (tháng cuối kỳ báo cáo) từ «Kế hoạch nhân sự»; kỳ hẹp "
+        f"Số người kế hoạch lấy ở tháng {month:02d}/{year} (tháng cuối kỳ báo cáo) từ «Kế hoạch nhân sự»; kỳ hẹp "
         f"(tháng, quý) thay kỳ rộng (bán niên, năm) cho đúng các tháng nó phủ. Thực tế tại {as_of:%d/%m/%Y} "
         "(cuối kỳ hoặc hôm nay nếu kỳ chưa kết thúc). Không có xu hướng và không so sánh kỳ trước.",
         "Pháp nhân có dòng kế hoạch «Toàn pháp nhân» thì dòng đó so với TỔNG người của pháp nhân và là số duy nhất "
         "tính vào Tổng cộng và nhóm Pháp nhân; các dòng phòng của pháp nhân đó chỉ hiện khi Xem theo Phòng ban "
         "(không cộng dồn thêm). Xem theo Vị trí: dòng vị trí so với người giữ đúng vị trí; người ở vị trí kế hoạch không "
         "liệt kê gộp vào nhóm «(Chưa gắn)».",
-        "Tỷ lệ lấp đầy = số vị trí kế hoạch đã có người (không tính phần vượt) ÷ định biên kế hoạch. "
+        "Tỷ lệ lấp đầy = số vị trí kế hoạch đã có người (không tính phần vượt) ÷ số người kế hoạch. "
         "«Còn thiếu» / «Vượt» cộng theo từng dòng kế hoạch nên thiếu ở phòng này không bù được bằng thừa ở phòng khác.",
     ]
     unplanned = [r for r in rows if not r.has_plan]

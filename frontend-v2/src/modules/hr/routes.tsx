@@ -9,9 +9,7 @@ import {
   CalendarOff,
   CalendarRange,
   IdCard,
-  Layers,
   LayoutDashboard,
-  ListChecks,
   Network,
   Target,
   Users,
@@ -110,22 +108,6 @@ export const hrModule: ErpModule = {
       label: 'Kế hoạch nhân sự',
       path: appRoutes.hr.headcountPlans,
       icon: Target,
-      entity: 'headcount_plan',
-      group: 'Danh mục',
-    },
-    {
-      //  duoc-CR-690: hai danh mục của kế hoạch — không chứa lương ai nên đọc theo `headcount_plan.read`.
-      //  Hai mục này cũng là hàng rào route của chính chúng (và của `/hr/hr-cost-templates/*`).
-      label: 'Mẫu khoản chi phí',
-      path: appRoutes.hr.hrCostTemplates,
-      icon: ListChecks,
-      entity: 'headcount_plan',
-      group: 'Danh mục',
-    },
-    {
-      label: 'Nhóm chi phí',
-      path: appRoutes.hr.hrCostGroups,
-      icon: Layers,
       entity: 'headcount_plan',
       group: 'Danh mục',
     },
@@ -462,28 +444,10 @@ export const hrModule: ErpModule = {
       }),
     },
     {
-      path: appRoutes.hr.hrCostGroups,
-      lazy: async () => ({
-        Component: (await import('./pages/hr-cost-group-list-page')).HrCostGroupListPage,
-      }),
-    },
-    {
-      path: appRoutes.hr.hrCostTemplates,
-      lazy: async () => ({
-        Component: (await import('./pages/hr-cost-template-list-page')).HrCostTemplateListPage,
-      }),
-    },
-    {
-      path: appRoutes.hr.hrCostTemplateNew,
-      lazy: async () => ({
-        Component: (await import('./pages/hr-cost-template-detail-page')).HrCostTemplateDetailPage,
-      }),
-    },
-    {
-      path: appRoutes.hr.hrCostTemplateDetail(':id'),
-      lazy: async () => ({
-        Component: (await import('./pages/hr-cost-template-detail-page')).HrCostTemplateDetailPage,
-      }),
+      //  duoc-CR-690: màn «Mẫu khoản chi phí» ĐÃ GỠ (đại ca chốt 28/10/2026 — người lập kế hoạch không cần
+      //  biết tới mẫu). Đường cũ đá về danh sách kế hoạch thay vì 404; `replace` để Back không quay vòng.
+      path: appRoutes.hr.hrCostTemplatesLegacy,
+      element: <Navigate to={appRoutes.hr.headcountPlans} replace />,
     },
     {
       path: appRoutes.hr.jobPositions,
