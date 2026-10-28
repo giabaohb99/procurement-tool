@@ -18,6 +18,14 @@ from .base import (
     ToolExecutor,
 )
 
+#  Model đã trả lỗi «temperature» (ai-CR-232) — nhớ trong tiến trình để lượt sau khỏi tốn một lượt gọi hỏng.
+_NO_TEMPERATURE_MODELS: set[str] = set()
+
+
+def _rejects_temperature(body: str) -> bool:
+    text = (body or "").lower()
+    return "temperature" in text and ("deprecated" in text or "not supported" in text or "unsupported" in text)
+
 NO_KEY_MSG = (
     "Chưa cấu hình Claude API Key — vào Quản trị > Cấu hình hệ thống, thẻ Trợ lý AI để dán key."
 )
@@ -144,13 +152,25 @@ class ClaudeProvider(Provider):
         return system
 
     def _post(self, payload: dict) -> dict:
-        try:
-            resp = requests.post(API_URL, json=payload, headers=self._headers(), timeout=TIMEOUT)
-        except requests.RequestException as e:
-            raise ProviderError(f"Lỗi gọi Claude: {e}") from e
+        #  ai-CR-232 (28/10/2026, prod): model Claude đời mới từ chối `temperature` («`temperature` is deprecated for this
+        #  model», 400) — bot Telegram prod hỏng mọi lượt luồng nặng. Model đã từng từ chối thì bỏ hẳn tham số; gặp lần đầu
+        #  thì gửi lại MỘT lần không có `temperature`.
+        model = str(payload.get("model") or "")
+        if model in _NO_TEMPERATURE_MODELS:
+            payload = {k: v for k, v in payload.items() if k != "temperature"}
+        resp = self._send(payload)
+        if resp.status_code == 400 and "temperature" in payload and _rejects_temperature(resp.text):
+            _NO_TEMPERATURE_MODELS.add(model)
+            resp = self._send({k: v for k, v in payload.items() if k != "temperature"})
         if resp.status_code != 200:
             raise ProviderError(f"Claude trả lỗi {resp.status_code}: {resp.text[:500]}")
         return resp.json()
+
+    def _send(self, payload: dict):
+        try:
+            return requests.post(API_URL, json=payload, headers=self._headers(), timeout=TIMEOUT)
+        except requests.RequestException as e:
+            raise ProviderError(f"Lỗi gọi Claude: {e}") from e
 
     # ── Vòng lặp tool-calling (Phase 2, loại A) ───────────────────────────────────────
     def run_tools(
