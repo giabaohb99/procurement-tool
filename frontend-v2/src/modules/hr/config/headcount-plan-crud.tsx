@@ -56,7 +56,7 @@ export function buildHeadcountPlanColumns(canSeePayroll: boolean): DataTableColu
     },
     {
       key: 'headcount_end',
-      header: 'Định biên cuối kỳ',
+      header: 'Số người cuối kỳ',
       width: 140,
       align: 'right',
       cell: (r) => <span className="tabular-nums">{r.headcount_end ?? 0}</span>,
@@ -87,7 +87,7 @@ export function buildHeadcountPlanColumns(canSeePayroll: boolean): DataTableColu
 /**
  * KẾ HOẠCH NHÂN SỰ THEO KỲ (duoc-CR-690) — danh sách lọc Năm · Loại kỳ · Pháp nhân · Phòng. Thêm /
  * mở là TRANG RIÊNG (`createRoute` + `detailRoute`): kế hoạch có bốn khối, hộp thoại không chứa nổi.
- * Báo cáo «Định biên kế hoạch so với thực tế» và «Quỹ lương theo pháp nhân» đọc từ đây.
+ * Báo cáo «Số người kế hoạch so với thực tế» và «Quỹ lương theo pháp nhân» đọc từ đây.
  *
  * Dựng bằng HÀM vì hai thứ chỉ biết lúc chạy: quyền xem lương và danh mục pháp nhân / phòng.
  */
@@ -96,7 +96,7 @@ export function buildHeadcountPlanCrudConfig(opts: HeadcountPlanCrudOptions): Cr
     entity: 'headcount_plan',
     title: 'Kế hoạch nhân sự',
     description:
-      'Định biên theo vị trí và chi phí nhân sự theo kỳ (năm, bán niên, quý, tháng) của từng pháp nhân, phòng ban.',
+      'Số người kế hoạch theo vị trí và chi phí nhân sự theo kỳ (năm, bán niên, quý, tháng) của từng pháp nhân, phòng ban.',
     unitLabel: 'kế hoạch',
     apiPath: HEADCOUNT_PLAN_API_PATH,
     storageKey: 'hr.headcount-plans.v2',
@@ -117,7 +117,7 @@ export function buildHeadcountPlanCrudConfig(opts: HeadcountPlanCrudOptions): Cr
       { key: 'department_id', label: 'Phòng ban', type: 'select', options: opts.departmentOptions },
     ],
     getItemName: (r) => `${periodOf(r)} · ${r.company_name} · ${r.department_name}`,
-    deleteWarning: 'Xóa rồi thì báo cáo định biên và quỹ lương coi pháp nhân × phòng này là «chưa có kế hoạch» cho kỳ đó.',
+    deleteWarning: 'Xóa rồi thì báo cáo số người kế hoạch và quỹ lương coi pháp nhân × phòng này là «chưa có kế hoạch» cho kỳ đó.',
     renderToolbarExtra: () => <HeadcountPlanCsvActions />,
     mobileCard: (r) => (
       <CrudRecordCard

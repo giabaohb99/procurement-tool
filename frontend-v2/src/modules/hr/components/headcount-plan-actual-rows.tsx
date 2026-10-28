@@ -53,9 +53,9 @@ interface HeadcountPlanActualRowsProps {
 }
 
 /**
- * Các dòng THỰC TẾ của bảng tự tính (phase 24) — chỉ ở kế hoạch đã lưu. Định biên thực tế luôn hiện;
+ * Các dòng THỰC TẾ của bảng tự tính (phase 24) — chỉ ở kế hoạch đã lưu. Số người thực tế luôn hiện;
  * ba dòng tiền chỉ khi được xem lương (bị che thì backend trả `null` cả mảng, dòng bị gỡ hẳn).
- * Cột «Tổng kỳ»: định biên lấy kỳ con cuối CÓ số, tiền cộng các kỳ con có số.
+ * Cột «Tổng kỳ»: số người lấy kỳ con cuối CÓ số, tiền cộng các kỳ con có số.
  */
 export function HeadcountPlanActualRows({ actual, periods, showMoney }: HeadcountPlanActualRowsProps) {
   const pad = (arr: readonly (number | null)[] | null) => periods.map((_, i) => arr?.[i] ?? null)
@@ -68,7 +68,7 @@ export function HeadcountPlanActualRows({ actual, periods, showMoney }: Headcoun
 
   return (
     <>
-      <Row label="Định biên thực tế" values={heads} total={lastHead} render={String} className="border-t-2" />
+      <Row label="Số người thực tế" values={heads} total={lastHead} render={String} className="border-t-2" />
       {moneyShown && (
         <>
           <Row label="Kế hoạch phần so được" values={planned} total={sumKnown(planned)} render={money} />

@@ -96,7 +96,7 @@ def _plan_months(plan: HeadcountPlan, lines: list, items: list | None, groups: d
         layout = period_layout(plan.period_type, plan.period_no)
         plan_lines = [to_plan_line(ln) for ln in lines]
         if any(len(ln.headcounts) != len(layout) for ln in plan_lines):
-            raise PlanCalcError("Số cột định biên không khớp số kỳ con")
+            raise PlanCalcError("Số cột số người không khớp số kỳ con")
         monthly = (compute_plan(plan.period_type, plan.period_no, plan.year, [to_cost_item(i) for i in items],
                                 plan_lines, groups)["monthly"] if items is not None else None)
     except PlanCalcError as e:

@@ -249,7 +249,7 @@ def test_export_can_quyen_export(db, world, client_as):
     resp = _get(client, f"{A4}/export", company_id=world.co["B"], group_by="department")
     assert resp.status_code == 200
     text = " ".join(str(c.value) for ws in load_workbook(BytesIO(resp.content)) for row in ws.iter_rows() for c in row)
-    assert "Định biên kế hoạch" in text and "Phòng Hành chính" in text
+    assert "Số người kế hoạch" in text and "Phòng Hành chính" in text
     _, ro = _actor(db, world, client_as, key="a2", plan_actions=("read",))
     assert _get(ro, f"{A4}/export").status_code == 403
 

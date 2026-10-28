@@ -197,18 +197,18 @@ def test_ma_trung_va_ma_rong():
 
 
 def test_khoan_goc_khong_ton_tai_tro_percent_hoac_tu_tro():
-    bad([item("P", PERCENT, rate=1, base_codes=("X",))], match="không tồn tại")
+    bad([item("P", PERCENT, rate=1, base_codes=("X",))], match="không còn trong kế hoạch")
     bad([item("L"), item("P1", PERCENT, rate=1, base_codes=("L",)), item("P2", PERCENT, rate=1, base_codes=("P1",))],
-        match="không được dùng làm gốc")
-    bad([item("P", PERCENT, rate=1, base_codes=("P",))], match="không được dùng làm gốc")
-    bad([item("P", PERCENT, rate=1, base_codes=())], match="chưa chọn khoản gốc")
-    bad([item("L"), item("O", ONCE, amount=1, months=(1,)), item("P", PERCENT, rate=1, base_codes=("O",))], match="gốc")
+        match="không dùng được ở «Tính trên khoản»")
+    bad([item("P", PERCENT, rate=1, base_codes=("P",))], match="không dùng được ở «Tính trên khoản»")
+    bad([item("P", PERCENT, rate=1, base_codes=())], match="chưa chọn «Tính trên khoản»")
+    bad([item("L"), item("O", ONCE, amount=1, months=(1,)), item("P", PERCENT, rate=1, base_codes=("O",))], match="Tính trên khoản")
 
 
 def test_so_thang_phai_dung_mot_goc_va_co_thang_roi():
-    bad([item("L"), item("B", MONTHS_OF, factor=1, base_codes=("L", "L"), months=(12,))], match="đúng một khoản gốc")
-    bad([item("L"), item("B", MONTHS_OF, factor=1, base_codes=("L",))], match="ít nhất một tháng")
-    bad([item("L"), item("B", MONTHS_OF, factor=1, base_codes=("B",), months=(1,))], match="không tồn tại|gốc")
+    bad([item("L"), item("B", MONTHS_OF, factor=1, base_codes=("L", "L"), months=(12,))], match="đúng một khoản ở «Tính trên khoản»")
+    bad([item("L"), item("B", MONTHS_OF, factor=1, base_codes=("L",))], match="chưa chọn tháng chi")
+    bad([item("L"), item("B", MONTHS_OF, factor=1, base_codes=("B",), months=(1,))], match="không còn trong kế hoạch|Tính trên khoản")
 
 
 def test_thang_ngoai_ky():
@@ -235,3 +235,12 @@ def test_dong_dinh_bien_sai():
     bad([item("L")], [line(1, [1] * 4, X=5)], match="không phải khoản nhập theo vị trí")
     bad([item("L")], [line(1, [1] * 4, L=-5)], match="không được âm")
     bad([item("P", ONCE, amount=1, months=(1,))], [line(1, [1] * 4, P=5)], match="không phải khoản nhập theo vị trí")
+
+
+def test_muc_chung_cua_khoan_hang_thang_dung_khi_vi_tri_de_trong():
+    #  Anh Được: «chỗ thêm khoản không quản lý được tiền à» — khoản hằng tháng có mức chung (amount) cho mọi vị trí,
+    #  vị trí nào nhập số riêng (> 0) thì số riêng thắng; % tính trên cả hai.
+    items = [item("AN", amount=730_000), item("BH", PERCENT, rate=10, base_codes=("AN",))]
+    res = calc(items, [line(1, [2] * 4), line(2, [1] * 4, AN=1_000_000)])
+    assert row(res, "AN")["values"][0] == (2 * 730_000 + 1_000_000) * 3
+    assert row(res, "BH")["values"][0] == (2 * 73_000 + 100_000) * 3

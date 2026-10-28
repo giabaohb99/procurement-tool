@@ -1,18 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { useQuery } from '@tanstack/react-query'
 
-import { getCrudDetailKey, getCrudQueryKey, getCrudRootKey } from '@/shared/crud'
-import {
-  HR_COST_GROUP_API_PATH,
-  HR_COST_TEMPLATE_API_PATH,
-  hrCostApi,
-} from '../api/hr-cost-template-api'
-import type { HrCostTemplatePayload } from '../types/hr-cost'
+import { getCrudDetailKey, getCrudQueryKey } from '@/shared/crud'
+import { HR_COST_GROUP_API_PATH, HR_COST_TEMPLATE_API_PATH, hrCostApi } from '../api/hr-cost-template-api'
 
 /**
- * Hook của NHÓM CHI PHÍ + MẪU KHOẢN CHI PHÍ (duoc-CR-690). Cố ý dùng khóa của khung CRUD chung
- * (`['crud', apiPath, …]`): màn danh mục chạy trên `CrudListPage` quét đúng gốc đó sau mỗi lần ghi,
- * nên ô chọn «Nhóm» / «Mẫu» ở trang khác tự nạp lại mà không ai phải nhớ gọi thêm.
+ * Hook ĐỌC nhóm chi phí + mẫu khoản chi phí (duoc-CR-690). Giữ khóa của khung CRUD chung
+ * (`['crud', apiPath, …]`) để nếu sau này có màn ghi thì quét đúng gốc đó là đủ.
  */
 
 export function useHrCostGroups(enabled = true) {
@@ -24,7 +17,7 @@ export function useHrCostGroups(enabled = true) {
   })
 }
 
-/** Ô chọn «Mẫu khoản chi phí» lúc tạo kế hoạch — chỉ mẫu đang dùng. */
+/** Các mẫu đang dùng — trang kế hoạch mới lấy «Mẫu gợi ý» (hoặc mẫu đầu tiên) để điền sẵn chi phí. */
 export function useActiveHrCostTemplates(enabled = true) {
   const params = { is_active: true, lookup: true }
   return useQuery({
@@ -39,44 +32,5 @@ export function useHrCostTemplate(id: number) {
     queryKey: getCrudDetailKey(HR_COST_TEMPLATE_API_PATH, id),
     queryFn: () => hrCostApi.getTemplate(id),
     enabled: id > 0,
-  })
-}
-
-function useInvalidateTemplates() {
-  const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: getCrudRootKey(HR_COST_TEMPLATE_API_PATH) })
-}
-
-export function useSaveHrCostTemplate() {
-  const invalidate = useInvalidateTemplates()
-  return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: HrCostTemplatePayload }) =>
-      id > 0 ? hrCostApi.updateTemplate(id, payload) : hrCostApi.createTemplate(payload),
-    onSuccess: (_data, { id }) => {
-      toast.success(id > 0 ? 'Đã lưu mẫu khoản chi phí' : 'Đã tạo mẫu khoản chi phí')
-      void invalidate()
-    },
-  })
-}
-
-export function useDuplicateHrCostTemplate() {
-  const invalidate = useInvalidateTemplates()
-  return useMutation({
-    mutationFn: hrCostApi.duplicateTemplate,
-    onSuccess: () => {
-      toast.success('Đã nhân bản mẫu — đang mở bản sao')
-      void invalidate()
-    },
-  })
-}
-
-export function useDeleteHrCostTemplate() {
-  const invalidate = useInvalidateTemplates()
-  return useMutation({
-    mutationFn: hrCostApi.removeTemplate,
-    onSuccess: () => {
-      toast.success('Đã xóa mẫu khoản chi phí')
-      void invalidate()
-    },
   })
 }

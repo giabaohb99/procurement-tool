@@ -306,7 +306,7 @@ export const REPORT_KEY: readonly StatusOption[] = [
   {"value": "22", "label": "Phúc lợi & sự kiện", "sort_order": 22, "is_terminal": false, "is_exception": false},
   {"value": "23", "label": "Cơ cấu quản lý", "sort_order": 23, "is_terminal": false, "is_exception": false},
   {"value": "24", "label": "Điều chuyển & bổ nhiệm", "sort_order": 24, "is_terminal": false, "is_exception": false},
-  {"value": "25", "label": "Định biên kế hoạch so với thực tế", "sort_order": 25, "is_terminal": false, "is_exception": false},
+  {"value": "25", "label": "Số người kế hoạch so với thực tế", "sort_order": 25, "is_terminal": false, "is_exception": false},
   {"value": "26", "label": "Có mặt theo ngày", "sort_order": 26, "is_terminal": false, "is_exception": false},
   {"value": "27", "label": "Yêu cầu sửa hồ sơ", "sort_order": 27, "is_terminal": false, "is_exception": false},
   {"value": "28", "label": "Sử dụng phòng họp", "sort_order": 28, "is_terminal": false, "is_exception": false},

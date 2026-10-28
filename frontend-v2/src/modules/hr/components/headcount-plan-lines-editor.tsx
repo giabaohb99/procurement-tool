@@ -1,10 +1,8 @@
 import { Plus } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
 
-import { LinesTable } from '@/shared/data-table/lines-table'
+import { PLAN_PERIOD_TYPE_CODE } from '@/shared/constants/statuses'
 import { Button } from '@/shared/ui/button'
-import { SearchSelect } from '@/shared/ui/search-select'
-import { buildHeadcountPlanLineColumns } from '../config/headcount-plan-line-columns'
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import {
   NO_POSITION_ID,
   NO_POSITION_LABEL,
@@ -14,7 +12,10 @@ import {
 } from '../types/headcount-plan'
 import type { HrCostItem } from '../types/hr-cost'
 import { countCurrentForLine } from '../utils/headcount-plan-draft'
-import { HeadcountPlanLineCell, type HeadcountPlanLineCellContext } from './headcount-plan-line-cell'
+import { describePerHeadColumn } from '../utils/hr-cost-item-presets'
+import { listPerPositionItems } from '../utils/hr-cost-item-rules'
+import { HeadcountPlanLineRow } from './headcount-plan-line-row'
+import { HeadcountPlanPositionPicker } from './headcount-plan-position-picker'
 
 interface HeadcountPlanLinesEditorProps {
   lines: HeadcountPlanLine[]
@@ -27,13 +28,17 @@ interface HeadcountPlanLinesEditorProps {
   readOnly: boolean
   onChange: (lines: HeadcountPlanLine[]) => void
   onAdd: (positionId: number, positionName: string) => void
-  /** Nút phụ trên đầu bảng (nhập CSV dòng vị trí). */
-  extraActions?: ReactNode
 }
 
+const EMPTY_HINT = 'Bấm Thêm vị trí. Ví dụ Kế toán viên: hiện có 4, cần 5 người từ Q3, lương 12.000.000.'
+
 /**
- * Khối 3 — ĐỊNH BIÊN THEO VỊ TRÍ (tài liệu 06 §2.3). Số cột định biên đổi theo loại kỳ, mỗi khoản
- * «nhập theo vị trí» mọc một cột số tiền. «Đang có» + gợi ý bình quân lấy từ `/position-stats`.
+ * Khối ① NGƯỜI VÀ LƯƠNG (duoc-CR-690, bố cục đại ca chốt 28/10/2026): Vị trí · Hiện có · Cần có từng kỳ
+ * con · Cần tuyển · Lương/người · Phụ cấp/người (+ cột cho khoản hằng tháng khác của dữ liệu cũ).
+ *
+ * Bảng thường, KHÔNG dùng `LinesTable`: đại ca chốt bỏ thanh «Bảng đầy đủ / Vừa nội dung / Cột» ở bảng
+ * này; cột đã gọn để vừa màn ≥1280 không cuộn ngang, màn hẹp thì khung bảng tự cuộn. Không được xem tiền
+ * thì KHÔNG dựng cột tiền (một cột toàn ô trống đọc ra «chưa ai nhập lương»).
  */
 export function HeadcountPlanLinesEditor({
   lines,
@@ -46,86 +51,86 @@ export function HeadcountPlanLinesEditor({
   readOnly,
   onChange,
   onAdd,
-  extraActions,
 }: HeadcountPlanLinesEditorProps) {
-  const [picked, setPicked] = useState('')
-  const columns = useMemo(
-    () => buildHeadcountPlanLineColumns({ periods, items, showMoney, readOnly }),
-    [periods, items, showMoney, readOnly],
-  )
+  const moneyItems = showMoney ? listPerPositionItems(items.filter((i) => !i.excluded)) : []
   const used = new Set(lines.map((l) => l.position_id))
-  const options = positions
-    .filter((p) => !used.has(p.id))
-    .map((p) => ({ value: String(p.id), label: p.name }))
-
-  const ctx: HeadcountPlanLineCellContext = {
-    items,
-    stats,
-    currentCounts: lines.map((l) => countCurrentForLine(l, lines, stats)),
-    showMoney,
-    readOnly,
-    onPatch: (index, patch) => onChange(lines.map((l, k) => (k === index ? { ...l, ...patch } : l))),
-    onRemove: (index) => onChange(lines.filter((_, k) => k !== index)),
-  }
-
-  const addPicked = () => {
-    const id = Number(picked)
-    const position = positions.find((p) => p.id === id)
-    if (!position) return
-    onAdd(position.id, position.name)
-    setPicked('')
-  }
+  const fillLabel = periodType === PLAN_PERIOD_TYPE_CODE.YEAR ? 'Giống nhau cả năm' : 'Giống nhau cả kỳ'
+  const patchLine = (index: number, patch: Partial<HeadcountPlanLine>) =>
+    onChange(lines.map((l, k) => (k === index ? { ...l, ...patch } : l)))
 
   return (
-    <LinesTable<HeadcountPlanLine>
-      columns={columns}
-      rows={lines}
-      //  Mỗi loại kỳ một bố cục: số cột định biên khác nhau, nhớ chung một khóa là cột của Năm (4 cột)
-      //  và của Quý (3 cột) đè thứ tự của nhau.
-      storageKey={`hr.headcount-plan.lines.p${periodType}`}
-      rowKey={(row) => `p${row.position_id}`}
-      renderCell={(key, row, index) => <HeadcountPlanLineCell columnKey={key} line={row} index={index} ctx={ctx} />}
-      title={`Định biên theo vị trí (${lines.length})`}
-      actions={
-        <div className="flex flex-wrap items-center gap-2">
-          {!readOnly && (
-            <>
-              <SearchSelect
-                value={picked}
-                onChange={setPicked}
-                options={options}
-                placeholder="Chọn vị trí để thêm"
-                searchPlaceholder="Tìm chức vụ…"
-                emptyMessage="Mọi chức vụ đã có dòng."
-                size="sm"
-                className="w-56"
+    <div className="space-y-2">
+      <div className="rounded-md border">
+        <Table className="min-w-[720px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead rowSpan={2} className="min-w-40 align-bottom">
+                Vị trí
+              </TableHead>
+              <TableHead rowSpan={2} className="w-16 text-right align-bottom" title="Số người đang làm ở vị trí này">
+                Hiện có
+              </TableHead>
+              <TableHead colSpan={periods.length} className="h-7 border-b text-center">
+                Cần có
+              </TableHead>
+              <TableHead rowSpan={2} className="w-20 text-right align-bottom" title="Cần có ở kỳ cuối trừ hiện có">
+                Cần tuyển
+              </TableHead>
+              {moneyItems.map((item) => (
+                <TableHead key={item.code} rowSpan={2} className="w-36 text-right align-bottom whitespace-normal">
+                  {describePerHeadColumn(item)}
+                </TableHead>
+              ))}
+              {!readOnly && <TableHead rowSpan={2} className="w-10" aria-label="Xóa dòng" />}
+            </TableRow>
+            <TableRow>
+              {periods.map((p) => (
+                <TableHead key={p.key} className="h-7 w-16 text-right">
+                  {p.label}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {lines.map((line, index) => (
+              <HeadcountPlanLineRow
+                key={`p${line.position_id}`}
+                line={line}
+                periods={periods}
+                moneyItems={moneyItems}
+                current={countCurrentForLine(line, lines, stats)}
+                stat={stats.find((s) => s.position_id === line.position_id)}
+                fillLabel={fillLabel}
+                readOnly={readOnly}
+                onPatch={(patch) => patchLine(index, patch)}
+                onRemove={() => onChange(lines.filter((_, k) => k !== index))}
               />
-              <Button type="button" size="sm" variant="outline" disabled={!picked} onClick={addPicked}>
-                <Plus className="size-4" />
-                Thêm vị trí
-              </Button>
-              {!used.has(NO_POSITION_ID) && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onAdd(NO_POSITION_ID, NO_POSITION_LABEL)}
-                  title="Cho ai chỉ muốn nhập tổng người của phòng, không chia theo chức vụ"
-                >
-                  <Plus className="size-4" />
-                  Dòng «{NO_POSITION_LABEL}»
-                </Button>
-              )}
-            </>
+            ))}
+          </TableBody>
+        </Table>
+        {lines.length === 0 && (
+          <p className="border-t p-4 text-center text-sm text-muted-foreground">
+            {readOnly ? 'Kế hoạch chưa có vị trí nào.' : EMPTY_HINT}
+          </p>
+        )}
+      </div>
+      {!readOnly && (
+        <div className="flex flex-wrap items-center gap-2">
+          <HeadcountPlanPositionPicker options={positions.filter((p) => !used.has(p.id))} onPick={onAdd} />
+          {!used.has(NO_POSITION_ID) && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              title="Dùng khi không chia theo vị trí — chỉ nhập tổng số người của phòng"
+              onClick={() => onAdd(NO_POSITION_ID, NO_POSITION_LABEL)}
+            >
+              <Plus className="size-4" />
+              Nhập tổng cả phòng
+            </Button>
           )}
-          {extraActions}
         </div>
-      }
-      emptyMessage={
-        readOnly
-          ? 'Kế hoạch chưa có dòng vị trí nào.'
-          : 'Chưa có dòng nào — chọn một vị trí để thêm, hoặc thêm dòng «Không theo vị trí» nếu chỉ nhập tổng phòng.'
-      }
-    />
+      )}
+    </div>
   )
 }

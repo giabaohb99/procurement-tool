@@ -44,8 +44,8 @@ def build_plan_xlsx(db: Session, plan: HeadcountPlan, profile: dict) -> bytes:
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Định biên"
-    rows = [["Vị trí"] + [f"Định biên {p['label']}" for p in periods] + [i.name for i in per_head]]
+    ws.title = "Số người"
+    rows = [["Vị trí"] + [f"Số người {p['label']}" for p in periods] + [i.name for i in per_head]]
     for ln in lines:
         out = line_out(ln, names, see)
         rows.append([out["position_name"]] + out["headcounts"]
@@ -60,7 +60,7 @@ def build_plan_xlsx(db: Session, plan: HeadcountPlan, profile: dict) -> bytes:
             body += [["    " + it["name"]] + it["values"] + [it["total"]]
                      for it in computed["items"] if it["group_id"] == g["group_id"]]
         body.append(["TỔNG CHI PHÍ NHÂN SỰ"] + computed["total"]["values"] + [computed["total"]["total"]])
-        body.append(["Định biên cuối kỳ con"] + computed["headcount"])
+        body.append(["Số người cuối kỳ con"] + computed["headcount"])
         body.append(["Bình quân / người cả kỳ", computed["avg_per_head"] if computed["avg_per_head"] is not None else ""])
         ws2 = wb.create_sheet("Bảng tính")
         _write(ws2, body)

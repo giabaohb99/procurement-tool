@@ -47,20 +47,19 @@ interface HeadcountPlanPeriodFieldsProps {
   yearOptions: readonly Option[]
   companyOptions: readonly Option[]
   departmentOptions: readonly Option[]
-  templateOptions: readonly Option[]
   /** Tên pháp nhân · phòng do API trả sẵn — người không đọc được danh mục vẫn thấy tên, không phải «#id». */
   savedNames?: { company?: string; department?: string }
   onPatch: (patch: Partial<HeadcountPlanDraft>) => void
   onPeriodChange: (change: { period_type?: number; period_no?: number }) => void
-  onTemplateChange: (templateId: number) => void
 }
 
 /**
- * Nửa đầu khối 1 — KỲ (loại kỳ → ô kỳ đổi theo), pháp nhân, phòng, mẫu khoản chi phí.
+ * Nửa đầu khối 1 — KỲ (loại kỳ → ô kỳ đổi theo), pháp nhân, phòng. Không có ô chọn mẫu (duoc-CR-690):
+ * kế hoạch mới tự điền sẵn chi phí của «Mẫu gợi ý».
  *
  * ⚠️ Năm · loại kỳ · kỳ · pháp nhân · phòng là KHÓA của kế hoạch (backend UNIQUE) nên khóa lại khi
  * sửa: đổi khóa của một kế hoạch đã duyệt là chuyển nó sang kỳ khác mà lịch sử vẫn ghi «sửa». Muốn
- * điều chỉnh giữa năm thì lập kế hoạch kỳ hẹp hơn (tài liệu 06 §3). Ô «Mẫu» chỉ có lúc TẠO.
+ * điều chỉnh giữa năm thì lập kế hoạch kỳ hẹp hơn (tài liệu 06 §3).
  */
 export function HeadcountPlanPeriodFields({
   draft,
@@ -69,11 +68,9 @@ export function HeadcountPlanPeriodFields({
   yearOptions,
   companyOptions,
   departmentOptions,
-  templateOptions,
   savedNames,
   onPatch,
   onPeriodChange,
-  onTemplateChange,
 }: HeadcountPlanPeriodFieldsProps) {
   const locked = !isNew || readOnly
   const findLabel = (options: readonly Option[], value: number) =>
@@ -151,20 +148,6 @@ export function HeadcountPlanPeriodFields({
           options={[...departmentOptions]}
           searchPlaceholder="Tìm phòng ban…"
           onChange={(v) => onPatch({ department_id: Number(v) || 0 })}
-        />
-      </PlanLabeledField>
-      <PlanLabeledField
-        label="Mẫu khoản chi phí"
-        htmlFor="hp-template"
-        required
-        hint="Hệ thống CHÉP bộ khoản của mẫu vào kế hoạch này. Sửa mẫu về sau không làm đổi kế hoạch đã lập."
-      >
-        <OptionSelect
-          id="hp-template"
-          value={draft.template_id ? String(draft.template_id) : ''}
-          options={templateOptions}
-          placeholder={templateOptions.length ? 'Chọn mẫu' : 'Chưa có mẫu nào đang dùng'}
-          onChange={(v) => onTemplateChange(Number(v))}
         />
       </PlanLabeledField>
     </>

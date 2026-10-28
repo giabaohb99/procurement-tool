@@ -89,7 +89,7 @@ REPORT_META: dict[ReportKey, tuple[str, str]] = {
     ReportKey.BENEFIT_AUDIENCE: ("Phúc lợi & sự kiện", "Nhân sự"),
     ReportKey.MANAGEMENT_SPAN: ("Cơ cấu quản lý", "Nhân sự"),
     ReportKey.WORK_MOVES: ("Điều chuyển & bổ nhiệm", "Nhân sự"),
-    ReportKey.HEADCOUNT_PLAN: ("Định biên kế hoạch so với thực tế", "Nhân sự"),
+    ReportKey.HEADCOUNT_PLAN: ("Số người kế hoạch so với thực tế", "Nhân sự"),
     ReportKey.ATTENDANCE_DAILY: ("Có mặt theo ngày", "Nhân sự"),
     ReportKey.PROFILE_CHANGES: ("Yêu cầu sửa hồ sơ", "Nhân sự"),
     ReportKey.ROOM_USAGE: ("Sử dụng phòng họp", "Nhân sự"),
