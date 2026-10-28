@@ -145,7 +145,7 @@ def _require_progress(user=Depends(get_current_user), db: Session = Depends(get_
     if (user_has_permission(db, user, "purchase_order", "read")
             or user_has_permission(db, user, "purchase_request", "read")):
         return user
-    raise HTTPException(403, "Không có quyền xem tiến độ mua hàng")
+    raise HTTPException(403, "Không có quyền xem tiến độ đơn mua hàng")
 
 
 # Một hàng của bảng = đơn + dòng hàng + lần giao. Thân hàm nằm ở `export.row_values` vì file xuất
@@ -288,7 +288,7 @@ def _require_progress_export(user=Depends(get_current_user), db: Session = Depen
     if (user_has_permission(db, user, "purchase_order", "export")
             or user_has_permission(db, user, "purchase_request", "export")):
         return user
-    raise HTTPException(403, "Không có quyền xuất dữ liệu tiến độ mua hàng")
+    raise HTTPException(403, "Không có quyền xuất dữ liệu tiến độ đơn mua hàng")
 
 
 @router.get("/export/xlsx")
@@ -435,4 +435,4 @@ def progress_summary_export(request: Request, db: Session = Depends(get_db),
 
     data = build_report(fetch, prog_summary.build_spec(show_supplier), period, group_by=group_by)
     data["notes"] = data.get("notes", []) + [prog_summary.NOTE]
-    return report_xlsx("tien-do-mua-hang", data)
+    return report_xlsx("tien-do-don-mua-hang", data)

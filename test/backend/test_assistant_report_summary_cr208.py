@@ -103,7 +103,7 @@ def test_cong_or_cua_tien_do_mua_hang_chay_dung_dependency_cua_route(db, cap_quy
     _grant(cap_quyen, gan_bao_cao, user, "purchase_request", ReportKey.PURCHASE_PROGRESS)
     out = T.run_tool(db, user, "report_summary", {"report_key": "purchase_progress", "filters": SEPT})
     assert "error" not in out, out
-    assert out["label"] == "Tiến độ mua hàng" and out["link"] == "/report/purchase-progress"
+    assert out["label"] == "Tiến độ đơn mua hàng" and out["link"] == "/report/purchase-progress"
 
 
 # ── Số khớp đường /summary ────────────────────────────────────────────────────

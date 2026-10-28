@@ -257,7 +257,7 @@ _XLSX_PARAMS = {
     "properties": {
         "filename": {
             "type": "string",
-            "description": "Tên tệp không dấu, không đuôi (vd: tien-do-mua-hang-thang-8).",
+            "description": "Tên tệp không dấu, không đuôi (vd: tien-do-don-mua-hang-thang-8).",
         },
         "sheets": {
             "type": "array",
