@@ -47,13 +47,13 @@ export default function PrLinesReport({ year, companyId }: { year: string; compa
             onKeyDown={(e) => { if (e.key === 'Enter') { setPrlPage(1); setPrlF((s) => ({ ...s, search: (e.target as HTMLInputElement).value.trim() })) } }}
             onBlur={(e) => { const v = e.target.value.trim(); if (v !== prlF.search) { setPrlPage(1); setPrlF((s) => ({ ...s, search: v })) } }} />
           <div style={{ minWidth: 160 }}>
-            <SearchSelect value={prlF.line_status} placeholder="Tất cả tiến độ"
-              options={[{ value: '', label: 'Tất cả tiến độ' }, ...PRL_LINE_STATUS]}
+            <SearchSelect value={prlF.line_status} placeholder="Tất cả tiến độ dòng"
+              options={[{ value: '', label: 'Tất cả tiến độ dòng' }, ...PRL_LINE_STATUS]}
               onChange={(v) => { setPrlPage(1); setPrlF((s) => ({ ...s, line_status: v })) }} />
           </div>
           <div style={{ minWidth: 150 }}>
-            <SearchSelect value={prlF.status} placeholder="Tất cả trạng thái"
-              options={[{ value: '', label: 'Tất cả trạng thái' }, ...Object.entries(PR_STATUS).map(([k, v]) => ({ value: k, label: v.label }))]}
+            <SearchSelect value={prlF.status} placeholder="Tất cả trạng thái phiếu"
+              options={[{ value: '', label: 'Tất cả trạng thái phiếu' }, ...Object.entries(PR_STATUS).map(([k, v]) => ({ value: k, label: v.label }))]}
               onChange={(v) => { setPrlPage(1); setPrlF((s) => ({ ...s, status: v })) }} />
           </div>
           <div style={{ minWidth: 160 }}>
@@ -70,7 +70,8 @@ export default function PrLinesReport({ year, companyId }: { year: string; compa
             <th>Mã hàng</th><th>Tên sản phẩm</th><th>Kho nhận</th><th>Phân loại</th><th>Gram</th>
             <th style={{ textAlign: 'right' }}>SL</th><th style={{ textAlign: 'right' }}>Đơn giá</th>
             <th style={{ textAlign: 'right' }}>VAT</th><th style={{ textAlign: 'right' }}>Thành tiền</th>
-            <th>Trạng thái</th><th>Tiến độ</th><th>Ngày dự kiến có hàng</th><th>NSTM phụ trách</th>
+            {/* 28/10/2026 bao-CR-691: Tiến độ của DÒNG đứng trước Trạng thái của PHIẾU — trước đây cột phiếu (Nháp) đứng trước dễ tưởng là của dòng */}
+            <th>Tiến độ dòng</th><th>Trạng thái phiếu</th><th>Ngày dự kiến có hàng</th><th>NSTM phụ trách</th>
           </tr></thead>
           <tbody>
             {(prlData.items || []).map((r: any) => (
@@ -83,7 +84,7 @@ export default function PrLinesReport({ year, companyId }: { year: string; compa
                 <td style={{ textAlign: 'right' }}>{fmtPrice(r.price)}</td>
                 <td style={{ textAlign: 'right' }}>{r.vat_pct ? `${fmt(r.vat_pct)}%` : ''}</td>
                 <td style={{ textAlign: 'right' }}>{fmtVND(r.amount)}</td>
-                <td>{prBadge(r.status)}</td><td>{prLineStatusLabel(r.line_status)}</td>
+                <td>{prLineStatusLabel(r.line_status)}</td><td>{prBadge(r.status)}</td>
                 <td>{r.expected_date}</td><td>{r.assignee_name || r.assignee}</td>
               </tr>))}
             {(prlData.total || 0) === 0 && <tr><td colSpan={18} style={{ textAlign: 'center', color: '#999', padding: 14 }}>{(prlF.status || prlF.line_status || prlF.assignee || prlF.search) ? 'Không có dòng khớp bộ lọc' : 'Chưa có dữ liệu'}</td></tr>}
