@@ -199,6 +199,8 @@ export const queryKeys = {
     changeRequest: (id: number) => ['hr', 'change-requests', 'detail', id] as const,
     /** Sơ đồ tổ chức (duoc-CR-669) — không nằm dưới `employees` vì cũng đổi theo phòng ban; quét bằng `hr.all`. */
     orgChart: () => ['hr', 'org-chart'] as const,
+    /** Ô «Lịch nhắc trong tháng» của Tổng quan Nhân sự (duoc-CR-689) — theo tháng `YYYY-MM`. */
+    monthlyReminders: (month: string) => ['hr', 'monthly-reminders', month] as const,
     employeeDepartments: (id: number) => ['hr', 'employees', id, 'departments'] as const,
     /**
      * Quá trình công tác của MỘT hồ sơ (phase 04, 03/10/2026) — tab «Quá trình

@@ -28,7 +28,7 @@ from app.core.status_catalog import Code, CodeSet, register
 
 
 class ReportKey(IntEnum):
-    """24 báo cáo của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
+    """29 báo cáo của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
     phase-02 của plan `261002-0836-phan-quyen-tung-bao-cao`."""
 
     PURCHASE_REPORT = 1      # Báo cáo mua hàng (Thu mua)
@@ -55,6 +55,11 @@ class ReportKey(IntEnum):
     BENEFIT_AUDIENCE = 22     # Phúc lợi & sự kiện (Nhân sự) — duoc-CR-688
     MANAGEMENT_SPAN = 23      # Cơ cấu quản lý (Nhân sự) — duoc-CR-688
     WORK_MOVES = 24           # Điều chuyển & bổ nhiệm (Nhân sự) — duoc-CR-688
+    HEADCOUNT_PLAN = 25       # Định biên kế hoạch so với thực tế (Nhân sự) — duoc-CR-689
+    ATTENDANCE_DAILY = 26     # Có mặt theo ngày (Nhân sự) — duoc-CR-689
+    PROFILE_CHANGES = 27      # Yêu cầu sửa hồ sơ (Nhân sự) — duoc-CR-689
+    ROOM_USAGE = 28           # Sử dụng phòng họp (Nhân sự) — duoc-CR-689
+    LEGAL_WATCH = 29          # Đối tượng cần chú ý theo luật (Nhân sự) — duoc-CR-689; có ngày sinh, con nhỏ
 
 
 #  {khóa: (nhãn, nhóm phân hệ)} — nhãn KHỚP `label`, nhóm KHỚP `group` ở danh
@@ -84,6 +89,11 @@ REPORT_META: dict[ReportKey, tuple[str, str]] = {
     ReportKey.BENEFIT_AUDIENCE: ("Phúc lợi & sự kiện", "Nhân sự"),
     ReportKey.MANAGEMENT_SPAN: ("Cơ cấu quản lý", "Nhân sự"),
     ReportKey.WORK_MOVES: ("Điều chuyển & bổ nhiệm", "Nhân sự"),
+    ReportKey.HEADCOUNT_PLAN: ("Định biên kế hoạch so với thực tế", "Nhân sự"),
+    ReportKey.ATTENDANCE_DAILY: ("Có mặt theo ngày", "Nhân sự"),
+    ReportKey.PROFILE_CHANGES: ("Yêu cầu sửa hồ sơ", "Nhân sự"),
+    ReportKey.ROOM_USAGE: ("Sử dụng phòng họp", "Nhân sự"),
+    ReportKey.LEGAL_WATCH: ("Đối tượng cần chú ý theo luật", "Nhân sự"),
 }
 
 #  `value` là SỐ VIẾT DƯỚI DẠNG CHUỖI — khung `status_catalog` dùng mã chuỗi,

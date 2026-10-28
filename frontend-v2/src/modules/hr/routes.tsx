@@ -11,6 +11,7 @@ import {
   IdCard,
   LayoutDashboard,
   Network,
+  Target,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -97,6 +98,16 @@ export const hrModule: ErpModule = {
       icon: BriefcaseBusiness,
       entity: 'job_position',
       manage: true,
+      group: 'Danh mục',
+    },
+    {
+      //  duoc-CR-689: Kế hoạch nhân sự theo năm (định biên + quỹ lương / tháng). ⚠️ `entity` ở đây
+      //  LÀ hàng rào của route (gác điều hướng mặc định MỞ) — thiếu mục này thì ai đăng nhập cũng gõ
+      //  URL vào được. Không `manage`: người chỉ được XEM kế hoạch (trưởng phòng) vẫn cần mở màn.
+      label: 'Kế hoạch nhân sự',
+      path: appRoutes.hr.headcountPlans,
+      icon: Target,
+      entity: 'headcount_plan',
       group: 'Danh mục',
     },
     {
@@ -410,6 +421,12 @@ export const hrModule: ErpModule = {
       lazy: async () => ({
         Component: (await import('./pages/labor-contract-template-editor-page'))
           .LaborContractTemplateEditorPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.headcountPlans,
+      lazy: async () => ({
+        Component: (await import('./pages/headcount-plan-list-page')).HeadcountPlanListPage,
       }),
     },
     {

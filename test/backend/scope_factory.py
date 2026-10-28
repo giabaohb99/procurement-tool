@@ -93,6 +93,7 @@ ENTITY_MODEL_PATHS = {
     "ai_mcp_key_admin": ("app.modules.employee.model", "Employee"),
     "labor_contract": ("app.modules.labor_contract.model", "LaborContract"),
     "labor_contract_template": ("app.modules.labor_contract.template_model", "LaborContractTemplate"),
+    "headcount_plan": ("app.modules.headcount_plan.model", "HeadcountPlan"),   # duoc-CR-689
 }
 
 

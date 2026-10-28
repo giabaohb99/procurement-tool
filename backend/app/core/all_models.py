@@ -116,3 +116,4 @@ from app.modules.feature_usage import model as _feature_usage  # noqa: F401  # d
 from app.modules.ai_usage import model as _ai_usage  # noqa: F401  ai-CR-230
 from app.modules.capability import model as _capability  # noqa: F401  # duoc-CR-656
 from app.modules.ai_plan import model as _ai_plan  # noqa: F401  kh-AI1-3
+from app.modules.headcount_plan import model as _headcount_plan  # noqa: F401  # duoc-CR-689

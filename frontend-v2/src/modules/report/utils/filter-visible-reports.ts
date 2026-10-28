@@ -23,5 +23,5 @@ export function filterVisibleReports(
   can: CanFn,
   reportKeys: readonly number[] | undefined,
 ): ReportCatalogEntry[] {
-  return reports.filter((r) => can(r.entity, 'read') && (reportKeys?.includes(r.key) ?? false))
+  return reports.filter((r) => can(r.entity, r.action ?? 'read') && (reportKeys?.includes(r.key) ?? false))
 }

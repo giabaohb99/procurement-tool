@@ -329,6 +329,10 @@ SCOPE_FIELDS = {
     "ai_skill":         {"company": "company_id", "dept_id": "owner_department_id", "owner": "created_by"},
     #  ai-CR-212: phát / thu hồi khóa AI hộ — lọc trên HỒ SƠ NHÂN SỰ của chủ khóa (như `employee`).
     "ai_mcp_key_admin": {"company": "company_id", "dept_id": "department_id", "self": "id"},
+    #  Kế hoạch nhân sự (duoc-CR-689): theo pháp nhân + phòng của dòng kế hoạch. KHÔNG khai `owner` (người nhập
+    #  không đồng nghĩa người được xem) và KHÔNG `self` (không gắn nhân sự). Dòng `department_id = 0` («toàn pháp
+    #  nhân») chỉ hiện với phạm vi tới cấp pháp nhân trở lên — người chỉ có phạm vi phòng không thấy kế hoạch cả công ty.
+    "headcount_plan":   {"company": "company_id", "dept_id": "department_id"},
 }
 
 

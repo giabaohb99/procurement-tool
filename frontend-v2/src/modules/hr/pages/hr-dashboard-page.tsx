@@ -9,6 +9,7 @@ import { AccountCoverageCard } from '../components/account-coverage-card'
 import { ExpiringLaborContractsCard } from '../components/expiring-labor-contracts-card'
 import { HrOverviewStats } from '../components/hr-overview-stats'
 import { LeaveGlanceCard } from '../components/leave-glance-card'
+import { MonthlyRemindersCard } from '../components/monthly-reminders-card'
 import { ProfileGapsCard } from '../components/profile-gaps-card'
 import { RoomGlanceCard } from '../components/room-glance-card'
 import { useHrLeaveGlance } from '../hooks/use-hr-leave-glance'
@@ -55,11 +56,13 @@ export function HrDashboardPage() {
         - **13 inch** (`lg`, 3 cột):
               [ theo phòng ban        ×2 ][ hồ sơ cần bổ sung ]
               [ hợp đồng lao động sắp hết hạn               ×3 ]  ← chỉ khi có quyền HĐLĐ
+              [ lịch nhắc trong tháng                       ×3 ]  ← chỉ khi đọc được hồ sơ
               [ nghỉ phép ][ lịch họp ][ cơ cấu ]
               [ tài khoản ][ theo pháp nhân          ×2 ]
         - **15 inch trở lên** (`2xl`, từ 1536px — 4 cột):
               [ theo phòng ban   ×2 ][ hồ sơ cần bổ sung ×2 ]
               [ hợp đồng lao động sắp hết hạn         ×4 ]  ← chỉ khi có quyền HĐLĐ
+              [ lịch nhắc trong tháng                 ×4 ]  ← chỉ khi đọc được hồ sơ
               [ nghỉ phép        ×2 ][ lịch họp          ×2 ]
               [ cơ cấu ][ tài khoản ][ theo pháp nhân    ×2 ]
 
@@ -104,6 +107,12 @@ export function HrDashboardPage() {
             (hợp đồng mang lương), người khác không thấy cả cái khung. */}
         {can('labor_contract', 'read') && (
           <ExpiringLaborContractsCard className="lg:col-span-3 2xl:col-span-4" />
+        )}
+
+        {/* duoc-CR-689: lịch nhắc trong tháng — cũng trọn MỘT HÀNG nên lưới vẫn kín. Gác
+            `employee.read` (backend gác y hệt); nhóm nào thiếu quyền thì chính thẻ tự giấu. */}
+        {overview.canReadEmployees && (
+          <MonthlyRemindersCard className="lg:col-span-3 2xl:col-span-4" today={now} />
         )}
 
         <LeaveGlanceCard className="2xl:col-span-2" glance={leave} />

@@ -4,10 +4,15 @@ import {
   BookUser,
   CalendarOff,
   ClipboardList,
+  DoorOpen,
+  FilePen,
   FileSignature,
   Gift,
   IdCard,
   Network,
+  Scale,
+  Target,
+  UserCheck,
   UserX,
   Wallet,
 } from 'lucide-react'
@@ -20,7 +25,8 @@ import type { ReportCatalogEntry } from './report-catalog'
  * Nhóm NHÂN SỰ của danh mục báo cáo (phase 04) — Nhân sự (biến động & cơ cấu) ·
  * Nghỉ phép (tình hình nghỉ) · Quỹ phép năm · Hợp đồng lao động · Hồ sơ còn thiếu
  * (duoc-CR-686) · Sổ quản lý lao động · Mẫu 01/PLI (duoc-CR-687) · Quỹ lương · Phúc lợi & sự kiện ·
- * Cơ cấu quản lý · Điều chuyển & bổ nhiệm (duoc-CR-688). Mỗi báo cáo = một `ReportPageConfig`
+ * Cơ cấu quản lý · Điều chuyển & bổ nhiệm (duoc-CR-688) · Định biên kế hoạch · Có mặt theo ngày ·
+ * Yêu cầu sửa hồ sơ · Sử dụng phòng họp · Đối tượng cần chú ý theo luật (duoc-CR-689). Mỗi báo cáo = một `ReportPageConfig`
  * (`pages/hr-headcount-report-page.tsx`/`leave-usage-report-page.tsx`/
  * `leave-balance-report-page.tsx`) — xem các tệp đó để biết KPI/chỉ số xu
  * hướng/breakdown/nhóm mặc định.
@@ -193,5 +199,81 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
     endpoint: '/api/work-moves/summary',
     overviewKpis: ['transfers', 'appoints'],
     load: async () => (await import('../pages/work-moves-report-page')).WorkMovesReportPage,
+  },
+  {
+    label: 'Định biên kế hoạch so với thực tế',
+    description: 'Định biên kế hoạch năm so với người đang có theo pháp nhân, phòng ban: còn thiếu, vượt, tỷ lệ lấp đầy.',
+    path: appRoutes.report.headcountPlan,
+    sourcePath: appRoutes.hr.headcountPlans,
+    icon: Target,
+    //  ReportKey.HEADCOUNT_PLAN (backend) = 25.
+    key: 25,
+    entity: 'headcount_plan',
+    group: 'Nhân sự',
+    endpoint: '/api/headcount-plan-report/summary',
+    overviewKpis: ['vacancies', 'fill_rate'],
+    load: async () => (await import('../pages/headcount-plan-report-page')).HeadcountPlanReportPage,
+  },
+  {
+    label: 'Có mặt theo ngày',
+    description: 'Người-ngày phải làm theo lịch, nghỉ theo đơn đã duyệt và có mặt; tỷ lệ có mặt, tỷ lệ vắng theo phòng.',
+    path: appRoutes.report.attendance,
+    sourcePath: appRoutes.hr.workRoster,
+    icon: UserCheck,
+    //  ReportKey.ATTENDANCE_DAILY (backend) = 26.
+    key: 26,
+    entity: 'employee',
+    group: 'Nhân sự',
+    endpoint: '/api/attendance-report/summary',
+    //  Không lên dải KPI Tổng quan: backend chặn kỳ dài hơn 92 ngày (422) — trang Tổng quan chọn
+    //  «Năm nay» là thẻ này hỏng trong khi mọi thẻ khác vẫn chạy.
+    overviewKpis: [],
+    load: async () => (await import('../pages/attendance-report-page')).AttendanceReportPage,
+  },
+  {
+    label: 'Yêu cầu sửa hồ sơ',
+    description: 'Đề nghị sửa hồ sơ trong kỳ: đang chờ, chờ quá 2 ngày, tỷ lệ từ chối, thời gian xử lý bình quân.',
+    path: appRoutes.report.profileChanges,
+    sourcePath: appRoutes.hr.profileChangeRequests,
+    icon: FilePen,
+    //  ReportKey.PROFILE_CHANGES (backend) = 27.
+    key: 27,
+    //  Backend gác `employee.write` (+ khóa báo cáo 27), cùng chốt màn Duyệt sửa hồ sơ — rà mã CR-689 S5.
+    entity: 'employee',
+    action: 'write',
+    group: 'Nhân sự',
+    endpoint: '/api/profile-change-report/summary',
+    overviewKpis: ['pending_over_2d'],
+    load: async () => (await import('../pages/profile-changes-report-page')).ProfileChangesReportPage,
+  },
+  {
+    label: 'Sử dụng phòng họp',
+    description: 'Lượt đặt, giờ đã đặt, tỷ lệ lấp đầy, đặt rồi hủy, số người dự so với sức chứa — theo phòng họp, khung giờ.',
+    path: appRoutes.report.roomUsage,
+    sourcePath: appRoutes.hr.roomBookings,
+    icon: DoorOpen,
+    //  ReportKey.ROOM_USAGE (backend) = 28.
+    key: 28,
+    entity: 'room_booking',
+    group: 'Nhân sự',
+    endpoint: '/api/room-usage/summary',
+    overviewKpis: ['occupancy'],
+    load: async () => (await import('../pages/room-usage-report-page')).RoomUsageReportPage,
+  },
+  {
+    label: 'Đối tượng cần chú ý theo luật',
+    description: 'Sắp đến tuổi nghỉ hưu trong 12 tháng, đang nghỉ thai sản, lao động nữ nuôi con dưới 12 tháng.',
+    path: appRoutes.report.legalWatch,
+    sourcePath: appRoutes.hr.employees,
+    icon: Scale,
+    //  ReportKey.LEGAL_WATCH (backend) = 29.
+    key: 29,
+    entity: 'employee',
+    group: 'Nhân sự',
+    endpoint: '/api/legal-watch/summary',
+    //  Không lên dải KPI Tổng quan: backend đòi thêm `employee_sensitive.read` (ngày sinh, con
+    //  nhỏ) — người được giao báo cáo mà thiếu quyền đó sẽ thấy thẻ Tổng quan hỏng (như khóa 19).
+    overviewKpis: [],
+    load: async () => (await import('../pages/legal-watch-report-page')).LegalWatchReportPage,
   },
 ]

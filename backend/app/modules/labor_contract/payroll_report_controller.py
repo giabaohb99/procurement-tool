@@ -21,6 +21,7 @@ from app.modules.report.procurement_summary_rows import valid_company_id, valid_
 from app.modules.report_access.guard import require_report
 
 from . import payroll_report_service as service
+from .payroll_report_plan import load_plan_sets
 from .model import LaborContract
 
 router = APIRouter(prefix="/api/payroll-fund", tags=["report"])
@@ -40,14 +41,18 @@ def _inputs(request: Request, db: Session, user, action: str = "read") -> dict:
 def payroll_fund_summary(request: Request, db: Session = Depends(get_db),
                          user=Depends(require("labor_contract", "read"))):
     kw = _inputs(request, db, user)
-    return success(service.build_summary(db, group_by=request.query_params.get("group_by") or None, **kw))
+    plans = load_plan_sets(db, user, get_perm_profile(db, user), kw["period"], kw["company_id"], kw["department_id"])
+    return success(service.build_summary(db, group_by=request.query_params.get("group_by") or None,
+                                         plan_sets=plans, **kw))
 
 
 @router.get("/summary/export", dependencies=_GUARD)
 def payroll_fund_summary_export(request: Request, db: Session = Depends(get_db),
                                 user=Depends(require("labor_contract", "export"))):
     kw = _inputs(request, db, user, "export")   # phạm vi theo quyền XUẤT, không theo quyền xem
-    data = service.build_summary(db, group_by=request.query_params.get("group_by") or None, **kw)
+    plans = load_plan_sets(db, user, get_perm_profile(db, user), kw["period"], kw["company_id"],
+                           kw["department_id"], "export")
+    data = service.build_summary(db, group_by=request.query_params.get("group_by") or None, plan_sets=plans, **kw)
     return report_xlsx("quy-luong", data)
 
 

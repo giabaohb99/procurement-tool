@@ -46,3 +46,39 @@ describe('HR_REPORT_CATALOG — đợt 3', () => {
     expect(entry?.description).toMatch(/dưới 3 người bị che/)
   })
 })
+
+/**
+ * Năm báo cáo Nhân sự đợt 4 (duoc-CR-689). Cùng luật nhãn với đợt 3: phải trùng HẲN `REPORT_KEY`.
+ */
+const WAVE_4 = [
+  { key: 25, path: '/report/headcount-plan', entity: 'headcount_plan', endpoint: '/api/headcount-plan-report/summary' },
+  { key: 26, path: '/report/attendance', entity: 'employee', endpoint: '/api/attendance-report/summary' },
+  { key: 27, path: '/report/profile-changes', entity: 'employee', endpoint: '/api/profile-change-report/summary' },
+  { key: 28, path: '/report/room-usage', entity: 'room_booking', endpoint: '/api/room-usage/summary' },
+  { key: 29, path: '/report/legal-watch', entity: 'employee', endpoint: '/api/legal-watch/summary' },
+] as const
+
+describe('HR_REPORT_CATALOG — đợt 4', () => {
+  it.each(WAVE_4)('report key $key has the backend label, gate, route and endpoint', (want) => {
+    const entry = HR_REPORT_CATALOG.find((r) => r.key === want.key)
+    expect(entry, `thiếu khóa ${want.key}`).toBeDefined()
+    const backend = REPORT_KEY.find((o) => o.value === String(want.key))
+    expect(backend, `REPORT_KEY chưa sinh khóa ${want.key}`).toBeDefined()
+    expect(entry?.label).toBe(backend?.label)
+    expect(entry).toMatchObject({ path: want.path, entity: want.entity, endpoint: want.endpoint, group: 'Nhân sự' })
+  })
+
+  it('keeps sensitive and period-capped reports off the shared overview strip', () => {
+    //  29 đòi `employee_sensitive.read`; 26 chặn kỳ > 92 ngày — trang Tổng quan chọn «Năm nay» là hỏng.
+    for (const key of [26, 29]) {
+      expect(HR_REPORT_CATALOG.find((r) => r.key === key)?.overviewKpis).toEqual([])
+    }
+  })
+
+  it('every wave-4 page loads a component', async () => {
+    for (const { key } of WAVE_4) {
+      const entry = HR_REPORT_CATALOG.find((r) => r.key === key)
+      expect(typeof (await entry?.load())).toBe('function')
+    }
+  })
+})

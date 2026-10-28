@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ComponentType } from 'react'
 
-import type { PermissionEntity } from '@/core/authorization/permission-types'
+import type { PermissionAction, PermissionEntity } from '@/core/authorization/permission-types'
 
 import { ADMIN_REPORT_CATALOG } from './report-catalog-admin'
 import { DOCUMENT_REPORT_CATALOG } from './report-catalog-document'
@@ -22,6 +22,11 @@ export interface ReportCatalogEntry {
   icon: LucideIcon
   /** Khóa quyền — GIỐNG HỆT khóa của mục menu ở phân hệ gốc, lệch là lủng. */
   entity: PermissionEntity
+  /**
+   * Hành động phải có trên `entity` để thấy báo cáo — mặc định `read`. Khai khi backend gác chặt hơn
+   * (vd Yêu cầu sửa hồ sơ đòi `employee.write`), kẻo menu mở ra trang báo mã quyền thô.
+   */
+  action?: PermissionAction
   /** Tên phân hệ gốc — thành tiêu đề nhóm trên menu trái và dải KPI Tổng quan. */
   group: string
   /**

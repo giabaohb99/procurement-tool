@@ -179,6 +179,10 @@ ENTITIES = [
     # Phát / thu hồi khóa kết nối AI (MCP) HỘ người khác (ai-CR-212, doc/erp/21 §5.3). Phạm vi tính trên hồ sơ nhân
     # sự của CHỦ KHÓA (pháp nhân + phòng ban); bảng khóa nằm ở DB dịch vụ AI, hỏi phạm vi qua cổng B.
     "ai_mcp_key_admin",
+    # Kế hoạch nhân sự (duoc-CR-689): định biên + quỹ lương kế hoạch theo năm × pháp nhân × phòng — nguồn của báo cáo
+    # A4 «Định biên kế hoạch so với thực tế» và các cột kế hoạch của A5. Khóa riêng: số quỹ lương kế hoạch là số
+    # nhạy cảm (chỉ trả cho người có `labor_contract.read`), và người duyệt định biên không phải người xem lương.
+    "headcount_plan",
 ]
 
 #  `import` (duoc-CR-660, Đ-13c): NHẬP file hàng loạt vào danh mục — tách khỏi `create`/`write`
@@ -271,6 +275,7 @@ ENTITY_LABELS = {
     "agent_ops": "Trợ lý Telegram › Nhận tin vận hành của bot",
     "ai_skill": "Kho skill AI",
     "ai_mcp_key_admin": "Trợ lý AI › Phát / thu hồi khóa kết nối AI hộ nhân sự",
+    "headcount_plan": "Nhân sự › Kế hoạch nhân sự",
 }
 
 ACTION_LABELS = {

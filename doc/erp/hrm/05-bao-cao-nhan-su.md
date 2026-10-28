@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Bản | 2.8 — 27/10/2026 (đợt 3 duoc-CR-688: A3, A5, D1, H1 đã có — khóa 21–24; biểu đồ linh hoạt phần một) · 2.7 — 27/10/2026 (đợt 2 duoc-CR-687: B2, B3 đã có — khóa 19, 20; A2 đã có trong Biến động nhân sự) · 2.6 — 27/10/2026 (đính chính B3: mẫu 01/PLI là danh sách từng người 27 cột, nộp Sở Nội vụ; B2 liệt kê đủ thông tin bắt buộc của sổ) · 2.5 — 27/10/2026 (đợt 1 duoc-CR-686 lên mã: B1, E1 đã có; A1/C1/C2 bù các chỗ thiếu; lọc phòng ban + danh sách người cho 5 báo cáo) · 2.4 — 27/10/2026 (thêm §3.4 «Biểu đồ linh hoạt» dùng chung cho mọi mẫu, kèm biểu đồ gợi ý từng mẫu) · 2.3 — 27/10/2026 (thêm nhóm H «Phúc lợi & sự kiện», mẫu H1: lọc đối tượng theo dịp như 8/3 và dự trù kinh phí) · 2.2 — 27/10/2026 (thêm mẫu A5 «Quỹ lương theo pháp nhân» để chọn công ty tuyển người) · 2.1 — 27/10/2026 (thêm ý «Tuyển dụng» vào A1; thêm nhóm G «Tài sản cấp phát» với mẫu G1) · 2.0 — 27/10/2026 (viết lại thành kho mẫu: 6 nhóm, 16 mẫu, mỗi mẫu chia ý nhỏ; gộp các mục lẻ vào mẫu lớn; bỏ danh sách mẫu chưa có phân hệ; soát mã 3 báo cáo đang chạy, ghi «Còn thiếu so với bản đang chạy» ở A1, C1, C2) · 1.1 — 27/10/2026 (thêm góc nhìn trưởng phòng Nhân sự) · 1.0 — 27/10/2026 (3 báo cáo đã có + 6 đề xuất) |
-| Tình trạng | 12 mẫu **đã có** trên ERP (A1, C1, C2 từ trước; B1, E1 từ duoc-CR-686; A2, B2, B3 từ duoc-CR-687; A3, A5, D1, H1 từ duoc-CR-688); các mẫu còn lại là **đề xuất**. Lộ trình các đợt: `plans/261027-1045-kho-mau-bao-cao-nhan-su/plan.md` |
+| Bản | 2.9 — 28/10/2026 (đợt 4 duoc-CR-689: A4, B4, C3, E2, F1 đã có — khóa 25–29; bảng Kế hoạch nhân sự; ô Lịch nhắc E3; cột kế hoạch ở A5) · 2.8 — 27/10/2026 (đợt 3 duoc-CR-688: A3, A5, D1, H1 đã có — khóa 21–24; biểu đồ linh hoạt phần một) · 2.7 — 27/10/2026 (đợt 2 duoc-CR-687: B2, B3 đã có — khóa 19, 20; A2 đã có trong Biến động nhân sự) · 2.6 — 27/10/2026 (đính chính B3: mẫu 01/PLI là danh sách từng người 27 cột, nộp Sở Nội vụ; B2 liệt kê đủ thông tin bắt buộc của sổ) · 2.5 — 27/10/2026 (đợt 1 duoc-CR-686 lên mã: B1, E1 đã có; A1/C1/C2 bù các chỗ thiếu; lọc phòng ban + danh sách người cho 5 báo cáo) · 2.4 — 27/10/2026 (thêm §3.4 «Biểu đồ linh hoạt» dùng chung cho mọi mẫu, kèm biểu đồ gợi ý từng mẫu) · 2.3 — 27/10/2026 (thêm nhóm H «Phúc lợi & sự kiện», mẫu H1: lọc đối tượng theo dịp như 8/3 và dự trù kinh phí) · 2.2 — 27/10/2026 (thêm mẫu A5 «Quỹ lương theo pháp nhân» để chọn công ty tuyển người) · 2.1 — 27/10/2026 (thêm ý «Tuyển dụng» vào A1; thêm nhóm G «Tài sản cấp phát» với mẫu G1) · 2.0 — 27/10/2026 (viết lại thành kho mẫu: 6 nhóm, 16 mẫu, mỗi mẫu chia ý nhỏ; gộp các mục lẻ vào mẫu lớn; bỏ danh sách mẫu chưa có phân hệ; soát mã 3 báo cáo đang chạy, ghi «Còn thiếu so với bản đang chạy» ở A1, C1, C2) · 1.1 — 27/10/2026 (thêm góc nhìn trưởng phòng Nhân sự) · 1.0 — 27/10/2026 (3 báo cáo đã có + 6 đề xuất) |
+| Tình trạng | 17 mẫu + ô Lịch nhắc **đã có** trên ERP (A1, C1, C2 từ trước; B1, E1 từ duoc-CR-686; A2, B2, B3 từ duoc-CR-687; A3, A5, D1, H1 từ duoc-CR-688; A4, B4, C3, E2, F1, E3 từ duoc-CR-689); còn lại chỉ tuyển dụng (phần của A1) và G1 Tài sản cấp phát — chờ phân hệ; các mẫu còn lại là **đề xuất**. Lộ trình các đợt: `plans/261027-1045-kho-mau-bao-cao-nhan-su/plan.md` |
 | Giao diện | `frontend-v2/` (cổng 8083), menu *Báo cáo* ▸ nhóm «Nhân sự» |
 | Mã nguồn backend | `modules/employee/report_*.py` · `modules/leave/report_*.py` · `modules/leave/balance_report_*.py` · khóa ở `core/report_keys.py` |
 | Mã nguồn frontend | `modules/report/config/report-catalog-hr.ts` · `modules/report/pages/*-report-page.tsx` |
@@ -25,20 +25,20 @@ Không làm chấm công và lương (đại ca chốt bỏ ngày 16/10/2026).
 | **A. Quy mô & cơ cấu** | A1. Biến động nhân sự (gồm cả tuyển dụng) | Đã có (khóa 6), mở rộng thêm; phần tuyển dụng 🔴 chờ phân hệ | 4 |
 | | A2. Cơ cấu nhân sự | **Đã có trong A1 (duoc-CR-687)** | — |
 | | A3. Cơ cấu quản lý | **Đã có (khóa 23, duoc-CR-688)** | — |
-| | A4. Định biên kế hoạch so với thực tế | Đề xuất, 🟡 thiếu dữ liệu | Chờ chốt |
+| | A4. Định biên kế hoạch so với thực tế | **Đã có (khóa 25, duoc-CR-689)** + bảng Kế hoạch nhân sự | — |
 | | A5. Quỹ lương theo pháp nhân | **Đã có phần thực tế (khóa 21, duoc-CR-688)**; kế hoạch 🟡 | — |
 | **B. Hợp đồng & tuân thủ pháp luật** | B1. Hợp đồng lao động | **Đã có (khóa 17, duoc-CR-686)** | — |
 | | B2. Sổ quản lý lao động | **Đã có (khóa 19, duoc-CR-687)** | — |
 | | B3. Báo cáo tình hình sử dụng lao động (mẫu 01/PLI) | **Đã có (khóa 20, duoc-CR-687)** | — |
-| | B4. Đối tượng cần chú ý theo luật | Đề xuất | 7 |
+| | B4. Đối tượng cần chú ý theo luật | **Đã có (khóa 29, duoc-CR-689)** | — |
 | **C. Nghỉ phép & có mặt** | C1. Tình hình nghỉ phép | Đã có (khóa 7), mở rộng thêm | 6 |
 | | C2. Quỹ phép năm | Đã có (khóa 8), mở rộng thêm | 6 |
-| | C3. Có mặt theo ngày | Đề xuất | 8 |
+| | C3. Có mặt theo ngày | **Đã có (khóa 26, duoc-CR-689)** | — |
 | **D. Quá trình công tác** | D1. Điều chuyển & bổ nhiệm | **Đã có (khóa 24, duoc-CR-688)** | — |
 | **E. Dữ liệu & vận hành phòng Nhân sự** | E1. Hồ sơ & tài khoản còn thiếu | **Đã có (khóa 18, duoc-CR-686)** | — |
-| | E2. Yêu cầu sửa hồ sơ | Đề xuất | 8 |
-| | E3. Lịch nhắc trong tháng | Đề xuất (ô ở Trang chủ, không phải báo cáo) | 9 |
-| **F. Tiện ích văn phòng** | F1. Sử dụng phòng họp | Đề xuất | 9 |
+| | E2. Yêu cầu sửa hồ sơ | **Đã có (khóa 27, duoc-CR-689)** | — |
+| | E3. Lịch nhắc trong tháng | **Đã có — ô ở Tổng quan Nhân sự (duoc-CR-689)** | — |
+| **F. Tiện ích văn phòng** | F1. Sử dụng phòng họp | **Đã có (khóa 28, duoc-CR-689)** | — |
 | **G. Tài sản cấp phát** | G1. Quản lý tài sản cấp phát | Đề xuất, 🔴 chờ phân hệ Tài sản | Chờ phân hệ |
 | **H. Phúc lợi & sự kiện** | H1. Đối tượng theo dịp và dự trù kinh phí | **Đã có (khóa 22, duoc-CR-688)** | — |
 
@@ -143,7 +143,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 *Nguồn:* `tab_employee.manager_id`, `job_level`
 
-#### A4. Định biên kế hoạch so với thực tế — 🟡 chờ dữ liệu
+#### A4. Định biên kế hoạch so với thực tế — đã có (khóa 25, duoc-CR-689)
 
 > **Trả lời:** «Phòng Kinh doanh được duyệt 20 người, đang có 17.» Đây là câu Ban Giám đốc hay hỏi nhất.
 
@@ -153,7 +153,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
   - Thiếu / thừa so với kế hoạch, theo phòng ✅ khi đã có kế hoạch
   - Vị trí đang trống ✅ khi đã có kế hoạch
 
-*Cần chốt:* có làm bảng định biên không, ai nhập, bao lâu nhập một lần.
+*Đã chốt 28/10/2026:* bảng **Kế hoạch nhân sự** (Nhân sự ▸ Danh mục) theo năm × pháp nhân × phòng ban (hoặc «Toàn pháp nhân»): định biên + quỹ lương kế hoạch / tháng (tiền chỉ hiện với người được xem HĐLĐ của pháp nhân đó), nhập tay hoặc CSV; khóa quyền `headcount_plan` (trưởng phòng Nhân sự / admin). Phòng ban dùng chung cho mọi pháp nhân nên chọn phòng nào cũng được; số thực tế đếm người có đúng cặp pháp nhân × phòng. A5 Quỹ lương có thêm Quỹ lương kế hoạch / Còn dư / % dùng.
 
 #### A5. Quỹ lương theo pháp nhân — đã có phần thực tế (khóa 21, duoc-CR-688); kế hoạch và thử tính chưa làm
 
@@ -250,7 +250,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 *Quyền:* như B2 — có CCCD, mã số BHXH, ngày sinh, lương.
 *Đã chốt 27/10/2026:* nhóm vị trí việc làm tự suy (Phó phòng trở lên = Nhà quản lý; Đại học+ = bậc cao; Trung cấp / Cao đẳng = bậc trung; còn lại = Khác); cột ERP chưa có dữ liệu để trống; người ký hợp đồng khoán việc / cộng tác viên **không** đưa vào 01/PLI (không phải HĐLĐ), báo cáo ghi số người bị loại. Nhãn 27 cột đã đối chiếu bản PDF mẫu gốc.
 
-#### B4. Đối tượng cần chú ý theo luật — đề xuất
+#### B4. Đối tượng cần chú ý theo luật — đã có (khóa 29, duoc-CR-689)
 
 > **Trả lời:** những ai đang được hưởng, hoặc sắp phải xử lý, chế độ riêng theo luật.
 
@@ -260,7 +260,9 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
   - Đang nghỉ thai sản, ngày dự kiến đi làm lại ✅ (nếu đã khai loại nghỉ thai sản)
   - Lao động nữ nuôi con dưới 12 tháng, được nghỉ 60 phút mỗi ngày ✅ (ngày sinh của con lấy từ bảng hộ gia đình `tab_employee_family`; chỉ đúng khi đã khai đủ người thân)
 - **Lao động nước ngoài**
-  - Danh sách lao động nước ngoài, giấy phép lao động sắp hết hạn 🟡 (chưa có cột quốc tịch, số giấy phép; chỉ cần nếu công ty có thuê)
+  - Danh sách lao động nước ngoài, giấy phép lao động sắp hết hạn ⏳ chưa làm (chưa có cột quốc tịch, số giấy phép)
+
+*Đã làm (duoc-CR-689):* sắp nghỉ hưu trong 12 tháng + đã quá tuổi vẫn đang làm (mốc = hết tháng đủ tuổi, lộ trình Nghị định 135/2020), đang nghỉ thai sản + ngày đi làm lại (theo phạm vi xem đơn nghỉ), lao động nữ nuôi con dưới 12 tháng; đòi quyền xem dữ liệu nhạy cảm; không in ngày sinh.
 
 ---
 
@@ -314,7 +316,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 *Nguồn:* `GET /api/leave-balances/summary` (+ export), quyền `leave_balance.read` / `export`; mã `leave/balance_report_service.py`
 
-#### C3. Có mặt theo ngày — đề xuất
+#### C3. Có mặt theo ngày — đã có (khóa 26, duoc-CR-689)
 
 > **Trả lời:** hôm nay, tuần này mỗi phòng có bao nhiêu người đi làm.
 
@@ -322,7 +324,9 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
   - Số người đi làm theo ngày, theo phòng: lịch làm việc trừ đi người nghỉ ✅
   - Ai đang nghỉ, nghỉ đến ngày nào ✅ (màn Lịch nghỉ đã có; đây là bản ra số)
 - **Thiếu người**
-  - Ngày có số người đi làm dưới mức tối thiểu của phòng 🟡 (cần khai mức tối thiểu cho từng phòng)
+  - Ngày có số người đi làm dưới mức tối thiểu của phòng ⏳ chưa làm (cần khai mức tối thiểu cho từng phòng)
+
+*Đã làm (duoc-CR-689):* người-ngày phải làm theo lịch riêng từng người trừ ngày lễ, nghỉ đã duyệt (nửa buổi 0,5), có mặt, tỷ lệ có mặt / vắng; chỉ tính tới hôm nay; kỳ tối đa 92 ngày; thiếu quyền xem đơn nghỉ thì không có các cột nghỉ.
 
 *Nguồn:* `work_schedule/resolver*.py`, `roster_leave.py` (đã dùng cho màn Xếp lịch), `tab_leave_request`
 
@@ -373,7 +377,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 *Quyền:* nhóm trường nhạy cảm chỉ hiện với người có quyền xem dữ liệu nhạy cảm; nhóm tài khoản chỉ hiện với người có quyền xem tài khoản.
 *Bảo mật:* chỉ trả số đếm và tên người, không trả giá trị nhạy cảm (số CCCD, số tài khoản); dùng lại `export_mask.py`
 
-#### E2. Yêu cầu sửa hồ sơ — đề xuất
+#### E2. Yêu cầu sửa hồ sơ — đã có (khóa 27, duoc-CR-689)
 
 > **Trả lời:** phòng Nhân sự duyệt yêu cầu sửa hồ sơ có kịp không.
 
@@ -386,7 +390,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 *Nguồn:* `tab_employee_change_request` (`status`, `changes`, `created_at`, `decided_at`)
 
-#### E3. Lịch nhắc trong tháng — ô ở Trang chủ Nhân sự
+#### E3. Lịch nhắc trong tháng — đã có, ô ở Tổng quan Nhân sự (duoc-CR-689)
 
 > **Trả lời:** tháng này có việc gì cần nhớ. Chỉ là danh sách, nên làm thành ô ở Trang chủ chứ không làm báo cáo.
 
@@ -402,7 +406,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 ### F. Tiện ích văn phòng
 
-#### F1. Sử dụng phòng họp — đề xuất
+#### F1. Sử dụng phòng họp — đã có (khóa 28, duoc-CR-689)
 
 > **Trả lời:** phòng nào quá tải, phòng nào bỏ không, giờ nào đông.
 

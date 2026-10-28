@@ -367,6 +367,16 @@ export const appRoutes = {
     managementSpan: '/report/management-span',
     /** Điều chuyển & bổ nhiệm (duoc-CR-688, khóa 24). */
     workMoves: '/report/work-moves',
+    /** Định biên kế hoạch so với thực tế (duoc-CR-689, khóa 25). */
+    headcountPlan: '/report/headcount-plan',
+    /** Có mặt theo ngày (duoc-CR-689, khóa 26). */
+    attendance: '/report/attendance',
+    /** Yêu cầu sửa hồ sơ (duoc-CR-689, khóa 27). */
+    profileChanges: '/report/profile-changes',
+    /** Sử dụng phòng họp (duoc-CR-689, khóa 28). */
+    roomUsage: '/report/room-usage',
+    /** Đối tượng cần chú ý theo luật (duoc-CR-689, khóa 29). */
+    legalWatch: '/report/legal-watch',
     vehicleBooking: '/report/vehicle-booking',
     sealRequest: '/report/seal-request',
     document: '/report/document',
@@ -505,6 +515,11 @@ export const appRoutes = {
     companyDetail: (id: number | string) => `/hr/companies/${id}`,
     /** Sơ đồ tổ chức tự vẽ từ dữ liệu (duoc-CR-669) — pháp nhân › phòng ban › người. */
     orgChart: '/hr/org-chart',
+    /**
+     * Kế hoạch nhân sự theo năm (duoc-CR-689) — định biên + quỹ lương / tháng của từng pháp nhân × phòng.
+     * Sửa bằng hộp thoại ngay trên danh sách nên không có trang chi tiết.
+     */
+    headcountPlans: '/hr/headcount-plans',
     /** Danh mục Chức vụ — nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ. */
     jobPositions: '/hr/job-positions',
     /** Thêm chức vụ mở TRANG RIÊNG, không phải hộp thoại — xem `CrudConfig.createRoute`. */

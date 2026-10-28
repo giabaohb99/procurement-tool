@@ -1,15 +1,25 @@
 # -*- coding: utf-8 -*-
-"""Seed Trung tâm trợ giúp cho nhóm báo cáo NHÂN SỰ của phân hệ Báo cáo — duoc-CR-686, mở rộng duoc-CR-687
-và duoc-CR-688 (27/10/2026).
+"""Seed Trung tâm trợ giúp cho nhóm báo cáo NHÂN SỰ của phân hệ Báo cáo — duoc-CR-686, mở rộng duoc-CR-687,
+duoc-CR-688 (27/10/2026) và duoc-CR-689 (28/10/2026).
 
-Dựng 1 thẻ phân hệ + 14 bài theo TÁC VỤ cho mười một báo cáo ở menu Báo cáo ▸ nhóm «Nhân sự»:
+Dựng 1 thẻ phân hệ + 21 bài theo TÁC VỤ cho mười sáu báo cáo ở menu Báo cáo ▸ nhóm «Nhân sự»:
 Biến động nhân sự · Tình hình nghỉ phép · Quỹ phép năm (đã có, mở rộng) · Hợp đồng lao động ·
 Hồ sơ & tài khoản còn thiếu (CR-686) · Sổ quản lý lao động · Báo cáo sử dụng lao động (01/PLI) (CR-687) ·
-Quỹ lương theo pháp nhân · Phúc lợi & sự kiện · Cơ cấu quản lý · Điều chuyển & bổ nhiệm (CR-688).
+Quỹ lương theo pháp nhân · Phúc lợi & sự kiện · Cơ cấu quản lý · Điều chuyển & bổ nhiệm (CR-688) ·
+Định biên kế hoạch so với thực tế · Có mặt theo ngày · Yêu cầu sửa hồ sơ · Sử dụng phòng họp ·
+Đối tượng cần chú ý theo luật (CR-689), cộng màn Nhân sự ▸ Danh mục ▸ «Kế hoạch nhân sự» và ô
+«Lịch nhắc trong tháng» ở Tổng quan Nhân sự (CR-689).
 Phần chung: ô lọc «Phòng ban» và ngăn «Danh sách» mở từ nút «Xem danh sách» ở thẻ số / nút «Xem» ở
 bảng «Xem theo»; biểu đồ linh hoạt («Vẽ theo», kiểu, Top N, Tải ảnh PNG — CR-688, mọi báo cáo dùng
 khung chung). CR-687 thêm 4 chiều cơ cấu vào Biến động nhân sự (Nhóm tuổi · Trình độ · Địa điểm làm
-việc · Nhóm vị trí việc làm) và khóa 19/20 vào bài giao quyền; CR-688 thêm khóa 21–24.
+việc · Nhóm vị trí việc làm) và khóa 19/20 vào bài giao quyền; CR-688 thêm khóa 21–24; CR-689 thêm
+khóa 25–29, khóa quyền «Nhân sự › Kế hoạch nhân sự» và cột kế hoạch ở Quỹ lương.
+
+CR-689: nhãn chép từ màn local 28/10/2026 (`/hr/headcount-plans`, `/report/headcount-plan`,
+`/report/attendance`, Tổng quan Nhân sự, Phân quyền tài khoản) và từ `meta` / `notes` của 5 đường
+`/summary` mới. ⚠️ Lúc viết, nhập CSV kế hoạch có dòng phòng ban bị từ chối «mã phòng ban không tồn
+tại trong pháp nhân» (phòng ban dùng chung, `company_id = 0`); bài viết theo cách chạy đúng (mọi
+phòng chọn được) — soát lại sau khi bên backend sửa.
 
 Nhãn nút và tên chỉ số chép từ mã màn (`frontend-v2/src/modules/report/`) và từ `meta.metrics` /
 `meta.dimensions` / `notes` của các đường `/summary` gọi trên local (27/10/2026); đổi nhãn ở màn hay ở
@@ -23,7 +33,7 @@ Chạy trong container api:
 
 Idempotent: xóa nguyên cây cùng tiêu đề gốc rồi dựng lại ở đúng vị trí cũ (xem `help_seed_common.py`).
 
-⚠️ Phải KHỚP với `doc/erp/hrm/05-bao-cao-nhan-su.md` (mục A1, A2, A3, A5, B1, B2, B3, C1, C2, D1, E1, H1, §3.4).
+⚠️ Phải KHỚP với `doc/erp/hrm/05-bao-cao-nhan-su.md` (mục A1–A5, B1–B4, C1–C3, D1, E1–E3, F1, H1, §3.4).
 Nội dung ở đây và ở tài liệu đó phải khớp nhau.
 """
 from help_seed_common import SessionLocal, HelpArticle, _descendants, rebuild_tree, ref, slugify
@@ -43,11 +53,22 @@ PAYROLL_TITLE = "Báo cáo Nhân sự — Đọc báo cáo Quỹ lương theo ph
 BENEFIT_TITLE = "Báo cáo Nhân sự — Lập danh sách nhận quà và dự trù kinh phí theo dịp"
 SPAN_TITLE = "Báo cáo Nhân sự — Rà cơ cấu quản lý và người chưa gán quản lý trực tiếp"
 MOVES_TITLE = "Báo cáo Nhân sự — Theo dõi điều chuyển, bổ nhiệm và kiêm nhiệm"
+#  duoc-CR-689
+PLAN_TITLE = "Báo cáo Nhân sự — Lập kế hoạch định biên và quỹ lương theo năm"
+PLAN_REPORT_TITLE = "Báo cáo Nhân sự — So định biên kế hoạch với số người đang có"
+ATTENDANCE_TITLE = "Báo cáo Nhân sự — Xem số người có mặt theo ngày ở từng phòng"
+PROFILE_CHANGES_TITLE = "Báo cáo Nhân sự — Theo dõi tốc độ duyệt yêu cầu sửa hồ sơ"
+ROOM_USAGE_TITLE = "Báo cáo Nhân sự — Đo mức sử dụng phòng họp và giờ cao điểm"
+LEGAL_WATCH_TITLE = "Báo cáo Nhân sự — Rà người sắp nghỉ hưu, đang nghỉ thai sản và nuôi con nhỏ"
+REMINDERS_TITLE = "Báo cáo Nhân sự — Xem lịch nhắc sinh nhật, kỷ niệm và hợp đồng hết hạn trong tháng"
+#  Bài của cây khác, dùng để nối chéo (tiêu đề phải khớp từng chữ).
+REVIEW_CHANGE_TITLE = "Nhân sự — Duyệt đề nghị sửa hồ sơ của nhân viên"
+ROOM_ROOT_TITLE = "Hướng dẫn sử dụng Đặt phòng họp"
 
 TREE = {
     "title": ROOT_TITLE,
     "icon": "bar-chart",
-    "summary": "Mười một báo cáo Nhân sự: biến động, nghỉ phép, quỹ phép, hợp đồng, hồ sơ thiếu, sổ lao động, mẫu 01/PLI, quỹ lương, phúc lợi theo dịp, cơ cấu quản lý, điều chuyển — lọc phòng ban, đổi biểu đồ, bấm ra danh sách người",
+    "summary": "Mười sáu báo cáo Nhân sự (biến động, nghỉ phép, hợp đồng, sổ lao động, quỹ lương, định biên kế hoạch, có mặt, sửa hồ sơ, phòng họp, đối tượng theo luật…), màn Kế hoạch nhân sự và ô Lịch nhắc trong tháng",
     "content": f"""<h2>Báo cáo Nhân sự dùng để làm gì</h2>
 <p>Nhóm <strong>Nhân sự</strong> trong phân hệ <strong>Báo cáo</strong> giúp phòng Nhân sự và Ban Giám đốc trả lời nhanh những câu hỏi hằng tuần, hằng tháng mà không phải lọc tay từng danh sách:</p>
 <table>
@@ -64,11 +85,21 @@ TREE = {
 <tr><td><strong>Phúc lợi &amp; sự kiện</strong></td><td>Dịp 8/3, 1/6, Tết… phát quà cho ai, bao nhiêu người, mỗi công ty chi bao nhiêu tiền</td><td>{ref(BENEFIT_TITLE, "Lập danh sách nhận quà và dự trù kinh phí theo dịp")}</td></tr>
 <tr><td><strong>Cơ cấu quản lý</strong></td><td>Mỗi quản lý đang phụ trách bao nhiêu người, ai chưa có quản lý trực tiếp</td><td>{ref(SPAN_TITLE, "Rà cơ cấu quản lý và người chưa gán quản lý trực tiếp")}</td></tr>
 <tr><td><strong>Điều chuyển &amp; bổ nhiệm</strong></td><td>Kỳ này ai chuyển phòng, ai được bổ nhiệm, kiêm nhiệm nào sắp hết</td><td>{ref(MOVES_TITLE, "Theo dõi điều chuyển, bổ nhiệm và kiêm nhiệm")}</td></tr>
+<tr><td><strong>Định biên kế hoạch so với thực tế</strong></td><td>Phòng nào được duyệt bao nhiêu người, đang có bao nhiêu, còn thiếu mấy vị trí</td><td>{ref(PLAN_REPORT_TITLE, "So định biên kế hoạch với số người đang có")}</td></tr>
+<tr><td><strong>Có mặt theo ngày</strong></td><td>Hôm nay, tuần này mỗi phòng có bao nhiêu người đi làm, bao nhiêu người nghỉ</td><td>{ref(ATTENDANCE_TITLE, "Xem số người có mặt theo ngày ở từng phòng")}</td></tr>
+<tr><td><strong>Yêu cầu sửa hồ sơ</strong></td><td>Phòng Nhân sự duyệt đề nghị sửa hồ sơ có kịp không, trường nào hay bị xin sửa</td><td>{ref(PROFILE_CHANGES_TITLE, "Theo dõi tốc độ duyệt yêu cầu sửa hồ sơ")}</td></tr>
+<tr><td><strong>Sử dụng phòng họp</strong></td><td>Phòng họp nào quá tải, phòng nào bỏ không, giờ nào đông</td><td>{ref(ROOM_USAGE_TITLE, "Đo mức sử dụng phòng họp và giờ cao điểm")}</td></tr>
+<tr><td><strong>Đối tượng cần chú ý theo luật</strong></td><td>Ai sắp đến tuổi nghỉ hưu, ai đang nghỉ thai sản, ai đang nuôi con dưới 12 tháng</td><td>{ref(LEGAL_WATCH_TITLE, "Rà người sắp nghỉ hưu, đang nghỉ thai sản và nuôi con nhỏ")}</td></tr>
 </tbody>
 </table>
+<p>Hai chỗ khác của phân hệ <strong>Nhân sự</strong> đi cùng nhóm báo cáo này:</p>
+<ul>
+<li>Màn <strong>Kế hoạch nhân sự</strong> (Nhân sự ▸ Danh mục): nơi nhập định biên và quỹ lương kế hoạch của từng năm, làm nguồn cho báo cáo định biên và cột kế hoạch của báo cáo quỹ lương. Xem bài {ref(PLAN_TITLE, "Lập kế hoạch định biên và quỹ lương theo năm")}.</li>
+<li>Ô <strong>Lịch nhắc trong tháng</strong> ở trang <strong>Tổng quan</strong> của phân hệ Nhân sự: sinh nhật, kỷ niệm năm làm việc, hợp đồng và thử việc hết hạn trong tháng. Xem bài {ref(REMINDERS_TITLE, "Xem lịch nhắc sinh nhật, kỷ niệm và hợp đồng hết hạn trong tháng")}.</li>
+</ul>
 
 <h2>Mở báo cáo ở đâu</h2>
-<p>Vào phân hệ <strong>Báo cáo</strong>, menu bên trái có nhóm <strong>Nhân sự</strong> với mười một mục trên. Bạn chỉ thấy mục nào mình đã được giao quyền xem. Không thấy báo cáo cần dùng thì nhờ quản trị giao quyền theo bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</p>
+<p>Vào phân hệ <strong>Báo cáo</strong>, menu bên trái có nhóm <strong>Nhân sự</strong> với mười sáu mục trên. Bạn chỉ thấy mục nào mình đã được giao quyền xem. Không thấy báo cáo cần dùng thì nhờ quản trị giao quyền theo bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</p>
 
 <h2>Điểm chung của mọi báo cáo</h2>
 <ul>
@@ -89,7 +120,7 @@ TREE = {
 <thead><tr><th>Ô lọc</th><th>Dùng để</th></tr></thead>
 <tbody>
 <tr><td><strong>Phòng ban</strong></td><td>Chỉ xem một phòng. Mặc định là <em>Tất cả phòng ban</em>. Ô này chỉ hiện với người được xem danh mục phòng ban.</td></tr>
-<tr><td>Nút kỳ (ví dụ <strong>Tháng này</strong> kèm khoảng ngày)</td><td>Chọn kỳ báo cáo. Dòng <em>So với …</em> bên cạnh cho biết kỳ đang được đem ra so sánh. Báo cáo <em>Hồ sơ &amp; tài khoản còn thiếu</em> không có nút này vì nó luôn cho biết tình trạng hiện tại. Báo cáo <em>Phúc lợi &amp; sự kiện</em> cũng không có nút này: bạn chọn ngày ở ô <strong>Ngày dịp</strong>.</td></tr>
+<tr><td>Nút kỳ (ví dụ <strong>Tháng này</strong> kèm khoảng ngày)</td><td>Chọn kỳ báo cáo. Dòng <em>So với …</em> bên cạnh cho biết kỳ đang được đem ra so sánh. Báo cáo <em>Hồ sơ &amp; tài khoản còn thiếu</em> không có nút này vì nó luôn cho biết tình trạng hiện tại. Báo cáo <em>Phúc lợi &amp; sự kiện</em> cũng không có nút này: bạn chọn ngày ở ô <strong>Ngày dịp</strong>. Báo cáo <em>Có mặt theo ngày</em> chỉ nhận kỳ tối đa 92 ngày.</td></tr>
 <tr><td><strong>Công ty</strong></td><td>Chỉ xem một pháp nhân. Mặc định là <em>Tất cả công ty</em>.</td></tr>
 </tbody>
 </table>
@@ -491,7 +522,7 @@ TREE = {
         {
             "title": PAYROLL_TITLE,
             "icon": "banknote",
-            "summary": "Báo cáo mới: quỹ lương thỏa thuận trên hợp đồng theo pháp nhân, phòng, chức vụ, nhóm vị trí, loại HĐ; bình quân, lương thấp nhất / cao nhất cùng chức vụ; xu hướng theo tháng; nhóm dưới 3 người bị che; chỉ giao cho người được xem lương",
+            "summary": "Quỹ lương thỏa thuận trên hợp đồng theo pháp nhân, phòng, chức vụ, loại HĐ; bình quân, thấp nhất / cao nhất cùng chức vụ; so với quỹ lương kế hoạch: còn dư, % dùng; nhóm dưới 3 người bị che; chỉ giao người được xem lương",
             "content": f"""<h2>Báo cáo cho biết gì</h2>
 <p>Báo cáo <strong>Quỹ lương theo pháp nhân</strong> cộng tiền lương ghi trên các hợp đồng lao động đang hiệu lực, để Ban Giám đốc biết mỗi công ty đang gánh bao nhiêu tiền lương mỗi tháng.</p>
 <p>⚠️ Đây là <strong>lương thỏa thuận ghi trên hợp đồng</strong>, không phải lương thực trả. ERP không có chấm công và bảng lương, nên báo cáo không tính làm thêm giờ, thưởng hay khấu trừ. Chỉ hợp đồng đã ký, còn hiệu lực, của người còn làm mới được cộng.</p>
@@ -527,6 +558,25 @@ TREE = {
 </ol>
 <p>Chức vụ nào ở một công ty chỉ có 1–2 người thì bị che số (xem mục dưới). Khi đó để ô <strong>Công ty</strong> ở <em>Tất cả công ty</em> để so trên cả tập đoàn.</p>
 
+<h2>So quỹ lương với kế hoạch: còn dư bao nhiêu</h2>
+<p>Khi phòng Nhân sự đã nhập <strong>quỹ lương kế hoạch / tháng</strong> ở màn <strong>Kế hoạch nhân sự</strong> (bài {ref(PLAN_TITLE, "Lập kế hoạch định biên và quỹ lương theo năm")}), báo cáo có thêm:</p>
+<table>
+<thead><tr><th>Thẻ số / cột</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><strong>Quỹ lương kế hoạch / tháng</strong></td><td>Quỹ lương (lương + phụ cấp) mỗi tháng đã duyệt trong kế hoạch của năm cuối kỳ</td></tr>
+<tr><td><strong>% dùng</strong></td><td>Quỹ lương đang có chia cho quỹ lương kế hoạch. Trên 100% là đang vượt kế hoạch</td></tr>
+<tr><td><strong>Còn dư so với kế hoạch</strong></td><td>Quỹ lương kế hoạch trừ quỹ lương đang có, có sẵn trên bảng. Số âm là đang vượt</td></tr>
+</tbody>
+</table>
+<ul>
+<li>Pháp nhân có dòng kế hoạch <em>Toàn pháp nhân</em> thì lấy đúng dòng đó; không có thì cộng các dòng phòng của pháp nhân.</li>
+<li>Pháp nhân hoặc phòng đã có kế hoạch mà chưa có hợp đồng lao động nào vẫn hiện thành một dòng riêng, lương thực tế 0 và % dùng 0, để cộng các dòng ra đúng số kế hoạch ở dòng <em>Tổng</em>.</li>
+<li>Số kế hoạch chỉ hiện với người được xem hợp đồng lao động của đúng pháp nhân đó ở phạm vi <em>Tất cả</em> hoặc <em>Công ty</em>.</li>
+<li>Ba cột này chỉ chia theo nhóm khi <strong>Xem theo</strong> là <em>Pháp nhân</em> hoặc <em>Phòng ban</em>. Xem theo chức vụ, nhóm vị trí hay loại hợp đồng thì chỉ dòng <em>Tổng</em> có số kế hoạch.</li>
+<li>Ô hiện <strong>—</strong> nghĩa là nhóm đó chưa khai quỹ lương kế hoạch (dòng kế hoạch để 0 được coi là chưa khai), hoặc nhóm dưới 3 người bị che số.</li>
+<li>Không thấy hai thẻ và cột kế hoạch: bạn chưa có quyền xem kế hoạch nhân sự. Nhờ quản trị cấp theo bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</li>
+</ul>
+
 <h2>Nhóm dưới 3 người bị che số</h2>
 <p>Nhìn bình quân của một nhóm chỉ 1–2 người là đoán ra lương từng người. Vì vậy với <strong>mọi người xem, kể cả quản trị</strong>:</p>
 <ul>
@@ -542,7 +592,7 @@ TREE = {
 <ul>
 <li>⚠️ Ai mở được báo cáo này là xem được lương. Báo cáo lúc mới lên <strong>chỉ quản trị thấy</strong>; chỉ giao cho người được phép xem lương (bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}). Báo cáo không hiện ở trang Tổng quan của phân hệ Báo cáo.</li>
 <li><strong>Trợ lý AI không đọc được báo cáo này</strong>, kể cả khi bạn có quyền xem. Cần số lương thì mở thẳng báo cáo.</li>
-<li>Chưa có quỹ lương kế hoạch, nên chưa so được đã dùng với còn dư, và chưa có phần BHXH công ty phải đóng; báo cáo chỉ có lương đóng BHXH ghi trên hợp đồng.</li>
+<li>Chưa có phần BHXH công ty phải đóng; báo cáo chỉ có lương đóng BHXH ghi trên hợp đồng. Chưa có ô thử tính «tuyển thêm một người vào công ty nào thì còn dư nhiều nhất».</li>
 </ul>""",
         },
         {
@@ -694,9 +744,294 @@ TREE = {
 </ul>""",
         },
         {
+            "title": PLAN_TITLE,
+            "icon": "clipboard-list",
+            "summary": "Màn Nhân sự ▸ Kế hoạch nhân sự: mỗi dòng là năm × pháp nhân × phòng (hoặc Toàn pháp nhân), định biên và quỹ lương kế hoạch / tháng; thêm, sửa, xóa; Xuất CSV, Nhập CSV nguyên khối báo lỗi từng dòng; ai được sửa",
+            "content": f"""<h2>Màn này dùng để làm gì</h2>
+<p>Màn <strong>Kế hoạch nhân sự</strong> là nơi phòng Nhân sự ghi lại số người và quỹ lương đã được duyệt cho từng năm. Hai báo cáo đọc từ đây:</p>
+<ul>
+<li><strong>Định biên kế hoạch so với thực tế</strong>: so số người kế hoạch với số người đang có (bài {ref(PLAN_REPORT_TITLE, "So định biên kế hoạch với số người đang có")}).</li>
+<li><strong>Quỹ lương theo pháp nhân</strong>: thêm cột quỹ lương kế hoạch, còn dư, % dùng (bài {ref(PAYROLL_TITLE, "Đọc báo cáo Quỹ lương theo pháp nhân")}).</li>
+</ul>
+<p>Mở màn ở phân hệ <strong>Nhân sự</strong>, menu <strong>Danh mục</strong> ▸ <strong>Kế hoạch nhân sự</strong>. Không thấy mục này là bạn chưa được cấp quyền (xem mục cuối bài).</p>
+
+<h2>Một dòng kế hoạch gồm gì</h2>
+<table>
+<thead><tr><th>Ô</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><strong>Năm</strong></td><td>Năm của kế hoạch. Ô chọn có từ ba năm trước tới năm sau</td></tr>
+<tr><td><strong>Pháp nhân</strong></td><td>Công ty được duyệt kế hoạch</td></tr>
+<tr><td><strong>Phòng ban</strong></td><td>Để <strong>Toàn pháp nhân</strong> (mặc định) nếu duyệt chung một con số cho cả công ty; chọn một phòng nếu duyệt theo từng phòng. Phòng ban dùng chung cho mọi pháp nhân nên chọn được mọi phòng đang dùng</td></tr>
+<tr><td><strong>Định biên kế hoạch (người)</strong></td><td>Số người được duyệt</td></tr>
+<tr><td><strong>Quỹ lương kế hoạch / tháng (đồng)</strong></td><td>Lương + phụ cấp của cả nhóm trong một tháng. Để 0 nếu chưa lập. Ô và cột <strong>Quỹ lương KH / tháng</strong> chỉ hiện số với người được xem hợp đồng lao động của đúng pháp nhân đó ở phạm vi <em>Tất cả</em> hoặc <em>Công ty</em> (phạm vi phòng ban hay bản thân thì không thấy, hiện «—»). Người không thấy số vẫn sửa được định biên, số quỹ lương đang có được giữ nguyên</td></tr>
+<tr><td><strong>Ghi chú</strong></td><td>Ví dụ số quyết định duyệt kế hoạch</td></tr>
+</tbody>
+</table>
+<p>Mỗi bộ ba <em>năm · pháp nhân · phòng</em> chỉ có một dòng. Lưu trùng thì màn báo <em>Đã có kế hoạch cho năm, pháp nhân và phòng này</em>; hãy mở dòng cũ ra sửa.</p>
+<p><strong>Toàn pháp nhân hay theo phòng?</strong> Dòng <em>Toàn pháp nhân</em> được so với tổng số người của pháp nhân và <strong>không cộng</strong> với các dòng phòng của cùng pháp nhân. Nếu đã duyệt theo từng phòng thì chỉ cần nhập các dòng phòng; nhập cả hai thì báo cáo lấy dòng <em>Toàn pháp nhân</em> làm số của pháp nhân, còn các dòng phòng chỉ hiện khi xem theo phòng ban.</p>
+
+<h2>Thêm, sửa, xóa một dòng</h2>
+<ol>
+<li>Bấm <strong>Thêm dòng kế hoạch</strong>. Hộp <strong>Thêm dòng kế hoạch</strong> mở ra, năm mặc định là năm nay.</li>
+<li>Chọn <strong>Pháp nhân</strong>, <strong>Phòng ban</strong> (hoặc để <em>Toàn pháp nhân</em>), nhập <strong>Định biên kế hoạch (người)</strong>, quỹ lương nếu có, rồi bấm <strong>Tạo mới</strong>.</li>
+<li>Muốn sửa, bấm vào dòng trong bảng. Hộp <strong>Sửa dòng kế hoạch</strong> chỉ cho sửa định biên, quỹ lương và ghi chú; <strong>Năm</strong>, <strong>Pháp nhân</strong>, <strong>Phòng ban</strong> bị khóa vì đó là khóa của dòng. Nhập nhầm phòng thì xóa dòng rồi thêm dòng mới. Sửa xong bấm <strong>Lưu thay đổi</strong>.</li>
+<li>Muốn xóa, mở dòng rồi bấm <strong>Xóa</strong>. Xóa rồi thì báo cáo định biên năm đó coi phòng này là <em>chưa có kế hoạch</em>.</li>
+</ol>
+<p>Ba ô lọc <strong>Tất cả năm</strong>, <strong>Tất cả pháp nhân</strong>, <strong>Tất cả phòng ban</strong> trên đầu bảng giúp tìm nhanh dòng cần sửa.</p>
+
+<h2>Nhập cả năm bằng tệp CSV</h2>
+<p>Khi có nhiều phòng, nhập bằng tệp nhanh hơn từng dòng:</p>
+<ol>
+<li>Bấm <strong>Xuất CSV</strong> để tải tệp mẫu (tệp chứa các dòng đang lọc). Mở bằng Excel hoặc Google Sheets.</li>
+<li>Giữ nguyên hàng tiêu đề với sáu cột: <strong>year</strong> (năm), <strong>company_code</strong> (mã pháp nhân), <strong>department_code</strong> (mã phòng ban; để trống là <em>Toàn pháp nhân</em>), <strong>planned_headcount</strong> (định biên), <strong>planned_payroll_monthly</strong> (quỹ lương / tháng, đồng, không dấu chấm), <strong>note</strong> (ghi chú).</li>
+<li>Lưu thành CSV mã UTF-8, rồi bấm <strong>Nhập CSV</strong> và chọn tệp.</li>
+<li>Thành công thì góc màn báo <em>Đã nhập kế hoạch: … dòng mới, … dòng cập nhật</em>. Dòng trùng năm, pháp nhân, phòng với dòng đã có thì được <strong>cập nhật</strong>, không tạo thêm.</li>
+</ol>
+<p>Nhập là <strong>nguyên khối</strong>: chỉ cần một dòng lỗi là <strong>không dòng nào được ghi</strong>. Hộp <strong>Chưa nhập được tệp</strong> liệt kê từng lỗi kèm số dòng trong tệp (dòng 2 là dòng đầu tiên sau tiêu đề). Sửa hết các dòng đó rồi nhập lại cùng tệp.</p>
+<table>
+<thead><tr><th>Lỗi thường gặp</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
+<tbody>
+<tr><td><em>mã pháp nhân không tồn tại</em></td><td>Ô company_code gõ sai mã</td><td>Chép mã từ tệp vừa xuất hoặc từ danh mục Công ty</td></tr>
+<tr><td><em>mã phòng ban không tồn tại…</em></td><td>Ô department_code gõ sai mã</td><td>Chép mã từ danh mục Phòng ban; muốn nhập cho cả pháp nhân thì để trống ô này</td></tr>
+<tr><td><em>trùng (năm, pháp nhân, phòng) với dòng trước trong tệp</em></td><td>Tệp có hai dòng cho cùng một chỗ</td><td>Giữ một dòng</td></tr>
+<tr><td><em>Cần quyền xem hợp đồng lao động để khai quỹ lương kế hoạch</em></td><td>Bạn không được xem lương mà tệp có ô quỹ lương</td><td>Để trống cột planned_payroll_monthly; ô trống không xóa số quỹ lương đang có</td></tr>
+<tr><td><em>Tệp CSV thiếu cột…</em>, <em>phải mã hóa UTF-8</em></td><td>Tệp đổi tiêu đề hoặc lưu sai mã chữ</td><td>Xuất lại tệp mẫu, lưu dạng CSV UTF-8</td></tr>
+</tbody>
+</table>
+<p>Tệp tối đa 2000 dòng. Người không được xem lương xuất tệp thì cột quỹ lương để trống.</p>
+
+<h2>Ai xem được, ai sửa được</h2>
+<ul>
+<li>Màn và báo cáo dùng khóa quyền <strong>Nhân sự › Kế hoạch nhân sự</strong>: xem để mở màn; thêm, sửa, xóa để nhập; nhập CSV cần cả thêm lẫn sửa; xuất CSV cần quyền xuất.</li>
+<li>Nên để trưởng phòng Nhân sự và quản trị nhập; trưởng các phòng và Ban Giám đốc chỉ cần xem.</li>
+<li>Số tiền chỉ hiện với người có quyền xem <strong>Hợp đồng lao động (có lương)</strong>. Người không có quyền này thấy định biên, không thấy cột tiền.</li>
+</ul>
+<p>Quản trị bật khóa này cho vai trò theo bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</p>""",
+        },
+        {
+            "title": PLAN_REPORT_TITLE,
+            "icon": "users",
+            "summary": "Báo cáo mới: Định biên kế hoạch, Đang có, Còn thiếu, Vượt, Tỷ lệ lấp đầy theo pháp nhân hoặc phòng ban; dòng Toàn pháp nhân không cộng dồn với dòng phòng; phòng có người mà chưa có kế hoạch; xem ai đang làm",
+            "content": f"""<h2>Báo cáo cho biết gì</h2>
+<p>Báo cáo <strong>Định biên kế hoạch so với thực tế</strong> trả lời câu Ban Giám đốc hay hỏi nhất: «Phòng Kinh doanh được duyệt 20 người, đang có bao nhiêu?». Kế hoạch lấy từ màn <strong>Kế hoạch nhân sự</strong> (bài {ref(PLAN_TITLE, "Lập kế hoạch định biên và quỹ lương theo năm")}); thực tế là số người đang làm.</p>
+<table>
+<thead><tr><th>Thẻ số / cột</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><strong>Định biên kế hoạch</strong></td><td>Số người được duyệt trong kế hoạch</td></tr>
+<tr><td><strong>Đang có</strong></td><td>Số người đang làm tại cuối kỳ (hoặc hôm nay nếu kỳ chưa hết). Có nút <strong>Xem danh sách</strong></td></tr>
+<tr><td><strong>Còn thiếu</strong></td><td>Số vị trí kế hoạch chưa có người</td></tr>
+<tr><td><strong>Tỷ lệ lấp đầy</strong></td><td>Số vị trí kế hoạch đã có người (không tính phần vượt) chia cho định biên kế hoạch</td></tr>
+<tr><td>Chênh (thực tế − kế hoạch)</td><td>Đang có trừ kế hoạch. Số âm là thiếu, số dương là thừa</td></tr>
+<tr><td>Vượt</td><td>Số người vượt quá kế hoạch</td></tr>
+<tr><td>Đang làm ở phòng chưa có kế hoạch</td><td>Người đang làm ở những phòng chưa lập kế hoạch cho năm đó. Có danh sách</td></tr>
+</tbody>
+</table>
+<p><em>Còn thiếu</em> và <em>Vượt</em> cộng theo từng dòng kế hoạch, nên thiếu ở phòng này không bù được bằng thừa ở phòng khác.</p>
+
+<h2>Đọc theo pháp nhân hay theo phòng ban</h2>
+<p>Kỳ mở sẵn là <strong>Năm nay</strong>. Báo cáo dùng kế hoạch của <strong>năm chứa ngày cuối kỳ</strong>. Báo cáo chụp tình hình tại một ngày nên không có biểu đồ xu hướng và không so với kỳ trước; biểu đồ vẽ <em>Còn thiếu</em> theo nhóm.</p>
+<ul>
+<li><strong>Xem theo</strong> ▸ <strong>Pháp nhân</strong> (mặc định): mỗi công ty một dòng. Pháp nhân có dòng kế hoạch <em>Toàn pháp nhân</em> thì lấy đúng dòng đó so với tổng người của pháp nhân; không có thì cộng các dòng phòng.</li>
+<li><strong>Xem theo</strong> ▸ <strong>Phòng ban</strong>: mỗi dòng kế hoạch một dòng. Dòng <em>Toàn pháp nhân</em> hiện dạng <em>Tên công ty — Toàn pháp nhân</em>. Phòng có người mà chưa có kế hoạch hiện kèm chữ <em>(chưa có kế hoạch)</em>, ví dụ <em>Xây dựng (chưa có kế hoạch)</em>.</li>
+</ul>
+<p>Mục <strong>Cách tính số liệu</strong> ghi rõ năm kế hoạch đang dùng, ngày lấy số thực tế và liệt kê những nơi có người mà chưa có kế hoạch, kèm số người mỗi nơi. Danh sách đó dài thì nên bổ sung kế hoạch trước khi đọc tỷ lệ.</p>
+
+<h2>Xem ai đang làm ở một phòng</h2>
+<ol>
+<li>Bấm <strong>Xem danh sách</strong> ở thẻ <strong>Đang có</strong>, hoặc nút <strong>Xem</strong> ở một dòng của bảng.</li>
+<li>Danh sách có Mã NV, Họ tên, Phòng ban, Chức vụ và Ngày vào làm. Bấm một dòng để mở hồ sơ.</li>
+<li>Đổi ô <strong>Chỉ số</strong> trong ngăn sang <em>Đang làm ở phòng chưa có kế hoạch</em> để ra những người chưa nằm trong kế hoạch nào.</li>
+</ol>
+<p>Mở danh sách cần thêm quyền xem hồ sơ nhân sự. Cách dùng ngăn xem bài {ref(COMMON_TITLE, "Lọc theo phòng ban và xem danh sách sau mỗi con số")}.</p>
+
+<h2>Lưu ý</h2>
+<ul>
+<li>Số thực tế đếm người theo đúng cặp <em>pháp nhân · phòng</em> ghi trên hồ sơ nhân sự hiện tại. Hồ sơ gắn sai công ty hay phòng thì số lệch theo.</li>
+<li>Báo cáo chưa có cột vị trí đang tuyển: <em>Còn thiếu</em> chỉ là số chỗ trống so với kế hoạch.</li>
+</ul>""",
+        },
+        {
+            "title": ATTENDANCE_TITLE,
+            "icon": "calendar",
+            "summary": "Báo cáo mới: người-ngày phải làm theo lịch làm việc riêng (trừ ngày lễ), nghỉ theo đơn đã duyệt (nửa buổi 0,5), có mặt, tỷ lệ có mặt / vắng theo phòng; chỉ tính tới hôm nay; kỳ tối đa 92 ngày; cần quyền xem đơn nghỉ",
+            "content": f"""<h2>Báo cáo cho biết gì</h2>
+<p>Báo cáo <strong>Có mặt theo ngày</strong> trả lời: hôm nay, tuần này mỗi phòng có bao nhiêu người đi làm. Số được tính từ <strong>lịch làm việc</strong> và <strong>đơn nghỉ phép đã duyệt</strong>, không phải từ máy chấm công: đi trễ hay vắng không phép chưa có dữ liệu nên không có trong báo cáo.</p>
+<p>Đơn vị đếm là <strong>người-ngày</strong>: một người phải làm một ngày là 1 người-ngày. Ví dụ phòng có 10 người, tuần làm 5 ngày thì có 50 người-ngày phải làm.</p>
+<table>
+<thead><tr><th>Thẻ số / cột</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><strong>Người-ngày phải làm</strong></td><td>Mỗi người × mỗi ngày họ có lịch làm theo <strong>lịch làm việc riêng của họ</strong>, trừ ngày lễ, ngày chưa vào làm và ngày đã nghỉ việc. Ngày làm nửa buổi tính 0,5</td></tr>
+<tr><td><strong>Người-ngày nghỉ (đã duyệt)</strong></td><td>Phần ngày phải làm bị phủ bởi đơn nghỉ đã duyệt. Nghỉ nửa buổi tính 0,5; nghỉ theo giờ tính theo tỷ lệ giờ</td></tr>
+<tr><td><strong>Người-ngày có mặt</strong></td><td>Phải làm trừ nghỉ</td></tr>
+<tr><td><strong>Tỷ lệ có mặt</strong></td><td>Có mặt chia cho phải làm</td></tr>
+<tr><td>Tỷ lệ vắng</td><td>Nghỉ chia cho phải làm, có trên bảng</td></tr>
+</tbody>
+</table>
+<p>Ô <strong>Xem theo</strong> cho chia theo <strong>Phòng ban</strong> (mặc định) hoặc <strong>Pháp nhân</strong>; phòng ban và pháp nhân lấy theo hồ sơ hiện tại. Biểu đồ mặc định vẽ <em>Tỷ lệ có mặt</em> theo ngày.</p>
+
+<h2>Xem tình hình tuần này của từng phòng</h2>
+<ol>
+<li>Mở <strong>Báo cáo</strong> ▸ <strong>Có mặt theo ngày</strong>. Kỳ mở sẵn là <strong>Tháng này</strong>.</li>
+<li>Bấm nút kỳ, chọn <strong>Hôm nay</strong>, <strong>7 ngày qua</strong>, <strong>Quý này</strong>…, hoặc <strong>Tùy chọn khoảng ngày</strong> để chọn đúng tuần cần xem rồi bấm <strong>Áp dụng</strong>.</li>
+<li>Đọc bảng <strong>Chi tiết theo Phòng ban</strong>: phòng nào tỷ lệ vắng cao là phòng đang thiếu người.</li>
+<li>Bấm <strong>Xem danh sách</strong> ở thẻ <strong>Người-ngày nghỉ (đã duyệt)</strong>, hoặc <strong>Xem</strong> ở dòng một phòng, để ra danh sách ai nghỉ: Mã NV, Họ tên, Phòng ban, Ngày, Loại nghỉ, Buổi. Bấm một dòng để mở hồ sơ.</li>
+</ol>
+
+<h2>Giới hạn của kỳ</h2>
+<ul>
+<li>Mỗi lần xem tối đa <strong>92 ngày</strong> (một quý vẫn xem được), vì mỗi người × mỗi ngày là một dòng tính. Chọn <strong>Năm nay</strong> thì trang báo <em>Báo cáo «Có mặt theo ngày» chỉ xem được tối đa 92 ngày một lần…</em>; chọn kỳ ngắn hơn rồi xem lại.</li>
+<li>Báo cáo <strong>chỉ tính tới hết hôm nay</strong>. Kỳ kéo sang ngày chưa tới thì phần đó chưa tính, và mục <strong>Cách tính số liệu</strong> ghi rõ.</li>
+<li>Vì kỳ có giới hạn nên báo cáo này không lên trang Tổng quan của phân hệ Báo cáo.</li>
+</ul>
+
+<h2>Không thấy số nghỉ</h2>
+<p>Các cột nghỉ, có mặt và tỷ lệ cần thêm <strong>quyền xem đơn nghỉ phép</strong>. Thiếu quyền thì các cột đó để trống, chỉ còn <em>Người-ngày phải làm</em>, mục <strong>Cách tính số liệu</strong> báo <em>Bạn chưa có quyền xem đơn nghỉ phép…</em> và danh sách người nghỉ không mở được. Có quyền nhưng chỉ trong phạm vi hẹp (ví dụ phòng mình) thì báo cáo chỉ đếm những đơn bạn được xem.</p>
+<p>Số người-ngày phải làm sai thường là do lịch làm việc của người đó chưa đúng. Xem lại lịch ở phân hệ <strong>Nhân sự</strong> ▸ <strong>Lịch làm việc</strong>.</p>""",
+        },
+        {
+            "title": PROFILE_CHANGES_TITLE,
+            "icon": "file-text",
+            "summary": "Báo cáo mới: số yêu cầu sửa hồ sơ trong kỳ, đang chờ, chờ quá 2 ngày, đã duyệt, từ chối, tỷ lệ từ chối, giờ xử lý bình quân; xem theo phòng, trường bị xin sửa, trạng thái; không hiện giá trị cũ / mới",
+            "content": f"""<h2>Báo cáo cho biết gì</h2>
+<p>Nhân viên tự gửi đề nghị sửa hồ sơ (số điện thoại, địa chỉ, tài khoản ngân hàng…) và phòng Nhân sự duyệt ở màn <strong>Duyệt sửa hồ sơ</strong> (bài {ref(REVIEW_CHANGE_TITLE, "Duyệt đề nghị sửa hồ sơ của nhân viên")}). Báo cáo <strong>Yêu cầu sửa hồ sơ</strong> cho biết việc duyệt đó có kịp không và trường nào hay bị xin sửa.</p>
+<table>
+<thead><tr><th>Thẻ số / cột</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><strong>Số yêu cầu</strong></td><td>Số đề nghị có <strong>ngày gửi</strong> nằm trong kỳ</td></tr>
+<tr><td><strong>Đang chờ</strong></td><td>Đề nghị chưa được duyệt hay từ chối</td></tr>
+<tr><td><strong>Chờ quá 2 ngày</strong></td><td>Đề nghị đã gửi hơn 2 ngày mà vẫn chờ. Số này tính tới hôm nay, không theo kỳ đang chọn</td></tr>
+<tr><td><strong>Giờ xử lý bình quân</strong></td><td>Trung bình từ lúc gửi tới lúc được duyệt hay từ chối, tính bằng giờ. Không tính đề nghị bị rút lại</td></tr>
+<tr><td>Đã duyệt, Từ chối, Tỷ lệ từ chối</td><td>Kết quả xử lý, có trên bảng</td></tr>
+</tbody>
+</table>
+<p>Ô <strong>Xem theo</strong> cho chia theo <strong>Phòng ban</strong> (mặc định), <strong>Công ty</strong>, <strong>Trường bị xin sửa</strong> hoặc <strong>Trạng thái</strong> (Chờ duyệt, Đã duyệt, Từ chối, Đã rút lại).</p>
+
+<h2>Tìm đề nghị đang bị treo</h2>
+<ol>
+<li>Mở <strong>Báo cáo</strong> ▸ <strong>Yêu cầu sửa hồ sơ</strong>.</li>
+<li>Bấm <strong>Xem danh sách</strong> ở thẻ <strong>Chờ quá 2 ngày</strong>. Danh sách có Mã NV, Họ tên, Phòng ban, Ngày gửi, Trạng thái, Số trường, Người duyệt và Ngày duyệt.</li>
+<li>Bấm một dòng để mở hồ sơ người đó, rồi sang màn <strong>Duyệt sửa hồ sơ</strong> để xử lý.</li>
+</ol>
+<p>Trong ngăn, đổi ô <strong>Chỉ số</strong> sang <em>Đang chờ</em>, <em>Đã duyệt</em> hay <em>Từ chối</em> để xem các nhóm còn lại.</p>
+
+<h2>Trường nào hay bị xin sửa</h2>
+<p>Chọn <strong>Xem theo</strong> ▸ <strong>Trường bị xin sửa</strong>. Mỗi dòng là một trường của hồ sơ (ví dụ <em>Tình trạng hôn nhân</em>). Một đề nghị xin sửa nhiều trường được đếm ở nhiều dòng, nên cộng các dòng có thể lớn hơn tổng số yêu cầu. Trường nào bị xin sửa nhiều thường là trường khai sai ngay từ đầu: nên nhắc khi nhận hồ sơ người mới.</p>
+
+<h2>Bảo mật</h2>
+<p>Báo cáo và danh sách <strong>không bao giờ hiện giá trị cũ hay giá trị mới</strong> của trường được xin sửa (có thể là số CCCD, tài khoản ngân hàng), chỉ đếm và nêu số trường. Muốn xem nội dung, mở đề nghị ở màn <strong>Duyệt sửa hồ sơ</strong> với quyền của bạn.</p>""",
+        },
+        {
+            "title": ROOM_USAGE_TITLE,
+            "icon": "building",
+            "summary": "Báo cáo mới: lượt đặt, giờ đã đặt, tỷ lệ lấp đầy so với giờ làm việc, tỷ lệ hủy / từ chối, người dự bình quân, % sức chứa; xem theo phòng họp, pháp nhân, phòng ban đặt, khung giờ, thứ trong tuần",
+            "content": f"""<h2>Báo cáo cho biết gì</h2>
+<p>Báo cáo <strong>Sử dụng phòng họp</strong> trả lời: phòng nào quá tải, phòng nào bỏ không, giờ nào đông. Số lấy từ các phiếu đặt phòng ở phân hệ <strong>Nhân sự</strong> ▸ <strong>Đặt phòng họp</strong> (bài {ref(ROOM_ROOT_TITLE, "Hướng dẫn sử dụng Đặt phòng họp")}).</p>
+<table>
+<thead><tr><th>Thẻ số / cột</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><strong>Lượt đặt</strong></td><td>Số phiếu <strong>đã duyệt</strong>, tính vào ngày bắt đầu của phiếu</td></tr>
+<tr><td><strong>Giờ đã đặt</strong></td><td>Tổng số giờ của các phiếu đã duyệt</td></tr>
+<tr><td><strong>Tỷ lệ lấp đầy</strong></td><td>Giờ đã đặt chia cho giờ làm việc của phòng. Họp ngoài giờ vẫn tính vào giờ đã đặt nên tỷ lệ có thể vượt 100%</td></tr>
+<tr><td><strong>Tỷ lệ hủy / từ chối</strong></td><td>Phần phiếu đã hủy hoặc bị từ chối trong các phiếu đã chốt</td></tr>
+<tr><td>Đặt rồi hủy / bị từ chối</td><td>Số phiếu đã hủy hoặc bị từ chối</td></tr>
+<tr><td>Người dự bình quân</td><td>Trung bình mỗi cuộc họp có bao nhiêu người dự</td></tr>
+<tr><td>% sức chứa</td><td>Số người dự so với sức chứa của phòng (chỉ tính phòng đã khai sức chứa). Thấp là đang đặt phòng to cho cuộc họp nhỏ</td></tr>
+</tbody>
+</table>
+<p>Phiếu nháp, chờ duyệt hay bị trả về chưa được tính. <strong>Giờ làm việc</strong> của phòng là giờ công theo lịch làm việc chung của hệ thống mỗi ngày, trừ nghỉ trưa và ngày lễ của pháp nhân sở hữu phòng.</p>
+
+<h2>Tìm phòng quá tải và giờ cao điểm</h2>
+<ol>
+<li>Mở <strong>Báo cáo</strong> ▸ <strong>Sử dụng phòng họp</strong>. Kỳ mở sẵn là <strong>Tháng này</strong>, bảng mặc định <strong>Xem theo</strong> <em>Phòng họp</em>.</li>
+<li>Đọc cột <strong>Tỷ lệ lấp đầy</strong>: phòng gần hoặc trên 100% là phòng quá tải, phòng rất thấp là phòng ít dùng.</li>
+<li>Chọn <strong>Xem theo</strong> ▸ <strong>Khung giờ</strong> (8h, 9h… tới 23h; một lượt đặt kéo dài nhiều giờ được chia giờ cho từng khung nó phủ) hoặc <strong>Thứ trong tuần</strong> để thấy giờ và ngày đông nhất.</li>
+<li>Chọn <strong>Xem theo</strong> ▸ <strong>Phòng ban đặt</strong> để biết phòng ban nào đặt nhiều, hoặc <strong>Pháp nhân sở hữu phòng</strong> để so giữa các công ty.</li>
+</ol>
+<p>Xem theo <em>Phòng ban đặt</em>, hoặc lọc ô <strong>Phòng ban</strong>, thì không có giờ làm việc nên <strong>Tỷ lệ lấp đầy</strong> để trống. Ô <strong>Phòng ban</strong> lọc theo phòng ban của <strong>người đặt</strong>.</p>
+
+<h2>Xem các phiếu đặt</h2>
+<p>Bấm <strong>Xem danh sách</strong> ở thẻ <strong>Lượt đặt</strong> hoặc <strong>Giờ đã đặt</strong>, hoặc <strong>Xem</strong> ở một dòng. Danh sách có Mã phiếu, Phòng, Tiêu đề, Người đặt, Phòng ban, Bắt đầu, Kết thúc, Số người và Trạng thái. Đổi ô <strong>Chỉ số</strong> sang <em>Đặt rồi hủy / bị từ chối</em> để xem các phiếu bị hủy. Bấm một dòng để mở phiếu.</p>
+<p>Bạn chỉ thấy các phiếu nằm trong phạm vi xem phiếu đặt phòng của mình, còn giờ làm việc vẫn tính cho mọi phòng; nên người có phạm vi hẹp sẽ thấy tỷ lệ lấp đầy thấp hơn thực tế.</p>""",
+        },
+        {
+            "title": LEGAL_WATCH_TITLE,
+            "icon": "shield-check",
+            "summary": "Báo cáo mới: người đến tuổi nghỉ hưu trong 12 tháng theo lộ trình Nghị định 135/2020 và người đã quá tuổi vẫn đang làm, đang nghỉ thai sản và ngày đi làm lại, lao động nữ nuôi con dưới 12 tháng; cần quyền xem thông tin nhạy cảm; không in ngày sinh",
+            "content": f"""<h2>Báo cáo cho biết gì</h2>
+<p>Báo cáo <strong>Đối tượng cần chú ý theo luật</strong> liệt kê những người đang được hưởng, hoặc sắp phải xử lý, chế độ riêng theo luật lao động. Tình trạng tính tại <strong>ngày cuối kỳ</strong> hoặc <strong>hôm nay</strong>, lấy ngày sớm hơn; báo cáo không có xu hướng theo thời gian.</p>
+<table>
+<thead><tr><th>Thẻ số</th><th>Ai được tính</th><th>Cột «Mốc» trong danh sách</th></tr></thead>
+<tbody>
+<tr><td><strong>Đến tuổi nghỉ hưu trong 12 tháng</strong></td><td>Người sẽ tới thời điểm nghỉ hưu trong 12 tháng tới</td><td>Thời điểm nghỉ hưu</td></tr>
+<tr><td><strong>Đã quá tuổi nghỉ hưu, vẫn đang làm</strong></td><td>Người đã qua thời điểm nghỉ hưu mà vẫn đang làm (cần làm hợp đồng mới hoặc chốt nghỉ)</td><td>Thời điểm nghỉ hưu</td></tr>
+<tr><td><strong>Đang nghỉ thai sản</strong></td><td>Người có đơn <em>Nghỉ thai sản</em> đã duyệt phủ ngày đang xét, <strong>hoặc</strong> hồ sơ nhân sự đang ở trạng thái <em>Nghỉ thai sản</em> (mỗi người chỉ đếm một lần)</td><td>Ngày đi làm lại (để trống nếu người đó không có đơn)</td></tr>
+<tr><td><strong>Lao động nữ nuôi con dưới 12 tháng</strong></td><td>Nhân sự nữ có con trai hoặc con gái sinh trong 12 tháng gần nhất</td><td>Ngày con đủ 12 tháng</td></tr>
+</tbody>
+</table>
+<p>Ô <strong>Xem theo</strong> cho chia theo <strong>Phòng ban</strong> (mặc định), <strong>Công ty</strong> hoặc <strong>Loại đối tượng</strong>. Một người có thể thuộc hai loại cùng lúc (ví dụ đang nghỉ thai sản và có con nhỏ).</p>
+
+<h2>Tuổi nghỉ hưu được tính thế nào</h2>
+<p>Báo cáo theo lộ trình của <strong>Nghị định 135/2020/NĐ-CP</strong> cho người làm việc trong điều kiện bình thường:</p>
+<ul>
+<li><strong>Nam</strong>: 60 tuổi 3 tháng vào năm 2021, mỗi năm tăng thêm 3 tháng, tới <strong>62 tuổi</strong> từ năm 2028. Ví dụ năm 2026 là 61 tuổi 6 tháng, năm 2027 là 61 tuổi 9 tháng.</li>
+<li><strong>Nữ</strong>: 55 tuổi 4 tháng vào năm 2021, mỗi năm tăng thêm 4 tháng, tới <strong>60 tuổi</strong> từ năm 2035. Ví dụ năm 2026 là 57 tuổi, năm 2027 là 57 tuổi 4 tháng.</li>
+</ul>
+<p><strong>Thời điểm nghỉ hưu</strong> là hết ngày cuối của tháng người đó đủ tuổi nghỉ hưu. Ví dụ đủ tuổi ngày 10/3 thì thời điểm nghỉ hưu là 31/3.</p>
+<p>Chỉ tính người đã khai ngày sinh và giới tính. Báo cáo không xét trường hợp được nghỉ hưu sớm vì làm nghề nặng nhọc, độc hại; những người này phòng Nhân sự tự rà thêm.</p>
+
+<h2>Dùng danh sách</h2>
+<ol>
+<li>Mở <strong>Báo cáo</strong> ▸ <strong>Đối tượng cần chú ý theo luật</strong>.</li>
+<li>Bấm <strong>Xem danh sách</strong> ở một thẻ số. Danh sách có Mã NV, Họ tên, Phòng ban, Loại và <strong>Mốc</strong>.</li>
+<li>Với người sắp nghỉ hưu: báo trước cho người đó và lên kế hoạch người thay. Với người nuôi con dưới 12 tháng: luật cho nghỉ 60 phút mỗi ngày trong giờ làm, báo cho quản lý trực tiếp để xếp việc.</li>
+<li>Bấm một dòng để mở hồ sơ người đó.</li>
+</ol>
+
+<h2>Lưu ý và quyền</h2>
+<ul>
+<li>Báo cáo cần thêm <strong>quyền xem thông tin nhạy cảm của nhân sự</strong> (ngày sinh, người thân). Thiếu quyền thì trang báo <em>Báo cáo này dùng ngày sinh và thông tin con của nhân sự nên cần quyền xem dữ liệu nhạy cảm…</em>. Vì vậy báo cáo không lên trang Tổng quan của phân hệ Báo cáo.</li>
+<li>Danh sách <strong>không in ngày sinh</strong> của nhân viên hay của con, chỉ in ngày mốc.</li>
+<li>Con nhỏ lấy từ danh sách người thân trong hồ sơ, nên chỉ đúng khi nhân viên đã khai con kèm ngày sinh. Nghỉ thai sản nhận đơn thuộc loại nghỉ <em>Nghỉ thai sản</em> trong phạm vi bạn được xem đơn nghỉ, cộng với hồ sơ đang ở trạng thái <em>Nghỉ thai sản</em>. Trạng thái hồ sơ là trạng thái hiện tại, nên khi xem kỳ đã qua thì chỉ tính theo đơn.</li>
+<li>Chưa có danh sách lao động nước ngoài và giấy phép lao động sắp hết hạn.</li>
+</ul>""",
+        },
+        {
+            "title": REMINDERS_TITLE,
+            "icon": "bell",
+            "summary": "Ô Lịch nhắc trong tháng ở Tổng quan Nhân sự: chọn tháng; Sinh nhật (chỉ ngày / tháng), Kỷ niệm 1, 3, 5, 10 năm làm việc, HĐ / thử việc hết hạn; bấm dòng mở hồ sơ; nhóm nào thiếu quyền thì ẩn",
+            "content": f"""<h2>Ô này ở đâu</h2>
+<p>Mở phân hệ <strong>Nhân sự</strong>, trang <strong>Tổng quan</strong>. Ô <strong>Lịch nhắc trong tháng</strong> nằm trọn một hàng, cho biết tháng này có việc gì cần nhớ: sinh nhật, kỷ niệm năm làm việc, hợp đồng và thử việc hết hạn. Đây chỉ là danh sách để liếc nhanh; muốn phát quà và dự trù tiền thì dùng báo cáo <strong>Phúc lợi &amp; sự kiện</strong> (bài {ref(BENEFIT_TITLE, "Lập danh sách nhận quà và dự trù kinh phí theo dịp")}).</p>
+
+<h2>Đổi tháng</h2>
+<p>Ô mở sẵn ở tháng hiện tại, tên tháng hiện trên đầu ô (ví dụ <em>Tháng 10/2026</em>). Bấm mũi tên trái (<strong>Tháng trước</strong>) hoặc mũi tên phải (<strong>Tháng sau</strong>), hoặc bấm vào tên tháng để chọn thẳng một tháng.</p>
+
+<h2>Ba nhóm trong ô</h2>
+<table>
+<thead><tr><th>Nhóm</th><th>Ai có trong nhóm</th><th>Dòng ghi</th></tr></thead>
+<tbody>
+<tr><td><strong>Sinh nhật</strong></td><td>Người có sinh nhật trong tháng</td><td>Ví dụ <em>Sinh nhật 04/10 · Kế toán</em>. Chỉ có ngày và tháng, không có năm sinh hay tuổi</td></tr>
+<tr><td><strong>Kỷ niệm năm làm việc</strong></td><td>Người vào làm đúng tháng này và tròn 1, 3, 5 hoặc 10 năm</td><td>Ví dụ <em>Tròn 5 năm làm việc · 15/10</em></td></tr>
+<tr><td><strong>HĐ / thử việc hết hạn</strong></td><td>Hợp đồng lao động hoặc hợp đồng thử việc đã ký, kết thúc trong tháng, chưa có hợp đồng nối tiếp, của người còn làm</td><td>Ví dụ <em>Hợp đồng hết hạn 15/11</em> hoặc <em>Thử việc hết hạn 20/11</em>. Dòng chữ đỏ là việc gấp</td></tr>
+</tbody>
+</table>
+<p>Số cạnh tên nhóm là tổng số người. Bấm một dòng để mở hồ sơ người đó; dòng hợp đồng mở thẳng tab hợp đồng để lập hợp đồng mới hoặc chấm dứt. Tháng không có ai thì nhóm ghi <em>Không có ai trong tháng này.</em></p>
+<ul>
+<li>Mỗi nhóm hiện tối đa 200 người. Nhiều hơn thì dưới nhóm có dòng <em>Chỉ hiện … trên … người — còn người khác chưa hiện.</em></li>
+<li>Nhóm hợp đồng chỉ nhìn trước <strong>180 ngày</strong> tính từ hôm nay. Chọn tháng xa hơn thì dưới nhóm có dòng <em>Chỉ thấy hợp đồng hết hạn trong 180 ngày tới — tháng này có thể còn thiếu.</em> Muốn soát hợp đồng đã quá hạn, dùng báo cáo {ref(LABOR_CONTRACT_TITLE, "Hợp đồng lao động")}.</li>
+</ul>
+
+<h2>Ai thấy nhóm nào</h2>
+<ul>
+<li>Ô chỉ hiện với người được xem hồ sơ nhân sự, và chỉ gồm người trong phạm vi bạn được xem.</li>
+<li>Nhóm <strong>Sinh nhật</strong> cần thêm quyền xem thông tin nhạy cảm của nhân sự.</li>
+<li>Nhóm <strong>HĐ / thử việc hết hạn</strong> cần thêm quyền xem hợp đồng lao động.</li>
+<li>Nhóm nào thiếu quyền thì không hiện, thay vì hiện số 0.</li>
+</ul>""",
+        },
+        {
             "title": ADMIN_ACCESS_TITLE,
             "icon": "shield-check",
-            "summary": "Tám báo cáo mới lúc đầu chỉ admin thấy; giao ở Phân quyền tài khoản ▸ tab Báo cáo cho trưởng phòng Nhân sự, Ban Giám đốc; Quỹ lương là số lương, chỉ giao người được xem lương; vẫn cần quyền ở phân hệ gốc",
+            "summary": "Mười ba báo cáo mới lúc đầu chỉ admin thấy; giao ở Phân quyền tài khoản ▸ tab Báo cáo; vẫn cần quyền ở phân hệ gốc; tick khóa Kế hoạch nhân sự cho vai trò Nhân sự rồi đăng nhập lại",
             "content": f"""<h2>Ai xem được báo cáo nào</h2>
 <p>Muốn mở một báo cáo Nhân sự, người dùng cần đủ <strong>hai lớp quyền</strong>:</p>
 <ol>
@@ -714,12 +1049,18 @@ TREE = {
 <tr><td>Quỹ lương theo pháp nhân</td><td>Xem hợp đồng lao động</td></tr>
 <tr><td>Phúc lợi &amp; sự kiện</td><td>Xem hồ sơ nhân sự. Lọc theo tuổi, tháng sinh, tuổi con cần thêm quyền xem thông tin nhạy cảm của nhân sự</td></tr>
 <tr><td>Cơ cấu quản lý · Điều chuyển &amp; bổ nhiệm</td><td>Xem hồ sơ nhân sự</td></tr>
+<tr><td>Định biên kế hoạch so với thực tế</td><td>Xem kế hoạch nhân sự (khóa <strong>Nhân sự › Kế hoạch nhân sự</strong>). Mở danh sách người cần thêm quyền xem hồ sơ nhân sự</td></tr>
+<tr><td>Có mặt theo ngày</td><td>Xem hồ sơ nhân sự. Các cột nghỉ, có mặt và tỷ lệ cần thêm quyền xem đơn nghỉ phép; thiếu thì chỉ còn <em>Người-ngày phải làm</em></td></tr>
+<tr><td>Yêu cầu sửa hồ sơ</td><td><strong>Sửa</strong> hồ sơ nhân sự (cùng quyền của màn Duyệt sửa hồ sơ); xuất Excel cần thêm quyền xuất hồ sơ nhân sự</td></tr>
+<tr><td>Sử dụng phòng họp</td><td>Xem phiếu đặt phòng họp</td></tr>
+<tr><td>Đối tượng cần chú ý theo luật</td><td>Xem hồ sơ nhân sự, <strong>và thêm</strong> xem thông tin nhạy cảm của nhân sự (ngày sinh, người thân). Thiếu thì trang báo không tải được kèm lý do</td></tr>
 </tbody>
 </table>
+<p>Cột <strong>Quỹ lương kế hoạch / tháng</strong> và cột kế hoạch của báo cáo <em>Quỹ lương theo pháp nhân</em> cần thêm quyền xem kế hoạch nhân sự. Số tiền kế hoạch, ở cả màn <strong>Kế hoạch nhân sự</strong> lẫn báo cáo Quỹ lương, chỉ hiện với người được xem hợp đồng lao động của đúng pháp nhân đó ở phạm vi <em>Tất cả</em> hoặc <em>Công ty</em> (phạm vi phòng ban hay bản thân thì không thấy, hiện «—»).</p>
 <p>Nút <strong>Xuất Excel</strong> trên báo cáo cần thêm quyền xuất của phân hệ gốc. Hai nút <strong>Xuất sổ (Excel)</strong> và <strong>Xuất mẫu 01/PLI</strong> cần quyền xuất hồ sơ nhân sự và quyền xuất hợp đồng lao động. Nút <strong>Xuất danh sách ký nhận</strong> của báo cáo Phúc lợi &amp; sự kiện cần quyền xuất hồ sơ nhân sự. Báo cáo <em>Hồ sơ &amp; tài khoản còn thiếu</em> hiện thêm nhóm giấy tờ cá nhân với người có quyền xem thông tin nhạy cảm, và nhóm tài khoản với người có quyền xem tài khoản. Ở báo cáo <em>Biến động nhân sự</em>, người không có quyền xem thông tin nhạy cảm thấy nhóm tuổi dưới 3 người bị che số và không mở được danh sách theo nhóm tuổi.</p>
 
 <h2>Giao các báo cáo mới cho trưởng phòng Nhân sự và Ban Giám đốc</h2>
-<p>Tám báo cáo mới lúc mới lên <strong>chỉ quản trị hệ thống thấy</strong>:</p>
+<p>Mười ba báo cáo mới lúc mới lên <strong>chỉ quản trị hệ thống thấy</strong>:</p>
 <table>
 <thead><tr><th>Báo cáo</th><th>Nên giao cho</th></tr></thead>
 <tbody>
@@ -731,6 +1072,11 @@ TREE = {
 <tr><td>Phúc lợi &amp; sự kiện</td><td>Phòng Nhân sự, Hành chính, người lo quà và sự kiện</td></tr>
 <tr><td>Cơ cấu quản lý</td><td>Trưởng phòng Nhân sự, Ban Giám đốc</td></tr>
 <tr><td>Điều chuyển &amp; bổ nhiệm</td><td>Trưởng phòng Nhân sự, Ban Giám đốc</td></tr>
+<tr><td>Định biên kế hoạch so với thực tế</td><td>Trưởng phòng Nhân sự, Ban Giám đốc</td></tr>
+<tr><td>Có mặt theo ngày</td><td>Phòng Nhân sự, trưởng các phòng (mỗi người chỉ thấy phòng trong phạm vi của mình)</td></tr>
+<tr><td>Yêu cầu sửa hồ sơ</td><td>Trưởng phòng Nhân sự</td></tr>
+<tr><td>Sử dụng phòng họp</td><td>Hành chính, người quản lý phòng họp</td></tr>
+<tr><td>Đối tượng cần chú ý theo luật</td><td>Chỉ trưởng phòng Nhân sự, Ban Giám đốc (báo cáo dựa trên ngày sinh và thông tin con nhỏ)</td></tr>
 </tbody>
 </table>
 <p>Quản trị giao cho người cần dùng như sau:</p>
@@ -745,12 +1091,23 @@ TREE = {
 <p>⚠️ Báo cáo Hợp đồng lao động có cột lương. Chỉ giao cho người được phép xem lương.</p>
 <p>⚠️ <strong>Sổ quản lý lao động</strong> và <strong>Báo cáo sử dụng lao động (01/PLI)</strong> xuất ra tệp có <strong>số CCCD, mã số BHXH, ngày sinh, địa chỉ và lương</strong> của từng người. Chỉ giao hai báo cáo này cho <strong>trưởng phòng Nhân sự</strong> và <strong>Ban Giám đốc</strong>, không giao theo cả phòng ban hay pháp nhân. Người được giao cũng phải có sẵn quyền xem thông tin nhạy cảm và quyền xem hợp đồng lao động thì mới mở được (xem bảng ở trên).</p>
 <p>⚠️ <strong>Quỹ lương theo pháp nhân là số lương.</strong> Người mở được báo cáo thấy tổng lương, lương bình quân, lương thấp nhất và cao nhất của từng nhóm, và bấm ra được lương cơ bản, phụ cấp, lương đóng BHXH của từng người. Nhóm dưới 3 người bị che số với mọi người xem, nhưng việc che đó không thay được việc giao đúng người: lọc hẹp còn 1–2 người thì dòng Tổng chính là lương của họ. Chỉ giao từng người cụ thể được phép xem lương, không giao theo phòng ban, pháp nhân hay vai trò đông người. Trợ lý AI không đọc báo cáo này, và báo cáo không lên trang Tổng quan.</p>
-<p>Quyền ở tab này chỉ quyết định ai mở được trang báo cáo trong phân hệ Báo cáo. Màn danh sách gốc ở từng phân hệ (hồ sơ nhân sự, đơn nghỉ…) vẫn theo quyền vai trò như cũ.</p>""",
+<p>Quyền ở tab này chỉ quyết định ai mở được trang báo cáo trong phân hệ Báo cáo. Màn danh sách gốc ở từng phân hệ (hồ sơ nhân sự, đơn nghỉ…) vẫn theo quyền vai trò như cũ.</p>
+
+<h2>Bật quyền mới «Kế hoạch nhân sự» cho vai trò Nhân sự</h2>
+<p>Màn <strong>Kế hoạch nhân sự</strong> và báo cáo <em>Định biên kế hoạch so với thực tế</em> dùng một khóa quyền mới. Trên hệ thống đang chạy, vai trò cũ <strong>không tự có</strong> khóa này (lần cập nhật không ghi đè phân quyền đã chỉnh trên màn), nên ngay cả trưởng phòng Nhân sự cũng chưa thấy mục <strong>Kế hoạch nhân sự</strong> trong menu cho tới khi quản trị bật:</p>
+<ol>
+<li>Vào <strong>Quản trị</strong> ▸ <strong>Phân quyền tài khoản</strong>, tab <strong>Vai trò &amp; quyền</strong>, chọn vai trò của phòng Nhân sự (ví dụ vai trò giữ hồ sơ nhân sự).</li>
+<li>Trong nhóm <strong>Nhân sự</strong>, tìm dòng <strong>Nhân sự › Kế hoạch nhân sự</strong>.</li>
+<li>Tick các quyền cần: xem; thêm, sửa, xóa cho người nhập kế hoạch; xuất cho người cần tải tệp CSV. Người chỉ cần đọc (ví dụ trưởng các phòng) thì chỉ tick xem.</li>
+<li>Bấm <strong>Lưu quyền</strong>, rồi nhờ người được cấp <strong>đăng xuất và đăng nhập lại</strong> để menu hiện mục mới.</li>
+</ol>
+<p>Muốn thấy và nhập <strong>quỹ lương kế hoạch</strong>, vai trò còn phải có quyền xem <strong>Hợp đồng lao động (có lương)</strong>. Ai chỉ có khóa kế hoạch mà không có quyền này thì thấy định biên nhưng không thấy cột tiền.</p>
+<p>Sau đó giao năm báo cáo mới (định biên, có mặt, sửa hồ sơ, phòng họp, đối tượng theo luật) ở tab <strong>Báo cáo</strong> như các bước ở trên.</p>""",
         },
     ],
 }
 
-EXPECTED_ARTICLES = 15
+EXPECTED_ARTICLES = 22
 
 
 def check_unique_titles() -> None:

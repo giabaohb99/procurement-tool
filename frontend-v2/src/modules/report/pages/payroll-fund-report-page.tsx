@@ -16,9 +16,12 @@ const CONFIG: ReportPageConfig = {
   //  HĐLĐ không có màn danh sách riêng — nguồn là danh sách nhân sự, như báo cáo Hợp đồng
   //  lao động (khóa 17; ngoại lệ khóa gác có ghi ở `report-catalog.test.ts`).
   sourcePath: appRoutes.hr.employees,
-  kpis: ['payroll_total', 'people_paid', 'avg_payroll', 'insurance_total'],
-  //  Hai thành phần của quỹ lương hiện sẵn trên bảng; thấp nhất / cao nhất bật ở menu «Cột».
-  tableMetrics: ['base_total', 'allowance_total'],
+  //  Hai thẻ cuối là phần KẾ HOẠCH (duoc-CR-689, nguồn: Nhân sự ▸ Kế hoạch nhân sự) — máy chủ
+  //  chưa trả thì thẻ tự bỏ (khóa vắng khỏi `meta`), hàng thẻ về lại 4.
+  kpis: ['payroll_total', 'people_paid', 'avg_payroll', 'insurance_total', 'planned_payroll', 'payroll_use_rate'],
+  //  Hai thành phần của quỹ lương + phần còn dư so với kế hoạch hiện sẵn trên bảng; thấp nhất /
+  //  cao nhất bật ở menu «Cột».
+  tableMetrics: ['base_total', 'allowance_total', 'payroll_remaining'],
   chartMetric: 'payroll_total',
   //  Mỗi pháp nhân trả lương phần mình — mặc định xem theo công ty.
   defaultGroupBy: 'company',

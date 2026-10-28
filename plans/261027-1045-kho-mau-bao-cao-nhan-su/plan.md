@@ -53,12 +53,24 @@ Mặc định 27/10/2026 (anh Được «tiếp đi», chưa trả lời câu 9�
 | 14 | [Biểu đồ linh hoạt (dùng chung)](phase-14-bieu-do-linh-hoat.md) | 5h | done | FE-a |
 | 15 | [Giao diện 4 trang mới + kiểm thử + HDSD](phase-15-giao-dien-kiem-thu-dot-3.md) | 5h | done | FE-b + điều phối |
 
+## Đợt 4 — phases (duoc-CR-689, đang làm)
+Chốt 28/10/2026 (anh Được): **làm bảng kế hoạch theo năm** — pháp nhân × phòng ban × năm → định biên + quỹ lương / tháng, phòng Nhân sự nhập (có nhập Excel), quyền ghi chỉ trưởng phòng Nhân sự / admin. Dữ liệu thử local giữ để soát đợt 4, cuối đợt xóa.
+
+| # | Phase | Effort | Status | Chủ tệp |
+|---|-------|--------|--------|---------|
+| 16 | Nền đợt 4: khóa 25–29, router khung, cache | 0.5h | done | điều phối |
+| 17 | [Bảng kế hoạch + A4 Định biên kế hoạch + cột kế hoạch A5](phase-17-ke-hoach-dinh-bien.md) | 8h | done | BE-7 |
+| 18 | [C3 Có mặt theo ngày + F1 Sử dụng phòng họp](phase-18-co-mat-phong-hop.md) | 6h | done | BE-8 |
+| 19 | [E2 Yêu cầu sửa hồ sơ + B4 Đối tượng theo luật + dữ liệu E3](phase-19-sua-ho-so-doi-tuong-luat.md) | 6h | done | BE-9 |
+| 20 | [Giao diện: màn kế hoạch, 5 trang báo cáo, ô Lịch nhắc](phase-20-giao-dien-dot-4.md) | 6h | in_progress | FE-c |
+| 21 | Kiểm thử, rà mã, HDSD, deploy dev, xóa dữ liệu thử | 4h | in_progress | điều phối |
+
 ## Lộ trình các đợt sau (chưa làm)
 | Đợt | Mẫu | Điều kiện |
 |---|---|---|
 | 2 | B2 · B3 · A2 — **đang làm, xem bảng trên** (bỏ «chốt số theo tháng»: 01/PLI là danh sách tại ngày cuối kỳ, không cần bảng chụp) | Hạn nộp 05/12/2026 |
 | 3 | **đang làm, xem bảng trên** | Phần kế hoạch của A5 chờ chốt câu 9 |
-| 4 | C3 Có mặt theo ngày · E2 · E3 · F1 · B4 · A4 + bảng định biên / quỹ lương kế hoạch | Chốt câu 5 |
+| 4 | **đang làm, xem bảng trên** | — |
 | Chờ phân hệ | Tuyển dụng (phần 🔴 của A1, HR2-4) · G1 Tài sản cấp phát (HR2-1) | Làm phân hệ trước |
 
 ## Rủi ro

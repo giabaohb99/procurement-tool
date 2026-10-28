@@ -47,6 +47,7 @@ ENTITY_MODEL_PATHS: dict[str, tuple[str, str]] = {
     "room_booking": ("app.modules.meeting_room.model", "RoomBooking"),
     "login_session": ("app.modules.login_session.model", "LoginSession"),
     "dossier": ("app.modules.dossier.model", "Dossier"),
+    "headcount_plan": ("app.modules.headcount_plan.model", "HeadcountPlan"),
 }
 
 

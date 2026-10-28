@@ -100,6 +100,17 @@ REPORTS: dict[str, ReportRoute] = {
                                                                      "management_span_summary"), "/report/management-span"),
     "work_moves": ReportRoute(ReportKey.WORK_MOVES, _route("employee.work_move_report_controller",
                                                            "work_moves_summary"), "/report/work-moves"),
+    #  duoc-CR-689: `/summary` chỉ trả số đếm; route tự đòi thêm quyền (nhạy cảm / đơn nghỉ) khi cần.
+    "headcount_plan": ReportRoute(ReportKey.HEADCOUNT_PLAN, _route("employee.headcount_plan_report_controller",
+                                                                   "headcount_plan_summary"), "/report/headcount-plan"),
+    "attendance_daily": ReportRoute(ReportKey.ATTENDANCE_DAILY, _route("work_schedule.attendance_report_controller",
+                                                                       "attendance_summary"), "/report/attendance"),
+    "profile_changes": ReportRoute(ReportKey.PROFILE_CHANGES, _route("employee.change_request_report_controller",
+                                                                     "profile_change_summary"), "/report/profile-changes"),
+    "room_usage": ReportRoute(ReportKey.ROOM_USAGE, _route("meeting_room.report_controller", "room_usage_summary"),
+                              "/report/room-usage"),
+    "legal_watch": ReportRoute(ReportKey.LEGAL_WATCH, _route("employee.legal_watch_report_controller",
+                                                             "legal_watch_summary"), "/report/legal-watch"),
 }
 _BY_NUMBER = {int(r.key): name for name, r in REPORTS.items()}
 

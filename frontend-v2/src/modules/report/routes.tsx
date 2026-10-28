@@ -43,6 +43,7 @@ export const reportModule: ErpModule = {
       path: r.path,
       icon: r.icon,
       entity: r.entity,
+      action: r.action,
       group: r.group,
       // Mỗi mục báo cáo gác thêm bằng đúng khóa của chính nó (`ReportKey` backend).
       reportKeys: [r.key],

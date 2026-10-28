@@ -176,6 +176,9 @@ export const ENTITIES = [
   'ai_skill',
   // Phát / thu hồi khóa kết nối AI hộ nhân sự (ai-CR-212).
   'ai_mcp_key_admin',
+  //  Kế hoạch nhân sự theo năm (duoc-CR-689) — định biên + quỹ lương kế hoạch của pháp nhân × phòng.
+  //  Số lương kế hoạch backend chỉ trả cho người có `labor_contract.read` (che ở serializer).
+  'headcount_plan',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]
