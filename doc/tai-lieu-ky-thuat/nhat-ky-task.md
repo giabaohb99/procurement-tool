@@ -111,6 +111,34 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-691 | Chi tiết YC mua hàng thêm cột đơn mua hàng, lọc nhiều tiến độ, xuất Excel
+- status: xong
+- date: 2026-10-28
+- tag: Agent 4
+**Bối cảnh:** phiếu TK28102602 của Dego Organic cần soát trên một bảng: dòng yêu cầu mua hàng nào đã lên đơn, đơn nào, của nhà
+cung cấp nào, hẹn giao khi nào, đã nhận hàng mấy lần. Màn Chi tiết YC mua hàng đã liệt kê mọi dòng, kể cả dòng chưa có đơn, nhưng
+thiếu các cột này.
+
+**Đã làm**
+- Mỗi dòng của bảng có thêm thông tin phiếu (pháp nhân, mục đích, gấp, ngày cần, trưởng bộ phận, người duyệt, phòng xử lý) và
+  thông tin dòng (đơn vị tính, ngày cần của dòng, số đã đặt, số đã nhận, chi tiết tiến độ, ghi chú dòng).
+- Ghép đơn mua hàng theo mã phiếu và mã hàng: danh sách mã đơn theo ngày tạo, số đơn, nhà cung cấp của đơn gần nhất, ngày hẹn giao
+  gần nhất, số lần nhận hàng. Đơn đã hủy, đã xóa và dòng đơn bị hủy không tính. Cả trang gom bằng vài truy vấn, không truy vấn
+  từng dòng.
+- Tên nhà cung cấp (đề xuất và trên đơn) chỉ hiện với người có quyền xem nhà cung cấp.
+- Bộ lọc tiến độ dòng chọn được nhiều giá trị; chọn một giá trị vẫn như cũ.
+- Thêm nút xuất Excel theo đúng bộ lọc của bảng, cần quyền xuất báo cáo, tối đa 5.000 dòng.
+- Đổi nhãn *Tiến độ mua hàng* thành *Tiến độ đơn mua hàng* ở danh mục báo cáo, tên tệp xuất và câu báo thiếu quyền; đường dẫn và khóa
+  quyền giữ nguyên.
+
+**Kết quả:** năm bài kiểm mới đạt, các bài kiểm cũ của báo cáo theo dòng, tổng hợp và tiến độ đơn mua hàng đạt.
+
+**Còn lại:** giao diện v2 làm song song; lên prod khi chủ dự án đồng ý. Hạn chế đã biết: hai dòng cùng mã hàng trong một phiếu
+nhận cùng tập đơn, vì đơn mua hàng không ghi dòng yêu cầu nguồn.
+
+Mã nguồn: `backend/app/modules/report/service.py` (`_pr_line_rows`, `_pr_line_po_links`, `export_pr_lines_rows`) ·
+`backend/app/modules/report/controller.py` · `backend/app/core/report_keys.py` · `test/backend/test_bao_cao_dong_ycmh_cot_moi_cr691.py`
+
 ## ai-CR-232 | Bot Telegram ERP hỏng sau khi đổi khóa Claude: bỏ tham số temperature với model mới
 - status: xong
 - date: 2026-10-28

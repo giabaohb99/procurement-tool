@@ -285,7 +285,7 @@ export const REPORT_KEY: readonly StatusOption[] = [
   {"value": "1", "label": "Báo cáo mua hàng", "sort_order": 1, "is_terminal": false, "is_exception": false},
   {"value": "2", "label": "Chi tiết YC mua hàng", "sort_order": 2, "is_terminal": false, "is_exception": false},
   {"value": "3", "label": "Tiến độ báo giá", "sort_order": 3, "is_terminal": false, "is_exception": false},
-  {"value": "4", "label": "Tiến độ mua hàng", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Tiến độ đơn mua hàng", "sort_order": 4, "is_terminal": false, "is_exception": false},
   {"value": "5", "label": "Báo cáo khảo sát", "sort_order": 5, "is_terminal": false, "is_exception": false},
   {"value": "6", "label": "Biến động nhân sự", "sort_order": 6, "is_terminal": false, "is_exception": false},
   {"value": "7", "label": "Tình hình nghỉ phép", "sort_order": 7, "is_terminal": false, "is_exception": false},

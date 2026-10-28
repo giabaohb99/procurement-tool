@@ -34,7 +34,7 @@ class ReportKey(IntEnum):
     PURCHASE_REPORT = 1      # Báo cáo mua hàng (Thu mua)
     PR_LINES = 2              # Chi tiết YC mua hàng (Thu mua)
     SURVEY_PROGRESS = 3       # Tiến độ báo giá (Thu mua)
-    PURCHASE_PROGRESS = 4     # Tiến độ mua hàng (Thu mua)
+    PURCHASE_PROGRESS = 4     # Tiến độ đơn mua hàng (Thu mua) — đổi nhãn bao-CR-691, giữ khóa
     SURVEY_REPORT = 5         # Báo cáo khảo sát (Thu mua)
     HR_HEADCOUNT = 6          # Biến động nhân sự (Nhân sự)
     LEAVE_USAGE = 7           # Tình hình nghỉ phép (Nhân sự)
@@ -68,7 +68,7 @@ REPORT_META: dict[ReportKey, tuple[str, str]] = {
     ReportKey.PURCHASE_REPORT: ("Báo cáo mua hàng", "Thu mua"),
     ReportKey.PR_LINES: ("Chi tiết YC mua hàng", "Thu mua"),
     ReportKey.SURVEY_PROGRESS: ("Tiến độ báo giá", "Thu mua"),
-    ReportKey.PURCHASE_PROGRESS: ("Tiến độ mua hàng", "Thu mua"),
+    ReportKey.PURCHASE_PROGRESS: ("Tiến độ đơn mua hàng", "Thu mua"),
     ReportKey.SURVEY_REPORT: ("Báo cáo khảo sát", "Thu mua"),
     ReportKey.HR_HEADCOUNT: ("Biến động nhân sự", "Nhân sự"),
     ReportKey.LEAVE_USAGE: ("Tình hình nghỉ phép", "Nhân sự"),
