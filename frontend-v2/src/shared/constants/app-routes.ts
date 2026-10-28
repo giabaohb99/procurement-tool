@@ -367,7 +367,7 @@ export const appRoutes = {
     managementSpan: '/report/management-span',
     /** Điều chuyển & bổ nhiệm (duoc-CR-688, khóa 24). */
     workMoves: '/report/work-moves',
-    /** Định biên kế hoạch so với thực tế (duoc-CR-689, khóa 25). */
+    /** Số người kế hoạch so với thực tế (duoc-CR-689, khóa 25). */
     headcountPlan: '/report/headcount-plan',
     /** Có mặt theo ngày (duoc-CR-689, khóa 26). */
     attendance: '/report/attendance',
@@ -523,12 +523,8 @@ export const appRoutes = {
     headcountPlans: '/hr/headcount-plans',
     headcountPlanNew: '/hr/headcount-plans/new',
     headcountPlanDetail: (id: number | string) => `/hr/headcount-plans/${id}`,
-    /** Nhóm chi phí nhân sự do người dùng tự đặt (duoc-CR-690) — CRUD hộp thoại. */
-    hrCostGroups: '/hr/hr-cost-groups',
-    /** Mẫu khoản chi phí (duoc-CR-690) — bộ khoản chép vào kế hoạch lúc tạo. Trang riêng vì có bảng khoản. */
-    hrCostTemplates: '/hr/hr-cost-templates',
-    hrCostTemplateNew: '/hr/hr-cost-templates/new',
-    hrCostTemplateDetail: (id: number | string) => `/hr/hr-cost-templates/${id}`,
+    /** Đường CŨ của màn «Mẫu khoản chi phí» (đã gỡ, duoc-CR-690) — chỉ còn để chuyển về danh sách kế hoạch. */
+    hrCostTemplatesLegacy: '/hr/hr-cost-templates/*',
     /** Danh mục Chức vụ — nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ. */
     jobPositions: '/hr/job-positions',
     /** Thêm chức vụ mở TRANG RIÊNG, không phải hộp thoại — xem `CrudConfig.createRoute`. */

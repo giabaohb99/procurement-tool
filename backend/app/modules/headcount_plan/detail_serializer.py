@@ -19,6 +19,7 @@ from app.modules.labor_contract.lookup import names_map
 from .actual_detail import build_actual_block
 from .cost_model import HeadcountPlanCostItem
 from .costing import PlanCalcError
+from .document_upload_service import document_item
 from .model import HeadcountPlan, HeadcountPlanDocument, HeadcountPlanLine
 from .serializer import can_see_payroll, compute_from, header_out, mask_computed, readable_names
 
@@ -60,8 +61,7 @@ def documents_out(db: Session, plan_id: int, user, profile: dict) -> list[dict]:
         elif not can_read_document(db, d, user, profile, "read"):
             out.append({"document_id": i, "can_read": False})
         else:
-            out.append({"document_id": i, "can_read": True, "code": d.doc_code or d.issue_number or "",
-                        "title": d.title or "", "status": int(d.status or 0)})
+            out.append(document_item(d))
     return out
 
 

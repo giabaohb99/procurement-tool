@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -8,6 +8,11 @@ import type { HeadcountPlanDocumentLink } from '../types/headcount-plan'
 import { HeadcountPlanLinkedDocuments } from './headcount-plan-linked-documents'
 
 const apiGet = vi.fn()
+const uploadBasisDocument = vi.fn()
+
+vi.mock('../api/headcount-plan-api', () => ({
+  headcountPlanApi: { uploadBasisDocument: (...args: unknown[]) => uploadBasisDocument(...args) },
+}))
 
 vi.mock('@/core/api', async (importOriginal) => {
   const actual = await importOriginal<typeof CoreApi>()
@@ -35,6 +40,7 @@ function build(props: Partial<React.ComponentProps<typeof HeadcountPlanLinkedDoc
 
 beforeEach(() => {
   apiGet.mockReset().mockResolvedValue({ items: [], total: 0 })
+  uploadBasisDocument.mockReset()
 })
 
 describe('linked documents', () => {
@@ -97,5 +103,63 @@ describe('linked documents', () => {
     build({ readOnly: true })
     expect(screen.queryByRole('button', { name: 'Gỡ văn bản khỏi kế hoạch' })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Tìm văn bản để gắn')).not.toBeInTheDocument()
+  })
+
+  describe('upload a basis file', () => {
+    const pdf = () => new File(['%PDF-1.4'], 'quyet-dinh.pdf', { type: 'application/pdf' })
+    const pick = (file: File) =>
+      fireEvent.change(screen.getByLabelText('Chọn tệp căn cứ để tải lên'), { target: { files: [file] } })
+
+    it('adds the document created from the file, with number, title and an open link', async () => {
+      const created = { document_id: 77, can_read: true, code: 'DEGO-CCKHNS-001', title: 'Căn cứ kế hoạch nhân sự – quyet-dinh.pdf', status: 1 }
+      uploadBasisDocument.mockResolvedValue(created)
+      const onChange = build()
+      pick(pdf())
+      await waitFor(() => expect(onChange).toHaveBeenCalledWith([...DOCS, created]))
+      expect(uploadBasisDocument.mock.calls[0][0].name).toBe('quyet-dinh.pdf')
+    })
+
+    it('shows the progress percentage while uploading and locks the button', async () => {
+      let report: (n: number) => void = () => undefined
+      uploadBasisDocument.mockImplementation(
+        (_file: File, onProgress: (n: number) => void) =>
+          new Promise(() => {
+            report = onProgress
+          }),
+      )
+      build()
+      pick(pdf())
+      const busy = await screen.findByRole('button', { name: /Đang tải lên/ })
+      expect(busy).toBeDisabled()
+      report(42)
+      expect(await screen.findByRole('button', { name: 'Đang tải lên… 42%' })).toBeInTheDocument()
+    })
+
+    it('shows the Vietnamese server error and does not change the list', async () => {
+      uploadBasisDocument.mockRejectedValue({ response: { data: { success: false, error: { message: 'Định dạng .exe không được phép' } } } })
+      const onChange = build()
+      pick(new File(['MZ'], 'chay.exe'))
+      expect(await screen.findByRole('alert')).toHaveTextContent('Định dạng .exe không được phép')
+      expect(onChange).not.toHaveBeenCalled()
+    })
+
+    it('refuses a file over 50 MB without calling the server', () => {
+      const big = new File(['x'], 'to.pdf')
+      Object.defineProperty(big, 'size', { value: 51 * 1024 * 1024 })
+      build()
+      pick(big)
+      expect(screen.getByRole('alert')).toHaveTextContent('lớn hơn 50 MB')
+      expect(uploadBasisDocument).not.toHaveBeenCalled()
+    })
+
+    it('has no upload button when read-only or without document.read', () => {
+      build({ readOnly: true })
+      expect(screen.queryByRole('button', { name: 'Tải tệp lên' })).not.toBeInTheDocument()
+    })
+
+    it('has no upload button without document.read', () => {
+      build({ canSearch: false })
+      expect(screen.queryByRole('button', { name: 'Tải tệp lên' })).not.toBeInTheDocument()
+    })
   })
 })

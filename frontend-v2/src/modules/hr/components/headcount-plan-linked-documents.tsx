@@ -1,17 +1,23 @@
-import { ExternalLink, FileX, Lock, Plus, X } from 'lucide-react'
-import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
+import { ExternalLink, FileX, Loader2, Lock, Plus, Upload, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 //  Dùng lại đúng hook tra văn bản của phân hệ Văn bản (danh sách đã lọc theo quyền đọc ở backend) —
 //  chép một bản thứ hai là hai nơi lệch nhau ở luật «ai thấy văn bản nào».
 import { useDocuments } from '@/modules/document/hooks/use-documents'
 import { STATUS_LABELS as DOCUMENT_STATUS_LABELS } from '@/modules/document/types/document-record'
+import { extractErrorMessage } from '@/core/api'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
+import { headcountPlanApi } from '../api/headcount-plan-api'
 import type { HeadcountPlanDocumentLink } from '../types/headcount-plan'
+
+/** Trần dung lượng 1 tệp của đính kèm Văn bản (`file_registry`: document_version = 50 MB) — chặn sớm đỡ tải rồi mới bị từ chối. */
+const MAX_UPLOAD_MB = 50
 
 /** Ít hơn 2 ký tự thì chưa tra — cùng mốc với ô tìm của phân hệ Văn bản. */
 const MIN_QUERY = 2
@@ -65,7 +71,7 @@ function LinkedDocumentRow({ doc }: { doc: HeadcountPlanDocumentLink }) {
 
 /**
  * VĂN BẢN LIÊN KẾT của kế hoạch (tài liệu 06 §2.1, §8): chọn văn bản CÓ SẴN ở phân hệ Văn bản
- * (quyết định duyệt ngân sách, tờ trình…). Chỉ tra ra văn bản người lập đọc được — danh sách
+ * (quyết định duyệt ngân sách, tờ trình…) HOẶC «Tải tệp lên» để hệ thống tự tạo một văn bản KÍN có tệp đó (duoc-CR-690). Chỉ tra ra văn bản người lập đọc được — danh sách
  * `/api/documents` đã lọc theo luật đọc của phân hệ Văn bản; backend còn chặn lại lúc lưu (403).
  */
 export function HeadcountPlanLinkedDocuments({
@@ -77,6 +83,35 @@ export function HeadcountPlanLinkedDocuments({
   const [query, setQuery] = useState('')
   const q = useDebouncedValue(query.trim(), 350)
   const search = useDocuments({ q, page_size: 8 }, { enabled: canSearch && !readOnly && q.length >= MIN_QUERY })
+  const fileInput = useRef<HTMLInputElement>(null)
+  const [progress, setProgress] = useState(0)
+  const [uploadError, setUploadError] = useState('')
+  //  Dùng bản `documents` MỚI NHẤT lúc tải xong (người dùng có thể gỡ/gắn trong lúc chờ) — không chụp bản cũ.
+  const latest = useRef(documents)
+  useEffect(() => {
+    latest.current = documents
+  }, [documents])
+  const upload = useMutation({
+    mutationFn: (file: File) => headcountPlanApi.uploadBasisDocument(file, setProgress),
+    onSuccess: (created) => {
+      setUploadError('')
+      onChange([...latest.current.filter((d) => d.document_id !== created.document_id), created])
+    },
+    onError: (error) => setUploadError(extractErrorMessage(error)),
+  })
+
+  function pickFile(file: File | undefined) {
+    if (fileInput.current) fileInput.current.value = '' // chọn lại đúng tệp vừa rồi vẫn bắn `change`
+    if (!file) return
+    if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      setUploadError(`Tệp «${file.name}» lớn hơn ${MAX_UPLOAD_MB} MB, không tải lên được.`)
+      return
+    }
+    setUploadError('')
+    setProgress(0)
+    upload.mutate(file)
+  }
+
   const linked = new Set(documents.map((d) => d.document_id))
   const results = q.length >= MIN_QUERY ? (search.data?.items ?? []).filter((d) => !linked.has(d.id)) : []
 
@@ -111,6 +146,33 @@ export function HeadcountPlanLinkedDocuments({
       )}
       {!readOnly && canSearch && (
         <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={fileInput}
+              type="file"
+              hidden
+              aria-label="Chọn tệp căn cứ để tải lên"
+              onChange={(e) => pickFile(e.target.files?.[0])}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={upload.isPending}
+              onClick={() => fileInput.current?.click()}
+            >
+              {upload.isPending ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+              {upload.isPending ? `Đang tải lên… ${progress}%` : 'Tải tệp lên'}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Tệp quyết định, tờ trình… (tối đa {MAX_UPLOAD_MB} MB) sẽ thành một văn bản riêng tư ở phân hệ Văn bản và được gắn vào kế hoạch.
+            </span>
+          </div>
+          {uploadError && (
+            <p role="alert" className="text-xs text-destructive">
+              {uploadError}
+            </p>
+          )}
           <Input
             value={query}
             placeholder="Gõ số hiệu hoặc trích yếu để tìm văn bản…"

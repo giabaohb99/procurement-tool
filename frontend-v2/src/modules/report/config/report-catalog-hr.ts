@@ -25,7 +25,7 @@ import type { ReportCatalogEntry } from './report-catalog'
  * Nhóm NHÂN SỰ của danh mục báo cáo (phase 04) — Nhân sự (biến động & cơ cấu) ·
  * Nghỉ phép (tình hình nghỉ) · Quỹ phép năm · Hợp đồng lao động · Hồ sơ còn thiếu
  * (duoc-CR-686) · Sổ quản lý lao động · Mẫu 01/PLI (duoc-CR-687) · Quỹ lương · Phúc lợi & sự kiện ·
- * Cơ cấu quản lý · Điều chuyển & bổ nhiệm (duoc-CR-688) · Định biên kế hoạch · Có mặt theo ngày ·
+ * Cơ cấu quản lý · Điều chuyển & bổ nhiệm (duoc-CR-688) · Số người kế hoạch · Có mặt theo ngày ·
  * Yêu cầu sửa hồ sơ · Sử dụng phòng họp · Đối tượng cần chú ý theo luật (duoc-CR-689). Mỗi báo cáo = một `ReportPageConfig`
  * (`pages/hr-headcount-report-page.tsx`/`leave-usage-report-page.tsx`/
  * `leave-balance-report-page.tsx`) — xem các tệp đó để biết KPI/chỉ số xu
@@ -201,8 +201,8 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
     load: async () => (await import('../pages/work-moves-report-page')).WorkMovesReportPage,
   },
   {
-    label: 'Định biên kế hoạch so với thực tế',
-    description: 'Định biên theo Kế hoạch nhân sự (năm, bán niên, quý, tháng) so với người đang có theo pháp nhân, phòng ban, vị trí: còn thiếu, vượt, tỷ lệ lấp đầy.',
+    label: 'Số người kế hoạch so với thực tế',
+    description: 'Số người theo Kế hoạch nhân sự (năm, bán niên, quý, tháng) so với số người hiện có theo pháp nhân, phòng ban, vị trí: còn thiếu, vượt, tỷ lệ lấp đầy.',
     path: appRoutes.report.headcountPlan,
     sourcePath: appRoutes.hr.headcountPlans,
     icon: Target,

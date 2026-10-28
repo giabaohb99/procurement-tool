@@ -7,9 +7,12 @@ import {
   type HeadcountPlanLine,
   type HeadcountPlanPositionStat,
 } from '../types/headcount-plan'
-import type { HrCostItem } from '../types/hr-cost'
+import type { HrCostGroup, HrCostItem } from '../types/hr-cost'
 import { buildSubPeriods, clampPeriodNo, listPeriodMonths, resizeHeadcounts } from './headcount-plan-periods'
 import { copyTemplateItemsForPeriod } from './headcount-plan-template-copy'
+import { markCostItemsCustomSetup } from './hr-cost-item-custom'
+import { ensureSalaryItems } from './hr-cost-item-presets'
+import { sortCostItemsByOrder } from './hr-cost-item-rules'
 
 /**
  * BẢN NHÁP của trang kế hoạch nhân sự — một object duy nhất giữ cả bốn khối, cùng khuôn với các
@@ -23,7 +26,10 @@ export interface HeadcountPlanDraft {
   period_no: number
   company_id: number
   department_id: number
-  /** Chỉ dùng lúc TẠO (backend chép khoản từ mẫu); sau đó chỉ để biết đã chép từ đâu. */
+  /**
+   * Mẫu gợi ý đã điền sẵn chi phí lúc TẠO (tự chọn, người dùng không thấy). `0` = bộ khoản dựng ở giao
+   * diện hoặc đã khác mẫu (thêm Lương / Phụ cấp) → lúc tạo phải gửi `cost_items` lên.
+   */
   template_id: number
   basis_no: string
   /** `YYYY-MM-DD`, chuỗi rỗng = chưa nhập. */
@@ -40,7 +46,7 @@ export interface HeadcountPlanDraft {
   template_items: HrCostItem[] | null
   /** Người dùng đã sửa bảng khoản sau khi chép từ mẫu → lúc tạo phải gửi `cost_items` lên. */
   cost_items_edited: boolean
-  /** Tên khoản của mẫu bị bỏ khi chép sang kỳ này (để báo trên form). */
+  /** Tên chi phí của mẫu gợi ý bị bỏ vì tháng chi nằm ngoài kỳ (để báo trên form). */
   skipped_items: string[]
 }
 
@@ -87,6 +93,20 @@ export function normalizeCostItem(raw: HrCostItem): HrCostItem {
   }
 }
 
+/**
+ * Bộ khoản từ API → bộ khoản của bản nháp: chuẩn hóa từng khoản, xếp theo thứ tự đã lưu (danh sách không
+ * còn ô «Thứ tự» — vị trí trên danh sách LÀ thứ tự), rồi đánh dấu khoản cũ có cấu hình riêng.
+ */
+export function normalizeCostItems(raw: readonly HrCostItem[] | null | undefined): HrCostItem[] {
+  return markCostItemsCustomSetup(sortCostItemsByOrder((raw ?? []).map(normalizeCostItem)))
+}
+
+/** Chép khoản của mẫu theo kỳ, rồi dò lại cấu hình riêng trên bộ đã chép. */
+function copyTemplateForPeriod(templateItems: readonly HrCostItem[], periodMonths: readonly number[]) {
+  const { items, skipped } = copyTemplateItemsForPeriod(templateItems, periodMonths)
+  return { items: markCostItemsCustomSetup(items), skipped }
+}
+
 export function draftFromDetail(detail: HeadcountPlanDetail): HeadcountPlanDraft {
   const periods = buildSubPeriods(detail.period_type, detail.period_no).length
   return {
@@ -100,7 +120,7 @@ export function draftFromDetail(detail: HeadcountPlanDetail): HeadcountPlanDraft
     basis_date: detail.basis_date ?? '',
     approver_employee_id: detail.approver_employee_id ?? 0,
     note: detail.note ?? '',
-    cost_items: (detail.cost_items ?? []).map(normalizeCostItem),
+    cost_items: normalizeCostItems(detail.cost_items),
     lines: (detail.lines ?? []).map((l) => ({
       ...l,
       headcounts: resizeHeadcounts(l.headcounts ?? [], periods),
@@ -114,14 +134,14 @@ export function draftFromDetail(detail: HeadcountPlanDetail): HeadcountPlanDraft
   }
 }
 
-/** Chọn mẫu lúc tạo: giữ bộ khoản gốc rồi chép theo kỳ đang chọn. */
+/** Chép khoản của mẫu lúc tạo: giữ bộ khoản gốc rồi chép theo kỳ đang chọn. */
 export function applyTemplateToDraft(
   draft: HeadcountPlanDraft,
   templateId: number,
   templateItems: readonly HrCostItem[],
 ): HeadcountPlanDraft {
-  const raw = templateItems.map(normalizeCostItem)
-  const { items, skipped } = copyTemplateItemsForPeriod(raw, listPeriodMonths(draft.period_type, draft.period_no))
+  const raw = normalizeCostItems(templateItems)
+  const { items, skipped } = copyTemplateForPeriod(raw, listPeriodMonths(draft.period_type, draft.period_no))
   return {
     ...draft,
     template_id: templateId,
@@ -130,6 +150,35 @@ export function applyTemplateToDraft(
     cost_items_edited: false,
     skipped_items: skipped,
   }
+}
+
+/** Bộ chi phí điền sẵn cho kế hoạch MỚI: khoản của «Mẫu gợi ý» (`templateId > 0`) hoặc bộ dựng ở giao diện (`0`). */
+export interface HeadcountPlanSeed {
+  /** Khóa để chỉ áp MỘT lần cho mỗi nguồn (mẫu nào / bộ giao diện). */
+  key: string
+  templateId: number
+  items: readonly HrCostItem[]
+}
+
+/**
+ * Điền sẵn chi phí cho kế hoạch mới (không còn ô chọn mẫu): chép khoản của nguồn theo kỳ đang chọn, bảo
+ * đảm có Lương + Phụ cấp. Bộ đã khác mẫu (thêm Lương / Phụ cấp, hoặc không có mẫu) thì `template_id = 0`
+ * để lúc tạo gửi nguyên bộ lên — backend tự chép mẫu thì mất phần vừa thêm.
+ */
+export function applySeedToDraft(
+  draft: HeadcountPlanDraft,
+  seed: HeadcountPlanSeed,
+  groups: readonly HrCostGroup[],
+): HeadcountPlanDraft {
+  const { items, added } = ensureSalaryItems(seed.items, groups)
+  const next = applyTemplateToDraft(draft, seed.templateId, items)
+  return added || !seed.templateId ? { ...next, template_id: 0 } : next
+}
+
+/** «Giống nhau cả năm»: mọi kỳ con của dòng nhận cùng một số người (số nguyên không âm). */
+export function fillLineHeadcounts(line: HeadcountPlanLine, value: number): HeadcountPlanLine {
+  const n = Math.max(0, Math.trunc(Number(value) || 0))
+  return { ...line, headcounts: line.headcounts.map(() => n) }
 }
 
 /**
@@ -149,10 +198,10 @@ export function changeDraftPeriod(
     period_no: periodNo,
     lines: draft.lines.map((l) => ({ ...l, headcounts: resizeHeadcounts(l.headcounts, length) })),
   }
-  //  Bảng khoản còn nguyên như vừa chép từ mẫu → chép lại theo kỳ mới (Năm có thưởng T12, Q1 thì không).
-  //  Người dùng đã sửa tay thì KHÔNG đè — bày cảnh báo «tháng ngoài kỳ» ở từng khoản để họ tự gỡ.
+  //  Chi phí còn nguyên như vừa điền sẵn → chép lại theo kỳ mới (Năm có thưởng T12, Q1 thì không).
+  //  Người dùng đã sửa tay thì KHÔNG đè — bày cảnh báo «tháng ngoài kỳ» ở từng dòng để họ tự sửa.
   if (draft.template_items && !draft.cost_items_edited) {
-    const { items, skipped } = copyTemplateItemsForPeriod(draft.template_items, listPeriodMonths(periodType, periodNo))
+    const { items, skipped } = copyTemplateForPeriod(draft.template_items, listPeriodMonths(periodType, periodNo))
     return { ...next, cost_items: items, skipped_items: skipped }
   }
   return next
@@ -173,7 +222,7 @@ export function addDraftLine(draft: HeadcountPlanDraft, positionId: number, posi
 }
 
 /**
- * «ĐANG CÓ» của một dòng. Dòng vị trí thường: đếm đúng vị trí đó. Dòng «Không theo vị trí»: những
+ * «HIỆN CÓ» của một dòng. Dòng vị trí thường: đếm đúng vị trí đó. Dòng «Cả phòng (không chia vị trí)»: những
  * người của pháp nhân × phòng KHÔNG thuộc vị trí nào đã có dòng riêng — cộng cả bảng thì người của
  * «Kế toán viên» bị đếm hai lần khi kế hoạch có cả dòng vị trí lẫn dòng tổng.
  */
@@ -189,7 +238,7 @@ export function countCurrentForLine(
   return stats.filter((s) => !listed.has(s.position_id)).reduce((acc, s) => acc + (s.current_count || 0), 0)
 }
 
-/** «CẦN TUYỂN» = định biên kỳ con cuối − đang có. Âm nghĩa là đang dư người. */
+/** «CẦN TUYỂN» = số người cần có ở kỳ con cuối − hiện có. Âm nghĩa là đang dư người. */
 export function computeNeedToHire(line: HeadcountPlanLine, current: number): number {
   const end = line.headcounts.length ? Number(line.headcounts[line.headcounts.length - 1]) || 0 : 0
   return end - current

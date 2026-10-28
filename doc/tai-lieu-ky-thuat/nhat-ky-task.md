@@ -17539,3 +17539,14 @@ Rà mã tìm ra hai chỗ lộ lương: dòng thực tế ở trang kế hoạch
 Bài kiểm backend 718 bài xanh, giao diện hơn 2200 bài xanh, kiểm kiểu 0 lỗi. Bài hướng dẫn có 23 bài, thêm bài về mẫu khoản chi phí.
 Lưu ý khi deploy: khóa quyền vẫn là «Nhân sự › Kế hoạch nhân sự»; vai trò nào cần lập kế hoạch phải có thêm, sửa, xóa của khóa đó.
 Mã nguồn: doc/erp/hrm/06-ke-hoach-nhan-su.md, plans/261027-1045-kho-mau-bao-cao-nhan-su/phase-22…25, backend/app/modules/headcount_plan/, migration hcplan02, hcplan03
+
+## duoc-CR-690-don-gian-hoa | Đơn giản hóa phần khoản chi phí của kế hoạch nhân sự
+- status: xong
+- date: 2026-10-28
+- pic: NSU231
+- tag: Được
+Anh Được thấy bảng khoản chi phí bày quá nhiều cột khó hiểu như mã, tỷ lệ, trần, số tiền, khoản gốc, tháng rơi. Nay mỗi khoản chỉ còn một dòng gồm tên và một câu mô tả tự sinh. Bấm sửa thì mở hộp thoại chỉ hỏi tên khoản và tính thế nào với ba lựa chọn: hằng tháng theo người, phần trăm trên lương, theo đợt. Các ô còn lại gom vào mục nâng cao đóng sẵn và được hệ thống tự điền. Nút thêm khoản có năm mẫu nhanh: lương, phụ cấp, bảo hiểm cộng công đoàn 23,5%, thưởng tháng 13, quà theo đợt. Câu báo lỗi phía máy chủ đổi theo nhãn mới, bài hướng dẫn viết lại cho ngắn.
+Lượt soát tiếp theo, anh thấy vẫn còn nhiều ô nâng cao, chữ định biên khó hiểu, và muốn tài liệu tải lên tự thành văn bản. Đã bỏ hẳn mục nâng cao, hộp thoại còn tối đa hai ô; khoản hằng tháng có thêm mức chung mỗi người mỗi tháng, vị trí nào khác thì nhập riêng; ẩn màn nhóm chi phí; mẫu gợi ý gọn còn bốn khoản. Chữ định biên đổi thành số người kế hoạch. Văn bản liên kết có nút tải tệp lên, hệ thống tự tạo văn bản kín loại căn cứ kế hoạch nhân sự bên phân hệ Văn bản và gắn vào kế hoạch.
+Lượt cuối, anh vẫn thấy các khái niệm khoản chi phí, cách tính, mẫu khó hiểu, nên làm lại trang thành ba khối đọc là hiểu: người và lương theo vị trí (hiện có, cần có từng quý, lương, phụ cấp), chi phí khác viết thành câu có ô số (bảo hiểm 23,5% trên lương, thưởng tháng 13, quà theo đợt, chi phí cả phòng), và bảng tổng theo quý. Bỏ ô chọn mẫu, gỡ màn mẫu khoản chi phí và nhóm chi phí khỏi menu. Lập thử phòng Kế toán khớp tính tay, cả năm 1.265.190.000 đồng.
+Mã nguồn: frontend-v2/src/modules/hr/components/hr-cost-item-*.tsx, frontend-v2/src/modules/hr/utils/hr-cost-item-*.ts, backend/app/modules/headcount_plan/costing.py, document_upload_service.py, legacy_seed.py, migration hcplan04
+

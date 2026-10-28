@@ -9,9 +9,9 @@ const CONFIG: ReportPageConfig = {
   exportEndpoint: '/api/headcount-plan-report/summary/export',
   drilldownEndpoint: '/api/headcount-plan-report/summary/rows',
   entity: 'headcount_plan',
-  title: 'Định biên kế hoạch so với thực tế',
+  title: 'Số người kế hoạch so với thực tế',
   description:
-    'Định biên theo Kế hoạch nhân sự có hiệu lực ở tháng cuối kỳ (kế hoạch tháng, quý, bán niên được ưu tiên hơn kế hoạch năm) so với số người đang làm tại cuối kỳ: còn thiếu, vượt, tỷ lệ lấp đầy. Dòng «Toàn pháp nhân» so với tổng người của pháp nhân, không cộng dồn với các dòng phòng; phòng có người mà chưa có kế hoạch hiện «chưa có kế hoạch».',
+    'Số người theo Kế hoạch nhân sự có hiệu lực ở tháng cuối kỳ (kế hoạch tháng, quý, bán niên được ưu tiên hơn kế hoạch năm) so với số người đang làm tại cuối kỳ: còn thiếu, vượt, tỷ lệ lấp đầy. Dòng «Toàn pháp nhân» so với tổng người của pháp nhân, không cộng dồn với các dòng phòng; phòng có người mà chưa có kế hoạch hiện «chưa có kế hoạch».',
   slug: 'headcount-plan',
   sourcePath: appRoutes.hr.headcountPlans,
   kpis: ['planned', 'actual', 'vacancies', 'fill_rate'],
@@ -28,7 +28,7 @@ const CONFIG: ReportPageConfig = {
 }
 
 /**
- * Định biên kế hoạch so với thực tế (A4, duoc-CR-689, khóa 25). Nguồn kế hoạch là màn
+ * Số người kế hoạch so với thực tế (A4, duoc-CR-689, khóa 25). Nguồn kế hoạch là màn
  * Nhân sự ▸ Kế hoạch nhân sự; «Xem danh sách» liệt kê người đang làm của nhóm.
  */
 export function HeadcountPlanReportPage() {

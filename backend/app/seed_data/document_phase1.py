@@ -138,7 +138,24 @@ LABOR_CONTRACT_ARCHIVE_DOC_TYPE = _doc_type(
     is_confidential_type=True,
 )
 
-ALL_DOC_TYPES = OFFICIAL_DOC_TYPES + [EXTRACT_DOC_TYPE, LABOR_CONTRACT_ARCHIVE_DOC_TYPE]
+#  duoc-CR-690: văn bản TỰ TẠO khi người lập kế hoạch nhân sự tải tệp căn cứ (quyết định, tờ trình…) lên mục «Văn bản liên kết».
+#  Tệp có thể chứa bảng lương ⇒ `is_personal` (phạm vi vai trò, kể cả «công ty», không mở được; chỉ người tạo / được chia /
+#  người duyệt / vai trò phạm vi «tất cả»). Mã bất biến cấp ngay lúc tạo để giao diện hiện được số ngay; không duyệt, không ký.
+#  Bản gieo cho DB đang chạy: migration `hcplan04` (cùng giá trị — sửa ở đây thì sửa cả đó).
+HEADCOUNT_BASIS_DOC_TYPE = _doc_type(
+    "CCKHNS",
+    "Căn cứ kế hoạch nhân sự",
+    "C",
+    "Tệp căn cứ (quyết định, tờ trình…) tải lên từ kế hoạch nhân sự; chỉ người tạo và người được chia sẻ đọc được.",
+    id_scheme=1,
+    needs_signature=False,
+    needs_approval=False,
+    is_personal=True,
+    is_confidential_type=True,
+)
+HEADCOUNT_BASIS_DOC_TYPE["number_when"] = 1
+
+ALL_DOC_TYPES = OFFICIAL_DOC_TYPES + [EXTRACT_DOC_TYPE, LABOR_CONTRACT_ARCHIVE_DOC_TYPE, HEADCOUNT_BASIS_DOC_TYPE]
 for _sort_order, _row in enumerate(ALL_DOC_TYPES, start=1):
     _row["sort_order"] = _sort_order
 

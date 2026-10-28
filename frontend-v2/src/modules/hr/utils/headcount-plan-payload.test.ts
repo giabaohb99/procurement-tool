@@ -119,3 +119,28 @@ describe('create payload (POST /)', () => {
     expect(buildCreatePayload(d, true).cost_items).toHaveLength(1)
   })
 })
+
+describe('switched-off items (khối «Chi phí khác»)', () => {
+  it('are left out of both the preview and the saved plan, with every reference to them', () => {
+    const d = draft({
+      cost_items: [
+        item('LUONG', M.PER_HEAD_MONTH, { months: [] }),
+        item('T13', M.MONTHS_OF, { factor: 1, base_codes: ['LUONG'], months: [12], excluded: true }),
+        item('QUA', M.PER_HEAD_ONCE, { months: [3] }),
+      ],
+    })
+    expect(buildDraftPayload(d, true).cost_items.map((i) => i.code)).toEqual(['LUONG', 'QUA'])
+    expect(buildPlanPayload(d, true).cost_items.map((i) => i.code)).toEqual(['LUONG', 'QUA'])
+  })
+
+  it('never leaks the UI-only flag into the 14 backend keys', () => {
+    const d = draft({ cost_items: [item('LUONG', M.PER_HEAD_MONTH, { excluded: false })] })
+    expect(Object.keys(buildDraftPayload(d, true).cost_items[0])).toHaveLength(14)
+    expect(buildDraftPayload(d, true).cost_items[0]).not.toHaveProperty('excluded')
+  })
+
+  it('a set built on screen (template_id 0) is always sent on create', () => {
+    const d = { ...draft(), template_id: 0 }
+    expect(buildCreatePayload(d, true).cost_items).toHaveLength(1)
+  })
+})

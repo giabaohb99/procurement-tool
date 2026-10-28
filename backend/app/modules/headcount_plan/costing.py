@@ -101,12 +101,12 @@ def validate_plan(period_type: int, period_no: int, items: list[CostItem], lines
     seen_pos: set[int] = set()
     for ln in lines:
         if ln.position_id in seen_pos:
-            raise PlanCalcError("Một vị trí chỉ được có một dòng định biên")
+            raise PlanCalcError("Một vị trí chỉ được có một dòng số người")
         seen_pos.add(ln.position_id)
         if len(ln.headcounts) != len(layout):
-            raise PlanCalcError(f"Dòng định biên phải có đúng {len(layout)} số (mỗi kỳ con một số)")
+            raise PlanCalcError(f"Dòng số người phải có đúng {len(layout)} số (mỗi kỳ con một số)")
         if any(h < 0 for h in ln.headcounts):
-            raise PlanCalcError("Định biên không được âm")
+            raise PlanCalcError("Số người kế hoạch không được âm")
         for code, val in ln.amounts.items():
             if code not in per_head_codes:
                 raise PlanCalcError(f"Cột «{code}» không phải khoản nhập theo vị trí của kế hoạch này")
@@ -121,7 +121,7 @@ def _validate_item(it: CostItem, by_code: dict, months_in_period: set) -> None:
     if it.applies_to not in {int(a) for a in CostAppliesTo}:
         raise PlanCalcError(f"{label}: phạm vi áp dụng không hợp lệ")
     if min(it.rate, it.factor) < 0 or it.cap_amount < 0 or it.amount < 0:
-        raise PlanCalcError(f"{label}: tỷ lệ, hệ số, trần và số tiền không được âm")
+        raise PlanCalcError(f"{label}: tỷ lệ, số tháng, mức tính tối đa và số tiền không được âm")
     if it.applies_to == CostAppliesTo.WHOLE_DEPARTMENT and it.calc_method != M.LUMP_SUM:
         raise PlanCalcError(f"{label}: «cả phòng» chỉ dùng với cách tính «Số tiền cả phòng»")
     if it.applies_to == CostAppliesTo.SELECTED_POSITIONS and not it.position_ids:
@@ -131,18 +131,18 @@ def _validate_item(it: CostItem, by_code: dict, months_in_period: set) -> None:
         raise PlanCalcError(f"{label}: tháng {', '.join(map(str, outside))} nằm ngoài kỳ của kế hoạch")
     if it.calc_method == M.PERCENT_OF:
         if not it.base_codes:
-            raise PlanCalcError(f"{label}: chưa chọn khoản gốc để tính %")
+            raise PlanCalcError(f"{label}: chưa chọn «Tính trên khoản» để tính phần trăm")
         for b in it.base_codes:
             _check_base(label, b, by_code, allowed=(M.PER_HEAD_MONTH, M.MONTHS_OF))
     if it.calc_method == M.PER_HEAD_ONCE and not it.months:
-        raise PlanCalcError(f"{label}: phải chọn ít nhất một tháng rơi vào")
+        raise PlanCalcError(f"{label}: chưa chọn tháng chi")
     _check_actual_source(label, it)
     if it.calc_method == M.MONTHS_OF:
         if len(it.base_codes) != 1:
-            raise PlanCalcError(f"{label}: «số tháng của một khoản» phải có đúng một khoản gốc")
+            raise PlanCalcError(f"{label}: «Tính bằng số tháng lương» phải chọn đúng một khoản ở «Tính trên khoản»")
         _check_base(label, it.base_codes[0], by_code, allowed=(M.PER_HEAD_MONTH,))
         if not it.months:
-            raise PlanCalcError(f"{label}: phải chọn ít nhất một tháng rơi vào")
+            raise PlanCalcError(f"{label}: chưa chọn tháng chi")
 
 
 def _check_actual_source(label: str, it: CostItem) -> None:
@@ -162,10 +162,10 @@ def _check_actual_source(label: str, it: CostItem) -> None:
 def _check_base(label: str, code: str, by_code: dict, allowed: tuple) -> None:
     base = by_code.get(code)
     if base is None:
-        raise PlanCalcError(f"{label}: khoản gốc «{code}» không tồn tại trong kế hoạch")
+        raise PlanCalcError(f"{label}: khoản «{code}» ở «Tính trên khoản» không còn trong kế hoạch")
     if base.calc_method not in allowed:
-        raise PlanCalcError(f"{label}: khoản gốc «{code}» có cách tính không được dùng làm gốc "
-                            "(chỉ trỏ tới khoản «Số tiền / người / tháng» hoặc «Số tháng của một khoản»)")
+        raise PlanCalcError(f"{label}: khoản «{code}» không dùng được ở «Tính trên khoản» "
+                            "(chỉ chọn được khoản «Hằng tháng theo người» hoặc khoản tính bằng số tháng lương)")
 
 
 # ---- Tính -----------------------------------------------------------------------------------------
@@ -184,8 +184,14 @@ def _applies(it: CostItem, ln: PlanLine) -> bool:
 
 
 def _nominal(it: CostItem, ln: PlanLine) -> Decimal:
-    """Số tiền / người / tháng NHẬP ở dòng vị trí (không xét tháng rơi) — khoản cách tính 1."""
-    return Decimal(ln.amounts.get(it.code, 0)) if _applies(it, ln) else ZERO
+    """Số tiền / người / tháng của khoản cách tính 1 cho một vị trí (không xét tháng chi).
+
+    Ô của vị trí có số (> 0) thì dùng số đó; trống / 0 thì lấy MỨC CHUNG `it.amount` khai ở hộp thoại khoản (vd ăn trưa
+    730k cho mọi người) — người dùng chỉ nhập riêng vị trí nào khác mức chung."""
+    if not _applies(it, ln):
+        return ZERO
+    own = ln.amounts.get(it.code) or 0
+    return Decimal(own if own > 0 else it.amount)
 
 
 def _per_head(it: CostItem, ln: PlanLine, m: int, by_code: dict) -> Decimal:

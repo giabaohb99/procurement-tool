@@ -173,18 +173,19 @@ def test_gieo_goi_y_chi_khi_bang_rong_va_mau_goi_y_dung_duoc(db, world, client_a
         "Quỹ lương", "Bắt buộc theo luật", "Phúc lợi", "Khác"]
     tpl = db.query(HrCostTemplate).one()
     items = {i.code: i for i in db.query(HrCostTemplateItem).filter(HrCostTemplateItem.template_id == tpl.id)}
-    assert set(items) == {"LUONG", "PC_BH", "PC_KHONG_BH", "BHXH", "BHYT", "BHTN", "KPCD", "THUONG_13"}
-    assert items["BHXH"].calc_method == 2 and float(items["BHXH"].rate) == 17.5 and items["BHXH"].cap_amount == 46_800_000
-    assert items["BHXH"].base_codes == ["LUONG", "PC_BH"] and items["THUONG_13"].months == [12]
+    assert set(items) == {"LUONG", "PHU_CAP", "BAO_HIEM", "THUONG_13"}        # bộ gọn (28/10/2026)
+    bh = items["BAO_HIEM"]
+    assert bh.calc_method == 2 and float(bh.rate) == 23.5 and bh.cap_amount == 50_600_000
+    assert bh.base_codes == ["LUONG", "PHU_CAP"] and items["THUONG_13"].months == [12]
     # mẫu gợi ý lập được kế hoạch thật và tính ra số hợp lý
     client = grant_hr(world, client_as)
     body = plan_body(world, template_id=tpl.id, lines=[{"position_id": 0, "headcounts": [1] * 4,
-                                                        "amounts": {"LUONG": 10_000_000, "PC_BH": 2_000_000}}])
+                                                        "amounts": {"LUONG": 10_000_000, "PHU_CAP": 2_000_000}}])
     body.pop("cost_items")
     got = client.post(URL, json=body).json()["data"]
     by = {i["code"]: i["total"] for i in got["computed"]["items"]}
     assert by["LUONG"] == 120_000_000 and by["THUONG_13"] == 10_000_000
-    assert by["BHXH"] == round(12_000_000 * 0.175 * 12) and by["KPCD"] == round(12_000_000 * 0.02 * 12)
+    assert by["BAO_HIEM"] == round(12_000_000 * 0.235 * 12)
     # xóa hết nhóm / mẫu rồi gieo lại: bảng RỖNG thì gieo lại (người dùng chủ động xóa hết)
     db.query(HrCostTemplateItem).delete()
     db.query(HrCostTemplate).delete()
@@ -193,3 +194,20 @@ def test_gieo_goi_y_chi_khi_bang_rong_va_mau_goi_y_dung_duoc(db, world, client_a
     legacy_seed.seed_suggestions(db.connection())
     db.expire_all()
     assert db.query(HrCostTemplate).count() == 1
+
+
+def test_thu_gon_mau_goi_y_ban_dau_chi_khi_con_nguyen_bo_8_khoan(db):
+    conn = db.connection()
+    legacy_seed.seed_suggestions(conn)
+    tpl = db.query(HrCostTemplate).one()
+    db.query(HrCostTemplateItem).delete()
+    for i, code in enumerate(sorted(legacy_seed._FIRST_SUGGESTED_CODES)):
+        db.add(HrCostTemplateItem(template_id=tpl.id, code=code, name=code, calc_method=1, sort_order=i))
+    db.flush()
+    assert legacy_seed.simplify_suggested_template(db.connection()) is True
+    db.expire_all()
+    codes = {i.code for i in db.query(HrCostTemplateItem).filter(HrCostTemplateItem.template_id == tpl.id)}
+    assert codes == {"LUONG", "PHU_CAP", "BAO_HIEM", "THUONG_13"}
+    # người dùng đã sửa bộ khoản (khác bộ 8 mã) → không đụng
+    assert legacy_seed.simplify_suggested_template(db.connection()) is False
+
