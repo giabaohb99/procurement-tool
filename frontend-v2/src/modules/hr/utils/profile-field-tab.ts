@@ -58,6 +58,7 @@ const FIELD_TAB: Record<string, ProfileTabKey> = {
 
   // Tab «Liên hệ & Ngân hàng» — nhóm 3 + nhóm 4
   phone: 'contact',
+  phone_label: 'contact',
   extra_phones: 'contact',
   permanent_address: 'contact',
   current_address: 'contact',
