@@ -17716,3 +17716,18 @@ Commit: 0c7b2104 (main) · Deploy: prod toàn bộ dịch vụ ERP và cụm AI,
 **Kết quả:** văn bản số 09 và 10 trên nhánh erp-v2.
 
 Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md · doc/erp/nghien-cuu/10-nghiep-vu-kho.md
+
+## nc-09b-tra-truoc-nhap-khau | Bổ sung trả trước, nhập khẩu và cách cân bằng vào nghiệp vụ Mua hàng
+- status: xong
+- date: 2026-10-29
+- tag: Nghiên cứu, Mua hàng
+
+**Bối cảnh:** Cần thấy rõ tiền trả trước, thuế và phí nhập khẩu được đối trừ thế nào để các tài khoản trung gian về 0.
+
+**Đã làm**
+- Thêm mục 10 vào tài liệu nghiệp vụ Mua hàng: trả trước toàn bộ mà nhà cung cấp giao thiếu, đặt cọc giao hai đợt (hai cách trừ cọc), hủy đơn sau khi trả trước, và một vòng nhập khẩu trọn vẹn gồm trả trước bằng ngoại tệ, hàng đi đường, thuế, phí, chi phí về muộn, chênh lệch tỷ giá.
+- Mỗi trường hợp ghi thao tác trên phần mềm, bút toán và bảng kiểm cân bằng cuối vòng.
+
+**Kết quả:** tài liệu 09 bản 1.1 trên nhánh erp-v2.
+
+Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md

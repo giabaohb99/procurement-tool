@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Phiên bản | **1.0** — 29/10/2026 |
+| Phiên bản | **1.1** — 29/10/2026 (thêm mục 10: trả trước, nhập khẩu, cách cân bằng) |
 | Người viết | A5 Nghiên cứu nghiệp vụ |
 | Trạng thái | Tài liệu nghiên cứu nghiệp vụ chuẩn, chưa phải tài liệu yêu cầu |
 | Căn cứ | Cách SAP, Oracle, Odoo, Microsoft Dynamics dựng phân hệ Mua hàng · Chuẩn mực kế toán số 02 · Thông tư 99/2025 (số hiệu tài khoản giữ như Thông tư 200) |
@@ -228,7 +228,91 @@ Kết quả: giá vốn 315 triệu, **15.750.000 đ/tấn**. Lỗ tỷ giá là
 
 ---
 
-## 10. Ranh giới với Kho và Kế toán
+## 10. Trả trước và nhập khẩu: các trường hợp và cách cân bằng
+
+### 10.1. Trên app, cân bằng được làm thế nào
+1. **Mỗi khoản trả trước là một dòng *Ứng trước*** gắn với đơn mua, có ba cột: đã ứng, đã đối trừ, còn lại.
+2. **Khi ghi sổ hóa đơn**, hệ thống tự hiện các khoản ứng trước còn lại của NCC đó và gợi ý trừ.
+3. **Màn công nợ NCC** luôn hiện: tổng hóa đơn, tổng ứng trước, tổng đã trả, số dư.
+4. **Tài khoản trung gian** (151, tài khoản tạm chờ hóa đơn, 3333, 33312) chỉ là chỗ tiền đi ngang qua. Xong một vòng thì phải về 0. Còn dư là có chỗ sai.
+
+### 10.2. Trả trước 100%, NCC giao thiếu
+Đơn 5.000.000 + VAT 500.000 = 5.500.000 đ, trả trước toàn bộ.
+
+| Bước | Trên app | Bút toán | Nợ NCC |
+|---|---|---|---|
+| Ứng trước | *Đề nghị ứng trước* từ đơn mua, duyệt, chi | Nợ 331 / Có 112: 5.500.000 | Dư Nợ 5.500.000 |
+| NCC giao 90%, có hóa đơn | Nhập kho 90%, nhập hóa đơn, hệ thống trừ ứng trước | Nợ 152 4.500.000, Nợ 1331 450.000 / Có 331 4.950.000 | Dư Nợ 550.000 |
+| NCC không giao tiếp | *Đóng sớm* đơn. Dòng ứng trước còn 550.000 hiện cảnh báo | | Dư Nợ 550.000 |
+| NCC hoàn tiền | *Nhận hoàn tiền ứng trước* | Nợ 112 / Có 331: 550.000 | **0** |
+
+Không hoàn mà muốn giữ lại thì bấm *Chuyển sang đơn* khác. NCC không hoàn, không giao thì chuyển sang phải thu khác để đòi, có quyết định xóa thì ghi 811.
+
+### 10.3. Đặt cọc 30%, giao hai đợt
+Đơn 110.000.000 đ có VAT, cọc 33.000.000 đ. Đợt 1 hóa đơn 66 triệu, đợt 2 hóa đơn 44 triệu. Trên đơn mua chọn **cách trừ cọc**:
+
+| | Cách A: trừ hết vào hóa đơn đầu | Cách B: trừ 30% mỗi hóa đơn |
+|---|---|---|
+| Hóa đơn đợt 1 | Trừ 33 triệu, trả 33 triệu | Trừ 19,8 triệu, trả 46,2 triệu |
+| Hóa đơn đợt 2 | Trả 44 triệu | Trừ 13,2 triệu, trả 30,8 triệu |
+| Tổng chi | 110 triệu | 110 triệu |
+
+Hai cách đều cân, chỉ khác dòng tiền từng đợt.
+
+### 10.4. Hủy đơn sau khi đã trả trước
+
+| Tình huống | Cách làm |
+|---|---|
+| Chưa nhận hàng, NCC hoàn đủ | Hủy đơn, nhận hoàn: Nợ 112 / Có 331 |
+| Chuyển tiền sang đơn khác | *Chuyển sang đơn* trên dòng ứng trước |
+| NCC giữ một phần làm phí hủy | Nợ 112 (phần hoàn), Nợ 811 (phí hủy) / Có 331 |
+| Đã nhận một phần | Không hủy được, chỉ đóng sớm, xử lý như 10.2 |
+
+### 10.5. Nhập khẩu trọn vòng
+Đơn từ NCC nước ngoài, giá đã gồm cước tàu: K₂SO₄ 15 tấn × 600 USD = 9.000 USD, KNO₃ 5 tấn × 1.000 USD = 5.000 USD, **tổng 14.000 USD**. Trả trước 30% (4.200 USD), 70% (9.800 USD) trả sau khi nhận hàng 30 ngày.
+
+**Quy tắc tỷ giá:** phần đã trả trước ghi giá hàng theo tỷ giá ngày trả trước, phần còn lại theo tỷ giá ngày nhận hàng. Kế toán xác nhận theo hướng dẫn hiện hành.
+
+| # | Việc | Trên app | Bút toán |
+|---|---|---|---|
+| 1 | Trả trước 4.200 USD, tỷ giá 25.000 | *Đề nghị ứng trước*, chi từ tài khoản ngoại tệ | Nợ 331 / Có 1122: 105.000.000 |
+| 2 | Tàu chạy, có bộ chứng từ, tỷ giá 25.100 | Mở **lô hàng nhập khẩu**, nhập vận đơn, *Ghi nhận hàng đi đường*. Giá hàng = 105.000.000 (phần đã ứng) + 9.800 × 25.100 = 245.980.000. Tổng 350.980.000, chia theo giá trị: K₂SO₄ 225.630.000, KNO₃ 125.350.000 | Nợ 151 / Có 331: 350.980.000. Nợ NCC còn dư Có 245.980.000 |
+| 3 | Thông quan, tỷ giá hải quan 25.150 | Nhập tờ khai. Thuế nhập khẩu K₂SO₄ 3%: 9.000 × 25.150 × 3% = 6.790.500. Thuế GTGT nhập khẩu: (352.100.000 + 6.790.500) × 10% = 35.889.050 | Nợ 151 / Có 3333: 6.790.500 · Nợ 1331 / Có 33312: 35.889.050 |
+| 4 | Nộp thuế | Lệnh chi nộp ngân sách | Nợ 3333, 33312 / Có 112: 42.679.550 |
+| 5 | Phí hải quan, nâng hạ, kéo về | **Phiếu chi phí mua hàng** gắn lô hàng, 8.000.000 + VAT, chia theo khối lượng: K₂SO₄ 6.000.000, KNO₃ 2.000.000 | Nợ 151 8.000.000, Nợ 1331 800.000 / Có 331 đại lý 8.800.000 |
+| 6 | Hàng về kho đủ | Thủ kho nhận theo lô hàng | Nợ 152 / Có 151: 365.770.500 |
+| 7 | Phí lưu container về muộn 3.000.000 + VAT, đã xuất 10/15 tấn K₂SO₄ | Phiếu chi phí mua hàng gắn cùng lô. Hệ thống chia: K₂SO₄ 2.250.000 (1.500.000 phần đã xuất, 750.000 phần còn tồn), KNO₃ 750.000 | Nợ 152 1.500.000, Nợ 621 1.500.000, Nợ 1331 300.000 / Có 331 3.300.000 |
+| 8 | Trả 9.800 USD, tỷ giá 25.300 | Đề xuất thanh toán, duyệt, chi | Nợ 331 245.980.000, Nợ 635 1.960.000 / Có 1122 247.940.000 |
+| 9 | Trả đại lý và phí cảng | Đề xuất thanh toán | Nợ 331 / Có 112: 8.800.000 và 3.300.000 |
+
+**Giá vốn khi về kho:**
+
+| Mặt hàng | Giá hàng | Thuế nhập khẩu | Phí | Giá vốn | Mỗi tấn |
+|---|---:|---:|---:|---:|---:|
+| K₂SO₄ | 225.630.000 | 6.790.500 | 6.000.000 | 238.420.500 | 15.894.700 |
+| KNO₃ | 125.350.000 | 0 | 2.000.000 | 127.350.000 | 25.470.000 |
+
+**Kiểm cân bằng cuối vòng:**
+
+| Tài khoản | Số dư | Nghĩa |
+|---|---:|---|
+| 331 NCC nước ngoài | 0 | Đã trả hết |
+| 151 Hàng đi đường | 0 | Hàng đã về kho đủ |
+| 3333, 33312 | 0 | Đã nộp thuế |
+| 331 đại lý, phí cảng | 0 | Đã trả |
+| 1331 | 36.989.050 | Đúng, chờ kê khai khấu trừ |
+| 635 | 1.960.000 | Lỗ tỷ giá, chi phí tài chính, không vào giá vốn |
+| 621 | 1.500.000 | Phần chi phí về muộn đã vào giá thành kỳ này |
+
+### 10.6. Màn soát cân bằng cho kế toán
+1. **Ứng trước chưa đối trừ:** khoản đã chi chưa có hóa đơn trừ vào, kèm số ngày treo.
+2. **Hàng đi đường:** số dư 151 theo từng lô hàng, treo quá 60 ngày thì cảnh báo.
+3. **Hàng về chưa có hóa đơn:** số dư tài khoản tạm theo từng phiếu nhập.
+4. **Công nợ ngoại tệ:** số dư theo USD và VNĐ. Cuối kỳ tính lại chênh lệch tỷ giá theo tỷ giá cuối kỳ.
+
+---
+
+## 11. Ranh giới với Kho và Kế toán
 
 - **Mua hàng** sở hữu: yêu cầu mua, yêu cầu báo giá, đơn mua, bảng giá NCC, đánh giá NCC.
 - **Kho** sở hữu: phiếu nhập, kết quả kiểm, phiếu trả hàng NCC, tồn kho, giá vốn tồn. Xem [`10`](./10-nghiep-vu-kho.md).
