@@ -125,11 +125,11 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
   giữ nguyên.
 - Nút *Xuất Excel* trên bảng Chi tiết YC mua hàng (cả trang riêng lẫn tab trong Báo cáo mua hàng): xuất đúng bộ lọc đang
   chọn, tên tệp theo máy chủ, lỗi (quá 5.000 dòng…) hiện câu máy chủ; chỉ hiện với người có quyền xuất báo cáo.
+- Ô lọc tiến độ dòng chọn được nhiều giá trị như v2 (vẫn giữ lựa chọn gộp *Chưa được đặt hàng*); thêm ba cột hiện sẵn
+  *SL đã đặt*, *SL đã nhận*, *Mã ĐMH* — mỗi mã đơn mở danh sách Đơn mua hàng lọc sẵn theo mã (thiếu quyền xem đơn thì
+  chỉ hiện chữ). Các cột phụ khác của v2 không đưa sang, ai cần thì dùng Xuất Excel.
 
 **Kết quả:** kiểm kiểu thumua giữ đúng 4 lỗi cũ, không lỗi mới.
-
-**Còn lại:** thumua còn lệch v2 hai chỗ chưa làm: ô lọc tiến độ dòng chỉ chọn một giá trị (v2 chọn nhiều), và chưa có các
-cột SL đã đặt / SL đã nhận / Mã ĐMH cùng nhóm cột tùy chọn của v2.
 
 Mã nguồn: `frontend/src/layouts/AppLayout.tsx`, `frontend/src/pages/PurchaseProgress.tsx`, `frontend/src/components/PrLinesReport.tsx`
 
