@@ -7,7 +7,7 @@ const CONFIG: ReportPageConfig = {
   endpoint: '/api/purchase-progress/summary',
   exportEndpoint: '/api/purchase-progress/summary/export',
   entity: 'purchase_request',
-  title: 'Tiến độ mua hàng',
+  title: 'Tiến độ đơn mua hàng',
   description: 'Giao hàng đúng hẹn, dòng chưa nhận đủ, NCC trễ — so với kỳ trước.',
   slug: 'purchase-progress',
   sourcePath: appRoutes.procurement.purchaseProgress,
@@ -21,7 +21,7 @@ const CONFIG: ReportPageConfig = {
 }
 
 /**
- * Tiến độ mua hàng — bản BIỂU ĐỒ (P03). Trả lời: giao đúng hẹn tới đâu, dòng
+ * Tiến độ đơn mua hàng — bản BIỂU ĐỒ (P03). Trả lời: giao đúng hẹn tới đâu, dòng
  * nào chưa nhận đủ, NCC nào đứng đầu, bộ phận nào còn nhiều việc mở. Bảng theo
  * từng lần giao vẫn ở Thu mua (`sourcePath`).
  *

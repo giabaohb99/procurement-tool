@@ -619,12 +619,14 @@ PR_LINE_EXPORT_COLUMNS = (
     ("department", "Bộ phận", "text", 20), ("requester", "Người yêu cầu", "text", 20), ("purpose", "Mục đích", "text", 30),
     ("is_urgent", "Gấp", "bool", 8), ("need_date", "Ngày cần (phiếu)", "date", 12),
     ("head_of_dept_name", "Trưởng bộ phận", "text", 20), ("approver_name", "Người duyệt", "text", 20),
-    ("handler_dept_name", "Phòng xử lý", "text", 20), ("status", "Trạng thái phiếu", "text", 14),
+    # Tiến độ dòng đứng TRƯỚC Trạng thái phiếu — khớp thứ tự cột màn v2 (chốt 28/10)
+    ("handler_dept_name", "Phòng xử lý", "text", 20), ("line_status", "Tiến độ dòng", "text", 18),
+    ("status", "Trạng thái phiếu", "text", 14),
     ("product_code", "Mã hàng", "text", 14), ("product_name", "Tên hàng", "text", 32), ("item_group", "Nhóm hàng", "text", 16),
     ("gram", "Gram", "text", 12), ("unit", "ĐVT", "text", 8), ("warehouse", "Kho nhận", "text", 14),
     ("qty", "SL yêu cầu", "qty", 12), ("price", "Đơn giá", "price", 14), ("vat_pct", "VAT %", "percent", 8),
     ("amount", "Thành tiền", "money", 16), ("required_date", "Ngày cần (dòng)", "date", 12),
-    ("expected_date", "Dự kiến có hàng", "date", 12), ("line_status", "Tiến độ dòng", "text", 16),
+    ("expected_date", "Dự kiến có hàng", "date", 12),
     ("qty_ordered", "SL đã đặt", "qty", 12), ("qty_received", "SL đã nhận", "qty", 12),
     ("assignee_name", "NSTM", "text", 18), ("suggested_supplier", "NCC đề xuất", "text", 24),
     ("po_codes", "Mã đơn mua hàng", "text", 24), ("po_count", "Số đơn", "int", 8),
@@ -778,8 +780,15 @@ def export_pr_lines_rows(db, user, *, year=None, company_id=None, status=None, l
 
     q, _ = _pr_lines_filtered(db, user, year=year, company_id=company_id, status=status,
                               line_status=line_status, assignee=assignee, search=search)
+    from app.core.status_codes import PR_LINE_STATUS
+    from app.modules.purchase_request.export import STATUS_LABEL
+
     check_row_limit(q.count())
-    return _pr_line_rows(db, _pr_lines_ordered(q).all(), show_supplier=show_supplier)
+    rows = _pr_line_rows(db, _pr_lines_ordered(q).all(), show_supplier=show_supplier)
+    for row in rows:   # tệp Excel đọc bằng mắt: nhãn tiếng Việt thay mã (API giữ mã)
+        row["status"] = STATUS_LABEL.get(row["status"], row["status"])
+        row["line_status"] = PR_LINE_STATUS.label_of(row["line_status"] or "no_po", row["line_status"] or "")
+    return rows
 
 
 def compute_shipping_detail(db, year, company_id, carrier=None, month=None, page=1, page_size=50) -> dict:

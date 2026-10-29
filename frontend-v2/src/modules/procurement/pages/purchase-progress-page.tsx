@@ -87,7 +87,7 @@ const RECV_STATES = [
 ] as const
 
 /**
- * Tiến độ mua hàng — báo cáo phẳng theo TỪNG LẦN GIAO của từng dòng đơn hàng,
+ * Tiến độ đơn mua hàng — báo cáo phẳng theo TỪNG LẦN GIAO của từng dòng đơn hàng,
  * không phải danh sách chứng từ.
  *
  * ⚠️ Endpoint `/api/purchase-progress` KHÔNG chạy qua `apply_filters`: nó tự đọc
@@ -213,7 +213,7 @@ function PurchaseProgressContent() {
   const handleExportExcel = async () => {
     trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
     const cols = visibleColumnKeys.join(',')
-    await downloadFile('/api/purchase-progress/export/xlsx', 'tien-do-mua-hang.xlsx', {
+    await downloadFile('/api/purchase-progress/export/xlsx', 'tien-do-don-mua-hang.xlsx', {
       ...filterParams,
       ...(cols ? { cols } : {}),
     })
@@ -497,7 +497,7 @@ function PurchaseProgressContent() {
     //  `payment-request-list-page` và `CrudListPage`.
     <PageContainer fill className="max-md:h-auto">
       <PageHeader
-        title="Tiến độ mua hàng"
+        title="Tiến độ đơn mua hàng"
         description={
           //  Ẩn ở khổ hẹp: câu giới thiệu màn, đọc một lần rồi thôi, nhưng ngốn
           //  hai dòng ở đầu MỌI lần mở màn — ngay trên thứ người ta vào đây để
@@ -590,7 +590,7 @@ function PurchaseProgressContent() {
                 onChange={setKeyword}
                 placeholder="Tìm mã ĐMH, MISA, PYC, NCC, NSPT, mã/tên sản phẩm…"
                 placeholderShort="Tìm ĐMH, SP…"
-                aria-label="Tìm dòng tiến độ mua hàng"
+                aria-label="Tìm dòng tiến độ đơn mua hàng"
                 className="md:min-w-56 md:max-w-xs"
               />
 

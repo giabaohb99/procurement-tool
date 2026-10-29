@@ -1,4 +1,5 @@
 import { apiGet, downloadFile } from '@/core/api'
+import { readBlobErrorMessage } from './customs-api'
 import type { LandedCostParams, LandedCostReport } from '../types/import-landed-cost'
 import type {
   DailyReport,
@@ -21,6 +22,20 @@ export type ReportScope = {
   /** 'YYYY' hoặc 'all'. */
   year?: string
   company_id?: string
+}
+
+/**
+ * Bộ lọc của báo cáo Chi tiết YC mua hàng — dùng chung cho đường danh sách và
+ * đường xuất Excel để hai bên không lệch nhau.
+ *
+ * `line_status` nối nhiều giá trị bằng dấu phẩy (`no_po,partial`, bao-CR-691);
+ * `chua_dat` là giá trị GỘP, backend hiểu = no_po + not_ordered.
+ */
+export type PrLinesFilter = ReportScope & {
+  status?: string
+  line_status?: string
+  assignee?: string
+  search?: string
 }
 
 /**
@@ -88,16 +103,28 @@ export const purchaseReportApi = {
    * Chi tiết YC mua hàng theo DÒNG hàng (bao-CR-295/299) — phân trang server.
    * `line_status: 'chua_dat'` là giá trị GỘP, backend hiểu = no_po + not_ordered.
    */
-  getPrLines: (
-    params: ReportScope & {
-      status?: string
-      line_status?: string
-      assignee?: string
-      search?: string
-      page: number
-      page_size: number
-    },
-  ) => apiGet<PrLinesResult>(`/api/reports/pr-lines${toQuery({ ...params })}`),
+  getPrLines: (params: PrLinesFilter & { page: number; page_size: number }) =>
+    apiGet<PrLinesResult>(`/api/reports/pr-lines${toQuery({ ...params })}`),
+
+  /**
+   * Xuất Excel đúng bộ lọc đang chọn trên bảng (bao-CR-691) — KHÔNG kèm phân
+   * trang: tệp chứa mọi dòng khớp bộ lọc chứ không riêng trang đang xem.
+   *
+   * Tên tệp do máy chủ đặt (`chi-tiet-yc-mua-hang-theo-dong-DDMMYYYY.xlsx`), tên ở
+   * đây chỉ là dự phòng. Quá trần dòng thì máy chủ trả 400 kèm câu lỗi — câu đó
+   * về dạng BLOB nên phải đọc lại mới báo được đúng lý do; ném ra `Error` mang
+   * câu ấy để màn hiện cho người dùng.
+   */
+  exportPrLines: async (params: PrLinesFilter) => {
+    try {
+      await downloadFile(
+        `/api/reports/pr-lines/export${toQuery({ ...params })}`,
+        'chi-tiet-yc-mua-hang-theo-dong.xlsx',
+      )
+    } catch (error) {
+      throw new Error(await readBlobErrorMessage(error), { cause: error })
+    }
+  },
 
   /** Chi phí theo NGÀY trong một tháng — mở khi bấm vào cột biểu đồ. */
   getDaily: (params: { month: string; company_id?: string }) =>

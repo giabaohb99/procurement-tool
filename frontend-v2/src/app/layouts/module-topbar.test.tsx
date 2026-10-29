@@ -26,7 +26,7 @@ const testModule: ErpModule = {
       path: '/test/report/purchase',
     },
     {
-      label: 'Tiến độ mua hàng',
+      label: 'Tiến độ đơn mua hàng',
       path: '/test/report/purchase-progress',
     },
     {
@@ -125,7 +125,7 @@ describe('ModuleTopbar breadcrumb', () => {
   //  Hồi quy 26/09/2026: `startsWith` trần làm `/report/purchase` nuốt `/report/purchase-progress`.
   it('matches on a path boundary, not a bare prefix', () => {
     const nav = renderAt('/test/report/purchase-progress')
-    expect(crumbTexts(nav)).toEqual(['Thu mua', 'Tiến độ mua hàng'])
+    expect(crumbTexts(nav)).toEqual(['Thu mua', 'Tiến độ đơn mua hàng'])
   })
 
   it('keeps a single level at the module root', () => {

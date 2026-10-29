@@ -174,5 +174,9 @@ def test_xuat_excel_va_chan_khi_thieu_quyen_xuat(db, seed, data, cap_quyen, clie
     header = [c.value for c in ws[1]]
     assert header[:3] == ["Mã YCMH", "Ngày lập", "Pháp nhân"] and "Mã đơn mua hàng" in header and "NCC đơn gần nhất" in header
     assert ws.max_row == 3, "hai dòng theo bộ lọc nhiều trạng thái"
+    assert header.index("Tiến độ dòng") + 1 == header.index("Trạng thái phiếu"), "Tiến độ dòng đứng ngay trước Trạng thái phiếu"
+    progress = {ws.cell(row=r, column=header.index("Tiến độ dòng") + 1).value for r in (2, 3)}
+    assert progress == {"Đã đặt hàng", "Chưa tạo đơn mua hàng"}, "nhãn tiếng Việt thay mã"
+    assert ws.cell(row=2, column=header.index("Trạng thái phiếu") + 1).value == "Đã duyệt"
     supplier_col = header.index("NCC đơn gần nhất") + 1
     assert all(ws.cell(row=r, column=supplier_col).value in (None, "") for r in (2, 3)), "không supplier.read thì cột NCC trống"
