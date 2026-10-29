@@ -17618,3 +17618,15 @@ Gỡ màn kế hoạch nhân sự, mẫu khoản chi phí, nhóm chi phí, các 
 Đã gỡ xong ở cả backend, giao diện và bài hướng dẫn. Báo cáo quỹ lương còn bốn chỉ số thực tế, xem theo pháp nhân, phòng ban, chức vụ, nhóm vị trí, loại hợp đồng, dòng tổng là toàn công ty; thêm dòng nhắc số người đang làm chưa có hợp đồng hiệu lực để biết quỹ lương còn thiếu ai. Migration bỏ bảng chạy được cả lên lẫn xuống; loại văn bản căn cứ kế hoạch nhân sự chưa có văn bản nào thì xóa, có thì tắt.
 Mã nguồn: backend/app/modules/headcount_plan/ (xóa), backend/app/modules/labor_contract/payroll_report_*.py, frontend-v2/src/modules/hr, frontend-v2/src/modules/report
 
+
+## kh-prod-2910 | Đợt prod 29/10: nhân sự của anh Được, Chi tiết YC mua hàng, nút trợ lý, quyền xuất báo cáo cho thu mua
+- status: xong
+- date: 2026-10-29
+- tag: Agent 1
+**Bối cảnh:** gom toàn bộ erp-v2 lên prod sau khi màn Chi tiết YC mua hàng (phiếu TK28102602) đã thử trên dev.
+
+**Đã làm:** gộp erp-v2 vào main (main có bản vá chọn riêng ai-CR-232 nên gộp chứ không đi thẳng; nội dung sau gộp trùng erp-v2). Trên prod: lưu dump, dựng lại api, hai dịch vụ celery, giao diện thumua, giao diện ERP v2 và cụm dịch vụ AI; 5 migration chạy xong (nghỉ phép nhiều khoảng ngày, kế hoạch nhân sự), CSDL 232 bảng. Đợt gồm duoc-CR-683, 685, 686 đến 690, bao-CR-689 (nâng nút trợ lý AI lên trên thanh lật trang), bao-CR-691 (Chi tiết YC mua hàng thêm cột phiếu, dòng, đơn mua hàng; lọc nhiều tiến độ dòng; xuất Excel; Tiến độ dòng thành nhãn màu đứng trước Trạng thái phiếu; đổi tên Tiến độ mua hàng thành Tiến độ đơn mua hàng trên v2), bao-CR-663. Nạp bài hướng dẫn báo cáo nhân sự, nghỉ phép, kết nối AI; đổi tên hai bài trợ giúp nhắc Tiến độ mua hàng; nạp lại kho tìm kiếm của trợ lý (129 bài, 11 câu hỏi thường gặp). Cấp quyền xuất báo cáo cho ba vai trò thu mua đang xem được mà chưa xuất được: Nhân viên thu mua, Nhân viên thu mua phòng, Quản lý thu mua phòng; có ghi nhật ký thao tác.
+
+**Kết quả:** bốn trang trả 200, cổng MCP chưa khóa trả 401, migration ở đầu hcplan04, log api và cụm AI không có lỗi; đường xuất Excel mới có trên prod.
+
+Commit: 0c7b2104 (main) · Deploy: prod toàn bộ dịch vụ ERP và cụm AI, 29/10/2026 sáng
