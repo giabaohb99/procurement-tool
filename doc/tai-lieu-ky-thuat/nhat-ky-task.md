@@ -111,6 +111,20 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-691-hdsd | Bài hướng dẫn và tài liệu cho màn Chi tiết YC mua hàng mở rộng, đổi tên Tiến độ đơn mua hàng
+- status: xong
+- date: 2026-10-29
+Màn Chi tiết YC mua hàng sau bao-CR-691 có thêm cột phiếu, cột dòng, cột đơn mua hàng và nút xuất Excel, nhưng Trung tâm trợ giúp
+chưa có bài nào cho màn này. Viết bài mới dưới nhóm Dành cho Nhân viên Mua hàng, đứng ngay sau bài Tiến độ đơn mua hàng: màn này
+khác Tiến độ đơn mua hàng ở chỗ có cả dòng chưa tạo đơn và chưa đặt hàng; cách đọc hai cột Tiến độ dòng và Trạng thái phiếu; ba
+cột tiến độ hiện sẵn và mười sáu cột ẩn bật ở menu Cột; lọc nhiều tiến độ dòng, lựa chọn gộp Chưa được đặt hàng; xuất Excel
+theo bộ lọc, trần 5.000 dòng; hạn chế ghép đơn theo mã phiếu và mã hàng. Đổi tên Tiến độ mua hàng thành Tiến độ đơn mua hàng
+ở hai bài có sẵn của Trung tâm trợ giúp (bài riêng và câu nhắc trong bài nhóm) bằng script sửa thẳng vì hai bài đó không có
+tệp seed. Tài liệu chức năng: thêm mục Màn Chi tiết YC mua hàng ở tài liệu Hệ thống và Báo cáo (API, xuất Excel, giao diện,
+hạn chế), đổi nhãn ở tài liệu Đơn mua hàng và Yêu cầu khảo sát. Đã nạp bài mới lên dev kèm kho vector; prod chờ người chủ gật.
+Mã nguồn: backend/scripts/seed_help_chi_tiet_yc_mua_hang.py (mới), doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md, 04-don-mua-hang.md, 02-yeu-cau-khao-sat.md
+Deploy: dev 29/10 (bài mới + đổi tên hai bài, kho vector nạp lại)
+
 ## bao-CR-693 | Mở chi tiết chứng từ ở tab mới từ trang danh sách đang lọc
 - status: xong
 - date: 2026-10-29
