@@ -315,3 +315,70 @@ def test_so_truy_van_khong_tang_theo_so_hop_dong(db, world):
     c5 = count()
     add(45, 5)
     assert c5 > 0 and c5 == count()
+
+
+# ---- duoc-CR-692: bỏ «Kế hoạch nhân sự» — quỹ lương chỉ từ lương trên HĐLĐ, gộp theo phòng / pháp nhân / toàn công ty ----
+
+def _rows_by_key(resp) -> dict:
+    return {g["key"]: g["current"] for g in resp.json()["data"]["groups"]}
+
+
+def test_cr692_gop_theo_phong_ban_va_phap_nhan_tong_bang_cong_cac_nhom(db, world, client_as):
+    _people(db, world, 3, "hc")                                  # B.hc
+    _people(db, world, 3, "kt", dept="B.kt", base=12_000_000)    # B.kt (cùng pháp nhân B)
+    _people(db, world, 4, "ak", dept="A.kt", co="A", base=8_000_000)
+    db.commit()
+    _, client = _actor(db, world, client_as)
+
+    total = _get(client).json()["data"]["totals"]["current"]
+    assert total["people_paid"] == 10
+    assert total["payroll_total"] == 3 * 11_000_000 + 3 * 13_000_000 + 4 * 9_000_000
+
+    by_dept = _rows_by_key(_get(client, group_by="department"))
+    assert by_dept[str(world.dept["B.hc"])]["payroll_total"] == 3 * 11_000_000
+    assert by_dept[str(world.dept["B.kt"])]["payroll_total"] == 3 * 13_000_000
+    assert sum(v["payroll_total"] for v in by_dept.values()) == total["payroll_total"]
+
+    by_company = _rows_by_key(_get(client, group_by="company"))
+    assert by_company[str(world.co["B"])]["people_paid"] == 6
+    assert by_company[str(world.co["B"])]["payroll_total"] == 3 * 11_000_000 + 3 * 13_000_000
+    assert by_company[str(world.co["A"])]["payroll_total"] == 4 * 9_000_000
+    assert sum(v["payroll_total"] for v in by_company.values()) == total["payroll_total"]    # Tổng = cộng các pháp nhân
+
+
+def test_cr692_khong_con_cot_ke_hoach_va_ghi_chu_neu_nguon_hdld(db, world, client_as):
+    _people(db, world, 3, "x")
+    db.commit()
+    _, client = _actor(db, world, client_as)
+    data = _get(client, group_by="company").json()["data"]
+    keys = {m["key"] for m in data["meta"]["metrics"]}
+    assert not keys & {"planned_cost", "planned_comparable", "actual_comparable", "payroll_remaining", "payroll_use_rate"}
+    assert "kế hoạch" not in " ".join(data["notes"]).lower()
+    assert any("hợp đồng lao động đang hiệu lực" in n for n in data["notes"])
+
+
+def test_cr692_dem_rieng_nguoi_chua_co_hd_hieu_luc(db, world, client_as):
+    world.grant("a1", "employee", "all", actions=("read",))
+    _, client = _actor(db, world, client_as)
+    base = _get(client).json()["data"]["meta"]["people_without_contract"]     # người sẵn có của `world` (a1…)
+
+    _people(db, world, 3, "hd")                                              # có HĐ hiệu lực: không đếm
+    _emp(db, world, "n1"); _emp(db, world, "n2")                             # chưa có HĐ nào: đếm
+    _hd(db, world, _emp(db, world, "dr"), status=DRAFT)                      # chỉ có HĐ nháp: đếm
+    _hd(db, world, _emp(db, world, "exp"), end="2026-07-01")                 # HĐ hết hạn trước mốc: đếm
+    _emp(db, world, "res", status="resigned")                                # đã nghỉ việc: không đếm
+    db.commit()
+
+    data = _get(client).json()["data"]
+    assert data["meta"]["people_without_contract"] == base + 4
+    assert any(f"{base + 4} người còn làm chưa có hợp đồng" in n for n in data["notes"])
+    assert data["totals"]["current"]["people_paid"] == 3                     # số tiền KHÔNG gồm họ
+
+
+def test_cr692_khong_co_quyen_xem_nhan_su_thi_khong_dem_nguoi_chua_co_hd(db, world, client_as):
+    _people(db, world, 3, "hd")
+    db.commit()
+    _, client = _actor(db, world, client_as)                                  # chỉ có labor_contract
+    data = _get(client).json()["data"]
+    assert "people_without_contract" not in data["meta"]
+    assert not any("chưa có hợp đồng" in n for n in data["notes"])

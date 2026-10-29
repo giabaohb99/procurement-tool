@@ -104,6 +104,8 @@ export function ReportAnalyticsBody({
         groupedSnapshotMetrics={groupedSnapshotMetrics}
       />
 
+      {config.kpiNotice && data && <config.kpiNotice meta={data.meta} />}
+
       {isPeriodEmpty ? (
         <ReportPeriodEmptyState
           period={data?.period}

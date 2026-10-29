@@ -48,10 +48,10 @@ describe('HR_REPORT_CATALOG — đợt 3', () => {
 })
 
 /**
- * Năm báo cáo Nhân sự đợt 4 (duoc-CR-689). Cùng luật nhãn với đợt 3: phải trùng HẲN `REPORT_KEY`.
+ * Báo cáo Nhân sự đợt 4 (duoc-CR-689). Cùng luật nhãn với đợt 3: phải trùng HẲN `REPORT_KEY`.
+ * Khóa 25 «Số người kế hoạch so với thực tế» ĐÃ BỎ cùng Kế hoạch nhân sự (duoc-CR-692) — không tái cấp.
  */
 const WAVE_4 = [
-  { key: 25, path: '/report/headcount-plan', entity: 'headcount_plan', endpoint: '/api/headcount-plan-report/summary' },
   { key: 26, path: '/report/attendance', entity: 'employee', endpoint: '/api/attendance-report/summary' },
   { key: 27, path: '/report/profile-changes', entity: 'employee', endpoint: '/api/profile-change-report/summary' },
   { key: 28, path: '/report/room-usage', entity: 'room_booking', endpoint: '/api/room-usage/summary' },
@@ -80,5 +80,13 @@ describe('HR_REPORT_CATALOG — đợt 4', () => {
       const entry = HR_REPORT_CATALOG.find((r) => r.key === key)
       expect(typeof (await entry?.load())).toBe('function')
     }
+  })
+})
+
+describe('HR_REPORT_CATALOG — khóa 25 đã bỏ (duoc-CR-692)', () => {
+  it('no longer lists the headcount-plan report nor reuses key 25', () => {
+    expect(HR_REPORT_CATALOG.find((r) => r.key === 25)).toBeUndefined()
+    expect(HR_REPORT_CATALOG.some((r) => r.path === '/report/headcount-plan')).toBe(false)
+    expect(REPORT_KEY.find((o) => o.value === '25')).toBeUndefined()
   })
 })

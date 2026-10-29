@@ -11,7 +11,6 @@ import {
   IdCard,
   LayoutDashboard,
   Network,
-  Target,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -98,17 +97,6 @@ export const hrModule: ErpModule = {
       icon: BriefcaseBusiness,
       entity: 'job_position',
       manage: true,
-      group: 'Danh mục',
-    },
-    {
-      //  duoc-CR-690: Kế hoạch nhân sự THEO KỲ (định biên theo vị trí + chi phí theo kỳ). ⚠️ `entity`
-      //  ở đây LÀ hàng rào của route (gác điều hướng mặc định MỞ) cho cả `/new` và `/:id` — thiếu mục
-      //  này thì ai đăng nhập cũng gõ URL vào được. Không `manage`: người chỉ được XEM kế hoạch
-      //  (trưởng phòng) vẫn cần mở màn.
-      label: 'Kế hoạch nhân sự',
-      path: appRoutes.hr.headcountPlans,
-      icon: Target,
-      entity: 'headcount_plan',
       group: 'Danh mục',
     },
     {
@@ -423,31 +411,6 @@ export const hrModule: ErpModule = {
         Component: (await import('./pages/labor-contract-template-editor-page'))
           .LaborContractTemplateEditorPage,
       }),
-    },
-    {
-      path: appRoutes.hr.headcountPlans,
-      lazy: async () => ({
-        Component: (await import('./pages/headcount-plan-list-page')).HeadcountPlanListPage,
-      }),
-    },
-    //  duoc-CR-690 — trang kế hoạch dùng CHUNG cho `/new` và `/:id`. ⚠️ `/new` phải đứng TRƯỚC `:id`.
-    {
-      path: appRoutes.hr.headcountPlanNew,
-      lazy: async () => ({
-        Component: (await import('./pages/headcount-plan-detail-page')).HeadcountPlanDetailPage,
-      }),
-    },
-    {
-      path: appRoutes.hr.headcountPlanDetail(':id'),
-      lazy: async () => ({
-        Component: (await import('./pages/headcount-plan-detail-page')).HeadcountPlanDetailPage,
-      }),
-    },
-    {
-      //  duoc-CR-690: màn «Mẫu khoản chi phí» ĐÃ GỠ (đại ca chốt 28/10/2026 — người lập kế hoạch không cần
-      //  biết tới mẫu). Đường cũ đá về danh sách kế hoạch thay vì 404; `replace` để Back không quay vòng.
-      path: appRoutes.hr.hrCostTemplatesLegacy,
-      element: <Navigate to={appRoutes.hr.headcountPlans} replace />,
     },
     {
       path: appRoutes.hr.jobPositions,

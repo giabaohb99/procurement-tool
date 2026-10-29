@@ -226,8 +226,6 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  "work_schedule",
                  #  ⚠️ HĐLĐ có LƯƠNG + mẫu HĐ: không để Quản lý thu mua tự có (xem `employee_sensitive`).
                  "labor_contract", "labor_contract_template",
-                 #  duoc-CR-689: kế hoạch định biên + quỹ lương kế hoạch — Quản lý thu mua không tự có.
-                 "headcount_plan",
                  #  ⚠️ Nhóm trường nhạy cảm của hồ sơ nhân sự (08/09/2026). Phải
                  #  nằm trong tập loại-trừ này, không thì vòng `_PUR_MANAGER_PERMS`
                  #  quét cả `ENTITIES` và Quản lý thu mua tự nhiên đọc được số
@@ -319,8 +317,6 @@ STD_ROLES = {
         #  Hợp đồng lao động (có lương) + mẫu hợp đồng: chỉ vai trò này (ngoài admin).
         "labor_contract": (["read", "create", "write", "delete", "print"], "all"),
         "labor_contract_template": (["read", "create", "write", "delete"], "all"),
-        #  duoc-CR-689: Nhân sự giữ kế hoạch định biên (số quỹ lương kế hoạch hiện nhờ `labor_contract.read` ở trên).
-        "headcount_plan": (["read", "create", "write", "delete", "export"], "all"),
         #  duoc-CR-629: danh sách Văn bản + tải tệp đòi `document.read` ở lớp 1. Phạm vi `own` (=
         #  người tạo) KHÔNG mở thêm văn bản thường nào; bản lưu trữ HĐLĐ mở bằng nhánh riêng theo
         #  `labor_contract.read` (document/labor_contract_archive_access.py).

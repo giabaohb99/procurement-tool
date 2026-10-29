@@ -219,4 +219,10 @@ export interface ReportPageConfig {
    * và màn «Kỳ này chưa có dữ liệu». Lời gọi vẫn gửi tham số kỳ mặc định, backend bỏ qua.
    */
   hidePeriod?: boolean
+  /**
+   * Dòng nhắc riêng của trang, hiện NGAY DƯỚI hàng thẻ KPI — đọc thẳng `meta` backend trả
+   * (vd Quỹ lương: số người đang làm chưa có HĐLĐ hiệu lực, duoc-CR-692). Tự trả `null` khi
+   * không có gì để nhắc. Bỏ trống = không có dòng nhắc.
+   */
+  kpiNotice?: ComponentType<{ meta: ReportMeta }>
 }

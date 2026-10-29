@@ -24,7 +24,7 @@ from app.modules.employee.profile_gaps_report_data import load_group_names
 
 from .payroll_report_data import PayRecord, load_records, rows_at
 from .payroll_report_extras import add_minmax, build_trend
-from .payroll_report_plan import add_plan_columns, hide_total_after_suppression
+from .payroll_report_no_contract import count_without_contract
 from .report_data import type_label
 
 METRICS = {"people_paid": "Số người hưởng lương"}   # chỉ số có danh sách `/rows`
@@ -78,7 +78,7 @@ def _load(db: Session, contracts_q, period: Period, today: date, company_id, dep
 
 
 def _summary(db: Session, records: list[PayRecord], period: Period, group_by: str | None, today: date,
-             plan_sets: dict | None = None) -> dict:
+             employees_q=None, company_id: int | None = None, department_id: int | None = None) -> dict:
     company_name, department_name = load_group_names(db, group_by)
     spec, dims = _build_spec(company_name, department_name)
     seen: dict[date, list[PayRecord]] = {}
@@ -93,23 +93,23 @@ def _summary(db: Session, records: list[PayRecord], period: Period, group_by: st
     gb = group_by if group_by in dims else None
     add_minmax(data, dims.get(gb) if gb else None, seen[period.date_to],
                seen.get(period.compare_to) if has_cmp else None)
-    #  TRƯỚC khi che nhóm nhỏ: thực tế phần so được / còn dư suy ngược được lương
-    plan_notes = add_plan_columns(data, plan_sets, group_by, company_name if group_by == "company" else department_name,
-                                  records, today)
     data["trend"] = build_trend(records, period, today)
     data["meta"]["drilldown_metrics"] = list(METRICS)
     data["notes"] = [
-        "Lương là lương THỎA THUẬN ghi trên hợp đồng đã ký còn hiệu lực của người còn làm, không phải lương "
-        "thực trả; quỹ lương = lương cơ bản + phụ cấp.",
+        "Nguồn số liệu: lương cơ bản + phụ cấp ghi trên hợp đồng lao động đang hiệu lực (tab «Hợp đồng lao động» ở chi tiết "
+        "nhân sự) của người còn làm — là lương THỎA THUẬN, không phải lương thực trả; quỹ lương = lương cơ bản + phụ cấp. "
+        "Dòng Tổng = toàn công ty trong phạm vi bạn được xem; «Xem theo» Pháp nhân / Phòng ban chia nhỏ số đó.",
         "Số liệu tính tại ngày cuối kỳ (hoặc hôm nay nếu kỳ chưa kết thúc); xu hướng lấy cuối mỗi tháng.",
         "Một người có hợp đồng còn hiệu lực ở hai pháp nhân được tính ở cả hai (số «người hưởng lương» "
         "đếm hợp đồng); dòng Tổng cộng cả hai.",
         "Chưa có khoản BHXH công ty đóng — báo cáo chỉ có lương đóng BHXH trên hợp đồng.",
-        *plan_notes,   # cột kế hoạch chỉ hiện khi bạn có quyền xem kế hoạch; theo nhóm khi Xem theo Pháp nhân / Phòng ban
     ]
+    if employees_q is not None:      # người chưa có HĐ hiệu lực KHÔNG nằm trong quỹ lương — đếm riêng (chỉ số đếm, không lộ lương)
+        n = count_without_contract(db, employees_q, _as_of(period.date_to, today), company_id, department_id)
+        data["meta"]["people_without_contract"] = n
+        data["notes"].append(f"Đang có {n} người còn làm chưa có hợp đồng lao động hiệu lực — chưa tính vào quỹ lương.")
     res = suppress_small_groups(data, lambda v: [int(v.get("people_paid") or 0)],
                                 lambda v: int(v.get("people_paid") or 0), NOTE_SMALL, NOTE_EXTRA)
-    hide_total_after_suppression(data)    # nhóm bị che thì Tổng không hiện phần so được (không suy ngược được lương nhóm)
     if res.unsafe_sides:     # che xong Tổng vẫn lộ lương -> bỏ cả bảng «Xem theo»
         drop_unsafe_breakdown(data, gb, dims[gb].label)
     return data
@@ -117,12 +117,12 @@ def _summary(db: Session, records: list[PayRecord], period: Period, group_by: st
 
 def build_summary(db: Session, contracts_q, period: Period, group_by: str | None,
                   company_id: int | None = None, department_id: int | None = None,
-                  plan_sets: dict | None = None) -> dict:
-    """Hợp đồng chuẩn `build_report` cho `/api/payroll-fund/summary` (+ `/export`). `plan_sets` = dòng kế hoạch
-    đã qua phạm vi (`payroll_report_plan.load_plan_sets`), `None` → không có cột kế hoạch."""
+                  employees_q=None) -> dict:
+    """Hợp đồng chuẩn `build_report` cho `/api/payroll-fund/summary` (+ `/export`). `employees_q` = truy vấn nhân sự
+    đã qua phạm vi để đếm người chưa có HĐ hiệu lực; `None` (người xem không có quyền xem nhân sự) → không đếm."""
     today = vn_today()
     return _summary(db, _load(db, contracts_q, period, today, company_id, department_id), period, group_by, today,
-                    plan_sets)
+                    employees_q, company_id, department_id)
 
 
 def _row_dict(r: PayRecord, company_name: dict, department_name: dict) -> dict:

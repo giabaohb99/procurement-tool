@@ -1,5 +1,8 @@
 # Kế hoạch nhân sự: định biên và chi phí nhân sự theo kỳ
 
+> ⛔ **ĐÃ BỎ — 29/10/2026 (duoc-CR-692, anh Được).** Toàn bộ Kế hoạch nhân sự (màn, mẫu / nhóm khoản chi phí, API, bảng dữ liệu, báo cáo «Số người kế hoạch so với thực tế» khóa 25, cột kế hoạch của Quỹ lương) đã gỡ. Lý do: lương nhập ở tab Hợp đồng lao động của chi tiết nhân sự là đủ; báo cáo Quỹ lương cộng lương từng người ra quỹ lương phòng ban · pháp nhân · toàn công ty. Tài liệu này chỉ giữ làm lịch sử thiết kế — **không làm lại theo đây** nếu chưa có chốt mới.
+
+
 | | |
 |---|---|
 | Bản | 1.1 — 28/10/2026 (thêm Văn bản liên kết sang phân hệ Văn bản) · 1.0 — 28/10/2026 (thiết kế lại sau khi anh Được soát bản đợt 4: form quá ít thông tin, quỹ lương tính theo tháng là sai, chi phí phải do người dùng tự định nghĩa) |

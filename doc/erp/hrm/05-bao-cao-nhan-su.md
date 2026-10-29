@@ -25,7 +25,7 @@ Không làm chấm công và lương (đại ca chốt bỏ ngày 16/10/2026).
 | **A. Quy mô & cơ cấu** | A1. Biến động nhân sự (gồm cả tuyển dụng) | Đã có (khóa 6), mở rộng thêm; phần tuyển dụng 🔴 chờ phân hệ | 4 |
 | | A2. Cơ cấu nhân sự | **Đã có trong A1 (duoc-CR-687)** | — |
 | | A3. Cơ cấu quản lý | **Đã có (khóa 23, duoc-CR-688)** | — |
-| | A4. Định biên kế hoạch so với thực tế | **Đã có (khóa 25, duoc-CR-689)** + bảng Kế hoạch nhân sự | — |
+| | A4. Định biên kế hoạch so với thực tế | ⛔ **Đã bỏ (duoc-CR-692)** cùng bảng Kế hoạch nhân sự | — |
 | | A5. Quỹ lương theo pháp nhân | **Đã có phần thực tế (khóa 21, duoc-CR-688)**; kế hoạch 🟡 | — |
 | **B. Hợp đồng & tuân thủ pháp luật** | B1. Hợp đồng lao động | **Đã có (khóa 17, duoc-CR-686)** | — |
 | | B2. Sổ quản lý lao động | **Đã có (khóa 19, duoc-CR-687)** | — |
@@ -143,7 +143,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 *Nguồn:* `tab_employee.manager_id`, `job_level`
 
-#### A4. Định biên kế hoạch so với thực tế — đã có (khóa 25, duoc-CR-689)
+#### A4. Định biên kế hoạch so với thực tế — ⛔ ĐÃ BỎ 29/10/2026 (duoc-CR-692; khóa 25 ngừng dùng, không tái cấp)
 
 > **Trả lời:** «Phòng Kinh doanh được duyệt 20 người, đang có 17.» Đây là câu Ban Giám đốc hay hỏi nhất.
 
@@ -158,6 +158,8 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 *Thiết kế lại 28/10/2026:* bảng kế hoạch trên chưa đủ (không có vị trí, chỉ một số «quỹ lương / tháng», thiếu các khoản chi phí, không có căn cứ). Thiết kế thay thế (loại kỳ Năm / Bán niên / Quý / Tháng, định biên theo vị trí và kỳ con, khoản chi phí do người dùng tự định nghĩa theo mẫu, căn cứ duyệt) ở [`06-ke-hoach-nhan-su.md`](06-ke-hoach-nhan-su.md); **đã làm ở duoc-CR-690**: A4 đọc kế hoạch có hiệu lực ở tháng cuối kỳ và có thêm «Xem theo» Vị trí.
 
 #### A5. Quỹ lương theo pháp nhân — đã có phần thực tế (khóa 21, duoc-CR-688); kế hoạch và thử tính chưa làm
+
+> **29/10/2026 (duoc-CR-692):** bỏ phần kế hoạch (bảng Kế hoạch nhân sự đã gỡ). Quỹ lương chỉ tính từ lương cơ bản + phụ cấp trên HĐLĐ đang hiệu lực của từng người (nhập ở tab Hợp đồng lao động của chi tiết nhân sự), xem theo phòng ban · pháp nhân, dòng Tổng = toàn công ty. Các ý «so với kế hoạch», «còn dư», «thử tính» bên dưới không làm.
 
 > **Trả lời:** mỗi pháp nhân đang gánh quỹ lương bao nhiêu, còn dư bao nhiêu so với kế hoạch, tuyển người mới vào công ty nào thì các công ty cân bằng nhất.
 

@@ -8,7 +8,8 @@ duoc-CR-690 (phase 22). Thay bang mot-dong cua dot 4 bang: tab_hr_cost_group, ta
 tab_headcount_plan (mo rong: loai ky, ky, can cu), tab_headcount_plan_cost_item, tab_headcount_plan_line,
 tab_headcount_plan_document. Doi khoa duy nhat sang (year, period_type, period_no, company_id, department_id).
 GIU cot planned_headcount / planned_payroll_monthly (bao cao A4/A5 con doc; DROP o migration cua phase 24).
-Doi du lieu cu + gieo nhom / mau goi y qua `app.modules.headcount_plan.legacy_seed` (Alembic, khong `mysql -e`).
+Doi du lieu cu + gieo nhom / mau goi y: DA BO khoi migration nay (duoc-CR-692 xoa module `headcount_plan`; `hcplan05` DROP het cac bang nay
+nen khong con y nghia). Chuoi migration van chay duoc tu DB trong.
 
 VIET TAY (tuong duong autogenerate da got): repo nay autogenerate troi ~650 dong moi lan.
 """
@@ -16,8 +17,6 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-
-from app.modules.headcount_plan import legacy_seed
 
 revision: str = "hcplan02"
 down_revision: Union[str, None] = "hcplan01"
@@ -101,10 +100,6 @@ def upgrade() -> None:
                     *_audit(), sa.PrimaryKeyConstraint("id"),
                     sa.UniqueConstraint("plan_id", "document_id", name="uq_headcount_plan_document"))
     op.create_index("ix_tab_headcount_plan_document_plan_id", "tab_headcount_plan_document", ["plan_id"])
-
-    conn = op.get_bind()
-    legacy_seed.seed_suggestions(conn)
-    legacy_seed.move_legacy_rows(conn)
 
 
 def downgrade() -> None:

@@ -17,11 +17,12 @@ from app.core.report_keys import ReportKey
 from app.core.report_period import parse_period
 from app.core.response import success
 from app.core.scoping import apply_scope
+from app.modules.employee.model import Employee
 from app.modules.report.procurement_summary_rows import valid_company_id, valid_department_id
 from app.modules.report_access.guard import require_report
 
 from . import payroll_report_service as service
-from .payroll_report_plan import load_plan_sets
+from .access import has_perm
 from .model import LaborContract
 
 router = APIRouter(prefix="/api/payroll-fund", tags=["report"])
@@ -37,22 +38,28 @@ def _inputs(request: Request, db: Session, user, action: str = "read") -> dict:
                 department_id=valid_department_id(qp.get("department_id")))
 
 
+def _employees_q(db: Session, user, prof: dict, action: str):
+    """Truy vấn nhân sự đã qua phạm vi để đếm người chưa có HĐ hiệu lực; người xem không có quyền xem nhân sự → `None`."""
+    if not has_perm(prof, "employee", action):
+        return None
+    return apply_scope(db.query(Employee), Employee, "employee", user, prof, action)
+
+
 @router.get("/summary", dependencies=_GUARD)
 def payroll_fund_summary(request: Request, db: Session = Depends(get_db),
                          user=Depends(require("labor_contract", "read"))):
     kw = _inputs(request, db, user)
-    plans = load_plan_sets(db, user, get_perm_profile(db, user), kw["period"], kw["company_id"], kw["department_id"])
+    emp_q = _employees_q(db, user, get_perm_profile(db, user), "read")
     return success(service.build_summary(db, group_by=request.query_params.get("group_by") or None,
-                                         plan_sets=plans, **kw))
+                                         employees_q=emp_q, **kw))
 
 
 @router.get("/summary/export", dependencies=_GUARD)
 def payroll_fund_summary_export(request: Request, db: Session = Depends(get_db),
                                 user=Depends(require("labor_contract", "export"))):
     kw = _inputs(request, db, user, "export")   # phạm vi theo quyền XUẤT, không theo quyền xem
-    plans = load_plan_sets(db, user, get_perm_profile(db, user), kw["period"], kw["company_id"],
-                           kw["department_id"], "export")
-    data = service.build_summary(db, group_by=request.query_params.get("group_by") or None, plan_sets=plans, **kw)
+    emp_q = _employees_q(db, user, get_perm_profile(db, user), "export")
+    data = service.build_summary(db, group_by=request.query_params.get("group_by") or None, employees_q=emp_q, **kw)
     return report_xlsx("quy-luong", data)
 
 

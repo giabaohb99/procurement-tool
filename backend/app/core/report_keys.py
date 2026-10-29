@@ -28,7 +28,7 @@ from app.core.status_catalog import Code, CodeSet, register
 
 
 class ReportKey(IntEnum):
-    """29 báo cáo của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
+    """28 báo cáo đang chạy (số 25 đã bỏ, để trống) của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
     phase-02 của plan `261002-0836-phan-quyen-tung-bao-cao`."""
 
     PURCHASE_REPORT = 1      # Báo cáo mua hàng (Thu mua)
@@ -55,11 +55,15 @@ class ReportKey(IntEnum):
     BENEFIT_AUDIENCE = 22     # Phúc lợi & sự kiện (Nhân sự) — duoc-CR-688
     MANAGEMENT_SPAN = 23      # Cơ cấu quản lý (Nhân sự) — duoc-CR-688
     WORK_MOVES = 24           # Điều chuyển & bổ nhiệm (Nhân sự) — duoc-CR-688
-    HEADCOUNT_PLAN = 25       # Định biên kế hoạch so với thực tế (Nhân sự) — duoc-CR-689
+    #  25 = «Định biên kế hoạch so với thực tế» — ĐÃ BỎ duoc-CR-692, KHÔNG tái cấp số này (xóa cả dòng `tab_report_access` khóa 25).
     ATTENDANCE_DAILY = 26     # Có mặt theo ngày (Nhân sự) — duoc-CR-689
     PROFILE_CHANGES = 27      # Yêu cầu sửa hồ sơ (Nhân sự) — duoc-CR-689
     ROOM_USAGE = 28           # Sử dụng phòng họp (Nhân sự) — duoc-CR-689
     LEGAL_WATCH = 29          # Đối tượng cần chú ý theo luật (Nhân sự) — duoc-CR-689; có ngày sinh, con nhỏ
+
+
+#  Số đã cấp rồi BỎ (để trống, không tái cấp) — test «khóa liên tục» cho phép đúng các khoảng trống này.
+RETIRED_REPORT_KEYS: frozenset[int] = frozenset({25})   # «Định biên kế hoạch so với thực tế», bỏ duoc-CR-692
 
 
 #  {khóa: (nhãn, nhóm phân hệ)} — nhãn KHỚP `label`, nhóm KHỚP `group` ở danh
@@ -89,7 +93,6 @@ REPORT_META: dict[ReportKey, tuple[str, str]] = {
     ReportKey.BENEFIT_AUDIENCE: ("Phúc lợi & sự kiện", "Nhân sự"),
     ReportKey.MANAGEMENT_SPAN: ("Cơ cấu quản lý", "Nhân sự"),
     ReportKey.WORK_MOVES: ("Điều chuyển & bổ nhiệm", "Nhân sự"),
-    ReportKey.HEADCOUNT_PLAN: ("Số người kế hoạch so với thực tế", "Nhân sự"),
     ReportKey.ATTENDANCE_DAILY: ("Có mặt theo ngày", "Nhân sự"),
     ReportKey.PROFILE_CHANGES: ("Yêu cầu sửa hồ sơ", "Nhân sự"),
     ReportKey.ROOM_USAGE: ("Sử dụng phòng họp", "Nhân sự"),
