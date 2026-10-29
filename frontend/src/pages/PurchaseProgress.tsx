@@ -260,7 +260,7 @@ export default function PurchaseProgress() {
       p.cols = table.columns.map((c) => c.key).join(',')
       const r = await api.get('/api/purchase-progress/export/xlsx', { params: p, responseType: 'blob' })
       const cd = String(r.headers['content-disposition'] || '')
-      const name = /filename="?([^"]+)"?/.exec(cd)?.[1] || 'tien-do-mua-hang.xlsx'
+      const name = /filename="?([^"]+)"?/.exec(cd)?.[1] || 'tien-do-don-mua-hang.xlsx'
       const url = window.URL.createObjectURL(new Blob([r.data]))
       const link = document.createElement('a')
       link.href = url
@@ -284,7 +284,7 @@ export default function PurchaseProgress() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-        <h2 className="page-title" style={{ margin: 0 }}>Tiến độ mua hàng</h2>
+        <h2 className="page-title" style={{ margin: 0 }}>Tiến độ đơn mua hàng</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Theo từng lần giao hàng · {fmt(total)} dòng</div>
           {canExport && (
