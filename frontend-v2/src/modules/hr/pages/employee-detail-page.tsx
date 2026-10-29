@@ -194,7 +194,7 @@ export function EmployeeDetailPage() {
       //  khoản ngân hàng thật. Lý lẽ đầy đủ ở `pickWritableProfile`.
       await saveEmployee.mutateAsync({
         id: employeeId,
-        values: pickWritableProfile(values, canReadSensitive),
+        values: pickWritableProfile(values, canReadSensitive, employee?.extra_phones),
       })
       //  Lưu xong thì coi giá trị vừa gửi là mốc sạch. `keepDirtyValues` ở effect
       //  trên KHÔNG xóa `dirtyFields`, nên thiếu dòng này thì ô đã lưu vẫn bị coi

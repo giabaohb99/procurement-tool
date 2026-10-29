@@ -611,6 +611,8 @@ def export_employees_csv(
         "full_name": "Họ tên",
         "email": "Email",
         "phone": "Số điện thoại",
+        "phone_label": "Nhãn số chính",
+        "extra_phones_text": "Số điện thoại khác",   # duoc-CR-694
         "department_name": "Phòng ban",
         "position": "Vị trí",          # CR-022: chức danh hiển thị, KHÔNG phải phân quyền
         # B-03: xuất NHÃN chứ không xuất mã. Cột này người dùng mở bằng Excel để đọc và
@@ -652,6 +654,8 @@ def export_employees_xlsx(
         Col("full_name", "Họ tên", width=28),
         Col("email", "Email", width=24),
         Col("phone", "Số điện thoại", width=16),
+        Col("phone_label", "Nhãn số chính", width=14),
+        Col("extra_phones_text", "Số điện thoại khác", width=34),   # duoc-CR-694
         Col("department_name", "Phòng ban", width=22),
         Col("company_name", "Công ty", width=22),
         Col("position", "Vị trí", width=18),

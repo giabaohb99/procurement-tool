@@ -19,6 +19,11 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
     full_name: Mapped[str] = mapped_column(String(255))
     email: Mapped[str] = mapped_column(String(255), default="")
     phone: Mapped[str] = mapped_column(String(25), default="")
+    #  duoc-CR-694: các số điện thoại KHÁC (tối đa 4) — `phone` vẫn là SỐ CHÍNH. Mỗi phần tử
+    #  `{"number": ≤20, "label": ≤50}`; luật ở `phone_rules.py`. Luôn GÁN LẠI cả danh sách, đừng sửa tại chỗ.
+    #  Nhãn của SỐ CHÍNH (Cá nhân / Công việc / Zalo…), tự do ≤ 50 ký tự.
+    phone_label: Mapped[str] = mapped_column(String(50), default="")
+    extra_phones: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     company_id: Mapped[int] = mapped_column(BigInteger, default=0)
     department_id: Mapped[int] = mapped_column(BigInteger, default=0)
     #  ⚠️ `position` là NHÃN ĐÃ CHÉP từ danh mục, `position_id` mới là sự thật
@@ -212,6 +217,12 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
         một hồ sơ cũ — thứ chỉ lộ ra trên dữ liệu thật.
         """
         return self.extra_fields if isinstance(self.extra_fields, dict) else {}
+
+    @property
+    def extra_phones_text(self) -> str:
+        """«số (nhãn); …» — cột «Số điện thoại khác» của tệp xuất Excel/CSV (cùng định dạng tệp nhập)."""
+        from .phone_rules import format_phones_text
+        return format_phones_text(self.extra_phones)
 
     @property
     def department_name(self) -> str | None:

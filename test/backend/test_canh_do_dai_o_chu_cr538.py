@@ -164,6 +164,8 @@ TARGETS.update({
 
 #  Schema ghi không ghi thẳng cột nào (chỉ gói danh sách con / tham số thao tác).
 NO_TARGET = {
+    #  duoc-CR-694: một phần tử của cột JSON `extra_phones` — độ dài (20/50) ràng thẳng ở schema, không có cột chữ riêng
+    "employee.PhoneEntry",
     #  duoc-CR-606: chỉ mang id mẫu / nội dung HTML soạn mẫu (lưu vào tệp Word, không vào cột chữ)
     "labor_contract.GenerateIn", "labor_contract.TemplateContentIn",
     "survey.LineApproveIn", "survey.LineApproveCombined", "survey_request.ReportTemplateApplyIn",

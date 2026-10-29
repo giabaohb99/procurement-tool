@@ -1,4 +1,5 @@
 import { EMPLOYEE_STATUS, labelOf } from '@/shared/constants/statuses'
+import type { ExtraPhone } from '../schemas/extra-phones-schema'
 
 /** Nhân viên — khớp `EmployeeOut` của backend. */
 export interface Employee {
@@ -6,7 +7,12 @@ export interface Employee {
   code: string
   full_name: string
   email: string
+  /** SỐ CHÍNH — các số còn lại ở `extra_phones` (duoc-CR-694). */
   phone: string
+  /** Nhãn của số chính (duoc-CR-694). Tùy chọn như mọi cột thêm sau. */
+  phone_label?: string
+  /** Số điện thoại khác, tối đa 4. Tùy chọn: dữ liệu dựng trước cột này không có khóa. */
+  extra_phones?: ExtraPhone[]
   company_id: number
   /** Tên pháp nhân, backend trả kèm (`EmployeeOut.company_name`). */
   company_name?: string | null

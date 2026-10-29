@@ -3,6 +3,8 @@ import { Loader2, Pencil, Save } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
+import { CopyAddressButton } from '@/modules/hr/components/copy-address-button'
+import { PhoneListEditor } from '@/modules/hr/components/phone-list-editor'
 import { useUpdateMyContact } from '@/modules/hr/hooks/use-my-contact'
 import {
   selfContactSchema,
@@ -28,7 +30,7 @@ interface SelfContactDialogProps {
 }
 
 /**
- * Nút «Sửa» + hộp thoại TỰ SỬA LIÊN HỆ (bao-CR-508) — số điện thoại và hai địa
+ * Nút «Sửa» + hộp thoại TỰ SỬA LIÊN HỆ (bao-CR-508) — số điện thoại (kể cả số khác) và hai địa
  * chỉ của chính mình. Lưu là áp ngay, không báo phòng Nhân sự; backend ghi nhật
  * ký như mọi lần sửa hồ sơ khác.
  *
@@ -72,7 +74,7 @@ export function SelfContactDialog({ employee }: SelfContactDialogProps) {
         <Pencil className="size-4" />
         Sửa
       </Button>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Sửa thông tin liên hệ</DialogTitle>
           <DialogDescription>
@@ -88,45 +90,40 @@ export function SelfContactDialog({ employee }: SelfContactDialogProps) {
             onSubmit={(event) => void form.handleSubmit(onSubmit)(event)}
             className="flex flex-col gap-3"
           >
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Số điện thoại</FormLabel>
-                  <FormControl>
-                    <Input type="tel" autoComplete="tel" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="permanent_address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Địa chỉ thường trú</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="current_address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Địa chỉ hiện nay (tạm trú)</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/*  duoc-CR-694: số chính + tối đa 4 số khác. */}
+            <PhoneListEditor />
+            {/*  Hai địa chỉ cùng một hàng (khổ hẹp thì xếp dọc), dưới danh sách số. */}
+            <div className="grid items-start gap-3 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="permanent_address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Địa chỉ thường trú</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex flex-col gap-1">
+                <FormField
+                  control={form.control}
+                  name="current_address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Địa chỉ hiện nay (tạm trú)</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <CopyAddressButton />
+              </div>
+            </div>
 
             <DialogFooter className="mt-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

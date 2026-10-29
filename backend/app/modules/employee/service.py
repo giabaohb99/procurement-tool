@@ -1,8 +1,9 @@
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import func, or_
+from sqlalchemy import String, cast, func, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.core import reference_guard
@@ -11,7 +12,7 @@ from app.core.utils import generate_code
 
 from app.modules.department.model import Department
 
-from . import position_role_service, position_service
+from . import phone_rules, position_role_service, position_service
 from . import references  # noqa: F401  — ai-CR-190: đăng ký chỗ tham chiếu lúc khởi động
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
@@ -45,7 +46,13 @@ def apply_keyword_search(query, keyword: str | None):
     if not kw:
         return query
     like = f"%{kw}%"
-    return query.filter(or_(*[getattr(Employee, f).like(like) for f in SEARCH_FIELDS]))
+    conds = [getattr(Employee, f).like(like) for f in SEARCH_FIELDS]
+    #  duoc-CR-694: từ khóa trông như SỐ ĐIỆN THOẠI thì tìm cả số phụ. Ép JSON về chữ rồi LIKE (chạy được
+    #  cả MySQL lẫn SQLite); chỉ làm khi từ khóa toàn chữ số/ký tự phân cách, kẻo «number» «label»
+    #  trong chính JSON khớp với từ khóa chữ bất kỳ.
+    if re.fullmatch(r"[0-9\s+.\-()]+", kw) and sum(c.isdigit() for c in kw) >= 3:
+        conds.append(cast(Employee.extra_phones, String).like(like))
+    return query.filter(or_(*conds))
 
 
 # ── CR-087: neo nhân sự trên chứng từ bằng ID ────────────────────────────────────
@@ -226,6 +233,7 @@ def create_employee_core(db: Session, data: EmployeeCreate, user_id: int) -> Emp
     #  người quản lý có thật.
     block_manager_cycle(db, 0, data.manager_id)
     data.email = ensure_email_unique(db, data.email)
+    phone_rules.ensure_distinct_from_main(data.phone, data.model_dump()["extra_phones"])
     obj = Employee(**data.model_dump(), created_by=user_id, updated_by=user_id)
     #  Nhãn chức vụ chép từ danh mục — xem `position_service`.
     #
@@ -393,6 +401,9 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
     fields = data.model_dump(exclude_unset=True)
     #  duoc-CR-693: lương gửi `null` = GIỮ NGUYÊN (cột NOT NULL; muốn xóa gửi 0). Lương đi đường `set_salary`
     #  (đóng dấu thời điểm), không qua vòng `setattr` chung.
+    #  duoc-CR-694: `extra_phones` gửi null = GIỮ NGUYÊN (cột NOT NULL); muốn xóa hết gửi [].
+    if "extra_phones" in fields and fields["extra_phones"] is None:
+        del fields["extra_phones"]
     salary_in = {k: fields.pop(k) for k in SALARY_FIELDS if k in fields}
     new_salary = salary_in.get("salary_monthly")
     new_allowance = salary_in.get("allowance_monthly")
@@ -402,6 +413,8 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
         fields["email"] = ensure_email_unique(db, fields["email"] or "", exclude_id=obj.id)
     for key, value in fields.items():
         setattr(obj, key, value)
+    if "phone" in fields or "extra_phones" in fields:
+        phone_rules.ensure_distinct_from_main(obj.phone, obj.extra_phones)
     position_service.sync_label(db, obj, fields, old_position_id)
     obj.updated_by = user_id
     salary_changed = (new_salary is not None or new_allowance is not None) and set_salary(

@@ -17619,11 +17619,21 @@ Gỡ màn kế hoạch nhân sự, mẫu khoản chi phí, nhóm chi phí, các 
 Mã nguồn: backend/app/modules/headcount_plan/ (xóa), backend/app/modules/labor_contract/payroll_report_*.py, frontend-v2/src/modules/hr, frontend-v2/src/modules/report
 
 ## duoc-CR-693 | Ô lương trên hồ sơ nhân sự, chỉ chính người đó xem được
-- status: dang-lam
+- status: xong
 - date: 2026-10-29
 - pic: NSU231
 - tag: Được
 Anh Được muốn nhập lương ngay ở hồ sơ nhân sự bằng một ô, thay vì phải lập hợp đồng lao động. Nhập xong thì chỉ chính người đó xem được lương của mình ở trang cá nhân, người khác không xem được.
 Thêm ô lương và phụ cấp mỗi tháng ở tab chung của hồ sơ; người có quyền sửa hồ sơ nhập được nhưng sau khi lưu chỉ thấy đã nhập, không thấy số. Ký hợp đồng lao động thì ô này tự cập nhật theo hợp đồng. Báo cáo quỹ lương cộng ô lương của từng người ra tổng theo pháp nhân, phòng ban và toàn công ty, không hiện lương từng người.
+Đã làm xong và thử trên trình duyệt: người nhập chỉ thấy đã nhập, chính nhân sự thấy đúng số ở thẻ lương của tôi trên trang cá nhân; lưu hồ sơ không đụng ô lương thì không đè mất số. Số lương không lộ qua xuất tệp, nhật ký hay trợ lý AI; nhập Excel bỏ qua cột lương. Hợp đồng ký trước mà hiệu lực ở tương lai thì tới ngày đó chưa tự cập nhật ô lương, cần sửa tay.
 Mã nguồn: backend/app/modules/employee/, backend/app/modules/labor_contract/payroll_report_*.py, frontend-v2/src/modules/hr, frontend-v2/src/modules/report
+
+## duoc-CR-694 | Nhập nhiều số điện thoại trong hồ sơ nhân sự
+- status: xong
+- date: 2026-10-29
+- pic: NSU231
+- tag: Được
+Anh Được muốn mục liên hệ của hồ sơ cho nhập nhiều số điện thoại thay vì một số. Nay hồ sơ có một danh sách số, mỗi số kèm nhãn như cá nhân, công việc, Zalo; dòng đầu là số chính và vẫn được dùng cho tìm kiếm, phiếu in, đặt xe như trước; nút đặt làm chính đổi cả số lẫn nhãn; tối đa năm số, kiểm định dạng và không cho trùng.
+Theo góp ý giao diện, danh sách số chiếm cả chiều ngang, hai ô địa chỉ nằm chung một hàng bên dưới và có nút giống địa chỉ thường trú. Nhân viên tự sửa được ở trang cá nhân; tìm nhân sự theo số phụ được; xuất và nhập Excel có thêm cột số điện thoại khác và nhãn số chính.
+Mã nguồn: backend/app/modules/employee/phone_rules.py, migration emp_phones01, frontend-v2/src/modules/hr/components/phone-list-editor.tsx
 

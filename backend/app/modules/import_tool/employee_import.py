@@ -159,7 +159,7 @@ def _build_ref(db, spec, text, fields, existing, log, r, code) -> None:
 
 def _same(cur, new) -> bool:
     if cur is None:
-        return new in ("", 0, None)
+        return new in ("", 0, None, [])
     return cur == new
 
 
@@ -171,7 +171,7 @@ def snapshot_diff(before: dict, emp: Employee) -> dict:
     """H1: CHỈ các cột thật sự đổi, dạng {attr: [cũ, mới]} — hoàn tác chỉ khôi phục đúng chúng và chỉ
     khi giá trị hiện tại vẫn là «mới» (không đè lên sửa đổi về sau)."""
     after = _snapshot(emp)
-    blank = ("", 0, None)
+    blank = ("", 0, None, [])
     return {a: [before[a], after[a]] for a in SNAPSHOT_ATTRS
             if not (before[a] == after[a] or (before[a] in blank and after[a] in blank))}
 

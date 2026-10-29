@@ -6,6 +6,7 @@ from app.core.status_codes import EMPLOYEE_STATUS
 from .constants import (EDUCATION_LEVEL_LABELS, EMPLOYMENT_TYPE_LABELS,
                         GENDER_VALUES, JOB_LEVEL_LABELS, MARITAL_STATUS_LABELS,
                         MAX_EXTRA_FIELDS, RELATION_LABELS)
+from .phone_rules import ExtraPhones
 from .field_limits import (MAX_PEOPLE_ROWS, ProfileDate, SalaryAmount, Str20, Str25, Str50,
                            Str100, Str255, Str500, check_extra_fields,
                            check_resign_after_hire)
@@ -30,6 +31,9 @@ class EmployeeBase(BaseModel):
     full_name: Str255
     email: Str255 = ""
     phone: Str25 = ""
+    phone_label: Str50 = ""      # duoc-CR-694: nhãn của số chính
+    #  duoc-CR-694: số điện thoại KHÁC; `phone` ở trên là số chính. Luật ở `phone_rules`.
+    extra_phones: ExtraPhones = []
     company_id: int = 0
     department_id: int = 0
     #  ⚠️ `position` là NHÃN, `position_id` là thứ giao diện GỬI LÊN
@@ -120,6 +124,17 @@ class EmployeeBase(BaseModel):
 
     # Nhóm 7 — tùy biến
     extra_fields: dict = {}
+
+    @field_validator("phone_label", mode="before")
+    @classmethod
+    def _phone_label_none_is_empty(cls, v):
+        return "" if v is None else v
+
+    @field_validator("extra_phones", mode="before")
+    @classmethod
+    def _extra_phones_none_is_empty(cls, v):
+        """Hồ sơ chưa flush mang `None` ở cột có `default=` — đọc thành danh sách rỗng."""
+        return [] if v is None else v
 
     @field_validator("extra_fields", mode="before")
     @classmethod
@@ -266,6 +281,9 @@ class EmployeeUpdate(BaseModel):
     full_name: Str255 | None = None
     email: Str255 | None = None
     phone: Str25 | None = None
+    phone_label: Str50 | None = None
+    #  `None`/vắng = giữ nguyên; muốn xóa hết gửi []. Gửi là THAY CẢ danh sách.
+    extra_phones: ExtraPhones | None = None
     company_id: int | None = None
     department_id: int | None = None
     position: Str100 | None = None
@@ -531,6 +549,8 @@ class SelfContactUpdate(BaseModel):
     model_config = {"extra": "forbid"}
 
     phone: Str25 | None = None
+    phone_label: Str50 | None = None
+    extra_phones: ExtraPhones | None = None
     permanent_address: Str500 | None = None
     current_address: Str500 | None = None
 

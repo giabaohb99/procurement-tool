@@ -82,7 +82,7 @@ describe('ProfileContactCard', () => {
     expect(within(dialog).getByLabelText('Địa chỉ hiện nay (tạm trú)')).toHaveValue('')
   })
 
-  it('sends only the three contact keys, trimmed, to the self-service endpoint', async () => {
+  it('sends only the four contact keys, trimmed, to the self-service endpoint', async () => {
     renderCard()
     const dialog = await openDialog()
     const phone = within(dialog).getByLabelText('Số điện thoại')
@@ -97,10 +97,29 @@ describe('ProfileContactCard', () => {
     //  Hồ sơ đang cầm department_id / bank_account_no — không khóa nào lọt theo.
     expect(body).toEqual({
       phone: '0987654321',
+      phone_label: '',
+      extra_phones: [],
       permanent_address: '12 Lê Lợi, Huế',
       current_address: '',
     })
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
+  it('shows extra phones on the card and sends an added one (duoc-CR-694)', async () => {
+    renderCard(employee({ extra_phones: [{ number: '0912000222', label: 'Zalo' }] }))
+    expect(screen.getByText('0912000222')).toBeInTheDocument()
+    const dialog = await openDialog()
+    expect(within(dialog).getByLabelText('Số điện thoại khác 1')).toHaveValue('0912000222')
+
+    await userEvent.click(within(dialog).getByRole('button', { name: /Thêm số/ }))
+    await userEvent.type(within(dialog).getByLabelText('Số điện thoại khác 2'), '0933444555')
+    await userEvent.click(within(dialog).getByRole('button', { name: /Lưu/ }))
+
+    await waitFor(() => expect(apiPatch).toHaveBeenCalledTimes(1))
+    expect(apiPatch.mock.calls[0][1].extra_phones).toEqual([
+      { number: '0912000222', label: 'Zalo' },
+      { number: '0933444555', label: '' },
+    ])
   })
 
   it('fires a single request when the form is submitted twice in the same tick', async () => {

@@ -11,6 +11,7 @@ paths:
   - "backend/app/modules/import_tool/employee_import*.py"
   - "test/backend/*cr628*"
   - "test/backend/*cr693*"
+  - "test/backend/*cr694*"
   - "backend/app/modules/labor_contract/payroll_report*"
   - "backend/app/modules/labor_contract/salary_sync.py"
 ---
@@ -298,3 +299,22 @@ thống tự cấp gói. Mã: `employee/position_role_service.py` (+ `position_r
   đã bắt đầu, chưa hết hạn, không HĐ Đã ký nào khác bắt đầu muộn hơn). Chỉ Nháp sửa được lương HĐ nên không có đường «sửa HĐ đã ký».
 - Báo cáo Quỹ lương (khóa 21) đọc ô này, không đọc HĐ: ảnh chụp hiện tại, không kỳ so sánh/xu hướng, chỉ TỔNG, nhóm/Tổng dưới 3 người bị
   che, `/rows` không có cột tiền, gác `employee.read|export` + `require_report(21)`. Test: `test_o_luong_ho_so_cr693.py`, `test_bao_cao_quy_luong_cr688.py`.
+
+
+### NHIỀU SỐ ĐIỆN THOẠI (duoc-CR-694, 29/10/2026)
+
+`tab_employee.phone` VẪN là **số chính** (~15 chỗ đọc thẳng cột này: tìm kiếm, phiếu in, trợ lý AI, đặt xe, auth — đừng đổi nghĩa).
+Số còn lại ở `extra_phones` (JSON NOT NULL, `[{number ≤20, label ≤50}]`, tối đa 4 → tổng 5 số). Migration `emp_phones01`.
+Luật một nơi: `employee/phone_rules.py` (8–15 chữ số, chỉ `0-9 khoảng-trắng + . - ( )`, không trùng nhau sau khi bỏ ký tự phân cách,
+không trùng số chính). Không thuộc nhóm nhạy cảm (như `phone`).
+
+- ⚠️ **Trùng số chính kiểm ở SERVICE (422), không ở validator**: PATCH có thể chỉ gửi một trong hai ô. `ensure_distinct_from_main` gọi ở
+  `create_employee_core`, `update_employee_core` và `update_own_contact` theo giá trị CUỐI CÙNG. Gửi `extra_phones` = THAY CẢ danh sách;
+  vắng/`null` = giữ nguyên; `[]` = xóa hết. Số chính có nhãn riêng ở `phone_label` (String 50, cùng migration); «Đặt làm chính» hoán đổi CẢ số lẫn nhãn. Excel: cột «Nhãn số chính».
+- Tìm nhanh (`apply_keyword_search`) chỉ quét số phụ khi từ khóa toàn chữ số/ký tự phân cách và ≥ 3 chữ số — nếu không, `number`/`label`
+  trong chính JSON khớp từ khóa chữ bất kỳ. Cột «Số điện thoại khác» ở xuất CSV/XLSX và nhập Excel: «số (nhãn); số (nhãn)»; ô có dữ liệu
+  THAY cả danh sách, `__/empty_value/__` xóa hết.
+- Frontend: `PhoneListEditor` (đọc/ghi `phone` + `extra_phones` qua `useFormContext`) dùng chung ở tab «Liên hệ & Ngân hàng» và hộp
+  «Sửa thông tin liên hệ» ở Trang cá nhân; `pickWritableProfile(values, canRead, savedExtraPhones)` chỉ gửi `extra_phones` khi KHÁC bản đã lưu.
+  «Đặt làm chính» hoán đổi trên form, nhãn đi theo số.
+- Test: `test_nhieu_so_dien_thoai_cr694.py`; vitest `extra-phones-schema.test.ts`, `phone-list-editor.test.tsx`, `profile-contact-card.test.tsx`.

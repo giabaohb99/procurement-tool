@@ -159,6 +159,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 #### A5. Quỹ lương theo pháp nhân — đã có phần thực tế (khóa 21, duoc-CR-688); kế hoạch và thử tính chưa làm
 
+> **29/10/2026 (duoc-CR-693):** nguồn quỹ lương đổi sang **ô Lương + Phụ cấp trên hồ sơ** (không còn đọc HĐLĐ): ảnh chụp hiện tại (không xu hướng / kỳ so sánh), chỉ số Quỹ lương · Lương · Phụ cấp · Số người có lương · Bình quân; chỉ TỔNG, nhóm/Tổng dưới 3 người bị che, `/rows` không có tiền; ghi chú số người đang làm chưa nhập lương; gác `employee.read` + khóa 21. Lương từng người chỉ chính chủ xem được (`01-ho-so-nhan-su.md` §7.15).
 > **29/10/2026 (duoc-CR-692):** bỏ phần kế hoạch (bảng Kế hoạch nhân sự đã gỡ). Quỹ lương chỉ tính từ lương cơ bản + phụ cấp trên HĐLĐ đang hiệu lực của từng người (nhập ở tab Hợp đồng lao động của chi tiết nhân sự), xem theo phòng ban · pháp nhân, dòng Tổng = toàn công ty. Các ý «so với kế hoạch», «còn dư», «thử tính» bên dưới không làm.
 
 > **Trả lời:** mỗi pháp nhân đang gánh quỹ lương bao nhiêu, còn dư bao nhiêu so với kế hoạch, tuyển người mới vào công ty nào thì các công ty cân bằng nhất.
