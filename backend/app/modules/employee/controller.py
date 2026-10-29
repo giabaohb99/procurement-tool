@@ -29,6 +29,9 @@ def list_employees(
     query = apply_filters(db.query(service.Employee), service.Employee, request, service.FILTERABLE)
     query = service.apply_keyword_search(query, request.query_params.get("search"))
     query = apply_scope(query, service.Employee, "employee", user, get_perm_profile(db, user))
+    #  duoc-CR-693: không sắp xếp theo lương — thứ tự cũng là thông tin (kéo xuống để biết ai lương cao nhất).
+    if (request.query_params.get("sort_by") or "").strip() in (*sensitive.SALARY_FIELDS, "salary_updated_at"):
+        raise HTTPException(400, "Không sắp xếp theo lương")
     query = apply_sort_from_request(query, service.Employee, request)
     total, items = service.list_employees(db, query, pg)
     rows = [EmployeeOut.model_validate(i).model_dump() for i in items]
@@ -81,7 +84,7 @@ def _my_detail(db: Session, user, obj) -> dict:
     """Bản chi tiết hồ sơ của chính mình, đi qua `sensitive.mask` như mọi cửa."""
     data = EmployeeDetailOut.model_validate(obj).model_dump()
     profile = get_perm_profile(db, user)
-    return sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id))
+    return sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id), profile)
 
 
 # ── Tự sửa LIÊN HỆ ở Trang cá nhân (bao-CR-508) ─────────────────────────────
@@ -142,7 +145,7 @@ def get_employee(eid: int, db: Session = Depends(get_db), user=Depends(require("
     obj = service.get_employee(db, eid)
     data = EmployeeDetailOut.model_validate(obj).model_dump()
     profile = get_perm_profile(db, user)
-    return success(sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id)))
+    return success(sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id), profile))
 
 
 @router.get("/{eid}/pending-work")
@@ -345,6 +348,7 @@ def update_employee(
     #  hồ sơ kéo theo email tài khoản (bao-CR-472) và email đó là khóa đăng nhập Google.
     profile = get_perm_profile(db, user)
     current = _employee_in_scope(db, eid, user, profile, "write")
+    _block_self_salary_change(data, profile, current)
     if (data.department_id is not None
             and int(data.department_id or 0) != int(current.department_id or 0)):
         department_service.block_edit_own_department(db, eid, user)
@@ -352,6 +356,20 @@ def update_employee(
 
     obj = service.update_employee(db, eid, data, user.id)
     return success(_masked(db, obj, user), "Đã cập nhật")
+
+
+def _block_self_salary_change(data: EmployeeUpdate, profile, current) -> None:
+    """duoc-CR-693: không ai tự đổi lương / phụ cấp của CHÍNH MÌNH (kể cả quản trị) → 403.
+
+    Chỉ chặn khi giá trị THỰC SỰ ĐỔI: chính chủ đọc được số của mình, nên màn hồ sơ gửi lại nguyên giá trị cũ
+    mỗi lần lưu một ô khác — chặn theo «có gửi» thì họ không sửa nổi số điện thoại. `None` = không đổi.
+    """
+    if not sensitive.is_self(profile, current.id):
+        return
+    for field in sensitive.SALARY_FIELDS:
+        new = getattr(data, field, None)
+        if new is not None and int(new) != int(getattr(current, field) or 0):
+            raise HTTPException(403, "Không được tự sửa lương / phụ cấp của chính mình — nhờ người khác trong phòng Nhân sự")
 
 
 def _masked(db: Session, obj, user) -> dict:
@@ -363,8 +381,8 @@ def _masked(db: Session, obj, user) -> dict:
     đường vòng không cần biết gõ gì đặc biệt.
     """
     data = EmployeeOut.model_validate(obj).model_dump()
-    allowed = sensitive.can_read_sensitive(get_perm_profile(db, user), obj.id)
-    return sensitive.mask(data, allowed)
+    profile = get_perm_profile(db, user)
+    return sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id), profile)
 
 
 def _employee_in_scope(db, eid: int, user, profile, action: str = "read"):

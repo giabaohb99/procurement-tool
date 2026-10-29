@@ -15,6 +15,7 @@ import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
 import { ProfileLaborContractsTab } from '@/app/components/profile/profile-labor-contracts-tab'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
 import { ProfileLeaveCard } from '@/app/components/profile/profile-leave-card'
+import { ProfileSalaryCard } from '@/app/components/profile/profile-salary-card'
 import { ProfileLoginHistoryTab } from '@/app/components/profile/profile-login-history-tab'
 import { ProfileMemoryTab } from '@/app/components/profile/profile-memory-tab'
 import { ProfilePasswordCard } from '@/app/components/profile/profile-password-card'
@@ -145,6 +146,8 @@ export function ProfilePage() {
                       hasHireDate={Boolean(myEmployee.hire_date)}
                     />
                   )}
+                  {/*  duoc-CR-693 — lương của chính mình, mặc định che số (xem ghi chú trong thẻ). */}
+                  {myEmployee && <ProfileSalaryCard employee={myEmployee} />}
                   {/* bao-CR-349 — công tắc email thông báo của chính mình.
                       Xếp dưới Chữ ký để hai cột cân nhau; đây cũng là cửa
                       người dùng TỰ tắt, ba cửa còn lại là của quản trị. */}

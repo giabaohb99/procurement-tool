@@ -86,6 +86,19 @@ export const EMPTY_EMPLOYEE_FORM: EmployeeFormValues = {
   date_of_birth: '',
 }
 
+/** Trần ô lương hồ sơ — khớp `SalaryAmount` (`le=10**10`) ở `backend/.../employee/field_limits.py`. */
+export const MAX_PROFILE_SALARY = 10 ** 10
+
+/** Ô tiền lương của hồ sơ (duoc-CR-693): nguyên đồng 0..10^10; `null` = không đụng. */
+function salaryMoney(label: string) {
+  return z
+    .number()
+    .int(`${label} phải là số nguyên đồng`)
+    .min(0, `${label} không được âm`)
+    .max(MAX_PROFILE_SALARY, `${label} vượt mức cho phép`)
+    .nullable()
+}
+
 /**
  * HỒ SƠ ĐẦY ĐỦ — bản mở rộng dùng cho MÀN CHI TIẾT (duoc-CR-314 Đợt 2).
  *
@@ -137,6 +150,12 @@ export const employeeProfileSchema = employeeSchema.extend({
   social_insurance_no: z.string().trim().max(20, 'Tối đa 20 ký tự'),
   health_care_place: z.string().trim().max(255, 'Tối đa 255 ký tự'),
   health_care_code: z.string().trim().max(20, 'Tối đa 20 ký tự'),
+
+  //  LƯƠNG (duoc-CR-693) — `null` = KHÔNG ĐỤNG, giữ nguyên số đã lưu; `0` = xóa.
+  //  ⚠️ Form KHÔNG BAO GIỜ nạp số từ API vào hai ô này (xem `employeeProfileFormValues`): người
+  //  khác không nhận được số, còn chính chủ có số nhưng tự sửa lương mình thì backend trả 403.
+  salary_monthly: salaryMoney('Lương'),
+  allowance_monthly: salaryMoney('Phụ cấp'),
 })
 
 export type EmployeeProfileFormValues = z.infer<typeof employeeProfileSchema>
@@ -170,6 +189,8 @@ export const EMPTY_EMPLOYEE_PROFILE_FORM: EmployeeProfileFormValues = {
   social_insurance_no: '',
   health_care_place: '',
   health_care_code: '',
+  salary_monthly: null,
+  allowance_monthly: null,
 }
 
 /**
@@ -221,6 +242,10 @@ export function employeeProfileFormValues(
     id_expiry_date: employee.id_expiry_date ?? '',
     gender: employee.gender ?? 0,
     position_id: employee.position_id ?? 0,
+    //  ⚠️ Không lấy số từ API — chính chủ nhận được số nhưng KHÔNG được tự sửa (403), nạp vào
+    //  form là lần Lưu nào của họ (sửa số điện thoại) cũng gửi kèm lương và ăn 403.
+    salary_monthly: null,
+    allowance_monthly: null,
   }
 }
 
@@ -248,6 +273,12 @@ export const SENSITIVE_PROFILE_FIELDS = [
   'social_insurance_no',
 ] as const satisfies readonly (keyof EmployeeProfileFormValues)[]
 
+/** Hai ô lương của hồ sơ — chỉ gửi khi người dùng gõ số mới hoặc bấm xóa (duoc-CR-693). */
+export const SALARY_PROFILE_FIELDS = [
+  'salary_monthly',
+  'allowance_monthly',
+] as const satisfies readonly (keyof EmployeeProfileFormValues)[]
+
 /**
  * Bỏ các ô NHẠY CẢM khỏi payload khi người lưu không được xem chúng.
  *
@@ -264,8 +295,11 @@ export function pickWritableProfile(
   values: EmployeeProfileFormValues,
   canReadSensitive: boolean,
 ): Partial<EmployeeProfileFormValues> {
-  if (canReadSensitive) return values
   const out: Partial<EmployeeProfileFormValues> = { ...values }
+  //  LƯƠNG (duoc-CR-693): `null` = người dùng không đụng ô → KHÔNG gửi. Gửi `0` là XÓA số thật
+  //  mà người lưu không nhìn thấy; gửi `null` thì backend cũng giữ nguyên nhưng bỏ hẳn cho sạch.
+  for (const field of SALARY_PROFILE_FIELDS) if (out[field] == null) delete out[field]
+  if (canReadSensitive) return out
   for (const field of SENSITIVE_PROFILE_FIELDS) delete out[field]
   return out
 }

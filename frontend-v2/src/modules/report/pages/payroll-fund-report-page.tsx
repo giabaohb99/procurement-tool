@@ -1,6 +1,6 @@
 import { appRoutes } from '@/shared/constants/app-routes'
 
-import { PayrollFundMissingContractNotice } from '../components/payroll-fund-missing-contract-notice'
+import { PayrollFundMissingSalaryNotice } from '../components/payroll-fund-missing-salary-notice'
 import { ReportDepartmentFilter } from '../components/report-department-filter'
 import type { ReportPageConfig } from '../types/report-analytics'
 import { ReportAnalyticsPage } from './report-analytics-page'
@@ -8,31 +8,33 @@ import { ReportAnalyticsPage } from './report-analytics-page'
 const CONFIG: ReportPageConfig = {
   endpoint: '/api/payroll-fund/summary',
   exportEndpoint: '/api/payroll-fund/summary/export',
+  //  Danh sách người của một nhóm — KHÔNG có cột tiền (duoc-CR-693), chỉ để biết ai được tính.
   drilldownEndpoint: '/api/payroll-fund/summary/rows',
-  entity: 'labor_contract',
+  //  duoc-CR-693: gác như backend — `employee.read` xem, `employee.export` xuất (+ khóa báo cáo 21).
+  entity: 'employee',
   title: 'Quỹ lương theo pháp nhân',
-  //  duoc-CR-692: Kế hoạch nhân sự đã bỏ — quỹ lương CHỈ tính từ lương trên HĐLĐ của từng người.
+  //  duoc-CR-693: nguồn đổi từ lương trên HĐLĐ sang ô lương nhập ở hồ sơ từng người.
   description:
-    'Quỹ lương = lương cơ bản + phụ cấp trên hợp đồng lao động đang hiệu lực của từng người; xem theo phòng ban, pháp nhân; dòng Tổng là toàn công ty. Nhóm dưới 3 người bị che để không lộ lương từng người.',
+    'Quỹ lương = lương + phụ cấp nhập ở hồ sơ từng người (số hiện tại). Chỉ hiện tổng theo pháp nhân, phòng ban, toàn công ty; nhóm dưới 3 người bị che. Không ai xem được lương từng người qua báo cáo.',
   slug: 'payroll-fund',
-  //  HĐLĐ không có màn danh sách riêng — nguồn là danh sách nhân sự, như báo cáo Hợp đồng
-  //  lao động (khóa 17; ngoại lệ khóa gác có ghi ở `report-catalog.test.ts`).
+  //  Nguồn là ô lương trên hồ sơ — màn danh sách nhân sự.
   sourcePath: appRoutes.hr.employees,
-  kpis: ['payroll_total', 'people_paid', 'avg_payroll', 'insurance_total'],
-  //  Hai thành phần của quỹ lương hiện sẵn trên bảng; thấp nhất / cao nhất bật ở menu «Cột».
-  tableMetrics: ['base_total', 'allowance_total'],
+  //  Khóa vắng khỏi `meta` thì thẻ tự bỏ (`ReportKpiRow`), lệch tên với backend không vỡ trang.
+  kpis: ['payroll_total', 'base_total', 'allowance_total', 'people_paid', 'avg_payroll'],
   chartMetric: 'payroll_total',
   //  Mỗi pháp nhân trả lương phần mình — mặc định xem theo công ty.
   defaultGroupBy: 'company',
-  defaultPreset: 'this_month',
   extraFilters: ReportDepartmentFilter,
-  kpiNotice: PayrollFundMissingContractNotice,
+  //  Ảnh chụp HIỆN TẠI: không xu hướng, không so sánh kỳ — ẩn biểu đồ thời gian và nút Kỳ để
+  //  khỏi tưởng đổi kỳ là đổi số (cùng khuôn Hồ sơ còn thiếu).
+  hideTrend: true,
+  hidePeriod: true,
+  kpiNotice: PayrollFundMissingSalaryNotice,
 }
 
 /**
- * Quỹ lương theo pháp nhân (A5, duoc-CR-688, khóa 21). Số tại mốc `min(cuối kỳ, hôm nay)`;
- * xu hướng = quỹ lương + số người tại cuối mỗi tháng trong kỳ. Nhóm dưới 3 người backend
- * trả `null` → ô hiện «—»; danh sách từng người của nhóm bị che trả 403 (thẻ lỗi của ngăn).
+ * Quỹ lương theo pháp nhân (A5, khóa 21). Từ duoc-CR-693 số là lương + phụ cấp nhập ở hồ sơ, tại
+ * thời điểm xem. Nhóm dưới 3 người backend trả `null` → ô hiện «—»; danh sách người không có tiền.
  */
 export function PayrollFundReportPage() {
   return <ReportAnalyticsPage config={CONFIG} />

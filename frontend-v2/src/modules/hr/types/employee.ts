@@ -127,6 +127,14 @@ export interface Employee {
 
   // Nhóm 7 — tùy biến
   extra_fields?: Record<string, unknown>
+
+  // Lương (duoc-CR-693) — CHỈ chính nhân sự này nhận được số (kể cả admin cũng không).
+  /** Lương đ/tháng. Vắng / `null` khi người xem không phải chính người đó. */
+  salary_monthly?: number | null
+  /** Phụ cấp đ/tháng. Vắng / `null` khi người xem không phải chính người đó. */
+  allowance_monthly?: number | null
+  /** Người khác nhận cờ này thay cho hai số: đã nhập lương/phụ cấp hay chưa. */
+  salary_set?: boolean
 }
 
 /** Bản chi tiết — kèm id tài khoản đăng nhập (0 = nhân sự chưa được cấp tài khoản). */

@@ -17618,3 +17618,12 @@ Gỡ màn kế hoạch nhân sự, mẫu khoản chi phí, nhóm chi phí, các 
 Đã gỡ xong ở cả backend, giao diện và bài hướng dẫn. Báo cáo quỹ lương còn bốn chỉ số thực tế, xem theo pháp nhân, phòng ban, chức vụ, nhóm vị trí, loại hợp đồng, dòng tổng là toàn công ty; thêm dòng nhắc số người đang làm chưa có hợp đồng hiệu lực để biết quỹ lương còn thiếu ai. Migration bỏ bảng chạy được cả lên lẫn xuống; loại văn bản căn cứ kế hoạch nhân sự chưa có văn bản nào thì xóa, có thì tắt.
 Mã nguồn: backend/app/modules/headcount_plan/ (xóa), backend/app/modules/labor_contract/payroll_report_*.py, frontend-v2/src/modules/hr, frontend-v2/src/modules/report
 
+## duoc-CR-693 | Ô lương trên hồ sơ nhân sự, chỉ chính người đó xem được
+- status: dang-lam
+- date: 2026-10-29
+- pic: NSU231
+- tag: Được
+Anh Được muốn nhập lương ngay ở hồ sơ nhân sự bằng một ô, thay vì phải lập hợp đồng lao động. Nhập xong thì chỉ chính người đó xem được lương của mình ở trang cá nhân, người khác không xem được.
+Thêm ô lương và phụ cấp mỗi tháng ở tab chung của hồ sơ; người có quyền sửa hồ sơ nhập được nhưng sau khi lưu chỉ thấy đã nhập, không thấy số. Ký hợp đồng lao động thì ô này tự cập nhật theo hợp đồng. Báo cáo quỹ lương cộng ô lương của từng người ra tổng theo pháp nhân, phòng ban và toàn công ty, không hiện lương từng người.
+Mã nguồn: backend/app/modules/employee/, backend/app/modules/labor_contract/payroll_report_*.py, frontend-v2/src/modules/hr, frontend-v2/src/modules/report
+

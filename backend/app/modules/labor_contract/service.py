@@ -12,7 +12,7 @@ from app.core.scoping import apply_scope, not_deleted_cond
 from app.core.utils import generate_code
 from app.modules.employee.model import Employee
 
-from . import access, rules
+from . import access, rules, salary_sync
 from .contract_custom_values import ensure_required_filled, merge_custom_values, placeholders_for_signing
 from .file_response import delete_files_after_commit
 from .model import LaborContract
@@ -160,6 +160,8 @@ def transition(db: Session, user, row: LaborContract, data: TransitionIn) -> Lab
     for key, value in plan.changes.items():
         setattr(row, key, value)
     row.updated_by = user.id
+    if int(plan.status) == int(S.SIGNED):    # duoc-CR-693: ký xong thì chép lương / phụ cấp sang ô hồ sơ (cùng giao dịch)
+        salary_sync.sync_profile_salary(db, row, user.id)
     db.commit()
     db.refresh(row)
     return row

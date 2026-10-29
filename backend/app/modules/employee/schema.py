@@ -6,7 +6,7 @@ from app.core.status_codes import EMPLOYEE_STATUS
 from .constants import (EDUCATION_LEVEL_LABELS, EMPLOYMENT_TYPE_LABELS,
                         GENDER_VALUES, JOB_LEVEL_LABELS, MARITAL_STATUS_LABELS,
                         MAX_EXTRA_FIELDS, RELATION_LABELS)
-from .field_limits import (MAX_PEOPLE_ROWS, ProfileDate, Str20, Str25, Str50,
+from .field_limits import (MAX_PEOPLE_ROWS, ProfileDate, SalaryAmount, Str20, Str25, Str50,
                            Str100, Str255, Str500, check_extra_fields,
                            check_resign_after_hire)
 
@@ -317,6 +317,11 @@ class EmployeeUpdate(BaseModel):
 
     extra_fields: dict | None = None
 
+    #  Lương / phụ cấp (duoc-CR-693). `None`/vắng = giữ nguyên; muốn xóa gửi 0. Ghi cần `employee.write`
+    #  trong phạm vi và KHÔNG phải hồ sơ của chính mình — chốt ở controller (`_guard_salary_write`).
+    salary_monthly: SalaryAmount | None = None
+    allowance_monthly: SalaryAmount | None = None
+
     #  ⚠️ `id_front_image` / `id_back_image` CỐ Ý KHÔNG có ở đây — hai ô ảnh chỉ
     #  đặt được qua cửa upload (`POST /employees/{id}/id-image`). Cho PATCH ghi
     #  thẳng là cho client trỏ ô ảnh CCCD vào một URL ngoài, và mọi màn hình lẫn
@@ -413,6 +418,18 @@ class EmployeeOut(EmployeeBase):
     #  trên — cái đó là trưởng PHÒNG BAN. Danh sách phải
     #  `selectinload(Employee.direct_manager)`, không thì mỗi dòng một truy vấn.
     direct_manager_name: str = ""
+
+    #  Lương (duoc-CR-693). ⚠️ Hai SỐ bị `sensitive.mask` / `mask_many` xóa về 0 với MỌI người xem trừ chính
+    #  nhân sự đó; `salary_set` (đã nhập chưa) thì ai có `employee.read` phạm vi hồ sơ cũng thấy.
+    salary_monthly: int = 0
+    allowance_monthly: int = 0
+    salary_set: bool = False
+
+    @field_validator("salary_monthly", "allowance_monthly", mode="before")
+    @classmethod
+    def _salary_none_is_zero(cls, v):
+        """Bản ghi chưa flush mang `None` (cùng bẫy `_code_none_is_unknown`) — đọc là 0, đừng 500."""
+        return 0 if v is None else v
 
     model_config = {"from_attributes": True}
 

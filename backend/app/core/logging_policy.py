@@ -246,9 +246,9 @@ def sensitive_keys_for_path(path: str) -> frozenset:
         return frozenset()
     #  Nhập muộn: `employee.sensitive` là tệp thuần không phụ thuộc gì, nhưng tầng
     #  `core` không nên kéo phân hệ vào lúc khởi động chỉ để đọc một hằng số.
-    from app.modules.employee.sensitive import SENSITIVE_FIELDS
+    from app.modules.employee.sensitive import SALARY_FIELDS, SENSITIVE_FIELDS
 
-    keys = frozenset(SENSITIVE_FIELDS)
+    keys = frozenset(SENSITIVE_FIELDS) | frozenset(SALARY_FIELDS)   # duoc-CR-693: lương hồ sơ che như lương HĐ
     if "/labor-contracts" in path:
         keys |= _LABOR_CONTRACT_KEYS
     if _EMPLOYEE_PEOPLE_PATH.match(path):

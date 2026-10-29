@@ -11,7 +11,7 @@ import { HR_REPORT_CATALOG } from './report-catalog-hr'
  * đọc nhãn ở đây — lệch một chữ là người gán quyền tưởng đang gán một báo cáo khác.
  */
 const WAVE_3 = [
-  { key: 21, path: appRoutes.report.payrollFund, entity: 'labor_contract', endpoint: '/api/payroll-fund/summary' },
+  { key: 21, path: appRoutes.report.payrollFund, entity: 'employee', endpoint: '/api/payroll-fund/summary' },
   { key: 22, path: appRoutes.report.benefitAudience, entity: 'employee', endpoint: '/api/benefit-audience/summary' },
   { key: 23, path: appRoutes.report.managementSpan, entity: 'employee', endpoint: '/api/management-span/summary' },
   { key: 24, path: appRoutes.report.workMoves, entity: 'employee', endpoint: '/api/work-moves/summary' },
@@ -41,9 +41,12 @@ describe('HR_REPORT_CATALOG — đợt 3', () => {
     }
   })
 
-  it('payroll page states the numbers are contract salaries with small groups hidden', () => {
+  it('payroll page states the numbers come from the profile salary field with small groups hidden', () => {
+    // duoc-CR-693: nguồn là ô lương ở hồ sơ, không còn là lương trên HĐLĐ.
     const entry = HR_REPORT_CATALOG.find((r) => r.key === 21)
     expect(entry?.description).toMatch(/dưới 3 người bị che/)
+    expect(entry?.description).toMatch(/hồ sơ/)
+    expect(entry?.description).not.toMatch(/hợp đồng lao động/)
   })
 })
 

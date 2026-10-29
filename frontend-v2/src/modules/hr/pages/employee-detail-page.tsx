@@ -200,7 +200,9 @@ export function EmployeeDetailPage() {
       //  trên KHÔNG xóa `dirtyFields`, nên thiếu dòng này thì ô đã lưu vẫn bị coi
       //  là «đang sửa» tới khi rời trang — rồi «Áp» quá trình công tác đổi phòng
       //  ban xong, lần Lưu sau đè ngược giá trị cũ lên (duoc-CR-627, review).
-      form.reset(values)
+      //  Hai ô lương về lại «không đụng» (null): người lưu không được xem số, để nguyên số vừa gõ
+      //  thì lần Lưu sau gửi lại số cũ đè lên số mà HĐLĐ ký sau đó vừa cập nhật (duoc-CR-693).
+      form.reset({ ...values, salary_monthly: null, allowance_monthly: null })
     } finally {
       submittingRef.current = false
     }
@@ -352,6 +354,7 @@ export function EmployeeDetailPage() {
                 employee={employee}
                 canWrite={canWrite}
                 canReadSensitive={canReadSensitive}
+                isSelf={currentUser?.employee_id === employee.id}
                 departments={departments?.items ?? []}
                 colleagues={(colleagues?.items ?? [])
                   //  Bỏ CHÍNH MÌNH khỏi ô chọn: tự làm quản lý của mình là một

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from fastapi import HTTPException
 from sqlalchemy import func, or_
@@ -14,6 +15,7 @@ from . import position_role_service, position_service
 from . import references  # noqa: F401  — ai-CR-190: đăng ký chỗ tham chiếu lúc khởi động
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
+from .sensitive import SALARY_FIELDS
 
 # "status" trước đây thiếu trong whitelist nên ô lọc Trạng thái trên UI không ăn — bổ sung vào
 # đây để cả lọc cơ bản lẫn lọc điều kiện đều chạy.
@@ -347,6 +349,19 @@ def _revoke_bot_access(db: Session, user_id: int) -> None:
     revoke_user(db, user_id)
 
 
+def set_salary(obj: Employee, salary: int, allowance: int) -> bool:
+    """Ghi ô lương + phụ cấp của hồ sơ và đóng dấu `salary_updated_at`. Trả `True` nếu có đổi giá trị.
+
+    MỘT đường ghi cho cả sửa tay (`update_employee_core`) lẫn ký HĐLĐ (`labor_contract.salary_sync`). Chỉ
+    `setattr`, bên gọi lo flush/commit. Không ghi nhật ký giá trị — lương không được lọt vào audit/change log.
+    """
+    if (obj.salary_monthly or 0, obj.allowance_monthly or 0) == (salary, allowance):
+        return False
+    obj.salary_monthly, obj.allowance_monthly = salary, allowance
+    obj.salary_updated_at = datetime.utcnow()
+    return True
+
+
 @dataclass
 class WriteOutcome:
     """Kết quả lõi sửa hồ sơ — bên gọi tự quyết commit / audit / xóa cache (duoc-CR-628)."""
@@ -376,6 +391,11 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
     #  lại y nguyên", xem ghi chú ở đó. Phải chụp TRƯỚC vòng `setattr`.
     old_position_id = obj.position_id or 0
     fields = data.model_dump(exclude_unset=True)
+    #  duoc-CR-693: lương gửi `null` = GIỮ NGUYÊN (cột NOT NULL; muốn xóa gửi 0). Lương đi đường `set_salary`
+    #  (đóng dấu thời điểm), không qua vòng `setattr` chung.
+    salary_in = {k: fields.pop(k) for k in SALARY_FIELDS if k in fields}
+    new_salary = salary_in.get("salary_monthly")
+    new_allowance = salary_in.get("allowance_monthly")
     if "manager_id" in fields:
         block_manager_cycle(db, obj.id, fields["manager_id"])
     if "email" in fields:
@@ -384,6 +404,9 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
         setattr(obj, key, value)
     position_service.sync_label(db, obj, fields, old_position_id)
     obj.updated_by = user_id
+    salary_changed = (new_salary is not None or new_allowance is not None) and set_salary(
+        obj, (obj.salary_monthly or 0) if new_salary is None else new_salary,
+        (obj.allowance_monthly or 0) if new_allowance is None else new_allowance)
     if "position_id" in fields and (obj.position_id or 0) != old_position_id:
         #  duoc-CR-653: đổi chức vụ → đổi phần vai trò HỆ THỐNG đã tự cấp (cùng giao dịch, chỉ flush).
         #  Đường nhập Excel, áp quá trình công tác, lưu hồ sơ đều đi qua lõi này.
@@ -422,6 +445,8 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
     #  Nói ra phòng nào bị gỡ. Gỡ âm thầm thì tháng sau không ai tra được vì sao
     #  một người mất phòng ban.
     notes = []
+    if salary_changed:
+        notes.append("Cập nhật lương")      # KHÔNG kèm số — lương không vào nhật ký
     if dropped_departments:
         notes.append("Đổi pháp nhân — gỡ khỏi phòng ban của pháp nhân cũ: "
                      + ", ".join(dropped_departments))

@@ -46,6 +46,12 @@ SENSITIVE_FIELDS: tuple[str, ...] = (
     "social_insurance_no",
 )
 
+#  LƯƠNG (duoc-CR-693) — LUẬT RIÊNG, chặt hơn nhóm trên: CHỈ chính nhân sự đó đọc được SỐ. Không ai khác —
+#  kể cả người nhập, quản trị, người có `employee_sensitive.read` hay `labor_contract` — xem được số; họ chỉ
+#  biết «đã nhập chưa» qua cờ `salary_set` (không che). Cùng một chốt (`mask` / `mask_many`) với nhóm trên để
+#  CSV, trợ lý AI, bản ghi nhật ký... đi chung một cửa; `mask` MẶC ĐỊNH CHE nếu nơi gọi không nói «đây là chính chủ».
+SALARY_FIELDS: tuple[str, ...] = ("salary_monthly", "allowance_monthly")
+
 #  Giá trị thay thế khi che. Trả về ĐÚNG KIỂU của trường chứ không trả `None`
 #  cho tất cả: `EmployeeOut` khai `bank_name: str`, nhét `None` vào là 500 ngay
 #  ở `model_validate` — một lỗi chỉ nổ với người KHÔNG có quyền, tức đúng nhóm
@@ -81,7 +87,13 @@ def can_read_sensitive(profile, employee_id: int = 0) -> bool:
     return bool(me) and me == int(employee_id or 0)
 
 
-def mask(data: dict, allowed: bool) -> dict:
+def is_self(profile, employee_id: int) -> bool:
+    """Hồ sơ `employee_id` là của CHÍNH người đang xem (chặn `employee_id = 0`, cùng lý do `can_read_sensitive`)."""
+    me = int((profile or {}).get("employee_id") or 0)
+    return bool(me) and me == int(employee_id or 0)
+
+
+def mask(data: dict, allowed: bool, profile=None, employee_id: int | None = None) -> dict:
     """Xóa trắng các trường nhạy cảm trong MỘT dict đã `model_dump()`.
 
     Xóa trắng chứ không **bỏ khóa** khỏi dict: bỏ khóa thì giao diện phải phân
@@ -90,13 +102,19 @@ def mask(data: dict, allowed: bool) -> dict:
     và đó là điều mình muốn — người không có quyền không cần biết ô đó có dữ
     liệu hay không.
 
+    Lương (`SALARY_FIELDS`) che riêng: về 0 trừ khi `profile` là của CHÍNH hồ sơ này
+    (`employee_id`, mặc định `data["id"]`). Không truyền `profile` = che (mặc định an toàn).
+
     Sửa TẠI CHỖ rồi trả lại chính dict đó (tiện xâu chuỗi ở tầng controller).
     """
-    if allowed:
-        return data
-    for f in SENSITIVE_FIELDS:
-        if f in data:
-            data[f] = _BLANK_BY_FIELD.get(f, "")
+    if not allowed:
+        for f in SENSITIVE_FIELDS:
+            if f in data:
+                data[f] = _BLANK_BY_FIELD.get(f, "")
+    if not is_self(profile, data.get("id") if employee_id is None else employee_id):
+        for f in SALARY_FIELDS:
+            if f in data:
+                data[f] = 0
     return data
 
 
@@ -107,9 +125,7 @@ def mask_many(rows: list[dict], profile) -> list[dict]:
     xem — họ tìm thấy mình trong danh sách rồi thấy ngày sinh trống trong khi
     trang cá nhân hiện đầy đủ thì đó là một mâu thuẫn không giải thích được.
     """
-    if can_read_sensitive(profile):
-        return rows
-    me = int((profile or {}).get("employee_id") or 0)
+    allowed_all = can_read_sensitive(profile)
     for r in rows:
-        mask(r, bool(me) and int(r.get("id") or 0) == me)
+        mask(r, allowed_all or is_self(profile, int(r.get("id") or 0)), profile)
     return rows

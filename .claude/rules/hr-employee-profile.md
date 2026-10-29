@@ -10,6 +10,9 @@ paths:
   - "doc/erp/hrm/**"
   - "backend/app/modules/import_tool/employee_import*.py"
   - "test/backend/*cr628*"
+  - "test/backend/*cr693*"
+  - "backend/app/modules/labor_contract/payroll_report*"
+  - "backend/app/modules/labor_contract/salary_sync.py"
 ---
 # Hồ sơ nhân sự mở rộng và danh mục Chức vụ
 
@@ -272,3 +275,26 @@ thống tự cấp gói. Mã: `employee/position_role_service.py` (+ `position_r
   worker khác. Có sẵn cho mọi thao tác phân quyền, CR-653 chỉ thêm thu hồi hàng loạt; chưa chuyển cache sang Redis.
 - Script đề xuất: mặc định dry-run, `--min-holders 3`, loại vai trò cấm, `--apply --yes` chỉ THÊM gói + ghi nhật ký, không
   cấp cho ai (dùng «Áp lại» sau).
+
+
+### Ô LƯƠNG TRÊN HỒ SƠ (duoc-CR-693, 29/10/2026)
+
+`tab_employee` có `salary_monthly` + `allowance_monthly` (BIGINT đồng, 0 = chưa nhập) + `salary_updated_at`. Migration `emp_salary01`.
+Đại ca chốt: **CHỈ chính nhân sự đó đọc được SỐ**. Người khác — kể cả người nhập, admin, người có `employee_sensitive` /
+`labor_contract` — chỉ thấy cờ `salary_set` (đã nhập chưa).
+
+- ⚠️ **Một chốt che duy nhất: `sensitive.mask` / `mask_many` (`SALARY_FIELDS`).** Khác nhóm nhạy cảm: KHÔNG mở bằng khóa quyền, chỉ
+  nhánh `self` (`is_self`, chặn `employee_id = 0`). `mask(data, allowed, profile)` **mặc định CHE** nếu không truyền `profile` —
+  đường mới quên truyền thì lương về 0 chứ không lộ. Mọi cửa trả hồ sơ (`/`, `/me`, `/{id}`, PATCH, CSV/XLSX qua `export_mask`)
+  đi qua đây; trợ lý AI dùng danh sách trắng nên không có lương; nhật ký (`change_tracker` denylist + `logging_policy` theo đường
+  dẫn) không giữ số; audit chỉ ghi «Cập nhật lương».
+- ⚠️ **Che bằng 0 nên màn sửa hồ sơ PHẢI không gửi hai ô này khi người xem không phải chính chủ** (cùng bẫy `pickWritableProfile`):
+  gửi 0 đè lương thật. Backend không phân biệt «bị che» với «muốn xóa». Gửi `null`/vắng = giữ nguyên; xóa = gửi 0.
+- Ghi: `employee.write` trong phạm vi; **không ai tự đổi lương của mình** (403 khi giá trị đổi thật — gửi lại nguyên giá trị cũ thì
+  qua, vì chính chủ đọc được số). Đường ghi duy nhất: `employee.service.set_salary` (PATCH và ký HĐLĐ dùng chung).
+- Không sắp xếp danh sách theo lương (400): thứ tự cũng là thông tin. Nhập Excel nhân sự KHÔNG có cột lương: tiêu đề «Lương/Phụ cấp»
+  bị bỏ qua + cảnh báo (`ignored_headers` của adapter ở `catalog_import.py`).
+- Ký HĐLĐ (DRAFT→SIGNED) tự chép `base_salary`/`allowance` sang hồ sơ nếu HĐ đó là **hiệu lực mới nhất** (`labor_contract/salary_sync.py`:
+  đã bắt đầu, chưa hết hạn, không HĐ Đã ký nào khác bắt đầu muộn hơn). Chỉ Nháp sửa được lương HĐ nên không có đường «sửa HĐ đã ký».
+- Báo cáo Quỹ lương (khóa 21) đọc ô này, không đọc HĐ: ảnh chụp hiện tại, không kỳ so sánh/xu hướng, chỉ TỔNG, nhóm/Tổng dưới 3 người bị
+  che, `/rows` không có cột tiền, gác `employee.read|export` + `require_report(21)`. Test: `test_o_luong_ho_so_cr693.py`, `test_bao_cao_quy_luong_cr688.py`.

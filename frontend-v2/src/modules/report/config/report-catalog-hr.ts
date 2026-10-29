@@ -140,15 +140,15 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
   },
   {
     label: 'Quỹ lương theo pháp nhân',
-    description: 'Quỹ lương = lương cơ bản + phụ cấp trên hợp đồng lao động đang hiệu lực của từng người; xem theo phòng ban, pháp nhân; nhóm dưới 3 người bị che.',
+    description: 'Quỹ lương = lương + phụ cấp nhập ở hồ sơ từng người (số hiện tại); chỉ hiện tổng theo pháp nhân, phòng ban; nhóm dưới 3 người bị che.',
     path: appRoutes.report.payrollFund,
-    //  Như Hợp đồng lao động (khóa 17): HĐLĐ không có màn danh sách riêng, nguồn là danh sách
-    //  nhân sự còn khóa gác là `labor_contract` (ngoại lệ ghi ở `report-catalog.test.ts`).
+    //  duoc-CR-693: số lấy từ ô lương hồ sơ nên gác `employee` (backend `require('employee', read|export)`),
+    //  khớp luôn khóa của danh sách nhân sự — hết là ngoại lệ ở `report-catalog.test.ts`.
     sourcePath: appRoutes.hr.employees,
     icon: Banknote,
     //  ReportKey.PAYROLL_FUND (backend) = 21.
     key: 21,
-    entity: 'labor_contract',
+    entity: 'employee',
     group: 'Nhân sự',
     endpoint: '/api/payroll-fund/summary',
     //  Không lên dải KPI Tổng quan: số lương là số nhạy cảm, trang Tổng quan hay được mở

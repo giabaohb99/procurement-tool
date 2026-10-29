@@ -53,6 +53,11 @@ ProfileDate = Annotated[
     Field(ge=date(MIN_PROFILE_YEAR, 1, 1), le=date(MAX_PROFILE_YEAR, 12, 31)),
 ]
 
+# ── Tiền lương (duoc-CR-693) ───────────────────────────────────────────────
+#  Đồng NGUYÊN, 0..10^10 (10 tỷ/tháng — trần hợp lý của cột BIGINT `salary_monthly` / `allowance_monthly`).
+#  Cột BIGINT nhận tới 9×10^18 nên thiếu trần này thì số dán nhầm đi thẳng xuống DB và làm hỏng tổng quỹ lương.
+SalaryAmount = Annotated[int, Field(ge=0, le=10**10)]
+
 # ── Ô JSON tùy biến ────────────────────────────────────────────────────────
 #  Trần SỐ KHÓA đã có từ đầu (`MAX_EXTRA_FIELDS`), nhưng nó không cứu được gì:
 #  20 khóa × 2MB = 40MB một hồ sơ, MySQL nhận hết (cột JSON chứa tới 1GB) và

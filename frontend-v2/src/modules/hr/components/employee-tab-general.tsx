@@ -13,6 +13,7 @@ import {
   EmployeeTextField,
   SensitiveFieldsNotice,
 } from './employee-form-fields'
+import { EmployeeSalarySection } from './employee-salary-section'
 import { LookupSelect } from './lookup-select'
 import { useCompanies } from '../hooks/use-companies'
 import { useJobPositions } from '../hooks/use-job-positions'
@@ -31,6 +32,8 @@ interface EmployeeTabGeneralProps {
   employee: EmployeeDetail
   canWrite: boolean
   canReadSensitive: boolean
+  /** Người xem là CHÍNH nhân sự này — chỉ họ thấy số lương (duoc-CR-693). */
+  isSelf: boolean
   //  ⚠️ `company_id` là BẮT BUỘC, không phải thừa: ô «Phòng ban» lọc theo pháp
   //  nhân đang chọn, và luật đó chính là điều kiện để mở khóa ô «Công ty».
   departments: { id: number; name: string; company_id: number }[]
@@ -43,6 +46,7 @@ export function EmployeeTabGeneral({
   employee,
   canWrite,
   canReadSensitive,
+  isSelf,
   departments,
   colleagues,
 }: EmployeeTabGeneralProps) {
@@ -423,6 +427,8 @@ export function EmployeeTabGeneral({
             disabled={disabled}
           />
         </FormSection>
+
+        <EmployeeSalarySection employee={employee} isSelf={isSelf} canWrite={canWrite} />
       </Card>
     </div>
   )

@@ -273,6 +273,9 @@ ADAPTERS: dict[int, dict] = {
         "template_action_col": False,
         "template_notes": EMPLOYEE_TEMPLATE_NOTES,
         "max_rows": 2000,
+        #  duoc-CR-693: lương / phụ cấp KHÔNG nhập qua Excel (chỉ ô hồ sơ + ký HĐLĐ) — gặp cột này thì bỏ qua + cảnh báo.
+        "ignored_headers": ("Lương", "Lương cơ bản", "Lương (đ/tháng)", "Phụ cấp", "Phụ cấp (đ/tháng)"),
+        "ignored_note": "Lương / phụ cấp không nhập được từ tệp Excel Nhân sự — bỏ qua các cột",
         "prepare": _employee_hook("prepare"),
         "apply_row": _employee_hook("apply_row"),
         "finalize": _employee_hook("finalize"),
@@ -432,6 +435,12 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
     #  Hook `prepare`: dựng ngữ cảnh cả lô (người nhập, quyền…), được phép bỏ bớt cột khỏi `field_col`
     #  (vd cột nhạy cảm khi thiếu quyền) và trả `ctx.pre_logs` = [(level, category, message)] để ghi dòng 0.
     ctx = adapter["prepare"](db, batch, field_col, apply) if adapter.get("prepare") else None
+    #  Cột adapter CỐ Ý không nhận (vd lương hồ sơ Nhân sự, duoc-CR-693): bỏ qua, nhưng báo để người nhập không
+    #  tưởng số đã vào. `ignored_headers` = tiêu đề (chữ thường, không dấu sao) + `ignored_note` = câu cảnh báo.
+    ignored = [h for h in adapter.get("ignored_headers", ()) if _norm(h) in header_col]
+    if ignored and ctx is not None and hasattr(ctx, "pre_logs"):
+        ctx.pre_logs.append((LogLevel.WARNING, "column_ignored",
+                             f"{adapter['ignored_note']}: " + ", ".join(ignored)))
 
     # Cột "Hành động" (tùy chọn) — không thuộc bộ trường, dò riêng theo tiêu đề.
     action_col = next((c for k, c in header_col.items() if k in _ACTION_HEADERS), None)

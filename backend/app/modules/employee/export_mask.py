@@ -22,10 +22,9 @@ def mask_export_rows(rows: list[dict], employee_ids: list[int], profile) -> list
 
     `employee_ids` song song với `rows` (id hồ sơ của từng dòng) để xét ngoại lệ `self`.
     """
-    if sensitive.can_read_sensitive(profile):
-        return rows
+    #  Không thoát sớm khi có `employee_sensitive.read`: lương (duoc-CR-693) che theo luật riêng — chỉ chính chủ.
     for row, eid in zip(rows, employee_ids):
-        sensitive.mask(row, sensitive.can_read_sensitive(profile, eid))
+        sensitive.mask(row, sensitive.can_read_sensitive(profile, eid), profile, eid)
     return rows
 
 

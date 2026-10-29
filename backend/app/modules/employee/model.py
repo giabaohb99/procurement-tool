@@ -1,6 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import JSON, BigInteger, Boolean, Date, SmallInteger, String
+from sqlalchemy import JSON, BigInteger, Boolean, Date, DateTime, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import Base, AuditMixin, LegacyIdMixin
@@ -131,6 +131,15 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
     #  `NULL` là `{}` (xem `extra_fields_map`).
     extra_fields: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
+    # Nhóm 8 — lương (duoc-CR-693)
+    #  ⚠️ CHỈ chính nhân sự đó đọc được SỐ (không ai khác, kể cả admin / người có `employee_sensitive`).
+    #  Chốt che ở MỘT chỗ: `sensitive.mask` / `mask_many` (danh sách `SALARY_FIELDS`). Người khác chỉ thấy
+    #  cờ `salary_set` bên dưới. Đồng đã làm tròn (BIGINT), 0 = chưa nhập.
+    salary_monthly: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    allowance_monthly: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    #  Lần cuối ô lương được ghi (tay hoặc do ký HĐLĐ).
+    salary_updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     department = relationship(
         "Department",
         primaryjoin="foreign(Employee.department_id) == Department.id",
@@ -172,6 +181,11 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
     @property
     def direct_manager_name(self) -> str:
         return (self.direct_manager.full_name or "") if self.direct_manager else ""
+
+    @property
+    def salary_set(self) -> bool:
+        """Đã nhập lương hoặc phụ cấp chưa — cờ DUY NHẤT người khác được biết (không lộ số)."""
+        return bool(self.salary_monthly or 0) or bool(self.allowance_monthly or 0)
 
     @property
     def marital_status_label(self) -> str:

@@ -53,6 +53,8 @@ const FIELD_TAB: Record<string, ProfileTabKey> = {
   is_active: 'general',
   hire_date: 'general',
   resign_date: 'general',
+  salary_monthly: 'general',   // nhóm «Lương» trong mục Công việc (duoc-CR-693)
+  allowance_monthly: 'general',
 
   // Tab «Liên hệ & Ngân hàng» — nhóm 3 + nhóm 4
   phone: 'contact',
