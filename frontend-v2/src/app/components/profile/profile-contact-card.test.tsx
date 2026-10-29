@@ -122,6 +122,11 @@ describe('ProfileContactCard', () => {
     ])
   })
 
+  it('shows the label of the main phone next to its title (duoc-CR-694)', () => {
+    renderCard(employee({ phone_label: 'Cá nhân' }))
+    expect(screen.getByText('Số điện thoại · Cá nhân')).toBeInTheDocument()
+  })
+
   it('fires a single request when the form is submitted twice in the same tick', async () => {
     //  `disabled={isPending}` chỉ đúng ở lần render sau — hai lần submit liền
     //  tay phải bị chốt `useRef` chặn, không thì ra hai dòng nhật ký.

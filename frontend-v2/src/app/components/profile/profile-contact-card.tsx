@@ -28,7 +28,11 @@ export function ProfileContactCard({ employee }: ProfileContactCardProps) {
       iconClassName="text-muted-foreground"
       actions={<SelfContactDialog employee={employee} />}
     >
-      <ProfileFieldRow icon={Phone} label="Số điện thoại" value={employee.phone} />
+      <ProfileFieldRow
+        icon={Phone}
+        label={employee.phone_label ? `Số điện thoại · ${employee.phone_label}` : 'Số điện thoại'}
+        value={employee.phone}
+      />
       {/*  duoc-CR-694: số điện thoại khác, kèm nhãn nếu có. */}
       {(employee.extra_phones ?? []).map((p, i) => (
         <ProfileFieldRow
