@@ -745,7 +745,8 @@ export const cruds: Record<string, CrudConfig> = {
   'purchase-orders': {
     slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders', txn: true, cloneable: true, exportXlsx: true,
     columns: [
-      { key: 'code', label: 'Mã PO' },
+      // bao-CR-693: mã PO là link thật — chuột phải / Ctrl + bấm mở đơn ở tab mới
+      { key: 'code', label: 'Mã PO', link: (r) => `/purchase-orders/${r.id}` },
       // bao-CR-319: chỉ đánh dấu đơn nhập khẩu. Đơn trong nước là số đông nên để trống
       // cho gọn mắt — cột đầy chữ "Trong nước" thì cái cần thấy lại chìm đi.
       { key: 'order_type', label: 'Loại đơn', render: (r) => (Number(r.order_type) === 2

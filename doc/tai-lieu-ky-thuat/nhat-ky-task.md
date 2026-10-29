@@ -111,6 +111,58 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-691-hdsd | Bài hướng dẫn và tài liệu cho màn Chi tiết YC mua hàng mở rộng, đổi tên Tiến độ đơn mua hàng
+- status: xong
+- date: 2026-10-29
+Màn Chi tiết YC mua hàng sau bao-CR-691 có thêm cột phiếu, cột dòng, cột đơn mua hàng và nút xuất Excel, nhưng Trung tâm trợ giúp
+chưa có bài nào cho màn này. Viết bài mới dưới nhóm Dành cho Nhân viên Mua hàng, đứng ngay sau bài Tiến độ đơn mua hàng: màn này
+khác Tiến độ đơn mua hàng ở chỗ có cả dòng chưa tạo đơn và chưa đặt hàng; cách đọc hai cột Tiến độ dòng và Trạng thái phiếu; ba
+cột tiến độ hiện sẵn và mười sáu cột ẩn bật ở menu Cột; lọc nhiều tiến độ dòng, lựa chọn gộp Chưa được đặt hàng; xuất Excel
+theo bộ lọc, trần 5.000 dòng; hạn chế ghép đơn theo mã phiếu và mã hàng. Đổi tên Tiến độ mua hàng thành Tiến độ đơn mua hàng
+ở hai bài có sẵn của Trung tâm trợ giúp (bài riêng và câu nhắc trong bài nhóm) bằng script sửa thẳng vì hai bài đó không có
+tệp seed. Tài liệu chức năng: thêm mục Màn Chi tiết YC mua hàng ở tài liệu Hệ thống và Báo cáo (API, xuất Excel, giao diện,
+hạn chế), đổi nhãn ở tài liệu Đơn mua hàng và Yêu cầu khảo sát. Đã nạp bài mới lên dev kèm kho vector; prod chờ người chủ gật.
+Mã nguồn: backend/scripts/seed_help_chi_tiet_yc_mua_hang.py (mới), doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md, 04-don-mua-hang.md, 02-yeu-cau-khao-sat.md
+Deploy: dev 29/10 (bài mới + đổi tên hai bài, kho vector nạp lại)
+
+## bao-CR-693 | Mở chi tiết chứng từ ở tab mới từ trang danh sách đang lọc
+- status: xong
+- date: 2026-10-29
+- tag: Agent 3
+**Bối cảnh:** phiếu TK29102601 của Dego Organic: người dùng lọc danh sách đơn mua hàng rồi muốn mở nhiều đơn cùng lúc, nhưng bấm vào dòng là rời trang và mất bộ lọc đang xem.
+
+**Đã làm**
+- Trên cả thumua và ERP v2, giữ Ctrl (Cmd trên máy Mac) rồi bấm, hoặc bấm chuột giữa vào một dòng thì chi tiết mở ở tab mới, trang danh sách giữ nguyên. Bấm thường vẫn mở cùng tab như cũ.
+- Mã chứng từ hiện chữ xanh và là link thật, nên chuột phải chọn Mở trong tab mới cũng chạy.
+- Bấm vào ô tick chọn, nút nhân bản hay link trong dòng thì dòng không mở thêm tab nào.
+- Thumua: áp cho mọi màn danh sách dựng bằng khung chung, thêm link cho cột Mã PO. ERP v2: bật ở Đơn mua hàng, Yêu cầu mua hàng, Yêu cầu báo giá; màn Chi tiết YC mua hàng đã có link thật từ trước. Danh sách dạng thẻ trên điện thoại giữ nguyên.
+
+**Kết quả:** kiểm kiểu và kiểm mã ERP v2 không lỗi; bài kiểm bảng dùng chung và phân hệ Thu mua đều đạt, có 14 bài mới cho bấm Ctrl, chuột giữa, bấm thường. Kiểm kiểu thumua giữ đúng 4 lỗi cũ. Đã thử trên trình duyệt local cả hai bản, khổ rộng và khổ điện thoại.
+
+Mã nguồn: frontend/src/components/CrudList.tsx, frontend/src/utils/new-tab.ts, frontend/src/config/cruds.tsx, frontend-v2/src/shared/data-table/data-table.tsx, row-new-tab.ts, row-link.tsx, row-new-tab.test.tsx, frontend-v2/src/modules/procurement/pages/purchase-order-list-page.tsx, purchase-request-list-page.tsx, survey-request-list-page.tsx
+
+## bao-CR-691-thumua | Đồng bộ thumua với v2: Chi tiết YC mua hàng và Tiến độ đơn mua hàng
+- status: xong
+- date: 2026-10-29
+- list: Kế hoạch hệ agent
+- tag: Agent 3
+**Bối cảnh:** bản v2 của hai màn Chi tiết YC mua hàng và Tiến độ đơn mua hàng đã đúng và đã lên prod; bản thumua
+(frontend/) còn lệch menu, tên màn và thiếu nút xuất Excel.
+
+**Đã làm**
+- Menu thumua: mục *Chi tiết YC mua hàng* dời xuống nhóm Mua hàng, đứng ngay dưới *Tiến độ đơn mua hàng*; quyền giữ nguyên.
+- Đổi tên *Tiến độ mua hàng* thành *Tiến độ đơn mua hàng* ở menu, tiêu đề trang và tên tệp Excel dự phòng; đường dẫn
+  giữ nguyên.
+- Nút *Xuất Excel* trên bảng Chi tiết YC mua hàng (cả trang riêng lẫn tab trong Báo cáo mua hàng): xuất đúng bộ lọc đang
+  chọn, tên tệp theo máy chủ, lỗi (quá 5.000 dòng…) hiện câu máy chủ; chỉ hiện với người có quyền xuất báo cáo.
+- Ô lọc tiến độ dòng chọn được nhiều giá trị như v2 (vẫn giữ lựa chọn gộp *Chưa được đặt hàng*); thêm ba cột hiện sẵn
+  *SL đã đặt*, *SL đã nhận*, *Mã ĐMH* — mỗi mã đơn mở danh sách Đơn mua hàng lọc sẵn theo mã (thiếu quyền xem đơn thì
+  chỉ hiện chữ). Các cột phụ khác của v2 không đưa sang, ai cần thì dùng Xuất Excel.
+
+**Kết quả:** kiểm kiểu thumua giữ đúng 4 lỗi cũ, không lỗi mới.
+
+Mã nguồn: `frontend/src/layouts/AppLayout.tsx`, `frontend/src/pages/PurchaseProgress.tsx`, `frontend/src/components/PrLinesReport.tsx`
+
 ## bao-CR-691 | Chi tiết YC mua hàng thêm cột đơn mua hàng, lọc nhiều tiến độ, xuất Excel
 - status: xong
 - date: 2026-10-28
@@ -17637,3 +17689,15 @@ Anh Được muốn mục liên hệ của hồ sơ cho nhập nhiều số đi�
 Theo góp ý giao diện, danh sách số chiếm cả chiều ngang, hai ô địa chỉ nằm chung một hàng bên dưới và có nút giống địa chỉ thường trú. Nhân viên tự sửa được ở trang cá nhân; tìm nhân sự theo số phụ được; xuất và nhập Excel có thêm cột số điện thoại khác và nhãn số chính.
 Mã nguồn: backend/app/modules/employee/phone_rules.py, migration emp_phones01, frontend-v2/src/modules/hr/components/phone-list-editor.tsx
 
+
+## kh-prod-2910 | Đợt prod 29/10: nhân sự của anh Được, Chi tiết YC mua hàng, nút trợ lý, quyền xuất báo cáo cho thu mua
+- status: xong
+- date: 2026-10-29
+- tag: Agent 1
+**Bối cảnh:** gom toàn bộ erp-v2 lên prod sau khi màn Chi tiết YC mua hàng (phiếu TK28102602) đã thử trên dev.
+
+**Đã làm:** gộp erp-v2 vào main (main có bản vá chọn riêng ai-CR-232 nên gộp chứ không đi thẳng; nội dung sau gộp trùng erp-v2). Trên prod: lưu dump, dựng lại api, hai dịch vụ celery, giao diện thumua, giao diện ERP v2 và cụm dịch vụ AI; 5 migration chạy xong (nghỉ phép nhiều khoảng ngày, kế hoạch nhân sự), CSDL 232 bảng. Đợt gồm duoc-CR-683, 685, 686 đến 690, bao-CR-689 (nâng nút trợ lý AI lên trên thanh lật trang), bao-CR-691 (Chi tiết YC mua hàng thêm cột phiếu, dòng, đơn mua hàng; lọc nhiều tiến độ dòng; xuất Excel; Tiến độ dòng thành nhãn màu đứng trước Trạng thái phiếu; đổi tên Tiến độ mua hàng thành Tiến độ đơn mua hàng trên v2), bao-CR-663. Nạp bài hướng dẫn báo cáo nhân sự, nghỉ phép, kết nối AI; đổi tên hai bài trợ giúp nhắc Tiến độ mua hàng; nạp lại kho tìm kiếm của trợ lý (129 bài, 11 câu hỏi thường gặp). Cấp quyền xuất báo cáo cho ba vai trò thu mua đang xem được mà chưa xuất được: Nhân viên thu mua, Nhân viên thu mua phòng, Quản lý thu mua phòng; có ghi nhật ký thao tác.
+
+**Kết quả:** bốn trang trả 200, cổng MCP chưa khóa trả 401, migration ở đầu hcplan04, log api và cụm AI không có lỗi; đường xuất Excel mới có trên prod.
+
+Commit: 0c7b2104 (main) · Deploy: prod toàn bộ dịch vụ ERP và cụm AI, 29/10/2026 sáng

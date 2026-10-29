@@ -15,6 +15,7 @@ import TableToolbar from './TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
 import { useFilterUrlWriter } from '../hooks/use-url-filters'
 import TableScroll from './TableScroll'
+import { isInteractiveTarget, openInNewTab, wantsNewTab } from '../utils/new-tab'
 
 export default function CrudList() {
   const { entity } = useParams()
@@ -77,6 +78,15 @@ export default function CrudList() {
   const pageIds = useMemo(() => items.map((r) => r.id), [items])
   const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id))
 
+  // bao-CR-693: bấm dòng — Ctrl/Cmd + bấm hoặc chuột giữa mở chi tiết ở tab mới (danh sách
+  // đang lọc giữ nguyên), bấm thường mở cùng tab như cũ. Bấm trúng ô tick / nút / link thì
+  // để ô đó tự xử lý, dòng không mở gì.
+  function openRow(e: React.MouseEvent, url: string) {
+    if (isInteractiveTarget(e)) return
+    if (wantsNewTab(e)) { e.preventDefault(); openInNewTab(url); return }
+    navigate(url)
+  }
+
   function toggleRow(id: number) {
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
   }
@@ -98,9 +108,18 @@ export default function CrudList() {
         cell: (row) => {
           const content = c.render ? c.render(row) : (row[c.key] ?? '')
           const href = c.link?.(row)
+          // bao-CR-693: link thật (<a href>) để chuột phải "Mở trong tab mới" chạy được.
+          // Bấm thường vẫn chuyển trang trong SPA; Ctrl/Cmd/chuột giữa để trình duyệt tự mở tab
+          // mới. Chặn lan lên dòng để không mở đôi (dòng cũng nghe Ctrl + bấm / chuột giữa).
           return href ? (
-            <span className="clickable" style={{ color: 'var(--teal)', fontWeight: 500 }}
-              onClick={(e) => { e.stopPropagation(); navigate(href) }}>{content}</span>
+            <a href={href} className="clickable" style={{ color: 'var(--teal)', fontWeight: 500 }}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (wantsNewTab(e) || e.shiftKey) return
+                e.preventDefault()
+                navigate(href)
+              }}
+              onAuxClick={(e) => e.stopPropagation()}>{content}</a>
           ) : content
         },
       })),
@@ -457,7 +476,12 @@ export default function CrudList() {
             <tbody>
               {/* Sort phía server (danh sách phân trang) / phía client (mảng thô) */}
               {displayItems.map((row, i) => (
-                <tr key={row.id} className="clickable" onClick={() => navigate(`/${cfg.slug}/${row.id}`)}>
+                <tr key={row.id} className="clickable"
+                  onClick={(e) => openRow(e, `/${cfg.slug}/${row.id}`)}
+                  onAuxClick={(e) => { if (e.button === 1) openRow(e, `/${cfg.slug}/${row.id}`) }}
+                  // Chuột giữa trên Windows bật chế độ cuộn tự động và nuốt mất auxclick — chặn đi
+                  // (trừ khi bấm trúng link: để trình duyệt tự mở tab mới cho link).
+                  onMouseDown={(e) => { if (e.button === 1 && !isInteractiveTarget(e)) e.preventDefault() }}>
                   <TableCells columns={table.columns} row={row} index={i} />
                 </tr>
               ))}

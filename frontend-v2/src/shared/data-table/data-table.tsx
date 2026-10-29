@@ -17,6 +17,7 @@ import { DataTableMobileCards } from './data-table-mobile-cards'
 import { DataTablePagination } from './data-table-pagination'
 import { FilterResetButton } from './filter-reset-button'
 import { measureColumnContentWidth } from './measure-column-width'
+import { isInteractiveTarget, openInNewTab, wantsNewTab } from './row-new-tab'
 import { columnLabel } from './required-header'
 import type { DataTableColumn, DataTablePagination as PaginationConfig } from './types'
 import { useColumnDrag } from './use-column-drag'
@@ -25,6 +26,13 @@ import { usePinnedOffsets } from './use-pinned-offsets'
 import { useTableLayout } from './use-table-layout'
 
 const DEFAULT_MIN_WIDTH = 64
+
+/** Ctrl / chuột giữa vào hàng có `getRowHref` (bao-CR-693) — bỏ qua khi bấm trúng ô có thao tác riêng. */
+function openRowInNewTab(event: React.MouseEvent, href: string | undefined) {
+  if (!href || isInteractiveTarget(event)) return
+  event.preventDefault()
+  openInNewTab(href)
+}
 
 /**
  * Lớp sơn đè lên `Table` mặc định của shadcn. Để ở đây (không sửa
@@ -137,6 +145,15 @@ export interface DataTableProps<T> {
   errorMessage?: string
 
   onRowClick?: (row: T) => void
+  /**
+   * Đường trang chi tiết của một hàng (đường của router, vd
+   * `appRoutes.procurement.purchaseOrderDetail(id)`). Khai thì Ctrl / Cmd +
+   * bấm hoặc bấm chuột giữa vào hàng mở chi tiết ở TAB MỚI — trang danh sách
+   * đang tìm / lọc giữ nguyên (bao-CR-693). Bấm thường vẫn chạy `onRowClick`
+   * như cũ. Bấm trúng ô tick / nút / link thì hàng không mở gì. Danh sách THẺ
+   * ở khổ hẹp không đổi (điện thoại không có Ctrl hay chuột giữa).
+   */
+  getRowHref?: (row: T) => string | undefined
   /**
    * Bấm ĐÚP vào một hàng — cộng thêm, không đổi hành vi mặc định của
    * `onRowClick` (vẫn chạy trên MỌI cú bấm, kể cả cú đầu của một lượt bấm
@@ -284,6 +301,7 @@ export function DataTable<T>({
   emptyMessage = 'Không có dữ liệu.',
   errorMessage = 'Không tải được danh sách. Kiểm tra kết nối hoặc quyền truy cập.',
   onRowClick,
+  getRowHref,
   onRowDoubleClick,
   rowClassName,
   onRowHover,
@@ -735,8 +753,34 @@ export function DataTable<T>({
               rows?.map((row) => (
                 <TableRow
                   key={getRowId(row)}
-                  className={cn(ROW_BG, onRowClick && 'cursor-pointer', rowClassName?.(row))}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  className={cn(
+                    ROW_BG,
+                    (onRowClick || getRowHref) && 'cursor-pointer',
+                    rowClassName?.(row),
+                  )}
+                  onClick={(event) => {
+                    if (getRowHref && wantsNewTab(event)) {
+                      openRowInNewTab(event, getRowHref(row))
+                      return
+                    }
+                    onRowClick?.(row)
+                  }}
+                  onAuxClick={
+                    getRowHref
+                      ? (event) => {
+                          if (event.button === 1) openRowInNewTab(event, getRowHref(row))
+                        }
+                      : undefined
+                  }
+                  //  Chuột giữa trên Windows bật chế độ cuộn tự động và nuốt mất
+                  //  `auxclick` — chặn ở `mousedown`. Trừ link: để trình duyệt tự mở.
+                  onMouseDown={
+                    getRowHref
+                      ? (event) => {
+                          if (event.button === 1 && !isInteractiveTarget(event)) event.preventDefault()
+                        }
+                      : undefined
+                  }
                   onDoubleClick={onRowDoubleClick ? (event) => onRowDoubleClick(row, event) : undefined}
                   onMouseEnter={onRowHover ? () => onRowHover(row) : undefined}
                 >
