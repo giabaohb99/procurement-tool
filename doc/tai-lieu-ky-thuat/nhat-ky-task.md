@@ -111,6 +111,28 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-691-thumua | Đồng bộ thumua với v2: Chi tiết YC mua hàng và Tiến độ đơn mua hàng
+- status: xong
+- date: 2026-10-29
+- list: Kế hoạch hệ agent
+- tag: Agent 3
+**Bối cảnh:** bản v2 của hai màn Chi tiết YC mua hàng và Tiến độ đơn mua hàng đã đúng và đã lên prod; bản thumua
+(frontend/) còn lệch menu, tên màn và thiếu nút xuất Excel.
+
+**Đã làm**
+- Menu thumua: mục *Chi tiết YC mua hàng* dời xuống nhóm Mua hàng, đứng ngay dưới *Tiến độ đơn mua hàng*; quyền giữ nguyên.
+- Đổi tên *Tiến độ mua hàng* thành *Tiến độ đơn mua hàng* ở menu, tiêu đề trang và tên tệp Excel dự phòng; đường dẫn
+  giữ nguyên.
+- Nút *Xuất Excel* trên bảng Chi tiết YC mua hàng (cả trang riêng lẫn tab trong Báo cáo mua hàng): xuất đúng bộ lọc đang
+  chọn, tên tệp theo máy chủ, lỗi (quá 5.000 dòng…) hiện câu máy chủ; chỉ hiện với người có quyền xuất báo cáo.
+- Ô lọc tiến độ dòng chọn được nhiều giá trị như v2 (vẫn giữ lựa chọn gộp *Chưa được đặt hàng*); thêm ba cột hiện sẵn
+  *SL đã đặt*, *SL đã nhận*, *Mã ĐMH* — mỗi mã đơn mở danh sách Đơn mua hàng lọc sẵn theo mã (thiếu quyền xem đơn thì
+  chỉ hiện chữ). Các cột phụ khác của v2 không đưa sang, ai cần thì dùng Xuất Excel.
+
+**Kết quả:** kiểm kiểu thumua giữ đúng 4 lỗi cũ, không lỗi mới.
+
+Mã nguồn: `frontend/src/layouts/AppLayout.tsx`, `frontend/src/pages/PurchaseProgress.tsx`, `frontend/src/components/PrLinesReport.tsx`
+
 ## bao-CR-691 | Chi tiết YC mua hàng thêm cột đơn mua hàng, lọc nhiều tiến độ, xuất Excel
 - status: xong
 - date: 2026-10-28
