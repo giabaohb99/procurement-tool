@@ -90,13 +90,6 @@ const NAV_GROUPS: NavGroup[] = [
         icon: "ti-chart-bar",
         entity: "report",
       },
-      {
-        // bao-CR-296 — lối vào riêng của báo cáo dòng YCMH (vẫn còn tab cùng tên trong Báo cáo)
-        to: "/pr-lines-report",
-        label: "Chi tiết YC mua hàng",
-        icon: "ti-list-search",
-        entity: "report",
-      },
     ],
   },
   {
@@ -110,7 +103,7 @@ const NAV_GROUPS: NavGroup[] = [
         entity: "survey_request",
       },
       {
-        // CR-075 — song sinh của "Tiến độ mua hàng" nhưng đọc chuỗi yêu cầu báo giá
+        // CR-075 — song sinh của "Tiến độ đơn mua hàng" nhưng đọc chuỗi yêu cầu báo giá
         to: "/survey-progress",
         label: "Tiến độ báo giá",
         icon: "ti-progress-check",
@@ -130,9 +123,17 @@ const NAV_GROUPS: NavGroup[] = [
       },
       {
         to: "/purchase-progress",
-        label: "Tiến độ mua hàng",
+        label: "Tiến độ đơn mua hàng",
         icon: "ti-truck-delivery",
         anyEntity: ["purchase_order", "purchase_request"],
+      },
+      {
+        // bao-CR-296 — lối vào riêng của báo cáo dòng YCMH (vẫn còn tab cùng tên trong Báo cáo).
+        // bao-CR-691: dời xuống nhóm Mua hàng, ngay dưới Tiến độ đơn mua hàng — khớp menu v2.
+        to: "/pr-lines-report",
+        label: "Chi tiết YC mua hàng",
+        icon: "ti-list-search",
+        entity: "report",
       },
       {
         // bao-CR-470 — giá nhập khẩu thị trường từ tờ khai hải quan (GTT02)
