@@ -111,6 +111,22 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-693 | Mở chi tiết chứng từ ở tab mới từ trang danh sách đang lọc
+- status: xong
+- date: 2026-10-29
+- tag: Agent 3
+**Bối cảnh:** phiếu TK29102601 của Dego Organic: người dùng lọc danh sách đơn mua hàng rồi muốn mở nhiều đơn cùng lúc, nhưng bấm vào dòng là rời trang và mất bộ lọc đang xem.
+
+**Đã làm**
+- Trên cả thumua và ERP v2, giữ Ctrl (Cmd trên máy Mac) rồi bấm, hoặc bấm chuột giữa vào một dòng thì chi tiết mở ở tab mới, trang danh sách giữ nguyên. Bấm thường vẫn mở cùng tab như cũ.
+- Mã chứng từ hiện chữ xanh và là link thật, nên chuột phải chọn Mở trong tab mới cũng chạy.
+- Bấm vào ô tick chọn, nút nhân bản hay link trong dòng thì dòng không mở thêm tab nào.
+- Thumua: áp cho mọi màn danh sách dựng bằng khung chung, thêm link cho cột Mã PO. ERP v2: bật ở Đơn mua hàng, Yêu cầu mua hàng, Yêu cầu báo giá; màn Chi tiết YC mua hàng đã có link thật từ trước. Danh sách dạng thẻ trên điện thoại giữ nguyên.
+
+**Kết quả:** kiểm kiểu và kiểm mã ERP v2 không lỗi; bài kiểm bảng dùng chung và phân hệ Thu mua đều đạt, có 14 bài mới cho bấm Ctrl, chuột giữa, bấm thường. Kiểm kiểu thumua giữ đúng 4 lỗi cũ. Đã thử trên trình duyệt local cả hai bản, khổ rộng và khổ điện thoại.
+
+Mã nguồn: frontend/src/components/CrudList.tsx, frontend/src/utils/new-tab.ts, frontend/src/config/cruds.tsx, frontend-v2/src/shared/data-table/data-table.tsx, row-new-tab.ts, row-link.tsx, row-new-tab.test.tsx, frontend-v2/src/modules/procurement/pages/purchase-order-list-page.tsx, purchase-request-list-page.tsx, survey-request-list-page.tsx
+
 ## bao-CR-691 | Chi tiết YC mua hàng thêm cột đơn mua hàng, lọc nhiều tiến độ, xuất Excel
 - status: xong
 - date: 2026-10-28

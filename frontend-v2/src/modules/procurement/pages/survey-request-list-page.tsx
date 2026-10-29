@@ -15,7 +15,7 @@ import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { DataTable, RowLink, type DataTableColumn } from '@/shared/data-table'
 import {
   ConditionalFilter,
   FilterProvider,
@@ -302,7 +302,8 @@ function SurveyRequestListContent() {
         width: 160,
         sortable: true,
         hideable: false,
-        cell: (sr) => <span className="truncate font-medium">{sr.code}</span>,
+        //  bao-CR-693: link thật — chuột phải / Ctrl + bấm mở phiếu ở tab mới.
+        cell: (sr) => <RowLink to={appRoutes.procurement.surveyRequestDetail(sr.id)}>{sr.code}</RowLink>,
       },
       { key: 'purpose', header: 'Mục đích', width: 280, cell: (sr) => sr.purpose || '' },
       { key: 'requester', header: 'Người yêu cầu', width: 200, cell: (sr) => sr.requester || '' },
@@ -504,6 +505,7 @@ function SurveyRequestListContent() {
           rows={data?.items}
           getRowId={(sr) => sr.id}
           onRowClick={(sr) => navigate(appRoutes.procurement.surveyRequestDetail(sr.id))}
+          getRowHref={(sr) => appRoutes.procurement.surveyRequestDetail(sr.id)}
           isLoading={isLoading}
           isError={isError}
           //  Rỗng vì đang lọc phải nói ra: bộ lọc nay còn được khôi phục từ bản nhớ khi

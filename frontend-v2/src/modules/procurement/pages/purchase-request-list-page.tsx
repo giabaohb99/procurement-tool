@@ -21,7 +21,7 @@ import {
   useFilterQuery,
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { DataTable, RowLink, type DataTableColumn } from '@/shared/data-table'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useRememberedListSearch } from '@/shared/hooks/use-remembered-list-search'
@@ -303,7 +303,8 @@ function PurchaseRequestListContent() {
         hideable: false,
         cell: (pr) => (
           <div className="flex items-center gap-1.5">
-            <span className="truncate font-medium">{pr.code}</span>
+            {/*  bao-CR-693: link thật — chuột phải / Ctrl + bấm mở phiếu ở tab mới. */}
+            <RowLink to={appRoutes.procurement.purchaseRequestDetail(pr.id)}>{pr.code}</RowLink>
             {pr.has_cancelled_line && (
               <Badge
                 variant="secondary"
@@ -570,6 +571,7 @@ function PurchaseRequestListContent() {
           toolbarClassName={STICKY_TOOLBAR_TOP}
           storageKey="procurement.purchase-requests"
           onRowClick={(pr) => navigate(appRoutes.procurement.purchaseRequestDetail(pr.id))}
+          getRowHref={(pr) => appRoutes.procurement.purchaseRequestDetail(pr.id)}
           sortBy={sortBy}
           sortDir={sortDir}
           onSortChange={handleSortChange}
