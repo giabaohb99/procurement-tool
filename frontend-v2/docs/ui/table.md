@@ -62,6 +62,7 @@ const columns = useMemo<DataTableColumn<Employee>[]>(() => [
 | `getRowId` | Bắt buộc, dùng làm `key` của dòng |
 | `isLoading` / `isError` | Hiện khung xương / dòng báo lỗi (`errorMessage`) |
 | `onRowClick` | Bấm dòng; ô hành động phải `stopPropagation` |
+| `getRowHref` | Đường trang chi tiết của dòng (bao-CR-693). Có thì Ctrl / Cmd + bấm, chuột giữa mở chi tiết ở **tab mới**, danh sách đang lọc giữ nguyên; bấm thường vẫn chạy `onRowClick`. Bấm trúng ô tick / nút / link thì dòng bỏ qua. Màn danh sách chứng từ nên khai cùng `onRowClick`, và ô mã chứng từ dùng `RowLink` (`@/shared/data-table`) để là link thật — chuột phải *Mở trong tab mới* chạy được |
 | `onRefresh` | Việc chạy khi bấm **Tải lại**. Bỏ trống = tự `invalidateQueries({ type: 'active' })` |
 | `sortBy` / `sortDir` / `onSortChange` | Sắp xếp phía server. ⚠️ Tiêu đề cột chạy **BA NHỊP**: tăng → giảm → **thôi sắp xếp**, và nhịp thứ ba gọi `onSortChange('', 'asc')` — khóa cột **RỖNG**. Chỗ nhận phải **xóa** `sort_by`/`sort_dir` khỏi URL (đừng ghi chuỗi rỗng, đường dẫn gửi cho nhau sẽ dính `?sort_by=&sort_dir=asc` đọc như đang xếp theo một cột không tên) và **không** gắn hai tham số này vào lời gọi API, để backend xếp theo mặc định của nó. Bỏ nhịp thứ ba là người dùng bấm nhầm một phát thì kẹt luôn, muốn về thứ tự gốc chỉ còn cách tải lại trang |
 | `toolbar` | Nội dung chèn bên TRÁI cụm nút phải (xem mục 3) |

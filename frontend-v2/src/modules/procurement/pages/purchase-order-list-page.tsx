@@ -21,7 +21,7 @@ import {
   useFilterQuery,
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { DataTable, RowLink, type DataTableColumn } from '@/shared/data-table'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useRememberedListSearch } from '@/shared/hooks/use-remembered-list-search'
@@ -361,7 +361,8 @@ function PurchaseOrderListContent() {
         sortable: true,
         hideable: false,
         defaultPinned: true,
-        cell: (po) => <span className="truncate font-medium">{po.code}</span>,
+        //  bao-CR-693: link thật — chuột phải / Ctrl + bấm mở đơn ở tab mới.
+        cell: (po) => <RowLink to={appRoutes.procurement.purchaseOrderDetail(po.id)}>{po.code}</RowLink>,
       },
       {
         key: 'misa_code',
@@ -688,6 +689,8 @@ function PurchaseOrderListContent() {
           storageKey="procurement.purchase-orders"
           onVisibleColumnsChange={setVisibleColumnKeys}
           onRowClick={(po) => navigate(appRoutes.procurement.purchaseOrderDetail(po.id))}
+          //  bao-CR-693: Ctrl / Cmd + bấm, chuột giữa mở đơn ở tab mới, danh sách đang lọc giữ nguyên.
+          getRowHref={(po) => appRoutes.procurement.purchaseOrderDetail(po.id)}
           sortBy={sortBy}
           sortDir={sortDir}
           onSortChange={handleSortChange}
