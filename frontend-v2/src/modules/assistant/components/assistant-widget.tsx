@@ -175,7 +175,8 @@ export function AssistantWidget() {
     */
     <div
       className={cn(
-        'fixed right-4 bottom-[calc(100lvh-100dvh+1rem)] z-50 flex flex-col items-end gap-3 sm:right-6 sm:bottom-[calc(100lvh-100dvh+1.5rem)]',
+        //  28/10/2026: lề đáy +3,5rem để bong bóng nằm TRÊN thanh lật trang của DataTable (trước che nút trang cuối).
+        'fixed right-4 bottom-[calc(100lvh-100dvh+4.5rem)] z-50 flex flex-col items-end gap-3 sm:right-6 sm:bottom-[calc(100lvh-100dvh+5rem)]',
         //  ⚠️ Khổ hẹp lúc ĐANG MỞ: tấm chat chiếm TRỌN màn hình.
         //
         //  Bản trước để nó nổi lửng như ở màn rộng — tấm 358×640 giữa một màn
@@ -192,7 +193,7 @@ export function AssistantWidget() {
           className={cn(
             //  Khổ lớn (khách chê bản 30rem x 24rem nhỏ quá): cao gần hết màn hình,
             //  rộng 30rem từ sm và 34rem từ lg; máy nhỏ vẫn ăn theo bề rộng màn hình.
-            'flex h-[40rem] max-h-[calc(100svh-6.5rem)] w-[calc(100vw-2rem)] sm:w-[30rem] lg:w-[34rem]',
+            'flex h-[40rem] max-h-[calc(100svh-10rem)] w-[calc(100vw-2rem)] sm:w-[30rem] lg:w-[34rem]',
             'flex-col overflow-hidden rounded-xl border bg-background shadow-2xl',
             //  Khổ hẹp: trọn màn hình, bỏ bo góc và viền — xem ghi chú ở khung
             //  ngoài. Phải đứng SAU hai dòng trên để tailwind-merge lấy nó.

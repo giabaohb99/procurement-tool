@@ -34,6 +34,7 @@ from app.modules.leave.catalog_model import LeaveType
 from app.modules.leave.constants import (LEAVE_REQUEST_STATUS_LABELS, LEAVE_SESSION_LABELS,
                                          LR_APPROVED, LR_CANCELLED, LR_DRAFT, LR_PENDING,
                                          LR_REJECTED, LR_RETURNED, label)
+from app.modules.leave.period_spans import header_period, period_text, periods_by_request
 from app.modules.leave.request_model import LeaveRequest, LeaveRequestLine
 
 from .base import ToolContext, ToolSpec, denied
@@ -185,11 +186,18 @@ def _run(ctx: ToolContext, args: dict) -> dict:
         q = q.filter(LeaveRequest.status == status)
     rows = q.order_by(LeaveRequest.id.desc()).limit(limit).all()
     lines = _lines_by_request(ctx.db, [r.id for r in rows], types)
+    periods = periods_by_request(ctx.db, [r.id for r in rows])   # 1 truy vấn cho cả danh sách
 
     requests = [{
         "code": r.code,
         "from_date": r.from_date.isoformat() if r.from_date else "",
         "to_date": r.to_date.isoformat() if r.to_date else "",
+        "periods_text": period_text(periods.get(r.id) or [header_period(r)]),
+        "periods": [{"from_date": p.from_date.isoformat(), "to_date": p.to_date.isoformat(),
+                     "from_session_label": label(LEAVE_SESSION_LABELS, p.from_session),
+                     "to_session_label": label(LEAVE_SESSION_LABELS, p.to_session),
+                     "days": p.days}
+                    for p in (periods.get(r.id) or [header_period(r)])],
         "from_session_label": label(LEAVE_SESSION_LABELS, r.from_session),
         "to_session_label": label(LEAVE_SESSION_LABELS, r.to_session),
         "total_days": r.total_days,
@@ -214,6 +222,9 @@ def _run(ctx: ToolContext, args: dict) -> dict:
                           "sang từ năm trước).",
             "pending_days": "Ngày đang GIỮ CHỖ cho đơn đã gửi nhưng chưa duyệt xong — đã "
                             "trừ khỏi số còn lại; đơn bị từ chối/trả về/rút thì trả lại.",
+            "from_date_to_date": "from_date/to_date là ngày ĐẦU và CUỐI của cả đơn. Đơn nghỉ nhiều "
+                                 "khoảng không liền nhau (periods có từ 2 phần tử) thì chỉ nghỉ trong "
+                                 "từng khoảng — đọc `periods`/`periods_text`, đừng nói nghỉ liền cả quãng.",
             "remaining_days": "Số ngày còn nghỉ được = tổng quỹ - đã dùng - đang giữ chỗ.",
         },
     }

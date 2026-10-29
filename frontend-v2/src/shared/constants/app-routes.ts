@@ -351,6 +351,32 @@ export const appRoutes = {
     hrHeadcount: '/report/hr-headcount',
     leaveUsage: '/report/leave-usage',
     leaveBalance: '/report/leave-balance',
+    /** Hợp đồng lao động (duoc-CR-686, khóa 17). */
+    laborContract: '/report/labor-contract',
+    /** Hồ sơ & tài khoản còn thiếu (duoc-CR-686, khóa 18). */
+    hrProfileGaps: '/report/hr-profile-gaps',
+    /** Sổ quản lý lao động (duoc-CR-687, khóa 19). */
+    laborRegister: '/report/labor-register',
+    /** Báo cáo sử dụng lao động mẫu 01/PLI (duoc-CR-687, khóa 20). */
+    laborUsageReport: '/report/labor-usage-report',
+    /** Quỹ lương theo pháp nhân (duoc-CR-688, khóa 21). */
+    payrollFund: '/report/payroll-fund',
+    /** Phúc lợi & sự kiện — danh sách nhận quà theo dịp (duoc-CR-688, khóa 22). */
+    benefitAudience: '/report/benefit-audience',
+    /** Cơ cấu quản lý — số cấp dưới, người chưa gán quản lý (duoc-CR-688, khóa 23). */
+    managementSpan: '/report/management-span',
+    /** Điều chuyển & bổ nhiệm (duoc-CR-688, khóa 24). */
+    workMoves: '/report/work-moves',
+    /** Số người kế hoạch so với thực tế (duoc-CR-689, khóa 25). */
+    headcountPlan: '/report/headcount-plan',
+    /** Có mặt theo ngày (duoc-CR-689, khóa 26). */
+    attendance: '/report/attendance',
+    /** Yêu cầu sửa hồ sơ (duoc-CR-689, khóa 27). */
+    profileChanges: '/report/profile-changes',
+    /** Sử dụng phòng họp (duoc-CR-689, khóa 28). */
+    roomUsage: '/report/room-usage',
+    /** Đối tượng cần chú ý theo luật (duoc-CR-689, khóa 29). */
+    legalWatch: '/report/legal-watch',
     vehicleBooking: '/report/vehicle-booking',
     sealRequest: '/report/seal-request',
     document: '/report/document',
@@ -489,6 +515,16 @@ export const appRoutes = {
     companyDetail: (id: number | string) => `/hr/companies/${id}`,
     /** Sơ đồ tổ chức tự vẽ từ dữ liệu (duoc-CR-669) — pháp nhân › phòng ban › người. */
     orgChart: '/hr/org-chart',
+    /**
+     * Kế hoạch nhân sự THEO KỲ (duoc-CR-690, thay bản một-dòng của CR-689): một kỳ × pháp nhân × phòng,
+     * bốn khối (kỳ & căn cứ · khoản chi phí · định biên theo vị trí · bảng tự tính). Form dài nên
+     * thêm / mở là TRANG RIÊNG, không hộp thoại. `/new` phải khai trước `/:id` ở `routes.tsx`.
+     */
+    headcountPlans: '/hr/headcount-plans',
+    headcountPlanNew: '/hr/headcount-plans/new',
+    headcountPlanDetail: (id: number | string) => `/hr/headcount-plans/${id}`,
+    /** Đường CŨ của màn «Mẫu khoản chi phí» (đã gỡ, duoc-CR-690) — chỉ còn để chuyển về danh sách kế hoạch. */
+    hrCostTemplatesLegacy: '/hr/hr-cost-templates/*',
     /** Danh mục Chức vụ — nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ. */
     jobPositions: '/hr/job-positions',
     /** Thêm chức vụ mở TRANG RIÊNG, không phải hộp thoại — xem `CrudConfig.createRoute`. */

@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Card } from '@/shared/ui/card'
 import { cn } from '@/shared/utils/cn'
 
 import {
   buildReportTableRows,
+  REPORT_OTHER_GROUP_KEY,
   REPORT_TOTAL_ROW_KEY,
   type ReportTableRow,
 } from '../utils/build-report-table-rows'
@@ -16,6 +18,7 @@ import type {
   ReportMeta,
   ReportMetricValues,
 } from '../types/report-analytics'
+import { ReportDrilldownRowButton } from './report-drilldown-row-button'
 import { ReportGroupBySelect } from './report-group-by-select'
 import { ReportMetricValueCell } from './report-metric-value-cell'
 
@@ -32,6 +35,11 @@ interface ReportGroupedTableProps {
   isError: boolean
   /** `report.<slug>.v4` — nhớ bố cục cột riêng cho từng báo cáo (`docs/ui/table.md`). */
   storageKey: string
+  /**
+   * Mở «Danh sách người» của MỘT dòng (duoc-CR-686) — bỏ trống thì không có cột hành động.
+   * Dòng «Các nhóm khác» (`__other__`) không có nút: backend không có danh sách riêng cho nó.
+   */
+  onDrilldownRow?: (row: ReportTableRow) => void
 }
 
 /**
@@ -55,7 +63,10 @@ export function ReportGroupedTable({
   isLoading,
   isError,
   storageKey,
+  onDrilldownRow,
 }: ReportGroupedTableProps) {
+  //  Điện thoại: cột nhóm ghim hẹp lại để chừa chỗ cho cột số (bảng cuộn ngang, không giấu cột).
+  const isMobile = useIsMobile()
   const [sortBy, setSortBy] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
@@ -76,8 +87,8 @@ export function ReportGroupedTable({
       {
         key: 'label',
         header: dimensionLabel,
-        width: 220,
-        minWidth: 180,
+        width: isMobile ? 128 : 220,
+        minWidth: isMobile ? 104 : 180,
         hideable: false,
         defaultPinned: true,
         wrap: true,
@@ -110,8 +121,32 @@ export function ReportGroupedTable({
       })
     }
 
+    if (onDrilldownRow) {
+      cols.push({
+        key: '__drilldown',
+        header: 'Danh sách',
+        width: 104,
+        minWidth: 96,
+        align: 'center',
+        hideable: false,
+        cell: (row) => {
+          if (row.key === REPORT_OTHER_GROUP_KEY) return null
+          //  Nhóm bị che (mọi số `null`) — danh sách của nó lộ đúng thứ vừa che, backend cũng
+          //  trả 403; hiện «—» thay cho nút để khỏi bấm vào một ngõ cụt.
+          if (row.isSuppressed) {
+            return (
+              <span className="text-muted-foreground" title="Nhóm quá ít người — không hiện danh sách">
+                —
+              </span>
+            )
+          }
+          return <ReportDrilldownRowButton label={row.label} onClick={() => onDrilldownRow(row)} />
+        },
+      })
+    }
+
     return cols
-  }, [visibleMetrics, kpiKeys, dimensionLabel, compare])
+  }, [visibleMetrics, kpiKeys, dimensionLabel, compare, onDrilldownRow, isMobile])
 
   return (
     <Card className="flex min-h-0 flex-1 flex-col p-4">

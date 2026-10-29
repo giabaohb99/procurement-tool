@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session
 from app.modules.employee.model import Employee
 
 from .catalog_model import LeaveType
+from .constants import LEAVE_SESSION_LABELS, label
+from .period_spans import PeriodView, header_period, periods_by_request
 from .request_model import LeaveRequest, LeaveRequestLine
 from .schema import LeaveRequestResponse, request_labels
 
@@ -51,8 +53,27 @@ def lines_by_request(db: Session,
     return grouped
 
 
+def periods_for(db: Session, request_ids) -> dict[int, list[PeriodView]]:
+    """Khoảng ngày của cả trang — MỘT lượt truy vấn (xem `period_spans.periods_by_request`)."""
+    return periods_by_request(db, request_ids)
+
+
+def dump_periods(obj: LeaveRequest, periods: list[PeriodView] | None) -> list[dict]:
+    """Khoảng ngày để trả ra, luôn ≥1 phần tử. Thiếu bản gom thì dựng từ đầu đơn
+    (không tự tra — cùng lý lẽ với `lines`)."""
+    return [
+        {"id": p.id, "from_date": p.from_date, "from_session": p.from_session,
+         "from_session_label": label(LEAVE_SESSION_LABELS, p.from_session),
+         "to_date": p.to_date, "to_session": p.to_session,
+         "to_session_label": label(LEAVE_SESSION_LABELS, p.to_session),
+         "days": p.days, "sort_order": p.sort_order}
+        for p in (periods or [header_period(obj)])
+    ]
+
+
 def dump_request(obj: LeaveRequest, names: dict[int, str], types: dict[int, str],
-                 lines: dict[int, list[LeaveRequestLine]] | None = None) -> dict:
+                 lines: dict[int, list[LeaveRequestLine]] | None = None,
+                 periods: dict[int, list[PeriodView]] | None = None) -> dict:
     """Một dòng đơn để trả ra giao diện.
 
     `lines` là bản gom sẵn của `lines_by_request`. Không truyền thì khóa `lines`
@@ -69,6 +90,7 @@ def dump_request(obj: LeaveRequest, names: dict[int, str], types: dict[int, str]
          "days": line.days, "sort_order": line.sort_order}
         for line in (lines or {}).get(obj.id, [])
     ]
+    data["periods"] = dump_periods(obj, (periods or {}).get(obj.id))
     return data
 
 

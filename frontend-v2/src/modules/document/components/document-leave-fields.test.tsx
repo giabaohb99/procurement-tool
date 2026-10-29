@@ -14,11 +14,11 @@ vi.mock('@/modules/hr/hooks/use-employees', () => ({
 }))
 
 /** Dựng component kèm form thật, và trả `form` ra để test tự đặt giá trị. */
-function build() {
+function build(defaultValues: DocumentRecordFormValues = emptyDocumentForm()) {
   let form!: UseFormReturn<DocumentRecordFormValues>
 
   function Frame() {
-    form = useForm<DocumentRecordFormValues>({ defaultValues: emptyDocumentForm() })
+    form = useForm<DocumentRecordFormValues>({ defaultValues })
     return (
       <Form {...form}>
         <DocumentLeaveFields form={form} />
@@ -120,5 +120,51 @@ describe('DocumentLeaveFields', () => {
     })
 
     expect(lay().getValues('leave.total_days')).toBe(1)
+  })
+})
+
+/**
+ * Giấy GNP của đơn nghỉ NHIỀU KHOẢNG (duoc-CR-683 M4): hai ô Từ/Đến ngày chỉ là bao ngoài, nên
+ * phải kê từng khoảng — không thì «27/10 → 07/11, 5.5 ngày» đọc thành 12 ngày nghỉ liền.
+ */
+describe('DocumentLeaveFields — multi-period GNP', () => {
+  function withPeriods(leave_periods: unknown) {
+    const base = emptyDocumentForm()
+    const leave = base.leave
+    if (!leave) throw new Error('khối nghỉ phép phải có')
+    return {
+      ...base,
+      leave: {
+        ...leave,
+        from_date: '2026-10-27',
+        to_date: '2026-11-07',
+        total_days: 5.5,
+        extra: { leave_periods },
+      },
+    }
+  }
+
+  it('lists every period read-only under «Thời gian nghỉ»', () => {
+    build(
+      withPeriods([
+        { from_date: '2026-10-27', from_session: 'full', to_date: '2026-10-27', to_session: 'full', days: 1 },
+        { from_date: '2026-11-03', from_session: 'afternoon', to_date: '2026-11-07', to_session: 'full', days: 4.5 },
+      ]),
+    )
+    const group = screen.getByRole('group', { name: 'Thời gian nghỉ' })
+    expect(group).toHaveTextContent('27/10/2026 (cả ngày) · 1 ngày')
+    expect(group).toHaveTextContent('03/11/2026 (chiều) → 07/11/2026 (cả ngày) · 4.5 ngày')
+    //  Chỉ xem: không có ô nhập nào trong cụm này.
+    expect(group.querySelector('input, textarea, button')).toBeNull()
+  })
+
+  it('shows nothing extra for a single-period GNP or one without the key', () => {
+    build(withPeriods([{ from_date: '2026-10-27', from_session: 'full', to_date: '2026-10-27', to_session: 'full', days: 1 }]))
+    expect(screen.queryByText('Thời gian nghỉ')).not.toBeInTheDocument()
+  })
+
+  it('a hand-made GNP (no extra metadata) renders as before', () => {
+    build()
+    expect(screen.queryByText('Thời gian nghỉ')).not.toBeInTheDocument()
   })
 })

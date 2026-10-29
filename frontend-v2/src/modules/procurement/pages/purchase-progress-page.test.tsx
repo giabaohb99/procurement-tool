@@ -321,7 +321,7 @@ describe('PurchaseProgressPage — xuất Excel (bao-CR-442)', () => {
       Record<string, unknown>,
     ]
     expect(url).toBe('/api/purchase-progress/export/xlsx')
-    expect(filename).toBe('tien-do-mua-hang.xlsx')
+    expect(filename).toBe('tien-do-don-mua-hang.xlsx')
     expect(params).toMatchObject({
       company_id: '7',
       recv_state: 'full',

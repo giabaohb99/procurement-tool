@@ -111,6 +111,45 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-691 | Chi tiết YC mua hàng thêm cột đơn mua hàng, lọc nhiều tiến độ, xuất Excel
+- status: xong
+- date: 2026-10-28
+- tag: Agent 4
+**Bối cảnh:** phiếu TK28102602 của Dego Organic cần soát trên một bảng: dòng yêu cầu mua hàng nào đã lên đơn, đơn nào, của nhà
+cung cấp nào, hẹn giao khi nào, đã nhận hàng mấy lần. Màn Chi tiết YC mua hàng đã liệt kê mọi dòng, kể cả dòng chưa có đơn, nhưng
+thiếu các cột này.
+
+**Đã làm**
+- Mỗi dòng của bảng có thêm thông tin phiếu (pháp nhân, mục đích, gấp, ngày cần, trưởng bộ phận, người duyệt, phòng xử lý) và
+  thông tin dòng (đơn vị tính, ngày cần của dòng, số đã đặt, số đã nhận, chi tiết tiến độ, ghi chú dòng).
+- Ghép đơn mua hàng theo mã phiếu và mã hàng: danh sách mã đơn theo ngày tạo, số đơn, nhà cung cấp của đơn gần nhất, ngày hẹn giao
+  gần nhất, số lần nhận hàng. Đơn đã hủy, đã xóa và dòng đơn bị hủy không tính. Cả trang gom bằng vài truy vấn, không truy vấn
+  từng dòng.
+- Tên nhà cung cấp (đề xuất và trên đơn) chỉ hiện với người có quyền xem nhà cung cấp.
+- Bộ lọc tiến độ dòng chọn được nhiều giá trị; chọn một giá trị vẫn như cũ.
+- Thêm nút xuất Excel theo đúng bộ lọc của bảng, cần quyền xuất báo cáo, tối đa 5.000 dòng.
+- Đổi nhãn *Tiến độ mua hàng* thành *Tiến độ đơn mua hàng* ở danh mục báo cáo, tên tệp xuất và câu báo thiếu quyền; đường dẫn và khóa
+  quyền giữ nguyên.
+
+**Kết quả:** năm bài kiểm mới đạt, các bài kiểm cũ của báo cáo theo dòng, tổng hợp và tiến độ đơn mua hàng đạt.
+
+**Còn lại:** giao diện v2 làm song song; lên prod khi chủ dự án đồng ý. Hạn chế đã biết: hai dòng cùng mã hàng trong một phiếu
+nhận cùng tập đơn, vì đơn mua hàng không ghi dòng yêu cầu nguồn.
+
+Mã nguồn: `backend/app/modules/report/service.py` (`_pr_line_rows`, `_pr_line_po_links`, `export_pr_lines_rows`) ·
+`backend/app/modules/report/controller.py` · `backend/app/core/report_keys.py` · `test/backend/test_bao_cao_dong_ycmh_cot_moi_cr691.py`
+
+### bao-CR-691-giao-dien | Giao diện v2 của màn Chi tiết YC mua hàng: cột mới, lọc nhiều tiến độ dòng, xuất Excel, dời menu
+- status: xong
+- date: 2026-10-28
+Màn Chi tiết YC mua hàng trên ERP v2 hiện sẵn ba cột mới là số đã đặt, số đã nhận và mã đơn mua hàng; mỗi mã đơn bấm được, dẫn sang danh sách đơn mua hàng đã tìm sẵn theo đúng mã đó vì máy chủ chỉ trả mã chứ không trả số định danh của đơn. Mười sáu cột còn lại (pháp nhân, mục đích, gấp, hai ngày cần, đơn vị tính, trưởng bộ phận, người duyệt, phòng xử lý, số đơn, hai cột nhà cung cấp, hẹn giao gần nhất, số lần nhận hàng, chi tiết tiến độ, ghi chú dòng) ẩn mặc định và bật ở menu Cột; hai cột nhà cung cấp biến mất hẳn, kể cả khỏi menu Cột, với người không có quyền xem nhà cung cấp. Ô nào máy chủ chưa trả hoặc để trống thì in dấu gạch ngang.
+Ô lọc tiến độ dòng chọn được nhiều giá trị, không chọn gì là tất cả và không tự gán khi chỉ còn một lựa chọn. Thêm nút Xuất Excel theo đúng bộ lọc đang chọn, không kèm phân trang, chỉ hiện với người có quyền xuất báo cáo; khi máy chủ từ chối (vượt 5.000 dòng) màn hiện đúng câu lỗi của máy chủ, bấm đúp chỉ tải một lần.
+Theo chốt của chủ dự án ngày 28/10: hai cột trạng thái đổi tên thành Tiến độ dòng (đứng trước) và Trạng thái phiếu, ô lọc tương ứng đổi chữ gợi ý; mục Chi tiết YC mua hàng dời xuống nhóm Mua hàng, đứng ngay sau Tiến độ đơn mua hàng; Tiến độ mua hàng đổi tên thành Tiến độ đơn mua hàng ở menu, tiêu đề trang, danh mục báo cáo, bản biểu đồ và tên tệp tải. Đường dẫn, đường API và khóa quyền giữ nguyên.
+Nhãn tiến độ dòng dùng chung bảng màu với chi tiết YCMH; trạng thái Chưa đặt hàng đổi sang màu cam cho khớp giao diện thumua, áp cho cả hệ.
+Soát trên trình duyệt local với máy chủ bản mới, khổ rộng và khổ điện thoại: lọc hai tiến độ ra đúng 9 dòng, mã đơn dẫn đúng chỗ, đường xuất trả tệp Excel tên theo ngày.
+Bài kiểm: 16 bài mới cho màn này; kiểm kiểu 0 lỗi, kiểm mã 0 lỗi; bài kiểm phân hệ Thu mua, Báo cáo, bảng dùng chung và thanh điều hướng đều xanh.
+Mã nguồn: frontend-v2/src/modules/procurement/components/report-pr-lines-tab.tsx (+ .test.tsx), api/purchase-report-api.ts, hooks/use-purchase-report.ts, types/purchase-report.ts, routes.tsx, pages/purchase-progress-page.tsx, modules/report/config/report-catalog-procurement.ts, modules/report/pages/purchase-progress-chart-page.tsx
+
 ## ai-CR-232 | Bot Telegram ERP hỏng sau khi đổi khóa Claude: bỏ tham số temperature với model mới
 - status: xong
 - date: 2026-10-28
@@ -317,6 +356,19 @@ lý web. Việc giao ngày 26/10 qua Agent 1.
 
 Mã nguồn: `agent_hub/mcp.py` (HIDDEN, PROPOSAL_TOOLS, `_confirm_proposal`, `server/discover`), `agent_hub/mcp_settings.py` (nhóm edit)
 Bài kiểm: `test_agent_hub_mcp_sua_xoa_kh_ai2_5.py`
+
+## bao-CR-663 | Viết lại bài hướng dẫn nối AI riêng bằng Connector theo lần chạy thật trên prod
+- status: xong
+- date: 2026-10-27
+Người chủ đã nối Claude Desktop với ERP prod bằng Connector (đăng nhập ERP, không khóa, không Node.js) thành công ngày 26/10
+và chốt đây là cách chính; cách dán khóa vào tệp cấu hình hay hỏng ở máy người dùng. Bài Cách 1 trên Trung tâm trợ giúp được
+viết lại: các bước từ chỗ mở Settings tới lúc bật DEGO ERP trong ô chat, thêm ở claude.ai hay Claude Desktop đều dùng chung,
+muốn soạn phiếu hoặc xuất tệp Excel / Word thì chọn mức Được ghi, đã nối bằng tệp cấu hình thì gỡ khối cũ kẻo trùng công cụ,
+và mục hỏi thử với câu mẫu về giao hàng, tồn kho, dữ liệu hải quan so với giá trên web, xuất Excel. Ghi rõ dữ liệu hải quan
+chỉ tra qua AI, không nạp qua AI (người chủ chốt 27/10). Tài liệu chức năng 22 lên bản 1.3 với ghi chú lần chạy thật. Đã nạp
+bài mới lên dev và prod kèm kho vector (prod người chủ gật 27/10).
+Mã nguồn: backend/scripts/seed_help_ket_noi_ai_cach_1.py, backend/scripts/seed_help_ket_noi_ai_mcp.py, doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md
+Deploy: dev 27/10 (seed_help_ket_noi_ai_cach_1.py, 7 bài nạp lại kho vector); prod 27/10 (3 bài: gốc, Cách 1, Cách 2)
 
 ## bao-CR-661 | Gộp phiếu đặt xe trùng mã app cũ trên prod và cho hàm tra chịu được trùng
 - status: xong
@@ -17439,11 +17491,14 @@ Tham chiếu: doc/erp/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
 Tham chiếu: doc/erp/nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md
 
 ## duoc-CR-683 | Đơn nghỉ phép khai được nhiều khoảng ngày không liền kề
-- status: đang làm
+- status: xong
 - date: 2026-10-26
 - pic: NSU231
 - tag: Được
 Anh Được muốn một đơn nghỉ phép khai được nhiều ngày không liền kề, ví dụ nghỉ ngày 27/10 và từ chiều 3/11 tới hết 7/11 trong cùng một đơn. Anh chốt cách khai là nhiều khoảng ngày, mỗi khoảng có từ ngày, đến ngày và buổi; nghỉ theo giờ vẫn chỉ một ngày. Anh cũng chốt bỏ việc cho luồng duyệt đọc đủ mọi loại nghỉ của đơn nhiều loại: luồng coi mọi đơn là nghỉ phép.
+Đã làm xong: một đơn nghỉ khai được tối đa hai mươi khoảng ngày, khoảng không được chồng nhau, đơn từ hai khoảng phải nằm trong cùng một năm, nghỉ theo giờ vẫn một khoảng. Ngày trống giữa các khoảng không bị tính là nghỉ ở lịch nghỉ, bảng ai làm ai nghỉ, hồ sơ làm việc theo ngày, tải việc và chốt trùng đơn. Màn lập đơn có nút thêm khoảng ngày, trang chi tiết, bản in và giấy nghỉ phép bên Văn bản hiện đủ các khoảng; trợ lý AI soạn, sửa và hoàn tác được đơn nhiều khoảng. Rà mã ra bốn lỗi mức trung bình và bốn lỗi nhỏ, đã sửa hết; bài kiểm phần nghỉ phép và các chỗ liên quan chạy xanh. Hướng dẫn sử dụng và cẩm nang trợ lý đã cập nhật.
+Mã nguồn: backend/app/modules/leave/request_periods.py · backend/app/modules/leave/period_spans.py · migration cr683nghiphep01 · frontend-v2/src/modules/hr/components/leave-request-periods-editor.tsx
+
 
 ## duoc-CR-684 | Nạp cấu hình Tra cứu thị trường từ tệp Excel ba sheet
 - status: xong
@@ -17453,3 +17508,103 @@ Anh Được muốn một đơn nghỉ phép khai được nhiều ngày không 
 Anh Được gửi tệp cấu hình Tra cứu thị trường gồm ba sheet: từ khóa thành phẩm và nguyên liệu, nhóm từ đồng nghĩa khi tìm kiếm, và bảng mã dạng chế phẩm thuốc bảo vệ thực vật. Việc là nạp ba sheet vào màn Cấu hình của Tra cứu thị trường trên ERP v2, làm luôn phần tương ứng ở giao diện cũ, chạy thử ở máy local rồi xuất tệp dữ liệu để chạy lên prod.
 Đã nạp ở máy local: bốn từ khóa mới (sáu từ đã có sẵn), mười nhóm từ đồng nghĩa và mười tám mã dạng chế phẩm. Hệ thống chưa có chỗ chứa mã dạng chế phẩm nên thêm một danh mục mới, hiện thành thẻ thứ tư ở tab Cấu hình của cả giao diện mới lẫn giao diện cũ. Dữ liệu nằm trong một tệp JSON đi kèm script nạp; script chạy lại không sinh trùng và tự gắn lại nhãn khi có từ khóa mới. Cách chạy lên prod ghi ở mục 11 của tài liệu thiết kế hải quan.
 Mã nguồn: backend/scripts/load_customs_lookup_config_cr684.py · backend/scripts/data/cau-hinh-tra-cuu-thi-truong-cr684.json · migration cr684fmcode01
+
+## kh-prod-2610-chieu | Chiều 26/10 trên prod: bật nhóm công cụ AI, nạp từ đồng nghĩa, đưa CR-684 lên
+- status: xong
+- date: 2026-10-26
+- tag: Agent 1
+**Bối cảnh:** sau đợt prod năm, người dùng phòng Thu mua và Hành chính bắt đầu thử AI riêng nối qua cổng MCP; cần mở thêm các nhóm công cụ duyệt và lập phiếu, và cần Tra cứu thị trường tìm được theo từ đồng nghĩa giống trên web.
+
+**Đã làm:** bật trên prod các nhóm công cụ duyệt phiếu, lập phiếu văn phòng, việc dự án, yêu cầu hỗ trợ, hải quan và văn phòng; nhóm sửa và xóa phiếu vẫn tắt. Nạp mười nhóm từ đồng nghĩa và bốn từ khóa nguyên liệu (NLSX, NGUYÊN LIỆU SẢN XUẤT, TECHNICAL GRADE, TK); chạy lại không sinh trùng. Đưa duoc-CR-684 lên prod: lưu dump, dựng lại api, hai dịch vụ celery và hai giao diện, migration thêm danh mục mã dạng chế phẩm (CSDL lên 224 bảng), chạy script nạp cấu hình (thêm 18 mã dạng chế phẩm, từ khóa và từ đồng nghĩa đã có đủ). Chạy gắn lại nhãn toàn bộ dòng hàng hải quan để các từ khóa nạp tay có hiệu lực với dữ liệu cũ.
+
+**Kết quả:** gắn lại nhãn 243.727 dòng, 61.272 dòng có nhãn, 38.875 dòng là nguyên liệu kỹ thuật. Kiểm sức khỏe prod đạt, migration ở đầu cr684fmcode01.
+
+Commit: 77c7bf59 (main = erp-v2) · Deploy: prod api, celery-worker, celery-beat, web, erp, 26/10/2026 chiều
+
+## duoc-CR-685 | Thông báo tải lại bản mới không còn lọt vào bản in, tự tải lại lúc 0h
+- status: xong
+- date: 2026-10-27
+- pic: NSU231
+- tag: Được
+Anh Được báo người dùng in phiếu trên giao diện cũ thì bản in dính luôn khung thông báo «Đã có phiên bản mới» với nút Tải lại. Anh muốn bỏ khung đó khỏi bản in, và nếu có bản mới thì ứng dụng tự tải lại vào cuối ngày.
+Đã làm xong: khung thông báo được ẩn khi in. Khi có bản mới mà người dùng chưa bấm Tải lại, kể cả đã bấm Để sau, ứng dụng tự tải lại lúc 0 giờ đêm đó; máy ngủ qua 0 giờ thì lúc thức dậy sẽ tải lại ngay. Ứng dụng cũng tự dò bản mới mỗi giờ, vì trước đây tab mở cả ngày không biết là đã có deploy. Khung thông báo ghi thêm một dòng báo giờ tự tải lại. Kiểm kiểu giao diện cũ vẫn đúng bốn lỗi cũ, không có lỗi mới. Phần này chỉ chạy ở bản build nên chưa thử được ở máy local.
+Lượt hai: anh Được thấy người dùng không biết bấm Tải lại nên cứ kẹt ở bản cũ, mà bản cũ không có hẹn 0 giờ. Nay bản mới tự cài ngay, không chờ ai bấm. Lúc cài, nó hỏi từng tab đang mở; tab nào không trả lời là đang chạy bản cũ và được tự tải lại ngay. Tab chạy bản mới thì vẫn hiện thông báo và hẹn tải lại lúc 0 giờ như lượt một. Tab bản cũ chỉ bị tải lại một lần, nếu đúng lúc đó đang nhập dở thì sẽ mất phần chưa lưu.
+Mã nguồn: frontend/src/components/PwaReloadPrompt.tsx · frontend/public/sw-update-old-clients.js · frontend/vite.config.ts
+
+## duoc-CR-686 | Kho mẫu báo cáo Nhân sự và đợt 1: sửa số liệu nghỉ phép, thêm báo cáo hợp đồng lao động và hồ sơ còn thiếu
+- status: xong
+- date: 2026-10-27
+- pic: NSU231
+- tag: Được
+Anh Được muốn có đủ các mẫu báo cáo cho phân hệ Nhân sự, nhìn từ vai trưởng phòng Nhân sự, rồi làm luôn phần mã.
+Đã gom thành kho mẫu tám nhóm, mười chín mẫu, kèm chỗ còn thiếu của ba báo cáo đang chạy, phiếu khai một mẫu báo cáo, phần biểu đồ linh hoạt và lộ trình bốn đợt.
+Đợt 1 đã chạy trên máy local: thêm báo cáo Hợp đồng lao động và báo cáo Hồ sơ và tài khoản còn thiếu; năm báo cáo Nhân sự có ô lọc phòng ban và bấm vào con số là ra danh sách người. Báo cáo nghỉ phép nay chia số ngày nghỉ theo đúng ngày rơi vào từng kỳ, còn số đơn vẫn tính theo ngày bắt đầu. Quỹ phép năm bỏ người đã nghỉ việc ra khỏi số mặc định, đếm người chưa được cấp quỹ và tách quỹ thành từng phần. Rà mã không có lỗi chặn; năm chỗ nên sửa đã sửa hết. Viết bộ hướng dẫn trên Trung tâm trợ giúp gồm một thẻ và bảy bài, đã nạp ở local. Bảy trăm ba mươi hai bài kiểm backend và ba trăm lẻ bốn bài kiểm giao diện đều đạt. Còn chờ anh duyệt để commit, rồi giao quyền xem hai báo cáo mới cho trưởng phòng Nhân sự và nạp lại kho tìm kiếm của Trợ lý AI trên dev.
+Mã nguồn: doc/erp/hrm/05-bao-cao-nhan-su.md · plans/261027-1045-kho-mau-bao-cao-nhan-su/ · backend/app/core/report_drilldown.py · backend/app/modules/labor_contract/report_*.py · backend/app/modules/employee/profile_gaps_report_*.py · backend/app/modules/leave/report_day_split*.py · frontend-v2/src/modules/report/ · backend/scripts/seed_help_bao_cao_nhan_su.py
+
+## duoc-CR-687 | Báo cáo Nhân sự đợt 2: sổ quản lý lao động, mẫu 01/PLI nộp Sở Nội vụ, cơ cấu nhân sự
+- status: xong
+- date: 2026-10-27
+- pic: NSU231
+- tag: Được
+Anh Được duyệt đợt 1 và bảo làm tiếp. Đợt 2 làm ba mẫu: sổ quản lý lao động mà luật bắt buộc doanh nghiệp phải có, báo cáo tình hình sử dụng lao động theo mẫu 01/PLI phải nộp Sở Nội vụ trước ngày 5 tháng 12, và báo cáo cơ cấu nhân sự theo nhóm tuổi, trình độ, địa điểm làm việc.
+Đã tra lại văn bản luật: mẫu 01/PLI là danh sách từng người gồm hai mươi bảy cột chứ không phải bảng số tổng như tài liệu ghi trước đó, nên đã sửa lại tài liệu; bản sửa nghị định mới là dự thảo nên vẫn dùng mẫu cũ. Anh chốt: nhóm vị trí việc làm tự suy từ cấp bậc và trình độ, cột nào hệ thống chưa có dữ liệu thì để trống cho phòng Nhân sự điền tay, nhóm tuổi dưới ba người thì che số.
+Đã làm xong trên máy local: hai báo cáo mới xuất được tệp Excel đúng khuôn, mỗi pháp nhân một trang; chỉ người có quyền xem dữ liệu nhạy cảm và hợp đồng lao động mới mở được. Báo cáo biến động nhân sự xem được theo nhóm tuổi, trình độ, địa điểm và nhóm vị trí việc làm. Rà mã tìm ra chỗ che nhóm tuổi còn lấy tổng trừ ra được và chỗ xuất tệp chưa theo phạm vi xuất, đều đã sửa. Viết thêm hai bài hướng dẫn và sửa hai bài cũ. Chín trăm mười bài kiểm backend và ba trăm mười tám bài kiểm giao diện đều đạt. Còn chờ đẩy lên dev, giao quyền xem cho trưởng phòng Nhân sự và nạp lại kho tìm kiếm của Trợ lý AI.
+Mã nguồn: backend/app/modules/labor_register/ · backend/app/modules/employee/report_headcount_dims.py · report_headcount_privacy.py · frontend-v2/src/modules/report/pages/labor-register-report-page.tsx · labor-usage-report-page.tsx · backend/scripts/seed_help_bao_cao_nhan_su.py
+
+## duoc-CR-688 | Báo cáo Nhân sự đợt 3: quỹ lương theo pháp nhân, phúc lợi theo dịp, cơ cấu quản lý, điều chuyển, biểu đồ linh hoạt
+- status: xong
+- date: 2026-10-27
+- pic: NSU231
+- tag: Được
+Anh Được bảo làm tiếp đợt 3 của kho mẫu báo cáo Nhân sự. Đợt này làm bốn báo cáo: quỹ lương theo từng pháp nhân để chọn công ty tuyển người, đối tượng và kinh phí theo từng dịp phúc lợi như 8/3, cơ cấu quản lý, điều chuyển và bổ nhiệm; kèm biểu đồ đổi được kiểu cho mọi báo cáo.
+Vì anh chưa chốt phần kế hoạch nên quỹ lương chỉ tính số thực tế từ hợp đồng, còn mức quà phúc lợi nhập tay trên màn và không lưu lại đợt phát.
+Đã làm xong trên máy local: bốn báo cáo mới chạy trên dữ liệu thật, biểu đồ của mọi báo cáo đổi được kiểu, bấm vào cột là ra danh sách người và tải được ảnh. Phần che nhóm ít người được gom thành một chỗ dùng chung; khi lọc hẹp tới mức không che an toàn được thì báo cáo thôi chia nhóm. Rà mã tìm ra hai lỗi làm sai số liệu hoặc lộ thông tin, đều đã sửa. Bộ hướng dẫn trên Trung tâm trợ giúp nay có mười lăm bài. Hơn một nghìn ba trăm bài kiểm backend và bốn trăm ba mươi mốt bài kiểm giao diện đều đạt, trừ hai bài kiểm cổng MCP đã đỏ sẵn từ trước.
+Mã nguồn: core/report_small_group.py · labor_contract/payroll_report_*.py · employee/benefit_report_*.py · employee/management_report_*.py · employee/work_move_report_*.py · frontend-v2/src/modules/report/components/report-flexible-chart*.tsx · backend/scripts/seed_help_bao_cao_nhan_su.py
+
+## duoc-CR-688-kiem-thu | Kiểm thử kỹ ba đợt báo cáo Nhân sự và sửa lỗi tìm ra
+- status: xong
+- date: 2026-10-27
+- pic: NSU231
+- tag: Được
+Anh Được bảo kiểm kỹ lại ba đợt báo cáo Nhân sự trước khi đẩy lên dev.
+Đã chạy toàn bộ mười nghìn tám trăm bốn mươi lăm bài kiểm backend, chia thành mười hai nhóm cho máy khỏi quá tải: có hai mươi lăm bài đỏ, đem chạy lại trên bản trước ba đợt thì đỏ y hệt, nên đều là lỗi có sẵn, không bài nào do ba đợt này gây ra. Soát trên trình duyệt mười một màn báo cáo với ba kiểu người dùng (quản trị, nhân sự có quyền xem dữ liệu nhạy cảm, người không có quyền đó), kèm mở từng tệp Excel: không có lỗi chặn; tìm ra ba lỗi nên sửa (danh sách đơn chờ duyệt quá ba ngày không lọc mốc ba ngày, số người có biến động đếm theo lượt, công tắc tính người đang nghỉ bấm được khi thiếu quyền) và các lỗi nhỏ về màn điện thoại, tên trang Excel, nhãn — đều đã sửa và có bài kiểm. Kiểm lại màn điện thoại ba trăm chín mươi điểm ảnh. Cổng giao diện đạt: kiểm kiểu không lỗi, lint không lỗi, bốn trăm ba mươi tám bài kiểm phân hệ Báo cáo đạt.
+Mã nguồn: plans/reports/tester-261027-1545-cr686-688-full-regression.md · plans/reports/tai-lieu-kiem-thu-261027-1545-cr686-688-e2e.md · plans/reports/fullstack-developer-261027-1630-sua-loi-e2e.md
+Deploy: dev 27/10/2026 — commit 03cec1c5, build api, celery-worker, celery-beat, erp; seed 15 bài HDSD và nạp lại kho tìm kiếm Trợ lý AI (124/124 bài); 12 đường báo cáo Nhân sự trả 200.
+
+## duoc-CR-689 | Báo cáo Nhân sự đợt 4: kế hoạch định biên, có mặt theo ngày, sửa hồ sơ, phòng họp, đối tượng theo luật
+- status: xong
+- date: 2026-10-28
+- pic: NSU231
+- tag: Được
+Anh Được bảo làm tiếp phần báo cáo Nhân sự. Đợt 4 làm các mẫu còn lại không phải chờ phân hệ mới: bảng kế hoạch nhân sự theo năm để so định biên và quỹ lương kế hoạch với thực tế, báo cáo có mặt theo ngày, yêu cầu sửa hồ sơ, sử dụng phòng họp, đối tượng cần chú ý theo luật (sắp nghỉ hưu, thai sản, nuôi con nhỏ) và ô lịch nhắc trong tháng ở Trang chủ Nhân sự.
+Anh chốt làm bảng kế hoạch theo năm, phòng Nhân sự nhập, chỉ trưởng phòng Nhân sự và quản trị được sửa.
+Đã làm xong năm báo cáo mới (khóa 25 tới 29), bảng kế hoạch nhân sự có nhập và xuất tệp CSV, thêm ba cột kế hoạch vào báo cáo Quỹ lương và ô lịch nhắc ở Tổng quan Nhân sự.
+Rà mã xong thì sửa thêm mấy chỗ. Nhập CSV nay tìm phòng ban chỉ theo mã, vì phòng dùng chung cho mọi pháp nhân. Quỹ lương kế hoạch chỉ hiện với người được xem hợp đồng lao động của đúng pháp nhân đó, dời dòng sang pháp nhân khác cũng phải xem được lương ở cả hai bên. Danh sách đang nghỉ thai sản lọc theo phạm vi xem đơn nghỉ. Báo cáo yêu cầu sửa hồ sơ đòi quyền sửa hồ sơ. Mốc nghỉ hưu tính tới hết tháng đủ tuổi, có thêm chỉ số người đã quá tuổi vẫn đang làm. Phòng họp tính cả khung 23 giờ tới 24 giờ và chia giờ đặt theo từng khung.
+Soát trên trình duyệt với ba vai thì thấy báo cáo Quỹ lương vẫn lộ quỹ lương kế hoạch cho người chỉ được xem hợp đồng trong phạm vi phòng; đã chặn. Theo anh chốt, pháp nhân có kế hoạch mà chưa có hợp đồng ra thành dòng riêng, và đang nghỉ thai sản đếm cả đơn đã duyệt lẫn hồ sơ ở trạng thái nghỉ thai sản. Biểu mẫu kế hoạch lưu được khi ô lương trống mà không đè số lương đang bị che, lỗi nhập tệp CSV ra tiếng Việt, báo cáo yêu cầu sửa hồ sơ chỉ hiện trên menu với người có quyền sửa hồ sơ. Đã xóa dữ liệu thử ở local.
+Bài kiểm backend 716 bài xanh, giao diện 1823 bài xanh, kiểm kiểu và lint 0 lỗi. Có thêm 1 bài hướng dẫn tổng và 21 bài con cho nhóm báo cáo Nhân sự.
+Lưu ý khi deploy: vai trò Nhân sự trên hệ đang chạy không tự có khóa quyền «Nhân sự › Kế hoạch nhân sự», phải tick tay; báo cáo 25 tới 29 lúc đầu chỉ quản trị thấy, giao thêm ở tab Báo cáo; người dùng đăng nhập lại mới thấy.
+Mã nguồn: plans/261027-1045-kho-mau-bao-cao-nhan-su/phase-16…21, backend/app/modules/headcount_plan/, migration hcplan01
+
+## duoc-CR-690 | Kế hoạch nhân sự theo kỳ: định biên theo vị trí, khoản chi phí tự định nghĩa, căn cứ duyệt
+- status: xong
+- date: 2026-10-28
+- pic: NSU231
+- tag: Được
+Anh Được soát màn Kế hoạch nhân sự của đợt 4 và thấy form quá ít thông tin: chỉ có một số định biên và một số quỹ lương mỗi tháng, không có căn cứ, quỹ lương tính theo tháng là sai vì kế hoạch còn lập theo quý, bán niên và năm, và mỗi kế hoạch có các khoản chi phí khác nhau.
+Làm lại theo thiết kế đã chốt: người dùng chọn loại kỳ năm, bán niên, quý hay tháng và form đổi theo; định biên nhập theo từng vị trí và từng kỳ con; ghi số quyết định, ngày, người duyệt và tệp đính kèm làm căn cứ; khoản chi phí do người dùng tự tạo trong mẫu, chọn mẫu khi lập kế hoạch thì hệ thống chép sang để sửa riêng; hệ thống tính từng tháng rồi cộng lên kỳ; hai báo cáo định biên và quỹ lương đọc bảng mới.
+Đã làm xong ba màn mới là Kế hoạch nhân sự, Mẫu khoản chi phí và Nhóm chi phí, có sẵn một mẫu gợi ý tám khoản để người dùng sửa. Kế hoạch đã lưu có thêm dòng thực tế và còn dư so với hợp đồng lao động. Báo cáo định biên lấy kế hoạch có hiệu lực ở tháng cuối kỳ và xem được theo vị trí; báo cáo quỹ lương có năm chỉ số kế hoạch mới. Kế hoạch nhập ở đợt 4 đã tự chuyển sang khuôn mới.
+Rà mã tìm ra hai chỗ lộ lương: dòng thực tế ở trang kế hoạch và gợi ý lương bình quân đọc hợp đồng không qua phạm vi người xem. Đã chặn, kèm khóa cấu trúc khoản với người không xem được lương, bắt buộc chọn tháng cho khoản tính theo lần, và che dòng tổng của báo cáo quỹ lương khi có thể suy ngược ra lương nhóm nhỏ. Soát trên trình duyệt với tài khoản không được xem lương và tài khoản bị loại trừ một phòng đều đạt; dữ liệu thử ở local đã xóa.
+Bài kiểm backend 718 bài xanh, giao diện hơn 2200 bài xanh, kiểm kiểu 0 lỗi. Bài hướng dẫn có 23 bài, thêm bài về mẫu khoản chi phí.
+Lưu ý khi deploy: khóa quyền vẫn là «Nhân sự › Kế hoạch nhân sự»; vai trò nào cần lập kế hoạch phải có thêm, sửa, xóa của khóa đó.
+Mã nguồn: doc/erp/hrm/06-ke-hoach-nhan-su.md, plans/261027-1045-kho-mau-bao-cao-nhan-su/phase-22…25, backend/app/modules/headcount_plan/, migration hcplan02, hcplan03
+
+## duoc-CR-690-don-gian-hoa | Đơn giản hóa phần khoản chi phí của kế hoạch nhân sự
+- status: xong
+- date: 2026-10-28
+- pic: NSU231
+- tag: Được
+Anh Được thấy bảng khoản chi phí bày quá nhiều cột khó hiểu như mã, tỷ lệ, trần, số tiền, khoản gốc, tháng rơi. Nay mỗi khoản chỉ còn một dòng gồm tên và một câu mô tả tự sinh. Bấm sửa thì mở hộp thoại chỉ hỏi tên khoản và tính thế nào với ba lựa chọn: hằng tháng theo người, phần trăm trên lương, theo đợt. Các ô còn lại gom vào mục nâng cao đóng sẵn và được hệ thống tự điền. Nút thêm khoản có năm mẫu nhanh: lương, phụ cấp, bảo hiểm cộng công đoàn 23,5%, thưởng tháng 13, quà theo đợt. Câu báo lỗi phía máy chủ đổi theo nhãn mới, bài hướng dẫn viết lại cho ngắn.
+Lượt soát tiếp theo, anh thấy vẫn còn nhiều ô nâng cao, chữ định biên khó hiểu, và muốn tài liệu tải lên tự thành văn bản. Đã bỏ hẳn mục nâng cao, hộp thoại còn tối đa hai ô; khoản hằng tháng có thêm mức chung mỗi người mỗi tháng, vị trí nào khác thì nhập riêng; ẩn màn nhóm chi phí; mẫu gợi ý gọn còn bốn khoản. Chữ định biên đổi thành số người kế hoạch. Văn bản liên kết có nút tải tệp lên, hệ thống tự tạo văn bản kín loại căn cứ kế hoạch nhân sự bên phân hệ Văn bản và gắn vào kế hoạch.
+Lượt cuối, anh vẫn thấy các khái niệm khoản chi phí, cách tính, mẫu khó hiểu, nên làm lại trang thành ba khối đọc là hiểu: người và lương theo vị trí (hiện có, cần có từng quý, lương, phụ cấp), chi phí khác viết thành câu có ô số (bảo hiểm 23,5% trên lương, thưởng tháng 13, quà theo đợt, chi phí cả phòng), và bảng tổng theo quý. Bỏ ô chọn mẫu, gỡ màn mẫu khoản chi phí và nhóm chi phí khỏi menu. Lập thử phòng Kế toán khớp tính tay, cả năm 1.265.190.000 đồng.
+Mã nguồn: frontend-v2/src/modules/hr/components/hr-cost-item-*.tsx, frontend-v2/src/modules/hr/utils/hr-cost-item-*.ts, backend/app/modules/headcount_plan/costing.py, document_upload_service.py, legacy_seed.py, migration hcplan04
+

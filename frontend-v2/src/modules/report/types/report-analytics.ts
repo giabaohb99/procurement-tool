@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 
-import type { PermissionEntity } from '@/core/authorization/permission-types'
+import type { PermissionAction, PermissionEntity } from '@/core/authorization/permission-types'
 
 /**
  * Hợp đồng JSON chuẩn của MỌI đường `/summary` báo cáo kiểu Haravan — khớp
@@ -10,7 +10,8 @@ import type { PermissionEntity } from '@/core/authorization/permission-types'
  */
 
 /** Đơn vị của một chỉ số — quyết định cách định dạng số (`format-report-metric.ts`). */
-export type ReportMetricKind = 'int' | 'money' | 'days' | 'hours' | 'percent'
+/** `number` (duoc-CR-688): số không đơn vị có phần lẻ — hiện 1 chữ số lẻ (vd «4,2»). */
+export type ReportMetricKind = 'int' | 'money' | 'days' | 'hours' | 'percent' | 'number'
 
 /** Chiều nào là TỐT khi chỉ số tăng. `null` = trung tính, không tô màu ±%. */
 export type ReportMetricGoodDirection = 'up' | 'down' | null
@@ -35,6 +36,13 @@ export interface ReportMetricMeta {
    * hiện trên dòng Tổng, các dòng nhóm hiện "—".
    */
   snapshot: boolean
+  /**
+   * Cộng các nhóm lại có ra đúng số của phần gộp không (duoc-CR-688). `false` = chỉ số dẫn
+   * xuất (tỷ lệ, bình quân), đếm phân biệt, min/max — biểu đồ linh hoạt KHÔNG cộng phần dư
+   * Top N thành «Khác» và không cho vẽ vành khuyên. Vắng mặt (máy chủ cũ) = coi như `true`,
+   * riêng `kind: 'percent'` vẫn coi là không cộng được.
+   */
+  additive?: boolean
 }
 
 export interface ReportDimensionMeta {
@@ -49,6 +57,11 @@ export interface ReportMeta {
   group_by: string
   /** Chỉ số xếp hạng nhóm + giá trị của các khối "Top" (breakdowns). */
   rank_by?: string | null
+  /**
+   * Chỉ số có «Xem danh sách» (duoc-CR-686) — gọi `<gốc>/summary/rows?metric=…`.
+   * Vắng mặt = máy chủ cũ / báo cáo chưa có danh sách: không hiện nút nào.
+   */
+  drilldown_metrics?: string[]
 }
 
 export type ReportCompareMode = 'previous' | 'year' | 'none'
@@ -144,6 +157,11 @@ export interface ReportPageConfig {
   endpoint: string
   /** Đường xuất Excel (cùng bộ lọc, `require(entity,'export')`). Bỏ trống = ẩn nút Xuất Excel. */
   exportEndpoint?: string
+  /**
+   * Chữ trên nút xuất — bỏ trống là «Xuất Excel». Khai khi tệp xuất là một BIỂU MẪU có tên
+   * riêng chứ không phải bảng số liệu (vd «Xuất sổ (Excel)», «Xuất mẫu 01/PLI» — duoc-CR-687).
+   */
+  exportLabel?: string
   /** Khóa quyền gác nút Xuất Excel — `can(entity, 'export')`. */
   entity: PermissionEntity
   title: string
@@ -157,6 +175,12 @@ export interface ReportPageConfig {
   sourcePath?: string
   /** Khóa chỉ số hiện thành thẻ KPI, ĐÚNG THỨ TỰ trái sang phải. */
   kpis: string[]
+  /**
+   * Chỉ số KHÔNG lên thẻ nhưng vẫn HIỆN SẴN ở bảng «Xem theo», đứng sau các cột `kpis`
+   * (duoc-CR-687, mẫu 01/PLI: cơ cấu vị trí + loại HĐ là phần chính của bảng). Bỏ trống =
+   * bảng chỉ hiện sẵn cột `kpis`, chỉ số khác bật qua menu «Cột».
+   */
+  tableMetrics?: string[]
   /** Chỉ số mặc định vẽ trên biểu đồ xu hướng — bấm thẻ KPI khác để đổi. */
   chartMetric: string
   /** `group_by` mặc định khi mở trang lần đầu — phải khớp một khóa `meta.dimensions` backend trả. */
@@ -174,6 +198,25 @@ export interface ReportPageConfig {
   breakdowns?: ReportBreakdownConfig[]
   /** Ô lọc riêng của trang, chèn vào thanh lọc TRƯỚC ô Công ty. */
   extraFilters?: ComponentType<ReportExtraFiltersProps>
+  /**
+   * Tham số URL chỉ gửi đi khi người xem có quyền (`[entity, action]`); thiếu quyền thì BỎ khỏi
+   * lời gọi API (link chia sẻ mang tham số đó không làm hỏng trang bằng 403). Chỉ là tiện ích
+   * giao diện, backend vẫn là chỗ chặn.
+   */
+  paramsRequirePermission?: Record<string, [PermissionEntity, PermissionAction]>
   /** Nguồn không lọc theo công ty (vd Báo cáo khảo sát) — ẩn ô Công ty. */
   hideCompany?: boolean
+  /**
+   * Đường `<gốc>/summary/rows` của ngăn «Danh sách người» (duoc-CR-686). Bỏ trống
+   * = báo cáo không có danh sách; khai rồi thì chỉ số nào bấm được do
+   * `meta.drilldown_metrics` backend trả quyết định.
+   */
+  drilldownEndpoint?: string
+  /** Báo cáo không có trục thời gian (backend luôn trả `trend: []`) — không vẽ biểu đồ xu hướng. */
+  hideTrend?: boolean
+  /**
+   * Báo cáo tình trạng HIỆN TẠI, bỏ qua kỳ (vd Hồ sơ còn thiếu) — ẩn nút Kỳ báo cáo
+   * và màn «Kỳ này chưa có dữ liệu». Lời gọi vẫn gửi tham số kỳ mặc định, backend bỏ qua.
+   */
+  hidePeriod?: boolean
 }

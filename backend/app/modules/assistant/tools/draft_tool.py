@@ -478,14 +478,37 @@ _SESSION_BY_NAME = {
 _LEAVE_PARAMS = {
     "type": "object",
     "properties": {
+        "periods": {
+            "type": "array",
+            "description": "CÁC KHOẢNG NGÀY nghỉ khi người dùng nghỉ NHIỀU đợt KHÔNG liền nhau trong "
+                           "CÙNG một đơn (tối đa 20, cùng một năm, không trùng ngày). Ví dụ «nghỉ 27/10 và "
+                           "chiều 3/11 tới 7/11» = 2 khoảng: [{from_date:2026-10-27,to_date:2026-10-27}, "
+                           "{from_date:2026-11-03,from_session:afternoon,to_date:2026-11-07}]. Mỗi khoảng có "
+                           "buổi riêng; khoảng một ngày thì to_date = from_date. Có periods thì BỎ "
+                           "from_date/to_date/from_session/to_session. Nghỉ MỘT đợt liền thì KHÔNG dùng "
+                           "periods, điền from_date/to_date như thường. Nghỉ theo giờ (hourly) không dùng "
+                           "periods. Khoảng giữa các đợt (ví dụ 28/10–02/11) là ngày đi làm, KHÔNG tính nghỉ.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "from_date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "to_date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "from_session": {"type": "string", "enum": ["full", "morning", "afternoon"],
+                                     "description": "Buổi bắt đầu của khoảng. Mặc định full."},
+                    "to_session": {"type": "string", "enum": ["full", "morning", "afternoon"],
+                                   "description": "Buổi kết thúc của khoảng. Mặc định full."},
+                },
+                "required": ["from_date", "to_date"],
+            },
+        },
         "from_date": {
             "type": "string",
-            "description": "Ngày bắt đầu nghỉ, YYYY-MM-DD — bắt buộc. Người dùng nói ngày "
+            "description": "Ngày bắt đầu nghỉ, YYYY-MM-DD — bắt buộc khi KHÔNG dùng periods. Người dùng nói ngày "
                            "tương đối (mai, thứ hai tuần sau...) thì tự quy ra theo ngày hôm nay.",
         },
         "to_date": {
             "type": "string",
-            "description": "Ngày kết thúc nghỉ, YYYY-MM-DD — bắt buộc. Nghỉ một ngày thì "
+            "description": "Ngày kết thúc nghỉ, YYYY-MM-DD — bắt buộc khi KHÔNG dùng periods. Nghỉ một ngày thì "
                            "bằng from_date.",
         },
         "reason": {"type": "string", "description": "Lý do nghỉ — ĐÚNG lời người dùng nói. Họ chưa nói thì BỎ "
@@ -525,7 +548,8 @@ _LEAVE_PARAMS = {
         },
         "contact_phone": {"type": "string", "description": "SĐT liên hệ khi nghỉ (nếu có)."},
     },
-    "required": ["from_date", "to_date"],
+    #  `from_date`/`to_date` HOẶC `periods` — handler kiểm; schema không ép để model chọn được `periods`.
+    "required": [],
 }
 
 _LEAVE_DESC = (
@@ -536,6 +560,9 @@ _LEAVE_DESC = (
     "hỏi — ĐỪNG hỏi lại. Gọi khi người dùng muốn xin nghỉ / lập đơn nghỉ phép và đã cho biết "
     "NGÀY nghỉ. Lý do / loại nghỉ người dùng chưa nói thì cứ gọi với ô đó TRỐNG — tool trả `need_info` để "
     "hỏi lại một lượt (kèm danh sách loại nghỉ); không tự điền thay họ. Nghỉ nửa ngày thì hỏi buổi nào. "
+    "Người dùng nghỉ NHIỀU đợt không liền nhau trong một đơn (ví dụ «27/10 và 3/11 tới 7/11») thì truyền "
+    "`periods` (mỗi đợt một phần tử), KHÔNG gộp thành một from_date/to_date liền — gộp là tính nghỉ cả "
+    "những ngày giữa các đợt. "
     "Đủ thông tin thì PHẢI gọi ngay trong lượt trả lời — nút "
     "'Tạo đơn nghỉ phép' chỉ xuất hiện khi tool được gọi. Sau khi gọi: tóm tắt bản đề xuất, "
     "nói rõ đơn CHƯA được tạo và CHƯA gửi duyệt, và đọc nguyên các cảnh báo trong `warnings` "
@@ -564,6 +591,39 @@ def _hhmm(value) -> str:
         return time(*parts).strftime("%H:%M")
     except (TypeError, ValueError):
         return ""
+
+
+def _session_code(value) -> int:
+    """Chữ buổi model gõ -> SMALLINT; ngoài bộ mã thì về cả ngày (ô chọn trên form, người dùng rà lại được)."""
+    #  Model có thể gửi số 1/2/3 (hoặc "1"/"2"/"3") thay vì chữ — cùng bộ mã với update_tool.
+    text = _clean_text(value, 20).lower()
+    if text in ("1", "2", "3"):
+        return {"1": LEAVE_SESSION_FULL, "2": LEAVE_SESSION_MORNING, "3": LEAVE_SESSION_AFTERNOON}[text]
+    return _SESSION_BY_NAME.get(text, LEAVE_SESSION_FULL)
+
+
+def _draft_periods(args: dict) -> tuple[list[dict], str | None]:
+    """Các khoảng ngày model khai: `periods` nếu có, không thì MỘT khoảng từ from/to (tương thích ngược).
+    Trả ([{from_date,to_date,from_session,to_session}], lỗi)."""
+    raw = args.get("periods")
+    if raw in (None, [], ""):
+        raw = [{k: args.get(k) for k in ("from_date", "to_date", "from_session", "to_session")}]
+    elif not isinstance(raw, list):
+        return [], "periods phải là danh sách các khoảng ngày — hỏi lại người dùng."
+    if len(raw) > 20:
+        return [], "Một đơn nghỉ tối đa 20 khoảng ngày."
+    out = []
+    for i, item in enumerate(raw, 1):
+        item = item if isinstance(item, dict) else {}
+        start, end = _iso_date(item.get("from_date")), _iso_date(item.get("to_date"))
+        if not start or not end:
+            return [], ("Thiếu hoặc sai from_date / to_date (cần YYYY-MM-DD)"
+                        + (f" ở khoảng thứ {i}" if len(raw) > 1 else "")
+                        + " hoặc reason — hỏi người dùng bổ sung rồi gọi lại.")
+        out.append({"from_date": start, "to_date": end,
+                    "from_session": _session_code(item.get("from_session")),
+                    "to_session": _session_code(item.get("to_session"))})
+    return out, None
 
 
 def _pick_leave_type(db, wanted: str):
@@ -612,12 +672,17 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
     emp = ctx.db.get(Employee, emp_id)
 
     user_text, asked = confirm_fields.take_context(args)
-    from_date = _iso_date(args.get("from_date"))
-    to_date = _iso_date(args.get("to_date"))
+    period_items, period_error = _draft_periods(args)
     reason = _clean_text(args.get("reason"), 500)
-    if not from_date or not to_date or (not reason and not user_text):
+    if period_error:
+        return {"error": period_error}
+    if not reason and not user_text:
         return {"error": "Thiếu hoặc sai from_date / to_date (cần YYYY-MM-DD) hoặc reason — "
                          "hỏi người dùng bổ sung rồi gọi lại."}
+    #  Đầu đơn = bao ngoài (khoảng đầu ↔ khoảng cuối theo ngày); `periods` giữ từng khoảng (duoc-CR-683).
+    period_items.sort(key=lambda p: (p["from_date"], p["to_date"]))
+    multi = len(period_items) > 1
+    from_date, to_date = period_items[0]["from_date"], period_items[-1]["to_date"]
     #  Đại ca 09/10: lý do / loại nghỉ người dùng CHƯA nói thì hỏi lại, không tự điền (lớp 1 + 2 của confirm_fields).
     missing: list[dict] = []
     if reason and not confirm_fields.stated(user_text, reason) and "reason" not in asked:
@@ -633,16 +698,12 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
     if missing:
         return confirm_fields.need(missing)
     reason = reason or "Việc cá nhân"
-    if to_date < from_date:
+    if any(p["to_date"] < p["from_date"] for p in period_items):
         return {"error": "«Đến ngày» đang trước «Từ ngày» — xác nhận lại ngày nghỉ với "
                          "người dùng rồi gọi lại."}
 
-    #  Giá trị ngoài bộ mã thì về mặc định thay vì nổ lỗi: các ô này trên form là ô chọn,
-    #  người dùng rà lại được; chặn cứng chỉ vì model gõ "morning " thừa dấu cách là quá tay.
-    def _session(value) -> int:
-        return _SESSION_BY_NAME.get(_clean_text(value, 20).lower(), LEAVE_SESSION_FULL)
-
-    from_session, to_session = _session(args.get("from_session")), _session(args.get("to_session"))
+    #  Giá trị ngoài bộ mã thì về mặc định thay vì nổ lỗi (xem `_session_code`).
+    from_session, to_session = period_items[0]["from_session"], period_items[-1]["to_session"]
     assumptions: list[str] = []
     if from_session == LEAVE_SESSION_FULL and to_session == LEAVE_SESSION_FULL and not confirm_fields.mentions(
             user_text, "ca ngay", "nua ngay", "buoi sang", "buoi chieu", "sang", "chieu", "theo gio", "gio"):
@@ -655,7 +716,9 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
         return {"error": "Nghỉ từ buổi chiều đến buổi sáng CÙNG một ngày là khoảng trống — "
                          "hỏi lại người dùng buổi nghỉ."}
 
-    hourly = LEAVE_SESSION_HOURLY in (from_session, to_session)
+    hourly = any(LEAVE_SESSION_HOURLY in (p["from_session"], p["to_session"]) for p in period_items)
+    if hourly and multi:
+        return {"error": "Nghỉ theo giờ chỉ khai được MỘT khoảng ngày — bỏ periods hoặc đổi buổi nghỉ."}
     from_time = _hhmm(args.get("from_time")) if hourly else ""
     to_time = _hhmm(args.get("to_time")) if hourly else ""
     if hourly and not (from_time and to_time):
@@ -664,15 +727,30 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
     if hourly:
         #  Khai theo giờ thì CẢ HAI ô buổi phải là «Theo giờ», nếu không backend chặn lúc lưu.
         from_session = to_session = LEAVE_SESSION_HOURLY
+        period_items[0]["from_session"] = period_items[0]["to_session"] = LEAVE_SESSION_HOURLY
 
     leave_type, catalog = _pick_leave_type(ctx.db, _clean_text(args.get("leave_type"), 50))
     if leave_type is None:
         return {"error": "Danh mục Loại nghỉ đang trống hoặc tắt hết — báo người dùng liên hệ "
                          "phòng Nhân sự khai danh mục trước khi nộp đơn."}
 
+    from fastapi import HTTPException
+
+    from app.modules.leave import request_periods
+    from app.modules.leave.period_spans import PeriodView, period_text
+    from app.modules.leave.request_service import validate_periods
+
+    views = [PeriodView(from_date=date.fromisoformat(p["from_date"]), to_date=date.fromisoformat(p["to_date"]),
+                        from_session=p["from_session"], to_session=p["to_session"]) for p in period_items]
+    if multi:
+        #  Cùng bộ luật với lúc lưu (chồng ngày, vắt năm, trần ngày) — báo sớm để khỏi điền form mới ăn chặn.
+        try:
+            views = validate_periods(views, None, None)
+        except HTTPException as exc:
+            return {"error": f"{exc.detail} — xác nhận lại ngày nghỉ với người dùng."}
     company_id = int(getattr(emp, "company_id", 0) or 0)
-    span_days = (date.fromisoformat(to_date) - date.fromisoformat(from_date)).days + 1
-    if span_days > workday_service.MAX_RANGE_DAYS:
+    span_days = request_periods.calendar_days(views)
+    if not multi and span_days > workday_service.MAX_RANGE_DAYS:
         return {"error": f"Khoảng nghỉ dài {span_days} ngày, vượt trần "
                          f"{workday_service.MAX_RANGE_DAYS} ngày của một tờ đơn — nhiều khả "
                          "năng gõ nhầm năm, xác nhận lại với người dùng."}
@@ -688,6 +766,10 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
         days = workday_service.count_hourly_days(
             ctx.db, date.fromisoformat(from_date), date.fromisoformat(to_date),
             _time.fromisoformat(from_time), _time.fromisoformat(to_time), **kwargs)
+    elif multi:
+        per_days = workday_service.count_leave_days_periods(ctx.db, views, **kwargs)
+        views = request_periods.with_days(views, per_days)
+        days = round(sum(per_days), 2)
     else:
         days = workday_service.count_leave_days(
             ctx.db, date.fromisoformat(from_date), date.fromisoformat(to_date),
@@ -705,16 +787,11 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
     if cap and days > cap:
         warnings.append(f"«{leave_type.name}» chỉ cho nghỉ tối đa {cap} ngày mỗi lần, "
                         f"đơn này đang {days} ngày.")
-    other = (ctx.db.query(LeaveRequest)
-             .filter(LeaveRequest.employee_id == emp_id,
-                     LeaveRequest.is_deleted.is_(False),
-                     LeaveRequest.status.in_(HOLDING_STATUSES),
-                     LeaveRequest.from_date <= date.fromisoformat(to_date),
-                     date.fromisoformat(from_date) <= LeaveRequest.to_date)
-             .first())
+    #  Cùng hàm chốt trùng ngày với lúc lưu: ngày KHE giữa hai khoảng của đơn khác không báo nhầm.
+    other = request_periods.find_overlap(ctx.db, emp_id, views)
     if other is not None:
-        warnings.append(f"Đã có đơn «{other.code}» nghỉ từ {other.from_date} đến "
-                        f"{other.to_date} trùng khoảng ngày này — hệ sẽ chặn lúc lưu.")
+        warnings.append(f"Đã có đơn «{other.code}» nghỉ {period_text(request_periods.periods_of(ctx.db, other))} "
+                        "trùng khoảng ngày này — hệ sẽ chặn lúc lưu.")
     remaining = None
     if leave_type.counts_balance:
         #  `remaining()` chỉ ĐỌC (`ensure_balance` mới là hàm cấp phát) — tool read-only
@@ -745,6 +822,10 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
             "to_date": to_date,
             "from_session": from_session,
             "to_session": to_session,
+            #  Luôn ≥1 phần tử (duoc-CR-683); `from_date`/`to_date` ở trên là bao ngoài của chúng.
+            "periods": [{"from_date": p["from_date"], "to_date": p["to_date"],
+                         "from_session": p["from_session"], "to_session": p["to_session"]}
+                        for p in period_items],
             "from_time": from_time,
             "to_time": to_time,
             "reason": reason,
@@ -757,6 +838,7 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
         "total_days": days,
         "remaining_days": remaining,
         "warnings": warnings,
+        "periods_text": period_text(views),
         "note": f"Số ngày {days} là GỢI Ý theo lịch làm việc (đã trừ Chủ nhật và ngày lễ) — "
                 "người dùng sửa được trên form. Đơn này chỉ khai MỘT loại nghỉ; cần nhiều "
                 "loại trong cùng khoảng ngày thì bấm «Thêm loại nghỉ» ngay trên form.",

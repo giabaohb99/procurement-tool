@@ -27,15 +27,24 @@ from app.modules.leave.constants import LR_DRAFT
 from app.modules.leave.request_model import LeaveRequest
 
 
-def scoped_requests(db: Session, user, prof: dict, d_from: date, d_to: date,
-                    company_id: int | None = None):
-    """Đơn trong PHẠM VI (đã `apply_scope`) + lọc kỳ (`from_date`)/trạng thái/công ty — H1:
-    `company_id` lọc SAU `apply_scope`, chỉ THU HẸP thêm, không mở rộng phạm vi."""
+def scoped_base(db: Session, user, prof: dict, company_id: int | None = None,
+                department_id: int | None = None):
+    """Đơn trong PHẠM VI (đã `apply_scope`) + lọc công ty/phòng ban + bỏ xóa/nháp, CHƯA lọc kỳ —
+    H1: `company_id`/`department_id` lọc SAU `apply_scope`, chỉ THU HẸP thêm, không mở rộng.
+    Phòng ban lấy theo cột chép lúc LẬP đơn (`LeaveRequest.department_id`)."""
     q = apply_scope(db.query(LeaveRequest), LeaveRequest, "leave_request", user, prof)
     if company_id is not None:
         q = q.filter(LeaveRequest.company_id == company_id)
-    return (q.filter(LeaveRequest.is_deleted.is_(False), LeaveRequest.status != LR_DRAFT)
-           .filter(range_filter(LeaveRequest.from_date, "date", d_from, d_to)))
+    if department_id is not None:
+        q = q.filter(LeaveRequest.department_id == department_id)
+    return q.filter(LeaveRequest.is_deleted.is_(False), LeaveRequest.status != LR_DRAFT)
+
+
+def scoped_requests(db: Session, user, prof: dict, d_from: date, d_to: date,
+                    company_id: int | None = None, department_id: int | None = None):
+    """`scoped_base` + lọc kỳ theo NGÀY BẮT ĐẦU (`from_date`) — dùng cho số ĐƠN/số người/tỷ lệ."""
+    return scoped_base(db, user, prof, company_id, department_id).filter(
+        range_filter(LeaveRequest.from_date, "date", d_from, d_to))
 
 
 def header_subquery(scoped_query):

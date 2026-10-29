@@ -199,6 +199,8 @@ export const queryKeys = {
     changeRequest: (id: number) => ['hr', 'change-requests', 'detail', id] as const,
     /** Sơ đồ tổ chức (duoc-CR-669) — không nằm dưới `employees` vì cũng đổi theo phòng ban; quét bằng `hr.all`. */
     orgChart: () => ['hr', 'org-chart'] as const,
+    /** Ô «Lịch nhắc trong tháng» của Tổng quan Nhân sự (duoc-CR-689) — theo tháng `YYYY-MM`. */
+    monthlyReminders: (month: string) => ['hr', 'monthly-reminders', month] as const,
     employeeDepartments: (id: number) => ['hr', 'employees', id, 'departments'] as const,
     /**
      * Quá trình công tác của MỘT hồ sơ (phase 04, 03/10/2026) — tab «Quá trình
@@ -328,6 +330,20 @@ export const queryKeys = {
       ['hr', 'room-availability', startAt, endAt, companyId] as const,
     meetingRooms: (params?: Record<string, unknown>) =>
       ['hr', 'meeting-rooms', params ?? {}] as const,
+
+    //  ── Kế hoạch nhân sự theo kỳ (duoc-CR-690) ───────────────────────────
+    //  Danh sách ba màn đi qua khung CRUD chung (khóa `['crud', apiPath]`); các khóa dưới đây là của
+    //  trang chi tiết. Gốc `headcountPlansRoot` quét chi tiết + số «Đang có» + bản xem trước cùng lúc.
+    headcountPlansRoot: () => ['hr', 'headcount-plans'] as const,
+    headcountPlan: (id: number) => ['hr', 'headcount-plans', 'detail', id] as const,
+    /** Bản xem trước của bảng tự tính — khóa theo NGUYÊN bản nháp đã chuẩn hóa (POST `/compute`, không lưu). */
+    headcountPlanCompute: (draft: unknown) => ['hr', 'headcount-plans', 'compute', draft] as const,
+    /** Số người đang làm + lương bình quân theo vị trí của một pháp nhân × phòng. */
+    headcountPlanPositionStats: (companyId: number, departmentId: number) =>
+      ['hr', 'headcount-plans', 'position-stats', companyId, departmentId] as const,
+    //  Nhóm chi phí + Mẫu khoản chi phí KHÔNG có khóa ở đây: chúng dùng khóa của khung CRUD chung
+    //  (`getCrudQueryKey` / `getCrudDetailKey` theo apiPath) để màn danh mục sửa xong là ô chọn ở trang
+    //  kế hoạch tự nạp lại — hai họ khóa thì một bên sẽ quên quét bên kia.
   },
   /** Phân hệ Văn thư. Danh mục nền nạp cả danh sách nên key không mang tham số lọc. */
   document: {

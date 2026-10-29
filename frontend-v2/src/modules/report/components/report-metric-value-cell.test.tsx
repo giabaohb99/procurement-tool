@@ -26,6 +26,7 @@ function totalRow(current: number | null, previous: number | null): ReportTableR
     compare: { requests: previous },
     isTotal: true,
     isEmpty: false,
+    isSuppressed: false,
   }
 }
 

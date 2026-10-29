@@ -108,3 +108,32 @@ describe('LeaveRequestSummary', () => {
     expect(screen.getByText('14/12/2026 (Buổi chiều)')).toBeInTheDocument()
   })
 })
+
+describe('LeaveRequestSummary — nhiều khoảng ngày (duoc-CR-683)', () => {
+  const periods = [
+    { id: 1, from_date: '2026-10-27', from_session: LEAVE_SESSION.FULL, to_date: '2026-10-27', to_session: LEAVE_SESSION.FULL, days: 1, sort_order: 0 },
+    { id: 2, from_date: '2026-11-03', from_session: LEAVE_SESSION.AFTERNOON, to_date: '2026-11-07', to_session: LEAVE_SESSION.FULL, days: 4.5, sort_order: 1 },
+  ]
+
+  it('lists every period with its own day count instead of the outer Từ/Đến ngày', () => {
+    render(
+      <LeaveRequestSummary
+        request={request({ from_date: '2026-10-27', to_date: '2026-11-07', total_days: 5.5, periods })}
+      />,
+    )
+    expect(screen.getByText('Thời gian nghỉ')).toBeInTheDocument()
+    expect(screen.getByText('27/10/2026')).toBeInTheDocument()
+    expect(screen.getByText('03/11/2026 (Buổi chiều) → 07/11/2026')).toBeInTheDocument()
+    expect(screen.getByText('4.5 ngày')).toBeInTheDocument()
+    //  Hai dòng bao ngoài nói sai (giữa chúng có cả tuần đi làm) nên không còn.
+    expect(screen.queryByText('Từ ngày')).not.toBeInTheDocument()
+    expect(screen.queryByText('Đến ngày')).not.toBeInTheDocument()
+  })
+
+  it('a ONE-period request still shows the two Từ ngày / Đến ngày rows exactly as before', () => {
+    render(<LeaveRequestSummary request={request({ periods: [{ ...periods[0], from_date: '2026-12-14', to_date: '2026-12-15', days: 2 }] })} />)
+    expect(screen.getByText('Từ ngày')).toBeInTheDocument()
+    expect(screen.getByText('Đến ngày')).toBeInTheDocument()
+    expect(screen.queryByText('Thời gian nghỉ')).not.toBeInTheDocument()
+  })
+})

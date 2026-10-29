@@ -6,7 +6,9 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.core.auth import require, get_perm_profile
+from app.core.auth import require, get_perm_profile, user_has_permission
+from app.core.base_controller import read_multi_param
+from app.core.export_xlsx import Col, xlsx_response
 from app.core.database import get_db
 from app.core.report_export import report_xlsx
 from app.core.report_keys import ReportKey
@@ -212,11 +214,31 @@ def pr_lines(request: Request, db: Session = Depends(get_db), user=Depends(requi
     except ValueError:
         page, page_size = 1, 50
     return success(report_service.compute_pr_lines(
-        db, user,
-        year=qp.get("year") or str(datetime.now().year), company_id=qp.get("company_id"),
-        status=qp.get("status") or None, line_status=qp.get("line_status") or None,
-        assignee=qp.get("assignee") or None, search=(qp.get("search") or "").strip() or None,
-        page=page, page_size=page_size))
+        db, user, **_pr_lines_filters(request), page=page, page_size=page_size,
+        show_supplier=user_has_permission(db, user, "supplier", "read")))
+
+
+def _pr_lines_filters(request: Request) -> dict:
+    """Bộ lọc chung của bảng `/pr-lines` và file xuất `/pr-lines/export` (bao-CR-691: `line_status` nhận NHIỀU
+    giá trị — `line_status=a,b` hoặc lặp tham số; một giá trị vẫn như cũ)."""
+    qp = request.query_params
+    return {
+        "year": qp.get("year") or str(datetime.now().year), "company_id": qp.get("company_id"),
+        "status": qp.get("status") or None, "line_status": read_multi_param(request, "line_status") or None,
+        "assignee": qp.get("assignee") or None, "search": (qp.get("search") or "").strip()[:100] or None,
+    }
+
+
+@router.get("/pr-lines/export")
+def pr_lines_export(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "export"))):
+    """bao-CR-691: xuất Excel bảng Chi tiết YC mua hàng — cùng bộ lọc với `/pr-lines`, không phân trang, trần
+    `export_xlsx.MAX_ROWS` dòng. Không gác `require_report`: bảng gốc `/pr-lines` thuộc phân hệ Thu mua (màn
+    /procurement/pr-lines-report), chỉ bản tổng hợp `/summary` mới nằm trong danh mục báo cáo (ReportKey.PR_LINES).
+    Cột NCC chỉ có nội dung khi người xuất có `supplier.read`."""
+    rows = report_service.export_pr_lines_rows(
+        db, user, **_pr_lines_filters(request), show_supplier=user_has_permission(db, user, "supplier", "read"))
+    columns = [Col(key, label, kind=kind, width=width) for key, label, kind, width in report_service.PR_LINE_EXPORT_COLUMNS]
+    return xlsx_response("chi-tiet-yc-mua-hang-theo-dong", columns, rows, sheet_title="Chi tiet YC mua hang")
 
 
 @router.get("/pr-lines/summary", dependencies=[Depends(require_report(ReportKey.PR_LINES))])

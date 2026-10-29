@@ -1,5 +1,6 @@
 import type { DocumentRecord } from '../types/document-record'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
+import { leaveExtraOf } from './gnp-leave-metadata'
 
 /** `2026-08-14` — đúng định dạng của `<input type="date">`. */
 export function today(): string {
@@ -115,6 +116,9 @@ export function documentToForm(record: DocumentRecord): DocumentRecordFormValues
       reason: String(record.metadata?.reason ?? ''),
       handover_employee_id: Number(record.metadata?.handover_employee_id ?? 0),
       contact_phone: String(record.metadata?.contact_phone ?? ''),
+      //  Phần metadata form không có ô (bản kê khoảng ngày / loại nghỉ của giấy hệ sinh) — giữ
+      //  nguyên để `formToPayload` gửi lại, không thì lưu văn bản là mất (duoc-CR-683 M4).
+      extra: leaveExtraOf(record.metadata),
     },
   }
 }
@@ -138,6 +142,19 @@ export function archiveFormToPayload(values: DocumentRecordFormValues) {
   }
 }
 
+/**
+ * Khối nghỉ phép của form → `metadata`. Khóa ngoài form (`extra`) trải TRƯỚC để mười ô người
+ * dùng vừa sửa luôn thắng, và `extra` không bị gửi lên thành một khóa lồng.
+ */
+function leaveMetadataOf(leave: NonNullable<DocumentRecordFormValues['leave']>) {
+  const { extra, ...fields } = leave
+  return {
+    ...(extra ?? {}),
+    ...fields,
+    total_days: fields.total_days === '' ? undefined : fields.total_days,
+  }
+}
+
 export function formToPayload(values: DocumentRecordFormValues, isLeaveForm = false) {
   const { leave, ...base } = values
   return {
@@ -145,8 +162,6 @@ export function formToPayload(values: DocumentRecordFormValues, isLeaveForm = fa
     effective_date: values.effective_date || null,
     expire_date: values.expire_date || null,
     attachment_view_until: values.attachment_view_until || null,
-    metadata: isLeaveForm && leave
-      ? { ...leave, total_days: leave.total_days === '' ? undefined : leave.total_days }
-      : undefined,
+    metadata: isLeaveForm && leave ? leaveMetadataOf(leave) : undefined,
   }
 }

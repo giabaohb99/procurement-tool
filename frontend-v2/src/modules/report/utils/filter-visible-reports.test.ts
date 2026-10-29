@@ -58,6 +58,13 @@ describe('filterVisibleReports — gác KÉP entity + reportKeys', () => {
     expect(filterVisibleReports([a, b], () => true, [1])).toEqual([a])
   })
 
+  it('báo cáo khai `action` xét đúng hành động đó, không phải `read` (E2 đòi employee.write)', () => {
+    const r = buildReport({ entity: 'employee', action: 'write' })
+    const onlyRead = (_e: string, a: string) => a === 'read'
+    expect(filterVisibleReports([r], onlyRead, [1])).toEqual([])
+    expect(filterVisibleReports([r], () => true, [1])).toEqual([r])
+  })
+
   it('danh mục rỗng trả về rỗng, không ném lỗi', () => {
     expect(filterVisibleReports([], () => true, [1, 2, 3])).toEqual([])
   })

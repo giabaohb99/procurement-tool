@@ -121,8 +121,8 @@ PROGRESS_RENAME = {
 #  quy đổi mà không kèm căn cứ quy đổi. `pick_columns` tự khử trùng nên ép luôn là an toàn.
 ALWAYS_COLS = ("currency", "exchange_rate")
 
-SHEET_TITLE = "Tien do mua hang"
-FILE_NAME = "tien-do-mua-hang"
+SHEET_TITLE = "Tien do don mua hang"
+FILE_NAME = "tien-do-don-mua-hang"
 
 
 def columns_for(show_supplier: bool) -> list[Col]:

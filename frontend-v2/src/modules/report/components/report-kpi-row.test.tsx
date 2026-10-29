@@ -74,6 +74,29 @@ describe('ReportKpiRow — snapshot metric: no sparkline, not clickable', () => 
   })
 })
 
+//  duoc-CR-688 — chỉ số thời điểm mà nhóm có số (vd «Định biên cuối kỳ» theo phòng ban) bấm
+//  được để biểu đồ linh hoạt vẽ THEO NHÓM; nhóm không có số thì thẻ vẫn tĩnh như trên.
+describe('ReportKpiRow — snapshot metric drawable by group', () => {
+  it('makes the snapshot card selectable when groups carry it, and reports its key', async () => {
+    const onSelectMetric = vi.fn()
+    renderRow({ onSelectMetric, groupedSnapshotMetrics: new Set(['debt']) })
+    const card = screen.getByRole('button', { name: /Công nợ/ })
+    card.click()
+    expect(onSelectMetric).toHaveBeenCalledWith('debt')
+    expect(screen.getByText('Số dư hiện tại — bấm để vẽ theo nhóm')).toBeInTheDocument()
+  })
+
+  it('shows the selected ring on a grouped snapshot card', () => {
+    renderRow({ selectedMetric: 'debt', groupedSnapshotMetrics: new Set(['debt']) })
+    expect(screen.getByRole('button', { name: /Công nợ/ })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('keeps the snapshot card static when the set names a different metric', () => {
+    renderRow({ groupedSnapshotMetrics: new Set(['spend']) })
+    expect(screen.queryByRole('button', { name: /Công nợ/ })).not.toBeInTheDocument()
+  })
+})
+
 describe('ReportKpiRow — null derived metric (zero denominator) renders — with no change badge', () => {
   it('shows the dash instead of 0% and skips the ±change line entirely', () => {
     renderRow()
@@ -81,5 +104,22 @@ describe('ReportKpiRow — null derived metric (zero denominator) renders — wi
     expect(card).toHaveTextContent('—')
     //  Không có dòng thay đổi nào (không mũi tên, không %/điểm) cho thẻ này.
     expect(card).not.toHaveTextContent('điểm')
+  })
+})
+
+//  duoc-CR-687 — một số ĐẾM (`int`) có thể về `null` khi backend che nhóm; thẻ phải ra «—»,
+//  không «0», và không vẽ mức thay đổi dù kỳ trước có số.
+describe('ReportKpiRow — null count metric renders a dash', () => {
+  it('shows — for a null int total even when the compare period has a value', () => {
+    renderRow({
+      meta: { metrics: [metric({ key: 'people', label: 'Tổng lao động', kind: 'int' })], dimensions: [], group_by: 'none' },
+      kpis: ['people'],
+      totals: { current: { people: null }, compare: { people: 12 } },
+      trend: [],
+    })
+    const card = screen.getByText('Tổng lao động').closest('[data-slot="card"]')
+    expect(card).toHaveTextContent('—')
+    expect(card).not.toHaveTextContent('0')
+    expect(card).not.toHaveTextContent('%')
   })
 })

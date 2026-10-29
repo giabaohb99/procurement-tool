@@ -118,6 +118,7 @@ def _rows_from_tasks(db: Session, tasks: list[dict], key: str) -> dict:
         db, {obj.employee_id for obj in rows.values()} | handover_ids)
     types = request_serializer.type_names(db)
     lines = request_serializer.lines_by_request(db, set(rows))
+    periods = request_serializer.periods_for(db, set(rows))
     flows = steps_service.steps_of_entities(db, ENTITY, list(rows))
 
     items = []
@@ -125,7 +126,7 @@ def _rows_from_tasks(db: Session, tasks: list[dict], key: str) -> dict:
         obj = rows.get(task.get(key))
         if obj is None:
             continue
-        data = request_serializer.dump_request(obj, names, types, lines)
+        data = request_serializer.dump_request(obj, names, types, lines, periods)
         data["task"] = task
         data["flow"] = flows.get(obj.id)
         #  ⚠️ Người NHẬN BÀN GIAO phải đi kèm ngay ở đây, không để người duyệt

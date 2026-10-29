@@ -4,7 +4,12 @@ import { toast } from 'sonner'
 import { appConfig } from '@/core/config/app-config'
 import { queryKeys } from '@/shared/constants/query-keys'
 import type { ListParams } from '@/shared/types/api'
-import { leaveApi, type LeaveRequestPayload } from '../api/leave-api'
+import {
+  leaveApi,
+  type LeavePeriodPayload,
+  type LeavePeriodsEstimate,
+  type LeaveRequestPayload,
+} from '../api/leave-api'
 
 /**
  * Hook của phân hệ Nghỉ phép (CR-259).
@@ -98,19 +103,53 @@ export function useLeaveRequestAction() {
 
 // ── Hai ô trợ giúp trên FORM ───────────────────────────────────────────────────
 
-/** Số ngày gợi ý. Chỉ chạy khi đã đủ hai đầu ngày — thiếu là backend trả 422. */
-export function useEstimateLeaveDays(params: {
-  from_date: string
-  to_date: string
-  leave_type_id?: number
-  from_session?: number
-  to_session?: number
+/**
+ * Số ngày GỢI Ý cho các khoảng ngày trên form (duoc-CR-683) — một lượt cho cả danh sách.
+ *
+ * - **Một khoảng** (gần như mọi tờ đơn, kể cả theo giờ) đi đường GET `estimate-days` cũ: y
+ *   hành vi trước đây, không ăn câu lỗi khi người dùng còn gõ dở giờ.
+ * - **Nhiều khoảng** gọi POST `estimate-periods`, trả số ngày TỪNG khoảng (đã sắp theo ngày).
+ *
+ * Chỉ chạy khi mọi hàng có đủ hai đầu ngày — thiếu là backend trả 422. React Query khử trùng
+ * theo khóa, nên gõ lại đúng danh sách cũ không bắn thêm request.
+ */
+export function useEstimateLeavePeriods(params: {
   employee_id?: number
+  leave_type_id?: number
+  periods: LeavePeriodPayload[]
+  from_time?: string
+  to_time?: string
+  /** Tắt hẳn (vd form đang thấy hai khoảng chồng nhau — gọi chỉ để ăn đúng câu lỗi đó). */
+  enabled?: boolean
 }) {
-  const ready = Boolean(params.from_date && params.to_date)
+  const { enabled = true, ...body } = params
+  const ready = enabled && body.periods.length > 0 && body.periods.every((p) => p.from_date && p.to_date)
   return useQuery({
-    queryKey: ['hr', 'leave-estimate', params] as const,
-    queryFn: () => leaveApi.estimateDays(params),
+    //  Khóa riêng của đúng hook này, không ai dọn từ ngoài — xem luật «Query keys».
+    queryKey: ['hr', 'leave-estimate', body] as const,
+    queryFn: async (): Promise<LeavePeriodsEstimate> => {
+      if (body.periods.length === 1) {
+        const [p] = body.periods
+        const one = await leaveApi.estimateDays({
+          from_date: p.from_date,
+          to_date: p.to_date,
+          from_session: p.from_session,
+          to_session: p.to_session,
+          leave_type_id: body.leave_type_id,
+          employee_id: body.employee_id,
+          from_time: body.from_time,
+          to_time: body.to_time,
+        })
+        return { periods: [{ days: one.total_days }], total_days: one.total_days, schedule_name: one.schedule_name }
+      }
+      return leaveApi.estimatePeriods({
+        employee_id: body.employee_id,
+        leave_type_id: body.leave_type_id,
+        periods: body.periods,
+        from_time: null,
+        to_time: null,
+      })
+    },
     enabled: ready,
   })
 }

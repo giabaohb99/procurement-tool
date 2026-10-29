@@ -4,6 +4,7 @@ import { Label } from '@/shared/ui/label'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { LEAVE_SESSION, LEAVE_SESSION_LABELS, type LeaveRequest } from '../types/leave'
+import { periodsOf } from '../utils/leave-periods'
 
 interface LeaveRequestSummaryProps {
   request: LeaveRequest
@@ -35,6 +36,8 @@ interface LeaveRequestSummaryProps {
  */
 export function LeaveRequestSummary({ request }: LeaveRequestSummaryProps) {
   const lines = request.lines ?? []
+  const periods = periodsOf(request)
+  const multi = periods.length > 1
 
   //  Buổi chỉ đáng nhắc khi KHÁC «Cả ngày» — thêm "(Cả ngày)" vào mọi dòng là
   //  bốn chữ thừa trên mọi tờ đơn.
@@ -59,9 +62,33 @@ export function LeaveRequestSummary({ request }: LeaveRequestSummaryProps) {
       <InfoList>
         <InfoRow label="Người nghỉ" value={request.employee_name || `#${request.employee_id}`} />
         <InfoRow label="Điện thoại liên hệ" value={request.contact_phone} />
-        <InfoRow label="Từ ngày" value={withSession(request.from_date, request.from_session)} />
-        <InfoRow label="Đến ngày" value={withSession(request.to_date, request.to_session)} />
+        {/*  Đơn MỘT khoảng giữ y hai dòng Từ / Đến ngày như trước. Đơn nhiều khoảng
+             (duoc-CR-683) thì hai dòng đó nói sai — giữa «27/10» và «07/11» có cả tuần đi
+             làm — nên thay bằng mục «Thời gian nghỉ» kê từng khoảng ở dưới. */}
+        {!multi && (
+          <>
+            <InfoRow label="Từ ngày" value={withSession(request.from_date, request.from_session)} />
+            <InfoRow label="Đến ngày" value={withSession(request.to_date, request.to_session)} />
+          </>
+        )}
       </InfoList>
+
+      {multi && (
+        <Block label="Thời gian nghỉ">
+          <ul className="divide-y rounded-md border text-sm">
+            {periods.map((p, index) => (
+              <li key={p.id || index} className="flex justify-between gap-3 px-3 py-2">
+                <span className="min-w-0 break-words tabular-nums">
+                  {p.from_date === p.to_date
+                    ? withSession(p.from_date, p.from_session === LEAVE_SESSION.FULL ? p.to_session : p.from_session)
+                    : `${withSession(p.from_date, p.from_session)} → ${withSession(p.to_date, p.to_session)}`}
+                </span>
+                <span className="shrink-0 font-medium tabular-nums">{p.days} ngày</span>
+              </li>
+            ))}
+          </ul>
+        </Block>
+      )}
 
       {/*  LOẠI NGHỈ — bảng, vì một đơn khai được nhiều loại (07/09/2026). Đơn
            một loại vẫn ra đúng một dòng, không phải dựng hai bố cục khác nhau

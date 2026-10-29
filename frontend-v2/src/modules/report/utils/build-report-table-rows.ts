@@ -26,11 +26,26 @@ export interface ReportTableRow {
    * "Kỳ này chưa có dữ liệu" (`ReportGroupedTable`), không phải một dòng mờ.
    */
   isEmpty: boolean
+  /**
+   * Nhóm bị backend CHE (duoc-CR-687): mọi giá trị kỳ này đều `null` — vd «Xem theo Nhóm
+   * tuổi», nhóm dưới 3 người thì mọi số thành `null` để khỏi lộ tuổi từng người (lý do nằm ở
+   * `notes`). Ô số hiện «—» (không phải 0) và dòng không có nút «Xem» danh sách.
+   */
+  isSuppressed: boolean
 }
 
 /** Mọi giá trị trong `values` đều `null` hoặc `0` — coi là "không có phát sinh". */
 export function isMetricValuesEmpty(values: ReportMetricValues): boolean {
   return Object.values(values).every((v) => v === null || v === 0)
+}
+
+/**
+ * Mọi giá trị đều `null` (và có ít nhất một khóa) — dấu hiệu nhóm bị che. KHÁC «rỗng»:
+ * nhóm rỗng thật mang số 0, còn chỉ số dẫn xuất mẫu số 0 là `null` lẻ cạnh các số đếm.
+ */
+export function isMetricValuesSuppressed(values: ReportMetricValues): boolean {
+  const list = Object.values(values)
+  return list.length > 0 && list.every((v) => v === null)
 }
 
 /**
@@ -60,6 +75,7 @@ export function buildReportTableRows(
     compare: totals.compare,
     isTotal: true,
     isEmpty: false,
+    isSuppressed: false,
   }
 
   const rows: ReportTableRow[] = groups.map((g) => ({
@@ -69,6 +85,7 @@ export function buildReportTableRows(
     compare: g.compare,
     isTotal: false,
     isEmpty: isMetricValuesEmpty(g.current),
+    isSuppressed: isMetricValuesSuppressed(g.current),
   }))
 
   function sortRows(list: ReportTableRow[]): ReportTableRow[] {

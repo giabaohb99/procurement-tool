@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Bản | 1.6 — 23/10/2026 (sửa dòng cờ «Bắt buộc đính kèm» ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ «Bắt buộc đính kèm» chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
-| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 |
+| Bản | 1.7 — 26/10/2026 (**một đơn khai nhiều khoảng ngày không liền kề** — duoc-CR-683: §7.3 mới, §6 + §7 + §12 sửa; **bỏ HR3-3** ở §7.1) · 1.6 — 23/10/2026 (sửa dòng cờ «Bắt buộc đính kèm» ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ «Bắt buộc đính kèm» chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
+| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 · **duoc-CR-683** |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Nghỉ phép* |
 | Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` |
 | Nguồn nghiệp vụ | `doc/erp/tham-khao-hrm/02-don-tu-va-duyet.md` (DT1, DT6) · `10-de-xuat-ap-dung.md` (V1-6, V1-7) |
@@ -316,7 +316,7 @@ hai con số tùy người nhập qua màn nào.
 ### Trần khoảng ngày
 
 Một tờ đơn tối đa `MAX_RANGE_DAYS = 400` ngày dương lịch, chặn ở
-`check_date_range`. ⚠️ Không có chốt này thì `date_range` lặng lẽ dừng ở 400 và
+`check_date_range`. Đơn nhiều khoảng (§7.3) tính trần trên **bao ngoài** (từ ngày đầu khoảng đầu tới ngày cuối khoảng cuối, kể cả khe), chặn ở `request_periods.check_periods`. ⚠️ Không có chốt này thì `date_range` lặng lẽ dừng ở 400 và
 trả con số nhỏ hơn sự thật — gõ nhầm năm 2036 (3651 ngày) ra đúng **343 ngày**,
 không có triệu chứng nào cho tới lúc đối chiếu sổ.
 
@@ -333,8 +333,8 @@ không có triệu chứng nào cho tới lúc đối chiếu sổ.
 
 | Luật | Chi tiết |
 |---|---|
-| Khoảng ngày | `to_date >= from_date`; nghỉ từ **chiều đến sáng cùng ngày** là khoảng trống → chặn |
-| Chồng ngày | Hai đơn còn hiệu lực (chờ duyệt / đã duyệt) của **cùng một người** không được chồng khoảng — chồng là trừ phép hai lần cho một ngày |
+| Khoảng ngày | **Mỗi khoảng** phải có `to_date >= from_date`; nghỉ từ **chiều đến sáng cùng ngày** là khoảng trống → chặn (câu báo lỗi nêu «Khoảng thứ N»). Một đơn có 1–20 khoảng, xem §7.3 |
+| Chồng ngày | Hai đơn còn hiệu lực (chờ duyệt / đã duyệt) của **cùng một người** không được chồng khoảng — chồng là trừ phép hai lần cho một ngày. Xét **từng khoảng**, không xét bao ngoài: đơn khác rơi vào khe giữa hai khoảng vẫn gửi được (§7.3) |
 | Giới tính | Thai sản chỉ áp cho hồ sơ nữ. **Hồ sơ chưa khai giới tính KHÔNG bị chặn** — chặn là khóa cả công ty tới khi Nhân sự nhập bù |
 | Trần mỗi lần | Cưới hỏi · tang chế 3 ngày. `0` = không giới hạn |
 | ~~Báo trước~~ | **ĐÃ BỎ 05/09/2026.** Không còn luật "phải nộp trước N ngày" — nghỉ ngày mai vẫn gửi duyệt được. Cột `min_notice_days` còn trong bảng nhưng không ai đọc, và đã gỡ khỏi schema lẫn màn danh mục loại nghỉ |
@@ -347,7 +347,7 @@ không có triệu chứng nào cho tới lúc đối chiếu sổ.
 *"Nghỉ 07→10/09, trong đó 3 ngày phép năm + 1 ngày không lương"* — trước đó phải
 lập hai đơn, mà chốt **chồng ngày** ở trên lại chặn đúng chuyện đó.
 
-**Cả đơn dùng CHUNG một khoảng ngày; dòng chỉ chia SỐ NGÀY.** Bản khai ngày riêng
+**Cả đơn dùng CHUNG các khoảng ngày (một hoặc nhiều, §7.3); dòng chỉ chia SỐ NGÀY, không gắn khoảng.** Bản khai ngày riêng
 cho từng dòng tra được *"ngày 09 nghỉ loại gì"*, nhưng đổi lại người nhập phải gõ
 hai đầu ngày cho mỗi loại và chốt chống chồng ngày phải chạy cả trong lẫn ngoài
 tờ đơn. Khách chọn bản gọn.
@@ -381,8 +381,8 @@ liệt kê đủ và **chỉ ghi khi từ hai dòng trở lên**, để đơn m�
 dạng cũ. Mã loại trong ô đó cố ý không đối chiếu `LEAVE_TYPE_SET` — giấy là bản
 chép của một quyết định đã ký, chặn ở đó không cứu được gì.
 
-⚠️ **Hạn chế đã biết — không phải lỗi.** Điều kiện rẽ nhánh của luồng duyệt đọc
-`leave_type_id`, tức **loại chính**. Nhánh khai *"loại nghỉ = không lương thì thêm
+⚠️ **Hạn chế đã biết — ĐÃ CHỐT BỎ 26/10/2026 (HR3-3, duoc-CR-683).** Điều kiện rẽ nhánh của luồng duyệt đọc
+`leave_type_id`, tức **loại chính**. Chủ sản phẩm chốt: luồng duyệt coi mọi đơn là nghỉ phép, **không rẽ nhánh theo từng loại nghỉ của đơn**; không làm phương án đọc đủ loại. Đoạn dưới giữ lại để biết hành vi hiện tại, không còn là việc chờ làm. Nhánh khai *"loại nghỉ = không lương thì thêm
 chặng Giám đốc"* sẽ KHÔNG chạy cho tờ đơn 3 ngày phép năm + 1 ngày không lương.
 Cố ý không đưa danh sách loại vào `entity_context`: `condition_service` chỉ so được
 giá trị vô hướng, thêm một ô mà phép `in` của nó không đọc nổi thì tệ hơn không có.
@@ -420,6 +420,46 @@ câu nêu tên loại, ví dụ *«Loại nghỉ «Nghỉ ốm» bắt buộc đ
   `hr/utils/leave-required-attachment.ts`.
 - Đơn **Trả về** rồi gửi lại cũng bị kiểm lại; gỡ hết tệp ở đơn Trả về thì gửi lại bị chặn.
 - Chỉ đếm tệp `entity = leave_request` của đúng đơn; không kiểm loại/đuôi tệp.
+
+### 7.3. Nhiều khoảng ngày trong một đơn (duoc-CR-683, 26/10/2026)
+
+*"Nghỉ 27/10 cả ngày, rồi 03/11 chiều tới 07/11"* — trước đó phải lập hai đơn. Nay một đơn khai được nhiều khoảng ngày không liền kề; đơn cũ là đúng 1 khoảng.
+
+**Mô hình.** Bảng con `tab_leave_request_period` (`request_id`, `from_date`, `from_session`, `to_date`, `to_session`, `days`, `sort_order`). Backend **luôn ghi ≥1 dòng** (đơn cũ được backfill bởi migration `cr683nghiphep01`). Hai cặp ngày/buổi ở **đầu đơn là BAO NGOÀI dẫn xuất**: `from_*` = khoảng đầu, `to_*` = khoảng cuối, nên lọc, sắp xếp và báo cáo cũ chạy nguyên. `total_days` = tổng ngày các khoảng (có thể sửa đè ở TỔNG, không sửa đè từng khoảng).
+
+```
+Ví dụ: 27/10/2026 (T3) cả ngày  +  03/11 (T3) chiều → 07/11 (T7) cả ngày, lịch T2–T7
+  periods.days = [1, 4.5]   total_days = 5.5   đầu đơn = 27/10 → 07/11
+  ngày 28/10 – 02/11 là KHE: không phải ngày nghỉ
+```
+
+**Luật** (`leave/request_periods.py`, `check_periods`):
+
+| # | Luật | Câu trả khi sai |
+|---|---|---|
+| 1 | 1–20 khoảng mỗi đơn | 422 (schema) |
+| 2 | **Nghỉ theo giờ chỉ một khoảng** (giữ hành vi cũ: được vắt nhiều ngày) | 400 «Nghỉ theo giờ chỉ khai được một khoảng ngày» |
+| 3 | Các khoảng **không chồng nhau**; sát nhau thì qua | 400 nêu hai khoảng chồng |
+| 4 | Bao ngoài ≤ `MAX_RANGE_DAYS = 400` ngày | 400 |
+| 5 | **Từ 2 khoảng trở lên phải cùng một năm** (quỹ trừ theo năm); đơn 1 khoảng vắt năm giữ như cũ | **422** «Tách thành hai đơn» |
+| 6 | Đơn từ 2 khoảng: khoảng không có ngày làm việc nào → **luôn** chặn, kể cả khi gõ đè Tổng số ngày (form luôn gửi số ngày nên chặn theo cờ sửa đè thì không bao giờ chạy — rà mã 26/10), nêu «Khoảng thứ N … Bỏ khoảng này khỏi đơn». Đơn 1 khoảng giữ luật cũ: gõ đè tổng thì qua | 400 |
+| 7 | `check_lines`: trần Σ ngày các dòng = Σ ngày **dương lịch của các khoảng** (khe không tính) | 400 |
+
+**Sửa đơn (PATCH).** Có `periods` thì ghi đè cả danh sách. Vắng `periods`: đơn 1 khoảng vẫn sửa bằng ô ngày như cũ; đơn từ 2 khoảng mà gửi ô ngày/buổi thì **400** «gửi đủ danh sách khoảng khi sửa ngày»; chỉ đổi lý do/bàn giao thì giữ nguyên các khoảng. Payload cũ (không `periods`) dựng thành 1 khoảng từ `from_date`/`to_date`.
+
+**Chốt trùng ngày** xét từng khoảng của đơn khác (một truy vấn): đơn khác rơi vào khe gửi được, chạm một khoảng thì chặn.
+
+**Sổ quỹ** vẫn chạy theo DÒNG ở bốn nhịp (§7.1); các khoảng chỉ chia ngày để tính tổng, không đụng sổ.
+
+⚠️ **Mọi chỗ hỏi *"ngày D có nghỉ không"* phải đọc qua khoảng ngày** — `leave/period_spans.py` (`LeaveSpan`, `span_of`, `periods_by_request`) với OUTER JOIN và đường rơi về đầu đơn cho đơn chưa có dòng khoảng. Không đọc `[from_date, to_date]` của đầu đơn vì nó nuốt cả khe. Đã áp cho: Lịch nghỉ, «Ai làm / ai nghỉ» (`work_schedule/roster_leave.py`), hồ sơ làm việc theo ngày (`usage_profile/daily_sources.py`), tải việc (`capability/workload_sources.py`), chốt trùng ngày.
+
+**API.** Vào: `periods?: [{from_date, from_session, to_date, to_session}]`. Ra (list, chi tiết, hộp việc duyệt): `periods: [{id, from_date, from_session(_label), to_date, to_session(_label), days, sort_order}]`, luôn ≥1 phần tử. `POST /api/leave-requests/tools/estimate-periods` ước tính ngày từng khoảng và tổng (giao diện dùng cho dòng «Cộng N khoảng»); `GET /tools/estimate-days` giữ nguyên. Giấy GNP: ô `leave_periods` chỉ ghi khi từ hai khoảng trở lên (cùng nếp với `leave_lines`).
+
+**Giao diện.** Nút **«+ Thêm khoảng ngày»** ở form; mỗi khoảng một khung «Khoảng ngày N · X ngày»; dòng «Cộng N khoảng: Y ngày». Màn chi tiết có mục «Thời gian nghỉ»; cột danh sách hiện «07/11/2026 · 2 khoảng»; Lịch nghỉ để trống các ngày khe; bản in liệt kê đủ khoảng.
+
+**Trợ lý AI** soạn và sửa được nhiều khoảng qua `periods` (`draft_leave_request`, `update_tool`); hoàn tác giữ nguyên các khoảng. Đơn từ 2 khoảng thì `update_tool` từ chối sửa bằng `from_date`/`to_date`, phải gửi `periods`.
+
+**Báo cáo theo kỳ (đổi ngày 27/10/2026, duoc-CR-686):** số **ngày** nghỉ chia theo ngày thật rơi vào kỳ / mốc (đơn 31/10 + 03/11 thì tháng 10 nhận 1 ngày, tháng 11 nhận 1 ngày), trọng số theo lịch làm việc, ngày lễ và nửa buổi. Số **đơn**, số người nghỉ, tỷ lệ từ chối, thời gian duyệt vẫn neo ngày bắt đầu, để một đơn không bị đếm hai lần. Bản trước (CR-683) neo cả số ngày vào ngày bắt đầu.
 
 ## 8. Duyệt
 
@@ -639,6 +679,8 @@ chặn trần — **người duyệt canh phần còn lại**.
 
 | Cần gì | Ở đâu |
 |---|---|
+| Khoảng ngày của đơn (chuẩn hóa · luật · ghi · chốt trùng) | `backend/app/modules/leave/request_periods.py` |
+| Đọc «ngày D có nghỉ không» (`LeaveSpan`, OUTER JOIN) | `backend/app/modules/leave/period_spans.py` |
 | Luật bảng dòng loại nghỉ | `backend/app/modules/leave/request_service.py` — `collect_lines` · `resolve_days` · `check_lines` |
 | Bảng dòng trên giao diện | `frontend-v2/src/modules/hr/components/leave-request-lines-editor.tsx` |
 | Bộ mã số (trạng thái, buổi, đơn vị, giới tính) | `backend/app/modules/leave/constants.py` |

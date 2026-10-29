@@ -5,6 +5,7 @@
 import { Check } from 'lucide-react'
 
 import { LEAVE_SESSION, type LeaveRequest } from '../types/leave'
+import { periodsOf } from '../utils/leave-periods'
 import { classifyLeaveForPrint } from '../utils/leave-print-category'
 
 const DOTS = '……………………………………………'
@@ -36,8 +37,24 @@ function describeSession(session: number): string {
   return ''
 }
 
-/** «Từ ngày … đến hết ngày …» của mẫu, kèm buổi / giờ khi không nghỉ trọn ngày. */
+/**
+ * «Từ ngày … đến hết ngày …» của mẫu, kèm buổi / giờ khi không nghỉ trọn ngày.
+ *
+ * Đơn nhiều khoảng (duoc-CR-683): mỗi khoảng một câu đúng mẫu, nối bằng «; » — in một câu bao
+ * ngoài «Từ 27/10 đến hết 07/11» là tờ giấy ký xin nghỉ cả tuần người đó vẫn đi làm.
+ */
 function formatLeaveRange(request: LeaveRequest): string {
+  const periods = periodsOf(request)
+  if (periods.length > 1) {
+    return periods
+      .map(
+        (p) =>
+          `Từ ngày ${formatDateVn(p.from_date)}${describeSession(p.from_session)} đến hết ngày ${formatDateVn(
+            p.to_date || p.from_date,
+          )}${describeSession(p.to_session)}`,
+      )
+      .join('; ')
+  }
   const from = formatDateVn(request.from_date)
   const to = formatDateVn(request.to_date || request.from_date)
   const hourly =

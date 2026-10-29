@@ -4,6 +4,7 @@
 import json
 from datetime import datetime
 
+from sqlalchemy import case
 from sqlalchemy.orm import Session
 
 from app.modules.payable.model import Payable
@@ -498,17 +499,32 @@ def _pr_lines_base_query(db, user, year, company_id):
     return q
 
 
+def _line_status_values(line_status) -> list[str]:
+    """`line_status` một giá trị, chuỗi nối dấu phẩy hoặc danh sách (bao-CR-691: lọc NHIỀU trạng thái)
+    -> danh sách mã; `chua_dat` nở thành hai trạng thái chưa đặt."""
+    from app.modules.purchase_request.service import LINE_STATUS_IDLE
+
+    raw = line_status if isinstance(line_status, (list, tuple, set)) else str(line_status or "").split(",")
+    out: list[str] = []
+    for value in raw:
+        value = str(value or "").strip()
+        for code in (LINE_STATUS_IDLE if value == "chua_dat" else (value,)):
+            if code and code not in out:
+                out.append(code)
+    return out[:20]
+
+
 def _apply_pr_line_filters(q, *, status=None, line_status=None, assignee=None, search=None):
     """Bốn bộ lọc chi tiết của báo cáo Chi tiết YC mua hàng — dùng chung bảng và tổng hợp."""
     from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
-    from app.modules.purchase_request.service import LINE_STATUS_IDLE
 
     if status:
         q = q.filter(PurchaseRequest.status == status)
-    if line_status == "chua_dat":   # gộp "Chưa tạo đơn mua hàng" + "Chưa đặt hàng" — đúng mục tiêu soi sót
-        q = q.filter(PurchaseRequestItem.line_status.in_(LINE_STATUS_IDLE))
-    elif line_status:
-        q = q.filter(PurchaseRequestItem.line_status == line_status)
+    #  "chua_dat" gộp "Chưa tạo đơn mua hàng" + "Chưa đặt hàng" — đúng mục tiêu soi sót; nhiều giá trị (bao-CR-691)
+    #  thì lọc IN, một giá trị vẫn ra đúng tập cũ.
+    codes = _line_status_values(line_status)
+    if codes:
+        q = q.filter(PurchaseRequestItem.line_status.in_(codes))
     if assignee:
         q = q.filter(PurchaseRequestItem.assignee == assignee)
     if search:
@@ -597,54 +613,182 @@ def compute_pr_lines_summary(db, user, *, year=None, company_id=None, status=Non
     }
 
 
+#  bao-CR-691: cột xuất / bày của bảng Chi tiết YC mua hàng — export dùng đúng thứ tự này.
+PR_LINE_EXPORT_COLUMNS = (
+    ("pr_code", "Mã YCMH", "text", 16), ("created_date", "Ngày lập", "date", 12), ("company_name", "Pháp nhân", "text", 24),
+    ("department", "Bộ phận", "text", 20), ("requester", "Người yêu cầu", "text", 20), ("purpose", "Mục đích", "text", 30),
+    ("is_urgent", "Gấp", "bool", 8), ("need_date", "Ngày cần (phiếu)", "date", 12),
+    ("head_of_dept_name", "Trưởng bộ phận", "text", 20), ("approver_name", "Người duyệt", "text", 20),
+    # Tiến độ dòng đứng TRƯỚC Trạng thái phiếu — khớp thứ tự cột màn v2 (chốt 28/10)
+    ("handler_dept_name", "Phòng xử lý", "text", 20), ("line_status", "Tiến độ dòng", "text", 18),
+    ("status", "Trạng thái phiếu", "text", 14),
+    ("product_code", "Mã hàng", "text", 14), ("product_name", "Tên hàng", "text", 32), ("item_group", "Nhóm hàng", "text", 16),
+    ("gram", "Gram", "text", 12), ("unit", "ĐVT", "text", 8), ("warehouse", "Kho nhận", "text", 14),
+    ("qty", "SL yêu cầu", "qty", 12), ("price", "Đơn giá", "price", 14), ("vat_pct", "VAT %", "percent", 8),
+    ("amount", "Thành tiền", "money", 16), ("required_date", "Ngày cần (dòng)", "date", 12),
+    ("expected_date", "Dự kiến có hàng", "date", 12),
+    ("qty_ordered", "SL đã đặt", "qty", 12), ("qty_received", "SL đã nhận", "qty", 12),
+    ("assignee_name", "NSTM", "text", 18), ("suggested_supplier", "NCC đề xuất", "text", 24),
+    ("po_codes", "Mã đơn mua hàng", "text", 24), ("po_count", "Số đơn", "int", 8),
+    ("latest_po_supplier", "NCC đơn gần nhất", "text", 24), ("latest_delivery_date", "Hẹn giao gần nhất", "date", 12),
+    ("delivery_count", "Số lần nhận hàng", "int", 10), ("progress_note", "Chi tiết tiến độ", "text", 30),
+    ("line_note", "Ghi chú dòng", "text", 24),
+)
+
+
+def _pr_line_po_links(db, pr_codes: set[str]) -> tuple[dict, dict]:
+    """bao-CR-691: đơn mua hàng của các dòng YCMH trên MỘT trang — gom bằng hai truy vấn, không N+1.
+
+    Ghép theo (mã YCMH, mã hàng): `PurchaseOrder.pr_code` = mã phiếu VÀ dòng đơn cùng `product_code`. Bỏ đơn đã
+    xóa / đã hủy và dòng đơn Hủy — đúng luật «đã tạo đơn» của `sync_from_purchase_orders` (màn Tiến độ mua hàng).
+    HẠN CHẾ: hai dòng YCMH cùng mã hàng trong một phiếu nhận CÙNG một tập đơn (đơn không ghi dòng YCMH nguồn).
+    Trả (links theo (pr_code, product_code) -> {po_codes, supplier mới nhất, po_item_ids}, giao hàng theo po_item_id)."""
+    from sqlalchemy import func
+
+    if not pr_codes:
+        return {}, {}
+    rows = (db.query(PurchaseOrder.code, PurchaseOrder.pr_code, PurchaseOrder.supplier_name, POItem.id, POItem.product_code)
+            .join(POItem, POItem.po_id == PurchaseOrder.id)
+            .filter(PurchaseOrder.pr_code.in_(list(pr_codes)), PurchaseOrder.is_deleted.is_(False),
+                    PurchaseOrder.status != "cancelled", POItem.progress_status != "cancelled")
+            .order_by(PurchaseOrder.created_at.asc(), PurchaseOrder.id.asc(), POItem.id.asc()).all())
+    links: dict[tuple[str, str], dict] = {}
+    for po_code, pr_code, supplier, item_id, product_code in rows:
+        if not product_code:
+            continue
+        link = links.setdefault((pr_code, product_code), {"po_codes": [], "supplier": "", "item_ids": []})
+        if po_code not in link["po_codes"]:
+            link["po_codes"].append(po_code)
+        link["supplier"] = supplier or link["supplier"]       # đơn tạo SAU cùng thắng (đã sắp theo ngày tạo tăng)
+        link["item_ids"].append(item_id)
+    item_ids = [i for link in links.values() for i in link["item_ids"]]
+    deliveries: dict[int, dict] = {}
+    if item_ids:
+        for item_id, promised, received in (
+                db.query(PODelivery.po_item_id, func.max(func.nullif(PODelivery.promised_date, "")),
+                         func.sum(case((PODelivery.received_qty > 0, 1), else_=0)))
+                .filter(PODelivery.po_item_id.in_(item_ids)).group_by(PODelivery.po_item_id).all()):
+            deliveries[int(item_id)] = {"promised": promised or "", "received": int(received or 0)}
+    return links, deliveries
+
+
+def _pr_line_rows(db, pairs, *, show_supplier: bool) -> list[dict]:
+    """Dựng các dòng của bảng / file xuất Chi tiết YC mua hàng từ các cặp (dòng YCMH, phiếu).
+
+    Mọi tra cứu phụ (gram, tên NV, pháp nhân, phòng ban, đơn mua hàng, giao hàng) gom MỘT lần cho cả trang.
+    `show_supplier` = có `supplier.read`: thiếu thì `suggested_supplier` / `latest_po_supplier` là null."""
+    from app.core.central_purchasing import get_central_dept_id
+    from app.modules.company.model import Company
+    from app.modules.employee.model import Employee
+    from app.modules.product.model import Product
+
+    codes = {it.product_code for it, _ in pairs if it.product_code}
+    specs = dict(db.query(Product.code, Product.specs).filter(Product.code.in_(codes)).all()) if codes else {}
+    emp_codes = {it.assignee for it, _ in pairs if it.assignee}
+    emp_names = dict(db.query(Employee.code, Employee.full_name)
+                     .filter(Employee.code.in_(emp_codes)).all()) if emp_codes else {}
+    emp_ids = {int(pr.head_of_dept_id or 0) for _, pr in pairs} | {int(pr.approver_employee_id or 0) for _, pr in pairs}
+    emp_ids.discard(0)
+    names_by_id = dict(db.query(Employee.id, Employee.full_name).filter(Employee.id.in_(emp_ids)).all()) if emp_ids else {}
+    company_ids = {int(pr.company_id or 0) for _, pr in pairs} - {0}
+    companies = dict(db.query(Company.id, Company.name).filter(Company.id.in_(company_ids)).all()) if company_ids else {}
+    dept_names = load_department_names(db)
+    central_id = get_central_dept_id(db) if any(int(pr.handler_dept_id or 0) == 0 for _, pr in pairs) else 0
+    links, deliveries = _pr_line_po_links(db, {pr.code for _, pr in pairs if pr.code})
+
+    rows = []
+    for it, pr in pairs:
+        link = links.get((pr.code, it.product_code)) if it.product_code else None
+        item_ids = link["item_ids"] if link else []
+        promised = max((deliveries[i]["promised"] for i in item_ids if i in deliveries), default="")
+        handler_id = int(pr.handler_dept_id or 0) or central_id   # 0 = «Thu mua chung» cũ, đọc như phòng thu mua mặc định
+        rows.append({
+            "id": it.id, "pr_id": pr.id, "pr_code": pr.code, "created_date": pr.request_date,
+            "requester": pr.requester, "department": pr.department,
+            "product_code": it.product_code, "product_name": it.product_name,
+            "warehouse": it.warehouse, "item_group": it.item_group,
+            "gram": specs.get(it.product_code, ""),
+            "qty": float(it.qty or 0), "price": float(it.price or 0),
+            "vat_pct": float(it.vat_pct or 0), "amount": float(it.amount or 0),
+            "status": pr.status, "line_status": it.line_status,
+            "expected_date": it.expected_date,
+            "assignee": it.assignee, "assignee_name": emp_names.get(it.assignee, ""),
+            # ── bao-CR-691: phía YCMH ──
+            "company_name": companies.get(int(pr.company_id or 0), ""),
+            "purpose": pr.purpose or "", "is_urgent": bool(pr.is_urgent), "need_date": pr.need_date or "",
+            "head_of_dept_name": names_by_id.get(int(pr.head_of_dept_id or 0)) or (pr.head_of_dept or ""),
+            "approver_name": names_by_id.get(int(pr.approver_employee_id or 0), ""),
+            "handler_dept_name": dept_names.get(handler_id, ""),
+            # ── phía dòng ──
+            "unit": it.unit or "", "required_date": it.required_date or "",
+            "qty_ordered": float(it.qty_ordered or 0), "qty_received": float(it.qty_received or 0),
+            "progress_note": it.progress_note or "", "line_note": it.note or "",
+            "suggested_supplier": (pr.suggested_supplier or "") if show_supplier else None,
+            # ── ghép đơn mua hàng ──
+            "po_codes": ", ".join(link["po_codes"]) if link else None,
+            "po_count": len(link["po_codes"]) if link else 0,
+            "latest_po_supplier": ((link["supplier"] or None) if link else None) if show_supplier else None,
+            "latest_delivery_date": promised or None,
+            "delivery_count": sum(deliveries[i]["received"] for i in item_ids if i in deliveries),
+        })
+    return rows
+
+
+def _pr_lines_filtered(db, user, *, year, company_id, status, line_status, assignee, search):
+    """Truy vấn gốc + bộ lọc chi tiết, kèm danh sách NSTM của dropdown (tính TRƯỚC các lọc chi tiết)."""
+    from app.modules.purchase_request.model import PurchaseRequestItem
+
+    q = _pr_lines_base_query(db, user, year, company_id)
+    assignees = sorted({a for (a,) in q.with_entities(PurchaseRequestItem.assignee)
+                        .filter(PurchaseRequestItem.assignee != "").distinct().all()})
+    q = _apply_pr_line_filters(q, status=status, line_status=line_status, assignee=assignee, search=search)
+    return q, assignees
+
+
+def _pr_lines_ordered(q):
+    from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
+
+    return q.order_by(PurchaseRequest.request_date.desc(), PurchaseRequest.id.desc(), PurchaseRequestItem.id.asc())
+
+
 def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_status=None,
-                     assignee=None, search=None, page=1, page_size=50) -> dict:
+                     assignee=None, search=None, page=1, page_size=50, show_supplier=False) -> dict:
     """Báo cáo Yêu cầu mua hàng theo DÒNG hàng (bao-CR-295 / ticket 23).
 
     Mục tiêu: NSTM nhìn vào biết MÃ HÀNG nào chưa được đặt (1 phiếu 3 mã thuộc 3 NCC -> phải
     tách 3 ĐMH, dễ đặt sót). Phân trang server (50/trang); scope phòng ban giống báo cáo PYC
     (phòng ban YÊU CẦU chỉ thấy phòng mình). Cột GRAM lấy từ Thông số (specs) của Sản phẩm —
-    hệ thống không có trường gram riêng."""
+    hệ thống không có trường gram riêng. bao-CR-691: thêm cột phía phiếu / dòng / đơn mua hàng
+    (xem `_pr_line_rows`), lọc nhiều trạng thái dòng."""
     from app.modules.employee.model import Employee
-    from app.modules.product.model import Product
-    from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
 
-    q = _pr_lines_base_query(db, user, year, company_id)
-
-    # Danh sách NSTM cho dropdown lọc: tính TRƯỚC các lọc chi tiết (như shipping-detail trả carriers)
-    assignees = sorted({a for (a,) in q.with_entities(PurchaseRequestItem.assignee)
-                        .filter(PurchaseRequestItem.assignee != "").distinct().all()})
-
-    q = _apply_pr_line_filters(q, status=status, line_status=line_status,
-                               assignee=assignee, search=search)
-
+    q, assignees = _pr_lines_filtered(db, user, year=year, company_id=company_id, status=status,
+                                      line_status=line_status, assignee=assignee, search=search)
     total = q.count()
     page = max(1, int(page or 1)); page_size = max(1, int(page_size or 50))
-    pairs = (q.order_by(PurchaseRequest.request_date.desc(), PurchaseRequest.id.desc(),
-                        PurchaseRequestItem.id.asc())
-             .offset((page - 1) * page_size).limit(page_size).all())
+    pairs = _pr_lines_ordered(q).offset((page - 1) * page_size).limit(page_size).all()
+    names = dict(db.query(Employee.code, Employee.full_name)
+                 .filter(Employee.code.in_(assignees)).all()) if assignees else {}
+    return {"items": _pr_line_rows(db, pairs, show_supplier=show_supplier), "total": total, "page": page,
+            "page_size": page_size, "assignees": [{"code": c, "name": names.get(c, "")} for c in assignees]}
 
-    # GRAM = Product.specs (thông số) + tên NSTM theo mã NV — chỉ tra cho các dòng của TRANG này
-    codes = {it.product_code for it, _ in pairs if it.product_code}
-    specs = dict(db.query(Product.code, Product.specs).filter(Product.code.in_(codes)).all()) if codes else {}
-    emp_codes = {it.assignee for it, _ in pairs if it.assignee} | set(assignees)
-    emp_names = dict(db.query(Employee.code, Employee.full_name)
-                     .filter(Employee.code.in_(emp_codes)).all()) if emp_codes else {}
 
-    items = [{
-        "id": it.id, "pr_id": pr.id, "pr_code": pr.code, "created_date": pr.request_date,
-        "requester": pr.requester, "department": pr.department,
-        "product_code": it.product_code, "product_name": it.product_name,
-        "warehouse": it.warehouse, "item_group": it.item_group,
-        "gram": specs.get(it.product_code, ""),
-        "qty": float(it.qty or 0), "price": float(it.price or 0),
-        "vat_pct": float(it.vat_pct or 0), "amount": float(it.amount or 0),
-        "status": pr.status, "line_status": it.line_status,
-        "expected_date": it.expected_date,
-        "assignee": it.assignee, "assignee_name": emp_names.get(it.assignee, ""),
-    } for it, pr in pairs]
-    return {"items": items, "total": total, "page": page, "page_size": page_size,
-            "assignees": [{"code": c, "name": emp_names.get(c, "")} for c in assignees]}
+def export_pr_lines_rows(db, user, *, year=None, company_id=None, status=None, line_status=None,
+                         assignee=None, search=None, show_supplier=False) -> list[dict]:
+    """bao-CR-691: mọi dòng theo đúng bộ lọc của bảng (không phân trang) cho file Excel — chặn ở trần dòng xuất."""
+    from app.core.export_xlsx import check_row_limit
+
+    q, _ = _pr_lines_filtered(db, user, year=year, company_id=company_id, status=status,
+                              line_status=line_status, assignee=assignee, search=search)
+    from app.core.status_codes import PR_LINE_STATUS
+    from app.modules.purchase_request.export import STATUS_LABEL
+
+    check_row_limit(q.count())
+    rows = _pr_line_rows(db, _pr_lines_ordered(q).all(), show_supplier=show_supplier)
+    for row in rows:   # tệp Excel đọc bằng mắt: nhãn tiếng Việt thay mã (API giữ mã)
+        row["status"] = STATUS_LABEL.get(row["status"], row["status"])
+        row["line_status"] = PR_LINE_STATUS.label_of(row["line_status"] or "no_po", row["line_status"] or "")
+    return rows
 
 
 def compute_shipping_detail(db, year, company_id, carrier=None, month=None, page=1, page_size=50) -> dict:

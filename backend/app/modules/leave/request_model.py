@@ -117,6 +117,35 @@ class LeaveRequest(Base, AuditMixin):
     )
 
 
+class LeaveRequestPeriod(Base, AuditMixin):
+    """MỘT KHOẢNG NGÀY của tờ đơn (duoc-CR-683) — *"27/10 · 03/11 chiều → 07/11"*.
+
+    Bảng con chứ không phải cột: một đơn nghỉ nhiều đợt không liền kề (ngày 28/10 –
+    02/11 đi làm bình thường) thì khoảng đầu–cuối ở đầu phiếu nuốt cả khe, và mọi
+    chỗ hỏi "ngày D có nghỉ không" sẽ đọc sai. Mỗi dòng là một khoảng liền.
+
+    ⚠️ Ba luật:
+    - **Luôn có ≥1 dòng** (đơn cũ được backfill) để SQL JOIN thẳng không sót đơn một
+      khoảng. Dữ liệu dựng tay không qua service (test, seed) có thể chưa có dòng —
+      bên đọc rơi về đầu đơn (`period_spans`).
+    - **Đầu đơn là DẪN XUẤT**: `from_date/from_session` = khoảng đầu, `to_date/
+      to_session` = khoảng cuối (bao ngoài). Chỉ `request_service` ghi.
+    - **Không gắn dòng loại nghỉ**: dòng loại chỉ chia SỐ NGÀY của cả đơn.
+    """
+
+    __tablename__ = "tab_leave_request_period"
+    __table_args__ = (Index("ix_leave_request_period_request", "request_id"),)
+
+    request_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    from_date: Mapped[date] = mapped_column(Date)
+    from_session: Mapped[int] = mapped_column(SmallInteger, default=SESSION_FULL)
+    to_date: Mapped[date] = mapped_column(Date)
+    to_session: Mapped[int] = mapped_column(SmallInteger, default=SESSION_FULL)
+    #  Số ngày nghỉ theo lịch NGƯỜI NGHỈ của riêng khoảng này (gợi ý, lưu để hiện).
+    days: Mapped[float] = mapped_column(Float, default=0.0)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+
 class LeaveRequestLine(Base, AuditMixin):
     """MỘT LOẠI NGHỈ trong tờ đơn — *"3 ngày phép năm + 1 ngày không lương"*.
 

@@ -68,6 +68,10 @@ const documentRecordBaseSchema = z.object({
         reason: z.string().trim().max(500, 'Tối đa 500 ký tự'),
         handover_employee_id: z.coerce.number().int().min(0),
         contact_phone: z.string().trim().max(30, 'Tối đa 30 ký tự'),
+        //  Khóa metadata NGOÀI mười ô trên (`leave_periods`, `leave_lines` của giấy hệ tự sinh —
+        //  duoc-CR-683). Không có ô nhập; chỉ để lưu lại không làm rơi, vì backend ghi đè cả
+        //  `metadata`. Xem `helpers/gnp-leave-metadata.ts`.
+        extra: z.record(z.string(), z.unknown()).optional(),
       })
       .optional(),
 })

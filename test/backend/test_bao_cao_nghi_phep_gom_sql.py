@@ -308,6 +308,42 @@ def rich(db, world):
 
 # ═══════════════════════════════ SO KHỚP ═══════════════════════════════
 
+#  duoc-CR-686 THÊM chỉ số/ghi chú mới (days_unpaid · requests_pending_over_3d ·
+#  avg_days_per_person · meta.drilldown_metrics · notes viết lại). Bản đông cứng không có chúng,
+#  nên gỡ khỏi bản MỚI trước khi so — mọi số cũ vẫn phải khớp đúng. (Fixture không có đơn vắt
+#  biên nên chia ngày theo kỳ không đổi số nào; ca vắt biên có bài riêng ở
+#  test_bao_cao_nghi_phep_chia_ngay_cr686.py.)
+_NEW_KEYS = {"days_unpaid", "requests_pending_over_3d", "avg_days_per_person", "drilldown_metrics"}
+
+
+def _strip_new(node):
+    if isinstance(node, dict):
+        return {k: _strip_new(v) for k, v in node.items() if k not in _NEW_KEYS}
+    if isinstance(node, list):
+        return [_strip_new(v) for v in node if not (isinstance(v, dict) and v.get("key") in _NEW_KEYS)]
+    return node
+
+
+_DAY_KEYS = {"days_approved", "days_pending"}
+
+
+def _drop_trend_days(data: dict) -> dict:
+    """Xu hướng độ hạt NGÀY: đơn nhiều ngày (R-E2-MULTI 10-14/01) nay chia ngày về từng mốc
+    ngày thay vì dồn hết vào ngày bắt đầu — ĐỔI CÓ CHỦ ĐÍCH (CR-686), nên bỏ hai số ngày khỏi
+    xu hướng khi so với bản đông cứng (ca chia ngày có bài riêng)."""
+    data = dict(data)
+    data["trend"] = [{k: ({m: v for m, v in val.items() if m not in _DAY_KEYS}
+                          if isinstance(val, dict) else val) for k, val in row.items()}
+                     for row in data["trend"]]
+    return data
+
+
+def _same_as_old(actual: dict, expected: dict) -> bool:
+    actual = _drop_trend_days(_strip_new(actual))
+    expected = _drop_trend_days(expected)
+    actual["notes"], expected = expected["notes"], dict(expected)
+    return actual == expected
+
 PERIOD_B1 = {"preset": "custom", "date_from": "2026-01-01", "date_to": "2026-04-10", "compare": "year"}
 PERIOD_B2 = {"preset": "custom", "date_from": "2026-02-01", "date_to": "2026-02-28", "compare": "previous"}
 
@@ -324,7 +360,7 @@ def test_moi_khop_cu_tren_fixture_giau(db, world, rich, period_params, group_by)
     expected = _old_build_summary(db, a1.user, prof, period, group_by)
     actual = report_service.build_summary(db, a1.user, prof, period, group_by)
 
-    assert actual == expected
+    assert _same_as_old(actual, expected)
 
 
 def test_moi_khop_cu_loc_cong_ty(db, world, rich):
@@ -335,7 +371,7 @@ def test_moi_khop_cu_loc_cong_ty(db, world, rich):
     for cid in (world.co["A"], world.co["B"]):
         expected = _old_build_summary(db, a1.user, prof, period, "employee", company_id=cid)
         actual = report_service.build_summary(db, a1.user, prof, period, "employee", company_id=cid)
-        assert actual == expected
+        assert _same_as_old(actual, expected)
 
 
 def test_moi_khop_cu_vuot_tran_group_limit(db, world):
@@ -361,7 +397,7 @@ def test_moi_khop_cu_vuot_tran_group_limit(db, world):
     actual = report_service.build_summary(db, cap.user, prof, period, "employee")
 
     assert len(expected["groups"]) == 300   # 299 nhóm thật + 1 hàng "(Các nhóm khác)"
-    assert actual == expected
+    assert _same_as_old(actual, expected)
 
 
 def test_moi_khop_cu_khong_co_du_lieu_trong_ky(db, world, rich):
@@ -373,4 +409,4 @@ def test_moi_khop_cu_khong_co_du_lieu_trong_ky(db, world, rich):
     for group_by in GROUP_BYS:
         expected = _old_build_summary(db, a1.user, prof, period, group_by)
         actual = report_service.build_summary(db, a1.user, prof, period, group_by)
-        assert actual == expected
+        assert _same_as_old(actual, expected)

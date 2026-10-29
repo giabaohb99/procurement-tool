@@ -354,6 +354,9 @@ def create_leave_document(db: Session, obj: LeaveRequest, actor: int) -> int:
             #  thành danh sách là phải sửa cả phân hệ Văn thư cho một tờ giấy.
             "leave_type": (leave_type.code if leave_type else "annual"),
             "leave_lines": _document_lines(db, obj),
+            #  Đơn ≥2 khoảng ngày (duoc-CR-683): bản kê từng khoảng; `from_date`/`to_date`
+            #  bên dưới là bao ngoài. Đơn 1 khoảng: khóa này vắng (metadata y hệt cũ).
+            **_document_periods(db, obj),
             "from_date": obj.from_date.isoformat(),
             "to_date": obj.to_date.isoformat(),
             "from_session": SESSION_TO_DOC_CODE.get(obj.from_session, "full"),
@@ -371,6 +374,22 @@ def create_leave_document(db: Session, obj: LeaveRequest, actor: int) -> int:
     obj.document_id = doc.id
     db.flush()
     return doc.id
+
+
+def _document_periods(db: Session, obj: LeaveRequest) -> dict:
+    """`{"leave_periods": [...]}` khi đơn có từ hai khoảng ngày, ngược lại `{}`."""
+    from .period_spans import periods_by_request
+
+    periods = periods_by_request(db, [obj.id]).get(obj.id) or []
+    if len(periods) < 2:
+        return {}
+    return {"leave_periods": [
+        {"from_date": p.from_date.isoformat(),
+         "from_session": SESSION_TO_DOC_CODE.get(p.from_session, "full"),
+         "to_date": p.to_date.isoformat(),
+         "to_session": SESSION_TO_DOC_CODE.get(p.to_session, "full"),
+         "days": p.days}
+        for p in periods]}
 
 
 def _document_lines(db: Session, obj: LeaveRequest) -> list[dict]:

@@ -194,9 +194,11 @@ def test_du_55_entity():
     `tab_ai_skill_set`; nằm trong `_SYS_ENTITIES`.
     77 → 78 cùng ngày (ai-CR-212): phát / thu hồi khóa AI hộ (`ai_mcp_key_admin`) — scope trên hồ sơ nhân sự của chủ
     khóa (pháp nhân / phòng / chính mình); nằm trong `_SYS_ENTITIES`.
+    78 → 79 ngày 28/10/2026 (duoc-CR-689): kế hoạch nhân sự (`headcount_plan`) — scope company / dept_id trên
+    `tab_headcount_plan`; nằm trong `_SYS_ENTITIES`.
     """
-    assert len(ENTITIES) == 78
-    assert len(SCOPE_FIELDS) == 78
+    assert len(ENTITIES) == 79
+    assert len(SCOPE_FIELDS) == 79
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

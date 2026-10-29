@@ -6,8 +6,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',              // có bản mới → hỏi user, không reload đột ngột
-      includeAssets: ['logo.svg', 'push-sw.js'],
+      // duoc-CR-685: SW mới tự kích hoạt ngay, không chờ người dùng bấm. Tab bản mới tự hiện
+      // popup + tải lại lúc 0h (PwaReloadPrompt); tab bản cũ bị sw-update-old-clients.js tải lại.
+      registerType: 'autoUpdate',
+      includeAssets: ['logo.svg', 'push-sw.js', 'sw-update-old-clients.js'],
       manifest: {
         name: 'DEGO Thu Mua',
         short_name: 'Thu Mua',
@@ -27,7 +29,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],  // chỉ precache asset tĩnh
         navigateFallbackDenylist: [/^\/api/],                     // /api không fallback về index.html
-        importScripts: ['push-sw.js'],                            // nạp handler Web Push vào SW
+        importScripts: ['push-sw.js', 'sw-update-old-clients.js'], // Web Push + ép tab bản cũ lên bản mới
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           { urlPattern: /\/api\//, handler: 'NetworkOnly' },      // data luôn realtime, KHÔNG cache
         ],

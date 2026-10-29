@@ -12,7 +12,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { toDateInputValue } from '@/shared/utils/format-date'
 
-import { ALL_DEPARTMENTS } from '../components/feature-usage/feature-usage-department-filter'
+import { ALL_DEPARTMENTS } from '../components/report-department-filter'
 import { buildPersonColumns, buildTypeColumns } from '../components/work-capability/work-capability-columns'
 import { ALL, DEFAULT_ROLE, WorkCapabilityFilters } from '../components/work-capability/work-capability-filters'
 import { WorkLoadPanel } from '../components/work-capability/work-load-panel'

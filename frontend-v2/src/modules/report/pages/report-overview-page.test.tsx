@@ -120,7 +120,7 @@ describe('ReportOverviewPage — KPI strip hides blocks without read permission'
     await screen.findByText('Chi phí mua hàng')
     expect(screen.getByText('Dòng chưa đặt')).toBeInTheDocument()
     //  "Giao đúng hạn" là nhãn CHUNG của on_time_rate ở cả Báo cáo mua hàng
-    //  (entity `report`, được phép) LẪN Tiến độ mua hàng (entity
+    //  (entity `report`, được phép) LẪN Tiến độ đơn mua hàng (entity
     //  `purchase_request`, KHÔNG được phép) — phải chỉ còn đúng một thẻ.
     expect(screen.getAllByText('Giao đúng hạn')).toHaveLength(1)
     expect(screen.queryByText('Trễ hạn')).not.toBeInTheDocument()

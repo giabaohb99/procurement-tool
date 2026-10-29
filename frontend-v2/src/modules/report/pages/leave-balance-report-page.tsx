@@ -1,22 +1,25 @@
 import { appRoutes } from '@/shared/constants/app-routes'
 
+import { LeaveBalanceExtraFilters } from '../components/leave-balance-extra-filters'
 import type { ReportPageConfig } from '../types/report-analytics'
 import { ReportAnalyticsPage } from './report-analytics-page'
 
 const CONFIG: ReportPageConfig = {
   endpoint: '/api/leave-balances/summary',
   exportEndpoint: '/api/leave-balances/summary/export',
+  drilldownEndpoint: '/api/leave-balances/summary/rows',
   entity: 'leave_balance',
   title: 'Quỹ phép năm',
   description: 'Được cấp, đã dùng, đang giữ chỗ, còn lại và tỷ lệ sử dụng — theo loại nghỉ, công ty, phòng ban, nhân sự.',
   slug: 'leave-balance',
   sourcePath: appRoutes.hr.leaveBalances,
-  kpis: ['granted', 'used', 'pending', 'remaining', 'usage_rate'],
+  //  `people_missing_balance` («Chưa được cấp quỹ», duoc-CR-686) là chỉ số THỜI ĐIỂM — chỉ ở Tổng.
+  kpis: ['granted', 'used', 'pending', 'remaining', 'usage_rate', 'people_missing_balance'],
   //  Kỳ của báo cáo này là NĂM, không có trục ngày/tuần/tháng bên trong một
-  //  năm — backend luôn trả `trend: []`. `ReportTrendChart` tự nhận ra mảng
-  //  rỗng và hiện khối "chưa có phát sinh" thay vì vẽ đường trống hay vỡ layout
-  //  (xem `components/report-trend-chart.tsx`) — KHÔNG cần đổi khung dùng chung.
+  //  năm — backend luôn trả `trend: []`, nên ẩn hẳn khung biểu đồ (duoc-CR-686)
+  //  thay vì để một khối "chưa có phát sinh" trống trơn.
   chartMetric: 'granted',
+  hideTrend: true,
   defaultGroupBy: 'leave_type',
   //  H2-FE (review 01/10/2026): kỳ của báo cáo này LÀ năm (xem docstring dưới) —
   //  mở trang lần đầu ở "Tháng này" (mặc định chung) rồi phải tự đổi sang "Năm
@@ -25,6 +28,8 @@ const CONFIG: ReportPageConfig = {
   //  tự lùi ĐÚNG 12 tháng — tức "cùng kỳ năm trước" — không cần khai thêm gì.
   defaultPreset: 'this_year',
   breakdowns: [{ key: 'leave_type', title: 'Top loại nghỉ' }],
+  //  Phòng ban (hiện tại của người giữ quỹ) + trạng thái nhân sự (mặc định «Đang làm»).
+  extraFilters: LeaveBalanceExtraFilters,
 }
 
 /**

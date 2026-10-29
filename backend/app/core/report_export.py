@@ -7,12 +7,16 @@ với khoảng ngày của KỲ báo cáo nằm sẵn trong tên).
 """
 from __future__ import annotations
 
+from io import BytesIO
+
 from fastapi.responses import Response
+from openpyxl import load_workbook
 
 from app.core.export_xlsx import Col, xlsx_response
 
 #  Loại chỉ số của báo cáo -> loại cột Excel (`export_xlsx.Col.kind`).
-_KIND_MAP = {"int": "int", "money": "money", "days": "qty", "hours": "qty", "percent": "percent"}
+#  `number` (duoc-CR-688): số không đơn vị có phần lẻ (bình quân cấp dưới, số tháng…) → cột `qty`.
+_KIND_MAP = {"int": "int", "money": "money", "days": "qty", "hours": "qty", "percent": "percent", "number": "qty"}
 
 
 def _fmt_delta(cur, cmp) -> str:
@@ -82,8 +86,27 @@ def report_xlsx(slug: str, data: dict) -> Response:
 
     rows = [_row_of("Tổng", bool(dim_label), has_compare,
                      data["totals"]["current"], data["totals"].get("compare"), meta)]
+    blank_rows = []   # số thứ tự dòng Excel của nhóm bị che (`g["suppressed"]`), ô phải TRỐNG chứ không phải 0
     for g in (data.get("groups") or []):
         rows.append(_row_of(g["label"], bool(dim_label), has_compare, g["current"], g.get("compare"), meta))
+        if g.get("suppressed"):
+            blank_rows.append(len(rows) + 1)
 
     filename = f"bao-cao-{slug}-{period['date_from']}-{period['date_to']}"
-    return xlsx_response(filename, columns, rows, sheet_title="Bao cao")
+    resp = xlsx_response(filename, columns, rows, sheet_title="Bao cao")
+    return _blank_suppressed(resp, blank_rows, 2 if dim_label else 1) if blank_rows else resp
+
+
+def _blank_suppressed(resp: Response, excel_rows: list[int], first_metric_col: int) -> Response:
+    """`export_xlsx.cell_value` quy `None` của cột số về 0 nên nhóm bị che (xem `suppressed` ở báo cáo
+    Nhóm tuổi) đọc ra «0» — người xem tưởng nhóm không có ai. Xóa các ô số đó sau khi dựng; báo cáo khác
+    không có nhóm bị che thì không đi qua đây."""
+    wb = load_workbook(BytesIO(resp.body))
+    ws = wb.active
+    for r in excel_rows:
+        for c in range(first_metric_col, ws.max_column + 1):
+            ws.cell(row=r, column=c).value = None
+    buf = BytesIO()
+    wb.save(buf)
+    headers = {k: v for k, v in resp.headers.items() if k.lower() != "content-length"}
+    return Response(content=buf.getvalue(), media_type=resp.media_type, headers=headers)

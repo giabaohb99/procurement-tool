@@ -186,6 +186,12 @@ export interface CrudConfig<T> {
    */
   defaultSort?: { by: string; dir: 'asc' | 'desc' }
   searchPlaceholder?: string
+  /**
+   * Bỏ ô tìm nhanh — cho danh mục mà API danh sách KHÔNG có trường chữ nào để lọc (vd Kế hoạch
+   * nhân sự, duoc-CR-689: chỉ lọc năm / pháp nhân / phòng). Để ô tìm đó thì người dùng gõ, bảng
+   * không đổi, và họ tin là «không có kết quả» trong khi backend đã lặng lẽ bỏ qua tham số.
+   */
+  hideSearch?: boolean
   /** Cấu hình thanh lọc nhanh ngoài bảng. */
   quickFilters?: QuickFilterConfig[]
   /** Cấu hình các cột hiển thị trên DataTable. */

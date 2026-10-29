@@ -103,7 +103,7 @@ def test_cong_or_cua_tien_do_mua_hang_chay_dung_dependency_cua_route(db, cap_quy
     _grant(cap_quyen, gan_bao_cao, user, "purchase_request", ReportKey.PURCHASE_PROGRESS)
     out = T.run_tool(db, user, "report_summary", {"report_key": "purchase_progress", "filters": SEPT})
     assert "error" not in out, out
-    assert out["label"] == "Tiến độ mua hàng" and out["link"] == "/report/purchase-progress"
+    assert out["label"] == "Tiến độ đơn mua hàng" and out["link"] == "/report/purchase-progress"
 
 
 # ── Số khớp đường /summary ────────────────────────────────────────────────────
@@ -196,7 +196,8 @@ def test_moi_khoa_bao_cao_deu_co_route_va_dung_khoa_gac():
     #  KHÔNG đưa vào công cụ `report_summary` của trợ lý AI (pha 4 AI đọc hồ sơ là việc riêng, chưa làm).
     #  duoc-CR-655 (khóa 15 «Mức dùng chức năng») cùng loại dữ liệu hành vi, chỉ admin; duoc-CR-657 (khóa 16 «Năng lực theo
     #  loại việc») đã có kênh riêng cho AI là `capability/ai_contract.py` (tự kiểm khóa + phạm vi) — không mở lần hai qua đây.
-    closed = {ReportKey.USAGE_PROFILE, ReportKey.FEATURE_USAGE, ReportKey.WORK_CAPABILITY}
+    #  duoc-CR-688: «Quỹ lương theo pháp nhân» (khóa 21) là số lương — đóng với trợ lý.
+    closed = {ReportKey.USAGE_PROFILE, ReportKey.FEATURE_USAGE, ReportKey.WORK_CAPABILITY, ReportKey.PAYROLL_FUND}
     assert {r.key for r in rs.REPORTS.values()} == set(ReportKey) - closed
     gated = {}
     for route in app.routes:

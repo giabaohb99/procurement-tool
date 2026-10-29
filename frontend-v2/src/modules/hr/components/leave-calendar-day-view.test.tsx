@@ -110,6 +110,24 @@ describe('LeaveCalendarDayView', () => {
     expect(screen.getByText('Nghỉ một ngày')).toBeInTheDocument()
   })
 
+  it('position is measured inside the PERIOD that holds the day, not the outer range', () => {
+    //  duoc-CR-683: đơn 10/03 + 16/03→20/03. Theo bao ngoài 16/03 là «Đang giữa đợt», nhưng
+    //  thật ra đó là NGÀY ĐẦU của khoảng thứ hai — người xếp việc cần đúng câu đó.
+    renderDay([
+      request({
+        id: 1,
+        from_date: '2027-03-10',
+        to_date: '2027-03-20',
+        periods: [
+          { id: 1, from_date: '2027-03-10', from_session: 1, to_date: '2027-03-10', to_session: 1, days: 1, sort_order: 0 },
+          { id: 2, from_date: DAY, from_session: 1, to_date: '2027-03-20', to_session: 1, days: 5, sort_order: 1 },
+        ],
+      }),
+    ])
+    expect(screen.getByText('Ngày đầu')).toBeInTheDocument()
+    expect(screen.queryByText('Đang giữa đợt')).not.toBeInTheDocument()
+  })
+
   it('tìm được theo TÊN, MÃ ĐƠN và LÝ DO — ba thứ người ta nhớ về một tờ đơn', async () => {
     const nguoi = userEvent.setup()
     renderDay([

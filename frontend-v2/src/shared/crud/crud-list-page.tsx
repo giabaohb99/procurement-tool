@@ -327,12 +327,14 @@ function CrudListContent<T extends CrudRecord>({
                    người ta hay muốn gõ thêm từ khóa để thu hẹp tiếp. Có sàn thì
                    cụm nút rớt xuống hàng riêng, hai hàng nhưng cả hai dùng được.
                    Chưa lọc gì (trạng thái thường ngày) vẫn đúng một hàng. */}
-              <SearchField
-                value={keyword}
-                onChange={setKeyword}
-                placeholder={config.searchPlaceholder || `Tìm ${config.unitLabel}…`}
-                className="max-md:min-w-40 md:w-64 md:max-w-sm md:flex-none"
-              />
+              {!config.hideSearch && (
+                <SearchField
+                  value={keyword}
+                  onChange={setKeyword}
+                  placeholder={config.searchPlaceholder || `Tìm ${config.unitLabel}…`}
+                  className="max-md:min-w-40 md:w-64 md:max-w-sm md:flex-none"
+                />
+              )}
 
               {/*  Khổ hẹp: mọi ô lọc dọn vào tờ trượt, hàng công cụ còn một dòng.
                    Cùng khuôn với bốn màn Thu mua và cụm Nghỉ phép. */}

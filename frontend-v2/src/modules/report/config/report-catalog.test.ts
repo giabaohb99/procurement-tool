@@ -23,6 +23,15 @@ function flattenSourceNav(): (ModuleNavItem & { gate?: string })[] {
     })
 }
 
+/**
+ * Báo cáo mà trang BẢNG gốc gác bằng khóa KHÁC khóa của báo cáo — chỉ khi phân hệ gốc
+ * không có màn danh sách riêng cho dữ liệu đó. Hợp đồng lao động (khóa 17) nằm ở tab của
+ * hồ sơ nhân sự, nên «Xem bảng chi tiết» mở danh sách nhân sự (`employee`) còn báo cáo
+ * gác `labor_contract` như `/api/labor-contracts/summary`. Quỹ lương theo pháp nhân (khóa 21,
+ * duoc-CR-688) cùng lý do: số lấy từ HĐLĐ, gác `labor_contract`. Thêm dòng mới phải có lý do.
+ */
+const SOURCE_GATE_EXCEPTIONS: Record<number, string> = { 17: 'employee', 21: 'employee' }
+
 describe('REPORT_CATALOG', () => {
   it('each report path lives under /report and is unique', () => {
     const paths = REPORT_CATALOG.map((r) => r.path)
@@ -41,7 +50,7 @@ describe('REPORT_CATALOG', () => {
       const matches = sourceNav.filter((i) => i.path === r.sourcePath && !i.crossModule)
       const src = matches.find((i) => i.entity) ?? matches[0]
       expect(src, `thiếu mục menu gốc cho ${r.sourcePath}`).toBeDefined()
-      expect(src?.gate).toBe(r.entity)
+      expect(src?.gate).toBe(SOURCE_GATE_EXCEPTIONS[r.key] ?? r.entity)
     }
   })
 

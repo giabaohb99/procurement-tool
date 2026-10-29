@@ -28,13 +28,13 @@ from app.core.status_catalog import Code, CodeSet, register
 
 
 class ReportKey(IntEnum):
-    """16 báo cáo của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
+    """29 báo cáo của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
     phase-02 của plan `261002-0836-phan-quyen-tung-bao-cao`."""
 
     PURCHASE_REPORT = 1      # Báo cáo mua hàng (Thu mua)
     PR_LINES = 2              # Chi tiết YC mua hàng (Thu mua)
     SURVEY_PROGRESS = 3       # Tiến độ báo giá (Thu mua)
-    PURCHASE_PROGRESS = 4     # Tiến độ mua hàng (Thu mua)
+    PURCHASE_PROGRESS = 4     # Tiến độ đơn mua hàng (Thu mua) — đổi nhãn bao-CR-691, giữ khóa
     SURVEY_REPORT = 5         # Báo cáo khảo sát (Thu mua)
     HR_HEADCOUNT = 6          # Biến động nhân sự (Nhân sự)
     LEAVE_USAGE = 7           # Tình hình nghỉ phép (Nhân sự)
@@ -47,6 +47,19 @@ class ReportKey(IntEnum):
     USAGE_PROFILE = 14        # Hồ sơ cách làm việc (Quản trị) — duoc-CR-641
     FEATURE_USAGE = 15        # Mức dùng chức năng (Quản trị) — duoc-CR-655; gom theo phòng ban, không theo người
     WORK_CAPABILITY = 16      # Năng lực theo loại việc (Quản trị) — duoc-CR-657; số theo TỪNG NGƯỜI, mặc định chỉ admin
+    LABOR_CONTRACT = 17       # Hợp đồng lao động (Nhân sự) — duoc-CR-686; danh sách có lương
+    HR_PROFILE_GAPS = 18      # Hồ sơ & tài khoản còn thiếu (Nhân sự) — duoc-CR-686
+    LABOR_BOOK = 19           # Sổ quản lý lao động (Nhân sự) — duoc-CR-687; có CCCD, BHXH, lương
+    LABOR_USAGE_REPORT = 20   # Báo cáo sử dụng lao động mẫu 01/PLI (Nhân sự) — duoc-CR-687
+    PAYROLL_FUND = 21         # Quỹ lương theo pháp nhân (Nhân sự) — duoc-CR-688; số lương, mặc định chỉ admin
+    BENEFIT_AUDIENCE = 22     # Phúc lợi & sự kiện (Nhân sự) — duoc-CR-688
+    MANAGEMENT_SPAN = 23      # Cơ cấu quản lý (Nhân sự) — duoc-CR-688
+    WORK_MOVES = 24           # Điều chuyển & bổ nhiệm (Nhân sự) — duoc-CR-688
+    HEADCOUNT_PLAN = 25       # Định biên kế hoạch so với thực tế (Nhân sự) — duoc-CR-689
+    ATTENDANCE_DAILY = 26     # Có mặt theo ngày (Nhân sự) — duoc-CR-689
+    PROFILE_CHANGES = 27      # Yêu cầu sửa hồ sơ (Nhân sự) — duoc-CR-689
+    ROOM_USAGE = 28           # Sử dụng phòng họp (Nhân sự) — duoc-CR-689
+    LEGAL_WATCH = 29          # Đối tượng cần chú ý theo luật (Nhân sự) — duoc-CR-689; có ngày sinh, con nhỏ
 
 
 #  {khóa: (nhãn, nhóm phân hệ)} — nhãn KHỚP `label`, nhóm KHỚP `group` ở danh
@@ -55,7 +68,7 @@ REPORT_META: dict[ReportKey, tuple[str, str]] = {
     ReportKey.PURCHASE_REPORT: ("Báo cáo mua hàng", "Thu mua"),
     ReportKey.PR_LINES: ("Chi tiết YC mua hàng", "Thu mua"),
     ReportKey.SURVEY_PROGRESS: ("Tiến độ báo giá", "Thu mua"),
-    ReportKey.PURCHASE_PROGRESS: ("Tiến độ mua hàng", "Thu mua"),
+    ReportKey.PURCHASE_PROGRESS: ("Tiến độ đơn mua hàng", "Thu mua"),
     ReportKey.SURVEY_REPORT: ("Báo cáo khảo sát", "Thu mua"),
     ReportKey.HR_HEADCOUNT: ("Biến động nhân sự", "Nhân sự"),
     ReportKey.LEAVE_USAGE: ("Tình hình nghỉ phép", "Nhân sự"),
@@ -68,6 +81,19 @@ REPORT_META: dict[ReportKey, tuple[str, str]] = {
     ReportKey.USAGE_PROFILE: ("Hồ sơ cách làm việc", "Quản trị"),
     ReportKey.FEATURE_USAGE: ("Mức dùng chức năng", "Quản trị"),
     ReportKey.WORK_CAPABILITY: ("Năng lực theo loại việc", "Quản trị"),
+    ReportKey.LABOR_CONTRACT: ("Hợp đồng lao động", "Nhân sự"),
+    ReportKey.HR_PROFILE_GAPS: ("Hồ sơ & tài khoản còn thiếu", "Nhân sự"),
+    ReportKey.LABOR_BOOK: ("Sổ quản lý lao động", "Nhân sự"),
+    ReportKey.LABOR_USAGE_REPORT: ("Báo cáo sử dụng lao động (01/PLI)", "Nhân sự"),
+    ReportKey.PAYROLL_FUND: ("Quỹ lương theo pháp nhân", "Nhân sự"),
+    ReportKey.BENEFIT_AUDIENCE: ("Phúc lợi & sự kiện", "Nhân sự"),
+    ReportKey.MANAGEMENT_SPAN: ("Cơ cấu quản lý", "Nhân sự"),
+    ReportKey.WORK_MOVES: ("Điều chuyển & bổ nhiệm", "Nhân sự"),
+    ReportKey.HEADCOUNT_PLAN: ("Số người kế hoạch so với thực tế", "Nhân sự"),
+    ReportKey.ATTENDANCE_DAILY: ("Có mặt theo ngày", "Nhân sự"),
+    ReportKey.PROFILE_CHANGES: ("Yêu cầu sửa hồ sơ", "Nhân sự"),
+    ReportKey.ROOM_USAGE: ("Sử dụng phòng họp", "Nhân sự"),
+    ReportKey.LEGAL_WATCH: ("Đối tượng cần chú ý theo luật", "Nhân sự"),
 }
 
 #  `value` là SỐ VIẾT DƯỚI DẠNG CHUỖI — khung `status_catalog` dùng mã chuỗi,

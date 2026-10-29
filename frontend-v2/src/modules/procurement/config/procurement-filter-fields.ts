@@ -119,7 +119,7 @@ export const PURCHASE_ORDER_FILTER_FIELDS: FilterFieldDefinition[] = [
 ]
 
 /**
- * Tiến độ mua hàng (`/api/purchase-progress`) — bao-CR-442.
+ * Tiến độ đơn mua hàng (`/api/purchase-progress`) — bao-CR-442.
  *
  * Một HÀNG ở màn này là ĐƠN + DÒNG HÀNG + LẦN GIAO ghép lại, nên danh sách trường
  * cũng chia ba cụm theo đúng thứ tự đó. Khóa phải nằm trong `_cond_map()` của

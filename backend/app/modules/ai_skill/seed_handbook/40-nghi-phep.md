@@ -83,7 +83,7 @@ nghỉ khác»** (đổi theo tỷ lệ, ví dụ 2 ngày phép đổi 1 ngày n
 không phải hai. Trên form, phần *Loại nghỉ* là một bảng: bấm **«Thêm loại nghỉ»**
 để có dòng thứ hai, mỗi dòng chọn loại và ghi số ngày.
 
-- **Cả đơn dùng chung một khoảng ngày.** Dòng chỉ chia số ngày, không khai ngày riêng.
+- **Cả đơn dùng chung các khoảng ngày** (một hoặc nhiều, xem mục dưới). Dòng chỉ chia số ngày, không khai ngày riêng và không gắn với khoảng nào.
 - **Quỹ phép trừ theo từng loại** — 3 ngày vào quỹ phép năm, 1 ngày vào quỹ không
   lương. Số phép còn lại hiện ngay dưới từng dòng.
 - **Một loại chỉ khai một dòng.** Muốn 3 ngày phép năm thì ghi 3 vào một dòng,
@@ -92,6 +92,39 @@ không phải hai. Trên form, phần *Loại nghỉ* là một bảng: bấm **
   lương* cho phần vượt, thay vì lập đơn thứ hai — đơn thứ hai sẽ bị chặn vì
   **chồng ngày** với đơn đầu.
 - **Nghỉ theo giờ thì chỉ một loại.**
+
+## Một đơn khai được NHIỀU KHOẢNG NGÀY không liền kề
+
+*"Nghỉ 27/10, rồi nghỉ tiếp chiều 03/11 tới hết 07/11"* — **một tờ đơn**, không phải hai.
+Trên form, người dùng bấm **«+ Thêm khoảng ngày»**; mỗi khoảng có khung «Khoảng ngày N · X ngày»,
+dòng cuối ghi «Cộng N khoảng: Y ngày». Đơn cũ là đơn đúng một khoảng.
+
+- **Ví dụ chuẩn:** 27/10/2026 cả ngày + 03/11 chiều → 07/11 cả ngày, lịch T2–T7 → hai khoảng
+  **1 ngày và 4,5 ngày, tổng 5,5 ngày**. Các ngày 28/10–02/11 là **ngày đi làm** — không trừ phép,
+  không hiện nghỉ ở Lịch nghỉ hay «Ai làm / ai nghỉ».
+- **`from_date`/`to_date` ở đầu đơn chỉ là BAO NGOÀI** (ngày đầu khoảng đầu → ngày cuối khoảng cuối),
+  nuốt cả khe giữa. **Đừng đọc "nghỉ từ 27/10 đến 07/11" thành nghỉ liên tục.** Muốn biết đơn nghỉ những
+  ngày nào thì đọc **`periods`** (mỗi phần tử: `from_date`, `to_date`, `from_session`, `to_session`, `days`).
+  Tool `my_leave_summary` cũng trả `periods` cho từng đơn.
+- **Luật:** tối đa **20 khoảng**; các khoảng **không chồng ngày** nhau (sát nhau thì được);
+  **từ hai khoảng trở lên phải cùng một năm** (vắt năm → hệ trả 422 «Tách thành hai đơn», một đơn cho năm
+  trước, một đơn cho năm sau); **nghỉ theo giờ chỉ một khoảng**. Chốt trùng ngày với đơn khác xét
+  **từng khoảng** — đơn khác nằm trong khe thì không trùng.
+- **Số ngày chỉ sửa đè ở TỔNG**, không sửa đè từng khoảng. Quỹ vẫn trừ theo **từng dòng loại nghỉ**.
+- **Báo cáo theo tháng neo ngày bắt đầu của đơn** (đơn 31/10 + 03/11 tính vào tháng 10) — đã chốt, không phải lỗi.
+- **Luồng duyệt coi mọi đơn là nghỉ phép, không rẽ nhánh theo loại nghỉ của từng dòng** (việc «đọc đủ
+  mọi loại nghỉ» HR3-3 đã chốt **bỏ** 26/10/2026). Đừng hứa với người dùng rằng đơn có dòng «không
+  lương» sẽ tự thêm chặng duyệt riêng.
+
+**Soạn và sửa bằng Trợ lý:** khi người dùng nói nhiều đợt («nghỉ 27/10 và chiều 3/11 tới 7/11») thì
+gọi `draft_leave_request` với **`periods`**, mỗi đợt một phần tử — **đừng gộp thành một
+`from_date`/`to_date` liền**, gộp là tính nghỉ cả những ngày đi làm ở giữa. Đợt một ngày thì
+`to_date` = `from_date`; nửa ngày dùng `from_session`/`to_session`. Đơn một khoảng thì vẫn dùng
+`from_date`/`to_date` như cũ (có `periods` thì bỏ hai ô này). Kết quả trả `periods` kèm `days` từng
+khoảng và `periods_text`; **`warnings` vẫn phải đọc nguyên** (vắt năm, chồng ngày, theo giờ nhiều khoảng
+đều bị chặn). Sửa đơn có từ hai khoảng bằng `propose_document_update`: **ngày phải gửi qua `periods`** (đủ danh
+sách), gửi `from_date`/`to_date` đơn lẻ sẽ bị từ chối; chỉ sửa lý do thì không đụng các khoảng.
+Hoàn tác giữ nguyên các khoảng cũ.
 
 ## Số ngày nghỉ
 
@@ -131,7 +164,7 @@ Ngoại lệ: loại nghỉ dài liên tục như **Thai sản** cố ý **khôn
   máy không biết ca nào, người duyệt quyết.
 - **Hai đơn không được chồng ngày** của cùng một người. Chồng thì cùng một ngày bị
   trừ phép hai lần.
-- **Nghỉ từ buổi chiều đến buổi sáng cùng ngày** là khoảng trống — hệ chặn.
+- **Nghỉ từ buổi chiều đến buổi sáng cùng ngày** là khoảng trống — hệ chặn (áp cho từng khoảng).
 - Lập đơn **hộ người khác** được (hành chính, trợ lý). Cả người lập lẫn người nghỉ
   đều thấy tờ đơn đó.
 
@@ -152,6 +185,7 @@ soạn xong mới biết không đủ phép là bắt người ta làm lại.
   «đã dùng hết». Bảo họ hỏi phòng Nhân sự, đừng nói họ hết phép.
 - Đơn khai **nhiều loại nghỉ** thì đọc theo `lines`; `total_days` đầu đơn là tổng
   chung, gán cả tổng đó cho một loại là nói sai.
+- Đơn **nhiều khoảng ngày** thì đọc ngày nghỉ theo `periods`, không theo `from_date`/`to_date` đầu đơn (bao ngoài, có khe).
 
 Hai điều tool này **không** làm: không nộp đơn (đó là `draft_leave_request`, đừng
 lẫn hai cái), và không xem được phép của người khác.
@@ -165,7 +199,7 @@ Gọi khi người hỏi muốn **xin nghỉ**: «tôi muốn nghỉ 3 ngày tu�
 Giấy GNP hệ tự sinh sau khi đơn được duyệt — đừng bao giờ dẫn người dùng sang màn
 tạo văn bản để «làm giấy nghỉ phép».
 
-Cần tối thiểu **ngày nghỉ từ–đến** và **lý do**. Ngày nói tương đối («mai», «thứ Hai
+Cần tối thiểu **ngày nghỉ từ–đến** (hoặc `periods` khi nghỉ nhiều đợt) và **lý do**. Ngày nói tương đối («mai», «thứ Hai
 tuần sau») thì tự quy ra `YYYY-MM-DD` theo hôm nay. Nghỉ **nửa ngày** thì hỏi buổi
 nào (`from_session`/`to_session` = `morning`/`afternoon`); nghỉ **vài tiếng** thì hỏi
 khung giờ (`hourly` + `from_time`/`to_time` dạng `HH:MM`).

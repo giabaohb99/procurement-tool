@@ -40,6 +40,8 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     # dễ vượt 20MB. Quyền kiểm trên entity cha `dossier` — tức là qua CẢ
     # `require` LẪN `apply_scope`, không phải chỉ đăng nhập.
     "dossier":                ("dossier", _DOC, 50),
+    # Kế hoạch nhân sự (duoc-CR-690): bảng tính gốc / tờ trình lẻ. Quyền theo entity cha `headcount_plan` (+ phạm vi pháp nhân/phòng).
+    "headcount_plan":         ("headcount_plan", _DOC, 50),
     "comment":                ("__self__", _DOC, 50),
     # Bài viết diễn đàn: ảnh + video (D-Q3 chốt 27/08/2026 — video quay điện thoại
     # đăng thẳng, mp4/webm là hai định dạng <video> mọi trình duyệt phát được).
@@ -142,7 +144,7 @@ def direct_policy(kind: str) -> tuple[set[str], int]:
 #  `employee_work_history` (plan 261003-0837): tệp QĐ bổ nhiệm/điều chuyển/thôi
 #  việc — cùng nhóm nhạy cảm với CCCD/ngân hàng của hồ sơ nhân sự.
 PRIVATE_ENTITIES: set[str] = {"document_version", "dossier", "leave_request",
-                             "employee_work_history"}
+                             "employee_work_history", "headcount_plan"}   # headcount_plan: bảng tính có chi phí nhân sự
 
 
 def is_private(entity: str) -> bool:

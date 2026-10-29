@@ -15,6 +15,7 @@ import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
 import type { ApprovalDecision } from '../hooks/use-leave'
 import type { LeaveInboxRow } from '../types/leave'
+import { formatRequestPeriods, hasMultiplePeriods } from '../utils/leave-periods'
 import { leaveLinesText } from '../utils/leave-type-label'
 
 interface LeaveDecisionDialogProps {
@@ -126,7 +127,13 @@ export function LeaveDecisionDialog({
             <Field label="Số ngày" value={`${row.total_days} ngày`} />
             <Field
               label="Thời gian nghỉ"
-              value={`${formatDate(row.from_date)} → ${formatDate(row.to_date)}`}
+              //  Đơn nhiều khoảng nói đủ từng khoảng: người duyệt quyết vào chính những ngày
+              //  vắng mặt, «27/10 → 07/11» giấu mất cả tuần đi làm ở giữa (duoc-CR-683).
+              value={
+                hasMultiplePeriods(row)
+                  ? formatRequestPeriods(row)
+                  : `${formatDate(row.from_date)} → ${formatDate(row.to_date)}`
+              }
               wide
             />
             {row.reason && <Field label="Lý do nghỉ" value={row.reason} wide />}

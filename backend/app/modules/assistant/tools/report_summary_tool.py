@@ -1,4 +1,4 @@
-"""Tool `report_summary` — một cửa vào 13 báo cáo gom sẵn của phân hệ Báo cáo (ai-CR-208, K11 của doc/erp/21 §T1).
+"""Tool `report_summary` — một cửa vào các báo cáo gom sẵn của phân hệ Báo cáo (ai-CR-208, K11 của doc/erp/21 §T1).
 
 Không viết lại phép tính, không gọi HTTP vòng: gọi THẲNG hàm route `/summary` của từng báo cáo, với một `Request` giả
 mang bộ lọc làm chuỗi truy vấn. Gác quyền giống hệt màn web:
@@ -80,6 +80,37 @@ REPORTS: dict[str, ReportRoute] = {
                             no_company=True),
     "work": ReportRoute(ReportKey.WORK, _route("work.report_controller", "work_summary"), "/report/work",
                         extra=("list_id",)),
+    #  duoc-CR-686: hai báo cáo Nhân sự mới. `/summary` chỉ trả số đếm (lương chỉ nằm ở `/summary/rows`,
+    #  công cụ này không gọi tới) nên mở cho trợ lý như các báo cáo Nhân sự khác.
+    "labor_contract": ReportRoute(ReportKey.LABOR_CONTRACT, _route("labor_contract.report_controller",
+                                                                   "labor_contract_summary"), "/report/labor-contract"),
+    "hr_profile_gaps": ReportRoute(ReportKey.HR_PROFILE_GAPS, _route("employee.profile_gaps_report_controller",
+                                                                     "profile_gaps_summary"), "/report/hr-profile-gaps"),
+    #  duoc-CR-687: sổ lao động + mẫu 01/PLI. `/summary` chỉ trả số đếm (CCCD, BHXH, lương chỉ ở tệp Excel); route tự
+    #  đòi thêm `employee_sensitive.read` + `labor_contract.read` nên trợ lý không vượt được quyền người hỏi.
+    "labor_book": ReportRoute(ReportKey.LABOR_BOOK, _route("labor_register.register_controller",
+                                                           "labor_register_summary"), "/report/labor-register"),
+    "labor_usage_report": ReportRoute(ReportKey.LABOR_USAGE_REPORT, _route("labor_register.usage_report_controller",
+                                                                           "labor_usage_summary"), "/report/labor-usage-report"),
+    #  duoc-CR-688: phúc lợi, cơ cấu quản lý, điều chuyển — `/summary` chỉ trả số đếm. «Quỹ lương theo pháp nhân»
+    #  (khóa 21) CỐ Ý KHÔNG mở cho trợ lý: số lương, chỉ người được giao xem trên màn riêng.
+    "benefit_audience": ReportRoute(ReportKey.BENEFIT_AUDIENCE, _route("employee.benefit_report_controller",
+                                                                       "benefit_summary"), "/report/benefit-audience"),
+    "management_span": ReportRoute(ReportKey.MANAGEMENT_SPAN, _route("employee.management_report_controller",
+                                                                     "management_span_summary"), "/report/management-span"),
+    "work_moves": ReportRoute(ReportKey.WORK_MOVES, _route("employee.work_move_report_controller",
+                                                           "work_moves_summary"), "/report/work-moves"),
+    #  duoc-CR-689: `/summary` chỉ trả số đếm; route tự đòi thêm quyền (nhạy cảm / đơn nghỉ) khi cần.
+    "headcount_plan": ReportRoute(ReportKey.HEADCOUNT_PLAN, _route("employee.headcount_plan_report_controller",
+                                                                   "headcount_plan_summary"), "/report/headcount-plan"),
+    "attendance_daily": ReportRoute(ReportKey.ATTENDANCE_DAILY, _route("work_schedule.attendance_report_controller",
+                                                                       "attendance_summary"), "/report/attendance"),
+    "profile_changes": ReportRoute(ReportKey.PROFILE_CHANGES, _route("employee.change_request_report_controller",
+                                                                     "profile_change_summary"), "/report/profile-changes"),
+    "room_usage": ReportRoute(ReportKey.ROOM_USAGE, _route("meeting_room.report_controller", "room_usage_summary"),
+                              "/report/room-usage"),
+    "legal_watch": ReportRoute(ReportKey.LEGAL_WATCH, _route("employee.legal_watch_report_controller",
+                                                             "legal_watch_summary"), "/report/legal-watch"),
 }
 _BY_NUMBER = {int(r.key): name for name, r in REPORTS.items()}
 
@@ -223,7 +254,7 @@ def _filters_schema() -> dict:
 
 REPORT_SUMMARY_SPEC = ToolSpec(
     name="report_summary",
-    description=("Số liệu TỔNG HỢP của 13 báo cáo ở phân hệ Báo cáo, đúng số màn web hiện (kỳ + so sánh kỳ trước, xu hướng, "
+    description=("Số liệu TỔNG HỢP của các báo cáo ở phân hệ Báo cáo (danh sách ở report_key), đúng số màn web hiện (kỳ + so sánh kỳ trước, xu hướng, "
                  "phân rã, Xem theo). Mã báo cáo: " + "; ".join(f"{k} = {REPORT_META[r.key][0]} ({REPORT_META[r.key][1]})"
                                                              for k, r in REPORTS.items())
                  + ". Cần được giao xem báo cáo đó VÀ có quyền xem phân hệ gốc; thiếu thì trả denied kèm lý do. Tiền là VND; "

@@ -14,6 +14,8 @@ interface ReportFiltersBarProps {
   /** Kỳ ĐÃ TÍNH LẠI trả về cùng dữ liệu — `undefined` khi chưa có lượt gọi nào về. */
   period?: ReportPeriod
   hideCompany?: boolean
+  /** Báo cáo tình trạng hiện tại, bỏ qua kỳ (`ReportPageConfig.hidePeriod`) — ẩn nút Kỳ báo cáo. */
+  hidePeriod?: boolean
   ExtraFilters?: ComponentType<ReportExtraFiltersProps>
 }
 
@@ -30,6 +32,7 @@ export function ReportFiltersBar({
   filters,
   period,
   hideCompany = false,
+  hidePeriod = false,
   ExtraFilters,
 }: ReportFiltersBarProps) {
   const { can } = usePermission()
@@ -45,19 +48,21 @@ export function ReportFiltersBar({
     <div className="flex flex-wrap items-start gap-2">
       {ExtraFilters && <ExtraFilters />}
 
-      <ReportPeriodControl
-        preset={filters.preset}
-        from={filters.from}
-        to={filters.to}
-        compare={filters.compare}
-        period={period}
-        onApply={filters.applyPeriod}
-      />
+      {!hidePeriod && (
+        <ReportPeriodControl
+          preset={filters.preset}
+          from={filters.from}
+          to={filters.to}
+          compare={filters.compare}
+          period={period}
+          onApply={filters.applyPeriod}
+        />
+      )}
 
       {canReadCompany && (
         <Select value={filters.companyId} onValueChange={filters.setCompanyId}>
           <SelectTrigger
-            className="w-auto min-w-40 max-md:min-w-0 max-md:flex-1"
+            className="w-auto min-w-40 max-md:min-w-36 max-md:flex-1"
             aria-label="Công ty"
           >
             <Building2 className="size-4 shrink-0 text-muted-foreground" aria-hidden />

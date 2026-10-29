@@ -52,7 +52,56 @@ GATED: dict[str, ReportKey] = {
     "/api/feature-usage/summary/export": ReportKey.FEATURE_USAGE,
     "/api/work-capability/summary": ReportKey.WORK_CAPABILITY,
     "/api/work-capability/summary/export": ReportKey.WORK_CAPABILITY,
+    #  duoc-CR-686: hai báo cáo Nhân sự mới (khóa 17, 18).
+    "/api/labor-contracts/summary": ReportKey.LABOR_CONTRACT,
+    "/api/labor-contracts/summary/export": ReportKey.LABOR_CONTRACT,
+    "/api/employees/profile-gaps/summary": ReportKey.HR_PROFILE_GAPS,
+    "/api/employees/profile-gaps/summary/export": ReportKey.HR_PROFILE_GAPS,
+    #  duoc-CR-686: đường «bấm số ra danh sách» — gác KÉP y hệt `/summary` của nó.
+    "/api/employees/summary/rows": ReportKey.HR_HEADCOUNT,
+    "/api/leave-requests/summary/rows": ReportKey.LEAVE_USAGE,
+    "/api/leave-balances/summary/rows": ReportKey.LEAVE_BALANCE,
+    "/api/labor-contracts/summary/rows": ReportKey.LABOR_CONTRACT,
+    "/api/employees/profile-gaps/summary/rows": ReportKey.HR_PROFILE_GAPS,
+    #  duoc-CR-687: sổ lao động + mẫu 01/PLI (gác kép + đòi thêm quyền nhạy cảm/HĐLĐ — test riêng ở cr687).
+    "/api/labor-register/summary": ReportKey.LABOR_BOOK,
+    "/api/labor-register/summary/export": ReportKey.LABOR_BOOK,
+    "/api/labor-register/summary/rows": ReportKey.LABOR_BOOK,
+    "/api/labor-usage-report/summary": ReportKey.LABOR_USAGE_REPORT,
+    "/api/labor-usage-report/summary/export": ReportKey.LABOR_USAGE_REPORT,
+    "/api/labor-usage-report/summary/rows": ReportKey.LABOR_USAGE_REPORT,
+    #  duoc-CR-688: quỹ lương, phúc lợi, cơ cấu quản lý, điều chuyển.
+    "/api/payroll-fund/summary": ReportKey.PAYROLL_FUND,
+    "/api/payroll-fund/summary/export": ReportKey.PAYROLL_FUND,
+    "/api/payroll-fund/summary/rows": ReportKey.PAYROLL_FUND,
+    "/api/benefit-audience/summary": ReportKey.BENEFIT_AUDIENCE,
+    "/api/benefit-audience/summary/export": ReportKey.BENEFIT_AUDIENCE,
+    "/api/benefit-audience/summary/rows": ReportKey.BENEFIT_AUDIENCE,
+    "/api/management-span/summary": ReportKey.MANAGEMENT_SPAN,
+    "/api/management-span/summary/export": ReportKey.MANAGEMENT_SPAN,
+    "/api/management-span/summary/rows": ReportKey.MANAGEMENT_SPAN,
+    "/api/work-moves/summary": ReportKey.WORK_MOVES,
+    "/api/work-moves/summary/export": ReportKey.WORK_MOVES,
+    "/api/work-moves/summary/rows": ReportKey.WORK_MOVES,
+    #  duoc-CR-689: định biên kế hoạch, có mặt, sửa hồ sơ, phòng họp, đối tượng theo luật.
+    "/api/headcount-plan-report/summary": ReportKey.HEADCOUNT_PLAN,
+    "/api/headcount-plan-report/summary/export": ReportKey.HEADCOUNT_PLAN,
+    "/api/headcount-plan-report/summary/rows": ReportKey.HEADCOUNT_PLAN,
+    "/api/attendance-report/summary": ReportKey.ATTENDANCE_DAILY,
+    "/api/attendance-report/summary/export": ReportKey.ATTENDANCE_DAILY,
+    "/api/attendance-report/summary/rows": ReportKey.ATTENDANCE_DAILY,
+    "/api/profile-change-report/summary": ReportKey.PROFILE_CHANGES,
+    "/api/profile-change-report/summary/export": ReportKey.PROFILE_CHANGES,
+    "/api/profile-change-report/summary/rows": ReportKey.PROFILE_CHANGES,
+    "/api/room-usage/summary": ReportKey.ROOM_USAGE,
+    "/api/room-usage/summary/export": ReportKey.ROOM_USAGE,
+    "/api/room-usage/summary/rows": ReportKey.ROOM_USAGE,
+    "/api/legal-watch/summary": ReportKey.LEGAL_WATCH,
+    "/api/legal-watch/summary/export": ReportKey.LEGAL_WATCH,
+    "/api/legal-watch/summary/rows": ReportKey.LEGAL_WATCH,
 }
+#  Khóa có thêm đường `/summary/rows` (3 route) — còn lại chỉ `/summary` + `/summary/export` (2 route).
+ROWS_KEYS = {v for k, v in GATED.items() if k.endswith("/summary/rows")}
 
 #  KHÔNG thuộc phân hệ Báo cáo — đã grep, không gán khóa nào (bảng phase-02).
 NOT_REPORT = {
@@ -63,6 +112,9 @@ NOT_REPORT = {
 }
 
 #  (khóa, entity giữ nguyên gác quyền, đường summary, đường export).
+#  Báo cáo mà cửa phân hệ gốc đòi `write` (không phải `read`): E2 «Yêu cầu sửa hồ sơ» dùng khóa của màn duyệt.
+NEEDS_WRITE = {ReportKey.PROFILE_CHANGES}
+
 ROUTE_SPECS = [
     (ReportKey.PURCHASE_REPORT, "report",
      "/api/reports/procurement/summary", "/api/reports/procurement/summary/export"),
@@ -99,6 +151,27 @@ ROUTE_SPECS = [
     #  duoc-CR-657: Năng lực theo loại việc gác `setting` (khóa 16, số theo từng người).
     (ReportKey.WORK_CAPABILITY, "setting",
      "/api/work-capability/summary", "/api/work-capability/summary/export"),
+    (ReportKey.LABOR_CONTRACT, "labor_contract",
+     "/api/labor-contracts/summary", "/api/labor-contracts/summary/export"),
+    (ReportKey.HR_PROFILE_GAPS, "employee",
+     "/api/employees/profile-gaps/summary", "/api/employees/profile-gaps/summary/export"),
+    (ReportKey.PAYROLL_FUND, "labor_contract",
+     "/api/payroll-fund/summary", "/api/payroll-fund/summary/export"),
+    (ReportKey.BENEFIT_AUDIENCE, "employee",
+     "/api/benefit-audience/summary", "/api/benefit-audience/summary/export"),
+    (ReportKey.MANAGEMENT_SPAN, "employee",
+     "/api/management-span/summary", "/api/management-span/summary/export"),
+    (ReportKey.WORK_MOVES, "employee",
+     "/api/work-moves/summary", "/api/work-moves/summary/export"),
+    (ReportKey.HEADCOUNT_PLAN, "headcount_plan",
+     "/api/headcount-plan-report/summary", "/api/headcount-plan-report/summary/export"),
+    #  duoc-CR-689 — «Đối tượng cần chú ý theo luật» (29) đòi thêm employee_sensitive.read nên không nằm ở đây.
+    (ReportKey.ATTENDANCE_DAILY, "employee",
+     "/api/attendance-report/summary", "/api/attendance-report/summary/export"),
+    (ReportKey.PROFILE_CHANGES, "employee",
+     "/api/profile-change-report/summary", "/api/profile-change-report/summary/export"),
+    (ReportKey.ROOM_USAGE, "room_booking",
+     "/api/room-usage/summary", "/api/room-usage/summary/export"),
 ]
 
 PRESET_QS = {"preset": "this_month", "compare": "none"}
@@ -106,7 +179,8 @@ PRESET_QS = {"preset": "this_month", "compare": "none"}
 
 def _summary_routes() -> list[APIRoute]:
     return [r for r in app.routes if isinstance(r, APIRoute)
-            and (r.path.endswith("/summary") or r.path.endswith("/summary/export"))]
+            and (r.path.endswith("/summary") or r.path.endswith("/summary/export")
+                 or r.path.endswith("/summary/rows"))]
 
 
 def _route_report_key(path: str):
@@ -134,7 +208,7 @@ def test_moi_duong_summary_duoc_phan_loai_gated_hoac_not_report():
 def test_moi_report_key_gac_dung_hai_duong():
     from collections import Counter
     counts = Counter(GATED.values())
-    assert counts == {k: 2 for k in ReportKey}, counts
+    assert counts == {k: 3 if k in ROWS_KEYS else 2 for k in ReportKey}, counts
 
 
 def test_khoa_gac_tren_route_khop_bang_khai():
@@ -188,7 +262,7 @@ def _new_user(db, code: str) -> User:
 def test_chua_gan_403_gan_qua_vai_tro_200(db, cap_quyen, gan_bao_cao, client_as,
                                          key, entity, summary_path, export_path):
     user = _new_user(db, f"U{int(key)}")
-    role = cap_quyen(user.id, entity, scope="all", read=True, export=True)
+    role = cap_quyen(user.id, entity, scope="all", read=True, export=True, write=key in NEEDS_WRITE)
     client = client_as(user)
 
     resp = client.get(summary_path, params=PRESET_QS)
@@ -217,7 +291,7 @@ def test_gan_bao_cao_nhung_thieu_quyen_entity_van_403(db, gan_bao_cao, client_as
 def test_co_read_thieu_export_van_403_tren_export(db, cap_quyen, gan_bao_cao, client_as,
                                                   key, entity, summary_path, export_path):
     user = _new_user(db, f"RDONLY{int(key)}")
-    role = cap_quyen(user.id, entity, scope="all", read=True, export=False)
+    role = cap_quyen(user.id, entity, scope="all", read=True, export=False, write=key in NEEDS_WRITE)
     gan_bao_cao(SUBJECT_ROLE, role.id, key)
     client = client_as(user)
 

@@ -139,7 +139,7 @@ TREE = {
 <thead><tr><th></th><th>Cách 1 — Connectors (đăng nhập ERP)</th><th>Cách 2 — Tệp cấu hình (dán khóa)</th></tr></thead>
 <tbody>
 <tr><td>Cần gì</td><td>Bản Claude Desktop có mục <strong>Settings ▸ Connectors</strong>. Không cần Node.js, không cần khóa.</td><td>Node.js 18 trở lên + khóa kết nối.</td></tr>
-<tr><td>Cách làm</td><td>Settings ▸ Connectors ▸ <strong>Add custom connector</strong> ▸ dán địa chỉ cổng ▸ Connect ▸ trang ERP mở ra, bấm <strong>Cho phép</strong>. Đúng các bước của {ref(OAUTH, "bài Nối ChatGPT và claude.ai")} (mục claude.ai).</td><td>Sáu bước bên dưới.</td></tr>
+<tr><td>Cách làm</td><td>Settings ▸ Connectors ▸ <strong>Add custom connector</strong> ▸ dán địa chỉ cổng ▸ Connect ▸ trang ERP mở ra, bấm <strong>Cho phép</strong>. Đúng các bước của {ref(OAUTH, "bài Cách 1")} (mục claude.ai và Claude Desktop).</td><td>Sáu bước bên dưới.</td></tr>
 <tr><td>Gỡ</td><td>Trang cá nhân ▸ Khóa của bạn ▸ dòng <em>Qua Claude</em> ▸ Gỡ.</td><td>Gỡ khóa ở Trang cá nhân rồi xóa khối trong tệp.</td></tr>
 </tbody>
 </table>

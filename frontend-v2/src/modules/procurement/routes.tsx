@@ -58,19 +58,12 @@ export const procurementModule: ErpModule = {
     },
     // Thứ tự menu bám theo bản v1 (`frontend/src/layouts/AppLayout.tsx`) — khách
     // chốt 29/08 "sửa lại như bản cũ": Báo cáo mua hàng đứng riêng đầu menu,
-    // nhóm Mua hàng xếp YCBG → Tiến độ báo giá → YCMH → ĐMH → Tiến độ mua hàng.
+    // nhóm Mua hàng xếp YCBG → Tiến độ báo giá → YCMH → ĐMH → Tiến độ đơn mua hàng
+    // → Chi tiết YC mua hàng (bao-CR-691).
     {
       label: 'Báo cáo mua hàng',
       path: appRoutes.procurement.purchaseReport,
       icon: ChartColumnBig,
-      entity: 'report',
-    },
-    // bao-CR-296/299 — trang riêng của tab "Chi tiết YC mua hàng", đứng ngay
-    // dưới Báo cáo mua hàng như bản v1 (entity `report` như menu v1).
-    {
-      label: 'Chi tiết YC mua hàng',
-      path: appRoutes.procurement.prLinesReport,
-      icon: TextSearch,
       entity: 'report',
     },
     {
@@ -102,10 +95,21 @@ export const procurementModule: ErpModule = {
       group: 'Mua hàng',
     },
     {
-      label: 'Tiến độ mua hàng',
+      label: 'Tiến độ đơn mua hàng',
       path: appRoutes.procurement.purchaseProgress,
       icon: Truck,
       entity: 'purchase_request',
+      group: 'Mua hàng',
+    },
+    // bao-CR-296/299 — trang riêng của tab "Chi tiết YC mua hàng" (entity `report`
+    // như menu v1). bao-CR-691 (đại ca chốt 28/10): dời từ đầu menu xuống nhóm
+    // Mua hàng, đứng NGAY SAU Tiến độ đơn mua hàng — hai báo cáo theo dõi cùng
+    // một chuỗi (dòng YCMH → dòng ĐMH → lần giao) nên đặt cạnh nhau.
+    {
+      label: 'Chi tiết YC mua hàng',
+      path: appRoutes.procurement.prLinesReport,
+      icon: TextSearch,
+      entity: 'report',
       group: 'Mua hàng',
     },
     // bao-CR-470 — Tra cứu giá hải quan, khóa riêng `customs_price`. Bộ lọc dùng chung trên URL nên

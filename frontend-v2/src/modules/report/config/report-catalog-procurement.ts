@@ -57,7 +57,7 @@ export const PROCUREMENT_REPORT_CATALOG: ReportCatalogEntry[] = [
     load: async () => (await import('../pages/survey-progress-chart-page')).SurveyProgressChartPage,
   },
   {
-    label: 'Tiến độ mua hàng',
+    label: 'Tiến độ đơn mua hàng',
     description: 'Giao đúng hạn, dòng chưa nhận đủ, NCC trễ, việc mở theo bộ phận.',
     path: appRoutes.report.purchaseProgress,
     sourcePath: appRoutes.procurement.purchaseProgress,

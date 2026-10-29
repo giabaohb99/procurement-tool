@@ -88,6 +88,18 @@ def count_hourly_days(db: Session, from_date: date, to_date: date,
     return round(total, 2)
 
 
+def _sum_masks(plan, holidays: set[date], from_date: date, to_date: date,
+               from_session: int, to_session: int) -> float:
+    """Số ngày nghỉ của MỘT khoảng, cho trước lịch + ngày lễ đã nạp (công thức duy nhất)."""
+    total = 0.0
+    for day in date_range(from_date, to_date):
+        if day in holidays:
+            continue
+        mask = leave_mask(day, from_date, to_date, from_session, to_session) & work_mask(plan(day))
+        total += 0.5 * bin(mask).count("1")
+    return round(total, 2)
+
+
 def count_leave_days(db: Session, from_date: date, to_date: date,
                      from_session: int = SESSION_FULL, to_session: int = SESSION_FULL,
                      *, company_id: int = 0, exclude_holiday: bool = True,
@@ -102,14 +114,28 @@ def count_leave_days(db: Session, from_date: date, to_date: date,
     if to_date < from_date:
         return 0.0
     plan, holidays = _plan_and_holidays(db, from_date, to_date, company_id, exclude_holiday, employee)
+    return _sum_masks(plan, holidays, from_date, to_date, from_session, to_session)
 
-    total = 0.0
-    for day in date_range(from_date, to_date):
-        if day in holidays:
-            continue
-        mask = leave_mask(day, from_date, to_date, from_session, to_session) & work_mask(plan(day))
-        total += 0.5 * bin(mask).count("1")
-    return round(total, 2)
+
+def count_leave_days_periods(db: Session, periods, *, company_id: int = 0,
+                             exclude_holiday: bool = True,
+                             employee: Employee | None = None) -> list[float]:
+    """Số ngày gợi ý của TỪNG khoảng (duoc-CR-683), cùng thứ tự đầu vào.
+
+    `periods`: dãy đối tượng có `from_date/to_date/from_session/to_session`. Lịch + ngày lễ
+    nạp MỘT lần cho cả bao ngoài nên số truy vấn không tăng theo số khoảng.
+    """
+    periods = list(periods)
+    if not periods:
+        return []
+    lo = min(p.from_date for p in periods)
+    hi = max(p.to_date for p in periods)
+    if hi < lo:
+        return [0.0] * len(periods)
+    plan, holidays = _plan_and_holidays(db, lo, hi, company_id, exclude_holiday, employee)
+    return [0.0 if p.to_date < p.from_date else
+            _sum_masks(plan, holidays, p.from_date, p.to_date, p.from_session, p.to_session)
+            for p in periods]
 
 
 def schedule_name_on(db: Session, employee: Employee, on_date: date) -> str:

@@ -32,6 +32,7 @@ MODULES = ["survey", "survey_request", "purchase_request", "purchase_order", "pa
            "report_access",
            "work_schedule",   # duoc-CR-555/562 (02/10): một model, `reason` 500 — bổ sung ở bao-CR-568
            "labor_contract",
+           "headcount_plan",  # duoc-CR-689: kế hoạch nhân sự — `note` 500
            "ai_skill",       # bao-CR-621 (17/10): Kho skill AI — 5 model, trần 50..500
            "usage_profile",  # duoc-CR-641 (khai ở bao-CR-647) — xem dòng dưới
            "ai_plan"]        # kh-AI1-3: đề xuất kế hoạch AI — `reject_reason` 500, kế hoạch JSON chặn ở service.normalize
@@ -156,6 +157,13 @@ TARGETS.update({
     **_same("ai_skill", "AiSkillFile", "SkillFileIn"),
     **_same("ai_skill", "AiSkillAccess", "AccessGrantIn", "AccessSubjectIn", "AccessRevokeIn"),
     **_same("labor_contract", "LaborContract", "TransitionIn"),
+    #  duoc-CR-690: kế hoạch nhân sự theo kỳ — header ghi vào HeadcountPlan; khoản dùng chung cột với khoản của mẫu;
+    #  `_Strict` chỉ là lớp gốc cấu hình, tự nó không ghi cột nào.
+    **_same("headcount_plan", "HeadcountPlan", "HeadcountPlanCreate", "HeadcountPlanSave", "PlanDraft", "PlanHeader"),
+    **_same("headcount_plan", "HrCostGroup", "CostGroupIn", "CostGroupPatch"),
+    **_same("headcount_plan", "HrCostTemplate", "CostTemplateIn", "CostTemplatePatch"),
+    "headcount_plan.CostItemIn": ["HrCostTemplateItem", "HeadcountPlanCostItem"],
+    **_same("headcount_plan", "HeadcountPlanLine", "PlanLineIn"),
     #  duoc-CR-630 — Danh sách biến mẫu HĐLĐ
     **_same("labor_contract", "LaborContractVariable", "VariableCreate", "VariableUpdate"),
     "ai_plan.PlanRejectIn": ["AiPlanProposal"],
@@ -164,6 +172,7 @@ TARGETS.update({
 
 #  Schema ghi không ghi thẳng cột nào (chỉ gói danh sách con / tham số thao tác).
 NO_TARGET = {
+    "headcount_plan._Strict",   # duoc-CR-690: lớp gốc cấu hình pydantic (extra=forbid)
     #  duoc-CR-606: chỉ mang id mẫu / nội dung HTML soạn mẫu (lưu vào tệp Word, không vào cột chữ)
     "labor_contract.GenerateIn", "labor_contract.TemplateContentIn",
     "survey.LineApproveIn", "survey.LineApproveCombined", "survey_request.ReportTemplateApplyIn",

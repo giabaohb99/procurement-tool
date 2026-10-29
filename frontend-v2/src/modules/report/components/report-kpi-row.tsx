@@ -1,3 +1,6 @@
+import { List } from 'lucide-react'
+
+import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
 import { Skeleton } from '@/shared/ui/skeleton'
 
@@ -15,6 +18,8 @@ import { KpiTrendCard } from './kpi-trend-card'
 
 /** Chỉ số `snapshot` (vd công nợ) — số dư tại-một-thời-điểm, không cộng dồn theo kỳ. */
 const SNAPSHOT_HINT = 'Số dư hiện tại — không có xu hướng theo kỳ'
+/** Chỉ số thời điểm mà các nhóm «Xem theo» CÓ số — bấm được, biểu đồ vẽ theo nhóm (duoc-CR-688). */
+const SNAPSHOT_GROUPED_HINT = 'Số dư hiện tại — bấm để vẽ theo nhóm'
 
 interface ReportKpiRowProps {
   meta: ReportMeta
@@ -24,8 +29,17 @@ interface ReportKpiRowProps {
   trend: ReportTrendPoint[]
   compareMode: ReportCompareMode
   selectedMetric: string
-  onSelectMetric: (metric: string) => void
+  /** Bỏ trống = thẻ tĩnh, không bấm đổi biểu đồ (trang `hideTrend` không có biểu đồ để đổi). */
+  onSelectMetric?: (metric: string) => void
   isLoading: boolean
+  /** Chỉ số có danh sách (`meta.drilldown_metrics` ∩ `metrics`) — thẻ của chúng có nút «Xem danh sách». */
+  drilldownMetrics?: ReadonlySet<string>
+  onDrilldown?: (metric: string) => void
+  /**
+   * Chỉ số `snapshot` mà các dòng nhóm có số (vd «Định biên cuối kỳ» theo phòng ban) — thẻ
+   * của chúng bấm được để biểu đồ linh hoạt vẽ THEO NHÓM. Vắng mặt = thẻ snapshot tĩnh như cũ.
+   */
+  groupedSnapshotMetrics?: ReadonlySet<string>
 }
 
 /**
@@ -45,9 +59,14 @@ export function ReportKpiRow({
   selectedMetric,
   onSelectMetric,
   isLoading,
+  drilldownMetrics,
+  onDrilldown,
+  groupedSnapshotMetrics,
 }: ReportKpiRowProps) {
   //  `helper` (mẫu số phụ của một derived) không bao giờ hiện thành thẻ, kể cả
   //  khi ai đó lỡ liệt kê nó trong `kpis` — backend là nguồn DUY NHẤT của cờ này.
+  //  Khóa VẮNG MẶT khỏi `meta` (vd chỉ số tài khoản bị backend gỡ vì người xem thiếu
+  //  `user.read`) cũng bị bỏ — hàng thẻ co lại, không vẽ thẻ trơ khóa kỹ thuật.
   const metrics = kpis
     .map((key) => meta.metrics.find((m) => m.key === key))
     .filter((m): m is ReportMetricMeta => m != null && !m.helper)
@@ -77,6 +96,10 @@ export function ReportKpiRow({
         //  `snapshot`: số dư tại-một-thời-điểm, KHÔNG có mặt trong `trend[]` —
         //  không vẽ sparkline (mọi mốc đều thiếu khóa) và không cho bấm đổi
         //  biểu đồ xu hướng (không có gì để vẽ).
+        //  Thẻ bấm được (đổi chỉ số biểu đồ): chỉ số thường luôn được; chỉ số thời điểm chỉ khi
+        //  các nhóm có số để vẽ — không thì bấm vào chỉ ra một biểu đồ rỗng.
+        const selectable =
+          !!onSelectMetric && (!metric.snapshot || !!groupedSnapshotMetrics?.has(metric.key))
         const sparkline = metric.snapshot
           ? undefined
           : trend.map((point) => point.current[metric.key] ?? 0)
@@ -89,12 +112,33 @@ export function ReportKpiRow({
             changeDescription={changeDescription}
             changeCaption={compareMode === 'none' ? undefined : compareCaption(compareMode)}
             hint={
-              metric.snapshot ? SNAPSHOT_HINT : compareMode === 'none' ? 'Không so sánh' : undefined
+              metric.snapshot
+                ? selectable
+                  ? SNAPSHOT_GROUPED_HINT
+                  : SNAPSHOT_HINT
+                : compareMode === 'none'
+                  ? 'Không so sánh'
+                  : undefined
             }
             sparkline={sparkline}
             loading={isLoading}
-            selected={metric.key === selectedMetric}
-            onClick={metric.snapshot ? undefined : () => onSelectMetric(metric.key)}
+            selected={selectable && metric.key === selectedMetric}
+            onClick={selectable ? () => onSelectMetric?.(metric.key) : undefined}
+            action={
+              onDrilldown && drilldownMetrics?.has(metric.key) ? (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto gap-1 px-0 text-xs"
+                  aria-label={`Xem danh sách ${metric.label}`}
+                  onClick={() => onDrilldown(metric.key)}
+                >
+                  <List className="size-3.5" aria-hidden />
+                  Xem danh sách
+                </Button>
+              ) : undefined
+            }
           />
         )
       })}

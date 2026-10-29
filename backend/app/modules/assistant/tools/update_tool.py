@@ -89,7 +89,7 @@ _ENTITY_RULES: dict[str, dict] = {
     "leave_request": {
         "label": "Đơn nghỉ phép",
         "fields": {"from_date": "Từ ngày", "to_date": "Đến ngày", "leave_type": "Loại nghỉ",
-                   "reason": "Lý do"},
+                   "reason": "Lý do", "periods": "Các khoảng ngày nghỉ"},
     },
 }
 
@@ -132,6 +132,26 @@ _PARAMS = {
                               "description": "Ngày bắt đầu nghỉ mới, YYYY-MM-DD (chỉ đơn nghỉ)."},
                 "to_date": {"type": "string",
                             "description": "Ngày kết thúc nghỉ mới, YYYY-MM-DD (chỉ đơn nghỉ)."},
+                "periods": {
+                    "type": "array",
+                    "description": "Danh sách ĐẦY ĐỦ các khoảng ngày nghỉ MỚI của đơn nghỉ (thay toàn bộ "
+                                   "khoảng cũ) — dùng khi đơn đang có từ 2 khoảng ngày, hoặc người dùng "
+                                   "muốn nghỉ nhiều khoảng không liền nhau. KHÔNG kèm from_date/to_date. "
+                                   "Khoảng không đổi vẫn phải chép lại (tra đơn bằng my_leave_summary "
+                                   "trước, xem `periods`).",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "from_date": {"type": "string", "description": "YYYY-MM-DD"},
+                            "to_date": {"type": "string", "description": "YYYY-MM-DD"},
+                            "from_session": {"type": "string",
+                                             "description": "full (cả ngày, mặc định) | morning | afternoon"},
+                            "to_session": {"type": "string",
+                                           "description": "full (cả ngày, mặc định) | morning | afternoon"},
+                        },
+                        "required": ["from_date", "to_date"],
+                    },
+                },
                 "leave_type": {"type": "string",
                                "description": "Mã hoặc tên loại nghỉ mới (chỉ đơn nghỉ)."},
                 "reason": {"type": "string",
@@ -166,7 +186,7 @@ _DESC = (
     "về bản so sánh cũ → mới; giao diện hiện thẻ xác nhận và CHÍNH NGƯỜI DÙNG bấm nút "
     "'Xác nhận sửa' thì hệ thống mới ghi. Sửa được: YCMH mục đích / ngày cần hàng / ghi chú; "
     "YCBG mục đích / ghi chú; dòng hàng YCMH và YCBG (thêm dòng, bỏ dòng, đổi số lượng — "
-    "qua line_ops); đơn nghỉ phép từ ngày / đến ngày / loại nghỉ / lý do (YCMH, YCBG, đơn nghỉ chỉ "
+    "qua line_ops); đơn nghỉ phép từ ngày / đến ngày (hoặc `periods` khi đơn có nhiều khoảng ngày) / loại nghỉ / lý do (YCMH, YCBG, đơn nghỉ chỉ "
     "khi phiếu Nháp hoặc Bị trả lại); YCTT sửa được 3 câu chữ bản in (kể cả khi phiếu đã "
     "gửi duyệt / đã duyệt). KHÔNG sửa được: giá, nhà cung cấp, số tiền, trạng thái, hạn chi "
     "— các phần đó phải mở form sửa tay, nói rõ cho người dùng. Chỉ điền đúng trường người "
@@ -273,6 +293,10 @@ def _old_value(db, entity: str, doc, field: str) -> str:
         return parse_print_texts(doc.print_texts).get(_PRINT_KEY_MAP[field], "")
     if field == "leave_type":
         return _leave_type_name(db, doc.leave_type_id)
+    if field == "periods":
+        from app.modules.leave.period_spans import period_text
+        from app.modules.leave.request_periods import periods_of
+        return period_text(periods_of(db, doc))
     value = getattr(doc, field, "")
     if isinstance(value, date):
         return value.isoformat()
@@ -293,6 +317,37 @@ def _state_sig(db, entity: str, doc) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()[:24]
 
 
+_SESSION_CODES = {"full": 1, "morning": 2, "afternoon": 3, "": 1, None: 1,
+                  1: 1, 2: 2, 3: 3}
+
+
+def _clean_periods(raw) -> tuple[list[dict], str | None]:
+    """Chuẩn hóa `periods` model gửi (buổi dạng chữ hoặc số) về [{from_date,to_date,from_session,to_session}]
+    ISO + số — hình này cũng là hình lưu trong token xác nhận nên hàm phải idempotent."""
+    from app.modules.leave.request_periods import MAX_PERIODS
+    if not isinstance(raw, list) or not raw:
+        return [], "periods phải là danh sách ít nhất một khoảng ngày — hỏi lại người dùng."
+    if len(raw) > MAX_PERIODS:
+        return [], f"Một đơn nghỉ tối đa {MAX_PERIODS} khoảng ngày."
+    out = []
+    for i, item in enumerate(raw, 1):
+        if not isinstance(item, dict):
+            return [], f"Khoảng thứ {i} không hợp lệ."
+        start, end = _iso_date(item.get("from_date")), _iso_date(item.get("to_date"))
+        if start is None or end is None:
+            return [], f"Khoảng thứ {i}: ngày sai định dạng — cần YYYY-MM-DD, hỏi lại người dùng."
+        sessions = []
+        for key in ("from_session", "to_session"):
+            value = item.get(key)
+            code = _SESSION_CODES.get(value.strip().lower() if isinstance(value, str) else value)
+            if code is None:
+                return [], f"Khoảng thứ {i}: {key} chỉ nhận full | morning | afternoon."
+            sessions.append(code)
+        out.append({"from_date": start, "to_date": end,
+                    "from_session": sessions[0], "to_session": sessions[1]})
+    return out, None
+
+
 def _clean_changes(entity: str, raw, allow_empty: bool = False) -> tuple[dict, str | None]:
     """Lọc changes theo whitelist của entity + chuẩn hóa giá trị. Trả (fields, lỗi)."""
     rules = _ENTITY_RULES[entity]
@@ -300,7 +355,7 @@ def _clean_changes(entity: str, raw, allow_empty: bool = False) -> tuple[dict, s
         return {}, None
     if not isinstance(raw, dict):
         return {}, "Thiếu changes — hỏi người dùng muốn sửa trường nào, giá trị mới là gì."
-    fields: dict[str, str] = {}
+    fields: dict = {}
     rejected = [k for k in raw if k not in rules["fields"]]
     for key in rules["fields"]:
         if key not in raw:
@@ -309,6 +364,10 @@ def _clean_changes(entity: str, raw, allow_empty: bool = False) -> tuple[dict, s
             value = _iso_date(raw.get(key))
             if value is None:
                 return {}, f"{key} sai định dạng — cần YYYY-MM-DD, hỏi lại người dùng."
+        elif key == "periods":
+            value, period_error = _clean_periods(raw.get(key))
+            if period_error:
+                return {}, period_error
         elif key == "leave_type":
             value = _clean_text(raw.get(key), 50)
             if not value:
@@ -504,14 +563,40 @@ def _check_ops_payload(raw) -> list:
 
 # ── Đơn nghỉ phép (AI-0006) ─────────────────────────────────────────────────────────────
 
+def _validate_new_periods(views, doc):
+    """Cùng bộ kiểm với lúc lưu đơn (không ghi gì) để từ chối sớm, thẻ đề xuất chưa hiện."""
+    from app.modules.leave.request_service import validate_periods
+    return validate_periods(views, doc.from_time, doc.to_time)
+
+
 def _check_leave_change(db, doc, fields: dict) -> tuple[dict, str | None]:
     """Kiểm khoảng ngày + loại nghỉ; trả {field: chữ hiện trên thẻ} cho loại nghỉ."""
     from app.modules.leave.request_service import lines_of
+    from app.modules.leave.period_spans import PeriodView, period_text
+    from app.modules.leave.request_periods import periods_of
+    shown: dict[str, str] = {}
+    if "periods" in fields:
+        if fields.keys() & {"from_date", "to_date"}:
+            return {}, "Chỉ gửi `periods` HOẶC from_date/to_date, không gửi cả hai."
+        views = [PeriodView(from_date=date.fromisoformat(p["from_date"]), to_date=date.fromisoformat(p["to_date"]),
+                            from_session=p["from_session"], to_session=p["to_session"]) for p in fields["periods"]]
+        try:
+            ordered = _validate_new_periods(views, doc)
+        except HTTPException as e:
+            return {}, f"{e.detail} — hỏi lại người dùng."
+        fields["periods"] = [{"from_date": p.from_date.isoformat(), "to_date": p.to_date.isoformat(),
+                              "from_session": p.from_session, "to_session": p.to_session} for p in ordered]
+        shown["periods"] = period_text(ordered)
+    elif fields.keys() & {"from_date", "to_date"}:
+        current = periods_of(db, doc)
+        if len(current) > 1:
+            return {}, (f"Đơn {doc.code} có {len(current)} khoảng ngày — sửa ngày phải gửi `periods` "
+                        "(danh sách đầy đủ các khoảng mới, gồm cả khoảng không đổi), không dùng from_date/to_date. "
+                        "Tra đơn trước để lấy các khoảng hiện có.")
     start = date.fromisoformat(fields["from_date"]) if "from_date" in fields else doc.from_date
     end = date.fromisoformat(fields["to_date"]) if "to_date" in fields else doc.to_date
     if start and end and start > end:
         return {}, f"Từ ngày {start.isoformat()} sau đến ngày {end.isoformat()} — hỏi lại người dùng."
-    shown: dict[str, str] = {}
     if "leave_type" in fields:
         found, rows = _find_leave_type(db, fields["leave_type"])
         if found is None:
@@ -921,9 +1006,11 @@ def _update_leave(db, user, doc, fields: dict) -> None:
     đơn) + dòng nhật ký như đường PATCH của màn hình."""
     from app.core.audit import record as audit_record
     from app.modules.leave import request_service
-    from app.modules.leave.schema import LeaveRequestUpdate
+    from app.modules.leave.schema import LeavePeriodItem, LeaveRequestUpdate
 
     values: dict = {}
+    if "periods" in fields:
+        values["periods"] = [LeavePeriodItem(**p) for p in fields["periods"]]
     if "from_date" in fields:
         values["from_date"] = date.fromisoformat(fields["from_date"])
     if "to_date" in fields:
@@ -935,7 +1022,7 @@ def _update_leave(db, user, doc, fields: dict) -> None:
         values["leave_type_id"] = found.id
     if "reason" in fields:
         values["reason"] = fields["reason"]
-    if not values.keys() & {"from_date", "to_date", "leave_type_id"}:
+    if not values.keys() & {"from_date", "to_date", "leave_type_id", "periods"}:
         #  Chỉ sửa lý do: giữ đúng số ngày đang có. Không gửi `total_days` thì service tính lại từ khoảng ngày —
         #  đơn đã chỉnh tay số ngày sẽ bị đổi ngầm, tức sửa vào quỹ phép chỉ vì sửa một câu chữ.
         values["total_days"] = float(doc.total_days or 0)

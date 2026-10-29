@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
@@ -13,12 +13,14 @@ import {
   FormMessage,
 } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
 import { suggestedDayCount } from '../helpers/suggested-day-count'
+import { formatGnpLeavePeriod, gnpLeavePeriodsOf } from '../helpers/gnp-leave-metadata'
 
 interface DocumentLeaveFieldsProps {
   form: UseFormReturn<DocumentRecordFormValues>
@@ -64,6 +66,12 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
     form.setValue('leave.to_date', fromDate)
   }
   const sameDayLeave = !!fromDate && fromDate === toDate
+
+  //  ĐƠN NGHỈ NHIỀU KHOẢNG NGÀY (duoc-CR-683): giấy hệ sinh mang bản kê `leave_periods`. Hai ô
+  //  Từ/Đến ngày lúc đó chỉ là BAO NGOÀI, nuốt cả những ngày đi làm ở giữa — người đọc giấy
+  //  phải thấy từng khoảng, không thì «27/10 → 07/11, 5.5 ngày» đọc thành 12 ngày nghỉ liền.
+  const periods = gnpLeavePeriodsOf(form.watch('leave.extra'))
+  const periodsLabelId = useId()
 
   //  ĐIỀN SẴN số ngày, không để trống chờ người dùng gõ.
   //
@@ -223,6 +231,25 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
       />
       {/*  Cùng ngày → MỘT ô buổi, gắn vào đầu ĐI và tự đồng bộ đầu VỀ. */}
       {sameDayLeave ? oBuoi('leave.from_session', true) : oBuoi('leave.to_session')}
+
+      {periods.length > 0 && (
+        //  CHỈ XEM: bản kê chép từ tờ đơn đã duyệt. Sửa ngày thì sửa ở đơn nghỉ phép, không ở đây.
+        <div role="group" aria-labelledby={periodsLabelId} className="space-y-1.5 md:col-span-12">
+          <p id={periodsLabelId} className="text-sm font-medium">
+            Thời gian nghỉ
+          </p>
+          <ReadOnlyValue multiline>
+            <ul className="space-y-0.5 tabular-nums">
+              {periods.map((p, index) => (
+                <li key={`${p.from_date}-${index}`}>{formatGnpLeavePeriod(p)}</li>
+              ))}
+            </ul>
+          </ReadOnlyValue>
+          <p className="text-xs text-muted-foreground">
+            {`Đơn nghỉ gồm ${periods.length} khoảng ngày; «Từ ngày» – «Đến ngày» ở trên là ngày đầu và ngày cuối.`}
+          </p>
+        </div>
+      )}
 
       {/* ── Hàng 3: mấy ngày · ai gánh việc · gọi số nào ───────────────── */}
       <FormField

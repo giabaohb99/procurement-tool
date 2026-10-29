@@ -1,0 +1,64 @@
+"""Báo cáo A5 «Quỹ lương theo pháp nhân» (khóa 21) — duoc-CR-688.
+
+Router riêng chỉ chứa `/summary` + `/summary/export` + `/summary/rows` (khung báo cáo kiểu Haravan).
+Đường gốc `/api/payroll-fund` cố ý KHÔNG nằm dưới `/api/employees` / `/api/labor-contracts` để khỏi bị
+`/{id}` của router chính nuốt. Cả ba gác KÉP: `require('labor_contract', read|export)` +
+`require_report(PAYROLL_FUND)`; phạm vi qua `apply_scope(LaborContract)`; `company_id` / `department_id`
+(của HĐ) chỉ thu hẹp thêm. Nhóm nhỏ bị che với MỌI người xem (số lương) — xem `payroll_report_service`.
+"""
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy.orm import Session
+
+from app.core.auth import get_perm_profile, require
+from app.core.database import get_db
+from app.core.report_drilldown import parse_rows_params
+from app.core.report_export import report_xlsx
+from app.core.report_keys import ReportKey
+from app.core.report_period import parse_period
+from app.core.response import success
+from app.core.scoping import apply_scope
+from app.modules.report.procurement_summary_rows import valid_company_id, valid_department_id
+from app.modules.report_access.guard import require_report
+
+from . import payroll_report_service as service
+from .payroll_report_plan import load_plan_sets
+from .model import LaborContract
+
+router = APIRouter(prefix="/api/payroll-fund", tags=["report"])
+_GUARD = [Depends(require_report(ReportKey.PAYROLL_FUND))]
+
+
+def _inputs(request: Request, db: Session, user, action: str = "read") -> dict:
+    """Tham số chung của cả ba đường: kỳ, bộ lọc và truy vấn HĐ đã qua phạm vi."""
+    prof = get_perm_profile(db, user)
+    qp = request.query_params
+    return dict(contracts_q=apply_scope(db.query(LaborContract), LaborContract, "labor_contract", user, prof, action),
+                period=parse_period(qp), company_id=valid_company_id(qp.get("company_id")),
+                department_id=valid_department_id(qp.get("department_id")))
+
+
+@router.get("/summary", dependencies=_GUARD)
+def payroll_fund_summary(request: Request, db: Session = Depends(get_db),
+                         user=Depends(require("labor_contract", "read"))):
+    kw = _inputs(request, db, user)
+    plans = load_plan_sets(db, user, get_perm_profile(db, user), kw["period"], kw["company_id"], kw["department_id"])
+    return success(service.build_summary(db, group_by=request.query_params.get("group_by") or None,
+                                         plan_sets=plans, **kw))
+
+
+@router.get("/summary/export", dependencies=_GUARD)
+def payroll_fund_summary_export(request: Request, db: Session = Depends(get_db),
+                                user=Depends(require("labor_contract", "export"))):
+    kw = _inputs(request, db, user, "export")   # phạm vi theo quyền XUẤT, không theo quyền xem
+    plans = load_plan_sets(db, user, get_perm_profile(db, user), kw["period"], kw["company_id"],
+                           kw["department_id"], "export")
+    data = service.build_summary(db, group_by=request.query_params.get("group_by") or None, plan_sets=plans, **kw)
+    return report_xlsx("quy-luong", data)
+
+
+@router.get("/summary/rows", dependencies=_GUARD)
+def payroll_fund_summary_rows(request: Request, db: Session = Depends(get_db),
+                              user=Depends(require("labor_contract", "read"))):
+    metric, group_by, group_key = parse_rows_params(request.query_params, service.METRICS)
+    kw = _inputs(request, db, user)
+    return success(service.build_rows(db, metric=metric, group_by=group_by, group_key=group_key, **kw))
