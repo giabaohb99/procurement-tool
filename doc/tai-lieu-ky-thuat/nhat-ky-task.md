@@ -17701,3 +17701,18 @@ Mã nguồn: backend/app/modules/employee/phone_rules.py, migration emp_phones01
 **Kết quả:** bốn trang trả 200, cổng MCP chưa khóa trả 401, migration ở đầu hcplan04, log api và cụm AI không có lỗi; đường xuất Excel mới có trên prod.
 
 Commit: 0c7b2104 (main) · Deploy: prod toàn bộ dịch vụ ERP và cụm AI, 29/10/2026 sáng
+
+## nc-09-10-nghiep-vu-mua-hang-kho | Tài liệu nghiệp vụ chuẩn riêng cho Mua hàng và Kho
+- status: xong
+- date: 2026-10-29
+- tag: Nghiên cứu, Mua hàng, Kho
+
+**Bối cảnh:** Cụm chuỗi cung ứng gồm Mua hàng, Kho và Sản xuất là ba phân hệ ngang hàng. Sản xuất đã có tài liệu nghiệp vụ riêng, được giao tách Mua hàng và Kho thành tài liệu riêng ở mức vừa phải.
+
+**Đã làm**
+- Tài liệu Mua hàng: vai trò, chứng từ và trạng thái, nhu cầu mua phát sinh từ đâu, bảy chặng từ yêu cầu mua tới thanh toán, hóa đơn và thời điểm ghi nợ, các khoản chi phí kèm tài khoản, ví dụ có số (mua trong nước và nhập khẩu), các luồng đặc biệt.
+- Tài liệu Kho: dữ liệu gốc, trạng thái tồn, các loại phiếu kho kèm bút toán, nhập, xuất, chuyển kho, kiểm kê, cách tính giá xuất, bổ sung hàng, việc cuối tháng.
+
+**Kết quả:** văn bản số 09 và 10 trên nhánh erp-v2.
+
+Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md · doc/erp/nghien-cuu/10-nghiep-vu-kho.md
