@@ -44,8 +44,8 @@ REPORT_SUMMARY_PATHS = frozenset({
     #  lương không được nằm trong Redis (gỡ quyền xem phải có hiệu lực ngay, không đợi hết hạn bộ nhớ đệm).
     "/api/benefit-audience/summary", "/api/management-span/summary",
     "/api/work-moves/summary",
-    #  duoc-CR-689: định biên kế hoạch, có mặt, sửa hồ sơ, phòng họp.
-    "/api/headcount-plan-report/summary", "/api/attendance-report/summary", "/api/profile-change-report/summary",
+    #  duoc-CR-689: có mặt, sửa hồ sơ, phòng họp.
+    "/api/attendance-report/summary", "/api/profile-change-report/summary",
     "/api/room-usage/summary",
     #  CỐ Ý KHÔNG đưa `/api/legal-watch/summary` vào: dữ liệu ngày sinh / thai sản / con nhỏ — thu hồi quyền
     #  `employee_sensitive` hay bỏ giao báo cáo phải có hiệu lực NGAY, không đợi hết hạn bộ nhớ đệm.

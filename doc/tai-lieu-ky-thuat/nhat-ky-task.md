@@ -17597,3 +17597,13 @@ Lượt soát tiếp theo, anh thấy vẫn còn nhiều ô nâng cao, chữ đ�
 Lượt cuối, anh vẫn thấy các khái niệm khoản chi phí, cách tính, mẫu khó hiểu, nên làm lại trang thành ba khối đọc là hiểu: người và lương theo vị trí (hiện có, cần có từng quý, lương, phụ cấp), chi phí khác viết thành câu có ô số (bảo hiểm 23,5% trên lương, thưởng tháng 13, quà theo đợt, chi phí cả phòng), và bảng tổng theo quý. Bỏ ô chọn mẫu, gỡ màn mẫu khoản chi phí và nhóm chi phí khỏi menu. Lập thử phòng Kế toán khớp tính tay, cả năm 1.265.190.000 đồng.
 Mã nguồn: frontend-v2/src/modules/hr/components/hr-cost-item-*.tsx, frontend-v2/src/modules/hr/utils/hr-cost-item-*.ts, backend/app/modules/headcount_plan/costing.py, document_upload_service.py, legacy_seed.py, migration hcplan04
 
+## duoc-CR-692 | Bỏ kế hoạch nhân sự, quỹ lương tính từ lương trên hợp đồng
+- status: xong
+- date: 2026-10-29
+- pic: NSU231
+- tag: Được
+Anh Được cân nhắc lại và chốt bỏ hẳn phần kế hoạch nhân sự. Lương đã nhập ở tab hợp đồng lao động trong chi tiết nhân sự là đủ, báo cáo quỹ lương chỉ cần cộng lương của từng người ra quỹ lương theo phòng ban, pháp nhân và toàn công ty.
+Gỡ màn kế hoạch nhân sự, mẫu khoản chi phí, nhóm chi phí, các đường API và bảng dữ liệu của chúng; gỡ báo cáo so số người kế hoạch với thực tế; bỏ các cột kế hoạch trong báo cáo quỹ lương; sửa bài hướng dẫn.
+Đã gỡ xong ở cả backend, giao diện và bài hướng dẫn. Báo cáo quỹ lương còn bốn chỉ số thực tế, xem theo pháp nhân, phòng ban, chức vụ, nhóm vị trí, loại hợp đồng, dòng tổng là toàn công ty; thêm dòng nhắc số người đang làm chưa có hợp đồng hiệu lực để biết quỹ lương còn thiếu ai. Migration bỏ bảng chạy được cả lên lẫn xuống; loại văn bản căn cứ kế hoạch nhân sự chưa có văn bản nào thì xóa, có thì tắt.
+Mã nguồn: backend/app/modules/headcount_plan/ (xóa), backend/app/modules/labor_contract/payroll_report_*.py, frontend-v2/src/modules/hr, frontend-v2/src/modules/report
+

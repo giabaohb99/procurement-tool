@@ -114,8 +114,10 @@ def test_chi_administrator_khong_co_admin_van_duoc_chen(db):
 
 
 def test_report_key_lien_tuc_khong_trung():
+    from app.core.report_keys import RETIRED_REPORT_KEYS
     values = [int(k) for k in ReportKey]
-    assert values == list(range(1, len(values) + 1)), "khóa phải liên tục 1..N, không trùng"
+    #  duoc-CR-692: khóa đã bỏ (RETIRED_REPORT_KEYS) để TRỐNG, không dồn số — còn lại phải liên tục, không trùng.
+    assert values == [n for n in range(1, max(values) + 1) if n not in RETIRED_REPORT_KEYS], "khóa phải liên tục, không trùng"
     assert len(set(values)) == len(values)
 
 

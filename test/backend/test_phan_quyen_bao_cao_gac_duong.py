@@ -83,10 +83,7 @@ GATED: dict[str, ReportKey] = {
     "/api/work-moves/summary": ReportKey.WORK_MOVES,
     "/api/work-moves/summary/export": ReportKey.WORK_MOVES,
     "/api/work-moves/summary/rows": ReportKey.WORK_MOVES,
-    #  duoc-CR-689: định biên kế hoạch, có mặt, sửa hồ sơ, phòng họp, đối tượng theo luật.
-    "/api/headcount-plan-report/summary": ReportKey.HEADCOUNT_PLAN,
-    "/api/headcount-plan-report/summary/export": ReportKey.HEADCOUNT_PLAN,
-    "/api/headcount-plan-report/summary/rows": ReportKey.HEADCOUNT_PLAN,
+    #  duoc-CR-689: có mặt, sửa hồ sơ, phòng họp, đối tượng theo luật.
     "/api/attendance-report/summary": ReportKey.ATTENDANCE_DAILY,
     "/api/attendance-report/summary/export": ReportKey.ATTENDANCE_DAILY,
     "/api/attendance-report/summary/rows": ReportKey.ATTENDANCE_DAILY,
@@ -163,8 +160,6 @@ ROUTE_SPECS = [
      "/api/management-span/summary", "/api/management-span/summary/export"),
     (ReportKey.WORK_MOVES, "employee",
      "/api/work-moves/summary", "/api/work-moves/summary/export"),
-    (ReportKey.HEADCOUNT_PLAN, "headcount_plan",
-     "/api/headcount-plan-report/summary", "/api/headcount-plan-report/summary/export"),
     #  duoc-CR-689 — «Đối tượng cần chú ý theo luật» (29) đòi thêm employee_sensitive.read nên không nằm ở đây.
     (ReportKey.ATTENDANCE_DAILY, "employee",
      "/api/attendance-report/summary", "/api/attendance-report/summary/export"),

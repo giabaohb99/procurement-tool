@@ -101,8 +101,6 @@ REPORTS: dict[str, ReportRoute] = {
     "work_moves": ReportRoute(ReportKey.WORK_MOVES, _route("employee.work_move_report_controller",
                                                            "work_moves_summary"), "/report/work-moves"),
     #  duoc-CR-689: `/summary` chỉ trả số đếm; route tự đòi thêm quyền (nhạy cảm / đơn nghỉ) khi cần.
-    "headcount_plan": ReportRoute(ReportKey.HEADCOUNT_PLAN, _route("employee.headcount_plan_report_controller",
-                                                                   "headcount_plan_summary"), "/report/headcount-plan"),
     "attendance_daily": ReportRoute(ReportKey.ATTENDANCE_DAILY, _route("work_schedule.attendance_report_controller",
                                                                        "attendance_summary"), "/report/attendance"),
     "profile_changes": ReportRoute(ReportKey.PROFILE_CHANGES, _route("employee.change_request_report_controller",

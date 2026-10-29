@@ -11,7 +11,6 @@ import {
   IdCard,
   Network,
   Scale,
-  Target,
   UserCheck,
   UserX,
   Wallet,
@@ -25,7 +24,7 @@ import type { ReportCatalogEntry } from './report-catalog'
  * Nhóm NHÂN SỰ của danh mục báo cáo (phase 04) — Nhân sự (biến động & cơ cấu) ·
  * Nghỉ phép (tình hình nghỉ) · Quỹ phép năm · Hợp đồng lao động · Hồ sơ còn thiếu
  * (duoc-CR-686) · Sổ quản lý lao động · Mẫu 01/PLI (duoc-CR-687) · Quỹ lương · Phúc lợi & sự kiện ·
- * Cơ cấu quản lý · Điều chuyển & bổ nhiệm (duoc-CR-688) · Số người kế hoạch · Có mặt theo ngày ·
+ * Cơ cấu quản lý · Điều chuyển & bổ nhiệm (duoc-CR-688) · Có mặt theo ngày ·
  * Yêu cầu sửa hồ sơ · Sử dụng phòng họp · Đối tượng cần chú ý theo luật (duoc-CR-689). Mỗi báo cáo = một `ReportPageConfig`
  * (`pages/hr-headcount-report-page.tsx`/`leave-usage-report-page.tsx`/
  * `leave-balance-report-page.tsx`) — xem các tệp đó để biết KPI/chỉ số xu
@@ -141,7 +140,7 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
   },
   {
     label: 'Quỹ lương theo pháp nhân',
-    description: 'Lương cơ bản, phụ cấp, lương đóng BHXH theo hợp đồng đang hiệu lực, so với chi phí nhân sự của Kế hoạch nhân sự theo kỳ; nhóm dưới 3 người bị che.',
+    description: 'Quỹ lương = lương cơ bản + phụ cấp trên hợp đồng lao động đang hiệu lực của từng người; xem theo phòng ban, pháp nhân; nhóm dưới 3 người bị che.',
     path: appRoutes.report.payrollFund,
     //  Như Hợp đồng lao động (khóa 17): HĐLĐ không có màn danh sách riêng, nguồn là danh sách
     //  nhân sự còn khóa gác là `labor_contract` (ngoại lệ ghi ở `report-catalog.test.ts`).
@@ -199,20 +198,6 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
     endpoint: '/api/work-moves/summary',
     overviewKpis: ['transfers', 'appoints'],
     load: async () => (await import('../pages/work-moves-report-page')).WorkMovesReportPage,
-  },
-  {
-    label: 'Số người kế hoạch so với thực tế',
-    description: 'Số người theo Kế hoạch nhân sự (năm, bán niên, quý, tháng) so với số người hiện có theo pháp nhân, phòng ban, vị trí: còn thiếu, vượt, tỷ lệ lấp đầy.',
-    path: appRoutes.report.headcountPlan,
-    sourcePath: appRoutes.hr.headcountPlans,
-    icon: Target,
-    //  ReportKey.HEADCOUNT_PLAN (backend) = 25.
-    key: 25,
-    entity: 'headcount_plan',
-    group: 'Nhân sự',
-    endpoint: '/api/headcount-plan-report/summary',
-    overviewKpis: ['vacancies', 'fill_rate'],
-    load: async () => (await import('../pages/headcount-plan-report-page')).HeadcountPlanReportPage,
   },
   {
     label: 'Có mặt theo ngày',

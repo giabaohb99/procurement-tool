@@ -65,7 +65,7 @@ Chốt 28/10/2026 (anh Được): **làm bảng kế hoạch theo năm** — ph�
 | 20 | [Giao diện: màn kế hoạch, 5 trang báo cáo, ô Lịch nhắc](phase-20-giao-dien-dot-4.md) | 6h | in_progress | FE-c |
 | 21 | Kiểm thử, rà mã, HDSD, deploy dev, xóa dữ liệu thử | 4h | in_progress | điều phối |
 
-## Đợt 5 — phases (duoc-CR-690, xong 28/10/2026)
+## Đợt 5 — phases (duoc-CR-690, xong 28/10/2026 — ⛔ ĐÃ GỠ 29/10/2026 ở duoc-CR-692: đại ca bỏ Kế hoạch nhân sự, quỹ lương chỉ tính từ HĐLĐ)
 Chốt 28/10/2026 (anh Được, sau khi soát đợt 4): làm lại Kế hoạch nhân sự theo `doc/erp/hrm/06-ke-hoach-nhan-su.md` — loại kỳ người dùng chọn (Năm/Bán niên/Quý/Tháng), định biên theo vị trí × kỳ con, căn cứ + văn bản liên kết sang phân hệ Văn bản + tệp, khoản chi phí tự định nghĩa theo mẫu (chép vào từng kế hoạch), bộ tính theo tháng.
 
 | # | Phase | Effort | Status | Chủ tệp |

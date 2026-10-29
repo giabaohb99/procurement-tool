@@ -8,7 +8,7 @@ duoc-CR-690. Nut «Tai tep len» o muc Van ban lien ket cua ke hoach nhan su tu 
 CA NHAN (`is_personal`) de tep co the chua bang luong khong bi doc theo pham vi vai tro. Cung gia tri voi
 `app/seed_data/document_phase1.HEADCOUNT_BASIS_DOC_TYPE`. Chi chen khi chua co ma nay (khong ghi de loai do van thu tu lap).
 Downgrade chi xoa loai neu CHUA co van ban nao thuoc loai.
-Kem: thu gon «Mau goi y» ve 4 khoan (Luong, Phu cap, Bao hiem + cong doan 23,5%, Thuong thang 13) neu mau con dung bo 8 khoan ban dau
+(Da bo duoc-CR-692: buoc thu gon mau goi y — bang mau da bi DROP o hcplan05.) Truoc day kem: thu gon «Mau goi y» ve 4 khoan (Luong, Phu cap, Bao hiem + cong doan 23,5%, Thuong thang 13) neu mau con dung bo 8 khoan ban dau
 (`legacy_seed.simplify_suggested_template`) — ke hoach da lap khong doi. Downgrade khong khoi phuc bo 8 khoan.
 
 VIET TAY (khong autogenerate): repo nay autogenerate troi ~650 dong moi lan.
@@ -17,8 +17,6 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-
-from app.modules.headcount_plan import legacy_seed
 
 revision: str = "hcplan04"
 down_revision: Union[str, None] = "hcplan03"
@@ -48,7 +46,6 @@ def _doc_type_table() -> sa.Table:
 
 def upgrade() -> None:
     bind = op.get_bind()
-    legacy_seed.simplify_suggested_template(bind)
     t = _doc_type_table()
     if bind.execute(sa.select(t.c.id).where(sa.func.upper(t.c.code) == CODE)).first() is not None:
         return
