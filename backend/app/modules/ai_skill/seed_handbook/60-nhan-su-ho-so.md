@@ -16,6 +16,11 @@ danh ở **Nhân sự ▸ Danh mục ▸ Chức vụ** (`/hr/job-positions`).
   dòng có thể thấy hai số khác nhau. Chỉ đường tới màn, đừng đọc số ra.
 - Ai cũng đọc được **hồ sơ của chính mình** đầy đủ, kể cả trường nhạy cảm. Hồ sơ
   người khác thì tùy phạm vi.
+- **Không đọc, không đoán LƯƠNG của bất kỳ ai — kể cả của chính người hỏi.** Số lương
+  và phụ cấp trên hồ sơ **chỉ chính nhân sự đó xem được** (ở Trang cá nhân); người
+  khác, kể cả quản trị và phòng Nhân sự, chỉ thấy «Đã nhập (ẩn)» hoặc «Chưa nhập».
+  Trợ lý không có đường nào tới các số đó. Người hỏi lương của mình thì chỉ đường tới
+  **Trang cá nhân**; hỏi lương người khác thì nói thẳng là chỉ chính chủ xem được.
 
 ## Chức vụ lấy từ DANH MỤC, không gõ tay nữa
 
@@ -50,7 +55,11 @@ thuộc phòng nào», «phòng Kế toán có những ai», «ai là quản lý
 Tìm được theo tên, mã nhân viên, email, số điện thoại hoặc chức vụ.
 
 Nó trả **đúng phần danh bạ**: mã NV · họ tên · chức vụ · cấp bậc · phòng ban ·
-công ty · email và điện thoại công việc · quản lý trực tiếp · tình trạng làm việc.
+công ty · email · điện thoại (`phone` là **số chính**, nhãn của nó ở `phone_label`;
+`extra_phones` là các **số khác**, mỗi số kèm nhãn như «Công việc», «Zalo») · quản lý
+trực tiếp · tình trạng làm việc.
+Tìm theo số điện thoại thì khớp cả số chính lẫn số khác. Đọc ra số chính trước; người
+hỏi cần số Zalo / số khác thì đọc số có nhãn tương ứng.
 **Không** có ngày sinh, CCCD, địa chỉ nhà, tài khoản ngân hàng, BHXH, lương —
 những thứ đó không đi qua trợ lý bằng bất kỳ đường nào, đúng mục *Điều CẤM nói* ở
 trên.
@@ -62,6 +71,44 @@ Hai điều phải nói đúng khi đọc kết quả:
   hai khả năng, đừng khẳng định một.
 - Mặc định chỉ ra **người đang làm việc**. Ai hỏi về người đã nghỉ thì nói rõ là
   cần tra riêng, đừng kết luận "không có người tên đó".
+
+## Lương trên hồ sơ — chỉ chính chủ xem (từ 29/10/2026)
+
+Hồ sơ có ô **Lương** và **Phụ cấp** (đồng / tháng) ở tab **«Chung» › mục «Công việc»**.
+
+- **Xem số:** chỉ chính nhân sự đó — ở hồ sơ của mình và thẻ **«Lương của tôi»** trên
+  Trang cá nhân (che sẵn, bấm con mắt để hiện). Người khác thấy «Đã nhập (ẩn)» / «Chưa nhập».
+- **Nhập / sửa:** người có quyền sửa hồ sơ nhân sự đó. Gõ số mới để thay, «Xóa số đã nhập»
+  để xóa, để trống là giữ nguyên. **Không ai tự đổi lương của chính mình.**
+- **Ký hợp đồng lao động** (Nháp → Đã ký) tự chép lương cơ bản và phụ cấp của HĐ sang ô này
+  nếu đó là HĐ hiệu lực mới nhất. HĐ ký trước nhưng hiệu lực ở tương lai thì tới ngày đó
+  **chưa tự cập nhật** — phải sửa tay.
+- Danh sách nhân sự không sắp xếp được theo lương; tệp Excel nhập nhân sự **không có cột
+  lương** (có thì bị bỏ qua kèm cảnh báo); phiếu in thông tin nhân viên không có ô lương.
+- **Quỹ lương** xem ở báo cáo **«Quỹ lương theo pháp nhân»** (phân hệ Báo cáo), chỉ người được
+  giao báo cáo đó: chỉ **tổng** theo pháp nhân · phòng ban · toàn công ty, nhóm dưới 3 người
+  bị che, bấm số chỉ ra danh sách tên **không kèm tiền**. Báo cáo này **không mở cho trợ lý**
+  (`report_summary` không có nó) — ai hỏi quỹ lương thì chỉ đường tới màn báo cáo.
+
+## Nhiều số điện thoại (từ 29/10/2026)
+
+Tab **«Liên hệ & Ngân hàng»** của hồ sơ, và hộp **«Sửa thông tin liên hệ»** ở Trang cá nhân,
+có danh sách **«Số điện thoại»**: tối đa **5 số** (1 số chính + 4 số khác), mỗi số kèm
+nhãn tùy ý. Nút **«+ Thêm số»**, **«Đặt làm chính»** (đổi chỗ với số chính cũ, nhãn đi theo số), xóa.
+
+- Mỗi số 8–15 chữ số, chỉ gồm chữ số, khoảng trắng và `+ . - ( )`; không được trùng nhau
+  và không trùng số chính (so sau khi bỏ ký tự phân cách).
+- **Số chính** là số dùng ở mọi chỗ khác (tìm kiếm, phiếu in, đặt xe…). Nhân viên tự sửa
+  số của mình ở Trang cá nhân là **lưu ngay**, không qua duyệt.
+- Tệp Excel xuất / nhập nhân sự có cột **«Nhãn số chính»** và **«Số điện thoại khác»** dạng
+  `số (nhãn); số (nhãn)`; ô có dữ liệu **thay cả danh sách** số khác.
+
+## Kế hoạch nhân sự — ĐÃ BỎ (29/10/2026)
+
+Màn **Kế hoạch nhân sự** (định biên, quỹ lương kế hoạch, mẫu khoản chi phí) và báo cáo
+**«Định biên kế hoạch so với thực tế»** đã **gỡ hẳn** khỏi ERP. Ai hỏi thì nói rõ là tính năng
+đã bỏ — đừng chỉ đường tới màn không còn. Quỹ lương nay chỉ tính từ lương trên hồ sơ của
+từng người (mục *Lương trên hồ sơ* ở trên).
 
 ## Người quản lý trực tiếp
 
@@ -132,7 +179,7 @@ Hai cách sửa hồ sơ của chính mình — trợ lý phải nói đúng cá
 
 | Ô | Cách sửa |
 |---|---|
-| Số điện thoại, địa chỉ thường trú, địa chỉ hiện nay, người báo tin | Tự sửa ở thẻ **«Liên hệ»** / bảng người báo tin trên Trang cá nhân, **lưu ngay**, không qua duyệt |
+| Số điện thoại (số chính và các số khác), địa chỉ thường trú, địa chỉ hiện nay, người báo tin | Tự sửa ở thẻ **«Liên hệ»** / bảng người báo tin trên Trang cá nhân, **lưu ngay**, không qua duyệt |
 | Cá nhân (giới tính, ngày sinh, nơi sinh, dân tộc, tôn giáo, hôn nhân, số con, email cá nhân, học vấn, chuyên ngành) · Ngân hàng · Giấy tờ (CCCD, mã số thuế, số sổ BHXH, nơi KCB BHYT) · Hộ gia đình | **Gửi đề nghị**, phòng Nhân sự duyệt rồi mới vào hồ sơ |
 | Họ tên, mã NV, phòng ban, chức vụ, quản lý trực tiếp, ngày vào làm… | Không tự đề nghị được — liên hệ phòng Nhân sự |
 
