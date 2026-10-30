@@ -23,9 +23,9 @@ function row(doi: Partial<DocumentAccessDraft['values']> = {}, ten = 'Lý Phó P
 }
 
 describe('AccessGroupEditDialog', () => {
-  //  Lỗi người dùng chỉ ra 24/08/2026: bấm «Sửa» để xem lại đã cho những ai,
+  //  Lỗi người dùng chỉ ra 24/08/2026: bấm "Sửa" để xem lại đã cho những ai,
   //  được làm gì, hạn tới bao giờ — hộp mở ra TRẮNG TRƠN y như khai mới, và bấm
-  //  «Áp cho cả cụm» là ghi đè hết bằng giá trị trắng đó.
+  //  "Áp cho cả cụm" là ghi đè hết bằng giá trị trắng đó.
   it('mở ra là thấy ĐÚNG bộ quyền đang áp, không phải form trắng', () => {
     render(
       <AccessGroupEditDialog
@@ -59,7 +59,7 @@ describe('AccessGroupEditDialog', () => {
     expect(screen.getByText(/Áp cho cả 2 đối tượng/)).toBeVisible()
   })
 
-  it('gọi cụm là «không cho phép», cùng một chữ với nút chọn và tên cụm bên ngoài', () => {
+  it('gọi cụm là "không cho phép", cùng một chữ với nút chọn và tên cụm bên ngoài', () => {
     render(
       <AccessGroupEditDialog open onOpenChange={vi.fn()} deny rows={[row()]} onApply={vi.fn()} />,
     )

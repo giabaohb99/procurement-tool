@@ -64,7 +64,7 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
     id: 'hr',
     title: 'Nhân sự',
     //  `employee_sensitive` (15 trường che) và `job_position` (danh mục chức vụ)
-    //  từng rơi vào «Khác» — chúng là khóa của phân hệ Nhân sự (bao-CR-428).
+    //  từng rơi vào "Khác" — chúng là khóa của phân hệ Nhân sự (bao-CR-428).
     entities: ['company', 'department', 'employee', 'employee_sensitive',
       'job_position', 'work_schedule', 'labor_contract', 'labor_contract_template',
       'user', 'role'],
@@ -90,7 +90,7 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
     title: 'Hệ thống',
     entities: ['setting', 'backup', 'mailbox', 'import',
       //  Nhật ký & phiên đăng nhập (CR-312). `login_session` trước nay rơi vào
-      //  nhóm «Khác» — cùng một mối quan tâm với hai khóa nhật ký, xếp chung.
+      //  nhóm "Khác" — cùng một mối quan tâm với hai khóa nhật ký, xếp chung.
       //  `sync_log` là sổ đồng bộ với hệ ngoài, cùng họ nhật ký.
       'login_session', 'audit', 'change_log', 'sync_log',
       //  Việc của bot Agent Hub (ai-CR-036) + nhận tin vận hành của bot (ai-CR-132).

@@ -24,7 +24,7 @@ interface LeaveHandoverEditorProps {
  * đầu**.
  *
  * ⚠️ Danh bạ nhân sự là dữ liệu của phân hệ khác: chỉ gọi khi có `employee.read`,
- * nếu không thì cứ mount là ăn toast 403 (bẫy đã dính ở tab «Công nợ» của Nhà
+ * nếu không thì cứ mount là ăn toast 403 (bẫy đã dính ở tab "Công nợ" của Nhà
  * cung cấp — CR-106). Thiếu quyền thì tên người đã cử vẫn hiện, chỉ ô chọn là
  * khóa.
  */

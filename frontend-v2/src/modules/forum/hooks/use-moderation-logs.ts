@@ -5,7 +5,7 @@ import { queryKeys } from '@/shared/constants/query-keys'
 import { fetchForumModerationLogs } from '../api/forum-api'
 
 /**
- * Nhật ký kiểm duyệt (CR-263) — chỉ tab «Quản trị» gọi, route đã gác quyền
+ * Nhật ký kiểm duyệt (CR-263) — chỉ tab "Quản trị" gọi, route đã gác quyền
  * nên không cần `enabled` theo `can()` ở đây.
  */
 export function useModerationLogs(page: number, action = 0, q = '') {

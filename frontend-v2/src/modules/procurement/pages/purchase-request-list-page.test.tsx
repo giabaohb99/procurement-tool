@@ -194,7 +194,7 @@ describe('PurchaseRequestListPage — nút Xóa lọc', () => {
     build(
       '/procurement/purchase-requests?company_id=1&status=approved&is_urgent=true&assignee=NSU209&request_date_from=2026-10-01&request_date_to=2026-10-31&q=bao',
     )
-    //  Hai nút cùng tên «Bộ lọc»: popover nâng cao (khổ rộng) và tờ trượt (khổ hẹp) — nút
+    //  Hai nút cùng tên "Bộ lọc": popover nâng cao (khổ rộng) và tờ trượt (khổ hẹp) — nút
     //  *Xóa lọc* nằm ở tờ trượt.
     const sheetTrigger = screen
       .getAllByRole('button', { name: 'Bộ lọc' })

@@ -28,7 +28,7 @@ interface TimeRangeProps {
   onChange: (next: WorkScheduleDay) => void
 }
 
-/** Cặp giờ «08:00 – 17:00» gọn trên một dòng; nhãn nhỏ chỉ hiện ở thẻ hẹp (máy tính đã có tiêu đề cột). */
+/** Cặp giờ "08:00 – 17:00" gọn trên một dòng; nhãn nhỏ chỉ hiện ở thẻ hẹp (máy tính đã có tiêu đề cột). */
 function TimeRange({ day, from, to, label, fromLabel, toLabel, onChange }: TimeRangeProps) {
   const weekdayLabel = WEEKDAY_LABELS[day.weekday]
   return (
@@ -60,7 +60,7 @@ interface WorkScheduleWeekEditorRowProps {
 }
 
 /**
- * MỘT hàng của bảng 7 ngày. Nghỉ -> dòng chữ mờ «Nghỉ» thay cho ô giờ; nửa ngày -> chỉ
+ * MỘT hàng của bảng 7 ngày. Nghỉ -> dòng chữ mờ "Nghỉ" thay cho ô giờ; nửa ngày -> chỉ
  * cặp giờ làm; Cả ngày -> thêm cặp nghỉ trưa. Xóa giá trị lúc đổi loại do
  * `normalizeDayOnKindChange` lo, để payload không mang giờ mồ côi.
  */

@@ -144,7 +144,7 @@ export function DocumentNumberingRulesPage() {
         }
       />
 
-      {/*  `group` + `data-scrolled` dẫn tín hiệu «đã cuộn» xuống dải thanh công
+      {/*  `group` + `data-scrolled` dẫn tín hiệu "đã cuộn" xuống dải thanh công
            cụ ghim nằm trong `CatalogTable` — xem `list-sticky.ts`. */}
       <Tabs
         ref={tabsRef}
@@ -205,7 +205,7 @@ export function DocumentNumberingRulesPage() {
             //  thứ định danh quy tắc, và các dấu `{}` `/` `-` phải thẳng cột thì mới
             //  đọc ra cấu trúc. *Bắt đầu từ số* và *cách đếm* cố ý KHÔNG lên thẻ —
             //  chúng là tham số chỉnh một lần lúc khai, còn thứ người ta dò khi lướt
-            //  danh sách là «quy tắc nào áp cho cái gì, còn bật không».
+            //  danh sách là "quy tắc nào áp cho cái gì, còn bật không".
             mobileCard={(row) => {
               const scope = scopeText(row)
               return (

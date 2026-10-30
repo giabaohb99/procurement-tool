@@ -43,7 +43,7 @@ interface TaskCommentsProps {
 const MAX_FILES = 5
 
 /**
- * Khối BÌNH LUẬN của một công việc (E-01), đặt trên «Lịch sử thao tác».
+ * Khối BÌNH LUẬN của một công việc (E-01), đặt trên "Lịch sử thao tác".
  *
  * Danh sách PHẲNG theo thời gian, không luồng trả lời: panel rộng 576px, thụt
  * thêm một cấp là câu chữ còn hơn nửa bề ngang. Backend vẫn hỗ trợ trả lời 2 cấp

@@ -96,7 +96,7 @@ const rowsCalls = () => vi.mocked(apiGet).mock.calls.filter(([u]) => u === ROWS)
 const lastRowsParams = () => (rowsCalls().at(-1)?.[1] as { params: Record<string, string> }).params
 
 describe('ReportAnalyticsPage — drilldown', () => {
-  it('puts «Xem danh sách» only on drillable KPI cards and skips KPIs missing from meta', async () => {
+  it('puts "Xem danh sách" only on drillable KPI cards and skips KPIs missing from meta', async () => {
     renderPage()
     expect(await screen.findByRole('button', { name: 'Xem danh sách Đã quá hạn, vẫn đi làm' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Xem danh sách Đang hiệu lực' })).not.toBeInTheDocument()
@@ -114,7 +114,7 @@ describe('ReportAnalyticsPage — drilldown', () => {
     expect(lastRowsParams()).not.toHaveProperty('group_key')
   })
 
-  it('opens a group list from its row, sending "" for «(Chưa gắn)», and has no button on __other__', async () => {
+  it('opens a group list from its row, sending "" for "(Chưa gắn)", and has no button on __other__', async () => {
     const user = userEvent.setup()
     renderPage()
     await screen.findByRole('button', { name: 'Xem danh sách Kế toán' })
@@ -144,7 +144,7 @@ describe('ReportAnalyticsPage — drilldown', () => {
 describe('ReportAnalyticsPage — hideTrend / hidePeriod', () => {
   it('draws the trend chart by default and switches to the by-group chart with hideTrend', async () => {
     //  duoc-CR-688: biểu đồ linh hoạt — trục thời gian chỉ khi `trend` có mốc; `hideTrend`
-    //  (hoặc `trend` rỗng) thì vẽ theo chiều «Xem theo» thay vì bỏ hẳn biểu đồ.
+    //  (hoặc `trend` rỗng) thì vẽ theo chiều "Xem theo" thay vì bỏ hẳn biểu đồ.
     vi.mocked(apiGet).mockImplementation(async (url) => {
       if (url === ROWS) return ROWS_RESPONSE as never
       const base = summary(drilldownMetrics)
@@ -173,7 +173,7 @@ describe('ReportAnalyticsPage — hideTrend / hidePeriod', () => {
     })
   })
 
-  it('keeps the table instead of the «empty period» screen on a hidePeriod report with all zeros', async () => {
+  it('keeps the table instead of the "empty period" screen on a hidePeriod report with all zeros', async () => {
     vi.mocked(apiGet).mockImplementation(async () => {
       const base = summary(['overdue'])
       return { ...base, totals: { current: { active: 0, overdue: 0 }, compare: null } } as never

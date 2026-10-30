@@ -37,7 +37,7 @@ describe('DocumentAttachmentSidebar — cột tệp cạnh trình soạn thảo'
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('«Bản soạn thảo» goes back to the editor (select null) and is marked current when no file is open', async () => {
+  it('"Bản soạn thảo" goes back to the editor (select null) and is marked current when no file is open', async () => {
     const user = userEvent.setup()
     const { onSelect } = renderSidebar({ selectedFileId: 7 })
     const back = screen.getByRole('button', { name: /Bản soạn thảo/ })

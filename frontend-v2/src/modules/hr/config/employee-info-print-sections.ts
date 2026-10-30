@@ -1,7 +1,7 @@
 import type { EmployeeFieldKey } from './employee-profile-fields'
 
 /**
- * BỐ CỤC bản in «Phiếu thông tin nhân viên» BM00../QT01/NS (C5 của `doc/erp/hrm/01-ho-so-nhan-su.md`).
+ * BỐ CỤC bản in "Phiếu thông tin nhân viên" BM00../QT01/NS (C5 của `doc/erp/hrm/01-ho-so-nhan-su.md`).
  *
  * ⚠️ TỆP MẪU GỐC BM00 CHƯA CÓ trong tay (duoc-CR-676, 23/10/2026) — thứ tự mục và thứ tự ô dưới
  * đây dựng theo bảng trường §2/§3 của tài liệu. Có tệp mẫu thì CHỈ sửa mảng này (đổi chỗ, đổi tên

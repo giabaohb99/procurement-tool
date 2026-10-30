@@ -14,7 +14,7 @@ import { documentApi, type DocumentInput, type DocumentListParams } from '../api
  */
 
 /**
- * Tham số riêng cho tab «Văn bản trong sổ» (duoc-CR-474) — sắp theo cột + lọc theo
+ * Tham số riêng cho tab "Văn bản trong sổ" (duoc-CR-474) — sắp theo cột + lọc theo
  * năm vào sổ. Khai CỤC BỘ ở đây thay vì thêm vào `DocumentListParams` của
  * `document-api.ts`: tệp đó đang có bản đổi khác chạy song song, và hai
  * trường này chỉ một hook/một tab dùng nên không đáng kéo vào interface
@@ -104,7 +104,7 @@ export function useDocumentSuggestions(params: {
 }
 
 /**
- * Gợi ý cho ô «Nơi lưu trữ cứng» — các ngăn tủ đã từng được gõ.
+ * Gợi ý cho ô "Nơi lưu trữ cứng" — các ngăn tủ đã từng được gõ.
  *
  * Danh sách này là thứ duy nhất giữ cho một ô chữ tự do khỏi thành mỗi người
  * một kiểu ("Tủ A2" / "tu a2" / "TỦ A2"), nên nó phải hiện ngay lúc gõ chứ
@@ -184,9 +184,9 @@ export function useSaveDocument() {
 }
 
 /**
- * Đổi CÁCH TẠO của văn bản (`content_mode`) — nút «Chuyển sang soạn thảo» ở
- * văn bản tạo bằng «Tạo, không soạn thảo» (24/09/2026). Tệp đính kèm giữ
- * nguyên; tab «Văn bản» đổi từ trình xem tệp sang trình soạn thảo.
+ * Đổi CÁCH TẠO của văn bản (`content_mode`) — nút "Chuyển sang soạn thảo" ở
+ * văn bản tạo bằng "Tạo, không soạn thảo" (24/09/2026). Tệp đính kèm giữ
+ * nguyên; tab "Văn bản" đổi từ trình xem tệp sang trình soạn thảo.
  */
 export function useSetDocumentContentMode(documentId: number) {
   const queryClient = useQueryClient()
@@ -226,10 +226,10 @@ export function useDeleteDocument() {
 }
 
 /**
- * Bỏ bản nháp do chính mình vừa mở ở màn *Tạo văn bản* (nút «Hủy»).
+ * Bỏ bản nháp do chính mình vừa mở ở màn *Tạo văn bản* (nút "Hủy").
  *
  * KHÔNG báo toast xanh: đây là thao tác dọn dẹp ngầm khi người dùng rời form,
- * họ không «làm» gì để mà được xác nhận. Bên gọi tự bắt lỗi.
+ * họ không "làm" gì để mà được xác nhận. Bên gọi tự bắt lỗi.
  */
 export function useDiscardDraft() {
   const queryClient = useQueryClient()
@@ -267,18 +267,18 @@ export function useDocumentWorkflow(documentId: number) {
    * Nạp lại CẢ HAI họ dữ liệu: bản ghi văn bản **và** phiên duyệt của nó.
    *
    * ⚠️ Trước 20/08/2026 hàm này chỉ nạp lại `document.all`, và đó là một lỗ
-   * thật. Bấm «Gửi duyệt» xong: văn bản nạp lại nên sang «Đang duyệt», nhưng
+   * thật. Bấm "Gửi duyệt" xong: văn bản nạp lại nên sang "Đang duyệt", nhưng
    * phiên duyệt vẫn là kết quả cũ (`null`, hỏi từ lúc còn Nháp). Trang chi tiết
-   * ẩn hai nút của luồng MỘT BƯỚC bằng điều kiện «có phiên đang chạy không» —
-   * đọc phải dữ liệu cũ nên nó kết luận là không, và **«Trả lại» + «Duyệt và ban
-   * hành» vẫn hiện** dù phiếu đã vào bộ máy nhiều bước.
+   * ẩn hai nút của luồng MỘT BƯỚC bằng điều kiện "có phiên đang chạy không" —
+   * đọc phải dữ liệu cũ nên nó kết luận là không, và **"Trả lại" + "Duyệt và ban
+   * hành" vẫn hiện** dù phiếu đã vào bộ máy nhiều bước.
    *
    * Bấm vào chỉ nhận lỗi 409 từ `approval_bridge.chan_duong_cu`. Băng tiến
    * trình duyệt cũng không hiện cho tới khi người dùng tự F5.
    */
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })
-    //  Cả cụm `approval`: phiên của chứng từ này đổi, mà hộp «Chờ tôi duyệt»
+    //  Cả cụm `approval`: phiên của chứng từ này đổi, mà hộp "Chờ tôi duyệt"
     //  của người duyệt cũng vừa có thêm/bớt một việc.
     void queryClient.invalidateQueries({ queryKey: queryKeys.approval.all })
   }
@@ -329,7 +329,7 @@ export function useDocumentWorkflow(documentId: number) {
   })
 
   /**
-   * Xác nhận ĐÃ RÀ SOÁT xong — tắt cờ «cần rà lại».
+   * Xác nhận ĐÃ RÀ SOÁT xong — tắt cờ "cần rà lại".
    *
    * Nằm chung `useDocumentWorkflow` vì cùng họ: đều đổi trạng thái bản ghi và
    * đều phải nạp lại cả cụm dữ liệu văn bản sau khi chạy.

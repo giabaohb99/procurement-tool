@@ -6,7 +6,7 @@ import type { PermissionAction, PermissionEntity } from '@/core/authorization/pe
 import { appRoutes } from '@/shared/constants/app-routes'
 import { LeaveSectionTabs } from './leave-section-tabs'
 
-//  Cặp «khóa + hành động» mà tài khoản đang thử được phép làm.
+//  Cặp "khóa + hành động" mà tài khoản đang thử được phép làm.
 let grants: string[] = []
 
 vi.mock('@/core/authorization/use-permission', () => ({
@@ -43,20 +43,20 @@ beforeEach(() => {
 })
 
 describe('LeaveSectionTabs', () => {
-  it('trong «Thiết lập» thì hiện hai tab con Loại nghỉ và Lịch ngày lễ', () => {
+  it('trong "Thiết lập" thì hiện hai tab con Loại nghỉ và Lịch ngày lễ', () => {
     grants = NHAN_SU
     build(appRoutes.hr.leaveTypes)
     expect(screen.getByRole('link', { name: 'Loại nghỉ' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Lịch ngày lễ' })).toBeInTheDocument()
   })
 
-  it('tab «Lịch ngày lễ» SÁNG khi đang ở màn Lịch ngày lễ', () => {
+  it('tab "Lịch ngày lễ" SÁNG khi đang ở màn Lịch ngày lễ', () => {
     grants = NHAN_SU
     build(appRoutes.hr.holidays)
     expect(activeLabels()).toContain('Lịch ngày lễ')
   })
 
-  it('không đứng trong «Thiết lập» thì ẩn hẳn thanh', () => {
+  it('không đứng trong "Thiết lập" thì ẩn hẳn thanh', () => {
     grants = NHAN_SU
     const { container } = render(
       <MemoryRouter initialEntries={[appRoutes.hr.leaveCalendar]}>

@@ -30,7 +30,7 @@ interface DocumentFoldersCardProps {
 }
 
 /**
- * THẺ «THƯ MỤC» ở tab Thông tin của trang chi tiết (phase 06, duoc-CR-476).
+ * THẺ "THƯ MỤC" ở tab Thông tin của trang chi tiết (phase 06, duoc-CR-476).
  *
  * Cố ý đứng NGOÀI `DocumentRecordForm`/`documentRecordSchema` — đổi thư mục đi
  * qua cửa RIÊNG `PUT /api/documents/{id}/folders`
@@ -90,7 +90,7 @@ export function DocumentFoldersCard({
       <CardContent>
         {folders.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Chưa gắn thư mục nào — bấm «Sửa thư mục» để chọn.
+            Chưa gắn thư mục nào — bấm <strong>Sửa thư mục</strong> để chọn.
           </p>
         ) : (
           <ul className="space-y-1.5">

@@ -21,7 +21,7 @@ import type { SurveyProgressItem } from '../types/survey-progress-types'
  * chừng danh sách: dòng chưa khảo sát hiện yêu cầu, dòng đã chốt hiện sản phẩm,
  * và hai loại đọc lẫn vào nhau. Phương án đã chốt đứng ở dòng riêng bên dưới.
  *
- * ⚠️ **«Trễ» phải có mặt.** Ở bảng nó là một cột số cạnh ba cột ngày, người đọc
+ * ⚠️ **"Trễ" phải có mặt.** Ở bảng nó là một cột số cạnh ba cột ngày, người đọc
  * tự so; thẻ thì mỗi cái một khối rời nên không so được với gì cả. Đây lại đúng
  * là thứ màn này sinh ra để trả lời.
  *

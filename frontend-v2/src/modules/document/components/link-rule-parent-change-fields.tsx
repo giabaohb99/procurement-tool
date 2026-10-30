@@ -15,7 +15,7 @@ import type { DocTypeLinkRuleInput, LinkRuleOptions } from '../types/document-li
 interface LinkRuleParentChangeFieldsProps {
   values: DocTypeLinkRuleInput
   options?: LinkRuleOptions
-  /** Quan hệ «trích từ» — ba ô bị khóa, backend ép lại dù khai gì. */
+  /** Quan hệ "trích từ" — ba ô bị khóa, backend ép lại dù khai gì. */
   isExcerpt: boolean
   onChange: <K extends keyof DocTypeLinkRuleInput>(
     key: K,
@@ -151,7 +151,7 @@ export function LinkRuleParentChangeFields({
           <p className="flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
             <Lock className="mt-0.5 size-4 shrink-0 text-amber-700" />
             <span>
-              Quan hệ «Trích từ» khóa ba ô trên, khai gì hệ thống cũng đặt lại. Bản trích
+              Quan hệ <strong>Trích từ</strong> khóa ba ô trên, khai gì hệ thống cũng đặt lại. Bản trích
               là <b>cùng nội dung</b> với bản gốc, chỉ ít hơn — cho phép đặt "không làm gì"
               nghĩa là chấp nhận một bản trích nói sai vẫn tồn tại hợp lệ, còn bỏ ràng buộc
               mức mật nghĩa là phần nội dung ít hơn lại được bảo vệ lỏng hơn phần đầy đủ.

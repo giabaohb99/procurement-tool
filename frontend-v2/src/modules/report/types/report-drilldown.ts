@@ -1,5 +1,5 @@
 /**
- * Hợp đồng `GET <gốc>/summary/rows` — «bấm số ra danh sách người» (duoc-CR-686,
+ * Hợp đồng `GET <gốc>/summary/rows` — "bấm số ra danh sách người" (duoc-CR-686,
  * khớp `backend/app/core/report_drilldown.py`). Backend là nguồn DUY NHẤT của cột
  * và nhãn cột; tầng này chỉ đọc `kind` để định dạng ô.
  */
@@ -26,11 +26,11 @@ export interface ReportDrilldownResponse {
   truncated: boolean
 }
 
-/** Nhóm «Xem theo» đang mở danh sách; `null` ở `ReportDrilldownTarget.group` = cả dòng Tổng. */
+/** Nhóm "Xem theo" đang mở danh sách; `null` ở `ReportDrilldownTarget.group` = cả dòng Tổng. */
 export interface ReportDrilldownGroup {
   /** `group_by` gửi lên — chiều đang xem. */
   by: string
-  /** `group_key` gửi lên — `""` là nhóm «(Chưa gắn)». */
+  /** `group_key` gửi lên — `""` là nhóm "(Chưa gắn)". */
   key: string
   /** Tên chiều ("Phòng ban") — để ghi phụ đề ngăn. */
   dimensionLabel: string

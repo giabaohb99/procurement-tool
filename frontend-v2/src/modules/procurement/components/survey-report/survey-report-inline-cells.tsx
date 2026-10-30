@@ -1,4 +1,4 @@
-// duoc-CR-612 (09/10/2026) — ô SỬA NGAY TRÊN DÒNG của dạng «Bảng» trong khối Báo cáo thực
+// duoc-CR-612 (09/10/2026) — ô SỬA NGAY TRÊN DÒNG của dạng "Bảng" trong khối Báo cáo thực
 // hiện. Ô chữ theo kiểu bảng tính: bấm vào là sửa, Enter / rời ô là lưu, Esc là bỏ. Ô chọn,
 // ô ngày, ô tick lưu ngay khi chọn. Mỗi lần lưu chỉ gửi ĐÚNG trường vừa đổi (PATCH từng phần).
 import { useEffect, useRef, useState } from 'react'
@@ -149,7 +149,7 @@ export function InlineTextCell({
       ref={viewButton}
       type="button"
       disabled={disabled}
-      //  Tên đọc ra phải kèm GIÁ TRỊ — chỉ «Sửa mô tả» thì trình đọc màn hình không bao giờ
+      //  Tên đọc ra phải kèm GIÁ TRỊ — chỉ "Sửa mô tả" thì trình đọc màn hình không bao giờ
       //  đọc được nội dung ô.
       aria-label={`Sửa ${label}: ${value || 'đang trống'}`}
       title={value || 'Bấm để nhập'}

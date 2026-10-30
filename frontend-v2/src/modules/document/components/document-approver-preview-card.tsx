@@ -29,7 +29,7 @@ const ONE_STEP_TAIL =
   'sẽ duyệt MỘT BƯỚC: người có quyền duyệt văn bản xem xét và bấm Duyệt/Từ chối trên trang chi tiết.'
 
 /**
- * Thẻ «Người duyệt dự kiến» — xem trước luồng duyệt trên màn tạo văn bản / chi
+ * Thẻ "Người duyệt dự kiến" — xem trước luồng duyệt trên màn tạo văn bản / chi
  * tiết bản nháp (phase 01, duoc-CR-473). Component THUẦN HIỂN THỊ: nhận thẳng
  * kết quả đã gọi API (`useDocumentApprovalPreview`), không tự gọi hook — hai
  * màn dùng nó (tạo mới đang debounce theo form, chi tiết đọc từ bản ghi đã có)
@@ -75,7 +75,7 @@ function PreviewBody({
         <p>Loại văn bản này KHÔNG cần phê duyệt.</p>
         {/*  Nói luôn bước kế tiếp (29/09/2026): màn chi tiết bày nút *Ban hành*
              thay *Gửi duyệt* cho loại này — bấm là cấp số và có hiệu lực. */}
-        <p>Tạo xong, người soạn bấm «Ban hành» là văn bản có số hiệu và có hiệu lực ngay.</p>
+        <p>Tạo xong, người soạn bấm <strong>Ban hành</strong> là văn bản có số hiệu và có hiệu lực ngay.</p>
       </div>
     )
   }

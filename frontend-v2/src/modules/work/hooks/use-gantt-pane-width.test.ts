@@ -63,7 +63,7 @@ describe('useGanttPaneWidth', () => {
   })
 
   it('bề rộng đã kéo vẫn bị kẹp lại khi bộ cột co lại', () => {
-    //  Tắt bớt cột ở «Tùy chỉnh»: giữ nguyên số cũ là thừa một mảng trắng ngay
+    //  Tắt bớt cột ở "Tùy chỉnh": giữ nguyên số cũ là thừa một mảng trắng ngay
     //  giữa lưới và biểu đồ.
     localStorage.setItem('erp.work.ganttpane.77', '1200')
     const { result } = dung(2400, 800)

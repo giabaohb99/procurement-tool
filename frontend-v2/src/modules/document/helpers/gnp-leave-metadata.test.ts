@@ -4,7 +4,7 @@ import { formatGnpLeavePeriod, gnpLeavePeriodsOf, leaveExtraOf } from './gnp-lea
 
 /**
  * Bản kê khoảng ngày trên giấy GNP (duoc-CR-683 M4). Giấy hệ sinh cho đơn 27/10 + 03/11→07/11
- * từng chỉ hiện «27/10/2026 → 07/11/2026, 5.5 ngày» — đọc thành 12 ngày nghỉ liền.
+ * từng chỉ hiện "27/10/2026 → 07/11/2026, 5.5 ngày" — đọc thành 12 ngày nghỉ liền.
  */
 
 const twoPeriods = [
@@ -66,7 +66,7 @@ describe('formatGnpLeavePeriod', () => {
     )
   })
 
-  it('a morning-only day reads «sáng», an unknown code falls back to «cả ngày»', () => {
+  it('a morning-only day reads "sáng", an unknown code falls back to "cả ngày"', () => {
     const morning = { ...twoPeriods[0], from_session: 'morning', to_session: 'morning', days: 0.5 }
     expect(formatGnpLeavePeriod(morning)).toBe('27/10/2026 (sáng) · 0.5 ngày')
     const odd = { ...twoPeriods[0], from_session: 'hourly??', to_session: 'hourly??' }

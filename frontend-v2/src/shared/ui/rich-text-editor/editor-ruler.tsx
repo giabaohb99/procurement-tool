@@ -24,7 +24,7 @@ interface EditorRulerProps {
    * mặc định) — đây mới là lúc trang cha ghi xuống bản ghi.
    *
    * Tách khỏi `onChange` vì trước đây trang cha phải tự hẹn giờ 600ms để gom
-   * nhịp kéo, mà hẹn giờ thì sinh ra khe hở: kéo xong bấm ngay «In / Xuất PDF»
+   * nhịp kéo, mà hẹn giờ thì sinh ra khe hở: kéo xong bấm ngay "In / Xuất PDF"
    * là bản in đọc lề CŨ, còn chuyển tab trong khoảng đó là mất luôn thay đổi.
    */
   onCommit?: (margins: PageMargins) => void

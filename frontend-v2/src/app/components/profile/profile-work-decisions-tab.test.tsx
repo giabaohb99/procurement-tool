@@ -92,7 +92,7 @@ describe('ProfileWorkDecisionsTab', () => {
     expect(state.calls.filter((c) => c.url === '/api/employees/me/work-history')).toHaveLength(1)
   })
 
-  it('rỗng → câu nhắc ngắn, KHÔNG nút «+ Thêm quyết định» (Trang cá nhân chỉ đọc)', async () => {
+  it('rỗng → câu nhắc ngắn, KHÔNG nút "+ Thêm quyết định" (Trang cá nhân chỉ đọc)', async () => {
     renderTab()
 
     expect(await screen.findByText('Chưa có quyết định nào.')).toBeInTheDocument()

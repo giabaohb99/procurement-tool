@@ -24,7 +24,7 @@ function money(key: keyof CustomsLine, header: string): DataTableColumn<CustomsL
   return {
     key,
     header,
-    //  bao-CR-493: bề rộng đủ cho tiêu đề (tiêu đề bảng luôn cắt «…», không xuống dòng) — đại ca 25/09.
+    //  bao-CR-493: bề rộng đủ cho tiêu đề (tiêu đề bảng luôn cắt "…", không xuống dòng) — đại ca 25/09.
     width: 175,
     align: 'right',
     cell: (row) => <span className="tabular-nums">{formatUsd(row[key] as number | null)}</span>,
@@ -85,7 +85,7 @@ function plain(key: keyof CustomsLine, header: string, width: number, wrap = fal
 }
 
 export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
-  //  bao-CR-608 — mã dòng, ĐẦU bảng như cột «ID» đầu tệp Excel xuất ra: xuất → sửa → nạp lại là
+  //  bao-CR-608 — mã dòng, ĐẦU bảng như cột "ID" đầu tệp Excel xuất ra: xuất → sửa → nạp lại là
   //  ghi đè đúng dòng; tra một dòng cụ thể khi trao đổi cũng nói bằng số này.
   {
     key: 'id',
@@ -171,7 +171,7 @@ export const CUSTOMS_LINE_COLUMNS: DataTableColumn<CustomsLine>[] = [
   money('tax_environment', 'Thuế môi trường'),
   money('tax_safeguard', 'Thuế tự vệ'),
   plain('import_country', 'Nước nhận hàng', 140),
-  //  bao-CR-603 — bỏ chữ «(suy ra)»: tệp nạp có cột thì giá trị là của tệp; rê chuột thấy nguồn.
+  //  bao-CR-603 — bỏ chữ "(suy ra)": tệp nạp có cột thì giá trị là của tệp; rê chuột thấy nguồn.
   tagged('active_ingredient', 'Hoạt chất', 160, true),
   tagged('formulation', 'Hàm lượng / dạng', 150),
   //  bao-CR-493 — hai cột VND đứng SAU hai cột suy ra, cùng thứ tự với tệp Excel xuất ra;

@@ -32,7 +32,7 @@ interface SectionTab {
   visible: (can: ReturnType<typeof usePermission>['can']) => boolean
 }
 
-/** Hai màn con của tab «Thiết lập» trên sidebar. */
+/** Hai màn con của tab "Thiết lập" trên sidebar. */
 const SETTING_TABS: SectionTab[] = [
   {
     label: 'Loại nghỉ',

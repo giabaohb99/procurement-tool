@@ -9,7 +9,7 @@ import { useDossierTypesForForm } from '../hooks/use-dossier-types'
  * Chi tiết MỘT hồ sơ — và cũng là màn THÊM MỚI (`/dossier/list/new`).
  *
  * Route tĩnh `/new` trỏ vào chính component này; khung tự nhận ra chế độ tạo
- * mới. ⚠️ Nó phải đăng ký TRƯỚC `/:id` kẻo «new» bị khớp thành id.
+ * mới. ⚠️ Nó phải đăng ký TRƯỚC `/:id` kẻo "new" bị khớp thành id.
  *
  * ⚠️ **Phải chờ danh mục Loại hồ sơ tải xong mới dựng khung.** Bộ ô của biểu mẫu
  * lấy từ `field_schema` của loại; dựng khi danh mục còn rỗng thì `useForm` khởi

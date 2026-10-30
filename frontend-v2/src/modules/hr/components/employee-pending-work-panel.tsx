@@ -21,7 +21,7 @@ interface EmployeePendingWorkPanelProps {
 }
 
 /**
- * Khung «Việc đang giữ» trước khi khóa tài khoản / cho nghỉ việc (duoc-CR-665, V0-4).
+ * Khung "Việc đang giữ" trước khi khóa tài khoản / cho nghỉ việc (duoc-CR-665, V0-4).
  *
  * Hai loại: việc DUYỆT còn treo (chuyển được từng việc hoặc chuyển hết, cần `approval_flow.write`)
  * và bước LUỒNG duyệt chỉ đích danh người này (chỉ nêu + dẫn tới luồng, không sửa tại đây).
@@ -97,7 +97,7 @@ export function EmployeePendingWorkPanel({ employeeId }: EmployeePendingWorkPane
             </div>
           ) : (
             <p className="text-muted-foreground">
-              Bạn không có quyền chuyển việc duyệt (cần quyền ghi «Luồng duyệt») — nhờ quản trị
+              Bạn không có quyền chuyển việc duyệt (cần quyền ghi <em>Luồng duyệt</em>) — nhờ quản trị
               luồng chuyển giúp trước khi khóa.
             </p>
           )}

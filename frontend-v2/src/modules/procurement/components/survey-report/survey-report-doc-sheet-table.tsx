@@ -1,7 +1,7 @@
-// duoc-CR-612 (09/10/2026) — dạng xem thứ ba «Bảng» của khối Báo cáo thực hiện (YCBG + ĐMH).
-// Đại ca đề xuất: «hiển thị thành dạng bảng, có thể cập nhật trực tiếp nội dung trên hàng».
+// duoc-CR-612 (09/10/2026) — dạng xem thứ ba "Bảng" của khối Báo cáo thực hiện (YCBG + ĐMH).
+// Đại ca đề xuất: "hiển thị thành dạng bảng, có thể cập nhật trực tiếp nội dung trên hàng".
 // Mỗi hồ sơ MỘT hàng phẳng, đọc như bảng kế hoạch Excel của thu mua; gần như mọi ô sửa tại
-// chỗ. Riêng «tiên quyết» (chọn nhiều) vẫn sửa qua hộp ✎ — ô chọn nhiều trong một ô bảng
+// chỗ. Riêng "tiên quyết" (chọn nhiều) vẫn sửa qua hộp ✎ — ô chọn nhiều trong một ô bảng
 // chật, dễ bấm nhầm, mà đây là trường ít đổi nhất.
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import {
@@ -55,7 +55,7 @@ interface ReportDocSheetTableProps {
   canEdit: boolean
   /** Thao tác NẶNG đang chạy (xóa, khởi tạo…) — chặn xóa / thêm, không chặn ô sửa. */
   busy: boolean
-  /** «cả phiếu» / «cả đơn». */
+  /** "cả phiếu" / "cả đơn". */
   ownerLabel: string
   /** Người thực hiện điền sẵn cho hồ sơ thêm từ hàng cuối = người đang đăng nhập. */
   defaultAssigneeId: number
@@ -66,7 +66,7 @@ interface ReportDocSheetTableProps {
 }
 
 /**
- * Dạng «Bảng»: hồ sơ xếp theo THỨ TỰ GIAI ĐOẠN (cùng trình tự với «Xem tổng»), trong
+ * Dạng "Bảng": hồ sơ xếp theo THỨ TỰ GIAI ĐOẠN (cùng trình tự với "Xem tổng"), trong
  * một giai đoạn giữ thứ tự backend trả. Không gấp / sổ gì cả — bảng tính thì phải thấy hết.
  */
 export function ReportDocSheetTable({
@@ -83,7 +83,7 @@ export function ReportDocSheetTable({
   onDeleteDoc,
   onCreateDoc,
 }: ReportDocSheetTableProps) {
-  //  Danh bạ cho ô «Người thực hiện» — chỉ tải khi sửa được (người chỉ xem đọc tên có
+  //  Danh bạ cho ô "Người thực hiện" — chỉ tải khi sửa được (người chỉ xem đọc tên có
   //  sẵn trong `assignee_name`, khỏi ăn toast 403 khi thiếu `employee.read`).
   const { data: employeePage } = useEmployees(
     { page_size: 1000, is_active: true },

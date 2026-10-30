@@ -25,13 +25,13 @@ import { useRoles } from '../hooks/use-roles'
 const ADMIN_ROLE_CODE = 'admin'
 
 /**
- * Tab «Quyền mặc định» của một chức vụ (duoc-CR-653).
+ * Tab "Quyền mặc định" của một chức vụ (duoc-CR-653).
  *
  * ⚠️ Gói chỉ là DANH SÁCH VAI TRÒ. Bậc phạm vi dữ liệu (cá nhân / phòng ban / công ty / tất cả) nằm trong
- * từng vai trò (màn Phân quyền), không chọn lại ở đây — muốn «Trưởng phòng ở bậc phòng ban» thì chọn vai
+ * từng vai trò (màn Phân quyền), không chọn lại ở đây — muốn "Trưởng phòng ở bậc phòng ban" thì chọn vai
  * trò đã cấu hình bậc đó.
  *
- * ⚠️ «Lưu» chỉ ghi gói. Người đang giữ chức vụ chỉ nhận thay đổi khi bấm «Áp lại» (có hộp xác nhận, kèm
+ * ⚠️ "Lưu" chỉ ghi gói. Người đang giữ chức vụ chỉ nhận thay đổi khi bấm "Áp lại" (có hộp xác nhận, kèm
  * số người) — sửa gói không bao giờ tự đổi quyền của ai.
  */
 export function JobPositionRolesPanel({ positionId }: { positionId: number }) {
@@ -109,7 +109,7 @@ export function JobPositionRolesPanel({ positionId }: { positionId: number }) {
           khi đổi chức vụ). Bậc phạm vi dữ liệu nằm trong từng vai trò. Vai trò quản trị gán tay không bị
           thay đổi. Vai trò quản trị và vai trò có quyền ghi/tạo/xóa trên Vai trò / Tài khoản không đưa vào
           gói được. Muốn bỏ một vai trò của gói cho riêng một người: sửa gói hoặc đổi chức vụ của họ — tick
-          bỏ ở màn Phân quyền tài khoản sẽ bị «Áp lại» cấp lại.
+          bỏ ở màn Phân quyền tài khoản sẽ bị <strong>Áp lại</strong> cấp lại.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">

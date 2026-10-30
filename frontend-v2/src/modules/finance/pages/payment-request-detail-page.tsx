@@ -215,7 +215,7 @@ function fromRequestLine(line: PaymentRequestLine, index: number): EditablePayme
 }
 
 //  bao-CR-553 ────────────────────────────────────────────────────────────────
-//  (02/10: đại ca bỏ ô «Người duyệt», chỉ giữ ô «Trưởng bộ phận» để in.)
+//  (02/10: đại ca bỏ ô "Người duyệt", chỉ giữ ô "Trưởng bộ phận" để in.)
 const DEPT_HEAD_DEFAULT = 'Mặc định: trưởng phòng của người lập'
 
 type PersonPick = { id: number; name: string }
@@ -233,7 +233,7 @@ function headOfDeptOf(req: PaymentRequest | undefined): PersonPick {
 }
 
 /**
- * Ô «Trưởng bộ phận» — tên in ở dòng «Trưởng phòng ban/bộ phận» của bản in nội bộ (ca chị Mi
+ * Ô "Trưởng bộ phận" — tên in ở dòng "Trưởng phòng ban/bộ phận" của bản in nội bộ (ca chị Mi
  * duyệt nhưng bản in ghi anh Dững). Để trống = mặc định trưởng phòng của người lập như trước.
  */
 function DeptHeadSelect({
@@ -341,7 +341,7 @@ function PaymentRequestCreate() {
   // CR-268 — phiếu THANH TOÁN TRƯỚC: đi từ hộp thoại "Lập thanh toán trước" của ĐMH
   // (CR-267) thì tick sẵn; form trắng thì kế toán tự tick khi tạm ứng NCC.
   const [prepay, setPrepay] = useState<boolean>(() => Boolean(navState?.prepay))
-  //  bao-CR-553 — ô «Trưởng bộ phận» in ở bản in nội bộ (để trống = trưởng phòng người lập).
+  //  bao-CR-553 — ô "Trưởng bộ phận" in ở bản in nội bộ (để trống = trưởng phòng người lập).
   const [headOfDept, setHeadOfDept] = useState<{ id: number; name: string }>({ id: 0, name: '' })
   const { data: managersData } = useDepartmentManagers(true)
 
@@ -730,10 +730,10 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
   const [refundOpen, setRefundOpen] = useState(false)
   const [refundAmountText, setRefundAmountText] = useState('')
   const [refundNote, setRefundNote] = useState('')
-  // bao-CR-509 — hộp xem trước «Cập nhật theo công nợ» (nháp: ghi được; phiếu đã
+  // bao-CR-509 — hộp xem trước "Cập nhật theo công nợ" (nháp: ghi được; phiếu đã
   // khóa: chỉ xem chênh lệch từ dải cảnh báo).
   const [refreshOpen, setRefreshOpen] = useState(false)
-  /** Chặn bấm đúp «Gửi duyệt» ngay trong tick (bao-CR-590). */
+  /** Chặn bấm đúp "Gửi duyệt" ngay trong tick (bao-CR-590). */
   const submittingRef = useRef(false)
 
   // Dữ liệu server về (hoặc lưu xong nạp lại) -> đổ lại bản nháp đang sửa.
@@ -840,7 +840,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
   }
 
   /**
-   * «Gửi duyệt» (bao-CR-590): phiếu còn Nháp sửa được thì LƯU phần đang sửa rồi mới gửi.
+   * "Gửi duyệt" (bao-CR-590): phiếu còn Nháp sửa được thì LƯU phần đang sửa rồi mới gửi.
    * Trước đây nút chỉ gọi `/submit` — máy chủ gửi bản CŨ, rồi nhịp nạp lại bên trên đổ bản cũ
    * đè lên các ô đang sửa, người dùng mất trắng phần vừa nhập. Lưu hỏng thì KHÔNG gửi.
    * Chặn bấm đúp bằng ref vì `disabled={isPending}` chỉ có hiệu lực ở lượt vẽ sau.
@@ -886,7 +886,7 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
         }
         title={
           <span className="flex flex-wrap items-center gap-2">
-            {/*  Khổ hẹp chỉ in MÃ PHIẾU. Cụm chữ «Yêu cầu thanh toán» đã nằm
+            {/*  Khổ hẹp chỉ in MÃ PHIẾU. Cụm chữ "Yêu cầu thanh toán" đã nằm
                  sẵn trên thanh ứng dụng ngay phía trên — mà dải này được ghim,
                  nên mỗi chữ thừa là một chữ đứng yên vĩnh viễn che mất form.
                  Đủ chỗ thì in cả câu như cũ. */}

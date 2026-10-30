@@ -28,7 +28,7 @@ function BarCard({ title, bars }: { title: string; bars: UsageAiBar[] }) {
 
 /**
  * Dùng AI (nhóm 3.8): lượt dùng, kênh nào, ứng dụng nào, nhờ nhóm việc gì, bao nhiêu phiếu AI soạn.
- * Chỉ số đếm và mã — không có nội dung câu hỏi. Chưa thu số liệu thì nói rõ «chưa thu thập», không hiện 0.
+ * Chỉ số đếm và mã — không có nội dung câu hỏi. Chưa thu số liệu thì nói rõ "chưa thu thập", không hiện 0.
  */
 export function UsageAiSection({ snapshot }: { snapshot: UsageSnapshot }) {
   if (isAiNotCollected(snapshot)) {

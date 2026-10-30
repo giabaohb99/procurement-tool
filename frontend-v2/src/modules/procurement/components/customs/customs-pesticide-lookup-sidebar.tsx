@@ -1,6 +1,6 @@
-// Cột «Tìm kiếm» + «Tra cứu nhanh» của trang chi tiết thuốc BVTV (01/10/2026 — bê theo cột trái
+// Cột "Tìm kiếm" + "Tra cứu nhanh" của trang chi tiết thuốc BVTV (01/10/2026 — bê theo cột trái
 // của trang nguồn danhmuc.thuocbvtv.com): đang đọc một thuốc mà muốn tra thuốc khác thì gõ / chọn
-// ngay tại đây, không phải lùi về danh sách. Bấm «Lọc» hay một phân nhóm là mở mục «Thuốc BVTV»
+// ngay tại đây, không phải lùi về danh sách. Bấm "Lọc" hay một phân nhóm là mở mục "Thuốc BVTV"
 // với đúng bộ lọc đó (`buildPesticideListSearch`).
 import { Search, Zap } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
@@ -18,7 +18,7 @@ import { ALL_PESTICIDE_OPTIONS, buildPesticideListSearch } from '../../utils/cus
 import { toSentenceCaseIfShouting } from '../../utils/customs-pesticide-display'
 
 interface CustomsPesticideLookupSidebarProps {
-  /** Phân nhóm của thuốc đang xem — tô đậm trong «Tra cứu nhanh» để biết mình đang ở nhóm nào. */
+  /** Phân nhóm của thuốc đang xem — tô đậm trong "Tra cứu nhanh" để biết mình đang ở nhóm nào. */
   currentPestGroup: string
   className?: string
 }

@@ -18,7 +18,7 @@ export function useSaveJobPositionRoles(positionId: number) {
   return useMutation({
     mutationFn: (roleIds: number[]) => jobPositionRoleApi.save(positionId, roleIds),
     onSuccess: () => {
-      toast.success('Đã lưu quyền mặc định. Chưa áp cho người đang giữ chức vụ — bấm «Áp lại» nếu cần.')
+      toast.success('Đã lưu quyền mặc định. Chưa áp cho người đang giữ chức vụ — bấm "Áp lại" nếu cần.')
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.jobPositionRoles(positionId) })
     },
   })

@@ -57,7 +57,7 @@ describe('LeaveAttachmentsCard', () => {
     expect(screen.queryByRole('button', { name: 'Gỡ tệp' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Xem trước giay-ra-vien.pdf/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Tải về giay-ra-vien.pdf/ })).toBeInTheDocument()
-    //  PDF không in nên không gắn nhãn «in kèm».
+    //  PDF không in nên không gắn nhãn "in kèm".
     expect(screen.queryByText(/· in kèm ở mặt sau/)).not.toBeInTheDocument()
   })
 
@@ -68,7 +68,7 @@ describe('LeaveAttachmentsCard', () => {
 
   it('marks the card required and names the leave types that demand a file', () => {
     render(<LeaveAttachmentsCard requestId={12} editable requiredByTypes={['Nghỉ ốm']} />)
-    expect(screen.getByText(/«Nghỉ ốm» bắt buộc đính kèm giấy tờ/)).toBeInTheDocument()
+    expect(screen.getByText(/"Nghỉ ốm" bắt buộc đính kèm giấy tờ/)).toBeInTheDocument()
     expect(screen.getByTitle('Bắt buộc trước khi gửi duyệt')).toBeInTheDocument()
   })
 

@@ -17,7 +17,7 @@ interface GroupMembersPanelProps {
  *
  * Người trong nhóm kế thừa vai trò xuống MỌI dự án bên trong nhóm (A-09), nên
  * mời một người vào đây là cấp quyền cho cả cụm một lần. Đổi vai trò đi cùng cửa
- * «mời» (backend cập nhật tại chỗ khi đã có), không có endpoint riêng như dự án.
+ * "mời" (backend cập nhật tại chỗ khi đã có), không có endpoint riêng như dự án.
  */
 export function GroupMembersPanel({ open, groupId, myRole }: GroupMembersPanelProps) {
   const { data: members = [] } = useWorkGroupMembers(open ? groupId : undefined)

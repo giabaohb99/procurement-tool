@@ -745,7 +745,7 @@ function PayableListContent() {
   //  `filter.activeCount` của bộ lọc điều kiện.
   const amountActive = Boolean(amountFrom || amountTo)
 
-  //  Huy hiệu trên nút «Bộ lọc» của khổ hẹp phải đếm CẢ BA tầng — ô lọc nhanh,
+  //  Huy hiệu trên nút "Bộ lọc" của khổ hẹp phải đếm CẢ BA tầng — ô lọc nhanh,
   //  khoảng tiền và điều kiện nâng cao — vì cả ba nay nằm sau đúng một nút đó.
   //  Đếm thiếu một tầng thì người dùng thấy nút không dấu gì mà danh sách vẫn
   //  đang bị lọc, rồi đi tìm lỗi ở dữ liệu.
@@ -761,7 +761,7 @@ function PayableListContent() {
     (amountActive ? 1 : 0) +
     filter.activeCount
 
-  //  Huy hiệu riêng của nút «Bộ lọc điều kiện» ở khổ rộng — chỉ đếm những gì
+  //  Huy hiệu riêng của nút "Bộ lọc điều kiện" ở khổ rộng — chỉ đếm những gì
   //  NẰM TRONG popover đó (khoảng tiền + các dòng điều kiện), không cộng dồn
   //  các ô lọc nhanh đã đứng thẳng ngoài thanh công cụ.
   const advancedFilterCount = (amountActive ? 1 : 0) + filter.activeCount
@@ -927,9 +927,9 @@ function PayableListContent() {
             //  GHIM — mỗi pixel là một pixel che mất thẻ. Gom lại: một hàng
             //  52px, mở tờ trượt ra thì mỗi ô có trọn bề ngang kèm nhãn.
             <>
-              {/*  Câu gợi ý RÚT GỌN ở khổ hẹp: sau khi chia chỗ cho nút «Bộ
-                   lọc» và nút Tải lại, ô chỉ còn ~150px nên bản đầy đủ bị trình
-                   duyệt xén thành «Tìm theo mã ĐMH.» — mất đúng phần đuôi, thứ
+              {/*  Câu gợi ý RÚT GỌN ở khổ hẹp: sau khi chia chỗ cho nút "Bộ
+                   lọc" và nút Tải lại, ô chỉ còn ~150px nên bản đầy đủ bị trình
+                   duyệt xén thành "Tìm theo mã ĐMH." — mất đúng phần đuôi, thứ
                    người đọc chưa đoán được. */}
               <SearchField
                 value={keyword}

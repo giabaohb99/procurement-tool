@@ -59,7 +59,7 @@ function getClosestNeedDate(items: any[]) {
   return fmtDate(closestDate);
 }
 
-// bao-CR-546 — ba mẫu in cố định của ô chọn «Mẫu in» (khớp v2 `purchase-request-print-template.ts`).
+// bao-CR-546 — ba mẫu in cố định của ô chọn "Mẫu in" (khớp v2 `purchase-request-print-template.ts`).
 type PrintTemplate = "normal-signed" | "normal-unsigned" | "tax";
 const PRINT_TEMPLATES: { value: PrintTemplate; label: string; taxMode: boolean; showSign: boolean }[] = [
   { value: "normal-signed", label: "Mẫu thường – có chữ ký", taxMode: false, showSign: true },
@@ -82,14 +82,14 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
   const [company, setCompany] = useState("");
   const [warehouses, setWarehouses] = useState<{ code: string; name: string }[]>([]);
   const [notFound, setNotFound] = useState(false);
-  // bao-CR-546 (đại ca chốt 01/10/2026): MỘT ô chọn «Mẫu in» ba mục cố định thay hai nhóm nút
-  // «Có/Không chữ ký» + «Mẫu thường/Mẫu thuế» — nhóm chữ ký biến mất khi chọn Mẫu thuế làm thanh
+  // bao-CR-546 (đại ca chốt 01/10/2026): MỘT ô chọn "Mẫu in" ba mục cố định thay hai nhóm nút
+  // "Có/Không chữ ký" + "Mẫu thường/Mẫu thuế" — nhóm chữ ký biến mất khi chọn Mẫu thuế làm thanh
   // nút nhảy. Mỗi mẫu quy về hai cờ cũ: taxMode (để trống thông tin người yêu cầu + mọi ô ký) và
   // showSign (bỏ ảnh chữ ký số, bản ký tay vẫn giữ họ tên). Bản v2:
   // `utils/purchase-request-print-template.ts` — giữ hai bản cùng ba mẫu.
   const [template, setTemplate] = useState<PrintTemplate>("normal-signed");
   const { taxMode, showSign } = PRINT_TEMPLATES.find((t) => t.value === template) || PRINT_TEMPLATES[0];
-  // bao-CR-544 → bao-CR-546: ô tick «Ẩn nơi giao» GIỮ cột «Nơi giao» (khuôn mẫu không đổi), chỉ để
+  // bao-CR-544 → bao-CR-546: ô tick "Ẩn nơi giao" GIỮ cột "Nơi giao" (khuôn mẫu không đổi), chỉ để
   // trống chữ trong ô — bản CR-544 xóa hẳn cột, đại ca chê lệch khuôn.
   const [hidePlace, setHidePlace] = useState(false);
 
@@ -355,7 +355,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
               {/* Mẫu kế toán 003/BM/PKT KHÔNG có cột VAT trên dòng hàng — VAT chỉ hiện ở
                   phần tổng cuối bảng. Không thêm cột vào đây. */}
               <td style={cell}>Thành tiền</td>
-              {/* bao-CR-546: bảng v1 tự co theo chữ — tick «Ẩn nơi giao» thì ô trống làm cột hẹp lại và
+              {/* bao-CR-546: bảng v1 tự co theo chữ — tick "Ẩn nơi giao" thì ô trống làm cột hẹp lại và
                   tiêu đề gãy dòng. Giữ bề rộng tối thiểu để khuôn y như lúc có chữ. */}
               <td style={{ ...cell, minWidth: 64, whiteSpace: "nowrap" }}>Nơi giao</td>
               <td style={cell}>Ghi chú</td>
@@ -466,7 +466,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
           >
             {(() => {
               // bao-CR-531 → bao-CR-536: BỘ Ô do backend quyết (`print_signature_cells`) — công ty
-              // luôn 4 ô; hộ kinh doanh cũng 4 ô, chỉ đổi nhãn ô đầu thành «Chủ hộ» (bao-CR-539). Người đại
+              // luôn 4 ô; hộ kinh doanh cũng 4 ô, chỉ đổi nhãn ô đầu thành "Chủ hộ" (bao-CR-539). Người đại
               // diện trùng TP/BP đề xuất và/hoặc TP/BP mua hàng thì tên + chữ ký lên ô đầu, ô trùng
               // GIỮ nhưng để trống.
               // Backend cũ chưa gửi danh sách thì lùi về bốn ô cũ:

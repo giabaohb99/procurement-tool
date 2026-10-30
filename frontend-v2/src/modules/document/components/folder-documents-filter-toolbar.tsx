@@ -47,8 +47,8 @@ function RemovableFilterChip({ label, onRemove }: { label: string; onRemove: () 
 
 /**
  * HÀNG 2 GỌN kiểu Drive (đặc tả A + đợt dọn gọn, phản hồi 24/09/2026 tối) — ô
- * tìm + ĐÚNG MỘT nút «Bộ lọc» (huy hiệu đếm số điều kiện đang bật) mở popover
- * chứa Loại/Trạng thái/Năm/«Gồm thư mục con»/«Bộ lọc nâng cao» (công tắc «Tìm cả nội dung» bỏ 25/09/2026 — gõ đủ 2 ký tự là tự tìm cả nội dung) — không còn dãy
+ * tìm + ĐÚNG MỘT nút "Bộ lọc" (huy hiệu đếm số điều kiện đang bật) mở popover
+ * chứa Loại/Trạng thái/Năm/"Gồm thư mục con"/"Bộ lọc nâng cao" (công tắc "Tìm cả nội dung" bỏ 25/09/2026 — gõ đủ 2 ký tự là tự tìm cả nội dung) — không còn dãy
  * Select/Switch LUÔN HIỆN trên thanh công cụ (khách chê "show ra hết thì
  * xấu"). Điều kiện đang bật hiện thành CHIP gỡ được ngay dưới ô tìm, CHỈ khi
  * có gì đang lọc — hàng chip biến mất hoàn toàn lúc mọi thứ về mặc định.
@@ -72,8 +72,8 @@ export function FolderDocumentsFilterToolbar({
 }: FolderDocumentsFilterToolbarProps) {
   //  Đếm CẢ điều kiện nâng cao (`ConditionalFilter`, chạy trong `FilterProvider`
   //  của `folder-documents-table.tsx`) lẫn ba ô lọc nhanh + công tắc thư mục con, cho
-  //  huy hiệu trên nút «Bộ lọc» phản ánh ĐỦ mọi thứ đang lọc chứ không riêng
-  //  một tầng. «Gồm thư mục con» đếm khi BẬT (mặc định TẮT từ 24/09/2026).
+  //  huy hiệu trên nút "Bộ lọc" phản ánh ĐỦ mọi thứ đang lọc chứ không riêng
+  //  một tầng. "Gồm thư mục con" đếm khi BẬT (mặc định TẮT từ 24/09/2026).
   const { activeCount: advancedCount } = useFilterQuery()
   const quickCount =
     (typeId !== ALL ? 1 : 0) +

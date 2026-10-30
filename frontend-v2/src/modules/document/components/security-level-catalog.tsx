@@ -85,7 +85,7 @@ export function SecurityLevelCatalog() {
       searchPlaceholderShort="Tìm mã, tên bậc…"
       detailPath={appRoutes.document.securityLevelDetail}
       //  ⚠️ `Bậc ${row.value}` là VALUE lưu trên văn bản, KHÔNG phải `row.id` —
-      //  xem cảnh báo đầu `types/security-level.ts`. Bảng bày cả hai (cột «ID»
+      //  xem cảnh báo đầu `types/security-level.ts`. Bảng bày cả hai (cột "ID"
       //  ẩn mặc định); thẻ chỉ bày con số có nghĩa với người đọc.
       mobileCard={(row) => (
         <CatalogCard

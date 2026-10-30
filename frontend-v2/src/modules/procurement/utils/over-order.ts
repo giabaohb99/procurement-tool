@@ -2,7 +2,7 @@
  * bao-CR-619 — cảnh báo đặt vượt khi tạo thêm ĐMH từ YCMH (cùng luật bản `frontend/`).
  *
  * Dữ liệu từ `GET /api/purchase-requests/{id}/order-progress`:
- * - `ordered`: đơn đã duyệt trở đi (nghĩa cũ — prefill «còn thiếu»);
+ * - `ordered`: đơn đã duyệt trở đi (nghĩa cũ — prefill "còn thiếu");
  * - `pending`: đơn nháp / chờ duyệt / bị trả lại — chưa tính là đã đặt nhưng đã giữ số lượng;
  * - `orders`: từng đơn còn sống theo mã hàng (mã đơn, trạng thái, SL đặt, SL đã nhận).
  */
@@ -43,7 +43,7 @@ export interface OverOrderLine {
 
 export const formatQty = (value: number) => Number(value || 0).toLocaleString('vi-VN')
 
-/** «đã đặt 80 (PO00358 Đã duyệt, đã nhận 10) · đang chờ duyệt 100 (PO00371 Nháp)». */
+/** "đã đặt 80 (PO00358 Đã duyệt, đã nhận 10) · đang chờ duyệt 100 (PO00371 Nháp)". */
 export function describeOrdered(progress: Pick<LineProgress, 'ordered' | 'pending' | 'orders'>): string {
   const live = progress.orders.filter((order) => !order.pending)
   const waiting = progress.orders.filter((order) => order.pending)

@@ -153,8 +153,8 @@ describe('ReportGroupedTable — rows with all-zero current values are muted and
   })
 })
 
-//  duoc-CR-687 — nhóm bị che (mọi số `null`, vd nhóm tuổi dưới 3 người) phải ra «—», không
-//  được ra «0»/«0 đ», và không có nút «Xem» danh sách (backend cũng trả 403 cho danh sách đó).
+//  duoc-CR-687 — nhóm bị che (mọi số `null`, vd nhóm tuổi dưới 3 người) phải ra "—", không
+//  được ra "0"/"0 đ", và không có nút "Xem" danh sách (backend cũng trả 403 cho danh sách đó).
 describe('ReportGroupedTable — suppressed group (all values null)', () => {
   const SUPPRESSED: ReportGroupRow[] = [
     ...GROUPS,
@@ -166,12 +166,12 @@ describe('ReportGroupedTable — suppressed group (all values null)', () => {
     const row = screen.getAllByRole('row').find((r) => r.textContent?.includes('Dưới 25'))
     expect(row).toBeDefined()
     if (!row) return
-    //  Hai cột hiện sẵn (spend, debt) — cả hai là «—».
+    //  Hai cột hiện sẵn (spend, debt) — cả hai là "—".
     expect(within(row).getAllByText('—')).toHaveLength(2)
     expect(row).not.toHaveTextContent(/\b0\b/)
   })
 
-  it('shows a dash instead of the «Xem» button on the suppressed row only', () => {
+  it('shows a dash instead of the "Xem" button on the suppressed row only', () => {
     renderTable({ groups: SUPPRESSED, onDrilldownRow: vi.fn() })
     expect(screen.getByRole('button', { name: 'Xem danh sách Kinh doanh' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Xem danh sách Dưới 25' })).not.toBeInTheDocument()

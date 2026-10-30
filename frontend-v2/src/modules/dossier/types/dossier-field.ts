@@ -1,5 +1,5 @@
 /**
- * BỘ TRƯỜNG TÙY BIẾN của một loại hồ sơ — phần «metadata».
+ * BỘ TRƯỜNG TÙY BIẾN của một loại hồ sơ — phần "metadata".
  *
  * Mỗi loại hồ sơ tự khai danh sách ô nhập riêng, và màn lập hồ sơ dựng biểu mẫu
  * **theo loại đang chọn**: giấy phép con hỏi *Số giấy phép · Cơ quan cấp*, hợp
@@ -16,7 +16,7 @@
  *
  * `select` và `reference` KHÁC nhau, giữ cả hai là cố ý: `reference` trỏ vào một
  * DANH MỤC có thật (nhân sự, nhà cung cấp…) và lưu ID, còn `select` dành cho mấy
- * tập hai-ba giá trị đặc thù («Bắt buộc / Không bắt buộc») vốn không có danh mục
+ * tập hai-ba giá trị đặc thù ("Bắt buộc / Không bắt buộc") vốn không có danh mục
  * nào để mà trỏ tới.
  *
  * ⚠️ Tập ĐÓNG, và cố ý là **tập con** của `CrudFormField['type']`: mỗi mục ở đây
@@ -89,7 +89,7 @@ export function emptyDossierField(): DossierFieldDef {
  * Chuẩn hoá nhãn thành mã trường — cùng luật với `_key_is_slug` ở backend.
  *
  * Gợi ý mã từ nhãn để người dùng không phải nghĩ ra hai thứ cho một ô; họ vẫn
- * sửa tay được. Bỏ dấu tiếng Việt trước khi cắt, kẻo «Số giấy phép» ra `s_gi_ph`.
+ * sửa tay được. Bỏ dấu tiếng Việt trước khi cắt, kẻo "Số giấy phép" ra `s_gi_ph`.
  */
 export function slugifyFieldKey(raw: string): string {
   const noAccent = (raw || '')
@@ -99,7 +99,7 @@ export function slugifyFieldKey(raw: string): string {
     //  người sửa sau không biết đang xóa gì).
     .replace(/[\u0300-\u036f]/g, '')
     //  `đ/Đ` KHÔNG nằm trong dải trên — nó là một chữ cái riêng, không phải `d`
-    //  cộng dấu. Thiếu dòng này thì «Đơn vị» ra `n_v`.
+    //  cộng dấu. Thiếu dòng này thì "Đơn vị" ra `n_v`.
     .replace(/[đĐ]/g, 'd')
 
   const key = noAccent

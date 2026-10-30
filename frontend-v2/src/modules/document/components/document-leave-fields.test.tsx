@@ -8,7 +8,7 @@ import { emptyDocumentForm } from '../helpers/document-form-defaults'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
 import { DocumentLeaveFields } from './document-leave-fields'
 
-//  Ô «Người nghỉ» / «Người bàn giao» gọi API nhân sự — không phải thứ tệp này kiểm.
+//  Ô "Người nghỉ" / "Người bàn giao" gọi API nhân sự — không phải thứ tệp này kiểm.
 vi.mock('@/modules/hr/hooks/use-employees', () => ({
   useEmployees: () => ({ data: { items: [], total: 0 } }),
 }))
@@ -30,7 +30,7 @@ function build(defaultValues: DocumentRecordFormValues = emptyDocumentForm()) {
   return () => form
 }
 
-/** Số ô «Buổi» đang hiện — đây là thứ phân biệt nghỉ một ngày với nghỉ nhiều ngày. */
+/** Số ô "Buổi" đang hiện — đây là thứ phân biệt nghỉ một ngày với nghỉ nhiều ngày. */
 function visibleCellCount() {
   return screen.getAllByText('Buổi').length
 }
@@ -49,7 +49,7 @@ describe('DocumentLeaveFields', () => {
   })
 
   it('chọn Từ ngày thì Đến ngày TỰ BÁM THEO', () => {
-    //  «Nghỉ chiều thứ Sáu» là ca hay gặp nhất. Bắt khai đủ bốn ô cho một buổi
+    //  "Nghỉ chiều thứ Sáu" là ca hay gặp nhất. Bắt khai đủ bốn ô cho một buổi
     //  nghỉ là bốn thao tác cho việc nhỏ nhất (khách góp ý 25/08/2026).
     const lay = build()
     setDate(lay(), '2026-09-11')
@@ -59,7 +59,7 @@ describe('DocumentLeaveFields', () => {
 
   it('nghỉ trong MỘT ngày thì gộp còn một ô buổi', () => {
     //  Hai ô buổi lúc đó nói về CÙNG một buổi — để hai ô là mời người ta đặt
-    //  lệch nhau rồi ra dữ liệu vô nghĩa («sáng → chiều» của cùng một ngày).
+    //  lệch nhau rồi ra dữ liệu vô nghĩa ("sáng → chiều" của cùng một ngày).
     const lay = build()
     setDate(lay(), '2026-09-11', '2026-09-11')
 
@@ -125,7 +125,7 @@ describe('DocumentLeaveFields', () => {
 
 /**
  * Giấy GNP của đơn nghỉ NHIỀU KHOẢNG (duoc-CR-683 M4): hai ô Từ/Đến ngày chỉ là bao ngoài, nên
- * phải kê từng khoảng — không thì «27/10 → 07/11, 5.5 ngày» đọc thành 12 ngày nghỉ liền.
+ * phải kê từng khoảng — không thì "27/10 → 07/11, 5.5 ngày" đọc thành 12 ngày nghỉ liền.
  */
 describe('DocumentLeaveFields — multi-period GNP', () => {
   function withPeriods(leave_periods: unknown) {
@@ -144,7 +144,7 @@ describe('DocumentLeaveFields — multi-period GNP', () => {
     }
   }
 
-  it('lists every period read-only under «Thời gian nghỉ»', () => {
+  it('lists every period read-only under "Thời gian nghỉ"', () => {
     build(
       withPeriods([
         { from_date: '2026-10-27', from_session: 'full', to_date: '2026-10-27', to_session: 'full', days: 1 },

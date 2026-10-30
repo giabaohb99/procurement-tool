@@ -43,10 +43,10 @@ interface DocumentShareDialogProps {
 }
 
 /**
- * HỘP «CHIA SẺ» của MỘT VĂN BẢN (yêu cầu 25/09/2026) — mở từ menu ⋮ / chuột
+ * HỘP "CHIA SẺ" của MỘT VĂN BẢN (yêu cầu 25/09/2026) — mở từ menu ⋮ / chuột
  * phải / nút chia sẻ trên dòng văn bản ở trang Thư mục. Bố cục cùng khuôn hộp
  * Chia sẻ của thư mục (kiểu Drive): ô mời trên cùng · danh sách người có quyền
- * riêng · ghi chú · «Sao chép liên kết» + «Xong» (bản đầu nhét nguyên thẻ «Quyền truy cập» của
+ * riêng · ghi chú · "Sao chép liên kết" + "Xong" (bản đầu nhét nguyên thẻ "Quyền truy cập" của
  * trang chi tiết vào — đại ca chê khó nhìn).
  *
  * Quyền ghi hỏi trên ĐÚNG văn bản này (`/permissions`, một lượt gọi lúc mở

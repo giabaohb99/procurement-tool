@@ -19,7 +19,7 @@ export interface ConversationListProps {
 }
 
 /**
- * RUỘT của cột hội thoại: hàng «Hội thoại mới» + danh sách đã lưu.
+ * RUỘT của cột hội thoại: hàng "Hội thoại mới" + danh sách đã lưu.
  *
  * Tách khỏi `ConversationSidebar` vì cùng một danh sách này phải dựng ở HAI
  * nơi: cột trái cố định ở màn rộng, và tờ trượt ở khổ điện thoại (xem
@@ -34,7 +34,7 @@ export interface ConversationListProps {
  *    xuống dòng dưới, tức mỗi mục chiếm gấp đôi chỗ để nói một thứ người dùng
  *    hiếm khi cần — họ tìm theo NỘI DUNG đã hỏi, không tìm theo giờ. Mốc thời
  *    gian không mất hẳn: nó nằm ở `title` (rê chuột vào là thấy).
- *  - **«Hội thoại mới» là một hàng có biểu tượng**, không phải nút viền. Trong
+ *  - **"Hội thoại mới" là một hàng có biểu tượng**, không phải nút viền. Trong
  *    màn này thứ đáng nổi bật nhất là ô nhập câu hỏi.
  *  - **Nền trắng như phần đọc**, chỉ hàng đang chọn / rê chuột mới có nền chìm.
  */
@@ -103,7 +103,7 @@ export function ConversationList({
                          thùng rác trong một cột hẹp thì rối, mà đây lại là thao
                          tác không hoàn tác được. */}
                     {/*  ⚠️ Ẩn-cho-tới-khi-rê-chuột chỉ áp TỪ `md`: màn cảm ứng
-                         không có nhịp «rê chuột», nên ở khổ hẹp nút xóa **không
+                         không có nhịp "rê chuột", nên ở khổ hẹp nút xóa **không
                          bao giờ bấm được** — hội thoại cũ không có đường nào dọn
                          đi. Ở màn rộng vẫn ẩn, vì bày sẵn vài chục thùng rác
                          trong một cột hẹp thì rối, mà đây lại là thao tác không

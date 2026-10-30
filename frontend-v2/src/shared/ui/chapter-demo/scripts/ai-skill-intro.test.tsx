@@ -26,7 +26,7 @@ describe('AI_SKILL_INTRO_CHAPTERS', () => {
     for (const c of AI_SKILL_INTRO_CHAPTERS) {
       for (const text of [c.title, c.caption]) {
         expect(text.trim().length).toBeGreaterThan(0)
-        expect(text).not.toMatch(/[«»]/)
+        expect(text).not.toMatch(/[""]/)
         expect(text).not.toMatch(/\p{Extended_Pictographic}/u)
       }
       expect(c.durationMs).toBeGreaterThanOrEqual(3000)

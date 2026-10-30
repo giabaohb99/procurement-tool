@@ -11,8 +11,8 @@ interface EmployeeWorkHistoryViewToggleProps {
 }
 
 /**
- * Nút chuyển «Bảng | Dòng thời gian» — dùng CHUNG cho cả hai khu («Quyết định
- * bổ nhiệm» và «Quá trình công tác») ở tab hồ sơ VÀ ở thẻ Trang cá nhân `/me`
+ * Nút chuyển "Bảng | Dòng thời gian" — dùng CHUNG cho cả hai khu ("Quyết định
+ * bổ nhiệm" và "Quá trình công tác") ở tab hồ sơ VÀ ở thẻ Trang cá nhân `/me`
  * (đại ca chốt 03/10/2026). Không tự giữ state — nơi gọi lưu lựa chọn vào URL
  * search param riêng của từng khu (`whView`/`decView`) để tải lại trang hay
  * gửi link vẫn giữ đúng cách xem.

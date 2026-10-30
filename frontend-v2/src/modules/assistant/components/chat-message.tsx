@@ -123,7 +123,7 @@ function CopyButton({ content }: { content: string }) {
       className={cn(
         'mt-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground',
         //  ⚠️ Ẩn-cho-tới-khi-rê-chuột chỉ áp TỪ `md`. Màn cảm ứng không có nhịp
-        //  «rê chuột», nên `opacity-0 group-hover` ở khổ hẹp nghĩa là nút chép
+        //  "rê chuột", nên `opacity-0 group-hover` ở khổ hẹp nghĩa là nút chép
         //  **không bao giờ bấm được** — nó vẫn chiếm chỗ, vẫn nhận chạm, chỉ là
         //  trong suốt. Mà chép câu trả lời chính là việc người ta hay làm nhất
         //  sau khi tra xong. Cùng bài học đã ghi ở `RoomBookingCard`.

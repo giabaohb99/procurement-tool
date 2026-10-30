@@ -14,7 +14,7 @@ import { taskSupportApi } from '../api/task-support-api'
 
 /** Bình luận của một việc. `taskId = 0` (panel đóng) thì không gọi gì. */
 export function useTaskComments(taskId: number) {
-  //  Con trỏ «xem thêm bình luận cũ». Giữ ở hook chứ không ở component: nó phải
+  //  Con trỏ "xem thêm bình luận cũ". Giữ ở hook chứ không ở component: nó phải
   //  nằm trong khóa truy vấn, không thì bấm xem thêm là đọc lại đúng bản cũ.
   const [beforeId, setBeforeId] = useState(0)
 

@@ -9,16 +9,16 @@ interface UseReportDrilldownStateInput {
   /** `ReportPageConfig.drilldownEndpoint` — bỏ trống thì trang không có danh sách nào. */
   endpoint: string | undefined
   meta: ReportMeta
-  /** Chiều «Xem theo» đang chọn — thành `group_by` khi mở danh sách từ một dòng nhóm. */
+  /** Chiều "Xem theo" đang chọn — thành `group_by` khi mở danh sách từ một dòng nhóm. */
   groupBy: string
   /** Thứ tự ưu tiên chọn chỉ số khi mở từ dòng nhóm: chỉ số biểu đồ, rồi thẻ KPI. */
   preferredMetrics: string[]
 }
 
 /**
- * Trạng thái ngăn «Danh sách người» của một trang báo cáo (duoc-CR-686): chỉ số nào bấm
+ * Trạng thái ngăn "Danh sách người" của một trang báo cáo (duoc-CR-686): chỉ số nào bấm
  * được, đang mở chỉ số/nhóm nào. Trang không khai `drilldownEndpoint` hoặc backend không
- * trả `drilldown_metrics` → `metricOptions` rỗng, mọi nút «Xem danh sách» tự biến mất.
+ * trả `drilldown_metrics` → `metricOptions` rỗng, mọi nút "Xem danh sách" tự biến mất.
  */
 export function useReportDrilldownState({
   endpoint,

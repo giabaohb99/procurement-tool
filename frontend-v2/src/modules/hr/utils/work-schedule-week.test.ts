@@ -122,7 +122,7 @@ describe('normalizeDayOnKindChange', () => {
     return { weekday: 2, day_kind: kind, start_time: start, end_time: end, lunch_start: lunchStart, lunch_end: lunchEnd }
   }
 
-  // Regression: Cả ngày 08–17 đổi sang Buổi sáng từng GIỮ giờ ra 17:00 -> «sáng 08–17»,
+  // Regression: Cả ngày 08–17 đổi sang Buổi sáng từng GIỮ giờ ra 17:00 -> "sáng 08–17",
   // nghỉ phép theo giờ tính sai im lặng. Kiểm cả bốn ô cho MỌI cặp loại khác nhau.
   for (const from of KINDS) {
     for (const to of KINDS) {

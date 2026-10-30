@@ -83,8 +83,8 @@ function DepartmentListContent() {
 
   const { data: companies } = useCompanies({ page_size: 500 }, { enabled: canReadCompany })
   const { queryParams, queryKey } = useFilterQuery()
-  //  Bộ lọc nâng cao: đếm để gắn huy hiệu lên nút «Bộ lọc», và hai hàm để nút
-  //  «Xóa lọc» / «Áp dụng» của tờ trượt điều khiển được nó.
+  //  Bộ lọc nâng cao: đếm để gắn huy hiệu lên nút "Bộ lọc", và hai hàm để nút
+  //  "Xóa lọc" / "Áp dụng" của tờ trượt điều khiển được nó.
   const {
     activeCount: filterActiveCount,
     reset: filterReset,
@@ -196,7 +196,7 @@ function DepartmentListContent() {
         }
       />
 
-      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu «đã cuộn» xuống thanh
+      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu "đã cuộn" xuống thanh
            công cụ ghim (do `DataTable` vẽ, tầng này không với tới bằng prop). */}
       <div
         ref={stickyRef}
@@ -216,7 +216,7 @@ function DepartmentListContent() {
             //  cả hai thì người vừa gõ nhầm một chữ đọc ra "chưa có dữ liệu".
             isFiltering
               ? 'Không có phòng ban nào khớp bộ lọc.'
-              : 'Chưa có phòng ban nào. Bấm «Thêm mới» để tạo.'
+              : 'Chưa có phòng ban nào. Bấm "Thêm mới" để tạo.'
           }
           storageKey="hr.departments"
           //  Khổ hẹp: THẺ thay bảng. Bảng khai 7 cột, bề rộng tự nhiên ~1360px —
@@ -261,8 +261,8 @@ function DepartmentListContent() {
           toolbar={
             <>
               {/*  ⚠️ Câu gợi ý rút gọn ở khổ hẹp và đo theo lúc ĐANG LỌC: nút
-                   *Bộ lọc* nở thêm 24px khi mọc huy hiệu số. Bản cũ «Tìm theo
-                   tên phòng ban hoặc trưởng bộ phận…» dài gấp ba chỗ có. Bản
+                   *Bộ lọc* nở thêm 24px khi mọc huy hiệu số. Bản cũ "Tìm theo
+                   tên phòng ban hoặc trưởng bộ phận…" dài gấp ba chỗ có. Bản
                    đầy đủ giữ từ `md`. */}
               <SearchField
                 value={keyword}

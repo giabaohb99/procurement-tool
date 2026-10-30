@@ -23,7 +23,7 @@ interface FolderPickerProps {
   onChange: (folderIds: number[], primaryFolderId: number | null) => void
   /** `false` = chỉ chọn MỘT thư mục, chọn tiếp thì THAY THẾ chứ không cộng dồn. Mặc định `true`. */
   multiple?: boolean
-  /** Hiện câu «Không chọn → vào thư mục …» khi rỗng — chỉ có nghĩa ở chế độ nhiều. */
+  /** Hiện câu "Không chọn → vào thư mục …" khi rỗng — chỉ có nghĩa ở chế độ nhiều. */
   showEmptyHint?: boolean
   /** Thư mục mặc định của LOẠI văn bản đang chọn — chỉ dùng để DỰNG CÂU gợi ý, không tự áp. */
   docTypeDefaultFolderId?: number | null
@@ -35,9 +35,9 @@ interface FolderPickerProps {
 }
 
 /**
- * Ô «Lưu vào thư mục» — popover có ô tìm (gõ thì tìm phẳng kèm đường dẫn,
+ * Ô "Lưu vào thư mục" — popover có ô tìm (gõ thì tìm phẳng kèm đường dẫn,
  * không gõ thì hiện CÂY, xem `folder-picker-results.tsx`), dùng ở màn tạo văn
- * bản (nhiều, lọc theo pháp nhân) và ở ô «Thư mục mặc định» của Thiết lập
+ * bản (nhiều, lọc theo pháp nhân) và ở ô "Thư mục mặc định" của Thiết lập
  * loại văn bản (một, mọi pháp nhân).
  *
  * Chỉ liệt kê thư mục mức hiệu lực ≥ ĐÓNG GÓP — `my_level` đọc thẳng từ

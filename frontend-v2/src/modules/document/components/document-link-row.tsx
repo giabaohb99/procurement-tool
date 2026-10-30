@@ -55,7 +55,7 @@ export function DocumentLinkRow({ link, onDelete }: DocumentLinkRowProps) {
             <Badge variant="secondary" className="font-normal">
               {link.relation_label}
             </Badge>
-            <HelpHint label={`Quan hệ «${link.relation_label}» nghĩa là gì`}>
+            <HelpHint label={`Quan hệ "${link.relation_label}" nghĩa là gì`}>
               {RELATION_HINTS[link.relation]}
             </HelpHint>
           </span>

@@ -21,7 +21,7 @@ import type { EmployeeContact } from '../types/employee'
  *   cha, quét luôn `employeeContacts(id)`);
  * - `employees()` — các trang danh sách nhân sự (cột Số điện thoại). `{}` khớp
  *   từng phần với MỌI bộ tham số, nên một lời gọi là đủ;
- * - `auth.me` — số điện thoại ở thẻ «Tài khoản» đọc từ phiên đăng nhập.
+ * - `auth.me` — số điện thoại ở thẻ "Tài khoản" đọc từ phiên đăng nhập.
  */
 export function invalidateSelfContactQueries(queryClient: QueryClient, employeeId: number) {
   return Promise.all([

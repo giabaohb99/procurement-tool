@@ -26,7 +26,7 @@ const TOP_LABELS: Record<FlexibleChartTop, string> = {
 interface ReportFlexibleChartToolbarProps {
   options: FlexibleChartOptions
   hasTime: boolean
-  /** Nhãn chiều «Xem theo» đang chọn; `null` = không vẽ theo nhóm được. */
+  /** Nhãn chiều "Xem theo" đang chọn; `null` = không vẽ theo nhóm được. */
   groupLabel: string | null
   donutAllowed: boolean
   onChange: (patch: Partial<FlexibleChartOptions>) => void
@@ -35,7 +35,7 @@ interface ReportFlexibleChartToolbarProps {
 }
 
 /**
- * Hàng điều khiển của biểu đồ linh hoạt: «Vẽ theo» · Kiểu · Top N · Tải ảnh PNG. Xuống dòng ở
+ * Hàng điều khiển của biểu đồ linh hoạt: "Vẽ theo" · Kiểu · Top N · Tải ảnh PNG. Xuống dòng ở
  * màn hẹp (390px) thay vì tràn ngang; nút PNG chỉ còn biểu tượng (kèm `aria-label`).
  */
 export function ReportFlexibleChartToolbar({

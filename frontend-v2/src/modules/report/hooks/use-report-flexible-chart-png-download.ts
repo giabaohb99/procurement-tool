@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { downloadChartPng, type ChartPngInput } from '../utils/report-flexible-chart-png'
 
 /**
- * Nút «Tải ảnh PNG» của biểu đồ linh hoạt: giữ `ref` khung vẽ, chặn bấm đúp bằng `useRef`
+ * Nút "Tải ảnh PNG" của biểu đồ linh hoạt: giữ `ref` khung vẽ, chặn bấm đúp bằng `useRef`
  * (state `downloading` chỉ đúng ở lần render sau — bẫy thứ tư của biểu mẫu), lỗi thì toast.
  */
 export function useReportFlexibleChartPngDownload() {

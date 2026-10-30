@@ -29,7 +29,7 @@ vi.mock('@/core/auth/use-auth', () => ({
 }))
 
 //  `canOverride` mặc định `null` = mọi `can(entity, action)` trả `true`, giữ
-//  đúng hành vi cũ của các bài kiểm có sẵn. Bài kiểm tab «Báo cáo» cần tắt
+//  đúng hành vi cũ của các bài kiểm có sẵn. Bài kiểm tab "Báo cáo" cần tắt
 //  riêng `role.read` nên phải có đường chỉnh được, không thể để nguyên hằng số.
 let canOverride: ((entity: string, action: string) => boolean) | null = null
 vi.mock('@/core/authorization/use-permission', () => ({
@@ -72,7 +72,7 @@ function newQueryClient() {
 }
 
 //  Truyền sẵn một `queryClient` khi cần dựng lại trang trên cùng bộ đệm — đó là
-//  cảnh «mở lại link `?role=7`», khác hẳn cảnh vào trang lần đầu.
+//  cảnh "mở lại link `?role=7`", khác hẳn cảnh vào trang lần đầu.
 function build(queryClient = newQueryClient(), roleId = 7) {
   const { unmount } = render(
     <QueryClientProvider client={queryClient}>
@@ -110,9 +110,9 @@ describe('RolePermissionPage', () => {
     //  Vai trò đang mở nằm trên URL, nên vào lại trang bằng đúng link đó là
     //  `savedRows` có sẵn trong bộ đệm NGAY ở lượt render đầu. Ở lượt đầu
     //  `useHasChanged` luôn trả `false`, nên bản cũ — vốn khởi tạo state bằng
-    //  `{}` rồi chờ dữ liệu «đổi» mới đổ vào — hiện ra một ma trận TRẮNG.
+    //  `{}` rồi chờ dữ liệu "đổi" mới đổ vào — hiện ra một ma trận TRẮNG.
     //
-    //  Bấm «Lưu quyền» lúc đó gửi danh sách RỖNG, mà `setPermissions` ghi đè
+    //  Bấm "Lưu quyền" lúc đó gửi danh sách RỖNG, mà `setPermissions` ghi đè
     //  toàn bộ (backend `role/service.set_permissions` xóa hết rồi ghi lại):
     //  mất sạch quyền của vai trò, kéo theo mọi tài khoản đang giữ nó.
     const nguoi = userEvent.setup()
@@ -135,7 +135,7 @@ describe('RolePermissionPage', () => {
 
   it('vai trò thật sự chưa có quyền nào thì vẫn lưu được danh sách rỗng', async () => {
     //  Mặt kia của chốt trên: khởi tạo đọc thẳng dữ liệu máy chủ nên phải phân
-    //  biệt «máy chủ trả rỗng» với «chưa tải xong». Vai trò mới tinh là ca thật,
+    //  biệt "máy chủ trả rỗng" với "chưa tải xong". Vai trò mới tinh là ca thật,
     //  không phải ca bịa.
     apiGet.mockImplementation((url: string) => {
       if (url === '/api/roles') return Promise.resolve(ROLES)
@@ -182,12 +182,12 @@ describe('RolePermissionPage', () => {
     expect(screen.getByText(/Bạn đang giữ vai trò này/)).toBeInTheDocument()
   })
 
-  it('có quyền role.read thì hiện tab «Báo cáo»', async () => {
+  it('có quyền role.read thì hiện tab "Báo cáo"', async () => {
     build()
     expect(await screen.findByRole('tab', { name: 'Báo cáo' })).toBeInTheDocument()
   })
 
-  it('không có quyền role.read thì KHÔNG hiện tab «Báo cáo» — ẩn hẳn, không chỉ khóa', async () => {
+  it('không có quyền role.read thì KHÔNG hiện tab "Báo cáo" — ẩn hẳn, không chỉ khóa', async () => {
     canOverride = (entity, action) => !(entity === 'role' && action === 'read')
     build()
 

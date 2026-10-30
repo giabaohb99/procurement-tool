@@ -16,7 +16,7 @@ import { cn } from '@/shared/utils/cn'
 import { AI_PLAN_PRIORITIES, type AiPlanAssignee, type AiPlanTaskType } from '../types/ai-plan'
 import type { EditableSubtask } from '../utils/ai-plan-edit'
 
-/** Ô «Loại việc» để trống. Không dùng `0` / chuỗi rỗng: Radix Select cấm giá trị rỗng. */
+/** Ô "Loại việc" để trống. Không dùng `0` / chuỗi rỗng: Radix Select cấm giá trị rỗng. */
 const NO_TYPE = 'none'
 
 export interface AiPlanPersonOption extends AiPlanAssignee {

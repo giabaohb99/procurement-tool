@@ -7,9 +7,9 @@ import type { LeaveBalanceRow } from '../utils/group-leave-balances'
  * Ô ĐỊNH DANH — chỗ duy nhất phân biệt ba dạng hàng.
  *
  * ⚠️ Người chỉ có MỘT loại nghỉ không có mũi tên: tên và loại nghỉ nằm cùng
- * dòng, `«Đoàn Minh Khôi · Phép năm»`. Cho họ một mũi tên bung ra đúng một dòng
+ * dòng, `"Đoàn Minh Khôi · Phép năm"`. Cho họ một mũi tên bung ra đúng một dòng
  * chép lại con số vừa đọc là bắt bấm thêm một nhịp để nhận lại không gì cả — mà
- * công ty mới khai mỗi «Phép năm» thì đó là TOÀN BỘ 261 hàng.
+ * công ty mới khai mỗi "Phép năm" thì đó là TOÀN BỘ 261 hàng.
  */
 export function NameCell({
   row,
@@ -72,7 +72,7 @@ export function NameCell({
  * ⚠️ Số `0` hiện thành dấu gạch mờ, không phải chữ "0". Bảng này có bảy cột số
  * mà bốn cột trong đó hầu như luôn bằng 0 (thâm niên, chuyển năm, điều chỉnh
  * tay) — in "0" và "+0" ra hết thì cả bảng đặc số, và mắt không còn nhặt ra
- * được ô nào thật sự có giá trị. Cột «Còn lại» thì `alwaysShow`: ở đó số 0 mang
+ * được ô nào thật sự có giá trị. Cột "Còn lại" thì `alwaysShow`: ở đó số 0 mang
  * nghĩa **hết phép**, đúng thứ phải đập vào mắt.
  */
 export function DayCount({

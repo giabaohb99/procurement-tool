@@ -45,7 +45,7 @@ export const COMPANY_LEVEL_OPTIONS = COMPANY_LEVELS.map((value) => ({
 /**
  * Loại hình pháp nhân — bao-CR-531. Mã SỐ, gõ tay theo `backend/app/modules/company/constants.py`
  * (`CompanyType`); `gen_status_ts.py` chỉ sinh bộ mã CHUỖI. Đổi ở backend thì sửa tay ở đây.
- * «Hộ kinh doanh» làm bản in Phiếu đề xuất mua hàng chỉ còn hai ô ký «Chủ hộ» + «Người lập».
+ * "Hộ kinh doanh" làm bản in Phiếu đề xuất mua hàng chỉ còn hai ô ký "Chủ hộ" + "Người lập".
  */
 export const COMPANY_TYPE = {
   COMPANY: 1,
@@ -59,7 +59,7 @@ export const COMPANY_TYPE_LABELS: Record<CompanyTypeCode, string> = {
   [COMPANY_TYPE.HOUSEHOLD]: 'Hộ kinh doanh',
 }
 
-/** Đổ vào ô chọn «Loại hình»; dựng TỪ bảng nhãn để hai chỗ không trôi khỏi nhau. */
+/** Đổ vào ô chọn "Loại hình"; dựng TỪ bảng nhãn để hai chỗ không trôi khỏi nhau. */
 export const COMPANY_TYPE_OPTIONS = Object.values(COMPANY_TYPE).map((value) => ({
   id: value as number,
   label: COMPANY_TYPE_LABELS[value],

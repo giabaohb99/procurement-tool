@@ -4,7 +4,7 @@ import { APPROVER_KIND } from '../types/approval'
 import { danhSachId, ghepId, refAfterKindChange, visibleApproverKinds } from './approver-ref'
 
 describe('refAfterKindChange', () => {
-  it('fills the flow entity as the permission key when switching to «Người có quyền duyệt»', () => {
+  it('fills the flow entity as the permission key when switching to "Người có quyền duyệt"', () => {
     expect(refAfterKindChange(APPROVER_KIND.permission, APPROVER_KIND.permission, 'vehicle_booking')).toBe(
       'vehicle_booking',
     )
@@ -35,7 +35,7 @@ describe('visibleApproverKinds', () => {
   const kinds = [1, 2, 8, 9].map((value) => ({ value, label: `k${value}` }))
   const supported = ['vehicle_booking', 'leave_request', 'room_booking']
 
-  it('offers «Người có quyền duyệt» only on flows of a supported entity', () => {
+  it('offers "Người có quyền duyệt" only on flows of a supported entity', () => {
     expect(visibleApproverKinds(kinds, 9, 'vehicle_booking', supported, 1).map((k) => k.value)).toEqual([1, 2, 8, 9])
     expect(visibleApproverKinds(kinds, 9, 'document', supported, 1).map((k) => k.value)).toEqual([1, 2, 8])
     expect(visibleApproverKinds(kinds, 9, 'seal_request', supported, undefined).map((k) => k.value)).toEqual([

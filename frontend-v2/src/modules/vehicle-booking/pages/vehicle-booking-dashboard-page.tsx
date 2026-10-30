@@ -331,9 +331,9 @@ export function VehicleBookingDashboardPage() {
               {/*  Thẻ "Quãng đường / Chi phí" đã BỎ khỏi dải KPI (19/09/2026).
                   Km và chi phí chỉ có số khi đóng chuyến có người nhập, mà phần
                   lớn chuyến nội thành không ai nhập — nên ô này gần như luôn đọc
-                  «0 km · Chi phí 0 đ», tức một ô vĩnh viễn rỗng đứng ngang hàng
+                  "0 km · Chi phí 0 đ", tức một ô vĩnh viễn rỗng đứng ngang hàng
                   với những ô đang đếm việc phải làm. Nó cũng là ô DUY NHẤT không
-                  bấm được. Số đó vẫn còn ở bảng «Thống kê theo xe», nơi nó tách
+                  bấm được. Số đó vẫn còn ở bảng "Thống kê theo xe", nơi nó tách
                   được theo từng xe. */}
             </>
           )}

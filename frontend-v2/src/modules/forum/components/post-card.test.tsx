@@ -114,7 +114,7 @@ describe('PostCard — kiểm duyệt (F5)', () => {
     expect(screen.queryByText(/đã bị quản trị viên ẩn/)).not.toBeInTheDocument()
   })
 
-  it('quản trị viên thấy menu «...» dù không phải tác giả, kèm mục Ẩn và Gỡ', async () => {
+  it('quản trị viên thấy menu "..." dù không phải tác giả, kèm mục Ẩn và Gỡ', async () => {
     renderCard(makePost({ can_moderate: true }))
     await userEvent.click(screen.getByRole('button', { name: 'Thao tác với bài viết' }))
     expect(await screen.findByText('Ẩn bài viết')).toBeInTheDocument()
@@ -130,7 +130,7 @@ describe('PostCard — kiểm duyệt (F5)', () => {
     expect(screen.queryByText('Ẩn bài viết')).not.toBeInTheDocument()
   })
 
-  it('người thường không phải tác giả thì không thấy menu «...»', () => {
+  it('người thường không phải tác giả thì không thấy menu "..."', () => {
     renderCard(makePost())
     expect(
       screen.queryByRole('button', { name: 'Thao tác với bài viết' }),
@@ -139,7 +139,7 @@ describe('PostCard — kiểm duyệt (F5)', () => {
 })
 
 describe('PostCard — ghim bài (F9a/CR-199)', () => {
-  it('bài đang ghim hiện nhãn «Đã ghim» trên đầu bài', () => {
+  it('bài đang ghim hiện nhãn "Đã ghim" trên đầu bài', () => {
     renderCard(makePost({ pinned_at: '2026-08-27T09:00:00' }))
     expect(screen.getByText('Đã ghim')).toBeInTheDocument()
   })
@@ -149,13 +149,13 @@ describe('PostCard — ghim bài (F9a/CR-199)', () => {
     expect(screen.queryByText('Đã ghim')).not.toBeInTheDocument()
   })
 
-  it('quản trị viên thấy «Ghim bài viết» với bài đang hiển thị', async () => {
+  it('quản trị viên thấy "Ghim bài viết" với bài đang hiển thị', async () => {
     renderCard(makePost({ can_moderate: true }))
     await userEvent.click(screen.getByRole('button', { name: 'Thao tác với bài viết' }))
     expect(await screen.findByText('Ghim bài viết')).toBeInTheDocument()
   })
 
-  it('bài đã ghim thì mục Ghim đổi thành «Bỏ ghim bài viết»', async () => {
+  it('bài đã ghim thì mục Ghim đổi thành "Bỏ ghim bài viết"', async () => {
     renderCard(makePost({ can_moderate: true, pinned_at: '2026-08-27T09:00:00' }))
     await userEvent.click(screen.getByRole('button', { name: 'Thao tác với bài viết' }))
     expect(await screen.findByText('Bỏ ghim bài viết')).toBeInTheDocument()

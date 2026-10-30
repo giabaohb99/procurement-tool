@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { documentChainApi } from '../api/document-chain-api'
 
 /**
- * Khóa cục bộ: chỉ trang «Chứng từ theo chuỗi» dùng, và không ai làm mất hiệu
+ * Khóa cục bộ: chỉ trang "Chứng từ theo chuỗi" dùng, và không ai làm mất hiệu
  * lực nó từ bên ngoài (tải/xóa tệp làm mất hiệu lực khóa `attachments` của đúng
  * chứng từ đó, còn chuỗi thì luôn nạp lại khi mở trang).
  */

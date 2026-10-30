@@ -23,7 +23,7 @@ function statusBadge(v: LaborContractVariable) {
 }
 
 /**
- * Cột bảng «Danh sách biến». Là hàm vì cột «Thao tác» cần callback của trang (bọc `useMemo`).
+ * Cột bảng "Danh sách biến". Là hàm vì cột "Thao tác" cần callback của trang (bọc `useMemo`).
  * Người chỉ có quyền đọc vẫn thấy bảng + nút chép `{{ mã }}`; cột Thao tác chỉ dựng khi có việc để làm.
  */
 export function buildLaborContractVariableColumns(

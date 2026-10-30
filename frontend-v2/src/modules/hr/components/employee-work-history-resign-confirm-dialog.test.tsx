@@ -27,7 +27,7 @@ describe('EmployeeWorkHistoryResignConfirmDialog', () => {
     expect(screen.getByText(/khỏi mọi thiết bị/)).toBeInTheDocument()
   })
 
-  it('«Chỉ lưu dòng» gọi onConfirm(false)', async () => {
+  it('"Chỉ lưu dòng" gọi onConfirm(false)', async () => {
     const { onConfirm } = renderDialog()
 
     await userEvent.click(screen.getByRole('button', { name: 'Chỉ lưu dòng' }))
@@ -36,7 +36,7 @@ describe('EmployeeWorkHistoryResignConfirmDialog', () => {
     expect(onConfirm).toHaveBeenCalledWith(false)
   })
 
-  it('«Lưu và chuyển sang nghỉ việc» gọi onConfirm(true)', async () => {
+  it('"Lưu và chuyển sang nghỉ việc" gọi onConfirm(true)', async () => {
     const { onConfirm } = renderDialog()
 
     await userEvent.click(screen.getByRole('button', { name: /Lưu và chuyển sang nghỉ việc/ }))
@@ -55,7 +55,7 @@ describe('EmployeeWorkHistoryResignConfirmDialog', () => {
   })
 })
 
-describe('EmployeeWorkHistoryResignConfirmDialog — dùng lại ở nút ▶ «Áp vào hồ sơ» (H1)', () => {
+describe('EmployeeWorkHistoryResignConfirmDialog — dùng lại ở nút ▶ "Áp vào hồ sơ" (H1)', () => {
   it('cancelLabel/confirmLabel truyền riêng thì HIỆN đúng nhãn đó, không phải nhãn mặc định', () => {
     render(
       <EmployeeWorkHistoryResignConfirmDialog

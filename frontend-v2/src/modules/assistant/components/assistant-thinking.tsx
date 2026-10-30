@@ -6,7 +6,7 @@ import { AssistantAvatar } from './assistant-avatar'
 const SLOW_THRESHOLD_SEC = 8
 
 /**
- * Khối «đang soạn» hiện trong lúc chờ trả lời.
+ * Khối "đang soạn" hiện trong lúc chờ trả lời.
  *
  * Đây mới là chỗ thật sự làm người dùng đỡ sốt ruột — hiệu ứng gõ máy
  * (`use-typewriter`) chỉ chạy SAU khi chữ đã về nên không rút ngắn cái chờ.

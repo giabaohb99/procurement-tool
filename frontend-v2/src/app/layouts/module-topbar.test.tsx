@@ -40,7 +40,7 @@ const testModule: ErpModule = {
       ],
     },
     {
-      //  Khuôn của Tra cứu thị trường: mục «Giá thị trường» gom các thẻ ẩn qua `matchPaths`.
+      //  Khuôn của Tra cứu thị trường: mục "Giá thị trường" gom các thẻ ẩn qua `matchPaths`.
       label: 'Tra cứu thị trường',
       path: '/test/prices',
       icon: Landmark,
@@ -100,8 +100,8 @@ describe('ModuleTopbar breadcrumb', () => {
     expect(current[0]).toHaveTextContent('Lịch nghỉ')
   })
 
-  //  Bốn thẻ tra giá gom về «Giá thị trường» — cấp ba phải ghi mục ĐANG SÁNG ở menu trái,
-  //  không ghi tên thẻ ẩn («Biểu đồ»).
+  //  Bốn thẻ tra giá gom về "Giá thị trường" — cấp ba phải ghi mục ĐANG SÁNG ở menu trái,
+  //  không ghi tên thẻ ẩn ("Biểu đồ").
   it('names the visible grouping item, not the hidden tab, when matched through matchPaths', () => {
     const nav = renderAt('/test/prices/chart')
     expect(crumbTexts(nav)).toEqual(['Thu mua', 'Tra cứu thị trường', 'Giá thị trường'])

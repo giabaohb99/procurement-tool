@@ -47,8 +47,8 @@ export const EMPLOYEE_FILTER_FIELDS: FilterFieldDefinition[] = [
   {
     //  ⚠️ Lọc theo `position_id` (KHÓA), không theo chữ — duoc-CR-320. Lọc bằng
     //  chữ thì đổi tên một chức vụ là mọi bộ lọc đã lưu trượt sạch, và
-    //  `contains` còn khớp chuỗi con («Phó phòng» lọt vào kết quả «Trưởng
-    //  phòng»). Cùng luật với các ô tham chiếu của màn Văn bản.
+    //  `contains` còn khớp chuỗi con ("Phó phòng" lọt vào kết quả "Trưởng
+    //  phòng"). Cùng luật với các ô tham chiếu của màn Văn bản.
     name: 'position_id',
     label: 'Vị trí / Chức vụ',
     type: 'select',

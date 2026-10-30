@@ -11,9 +11,9 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { Switch } from '@/shared/ui/switch'
 
 /**
- * Thẻ «Bản tin bot tự gửi» (ai-CR-140) trong tab «Bot nhớ gì về tôi».
+ * Thẻ "Bản tin bot tự gửi" (ai-CR-140) trong tab "Bot nhớ gì về tôi".
  *
- * Bật / tắt cũng làm được ngay trong chat («bật bản tin», «tắt bản tin 2», «sáng thứ hai gửi anh công nợ quá hạn») — thẻ
+ * Bật / tắt cũng làm được ngay trong chat ("bật bản tin", "tắt bản tin 2", "sáng thứ hai gửi anh công nợ quá hạn") — thẻ
  * này chỉ để nhìn tổng và bấm nhanh. Bản tin sáng ngầm (người đã nối Google mà chưa tự đặt) có `id` 0: bật / tắt đi
  * đường `daily`, không đi đường theo id.
  */
@@ -77,7 +77,7 @@ export function ProfileBriefCard() {
                       variant="ghost"
                       aria-label={`Bỏ bản tin: ${item.topic}`}
                       onClick={async () => {
-                        const ok = await confirm({ title: 'Bỏ bản tin', message: `Bỏ bản tin «${item.topic}»?`, confirmLabel: 'Bỏ' })
+                        const ok = await confirm({ title: 'Bỏ bản tin', message: `Bỏ bản tin "${item.topic}"?`, confirmLabel: 'Bỏ' })
                         if (ok) void once(() => remove.mutateAsync(item.id))
                       }}
                     >
@@ -91,7 +91,7 @@ export function ProfileBriefCard() {
         )}
         <p className="text-muted-foreground">
           Trong chat với bot nhắn: bật bản tin · tắt bản tin · bản tin lúc 6h45 ngày thường · bản tin hôm nay · hoặc nói tự
-          nhiên «sáng thứ hai gửi anh công nợ quá hạn của DEGO».
+          nhiên <em>sáng thứ hai gửi anh công nợ quá hạn của DEGO</em>.
         </p>
       </CardContent>
     </Card>

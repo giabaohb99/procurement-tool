@@ -244,7 +244,7 @@ export function SurveyDetailPage() {
   // Mở từ nút "Tạo phiếu khảo sát" của YCBG: chép Mục đích khảo sát sang Nội dung
   // chính. Phải đợi danh mục YCBG tải xong mới có `purpose`, nên làm ở nhịp riêng.
   //  ⚠️ KHÔNG gác nhịp này bằng `useHasChanged(surveyRequestsData)`. Vào đây từ
-  //  nút «Tạo phiếu khảo sát» của YCBG nghĩa là danh mục YCBG vừa được đọc xong
+  //  nút "Tạo phiếu khảo sát" của YCBG nghĩa là danh mục YCBG vừa được đọc xong
   //  và đang nằm trong bộ đệm, nên nó có luôn ở lượt render đầu — mà lượt đầu
   //  `useHasChanged` trả `false`, thành ra ô Nội dung chính không được chép gì
   //  cả, đúng trong trường hợp hay gặp nhất (bao-CR-492). Điều kiện
@@ -554,7 +554,7 @@ export function SurveyDetailPage() {
         </Button>
       )}
 
-      {/* bao-CR-554: «Trả về» mở cả khi phiếu ĐÃ DUYỆT (= hủy duyệt để sửa lại); Duyệt / Từ chối
+      {/* bao-CR-554: "Trả về" mở cả khi phiếu ĐÃ DUYỆT (= hủy duyệt để sửa lại); Duyệt / Từ chối
           chỉ khi đang chờ duyệt. Backend `POST /{id}/reject` nhận cả hai trạng thái. */}
       {!isNew && isSurveyReturnable(status) && canApprove && (
         <Button

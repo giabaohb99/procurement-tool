@@ -28,7 +28,7 @@ interface KeyIssueDialogProps {
 }
 
 /**
- * Hộp «Phát khóa» (G5, K4 ai-CR-212): phát hộ khóa kết nối AI CHỈ ĐỌC cho một nhóm người hoặc cả một phòng. Khóa ở
+ * Hộp "Phát khóa" (G5, K4 ai-CR-212): phát hộ khóa kết nối AI CHỈ ĐỌC cho một nhóm người hoặc cả một phòng. Khóa ở
  * trạng thái Chờ nhận; mỗi người nhận thông báo, vào Trang cá nhân bấm Nhận khóa mới thấy khóa (đúng một lần) — người
  * phát không bao giờ thấy khóa của người khác. Khóa được ghi chỉ người dùng tự tạo (Q5), nên ở đây không có ô Mức.
  */

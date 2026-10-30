@@ -33,7 +33,7 @@ export interface DocTypeLinkRule {
   inherit_code: boolean
   inherit_secrecy: boolean
   /**
-   * Dòng «trích từ» — ba cột `on_parent_*` và `inherit_secrecy` bị khóa cứng ở
+   * Dòng "trích từ" — ba cột `on_parent_*` và `inherit_secrecy` bị khóa cứng ở
    * tầng dịch vụ, khai gì cũng bị ép lại. Giao diện tắt ô và nói rõ vì sao.
    */
   is_locked: boolean

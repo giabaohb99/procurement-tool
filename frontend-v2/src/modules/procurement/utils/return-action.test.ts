@@ -1,4 +1,4 @@
-// bao-CR-498 — một nút «Trả về» phải đi đúng đường theo hai cờ backend, không đoán.
+// bao-CR-498 — một nút "Trả về" phải đi đúng đường theo hai cờ backend, không đoán.
 import { describe, expect, it } from 'vitest'
 
 import { resolveReturnAction } from './return-action'

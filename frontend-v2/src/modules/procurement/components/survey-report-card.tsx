@@ -42,7 +42,7 @@ export function SurveyReportCard({ row }: { row: SurveyReportLine }) {
 
              `line-clamp-2` chứ không `truncate`: tên sản phẩm khảo sát dài
              thật (quy cách + kích thước nằm ngay trong tên), cắt còn MỘT dòng
-             thì mọi thẻ mở đầu như nhau — «Thùng carton 5 lớp sóng BC, in…» —
+             thì mọi thẻ mở đầu như nhau — "Thùng carton 5 lớp sóng BC, in…" —
              và không phân biệt được dòng nào là dòng nào. Hai dòng đủ tới phần
              khác nhau. Cũng không để xuống dòng tự do: một tên bốn dòng đẩy
              phần dưới của thẻ ra khỏi tầm mắt, mà thứ quyết định ở đây là kết

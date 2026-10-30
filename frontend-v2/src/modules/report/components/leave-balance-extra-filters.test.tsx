@@ -53,7 +53,7 @@ describe('ReportDepartmentFilter', () => {
     expect(apiGet).not.toHaveBeenCalled()
   })
 
-  it('writes department_id to the URL and removes it again on «Tất cả phòng ban»', async () => {
+  it('writes department_id to the URL and removes it again on "Tất cả phòng ban"', async () => {
     const user = userEvent.setup()
     renderWithUrl(<ReportDepartmentFilter />)
     await user.click(screen.getByRole('combobox', { name: 'Phòng ban' }))
@@ -67,7 +67,7 @@ describe('ReportDepartmentFilter', () => {
 })
 
 describe('LeaveBalanceExtraFilters — employee_status', () => {
-  it('shows «Đang làm» by default without writing it to the URL', () => {
+  it('shows "Đang làm" by default without writing it to the URL', () => {
     renderWithUrl(<LeaveBalanceExtraFilters />)
     expect(screen.getByRole('combobox', { name: 'Trạng thái nhân sự' })).toHaveTextContent('Đang làm')
     expect(screen.getByTestId('search')).toBeEmptyDOMElement()
@@ -75,7 +75,7 @@ describe('LeaveBalanceExtraFilters — employee_status', () => {
     expect(screen.getByRole('combobox', { name: 'Phòng ban' })).toBeInTheDocument()
   })
 
-  it('writes resigned / all, and clears the param when going back to «Đang làm»', async () => {
+  it('writes resigned / all, and clears the param when going back to "Đang làm"', async () => {
     const user = userEvent.setup()
     renderWithUrl(<LeaveBalanceExtraFilters />)
     const trigger = screen.getByRole('combobox', { name: 'Trạng thái nhân sự' })

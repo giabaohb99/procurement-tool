@@ -7,12 +7,12 @@ interface DocumentFilesToolbarProps {
   /** Đang tải lên hoặc đang gỡ tệp — khóa cả hai nút. */
   busy: boolean
   onUpload: (files: File[]) => void
-  /** Có = hiện «Xóa tệp» cho tệp đang xem. */
+  /** Có = hiện "Xóa tệp" cho tệp đang xem. */
   onDelete?: () => void
 }
 
 /**
- * Thanh lệnh tệp của văn bản CHỈ GỒM TỆP khi đã có ít nhất một tệp: «Tải thêm tệp» (chọn nhiều tệp) và «Xóa tệp».
+ * Thanh lệnh tệp của văn bản CHỈ GỒM TỆP khi đã có ít nhất một tệp: "Tải thêm tệp" (chọn nhiều tệp) và "Xóa tệp".
  * Trước đây ô tải lên chỉ hiện lúc 0 tệp nên văn bản đã có tệp không thể bổ sung phụ lục / bản scan.
  */
 export function DocumentFilesToolbar({ busy, onUpload, onDelete }: DocumentFilesToolbarProps) {

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Nạp bài HDSD hệ thống cho duoc-CR-671 — MỘT LỆNH: thêm/cập nhật bài rồi nạp luôn kho vector.
 
-Hai thẻ cha «Bắt đầu» và «Quản trị Hệ thống» được dựng TAY trên giao diện (không có script seed sở
+Hai thẻ cha "Bắt đầu" và "Quản trị Hệ thống" được dựng TAY trên giao diện (không có script seed sở
 hữu), nên script này chỉ thêm / ghi đè đúng hai bài cùng tiêu đề, không xóa hay dựng lại cây — khuôn
 chung ở `help_seed_common.upsert_articles`. Chạy lại vô hại.
 
@@ -17,13 +17,14 @@ from help_seed_common import ref, run_article_upsert
 START_ROOT = "Bắt đầu"
 ADMIN_ROOT = "Quản trị Hệ thống"
 
-BUSY_TITLE = "Gặp thông báo «Hệ thống đang bận» thì làm gì"
+BUSY_TITLE = 'Gặp thông báo "Hệ thống đang bận" thì làm gì'
+BUSY_OLD_TITLES = ["Gặp thông báo «Hệ thống đang bận» thì làm gì", "Gặp thông báo 'Hệ thống đang bận' thì làm gì"]
 OPS_TITLE = "Vận hành: giới hạn lượt gọi cùng lúc và dọn kho tìm kiếm của Trợ lý AI"
 
 ARTICLES = [
     (START_ROOT, BUSY_TITLE,
-     "Vì sao đôi khi hệ thống báo «Hệ thống đang bận, vui lòng thử lại sau ít giây», dữ liệu có mất không, và nên làm gì.",
-     """<h2>Gặp thông báo «Hệ thống đang bận» thì làm gì</h2>
+     "Vì sao đôi khi hệ thống báo 'Hệ thống đang bận, vui lòng thử lại sau ít giây', dữ liệu có mất không, và nên làm gì.",
+     """<h2>Gặp thông báo "Hệ thống đang bận" thì làm gì</h2>
 <p>Vào giờ cao điểm, khi rất nhiều người cùng bấm cùng lúc, hệ thống <strong>xếp hàng</strong> các thao tác để xử lý lần lượt thay vì để cả hệ thống bị treo. Nếu thao tác của bạn phải chờ quá <strong>30 giây</strong> mà vẫn chưa tới lượt, màn hình hiện câu:</p>
 <blockquote><strong>Hệ thống đang bận, vui lòng thử lại sau ít giây.</strong></blockquote>
 <h3>1. Dữ liệu của tôi có bị mất hay lưu dở không?</h3>
@@ -40,7 +41,7 @@ ARTICLES = [
 <tbody>
 <tr><td>Thỉnh thoảng gặp một lần, bấm lại là được</td><td>Giờ cao điểm, hệ thống đang xếp hàng đúng như thiết kế</td><td>Không cần báo</td></tr>
 <tr><td>Bấm lại nhiều lần trong vài phút vẫn báo bận</td><td>Hệ thống đang quá tải kéo dài hoặc có thao tác nặng chạy lâu</td><td>Báo quản trị, ghi rõ <strong>giờ</strong> và <strong>màn hình</strong> đang dùng</td></tr>
-<tr><td>Báo «Có lỗi xảy ra» hoặc kèm mã sự cố</td><td>Đây là lỗi khác, không phải báo bận</td><td>Chụp màn hình kèm mã sự cố gửi quản trị</td></tr>
+<tr><td>Báo <em>Có lỗi xảy ra</em> hoặc kèm mã sự cố</td><td>Đây là lỗi khác, không phải báo bận</td><td>Chụp màn hình kèm mã sự cố gửi quản trị</td></tr>
 </tbody>
 </table>
 <p>Quản trị xem cách chỉnh ngưỡng ở bài {ops}.</p>"""),
@@ -49,7 +50,7 @@ ARTICLES = [
      """<h2>Vận hành: giới hạn lượt gọi cùng lúc và dọn kho tìm kiếm của Trợ lý AI</h2>
 <p>Bài dành cho <strong>quản trị và bộ phận kỹ thuật</strong>. Người dùng thường chỉ cần đọc bài {busy}.</p>
 <h3>1. Cổng giới hạn lượt gọi cùng lúc</h3>
-<p>Mỗi tiến trình máy chủ chỉ cho một số lượt gọi chạy <strong>cùng lúc</strong>, luôn nhỏ hơn số kết nối cơ sở dữ liệu nó có. Lượt dư phải <strong>xếp hàng</strong>; chờ quá hạn thì người dùng nhận câu «Hệ thống đang bận» (mã HTTP 503, mã lỗi <code>server_busy</code>). Riêng đường kiểm sức khỏe <code>/api/health</code> không bị giới hạn.</p>
+<p>Mỗi tiến trình máy chủ chỉ cho một số lượt gọi chạy <strong>cùng lúc</strong>, luôn nhỏ hơn số kết nối cơ sở dữ liệu nó có. Lượt dư phải <strong>xếp hàng</strong>; chờ quá hạn thì người dùng nhận câu "Hệ thống đang bận" (mã HTTP 503, mã lỗi <code>server_busy</code>). Riêng đường kiểm sức khỏe <code>/api/health</code> không bị giới hạn.</p>
 <p>Lý do: trước khi có cổng này, khi khoảng 150 lượt gọi dồn vào cùng lúc, các lượt gọi giữ chỗ kết nối của nhau và máy chủ có thể <strong>treo hẳn</strong> tới khi khởi động lại. Nay quá tải chỉ làm chậm hoặc báo bận, không treo.</p>
 <h3>2. Hai biến cấu hình trong tệp <code>.env</code></h3>
 <table>
@@ -69,7 +70,8 @@ ARTICLES = [
 #  Hai bài trỏ chéo nhau: chèn liên kết sau khi đã có đủ hai tiêu đề.
 
 ARTICLES = [
-    (parent, title, summary, body.replace("{ops}", ref(OPS_TITLE, OPS_TITLE)).replace("{busy}", ref(BUSY_TITLE, BUSY_TITLE)))
+    (parent, title, summary, body.replace("{ops}", ref(OPS_TITLE, OPS_TITLE)).replace("{busy}", ref(BUSY_TITLE, BUSY_TITLE)),
+     BUSY_OLD_TITLES if title == BUSY_TITLE else [])
     for parent, title, summary, body in ARTICLES
 ]
 

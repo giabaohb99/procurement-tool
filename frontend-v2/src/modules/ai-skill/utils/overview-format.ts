@@ -1,6 +1,6 @@
 /** Định dạng số liệu màn Tổng quan Kho skill AI (G1). */
 
-/** Câu so sánh 7 ngày — `null` (7 ngày trước bằng 0) thì không nói phần trăm, khỏi in «+Infinity%». */
+/** Câu so sánh 7 ngày — `null` (7 ngày trước bằng 0) thì không nói phần trăm, khỏi in "+Infinity%". */
 export function describeChange(pct: number | null, previous: number): string {
   if (pct === null) return previous === 0 ? '7 ngày trước chưa có lượt nào' : ''
   if (!Number.isFinite(pct)) return ''

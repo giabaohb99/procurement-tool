@@ -6,7 +6,7 @@ import { auditLogApi } from '../api/audit-log-api'
 import { settingApi } from '../api/setting-api'
 import type { SettingPayload } from '../types/setting'
 
-/** Số lần cập nhật gần nhất bày ở thẻ «Lịch sử thay đổi» của màn Cấu hình. */
+/** Số lần cập nhật gần nhất bày ở thẻ "Lịch sử thay đổi" của màn Cấu hình. */
 export const SETTING_HISTORY_LIMIT = 30
 
 /**
@@ -32,7 +32,7 @@ export function useSaveSettings() {
     // vì invalidate rồi gọi lại một vòng nữa.
     onSuccess: (data: SettingPayload) => {
       queryClient.setQueryData(queryKeys.system.settings(), data)
-      //  Lần lưu vừa rồi đẻ ra một dòng nhật ký — thẻ «Lịch sử thay đổi» ngay
+      //  Lần lưu vừa rồi đẻ ra một dòng nhật ký — thẻ "Lịch sử thay đổi" ngay
       //  trong màn này phải thấy nó, không thì người dùng bấm Lưu xong mở tab
       //  lịch sử ra và tưởng thao tác của mình không được ghi lại.
       void queryClient.invalidateQueries({ queryKey: queryKeys.system.settingHistory() })

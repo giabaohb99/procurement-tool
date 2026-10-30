@@ -82,7 +82,7 @@ export interface DocumentInput {
 }
 
 /**
- * Một tệp đính kèm trong tab «Tệp» (phase 09) — `AttachmentFile` gốc kèm ba ô
+ * Một tệp đính kèm trong tab "Tệp" (phase 09) — `AttachmentFile` gốc kèm ba ô
  * để dựng CÂY THEO PHIÊN BẢN mà không phải gọi API riêng cho từng bản.
  */
 export interface DocumentVersionFile extends AttachmentFile {
@@ -120,7 +120,7 @@ export const documentApi = {
   update: (id: number, payload: Partial<DocumentInput>) =>
     apiPatch<DocumentRecord>(`${DOCUMENT_URL}/${id}`, payload),
 
-  /** Xác nhận đã rà soát xong — tắt cờ «cần rà lại», kết luận vào nhật ký. */
+  /** Xác nhận đã rà soát xong — tắt cờ "cần rà lại", kết luận vào nhật ký. */
   confirmReviewed: (id: number, ket_luan: string) =>
     apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/reviewed`, { ket_luan }),
 
@@ -130,7 +130,7 @@ export const documentApi = {
   remove: (id: number) => apiDelete<null>(`${DOCUMENT_URL}/${id}`),
 
   /**
-   * Bỏ bản nháp mà chính mình vừa mở ra ở màn *Tạo văn bản* (nút «Hủy»).
+   * Bỏ bản nháp mà chính mình vừa mở ra ở màn *Tạo văn bản* (nút "Hủy").
    *
    * Cửa RIÊNG chứ không dùng `remove`: vai trò soạn thảo tiêu chuẩn không có
    * quyền `delete`, nên gọi `remove` thì người dùng ăn 403 và bản nháp nằm lại
@@ -142,7 +142,7 @@ export const documentApi = {
   /** `applyMode` = cơ chế áp dụng chọn lúc ban hành (F13). Bỏ trống là giữ nguyên. */
   //  `mailboxId` = hộp thư gửi thông báo ban hành danh nghĩa địa chỉ khác
   //  (26/08/2026). Bỏ trống thì backend gửi bằng địa chỉ hệ thống như cũ.
-  //  `forumAnnounce` = ô «Đăng thông báo lên diễn đàn» (CR-200): tích thì backend
+  //  `forumAnnounce` = ô "Đăng thông báo lên diễn đàn" (CR-200): tích thì backend
   //  clone văn bản thành một bài diễn đàn đã ghim, không tích thì như cũ.
   approve: (id: number, applyMode?: number, mailboxId?: number, forumAnnounce?: boolean) =>
     apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/approve`, {
@@ -152,8 +152,8 @@ export const documentApi = {
     }),
   /**
    * Nút *Ban hành* CỦA NGƯỜI SOẠN (29/09/2026) — gác bằng quyền Sửa, không phải
-   * quyền Duyệt. Dùng cho hai ca: văn bản *Chờ ban hành*, và loại văn bản «không
-   * cần duyệt» ban hành thẳng từ bản nháp. Tham số như `approve`.
+   * quyền Duyệt. Dùng cho hai ca: văn bản *Chờ ban hành*, và loại văn bản "không
+   * cần duyệt" ban hành thẳng từ bản nháp. Tham số như `approve`.
    */
   issue: (id: number, applyMode?: number, mailboxId?: number, forumAnnounce?: boolean) =>
     apiPost<DocumentRecord>(`${DOCUMENT_URL}/${id}/issue`, {
@@ -207,12 +207,12 @@ export const documentApi = {
   }) => apiGet<NumberPreview>(`${DOCUMENT_URL}/number-preview`, { params }),
 
   /**
-   * Xem trước «Người duyệt dự kiến» — chỉ đọc, không mở phiên duyệt nào
+   * Xem trước "Người duyệt dự kiến" — chỉ đọc, không mở phiên duyệt nào
    * (phase 01, duoc-CR-473). Người duyệt thực tế chốt lúc gửi duyệt thật.
    */
   //  ⚠️ `_silent`: chỉ là thông tin THAM KHẢO. Người duyệt/ban hành phạm vi hẹp
   //  hơn người soạn (không đọc được phòng chủ trì) ăn 400 ở đây theo chốt M3 —
-  //  trước 25/09/2026 lỗi đó bật toast đỏ đúng lúc họ bấm «Ban hành» thành công.
+  //  trước 25/09/2026 lỗi đó bật toast đỏ đúng lúc họ bấm "Ban hành" thành công.
   //  Hỏng thì dòng xem trước tự nói, không cần toast.
   previewApproval: (payload: ApprovalPreviewInput) =>
     apiPost<ApprovalPreviewResult>(`${DOCUMENT_URL}/approval-preview`, payload, {
@@ -220,7 +220,7 @@ export const documentApi = {
     } as never),
 
   /**
-   * Tệp đính kèm của MỌI phiên bản — tab «Tệp» (phase 09). Khác
+   * Tệp đính kèm của MỌI phiên bản — tab "Tệp" (phase 09). Khác
    * `purchaseRequestSupportApi.listAttachments('document_version', versionId)`
    * (chỉ một phiên bản): đường này gộp cả văn bản trong một lần gọi.
    */

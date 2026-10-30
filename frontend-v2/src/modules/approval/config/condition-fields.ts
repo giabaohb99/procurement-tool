@@ -39,7 +39,7 @@ const CATALOG_OPS: ConditionOp[] = ['in', 'not_in']
  * Đúng bằng những khóa `approval_bridge.boi_canh()` đưa sang — thêm một ô ở đây
  * mà backend không gửi khóa đó thì điều kiện **không bao giờ khớp** và nhánh
  * lặng lẽ không chạy. Cố ý bỏ `id` (văn bản cụ thể): đó là việc của bộ chọn
- * «Áp cho phiếu nào» ở tầng luồng, lặp lại ở đây chỉ làm hai chỗ nói khác nhau.
+ * "Áp cho phiếu nào" ở tầng luồng, lặp lại ở đây chỉ làm hai chỗ nói khác nhau.
  */
 export const DOCUMENT_CONDITION_FIELDS: ConditionFieldDef[] = [
   {
@@ -98,7 +98,7 @@ export const VEHICLE_BOOKING_CONDITION_FIELDS: ConditionFieldDef[] = [
 
 /**
  * Các ô của PHIẾU DUYỆT DẤU đem ra rẽ nhánh (bao-CR-579). Khớp
- * `seal_request/approval_bridge.entity_context`. «Pháp nhân» là công ty CHÍNH
+ * `seal_request/approval_bridge.entity_context`. "Pháp nhân" là công ty CHÍNH
  * của phiếu; phiếu đóng dấu nhiều công ty thì chỉ công ty đầu được xét.
  */
 export const SEAL_REQUEST_CONDITION_FIELDS: ConditionFieldDef[] = [
@@ -122,14 +122,14 @@ export const CONDITION_FIELDS_BY_ENTITY: Record<string, ConditionFieldDef[]> = {
   seal_request: SEAL_REQUEST_CONDITION_FIELDS,
 }
 
-/** Một ô trên phiếu ghi sẵn người duyệt — dùng cho cách chọn «Lấy từ một ô trên phiếu». */
+/** Một ô trên phiếu ghi sẵn người duyệt — dùng cho cách chọn "Lấy từ một ô trên phiếu". */
 export interface ApproverFieldDef {
   name: string
   label: string
 }
 
 /**
- * Các ô CHỌN ĐƯỢC cho cách «Lấy từ một ô trên phiếu» (bao-CR-579).
+ * Các ô CHỌN ĐƯỢC cho cách "Lấy từ một ô trên phiếu" (bao-CR-579).
  *
  * Trước đây là ô gõ tay tên cột — gõ sai một chữ thì bước không ra ai, phiếu kẹt.
  * Khóa phải khớp `entity_context` bên backend và phải mang id NHÂN SỰ.

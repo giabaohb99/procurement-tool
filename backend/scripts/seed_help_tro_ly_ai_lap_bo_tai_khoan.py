@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 """Seed bài Trung tâm trợ giúp: LẬP BỘ TÀI KHOẢN THU MUA BẰNG TRỢ LÝ AI (bao-CR-441).
 
-Bài này là BÀI CON của bài «Trợ lý AI» (nằm trong nhóm «Các chức năng khác»). Không dựng
+Bài này là BÀI CON của bài "Trợ lý AI" (nằm trong nhóm "Các chức năng khác"). Không dựng
 thẻ phân hệ mới ngoài trang chủ, không đụng nội dung bài cha.
 
 Chạy trong container api:
     docker compose exec -T api python scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py
 
 Idempotent: đã có bài cùng tiêu đề dưới cùng bài cha thì xóa bài đó (kèm con, nếu có)
-rồi chèn lại. Không thấy bài cha «Trợ lý AI» thì DỪNG, không tự tạo bài gốc.
+rồi chèn lại. Không thấy bài cha "Trợ lý AI" thì DỪNG, không tự tạo bài gốc.
 
 ⚠️ Nội dung ở đây phải KHỚP với `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`
-mục 3 (phần «Làm nhanh Bước 3 và 4 bằng Trợ lý AI») và với tool T49
+mục 3 (phần "Làm nhanh Bước 3 và 4 bằng Trợ lý AI") và với tool T49
 `propose_account_setup` (`app/modules/assistant/tools/account_setup_tool.py`, bao-CR-435).
 Đổi hành vi tool thì sửa cả ba chỗ.
 """
@@ -148,7 +148,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 
 
 def find_parent(db):
-    """Bài «Trợ lý AI»; nếu trùng tiêu đề thì ưu tiên bài nằm dưới «Các chức năng khác»."""
+    """Bài "Trợ lý AI"; nếu trùng tiêu đề thì ưu tiên bài nằm dưới "Các chức năng khác"."""
     candidates = db.query(HelpArticle).filter(HelpArticle.title == PARENT_TITLE).all()
     if not candidates:
         return None
@@ -187,7 +187,7 @@ def main():
     try:
         parent = find_parent(db)
         if parent is None:
-            print(f"Không thấy bài cha «{PARENT_TITLE}» — dừng, không tạo bài gốc mới.")
+            print(f"Không thấy bài cha '{PARENT_TITLE}' — dừng, không tạo bài gốc mới.")
             sys.exit(1)
 
         old = (
@@ -218,7 +218,7 @@ def main():
         )
         db.add(art)
         db.commit()
-        print(f"Đã dựng bài «{ARTICLE_TITLE}» (id={art.id}) dưới «{parent.title}» "
+        print(f"Đã dựng bài '{ARTICLE_TITLE}' (id={art.id}) dưới '{parent.title}' "
               f"(id={parent.id}, sort_order={order}).")
     except Exception:
         db.rollback()

@@ -38,11 +38,11 @@ interface PurchaseRequestOptionEditDialogProps {
 
 /**
  * bao-CR-583 (đại ca chốt 03/10/2026) — sửa thông tin PHƯƠNG ÁN 0 và phương án NHẬP TAY, dùng
- * chung cho màn xử lý (NSTM) và màn chọn (thu mua). «Phương án 0 xem như phương án nhập tay và
- * chỉnh sửa lại được.»
+ * chung cho màn xử lý (NSTM) và màn chọn (thu mua). "Phương án 0 xem như phương án nhập tay và
+ * chỉnh sửa lại được."
  *
  * Phương án 0 sinh từ chính dòng yêu cầu nên thường thiếu mã VTBB, NCC, giá thật; riêng nó có
- * nút «Khôi phục ban đầu» đưa về đúng như dòng yêu cầu lúc sinh (bỏ NCC, xóa mọi ô đã sửa).
+ * nút "Khôi phục ban đầu" đưa về đúng như dòng yêu cầu lúc sinh (bỏ NCC, xóa mọi ô đã sửa).
  * Phương án đang được chọn mà đổi mã thì mã của DÒNG đổi theo — lập đơn đọc mã ở dòng
  * (bao-CR-568). Phương án lấy từ khảo sát KHÔNG đi hộp này (chỉ sửa giá).
  */
@@ -109,7 +109,7 @@ export function PurchaseRequestOptionEditDialog({
           <DialogTitle>Sửa {label}</DialogTitle>
           <DialogDescription>
             {isOptionZero
-              ? 'Phương án 0 là mua đúng theo dòng yêu cầu. Bổ sung mã VTBB, nhà cung cấp, giá và điều kiện giao; cần thì bấm «Khôi phục ban đầu» để quay về như dòng yêu cầu.'
+              ? 'Phương án 0 là mua đúng theo dòng yêu cầu. Bổ sung mã VTBB, nhà cung cấp, giá và điều kiện giao; cần thì bấm "Khôi phục ban đầu" để quay về như dòng yêu cầu.'
               : 'Phương án nhập tay: sửa được mọi thông tin, nhà cung cấp không được bỏ trống.'}
           </DialogDescription>
         </DialogHeader>

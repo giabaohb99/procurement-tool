@@ -1,7 +1,7 @@
 import { toDateInputValue } from '@/shared/utils/format-date'
 
 /**
- * «Tải ảnh PNG» của biểu đồ linh hoạt (duoc-CR-688): SVG của recharts → ảnh → canvas → PNG.
+ * "Tải ảnh PNG" của biểu đồ linh hoạt (duoc-CR-688): SVG của recharts → ảnh → canvas → PNG.
  *
  * ⚠️ SVG của recharts tô màu bằng `var(--chart-1)`… — đem SVG ra ngoài trang (thành ảnh) là
  * mất bảng CSS nên mọi biến màu thành đen. Phải chép KIỂU ĐÃ TÍNH (`getComputedStyle`) của

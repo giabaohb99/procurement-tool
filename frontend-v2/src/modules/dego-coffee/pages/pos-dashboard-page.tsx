@@ -105,7 +105,7 @@ export function PosDashboardPage() {
     <PageContainer fill className="gap-6">
       <PageHeader
         title="Quản lý POS"
-        description="Số liệu quầy đọc trực tiếp từ POS365 — chỉ xem; sổ điểm và đối soát nằm ở màn «Sổ điểm & đối soát»."
+        description='Số liệu quầy đọc trực tiếp từ POS365 — chỉ xem; sổ điểm và đối soát nằm ở màn "Sổ điểm & đối soát".'
         actions={
           <>
             <Button variant="outline" onClick={() => void refetch()} disabled={isFetching}>

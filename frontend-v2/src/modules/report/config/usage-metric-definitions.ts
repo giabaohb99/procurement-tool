@@ -1,5 +1,5 @@
 /**
- * Định nghĩa từng chỉ số của «Bộ chỉ số đánh giá» (duoc-CR-649) — tầng HIỂN THỊ, khóa theo `metric_catalog.py` backend.
+ * Định nghĩa từng chỉ số của "Bộ chỉ số đánh giá" (duoc-CR-649) — tầng HIỂN THỊ, khóa theo `metric_catalog.py` backend.
  * Nguồn gốc nội dung: `plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md`. Backend chỉ trả khóa và mã (luật R2).
  * Thêm khóa ở backend mà quên khai ở đây thì `usage-metric-definitions.test.ts` đỏ.
  */
@@ -98,7 +98,7 @@ export const USAGE_METRIC_DEFINITIONS: Record<string, UsageMetricDefinition> = {
   ai_uses: { meaning: 'Mức dùng AI nói chung: trợ lý trên web, Telegram, Zalo hoặc ứng dụng AI ngoài.', formula: `Cộng số câu hỏi (web, Telegram, Zalo) và số lượt gọi công cụ (ứng dụng ngoài) ${WINDOW}.`, source: AI_USAGE },
   ai_active_days: { meaning: 'Dùng AI đều đặn hay chỉ thỉnh thoảng.', formula: `Số ngày có ít nhất một lượt dùng AI ${WINDOW}.`, source: AI_USAGE },
   ai_mcp_share: { meaning: 'Phần dùng AI qua ứng dụng ngoài (Claude, ChatGPT) so với trợ lý của công ty.', formula: 'Lượt dùng qua ứng dụng AI ngoài chia cho tổng lượt dùng AI. Không dùng AI thì chưa đo được.', source: AI_USAGE },
-  ai_tool_groups_used: { meaning: 'Nhờ AI nhiều loại việc hay chỉ một loại. Tên các nhóm việc hiện ở khối «Dùng AI» của hồ sơ.', formula: `Số nhóm công cụ khác nhau đã được AI gọi ${WINDOW}.`, source: AI_USAGE },
+  ai_tool_groups_used: { meaning: 'Nhờ AI nhiều loại việc hay chỉ một loại. Tên các nhóm việc hiện ở khối "Dùng AI" của hồ sơ.', formula: `Số nhóm công cụ khác nhau đã được AI gọi ${WINDOW}.`, source: AI_USAGE },
   ai_denied: { meaning: 'AI bị chặn vì thiếu quyền, gợi ý cấp thêm quyền hoặc người dùng đang nhờ việc ngoài phạm vi.', formula: `Đếm lượt công cụ bị từ chối quyền ${WINDOW}.`, source: AI_USAGE },
   ai_drafts_confirmed: { meaning: 'Bao nhiêu bản nháp do AI soạn đã được người xác nhận thành phiếu thật.', formula: `Đếm lượt xác nhận nháp thành công ${WINDOW}.`, source: AI_USAGE },
   ai_docs_drafted: { meaning: 'Số phiếu được lập qua AI thay vì người tự gõ.', formula: `Đếm phiếu khác nhau có thao tác lập mới do AI làm hộ ${WINDOW} (một phiếu ghi nhiều lần chỉ tính một).`, source: 'Nhật ký thao tác (cột kênh AI)' },
@@ -107,9 +107,9 @@ export const USAGE_METRIC_DEFINITIONS: Record<string, UsageMetricDefinition> = {
 
 /** Chỉ số hoãn / bỏ → lý do (khóa theo `DEFERRED_METRICS` backend). */
 export const USAGE_DEFERRED_METRICS: Record<string, { title: string; reason: string }> = {
-  approval_wait_ycmh_dmh: { title: 'Thời gian duyệt YCMH / ĐMH', reason: 'Hoãn: hai loại phiếu này duyệt ngoài bộ máy phê duyệt nên không có mốc «đến lượt» đáng tin.' },
+  approval_wait_ycmh_dmh: { title: 'Thời gian duyệt YCMH / ĐMH', reason: 'Hoãn: hai loại phiếu này duyệt ngoài bộ máy phê duyệt nên không có mốc "đến lượt" đáng tin.' },
   comments_own_vs_other: { title: 'Bình luận phiếu mình so với phiếu người khác', reason: 'Hoãn: phải tra chủ phiếu của từng loại phiếu mới tách được.' },
   http_422_per_field: { title: 'Lỗi nhập liệu theo từng trường', reason: 'Hoãn: phải bóc nội dung phản hồi lỗi mới biết trường nào sai.' },
-  unused_permissions_90d: { title: 'Quyền 90 ngày không dùng', reason: 'Hoãn: lượt đọc không ánh xạ được về quyền, chỉ làm được nửa phần ghi nên dễ kết luận sai «quyền thừa».' },
+  unused_permissions_90d: { title: 'Quyền 90 ngày không dùng', reason: 'Hoãn: lượt đọc không ánh xạ được về quyền, chỉ làm được nửa phần ghi nên dễ kết luận sai "quyền thừa".' },
   assistant_topics: { title: 'Chủ đề hay hỏi trợ lý AI', reason: 'Bỏ: là văn bản tự do, trái nguyên tắc không lưu nội dung.' },
 }

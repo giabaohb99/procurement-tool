@@ -29,8 +29,8 @@ type Props = {
   onDelete: () => void
 }
 
-/** Một HÀNG hồ sơ của dạng «Bảng»: mọi ô sửa tại chỗ trừ tiên quyết. Người chỉ xem thấy chữ thường.
- *  Không có ô tick ✓ đầu hàng (bỏ ở duoc-CR-617) — đánh dấu xong chọn «Hoàn thành» ở cột Trạng thái. */
+/** Một HÀNG hồ sơ của dạng "Bảng": mọi ô sửa tại chỗ trừ tiên quyết. Người chỉ xem thấy chữ thường.
+ *  Không có ô tick ✓ đầu hàng (bỏ ở duoc-CR-617) — đánh dấu xong chọn "Hoàn thành" ở cột Trạng thái. */
 export default function SurveyReportSheetRow({
   no, doc, docsById, phaseOptions, itemOptions, employeeOptions, today, canEdit, busy, onPatch, onEdit, onDelete,
 }: Props) {
@@ -41,7 +41,7 @@ export default function SurveyReportSheetRow({
   const tone = doc.expires_at ? expiryTone(doc.expires_at, today) : 'normal'
   const readOnly = !canEdit
   const isLink = /^https?:\/\//i.test(doc.file_note.trim())
-  //  Ô chọn / ngày / tick lưu ngay: lỗi đã có toast của client.ts — chỉ nuốt lời từ chối cho khỏi «unhandled rejection».
+  //  Ô chọn / ngày / tick lưu ngay: lỗi đã có toast của client.ts — chỉ nuốt lời từ chối cho khỏi "unhandled rejection".
   const save = (changes: InlineChanges) => { onPatch(changes).catch(() => undefined) }
 
   //  Nhân sự đã nghỉ (không còn trong danh bạ đang hoạt động) vẫn phải hiện TÊN, không thì ô chọn trống.
@@ -96,8 +96,8 @@ export default function SurveyReportSheetRow({
       </td>
       <td>
         {readOnly ? <span>{phaseLabel}</span> : (
-          //  Ô chọn gốc của trình duyệt không xuống dòng được → tên giai đoạn dài bị cắt («…nhậ»).
-          //  Dùng cùng ô chọn với cột «Dòng hàng» bên cạnh để nhãn hiện đủ chữ.
+          //  Ô chọn gốc của trình duyệt không xuống dòng được → tên giai đoạn dài bị cắt ("…nhậ").
+          //  Dùng cùng ô chọn với cột "Dòng hàng" bên cạnh để nhãn hiện đủ chữ.
           <SearchSelect
             variant="table" wrap
             value={String(doc.phase_id)} options={phaseOptions}

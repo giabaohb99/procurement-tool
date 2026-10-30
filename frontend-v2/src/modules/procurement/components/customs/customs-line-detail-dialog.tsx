@@ -4,8 +4,8 @@
 // ô nhập bị khóa. Chân popup có hai lối đổ ngược bộ lọc vào màn: cùng doanh nghiệp / cùng
 // đối tác.
 //
-// bao-CR-608 (đại ca 07/10/2026): thêm nút «Sửa» (quyền `customs_price.write`) — chuyển hộp sang
-// biểu mẫu sửa ngay tại chỗ — và «Xóa» (quyền `customs_price.delete`, hỏi xác nhận). Nút ẩn theo
+// bao-CR-608 (đại ca 07/10/2026): thêm nút "Sửa" (quyền `customs_price.write`) — chuyển hộp sang
+// biểu mẫu sửa ngay tại chỗ — và "Xóa" (quyền `customs_price.delete`, hỏi xác nhận). Nút ẩn theo
 // quyền; backend gác lại bằng `require` tương ứng.
 import { Building2, CalendarSync, Handshake, Pencil } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -49,7 +49,7 @@ function percent(value: number | null): string {
   return value === null ? '—' : `${value}%`
 }
 
-/** bao-CR-603 — giá trị kèm nguồn: «(từ tệp)» khi lấy từ cột tùy chọn của tệp nạp, không thì «(suy ra)» / «(tính)». */
+/** bao-CR-603 — giá trị kèm nguồn: "(từ tệp)" khi lấy từ cột tùy chọn của tệp nạp, không thì "(suy ra)" / "(tính)". */
 function withSource(value: string, fromFile: boolean | undefined, derivedNote: string): string {
   return value === '—' ? value : `${value} ${fromFile ? '(từ tệp)' : derivedNote}`
 }
@@ -110,7 +110,7 @@ const GROUPS: { title: string; fields: DetailField[] }[] = [
       { key: 'fx_rate', label: 'Tỷ giá nguyên tệ', format: (l) => formatUsd(l.fx_rate) },
       { key: 'usd_rate', label: 'Tỷ giá USD', format: (l) => formatUsd(l.usd_rate) },
       //  bao-CR-493 — hai cột VND theo yêu cầu phòng Thu mua: 7% tạm tính và theo thuế suất dòng.
-      //  bao-CR-603 — tệp nạp có cột VND thì lấy của tệp («từ tệp»), không thì tính.
+      //  bao-CR-603 — tệp nạp có cột VND thì lấy của tệp ("từ tệp"), không thì tính.
       {
         key: 'price_vnd_flat',
         label: 'Đơn giá VND (thuế NK 7%)',
@@ -157,9 +157,9 @@ interface CustomsLineDetailDialogProps {
   onClose: () => void
   onFilterImporter: (id: number, name: string) => void
   onFilterPartner: (id: number, name: string) => void
-  /** bao-CR-608 — `customs_price.write`: hiện nút «Sửa». */
+  /** bao-CR-608 — `customs_price.write`: hiện nút "Sửa". */
   canEdit?: boolean
-  /** bao-CR-608 — `customs_price.delete`: hiện nút «Xóa». */
+  /** bao-CR-608 — `customs_price.delete`: hiện nút "Xóa". */
   canDelete?: boolean
 }
 

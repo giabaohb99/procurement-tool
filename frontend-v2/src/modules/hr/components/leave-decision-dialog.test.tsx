@@ -176,7 +176,7 @@ describe('LeaveDecisionDialog', () => {
   })
 
   it('a multi-period request lists every period so the approver sees the gap days', () => {
-    //  duoc-CR-683 — «27/10 → 07/11» giấu mất cả tuần đi làm ở giữa.
+    //  duoc-CR-683 — "27/10 → 07/11" giấu mất cả tuần đi làm ở giữa.
     render(
       <LeaveDecisionDialog
         row={row({

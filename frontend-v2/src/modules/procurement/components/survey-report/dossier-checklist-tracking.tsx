@@ -22,7 +22,7 @@ interface DossierChecklistTrackingProps {
  * tiến độ là của cả phiếu nên đúng một điểm. Khác biệt có chủ ý — thấy rõ thì
  * mới đánh giá được cái nào hợp hơn.
  *
- * ⚠️ «Xong» = tờ giấy ĐÃ CÓ TRONG KHO, không phải «xong cho phiếu này» — xem
+ * ⚠️ "Xong" = tờ giấy ĐÃ CÓ TRONG KHO, không phải "xong cho phiếu này" — xem
  * ghi chú dài ở `dossier-checklist-helpers.ts`.
  */
 export function DossierChecklistTracking({

@@ -66,11 +66,11 @@ export function OutgoingDocumentsTab() {
 }
 
 /**
- * VĂN BẢN ĐI — nguyên màn «Văn bản» cũ, nay là tab mặc định của màn Văn bản.
+ * VĂN BẢN ĐI — nguyên màn "Văn bản" cũ, nay là tab mặc định của màn Văn bản.
  *
  * ⚠️ Không có cột hướng nào trong dữ liệu cả: "đi" ở đây nghĩa là **danh sách
  * văn bản trong tầm đọc của người dùng** (`/api/documents`), đối lại với tab
- * «đến» hỏi `/api/documents/applies-to-me` — văn bản tôi phải làm theo. Hai
+ * "đến" hỏi `/api/documents/applies-to-me` — văn bản tôi phải làm theo. Hai
  * hướng = hai màn cũ, không phải hai giá trị của một trường.
  *
  * Tìm kiếm và phân trang chạy ở BACKEND, không nạp hết về rồi lọc tại trình
@@ -86,11 +86,11 @@ function OutgoingDocumentsContent() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [typeId, setTypeId] = useUrlParamState('type', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
-  //  Tìm TOÀN VĂN tự bật khi câu tìm đủ dài (25/09/2026 — bỏ công tắc «Tìm cả
-  //  nội dung»): `/api/documents/search` đọc cả tiêu đề/số hiệu, nội dung soạn
+  //  Tìm TOÀN VĂN tự bật khi câu tìm đủ dài (25/09/2026 — bỏ công tắc "Tìm cả
+  //  nội dung"): `/api/documents/search` đọc cả tiêu đề/số hiệu, nội dung soạn
   //  thảo, chữ trong tệp. Ô trống / 1 ký tự thì về danh sách thường (`useDocuments`).
   const isFullText = isFullTextQuery(debouncedValue)
-  //  Ô lọc «Thư mục» (phase 06, duoc-CR-476) — `-1` (`FOLDER_FILTER_ALL`) =
+  //  Ô lọc "Thư mục" (phase 06, duoc-CR-476) — `-1` (`FOLDER_FILTER_ALL`) =
   //  chưa lọc, KHÔNG dùng `0` làm mốc "tất cả" (CR-322: id thật của một dòng
   //  luôn là giá trị thật, không được trưng dụng làm sentinel).
   const [folderIdParam, setFolderIdParam] = useUrlParamState('folder_id', String(FOLDER_FILTER_ALL))
@@ -103,7 +103,7 @@ function OutgoingDocumentsContent() {
   //  cũng đúng thói quen dùng: người ta soi từng bản gốc một.
   const [expandedRow, setExpandedRow] = useState<number | null>(null)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  //  Tick chọn nhiều dòng cho thao tác hàng loạt «Thêm vào thư mục…» — dùng
+  //  Tick chọn nhiều dòng cho thao tác hàng loạt "Thêm vào thư mục…" — dùng
   //  chung `useRowSelection`/`createSelectionColumn` với bảng văn bản của
   //  trang thư mục (`folder-documents-table.tsx`, phase 05). Destructure
   //  thẳng (không giữ nguyên đối tượng `selection`) để `react-hooks/exhaustive-deps`
@@ -176,7 +176,7 @@ function OutgoingDocumentsContent() {
   const activeData = isFullText ? searchData : data
   //  Hook tìm toàn văn tự hoãn thêm 400ms sau nhịp 350ms của ô tìm — trong
   //  khe đó nó chưa bật nên `isLoading` là false mà cũng chưa có dữ liệu. Coi
-  //  khe đó là ĐANG TẢI, không thì bảng nháy «không tìm thấy» mỗi lần gõ.
+  //  khe đó là ĐANG TẢI, không thì bảng nháy "không tìm thấy" mỗi lần gõ.
   const activeLoading = isFullText ? searchLoading || (!searchData && !searchError) : isLoading
   const activeError = isFullText ? searchError : isError
 
@@ -232,9 +232,9 @@ function OutgoingDocumentsContent() {
     canCreate,
   })
 
-  //  BẬT «Tìm cả nội dung»: chèn đoạn trích + nhãn nơi trúng NGAY DƯỚI ô «Tên
-  //  văn bản» — hậu xử lý mảng cột thay vì sửa `outgoing-document-columns.tsx`
-  //  (bộ cột dùng chung cho cả hai chế độ). Cùng nhịp này chèn LUÔN cột «Chọn»
+  //  BẬT "Tìm cả nội dung": chèn đoạn trích + nhãn nơi trúng NGAY DƯỚI ô "Tên
+  //  văn bản" — hậu xử lý mảng cột thay vì sửa `outgoing-document-columns.tsx`
+  //  (bộ cột dùng chung cho cả hai chế độ). Cùng nhịp này chèn LUÔN cột "Chọn"
   //  ở đầu bảng (phase 06, duoc-CR-476) — dùng chung `createSelectionColumn`
   //  với `folder-document-columns.tsx`. Tick chọn tính trên đúng các dòng
   //  ĐANG HIỆN của trang này, không phải "chọn tất cả" phía server (xem
@@ -320,7 +320,7 @@ function OutgoingDocumentsContent() {
     </Select>
   )
 
-  //  Ô lọc «Thư mục» + «Gồm thư mục con» (phase 06) — cùng khuôn hai ô trên,
+  //  Ô lọc "Thư mục" + "Gồm thư mục con" (phase 06) — cùng khuôn hai ô trên,
   //  JSX thật nằm ở `folder-filter-control.tsx` để không phình thêm tệp này.
   const folderFilterControl = (
     <FolderFilterControl
@@ -354,7 +354,7 @@ function OutgoingDocumentsContent() {
     //  `flex-1`/`min-h-0` mà `Card` đang giữ, `Card` bên trong chỉ còn lo phần
     //  của chính nó.
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3">
-      {/*  Thanh thao tác hàng loạt «Thêm vào thư mục…» (phase 06) — tự ẩn khi
+      {/*  Thanh thao tác hàng loạt "Thêm vào thư mục…" (phase 06) — tự ẩn khi
            chưa tick dòng nào và chưa có kết quả để báo (`FolderBulkActions`
            tự `return null`). Không truyền `currentFolder`: màn này không có
            khái niệm "thư mục đang xem" như trang Quản lý cây thư mục, nên chỉ
@@ -410,16 +410,16 @@ function OutgoingDocumentsContent() {
 
                  Số học của hàng đó rất sát, nên hai vế dưới đây đi kèm nhau chứ
                  không phải làm đẹp thêm — đo ở 393px, bề ngang dùng được 335px:
-                 - **`iconOnly`** rút «Bộ lọc» từ 80px còn 36px. Không có vế này
+                 - **`iconOnly`** rút "Bộ lọc" từ 80px còn 36px. Không có vế này
                    thì ô tìm chỉ còn 141px, tức 93px cho chữ — không đủ cho cả
                    câu gợi ý ngắn nhất.
                  - **`placeholderShort`** vì ngay cả khi đã rút nút, ô tìm được
                    185px ≈ 137px chữ, mà câu đủ cần **171px**: trình duyệt sẽ xén
-                   thành «Tìm tên, số hiệu, từ k…» — mất đúng chữ *từ khóa*, thứ
+                   thành "Tìm tên, số hiệu, từ k…" — mất đúng chữ *từ khóa*, thứ
                    người dùng chưa đoán được. Câu ngắn 115px thì vừa, và ở 360px
                    (ô còn 152px ≈ 104px chữ) vẫn vừa.
                  Bỏ một trong hai là hàng lại vỡ. Từ `md` trở lên cả hai tắt: nút
-                 «Bộ lọc» ẩn hẳn (desktop dùng `ConditionalFilter`) và câu gợi ý
+                 "Bộ lọc" ẩn hẳn (desktop dùng `ConditionalFilter`) và câu gợi ý
                  về bản đủ. */}
             <SearchField
               value={keyword}
@@ -437,7 +437,7 @@ function OutgoingDocumentsContent() {
                  thiếu một tầng thì người dùng thấy nút không có dấu gì mà danh
                  sách vẫn đang bị lọc, rồi đi tìm lỗi ở dữ liệu.
 
-                 «Đang lọc» = KHÁC mặc định chứ không phải «có giá trị»: mặc định
+                 "Đang lọc" = KHÁC mặc định chứ không phải "có giá trị": mặc định
                  của hai ô là `all` chứ không rỗng, đếm kiểu kia thì nút lúc nào
                  cũng báo đang lọc (bài học duoc-CR-364). */}
             <QuickFilterSheet
@@ -485,11 +485,11 @@ function OutgoingDocumentsContent() {
             {/*  Nút xuất nằm ở THANH CÔNG CỤ chứ không ở đầu trang: file tải
                  về đúng bằng bộ điều kiện đang lọc, nên nó thuộc về hàng chứa
                  mấy ô lọc — mà đầu trang giờ là của cả hai tab.
-                 Nhãn «Export» là chữ khách chọn (25/08/2026), không phải sót
-                 dịch — đừng "sửa" về «Xuất Excel». Tên tệp tải về vẫn giữ
+                 Nhãn "Export" là chữ khách chọn (25/08/2026), không phải sót
+                 dịch — đừng "sửa" về "Xuất Excel". Tên tệp tải về vẫn giữ
                  tiếng Việt không dấu.
 
-                 Khổ hẹp rút còn biểu tượng: chữ «Export» ăn ~60px của một hàng
+                 Khổ hẹp rút còn biểu tượng: chữ "Export" ăn ~60px của một hàng
                  chỉ vừa đúng ba khối. `aria-label` bù lại tên đọc được, nếu
                  không trình đọc màn hình gặp một nút chỉ có hình. */}
             <PermissionGate entity="document" action="export">

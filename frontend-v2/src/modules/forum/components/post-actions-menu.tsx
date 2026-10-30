@@ -43,7 +43,7 @@ function afterLeaveTarget(post: ForumPost): string {
 }
 
 /**
- * Nút «...» góc bài viết. Tác giả có «Xóa bài» (F3); quản trị viên (F5,
+ * Nút "..." góc bài viết. Tác giả có "Xóa bài" (F3); quản trị viên (F5,
  * `post.can_moderate`) có Ẩn / Khôi phục / Gỡ theo trạng thái bài — hai đường
  * ẩn/gỡ bắt buộc lý do và báo chuông cho tác giả (QĐ-D1).
  */

@@ -45,7 +45,7 @@ import { handlingDeptLabel } from '../utils/handling-dept-display'
 const EXCHANGE_RATE_MAX_DECIMALS = 6
 
 interface PurchaseOrderInfoCardProps {
-  /** bao-CR-499 — người duyệt được chứng từ này (nguồn ô «Trưởng phòng phê duyệt»). */
+  /** bao-CR-499 — người duyệt được chứng từ này (nguồn ô "Trưởng phòng phê duyệt"). */
   approverCandidates?: DeptHeadCandidate[]
   data: PurchaseOrderDetail
   /** Đơn chưa chốt + có quyền ghi thì cho sửa phần đầu. */
@@ -287,10 +287,10 @@ export function PurchaseOrderInfoCard({
         />
 
         {/*
-          bao-CR-480 — «Phòng xử lý» chép từ YCMH nguồn, chỉ xem: đơn do nhà máy mua hay do
-          phòng thu mua mặc định (bao-CR-524: «Sản xuất -Thu mua») mua phải thấy ngay trên đầu
+          bao-CR-480 — "Phòng xử lý" chép từ YCMH nguồn, chỉ xem: đơn do nhà máy mua hay do
+          phòng thu mua mặc định (bao-CR-524: "Sản xuất -Thu mua") mua phải thấy ngay trên đầu
           đơn. Muốn đổi thì đổi ở YCMH (nút
-          «Chuyển phòng xử lý»), đơn con đi theo.
+          "Chuyển phòng xử lý"), đơn con đi theo.
         */}
         <ReadOnlyField label="Phòng xử lý">
           {handlingDeptLabel(data.handler_dept_id, data.handler_dept_name)}

@@ -117,7 +117,7 @@ export default function SurveyRequestDetail() {
     request_date: new Date().toISOString().slice(0, 10),
     note: '', status: 'draft', reject_reason: '', lines: [],
     handler_dept_id: 0,                         // bao-CR-414: phòng ĐƯỢC NHỜ xử lý (0 = không nhờ)
-    handler_dept_assigned: false,               // bao-CR-488: đã tick «Nhờ phòng khác xử lý» lúc lập (chỉ giao diện)
+    handler_dept_assigned: false,               // bao-CR-488: đã tick "Nhờ phòng khác xử lý" lúc lập (chỉ giao diện)
     ...(fromPr ? {
       company_id: fromPr.company_id || 0,
       handler_dept_id: fromPr.handler_dept_id || 0,
@@ -133,9 +133,9 @@ export default function SurveyRequestDetail() {
   const [companies, setCompanies]   = useState<any[]>([])
   const [departments, setDepartments] = useState<any[]>([])
   const [employees, setEmployees]   = useState<any[]>([])
-  // bao-CR-499: người DUYỆT ĐƯỢC chứng từ — nguồn ô «Trưởng phòng phê duyệt» (chỉ nạp khi ô còn chọn được).
+  // bao-CR-499: người DUYỆT ĐƯỢC chứng từ — nguồn ô "Trưởng phòng phê duyệt" (chỉ nạp khi ô còn chọn được).
   const [approverCands, setApproverCands] = useState<any[]>([])
-  // bao-CR-552: ô «Trưởng bộ phận» chọn được — trưởng phòng mọi phòng (cùng bộ với bản v2).
+  // bao-CR-552: ô "Trưởng bộ phận" chọn được — trưởng phòng mọi phòng (cùng bộ với bản v2).
   const [deptManagers, setDeptManagers] = useState<any[]>([])
   useEffect(() => {
     api.get(`${API}/meta/department-managers`, { _silent: true } as any)
@@ -229,8 +229,8 @@ export default function SurveyRequestDetail() {
   const companyOptions  = companies.map((c) => ({ value: c.id, label: c.name }))
   const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
   const deptOptions     = departments.map((d) => ({ value: d.name, label: d.name }))
-  // bao-CR-414 / bao-CR-480: ô «Phòng xử lý» — phòng đang hoạt động; phòng đã tắt mà phiếu cũ còn trỏ
-  // tới thì giữ lại để không mất nhãn (cùng luật với YCMH). bao-CR-524: KHÔNG còn mục ảo «Thu mua chung»
+  // bao-CR-414 / bao-CR-480: ô "Phòng xử lý" — phòng đang hoạt động; phòng đã tắt mà phiếu cũ còn trỏ
+  // tới thì giữ lại để không mất nhãn (cùng luật với YCMH). bao-CR-524: KHÔNG còn mục ảo "Thu mua chung"
   // (0); người không đọc được danh mục phòng ban vẫn thấy tên phòng đang xử lý nhờ `handler_dept_name`.
   const handlerDeptOptions = [
     ...departments
@@ -241,7 +241,7 @@ export default function SurveyRequestDetail() {
       : []),
   ]
   // NSTM phụ trách: value = MÃ NV (khớp cột assignee), label = tên.
-  // bao-CR-486: danh sách đọc từ API theo ô «Phòng xử lý» (trước đó là CẢ danh mục nhân sự).
+  // bao-CR-486: danh sách đọc từ API theo ô "Phòng xử lý" (trước đó là CẢ danh mục nhân sự).
   // Bổ sung NSTM đã gán ở các dòng (dù không còn trong danh sách) → luôn hiện đúng tên.
   const purchaserOptions = (() => {
     const opts = assignableStaff.map((e: any) => ({ value: e.code, label: e.full_name }))
@@ -447,7 +447,7 @@ export default function SurveyRequestDetail() {
 
   const setH = (k: string, v: any) => setSv((s: any) => ({ ...s, [k]: v }))
   const lines: any[] = sv.lines || []
-  // bao-CR-547: tick nhiều dòng rồi «Xóa đã chọn» — CHỈ form tạo hoặc phiếu Nháp (phiếu Bị trả lại vẫn
+  // bao-CR-547: tick nhiều dòng rồi "Xóa đã chọn" — CHỈ form tạo hoặc phiếu Nháp (phiếu Bị trả lại vẫn
   // xóa từng dòng). Chọn theo CHỈ SỐ nên đổi số dòng là bỏ hết lựa chọn.
   const bulkRemovable = editable && (isNew || sv.status === 'draft')
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
@@ -545,7 +545,7 @@ export default function SurveyRequestDetail() {
       purpose:            sv.purpose,
       request_date:       sv.request_date,
       note:               sv.note,
-      // bao-CR-414/488: lúc tạo chưa tick «Nhờ phòng khác xử lý» thì KHÔNG gửi, backend tự chọn mặc định.
+      // bao-CR-414/488: lúc tạo chưa tick "Nhờ phòng khác xử lý" thì KHÔNG gửi, backend tự chọn mặc định.
       handler_dept_id:    isNew && !sv.handler_dept_assigned ? undefined : Number(sv.handler_dept_id) || 0,
       lines:              lines,
     }
@@ -648,7 +648,7 @@ export default function SurveyRequestDetail() {
             <i className="ti ti-transfer" />Chuyển phòng xử lý
           </button>
         )}
-        {/* bao-CR-498: MỘT nút «Trả về» cho hai đường (trả người lập sửa lại / trả phòng lập tự xử lý —
+        {/* bao-CR-498: MỘT nút "Trả về" cho hai đường (trả người lập sửa lại / trả phòng lập tự xử lý —
             bao-CR-414). Cả hai đường cùng mở thì hỏi (ReturnChoiceModal); một đường thì đi thẳng. */}
         {returnResolution !== null && (
           <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }}
@@ -846,7 +846,7 @@ export default function SurveyRequestDetail() {
                   phiếu; phòng lập phiếu vẫn thấy như cũ. */}
               <div className="form-row">
                 <label>Phòng xử lý <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(phòng sẽ đi mua cho phiếu này)</span></label>
-                {/* bao-CR-488: lúc LẬP phiếu ô này ẩn sau ô tick «Nhờ phòng khác xử lý» (cùng luật YCMH). */}
+                {/* bao-CR-488: lúc LẬP phiếu ô này ẩn sau ô tick "Nhờ phòng khác xử lý" (cùng luật YCMH). */}
                 {isNew ? (
                   <>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 400 }}>

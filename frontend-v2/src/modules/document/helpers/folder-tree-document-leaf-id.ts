@@ -1,6 +1,6 @@
 /**
  * id CỦA CÁC DÒNG LÁ chèn thêm vào cây thư mục khi mở một thư mục — văn bản
- * trực tiếp, dòng «(trống)», dòng «đang tải…», dòng «Xem thêm n văn bản…»
+ * trực tiếp, dòng "(trống)", dòng "đang tải…", dòng "Xem thêm n văn bản…"
  * (yêu cầu giao diện kiểu VS Code, 23/09/2026, §4). Thư mục THẬT luôn mang id
  * SỐ (khóa `tab_doc_folder.id`) — bốn loại dòng lá này cố ý dùng id CHUỖI để
  * không bao giờ trùng, và để `folder-tree-panel.tsx` phân biệt "dòng thư mục

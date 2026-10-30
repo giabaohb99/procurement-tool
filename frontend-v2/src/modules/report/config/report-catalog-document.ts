@@ -14,7 +14,7 @@ export const DOCUMENT_REPORT_CATALOG: ReportCatalogEntry[] = [
     label: 'Báo cáo văn bản',
     description: 'Tạo mới, ban hành, chờ duyệt, hết hạn trong kỳ — theo loại, công ty, phòng chủ trì.',
     path: appRoutes.report.document,
-    //  Mục menu «Văn bản» không khai `entity` riêng (cố ý — xem `modules/document/routes.tsx`),
+    //  Mục menu "Văn bản" không khai `entity` riêng (cố ý — xem `modules/document/routes.tsx`),
     //  nên khóa quyền THỰC SỰ gác nó là khóa PHÂN HỆ `document` (luật dự phòng của
     //  `report-catalog.test.ts`). Báo cáo này CHẶT hơn: gác thẳng `document.read`/`.export`.
     sourcePath: appRoutes.document.documents,

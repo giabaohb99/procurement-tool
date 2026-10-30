@@ -57,7 +57,7 @@ import type { TaskRowActions } from './task-list-row'
  *
  * PHẢI là hằng ngoài component. Viết thẳng object vào JSX là mỗi lần vẽ lại một
  * tham chiếu mới, `DndContext` thấy cấu hình "đổi" nên hẹn đo lại, đo xong đặt
- * state, state đổi lại vẽ lại — React ngắt bằng «Maximum update depth exceeded»
+ * state, state đổi lại vẽ lại — React ngắt bằng "Maximum update depth exceeded"
  * và cả bảng trắng trang. Cùng một cái bẫy đã vá ở `kanban-board.tsx`.
  */
 const MEASURING = { droppable: { strategy: MeasuringStrategy.Always } }
@@ -153,7 +153,7 @@ function pickMostSpecific(collisions: ReturnType<CollisionDetection>) {
  *
  * `pointerWithin` chỉ nhận vùng THỰC SỰ chứa con trỏ nên không có chuyện đó;
  * `closestCenter` chỉ còn dùng khi con trỏ không nằm trên vùng nào (mép bảng,
- * dải «Việc mới»), lúc ấy "gần nhất" mới đúng là ý người dùng.
+ * dải "Việc mới"), lúc ấy "gần nhất" mới đúng là ý người dùng.
  *
  * **Việc con** thì thêm một lớp nữa: chỉ nhìn thấy anh em cùng cha, mọi thứ khác
  * vô hình. Không có nó thì rê ra khỏi cụm cả trăm pixel `closestCenter` vẫn bám
@@ -244,11 +244,11 @@ export interface TaskGroupsBoardProps extends TaskRowActions {
   onMoveSection: (sectionId: number, beforeSectionId: number | null) => void
   onAddTask: (sectionId: number | null, draft: NewTaskDraft) => void
   /**
-   * bao-CR-483: số việc CHƯA tải của từng nhóm, khóa `section_id` (`0` = «Chưa
-   * phân cột»). Không truyền = đã đủ, không có đuôi «Tải thêm» (Gantt luôn thế).
+   * bao-CR-483: số việc CHƯA tải của từng nhóm, khóa `section_id` (`0` = "Chưa
+   * phân cột"). Không truyền = đã đủ, không có đuôi "Tải thêm" (Gantt luôn thế).
    */
   remaining?: Record<number, number>
-  /** Nhóm đang tải trang kế (`0` = «Chưa phân cột»); `null` = không nhóm nào. */
+  /** Nhóm đang tải trang kế (`0` = "Chưa phân cột"); `null` = không nhóm nào. */
   loadingSectionId?: number | null
   onLoadMore?: (sectionId: number | null) => void
 }
@@ -258,7 +258,7 @@ export interface TaskGroupsBoardProps extends TaskRowActions {
  * lưới trái của khung nhìn **Gantt**.
  *
  * Tách ra khỏi `task-list-view.tsx` khi Gantt cần đúng bộ thao tác này (kéo
- * việc / việc con / cột, bung việc con, dòng «Việc mới»): chép sang bản thứ hai
+ * việc / việc con / cột, bung việc con, dòng "Việc mới"): chép sang bản thứ hai
  * thì hai bên lệch nhau ngay ở lần sửa kế tiếp, mà lệch ở đây là **kéo thả sai
  * chỗ** chứ không phải sai màu sắc.
  *

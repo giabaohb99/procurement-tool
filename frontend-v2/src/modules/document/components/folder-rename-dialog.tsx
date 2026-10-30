@@ -22,7 +22,7 @@ interface FolderRenameDialogProps {
 
 /**
  * ĐỔI TÊN từ khung nội dung (menu chuột phải trên thẻ thư mục, đặc tả §B) —
- * bằng HỘP THOẠI, khác «đổi tên tại chỗ» của cây bên trái (F2/bấm đúp, ô nhập
+ * bằng HỘP THOẠI, khác "đổi tên tại chỗ" của cây bên trái (F2/bấm đúp, ô nhập
  * ngay trong dòng, phase 10A). Hai lối vào khác hình dạng nhưng cùng một API
  * (`PATCH /doc-folders/{id}` qua `useUpdateDocFolder`) nên không lệch dữ liệu.
  */

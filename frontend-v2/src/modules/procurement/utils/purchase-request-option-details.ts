@@ -3,7 +3,7 @@
 import type { PrOptionDetailsPayload, PurchaseRequestOption } from '../types/purchase-request-options'
 import { PR_OPTION_SOURCE_MANUAL } from '../types/purchase-request-options'
 
-/** Giá trị «không chọn NCC trong danh mục» của ô chọn. */
+/** Giá trị "không chọn NCC trong danh mục" của ô chọn. */
 export const NO_SUPPLIER_CODE = '__none__'
 
 export interface OptionDetailsForm {
@@ -61,7 +61,7 @@ function parseNumber(raw: string): number | null {
 
 /**
  * Chỉ gửi ô ĐÃ ĐỔI so với phương án hiện tại — gửi cả gói thì ghi đè cả những ô người khác
- * vừa sửa trên phiếu khác, và nhật ký ghi một loạt «đổi» không có thật.
+ * vừa sửa trên phiếu khác, và nhật ký ghi một loạt "đổi" không có thật.
  */
 export function buildOptionDetailsPayload(
   option: PurchaseRequestOption,

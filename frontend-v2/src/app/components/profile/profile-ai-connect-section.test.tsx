@@ -7,7 +7,7 @@ import { confirm } from '@/shared/ui/confirm-dialog'
 import { ProfileAiConnectSection } from './profile-ai-connect-section'
 
 /**
- * «Kết nối AI riêng» = màn «AI của tôi» (G8, K6 bao-CR-624; tách từ khối MCP «Nâng cao» ở P0).
+ * "Kết nối AI riêng" = màn "AI của tôi" (G8, K6 bao-CR-624; tách từ khối MCP "Nâng cao" ở P0).
  *
  * Chỗ dễ lủng:
  * - Đoạn cấu hình ở bước 1 phải điền khóa THẬT của dòng đang chọn, không thì người dùng dán nguyên `<KHÓA_CỦA_BẠN>` vào

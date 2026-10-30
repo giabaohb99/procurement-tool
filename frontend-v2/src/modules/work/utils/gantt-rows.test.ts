@@ -124,7 +124,7 @@ describe('buildGanttRows', () => {
     expect(rows.map((r) => r.key)).toEqual(['g:a', 't:1'])
   })
 
-  it('dòng «Việc mới» nằm CUỐI mỗi nhóm, và chỉ khi đủ quyền sửa', () => {
+  it('dòng "Việc mới" nằm CUỐI mỗi nhóm, và chỉ khi đủ quyền sửa', () => {
     const groups = [group('a', [task({ id: 1 })]), group('b', [])]
     expect(buildGanttRows(groups, opts({ showDraftRow: true })).map((r) => r.key)).toEqual([
       'g:a',
@@ -136,7 +136,7 @@ describe('buildGanttRows', () => {
     expect(buildGanttRows(groups, opts()).map((r) => r.key)).toEqual(['g:a', 't:1', 'g:b'])
   })
 
-  it('nhóm đang THU thì không có dòng «Việc mới» — nó nằm trong thân nhóm', () => {
+  it('nhóm đang THU thì không có dòng "Việc mới" — nó nằm trong thân nhóm', () => {
     const rows = buildGanttRows(
       [group('a', [task({ id: 1 })])],
       opts({ isCollapsed: () => true, showDraftRow: true }),

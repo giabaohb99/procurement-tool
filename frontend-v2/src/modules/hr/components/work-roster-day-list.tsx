@@ -81,7 +81,7 @@ function Section({ title, rows, emptyText }: { title: string; rows: Row[]; empty
 
 /**
  * Khổ điện thoại: lưới ngang không đọc nổi nên chọn MỘT ngày rồi chia nhân sự
- * thành hai nhóm «Đi làm» / «Nghỉ». Nửa buổi nghỉ vẫn nằm ở «Đi làm» (còn một buổi).
+ * thành hai nhóm "Đi làm" / "Nghỉ". Nửa buổi nghỉ vẫn nằm ở "Đi làm" (còn một buổi).
  * Ô thiếu dữ liệu (`unknown`) không vào nhóm nào — đừng đoán.
  */
 export function WorkRosterDayList({ days, items, selectedISO, onSelect, todayISO }: WorkRosterDayListProps) {

@@ -3,9 +3,9 @@ import { useState } from 'react'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 
 /**
- * Thư mục đang mở hộp «Chia sẻ» (popup, đặc tả §C — chốt lead 23/09/2026: bỏ
- * tab «Phân quyền», ba lối vào — nút «Chia sẻ» ở thanh trên, mục «Chia sẻ…»
- * trong menu chuột phải, nút «Quản lý quyền» ở khung chi tiết — đều mở ĐÚNG
+ * Thư mục đang mở hộp "Chia sẻ" (popup, đặc tả §C — chốt lead 23/09/2026: bỏ
+ * tab "Phân quyền", ba lối vào — nút "Chia sẻ" ở thanh trên, mục "Chia sẻ…"
+ * trong menu chuột phải, nút "Quản lý quyền" ở khung chi tiết — đều mở ĐÚNG
  * một hộp thoại `FolderShareDialog`).
  *
  * `openOnMount` giữ TƯƠNG THÍCH NGƯỢC với lối vào cũ từ cây bên trái

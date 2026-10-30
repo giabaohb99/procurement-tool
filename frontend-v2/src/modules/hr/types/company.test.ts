@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { companySchema, EMPTY_COMPANY_FORM } from '../schemas/company-schema'
 import { COMPANY_TYPE, COMPANY_TYPE_LABELS, COMPANY_TYPE_OPTIONS } from './company'
 
-// bao-CR-531: bộ mã «Loại hình» gõ tay theo `backend/app/modules/company/constants.py`
+// bao-CR-531: bộ mã "Loại hình" gõ tay theo `backend/app/modules/company/constants.py`
 // (CompanyType: COMPANY = 1, HOUSEHOLD = 2). Đổi số ở backend mà quên bên này là bản in
 // của hộ kinh doanh ra bốn ô ký có tên như công ty.
 describe('company type code set', () => {
@@ -16,7 +16,7 @@ describe('company type code set', () => {
     expect(Object.keys(COMPANY_TYPE_LABELS)).toHaveLength(2)
   })
 
-  it('defaults a new company form to «Công ty»', () => {
+  it('defaults a new company form to "Công ty"', () => {
     expect(EMPTY_COMPANY_FORM.company_type).toBe(COMPANY_TYPE.COMPANY)
   })
 

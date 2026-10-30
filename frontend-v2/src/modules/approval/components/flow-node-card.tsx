@@ -12,7 +12,7 @@ import { APPROVER_KIND, NODE_KIND, type ApprovalNode } from '../types/approval'
  *
  * Bỏ trống là bước không tìm được ai và phiếu kẹt lúc chạy, nên cảnh báo ngay
  * trên thẻ chứ không đợi mở bảng thuộc tính. Trước CR-159 chỗ này khóa cứng vào
- * mỗi «Người cụ thể» (`=== 1`), nên khai «trưởng bộ phận của phòng ban chỉ định»
+ * mỗi "Người cụ thể" (`=== 1`), nên khai "trưởng bộ phận của phòng ban chỉ định"
  * mà quên chọn phòng thì không có gì báo.
  */
 const CAN_REF = [APPROVER_KIND.employee, APPROVER_KIND.deptHeadOf] as number[]

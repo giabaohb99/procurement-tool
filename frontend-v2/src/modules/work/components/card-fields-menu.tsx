@@ -41,17 +41,17 @@ interface CardFieldsMenuProps {
 }
 
 /**
- * Menu «Tùy chỉnh» — chọn trường nào hiện trên thẻ và XẾP THỨ TỰ, đúng khuôn
+ * Menu "Tùy chỉnh" — chọn trường nào hiện trên thẻ và XẾP THỨ TỰ, đúng khuôn
  * *Customize* của Lark.
  *
  * Thứ tự trong danh sách này chính là thứ tự các dòng vẽ trên thẻ, nên phải kéo
- * thả được: đọc thẻ mà «Bình luận» nằm trên «Độ ưu tiên» thì mắt phải dò lại từ
+ * thả được: đọc thẻ mà "Bình luận" nằm trên "Độ ưu tiên" thì mắt phải dò lại từ
  * đầu mỗi lần.
  *
  * `DndContext` RIÊNG của menu, không dùng chung với bảng kanban: hai ngữ cảnh
  * lồng nhau thì mọi cú kéo thẻ việc cũng bắn vào đây.
  *
- * Nút BÚT CHÌ mở hộp thoại «Sửa trường» — MỘT khuôn cho mọi trường tùy biến,
+ * Nút BÚT CHÌ mở hộp thoại "Sửa trường" — MỘT khuôn cho mọi trường tùy biến,
  * Tag và Độ ưu tiên cũng vậy: tên · kiểu · bộ giá trị kéo xếp được · xóa trường.
  *
  * Trước đây muốn sửa một chữ trong bộ giá trị phải đóng menu, mở *Quản lý dự án

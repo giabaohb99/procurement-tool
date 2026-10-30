@@ -10,7 +10,7 @@ import type { OAuthClient } from '../types/ai-skill'
 import { OAuthClientsPage } from './oauth-clients-page'
 
 /**
- * Màn «Ứng dụng AI đã kết nối» (bao-CR-635). Chỗ dễ lủng: tin tên tự khai (phải tô cảnh báo theo `trusted` của máy chủ,
+ * Màn "Ứng dụng AI đã kết nối" (bao-CR-635). Chỗ dễ lủng: tin tên tự khai (phải tô cảnh báo theo `trusted` của máy chủ,
  * không tự đoán); xóa mà không nói rõ số kết nối sẽ bị cắt; người thiếu quyền quản lý bot AI mở ra ăn 403 thay vì câu
  * giải thích; người chỉ đọc vẫn thấy nút Xóa.
  */
@@ -130,6 +130,6 @@ describe('OAuthClientsPage', () => {
   it('tells where apps come from when the list is empty', async () => {
     mockServer([])
     renderPage()
-    expect(await screen.findByText(/Ứng dụng xuất hiện ở đây khi có người bấm «Cho phép»/)).toBeInTheDocument()
+    expect(await screen.findByText(/Ứng dụng xuất hiện ở đây khi có người bấm "Cho phép"/)).toBeInTheDocument()
   })
 })

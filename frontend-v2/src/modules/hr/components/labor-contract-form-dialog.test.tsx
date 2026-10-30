@@ -111,7 +111,7 @@ describe('LaborContractFormDialog', () => {
     expect(screen.queryByRole('textbox', { name: /Pháp nhân/ })).not.toBeInTheDocument()
   })
 
-  it('mẫu rỗng: báo «chưa có mẫu cho loại này» kèm liên kết khi có quyền xem màn Mẫu', async () => {
+  it('mẫu rỗng: báo "chưa có mẫu cho loại này" kèm liên kết khi có quyền xem màn Mẫu', async () => {
     listTemplateOptions.mockResolvedValue([])
     renderDialog({ row: makeLaborContract() })
     expect(await screen.findByText(/chưa có mẫu cho loại này/)).toBeInTheDocument()
@@ -140,7 +140,7 @@ describe('LaborContractFormDialog', () => {
     expect(listTemplateOptions).not.toHaveBeenCalled()
   })
 
-  // duoc-CR-630 ─ ô «Thông tin bổ sung cho mẫu»
+  // duoc-CR-630 ─ ô "Thông tin bổ sung cho mẫu"
   const field = (code: string, over: Record<string, unknown> = {}) => ({
     code, label: `Nhãn ${code}`, description: '', value_type: 1, default_value: '', is_required: false,
     is_active: true, sort_order: 0, ...over,

@@ -209,13 +209,13 @@ export function PurchaseOrderDetailPage() {
   } | null>(null)
   /** Dòng đang mở hộp chi tiết (thông tin đầy đủ + các lần giao). */
   const [lineIndex, setLineIndex] = useState<number | null>(null)
-  //  duoc-CR-654 (D0b): «Nhận hàng» không có form riêng — đo dialog chi tiết dòng ĐMH (nơi nhập giao/nhận) khi người dùng có quyền ghi.
+  //  duoc-CR-654 (D0b): "Nhận hàng" không có form riêng — đo dialog chi tiết dòng ĐMH (nơi nhập giao/nhận) khi người dùng có quyền ghi.
   const { markSubmitted: markLineSubmitted } = useFormTelemetry(
     UI_FORM_CODE.GOODS_RECEIPT,
     lineIndex !== null && can('purchase_order', 'write'),
   )
   const [paymentOpen, setPaymentOpen] = useState(false)
-  /** Chặn bấm đúp «Gửi duyệt» ngay trong tick (bao-CR-590). */
+  /** Chặn bấm đúp "Gửi duyệt" ngay trong tick (bao-CR-590). */
   const submittingRef = useRef(false)
 
   //  Chọn khung bọc cho nhóm lệnh phụ của đầu trang — xem `HeaderActionsPopover`.
@@ -279,7 +279,7 @@ export function PurchaseOrderDetailPage() {
     [pendingFiles, lineIndex],
   )
 
-  //  bao-CR-499: ô «Trưởng phòng phê duyệt» chỉ liệt kê người DUYỆT ĐƯỢC đơn này. Gọi TRƯỚC
+  //  bao-CR-499: ô "Trưởng phòng phê duyệt" chỉ liệt kê người DUYỆT ĐƯỢC đơn này. Gọi TRƯỚC
   //  các nhánh return sớm bên dưới (luật hook).
   const approverSource = draft ?? serverData
   const { data: approverData } = useApproverCandidates(
@@ -347,7 +347,7 @@ export function PurchaseOrderDetailPage() {
   }
 
   /**
-   * Lưu đơn. `submitAfterSave` = «Gửi duyệt» khi đơn còn sửa được (bao-CR-590): LƯU phần
+   * Lưu đơn. `submitAfterSave` = "Gửi duyệt" khi đơn còn sửa được (bao-CR-590): LƯU phần
    * đang sửa trước rồi mới gửi. Trước đây nút Gửi duyệt chỉ gọi `/submit` — máy chủ gửi
    * bản CŨ, rồi trang nạp lại bản cũ đè lên bản nháp, người dùng mất trắng phần vừa sửa.
    * Trả `true` khi lưu (và gửi, nếu có) xong.
@@ -390,7 +390,7 @@ export function PurchaseOrderDetailPage() {
   }
 
   /**
-   * Bấm «Gửi duyệt». Đơn còn sửa được thì đi đường LƯU RỒI GỬI (bao-CR-590). Chặn bấm đúp
+   * Bấm "Gửi duyệt". Đơn còn sửa được thì đi đường LƯU RỒI GỬI (bao-CR-590). Chặn bấm đúp
    * bằng ref đổi ngay trong tick — `disabled={isPending}` chỉ có hiệu lực ở lượt vẽ sau.
    */
   async function handleSubmit() {
@@ -484,7 +484,7 @@ export function PurchaseOrderDetailPage() {
    */
   const secondaryActions = (
     <>
-        {/* bao-CR-498: gom mọi bản in vào MỘT nút «In» thả xuống như bản v1 — trước đó năm nút
+        {/* bao-CR-498: gom mọi bản in vào MỘT nút "In" thả xuống như bản v1 — trước đó năm nút
             in rời chiếm cả hàng tiêu đề, người dùng phải đọc từng nút để tìm bản cần in. */}
         {!isNew && can('purchase_order', 'print') && (
           <DropdownMenu>
@@ -999,7 +999,7 @@ export function PurchaseOrderDetailPage() {
           if (!open) setLineIndex(null)
         }}
         onSave={() => {
-          //  Dialog đóng ngay khi bấm «Lưu đơn» nên không chờ API: chỉ tính «gửi» khi dữ liệu qua được bước kiểm ở màn.
+          //  Dialog đóng ngay khi bấm "Lưu đơn" nên không chờ API: chỉ tính "gửi" khi dữ liệu qua được bước kiểm ở màn.
           if (!validatePurchaseOrder(data, false)) markLineSubmitted()
           void handleSave()
         }}

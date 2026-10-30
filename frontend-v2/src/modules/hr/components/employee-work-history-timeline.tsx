@@ -18,8 +18,8 @@ export interface EmployeeWorkHistoryTimelineProps {
 }
 
 /**
- * Dòng thời gian DÙNG CHUNG cho cả hai khu («Quyết định bổ nhiệm» · «Quá trình
- * công tác») ở tab hồ sơ VÀ thẻ Trang cá nhân `/me` (đại ca chốt 03/10/2026) —
+ * Dòng thời gian DÙNG CHUNG cho cả hai khu ("Quyết định bổ nhiệm" · "Quá trình
+ * công tác") ở tab hồ sơ VÀ thẻ Trang cá nhân `/me` (đại ca chốt 03/10/2026) —
  * một component, nhận `items` đã lọc sẵn (theo khu) từ nơi gọi, không tự gọi
  * API. Mốc MỚI NHẤT ở trên (`sortWorkHistoryNewestFirst`, không tin thứ tự
  * `items` truyền vào).
@@ -27,7 +27,7 @@ export interface EmployeeWorkHistoryTimelineProps {
  * Khuôn trục dọc dùng lại `TimelineItem` của `shared/ui/timeline-item.tsx`
  * (cùng khuôn với Đặt xe/Duyệt dấu) — chấm tròn đặc + đường nối, không gán ý
  * nghĩa trạng thái cho màu chấm (khác `TimelineMarker` done/pending/stopped):
- * «Hiện tại» đã có badge riêng trong nội dung mốc.
+ * "Hiện tại" đã có badge riêng trong nội dung mốc.
  */
 export function EmployeeWorkHistoryTimeline({
   items,

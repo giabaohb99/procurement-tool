@@ -15,7 +15,7 @@ const OPTIONS = [
 
 /**
  * Ô lọc trạng thái nhân sự của người giữ quỹ. Giá trị trên URL (`employee_status`), mặc
- * định «Đang làm» thì xóa khỏi URL — link cũ không có tham số này vẫn mở đúng như trước.
+ * định "Đang làm" thì xóa khỏi URL — link cũ không có tham số này vẫn mở đúng như trước.
  */
 export function ReportEmployeeStatusFilter() {
   const [status, setStatus] = useUrlParamState('employee_status', EMPLOYEE_STATUS_WORKING)

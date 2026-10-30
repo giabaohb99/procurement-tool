@@ -84,7 +84,7 @@ function buildPeople(
 export function buildOrgChartTree(payload: OrgChartPayload): OrgCompanyNode[] {
   const { companies, employees } = payload
   //  Người chưa gắn phòng (hoặc phòng không còn) vẫn phải hiện: gom vào một phòng
-  //  ảo «Chưa gán phòng ban» theo pháp nhân (id âm để không đụng id thật).
+  //  ảo "Chưa gán phòng ban" theo pháp nhân (id âm để không đụng id thật).
   const realDeptIds = new Set(payload.departments.map((dept) => dept.id))
   const orphanCompanyIds = [
     ...new Set(

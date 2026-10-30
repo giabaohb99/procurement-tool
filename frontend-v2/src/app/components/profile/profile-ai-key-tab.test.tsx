@@ -7,7 +7,7 @@ import type { AiKeyInfo, AiKeyItem } from '@/modules/system/api/agent-hub-api'
 import { ProfileAiKeyTab } from './profile-ai-key-tab'
 
 /**
- * Mục «Khóa model AI» ở Trang cá nhân (ai-CR-053; tên cũ tab «Khóa AI»).
+ * Mục "Khóa model AI" ở Trang cá nhân (ai-CR-053; tên cũ tab "Khóa AI").
  *
  * Chỗ dễ lủng: khóa thô phải đi qua PUT `/api/agent-hub/ai-key` rồi ô nhập XÓA TRẮNG (không để khóa nằm lại
  * trên màn), màn chỉ hiện 4 ký tự cuối do backend trả, và ô nhập là `password`.
@@ -156,7 +156,7 @@ describe('ProfileAiKeyTab — dễ dùng (ai-CR-101)', () => {
     renderTab()
     const headings = await screen.findAllByText(/Khóa AI của bạn|Google của bạn/)
     expect(headings[0]).toHaveTextContent(/Khóa AI của bạn/)
-    //  Khối MCP đã tách sang mục «Kết nối AI riêng»; còn sót ở đây là người dùng thấy hai chỗ tạo khóa kết nối.
+    //  Khối MCP đã tách sang mục "Kết nối AI riêng"; còn sót ở đây là người dùng thấy hai chỗ tạo khóa kết nối.
     expect(screen.queryByText(/Nâng cao: dùng Claude Desktop/)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Tạo khóa/ })).not.toBeInTheDocument()
     expect(apiGet).not.toHaveBeenCalledWith('/api/agent-hub/mcp-keys')

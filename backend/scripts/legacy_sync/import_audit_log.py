@@ -45,8 +45,8 @@ BA ĐIỀU RÀNG BUỘC CÁCH VIẾT TỆP NÀY:
 CÂU CHỮ LẤY NGUYÊN VĂN CỦA ERP, không tự chế: mỗi dòng dưới đây khớp đúng chuỗi
 mà `seal_request/controller.py` và `vehicle_booking/controller.py` đang ghi cho
 cùng một thao tác. Hai màn chi tiết đọc `message` theo hai kiểu khác nhau nên
-câu chữ phải chịu được cả hai: phiếu dấu bày *«Tên — Duyệt: Duyệt yêu cầu đóng
-dấu DD000153»* (`showMessage`), phiếu xe bày *«Tên — Bắt đầu chuyến XE000123»*
+câu chữ phải chịu được cả hai: phiếu dấu bày *"Tên — Duyệt: Duyệt yêu cầu đóng
+dấu DD000153"* (`showMessage`), phiếu xe bày *"Tên — Bắt đầu chuyến XE000123"*
 (`messageOnly`, `message` phải ĐỨNG MỘT MÌNH đọc được).
 
 `actor_kind = ACTOR_KIND_SCRIPT` (3) cho cả 5095 dòng — nói thẳng rằng chúng do

@@ -48,9 +48,9 @@ vi.mock('../hooks/use-document-access', () => ({
 //  bài này kiểm, và mount thật thì phải giả lập thêm bốn hook nữa.
 vi.mock('./document-access-dialog', () => ({ DocumentAccessDialog: () => null }))
 
-describe('DocumentAccessCard — chữ «Hủy» thay cho «Thu hồi»', () => {
-  it('nút và dòng đã hủy đều dùng chữ HỦY, không còn chữ «Thu hồi»', () => {
-    //  Khách yêu cầu 25/08/2026: đổi hết chữ «Thu hồi» thành «Hủy».
+describe('DocumentAccessCard — chữ "Hủy" thay cho "Thu hồi"', () => {
+  it('nút và dòng đã hủy đều dùng chữ HỦY, không còn chữ "Thu hồi"', () => {
+    //  Khách yêu cầu 25/08/2026: đổi hết chữ "Thu hồi" thành "Hủy".
     render(<DocumentAccessCard documentId={1} canWrite />)
 
     expect(screen.getByLabelText('Hủy quyền')).toBeInTheDocument()
@@ -58,9 +58,9 @@ describe('DocumentAccessCard — chữ «Hủy» thay cho «Thu hồi»', () => 
     expect(screen.queryByText(/Thu hồi/)).not.toBeInTheDocument()
   })
 
-  it('hộp xác nhận KHÔNG được có hai nút cùng chữ «Hủy»', async () => {
-    //  Nút bỏ qua của `ConfirmIconButton` đã là «Hủy» sẵn. Đặt nhãn nút thi hành
-    //  cũng là «Hủy» trơn thì hộp có hai nút cạnh nhau chữ y hệt nhau — một cái
+  it('hộp xác nhận KHÔNG được có hai nút cùng chữ "Hủy"', async () => {
+    //  Nút bỏ qua của `ConfirmIconButton` đã là "Hủy" sẵn. Đặt nhãn nút thi hành
+    //  cũng là "Hủy" trơn thì hộp có hai nút cạnh nhau chữ y hệt nhau — một cái
     //  bỏ qua, một cái cắt quyền người khác và không hoàn tác được. Nhãn thi
     //  hành phải nói rõ hủy CÁI GÌ.
     const nguoi = userEvent.setup()

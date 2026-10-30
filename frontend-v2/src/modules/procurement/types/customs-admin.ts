@@ -36,7 +36,7 @@ export type CustomsKindKeyword = {
 export type CustomsSearchSynonym = {
   id: number
   term: string
-  /** Các cách viết tương đương, ngăn bằng «;». */
+  /** Các cách viết tương đương, ngăn bằng ";". */
   synonyms: string
   note: string
   is_active: boolean

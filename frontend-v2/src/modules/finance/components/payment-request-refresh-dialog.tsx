@@ -43,7 +43,7 @@ interface PaymentRequestRefreshDialogProps {
 const ALERT_STATES: PaymentRefreshState[] = ['paid_off', 'payable_missing', 'duplicate']
 
 /**
- * bao-CR-509 — hộp thoại «Cập nhật theo công nợ»: XEM TRƯỚC số cũ → số mới từng dòng
+ * bao-CR-509 — hộp thoại "Cập nhật theo công nợ": XEM TRƯỚC số cũ → số mới từng dòng
  * rồi mới ghi. Mọi con số và câu lý do đều do backend tính (`service.plan_refresh`);
  * bấm Cập nhật không gửi số nào lên — backend tính lại từ DB lúc ghi.
  */
@@ -149,7 +149,7 @@ export function PaymentRequestRefreshDialog({
   )
 }
 
-/** Hai giá trị cũ/mới: giống nhau thì in một, khác thì in «cũ → mới». */
+/** Hai giá trị cũ/mới: giống nhau thì in một, khác thì in "cũ → mới". */
 function OldNew({ oldValue, newValue }: { oldValue: string; newValue: string }) {
   if (oldValue === newValue) return <>{newValue || '—'}</>
   return (

@@ -112,8 +112,8 @@ export function LeaveCloseYearReviewDialog({ year, onClose }: LeaveCloseYearRevi
         )}
         <p className="text-xs text-muted-foreground">
           Số cũ = số còn lại + số đã chuyển đi, dựng lại từ sổ quỹ hiện tại: đơn năm {year} được
-          duyệt hoặc hủy sau khi kết sổ sẽ làm số đổi theo. Phần «Sang loại» và «Cộng vào năm
-          sau» tính theo cấu hình loại nghỉ hiện hành.
+          duyệt hoặc hủy sau khi kết sổ sẽ làm số đổi theo. Phần <strong>Sang loại</strong> và <strong>Cộng vào năm
+          sau</strong> tính theo cấu hình loại nghỉ hiện hành.
         </p>
       </DialogContent>
     </Dialog>

@@ -35,7 +35,7 @@ function Pick({ label, value, onChange, options, all }: {
   )
 }
 
-/** Lọc riêng của «Năng lực theo loại việc»: phòng ban · loại phiếu · loại việc (khi là việc Dự án) · vai. Giá trị nằm trên URL. */
+/** Lọc riêng của "Năng lực theo loại việc": phòng ban · loại phiếu · loại việc (khi là việc Dự án) · vai. Giá trị nằm trên URL. */
 export function WorkCapabilityFilters() {
   const [kind, setKind] = useUrlParamState('kind', ALL)
   const [taskType, setTaskType] = useUrlParamState('task_type_id', ALL)

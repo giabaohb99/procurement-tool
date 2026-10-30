@@ -8,7 +8,7 @@ const CHIP_LIMIT = 12
 
 interface SubjectChipsProps {
   items: { key: string; label: string }[]
-  /** Bỏ trống = dải CHỈ ĐỌC (hộp «Sửa quyền cụm» chỉ để rà lại, không xóa ở đó). */
+  /** Bỏ trống = dải CHỈ ĐỌC (hộp "Sửa quyền cụm" chỉ để rà lại, không xóa ở đó). */
   onRemove?: (key: string) => void
 }
 

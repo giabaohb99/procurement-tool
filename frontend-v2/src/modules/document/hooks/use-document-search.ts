@@ -10,13 +10,13 @@ import { documentSearchApi, type DocumentSearchParams } from '../api/document-se
 const SEARCH_DEBOUNCE_MS = 400
 /** Token dưới 2 ký tự không có ngram nào để khớp (chỉ mục `ngram` n=2 ở
  * backend) — gọi API cho câu 0–1 ký tự chỉ tốn một lượt round-trip vô ích.
- * Export ra để nơi dựng câu «rỗng» (`outgoing-documents-tab.tsx`,
+ * Export ra để nơi dựng câu "rỗng" (`outgoing-documents-tab.tsx`,
  * `folder-documents-table.tsx`) dùng ĐÚNG một mốc, không chép số tay lần hai. */
 export const MIN_QUERY_LENGTH = 2
 
 /**
  * Câu tìm này có đi đường TÌM TOÀN VĂN không (25/09/2026, đại ca chốt bỏ công
- * tắc «Tìm cả nội dung» — tìm là tìm luôn cả tên lẫn nội dung). Đủ
+ * tắc "Tìm cả nội dung" — tìm là tìm luôn cả tên lẫn nội dung). Đủ
  * `MIN_QUERY_LENGTH` ký tự → `/api/documents/search` (siêu dữ liệu + nội dung
  * soạn thảo + chữ trong tệp); ngắn hơn / rỗng → danh sách thường, vì chỉ mục
  * ngram không khớp được câu 1 ký tự và ô trống thì phải hiện đủ danh sách.
@@ -33,7 +33,7 @@ export function isFullTextQuery(keyword: string): boolean {
  * `useUrlSearchParam` ở nơi gọi — hook dùng được thẳng với state gõ tức thời
  * (`value` chưa qua debounce) mà vẫn không bắn API theo từng phím.
  *
- * `enabled=false` (mặc định công tắc «Tìm cả nội dung» tắt) → không gọi API
+ * `enabled=false` (mặc định công tắc "Tìm cả nội dung" tắt) → không gọi API
  * dù `q` hợp lệ, và React Query cũng không tự chạy lại khi bật lên nhờ
  * `enabled` đổi giá trị.
  */

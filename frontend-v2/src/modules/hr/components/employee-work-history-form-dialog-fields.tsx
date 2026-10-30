@@ -18,16 +18,16 @@ interface EmployeeWorkHistoryFormDialogFieldsProps {
   companies: LookupItem[]
   departments: LookupItem[]
   positions: LookupItem[]
-  /** Dòng chính đang mở, sớm hơn dòng mới — hiện tick «Đóng dòng». `null` = ẩn ô tick. */
+  /** Dòng chính đang mở, sớm hơn dòng mới — hiện tick "Đóng dòng". `null` = ẩn ô tick. */
   openMainRow: EmployeeWorkHistory | null
   eventType: number
   fromDate: string
   today: string
   /** Đang SỬA (`true`) hay tạo mới (`false`) — quyết định ô Tệp QĐ hiện dạng nào. */
   editingRow: EmployeeWorkHistory | null
-  /** A9 (Q4) — `false` thì ẨN cả vùng thả tệp lẫn nút «Quản lý tệp» (M4). */
+  /** A9 (Q4) — `false` thì ẨN cả vùng thả tệp lẫn nút "Quản lý tệp" (M4). */
   canOpenFiles: boolean
-  /** Nút «+ Thêm quyết định» (mục 3) — Số QĐ bắt buộc, chỉ đổi dấu `*` ở nhãn. */
+  /** Nút "+ Thêm quyết định" (mục 3) — Số QĐ bắt buộc, chỉ đổi dấu `*` ở nhãn. */
   requireDecisionNo?: boolean
   queuedFileCount: number
   onQueueFiles: (files: File[]) => void
@@ -105,7 +105,7 @@ export function EmployeeWorkHistoryFormDialogFields({
                 <DatePicker value={field.value} onChange={field.onChange} clearable={false} />
                 {eventType === RESIGN_TYPE && fromDate > today && (
                   <p className="text-xs text-muted-foreground">
-                    Tới ngày này quay lại bấm «Áp vào hồ sơ» để chuyển nghỉ việc.
+                    Tới ngày này quay lại bấm <strong>Áp vào hồ sơ</strong> để chuyển nghỉ việc.
                   </p>
                 )}
                 <FormMessage />
@@ -136,7 +136,7 @@ export function EmployeeWorkHistoryFormDialogFields({
                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                   <FormLabel className="font-normal">
-                    Đóng dòng đang hiệu lực «{labelOf(WORK_EVENT_TYPE, String(openMainRow.event_type))}»
+                    Đóng dòng đang hiệu lực <strong>{labelOf(WORK_EVENT_TYPE, String(openMainRow.event_type))}</strong>{' '}
                     vào ngày trước đó
                   </FormLabel>
                 </FormItem>

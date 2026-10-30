@@ -67,7 +67,7 @@ export interface CrudFormField {
    * Chỉ hiện ô này khi giá trị đang nhập thỏa điều kiện.
    *
    * Dùng cho những ô CHỈ CÓ NGHĨA ở một nhánh cấu hình (vd tỷ lệ quy đổi khi
-   * chưa chọn «quy đổi» thì không nói lên gì). Ẩn hẳn thay vì làm mờ: ô mờ vẫn
+   * chưa chọn "quy đổi" thì không nói lên gì). Ẩn hẳn thay vì làm mờ: ô mờ vẫn
    * chiếm chỗ và vẫn khiến người đọc dừng lại đọc chú thích của nó.
    *
    * ⚠️ Ẩn chỉ là chuyện HIỂN THỊ — giá trị vẫn nằm trong form và vẫn gửi lên.
@@ -94,7 +94,7 @@ export interface CrudFormField {
    * Khai nó khi backend khai trường đó là **kiểu thật** (`date | None`,
    * `int | None`) chứ không phải `str = ""`. `DatePicker` không có cách nào khác
    * để nói "chưa chọn" — nó luôn giữ `''` — mà `''` thì không phải một ngày, nên
-   * schema chặt sẽ trả 422 «input is too short» cho một ô người dùng CỐ Ý bỏ
+   * schema chặt sẽ trả 422 "input is too short" cho một ô người dùng CỐ Ý bỏ
    * trống, và họ chỉ thấy bấm Lưu mà không có gì xảy ra.
    *
    * ⚠️ **Phải khai từng ô, cố ý không làm mặc định cho `type: 'date'`.** Các
@@ -157,7 +157,7 @@ export interface CrudConfig<T> {
    *
    * Bỏ trống thì `PageHeader` chỉ có mỗi dòng tiêu đề, và màn CRUD đứng cạnh
    * những màn viết tay (vốn luôn có mô tả) sẽ trông cụt lủn — khách chỉ đúng
-   * chỗ đó ngày 04/09/2026 ở tab «Danh mục phòng».
+   * chỗ đó ngày 04/09/2026 ở tab "Danh mục phòng".
    */
   description?: string
   /** Tên đơn vị danh từ (vd 'kho', 'đơn vị tính', dùng cho nút "Thêm kho"). */
@@ -189,7 +189,7 @@ export interface CrudConfig<T> {
   /**
    * Bỏ ô tìm nhanh — cho danh mục mà API danh sách KHÔNG có trường chữ nào để lọc (vd Kế hoạch
    * nhân sự, duoc-CR-689: chỉ lọc năm / pháp nhân / phòng). Để ô tìm đó thì người dùng gõ, bảng
-   * không đổi, và họ tin là «không có kết quả» trong khi backend đã lặng lẽ bỏ qua tham số.
+   * không đổi, và họ tin là "không có kết quả" trong khi backend đã lặng lẽ bỏ qua tham số.
    */
   hideSearch?: boolean
   /** Cấu hình thanh lọc nhanh ngoài bảng. */
@@ -234,7 +234,7 @@ export interface CrudConfig<T> {
   /** Đường dẫn tới trang chi tiết (vd (id) => `/inventory/warehouses/${id}`). */
   detailRoute?: (id: number | string) => string
   /**
-   * Đường dẫn trang THÊM MỚI (vd '/hr/leave-types/new'). Khai nó thì nút «Thêm»
+   * Đường dẫn trang THÊM MỚI (vd '/hr/leave-types/new'). Khai nó thì nút "Thêm"
    * **điều hướng sang trang đó** thay vì bật hộp thoại; bỏ trống = giữ hộp thoại
    * như cũ.
    *
@@ -249,7 +249,7 @@ export interface CrudConfig<T> {
   createRoute?: string
   /**
    * `apiPath` của các bảng KHÁC cần làm mới cache sau khi tạo/sửa/xóa ở bảng này
-   * (vd Gán lịch khai `['/api/work-schedules']` vì số «đang gán n nơi» và tên mẫu
+   * (vd Gán lịch khai `['/api/work-schedules']` vì số "đang gán n nơi" và tên mẫu
    * hiện ở màn kia đổi theo). Mặc định chỉ dọn chính `apiPath`.
    */
   alsoInvalidate?: string[]
@@ -308,7 +308,7 @@ export interface CrudConfig<T> {
    */
   openFormOnRowClick?: boolean
   /**
-   * Hiện nút «Xóa» (gác quyền `delete`) ngay trong popup Sửa. Cần cho danh mục mở
+   * Hiện nút "Xóa" (gác quyền `delete`) ngay trong popup Sửa. Cần cho danh mục mở
    * popup khi bấm dòng — chúng không có trang chi tiết nên không còn chỗ nào khác để
    * xóa. Tự nguyện bật để các popup sẵn có không tự nhiên mọc thêm nút.
    */

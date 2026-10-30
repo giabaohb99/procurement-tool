@@ -15,14 +15,14 @@ interface SettingConditionFieldProps {
 /**
  * Ô cấu hình kiểu `condition` — BỘ CHỌN ĐIỀU KIỆN thay cho ô gõ JSON (bao-CR-528).
  *
- * Ô «Điều kiện bỏ qua điều phối» của YCMH (bao-CR-497) từng là ô chữ bắt quản
- * trị gõ `[{"field":"handler_dept_id","op":"not_empty"}]`; đại ca chê «cấu hình
- * là gõ code vào à». Giá trị gửi lên vẫn là đúng chuỗi JSON đó — backend kiểm ở
+ * Ô "Điều kiện bỏ qua điều phối" của YCMH (bao-CR-497) từng là ô chữ bắt quản
+ * trị gõ `[{"field":"handler_dept_id","op":"not_empty"}]`; đại ca chê "cấu hình
+ * là gõ code vào à". Giá trị gửi lên vẫn là đúng chuỗi JSON đó — backend kiểm ở
  * cửa lưu và trả câu lỗi tiếng Việt nếu hỏng.
  */
 export function SettingConditionField({ field, disabled, onChange }: SettingConditionFieldProps) {
   //  Mã phòng thu mua mặc định lấy từ bản ĐÃ LƯU (cùng truy vấn của trang, đã
-  //  nằm sẵn trong đệm): phòng đó bị gỡ khỏi ô «Phòng xử lý».
+  //  nằm sẵn trong đệm): phòng đó bị gỡ khỏi ô "Phòng xử lý".
   const { data } = useSettings()
   const centralCode = data?.fields.find((item) => item.key === 'central_purchasing_dept_code')?.value
   const getOptions = usePrDispatchConditionChoices(

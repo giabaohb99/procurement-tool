@@ -13,16 +13,16 @@ interface LeaveStatusCellProps {
  * Ô TRẠNG THÁI của bảng đơn nghỉ phép: huy hiệu, và với ba kết cục xấu thì kèm
  * luôn lý do bị chặn.
  *
- * Vì sao kèm lý do: chỉ một chữ «Từ chối» đỏ thì người nộp phải mở từng đơn ra
+ * Vì sao kèm lý do: chỉ một chữ "Từ chối" đỏ thì người nộp phải mở từng đơn ra
  * mới biết mình sai chỗ nào, và câu hỏi đó đi vòng qua điện thoại tới phòng
  * Nhân sự.
  *
  * Ba điều kiện mà bản đầu (chữ đỏ trần trụi dán sát huy hiệu) đều hụt:
  *
- * 1. **Phải nói rõ đây là lý do của việc gì.** Cột «Lý do» (lý do NGHỈ) nằm
+ * 1. **Phải nói rõ đây là lý do của việc gì.** Cột "Lý do" (lý do NGHỈ) nằm
  *    ngay trong cùng bảng và cũng là chữ tự do — hai đoạn chữ tự do không nhãn
  *    thì không phân biệt được. Nên có biểu tượng ghi chú dẫn đầu, và tooltip mở
- *    ra bằng đúng nhãn «Lý do từ chối / trả về / hủy yêu cầu».
+ *    ra bằng đúng nhãn "Lý do từ chối / trả về / hủy yêu cầu".
  * 2. **Không tô đỏ đoạn chữ.** Màu đỏ đã là việc của huy hiệu; đỏ thêm lần nữa
  *    ở một đoạn chữ 12px trông như lỗi hiển thị. Chữ phụ để màu mờ, đúng vai
  *    ghi chú.

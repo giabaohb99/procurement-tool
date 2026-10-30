@@ -70,7 +70,7 @@ describe('groupLeaveBalances', () => {
   })
 
   it('giữ thứ tự người xuất hiện lần đầu, không tự sắp lại theo id hay theo tên', () => {
-    //  Backend đã sắp danh sách; gom nhóm mà đảo thứ tự thì ô «Sắp xếp» của
+    //  Backend đã sắp danh sách; gom nhóm mà đảo thứ tự thì ô "Sắp xếp" của
     //  bảng nói một đằng, bảng hiện một nẻo.
     const groups = groupLeaveBalances([
       makeBalance({ employee_id: 9, employee_name: 'Vũ Anh' }),
@@ -127,7 +127,7 @@ describe('groupLeaveBalances', () => {
   })
 
   it('đánh dấu có quỹ thật khi BẤT KỲ loại nghỉ nào được cấp, kể cả bị trừ tay', () => {
-    //  `hasQuota` quyết «0 còn lại» tô đỏ (hết phép) hay để mờ (loại vốn không
+    //  `hasQuota` quyết "0 còn lại" tô đỏ (hết phép) hay để mờ (loại vốn không
     //  cấp hạn mức). Người có bảy loại hạn mức 0 và một loại 12 ngày mà tiêu
     //  hết thì vẫn là HẾT PHÉP.
     const noQuota = groupLeaveBalances([
@@ -150,7 +150,7 @@ describe('groupLeaveBalances', () => {
 
 describe('flattenLeaveBalanceGroups', () => {
   it('người có MỘT loại nghỉ ra một hàng thẳng, không có gì để bung', () => {
-    //  Công ty mới khai mỗi «Phép năm» thì đây là toàn bộ 261 hàng — một bảng
+    //  Công ty mới khai mỗi "Phép năm" thì đây là toàn bộ 261 hàng — một bảng
     //  261 mũi tên bung ra đúng một dòng chép lại con số vừa đọc còn tệ hơn
     //  bảng phẳng cũ.
     const groups = groupLeaveBalances([makeBalance({ id: 5 })])

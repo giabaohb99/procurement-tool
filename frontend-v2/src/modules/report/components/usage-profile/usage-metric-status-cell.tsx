@@ -5,7 +5,7 @@ import type { UsageMetricCatalogItem } from '../../types/usage-metric-catalog'
 import { formatUsageValue } from '../../utils/usage-format'
 import { unitKind, unmeasuredStatusText } from '../../utils/usage-metric-catalog-helpers'
 
-/** Trạng thái đo THỰC của tuần snapshot mới nhất: «n/tổng người · trung vị …» hoặc lý do chưa đo. */
+/** Trạng thái đo THỰC của tuần snapshot mới nhất: "n/tổng người · trung vị …" hoặc lý do chưa đo. */
 export function UsageMetricStatusCell({ item, hasWeek }: { item: UsageMetricCatalogItem; hasWeek: boolean }) {
   if (!hasWeek) return <Badge variant="outline">{unmeasuredStatusText(false, null)}</Badge>
   if (item.measured_users > 0) {

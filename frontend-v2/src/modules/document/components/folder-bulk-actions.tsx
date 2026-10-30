@@ -19,8 +19,8 @@ interface FolderBulkActionsProps {
   selectedIds: number[]
   /**
    * Thư mục ĐANG XEM — chỉ có ở trang Quản lý cây thư mục. Có giá trị thì
-   * hiện thêm nút «Chuyển tới…» + «Gỡ khỏi thư mục này» (gỡ đúng khỏi đây,
-   * không hỏi lại); bỏ trống thì CHỈ hiện «Thêm vào thư mục…» — dùng ở màn
+   * hiện thêm nút "Chuyển tới…" + "Gỡ khỏi thư mục này" (gỡ đúng khỏi đây,
+   * không hỏi lại); bỏ trống thì CHỈ hiện "Thêm vào thư mục…" — dùng ở màn
    * Văn bản (`outgoing-documents-tab.tsx`, phase 06), nơi không có khái niệm
    * "thư mục đang xem" (một dòng có thể không nằm trong thư mục nào đang lọc).
    */
@@ -33,7 +33,7 @@ type PickerMode = 'add' | 'move' | null
 /**
  * Thanh thao tác HÀNG LOẠT hiện khi một bảng văn bản có dòng đang tick — dùng
  * chung cho khung nội dung thư mục (`folder-documents-table.tsx`, đủ ba nút)
- * VÀ màn Văn bản (`outgoing-documents-tab.tsx`, chỉ nút «Thêm vào thư mục…» vì
+ * VÀ màn Văn bản (`outgoing-documents-tab.tsx`, chỉ nút "Thêm vào thư mục…" vì
  * không có "thư mục đang xem" để chuyển-tới/gỡ-khỏi).
  *
  * ⚠️ Gửi lên backend đúng DANH SÁCH ID client đang có trên bảng — không có
@@ -79,7 +79,7 @@ export function FolderBulkActions({ selectedIds, currentFolder, onClearSelection
               </Button>
               <Button type="button" variant="outline" size="sm" onClick={runUnlink} disabled={unlink.isPending}>
                 <FolderX className="size-4" />
-                Gỡ khỏi «{currentFolder.name}»
+                Gỡ khỏi <em>{currentFolder.name}</em>
               </Button>
             </>
           )}

@@ -51,9 +51,9 @@ interface AiKeyListCardProps {
  * Danh sách khóa AI theo ƯU TIÊN (ai-CR-098, nhóm C-04) — dùng chung cho khóa CÁ NHÂN (Trang cá nhân → Khóa AI) và
  * khóa CÔNG TY (Cấu hình hệ thống → Trợ lý AI). Một bảng `tab_ai_key` ở backend, khác nhau ở chủ khóa.
  *
- * ai-CR-101 (đại ca 07/10: «cấu hình phải dễ sử dụng»): thêm khóa chỉ còn ba bước — chọn hãng, bấm «Lấy khóa» mở
- * trang của hãng, dán rồi Lưu; model và trần lượt gập vào «Tùy chọn». Mỗi dòng đọc thành một câu (model gì, trần bao
- * nhiêu, hôm nay dùng mấy lượt), sửa bằng nút «Sửa» chứ không bày ô nhập sẵn.
+ * ai-CR-101 (đại ca 07/10: "cấu hình phải dễ sử dụng"): thêm khóa chỉ còn ba bước — chọn hãng, bấm "Lấy khóa" mở
+ * trang của hãng, dán rồi Lưu; model và trần lượt gập vào "Tùy chọn". Mỗi dòng đọc thành một câu (model gì, trần bao
+ * nhiêu, hôm nay dùng mấy lượt), sửa bằng nút "Sửa" chứ không bày ô nhập sẵn.
  *
  * Bot dùng khóa số 1; khóa đó hết tiền / hết hạn mức / sai thì tự nhảy sang khóa kế, không nhắn gì (đại ca chốt
  * 07/10/2026). Khóa thô chỉ đi VÀO (ô `password`, xóa trắng sau khi lưu); màn chỉ thấy 4 ký tự cuối.
@@ -74,7 +74,7 @@ export function AiKeyListCard({
   const busy = useRef(false)
   const current = list.find((p) => p.name === provider) ?? list[0]
   const idPrefix = title.replace(/\W+/g, '-')
-  //  ai-CR-108: trạm trung gian / máy chủ tự dựng kiểu OpenAI (vd modelapi.vn) — nhập địa chỉ trạm thay vì «Mở trang».
+  //  ai-CR-108: trạm trung gian / máy chủ tự dựng kiểu OpenAI (vd modelapi.vn) — nhập địa chỉ trạm thay vì "Mở trang".
   const custom = provider === 'openai_compat'
 
   async function handleSave() {

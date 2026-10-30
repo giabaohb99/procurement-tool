@@ -15,10 +15,10 @@ interface EmployeeTabWorkDecisionsProps {
 }
 
 /**
- * Tab «Quyết định bổ nhiệm» ở hồ sơ nhân sự — TÁCH từ tab gộp cũ «Quá trình
- * công tác & Quyết định» thành tab RIÊNG (đại ca chốt 03/10/2026, xem báo cáo
+ * Tab "Quyết định bổ nhiệm" ở hồ sơ nhân sự — TÁCH từ tab gộp cũ "Quá trình
+ * công tác & Quyết định" thành tab RIÊNG (đại ca chốt 03/10/2026, xem báo cáo
  * `fullstack-developer-261003-1110-tach-hai-tab.md`). KHÔNG có nút Sửa/Xóa/Áp
- * (ghi vẫn làm ở tab «Quá trình công tác»), nhưng CÓ nút «+ Thêm quyết định»
+ * (ghi vẫn làm ở tab "Quá trình công tác"), nhưng CÓ nút "+ Thêm quyết định"
  * (mục 3 — mở ĐÚNG hộp thêm/sửa dùng chung, loại mặc định Bổ nhiệm, Số QĐ bắt
  * buộc) — dùng CHUNG `useEmployeeWorkHistoryEditorDialog` với tab kia qua
  * `openCreate`, không chép logic điều phối hộp ra bản thứ hai.
@@ -31,7 +31,7 @@ interface EmployeeTabWorkDecisionsProps {
  *
  * Hộp tệp vẫn `editable={canEdit}` — khu này chỉ cấm SỬA DÒNG lịch sử (số QĐ,
  * ngày…), không cấm quản lý tệp đính kèm của dòng đó; cùng luật với hộp tệp ở
- * tab «Quá trình công tác».
+ * tab "Quá trình công tác".
  */
 export function EmployeeTabWorkDecisions({ employee }: EmployeeTabWorkDecisionsProps) {
   const { data, isLoading, isError } = useEmployeeWorkHistory(employee.id)

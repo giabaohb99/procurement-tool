@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react'
 /**
  * TICK CHỌN NHIỀU DÒNG của một bảng — `Set<number>` id đang chọn + bật/tắt
  * từng dòng + bật/tắt CẢ TRANG hiện tại. Dùng chung cho mọi bảng có thao tác
- * HÀNG LOẠT (đầu tiên: bảng «Văn bản» trong thư mục và màn Văn bản, phase 05/06).
+ * HÀNG LOẠT (đầu tiên: bảng "Văn bản" trong thư mục và màn Văn bản, phase 05/06).
  *
  * ⚠️ KHÔNG có khái niệm "chọn tất cả" chạy phía server — `selectedIds` chỉ là
  * những id CLIENT đang thấy trên trang đã tick, đúng luật "Thấy một phần"

@@ -25,7 +25,7 @@ import { useUsageProfileList } from '../hooks/use-usage-profile-list'
 /** Kỳ mặc định khi URL chưa có: 30 ngày qua (≈ 4 tuần). */
 const DEFAULT_PRESET = 'last_30_days'
 
-/** Danh sách «Hồ sơ cách làm việc» (duoc-CR-641): lọc kỳ/pháp nhân/phòng/vai trò/kiểu, bấm dòng mở hồ sơ. */
+/** Danh sách "Hồ sơ cách làm việc" (duoc-CR-641): lọc kỳ/pháp nhân/phòng/vai trò/kiểu, bấm dòng mở hồ sơ. */
 export function UsageProfileListPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -60,7 +60,7 @@ export function UsageProfileListPage() {
       mutate(next)
       return next
     }, { replace: true })
-  //  Tiêu đề cột chạy ba nhịp (giảm → tăng → thôi); ở đây chỉ đảo giảm/tăng nên nhịp «thôi» (khóa rỗng) quay về giảm.
+  //  Tiêu đề cột chạy ba nhịp (giảm → tăng → thôi); ở đây chỉ đảo giảm/tăng nên nhịp "thôi" (khóa rỗng) quay về giảm.
   const handleSortChange = (key: string, dir: 'asc' | 'desc') =>
     updateParams((n) => n.set('sort', key && dir === 'asc' ? 'metric' : '-metric'))
   const clearMetric = () => updateParams((n) => { n.delete('metric'); n.delete('sort') })

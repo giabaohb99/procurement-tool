@@ -13,7 +13,7 @@ interface TaskDueCellProps {
   done: boolean
   canEdit: boolean
   onChange: (dueDate: string) => void
-  /** Tên mốc, đọc lên cho trình đọc màn hình. Mặc định «Hạn chót». */
+  /** Tên mốc, đọc lên cho trình đọc màn hình. Mặc định "Hạn chót". */
   label?: string
   /**
    * Tô màu theo mức KHẨN (quá hạn đỏ, sắp tới cam). Tắt cho NGÀY BẮT ĐẦU: ngày
@@ -28,7 +28,7 @@ interface TaskDueCellProps {
  * bắt đầu.
  *
  * Khác `TaskDateRow` của panel chi tiết ở chỗ chỉ lo MỘT mốc và phải vừa một ô
- * bảng, nên không bày ba nút «Hôm nay · Ngày mai · Khác» ra hàng — chúng nằm
+ * bảng, nên không bày ba nút "Hôm nay · Ngày mai · Khác" ra hàng — chúng nằm
  * trong popover. Ô rỗng vẫn chiếm đủ chiều cao và hiện icon lịch mờ khi rê
  * chuột: không có gì để bấm thì người dùng không đoán được là sửa được tại chỗ.
  */

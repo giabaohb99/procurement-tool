@@ -13,7 +13,7 @@ import type { Holiday } from '../types/leave'
  *
  * 1. **Pháp nhân bỏ trống = áp cho MỌI pháp nhân.** Đây là lựa chọn đúng cho
  *    gần hết các dòng; chỉ khai riêng khi nhà máy nghỉ bù khác văn phòng.
- * 2. **«Lặp hằng năm» chỉ dùng được cho ngày CỐ ĐỊNH theo dương lịch** (01/01,
+ * 2. **"Lặp hằng năm" chỉ dùng được cho ngày CỐ ĐỊNH theo dương lịch** (01/01,
  *    30/4, 02/9). Tết Âm và Giỗ Tổ trôi theo lịch âm nên mỗi năm phải nhập lại
  *    — tick lặp cho chúng là năm sau nghỉ sai ngày.
  */
@@ -39,7 +39,7 @@ export const HOLIDAY_CRUD_CONFIG: CrudConfig<Holiday> = {
   storageKey: 'hr.holidays',
   listRoute: appRoutes.hr.holidays,
   detailRoute: (id) => appRoutes.hr.holidayDetail(id),
-  //  Đi cùng cặp với Loại nghỉ: hai màn nằm chung tab «Thiết lập», một màn mở
+  //  Đi cùng cặp với Loại nghỉ: hai màn nằm chung tab "Thiết lập", một màn mở
   //  hộp thoại còn màn kia nhảy trang thì thao tác đọc ra như hai phần mềm.
   createRoute: appRoutes.hr.holidayNew,
   searchParam: 'name',
@@ -58,7 +58,7 @@ export const HOLIDAY_CRUD_CONFIG: CrudConfig<Holiday> = {
   getItemName: (h) => `${h.name} (${formatDate(h.date)})`,
   deleteWarning: 'Xóa ngày lễ sẽ làm các đơn nghỉ phép tính lại số ngày kể từ lần nhập sau.',
   chips: holidayChips,
-  //  Khổ hẹp: thẻ thay bảng. Cột «Pháp nhân» lên dòng phụ vì `0` KHÔNG phải
+  //  Khổ hẹp: thẻ thay bảng. Cột "Pháp nhân" lên dòng phụ vì `0` KHÔNG phải
   //  "chưa chọn" mà là *áp cho mọi pháp nhân* — giá trị của gần hết các dòng, và
   //  cũng là thứ hay bị khai nhầm nhất.
   mobileCard: (h) => (

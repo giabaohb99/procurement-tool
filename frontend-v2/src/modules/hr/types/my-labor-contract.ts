@@ -1,5 +1,5 @@
 /**
- * «Hợp đồng của tôi» (duoc-CR-652) — khớp `MyLaborContractOut` của backend (`/api/me/labor-contracts`).
+ * "Hợp đồng của tôi" (duoc-CR-652) — khớp `MyLaborContractOut` của backend (`/api/me/labor-contracts`).
  * Hình dạng RÚT GỌN so với `LaborContract` của HR: không cờ `can_*`, không `transitions`, không id tệp.
  */
 export interface MyLaborContract {
@@ -10,7 +10,7 @@ export interface MyLaborContract {
   contract_type: number
   /** Trạng thái LƯU (2 Đã ký / 4 Đã chấm dứt). */
   status: number
-  /** Trạng thái hiển thị — thêm «Hết hạn» (3) suy ra theo ngày. */
+  /** Trạng thái hiển thị — thêm "Hết hạn" (3) suy ra theo ngày. */
   effective_status: number
   sign_date: string | null
   start_date: string

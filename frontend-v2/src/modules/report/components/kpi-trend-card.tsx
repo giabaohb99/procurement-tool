@@ -38,7 +38,7 @@ interface KpiTrendCardProps {
   /** Đang là chỉ số được chọn — viền nổi bật. Chỉ có nghĩa cùng `onClick`. */
   selected?: boolean
   /**
-   * Nút phụ ở chân thẻ (vd «Xem danh sách», duoc-CR-686). Cú bấm / phím của nó KHÔNG
+   * Nút phụ ở chân thẻ (vd "Xem danh sách", duoc-CR-686). Cú bấm / phím của nó KHÔNG
    * nổi lên thẻ — bấm nút không được đổi luôn chỉ số biểu đồ.
    */
   action?: ReactNode

@@ -16,7 +16,7 @@ export function useActiveTaskTypes() {
 /**
  * Đánh giá kết quả một việc đã xong (duoc-CR-656).
  *
- * Không làm lạc quan: «Phải làm lại» mở lại việc và đổi cột/trạng thái ở nhiều chỗ, nên chờ máy chủ
+ * Không làm lạc quan: "Phải làm lại" mở lại việc và đổi cột/trạng thái ở nhiều chỗ, nên chờ máy chủ
  * rồi làm mới còn hơn vá tay rồi giật lùi. Lỗi (403 khi không phải người giao…) hiện nguyên câu của máy chủ.
  */
 export function useSetTaskOutcome(listId: number) {

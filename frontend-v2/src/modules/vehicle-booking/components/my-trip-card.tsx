@@ -11,7 +11,7 @@ import { CarBookingIcon, DeliveryBookingIcon } from './booking-type-icons'
 import { BookingStatusBadge } from './status-pill'
 
 /**
- * Thẻ MỘT CHUYẾN ở màn «Chuyến của tôi».
+ * Thẻ MỘT CHUYẾN ở màn "Chuyến của tôi".
  *
  * Thứ bậc đọc: mục đích chuyến → thời gian → lộ trình → xe → nút. Mục đích đứng
  * đầu vì đó là thứ tài xế dùng để nhận ra chuyến; mã phiếu chỉ cần khi đối chiếu
@@ -99,10 +99,10 @@ export function MyTripCard({ trip }: { trip: VehicleBooking }) {
 
       {/*  --- Cụm nút: chỉ việc của TÀI XẾ (xem prop `scope`) ---
           ⚠️ `size="sm"` + `flex-1` cho từng nút là BẮT BUỘC ở đây, không phải cho
-          đẹp: lưới ba cột chừa cho thẻ 285px, mà hai nút cỡ thường («Chấp nhận» +
-          «Từ chối chuyến») cần 286px — nút thứ hai bị xén mất đuôi ngay trong
+          đẹp: lưới ba cột chừa cho thẻ 285px, mà hai nút cỡ thường ("Chấp nhận" +
+          "Từ chối chuyến") cần 286px — nút thứ hai bị xén mất đuôi ngay trong
           viền thẻ. Chia đều bề ngang thì hai nút luôn vừa, và một nút đứng lẻ
-          («Bắt đầu», «Hoàn thành») giãn hết hàng thành một vệt bấm rộng. */}
+          ("Bắt đầu", "Hoàn thành") giãn hết hàng thành một vệt bấm rộng. */}
       <div className="relative z-10 mt-auto flex items-center gap-2 border-t px-4 py-3 [&>button]:min-w-0 [&>button]:flex-1">
         <BookingWorkflowActions
           booking={trip}
@@ -120,10 +120,10 @@ export function MyTripCard({ trip }: { trip: VehicleBooking }) {
  * đến, một nét nối giữa hai chấm.
  *
  * ⚠️ Mỗi địa điểm được phép xuống DÒNG THỨ HAI (`line-clamp-2`) chứ không cắt
- * cụt ở một dòng. Địa chỉ ở đây có dạng «Tên chỗ — số nhà, phường, quận, thành
- * phố», mà cắt một dòng thì phần rụng đi luôn là QUẬN/THÀNH PHỐ — đúng phần tài
- * xế cần để biết đi hướng nào («45 Đường số 8, P.Linh Trung, TP.Thủ Đức, TP.Hồ
- * Chí ...»). Hai dòng đủ cho phần lớn địa chỉ đang có.
+ * cụt ở một dòng. Địa chỉ ở đây có dạng "Tên chỗ — số nhà, phường, quận, thành
+ * phố", mà cắt một dòng thì phần rụng đi luôn là QUẬN/THÀNH PHỐ — đúng phần tài
+ * xế cần để biết đi hướng nào ("45 Đường số 8, P.Linh Trung, TP.Thủ Đức, TP.Hồ
+ * Chí ..."). Hai dòng đủ cho phần lớn địa chỉ đang có.
  *
  * Chấm vì thế phải neo theo DÒNG ĐẦU của mỗi địa điểm (`mt-[7px]`), không neo
  * theo tâm khối chữ: địa điểm một dòng đứng cạnh địa điểm hai dòng mà neo giữa

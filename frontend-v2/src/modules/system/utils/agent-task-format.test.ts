@@ -30,7 +30,7 @@ describe('agent-task-format', () => {
   it('strips Telegram HTML and decodes entities, including a literal ampersand-lt sequence', () => {
     expect(stripTelegramHtml('<b>AI-0007</b>: gộp <code>erp-v2</code>')).toBe('AI-0007: gộp erp-v2')
     expect(stripTelegramHtml('a &lt; b &amp;&amp; c<br/>d')).toBe('a < b && c\nd')
-    //  &amp;lt; là chữ «&lt;» thật trong tin, không phải dấu nhỏ hơn.
+    //  &amp;lt; là chữ "&lt;" thật trong tin, không phải dấu nhỏ hơn.
     expect(stripTelegramHtml('&amp;lt;')).toBe('&lt;')
     expect(stripTelegramHtml('')).toBe('')
   })

@@ -5,7 +5,7 @@ import { nameInitials } from './name-initials'
 describe('nameInitials', () => {
   it('lấy chữ đầu của hai từ cuối nên hai người khác nhau không ra cùng một chữ tắt', () => {
     //  Đúng ca đã hỏng trên màn Quản lý dự án: bản cũ lấy hai ký tự đầu của TỪ
-    //  CUỐI nên cả hai người đều ra «MỘ», hai vòng tròn cạnh nhau giống hệt.
+    //  CUỐI nên cả hai người đều ra "MỘ", hai vòng tròn cạnh nhau giống hệt.
     expect(nameInitials('Nguyễn Văn Nhân Sự Một')).toBe('SM')
     expect(nameInitials('Phạm Thị Kế Toán Một')).toBe('TM')
   })

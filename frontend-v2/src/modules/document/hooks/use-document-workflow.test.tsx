@@ -39,10 +39,10 @@ function hasReload(goc: string): boolean {
 
 describe('useDocumentWorkflow', () => {
   it('gửi duyệt xong phải nạp lại CẢ phiên duyệt, không chỉ bản ghi văn bản', async () => {
-    //  LỖI ĐÃ XẢY RA (20/08/2026): chỉ nạp lại `document`. Văn bản sang «Đang
-    //  duyệt» nhưng phiên duyệt còn là kết quả cũ (`null`, hỏi từ lúc còn Nháp),
+    //  LỖI ĐÃ XẢY RA (20/08/2026): chỉ nạp lại `document`. Văn bản sang "Đang
+    //  duyệt" nhưng phiên duyệt còn là kết quả cũ (`null`, hỏi từ lúc còn Nháp),
     //  nên trang chi tiết tưởng chưa vào bộ máy nhiều bước và vẫn bày hai nút
-    //  «Trả lại» + «Duyệt và ban hành». Bấm vào chỉ nhận lỗi 409.
+    //  "Trả lại" + "Duyệt và ban hành". Bấm vào chỉ nhận lỗi 409.
     const { result } = renderHook(() => useDocumentWorkflow(7), { wrapper: wrapper })
 
     result.current.submit.mutate()

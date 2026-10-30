@@ -39,7 +39,7 @@ describe('LaborContractCustomFields', () => {
     expect(screen.getByText('Thông tin bổ sung cho mẫu')).toBeInTheDocument()
   })
 
-  it('biến bắt buộc có dấu sao + chú «bắt buộc khi sinh tệp»; mô tả hiện dưới ô', () => {
+  it('biến bắt buộc có dấu sao + chú "bắt buộc khi sinh tệp"; mô tả hiện dưới ô', () => {
     render(<Harness fields={[f('a_chu', 1, { is_required: true, description: 'Điền số ngày phép' })]} />)
     expect(screen.getByTitle('Bắt buộc khi sinh tệp và khi chuyển sang Đã ký')).toBeInTheDocument()
     expect(screen.getByText(/Bắt buộc khi sinh tệp \(lưu nháp/)).toBeInTheDocument()

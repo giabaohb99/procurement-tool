@@ -84,7 +84,7 @@ export function TaskStatusSelect({
 //
 //  Mỗi tông phải khai CẢ `dark:bg-…`: `SelectTrigger` gốc mang sẵn
 //  `dark:bg-input/30`, không đè lên thì ở nền tối viên thuốc mất màu và trạng
-//  thái «Hoàn thành» nhìn hệt «Đang mở».
+//  thái "Hoàn thành" nhìn hệt "Đang mở".
 const STATUS_TONE: Record<number, { chip: string; text: string; icon: typeof Circle }> = {
   [WORK_TASK_STATUS.OPEN]: {
     chip: 'bg-sky-500/10 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',

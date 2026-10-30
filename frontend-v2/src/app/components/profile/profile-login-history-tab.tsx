@@ -22,7 +22,7 @@ const DAY_RANGES = [
 ] as const
 
 /**
- * Tab «Lịch sử đăng nhập» ở Trang cá nhân (bao-CR-400).
+ * Tab "Lịch sử đăng nhập" ở Trang cá nhân (bao-CR-400).
  *
  * Trả lời ba câu người dùng hay hỏi về tài khoản của CHÍNH MÌNH: đang có bao
  * nhiêu máy giữ phiên, gần đây đăng nhập từ máy nào, và có ai gõ sai mật khẩu
@@ -34,7 +34,7 @@ const DAY_RANGES = [
 export function ProfileLoginHistoryTab() {
   const [days, setDays] = useState<number>(LOGIN_HISTORY_DAYS)
   const history = useMyLoginHistory(days)
-  //  Cùng cache với tab «Thiết bị của tôi» — mở tab nào trước cũng chỉ gọi một lần.
+  //  Cùng cache với tab "Thiết bị của tôi" — mở tab nào trước cũng chỉ gọi một lần.
   const sessions = useMySessions(true)
 
   const aliveCount = sessions.data?.alive_count ?? 0

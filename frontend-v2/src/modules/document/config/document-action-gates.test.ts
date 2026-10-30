@@ -31,7 +31,7 @@ describe('resolveDocumentActionGates', () => {
     expect(g).toMatchObject({ canWrite: false, canDelete: false, canApprove: false, canCreate: false })
   })
 
-  //  duoc-CR-659: nút «Ban hành» của bản lưu trữ = ký HĐ gốc — chỉ khi backend bật cờ VÀ có id HĐ.
+  //  duoc-CR-659: nút "Ban hành" của bản lưu trữ = ký HĐ gốc — chỉ khi backend bật cờ VÀ có id HĐ.
   it('bản lưu trữ được ban hành: trả id HĐ gốc để gọi đường ký', () => {
     const g = resolveDocumentActionGates(
       { read: true, write: true, delete: false, is_archive: true, archive_contract_id: 14, can_issue_archive: true },

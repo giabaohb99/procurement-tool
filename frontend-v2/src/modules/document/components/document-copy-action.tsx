@@ -13,7 +13,7 @@ import { useCopyDocument } from '../hooks/use-documents'
  *
  * Ô của `DataTable` là `min-h-9` + `py-1.5`, nên chỗ trống cho nội dung đúng
  * 23px: nhét một nút 32px vào là **cả bảng cao thêm 9px mỗi dòng** — đó là lý do
- * bảng «Văn bản đi» trông thưa hơn hẳn «Văn bản đến» dù hai bảng cùng một khung.
+ * bảng "Văn bản đi" trông thưa hơn hẳn "Văn bản đến" dù hai bảng cùng một khung.
  * Vùng bấm 24px vẫn thoải mái vì cả ô là vùng chờ chuột.
  */
 const ROW_ACTIONS = 'size-6 -my-px'

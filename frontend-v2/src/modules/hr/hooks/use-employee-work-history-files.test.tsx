@@ -8,9 +8,9 @@ import type { AuthUser } from '@/core/auth/auth-types'
 import { queryKeys } from '@/shared/constants/query-keys'
 import type { WorkHistoryFile } from '../types/employee-work-history'
 
-/*  Lỗi phát hiện lúc kiểm tay bằng Chrome DevTools 03/10/2026: mở hộp «Quản lý
-    tệp» của một dòng, tải tệp lên thành công (toast báo đúng) nhưng cột «Tệp»
-    của dòng ở bảng ngoài vẫn đứng «—» — phải bấm «Tải lại dữ liệu» mới thấy số
+/*  Lỗi phát hiện lúc kiểm tay bằng Chrome DevTools 03/10/2026: mở hộp "Quản lý
+    tệp" của một dòng, tải tệp lên thành công (toast báo đúng) nhưng cột "Tệp"
+    của dòng ở bảng ngoài vẫn đứng "—" — phải bấm "Tải lại dữ liệu" mới thấy số
     mới. Nguyên nhân: hộp tệp chỉ dọn khóa `workHistoryFiles(historyId)` của
     CHÍNH NÓ, không dọn `employeeWorkHistory(eid)` — khóa mà bảng ngoài đọc
     `file_count` từ đó. */

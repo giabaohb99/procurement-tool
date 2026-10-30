@@ -30,7 +30,7 @@ interface SelfContactDialogProps {
 }
 
 /**
- * Nút «Sửa» + hộp thoại TỰ SỬA LIÊN HỆ (bao-CR-508) — số điện thoại (kể cả số khác) và hai địa
+ * Nút "Sửa" + hộp thoại TỰ SỬA LIÊN HỆ (bao-CR-508) — số điện thoại (kể cả số khác) và hai địa
  * chỉ của chính mình. Lưu là áp ngay, không báo phòng Nhân sự; backend ghi nhật
  * ký như mọi lần sửa hồ sơ khác.
  *

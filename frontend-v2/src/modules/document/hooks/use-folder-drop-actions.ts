@@ -23,7 +23,7 @@ export function useFolderDropActions(folderId: number, folderName: string) {
    * Thả lên một thẻ/dòng thư mục. Văn bản mặc định CHUYỂN (gắn vào đích rồi
    * gỡ khỏi thư mục NGUỒN — chỉ thư mục nguồn, không đụng các thư mục khác văn
    * bản đang nằm); `keepInSource` (giữ Alt/Option) = THÊM một chỗ nữa. Đổi
-   * 24/09/2026: mặc định cũ là THÊM, người dùng thấy văn bản «nhân bản».
+   * 24/09/2026: mặc định cũ là THÊM, người dùng thấy văn bản "nhân bản".
    */
   function handleDropOnFolder(
     targetFolderId: number,
@@ -50,7 +50,7 @@ export function useFolderDropActions(folderId: number, folderName: string) {
 
   async function handleRemoveDocument(document: DocumentRecord) {
     const ok = await confirm({
-      message: `Gỡ «${document.title}» khỏi thư mục «${folderName}»? Văn bản vẫn còn nguyên ở các thư mục khác.`,
+      message: `Gỡ "${document.title}" khỏi thư mục "${folderName}"? Văn bản vẫn còn nguyên ở các thư mục khác.`,
       confirmLabel: 'Gỡ',
     })
     if (ok) unlink.mutate({ document_ids: [document.id], folder_id: folderId })

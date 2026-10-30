@@ -1,11 +1,11 @@
-// Mục «Pháp lý» của Tra cứu thị trường (29/09/2026): bảng DUYỆT toàn bộ danh mục hóa chất theo
+// Mục "Pháp lý" của Tra cứu thị trường (29/09/2026): bảng DUYỆT toàn bộ danh mục hóa chất theo
 // văn bản — hoạt chất BVTV cấm (TT 75/2025), NĐ 24/2026 phụ lục I–IV (phụ lục IV có ngưỡng khối
 // lượng), hóa chất phải công bố theo lô (TT 01/2026). Trước đây chỉ tra được từng từ trong mục
-// «Pháp lý & thuế»; mục đó nay chỉ còn phần thuế («Thuế»).
+// "Pháp lý & thuế"; mục đó nay chỉ còn phần thuế ("Thuế").
 //
 // Bộ lọc là state CỤC BỘ: ô tìm `q` trên URL là của thanh lọc dòng hàng hải quan, dùng chung thì
 // đổi mục là ô tìm hóa chất bị ghi đè bằng tên hàng. Riêng thẻ cảnh báo trên đầu vẫn đọc từ khóa
-// dòng hàng đang tra — dải cảnh báo ở các mục khác bảo «xem mục Pháp lý» là trỏ vào thẻ đó.
+// dòng hàng đang tra — dải cảnh báo ở các mục khác bảo "xem mục Pháp lý" là trỏ vào thẻ đó.
 import { useMemo, useState } from 'react'
 
 import { DataTable } from '@/shared/data-table'
@@ -27,7 +27,7 @@ import { CustomsRegulationAlertTable } from './customs-regulation-alert-table'
 
 const ALL = 'all'
 const DEFAULT_PAGE_SIZE = 50
-//  v2 (29/09/2026): thêm cột «Thuốc BVTV chứa» — bản lưu bố cục cũ thắng cột mới (table.md §4).
+//  v2 (29/09/2026): thêm cột "Thuốc BVTV chứa" — bản lưu bố cục cũ thắng cột mới (table.md §4).
 //  v3 (duoc-CR-598): thêm STT · Tên chất · Công thức hóa học.
 //  v4 (07/10/2026): STT dời lên ĐẦU bảng — thứ tự cột đã lưu trong máy sẽ giữ STT ở chỗ cũ nếu không đổi khóa.
 const STORAGE_KEY = 'procurement.customs-regulations-v4'
@@ -45,7 +45,7 @@ export function CustomsRegulationTab({ keyword, alerts }: CustomsRegulationTabPr
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [page, setPage] = usePageResetOnFilterChange([debouncedSearch, listCode])
   const [pesticidesOf, setPesticidesOf] = useState<CustomsRegulationHit | null>(null)
-  //  Cột «Thuốc BVTV chứa» đứng TRƯỚC «Lưu ý» (cột rộng nhất): đặt cuối thì nó rơi ra ngoài khung
+  //  Cột "Thuốc BVTV chứa" đứng TRƯỚC "Lưu ý" (cột rộng nhất): đặt cuối thì nó rơi ra ngoài khung
   //  ở màn 1440px, phải cuộn ngang mới thấy — mà nó là thứ mới của bảng này.
   const columns = useMemo(() => {
     const at = CUSTOMS_REGULATION_COLUMNS.findIndex((column) => column.key === 'obligation')
@@ -72,7 +72,7 @@ export function CustomsRegulationTab({ keyword, alerts }: CustomsRegulationTabPr
 
       {alerts.length > 0 && (
         <Card className="gap-3 p-4">
-          <CardTitle className="text-base">Cảnh báo cho từ khóa đang tra «{keyword}»</CardTitle>
+          <CardTitle className="text-base">Cảnh báo cho từ khóa đang tra <strong>{keyword}</strong></CardTitle>
           <CustomsRegulationAlertTable items={alerts} />
         </Card>
       )}

@@ -12,7 +12,7 @@ describe('classifyLeaveForPrint', () => {
     expect(classifyLeaveForPrint(['Nghỉ việc riêng'], 2)).toEqual({ paid: false, unpaid: true, insurance: false })
   })
 
-  //  Mẫu chỉ có ba ô: cưới / tang / bù vẫn hưởng lương công ty nên rơi vào ô «có lương».
+  //  Mẫu chỉ có ba ô: cưới / tang / bù vẫn hưởng lương công ty nên rơi vào ô "có lương".
   it('puts company-paid special leave (wedding, funeral, comp-off) under the paid box', () => {
     for (const name of ['Nghỉ cưới hỏi', 'Nghỉ tang chế', 'Nghỉ bù', 'Nghỉ việc riêng có lương']) {
       expect(classifyLeaveForPrint([name], 1)).toEqual({ paid: true, unpaid: false, insurance: false })
@@ -25,8 +25,8 @@ describe('classifyLeaveForPrint', () => {
     }
   })
 
-  //  «ốm … không lương» chứa cả hai từ khóa — không lương thắng, vì BHXH không chi.
-  it('lets «không lương» win over a sickness keyword in the same name', () => {
+  //  "ốm … không lương" chứa cả hai từ khóa — không lương thắng, vì BHXH không chi.
+  it('lets "không lương" win over a sickness keyword in the same name', () => {
     expect(classifyLeaveForPrint(['Nghỉ ốm không lương'], 1)).toEqual({ paid: false, unpaid: true, insurance: false })
   })
 

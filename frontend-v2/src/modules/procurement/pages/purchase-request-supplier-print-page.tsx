@@ -61,7 +61,7 @@ export function PurchaseRequestSupplierPrintPage() {
   const { data: warehouses } = usePurchaseRequestPrintWarehouses()
   // Tick mặc định TẤT CẢ các NCC; lưu tập BỎ tick để không phải chờ dữ liệu về.
   const [unchecked, setUnchecked] = useState<ReadonlySet<string>>(new Set())
-  //  bao-CR-546: cùng ô chọn «Mẫu in» + ô tick «Ẩn nơi giao» với bản in gốc.
+  //  bao-CR-546: cùng ô chọn "Mẫu in" + ô tick "Ẩn nơi giao" với bản in gốc.
   //  bao-CR-574: mẫu đi theo `?mau=` — chọn ở phiếu chung rồi sang đây vẫn giữ.
   const [searchParams] = useSearchParams()
   const [template, setTemplate] = useState<PrintTemplateValue>(() =>
@@ -166,8 +166,8 @@ export function PurchaseRequestSupplierPrintPage() {
           )}
         </div>
 
-        {/* bao-CR-574: quay về phiếu chung bằng nhóm «Phiếu chung» của chính ô chọn này
-            (thay nút lẻ «Xem tờ phiếu gốc»), giữ nguyên kiểu mẫu đang chọn. */}
+        {/* bao-CR-574: quay về phiếu chung bằng nhóm "Phiếu chung" của chính ô chọn này
+            (thay nút lẻ "Xem tờ phiếu gốc"), giữ nguyên kiểu mẫu đang chọn. */}
         <PurchaseRequestPrintOptions
           layout="supplier"
           template={template}

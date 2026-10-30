@@ -13,7 +13,7 @@ import {
 
 /**
  * Lựa chọn của biểu đồ linh hoạt, lấy URL làm nguồn sự thật (`chart_by`, `chart_type`,
- * `chart_top`). `setOptions` ghi CẢ BA trong MỘT lượt `setParams` — đổi «Vẽ theo» kéo theo
+ * `chart_top`). `setOptions` ghi CẢ BA trong MỘT lượt `setParams` — đổi "Vẽ theo" kéo theo
  * đổi kiểu, hai lượt ghi liên tiếp thì lượt sau đọc URL cũ và đè mất lượt trước
  * (`use-url-param-state.ts`).
  */

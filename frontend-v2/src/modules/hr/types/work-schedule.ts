@@ -1,5 +1,5 @@
 /**
- * Kiểu dữ liệu của «Lịch làm việc» — khớp hợp đồng API ở
+ * Kiểu dữ liệu của "Lịch làm việc" — khớp hợp đồng API ở
  * `plans/261005-0925-hr-lich-lam-viec/phase-02-*.md` §API.
  *
  * NHÃN và danh sách chọn lấy từ `@/shared/constants/statuses` (`WORK_DAY_KIND`,
@@ -15,7 +15,7 @@ export const WORK_DAY_KIND_CODE = { OFF: 1, FULL: 2, MORNING: 3, AFTERNOON: 4 } 
 /** Cấp gán lịch (`WorkScheduleLevel` backend). */
 export const WORK_SCHEDULE_LEVEL_CODE = { SYSTEM: 1, COMPANY: 2, DEPARTMENT: 3, EMPLOYEE: 4 } as const
 
-/** Nhãn cấp «Toàn hệ thống» lấy từ bộ mã sinh — mọi chỗ hiển thị dùng đúng một nhãn này. */
+/** Nhãn cấp "Toàn hệ thống" lấy từ bộ mã sinh — mọi chỗ hiển thị dùng đúng một nhãn này. */
 export const SYSTEM_LEVEL_LABEL =
   WORK_SCHEDULE_LEVEL.find((o) => Number(o.value) === WORK_SCHEDULE_LEVEL_CODE.SYSTEM)?.label ??
   'Toàn hệ thống'
@@ -48,7 +48,7 @@ export type WorkScheduleAssignment = {
   id: number
   target_level: number
   target_level_label: string
-  /** `0` ở cấp «Toàn hệ thống». */
+  /** `0` ở cấp "Toàn hệ thống". */
   target_id: number
   target_name: string
   schedule_id: number

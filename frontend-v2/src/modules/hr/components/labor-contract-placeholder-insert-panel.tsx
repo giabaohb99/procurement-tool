@@ -1,4 +1,4 @@
-// duoc-CR-606 (07/10/2026) — khung «Chèn biến» cạnh trình soạn mẫu: bấm một biến là chèn
+// duoc-CR-606 (07/10/2026) — khung "Chèn biến" cạnh trình soạn mẫu: bấm một biến là chèn
 // `{{ ma_bien }}` vào đúng chỗ con trỏ. Trước đây người soạn phải tự gõ biến trong Word, gõ sai
 // một chữ là bị chặn lúc tải lên. Danh mục đọc từ API (backend giữ), KHÔNG chép sang TS.
 import { Braces, Loader2 } from 'lucide-react'
@@ -48,7 +48,7 @@ export function LaborContractPlaceholderInsertPanel({ onInsert, disabled, classN
         )}
         {isError && <p className="text-sm text-destructive">Không tải được danh sách biến.</p>}
         {!isLoading && !isError && groups.length === 0 && (
-          <p className="text-sm text-muted-foreground">Không có biến nào khớp «{query.trim()}».</p>
+          <p className="text-sm text-muted-foreground">Không có biến nào khớp <strong>{query.trim()}</strong>.</p>
         )}
         {groups.map(({ group, items }) => (
           <section key={group}>

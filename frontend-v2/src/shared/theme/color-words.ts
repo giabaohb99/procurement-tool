@@ -48,7 +48,7 @@ const COLOR_WORDS: ColorWord[] = [
   //  một bên là nâu đất còn một bên là vàng cam chói.
   { word: 'nâu', ranges: [[10, 42]], maxChroma: 0.5, maxLightness: 60 },
   { word: 'cam', ranges: [[10, 42]] },
-  //  Bắt đầu từ 36 chứ không phải 42 để «hổ phách» (`#f59e0b`, H=38) gọi được
+  //  Bắt đầu từ 36 chứ không phải 42 để "hổ phách" (`#f59e0b`, H=38) gọi được
   //  là vàng — đúng tên gọi quen thuộc của màu amber, dù góc màu ngả sang cam.
   { word: 'vàng', ranges: [[36, 70]] },
   { word: 'xám', ranges: null },

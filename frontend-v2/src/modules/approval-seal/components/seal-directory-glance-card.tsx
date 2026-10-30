@@ -25,7 +25,7 @@ const MAX_CLERKS = 4
  *    như biểu đồ tải hỏng. Nay bỏ `justify-between` và cho lưới `items-start`.
  * 2. Mỗi dòng văn thư in TÊN ĐẦY ĐỦ của mọi công ty phụ trách, nối bằng dấu
  *    phẩy ("CÔNG TY TNHH N2SBIO VIỆT NAM, CÔNG TY TNHH XUẤT NHẬP KHẨU IDA
- *    GLOBAL, …") nên dòng gãy ba hàng và huy hiệu «Văn thư tổng» bị đẩy vào
+ *    GLOBAL, …") nên dòng gãy ba hàng và huy hiệu "Văn thư tổng" bị đẩy vào
  *    giữa đoạn chữ. Nay dùng cụm ảnh tròn công ty như ở màn danh sách văn thư.
  */
 export function SealDirectoryGlanceCard() {

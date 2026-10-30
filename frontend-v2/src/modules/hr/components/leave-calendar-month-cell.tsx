@@ -28,10 +28,10 @@ interface LeaveCalendarMonthCellProps {
  *   tháng — ba sắc xám cạnh nhau (nền tháng, nền cuối tuần, nền ngoài tháng)
  *   làm lưới trông lem nhem, mà chính chip màu mới là thứ cần nổi lên. Nay chỉ
  *   **làm nhạt CHỮ**; nền để trắng, trừ ngày lễ (xem dưới).
- * · **«+N người nữa» là DÒNG CUỐI, và nó CHIẾM CHỖ của một chip.** Ô cao ~95px
+ * · **"+N người nữa" là DÒNG CUỐI, và nó CHIẾM CHỖ của một chip.** Ô cao ~95px
  *   chứa bốn dòng; ngày có 5 người mà cứ vẽ 3 chip rồi thêm dòng "+2" là năm
  *   dòng, dòng cuối bị đường kẻ ô cắt ngang — đúng lúc đông người mới cần lối
- *   xem tiếp. Vậy nên bớt một chip: 2 chip + «+3 người nữa». Phép chia dòng nằm
+ *   xem tiếp. Vậy nên bớt một chip: 2 chip + "+3 người nữa". Phép chia dòng nằm
  *   ở `splitMonthCellLines`.
  *
  * ⚠️ **Ngày lễ vẫn tô nền hồng nhạt** — chỗ này cố ý KHÁC Google Calendar. Với

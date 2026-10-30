@@ -196,7 +196,7 @@ describe('PurchaseRequestInfoCard — Trưởng bộ phận', () => {
 
     expect(screen.queryByRole('button', { name: 'Lê Văn Trưởng - Trưởng phòng' })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Đỗ Văn Phó' }))
-    //  bao-CR-499: phiếu chưa chọn riêng người duyệt → ô «Trưởng phòng phê duyệt» đi theo TBP mới.
+    //  bao-CR-499: phiếu chưa chọn riêng người duyệt → ô "Trưởng phòng phê duyệt" đi theo TBP mới.
     expect(onChange).toHaveBeenCalledWith({
       head_of_dept_id: 51,
       head_of_dept: 'Đỗ Văn Phó',
@@ -206,8 +206,8 @@ describe('PurchaseRequestInfoCard — Trưởng bộ phận', () => {
   })
 })
 
-//  03/10/2026 — bỏ ô tick «Nhờ phòng khác xử lý» (bao-CR-488): một ô chọn, mặc định «Phòng thu
-//  mua mặc định», bấm mới xổ danh mục. Mục mặc định = CHƯA nhờ phòng nào (không gửi, backend tự
+//  03/10/2026 — bỏ ô tick "Nhờ phòng khác xử lý" (bao-CR-488): một ô chọn, mặc định "Phòng thu
+//  mua mặc định", bấm mới xổ danh mục. Mục mặc định = CHƯA nhờ phòng nào (không gửi, backend tự
 //  chọn: nhà máy → chính phòng mình) — KHÔNG được quy về phòng `0`.
 describe('PurchaseRequestInfoCard — Phòng xử lý lúc lập phiếu', () => {
   const DEPARTMENTS = [
@@ -218,7 +218,7 @@ describe('PurchaseRequestInfoCard — Phòng xử lý lúc lập phiếu', () =>
   it('shows Phòng thu mua mặc định by default and no tick box when creating', () => {
     renderCard({ isNew: true, departments: DEPARTMENTS })
     expect(screen.queryByRole('checkbox', { name: /Nhờ phòng khác xử lý/ })).not.toBeInTheDocument()
-    //  Lỗi cũ: ô hiện nguyên số «0» vì giá trị 0 không nằm trong danh mục.
+    //  Lỗi cũ: ô hiện nguyên số "0" vì giá trị 0 không nằm trong danh mục.
     expect(screen.getByRole('combobox', { name: /Phòng xử lý/ })).toHaveValue('Phòng thu mua mặc định')
   })
 

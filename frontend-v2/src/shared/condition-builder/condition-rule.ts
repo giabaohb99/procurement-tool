@@ -8,15 +8,15 @@
  * lặng** — điều kiện không bao giờ khớp và không có gì báo.
  *
  * Nâng từ `modules/approval/helpers/node-condition.ts` lên `shared/` ở
- * bao-CR-528 vì màn Cấu hình hệ thống cũng cần đúng bộ chọn này (ô «Điều kiện
- * bỏ qua điều phối» của YCMH). Bản nâng thêm ba thứ bộ máy duyệt văn bản chưa
+ * bao-CR-528 vì màn Cấu hình hệ thống cũng cần đúng bộ chọn này (ô "Điều kiện
+ * bỏ qua điều phối" của YCMH). Bản nâng thêm ba thứ bộ máy duyệt văn bản chưa
  * dùng: hai phép KHÔNG cần giá trị (`empty` · `not_empty`), ô SỐ nhập tay và ô
  * CÓ/KHÔNG. Bộ ô của văn bản không khai chúng nên màn luồng duyệt vẫn y như cũ.
  */
 
 /**
  * Phép so bộ chọn diễn tả được. Backend còn `contains` (so chuỗi) — cố ý chưa
- * đưa vào vì chưa ô nào cần; điều kiện dùng nó sẽ rơi vào «khai tay».
+ * đưa vào vì chưa ô nào cần; điều kiện dùng nó sẽ rơi vào "khai tay".
  */
 export type ConditionOp =
   | 'eq'
@@ -32,7 +32,7 @@ export type ConditionOp =
 
 /** Phép nhận NHIỀU giá trị — ô nhập là bộ chọn nhiều, không phải chọn một. */
 const MULTI_OPS: ConditionOp[] = ['in', 'not_in']
-/** Phép không cần giá trị: dòng chỉ có «trường · phép». */
+/** Phép không cần giá trị: dòng chỉ có "trường · phép". */
 const VALUE_FREE_OPS: ConditionOp[] = ['empty', 'not_empty']
 
 export function isMultiValueOp(op: ConditionOp): boolean {
@@ -46,8 +46,8 @@ export function isValueFreeOp(op: ConditionOp): boolean {
 /**
  * Giá trị của ô nhập theo kiểu nào.
  * - `choice` (mặc định): chọn từ danh mục — id hoặc mức trong thang, đều từ 1
- *   trở lên, nên `0` nghĩa là «chưa chọn».
- * - `number`: số nhập tay (số dòng hàng…). `0` là giá trị THẬT, «chưa nhập» là `null`.
+ *   trở lên, nên `0` nghĩa là "chưa chọn".
+ * - `number`: số nhập tay (số dòng hàng…). `0` là giá trị THẬT, "chưa nhập" là `null`.
  * - `bool`: có / không. Lưu `true`/`false` của JSON — backend so bằng chuỗi,
  *   `str(False)` là `"False"`, nên lưu `0` thì không bao giờ khớp.
  */
@@ -97,7 +97,7 @@ function kindOf(field: ConditionField | undefined): ConditionValueKind {
  * Chuỗi điều kiện → các dòng của bộ chọn.
  *
  * `fields` là danh mục ô của đúng ngữ cảnh đó: ô lạ, hoặc phép mà ô đó không
- * bày, nghĩa là điều kiện này viết cho thứ bộ chọn không biết — xếp vào «khai tay».
+ * bày, nghĩa là điều kiện này viết cho thứ bộ chọn không biết — xếp vào "khai tay".
  */
 export function parseCondition(raw: string, fields: ConditionField[]): ParsedCondition {
   if (!(raw || '').trim()) return { rows: [], advanced: false }

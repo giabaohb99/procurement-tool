@@ -24,7 +24,7 @@ interface Paged<T> {
 
 export const approvalFlowApi = {
   options: () => apiGet<ApprovalOptions>(`${FLOW_URL}/options`),
-  /** Ai đang giữ quyền Duyệt trên khóa `entity` (cách chọn «Người có quyền duyệt»). */
+  /** Ai đang giữ quyền Duyệt trên khóa `entity` (cách chọn "Người có quyền duyệt"). */
   permissionApprovers: (entity: string) =>
     apiGet<PermissionApprover[]>(`${FLOW_URL}/permission-approvers`, { params: { entity } }),
   list: (entity?: string) =>

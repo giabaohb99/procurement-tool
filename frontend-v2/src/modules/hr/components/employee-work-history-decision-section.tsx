@@ -27,11 +27,11 @@ interface EmployeeWorkHistoryDecisionSectionProps {
   /** Khóa nhớ bố cột ở `localStorage` — khác bảng chính vì bộ cột khác hẳn. */
   storageKey: string
   /**
-   * Bỏ trống = ẨN nút «+ Thêm quyết định» (thẻ Trang cá nhân `/me`, hoặc
-   * người xem không có quyền sửa — cùng điều kiện với «Thêm dòng» của khu
+   * Bỏ trống = ẨN nút "+ Thêm quyết định" (thẻ Trang cá nhân `/me`, hoặc
+   * người xem không có quyền sửa — cùng điều kiện với "Thêm dòng" của khu
    * Quá trình công tác). Có giá trị → hiện ở CUỐI thanh công cụ (cùng chỗ
-   * «Thêm dòng» của khu kia) VÀ thay cho nút gợi ý lúc rỗng — bấm MỞ THẲNG hộp
-   * thêm (mục 3, 03/10/2026; trước đó nhảy sang tab «Quá trình công tác»).
+   * "Thêm dòng" của khu kia) VÀ thay cho nút gợi ý lúc rỗng — bấm MỞ THẲNG hộp
+   * thêm (mục 3, 03/10/2026; trước đó nhảy sang tab "Quá trình công tác").
    */
   onAddClick?: () => void
   /** Việc chạy khi bấm Tải lại. Bỏ trống = tự làm mới mọi query đang hoạt động. */
@@ -39,11 +39,11 @@ interface EmployeeWorkHistoryDecisionSectionProps {
 }
 
 /**
- * Tab/khu «Quyết định bổ nhiệm» (đại ca chốt 03/10/2026) — CHỈ các dòng có
- * `decision_no`, dùng CHUNG nguồn dữ liệu với tab/khu «Quá trình công tác»
+ * Tab/khu "Quyết định bổ nhiệm" (đại ca chốt 03/10/2026) — CHỈ các dòng có
+ * `decision_no`, dùng CHUNG nguồn dữ liệu với tab/khu "Quá trình công tác"
  * (không gọi API thêm). Dùng lại ở tab hồ sơ (`employee-tab-work-decisions.tsx`)
  * VÀ thẻ Trang cá nhân `/me` — khu này không nhận `actions` (không Sửa/Xóa/Áp,
- * việc đó vẫn làm ở tab «Quá trình công tác») nhưng CÓ thể nhận `onAddClick`
+ * việc đó vẫn làm ở tab "Quá trình công tác") nhưng CÓ thể nhận `onAddClick`
  * (mục 3) vì tạo MỘT quyết định mới không cần sửa dòng cũ nào.
  */
 export function EmployeeWorkHistoryDecisionSection({

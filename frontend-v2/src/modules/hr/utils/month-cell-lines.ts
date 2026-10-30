@@ -35,7 +35,7 @@ const DAY_ROW_HEIGHT = 22
  * chỉ ~79px trên laptop 1280×800 (2 dòng). Đặt cứng 3 dòng thì laptop thấp bày
  * ra chip thứ ba **bị đường kẻ ô cắt ngang** — đúng lỗi ảnh báo 09/09/2026.
  *
- * Sàn 2 dòng: hẹp hơn nữa thì ô không đủ chỗ cho cả «+N người nữa», mà mất dòng
+ * Sàn 2 dòng: hẹp hơn nữa thì ô không đủ chỗ cho cả "+N người nữa", mà mất dòng
  * đó là mất lối duy nhất đọc tên những người bị giấu. Cửa sổ thấp tới mức đó thì
  * chấp nhận cắt — `overflow-hidden` của ô lo phần còn lại.
  */
@@ -47,7 +47,7 @@ export function monthCellLinesFor(cellHeight: number): number {
 /**
  * Ô bày được mấy chip người nghỉ, và giấu mấy người.
  *
- * ⚠️ **Dòng «+N người nữa» CHIẾM CHỖ của một chip**, không cộng thêm vào. Vẽ đủ
+ * ⚠️ **Dòng "+N người nữa" CHIẾM CHỖ của một chip**, không cộng thêm vào. Vẽ đủ
  * ba chip rồi thêm dòng "+N" là năm dòng trong một ô bốn dòng: dòng cuối bị
  * đường kẻ ô cắt ngang, mà nó chính là lối duy nhất để đọc tên những người bị
  * giấu — đúng lúc một ngày đông người nghỉ mới là lúc cần tới nó.
@@ -64,7 +64,7 @@ export function splitMonthCellLines(
   if (total <= room) return { visible: total, hidden: 0 }
 
   //  `Math.max(…, 0)`: ngày lễ + ô quá thấp có thể đẩy `room` về 1, và lúc đó
-  //  bày 0 chip + «+N người nữa» vẫn đúng hơn là bày một chip rồi nuốt phần dư.
+  //  bày 0 chip + "+N người nữa" vẫn đúng hơn là bày một chip rồi nuốt phần dư.
   const visible = Math.max(room - 1, 0)
   return { visible, hidden: total - visible }
 }
@@ -72,10 +72,10 @@ export function splitMonthCellLines(
 /**
  * Chữ trên con số ngày.
  *
- * ⚠️ **Ngày 1 kèm tên tháng** («1 thg 10») — lối của Google Calendar, và ở lưới
+ * ⚠️ **Ngày 1 kèm tên tháng** ("1 thg 10") — lối của Google Calendar, và ở lưới
  * này nó giải đúng một chỗ mù: hàng cuối bày 1…11 của tháng sau, chữ mờ thôi
  * không đủ nói đó là tháng nào. Hôm nay thì chỉ để con số: nhãn nằm trong một
- * vòng tròn 24px, nhét thêm «thg 10» vào là vòng tròn méo thành viên thuốc.
+ * vòng tròn 24px, nhét thêm "thg 10" vào là vòng tròn méo thành viên thuốc.
  */
 export function monthCellDayLabel(date: Date, today: boolean): string {
   if (date.getDate() === 1 && !today) return `1 thg ${date.getMonth() + 1}`

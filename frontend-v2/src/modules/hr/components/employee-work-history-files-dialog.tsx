@@ -53,7 +53,7 @@ interface EmployeeWorkHistoryFilesDialogProps {
  * Hộp TỆP QĐ của một dòng quá trình công tác (A6 — entity riêng tư, đi qua cửa
  * đính kèm dùng chung với `entity=employee_work_history`).
  *
- * Dùng LẠI ở hai nơi: cột «Tệp» của tab hồ sơ (`editable` theo `can_edit`) và
+ * Dùng LẠI ở hai nơi: cột "Tệp" của tab hồ sơ (`editable` theo `can_edit`) và
  * thẻ ở Trang cá nhân `/me` (luôn `editable=false` — chỉ xem tệp của chính mình).
  *
  * Khuôn giống `leave-attachments-card.tsx`, chỉ khác là một `Dialog` thay vì
@@ -86,7 +86,7 @@ export function EmployeeWorkHistoryFilesDialog({
     try {
       await downloadFile(workHistoryFileDownloadUrl(file.id), file.filename)
     } catch {
-      toast.error(`Không tải được tệp «${file.filename}».`)
+      toast.error(`Không tải được tệp "${file.filename}".`)
     }
   }
 

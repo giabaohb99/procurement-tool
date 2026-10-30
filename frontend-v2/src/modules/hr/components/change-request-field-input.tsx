@@ -14,7 +14,7 @@ interface ChangeRequestFieldInputProps {
 }
 
 /**
- * Một ô nhập của hộp «Đề nghị sửa thông tin» (duoc-CR-676) — dựng theo KIỂU khai ở
+ * Một ô nhập của hộp "Đề nghị sửa thông tin" (duoc-CR-676) — dựng theo KIỂU khai ở
  * `EMPLOYEE_FIELD_DEFS`, nên thêm ô mới chỉ cần khai ở đó.
  *
  * Nhãn nối đúng vào ô bằng `useId` (trình đọc màn hình đọc ra tên ô, bấm chữ nhảy vào ô).

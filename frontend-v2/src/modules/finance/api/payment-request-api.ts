@@ -39,7 +39,7 @@ export const paymentRequestApi = {
 
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/${id}`),
 
-  /** bao-CR-553 — ô «Trưởng bộ phận»: trưởng phòng mọi phòng (có Ban Giám đốc). */
+  /** bao-CR-553 — ô "Trưởng bộ phận": trưởng phòng mọi phòng (có Ban Giám đốc). */
   departmentManagers: () =>
     apiGet<{ items: PaymentApprovalCandidate[] }>(`${BASE_URL}/meta/department-managers`),
 

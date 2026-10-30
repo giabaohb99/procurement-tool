@@ -19,7 +19,7 @@ describe('plainText', () => {
 
 describe('isRichEmpty', () => {
   //  Tiptap trả đúng chuỗi này cho ô vừa bị xóa sạch — coi nó là "có nội dung"
-  //  thì panel hiện một khối trắng thay cho câu mời «Thêm mô tả».
+  //  thì panel hiện một khối trắng thay cho câu mời "Thêm mô tả".
   it('coi <p></p> của Tiptap là trống', () => {
     expect(isRichEmpty('<p></p>')).toBe(true)
     expect(isRichEmpty('   ')).toBe(true)

@@ -2,11 +2,11 @@ import { getCurrentRoute, telemetry } from './telemetry-queue'
 import { UI_ACTION_CODE, UI_EVENT, type UiActionCode } from './ui-event-codes'
 
 /**
- * Ghi một lần «bấm chức năng» (duoc-CR-654, D0a). Chỉ mang MÃ NÚT cố định + route mẫu — không chữ gõ, không id.
+ * Ghi một lần "bấm chức năng" (duoc-CR-654, D0a). Chỉ mang MÃ NÚT cố định + route mẫu — không chữ gõ, không id.
  *
  * Chống spam ở máy khách (xem phase-01):
  *  1. bỏ trùng: cùng (mã, route) trong 2 giây → bỏ (bấm đúp);
- *  2. mã «lắm lời» (sắp xếp, chuyển trang, đổi cỡ trang, ẩn/hiện cột, tô màu) gộp cửa sổ 10 giây theo (mã, route);
+ *  2. mã "lắm lời" (sắp xếp, chuyển trang, đổi cỡ trang, ẩn/hiện cột, tô màu) gộp cửa sổ 10 giây theo (mã, route);
  *  3. trần 30 UI_ACTION/phút/tab (cửa sổ trượt), vượt thì bỏ im lặng.
  * Trần phía máy chủ là 60/lô, nên đây là lớp đầu, không phải lớp duy nhất.
  */

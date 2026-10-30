@@ -26,7 +26,7 @@ export function validateDraft(settings: McpSettings, draft: McpSettingsDraft): R
   const errors: Record<string, string> = {}
   for (const limit of settings.limits) {
     const raw = (draft.limits[limit.key] ?? '').trim()
-    //  `Number('')` = 0 và `Number('1e3')` = 1000 — chỉ nhận chuỗi toàn chữ số, kẻo ô bỏ trống thành 0 = «không chặn».
+    //  `Number('')` = 0 và `Number('1e3')` = 1000 — chỉ nhận chuỗi toàn chữ số, kẻo ô bỏ trống thành 0 = "không chặn".
     if (!WHOLE_NUMBER_RE.test(raw)) {
       errors[`limit:${limit.key}`] = 'Nhập số nguyên không âm.'
       continue

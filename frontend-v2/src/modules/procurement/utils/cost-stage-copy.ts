@@ -1,6 +1,6 @@
 /**
  * bao-CR-478 — chép số hàng loạt giữa hai cột giai đoạn của bảng chi phí thu mua
- * («Dự toán → Tạm tính», «Tạm tính → Quyết toán»), cùng luật với nút ở bản cũ.
+ * ("Dự toán → Tạm tính", "Tạm tính → Quyết toán"), cùng luật với nút ở bản cũ.
  *
  * Chỉ điền Ô CÒN TRỐNG (rỗng hoặc 0 — bản cũ lưu ô bỏ trống thành 0) và chỉ ở dòng còn
  * sửa được: số người dùng đã gõ ở cột đích không bao giờ bị đè. Có tick thì chỉ các dòng

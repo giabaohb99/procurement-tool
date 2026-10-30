@@ -17,7 +17,7 @@ import { nameInitials } from '@/shared/utils/name-initials'
 import { useForumBoards } from '../hooks/use-forum-boards'
 
 /**
- * Tab «Diễn đàn» (F13b, QĐ-D7) — danh sách box gom theo nhóm kiểu VOZ: mỗi
+ * Tab "Diễn đàn" (F13b, QĐ-D7) — danh sách box gom theo nhóm kiểu VOZ: mỗi
  * dòng box có icon + tên + mô tả + bộ đếm gọn, kèm khối bài-mới-nhất bấm
  * được bên phải (mobile giấu khối này, giữ số đếm). Số đếm ghi THẲNG con số,
  * không format 1K+ — chốt trong spec F13b.
@@ -75,7 +75,7 @@ export function ForumBoardsPage() {
 
   return (
     //  F13c: desktop rộng chia 2 cột (danh sách box + sidebar 300px); mobile
-    //  giấu sidebar, riêng khối «Nổi bật» dồn lên đầu trang (PinnedSpotlight).
+    //  giấu sidebar, riêng khối "Nổi bật" dồn lên đầu trang (PinnedSpotlight).
     <div className="pt-3 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-5">
       <div className="space-y-4">
         <PinnedSpotlight className="lg:hidden" />
@@ -162,7 +162,7 @@ function BoardRow({ box }: { box: ForumBoardNode }) {
   )
 }
 
-/** Nhãn «Đang ẩn» — chỉ forum_admin mới nhận được nhóm/box ẩn từ backend. */
+/** Nhãn "Đang ẩn" — chỉ forum_admin mới nhận được nhóm/box ẩn từ backend. */
 function HiddenBadge({ className }: { className?: string }) {
   return (
     <Badge variant="secondary" className={className}>

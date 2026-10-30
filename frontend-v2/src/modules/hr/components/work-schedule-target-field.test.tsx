@@ -74,14 +74,14 @@ describe('WorkScheduleLevelField + WorkScheduleTargetField', () => {
     expect(probe()).toEqual({ level: 2, id: 0 })
   })
 
-  it('level SYSTEM shows no picker, just «Toàn hệ thống», and target id stays 0', async () => {
+  it('level SYSTEM shows no picker, just "Toàn hệ thống", and target id stays 0', async () => {
     const user = userEvent.setup()
     render(<Harness level={4} id={12} />)
 
     await user.click(screen.getByRole('combobox', { name: /Cấp áp dụng/ }))
     await user.click(await screen.findByRole('option', { name: 'Toàn hệ thống' }))
 
-    //  Một ở ô chọn cấp, một ở ô chỉ xem của đối tượng — đúng MỘT nhãn cho cấp này, không còn «Toàn công ty».
+    //  Một ở ô chọn cấp, một ở ô chỉ xem của đối tượng — đúng MỘT nhãn cho cấp này, không còn "Toàn công ty".
     expect(screen.getAllByText('Toàn hệ thống').length).toBeGreaterThanOrEqual(2)
     expect(screen.queryByText('Toàn công ty')).not.toBeInTheDocument()
     expect(probe().id).toBe(0)
@@ -100,7 +100,7 @@ describe('WorkScheduleLevelField + WorkScheduleTargetField', () => {
     expect(await screen.findByDisplayValue('#7')).toBeInTheDocument()
   })
 
-  // Regression: đối tượng đã lưu mà không còn trong danh sách từng hiện «#7» vô nghĩa.
+  // Regression: đối tượng đã lưu mà không còn trong danh sách từng hiện "#7" vô nghĩa.
   it('shows the saved target_name instead of #id when the target is no longer in the list', async () => {
     render(<Harness level={3} id={7} savedName="Phòng Kế toán" />)
     await waitFor(() => expect(apiGet).toHaveBeenCalled())

@@ -88,7 +88,7 @@ export function useChapterPlayer({
     return () => window.clearInterval(timer)
   }, [playing])
 
-  //  Báo đổi chương cho bên ngoài — bỏ lần dựng đầu (chưa có gì «đổi»).
+  //  Báo đổi chương cho bên ngoài — bỏ lần dựng đầu (chưa có gì "đổi").
   const onChange = useRef(onChapterChange)
   const lastIndex = useRef(state.index)
   useEffect(() => {

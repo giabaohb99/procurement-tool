@@ -183,7 +183,7 @@ export function SurveyRequestDetailPage() {
 
   const { data: serverData, isLoading, isError } = useSurveyRequest(surveyRequestId)
   const { data: result } = useSurveyRequestResult(surveyRequestId, serverData?.status ?? '')
-  //  bao-CR-486: danh sách NSTM đi theo ô «Phòng xử lý» — chỉ tải cho người xử lý được.
+  //  bao-CR-486: danh sách NSTM đi theo ô "Phòng xử lý" — chỉ tải cho người xử lý được.
   //  Gọi ở ĐÂY (trước mọi `return` sớm) — luật hook.
   const { data: assignableStaff } = useSurveyRequestAssignableStaff(
     surveyRequestId,
@@ -307,7 +307,7 @@ export function SurveyRequestDetailPage() {
       })
   }, [prefillDeptId, prefillDeptName, prefillHeadId, lookupDeptHead])
 
-  //  bao-CR-499: ô «Trưởng phòng phê duyệt» chỉ liệt kê người DUYỆT ĐƯỢC phiếu này. Gọi TRƯỚC
+  //  bao-CR-499: ô "Trưởng phòng phê duyệt" chỉ liệt kê người DUYỆT ĐƯỢC phiếu này. Gọi TRƯỚC
   //  các nhánh return sớm bên dưới (luật hook).
   const approverSource = draft ?? serverData
   const { data: approverData } = useApproverCandidates(
@@ -351,7 +351,7 @@ export function SurveyRequestDetailPage() {
   const data = serverData ?? draft ?? createEmptySurveyRequest(user)
   const loadedDraft = draft ?? data
   const status = data.status
-  //  bao-CR-498: hai đường «Trả về» gộp vào một nút — đường luồng duyệt (người duyệt trả người
+  //  bao-CR-498: hai đường "Trả về" gộp vào một nút — đường luồng duyệt (người duyệt trả người
   //  lập sửa lại) và đường trả phòng lập tự xử lý theo cờ backend `can_return_dept` (bao-CR-414).
   //  bao-CR-554: luật trả về nay do backend tính (`can_return_requester`) — mở cả phiếu đã duyệt
   //  khi chưa dòng nào hoàn thành / chọn phương án / sinh YCMH.
@@ -420,7 +420,7 @@ export function SurveyRequestDetailPage() {
     !isNew && !!result && hasSurveyResult(status) && (status !== 'processing' || hasAnyOptions)
 
   /**
-   * NSTM chọn được — bao-CR-486: đọc từ API theo ô «Phòng xử lý» của phiếu, không lọc
+   * NSTM chọn được — bao-CR-486: đọc từ API theo ô "Phòng xử lý" của phiếu, không lọc
    * danh mục nhân sự theo tên phòng nữa (xem `purchase-request-detail-page.tsx`).
    * Ô hiện TÊN nhưng lưu MÃ nhân sự. Bổ sung người đã gán ở từng dòng dù họ nằm ngoài
    * danh sách — không thì bảng hiện mã trần thay vì tên.
@@ -498,7 +498,7 @@ export function SurveyRequestDetailPage() {
         head_of_dept_id: loadedDraft.head_of_dept_id,
         head_of_dept: loadedDraft.head_of_dept,
         approver_employee_id: loadedDraft.approver_employee_id ?? 0,   // bao-CR-499
-        // bao-CR-488: lúc tạo, chưa tick «Nhờ phòng khác xử lý» thì không gửi để backend chọn mặc định.
+        // bao-CR-488: lúc tạo, chưa tick "Nhờ phòng khác xử lý" thì không gửi để backend chọn mặc định.
         handler_dept_id: isNew ? handlingDeptForCreate(loadedDraft) : loadedDraft.handler_dept_id || 0,
         purpose: loadedDraft.purpose,
         request_date: loadedDraft.request_date,
@@ -601,7 +601,7 @@ export function SurveyRequestDetailPage() {
         </Button>
       )}
 
-      {/* bao-CR-498: MỘT nút «Trả về» cho hai đường (trả người lập sửa lại / trả phòng lập tự
+      {/* bao-CR-498: MỘT nút "Trả về" cho hai đường (trả người lập sửa lại / trả phòng lập tự
           xử lý — bao-CR-414). Cả hai đường cùng mở thì hỏi; một đường thì đi thẳng. */}
       {returnResolution !== null && (
         <Button
@@ -844,7 +844,7 @@ export function SurveyRequestDetailPage() {
           <SurveyReportCard ownerId={surveyRequestId} canEdit={canEditReport} />
         )}
 
-        {/* THẺ THỬ «Hồ sơ cần hoàn thành» — dựng SONG SONG với khối Báo cáo
+        {/* THẺ THỬ "Hồ sơ cần hoàn thành" — dựng SONG SONG với khối Báo cáo
             thực hiện ngay trên, để so xem phân hệ Hồ sơ có thay được nó không
             (21/09/2026). Chỉ xem, không tick được; chân thẻ ghi rõ còn thiếu gì.
 

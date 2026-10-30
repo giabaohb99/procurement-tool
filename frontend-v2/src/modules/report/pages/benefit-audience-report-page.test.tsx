@@ -32,7 +32,7 @@ function metric(key: string, label: string, kind: ReportMetricMeta['kind'] = 'in
   return { key, label, kind, good: null, helper: false, snapshot: false }
 }
 
-/** Không lọc theo con → backend không trả `children`; thẻ «Số con» phải tự vắng. */
+/** Không lọc theo con → backend không trả `children`; thẻ "Số con" phải tự vắng. */
 function summary(): ReportAnalyticsResponse {
   const values = { people: 12, managers: 2, staff: 10, budget: 6_400_000 }
   return {
@@ -85,8 +85,8 @@ describe('BenefitAudienceReportPage (Phúc lợi & sự kiện, khóa 22)', () =
     await screen.findAllByText('Số người')
     expect(lastSummaryParams()).toMatchObject({ preset: 'today', group_by: 'company' })
     expect(screen.queryByText(/^Xu hướng/)).not.toBeInTheDocument()
-    //  Ngày dịp nằm trong khung lọc — không có nút «Kỳ báo cáo» thứ hai đặt cùng một thứ.
-    //  Nút kỳ ghi chữ preset («Hôm nay …») — vắng hẳn.
+    //  Ngày dịp nằm trong khung lọc — không có nút "Kỳ báo cáo" thứ hai đặt cùng một thứ.
+    //  Nút kỳ ghi chữ preset ("Hôm nay …") — vắng hẳn.
     expect(screen.queryByRole('button', { name: /Hôm nay/ })).not.toBeInTheDocument()
     expect(screen.getByLabelText('Ngày dịp')).toBeInTheDocument()
     expect(screen.queryByText('Số con')).not.toBeInTheDocument()

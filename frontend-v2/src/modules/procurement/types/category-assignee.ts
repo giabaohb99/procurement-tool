@@ -9,14 +9,14 @@ export interface CategoryAssignee {
   primary_status?: string | null
   primary_status_label?: string | null
   primary_is_active?: boolean | null
-  /** bao-CR-527: NSTM chính không còn «Chính thức» / đã tắt hồ sơ → màn danh sách gắn cảnh báo. */
+  /** bao-CR-527: NSTM chính không còn "Chính thức" / đã tắt hồ sơ → màn danh sách gắn cảnh báo. */
   primary_not_official?: boolean
   backup_employee_id: number
   backup_name?: string | null
   backup_code?: string | null
   /**
    * Phòng áp dụng. bao-CR-524: bộ dùng cho mọi phòng chưa có bộ riêng là bộ của phòng thu mua mặc
-   * định («Sản xuất -Thu mua») — backend trả id + tên THẬT, kể cả dòng `0` («Thu mua chung» cũ).
+   * định ("Sản xuất -Thu mua") — backend trả id + tên THẬT, kể cả dòng `0` ("Thu mua chung" cũ).
    */
   department_id?: number
   department_name?: string | null

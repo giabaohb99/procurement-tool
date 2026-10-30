@@ -50,7 +50,7 @@ export function InventoryDashboardPage() {
 
   const kpi = overview?.kpi
   const lowStock = overview?.low_stock ?? []
-  //  kh-NT2-8 (NF-22): giữ tám kho lớn nhất, còn lại gom «Khác» — thẻ cao tám dòng là
+  //  kh-NT2-8 (NF-22): giữ tám kho lớn nhất, còn lại gom "Khác" — thẻ cao tám dòng là
   //  vẫn đọc được trên điện thoại, mà công ty hiện chưa tới chục kho.
   const warehouseBars = buildWarehouseValueBars(overview?.kpi_inv_by_warehouse, WAREHOUSE_BAR_TOP)
 
@@ -244,7 +244,7 @@ export function InventoryDashboardPage() {
   )
 }
 
-/** Số kho vẽ riêng trên biểu đồ giá trị tồn; phần còn lại gom thành «Khác». */
+/** Số kho vẽ riêng trên biểu đồ giá trị tồn; phần còn lại gom thành "Khác". */
 const WAREHOUSE_BAR_TOP = 8
 
 /** 286.000.000 -> "286 tr"; 1.675.469.039 -> "1,7 tỷ" — cùng cách rút gọn của dashboard Thu mua. */

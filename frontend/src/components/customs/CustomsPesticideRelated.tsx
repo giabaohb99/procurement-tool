@@ -1,8 +1,8 @@
-// Bảng «Thuốc liên quan» của trang chi tiết thuốc BVTV (01/10/2026, đồng bộ bản v2
-// `customs-pesticide-related-cards.tsx`, bê theo trang nguồn danhmuc.thuocbvtv.com): «Cùng công ty» và
-// «Cùng hoạt chất». Số liệu tính ở backend: `GET /api/customs/pesticides/{id}/related`.
-// Bố cục chốt sau hai lần bị chê (thẻ link lệch nhau → lưới ô có viền): BẢNG cùng khuôn bảng «Phạm vi
-// sử dụng» ngay phía trên, nhãn tình trạng chung một cột, phân trang thay nút «Xem tất cả».
+// Bảng "Thuốc liên quan" của trang chi tiết thuốc BVTV (01/10/2026, đồng bộ bản v2
+// `customs-pesticide-related-cards.tsx`, bê theo trang nguồn danhmuc.thuocbvtv.com): "Cùng công ty" và
+// "Cùng hoạt chất". Số liệu tính ở backend: `GET /api/customs/pesticides/{id}/related`.
+// Bố cục chốt sau hai lần bị chê (thẻ link lệch nhau → lưới ô có viền): BẢNG cùng khuôn bảng "Phạm vi
+// sử dụng" ngay phía trên, nhãn tình trạng chung một cột, phân trang thay nút "Xem tất cả".
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'

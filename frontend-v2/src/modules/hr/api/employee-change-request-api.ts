@@ -9,7 +9,7 @@ import type {
 const BASE_URL = '/api/employees'
 
 /**
- * Bóc `{items}` của các cửa «của tôi». Nhận cả mảng trần cho chắc: `/me/contacts` (bao-CR-508)
+ * Bóc `{items}` của các cửa "của tôi". Nhận cả mảng trần cho chắc: `/me/contacts` (bao-CR-508)
  * trả mảng trần, còn hợp đồng duoc-CR-676 chốt `{items}` — lệch một bên thì màn vẫn đúng.
  */
 function unwrapItems<T>(data: { items: T[] } | T[] | null | undefined): T[] {
@@ -25,11 +25,11 @@ function unwrapItems<T>(data: { items: T[] } | T[] | null | undefined): T[] {
  * - `/change-requests/...` của phòng Nhân sự, gác `employee.write` + phạm vi; duyệt yêu cầu có
  *   ô nhạy cảm còn đòi `employee_sensitive.read`, và không ai tự duyệt đề nghị của chính mình.
  *
- * ⚠️ Mọi cửa nằm DƯỚI `/api/employees/` và backend khai TRƯỚC `/{eid}` — «me» / «change-requests»
+ * ⚠️ Mọi cửa nằm DƯỚI `/api/employees/` và backend khai TRƯỚC `/{eid}` — "me" / "change-requests"
  * rơi vào `eid: int` là 422.
  */
 export const employeeChangeRequestApi = {
-  /** Hộ gia đình của chính mình — nguồn điền sẵn tab «Hộ gia đình» và bảng VII của bản in. */
+  /** Hộ gia đình của chính mình — nguồn điền sẵn tab "Hộ gia đình" và bảng VII của bản in. */
   getMyFamilies: async () =>
     unwrapItems(await apiGet<{ items: EmployeeFamily[] } | EmployeeFamily[]>(`${BASE_URL}/me/families`)),
 

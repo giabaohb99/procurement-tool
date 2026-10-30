@@ -14,11 +14,11 @@ interface ArchiveContractIssueButtonProps {
 }
 
 /**
- * Nút «Ban hành» DUY NHẤT của bản lưu trữ hợp đồng lao động (duoc-CR-659).
+ * Nút "Ban hành" DUY NHẤT của bản lưu trữ hợp đồng lao động (duoc-CR-659).
  *
- * Văn bản này không có trạng thái riêng — nó chép trạng thái của HĐ gốc. Vì vậy «Ban hành» = KÝ hợp đồng gốc
+ * Văn bản này không có trạng thái riêng — nó chép trạng thái của HĐ gốc. Vì vậy "Ban hành" = KÝ hợp đồng gốc
  * (Nháp → Đã ký, ngày ký = hôm nay) qua đúng đường `/transition` của phân hệ Nhân sự; đồng bộ sau khi ký đưa văn bản
- * sang «Có hiệu lực». Backend vẫn chặn nếu HĐ còn biến bắt buộc trống, như khi ký ở hồ sơ nhân sự.
+ * sang "Có hiệu lực". Backend vẫn chặn nếu HĐ còn biến bắt buộc trống, như khi ký ở hồ sơ nhân sự.
  */
 export function ArchiveContractIssueButton({ contractId }: ArchiveContractIssueButtonProps) {
   const queryClient = useQueryClient()
@@ -37,7 +37,7 @@ export function ArchiveContractIssueButton({ contractId }: ArchiveContractIssueB
     const today = toDateInputValue(new Date())
     const ok = await confirm({
       title: 'Ban hành hợp đồng lao động?',
-      message: `Hợp đồng sẽ chuyển sang «Đã ký» với ngày ký ${formatDate(today)}, văn bản chuyển sang «Có hiệu lực». Sau khi ban hành không quay lại nháp được.`,
+      message: `Hợp đồng sẽ chuyển sang "Đã ký" với ngày ký ${formatDate(today)}, văn bản chuyển sang "Có hiệu lực". Sau khi ban hành không quay lại nháp được.`,
       confirmLabel: 'Ban hành',
       tone: 'default',
     })

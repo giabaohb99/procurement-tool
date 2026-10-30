@@ -18,7 +18,7 @@ import type { LeaveBalance } from '../types/leave'
  * CHI TIẾT MỘT DÒNG QUỸ PHÉP — `/hr/leave-balances/:id`.
  *
  * ⚠️ Là một TRANG chứ không phải hộp thoại (đổi 03/09/2026). Bản đầu mở popup
- * «Điều chỉnh quỹ phép» ngay từ dòng, và popup thì buộc phải gói gọn: mọi thứ
+ * "Điều chỉnh quỹ phép" ngay từ dòng, và popup thì buộc phải gói gọn: mọi thứ
  * giải thích cho con số đang sửa — quỹ cấu thành từ đâu, người này đã nghỉ
  * những hôm nào — đều nằm ngoài nó. Người dùng đóng popup ra xem rồi mở lại, và
  * lúc mở lại thì phải nhớ mình vừa đọc gì.

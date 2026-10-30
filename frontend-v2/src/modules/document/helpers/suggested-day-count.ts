@@ -3,7 +3,7 @@
  *
  * ⚠️ Bản sao của `so_ngay_goi_y` ở `backend/app/modules/document/type_metadata.py`.
  * Hai bên phải ra CÙNG một con số: backend là chốt cuối (nó ghi xuống CSDL), còn
- * bản này chỉ để ô «Tổng số ngày» hiện gợi ý ngay lúc gõ mà không phải gọi API
+ * bản này chỉ để ô "Tổng số ngày" hiện gợi ý ngay lúc gõ mà không phải gọi API
  * sau mỗi lần đổi ngày. Sửa một bên thì sửa cả hai — bài kiểm ở
  * `suggested-day-count.test.ts` giữ đúng mấy mốc mà bản Python cũng kiểm.
  *
@@ -20,7 +20,7 @@
  * ⚠️ **Hai bảng khác nhau** (vá 07/09/2026). Ô buổi nói MỐC, không nói buổi:
  * *bắt đầu buổi Sáng* là nghỉ trọn ngày đó, *kết thúc buổi Chiều* cũng là nghỉ
  * trọn ngày đó. Bản cũ tra chung một bảng `{full: 1, morning: .5, afternoon: .5}`
- * cho cả hai đầu nên đơn *«từ Sáng 05 đến hết 07»* gợi ý 2.5 thay vì 3 ngày.
+ * cho cả hai đầu nên đơn *"từ Sáng 05 đến hết 07"* gợi ý 2.5 thay vì 3 ngày.
  */
 const START_DAY_CREDIT: Record<string, number> = {
   full: 1,
@@ -42,7 +42,7 @@ const END_DAY_CREDIT: Record<string, number> = {
  *
  * Hai mốc nửa ngày: bắt đầu ở nửa `0` (sáng) hay `1` (chiều), kết thúc ở nửa `0`
  * hay `1`; số nửa phủ được là `end − start + 1`. Lấy riêng ô đi như bản cũ thì
- * *«Cả ngày → Sáng»* ra nguyên một ngày trong khi người khai kết thúc lúc hết
+ * *"Cả ngày → Sáng"* ra nguyên một ngày trong khi người khai kết thúc lúc hết
  * buổi sáng — người lao động mất oan nửa ngày phép.
  */
 function sameDayCredit(outgoing: string, incoming: string): number {
@@ -78,7 +78,7 @@ export function suggestedDayCount(
 }
 
 /**
- * Ô BẮT BUỘC của khối nghỉ phép — kiểm khi bấm «Tiếp tục» ở bước Thông tin chính.
+ * Ô BẮT BUỘC của khối nghỉ phép — kiểm khi bấm "Tiếp tục" ở bước Thông tin chính.
  *
  * Để ở đây chứ không ở tệp component: tệp component chỉ nên export component,
  * nếu không `react-refresh` mất khả năng nạp nóng cả tệp đó.

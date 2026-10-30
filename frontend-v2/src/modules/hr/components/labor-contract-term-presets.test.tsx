@@ -22,7 +22,7 @@ describe('LaborContractTermPresets', () => {
     expect(onPick).toHaveBeenCalledWith('2029-10-31')
   })
 
-  //  Bẫy «nút trong <form> thiếu type=button»: hộp HĐ nằm trong form hồ sơ nhân sự, bấm nút
+  //  Bẫy "nút trong <form> thiếu type=button": hộp HĐ nằm trong form hồ sơ nhân sự, bấm nút
   //  chọn nhanh mà thành submit là lưu đè luôn hồ sơ.
   it('does not submit the surrounding form', () => {
     const { onOuterSubmit } = renderPresets()

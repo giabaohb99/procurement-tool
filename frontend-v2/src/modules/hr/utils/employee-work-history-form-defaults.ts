@@ -11,7 +11,7 @@ import type { EmployeeWorkHistory } from '../types/employee-work-history'
  * (CLAUDE.md §"File Size Management"). Hàm THUẦN, không gọi API.
  *
  * SỬA dòng có sẵn → chép nguyên dòng đó. TẠO MỚI → điền sẵn từ hồ sơ hiện tại,
- * `seed` (vd nút «Tạo dòng đầu từ hồ sơ») đè lên sau cùng.
+ * `seed` (vd nút "Tạo dòng đầu từ hồ sơ") đè lên sau cùng.
  */
 export function buildEmployeeWorkHistoryDefaultValues(
   employee: Employee,

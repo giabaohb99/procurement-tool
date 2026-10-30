@@ -17,12 +17,12 @@ import { PO_STATUS_LABELS, type PurchaseOrder } from '../types/purchase-document
  * chỉ khác nhau hai chữ số cuối, đọc mười dòng không phân biệt được dòng nào;
  * thứ phân biệt chúng là MUA CỦA AI.
  *
- * ⚠️ **Cờ «Gấp» đứng NGAY CẠNH tên NCC**, không dồn xuống hàng huy hiệu bên
+ * ⚠️ **Cờ "Gấp" đứng NGAY CẠNH tên NCC**, không dồn xuống hàng huy hiệu bên
  * dưới: đây là thứ bắt mắt phải thấy trước khi đọc gì khác, mà hàng dưới đã có
  * hai huy hiệu trạng thái rồi — thêm cái thứ ba vào đó là nó chìm nghỉm.
  *
  * ⚠️ **Số tiền KHÔNG rút gọn.** Người duyệt bấm dựa trên đúng con số này, mà
- * «201,9 tr» với «201.960.000 đ» là hai mức tin cậy khác nhau.
+ * "201,9 tr" với "201.960.000 đ" là hai mức tin cậy khác nhau.
  *
  * ⚠️ **Không nút nào trong thẻ**: bảng khai `onRowClick` nên `DataTableMobileCards`
  * bọc cả thẻ trong một `<button>`; lồng nút vào trong nút là HTML sai và trên

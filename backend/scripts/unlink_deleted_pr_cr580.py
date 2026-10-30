@@ -2,7 +2,7 @@
 """Gỡ liên kết YCBG -> YCMH đã xóa, cho dữ liệu cũ — bao-CR-580.
 
 Từ bao-CR-580, xóa YCMH thì YCBG tự gỡ liên kết. Các YCMH xóa TRƯỚC bản vá vẫn còn dây nối
-(YCBG vẫn bày mã YCMH đã xóa, vẫn đứng ở «Đã tạo YCMH»). Chạy một lần sau khi deploy; chạy lại vô hại.
+(YCBG vẫn bày mã YCMH đã xóa, vẫn đứng ở "Đã tạo YCMH"). Chạy một lần sau khi deploy; chạy lại vô hại.
 
     docker compose exec -T api python scripts/unlink_deleted_pr_cr580.py --dry-run   # xem sẽ gỡ gì
     docker compose exec -T api python scripts/unlink_deleted_pr_cr580.py             # gỡ thật

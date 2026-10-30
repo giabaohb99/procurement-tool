@@ -56,8 +56,8 @@ interface FolderDocumentsViewProps {
 }
 
 /**
- * Khối «Văn bản» của khung nội dung — Hàng 2 (tìm/lọc, đặc tả A phản hồi
- * 24/09/2026: bỏ nhãn «Văn bản», bỏ ô sắp xếp Select — sắp xếp nay bấm THẲNG
+ * Khối "Văn bản" của khung nội dung — Hàng 2 (tìm/lọc, đặc tả A phản hồi
+ * 24/09/2026: bỏ nhãn "Văn bản", bỏ ô sắp xếp Select — sắp xếp nay bấm THẲNG
  * cột (Danh sách, `folder-list-view.tsx`) hoặc nhãn nhỏ phía trên (Lưới)) +
  * chế độ Lưới/Danh sách. Tự dựng `filterToolbar` MỘT LẦN rồi dùng NGUYÊN XI
  * cho cả hai chế độ (bug lead bắt 23/09/2026: trước đây Lưới không có khung
@@ -85,7 +85,7 @@ export function FolderDocumentsView({
   onViewFolderDetails,
   onDropOnFolder,
 }: FolderDocumentsViewProps) {
-  //  Văn bản đang mở hộp «Chia sẻ» (menu ⋮ / chuột phải / nút chia sẻ trên dòng).
+  //  Văn bản đang mở hộp "Chia sẻ" (menu ⋮ / chuột phải / nút chia sẻ trên dòng).
   const [shareDocument, setShareDocument] = useState<DocumentRecord | null>(null)
   const filterToolbar = (
     <FolderDocumentsFilterToolbar
@@ -106,7 +106,7 @@ export function FolderDocumentsView({
   const hasDocuments = q.rows.length > 0
   //  Chế độ Lưới truyền `children=[]` (thư mục con vẽ riêng ở `folderCards`),
   //  nên phải hỏi CẢ `folderCards` — thiếu vế đó thì thư mục chỉ chứa thư mục
-  //  con vẫn hiện «Thư mục này chưa có gì» ngay dưới 14 thẻ thư mục (lỗi lead
+  //  con vẫn hiện "Thư mục này chưa có gì" ngay dưới 14 thẻ thư mục (lỗi lead
   //  chụp 24/09/2026).
   const hasFolders = children.length > 0 || Boolean(folderCards)
   const isEmpty = !hasFolders && !hasDocuments

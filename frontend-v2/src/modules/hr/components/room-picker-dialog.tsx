@@ -77,7 +77,7 @@ export function RoomPickerDialog({
    *  · **chưa chọn giờ** → không tra được trống/bận, bày hết còn hơn bày rỗng;
    *  · **phòng đang chọn** luôn hiện, kể cả khi nó bận — biến mất khỏi danh sách
    *    thì người dùng tưởng phòng bị xoá;
-   *  · **bấm «Hiện cả phòng đang bận»** → xem đủ, để còn biết nên xin lại phòng
+   *  · **bấm "Hiện cả phòng đang bận"** → xem đủ, để còn biết nên xin lại phòng
    *    của ai. Số phòng bị giấu nói thành lời, không giấu im.
    */
   const busyMatchedCount = matchedRooms.filter((r) => busyById.get(r.id)?.available === false).length
@@ -119,7 +119,7 @@ export function RoomPickerDialog({
           {rooms.length === 0 && (
             <p className="py-8 text-center text-sm text-muted-foreground">
               {keyword
-                ? `Không có phòng trống nào khớp «${keyword}».`
+                ? `Không có phòng trống nào khớp "${keyword}".`
                 : 'Khung giờ này không còn phòng nào trống.'}
             </p>
           )}
@@ -167,7 +167,7 @@ export function RoomPickerDialog({
                   </div>
                 </div>
 
-                {/*  Trạng thái nói RÕ ai giữ tới mấy giờ — «bận» trần thì người
+                {/*  Trạng thái nói RÕ ai giữ tới mấy giờ — "bận" trần thì người
                      dùng phải đi hỏi vòng quanh mới biết nên dời sang giờ nào. */}
                 <div className="shrink-0 text-right text-xs">
                   {isBusy ? (

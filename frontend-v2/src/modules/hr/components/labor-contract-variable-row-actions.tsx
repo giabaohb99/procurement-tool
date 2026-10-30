@@ -5,8 +5,8 @@ import type { LaborContractVariableColumnActions } from '../config/labor-contrac
 import { VARIABLE_SOURCE_SYSTEM, type LaborContractVariable } from '../types/labor-contract-variable'
 
 /**
- * Nút thao tác của MỘT dòng biến. Ẩn theo quyền ở đây — quyền thật do backend (ghi đòi phạm vi «tất cả
- * pháp nhân»). Biến hệ thống: Sửa (tên / mô tả) + Ẩn / Hiện, KHÔNG có Xóa. Biến tùy chỉnh: Sửa ·
+ * Nút thao tác của MỘT dòng biến. Ẩn theo quyền ở đây — quyền thật do backend (ghi đòi phạm vi "tất cả
+ * pháp nhân"). Biến hệ thống: Sửa (tên / mô tả) + Ẩn / Hiện, KHÔNG có Xóa. Biến tùy chỉnh: Sửa ·
  * Ngừng dùng / Bật lại · Xóa (đang dùng thì backend chặn kèm số mẫu / hợp đồng).
  */
 export function LaborContractVariableRowActions({

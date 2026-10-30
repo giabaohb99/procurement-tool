@@ -10,18 +10,18 @@ import type { DossierFieldDef } from '../types/dossier-field'
 import type { DossierType } from '../types/dossier-type'
 
 /**
- * Tên ô GIỮ CÁC HÀNG «trường riêng» trên biểu mẫu.
+ * Tên ô GIỮ CÁC HÀNG "trường riêng" trên biểu mẫu.
  *
  * ⚠️ Cố ý KHÁC `custom_fields` (tên cột dưới DB). Nếu trùng tên thì
  * `buildFormDefaults` thấy bản ghi đã có khóa đó và lấy thẳng giá trị đã lưu —
  * tức là danh sách khai báo TRẦN, chưa ghép giá trị — nên `defaultValue` mà ta
- * dựng công phu ở dưới sẽ không bao giờ được dùng, và mọi ô «Giá trị» hiện
+ * dựng công phu ở dưới sẽ không bao giờ được dùng, và mọi ô "Giá trị" hiện
  * trống dù dữ liệu có sẵn. Khác tên thì nó rơi đúng vào nhánh `defaultValue`.
  */
 export const CUSTOM_ROWS_FIELD = 'custom_rows'
 
 /**
- * Dựng BIỂU MẪU HỒ SƠ theo loại đang chọn — trái tim của phần «metadata».
+ * Dựng BIỂU MẪU HỒ SƠ theo loại đang chọn — trái tim của phần "metadata".
  *
  * Khung CRUD gọi hàm này lại sau mỗi phím gõ (`resolveFormFields`), nên nó phải
  * THUẦN và rẻ: chỉ đọc `values` với danh mục truyền vào, không gọi mạng.
@@ -34,7 +34,7 @@ export const CUSTOM_ROWS_FIELD = 'custom_rows'
  * đó sẽ lệch nhau.
  */
 
-/** Ô chọn «Loại hồ sơ»: loại ngừng dùng bị loại, TRỪ loại hồ sơ đang mang. */
+/** Ô chọn "Loại hồ sơ": loại ngừng dùng bị loại, TRỪ loại hồ sơ đang mang. */
 function typeOptions(types: DossierType[], currentId: number): CrudOption[] {
   return types
     //  ⚠️ Giữ lại loại ngừng dùng NẾU hồ sơ này đang mang nó. Bỏ đi thì ô chọn
@@ -53,25 +53,25 @@ export function fieldsOfType(types: DossierType[], typeId: number): DossierField
 /**
  * Toàn bộ ô của biểu mẫu hồ sơ = **ba ô khung** + ô của LOẠI + trường RIÊNG.
  *
- * ⚠️ Không nhận `statusOptions` nữa: ô «Tình trạng» đã gỡ khỏi biểu mẫu
+ * ⚠️ Không nhận `statusOptions` nữa: ô "Tình trạng" đã gỡ khỏi biểu mẫu
  * (17/09/2026), nên hồ sơ mới luôn ở mức mặc định *Nháp* — xem ghi chú trong
  * thân hàm. Bộ mã vẫn sống ở `types/dossier.ts` và cột danh sách vẫn đọc nó.
  */
 interface BuildOptions {
-  /** Vẽ khối «Trường riêng của hồ sơ này» — truyền từ config để tệp này khỏi nhập JSX. */
+  /** Vẽ khối "Trường riêng của hồ sơ này" — truyền từ config để tệp này khỏi nhập JSX. */
   renderCustomFields: (ctx: {
     control: Control<CrudRecord>
     name: string
     disabled: boolean
     typeId: number
   }) => ReactNode
-  /** Vẽ khối «Điều kiện áp dụng» — cùng lý do không nhập JSX ở đây. */
+  /** Vẽ khối "Điều kiện áp dụng" — cùng lý do không nhập JSX ở đây. */
   renderApplyRules: (ctx: {
     control: Control<CrudRecord>
     name: string
     disabled: boolean
   }) => ReactNode
-  /** Vẽ khối «Hồ sơ tiên quyết» — component tự lấy id đang sửa từ URL. */
+  /** Vẽ khối "Hồ sơ tiên quyết" — component tự lấy id đang sửa từ URL. */
   renderDepends: (ctx: {
     control: Control<CrudRecord>
     name: string
@@ -123,7 +123,7 @@ export function buildDossierFormFields(
       //  thích, đáy bằng nhau.
       //
       //  Cũng hợp lẽ về nội dung: tên hồ sơ là chuỗi dài nhất của cả biểu mẫu
-      //  («Hợp đồng nguyên tắc NCC An Phát»), còn loại và hạn thì ngắn.
+      //  ("Hợp đồng nguyên tắc NCC An Phát"), còn loại và hạn thì ngắn.
       fullWidth: true,
     },
     {
@@ -154,8 +154,8 @@ export function buildDossierFormFields(
   if (!options) return base
 
   //  ⚠️ **KHÔNG dựng ô cho bộ trường của LOẠI nữa** (đổi 17/09/2026). Loại tụt
-  //  xuống thành KHUÔN: `DossierCustomFieldsEditor` đổ nó vào bảng «Trường
-  //  riêng» khi người dùng chọn loại, rồi họ sửa/xóa tự do. Một bảng duy nhất
+  //  xuống thành KHUÔN: `DossierCustomFieldsEditor` đổ nó vào bảng "Trường
+  //  riêng" khi người dùng chọn loại, rồi họ sửa/xóa tự do. Một bảng duy nhất
   //  thay vì một khối chỉ-xem cộng một bảng sửa được.
   //
   //  ⚠️ Backend đi theo cùng luật: `service.apply_extra_fields` chỉ kiểm theo
@@ -181,9 +181,9 @@ export function buildDossierFormFields(
   return [
     ...base,
     {
-      //  ⚠️ Đứng TRƯỚC «Trường riêng» (đại ca chốt 21/09/2026). Lý lẽ cũ —
+      //  ⚠️ Đứng TRƯỚC "Trường riêng" (đại ca chốt 21/09/2026). Lý lẽ cũ —
       //  *khai xong tờ giấy có gì rồi mới tới chuyện nó kèm theo đâu* — nghe
-      //  thuận nhưng sai về chiều cao: khối «Trường riêng» giãn tới 20 dòng,
+      //  thuận nhưng sai về chiều cao: khối "Trường riêng" giãn tới 20 dòng,
       //  nên để nó trên thì khối điều kiện bị đẩy khỏi tầm mắt đúng ở những tờ
       //  hồ sơ khai nhiều nhất. Cả hai nay đều GẬP ĐƯỢC, nên thứ đứng trước là
       //  thứ có chiều cao đoán trước được.
@@ -196,13 +196,13 @@ export function buildDossierFormFields(
         options.renderApplyRules({ control, name, disabled }),
     },
     {
-      //  ⚠️ Đứng NGAY SAU «Điều kiện áp dụng»: hai khối cùng trả lời câu hỏi
-      //  *«tờ này gắn vào đâu, theo thứ tự nào»*, còn «Trường riêng» là nội
+      //  ⚠️ Đứng NGAY SAU "Điều kiện áp dụng": hai khối cùng trả lời câu hỏi
+      //  *"tờ này gắn vào đâu, theo thứ tự nào"*, còn "Trường riêng" là nội
       //  dung bên trong tờ giấy. Chiều cao cũng đoán trước được nên không đẩy
       //  gì khỏi tầm mắt.
       name: 'depends',
       //  Nhãn để RỖNG: khối tự mang tiêu đề bằng `CollapsibleSection`, y như
-      //  «Điều kiện áp dụng» ngay trên. Khai nhãn ở đây là hiện hai dòng tiêu
+      //  "Điều kiện áp dụng" ngay trên. Khai nhãn ở đây là hiện hai dòng tiêu
       //  đề chồng nhau.
       label: '',
       type: 'custom',

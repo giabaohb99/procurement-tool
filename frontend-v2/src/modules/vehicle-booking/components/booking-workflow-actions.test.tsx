@@ -158,7 +158,7 @@ describe('BookingWorkflowActions — hai đường duyệt, một bộ nút', ()
     expect(apiGet).not.toHaveBeenCalled()
   })
 
-  it('chuyến đã điều phối: người KHÔNG phải tài xế được phân không thấy «Chấp nhận», kể cả có quyền write', () => {
+  it('chuyến đã điều phối: người KHÔNG phải tài xế được phân không thấy "Chấp nhận", kể cả có quyền write', () => {
     //  Lỗi thấy ngày 23/09/2026: gác bằng `is_assigned_driver || write` nên tài
     //  xế có `write` mở chuyến của đồng nghiệp thấy nút, bấm vào backend trả 403
     //  "Bạn không phải tài xế được phân cho chuyến này".
@@ -169,7 +169,7 @@ describe('BookingWorkflowActions — hai đường duyệt, một bộ nút', ()
     expect(screen.queryByRole('button', { name: 'Chấp nhận' })).not.toBeInTheDocument()
   })
 
-  it('chuyến đã điều phối: đúng tài xế được phân thấy «Chấp nhận»', () => {
+  it('chuyến đã điều phối: đúng tài xế được phân thấy "Chấp nhận"', () => {
     renderActions(
       booking({ status: BOOKING_STATUS.dispatched, driver_status: DRIVER_STATUS.waiting, is_assigned_driver: true }),
       'driver',
@@ -180,8 +180,8 @@ describe('BookingWorkflowActions — hai đường duyệt, một bộ nút', ()
 
   it('approval_running VẮNG MẶT không được hiểu là "bật" để đi hỏi bộ máy', () => {
     //  Lỗi bắt được lúc viết (23/09/2026): `undefined && x` ra `undefined`, mà
-    //  `undefined` vào tham số `enabled = true` là BẬT — mỗi thẻ «Chuyến của
-    //  tôi» (danh sách không gửi ô này) lại bắn hai lượt gọi bộ máy duyệt.
+    //  `undefined` vào tham số `enabled = true` là BẬT — mỗi thẻ "Chuyến của
+    //  tôi" (danh sách không gửi ô này) lại bắn hai lượt gọi bộ máy duyệt.
     renderActions(booking({ approval_running: undefined }))
 
     expect(apiGet).not.toHaveBeenCalled()

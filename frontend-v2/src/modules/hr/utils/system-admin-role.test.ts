@@ -58,7 +58,7 @@ describe('readSelfAdminRemovalQuestion', () => {
   })
 
   it('lỗi khác 409 thì không phải câu hỏi xác nhận', () => {
-    //  400 «Hệ thống phải còn ít nhất một quản trị» KHÔNG được biến thành hộp
+    //  400 "Hệ thống phải còn ít nhất một quản trị" KHÔNG được biến thành hộp
     //  hỏi — gửi lại kèm cờ cũng vẫn bị từ chối.
     expect(
       readSelfAdminRemovalQuestion({

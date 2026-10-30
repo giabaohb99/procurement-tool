@@ -11,7 +11,7 @@ import {
   resolvePrintTemplate,
 } from './purchase-request-print-template'
 
-// bao-CR-546 — ô chọn «Mẫu in» quy về đúng hai cờ cũ của tờ phiếu.
+// bao-CR-546 — ô chọn "Mẫu in" quy về đúng hai cờ cũ của tờ phiếu.
 describe('resolvePrintTemplate', () => {
   it('maps the three fixed templates to the old signature / tax flags', () => {
     expect(resolvePrintTemplate('normal-signed')).toEqual({ taxMode: false, showSignature: true })
@@ -43,7 +43,7 @@ describe('resolvePrintTemplate', () => {
   })
 })
 
-// bao-CR-574 — ô «Mẫu in» gom luôn việc tách theo nhà cung cấp: một lựa chọn = (kiểu bản in, mẫu).
+// bao-CR-574 — ô "Mẫu in" gom luôn việc tách theo nhà cung cấp: một lựa chọn = (kiểu bản in, mẫu).
 describe('print choice encoding', () => {
   it('round-trips every layout x template pair', () => {
     for (const layout of PRINT_LAYOUTS) {

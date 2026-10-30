@@ -73,7 +73,7 @@ export function LabelMultiCell({ field, chosen, disabled, onChange }: LabelMulti
     onChange(null)
   }
 
-  /*  Chỉ vẽ MỘT chip rồi dồn phần còn lại vào «+N»: ô rộng 150px mà hai chip
+  /*  Chỉ vẽ MỘT chip rồi dồn phần còn lại vào "+N": ô rộng 150px mà hai chip
       tiếng Việt là đã tràn, còn cho xuống dòng thì mọi dòng của bảng cao gấp
       đôi. Tên đầy đủ của phần bị dồn nằm ở `title`, và mở menu là thấy hết.  */
   const faces = picked.length ? (

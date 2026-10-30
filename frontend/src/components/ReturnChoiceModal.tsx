@@ -1,5 +1,5 @@
-// bao-CR-498 — hộp «Trả về đâu?» của bản v1, chỉ mở khi phiếu mở CẢ HAI đường trả
-// (trả người lập sửa lại / trả về phòng thu mua mặc định — bao-CR-414/524). Một đường thì nút «Trả về» đi thẳng.
+// bao-CR-498 — hộp "Trả về đâu?" của bản v1, chỉ mở khi phiếu mở CẢ HAI đường trả
+// (trả người lập sửa lại / trả về phòng thu mua mặc định — bao-CR-414/524). Một đường thì nút "Trả về" đi thẳng.
 export type ReturnTarget = 'requester' | 'department'
 export type ReturnResolution = ReturnTarget | 'choose' | null
 
@@ -13,7 +13,7 @@ export function resolveReturnAction(canReturnToRequester: boolean, canReturnToDe
 
 const OPTIONS: { target: ReturnTarget; icon: string; title: string; description: string }[] = [
   { target: 'requester', icon: 'ti-user-edit', title: 'Trả người lập sửa lại',
-    description: 'Phiếu về trạng thái «Trả về», người lập sửa nội dung rồi gửi duyệt lại từ đầu.' },
+    description: 'Phiếu về trạng thái "Trả về", người lập sửa nội dung rồi gửi duyệt lại từ đầu.' },
   { target: 'department', icon: 'ti-building', title: 'Trả về phòng thu mua',
     description: 'Phiếu giữ nguyên trạng thái, gỡ nhân sự thu mua đang phụ trách; phòng thu mua mặc định nhận lại phiếu.' },
 ]

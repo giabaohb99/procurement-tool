@@ -17,16 +17,16 @@ import {
  */
 describe('slugifyFieldKey', () => {
   it('bỏ dấu tiếng Việt thay vì cắt bỏ chữ', () => {
-    //  ⚠️ Cắt thẳng ký tự ngoài `a-z` mà không `normalize` trước thì «Số giấy
-    //  phép» ra `s_gi_ph` — một mã không ai đọc được, và nó đi vào tiêu đề cột
+    //  ⚠️ Cắt thẳng ký tự ngoài `a-z` mà không `normalize` trước thì "Số giấy
+    //  phép" ra `s_gi_ph` — một mã không ai đọc được, và nó đi vào tiêu đề cột
     //  tệp Excel.
     expect(slugifyFieldKey('Số giấy phép')).toBe('so_giay_phep')
     expect(slugifyFieldKey('Cơ quan cấp')).toBe('co_quan_cap')
   })
 
-  it('«đ» thành «d», không biến mất', () => {
+  it('"đ" thành "d", không biến mất', () => {
     //  `đ` KHÔNG nằm trong dải dấu phụ Unicode — nó là một chữ cái riêng, nên
-    //  `normalize('NFD')` không tách nó ra. Thiếu luật riêng thì «Đơn vị» ra `n_v`.
+    //  `normalize('NFD')` không tách nó ra. Thiếu luật riêng thì "Đơn vị" ra `n_v`.
     expect(slugifyFieldKey('Đơn vị')).toBe('don_vi')
     expect(slugifyFieldKey('Địa điểm giao')).toBe('dia_diem_giao')
   })
@@ -88,7 +88,7 @@ describe('bộ kiểu ô', () => {
 
 describe('emptyDossierField', () => {
   it('ô mới rỗng hoàn toàn và KHÔNG bắt buộc', () => {
-    //  Bật «bắt buộc» sẵn là mọi hồ sơ cũ của loại đó lập tức không lưu nổi cho
+    //  Bật "bắt buộc" sẵn là mọi hồ sơ cũ của loại đó lập tức không lưu nổi cho
     //  tới khi ai đó đi điền ô vừa mới sinh ra.
     //  `source` rỗng = chưa trỏ tới danh mục nào. Khai sẵn chứ không để thiếu
     //  khóa: ô nhập không kiểm soát (`value={undefined}`) rồi có giá trị là

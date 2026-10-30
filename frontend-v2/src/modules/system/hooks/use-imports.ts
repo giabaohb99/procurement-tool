@@ -41,7 +41,7 @@ export function useImportBatch(id: number) {
 
   const status = query.data?.status
   const prevRunning = useRef<boolean | null>(null)
-  //  Đổi sang lô khác: quên trạng thái của lô trước, kẻo «đang chạy → xong» bị suy từ hai lô khác nhau.
+  //  Đổi sang lô khác: quên trạng thái của lô trước, kẻo "đang chạy → xong" bị suy từ hai lô khác nhau.
   useEffect(() => {
     prevRunning.current = null
   }, [id])

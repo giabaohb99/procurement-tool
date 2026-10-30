@@ -76,7 +76,7 @@ describe('ReportMatrixTab', () => {
 
   /**
    * Tháng rỗng từng dựng đủ thẻ (viền màu + tiêu đề + hàng tiêu đề bảng + một ô
-   * «Không có dữ liệu») ≈ 180px cho một thông tin bằng không.
+   * "Không có dữ liệu") ≈ 180px cho một thông tin bằng không.
    */
   it('không dựng khối cho tháng chưa phát sinh, nhưng NÓI RA là đã bỏ tháng nào', () => {
     mobile = true
@@ -86,7 +86,7 @@ describe('ReportMatrixTab', () => {
     expect(screen.getByText('Tháng 02/2026')).toBeInTheDocument()
     expect(screen.queryByText('Tháng 01/2026')).not.toBeInTheDocument()
     expect(screen.queryByText('Tháng 03/2026')).not.toBeInTheDocument()
-    //  ⚠️ Không được im lặng: người dùng tự tick tháng ở nút «Tháng: n/12», tick
+    //  ⚠️ Không được im lặng: người dùng tự tick tháng ở nút "Tháng: n/12", tick
     //  xong không thấy gì mà không có câu này thì đọc ra là màn hình lỗi.
     expect(screen.getByText(/Chưa phát sinh trong 2 tháng/)).toBeInTheDocument()
     expect(screen.getByText(/01\/2026 · 03\/2026/)).toBeInTheDocument()
@@ -110,7 +110,7 @@ describe('ReportMatrixTab', () => {
   })
 
   //  Không dòng nào thì mọi tháng đều rỗng — câu tóm tắt vẫn phải đúng số, chứ
-  //  không được rơi vào «Chưa phát sinh trong 0 tháng».
+  //  không được rơi vào "Chưa phát sinh trong 0 tháng".
   it('rỗng hoàn toàn thì đếm đúng số tháng bị bỏ', () => {
     mobile = true
 
@@ -120,9 +120,9 @@ describe('ReportMatrixTab', () => {
   })
 
   /**
-   * ⚠️ Ở chế độ «Dọc» màn này dựng tới mười khối; nếu mỗi khối là một BẢNG thì
-   * hàng tiêu đề «# · Nhà cung cấp · …» lặp lại mười lần, mỗi bảng một thanh
-   * cuộn ngang, và cột tên bị bóp tới mức ba dòng «CÔNG TY TNHH …» giống hệt
+   * ⚠️ Ở chế độ "Dọc" màn này dựng tới mười khối; nếu mỗi khối là một BẢNG thì
+   * hàng tiêu đề "# · Nhà cung cấp · …" lặp lại mười lần, mỗi bảng một thanh
+   * cuộn ngang, và cột tên bị bóp tới mức ba dòng "CÔNG TY TNHH …" giống hệt
    * nhau. Khổ hẹp phải là THẺ.
    */
   it('khổ điện thoại bày thẻ chứ không bày bảng, và tên hiện ĐỦ', () => {

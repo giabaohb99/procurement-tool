@@ -224,7 +224,7 @@ export default function PurchaseOrderDetail() {
   const [prList, setPrList] = useState<any[]>([])
   const [itemGroups, setItemGroups] = useState<any[]>([])   // danh mục phân loại VTBB/NL (có ngày QĐ) để tự tính đơn gấp
   const [employees, setEmployees] = useState<any[]>([])
-  // bao-CR-499: người DUYỆT ĐƯỢC chứng từ — nguồn ô «Trưởng phòng phê duyệt» (chỉ nạp khi ô còn chọn được).
+  // bao-CR-499: người DUYỆT ĐƯỢC chứng từ — nguồn ô "Trưởng phòng phê duyệt" (chỉ nạp khi ô còn chọn được).
   const [approverCands, setApproverCands] = useState<any[]>([])
   useEffect(() => {
     if (!(isNew || ['draft', 'rejected'].includes(po.status))) { setApproverCands([]); return }
@@ -232,7 +232,7 @@ export default function PurchaseOrderDetail() {
   }, [id, isNew, po.status, po.department, po.department_id, po.company_id, po.handler_dept_id])
   const [logs, setLogs] = useState<any[]>([])
   //  bao-CR-602: khối Báo cáo thực hiện của đơn — thẻ bên dưới nạp rồi báo lên, bảng dòng
-  //  hàng đọc % theo dòng từ đây; bấm ô «Hồ sơ» thì ra lệnh cho thẻ cuộn tới + sổ nút.
+  //  hàng đọc % theo dòng từ đây; bấm ô "Hồ sơ" thì ra lệnh cho thẻ cuộn tới + sổ nút.
   const [execReport, setExecReport] = useState<SurveyRequestReport | null>(null)
   const reportCardRef = useRef<SurveyReportCardHandle>(null)
   const lineReport = useMemo(() => lineReportProgress(execReport), [execReport])
@@ -342,7 +342,7 @@ export default function PurchaseOrderDetail() {
   const progressEditable = !isNew && ['approved', 'partial', 'received'].includes(po.status) && can('purchase_order', 'write')
   // Dòng đã Hoàn thành / Hủy đơn → khóa HẲN dòng đó (kể cả bảng vận chuyển), không sửa gì được
   const lineLocked = (it: any) => ['completed', PG_CANCELLED].includes(it?.progress_status || '')
-  // bao-CR-547: tick nhiều dòng rồi «Xóa đã chọn» — CHỈ form tạo hoặc đơn Nháp (đơn Bị từ chối vẫn xóa
+  // bao-CR-547: tick nhiều dòng rồi "Xóa đã chọn" — CHỈ form tạo hoặc đơn Nháp (đơn Bị từ chối vẫn xóa
   // từng dòng). Dòng đã hoàn thành / đã hủy không tick được, như nút xóa lẻ. Chọn theo CHỈ SỐ nên đổi số
   // dòng là bỏ hết lựa chọn.
   const bulkRemovable = headerEditable && (isNew || po.status === 'draft')
@@ -626,7 +626,7 @@ export default function PurchaseOrderDetail() {
   const toggleCostSel = (payableId: number, on: boolean) =>
     setCostSel((s) => on ? Array.from(new Set([...s, payableId])) : s.filter((x) => x !== payableId))
 
-  // ---- bao-CR-478: quyết toán bằng TICK CHỌN (bỏ dải giai đoạn + nút «Chốt Tạm tính») ----
+  // ---- bao-CR-478: quyết toán bằng TICK CHỌN (bỏ dải giai đoạn + nút "Chốt Tạm tính") ----
   // Cùng một cột tick với YCTT: dòng CHƯA quyết toán thì tick để quyết toán, dòng đã thành công
   // nợ thì tick để lập YCTT — hai tập không giẫm nhau (giống v2 bao-CR-469).
   const canFinalizeCosts = !isNew && costEditable && can('purchase_order', 'write')
@@ -759,7 +759,7 @@ export default function PurchaseOrderDetail() {
     }
   }
 
-  //  bao-CR-590: `submitAfterSave` = bấm «Gửi duyệt» khi đơn còn sửa được — LƯU phần đang sửa
+  //  bao-CR-590: `submitAfterSave` = bấm "Gửi duyệt" khi đơn còn sửa được — LƯU phần đang sửa
   //  rồi mới gửi. Trước đây nút Gửi duyệt chỉ POST `/submit`: máy chủ gửi bản CŨ, rồi `loadAll()`
   //  đổ bản cũ đè lên form, người dùng mất trắng phần vừa sửa. Trả `true` khi lưu (và gửi) xong.
   async function save(submitAfterSave = false): Promise<boolean> {
@@ -895,7 +895,7 @@ export default function PurchaseOrderDetail() {
     }
   }
 
-  //  bao-CR-590: «Gửi duyệt» — đơn còn sửa được thì lưu rồi gửi; chặn bấm đúp bằng ref.
+  //  bao-CR-590: "Gửi duyệt" — đơn còn sửa được thì lưu rồi gửi; chặn bấm đúp bằng ref.
   const submittingRef = useRef(false)
   async function submitForApproval() {
     if (submittingRef.current) return
@@ -1290,9 +1290,9 @@ export default function PurchaseOrderDetail() {
                   onChange={(v) => setH('nspt', v)} disabled={!headerEditable || !canPickNspt}
                   placeholder={canPickNspt ? 'Chọn nhân sự phụ trách' : ''} />
               </div>
-              {/* bao-CR-480: «Phòng xử lý» chép từ YCMH nguồn, chỉ xem — đơn do nhà máy mua hay do
+              {/* bao-CR-480: "Phòng xử lý" chép từ YCMH nguồn, chỉ xem — đơn do nhà máy mua hay do
                   phòng thu mua mặc định mua phải thấy ngay trên đầu đơn; muốn đổi thì đổi ở YCMH.
-                  bao-CR-524: backend trả tên phòng thật (kể cả đơn cũ còn 0) — không còn «Thu mua chung». */}
+                  bao-CR-524: backend trả tên phòng thật (kể cả đơn cũ còn 0) — không còn "Thu mua chung". */}
               <div className="form-row"><label>Phòng xử lý</label>
                 <input value={po.handler_dept_name || (po.handler_dept_id ? `Phòng #${po.handler_dept_id}` : 'Phòng thu mua mặc định')} disabled />
               </div>
@@ -1617,7 +1617,7 @@ export default function PurchaseOrderDetail() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
                 <h3 className="sec-title" style={{ margin: 0, border: 'none', padding: 0 }}>Chi phí thu mua</h3>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {/* bao-CR-478: bỏ nút «Chốt Tạm tính / Quyết toán» theo giai đoạn — quyết toán bằng tick chọn */}
+                  {/* bao-CR-478: bỏ nút "Chốt Tạm tính / Quyết toán" theo giai đoạn — quyết toán bằng tick chọn */}
                   {costEditable && importCosts.some((c: any) => costRowEditable(c)) && (
                     <>
                       <button className="btn ghost" style={{ height: 32, fontSize: 13 }} onClick={() => copyCostStage('estimate', 'provisional')}
@@ -1656,7 +1656,7 @@ export default function PurchaseOrderDetail() {
                   )}
                 </div>
               </div>
-              {/* bao-CR-478: bỏ dải «Dự toán › Tạm tính › Quyết toán» — ba cột gõ tự do, quyết toán bằng tick */}
+              {/* bao-CR-478: bỏ dải "Dự toán › Tạm tính › Quyết toán" — ba cột gõ tự do, quyết toán bằng tick */}
               {canFinalizeCosts && importCosts.length > 0 && (
                 <div style={{ marginBottom: 10, fontSize: 12.5, color: 'var(--muted)' }}>
                   <i className="ti ti-info-circle" /> Tick dòng rồi bấm <b>Quyết toán</b>: ô còn trống được chép từ giai đoạn trước
@@ -1697,7 +1697,7 @@ export default function PurchaseOrderDetail() {
                       <th style={{ width: 95 }}>Tiền tệ</th>
                       <th style={{ width: 70 }}>VAT%</th>
                       {/* bao-CR-453 GĐ2: ba cột số theo giai đoạn + lệch.
-                          bao-CR-517: bỏ đuôi «(VNĐ)» — ô đang gõ nhận số theo TIỀN TỆ CỦA DÒNG (trước
+                          bao-CR-517: bỏ đuôi "(VNĐ)" — ô đang gõ nhận số theo TIỀN TỆ CỦA DÒNG (trước
                           VAT, vd 120 USD), chỉ ô đã khóa mới bày số quy đổi VNĐ gồm VAT; ghi VNĐ trên
                           tiêu đề làm người nhập tưởng phải gõ tiền Việt. Giải thích để ở chú thích chuột. */}
                       <th style={{ width: 130, background: '#f0fdf4', textAlign: 'center' }} title={COST_STAGE_HEADER_HINT}>Dự toán</th>

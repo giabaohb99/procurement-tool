@@ -1,7 +1,7 @@
 import { addDays, startOfMonth, startOfWeek, toISODate } from './calendar-grid'
 
 /**
- * Khoảng ngày của màn «Xem lịch». Chỉ hai chế độ: TUẦN (mặc định) và THÁNG.
+ * Khoảng ngày của màn "Xem lịch". Chỉ hai chế độ: TUẦN (mặc định) và THÁNG.
  *
  * ⚠️ Tháng hỏi đúng từ mùng 1 tới ngày cuối tháng (28–31 ngày), KHÔNG hỏi cả lưới
  * 42 ô như Lịch nghỉ: ở đây mỗi ngày là một CỘT, không có ô rìa của tháng khác,
@@ -43,8 +43,8 @@ export function rosterRange(anchor: Date, mode: WorkRosterMode): { from: string;
 }
 
 /**
- * Ngày «hôm nay» theo giờ Việt Nam (`YYYY-MM-DD`), không theo múi giờ máy người xem:
- * máy đặt giờ UTC lúc 00:30 sáng VN vẫn còn «hôm qua» nếu dùng `new Date()` trần.
+ * Ngày "hôm nay" theo giờ Việt Nam (`YYYY-MM-DD`), không theo múi giờ máy người xem:
+ * máy đặt giờ UTC lúc 00:30 sáng VN vẫn còn "hôm qua" nếu dùng `new Date()` trần.
  * `en-CA` là locale cho ra đúng dạng ISO — dựng chuỗi tay từ `formatToParts` dài hơn mà không hơn gì.
  */
 export function todayInVietnamISO(now: Date = new Date()): string {

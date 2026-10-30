@@ -27,7 +27,7 @@ describe('optionToDetailsForm', () => {
     expect(form.supplierName).toBe('')
   })
 
-  it('a free-text supplier lands in the text box with the picker on «none»', () => {
+  it('a free-text supplier lands in the text box with the picker on "none"', () => {
     const form = optionToDetailsForm(zero({ supplier_name: 'Cơ sở in B' }))
     expect(form.supplierCode).toBe(NO_SUPPLIER_CODE)
     expect(form.supplierName).toBe('Cơ sở in B')

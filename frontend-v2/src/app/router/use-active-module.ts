@@ -10,10 +10,17 @@ import type { ErpModule } from './module-definition'
  */
 export function useActiveModule(): ErpModule | null {
   const { pathname } = useLocation()
+  return findModuleByPath(pathname)
+}
 
-  return (
-    [...moduleRegistry]
-      .sort((a, b) => b.path.length - a.path.length)
-      .find((m) => pathname === m.path || pathname.startsWith(`${m.path}/`)) ?? null
-  )
+/**
+ * Tách khỏi hook để bài kiểm gọi thẳng được. Xét cả đường gốc phụ (`extraPaths`) — phân hệ AI gộp từ hai phân hệ cũ
+ * nên `/ai-skill/...` và `/assistant/...` đều phải ra cùng một phân hệ (bao-CR-696).
+ */
+export function findModuleByPath(pathname: string, modules: ErpModule[] = moduleRegistry): ErpModule | null {
+  const candidates = modules.flatMap((m) => [m.path, ...(m.extraPaths ?? [])].map((root) => ({ m, root })))
+  const hit = candidates
+    .sort((a, b) => b.root.length - a.root.length)
+    .find(({ root }) => pathname === root || pathname.startsWith(`${root}/`))
+  return hit?.m ?? null
 }

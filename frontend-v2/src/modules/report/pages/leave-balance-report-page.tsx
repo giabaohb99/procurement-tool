@@ -13,7 +13,7 @@ const CONFIG: ReportPageConfig = {
   description: 'Được cấp, đã dùng, đang giữ chỗ, còn lại và tỷ lệ sử dụng — theo loại nghỉ, công ty, phòng ban, nhân sự.',
   slug: 'leave-balance',
   sourcePath: appRoutes.hr.leaveBalances,
-  //  `people_missing_balance` («Chưa được cấp quỹ», duoc-CR-686) là chỉ số THỜI ĐIỂM — chỉ ở Tổng.
+  //  `people_missing_balance` ("Chưa được cấp quỹ", duoc-CR-686) là chỉ số THỜI ĐIỂM — chỉ ở Tổng.
   kpis: ['granted', 'used', 'pending', 'remaining', 'usage_rate', 'people_missing_balance'],
   //  Kỳ của báo cáo này là NĂM, không có trục ngày/tuần/tháng bên trong một
   //  năm — backend luôn trả `trend: []`, nên ẩn hẳn khung biểu đồ (duoc-CR-686)
@@ -28,7 +28,7 @@ const CONFIG: ReportPageConfig = {
   //  tự lùi ĐÚNG 12 tháng — tức "cùng kỳ năm trước" — không cần khai thêm gì.
   defaultPreset: 'this_year',
   breakdowns: [{ key: 'leave_type', title: 'Top loại nghỉ' }],
-  //  Phòng ban (hiện tại của người giữ quỹ) + trạng thái nhân sự (mặc định «Đang làm»).
+  //  Phòng ban (hiện tại của người giữ quỹ) + trạng thái nhân sự (mặc định "Đang làm").
   extraFilters: LeaveBalanceExtraFilters,
 }
 

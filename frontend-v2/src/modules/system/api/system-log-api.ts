@@ -28,7 +28,7 @@ export const LOG_SOURCE_LABEL: Record<number, string> = {
   [LOG_SOURCE.SCRIPT]: 'Script',
 }
 
-/** Nhóm hành động — khớp `ACTION_GROUP_*`. `0` là «không rõ», không đưa vào ô lọc. */
+/** Nhóm hành động — khớp `ACTION_GROUP_*`. `0` là "không rõ", không đưa vào ô lọc. */
 export const ACTION_GROUP = {
   VIEW: 1,
   EDIT: 2,
@@ -53,9 +53,9 @@ export const ACTION_GROUP_LABEL: Record<number, string> = {
 export const CHANGE_OP = { ADD: 1, UPDATE: 2, DELETE: 3 } as const
 
 /**
- * Ô «Kết quả» — khớp `STATUS_*` ở `system_log/service.py`.
+ * Ô "Kết quả" — khớp `STATUS_*` ở `system_log/service.py`.
  *
- * ⚠️ «Bị chặn» (401/403) KHÔNG phải «lỗi» (5xx): 403 là hệ thống làm đúng việc
+ * ⚠️ "Bị chặn" (401/403) KHÔNG phải "lỗi" (5xx): 403 là hệ thống làm đúng việc
  * của nó. Trộn hai thứ thì câu hỏi *"hôm nay hỏng gì"* luôn bị vùi dưới hàng
  * trăm lượt 403 của người thiếu quyền.
  */
@@ -104,7 +104,7 @@ export interface SystemLogListResult {
   page_size: number
 }
 
-/** Tab «Request» — khớp `build_detail().request`. */
+/** Tab "Request" — khớp `build_detail().request`. */
 export interface SystemLogRequestDetail {
   request_id: string
   at: string
@@ -136,7 +136,7 @@ export interface SystemLogRequestDetail {
   error_detail?: string
 }
 
-/** Tab «Tổng quan» — một dòng `tab_audit_log`. */
+/** Tab "Tổng quan" — một dòng `tab_audit_log`. */
 export interface SystemLogAuditEntry {
   id: number
   at: string
@@ -156,7 +156,7 @@ export interface SystemLogAuditEntry {
   change_count: number
 }
 
-/** Tab «Thay đổi» — MỘT dòng cho MỘT trường (§4.3). */
+/** Tab "Thay đổi" — MỘT dòng cho MỘT trường (§4.3). */
 export interface SystemLogChangeEntry {
   id: number
   at: string
@@ -172,7 +172,7 @@ export interface SystemLogChangeEntry {
   is_masked: boolean
 }
 
-/** Tab «Phiên» — `null` khi lượt gọi không gắn phiên nào (script, Celery, chưa đăng nhập). */
+/** Tab "Phiên" — `null` khi lượt gọi không gắn phiên nào (script, Celery, chưa đăng nhập). */
 export interface SystemLogSessionInfo {
   id: number
   user_id: number
@@ -195,7 +195,7 @@ export interface SystemLogDetail {
   request: SystemLogRequestDetail
   audit: SystemLogAuditEntry[]
   changes: SystemLogChangeEntry[]
-  /** `false` = thiếu khóa `change_log`, KHÔNG phải «lượt này không đổi gì». */
+  /** `false` = thiếu khóa `change_log`, KHÔNG phải "lượt này không đổi gì". */
   can_read_changes: boolean
   session: SystemLogSessionInfo | null
 }

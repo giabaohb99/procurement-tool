@@ -36,7 +36,7 @@ function doc(overrides: Partial<DocumentRecord> = {}): DocumentRecord {
     secrecy_level: 2,
     urgency: 1,
     //  Mặc định là NHÁP: `effectiveLabel` chỉ tính lại nhãn theo ngày khi văn
-    //  bản «Có hiệu lực», nên trạng thái này giữ bài kiểm khỏi phụ thuộc hôm nay.
+    //  bản "Có hiệu lực", nên trạng thái này giữ bài kiểm khỏi phụ thuộc hôm nay.
     status: DOCUMENT_STATUS.draft,
     status_label: 'Nháp',
     effective_date: null,
@@ -83,7 +83,7 @@ describe('DocumentCard', () => {
 
   /**
    * Bài học duoc-CR-364: số hiệu đứng đầu thì cả một danh sách nháp in ra mười
-   * dòng «Chưa cấp số» giống hệt nhau, còn TÊN — thứ duy nhất nói đây là văn bản
+   * dòng "Chưa cấp số" giống hệt nhau, còn TÊN — thứ duy nhất nói đây là văn bản
    * gì — bị đẩy xuống. Trên thẻ, tên phải ra trước số hiệu.
    */
   it('đặt tên văn bản TRƯỚC số hiệu, ngược thứ tự cột của bảng', () => {
@@ -97,13 +97,13 @@ describe('DocumentCard', () => {
     expect(text.compareDocumentPosition(code) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it('nói rõ «Chưa cấp số» thay vì để trống khi văn bản chưa duyệt', () => {
+  it('nói rõ "Chưa cấp số" thay vì để trống khi văn bản chưa duyệt', () => {
     render(<DocumentCard doc={doc({ display_code: '' })} />)
 
     expect(screen.getByText('Chưa cấp số')).toBeInTheDocument()
   })
 
-  describe('«Cần rà lại»', () => {
+  describe('"Cần rà lại"', () => {
     it('hiện ở tab Văn bản đến khi văn bản cha đã đổi', () => {
       render(<DocumentCard doc={doc({ needs_review: true })} showReviewFlag />)
 
@@ -117,7 +117,7 @@ describe('DocumentCard', () => {
     })
 
     /**
-     * Tab «Văn bản đi» không có cột này trên bảng, nên thẻ cũng không được có —
+     * Tab "Văn bản đi" không có cột này trên bảng, nên thẻ cũng không được có —
      * hai khổ màn nói khác nhau về cùng một văn bản là chuyện không giải thích
      * được với người dùng.
      */
@@ -137,7 +137,7 @@ describe('DocumentCard', () => {
 
     /**
      * `clone_count` chỉ có ở endpoint DANH SÁCH của tab đi; `0` và `undefined`
-     * đều nghĩa là "không tách bản nào" — in ra «0 bản riêng» là bịa thêm một
+     * đều nghĩa là "không tách bản nào" — in ra "0 bản riêng" là bịa thêm một
      * khái niệm cho mọi dòng bình thường.
      */
     it.each([
@@ -161,7 +161,7 @@ describe('DocumentCard', () => {
 
     /**
      * Phòng chủ trì để trống là chuyện thường (văn bản cấp tập đoàn). Nối chuỗi
-     * mà không lọc thì ra «CÔNG TY TNHH DEGO HOLDING · » — một dấu chấm giữa mồ
+     * mà không lọc thì ra "CÔNG TY TNHH DEGO HOLDING · " — một dấu chấm giữa mồ
      * côi treo ở cuối dòng.
      */
     it('không để lại dấu · mồ côi khi thiếu phòng chủ trì', () => {
@@ -178,10 +178,10 @@ describe('DocumentCard', () => {
   })
 
   /**
-   * «Chờ bạn duyệt» đứng CẠNH trạng thái chứ không thay thế nó: văn bản vẫn đang
-   * ở «Đang duyệt», thứ thêm vào là *lượt của ai*.
+   * "Chờ bạn duyệt" đứng CẠNH trạng thái chứ không thay thế nó: văn bản vẫn đang
+   * ở "Đang duyệt", thứ thêm vào là *lượt của ai*.
    */
-  it('bày cả trạng thái lẫn «Chờ bạn duyệt» khi tới lượt người đang xem', () => {
+  it('bày cả trạng thái lẫn "Chờ bạn duyệt" khi tới lượt người đang xem', () => {
     render(
       <DocumentCard
         doc={doc({ status: DOCUMENT_STATUS.submitted, status_label: 'Đang duyệt' })}
@@ -193,7 +193,7 @@ describe('DocumentCard', () => {
     expect(screen.getByText('Chờ bạn duyệt')).toBeInTheDocument()
   })
 
-  it('im «Chờ bạn duyệt» khi không phải lượt của người đang xem', () => {
+  it('im "Chờ bạn duyệt" khi không phải lượt của người đang xem', () => {
     render(<DocumentCard doc={doc({ status: DOCUMENT_STATUS.submitted })} />)
 
     expect(screen.queryByText('Chờ bạn duyệt')).not.toBeInTheDocument()

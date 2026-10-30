@@ -318,15 +318,15 @@ function AccessForm({ pending, existing, initial, onCancel, onSubmit }: AccessFo
             <label className="flex items-center gap-2 text-sm">
               <RadioGroupItem value={String(EFFECT.deny)} />
               {/*  Gọi ĐÚNG MỘT TÊN ở mọi chỗ: nút chọn ở đây, tiêu đề cụm bên
-                   ngoài, câu giải thích. Trước 24/08/2026 chỗ này ghi «Cấm» còn
-                   cụm bên ngoài ghi «Không cho phép» — người dùng phải tự đoán
+                   ngoài, câu giải thích. Trước 24/08/2026 chỗ này ghi "Cấm" còn
+                   cụm bên ngoài ghi "Không cho phép" — người dùng phải tự đoán
                    hai chữ đó là một. */}
               Không cho phép
             </label>
           </RadioGroup>
           <p className="text-xs text-muted-foreground">
             {isDeny
-              ? '«Không cho phép» thắng mọi dòng cho phép và thắng cả phạm vi vai trò — người bị chặn không còn thấy văn bản này trong danh sách.'
+              ? '"Không cho phép" thắng mọi dòng cho phép và thắng cả phạm vi vai trò — người bị chặn không còn thấy văn bản này trong danh sách.'
               : 'Người được chia sẽ thấy và mở được văn bản này kể cả khi nó nằm ngoài phạm vi vai trò của họ.'}
           </p>
         </div>
@@ -421,7 +421,7 @@ interface SubjectOption {
   label: string
   /**
    * Chữ phụ mờ bên cạnh tên — hiện chỉ có MÃ NHÂN VIÊN. Tìm được theo nó
-   * (25/09/2026: gõ «NSU204» ra «Không có người nào khớp» — người dùng tra
+   * (25/09/2026: gõ "NSU204" ra "Không có người nào khớp" — người dùng tra
    * theo mã, và công ty có người trùng họ tên).
    */
   hint?: string
@@ -435,7 +435,7 @@ interface SubjectMultiSelectProps {
   kindLabel: string
   /**
    * Vì sao danh sách THIẾU một dòng lẽ ra phải có (hiện đúng một trường hợp:
-   * chính mình bị bỏ khỏi cụm «không cho phép»).
+   * chính mình bị bỏ khỏi cụm "không cho phép").
    *
    * Đặt TRONG ô chọn chứ không phải một băng riêng ngoài hộp thoại: nó chỉ có
    * nghĩa lúc người dùng mở danh sách ra tìm mà không thấy tên. Để ngoài thì

@@ -5,7 +5,7 @@
  * Danh sách kiểu ảnh phải khớp `INLINE_VIEW_TYPES` của
  * `backend/app/modules/attachment/controller.py`: ảnh in được là ảnh lấy về được
  * qua `/view`. Kiểu nằm ngoài danh sách đó (`image/svg+xml`, `image/heic`…) mà
- * xếp vào nhóm ảnh thì `/view` trả 415 và trang in treo ở «đang nạp ảnh» mãi.
+ * xếp vào nhóm ảnh thì `/view` trả 415 và trang in treo ở "đang nạp ảnh" mãi.
  */
 
 const PRINTABLE_IMAGE_TYPES = new Set([
@@ -34,7 +34,7 @@ export function isPrintableImage(file: AttachmentLike): boolean {
 }
 
 /**
- * Câu «Tài liệu đính kèm» trên mặt đơn. Rỗng khi không có tệp nào — bên gọi
+ * Câu "Tài liệu đính kèm" trên mặt đơn. Rỗng khi không có tệp nào — bên gọi
  * dựa vào đó để không in một dòng trơ trọi.
  *
  * Tệp không phải ảnh ghi TÊN (chúng không được in), ảnh chỉ ghi SỐ LƯỢNG vì bản

@@ -9,8 +9,8 @@ import {
 import type { EmployeeChangeRequest } from '../types/employee-change-request'
 
 /**
- * Danh sách gọn «ô nào: trước → sau» của MỘT đề nghị sửa hồ sơ (duoc-CR-676) — dùng ở thẻ
- * «Đề nghị sửa hồ sơ» của Trang cá nhân. Màn duyệt của phòng Nhân sự dùng bảng so sánh đủ cột
+ * Danh sách gọn "ô nào: trước → sau" của MỘT đề nghị sửa hồ sơ (duoc-CR-676) — dùng ở thẻ
+ * "Đề nghị sửa hồ sơ" của Trang cá nhân. Màn duyệt của phòng Nhân sự dùng bảng so sánh đủ cột
  * (`change-request-diff-table.tsx`) chứ không dùng khối này.
  */
 export function ChangeRequestChangesList({ request }: { request: EmployeeChangeRequest }) {

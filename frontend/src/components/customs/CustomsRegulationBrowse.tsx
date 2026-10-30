@@ -1,11 +1,11 @@
-// duoc-CR-490 — thẻ «Pháp lý» của Tra cứu thị trường (bê từ bản v2 `customs-regulation-tab.tsx`):
+// duoc-CR-490 — thẻ "Pháp lý" của Tra cứu thị trường (bê từ bản v2 `customs-regulation-tab.tsx`):
 // bảng DUYỆT toàn bộ danh mục hóa chất theo văn bản — hoạt chất BVTV cấm (TT 75/2025), NĐ
 // 24/2026 phụ lục I–IV, hóa chất phải công bố theo lô (TT 01/2026). Trước đây chỉ tra được từng
-// từ trong thẻ «Pháp lý & thuế»; thẻ đó nay chỉ còn phần thuế (`CustomsTabs.tsx` → `CustomsTariff`).
+// từ trong thẻ "Pháp lý & thuế"; thẻ đó nay chỉ còn phần thuế (`CustomsTabs.tsx` → `CustomsTariff`).
 //
 // Bộ lọc là state CỤC BỘ: ô tìm `q` trên URL là của thanh lọc dòng hàng hải quan, dùng chung thì
 // đổi thẻ là ô tìm hóa chất bị ghi đè bằng tên hàng. Riêng thẻ cảnh báo trên đầu vẫn đọc từ khóa
-// dòng hàng đang tra (`filters.q`) — dải cảnh báo ở các thẻ khác bảo «xem thẻ Pháp lý» là trỏ vào đây.
+// dòng hàng đang tra (`filters.q`) — dải cảnh báo ở các thẻ khác bảo "xem thẻ Pháp lý" là trỏ vào đây.
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../api/client'
 import { TableColumn, useTableColumns } from '../../hooks/useTableColumns'
@@ -38,7 +38,7 @@ export default function CustomsRegulationBrowse({ filters, alerts }: { filters: 
   const [options, setOptions] = useState<any>(null)
   const [pesticidesOf, setPesticidesOf] = useState<any | null>(null)
 
-  //  duoc-CR-609 — nút «Cột» ẩn / hiện từng cột (đại ca yêu cầu 07/10/2026). Thứ tự cột vẫn đúng bản
+  //  duoc-CR-609 — nút "Cột" ẩn / hiện từng cột (đại ca yêu cầu 07/10/2026). Thứ tự cột vẫn đúng bản
   //  v2: phần chung · Thuốc BVTV chứa · Lưu ý. Mảng cột dựng một lần (hook so theo tham chiếu).
   const allColumns = useMemo<TableColumn[]>(() => [
     ...REGULATION_COMMON_COLUMNS,
@@ -84,7 +84,7 @@ export default function CustomsRegulationBrowse({ filters, alerts }: { filters: 
 
       {alerts.length > 0 && (
         <div className="card" style={{ padding: 12 }}>
-          <div style={{ fontWeight: 600, marginBottom: 6 }}>Cảnh báo cho từ khóa đang tra «{filters.q}»</div>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>Cảnh báo cho từ khóa đang tra <strong>{filters.q}</strong></div>
           <CustomsRegulationAlertTable items={alerts} />
         </div>
       )}
@@ -101,7 +101,7 @@ export default function CustomsRegulationBrowse({ filters, alerts }: { filters: 
           {filtersActive && (
             <button className="btn ghost" onClick={resetFilters}><i className="ti ti-rotate" />Xóa lọc</button>
           )}
-          {/* Nút «Cột» dồn về góc phải hàng lọc. */}
+          {/* Nút "Cột" dồn về góc phải hàng lọc. */}
           <div style={{ marginLeft: 'auto' }}>
             <TableToolbar {...table} />
           </div>
@@ -131,7 +131,7 @@ export default function CustomsRegulationBrowse({ filters, alerts }: { filters: 
 }
 
 /**
- * Cột «Thuốc BVTV chứa» — chỉ dòng TT 75 (cấm) có số. `null` = danh mục thuốc CHƯA nạp (khác
+ * Cột "Thuốc BVTV chứa" — chỉ dòng TT 75 (cấm) có số. `null` = danh mục thuốc CHƯA nạp (khác
  * "0 thuốc" — phải nói ra, không thì đọc thành "đã đối chiếu, sạch"). Tên cấm không rút ra được
  * khóa so khớp nào (chữ tiếng Việt có dấu…) cũng phải nói ra, cùng lý do. Bấm số → danh sách.
  */

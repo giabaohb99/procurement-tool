@@ -66,8 +66,8 @@ describe('fromCustomRows — hàng biểu mẫu thành bản ghi', () => {
     ({ ...def(), value: '1234/QĐ', ...over })
 
   it('tách thành khai báo và giá trị, khai báo KHÔNG còn `value`', () => {
-    //  Lọt `value` vào `custom_fields` thì backend trả 422 «Extra inputs are
-    //  not permitted» — `DossierFieldDef` là schema đóng.
+    //  Lọt `value` vào `custom_fields` thì backend trả 422 "Extra inputs are
+    //  not permitted" — `DossierFieldDef` là schema đóng.
     const { defs, values } = fromCustomRows([row()])
     expect(defs).toEqual([def()])
     expect(defs[0]).not.toHaveProperty('value')
@@ -75,8 +75,8 @@ describe('fromCustomRows — hàng biểu mẫu thành bản ghi', () => {
   })
 
   it('BỎ hàng chưa đặt tên', () => {
-    //  Người dùng bấm «Thêm trường» rồi đổi ý. Gửi lên thì backend trả 422 «Mã
-    //  trường không được để trống» cho một hàng họ coi như không tồn tại.
+    //  Người dùng bấm "Thêm trường" rồi đổi ý. Gửi lên thì backend trả 422 "Mã
+    //  trường không được để trống" cho một hàng họ coi như không tồn tại.
     const { defs, values } = fromCustomRows([
       row(),
       { ...emptyCustomRow() },
@@ -101,7 +101,7 @@ describe('fromCustomRows — hàng biểu mẫu thành bản ghi', () => {
 })
 
 describe('reseedFromType — đổi loại thì đổ lại khuôn', () => {
-  //  ⚠️ `def()` mặc định khóa `so_qd` — trùng với hàng «tự thêm» ở dưới, nên
+  //  ⚠️ `def()` mặc định khóa `so_qd` — trùng với hàng "tự thêm" ở dưới, nên
   //  khuôn phải khai khóa RIÊNG, không thì bài kiểm đo nhầm chính nó.
   const gp = def({ key: 'so_gp', label: 'Số giấy phép' })
   const cq = def({ key: 'co_quan', label: 'Cơ quan cấp' })
@@ -109,7 +109,7 @@ describe('reseedFromType — đổi loại thì đổ lại khuôn', () => {
   const rieng: DossierCustomRow = { ...def({ key: 'so_qd', label: 'Số QĐ' }), value: '777' }
 
   it('lần ĐẦU chọn loại: đổ khuôn vào, giữ nguyên hàng người dùng tự thêm', () => {
-    //  Họ khai «Số QĐ» rồi mới chọn loại — cuốn phăng đi là mất công gõ.
+    //  Họ khai "Số QĐ" rồi mới chọn loại — cuốn phăng đi là mất công gõ.
     const out = reseedFromType([rieng], [], [gp, cq])
     //  Khuôn lên TRƯỚC, giữ đúng thứ tự đã khai ở màn Loại hồ sơ.
     expect(out.map((r) => r.key)).toEqual(['so_gp', 'co_quan', 'so_qd'])

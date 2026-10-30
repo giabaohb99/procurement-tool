@@ -1,5 +1,5 @@
-// duoc-CR-614 (09/10/2026) — «Khởi tạo báo cáo mẫu» có CHỌN MẪU. Trước đây nút đổ thẳng mẫu chung
-// (5 giai đoạn, bộ hồ sơ chứng từ nhập khẩu); nay thêm mẫu «Tiến độ kế hoạch công việc nhập khẩu»
+// duoc-CR-614 (09/10/2026) — "Khởi tạo báo cáo mẫu" có CHỌN MẪU. Trước đây nút đổ thẳng mẫu chung
+// (5 giai đoạn, bộ hồ sơ chứng từ nhập khẩu); nay thêm mẫu "Tiến độ kế hoạch công việc nhập khẩu"
 // theo file Excel của Phòng Thu mua (21 việc, một giai đoạn). Danh sách mẫu lấy từ backend.
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'

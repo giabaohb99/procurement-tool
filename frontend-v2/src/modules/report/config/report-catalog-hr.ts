@@ -51,7 +51,7 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
     path: appRoutes.report.leaveUsage,
     sourcePath: appRoutes.hr.leaveRequests,
     icon: CalendarOff,
-    //  Khớp mục con «Đơn nghỉ phép» (cùng đường với mục cha «Nghỉ phép») và
+    //  Khớp mục con "Đơn nghỉ phép" (cùng đường với mục cha "Nghỉ phép") và
     //  `require('leave_request', ...)` của `/api/leave-requests/summary`.
     //  ReportKey.LEAVE_USAGE (backend) = 7.
     key: 7,
@@ -211,7 +211,7 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
     group: 'Nhân sự',
     endpoint: '/api/attendance-report/summary',
     //  Không lên dải KPI Tổng quan: backend chặn kỳ dài hơn 92 ngày (422) — trang Tổng quan chọn
-    //  «Năm nay» là thẻ này hỏng trong khi mọi thẻ khác vẫn chạy.
+    //  "Năm nay" là thẻ này hỏng trong khi mọi thẻ khác vẫn chạy.
     overviewKpis: [],
     load: async () => (await import('../pages/attendance-report-page')).AttendanceReportPage,
   },

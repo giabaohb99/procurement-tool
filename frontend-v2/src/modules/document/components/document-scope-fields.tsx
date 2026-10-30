@@ -50,7 +50,7 @@ export function DocumentScopeFields({ rows, onChange }: DocumentScopeFieldsProps
             </p>
             <p className="text-muted-foreground">
               Mọi phòng ban, mọi nhân sự của pháp nhân đứng tên văn bản đều thấy nó
-              trong mục «Văn bản áp dụng cho tôi». Chỉ khai thêm dòng khi cần đi xa
+              trong mục <em>Văn bản áp dụng cho tôi</em>. Chỉ khai thêm dòng khi cần đi xa
               hơn (pháp nhân khác) hoặc hẹp lại (một phòng ban, một người).
             </p>
           </div>

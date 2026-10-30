@@ -26,7 +26,7 @@ export const CUSTOMS_FORMULATION_CODE_CRUD_CONFIG: CrudConfig<CustomsFormulation
   searchPlaceholder: 'Tìm mã…',
   quickFilters: [{ key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS }],
   getItemName: (row) => row.code,
-  deleteWarning: 'Xóa mã thì chỉ mất dòng tra cứu này. Muốn tạm tắt thì chuyển sang «Ngừng dùng».',
+  deleteWarning: 'Xóa mã thì chỉ mất dòng tra cứu này. Muốn tạm tắt thì chuyển sang "Ngừng dùng".',
   openFormOnRowClick: true,
   columns: [
     {
@@ -61,7 +61,7 @@ export const CUSTOMS_FORMULATION_CODE_CRUD_CONFIG: CrudConfig<CustomsFormulation
     preserveParams: ['is_active'],
   },
   formFields: [
-    { name: 'code', label: 'Mã', type: 'text', required: true, hint: 'Viết hoa, tối đa 20 ký tự, vd «EC».' },
+    { name: 'code', label: 'Mã', type: 'text', required: true, hint: 'Viết hoa, tối đa 20 ký tự, vd "EC".' },
     { name: 'name_en', label: 'Tên tiếng Anh', type: 'text', fullWidth: true },
     { name: 'name_vi', label: 'Tên tiếng Việt', type: 'text', fullWidth: true },
     { name: 'description', label: 'Đặc điểm', type: 'textarea', fullWidth: true },

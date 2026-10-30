@@ -29,13 +29,13 @@ function isSalarySet(employee: EmployeeDetail): boolean {
 }
 
 /**
- * Nhóm «Lương» trong mục Công việc (duoc-CR-693) — MỘT chỗ nhập lương duy nhất của hồ sơ.
+ * Nhóm "Lương" trong mục Công việc (duoc-CR-693) — MỘT chỗ nhập lương duy nhất của hồ sơ.
  *
  * ⚠️ Chỉ chính nhân sự này xem được số (backend chỉ trả hai số khi người xem là chính họ). Người
  * khác — kể cả người nhập và quản trị — nhận `salary_set` thay số, nên ô sửa LUÔN mở ra trống:
  * - giá trị form `null` = KHÔNG ĐỤNG → `pickWritableProfile` bỏ khỏi PATCH, số thật được giữ;
- * - gõ số mới = thay số cũ; bấm «Xóa số đã nhập» = gửi `0` (xóa).
- * Gõ rồi xóa trắng ô thì quay về «không đụng», KHÔNG thành 0 — xóa nhầm số mình không nhìn thấy
+ * - gõ số mới = thay số cũ; bấm "Xóa số đã nhập" = gửi `0` (xóa).
+ * Gõ rồi xóa trắng ô thì quay về "không đụng", KHÔNG thành 0 — xóa nhầm số mình không nhìn thấy
  * là mất dữ liệu mà không ai biết.
  *
  * Chính chủ chỉ XEM: tự sửa lương mình thì backend trả 403, nên không bày ô nhập.
@@ -90,8 +90,8 @@ export function EmployeeSalarySection({ employee, isSelf, canWrite }: EmployeeSa
                   decimals={false}
                   max={MAX_PROFILE_SALARY}
                   value={field.value ?? 0}
-                  //  Ô trống (0) giữ nguyên trạng thái đang có: «không đụng» vẫn là `null`,
-                  //  «sẽ xóa» vẫn là 0. Chỉ số > 0 mới là thay số.
+                  //  Ô trống (0) giữ nguyên trạng thái đang có: "không đụng" vẫn là `null`,
+                  //  "sẽ xóa" vẫn là 0. Chỉ số > 0 mới là thay số.
                   onChange={(next) => field.onChange(next > 0 ? next : field.value === 0 ? 0 : null)}
                   placeholder={field.value === 0 ? 'Sẽ xóa khi Lưu' : unsetLabel}
                 />

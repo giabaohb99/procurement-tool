@@ -1,8 +1,8 @@
 // Hộp THÊM / SỬA một thuốc BVTV (duoc-CR-490). Khóa `customs_pesticide` (create / write).
 //
 // Ba điều hộp này phải nói ra, vì người dùng không tự đoán được:
-//   · sửa thuốc LẤY TỪ NGUỒN thì lần «Nạp danh mục» sau ghi đè chỗ sửa theo tệp mới;
-//   · tên thương mại / hoạt chất vừa sửa chưa vào dòng hàng hải quan cho tới khi bấm «Gắn lại nhãn»
+//   · sửa thuốc LẤY TỪ NGUỒN thì lần "Nạp danh mục" sau ghi đè chỗ sửa theo tệp mới;
+//   · tên thương mại / hoạt chất vừa sửa chưa vào dòng hàng hải quan cho tới khi bấm "Gắn lại nhãn"
 //     ở mục Cấu hình (backend cố ý không quét lại ~18 nghìn dòng mỗi lần sửa một thuốc);
 //   · lưu là thay TOÀN BỘ phạm vi sử dụng bằng bảng đang thấy.
 // Chặn bấm đúp bằng `useRef` (đổi ngay trong lượt bấm) — `disabled` chỉ đổi ở lượt vẽ sau.
@@ -106,9 +106,9 @@ export function CustomsPesticideFormDialog({
     <Dialog open onOpenChange={(open) => !open && !pending && onClose()}>
       <DialogContent className="flex max-h-[92dvh] flex-col gap-4 sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? `Sửa thuốc «${initial.trade_name}»` : 'Thêm thuốc BVTV'}</DialogTitle>
+          <DialogTitle>{isEdit ? `Sửa thuốc "${initial.trade_name}"` : 'Thêm thuốc BVTV'}</DialogTitle>
           <DialogDescription>
-            Thuốc thêm trên màn được giữ lại qua các lần «Nạp danh mục».
+            Thuốc thêm trên màn được giữ lại qua các lần <strong>Nạp danh mục</strong>.
           </DialogDescription>
         </DialogHeader>
 
@@ -120,11 +120,11 @@ export function CustomsPesticideFormDialog({
         >
           {isEdit && fromSource && (
             <CustomsNotice tone="warning" icon={<TriangleAlert className="size-4" />}>
-              Thuốc này lấy từ bản cào — lần «Nạp danh mục» sau sẽ ghi đè chỗ sửa tay theo nguồn.
+              Thuốc này lấy từ bản cào — lần <strong>Nạp danh mục</strong> sau sẽ ghi đè chỗ sửa tay theo nguồn.
             </CustomsNotice>
           )}
           <CustomsNotice icon={<Info className="size-4" />}>
-            Tên thuốc / hoạt chất mới chỉ vào nhãn của dòng hàng hải quan sau khi bấm «Gắn lại nhãn»
+            Tên thuốc / hoạt chất mới chỉ vào nhãn của dòng hàng hải quan sau khi bấm <strong>Gắn lại nhãn</strong>{' '}
             ở mục Cấu hình, hoặc ở lần nạp danh mục kế tiếp.
           </CustomsNotice>
 

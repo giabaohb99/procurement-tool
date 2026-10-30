@@ -7,10 +7,10 @@ khác nút chọn phương án của người yêu cầu chỗ nào.
 
 Script dựng HAI bài, mỗi bài một nhóm có sẵn (không đẻ nhóm mới):
 
-1. «Xử lý phương án trên yêu cầu mua hàng» — nhóm «Dành cho Nhân viên Mua hàng».
+1. "Xử lý phương án trên yêu cầu mua hàng" — nhóm "Dành cho Nhân viên Mua hàng".
    Bài chính, kể đủ đường đi: gắn phương án, phương án 0, chốt hoàn thành xử lý, chốt rỗng,
    sửa giá / NCC sau chốt, áp 1 NCC cho nhiều dòng, tạo đơn, in phiếu.
-2. «Chọn phương án trên yêu cầu mua hàng» — nhóm «Dành cho Người yêu cầu».
+2. "Chọn phương án trên yêu cầu mua hàng" — nhóm "Dành cho Người yêu cầu".
    Bài ngắn, chỉ nói phần người yêu cầu bấm, và cố ý KHÔNG nhắc tên nhà cung cấp vì màn chọn
    của họ che cụm NCC (H.3.8).
 
@@ -279,7 +279,7 @@ REQUESTER_CONTENT = f"""<h2>I. Chuyện gì đang xảy ra</h2>
 """
 
 
-#  Chỗ đứng mong muốn khi bài CHƯA tồn tại. Bài thu mua xếp ngay sau «Tiến độ mua hàng» (4)
+#  Chỗ đứng mong muốn khi bài CHƯA tồn tại. Bài thu mua xếp ngay sau "Tiến độ mua hàng" (4)
 #  chứ không rơi xuống cuối nhóm — nhóm này có một bài cố ý để sort_order 50.
 #  Bài đã tồn tại thì giữ nguyên chỗ cũ, không kéo về đây.
 ARTICLES = [
@@ -331,7 +331,7 @@ def seed_one(db, parent, title: str, summary: str, content: str, default_order: 
     if old is not None:
         order = old.sort_order
         removed = delete_subtree(db, old.id)
-        print(f"  Đã xóa bài cũ «{title}»: {removed} bài (id={old.id}).")
+        print(f"  Đã xóa bài cũ '{title}': {removed} bài (id={old.id}).")
     if order is None:
         order = default_order
 
@@ -344,7 +344,7 @@ def seed_one(db, parent, title: str, summary: str, content: str, default_order: 
     )
     db.add(art)
     db.flush()
-    print(f"  Đã dựng «{title}» (id={art.id}) dưới «{parent.title}» "
+    print(f"  Đã dựng '{title}' (id={art.id}) dưới '{parent.title}' "
           f"(id={parent.id}, sort_order={order}).")
 
 
@@ -357,7 +357,7 @@ def main():
         for parent_title, *_ in ARTICLES:
             group = find_group(db, parent_title)
             if group is None:
-                print(f"Không thấy nhóm «{parent_title}» — dừng, không tạo bài gốc mới.")
+                print(f"Không thấy nhóm '{parent_title}' — dừng, không tạo bài gốc mới.")
                 sys.exit(1)
             groups[parent_title] = group
 

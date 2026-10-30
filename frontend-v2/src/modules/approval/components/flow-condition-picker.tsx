@@ -13,7 +13,7 @@ interface FlowConditionPickerProps {
 }
 
 /**
- * «Luồng này áp cho phiếu nào» của các loại chứng từ KHÁC văn bản (bao-CR-579).
+ * "Luồng này áp cho phiếu nào" của các loại chứng từ KHÁC văn bản (bao-CR-579).
  *
  * Văn bản có bộ chọn riêng ba lựa chọn (`FlowScopePicker`). Đặt xe và Duyệt dấu
  * cần thứ khác: khai NHIỀU luồng cho cùng một loại phiếu, mỗi luồng một điều kiện

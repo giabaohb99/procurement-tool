@@ -12,7 +12,7 @@ import {
 interface EmployeeWorkHistoryFileFieldProps {
   /** Đang SỬA (`true`) hay tạo mới (`false`) — quyết định ô Tệp QĐ hiện dạng nào. */
   editingRow: EmployeeWorkHistory | null
-  /** A9 (Q4) — `false` thì ẨN cả vùng thả tệp lẫn nút «Quản lý tệp» (M4). */
+  /** A9 (Q4) — `false` thì ẨN cả vùng thả tệp lẫn nút "Quản lý tệp" (M4). */
   canOpenFiles: boolean
   queuedFileCount: number
   onQueueFiles: (files: File[]) => void
@@ -20,15 +20,15 @@ interface EmployeeWorkHistoryFileFieldProps {
 }
 
 /**
- * Ô «Tệp QĐ» của hộp thêm/sửa «Quá trình công tác» — tách khỏi
+ * Ô "Tệp QĐ" của hộp thêm/sửa "Quá trình công tác" — tách khỏi
  * `employee-work-history-form-dialog-fields.tsx` để tệp đó giữ dưới ~200 dòng
  * (CLAUDE.md §"File Size Management").
  *
- * M4 (Q4) — `can_open_files=false` thì ẨN cả vùng thả tệp lẫn nút «Quản lý
- * tệp»: không hiện điều khiển gọi tới cửa đính kèm khi người sửa không có
+ * M4 (Q4) — `can_open_files=false` thì ẨN cả vùng thả tệp lẫn nút "Quản lý
+ * tệp": không hiện điều khiển gọi tới cửa đính kèm khi người sửa không có
  * quyền xem tệp (vd thiếu `employee_sensitive.read` khi sửa hồ sơ NGƯỜI
  * KHÁC). Dòng có tệp sẵn vẫn báo SỐ LƯỢNG (không nội dung), cùng quy ước với
- * cột «Tệp» của bảng.
+ * cột "Tệp" của bảng.
  */
 export function EmployeeWorkHistoryFileField({
   editingRow,
@@ -39,7 +39,7 @@ export function EmployeeWorkHistoryFileField({
 }: EmployeeWorkHistoryFileFieldProps) {
   if (!canOpenFiles) {
     //  Không có gì để báo (TẠO MỚI, hoặc SỬA dòng chưa có tệp nào) → bỏ hẳn
-    //  cả nhãn, đừng để một chữ «Tệp QĐ» trống hoác không có nội dung dưới nó.
+    //  cả nhãn, đừng để một chữ "Tệp QĐ" trống hoác không có nội dung dưới nó.
     if (!editingRow || editingRow.file_count === 0) return null
     return (
       <div>

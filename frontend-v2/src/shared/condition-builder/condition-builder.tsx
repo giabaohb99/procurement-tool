@@ -40,9 +40,9 @@ interface ConditionBuilderProps<F extends ConditionField> {
   getOptions: (field: F) => ConditionChoice[]
   /** Nhãn đầu khối; bỏ trống khi nơi gọi tự dựng nhãn phía trên. */
   label?: ReactNode
-  /** Câu hiện khi chưa có dòng nào — nói rõ «không điều kiện» nghĩa là gì ở đây. */
+  /** Câu hiện khi chưa có dòng nào — nói rõ "không điều kiện" nghĩa là gì ở đây. */
   emptyText: ReactNode
-  /** Tiền tố câu tổng kết, ví dụ «Bước chỉ chạy khi ». */
+  /** Tiền tố câu tổng kết, ví dụ "Bước chỉ chạy khi ". */
   sentencePrefix: string
   /** Câu giải thích khi chuỗi đang lưu vượt ngoài thứ bộ chọn diễn tả được. */
   advancedText: ReactNode
@@ -50,7 +50,7 @@ interface ConditionBuilderProps<F extends ConditionField> {
 }
 
 /**
- * BỘ CHỌN ĐIỀU KIỆN — mỗi dòng «trường · phép so · giá trị» chọn sẵn, **thay
+ * BỘ CHỌN ĐIỀU KIỆN — mỗi dòng "trường · phép so · giá trị" chọn sẵn, **thay
  * cho ô gõ JSON**, kèm một câu tiếng Việt nói lại đúng thứ vừa khai để người
  * dùng tự soát trước khi lưu.
  *
@@ -319,8 +319,8 @@ function ValueInput({ row, field, options, disabled, onChange }: ValueRowProps) 
         disabled={disabled}
         value={typeof row.value === 'number' ? row.value : ''}
         onChange={(event) =>
-          //  Ô trống là «chưa nhập» (`null`), KHÔNG phải `0`: `Number('')` ra 0,
-          //  và «số dòng từ 0 trở xuống» là một điều kiện thật, khác hẳn nghĩa.
+          //  Ô trống là "chưa nhập" (`null`), KHÔNG phải `0`: `Number('')` ra 0,
+          //  và "số dòng từ 0 trở xuống" là một điều kiện thật, khác hẳn nghĩa.
           onChange({ value: event.target.value === '' ? null : Number(event.target.value) })
         }
       />

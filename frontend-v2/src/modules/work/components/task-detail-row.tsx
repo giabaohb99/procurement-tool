@@ -54,7 +54,7 @@ export function TaskDetailRow({
 }
 
 /**
- * Ô giá trị RỖNG — chữ mờ kiểu «Thêm mô tả» của Lark, bấm được.
+ * Ô giá trị RỖNG — chữ mờ kiểu "Thêm mô tả" của Lark, bấm được.
  *
  * Không dùng `<Input placeholder>` cho những chỗ này: một hàng ô nhập viền xám
  * chồng lên nhau làm panel nặng, trong khi phần lớn thời gian người ta chỉ ĐỌC.

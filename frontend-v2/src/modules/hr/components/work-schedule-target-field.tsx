@@ -19,7 +19,7 @@ interface WorkScheduleTargetFieldProps {
   levelName: string
   /**
    * Tên ô ẨN giữ `target_name` của dòng đang sửa. Đối tượng đã lưu mà không còn trong
-   * danh sách (nhân sự đã nghỉ, ngoài phạm vi…) thì hiện tên này thay vì «#7».
+   * danh sách (nhân sự đã nghỉ, ngoài phạm vi…) thì hiện tên này thay vì "#7".
    */
   nameFieldName?: string
   disabled?: boolean
@@ -27,7 +27,7 @@ interface WorkScheduleTargetFieldProps {
 
 type Row = Record<string, unknown>
 
-/** Nguồn danh sách theo cấp; «Toàn hệ thống» không có đối tượng nên không có nguồn. */
+/** Nguồn danh sách theo cấp; "Toàn hệ thống" không có đối tượng nên không có nguồn. */
 const SOURCES: Record<number, { url: string; label: (row: Row) => string }> = {
   [WORK_SCHEDULE_LEVEL_CODE.COMPANY]: { url: '/api/companies', label: (r) => String(r.name ?? '') },
   [WORK_SCHEDULE_LEVEL_CODE.DEPARTMENT]: { url: '/api/departments', label: (r) => String(r.name ?? '') },
@@ -49,7 +49,7 @@ function extractRows(payload: unknown): Row[] {
 }
 
 /**
- * Ô «Đối tượng áp dụng» — danh sách ĐỔI THEO cấp đang chọn. Cấp «Toàn hệ thống»
+ * Ô "Đối tượng áp dụng" — danh sách ĐỔI THEO cấp đang chọn. Cấp "Toàn hệ thống"
  * ẩn ô chọn (giá trị luôn 0). Việc xóa đối tượng khi đổi cấp do
  * `WorkScheduleLevelField` lo; backend vẫn kiểm đối tượng có thật.
  */
@@ -65,7 +65,7 @@ export function WorkScheduleTargetField({
   const { field, fieldState } = useController({
     control,
     name,
-    //  `formValues` luôn là giá trị MỚI NHẤT của cả form — cấp «Toàn hệ thống» không có đối tượng.
+    //  `formValues` luôn là giá trị MỚI NHẤT của cả form — cấp "Toàn hệ thống" không có đối tượng.
     rules: {
       validate: (value, formValues) =>
         Number(formValues[levelName]) === WORK_SCHEDULE_LEVEL_CODE.SYSTEM ||

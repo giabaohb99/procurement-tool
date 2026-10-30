@@ -109,7 +109,7 @@ describe('formatHourLabel', () => {
   })
 
   it('adds the day when the filter spans more than one day', () => {
-    //  Lọc ba ngày mà trục X chỉ có giờ thì ba cột «10:00» đứng cạnh nhau, và
+    //  Lọc ba ngày mà trục X chỉ có giờ thì ba cột "10:00" đứng cạnh nhau, và
     //  "đỉnh lỗi lúc 10 giờ NGÀY NÀO" là thông tin duy nhất đang đi tìm.
     expect(formatHourLabel('2026-09-15 10', true)).toBe('15/09 10:00')
   })
@@ -134,7 +134,7 @@ describe('spansMultipleDays', () => {
 
 describe('defaultLogRange', () => {
   it('puts both ends on the same day, mirroring the backend default_range()', () => {
-    //  Bẫy đã xảy ra ở backend: trả (hôm nay, ngày mai) rồi ô «Đến» được kéo tới
+    //  Bẫy đã xảy ra ở backend: trả (hôm nay, ngày mai) rồi ô "Đến" được kéo tới
     //  23:59:59 của NGÀY MAI — khoảng mặc định lặng lẽ thành hai ngày.
     const range = defaultLogRange(new Date(2026, 8, 15, 14, 30))
     expect(range).toEqual({ from: '2026-09-15', to: '2026-09-15' })
@@ -225,7 +225,7 @@ describe('httpMethodTone', () => {
 
   it('keeps reads neutral and colours every write, so the eye lands on data changes', () => {
     //  GET là phần lớn dòng — tô màu thì cả cột rực lên, mất tác dụng nhấn. Cột
-    //  «Phương thức» (bao-CR-582) dùng chung hàm này với khung chi tiết.
+    //  "Phương thức" (bao-CR-582) dùng chung hàm này với khung chi tiết.
     expect(httpMethodTone('GET')).toBe('neutral')
     for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
       expect(httpMethodTone(method)).not.toBe('neutral')

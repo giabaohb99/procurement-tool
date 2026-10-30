@@ -10,7 +10,7 @@ import { ProfileEmergencyContacts } from './profile-emergency-contacts'
  *
  * Phải đi cửa `/api/employees/me/contacts` — không phải `/{id}/contacts` của
  * phòng Nhân sự (gác `employee.write` + `employee_sensitive.read`, người dùng
- * thường ăn 403). Và bấm «Lưu danh sách» dồn dập chỉ được ra MỘT lần đặt lại.
+ * thường ăn 403). Và bấm "Lưu danh sách" dồn dập chỉ được ra MỘT lần đặt lại.
  */
 
 const apiGet = vi.fn()

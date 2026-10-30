@@ -29,17 +29,17 @@ thì theo mục đó). Để trống thì script không đụng tới người p
 bao-CR-604 (07/10/2026) — ba luật thêm để bảng dự án đọc được ai làm gì:
 - NGƯỜI PHỤ TRÁCH theo TIỀN TỐ key: `duoc-CR-…` → Được (NSU231), `giang-CR-…` →
   Giang, `bao-CR-…` và `ai-CR-…` → Bảo; mục khai `- pic:` thì vẫn theo mục.
-- NHÃN «Tag» theo tiền tố (Bảo / Được / Giang / Bot AI) — trường «Tag» chọn nhiều
+- NHÃN "Tag" theo tiền tố (Bảo / Được / Giang / Bot AI) — trường "Tag" chọn nhiều
   có sẵn ở mọi list, thiếu thì tạo; giá trị gán CỘNG THÊM, không gỡ tag người
   dùng tự gán. Mục khai `- tag: A, B` thì thêm cả A, B.
-- CHIA DỰ ÁN theo từ khóa trong key + tiêu đề (`LIST_RULES`): văn thư → «Công cụ
-  văn thư», đặt xe / duyệt dấu → «Duyệt dấu, Đặt xe», bot / Agent Hub → «Công cụ
-  Ai»… Mục khai `- list:` thì theo mục. Task ĐÃ có ở dự án khác thì giữ nguyên
+- CHIA DỰ ÁN theo từ khóa trong key + tiêu đề (`LIST_RULES`): văn thư → "Công cụ
+  văn thư", đặt xe / duyệt dấu → "Duyệt dấu, Đặt xe", bot / Agent Hub → "Công cụ
+  Ai"… Mục khai `- list:` thì theo mục. Task ĐÃ có ở dự án khác thì giữ nguyên
   và báo; chạy `--move` mới xóa chỗ cũ (vào thùng rác) rồi tạo ở dự án đúng —
   API không có đường chuyển task giữa hai list.
 Đẩy lên PROD: đổi `WORK_SYNC_BASE_URL` sang https://erp.degoholding.vn và tài
 khoản prod (có quyền `work_task` create/write + đọc hồ sơ nhân sự), chạy
-`--dry-run` xem trước; nhóm «DX» chưa có thì script tự tạo.
+`--dry-run` xem trước; nhóm "DX" chưa có thì script tự tạo.
 """
 from __future__ import annotations
 
@@ -203,7 +203,7 @@ class JournalEntry:
     #  Mã nhân sự của người phụ trách (`- pic:`, nhiều mã cách nhau bằng dấu
     #  phẩy). Rỗng = lấy theo cấu hình `WORK_SYNC_PIC`; việc con theo cha.
     pic_codes: list[str] = field(default_factory=list)
-    #  Nhãn «Tag» cần có trên task (`- tag:` + tag theo tiền tố, bao-CR-604).
+    #  Nhãn "Tag" cần có trên task (`- tag:` + tag theo tiền tố, bao-CR-604).
     tag_names: list[str] = field(default_factory=list)
     #  duoc-CR-674 — số liệu cho báo cáo Năng lực theo loại việc (duoc-CR-656/657). Rỗng = sổ KHÔNG khai,
     #  script không đụng tới giá trị đang có trên ERP. Giờ lưu dạng chuỗi chuẩn "1.50".
@@ -478,7 +478,7 @@ class TaskTypeDirectory:
 def effort_patch(entry: JournalEntry, task: dict, types: TaskTypeDirectory) -> dict:
     """Các trường loại việc / hạn / giờ mà sổ CÓ KHAI và đang khác trên ERP (duoc-CR-674).
 
-    Gửi CÙNG lượt PATCH với `status`: máy chủ áp trạng thái trước rồi mới áp giờ, nên một lượt vừa «xong» vừa
+    Gửi CÙNG lượt PATCH với `status`: máy chủ áp trạng thái trước rồi mới áp giờ, nên một lượt vừa "xong" vừa
     nhập giờ thực tế vẫn hợp lệ. Trường sổ không khai thì không đụng — người dùng tự nhập trên ERP vẫn giữ.
     """
     out: dict = {}
@@ -520,8 +520,8 @@ def sync_pic(api: WorkApi, task: dict, entry: JournalEntry,
     print(f"{indent}@ [{entry.key}] giao cho " + ", ".join(entry.pic_codes))
 
 
-#  bao-CR-482: dự án mà sổ tự tạo phải nằm TRONG nhóm cha (mặc định «DX»), không đứng
-#  lẻ — «Nhật ký hệ thống» từng sinh ra ngoài nhóm nên màn liệt kê và cây bên trái
+#  bao-CR-482: dự án mà sổ tự tạo phải nằm TRONG nhóm cha (mặc định "DX"), không đứng
+#  lẻ — "Nhật ký hệ thống" từng sinh ra ngoài nhóm nên màn liệt kê và cây bên trái
 #  không xếp nó cùng chỗ với các dự án khác. Đặt `WORK_SYNC_GROUP=` (rỗng) để tắt.
 DEFAULT_GROUP_NAME = "DX"
 
@@ -542,15 +542,15 @@ def find_group_id(api: WorkApi, name: str) -> int | None:
 
 def ensure_list(api: WorkApi, name: str, dry: bool) -> int:
     lists = api.call("GET", "/api/work/lists") or []
-    #  Trùng tên thì ưu tiên dự án NẰM TRONG NHÓM — «Nhật ký hệ thống» trên dev từng có
-    #  một bản đứng ngoài nhóm (sinh trước bao-CR-482) cạnh bản trong «DX».
+    #  Trùng tên thì ưu tiên dự án NẰM TRONG NHÓM — "Nhật ký hệ thống" trên dev từng có
+    #  một bản đứng ngoài nhóm (sinh trước bao-CR-482) cạnh bản trong "DX".
     same = [row for row in lists if row.get("name") == name]
     for row in sorted(same, key=lambda r: (not r.get("group_id"), int(r["id"]))):
         return int(row["id"])
     group_name = os.environ.get("WORK_SYNC_GROUP", DEFAULT_GROUP_NAME)
     group_id = find_group_id(api, group_name)
     if group_name and not group_id and not dry:
-        #  bao-CR-604: prod chưa có nhóm «DX» — tạo luôn, kẻo dự án đứng lẻ ngoài cây.
+        #  bao-CR-604: prod chưa có nhóm "DX" — tạo luôn, kẻo dự án đứng lẻ ngoài cây.
         created = api.call("POST", "/api/work/groups", {"name": group_name})
         group_id = int(created["id"])
         print(f"+ tạo nhóm '{group_name}' (id {group_id})")
@@ -584,7 +584,7 @@ def ensure_sections(api: WorkApi, list_id: int, names: set[str], dry: bool) -> d
 
 
 def ensure_tag_options(api: WorkApi, list_id: int, names: set[str], dry: bool) -> tuple[int, dict[str, int]]:
-    """Trường «Tag» (chọn nhiều) của list + id từng giá trị cần có; thiếu thì tạo.
+    """Trường "Tag" (chọn nhiều) của list + id từng giá trị cần có; thiếu thì tạo.
     Trả `(field_id, {tên: option_id})`; `field_id = 0` khi dry-run chưa có trường."""
     if not names:
         return 0, {}
@@ -824,7 +824,7 @@ def main() -> None:
     pic_by_prefix = parse_map(env.get("WORK_SYNC_PIC_BY_PREFIX", ""), DEFAULT_PIC_BY_PREFIX)
     tag_by_prefix = parse_map(env.get("WORK_SYNC_TAG_BY_PREFIX", ""), DEFAULT_TAG_BY_PREFIX)
     route = env.get("WORK_SYNC_ROUTE", "1").strip() != "0"
-    #  20/10/2026: mã nhân sự KHÁC NHAU giữa dev và prod (NSU231 dev = anh Dược, prod = «Dego Marketing»; anh Dược
+    #  20/10/2026: mã nhân sự KHÁC NHAU giữa dev và prod (NSU231 dev = anh Dược, prod = "Dego Marketing"; anh Dược
     #  trên prod là NSU265). Sổ ghi mã dev; `WORK_SYNC_PIC_ALIAS=NSU231=NSU265` đổi mã khai tường minh khi đồng bộ prod.
     pic_alias = {k.upper(): v.upper() for k, v in parse_map(env.get("WORK_SYNC_PIC_ALIAS", ""), {}).items()}
     #  Người phụ trách: mục nào không khai `- pic:` thì theo tiền tố, rồi tới người

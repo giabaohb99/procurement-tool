@@ -19,7 +19,7 @@ export const workTaskApi = {
       },
     }),
 
-  /** Trang kế của một cột (bao-CR-483). `sectionId = 0` = «Chưa phân cột». */
+  /** Trang kế của một cột (bao-CR-483). `sectionId = 0` = "Chưa phân cột". */
   sectionTasks: (listId: number, sectionId: number, offset: number, limit: number) =>
     apiGet<WorkSectionPage>(`/api/work/lists/${listId}/sections/${sectionId}/tasks`, {
       params: { offset, limit, light: true },

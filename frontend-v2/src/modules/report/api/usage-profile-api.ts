@@ -7,7 +7,7 @@ export type UsageListParams = Record<string, string | number | string[]>
 
 const BASE = '/api/usage-profiles'
 
-/** Ba lời gọi của «Hồ sơ cách làm việc» (duoc-CR-641): danh sách · xuất Excel · hồ sơ một người. */
+/** Ba lời gọi của "Hồ sơ cách làm việc" (duoc-CR-641): danh sách · xuất Excel · hồ sơ một người. */
 export const usageProfileApi = {
   list: (params: UsageListParams) =>
     apiGet<UsageProfileListResponse>(`${BASE}/summary`, { params }),

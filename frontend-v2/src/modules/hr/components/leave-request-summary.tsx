@@ -19,7 +19,7 @@ interface LeaveRequestSummaryProps {
  * như chữ gợi ý. Ở đây giá trị là **chữ thật trong thẻ thường**, nên bôi đen,
  * copy và trình đọc màn hình đều bình thường.
  *
- * ⚠️ **Bố cục là DANH SÁCH «nhãn – giá trị», không phải lưới ô nhập.** Trước
+ * ⚠️ **Bố cục là DANH SÁCH "nhãn – giá trị", không phải lưới ô nhập.** Trước
  * 09/09/2026 mỗi trường là một `ReadOnlyValue` — khung viền cao 36px trông y hệt
  * một ô nhập — xếp theo lưới của form. Ba cái sai của kiểu đó, thấy rõ nhất trên
  * điện thoại (ảnh báo 09/09/2026):
@@ -39,12 +39,12 @@ export function LeaveRequestSummary({ request }: LeaveRequestSummaryProps) {
   const periods = periodsOf(request)
   const multi = periods.length > 1
 
-  //  Buổi chỉ đáng nhắc khi KHÁC «Cả ngày» — thêm "(Cả ngày)" vào mọi dòng là
+  //  Buổi chỉ đáng nhắc khi KHÁC "Cả ngày" — thêm "(Cả ngày)" vào mọi dòng là
   //  bốn chữ thừa trên mọi tờ đơn.
   const withSession = (date: string, session: number) => {
     const text = formatDate(date)
     if (session === LEAVE_SESSION.FULL) return text
-    //  Theo giờ thì phải nói RA KHOẢNG GIỜ, không chỉ ghi «(Theo giờ)»: người
+    //  Theo giờ thì phải nói RA KHOẢNG GIỜ, không chỉ ghi "(Theo giờ)": người
     //  duyệt cần biết vắng mặt lúc nào để xếp việc, mà đó chính là thứ duy nhất
     //  tờ đơn theo giờ nói thêm so với tờ đơn cả ngày.
     if (session === LEAVE_SESSION.HOURLY) {
@@ -63,8 +63,8 @@ export function LeaveRequestSummary({ request }: LeaveRequestSummaryProps) {
         <InfoRow label="Người nghỉ" value={request.employee_name || `#${request.employee_id}`} />
         <InfoRow label="Điện thoại liên hệ" value={request.contact_phone} />
         {/*  Đơn MỘT khoảng giữ y hai dòng Từ / Đến ngày như trước. Đơn nhiều khoảng
-             (duoc-CR-683) thì hai dòng đó nói sai — giữa «27/10» và «07/11» có cả tuần đi
-             làm — nên thay bằng mục «Thời gian nghỉ» kê từng khoảng ở dưới. */}
+             (duoc-CR-683) thì hai dòng đó nói sai — giữa "27/10" và "07/11" có cả tuần đi
+             làm — nên thay bằng mục "Thời gian nghỉ" kê từng khoảng ở dưới. */}
         {!multi && (
           <>
             <InfoRow label="Từ ngày" value={withSession(request.from_date, request.from_session)} />
@@ -177,7 +177,7 @@ function InfoList({ children }: { children: ReactNode }) {
 }
 
 /**
- * Một dòng «nhãn – giá trị».
+ * Một dòng "nhãn – giá trị".
  *
  * Điện thoại xếp chồng (nhãn nhỏ ở trên), từ `sm` nhãn thành cột trái rộng cố
  * định để mọi giá trị thẳng hàng nhau. Không dùng `justify-between`: trên màn

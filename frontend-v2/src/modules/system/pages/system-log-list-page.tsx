@@ -61,7 +61,7 @@ export function SystemLogListPage() {
   const [from, setFrom] = useState(initialRange.from)
   const [to, setTo] = useState(initialRange.to)
   const [status, setStatus] = useState<LogStatus>(LOG_STATUS.ALL)
-  //  Nhiều phương thức một lượt là HOẶC (bao-CR-582): «POST + PUT» = mọi lượt ghi.
+  //  Nhiều phương thức một lượt là HOẶC (bao-CR-582): "POST + PUT" = mọi lượt ghi.
   const [methods, setMethods] = useState<string[]>([])
   const [actionGroup, setActionGroup] = useState('')
   const [source, setSource] = useState('')
@@ -316,7 +316,7 @@ export function SystemLogListPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={LOG_STATUS.ALL}>Mọi kết quả</SelectItem>
-                    {/*  «Bị chặn» tách khỏi «Lỗi» vì 403 là hệ thống làm ĐÚNG
+                    {/*  "Bị chặn" tách khỏi "Lỗi" vì 403 là hệ thống làm ĐÚNG
                          việc của nó; trộn chung thì câu hỏi "hôm nay hỏng gì"
                          luôn bị vùi dưới hàng trăm lượt thiếu quyền. */}
                     <SelectItem value={LOG_STATUS.ERROR}>Chỉ lỗi (5xx, 4xx)</SelectItem>
@@ -335,7 +335,7 @@ export function SystemLogListPage() {
                     contentClassName="w-48"
                     summaryInTrigger
                     clearInTrigger
-                    //  «Chọn tất cả» = không lọc gì, chỉ thêm một bước bấm thừa.
+                    //  "Chọn tất cả" = không lọc gì, chỉ thêm một bước bấm thừa.
                     hideSelectAll
                   />
                 </div>

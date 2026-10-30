@@ -19,7 +19,7 @@ interface LeaveBalanceCardProps {
  *
  * ⚠️ **Bảng quỹ có ELEVEN cột, mười trong đó là số.** Trên máy 393px người dùng
  * chỉ thấy hai cột đầu (*Nhân sự* · *Loại nghỉ*) — tức là đúng phần KHÔNG có
- * con số nào, còn «Còn lại» — thứ duy nhất người ta mở màn này để xem — nằm sau
+ * con số nào, còn "Còn lại" — thứ duy nhất người ta mở màn này để xem — nằm sau
  * một thao tác cuộn ngang qua chín cột. Thẻ đảo lại thứ bậc đó: **số CÒN LẠI to
  * nhất, nằm bên phải**, tên người bên trái, mấy con số phụ gom thành một dòng
  * chú thích.
@@ -27,7 +27,7 @@ interface LeaveBalanceCardProps {
  * ⚠️ **Chỉ bày ô KHÁC 0.** Thâm niên · chuyển năm trước · điều chỉnh tay hầu như
  * luôn bằng 0; in hết ra thì thẻ nào cũng bốn dòng số giống hệt nhau và người
  * đọc không nhặt ra được thẻ nào có gì đặc biệt. Cùng lý do bảng vẽ số 0 thành
- * dấu gạch mờ. Riêng «Còn lại» thì luôn hiện — ở đó số 0 nghĩa là **hết phép**,
+ * dấu gạch mờ. Riêng "Còn lại" thì luôn hiện — ở đó số 0 nghĩa là **hết phép**,
  * đúng thứ phải đập vào mắt.
  */
 export function LeaveBalanceCard({ balance, hideEmployeeName }: LeaveBalanceCardProps) {
@@ -56,7 +56,7 @@ export function LeaveBalanceCard({ balance, hideEmployeeName }: LeaveBalanceCard
           {balance.leave_type_name || `#${balance.leave_type_id}`}
         </span>
 
-        {/*  ⚠️ Cả dòng này ẨN khi mọi số đều 0 — «Hạn mức 0 · Đã nghỉ 0» không
+        {/*  ⚠️ Cả dòng này ẨN khi mọi số đều 0 — "Hạn mức 0 · Đã nghỉ 0" không
              nói thêm được gì mà con số lớn bên phải chưa nói. Một người có tám
              dòng quỹ thì sáu dòng như vậy (Nghỉ tang chế, Nghỉ bù, Nghỉ cưới
              hỏi…), giữ lại là sáu thẻ chữ giống hệt nhau. */}

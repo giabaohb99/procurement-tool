@@ -29,7 +29,7 @@ import type { ChainSourceGroup } from '../utils/group-document-chain'
 import { groupDocumentChain, isPreviewableChainFile } from '../utils/group-document-chain'
 
 /**
- * Trang «Chứng từ» của một đơn mua hàng — xem TOÀN BỘ hồ sơ của chuỗi
+ * Trang "Chứng từ" của một đơn mua hàng — xem TOÀN BỘ hồ sơ của chuỗi
  * ĐMH → YCMH → Phiếu khảo sát → YCBG ở một chỗ, thay vì mở lần lượt bốn phiếu.
  *
  * Dời từ bản cũ `frontend/src/pages/Documents.tsx` (màn cuối cùng của kế hoạch

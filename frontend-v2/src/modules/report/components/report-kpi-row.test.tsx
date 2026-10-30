@@ -74,7 +74,7 @@ describe('ReportKpiRow — snapshot metric: no sparkline, not clickable', () => 
   })
 })
 
-//  duoc-CR-688 — chỉ số thời điểm mà nhóm có số (vd «Định biên cuối kỳ» theo phòng ban) bấm
+//  duoc-CR-688 — chỉ số thời điểm mà nhóm có số (vd "Định biên cuối kỳ" theo phòng ban) bấm
 //  được để biểu đồ linh hoạt vẽ THEO NHÓM; nhóm không có số thì thẻ vẫn tĩnh như trên.
 describe('ReportKpiRow — snapshot metric drawable by group', () => {
   it('makes the snapshot card selectable when groups carry it, and reports its key', async () => {
@@ -107,8 +107,8 @@ describe('ReportKpiRow — null derived metric (zero denominator) renders — wi
   })
 })
 
-//  duoc-CR-687 — một số ĐẾM (`int`) có thể về `null` khi backend che nhóm; thẻ phải ra «—»,
-//  không «0», và không vẽ mức thay đổi dù kỳ trước có số.
+//  duoc-CR-687 — một số ĐẾM (`int`) có thể về `null` khi backend che nhóm; thẻ phải ra "—",
+//  không "0", và không vẽ mức thay đổi dù kỳ trước có số.
 describe('ReportKpiRow — null count metric renders a dash', () => {
   it('shows — for a null int total even when the compare period has a value', () => {
     renderRow({

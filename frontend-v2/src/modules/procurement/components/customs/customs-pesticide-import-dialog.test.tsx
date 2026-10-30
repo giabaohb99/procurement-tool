@@ -1,4 +1,4 @@
-// Hộp «Nạp danh mục» thuốc BVTV: luôn giải thích trước hai chế độ nạp lại (thay cả danh mục /
+// Hộp "Nạp danh mục" thuốc BVTV: luôn giải thích trước hai chế độ nạp lại (thay cả danh mục /
 // chỉ cập nhật), và sau khi nạp xong phải HIỆN NGUYÊN câu `message` của backend một khi backend
 // đã biết phân biệt `mode` — không tự ghép lại câu cũ (review M… — tự ghép câu bỏ qua thông tin
 // backend vừa thêm). Backend CŨ chưa trả `mode` thì vẫn phải ghép câu như trước, không được vỡ.

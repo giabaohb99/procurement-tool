@@ -15,7 +15,7 @@ const ENTITY = 'vehicle_booking'
  * việc chưa kịp nạp lại thì nút duyệt sẽ sống thêm một nhịp và bấm vào ra lỗi.
  *
  * `enabled = false` thì KHÔNG gọi gì cả. Cụm nút của phiếu đặt xe được dựng trên
- * từng thẻ ở màn «Chuyến của tôi», nên không gác là mỗi thẻ một lượt hỏi bộ máy
+ * từng thẻ ở màn "Chuyến của tôi", nên không gác là mỗi thẻ một lượt hỏi bộ máy
  * duyệt — dù chỉ phiếu đang chạy luồng mới cần biết.
  */
 export function useMyBookingApprovalTask(bookingId: number, enabled = true) {

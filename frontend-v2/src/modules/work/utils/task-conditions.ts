@@ -22,7 +22,7 @@ export function multiKey(id: number): string {
   return `|${id}|`
 }
 
-/** Ghép nhiều id thành chuỗi tra được bằng phép «chứa»: `|3|7|` */
+/** Ghép nhiều id thành chuỗi tra được bằng phép "chứa": `|3|7|` */
 function multiKeys(ids: number[]): string {
   return ids.length === 0 ? '' : `|${ids.join('|')}|`
 }
@@ -53,7 +53,7 @@ export function toFilterableTask(task: WorkTask): FilterableTask {
   return {
     task,
     title: task.title,
-    //  Mô tả lưu HTML — lọc trên chuỗi thô thì điều kiện «chứa "p"» khớp mọi
+    //  Mô tả lưu HTML — lọc trên chuỗi thô thì điều kiện "chứa "p"" khớp mọi
     //  việc có mô tả vì trúng tên thẻ.
     description: plainText(task.description),
     status: task.status,

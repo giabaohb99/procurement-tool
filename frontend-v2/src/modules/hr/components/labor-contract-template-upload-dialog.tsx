@@ -38,7 +38,7 @@ const EMPTY: FormValues = { name: '', company_id: 0, contract_type: 0, note: '' 
 interface UploadDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Có mẫu = chế độ «Thay tệp» (chỉ chọn tệp); không có = tải mẫu mới. */
+  /** Có mẫu = chế độ "Thay tệp" (chỉ chọn tệp); không có = tải mẫu mới. */
   replacing?: LaborContractTemplate | null
 }
 
@@ -46,7 +46,7 @@ interface UploadDialogProps {
  * Hộp tải lên mẫu .docx mới, hoặc thay tệp của mẫu có sẵn.
  *
  * Toàn bộ state nằm ở `UploadDialogBody`, mà Radix chỉ dựng `DialogContent` khi hộp
- * MỞ — nên mỗi lần mở là một lần dựng mới, state tự sạch (không cần effect «reset»).
+ * MỞ — nên mỗi lần mở là một lần dựng mới, state tự sạch (không cần effect "reset").
  */
 export function LaborContractTemplateUploadDialog({ open, onOpenChange, replacing }: UploadDialogProps) {
   return (
@@ -159,7 +159,7 @@ function UploadDialogBody({
                       onChange={(v) => field.onChange(Number(v) || 0)}
                       options={(companies?.items ?? []).map((c) => ({
                         value: String(c.id),
-                        //  Kèm mã: có pháp nhân trùng tên (vd hai «CÔNG TY TNHH DEGO HOLDING»), chỉ tên thì chọn nhầm.
+                        //  Kèm mã: có pháp nhân trùng tên (vd hai "CÔNG TY TNHH DEGO HOLDING"), chỉ tên thì chọn nhầm.
                         label: `${c.issue_code || c.code} — ${c.name}`,
                       }))}
                       placeholder="Chọn pháp nhân"

@@ -196,7 +196,7 @@ describe('EmployeeWorkHistoryFormDialog', () => {
    * Lỗi phát hiện lúc kiểm tay bằng Chrome DevTools 03/10/2026: Sửa → Quản lý
    * tệp → Xem trước → đóng từng hộp (Close) → đóng hộp Sửa (Hủy/Close) — nghi
    * có lần bắn `PATCH /api/employees/:id` (submit cả form hồ sơ ngoài trang).
-   * Hộp «Tệp quyết định» và hộp «Xem trước» đứng NGANG HÀNG (không lồng
+   * Hộp "Tệp quyết định" và hộp "Xem trước" đứng NGANG HÀNG (không lồng
    * trong) `<form>` đã chặn lan ở trên, nên phải tự có ranh giới riêng — xem
    * `employee-work-history-files-dialog.tsx` + `attachment-preview-dialog.tsx`.
    */
@@ -313,7 +313,7 @@ describe('EmployeeWorkHistoryFormDialog', () => {
 })
 
 describe('EmployeeWorkHistoryFormDialog — M4 (ẩn vùng tệp khi can_open_files=false)', () => {
-  it('canOpenFiles=false + TẠO MỚI → không vùng thả tệp, không cả nhãn «Tệp QĐ» trống hoác', () => {
+  it('canOpenFiles=false + TẠO MỚI → không vùng thả tệp, không cả nhãn "Tệp QĐ" trống hoác', () => {
     renderDialog({ event_type: 9, from_date: TODAY, to_date: '' }, { canOpenFiles: false })
 
     expect(screen.queryByText(/Kéo tệp QĐ vào đây/)).not.toBeInTheDocument()
@@ -326,7 +326,7 @@ describe('EmployeeWorkHistoryFormDialog — M4 (ẩn vùng tệp khi can_open_fi
     expect(screen.getByText(/Kéo tệp QĐ vào đây/)).toBeInTheDocument()
   })
 
-  it('canOpenFiles=false + SỬA dòng có sẵn (có tệp) → không nút «Quản lý tệp», chỉ báo số lượng', () => {
+  it('canOpenFiles=false + SỬA dòng có sẵn (có tệp) → không nút "Quản lý tệp", chỉ báo số lượng', () => {
     renderDialog(
       { event_type: 9, from_date: TODAY, to_date: '' },
       { canOpenFiles: false, row: workHistoryRow({ file_count: 2 }) },
@@ -345,7 +345,7 @@ describe('EmployeeWorkHistoryFormDialog — M4 (ẩn vùng tệp khi can_open_fi
     expect(screen.queryByText('Tệp QĐ')).not.toBeInTheDocument()
   })
 
-  it('canOpenFiles=true + SỬA dòng có sẵn → CÓ nút «Quản lý tệp» (không hồi quy)', () => {
+  it('canOpenFiles=true + SỬA dòng có sẵn → CÓ nút "Quản lý tệp" (không hồi quy)', () => {
     renderDialog(
       { event_type: 9, from_date: TODAY, to_date: '' },
       { canOpenFiles: true, row: workHistoryRow() },
@@ -387,12 +387,12 @@ describe('EmployeeWorkHistoryFormDialog — M5 (nạp lại danh sách sau khi t
 })
 
 /**
- * Mục 3 (03/10/2026) — nút «+ Thêm quyết định» của tab «Quyết định bổ nhiệm»
+ * Mục 3 (03/10/2026) — nút "+ Thêm quyết định" của tab "Quyết định bổ nhiệm"
  * mở ĐÚNG hộp này nhưng với tiêu đề riêng và Số QĐ chuyển từ tùy chọn sang
  * BẮT BUỘC (`employeeWorkHistoryDecisionSchema`). Validate ở TẦNG FORM —
  * không gọi API khi Số QĐ còn trống.
  */
-describe('EmployeeWorkHistoryFormDialog — createTitle/requireDecisionNo (mục 3, nút «+ Thêm quyết định»)', () => {
+describe('EmployeeWorkHistoryFormDialog — createTitle/requireDecisionNo (mục 3, nút "+ Thêm quyết định")', () => {
   it('requireDecisionNo + createTitle → tiêu đề đổi + nhãn Số QĐ thêm dấu *, KHÔNG đụng mặc định khi không truyền', () => {
     renderDialog(
       { event_type: 3, from_date: TODAY, to_date: '' },
@@ -442,7 +442,7 @@ describe('EmployeeWorkHistoryFormDialog — createTitle/requireDecisionNo (mục
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
   })
 
-  it('SỬA dòng có sẵn (row != null) → tiêu đề vẫn «Sửa quá trình công tác» dù có createTitle (chỉ áp lúc TẠO MỚI)', () => {
+  it('SỬA dòng có sẵn (row != null) → tiêu đề vẫn "Sửa quá trình công tác" dù có createTitle (chỉ áp lúc TẠO MỚI)', () => {
     renderDialog(
       { event_type: 3, from_date: TODAY, to_date: '' },
       { row: workHistoryRow(), createTitle: 'Thêm quyết định bổ nhiệm', requireDecisionNo: true },

@@ -9,9 +9,9 @@ import {
 } from '../utils/surveyReportHelpers'
 
 /**
- * duoc-CR-612 (v1): dạng xem thứ ba «Bảng» của khối Báo cáo thực hiện (YCBG + ĐMH) — chép từ
+ * duoc-CR-612 (v1): dạng xem thứ ba "Bảng" của khối Báo cáo thực hiện (YCBG + ĐMH) — chép từ
  * `frontend-v2/.../survey-report-doc-sheet-table.tsx`. Mỗi hồ sơ MỘT hàng phẳng, đọc như bảng kế
- * hoạch Excel; gần như mọi ô sửa tại chỗ. «Tiên quyết» (chọn nhiều) vẫn sửa qua hộp ✎.
+ * hoạch Excel; gần như mọi ô sửa tại chỗ. "Tiên quyết" (chọn nhiều) vẫn sửa qua hộp ✎.
  *
  * Bề rộng: `table-layout: fixed` + `min-width` tổng (CSS `.srp-sheet`); KHÔNG đặt width cứng cho
  * <table> — khung hẹp thì cuộn ngang chứ không bóp cột tên còn một chữ mỗi dòng.
@@ -42,7 +42,7 @@ type Props = {
   hasDocFilter: boolean
   canEdit: boolean
   busy: boolean
-  /** «cả phiếu» / «cả đơn». */
+  /** "cả phiếu" / "cả đơn". */
   ownerLabel: string
   today: string
   /** Người thực hiện điền sẵn cho hồ sơ thêm từ hàng cuối = người đang đăng nhập. */
@@ -57,7 +57,7 @@ export default function SurveyReportSheetTable({
   report, docs, docsById, hasDocFilter, canEdit, busy, ownerLabel, today, defaultAssigneeId,
   onPatchDoc, onEditDoc, onDeleteDoc, onCreateDoc,
 }: Props) {
-  //  Danh bạ cho ô «Người thực hiện» — chỉ tải khi sửa được (người chỉ xem đọc tên có sẵn trong
+  //  Danh bạ cho ô "Người thực hiện" — chỉ tải khi sửa được (người chỉ xem đọc tên có sẵn trong
   //  `assignee_name`, khỏi ăn toast 403 khi thiếu quyền đọc nhân sự).
   const [employeeOptions, setEmployeeOptions] = useState<SheetOption[]>([])
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function SurveyReportSheetTable({
     return () => { alive = false }
   }, [canEdit])
 
-  //  Thứ tự: theo THỨ TỰ GIAI ĐOẠN (cùng trình tự «Xem tổng»), trong giai đoạn giữ thứ tự backend trả.
+  //  Thứ tự: theo THỨ TỰ GIAI ĐOẠN (cùng trình tự "Xem tổng"), trong giai đoạn giữ thứ tự backend trả.
   const rows = useMemo(() => {
     const phaseIndex = new Map(report.phases.map((p, i) => [p.id, i]))
     return docs
@@ -125,7 +125,7 @@ export default function SurveyReportSheetTable({
   )
 }
 
-/** Hàng cuối «+ Thêm hồ sơ»: gõ tên rồi Enter. Giai đoạn / dòng hàng giữ nguyên sau mỗi lần thêm. */
+/** Hàng cuối "+ Thêm hồ sơ": gõ tên rồi Enter. Giai đoạn / dòng hàng giữ nguyên sau mỗi lần thêm. */
 function AddRow({ colSpanRest, phaseOptions, itemOptions, defaultAssigneeId, onCreate }: {
   colSpanRest: number
   phaseOptions: SheetOption[]

@@ -5,7 +5,7 @@ import { LeaveToDateCell } from './leave-to-date-cell'
 import { LEAVE_SESSION, LEAVE_STATUS, LEAVE_UNIT, type LeaveRequest } from '../types/leave'
 
 /**
- * Ô «Đến ngày» của bảng đơn nghỉ. Danh sách khoảng từng chỉ nằm ở `title` — trình đọc màn hình
+ * Ô "Đến ngày" của bảng đơn nghỉ. Danh sách khoảng từng chỉ nằm ở `title` — trình đọc màn hình
  * và màn cảm ứng không nhận được (L9 của bản rà duoc-CR-683).
  */
 
@@ -45,7 +45,7 @@ describe('LeaveToDateCell', () => {
     expect(
       screen.getByText(', gồm 2 khoảng: 27/10/2026 · 03/11 (chiều) → 07/11/2026'),
     ).toBeInTheDocument()
-    //  Chữ mờ «· 2 khoảng» vẫn hiện bằng mắt, nhưng ẩn khỏi trình đọc màn hình cho khỏi đọc hai lần.
+    //  Chữ mờ "· 2 khoảng" vẫn hiện bằng mắt, nhưng ẩn khỏi trình đọc màn hình cho khỏi đọc hai lần.
     expect(screen.getByText('· 2 khoảng')).toHaveAttribute('aria-hidden', 'true')
   })
 

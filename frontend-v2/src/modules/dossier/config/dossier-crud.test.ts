@@ -105,8 +105,8 @@ describe('buildPayload — TRƯỜNG RIÊNG của hồ sơ', () => {
   })
 
   it('KHÔNG gửi ô `custom_rows` lên backend', () => {
-    //  Nó chỉ sống trên biểu mẫu. Gửi lên là 422 «Extra inputs are not
-    //  permitted» — schema của hồ sơ đóng.
+    //  Nó chỉ sống trên biểu mẫu. Gửi lên là 422 "Extra inputs are not
+    //  permitted" — schema của hồ sơ đóng.
     const out = build({ dossier_type_id: 1, custom_rows: rows }, null)
     expect(out).not.toHaveProperty('custom_rows')
   })

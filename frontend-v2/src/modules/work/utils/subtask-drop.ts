@@ -34,7 +34,7 @@ export function isSubtaskDragData(value: unknown): value is SubtaskDragData {
  * Trả `null` ở ba trường hợp, cả ba đều CỐ Ý im lặng:
  *
  * 1. Thả ra ngoài, hoặc thả lên một dòng không phải việc con (dòng cha, tiêu đề
- *    nhóm, «Việc mới»).
+ *    nhóm, "Việc mới").
  * 2. Thả sang cụm của một việc cha KHÁC. Đó là phép đổi cha, mà `move_task` chỉ
  *    xếp lại thứ tự chứ không đụng `parent_id` — gửi đi là chắc chắn ăn 400.
  * 3. Thả về đúng chỗ cũ. Đừng bắn một lượt PATCH không đổi gì, nó chỉ làm bẩn

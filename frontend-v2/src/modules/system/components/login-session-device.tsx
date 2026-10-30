@@ -19,8 +19,8 @@ interface LoginSessionDeviceProps {
 }
 
 /**
- * Ô «Thiết bị» dùng chung cho ba màn phiên đăng nhập: biểu tượng theo loại
- * máy + nhãn "Chrome trên Windows" + huy hiệu «Thiết bị này» khi là phiên đang
+ * Ô "Thiết bị" dùng chung cho ba màn phiên đăng nhập: biểu tượng theo loại
+ * máy + nhãn "Chrome trên Windows" + huy hiệu "Thiết bị này" khi là phiên đang
  * bấm. `title` mang nguyên `User-Agent` để người tra lỗi rê chuột đọc được.
  */
 export function LoginSessionDevice({ session, className }: LoginSessionDeviceProps) {

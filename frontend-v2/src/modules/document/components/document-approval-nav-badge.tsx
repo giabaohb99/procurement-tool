@@ -3,7 +3,7 @@ import { useLegacyPendingDocuments } from '../hooks/use-legacy-pending-documents
 import { useMyDocumentTasks } from '../hooks/use-my-document-approvals'
 
 /**
- * Huy hiệu ĐỎ trên mục menu «Chờ tôi duyệt» — số văn bản đang chờ chính tôi.
+ * Huy hiệu ĐỎ trên mục menu "Chờ tôi duyệt" — số văn bản đang chờ chính tôi.
  *
  * Thư báo (chuông) nói *có việc mới*; huy hiệu này nói *còn bao nhiêu việc chưa
  * làm*. Hai thứ khác nhau: thư đọc một lần rồi thôi, còn con số ở đây nằm đó tới
@@ -15,7 +15,7 @@ import { useMyDocumentTasks } from '../hooks/use-my-document-approvals'
 export function DocumentApprovalNavBadge() {
   const { items } = useMyDocumentTasks()
   //  Văn bản duyệt MỘT BƯỚC cũng là việc chờ tôi — đếm chung, không thì huy hiệu
-  //  báo 0 trong khi màn «Chờ tôi duyệt» có dòng.
+  //  báo 0 trong khi màn "Chờ tôi duyệt" có dòng.
   const { items: legacy } = useLegacyPendingDocuments()
   const count = items.length + legacy.length
   if (count === 0) return null

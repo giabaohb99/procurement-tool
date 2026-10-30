@@ -42,7 +42,7 @@ const TONES = {
  * ⚠️ Cố ý KHÔNG dùng `DataTable` ở đây, dù `docs/ui/table.md` bắt buộc dùng nó
  * cho màn DANH SÁCH. Đây không phải màn danh sách mà là một ô tóm tắt nằm trong
  * lưới hai cột: khung rộng ~600px, mà bảng cũ có sáu cột. Đo thật trên máy:
- * cột "Công ty đóng dấu" cụt thành «CÔNG TY TNHH DE…» ở cả bốn dòng — bốn ô
+ * cột "Công ty đóng dấu" cụt thành "CÔNG TY TNHH DE…" ở cả bốn dòng — bốn ô
  * giống hệt nhau, không phân biệt được dòng nào với dòng nào; tiêu đề văn bản
  * đứt giữa chữ; hai cột cuối (Ngày tạo, Trạng thái) bị đẩy khuất. Cùng lượng
  * dữ liệu đó xếp theo DÒNG thì đọc được hết mà không cần cuộn ngang.

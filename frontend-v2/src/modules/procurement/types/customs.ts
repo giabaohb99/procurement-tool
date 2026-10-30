@@ -1,7 +1,7 @@
 // bao-CR-470 — kiểu dữ liệu của màn Tra cứu giá hải quan (bản v2).
 //
 // Khớp đúng hình dạng trả về của `backend/app/modules/customs/service.py` +
-// `controller.py`. Một «dòng hàng» là MỘT dòng của tệp GTT02, không phải cả tờ khai:
+// `controller.py`. Một "dòng hàng" là MỘT dòng của tệp GTT02, không phải cả tờ khai:
 // tệp không có số tờ khai (xem doc/erp/hai-quan/02-thiet-ke-ky-thuat.md §2.2).
 
 /** Bộ lọc dùng chung cho mọi thẻ của màn — nằm trên URL, rỗng = không lọc. */
@@ -11,7 +11,7 @@ export interface CustomsFilters {
   origin: string
   unit: string
   formulation: string
-  /** bao-CR-493: nhiều id nối bằng dấu phẩy («12,34») — backend tự tách, nhiều là HOẶC. */
+  /** bao-CR-493: nhiều id nối bằng dấu phẩy ("12,34") — backend tự tách, nhiều là HOẶC. */
   importer_id: string
   partner_id: string
   date_from: string
@@ -106,7 +106,7 @@ export interface CustomsCoverage {
 export interface CustomsOptionItem {
   value: string
   count: number
-  /** Nhãn hiện thay cho `value` (ô lọc lô nạp: «#12 1.xls»). */
+  /** Nhãn hiện thay cho `value` (ô lọc lô nạp: "#12 1.xls"). */
   label?: string
 }
 
@@ -238,7 +238,7 @@ export interface CustomsRegulationHit {
   note: string
   obligation: string
   /**
-   * Chỉ có ở bảng duyệt mục «Pháp lý» (không có ở cảnh báo theo từ khóa): số thuốc trong danh mục
+   * Chỉ có ở bảng duyệt mục "Pháp lý" (không có ở cảnh báo theo từ khóa): số thuốc trong danh mục
    * BVTV chứa hoạt chất CẤM này. `null` = dòng không phải TT 75, hoặc danh mục thuốc CHƯA nạp.
    */
   pesticide_count?: number | null
@@ -246,7 +246,7 @@ export interface CustomsRegulationHit {
   pesticide_matchable?: boolean
 }
 
-/** Mục «Pháp lý» — bảng duyệt cả danh mục (`GET /api/customs/regulations`). */
+/** Mục "Pháp lý" — bảng duyệt cả danh mục (`GET /api/customs/regulations`). */
 export interface CustomsRegulationList {
   total: number
   items: CustomsRegulationHit[]
@@ -300,9 +300,9 @@ export interface CustomsImportBatch {
   has_file?: boolean
   total_rows: number
   created_count: number
-  /** bao-CR-608 — dòng GHI ĐÈ theo cột «ID» (lô cũ không có khóa này). */
+  /** bao-CR-608 — dòng GHI ĐÈ theo cột "ID" (lô cũ không có khóa này). */
   updated_count?: number
-  /** Từ bao-CR-608: dòng XÓA theo cột «Thao tác» (có bản chụp, hoàn tác được). Lô nạp trước
+  /** Từ bao-CR-608: dòng XÓA theo cột "Thao tác" (có bản chụp, hoàn tác được). Lô nạp trước
    *  bao-CR-541 dùng cột này cho số dòng cũ bị THAY — xem `legacy_replace`. */
   deleted_count: number
   skipped_count: number
@@ -318,7 +318,7 @@ export interface CustomsImportBatch {
   existing_rows?: number
   /** bao-CR-541 — dòng THÊM MỚI nhưng trùng cột nhận diện với dòng đã có mà khác giá/lượng. */
   suspect_rows?: number
-  /** bao-CR-608 — dòng ghi đè / xóa theo cột «ID» + «Thao tác»; dòng xóa hỏng bị bỏ qua; dòng có
+  /** bao-CR-608 — dòng ghi đè / xóa theo cột "ID" + "Thao tác"; dòng xóa hỏng bị bỏ qua; dòng có
    *  số ID mà không có dòng đó (đã thêm mới). */
   updated_rows?: number
   deleted_rows?: number

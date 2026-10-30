@@ -629,18 +629,18 @@ function PurchaseRequestListContent() {
               </div>
 
               {/*  ⚠️ Ô trong tờ trượt phải có NHÃN. Trên thanh công cụ, ô chọn tự
-                   giải nghĩa bằng giá trị đang chọn («Tất cả công ty»); xếp dọc
+                   giải nghĩa bằng giá trị đang chọn ("Tất cả công ty"); xếp dọc
                    năm ô như vậy trong một tờ trắng thì thành một danh sách chữ
                    trôi nổi. Riêng HAI ô ngày thì nhãn là bắt buộc tuyệt đối —
                    chúng trông y hệt nhau, không có nhãn thì không cách nào biết
                    ô nào là *ngày cần hàng*, ô nào là *ngày tạo*. */}
               {/*  ⚠️ `iconOnly`: thanh công cụ khổ hẹp của màn này phải gói ô
                    tìm + chip *Gấp* + nút lọc + nút tải lại vào MỘT hàng, và 48px
-                   chữ «Bộ lọc» đúng là phần chênh giữa ô tìm đọc được và ô tìm
+                   chữ "Bộ lọc" đúng là phần chênh giữa ô tìm đọc được và ô tìm
                    cụt ở chữ thứ tám (73px → 121px). Giữ chữ thì phải bỏ chip
                    *Gấp* — mà đó là bộ lọc một chạm dùng nhiều nhất của màn này,
                    đổi nó thành ba chạm còn tệ hơn. Cái phễu vẫn có huy hiệu chấm
-                   khi đang lọc, và tiêu đề tờ trượt vẫn ghi «Bộ lọc». */}
+                   khi đang lọc, và tiêu đề tờ trượt vẫn ghi "Bộ lọc". */}
               <QuickFilterSheet
                 iconOnly
                 activeCount={activeCount}

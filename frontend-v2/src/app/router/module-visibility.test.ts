@@ -24,12 +24,12 @@ function allow(...duoc: string[]) {
 describe('canOpenModule', () => {
   //  LỖI THẬT (22/08/2026): màn chọn phân hệ chỉ xét `module.entity`, nên
   //  DEMO_MANAGER — người ký ở ba trong bốn chặng luồng ban hành văn bản — thấy
-  //  ô «Văn bản» đeo ổ khóa. Chuông báo 6 việc chờ mà không vào nổi chỗ để duyệt.
+  //  ô "Văn bản" đeo ổ khóa. Chuông báo 6 việc chờ mà không vào nổi chỗ để duyệt.
   it('người duyệt không có quyền trên phân hệ vẫn mở được nếu có mục không gác quyền', () => {
     const document = module(
       [
         { label: 'Văn bản', path: '/d/list', entity: 'document', icon: FileText },
-        //  «Chờ tôi duyệt» cố ý không khai `entity`.
+        //  "Chờ tôi duyệt" cố ý không khai `entity`.
         { label: 'Chờ tôi duyệt', path: '/d/pending', icon: FileText },
       ],
       'document',
@@ -63,7 +63,7 @@ describe('canOpenModule', () => {
 
   //  Thu mua mượn hai màn của Tài chính làm lối tắt (`crossModule`, 31/08/2026).
   //  Đếm cả lối tắt thì kế toán chỉ có `payable.read` thấy thẻ Thu mua mở, bấm
-  //  vào rỗng tuếch — đúng lỗi «thẻ mở cho người ngoài phân hệ» đã vá 27/08.
+  //  vào rỗng tuếch — đúng lỗi "thẻ mở cho người ngoài phân hệ" đã vá 27/08.
   it('lối tắt sang phân hệ khác KHÔNG tự mở khóa thẻ phân hệ này', () => {
     const procurement = module([
       { label: 'YCMH', path: '/x/pr', entity: 'purchase_request', icon: FileText },
@@ -228,7 +228,7 @@ describe('firstAccessibleNavPath', () => {
 })
 
 describe('mục gom nhiều màn con (`entities`)', () => {
-  //  «Thiết lập văn bản» là MỘT mục menu chứa bốn tab chạy trên bốn khóa khác
+  //  "Thiết lập văn bản" là MỘT mục menu chứa bốn tab chạy trên bốn khóa khác
   //  nhau. Trước CR-157 nó gác bằng đúng `doc_type`, nên người chỉ giữ *Đơn vị
   //  gửi nhận* không vào nổi trang chứa đúng tab của mình.
   const thietLap = [
@@ -271,7 +271,7 @@ describe('phân hệ LINK RA NGOÀI', () => {
     } as unknown as ErpModule
   }
 
-  //  LỖI KHÁCH BÁO 25/08/2026: ô «Hướng dẫn sử dụng» đeo ổ khóa, không ai bấm
+  //  LỖI KHÁCH BÁO 25/08/2026: ô "Hướng dẫn sử dụng" đeo ổ khóa, không ai bấm
   //  vào được — kể cả admin. `canOpenModule` đo bằng "còn mục menu nào hiện
   //  không", mà phân hệ link ra ngoài có `nav: []` theo đúng bản chất nên luôn
   //  ra 0. Tài liệu dùng hệ thống mà không ai mở được là hỏng đúng chỗ đáng giá.
@@ -338,17 +338,17 @@ describe('B4 — thẻ phân hệ khi không có quyền nào', () => {
     //  vào đây phải kèm lý do, kẻo lại tái diễn lỗi 27/08/2026: thẻ phân hệ mở
     //  cho người ngoài, vào trong toàn số 0.
     const congKhai = new Set([
-      'document', // «Chờ tôi duyệt» dành cho người duyệt NGOÀI phân hệ
+      'document', // "Chờ tôi duyệt" dành cho người duyệt NGOÀI phân hệ
       'forum', // bảng tin toàn công ty
       'appearance', // tùy chọn hiển thị của chính người đăng nhập
       //  ⚠️ **Hồ sơ (`dossier`) CỐ Ý không nằm ở đây** — xem ghi chú song song ở
       //  `module-registry.test.ts`. Phân hệ chỉ còn danh mục *Loại hồ sơ*, gác đủ
       //  bằng `dossier_type`, nên thẻ của nó đóng với người không quản danh mục.
-      //  «Dego Coffee» từng công khai qua «Ví điểm của tôi», nhưng phân hệ nay TẮT
+      //  "Dego Coffee" từng công khai qua "Ví điểm của tôi", nhưng phân hệ nay TẮT
       //  (`enabled: false`, phần Điểm cà phê còn dở) nên không nằm trong moduleRegistry.
     ])
     //  Chỉ xét phân hệ ĐANG BẬT: phân hệ tắt (`sales`, `approval-seal`, `dego-coffee`)
-    //  mới có mỗi mục «Tổng quan»/công khai nhưng không vào router nên không ai mở được.
+    //  mới có mỗi mục "Tổng quan"/công khai nhưng không vào router nên không ai mở được.
     const mo = moduleRegistry
       .filter((m) => !m.externalUrl && canOpenModule(m, DENY_ALL))
       .map((m) => m.id)
@@ -521,7 +521,7 @@ describe('Tra cứu thị trường — submenu thật (procurementModule)', () 
   const procurement = moduleRegistry.find((m) => m.id === 'procurement')
   if (!procurement) throw new Error('Thiếu phân hệ Thu mua')
 
-  /** `can` giả lập theo từng cặp «khóa.hành động». */
+  /** `can` giả lập theo từng cặp "khóa.hành động". */
   function grants(...cap: string[]) {
     return (entity: PermissionEntity, action: PermissionAction) => cap.includes(`${entity}.${action}`)
   }
@@ -529,13 +529,13 @@ describe('Tra cứu thị trường — submenu thật (procurementModule)', () 
     const parent = visibleNavItems(procurement as ErpModule, can).find(
       (item) => item.path === '/procurement/customs-prices',
     )
-    //  Chỉ mục VẼ trên menu — bỏ mục `hidden` (bốn thẻ tra giá gom về «Giá nhập khẩu»).
+    //  Chỉ mục VẼ trên menu — bỏ mục `hidden` (bốn thẻ tra giá gom về "Giá nhập khẩu").
     return parent?.children?.filter((child) => !child.hidden).map((child) => child.path) ?? []
   }
 
-  it('người chỉ ĐỌC dữ liệu hải quan thấy mọi mục trừ «Cấu hình» (kể cả «Thuốc BVTV»)', () => {
+  it('người chỉ ĐỌC dữ liệu hải quan thấy mọi mục trừ "Cấu hình" (kể cả "Thuốc BVTV")', () => {
     const paths = customsChildren(grants('customs_price.read'))
-    //  01/10/2026: «Giá nhập khẩu» (gom 5 thẻ) · Pháp lý · Thuốc BVTV · Lịch sử nạp.
+    //  01/10/2026: "Giá nhập khẩu" (gom 5 thẻ) · Pháp lý · Thuốc BVTV · Lịch sử nạp.
     expect(paths).toEqual([
       '/procurement/customs-prices',
       '/procurement/customs-prices/legal',
@@ -555,9 +555,9 @@ describe('Tra cứu thị trường — submenu thật (procurementModule)', () 
     }
   })
 
-  //  «Cấu hình» có hai mức quyền trên hai khóa: QUẢN LÝ `customs_price` (từ khóa + đồng
+  //  "Cấu hình" có hai mức quyền trên hai khóa: QUẢN LÝ `customs_price` (từ khóa + đồng
   //  nghĩa) hoặc chỉ ĐỌC `customs_regulation` (danh mục hóa chất) — `alsoReadable`.
-  it('chỉ đọc được danh mục hóa chất vẫn thấy và vào được «Cấu hình»', () => {
+  it('chỉ đọc được danh mục hóa chất vẫn thấy và vào được "Cấu hình"', () => {
     const can = grants('customs_price.read', 'customs_regulation.read')
     expect(customsChildren(can)).toContain('/procurement/customs-prices/config')
     expect(
@@ -565,7 +565,7 @@ describe('Tra cứu thị trường — submenu thật (procurementModule)', () 
     ).toBe(true)
   })
 
-  it('quản lý customs_price thì thấy «Cấu hình» dù không đọc được hóa chất', () => {
+  it('quản lý customs_price thì thấy "Cấu hình" dù không đọc được hóa chất', () => {
     expect(customsChildren(grants('customs_price.read', 'customs_price.write'))).toContain(
       '/procurement/customs-prices/config',
     )
@@ -726,13 +726,13 @@ describe('Lịch làm việc (hrModule) — nav gác mặc định MỞ nên ph�
     expect(canAccessRoute(hr, path, makeCan({ leave_type: ['write', 'create', 'delete'] }))).toBe(false)
   })
 
-  it('người chỉ có employee.read thấy nhóm «Lịch làm việc» nhưng CHỈ với con «Xem lịch»', () => {
+  it('người chỉ có employee.read thấy nhóm "Lịch làm việc" nhưng CHỈ với con "Xem lịch"', () => {
     const viewer = visibleNavItems(hr, makeCan({ employee: ['read'], work_schedule: ['read'] }))
     const item = viewer.find((i) => i.label === 'Lịch làm việc')
     expect(item?.children?.map((c) => c.label)).toEqual(['Xem lịch'])
   })
 
-  it('không có employee.read thì không thấy nhóm «Lịch làm việc» (dù đọc được work_schedule)', () => {
+  it('không có employee.read thì không thấy nhóm "Lịch làm việc" (dù đọc được work_schedule)', () => {
     const nav = visibleNavItems(hr, makeCan({ work_schedule: ['read'] }))
     expect(nav.some((i) => i.label === 'Lịch làm việc')).toBe(false)
   })
@@ -753,14 +753,14 @@ describe('Lịch làm việc (hrModule) — nav gác mặc định MỞ nên ph�
   })
 })
 
-//  duoc-CR-629b: mẫu HĐLĐ chuyển vào «Thiết lập văn bản» nhưng quyền vẫn là `labor_contract_template`.
+//  duoc-CR-629b: mẫu HĐLĐ chuyển vào "Thiết lập văn bản" nhưng quyền vẫn là `labor_contract_template`.
 describe('mẫu hợp đồng lao động trong Thiết lập văn bản', () => {
   const documentModule = moduleRegistry.find((m) => m.id === 'document') as ErpModule
   const hrModule = moduleRegistry.find((m) => m.id === 'hr') as ErpModule
   const can = (grant: Partial<Record<PermissionAction, boolean>>) => (entity: PermissionEntity, action: PermissionAction) =>
     entity === 'labor_contract_template' && grant[action] === true
 
-  it('«Thiết lập văn bản» mở được cho người chỉ có quyền quản lý mẫu HĐLĐ', () => {
+  it('"Thiết lập văn bản" mở được cho người chỉ có quyền quản lý mẫu HĐLĐ', () => {
     for (const action of ['create', 'write', 'delete'] as const) {
       expect(canAccessRoute(documentModule, '/document/settings', can({ [action]: true }))).toBe(true)
     }

@@ -90,7 +90,7 @@ beforeEach(() => {
 })
 
 describe('FolderPicker — cây chỉ liệt kê thư mục đủ điều kiện', () => {
-  //  Luật «ẩn pháp nhân khác» BỎ 24/09/2026 — văn bản gắn vào thư mục nào cũng
+  //  Luật "ẩn pháp nhân khác" BỎ 24/09/2026 — văn bản gắn vào thư mục nào cũng
   //  được; chỉ còn lọc theo MỨC Đóng góp.
   it('shows folders of EVERY company at Contribute level and up, hides View-only ones', async () => {
     const user = userEvent.setup()
@@ -250,7 +250,7 @@ describe('FolderPicker — ô tìm (gõ ra danh sách phẳng kèm đường d�
 
     expect(screen.getByText('CÔNG TY A / Hợp đồng')).toBeVisible()
     expect(screen.queryByText('Chỉ xem được')).not.toBeInTheDocument()
-    //  Tên + đường dẫn cùng là «CÔNG TY B» nên khớp hơn một phần tử.
+    //  Tên + đường dẫn cùng là "CÔNG TY B" nên khớp hơn một phần tử.
     expect(screen.getAllByText(/CÔNG TY B$/).length).toBeGreaterThan(0)
   })
 })
@@ -283,7 +283,7 @@ describe('FolderPicker — câu gợi ý khi để trống', () => {
   })
 })
 
-describe('FolderPicker — nút «Tạo thư mục mới»', () => {
+describe('FolderPicker — nút "Tạo thư mục mới"', () => {
   it('không có quyền doc_folder.create thì ẩn nút', async () => {
     canCreateFolder = false
     const user = userEvent.setup()

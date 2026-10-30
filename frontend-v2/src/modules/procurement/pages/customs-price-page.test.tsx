@@ -1,5 +1,5 @@
 // bao-CR-470 — màn Tra cứu giá hải quan: cổng "chưa lọc thì không vẽ biểu đồ", câu bảng
-// rỗng phân biệt «chưa có dữ liệu» với «bộ lọc loại hết», và nút Nạp dữ liệu gác theo quyền.
+// rỗng phân biệt "chưa có dữ liệu" với "bộ lọc loại hết", và nút Nạp dữ liệu gác theo quyền.
 // Chặn ở tầng `@/core/api` (luật testing.md) để bắt được đúng đường API màn gọi đi.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
@@ -145,7 +145,7 @@ describe('CustomsPricePage', () => {
     coverageTotal = 0
     build('/procurement/customs-prices')
     expect(
-      await screen.findByText('Chưa có dữ liệu hải quan. Bấm «Nạp dữ liệu» để tải tệp GTT02.'),
+      await screen.findByText('Chưa có dữ liệu hải quan. Bấm "Nạp dữ liệu" để tải tệp GTT02.'),
     ).toBeInTheDocument()
   })
 
@@ -177,12 +177,12 @@ describe('CustomsPricePage', () => {
     await waitFor(() => expect(calls.some((call) => call.url.endsWith('/stats'))).toBe(true))
   })
 
-  it('sends /list back to the base path so the «Danh sách» menu item lights up', async () => {
+  it('sends /list back to the base path so the "Danh sách" menu item lights up', async () => {
     build('/procurement/customs-prices/list?origin=CN')
     await waitFor(() => expect(currentLocation()).toBe('/procurement/customs-prices?origin=CN'))
   })
 
-  //  «Pháp lý & thuế» chia đôi 29/09/2026: link cũ `?tab=legal` phải rơi vào mục Pháp lý.
+  //  "Pháp lý & thuế" chia đôi 29/09/2026: link cũ `?tab=legal` phải rơi vào mục Pháp lý.
   it('lands an old ?tab=legal link on the Pháp lý section', async () => {
     build('/procurement/customs-prices?tab=legal')
     await waitFor(() => expect(currentLocation()).toBe('/procurement/customs-prices/legal'))
@@ -228,7 +228,7 @@ describe('CustomsPricePage', () => {
     expect(screen.getByRole('tab', { name: 'Thuế' })).toHaveAttribute('aria-selected', 'true')
   })
 
-  //  03/10/2026 — tiêu đề trang = ĐÚNG tên mục ở menu trái, không ghép «Tra cứu thị trường —»
+  //  03/10/2026 — tiêu đề trang = ĐÚNG tên mục ở menu trái, không ghép "Tra cứu thị trường —"
   //  (ngữ cảnh đó đã nằm ở breadcrumb cấp hai). `name` dạng chuỗi = khớp NGUYÊN chuỗi, nên
   //  bản có tiền tố không lọt qua được.
   it('keeps Tra cứu hóa chất as its own submenu page without the price tabs', async () => {
@@ -238,7 +238,7 @@ describe('CustomsPricePage', () => {
     expect(screen.queryByRole('tab', { name: 'Danh sách' })).not.toBeInTheDocument()
   })
 
-  //  06/10/2026 — mục hóa chất chỉ giữ tiêu đề + «Lịch sử nạp» + «Nạp dữ liệu» + bảng: dải phủ
+  //  06/10/2026 — mục hóa chất chỉ giữ tiêu đề + "Lịch sử nạp" + "Nạp dữ liệu" + bảng: dải phủ
   //  dữ liệu hải quan, câu mô tả GTT02 và thanh lọc dòng hàng đều phải biến mất.
   it('shows only the title, the two header buttons and the chemical table on Tra cứu hóa chất', async () => {
     build('/procurement/customs-prices/legal')
@@ -259,8 +259,8 @@ describe('CustomsPricePage', () => {
     expect(screen.queryByText(/lần nạp gần nhất/)).not.toBeInTheDocument()
   })
 
-  //  06/10/2026 — «Xuất Excel» trong thanh công cụ của bảng → «Xuất dữ liệu» ở đầu trang, kế
-  //  «Nạp dữ liệu»; vẫn khóa khi bảng rỗng (không xuất tệp trắng).
+  //  06/10/2026 — "Xuất Excel" trong thanh công cụ của bảng → "Xuất dữ liệu" ở đầu trang, kế
+  //  "Nạp dữ liệu"; vẫn khóa khi bảng rỗng (không xuất tệp trắng).
   it('puts Xuất dữ liệu in the page header and disables it while the list is empty', async () => {
     build('/procurement/customs-prices')
     const exportButton = await screen.findByRole('button', { name: /Xuất dữ liệu/ })
@@ -276,7 +276,7 @@ describe('CustomsPricePage', () => {
     )
   })
 
-  //  bao-CR-608 — cột ID đầu bảng (khớp cột «ID» đầu Excel xuất ra) và nút Sửa / Xóa trong hộp
+  //  bao-CR-608 — cột ID đầu bảng (khớp cột "ID" đầu Excel xuất ra) và nút Sửa / Xóa trong hộp
   //  chi tiết dòng ẩn theo quyền `customs_price.write` / `customs_price.delete`.
   it('shows the line ID column and offers Sửa / Xóa in the line detail to users with the rights', async () => {
     lineItems = [{ id: 4321, batch_id: 9, source_row: 2, product_name: 'ATRAZINE 97% TECH' }]
@@ -304,7 +304,7 @@ describe('CustomsPricePage', () => {
     expect(screen.queryByRole('heading', { name: /Tra cứu thị trường/ })).not.toBeInTheDocument()
   })
 
-  it('titles the pesticide section «Tra cứu Thuốc BVTV»', async () => {
+  it('titles the pesticide section "Tra cứu Thuốc BVTV"', async () => {
     build('/procurement/customs-prices/pesticides')
     expect(await screen.findByRole('heading', { name: 'Tra cứu Thuốc BVTV' })).toBeInTheDocument()
   })

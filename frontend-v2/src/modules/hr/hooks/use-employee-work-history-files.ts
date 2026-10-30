@@ -26,9 +26,9 @@ export function useWorkHistoryFiles(historyId: number, enabled = true) {
 /**
  * Dọn cache sau khi tải lên / gỡ tệp — phát hiện lúc kiểm tay bằng Chrome
  * DevTools 03/10/2026: hộp tệp trước đây CHỈ dọn `workHistoryFiles(historyId)`
- * của chính nó, nên cột «Tệp» ở bảng ngoài (đọc `file_count` từ
+ * của chính nó, nên cột "Tệp" ở bảng ngoài (đọc `file_count` từ
  * `employeeWorkHistory(eid)` / `myWorkHistory()`) đứng ở số cũ tới khi bấm
- * «Tải lại dữ liệu». `employeeId` là id hồ sơ CHỦ của dòng lịch sử (nơi gọi
+ * "Tải lại dữ liệu". `employeeId` là id hồ sơ CHỦ của dòng lịch sử (nơi gọi
  * luôn biết — xem `employee-work-history-files-dialog.tsx`), không phải id
  * người đang xem.
  */

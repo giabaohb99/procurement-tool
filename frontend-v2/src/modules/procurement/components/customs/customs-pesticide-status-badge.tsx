@@ -1,4 +1,4 @@
-// Nhãn tình trạng đăng ký của một thuốc BVTV (mục «Thuốc BVTV» của Tra cứu thị trường).
+// Nhãn tình trạng đăng ký của một thuốc BVTV (mục "Thuốc BVTV" của Tra cứu thị trường).
 import { Badge } from '@/shared/ui/badge'
 import { TONE_CLASS } from '@/shared/ui/status-tone'
 import { cn } from '@/shared/utils/cn'

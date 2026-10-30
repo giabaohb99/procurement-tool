@@ -2,9 +2,9 @@
 // bao-CR-541: lô chỉ THÊM dòng chưa có (trùng thì bỏ qua) nên luôn hoàn tác được. Riêng lô CŨ nạp
 // trước CR đã THAY dòng cũ (deleted_count > 0) thì không: dòng cũ đã xóa lúc ghi, hoàn tác chỉ để
 // lại một khoảng ngày trống — nút bị khóa kèm lời giải thích.
-// bao-CR-493: từ hộp thoại thành MỘT THẺ trên trang (thẻ «Lịch sử nạp», yêu cầu F11 phòng Thu mua)
+// bao-CR-493: từ hộp thoại thành MỘT THẺ trên trang (thẻ "Lịch sử nạp", yêu cầu F11 phòng Thu mua)
 // và thêm nút tải lại tệp GTT02 gốc — chỉ lô nạp qua màn hình có tệp (`has_file`).
-// bao-CR-608: thêm cột Ghi đè / Xóa (tệp có cột «ID» + «Thao tác»). Lô ghi đè / xóa có bản chụp
+// bao-CR-608: thêm cột Ghi đè / Xóa (tệp có cột "ID" + "Thao tác"). Lô ghi đè / xóa có bản chụp
 // nên VẪN hoàn tác được — backend báo lô cũ không hoàn tác được bằng `legacy_replace`.
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../api/client'
@@ -40,7 +40,7 @@ export default function CustomsHistoryPanel({ onChanged }: { onChanged: () => vo
     if (b.deleted_count) parts.push(`dựng lại ${b.deleted_count} dòng lô đã xóa`)
     const ok = await askConfirm({
       title: 'Hoàn tác lô nạp',
-      message: `Hoàn tác tệp «${b.filename}»: ${parts.join(', ')}?`
+      message: `Hoàn tác tệp "${b.filename}": ${parts.join(', ')}?`
         + (b.updated_count ? ' Dòng bị sửa tiếp sau lô này cũng trả về bản trước lô — phần sửa sau sẽ mất.' : ''),
       confirmText: 'Hoàn tác',
     })
@@ -124,7 +124,7 @@ const LEVELS: Record<number, [string, string]> = { 0: ['Thông tin', 'gray'], 1:
 
 // bao-CR-496 — kết cục từng dòng của tệp, khớp `ImportRowStatus` backend
 // (1 Thêm mới · 2 Lỗi · 3 Trùng trong tệp · 4 Đã có). bao-CR-541: 3 và 4 là dòng BỎ QUA.
-// bao-CR-608: 5 Ghi đè · 6 Xóa (theo cột «ID» / «Thao tác») · 7 Bỏ qua (xóa hỏng / ID lặp).
+// bao-CR-608: 5 Ghi đè · 6 Xóa (theo cột "ID" / "Thao tác") · 7 Bỏ qua (xóa hỏng / ID lặp).
 const ROW_STATUS: Record<number, [string, string]> = {
   1: ['Thêm mới', 'ok'], 2: ['Lỗi', 'err'], 3: ['Trùng trong tệp', 'warn'], 4: ['Đã có', 'gray'],
   5: ['Ghi đè', 'info'], 6: ['Xóa', 'err'], 7: ['Bỏ qua', 'warn'],

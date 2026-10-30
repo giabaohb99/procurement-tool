@@ -43,7 +43,7 @@ export const clientBars = (s: UsageSnapshot) => codeCountsToBars(s.lists?.ai_cli
 export const toolGroupBars = (s: UsageSnapshot): UsageAiBar[] =>
   (s.lists?.ai_tool_groups ?? []).map(([key, value]) => ({ label: AI_TOOL_GROUP_LABELS[key] ?? key, value }))
 
-/** Chưa thu số dùng AI: khóa lượt dùng nằm ở `unmeasured` với lý do «chưa thu thập» (hoặc không có giá trị). */
+/** Chưa thu số dùng AI: khóa lượt dùng nằm ở `unmeasured` với lý do "chưa thu thập" (hoặc không có giá trị). */
 export function isAiNotCollected(s: UsageSnapshot): boolean {
   const reason = s.unmeasured?.ai_uses
   return reason === USAGE_UNMEASURED_REASON_CODE.NOT_COLLECTED || (s.metrics.ai_uses?.v == null && reason === undefined)

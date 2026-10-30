@@ -43,10 +43,10 @@ const BUILTIN_WIDTH: Record<string, { label: string; width: number }> = {
 }
 
 /**
- * Dịch bộ «Tùy chỉnh» (§3.6) thành các CỘT của khung nhìn Danh sách.
+ * Dịch bộ "Tùy chỉnh" (§3.6) thành các CỘT của khung nhìn Danh sách.
  *
  * Dùng chung đúng một nguồn với thẻ kanban thay vì khai một danh sách cột thứ
- * hai: tắt một trường ở menu «Tùy chỉnh» thì nó biến mất ở CẢ hai khung nhìn,
+ * hai: tắt một trường ở menu "Tùy chỉnh" thì nó biến mất ở CẢ hai khung nhìn,
  * đúng như Lark. Thứ tự cột cũng chính là thứ tự người dùng kéo trong menu đó.
  *
  * Hai khóa `subtasks` và `comments` KHÔNG thành cột — bên Lark chúng là huy hiệu

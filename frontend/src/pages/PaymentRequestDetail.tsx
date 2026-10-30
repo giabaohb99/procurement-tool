@@ -23,8 +23,8 @@ const ST: Record<string, { label: string; cls: string }> = {
 }
 const stBadge = (s: string) => { const x = ST[s] || { label: s, cls: 'gray' }; return <span className={'badge ' + x.cls}>{x.label}</span> }
 
-// bao-CR-553 — ô «Trưởng bộ phận» (như YCMH), dùng chung màn tạo và màn chi tiết: in ở dòng
-// «Trưởng phòng ban/bộ phận» của bản in (trống = trưởng phòng của người lập). Chỉ để in, không
+// bao-CR-553 — ô "Trưởng bộ phận" (như YCMH), dùng chung màn tạo và màn chi tiết: in ở dòng
+// "Trưởng phòng ban/bộ phận" của bản in (trống = trưởng phòng của người lập). Chỉ để in, không
 // đổi ai được duyệt hay được báo.
 type HeadValue = { head_of_dept_id?: number; head_of_dept?: string }
 function HeadOfDeptField({ value, editable, onChange }: {
@@ -51,7 +51,7 @@ function HeadOfDeptField({ value, editable, onChange }: {
         options={rows.map((r) => ({ value: String(r.employee_id), label: r.position ? `${r.name} — ${r.position}` : r.name }))}
         onChange={(v) => onChange({ head_of_dept_id: Number(v) || 0,
           head_of_dept: heads.find((h) => String(h.employee_id) === v)?.name || '' })} />
-      <div style={hintStyle}>In ở dòng «Trưởng phòng ban/bộ phận» của bản in.</div>
+      <div style={hintStyle}>In ở dòng <strong>Trưởng phòng ban/bộ phận</strong> của bản in.</div>
     </div>
   )
 }
@@ -131,7 +131,7 @@ function PaymentRequestCreate() {
   const ids = useMemo(() => idsParam.split(',').map(Number).filter(Boolean), [idsParam])
   const blankMode = !ids.length
 
-  // bao-CR-547: tick nhiều dòng rồi «Xóa đã chọn» — màn TẠO là form tạo nên luôn bật; chọn theo `key` của dòng.
+  // bao-CR-547: tick nhiều dòng rồi "Xóa đã chọn" — màn TẠO là form tạo nên luôn bật; chọn theo `key` của dòng.
   const [selectedKeys, setSelectedKeys] = useState<Set<number>>(new Set())
   const [lines, setLines] = useState<NewLine[]>(
     () => ((location.state as any)?.rows || []).map(fromPayable))
@@ -361,12 +361,12 @@ function PaymentRequestView() {
   const [files, setFiles] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [notFound, setNotFound] = useState(false)
-  // bao-CR-509 — hộp xem trước «Cập nhật theo công nợ». plan = kết quả refresh-preview
+  // bao-CR-509 — hộp xem trước "Cập nhật theo công nợ". plan = kết quả refresh-preview
   // (backend tính hết số và lý do; màn này chỉ hiển thị).
   const [refresh, setRefresh] = useState<{ open: boolean; loading: boolean; plan: any }>({ open: false, loading: false, plan: null })
   // Chặn bấm đúp: state chỉ đổi ở lượt render sau, ref đổi ngay trong tick.
   const applyingRef = useRef(false)
-  //  bao-CR-590: chặn bấm đúp «Gửi duyệt». Khai Ở ĐÂY, trên các `return` sớm, cho đúng luật hook.
+  //  bao-CR-590: chặn bấm đúp "Gửi duyệt". Khai Ở ĐÂY, trên các `return` sớm, cho đúng luật hook.
   const submittingRef = useRef(false)
   const [applying, setApplying] = useState(false)
 
@@ -400,7 +400,7 @@ function PaymentRequestView() {
 
   // CR-066: chỉ bản NHÁP mới sửa được. Gửi duyệt / duyệt xong là khóa cứng (backend cũng chặn).
   const editable = req.status === 'draft' && can('payment_request', 'write')
-  // bao-CR-547: tick nhiều dòng rồi «Xóa đã chọn» — `editable` ở màn này đã là «phiếu Nháp + quyền ghi».
+  // bao-CR-547: tick nhiều dòng rồi "Xóa đã chọn" — `editable` ở màn này đã là "phiếu Nháp + quyền ghi".
   // State + effect khai cạnh `req` (trước các `return` sớm) cho đúng luật hook.
   const toggleRow = (i: number) => setSelectedRows((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n })
   const toggleAllRows = () => setSelectedRows((s) => s.size === lineCount ? new Set() : new Set(Array.from({ length: lineCount }, (_, i) => i)))
@@ -419,7 +419,7 @@ function PaymentRequestView() {
     setReq((s: any) => ({ ...s, lines: s.lines.map((l: any, idx: number) => idx === i ? { ...l, ...patch } : l) }))
   const unmatched = (req.lines || []).filter((l: any) => !l.matched)
 
-  //  bao-CR-590: `submitAfterSave` = bấm «Gửi duyệt» khi phiếu còn Nháp — LƯU phần đang sửa
+  //  bao-CR-590: `submitAfterSave` = bấm "Gửi duyệt" khi phiếu còn Nháp — LƯU phần đang sửa
   //  rồi mới gửi. Trước đây nút Gửi duyệt chỉ POST `/submit`: máy chủ gửi bản CŨ, rồi `loadAll()`
   //  đổ bản cũ đè lên form, người dùng mất trắng phần vừa sửa. Lưu hỏng thì KHÔNG gửi.
   async function save(submitAfterSave = false) {
@@ -752,7 +752,7 @@ function PaymentRequestView() {
   )
 }
 
-/** Hai giá trị cũ/mới: giống nhau thì in một, khác thì in «cũ → mới». */
+/** Hai giá trị cũ/mới: giống nhau thì in một, khác thì in "cũ → mới". */
 function oldNew(oldValue: string, newValue: string) {
   if ((oldValue || '') === (newValue || '')) return newValue || '—'
   return (
@@ -766,7 +766,7 @@ function oldNew(oldValue: string, newValue: string) {
 // Dòng số về 0 vì nợ đã hết / mất / trùng khoản nợ — phải đập vào mắt
 const REFRESH_ALERT_STATES = ['paid_off', 'payable_missing', 'duplicate']
 
-/** bao-CR-509 — hộp xem trước «Cập nhật theo công nợ»: số cũ → số mới từng dòng rồi mới ghi. */
+/** bao-CR-509 — hộp xem trước "Cập nhật theo công nợ": số cũ → số mới từng dòng rồi mới ghi. */
 function RefreshPreviewModal({ loading, plan, canWrite, applying, onClose, onApply }: {
   loading: boolean; plan: any; canWrite: boolean; applying: boolean; onClose: () => void; onApply: () => void
 }) {

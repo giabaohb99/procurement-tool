@@ -22,7 +22,7 @@ export function PurchaseOrderPrintOrderForm({
   const supplier = data.supplier ?? {}
   const warehouse = data.warehouse ?? {}
   const signers = data.signers
-  //  bao-CR-499: ô Trưởng bộ phận luôn in cột «Trưởng phòng phê duyệt» (người thực duyệt / người được chọn).
+  //  bao-CR-499: ô Trưởng bộ phận luôn in cột "Trưởng phòng phê duyệt" (người thực duyệt / người được chọn).
   const head = { name: signers?.approver_name ?? '', signature: signers?.approver_signature ?? '' }
   const terms = resolvePrintTerms(data)
 

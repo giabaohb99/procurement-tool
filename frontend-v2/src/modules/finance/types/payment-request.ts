@@ -85,7 +85,7 @@ export type PaymentRefreshState =
   | 'paid_off'
   | 'duplicate'
 
-/** bao-CR-509 — một dòng của bản xem trước «Cập nhật theo công nợ»: số cũ → số mới. */
+/** bao-CR-509 — một dòng của bản xem trước "Cập nhật theo công nợ": số cũ → số mới. */
 export interface PaymentRefreshLine {
   line_id: number
   index: number
@@ -168,14 +168,14 @@ export interface PaymentRequestSummary {
   /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
   updated_at?: string
   /**
-   * bao-CR-553 — «Trưởng bộ phận» in ở dòng «Trưởng phòng ban/bộ phận» của bản in (id NHÂN SỰ + tên
+   * bao-CR-553 — "Trưởng bộ phận" in ở dòng "Trưởng phòng ban/bộ phận" của bản in (id NHÂN SỰ + tên
    * đã chép). 0 / rỗng = mặc định trưởng phòng của người lập.
    */
   head_of_dept_id?: number
   head_of_dept?: string
 }
 
-/** bao-CR-553 — một người trong ô «Trưởng bộ phận» (cùng dạng với YCMH/YCBG/ĐMH). */
+/** bao-CR-553 — một người trong ô "Trưởng bộ phận" (cùng dạng với YCMH/YCBG/ĐMH). */
 export interface PaymentApprovalCandidate {
   employee_id: number
   code: string

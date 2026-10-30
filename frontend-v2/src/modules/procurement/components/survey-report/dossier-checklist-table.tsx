@@ -28,7 +28,7 @@ import {
 const TABLE_COLUMNS = 6
 
 interface DossierChecklistTableProps {
-  /** Một dòng bảng cho mỗi nhóm: «Chung (cả phiếu)» rồi tới từng dòng hàng. */
+  /** Một dòng bảng cho mỗi nhóm: "Chung (cả phiếu)" rồi tới từng dòng hàng. */
   rows: ChecklistGroup[]
   /** TOÀN BỘ hồ sơ của phiếu — dòng TỔNG đếm theo đây, không theo bộ lọc. */
   allDocs: ApplicableDossier[]
@@ -45,12 +45,12 @@ interface DossierChecklistTableProps {
 }
 
 /**
- * CHẾ ĐỘ XEM «Theo dòng hàng» — chép `ReportItemTable` của khối *Báo cáo thực
+ * CHẾ ĐỘ XEM "Theo dòng hàng" — chép `ReportItemTable` của khối *Báo cáo thực
  * hiện*: mỗi dòng hàng một dòng bảng, bấm để sổ hồ sơ của riêng nó, dưới cùng
  * là dòng TỔNG của cả phiếu.
  *
- * ⚠️ **Thiếu dòng «Thêm nút dòng hàng» của bản gốc, và thiếu CÓ LÝ DO.** Bên
- * kia «nút dòng hàng» là bản ghi người dùng tự đặt; ở đây dòng hàng là dòng
+ * ⚠️ **Thiếu dòng "Thêm nút dòng hàng" của bản gốc, và thiếu CÓ LÝ DO.** Bên
+ * kia "nút dòng hàng" là bản ghi người dùng tự đặt; ở đây dòng hàng là dòng
  * THẬT của tờ YCBG, thêm bớt ở màn sửa phiếu chứ không ở đây.
  */
 export function DossierChecklistTable({
@@ -200,7 +200,7 @@ function ChecklistRowDetail({
 }
 
 /**
- * Ô «Hạn gần nhất» của bảng — chép `ExpiryChip` bản gốc. Không tờ nào có hạn
+ * Ô "Hạn gần nhất" của bảng — chép `ExpiryChip` bản gốc. Không tờ nào có hạn
  * thì GẠCH NGANG chứ không để trống: ô trống đọc ra như dữ liệu chưa tải xong.
  */
 function ChecklistExpiryChip({ docs }: { docs: ApplicableDossier[] }) {

@@ -1,6 +1,6 @@
 /**
  * Hợp đồng JSON của `/api/work-capability` (duoc-CR-657). Thời gian tính bằng NGÀY LỊCH, tỷ lệ là số 0..1.
- * Dưới ngưỡng mẫu (`below_threshold`) mọi số là `null` — hiện «chưa đủ mẫu», không điền 0.
+ * Dưới ngưỡng mẫu (`below_threshold`) mọi số là `null` — hiện "chưa đủ mẫu", không điền 0.
  * Dòng ước tính (`n_estimated`) không bao giờ nằm trong trung vị / p90.
  */
 export interface CapabilityStats {

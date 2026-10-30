@@ -7,7 +7,7 @@ describe('buildRegulationParams', () => {
     expect(buildRegulationParams('', 'all')).toEqual({})
   })
 
-  //  `list_code` ở backend là `int | None`: gửi «all» hay chuỗi rỗng là 422 và cả bảng đỏ.
+  //  `list_code` ở backend là `int | None`: gửi "all" hay chuỗi rỗng là 422 và cả bảng đỏ.
   it.each(['all', '', ' ', 'abc', '-1', '4.5'])('never sends a non-numeric list code (%j)', (code) => {
     expect(buildRegulationParams('', code)).not.toHaveProperty('list_code')
   })

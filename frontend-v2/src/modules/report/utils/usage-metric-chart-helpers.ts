@@ -19,7 +19,7 @@ export interface TrendDatum {
 
 const fmt = (v: number, unit: string) => formatUsageValue(v, unitKind(unit))
 
-/** Nhãn ngắn trên trục X: cận dưới của cột (cột tràn có «≥»; cờ 0/1 hiện «Không»/«Có»). */
+/** Nhãn ngắn trên trục X: cận dưới của cột (cột tràn có "≥"; cờ 0/1 hiện "Không"/"Có"). */
 export function bucketAxisLabel(b: UsageMetricBucket, unit: string): string {
   if (unit === 'flag') return b.lo >= 1 ? 'Có' : 'Không'
   return b.hi === null ? `≥${fmt(b.lo, unit)}` : fmt(b.lo, unit)
@@ -45,7 +45,7 @@ export function medianBucketIndex(buckets: UsageMetricBucket[], median: number |
   return idx >= 0 ? idx : median >= buckets[buckets.length - 1].lo ? buckets.length - 1 : -1
 }
 
-/** «2026-10-12» → «12/10». Chuỗi lạ giữ nguyên. */
+/** "2026-10-12" → "12/10". Chuỗi lạ giữ nguyên. */
 export function weekShortLabel(iso: string): string {
   const m = /^\d{4}-(\d{2})-(\d{2})/.exec(iso)
   return m ? `${m[2]}/${m[1]}` : iso

@@ -18,12 +18,12 @@ export const INBOX_SCOPE = {
 export type InboxScope = (typeof INBOX_SCOPE)[keyof typeof INBOX_SCOPE]
 
 /**
- * Câu cho bảng RỖNG — nói theo TAB đang đứng, chỉ nhắc «điều kiện đang lọc»
+ * Câu cho bảng RỖNG — nói theo TAB đang đứng, chỉ nhắc "điều kiện đang lọc"
  * khi người dùng thật sự đang gõ tìm / đặt bộ lọc.
  *
- * Từ 25/09/2026 màn mở sẵn ở «Cần duyệt». Câu cũ chỉ phân biệt «có dòng nào
- * không», nên tab mặc định trống mà còn việc đã duyệt thì màn báo «không khớp
- * điều kiện đang lọc» — người dùng chưa lọc gì, đọc ra như lọc nhầm; trong khi
+ * Từ 25/09/2026 màn mở sẵn ở "Cần duyệt". Câu cũ chỉ phân biệt "có dòng nào
+ * không", nên tab mặc định trống mà còn việc đã duyệt thì màn báo "không khớp
+ * điều kiện đang lọc" — người dùng chưa lọc gì, đọc ra như lọc nhầm; trong khi
  * đó là tin tốt: hết việc.
  */
 export function describeInboxEmpty(scope: string, isFiltering: boolean): string {
@@ -138,7 +138,7 @@ export function buildInboxRows(
 
   //  ĐÃ DUYỆT theo đường một bước — đọc từ nhật ký văn bản. Xếp CHUNG nhóm đã
   //  làm rồi sắp lại theo thời điểm bấm, không để thành một cụm riêng cuối bảng:
-  //  người dùng đọc «tuần này tôi ký gì» theo thời gian, không theo đường duyệt.
+  //  người dùng đọc "tuần này tôi ký gì" theo thời gian, không theo đường duyệt.
   const legacyDoneRows: InboxRow[] = legacyDone.map((row) => ({
     id: `legacy-done-${row.id}`,
     kind: 'done',

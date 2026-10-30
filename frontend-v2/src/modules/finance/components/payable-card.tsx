@@ -21,10 +21,10 @@ import { PAYABLE_SOURCE_LABELS, type Payable } from '../types/payable'
  * này thì hai thẻ liền nhau giống hệt nhau và không cách nào biết thẻ nào là
  * thẻ nào.
  *
- * ⚠️ **Số tiền KHÔNG rút gọn** và luôn hiện «Còn lại» chứ không hiện tổng nợ:
+ * ⚠️ **Số tiền KHÔNG rút gọn** và luôn hiện "Còn lại" chứ không hiện tổng nợ:
  * tổng nợ là con số đã trả một phần, còn thứ người ta vào đây để biết là còn
- * phải chi bao nhiêu. Trả một phần thì bày thêm phần ĐÃ TRẢ, nếu không «Còn
- * lại» nhỏ hơn tổng mà không có gì giải thích vì sao.
+ * phải chi bao nhiêu. Trả một phần thì bày thêm phần ĐÃ TRẢ, nếu không "Còn
+ * lại" nhỏ hơn tổng mà không có gì giải thích vì sao.
  *
  * ⚠️ **Không nút nào trong thẻ**: `DataTableMobileCards` bọc cả thẻ trong một
  * `<button>` (bảng này có `onRowClick` mở ĐMH), lồng nút vào trong nút là HTML

@@ -22,11 +22,11 @@ interface TaskDescriptionFieldProps {
  * `onBlur`:
  *
  * 1. Bấm một nút trên thanh công cụ là vùng gõ MẤT tiêu điểm — bắt `blur` thì
- *    vừa bấm «In đậm» đã đóng ô, chưa kịp gõ gì.
- * 2. Menu «Liên kết» mở bằng portal nên nằm NGOÀI khung; bấm vào ô nhập địa chỉ
+ *    vừa bấm "In đậm" đã đóng ô, chưa kịp gõ gì.
+ * 2. Menu "Liên kết" mở bằng portal nên nằm NGOÀI khung; bấm vào ô nhập địa chỉ
  *    trong đó cũng không được tính là rời ô.
  *
- * Nên chốt lưu bằng một cú bấm RA NGOÀI khung, giữ đúng nếp «không có nút Lưu»
+ * Nên chốt lưu bằng một cú bấm RA NGOÀI khung, giữ đúng nếp "không có nút Lưu"
  * của cả panel.
  */
 export function TaskDescriptionField({

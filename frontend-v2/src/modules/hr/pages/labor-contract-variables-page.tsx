@@ -1,4 +1,4 @@
-// duoc-CR-630 — màn «Danh sách biến» của mẫu hợp đồng lao động: xem 48 biến hệ thống, thêm / sửa /
+// duoc-CR-630 — màn "Danh sách biến" của mẫu hợp đồng lao động: xem 48 biến hệ thống, thêm / sửa /
 // ngừng dùng / xóa biến TÙY CHỈNH (nhập tay theo từng hợp đồng). Trang riêng (không hộp thoại) vì bảng
 // dài + bộ lọc + hộp sửa lồng nhau; nằm dưới `/hr/labor-contract-templates` nên chung hàng rào quyền.
 import { ArrowLeft, Plus } from 'lucide-react'
@@ -70,8 +70,8 @@ export function LaborContractVariablesPage() {
           const ok = await confirm({
             title: stopping ? 'Ngừng dùng biến' : 'Bật lại biến',
             message: stopping
-              ? `Ngừng dùng biến «${v.label}»? Biến biến mất khỏi ô nhập và khung «Chèn biến»; mẫu mới không nhận được biến này. Mẫu cũ và giá trị đã nhập vẫn giữ nguyên.`
-              : `Bật lại biến «${v.label}»? Biến hiện lại ở ô nhập hợp đồng và khung «Chèn biến».`,
+              ? `Ngừng dùng biến "${v.label}"? Biến biến mất khỏi ô nhập và khung "Chèn biến"; mẫu mới không nhận được biến này. Mẫu cũ và giá trị đã nhập vẫn giữ nguyên.`
+              : `Bật lại biến "${v.label}"? Biến hiện lại ở ô nhập hợp đồng và khung "Chèn biến".`,
             confirmLabel: stopping ? 'Ngừng dùng' : 'Bật lại',
           })
           if (ok) update.mutate({ id: v.id, payload: { is_active: !v.is_active } })
@@ -81,8 +81,8 @@ export function LaborContractVariablesPage() {
           const ok = await confirm({
             title: hiding ? 'Ẩn biến khỏi danh sách' : 'Hiện lại biến',
             message: hiding
-              ? `Ẩn biến «${v.label}» khỏi khung «Chèn biến»? Biến vẫn dùng được trong mẫu.`
-              : `Hiện lại biến «${v.label}» ở khung «Chèn biến»?`,
+              ? `Ẩn biến "${v.label}" khỏi khung "Chèn biến"? Biến vẫn dùng được trong mẫu.`
+              : `Hiện lại biến "${v.label}" ở khung "Chèn biến"?`,
             confirmLabel: hiding ? 'Ẩn' : 'Hiện',
           })
           if (ok) update.mutate({ id: v.id, payload: { is_hidden: hiding } })
@@ -90,7 +90,7 @@ export function LaborContractVariablesPage() {
         onDelete: async (v) => {
           const ok = await confirm({
             title: 'Xóa biến',
-            message: `Xóa biến «${v.label}»? Biến đang dùng trong mẫu hoặc đã có hợp đồng nhập giá trị sẽ không xóa được, khi đó hãy chọn «Ngừng dùng».`,
+            message: `Xóa biến "${v.label}"? Biến đang dùng trong mẫu hoặc đã có hợp đồng nhập giá trị sẽ không xóa được, khi đó hãy chọn "Ngừng dùng".`,
             confirmLabel: 'Xóa',
           })
           //  Lỗi 409 (đang dùng) đã được http-client toast đúng câu của backend (số mẫu / hợp đồng).
@@ -131,7 +131,7 @@ export function LaborContractVariablesPage() {
           <>
             Gõ biến vào tệp Word đúng dạng <code>{'{{ ten_bien }}'}</code>. Biến hệ thống lấy giá trị từ hồ sơ; biến
             tùy chỉnh nhập tay theo từng hợp đồng.
-            {!canManage && ' Chỉ người có phạm vi «tất cả pháp nhân» mới thêm, sửa, xóa được biến.'}
+            {!canManage && ' Chỉ người có phạm vi "tất cả pháp nhân" mới thêm, sửa, xóa được biến.'}
           </>
         }
         actions={
@@ -152,7 +152,7 @@ export function LaborContractVariablesPage() {
           isLoading={isLoading}
           isError={isError}
           emptyMessage={
-            isFiltering ? 'Không có biến nào khớp bộ lọc.' : 'Chưa có biến tùy chỉnh. Bấm «Thêm biến».'
+            isFiltering ? 'Không có biến nào khớp bộ lọc.' : 'Chưa có biến tùy chỉnh. Bấm "Thêm biến".'
           }
           storageKey="hr.labor-contract-variables"
           pagination={{

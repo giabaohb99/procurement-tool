@@ -57,7 +57,7 @@ export function DocumentScopeRow({ scope, onDelete }: DocumentScopeRowProps) {
           title="Gỡ dòng phạm vi"
           destructive
           confirmTitle="Gỡ dòng phạm vi này?"
-          confirmDescription="Người thuộc dòng này sẽ không còn thấy văn bản trong mục «áp dụng cho tôi»."
+          confirmDescription='Người thuộc dòng này sẽ không còn thấy văn bản trong mục "áp dụng cho tôi".'
           confirmLabel="Gỡ"
           onConfirm={() => onDelete(scope.id)}
         />

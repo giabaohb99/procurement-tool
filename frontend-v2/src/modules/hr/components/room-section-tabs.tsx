@@ -12,9 +12,9 @@ import { LIST_SECTION_TABS_STICKY } from '../utils/list-sticky'
  * Khai ba mục menu rời cho một việc dùng vài lần một tuần là chiếm chỗ của
  * những thứ mở hằng ngày.
  *
- * ⚠️ Tab «Danh mục phòng» hỏi quyền **`write`**, không phải `read`: khai phòng
+ * ⚠️ Tab "Danh mục phòng" hỏi quyền **`write`**, không phải `read`: khai phòng
  * là việc quản trị. Hỏi `read` thì mọi người đều thấy tab rồi bấm vào ăn 403 —
- * cùng luật với tab «Thiết lập» của Nghỉ phép.
+ * cùng luật với tab "Thiết lập" của Nghỉ phép.
  */
 
 interface SectionTab {
@@ -114,7 +114,7 @@ export function RoomSectionTabs({ sticky = false }: RoomSectionTabsProps) {
             //  một dải chuyển màn.
             //
             //  `whitespace-nowrap` bắt buộc khi đã `flex-1` (cỡ gốc bằng 0):
-            //  thiếu nó thì «Danh mục phòng» gãy làm hai dòng.
+            //  thiếu nó thì "Danh mục phòng" gãy làm hai dòng.
             className={cn(
               'rounded-md px-2 py-1.5 text-center text-xs font-medium whitespace-nowrap transition-colors max-md:flex-1 md:px-3 md:text-sm',
               active

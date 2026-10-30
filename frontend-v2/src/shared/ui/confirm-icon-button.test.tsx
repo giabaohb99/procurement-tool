@@ -5,10 +5,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { ConfirmIconButton } from './confirm-icon-button'
 
 describe('ConfirmIconButton', () => {
-  //  Lỗi người dùng chỉ ra 25/08/2026: thẻ «Quyền truy cập» nằm TRONG thẻ
+  //  Lỗi người dùng chỉ ra 25/08/2026: thẻ "Quyền truy cập" nằm TRONG thẻ
   //  `<form>` thông tin văn bản, mà `<button>` không ghi type thì mặc định là
   //  submit. Bấm biểu tượng thu hồi, hộp xác nhận mới vừa hiện ra thôi mà toast
-  //  «Cập nhật văn bản» đã nhảy — form đã bị gửi đi trước cả khi người dùng
+  //  "Cập nhật văn bản" đã nhảy — form đã bị gửi đi trước cả khi người dùng
   //  đồng ý thu hồi.
   it('nằm trong form mà bấm thì KHÔNG gửi form, chỉ mở hộp xác nhận', () => {
     const submitForm = vi.fn((event: { preventDefault: () => void }) => event.preventDefault())

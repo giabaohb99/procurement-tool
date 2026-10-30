@@ -149,8 +149,8 @@ function ApprovalFlowListContent() {
         header: 'Áp khi',
         width: 300,
         cell: (row) => {
-          //  Chuỗi «[]» cũng là KHÔNG có điều kiện (bộ dựng lưu vậy khi xóa hết dòng)
-          //  — trước đây nó in nguyên «[]» ra bảng.
+          //  Chuỗi "[]" cũng là KHÔNG có điều kiện (bộ dựng lưu vậy khi xóa hết dòng)
+          //  — trước đây nó in nguyên "[]" ra bảng.
           const raw = (row.condition || '').trim()
           if (!raw || raw === '[]') return <span className="text-muted-foreground">Mọi phiếu</span>
 
@@ -172,7 +172,7 @@ function ApprovalFlowListContent() {
         cell: (row) => <span className="tabular-nums">{row.node_count}</span>,
       },
       {
-        //  bao-CR-579: trả lời «luồng nào đang chạy». Sửa luồng chỉ đổi phiếu gửi
+        //  bao-CR-579: trả lời "luồng nào đang chạy". Sửa luồng chỉ đổi phiếu gửi
         //  SAU; số này là những phiếu giữ nguyên bản cũ tới khi xong.
         key: 'running_count',
         header: 'Đang chạy',

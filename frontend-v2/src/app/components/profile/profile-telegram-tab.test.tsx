@@ -7,7 +7,7 @@ import type { TelegramLinksResult } from '@/modules/system/api/agent-hub-api'
 import { ProfileTelegramTab } from './profile-telegram-tab'
 
 /**
- * Tab «Telegram» ở Trang cá nhân (ai-CR-038).
+ * Tab "Telegram" ở Trang cá nhân (ai-CR-038).
  *
  * Chỗ dễ lủng: cửa gọi phải là `/api/agent-hub/links*` (tự phục vụ, chỉ đòi đăng nhập), và mã
  * một lần phải hiện kèm lệnh chép sẵn — người dùng gõ nhầm lệnh là bot im lặng (chat lạ bị lờ).

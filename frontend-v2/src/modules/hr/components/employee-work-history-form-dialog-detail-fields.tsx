@@ -12,12 +12,12 @@ interface EmployeeWorkHistoryDetailFieldsProps {
   companies: LookupItem[]
   departments: LookupItem[]
   positions: LookupItem[]
-  /** Nút «+ Thêm quyết định» (mục 3, 03/10/2026) — Số QĐ bắt buộc, thêm dấu `*`. */
+  /** Nút "+ Thêm quyết định" (mục 3, 03/10/2026) — Số QĐ bắt buộc, thêm dấu `*`. */
   requireDecisionNo?: boolean
 }
 
 /**
- * Phần "chi tiết" của hộp thêm/sửa «Quá trình công tác» — Pháp nhân / Phòng
+ * Phần "chi tiết" của hộp thêm/sửa "Quá trình công tác" — Pháp nhân / Phòng
  * ban / Chức vụ, Số QĐ / Ngày ký QĐ, Ghi chú. Tách khỏi
  * `employee-work-history-form-dialog-fields.tsx` để tệp đó giữ dưới ~200 dòng
  * (CLAUDE.md §"File Size Management"). Thuần trình bày.

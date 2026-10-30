@@ -55,7 +55,7 @@ def _ghi_ly_do_chan(db, req, reason: str, actor_user_id: int) -> bool:
     còn `note` để dành cho chữ của người TẠO phiếu. Seed nào nhét lý do vào
     `note` là vừa sai chỗ, vừa làm màn chi tiết không có gì để hiện.
 
-    Chạy lại được: đã có dòng mang dấu «— Lý do:» thì bỏ qua.
+    Chạy lại được: đã có dòng mang dấu "— Lý do:" thì bỏ qua.
     """
     action, prefix = STOP_ACTIONS.get(req.status, ("", ""))
     if not action or not reason:

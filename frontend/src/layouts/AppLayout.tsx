@@ -237,7 +237,7 @@ const NAV_GROUPS: NavGroup[] = [
         entity: "unit",
         manage: true,
       },
-      // bao-CR-502 — «Hóa chất theo văn bản» đã dời vào thẻ «Cấu hình» của màn Tra cứu thị trường
+      // bao-CR-502 — "Hóa chất theo văn bản" đã dời vào thẻ "Cấu hình" của màn Tra cứu thị trường
       // (như bản v2, bao-CR-501). Đường /customs-regulations vẫn mở được, chỉ bỏ khỏi menu.
       {
         to: "/item-groups",
@@ -489,8 +489,8 @@ export default function AppLayout() {
   const currentGroup = NAV_GROUPS.find((g) =>
     g.items.some((n) => n.to === current?.to),
   );
-  //  06/10/2026 — breadcrumb cấp ba = mục con đang sáng ở menu trái (vd «Mua hàng / Tra cứu thị
-  //  trường / Tra cứu hóa chất»), khớp bản v2. Chỉ xét mục con được vẽ, như `NavParent`.
+  //  06/10/2026 — breadcrumb cấp ba = mục con đang sáng ở menu trái (vd "Mua hàng / Tra cứu thị
+  //  trường / Tra cứu hóa chất"), khớp bản v2. Chỉ xét mục con được vẽ, như `NavParent`.
   const currentChild = current?.children
     ?.filter((c) => !c.visible || c.visible(can))
     .find((c) => isNavChildActive(c, current.to, loc.pathname));

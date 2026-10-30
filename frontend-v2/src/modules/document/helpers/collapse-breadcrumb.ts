@@ -6,7 +6,7 @@ const MAX_VISIBLE = 4
 export interface CollapsedBreadcrumb {
   /** Đoạn ĐẦU hiện nguyên (gốc pháp nhân) — rỗng khi không cần gập. */
   head: FolderBreadcrumbItem[]
-  /** Đoạn GIỮA bị gập vào menu «…» — rỗng khi không cần gập. */
+  /** Đoạn GIỮA bị gập vào menu "…" — rỗng khi không cần gập. */
   collapsed: FolderBreadcrumbItem[]
   /** Đoạn CUỐI hiện nguyên, LUÔN gồm ít nhất chính thư mục đang xem. */
   tail: FolderBreadcrumbItem[]
@@ -14,13 +14,13 @@ export interface CollapsedBreadcrumb {
 
 /**
  * Quyết định đoạn nào hiện/gập của breadcrumb khung nội dung (đặc tả §4,
- * duoc-CR-476: "long paths collapse middle segments into «…» dropdown") — hàm
+ * duoc-CR-476: "long paths collapse middle segments into "…" dropdown") — hàm
  * THUẦN, tách khỏi `folder-breadcrumb.tsx` để test không cần dựng DOM.
  *
  * Đường ngắn (≤ {@link MAX_VISIBLE} đoạn) hiện NGUYÊN VẸN, không gập gì cả.
  * Đường dài giữ lại: gốc pháp nhân (đầu) + cha trực tiếp và chính nó (cuối) —
  * hai đầu mút là chỗ người dùng cần bấm nhất (về gốc / lên một cấp), phần giữa
- * gập vào «…».
+ * gập vào "…".
  */
 export function collapseBreadcrumb(
   crumbs: readonly FolderBreadcrumbItem[],

@@ -1,5 +1,5 @@
 /**
- * XEM TRƯỚC LUỒNG DUYỆT — thẻ «Người duyệt dự kiến» (phase 01, duoc-CR-473).
+ * XEM TRƯỚC LUỒNG DUYỆT — thẻ "Người duyệt dự kiến" (phase 01, duoc-CR-473).
  *
  * Khớp hình dạng `preview_service.preview_flow` bên backend
  * (`POST /api/documents/approval-preview`). CHỈ ĐỌC: gọi API này không mở
@@ -24,7 +24,7 @@ export interface ApprovalPreviewApprover {
 export interface ApprovalPreviewStep {
   seq: number
   name: string
-  /** Câu QUY TẮC khai trong luồng, vd «Theo vai trò: Trưởng phòng Nhân sự». */
+  /** Câu QUY TẮC khai trong luồng, vd "Theo vai trò: Trưởng phòng Nhân sự". */
   rule_label: string
   approvers: ApprovalPreviewApprover[]
   /** Khác rỗng = chặng KHÔNG có ai duyệt và phiếu sẽ DỪNG ở đó nếu gửi ngay. */

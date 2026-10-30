@@ -69,7 +69,7 @@ describe('toDraftLabelValues', () => {
     )
   })
 
-  it('treats null, undefined and empty string as «chưa đặt»', () => {
+  it('treats null, undefined and empty string as "chưa đặt"', () => {
     const single = field(WORK_FIELD_TYPE.SINGLE)
 
     expect(toDraftLabelValues(single, null, [])).toEqual([])

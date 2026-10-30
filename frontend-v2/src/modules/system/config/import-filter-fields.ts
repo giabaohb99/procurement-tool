@@ -1,7 +1,7 @@
 import type { FilterFieldDefinition } from '@/shared/conditional-filter'
 
 /**
- * Trường của BỘ LỌC NÂNG CAO («Bộ lọc») màn Quản lý nhập dữ liệu.
+ * Trường của BỘ LỌC NÂNG CAO ("Bộ lọc") màn Quản lý nhập dữ liệu.
  *
  * ⚠️ `name` phải nằm trong `import_tool/service._FILTER_OPS` — ngoài whitelist đó
  * backend im lặng bỏ qua, giao diện trông như bộ lọc hỏng.

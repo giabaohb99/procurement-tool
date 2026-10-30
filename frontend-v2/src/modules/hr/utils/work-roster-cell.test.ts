@@ -28,7 +28,7 @@ const cell = (over: Partial<WorkRosterCell> = {}): WorkRosterCell => ({
 })
 
 describe('formatHour', () => {
-  //  05/10/2026: «08–17» bị chê — giờ luôn hiện đủ HH:MM.
+  //  05/10/2026: "08–17" bị chê — giờ luôn hiện đủ HH:MM.
   it('always renders full HH:MM and never breaks on bad input', () => {
     expect(formatHour('08:00')).toBe('08:00')
     expect(formatHour('8:30')).toBe('08:30')
@@ -109,7 +109,7 @@ describe('describeRosterCell', () => {
 
   it('keeps working in the morning when only the afternoon is off, with a label distinct from a morning-only schedule', () => {
     const v = describeRosterCell(cell({ leave: leave({ morning: false, afternoon: true }) }))
-    //  Lỗi 05/10/2026: ô ghi «Sáng» trùng chữ với ngày lịch chỉ làm buổi sáng → đọc ngược nghĩa.
+    //  Lỗi 05/10/2026: ô ghi "Sáng" trùng chữ với ngày lịch chỉ làm buổi sáng → đọc ngược nghĩa.
     expect(v).toMatchObject({ state: 'partial', shortLabel: 'Nghỉ chiều', afternoonOff: true })
     expect(v.shortLabel).not.toBe(describeRosterCell(cell({ work_kind: 3 })).shortLabel)
   })

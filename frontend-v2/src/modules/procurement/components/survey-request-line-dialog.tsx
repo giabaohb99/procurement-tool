@@ -245,7 +245,7 @@ export function SurveyRequestLineDialog({
             <>
               <LineField label="Nhân sự phụ trách">
                 {canAssignNstm ? (
-                  //  «Bỏ chọn» cũ nay là nút xóa của ô (trả về `''`), chỉ hiện khi đang có người.
+                  //  "Bỏ chọn" cũ nay là nút xóa của ô (trả về `''`), chỉ hiện khi đang có người.
                   <SearchSelect
                     searchInTrigger
                     clearable
@@ -334,7 +334,7 @@ function CatalogSelect({
   options: { value: string; label: string }[]
   onChange: (value: string) => void
 }) {
-  //  Mục «-- Phân loại --» / «-- ĐVT --» cũ (chọn để bỏ trống) nay là nút xóa của ô,
+  //  Mục "-- Phân loại --" / "-- ĐVT --" cũ (chọn để bỏ trống) nay là nút xóa của ô,
   //  cũng trả `''`.
   return (
     <SearchSelect

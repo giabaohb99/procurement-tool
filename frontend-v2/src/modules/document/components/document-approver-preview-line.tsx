@@ -15,9 +15,9 @@ interface DocumentApproverPreviewLineProps {
 const CAVEAT = 'Dự kiến theo thông tin hiện tại — người duyệt thực tế chốt lúc gửi duyệt.'
 
 /**
- * «Người duyệt dự kiến» dạng MỘT DÒNG trong form tạo văn bản (chốt 24/09/2026 —
+ * "Người duyệt dự kiến" dạng MỘT DÒNG trong form tạo văn bản (chốt 24/09/2026 —
  * thay thẻ ghim ở cột phải, cột đó chiếm chỗ của form suốt ba bước). Dòng đọc
- * được ngay: «① Nguyễn A → ② Trần B, Lê C». Chặng chưa tìm ra người thì đỏ,
+ * được ngay: "① Nguyễn A → ② Trần B, Lê C". Chặng chưa tìm ra người thì đỏ,
  * chặng còn chờ nhập ô nào đó thì mờ — đủ để người lập biết có vấn đề; chi
  * tiết từng chặng xem ở tab Phê duyệt (`DocumentApproverPreviewCard`).
  */

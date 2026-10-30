@@ -57,15 +57,15 @@ describe('bộ mã số của hồ sơ nhân sự', () => {
 })
 
 describe('giới tính của hồ sơ', () => {
-  it('có đủ bốn mục, «Khác» là mã 3 — khớp `employee/constants.GENDER_*`', () => {
+  it('có đủ bốn mục, "Khác" là mã 3 — khớp `employee/constants.GENDER_*`', () => {
     expect(EMPLOYEE_GENDER_OPTIONS.map((o) => o.value)).toEqual([0, 1, 2, 3])
     expect(employeeGenderLabel(3)).toBe('Khác')
   })
 
-  it('mã 0 vẫn là «Chưa khai», KHÔNG phải «Khác»', () => {
+  it('mã 0 vẫn là "Chưa khai", KHÔNG phải "Khác"', () => {
     // Gộp hai thứ này là mất luôn khả năng phân biệt "chưa ai nhập" với một
     // giới tính đã khai — mà nghỉ phép đối xử với hai ca đó ngược nhau: chưa
-    // khai thì không bị chặn loại nghỉ theo giới, «Khác» thì bị chặn.
+    // khai thì không bị chặn loại nghỉ theo giới, "Khác" thì bị chặn.
     expect(employeeGenderLabel(0)).toBe('Chưa khai')
     expect(employeeGenderLabel(null)).toBe('Chưa khai')
   })
@@ -94,25 +94,25 @@ describe('codeLabel', () => {
 })
 
 describe('bộ mã QUAN HỆ nhân thân', () => {
-  it('có đủ 15 mục kể cả «chưa khai» và «Khác»', () => {
+  it('có đủ 15 mục kể cả "chưa khai" và "Khác"', () => {
     expect(RELATION_OPTIONS).toHaveLength(15)
   })
 
-  it('đánh số 0..13 liền mạch rồi NHẢY sang 99 cho «Khác»', () => {
-    // Nhảy số là CỐ Ý: chừa chỗ cho quan hệ thêm về sau, «Khác» luôn cuối bảng.
+  it('đánh số 0..13 liền mạch rồi NHẢY sang 99 cho "Khác"', () => {
+    // Nhảy số là CỐ Ý: chừa chỗ cho quan hệ thêm về sau, "Khác" luôn cuối bảng.
     const values = RELATION_OPTIONS.map((o) => o.value)
     expect(values.slice(0, 14)).toEqual([...Array(14).keys()])
     expect(values.at(-1)).toBe(99)
   })
 
-  it('để nhãn mã 0 rỗng — «chưa khai» không phải một lựa chọn', () => {
+  it('để nhãn mã 0 rỗng — "chưa khai" không phải một lựa chọn', () => {
     expect(RELATION_OPTIONS[0]).toEqual({ value: 0, label: '' })
   })
 
   it('phủ đủ cả hai giới, vì danh sách DÙNG CHUNG không lọc theo giới tính', () => {
     const labels = RELATION_OPTIONS.map((o) => o.label)
     for (const label of ['Cha', 'Mẹ', 'Vợ', 'Chồng', 'Con trai', 'Con gái', 'Ông', 'Bà']) {
-      expect(labels, `thiếu «${label}»`).toContain(label)
+      expect(labels, `thiếu "${label}"`).toContain(label)
     }
   })
 
@@ -125,9 +125,9 @@ describe('bộ mã QUAN HỆ nhân thân', () => {
   })
 })
 
-describe('luật hiện ô «Số con»', () => {
+describe('luật hiện ô "Số con"', () => {
   it('MARITAL_MARRIED trỏ đúng mục Có gia đình trong bảng nhãn', () => {
-    // Lệch hằng số này thì ô Số con hiện với «Độc thân» — im lặng và sai.
+    // Lệch hằng số này thì ô Số con hiện với "Độc thân" — im lặng và sai.
     expect(codeLabel(MARITAL_STATUS_OPTIONS, MARITAL_MARRIED)).toBe('Có gia đình')
   })
 

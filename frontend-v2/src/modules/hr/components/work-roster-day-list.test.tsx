@@ -64,7 +64,7 @@ describe('WorkRosterDayList', () => {
     expect(within(screen.getByRole('region', { name: 'Nghỉ' })).getByText('An')).toBeInTheDocument()
   })
 
-  //  Lễ RIÊNG của một pháp nhân: biểu ngữ (chỉ lễ chung) không được nói «Ngày lễ», nhưng dòng của người đó phải nói.
+  //  Lễ RIÊNG của một pháp nhân: biểu ngữ (chỉ lễ chung) không được nói "Ngày lễ", nhưng dòng của người đó phải nói.
   it('shows a company-only holiday on that employee row and not in the shared banner', () => {
     renderList(
       [

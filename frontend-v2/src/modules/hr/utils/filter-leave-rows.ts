@@ -7,7 +7,7 @@ import type { LeaveRequest } from '../types/leave'
  * trang: hai tab hộp việc duyệt và chế độ NGÀY của Lịch nghỉ. Hỏi lại backend
  * cho một bộ lọc ở đó là thừa một vòng mạng để lấy đúng thứ vừa có trong bộ nhớ.
  *
- * ⚠️ Màn nào CÓ phân trang (tab «Đơn của tôi») thì phải lọc ở BACKEND, không
+ * ⚠️ Màn nào CÓ phân trang (tab "Đơn của tôi") thì phải lọc ở BACKEND, không
  * dùng mấy hàm này: lọc trên trang hiện tại nghĩa là gõ một cái tên rồi chỉ tìm
  * trong hai mươi dòng đang mở, còn người đó nằm ở trang ba thì coi như không có.
  */

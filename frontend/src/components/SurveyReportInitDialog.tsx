@@ -1,4 +1,4 @@
-// duoc-CR-614 (09/10/2026) — bản v1 của hộp chọn mẫu «Khởi tạo báo cáo mẫu» (v2:
+// duoc-CR-614 (09/10/2026) — bản v1 của hộp chọn mẫu "Khởi tạo báo cáo mẫu" (v2:
 // `frontend-v2/.../survey-report/survey-report-init-dialog.tsx`). Danh sách mẫu lấy từ
 // `GET .../templates`: mẫu chung hồ sơ nhập khẩu (5 giai đoạn) và tiến độ kế hoạch công việc
 // nhập khẩu (21 việc, một giai đoạn — theo file Excel của Phòng Thu mua).

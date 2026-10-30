@@ -1,7 +1,7 @@
 import { Badge } from '@/shared/ui/badge'
 
 /**
- * Huy hiệu «Theo chức vụ: <tên>» (duoc-CR-653) — đánh dấu vai trò do HỆ THỐNG tự cấp theo chức vụ,
+ * Huy hiệu "Theo chức vụ: <tên>" (duoc-CR-653) — đánh dấu vai trò do HỆ THỐNG tự cấp theo chức vụ,
  * để quản trị biết dòng này sẽ đổi theo chức vụ chứ không phải do ai gán tay.
  */
 export function PositionGrantBadge({ positionName }: { positionName: string }) {

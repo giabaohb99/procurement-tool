@@ -37,7 +37,7 @@ export interface PendingFolderDrop {
 export function useFolderDragMove(rows: DocFolderTreeNode[] | undefined) {
   const [dragSourceId, setDragSourceId] = useState<number | null>(null)
   //  Thả vào một nhánh có văn bản (kể cả văn bản mình không xem được) phải hỏi
-  //  lại trước — cùng luật với «Chuyển tới…» (`folder-move-dialog.tsx`), chỉ
+  //  lại trước — cùng luật với "Chuyển tới…" (`folder-move-dialog.tsx`), chỉ
   //  khác đường vào là kéo thả thay vì mở hộp thoại chọn cây.
   const [pendingDrop, setPendingDrop] = useState<PendingFolderDrop | null>(null)
   const moveFolder = useMoveDocFolder()
@@ -61,7 +61,7 @@ export function useFolderDragMove(rows: DocFolderTreeNode[] | undefined) {
   function canDrag(node: TreeNode<DocFolderTreeNode>) {
     return Boolean(
       //  Thư mục pháp nhân kéo được như mọi thư mục (mở 24/09/2026); riêng
-      //  nhóm «Công ty» luôn đứng ở gốc — backend cũng chặn chuyển nó.
+      //  nhóm "Công ty" luôn đứng ở gốc — backend cũng chặn chuyển nó.
       node.data &&
       node.data.kind !== FOLDER_KIND.companyGroup &&
       node.data.my_level >= FOLDER_ACCESS_LEVEL.manage,
@@ -139,7 +139,7 @@ export function useFolderDragMove(rows: DocFolderTreeNode[] | undefined) {
   }
 
   /**
-   * Nút GỐC («THƯ MỤC» ở đầu cây) nhận thả = đưa thư mục ra GỐC cây (lỗi báo
+   * Nút GỐC ("THƯ MỤC" ở đầu cây) nhận thả = đưa thư mục ra GỐC cây (lỗi báo
    * 24/09/2026: kéo thư mục con ra gốc không có chỗ nào để thả). Nhận cả lượt
    * kéo TRONG cây (`dragSource`) lẫn lượt kéo từ khung phải (payload). Thư mục
    * đã nằm ở gốc thì không nhận — thả vào là không đổi gì.
@@ -167,7 +167,7 @@ export function useFolderDragMove(rows: DocFolderTreeNode[] | undefined) {
     }
   }
 
-  /** Mọi thư mục THẬT (không phải dòng tạm «thư mục mới») đều nhận payload ngoài — quyền thật gác ở backend, lỗi tự toast. */
+  /** Mọi thư mục THẬT (không phải dòng tạm "thư mục mới") đều nhận payload ngoài — quyền thật gác ở backend, lỗi tự toast. */
   function acceptsExternalDrop(node: TreeNode<DocFolderTreeNode>): boolean {
     return Boolean(node.data) && node.id !== NEW_FOLDER_TEMP_ID
   }
@@ -176,7 +176,7 @@ export function useFolderDragMove(rows: DocFolderTreeNode[] | undefined) {
    * Thả văn bản/thư mục kéo từ khung nội dung bên phải vào một nút cây — đúng
    * hợp đồng kéo thả §A/§B (`phase-10-giao-dien-kieu-drive-va-vscode.md`).
    * Văn bản → CHUYỂN sang đích (đổi 24/09/2026: mặc định cũ là THÊM, người
-   * dùng thấy văn bản «nhân bản» ra hai chỗ): gắn vào đích rồi gỡ khỏi
+   * dùng thấy văn bản "nhân bản" ra hai chỗ): gắn vào đích rồi gỡ khỏi
    * `sourceFolderId` SAU KHI gắn thành công, không gỡ trước — thất bại giữa
    * chừng thì văn bản không bị treo ngoài mọi thư mục. Giữ Alt/Option lúc thả
    * = THÊM một chỗ nữa (giữ cả thư mục cũ). Thư mục →

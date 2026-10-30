@@ -7,7 +7,7 @@ import type { Employee } from '@/modules/hr/types/employee'
 import { ProfileContactCard } from './profile-contact-card'
 
 /**
- * Thẻ «Liên hệ» + hộp thoại tự sửa ở Trang cá nhân (bao-CR-508).
+ * Thẻ "Liên hệ" + hộp thoại tự sửa ở Trang cá nhân (bao-CR-508).
  *
  * Canh ba thứ dễ vỡ âm thầm: thân PATCH mang khóa lạ (backend `extra="forbid"`
  * → 422 cả lần lưu), bấm đúp ra hai request + hai dòng nhật ký, và chuỗi quá

@@ -17,7 +17,7 @@ interface RoomPickerFieldProps {
    * Phòng đã được xác định từ trước (bấm ô trống trên LỊCH). Lúc đó **không bày
    * bộ chọn ra nữa**: người dùng vừa chỉ tay vào đúng phòng đúng giờ, dí thêm
    * hai chục phòng khác vào mặt họ là hỏi lại một câu đã trả lời rồi. Vẫn đổi
-   * được, nhưng phải bấm «Đổi phòng» — một chủ ý rõ ràng.
+   * được, nhưng phải bấm "Đổi phòng" — một chủ ý rõ ràng.
    */
   lockedFromCalendar?: boolean
 }
@@ -48,10 +48,10 @@ export function RoomPickerField({
   return (
     <>
       {room ? (
-        //  ⚠️ `flex-wrap` + `max-sm:basis-full`: dưới 640px nút «Đổi phòng» XUỐNG
+        //  ⚠️ `flex-wrap` + `max-sm:basis-full`: dưới 640px nút "Đổi phòng" XUỐNG
         //  HÀNG RIÊNG và trải hết bề ngang. Xếp một hàng ở khổ đó thì khối chữ
-        //  chỉ còn 160px — đo được 09/09/2026 — đủ hẹp để «Tầng 3 · 8 chỗ · TV
-        //  55 inch, bảng trắng» gãy làm hai dòng và tên phòng cụt.
+        //  chỉ còn 160px — đo được 09/09/2026 — đủ hẹp để "Tầng 3 · 8 chỗ · TV
+        //  55 inch, bảng trắng" gãy làm hai dòng và tên phòng cụt.
         <div
           className={cn(
             'flex flex-wrap items-center gap-3 rounded-lg border p-3',
@@ -67,7 +67,7 @@ export function RoomPickerField({
             <div className="min-w-0 flex-1">
               {/*  ⚠️ `truncate` phải đặt lên chính TÊN PHÒNG, đừng đặt lên hàng
                    flex bọc ngoài: ở đó nó thành `overflow-hidden` cắt cụt cả huy
-                   hiệu bên cạnh — «chọn từ lịch» hiện ra đúng chữ «chọn từ»
+                   hiệu bên cạnh — "chọn từ lịch" hiện ra đúng chữ "chọn từ"
                    (khách báo 09/09/2026). */}
               <p className="flex min-w-0 items-center gap-2 font-medium">
                 <span className="truncate">{room.name}</span>
@@ -123,7 +123,7 @@ export function RoomPickerField({
           </Button>
         </div>
       ) : (
-        //  Chưa có phòng (vào từ nút «Đặt phòng»): một nút mở bộ chọn, không
+        //  Chưa có phòng (vào từ nút "Đặt phòng"): một nút mở bộ chọn, không
         //  phải một ô select rỗng — nút nói rõ bấm vào sẽ được gì.
         <Button
           type="button"
@@ -145,7 +145,7 @@ export function RoomPickerField({
         </Button>
       )}
 
-      {/*  Vào từ lịch thì bộ chọn chỉ mở khi người dùng CHỦ ĐỘNG bấm «Đổi phòng» —
+      {/*  Vào từ lịch thì bộ chọn chỉ mở khi người dùng CHỦ ĐỘNG bấm "Đổi phòng" —
            xem `lockedFromCalendar`. Ở đây cờ đó không chặn gì thêm, nó chỉ có
            nghĩa là ta KHÔNG tự bung hộp chọn lúc mở trang. */}
       <RoomPickerDialog

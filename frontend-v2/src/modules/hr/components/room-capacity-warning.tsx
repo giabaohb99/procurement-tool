@@ -3,7 +3,7 @@ import { AlertTriangle } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 
 interface RoomCapacityWarningProps {
-  /** Tên phòng đang chọn — nói đích danh, «phòng này» thì phải nhớ lại là phòng nào. */
+  /** Tên phòng đang chọn — nói đích danh, "phòng này" thì phải nhớ lại là phòng nào. */
   roomName: string
   capacity: number
   className?: string
@@ -16,8 +16,8 @@ interface RoomCapacityWarningProps {
  * - Màn rộng: nằm ở cột phải (`RoomBookingSidePanel`) — cột đó dính khi cuộn nên
  *   cảnh báo còn trong tầm mắt lúc người dùng đang gõ ở dưới.
  * - Khổ hẹp: cột phải bị ẩn (nó chỉ lặp lại thứ vừa nhập, xem
- *   `room-booking-detail-page`), nên câu này phải mọc lại ngay dưới ô «Số người
- *   dự» — chỗ duy nhất sửa được lỗi đó.
+ *   `room-booking-detail-page`), nên câu này phải mọc lại ngay dưới ô "Số người
+ *   dự" — chỗ duy nhất sửa được lỗi đó.
  *
  * ⚠️ Tách thành một tệp chứ không chép câu chữ sang hai chỗ: đây là câu báo
  * trước một cú CHẶN THẬT ở backend, hai bản chép sẽ lệch nhau vào ngày ai đó

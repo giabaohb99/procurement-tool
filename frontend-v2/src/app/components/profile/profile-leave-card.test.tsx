@@ -13,7 +13,7 @@ vi.mock('@/core/authorization/use-permission', () => ({
   }),
 }))
 
-//  Theo dõi hook đọc quỹ: điều quan trọng nhất của bài này không phải «vẽ ra gì»
+//  Theo dõi hook đọc quỹ: điều quan trọng nhất của bài này không phải "vẽ ra gì"
 //  mà là **có gọi API hay không** khi thiếu khóa.
 const useLeaveBalances = vi.fn()
 vi.mock('@/modules/hr/hooks/use-leave', () => ({

@@ -2,7 +2,7 @@
  * Bốn năm gần nhất — đủ để tra sổ cũ mà không phải gõ tay.
  *
  * Dùng chung cho MỌI ô chọn năm của một sổ văn bản: `BookCounterCard` (tab
- * «Thông tin sổ») và `BookDocumentsTab` (tab «Văn bản trong sổ», duoc-CR-474) phải
+ * "Thông tin sổ") và `BookDocumentsTab` (tab "Văn bản trong sổ", duoc-CR-474) phải
  * liệt kê y hệt nhau — hai tab của CÙNG một sổ mà hai danh sách năm khác nhau
  * thì người dùng chọn "Năm 2023" ở tab này mà tab kia không có lựa chọn đó.
  *

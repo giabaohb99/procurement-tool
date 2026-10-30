@@ -31,7 +31,7 @@ export function useWorkActivities(listId: number, filter: ActivityFilter = {}) {
   })
 }
 
-/** Người từng thao tác trên dự án — nguồn cho ô lọc «theo người». */
+/** Người từng thao tác trên dự án — nguồn cho ô lọc "theo người". */
 export function useWorkActivityActors(listId: number) {
   return useQuery({
     queryKey: queryKeys.work.activityActors(listId),

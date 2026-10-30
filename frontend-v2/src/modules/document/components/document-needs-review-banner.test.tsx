@@ -42,8 +42,8 @@ describe('DocumentNeedsReviewBanner', () => {
   })
 
   //  LỖI THẬT (22/08/2026): bản riêng chưa bị đánh dấu vẫn bày nút rà. Người
-  //  dùng gõ lý do, bấm xác nhận, rồi ăn báo đỏ «Văn bản này không có dấu cần rà
-  //  lại» — mà họ không làm gì sai. Nút chỉ có việc khi ĐANG có dấu.
+  //  dùng gõ lý do, bấm xác nhận, rồi ăn báo đỏ "Văn bản này không có dấu cần rà
+  //  lại" — mà họ không làm gì sai. Nút chỉ có việc khi ĐANG có dấu.
   it('bản riêng CHƯA bị đánh dấu thì không bày nút rà', () => {
     render(
       <DocumentNeedsReviewBanner

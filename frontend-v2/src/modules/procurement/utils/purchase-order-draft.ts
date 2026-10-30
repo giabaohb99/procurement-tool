@@ -85,7 +85,7 @@ export function createEmptyPurchaseOrder(
  * Bảng chi phí trên màn hình → dữ liệu gửi lên. bao-CR-453: gửi ba giai đoạn thay cho
  * `amount`/`exchange_rate` cũ.
  *
- * bao-CR-476: tách riêng để thẻ chi phí gửi kèm ĐÚNG bản này lúc bấm «Quyết toán» (lưu trước
+ * bao-CR-476: tách riêng để thẻ chi phí gửi kèm ĐÚNG bản này lúc bấm "Quyết toán" (lưu trước
  * rồi mới chốt). Hai chỗ tự viết hai bản là sớm muộn lệch nhau một ô, và ô lệch đó sẽ bị
  * lưu đè bằng giá trị rỗng ngay trước khi thành công nợ.
  */

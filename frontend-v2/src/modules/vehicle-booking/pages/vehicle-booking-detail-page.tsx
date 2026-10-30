@@ -129,7 +129,7 @@ export function VehicleBookingDetailPage() {
             {/*  Tiến trình xử lý đứng ĐẦU cột phụ: nó trả lời "phiếu đang ở đâu, đã
                 đi qua tay ai". Để nó ở cột chính thì nó cắt đôi mạch *chuyến đi
                 này là gì* (lộ trình → hàng hóa → người yêu cầu).
-                ⚠️ ĐÃ BỎ khung «Luồng duyệt nhiều bước» (đại ca chốt 23/09/2026):
+                ⚠️ ĐÃ BỎ khung "Luồng duyệt nhiều bước" (đại ca chốt 23/09/2026):
                 nó nói lại đúng điều Tiến trình đã nói (chờ duyệt / ai duyệt / lúc
                 nào / lý do từ chối), còn chặng đang chờ ai thì dải tiêu đề đã ghi
                 ("Đang ở chặng 1/1 · …"), nút ký thì đã lên đầu trang.
@@ -149,7 +149,7 @@ export function VehicleBookingDetailPage() {
                 lặp tiêu đề); `messageOnly` vì backend đã ghi câu tự mô tả ("Đã điều
                 phối Xe…", "Yêu cầu chỉnh sửa — Lý do: …"). Nó dài ra theo thời gian
                 nhưng KHÔNG cần chặn chiều cao ở đây: bản thân nó chỉ hiện một số
-                dòng đầu rồi để lại nút «Xem thêm», nên cột phải không phình vô hạn. */}
+                dòng đầu rồi để lại nút "Xem thêm", nên cột phải không phình vô hạn. */}
             <AuditTimeline entity="vehicle_booking" entityId={data.id} messageOnly dense />
           </div>
         </div>

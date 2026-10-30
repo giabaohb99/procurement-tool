@@ -13,7 +13,7 @@ export interface MonthlyReminderRow {
   employeeCode: string
   employeeName: string
   department: string
-  /** Câu mốc: «Sinh nhật 05/10», «Tròn 5 năm làm việc · 03/10», «Thử việc hết hạn 20/10». */
+  /** Câu mốc: "Sinh nhật 05/10", "Tròn 5 năm làm việc · 03/10", "Thử việc hết hạn 20/10". */
   detail: string
   /** `true` = việc gấp (HĐ còn ≤ ngưỡng đỏ / đã quá hạn). */
   urgent: boolean
@@ -60,7 +60,7 @@ function contractRow(c: ContractReminder, probation: boolean): MonthlyReminderRo
 
 /**
  * Ba nhóm để vẽ, đúng thứ tự cố định (việc vui trước, việc phải làm sau). Nhóm `allowed: false`
- * hoặc vắng (máy chủ cũ) = người xem thiếu quyền → BỎ HẲN, không dựng cột «không có ai» (câu đó
+ * hoặc vắng (máy chủ cũ) = người xem thiếu quyền → BỎ HẲN, không dựng cột "không có ai" (câu đó
  * là trấn an sai). HĐ và thử việc gộp một nhóm, sắp theo ngày hết hạn; nhóm gộp chỉ hiện khi CẢ
  * HAI nửa đều được phép đọc (cùng một quyền ở backend, nên thực tế hai nửa luôn cùng cờ).
  */
@@ -144,7 +144,7 @@ export function shiftMonthKey(key: string, delta: number, fallback: Date): strin
   return toMonthKey(new Date(d.getFullYear(), d.getMonth() + delta, 1))
 }
 
-/** Nhãn tháng trên nút chọn: «Tháng 10/2026». */
+/** Nhãn tháng trên nút chọn: "Tháng 10/2026". */
 export function formatMonthKeyLabel(key: string, fallback: Date): string {
   const d = monthKeyToDate(key, fallback)
   return `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`
@@ -155,7 +155,7 @@ export const CONTRACT_LOOKAHEAD_DAYS = 180
 
 /**
  * Tháng đang xem có phần nào nằm QUÁ cửa sổ 180 ngày của nguồn HĐ không — có thì nhóm HĐ của
- * tháng đó có thể thiếu, phải nói ra kẻo «không có ai» thành trấn an sai.
+ * tháng đó có thể thiếu, phải nói ra kẻo "không có ai" thành trấn an sai.
  */
 export function isPastContractLookahead(monthKey: string, today: Date): boolean {
   const start = monthKeyToDate(monthKey, today)

@@ -7,7 +7,7 @@ interface Props {
   buckets: UsageMetricBucket[]
   unit: string
   median: number | null
-  /** Chữ trên vạch trung vị, vd «Trung vị 5». */
+  /** Chữ trên vạch trung vị, vd "Trung vị 5". */
   medianText: string
 }
 

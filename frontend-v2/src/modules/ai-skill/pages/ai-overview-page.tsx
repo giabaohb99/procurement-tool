@@ -58,7 +58,7 @@ export function AiOverviewPage() {
 function OverviewBody({ data, loading }: { data?: AiOverview; loading: boolean }) {
   const titles = useSkillTitles((data?.top_skills ?? []).map((s) => s.skill_id))
   const problems = (data?.denied_7d ?? 0) + (data?.error_7d ?? 0)
-  //  ai-CR-219: thẻ đếm lượt gọi CÔNG CỤ cho khớp bảng «Công cụ dùng nhiều» (calls_7d gồm cả khởi tạo / liệt kê).
+  //  ai-CR-219: thẻ đếm lượt gọi CÔNG CỤ cho khớp bảng "Công cụ dùng nhiều" (calls_7d gồm cả khởi tạo / liệt kê).
   const toolCalls =
     data?.tool_calls_7d !== undefined ? { current: data.tool_calls_7d, previous: data.tool_calls_prev_7d ?? 0 } : null
 
@@ -174,7 +174,7 @@ function OverviewBody({ data, loading }: { data?: AiOverview; loading: boolean }
                     ))}
                   </ul>
                   <Link to={appRoutes.aiSkill.keys} className="text-xs text-primary hover:underline">
-                    Mở Khóa nhân sự để phát khóa mới
+                    Mở Kết nối để phát khóa mới
                   </Link>
                 </div>
               )}

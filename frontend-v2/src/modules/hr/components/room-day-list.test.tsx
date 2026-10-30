@@ -56,7 +56,7 @@ const ROOMS = [
 describe('RoomDayList', () => {
   it('ngày chưa ai đặt gì thì nói bằng MỘT câu, không lặp lại từng phòng', () => {
     //  Bản đầu đổ tất cả vào một danh sách phẳng nên ngày trống ra 21 dòng giống
-    //  hệt nhau cùng nói «Trống cả ngày» — người dùng cuộn hết hai chục dòng để
+    //  hệt nhau cùng nói "Trống cả ngày" — người dùng cuộn hết hai chục dòng để
     //  biết một điều đáng ra nói bằng một câu (khách báo 09/09/2026).
     render(<RoomDayList rooms={ROOMS} bookings={[]} onOpenBooking={vi.fn()} />)
 
@@ -109,7 +109,7 @@ describe('RoomDayList', () => {
   })
 
   it('chỉ bày phiếu ĐANG GIỮ phòng — nháp, hủy, từ chối không chiếm chỗ', () => {
-    //  Cùng luật với lưới và với con số «lượt giữ» trên thanh công cụ. Ba chỗ
+    //  Cùng luật với lưới và với con số "lượt giữ" trên thanh công cụ. Ba chỗ
     //  đếm khác nhau là ba con số khác nhau, và người xem không biết tin cái nào.
     render(
       <RoomDayList
@@ -136,7 +136,7 @@ describe('RoomDayList', () => {
   })
 
   it('phòng chỉ có phiếu KHÔNG giữ chỗ vẫn được tính là còn trống', () => {
-    //  Ngược lại thì phòng đó rơi vào mục «đang có lịch» với một danh sách rỗng —
+    //  Ngược lại thì phòng đó rơi vào mục "đang có lịch" với một danh sách rỗng —
     //  một khối trống trơn không nói được gì.
     render(
       <RoomDayList

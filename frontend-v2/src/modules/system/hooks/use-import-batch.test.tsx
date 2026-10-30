@@ -101,7 +101,7 @@ describe('toast lỗi hoàn tác / ghi thật', () => {
 })
 
 describe('useImportBatch đổi lô', () => {
-  it('đổi id: trạng thái «đang chạy» của lô trước không kích hoạt tải nhật ký lô sau', async () => {
+  it('đổi id: trạng thái "đang chạy" của lô trước không kích hoạt tải nhật ký lô sau', async () => {
     logs.mockResolvedValue({ total: 0, items: [] })
     get.mockImplementation((id: number) =>
       Promise.resolve({ id, status: id === 1 ? 1 : 2 }),

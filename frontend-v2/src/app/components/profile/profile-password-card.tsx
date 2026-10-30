@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from '@/shared/ui/card'
 import { SectionHeading } from '@/shared/ui/section-heading'
 
 /**
- * Mục «Đổi mật khẩu» trong nhóm Bảo mật & hiển thị (P0 doc 21 §6.5). Dùng lại đúng hộp thoại của nút trong thẻ
+ * Mục "Đổi mật khẩu" trong nhóm Bảo mật & hiển thị (P0 doc 21 §6.5). Dùng lại đúng hộp thoại của nút trong thẻ
  * Tài khoản ở mục Thông tin cá nhân — nút cũ giữ nguyên, người quen chỗ cũ vẫn tìm thấy.
  */
 export function ProfilePasswordCard() {

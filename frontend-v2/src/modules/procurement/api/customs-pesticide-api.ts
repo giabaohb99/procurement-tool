@@ -1,4 +1,4 @@
-// Mục «Thuốc BVTV» của Tra cứu thị trường — `/api/customs/pesticides` (khóa `customs_price`).
+// Mục "Thuốc BVTV" của Tra cứu thị trường — `/api/customs/pesticides` (khóa `customs_price`).
 import { apiDelete, apiGet, apiPatch, apiPost, httpClient } from '@/core/api'
 import { downloadFile } from '@/core/api/download-file'
 import type { SuccessEnvelope } from '@/core/api/response-envelope'
@@ -27,14 +27,14 @@ export function fetchCustomsPesticide(id: number) {
   return apiGet<CustomsPesticideDetail>(`${BASE}/${id}`)
 }
 
-/** «Sản phẩm khác cùng công ty» + «Thuốc cùng hoạt chất» — `limit` mỗi khối (mặc định 10, trần 300). */
+/** "Sản phẩm khác cùng công ty" + "Thuốc cùng hoạt chất" — `limit` mỗi khối (mặc định 10, trần 300). */
 export function fetchCustomsPesticideRelated(id: number, limit: number) {
   return apiGet<CustomsPesticideRelated>(`${BASE}/${id}/related`, { params: { limit } })
 }
 
 /**
  * Nạp tệp danh mục (cần `customs_pesticide.write`) — tệp toàn bộ/bản cào gốc THAY cả danh mục
- * (giữ thuốc tự thêm); tệp xuất «Trang hiện tại» chỉ CẬP NHẬT đúng các thuốc có trong tệp, backend
+ * (giữ thuốc tự thêm); tệp xuất "Trang hiện tại" chỉ CẬP NHẬT đúng các thuốc có trong tệp, backend
  * tự nhận ra qua sheet ẩn (`result.mode`: `replace` | `merge`). Trả kèm `message` của phong bì —
  * câu đó đã đúng theo từng `mode`, hộp thoại hiện NGUYÊN câu này, không tự ghép lại (xem
  * `customs-pesticide-import-dialog.tsx`). Dùng `httpClient` trực tiếp vì `apiPost` bóc bỏ

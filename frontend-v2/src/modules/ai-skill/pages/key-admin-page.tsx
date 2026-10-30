@@ -148,7 +148,7 @@ export function KeyAdminPage() {
   return (
     <PageContainer fill>
       <PageHeader
-        title="Khóa nhân sự"
+        title="Kết nối"
         description="Khóa để AI riêng của nhân viên (Claude, ChatGPT…) tra cứu ERP đúng quyền của họ. Phát hộ cho cả phòng, thu hồi khi nghỉ việc."
         actions={
           <>

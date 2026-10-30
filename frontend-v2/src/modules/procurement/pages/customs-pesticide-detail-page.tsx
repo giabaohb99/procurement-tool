@@ -3,10 +3,10 @@
 // Trang riêng thay cho hộp thoại cũ (đại ca chốt): hộp thoại phải nhét nút Sửa/Xóa chen giữa tiêu đề
 // và thông tin, và bảng phạm vi sử dụng dưới đáy không có tiêu đề đủ rõ để biết nó là gì. Trang đi
 // 01/10/2026 — làm lại cả bố cục (đại ca chê xấu sau ba lần vá từng khối): THẺ ĐẦU TRANG gom thông
-// tin chính, phần dưới chia TAB (phạm vi · thuốc liên quan · tệp · lịch sử), cột «Tìm thuốc khác» +
-// «Tra cứu nhanh» bên phải khi màn đủ rộng, màn hẹp thì thành nút «Tra cứu» mở ngăn kéo.
+// tin chính, phần dưới chia TAB (phạm vi · thuốc liên quan · tệp · lịch sử), cột "Tìm thuốc khác" +
+// "Tra cứu nhanh" bên phải khi màn đủ rộng, màn hẹp thì thành nút "Tra cứu" mở ngăn kéo.
 //
-// Gác quyền: đường này nằm DƯỚI mục menu «Thuốc BVTV» (`customs_price.read`) nên `canAccessRoute` tự
+// Gác quyền: đường này nằm DƯỚI mục menu "Thuốc BVTV" (`customs_price.read`) nên `canAccessRoute` tự
 // gác; nút Sửa / Xóa theo khóa riêng `customs_pesticide` (duoc-CR-490).
 import { ArrowLeft, Pencil, Search } from 'lucide-react'
 import { useState } from 'react'
@@ -99,7 +99,7 @@ export function CustomsPesticideDetailPage() {
           warning={
             data.is_manual
               ? undefined
-              : 'Thuốc này lấy từ bản cào — lần «Nạp danh mục» sau sẽ thêm lại nó theo nguồn.'
+              : 'Thuốc này lấy từ bản cào — lần "Nạp danh mục" sau sẽ thêm lại nó theo nguồn.'
           }
           onConfirm={async () => {
             await remove.mutateAsync(data.id)

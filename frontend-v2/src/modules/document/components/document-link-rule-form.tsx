@@ -90,7 +90,7 @@ export function DocumentLinkRuleForm({
   const [values, setValues] = useState<DocTypeLinkRuleInput>(
     () => initial ?? { ...EMPTY_LINK_RULE, source_type_id: lockedSourceTypeId ?? 0 },
   )
-  //  Chỉ dùng ở chế độ nhiều đích. Rỗng = «Loại bất kỳ» (dòng duy nhất,
+  //  Chỉ dùng ở chế độ nhiều đích. Rỗng = "Loại bất kỳ" (dòng duy nhất,
   //  `target_type_id` để trống) — giữ được lối khai "bất kỳ tham chiếu bất kỳ".
   const [targetTypeIds, setTargetTypeIds] = useState<number[]>(() =>
     initial?.target_type_id ? [initial.target_type_id] : [],
@@ -132,7 +132,7 @@ export function DocumentLinkRuleForm({
           onSubmit([values])
           return
         }
-        //  Không chọn loại nào = «Loại bất kỳ», vẫn là MỘT dòng.
+        //  Không chọn loại nào = "Loại bất kỳ", vẫn là MỘT dòng.
         onSubmit(
           targetTypeIds.length === 0
             ? [{ ...values, target_type_id: null }]

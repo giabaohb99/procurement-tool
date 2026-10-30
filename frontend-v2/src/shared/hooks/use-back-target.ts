@@ -33,8 +33,8 @@ export function fromHere(location: { pathname: string; search: string }): BackOr
  * Đích của nút LÙI trên một trang chi tiết.
  *
  * ⚠️ **Nút lùi trỏ cứng về danh sách của chính nó là sai khi trang được mở từ
- * nơi khác.** Hồ sơ nhân sự mở từ tab *«Người đang giữ»* của một chức vụ, hay từ
- * bảng thành viên của một phòng ban, thì *«Danh sách nhân sự»* ném người dùng
+ * nơi khác.** Hồ sơ nhân sự mở từ tab *"Người đang giữ"* của một chức vụ, hay từ
+ * bảng thành viên của một phòng ban, thì *"Danh sách nhân sự"* ném người dùng
  * sang một màn họ chưa từng đứng — và chỗ họ đang làm dở (tab, bộ lọc, số trang)
  * mất sạch. Trên điện thoại đây là nút lùi DUY NHẤT trong tầm mắt, nên nó phải
  * đúng.
@@ -43,7 +43,7 @@ export function fromHere(location: { pathname: string; search: string }): BackOr
  * sách như cũ — luôn có một đích hợp lệ.
  *
  * `fromElsewhere` để trang tự đổi nhãn: đích đổi thì chữ phải đổi theo, không
- * thì nút ghi *«Danh sách nhân sự»* mà bấm vào lại ra chức vụ.
+ * thì nút ghi *"Danh sách nhân sự"* mà bấm vào lại ra chức vụ.
  */
 export function useBackTarget(fallbackUrl: string): {
   url: string

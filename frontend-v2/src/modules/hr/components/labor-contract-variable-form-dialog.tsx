@@ -144,7 +144,7 @@ function FormBody({ variable, detail, onOpenChange }: { variable: LaborContractV
               <FormItem className="flex items-center justify-between gap-3 rounded-md border p-3">
                 <div>
                   <FormLabel>Ẩn khỏi danh sách hướng dẫn</FormLabel>
-                  <FormDescription>Biến vẫn dùng được trong mẫu; chỉ không hiện ở khung «Chèn biến».</FormDescription>
+                  <FormDescription>Biến vẫn dùng được trong mẫu; chỉ không hiện ở khung <strong>Chèn biến</strong>.</FormDescription>
                 </div>
                 <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} aria-label="Ẩn khỏi danh sách hướng dẫn" /></FormControl>
               </FormItem>
@@ -191,7 +191,7 @@ function FormBody({ variable, detail, onOpenChange }: { variable: LaborContractV
                   <FormMessage />
                 </FormItem>
               )} />
-              {([['is_required', 'Bắt buộc', 'Chặn Sinh tệp và chuyển sang «Đã ký» khi hợp đồng chưa nhập; lưu nháp thì không chặn.'],
+              {([['is_required', 'Bắt buộc', 'Chặn Sinh tệp và chuyển sang "Đã ký" khi hợp đồng chưa nhập; lưu nháp thì không chặn.'],
                  ['is_active', 'Đang dùng', 'Tắt = ngừng dùng: biến không còn ở ô nhập và không nhận vào mẫu mới.']] as const).map(([name, label, hint]) => (
                 <FormField key={name} control={form.control} name={name} render={({ field }) => (
                   <FormItem className="flex items-center justify-between gap-3 rounded-md border p-3">

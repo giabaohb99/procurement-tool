@@ -177,7 +177,7 @@ describe('DocumentFilesTab — rẽ theo số tệp', () => {
     expect(screen.getByText('Đang xem tệp b.pdf')).toBeInTheDocument()
   })
 
-  it('bấm «Về danh sách» trong khung xem → quay lại bảng danh sách', async () => {
+  it('bấm "Về danh sách" trong khung xem → quay lại bảng danh sách', async () => {
     const user = userEvent.setup()
     mockFiles([file({ id: 1, filename: 'a.pdf' }), file({ id: 2, filename: 'b.pdf' })])
     renderTab({}, '/document/documents/1?tab=files&file=1')
@@ -227,14 +227,14 @@ describe('DocumentFilesTab — tải thêm / gỡ tệp khi đã có tệp (duoc
     )
   }
 
-  it('1 tệp + có quyền sửa + bản chưa khóa → «Tải thêm tệp» và «Xóa tệp»', () => {
+  it('1 tệp + có quyền sửa + bản chưa khóa → "Tải thêm tệp" và "Xóa tệp"', () => {
     mockFiles([file()])
     renderTab()
     expect(screen.getByRole('button', { name: /Tải thêm tệp/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Xóa tệp/ })).toBeInTheDocument()
   })
 
-  it('nhiều tệp (danh sách) → có «Tải thêm tệp», chưa chọn tệp nên chưa có «Xóa tệp»', () => {
+  it('nhiều tệp (danh sách) → có "Tải thêm tệp", chưa chọn tệp nên chưa có "Xóa tệp"', () => {
     mockFiles([file({ id: 1 }), file({ id: 2 })])
     renderTab()
     expect(screen.getByRole('button', { name: /Tải thêm tệp/ })).toBeInTheDocument()

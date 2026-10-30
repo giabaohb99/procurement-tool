@@ -42,7 +42,7 @@ interface UseEmployeeWorkHistoryFormSubmitArgs {
 }
 
 /**
- * Điều phối LƯU + câu hỏi áp hồ sơ của hộp thêm/sửa «Quá trình công tác»
+ * Điều phối LƯU + câu hỏi áp hồ sơ của hộp thêm/sửa "Quá trình công tác"
  * (tách khỏi `employee-work-history-form-dialog.tsx` để mỗi tệp dưới ~200
  * dòng, CLAUDE.md §"File Size Management"). Thôi việc (Q2) đi hộp xác nhận
  * RIÊNG (`EmployeeWorkHistoryResignConfirmDialog`, dựng ở nơi gọi); loại khác
@@ -81,7 +81,7 @@ export function useEmployeeWorkHistoryFormSubmit({
     if (!row && canOpenFiles && queuedFiles.length > 0) {
       void uploadWorkHistoryFiles(result.item.id, queuedFiles)
         .then(() => {
-          //  M5 — cột «Tệp» của bảng đọc `employeeWorkHistory(id)`; tải tệp đi
+          //  M5 — cột "Tệp" của bảng đọc `employeeWorkHistory(id)`; tải tệp đi
           //  đường riêng (không qua hook) nên phải tự dọn cache ở đây, không
           //  thì `file_count` đứng im tới lần nạp sau.
           void queryClient.invalidateQueries({ queryKey: queryKeys.hr.employeeWorkHistory(employeeId) })
@@ -123,8 +123,8 @@ export function useEmployeeWorkHistoryFormSubmit({
               message: [
                 ...prompt.changes.map((c) => `• ${c}`),
                 '',
-                //  M6 — Esc/đóng hộp KHÔNG có nút riêng để phân biệt với «Chỉ
-                //  lưu dòng» (cùng `confirm()` chung cho mọi màn) nên phải NÓI
+                //  M6 — Esc/đóng hộp KHÔNG có nút riêng để phân biệt với "Chỉ
+                //  lưu dòng" (cùng `confirm()` chung cho mọi màn) nên phải NÓI
                 //  RÕ hệ quả ngay trong câu, thay vì đổi hành vi Esc.
                 'Đóng hộp này (hoặc nhấn Esc) sẽ CHỈ lưu dòng, không cập nhật hồ sơ.',
               ].join('\n'),

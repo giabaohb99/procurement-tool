@@ -6,15 +6,15 @@ import { useMeetingRooms } from '../hooks/use-room'
 import { ROOM_BOOKING_STATUS, type RoomBooking } from '../types/room'
 
 /**
- * CỘT PHẢI của phiếu đã gửi duyệt — «phiếu này đang ở đâu».
+ * CỘT PHẢI của phiếu đã gửi duyệt — "phiếu này đang ở đâu".
  *
  * Bản chỉ-xem trước đây bỏ trống cả nửa phải màn hình trong khi mấy thứ người
  * đọc cần lại nằm rải rác: trạng thái ở thanh tiêu đề, ý kiến người duyệt ở một
  * thẻ riêng bên dưới, mốc thời gian thì không có. Gom về một chỗ.
  *
- * ⚠️ **Hai dòng «Trạng thái» và «Số phiếu» đã BỎ (09/09/2026).** Cả hai chép lại
+ * ⚠️ **Hai dòng "Trạng thái" và "Số phiếu" đã BỎ (09/09/2026).** Cả hai chép lại
  * đúng cái đang nằm ở đầu trang: huy hiệu trạng thái nay đứng cạnh tiêu đề, còn
- * tiêu đề thì đọc thẳng là «Phiếu PH113». Mà đầu trang là dải GHIM, tức hai thứ
+ * tiêu đề thì đọc thẳng là "Phiếu PH113". Mà đầu trang là dải GHIM, tức hai thứ
  * đó luôn trong tầm mắt — chép xuống đây không phải "gom về một chỗ" mà là nói
  * hai lần trên cùng một khung hình. Ở khổ 390px thẻ này rơi xuống dưới bản tóm
  * tắt, và bốn dòng của nó thì ba dòng là bản sao.
@@ -46,7 +46,7 @@ export function RoomBookingStatusPanel({ booking }: { booking: RoomBooking }) {
 
           {booking.decided_at ? (
             <Row
-              //  Nhãn đổi theo KẾT CỤC: «Quyết định lúc» cho một phiếu bị hủy
+              //  Nhãn đổi theo KẾT CỤC: "Quyết định lúc" cho một phiếu bị hủy
               //  đọc như thể ai đó đã ký nó.
               label={
                 booking.status === ROOM_BOOKING_STATUS.CANCELLED ? 'Hủy lúc' : 'Quyết định lúc'

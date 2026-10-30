@@ -17,7 +17,7 @@ interface ReportAccessTabProps {
 }
 
 /**
- * Tab «Báo cáo» của Phân quyền tài khoản — mọi báo cáo (`ReportKey`, backend),
+ * Tab "Báo cáo" của Phân quyền tài khoản — mọi báo cáo (`ReportKey`, backend),
  * mỗi dòng hiện chủ thể được CHO PHÉP / bị CẤM. Nhóm/nhãn đọc thẳng từ API
  * (`report.group` / `report.label`) — không import danh mục của `modules/report`
  * để `system` khỏi dính ruột phân hệ khác.
@@ -65,8 +65,8 @@ export function ReportAccessTab({ canWrite }: ReportAccessTabProps) {
               type="button"
               variant="ghost"
               size="icon-sm"
-              title={`Sửa quyền xem «${row.label}»`}
-              aria-label={`Sửa quyền xem «${row.label}»`}
+              title={`Sửa quyền xem "${row.label}"`}
+              aria-label={`Sửa quyền xem "${row.label}"`}
               onClick={() => setEditingKey(row.key)}
             >
               <Pencil />

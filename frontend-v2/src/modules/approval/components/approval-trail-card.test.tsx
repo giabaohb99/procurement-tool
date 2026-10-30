@@ -186,7 +186,7 @@ describe('ApprovalTrailCard', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Luồng đang bị kẹt')
     expect(screen.getByRole('alert')).toHaveTextContent('Không tìm được người duyệt phù hợp.')
   })
-  //  bao-CR-506: đơn nghỉ phép bấm nhầm «In» của thẻ này tưởng là in đơn — thẻ
+  //  bao-CR-506: đơn nghỉ phép bấm nhầm "In" của thẻ này tưởng là in đơn — thẻ
   //  nào có bản in riêng thì ẩn nút, còn mặc định vẫn giữ cho văn bản / duyệt dấu.
   it('keeps the print button by default and hides it when hidePrint is set', () => {
     const { unmount } = render(<ApprovalTrailCard instanceId={8} />)

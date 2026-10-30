@@ -147,7 +147,7 @@ function buildDraft(full: Dossier, doc: ApplicableDossier): QuickEditDraft {
  *
  * ⚠️ **Mọi thay đổi ở đây áp cho MỌI phiếu** dùng tờ hồ sơ này — phân hệ Hồ sơ
  * chưa có trạng thái theo từng phiếu. Hộp phải nói thành lời, kẻo người dùng
- * tick «đã có giấy» cho phiếu này rồi vô tình đánh dấu xong cho hai chục phiếu
+ * tick "đã có giấy" cho phiếu này rồi vô tình đánh dấu xong cho hai chục phiếu
  * khác. Đây là khác biệt lớn nhất so với khối Báo cáo thực hiện, nơi mỗi phiếu
  * giữ bản ghi riêng.
  *
@@ -359,7 +359,7 @@ function QuickEditBody({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Dòng hàng</Label>
-              {/*  CHỈ ĐỌC: bên kho Hồ sơ, «dòng hàng nào» không phải một ô người
+              {/*  CHỈ ĐỌC: bên kho Hồ sơ, "dòng hàng nào" không phải một ô người
                    dùng chọn mà là KẾT QUẢ của điều kiện áp dụng — sửa nó là sửa
                    luật khớp cho mọi phiếu, việc đó nằm ở chính tờ hồ sơ. */}
               <ReadOnlyValue>
@@ -373,7 +373,7 @@ function QuickEditBody({
               <Label>Trạng thái</Label>
               {/*  ⚠️ Đây là TIẾN ĐỘ của phiếu đang mở (4 mức), KHÔNG phải tình
                    trạng tờ giấy trong kho — ô đó nằm riêng ở cụm dưới. Hai thứ
-                   cùng tên «trạng thái» nên phải đứng cách xa nhau trên màn. */}
+                   cùng tên "trạng thái" nên phải đứng cách xa nhau trên màn. */}
               <Select
                 value={String(draft.progress_status)}
                 onValueChange={(v) =>
@@ -531,7 +531,7 @@ function QuickEditBody({
               >
                 kho hồ sơ
               </Link>
-              . Dùng chung cả công ty; riêng «đã xong hay chưa» thì tính theo từng chứng từ.
+              . Dùng chung cả công ty; riêng <strong>đã xong hay chưa</strong> thì tính theo từng chứng từ.
             </p>
           </div>
 
@@ -550,7 +550,7 @@ function QuickEditBody({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {/*  «Đã lưu trữ» có trong bộ mã nhưng KHÔNG bày ở đây: API
+                {/*  "Đã lưu trữ" có trong bộ mã nhưng KHÔNG bày ở đây: API
                      `applicable` đã lọc nó ra, nên chọn xong là tờ hồ sơ biến
                      mất khỏi chính cái thẻ vừa thao tác — trông như vừa xóa nhầm. */}
                 {[DOSSIER_STATUS.DRAFT, DOSSIER_STATUS.ACTIVE].map((code) => (
@@ -562,7 +562,7 @@ function QuickEditBody({
             </Select>
             <p className="text-xs text-muted-foreground">
               Công ty đã có tờ giấy này chưa — <strong>dùng chung cho mọi phiếu</strong>.
-              Khác với ô «Trạng thái» ở trên, thứ chỉ tính cho phiếu đang mở.
+              Khác với ô <strong>Trạng thái</strong> ở trên, thứ chỉ tính cho phiếu đang mở.
             </p>
           </div>
 

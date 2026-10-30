@@ -38,7 +38,7 @@ export function RoomBookingSummary({ booking }: { booking: RoomBooking }) {
 
            ⚠️ Khổ hẹp xếp HAI CỘT, không phải một. Xếp dọc thì ba khung viền ăn
            266px — hơn một phần ba màn 844px — để nói ba mẩu chữ ngắn, mà cả ba
-           đều thừa chỗ (đo 09/09/2026: khung 308px, chữ dài nhất «Phòng họp 302»
+           đều thừa chỗ (đo 09/09/2026: khung 308px, chữ dài nhất "Phòng họp 302"
            ~95px). Phòng họp chiếm trọn hàng dưới vì nó là ô duy nhất có dòng phụ
            (mã phòng) và tên phòng dài nhất trong ba ô. */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -71,8 +71,8 @@ export function RoomBookingSummary({ booking }: { booking: RoomBooking }) {
         ) : null}
       </dl>
 
-      {/*  ⚠️ Khối này LUÔN dựng, kể cả khi chưa mời ai — cùng lẽ với mục «Bàn
-           giao công việc» của đơn nghỉ phép: người duyệt phải phân biệt được
+      {/*  ⚠️ Khối này LUÔN dựng, kể cả khi chưa mời ai — cùng lẽ với mục "Bàn
+           giao công việc" của đơn nghỉ phép: người duyệt phải phân biệt được
            *"người đặt chưa mời ai"* với *"màn hình thiếu mục đó"*. Số người dự
            so với sức chứa phòng là thứ họ cân nhắc để bấm Duyệt hay Trả về. */}
       <div>

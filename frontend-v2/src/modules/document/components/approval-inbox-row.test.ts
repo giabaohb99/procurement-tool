@@ -14,7 +14,7 @@ const legacy: LegacyPendingDocument = {
 }
 
 //  Lỗi bắt khi test UI 25/09/2026: văn bản duyệt MỘT BƯỚC không có việc trong
-//  bộ máy duyệt nên không bao giờ hiện ở «Chờ tôi duyệt».
+//  bộ máy duyệt nên không bao giờ hiện ở "Chờ tôi duyệt".
 describe('buildInboxRows — single-step documents', () => {
   it('lists a single-step document as a pending row that opens the document', () => {
     const [row] = buildInboxRows([], [], [legacy])
@@ -40,7 +40,7 @@ describe('buildInboxRows — single-step documents', () => {
   })
 })
 
-//  Duyệt một bước xong thì văn bản biến khỏi màn — nhóm «Đã duyệt» phải có nó.
+//  Duyệt một bước xong thì văn bản biến khỏi màn — nhóm "Đã duyệt" phải có nó.
 describe('buildInboxRows — single-step decisions', () => {
   const approved: LegacyDecision = {
     id: 4048,
@@ -103,8 +103,8 @@ describe('buildInboxRows — single-step decisions', () => {
   })
 })
 
-//  25/09/2026: tab mặc định đổi sang «Cần duyệt». Tab đó trống (hết việc) mà
-//  màn báo «không khớp điều kiện đang lọc» là nói sai — người dùng chưa lọc gì.
+//  25/09/2026: tab mặc định đổi sang "Cần duyệt". Tab đó trống (hết việc) mà
+//  màn báo "không khớp điều kiện đang lọc" là nói sai — người dùng chưa lọc gì.
 describe('describeInboxEmpty', () => {
   it('says there is nothing waiting when the default tab is empty and nothing is filtered', () => {
     expect(describeInboxEmpty(INBOX_SCOPE.pending, false)).toBe(

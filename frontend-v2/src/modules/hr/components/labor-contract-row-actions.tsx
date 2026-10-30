@@ -54,7 +54,7 @@ interface LaborContractRowActionsProps extends LaborContractRowActionHandlers {
   row: LaborContract
   /** Đang có lệnh chạy trên dòng này — khóa nút. */
   busy: boolean
-  /** Mục «Xem bản ký» cần quyền đọc; có thể tắt riêng. */
+  /** Mục "Xem bản ký" cần quyền đọc; có thể tắt riêng. */
   canReadSigned: boolean
 }
 
@@ -62,15 +62,15 @@ interface MenuEntry {
   key: string
   label: string
   icon: typeof PenLine
-  /** Bỏ trống = mục «Tải lên / Thay bản đã ký» (mở hộp chọn tệp — gắn thẳng ở JSX, xem `openFilePicker`). */
+  /** Bỏ trống = mục "Tải lên / Thay bản đã ký" (mở hộp chọn tệp — gắn thẳng ở JSX, xem `openFilePicker`). */
   onSelect?: () => void
   danger?: boolean
 }
 
 /**
- * Thao tác của MỘT dòng hợp đồng — MỘT nút icon «⋯» (gọn, cùng kiểu bảng Mẫu hợp đồng) mở menu, mỗi mục có ICON + CHỮ, chia nhóm
- * Xem / Soạn / Trạng thái, Xóa tách riêng cuối (duoc-CR-633, đại ca: «icon + chữ, dropdown tường minh
- * hơn» — dãy 8 icon trơn trước đây nhìn na ná nhau, phải rê chuột đoán).
+ * Thao tác của MỘT dòng hợp đồng — MỘT nút icon "⋯" (gọn, cùng kiểu bảng Mẫu hợp đồng) mở menu, mỗi mục có ICON + CHỮ, chia nhóm
+ * Xem / Soạn / Trạng thái, Xóa tách riêng cuối (duoc-CR-633, đại ca: "icon + chữ, dropdown tường minh
+ * hơn" — dãy 8 icon trơn trước đây nhìn na ná nhau, phải rê chuột đoán).
  *
  * Mục nào hiện vẫn hoàn toàn theo cờ backend (`can_*`, `transitions`) — FE không tự suy từ trạng
  * thái. Nút kích hoạt `type="button"` vì tab nằm trong `<form>` hồ sơ.

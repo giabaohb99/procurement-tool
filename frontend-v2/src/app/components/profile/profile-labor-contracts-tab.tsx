@@ -15,7 +15,7 @@ import { formatMoney } from '@/shared/utils/format-money'
 const fallbackName = (row: MyLaborContract, ext: string) => `HDLD-${row.contract_no || row.code}.${ext}`
 
 /**
- * MỤC «Hợp đồng của tôi» của Trang cá nhân (duoc-CR-652) — CHỈ ĐỌC.
+ * MỤC "Hợp đồng của tôi" của Trang cá nhân (duoc-CR-652) — CHỈ ĐỌC.
  *
  * Backend chỉ trả HĐ của chính người đăng nhập ở trạng thái Đã ký / Đã chấm dứt / Hết hạn (Nháp, Đã hủy không hiện),
  * nên giao diện không cần và không có nút sửa / sinh tệp / tải bản ký lên / chuyển trạng thái / xóa. Hai nút tải

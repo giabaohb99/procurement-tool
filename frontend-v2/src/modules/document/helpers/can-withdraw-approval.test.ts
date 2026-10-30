@@ -32,7 +32,7 @@ describe('canWithdrawApproval', () => {
     expect(canWithdrawApproval(instance(), 10)).toBe(false)
   })
 
-  //  Hồ sơ chưa gắn nhân sự: 0 === 0 KHÔNG được coi là «chính người trình»,
+  //  Hồ sơ chưa gắn nhân sự: 0 === 0 KHÔNG được coi là "chính người trình",
   //  không thì mọi tài khoản chưa gắn hồ sơ đều thấy nút trên phiếu của nhau.
   it('never matches an unlinked account (employee id 0 or missing)', () => {
     const unlinked = instance({ started_by_employee_id: 0 })

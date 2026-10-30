@@ -99,8 +99,8 @@ export function sortRegulationsBySeverity<T extends RegulationSortable>(items: r
 }
 
 /**
- * Ngưỡng khối lượng → chữ: «100 kg», «1.000 kg», «0,15 kg». Giữ tới 3 chữ số lẻ vì có ngưỡng
- * dưới 1 kg (Methyl isocyanate 0,15 kg) — làm tròn về số nguyên là in ra «0 kg», tức nói điều
+ * Ngưỡng khối lượng → chữ: "100 kg", "1.000 kg", "0,15 kg". Giữ tới 3 chữ số lẻ vì có ngưỡng
+ * dưới 1 kg (Methyl isocyanate 0,15 kg) — làm tròn về số nguyên là in ra "0 kg", tức nói điều
  * ngược hẳn với luật. Rỗng / âm / không phải số thì trả chuỗi rỗng.
  */
 export function formatThresholdKg(value: number | null | undefined): string {
@@ -108,7 +108,7 @@ export function formatThresholdKg(value: number | null | undefined): string {
   return `${value.toLocaleString('vi-VN', { maximumFractionDigits: 3 })} kg`
 }
 
-/** Nhãn cột «Ngưỡng / Mức cấm»: hoạt chất cấm → «CẤM từ 2026» (không rõ năm → «CẤM»). */
+/** Nhãn cột "Ngưỡng / Mức cấm": hoạt chất cấm → "CẤM từ 2026" (không rõ năm → "CẤM"). */
 export function formatBannedLabel(bannedYear: number | null | undefined): string {
   return bannedYear ? `CẤM từ ${bannedYear}` : 'CẤM'
 }
@@ -134,7 +134,7 @@ export function formatCustomsUnit(code: string | null | undefined): string {
   return UNIT_LABELS[code] ?? code
 }
 
-/** Nhãn nút chọn đơn vị: «lít (LTR)»; mã chưa rõ nghĩa thì chỉ mã. */
+/** Nhãn nút chọn đơn vị: "lít (LTR)"; mã chưa rõ nghĩa thì chỉ mã. */
 export function formatCustomsUnitChip(code: string): string {
   return UNIT_LABELS[code] ? `${UNIT_LABELS[code]} (${code})` : code
 }
@@ -154,7 +154,7 @@ export function formatVnd(value: number | string | null | undefined): string {
 
 /**
  * bao-CR-493 — doanh nghiệp / đối tác chọn NHIỀU nhưng vẫn đi bằng hai tham số URL: `…_id`
- * là id nối dấu phẩy («12,34»), `…_name` là tên nối dấu «|» cùng thứ tự (tên chỉ để in chip,
+ * là id nối dấu phẩy ("12,34"), `…_name` là tên nối dấu "|" cùng thứ tự (tên chỉ để in chip,
  * không lọc). Hai hàm dưới giữ hai chuỗi này luôn song song với nhau.
  */
 export interface NamedId {
@@ -202,7 +202,7 @@ export function toPartyOptions(
     }))
 }
 
-/** «1, 2,,3» → ['1', '2', '3'] — danh sách id nối dấu phẩy trên URL (lô nạp, doanh nghiệp…). */
+/** "1, 2,,3" → ['1', '2', '3'] — danh sách id nối dấu phẩy trên URL (lô nạp, doanh nghiệp…). */
 export function splitIdList(ids: string): string[] {
   return ids.split(',').map((value) => value.trim()).filter(Boolean)
 }
@@ -230,8 +230,8 @@ export function hasChartFilter(filters: Pick<CustomsFilters, 'q' | 'hs_code'>): 
 }
 
 /**
- * Câu hiện khi bảng dòng hàng rỗng. Phải phân biệt «chưa có dữ liệu» với «bộ lọc loại
- * hết» — một câu chung cho cả hai thì người gõ nhầm một chữ đọc ra "chưa có dữ liệu" và
+ * Câu hiện khi bảng dòng hàng rỗng. Phải phân biệt "chưa có dữ liệu" với "bộ lọc loại
+ * hết" — một câu chung cho cả hai thì người gõ nhầm một chữ đọc ra "chưa có dữ liệu" và
  * tin là vậy. `coverageTotal` chưa về (undefined) thì coi là đang có dữ liệu.
  */
 export function resolveLinesEmptyMessage(
@@ -240,7 +240,7 @@ export function resolveLinesEmptyMessage(
 ): string {
   if (coverageTotal === 0) {
     return canImport
-      ? 'Chưa có dữ liệu hải quan. Bấm «Nạp dữ liệu» để tải tệp GTT02.'
+      ? 'Chưa có dữ liệu hải quan. Bấm "Nạp dữ liệu" để tải tệp GTT02.'
       : 'Chưa có dữ liệu hải quan. Liên hệ người phụ trách nạp dữ liệu.'
   }
   return 'Không có dòng hàng nào khớp bộ lọc — thử bỏ bớt điều kiện hoặc đổi từ khóa.'
@@ -252,8 +252,8 @@ export function isBatchRunning(batch: Pick<CustomsImportBatch, 'status'>): boole
 }
 
 /**
- * Lô chạy thử đã xong và có việc để ghi — chỉ những lô này mới đem đi Áp dụng. bao-CR-608: «có
- * việc» gồm cả ghi đè (cột «ID») và xóa (cột «Thao tác»), không chỉ dòng mới.
+ * Lô chạy thử đã xong và có việc để ghi — chỉ những lô này mới đem đi Áp dụng. bao-CR-608: "có
+ * việc" gồm cả ghi đè (cột "ID") và xóa (cột "Thao tác"), không chỉ dòng mới.
  */
 export function isBatchUsable(
   batch: Pick<CustomsImportBatch, 'status' | 'created_count' | 'updated_count' | 'deleted_count'>,
@@ -278,7 +278,7 @@ export function sumWrittenLines(batches: CustomsImportBatch[]): {
   }
 }
 
-/** bao-CR-608 — câu báo kết quả ghi: «Đã nạp 3 dòng mới, ghi đè 2 dòng, xóa 1 dòng, bỏ qua 4 dòng trùng». */
+/** bao-CR-608 — câu báo kết quả ghi: "Đã nạp 3 dòng mới, ghi đè 2 dòng, xóa 1 dòng, bỏ qua 4 dòng trùng". */
 export function formatWrittenSummary(
   written: { created: number; updated: number; deleted: number },
   skippedTotal: number,
@@ -308,7 +308,7 @@ export function sumSkippedLines(batches: CustomsImportBatch[]): {
  * Hoàn tác được không. Chỉ lô GHI THẬT đã xong mới có gì để hoàn tác. Từ bao-CR-541 lô chỉ
  * thêm dòng của chính nó nên luôn hoàn tác được; riêng lô CŨ (nạp trước CR) đã THAY dòng cũ
  * thì không — dòng cũ đã xóa lúc ghi, hoàn tác chỉ để lại một khoảng ngày trống.
- * bao-CR-608: lô xóa / ghi đè theo cột «ID» có bản chụp nên VẪN hoàn tác được — backend báo lô
+ * bao-CR-608: lô xóa / ghi đè theo cột "ID" có bản chụp nên VẪN hoàn tác được — backend báo lô
  * cũ bằng `legacy_replace`; bản backend chưa có khóa này thì lùi về luật cũ `deleted_count > 0`.
  */
 export function resolveRevertState(
@@ -322,7 +322,7 @@ export function resolveRevertState(
 
 /**
  * bao-CR-608 — câu hỏi xác nhận hoàn tác: nói đủ ba việc hoàn tác sẽ làm (xóa dòng lô đã thêm, trả
- * dòng lô đã ghi đè về bản cũ, dựng lại dòng lô đã xóa) thay vì chỉ «xóa N dòng».
+ * dòng lô đã ghi đè về bản cũ, dựng lại dòng lô đã xóa) thay vì chỉ "xóa N dòng".
  */
 export function formatRevertConfirm(
   batch: Pick<CustomsImportBatch, 'filename' | 'created_count' | 'updated_count' | 'deleted_count'>,
@@ -333,7 +333,7 @@ export function formatRevertConfirm(
   const tail = batch.updated_count
     ? ' Dòng bị sửa tiếp sau lô này cũng trả về bản trước lô — phần sửa sau sẽ mất.'
     : ''
-  return `Hoàn tác tệp «${batch.filename}»: ${parts.join(', ')}?${tail}`
+  return `Hoàn tác tệp "${batch.filename}": ${parts.join(', ')}?${tail}`
 }
 
 /** Nhãn trạng thái lô. */

@@ -111,7 +111,7 @@ describe('LeaveCalendarDayView', () => {
   })
 
   it('position is measured inside the PERIOD that holds the day, not the outer range', () => {
-    //  duoc-CR-683: đơn 10/03 + 16/03→20/03. Theo bao ngoài 16/03 là «Đang giữa đợt», nhưng
+    //  duoc-CR-683: đơn 10/03 + 16/03→20/03. Theo bao ngoài 16/03 là "Đang giữa đợt", nhưng
     //  thật ra đó là NGÀY ĐẦU của khoảng thứ hai — người xếp việc cần đúng câu đó.
     renderDay([
       request({

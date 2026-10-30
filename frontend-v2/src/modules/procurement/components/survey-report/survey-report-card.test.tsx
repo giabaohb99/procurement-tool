@@ -81,7 +81,7 @@ function renderCard(canEdit = true) {
   )
 }
 
-/** Mở khối, chuyển dạng xem theo dòng hàng (đọc từ localStorage), sổ dòng «Nắp». */
+/** Mở khối, chuyển dạng xem theo dòng hàng (đọc từ localStorage), sổ dòng "Nắp". */
 async function openCapRow() {
   fireEvent.click(await screen.findByRole('button', { name: /Báo cáo thực hiện/ }))
   fireEvent.click(await screen.findByText('Nắp 50 75ml'))

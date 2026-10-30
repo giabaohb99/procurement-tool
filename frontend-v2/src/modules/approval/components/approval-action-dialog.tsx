@@ -94,8 +94,8 @@ const TASKS = [
  * lại. Gộp hai nút làm một là người duyệt bấm nhầm và người nộp mất cả phiếu.
  *
  * Vì thế bốn việc bày thành **thẻ chọn**, mỗi thẻ tự mang câu hậu quả của nó,
- * chứ không phải bốn cái nút. Bản cũ dùng nút: thẻ «Duyệt» đang chọn trông y hệt
- * nút «Duyệt» ở chân hộp thoại, nên một hộp thoại có hai nút xanh cùng tên và
+ * chứ không phải bốn cái nút. Bản cũ dùng nút: thẻ "Duyệt" đang chọn trông y hệt
+ * nút "Duyệt" ở chân hộp thoại, nên một hộp thoại có hai nút xanh cùng tên và
  * người dùng không biết cái nào mới thật sự ký. Nút xác nhận nay chỉ có một, và
  * nhãn của nó đổi theo việc đang chọn.
  */

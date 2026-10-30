@@ -6,7 +6,7 @@
  * dòng thấp hơn chữ của nó và các dòng ĐÈ lên nhau (ảnh chụp 24/09/2026). Đổi
  * về số KHÔNG đơn vị để mỗi dòng nhân theo đúng cỡ chữ đang dùng.
  *
- * Chỉ đổi `em`; `px` (giãn dòng «chính xác» của Word) giữ nguyên.
+ * Chỉ đổi `em`; `px` (giãn dòng "chính xác" của Word) giữ nguyên.
  */
 export function unitlessWordLineHeights(html: string): string {
   return html.replace(/line-height:\s*(\d*\.?\d+)em/g, 'line-height: $1')

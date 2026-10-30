@@ -17,7 +17,7 @@ const DONUT_COLORS = [
 /** Màu MỘT màu cho mọi cột theo nhóm — độ dài đã nói độ lớn, tô theo giá trị là mã hóa hai lần. */
 export const FLEXIBLE_CHART_BAR_COLOR = 'var(--chart-1)'
 
-/** Màu lát theo VỊ TRÍ trong dãy đã xếp lớn → nhỏ; «Khác» luôn xám trung tính. */
+/** Màu lát theo VỊ TRÍ trong dãy đã xếp lớn → nhỏ; "Khác" luôn xám trung tính. */
 export function pickDonutColor(item: FlexibleGroupItem, index: number): string {
   if (item.isRest) return CHART_NEUTRAL
   return DONUT_COLORS[index % DONUT_COLORS.length] ?? CHART_NEUTRAL

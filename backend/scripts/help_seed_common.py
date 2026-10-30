@@ -5,7 +5,7 @@ Các script seed cũ (nghỉ phép, diễn đàn, văn bản…) mỗi cái ché
 cho khỏi chép lần thứ N. Chạy dạng `python scripts/<tên>.py` nên thư mục scripts đã nằm trong sys.path.
 
 Khuôn: xóa nguyên cây con của thẻ gốc cùng tiêu đề (con trước, cha sau — FK tự tham chiếu không cascade)
-rồi dựng lại ở ĐÚNG vị trí cũ; gắn thẻ gốc vào khung «Các Phân hệ» ở trang chủ nếu chưa có.
+rồi dựng lại ở ĐÚNG vị trí cũ; gắn thẻ gốc vào khung "Các Phân hệ" ở trang chủ nếu chưa có.
 """
 import re
 import sys
@@ -84,7 +84,7 @@ def rebuild_tree(tree: dict) -> None:
         order = None
         if old is not None:
             order = old.sort_order
-            print(f"Đã xóa cây cũ «{tree['title']}»: {_delete_subtree(db, old.id)} bài (gốc id={old.id}).")
+            print(f"Đã xóa cây cũ '{tree['title']}': {_delete_subtree(db, old.id)} bài (gốc id={old.id}).")
         if order is None:
             last = (db.query(HelpArticle.sort_order).filter(HelpArticle.parent_id.is_(None))
                     .order_by(HelpArticle.sort_order.desc()).first())
@@ -92,7 +92,7 @@ def rebuild_tree(tree: dict) -> None:
         total, root_id = _insert_node(db, tree, None, order)
         _attach_home_card(db, root_id)
         db.commit()
-        print(f"Đã dựng cây «{tree['title']}»: {total} bài (gốc id={root_id}, sort_order={order}).")
+        print(f"Đã dựng cây '{tree['title']}': {total} bài (gốc id={root_id}, sort_order={order}).")
         print("Tiếp theo: docker compose exec -T api python scripts/reindex_help_rag.py")
     except Exception:
         db.rollback()
@@ -111,20 +111,38 @@ def _root(db, title: str):
 
 
 def upsert_articles(articles, dry_run: bool) -> list[int]:
-    """`articles` = [(tiêu đề thẻ cha, tiêu đề bài, tóm tắt, HTML)] → id các bài đã ghi."""
+    """`articles` = [(tiêu đề thẻ cha, tiêu đề bài, tóm tắt, HTML[, tên cũ])] → id các bài đã ghi.
+    `tên cũ` (chuỗi hoặc danh sách, bao-CR-695): bài đã đổi tiêu đề thì tìm theo tên cũ dưới cùng thẻ cha rồi ĐỔI TÊN tại
+    chỗ (giữ id, giữ thứ tự), bản trùng còn lại xóa — không đẻ bài mới bên cạnh bài cũ."""
     db = SessionLocal()
     touched = []
     try:
-        for parent_title, title, summary, content in articles:
+        for item in articles:
+            parent_title, title, summary, content = item[:4]
+            old_titles = item[4] if len(item) > 4 else []
+            if isinstance(old_titles, str):
+                old_titles = [old_titles]
             parent = _root(db, parent_title)
             if parent is None:
-                print(f"  BỎ QUA «{title}»: không có thẻ cha «{parent_title}» trên hệ này")
+                print(f"  BỎ QUA '{title}': không có thẻ cha '{parent_title}' trên hệ này")
                 continue
             row = (db.query(HelpArticle)
                    .filter(HelpArticle.parent_id == parent.id, HelpArticle.title == title).first())
-            print(f"  {'cập nhật' if row else 'thêm'}: «{title}» (dưới «{parent_title}»)")
+            stale = []
+            if row is None and old_titles:
+                stale = (db.query(HelpArticle)
+                         .filter(HelpArticle.parent_id == parent.id, HelpArticle.title.in_(old_titles))
+                         .order_by(HelpArticle.id).all())
+                if stale:
+                    row, stale = stale[0], stale[1:]
+                    print(f"  đổi tên: '{row.title}' → '{title}'" + (f" (xóa {len(stale)} bản trùng)" if stale else ""))
+            print(f"  {'cập nhật' if row else 'thêm'}: '{title}' (dưới '{parent_title}')")
             if dry_run:
                 continue
+            for extra in stale:
+                db.delete(extra)
+            if row is not None:
+                row.title = title
             if row is None:
                 orders = [a.sort_order or 0 for a in db.query(HelpArticle).filter(HelpArticle.parent_id == parent.id)]
                 row = HelpArticle(parent_id=parent.id, title=title, sort_order=max(orders or [0]) + 1)

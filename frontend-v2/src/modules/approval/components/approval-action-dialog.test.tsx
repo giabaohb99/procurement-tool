@@ -47,8 +47,8 @@ function mo() {
 
 describe('ApprovalActionDialog', () => {
   it('chỉ có MỘT nút xác nhận, và nhãn của nó đổi theo việc đang chọn', async () => {
-    //  Bản cũ bày bốn việc thành bốn cái NÚT, nên thẻ «Duyệt» đang chọn trông y
-    //  hệt nút «Duyệt» ở chân hộp thoại: một hộp thoại có hai nút xanh cùng tên,
+    //  Bản cũ bày bốn việc thành bốn cái NÚT, nên thẻ "Duyệt" đang chọn trông y
+    //  hệt nút "Duyệt" ở chân hộp thoại: một hộp thoại có hai nút xanh cùng tên,
     //  người dùng không biết cái nào mới thật sự ký.
     const user = userEvent.setup()
     mo()

@@ -86,8 +86,8 @@ describe('decisionNoteOf', () => {
   })
 
   it('giữ nguyên dấu tiếng Việt và ký tự lạ, không chuẩn hóa gì thêm', () => {
-    expect(decisionNoteOf(rejected('Nghỉ trùng đợt kiểm kê — «Q4/2026»'))).toBe(
-      'Nghỉ trùng đợt kiểm kê — «Q4/2026»',
+    expect(decisionNoteOf(rejected('Nghỉ trùng đợt kiểm kê — "Q4/2026"'))).toBe(
+      'Nghỉ trùng đợt kiểm kê — "Q4/2026"',
     )
   })
 

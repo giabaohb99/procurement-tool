@@ -9,11 +9,11 @@ import type { McpCall } from '../types/ai-skill'
 import { CallLogPage } from './call-log-page'
 
 /**
- * Cột «Số ký tự kết quả» của Nhật ký lượt gọi (ai-CR-228). Chỗ dễ lủng: in «0» cho lượt không đo (initialize /
+ * Cột "Số ký tự kết quả" của Nhật ký lượt gọi (ai-CR-228). Chỗ dễ lủng: in "0" cho lượt không đo (initialize /
  * tools/list / dòng cũ) làm người đọc tưởng công cụ trả rỗng; số lớn không có dấu chấm nghìn khó đọc; máy chủ cũ
- * chưa có trường thì ô in «undefined» hoặc «NaN»; cột không ẩn được qua menu Cột như các cột khác.
+ * chưa có trường thì ô in "undefined" hoặc "NaN"; cột không ẩn được qua menu Cột như các cột khác.
  *
- * Ô «không đo»: hàm định dạng trả «—» như mọi cột khác của màn, rồi `DataTable` theo luật CR-132 đổi «—» thành ô
+ * Ô "không đo": hàm định dạng trả "—" như mọi cột khác của màn, rồi `DataTable` theo luật CR-132 đổi "—" thành ô
  * TRỐNG (cùng cách cột Người / Ứng dụng AI / IP đang hiện). Bài kiểm khẳng định ô trống để ai đổi luật đó thấy ngay.
  */
 const EMPTY_CELL = /^$/
@@ -77,7 +77,7 @@ function renderPage() {
   )
 }
 
-/** Ô «Số ký tự kết quả» của dòng có công cụ `tool` — tìm theo vị trí cột ở hàng tiêu đề, khỏi phụ thuộc thứ tự cột. */
+/** Ô "Số ký tự kết quả" của dòng có công cụ `tool` — tìm theo vị trí cột ở hàng tiêu đề, khỏi phụ thuộc thứ tự cột. */
 function resultCellOf(tool: string): HTMLElement {
   const headers = screen.getAllByRole('columnheader')
   const index = headers.findIndex((h) => h.textContent?.includes('Số ký tự kết quả'))

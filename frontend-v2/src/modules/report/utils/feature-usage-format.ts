@@ -9,7 +9,7 @@ const labelOf = (options: readonly { value: string; label: string }[], code: num
 export const actionName = (code: number) => labelOf(UI_ACTION, code)
 export const formName = (code: number) => labelOf(UI_FORM, code)
 
-/** «Phân hệ › Màn» của một route mẫu; route không nhận ra hiện nguyên route. */
+/** "Phân hệ › Màn" của một route mẫu; route không nhận ra hiện nguyên route. */
 export function screenName(route: string): string {
   const l = labelRouteInApp(route)
   return l.module ? `${l.module} › ${l.screen}` : l.screen

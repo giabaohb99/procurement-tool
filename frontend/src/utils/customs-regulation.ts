@@ -32,15 +32,15 @@ export function sortRegulationsBySeverity<T extends RegulationSortable>(items: r
 }
 
 /**
- * Ngưỡng → «100 kg», «1.000 kg», «0,15 kg». Giữ tới 3 chữ số lẻ: Methyl isocyanate ngưỡng
- * 0,15 kg, làm tròn thành «0 kg» là nói ngược hẳn với luật. Rỗng / âm / không phải số → ''.
+ * Ngưỡng → "100 kg", "1.000 kg", "0,15 kg". Giữ tới 3 chữ số lẻ: Methyl isocyanate ngưỡng
+ * 0,15 kg, làm tròn thành "0 kg" là nói ngược hẳn với luật. Rỗng / âm / không phải số → ''.
  */
 export function formatThresholdKg(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value) || value < 0) return ''
   return `${value.toLocaleString('vi-VN', { maximumFractionDigits: 3 })} kg`
 }
 
-/** Hoạt chất cấm → «CẤM từ 2026»; nguồn không có năm thì chỉ «CẤM». */
+/** Hoạt chất cấm → "CẤM từ 2026"; nguồn không có năm thì chỉ "CẤM". */
 export function formatBannedLabel(bannedYear: number | null | undefined): string {
   return bannedYear ? `CẤM từ ${bannedYear}` : 'CẤM'
 }
@@ -48,7 +48,7 @@ export function formatBannedLabel(bannedYear: number | null | undefined): string
 /**
  * Lớp nhãn theo mức nặng, dùng lại đúng các lớp `.badge.*` có sẵn trong `index.css`: cấm +
  * tiền chất vũ khí hóa học đỏ (`err`) · có ngưỡng cam (`back`) · công bố theo lô xanh (`info`)
- * · chỉ có tên xám (`gray`). Trước đây ngoài «cấm» và «ngưỡng» mọi thứ đều xanh, nên tiền chất
+ * · chỉ có tên xám (`gray`). Trước đây ngoài "cấm" và "ngưỡng" mọi thứ đều xanh, nên tiền chất
  * vũ khí hóa học trông nhẹ ngang một thủ tục công bố.
  */
 export function regulationBadgeClass(listCode: number): string {
@@ -58,7 +58,7 @@ export function regulationBadgeClass(listCode: number): string {
   return 'gray'
 }
 
-// duoc-CR-490 — thẻ «Pháp lý» (bảng duyệt cả danh mục, 29/09/2026): tách khỏi thẻ «Pháp lý & thuế»
+// duoc-CR-490 — thẻ "Pháp lý" (bảng duyệt cả danh mục, 29/09/2026): tách khỏi thẻ "Pháp lý & thuế"
 // cũ (chỉ tra một từ). Hai hàm dưới CHÉP ĐÚNG bản ERP
 // (`frontend-v2/src/modules/procurement/utils/customs-regulation.ts`).
 
@@ -71,17 +71,17 @@ export function buildRegulationParams(search: string, listCode: string): Record<
 }
 
 /**
- * Câu bảng rỗng phân biệt «chưa nạp danh mục» với «bộ lọc loại hết». Danh mục nạp bằng script
- * (dữ liệu bên thứ ba, không nằm trong repo) hoặc thêm tay ở mục «Cấu hình».
+ * Câu bảng rỗng phân biệt "chưa nạp danh mục" với "bộ lọc loại hết". Danh mục nạp bằng script
+ * (dữ liệu bên thứ ba, không nằm trong repo) hoặc thêm tay ở mục "Cấu hình".
  */
 export function resolveRegulationEmptyMessage(catalogTotal: number): string {
   return catalogTotal > 0
-    ? 'Không có hóa chất nào khớp — thử đổi từ khóa hoặc chọn «Tất cả văn bản».'
-    : 'Chưa có danh mục hóa chất theo văn bản — nhờ người phụ trách nạp danh mục hoặc thêm ở mục «Cấu hình».'
+    ? 'Không có hóa chất nào khớp — thử đổi từ khóa hoặc chọn "Tất cả văn bản".'
+    : 'Chưa có danh mục hóa chất theo văn bản — nhờ người phụ trách nạp danh mục hoặc thêm ở mục "Cấu hình".'
 }
 
 /**
- * duoc-CR-598 — câu thay cho ô «Ngưỡng / Mức cấm» khi dòng không có ngưỡng kg lẫn ngưỡng hỗn hợp
+ * duoc-CR-598 — câu thay cho ô "Ngưỡng / Mức cấm" khi dòng không có ngưỡng kg lẫn ngưỡng hỗn hợp
  * (ô trống bị đọc thành THIẾU dữ liệu): NĐ 24 phụ lục I không đặt ngưỡng nào; dòng cha phụ lục IV
  * (Amoni nitrat, Kali nitrat) có ngưỡng ở từng dòng con. `null` = danh sách đó vốn không có cột này.
  */
@@ -91,7 +91,7 @@ export function describeMissingLimit(listCode: number): string | null {
   return null
 }
 
-/** Ngưỡng hàm lượng hỗn hợp của phụ lục II / III → «> 5% trong hỗn hợp» (khớp bản v2, không viết tắt). */
+/** Ngưỡng hàm lượng hỗn hợp của phụ lục II / III → "> 5% trong hỗn hợp" (khớp bản v2, không viết tắt). */
 export function formatMixtureLimit(pct: number | null | undefined): string {
   if (pct === null || pct === undefined || !Number.isFinite(pct) || pct < 0) return ''
   return `> ${pct.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}% trong hỗn hợp`

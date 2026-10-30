@@ -1,5 +1,5 @@
 /**
- * Hai «chỗ đứng» của nút trên dải tiêu đề màn chi tiết đơn nghỉ phép, ở khổ
+ * Hai "chỗ đứng" của nút trên dải tiêu đề màn chi tiết đơn nghỉ phép, ở khổ
  * ĐIỆN THOẠI. Khai một chỗ vì cụm nút do HAI tệp cùng dựng — trang chi tiết
  * (`leave-request-detail-page.tsx`) và `leave-detail-decision-actions.tsx` —
  * nên chép tay hai bản là sớm muộn hai bên xếp lệch nhau.

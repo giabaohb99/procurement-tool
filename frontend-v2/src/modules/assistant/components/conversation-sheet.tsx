@@ -13,12 +13,12 @@ type ConversationSheetProps = Omit<ConversationListProps, 'trailing'>
  * ⚠️ **Cột hội thoại không thể đứng cạnh khung chat ở khổ này.** Nó rộng cố
  * định 256px, nên trên máy 390px phần chat chỉ còn ~130px và câu trả lời rớt
  * xuống mỗi dòng một từ. Nhưng cũng không bỏ hẳn được: không có nó thì hội
- * thoại cũ **không có đường nào mở lại**, và nút «Hội thoại mới» cũng mất theo.
+ * thoại cũ **không có đường nào mở lại**, và nút "Hội thoại mới" cũng mất theo.
  * Tờ trượt giữ đủ cả hai mà không ăn một pixel nào của khung chat lúc đang đọc.
  *
  * ⚠️ **Chọn một hội thoại là ĐÓNG tờ trượt.** Không đóng thì người dùng bấm
  * xong vẫn nhìn thấy danh sách, tưởng chưa ăn, rồi bấm lần nữa. Cùng lý do với
- * nút «Hội thoại mới».
+ * nút "Hội thoại mới".
  */
 export function ConversationSheet({ onNew, onSelect, ...rest }: ConversationSheetProps) {
   const [open, setOpen] = useState(false)

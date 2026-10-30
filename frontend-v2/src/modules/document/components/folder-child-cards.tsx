@@ -25,7 +25,7 @@ interface FolderChildCardsProps {
   children: DocFolderTreeNode[]
   /**
    * Thư mục ĐANG XEM — nguồn của lượt kéo khi thả thẻ này ra ngoài. `null` =
-   * không gắn với một thư mục cụ thể (gốc «Thư mục của bạn», các thẻ ở đây là
+   * không gắn với một thư mục cụ thể (gốc "Thư mục của bạn", các thẻ ở đây là
    * THƯ MỤC PHÁP NHÂN — kéo ra khỏi "không đâu cả" chứ không phải khỏi một
    * thư mục cha thật).
    */
@@ -40,12 +40,12 @@ interface FolderChildCardsProps {
    * CHUYỂN văn bản, giữ Alt = THÊM một chỗ nữa).
    */
   onDropItems: (targetFolderId: number, payload: FolderDragPayload, keepInSource: boolean) => void
-  /** `false` = không vẽ ô tick trên thẻ (gốc «Thư mục của bạn»). Mặc định `true`. */
+  /** `false` = không vẽ ô tick trên thẻ (gốc "Thư mục của bạn"). Mặc định `true`. */
   selectable?: boolean
 }
 
 /**
- * Thư mục CON dạng thẻ, đầu tab «Văn bản» của khung nội dung — kiểu Drive
+ * Thư mục CON dạng thẻ, đầu tab "Văn bản" của khung nội dung — kiểu Drive
  * (đặc tả §B): chọn được (bấm/Ctrl/Shift), kéo được ra ngoài, nhận thả từ
  * ngoài vào, menu chuột phải đủ sáu mục theo `my_level`.
  */
@@ -70,8 +70,8 @@ export function FolderChildCards({
   return (
     <>
       {/*  Thẻ thư mục kiểu Google Drive (làm lại 24/09/2026): nền xám nhạt
-          KHÔNG viền, bo `rounded-xl`, icon + tên + dòng phụ đếm «n thư mục ·
-          n văn bản», nút «⋮» LUÔN hiện. Có viền + bóng nhẹ như thẻ văn bản
+          KHÔNG viền, bo `rounded-xl`, icon + tên + dòng phụ đếm "n thư mục ·
+          n văn bản", nút "⋮" LUÔN hiện. Có viền + bóng nhẹ như thẻ văn bản
           (bản nền xám không viền chìm vào nền trắng). Thay thẻ pill viền tròn cũ — lưới 4
           cột toàn viền nhìn như dãy ô nhập liệu. Chọn tô `bg-accent`/
           `ring-primary` cùng ngôn ngữ với thẻ Lưới văn bản. */}

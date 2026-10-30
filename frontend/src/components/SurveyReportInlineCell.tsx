@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from './toast'
 
 /**
- * duoc-CR-612 (v1): ô chữ SỬA NGAY TRÊN DÒNG của dạng «Bảng» trong khối Báo cáo thực hiện.
+ * duoc-CR-612 (v1): ô chữ SỬA NGAY TRÊN DÒNG của dạng "Bảng" trong khối Báo cáo thực hiện.
  * Kiểu bảng tính: bấm vào là sửa, Enter / rời ô là lưu, Esc là bỏ. Chép hành vi từ
  * `frontend-v2/.../survey-report-inline-cells.tsx`.
  *

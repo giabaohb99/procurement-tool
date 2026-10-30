@@ -69,7 +69,7 @@ describe('WorkScheduleWeekEditor', () => {
     expect(screen.queryByLabelText('T7 — nghỉ trưa từ')).not.toBeInTheDocument()
     const saturday = currentDays()[5]
     expect(saturday.day_kind).toBe(WORK_DAY_KIND_CODE.MORNING)
-    //  Regression: giờ ra từng giữ 17:00 của Cả ngày -> «sáng 08–17».
+    //  Regression: giờ ra từng giữ 17:00 của Cả ngày -> "sáng 08–17".
     expect([saturday.start_time, saturday.end_time, saturday.lunch_start, saturday.lunch_end]).toEqual([
       '08:00',
       '12:00',
@@ -122,7 +122,7 @@ describe('WorkScheduleWeekEditor', () => {
     expect(screen.getAllByText('Không nghỉ trưa')).toHaveLength(1)
   })
 
-  it('preset «T2–T6 hành chính» makes T7 off and the total 5; «T2–T7» restores 6', async () => {
+  it('preset "T2–T6 hành chính" makes T7 off and the total 5; "T2–T7" restores 6', async () => {
     const user = userEvent.setup()
     render(<Harness initial={buildDefaultWeek()} />)
     await user.click(screen.getByRole('button', { name: 'T2–T6 hành chính' }))
@@ -151,7 +151,7 @@ describe('WorkScheduleWeekEditor', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('T4: nhập đủ giờ vào và giờ ra.')
   })
 
-  it('«Áp giờ T2 cho T3–T6» copies Monday into Tue–Fri but never overwrites T7 or CN', async () => {
+  it('"Áp giờ T2 cho T3–T6" copies Monday into Tue–Fri but never overwrites T7 or CN', async () => {
     const user = userEvent.setup()
     const week = buildDefaultWeek()
     week[0] = { ...week[0], start_time: '07:30', end_time: '16:30' }
@@ -191,7 +191,7 @@ describe('WorkScheduleWeekEditor', () => {
     expect(document.querySelectorAll('input[type="time"]')).toHaveLength(0)
     expect(screen.queryByRole('button', { name: /Áp giờ T2/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'T2–T7' })).not.toBeInTheDocument()
-    //  Ngày Cả ngày phải hiện cả giờ nghỉ trưa, ngày nghỉ hiện «Nghỉ».
+    //  Ngày Cả ngày phải hiện cả giờ nghỉ trưa, ngày nghỉ hiện "Nghỉ".
     expect(screen.getAllByText('08:00–17:00 (nghỉ trưa 12:00–13:00)')).toHaveLength(6)
     expect(screen.getAllByText('Nghỉ')).toHaveLength(1)
   })
@@ -203,7 +203,7 @@ describe('WorkScheduleWeekEditor', () => {
     expect(screen.getByText('Sáng 08:00–12:00')).toBeInTheDocument()
   })
 
-  it('survives an empty / missing / garbage value from the backend by showing 7 «Nghỉ» rows', () => {
+  it('survives an empty / missing / garbage value from the backend by showing 7 "Nghỉ" rows', () => {
     for (const bad of [[], undefined, null, 'oops']) {
       const { unmount } = render(<Harness initial={bad} disabled />)
       expect(screen.getAllByText('Nghỉ')).toHaveLength(7)

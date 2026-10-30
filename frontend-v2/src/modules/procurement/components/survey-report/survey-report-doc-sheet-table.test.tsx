@@ -1,4 +1,4 @@
-// duoc-CR-612 — khối Báo cáo thực hiện, dạng «Bảng» sửa ngay trên hàng. Chạy qua NGUYÊN
+// duoc-CR-612 — khối Báo cáo thực hiện, dạng "Bảng" sửa ngay trên hàng. Chạy qua NGUYÊN
 // `SurveyReportCard` (hook + cache thật, chỉ giả tầng `@/core/api`) để bắt đúng thứ gửi lên
 // backend: PATCH thừa trường là ghi đè trường người khác vừa sửa; PATCH nhầm id là sửa nhầm hồ sơ.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -115,7 +115,7 @@ describe('SurveyReportCard — table view with inline editing', () => {
     renderCard()
     await openCard()
     expect(screen.getByRole('button', { name: 'Bảng' })).toHaveAttribute('aria-pressed', 'true')
-    //  Dạng bảng không có gì để gấp — nút «Mở tất cả» chỉ gây hiểu nhầm.
+    //  Dạng bảng không có gì để gấp — nút "Mở tất cả" chỉ gây hiểu nhầm.
     expect(screen.queryByRole('button', { name: /Mở tất cả|Thu gọn/ })).not.toBeInTheDocument()
   })
 
@@ -190,7 +190,7 @@ describe('SurveyReportCard — table view with inline editing', () => {
     expect(apiPatch.mock.calls[1]).toEqual([`${BASE}/docs/1`, { required: true }])
   })
 
-  //  duoc-CR-617 bỏ cột ô tick ✓ đầu bảng — luật «chờ tiên quyết thì chưa được Hoàn thành»
+  //  duoc-CR-617 bỏ cột ô tick ✓ đầu bảng — luật "chờ tiên quyết thì chưa được Hoàn thành"
   //  nay chỉ còn gác ở ô Trạng thái, nên phải kiểm ngay trên ô đó.
   it('blocks choosing "Hoàn thành" for a locked doc and shows what it waits for', async () => {
     const user = userEvent.setup()
@@ -258,7 +258,7 @@ describe('SurveyReportCard — table view with inline editing', () => {
     expect(screen.queryByRole('button', { name: /Sửa tên hồ sơ/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: 'Tên hồ sơ mới' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Xóa hồ sơ/ })).not.toBeInTheDocument()
-    //  «Bắt buộc» là chữ, không phải ô tick mờ `disabled` (luật ô chỉ xem).
+    //  "Bắt buộc" là chữ, không phải ô tick mờ `disabled` (luật ô chỉ xem).
     expect(within(table).queryAllByRole('checkbox')).toHaveLength(0)
     //  Trạng thái là pill chữ, không phải ô chọn.
     expect(screen.queryByRole('combobox', { name: /^Trạng thái hồ sơ/ })).not.toBeInTheDocument()

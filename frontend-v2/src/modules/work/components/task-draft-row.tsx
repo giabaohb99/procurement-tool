@@ -117,11 +117,11 @@ export function TaskDraftRow({
       onCancel()
       return
     }
-    //  Dòng nháp ở lại để gõ tiếp nên chỉ lần tạo ĐẦU tính là «gửi»; tạo thành công hay không do trang cha quyết (gọi API ở đó).
+    //  Dòng nháp ở lại để gõ tiếp nên chỉ lần tạo ĐẦU tính là "gửi"; tạo thành công hay không do trang cha quyết (gọi API ở đó).
     markSubmitted()
     onSave({ ...draft, title })
     //  Dòng nháp Ở LẠI để gõ tiếp việc kế — thêm việc hiếm khi đi một cái, đóng
-    //  sau mỗi lần Enter thì cứ mỗi việc lại phải rê chuột xuống bấm «Việc mới».
+    //  sau mỗi lần Enter thì cứ mỗi việc lại phải rê chuột xuống bấm "Việc mới".
     //  Chỉ ô tên được dọn; người phụ trách / hạn / nhãn vừa chọn giữ nguyên vì
     //  mấy việc thêm liền nhau thường cùng một bộ.
     setDraft((prev) => ({ ...prev, title: '' }))
@@ -247,8 +247,8 @@ function DraftCell({ column, draft, members, onPatch, onPatchLabel }: DraftCellP
   }
 
   //  Cột TRẠNG THÁI cố ý để trống ở dòng nháp: việc chưa tồn tại thì trạng thái
-  //  duy nhất có nghĩa là «Đang mở», bày một ô chọn ra chỉ mời người ta tạo sẵn
-  //  một việc «Hoàn thành».
+  //  duy nhất có nghĩa là "Đang mở", bày một ô chọn ra chỉ mời người ta tạo sẵn
+  //  một việc "Hoàn thành".
   if (column.key === 'status') return null
 
   const field: WorkLabelField | undefined = column.field

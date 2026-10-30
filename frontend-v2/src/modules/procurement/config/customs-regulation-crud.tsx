@@ -41,7 +41,7 @@ export const CUSTOMS_REGULATION_CRUD_CONFIG: CrudConfig<CustomsRegulation> = {
   ],
   getItemName: (row) => row.name,
   deleteWarning:
-    'Xóa khỏi danh mục thì màn Tra cứu thị trường thôi cảnh báo cho hóa chất này. Muốn tạm tắt thì chuyển sang «Ngừng dùng».',
+    'Xóa khỏi danh mục thì màn Tra cứu thị trường thôi cảnh báo cho hóa chất này. Muốn tạm tắt thì chuyển sang "Ngừng dùng".',
   chips: (row) => [
     { icon: BookOpen, text: formatRegulationListLabel(row.list_code) },
     ...(row.cas_no ? [{ icon: Hash, text: `CAS ${row.cas_no}`, tone: 'code' as const }] : []),

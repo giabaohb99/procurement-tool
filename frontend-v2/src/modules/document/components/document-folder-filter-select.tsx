@@ -12,7 +12,7 @@ import { useDocFolderSearch, useDocFolderTree } from '../hooks/use-document-fold
 import { FOLDER_KIND } from '../types/document-folder'
 import { FolderPickerResults } from './folder-picker-results'
 
-/** Sentinel «tất cả thư mục» — id thư mục thật luôn > 0, không dùng lại `0`
+/** Sentinel "tất cả thư mục" — id thư mục thật luôn > 0, không dùng lại `0`
  * (CR-322: đừng lấy một giá trị id THẬT làm mốc "tất cả"). */
 export const FOLDER_FILTER_ALL = -1
 
@@ -20,9 +20,9 @@ interface DocumentFolderFilterSelectProps {
   folderId: number
   onFolderIdChange: (id: number) => void
   /**
-   * «Gồm cả thư mục con» — nằm Ở CHÂN popover chứ không đứng ngoài thanh công
+   * "Gồm cả thư mục con" — nằm Ở CHÂN popover chứ không đứng ngoài thanh công
    * cụ (đại ca chê 25/09/2026: công tắc ngoài thanh trông như đang bật trong
-   * khi ô vẫn là «Tất cả thư mục», mà lúc đó nó chẳng có nghĩa gì). Bỏ trống
+   * khi ô vẫn là "Tất cả thư mục", mà lúc đó nó chẳng có nghĩa gì). Bỏ trống
    * = không vẽ dòng này.
    */
   includeSubfolders?: boolean
@@ -31,7 +31,7 @@ interface DocumentFolderFilterSelectProps {
 }
 
 /**
- * Ô LỌC «Thư mục» của bộ lọc nâng cao ở màn Văn bản (phase 06, duoc-CR-476) —
+ * Ô LỌC "Thư mục" của bộ lọc nâng cao ở màn Văn bản (phase 06, duoc-CR-476) —
  * chọn MỘT thư mục từ CẢ CÂY (không giới hạn mức Đóng góp như `folder-picker.tsx`,
  * thứ đó phục vụ CHỌN NƠI LƯU lúc soạn văn bản; ở đây chỉ cần đọc được thư mục
  * là lọc được, đúng luật "quyền thư mục không mở quyền văn bản" — thấy thư mục
@@ -40,7 +40,7 @@ interface DocumentFolderFilterSelectProps {
  *
  * Tái dùng `FolderPickerResults` (khung tìm + cây) của `folder-picker.tsx` —
  * chỉ khác đầu vào KHÔNG lọc theo `my_level`/pháp nhân và có thêm dòng
- * «Tất cả thư mục» đứng đầu popover.
+ * "Tất cả thư mục" đứng đầu popover.
  */
 export function DocumentFolderFilterSelect({
   folderId,

@@ -10,7 +10,7 @@ import {
 
 describe('wordLineSpacingToCss', () => {
   //  ⚠️ Chỗ này TỪNG nhân thêm 1,15 để bản nhập nhìn giống Word, và người dùng
-  //  bắt được là hỏng: trang giấy để sẵn `line-height: 1.15`, nên bấm nấc «1,0»
+  //  bắt được là hỏng: trang giấy để sẵn `line-height: 1.15`, nên bấm nấc "1,0"
   //  ghi ra đúng 1.15 — không đổi một pixel nào, nhìn như tính năng chết. Chốt
   //  20/08/2026: giãn dòng 1 là 1.
   it('số trên thanh công cụ CHÍNH LÀ line-height, không quy đổi', () => {

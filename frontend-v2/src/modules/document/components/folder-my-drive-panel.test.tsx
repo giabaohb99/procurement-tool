@@ -126,7 +126,7 @@ describe('FolderMyDrivePanel — chế độ DANH SÁCH mặc định, dùng L�
 })
 
 describe('FolderMyDrivePanel — chuyển sang chế độ LƯỚI, dùng LẠI FolderChildCards', () => {
-  it('bấm «Xem dạng lưới» → đổi ngay sang thẻ pill, GHI vào ĐÚNG localStorage của một thư mục thật', async () => {
+  it('bấm "Xem dạng lưới" → đổi ngay sang thẻ pill, GHI vào ĐÚNG localStorage của một thư mục thật', async () => {
     const user = userEvent.setup()
     render(<FolderMyDrivePanel onSelectFolder={vi.fn()} />)
     await user.click(screen.getByRole('button', { name: 'Xem dạng lưới' }))
@@ -134,7 +134,7 @@ describe('FolderMyDrivePanel — chuyển sang chế độ LƯỚI, dùng LẠI 
     expect(screen.getByRole('button', { name: 'Xem dạng lưới' })).toHaveAttribute('aria-pressed', 'true')
     expect(localStorage.getItem(FOLDER_VIEW_STORAGE_KEY)).toBe('1')
     //  Thẻ thư mục kiểu Drive (chốt 24/09/2026): tên hỗ trợ = đúng TÊN, dòng
-    //  đếm là phần MÔ TẢ — rỗng thì ghi «Trống», có văn bản thì ghi số.
+    //  đếm là phần MÔ TẢ — rỗng thì ghi "Trống", có văn bản thì ghi số.
     expect(screen.getByRole('button', { name: 'CÔNG TY A' })).toHaveAccessibleDescription('Trống')
     expect(screen.getByRole('button', { name: 'CÔNG TY B' })).toHaveAccessibleDescription('12 văn bản')
   })
@@ -163,7 +163,7 @@ describe('FolderMyDrivePanel — khung chi tiết bật/tắt được, menu ⋯
     expect(screen.getByText('Chọn một thư mục hoặc văn bản để xem chi tiết.')).toBeInTheDocument()
   })
 
-  it('menu «⋯» của một dòng pháp nhân có mục «Xem chi tiết» (dùng chung FolderItemContextMenu)', async () => {
+  it('menu "⋯" của một dòng pháp nhân có mục "Xem chi tiết" (dùng chung FolderItemContextMenu)', async () => {
     const user = userEvent.setup()
     render(<FolderMyDrivePanel onSelectFolder={vi.fn()} />)
     const row = screen.getByRole('button', { name: 'CÔNG TY A' })

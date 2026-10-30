@@ -61,20 +61,20 @@ interface UserScopeDialogProps {
  *
  * **HAI TẦNG GỘP LÀM MỘT** (đại ca chốt 19/09/2026). Bản trước bày hai khối
  * "Tầng 1" / "Tầng 2" ngang nhau, và đại ca bác đúng: gán vai trò xong là tài
- * khoản **đã có phạm vi rồi** — bậc «Công ty» nghĩa là công ty trong hồ sơ của
+ * khoản **đã có phạm vi rồi** — bậc "Công ty" nghĩa là công ty trong hồ sơ của
  * chính người đó, không ai phải tick gì cả. Bày hai tầng ngang hàng khiến năm ô
  * tick trông như phần bắt buộc phải khai; đo trên dữ liệu thật thì 25 trong 27
  * dòng khai công ty chỉ chép lại đúng công ty đã có trong hồ sơ.
  *
  * Nên hộp thoại nay có MỘT khối trả lời "tài khoản này thấy gì" (in tên công ty
- * / phòng ban thật), còn năm ô tick tụt xuống mục «Ngoại lệ» **gấp lại**.
+ * / phòng ban thật), còn năm ô tick tụt xuống mục "Ngoại lệ" **gấp lại**.
  *
  * ⚠️ Gấp chứ KHÔNG bỏ, và `core/scoping.py` không đụng tới: 11 tài khoản chưa
  * gắn hồ sơ và 2 tài khoản khai công ty khác hồ sơ đang sống nhờ đúng mấy dòng
  * đó. Bỏ ô tick hôm nay là mười ba người mất phạm vi trong im lặng.
  *
  * ⚠️ Hai chiều CỘNG THÊM chứ không thu hẹp, ngược hẳn với cái tên:
- * «Phòng ban được xem» ghép bằng `or_` với bậc vai trò (`scope_condition`). Tick
+ * "Phòng ban được xem" ghép bằng `or_` với bậc vai trò (`scope_condition`). Tick
  * một phòng vào đó KHÔNG làm tài khoản chỉ còn thấy phòng đó. Mọi câu chữ trong
  * hộp thoại phải nói đúng chiều này, xem `utils/scope-summary.ts`.
  *
@@ -112,7 +112,7 @@ export function UserScopeDialog({
   //  Không tắt thì hộp thoại vừa mở đã bắn ba lượt gọi; thiếu quyền là ăn 403,
   //  mà 403 trên GET không bật toast (`core/api/http-client.ts`) nên ô chỉ hiện
   //  rỗng — người khai quyền đọc ra thành "công ty này chưa khai phòng ban nào"
-  //  rồi khai phạm vi hụt. Cùng bẫy đã dính ở tab «Công nợ» của Nhà cung cấp.
+  //  rồi khai phạm vi hụt. Cùng bẫy đã dính ở tab "Công nợ" của Nhà cung cấp.
   //
   //  Gác thêm `roleId !== null`: hộp thoại luôn được dựng ở cây React, chỉ có
   //  `open` là đổi — không có nhịp này thì đóng hộp vẫn nạp 2000 nhân sự.
@@ -172,7 +172,7 @@ export function UserScopeDialog({
         : null
 
   const tierGroups = meta ? groupEntitiesByScope(rolePermissions ?? [], meta) : []
-  //  Vai trò chỉ toàn bậc «Tất cả» thì ô "xem thêm phòng ban" không đổi được gì:
+  //  Vai trò chỉ toàn bậc "Tất cả" thì ô "xem thêm phòng ban" không đổi được gì:
   //  `scope_condition` bỏ qua phần cộng thêm khi bậc đã thấy hết.
   const roleSeesEverything = tierGroups.length === 1 && tierGroups[0].scope === 'all'
 
@@ -333,7 +333,7 @@ export function UserScopeDialog({
                     title="Xem THÊM phòng ban"
                     hint={
                       roleSeesEverything
-                        ? 'Vai trò đã ở bậc «Tất cả» nên cộng thêm phòng ban không đổi được gì.'
+                        ? 'Vai trò đã ở bậc "Tất cả" nên cộng thêm phòng ban không đổi được gì.'
                         : 'CỘNG THÊM, không thu hẹp: tài khoản thấy chứng từ của các phòng này NGOÀI phần mặc định ở trên.'
                     }
                     muted={roleSeesEverything}

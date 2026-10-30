@@ -152,7 +152,7 @@ export function ProductionDashboardPage() {
         {canProduct && (
           <ChartCard
             title="Sản phẩm theo phân loại"
-            description="6 phân loại nhiều mã nhất, phần còn lại gộp vào «Khác»."
+            description='6 phân loại nhiều mã nhất, phần còn lại gộp vào "Khác".'
             loading={isLoading}
             isEmpty={productGroups.length === 0}
             emptyLabel="Chưa có sản phẩm nào trong danh mục."

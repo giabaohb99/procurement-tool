@@ -12,7 +12,7 @@ export function isChosenId(value: unknown): boolean {
  * giờ vào, giờ nghỉ trưa khai đủ cặp. Trả câu tiếng Việt nêu đúng thứ sai, hoặc
  * `true`. Luật sâu hơn (trưa nằm gọn trong khung…) vẫn do backend giữ; chỗ này chỉ
  * để người dùng không nhận khóa lỗi thô ở toast. Dữ liệu thiếu thứ được `fillWeek`
- * bù thành «Nghỉ» nên luôn đủ bảy hàng.
+ * bù thành "Nghỉ" nên luôn đủ bảy hàng.
  */
 export function validateWeekDays(days: unknown): string | true {
   for (const day of fillWeek(days)) {

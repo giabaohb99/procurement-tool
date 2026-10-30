@@ -165,7 +165,7 @@ describe('UnifiedLeaveRequestTable', () => {
     vi.clearAllMocks()
   })
 
-  it('mặc định phạm vi là «Tất cả» trong ô chọn Select', () => {
+  it('mặc định phạm vi là "Tất cả" trong ô chọn Select', () => {
     renderComponent()
     // Ô select phạm vi hiển thị giá trị mặc định "Tất cả"
     const selects = screen.getAllByRole('combobox')
@@ -173,7 +173,7 @@ describe('UnifiedLeaveRequestTable', () => {
     expect(selects[0]).toHaveTextContent('Tất cả')
   })
 
-  it('gắn nhãn «Cần bạn duyệt» cho đơn đang nằm trong hàng đợi ký của chính người dùng', () => {
+  it('gắn nhãn "Cần bạn duyệt" cho đơn đang nằm trong hàng đợi ký của chính người dùng', () => {
     renderComponent()
     // Đơn NP-00101 nằm trong mockToApproveList
     expect(screen.getByText('Cần bạn duyệt')).toBeInTheDocument()

@@ -58,7 +58,7 @@ type DeclaringState = null | number
  * Quan hệ là **một–nhiều**: một loại phụ thuộc mấy loại cũng được, và ô "Tới
  * loại" lúc thêm mới cho tick nhiều loại một lần.
  *
- * Cùng bảng dữ liệu với trang «Quy tắc quan hệ» — trang đó xem toàn cảnh cả hệ,
+ * Cùng bảng dữ liệu với trang "Quy tắc quan hệ" — trang đó xem toàn cảnh cả hệ,
  * ở đây chỉ lọc theo một loại. Cố tình KHÔNG đẻ thêm khái niệm "loại tiên
  * quyết" riêng: hai nơi mô tả cùng một việc thì sớm muộn cũng lệch nhau.
  */
@@ -296,7 +296,7 @@ export function DocumentTypeLinkRulesCard({
               {typeof declaring === 'number' ? 'Sửa quy tắc quan hệ' : 'Thêm quy tắc quan hệ'}
             </DialogTitle>
             <DialogDescription>
-              Quy định văn bản thuộc loại {docTypeName ? `«${docTypeName}»` : 'này'} phải gắn với
+              Quy định văn bản thuộc loại {docTypeName ? `"${docTypeName}"` : 'này'} phải gắn với
               loại văn bản nào, bắt buộc hay tùy chọn, và được gắn bao nhiêu văn bản.
             </DialogDescription>
           </DialogHeader>

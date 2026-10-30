@@ -19,7 +19,7 @@ const departments = [
 ]
 
 describe('handlingDeptLabel — bao-CR-480 / bao-CR-524', () => {
-  it('shows the real central department name the backend sends, never «Thu mua chung»', () => {
+  it('shows the real central department name the backend sends, never "Thu mua chung"', () => {
     //  bao-CR-524: phiếu cũ còn 0 cũng được backend trả kèm tên phòng thu mua mặc định.
     expect(handlingDeptLabel(0, 'Sản xuất -Thu mua')).toBe('Sản xuất -Thu mua')
     expect(handlingDeptLabel(20, 'Sản xuất -Thu mua')).toBe('Sản xuất -Thu mua')
@@ -46,7 +46,7 @@ describe('handlingDeptLabel — bao-CR-480 / bao-CR-524', () => {
 })
 
 describe('handlingDeptOptions — bao-CR-524 (không còn mục ảo)', () => {
-  it('offers only real departments — no option with value 0, no «Thu mua chung»', () => {
+  it('offers only real departments — no option with value 0, no "Thu mua chung"', () => {
     const options = handlingDeptOptions(departments, 0)
     expect(options).toEqual([
       { value: '5', label: 'Dego Organic' },
@@ -65,7 +65,7 @@ describe('handlingDeptOptions — bao-CR-524 (không còn mục ảo)', () => {
   })
 })
 
-describe('handlingDeptForCreate — bao-CR-488 (ô tick «Nhờ phòng khác xử lý» lúc lập phiếu)', () => {
+describe('handlingDeptForCreate — bao-CR-488 (ô tick "Nhờ phòng khác xử lý" lúc lập phiếu)', () => {
   it('untouched tick + no department → send nothing, backend picks the default', () => {
     expect(isHandlingDeptAssigned({ handler_dept_id: 0 })).toBe(false)
     expect(handlingDeptForCreate({ handler_dept_id: 0 })).toBeUndefined()
@@ -91,7 +91,7 @@ describe('handlingDeptForCreate — bao-CR-488 (ô tick «Nhờ phòng khác x�
   })
 })
 
-//  03/10/2026 — ô Phòng xử lý lúc LẬP phiếu bỏ ô tick: mục mặc định «Phòng thu mua mặc định»
+//  03/10/2026 — ô Phòng xử lý lúc LẬP phiếu bỏ ô tick: mục mặc định "Phòng thu mua mặc định"
 //  phải là trạng thái CHƯA nhờ (không gửi gì, backend tự chọn — nhà máy → chính phòng mình).
 //  Quy nó về phòng 0 là ép mọi phiếu nhà máy sang thu mua chung, im lặng.
 describe('handling department picker when creating', () => {

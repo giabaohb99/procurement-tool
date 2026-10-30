@@ -95,7 +95,7 @@ export function DocumentNeedsReviewBanner({
           của băng một mình không cứu được: ô chữ khai `min-w-0 flex-1` nên nó co
           được xuống tận 0, tức hàng KHÔNG BAO GIỜ tràn và do đó không bao giờ
           xuống dòng — chỗ thiếu bị lấy hết từ ô chữ. Đo ở 390px: hai nút giữ
-          nguyên 215px, ô chữ còn **69px** và câu «Văn bản này cần rà lại.» rơi
+          nguyên 215px, ô chữ còn **69px** và câu "Văn bản này cần rà lại." rơi
           thành một chữ mỗi dòng, cao 200px. Cho cụm nút chiếm trọn bề ngang thì
           nó buộc phải xuống hàng, và ô chữ lấy lại gần 300px.
 
@@ -117,10 +117,10 @@ export function DocumentNeedsReviewBanner({
           </Button>
         )}
 
-        {/*  CHỈ khi đang có dấu «cần rà lại». Việc duy nhất của nút này là GỠ
+        {/*  CHỈ khi đang có dấu "cần rà lại". Việc duy nhất của nút này là GỠ
             cái dấu đó, nên bản riêng chưa bị đánh dấu mà bày nút ra thì bấm vào
-            chỉ nhận đúng một câu từ chối: *«Văn bản này không có dấu cần rà
-            lại»* (`service.py::xac_nhan_ra_soat`). Người dùng gõ xong lý do,
+            chỉ nhận đúng một câu từ chối: *"Văn bản này không có dấu cần rà
+            lại"* (`service.py::xac_nhan_ra_soat`). Người dùng gõ xong lý do,
             bấm xác nhận, rồi ăn báo đỏ — mà họ không làm gì sai cả. */}
         {needsReview && canWrite && onConfirm && (
           <Button type="button" size="sm" disabled={pending} onClick={onConfirm}>

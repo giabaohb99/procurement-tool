@@ -23,7 +23,7 @@ interface EmployeeTabDocumentsProps {
 }
 
 /**
- * Tab «Giấy tờ & BHXH» — nhóm 5, hai ảnh CCCD, và bảng thành viên hộ gia đình.
+ * Tab "Giấy tờ & BHXH" — nhóm 5, hai ảnh CCCD, và bảng thành viên hộ gia đình.
  *
  * Gần như toàn bộ tab nằm trong nhóm NHẠY CẢM. Ngoại lệ duy nhất là **nơi khám
  * chữa bệnh BHYT**: hành chính hỏi nhau hằng ngày để làm thủ tục, giấu nó chỉ

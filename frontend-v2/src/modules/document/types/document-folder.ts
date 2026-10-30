@@ -20,13 +20,13 @@
 export const FOLDER_KIND = {
   company: 1,
   normal: 2,
-  /** Thư mục NHÓM «Công ty» ở gốc cây — chứa mọi thư mục pháp nhân (24/09/2026). */
+  /** Thư mục NHÓM "Công ty" ở gốc cây — chứa mọi thư mục pháp nhân (24/09/2026). */
   companyGroup: 3,
 } as const
 
 /**
  * Thư mục tick chọn được để thao tác HÀNG LOẠT (chuyển · xóa) hay không. Thư
- * mục pháp nhân và nhóm «Công ty» là khung cố định của cây — không chuyển,
+ * mục pháp nhân và nhóm "Công ty" là khung cố định của cây — không chuyển,
  * không xóa theo lô được — nên KHÔNG có ô tick (lead chốt 24/09/2026).
  */
 export function canBulkSelectFolder(folder: { kind: number }): boolean {
@@ -133,9 +133,9 @@ export interface DocFolderTreeNode {
    * trên chính trường này thay vì đoán lại ở client.
    */
   my_level: number
-  /** Ngày tạo thư mục — cột «Ngày tạo» của danh sách (25/09/2026). Tùy chọn vì test dựng tay có thể bỏ. */
+  /** Ngày tạo thư mục — cột "Ngày tạo" của danh sách (25/09/2026). Tùy chọn vì test dựng tay có thể bỏ. */
   created_at?: string
-  /** Tên người tạo; «Hệ thống» với thư mục tự dựng (pháp nhân, nhóm «Công ty»). */
+  /** Tên người tạo; "Hệ thống" với thư mục tự dựng (pháp nhân, nhóm "Công ty"). */
   created_by_name?: string
 }
 
@@ -251,7 +251,7 @@ export interface FolderAccessRevokeInput {
 /** Trần đối tượng một lượt cấp HÀNG LOẠT — khớp `MAX_BULK_ACCESS_SUBJECTS` (`folder_access_schema.py`, phase 10B). */
 export const MAX_BULK_ACCESS_SUBJECTS = 200
 
-/** Một đối tượng trong hộp «Chia sẻ» chọn nhiều — chỉ định danh, mức/chiều tác động khai CHUNG cho cả lượt. */
+/** Một đối tượng trong hộp "Chia sẻ" chọn nhiều — chỉ định danh, mức/chiều tác động khai CHUNG cho cả lượt. */
 export interface FolderAccessBulkSubject {
   subject_kind: number
   subject_id: number

@@ -52,7 +52,7 @@ export function BookingRequesterCard({ booking }: { booking: VehicleBooking }) {
       </div>
 
       {/*  duoc-CR-681: người phê duyệt + công ty CHỌN trên phiếu — hai thứ người duyệt / điều phối hay hỏi đầu tiên
-          («phiếu này ai duyệt, của công ty nào»). Phiếu cũ chưa chọn thì không dựng ô đó. */}
+          ("phiếu này ai duyệt, của công ty nào"). Phiếu cũ chưa chọn thì không dựng ô đó. */}
       {(booking.first_approver_name || booking.company_name) && (
         <div className="grid gap-3 border-t pt-3 sm:grid-cols-2">
           {booking.first_approver_name && (

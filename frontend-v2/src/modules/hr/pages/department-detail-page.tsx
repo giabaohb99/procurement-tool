@@ -128,7 +128,7 @@ export function DepartmentDetailPage() {
                Lề âm để dải chạy hết bề ngang khung thay vì thụt vào theo phần
                đệm của `PageContainer`. */}
           <div className="sticky top-0 z-20 -mx-4 -mt-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b bg-canvas px-4 py-3 lg:-mx-6 lg:-mt-6 lg:px-6">
-            {/*  ⚠️ Chữ «phòng ban» THÔI HIỆN ở khổ điện thoại: hàng này còn phải
+            {/*  ⚠️ Chữ "phòng ban" THÔI HIỆN ở khổ điện thoại: hàng này còn phải
                  chứa nút Lưu và nút Xóa. `sr-only` chứ KHÔNG `hidden` — `hidden`
                  là `display:none` nên trình đọc màn hình cũng mất luôn. */}
             <Button variant="ghost" size="sm" className="-ml-2 min-w-0" asChild>
@@ -175,7 +175,7 @@ export function DepartmentDetailPage() {
                     {/*  ⚠️ `ReadOnlyValue`, KHÔNG phải `<Input disabled>` (luật ở
                          `CLAUDE.md`). `disabled` gỡ khả năng nhận con trỏ nên
                          **không bôi đen, không copy được**, lại bị làm mờ 50%
-                         nên «PB13» nhìn y như chữ gợi ý của ô chưa ai nhập.
+                         nên "PB13" nhìn y như chữ gợi ý của ô chưa ai nhập.
                          Vẫn bọc `FormField` để `code` ở lại trong payload. */}
                     <ReadOnlyValue>{field.value}</ReadOnlyValue>
                     <FormDescription>
@@ -316,7 +316,7 @@ export function DepartmentDetailPage() {
                       //  cách hợp lệ: danh sách lọc theo pháp nhân gốc, mà dữ
                       //  liệu cũ có phòng ở pháp nhân này lại giữ trưởng phòng
                       //  của pháp nhân khác. Không có nhãn dự phòng thì ô hiện
-                      //  trống, đọc thành «chưa chỉ định» — sai hẳn.
+                      //  trống, đọc thành "chưa chỉ định" — sai hẳn.
                       fallbackLabel={department.manager_name ?? undefined}
                     />
                     <FormDescription>

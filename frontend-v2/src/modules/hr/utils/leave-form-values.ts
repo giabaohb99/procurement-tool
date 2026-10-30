@@ -38,7 +38,7 @@ export interface LeaveLineValue {
 
 /**
  * Một KHOẢNG NGÀY LIỀN trên form (duoc-CR-683): từ ngày + buổi → đến ngày + buổi.
- * Đơn một khoảng là hình dạng của gần như mọi tờ đơn; «+ Thêm khoảng ngày» mọc thêm hàng.
+ * Đơn một khoảng là hình dạng của gần như mọi tờ đơn; "+ Thêm khoảng ngày" mọc thêm hàng.
  */
 export interface LeavePeriodValue {
   from_date: string
@@ -63,7 +63,7 @@ export interface LeaveFormValues {
    * ước lượng, hoặc đơn đã lưu mà số ngày là người dùng gõ đè). Ô số ngày bằng đúng con số này
    * nghĩa là người dùng CHƯA gõ đè — form còn được cập nhật theo ngày, và `toLeavePayload` gửi
    * `days: 0` để backend tự tính (duoc-CR-683 M2: gửi con số ước lượng lên là backend coi như
-   * sửa đè và bỏ qua chốt «khoảng 0 ngày công»).
+   * sửa đè và bỏ qua chốt "khoảng 0 ngày công").
    *
    * Nằm trong giá trị form chứ không trong `useRef` của component: `formValuesOf` cần gieo nó
    * khi mở lại đơn đã lưu (M3), và payload cần đọc nó lúc lưu.
@@ -74,7 +74,7 @@ export interface LeaveFormValues {
    * bao ngoài do backend dẫn xuất, giữ thêm ở form là nuôi hai nguồn sự thật.
    */
   periods: LeavePeriodValue[]
-  /** `HH:MM` — chỉ dùng khi buổi là «Theo giờ» (khi đó đúng MỘT khoảng), rỗng thì không gửi. */
+  /** `HH:MM` — chỉ dùng khi buổi là "Theo giờ" (khi đó đúng MỘT khoảng), rỗng thì không gửi. */
   from_time: string
   to_time: string
   reason: string
@@ -91,14 +91,14 @@ export const MAX_LEAVE_LINES = 10
 /** Tổng số ngày của đơn = tổng các dòng. Nguồn DUY NHẤT của con số này ở v2. */
 export function totalLeaveDays(lines: LeaveLineValue[]): number {
   //  Làm tròn 2 chữ số vì cộng số thực: 0.13 + 0.5 ra 0.6300000000000001 và ô
-  //  «Tổng cộng» hiện nguyên cái đuôi đó ra màn hình.
+  //  "Tổng cộng" hiện nguyên cái đuôi đó ra màn hình.
   return Math.round(lines.reduce((sum, line) => sum + (line.days || 0), 0) * 100) / 100
 }
 
 /** Ngày hôm nay theo giờ ĐỊA PHƯƠNG, dạng `YYYY-MM-DD`.
  *
  * `toISOString()` quy về UTC, mà Việt Nam lệch +7 — mở form lúc 0h-7h sáng thì
- * ô «Từ ngày» hiện ngày HÔM QUA.
+ * ô "Từ ngày" hiện ngày HÔM QUA.
  */
 function todayISO(): string {
   const d = new Date()
@@ -137,7 +137,7 @@ export function emptyLeaveForm(): LeaveFormValues {
     employee_id: 0,
     employee_name: '',
     //  MỘT dòng trống sẵn: gần như mọi tờ đơn chỉ có một loại nghỉ, nên bắt
-    //  người dùng bấm «Thêm loại nghỉ» trước khi gõ được gì là thừa một nhịp.
+    //  người dùng bấm "Thêm loại nghỉ" trước khi gõ được gì là thừa một nhịp.
     lines: [{ leave_type_id: 0, days: 0 }],
     auto_days: null,
     periods: [
@@ -237,8 +237,8 @@ export function formValuesOf(request: LeaveRequest): LeaveFormValues {
  */
 /**
  * Dòng loại nghỉ gửi lên. Đơn MỘT dòng mà số ngày vẫn là con số máy tự điền (`auto_days`) thì
- * gửi `days: 0` — y như form mới chưa đụng tới — để backend tự tính và giữ chốt «khoảng không có
- * ngày công nào» (duoc-CR-683 M2). Gửi nguyên con số thì backend hiểu là người dùng sửa đè.
+ * gửi `days: 0` — y như form mới chưa đụng tới — để backend tự tính và giữ chốt "khoảng không có
+ * ngày công nào" (duoc-CR-683 M2). Gửi nguyên con số thì backend hiểu là người dùng sửa đè.
  */
 function payloadLines(values: LeaveFormValues): LeaveRequestPayload['lines'] {
   const lines = values.lines.filter((line) => line.leave_type_id > 0)
@@ -266,7 +266,7 @@ export function toLeavePayload(values: LeaveFormValues): LeaveRequestPayload {
     from_session: outer.from_session,
     to_session: outer.to_session,
     //  `null` chứ không phải chuỗi rỗng: cột giờ nhận `NULL` khi đơn không khai
-    //  theo giờ, và backend chặn nếu có giờ mà buổi lại không phải «Theo giờ».
+    //  theo giờ, và backend chặn nếu có giờ mà buổi lại không phải "Theo giờ".
     from_time: isHourly && values.from_time ? values.from_time : null,
     to_time: isHourly && values.to_time ? values.to_time : null,
     reason: values.reason,

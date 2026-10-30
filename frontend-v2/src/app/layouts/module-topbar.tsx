@@ -35,8 +35,8 @@ function isNavItemActive(item: ModuleNavItem, pathname: string): boolean {
  * Mục con đang sáng trên menu trái — làm cấp thứ BA của breadcrumb.
  *
  * Chỉ xét mục con ĐƯỢC VẼ (bỏ `hidden`), y như menu trái: màn gom về một mục khác qua
- * `matchPaths` (vd bốn thẻ Biểu đồ · Doanh nghiệp · So sánh · Thuế gom về «Giá thị
- * trường») phải ghi đúng tên mục ĐANG SÁNG bên trái, không ghi tên thẻ ẩn của nó.
+ * `matchPaths` (vd bốn thẻ Biểu đồ · Doanh nghiệp · So sánh · Thuế gom về "Giá thị
+ * trường") phải ghi đúng tên mục ĐANG SÁNG bên trái, không ghi tên thẻ ẩn của nó.
  */
 function findActiveChild(item: ModuleNavItem, pathname: string): ModuleNavItem | undefined {
   return item.children?.find((child) => !child.hidden && isNavItemActive(child, pathname))
@@ -47,8 +47,8 @@ function findActiveChild(item: ModuleNavItem, pathname: string): ModuleNavItem |
  * con) + tài khoản. Dùng breadcrumb thay vì mỗi tên màn hình để luôn biết đang đứng
  * ở phân hệ nào, và bấm được về trang tổng quan của phân hệ đó.
  *
- * Cấp thứ ba (03/10/2026) chỉ có khi mục menu có `children` — vd «Thu mua › Tra cứu
- * thị trường › Giá thị trường», «Nhân sự › Nghỉ phép › Lịch nghỉ».
+ * Cấp thứ ba (03/10/2026) chỉ có khi mục menu có `children` — vd "Thu mua › Tra cứu
+ * thị trường › Giá thị trường", "Nhân sự › Nghỉ phép › Lịch nghỉ".
  */
 export function ModuleTopbar({ module }: { module: ErpModule }) {
   const { pathname } = useLocation()
@@ -71,17 +71,17 @@ export function ModuleTopbar({ module }: { module: ErpModule }) {
       <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
       <Separator orientation="vertical" className="mx-1 !h-4" />
 
-      {/*  ⚠️ Đường dẫn CẮT BẰNG «…», không xuống dòng. `BreadcrumbList` của
+      {/*  ⚠️ Đường dẫn CẮT BẰNG "…", không xuống dòng. `BreadcrumbList` của
            shadcn để `flex-wrap` sẵn, mà thanh này cao cố định `h-14`: trên máy
-           390px phần chừa cho đường dẫn chỉ còn ~160px nên «Nhân sự › Loại nghỉ»
+           390px phần chừa cho đường dẫn chỉ còn ~160px nên "Nhân sự › Loại nghỉ"
            gãy làm hai dòng chen trong một thanh một dòng — nhìn như thanh bị vỡ
            (khách báo 09/09/2026). `min-w-0` ở cả hai cấp là bắt buộc: thiếu nó
            thì phần tử flex không co xuống dưới bề rộng nội dung và `truncate`
            không bao giờ có dịp chạy.
 
-           ⚠️ **Dưới `sm` thì cấp phân hệ GIẤU HẲN, không cắt bằng «…»** — miễn
+           ⚠️ **Dưới `sm` thì cấp phân hệ GIẤU HẲN, không cắt bằng "…"** — miễn
            là còn cấp thứ hai để mà giấu. Bản đầu cho nó co lại (`shrink-[3]`) và
-           kết quả là *«N… › Phân quyền tài …»*: dấu ba chấm tốn đúng bằng chỗ nó
+           kết quả là *"N… › Phân quyền tài …"*: dấu ba chấm tốn đúng bằng chỗ nó
            tiết kiệm mà chẳng nói được gì, lại còn ăn mất chỗ của cái tên duy
            nhất đáng đọc. Giấu đi thì tên MÀN HÌNH được trọn ~160px và hiện đủ
            chữ. Không mất mát gì: phân hệ đang được tô sáng sẵn ở menu trái.

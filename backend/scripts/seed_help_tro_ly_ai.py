@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Seed bài Trung tâm trợ giúp: TRỢ LÝ AI — bài cha của cụm trợ lý AI (bao-CR-445).
 
-Bài «Trợ lý AI» (nhóm «Các chức năng khác») vốn được nạp tay từ bảng Excel, không thuộc
+Bài "Trợ lý AI" (nhóm "Các chức năng khác") vốn được nạp tay từ bảng Excel, không thuộc
 script nào. Từ bao-CR-445 script này NHẬN SỞ HỮU nội dung bài đó: sửa bài là sửa ở đây rồi
 chạy lại trên từng môi trường, không sửa tay trên giao diện quản trị nữa.
 
@@ -11,14 +11,14 @@ Chạy trong container api:
 Idempotent, và KHÁC các seed bài con ở một điểm: bài này CÓ BÀI CON thuộc script khác
 (`seed_help_tro_ly_ai_lap_bo_tai_khoan.py` — bao-CR-441, và
 `seed_help_lap_bo_tai_khoan_phong_tu_mua.py` — bao-CR-444), nên KHÔNG xóa-chèn-lại.
-Đã có bài cùng tiêu đề dưới «Các chức năng khác» thì CẬP NHẬT TẠI CHỖ (giữ id, sort_order,
+Đã có bài cùng tiêu đề dưới "Các chức năng khác" thì CẬP NHẬT TẠI CHỖ (giữ id, sort_order,
 giữ nguyên các bài con). Chưa có thì tạo mới ở cuối nhóm. Không thấy nhóm cha thì DỪNG.
 
 Thứ tự nạp trên DB trống: chạy script này TRƯỚC, rồi mới chạy hai seed bài con (chúng tìm
-bài cha theo tiêu đề «Trợ lý AI»).
+bài cha theo tiêu đề "Trợ lý AI").
 
-⚠️ Bảng «Nhóm câu hỏi» phải khớp bộ tool của trợ lý (`app/modules/assistant/tools/`) và bài
-`doc/ai/` tương ứng; dòng «Lập bộ tài khoản thu mua» khớp tool T49 (bao-CR-435). Đổi tool
+⚠️ Bảng "Nhóm câu hỏi" phải khớp bộ tool của trợ lý (`app/modules/assistant/tools/`) và bài
+`doc/ai/` tương ứng; dòng "Lập bộ tài khoản thu mua" khớp tool T49 (bao-CR-435). Đổi tool
 thì sửa bảng này.
 """
 import re
@@ -95,7 +95,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 
 
 def find_parent(db):
-    """Nhóm «Các chức năng khác»; nếu trùng tiêu đề thì ưu tiên bài ở gốc (không có cha)."""
+    """Nhóm "Các chức năng khác"; nếu trùng tiêu đề thì ưu tiên bài ở gốc (không có cha)."""
     candidates = db.query(HelpArticle).filter(HelpArticle.title == PARENT_TITLE).all()
     if not candidates:
         return None
@@ -110,7 +110,7 @@ def main():
     try:
         parent = find_parent(db)
         if parent is None:
-            print(f"Không thấy nhóm cha «{PARENT_TITLE}» — dừng, không tạo nhóm mới.")
+            print(f"Không thấy nhóm cha '{PARENT_TITLE}' — dừng, không tạo nhóm mới.")
             sys.exit(1)
 
         art = (
@@ -130,7 +130,7 @@ def main():
                 .count()
             )
             state = "đã cập nhật nội dung" if changed else "nội dung không đổi"
-            print(f"Bài «{ARTICLE_TITLE}» (id={art.id}, sort_order={art.sort_order}) {state}; "
+            print(f"Bài '{ARTICLE_TITLE}' (id={art.id}, sort_order={art.sort_order}) {state}; "
                   f"giữ nguyên {children} bài con.")
             return
 
@@ -150,7 +150,7 @@ def main():
         )
         db.add(art)
         db.commit()
-        print(f"Đã dựng bài «{ARTICLE_TITLE}» (id={art.id}) dưới «{parent.title}» "
+        print(f"Đã dựng bài '{ARTICLE_TITLE}' (id={art.id}) dưới '{parent.title}' "
               f"(id={parent.id}, sort_order={order}).")
     except Exception:
         db.rollback()

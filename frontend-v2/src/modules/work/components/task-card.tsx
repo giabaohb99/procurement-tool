@@ -44,7 +44,7 @@ interface TaskCardBodyProps {
 
 interface TaskCardProps extends TaskCardBodyProps {
   onOpen: (taskId: number) => void
-  /** Khóa kéo thả khi đang sắp xếp khác «Tay» (§3.4). */
+  /** Khóa kéo thả khi đang sắp xếp khác "Tay" (§3.4). */
   dragDisabled?: boolean
   /**
    * Giấu hẳn thẻ mờ nằm lại, nhưng VẪN CHỪA KHE. Bật khi thẻ đã được dời sang
@@ -157,7 +157,7 @@ export const TaskCardBody = memo(function TaskCardBody({
         <Checkbox
           //  `mt-0.5`: ô tick 16px còn dòng chữ 20px, không đẩy xuống thì nó
           //  treo cao hơn chữ nửa thân.
-          //  bao-CR-604: tick xong tô XANH LÁ, cùng màu chip «Hoàn thành» ở panel chi tiết
+          //  bao-CR-604: tick xong tô XANH LÁ, cùng màu chip "Hoàn thành" ở panel chi tiết
           //  (mặc định của Checkbox là màu chủ đạo xanh biển, đại ca soi 07/10 thấy lệch).
           className={cn("mt-0.5 shrink-0 rounded-full", DONE_CHECK_CLASS)}
           checked={done}
@@ -174,7 +174,7 @@ export const TaskCardBody = memo(function TaskCardBody({
             đường link hay một mã lỗi DÀI KHÔNG CÓ DẤU CÁCH. Không cho bẻ giữa
             từ thì `line-clamp-2` chẳng có chỗ nào xuống dòng, chuỗi nằm lì một
             dòng rồi bị cắt cụt ở mép thẻ — mất luôn dòng thứ hai đáng ra được
-            dùng, mà cũng không có dấu «…» nào báo là còn nữa. */}
+            dùng, mà cũng không có dấu "…" nào báo là còn nữa. */}
         <p
           className={cn(
             'line-clamp-2 text-sm font-medium break-words',
@@ -269,7 +269,7 @@ function buildFieldRow(
       }
     }
     case 'status': {
-      //  Chỉ khoe trạng thái KHÁC «Đang mở»: mọi thẻ đều đang mở, in ra hết thì
+      //  Chỉ khoe trạng thái KHÁC "Đang mở": mọi thẻ đều đang mở, in ra hết thì
       //  một dòng vô nghĩa lặp trên toàn bộ bảng.
       if (task.status === WORK_TASK_STATUS.OPEN) return null
       return {

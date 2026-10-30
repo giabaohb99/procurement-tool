@@ -12,7 +12,7 @@ interface ReportAccessGrantListProps {
 }
 
 /**
- * Khối 1 của hộp «Sửa quyền xem báo cáo» — mọi dòng CÒN SỐNG (API chỉ trả
+ * Khối 1 của hộp "Sửa quyền xem báo cáo" — mọi dòng CÒN SỐNG (API chỉ trả
  * loại này, không có dòng đã thu hồi để hiện lịch sử), thu hồi được từng dòng.
  *
  * Thu hồi dùng `ConfirmIconButton` có sẵn (hộp hỏi lại trước khi chạy) với lý
@@ -26,8 +26,8 @@ export function ReportAccessGrantList({ grants }: ReportAccessGrantListProps) {
   if (grants.length === 0) {
     return (
       <p className="rounded-md border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
-        Chưa gán cho ai — báo cáo này đang «Chưa gán — không ai xem được trong
-        phân hệ Báo cáo».
+        Chưa gán cho ai — báo cáo này đang <em>Chưa gán — không ai xem được trong
+        phân hệ Báo cáo</em>.
       </p>
     )
   }

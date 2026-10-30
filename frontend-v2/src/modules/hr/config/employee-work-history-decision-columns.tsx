@@ -12,13 +12,13 @@ interface BuildEmployeeWorkHistoryDecisionColumnsOptions {
 }
 
 /**
- * Cột của bảng khu «Quyết định bổ nhiệm» (đại ca chốt 03/10/2026) — lọc từ
+ * Cột của bảng khu "Quyết định bổ nhiệm" (đại ca chốt 03/10/2026) — lọc từ
  * CÙNG nguồn dữ liệu quá trình công tác, chỉ các dòng có `decision_no`.
  *
  * Bộ cột khác hẳn bảng quá trình công tác đầy đủ
  * (`employee-work-history-columns.tsx`): không có Đến ngày/Thao tác — khu này
- * CHỈ ĐỌC, ghi vẫn làm ở khu «Quá trình công tác» phía dưới — và gộp ba trường
- * phòng ban/chức vụ/pháp nhân vào một cột «Nội dung tóm tắt» cho đúng yêu cầu.
+ * CHỈ ĐỌC, ghi vẫn làm ở khu "Quá trình công tác" phía dưới — và gộp ba trường
+ * phòng ban/chức vụ/pháp nhân vào một cột "Nội dung tóm tắt" cho đúng yêu cầu.
  */
 export function buildEmployeeWorkHistoryDecisionColumns({
   canOpenFiles,

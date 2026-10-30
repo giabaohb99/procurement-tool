@@ -14,9 +14,9 @@ import { WORK_ROLE } from '../types/work'
  *
  *  1. **Ô vai trò tràn hai dòng.** Radix `SelectValue` mặc định chép NGUYÊN
  *     children của mục đang chọn vào ô; mục ở đây có nhãn + câu giải thích, nên
- *     ô cao gấp đôi và câu giải thích bị cắt cụt thành «Mời và gỡ người,» (lỗi
+ *     ô cao gấp đôi và câu giải thích bị cắt cụt thành "Mời và gỡ người," (lỗi
  *     thật 03/09/2026). Câu giải thích chỉ được xuất hiện khi ĐANG MỞ danh sách.
- *  2. **«Chủ sở hữu» lọt vào danh sách gán được.** Backend chặn gán thẳng vai
+ *  2. **"Chủ sở hữu" lọt vào danh sách gán được.** Backend chặn gán thẳng vai
  *     chủ, nên để nó trong ô chọn là dựng sẵn một cú 400.
  *  3. **Mời nhiều người một lượt** phải gọi đúng số lần, đúng vai trò, rồi dọn
  *     lựa chọn — không dọn thì bấm Mời lần hai là mời lại y hệt.
@@ -105,7 +105,7 @@ beforeEach(() => {
 
 describe('Ô chọn vai trò — hình dáng', () => {
   it('ô ĐÃ CHỌN chỉ in nhãn, KHÔNG in câu giải thích', () => {
-    //  Lỗi thật: ô hiện «Quản trị / Mời và gỡ người,» — hai dòng, dòng dưới cụt.
+    //  Lỗi thật: ô hiện "Quản trị / Mời và gỡ người," — hai dòng, dòng dưới cụt.
     show()
     const box = screen.getByLabelText('Vai trò của Vũ Văn Kinh Doanh Một')
     expect(box).toHaveTextContent('Quản trị')
@@ -123,7 +123,7 @@ describe('Ô chọn vai trò — hình dáng', () => {
     expect(within(list).getByText('Chỉ xem, không sửa được gì')).toBeInTheDocument()
   })
 
-  it('danh sách gán được KHÔNG có «Chủ sở hữu» — backend chặn gán thẳng', async () => {
+  it('danh sách gán được KHÔNG có "Chủ sở hữu" — backend chặn gán thẳng', async () => {
     const nguoi = userEvent.setup()
     show()
     await nguoi.click(inviteRoleBox())

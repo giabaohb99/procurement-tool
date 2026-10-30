@@ -33,9 +33,9 @@ interface DocumentApprovalTabProps {
  * ⚠️ Bỏ hẳn những lượt giao việc **đã hủy**. Trả phiếu về một bước phía trước
  * thì bộ máy hủy việc cũ rồi mở việc mới, nên chặng đó tích lại nhiều lượt giao
  * cho cùng những con người ấy. Bản cũ liệt kê tất — người dùng thấy bốn dòng,
- * ba dòng «Đã hủy», hai dòng trùng tên nhau, và không đọc ra ai mới là người
+ * ba dòng "Đã hủy", hai dòng trùng tên nhau, và không đọc ra ai mới là người
  * thật sự đã ký (ảnh người dùng gửi 24/08/2026). Dấu vết đầy đủ vẫn còn nguyên
- * ở thẻ «Dấu vết duyệt» ngay bên dưới — đó mới là chỗ để tra từng lượt bấm.
+ * ở thẻ "Dấu vết duyệt" ngay bên dưới — đó mới là chỗ để tra từng lượt bấm.
  *
  * Xếp người ĐÃ QUYẾT lên trước: câu người đọc cần là *"ai ký chặng này"*, không
  * phải *"ai được giao"*.
@@ -165,8 +165,8 @@ const SHAPE = {
 /**
  * Tab PHÊ DUYỆT của trang chi tiết văn bản: phiếu này đang đi tới đâu.
  *
- * Trang chi tiết trước đây không nói gì về luồng duyệt ngoài hai chữ «Đang
- * duyệt», nên người soạn không biết chờ ai còn người vừa ký không biết mình
+ * Trang chi tiết trước đây không nói gì về luồng duyệt ngoài hai chữ "Đang
+ * duyệt", nên người soạn không biết chờ ai còn người vừa ký không biết mình
  * đang đứng ở khúc nào của một luồng bốn bước.
  *
  * Hai kiểu bước dễ đọc nhầm nên phải phân biệt bằng mắt:
@@ -178,8 +178,8 @@ const SHAPE = {
  *
  * **Nút duyệt CÓ ở đây (21/08/2026)** — nhưng chỉ hiện với đúng người đang cầm
  * việc, và vẫn là hộp thoại chung của bộ máy duyệt chứ không phải một đường
- * riêng của phân hệ Văn bản. Bản trước cố ý không có nút và bắt sang «Việc của
- * tôi»: người duyệt phải rời văn bản đang đọc để đi bấm ở một danh sách, hoặc
+ * riêng của phân hệ Văn bản. Bản trước cố ý không có nút và bắt sang "Việc của
+ * tôi": người duyệt phải rời văn bản đang đọc để đi bấm ở một danh sách, hoặc
  * ký mà chưa mở văn bản ra.
  */
 export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTabProps) {
@@ -209,7 +209,7 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
         <CardHeader className="flex min-h-16 flex-row items-start justify-between gap-4 border-b px-5 py-4">
           <div className="min-w-0">
             <CardTitle className="text-base">
-              Luồng «{instance.flow_name}» bản {instance.flow_version}
+              Luồng <strong>{instance.flow_name}</strong> bản {instance.flow_version}
             </CardTitle>
             <CardDescription className="mt-0.5">
               Đường đi của phiếu, đọc từ trên xuống theo thứ tự chặng.
@@ -290,7 +290,7 @@ export function DocumentApprovalTab({ instance, documentId }: DocumentApprovalTa
                       <Badge variant="outline" className={cn('font-normal', huy_hieu)}>
                         {nhan}
                       </Badge>
-                      <HelpHint label={`«${nhan}» nghĩa là gì`}>{giai_thich}</HelpHint>
+                      <HelpHint label={`"${nhan}" nghĩa là gì`}>{giai_thich}</HelpHint>
 
                       {/*  `aria-current` ở `<li>` chỉ trình đọc màn hình mới nghe
                            thấy. Người nhìn bằng mắt cũng cần biết phiếu ĐANG nằm

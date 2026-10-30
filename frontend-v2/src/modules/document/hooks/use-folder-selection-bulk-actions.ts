@@ -71,7 +71,7 @@ export function useFolderSelectionBulkActions({
   const overDocCap = selectedDocumentIds.length > MAX_BULK_DOCUMENT_IDS
   const overFolderCap = selectedFolderIds.length > MAX_BULK_FOLDER_IDS
   const overCap = overDocCap || overFolderCap
-  //  «Xóa» (phản hồi lead 24/09/2026, hạng mục §2) — hiện khi có THƯ MỤC trong
+  //  "Xóa" (phản hồi lead 24/09/2026, hạng mục §2) — hiện khi có THƯ MỤC trong
   //  lượt chọn (luôn thử được), hoặc có VĂN BẢN VÀ đủ quyền `document.delete`.
   const deletableDocumentCount = canDeleteDocuments ? selectedDocumentIds.length : 0
   const showDelete = hasFolders || deletableDocumentCount > 0

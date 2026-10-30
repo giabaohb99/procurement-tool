@@ -67,12 +67,12 @@ export function buildFlexibleTimeSeries(
 }
 
 /**
- * Dãy nhóm để vẽ theo chiều «Xem theo»: bỏ nhóm bị che (`null`) và hàng `__other__` của máy
- * chủ, xếp lớn → nhỏ, giữ `top` nhóm đầu, phần dư gộp thành «Khác».
+ * Dãy nhóm để vẽ theo chiều "Xem theo": bỏ nhóm bị che (`null`) và hàng `__other__` của máy
+ * chủ, xếp lớn → nhỏ, giữ `top` nhóm đầu, phần dư gộp thành "Khác".
  *
- * - Giá trị `null` lẻ ở một nhóm KHÔNG bị che (chỉ số dẫn xuất mẫu số 0) → bỏ, không đếm là «che».
+ * - Giá trị `null` lẻ ở một nhóm KHÔNG bị che (chỉ số dẫn xuất mẫu số 0) → bỏ, không đếm là "che".
  * - Số 0 → không vẽ (ở màn Hợp đồng lao động 18/19 phòng ban là 0: một cột thật giữa 18 dòng
- *   trống), chỉ đếm vào ghi chú «N nhóm bằng 0». Biểu đồ đọc độ lớn, bảng «Xem theo» vẫn đủ dòng.
+ *   trống), chỉ đếm vào ghi chú "N nhóm bằng 0". Biểu đồ đọc độ lớn, bảng "Xem theo" vẫn đủ dòng.
  * - Chỉ số không cộng được (`isMetricAdditive` sai: tỷ lệ, bình quân, đếm phân biệt, min/max)
  *   → phần dư bị BỎ thay vì gộp: tổng của chúng là một con số sai.
  */
@@ -159,7 +159,7 @@ export function describeSkippedGroups(series: FlexibleGroupSeries): string[] {
   const notes: string[] = []
   if (series.suppressedCount > 0) notes.push(`${series.suppressedCount} nhóm bị che không vẽ.`)
   if (series.zeroCount > 0) notes.push(`${series.zeroCount} nhóm bằng 0 không vẽ.`)
-  if (series.skippedServerOther) notes.push('Phần «Các nhóm khác» máy chủ đã gộp sẵn không vẽ.')
+  if (series.skippedServerOther) notes.push('Phần "Các nhóm khác" máy chủ đã gộp sẵn không vẽ.')
   if (series.droppedRestCount > 0) {
     notes.push(
       `Còn ${series.droppedRestCount} nhóm nhỏ hơn không vẽ (chỉ số này không cộng gộp được).`,

@@ -29,8 +29,8 @@ const ROW = 'gap-x-3 gap-y-1 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-center'
 const MESSAGE = 'sm:col-start-2'
 
 /**
- * Năm ô BẮT BUỘC của văn bản (`MAIN_INFO_FIELDS`) — bản rút gọn cho hộp «Tạo
- * nhanh từ tệp». Cố ý KHÔNG dùng lại `DocumentMainInfoFields`: bộ đó kéo theo
+ * Năm ô BẮT BUỘC của văn bản (`MAIN_INFO_FIELDS`) — bản rút gọn cho hộp "Tạo
+ * nhanh từ tệp". Cố ý KHÔNG dùng lại `DocumentMainInfoFields`: bộ đó kéo theo
  * văn bản mẫu, sổ, thư mục, số hiệu xem trước, gợi ý văn bản trùng — đúng thứ
  * hộp tạo nhanh muốn bỏ. Ô nào còn thiếu thì khai sau ở tab Thông tin.
  */
@@ -129,7 +129,7 @@ export function FolderQuickDocumentFields({
           'Người phụ trách',
           'Chọn người chịu trách nhiệm nội dung',
         )}
-        {/*  «Lưu vào thư mục» (yêu cầu 25/09/2026) — bày ra cho thấy văn bản sẽ
+        {/*  "Lưu vào thư mục" (yêu cầu 25/09/2026) — bày ra cho thấy văn bản sẽ
              nằm đâu, chọn sẵn thư mục đang xem. Không phải ô của form: thư mục
              gửi riêng qua `folder_ids`/`primary_folder_id` lúc tạo. Chế độ MỘT
              nên không bao giờ rỗng — chọn thư mục khác là THAY. */}

@@ -9,7 +9,7 @@ interface LaborContractTermPresetsProps {
 }
 
 /**
- * Hàng nút «12 tháng · 24 tháng · 36 tháng» (thử việc: «30 ngày · 60 ngày») dưới ô Ngày kết thúc.
+ * Hàng nút "12 tháng · 24 tháng · 36 tháng" (thử việc: "30 ngày · 60 ngày") dưới ô Ngày kết thúc.
  * Bấm là điền ngày kết thúc tính từ ngày bắt đầu; nút trùng ngày đang chọn được tô đậm.
  * Chưa có ngày bắt đầu thì nút tắt kèm lời nhắc — điền đại một ngày là sai còn tệ hơn không điền.
  */

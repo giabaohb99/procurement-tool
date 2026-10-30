@@ -1,7 +1,7 @@
 // bao-CR-494 — cấu hình CRUD danh mục TỪ KHÓA nhận diện Thành phẩm / Nguyên liệu.
 //
 // Entity backend dùng chung `customs_price` (bảng này là cấu hình của chính màn tra cứu, không
-// có màn nghiệp vụ riêng — luật «một khóa = một màn hình»), đường API
+// có màn nghiệp vụ riêng — luật "một khóa = một màn hình"), đường API
 // `/api/customs-kind-keywords`. Luật gắn nhãn: tên hàng chứa từ khóa loại NGUYÊN LIỆU → Nguyên
 // liệu; từ khóa loại THÀNH PHẨM là ngoại lệ thắng ngược; không khớp gì → Thành phẩm. Từ khóa
 // ngắn (≤ 4 ký tự) khớp nguyên từ, từ dài khớp chuỗi con — xem `customs/ingredient.py`.
@@ -32,7 +32,7 @@ export const CUSTOMS_KIND_KEYWORD_CRUD_CONFIG: CrudConfig<CustomsKindKeyword> = 
   entity: 'customs_price',
   title: 'Từ khóa Thành phẩm / Nguyên liệu',
   description:
-    'Bộ từ khóa để màn Tra cứu thị trường tự gắn nhãn từng dòng hàng. Tên hàng chứa từ khóa loại «Nguyên liệu» thì là nguyên liệu kỹ thuật, còn lại là thành phẩm. Sửa xong bấm «Gắn lại nhãn».',
+    'Bộ từ khóa để màn Tra cứu thị trường tự gắn nhãn từng dòng hàng. Tên hàng chứa từ khóa loại "Nguyên liệu" thì là nguyên liệu kỹ thuật, còn lại là thành phẩm. Sửa xong bấm "Gắn lại nhãn".',
   unitLabel: 'từ khóa',
   apiPath: '/api/customs-kind-keywords',
   storageKey: 'procurement.customs-kind-keywords',
@@ -44,7 +44,7 @@ export const CUSTOMS_KIND_KEYWORD_CRUD_CONFIG: CrudConfig<CustomsKindKeyword> = 
   ],
   getItemName: (row) => row.keyword,
   deleteWarning:
-    'Xóa từ khóa thì các dòng đang mang nhãn nhờ nó KHÔNG tự đổi — bấm «Gắn lại nhãn» sau khi xóa. Muốn tạm tắt thì chuyển sang «Ngừng dùng».',
+    'Xóa từ khóa thì các dòng đang mang nhãn nhờ nó KHÔNG tự đổi — bấm "Gắn lại nhãn" sau khi xóa. Muốn tạm tắt thì chuyển sang "Ngừng dùng".',
   renderToolbarExtra: () => <CustomsRetagButton />,
   openFormOnRowClick: true,
   columns: [
@@ -101,7 +101,7 @@ export const CUSTOMS_KIND_KEYWORD_CRUD_CONFIG: CrudConfig<CustomsKindKeyword> = 
       type: 'text',
       required: true,
       fullWidth: true,
-      hint: 'Không phân biệt hoa/thường. Từ ngắn (TC, TG…) chỉ khớp khi đứng thành một từ — «TC» không dính «ATC». Từ dài khớp cả khi nằm trong chuỗi («kỹ thuật» khớp «Thuốc kỹ thuật ATRAZINE»).',
+      hint: 'Không phân biệt hoa/thường. Từ ngắn (TC, TG…) chỉ khớp khi đứng thành một từ — "TC" không dính "ATC". Từ dài khớp cả khi nằm trong chuỗi ("kỹ thuật" khớp "Thuốc kỹ thuật ATRAZINE").',
     },
     {
       name: 'kind',
@@ -110,7 +110,7 @@ export const CUSTOMS_KIND_KEYWORD_CRUD_CONFIG: CrudConfig<CustomsKindKeyword> = 
       required: true,
       defaultValue: PRODUCT_KIND.TECHNICAL,
       options: PRODUCT_KIND_OPTIONS.map((item) => ({ value: item.value, label: item.label })),
-      hint: 'Thường là «Nguyên liệu». Chọn «Thành phẩm» cho từ khóa NGOẠI LỆ muốn thắng ngược (vd tên chứa TECHNOLOGY nhưng vẫn là thành phẩm).',
+      hint: 'Thường là "Nguyên liệu". Chọn "Thành phẩm" cho từ khóa NGOẠI LỆ muốn thắng ngược (vd tên chứa TECHNOLOGY nhưng vẫn là thành phẩm).',
     },
     { name: 'note', label: 'Ghi chú', type: 'textarea', fullWidth: true },
     {

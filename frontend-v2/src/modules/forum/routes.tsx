@@ -24,7 +24,7 @@ export const forumModule: ErpModule = {
   customLayout: true,
 
   nav: [
-    // «Diễn đàn» đứng trước và là màn mặc định của phân hệ (sếp chốt 03/09/2026).
+    // "Diễn đàn" đứng trước và là màn mặc định của phân hệ (sếp chốt 03/09/2026).
     {
       label: 'Diễn đàn',
       path: appRoutes.forum.boards,
@@ -122,7 +122,7 @@ export const forumModule: ErpModule = {
               }),
             },
             {
-              // Tab «Quản trị» (CR-263) — trang tự đá về Diễn đàn khi thiếu grant.
+              // Tab "Quản trị" (CR-263) — trang tự đá về Diễn đàn khi thiếu grant.
               path: 'admin',
               lazy: async () => ({
                 Component: (await import('./pages/forum-admin-page')).ForumAdminPage,

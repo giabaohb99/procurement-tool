@@ -1,4 +1,4 @@
-// Nút «Xuất Excel» của mục «Thuốc BVTV», hai lựa chọn: trang đang xem / cả danh mục. Khuôn
+// Nút "Xuất Excel" của mục "Thuốc BVTV", hai lựa chọn: trang đang xem / cả danh mục. Khuôn
 // dropdown bám nút bê từ `TableToolbar` (portal + `.col-menu`, tự đóng khi click ra ngoài / Esc /
 // cuộn trang). Backend: `GET /api/customs/pesticides/export?scope=page|all`, quyền
 // `customs_price.export` (giống nút Xuất Excel của thẻ Danh sách, KHÁC quyền sửa danh mục
@@ -95,14 +95,14 @@ export default function CustomsPesticideExportMenu({ filters, page, pageSize, pa
           <button type="button" className="col-menu-item" style={ITEM_STYLE} onClick={() => runExport('page')}>
             <div>Trang hiện tại ({pageRowCount} dòng)</div>
             <div style={DESC_STYLE}>
-              Chỉ các dòng đang xem theo bộ lọc hiện tại. Nạp lại tệp này qua «Nạp danh mục»
+              Chỉ các dòng đang xem theo bộ lọc hiện tại. Nạp lại tệp này qua <strong>Nạp danh mục</strong>
               <b> chỉ cập nhật</b> đúng các thuốc có trong tệp, phần còn lại giữ nguyên.
             </div>
           </button>
           <button type="button" className="col-menu-item" style={ITEM_STYLE} onClick={() => runExport('all')}>
             <div>Toàn bộ danh mục</div>
             <div style={DESC_STYLE}>
-              Xuất hết, không theo bộ lọc. Nạp lại tệp này qua «Nạp danh mục» sẽ
+              Xuất hết, không theo bộ lọc. Nạp lại tệp này qua <strong>Nạp danh mục</strong> sẽ
               <b> thay toàn bộ danh mục</b>; thuốc thêm tay không có trong lần nạp (vẫn giữ trên hệ thống).
             </div>
           </button>

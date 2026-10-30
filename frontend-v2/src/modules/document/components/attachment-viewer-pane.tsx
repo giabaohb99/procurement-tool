@@ -9,7 +9,7 @@ import { isImage, viewAsHtml } from '../helpers/inline-viewable'
 import { buildWordPreviewPage } from '../helpers/word-preview-page'
 
 /**
- * Chiều cao «hết màn hình» của khung xem ở tab «Văn bản»: trừ thanh trên của
+ * Chiều cao "hết màn hình" của khung xem ở tab "Văn bản": trừ thanh trên của
  * ứng dụng + tiêu đề văn bản + dải tab + lề trang (~11rem). Ảnh chụp màn
  * hình 24/09/2026: khung 70dvh chừa một khoảng trắng lớn phía dưới.
  */
@@ -24,19 +24,19 @@ export interface AttachmentViewerPaneProps {
   className?: string
   /**
    * Báo LÊN NGOÀI khi tệp không mở được (403 hết hạn xem, 403 mất quyền giữa
-   * chừng, 404…) — tab «Tệp» (phase 09) dùng để đánh dấu KHÓA trên cây và bỏ
-   * qua tệp đó khi bấm nút trước/sau (bộ luật «Thấy một phần», phase 04).
+   * chừng, 404…) — tab "Tệp" (phase 09) dùng để đánh dấu KHÓA trên cây và bỏ
+   * qua tệp đó khi bấm nút trước/sau (bộ luật "Thấy một phần", phase 04).
    * Không truyền = chỉ hiện câu báo tại chỗ như trước, không báo ra ngoài.
    */
   onViewError?: (message: string) => void
   /**
    * In chìm tên người xem · giờ · số hiệu lên mặt tệp. Mặc định BẬT (hộp thoại
-   * xem tệp). Tab «Văn bản» của văn bản chỉ gồm tệp TẮT (chốt 24/09/2026 —
+   * xem tệp). Tab "Văn bản" của văn bản chỉ gồm tệp TẮT (chốt 24/09/2026 —
    * đó là chỗ đọc tệp hằng ngày, lớp chữ phủ kín trang gây khó đọc).
    */
   watermark?: boolean
   /**
-   * Khung xem cao HẾT màn hình còn lại (tab «Văn bản», 24/09/2026) thay vì
+   * Khung xem cao HẾT màn hình còn lại (tab "Văn bản", 24/09/2026) thay vì
    * 70% chiều cao như trong hộp thoại.
    */
   fill?: boolean
@@ -44,7 +44,7 @@ export interface AttachmentViewerPaneProps {
 
 /**
  * RUỘT của khung xem tệp đính kèm — tách khỏi `attachment-viewer-dialog.tsx`
- * (phase 09) để tab «Tệp» dùng lại được nguyên logic blob/HTML/watermark mà
+ * (phase 09) để tab "Tệp" dùng lại được nguyên logic blob/HTML/watermark mà
  * không phải chép: `document-file-viewer-layout.tsx` nhúng thẳng component
  * này (không bọc `Dialog`), hộp thoại cũ gọi lại nó y như trước.
  *

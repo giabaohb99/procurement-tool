@@ -28,7 +28,7 @@ interface SkillImportDialogProps {
 }
 
 /**
- * Hộp «Tải gói lên» (G2 / G3): nhận gói skill `.zip` / `.skill` có SKILL.md. Trùng tên skill trong bộ là THAY GÓI —
+ * Hộp "Tải gói lên" (G2 / G3): nhận gói skill `.zip` / `.skill` có SKILL.md. Trùng tên skill trong bộ là THAY GÓI —
  * ghi đè bản nháp và THAY TOÀN BỘ tệp đi kèm cũ (Agent 1 dặn phải báo rõ trên màn). Bản đang phát cho AI không đổi cho
  * tới khi bấm Xuất bản.
  */
@@ -84,7 +84,7 @@ function ImportForm({
       onImported?.(result)
       onDone(false)
     } catch {
-      //  Toast lỗi tự động (vd «Gói phải có tệp SKILL.md») — giữ hộp mở.
+      //  Toast lỗi tự động (vd "Gói phải có tệp SKILL.md") — giữ hộp mở.
     } finally {
       busy.current = false
     }

@@ -120,7 +120,7 @@ export const approvalInboxColumns: DataTableColumn<InboxRow>[] = [
     stickyRight: true,
     cell: (row) =>
       row.kind === 'pending' ? (
-        //  Quá hạn tô đỏ ngay ở huy hiệu: cột «Hạn duyệt» ẩn được, còn cột này
+        //  Quá hạn tô đỏ ngay ở huy hiệu: cột "Hạn duyệt" ẩn được, còn cột này
         //  thì không — mức gấp gáp không được biến mất theo một cú ẩn cột.
         <Badge variant={row.isOverdue ? 'destructive' : 'default'}>
           {row.isOverdue ? 'Quá hạn' : 'Cần duyệt'}

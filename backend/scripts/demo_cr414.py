@@ -57,7 +57,7 @@ OTHER_LINES = [
 def _dept(db, name):
     d = db.query(Department).filter(Department.name == name).first()
     if not d:
-        raise SystemExit(f"Không có phòng «{name}» trong DB local")
+        raise SystemExit(f"Không có phòng '{name}' trong DB local")
     return d
 
 
@@ -202,7 +202,7 @@ def _ensure_factory_assignee_rows(db, dept_id, primary, backup, user):
     for group_name in {g for g, *_ in FACTORY_LINES_A + FACTORY_LINES_B}:
         g = db.query(ItemGroup).filter(ItemGroup.name == group_name).first()
         if not g:
-            print(f"  ! Không có phân loại «{group_name}» — bỏ dòng phân công")
+            print(f"  ! Không có phân loại '{group_name}' — bỏ dòng phân công")
             continue
         row = (db.query(CategoryAssignee)
                .filter(CategoryAssignee.department_id == dept_id,

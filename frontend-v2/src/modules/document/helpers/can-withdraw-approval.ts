@@ -2,7 +2,7 @@ import { INSTANCE_STATUS, TASK_STATUS } from '@/modules/approval/types/approval'
 import type { ApprovalInstance } from '@/modules/approval/types/approval'
 
 /**
- * Người đang xem có được bày nút «Rút về để sửa» không — cùng ba điều kiện
+ * Người đang xem có được bày nút "Rút về để sửa" không — cùng ba điều kiện
  * backend kiểm ở `approval.action_service.withdraw`:
  * - phiên duyệt còn đang chạy (hoặc đang KẸT vì không tìm được người duyệt);
  * - người xem CHÍNH LÀ người trình (so theo mã nhân sự, 0 = chưa gắn hồ sơ →

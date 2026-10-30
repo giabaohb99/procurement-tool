@@ -32,7 +32,7 @@ interface ListConfigDialogProps {
  * tiên nằm chung với các trường do người dùng tự khai vì chúng đúng là cùng một
  * thứ (migration `c8a1d4f60b72`).
  *
- * Sửa thì mở đúng hộp thoại «Sửa trường» của menu «Tùy chỉnh» — một khuôn duy
+ * Sửa thì mở đúng hộp thoại "Sửa trường" của menu "Tùy chỉnh" — một khuôn duy
  * nhất, hai lối vào. Chỉ ADMIN trở lên mới tới được màn này (04 §3).
  */
 export function ListConfigDialog({ open, listId, onClose }: ListConfigDialogProps) {
@@ -56,9 +56,9 @@ export function ListConfigDialog({ open, listId, onClose }: ListConfigDialogProp
             placeholder='Tên trường, ví dụ "Phiên bản"'
             onChange={(e) => setFieldName(e.target.value)}
           />
-          {/*  Chọn KIỂU ngay lúc khai, như hộp «Add custom field» của Lark.
+          {/*  Chọn KIỂU ngay lúc khai, như hộp "Add custom field" của Lark.
               Kiểu chỉ đổi được khi trường chưa có việc nào gán giá trị — luật
-              nằm ở backend, hộp «Sửa trường» chỉ phản ánh lại. */}
+              nằm ở backend, hộp "Sửa trường" chỉ phản ánh lại. */}
           <Select value={String(fieldType)} onValueChange={(v) => setFieldType(Number(v))}>
             <SelectTrigger className="w-48 shrink-0">
               <SelectValue />

@@ -46,7 +46,7 @@ import { formatDateTime } from '@/shared/utils/format-date'
 type RawKeys = Record<number, string>
 
 /**
- * Mục «Kết nối AI riêng» = màn «AI của tôi» (G8, doc 21 §6.2; K6 bao-CR-624; bước 2 làm lại kiểu CoreSkill ở bao-CR-638).
+ * Mục "Kết nối AI riêng" = màn "AI của tôi" (G8, doc 21 §6.2; K6 bao-CR-624; bước 2 làm lại kiểu CoreSkill ở bao-CR-638).
  *
  * Đường chính từ 17/10/2026: nhân sự dùng gói AI của CHÍNH HỌ (Claude, ChatGPT, Cursor…) tra ERP đúng quyền của họ.
  * Ba bước: chọn ứng dụng (đoạn cấu hình điền khóa của dòng đang chọn ở bước 2) → khóa của bạn (bật / tắt, Hiện / Ẩn,

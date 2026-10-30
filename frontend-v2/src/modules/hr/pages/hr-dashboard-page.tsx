@@ -37,7 +37,7 @@ export function HrDashboardPage() {
   const { can } = usePermission()
   //  Chốt "bây giờ" MỘT LẦN cho cả lượt vẽ rồi truyền xuống: để mỗi dòng tự gọi
   //  `new Date()` thì hai cuộc họp sát nhau có thể rơi vào hai phía của cùng
-  //  một mốc kết thúc, và dấu «Đang họp» hiện ở hai dòng liền.
+  //  một mốc kết thúc, và dấu "Đang họp" hiện ở hai dòng liền.
   const now = new Date()
 
   return (

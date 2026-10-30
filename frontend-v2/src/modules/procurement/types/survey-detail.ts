@@ -532,7 +532,7 @@ export function isSurveyDeletable(status: string): boolean {
 }
 
 /**
- * bao-CR-554 (đại ca chốt 02/10/2026): «Trả về» cho người khảo sát mở ở cả phiếu ĐÃ DUYỆT —
+ * bao-CR-554 (đại ca chốt 02/10/2026): "Trả về" cho người khảo sát mở ở cả phiếu ĐÃ DUYỆT —
  * tức hủy duyệt để sửa rồi gửi lại. Duyệt / Từ chối vẫn chỉ khi đang chờ duyệt.
  */
 export function isSurveyReturnable(status: string): boolean {

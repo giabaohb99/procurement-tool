@@ -26,7 +26,7 @@ interface LeaveRequestLinesEditorProps {
   value: LeaveLineValue[]
   onChange: (lines: LeaveLineValue[]) => void
   types: LeaveType[]
-  /** Năm để tra quỹ phép — lấy từ «Từ ngày» của đơn. */
+  /** Năm để tra quỹ phép — lấy từ "Từ ngày" của đơn. */
   year: number
   /** NGƯỜI NGHỈ; quỹ phép hiện là của họ, không phải của người đang lập. */
   employeeId: number
@@ -48,13 +48,13 @@ interface LeaveRequestLinesEditorProps {
  *
  * Bố cục là **một bảng thật** — hàng tiêu đề, các dòng, hàng chân. Bản đầu bày
  * ba thứ rời nhau (nút *Thêm loại nghỉ* dạt sang mép phải cách bảng cả một
- * khoảng, ô số ngày không nhãn nên đọc ra như một ô «0» vô danh, và hộp gợi ý
+ * khoảng, ô số ngày không nhãn nên đọc ra như một ô "0" vô danh, và hộp gợi ý
  * quỹ phép viền đứt chiếm trọn một hàng ngay cả khi chưa chọn loại nào) —
  * khách bác đúng chỗ đó.
  *
  * Bốn điều đáng chú ý:
  *
- * 1. **Cột «Số ngày» có tiêu đề.** Ô số không nhãn nằm cạnh một ô chọn là chỗ
+ * 1. **Cột "Số ngày" có tiêu đề.** Ô số không nhãn nằm cạnh một ô chọn là chỗ
  *    người dùng phải đoán, và trình đọc màn hình thì đọc ra một ô trống.
  * 2. **Hộp quỹ phép chỉ mọc khi ĐÃ chọn loại.** Chưa chọn thì nó chỉ nói lại
  *    đúng thứ ô bên cạnh đang nói, mà lại chiếm một hàng viền đứt.
@@ -92,13 +92,13 @@ export function LeaveRequestLinesEditor({
   const removeLine = (index: number) => onChange(value.filter((_, i) => i !== index))
 
   //  Loại đã chọn ở dòng khác thì không cho chọn lại — backend chặn với câu
-  //  «khai hai lần», nhưng để người dùng chọn xong mới báo là bắt họ làm hai lần.
+  //  "khai hai lần", nhưng để người dùng chọn xong mới báo là bắt họ làm hai lần.
   const takenElsewhere = (index: number, typeId: number) =>
     value.some((line, i) => i !== index && line.leave_type_id === typeId)
 
   //  Ba cột dùng CHUNG một khai báo lưới cho hàng tiêu đề và mọi dòng — khai hai
-  //  lần là tiêu đề «Số ngày» trôi khỏi ô số ngay lần đầu ai đó chỉnh bề rộng.
-  //  Cột «Số ngày» hẹp lại trên điện thoại: 7rem cho một con số một chữ số là
+  //  lần là tiêu đề "Số ngày" trôi khỏi ô số ngay lần đầu ai đó chỉnh bề rộng.
+  //  Cột "Số ngày" hẹp lại trên điện thoại: 7rem cho một con số một chữ số là
   //  thừa, mà phần thừa đó lấy đúng từ ô CHỌN LOẠI NGHỈ — thứ duy nhất ở hàng
   //  này có chữ dài ("Nghỉ không lương" cụt thành "Nghỉ khô…" trên màn 390px).
   const grid =
@@ -212,7 +212,7 @@ export function LeaveRequestLinesEditor({
           ) : (
             <span />
           )}
-          {/*  Một chuỗi liền, không tách thẻ: «Tổng cộng» và con số đọc thành
+          {/*  Một chuỗi liền, không tách thẻ: "Tổng cộng" và con số đọc thành
                một câu, mà tách ra thì khoảng cách giữa hai thẻ cũng phải canh. */}
           <span className="text-sm font-medium tabular-nums">{`Tổng cộng ${total} ngày`}</span>
         </div>
@@ -233,7 +233,7 @@ export function LeaveRequestLinesEditor({
                 //  không biết (ca kíp, nghỉ bù, công trường chạy Chủ nhật).
                 `Tổng ${total} ngày khác số ngày công của khoảng (${suggestedDays} ngày) — kiểm lại nếu không cố ý.`
               : //  Số ngày công tính theo LỊCH LÀM VIỆC của người nghỉ (mẫu gán theo nhân sự /
-                //  phòng ban / pháp nhân), không còn là «chỉ trừ Chủ nhật» cứng cho cả công ty.
+                //  phòng ban / pháp nhân), không còn là "chỉ trừ Chủ nhật" cứng cho cả công ty.
                 describeSuggestedDays(suggestedDays, firstType?.exclude_holiday, scheduleName)}
       </p>
     </div>

@@ -7,7 +7,7 @@ import { COMPANY_LEVEL_LABELS, companyInitial, type Company } from '../types/com
 /**
  * Ô LOGO của một pháp nhân — chữ đầu của mã khi chưa có ảnh.
  *
- * Tách ra vì nó dựng ở hai chỗ với hai cỡ: ô «Tên pháp nhân» của bảng (nhỏ) và
+ * Tách ra vì nó dựng ở hai chỗ với hai cỡ: ô "Tên pháp nhân" của bảng (nhỏ) và
  * thẻ ở khổ điện thoại (to hơn, vì ở đó nó là thứ đầu tiên mắt bắt được). Để
  * hai bản chép thì đổi cách vẽ một chỗ là hai màn nói khác nhau.
  *
@@ -40,20 +40,20 @@ export function CompanyLogoMark({
 /**
  * Một pháp nhân ở chế độ MÀN HẸP — xem `DataTableProps.mobileCard`.
  *
- * ⚠️ **Mỗi dòng chữ đúng MỘT hàng, dài thì cắt bằng «…»** (khách chốt
+ * ⚠️ **Mỗi dòng chữ đúng MỘT hàng, dài thì cắt bằng "…"** (khách chốt
  * 10/09/2026). Cho tên xuống hai hàng thì thẻ cao thấp so le nhau — mắt phải
  * dò lại mép trên của từng thẻ thay vì lướt một cột đều, và mười ba thẻ dài ra
  * thêm gần một màn hình. Cái giá là hai pháp nhân cùng họ tên cắt ra giống hệt
- * nhau («CÔNG TY TNHH SẢN XUẤT…»); bù lại bằng **dòng mã ngay dưới** — mã
+ * nhau ("CÔNG TY TNHH SẢN XUẤT…"); bù lại bằng **dòng mã ngay dưới** — mã
  * (`NN DEGO` · `ABA`) mới là thứ phân biệt được, và nó luôn ngắn.
  *
  * ⚠️ **Thẻ chỉ nói cái BẤT THƯỜNG.** Huy hiệu trạng thái tắt khi pháp nhân vẫn
  * *Đang dùng* — 13/13 dòng hiện tại đều vậy, in ra là mười ba huy hiệu giống hệt
- * nhau. Thứ cần nhặt ra là dòng «Ngừng». Cùng luật với thẻ Phòng họp và Chức vụ.
+ * nhau. Thứ cần nhặt ra là dòng "Ngừng". Cùng luật với thẻ Phòng họp và Chức vụ.
  *
  * ⚠️ **MST đứng riêng một dòng, có nhãn.** Nó là chuỗi số trần: nhét chung dòng
  * với mã và cấp thì ba cụm ký tự cạnh nhau không cụm nào tự giải nghĩa được.
- * Không có MST thì bỏ hẳn dòng, đừng in «—» — dấu gạch đó nói *không có thông
+ * Không có MST thì bỏ hẳn dòng, đừng in "—" — dấu gạch đó nói *không có thông
  * tin*, mà ở đây đúng là chưa ai nhập, hai điều khác nhau nhưng cùng vô ích.
  */
 export function CompanyCard({ company }: { company: Company }) {

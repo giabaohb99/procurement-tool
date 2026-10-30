@@ -170,7 +170,7 @@ export function DocumentAttachmentsCard({
         ⚠️ **Khổ điện thoại XẾP DỌC** (`max-md:flex-col`). Bản cũ khóa cứng
         `flex-row` không cho xuống dòng: ở 356px không đủ chỗ nên flex bóp nhóm
         bên trái xuống **min-content**, mà tiêu đề không có `min-w-0` nên nó tụt
-        thành MỘT TỪ MỖI DÒNG («Chứng / từ & Tài / liệu / đính / kèm»), trong
+        thành MỘT TỪ MỖI DÒNG ("Chứng / từ & Tài / liệu / đính / kèm"), trong
         khi nút *Upload chứng từ* không co được nữa và **tràn hẳn ra ngoài mép
         thẻ** (đo 12/09/2026: 374px trong khung 356px). Sửa ở đây là sửa cho cả
         9 màn đang dùng thẻ này.

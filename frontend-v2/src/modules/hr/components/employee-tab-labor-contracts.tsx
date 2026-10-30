@@ -25,7 +25,7 @@ interface EmployeeTabLaborContractsProps {
 const fallbackName = (row: LaborContract, ext: string) => `HDLD-${row.contract_no || row.code}.${ext}`
 
 /**
- * Tab «Hợp đồng» ở hồ sơ nhân sự. CHỈ được dựng khi người xem có `labor_contract.read`
+ * Tab "Hợp đồng" ở hồ sơ nhân sự. CHỈ được dựng khi người xem có `labor_contract.read`
  * (trang cha gác) — nên lương không bao giờ render ra cho người không có quyền, và không có
  * lượt gọi API nào lúc mount để ăn toast 403.
  *

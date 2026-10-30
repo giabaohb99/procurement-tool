@@ -13,7 +13,7 @@
  * đừng "sửa cho đồng bộ" bằng cách chép hằng này sang module khác, muốn đổi cả
  * app thì đổi ở biến `outline` của `button.tsx` rồi xóa hằng này đi.
  *
- * ⚠️ Áp cho CẢ DẢI, kể cả nút «…» và «Lưu nháp». Chỉ tô vài nút trong hàng thì
+ * ⚠️ Áp cho CẢ DẢI, kể cả nút "…" và "Lưu nháp". Chỉ tô vài nút trong hàng thì
  * chính hàng nút đó lại có hai kiểu nền, tức là đổi một chỗ lệch lấy một chỗ
  * lệch khác.
  */

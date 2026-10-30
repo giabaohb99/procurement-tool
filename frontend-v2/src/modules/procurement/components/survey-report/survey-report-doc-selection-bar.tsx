@@ -1,4 +1,4 @@
-// duoc-CR-611 (07/10/2026) — thanh «chọn nhiều» trong dải sổ của MỘT dòng hàng (dạng xem
+// duoc-CR-611 (07/10/2026) — thanh "chọn nhiều" trong dải sổ của MỘT dòng hàng (dạng xem
 // theo dòng hàng của khối Báo cáo thực hiện): chọn tất cả / bỏ chọn, đếm số đã chọn, xóa
 // các hồ sơ đã chọn một lượt. Tách khỏi `survey-report-card.tsx` (đã >1.600 dòng).
 import { ListChecks, Trash2, X } from 'lucide-react'
@@ -7,9 +7,9 @@ import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 
 interface SurveyReportDocSelectionBarProps {
-  /** Đang ở chế độ chọn chưa — chưa thì chỉ bày nút «Chọn nhiều». */
+  /** Đang ở chế độ chọn chưa — chưa thì chỉ bày nút "Chọn nhiều". */
   selecting: boolean
-  /** Số hồ sơ đang bày trong dải (đã qua bộ lọc) — mẫu số của «chọn tất cả». */
+  /** Số hồ sơ đang bày trong dải (đã qua bộ lọc) — mẫu số của "chọn tất cả". */
   total: number
   /** Số hồ sơ đang bày VÀ đang được chọn. */
   selectedCount: number

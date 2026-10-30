@@ -8,18 +8,18 @@ import type { DocumentRecord } from '../types/document-record'
 interface DocumentCardProps {
   doc: DocumentRecord
   /**
-   * Văn bản đang chờ CHÍNH người xem duyệt. Chỉ tab «Văn bản đi» truyền — nó là
+   * Văn bản đang chờ CHÍNH người xem duyệt. Chỉ tab "Văn bản đi" truyền — nó là
    * tab duy nhất nạp hộp việc để biết điều đó.
    */
   awaitingMyApproval?: boolean
   /**
-   * Bày *pháp nhân ban hành · phòng chủ trì*. Bật ở tab «Văn bản đi»: ở đó hai ô
+   * Bày *pháp nhân ban hành · phòng chủ trì*. Bật ở tab "Văn bản đi": ở đó hai ô
    * này là cột thường trực, và với BẢN RIÊNG của pháp nhân con thì pháp nhân là
    * thứ DUY NHẤT phân biệt nó với bản gốc (tiêu đề chép nguyên).
    */
   showOrigin?: boolean
   /**
-   * Bày dòng «Cần rà lại». Chỉ tab «Văn bản đến»: đó là lý do chính người ta mở
+   * Bày dòng "Cần rà lại". Chỉ tab "Văn bản đến": đó là lý do chính người ta mở
    * tab đó ra — văn bản mình phải làm theo vừa bị đổi.
    */
   showReviewFlag?: boolean
@@ -28,22 +28,22 @@ interface DocumentCardProps {
 /**
  * Một VĂN BẢN ở chế độ MÀN HẸP — xem `DataTableProps.mobileCard`.
  *
- * Bảng «Văn bản đi» khai **17 cột**, bề rộng tự nhiên ~1934px: trên máy 390px
+ * Bảng "Văn bản đi" khai **17 cột**, bề rộng tự nhiên ~1934px: trên máy 390px
  * phần nhìn thấy được là cột *Số hiệu* cộng một mẩu *Số vào sổ*, còn *Tên văn
  * bản* — thứ duy nhất nói đây là văn bản gì — nằm sau một lượt cuộn ngang.
  *
  * ⚠️ **TÊN VĂN BẢN LÊN TRƯỚC, số hiệu tụt xuống dòng phụ.** Bảng để *Số hiệu*
  * đứng đầu vì cột đầu là cột định danh và nó được ghim; trên thẻ thì số hiệu là
  * thứ ít dùng nhất, mà tệ hơn: văn bản **chưa duyệt thì chưa có số**, nên cả một
- * danh sách nháp in ra đúng mười dòng «Chưa cấp số» giống hệt nhau — chuỗi dài
- * nhất và ít giá trị nhất lại chiếm dòng đầu. Đây là bài học đã rút ở khối «Văn
- * bản gần đây» của trang Tổng quan Văn thư (duoc-CR-364).
+ * danh sách nháp in ra đúng mười dòng "Chưa cấp số" giống hệt nhau — chuỗi dài
+ * nhất và ít giá trị nhất lại chiếm dòng đầu. Đây là bài học đã rút ở khối "Văn
+ * bản gần đây" của trang Tổng quan Văn thư (duoc-CR-364).
  *
- * ⚠️ **«Chưa cấp số» KHÔNG dùng `font-mono`** — nó là một lời nói, không phải
+ * ⚠️ **"Chưa cấp số" KHÔNG dùng `font-mono`** — nó là một lời nói, không phải
  * một mã. Chữ đều nét làm nó dãn ra và đọc như lỗi hiển thị; cùng lý do với
  * CR-364.
  *
- * ⚠️ **Mỗi dòng chữ đúng MỘT hàng, dài thì «…»** (luật chung của thẻ, khách chốt
+ * ⚠️ **Mỗi dòng chữ đúng MỘT hàng, dài thì "…"** (luật chung của thẻ, khách chốt
  * 10/09/2026): thẻ cao thấp so le thì mắt phải dò lại mép trên của từng thẻ thay
  * vì lướt một cột đều.
  *
@@ -91,8 +91,8 @@ export function DocumentCard({
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant={label.variant}>{label.text}</Badge>
 
-          {/*  «Chờ bạn duyệt» đứng CẠNH trạng thái chứ không thay thế nó: văn bản
-               vẫn đang ở «Đang duyệt», thứ thêm vào là *lượt của ai*. */}
+          {/*  "Chờ bạn duyệt" đứng CẠNH trạng thái chứ không thay thế nó: văn bản
+               vẫn đang ở "Đang duyệt", thứ thêm vào là *lượt của ai*. */}
           {awaitingMyApproval && (
             <Badge className="gap-1 bg-primary text-primary-foreground">
               <ShieldCheck className="size-3" />

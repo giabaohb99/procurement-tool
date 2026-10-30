@@ -4,7 +4,7 @@ import { suggestedDayCount } from './suggested-day-count'
 
 /**
  * ⚠️ Mấy mốc dưới đây phải khớp bản Python (`type_metadata.so_ngay_goi_y`), vì
- * backend mới là chốt ghi xuống CSDL. Lệch nhau thì ô «Tổng số ngày» hiện một
+ * backend mới là chốt ghi xuống CSDL. Lệch nhau thì ô "Tổng số ngày" hiện một
  * con số rồi lưu xong ra con số khác — người dùng không hiểu vì sao.
  */
 describe('soNgayGoiY', () => {
@@ -46,17 +46,17 @@ describe('soNgayGoiY', () => {
       expect(suggestedDayCount('2026-09-01', '2026-09-03', 'morning', 'afternoon')).toBe(3)
     })
 
-    it('CÙNG ngày «cả ngày → sáng» chỉ là NỬA ngày', () => {
+    it('CÙNG ngày "cả ngày → sáng" chỉ là NỬA ngày', () => {
       //  Bản cũ ra 1.0 — người lao động mất oan nửa ngày phép.
       expect(suggestedDayCount('2026-09-01', '2026-09-01', 'full', 'morning')).toBe(0.5)
     })
 
-    it('CÙNG ngày «sáng → chiều» là trọn một ngày', () => {
+    it('CÙNG ngày "sáng → chiều" là trọn một ngày', () => {
       //  Bản cũ ra 0.5.
       expect(suggestedDayCount('2026-09-01', '2026-09-01', 'morning', 'afternoon')).toBe(1)
     })
 
-    it('CÙNG ngày «chiều → sáng» là khoảng trống, trả 0 chứ không ra số âm', () => {
+    it('CÙNG ngày "chiều → sáng" là khoảng trống, trả 0 chứ không ra số âm', () => {
       //  Backend chặn hẳn ca này; ở đây chỉ cần không sinh ra số âm.
       expect(suggestedDayCount('2026-09-01', '2026-09-01', 'afternoon', 'morning')).toBe(0)
     })

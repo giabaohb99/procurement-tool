@@ -56,7 +56,7 @@ export function DocumentFolderPage() {
     setTreeSheetOpen(false)
   }
 
-  /** Về gốc «Thư mục của bạn» — bỏ `folder` (mặc định `all`) và `doc` trong CÙNG một lượt ghi. */
+  /** Về gốc "Thư mục của bạn" — bỏ `folder` (mặc định `all`) và `doc` trong CÙNG một lượt ghi. */
   function selectRoot() {
     setUrlParams({ folder: null, doc: null })
     setTreeSheetOpen(false)

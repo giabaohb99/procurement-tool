@@ -120,7 +120,7 @@ describe('groupBySection', () => {
   })
 
   //  Lỗi đã có thật: cột luôn được xếp lại theo `sort_order`, nên mọi lựa chọn
-  //  ở nút «Sắp xếp» (hạn chót, độ ưu tiên…) bị đè lại và bảng đứng im.
+  //  ở nút "Sắp xếp" (hạn chót, độ ưu tiên…) bị đè lại và bảng đứng im.
   it('keeps the incoming order when a sort criterion is active', () => {
     const tasks = [task(9, 1, 3000), task(3, 1, 1000), task(7, 1, 2000)]
     expect(ids(groupBySection([1], tasks, true).get(1))).toEqual([9, 3, 7])
@@ -209,7 +209,7 @@ describe('resolveDropPlace — sang cột khác', () => {
   ])
   const all = [...A, ...B]
 
-  it('drops into an EMPTY column — the bug that made column «Đã xong» refuse cards', () => {
+  it('drops into an EMPTY column — the bug that made column "Đã xong" refuse cards', () => {
     const place = resolveDropPlace(cols, 10, { type: 'section', sectionId: 3 })
     expect(place).toEqual({ sectionId: 3, beforeTaskId: null })
 

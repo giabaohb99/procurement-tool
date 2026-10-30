@@ -27,7 +27,7 @@ interface FolderShareDialogProps {
   onNavigateToFolder?: (folderId: number) => void
 }
 
-/** «Sao chép liên kết» ở chân hộp (đặc tả §P7) — URL TUYỆT ĐỐI để dán ra ngoài (chat, email…) vẫn mở đúng thư mục. */
+/** "Sao chép liên kết" ở chân hộp (đặc tả §P7) — URL TUYỆT ĐỐI để dán ra ngoài (chat, email…) vẫn mở đúng thư mục. */
 function copyFolderLink(folderId: number) {
   const url = `${window.location.origin}${appRoutes.document.folderDetail(folderId)}`
   void navigator.clipboard
@@ -37,22 +37,22 @@ function copyFolderLink(folderId: number) {
 }
 
 /**
- * HỘP «CHIA SẺ» kiểu Google Drive (đặc tả §C/§P7, làm lại UI 23/09/2026) — POPUP,
+ * HỘP "CHIA SẺ" kiểu Google Drive (đặc tả §C/§P7, làm lại UI 23/09/2026) — POPUP,
  * KHÔNG còn là một tab. Ba khối: mời (`folder-share-invite-form.tsx`, chỉ
- * hiện với mức Quản lý), «Người có quyền», «Quyền chung» (icon Khóa/Tòa nhà +
- * ô chọn HIỆN ĐÚNG giá trị đang khai). Ba lối vào: nút «Chia sẻ» ở thanh trên
- * khung nội dung, mục «Chia sẻ…» trong menu chuột phải, nút «Quản lý quyền» ở
+ * hiện với mức Quản lý), "Người có quyền", "Quyền chung" (icon Khóa/Tòa nhà +
+ * ô chọn HIỆN ĐÚNG giá trị đang khai). Ba lối vào: nút "Chia sẻ" ở thanh trên
+ * khung nội dung, mục "Chia sẻ…" trong menu chuột phải, nút "Quản lý quyền" ở
  * khung chi tiết — cả ba mở ĐÚNG một component này.
  *
- * `my_level < Quản lý` → CHỈ ĐỌC: ẩn khối mời + ô «Quyền chung» (ghi), danh
+ * `my_level < Quản lý` → CHỈ ĐỌC: ẩn khối mời + ô "Quyền chung" (ghi), danh
  * sách quyền hiện đúng ĐÃ NẠP được (backend cố ý trả rỗng cho người dưới mức
  * Quản lý ở `effective_access` — xem `types/document-folder.ts`), kèm câu
  * nhắc vì sao có thể chưa thấy đủ.
  *
  * ⚠️ Thân hộp bọc `ErrorBoundary` RIÊNG (rà UI 23/09/2026 — lead báo một lần
  * lỗi render ở đây làm SẬP CẢ TRANG, `errorElement` của router thay hẳn route
- * bằng «Không mở được trang»): một lỗi dựng — vd dữ liệu thiếu trường không
- * đúng hợp đồng — giờ chỉ làm rỗng ĐÚNG phần thân, khung + nút «Xong» vẫn
+ * bằng "Không mở được trang"): một lỗi dựng — vd dữ liệu thiếu trường không
+ * đúng hợp đồng — giờ chỉ làm rỗng ĐÚNG phần thân, khung + nút "Xong" vẫn
  * đóng được bình thường.
  */
 export function FolderShareDialog({ folderId, open, onOpenChange, onNavigateToFolder }: FolderShareDialogProps) {
@@ -65,7 +65,7 @@ export function FolderShareDialog({ folderId, open, onOpenChange, onNavigateToFo
   //  ngay tại `.length`/`.map`.
   const effectiveAccess = folder?.effective_access ?? []
   const displayName = folder?.display_name ?? folder?.name ?? '…'
-  //  `undefined` = «chưa đặt» (kế thừa tổ tiên) — ô chọn để TRỐNG thay vì suy
+  //  `undefined` = "chưa đặt" (kế thừa tổ tiên) — ô chọn để TRỐNG thay vì suy
   //  diễn thành Riêng tư, đúng ý nghĩa cột `default_access` (xem
   //  `types/document-folder.ts`). Icon Khóa chỉ khi ĐÃ đặt tường minh = Riêng tư.
   const defaultAccess = folder?.default_access ?? null
@@ -106,7 +106,7 @@ export function FolderShareDialog({ folderId, open, onOpenChange, onNavigateToFo
             ) : (
               <p className="flex items-start gap-2 rounded-md border border-dashed p-3 text-sm text-muted-foreground">
                 <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-                Không đủ quyền để mời thêm người hoặc đổi «Quyền chung» trên thư mục này.
+                Không đủ quyền để mời thêm người hoặc đổi <strong>Quyền chung</strong> trên thư mục này.
               </p>
             )}
 
@@ -138,8 +138,8 @@ export function FolderShareDialog({ folderId, open, onOpenChange, onNavigateToFo
                   </Select>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {/*  Viết lại bằng lời thường 29/09/2026 — câu cũ («nhánh pháp nhân», «dòng
-                       quyền riêng») là thuật ngữ nội bộ, người dùng đọc không ra. */}
+                  {/*  Viết lại bằng lời thường 29/09/2026 — câu cũ ("nhánh pháp nhân", "dòng
+                       quyền riêng") là thuật ngữ nội bộ, người dùng đọc không ra. */}
                   Mức quyền cho mọi người trong công ty này. Ai được chia sẻ riêng ở danh sách
                   dưới thì theo mức riêng đó.
                 </p>

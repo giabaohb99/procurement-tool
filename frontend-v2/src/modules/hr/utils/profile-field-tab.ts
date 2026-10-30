@@ -3,7 +3,7 @@
  *
  * ⚠️ Sinh ra để vá một lỗi đến từ chính thiết kế 5 tab (duoc-CR-316):
  *
- *   Người dùng nhập sai một ô ở tab «Giấy tờ & BHXH», chuyển sang tab «Chung»,
+ *   Người dùng nhập sai một ô ở tab "Giấy tờ & BHXH", chuyển sang tab "Chung",
  *   bấm **Lưu** → **không có gì xảy ra**. Không toast, không lỗi trên màn,
  *   không một lời gọi API nào. Nút Lưu đọc ra như bị hỏng.
  *
@@ -27,7 +27,7 @@ export type ProfileTabKey = 'general' | 'contact' | 'documents' | 'leave' | 'acc
  * bảng này với schema, nên bỏ sót là đỏ chứ không im lặng.
  */
 const FIELD_TAB: Record<string, ProfileTabKey> = {
-  // Tab «Chung» — nhóm 1 (cá nhân) + nhóm 2 (công việc)
+  // Tab "Chung" — nhóm 1 (cá nhân) + nhóm 2 (công việc)
   code: 'general',
   full_name: 'general',
   gender: 'general',
@@ -53,10 +53,10 @@ const FIELD_TAB: Record<string, ProfileTabKey> = {
   is_active: 'general',
   hire_date: 'general',
   resign_date: 'general',
-  salary_monthly: 'general',   // nhóm «Lương» trong mục Công việc (duoc-CR-693)
+  salary_monthly: 'general',   // nhóm "Lương" trong mục Công việc (duoc-CR-693)
   allowance_monthly: 'general',
 
-  // Tab «Liên hệ & Ngân hàng» — nhóm 3 + nhóm 4
+  // Tab "Liên hệ & Ngân hàng" — nhóm 3 + nhóm 4
   phone: 'contact',
   phone_label: 'contact',
   extra_phones: 'contact',
@@ -67,7 +67,7 @@ const FIELD_TAB: Record<string, ProfileTabKey> = {
   bank_name: 'contact',
   bank_branch: 'contact',
 
-  // Tab «Giấy tờ & BHXH» — nhóm 5
+  // Tab "Giấy tờ & BHXH" — nhóm 5
   id_number: 'documents',
   id_issue_date: 'documents',
   id_issue_place: 'documents',

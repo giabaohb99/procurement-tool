@@ -26,8 +26,8 @@ const CONFIG: ReportPageConfig = {
  * Báo cáo Văn bản (phase 05, mục 5.3) — bản BIỂU ĐỒ của phân hệ Báo cáo.
  *
  * Gác CHẶT hơn menu nguồn (`document.read`/`document.export`, Q5.3): mục menu
- * «Văn bản» (`appRoutes.document.documents`) không khai `entity` riêng (cố ý,
- * màn đó có tab «Văn bản đến» mở cho mọi người đăng nhập) nên `report-catalog.
+ * "Văn bản" (`appRoutes.document.documents`) không khai `entity` riêng (cố ý,
+ * màn đó có tab "Văn bản đến" mở cho mọi người đăng nhập) nên `report-catalog.
  * test.ts` so khớp với khóa PHÂN HỆ `document` — đúng khóa trang này đang gác.
  *
  * "Chờ duyệt"/"Cần rà soát"/"Hết hạn trong kỳ"/"Đã ban hành" là chỉ số THỜI

@@ -91,7 +91,7 @@ export const aiUsageApi = {
 }
 
 /**
- * «AI của tôi» (G8) + Tổng quan (G1) — K6, hợp đồng doc/agent-hub/06 §6. Khóa của CHÍNH MÌNH đi chung đường
+ * "AI của tôi" (G8) + Tổng quan (G1) — K6, hợp đồng doc/agent-hub/06 §6. Khóa của CHÍNH MÌNH đi chung đường
  * `mcp-keys` với tab cũ (ai-CR-063), nay kèm trạng thái và khóa chờ nhận do quản trị phát hộ.
  */
 export const myAiApi = {

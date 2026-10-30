@@ -72,8 +72,8 @@ export function statusColumn<T extends LeaveRequest>(): DataTableColumn<T> {
  * cột.
  *
  * ⚠️ **Không tab nào của màn Đơn nghỉ phép còn BÀY cột này** (khách chốt
- * 08/09/2026). «Đơn của tôi» và «Tôi đã duyệt» bỏ hẳn khỏi danh sách cột; «Cần
- * tôi duyệt» giữ nhưng `defaultHidden` — bật lại được ở menu «Cột». Câu tóm tắt
+ * 08/09/2026). "Đơn của tôi" và "Tôi đã duyệt" bỏ hẳn khỏi danh sách cột; "Cần
+ * tôi duyệt" giữ nhưng `defaultHidden` — bật lại được ở menu "Cột". Câu tóm tắt
  * vẫn sống ở màn CHI TIẾT đơn và ở bản in, nên đừng xóa hàm này hay
  * `steps_service._summary`.
  */
@@ -111,7 +111,7 @@ export function leaveTypeColumn<T extends LeaveRequest>(): DataTableColumn<T> {
   return {
     key: 'leave_type_name',
     header: 'Loại nghỉ',
-    //  Đơn nhiều loại hiện «Phép năm +1» chứ không liệt kê hết: ô bảng cao 35px
+    //  Đơn nhiều loại hiện "Phép năm +1" chứ không liệt kê hết: ô bảng cao 35px
     //  không chứa nổi hai tên loại, và liệt kê hết thì cột nào cũng cụt bằng dấu
     //  ba chấm — mất luôn tên loại chính. Bản kê đủ nằm ở `title` và ở màn chi tiết.
     cell: (r) => <span title={leaveLinesText(r) || undefined}>{leaveTypeLabel(r)}</span>,
@@ -133,7 +133,7 @@ export function dateColumns<T extends LeaveRequest>(): DataTableColumn<T>[] {
     {
       key: 'to_date',
       header: 'Đến ngày',
-      //  Đơn nhiều khoảng thêm chữ mờ «· 2 khoảng» (duoc-CR-683) — cột này là bao ngoài.
+      //  Đơn nhiều khoảng thêm chữ mờ "· 2 khoảng" (duoc-CR-683) — cột này là bao ngoài.
       cell: (r) => <LeaveToDateCell request={r} />,
       width: 150,
     },

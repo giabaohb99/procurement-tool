@@ -111,6 +111,49 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-696-giao-dien | Gom Trợ lý AI và Kho skill AI thành một phân hệ AI
+- status: dang-lam
+- date: 2026-10-30
+Màn chọn phân hệ chỉ còn một thẻ AI thay cho hai thẻ Trợ lý AI và Kho skill AI. Menu bên trái xếp theo nhóm: Trợ lý AI, Kết nối
+(tên mới của màn Khóa nhân sự), nhóm Kho skill (Bộ skill), nhóm Giám sát (Tổng quan, Nhật ký sử dụng và mục Bot Telegram gập sẵn,
+bên trong là Nhóm chat và Người dùng bot), nhóm Cấu hình (Cấu hình chung và Nâng cao, nơi quản trị dọn các ứng dụng AI đã đăng ký,
+chỉ người quản lý trợ lý AI thấy). Quyền từng mục giữ như cũ, mọi đường dẫn cũ vẫn mở được nên link trong thông báo và bài hướng
+dẫn không gãy. Khung phân hệ dùng chung thêm khái niệm đường gốc phụ để một phân hệ nhận được hai tiền tố đường dẫn.
+Còn lại: đợt 2 gồm màn Kết nối mới (người, cách nối, ứng dụng, dùng lần cuối, ô tìm), lọc ở màn Nâng cao, ô tìm và cột Chứng từ ở
+Nhật ký sử dụng, đang chờ hợp đồng API của phần máy chủ.
+Kiểm: typecheck 0 lỗi; lint 0 lỗi, 30 cảnh báo như bản gốc; bài kiểm thư mục AI, Kho skill, điều hướng và khung trang 213 bài xanh;
+mở thử trên trình duyệt ở màn rộng 1440 và màn điện thoại.
+Mã nguồn: frontend-v2/src/modules/ai/routes.tsx, frontend-v2/src/modules/ai/routes.test.tsx, frontend-v2/src/app/router/module-definition.ts, frontend-v2/src/app/router/use-active-module.ts, frontend-v2/src/app/router/module-registry.ts
+
+## bao-CR-695-giao-dien | Bỏ dấu ngoặc kép góc trên giao diện ERP v2 và giao diện thu mua cũ
+- status: xong
+- date: 2026-10-30
+Giao diện ERP v2 và giao diện thu mua cũ không còn dấu ngoặc kép góc: 4.968 cặp trong 1.429 tệp ở bản v2, 364 cặp trong 58 tệp
+ở bản cũ. Luật áp dụng theo chốt ngày 30/10: chữ hiện trên màn mà định dạng được thì tên nút, tên màn, tên ô thành chữ in đậm,
+lời trích và ví dụ thành chữ in nghiêng; chuỗi thuần như thông báo nổi, chữ gợi ý trong ô, chú giải khi rê chuột, nhãn lựa chọn
+và chú thích trong mã dùng nháy kép thẳng. Làm bằng một script đọc cây cú pháp TypeScript để biết từng dấu nằm trong chú thích,
+chuỗi hay chữ hiển thị, rồi soát tay các chỗ đổi sang in đậm, in nghiêng (giữ khoảng trắng khi câu xuống dòng, một chỗ ô chỉ nhận
+chuỗi nên giữ nháy thẳng). Sửa theo 11 khẳng định ở 7 tệp trong bài kiểm vốn khớp nguyên câu có dấu. Dữ liệu giả lập câu máy chủ trong bài
+kiểm đổi sang nháy thẳng cho khớp phần máy chủ cùng đợt.
+Kiểm: typecheck 0 lỗi; lint 0 lỗi, 30 cảnh báo như bản gốc; bài kiểm v2 chạy theo từng thư mục đều xanh, riêng bài nạp danh mục báo cáo hết giờ 5 giây giống hệt trên bản gốc; tsc bản cũ giữ đúng 4 lỗi cũ.
+Mã nguồn: frontend-v2/src/**, frontend/src/**
+
+## bao-CR-695-hdsd | Bỏ dấu ngoặc kép góc trong bài hướng dẫn và các script máy chủ
+- status: xong
+- date: 2026-10-30
+Toàn bộ thư mục backend/scripts không còn dấu ngoặc kép góc: 650 chỗ trong 53 tệp. Luật áp dụng theo chốt ngày 30/10: trong nội
+dung bài hướng dẫn (HTML), tên nút, màn, ô, trạng thái thành chữ in đậm, lời trích và ví dụ thành chữ in nghiêng, chỗ đã nằm sẵn
+trong thẻ in đậm hay in nghiêng thì chỉ bỏ dấu; câu in ra màn hình dòng lệnh, chú thích và docstring dùng nháy kép thẳng (chuỗi
+một dòng bọc bằng nháy kép thì dùng nháy đơn để không vỡ chuỗi). Làm bằng một script phân loại theo từng loại chuỗi của Python
+rồi soát tay 173 chỗ phải chọn in đậm hay in nghiêng, sửa 23 chỗ máy chọn sai; hai tệp JSON (bài Văn bản, cấu hình tra cứu thị
+trường) đối chiếu lại từng khóa để chắc chỉ đổi dấu. Chạy lại 22 script seed_help trên dev và nạp lại kho vector. Prod gom vào
+đợt sau. Cẩm nang trợ lý (seed_handbook) và các bài chỉ nằm trong DB prod không nằm trong phạm vi này, đã liệt kê cho điều phối.
+Bổ sung: ba bài có dấu ngoặc trong TIÊU ĐỀ (Phê duyệt theo quyền, Ô Tên trên hóa đơn, Hệ thống đang bận) đổi sang nháy kép
+thẳng; vì seed tìm bài theo tiêu đề nên lần chạy đầu đã đẻ bài mới bên cạnh bài cũ trên dev. Sửa khuôn chung: tuple bài nhận
+thêm danh sách tên cũ, seed đổi tên tại chỗ (giữ id, giữ thứ tự) và xóa bản trùng. Chạy lại ba seed trên dev, hết trùng.
+Mã nguồn: backend/scripts/*.py, backend/scripts/help_van_ban/bai-viet.json, backend/scripts/data/cau-hinh-tra-cuu-thi-truong-cr684.json, backend/scripts/deploy/deploy.sh, backend/scripts/agent_restore.sh
+Deploy: dev 30/10 (chạy lại 22 seed_help + reindex_help_rag)
+
 ## bao-CR-691-hdsd | Bài hướng dẫn và tài liệu cho màn Chi tiết YC mua hàng mở rộng, đổi tên Tiến độ đơn mua hàng
 - status: xong
 - date: 2026-10-29

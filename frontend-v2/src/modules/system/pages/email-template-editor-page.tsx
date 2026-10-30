@@ -84,7 +84,7 @@ function EditorForm({ event, template }: { event: string; template: EmailTemplat
   const [busy, setBusy] = useState<'' | 'test'>('')
 
   //  ⚠️ **Xem trước chạy TỰ ĐỘNG, không chờ bấm nút.** Bản cũ chỉ render sau khi
-  //  người dùng tìm ra nút «Cập nhật» cao 24px nép góc phải — mở trang ra là ô
+  //  người dùng tìm ra nút "Cập nhật" cao 24px nép góc phải — mở trang ra là ô
   //  *Kết quả hiển thị* trống trơn và ô *Tiêu đề* ghi "—", trong khi cột trái là
   //  một khối HTML liền mạch không đọc nổi. Người soạn không có cách nào biết
   //  mình vừa sửa ra cái gì (khách nêu 14/09/2026).
@@ -239,7 +239,7 @@ function EditorForm({ event, template }: { event: string; template: EmailTemplat
           <div className="grid gap-1.5">
             <div className="flex h-6 items-center justify-between">
               <Label>Xem trước (dữ liệu mẫu)</Label>
-              {/*  Chữ trạng thái thay cho nút «Cập nhật» đã bỏ: bản render nay tự
+              {/*  Chữ trạng thái thay cho nút "Cập nhật" đã bỏ: bản render nay tự
                    chạy, nên chỗ này chỉ còn việc nói nó có đang theo kịp không. */}
               <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 {previewStale ? (

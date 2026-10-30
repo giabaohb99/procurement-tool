@@ -1,4 +1,4 @@
-// bao-CR-496 (bản cũ) — «Bộ lọc đã lưu» + «Lưu bộ lọc này» của màn Tra cứu giá hải quan, bê từ bản v2
+// bao-CR-496 (bản cũ) — "Bộ lọc đã lưu" + "Lưu bộ lọc này" của màn Tra cứu giá hải quan, bê từ bản v2
 // (`customs-saved-filter-bar.tsx`). Bộ lọc là của RIÊNG tài khoản, lưu ở backend — đổi máy không mất
 // (đại ca chốt, không dùng localStorage).
 //
@@ -72,7 +72,7 @@ export default function CustomsSavedFilters({ filters, onApply }: {
     if (!selected) return
     const ok = await askConfirm({
       title: 'Xóa bộ lọc đã lưu',
-      message: `Xóa bộ lọc «${selected.name}»? Điều kiện đang áp trên màn hình không đổi.`,
+      message: `Xóa bộ lọc "${selected.name}"? Điều kiện đang áp trên màn hình không đổi.`,
       confirmText: 'Xóa', danger: true,
     })
     if (!ok) return
@@ -114,7 +114,7 @@ export default function CustomsSavedFilters({ filters, onApply }: {
             <button className="btn" type="button" disabled={!name.trim()} onClick={submitSave}>Lưu</button>
           </>}>
           <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>
-            Đặt tên cho tổ hợp điều kiện đang áp (ví dụ «Abamectin 3.6 EC»). Lần sau chọn tên này là màn hình
+            Đặt tên cho tổ hợp điều kiện đang áp (ví dụ <em>Abamectin 3.6 EC</em>). Lần sau chọn tên này là màn hình
             về đúng trạng thái đó. Bộ lọc là của riêng bạn, dùng được ở cả hai bản giao diện.
           </div>
           <input autoFocus value={name} maxLength={120} placeholder="Tối đa 120 ký tự" style={{ width: '100%' }}

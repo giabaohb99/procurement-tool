@@ -91,9 +91,9 @@ function ApprovalInboxContent() {
   //  Ba ô lọc nhanh lấy URL làm nguồn sự thật: tải lại trang hay gửi link cho
   //  nhau vẫn ra đúng cái đang xem.
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
-  //  Mặc định «Cần duyệt» (yêu cầu 25/09/2026): người ta mở màn này để xử lý
+  //  Mặc định "Cần duyệt" (yêu cầu 25/09/2026): người ta mở màn này để xử lý
   //  việc đang treo, không phải để đọc lại cái đã ký — việc chờ lẫn giữa cả chục
-  //  dòng đã duyệt là dễ sót. Muốn xem hết thì bấm «Tất cả» (ghi `?scope=all`).
+  //  dòng đã duyệt là dễ sót. Muốn xem hết thì bấm "Tất cả" (ghi `?scope=all`).
   const [scope, setScope] = useUrlParamState('scope', INBOX_SCOPE.pending)
   const [rangeDays, setRangeDays] = useUrlParamState('days', DEFAULT_DATE)
   const clearUrlParams = useClearUrlParams()
@@ -159,7 +159,7 @@ function ApprovalInboxContent() {
     //  mắt xích giữa `PageContainer fill` và `Card`, thiếu một vế là thẻ mất
     //  `flex-1` và bảng không còn cao bằng khung.
     //
-    //  `group` + `data-scrolled` là đường dẫn tín hiệu «đã cuộn» xuống tới dải
+    //  `group` + `data-scrolled` là đường dẫn tín hiệu "đã cuộn" xuống tới dải
     //  ghim nằm sâu bên trong (thanh công cụ do `DataTable` vẽ, tầng này không
     //  với tới được bằng prop). Bóng đổ của dải đó đọc thuộc tính này — xem
     //  `list-sticky.ts`.
@@ -257,7 +257,7 @@ function ApprovalInboxContent() {
                    Đếm thiếu một tầng thì người dùng thấy nút trơn mà danh sách
                    vẫn đang bị cắt bớt, rồi đi tìm lỗi ở dữ liệu.
 
-                   «Đang lọc» = KHÁC mặc định chứ không phải «có giá trị»: mặc
+                   "Đang lọc" = KHÁC mặc định chứ không phải "có giá trị": mặc
                    định của ô khoảng là `30` chứ không rỗng (bài học duoc-CR-364).
 
                    Nút tự ẩn từ `md` trở lên (`QuickFilterSheet` khai `md:hidden`). */}

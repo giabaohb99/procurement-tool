@@ -13,10 +13,10 @@ interface WorkTaskShortlistProps {
   title: string
   description: string
   tasks: WorkOverviewTask[]
-  /** Tổng số việc thuộc nhóm này — dùng cho dòng «còn N việc nữa». */
+  /** Tổng số việc thuộc nhóm này — dùng cho dòng "còn N việc nữa". */
   total: number
   loading?: boolean
-  /** Câu nói khi không có việc nào. Phải là tin MỪNG, không phải «không có dữ liệu». */
+  /** Câu nói khi không có việc nào. Phải là tin MỪNG, không phải "không có dữ liệu". */
   emptyMessage: string
   /** Tô đỏ ngày hạn — dùng cho nhóm quá hạn. */
   overdue?: boolean
@@ -25,8 +25,8 @@ interface WorkTaskShortlistProps {
 /**
  * Danh sách RÚT GỌN vài việc trên màn Tổng quan Dự án.
  *
- * ⚠️ **Đây là ĐƯỜNG ĐI, không phải số liệu.** Thẻ đếm phía trên nói «22 việc
- * quá hạn» rồi dừng ở đó: người đọc biết mình đang có vấn đề nhưng không biết
+ * ⚠️ **Đây là ĐƯỜNG ĐI, không phải số liệu.** Thẻ đếm phía trên nói "22 việc
+ * quá hạn" rồi dừng ở đó: người đọc biết mình đang có vấn đề nhưng không biết
  * vấn đề nằm ở đâu, và không có chỗ nào bấm vào — một cảnh báo không có lối ra.
  * Khối này là lối ra đó.
  *
@@ -35,8 +35,8 @@ interface WorkTaskShortlistProps {
  * một bảng thứ hai. Nhưng cắt mà im lặng thì người đọc tưởng mình đã thấy hết —
  * nên khi `total` lớn hơn số dòng, chân khối ghi rõ còn bao nhiêu.
  *
- * ⚠️ **Câu rỗng là tin MỪNG.** «Không có việc quá hạn» khác hẳn «không có dữ
- * liệu»: cái đầu nói mọi thứ đang đúng hạn, cái sau nói màn hình hỏng. Ở một
+ * ⚠️ **Câu rỗng là tin MỪNG.** "Không có việc quá hạn" khác hẳn "không có dữ
+ * liệu": cái đầu nói mọi thứ đang đúng hạn, cái sau nói màn hình hỏng. Ở một
  * khối cảnh báo, để nhầm câu là người đọc đi tìm lỗi ở chỗ không có lỗi.
  */
 export function WorkTaskShortlist({

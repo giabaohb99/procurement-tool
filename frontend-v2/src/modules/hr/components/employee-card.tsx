@@ -19,7 +19,7 @@ const STATUS_NORMAL = 'official'
  * người ta thật sự nhận ra đồng nghiệp. Mã NV tụt xuống dòng phụ, chỗ của nó
  * cùng với chức vụ.
  *
- * ⚠️ **Mỗi dòng chữ đúng MỘT hàng, dài thì «…»** (luật chung của thẻ danh mục,
+ * ⚠️ **Mỗi dòng chữ đúng MỘT hàng, dài thì "…"** (luật chung của thẻ danh mục,
  * khách chốt 10/09/2026) — thẻ cao thấp so le nhau thì mắt phải dò lại mép trên
  * của từng thẻ thay vì lướt một cột đều.
  *
@@ -28,8 +28,8 @@ const STATUS_NORMAL = 'official'
  * nhặt ra là người đã nghỉ. Cùng lý do, dòng cảnh báo *Chưa gán quản lý trực
  * tiếp* chỉ hiện khi ô đó trống.
  *
- * ⚠️ Cảnh báo K5 **phải theo sang thẻ, đừng bỏ vì cho gọn**: ô «quản lý trực
- * tiếp» là thứ bộ máy duyệt đọc để tìm người ký; bỏ trống thì đơn từ lặng lẽ
+ * ⚠️ Cảnh báo K5 **phải theo sang thẻ, đừng bỏ vì cho gọn**: ô "quản lý trực
+ * tiếp" là thứ bộ máy duyệt đọc để tìm người ký; bỏ trống thì đơn từ lặng lẽ
  * chạy về trưởng bộ phận và không ai biết là đã đi sai đường. Ở khổ rộng nó là
  * một cột đỏ, ở khổ hẹp phải là một dòng đỏ — không thể là khoảng trắng.
  */

@@ -286,7 +286,7 @@ function ReconcileTab() {
           </div>
           {detail && detail.mismatches.length === 0 ? (
             <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-              Khớp — tổng tiêu trong sổ bằng tổng đơn «Trừ điểm» của 3 ngày gần nhất.
+              Khớp — tổng tiêu trong sổ bằng tổng đơn <strong>Trừ điểm</strong> của 3 ngày gần nhất.
             </p>
           ) : (
             <div className="flex flex-col gap-2">
@@ -303,14 +303,14 @@ function ReconcileTab() {
                 </div>
               ))}
               <p className="text-xs text-muted-foreground">
-                Hệ KHÔNG tự sửa lệch — xử lý bằng dòng «Điều chỉnh» có lý do, sau khi đã hiểu vì
+                Hệ KHÔNG tự sửa lệch — xử lý bằng dòng <strong>Điều chỉnh</strong> có lý do, sau khi đã hiểu vì
                 sao lệch (đơn chưa khớp? đơn void chưa quét?).
               </p>
             </div>
           )}
           {detail && detail.unmatched > 0 && (
             <p className="text-sm text-amber-600 dark:text-amber-400">
-              Đang còn {detail.unmatched} đơn chưa khớp người — xem tab «Đơn chưa khớp».
+              Đang còn {detail.unmatched} đơn chưa khớp người — xem tab <strong>Đơn chưa khớp</strong>.
             </p>
           )}
         </>

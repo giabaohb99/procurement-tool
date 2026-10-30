@@ -48,7 +48,7 @@ describe('bộ mã điều kiện áp dụng', () => {
     expect(DOC_KIND_WARNING[DOC_KINDS.SURVEY_REQUEST]).toMatch(/chốt phương án/)
   })
 
-  it('chỉ «thuộc» và «không thuộc» nhận nhiều giá trị', () => {
+  it('chỉ "thuộc" và "không thuộc" nhận nhiều giá trị', () => {
     expect(isMultiValueOp(APPLY_OPS.IN)).toBe(true)
     expect(isMultiValueOp(APPLY_OPS.NOT_IN)).toBe(true)
     for (const op of [APPLY_OPS.EQ, APPLY_OPS.NE, APPLY_OPS.CONTAINS]) {
@@ -73,7 +73,7 @@ describe('đọc/ghi giá trị của một dòng điều kiện', () => {
   })
 
   it('phép MỘT giá trị không tách theo dấu phẩy', () => {
-    //  «chứa» với chuỗi có dấu phẩy là hợp lệ — tách ra là đổi nghĩa điều kiện.
+    //  "chứa" với chuỗi có dấu phẩy là hợp lệ — tách ra là đổi nghĩa điều kiện.
     expect(textToConditionValue('Thùng, carton', APPLY_OPS.CONTAINS)).toBe('Thùng, carton')
   })
 

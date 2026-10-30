@@ -2,7 +2,7 @@ import { WORK_DAY_KIND_CODE } from '../types/work-schedule'
 import type { WorkRosterCell, WorkRosterItem } from '../types/work-roster'
 
 /**
- * Đọc MỘT ô của lưới «Xem lịch» thành thứ vẽ được. Thuần, không dính React.
+ * Đọc MỘT ô của lưới "Xem lịch" thành thứ vẽ được. Thuần, không dính React.
  *
  * Trạng thái (từ trên xuống, cái đầu khớp thắng):
  * · `unknown`  — backend không trả ô cho ngày này (hoặc `work_kind` lạ): không đếm, không tô;
@@ -20,7 +20,7 @@ export type WorkRosterCellState = 'unknown' | 'holiday' | 'off' | 'leave' | 'par
 
 export interface WorkRosterCellView {
   state: WorkRosterCellState
-  /** Chữ ngắn trong ô tuần («08:00 – 17:00», «Sáng», «Nghỉ», «Lễ», tên loại phép). */
+  /** Chữ ngắn trong ô tuần ("08:00 – 17:00", "Sáng", "Nghỉ", "Lễ", tên loại phép). */
   shortLabel: string
   /** Ký tự cho ô tháng; rỗng = ô để trống (ngày thường, nghỉ lịch, lễ — để ngoại lệ nổi lên). */
   glyph: string
@@ -39,7 +39,7 @@ export interface WorkRosterCellView {
 
 /**
  * "8:00" / "08:00:00" → "08:00"; giá trị hỏng / rỗng → "".
- * Luôn đủ giờ:phút — bản cũ rút «08:00» thành «08» và ô đọc ra «08–17», đại ca chê (05/10/2026).
+ * Luôn đủ giờ:phút — bản cũ rút "08:00" thành "08" và ô đọc ra "08–17", đại ca chê (05/10/2026).
  */
 export function formatHour(time: string | null | undefined): string {
   const match = /^(\d{1,2}):(\d{2})/.exec(time ?? '')
@@ -105,7 +105,7 @@ export function describeRosterCell(cell: WorkRosterCell | undefined): WorkRoster
       state: 'off',
       shortLabel: 'Nghỉ',
       glyph: '',
-      description: `Nghỉ theo lịch${cell.schedule_name ? ` «${cell.schedule_name}»` : ''}`,
+      description: `Nghỉ theo lịch${cell.schedule_name ? ` "${cell.schedule_name}"` : ''}`,
       isWorking: false,
     }
   }
@@ -140,8 +140,8 @@ export function describeRosterCell(cell: WorkRosterCell | undefined): WorkRoster
     return {
       ...common,
       state: 'partial',
-      //  Nói buổi NGHỈ, không nói buổi làm: «Sáng» trơn đọc ra như lịch chỉ làm buổi sáng
-      //  (ô `working` của ngày nửa buổi cũng ghi «Sáng») — hai nghĩa ngược nhau, một chữ.
+      //  Nói buổi NGHỈ, không nói buổi làm: "Sáng" trơn đọc ra như lịch chỉ làm buổi sáng
+      //  (ô `working` của ngày nửa buổi cũng ghi "Sáng") — hai nghĩa ngược nhau, một chữ.
       shortLabel: morningOff ? 'Nghỉ sáng' : 'Nghỉ chiều',
       glyph: 'P',
       description: `Nghỉ ${morningOff ? 'buổi sáng' : 'buổi chiều'} — ${detail}`,

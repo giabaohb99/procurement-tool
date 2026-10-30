@@ -15,7 +15,7 @@ import {
  * Lựa chọn của từng ô điều kiện bỏ qua điều phối (bao-CR-528).
  *
  * `centralDeptCode` = mã phòng thu mua mặc định đang cấu hình; phòng đó bị gỡ
- * khỏi ô «Phòng xử lý» vì bối cảnh phiếu đưa nó vào dưới dạng «để trống».
+ * khỏi ô "Phòng xử lý" vì bối cảnh phiếu đưa nó vào dưới dạng "để trống".
  *
  * Ba danh mục mượn của phân hệ Nhân sự tự tắt khi thiếu quyền đọc — cứ mount là
  * gọi thì người chỉ có quyền cấu hình ăn toast 403 ngay lúc mở tab.

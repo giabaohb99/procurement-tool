@@ -49,7 +49,7 @@ export const employeeSchema = z.object({
   //  Backend coi rỗng là 0 năm và màn Quỹ phép trưng cảnh báo ra.
   hire_date: z.string().trim(),
   //  0 = chưa khai · 1 nam · 2 nữ · 3 khác. Dùng để LỌC loại nghỉ (thai sản chỉ
-  //  áp cho nữ); chưa khai thì KHÔNG bị chặn loại nào, còn «Khác» thì CÓ — xem
+  //  áp cho nữ); chưa khai thì KHÔNG bị chặn loại nào, còn "Khác" thì CÓ — xem
   //  `employee/constants.GENDER_OTHER` ở backend.
   gender: z.number().int().min(0).max(3),
 

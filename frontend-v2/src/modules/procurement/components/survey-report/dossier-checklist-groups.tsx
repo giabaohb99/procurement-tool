@@ -33,7 +33,7 @@ interface DossierChecklistGroupsProps {
   onToggle: (key: string) => void
   /** Mở hộp thoại sửa nhanh. Bỏ trống = người xem không sửa được. */
   onEdit?: (doc: ApplicableDossier) => void
-  /** Bấm ô tick — gạt giữa «Hoàn thành» và «Đang làm». Bỏ trống = chỉ xem. */
+  /** Bấm ô tick — gạt giữa "Hoàn thành" và "Đang làm". Bỏ trống = chỉ xem. */
   onToggleDone?: (doc: ApplicableDossier) => void
   /** Đang có lệnh ghi chạy dở — khóa ô tick để khỏi bắn chồng request. */
   busy?: boolean
@@ -219,7 +219,7 @@ const STATUS_PILL: Record<number, string> = {
   [DOSSIER_PROGRESS.DONE]: 'bg-success/15 text-success',
 }
 
-/** Ô «Dự định hoàn tất» trên dòng — chép `DocPlannedChip`, đỏ khi trễ hẹn. */
+/** Ô "Dự định hoàn tất" trên dòng — chép `DocPlannedChip`, đỏ khi trễ hẹn. */
 function PlannedChip({ doc }: { doc: ApplicableDossier }) {
   if (!doc.planned_date) return null
   //  Trễ = quá ngày hẹn mà việc CHƯA xong. Xong rồi thì không còn gì để trễ,
@@ -294,7 +294,7 @@ export function ChecklistRow({
           type="button"
           aria-label={done ? 'Mở lại hồ sơ' : 'Đánh dấu hoàn thành'}
           //  ⚠️ Đang khóa thì NÓI RA CHỜ AI, không chỉ khóa nút. Nút mờ không
-          //  lời giải thích là thứ người dùng báo lỗi «bấm không được».
+          //  lời giải thích là thứ người dùng báo lỗi "bấm không được".
           title={
             doc.locked
               ? `Chờ hồ sơ tiên quyết hoàn thành trước: ${waitText}`
@@ -396,7 +396,7 @@ export function ChecklistRow({
 
       {onEdit && (
         //  ⚠️ `type="button"` — dòng này nằm trong `<form>` của trang YCBG, để
-        //  mặc định `submit` thì bấm «sửa» là LƯU cả phiếu rồi mới mở hộp thoại
+        //  mặc định `submit` thì bấm "sửa" là LƯU cả phiếu rồi mới mở hộp thoại
         //  (bẫy thứ ba của duoc-CR-317).
         <Button
           type="button"

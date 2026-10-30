@@ -40,7 +40,7 @@ export const LEAVE_INBOX_FILTER_FIELDS: FilterFieldDefinition[] = [
 ]
 
 /**
- * Tab «Đơn của tôi» — lọc ở BACKEND, nên mọi `name` phải là **cột thật** và phải
+ * Tab "Đơn của tôi" — lọc ở BACKEND, nên mọi `name` phải là **cột thật** và phải
  * nằm trong `request_service.FILTER_OPERATORS`; thiếu một cái là backend **bỏ
  * qua im lặng** điều kiện đó, người dùng bấm Áp dụng mà danh sách không đổi.
  *

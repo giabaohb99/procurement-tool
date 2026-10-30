@@ -6,11 +6,11 @@ import type { Employee, EmployeeContact, EmployeeFamily } from '../types/employe
 import { EmployeeInfoPrintSheet } from './employee-info-print-sheet'
 
 /**
- * Bản in «Phiếu thông tin nhân viên» BM00../QT01/NS (duoc-CR-676).
+ * Bản in "Phiếu thông tin nhân viên" BM00../QT01/NS (duoc-CR-676).
  *
  * Canh: đủ bảy mục đúng thứ tự, mã số in ra NHÃN chứ không in số, và ô bị backend che (thiếu
- * quyền nhạy cảm → `''` / `null`) in thành ô TRỐNG — không bao giờ ra chữ «null» / «undefined» /
- * «Chưa khai» trên giấy.
+ * quyền nhạy cảm → `''` / `null`) in thành ô TRỐNG — không bao giờ ra chữ "null" / "undefined" /
+ * "Chưa khai" trên giấy.
  */
 
 function employee(overrides: Partial<Employee> = {}): Employee {
@@ -36,7 +36,7 @@ function employee(overrides: Partial<Employee> = {}): Employee {
 }
 
 function fieldValue(label: string): string {
-  //  Mỗi ô in là «Nhãn:» + một khối giá trị liền sau.
+  //  Mỗi ô in là "Nhãn:" + một khối giá trị liền sau.
   const labelNode = screen.getByText(`${label}:`)
   return labelNode.nextElementSibling?.textContent ?? '(không có ô)'
 }
@@ -46,7 +46,7 @@ describe('EmployeeInfoPrintSheet', () => {
     render(<EmployeeInfoPrintSheet employee={employee()} contacts={[]} families={[]} />)
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('PHIẾU THÔNG TIN NHÂN VIÊN')
-    //  Tên pháp nhân in ở đầu phiếu (và lặp lại ở ô «Pháp nhân» của mục II).
+    //  Tên pháp nhân in ở đầu phiếu (và lặp lại ở ô "Pháp nhân" của mục II).
     const header = screen.getByRole('banner')
     expect(within(header).getByText('Công ty Cổ phần DEGO')).toBeInTheDocument()
     expect(within(header).getByText(/BM00\.\.\/QT01\/NS/)).toBeInTheDocument()
@@ -67,7 +67,7 @@ describe('EmployeeInfoPrintSheet', () => {
     expect(fieldValue('Trình độ học vấn')).toBe('Đại học')
     expect(fieldValue('Ngày sinh')).toBe('01/05/1990')
     expect(fieldValue('Ngày vào làm')).toBe('15/03/2024')
-    //  `0` con là câu trả lời thật, phải in «0».
+    //  `0` con là câu trả lời thật, phải in "0".
     expect(fieldValue('Số con')).toBe('0')
   })
 

@@ -21,12 +21,12 @@ interface LeaveStatusBadgeProps {
  *
  * ⚠️ **CẤM token `primary` / `foreground` ở bảng này, và cấm luôn thang `slate`.**
  * Màu chủ đạo của bộ giao diện là navy, mà `slate` là thang xám ÁM XANH — huy
- * hiệu «Nháp»/«Đã hủy» tô `text-slate-700` đọc ra gần như đúng màu chữ thường
+ * hiệu "Nháp"/"Đã hủy" tô `text-slate-700` đọc ra gần như đúng màu chữ thường
  * và màu nút chính, nên nó thôi không còn là huy hiệu trạng thái nữa mà nhìn
  * như một mẩu chữ in đậm. Hai trạng thái trung tính dùng thang `zinc` (xám
  * THẬT, không ám màu nào) để tách hẳn khỏi navy.
  *
- * «Nháp» và «Đã hủy» đều trung tính nên phân biệt bằng độ đậm của cùng thang
+ * "Nháp" và "Đã hủy" đều trung tính nên phân biệt bằng độ đậm của cùng thang
  * `zinc` — không mượn thêm một màu nào nữa, vì bốn màu còn lại đã mang nghĩa
  * riêng và thêm màu thứ năm là bắt người dùng học thuộc.
  *

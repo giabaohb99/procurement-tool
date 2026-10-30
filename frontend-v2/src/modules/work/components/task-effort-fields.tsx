@@ -17,7 +17,7 @@ interface TaskEffortFieldsProps {
 }
 
 /**
- * Ba hàng «Loại việc · Ước lượng · Thực tế» của panel chi tiết (duoc-CR-656). Lưu khi rời ô như mọi ô khác.
+ * Ba hàng "Loại việc · Ước lượng · Thực tế" của panel chi tiết (duoc-CR-656). Lưu khi rời ô như mọi ô khác.
  *
  * Ô giờ giữ BẢN NHÁP cục bộ và dựng lại khi giá trị máy chủ đổi (`key` chứa giá trị), nên làm mới nền không
  * ghi đè chữ đang gõ giữa chừng; gõ sai (chữ, quá 999) thì trả về giá trị cũ và báo đỏ chứ không lưu bừa.

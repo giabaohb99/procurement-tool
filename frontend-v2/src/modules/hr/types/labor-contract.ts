@@ -13,7 +13,7 @@ export interface LaborContractPlaceholder {
   label: string
   group: string
   example: string
-  /** duoc-CR-630: mô tả do HR khai ở «Danh sách biến» (có thể vắng ở backend cũ). */
+  /** duoc-CR-630: mô tả do HR khai ở "Danh sách biến" (có thể vắng ở backend cũ). */
   description?: string
 }
 
@@ -66,7 +66,7 @@ export interface LaborContractTemplateContent {
   margin_right_mm: number
 }
 
-/** Mẫu hiện trong ô chọn ở tab «Hợp đồng» của hồ sơ — chỉ id/tên/loại. */
+/** Mẫu hiện trong ô chọn ở tab "Hợp đồng" của hồ sơ — chỉ id/tên/loại. */
 export interface LaborContractTemplateOption {
   id: number
   name: string
@@ -93,7 +93,7 @@ export interface LaborContract {
   contract_type: number
   /** Trạng thái LƯU trong DB. */
   status: number
-  /** Trạng thái hiển thị — thêm «Hết hạn» (3, suy ra theo ngày, không lưu). */
+  /** Trạng thái hiển thị — thêm "Hết hạn" (3, suy ra theo ngày, không lưu). */
   effective_status: number
   sign_date: string | null
   start_date: string
@@ -106,7 +106,7 @@ export interface LaborContract {
   allowance: number
   allowance_note: string
   note: string
-  /** duoc-CR-630: giá trị biến TÙY CHỈNH `{mã: chuỗi chuẩn}` (tiền «15000000», số «1.5», ngày ISO). */
+  /** duoc-CR-630: giá trị biến TÙY CHỈNH `{mã: chuỗi chuẩn}` (tiền "15000000", số "1.5", ngày ISO). */
   custom_values: Record<string, string>
   has_generated_file: boolean
   generated_at: string | null

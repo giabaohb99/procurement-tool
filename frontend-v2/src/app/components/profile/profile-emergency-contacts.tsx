@@ -14,14 +14,14 @@ interface ProfileEmergencyContactsProps {
 }
 
 /**
- * «Người báo tin trong trường hợp cần thiết» của CHÍNH MÌNH (bao-CR-508).
+ * "Người báo tin trong trường hợp cần thiết" của CHÍNH MÌNH (bao-CR-508).
  *
  * Dùng lại nguyên `EmployeePeopleEditor` của hồ sơ nhân sự — cùng bộ cột
  * (`CONTACT_COLUMNS`), cùng trần 30 dòng hiện TRƯỚC khi gõ, cùng chốt chặn phím
  * Enter. Chỉ khác cửa API: `/api/employees/me/contacts`, không cần khóa
  * `employee.write` hay `employee_sensitive.read`.
  *
- * ⚠️ Chặn bấm đúp ở đây bằng `useRef`: nút «Lưu danh sách» của bảng chung chỉ
+ * ⚠️ Chặn bấm đúp ở đây bằng `useRef`: nút "Lưu danh sách" của bảng chung chỉ
  * có `disabled={isSaving}` — state React, trễ một nhịp render.
  */
 export function ProfileEmergencyContacts({ employeeId }: ProfileEmergencyContactsProps) {
@@ -42,7 +42,7 @@ export function ProfileEmergencyContacts({ employeeId }: ProfileEmergencyContact
   return (
     <EmployeePeopleEditor<EmployeeContact>
       title="Người báo tin trong trường hợp cần thiết"
-      description="Người thân để công ty liên hệ khi cần. Bạn tự thêm, sửa, xóa được; bấm «Lưu danh sách» để áp dụng."
+      description='Người thân để công ty liên hệ khi cần. Bạn tự thêm, sửa, xóa được; bấm "Lưu danh sách" để áp dụng.'
       columns={CONTACT_COLUMNS}
       rows={contacts.data}
       isLoading={contacts.isLoading}

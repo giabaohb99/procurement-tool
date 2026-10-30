@@ -67,9 +67,9 @@ describe('buildFolderItemMenuActions — văn bản', () => {
     expect(buildFolderItemMenuActions({ kind: 'document' })).toEqual([A.viewDetails])
   })
 
-  //  Đại ca bắt 25/09/2026: «Xem chi tiết» của văn bản chỉ bật khung bên phải,
-  //  tưởng hỏng. Nay nó vào thẳng trang chi tiết, nên «Mở» thành trùng và bị bỏ.
-  it('never offers both «Mở» and «Xem chi tiết» for a document — they would do the same thing', () => {
+  //  Đại ca bắt 25/09/2026: "Xem chi tiết" của văn bản chỉ bật khung bên phải,
+  //  tưởng hỏng. Nay nó vào thẳng trang chi tiết, nên "Mở" thành trùng và bị bỏ.
+  it('never offers both "Mở" and "Xem chi tiết" for a document — they would do the same thing', () => {
     const actions = buildFolderItemMenuActions({
       kind: 'document',
       canWriteDocument: true,

@@ -18,7 +18,7 @@ interface ReportExportButtonProps {
   /** Giá trị mảng được lặp khóa (`label=1&label=2`) — xem `httpClient.paramsSerializer`. */
   params: Record<string, string | string[]>
   filename: string
-  /** Chữ trên nút — bỏ trống là «Xuất Excel» (`ReportPageConfig.exportLabel`). */
+  /** Chữ trên nút — bỏ trống là "Xuất Excel" (`ReportPageConfig.exportLabel`). */
   label?: string
 }
 

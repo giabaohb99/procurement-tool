@@ -1,5 +1,5 @@
 // duoc-CR-490 — nạp lại danh mục thuốc BVTV, chấp nhận CẢ BA loại tệp: bản cào gốc
-// (thuoc-bvtv.json / .xlsx), tệp xuất «Toàn bộ danh mục» hoặc tệp xuất «Trang hiện tại» (xem
+// (thuoc-bvtv.json / .xlsx), tệp xuất "Toàn bộ danh mục" hoặc tệp xuất "Trang hiện tại" (xem
 // `CustomsPesticideExportMenu.tsx`). Backend tự nhận ra loại tệp qua sheet ẩn, trả về `mode`:
 // bản cào gốc/tệp toàn bộ → THAY cả danh mục LẤY TỪ NGUỒN (thuốc tự thêm `is_manual` GIỮ NGUYÊN);
 // tệp theo trang → chỉ CẬP NHẬT đúng các thuốc có trong tệp, phần còn lại giữ nguyên. Hộp không
@@ -79,8 +79,8 @@ export default function CustomsPesticideImportDialog({ options, onClose, onAppli
       </p>
       <div style={{ marginTop: 8, border: '1px solid #bfdbfe', background: '#eff6ff', color: '#1e3a8a',
         borderRadius: 8, padding: '8px 12px', fontSize: 13 }}>
-        <i className="ti ti-info-circle" /> Tệp toàn bộ danh mục (bản cào gốc hoặc xuất «Toàn bộ
-        danh mục») sẽ <b>thay cả danh mục</b>. Tệp xuất «Trang hiện tại» chỉ <b>cập nhật</b> đúng
+        <i className="ti ti-info-circle" /> Tệp toàn bộ danh mục (bản cào gốc hoặc xuất <strong>Toàn bộ
+        danh mục</strong>) sẽ <b>thay cả danh mục</b>. Tệp xuất <strong>Trang hiện tại</strong> chỉ <b>cập nhật</b> đúng
         các thuốc có trong tệp (thêm thuốc mới nếu chưa có), phần còn lại giữ nguyên.
       </div>
       <input type="file" accept={ACCEPT} disabled={uploading}

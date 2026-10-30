@@ -143,7 +143,7 @@ describe('sortTasks', () => {
 
   it('sắp theo trường tùy biến kiểu chọn-nhiều lấy giá trị ĐẦU TIÊN, việc trống xuống cuối', () => {
     //  Tag nay chính là một trường như thế (`label:{fieldId}`), không còn tiêu
-    //  chí «Tag» riêng nữa.
+    //  chí "Tag" riêng nữa.
     const rank = new Map([
       [91, 0],
       [94, 1],
@@ -172,8 +172,8 @@ describe('sortTasks', () => {
 
 describe('prepareTasks', () => {
   it('lọc theo TỪ KHÓA trước rồi mới sắp, và KHÔNG còn ẩn ngầm việc đã xong', () => {
-    //  Lát cắt cố định "chỉ việc chưa xong" đã bỏ: ẩn ngầm thì lọc «trạng thái
-    //  = Hoàn thành» ở nút «Bộ lọc» sẽ ra bảng trống.
+    //  Lát cắt cố định "chỉ việc chưa xong" đã bỏ: ẩn ngầm thì lọc "trạng thái
+    //  = Hoàn thành" ở nút "Bộ lọc" sẽ ra bảng trống.
     const rows = [
       task({ id: 1, title: 'In tem', due_date: '2026-09-10' }),
       task({ id: 2, title: 'In nhãn', status: WORK_TASK_STATUS.DONE, due_date: '2026-08-01' }),

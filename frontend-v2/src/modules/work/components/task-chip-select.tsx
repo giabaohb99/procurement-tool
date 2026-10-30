@@ -13,7 +13,7 @@ export interface ChipOption {
   label: string
   /**
    * Chữ NGẮN dùng cho chip đang hiện; danh sách thả xuống vẫn dùng `label` đủ
-   * chữ. «P3» đọc trên panel là đủ, nhưng lúc CHỌN thì phải thấy «P3 — Vừa».
+   * chữ. "P3" đọc trên panel là đủ, nhưng lúc CHỌN thì phải thấy "P3 — Vừa".
    */
   short?: string
   /** Tên màu trong `WORK_COLORS`; bỏ trống thì mục hiện bằng chữ thường. */

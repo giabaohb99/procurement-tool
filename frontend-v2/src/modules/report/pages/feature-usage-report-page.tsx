@@ -54,7 +54,7 @@ function NamesCard({ title, names, empty }: { title: string; names: string[]; em
 }
 
 /**
- * «Mức dùng chức năng» (duoc-CR-655, ReportKey 15): chức năng nào nhiều người dùng, cái nào không ai dùng,
+ * "Mức dùng chức năng" (duoc-CR-655, ReportKey 15): chức năng nào nhiều người dùng, cái nào không ai dùng,
  * biểu mẫu nào hay bỏ dở, màn nào hay lỗi. Gom theo chức năng / phòng ban — KHÔNG có số liệu theo từng người.
  */
 export function FeatureUsageReportPage() {
@@ -82,7 +82,7 @@ export function FeatureUsageReportPage() {
     }),
     [active],
   )
-  //  «Chưa ai mở» chỉ có nghĩa khi đã có số liệu — kỳ rỗng thì mọi màn đều «chưa ai mở», nói vậy là sai.
+  //  "Chưa ai mở" chỉ có nghĩa khi đã có số liệu — kỳ rỗng thì mọi màn đều "chưa ai mở", nói vậy là sai.
   const unusedScreens = useMemo(
     () => (data?.has_data ? findUnusedScreens(allModules, data.screens.map((s) => s.route)) : []),
     [data],

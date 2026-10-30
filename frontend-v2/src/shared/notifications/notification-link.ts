@@ -11,8 +11,8 @@
  * ⚠️ Trước 20/08/2026 hàm này **chỉ biết kiểu 1**. Nhánh "link v2 thì giữ
  * nguyên" so với đúng sáu đích trong `PREFIX_MAP`, nên `/document/documents/273`
  * rơi xuống cuối và trả `null` — bấm vào thông báo **không đi đâu cả**. Hai thư
- * duy nhất của phân hệ Văn thư đều dính: «Bản nháp cần xử lý» (pháp nhân con
- * nhận bản clone) và «Cần rà lại» (bản gốc lên phiên bản mới). Nghĩa là toàn bộ
+ * duy nhất của phân hệ Văn thư đều dính: "Bản nháp cần xử lý" (pháp nhân con
+ * nhận bản clone) và "Cần rà lại" (bản gốc lên phiên bản mới). Nghĩa là toàn bộ
  * đường báo việc của luồng clone gãy ở bước cuối cùng.
  *
  * Màn hình nào v2 chưa có thì vẫn trả `null` — chỗ gọi đánh dấu đã đọc nhưng

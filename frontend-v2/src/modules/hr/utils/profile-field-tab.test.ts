@@ -8,9 +8,9 @@ import {
 import { EMPTY_EMPLOYEE_PROFILE_FORM } from '../schemas/employee-schema'
 
 /**
- * Bảng «trường nào ở tab nào» — vá cho một lỗi im lặng tuyệt đối.
+ * Bảng "trường nào ở tab nào" — vá cho một lỗi im lặng tuyệt đối.
  *
- * Người dùng nhập sai một ô ở tab «Giấy tờ & BHXH», sang tab «Chung», bấm Lưu →
+ * Người dùng nhập sai một ô ở tab "Giấy tờ & BHXH", sang tab "Chung", bấm Lưu →
  * **không có gì xảy ra**. Không toast, không lỗi trên màn, không lời gọi API
  * nào; nút Lưu đọc ra như bị hỏng. Lý do: Radix hủy mount tab ẩn, nên câu lỗi
  * của react-hook-form không có chỗ nào để hiện.

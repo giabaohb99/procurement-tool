@@ -18,12 +18,12 @@ interface ChangeRequestDecisionActionsProps {
 }
 
 /**
- * Hai nút «Từ chối» / «Duyệt» của màn duyệt đề nghị sửa hồ sơ (duoc-CR-676) kèm hộp lý do từ chối.
+ * Hai nút "Từ chối" / "Duyệt" của màn duyệt đề nghị sửa hồ sơ (duoc-CR-676) kèm hộp lý do từ chối.
  * Nơi gọi chỉ dựng khi backend báo `can_decide` và đề nghị còn chờ.
  *
  * ⚠️ Chặn bấm đúp bằng ref (bẫy thứ tư): duyệt hai lần = hai lần ghi hồ sơ + hai dòng nhật ký.
  * Lỗi máy chủ đã được http-client toast; ở đây chỉ chuyển câu đó lên trang để nó ĐỨNG LẠI trên màn
- * (toast tắt sau vài giây, mà 409 «hộ gia đình đã đổi sau lúc gửi» là thứ người duyệt phải đọc kỹ).
+ * (toast tắt sau vài giây, mà 409 "hộ gia đình đã đổi sau lúc gửi" là thứ người duyệt phải đọc kỹ).
  */
 export function ChangeRequestDecisionActions({
   request,
@@ -41,7 +41,7 @@ export function ChangeRequestDecisionActions({
     try {
       const ok = await confirm({
         title: 'Duyệt đề nghị?',
-        message: `Các ô ở cột «Đề nghị» sẽ được ghi vào hồ sơ của ${request.employee_name}. Dòng tô màu là ô đã bị sửa sau lúc gửi — duyệt sẽ ghi đè giá trị hiện tại.`,
+        message: `Các ô ở cột "Đề nghị" sẽ được ghi vào hồ sơ của ${request.employee_name}. Dòng tô màu là ô đã bị sửa sau lúc gửi — duyệt sẽ ghi đè giá trị hiện tại.`,
         confirmLabel: 'Duyệt',
         tone: 'default',
       })

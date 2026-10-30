@@ -377,7 +377,7 @@ export function SealClerkDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  //  Khung rỗng + câu cảnh báo (dời từ thẻ «Tổng quan phân công»
+                  //  Khung rỗng + câu cảnh báo (dời từ thẻ "Tổng quan phân công"
                   //  ở cột phải sang, 22/09/2026): cảnh báo phải đứng ngay cạnh
                   //  thứ sửa được nó — ô chọn công ty ở ngay trên. Nằm tận cột
                   //  bên kia thì người đọc phải tự nối hai chỗ với nhau.
@@ -399,13 +399,13 @@ export function SealClerkDetailPage() {
             <DocumentComments entity="seal_clerk" entityId={row.id} />
           </div>
 
-          {/*  Cột phải — khối THAM CHIẾU, chỉ đọc. Thẻ «Tổng quan phân công» đã
+          {/*  Cột phải — khối THAM CHIẾU, chỉ đọc. Thẻ "Tổng quan phân công" đã
                BỎ (22/09/2026): ba dòng của nó — trạng thái nhận phiếu · loại hình
                văn thư · số công ty — đọc từ đúng ba ô người dùng đang chỉnh ở cột
                trái, tức là một tấm gương. Tệ hơn: nó soi cả những thay đổi CHƯA
                LƯU, nên nó không nói được điều gì mà nhìn sang cột trái không
                thấy. Trạng thái và loại hình còn nằm sẵn trên dải tóm tắt ở tiêu
-               đề trang. Câu cảnh báo «chưa phân công công ty nào» thì KHÔNG bỏ —
+               đề trang. Câu cảnh báo "chưa phân công công ty nào" thì KHÔNG bỏ —
                nó dời xuống ngay dưới danh sách công ty, chỗ người ta sửa được.
 
                ⚠️ KHÔNG có vùng cuộn riêng (cùng luật đã áp cho chi tiết phiếu

@@ -136,7 +136,7 @@ export function PostComposerDialog({ open, onOpenChange, board }: PostComposerDi
         }}
       >
         <DialogHeader>
-          <DialogTitle>{board ? `Tạo chủ đề trong «${board.name}»` : 'Đăng bài viết'}</DialogTitle>
+          <DialogTitle>{board ? `Tạo chủ đề trong "${board.name}"` : 'Đăng bài viết'}</DialogTitle>
           <DialogDescription className="sr-only">
             Viết nội dung, đính ảnh/video và chọn đối tượng xem cho bài viết.
           </DialogDescription>

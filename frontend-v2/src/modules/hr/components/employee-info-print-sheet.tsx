@@ -121,8 +121,8 @@ function PeopleTable<T>({
 }
 
 /**
- * Mặt phiếu «PHIẾU THÔNG TIN NHÂN VIÊN» khổ A4 (duoc-CR-676, C5). Chỉ dựng giấy từ dữ liệu đã
- * nạp — không gọi API, nên trang in cho phòng Nhân sự và trang in «của tôi» dùng chung.
+ * Mặt phiếu "PHIẾU THÔNG TIN NHÂN VIÊN" khổ A4 (duoc-CR-676, C5). Chỉ dựng giấy từ dữ liệu đã
+ * nạp — không gọi API, nên trang in cho phòng Nhân sự và trang in "của tôi" dùng chung.
  *
  * Thứ tự mục / ô nằm ở `EMPLOYEE_INFO_PRINT_SECTIONS` (tệp mẫu BM00 gốc chưa có, xem ghi chú ở đó).
  */

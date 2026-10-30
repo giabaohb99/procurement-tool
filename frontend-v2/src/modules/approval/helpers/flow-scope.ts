@@ -30,7 +30,7 @@ export const SCOPE_LABELS: Record<FlowScopeKind, string> = {
   document: 'Chỉ một số văn bản cụ thể',
 }
 
-/** Chuỗi điều kiện → trạng thái bộ chọn. Không đọc được thì coi như «tất cả». */
+/** Chuỗi điều kiện → trạng thái bộ chọn. Không đọc được thì coi như "tất cả". */
 export function parseScope(condition: string): FlowScope {
   if (!(condition || '').trim()) return { kind: 'all', ids: [] }
 
@@ -60,7 +60,7 @@ export function parseScope(condition: string): FlowScope {
 
 /** Trạng thái bộ chọn → chuỗi điều kiện gửi lên backend. */
 export function buildScopeCondition(scope: FlowScope): string {
-  //  Chưa chọn cái nào thì coi như «tất cả»: gửi `in: []` là điều kiện không bao
+  //  Chưa chọn cái nào thì coi như "tất cả": gửi `in: []` là điều kiện không bao
   //  giờ khớp, và luồng lặng lẽ không bao giờ chạy.
   if (scope.kind === 'all' || scope.ids.length === 0) return ''
   return JSON.stringify([{ field: FIELD_OF[scope.kind], op: 'in', value: scope.ids }])

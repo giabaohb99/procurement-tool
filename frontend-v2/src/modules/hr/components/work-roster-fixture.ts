@@ -1,6 +1,6 @@
 import type { WorkRoster, WorkRosterCell, WorkRosterItem, WorkRosterLeave } from '../types/work-roster'
 
-/** Dữ liệu mẫu cho bài kiểm «Xem lịch». Ngày truyền cụ thể — không phụ thuộc «hôm nay». */
+/** Dữ liệu mẫu cho bài kiểm "Xem lịch". Ngày truyền cụ thể — không phụ thuộc "hôm nay". */
 export const ROSTER_DAYS = [
   { date: '2026-10-05', weekday: 0, holiday_name: '' },
   { date: '2026-10-06', weekday: 1, holiday_name: 'Nghỉ bù' },

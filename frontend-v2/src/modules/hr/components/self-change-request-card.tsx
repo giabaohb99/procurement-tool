@@ -29,7 +29,7 @@ function pickLatest(items: readonly EmployeeChangeRequest[] | undefined) {
 }
 
 /**
- * Thẻ «Đề nghị sửa hồ sơ» ở Trang cá nhân (duoc-CR-676, C6) — đứng ngay dưới nhóm Liên hệ.
+ * Thẻ "Đề nghị sửa hồ sơ" ở Trang cá nhân (duoc-CR-676, C6) — đứng ngay dưới nhóm Liên hệ.
  *
  * Nhóm LIÊN HỆ tự sửa áp ngay (bao-CR-508); còn thông tin cá nhân, ngân hàng, giấy tờ và hộ gia
  * đình thì nhân viên chỉ ĐỀ NGHỊ, phòng Nhân sự duyệt rồi mới vào hồ sơ. Mỗi lúc chỉ một đề nghị
@@ -38,7 +38,7 @@ function pickLatest(items: readonly EmployeeChangeRequest[] | undefined) {
 export function SelfChangeRequestCard({ employee }: SelfChangeRequestCardProps) {
   const [open, setOpen] = useState(false)
   const requests = useMyChangeRequests(true)
-  //  Nạp sẵn hộ gia đình ngay khi thẻ hiện: mở hộp ra là tab «Hộ gia đình» có dữ liệu luôn.
+  //  Nạp sẵn hộ gia đình ngay khi thẻ hiện: mở hộp ra là tab "Hộ gia đình" có dữ liệu luôn.
   const families = useMyFamilies(true)
   const withdraw = useWithdrawMyChangeRequest()
   const withdrawingRef = useRef(false)
@@ -145,7 +145,7 @@ export function SelfChangeRequestCard({ employee }: SelfChangeRequestCardProps) 
         families={{
           data: families.data,
           isLoading: families.isLoading,
-          //  Nạp hỏng thì tab «Hộ gia đình» khóa lại + nút thử lại (review M4), không bày bảng rỗng.
+          //  Nạp hỏng thì tab "Hộ gia đình" khóa lại + nút thử lại (review M4), không bày bảng rỗng.
           isError: families.isError,
           retry: () => void families.refetch(),
         }}

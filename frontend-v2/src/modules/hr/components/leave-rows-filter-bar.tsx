@@ -28,19 +28,19 @@ interface LeaveRowsFilterBarProps {
    *
    * ⚠️ Khai riêng chứ không dựng lại `children`: `children` còn chứa những thứ
    * KHÔNG phải bộ lọc (cụm đếm đầu người, câu hướng dẫn), mà tờ trượt tên là
-   * «Bộ lọc» — nhét con số vào đó là nói sai về thứ đang bày.
+   * "Bộ lọc" — nhét con số vào đó là nói sai về thứ đang bày.
    */
   extraFilters?: ReactNode
-  /** Bao nhiêu ô lọc riêng đang bật — cộng vào huy hiệu nút «Bộ lọc». */
+  /** Bao nhiêu ô lọc riêng đang bật — cộng vào huy hiệu nút "Bộ lọc". */
   extraFilterCount?: number
-  /** Trả các ô lọc riêng về mặc định khi bấm «Xóa lọc» trong tờ trượt. */
+  /** Trả các ô lọc riêng về mặc định khi bấm "Xóa lọc" trong tờ trượt. */
   onClearExtraFilters?: () => void
 }
 
 /**
  * Thanh TÌM + LỌC dùng chung cho những bảng đơn nghỉ lọc ở phía màn hình.
  *
- * Ba màn xài nó: tab «Cần tôi duyệt», tab «Tôi đã duyệt», và chế độ NGÀY của
+ * Ba màn xài nó: tab "Cần tôi duyệt", tab "Tôi đã duyệt", và chế độ NGÀY của
  * Lịch nghỉ. Chép ba bản thì ba nơi trôi khác nhau về câu gợi ý, bề rộng ô, và
  * cả cách xử lý loại nghỉ trùng.
  *
@@ -49,7 +49,7 @@ interface LeaveRowsFilterBarProps {
  * rồi không thấy gì đổi.
  *
  * ⚠️ **Dưới 768px thanh công cụ rút còn MỘT HÀNG**: một ô tìm trải hết bề ngang
- * có nút «Bộ lọc» nằm LỒNG bên trong, rồi nút Tải lại đứng cuối hàng. Ô lọc dọn
+ * có nút "Bộ lọc" nằm LỒNG bên trong, rồi nút Tải lại đứng cuối hàng. Ô lọc dọn
  * vào tờ trượt (`QuickFilterSheet`).
  *
  * Không phải để cho đẹp — thanh này được GHIM đầu trang khi cuộn (xem
@@ -58,7 +58,7 @@ interface LeaveRowsFilterBarProps {
  * 852px**, gần một phần tư màn hình, cho những thứ người ta chạm tới vài giây
  * một lần. Rút còn một hàng thì cả cụm ghim ~100px.
  *
- * ⚠️ **Đã thử bản «thu ô tìm về một nút kính lúp» và BỎ.** Nó tiết kiệm đúng
+ * ⚠️ **Đã thử bản "thu ô tìm về một nút kính lúp" và BỎ.** Nó tiết kiệm đúng
  * bằng bản này (cùng một hàng) nhưng hàng đó thành ba khối viền rời rạc — kính
  * lúp · phễu · tải lại — trông như ba mẩu chắp vá chứ không ra một thanh công
  * cụ, mà lại còn bắt bấm thêm một nhịp mới gõ được. Gom nút lọc vào TRONG ô tìm
@@ -115,7 +115,7 @@ export function LeaveRowsFilterBar({
            `ml-auto` nên hàng đó chỉ có đúng một nút nép mép phải. */}
       {/*  Câu gợi ý ngắn để ĐỌC HẾT được ở khổ hẹp: ô còn 142px sau khi chia
            chỗ cho nút Bộ lọc và nút Tải lại, bản cũ cần 215px nên cụt thành
-           «Tìm theo tên, số đơn h». Một ô tìm không nói nổi mình tìm được những
+           "Tìm theo tên, số đơn h". Một ô tìm không nói nổi mình tìm được những
            gì thì người dùng đoán, và thường đoán là chỉ tìm được mã. */}
       <SearchField
         value={keyword}
@@ -124,7 +124,7 @@ export function LeaveRowsFilterBar({
         className="md:min-w-56 md:max-w-xs"
       />
 
-      {/*  ⚠️ Nút lọc đứng RIÊNG cạnh ô tìm và GIỮ CHỮ «Bộ lọc». Bản trước nhét
+      {/*  ⚠️ Nút lọc đứng RIÊNG cạnh ô tìm và GIỮ CHỮ "Bộ lọc". Bản trước nhét
            cái phễu vào trong khung viền của ô tìm cho gọn, và đó là lỗi: lọt
            trong ô tìm thì nó đọc ra như "tùy chọn tìm kiếm", không ai đoán được
            bấm vào ra cái gì. 60px chữ đổi lấy việc không phải đoán là đáng.

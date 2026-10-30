@@ -27,12 +27,12 @@ export const DOSSIER_TYPES_FOR_FORM_KEY = dossierTypeKeys.forForm
 /**
  * Danh mục LOẠI HỒ SƠ kèm **bộ trường tùy biến** — nguồn dựng biểu mẫu hồ sơ.
  *
- * Nạp một lần cho cả màn: ô chọn «Loại hồ sơ» cần danh sách, và biểu mẫu cần
+ * Nạp một lần cho cả màn: ô chọn "Loại hồ sơ" cần danh sách, và biểu mẫu cần
  * `field_schema` của loại đang chọn. Gọi hai lần cho hai việc đó là hai bản
  * dữ liệu có thể lệch nhau trong cùng một trang.
  *
  * ⚠️ **KHÔNG lọc `is_active` ở đây.** Loại đã ngừng dùng vẫn phải có trong danh
- * sách, nếu không thì hồ sơ đang mang nó mở ra sẽ thấy ô «Loại hồ sơ» TRỐNG
+ * sách, nếu không thì hồ sơ đang mang nó mở ra sẽ thấy ô "Loại hồ sơ" TRỐNG
  * (Radix `Select` không khớp mục nào thì rơi về chữ gợi ý, nhìn y như ô chưa
  * nhập) và mất luôn bộ ô tùy biến của nó. Việc chặn gán MỚI làm ở nơi dựng ô
  * chọn, bằng cách bỏ loại ngừng dùng khỏi `options` — backend cũng chặn lần

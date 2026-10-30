@@ -129,7 +129,7 @@ import {
  * không thôi thì chỉ người chưa từng mở bảng này mới thấy cột đó — phải đổi khóa.
  * Cái giá là bố cục đã chỉnh tay của riêng bảng này về mặc định một lần.
  *
- * `-v5` (bao-CR-453): bỏ hẳn hai cột «Tỷ giá» và «Số tiền», thay bằng ba cột
+ * `-v5` (bao-CR-453): bỏ hẳn hai cột "Tỷ giá" và "Số tiền", thay bằng ba cột
  * giai đoạn Dự toán / Tạm tính / Quyết toán. Bố cục cũ còn nhớ hai cột đã chết
  * nên phải đổi khóa, nếu không bảng hiện hai ô trống vĩnh viễn.
  */
@@ -223,7 +223,7 @@ const BASE_COLUMNS: LinesTableColumn[] = [
   { key: 'supplier', header: 'Nhà cung cấp', width: 230, minWidth: 150, wrap: true },
   { key: 'currency', header: 'Tiền tệ', width: 95, minWidth: 80, align: 'center' },
   { key: 'vat', header: 'VAT%', width: 80, minWidth: 60, align: 'right' },
-  // bao-CR-453 — ba cột số theo giai đoạn thay cho cặp «Tỷ giá / Số tiền» cũ; từ
+  // bao-CR-453 — ba cột số theo giai đoạn thay cho cặp "Tỷ giá / Số tiền" cũ; từ
   // bao-CR-467 cả ba đều gõ được. Tỷ giá riêng từng giai đoạn nằm trong popup chi tiết.
   // bao-CR-473 — ba màu tăng dần theo ĐỘ QUAN TRỌNG của con số, như đèn giao thông:
   // xanh = số tham khảo lúc lập kế hoạch · vàng = số đang thương lượng · đỏ = số thật,
@@ -259,15 +259,15 @@ const BASE_COLUMNS: LinesTableColumn[] = [
 ]
 
 /**
- * bao-CR-473 — nút «Chốt tạm tính / Chốt quyết toán» cấp ĐƠN tạm ẩn theo lệnh đại ca: từ
- * bao-CR-469 việc chốt đi bằng tick chọn + «Quyết toán tất cả», nút cấp đơn trùng vai và làm
+ * bao-CR-473 — nút "Chốt tạm tính / Chốt quyết toán" cấp ĐƠN tạm ẩn theo lệnh đại ca: từ
+ * bao-CR-469 việc chốt đi bằng tick chọn + "Quyết toán tất cả", nút cấp đơn trùng vai và làm
  * người dùng lúng túng không biết bấm cái nào. Đường API và hộp xác nhận vẫn giữ nguyên —
  * cần bày lại thì đổi hằng này thành `true`, không phải dựng lại gì.
  */
 const STAGE_ADVANCE_ENABLED = false
 
 /**
- * bao-CR-473 — ba khối giai đoạn trong popup «Chi tiết khoản» mang CÙNG ba màu với ba cột
+ * bao-CR-473 — ba khối giai đoạn trong popup "Chi tiết khoản" mang CÙNG ba màu với ba cột
  * trên bảng (`defaultColor` xanh · vàng · đỏ), để mắt người dùng nối được ô trên bảng với
  * khối trong popup. Viết bằng lớp Tailwind có bản tối, không mã hex, cho chế độ tối khỏi vỡ.
  */
@@ -485,7 +485,7 @@ export function PurchaseOrderImportCostsCard({
     cost.id !== undefined &&
     Math.max(orderStage, cost.line_stage ?? 0) < COST_STAGE_FINAL
   // bao-CR-478: dòng chưa có Dự toán thì KHÔNG quyết toán được (backend bỏ qua dòng đó) —
-  // ô tick của nó khóa kèm lời giải thích, và không lọt vào «Quyết toán tất cả».
+  // ô tick của nó khóa kèm lời giải thích, và không lọt vào "Quyết toán tất cả".
   const finalizableIds = useMemo(
     () =>
       costs
@@ -922,7 +922,7 @@ export function PurchaseOrderImportCostsCard({
         )
       case 'action': {
         const lineStage = cost.line_stage ?? 0
-        // bao-CR-469: nút «Quyết toán dòng này» ở đây đã BỎ — chốt nay đi bằng ô tick đầu
+        // bao-CR-469: nút "Quyết toán dòng này" ở đây đã BỎ — chốt nay đi bằng ô tick đầu
         // dòng cộng hai nút trên đầu thẻ (chốt các dòng đã tick · chốt tất cả). Một thao tác
         // sinh công nợ thật thì nên có chỗ nhìn thấy số dòng trước khi bấm, chứ không nấp
         // trong menu ba chấm của từng dòng. Mở lại thì vẫn theo DÒNG, giữ nguyên chỗ này.
@@ -1000,7 +1000,7 @@ export function PurchaseOrderImportCostsCard({
     if (Number(cost.allocation_method) === ALLOCATION_BY_PRODUCT) {
       if (!editable) return cost.allocation_target || null
       return (
-        //  Mục «Chưa chọn mã hàng» cũ nay là nút xóa của ô, cũng trả `''`.
+        //  Mục "Chưa chọn mã hàng" cũ nay là nút xóa của ô, cũng trả `''`.
         <SearchSelect
           searchInTrigger
           clearable
@@ -1022,7 +1022,7 @@ export function PurchaseOrderImportCostsCard({
 
   const detailCost = detailIndex !== null ? costs[detailIndex] : undefined
 
-  // bao-CR-478: ô «tick hết» nằm NGAY ở tiêu đề cột «Chọn» (như bản cũ), không đứng lẻ trên
+  // bao-CR-478: ô "tick hết" nằm NGAY ở tiêu đề cột "Chọn" (như bản cũ), không đứng lẻ trên
   // thanh nút. Một ô cho cả hai việc: tick mọi dòng quyết toán được + mọi dòng còn phải chi.
   const tickableCount = finalizableIds.length + (payReady ? selectablePayableIds.length : 0)
   const tickedCount = selectedFinalizable.length + (payReady ? effectiveSelected.length : 0)
@@ -1131,7 +1131,7 @@ export function PurchaseOrderImportCostsCard({
                   variant="outline"
                   size="sm"
                   disabled={finalizeLinesMutation.isPending}
-                  // bao-CR-476: gửi ĐÚNG danh sách đã đếm trên nút chứ không gửi rỗng («chốt hết»
+                  // bao-CR-476: gửi ĐÚNG danh sách đã đếm trên nút chứ không gửi rỗng ("chốt hết"
                   // phía backend): lượt lưu kèm theo có thể đẻ thêm dòng mới, và dòng đó không được
                   // chốt lén khi người dùng chỉ thấy con số m trên nút.
                   onClick={() =>
@@ -2193,7 +2193,7 @@ function CostDetailDialog({
             {Number(cost.allocation_method) === ALLOCATION_BY_PRODUCT && (
               <Field label="Mã hàng chỉ định">
                 {editable ? (
-                  //  Mục «— chọn mã hàng —» cũ (chọn để bỏ trống) nay là nút xóa của ô.
+                  //  Mục "— chọn mã hàng —" cũ (chọn để bỏ trống) nay là nút xóa của ô.
                   <SearchSelect
                     searchInTrigger
                     clearable
@@ -2289,7 +2289,7 @@ function CostDetailDialog({
   )
 }
 
-// bao-CR-473: dải bước «Dự toán — Tạm tính — Quyết toán» ở đầu thẻ đã BỎ theo lệnh đại ca.
+// bao-CR-473: dải bước "Dự toán — Tạm tính — Quyết toán" ở đầu thẻ đã BỎ theo lệnh đại ca.
 // Từ bao-CR-467 cả ba cột gõ tự do và chốt đi theo từng dòng, nên một dải bước cho CẢ ĐƠN
 // không còn nói đúng điều gì: đơn đứng yên ở Dự toán trong khi các dòng đã quyết toán.
 

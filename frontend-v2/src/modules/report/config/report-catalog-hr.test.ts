@@ -7,7 +7,7 @@ import { HR_REPORT_CATALOG } from './report-catalog-hr'
 
 /**
  * Bốn báo cáo Nhân sự đợt 3 (duoc-CR-688). Nhãn phải trùng HẲN `REPORT_KEY` sinh từ backend
- * (`report_keys.py` → `gen_status_ts.py`): tab «Báo cáo» của phân quyền đọc nhãn backend, menu
+ * (`report_keys.py` → `gen_status_ts.py`): tab "Báo cáo" của phân quyền đọc nhãn backend, menu
  * đọc nhãn ở đây — lệch một chữ là người gán quyền tưởng đang gán một báo cáo khác.
  */
 const WAVE_3 = [
@@ -52,7 +52,7 @@ describe('HR_REPORT_CATALOG — đợt 3', () => {
 
 /**
  * Báo cáo Nhân sự đợt 4 (duoc-CR-689). Cùng luật nhãn với đợt 3: phải trùng HẲN `REPORT_KEY`.
- * Khóa 25 «Số người kế hoạch so với thực tế» ĐÃ BỎ cùng Kế hoạch nhân sự (duoc-CR-692) — không tái cấp.
+ * Khóa 25 "Số người kế hoạch so với thực tế" ĐÃ BỎ cùng Kế hoạch nhân sự (duoc-CR-692) — không tái cấp.
  */
 const WAVE_4 = [
   { key: 26, path: '/report/attendance', entity: 'employee', endpoint: '/api/attendance-report/summary' },
@@ -72,7 +72,7 @@ describe('HR_REPORT_CATALOG — đợt 4', () => {
   })
 
   it('keeps sensitive and period-capped reports off the shared overview strip', () => {
-    //  29 đòi `employee_sensitive.read`; 26 chặn kỳ > 92 ngày — trang Tổng quan chọn «Năm nay» là hỏng.
+    //  29 đòi `employee_sensitive.read`; 26 chặn kỳ > 92 ngày — trang Tổng quan chọn "Năm nay" là hỏng.
     for (const key of [26, 29]) {
       expect(HR_REPORT_CATALOG.find((r) => r.key === key)?.overviewKpis).toEqual([])
     }

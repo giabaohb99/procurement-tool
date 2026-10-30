@@ -54,7 +54,7 @@ describe('filterReportDocs', () => {
   })
 
   it('treats REPORT_FILTER_ALL as no filter — 0 is a real id, not the sentinel', () => {
-    // Bẫy «id = 0 làm mốc tất cả» (duoc-CR-322): 0 là hồ sơ CHUNG, sentinel phải là -1.
+    // Bẫy "id = 0 làm mốc tất cả" (duoc-CR-322): 0 là hồ sơ CHUNG, sentinel phải là -1.
     expect(filterReportDocs(docs, REPORT_FILTER_ALL)).toHaveLength(3)
     expect(filterReportDocs(docs, 0).map((d) => d.id)).toEqual([1])
   })
@@ -77,7 +77,7 @@ describe('isReportDocLocked / pendingDepends', () => {
   })
 
   it('ignores dead prerequisite ids instead of locking forever', () => {
-    // Id chết mà đếm là «chưa xong» thì hồ sơ khóa vĩnh viễn theo một thứ không tồn tại.
+    // Id chết mà đếm là "chưa xong" thì hồ sơ khóa vĩnh viễn theo một thứ không tồn tại.
     const b = doc({ id: 2, depends: [999] })
     expect(pendingDepends(b, byId([b]))).toEqual([])
     expect(isReportDocLocked(b, byId([b]))).toBe(false)
@@ -93,7 +93,7 @@ describe('matchReportDoc', () => {
   })
 
   it('matches word-by-word across fields — words need not be adjacent', () => {
-    // «giấy phép» ở tiêu đề còn «công an» ở mô tả — tìm gộp vẫn phải ra.
+    // "giấy phép" ở tiêu đề còn "công an" ở mô tả — tìm gộp vẫn phải ra.
     expect(matchReportDoc(d, 'giay phep bo cong an', '')).toBe(true)
     expect(matchReportDoc(d, 'giay phep khong lien quan', '')).toBe(false)
   })
@@ -102,7 +102,7 @@ describe('matchReportDoc', () => {
     expect(matchReportDoc(d, 'tienchat.pdf', '')).toBe(true)
     expect(matchReportDoc(d, 'dang lam', '')).toBe(true)
     expect(matchReportDoc(d, 'kno3', 'KNO₃ – Kali Nitrat')).toBe(true)
-    // Hồ sơ không gắn nút nào tìm được bằng chữ «chung».
+    // Hồ sơ không gắn nút nào tìm được bằng chữ "chung".
     expect(matchReportDoc(d, 'chung', '')).toBe(true)
     expect(matchReportDoc(d, 'không tồn tại đâu', '')).toBe(false)
   })
@@ -145,7 +145,7 @@ describe('currentReportPhaseId / trackingMarkers', () => {
     })
     expect(currentReportPhaseId(r, 1)).toBe(20)
     expect(currentReportPhaseId(r, 2)).toBe(10)
-    // «Tất cả»: mỗi nút một chấm, nhãn là số thứ tự nút.
+    // "Tất cả": mỗi nút một chấm, nhãn là số thứ tự nút.
     expect(trackingMarkers(r, REPORT_FILTER_ALL)).toEqual([
       { phaseId: 20, label: '1', names: ['K2SO4'] },
       { phaseId: 10, label: '2', names: ['KNO3'] },
@@ -359,7 +359,7 @@ describe('lineReportProgress (bao-CR-602)', () => {
   })
 })
 
-describe('addDaysIso / durationDays (cột «Time xử lý» của bảng kế hoạch Excel)', () => {
+describe('addDaysIso / durationDays (cột "Time xử lý" của bảng kế hoạch Excel)', () => {
   it('adds days without timezone drift and round-trips through durationDays', () => {
     expect(addDaysIso('2024-12-24', 1)).toBe('2024-12-25')
     expect(addDaysIso('2025-02-19', 90)).toBe('2025-05-20')

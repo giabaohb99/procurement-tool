@@ -57,7 +57,7 @@ describe('buildTimeOptions', () => {
     expect(options.at(-1)).toBe('23:45')
   })
 
-  it('luôn hai chữ số — 9 giờ là «09:00», không phải «9:0»', () => {
+  it('luôn hai chữ số — 9 giờ là "09:00", không phải "9:0"', () => {
     expect(buildTimeOptions(60)[9]).toBe('09:00')
   })
 

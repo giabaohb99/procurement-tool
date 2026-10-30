@@ -18,7 +18,7 @@ interface LaborContractSignedFileFieldProps {
 /**
  * Ô chọn bản hợp đồng đã ký / bản scan ngay trong hộp Lập / Sửa hợp đồng (duoc-CR-632).
  *
- * Trước đây chỉ tải lên được bằng nút «Tải lên bản đã ký» trên DÒNG hợp đồng sau khi lập, người dùng
+ * Trước đây chỉ tải lên được bằng nút "Tải lên bản đã ký" trên DÒNG hợp đồng sau khi lập, người dùng
  * nhìn hộp lập tưởng là không có chỗ lưu tệp. Ô này chỉ GIỮ tệp; tải lên đi đúng đường API cũ
  * (`PUT /signed-file`) sau khi lưu xong, nên luật định dạng / dung lượng / trạng thái và việc chép
  * tệp sang bản lưu trữ bên Văn bản (CR-629) giữ nguyên một chỗ.

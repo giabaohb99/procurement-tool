@@ -8,10 +8,10 @@ import type { EmployeeChangeRequest } from '../types/employee-change-request'
 import { SelfChangeRequestCard } from './self-change-request-card'
 
 /**
- * Thẻ + hộp «Đề nghị sửa thông tin» ở Trang cá nhân (duoc-CR-676).
+ * Thẻ + hộp "Đề nghị sửa thông tin" ở Trang cá nhân (duoc-CR-676).
  *
- * Canh ba thứ hỏng âm thầm: gửi CẢ nhóm thay vì ô đã đổi (phòng Nhân sự đọc mười dòng «không
- * đổi»), bấm Gửi khi chưa đổi gì (backend 400 tiếng Việt nhưng tốn một lượt), và bấm đúp ra hai
+ * Canh ba thứ hỏng âm thầm: gửi CẢ nhóm thay vì ô đã đổi (phòng Nhân sự đọc mười dòng "không
+ * đổi"), bấm Gửi khi chưa đổi gì (backend 400 tiếng Việt nhưng tốn một lượt), và bấm đúp ra hai
  * đề nghị (lượt thứ hai ăn 409).
  */
 
@@ -180,7 +180,7 @@ describe('SelfChangeRequestCard', () => {
   })
 
   it('locks the household tab when the current list fails to load, so a submit cannot wipe real members', async () => {
-    //  Review M4: bảng rỗng vì LỖI NẠP trông y như «chưa khai ai» — thêm một người rồi gửi là
+    //  Review M4: bảng rỗng vì LỖI NẠP trông y như "chưa khai ai" — thêm một người rồi gửi là
     //  duyệt xong xóa sạch thành viên thật (đề nghị thay CẢ danh sách).
     let familiesCalls = 0
     apiGet.mockImplementation((url: string) => {

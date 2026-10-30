@@ -8,7 +8,7 @@ import {
 } from '../api/purchase-request-api'
 
 /**
- * bao-CR-486 — NSTM chọn được cho phiếu, đi theo ô «Phòng xử lý». `enabled` để trang tắt
+ * bao-CR-486 — NSTM chọn được cho phiếu, đi theo ô "Phòng xử lý". `enabled` để trang tắt
  * khi người xem không có quyền phân bổ (khỏi một lượt gọi thừa cho người yêu cầu).
  */
 export function usePurchaseRequestAssignableStaff(id: number, enabled = true) {

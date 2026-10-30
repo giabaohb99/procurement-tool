@@ -32,7 +32,7 @@ export type DossierType = {
   /**
    * Thứ tự bày trong danh sách và ô chọn.
    *
-   * ⚠️ CỐ Ý không lên giao diện (bài học duoc-CR-321): «thứ tự» là khái niệm của
+   * ⚠️ CỐ Ý không lên giao diện (bài học duoc-CR-321): "thứ tự" là khái niệm của
    * người dựng hệ thống, bày ra bảng thì người dùng thấy toàn 10·20·130 mà không
    * chỗ nào giải nghĩa. Vẫn phải gửi `sort_by=sort_order` khi gọi API, kẻo danh
    * mục tự đổi chỗ mỗi lần thêm một dòng.

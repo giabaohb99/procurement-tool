@@ -11,7 +11,7 @@ const CONFIG: ReportPageConfig = {
   entity: 'employee',
   title: 'Yêu cầu sửa hồ sơ',
   description:
-    'Đề nghị sửa hồ sơ nhân viên tự gửi trong kỳ (theo ngày gửi): đang chờ, chờ quá 2 ngày, đã duyệt, bị từ chối và thời gian xử lý bình quân. «Xem theo Trường bị xin sửa» đếm mỗi trường một lần nên tổng có thể lớn hơn số yêu cầu. Danh sách không hiện giá trị cũ / mới của trường.',
+    'Đề nghị sửa hồ sơ nhân viên tự gửi trong kỳ (theo ngày gửi): đang chờ, chờ quá 2 ngày, đã duyệt, bị từ chối và thời gian xử lý bình quân. "Xem theo Trường bị xin sửa" đếm mỗi trường một lần nên tổng có thể lớn hơn số yêu cầu. Danh sách không hiện giá trị cũ / mới của trường.',
   slug: 'profile-changes',
   sourcePath: appRoutes.hr.profileChangeRequests,
   kpis: ['requests', 'pending', 'pending_over_2d', 'turnaround_hours'],

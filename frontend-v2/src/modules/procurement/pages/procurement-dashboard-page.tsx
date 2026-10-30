@@ -311,7 +311,7 @@ export function ProcurementDashboardPage() {
             {/*  `|| 'Không rõ NCC'`: dòng đơn mua có thể chưa gắn nhà cung cấp,
                  và backend trả tên RỖNG chứ không bỏ dòng đó đi. Để nguyên thì
                  trên biểu đồ hiện một thanh dài không nhãn (thấy 12/09/2026:
-                 «397 tr» treo giữa danh sách), đọc ra như lỗi hiển thị chứ không
+                 "397 tr" treo giữa danh sách), đọc ra như lỗi hiển thị chứ không
                  như một nhóm dữ liệu — mà nó lại đang là hạng nhì về chi tiêu.
                  Kèm theo: `BarList` khóa `key` theo nhãn, hai dòng rỗng là trùng
                  khóa React. */}

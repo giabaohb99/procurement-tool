@@ -1,4 +1,4 @@
-// duoc-CR-630 — khối «Thông tin bổ sung cho mẫu» trong hộp Lập / Sửa hợp đồng: mỗi biến TÙY CHỈNH đang
+// duoc-CR-630 — khối "Thông tin bổ sung cho mẫu" trong hộp Lập / Sửa hợp đồng: mỗi biến TÙY CHỈNH đang
 // dùng một ô nhập theo kiểu. Biến đã ngừng dùng mà hợp đồng còn giữ giá trị thì hiện CHỈ ĐỌC (vẫn in vào
 // mẫu cũ). Không có biến nào → không vẽ khối. Bắt buộc chỉ chặn ở bước Sinh tệp / Đã ký (backend), KHÔNG
 // chặn lưu nháp.

@@ -1,8 +1,8 @@
 // bao-CR-470 — ba thẻ phụ của màn Tra cứu giá hải quan: Nhà nhập khẩu (T-05), So sánh (B-05),
 // Thuế (P-04, tra biểu thuế theo mã HS). Cả ba chỉ chạy khi đã có từ khóa hoặc mã HS, trừ ô Thuế
 // (tra độc lập theo mã HS gõ tay hoặc lấy sẵn từ thanh lọc trang).
-// duoc-CR-490 (29/09/2026) — thẻ «Pháp lý» (P-03, duyệt cả danh mục hóa chất theo văn bản) tách
-// sang `CustomsRegulationBrowse.tsx`; thẻ cũ «Pháp lý & thuế» nay chỉ còn phần Thuế.
+// duoc-CR-490 (29/09/2026) — thẻ "Pháp lý" (P-03, duyệt cả danh mục hóa chất theo văn bản) tách
+// sang `CustomsRegulationBrowse.tsx`; thẻ cũ "Pháp lý & thuế" nay chỉ còn phần Thuế.
 import { useEffect, useState } from 'react'
 import { api } from '../../api/client'
 import {
@@ -263,8 +263,8 @@ function CompareSvg({ data, periods, labelOf }: { data: any; periods: string[]; 
   )
 }
 
-// ── Thuế (tách khỏi «Pháp lý & thuế» cũ, 29/09/2026 — phần hóa chất theo văn bản dời sang thẻ
-// «Pháp lý» `CustomsRegulationBrowse.tsx`) ──────────────────────────────────────────────────
+// ── Thuế (tách khỏi "Pháp lý & thuế" cũ, 29/09/2026 — phần hóa chất theo văn bản dời sang thẻ
+// "Pháp lý" `CustomsRegulationBrowse.tsx`) ──────────────────────────────────────────────────
 export function CustomsTariff({ filters }: { filters: CustomsFilters }) {
   const [hs, setHs] = useState(filters.hs_code)
   const [tariff, setTariff] = useState<any[] | null>(null)

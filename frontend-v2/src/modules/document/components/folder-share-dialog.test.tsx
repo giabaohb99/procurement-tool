@@ -25,8 +25,8 @@ vi.mock('../hooks/use-document-folder-access', () => ({
   useUpdateFolderAccessLevel: vi.fn(),
   useRevokeFolderAccess: vi.fn(),
 }))
-//  `vi.fn()` (không phải factory trả sẵn dữ liệu) — bài kiểm «không nổ khi
-//  hook trả `undefined`» (rà UI 23/09/2026, sự cố hộp Chia sẻ) cần đổi được
+//  `vi.fn()` (không phải factory trả sẵn dữ liệu) — bài kiểm "không nổ khi
+//  hook trả `undefined`" (rà UI 23/09/2026, sự cố hộp Chia sẻ) cần đổi được
 //  giá trị trả về TỪNG BÀI, factory cố định không cho làm việc đó.
 vi.mock('@/modules/hr/hooks/use-employees', () => ({ useEmployees: vi.fn() }))
 vi.mock('@/modules/hr/hooks/use-departments', () => ({ useDepartments: vi.fn() }))
@@ -96,14 +96,14 @@ beforeEach(() => {
 })
 
 describe('FolderShareDialog', () => {
-  it('hiện tên thư mục ở tiêu đề và câu nhắc «quyền thư mục không cho đọc văn bản»', () => {
+  it('hiện tên thư mục ở tiêu đề và câu nhắc "quyền thư mục không cho đọc văn bản"', () => {
     render(<FolderShareDialog folderId={5} open onOpenChange={vi.fn()} />)
     expect(screen.getByRole('heading', { name: 'Chia sẻ thư mục' })).toBeInTheDocument()
     expect(screen.getByTitle('Hợp đồng')).toHaveTextContent('Hợp đồng')
     expect(screen.getByText(/Quyền thư mục không cho đọc văn bản/)).toBeInTheDocument()
   })
 
-  it('ô «Quyền chung» hiện ĐÚNG giá trị ĐANG khai (default_access=1 → «Xem»), không phải placeholder trống (bug lead bắt 23/09/2026)', () => {
+  it('ô "Quyền chung" hiện ĐÚNG giá trị ĐANG khai (default_access=1 → "Xem"), không phải placeholder trống (bug lead bắt 23/09/2026)', () => {
     vi.mocked(useDocFolder).mockReturnValue({
       data: folder({ default_access: 1 }),
     } as unknown as ReturnType<typeof useDocFolder>)
@@ -115,7 +115,7 @@ describe('FolderShareDialog', () => {
     ).toHaveTextContent('Xem')
   })
 
-  it('chưa đặt «Quyền chung» (default_access=null) → hiện câu nhắc CHƯA ĐẶT, không suy diễn thành Riêng tư', () => {
+  it('chưa đặt "Quyền chung" (default_access=null) → hiện câu nhắc CHƯA ĐẶT, không suy diễn thành Riêng tư', () => {
     vi.mocked(useDocFolder).mockReturnValue({
       data: folder({ default_access: null }),
     } as unknown as ReturnType<typeof useDocFolder>)
@@ -127,18 +127,18 @@ describe('FolderShareDialog', () => {
     ).toHaveTextContent('Chưa đặt — theo thư mục cha')
   })
 
-  it('chưa chọn đối tượng nào thì KHÔNG hiện nút «Cấp quyền» (chỉ hiện khi ≥1 chip)', () => {
+  it('chưa chọn đối tượng nào thì KHÔNG hiện nút "Cấp quyền" (chỉ hiện khi ≥1 chip)', () => {
     render(<FolderShareDialog folderId={5} open onOpenChange={vi.fn()} />)
     expect(screen.queryByRole('button', { name: /Cấp quyền/ })).not.toBeInTheDocument()
   })
 
-  it('danh sách «Người có quyền» hiện dòng KẾ THỪA, ghi rõ nguồn', () => {
+  it('danh sách "Người có quyền" hiện dòng KẾ THỪA, ghi rõ nguồn', () => {
     render(<FolderShareDialog folderId={5} open onOpenChange={vi.fn()} />)
     expect(screen.getByText('Người kế thừa')).toBeInTheDocument()
-    expect(screen.getByText(/Kế thừa từ «CÔNG TY A»/)).toBeInTheDocument()
+    expect(screen.getByText(/Kế thừa từ "CÔNG TY A"/)).toBeInTheDocument()
   })
 
-  it('chọn NHIỀU đối tượng rồi bấm «Cấp quyền» → gọi bulk ĐÚNG MỘT LẦN với cả danh sách', async () => {
+  it('chọn NHIỀU đối tượng rồi bấm "Cấp quyền" → gọi bulk ĐÚNG MỘT LẦN với cả danh sách', async () => {
     const user = userEvent.setup()
     render(<FolderShareDialog folderId={5} open onOpenChange={vi.fn()} />)
 
@@ -159,7 +159,7 @@ describe('FolderShareDialog', () => {
         ],
         effect: 1,
         level: 1,
-        //  Khối «Mở rộng» (hiệu lực từ–đến, lý do) gấp lại mặc định — chưa mở
+        //  Khối "Mở rộng" (hiệu lực từ–đến, lý do) gấp lại mặc định — chưa mở
         //  ra khai gì thì gửi rỗng/null, không phải bỏ qua trường.
         valid_from: null,
         valid_to: null,
@@ -177,7 +177,7 @@ describe('FolderShareDialog — chỉ đọc dưới mức Quản lý (chốt le
     } as unknown as ReturnType<typeof useDocFolder>)
   })
 
-  it('ẩn khối mời + ô «Quyền chung», hiện câu nhắc không đủ quyền', () => {
+  it('ẩn khối mời + ô "Quyền chung", hiện câu nhắc không đủ quyền', () => {
     render(<FolderShareDialog folderId={5} open onOpenChange={vi.fn()} />)
     expect(screen.queryByText('Chọn đối tượng')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Cấp quyền/ })).not.toBeInTheDocument()
@@ -195,8 +195,8 @@ describe('FolderShareDialog — chỉ đọc dưới mức Quản lý (chốt le
   })
 })
 
-describe('FolderSharePeopleList (qua FolderShareDialog) — «Gỡ quyền» gộp trong ô đổi mức', () => {
-  it('chọn «Gỡ quyền» trong ô đổi mức của dòng KHÔNG kế thừa → hỏi xác nhận rồi gọi revoke', async () => {
+describe('FolderSharePeopleList (qua FolderShareDialog) — "Gỡ quyền" gộp trong ô đổi mức', () => {
+  it('chọn "Gỡ quyền" trong ô đổi mức của dòng KHÔNG kế thừa → hỏi xác nhận rồi gọi revoke', async () => {
     const user = userEvent.setup()
     const revokeMutate = vi.fn()
     vi.mocked(useRevokeFolderAccess).mockReturnValue({ mutate: revokeMutate } as unknown as ReturnType<

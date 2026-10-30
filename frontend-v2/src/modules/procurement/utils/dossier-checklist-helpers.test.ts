@@ -145,7 +145,7 @@ describe('groupByLine', () => {
     expect(groups[0].docs).toEqual([])
   })
 
-  //  `matched_lines` rỗng = CHUNG, khác hẳn «không khớp dòng nào». Tờ khớp
+  //  `matched_lines` rỗng = CHUNG, khác hẳn "không khớp dòng nào". Tờ khớp
   //  nhiều dòng thì hiện ở mọi dòng nó khớp — không phải nhân bản, nó đúng là
   //  hồ sơ của từng dòng đó.
   it('tờ khớp nhiều dòng hiện ở mọi dòng nó khớp', () => {
@@ -157,8 +157,8 @@ describe('groupByLine', () => {
     expect(groups.some((g) => g.key === CHUNG_ROW_KEY)).toBe(false)
   })
 
-  //  Số thứ tự dòng bắt đầu từ 1; `no = 0` là dòng thật chứ không phải «chưa
-  //  gắn». Lấy 0 làm mốc rỗng là đúng bẫy duoc-CR-322.
+  //  Số thứ tự dòng bắt đầu từ 1; `no = 0` là dòng thật chứ không phải "chưa
+  //  gắn". Lấy 0 làm mốc rỗng là đúng bẫy duoc-CR-322.
   it('nhận dòng số 0 như một dòng hàng thật', () => {
     const doc0 = doc({ id: 5, matched_lines: [0] })
     const groups = groupByLine([doc0], [line(0, 'Dòng 0')])

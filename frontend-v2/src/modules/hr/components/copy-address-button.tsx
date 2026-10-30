@@ -9,7 +9,7 @@ interface AddressFormShape {
 }
 
 /**
- * Nút nhỏ «Giống địa chỉ thường trú» đặt dưới ô địa chỉ hiện nay (đại ca chốt 29/10/2026): chép địa chỉ
+ * Nút nhỏ "Giống địa chỉ thường trú" đặt dưới ô địa chỉ hiện nay (đại ca chốt 29/10/2026): chép địa chỉ
  * thường trú sang ô tạm trú ngay trên form — bấm Lưu mới ghi. Tắt khi ô thường trú còn trống.
  */
 export function CopyAddressButton({ disabled = false }: { disabled?: boolean }) {

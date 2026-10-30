@@ -1,11 +1,11 @@
-// bao-CR-608 — hộp SỬA một dòng hàng màn «Giá thị trường» (đại ca 07/10/2026).
+// bao-CR-608 — hộp SỬA một dòng hàng màn "Giá thị trường" (đại ca 07/10/2026).
 //
 // Biểu mẫu giữ mọi ô dạng CHUỖI (đúng thứ người dùng gõ), lúc lưu mới đổi sang số / ngày và chỉ
 // gửi ô ĐÃ ĐỔI (PATCH `/api/customs/lines/{id}`). Gửi đủ mọi ô thì lần nào lưu cũng ghi lại doanh
-// nghiệp / đối tác và đóng băng hoạt chất suy ra thành «do người nhập».
+// nghiệp / đối tác và đóng băng hoạt chất suy ra thành "do người nhập".
 //
 // Bốn ô suy ra / tự tính (hoạt chất, hàm lượng, hai giá VND): ô TRỐNG = để hệ thống suy ra / tính
-// (giá trị đang suy ra hiện ở chữ mờ); gõ chữ / số = giá trị do người nhập, «Gắn lại nhãn» không ghi đè.
+// (giá trị đang suy ra hiện ở chữ mờ); gõ chữ / số = giá trị do người nhập, "Gắn lại nhãn" không ghi đè.
 //
 // Trần độ dài khớp `String(n)` của `tab_customs_line` / `tab_customs_party` — khớp schema
 // `CustomsLineUpdate` ở backend; backend vẫn chặn lại bằng 422 nếu lệch.
@@ -210,7 +210,7 @@ export function buildCustomsLinePatch(
   const patch: Record<string, string | number | null> = {}
   for (const field of CUSTOMS_LINE_FIELDS) {
     const value = form[field.key].trim()
-    if (field.required && !value) return { patch: {}, error: `Chưa nhập «${field.label}»` }
+    if (field.required && !value) return { patch: {}, error: `Chưa nhập "${field.label}"` }
     if (value === initial[field.key].trim()) continue
     if (field.kind === 'text') {
       patch[field.key] = value
@@ -220,9 +220,9 @@ export function buildCustomsLinePatch(
       patch[field.key] = value ? Number(value) : null
     } else {
       const number = parseCustomsNumber(value)
-      if (Number.isNaN(number)) return { patch: {}, error: `«${field.label}» phải là số không âm` }
+      if (Number.isNaN(number)) return { patch: {}, error: `"${field.label}" phải là số không âm` }
       if (field.kind === 'integer' && number !== null && !Number.isInteger(number)) {
-        return { patch: {}, error: `«${field.label}» phải là số nguyên` }
+        return { patch: {}, error: `"${field.label}" phải là số nguyên` }
       }
       patch[field.key] = number
     }

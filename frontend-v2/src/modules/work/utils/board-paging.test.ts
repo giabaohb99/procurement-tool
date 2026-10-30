@@ -49,7 +49,7 @@ describe('anchorInsideLoaded / remainingOf — bao-CR-483', () => {
     expect(remainingCounts(undefined)).toBeUndefined()
   })
 
-  it('remainingOf: cột null là «Chưa phân cột» (khóa 0); không có = 0', () => {
+  it('remainingOf: cột null là "Chưa phân cột" (khóa 0); không có = 0', () => {
     expect(remainingOf(board, 7)).toBe(120)
     expect(remainingOf(board, null)).toBe(2)
     expect(remainingOf(board, 99)).toBe(0)

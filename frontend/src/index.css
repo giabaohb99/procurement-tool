@@ -3027,7 +3027,7 @@ input,
 .srp-doc.st-2 { border-left-color: var(--amber); }
 .srp-doc.st-3 { border-left-color: var(--green); }
 .srp-doc.late { border-left-color: var(--red); }
-/* Hồ sơ khóa: KHÔNG làm mờ cả dòng (trước 0.6 — đọc không ra chữ); chỉ dịu tên, nhãn «Chờ: …» nói lý do. */
+/* Hồ sơ khóa: KHÔNG làm mờ cả dòng (trước 0.6 — đọc không ra chữ); chỉ dịu tên, nhãn "Chờ: …" nói lý do. */
 .srp-doc.locked .srp-title { color: #5a6b8c; font-weight: 500; }
 .srp-doc.locked .srp-check { border-style: dashed; background: #f8fafc; }
 .srp-doc.locked select.srp-status-select { opacity: 0.7; }
@@ -3070,12 +3070,12 @@ input,
   font-weight: 600;
   white-space: nowrap;
 }
-/* «Chung» viền xám nhạt; nhãn dòng hàng tô xanh để phân biệt ngay hồ sơ riêng của một mặt hàng. */
+/* "Chung" viền xám nhạt; nhãn dòng hàng tô xanh để phân biệt ngay hồ sơ riêng của một mặt hàng. */
 .srp-tag.item { background: var(--info-bg); border-color: transparent; color: #0b7fac; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
 .srp-tag.req { background: var(--red-bg); border-color: transparent; color: var(--red); }
-/* «chờ ‹hồ sơ tiên quyết›» đứng cạnh tên, chữ cam không nền: nói lý do khóa mà không thêm tầng thứ ba. */
+/* "chờ ‹hồ sơ tiên quyết›" đứng cạnh tên, chữ cam không nền: nói lý do khóa mà không thêm tầng thứ ba. */
 /* Tên KHÔNG co — co theo flex thì làm tròn lẻ điểm ảnh khiến tên vừa khít vẫn rớt chữ cuối xuống
-   dòng. Có «chờ …» thì chừa sẵn 80px cho nó; tên chỉ xuống dòng khi dài thật. */
+   dòng. Có "chờ …" thì chừa sẵn 80px cho nó; tên chỉ xuống dòng khi dài thật. */
 .srp-doc-line .srp-title { flex: 0 0 auto; max-width: 100%; }
 .srp-doc-line .srp-title.with-wait { max-width: calc(100% - 80px); }
 .srp-wait {
@@ -3252,7 +3252,7 @@ input,
   border-bottom: 0;
   background: #f8fafc;
 }
-/* duoc-CR-612 (09/10/2026) — dạng xem «Bảng» của khối Báo cáo thực hiện: mỗi hồ sơ một hàng, sửa tại chỗ.
+/* duoc-CR-612 (09/10/2026) — dạng xem "Bảng" của khối Báo cáo thực hiện: mỗi hồ sơ một hàng, sửa tại chỗ.
    Bảng `table-layout: fixed` + min-width inline (cộng bề rộng cột); KHÔNG đặt width cứng cho <table> —
    khung hẹp thì cuộn ngang. Hai cột đầu (# · Hồ sơ) GHIM khi cuộn ngang (cột ô tick ✓ bỏ ở duoc-CR-617), nền đặc để chữ cột cuộn
    qua bên dưới không lộ ra. Phải thắng luật `table/thead th/tbody td` toàn cục (padding 14px 18px, hover !important). */
@@ -3351,7 +3351,7 @@ input,
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
-/* duoc-CR-614 — ô chọn mẫu trong hộp «Khởi tạo báo cáo mẫu». */
+/* duoc-CR-614 — ô chọn mẫu trong hộp "Khởi tạo báo cáo mẫu". */
 .srp-tpl-list { display: flex; flex-direction: column; gap: 8px; }
 .srp-tpl {
   display: flex;

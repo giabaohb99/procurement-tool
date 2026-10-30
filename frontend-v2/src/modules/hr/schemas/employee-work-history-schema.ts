@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 /**
- * Form hộp thêm/sửa «Quá trình công tác». Bám sát `WorkHistoryIn` của backend
+ * Form hộp thêm/sửa "Quá trình công tác". Bám sát `WorkHistoryIn` của backend
  * (phase 02) để không dính 422.
  *
  * ⚠️ Cùng quy ước với `employee-schema.ts`: KHÔNG `.default()` / `.coerce` —
@@ -23,7 +23,7 @@ export const employeeWorkHistorySchema = z
     decision_no: z.string().trim().max(50, 'Số QĐ tối đa 50 ký tự'),
     decision_date: z.string().trim(),
     note: z.string().trim().max(500, 'Ghi chú tối đa 500 ký tự'),
-    //  Tick «Đóng dòng đang hiệu lực… vào ngày trước đó» — chỉ hiện ô này khi
+    //  Tick "Đóng dòng đang hiệu lực… vào ngày trước đó" — chỉ hiện ô này khi
     //  đang tạo dòng NHÓM CHÍNH và có dòng chính khác còn mở (xem form dialog).
     close_open_main: z.boolean(),
   })
@@ -35,9 +35,9 @@ export const employeeWorkHistorySchema = z
 export type EmployeeWorkHistoryFormValues = z.infer<typeof employeeWorkHistorySchema>
 
 /**
- * Biến thể khi hộp mở từ tab «Quyết định bổ nhiệm» (nút «+ Thêm quyết định»,
+ * Biến thể khi hộp mở từ tab "Quyết định bổ nhiệm" (nút "+ Thêm quyết định",
  * 03/10/2026) — cùng hộp, cùng ô, chỉ khác Số QĐ chuyển từ tùy chọn sang BẮT
- * BUỘC. Ở tab «Quá trình công tác», Số QĐ vẫn tùy chọn (không phải dòng nào
+ * BUỘC. Ở tab "Quá trình công tác", Số QĐ vẫn tùy chọn (không phải dòng nào
  * cũng có quyết định bằng văn bản).
  */
 export const employeeWorkHistoryDecisionSchema = employeeWorkHistorySchema.refine(

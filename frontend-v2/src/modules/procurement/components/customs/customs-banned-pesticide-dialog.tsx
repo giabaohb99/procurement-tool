@@ -1,6 +1,6 @@
-// Mục «Pháp lý» → bấm số ở cột «Thuốc BVTV chứa» của một hoạt chất CẤM (TT 75/2025): danh sách
+// Mục "Pháp lý" → bấm số ở cột "Thuốc BVTV chứa" của một hoạt chất CẤM (TT 75/2025): danh sách
 // thuốc trong danh mục BVTV đang chứa hoạt chất đó (29/09/2026). Mọi tình trạng — kể cả hết hiệu
-// lực — vì số ở cột đếm đủ mọi tình trạng; lọc «Còn hiệu lực» ở đây là số với danh sách lệch nhau.
+// lực — vì số ở cột đếm đủ mọi tình trạng; lọc "Còn hiệu lực" ở đây là số với danh sách lệch nhau.
 // Bấm một thuốc mở TRANG chi tiết thuốc (duoc-CR-492), nút lùi của trang đưa về lại mục Pháp lý.
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -35,8 +35,8 @@ export function CustomsBannedPesticideDialog({ regulation, onClose }: CustomsBan
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const navigate = useNavigate()
   const location = useLocation()
-  //  Giữ dòng vừa mở để tiêu đề không nhảy về «hoạt chất cấm» trong lúc hộp đang đóng dần
-  //  (cha đặt `regulation = null` ngay khi bấm đóng). Mẫu «state theo prop», không dùng ref.
+  //  Giữ dòng vừa mở để tiêu đề không nhảy về "hoạt chất cấm" trong lúc hộp đang đóng dần
+  //  (cha đặt `regulation = null` ngay khi bấm đóng). Mẫu "state theo prop", không dùng ref.
   const [shown, setShown] = useState(regulation)
   if (regulation && regulation !== shown) setShown(regulation)
   const list = useCustomsPesticides(

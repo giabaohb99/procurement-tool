@@ -95,7 +95,7 @@ export const USAGE_DOC_ENTITY_LABELS: Record<string, string> = {
   labor_contract: 'Hợp đồng lao động',
 }
 
-/** Lý do chưa đo được — nhãn lấy từ `USAGE_UNMEASURED_REASON` (sinh từ backend), viết thường để nối sau «Chưa đo được — ». */
+/** Lý do chưa đo được — nhãn lấy từ `USAGE_UNMEASURED_REASON` (sinh từ backend), viết thường để nối sau "Chưa đo được — ". */
 export function unmeasuredReasonLabel(code: number): string {
   const label = USAGE_UNMEASURED_REASON.find((o) => o.value === String(code))?.label
   return label ? label.toLowerCase() : 'không rõ lý do'

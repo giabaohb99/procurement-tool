@@ -36,8 +36,8 @@ interface ReportGroupedTableProps {
   /** `report.<slug>.v4` — nhớ bố cục cột riêng cho từng báo cáo (`docs/ui/table.md`). */
   storageKey: string
   /**
-   * Mở «Danh sách người» của MỘT dòng (duoc-CR-686) — bỏ trống thì không có cột hành động.
-   * Dòng «Các nhóm khác» (`__other__`) không có nút: backend không có danh sách riêng cho nó.
+   * Mở "Danh sách người" của MỘT dòng (duoc-CR-686) — bỏ trống thì không có cột hành động.
+   * Dòng "Các nhóm khác" (`__other__`) không có nút: backend không có danh sách riêng cho nó.
    */
   onDrilldownRow?: (row: ReportTableRow) => void
 }
@@ -132,7 +132,7 @@ export function ReportGroupedTable({
         cell: (row) => {
           if (row.key === REPORT_OTHER_GROUP_KEY) return null
           //  Nhóm bị che (mọi số `null`) — danh sách của nó lộ đúng thứ vừa che, backend cũng
-          //  trả 403; hiện «—» thay cho nút để khỏi bấm vào một ngõ cụt.
+          //  trả 403; hiện "—" thay cho nút để khỏi bấm vào một ngõ cụt.
           if (row.isSuppressed) {
             return (
               <span className="text-muted-foreground" title="Nhóm quá ít người — không hiện danh sách">

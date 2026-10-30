@@ -35,7 +35,7 @@ interface AccessSubjectPickerProps {
  * Ô CHỌN NHIỀU trộn đủ BỐN loại đối tượng cùng một danh sách (đặc tả §C) —
  * khác `SubjectMultiSelect` của `document-access-dialog.tsx` (chọn LOẠI trước
  * rồi mới chọn trong loại đó): ở đây gõ một từ khóa là khớp CẢ BỐN danh mục
- * cùng lúc, đúng cảm giác hộp «Chia sẻ» của Drive — chọn quyền cho cả một nhóm
+ * cùng lúc, đúng cảm giác hộp "Chia sẻ" của Drive — chọn quyền cho cả một nhóm
  * hỗn hợp người/phòng/pháp nhân/vai trò không cần đổi tab.
  *
  * Bản THUẦN UI — chuyển từ

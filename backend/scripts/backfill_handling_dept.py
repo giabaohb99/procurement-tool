@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Chuyển phiếu CŨ của phòng tự mua hàng sang luật «Phòng xử lý» — bao-CR-480.
+"""Chuyển phiếu CŨ của phòng tự mua hàng sang luật "Phòng xử lý" — bao-CR-480.
 
-Chạy MỖI KHI một phòng vừa được cấp bộ máy mua riêng (có người giữ vai trò «Quản lý thu
-mua phòng»), và một lần ngay sau khi deploy CR-480 cho các phòng đã có sẵn. Chạy lại vô hại.
+Chạy MỖI KHI một phòng vừa được cấp bộ máy mua riêng (có người giữ vai trò "Quản lý thu
+mua phòng"), và một lần ngay sau khi deploy CR-480 cho các phòng đã có sẵn. Chạy lại vô hại.
 
     docker compose exec -T api python scripts/backfill_handling_dept.py --dry-run   # xem sẽ đổi gì
     docker compose exec -T api python scripts/backfill_handling_dept.py             # đổi thật
@@ -12,7 +12,7 @@ Không truyền `--dept` thì tự lấy mọi phòng đang có người giữ b
 Vì sao không tự chạy lúc khởi động: xem `backfill_handling_dept` trong
 `app/modules/purchase_request/service.py`.
 
-Bước 2 (bao-CR-484): gán lại phòng của MỌI khoản nợ có đơn = ô «Phòng xử lý» của đơn
+Bước 2 (bao-CR-484): gán lại phòng của MỌI khoản nợ có đơn = ô "Phòng xử lý" của đơn
 (0 = thu mua chung), vì công nợ nay tính cho phòng xử lý, không lùi về phòng lập. Chạy
 sau bước 1 để đơn vừa được gán phòng xử lý kéo nợ theo.
 """

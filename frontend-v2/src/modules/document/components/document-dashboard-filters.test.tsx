@@ -84,7 +84,7 @@ describe('DocumentDashboardFilters', () => {
     expect(screen.getByText(/chưa khai phòng ban nào/i)).toBeInTheDocument()
   })
 
-  it('chưa chọn pháp nhân thì KHÔNG hiện câu «chưa khai»', async () => {
+  it('chưa chọn pháp nhân thì KHÔNG hiện câu "chưa khai"', async () => {
     const nguoi = userEvent.setup()
     dung()
     await openDepartmentSelect(nguoi)
@@ -92,14 +92,14 @@ describe('DocumentDashboardFilters', () => {
     expect(screen.queryByText(/chưa khai phòng ban nào/i)).not.toBeInTheDocument()
   })
 
-  it('ô khoảng ngày chỉ hiện khi chọn mức «Khoảng ngày…»', () => {
+  it('ô khoảng ngày chỉ hiện khi chọn mức "Khoảng ngày…"', () => {
     //  Bày sẵn một ô lịch cạnh ô mức thời gian là hai thứ cùng trả lời một câu,
     //  người dùng phải đoán cái nào đang ăn.
     dung({ rangeKey: 'all' })
     expect(screen.queryByText(/Chọn khoảng ngày/)).not.toBeInTheDocument()
   })
 
-  it('chọn mức «Khoảng ngày…» thì hiện ô lịch', () => {
+  it('chọn mức "Khoảng ngày…" thì hiện ô lịch', () => {
     dung({ rangeKey: 'custom' })
     expect(screen.getByText(/Chọn khoảng ngày/)).toBeInTheDocument()
   })
@@ -116,7 +116,7 @@ describe('DocumentDashboardFilters', () => {
     dung()
 
     //  `rangeKey: 'all'` là MẶC ĐỊNH, không phải một lựa chọn — đếm nó là nút
-    //  lúc nào cũng báo «1 đang lọc» và huy hiệu mất sạch ý nghĩa.
+    //  lúc nào cũng báo "1 đang lọc" và huy hiệu mất sạch ý nghĩa.
     expect(screen.getByRole('button', { name: 'Bộ lọc' })).toHaveTextContent(/^Bộ lọc$/)
   })
 
@@ -125,13 +125,13 @@ describe('DocumentDashboardFilters', () => {
 
     //  Huy hiệu nói CÓ BAO NHIÊU ô đang lọc…
     expect(screen.getByRole('button', { name: 'Bộ lọc' })).toHaveTextContent('2')
-    //  …còn dòng tóm tắt nói lọc CÁI GÌ. Thiếu nó thì «20 văn bản» trên dải số
+    //  …còn dòng tóm tắt nói lọc CÁI GÌ. Thiếu nó thì "20 văn bản" trên dải số
     //  liệu không phân biệt được là của toàn công ty hay của một pháp nhân.
     expect(screen.getByText('SAM · 7 ngày qua')).toBeInTheDocument()
   })
 
   it('tên pháp nhân chưa nạp xong thì BỎ QUA, không in ra số id', () => {
-    //  Ô chọn nạp bất đồng bộ. In «#77» ra màn hình còn tệ hơn im lặng: người
+    //  Ô chọn nạp bất đồng bộ. In "#77" ra màn hình còn tệ hơn im lặng: người
     //  đọc không tra được số đó là đơn vị nào.
     dung({ companyId: 77, rangeKey: 'week' })
 
@@ -141,10 +141,10 @@ describe('DocumentDashboardFilters', () => {
     expect(screen.queryByText(/77/)).not.toBeInTheDocument()
   })
 
-  it('«Xóa lọc» trả CẢ BỐN giá trị về mặc định, kể cả khoảng ngày tự chọn', async () => {
+  it('"Xóa lọc" trả CẢ BỐN giá trị về mặc định, kể cả khoảng ngày tự chọn', async () => {
     //  Bỏ sót `fromDate`/`toDate` thì bấm Xóa lọc xong `rangeKey` về `all`
-    //  nhưng hai đầu ngày vẫn nằm đó — vô hại hôm nay, nhưng chọn lại «Khoảng
-    //  ngày…» là lịch bung ra với khoảng cũ của lần lọc trước.
+    //  nhưng hai đầu ngày vẫn nằm đó — vô hại hôm nay, nhưng chọn lại "Khoảng
+    //  ngày…" là lịch bung ra với khoảng cũ của lần lọc trước.
     const nguoi = userEvent.setup()
     const onChange = dung({
       companyId: 12,

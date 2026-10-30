@@ -8,11 +8,11 @@ export interface JobPositionRole {
 /** `GET/PUT /api/job-positions/{id}/roles`. */
 export interface JobPositionRoleBundle {
   roles: JobPositionRole[]
-  /** Số tài khoản ĐỦ ĐIỀU KIỆN nhận gói (tài khoản mở, hồ sơ còn làm) — con số trên nút «Áp lại». */
+  /** Số tài khoản ĐỦ ĐIỀU KIỆN nhận gói (tài khoản mở, hồ sơ còn làm) — con số trên nút "Áp lại". */
   eligible_holders: number
 }
 
-/** Kết quả «Áp lại cho người đang giữ chức vụ». */
+/** Kết quả "Áp lại cho người đang giữ chức vụ". */
 export interface ApplyPositionRolesResult {
   holders: number
   changed_users: number

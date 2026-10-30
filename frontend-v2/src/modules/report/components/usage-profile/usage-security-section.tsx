@@ -5,7 +5,7 @@ import { findSecurityFlags } from '../../utils/usage-profile-helpers'
 import { UsageMetricWithCohort } from './usage-metric-with-cohort'
 import { UsageSectionCard } from './usage-section-card'
 
-/** An toàn tài khoản — rỗng thì nói rõ «Không có gì bất thường» thay vì để trống. */
+/** An toàn tài khoản — rỗng thì nói rõ "Không có gì bất thường" thay vì để trống. */
 export function UsageSecuritySection({ snapshot }: { snapshot: UsageSnapshot }) {
   const flags = findSecurityFlags(snapshot)
   return (

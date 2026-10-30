@@ -18,7 +18,7 @@ interface MembersPanelProps {
   members: WorkMember[]
   /** Vai trò của CHÍNH mình — quyết định hiện hàng mời / nút gỡ (04 §3). */
   myRole: number | null
-  /** Chữ trong câu rỗng: «dự án này» / «nhóm này». */
+  /** Chữ trong câu rỗng: "dự án này" / "nhóm này". */
   subject: string
   isInviting: boolean
   onInvite: (employeeId: number, role: number) => void
@@ -52,7 +52,7 @@ export function MembersPanel({
 
   //  ⚠️ Danh bạ nhân sự là dữ liệu của phân hệ khác. Không có `employee.read` mà
   //  cứ gọi thì người dùng ăn toast 403 ngay lúc mở hộp thoại — đúng cái bẫy đã
-  //  dính ở tab «Công nợ» của màn Nhà cung cấp. Thiếu quyền thì ẩn hàng mời, phần
+  //  dính ở tab "Công nợ" của màn Nhà cung cấp. Thiếu quyền thì ẩn hàng mời, phần
   //  xem danh sách thành viên vẫn chạy vì nó là dữ liệu của chính phân hệ.
   const { can } = usePermission()
   const canReadDirectory = can('employee', 'read')

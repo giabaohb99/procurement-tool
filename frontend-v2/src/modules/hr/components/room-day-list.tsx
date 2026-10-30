@@ -26,7 +26,7 @@ interface RoomDayListProps {
  *
  * ⚠️ **CHIA HAI PHẦN: đang có lịch · còn trống.** Bản đầu đổ tất cả vào một
  * danh sách phẳng, và ngày chưa ai đặt gì thì màn hình thành **21 dòng giống
- * hệt nhau cùng nói một câu «Trống cả ngày»** — người dùng cuộn hết hai chục
+ * hệt nhau cùng nói một câu "Trống cả ngày"** — người dùng cuộn hết hai chục
  * dòng để biết một điều đáng ra nói bằng một câu (khách báo 09/09/2026). Nay:
  *
  * * **Phòng đang có lịch** đứng trên, mỗi phòng một khối đủ giờ giấc — đây là
@@ -47,7 +47,7 @@ export function RoomDayList({
   onOpenBooking,
   onPickRoom,
 }: RoomDayListProps) {
-  //  Chỉ phiếu ĐANG GIỮ phòng, cùng luật với lưới và với con số «lượt giữ» trên
+  //  Chỉ phiếu ĐANG GIỮ phòng, cùng luật với lưới và với con số "lượt giữ" trên
   //  thanh công cụ — ba chỗ đếm khác nhau là ba con số khác nhau.
   const held = blockingOnly(bookings)
 

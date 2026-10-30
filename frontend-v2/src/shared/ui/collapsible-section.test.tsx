@@ -83,7 +83,7 @@ describe('mặc định CÒN SỐNG cho tới khi người dùng tự quyết', 
   it('`defaultOpen` đổi sau lượt vẽ đầu thì khối đi theo', () => {
     //  ⚠️ LỖI ĐÃ TRÁNH: bản đầu chốt `defaultOpen` vào `useState`, nên nó được
     //  tính trên dữ liệu RỖNG của lượt vẽ đầu (bản ghi còn đang nạp). Hậu quả:
-    //  khối «Điều kiện áp dụng» của một hồ sơ đã khai đầy đủ vẫn gập sẵn mãi
+    //  khối "Điều kiện áp dụng" của một hồ sơ đã khai đầy đủ vẫn gập sẵn mãi
     //  mãi, vì `useState` không đọc lại khi dữ liệu về.
     const { rerender } = render(
       <CollapsibleSection title="Khối thử" defaultOpen={false}>

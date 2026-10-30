@@ -33,7 +33,7 @@ interface FolderSelectionToolbarProps {
 /**
  * THANH THAO TÁC kiểu Drive (đặc tả §B, phản hồi 24/09/2026) — thay NGUYÊN
  * hàng tìm/lọc khi có lượt chọn (`folder-documents-view.tsx` swap ở CÙNG một
- * chỗ, không xếp chồng lên nhau như bản cũ): «✕» + «n mục đã chọn» + các nút
+ * chỗ, không xếp chồng lên nhau như bản cũ): "✕" + "n mục đã chọn" + các nút
  * CHỈ ICON có tooltip (Thêm vào thư mục · Chuyển tới · Gỡ khỏi thư mục này ·
  * Xóa (tô màu nguy hiểm) · Chi tiết) — không còn nhãn chữ dài kiểu form cũ.
  *
@@ -41,7 +41,7 @@ interface FolderSelectionToolbarProps {
  * chỉ biết văn bản): thanh này biết cả THƯ MỤC lẫn văn bản trong CÙNG một
  * lượt chọn (khung nội dung kiểu Drive chọn được cả hai loại thẻ).
  *
- * «Thêm vào thư mục…» chỉ có nghĩa với văn bản (một thư mục chỉ có MỘT cha,
+ * "Thêm vào thư mục…" chỉ có nghĩa với văn bản (một thư mục chỉ có MỘT cha,
  * không "thêm" được) — ẩn hẳn khi có thư mục trong lượt chọn thay vì hiện rồi
  * âm thầm bỏ qua phần thư mục.
  *
@@ -118,12 +118,12 @@ export function FolderSelectionToolbar({
           </Button>
         </IconTooltip>
         {!bulk.hasFolders && (
-          <IconTooltip label={`Gỡ khỏi «${currentFolder.name}»`}>
+          <IconTooltip label={`Gỡ khỏi "${currentFolder.name}"`}>
             <Button
               type="button"
               variant="ghost"
               size="icon-sm"
-              aria-label={`Gỡ khỏi «${currentFolder.name}»`}
+              aria-label={`Gỡ khỏi "${currentFolder.name}"`}
               disabled={bulk.overCap}
               onClick={bulk.runUnlink}
             >

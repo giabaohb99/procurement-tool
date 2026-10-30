@@ -4,7 +4,7 @@ import { cn } from '@/shared/utils/cn'
 interface FolderItemSelectCheckboxProps {
   checked: boolean | 'indeterminate'
   onToggle: () => void
-  /** Tên hỗ trợ — «Chọn ‹tên›» / «Chọn tất cả». */
+  /** Tên hỗ trợ — "Chọn ‹tên›" / "Chọn tất cả". */
   label: string
   className?: string
 }

@@ -1,4 +1,4 @@
-// Ba ô «Loại hình nghỉ» của mẫu đơn 2026 (ĐƠN XIN NGHỈ PHÉP / NGHỈ CHẾ ĐỘ, 06/10/2026):
+// Ba ô "Loại hình nghỉ" của mẫu đơn 2026 (ĐƠN XIN NGHỈ PHÉP / NGHỈ CHẾ ĐỘ, 06/10/2026):
 //   [ ] Nghỉ phép năm (có lương) · [ ] Nghỉ việc riêng (không lương) · [ ] Nghỉ chế độ bảo hiểm.
 //
 // Đánh dấu theo TÊN loại nghỉ (đầu đơn + từng dòng) vì bản kê dòng không mang cờ `is_paid`.
@@ -33,7 +33,7 @@ function isInsuranceName(name: string): boolean {
 }
 
 /**
- * Tên loại nào không thuộc «không lương» hay «chế độ bảo hiểm» thì rơi vào ô «có lương»:
+ * Tên loại nào không thuộc "không lương" hay "chế độ bảo hiểm" thì rơi vào ô "có lương":
  * nghỉ cưới / tang / bù vẫn hưởng lương công ty, mẫu không có ô riêng cho chúng.
  * Đơn không có tên loại nào (dữ liệu cũ) mà có số ngày thì coi là phép năm — như bản in trước.
  */

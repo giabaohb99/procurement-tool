@@ -69,13 +69,13 @@ export interface SupplierCluster {
 }
 
 /**
- * Một ô ký cụm «XÉT DUYỆT» trên bản in YCMH — bao-CR-531. Backend
+ * Một ô ký cụm "XÉT DUYỆT" trên bản in YCMH — bao-CR-531. Backend
  * (`purchase_request/print_signature_cells.py`) là nơi duy nhất quyết định bộ ô.
  */
 export interface PrintSignatureCell {
   /** `director` · `purchasing_head` · `proposer` · `preparer` · `household_owner`. */
   key: string
-  /** Nhãn in trên giấy, vd «Giám đốc», «Chủ hộ». */
+  /** Nhãn in trên giấy, vd "Giám đốc", "Chủ hộ". */
   role: string
   name: string
   signature: string
@@ -100,13 +100,13 @@ export interface PurchaseRequestDetail {
   head_of_dept_id: number
   /**
    * bao-CR-414: id PHÒNG BAN xử lý phiếu. bao-CR-524: phiếu không nhờ ai mang id THẬT của phòng thu
-   * mua mặc định («Sản xuất -Thu mua»); backend đổi cả `0` cũ sang id đó khi trả về. Chọn phòng thì quản lý
+   * mua mặc định ("Sản xuất -Thu mua"); backend đổi cả `0` cũ sang id đó khi trả về. Chọn phòng thì quản lý
    * thu mua của phòng đó thấy + điều phối được phiếu; backend chép xuống ĐMH/YCBG con.
    */
   handler_dept_id: number
   /**
-   * bao-CR-488 — CHỈ ở giao diện, không có trên API: lúc LẬP phiếu người dùng đã tick «Nhờ phòng
-   * khác xử lý» chưa. Chưa tick thì không gửi `handler_dept_id`, backend tự chọn mặc định.
+   * bao-CR-488 — CHỈ ở giao diện, không có trên API: lúc LẬP phiếu người dùng đã tick "Nhờ phòng
+   * khác xử lý" chưa. Chưa tick thì không gửi `handler_dept_id`, backend tự chọn mặc định.
    */
   handler_dept_assigned?: boolean
   /**
@@ -175,7 +175,7 @@ export interface PurchaseRequestDetail {
   can_dispatch: boolean
   can_approve: boolean
   /**
-   * bao-CR-554: được «Trả về» cho người lập — quản lý (quyền Hủy) hoặc người duyệt, phiếu chờ duyệt
+   * bao-CR-554: được "Trả về" cho người lập — quản lý (quyền Hủy) hoặc người duyệt, phiếu chờ duyệt
    * hoặc đã duyệt / đã điều phối mà chưa dòng nào lên ĐMH. Backend tính, giao diện chỉ đọc.
    */
   can_return?: boolean
@@ -200,13 +200,13 @@ export interface PurchaseRequestDetail {
   purchasing_head_name: string
   purchasing_head_signature: string
   /**
-   * bao-CR-531: bộ ô ký cụm «XÉT DUYỆT» backend đã rút gọn — hộ kinh doanh chỉ còn «Chủ hộ» +
-   * «Người lập» (không tên), công ty thì gộp ô trùng người đại diện pháp luật vào «Giám đốc».
+   * bao-CR-531: bộ ô ký cụm "XÉT DUYỆT" backend đã rút gọn — hộ kinh doanh chỉ còn "Chủ hộ" +
+   * "Người lập" (không tên), công ty thì gộp ô trùng người đại diện pháp luật vào "Giám đốc".
    * Tùy chọn vì backend cũ chưa gửi; thiếu thì bản in lùi về bốn ô dựng từ các khóa cũ.
    */
   print_signature_cells?: PrintSignatureCell[]
   /**
-   * bao-CR-490 — NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt») và
+   * bao-CR-490 — NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng ("Trưởng phòng phê duyệt") và
    * trưởng phòng THEO HỒ SƠ phòng ban (`Department.manager_id`) — hai người ký chọn được trên
    * bản in nội bộ. Phiếu cũ: id 0, tên rỗng.
    */

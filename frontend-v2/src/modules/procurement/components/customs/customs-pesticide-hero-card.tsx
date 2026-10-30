@@ -33,8 +33,8 @@ export function CustomsPesticideHeroCard({
   actions,
 }: CustomsPesticideHeroCardProps) {
   const p = pesticide
-  //  Trống thì nói rõ, đừng để một ô trắng tưởng lỗi màn: thuốc từ bản cào là «Nguồn không ghi»,
-  //  thuốc tự thêm là «Chưa nhập» (không có nguồn nào để mà «không ghi»).
+  //  Trống thì nói rõ, đừng để một ô trắng tưởng lỗi màn: thuốc từ bản cào là "Nguồn không ghi",
+  //  thuốc tự thêm là "Chưa nhập" (không có nguồn nào để mà "không ghi").
   const missing = p.is_manual ? 'Chưa nhập' : 'Nguồn không ghi'
   const remaining = describeRemainingTerm(p.expires_on, new Date())
   const toxicity = parsePesticideToxicity(p.toxicity)
@@ -82,7 +82,7 @@ export function CustomsPesticideHeroCard({
             {toSentenceCaseIfShouting(p.sector)}
           </Fact>
           {/*  Ngày HẾT HẠN là thứ người ta hỏi — đứng dòng chính; ngày cấp + thời gian còn lại xuống
-               dòng phụ (bản «cấp → hết hạn» một dòng bị bẻ đôi ở dấu mũi tên trong ô hẹp). */}
+               dòng phụ (bản "cấp → hết hạn" một dòng bị bẻ đôi ở dấu mũi tên trong ô hẹp). */}
           <Fact label="Hiệu lực đến" empty={!p.expires_on} missing={missing}>
             <span className="tabular-nums">{formatDate(p.expires_on)}</span>
             <span className="block text-xs font-normal text-muted-foreground">
@@ -113,7 +113,7 @@ export function CustomsPesticideHeroCard({
               {p.summary}
             </p>
           )}
-          {/*  Nhóm kháng thường trống ở nguồn — chỉ bày khi có, khỏi chiếm một ô «Nguồn không ghi». */}
+          {/*  Nhóm kháng thường trống ở nguồn — chỉ bày khi có, khỏi chiếm một ô "Nguồn không ghi". */}
           {p.resistance && (
             <p className="leading-relaxed text-muted-foreground">
               <span className="font-medium text-foreground">Quản lý tính kháng: </span>
@@ -168,7 +168,7 @@ function ToxicityChip({ item }: { item: ToxicityItem }) {
         TOXICITY_TONE[item.severity],
       )}
     >
-      {/*  Mã nhóm KHÔNG được bẻ dòng — «GHS» một dòng, «5» một dòng là đọc không ra. */}
+      {/*  Mã nhóm KHÔNG được bẻ dòng — "GHS" một dòng, "5" một dòng là đọc không ra. */}
       {item.code && <span className="font-semibold whitespace-nowrap">{item.code}</span>}
       {item.code && item.label && <span aria-hidden>·</span>}
       <span>{item.label}</span>

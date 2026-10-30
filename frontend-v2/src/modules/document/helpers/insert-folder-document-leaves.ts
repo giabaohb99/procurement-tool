@@ -19,7 +19,7 @@ export type FolderTreeLeafData =
  * Chèn văn bản TRỰC TIẾP của mỗi thư mục ĐANG MỞ làm con SAU CÙNG (sau thư
  * mục con thật — kiểu VS Code Explorer: thư mục trước, tệp sau; yêu cầu
  * 23/09/2026 §4). Thư mục không có gì cả (không thư mục con, không văn bản)
- * hiện MỘT dòng «(trống)» mờ, cùng ý «Chưa có thư mục nào» của `TreeView`.
+ * hiện MỘT dòng "(trống)" mờ, cùng ý "Chưa có thư mục nào" của `TreeView`.
  *
  * Trả kèm map id-dòng-lá → dữ liệu vì `TreeNode<T>` của cây vẫn giữ nguyên
  * `T = DocFolderTreeNode` (không đổi sang hợp kiểu) — đổi `T` sẽ kéo theo mọi
