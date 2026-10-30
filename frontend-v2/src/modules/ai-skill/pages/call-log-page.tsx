@@ -54,8 +54,8 @@ const CSV_COLUMNS: CsvColumn<McpCall>[] = [
  * thường chỉ thấy lượt của chính mình; xem cả công ty cần quyền quản lý bot AI (`agent_group.read`, tạm thời — Agent 4
  * sẽ đổi sang khóa riêng). Xuất CSV lấy đúng TRANG ĐANG XEM, nói rõ trên nút.
  *
- * bao-CR-696: ô tìm nhanh theo người HOẶC công cụ (tham số `q`, bản đề nghị) và cột Chứng từ — mã phiếu của lượt GHI
- * (duyệt, lập phiếu), đọc qua `readCallDocument`; lượt chỉ đọc / máy chủ cũ chưa trả thì gạch ngang.
+ * bao-CR-696: ô tìm nhanh theo người HOẶC công cụ (tham số `q`, khớp một phần — thay `tool` khớp đúng tên) và cột
+ * Chứng từ — mã phiếu của lượt GHI thật, đọc qua `readCallDocument`; lượt nháp / đề xuất / chỉ đọc thì gạch ngang.
  */
 export function CallLogPage() {
   const { can } = usePermission()

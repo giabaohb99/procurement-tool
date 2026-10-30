@@ -42,7 +42,7 @@ const ALL = 'all'
  * thái. Phát hộ khóa chỉ đọc cho người / cả phòng; tick chọn để thu hồi hàng loạt. Người phát không bao giờ thấy chuỗi
  * khóa — chỉ 4 ký tự cuối để đối chiếu.
  *
- * Trường mới đọc qua `toConnectionRow` (một chỗ, hợp đồng còn là bản đề nghị); máy chủ cũ thì lùi về trường sẵn có.
+ * Trường mới đọc qua `toConnectionRow` (một chỗ, hợp đồng Agent 4 chốt 30/10); máy chủ cũ thì lùi về trường sẵn có.
  */
 export function KeyAdminPage() {
   const meta = useKeyAdminMeta()

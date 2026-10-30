@@ -161,6 +161,21 @@ describe('OAuthClientsPage filters (bao-CR-696)', () => {
     expect(apiGet.mock.calls.filter(([u]) => String(u).endsWith('/oauth-clients'))).toHaveLength(1)
   })
 
+  it('names the people still connected, and says how many more beyond the five the server lists', async () => {
+    mockServer([
+      client(1, { client_name: 'ChatGPT', live_grants: 9, live_users: 7, live_user_names: ['An (NSU001)', 'Bình (NSU002)'] }),
+      client(2, { client_name: 'Cũ', live_grants: 0, live_users: 0, live_user_names: [] }),
+      client(3, { client_name: 'Máy chủ cũ', live_grants: 1 }),
+    ])
+    renderAt('/ai-skill/oauth-clients')
+    expect(await screen.findByText(/An \(NSU001\), Bình \(NSU002\)/)).toBeInTheDocument()
+    expect(screen.getByText(/và 5 người khác/)).toBeInTheDocument()
+    //  Không có ai / máy chủ cũ thiếu trường: gạch ngang thật, không phải "0" hay "undefined".
+    const dashRows = ['Cũ', 'Máy chủ cũ'].map((name) => screen.getByText(name).closest('tr'))
+    for (const row of dashRows) expect(row?.textContent).toContain('—')
+    expect(document.body.textContent).not.toMatch(/undefined|NaN/)
+  })
+
   it('searches by redirect host without accents mattering, and says the table is empty because of the filter', async () => {
     const user = userEvent.setup()
     mockServer(apps)

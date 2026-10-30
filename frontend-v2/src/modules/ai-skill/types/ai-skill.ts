@@ -188,20 +188,23 @@ export interface AdminMcpKey {
   department: string
   issued_by_label: string
   /**
-   * bao-CR-696 (màn Kết nối) — trường BẢN ĐỀ NGHỊ, hợp đồng chưa chốt. Chỉ đọc qua `toConnectionRow`
-   * (`utils/ai-row-mappers.ts`); đổi tên khi hợp đồng chốt thì sửa ở đây và ở hàm đó, không chỗ nào khác.
-   * Máy chủ cũ chưa trả thì hàm map lùi về `owner_label` / `department` / `kind` / `name`.
+   * bao-CR-696 (màn Kết nối, hợp đồng Agent 4 chốt 30/10). Người vẫn là `owner_label` ("Họ tên (MÃ)"), phòng vẫn là
+   * `department`, trạng thái vẫn `state` + `state_label`. Chỉ đọc qua `toConnectionRow` (`utils/ai-row-mappers.ts`).
+   * Máy chủ trước bao-CR-696 chưa trả thì hàm map lùi về `kind` / `name`.
    */
-  person_name?: string | null
+  /** Mã nhân viên, `""` khi không có. */
   employee_code?: string | null
+  /** Email, `""` khi không có. */
   email?: string | null
-  dept_name?: string | null
+  /** `"key"` | `"oauth"`. */
   connection_type?: string | null
+  /** Tên ứng dụng; `null` với khóa dán tay. */
   app_name?: string | null
+  /** Nơi quay về ĐẦU TIÊN của ứng dụng OAuth; `null` với khóa tay hoặc khi ứng dụng đã bị xóa. */
   app_redirect_uri?: string | null
 }
 
-/** Tham số bảng màn Kết nối. `q` (bao-CR-696, bản đề nghị): tìm theo tên / email / mã NV — máy chủ cũ bỏ qua. */
+/** Tham số bảng màn Kết nối. `q` (bao-CR-696): họ tên / mã NV / email, không dấu, không phân biệt hoa thường. */
 //  `type` chứ không `interface`: khóa truy vấn nhận `Record<string, unknown>`, interface không gán được vào đó.
 export type KeyAdminKeysParams = {
   department_id?: number
@@ -258,12 +261,11 @@ export interface McpCall {
   ip: string
   user_label: string
   /**
-   * bao-CR-696 (cột Chứng từ) — trường BẢN ĐỀ NGHỊ, hợp đồng chưa chốt: mã phiếu cho lượt GHI (duyệt, lập phiếu).
-   * Chỉ đọc qua `readCallDocument` (`utils/ai-row-mappers.ts`). Lượt chỉ đọc, dòng cũ, máy chủ cũ: thiếu / null.
+   * bao-CR-696 (cột Chứng từ, hợp đồng Agent 4 chốt 30/10): chỉ lượt GHI thật (`confirm_draft`, công cụ ghi trực tiếp)
+   * mới có; `draft_*` / `propose_*` / lượt đọc là `null`. `doc_url` khi có luôn là đường nội bộ bắt đầu `/`. Chỉ đọc
+   * qua `readCallDocument` (`utils/ai-row-mappers.ts`); máy chủ cũ thiếu trường thì coi như null.
    */
   doc_code?: string | null
-  doc_type?: string | number | null
-  doc_id?: number | null
   doc_url?: string | null
 }
 
@@ -280,7 +282,7 @@ export interface McpCallFilters {
   status?: number
   /** `tools` = chỉ lượt gọi công cụ (`tools/call`), ẩn initialize / tools/list / notifications/* (ai-CR-219). */
   kind?: 'tools'
-  /** bao-CR-696: tìm nhanh theo người hoặc công cụ (bản đề nghị — máy chủ cũ bỏ qua tham số này). */
+  /** bao-CR-696: tìm nhanh cả người (họ tên / mã / email) lẫn tên công cụ, khớp một phần. `tool` vẫn là khớp ĐÚNG tên. */
   q?: string
   page: number
   size: number
@@ -476,6 +478,10 @@ export interface OAuthClient {
   last_used_at: string | null
   /** Kết nối (mã truy cập) còn sống của ứng dụng — xóa ứng dụng là cắt hết. */
   live_grants: number
+  /** bao-CR-696: số NGƯỜI còn kết nối sống (`live_grants` là số kết nối). Máy chủ cũ chưa có. */
+  live_users?: number
+  /** bao-CR-696: tối đa 5 nhãn "Họ tên (MÃ)" của người còn kết nối sống. */
+  live_user_names?: string[]
 }
 
 export interface OAuthClientList {

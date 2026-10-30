@@ -4,7 +4,7 @@ import type { AdminMcpKey, McpCall, OAuthClient } from '../types/ai-skill'
 import { filterOAuthClients, readCallDocument, redirectHost, toConnectionRow } from './ai-row-mappers'
 
 /**
- * bao-CR-696 — hợp đồng màn Kết nối / cột Chứng từ còn là BẢN ĐỀ NGHỊ. Các hàm map phải chịu được: máy chủ cũ thiếu
+ * bao-CR-696 — hợp đồng màn Kết nối / cột Chứng từ (Agent 4 chốt 30/10). Các hàm map phải chịu được: máy chủ cũ thiếu
  * hẳn trường mới, trường null, chuỗi toàn khoảng trắng, giá trị lạ, và link chứng từ dẫn ra ngoài.
  */
 
@@ -18,10 +18,10 @@ function oldServerKey(over: Partial<AdminMcpKey> = {}): AdminMcpKey {
 }
 
 describe('toConnectionRow', () => {
-  it('reads the proposed fields when the server sends them', () => {
+  it('reads the agreed fields, taking the name off "Name (CODE)" because the code is shown next to the email', () => {
     const row = toConnectionRow(
       oldServerKey({
-        person_name: 'Trần Thị Bình', employee_code: 'NSU001', email: 'binh@dego.vn', dept_name: 'Kế toán',
+        owner_label: 'Trần Thị Bình (NSU001)', employee_code: 'NSU001', email: 'binh@dego.vn', department: 'Kế toán',
         connection_type: 'oauth', app_name: 'ChatGPT', app_redirect_uri: 'https://chatgpt.com/connector/oauth/abc',
       }),
     )
@@ -43,12 +43,29 @@ describe('toConnectionRow', () => {
     }
   })
 
-  it('treats null and whitespace-only new fields as missing and keeps the old value', () => {
-    const row = toConnectionRow(oldServerKey({ person_name: '   ', dept_name: null, email: null, employee_code: ' ' }))
+  it('treats null and whitespace-only new fields as empty', () => {
+    const row = toConnectionRow(oldServerKey({ email: null, employee_code: ' ', app_name: null, app_redirect_uri: null }))
     expect(row.person).toBe('Nguyễn Văn An')
-    expect(row.department).toBe('Thu mua')
     expect(row.email).toBe('')
     expect(row.employeeCode).toBe('')
+    expect(row.appName).toBe('')
+    expect(row.appRedirectUri).toBe('')
+  })
+
+  it('cuts the code off the name only when it is exactly the employee code at the end', () => {
+    //  Không có mã → để nguyên (đuôi trong ngoặc có thể là một phần tên / ghi chú).
+    expect(toConnectionRow(oldServerKey({ owner_label: 'An (NSU001)', employee_code: '' })).person).toBe('An (NSU001)')
+    //  Mã khác → để nguyên, không cắt nhầm.
+    expect(toConnectionRow(oldServerKey({ owner_label: 'An (NSU001)', employee_code: 'NSU002' })).person).toBe('An (NSU001)')
+    //  Mã nằm giữa chứ không ở cuối → để nguyên.
+    expect(toConnectionRow(oldServerKey({ owner_label: 'An (NSU001) phụ', employee_code: 'NSU001' })).person).toBe('An (NSU001) phụ')
+    //  Nhãn chỉ có mỗi đuôi mã (máy chủ thiếu họ tên) → không còn gì thì in mã người dùng.
+    expect(toConnectionRow(oldServerKey({ owner_label: ' (NSU001)', employee_code: 'NSU001' })).person).toBe('#42')
+  })
+
+  it('keeps an OAuth row whose app was deleted: no redirect, app name still shown', () => {
+    const row = toConnectionRow(oldServerKey({ connection_type: 'oauth', app_name: 'ChatGPT', app_redirect_uri: null }))
+    expect(row).toMatchObject({ connectionType: 'oauth', appName: 'ChatGPT', appRedirectUri: '' })
   })
 
   it('takes OAuth from the old kind field and pulls the app name out of the "Qua <app>" key name', () => {
@@ -108,18 +125,17 @@ function call(over: Partial<McpCall> = {}): McpCall {
 describe('readCallDocument', () => {
   it('is null for a read-only call, a legacy row, or an older server without the field', () => {
     expect(readCallDocument(call())).toBeNull()
-    expect(readCallDocument(call({ doc_code: null, doc_url: null, doc_id: null }))).toBeNull()
+    expect(readCallDocument(call({ doc_code: null, doc_url: null }))).toBeNull()
     expect(readCallDocument(call({ doc_code: '   ' }))).toBeNull()
-    expect(readCallDocument(call({ doc_id: 0 }))).toBeNull()
-    expect(readCallDocument(call({ doc_id: -5 }))).toBeNull()
+    expect(readCallDocument(call({ doc_code: '' , doc_url: '/leave/requests/7' }))).toBeNull()
   })
 
   it('needs a code to show anything: a link without a code is dropped', () => {
     expect(readCallDocument(call({ doc_url: '/procurement/purchase-requests/9' }))).toBeNull()
   })
 
-  it('falls back to the document id when the code is missing', () => {
-    expect(readCallDocument(call({ doc_id: 9 }))).toEqual({ code: '#9', href: null })
+  it('shows the code without a link when the server has no URL for it', () => {
+    expect(readCallDocument(call({ doc_code: 'DNP-0007', doc_url: null }))).toEqual({ code: 'DNP-0007', href: null })
   })
 
   it('links only to an internal path', () => {

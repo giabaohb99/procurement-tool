@@ -5,8 +5,8 @@ import type { AdminMcpKey, McpCall, OAuthClient } from '../types/ai-skill'
 /**
  * bao-CR-696 — MỘT chỗ duy nhất đọc các trường mới của màn Kết nối và cột Chứng từ ở Nhật ký sử dụng.
  *
- * Hợp đồng API đang là BẢN ĐỀ NGHỊ (Agent 4 có thể đổi tên). Khi hợp đồng chốt: sửa kiểu ở `types/ai-skill.ts` và hai
- * hàm dưới đây — màn hình chỉ đọc `ConnectionRow` / `CallDocument`, không đụng thẳng tên trường của máy chủ.
+ * Hợp đồng máy chủ Agent 4 chốt 30/10/2026. Đổi tên trường thì sửa kiểu ở `types/ai-skill.ts` và các hàm dưới đây —
+ * màn hình chỉ đọc `ConnectionRow` / `CallDocument`, không đụng thẳng tên trường của máy chủ.
  * Máy chủ cũ chưa trả trường mới thì mọi hàm lùi về trường sẵn có, không bao giờ ném lỗi hay in "undefined".
  */
 
@@ -53,8 +53,21 @@ function readConnectionType(k: AdminMcpKey): ConnectionType {
   return k.kind === KEY_KIND.oauth ? 'oauth' : 'key'
 }
 
+/**
+ * `owner_label` máy chủ ghép sẵn "Họ tên (MÃ)". Màn đã in mã ở dòng phụ (cạnh email) nên bóc đuôi `(MÃ)` khi nó đúng
+ * bằng `employee_code` — khác mã (hay không có mã) thì để nguyên, thà lặp chữ còn hơn cắt nhầm tên.
+ */
+function stripEmployeeCode(label: string, code: string): string {
+  const suffix = `(${code})`
+  if (!code || !label.endsWith(suffix)) return label
+  const rest = label.slice(0, -suffix.length)
+  //  Chỉ cắt khi đuôi đứng riêng ("An (NSU001)") hoặc nhãn chỉ có mỗi mã — "An(NSU001)" dính liền thì để nguyên.
+  return rest === '' || rest.endsWith(' ') ? rest.trim() : label
+}
+
 export function toConnectionRow(k: AdminMcpKey): ConnectionRow {
   const connectionType = readConnectionType(k)
+  const employeeCode = text(k.employee_code)
   const keyName = text(k.name)
   let appName = text(k.app_name)
   if (!appName && connectionType === 'oauth' && keyName.startsWith(OAUTH_KEY_NAME_PREFIX)) {
@@ -62,10 +75,10 @@ export function toConnectionRow(k: AdminMcpKey): ConnectionRow {
   }
   return {
     id: k.id,
-    person: text(k.person_name) || text(k.owner_label) || (k.user_id ? `#${k.user_id}` : ''),
-    employeeCode: text(k.employee_code),
+    person: stripEmployeeCode(text(k.owner_label), employeeCode) || (k.user_id ? `#${k.user_id}` : ''),
+    employeeCode,
     email: text(k.email),
-    department: text(k.dept_name) || text(k.department),
+    department: text(k.department),
     connectionType,
     appName,
     appRedirectUri: text(k.app_redirect_uri),
@@ -109,11 +122,14 @@ function safeInternalPath(url: string | null | undefined): string | null {
   return raw
 }
 
+/**
+ * Hợp đồng hứa `doc_url` luôn là đường nội bộ — vẫn soát lại ở đây (lớp phòng thủ thứ hai, rẻ): nhật ký ai cũng mở
+ * được, một dòng dữ liệu hỏng không được biến thành link dẫn ra ngoài.
+ */
 export function readCallDocument(c: McpCall): CallDocument | null {
-  const href = safeInternalPath(c.doc_url)
-  const code = text(c.doc_code) || (typeof c.doc_id === 'number' && c.doc_id > 0 ? `#${c.doc_id}` : '')
+  const code = text(c.doc_code)
   if (!code) return null
-  return { code, href }
+  return { code, href: safeInternalPath(c.doc_url) }
 }
 
 export const OAUTH_CLIENT_STATUS = {

@@ -82,6 +82,24 @@ export function OAuthClientsPage() {
         cell: (c) => <span className={cn('tabular-nums', c.live_grants === 0 && 'text-muted-foreground')}>{c.live_grants}</span>,
       },
       {
+        //  bao-CR-696: AI đang dùng ứng dụng này — để biết xóa thì cắt của ai. Máy chủ cũ chưa có thì gạch ngang.
+        key: 'live_users',
+        header: 'Người đang dùng',
+        width: 240,
+        wrap: true,
+        cell: (c) => {
+          const names = c.live_user_names ?? []
+          if (typeof c.live_users !== 'number' || c.live_users === 0) return <span className="text-muted-foreground">—</span>
+          const more = c.live_users - names.length
+          return (
+            <span className="text-sm">
+              {names.join(', ')}
+              {more > 0 && <span className="text-muted-foreground">{names.length > 0 ? ` và ${more} người khác` : `${more} người`}</span>}
+            </span>
+          )
+        },
+      },
+      {
         key: 'last_used_at',
         header: 'Dùng lần cuối',
         width: 150,

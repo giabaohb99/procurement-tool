@@ -152,11 +152,11 @@ describe('KeyAdminPage as the Connections screen (bao-CR-696)', () => {
 
   beforeEach(() => localStorage.clear())
 
-  it('shows who, how, which app and where it returns to, from the proposed fields', async () => {
+  it('shows who, how, which app and where it returns to, from the agreed fields', async () => {
     mockServer(META, [
       {
         ...key(1, 2, 'An'),
-        person_name: 'Nguyễn Văn An', employee_code: 'NSU001', email: 'an@dego.vn', dept_name: 'Kế toán',
+        owner_label: 'Nguyễn Văn An (NSU001)', employee_code: 'NSU001', email: 'an@dego.vn', department: 'Kế toán',
         connection_type: 'oauth', app_name: 'ChatGPT', app_redirect_uri: 'https://chatgpt.com/connector/oauth/x',
       },
     ])
