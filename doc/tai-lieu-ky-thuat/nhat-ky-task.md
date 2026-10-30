@@ -111,6 +111,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-697 | Đánh giá độ phủ nghiệp vụ thu mua và kho so với ERPNext v16
+- status: xong
+- date: 2026-10-30
+- list: Kế hoạch hệ agent
+Người chủ muốn biết luồng thu mua và kho hiện tại nằm được bao nhiêu phần trăm so với nghiệp vụ chuẩn, lấy ERPNext v16 (site học
+dựng 30/10) làm mốc. Tài liệu nghiên cứu số 11 chấm 52 chức năng trên tám chặng, từ dữ liệu gốc tới báo cáo, mỗi chức năng ba
+mức Có, Một phần, Chưa kèm chỗ tương ứng trong mã nguồn và màn hình để người sau kiểm lại. Kết quả chung 30,5 trên 52, tức 59
+phần trăm: nửa trước luồng (yêu cầu mua, hỏi giá, đơn mua và duyệt) đạt 72 phần trăm và nhiều chỗ đi trước ERPNext; nửa sau
+(nhận hàng và kiểm chất lượng, kho, hóa đơn và công nợ) chỉ 43 phần trăm, trùng với các điểm đã soát ở tài liệu 01 mục 7.
+Xếp mười chỗ hở theo giá trị cho phòng thu mua: số lượng từ chối và kiểm chất lượng chặn nhập, trả hàng nhà cung cấp, phiếu nhập
+do thủ kho lập, xuất và chuyển kho, hóa đơn nhà cung cấp đối chiếu ba chiều, mức tồn tối thiểu tự đề nghị mua, chi phí nhập khẩu
+vào giá vốn, sổ kho có ngày ghi sổ và khóa kỳ, hợp đồng khung có số lượng và giá, chấm điểm nhà cung cấp định kỳ. Có mục riêng
+liệt kê chỗ ERP DEGO đi xa hơn ERPNext để nhìn công bằng. Chọn việc nào làm trước chờ người chủ quyết.
+Mã nguồn: doc/erp/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md
+
 ## bao-CR-696-hdsd | Sửa bài hướng dẫn cụm AI theo màn mới: một phân hệ AI, Kết nối, Nâng cao, Nhật ký
 - status: xong
 - date: 2026-10-30
