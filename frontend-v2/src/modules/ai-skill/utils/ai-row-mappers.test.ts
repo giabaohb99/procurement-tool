@@ -182,6 +182,17 @@ describe('filterOAuthClients', () => {
     expect(filterOAuthClients(items, 'không có', 'all')).toEqual([])
   })
 
+  //  Ô tìm màn Nâng cao gợi ý "Tìm ứng dụng, người dùng" (bao-CR-696): phải khớp được tên / mã người đang dùng.
+  it('also finds an app by the name or code of a person using it', () => {
+    const withUsers = [
+      app(1, { client_name: 'ChatGPT', live_user_names: ['Huỳnh Gia Bảo (NSU209)'] }),
+      app(2, { client_name: 'claude.ai', live_user_names: [] }),
+      app(3, { client_name: 'Cũ' }),
+    ]
+    expect(filterOAuthClients(withUsers, 'huynh gia', 'all').map((c) => c.id)).toEqual([1])
+    expect(filterOAuthClients(withUsers, 'nsu209', 'all').map((c) => c.id)).toEqual([1])
+  })
+
   it('survives an empty list and a client with no redirect hosts', () => {
     expect(filterOAuthClients([], 'x', 'live')).toEqual([])
     expect(filterOAuthClients([app(9, { redirect_hosts: [] })], 'chatgpt', 'all')).toEqual([])

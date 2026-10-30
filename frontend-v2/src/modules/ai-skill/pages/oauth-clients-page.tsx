@@ -198,7 +198,7 @@ export function OAuthClientsPage() {
                 <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-9"
-                  placeholder="Tìm tên, mã ứng dụng, nơi quay về"
+                  placeholder="Tìm ứng dụng, người dùng"
                   aria-label="Tìm ứng dụng"
                   value={keyword}
                   maxLength={80}

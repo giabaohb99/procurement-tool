@@ -158,6 +158,9 @@ export function filterOAuthClients(items: OAuthClient[], keyword: string, status
     if (status === OAUTH_CLIENT_STATUS.live && !(c.live_grants > 0)) return false
     if (status === OAUTH_CLIENT_STATUS.idle && c.live_grants > 0) return false
     if (status === OAUTH_CLIENT_STATUS.untrusted && c.trusted) return false
-    return matchesVietnamese([c.client_name, c.client_id, ...(c.redirect_hosts ?? [])], keyword)
+    return matchesVietnamese(
+      [c.client_name, c.client_id, ...(c.redirect_hosts ?? []), ...(c.live_user_names ?? [])],
+      keyword,
+    )
   })
 }
