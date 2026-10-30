@@ -112,7 +112,7 @@ def check_audit(db, problems: list[str]) -> None:
             flags.append(f"nhom lech, dung ra la {group_of_action(action)}")
         flag = (_FAIL + ": " + " · ".join(flags)) if flags else ""
         print(f"  {n:>6}  {action:<14} nhom={group}  "
-              f"«{label_of_action(action)}»{flag}")
+              f"'{label_of_action(action)}'{flag}")
         if flags:
             problems.append(f"ma hanh dong `{action}`: {' · '.join(flags)}")
 

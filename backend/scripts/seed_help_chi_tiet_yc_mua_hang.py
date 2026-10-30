@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Seed Trung tâm trợ giúp: bài «Chi tiết YC mua hàng — soát dòng chưa mua, tiến độ từng dòng, xuất Excel» (bao-CR-691, 29/10/2026).
+"""Seed Trung tâm trợ giúp: bài "Chi tiết YC mua hàng — soát dòng chưa mua, tiến độ từng dòng, xuất Excel" (bao-CR-691, 29/10/2026).
 
 Phiếu TK28102602 (Dego Organic) cần một bảng liệt kê MỌI dòng hàng của mọi YCMH, kể cả dòng chưa tạo đơn, kèm tiến độ phía
 đơn mua hàng, để đếm số dòng theo trạng thái và kéo Excel. Màn Chi tiết YC mua hàng đã làm việc đó từ bao-CR-691; trước đó
-Trung tâm trợ giúp CHƯA có bài nào cho màn này. Bài đặt dưới nhóm «Dành cho Nhân viên Mua hàng», ngay sau bài «Tiến độ
-đơn mua hàng» (sort_order 4) để hai màn tiến độ đứng cạnh nhau như trên menu.
+Trung tâm trợ giúp CHƯA có bài nào cho màn này. Bài đặt dưới nhóm "Dành cho Nhân viên Mua hàng", ngay sau bài "Tiến độ
+đơn mua hàng" (sort_order 4) để hai màn tiến độ đứng cạnh nhau như trên menu.
 
 Chạy trong container api:
     docker compose exec -T api python scripts/seed_help_chi_tiet_yc_mua_hang.py --dry-run
@@ -12,7 +12,7 @@ Chạy trong container api:
 
 Idempotent: có bài cùng tiêu đề dưới đúng nhóm thì ghi đè nội dung, giữ chỗ. Thêm mới thì chen vào sort_order 5 và đẩy các
 bài 5..49 của nhóm xuống một bậc (bài sort 50+ là cố ý nằm cuối, không đụng). Nội dung phải KHỚP
-`doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md` mục «Màn Chi tiết YC mua hàng» và hành vi thật của
+`doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md` mục "Màn Chi tiết YC mua hàng" và hành vi thật của
 `frontend-v2/src/modules/procurement/components/report-pr-lines-tab.tsx` (v2) / `frontend/src/components/PrLinesReport.tsx` (thumua).
 """
 from help_seed_common import HelpArticle, SessionLocal, ref, reindex_articles
@@ -83,10 +83,10 @@ def main() -> None:
     try:
         parent = db.query(HelpArticle).filter(HelpArticle.parent_id.is_(None), HelpArticle.title == PARENT_TITLE).first()
         if parent is None:
-            print(f"BỎ QUA: không có thẻ cha «{PARENT_TITLE}» trên hệ này")
+            print(f"BỎ QUA: không có thẻ cha '{PARENT_TITLE}' trên hệ này")
             return
         row = db.query(HelpArticle).filter(HelpArticle.parent_id == parent.id, HelpArticle.title == TITLE).first()
-        print(f"  {'cập nhật' if row else f'thêm ở sort_order {INSERT_ORDER}'}: «{TITLE}» (dưới «{PARENT_TITLE}»)")
+        print(f"  {'cập nhật' if row else f'thêm ở sort_order {INSERT_ORDER}'}: '{TITLE}' (dưới '{PARENT_TITLE}')")
         if args.dry_run:
             print("Thử xong, chưa ghi gì.")
             return

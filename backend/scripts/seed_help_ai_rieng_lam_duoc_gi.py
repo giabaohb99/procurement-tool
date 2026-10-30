@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Viết lại bài HDSD «AI riêng của bạn làm được gì trong ERP: công cụ và skill» cho khớp prod 26/10/2026 (main 51c9a2b6).
-MỘT LỆNH: ghi đè đúng bài cùng tiêu đề dưới thẻ «Hướng dẫn sử dụng Kết nối AI riêng và Kho skill AI» rồi nạp kho vector
+"""Viết lại bài HDSD "AI riêng của bạn làm được gì trong ERP: công cụ và skill" cho khớp prod 26/10/2026 (main 51c9a2b6).
+MỘT LỆNH: ghi đè đúng bài cùng tiêu đề dưới thẻ "Hướng dẫn sử dụng Kết nối AI riêng và Kho skill AI" rồi nạp kho vector
 cho bài đó (khuôn `help_seed_common.upsert_articles`) — không dựng lại cả cây.
 
 Chạy trong container api:
@@ -111,7 +111,7 @@ gọi thì bị từ chối kèm tên nhóm. Nhóm cần dùng mà đang tắt: 
 <ul>
 <li><em>Phiếu duyệt dấu nào đã duyệt mà chưa đóng dấu?</em></li>
 <li><em>Lịch đặt xe tuần này: chuyến nào chưa phân xe?</em></li>
-<li><em>Tìm bài diễn đàn có chữ «lịch nghỉ lễ» mới nhất.</em></li>
+<li><em>Tìm bài diễn đàn có chữ <em>lịch nghỉ lễ</em> mới nhất.</em></li>
 <li><em>Văn bản số 08/2026/TB-NS nói gì?</em> — cần nhóm Văn thư đang bật.</li>
 </ul>
 <h3>Quản lý</h3>

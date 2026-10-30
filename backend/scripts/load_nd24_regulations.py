@@ -29,7 +29,7 @@ def read_xlsx(path: str) -> list[dict]:
 
     wb = openpyxl.load_workbook(path, read_only=True)   # KHÔNG data_only: lấy giá trị gốc của ô
     if loader.SHEET_NAME not in wb.sheetnames:
-        raise SystemExit(f"Tệp không có sheet «{loader.SHEET_NAME}»")
+        raise SystemExit(f"Tệp không có sheet '{loader.SHEET_NAME}'")
     return loader.parse_sheet(wb[loader.SHEET_NAME].iter_rows(max_col=7, values_only=True))
 
 

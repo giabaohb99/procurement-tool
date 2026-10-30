@@ -17,7 +17,7 @@ Chạy trong container api:
     # ROLLBACK: xóa mềm mọi văn bản lưu trữ HĐLĐ và đặt document_id = 0 (trước khi downgrade); cũng cần --apply --yes
     docker compose exec -T api python scripts/backfill_hdld_van_ban_luu_tru.py --soft-delete-all --apply --yes
 
-Cần loại văn bản `HDLD` đang bật (seed tạo); thiếu thì mọi HĐ được tính là «bỏ qua».
+Cần loại văn bản `HDLD` đang bật (seed tạo); thiếu thì mọi HĐ được tính là "bỏ qua".
 """
 import argparse
 import sys

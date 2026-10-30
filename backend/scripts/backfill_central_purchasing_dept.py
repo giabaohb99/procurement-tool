@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Chuyển dữ liệu «Thu mua chung» (phòng ảo, id 0) sang PHÒNG THU MUA MẶC ĐỊNH — bao-CR-524.
+"""Chuyển dữ liệu "Thu mua chung" (phòng ảo, id 0) sang PHÒNG THU MUA MẶC ĐỊNH — bao-CR-524.
 
-Khách chốt 30/09/2026: bỏ phòng ảo «Thu mua chung»; phòng thu mua mặc định là phòng THẬT mang mã
-`central_purchasing_dept_code` (mặc định `PBA017` «Sản xuất -Thu mua»). Id tra theo MÃ ở
+Khách chốt 30/09/2026: bỏ phòng ảo "Thu mua chung"; phòng thu mua mặc định là phòng THẬT mang mã
+`central_purchasing_dept_code` (mặc định `PBA017` "Sản xuất -Thu mua"). Id tra theo MÃ ở
 `app/core/central_purchasing.py`, không gõ cứng (id local / dev / prod khác nhau).
 
     docker compose exec -T api python scripts/backfill_central_purchasing_dept.py            # xem thử (mặc định)
@@ -20,11 +20,11 @@ làm dữ liệu sạch cho báo cáo / bộ lọc / người đọc thẳng DB.
      của thu mua chung.
   2. `tab_payable.department_id = 0`: CHỈ khoản nợ CÓ ĐƠN (`po_id > 0`) mà đơn do phòng mặc định
      xử lý (`handler_dept_id` = 0 hoặc id phòng mặc định) — đúng luật `debt_dept_of` (bao-CR-484).
-     Nợ không có đơn giữ `0` (ở đó `0` nghĩa là «không gắn phòng»); nợ `0` mà đơn thuộc phòng
+     Nợ không có đơn giữ `0` (ở đó `0` nghĩa là "không gắn phòng"); nợ `0` mà đơn thuộc phòng
      khác thì bỏ qua và báo — đó là nợ chưa chạy `resync_departments_from_orders`.
   3. `tab_payment_request.department_id = 0`: CHỈ phiếu có gắn khoản nợ, và MỌI khoản nợ gắn
      vào đều là nợ của phòng mặc định (sau bước 2). Phiếu gõ tay / không gắn nợ / nợ không có đơn
-     giữ `0` (ở đó `0` nghĩa là «phiếu cũ, không gắn phòng», xem `get_hanging_lines`).
+     giữ `0` (ở đó `0` nghĩa là "phiếu cũ, không gắn phòng", xem `get_hanging_lines`).
   4. `tab_category_assignee.department_id = 0` → id phòng mặc định. Khóa duy nhất là (phòng,
      phân loại): phân loại đã có SẴN dòng của phòng mặc định thì là XUNG ĐỘT — bỏ qua, in ra để
      người quản trị tự chọn giữ dòng nào trên màn Phân công phụ trách. Không xóa dòng nào.

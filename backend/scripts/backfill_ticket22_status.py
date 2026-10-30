@@ -1,9 +1,9 @@
 """bao-CR-292 (ticket 22) — chia lại trạng thái phiếu YCMH cũ theo bộ ba mốc mới.
 
 Từ bao-CR-292, cụm "Đang xử lý" tách thành ba mốc theo mã đơn MISA + độ phủ mã hàng:
-  processing «Đang xử lý»   — đã có ĐMH (kể cả Nháp) nhưng chưa đơn nào nhập MISA
-  purchasing «Đang mua hàng» — có ĐMH nhập MISA nhưng mới phủ một phần mã hàng
-  purchased  «Đã mua hàng»  — mọi mã hàng (trừ dòng Hủy) đều có ĐMH nhập MISA
+  processing "Đang xử lý"   — đã có ĐMH (kể cả Nháp) nhưng chưa đơn nào nhập MISA
+  purchasing "Đang mua hàng" — có ĐMH nhập MISA nhưng mới phủ một phần mã hàng
+  purchased  "Đã mua hàng"  — mọi mã hàng (trừ dòng Hủy) đều có ĐMH nhập MISA
 Đồng thời mốc rời 'dispatched' hạ xuống "đã có ĐMH" (trước phải có dòng đã đặt hàng).
 
 Phiếu cũ chỉ tự tính lại khi có ai đụng vào ĐMH liên quan — script này quét một lượt

@@ -11,8 +11,8 @@ nhãn nút và nhãn ô trên màn hình, thêm ba bài mới — *tình huống
 *câu báo lỗi*, và tách phần Nhân sự làm ba bài (quỹ · danh mục · phân quyền).
 Lý do tách: bài gộp cũ dài mà vẫn hụt, người đọc phải tự suy phần còn thiếu.
 
-Bản 3 (22/10/2026, duoc-CR-670): thêm «loại nghỉ bắt buộc đính kèm» (CR-661) vào bài Nộp đơn / Câu báo lỗi /
-Loại nghỉ, và mục «Kết sổ cuối năm và bảng Đối chiếu» (CR-664) vào bài Quỹ phép của phòng Nhân sự.
+Bản 3 (22/10/2026, duoc-CR-670): thêm "loại nghỉ bắt buộc đính kèm" (CR-661) vào bài Nộp đơn / Câu báo lỗi /
+Loại nghỉ, và mục "Kết sổ cuối năm và bảng Đối chiếu" (CR-664) vào bài Quỹ phép của phòng Nhân sự.
 
 Chạy trong container api:
     docker compose exec -T api python scripts/seed_help_nghi_phep.py
@@ -112,7 +112,7 @@ TREE = {
 <tr><td><strong>Quỹ phép</strong></td><td>Số ngày của <strong>một người × một năm × một loại nghỉ</strong>.</td></tr>
 </tbody>
 </table>
-<p>⚠️ Muốn xin nghỉ thì <strong>nộp đơn</strong> ở đây, <strong>đừng</strong> vào Văn thư tạo «Giấy nghỉ phép» — làm tay ra một tờ giấy không gắn với quỹ phép nào, và không ai được báo để duyệt.</p>
+<p>⚠️ Muốn xin nghỉ thì <strong>nộp đơn</strong> ở đây, <strong>đừng</strong> vào Văn thư tạo <strong>Giấy nghỉ phép</strong> — làm tay ra một tờ giấy không gắn với quỹ phép nào, và không ai được báo để duyệt.</p>
 
 <h2>Vòng đời một tờ đơn</h2>
 <pre>                gửi duyệt              ký chặng cuối
@@ -126,10 +126,10 @@ Nháp  ─────────────────────►  Chờ
 
 <h2>Ba câu hay hỏi nhất</h2>
 <ul>
-<li><strong>«Vừa nộp đơn xong sao phép còn lại hụt luôn?»</strong> — đúng như vậy, và là cố ý. Xem {ref(QUY_PHEP, "Hiểu số ngày phép còn lại")}.</li>
-<li><strong>«Nộp rồi sửa được không?»</strong> — không. Chỉ sửa được lúc <em>Nháp</em> và <em>Trả về chỉnh sửa</em>. Xem {ref(THEO_DOI, "Theo dõi, sửa và hủy đơn")}.</li>
-<li><strong>«Không thấy menu Nghỉ phép»</strong> — gần như luôn là phân quyền, xem {ref(NS_QUYEN, "bài Phân quyền")}.</li>
-<li><strong>«Nghỉ hai đợt không liền nhau trong một đơn được không?»</strong> — được, bấm <strong>«+ Thêm khoảng ngày»</strong> ngay trên form. Xem {ref(NOP_DON, "Nộp đơn nghỉ phép")}.</li>
+<li><strong>Vừa nộp đơn xong sao phép còn lại hụt luôn?</strong> — đúng như vậy, và là cố ý. Xem {ref(QUY_PHEP, "Hiểu số ngày phép còn lại")}.</li>
+<li><strong>Nộp rồi sửa được không?</strong> — không. Chỉ sửa được lúc <em>Nháp</em> và <em>Trả về chỉnh sửa</em>. Xem {ref(THEO_DOI, "Theo dõi, sửa và hủy đơn")}.</li>
+<li><strong>Không thấy menu Nghỉ phép</strong> — gần như luôn là phân quyền, xem {ref(NS_QUYEN, "bài Phân quyền")}.</li>
+<li><strong>Nghỉ hai đợt không liền nhau trong một đơn được không?</strong> — được, bấm <strong>+ Thêm khoảng ngày</strong> ngay trên form. Xem {ref(NOP_DON, "Nộp đơn nghỉ phép")}.</li>
 </ul>
 
 <h2>Đọc theo việc bạn cần làm</h2>
@@ -147,23 +147,23 @@ Nháp  ─────────────────────►  Chờ
 <h2>Sáu bước</h2>
 <ol>
 <li>Vào <strong>Nhân sự ▸ Nghỉ phép</strong>, đứng ở tab <strong>Đơn nghỉ phép</strong>.</li>
-<li>Bấm nút <strong>«Nộp đơn nghỉ phép»</strong> ở góc trên bên phải.</li>
+<li>Bấm nút <strong>Nộp đơn nghỉ phép</strong> ở góc trên bên phải.</li>
 <li>Chọn <strong>Loại nghỉ</strong> <em>trước tiên</em> — mỗi loại một luật riêng, và chọn xong thì số ngày còn lại của loại đó hiện ra ngay dưới.</li>
 <li>Chọn <strong>Từ ngày / Đến ngày</strong> (kèm <strong>buổi</strong> nếu nghỉ nửa ngày). Ô <strong>Tổng số ngày</strong> tự điền.</li>
 <li>Viết <strong>Lý do nghỉ</strong>, khai <strong>Bàn giao công việc</strong>, điền số điện thoại liên hệ nếu công ty yêu cầu.</li>
-<li>Bấm <strong>«Lưu nháp»</strong>. Kiểm lại một lượt rồi bấm <strong>«Gửi duyệt»</strong>.</li>
+<li>Bấm <strong>Lưu nháp</strong>. Kiểm lại một lượt rồi bấm <strong>Gửi duyệt</strong>.</li>
 </ol>
-<p>⚠️ Nút <strong>«Gửi duyệt»</strong> chỉ hiện <strong>sau khi đơn đã được lưu ít nhất một lần</strong>. Chưa lưu mà không thấy nút thì không phải hỏng — bấm «Lưu nháp» trước.</p>
+<p>⚠️ Nút <strong>Gửi duyệt</strong> chỉ hiện <strong>sau khi đơn đã được lưu ít nhất một lần</strong>. Chưa lưu mà không thấy nút thì không phải hỏng — bấm <strong>Lưu nháp</strong> trước.</p>
 
 <h2>Từng ô trên đơn</h2>
 <table>
 <thead><tr><th>Ô</th><th>Bắt buộc</th><th>Ghi gì / cần biết</th></tr></thead>
 <tbody>
 <tr><td><strong>Loại nghỉ</strong></td><td>Có</td><td>Quyết định mọi luật còn lại: có trừ quỹ không, phải báo trước mấy ngày, tối đa mấy ngày một lần, có trừ cuối tuần và ngày lễ không.</td></tr>
-<tr><td><strong>Tổng số ngày</strong></td><td>Có (tự điền)</td><td>Hệ tính sẵn và <strong>đã trừ thứ Bảy, Chủ nhật, ngày lễ</strong>. Gõ đè được — lúc đó dòng chú thích đổi thành <em>«Bạn đang nhập tay. Hệ thống gợi ý N ngày.»</em> để bạn biết mình đang lệch với máy.</td></tr>
+<tr><td><strong>Tổng số ngày</strong></td><td>Có (tự điền)</td><td>Hệ tính sẵn và <strong>đã trừ thứ Bảy, Chủ nhật, ngày lễ</strong>. Gõ đè được — lúc đó dòng chú thích đổi thành <em>Bạn đang nhập tay. Hệ thống gợi ý N ngày.</em> để bạn biết mình đang lệch với máy.</td></tr>
 <tr><td><strong>Từ ngày</strong> + <strong>Buổi bắt đầu</strong></td><td>Có</td><td>Buổi: <em>Cả ngày · Buổi sáng · Buổi chiều</em>.</td></tr>
 <tr><td><strong>Đến ngày</strong> + <strong>Buổi kết thúc</strong></td><td>Có</td><td>Nghỉ một ngày thì để hai ô ngày bằng nhau.</td></tr>
-<tr><td><strong>Lý do nghỉ</strong></td><td>Có, khi gửi duyệt</td><td>Người duyệt đọc đúng dòng này để quyết. Viết cụ thể, đừng viết «việc riêng».</td></tr>
+<tr><td><strong>Lý do nghỉ</strong></td><td>Có, khi gửi duyệt</td><td>Người duyệt đọc đúng dòng này để quyết. Viết cụ thể, đừng viết <em>việc riêng</em>.</td></tr>
 <tr><td><strong>Bàn giao công việc</strong></td><td>Không, nhưng nên</td><td>Ai gánh việc gì thay bạn. <strong>Thiếu người bàn giao là lý do bị trả đơn phổ biến nhất.</strong></td></tr>
 <tr><td><strong>Điện thoại liên hệ khi nghỉ</strong></td><td>Không</td><td>Số gọi được trong thời gian nghỉ.</td></tr>
 <tr><td><strong>Địa chỉ khi nghỉ</strong></td><td>Không</td><td>Nơi ở trong thời gian nghỉ (đi tỉnh, về quê…).</td></tr>
@@ -171,10 +171,10 @@ Nháp  ─────────────────────►  Chờ
 </table>
 
 <h2>Số ngày phép còn lại — ô quan trọng nhất</h2>
-<p>Ngay dưới «Loại nghỉ» và «Tổng số ngày» có một dải chạy hết bề ngang, nói bạn còn bao nhiêu ngày của <em>chính loại nghỉ vừa chọn</em>. Ba trạng thái của dải này:</p>
+<p>Ngay dưới <strong>Loại nghỉ</strong> và <strong>Tổng số ngày</strong> có một dải chạy hết bề ngang, nói bạn còn bao nhiêu ngày của <em>chính loại nghỉ vừa chọn</em>. Ba trạng thái của dải này:</p>
 <ul>
 <li><strong>Còn đủ</strong> — hiện số còn lại trên tổng quỹ, cứ thế gửi duyệt.</li>
-<li><strong>Xin vượt quỹ</strong> — cảnh báo ngay tại chỗ, kèm gợi ý chuyển sang <strong>«Nghỉ không lương»</strong>. Đừng bấm gửi duyệt, backend cũng chặn.</li>
+<li><strong>Xin vượt quỹ</strong> — cảnh báo ngay tại chỗ, kèm gợi ý chuyển sang <strong>Nghỉ không lương</strong>. Đừng bấm gửi duyệt, backend cũng chặn.</li>
 <li><strong>Loại nghỉ không trừ quỹ</strong> — nói thẳng là không giới hạn, chứ không hiện số <code>0</code> gây hiểu nhầm là hết phép.</li>
 </ul>
 <p>Xin <strong>đúng bằng</strong> số còn lại thì <strong>không</strong> bị cảnh báo — đó là hợp lệ. Chi tiết cách con số này được tính: {ref(QUY_PHEP, "Hiểu số ngày phép còn lại")}.</p>
@@ -187,19 +187,19 @@ Nháp  ─────────────────────►  Chờ
 <tr><td>Trừ phép chưa</td><td><strong>Chưa</strong></td><td><strong>Trừ ngay</strong> (giữ chỗ)</td></tr>
 <tr><td>Kiểm nhập đủ</td><td>Không kiểm</td><td>Kiểm — thiếu ô nào là chặn</td></tr>
 <tr><td>Sửa lại được</td><td>Thoải mái</td><td><strong>Khóa</strong></td></tr>
-<tr><td>Xóa được</td><td>Được (nút <strong>«Xóa đơn»</strong>)</td><td>Không — chỉ <strong>hủy</strong></td></tr>
+<tr><td>Xóa được</td><td>Được (nút <strong>Xóa đơn</strong>)</td><td>Không — chỉ <strong>hủy</strong></td></tr>
 </tbody>
 </table>
 <p>Cứ lưu nháp thoải mái rồi hoàn thiện sau: hệ chỉ kiểm "nhập đủ" ở bước gửi duyệt.</p>
 
 <h2>Loại nghỉ bắt buộc đính kèm giấy tờ</h2>
-<p>Một số loại nghỉ (thường là <strong>Nghỉ ốm</strong>, <strong>Nghỉ vợ sinh con</strong>) được phòng Nhân sự bật cờ <strong>«Bắt buộc đính kèm»</strong>: đơn phải có <strong>ít nhất một tệp</strong> (giấy khám bệnh, giấy chứng sinh…) thì mới <strong>gửi duyệt</strong> được. <strong>Lưu nháp thì không bị chặn.</strong></p>
+<p>Một số loại nghỉ (thường là <strong>Nghỉ ốm</strong>, <strong>Nghỉ vợ sinh con</strong>) được phòng Nhân sự bật cờ <strong>Bắt buộc đính kèm</strong>: đơn phải có <strong>ít nhất một tệp</strong> (giấy khám bệnh, giấy chứng sinh…) thì mới <strong>gửi duyệt</strong> được. <strong>Lưu nháp thì không bị chặn.</strong></p>
 <ol>
-<li>Điền đơn, bấm <strong>«Lưu nháp»</strong>. Mục <strong>«Tệp đính kèm»</strong> chỉ dùng được sau khi đơn đã được lưu, vì tệp phải gắn vào một tờ đơn đã có số.</li>
-<li>Ở mục <strong>«Tệp đính kèm»</strong>, tải giấy tờ lên. Khi đã chọn loại nghỉ bắt buộc, mục này hiện <strong>dấu bắt buộc</strong> và dòng chữ đỏ <em>«Loại nghỉ «Nghỉ ốm» bắt buộc đính kèm giấy tờ: cần có ít nhất một tệp trước khi gửi duyệt.»</em></li>
-<li>Bấm <strong>«Gửi duyệt»</strong>.</li>
+<li>Điền đơn, bấm <strong>Lưu nháp</strong>. Mục <strong>Tệp đính kèm</strong> chỉ dùng được sau khi đơn đã được lưu, vì tệp phải gắn vào một tờ đơn đã có số.</li>
+<li>Ở mục <strong>Tệp đính kèm</strong>, tải giấy tờ lên. Khi đã chọn loại nghỉ bắt buộc, mục này hiện <strong>dấu bắt buộc</strong> và dòng chữ đỏ <em>Loại nghỉ <strong>Nghỉ ốm</strong> bắt buộc đính kèm giấy tờ: cần có ít nhất một tệp trước khi gửi duyệt.</em></li>
+<li>Bấm <strong>Gửi duyệt</strong>.</li>
 </ol>
-<p>Bấm «Gửi duyệt» khi chưa có tệp thì màn hình báo ngay <em>«Loại nghỉ «Nghỉ ốm» bắt buộc đính kèm giấy tờ — tải tệp lên ở mục «Tệp đính kèm» rồi gửi duyệt.»</em> và đơn vẫn nằm ở trạng thái Nháp, phép chưa bị giữ chỗ. Đơn khai nhiều loại nghỉ thì chỉ cần <strong>một</strong> loại bắt buộc là cả đơn phải có tệp.</p>
+<p>Bấm <strong>Gửi duyệt</strong> khi chưa có tệp thì màn hình báo ngay <em>Loại nghỉ <strong>Nghỉ ốm</strong> bắt buộc đính kèm giấy tờ — tải tệp lên ở mục <strong>Tệp đính kèm</strong> rồi gửi duyệt.</em> và đơn vẫn nằm ở trạng thái Nháp, phép chưa bị giữ chỗ. Đơn khai nhiều loại nghỉ thì chỉ cần <strong>một</strong> loại bắt buộc là cả đơn phải có tệp.</p>
 
 <h2>Nghỉ nửa ngày</h2>
 <p>Đặt <strong>Từ ngày = Đến ngày</strong>, rồi chọn <strong>Buổi bắt đầu</strong> và <strong>Buổi kết thúc</strong> là <em>Buổi sáng</em> (hoặc cả hai là <em>Buổi chiều</em>). Tổng số ngày ra <strong>0,5</strong> và quỹ trừ đúng nửa ngày.</p>
@@ -209,24 +209,24 @@ Nháp  ─────────────────────►  Chờ
 <p>Ví dụ: nghỉ <strong>27/10</strong> cả ngày, rồi nghỉ tiếp từ <strong>chiều 03/11 đến hết 07/11</strong>. Không cần lập hai đơn — khai cả hai đợt trong <strong>một</strong> tờ đơn.</p>
 <ol>
 <li>Điền khoảng đầu như bình thường (Từ ngày / Đến ngày, kèm buổi).</li>
-<li>Bấm nút <strong>«+ Thêm khoảng ngày»</strong> dưới ô ngày. Mỗi khoảng hiện trong một khung riêng, tiêu đề dạng <strong>«Khoảng ngày 2 · 4,5 ngày»</strong> (số ngày của khoảng do hệ tính sẵn). Nút <strong>X</strong> ở góc khung để bỏ khoảng đó.</li>
-<li>Dòng cuối danh sách cộng giúp bạn: <strong>«Cộng 2 khoảng: 5,5 ngày»</strong>. Đây cũng là <strong>Tổng số ngày</strong> của đơn; gõ đè được ở ô Tổng số ngày như mọi đơn khác (không gõ đè riêng từng khoảng).</li>
+<li>Bấm nút <strong>+ Thêm khoảng ngày</strong> dưới ô ngày. Mỗi khoảng hiện trong một khung riêng, tiêu đề dạng <strong>Khoảng ngày 2 · 4,5 ngày</strong> (số ngày của khoảng do hệ tính sẵn). Nút <strong>X</strong> ở góc khung để bỏ khoảng đó.</li>
+<li>Dòng cuối danh sách cộng giúp bạn: <strong>Cộng 2 khoảng: 5,5 ngày</strong>. Đây cũng là <strong>Tổng số ngày</strong> của đơn; gõ đè được ở ô Tổng số ngày như mọi đơn khác (không gõ đè riêng từng khoảng).</li>
 <li>Lưu nháp rồi Gửi duyệt như bình thường.</li>
 </ol>
-<p>Những ngày <strong>nằm giữa hai khoảng</strong> (trong ví dụ là 28/10 – 02/11) là ngày đi làm: <strong>không bị trừ phép</strong>, và không hiện nghỉ ở Lịch nghỉ hay «Ai làm / ai nghỉ».</p>
+<p>Những ngày <strong>nằm giữa hai khoảng</strong> (trong ví dụ là 28/10 – 02/11) là ngày đi làm: <strong>không bị trừ phép</strong>, và không hiện nghỉ ở Lịch nghỉ hay <strong>Ai làm / ai nghỉ</strong>.</p>
 <table>
 <thead><tr><th>Cần biết</th><th>Chi tiết</th></tr></thead>
 <tbody>
-<tr><td>Tối đa</td><td><strong>20 khoảng</strong> mỗi đơn. Đủ 20 thì nút «+ Thêm khoảng ngày» tắt, có dòng chú thích.</td></tr>
-<tr><td>Không chồng ngày</td><td>Hai khoảng trong cùng một đơn không được trùng ngày. Trùng thì khung hiện chữ đỏ <em>«Khoảng này chồng ngày với một khoảng khác — các khoảng không được trùng ngày.»</em></td></tr>
-<tr><td>Cùng một năm</td><td>Đơn có <strong>từ hai khoảng trở lên</strong> thì mọi khoảng phải cùng một năm (vì phép trừ theo năm). Ví dụ 29/12 và 05/01 sang năm: hệ báo <em>«Đơn nhiều khoảng ngày phải nằm trong cùng một năm. Tách thành hai đơn…»</em> — lập một đơn cho năm trước, một đơn cho năm sau. Đơn chỉ <strong>một</strong> khoảng vắt sang năm mới thì vẫn như trước.</td></tr>
-<tr><td>Nghỉ theo giờ</td><td>Nghỉ <strong>theo giờ chỉ khai được một khoảng</strong>. Chọn «Theo giờ» thì nút «+ Thêm khoảng ngày» ẩn; đang có từ hai khoảng thì không chọn được «Theo giờ».</td></tr>
+<tr><td>Tối đa</td><td><strong>20 khoảng</strong> mỗi đơn. Đủ 20 thì nút <strong>+ Thêm khoảng ngày</strong> tắt, có dòng chú thích.</td></tr>
+<tr><td>Không chồng ngày</td><td>Hai khoảng trong cùng một đơn không được trùng ngày. Trùng thì khung hiện chữ đỏ <em>Khoảng này chồng ngày với một khoảng khác — các khoảng không được trùng ngày.</em></td></tr>
+<tr><td>Cùng một năm</td><td>Đơn có <strong>từ hai khoảng trở lên</strong> thì mọi khoảng phải cùng một năm (vì phép trừ theo năm). Ví dụ 29/12 và 05/01 sang năm: hệ báo <em>Đơn nhiều khoảng ngày phải nằm trong cùng một năm. Tách thành hai đơn…</em> — lập một đơn cho năm trước, một đơn cho năm sau. Đơn chỉ <strong>một</strong> khoảng vắt sang năm mới thì vẫn như trước.</td></tr>
+<tr><td>Nghỉ theo giờ</td><td>Nghỉ <strong>theo giờ chỉ khai được một khoảng</strong>. Chọn <strong>Theo giờ</strong> thì nút <strong>+ Thêm khoảng ngày</strong> ẩn; đang có từ hai khoảng thì không chọn được <strong>Theo giờ</strong>.</td></tr>
 <tr><td>Nhiều loại nghỉ</td><td>Vẫn dùng bảng loại nghỉ như cũ: các khoảng chỉ cho ra tổng số ngày, bạn chia tổng đó vào từng loại. Loại nghỉ <strong>không gắn</strong> với một khoảng cụ thể.</td></tr>
 <tr><td>Trùng đơn khác</td><td>Hệ kiểm trùng ngày <strong>theo từng khoảng</strong>: một đơn khác nằm gọn trong khe giữa hai khoảng thì vẫn gửi được; chạm vào một khoảng thì bị chặn.</td></tr>
 </tbody>
 </table>
-<p>Sau khi gửi, người duyệt thấy mục <strong>«Thời gian nghỉ»</strong> liệt kê từng khoảng (thay cho hai dòng Từ ngày / Đến ngày). Ở danh sách đơn, cột <em>Đến ngày</em> ghi thêm chữ mờ, ví dụ <strong>«07/11/2026 · 2 khoảng»</strong>. Bản in liệt kê đủ các khoảng.</p>
-<p><strong>Nhờ Trợ lý AI soạn:</strong> bạn có thể nói «nghỉ 27/10 và chiều 3/11 tới 7/11» — Trợ lý soạn nháp có đủ hai khoảng, bạn kiểm lại rồi bấm tạo đơn.</p>
+<p>Sau khi gửi, người duyệt thấy mục <strong>Thời gian nghỉ</strong> liệt kê từng khoảng (thay cho hai dòng Từ ngày / Đến ngày). Ở danh sách đơn, cột <em>Đến ngày</em> ghi thêm chữ mờ, ví dụ <strong>07/11/2026 · 2 khoảng</strong>. Bản in liệt kê đủ các khoảng.</p>
+<p><strong>Nhờ Trợ lý AI soạn:</strong> bạn có thể nói <em>nghỉ 27/10 và chiều 3/11 tới 7/11</em> — Trợ lý soạn nháp có đủ hai khoảng, bạn kiểm lại rồi bấm tạo đơn.</p>
 
 <h2>Nộp hộ người khác</h2>
 <p>Hành chính hoặc trợ lý nộp hộ được: điền <strong>người nghỉ</strong> vào ô riêng trên đơn. Bỏ trống ô đó thì người nghỉ chính là người đang gõ.</p>
@@ -234,7 +234,7 @@ Nháp  ─────────────────────►  Chờ
 
 <h2>Gửi duyệt xong thì gì xảy ra</h2>
 <ol>
-<li>Số ngày bị <strong>giữ chỗ</strong> ngay, trừ khỏi «còn lại».</li>
+<li>Số ngày bị <strong>giữ chỗ</strong> ngay, trừ khỏi <strong>còn lại</strong>.</li>
 <li>Đơn khóa, không sửa được nữa.</li>
 <li>Việc rơi vào hộp <em>Cần tôi duyệt</em> của người ký chặng 1, kèm thông báo chuông.</li>
 <li>Ký hết các chặng thì đơn thành <strong>Đã duyệt</strong>: quỹ trừ thật, và hệ <strong>tự sinh Giấy nghỉ phép</strong> bên Văn thư.</li>
@@ -246,7 +246,7 @@ Nháp  ─────────────────────►  Chờ
             "icon": "wallet",
             "summary": "Công thức, ví dụ bằng số, vì sao vừa nộp đơn đã thấy hụt ngày, thâm niên",
             "content": f"""<h2>Hiểu số ngày phép còn lại</h2>
-<p>Con số này xuất hiện ở <strong>ba chỗ</strong>: dải ngay dưới ô «Loại nghỉ» khi đang điền đơn · cột <strong>Còn lại</strong> ở bảng <em>Quỹ phép năm</em> · và thẻ chi tiết của một dòng quỹ. Ba chỗ cùng một công thức, không có chỗ nào tính riêng.</p>
+<p>Con số này xuất hiện ở <strong>ba chỗ</strong>: dải ngay dưới ô <strong>Loại nghỉ</strong> khi đang điền đơn · cột <strong>Còn lại</strong> ở bảng <em>Quỹ phép năm</em> · và thẻ chi tiết của một dòng quỹ. Ba chỗ cùng một công thức, không có chỗ nào tính riêng.</p>
 
 <h2>Công thức</h2>
 <pre>còn lại = (hạn mức + thâm niên + chuyển năm trước + điều chỉnh tay)
@@ -272,9 +272,9 @@ Nháp  ─────────────────────►  Chờ
 <p>Chị A mở form nộp đơn ra sẽ thấy <strong>7</strong>, không phải 10. Ba ngày kia <em>chưa</em> nghỉ nhưng <em>đã</em> bị giữ chỗ.</p>
 
 <h2>Vì sao vừa nộp đơn đã thấy hụt ngày?</h2>
-<p><strong>Vì «đang chờ duyệt» ĐÃ bị trừ khỏi «còn lại».</strong> Nộp đơn 3 ngày là số còn lại tụt ngay 3 ngày, chưa cần ai duyệt.</p>
+<p><strong>Vì <em>đang chờ duyệt</em> ĐÃ bị trừ khỏi <strong>còn lại</strong>.</strong> Nộp đơn 3 ngày là số còn lại tụt ngay 3 ngày, chưa cần ai duyệt.</p>
 <p>Đây là <strong>cố ý</strong>: không giữ chỗ như vậy thì nộp mười đơn liền tay đều lọt qua chốt kiểm, vì đơn nào cũng thấy quỹ còn nguyên. Lỗi đó chỉ lộ ra khi đã có người nghỉ thừa hai tuần.</p>
-<p>Ngày bị giữ chỗ được <strong>trả lại ngay</strong> trong cả ba trường hợp: đơn bị <strong>từ chối</strong> · bị <strong>trả về chỉnh sửa</strong> · bạn <strong>tự hủy</strong>. Hủy một đơn <strong>đã duyệt</strong> thì hoàn lại phần «đã nghỉ».</p>
+<p>Ngày bị giữ chỗ được <strong>trả lại ngay</strong> trong cả ba trường hợp: đơn bị <strong>từ chối</strong> · bị <strong>trả về chỉnh sửa</strong> · bạn <strong>tự hủy</strong>. Hủy một đơn <strong>đã duyệt</strong> thì hoàn lại phần <em>đã nghỉ</em>.</p>
 
 <h2>Thâm niên</h2>
 <p>Bảng bậc mặc định:</p>
@@ -292,7 +292,7 @@ Nháp  ─────────────────────►  Chờ
 <p>⚠️ Hồ sơ <strong>chưa có ngày vào làm</strong> thì thâm niên tính bằng <strong>0</strong> và quỹ thiếu ngày. Màn hình có cảnh báo riêng cho ca này — thấy nó thì báo phòng Nhân sự nhập bổ sung, đừng bỏ qua.</p>
 
 <h2>Không có ứng phép</h2>
-<p>Xin vượt quỹ bị <strong>chặn ngay lúc gửi duyệt</strong>, không phải chờ ai đó phát hiện. Hệ <strong>không ghi nợ phép</strong>. Muốn nghỉ thêm thì chọn loại <strong>«Nghỉ không lương»</strong> — câu chặn của hệ nói thẳng đường đó.</p>
+<p>Xin vượt quỹ bị <strong>chặn ngay lúc gửi duyệt</strong>, không phải chờ ai đó phát hiện. Hệ <strong>không ghi nợ phép</strong>. Muốn nghỉ thêm thì chọn loại <strong>Nghỉ không lương</strong> — câu chặn của hệ nói thẳng đường đó.</p>
 <p>Ghi nợ nghe thì tiện nhưng kéo theo cả một sổ công nợ phép và luật trừ lương khi nghỉ việc, nên bản này cố ý không làm.</p>
 
 <h2>Thấy số sai thì hỏi ai</h2>
@@ -335,7 +335,7 @@ Nháp  ─────────────────────►  Chờ
 <tr><td><strong>Đã hủy</strong></td><td>Bạn tự rút.</td><td>Trả lại</td></tr>
 </tbody>
 </table>
-<p>⚠️ <strong>«Từ chối» khác «Trả về chỉnh sửa»</strong> — một cái là dẹp, một cái là mời sửa. Hai chữ giống nhau về cảm giác nhưng khác hẳn về việc bạn phải làm tiếp. Đọc kỹ ô lý do người duyệt ghi; lý do luôn hiện trên dòng thời gian của đơn.</p>
+<p>⚠️ <strong>Từ chối khác Trả về chỉnh sửa</strong> — một cái là dẹp, một cái là mời sửa. Hai chữ giống nhau về cảm giác nhưng khác hẳn về việc bạn phải làm tiếp. Đọc kỹ ô lý do người duyệt ghi; lý do luôn hiện trên dòng thời gian của đơn.</p>
 
 <h2>Ở trạng thái nào thì làm được gì</h2>
 <table>
@@ -356,15 +356,15 @@ Nháp  ─────────────────────►  Chờ
 </ul>
 
 <h2>Hủy đơn</h2>
-<p>Bấm <strong>«Hủy đơn»</strong> ở màn chi tiết, hộp thoại <em>Hủy đơn nghỉ phép</em> hiện ra và <strong>bắt ghi lý do</strong> (gõ toàn dấu cách không tính là lý do). <strong>Hủy được cả khi đơn đã duyệt</strong> — đổi kế hoạch là chuyện thường, và ngày phép được hoàn lại.</p>
+<p>Bấm <strong>Hủy đơn</strong> ở màn chi tiết, hộp thoại <em>Hủy đơn nghỉ phép</em> hiện ra và <strong>bắt ghi lý do</strong> (gõ toàn dấu cách không tính là lý do). <strong>Hủy được cả khi đơn đã duyệt</strong> — đổi kế hoạch là chuyện thường, và ngày phép được hoàn lại.</p>
 <p>Đơn đang chạy trong luồng thì hệ <strong>rút phiên duyệt trước rồi mới hủy</strong>, nên người duyệt không còn thấy việc đó nữa.</p>
 <p>⚠️ <strong>Chỉ chính người nộp</strong> mới hủy được đơn đang nằm trong luồng. Người khác muốn chặn thì dùng <strong>Trả về</strong> hoặc <strong>Từ chối</strong> — hai nút đó có ô ghi lý do gửi về cho người nộp.</p>
 
 <h2>Sửa rồi gửi lại</h2>
-<p>Đơn bị <em>Trả về chỉnh sửa</em> thì mở ra, sửa đúng chỗ người duyệt nêu, bấm <strong>«Lưu nháp»</strong> rồi <strong>«Gửi duyệt»</strong> lần nữa. Đơn <strong>không</strong> bị đóng và <strong>giữ nguyên số đơn</strong> — người duyệt nhìn thấy đúng tờ họ đã trả về.</p>
+<p>Đơn bị <em>Trả về chỉnh sửa</em> thì mở ra, sửa đúng chỗ người duyệt nêu, bấm <strong>Lưu nháp</strong> rồi <strong>Gửi duyệt</strong> lần nữa. Đơn <strong>không</strong> bị đóng và <strong>giữ nguyên số đơn</strong> — người duyệt nhìn thấy đúng tờ họ đã trả về.</p>
 
 <h2>Không thấy đơn mình đang tìm?</h2>
-<p>Bạn chỉ đọc được đơn <strong>trong phạm vi dữ liệu</strong> của mình. Đơn ngoài phạm vi thì hệ báo «Không tìm thấy» — không có nghĩa là đơn đó không tồn tại, chỉ là bạn không được xem. Lý do nghỉ là chuyện riêng tư nên hệ cố ý chặt tay ở chỗ này.</p>
+<p>Bạn chỉ đọc được đơn <strong>trong phạm vi dữ liệu</strong> của mình. Đơn ngoài phạm vi thì hệ báo <em>Không tìm thấy</em> — không có nghĩa là đơn đó không tồn tại, chỉ là bạn không được xem. Lý do nghỉ là chuyện riêng tư nên hệ cố ý chặt tay ở chỗ này.</p>
 <p>Cần xem rộng hơn thì xin thêm phạm vi ở {ref(NS_QUYEN, "màn Phân quyền")}, đừng nhờ người khác chụp màn hình gửi qua.</p>""",
         },
         {
@@ -372,7 +372,7 @@ Nháp  ─────────────────────►  Chờ
             "icon": "workflow",
             "summary": "Duyệt ngay trong màn Nghỉ phép, đọc gì trước khi ký, ba nút và hậu quả",
             "content": f"""<h2>Duyệt đơn nghỉ phép</h2>
-<p>Dành cho người được giao ký. Bạn <strong>không phải sang màn Phê duyệt</strong> — duyệt ngay trong <strong>Nhân sự ▸ Nghỉ phép ▸ tab «Cần tôi duyệt»</strong>.</p>
+<p>Dành cho người được giao ký. Bạn <strong>không phải sang màn Phê duyệt</strong> — duyệt ngay trong <strong>Nhân sự ▸ Nghỉ phép ▸ tab Cần tôi duyệt</strong>.</p>
 
 <h2>Nhận việc</h2>
 <ul>
@@ -385,9 +385,9 @@ Nháp  ─────────────────────►  Chờ
 <p>Thẻ tóm tắt trên đầu trang chi tiết gom đủ bốn thứ để quyết mà không phải đi lục:</p>
 <ol>
 <li><strong>Loại nghỉ và số ngày</strong> — kèm số ngày còn lại của người xin.</li>
-<li><strong>Khoảng ngày</strong> — kèm buổi, nếu khác «cả ngày».</li>
+<li><strong>Khoảng ngày</strong> — kèm buổi, nếu khác <em>cả ngày</em>.</li>
 <li><strong>Lý do nghỉ</strong>.</li>
-<li><strong>Bàn giao công việc</strong> — mục này <strong>luôn hiện, kể cả khi trống</strong>, và khi trống thì nói thẳng <em>«Người nộp chưa khai ai nhận bàn giao trong thời gian nghỉ.»</em></li>
+<li><strong>Bàn giao công việc</strong> — mục này <strong>luôn hiện, kể cả khi trống</strong>, và khi trống thì nói thẳng <em>Người nộp chưa khai ai nhận bàn giao trong thời gian nghỉ.</em></li>
 </ol>
 <p>⚠️ Mục bàn giao luôn hiện là <strong>cố ý</strong>: người duyệt phải phân biệt được <em>"người nộp chưa khai ai"</em> với <em>"màn hình thiếu mục đó"</em>. Mà thiếu người bàn giao chính là <strong>lý do trả đơn phổ biến nhất</strong> — nó phải nói thành lời, không để suy ra từ một khoảng trống.</p>
 <p>Bên dưới là <strong>dòng thời gian duyệt</strong>: ai đã ký chặng nào, lúc mấy giờ, ghi ý kiến gì.</p>
@@ -403,15 +403,15 @@ Nháp  ─────────────────────►  Chờ
 </table>
 <p><strong>Duyệt</strong> không bắt ghi lý do, ô ý kiến để trống cũng bấm được. <strong>Trả về</strong> và <strong>Từ chối</strong> thì <strong>bắt buộc</strong> — nút không bấm được cho tới khi có chữ, và gõ toàn dấu cách không tính. Người nhận chỉ đọc được đúng dòng bạn ghi, nên viết cho rõ phải sửa gì:</p>
 <ul>
-<li><em>«Thiếu người bàn giao, bổ sung rồi gửi lại.»</em> — trả về</li>
-<li><em>«Trùng lịch nghỉ của cả phòng, dời sang tuần sau.»</em> — từ chối</li>
+<li><em>Thiếu người bàn giao, bổ sung rồi gửi lại.</em> — trả về</li>
+<li><em>Trùng lịch nghỉ của cả phòng, dời sang tuần sau.</em> — từ chối</li>
 </ul>
 
 <h2>Bốn điều đáng biết</h2>
 <ul>
 <li><strong>Đang có việc trên tờ đơn thì bạn đọc được nó</strong>, kể cả khi phạm vi dữ liệu của bạn không với tới — thường gặp với trưởng phòng Nhân sự ký chặng 2 cho nhân viên phòng khác. <strong>Ký xong quyền đó đóng lại</strong>; muốn xem lại thì vào tab <strong>Tôi đã duyệt</strong> (30 ngày gần đây).</li>
 <li><strong>Người nộp không tự duyệt đơn của mình</strong> — hệ loại họ khỏi danh sách người ký. Vì vậy mỗi chặng đều phải khai <strong>người dự phòng</strong>, nếu không thì trưởng phòng tự xin nghỉ sẽ không có ai ký và đơn kẹt.</li>
-<li>Chỗ nào <strong>chưa khai luồng duyệt</strong> thì người có quyền duyệt bấm <strong>«Duyệt đơn»</strong> thẳng trên đơn. Đơn <em>đang</em> chạy trong luồng thì đường tắt đó bị chặn — không chặn là mở một lối đi vòng qua cả luồng.</li>
+<li>Chỗ nào <strong>chưa khai luồng duyệt</strong> thì người có quyền duyệt bấm <strong>Duyệt đơn</strong> thẳng trên đơn. Đơn <em>đang</em> chạy trong luồng thì đường tắt đó bị chặn — không chặn là mở một lối đi vòng qua cả luồng.</li>
 <li>Duyệt xong <strong>không rút lại được</strong>. Cần chặn một đơn đã duyệt thì bảo người nộp <strong>hủy đơn</strong>, phép sẽ được hoàn.</li>
 </ul>
 <p>Cách khai luồng: {ref(NS_QUYEN, "bài Phân quyền và luồng duyệt")}.</p>""",
@@ -421,7 +421,7 @@ Nháp  ─────────────────────►  Chờ
             "icon": "users",
             "summary": "Ba chế độ ngày / tuần / tháng, cách lọc, và lịch KHÔNG hiện đơn nào",
             "content": f"""<h2>Xem Lịch nghỉ</h2>
-<p>Tab <strong>Lịch nghỉ</strong> trong <strong>Nhân sự ▸ Nghỉ phép</strong> — trả lời câu <em>«tuần sau ai nghỉ»</em> mà không phải mở từng tờ đơn.</p>
+<p>Tab <strong>Lịch nghỉ</strong> trong <strong>Nhân sự ▸ Nghỉ phép</strong> — trả lời câu <em>tuần sau ai nghỉ</em> mà không phải mở từng tờ đơn.</p>
 
 <h2>Thanh điều khiển</h2>
 <ul>
@@ -436,7 +436,7 @@ Nháp  ─────────────────────►  Chờ
 <tbody>
 <tr><td><strong>Ngày</strong></td><td>Danh sách người nghỉ hôm đó, kèm loại nghỉ và vị trí trong đợt (<em>ngày đầu · đang giữa đợt · ngày cuối</em>). Có ô tìm tên và ô lọc loại nghỉ.</td><td>Sáng ra muốn biết hôm nay vắng ai</td></tr>
 <tr><td><strong>Tuần</strong></td><td>Bảy ngày từ thứ Hai, mỗi ngày một cột người nghỉ.</td><td>Xếp lịch họp, phân ca</td></tr>
-<tr><td><strong>Tháng</strong></td><td>Lưới 42 ô. Mỗi ô liệt kê vài người, quá thì gộp thành nút <strong>«+N người nữa»</strong> — bấm vào là mở <strong>đúng ngày đó</strong> ở chế độ Ngày.</td><td>Nhìn toàn cảnh, tránh dồn nghỉ</td></tr>
+<tr><td><strong>Tháng</strong></td><td>Lưới 42 ô. Mỗi ô liệt kê vài người, quá thì gộp thành nút <strong>+N người nữa</strong> — bấm vào là mở <strong>đúng ngày đó</strong> ở chế độ Ngày.</td><td>Nhìn toàn cảnh, tránh dồn nghỉ</td></tr>
 </tbody>
 </table>
 <p>Ô lọc loại nghỉ ở chế độ Ngày <strong>chỉ bày loại có mặt trong ngày đó</strong>, và <strong>tự ẩn khi cả ngày chỉ có một loại</strong> — một lựa chọn thì lọc được gì.</p>
@@ -445,8 +445,8 @@ Nháp  ─────────────────────►  Chờ
 <ul>
 <li>Bấm vào một dòng để <strong>mở thẳng tờ đơn</strong>.</li>
 <li><strong>Ngày lễ</strong> hiện tên lễ ngay trên ô của nó, kèm ghi chú là ngày đó không tính vào phép.</li>
-<li>Không ai nghỉ thì lịch <strong>nói rõ</strong> («Không ai nghỉ ngày này.» / «Cả tuần này không ai nghỉ.») chứ không để bảng trống trơn — trống trơn thì không biết là không ai nghỉ hay là màn hình lỗi.</li>
-<li>Tìm không ra ai khớp bộ lọc thì câu báo <strong>khác hẳn</strong> câu «không ai nghỉ», để bạn biết là do bộ lọc.</li>
+<li>Không ai nghỉ thì lịch <strong>nói rõ</strong> (<em>Không ai nghỉ ngày này.</em> / <em>Cả tuần này không ai nghỉ.</em>) chứ không để bảng trống trơn — trống trơn thì không biết là không ai nghỉ hay là màn hình lỗi.</li>
+<li>Tìm không ra ai khớp bộ lọc thì câu báo <strong>khác hẳn</strong> câu <em>không ai nghỉ</em>, để bạn biết là do bộ lọc.</li>
 </ul>
 
 <p>Đơn nghỉ <strong>nhiều khoảng ngày</strong> chỉ tô đúng những ngày nằm trong từng khoảng; các ngày nằm giữa hai khoảng để trống (người đó đi làm).</p>
@@ -476,10 +476,10 @@ Nháp  ─────────────────────►  Chờ
 <p>⚠️ Hai đơn <strong>không được chồng ngày</strong> — cùng một ngày nằm trên hai đơn là bị chặn. Chia theo ngày liền mạch: ví dụ 05–09/10 phép năm, 12–16/10 không lương.</p>
 
 <h3>4. Nghỉ vắt qua cuối tuần hoặc ngày lễ</h3>
-<p>Cứ chọn khoảng ngày thật (ví dụ thứ Sáu đến thứ Ba). Hệ <strong>tự trừ</strong> thứ Bảy, Chủ nhật và ngày lễ ra khỏi «Tổng số ngày» — bạn không phải cắt đơn làm đôi.</p>
+<p>Cứ chọn khoảng ngày thật (ví dụ thứ Sáu đến thứ Ba). Hệ <strong>tự trừ</strong> thứ Bảy, Chủ nhật và ngày lễ ra khỏi <strong>Tổng số ngày</strong> — bạn không phải cắt đơn làm đôi.</p>
 
 <h3>5. Bộ phận làm cả thứ Bảy, hoặc chạy ca</h3>
-<p>Máy trừ cuối tuần theo lịch hành chính, mà lịch thật của bạn khác. <strong>Gõ đè «Tổng số ngày»</strong> cho đúng số ngày công thực tế. Chú thích dưới ô sẽ đổi thành <em>«Bạn đang nhập tay…»</em> — người duyệt nhìn vào biết con số là do bạn khai.</p>
+<p>Máy trừ cuối tuần theo lịch hành chính, mà lịch thật của bạn khác. <strong>Gõ đè Tổng số ngày</strong> cho đúng số ngày công thực tế. Chú thích dưới ô sẽ đổi thành <em>Bạn đang nhập tay…</em> — người duyệt nhìn vào biết con số là do bạn khai.</p>
 
 <h3>6. Cưới hỏi, tang chế</h3>
 <p>Chọn đúng loại nghỉ tương ứng. Hai loại này thường có <strong>trần 3 ngày mỗi lần</strong> — xin 5 ngày là bị chặn ngay lúc gửi duyệt.</p>
@@ -514,13 +514,13 @@ Nháp  ─────────────────────►  Chờ
 <table>
 <thead><tr><th>Câu bạn nhìn thấy</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td><em>«Không đủ phép: «Phép năm» còn 3 ngày, đơn này xin 5 ngày. Muốn nghỉ tiếp thì chọn loại «Nghỉ không lương».»</em></td><td>Xin vượt quỹ. Hệ không ghi nợ phép.</td><td>Giảm số ngày, hoặc tách phần dôi ra thành đơn <strong>Nghỉ không lương</strong>.</td></tr>
-<tr><td><em>«Đã có đơn «NP012» nghỉ từ … đến … trùng khoảng ngày này.»</em></td><td>Bạn đã có một đơn còn hiệu lực chồng lên khoảng ngày này.</td><td>Mở đơn NP012 ra xem. Muốn gộp thì hủy nó rồi nộp một đơn dài; muốn tách thì dời ngày cho khỏi chồng.</td></tr>
-<tr><td><em>«Thiếu «Lý do nghỉ» — nhập đủ trước khi gửi duyệt.»</em></td><td>Ô bắt buộc còn trống.</td><td>Điền rồi <strong>Lưu nháp</strong>, sau đó gửi duyệt lại.</td></tr>
-<tr><td><em>«Phép năm» phải nộp trước ít nhất 3 ngày.»</em></td><td>Không đủ số ngày báo trước. Đếm từ <strong>hôm nay</strong>, không phải từ ngày bạn lập đơn.</td><td>Dời ngày nghỉ ra xa hơn, hoặc chọn loại nghỉ không đòi báo trước (Nghỉ ốm).</td></tr>
-<tr><td><em>«Nghỉ cưới hỏi» chỉ cho nghỉ tối đa 3 ngày mỗi lần, đơn này xin 5.»</em></td><td>Vượt trần của loại nghỉ.</td><td>Cắt bớt, hoặc xin phần dôi bằng loại nghỉ khác.</td></tr>
-<tr><td><em>«Loại nghỉ «Nghỉ ốm» bắt buộc đính kèm giấy tờ (giấy khám bệnh, giấy chứng nhận…) — tải tệp lên ở mục «Tệp đính kèm» rồi gửi duyệt lại.»</em></td><td>Loại nghỉ này đòi giấy tờ mà đơn chưa có tệp nào.</td><td>Mở đơn (vẫn là Nháp), tải tệp ở mục <strong>«Tệp đính kèm»</strong>, rồi bấm <strong>«Gửi duyệt»</strong> lại. Chưa có giấy thì để Nháp, đừng lập đơn mới.</td></tr>
-<tr><td><em>«Loại nghỉ «Thai sản» không áp dụng cho hồ sơ này»</em></td><td>Loại nghỉ giới hạn theo giới tính, mà hồ sơ khai không khớp.</td><td>Hồ sơ khai sai thì báo phòng Nhân sự sửa; đúng thì chọn loại khác.</td></tr>
+<tr><td><em>Không đủ phép: <strong>Phép năm</strong> còn 3 ngày, đơn này xin 5 ngày. Muốn nghỉ tiếp thì chọn loại <strong>Nghỉ không lương</strong>.</em></td><td>Xin vượt quỹ. Hệ không ghi nợ phép.</td><td>Giảm số ngày, hoặc tách phần dôi ra thành đơn <strong>Nghỉ không lương</strong>.</td></tr>
+<tr><td><em>Đã có đơn <strong>NP012</strong> nghỉ từ … đến … trùng khoảng ngày này.</em></td><td>Bạn đã có một đơn còn hiệu lực chồng lên khoảng ngày này.</td><td>Mở đơn NP012 ra xem. Muốn gộp thì hủy nó rồi nộp một đơn dài; muốn tách thì dời ngày cho khỏi chồng.</td></tr>
+<tr><td><em>Thiếu <strong>Lý do nghỉ</strong> — nhập đủ trước khi gửi duyệt.</em></td><td>Ô bắt buộc còn trống.</td><td>Điền rồi <strong>Lưu nháp</strong>, sau đó gửi duyệt lại.</td></tr>
+<tr><td><em>Phép năm phải nộp trước ít nhất 3 ngày.</em></td><td>Không đủ số ngày báo trước. Đếm từ <strong>hôm nay</strong>, không phải từ ngày bạn lập đơn.</td><td>Dời ngày nghỉ ra xa hơn, hoặc chọn loại nghỉ không đòi báo trước (Nghỉ ốm).</td></tr>
+<tr><td><em>Nghỉ cưới hỏi chỉ cho nghỉ tối đa 3 ngày mỗi lần, đơn này xin 5.</em></td><td>Vượt trần của loại nghỉ.</td><td>Cắt bớt, hoặc xin phần dôi bằng loại nghỉ khác.</td></tr>
+<tr><td><em>Loại nghỉ <strong>Nghỉ ốm</strong> bắt buộc đính kèm giấy tờ (giấy khám bệnh, giấy chứng nhận…) — tải tệp lên ở mục <strong>Tệp đính kèm</strong> rồi gửi duyệt lại.</em></td><td>Loại nghỉ này đòi giấy tờ mà đơn chưa có tệp nào.</td><td>Mở đơn (vẫn là Nháp), tải tệp ở mục <strong>Tệp đính kèm</strong>, rồi bấm <strong>Gửi duyệt</strong> lại. Chưa có giấy thì để Nháp, đừng lập đơn mới.</td></tr>
+<tr><td><em>Loại nghỉ <strong>Thai sản</strong> không áp dụng cho hồ sơ này</em></td><td>Loại nghỉ giới hạn theo giới tính, mà hồ sơ khai không khớp.</td><td>Hồ sơ khai sai thì báo phòng Nhân sự sửa; đúng thì chọn loại khác.</td></tr>
 </tbody>
 </table>
 
@@ -528,14 +528,14 @@ Nháp  ─────────────────────►  Chờ
 <table>
 <thead><tr><th>Câu bạn nhìn thấy</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td><em>«Đến ngày» phải bằng hoặc sau «Từ ngày»</em></td><td>Chọn ngược ngày.</td><td>Đổi lại hai ô.</td></tr>
-<tr><td><em>«Khoảng thứ 2 (01/11 → 01/11) không có ngày làm việc nào theo lịch làm việc … Bỏ khoảng này khỏi đơn.»</em></td><td>Đơn nhiều khoảng có một khoảng rơi trọn vào ngày nghỉ (Chủ nhật, ngày lễ).</td><td>Bỏ khoảng đó khỏi đơn — ngày nghỉ sẵn thì không cần xin. Đơn nhiều khoảng không cho gõ đè tổng để vượt qua chốt này.</td></tr>
-<tr><td><em>«Khoảng thứ 1 (27/10 → 29/10) và Khoảng thứ 2 (29/10 → 30/10) chồng ngày nhau — các khoảng không được trùng ngày.»</em></td><td>Hai khoảng trong cùng một đơn có ngày trùng nhau.</td><td>Dời ngày để các khoảng không trùng (sát nhau thì được), hoặc gộp thành một khoảng.</td></tr>
-<tr><td><em>«Đơn nhiều khoảng ngày phải nằm trong cùng một năm. Tách thành hai đơn…»</em></td><td>Đơn có từ hai khoảng trở lên mà các khoảng rơi vào hai năm khác nhau.</td><td>Lập hai đơn: một đơn cho phần năm trước, một đơn cho phần năm sau.</td></tr>
-<tr><td><em>«Nghỉ theo giờ chỉ khai được một khoảng ngày…»</em></td><td>Đơn có từ hai khoảng mà một khoảng chọn «Theo giờ».</td><td>Bỏ bớt khoảng, hoặc chọn lại buổi nghỉ (Cả ngày / Sáng / Chiều).</td></tr>
-<tr><td><em>«Nghỉ từ buổi chiều đến buổi sáng cùng ngày là khoảng trống»</em></td><td>Buổi bắt đầu là chiều, buổi kết thúc là sáng, cùng một ngày — không có khoảng nào.</td><td>Chọn cùng một buổi cho cả hai ô.</td></tr>
-<tr><td><em>«Khoảng ngày này không có ngày làm việc nào (rơi trọn vào cuối tuần hoặc ngày lễ). Sửa lại ngày, hoặc nhập tay «Tổng số ngày».»</em></td><td>Cả khoảng bạn chọn đều là ngày nghỉ sẵn.</td><td>Không cần xin phép thì thôi. Bộ phận có làm ngày đó thì <strong>gõ đè Tổng số ngày</strong>.</td></tr>
-<tr><td><em>«Tổng số ngày» phải lớn hơn 0</em></td><td>Bạn xóa trắng hoặc gõ 0 vào ô số ngày.</td><td>Nhập số đúng, hoặc xóa ô để hệ tính lại.</td></tr>
+<tr><td><em>Đến ngày phải bằng hoặc sau Từ ngày</em></td><td>Chọn ngược ngày.</td><td>Đổi lại hai ô.</td></tr>
+<tr><td><em>Khoảng thứ 2 (01/11 → 01/11) không có ngày làm việc nào theo lịch làm việc … Bỏ khoảng này khỏi đơn.</em></td><td>Đơn nhiều khoảng có một khoảng rơi trọn vào ngày nghỉ (Chủ nhật, ngày lễ).</td><td>Bỏ khoảng đó khỏi đơn — ngày nghỉ sẵn thì không cần xin. Đơn nhiều khoảng không cho gõ đè tổng để vượt qua chốt này.</td></tr>
+<tr><td><em>Khoảng thứ 1 (27/10 → 29/10) và Khoảng thứ 2 (29/10 → 30/10) chồng ngày nhau — các khoảng không được trùng ngày.</em></td><td>Hai khoảng trong cùng một đơn có ngày trùng nhau.</td><td>Dời ngày để các khoảng không trùng (sát nhau thì được), hoặc gộp thành một khoảng.</td></tr>
+<tr><td><em>Đơn nhiều khoảng ngày phải nằm trong cùng một năm. Tách thành hai đơn…</em></td><td>Đơn có từ hai khoảng trở lên mà các khoảng rơi vào hai năm khác nhau.</td><td>Lập hai đơn: một đơn cho phần năm trước, một đơn cho phần năm sau.</td></tr>
+<tr><td><em>Nghỉ theo giờ chỉ khai được một khoảng ngày…</em></td><td>Đơn có từ hai khoảng mà một khoảng chọn <strong>Theo giờ</strong>.</td><td>Bỏ bớt khoảng, hoặc chọn lại buổi nghỉ (Cả ngày / Sáng / Chiều).</td></tr>
+<tr><td><em>Nghỉ từ buổi chiều đến buổi sáng cùng ngày là khoảng trống</em></td><td>Buổi bắt đầu là chiều, buổi kết thúc là sáng, cùng một ngày — không có khoảng nào.</td><td>Chọn cùng một buổi cho cả hai ô.</td></tr>
+<tr><td><em>Khoảng ngày này không có ngày làm việc nào (rơi trọn vào cuối tuần hoặc ngày lễ). Sửa lại ngày, hoặc nhập tay <strong>Tổng số ngày</strong>.</em></td><td>Cả khoảng bạn chọn đều là ngày nghỉ sẵn.</td><td>Không cần xin phép thì thôi. Bộ phận có làm ngày đó thì <strong>gõ đè Tổng số ngày</strong>.</td></tr>
+<tr><td><em>Tổng số ngày phải lớn hơn 0</em></td><td>Bạn xóa trắng hoặc gõ 0 vào ô số ngày.</td><td>Nhập số đúng, hoặc xóa ô để hệ tính lại.</td></tr>
 </tbody>
 </table>
 
@@ -543,8 +543,8 @@ Nháp  ─────────────────────►  Chờ
 <table>
 <thead><tr><th>Câu bạn nhìn thấy</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td><em>«Đơn đã gửi duyệt nên không sửa được. Rút phiếu duyệt hoặc hủy đơn…»</em></td><td>Đơn đang trong luồng, đã khóa.</td><td><strong>Hủy đơn</strong> rồi nộp lại, hoặc nhờ người duyệt <strong>Trả về</strong> để sửa mà giữ nguyên số đơn.</td></tr>
-<tr><td><em>«Đơn này đã gửi duyệt rồi»</em></td><td>Bấm «Gửi duyệt» hai lần.</td><td>Không phải lỗi. Tải lại trang là thấy trạng thái <em>Chờ duyệt</em>.</td></tr>
+<tr><td><em>Đơn đã gửi duyệt nên không sửa được. Rút phiếu duyệt hoặc hủy đơn…</em></td><td>Đơn đang trong luồng, đã khóa.</td><td><strong>Hủy đơn</strong> rồi nộp lại, hoặc nhờ người duyệt <strong>Trả về</strong> để sửa mà giữ nguyên số đơn.</td></tr>
+<tr><td><em>Đơn này đã gửi duyệt rồi</em></td><td>Bấm <strong>Gửi duyệt</strong> hai lần.</td><td>Không phải lỗi. Tải lại trang là thấy trạng thái <em>Chờ duyệt</em>.</td></tr>
 </tbody>
 </table>
 
@@ -552,10 +552,10 @@ Nháp  ─────────────────────►  Chờ
 <table>
 <thead><tr><th>Câu bạn nhìn thấy</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td><em>«Chưa xác định được người nghỉ — tài khoản này chưa gắn hồ sơ nhân sự.»</em></td><td>Tài khoản đăng nhập chưa nối với một hồ sơ nhân sự nào, nên hệ không biết trừ phép của ai.</td><td>Báo phòng Nhân sự gắn hồ sơ. Không tự sửa được.</td></tr>
+<tr><td><em>Chưa xác định được người nghỉ — tài khoản này chưa gắn hồ sơ nhân sự.</em></td><td>Tài khoản đăng nhập chưa nối với một hồ sơ nhân sự nào, nên hệ không biết trừ phép của ai.</td><td>Báo phòng Nhân sự gắn hồ sơ. Không tự sửa được.</td></tr>
 <tr><td>Không thấy menu <strong>Nghỉ phép</strong>, hoặc thiếu tab</td><td>Phân quyền — bốn khóa quyền của Nghỉ phép là khóa mới, vai trò cũ không tự có.</td><td>Xin quản trị tick thêm, xem {ref(NS_QUYEN, "bài Phân quyền")}.</td></tr>
-<tr><td>Hệ báo <em>«Không tìm thấy»</em> khi mở một tờ đơn</td><td>Đơn nằm ngoài <strong>phạm vi dữ liệu</strong> của bạn.</td><td>Xin mở rộng phạm vi, hoặc nhờ người trong phạm vi xử lý.</td></tr>
-<tr><td>Bấm <strong>In</strong> ra trang <em>«Không có quyền mở bản in»</em></td><td>Tài khoản chưa có quyền xem đơn nghỉ phép (trang in kiểm quyền trước khi mở, từ 22/10/2026).</td><td>Nhờ quản trị cấp quyền xem Đơn nghỉ phép, rồi đăng xuất đăng nhập lại.</td></tr>
+<tr><td>Hệ báo <em>Không tìm thấy</em> khi mở một tờ đơn</td><td>Đơn nằm ngoài <strong>phạm vi dữ liệu</strong> của bạn.</td><td>Xin mở rộng phạm vi, hoặc nhờ người trong phạm vi xử lý.</td></tr>
+<tr><td>Bấm <strong>In</strong> ra trang <em>Không có quyền mở bản in</em></td><td>Tài khoản chưa có quyền xem đơn nghỉ phép (trang in kiểm quyền trước khi mở, từ 22/10/2026).</td><td>Nhờ quản trị cấp quyền xem Đơn nghỉ phép, rồi đăng xuất đăng nhập lại.</td></tr>
 <tr><td>Cảnh báo <em>hồ sơ thiếu ngày vào làm</em></td><td>Không có ngày vào làm thì thâm niên tính bằng 0, quỹ <strong>thiếu ngày</strong>.</td><td>Báo phòng Nhân sự nhập bổ sung rồi cấp lại quỹ.</td></tr>
 </tbody>
 </table>
@@ -586,7 +586,7 @@ Nháp  ─────────────────────►  Chờ
 <p>Bộ lọc: ô tìm theo <strong>tên hoặc mã nhân sự</strong>, ô chọn <strong>loại nghỉ</strong>, ô chọn <strong>năm</strong>.</p>
 
 <h2>Cấp quỹ đầu năm</h2>
-<p>Nút <strong>«Cấp quỹ năm 2026»</strong> ở góc trên bên phải (con số đổi theo năm đang chọn). Bảng rỗng thì chính câu trạng thái rỗng đã chỉ đường: <em>«Chưa cấp quỹ phép năm 2026. Bấm «Cấp quỹ năm 2026» để tạo.»</em></p>
+<p>Nút <strong>Cấp quỹ năm 2026</strong> ở góc trên bên phải (con số đổi theo năm đang chọn). Bảng rỗng thì chính câu trạng thái rỗng đã chỉ đường: <em>Chưa cấp quỹ phép năm 2026. Bấm <strong>Cấp quỹ năm 2026</strong> để tạo.</em></p>
 <ul>
 <li><strong>Chạy lại được</strong>: chỉ tạo dòng còn thiếu. Bấm hai lần không nhân đôi.</li>
 <li>Thêm người giữa năm thì <strong>bấm lại</strong> là họ có quỹ, không phải tạo tay.</li>
@@ -596,19 +596,19 @@ Nháp  ─────────────────────►  Chờ
 <p>⚠️ Cấp quỹ <strong>trước khi</strong> hồ sơ có <strong>ngày vào làm</strong> thì thâm niên ra 0. Nhập bù ngày vào làm rồi phải sửa lại bằng điều chỉnh tay — cấp lại không sửa dòng cũ.</p>
 
 <h2>Điều chỉnh tay</h2>
-<p>Mở một dòng quỹ ra, dùng thẻ <strong>Điều chỉnh tay</strong>: nhập số và <strong>lý do</strong>, bấm <strong>«Lưu điều chỉnh»</strong>.</p>
+<p>Mở một dòng quỹ ra, dùng thẻ <strong>Điều chỉnh tay</strong>: nhập số và <strong>lý do</strong>, bấm <strong>Lưu điều chỉnh</strong>.</p>
 <ul>
 <li>⚠️ <strong>GHI ĐÈ, không cộng dồn.</strong> Ô nạp sẵn số của lần chỉnh trước; bạn gõ con số bạn muốn nó <em>thành</em>. Cộng dồn thì bấm Lưu hai lần là gấp đôi.</li>
-<li>Thẻ nói trước <strong>«còn lại» sẽ thành bao nhiêu</strong> sau khi lưu — đọc dòng đó rồi hãy bấm.</li>
-<li><strong>Bắt buộc có lý do</strong>, khoảng trắng không tính. Đây là thao tác <em>tặng ngày phép cho người khác</em> nên phải để lại dấu vết đọc được: <em>«Bù phép tồn 2025»</em>, <em>«Cấp nhầm, trừ lại»</em>.</li>
+<li>Thẻ nói trước <strong>còn lại sẽ thành bao nhiêu</strong> sau khi lưu — đọc dòng đó rồi hãy bấm.</li>
+<li><strong>Bắt buộc có lý do</strong>, khoảng trắng không tính. Đây là thao tác <em>tặng ngày phép cho người khác</em> nên phải để lại dấu vết đọc được: <em>Bù phép tồn 2025</em>, <em>Cấp nhầm, trừ lại</em>.</li>
 <li>Nhận <strong>số âm</strong> để trừ bớt.</li>
 </ul>
 <p>Trang chi tiết có khối <strong>Lịch sử thao tác</strong> — nhìn con số hiện tại không biết ai đưa nó tới đó, nên <strong>đọc lịch sử trước khi sửa tiếp</strong>. Chưa từng chỉnh tay thì khối đó không hiện dòng rỗng nào.</p>
 <p>Trang chi tiết cũng liệt kê <strong>các đơn nghỉ</strong> đã ăn vào dòng quỹ này, để đối chiếu khi người dùng kêu sai số.</p>
 
 <h2>Kết sổ cuối năm và bảng Đối chiếu</h2>
-<p>Phép năm cũ còn dư đi đâu là do từng <em>Loại nghỉ</em> khai: <strong>«Hết năm là mất»</strong> (mặc định), <strong>«Mang sang năm sau»</strong> hoặc <strong>«Quy đổi sang loại nghỉ khác»</strong>. ⚠️ <strong>Không có gì tự chạy đêm 31/12</strong> — phải có người bấm nút <strong>«Kết sổ năm …»</strong> ở góc trên màn <em>Quỹ phép năm</em> (năm đang xem trừ một; cần quyền ghi Quỹ phép). Hộp xác nhận <em>«Kết sổ quỹ phép năm …?»</em> nhắc rằng loại để mặc định «Hết năm là mất» thì không đụng tới; bấm lại lần hai không nhân đôi số ngày.</p>
-<p>Kết sổ xong, hộp <strong>«Đối chiếu kết sổ phép năm …»</strong> <strong>tự mở</strong> để bạn soát ngay kết quả. Mỗi dòng là một người × một loại nghỉ nguồn:</p>
+<p>Phép năm cũ còn dư đi đâu là do từng <em>Loại nghỉ</em> khai: <strong>Hết năm là mất</strong> (mặc định), <strong>Mang sang năm sau</strong> hoặc <strong>Quy đổi sang loại nghỉ khác</strong>. ⚠️ <strong>Không có gì tự chạy đêm 31/12</strong> — phải có người bấm nút <strong>Kết sổ năm …</strong> ở góc trên màn <em>Quỹ phép năm</em> (năm đang xem trừ một; cần quyền ghi Quỹ phép). Hộp xác nhận <em>Kết sổ quỹ phép năm …?</em> nhắc rằng loại để mặc định <strong>Hết năm là mất</strong> thì không đụng tới; bấm lại lần hai không nhân đôi số ngày.</p>
+<p>Kết sổ xong, hộp <strong>Đối chiếu kết sổ phép năm …</strong> <strong>tự mở</strong> để bạn soát ngay kết quả. Mỗi dòng là một người × một loại nghỉ nguồn:</p>
 <table>
 <thead><tr><th>Cột</th><th>Nghĩa là</th></tr></thead>
 <tbody>
@@ -617,14 +617,14 @@ Nháp  ─────────────────────►  Chờ
 <tr><td><strong>Số cũ (trước)</strong></td><td>Số ngày còn của năm cũ <strong>trước</strong> khi kết sổ.</td></tr>
 <tr><td><strong>Số mới (sau)</strong></td><td>Số ngày còn của năm cũ <strong>sau</strong> khi kết sổ — phần đã chuyển đi không còn nằm ở đây.</td></tr>
 <tr><td><strong>Chênh</strong></td><td><strong>Số mới trừ số cũ</strong>, nên thường là <strong>số âm</strong> — đúng bằng phần ngày đã chuyển đi khỏi năm cũ.</td></tr>
-<tr><td><strong>Sang loại</strong></td><td>Loại nghỉ nhận phần chuyển ở năm sau (với «Mang sang năm sau» thì chính là loại đó). Ghi <em>«Chưa khai»</em> nghĩa là loại quy đổi này chưa khai loại nhận — nhờ phòng Nhân sự khai ở Thiết lập ▸ Loại nghỉ.</td></tr>
+<tr><td><strong>Sang loại</strong></td><td>Loại nghỉ nhận phần chuyển ở năm sau (với <strong>Mang sang năm sau</strong> thì chính là loại đó). Ghi <em>Chưa khai</em> nghĩa là loại quy đổi này chưa khai loại nhận — nhờ phòng Nhân sự khai ở Thiết lập ▸ Loại nghỉ.</td></tr>
 <tr><td><strong>Cộng vào năm sau</strong></td><td>Số ngày được cộng sang năm sau = phần đã chuyển đi × tỷ lệ quy đổi của loại nghỉ (mang sang nguyên loại thì tỷ lệ là 1; quy đổi 2 ngày lấy 1 ngày bù thì chỉ bằng một nửa).</td></tr>
 </tbody>
 </table>
-<p>Cuối hộp có dòng tổng (<em>«Tổng N dòng: số cũ … → số mới … (chênh …), cộng vào năm sau … ngày»</em>). Muốn đối chiếu lại sau này hay gửi người khác soát: bấm nút <strong>«Đối chiếu kết sổ …»</strong> cạnh nút Kết sổ rồi bấm <strong>«Xuất Excel»</strong> trong hộp (nút này chỉ hiện với người có quyền xuất Quỹ phép năm).</p>
-<p>⚠️ <strong>Hạn chế cần biết:</strong> hệ <strong>không chụp ảnh</strong> lúc bấm Kết sổ. «Số cũ» được <strong>tính lại mỗi lần mở bảng</strong> từ sổ quỹ hiện tại. Vì vậy nếu có đơn của năm cũ được duyệt hoặc bị hủy <em>sau</em> khi kết sổ thì các số trong bảng đổi theo; cột «Sang loại» và «Cộng vào năm sau» cũng tính theo cấu hình loại nghỉ <em>hiện hành</em> (sửa cấu hình sau khi kết sổ thì đó chỉ là số ước theo cấu hình mới). Bảng chỉ liệt kê loại nghỉ đang khai «Mang sang» hoặc «Quy đổi». Cần lưu số đúng ngày kết sổ thì xuất Excel ngay lúc đó.</p>
+<p>Cuối hộp có dòng tổng (<em>Tổng N dòng: số cũ … → số mới … (chênh …), cộng vào năm sau … ngày</em>). Muốn đối chiếu lại sau này hay gửi người khác soát: bấm nút <strong>Đối chiếu kết sổ …</strong> cạnh nút Kết sổ rồi bấm <strong>Xuất Excel</strong> trong hộp (nút này chỉ hiện với người có quyền xuất Quỹ phép năm).</p>
+<p>⚠️ <strong>Hạn chế cần biết:</strong> hệ <strong>không chụp ảnh</strong> lúc bấm Kết sổ. <strong>Số cũ</strong> được <strong>tính lại mỗi lần mở bảng</strong> từ sổ quỹ hiện tại. Vì vậy nếu có đơn của năm cũ được duyệt hoặc bị hủy <em>sau</em> khi kết sổ thì các số trong bảng đổi theo; cột <strong>Sang loại</strong> và <strong>Cộng vào năm sau</strong> cũng tính theo cấu hình loại nghỉ <em>hiện hành</em> (sửa cấu hình sau khi kết sổ thì đó chỉ là số ước theo cấu hình mới). Bảng chỉ liệt kê loại nghỉ đang khai <strong>Mang sang</strong> hoặc <strong>Quy đổi</strong>. Cần lưu số đúng ngày kết sổ thì xuất Excel ngay lúc đó.</p>
 
-<h2>Người dùng kêu «số phép của tôi sai»</h2>
+<h2>Người dùng kêu <em>số phép của tôi sai</em></h2>
 <ol>
 <li>Mở dòng quỹ của họ, đọc <strong>đủ sáu số cấu thành</strong> — thường lệch ở <em>thâm niên</em> (thiếu ngày vào làm) hoặc <em>chuyển năm trước</em>.</li>
 <li>Xem khối <strong>các đơn nghỉ</strong>: phần <em>đang chờ duyệt</em> cũng đã bị trừ, và người dùng hay quên điều này — xem {ref(QUY_PHEP, "bài Hiểu số ngày phép còn lại")}.</li>
@@ -643,13 +643,13 @@ Nháp  ─────────────────────►  Chờ
 <table>
 <thead><tr><th>Ô</th><th>Quyết định điều gì</th></tr></thead>
 <tbody>
-<tr><td><strong>Có trừ quỹ</strong></td><td>Tắt thì loại nghỉ đó không giới hạn số ngày, và màn nộp đơn nói thẳng «không giới hạn» thay vì hiện số 0.</td></tr>
+<tr><td><strong>Có trừ quỹ</strong></td><td>Tắt thì loại nghỉ đó không giới hạn số ngày, và màn nộp đơn nói thẳng <em>không giới hạn</em> thay vì hiện số 0.</td></tr>
 <tr><td><strong>Hạn mức</strong></td><td>Số ngày cấp cho một năm (Phép năm 12…).</td></tr>
 <tr><td><strong>Số ngày báo trước</strong></td><td>So với <strong>hôm nay</strong>, không phải ngày lập đơn. Nghỉ ốm phải để <strong>0</strong>.</td></tr>
 <tr><td><strong>Trần mỗi lần</strong></td><td>Cưới hỏi, tang chế thường 3. Đặt <strong>0</strong> = không giới hạn.</td></tr>
 <tr><td><strong>Trừ cuối tuần / ngày lễ</strong></td><td>Bật thì T7·CN·lễ không tính vào số ngày. ⚠️ <strong>Thai sản phải TẮT</strong> — nghỉ sáu tháng thì không ai bù cuối tuần.</td></tr>
 <tr><td><strong>Chỉ áp cho giới tính</strong></td><td>Thai sản → nữ. Hồ sơ <strong>chưa khai giới tính vẫn nộp được</strong> — chặn là khóa cả công ty tới khi nhập bù.</td></tr>
-<tr><td><strong>Bắt buộc đính kèm</strong></td><td>Bật thì đơn thuộc loại này phải có ít nhất một tệp mới <strong>gửi duyệt</strong> được (lưu nháp thì không chặn). Mục «Tệp đính kèm» trên đơn hiện dấu bắt buộc và dòng nhắc đỏ. Nên bật cho Nghỉ ốm (giấy khám), Nghỉ vợ sinh con (giấy chứng sinh).</td></tr>
+<tr><td><strong>Bắt buộc đính kèm</strong></td><td>Bật thì đơn thuộc loại này phải có ít nhất một tệp mới <strong>gửi duyệt</strong> được (lưu nháp thì không chặn). Mục <strong>Tệp đính kèm</strong> trên đơn hiện dấu bắt buộc và dòng nhắc đỏ. Nên bật cho Nghỉ ốm (giấy khám), Nghỉ vợ sinh con (giấy chứng sinh).</td></tr>
 <tr><td><strong>Cho chuyển sang năm sau</strong></td><td>Mặc định <strong>tắt</strong>. Bật thì cột <em>Chuyển năm trước</em> mới có số.</td></tr>
 </tbody>
 </table>
@@ -688,7 +688,7 @@ Nháp  ─────────────────────►  Chờ
 <p>Tách bốn vì <strong><code>leave_balance</code> ghi được nghĩa là tặng thêm ngày phép cho bất kỳ ai</strong>. Gộp nó với <code>leave_request</code> thì cho ai xem đơn của mình là cho họ tự cộng phép.</p>
 <p>Có quyền <strong>một trong hai</strong> danh mục thì vẫn vào được tab <em>Thiết lập</em>; chỉ sửa được một danh mục thì hệ không dựng hàng tab con một mục.</p>
 
-<h2>«Không thấy menu Nghỉ phép»</h2>
+<h2><em>Không thấy menu Nghỉ phép</em></h2>
 <p>⚠️ Gần như <strong>luôn</strong> là phân quyền. Bốn khóa trên là khóa <strong>mới</strong>, mà seed cố ý <strong>không ghi đè</strong> phân quyền đã chỉnh tay trên hệ đang chạy — nên vai trò cũ <strong>không tự có</strong> chúng.</p>
 <p>Cách xử lý: vào <strong>Nhân sự ▸ Phân quyền tài khoản</strong>, tick bốn khóa cho đúng vai trò. (Quản trị hệ thống có thể chạy một lần với cờ đồng bộ cưỡng bức, nhưng cách đó ghi đè cả những chỉnh tay khác — cân nhắc.)</p>
 
@@ -705,7 +705,7 @@ Nháp  ─────────────────────►  Chờ
 <h2>Phạm vi dữ liệu</h2>
 <p>Quyền mở màn, <strong>phạm vi</strong> quyết định thấy được dòng nào.</p>
 <ul>
-<li><code>leave_request</code> là entity <strong>duy nhất</strong> khai cả <em>người lập</em> lẫn <em>người nghỉ</em> vào phạm vi «của mình» — vì hành chính lập hộ là việc có thật, và cả hai người đều phải thấy tờ đơn.</li>
+<li><code>leave_request</code> là entity <strong>duy nhất</strong> khai cả <em>người lập</em> lẫn <em>người nghỉ</em> vào phạm vi <strong>của mình</strong> — vì hành chính lập hộ là việc có thật, và cả hai người đều phải thấy tờ đơn.</li>
 <li><code>leave_balance</code> chỉ khai theo <em>người sở hữu dòng quỹ</em>. Nhân viên thường <strong>không</strong> vào tab Quỹ phép năm; họ xem số của mình ngay trên form nộp đơn.</li>
 <li>Hai danh mục (<em>Loại nghỉ</em>, <em>Lịch ngày lễ</em>) là dữ liệu chung, không lọc theo phạm vi.</li>
 </ul>
@@ -715,7 +715,7 @@ Nháp  ─────────────────────►  Chờ
 <p>Khai ở phân hệ <strong>Phê duyệt</strong> cho loại chứng từ <em>Đơn nghỉ phép</em>. Luồng mẫu: <strong>trưởng bộ phận của người xin nghỉ → trưởng phòng Nhân sự</strong>.</p>
 <ul>
 <li>⚠️ <strong>Mỗi chặng PHẢI khai người dự phòng.</strong> Hệ loại người nộp khỏi danh sách người ký, nên trưởng phòng tự xin nghỉ thì chặng đó rỗng và <strong>đơn kẹt vĩnh viễn</strong> — mà quản lý thì cũng phải nghỉ phép.</li>
-<li><strong>Chưa khai luồng nào thì vẫn nộp được</strong>: lúc đó người có quyền duyệt bấm <strong>«Duyệt đơn»</strong> thẳng ở màn chi tiết. Không có đường lùi này thì cài mới xong là không ai nghỉ nổi.</li>
+<li><strong>Chưa khai luồng nào thì vẫn nộp được</strong>: lúc đó người có quyền duyệt bấm <strong>Duyệt đơn</strong> thẳng ở màn chi tiết. Không có đường lùi này thì cài mới xong là không ai nghỉ nổi.</li>
 <li>Đơn <em>đang</em> chạy trong luồng thì đường duyệt thẳng <strong>bị chặn</strong> — nếu không thì đó là lối đi vòng qua cả luồng.</li>
 </ul>
 <p>Cách ký và ý nghĩa ba nút: {ref(DUYET, "bài Duyệt đơn nghỉ phép")}.</p>

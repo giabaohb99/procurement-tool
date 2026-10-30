@@ -1,4 +1,4 @@
-"""Nạp bảng kế hoạch «2870 — Kế hoạch Abamectin 3.6» (Excel của Thu mua) vào khối
+"""Nạp bảng kế hoạch "2870 — Kế hoạch Abamectin 3.6" (Excel của Thu mua) vào khối
 Báo cáo thực hiện của MỘT đơn mua hàng — để đại ca xem thử dữ liệu thật trên màn
 (bao-CR-602).
 
@@ -66,10 +66,10 @@ ROWS = [
 
 
 def _employee_id_by_name(db, name: str) -> int:
-    """Tra nhân sự theo TÊN GỌI trong Excel («Tiên», «Ngân») — lấy người đầu tiên đang
+    """Tra nhân sự theo TÊN GỌI trong Excel ("Tiên", "Ngân") — lấy người đầu tiên đang
     làm việc có tên kết thúc bằng chữ đó; không thấy thì 0 (chưa cử)."""
     #  So khớp CHỮ CUỐI đúng dấu ở Python: LIKE của MySQL không phân biệt dấu nên
-    #  «Tiên» sẽ trúng cả «Tiến».
+    #  "Tiên" sẽ trúng cả "Tiến".
     rows = (db.query(Employee.id, Employee.full_name)
             .filter(Employee.full_name.like(f"%{name}"))
             .order_by(Employee.id).all())

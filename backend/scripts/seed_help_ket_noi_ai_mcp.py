@@ -10,11 +10,11 @@ bao-CR-639 (19/10, tối, đính chính theo ảnh đại ca chụp): ChatGPT n�
 MCP Server URL, Authentication OAuth, tick I trust this application) → Create; Developer mode bật trước; cần gói trả phí.
 Khớp khối chatgpt của `mcp_setup.py`.
 bao-CR-636 (19/10, chiều): thêm bài (g) OAuth (ai-CR-218/222/225); Claude Desktop có hai cách (Connectors hoặc mcp-remote);
-khóa xem lại được + bật / tắt tạm (ai-CR-221) — bỏ câu «chỉ hiện một lần»; quản trị có màn Ứng dụng AI đã kết nối
+khóa xem lại được + bật / tắt tạm (ai-CR-221) — bỏ câu "chỉ hiện một lần"; quản trị có màn Ứng dụng AI đã kết nối
 (bao-CR-635) và bộ Cẩm nang hệ thống 7 skill (ai-CR-220). ⚠️ Nhãn nút Hiện / Tạm tắt ở màn Khóa của bạn viết theo hợp đồng
 API; màn giao diện là bao-CR-633 của Agent 3 — lên dev xong đối chiếu lại nhãn.
 
-Nguồn sự thật của từng bước nối ứng dụng là `app/modules/agent_hub/mcp_setup.py` (màn «AI của tôi» đọc đúng tệp đó);
+Nguồn sự thật của từng bước nối ứng dụng là `app/modules/agent_hub/mcp_setup.py` (màn "AI của tôi" đọc đúng tệp đó);
 bài ở đây chép lại CÙNG bước, cùng tên tệp, cùng khối cấu hình — đổi bên kia thì sửa bên này.
 
 Chạy trong container api:
@@ -28,8 +28,8 @@ Idempotent: có thẻ gốc cũ thì xóa nguyên cây con (con trước, cha sa
 `doc/agent-hub/06-cong-mcp.md` (hợp đồng cổng). Ba nơi lệch nhau thì người dùng đọc một đằng, màn hình làm một nẻo.
 
 ⚠️ Tiêu đề bài phải KHÁC mọi bài đang có trong Trung tâm trợ giúp (portal tra ngược slug -> id trên client, trùng tiêu đề
-là trùng slug). Cụm Trợ lý AI đã có các bài «Trợ lý AI», «Lập bộ tài khoản thu mua bằng Trợ lý AI», «Tạo, sửa, xóa phiếu
-và xem quyền bằng Trợ lý AI» — bài ở đây luôn mang chữ «AI riêng» hoặc «Kho skill AI» để không đụng.
+là trùng slug). Cụm Trợ lý AI đã có các bài "Trợ lý AI", "Lập bộ tài khoản thu mua bằng Trợ lý AI", "Tạo, sửa, xóa phiếu
+và xem quyền bằng Trợ lý AI" — bài ở đây luôn mang chữ "AI riêng" hoặc "Kho skill AI" để không đụng.
 
 ⚠️ KHÔNG bao giờ in khóa thật vào bài: mọi ví dụ dùng chỗ giữ <KHÓA_CỦA_BẠN> đúng như màn hình.
 """
@@ -169,7 +169,7 @@ TREE = {
 <p>Địa chỉ cổng trong khối lấy đúng theo màn AI của tôi của hệ thống bạn đang dùng (môi trường thử là <code>deverp.degoholding.vn</code>).</p>
 
 <h2>Vì sao khóa nằm trong <code>env</code> mà không nằm trong <code>args</code></h2>
-<p>Trên Windows, một khoảng trắng trong <code>args</code> làm hỏng lệnh, mà <em>«Bearer khóa»</em> có khoảng trắng. Nên khóa để ở biến môi trường <code>DEGO_MCP_KEY</code>, còn <code>args</code> chỉ tham chiếu tên biến. Muốn gọn hơn: đặt biến cho cả máy bằng lệnh <code>setx DEGO_MCP_KEY "Bearer {KEY}"</code> thì bỏ được khối <code>env</code>; nhưng <code>setx</code> chỉ có hiệu lực với ứng dụng <strong>mở sau</strong> lệnh — lại phải thoát hẳn Claude Desktop.</p>
+<p>Trên Windows, một khoảng trắng trong <code>args</code> làm hỏng lệnh, mà <em>Bearer khóa</em> có khoảng trắng. Nên khóa để ở biến môi trường <code>DEGO_MCP_KEY</code>, còn <code>args</code> chỉ tham chiếu tên biến. Muốn gọn hơn: đặt biến cho cả máy bằng lệnh <code>setx DEGO_MCP_KEY "Bearer {KEY}"</code> thì bỏ được khối <code>env</code>; nhưng <code>setx</code> chỉ có hiệu lực với ứng dụng <strong>mở sau</strong> lệnh — lại phải thoát hẳn Claude Desktop.</p>
 
 <h2>Ba lỗi hay gặp riêng của Claude Desktop</h2>
 <table>
@@ -183,7 +183,7 @@ TREE = {
 <p>Các lỗi chung (khóa sai, quá tần suất, nhóm công cụ bị tắt): {ref(NHAT_KY, "bài Nhật ký và lỗi thường gặp")}.</p>
 
 <h2>Dùng thử</h2>
-<p>Hỏi Claude: <em>«Liệt kê các skill công ty mà bạn đọc được»</em> — phải ra danh sách cẩm nang bạn được gán. Rồi <em>«Tôi muốn mua 10 thùng giấy A4 thì làm thế nào?»</em> — Claude tự đọc skill quy trình thu mua và trả lời theo cách làm của công ty. Những gì AI làm được: {ref(CONG_CU, "bài Công cụ và skill")}.</p>""",
+<p>Hỏi Claude: <em>Liệt kê các skill công ty mà bạn đọc được</em> — phải ra danh sách cẩm nang bạn được gán. Rồi <em>Tôi muốn mua 10 thùng giấy A4 thì làm thế nào?</em> — Claude tự đọc skill quy trình thu mua và trả lời theo cách làm của công ty. Những gì AI làm được: {ref(CONG_CU, "bài Công cụ và skill")}.</p>""",
         },
         {
             "title": CLIENT_KHAC,
@@ -226,7 +226,7 @@ TREE = {
 <p>Hai nơi này không nhận khóa dán tay; chúng tự mở trang ERP để bạn đăng nhập và bấm <strong>Cho phép</strong>. Xem {ref(OAUTH, "bài Nối ChatGPT và claude.ai bằng đăng nhập ERP")}.</p>
 
 <h2>Sau khi nối</h2>
-<p>Hỏi một câu về ERP (<em>«Tôi còn bao nhiêu ngày phép?»</em>), rồi về màn AI của tôi bấm <strong>Kiểm tra lại</strong>. Mọi lỗi chung xem {ref(NHAT_KY, "bài Nhật ký và lỗi thường gặp")}; AI làm được gì xem {ref(CONG_CU, "bài Công cụ và skill")}.</p>""",
+<p>Hỏi một câu về ERP (<em>Tôi còn bao nhiêu ngày phép?</em>), rồi về màn AI của tôi bấm <strong>Kiểm tra lại</strong>. Mọi lỗi chung xem {ref(NHAT_KY, "bài Nhật ký và lỗi thường gặp")}; AI làm được gì xem {ref(CONG_CU, "bài Công cụ và skill")}.</p>""",
         },
         {
             "title": CONG_CU,
@@ -271,7 +271,7 @@ TREE = {
 <ol>
 <li>Mở bộ ▸ tab <strong>Skill</strong> ▸ <strong>Thêm skill</strong>. <strong>Tên skill</strong> 2 tới 100 ký tự, chỉ chữ không dấu, số, gạch ngang, gạch dưới (ví dụ <code>bao-cao-mua-hang-thang</code>) — AI gọi bằng tên này.</li>
 <li>Màn <strong>Soạn skill</strong> hai cột: trái là <strong>Nội dung (Markdown)</strong> có thanh chèn nhanh tiêu đề, chữ đậm, danh sách, bảng; phải là <strong>Xem như AI đọc</strong>.</li>
-<li>Ô <strong>Tóm tắt cho AI</strong> (tối đa 500 ký tự) <strong>bắt buộc trước khi xuất bản</strong>. AI đọc câu này để quyết định có mở skill hay không, nên viết rõ <em>KHI NÀO dùng</em>: <em>«Dùng khi người dùng hỏi cách lập yêu cầu mua hàng»</em>, không viết <em>«Hướng dẫn mua hàng»</em>.</li>
+<li>Ô <strong>Tóm tắt cho AI</strong> (tối đa 500 ký tự) <strong>bắt buộc trước khi xuất bản</strong>. AI đọc câu này để quyết định có mở skill hay không, nên viết rõ <em>KHI NÀO dùng</em>: <em>Dùng khi người dùng hỏi cách lập yêu cầu mua hàng</em>, không viết <em>Hướng dẫn mua hàng</em>.</li>
 <li><strong>Lưu nháp</strong> bằng nút hoặc <strong>Ctrl+S</strong>. Rời trang khi chưa lưu thì màn hỏi lại.</li>
 <li><strong>Xuất bản</strong> (cần quyền duyệt): màn tự lưu nháp rồi mới xuất bản, kèm <strong>Ghi chú thay đổi</strong>. Từ lúc này AI đọc được bản vừa xuất bản; sửa tiếp là nháp mới, AI vẫn đọc bản đã xuất bản cho tới lần xuất bản sau (màn ghi <em>Nháp mới hơn bản AI đang đọc</em>).</li>
 </ol>
@@ -384,7 +384,7 @@ TREE = {
 <tr><td><em>Quá tần suất (khóa)</em> · <em>Quá tần suất: tối đa n lượt / phút…</em></td><td>Một khóa gọi hơn 120 lượt trong một phút (AI đang lặp, hoặc nhiều máy dùng chung một khóa).</td><td>Đợi một phút. Mỗi máy nên một khóa riêng.</td></tr>
 <tr><td><em>Quá tần suất (IP)</em> · <em>Quá tần suất (khóa sai liên tục)</em></td><td>Cả văn phòng chung một địa chỉ mạng vượt 600 lượt / phút, hoặc có máy đang thử khóa sai liên tục (30 lần / phút).</td><td>Đợi một phút; báo quản trị nếu lặp lại — có thể là máy ai đó cấu hình sai.</td></tr>
 <tr><td>AI báo <em>công cụ bị từ chối</em> kèm <strong>tên nhóm</strong></td><td>Quản trị tắt nhóm đó qua cổng (ví dụ Công nợ).</td><td>Không phải lỗi. Cần thì xin quản trị bật nhóm ở Cấu hình.</td></tr>
-<tr><td><em>Khóa này chỉ đọc; tạo phiếu cần khóa «được ghi»</em></td><td>Nhờ AI tạo phiếu bằng khóa Chỉ đọc.</td><td>Tạo khóa mức <strong>Được ghi</strong> ở Trang cá nhân, dán vào ứng dụng.</td></tr>
+<tr><td><em>Khóa này chỉ đọc; tạo phiếu cần khóa được ghi</em></td><td>Nhờ AI tạo phiếu bằng khóa Chỉ đọc.</td><td>Tạo khóa mức <strong>Được ghi</strong> ở Trang cá nhân, dán vào ứng dụng.</td></tr>
 <tr><td>AI báo <em>bị từ chối, thiếu quyền…</em> khi hỏi báo cáo hay phiếu</td><td>Phạm vi dữ liệu của bạn trên ERP, giống như không thấy trên web.</td><td>Xin quản trị mở quyền / giao báo cáo; không phải lỗi kết nối.</td></tr>
 <tr><td>AI báo <em>không có skill đó</em></td><td>Skill chưa xuất bản, hoặc không gán cho bạn — hệ cố ý trả cùng câu với skill không tồn tại.</td><td>Hỏi người soạn skill của phòng.</td></tr>
 <tr><td>AI báo <em>bộ ở mức Bảo vệ, không mở tệp</em></td><td>Quản trị đặt mức Bảo vệ cho bộ đó.</td><td>Đúng ý thiết kế; nội dung skill vẫn đọc được.</td></tr>
@@ -395,14 +395,14 @@ TREE = {
 <h2>Không phải lỗi, nhưng hay bị tưởng là lỗi</h2>
 <ul>
 <li><strong>Số công cụ khác nhau giữa hai người</strong> — khóa Chỉ đọc thấy ít hơn khóa Được ghi, và nhóm công cụ do quản trị bật.</li>
-<li><strong>AI trả lời không theo quy trình công ty</strong> — AI chưa mở skill. Nhắc: <em>«Hãy xem cẩm nang công ty trước khi trả lời»</em>; vẫn không có thì bạn chưa được gán skill đó.</li>
+<li><strong>AI trả lời không theo quy trình công ty</strong> — AI chưa mở skill. Nhắc: <em>Hãy xem cẩm nang công ty trước khi trả lời</em>; vẫn không có thì bạn chưa được gán skill đó.</li>
 <li><strong>Kiểm tra kết nối báo chưa thấy</strong> dù ứng dụng đã liệt kê công cụ — liệt kê công cụ là lượt <em>khởi tạo</em>; hỏi một câu để có lượt gọi thật rồi bấm <strong>Kiểm tra lại</strong>.</li>
 <li><strong>Sửa skill mà AI vẫn trả lời như cũ</strong> — chưa bấm <strong>Xuất bản</strong>, AI chỉ đọc bản đã xuất bản.</li>
 <li><strong>Nhật ký có dòng <em>key/reveal</em> từ ứng dụng ERP web</strong> — đó là bạn vừa bấm xem lại khóa, không phải ai đó lấy khóa qua AI.</li>
 </ul>
 
 <h2>Báo lỗi hệ thống</h2>
-<p>Nhờ chính AI: <em>«Báo lỗi: nối ERP bị từ chối lúc 9:10, màn AI của tôi»</em> — công cụ báo lỗi luôn mở kể cả khóa Chỉ đọc, tạo phiếu hỗ trợ gắn bộ phận phụ trách. Hoặc lập phiếu ở Trang cá nhân ▸ <strong>Yêu cầu hỗ trợ</strong>, kèm giờ thử để quản trị tra đúng dòng nhật ký. <strong>Che khóa</strong> trước khi chụp màn hình.</p>""",
+<p>Nhờ chính AI: <em>Báo lỗi: nối ERP bị từ chối lúc 9:10, màn AI của tôi</em> — công cụ báo lỗi luôn mở kể cả khóa Chỉ đọc, tạo phiếu hỗ trợ gắn bộ phận phụ trách. Hoặc lập phiếu ở Trang cá nhân ▸ <strong>Yêu cầu hỗ trợ</strong>, kèm giờ thử để quản trị tra đúng dòng nhật ký. <strong>Che khóa</strong> trước khi chụp màn hình.</p>""",
         },
     ],
 }

@@ -3,7 +3,7 @@
 #
 #   deploy.sh <đích> <commit|latest> [service ...]
 #     đích    : dev | prod | tên khác (khi đó phải khai DEPLOY_DIR, DEPLOY_COMPOSE, DEPLOY_BRANCH)
-#     commit  : sha, hoặc «latest» = origin/<nhánh của đích>
+#     commit  : sha, hoặc "latest" = origin/<nhánh của đích>
 #     service : bỏ trống = tự chọn theo tệp đổi giữa bản đang chạy và bản mới
 #
 # Chạy TRÊN máy chủ đích. Bot code gửi tệp này qua `ssh … bash -s -- <đích> <commit> …` (tệp đi qua
@@ -49,7 +49,7 @@ main() {
       : "${DEPLOY_HEALTH:=http://127.0.0.1:8020/api/health}" ;;
     *)
       if [ -z "${DEPLOY_DIR:-}" ] || [ -z "${DEPLOY_COMPOSE:-}" ] || [ -z "${DEPLOY_BRANCH:-}" ]; then
-        echo "ERR=đích lạ «$target»: phải khai DEPLOY_DIR, DEPLOY_COMPOSE, DEPLOY_BRANCH"; echo "RESULT=fail"; return 2
+        echo "ERR=đích lạ '$target': phải khai DEPLOY_DIR, DEPLOY_COMPOSE, DEPLOY_BRANCH"; echo "RESULT=fail"; return 2
       fi ;;
   esac
   : "${DEPLOY_HEALTH:=}"
@@ -60,7 +60,7 @@ main() {
     DEPLOY_COMPOSE="$DEPLOY_COMPOSE -f docker-compose.dev.override.yml"
   fi
   DEPLOY_TARGET="$target"
-  DEPLOY_DIR="${DEPLOY_DIR/#\~/$HOME}"   # sổ môi trường ghi «~/…»: biến trong ngoặc kép không tự nở dấu ~
+  DEPLOY_DIR="${DEPLOY_DIR/#\~/$HOME}"   # sổ môi trường ghi "~/…": biến trong ngoặc kép không tự nở dấu ~
   : "${DEPLOY_ROLLBACK:=1}"
   : "${DEPLOY_LOG_DIR:=$HOME/agent-deploy-logs}"
   DEPLOY_LOG_DIR="${DEPLOY_LOG_DIR/#\~/$HOME}"

@@ -2,14 +2,14 @@
 """Seed Trung tâm trợ giúp cho nhóm báo cáo NHÂN SỰ của phân hệ Báo cáo — duoc-CR-686, mở rộng duoc-CR-687,
 duoc-CR-688 (27/10/2026), duoc-CR-689 (28/10/2026); duoc-CR-692 (29/10/2026) bỏ hẳn phần kế hoạch.
 
-Dựng 1 thẻ phân hệ + 19 bài theo TÁC VỤ cho mười lăm báo cáo ở menu Báo cáo ▸ nhóm «Nhân sự»:
+Dựng 1 thẻ phân hệ + 19 bài theo TÁC VỤ cho mười lăm báo cáo ở menu Báo cáo ▸ nhóm "Nhân sự":
 Biến động nhân sự · Tình hình nghỉ phép · Quỹ phép năm (đã có, mở rộng) · Hợp đồng lao động ·
 Hồ sơ & tài khoản còn thiếu (CR-686) · Sổ quản lý lao động · Báo cáo sử dụng lao động (01/PLI) (CR-687) ·
 Quỹ lương theo pháp nhân · Phúc lợi & sự kiện · Cơ cấu quản lý · Điều chuyển & bổ nhiệm (CR-688) ·
 Có mặt theo ngày · Yêu cầu sửa hồ sơ · Sử dụng phòng họp · Đối tượng cần chú ý theo luật (CR-689), cộng ô
-«Lịch nhắc trong tháng» ở Tổng quan Nhân sự (CR-689).
-Phần chung: ô lọc «Phòng ban» và ngăn «Danh sách» mở từ nút «Xem danh sách» ở thẻ số / nút «Xem» ở
-bảng «Xem theo»; biểu đồ linh hoạt («Vẽ theo», kiểu, Top N, Tải ảnh PNG — CR-688, mọi báo cáo dùng
+"Lịch nhắc trong tháng" ở Tổng quan Nhân sự (CR-689).
+Phần chung: ô lọc "Phòng ban" và ngăn "Danh sách" mở từ nút "Xem danh sách" ở thẻ số / nút "Xem" ở
+bảng "Xem theo"; biểu đồ linh hoạt ("Vẽ theo", kiểu, Top N, Tải ảnh PNG — CR-688, mọi báo cáo dùng
 khung chung). CR-687 thêm 4 chiều cơ cấu vào Biến động nhân sự (Nhóm tuổi · Trình độ · Địa điểm làm
 việc · Nhóm vị trí việc làm) và khóa 19/20 vào bài giao quyền; CR-688 thêm khóa 21–24; CR-689 thêm
 khóa 26–29.
@@ -161,7 +161,7 @@ TREE = {
         {
             "title": CHART_TITLE,
             "icon": "bar-chart",
-            "summary": "Biểu đồ dưới thẻ số của mọi báo cáo: bấm thẻ để đổi chỉ số, Vẽ theo thời gian hay theo nhóm, kiểu Đường / Cột / Cột ngang / Vành khuyên, Top 5–20 gộp «Khác», bấm cột ra danh sách người, Tải ảnh PNG, gửi đường dẫn giữ nguyên biểu đồ",
+            "summary": "Biểu đồ dưới thẻ số của mọi báo cáo: bấm thẻ để đổi chỉ số, Vẽ theo thời gian hay theo nhóm, kiểu Đường / Cột / Cột ngang / Vành khuyên, Top 5–20 gộp 'Khác', bấm cột ra danh sách người, Tải ảnh PNG, gửi đường dẫn giữ nguyên biểu đồ",
             "content": f"""<h2>Biểu đồ nằm ở đâu</h2>
 <p>Mọi báo cáo trong phân hệ <strong>Báo cáo</strong> (nhóm Nhân sự và các nhóm khác) có một biểu đồ ngay dưới hàng thẻ số. Mở báo cáo lần đầu, biểu đồ trông như trước:</p>
 <ul>
@@ -464,7 +464,7 @@ TREE = {
 <tbody>
 <tr><td><strong>Tổng lao động</strong></td><td>Số người trong báo cáo</td></tr>
 <tr><td><strong>Nữ</strong></td><td>Số lao động nữ</td></tr>
-<tr><td><strong>Nhà quản lý</strong>, <strong>Chuyên môn kỹ thuật bậc cao</strong></td><td>Hai nhóm đầu của cột «Vị trí việc làm» trong mẫu</td></tr>
+<tr><td><strong>Nhà quản lý</strong>, <strong>Chuyên môn kỹ thuật bậc cao</strong></td><td>Hai nhóm đầu của cột <strong>Vị trí việc làm</strong> trong mẫu</td></tr>
 <tr><td>Chuyên môn kỹ thuật bậc trung, Vị trí việc làm khác</td><td>Hai nhóm còn lại, có sẵn trên bảng</td></tr>
 <tr><td>HĐ không xác định thời hạn, HĐ xác định thời hạn, HĐ khác (thử việc, chưa có HĐ)</td><td>Số người theo loại hợp đồng đang áp, có sẵn trên bảng</td></tr>
 </tbody>
@@ -472,7 +472,7 @@ TREE = {
 <p><strong>Không có trong mẫu:</strong> người ký <strong>hợp đồng khoán việc</strong> hoặc <strong>cộng tác viên</strong> — đây là hợp đồng dân sự, không phải hợp đồng lao động. Mục <strong>Cách tính số liệu</strong> ghi số người bị loại để bạn xem lại; vẫn có trong Sổ quản lý lao động.</p>
 
 <h2>Nhóm vị trí việc làm được tính thế nào</h2>
-<p>Hệ thống không có ô «vị trí việc làm» riêng mà <strong>tự suy</strong> từ hồ sơ, theo chú thích của mẫu:</p>
+<p>Hệ thống không có ô <strong>vị trí việc làm</strong> riêng mà <strong>tự suy</strong> từ hồ sơ, theo chú thích của mẫu:</p>
 <table>
 <thead><tr><th>Nhóm</th><th>Điều kiện</th></tr></thead>
 <tbody>
@@ -500,7 +500,7 @@ TREE = {
 <ol>
 <li><strong>Điền tay các cột để trống</strong> (hệ thống chưa có dữ liệu):
 <ul>
-<li>cột 13–15 và 17: phụ cấp chức vụ, thâm niên vượt khung, thâm niên nghề, các khoản bổ sung (hệ thống chỉ có một ô phụ cấp tổng trên hợp đồng, đã ghi vào cột 16 «Phụ cấp lương»);</li>
+<li>cột 13–15 và 17: phụ cấp chức vụ, thâm niên vượt khung, thâm niên nghề, các khoản bổ sung (hệ thống chỉ có một ô phụ cấp tổng trên hợp đồng, đã ghi vào cột 16 <strong>Phụ cấp lương</strong>);</li>
 <li>cột 18–19: ngành, nghề nặng nhọc, độc hại;</li>
 <li>cột 25–26: thời điểm đơn vị bắt đầu và kết thúc đóng BHXH.</li>
 </ul></li>
@@ -745,7 +745,7 @@ TREE = {
 
 <h2>Giới hạn của kỳ</h2>
 <ul>
-<li>Mỗi lần xem tối đa <strong>92 ngày</strong> (một quý vẫn xem được), vì mỗi người × mỗi ngày là một dòng tính. Chọn <strong>Năm nay</strong> thì trang báo <em>Báo cáo «Có mặt theo ngày» chỉ xem được tối đa 92 ngày một lần…</em>; chọn kỳ ngắn hơn rồi xem lại.</li>
+<li>Mỗi lần xem tối đa <strong>92 ngày</strong> (một quý vẫn xem được), vì mỗi người × mỗi ngày là một dòng tính. Chọn <strong>Năm nay</strong> thì trang báo <em>Báo cáo <strong>Có mặt theo ngày</strong> chỉ xem được tối đa 92 ngày một lần…</em>; chọn kỳ ngắn hơn rồi xem lại.</li>
 <li>Báo cáo <strong>chỉ tính tới hết hôm nay</strong>. Kỳ kéo sang ngày chưa tới thì phần đó chưa tính, và mục <strong>Cách tính số liệu</strong> ghi rõ.</li>
 <li>Vì kỳ có giới hạn nên báo cáo này không lên trang Tổng quan của phân hệ Báo cáo.</li>
 </ul>
@@ -826,7 +826,7 @@ TREE = {
             "content": f"""<h2>Báo cáo cho biết gì</h2>
 <p>Báo cáo <strong>Đối tượng cần chú ý theo luật</strong> liệt kê những người đang được hưởng, hoặc sắp phải xử lý, chế độ riêng theo luật lao động. Tình trạng tính tại <strong>ngày cuối kỳ</strong> hoặc <strong>hôm nay</strong>, lấy ngày sớm hơn; báo cáo không có xu hướng theo thời gian.</p>
 <table>
-<thead><tr><th>Thẻ số</th><th>Ai được tính</th><th>Cột «Mốc» trong danh sách</th></tr></thead>
+<thead><tr><th>Thẻ số</th><th>Ai được tính</th><th>Cột <strong>Mốc</strong> trong danh sách</th></tr></thead>
 <tbody>
 <tr><td><strong>Đến tuổi nghỉ hưu trong 12 tháng</strong></td><td>Người sẽ tới thời điểm nghỉ hưu trong 12 tháng tới</td><td>Thời điểm nghỉ hưu</td></tr>
 <tr><td><strong>Đã quá tuổi nghỉ hưu, vẫn đang làm</strong></td><td>Người đã qua thời điểm nghỉ hưu mà vẫn đang làm (cần làm hợp đồng mới hoặc chốt nghỉ)</td><td>Thời điểm nghỉ hưu</td></tr>
@@ -945,7 +945,7 @@ TREE = {
 <p>Quản trị giao cho người cần dùng như sau:</p>
 <ol>
 <li>Vào màn <strong>Phân quyền tài khoản</strong>, chọn tab <strong>Báo cáo</strong>. Bảng liệt kê mọi báo cáo theo phân hệ, kèm cột <strong>Được xem</strong> và <strong>Bị cấm</strong>.</li>
-<li>Ở dòng <em>Hợp đồng lao động</em>, bấm nút bút chì ở cột <strong>Sửa</strong>. Hộp <strong>Quyền xem «Hợp đồng lao động»</strong> mở ra.</li>
+<li>Ở dòng <em>Hợp đồng lao động</em>, bấm nút bút chì ở cột <strong>Sửa</strong>. Hộp <strong>Quyền xem Hợp đồng lao động</strong> mở ra.</li>
 <li>Ở ô <strong>Thêm người · phòng ban · pháp nhân · vai trò</strong>, chọn người (ví dụ trưởng phòng Nhân sự) hoặc vai trò (ví dụ Ban Giám đốc).</li>
 <li>Để <strong>Chiều tác động</strong> là <strong>Cho phép</strong>. Ghi <strong>Lý do</strong> nếu muốn (không bắt buộc).</li>
 <li>Bấm <strong>Thêm</strong>, rồi <strong>Đóng</strong>. Làm lại cho từng dòng báo cáo còn lại trong bảng trên.</li>

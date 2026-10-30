@@ -21,7 +21,7 @@ lệch nhau thì người dùng đọc một đằng, trợ lý trả lời mộ
 
 ⚠️ Tiêu đề bài phải KHÁC mọi bài đang có trong Trung tâm trợ giúp: portal tra
 ngược slug -> id ngay trên client, hai bài trùng tiêu đề là trùng slug và liên
-kết chéo sẽ nhảy nhầm bài (vì vậy bài lỗi ở đây tên «… khi đặt phòng», không
+kết chéo sẽ nhảy nhầm bài (vì vậy bài lỗi ở đây tên "… khi đặt phòng", không
 trùng bài cùng loại bên Nghỉ phép).
 """
 import re
@@ -92,8 +92,8 @@ TREE = {
 </table>
 
 <h2>Điều quan trọng nhất phải nhớ</h2>
-<p>⚠️ <strong>Phòng bị giữ ngay khi bạn bấm «Gửi duyệt», không đợi ai duyệt xong.</strong> Nghĩa là nộp phiếu xong là yên tâm — không ai chen ngang được.</p>
-<p>Ngược lại, <strong>phiếu để ở «Nháp» thì KHÔNG giữ chỗ gì cả</strong>: người khác vẫn đặt mất phòng như thường. Chọn xong phòng và giờ thì gửi duyệt luôn, đừng để nháp qua đêm.</p>
+<p>⚠️ <strong>Phòng bị giữ ngay khi bạn bấm <strong>Gửi duyệt</strong>, không đợi ai duyệt xong.</strong> Nghĩa là nộp phiếu xong là yên tâm — không ai chen ngang được.</p>
+<p>Ngược lại, <strong>phiếu để ở <strong>Nháp</strong> thì KHÔNG giữ chỗ gì cả</strong>: người khác vẫn đặt mất phòng như thường. Chọn xong phòng và giờ thì gửi duyệt luôn, đừng để nháp qua đêm.</p>
 
 <h2>Vòng đời một tờ phiếu</h2>
 <pre>              gửi duyệt              ký chặng cuối
@@ -106,9 +106,9 @@ Nháp  ───────────────────►  Chờ duy�
 
 <h2>Ba câu hay hỏi nhất</h2>
 <ul>
-<li><strong>«Đặt xong có phải chờ duyệt mới giữ được phòng không?»</strong> — không, giữ ngay lúc gửi duyệt.</li>
-<li><strong>«Người tôi mời sao chưa thấy thông báo?»</strong> — thư mời chỉ gửi <strong>sau khi phiếu được duyệt</strong>. Xem {ref(LAP_PHIEU, "bài Lập phiếu")}.</li>
-<li><strong>«Dời giờ họp có phải duyệt lại không?»</strong> — không. Kéo thả trên lịch, trạng thái giữ nguyên. Xem {ref(KEO_THA, "bài Kéo thả")}.</li>
+<li><strong>Đặt xong có phải chờ duyệt mới giữ được phòng không?</strong> — không, giữ ngay lúc gửi duyệt.</li>
+<li><strong>Người tôi mời sao chưa thấy thông báo?</strong> — thư mời chỉ gửi <strong>sau khi phiếu được duyệt</strong>. Xem {ref(LAP_PHIEU, "bài Lập phiếu")}.</li>
+<li><strong>Dời giờ họp có phải duyệt lại không?</strong> — không. Kéo thả trên lịch, trạng thái giữ nguyên. Xem {ref(KEO_THA, "bài Kéo thả")}.</li>
 </ul>
 
 <h2>Đọc theo việc bạn cần làm</h2>
@@ -121,14 +121,14 @@ Nháp  ───────────────────►  Chờ duy�
             "icon": "calendar",
             "summary": "Đọc lưới lịch, đổi ngày, lọc phòng, bấm ô trống để đặt ngay",
             "content": f"""<h2>Xem lịch phòng và đặt nhanh</h2>
-<p>Tab <strong>Lịch đặt phòng</strong> trả lời đúng một câu: <em>«bây giờ phòng nào còn trống»</em>.</p>
+<p>Tab <strong>Lịch đặt phòng</strong> trả lời đúng một câu: <em>bây giờ phòng nào còn trống</em>.</p>
 
 <h2>Đọc lưới</h2>
 <ul>
-<li><strong>Mỗi phòng một HÀNG</strong>, giờ chạy ngang từ <strong>7:00 đến 20:00</strong>. Tên phòng dính bên trái khi bạn cuộn ngang, kèm vị trí (vd «Tầng 3») ngay dưới.</li>
+<li><strong>Mỗi phòng một HÀNG</strong>, giờ chạy ngang từ <strong>7:00 đến 20:00</strong>. Tên phòng dính bên trái khi bạn cuộn ngang, kèm vị trí (vd <em>Tầng 3</em>) ngay dưới.</li>
 <li>Mỗi khối màu là một lượt giữ phòng: <strong>xanh lá = đã duyệt</strong>, <strong>vàng cam = chờ duyệt</strong>. Chú giải màu nằm ngay góc trên bên trái.</li>
 <li>Phần <strong>tô xám mờ</strong> là ngoài giờ hành chính và giờ nghỉ trưa — vẫn đặt được, chỉ là nhắc bạn nhìn kỹ.</li>
-<li><strong>Vạch đỏ dọc</strong> là mốc «bây giờ», chỉ hiện khi bạn đang xem hôm nay.</li>
+<li><strong>Vạch đỏ dọc</strong> là mốc <em>bây giờ</em>, chỉ hiện khi bạn đang xem hôm nay.</li>
 <li>Rê chuột lên một khối để xem đầy đủ <strong>mã phiếu, nội dung, giờ và người đặt</strong>. Bấm vào khối để mở phiếu.</li>
 </ul>
 <p>Lưới xếp phòng theo hàng chứ không theo cột là <strong>cố ý</strong>: lấy cột làm phòng thì 20 phòng rộng 4.500px, cuộn bốn màn hình mới xem hết; đảo lại thì số phòng chỉ làm lưới <em>dài xuống</em>, còn cả ngày làm việc nằm trọn một màn.</p>
@@ -136,14 +136,14 @@ Nháp  ───────────────────►  Chờ duy�
 <h2>Đổi ngày, lọc phòng</h2>
 <ul>
 <li>Bấm <strong>tên ngày</strong> ở thanh trên để mở lịch chọn ngày; hai nút <strong>mũi tên</strong> (ngày trước / ngày sau) và nút <strong>Hôm nay</strong> nằm cạnh đó.</li>
-<li>Ô <strong>«Lọc phòng, tầng, thiết bị…»</strong> lọc ngay trên lưới. Gõ <strong>không dấu vẫn tìm ra</strong> — «tang 3» ra «Tầng 3», «may chieu» ra phòng có máy chiếu.</li>
+<li>Ô <strong>Lọc phòng, tầng, thiết bị…</strong> lọc ngay trên lưới. Gõ <strong>không dấu vẫn tìm ra</strong> — <em>tang 3</em> ra <strong>Tầng 3</strong>, <em>may chieu</em> ra phòng có máy chiếu.</li>
 <li>Đường dẫn <strong>có mang theo ngày</strong>, nên copy link gửi cho người khác là họ mở đúng ngày bạn đang xem.</li>
 </ul>
 
 <h2>Đặt nhanh từ ô trống</h2>
 <ol>
 <li>Rê chuột vào một ô trống trên hàng phòng bạn muốn.</li>
-<li>Nhãn <strong>«+ giờ»</strong> hiện lên (ví dụ «+ 14:30»).</li>
+<li>Nhãn <strong>+ giờ</strong> hiện lên (ví dụ <em>+ 14:30</em>).</li>
 <li>Bấm — form đặt phòng mở ra <strong>đã điền sẵn đúng phòng và đúng giờ</strong> đó.</li>
 </ol>
 <p>Ô chia <strong>nửa tiếng</strong> một, vì họp 30 phút là chuyện thường. Điền nốt nội dung rồi gửi duyệt: {ref(LAP_PHIEU, "xem bài Lập phiếu đặt phòng")}.</p>
@@ -163,24 +163,24 @@ Nháp  ───────────────────►  Chờ duy�
 
 <h2>Năm bước</h2>
 <ol>
-<li>Bấm <strong>«Đặt phòng»</strong> ở góc trên bên phải — nút này có ở cả tab <em>Lịch</em> lẫn tab <em>Phiếu</em>. Hoặc {ref(XEM_LICH, "bấm thẳng vào ô trống trên lịch")} để form tự điền sẵn phòng và giờ.</li>
+<li>Bấm <strong>Đặt phòng</strong> ở góc trên bên phải — nút này có ở cả tab <em>Lịch</em> lẫn tab <em>Phiếu</em>. Hoặc {ref(XEM_LICH, "bấm thẳng vào ô trống trên lịch")} để form tự điền sẵn phòng và giờ.</li>
 <li>Điền <strong>Nội dung cuộc họp</strong>, <strong>Bắt đầu</strong>, <strong>Kết thúc</strong>.</li>
 <li>Bấm nút chọn <strong>Phòng họp</strong> — hộp thoại chỉ bày phòng đang trống trong khung giờ đó.</li>
 <li>Ghi <strong>Số người dự</strong> và chọn <strong>Người được mời</strong>.</li>
-<li><strong>«Lưu nháp»</strong> để kiểm lại, rồi <strong>«Gửi duyệt»</strong> để giữ phòng.</li>
+<li><strong>Lưu nháp</strong> để kiểm lại, rồi <strong>Gửi duyệt</strong> để giữ phòng.</li>
 </ol>
-<p>⚠️ Nút <strong>«Gửi duyệt»</strong> chỉ hiện <strong>sau khi phiếu đã được lưu ít nhất một lần</strong>.</p>
+<p>⚠️ Nút <strong>Gửi duyệt</strong> chỉ hiện <strong>sau khi phiếu đã được lưu ít nhất một lần</strong>.</p>
 
 <h2>Từng ô trên phiếu</h2>
 <table>
 <thead><tr><th>Ô</th><th>Bắt buộc</th><th>Ghi gì / cần biết</th></tr></thead>
 <tbody>
-<tr><td><strong>Nội dung cuộc họp</strong></td><td>Có, khi gửi duyệt</td><td>Người duyệt đọc đúng dòng này để quyết. Ví dụ: <em>«Họp giao ban tuần 37»</em>.</td></tr>
+<tr><td><strong>Nội dung cuộc họp</strong></td><td>Có, khi gửi duyệt</td><td>Người duyệt đọc đúng dòng này để quyết. Ví dụ: <em>Họp giao ban tuần 37</em>.</td></tr>
 <tr><td><strong>Bắt đầu / Kết thúc</strong></td><td>Có</td><td>Ngày + giờ. Tối đa <strong>24 giờ một lượt</strong> — vượt trần gần như luôn là chọn nhầm sang ngày hôm sau.</td></tr>
 <tr><td><strong>Phòng họp</strong></td><td>Có</td><td>Hộp thoại <strong>chỉ bày phòng ĐANG TRỐNG</strong> trong khung giờ vừa chọn. Ô tìm ở đây cũng <strong>bỏ dấu vẫn khớp</strong>.</td></tr>
 <tr><td><strong>Số người dự (dự kiến)</strong></td><td>Không</td><td>Hệ so với <strong>sức chứa</strong> của phòng và <strong>chặn lúc lưu</strong> nếu vượt. Phòng chưa khai sức chứa thì không chặn.</td></tr>
 <tr><td><strong>Người được mời</strong></td><td>Không</td><td>Họ nhận thông báo <strong>sau khi phiếu được duyệt</strong>.</td></tr>
-<tr><td><strong>Ghi chú / chuẩn bị</strong></td><td>Không</td><td>Thứ cần chuẩn bị trước. Ví dụ: <em>«cần máy chiếu, in sẵn 10 bộ tài liệu»</em>.</td></tr>
+<tr><td><strong>Ghi chú / chuẩn bị</strong></td><td>Không</td><td>Thứ cần chuẩn bị trước. Ví dụ: <em>cần máy chiếu, in sẵn 10 bộ tài liệu</em>.</td></tr>
 </tbody>
 </table>
 
@@ -210,7 +210,7 @@ Nháp  ───────────────────►  Chờ duy�
 <tr><td>Kiểm trùng?</td><td>Không kiểm</td><td>Kiểm, chặn nếu trùng</td></tr>
 <tr><td>Hiện trên lịch?</td><td>Không</td><td>Có</td></tr>
 <tr><td>Sửa được?</td><td>Sửa thoải mái</td><td>Khóa (trừ giờ và phòng, xem {ref(KEO_THA, "kéo thả")})</td></tr>
-<tr><td>Xóa được?</td><td>Được (nút <strong>«Xóa phiếu»</strong>)</td><td>Không — chỉ <strong>hủy</strong></td></tr>
+<tr><td>Xóa được?</td><td>Được (nút <strong>Xóa phiếu</strong>)</td><td>Không — chỉ <strong>hủy</strong></td></tr>
 </tbody>
 </table>
 <p>Sức chứa được kiểm ngay <strong>lúc lưu</strong>, còn trùng giờ thì kiểm <strong>lúc gửi duyệt</strong>.</p>
@@ -247,9 +247,9 @@ Nháp  ───────────────────►  Chờ duy�
 
 <h2>Bốn điều đáng biết</h2>
 <ul>
-<li><strong>Kéo được cả phiếu «Chờ duyệt» lẫn «Đã duyệt», và trạng thái giữ nguyên</strong> — dời một phiếu đã duyệt <strong>không</strong> bắt đi duyệt lại. Nếu chặn theo luật sửa thông thường (chỉ <em>Nháp</em> mới sửa được) thì tính năng này không dùng được lấy một lần, vì lịch cố ý chỉ vẽ phiếu đang giữ phòng.</li>
+<li><strong>Kéo được cả phiếu <strong>Chờ duyệt</strong> lẫn <strong>Đã duyệt</strong>, và trạng thái giữ nguyên</strong> — dời một phiếu đã duyệt <strong>không</strong> bắt đi duyệt lại. Nếu chặn theo luật sửa thông thường (chỉ <em>Nháp</em> mới sửa được) thì tính năng này không dùng được lấy một lần, vì lịch cố ý chỉ vẽ phiếu đang giữ phòng.</li>
 <li><strong>Vẫn chặn trùng y hệt.</strong> Kéo vào khung đã có người là bị chặn, khối bật về chỗ cũ và hiện câu báo nói rõ ai đang giữ. Bỏ chốt đó thì ai muốn đặt đôi chỉ cần đặt lệch giờ rồi kéo về.</li>
-<li><strong>Phiếu đã duyệt bị dời thì người dự nhận thông báo «Đổi giờ họp».</strong> Cuộc họp bị dời mà không báo thì họ tới đúng phòng cũ vào đúng giờ cũ — tệ hơn cả không mời.</li>
+<li><strong>Phiếu đã duyệt bị dời thì người dự nhận thông báo <em>Đổi giờ họp</em>.</strong> Cuộc họp bị dời mà không báo thì họ tới đúng phòng cũ vào đúng giờ cũ — tệ hơn cả không mời.</li>
 <li><strong>Không kéo sang ngày khác được.</strong> Lưới vẽ một ngày, nên kéo ngang bị kẹp trong 7:00–20:00 của chính ngày đang xem. Dời sang ngày khác thì mở phiếu ra sửa — mà phiếu đã gửi duyệt thì phải <strong>hủy rồi đặt lại</strong>.</li>
 </ul>
 
@@ -259,7 +259,7 @@ Nháp  ───────────────────►  Chờ duy�
 <tbody>
 <tr><td>Con trỏ không đổi thành hình bàn tay, khối không nhúc nhích</td><td>Bạn <strong>không có quyền sửa phiếu</strong> — thiếu quyền ghi trên khóa <code>room_booking</code>. Lúc đó kéo thả tắt hẳn, khối chỉ bấm mở phiếu.</td><td>Hỏi quản trị, đừng báo lỗi hệ thống. Xem {ref(QUYEN, "bài Phân quyền")}.</td></tr>
 <tr><td>Khối kéo được nhưng bật về chỗ cũ, kèm câu báo</td><td>Khung giờ mới đã có người giữ.</td><td>Đọc câu báo xem ai giữ, rồi chọn chỗ khác.</td></tr>
-<tr><td>Hệ báo <em>«Phiếu đã hủy hoặc bị từ chối thì không dời được»</em></td><td>Phiếu đó <strong>đã nhả phòng</strong> rồi.</td><td>Lập phiếu mới. Dời một phiếu đã chết chỉ đẻ ra cuộc họp không ai giữ chỗ cho.</td></tr>
+<tr><td>Hệ báo <em>Phiếu đã hủy hoặc bị từ chối thì không dời được</em></td><td>Phiếu đó <strong>đã nhả phòng</strong> rồi.</td><td>Lập phiếu mới. Dời một phiếu đã chết chỉ đẻ ra cuộc họp không ai giữ chỗ cho.</td></tr>
 </tbody>
 </table>""",
         },
@@ -321,18 +321,18 @@ Nháp  ───────────────────►  Chờ duy�
 </ul>
 
 <h2>Hủy phiếu</h2>
-<p>Bấm <strong>«Hủy phiếu»</strong> ở màn chi tiết, hộp thoại <em>Hủy phiếu đặt phòng</em> hiện ra và <strong>bắt ghi lý do</strong>. <strong>Hủy được cả phiếu đã duyệt</strong> — họp hoãn là chuyện thường, và không nhả thì phòng bị khóa suốt khung giờ đó dù chẳng ai dùng.</p>
+<p>Bấm <strong>Hủy phiếu</strong> ở màn chi tiết, hộp thoại <em>Hủy phiếu đặt phòng</em> hiện ra và <strong>bắt ghi lý do</strong>. <strong>Hủy được cả phiếu đã duyệt</strong> — họp hoãn là chuyện thường, và không nhả thì phòng bị khóa suốt khung giờ đó dù chẳng ai dùng.</p>
 <p>⚠️ <strong>Hoãn họp thì phải vào hủy phiếu.</strong> Không hủy là chiếm chỗ của người khác mà chính bạn cũng không dùng — đây là lỗi tốn kém nhất của cả phân hệ, và nó <strong>không có triệu chứng</strong> nào cho tới khi có người đứng ngoài cửa một phòng trống.</p>
 
 <h2>Không thấy phiếu mình đang tìm?</h2>
-<p>Bạn chỉ đọc được phiếu <strong>trong phạm vi dữ liệu</strong> của mình. Phiếu ngoài phạm vi thì hệ báo «Không tìm thấy» — không có nghĩa là phiếu đó không tồn tại, chỉ là bạn không được xem. Nội dung cuộc họp hay chứa chuyện nhân sự nên hệ cố ý chặt tay ở chỗ này.</p>""",
+<p>Bạn chỉ đọc được phiếu <strong>trong phạm vi dữ liệu</strong> của mình. Phiếu ngoài phạm vi thì hệ báo <em>Không tìm thấy</em> — không có nghĩa là phiếu đó không tồn tại, chỉ là bạn không được xem. Nội dung cuộc họp hay chứa chuyện nhân sự nên hệ cố ý chặt tay ở chỗ này.</p>""",
         },
         {
             "title": DUYET,
             "icon": "workflow",
             "summary": "Nhận việc, ba nút và hậu quả, điều gì xảy ra với phòng sau khi ký",
             "content": f"""<h2>Duyệt phiếu đặt phòng</h2>
-<p>Dành cho người được giao ký. Duyệt ngay trong <strong>Nhân sự ▸ Đặt phòng họp ▸ tab «Phiếu đặt phòng» ▸ «Cần tôi duyệt»</strong>, không phải sang màn Phê duyệt.</p>
+<p>Dành cho người được giao ký. Duyệt ngay trong <strong>Nhân sự ▸ Đặt phòng họp ▸ tab <strong>Phiếu đặt phòng</strong> ▸ Cần tôi duyệt</strong>, không phải sang màn Phê duyệt.</p>
 
 <h2>Nhận việc</h2>
 <ul>
@@ -346,7 +346,7 @@ Nháp  ───────────────────►  Chờ duy�
 <li><strong>Nội dung cuộc họp</strong> — không có dòng này thì bạn duyệt cái gì. Trống là lý do trả về chính đáng.</li>
 <li><strong>Phòng · ngày · khung giờ</strong>.</li>
 <li><strong>Số người dự</strong> so với sức chứa — hệ đã chặn khi vượt, nhưng phòng chưa khai sức chứa thì không ai chặn cả.</li>
-<li><strong>Mục «Mời tham dự»</strong> — <strong>luôn hiện kể cả khi rỗng</strong>, để bạn phân biệt được <em>"chưa mời ai"</em> với <em>"màn hình thiếu mục đó"</em>.</li>
+<li><strong>Mục Mời tham dự</strong> — <strong>luôn hiện kể cả khi rỗng</strong>, để bạn phân biệt được <em>"chưa mời ai"</em> với <em>"màn hình thiếu mục đó"</em>.</li>
 </ol>
 
 <h2>Ba nút</h2>
@@ -364,16 +364,16 @@ Nháp  ───────────────────►  Chờ duy�
 <h2>Vài điều đáng biết</h2>
 <ul>
 <li><strong>Đang có việc trên tờ phiếu thì bạn đọc được nó</strong>, kể cả khi phạm vi dữ liệu của bạn không với tới. <strong>Ký xong quyền đó đóng lại</strong> — xem lại thì vào tab <strong>Tôi đã duyệt</strong> (30 ngày gần đây).</li>
-<li>Chỗ nào <strong>chưa khai luồng duyệt</strong> thì người có quyền duyệt bấm <strong>«Duyệt phiếu»</strong> thẳng trên phiếu. Phiếu <em>đang</em> chạy trong luồng thì đường đó bị chặn.</li>
+<li>Chỗ nào <strong>chưa khai luồng duyệt</strong> thì người có quyền duyệt bấm <strong>Duyệt phiếu</strong> thẳng trên phiếu. Phiếu <em>đang</em> chạy trong luồng thì đường đó bị chặn.</li>
 <li>Duyệt xong <strong>không rút lại được</strong>. Cần chặn một phiếu đã duyệt thì bảo người đặt <strong>hủy phiếu</strong>.</li>
 <li>Người đặt <strong>vẫn kéo thả đổi giờ được</strong> sau khi bạn đã duyệt, và <strong>không phải duyệt lại</strong> — {ref(KEO_THA, "xem bài Kéo thả")}. Người dự sẽ nhận thông báo đổi giờ.</li>
 </ul>
 
 <h2>Hủy phiếu</h2>
-<p>Người đặt bấm <strong>«Hủy phiếu»</strong> ở màn chi tiết, kể cả với phiếu đã duyệt. Chi tiết ở {ref(THEO_DOI, "bài Theo dõi, sửa và hủy phiếu")}.</p>
+<p>Người đặt bấm <strong>Hủy phiếu</strong> ở màn chi tiết, kể cả với phiếu đã duyệt. Chi tiết ở {ref(THEO_DOI, "bài Theo dõi, sửa và hủy phiếu")}.</p>
 
 <h2>Không thấy phiếu mình đang tìm?</h2>
-<p>Phạm vi dữ liệu — hệ báo «Không tìm thấy» chứ không nói «bạn không có quyền», và điều đó là cố ý. Xem {ref(QUYEN, "bài Phân quyền và luồng duyệt")}.</p>""",
+<p>Phạm vi dữ liệu — hệ báo <em>Không tìm thấy</em> chứ không nói <em>bạn không có quyền</em>, và điều đó là cố ý. Xem {ref(QUYEN, "bài Phân quyền và luồng duyệt")}.</p>""",
         },
         {
             "title": BAO_LOI,
@@ -386,12 +386,12 @@ Nháp  ───────────────────►  Chờ duy�
 <table>
 <thead><tr><th>Câu bạn nhìn thấy</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td><em>«Phòng họp 301» đã có phiếu PH012 giữ từ 09:00 20/09 đến 10:30 20/09 (đã duyệt). Chọn phòng khác hoặc dời giờ.»</em></td><td>Trùng giờ. Câu báo nói rõ <strong>ai giữ, tới mấy giờ, đã duyệt hay đang chờ</strong>.</td><td>Ba đường: xin lại phòng của người kia · dời giờ · chọn phòng khác. Nhớ là <strong>hai ca liền nhau không tính là trùng</strong>.</td></tr>
-<tr><td><em>«Phòng họp 301» chứa được 8 người, phiếu này ghi 30 người. Chọn phòng lớn hơn hoặc sửa lại số người.»</em></td><td>Vượt sức chứa. Kiểm ngay lúc lưu.</td><td>Chọn phòng lớn hơn, hoặc sửa lại con số nếu bạn gõ nhầm.</td></tr>
-<tr><td><em>«Một lượt đặt tối đa 24 giờ. Kiểm tra lại ngày — thường là chọn nhầm sang ngày hôm sau.»</em></td><td>Khoảng giờ dài bất thường.</td><td>Xem lại <strong>ngày</strong> ở ô Kết thúc. Cần giữ phòng nhiều ngày thì đặt mỗi ngày một phiếu.</td></tr>
-<tr><td><em>«Giờ kết thúc» phải sau «Giờ bắt đầu»</em></td><td>Nhập ngược.</td><td>Đổi lại hai ô.</td></tr>
-<tr><td><em>«Thiếu «Nội dung cuộc họp» — nhập đủ trước khi gửi duyệt.»</em></td><td>Ô bắt buộc còn trống.</td><td>Điền rồi <strong>Lưu nháp</strong>, sau đó gửi duyệt lại.</td></tr>
-<tr><td><em>«Phòng họp không tồn tại hoặc đã ngừng dùng»</em></td><td>Phòng vừa bị quản trị bỏ tick «Đang dùng».</td><td>Chọn phòng khác. Phiếu cũ của phòng đó vẫn đọc được bình thường.</td></tr>
+<tr><td><em>Phòng họp 301 đã có phiếu PH012 giữ từ 09:00 20/09 đến 10:30 20/09 (đã duyệt). Chọn phòng khác hoặc dời giờ.</em></td><td>Trùng giờ. Câu báo nói rõ <strong>ai giữ, tới mấy giờ, đã duyệt hay đang chờ</strong>.</td><td>Ba đường: xin lại phòng của người kia · dời giờ · chọn phòng khác. Nhớ là <strong>hai ca liền nhau không tính là trùng</strong>.</td></tr>
+<tr><td><em>Phòng họp 301 chứa được 8 người, phiếu này ghi 30 người. Chọn phòng lớn hơn hoặc sửa lại số người.</em></td><td>Vượt sức chứa. Kiểm ngay lúc lưu.</td><td>Chọn phòng lớn hơn, hoặc sửa lại con số nếu bạn gõ nhầm.</td></tr>
+<tr><td><em>Một lượt đặt tối đa 24 giờ. Kiểm tra lại ngày — thường là chọn nhầm sang ngày hôm sau.</em></td><td>Khoảng giờ dài bất thường.</td><td>Xem lại <strong>ngày</strong> ở ô Kết thúc. Cần giữ phòng nhiều ngày thì đặt mỗi ngày một phiếu.</td></tr>
+<tr><td><em>Giờ kết thúc phải sau Giờ bắt đầu</em></td><td>Nhập ngược.</td><td>Đổi lại hai ô.</td></tr>
+<tr><td><em>Thiếu <strong>Nội dung cuộc họp</strong> — nhập đủ trước khi gửi duyệt.</em></td><td>Ô bắt buộc còn trống.</td><td>Điền rồi <strong>Lưu nháp</strong>, sau đó gửi duyệt lại.</td></tr>
+<tr><td><em>Phòng họp không tồn tại hoặc đã ngừng dùng</em></td><td>Phòng vừa bị quản trị bỏ tick <strong>Đang dùng</strong>.</td><td>Chọn phòng khác. Phiếu cũ của phòng đó vẫn đọc được bình thường.</td></tr>
 </tbody>
 </table>
 
@@ -399,9 +399,9 @@ Nháp  ───────────────────►  Chờ duy�
 <table>
 <thead><tr><th>Câu bạn nhìn thấy</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td><em>«Phiếu đã gửi duyệt nên không sửa được. Hủy phiếu rồi đặt lại nếu cần đổi.»</em></td><td>Nội dung, người mời, số người dự đã khóa.</td><td>Chỉ đổi <strong>giờ hoặc phòng</strong> thì dùng {ref(KEO_THA, "kéo thả trên lịch")} — không bị chặn. Đổi thứ khác thì hủy rồi đặt lại.</td></tr>
-<tr><td><em>«Phiếu đã hủy hoặc bị từ chối thì không dời được. Muốn họp lại thì lập phiếu mới.»</em></td><td>Phiếu đã nhả phòng, không còn giữ chỗ nào.</td><td>Lập phiếu mới.</td></tr>
-<tr><td><em>«Phiếu này đã gửi duyệt rồi»</em></td><td>Bấm «Gửi duyệt» hai lần.</td><td>Không phải lỗi. Tải lại trang là thấy trạng thái <em>Chờ duyệt</em>.</td></tr>
+<tr><td><em>Phiếu đã gửi duyệt nên không sửa được. Hủy phiếu rồi đặt lại nếu cần đổi.</em></td><td>Nội dung, người mời, số người dự đã khóa.</td><td>Chỉ đổi <strong>giờ hoặc phòng</strong> thì dùng {ref(KEO_THA, "kéo thả trên lịch")} — không bị chặn. Đổi thứ khác thì hủy rồi đặt lại.</td></tr>
+<tr><td><em>Phiếu đã hủy hoặc bị từ chối thì không dời được. Muốn họp lại thì lập phiếu mới.</em></td><td>Phiếu đã nhả phòng, không còn giữ chỗ nào.</td><td>Lập phiếu mới.</td></tr>
+<tr><td><em>Phiếu này đã gửi duyệt rồi</em></td><td>Bấm <strong>Gửi duyệt</strong> hai lần.</td><td>Không phải lỗi. Tải lại trang là thấy trạng thái <em>Chờ duyệt</em>.</td></tr>
 <tr><td>Hệ trả lỗi khi dời giờ, kèm chữ về <strong>múi giờ</strong></td><td>Giờ gửi lên phải là <strong>giờ địa phương, không kèm múi giờ</strong>. Cả hệ lưu giờ trần theo giờ Việt Nam.</td><td>Người dùng thường không gặp — gặp thì báo quản trị, đừng đoán giờ rồi nhập lại.</td></tr>
 </tbody>
 </table>
@@ -410,11 +410,11 @@ Nháp  ───────────────────►  Chờ duy�
 <table>
 <thead><tr><th>Hiện tượng</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td><em>«Chưa xác định được người đặt — tài khoản này chưa gắn hồ sơ nhân sự.»</em></td><td>Tài khoản chưa nối với hồ sơ nhân sự nào.</td><td>Báo phòng Nhân sự gắn hồ sơ. Không tự sửa được.</td></tr>
+<tr><td><em>Chưa xác định được người đặt — tài khoản này chưa gắn hồ sơ nhân sự.</em></td><td>Tài khoản chưa nối với hồ sơ nhân sự nào.</td><td>Báo phòng Nhân sự gắn hồ sơ. Không tự sửa được.</td></tr>
 <tr><td>Không thấy menu <strong>Đặt phòng họp</strong></td><td>Phân quyền — hai khóa của phân hệ này là khóa mới, vai trò cũ không tự có.</td><td>Xin quản trị tick thêm, xem {ref(QUYEN, "bài Phân quyền")}.</td></tr>
 <tr><td>Thấy lịch nhưng <strong>không kéo thả được</strong></td><td>Chỉ có quyền đọc.</td><td>Xin thêm quyền ghi trên khóa <code>room_booking</code>.</td></tr>
 <tr><td>Vào được lịch nhưng <strong>không thấy tab Danh mục phòng</strong></td><td>Thiếu khóa <code>meeting_room</code> — đó là khóa riêng.</td><td>Bình thường: khai phòng là việc của quản trị, không phải của người đặt.</td></tr>
-<tr><td>Hệ báo <em>«Không tìm thấy»</em> khi mở một phiếu</td><td><strong>Phạm vi dữ liệu</strong>, không phải phiếu bị xóa.</td><td>Xin mở rộng phạm vi, hoặc nhờ người trong phạm vi xử lý.</td></tr>
+<tr><td>Hệ báo <em>Không tìm thấy</em> khi mở một phiếu</td><td><strong>Phạm vi dữ liệu</strong>, không phải phiếu bị xóa.</td><td>Xin mở rộng phạm vi, hoặc nhờ người trong phạm vi xử lý.</td></tr>
 </tbody>
 </table>
 
@@ -437,10 +437,10 @@ Nháp  ───────────────────►  Chờ duy�
 <table>
 <thead><tr><th>Ô</th><th>Cần biết</th></tr></thead>
 <tbody>
-<tr><td><strong>Mã phòng</strong></td><td>⚠️ <strong>Đặt xong thì KHÔNG đổi được.</strong> Mã đi vào mọi phiếu đã đặt và vào cách người ta gọi nhau («họp ở P301»). Nghĩ kỹ trước khi lưu.</td></tr>
-<tr><td><strong>Tên phòng</strong></td><td>Tên người dùng đọc. Ví dụ «Phòng họp 301».</td></tr>
-<tr><td><strong>Vị trí</strong></td><td>Ví dụ «Tầng 3, toà A». Hiện ngay dưới tên trên lưới lịch, và người dùng <strong>lọc bằng nó</strong>.</td></tr>
-<tr><td><strong>Sức chứa (người)</strong></td><td>Hệ dùng để chặn khi số người dự vượt quá. ⚠️ Để <strong>0</strong> nghĩa là <strong>CHƯA KHAI</strong>, không phải «không chứa được ai» — nên sẽ không chặn ai cả.</td></tr>
+<tr><td><strong>Mã phòng</strong></td><td>⚠️ <strong>Đặt xong thì KHÔNG đổi được.</strong> Mã đi vào mọi phiếu đã đặt và vào cách người ta gọi nhau (<em>họp ở P301</em>). Nghĩ kỹ trước khi lưu.</td></tr>
+<tr><td><strong>Tên phòng</strong></td><td>Tên người dùng đọc. Ví dụ <em>Phòng họp 301</em>.</td></tr>
+<tr><td><strong>Vị trí</strong></td><td>Ví dụ <em>Tầng 3, toà A</em>. Hiện ngay dưới tên trên lưới lịch, và người dùng <strong>lọc bằng nó</strong>.</td></tr>
+<tr><td><strong>Sức chứa (người)</strong></td><td>Hệ dùng để chặn khi số người dự vượt quá. ⚠️ Để <strong>0</strong> nghĩa là <strong>CHƯA KHAI</strong>, không phải <em>không chứa được ai</em> — nên sẽ không chặn ai cả.</td></tr>
 <tr><td><strong>Thiết bị sẵn có</strong></td><td>Chữ mô tả tự do: máy chiếu, TV 55 inch, bảng trắng, thiết bị họp trực tuyến. Người đặt <strong>tìm phòng bằng ô này</strong>, nên viết đủ từ khóa họ hay gõ.</td></tr>
 <tr><td><strong>Pháp nhân riêng</strong></td><td>⚠️ <strong>Để trống = phòng DÙNG CHUNG cho mọi pháp nhân</strong> (toà nhà chung) — đây là mặc định và là ca phổ biến nhất. Khai một pháp nhân cụ thể thì chỉ pháp nhân đó thấy.</td></tr>
 <tr><td><strong>Thứ tự hiển thị</strong></td><td>Quyết định thứ tự hàng trên lưới lịch. Phòng hay dùng để lên đầu, người ta đỡ phải cuộn.</td></tr>
@@ -451,19 +451,19 @@ Nháp  ───────────────────►  Chờ duy�
 
 <h2>Dẹp một phòng: bỏ tick, đừng xóa</h2>
 <ul>
-<li><strong>Bỏ tick «Đang dùng»</strong> — phòng biến khỏi ô chọn, không ai đặt được nữa, nhưng <strong>phiếu cũ vẫn đọc được</strong>. Dùng cách này khi phòng sửa chữa, đổi công năng, hoặc trả mặt bằng.</li>
+<li><strong>Bỏ tick Đang dùng</strong> — phòng biến khỏi ô chọn, không ai đặt được nữa, nhưng <strong>phiếu cũ vẫn đọc được</strong>. Dùng cách này khi phòng sửa chữa, đổi công năng, hoặc trả mặt bằng.</li>
 <li><strong>Xóa</strong> — hệ chặn nếu phòng đang có phiếu. Xóa được là để lại những cuộc họp không biết ở đâu.</li>
 </ul>
 <p>Bộ lọc trạng thái ở đầu bảng có sẵn hai lựa chọn <em>Đang dùng</em> và <em>Ngừng / Ẩn</em> để rà lại.</p>
 
 <h2>Xem lịch riêng của một phòng</h2>
-<p>Mở một phòng trong danh mục, tab <strong>«Lịch đặt của phòng»</strong> liệt kê các lượt đặt sắp tới và đã qua của riêng phòng đó. Dùng khi cần trả lời <em>«phòng 301 tuần này ai dùng»</em> hoặc trước khi tắt một phòng.</p>
+<p>Mở một phòng trong danh mục, tab <strong>Lịch đặt của phòng</strong> liệt kê các lượt đặt sắp tới và đã qua của riêng phòng đó. Dùng khi cần trả lời <em>phòng 301 tuần này ai dùng</em> hoặc trước khi tắt một phòng.</p>
 
 <h2>Ba lỗi khai phòng hay gặp</h2>
 <ol>
 <li><strong>Quên khai sức chứa</strong> — để 0 thì chốt chặn theo sức chứa <em>không chạy</em>, và người ta nhét 30 người vào phòng 8 chỗ mà hệ không nói gì.</li>
 <li><strong>Khai pháp nhân cho phòng dùng chung</strong> — làm phòng biến mất khỏi danh sách của các pháp nhân khác, mà không có câu báo nào. Toà nhà chung thì <strong>để trống</strong>.</li>
-<li><strong>Thiết bị ghi quá sơ sài</strong> — người đặt tìm «may chieu» không ra phòng nào rồi đi hỏi hành chính.</li>
+<li><strong>Thiết bị ghi quá sơ sài</strong> — người đặt tìm <em>may chieu</em> không ra phòng nào rồi đi hỏi hành chính.</li>
 </ol>
 
 <h2>Nạp phòng mẫu (chỉ môi trường thử)</h2>
@@ -500,22 +500,22 @@ Nháp  ───────────────────►  Chờ duy�
 </table>
 <p>⚠️ Thiếu quyền <strong>ghi</strong> thì kéo thả <strong>tắt hẳn</strong>, khối vẫn bấm mở phiếu như cũ. Cố ý làm vậy: không gác thì người chỉ được xem vẫn kéo được, thấy khối nhảy sang chỗ mới rồi bật về — họ sẽ tưởng hệ thống lỗi chứ không nghĩ là mình không có quyền.</p>
 
-<h2>«Không thấy menu Đặt phòng họp»</h2>
+<h2><em>Không thấy menu Đặt phòng họp</em></h2>
 <p>⚠️ Gần như <strong>luôn</strong> là phân quyền. Hai khóa trên là khóa <strong>mới</strong>, mà seed cố ý <strong>không ghi đè</strong> phân quyền đã chỉnh tay trên hệ đang chạy — nên vai trò cũ <strong>không tự có</strong> chúng.</p>
 <p>Cách xử lý: vào <strong>Nhân sự ▸ Phân quyền tài khoản</strong>, tick khóa cho đúng vai trò.</p>
 
 <h2>Phạm vi dữ liệu</h2>
 <p>Quyền mở màn, <strong>phạm vi</strong> quyết định thấy được phiếu nào.</p>
 <ul>
-<li><code>room_booking</code> khai cả <em>người lập</em> phiếu lẫn <em>người đặt</em> vào phạm vi «của mình» — thư ký đặt hộ sếp là việc có thật, và cả hai đều phải thấy phiếu.</li>
+<li><code>room_booking</code> khai cả <em>người lập</em> phiếu lẫn <em>người đặt</em> vào phạm vi <strong>của mình</strong> — thư ký đặt hộ sếp là việc có thật, và cả hai đều phải thấy phiếu.</li>
 <li>Người duyệt <strong>không cần</strong> phạm vi rộng: đang có việc trên tờ phiếu thì đọc được nó, ký xong quyền đó đóng lại.</li>
-<li>Phạm vi hẹp quá thì <strong>lưới lịch cũng thưa theo</strong> — người dùng nhìn thấy phòng «trống» trong khi thật ra đã có người giữ, rồi gửi duyệt lên bị chặn mà không hiểu vì sao. Với phân hệ này nên để phạm vi <strong>rộng ở mức đọc</strong>: lịch phòng họp không phải bí mật, còn nội dung cuộc họp thì vẫn nằm trong phiếu.</li>
+<li>Phạm vi hẹp quá thì <strong>lưới lịch cũng thưa theo</strong> — người dùng nhìn thấy phòng <em>trống</em> trong khi thật ra đã có người giữ, rồi gửi duyệt lên bị chặn mà không hiểu vì sao. Với phân hệ này nên để phạm vi <strong>rộng ở mức đọc</strong>: lịch phòng họp không phải bí mật, còn nội dung cuộc họp thì vẫn nằm trong phiếu.</li>
 </ul>
 
 <h2>Luồng duyệt</h2>
 <p>Khai ở phân hệ <strong>Phê duyệt</strong> cho loại chứng từ <em>Phiếu đặt phòng họp</em>. Chạy trên cùng bộ máy duyệt với Nghỉ phép và Văn thư.</p>
 <ul>
-<li><strong>Chưa khai luồng nào thì phiếu vẫn gửi duyệt được</strong>, và người có quyền duyệt bấm <strong>«Duyệt phiếu»</strong> thẳng. Không có đường lùi này thì cài mới xong là không ai đặt nổi phòng.</li>
+<li><strong>Chưa khai luồng nào thì phiếu vẫn gửi duyệt được</strong>, và người có quyền duyệt bấm <strong>Duyệt phiếu</strong> thẳng. Không có đường lùi này thì cài mới xong là không ai đặt nổi phòng.</li>
 <li>Phiếu <em>đang</em> chạy trong luồng thì đường duyệt thẳng <strong>bị chặn</strong>.</li>
 <li>Cân nhắc kỹ trước khi khai luồng nhiều chặng: <strong>phòng bị giữ suốt thời gian chờ ký</strong>, mà đặt phòng là việc gấp. Một chặng (hành chính) là đủ cho hầu hết công ty.</li>
 </ul>
