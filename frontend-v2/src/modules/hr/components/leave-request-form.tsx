@@ -60,12 +60,12 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
   const { data: typeData } = useLeaveTypes()
   const types = typeData?.items ?? []
 
-  //  LẬP HỘ — ô «Người nghỉ» chỉ dựng cho người đọc được danh bạ nhân sự. Đó
+  //  LẬP HỘ — ô "Người nghỉ" chỉ dựng cho người đọc được danh bạ nhân sự. Đó
   //  cũng đúng một trong hai điều kiện backend đòi (`ensure_can_create_for`);
-  //  điều kiện còn lại (phạm vi tạo đơn rộng hơn «của mình») backend giữ, vì
+  //  điều kiện còn lại (phạm vi tạo đơn rộng hơn "của mình") backend giữ, vì
   //  giao diện không được là chốt chặn cuối.
   //  ⚠️ Không có quyền thì KHÔNG gọi danh bạ: cứ mount là ăn toast 403, đúng
-  //  bẫy đã dính ở tab «Công nợ» của Nhà cung cấp (CR-106).
+  //  bẫy đã dính ở tab "Công nợ" của Nhà cung cấp (CR-106).
   const { can } = usePermission()
   const canPickTaker = can('employee', 'read')
   const { data: employeeData } = useEmployees(
@@ -152,8 +152,8 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
     //  Đơn THEO GIỜ không có "số người dùng gõ" để mà giữ — ô đó chỉ xem, con số
     //  là phép chia từ hai đầu giờ. Nên nó luôn bám con số mới.
     //  ⚠️ Thiếu nhánh này thì mở một đơn theo giờ đã lưu rồi đổi ngày/giờ, ô số
-    //  ngày đứng im ở giá trị cũ (bắt được lúc test tay 07/09/2026 — đổi «Đến
-    //  ngày» sang 09/09 mà vẫn hiện 0.38).
+    //  ngày đứng im ở giá trị cũ (bắt được lúc test tay 07/09/2026 — đổi "Đến
+    //  ngày" sang 09/09 mà vẫn hiện 0.38).
     //
     //  Ngoài ra: `0` = ô trống, chưa ai quyết con số nào. Khác `0` mà cũng khác
     //  con số máy điền lần trước nghĩa là người dùng đã gõ đè — để yên.
@@ -230,8 +230,8 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
           isHourly={isHourly}
         />
 
-        {/*  KHOẢNG NGÀY (duoc-CR-683) — đơn một khoảng vẫn là hai ô «Từ ngày» · «Đến
-             ngày» như cũ; «+ Thêm khoảng ngày» mọc thêm hàng cho đơn nghỉ không liền. */}
+        {/*  KHOẢNG NGÀY (duoc-CR-683) — đơn một khoảng vẫn là hai ô "Từ ngày" · "Đến
+             ngày" như cũ; "+ Thêm khoảng ngày" mọc thêm hàng cho đơn nghỉ không liền. */}
         <LeaveRequestPeriodsEditor
           periods={value.periods}
           fromTime={value.from_time}
@@ -245,7 +245,7 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
         {isHourly && (
           <p className="text-xs text-muted-foreground md:col-span-2">
             Nghỉ theo giờ quy đổi theo giờ làm của{' '}
-            {scheduleName ? `lịch «${scheduleName}»` : 'lịch làm việc áp cho người nghỉ'}, đã trừ
+            {scheduleName ? `lịch "${scheduleName}"` : 'lịch làm việc áp cho người nghỉ'}, đã trừ
             giờ nghỉ trưa. Vắt qua nhiều ngày cũng được: ngày đầu tính tới hết giờ làm, ngày cuối
             tính từ đầu giờ làm.
           </p>

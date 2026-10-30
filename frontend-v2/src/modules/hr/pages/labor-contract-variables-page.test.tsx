@@ -95,7 +95,7 @@ describe('LaborContractVariablesPage', () => {
   it('câu rỗng khác nhau khi đang lọc và khi chưa có biến tùy chỉnh', async () => {
     api.list.mockResolvedValue(list({ total: 0, items: [] }))
     const { unmount } = renderPage({ labor_contract_template: { read: true } })
-    expect(await screen.findByText('Chưa có biến tùy chỉnh. Bấm «Thêm biến».')).toBeInTheDocument()
+    expect(await screen.findByText('Chưa có biến tùy chỉnh. Bấm "Thêm biến".')).toBeInTheDocument()
     unmount()
     renderPage({ labor_contract_template: { read: true } }, '/hr/labor-contract-templates/variables?source=2')
     expect(await screen.findByText('Không có biến nào khớp bộ lọc.')).toBeInTheDocument()

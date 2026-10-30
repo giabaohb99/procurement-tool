@@ -19,7 +19,7 @@ interface WorkScheduleLevelFieldProps {
 }
 
 /**
- * Ô «Cấp áp dụng». Đổi cấp thì **xóa luôn đối tượng đã chọn** (về 0) trong cùng
+ * Ô "Cấp áp dụng". Đổi cấp thì **xóa luôn đối tượng đã chọn** (về 0) trong cùng
  * một lần bấm: giữ `target_id` cũ là gán nhầm — nhân sự #12 bỗng thành pháp nhân
  * #12. Cố ý làm trong handler chứ không bằng effect theo dõi cấp, vì effect đó
  * cũng chạy khi form nạp bản ghi có sẵn và sẽ xóa mất đối tượng của chính bản ghi.

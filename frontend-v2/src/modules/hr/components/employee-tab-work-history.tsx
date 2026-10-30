@@ -16,16 +16,16 @@ interface EmployeeTabWorkHistoryProps {
   employee: EmployeeDetail
 }
 
-/** Khớp `WorkEventType.HIRE` — loại điền sẵn của nút «Tạo dòng đầu từ hồ sơ». */
+/** Khớp `WorkEventType.HIRE` — loại điền sẵn của nút "Tạo dòng đầu từ hồ sơ". */
 const HIRE_TYPE = 1
 
 /**
- * Tab «Quá trình công tác» ở hồ sơ nhân sự — TÁCH từ tab gộp cũ «Quá trình
- * công tác & Quyết định» thành tab RIÊNG (đại ca chốt 03/10/2026, xem báo cáo
+ * Tab "Quá trình công tác" ở hồ sơ nhân sự — TÁCH từ tab gộp cũ "Quá trình
+ * công tác & Quyết định" thành tab RIÊNG (đại ca chốt 03/10/2026, xem báo cáo
  * `fullstack-developer-261003-1110-tach-hai-tab.md`): MỌI dòng,
  * Thêm/Áp/Sửa/Xóa như cũ, tự chuyển Bảng | Dòng thời gian (lưu vào URL `whView`).
  *
- * Khu «Quyết định bổ nhiệm» (chỉ dòng có số QĐ, chỉ đọc) nay là TAB RIÊNG —
+ * Khu "Quyết định bổ nhiệm" (chỉ dòng có số QĐ, chỉ đọc) nay là TAB RIÊNG —
  * `employee-tab-work-decisions.tsx` — dùng CHUNG khóa truy vấn
  * `useEmployeeWorkHistory(employee.id)` với component này; TanStack Query
  * cache theo key là đủ (`staleTime` 30 giây ở `query-client.ts`), không cần
@@ -43,9 +43,9 @@ export function EmployeeTabWorkHistory({ employee }: EmployeeTabWorkHistoryProps
   const deleting = useBusyIds()
 
   const [filesRow, setFilesRow] = useState<EmployeeWorkHistory | null>(null)
-  //  Điều phối hộp thêm/sửa NÂNG lên chỗ chung — tab «Quyết định bổ nhiệm»
+  //  Điều phối hộp thêm/sửa NÂNG lên chỗ chung — tab "Quyết định bổ nhiệm"
   //  (`employee-tab-work-decisions.tsx`) dùng CHUNG hook này cho nút
-  //  «+ Thêm quyết định», không chép logic chuyển trạng thái ra bản thứ hai.
+  //  "+ Thêm quyết định", không chép logic chuyển trạng thái ra bản thứ hai.
   const editor = useEmployeeWorkHistoryEditorDialog()
 
   const items = data?.items ?? []

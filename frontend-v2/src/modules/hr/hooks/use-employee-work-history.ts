@@ -37,7 +37,7 @@ export function useMyWorkHistory() {
 /**
  * Low FE (code review 03/10/2026) — hồ sơ vừa áp thay đổi là CHÍNH hồ sơ của
  * người đang đăng nhập (chỉ xảy ra khi quản trị hệ thống tự sửa, A9/Q3 cho
- * phép ngoại lệ đó) thì phải làm mới CẢ thẻ «Quá trình công tác» ở Trang cá
+ * phép ngoại lệ đó) thì phải làm mới CẢ thẻ "Quá trình công tác" ở Trang cá
  * nhân LẪN thông tin tài khoản đang đăng nhập — không thì sidebar/avatar vẫn
  * hiện chức vụ/phòng ban CŨ tới lần đăng nhập sau. `authService.me()` thất bại
  * thì bỏ qua (best-effort): không được chặn luồng áp hồ sơ vì một lần gọi lại

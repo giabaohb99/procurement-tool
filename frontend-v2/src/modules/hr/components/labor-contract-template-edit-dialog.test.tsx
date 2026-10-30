@@ -1,4 +1,4 @@
-// duoc-CR-606 — hộp «Sửa thông tin» mẫu: tên · loại HĐ · ghi chú (PATCH). Chặn ở `@/core/api`.
+// duoc-CR-606 — hộp "Sửa thông tin" mẫu: tên · loại HĐ · ghi chú (PATCH). Chặn ở `@/core/api`.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

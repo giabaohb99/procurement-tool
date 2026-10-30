@@ -2,7 +2,7 @@ import type { SearchSelectOption } from '@/shared/ui/search-select'
 import type { BookingPickOptions } from '../types/vehicle-booking'
 
 /**
- * Hai ô «Công ty» + «Người duyệt» của phiếu đặt xe (duoc-CR-681) — hàm thuần để kiểm được.
+ * Hai ô "Công ty" + "Người duyệt" của phiếu đặt xe (duoc-CR-681) — hàm thuần để kiểm được.
  *
  * Hai ô ĐỘC LẬP: đổi công ty không lọc người duyệt và ngược lại (anh Được chốt 23/10/2026).
  */
@@ -43,7 +43,7 @@ export function approverSelectOptions(
     .filter((a) => !selfUserId || a.user_id !== selfUserId)
     .map((a) => ({
       value: String(a.user_id),
-      //  «Mã - Tên» như mẫu anh Được gửi 24/10/2026; dòng phụ = vai trò cấp quyền duyệt (kèm phạm vi).
+      //  "Mã - Tên" như mẫu anh Được gửi 24/10/2026; dòng phụ = vai trò cấp quyền duyệt (kèm phạm vi).
       label: a.code ? `${a.code} - ${a.name}` : a.name,
       hint: a.roles.map((r) => `${r.role} (${r.scope_label})`).join(', '),
       avatar: a.avatar ?? '',

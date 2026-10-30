@@ -17,7 +17,7 @@ interface SelfChangeRequestFamiliesTabProps {
 }
 
 /**
- * Tab «Hộ gia đình» của hộp «Đề nghị sửa thông tin» (duoc-CR-676).
+ * Tab "Hộ gia đình" của hộp "Đề nghị sửa thông tin" (duoc-CR-676).
  *
  * ⚠️ Nạp `/me/families` HỎNG thì KHÔNG dựng bảng sửa (review M4). Dựng bảng rỗng thì người dùng
  * tưởng hộ chưa khai ai, thêm một người, gửi đi — đề nghị THAY CẢ danh sách nên duyệt xong là mọi

@@ -3,12 +3,12 @@ import { VARIABLE_TYPE_DATE, VARIABLE_TYPE_MONEY, VARIABLE_TYPE_NUMBER } from '.
 /** Trần tiền của backend (`variable_rules.MONEY_MAX`). */
 export const MAX_VARIABLE_MONEY = 10 ** 12
 
-/** Số lẻ tối đa của kiểu «Số» (backend: 2). */
+/** Số lẻ tối đa của kiểu "Số" (backend: 2). */
 export const NUMBER_MAX_DECIMALS = 2
 
 /**
- * Giá trị trong ô → chuỗi GỬI backend. Kiểu «Số» cho gõ `,` hoặc `.` làm dấu thập phân nên đổi
- * `,` → `.` và bỏ dấu thập phân treo cuối («1,» → «1»); kiểu khác giữ nguyên. Backend vẫn là chuẩn
+ * Giá trị trong ô → chuỗi GỬI backend. Kiểu "Số" cho gõ `,` hoặc `.` làm dấu thập phân nên đổi
+ * `,` → `.` và bỏ dấu thập phân treo cuối ("1," → "1"); kiểu khác giữ nguyên. Backend vẫn là chuẩn
  * (chuẩn hóa + kiểm lại); đây chỉ để khỏi gửi chuỗi chắc chắn bị từ chối.
  */
 export function toWireValue(valueType: number, raw: string): string {
@@ -16,7 +16,7 @@ export function toWireValue(valueType: number, raw: string): string {
   return raw.trim().replace(',', '.').replace(/\.$/, '')
 }
 
-/** Chuỗi chuẩn của backend («1.5») → chữ hiện trong ô số kiểu Việt («1,5»). */
+/** Chuỗi chuẩn của backend ("1.5") → chữ hiện trong ô số kiểu Việt ("1,5"). */
 export function numberToDisplay(wire: string): string {
   return wire.replace('.', ',')
 }

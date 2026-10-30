@@ -5,7 +5,7 @@ import type { ModuleNavItem } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
 
 /**
- * Mục menu + route của «Lịch làm việc», tách khỏi `routes.tsx` (đã quá dài).
+ * Mục menu + route của "Lịch làm việc", tách khỏi `routes.tsx` (đã quá dài).
  *
  * ⚠️ Hai màn quản lý gác bằng `manage: true` trên entity `work_schedule`: mọi vai trò ĐỌC được
  * (form nghỉ phép cần), nhưng vào màn quản lý thì phải có tạo/sửa/xóa. Gác route
@@ -16,7 +16,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
  */
 export const workScheduleNavItem: ModuleNavItem = {
   label: 'Lịch làm việc',
-  //  Cha trỏ vào «Xem lịch» (ai cũng có `employee.read` là vào được), không phải màn quản lý.
+  //  Cha trỏ vào "Xem lịch" (ai cũng có `employee.read` là vào được), không phải màn quản lý.
   //  Cha có con nên `itemAllowed` chỉ xét con: hiện khi CÓ ÍT NHẤT MỘT con được phép. Khai
   //  `entities` ở cha cho đúng nghĩa; KHÔNG khai `manage` ở cha nữa.
   path: appRoutes.hr.workRoster,

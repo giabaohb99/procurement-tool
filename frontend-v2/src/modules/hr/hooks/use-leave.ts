@@ -15,8 +15,8 @@ import {
  * Hook của phân hệ Nghỉ phép (CR-259).
  *
  * ⚠️ Mọi mutation đều dọn `queryKeys.hr.all`, không dọn lẻ từng khóa. Lý do:
- * **số phép còn lại xuất hiện ở ba màn** — ô gợi ý trên form nộp đơn, thẻ «Quỹ
- * phép của tôi», và bảng Quỹ phép của Nhân sự. Duyệt một đơn là cả ba đổi. Dọn
+ * **số phép còn lại xuất hiện ở ba màn** — ô gợi ý trên form nộp đơn, thẻ "Quỹ
+ * phép của tôi", và bảng Quỹ phép của Nhân sự. Duyệt một đơn là cả ba đổi. Dọn
  * lẻ thì chắc chắn có màn hiện số cũ, và số cũ ở đây nghĩa là người ta tưởng
  * mình còn phép.
  */
@@ -93,7 +93,7 @@ export function useLeaveRequestAction() {
       toast.success(ACTION_MESSAGES[variables.action])
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
       //  ⚠️ Dọn CẢ nhánh `approval`. Bốn thao tác này đều đụng vào phiên duyệt
-      //  (gửi duyệt mở phiên, hủy đơn rút phiên), mà thẻ «Lịch sử phê duyệt»
+      //  (gửi duyệt mở phiên, hủy đơn rút phiên), mà thẻ "Lịch sử phê duyệt"
       //  nằm dưới khóa `approval.trail` / `approval.of-entity` — chỉ dọn `hr`
       //  thì đầu trang đổi trạng thái còn thẻ dấu vết vẫn vẽ cảnh cũ.
       void queryClient.invalidateQueries({ queryKey: queryKeys.approval.all })
@@ -125,7 +125,7 @@ export function useEstimateLeavePeriods(params: {
   const { enabled = true, ...body } = params
   const ready = enabled && body.periods.length > 0 && body.periods.every((p) => p.from_date && p.to_date)
   return useQuery({
-    //  Khóa riêng của đúng hook này, không ai dọn từ ngoài — xem luật «Query keys».
+    //  Khóa riêng của đúng hook này, không ai dọn từ ngoài — xem luật "Query keys".
     queryKey: ['hr', 'leave-estimate', body] as const,
     queryFn: async (): Promise<LeavePeriodsEstimate> => {
       if (body.periods.length === 1) {
@@ -189,7 +189,7 @@ export function useLeaveBalance(id: number) {
   })
 }
 
-/** Toàn bộ quỹ của MỘT người trong một năm — thẻ «Quỹ phép của tôi». */
+/** Toàn bộ quỹ của MỘT người trong một năm — thẻ "Quỹ phép của tôi". */
 export function useLeaveBalanceSummary(employeeId: number, year: number, enabled = true) {
   return useQuery({
     queryKey: queryKeys.hr.leaveBalanceSummary(employeeId, year),
@@ -247,7 +247,7 @@ export function useCloseLeaveYear() {
       if (data.skipped_config > 0) {
         toast.warning(
           `${data.skipped_config} dòng bị bỏ qua vì loại nghỉ đích chưa khai đúng. ` +
-            'Kiểm lại ô «Quy đổi sang loại» của các loại nghỉ rồi kết sổ lại.',
+            'Kiểm lại ô "Quy đổi sang loại" của các loại nghỉ rồi kết sổ lại.',
         )
       }
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
@@ -397,10 +397,10 @@ export function useLeaveApprovalDecision() {
       //  Dọn cả nhánh `hr`: một lượt ký đổi hàng đợi, đổi danh sách đơn, đổi
       //  luồng duyệt, và đổi quỹ phép của người nghỉ.
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
-      //  ⚠️ Và cả nhánh `approval` — thẻ «Lịch sử phê duyệt» đọc
+      //  ⚠️ Và cả nhánh `approval` — thẻ "Lịch sử phê duyệt" đọc
       //  `approval.trail(instanceId)`, không đọc khóa nào của `hr`. Thiếu dòng
-      //  này thì ký xong: đầu trang ghi «Đã duyệt», thẻ dấu vết ngay dưới vẫn
-      //  ghi «Đang chạy · Đang chờ phản hồi» — hai câu trái nhau trên cùng một
+      //  này thì ký xong: đầu trang ghi "Đã duyệt", thẻ dấu vết ngay dưới vẫn
+      //  ghi "Đang chạy · Đang chờ phản hồi" — hai câu trái nhau trên cùng một
       //  màn hình, và người dùng tin câu bi quan hơn (NP141, 07/09/2026).
       void queryClient.invalidateQueries({ queryKey: queryKeys.approval.all })
     },

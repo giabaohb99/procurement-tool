@@ -25,7 +25,7 @@ interface EmployeeTabContactProps {
 }
 
 /**
- * Tab «Liên hệ & Ngân hàng» — nhóm 3 (địa chỉ) + nhóm 4 (ngân hàng) + bảng
+ * Tab "Liên hệ & Ngân hàng" — nhóm 3 (địa chỉ) + nhóm 4 (ngân hàng) + bảng
  * người báo tin.
  *
  * Cả ba khối đều thuộc nhóm NHẠY CẢM, nên thiếu quyền thì tab này gần như trống
@@ -49,7 +49,7 @@ export function EmployeeTabContact({
       <div className="grid gap-5 lg:grid-cols-2">
         <Card className="gap-4 p-5">
           <FormSection title="Liên hệ">
-            {/*  «Email công việc» đã dời sang tab Chung (đại ca chốt 23/09/2026) —
+            {/*  "Email công việc" đã dời sang tab Chung (đại ca chốt 23/09/2026) —
                  nó là email ĐĂNG NHẬP, đứng cạnh Trạng thái hồ sơ, xem ghi chú ở đó. */}
             {/*  duoc-CR-694: danh sách số (chính + tối đa 4 số khác) chiếm HẾT chiều ngang khối, rồi mới tới
                  hàng hai địa chỉ — đọc từ trên xuống, không xen kẽ (đại ca chốt 29/10/2026). */}

@@ -243,7 +243,7 @@ describe('LeaveCalendarMonthGrid — khổ điện thoại', () => {
 
   it('MÀN RỘNG nhưng LƯỚI hẹp cũng đổi sang ô đếm — menu trái ăn mất 256px', () => {
     //  Máy 820px với menu trái mở: lưới chỉ còn 530px, ô 75px, tên cắt thành
-    //  «Dego …» y hệt trên điện thoại. `matchMedia` ở đây vẫn nói "khổ rộng"
+    //  "Dego …" y hệt trên điện thoại. `matchMedia` ở đây vẫn nói "khổ rộng"
     //  (mặc định của `setup.ts`) — chỉ phép đo bắt được ca này.
     class NarrowResizeObserver {
       constructor(private readonly callback: ResizeObserverCallback) {}

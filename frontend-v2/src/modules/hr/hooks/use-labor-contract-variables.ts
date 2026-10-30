@@ -36,7 +36,7 @@ export function useLaborContractInputFields(enabled: boolean, includeInactive: b
   })
 }
 
-/** Mọi lệnh ghi quét `hr.all`: bảng, khung «Chèn biến» (đọc `/placeholders`), ô nhập trong hộp HĐ cùng mới. */
+/** Mọi lệnh ghi quét `hr.all`: bảng, khung "Chèn biến" (đọc `/placeholders`), ô nhập trong hộp HĐ cùng mới. */
 function useInvalidateHr() {
   const queryClient = useQueryClient()
   return () => queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })

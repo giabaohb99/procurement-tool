@@ -122,17 +122,17 @@ export function EmployeeDetailPage() {
     defaultValues: EMPTY_EMPLOYEE_PROFILE_FORM,
   })
 
-  //  Cờ «đang gửi» đổi NGAY trong tick — xem `onSubmit`.
+  //  Cờ "đang gửi" đổi NGAY trong tick — xem `onSubmit`.
   const submittingRef = useRef(false)
   //  duoc-CR-665 (V0-4): lần lưu đưa hồ sơ sang NGHỈ VIỆC / ngừng hoạt động sẽ khóa tài khoản,
-  //  nên dừng lại ở hộp «kiểm việc duyệt đang treo» trước. Giữ giá trị form để lưu tiếp khi xác nhận.
+  //  nên dừng lại ở hộp "kiểm việc duyệt đang treo" trước. Giữ giá trị form để lưu tiếp khi xác nhận.
   const [pendingLeave, setPendingLeave] = useState<EmployeeProfileFormValues | null>(null)
 
   //  ⚠️ `keepDirtyValues` — `employee` đổi không chỉ lúc mở trang: tải ảnh CCCD /
-  //  ảnh đại diện / chữ ký hay «Áp» một dòng quá trình công tác đều làm hồ sơ
+  //  ảnh đại diện / chữ ký hay "Áp" một dòng quá trình công tác đều làm hồ sơ
   //  tải lại. Reset trần thì mọi ô đang gõ dở ở mọi tab biến mất, im lặng
   //  (duoc-CR-627, dựng lại được trên trình duyệt). Đừng đổi thành "chỉ reset khi
-  //  đổi id": form gửi lại mọi ô, lần Lưu sau sẽ đè phòng ban/chức vụ vừa «Áp».
+  //  đổi id": form gửi lại mọi ô, lần Lưu sau sẽ đè phòng ban/chức vụ vừa "Áp".
   useEffect(() => {
     if (employee) form.reset(employeeProfileFormValues(employee), { keepDirtyValues: true })
   }, [employee, form])
@@ -177,7 +177,7 @@ export function EmployeeDetailPage() {
     //  `isPending` là state React nên chỉ đúng ở lần render SAU. Bấm đúp — hay
     //  bấm liên tiếp trong cùng một tick — thì cả hai lần bấm đều thấy nút còn
     //  bật. Bấm 5 lần liền tay ra **5 `PATCH`** (dựng lại được trên trình duyệt
-    //  thật 08/09/2026), tức 5 dòng «Cập nhật» trong lịch sử thao tác cho một
+    //  thật 08/09/2026), tức 5 dòng "Cập nhật" trong lịch sử thao tác cho một
     //  lần lưu — làm nhiễu đúng cái nhật ký vừa được đầu tư ở bao-CR-311.
     //
     //  Ref đổi NGAY trong cùng tick nên nó chặn được, còn `disabled` giữ vai
@@ -198,9 +198,9 @@ export function EmployeeDetailPage() {
       })
       //  Lưu xong thì coi giá trị vừa gửi là mốc sạch. `keepDirtyValues` ở effect
       //  trên KHÔNG xóa `dirtyFields`, nên thiếu dòng này thì ô đã lưu vẫn bị coi
-      //  là «đang sửa» tới khi rời trang — rồi «Áp» quá trình công tác đổi phòng
+      //  là "đang sửa" tới khi rời trang — rồi "Áp" quá trình công tác đổi phòng
       //  ban xong, lần Lưu sau đè ngược giá trị cũ lên (duoc-CR-627, review).
-      //  Hai ô lương về lại «không đụng» (null): người lưu không được xem số, để nguyên số vừa gõ
+      //  Hai ô lương về lại "không đụng" (null): người lưu không được xem số, để nguyên số vừa gõ
       //  thì lần Lưu sau gửi lại số cũ đè lên số mà HĐLĐ ký sau đó vừa cập nhật (duoc-CR-693).
       form.reset({ ...values, salary_monthly: null, allowance_monthly: null })
     } finally {
@@ -247,11 +247,11 @@ export function EmployeeDetailPage() {
                trên trình duyệt thật 08/09/2026. */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             {/*  ⚠️ Đích của nút lùi phụ thuộc CHỖ ĐẾN. Hồ sơ này mở được từ tab
-                 «Người đang giữ» của một chức vụ hay bảng thành viên của một
+                 "Người đang giữ" của một chức vụ hay bảng thành viên của một
                  phòng ban; trỏ cứng về danh sách nhân sự là ném người dùng sang
                  màn họ chưa từng đứng, mất luôn tab và bộ lọc đang đặt. Trên
                  điện thoại đây là nút lùi DUY NHẤT trong tầm mắt.
-                 Nhãn đổi theo đích — «Danh sách nhân sự» mà bấm ra chức vụ thì
+                 Nhãn đổi theo đích — "Danh sách nhân sự" mà bấm ra chức vụ thì
                  nút nói dối. Xem `use-back-target.ts`. */}
             <Button variant="ghost" size="sm" asChild>
               <Link to={backTarget.url}>
@@ -363,15 +363,15 @@ export function EmployeeDetailPage() {
                   .map((e) => ({ id: e.id, label: `${e.full_name} (${e.code})` }))}
               />
 
-              {/*  Kiêm nhiệm dời từ tab «Tài khoản» sang đây (khách chốt
+              {/*  Kiêm nhiệm dời từ tab "Tài khoản" sang đây (khách chốt
                    10/09/2026): nó là thông tin CÔNG VIỆC — người này phụ trách
                    thêm phòng nào — nên đứng cạnh Phòng ban · Chức vụ · Quản lý
                    trực tiếp thì người khai tìm được mà không phải đoán.
 
                    ⚠️ Lý do cũ để nó cạnh thẻ tài khoản KHÔNG sai và đừng quên:
                    phòng kiêm nhiệm mở rộng **phạm vi dữ liệu** người này đọc
-                   được, tức nó cũng là một nửa của câu «người này thấy được
-                   gì». Đổi chỗ là chọn cách đọc thứ nhất; ai đổi lại thì đọc
+                   được, tức nó cũng là một nửa của câu "người này thấy được
+                   gì". Đổi chỗ là chọn cách đọc thứ nhất; ai đổi lại thì đọc
                    dòng này trước. */}
               <EmployeeDepartmentCard
                 employeeId={employee.id}

@@ -3,13 +3,13 @@ import { CONTRACT_TYPE_INDEFINITE } from './labor-contract-rules'
 /**
  * Nút chọn nhanh thời hạn ở hộp lập/sửa HĐLĐ — bấm là điền sẵn ngày kết thúc từ ngày bắt đầu.
  *
- * Sinh ra sau đợt bấm thử 06/10/2026: lịch chọn ngày chỉ có nút «tháng sau», HĐ 3 năm phải bấm 36
+ * Sinh ra sau đợt bấm thử 06/10/2026: lịch chọn ngày chỉ có nút "tháng sau", HĐ 3 năm phải bấm 36
  * lần. Không sửa ô chọn ngày dùng chung của cả app — gói gọn trong form hợp đồng.
  *
  * Cách tính PHẢI khớp backend (`context_builder.describe_duration` + `rules.duration_warnings`):
  * ngày kết thúc = ngày bắt đầu + N tháng − 1 ngày, tháng đích ngắn hơn thì kẹp về cuối tháng
- * (giống `_add_months`). Nhờ vậy «12 tháng» in ra file đúng «12 tháng», và «36 tháng» không tự kích
- * cảnh báo «quá 36 tháng».
+ * (giống `_add_months`). Nhờ vậy "12 tháng" in ra file đúng "12 tháng", và "36 tháng" không tự kích
+ * cảnh báo "quá 36 tháng".
  */
 
 export type TermPreset = { label: string; months: number } | { label: string; days: number }
@@ -20,7 +20,7 @@ const FIXED_TERM = 2
 
 const PRESETS_BY_TYPE: Record<number, TermPreset[]> = {
   //  Thử việc tính theo NGÀY (BLLĐ 2019 Điều 25: tối đa 60 ngày với việc cần cao đẳng trở lên,
-  //  30 ngày với trung cấp). «2 tháng» có khi ra 61–62 ngày, vượt trần — nên không dùng tháng.
+  //  30 ngày với trung cấp). "2 tháng" có khi ra 61–62 ngày, vượt trần — nên không dùng tháng.
   [PROBATION]: [
     { label: '30 ngày', days: 30 },
     { label: '60 ngày', days: 60 },
@@ -51,7 +51,7 @@ function parseIsoDate(value: string): [number, number, number] | null {
   if (!match) return null
   const [y, m, d] = [Number(match[1]), Number(match[2]), Number(match[3])]
   const probe = new Date(Date.UTC(y, m - 1, d))
-  //  Date tự «tràn» 31/02 → 03/03; so lại để loại ngày không tồn tại.
+  //  Date tự "tràn" 31/02 → 03/03; so lại để loại ngày không tồn tại.
   if (probe.getUTCFullYear() !== y || probe.getUTCMonth() !== m - 1 || probe.getUTCDate() !== d) return null
   return [y, m, d]
 }

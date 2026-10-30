@@ -1,5 +1,5 @@
 // duoc-CR-606 (07/10/2026) — SOẠN NỘI DUNG mẫu hợp đồng ngay trên web: mở tệp .docx bằng trình
-// soạn thảo của phân hệ Văn bản, chèn biến bằng nút (khung «Chèn biến»), lưu thì backend dựng lại
+// soạn thảo của phân hệ Văn bản, chèn biến bằng nút (khung "Chèn biến"), lưu thì backend dựng lại
 // .docx, kiểm biến y như lúc tải tệp lên rồi thay tệp. Bản Word gốc vẫn tải về được trước khi lưu.
 import type { Editor } from '@tiptap/react'
 import { ArrowLeft, Download, Loader2, Save, TriangleAlert } from 'lucide-react'
@@ -119,7 +119,7 @@ export function LaborContractTemplateEditorPage() {
   return (
     <PageContainer fill className="flex flex-col gap-3">
       <PageHeader
-        title={meta ? `Soạn mẫu «${meta.name}»` : 'Soạn mẫu hợp đồng'}
+        title={meta ? `Soạn mẫu "${meta.name}"` : 'Soạn mẫu hợp đồng'}
         description={description}
         actions={
           <div className="flex flex-wrap gap-2">
@@ -154,7 +154,7 @@ export function LaborContractTemplateEditorPage() {
           <TriangleAlert className="mt-0.5 size-4 shrink-0" />
           <span>
             Biến không có trong danh sách: {unknown.map((key) => `{{ ${key} }}`).join(', ')}. Xóa hoặc thay bằng biến ở
-            khung «Chèn biến» rồi lưu lại.
+            khung <strong>Chèn biến</strong> rồi lưu lại.
           </span>
         </div>
       )}

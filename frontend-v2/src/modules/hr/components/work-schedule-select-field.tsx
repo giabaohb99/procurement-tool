@@ -16,7 +16,7 @@ interface WorkScheduleSelectFieldProps {
 }
 
 /**
- * Ô «Mẫu lịch» của màn Gán lịch — chỉ liệt kê mẫu đang dùng.
+ * Ô "Mẫu lịch" của màn Gán lịch — chỉ liệt kê mẫu đang dùng.
  *
  * Cố ý KHÔNG dùng `source` của ô `select` chung: nó cache 5 phút dưới khóa riêng
  * nên mẫu vừa tạo ở màn bên cạnh không hiện ra trong ô chọn, HR đi gán thì thấy
@@ -87,7 +87,7 @@ export function WorkScheduleSelectField({
       )}
       {!isLoading && !isError && options.length === 0 && (
         <p className="text-xs text-muted-foreground">
-          Chưa có mẫu lịch đang dùng — tạo ở mục «Mẫu lịch tuần» trước.
+          Chưa có mẫu lịch đang dùng — tạo ở mục <strong>Mẫu lịch tuần</strong> trước.
         </p>
       )}
     </div>

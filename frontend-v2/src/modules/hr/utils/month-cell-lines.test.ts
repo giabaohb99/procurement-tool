@@ -63,7 +63,7 @@ describe('monthCellDayLabel', () => {
   })
 
   it('HÔM NAY thì bỏ tên tháng — nhãn nằm trong vòng tròn 24px', () => {
-    //  «1 thg 10» nhét vào vòng tròn thì nó méo thành viên thuốc.
+    //  "1 thg 10" nhét vào vòng tròn thì nó méo thành viên thuốc.
     expect(monthCellDayLabel(new Date(2026, 9, 1), true)).toBe('1')
   })
 })

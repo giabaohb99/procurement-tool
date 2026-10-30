@@ -111,7 +111,7 @@ describe('EmployeeTabWorkDecisions', () => {
     expect(state.queriedEmployeeId).toBe(employee.id)
   })
 
-  it('không có nút Thêm/Sửa/Xóa/Áp — khu này chỉ đọc dù can_edit=true (chỉ có «+ Thêm quyết định»)', () => {
+  it('không có nút Thêm/Sửa/Xóa/Áp — khu này chỉ đọc dù can_edit=true (chỉ có "+ Thêm quyết định")', () => {
     state.result = {
       items: [{ ...row(), decision_no: 'QD-30' }],
       can_edit: true,
@@ -137,12 +137,12 @@ describe('EmployeeTabWorkDecisions', () => {
 })
 
 /**
- * Mục 3 (03/10/2026) — nút «+ Thêm quyết định» mở ĐÚNG hộp thêm/sửa quá trình
+ * Mục 3 (03/10/2026) — nút "+ Thêm quyết định" mở ĐÚNG hộp thêm/sửa quá trình
  * công tác dùng chung, nhưng với tiêu đề/loại mặc định/ràng buộc riêng cho
  * ngữ cảnh "thêm quyết định": loại Bổ nhiệm, Số QĐ bắt buộc. Lưu xong dùng
- * chung khóa truy vấn với tab «Quá trình công tác» nên dòng mới hiện ở cả hai.
+ * chung khóa truy vấn với tab "Quá trình công tác" nên dòng mới hiện ở cả hai.
  */
-describe('EmployeeTabWorkDecisions — nút «+ Thêm quyết định» (mục 3)', () => {
+describe('EmployeeTabWorkDecisions — nút "+ Thêm quyết định" (mục 3)', () => {
   it('can_edit=true → có nút, bấm vào mở hộp với tiêu đề/loại/ràng buộc đúng ngữ cảnh', async () => {
     state.result = { items: [], can_edit: true, can_open_files: true }
     renderTab()
@@ -159,7 +159,7 @@ describe('EmployeeTabWorkDecisions — nút «+ Thêm quyết định» (mục 3
     expect(call?.createTitle).toBe('Thêm quyết định bổ nhiệm')
   })
 
-  it('can_edit=false → KHÔNG có nút «+ Thêm quyết định» ở đâu cả', () => {
+  it('can_edit=false → KHÔNG có nút "+ Thêm quyết định" ở đâu cả', () => {
     state.result = { items: [], can_edit: false, can_open_files: true }
     renderTab()
 

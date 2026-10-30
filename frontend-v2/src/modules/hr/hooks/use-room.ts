@@ -12,7 +12,7 @@ import { toApiTime } from '../utils/room-time'
  *
  * ⚠️ Mọi lượt ghi đều dọn cả nhánh `queryKeys.hr.all`, không dọn lẻ từng khóa.
  * Một phiếu xuất hiện ở BA chỗ đọc cùng dữ liệu — danh sách phiếu, lịch đặt
- * phòng, và ô «phòng trống» trên form đang mở — nên dọn lẻ là chắc chắn có màn
+ * phòng, và ô "phòng trống" trên form đang mở — nên dọn lẻ là chắc chắn có màn
  * hiện phòng còn trống trong khi nó vừa bị giữ.
  */
 
@@ -60,7 +60,7 @@ export function useRoomAvailability(startAt: string, endAt: string, companyId = 
   })
 }
 
-/** Phiếu đang chờ CHÍNH TÔI ký — tab «Cần tôi duyệt». */
+/** Phiếu đang chờ CHÍNH TÔI ký — tab "Cần tôi duyệt". */
 export function useRoomToApprove(enabled = true) {
   return useQuery({
     queryKey: queryKeys.hr.roomToApprove(),
@@ -72,7 +72,7 @@ export function useRoomToApprove(enabled = true) {
   })
 }
 
-/** Phiếu chính tôi vừa quyết định — tab «Tôi đã duyệt». */
+/** Phiếu chính tôi vừa quyết định — tab "Tôi đã duyệt". */
 export function useRoomHandled(days = 30, enabled = true) {
   return useQuery({
     queryKey: queryKeys.hr.roomHandled({ days }),

@@ -32,7 +32,7 @@ describe('describeDay / describeLunch / describeDayFull', () => {
     expect(describeDay(day(6, OFF))).toBe('Nghỉ')
   })
 
-  it('half days without hours (broken data) fall back to the bare label, not «undefined»', () => {
+  it('half days without hours (broken data) fall back to the bare label, not "undefined"', () => {
     expect(describeDay(day(5, MORNING))).toBe('Sáng')
     expect(describeDay(day(5, AFTERNOON))).toBe('Chiều')
     expect(describeDay(day(0, FULL))).toBe('Cả ngày')
@@ -55,7 +55,7 @@ describe('summarizeWeek', () => {
     expect(summarizeWeek(week)).toBe('T2–T6 08:00–17:00 · T7 sáng 08:00–12:00 · CN nghỉ')
   })
 
-  // Regression: T6 không khai giờ trưa từng ra «T2–T5 08:00–17:00 · T6 08:00–17:00»,
+  // Regression: T6 không khai giờ trưa từng ra "T2–T5 08:00–17:00 · T6 08:00–17:00",
   // trông như bị lặp. Giờ trưa khác chuẩn / vắng phải được nói ra.
   it('never prints two adjacent groups with the same label: a lunch difference is spelled out', () => {
     const week = [0, 1, 2, 3].map(fullDay)
@@ -80,7 +80,7 @@ describe('summarizeWeek', () => {
     expect(summarizeWeek(week)).toBe('T2–T3 08:00–17:00 · T4 07:30–16:30')
   })
 
-  it('seven OFF days -> «Nghỉ cả tuần»; empty / invalid -> «Chưa khai lịch»', () => {
+  it('seven OFF days -> "Nghỉ cả tuần"; empty / invalid -> "Chưa khai lịch"', () => {
     expect(summarizeWeek(Array.from({ length: 7 }, (_, i) => day(i, OFF)))).toBe('Nghỉ cả tuần')
     expect(summarizeWeek([])).toBe('Chưa khai lịch')
     expect(summarizeWeek(undefined)).toBe('Chưa khai lịch')
@@ -88,7 +88,7 @@ describe('summarizeWeek', () => {
     expect(summarizeWeek([day(12, FULL)])).toBe('Chưa khai lịch')
   })
 
-  it('missing weekdays are skipped, not invented as «nghỉ»; shuffled input gives the same output', () => {
+  it('missing weekdays are skipped, not invented as "nghỉ"; shuffled input gives the same output', () => {
     expect(summarizeWeek([fullDay(0)])).toBe('T2 08:00–17:00')
     expect(summarizeWeek([fullDay(1), fullDay(0)])).toBe('T2–T3 08:00–17:00')
   })

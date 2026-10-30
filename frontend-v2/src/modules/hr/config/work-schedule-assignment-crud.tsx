@@ -14,7 +14,7 @@ import {
   type WorkScheduleAssignment,
 } from '../types/work-schedule'
 
-/** «Toàn hệ thống» cho cấp hệ thống (đối tượng `0` không có tên), còn lại lấy tên backend trả kèm. */
+/** "Toàn hệ thống" cho cấp hệ thống (đối tượng `0` không có tên), còn lại lấy tên backend trả kèm. */
 function targetLabel(row: WorkScheduleAssignment): string {
   if (row.target_level === WORK_SCHEDULE_LEVEL_CODE.SYSTEM) return SYSTEM_LEVEL_LABEL
   return row.target_name || `#${row.target_id}`
@@ -25,12 +25,12 @@ function targetLabel(row: WorkScheduleAssignment): string {
  *
  * Hẹp thắng rộng (Nhân sự > Phòng ban > Pháp nhân > Toàn hệ thống). Cùng một đối
  * tượng không được có hai dòng chồng khoảng ngày — NGOẠI LỆ: tạo dòng mới khi đối
- * tượng đang có dòng «không thời hạn» bắt đầu trước đó thì backend tự đóng dòng cũ
- * vào ngày liền trước, và nếu dòng mới có «Đến ngày» thì lịch cũ tự nối lại không
+ * tượng đang có dòng "không thời hạn" bắt đầu trước đó thì backend tự đóng dòng cũ
+ * vào ngày liền trước, và nếu dòng mới có "Đến ngày" thì lịch cũ tự nối lại không
  * thời hạn từ ngày sau đó (chốt 05/10/2026). Mọi chồng khác backend trả 400 kèm tên
  * dòng trùng, câu đó hiện ở toast chung của khung CRUD.
  *
- * Bốn ô đầu là ô TỰ VẼ vì cặp «cấp + đối tượng» phụ thuộc nhau: đổi cấp phải xóa
+ * Bốn ô đầu là ô TỰ VẼ vì cặp "cấp + đối tượng" phụ thuộc nhau: đổi cấp phải xóa
  * đối tượng cũ, và danh sách đối tượng đổi theo cấp.
  */
 export const WORK_SCHEDULE_ASSIGNMENT_CRUD_CONFIG: CrudConfig<WorkScheduleAssignment> = {
@@ -46,7 +46,7 @@ export const WORK_SCHEDULE_ASSIGNMENT_CRUD_CONFIG: CrudConfig<WorkScheduleAssign
   //  Không có trang chi tiết → xóa ngay trong popup. Xóa dòng vừa gán thì backend tự mở lại
   //  lịch cũ mà dòng đó đã tự đóng (chốt 05/10/2026).
   deleteInForm: true,
-  //  Gán/gỡ lịch đổi `assignment_count` của mẫu (cảnh báo «Mẫu đang gán n nơi»).
+  //  Gán/gỡ lịch đổi `assignment_count` của mẫu (cảnh báo "Mẫu đang gán n nơi").
   alsoInvalidate: ['/api/work-schedules'],
   dialogMaxWidth: 'sm:max-w-xl',
   //  Lọc theo cấp ở backend (`target_level`); lọc theo mẫu cần danh sách động nên chưa có.
@@ -142,7 +142,7 @@ export const WORK_SCHEDULE_ASSIGNMENT_CRUD_CONFIG: CrudConfig<WorkScheduleAssign
         <WorkScheduleLevelField control={control} name={name} idName="target_id" disabled={disabled} />
       ),
     },
-    //  Ô ẨN: chỉ để giữ tên đối tượng đã lưu cho ô «Đối tượng» hiện thay vì «#7».
+    //  Ô ẨN: chỉ để giữ tên đối tượng đã lưu cho ô "Đối tượng" hiện thay vì "#7".
     //  Không gửi lên backend (xem `buildPayload`).
     { name: 'target_name', label: 'Tên đối tượng', type: 'text', defaultValue: '', showWhen: () => false },
     {
@@ -175,8 +175,8 @@ export const WORK_SCHEDULE_ASSIGNMENT_CRUD_CONFIG: CrudConfig<WorkScheduleAssign
       required: true,
       hint:
         'Nếu đối tượng đang có lịch không thời hạn, lịch đó tự kết thúc trước ngày này; nếu lịch ' +
-        'mới có «Đến ngày», lịch cũ tự nối lại sau ngày đó. Các trường hợp chồng ngày khác sẽ báo ' +
-        'lỗi — khi đó đặt «Đến ngày» cho dòng cũ trước.',
+        'mới có "Đến ngày", lịch cũ tự nối lại sau ngày đó. Các trường hợp chồng ngày khác sẽ báo ' +
+        'lỗi — khi đó đặt "Đến ngày" cho dòng cũ trước.',
     },
     {
       name: 'effective_to',

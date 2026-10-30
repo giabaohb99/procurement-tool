@@ -1,11 +1,11 @@
 /**
- * Ô «Lịch nhắc trong tháng» của Tổng quan Nhân sự (duoc-CR-689) — khớp
+ * Ô "Lịch nhắc trong tháng" của Tổng quan Nhân sự (duoc-CR-689) — khớp
  * `GET /api/employees/monthly-reminders?month=YYYY-MM`
  * (`backend/app/modules/employee/monthly_reminders_service.py`).
  *
  * ⚠️ Nhóm người xem THIẾU QUYỀN trả `allowed: false` + rỗng: sinh nhật cần `employee_sensitive.read`,
  * HĐ / thử việc cần `labor_contract.read`. `allowed: false` ≠ rỗng — không có quyền thì giấu cả
- * nhóm, có quyền mà rỗng thì nói «không có ai». Trần 200 dòng mỗi nhóm (`total` là số thật).
+ * nhóm, có quyền mà rỗng thì nói "không có ai". Trần 200 dòng mỗi nhóm (`total` là số thật).
  */
 export interface MonthlyReminderPerson {
   employee_id: number
@@ -29,7 +29,7 @@ export interface AnniversaryReminder extends MonthlyReminderPerson {
   hire_date: string
 }
 
-/** HĐLĐ / HĐ thử việc kết thúc trong tháng (cùng nguồn với thẻ «HĐLĐ sắp hết hạn»). */
+/** HĐLĐ / HĐ thử việc kết thúc trong tháng (cùng nguồn với thẻ "HĐLĐ sắp hết hạn"). */
 export interface ContractReminder extends MonthlyReminderPerson {
   contract_code: string
   contract_no: string

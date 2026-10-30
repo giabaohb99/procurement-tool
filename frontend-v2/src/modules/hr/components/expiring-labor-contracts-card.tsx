@@ -19,8 +19,8 @@ interface ExpiringLaborContractsCardProps {
  * HĐLĐ sắp hết / đã hết hạn trong phạm vi người xem (duoc-CR-620).
  *
  * Nơi gọi chỉ dựng thẻ khi có `labor_contract.read` — hợp đồng mang lương nên
- * người không có quyền thì không thấy cả cái khung, khác thẻ «Hồ sơ cần bổ sung»
- * vẫn hiện câu «không có quyền».
+ * người không có quyền thì không thấy cả cái khung, khác thẻ "Hồ sơ cần bổ sung"
+ * vẫn hiện câu "không có quyền".
  *
  * Hết hạn sớm nhất lên đầu, kể cả HĐ đã quá hạn: người đó vẫn đi làm mà không có
  * hợp đồng, phải nằm trên cùng cho tới khi Nhân sự lập HĐ mới hoặc chấm dứt. Luật
@@ -43,7 +43,7 @@ export function ExpiringLaborContractsCard({ className }: ExpiringLaborContracts
         .join(' · ')
     : `Không có hợp đồng nào hết hạn trong ${warnDays} ngày tới.`
 
-  //  Thẻ CẢNH BÁO mà tải hỏng thì không được nói «không có gì» — đó là trấn an giả,
+  //  Thẻ CẢNH BÁO mà tải hỏng thì không được nói "không có gì" — đó là trấn an giả,
   //  đúng lúc có thể đang có hợp đồng quá hạn. `ChartCard` không có trạng thái lỗi riêng.
   if (query.isError) {
     return (

@@ -68,13 +68,13 @@ export function useChangeRequests(params: ListParams, enabled = true) {
   })
 }
 
-/** Số đề nghị đang chờ — huy hiệu menu «Duyệt sửa hồ sơ». */
+/** Số đề nghị đang chờ — huy hiệu menu "Duyệt sửa hồ sơ". */
 export function useChangeRequestPendingCount(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.hr.changeRequestPendingCount(),
     queryFn: () => employeeChangeRequestApi.pendingCount(),
     enabled,
-    //  Không cần thời gian thực: huy hiệu nhắc «còn việc», trễ một phút không ai thiệt.
+    //  Không cần thời gian thực: huy hiệu nhắc "còn việc", trễ một phút không ai thiệt.
     staleTime: 60_000,
   })
 }
@@ -90,7 +90,7 @@ export function useChangeRequest(id: number) {
 /**
  * Duyệt / từ chối xong: nạp lại danh sách + số đếm + chi tiết (chung gốc `changeRequestsRoot`),
  * hồ sơ của người được duyệt (khóa cha quét luôn hộ gia đình), các trang danh sách nhân sự, và
- * hai khóa «của tôi» — admin được duyệt đề nghị của CHÍNH MÌNH (review L3), Trang cá nhân phải
+ * hai khóa "của tôi" — admin được duyệt đề nghị của CHÍNH MÌNH (review L3), Trang cá nhân phải
  * thấy ngay. `myEmployee` (`['hr','employees','me']`) KHÔNG khớp `employees()` (`{}` ≠ `'me'`).
  */
 function invalidateAfterDecision(queryClient: QueryClient, employeeId: number) {

@@ -36,10 +36,10 @@ export const DRIVER_CRUD_CONFIG: CrudConfig<Driver> = {
   detailRoute: (id) => appRoutes.vehicleBooking.driverDetail(id),
   searchParam: 'name',
   //  Ô tìm chỉ lọc theo tên (`searchParam`) — câu gợi ý ngắn để còn đọc được ở
-  //  khổ hẹp, nơi nó chia hàng với nút «Bộ lọc».
+  //  khổ hẹp, nơi nó chia hàng với nút "Bộ lọc".
   searchPlaceholder: 'Tìm tên tài xế…',
   //  Hai câu hỏi thường ngày của người điều phối ("ai đang rảnh", "ai là tài xế
-  //  thuê") đặt sẵn ngoài bảng, khỏi phải mở tờ «Bộ lọc».
+  //  thuê") đặt sẵn ngoài bảng, khỏi phải mở tờ "Bộ lọc".
   quickFilters: [
     { key: 'status', label: 'Trạng thái', type: 'select', options: STATUS_OPTIONS },
     { key: 'is_external', label: 'Nguồn', type: 'select', options: SOURCE_OPTIONS },
@@ -61,7 +61,7 @@ export const DRIVER_CRUD_CONFIG: CrudConfig<Driver> = {
       subtitle={
         <span className="block truncate">
           {(() => {
-            //  Có chữ «GPLX» dẫn đường thì "B2" mới đọc ra là hạng bằng lái;
+            //  Có chữ "GPLX" dẫn đường thì "B2" mới đọc ra là hạng bằng lái;
             //  đứng trơ sau số điện thoại, nó như một mẩu mã nào đó.
             const license = [d.license_class, d.license_number].filter(Boolean).join(' · ')
             return [d.phone, license && `GPLX ${license}`].filter(Boolean).join(' — ') || '—'

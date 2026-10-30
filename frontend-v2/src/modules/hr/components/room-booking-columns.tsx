@@ -104,7 +104,7 @@ export function flowColumn(): DataTableColumn<RoomInboxRow> {
   }
 }
 
-/** Việc của tôi trên phiếu + hạn xử lý — chỉ có nghĩa ở tab «Cần tôi duyệt». */
+/** Việc của tôi trên phiếu + hạn xử lý — chỉ có nghĩa ở tab "Cần tôi duyệt". */
 export function myTaskColumns(): DataTableColumn<RoomInboxRow>[] {
   return [
     {

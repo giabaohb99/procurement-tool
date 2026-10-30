@@ -94,8 +94,8 @@ function EmployeeListContent() {
 
   const { data: departments } = useDepartments({ page_size: 500 })
   const { queryParams, queryKey } = useFilterQuery()
-  //  Bộ lọc nâng cao: đếm để gắn huy hiệu lên nút «Bộ lọc», và hai hàm để nút
-  //  «Xóa lọc» / «Áp dụng» của tờ trượt điều khiển được nó.
+  //  Bộ lọc nâng cao: đếm để gắn huy hiệu lên nút "Bộ lọc", và hai hàm để nút
+  //  "Xóa lọc" / "Áp dụng" của tờ trượt điều khiển được nó.
   const {
     activeCount: filterActiveCount,
     reset: filterReset,
@@ -196,7 +196,7 @@ function EmployeeListContent() {
         }
       />
 
-      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu «đã cuộn» xuống thanh
+      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu "đã cuộn" xuống thanh
            công cụ ghim (do `DataTable` vẽ, tầng này không với tới bằng prop). */}
       <div
         ref={stickyRef}
@@ -215,7 +215,7 @@ function EmployeeListContent() {
             //  Nói rõ RỖNG VÌ BỘ LỌC hay rỗng vì chưa có gì.
             isFiltering
               ? 'Không có nhân sự nào khớp bộ lọc.'
-              : 'Chưa có nhân sự nào. Bấm «Thêm mới» để tạo.'
+              : 'Chưa có nhân sự nào. Bấm "Thêm mới" để tạo.'
           }
           storageKey="hr.employees"
           //  Khổ hẹp: THẺ thay bảng — xem `EmployeeCard`.

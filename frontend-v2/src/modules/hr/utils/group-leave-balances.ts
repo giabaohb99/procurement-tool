@@ -79,7 +79,7 @@ const SUM_FIELDS = [
  * Làm tròn hai chữ số sau dấu phẩy.
  *
  * ⚠️ Không phải làm đẹp: số ngày đi theo bước nửa ngày, và `0.1 + 0.2` trong
- * JavaScript ra `0.30000000000000004`. Cộng tám dòng như vậy là cột «Còn lại»
+ * JavaScript ra `0.30000000000000004`. Cộng tám dòng như vậy là cột "Còn lại"
  * hiện ra một con số hai chục chữ số giữa một bảng toàn số tròn.
  */
 function round2(value: number): number {
@@ -169,7 +169,7 @@ export function groupLeaveBalances(items: readonly LeaveBalance[] | undefined): 
  *
  * ⚠️ Nhóm chỉ có MỘT dòng quỹ thì không có mũi tên bung: bung ra để thấy đúng
  * một dòng chép lại con số vừa đọc là một thao tác không trả lại gì. Đó cũng là
- * đa số hiện nay — công ty mới khai mỗi «Phép năm» thì mọi nhân sự đều một dòng,
+ * đa số hiện nay — công ty mới khai mỗi "Phép năm" thì mọi nhân sự đều một dòng,
  * và một bảng 261 mũi tên vô dụng còn tệ hơn bảng phẳng cũ.
  */
 export function flattenLeaveBalanceGroups(
@@ -211,7 +211,7 @@ export function rowTotals(row: LeaveBalanceRow): LeaveBalanceTotals | LeaveBalan
   return row.kind === 'group' ? row.group.totals : row.balance
 }
 
-/** Hàng này có quỹ thật không — dùng để quyết «0 còn lại» tô đỏ hay để mờ. */
+/** Hàng này có quỹ thật không — dùng để quyết "0 còn lại" tô đỏ hay để mờ. */
 export function rowHasRealQuota(row: LeaveBalanceRow): boolean {
   return row.kind === 'group' ? row.group.hasQuota : rowHasQuota(row.balance)
 }

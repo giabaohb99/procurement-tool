@@ -49,8 +49,8 @@ function describeStatus(booking?: RoomBooking): string {
   if (!booking) return 'Chọn phòng và khung giờ, lưu nháp rồi gửi duyệt.'
   switch (booking.status) {
     case ROOM_BOOKING_STATUS.PENDING:
-      //  ⚠️ KHÔNG nhắc mốc «gửi duyệt lúc…» ở đây (bỏ 09/09/2026): thẻ «Tình
-      //  trạng phiếu» đã in đúng mốc đó, mà hai thứ nằm cách nhau chưa tới một
+      //  ⚠️ KHÔNG nhắc mốc "gửi duyệt lúc…" ở đây (bỏ 09/09/2026): thẻ "Tình
+      //  trạng phiếu" đã in đúng mốc đó, mà hai thứ nằm cách nhau chưa tới một
       //  màn hình. Câu này có việc riêng — nói VIỆC TIẾP THEO — còn mốc thời
       //  gian là việc của thẻ kia.
       return 'Đang chờ duyệt — phòng đã được giữ.'
@@ -74,7 +74,7 @@ export function RoomBookingDetailPage() {
   const location = useLocation()
   const { can } = usePermission()
 
-  //  Nút «Về danh sách» LÙI THEO LỊCH SỬ: đường cứng làm mất bộ lọc người dùng
+  //  Nút "Về danh sách" LÙI THEO LỊCH SỬ: đường cứng làm mất bộ lọc người dùng
   //  vừa đặt ở màn danh sách (bài học 04/09/2026 của Nghỉ phép). `location.key
   //  === 'default'` = vào thẳng từ link trong thư mời, lùi lúc đó là đẩy họ ra
   //  khỏi ứng dụng.
@@ -119,7 +119,7 @@ export function RoomBookingDetailPage() {
   //
   //  `disabled={isPending}` không đỡ được: đó là state của React, chỉ bật ở lần
   //  render kế, nên năm cú bấm trong cùng một nhịp đều lọt — đo được ngày
-  //  04/09/2026, bấm «Lưu nháp» 5 lần ra **5 lệnh POST**, tức 5 phiếu trùng.
+  //  04/09/2026, bấm "Lưu nháp" 5 lần ra **5 lệnh POST**, tức 5 phiếu trùng.
   //
   //  Dùng chung một chốt cho mọi thao tác ghi của trang cũng là có chủ ý: hai
   //  thao tác khác nhau trên CÙNG một phiếu (vừa Lưu vừa Gửi duyệt) chạy song
@@ -214,7 +214,7 @@ export function RoomBookingDetailPage() {
         //  Nút trải đều hết hàng ở khổ hẹp. `[&>button]` chứ không gắn class
         //  vào từng nút: ba nút của `RoomDecisionActions` cũng là con trực tiếp
         //  của cụm này, gắn tay thì phải xỏ thêm một prop xuyên qua nó.
-        //  `min-w-30` để cụm tự ngắt hàng thay vì bóp «Duyệt phiếu» thành hai dòng.
+        //  `min-w-30` để cụm tự ngắt hàng thay vì bóp "Duyệt phiếu" thành hai dòng.
         actionsClassName="max-md:[&>button]:min-w-30 max-md:[&>button]:flex-1"
         actions={
           <>
@@ -342,7 +342,7 @@ export function RoomBookingDetailPage() {
           </div>
 
           {/*  Cột phải đổi vai theo chế độ: đang SỬA thì soi lại thứ vừa nhập,
-               còn CHỈ XEM thì «phiếu này đang ở đâu» — trạng thái, mốc thời
+               còn CHỈ XEM thì "phiếu này đang ở đâu" — trạng thái, mốc thời
                gian, ý kiến người duyệt. Bỏ trống nửa phải là phí đúng chỗ mắt
                người đọc tìm tới.
 

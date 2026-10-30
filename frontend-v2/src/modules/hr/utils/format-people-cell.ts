@@ -8,7 +8,7 @@ import { formatDate } from '@/shared/utils/format-date'
  *
  * Dùng ở bản in phiếu thông tin và bảng so sánh hộ gia đình của màn duyệt (duoc-CR-676). Mã `0`
  * (chưa khai) và `null` đều ra chuỗi RỖNG — in ra giấy là ô trống để điền tay, không phải chữ
- * «Chưa khai» hay «null».
+ * "Chưa khai" hay "null".
  */
 export function formatPeopleCell(kind: PeopleFieldKind, value: unknown): string {
   if (value === null || value === undefined) return ''

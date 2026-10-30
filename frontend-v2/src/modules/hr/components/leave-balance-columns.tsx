@@ -11,11 +11,11 @@ import { DayCount, NameCell } from './leave-balance-cells'
  * Cột của bảng QUỸ PHÉP NĂM — bảng gom theo NGƯỜI, loại nghỉ là dòng con.
  *
  * ⚠️ **Năm cột bày sẵn, sáu cột ẩn sẵn.** Bản cũ bày cả mười một cột: ở màn
- * 1600px nó vẫn tràn, và thứ tràn ra ngoài mép phải lại đúng là cột «Còn lại» —
+ * 1600px nó vẫn tràn, và thứ tràn ra ngoài mép phải lại đúng là cột "Còn lại" —
  * con số duy nhất người ta mở màn này để xem. Sáu cột giải thích (hạn mức gốc,
  * thâm niên, chuyển năm trước, đã chuyển đi, hết hạn, điều chỉnh tay) gần như
  * luôn bằng 0 nên chúng chiếm 750px để bày ra một biển dấu gạch; ai cần thì bật
- * lại ở menu «Cột», mà phép tính đầy đủ thì trang chi tiết đã bày sẵn rồi.
+ * lại ở menu "Cột", mà phép tính đầy đủ thì trang chi tiết đã bày sẵn rồi.
  *
  * Ô định danh và ô số ngày nằm ở `leave-balance-cells.tsx` — tách ra để tệp này
  * chỉ còn khai báo cột, và để `react-refresh` không cằn nhằn một tệp vừa xuất
@@ -47,10 +47,10 @@ export function buildLeaveBalanceColumns({
     {
       key: 'total_days',
       header: 'Tổng cấp',
-      //  Thay cho cột «Hạn mức» cũ ở vị trí bày sẵn: ở hàng NHÓM thì hạn mức
+      //  Thay cho cột "Hạn mức" cũ ở vị trí bày sẵn: ở hàng NHÓM thì hạn mức
       //  gốc cộng lại không còn nghĩa (cộng hạn mức phép năm với hạn mức nghỉ
       //  cưới ra một con số không ai dùng), còn `total_days` là "tổng được
-      //  nghỉ" — đúng vế trái của phép tính mà cột «Còn lại» là kết quả.
+      //  nghỉ" — đúng vế trái của phép tính mà cột "Còn lại" là kết quả.
       cell: (row) => <DayCount value={rowTotals(row).total_days} />,
       width: 110,
       align: 'right',
@@ -82,7 +82,7 @@ export function buildLeaveBalanceColumns({
     {
       key: 'carried_out_days',
       header: 'Đã chuyển đi',
-      //  Phần đã mang sang năm sau lúc kết sổ. Nó ĐÃ bị trừ khỏi «Còn lại»,
+      //  Phần đã mang sang năm sau lúc kết sổ. Nó ĐÃ bị trừ khỏi "Còn lại",
       //  nên không có cột này thì số dư năm cũ tụt mà không dòng nào giải
       //  thích — và người xem sẽ đi tìm xem ai vừa nghỉ mấy ngày đó.
       cell: (row) => <DayCount value={rowTotals(row).carried_out_days} />,

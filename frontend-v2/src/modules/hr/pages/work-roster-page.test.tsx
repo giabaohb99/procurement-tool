@@ -7,7 +7,7 @@ import { useAuthStore } from '@/core/auth/auth-store'
 import type { AuthUser } from '@/core/auth/auth-types'
 import { rosterCell, rosterItem, rosterResponse } from '../components/work-roster-fixture'
 
-/*  Trang «Xem lịch»: chốt các cái bẫy bộ lọc (page về 1, phân biệt rỗng vì lọc / rỗng vì chưa có gì),
+/*  Trang "Xem lịch": chốt các cái bẫy bộ lọc (page về 1, phân biệt rỗng vì lọc / rỗng vì chưa có gì),
     và hai danh mục mượn quyền (pháp nhân, phòng ban) phải TỰ TẮT khi thiếu quyền — không 403. */
 
 const apiGetMock = vi.fn()

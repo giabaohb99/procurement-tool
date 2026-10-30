@@ -38,7 +38,7 @@ function jobPositionChips(r: JobPosition, quietWhenNormal = false): IdentityChip
 /**
  * DANH MỤC CHỨC VỤ — khai bằng dữ liệu, không viết trang riêng (duoc-CR-320).
  *
- * ⚠️ «Mã chức vụ» KHÔNG sửa được sau khi tạo (`readonlyOnEdit`) — backend cũng
+ * ⚠️ "Mã chức vụ" KHÔNG sửa được sau khi tạo (`readonlyOnEdit`) — backend cũng
  * bỏ `code` khỏi schema cập nhật. Mã là thứ tệp CSV nhập/xuất dùng để trỏ tới
  * dòng này; đổi mã là mọi tệp đã phát ra trỏ vào chỗ khác.
  *
@@ -47,7 +47,7 @@ function jobPositionChips(r: JobPosition, quietWhenNormal = false): IdentityChip
  * của cả trăm người đổi theo. Nói thẳng điều đó trong `hint` của ô Tên, vì
  * người sửa danh mục không có cách nào đoán ra.
  *
- * ⚠️ **KHÔNG bày cột / ô «Thứ tự hiển thị»** (bỏ 08/09/2026). Cột
+ * ⚠️ **KHÔNG bày cột / ô "Thứ tự hiển thị"** (bỏ 08/09/2026). Cột
  * `sort_order` vẫn còn dưới DB và migration vẫn nạp số cho nó, nhưng nó là
  * khái niệm của người dựng hệ thống chứ không phải của người dùng: màn hình
  * hiện ra một cột toàn số 10·20·130 mà không chỗ nào giải thích số đó nghĩa
@@ -56,7 +56,7 @@ function jobPositionChips(r: JobPosition, quietWhenNormal = false): IdentityChip
  * cột này. Ô chọn nay sắp theo TÊN (xem `use-job-positions.ts`), thứ người
  * dùng đoán được mà không phải học.
  *
- * ⚠️ **KHÔNG bày ô «Phòng ban thường giữ»** (bỏ 08/09/2026). Cột
+ * ⚠️ **KHÔNG bày ô "Phòng ban thường giữ"** (bỏ 08/09/2026). Cột
  * `department_id` vẫn còn dưới DB và vẫn lọc được qua API, nhưng nó không CHẶN
  * gì cả — gán chức vụ đó cho người phòng khác vẫn được. Một ô bắt người ta
  * chọn rồi tự thú ngay bên dưới là chọn xong cũng chẳng để làm gì thì thà
@@ -67,11 +67,11 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
   entity: 'job_position',
   title: 'Chức vụ',
   description:
-    'Khai chức danh dùng chung — đây là nguồn của ô «Vị trí / Chức vụ» trên hồ sơ nhân sự.',
+    'Khai chức danh dùng chung — đây là nguồn của ô "Vị trí / Chức vụ" trên hồ sơ nhân sự.',
   unitLabel: 'chức vụ',
   apiPath: '/api/job-positions',
   //  ⚠️ Đuôi `.v2` là CÓ CHỦ Ý (19/09/2026). Bộ cột vừa đổi hẳn: bỏ hai cột đếm,
-  //  `code` thay bằng `id`. Ai đã từng đụng menu «Cột» thì `useTableLayout` đọc
+  //  `code` thay bằng `id`. Ai đã từng đụng menu "Cột" thì `useTableLayout` đọc
   //  bản lưu trong `localStorage` và **bản lưu thắng** — `columnOrder` cũ xếp
   //  trước, khóa mới nối vào CUỐI, nên cột ID lẽ ra đứng đầu lại rơi xuống sau
   //  cột *Trạng thái* (đại ca bắt được ngay khi mở màn). Đổi khóa là mọi người
@@ -88,15 +88,15 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
   createRoute: appRoutes.hr.jobPositionNew,
   detailRoute: (id) => appRoutes.hr.jobPositionDetail(id),
   //  Trang chi tiết chạy HẾT bề ngang, cùng khuôn với Sản phẩm · Nhà cung cấp ·
-  //  Phòng họp: tab «Người đang giữ» là một bảng 4 cột, bó ở mức mặc định
+  //  Phòng họp: tab "Người đang giữ" là một bảng 4 cột, bó ở mức mặc định
   //  `max-w-5xl` thì bảng nằm giữa hai khoảng trắng rộng bằng chính nó.
   detailMaxWidth: 'max-w-none',
   searchParam: 'name',
   //  ⚠️ Câu gợi ý phải đo theo lúc ĐANG LỌC. Trên màn 390px ô tìm chia hàng với
-  //  nút *Bộ lọc* và nút *Tải lại* nên phần gõ chữ chỉ còn 142px — bản cũ «Tìm
-  //  theo tên chức vụ…» cần 148px, đã cụt sẵn 6px — rồi tụt tiếp còn 118px ngay
+  //  nút *Bộ lọc* và nút *Tải lại* nên phần gõ chữ chỉ còn 142px — bản cũ "Tìm
+  //  theo tên chức vụ…" cần 148px, đã cụt sẵn 6px — rồi tụt tiếp còn 118px ngay
   //  khi nút *Bộ lọc* mọc huy hiệu số. Bản này 91px, dư ở cả hai trạng thái.
-  //  Bỏ «theo tên» không mất nghĩa: ô này vốn chỉ lọc theo tên (`searchParam`).
+  //  Bỏ "theo tên" không mất nghĩa: ô này vốn chỉ lọc theo tên (`searchParam`).
   searchPlaceholder: 'Tìm chức vụ…',
   quickFilters: [
     {
@@ -112,7 +112,7 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
   getItemName: (r) => `${r.name} (#${r.id})`,
   deleteWarning:
     'Chức vụ đang có người giữ thì không xóa được. Xóa rồi thì hồ sơ cũ mất chức danh. ' +
-    'Muốn dẹp thì bỏ tick «Đang dùng»: chức vụ biến khỏi ô chọn nhưng hồ sơ cũ vẫn đọc được.',
+    'Muốn dẹp thì bỏ tick "Đang dùng": chức vụ biến khỏi ô chọn nhưng hồ sơ cũ vẫn đọc được.',
   chips: (r) => jobPositionChips(r),
   //  Khổ hẹp: THẺ thay bảng, để *Tên chức vụ* và *Ghi chú* không phải cuộn ngang
   //  mới đọc được.
@@ -127,7 +127,7 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
       title={r.name}
       subtitle={
         //  Ghi chú là chữ tự do, không chặn độ dài ở tầng nhập — cắt ĐÚNG MỘT
-        //  dòng bằng «…» (luật chung của thẻ danh mục, khách chốt 10/09/2026).
+        //  dòng bằng "…" (luật chung của thẻ danh mục, khách chốt 10/09/2026).
         //  Đầy đủ thì đọc ở trang chi tiết.
         r.note ? <span className="block truncate">{r.note}</span> : undefined
       }
@@ -136,7 +136,7 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
   ),
   columns: [
     //  ⚠️ Cột nhận diện là **ID**, không phải mã (19/09/2026). Mã `cv-xxx` dài
-    //  bằng cả tên chức vụ, hay bị cắt đuôi («truong-phong-…») và không ai gọi
+    //  bằng cả tên chức vụ, hay bị cắt đuôi ("truong-phong-…") và không ai gọi
     //  một chức vụ bằng nó — nó chỉ là khóa để tệp CSV trỏ vào dòng. Mã vẫn nằm
     //  trong biểu mẫu, vẫn lọc được ở bộ lọc nâng cao, chỉ không chiếm cột nữa.
     {
@@ -173,8 +173,8 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
   //  đó bị `apply_filters` **bỏ qua trong im lặng** — người dùng đặt điều kiện,
   //  bấm Áp dụng, và nhận về nguyên danh sách cũ mà không có lỗi nào để lần.
   //
-  //  KHÔNG khai `department_id` dù backend lọc được: cột đó là «phòng ban
-  //  thường giữ», một gợi ý không chặn gì, và ô nhập của nó đã bỏ khỏi biểu mẫu
+  //  KHÔNG khai `department_id` dù backend lọc được: cột đó là "phòng ban
+  //  thường giữ", một gợi ý không chặn gì, và ô nhập của nó đã bỏ khỏi biểu mẫu
   //  (xem chú thích đầu tệp). Lọc theo một ô không ai điền là lọc ra rỗng.
   filterConfig: {
     fields: [
@@ -192,7 +192,7 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
       },
     ],
   },
-  //  Tab «Người đang giữ» chỉ dựng ở trang CHI TIẾT (khung CRUD tự bỏ tab khi
+  //  Tab "Người đang giữ" chỉ dựng ở trang CHI TIẾT (khung CRUD tự bỏ tab khi
   //  chưa có bản ghi) — chức vụ chưa tạo thì chưa ai giữ.
   tabs: [
     {

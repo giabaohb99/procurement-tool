@@ -25,7 +25,7 @@ function dayLabel(iso: string, mode: WorkRosterMode): string {
 }
 
 /**
- * Đầu bảng = MỘT khối dính `top-0` gồm hàng ngày (h-12) + hàng tổng «Nghỉ (trang này)» (h-7). Chiều cao cố
+ * Đầu bảng = MỘT khối dính `top-0` gồm hàng ngày (h-12) + hàng tổng "Nghỉ (trang này)" (h-7). Chiều cao cố
  * định nên mép dưới luôn là `ROSTER_HEADER_HEIGHT` — chồng dính hàng có nghỉ bám vào đó, không phải đo.
  */
 export function WorkRosterGridHeader({ days, columns, mode, todayISO }: WorkRosterGridHeaderProps) {

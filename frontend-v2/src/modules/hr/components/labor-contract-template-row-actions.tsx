@@ -18,10 +18,10 @@ interface LaborContractTemplateRowActionsProps {
 }
 
 /**
- * Thao tác của MỘT dòng mẫu hợp đồng: MỘT nút icon «⋯» mở menu, mỗi mục có ICON + CHỮ, chia nhóm
- * «Nội dung» (Soạn / Xem · Tải tệp) và «Quản lý» (Sửa thông tin · Thay tệp · Ngừng / Bật dùng), Xóa
+ * Thao tác của MỘT dòng mẫu hợp đồng: MỘT nút icon "⋯" mở menu, mỗi mục có ICON + CHỮ, chia nhóm
+ * "Nội dung" (Soạn / Xem · Tải tệp) và "Quản lý" (Sửa thông tin · Thay tệp · Ngừng / Bật dùng), Xóa
  * tách riêng cuối. Cùng kiểu với cột thao tác bảng hợp đồng (duoc-CR-633) — trước đây hai icon trơn
- * đứng ngoài + menu «⋯» (CR-610) nhìn lệch với bảng bên cạnh. Mục bị ẨN theo quyền — quyền thật do BE.
+ * đứng ngoài + menu "⋯" (CR-610) nhìn lệch với bảng bên cạnh. Mục bị ẨN theo quyền — quyền thật do BE.
  */
 export function LaborContractTemplateRowActions({ template, actions }: LaborContractTemplateRowActionsProps) {
   const { canWrite, canDelete } = actions

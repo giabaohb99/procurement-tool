@@ -87,7 +87,7 @@ describe('EmployeeWorkHistoryTimeline', () => {
     expect(headers[1]).toHaveTextContent('01/01/2024')
   })
 
-  it('dòng is_current=true → có huy hiệu «Hiện tại», false thì không', () => {
+  it('dòng is_current=true → có huy hiệu "Hiện tại", false thì không', () => {
     render(
       <EmployeeWorkHistoryTimeline
         items={[row({ id: 1, is_current: true }), row({ id: 2, from_date: '2020-01-01', is_current: false })]}

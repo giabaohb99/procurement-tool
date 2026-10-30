@@ -14,7 +14,7 @@ import { ChangeRequestDetailView } from './profile-change-request-detail-page'
  *
  * Canh: nút Duyệt / Từ chối chỉ hiện khi backend cho (`can_decide`) và nói lý do khi không; từ
  * chối KHÔNG gửi được khi chưa có lý do; dòng hồ sơ đã đổi sau khi gửi được gắn nhãn; ô bị che
- * không lộ «null».
+ * không lộ "null".
  */
 
 const apiPost = vi.fn()

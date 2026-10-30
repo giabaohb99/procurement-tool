@@ -50,7 +50,7 @@ interface LeaveCalendarDayViewProps {
  * ⚠️ Bản đầu (04/09/2026) dựng mỗi người một tấm thẻ bốn dòng, và nó vỡ đúng ở
  * ca mà chế độ này sinh ra để phục vụ: hôm cả phòng nghỉ chung. Mười bốn tấm
  * thẻ lặp y hệt nhau — cùng loại nghỉ, cùng khoảng ngày, cùng lý do, cùng huy
- * hiệu «Chờ duyệt» — trong khi thứ duy nhất khác nhau giữa chúng là CÁI TÊN.
+ * hiệu "Chờ duyệt" — trong khi thứ duy nhất khác nhau giữa chúng là CÁI TÊN.
  * Thẻ hợp khi mỗi mục một vẻ; danh sách người cùng nghỉ một ngày thì ngược lại.
  *
  * Bảng thì đọc theo cột: liếc dọc một cột là so được cả mười bốn dòng, và cái
@@ -116,7 +116,7 @@ export function LeaveCalendarDayView({
         header: 'Trong đợt nghỉ',
         //
         //  Tính theo KHOẢNG chứa ngày đang xem, không theo bao ngoài của đơn (duoc-CR-683):
-        //  đơn 27/10 + 03/11→07/11 thì 27/10 là «Nghỉ một ngày», 03/11 là «Ngày đầu».
+        //  đơn 27/10 + 03/11→07/11 thì 27/10 là "Nghỉ một ngày", 03/11 là "Ngày đầu".
         cell: (r) => {
           const p = periodOn(r, iso) ?? { from_date: r.from_date, to_date: r.to_date }
           if (p.from_date === p.to_date) return 'Nghỉ một ngày'
@@ -135,7 +135,7 @@ export function LeaveCalendarDayView({
   )
 
   //  Ô lọc trạng thái dựng MỘT LẦN rồi đặt vào một trong hai chỗ tùy khổ màn:
-  //  hàng công cụ (khổ rộng) hoặc tờ trượt «Bộ lọc» (khổ hẹp). Dựng hai bản rồi
+  //  hàng công cụ (khổ rộng) hoặc tờ trượt "Bộ lọc" (khổ hẹp). Dựng hai bản rồi
   //  ẩn bớt bằng `md:hidden` thì có hai ô cùng tên trong cây DOM.
   const statusSelect = (
     <Select value={status} onValueChange={setStatus}>
@@ -209,7 +209,7 @@ export function LeaveCalendarDayView({
         //  ⚠️ Phải khai CẢ HAI, đừng để `DataTable` tự suy: mặc định của nó là
         //  "URL còn param nào thì coi như đang lọc, bấm Xóa lọc là quét sạch
         //  param". Mà URL của màn này mang `mode` + `date` — hai thứ nói mình
-        //  đang xem NGÀY NÀO, không phải bộ lọc. Không khai thì nút «Xóa lọc»
+        //  đang xem NGÀY NÀO, không phải bộ lọc. Không khai thì nút "Xóa lọc"
         //  hiện thường trực dù chưa lọc gì, và bấm vào là văng về lịch tháng của
         //  hôm nay. Bộ lọc thật ở đây nằm trong state cục bộ, nên dọn bằng tay.
         filtersActive={filtering}

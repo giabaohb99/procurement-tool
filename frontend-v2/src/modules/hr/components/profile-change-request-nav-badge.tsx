@@ -2,7 +2,7 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { useChangeRequestPendingCount } from '../hooks/use-employee-change-requests'
 
 /**
- * Huy hiệu trên mục menu «Duyệt sửa hồ sơ» — số đề nghị sửa hồ sơ đang chờ (duoc-CR-676).
+ * Huy hiệu trên mục menu "Duyệt sửa hồ sơ" — số đề nghị sửa hồ sơ đang chờ (duoc-CR-676).
  * Không có việc thì không hiện gì (một số 0 nằm trên menu cả ngày dạy người ta lướt qua chỗ đó).
  * Tự tắt query khi thiếu `employee.write` — cửa đếm trả 403.
  */

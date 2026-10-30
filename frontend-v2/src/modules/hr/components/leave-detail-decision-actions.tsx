@@ -29,7 +29,7 @@ interface LeaveDetailDecisionActionsProps {
  * Nhân sự được bộ máy giao ký nhưng không được cấp khóa đó thì mở đơn ra chẳng
  * thấy nút nào.
  *
- * Dùng lại đúng hàng đợi của tab «Cần tôi duyệt» chứ không gọi riêng: người
+ * Dùng lại đúng hàng đợi của tab "Cần tôi duyệt" chứ không gọi riêng: người
  * dùng thường vào đây TỪ tab đó, nên dữ liệu đã nằm sẵn trong cache và không
  * tốn thêm lượt gọi nào.
  */

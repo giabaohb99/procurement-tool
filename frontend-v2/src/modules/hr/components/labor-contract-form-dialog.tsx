@@ -36,7 +36,7 @@ interface LaborContractFormDialogProps {
   row?: LaborContract | null
 }
 
-/** Hộp lập / sửa hợp đồng nháp. Chọn mẫu và sinh tệp là bước RIÊNG (hộp «Sinh tệp»). */
+/** Hộp lập / sửa hợp đồng nháp. Chọn mẫu và sinh tệp là bước RIÊNG (hộp "Sinh tệp"). */
 export function LaborContractFormDialog({ open, onOpenChange, employee, row }: LaborContractFormDialogProps) {
   const { can } = usePermission()
   const saveMutation = useSaveLaborContract(employee.id)
@@ -66,7 +66,7 @@ export function LaborContractFormDialog({ open, onOpenChange, employee, row }: L
   const { data: inputFields } = useLaborContractInputFields(open, true)
   const activeFields = useMemo(() => inputFields?.filter((f) => f.is_active), [inputFields])
 
-  //  LẬP MỚI: SAO giá trị mặc định vào ô (chỉ ô CHƯA có giá trị — ô người dùng đã xóa trắng giữ là «»; ô vừa đăng ký là `undefined`).
+  //  LẬP MỚI: SAO giá trị mặc định vào ô (chỉ ô CHƯA có giá trị — ô người dùng đã xóa trắng giữ là ""; ô vừa đăng ký là `undefined`).
   //  Sửa hợp đồng đã lập thì KHÔNG điền: mặc định đổi sau này không được đổi hợp đồng cũ.
   useEffect(() => {
     if (!open || row || !activeFields) return
@@ -94,7 +94,7 @@ export function LaborContractFormDialog({ open, onOpenChange, employee, row }: L
         onSuccess: async (result) => {
           markSubmitted()
           //  Hợp đồng đã lưu rồi mới tải tệp. Tải lỗi (httpClient tự báo) thì hợp đồng VẪN giữ — tải lại
-          //  được ở nút «Tải lên bản đã ký» trên dòng; không mở lại hộp để khỏi lưu trùng lần hai.
+          //  được ở nút "Tải lên bản đã ký" trên dòng; không mở lại hộp để khỏi lưu trùng lần hai.
           if (signedFile) {
             try {
               await uploadMutation.mutateAsync({ id: result.item.id, file: signedFile })

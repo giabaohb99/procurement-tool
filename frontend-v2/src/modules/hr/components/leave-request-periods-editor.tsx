@@ -21,13 +21,13 @@ interface LeaveRequestPeriodsEditorProps {
 }
 
 /**
- * Danh sách KHOẢNG NGÀY của đơn nghỉ + nút «+ Thêm khoảng ngày» (duoc-CR-683).
+ * Danh sách KHOẢNG NGÀY của đơn nghỉ + nút "+ Thêm khoảng ngày" (duoc-CR-683).
  *
  * Trả về các phần tử con của LƯỚI hai cột của form (không tự bọc lưới): đơn một khoảng nhờ
- * vậy vẫn là hai ô «Từ ngày» · «Đến ngày» đứng cạnh nhau như trước.
+ * vậy vẫn là hai ô "Từ ngày" · "Đến ngày" đứng cạnh nhau như trước.
  *
  * Luật (khớp `request_periods.check_*` ở backend, backend vẫn là chốt cuối):
- * - nghỉ THEO GIỜ chỉ một khoảng → ẩn nút thêm, và từ hai khoảng thì mục «Theo giờ» bị khóa;
+ * - nghỉ THEO GIỜ chỉ một khoảng → ẩn nút thêm, và từ hai khoảng thì mục "Theo giờ" bị khóa;
  * - tối đa `MAX_LEAVE_PERIODS` khoảng;
  * - các khoảng không chồng ngày — báo đỏ ngay dưới hàng, không đợi bấm Lưu;
  * - nhiều khoảng phải cùng một năm — để backend nói (câu 422 hiện ở cuối danh sách).
@@ -50,8 +50,8 @@ export function LeaveRequestPeriodsEditor({
     onChange({ periods: periods.map((p, i) => (i === index ? { ...p, ...patch } : p)), ...extra })
 
   /**
-   * Đổi ô BUỔI. Chọn «Theo giờ» ở một đầu thì đầu kia theo luôn (backend đòi hai ô buổi
-   * giống nhau). Bỏ «Theo giờ» thì XÓA khoảng giờ: giữ lại là lưu một khoảng giờ mà tờ đơn
+   * Đổi ô BUỔI. Chọn "Theo giờ" ở một đầu thì đầu kia theo luôn (backend đòi hai ô buổi
+   * giống nhau). Bỏ "Theo giờ" thì XÓA khoảng giờ: giữ lại là lưu một khoảng giờ mà tờ đơn
    * không còn khai theo giờ nữa.
    */
   const setSession = (index: number, which: 'from_session' | 'to_session', next: number) => {

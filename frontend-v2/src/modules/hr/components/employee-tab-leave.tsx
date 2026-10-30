@@ -14,7 +14,7 @@ interface EmployeeTabLeaveProps {
 }
 
 /**
- * Tab «Quỹ phép» — CỐ Ý chỉ là một lối đi sang phân hệ Nghỉ phép, không dựng
+ * Tab "Quỹ phép" — CỐ Ý chỉ là một lối đi sang phân hệ Nghỉ phép, không dựng
  * lại bảng quỹ ở đây.
  *
  * Số phép còn lại KHÔNG lưu thành cột: `balance_service.remaining()` là nơi duy
@@ -44,7 +44,7 @@ export function EmployeeTabLeave({ employee }: EmployeeTabLeaveProps) {
       )}
 
       {/*  ⚠️ Khổ hẹp: hai mốc ngày gom vào MỘT khối có viền, mỗi mốc một hàng
-           «nhãn trái — giá trị phải». Bản cũ để lưới một cột nên nhãn và giá
+           "nhãn trái — giá trị phải". Bản cũ để lưới một cột nên nhãn và giá
            trị xếp CHỒNG nhau không khung không vạch: bốn dòng chữ trôi nổi giữa
            thẻ, mắt không biết dòng nào ăn với dòng nào, và khoảng hở giữa hai
            cặp trông y như khoảng hở trong một cặp. Từ `sm` giữ lưới hai cột như

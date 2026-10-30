@@ -28,12 +28,12 @@ import {
   listChangedGroups,
 } from '../utils/employee-change-request-review'
 
-/** Mục «tất cả» — Radix cấm option value rỗng; mã trạng thái là 1..4 nên chữ này không đụng mã thật. */
+/** Mục "tất cả" — Radix cấm option value rỗng; mã trạng thái là 1..4 nên chữ này không đụng mã thật. */
 const ALL = 'all'
-/** Mặc định «Chờ duyệt»: người ta mở màn này để xử lý việc đang treo. */
+/** Mặc định "Chờ duyệt": người ta mở màn này để xử lý việc đang treo. */
 const DEFAULT_STATUS = String(CHANGE_REQUEST_STATUS.PENDING)
 
-/** Câu bảng rỗng phân biệt «rỗng vì bộ lọc» với «chưa có gì» (bẫy thứ ba của bảng có bộ lọc). */
+/** Câu bảng rỗng phân biệt "rỗng vì bộ lọc" với "chưa có gì" (bẫy thứ ba của bảng có bộ lọc). */
 function describeEmpty(keyword: string, status: string): string {
   if (keyword) return 'Không có đề nghị nào khớp từ khóa tìm.'
   if (status === DEFAULT_STATUS) return 'Không còn đề nghị nào chờ duyệt.'
@@ -42,7 +42,7 @@ function describeEmpty(keyword: string, status: string): string {
 }
 
 /**
- * «Duyệt sửa hồ sơ» — danh sách đề nghị sửa hồ sơ nhân viên tự khai (duoc-CR-676, C6).
+ * "Duyệt sửa hồ sơ" — danh sách đề nghị sửa hồ sơ nhân viên tự khai (duoc-CR-676, C6).
  *
  * Gác `employee.write` ở HAI lớp: mục menu (cũng là hàng rào route, vì gác điều hướng mặc định
  * MỞ) và kiểm lại ngay trong trang. Backend vẫn là chốt chặn thật.

@@ -70,12 +70,12 @@ export function EmployeeFormDialog({
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
   //  `enabled: open` — hộp thoại KHÔNG unmount giữa các lần mở, nên không tắt
   //  thì hai danh sách này nạp ngay lúc vào màn danh sách, trước cả khi ai bấm
-  //  «Thêm mới». Người thiếu `company.read` còn ăn toast 403 chẳng liên quan.
+  //  "Thêm mới". Người thiếu `company.read` còn ăn toast 403 chẳng liên quan.
   const { data: companies } = useCompanies({ page_size: 200, is_active: true }, { enabled: open })
   //  Danh mục Chức vụ (duoc-CR-320) — cùng luật `enabled` với danh sách pháp
   //  nhân ở trên, cộng thêm chốt quyền: vai trò cũ trên hệ đang chạy KHÔNG tự
   //  có khóa `job_position` (D-018), mà gọi khi thiếu quyền là một toast 403
-  //  bật lên ngay khi bấm «Thêm mới».
+  //  bật lên ngay khi bấm "Thêm mới".
   const { can } = usePermission()
   const { data: positions } = useJobPositions(open && can('job_position', 'read'))
   const positionOptions = useMemo(

@@ -32,7 +32,7 @@ function parseId(value: string): number {
 }
 
 /**
- * LỊCH TUẦN — «nhìn vô biết ngày nay ai làm, ai nghỉ». Hàng = nhân sự trong phạm
+ * LỊCH TUẦN — "nhìn vô biết ngày nay ai làm, ai nghỉ". Hàng = nhân sự trong phạm
  * vi `employee.read` của người xem, cột = ngày; mặc định xem TUẦN, có nút sang THÁNG.
  * Đơn nghỉ hiện cả đã duyệt lẫn chờ duyệt (xem `WorkRosterCellView`).
  *

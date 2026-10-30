@@ -8,19 +8,19 @@ import { RoomStatusBadge } from './room-status-badge'
 interface RoomBookingCardProps {
   booking: RoomBooking
   /**
-   * Bày huy hiệu trạng thái không. Tab «Cần tôi duyệt» tắt: mọi phiếu ở đó đều
-   * là «Chờ duyệt», một huy hiệu lặp lại y hệt trên từng thẻ chỉ ăn chỗ của
+   * Bày huy hiệu trạng thái không. Tab "Cần tôi duyệt" tắt: mọi phiếu ở đó đều
+   * là "Chờ duyệt", một huy hiệu lặp lại y hệt trên từng thẻ chỉ ăn chỗ của
    * dòng chữ đứng cạnh nó — cùng lý do với `LeaveRequestCard`.
    */
   showStatus?: boolean
-  /** Hạn xử lý việc duyệt — chỉ tab «Cần tôi duyệt» có. */
+  /** Hạn xử lý việc duyệt — chỉ tab "Cần tôi duyệt" có. */
   dueAt?: string | null
 }
 
 /**
  * Một phiếu đặt phòng ở chế độ MÀN HẸP — xem `DataTableProps.mobileCard`.
  *
- * ⚠️ **Thứ tự trong thẻ không phải thứ tự cột của bảng.** Bảng xếp «Số phiếu»
+ * ⚠️ **Thứ tự trong thẻ không phải thứ tự cột của bảng.** Bảng xếp "Số phiếu"
  * trước vì cột đầu là cột định danh và nó được ghim; trên thẻ thì mã phiếu là
  * thứ ÍT dùng nhất — người ta nhận ra phiếu bằng NỘI DUNG CUỘC HỌP, còn mã chỉ
  * dùng khi đọc số cho nhau qua điện thoại. Nên nội dung lên đầu, mã tụt xuống
@@ -31,7 +31,7 @@ interface RoomBookingCardProps {
  * trùng lịch. Gộp lại thì trên máy 390px chúng tự ngắt ở chỗ ngẫu nhiên, và
  * đúng nửa sau — khung giờ — là phần hay rơi xuống dòng dưới nhất.
  *
- * ⚠️ **Không tooltip trong thẻ.** Màn cảm ứng không có nhịp «rê chuột», nên lý
+ * ⚠️ **Không tooltip trong thẻ.** Màn cảm ứng không có nhịp "rê chuột", nên lý
  * do bị từ chối / trả về hiện thẳng thành chữ.
  */
 export function RoomBookingCard({
@@ -66,7 +66,7 @@ export function RoomBookingCard({
         </p>
 
         {/*  Ngày + khung giờ đứng chung một dòng: hai vế của cùng một câu hỏi
-             «họp lúc nào», tách hai dòng thì mắt phải ghép lại. */}
+             "họp lúc nào", tách hai dòng thì mắt phải ghép lại. */}
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
           <CalendarDays className="size-3.5 shrink-0" aria-hidden="true" />
           <span className="tabular-nums">{formatDate(booking.start_at)}</span>

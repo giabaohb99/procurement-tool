@@ -70,8 +70,8 @@ describe('RoomBookingCard', () => {
     expect(screen.getByText('#2')).toBeInTheDocument()
   })
 
-  it('tab «Cần tôi duyệt» tắt huy hiệu trạng thái và bày HẠN XỬ LÝ thay vào', () => {
-    //  Mọi phiếu ở tab đó đều «Chờ duyệt» nên huy hiệu chỉ lặp lại; hạn xử lý
+  it('tab "Cần tôi duyệt" tắt huy hiệu trạng thái và bày HẠN XỬ LÝ thay vào', () => {
+    //  Mọi phiếu ở tab đó đều "Chờ duyệt" nên huy hiệu chỉ lặp lại; hạn xử lý
     //  mới là thứ phân biệt hai việc đang chờ cùng một người.
     render(
       <RoomBookingCard
@@ -100,7 +100,7 @@ describe('RoomBookingCard', () => {
   })
 
   it('lý do từ chối / trả về hiện thẳng thành CHỮ, không giấu trong tooltip', () => {
-    //  Màn cảm ứng không có nhịp «rê chuột»: tooltip hoặc không mở được, hoặc
+    //  Màn cảm ứng không có nhịp "rê chuột": tooltip hoặc không mở được, hoặc
     //  mở ra rồi che mất chính dòng vừa bấm.
     render(
       <RoomBookingCard

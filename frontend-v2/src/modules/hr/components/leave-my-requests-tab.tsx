@@ -40,20 +40,20 @@ import {
 const ALL = 'all'
 
 /**
- * Tab «ĐƠN CỦA TÔI» — danh sách đơn trong phạm vi người xem.
+ * Tab "ĐƠN CỦA TÔI" — danh sách đơn trong phạm vi người xem.
  *
  * Người thường thấy đơn của chính mình (phạm vi `own`), trưởng phòng thấy cả
  * phòng, Nhân sự thấy toàn công ty. Cùng một bảng, backend lọc — màn hình không
  * cần biết mình đang đứng ở vai nào.
  *
- * ⚠️ **KHÔNG có cột «Luồng duyệt»** (bỏ 08/09/2026, khách chốt). Đây là danh
- * sách đơn CỦA MÌNH: cột «Trạng thái» ngay bên cạnh đã trả lời câu người nộp
+ * ⚠️ **KHÔNG có cột "Luồng duyệt"** (bỏ 08/09/2026, khách chốt). Đây là danh
+ * sách đơn CỦA MÌNH: cột "Trạng thái" ngay bên cạnh đã trả lời câu người nộp
  * hỏi (*đơn của tôi tới đâu rồi*), còn tên từng chặng và ai đang cầm là việc
- * của người duyệt — xem ở tab «Cần tôi duyệt» hoặc mở chi tiết đơn.
+ * của người duyệt — xem ở tab "Cần tôi duyệt" hoặc mở chi tiết đơn.
  *
  * Bỏ cột thì bỏ luôn lượt gọi `useLeaveFlowStrips` đi kèm — nó chỉ dựng cho
  * cột đó, giữ lại là mỗi lần mở bảng thêm một vòng mạng cho dữ liệu không ai
- * nhìn. Hook và endpoint vẫn còn (tab «Tôi đã duyệt» và bản in dùng chung
+ * nhìn. Hook và endpoint vẫn còn (tab "Tôi đã duyệt" và bản in dùng chung
  * `approval/steps_service.py`), chỉ màn này thôi không gọi nữa.
  */
 export function LeaveMyRequestsTab() {
@@ -66,8 +66,8 @@ export function LeaveMyRequestsTab() {
 
 /**
  * `preserveParams`: mọi tham số khác của màn phải kể tên ở đây, không thì bấm
- * «Áp dụng» là chúng bị xóa khỏi URL — mất `tab` thì nhảy về tab mặc định, mất
- * `status`/`leave_type_id` thì hai ô chọn trên thanh công cụ tự nhảy về «Tất cả»
+ * "Áp dụng" là chúng bị xóa khỏi URL — mất `tab` thì nhảy về tab mặc định, mất
+ * `status`/`leave_type_id` thì hai ô chọn trên thanh công cụ tự nhảy về "Tất cả"
  * ngay lúc người dùng thêm một điều kiện. (`q` do `searchParamName` giữ sẵn.)
  */
 const FILTER_CONFIG = {
@@ -173,7 +173,7 @@ function LeaveMyRequestsContent() {
       storageKey="hr.leave-requests"
       onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
       //  Màn hẹp: thẻ thay bảng. Giữ huy hiệu trạng thái — đây là câu hỏi đầu
-      //  tiên của người nộp («đơn của tôi tới đâu rồi»).
+      //  tiên của người nộp ("đơn của tôi tới đâu rồi").
       mobileCard={(r) => <LeaveRequestCard request={r} />}
       pagination={{
         page,
@@ -185,7 +185,7 @@ function LeaveMyRequestsContent() {
       }}
       toolbar={
         <>
-          {/*  Khổ hẹp: nút «Bộ lọc» nằm lồng trong ô tìm, hai ô chọn dọn vào tờ
+          {/*  Khổ hẹp: nút "Bộ lọc" nằm lồng trong ô tìm, hai ô chọn dọn vào tờ
                trượt — cùng lý do và cùng khuôn với `leave-rows-filter-bar.tsx`,
                đọc ghi chú ở đầu tệp đó. */}
           <SearchField
@@ -193,7 +193,7 @@ function LeaveMyRequestsContent() {
             onChange={setKeyword}
             //  Ngắn để câu gợi ý ĐỌC HẾT được ở khổ hẹp: ô còn 142px sau khi
             //  chia chỗ cho nút Bộ lọc và nút Tải lại, bản cũ cần 186px nên cụt
-            //  thành «Tìm theo số đơn hoặc l».
+            //  thành "Tìm theo số đơn hoặc l".
             placeholder="Tìm số đơn, lý do…"
             className="md:min-w-56 md:max-w-xs"
           />

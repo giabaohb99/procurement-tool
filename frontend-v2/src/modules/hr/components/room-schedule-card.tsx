@@ -86,8 +86,8 @@ export function RoomScheduleCard({ roomId }: { roomId: number }) {
     [],
   )
 
-  //  Phiếu ĐÃ HỦY / bị từ chối vẫn nằm trong bảng «Đã qua» — chúng là lịch sử
-  //  thật của phòng. Nhưng ở «Sắp tới» thì bỏ: phòng không bị giữ, hiện ra chỉ
+  //  Phiếu ĐÃ HỦY / bị từ chối vẫn nằm trong bảng "Đã qua" — chúng là lịch sử
+  //  thật của phòng. Nhưng ở "Sắp tới" thì bỏ: phòng không bị giữ, hiện ra chỉ
   //  làm người xếp lịch tưởng nó đã kín.
   const upcomingRows = (upcoming.data?.items ?? []).filter((b) =>
     BLOCKING_ROOM_STATUSES.includes(b.status),

@@ -160,7 +160,7 @@ export const LIST_TOOLBAR_STICKY_TOP = `${TOOLBAR_STICKY_BASE} max-md:top-0`
 /**
  * Dải THANH CÔNG CỤ của một bảng nằm trong TAB của trang chi tiết CRUD.
  *
- * Dùng ở: tab *«Người đang giữ»* của Chức vụ.
+ * Dùng ở: tab *"Người đang giữ"* của Chức vụ.
  *
  * ⚠️ Mốc `61px` là chiều cao **hàng nút Lưu/Xóa** mà `CrudDetailPage` đã ghim
  * sẵn ở `top-0`: đệm `py-3` (12+12) + nút `h-9` (36) + `border-b` (1). Sửa cỡ
@@ -171,7 +171,7 @@ export const LIST_TOOLBAR_STICKY_TOP = `${TOOLBAR_STICKY_BASE} max-md:top-0`
  * ⚠️ **Chỉ ghim thanh công cụ, KHÔNG ghim dải tab.** Ghim cả hai thì
  * 61 (hàng nút) + 44 (dải tab) + 61 (thanh công cụ) = **166px trên 788px nhìn
  * thấy được**, tức hơn một phần năm màn hình đứng yên vĩnh viễn. Dải tab đổi
- * lấy chỗ đó không đáng: nó trả lời câu *«đang ở tab nào»*, mà giữa một danh
+ * lấy chỗ đó không đáng: nó trả lời câu *"đang ở tab nào"*, mà giữa một danh
  * sách gương mặt thì câu đó không ai phải hỏi.
  *
  * ⚠️ Bóng đổ đòi tổ tiên mang `group` + `data-scrolled` — `CrudDetailPage` dựng

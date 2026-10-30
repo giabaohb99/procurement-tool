@@ -26,7 +26,7 @@ function renderAs(permissions: Record<string, Record<string, boolean>>) {
           <Route
             path="/catalog"
             element={
-              //  Như trang «Thiết lập văn bản»: nút ở góc tiêu đề + bảng bên dưới.
+              //  Như trang "Thiết lập văn bản": nút ở góc tiêu đề + bảng bên dưới.
               <>
                 <LaborContractTemplateHeaderActions />
                 <LaborContractTemplateCatalog />
@@ -66,7 +66,7 @@ describe('LaborContractTemplateCatalog — gác quyền', () => {
     expect(await screen.findByRole('button', { name: /Tải lên mẫu/ })).toBeInTheDocument()
   })
 
-  //  duoc-CR-630: nút «Danh sách biến» không còn mở hộp thoại chỉ xem mà đi tới trang quản lý biến.
+  //  duoc-CR-630: nút "Danh sách biến" không còn mở hộp thoại chỉ xem mà đi tới trang quản lý biến.
   it('nút Danh sách biến điều hướng tới trang biến', async () => {
     renderAs({ labor_contract_template: { read: true } })
     await userEvent.click(await screen.findByRole('button', { name: /Danh sách biến/ }))

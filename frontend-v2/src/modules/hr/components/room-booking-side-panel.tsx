@@ -33,7 +33,7 @@ interface RoomBookingSidePanelProps {
  * form: người dùng phải cuộn qua đúng những ô mình vừa điền để đọc lại chính
  * những giá trị đó, còn cảnh báo sức chứa thì nằm ngoài tầm mắt lúc gõ số
  * người. Phần duy nhất còn việc để làm ở khổ hẹp là câu cảnh báo, và nó mọc
- * lại ngay dưới ô «Số người dự» — xem `RoomCapacityWarning`.
+ * lại ngay dưới ô "Số người dự" — xem `RoomCapacityWarning`.
  */
 export function RoomBookingSidePanel({ value, className }: RoomBookingSidePanelProps) {
   const { data: roomData } = useMeetingRooms()

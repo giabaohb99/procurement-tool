@@ -21,7 +21,7 @@ export interface ExtraPhone {
 
 const PHONE_CHARS = /^[0-9\s+.\-()]+$/
 
-/** Chỉ giữ chữ số — để so trùng («0901 234 567» = «0901.234.567»). */
+/** Chỉ giữ chữ số — để so trùng ("0901 234 567" = "0901.234.567"). */
 export function digitsOf(value: string): string {
   return value.replace(/\D/g, '')
 }
@@ -93,7 +93,7 @@ export function extraPhonesFormError(main: string, extras: readonly ExtraPhone[]
 }
 
 /**
- * «Đặt làm chính»: hoán đổi số chính với số phụ thứ `index` — CẢ số lẫn nhãn, nên không nhãn nào bị mất.
+ * "Đặt làm chính": hoán đổi số chính với số phụ thứ `index` — CẢ số lẫn nhãn, nên không nhãn nào bị mất.
  */
 export function swapWithMain(
   main: ExtraPhone,

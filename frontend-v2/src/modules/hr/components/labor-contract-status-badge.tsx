@@ -15,7 +15,7 @@ const TONES: Record<number, string> = {
     'border-zinc-400 bg-zinc-200 text-zinc-700 dark:border-zinc-500 dark:bg-zinc-700 dark:text-zinc-200',
 }
 
-/** Truyền `effective_status` (có «Hết hạn» suy ra), không phải `status` lưu trong DB. */
+/** Truyền `effective_status` (có "Hết hạn" suy ra), không phải `status` lưu trong DB. */
 export function LaborContractStatusBadge({ status }: { status: number }) {
   return (
     <Badge variant="outline" className={TONES[status] ?? TONES[CONTRACT_STATUS.DRAFT]}>

@@ -35,7 +35,7 @@ interface RoomBookingFormProps {
  * bao nhiêu người · mời ai**. Phòng đứng SAU giờ là có chủ ý — chọn phòng trước
  * rồi mới biết giờ đó nó bận thì phải quay lại sửa.
  *
- * ⚠️ Dải «phòng còn trống» KHÔNG nằm ở đây nữa (dời 04/09/2026) mà ở cột phải
+ * ⚠️ Dải "phòng còn trống" KHÔNG nằm ở đây nữa (dời 04/09/2026) mà ở cột phải
  * (`RoomBookingSidePanel`): nó là công cụ QUYẾT ĐỊNH, không phải ô nhập, và để
  * xen giữa hai ô giờ thì form bị cắt làm đôi bởi một khối xám chạy suốt bề ngang.
  */
@@ -107,7 +107,7 @@ export function RoomBookingForm({ value, onChange, lockedRoom }: RoomBookingForm
           />
           {value.startAt && value.endAt && value.endAt <= value.startAt && (
             <p className="text-xs text-destructive">
-              «Kết thúc» phải sau «Bắt đầu».
+              <strong>Kết thúc</strong> phải sau <strong>Bắt đầu</strong>.
             </p>
           )}
         </div>

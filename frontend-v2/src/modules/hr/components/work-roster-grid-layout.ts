@@ -3,9 +3,9 @@ import type { CSSProperties } from 'react'
 import type { WorkRosterMode } from '../utils/work-roster-range'
 
 /**
- * Hằng bố cục của lưới «Xem lịch». Lưới dựng bằng `div` + CSS grid (vai trò ARIA của bảng giữ nguyên) chứ
+ * Hằng bố cục của lưới "Xem lịch". Lưới dựng bằng `div` + CSS grid (vai trò ARIA của bảng giữ nguyên) chứ
  * không bằng `<table>`: ô dính trong `<table>` chỉ bị giới hạn bởi CẢ BẢNG, nên không có cách CSS nào để một
- * khối hàng dính bị khối sau ĐẨY ra. Với `div`, hàng dính bị giới hạn bởi khung cha (một «đợt») — trình duyệt
+ * khối hàng dính bị khối sau ĐẨY ra. Với `div`, hàng dính bị giới hạn bởi khung cha (một "đợt") — trình duyệt
  * tự đẩy, không cần JS theo dõi cuộn (bản JS luôn trễ một nhịp so với cuộn trên macOS → giật).
  */
 
@@ -17,7 +17,7 @@ export function rosterRowHeight(mode: WorkRosterMode): number {
   return mode === 'month' ? 32 : 40
 }
 
-/** Số hàng có nghỉ phép dính thành một khối (đại ca chốt 05/10/2026: «3 row, từ row 4 5 6 đẩy lên 1 lượt»). */
+/** Số hàng có nghỉ phép dính thành một khối (đại ca chốt 05/10/2026: "3 row, từ row 4 5 6 đẩy lên 1 lượt"). */
 export const STICKY_LEAVE_SLOTS = 3
 
 /** Mọi hàng dùng chung khuôn cột qua biến `--roster-cols` đặt ở khung ngoài. */

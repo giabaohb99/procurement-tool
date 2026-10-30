@@ -18,9 +18,9 @@ interface LaborContractFormDialogFieldsProps {
   onSubmit: (values: LaborContractFormValues) => void
   /** Pháp nhân của hợp đồng — CHỈ ĐỌC (snapshot lúc lập, không đổi được). */
   companyName: string
-  /** Câu báo «chưa có mẫu» / gợi ý mẫu, nằm dưới ô Loại. */
+  /** Câu báo "chưa có mẫu" / gợi ý mẫu, nằm dưới ô Loại. */
   templateHint: ReactNode
-  /** duoc-CR-630 — khối «Thông tin bổ sung cho mẫu» (biến tùy chỉnh); `null` khi không có biến nào. */
+  /** duoc-CR-630 — khối "Thông tin bổ sung cho mẫu" (biến tùy chỉnh); `null` khi không có biến nào. */
   customFields?: ReactNode
   footer: ReactNode
 }
@@ -106,7 +106,7 @@ export function LaborContractFormDialogFields({
                 contractType={contractType}
                 startDate={form.watch('start_date')}
                 endDate={field.value}
-                //  `shouldValidate`: đang đỏ «Chọn ngày kết thúc» thì bấm nút phải xóa lỗi ngay.
+                //  `shouldValidate`: đang đỏ "Chọn ngày kết thúc" thì bấm nút phải xóa lỗi ngay.
                 onPick={(value) => form.setValue('end_date', value, { shouldValidate: true, shouldDirty: true })}
               />
               <FormMessage />

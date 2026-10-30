@@ -14,7 +14,7 @@ interface LeaveRequestPeriodRowProps {
   days?: number
   /** Hàng chồng ngày với một hàng khác (kiểm sớm ở giao diện, backend vẫn là chốt cuối). */
   overlapping: boolean
-  /** Hai ô giờ — chỉ truyền khi đơn MỘT khoảng đang khai «Theo giờ». */
+  /** Hai ô giờ — chỉ truyền khi đơn MỘT khoảng đang khai "Theo giờ". */
   fromTime?: string
   toTime?: string
   onDateChange: (key: 'from_date' | 'to_date', value: string) => void
@@ -26,9 +26,9 @@ interface LeaveRequestPeriodRowProps {
 /**
  * MỘT khoảng ngày trên form đơn nghỉ (duoc-CR-683).
  *
- * Đơn một khoảng dựng Y HỆT trước đây: hai ô «Từ ngày» · «Đến ngày» nằm trần trong lưới của
- * form, cùng nhãn và cùng tên ô buổi («Buổi bắt đầu» · «Buổi kết thúc»). Chỉ từ hai khoảng
- * mới bọc khung, có tiêu đề «Khoảng ngày N», số ngày của khoảng và nút bỏ — người dùng đơn
+ * Đơn một khoảng dựng Y HỆT trước đây: hai ô "Từ ngày" · "Đến ngày" nằm trần trong lưới của
+ * form, cùng nhãn và cùng tên ô buổi ("Buổi bắt đầu" · "Buổi kết thúc"). Chỉ từ hai khoảng
+ * mới bọc khung, có tiêu đề "Khoảng ngày N", số ngày của khoảng và nút bỏ — người dùng đơn
  * thường không phải đọc thêm chữ nào.
  */
 export function LeaveRequestPeriodRow({
@@ -50,7 +50,7 @@ export function LeaveRequestPeriodRow({
 
   const fields = (
     <>
-      {/*  Hai đầu ngày GIỮ NGUYÊN khi chọn «Theo giờ», chỉ mọc thêm ô giờ: nghỉ *từ 14:00
+      {/*  Hai đầu ngày GIỮ NGUYÊN khi chọn "Theo giờ", chỉ mọc thêm ô giờ: nghỉ *từ 14:00
            ngày 07 đến 10:00 ngày 09* là tờ đơn có thật. */}
       <LeaveDateSessionField
         label="Từ ngày"
@@ -85,7 +85,7 @@ export function LeaveRequestPeriodRow({
     <>
       {reversed && (
         <p className="text-xs text-destructive md:col-span-2">
-          «Đến ngày» phải từ «Từ ngày» trở đi.
+          <strong>Đến ngày</strong> phải từ <strong>Từ ngày</strong> trở đi.
         </p>
       )}
       {overlapping && (
@@ -119,7 +119,7 @@ export function LeaveRequestPeriodRow({
             <span className="font-normal text-muted-foreground tabular-nums">{` · ${days} ngày`}</span>
           )}
         </span>
-        {/*  `type="button"`: nút nằm trong `<form>` của trang, thiếu là bấm «Bỏ» thành LƯU. */}
+        {/*  `type="button"`: nút nằm trong `<form>` của trang, thiếu là bấm "Bỏ" thành LƯU. */}
         <Button
           type="button"
           variant="ghost"

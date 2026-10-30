@@ -59,7 +59,7 @@ export interface OrgDepartmentNode {
 }
 
 export interface OrgCompanyNode {
-  /** `0` = nhóm «Chưa gán pháp nhân». */
+  /** `0` = nhóm "Chưa gán pháp nhân". */
   id: number
   code: string
   name: string

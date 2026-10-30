@@ -49,7 +49,7 @@ export function notifySaveWarnings(result: LaborContractSaveResult, message: str
 
 /**
  * Mọi lệnh ghi quét cả nhánh hồ sơ của người này — danh sách + ô chọn mẫu cùng mới — và
- * thẻ «Hợp đồng sắp hết hạn» (ký HĐ nối tiếp / chấm dứt là HĐ cũ phải rời thẻ ngay).
+ * thẻ "Hợp đồng sắp hết hạn" (ký HĐ nối tiếp / chấm dứt là HĐ cũ phải rời thẻ ngay).
  */
 function useInvalidateContracts(employeeId: number) {
   const queryClient = useQueryClient()

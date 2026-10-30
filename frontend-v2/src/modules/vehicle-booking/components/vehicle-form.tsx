@@ -238,7 +238,7 @@ export function VehicleForm({ item, title, onDone }: VehicleFormProps) {
                     placeholder="VD: Toyota Hilux"
                   />
                 </CatalogFormField>
-                <CatalogFormField label="Loại xe" hint="Có chữ «tải» → sức chứa tính bằng tấn.">
+                <CatalogFormField label="Loại xe" hint='Có chữ "tải" → sức chứa tính bằng tấn.'>
                   <Input
                     value={form.type}
                     onChange={(e) => set('type', e.target.value)}
@@ -265,7 +265,7 @@ export function VehicleForm({ item, title, onDone }: VehicleFormProps) {
                 <CatalogFormField
                   label="Trạng thái"
                   fullWidth
-                  hint="Xe «Bảo trì» / «Ngưng sử dụng» vẫn nằm trong danh mục nhưng không nên điều đi."
+                  hint='Xe "Bảo trì" / "Ngưng sử dụng" vẫn nằm trong danh mục nhưng không nên điều đi.'
                 >
                   <Select value={form.status} onValueChange={(v) => set('status', v)}>
                     <SelectTrigger className="w-full">

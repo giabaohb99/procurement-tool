@@ -61,7 +61,7 @@ export interface LeaveRequestPayload {
   to_date: string
   from_session?: number
   to_session?: number
-  /** `HH:MM` khi buổi là «Theo giờ»; `null` để XÓA giờ cũ khi đổi sang buổi khác. */
+  /** `HH:MM` khi buổi là "Theo giờ"; `null` để XÓA giờ cũ khi đổi sang buổi khác. */
   from_time?: string | null
   to_time?: string | null
   unit?: number
@@ -207,7 +207,7 @@ export const leaveApi = {
     apiGet<{ total: number; items: LeaveInboxRow[] }>(`${INBOX}/handled`, { params }),
 
   /**
-   * Luồng duyệt của NHIỀU đơn một lượt, cho cột «Luồng duyệt» ở bảng danh sách.
+   * Luồng duyệt của NHIỀU đơn một lượt, cho cột "Luồng duyệt" ở bảng danh sách.
    * Khóa trả về là `entity_id` dạng chuỗi. Đơn chưa vào bộ máy thì KHÔNG có khóa.
    */
   flowStrips: (ids: number[]) =>

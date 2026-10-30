@@ -13,7 +13,7 @@ import { extractErrorMessage } from '@/core/api/response-envelope'
  * Luật hiển thị phía PHÒNG NHÂN SỰ của đề nghị sửa hồ sơ (duoc-CR-676) — hàm thuần để test.
  */
 
-/** So hai giá trị kiểu «nhìn bằng mắt»: `null` / `''` coi như nhau, số và chữ số coi như nhau. */
+/** So hai giá trị kiểu "nhìn bằng mắt": `null` / `''` coi như nhau, số và chữ số coi như nhau. */
 function sameValue(a: unknown, b: unknown): boolean {
   return String(a ?? '') === String(b ?? '')
 }
@@ -54,7 +54,7 @@ export function describeDecisionError(error: unknown): string {
 
 const GROUP_ORDER: readonly ChangeRequestGroup[] = ['personal', 'bank', 'documents']
 
-/** Các nhóm có mặt trong đề nghị, đúng thứ tự tab — cột «Nhóm thay đổi» của danh sách. */
+/** Các nhóm có mặt trong đề nghị, đúng thứ tự tab — cột "Nhóm thay đổi" của danh sách. */
 export function listChangedGroups(request: EmployeeChangeRequest): string[] {
   const present = new Set(request.items.map((item) => item.group))
   const labels = GROUP_ORDER.filter((group) => present.has(group)).map(
@@ -64,7 +64,7 @@ export function listChangedGroups(request: EmployeeChangeRequest): string[] {
   return labels
 }
 
-/** Số «trường» đổi: mỗi ô phẳng là một, cả bảng hộ gia đình tính là một. */
+/** Số "trường" đổi: mỗi ô phẳng là một, cả bảng hộ gia đình tính là một. */
 export function countChangedFields(request: EmployeeChangeRequest): number {
   return request.items.length + (request.families ? 1 : 0)
 }

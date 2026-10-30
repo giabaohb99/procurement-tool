@@ -116,7 +116,7 @@ describe('parseAssistantLeaveDraft', () => {
     expect(theoGio?.from_time).toBe('08:00')
     expect(theoGio?.to_time).toBe('10:30')
 
-    //  Buổi không phải «Theo giờ» mà vẫn kèm giờ thì form gửi lên hai ô thừa.
+    //  Buổi không phải "Theo giờ" mà vẫn kèm giờ thì form gửi lên hai ô thừa.
     const caNgay = parseAssistantLeaveDraft(draftOf({ from_time: '08:00', to_time: '10:30' }))
     expect(caNgay?.from_time).toBe('')
     expect(caNgay?.to_time).toBe('')

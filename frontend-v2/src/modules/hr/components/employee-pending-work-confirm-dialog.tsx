@@ -26,10 +26,10 @@ interface EmployeePendingWorkConfirmDialogProps {
 }
 
 /**
- * Hộp «kiểm việc treo» trước khi khóa tài khoản / lưu hồ sơ sang nghỉ việc (duoc-CR-665, V0-4).
+ * Hộp "kiểm việc treo" trước khi khóa tài khoản / lưu hồ sơ sang nghỉ việc (duoc-CR-665, V0-4).
  *
  * CHO QUA CÓ XÁC NHẬN (không chặn cứng): tài liệu không đòi chặn, và có người nghỉ đột xuất
- * cần khóa ngay. Còn việc treo thì nút xác nhận đổi thành «Vẫn khóa…» để người bấm biết mình
+ * cần khóa ngay. Còn việc treo thì nút xác nhận đổi thành "Vẫn khóa…" để người bấm biết mình
  * đang để phiếu kẹt; chuyển hết rồi thì nút trở lại bình thường (danh sách làm mới sau mỗi lần chuyển).
  */
 export function EmployeePendingWorkConfirmDialog({

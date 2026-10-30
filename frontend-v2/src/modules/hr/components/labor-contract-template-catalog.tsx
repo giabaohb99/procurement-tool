@@ -32,7 +32,7 @@ import { SCROLL_TABS_TOOLBAR_STICKY } from '../utils/list-sticky'
 const ALL = 'all'
 
 /**
- * MẪU HỢP ĐỒNG LAO ĐỘNG theo pháp nhân (.docx) — thân bảng, đặt trong tab «Thư viện văn bản mẫu»
+ * MẪU HỢP ĐỒNG LAO ĐỘNG theo pháp nhân (.docx) — thân bảng, đặt trong tab "Thư viện văn bản mẫu"
  * của phân hệ Văn bản (duoc-CR-629b bước A). Tách riêng một tệp để bước gộp dữ liệu sau này (nếu có)
  * chỉ phải đổi nguồn dữ liệu ở đây.
  *
@@ -81,7 +81,7 @@ export function LaborContractTemplateCatalog() {
         onDelete: async (t) => {
           const ok = await confirm({
             title: 'Xóa mẫu hợp đồng',
-            message: `Xóa mẫu «${t.name}»? Hợp đồng đã sinh từ mẫu này vẫn giữ nguyên. Mẫu đã có hợp đồng tham chiếu sẽ không xóa được, khi đó hãy chọn «Ngừng dùng».`,
+            message: `Xóa mẫu "${t.name}"? Hợp đồng đã sinh từ mẫu này vẫn giữ nguyên. Mẫu đã có hợp đồng tham chiếu sẽ không xóa được, khi đó hãy chọn "Ngừng dùng".`,
             confirmLabel: 'Xóa',
           })
           //  Lỗi 409 (đang có HĐ dùng) đã được http-client toast đúng câu của backend.
@@ -113,7 +113,7 @@ export function LaborContractTemplateCatalog() {
           emptyMessage={
             isFiltering
               ? 'Không có mẫu nào khớp bộ lọc.'
-              : 'Chưa có mẫu hợp đồng nào. Bấm «Tải lên mẫu» ở góc trên để thêm.'
+              : 'Chưa có mẫu hợp đồng nào. Bấm "Tải lên mẫu" ở góc trên để thêm.'
           }
           storageKey="hr.labor-contract-templates"
           pagination={{
@@ -160,7 +160,7 @@ export function LaborContractTemplateCatalog() {
         />
       </Card>
 
-      {/*  «Danh sách biến» + «Tải lên mẫu» ở góc tiêu đề trang: `LaborContractTemplateHeaderActions`. */}
+      {/*  "Danh sách biến" + "Tải lên mẫu" ở góc tiêu đề trang: `LaborContractTemplateHeaderActions`. */}
       <LaborContractTemplateUploadDialog
         open={replacing !== null}
         onOpenChange={(next) => !next && setReplacing(null)}

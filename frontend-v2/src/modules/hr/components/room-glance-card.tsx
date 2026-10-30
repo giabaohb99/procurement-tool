@@ -47,7 +47,7 @@ export function RoomGlanceCard({ glance, now, className }: RoomGlanceCardProps) 
   return (
     // ⚠️ KHÔNG dùng `isEmpty` của `ChartCard`: nó thay THẲNG toàn bộ nội dung
     // bằng một câu, tức dòng chân thẻ biến mất theo — mà dòng chân mới là chỗ
-    // ghi «n phiếu chờ duyệt». Hôm nào không có cuộc họp nào lại thường đúng là
+    // ghi "n phiếu chờ duyệt". Hôm nào không có cuộc họp nào lại thường đúng là
     // hôm người duyệt rảnh để ký; giấu con số đó đi là giấu đúng lúc cần nhất.
     <ChartCard
       className={className}

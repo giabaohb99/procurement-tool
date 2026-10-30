@@ -42,7 +42,7 @@ interface LeaveAttachmentsCardProps {
    */
   editable: boolean
   /**
-   * Tên các loại nghỉ trong đơn đang bật «Bắt buộc đính kèm» (duoc-CR-661). Có
+   * Tên các loại nghỉ trong đơn đang bật "Bắt buộc đính kèm" (duoc-CR-661). Có
    * phần tử = đơn phải có ít nhất một tệp trước khi GỬI DUYỆT (lưu nháp thì không).
    */
   requiredByTypes?: string[]
@@ -85,7 +85,7 @@ export function LeaveAttachmentsCard({
     try {
       await downloadFile(leaveAttachmentDownloadUrl(file.id), file.filename)
     } catch {
-      toast.error(`Không tải được tệp «${file.filename}».`)
+      toast.error(`Không tải được tệp "${file.filename}".`)
     }
   }
 
@@ -102,7 +102,7 @@ export function LeaveAttachmentsCard({
         </p>
         {requiredByTypes.length > 0 && (
           <p className="mt-1 text-xs font-medium text-destructive">
-            Loại nghỉ {requiredByTypes.map((n) => `«${n}»`).join(', ')} bắt buộc đính kèm giấy tờ:
+            Loại nghỉ {requiredByTypes.map((n) => `"${n}"`).join(', ')} bắt buộc đính kèm giấy tờ:
             cần có ít nhất một tệp trước khi gửi duyệt.
           </p>
         )}
@@ -185,7 +185,7 @@ export function LeaveAttachmentsCard({
                           icon={Trash2}
                           title="Gỡ tệp"
                           confirmTitle="Gỡ tệp đính kèm?"
-                          confirmDescription={`Gỡ «${file.filename}» khỏi đơn nghỉ phép này?`}
+                          confirmDescription={`Gỡ "${file.filename}" khỏi đơn nghỉ phép này?`}
                           destructive
                           disabled={deleteMutation.isPending}
                           onConfirm={() => deleteMutation.mutate(file.id)}

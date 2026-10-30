@@ -34,7 +34,7 @@ export const laborContractSchema = z
     allowance: money('Phụ cấp'),
     allowance_note: z.string().trim().max(500, 'Ghi chú phụ cấp tối đa 500 ký tự'),
     note: z.string().trim().max(500, 'Ghi chú tối đa 500 ký tự'),
-    //  duoc-CR-630: giá trị ô «Thông tin bổ sung» theo mã biến; mỗi ô luôn là chuỗi (chuẩn hóa ở backend).
+    //  duoc-CR-630: giá trị ô "Thông tin bổ sung" theo mã biến; mỗi ô luôn là chuỗi (chuẩn hóa ở backend).
     custom_values: z.record(z.string(), z.string()),
   })
   .superRefine((v, ctx) => {

@@ -193,7 +193,7 @@ describe('employeeSchema (tạo nhanh) vs employeeProfileSchema (đầy đủ)',
 })
 
 /**
- * Ô LƯƠNG của hồ sơ (duoc-CR-693). Chỉ chính chủ nhận được số; người khác sửa «mù» nên mọi
+ * Ô LƯƠNG của hồ sơ (duoc-CR-693). Chỉ chính chủ nhận được số; người khác sửa "mù" nên mọi
  * đường từ form ra PATCH phải coi `null` là KHÔNG ĐỤNG và không bao giờ nạp số từ API vào form.
  */
 describe('ô lương — đường form → PATCH', () => {

@@ -103,7 +103,7 @@ export const employeeApi = {
       `${BASE_URL}/${id}/departments`,
     ),
 
-  /** Chỉ đặt phòng KIÊM NHIỆM. Phòng chính đổi ở ô «Phòng ban» của hồ sơ. */
+  /** Chỉ đặt phòng KIÊM NHIỆM. Phòng chính đổi ở ô "Phòng ban" của hồ sơ. */
   setDepartments: (id: number, extraDepartmentIds: number[]) =>
     httpClient.put(`${BASE_URL}/${id}/departments`, {
       extra_department_ids: extraDepartmentIds,
@@ -135,7 +135,7 @@ export const employeeApi = {
   //  ⚠️ Cả bốn cửa dưới đây trả **403** khi người gọi không có
   //  `employee_sensitive.read` — toàn bộ hai bảng thuộc nhóm nhạy cảm. Nơi gọi
   //  PHẢI tắt query bằng `enabled` chứ đừng để nó cứ mount là bắn: người dùng
-  //  ăn toast 403 ngay lúc mở tab, đúng cái bẫy đã dính ở tab «Công nợ» của
+  //  ăn toast 403 ngay lúc mở tab, đúng cái bẫy đã dính ở tab "Công nợ" của
   //  Nhà cung cấp (CR-106).
 
   /** Người báo tin trong trường hợp cần thiết. */

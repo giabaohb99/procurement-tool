@@ -34,14 +34,14 @@ interface EmployeeTabGeneralProps {
   canReadSensitive: boolean
   /** Người xem là CHÍNH nhân sự này — chỉ họ thấy số lương (duoc-CR-693). */
   isSelf: boolean
-  //  ⚠️ `company_id` là BẮT BUỘC, không phải thừa: ô «Phòng ban» lọc theo pháp
-  //  nhân đang chọn, và luật đó chính là điều kiện để mở khóa ô «Công ty».
+  //  ⚠️ `company_id` là BẮT BUỘC, không phải thừa: ô "Phòng ban" lọc theo pháp
+  //  nhân đang chọn, và luật đó chính là điều kiện để mở khóa ô "Công ty".
   departments: { id: number; name: string; company_id: number }[]
   /** Danh bạ để chọn NGƯỜI QUẢN LÝ TRỰC TIẾP. */
   colleagues: { id: number; label: string }[]
 }
 
-/** Tab «Chung» — nhóm 1 (cá nhân) + nhóm 2 (công việc). */
+/** Tab "Chung" — nhóm 1 (cá nhân) + nhóm 2 (công việc). */
 export function EmployeeTabGeneral({
   employee,
   canWrite,
@@ -52,7 +52,7 @@ export function EmployeeTabGeneral({
 }: EmployeeTabGeneralProps) {
   const form = useFormContext<EmployeeProfileFormValues>()
   const disabled = !canWrite
-  //  Theo dõi ô hôn nhân để ẩn/hiện ô «Số con» — xem ghi chú tại chỗ dùng.
+  //  Theo dõi ô hôn nhân để ẩn/hiện ô "Số con" — xem ghi chú tại chỗ dùng.
   const maritalStatus = form.watch('marital_status')
 
   //  ⚠️ Danh mục Chức vụ là dữ liệu của MÀN KHÁC, nên phải tự tắt khi thiếu
@@ -173,7 +173,7 @@ export function EmployeeTabGeneral({
             options={MARITAL_STATUS_OPTIONS}
             disabled={disabled}
           />
-          {/*  Ô «Số con» CHỈ hiện khi đã khai «Có gia đình» (khách chốt
+          {/*  Ô "Số con" CHỈ hiện khi đã khai "Có gia đình" (khách chốt
                08/09/2026 — trước đó luật ngược lại: ẩn khi *Độc thân*).
 
                ⚠️ Ẩn/hiện chỉ là chuyện HIỂN THỊ — giá trị vẫn nằm trong form và
@@ -185,8 +185,8 @@ export function EmployeeTabGeneral({
 
                ⚠️ Ô rỗng thay chỗ khi ẩn: lưới là 2 cột và các ô xếp lần lượt,
                nên bỏ trống một ô là mọi cặp phía dưới lệch sang nửa hàng bên
-               kia — đúng cảnh «Số con» từng nằm dưới «Tôn giáo» thay vì đứng
-               cạnh «Tình trạng hôn nhân». */}
+               kia — đúng cảnh "Số con" từng nằm dưới "Tôn giáo" thay vì đứng
+               cạnh "Tình trạng hôn nhân". */}
           {maritalStatus === MARITAL_MARRIED ? (
             <EmployeeNumberField name="children_count" label="Số con" disabled={disabled} />
           ) : (
@@ -220,8 +220,8 @@ export function EmployeeTabGeneral({
         <FormSection title="Công việc">
           {/*  CÔNG TY — ô CHỌN, sửa được (duoc-CR-342, khách yêu cầu).
                Trước đây ô này CHỈ XEM với lý do "đổi pháp nhân là đổi tập dữ
-               liệu người đó đọc được, và phải kèm luật «phòng ban đang gán có
-               thuộc pháp nhân mới không»". Luật đó nay có mặt ngay dưới đây, nên
+               liệu người đó đọc được, và phải kèm luật "phòng ban đang gán có
+               thuộc pháp nhân mới không"". Luật đó nay có mặt ngay dưới đây, nên
                lý do khóa hết hiệu lực. Ba việc phải đi CÙNG NHAU:
 
                1. Ô chọn đọc từ danh mục Công ty (không gõ tay — tên pháp nhân
@@ -289,7 +289,7 @@ export function EmployeeTabGeneral({
                ⚠️ `fallbackLabel` là bắt buộc, không phải cho đẹp: hồ sơ cũ chưa
                map (hoặc đang giữ một chức vụ vừa bị cho ngừng dùng) không có
                dòng nào trong danh sách, và thiếu nhãn dự phòng thì ô hiện trống
-               — người đọc hiểu thành «chưa khai chức vụ» rồi lưu đè lên. */}
+               — người đọc hiểu thành "chưa khai chức vụ" rồi lưu đè lên. */}
           <FormField
             control={form.control}
             name="position_id"
@@ -334,8 +334,8 @@ export function EmployeeTabGeneral({
                   items={colleagues}
                 />
                 <FormDescription>
-                  Người ký duyệt đơn từ của nhân viên này ở những luồng duyệt có bước
-                  «Quản lý trực tiếp người nộp». Bỏ trống thì bước đó chuyển cho trưởng
+                  Người ký duyệt đơn từ của nhân viên này ở những luồng duyệt có bước{' '}
+                  <em>Quản lý trực tiếp người nộp</em>. Bỏ trống thì bước đó chuyển cho trưởng
                   bộ phận.
                 </FormDescription>
                 <FormMessage />
@@ -412,13 +412,13 @@ export function EmployeeTabGeneral({
             )}
           />
 
-          {/*  EMAIL CÔNG VIỆC = EMAIL ĐĂNG NHẬP — dời từ tab «Liên hệ & Ngân hàng» sang đây
+          {/*  EMAIL CÔNG VIỆC = EMAIL ĐĂNG NHẬP — dời từ tab "Liên hệ & Ngân hàng" sang đây
                (đại ca chốt 23/09/2026) vì sửa ô này là sửa cách người đó đăng nhập:
                - Đăng nhập Google tra THẲNG email nhân sự (`auth/service.google_login`).
                - Đăng nhập mật khẩu tra `User.email`; lưu hồ sơ mà ô này đổi thì
                  `_sync_user_email_from_employee` đẩy email mới sang tài khoản gắn với
                  người này (chặn 400 nếu tài khoản khác đang dùng email đó).
-               Câu mô tả cũ «đổi ở đây không tự đổi tài khoản đã cấp» là SAI với backend. */}
+               Câu mô tả cũ "đổi ở đây không tự đổi tài khoản đã cấp" là SAI với backend. */}
           <EmployeeTextField
             name="email"
             label="Email công việc"

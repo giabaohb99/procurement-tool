@@ -4,7 +4,7 @@ import { WORK_SCHEDULE_ASSIGNMENT_CRUD_CONFIG as config } from './work-schedule-
 import { WORK_SCHEDULE_CRUD_CONFIG } from './work-schedule-crud'
 
 describe('work schedule CRUD configs', () => {
-  // Regression: gán/gỡ lịch đổi assignment_count của mẫu, đổi tên mẫu đổi cột «Mẫu lịch» ở
+  // Regression: gán/gỡ lịch đổi assignment_count của mẫu, đổi tên mẫu đổi cột "Mẫu lịch" ở
   // màn Gán — thiếu khai báo thì hai màn hiển thị số liệu cũ cho tới khi tải lại trang.
   it('each screen also refreshes the cache of the other', () => {
     expect(config.alsoInvalidate).toContain(WORK_SCHEDULE_CRUD_CONFIG.apiPath)

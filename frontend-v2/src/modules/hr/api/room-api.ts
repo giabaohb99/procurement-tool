@@ -62,8 +62,8 @@ export const roomApi = {
     }),
 
   // ── Hộp việc duyệt ──────────────────────────────────────────────────────────
-  //  Hai đường này KHÔNG gác theo khóa vai trò: quyền ở đây là «bộ máy có giao
-  //  việc cho tôi không» — xem docstring của `inbox_controller.py`.
+  //  Hai đường này KHÔNG gác theo khóa vai trò: quyền ở đây là "bộ máy có giao
+  //  việc cho tôi không" — xem docstring của `inbox_controller.py`.
   toApprove: () => apiGet<{ total: number; items: RoomInboxRow[] }>(`${INBOX}/to-approve`),
 
   handled: (days = 30) =>

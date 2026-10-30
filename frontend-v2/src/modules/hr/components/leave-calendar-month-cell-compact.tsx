@@ -13,9 +13,9 @@ interface LeaveCalendarMonthCellCompactProps {
 }
 
 /**
- * Quá số vạch này thì chồng vạch cao hơn ô 64px — phần dư gộp thành «+N».
+ * Quá số vạch này thì chồng vạch cao hơn ô 64px — phần dư gộp thành "+N".
  *
- * Tính: con số ngày 20px + 3 vạch (3×6 + 2×2 khe = 22px) + dòng «+N» 12px +
+ * Tính: con số ngày 20px + 3 vạch (3×6 + 2×2 khe = 22px) + dòng "+N" 12px +
  * đệm 8px = 62px, vừa sát trần 64px của ô. Dày hơn 6px hoặc thêm vạch thứ tư là
  * tràn — lúc đó phải nới `min-h` của ô lên trước.
  */
@@ -26,14 +26,14 @@ const MAX_BARS = 3
  * lối Google Calendar trên điện thoại (chốt 09/09/2026, khách chỉ định).
  *
  * ⚠️ Vì sao không kê tên: trên máy 393px một ô của lưới 7 cột rộng **~48px**.
- * Chip tên của khổ rộng đặt vào đó cắt còn ba ký tự — màn hình bày ra «Deg»,
- * «Phạ», «Hồ», ba mẩu chữ không nói được ai nghỉ mà vẫn ăn trọn chiều cao ô và
+ * Chip tên của khổ rộng đặt vào đó cắt còn ba ký tự — màn hình bày ra "Deg",
+ * "Phạ", "Hồ", ba mẩu chữ không nói được ai nghỉ mà vẫn ăn trọn chiều cao ô và
  * tràn sang hàng dưới (ảnh báo lỗi 09/09/2026: ô ngày 21 đè lên ô ngày 14).
  *
  * ⚠️ **Một VẠCH NGANG = một người** — không phải chấm, không phải huy hiệu đếm.
  * Cả ba bản đều đã dựng, đây là bản thứ ba và lý do bỏ hai bản kia:
  *
- * · *huy hiệu đếm* («●3 ●1»): hai viên có viền trong một ô 48px là hai khối chữ
+ * · *huy hiệu đếm* ("●3 ●1"): hai viên có viền trong một ô 48px là hai khối chữ
  *   nhật cạnh nhau, nặng hơn hẳn phần lịch còn lại — mắt bị chúng kéo trước cả
  *   con số ngày;
  * · *chấm tròn* (lối Google Calendar): nhẹ, nhưng mỗi ô một số chấm khác nhau

@@ -45,7 +45,7 @@ function renderCard(glance: RoomGlance, now: Date) {
 }
 
 describe('RoomGlanceCard', () => {
-  it('gắn dấu «Đang họp» cho cuộc đang diễn ra, không gắn cho cuộc vừa tan', () => {
+  it('gắn dấu "Đang họp" cho cuộc đang diễn ra, không gắn cho cuộc vừa tan', () => {
     // Mốc kết thúc là biên HỞ: 10:00 tức đã tan, không còn "đang họp".
     renderCard(
       makeGlance({
@@ -65,7 +65,7 @@ describe('RoomGlanceCard', () => {
     expect(screen.getAllByText('Đang họp')).toHaveLength(1)
   })
 
-  it('chưa tới giờ thì không phải «Đang họp»', () => {
+  it('chưa tới giờ thì không phải "Đang họp"', () => {
     renderCard(
       makeGlance({ today: [makeBooking()] }),
       new Date(2026, 8, 5, 8, 59),

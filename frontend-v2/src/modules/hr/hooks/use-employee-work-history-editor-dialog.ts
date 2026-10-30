@@ -5,16 +5,16 @@ import type { EmployeeWorkHistory } from '../types/employee-work-history'
 
 /** Tùy chọn khi mở hộp ở chế độ TẠO MỚI — xem `openCreate`. */
 export interface OpenCreateOptions {
-  /** Ép Số QĐ bắt buộc (nút «+ Thêm quyết định» của tab Quyết định bổ nhiệm). */
+  /** Ép Số QĐ bắt buộc (nút "+ Thêm quyết định" của tab Quyết định bổ nhiệm). */
   requireDecisionNo?: boolean
-  /** Đè tiêu đề hộp lúc tạo mới. Bỏ trống = giữ tiêu đề mặc định «Thêm quá trình công tác». */
+  /** Đè tiêu đề hộp lúc tạo mới. Bỏ trống = giữ tiêu đề mặc định "Thêm quá trình công tác". */
   createTitle?: string
 }
 
 /**
- * Điều phối hộp thêm/sửa «Quá trình công tác» (`EmployeeWorkHistoryFormDialog`)
- * — NÂNG lên chỗ chung (đại ca chốt 03/10/2026, mục 3) để cả tab «Quá trình
- * công tác» (`openCreate`/`openEdit`) VÀ tab «Quyết định bổ nhiệm» (chỉ
+ * Điều phối hộp thêm/sửa "Quá trình công tác" (`EmployeeWorkHistoryFormDialog`)
+ * — NÂNG lên chỗ chung (đại ca chốt 03/10/2026, mục 3) để cả tab "Quá trình
+ * công tác" (`openCreate`/`openEdit`) VÀ tab "Quyết định bổ nhiệm" (chỉ
  * `openCreate` — khu đó không có nút Sửa) cùng dùng, không chép logic ra hai
  * bản. Mỗi tab tự gọi hook này MỘT LẦN và tự dựng `<EmployeeWorkHistoryFormDialog>`
  * của riêng nó — hai hook KHÔNG chia sẻ state (không cần, vì chỉ một tab mở

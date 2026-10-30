@@ -68,10 +68,10 @@ export function LeaveRequestDetailPage() {
   const location = useLocation()
   const { can } = usePermission()
 
-  //  ⚠️ Nút «Về danh sách» phải LÙI THEO LỊCH SỬ, không điều hướng cứng về
+  //  ⚠️ Nút "Về danh sách" phải LÙI THEO LỊCH SỬ, không điều hướng cứng về
   //  `/hr/leave-requests`. Đường cứng mất sạch trạng thái người dùng vừa đặt:
   //  màn danh sách có ba tab và mỗi tab một bộ lọc, mà URL sạch thì nó tự chọn
-  //  lại tab mặc định — bấm từ tab «Đơn của tôi» lại rơi về «Cần tôi duyệt»
+  //  lại tab mặc định — bấm từ tab "Đơn của tôi" lại rơi về "Cần tôi duyệt"
   //  (lỗi báo 04/09/2026), và bộ lọc vừa gõ cũng bay theo.
   //
   //  `location.key === 'default'` = đây là trang ĐẦU TIÊN của phiên (vào thẳng
@@ -87,8 +87,8 @@ export function LeaveRequestDetailPage() {
   const remove = useDeleteLeaveRequest()
   const act = useLeaveRequestAction()
 
-  //  Bản nháp do Trợ lý AI soạn (tool `draft_leave_request`) đi vào qua nút «Tạo đơn nghỉ
-  //  phép» ở trang chat, cùng khuôn `state.assistantDraft` với YCBG/YCMH. Chỉ là giá trị
+  //  Bản nháp do Trợ lý AI soạn (tool `draft_leave_request`) đi vào qua nút "Tạo đơn nghỉ
+  //  phép" ở trang chat, cùng khuôn `state.assistantDraft` với YCBG/YCMH. Chỉ là giá trị
   //  MỞ SẴN: người dùng rà lại rồi tự bấm Lưu, không có gì tự sinh. State rác thì parse
   //  trả `null` và form mở trắng như thường.
   //
@@ -132,7 +132,7 @@ export function LeaveRequestDetailPage() {
   const canApprove = can('leave_request', 'approve')
   const canCancel = can('leave_request', 'cancel')
 
-  //  Loại nghỉ bật «Bắt buộc đính kèm» (duoc-CR-661): báo trước ở thẻ tệp và chặn
+  //  Loại nghỉ bật "Bắt buộc đính kèm" (duoc-CR-661): báo trước ở thẻ tệp và chặn
   //  nút Gửi duyệt cho khỏi lưu rồi mới ăn 400. Danh mục + tệp dùng chung khóa cache
   //  với form và thẻ tệp nên không thêm request.
   const { data: typeData } = useLeaveTypes()
@@ -151,18 +151,18 @@ export function LeaveRequestDetailPage() {
     )
   }
 
-  //  ⚠️ GỬI DUYỆT PHẢI LƯU TRƯỚC. Backend kiểm «đã nhập đủ» trên BẢN ĐÃ LƯU
+  //  ⚠️ GỬI DUYỆT PHẢI LƯU TRƯỚC. Backend kiểm "đã nhập đủ" trên BẢN ĐÃ LƯU
   //  (`request_service.check_ready_to_submit`), còn người dùng thì đang nhìn
   //  chữ họ vừa gõ. Trước 07/09/2026 nút này gửi thẳng, nên gõ lý do rồi bấm
-  //  Gửi duyệt ăn đúng câu «Thiếu Lý do nghỉ — nhập đủ trước khi gửi duyệt» —
+  //  Gửi duyệt ăn đúng câu "Thiếu Lý do nghỉ — nhập đủ trước khi gửi duyệt" —
   //  một câu chặn nói ngược lại thứ đang hiện trên màn hình, không cách nào
-  //  đoán ra là phải bấm «Lưu nháp» trước.
+  //  đoán ra là phải bấm "Lưu nháp" trước.
   const saveThenSubmit = () => {
     //  Chặn sớm khi ĐÃ biết đơn chưa có tệp (danh sách tệp tải xong và rỗng); chưa tải
     //  xong thì để backend phán — nó là chốt thật (`check_required_attachment`).
     if (requiredByTypes.length > 0 && attachedFiles && attachedFiles.length === 0) {
       toast.error(
-        `Loại nghỉ ${requiredByTypes.map((n) => `«${n}»`).join(', ')} bắt buộc đính kèm giấy tờ — tải tệp lên ở mục «Tệp đính kèm» rồi gửi duyệt.`,
+        `Loại nghỉ ${requiredByTypes.map((n) => `"${n}"`).join(', ')} bắt buộc đính kèm giấy tờ — tải tệp lên ở mục "Tệp đính kèm" rồi gửi duyệt.`,
       )
       return
     }
@@ -191,7 +191,7 @@ export function LeaveRequestDetailPage() {
   return (
     <PageContainer>
       {/*  Nhóm nút nằm TRÊN ĐẦU và dính khi cuộn: form dài hơn một màn, để nút
-           «Lưu nháp» dưới đáy thì mỗi lần lưu là một lần cuộn xuống rồi cuộn
+           "Lưu nháp" dưới đáy thì mỗi lần lưu là một lần cuộn xuống rồi cuộn
            ngược lên. Xem `sticky` của `PageHeader`. */}
       <PageHeader
         sticky
@@ -214,14 +214,14 @@ export function LeaveRequestDetailPage() {
           //  nhóm nút. Trên điện thoại nhóm nút chiếm trọn bề ngang và xuống
           //  dòng theo lưới; nhét một huy hiệu vào giữa thì nó ăn mất một ô của
           //  lưới đó và mọi nút sau nó lệch đi một nhịp (ảnh báo 09/09/2026:
-          //  «Chờ duyệt» + 2 nút ở hàng trên, «Hủy đơn» rơi lẻ xuống hàng dưới).
+          //  "Chờ duyệt" + 2 nút ở hàng trên, "Hủy đơn" rơi lẻ xuống hàng dưới).
           //  Trạng thái vốn là thông tin về tờ đơn, không phải một hành động.
           <>
             {request && <LeaveStatusBadge status={request.status} label={request.status_label} />}
             <span>
               {request?.submitted_at
                 ? `Gửi duyệt lúc ${formatDateTime(request.submitted_at)}`
-                : //  Nút «Gửi duyệt» nay tự lưu trước, nên câu cũ ("Lưu nháp rồi
+                : //  Nút "Gửi duyệt" nay tự lưu trước, nên câu cũ ("Lưu nháp rồi
                   //  gửi duyệt") mô tả một thao tác không còn bắt buộc.
                   'Gửi duyệt sẽ tự lưu những gì đang nhập.'}
             </span>
@@ -251,7 +251,7 @@ export function LeaveRequestDetailPage() {
                     Xóa đơn
                   </Button>
                 )}
-                {/*  ⚠️ «Lưu nháp» chỉ là nút CHÍNH khi đơn chưa có id — lúc đó
+                {/*  ⚠️ "Lưu nháp" chỉ là nút CHÍNH khi đơn chưa có id — lúc đó
                      nó là việc duy nhất làm được. Đơn đã lưu rồi thì việc người
                      ta định làm là GỬI DUYỆT, mà hai nút xanh đặc đứng cạnh nhau
                      thì chẳng nút nào còn là nút chính nữa. */}
@@ -377,7 +377,7 @@ export function LeaveRequestDetailPage() {
         {/*  Tệp đính kèm (bao-CR-505) đứng ngay dưới tờ đơn vì nó là một phần
              của hồ sơ trình duyệt — người duyệt đọc lý do nghỉ rồi xem giấy tờ.
              Thêm/gỡ được đúng lúc form còn sửa được; sau khi gửi duyệt thì chỉ
-             xem và tải về. Đơn mới chưa có id thì thẻ nhắc «Lưu nháp». */}
+             xem và tải về. Đơn mới chưa có id thì thẻ nhắc "Lưu nháp". */}
         {(request || (isNew && canWrite)) && (
           <LeaveAttachmentsCard
             requestId={requestId}

@@ -72,8 +72,8 @@ function CompanyListContent() {
   const scrolled = useScrolled(stickyRef)
 
   const { queryParams, queryKey } = useFilterQuery()
-  //  Bộ lọc nâng cao: đếm để gắn huy hiệu lên nút «Bộ lọc», và hai hàm để nút
-  //  «Xóa lọc» / «Áp dụng» của tờ trượt điều khiển được nó.
+  //  Bộ lọc nâng cao: đếm để gắn huy hiệu lên nút "Bộ lọc", và hai hàm để nút
+  //  "Xóa lọc" / "Áp dụng" của tờ trượt điều khiển được nó.
   const {
     activeCount: filterActiveCount,
     reset: filterReset,
@@ -166,7 +166,7 @@ function CompanyListContent() {
         }
       />
 
-      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu «đã cuộn» xuống thanh
+      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu "đã cuộn" xuống thanh
            công cụ ghim (do `DataTable` vẽ, tầng này không với tới bằng prop) —
            bóng đổ của nó đọc thuộc tính này. Xem `list-sticky.ts`. */}
       <div
@@ -189,12 +189,12 @@ function CompanyListContent() {
             //  pháp nhân đã tồn tại.
             isFiltering
               ? 'Không có công ty nào khớp bộ lọc.'
-              : 'Chưa có công ty nào. Bấm «Thêm mới» để tạo.'
+              : 'Chưa có công ty nào. Bấm "Thêm mới" để tạo.'
           }
           storageKey="hr.companies"
           //  Khổ hẹp: THẺ thay bảng. Bảng khai 10 cột, bề rộng tự nhiên ~1880px
           //  — trên máy 390px chỉ thấy *Tên pháp nhân* (còn bị cắt đuôi thành
-          //  «CÔNG TY TNHH HÓ…») và *Mã*, tức mã số thuế · người đại diện ·
+          //  "CÔNG TY TNHH HÓ…") và *Mã*, tức mã số thuế · người đại diện ·
           //  trạng thái đều nằm sau một lượt cuộn ngang.
           mobileCard={(company: Company) => <CompanyCard company={company} />}
           //  Danh sách thẻ dài hơn một màn (13 pháp nhân ≈ 1600px) và CẢ TRANG
@@ -216,7 +216,7 @@ function CompanyListContent() {
             <>
               {/*  ⚠️ Câu gợi ý rút gọn ở khổ hẹp và phải đo theo lúc ĐANG LỌC:
                    nút *Bộ lọc* nở thêm 24px khi mọc huy hiệu số, nên phần gõ
-                   chữ tụt xuống ~117px — bản «Tìm theo tên pháp nhân…» cần hơn
+                   chữ tụt xuống ~117px — bản "Tìm theo tên pháp nhân…" cần hơn
                    gấp rưỡi thế. Bản đầy đủ giữ từ `md`, ở đó ô rộng 256px. */}
               <SearchField
                 value={keyword}

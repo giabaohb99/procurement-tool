@@ -31,11 +31,11 @@ const NUMBER_CLASS = 'min-w-[10rem] flex-1'
 const ACTIONS_CLASS = 'sm:w-36 sm:shrink-0'
 
 /**
- * Ô nhập NHIỀU SỐ ĐIỆN THOẠI (duoc-CR-694) — MỘT danh sách «Số điện thoại» cùng bề rộng các ô khác.
+ * Ô nhập NHIỀU SỐ ĐIỆN THOẠI (duoc-CR-694) — MỘT danh sách "Số điện thoại" cùng bề rộng các ô khác.
  *
- * Mỗi dòng: [nhãn] [số] [nút/huy hiệu]. Dòng đầu là SỐ CHÍNH (cột `phone` + `phone_label`, huy hiệu «Số chính»
+ * Mỗi dòng: [nhãn] [số] [nút/huy hiệu]. Dòng đầu là SỐ CHÍNH (cột `phone` + `phone_label`, huy hiệu "Số chính"
  * ở cuối dòng); các dòng sau là số phụ (`extra_phones`, tối đa `MAX_EXTRA_PHONES`) có
- * ô nhãn gõ tự do kèm gợi ý, nút «Đặt làm chính» và thùng rác. «Đặt làm chính» chỉ hoán đổi trên form — bấm Lưu
+ * ô nhãn gõ tự do kèm gợi ý, nút "Đặt làm chính" và thùng rác. "Đặt làm chính" chỉ hoán đổi trên form — bấm Lưu
  * mới ghi, và hoán đổi CẢ số lẫn nhãn.
  *
  * Đọc/ghi qua `useFormContext` nên dùng được trong cả hai form; nơi gọi chỉ cần nằm trong `<Form>`.

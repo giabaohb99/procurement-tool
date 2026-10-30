@@ -70,7 +70,7 @@ function renderDialog(
 }
 
 describe('EmployeeWorkHistoryFilesDialog', () => {
-  it('editable=false → không vùng thả tệp, không nút «Gỡ tệp»; vẫn xem/tải được', async () => {
+  it('editable=false → không vùng thả tệp, không nút "Gỡ tệp"; vẫn xem/tải được', async () => {
     fetchFilesMock.mockResolvedValue([file()])
     renderDialog({ editable: false })
 

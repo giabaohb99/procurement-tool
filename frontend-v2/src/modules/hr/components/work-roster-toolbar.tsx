@@ -15,7 +15,7 @@ interface WorkRosterToolbarProps {
 const MODE_LABEL: Record<WorkRosterMode, string> = { week: 'Tuần', month: 'Tháng' }
 
 /**
- * Hàng điều hướng của «Xem lịch»: Tuần/Tháng · ‹ Hôm nay › · nhãn kỳ.
+ * Hàng điều hướng của "Xem lịch": Tuần/Tháng · ‹ Hôm nay › · nhãn kỳ.
  * Bộ lọc và ô tìm nằm ở `WorkRosterFilterBar` — hai việc khác nhau ("xem kỳ nào"
  * và "xem ai"), tách để mỗi bên đủ chỗ trên khổ hẹp.
  */

@@ -6,7 +6,7 @@ import type { PaginatedResult } from '@/shared/types/api'
 import type { JobPosition } from '../types/job-position'
 
 /**
- * Danh mục CHỨC VỤ để đổ vào ô chọn «Vị trí / Chức vụ» (duoc-CR-320).
+ * Danh mục CHỨC VỤ để đổ vào ô chọn "Vị trí / Chức vụ" (duoc-CR-320).
  *
  * Lấy MỘT lượt 500 dòng thay vì tìm động: một công ty có vài chục chức vụ, và ô
  * chọn phải mở ra là thấy đủ. Cùng cách đang dùng cho ô chọn phòng ban và ô chọn

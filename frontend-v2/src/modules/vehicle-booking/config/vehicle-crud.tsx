@@ -29,7 +29,7 @@ export const VEHICLE_CRUD_CONFIG: CrudConfig<Vehicle> = {
   // Thêm/Sửa mở TRANG riêng (không popup): nút "Thêm" đi `/new`, bấm dòng đi `/:id`.
   createRoute: appRoutes.vehicleBooking.vehicleNew,
   //  ⚠️ Đuôi `.v2` là CÓ CHỦ Ý (22/09/2026): bộ cột vừa đổi hẳn (gộp *Biển số* +
-  //  *Mẫu xe*, thêm *Đơn vị cho thuê*). Ai đã từng đụng menu «Cột» thì
+  //  *Mẫu xe*, thêm *Đơn vị cho thuê*). Ai đã từng đụng menu "Cột" thì
   //  `useTableLayout` đọc bản lưu trong `localStorage` và **bản lưu thắng** —
   //  cột mới nối vào cuối, cột cũ đã xóa nằm lại trong thứ tự. Đổi khóa là mọi
   //  người nhận đúng bố cục mặc định mới; khóa cũ nằm lại vô hại.
@@ -38,11 +38,11 @@ export const VEHICLE_CRUD_CONFIG: CrudConfig<Vehicle> = {
   detailRoute: (id) => appRoutes.vehicleBooking.vehicleDetail(id),
   searchParam: 'license_plate',
   //  Ô tìm chỉ lọc theo biển số (`searchParam`) — câu gợi ý ngắn để còn đọc
-  //  được ở khổ hẹp, nơi nó chia hàng với nút «Bộ lọc».
+  //  được ở khổ hẹp, nơi nó chia hàng với nút "Bộ lọc".
   searchPlaceholder: 'Tìm biển số…',
   //  Hai ô lọc nhanh đứng ngay trên bảng: đây là hai câu hỏi người điều phối
   //  hỏi mỗi ngày ("xe nào đang sẵn sàng", "xe nào là xe thuê"), bắt họ mở tờ
-  //  «Bộ lọc» để hỏi là thêm hai lần bấm cho việc thường xuyên nhất.
+  //  "Bộ lọc" để hỏi là thêm hai lần bấm cho việc thường xuyên nhất.
   quickFilters: [
     { key: 'status', label: 'Trạng thái', type: 'select', options: STATUS_OPTIONS },
     { key: 'is_external', label: 'Nguồn', type: 'select', options: SOURCE_OPTIONS },
@@ -135,7 +135,7 @@ export const VEHICLE_CRUD_CONFIG: CrudConfig<Vehicle> = {
     {
       //  Mặc định ẩn: chỉ có nghĩa với xe thuê ngoài (3/13 dòng hiện tại), bày
       //  luôn thì cả cột là dấu gạch ngang. Ai theo dõi xe thuê thì bật lên ở
-      //  menu «Cột», hoặc lọc *Nguồn = Thuê ngoài* rồi đọc ngay dòng phụ của ô
+      //  menu "Cột", hoặc lọc *Nguồn = Thuê ngoài* rồi đọc ngay dòng phụ của ô
       //  nhận diện — xe thuê ngoài thường bỏ trống mẫu xe nên chỗ đó hiện tên
       //  đơn vị.
       key: 'external_company',

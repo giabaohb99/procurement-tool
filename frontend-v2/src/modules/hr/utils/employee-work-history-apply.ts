@@ -17,7 +17,7 @@ import type { EmployeeWorkHistory } from '../types/employee-work-history'
  * đều có test canh theo tên hằng số này.
  */
 export const POSITION_TRACK = new Set([1, 2, 3, 5]) // Tuyển dụng · Điều chuyển · Bổ nhiệm · Miễn nhiệm
-/** Loại mặc định của nút «+ Thêm quyết định» (tab Quyết định bổ nhiệm, 03/10/2026). */
+/** Loại mặc định của nút "+ Thêm quyết định" (tab Quyết định bổ nhiệm, 03/10/2026). */
 export const APPOINT_TYPE = 3 // Bổ nhiệm
 export const CONCURRENT_TYPE = 4 // Kiêm nhiệm
 export const RESIGN_TYPE = 6 // Thôi việc
@@ -63,9 +63,9 @@ function describeFieldChange(fieldLabel: string, oldLabel: string | null | undef
   return `${fieldLabel}: ${oldText} → ${newText}`
 }
 
-/** `«Phòng Kế toán»` khi có nhãn, `này` khi không (giữ đúng câu cũ lúc chưa có nhãn). */
+/** `"Phòng Kế toán"` khi có nhãn, `này` khi không (giữ đúng câu cũ lúc chưa có nhãn). */
 function departmentPhrase(label: string | undefined): string {
-  return label && label.trim() ? `«${label}»` : 'này'
+  return label && label.trim() ? `"${label}"` : 'này'
 }
 
 /**
@@ -88,7 +88,7 @@ export function planApplyPrompt(
   editingId = 0,
 ): ApplyPrompt {
   //  Ngày rỗng/không hợp lệ, hoặc CHƯA tới ngày hiệu lực (Q1) → không hỏi. BE
-  //  cũng từ chối `/apply` với lý do «chưa tới ngày hiệu lực» — hỏi trước là hỏi hụt.
+  //  cũng từ chối `/apply` với lý do "chưa tới ngày hiệu lực" — hỏi trước là hỏi hụt.
   if (!isValidDate(values.from_date)) return null
   if (values.from_date > today) return null
 
@@ -146,7 +146,7 @@ export function planApplyPrompt(
 
 /**
  * Chuyển một dòng ĐÃ CÓ (`EmployeeWorkHistory`) thành `ApplyPromptValues` —
- * dùng ở nút ▶ «Áp vào hồ sơ» trên từng dòng (H1, `employee-tab-work-history.tsx`),
+ * dùng ở nút ▶ "Áp vào hồ sơ" trên từng dòng (H1, `employee-tab-work-history.tsx`),
  * để dùng LẠI đúng một bộ luật `planApplyPrompt` cho cả hai nơi hỏi (lưu dòng
  * và áp dòng có sẵn), không chép luật ra bản thứ hai. Dòng đã có sẵn tên hiển
  * thị (`company_name`/`department_name`/`position_label`) nên không cần tra

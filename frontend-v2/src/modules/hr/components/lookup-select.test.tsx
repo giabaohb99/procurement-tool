@@ -10,7 +10,7 @@ const DANH_SACH = [
 
 describe('LookupSelect', () => {
   //  Lỗi khách báo 24/08/2026: chọn trưởng bộ phận (hoặc phòng ban của nhân sự),
-  //  bấm Lưu, ô trở lại «— Chưa chỉ định —» và dữ liệu mất thật trên máy chủ.
+  //  bấm Lưu, ô trở lại "— Chưa chỉ định —" và dữ liệu mất thật trên máy chủ.
   //
   //  Radix dựng thêm một `<select>` nguyên bản ẩn. Danh mục nạp bất đồng bộ nên
   //  có nhịp `value` đã là 5 mà `<option value="5">` chưa sinh ra; trình duyệt
@@ -36,7 +36,7 @@ describe('LookupSelect', () => {
     expect(doi).not.toHaveBeenCalled()
   })
 
-  it('người dùng chọn mục «bỏ chọn» thì VẪN báo 0 — đừng chặn nhầm', () => {
+  it('người dùng chọn mục "bỏ chọn" thì VẪN báo 0 — đừng chặn nhầm', () => {
     const doi = vi.fn()
 
     render(

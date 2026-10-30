@@ -45,7 +45,7 @@ describe('companySelectOptions', () => {
 })
 
 describe('approverSelectOptions', () => {
-  it('shows avatar + «code - name», with the role (scope) granting approval as the hint', () => {
+  it('shows avatar + "code - name", with the role (scope) granting approval as the hint', () => {
     expect(approverSelectOptions(DATA, 0, '')).toEqual([
       {
         value: '40',

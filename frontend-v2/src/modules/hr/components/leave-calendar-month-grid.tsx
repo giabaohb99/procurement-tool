@@ -30,10 +30,10 @@ interface LeaveCalendarMonthGridProps {
  * ⚠️ Đo bề rộng THẬT của lưới, không hỏi bề rộng màn hình. Cùng một máy 820px,
  * lưới rộng 530px khi menu trái mở và 740px khi thu — hỏi `useIsMobile` thì cả
  * hai đều là "khổ rộng", mà ở trường hợp đầu ô chỉ còn 75px nên tên cắt thành
- * «Dego …» y hệt lỗi trên điện thoại, chỉ khác là không ai gọi nó là điện thoại.
+ * "Dego …" y hệt lỗi trên điện thoại, chỉ khác là không ai gọi nó là điện thoại.
  *
  * Con số 92 = **đủ chỗ cho chữ đầu của tên**: 8px đệm ô + 24px viền/chấm/đệm
- * chip, còn ~60px cho chữ, tức «Nguyễn…» · «Dego Admin». Không phải mốc "tên
+ * chip, còn ~60px cho chữ, tức "Nguyễn…" · "Dego Admin". Không phải mốc "tên
  * hiện đủ" — tên dài vẫn cắt ở mọi bề rộng, kể cả ô 160px của màn 24". Mốc này
  * chỉ phân biệt *cắt nhưng còn đọc ra người nào* với *cắt thành ba ký tự vô
  * nghĩa*; đặt cao hơn thì màn hình 1024px mất tên mà không cần thiết.
@@ -50,11 +50,11 @@ const MIN_NAME_CELL_WIDTH = 92
  * cao thật. Thiếu `min-h-0` thì ô con có `overflow-auto` sẽ nong hàng ra theo
  * nội dung — ngày nào có năm người nghỉ là hàng đó cao gấp ba, và cả lưới méo.
  *
- * ⚠️ Mỗi ô cắt bớt rồi gộp phần dư thành «+N người nữa» (`splitMonthCellLines`).
+ * ⚠️ Mỗi ô cắt bớt rồi gộp phần dư thành "+N người nữa" (`splitMonthCellLines`).
  * Không cắt thì một ngày cả phòng nghỉ sẽ đẩy ô cao vọt và phá lưới; cho ô cuộn
  * riêng thì có thanh cuộn tí hon trong một ô 90px, không ai kéo nổi.
  *
- * ⚠️ **«+N nữa» và số ngày phải BẤM ĐƯỢC.** Cắt bớt mà không chừa đường xem tiếp
+ * ⚠️ **"+N nữa" và số ngày phải BẤM ĐƯỢC.** Cắt bớt mà không chừa đường xem tiếp
  * thì màn hình biết có 12 người nghỉ nhưng người dùng không bao giờ đọc được tên
  * chín người còn lại — đúng lúc một ngày đông người nghỉ mới là lúc cần xem kỹ
  * nhất. Bấm vào là sang chế độ NGÀY, nơi có đủ chỗ cho tất cả.

@@ -144,7 +144,7 @@ export function CompanyDetailPage() {
                đệm của `PageContainer` — dính mà còn hai mép hở thì nhìn ra ngay
                là vá. */}
           <div className="sticky top-0 z-20 -mx-4 -mt-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b bg-canvas px-4 py-3 lg:-mx-6 lg:-mt-6 lg:px-6">
-            {/*  ⚠️ Chữ «công ty» THÔI HIỆN ở khổ điện thoại: hàng này còn phải
+            {/*  ⚠️ Chữ "công ty" THÔI HIỆN ở khổ điện thoại: hàng này còn phải
                  chứa nút Lưu và nút Xóa, ba thứ đủ chữ thì rớt xuống hai hàng và
                  dải ghim cao gấp đôi. `sr-only` chứ KHÔNG `hidden` — `hidden` là
                  `display:none` nên trình đọc màn hình cũng mất luôn, người mù chỉ
@@ -208,7 +208,7 @@ export function CompanyDetailPage() {
                          `CLAUDE.md`). `disabled` gỡ luôn khả năng nhận con trỏ
                          nên **không bôi đen, không copy được** — mà mã pháp nhân
                          chính là thứ người ta hay chép ra để dán vào tệp Excel
-                         hay nhắn cho nhau. Nó còn bị làm mờ 50% nên «NN ABA»
+                         hay nhắn cho nhau. Nó còn bị làm mờ 50% nên "NN ABA"
                          nhìn y như chữ gợi ý của một ô chưa ai nhập.
 
                          Vẫn bọc trong `FormField` để `code` ở lại trong payload
@@ -305,7 +305,7 @@ export function CompanyDetailPage() {
                     />
                     {/* bao-CR-531 */}
                     <FormDescription>
-                      Hộ kinh doanh: phiếu đề xuất mua hàng in hai ô ký «Chủ hộ» + «Người lập».
+                      Hộ kinh doanh: phiếu đề xuất mua hàng in hai ô ký <strong>Chủ hộ</strong> + <strong>Người lập</strong>.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

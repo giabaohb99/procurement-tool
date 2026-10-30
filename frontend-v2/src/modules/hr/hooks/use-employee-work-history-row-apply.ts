@@ -24,7 +24,7 @@ export function useBusyIds() {
 }
 
 /**
- * H1 (code review 03/10/2026) — nút ▶ «Áp vào hồ sơ» của TỪNG DÒNG phải HỎI
+ * H1 (code review 03/10/2026) — nút ▶ "Áp vào hồ sơ" của TỪNG DÒNG phải HỎI
  * trước khi gọi `/apply`, dùng LẠI đúng một luật `planApplyPrompt` của hộp Lưu
  * (M6) — không chép luật ra bản thứ hai. Thôi việc → hộp riêng (khóa TK); loại
  * khác → `confirm()` chung, liệt kê thay đổi cũ → mới (đã có sẵn trên dòng,

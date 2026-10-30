@@ -62,7 +62,7 @@ describe('EmployeeSalarySection — người khác có quyền sửa', () => {
     expect(payload).not.toHaveProperty('allowance_monthly')
   })
 
-  it('shows empty inputs with the «Đã nhập (ẩn)» hint when a salary exists, «Chưa nhập» when not', () => {
+  it('shows empty inputs with the "Đã nhập (ẩn)" hint when a salary exists, "Chưa nhập" when not', () => {
     const { unmount } = render(<Harness employee={{ ...BASE, salary_set: true }} />)
     const boxes = screen.getAllByRole('textbox')
     expect(boxes).toHaveLength(2)
@@ -85,7 +85,7 @@ describe('EmployeeSalarySection — người khác có quyền sửa', () => {
     expect(payload).not.toHaveProperty('allowance_monthly')
   })
 
-  it('typing then clearing the field goes back to «keep», never to 0', async () => {
+  it('typing then clearing the field goes back to "keep", never to 0', async () => {
     const onSave = vi.fn()
     render(<Harness employee={{ ...BASE, salary_set: true }} onSave={onSave} />)
     const box = screen.getByRole('textbox', { name: 'Phụ cấp (đ/tháng)' })
@@ -96,7 +96,7 @@ describe('EmployeeSalarySection — người khác có quyền sửa', () => {
     expect(payload).not.toHaveProperty('allowance_monthly')
   })
 
-  it('«Xóa số đã nhập» sends 0 for both fields, does not submit by itself, and can be undone', async () => {
+  it('"Xóa số đã nhập" sends 0 for both fields, does not submit by itself, and can be undone', async () => {
     const onSave = vi.fn()
     render(<Harness employee={{ ...BASE, salary_set: true }} onSave={onSave} />)
     await userEvent.click(screen.getByRole('button', { name: 'Xóa số đã nhập' }))
@@ -110,7 +110,7 @@ describe('EmployeeSalarySection — người khác có quyền sửa', () => {
     expect(payload).toMatchObject({ salary_monthly: 0, allowance_monthly: 0 })
   })
 
-  it('keeps the «clear» intent when the user focuses and leaves an empty field', async () => {
+  it('keeps the "clear" intent when the user focuses and leaves an empty field', async () => {
     const onSave = vi.fn()
     render(<Harness employee={{ ...BASE, salary_set: true }} onSave={onSave} />)
     await userEvent.click(screen.getByRole('button', { name: 'Xóa số đã nhập' }))

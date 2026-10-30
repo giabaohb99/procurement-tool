@@ -1,4 +1,4 @@
-// duoc-CR-606 — khung «Chèn biến». Danh mục chặn ở `@/core/api`; lọc + gom nhóm chạy THẬT.
+// duoc-CR-606 — khung "Chèn biến". Danh mục chặn ở `@/core/api`; lọc + gom nhóm chạy THẬT.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
@@ -40,7 +40,10 @@ describe('LaborContractPlaceholderInsertPanel', () => {
     expect(screen.queryByRole('button', { name: 'Chèn biến Họ và tên' })).toBeNull()
     expect(screen.getAllByRole('button', { name: /Chèn biến Lương/ })).toHaveLength(2)
     fireEvent.change(screen.getByRole('textbox', { name: 'Tìm biến' }), { target: { value: 'không có' } })
-    expect(screen.getByText('Không có biến nào khớp «không có».')).toBeInTheDocument()
+    expect(screen.getByText(/Không có biến nào khớp/)).toHaveTextContent(
+      'Không có biến nào khớp không có.',
+    )
+    expect(screen.getByText('không có', { selector: 'strong' })).toBeInTheDocument()
   })
 
   //  Bấm khi trình soạn chưa dựng xong thì không có chỗ chèn — nút phải khóa, không âm thầm nuốt.

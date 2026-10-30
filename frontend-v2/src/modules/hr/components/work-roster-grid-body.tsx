@@ -20,7 +20,7 @@ type Entry =
   | { kind: 'row'; item: WorkRosterItem; slot: number | null }
 
 /**
- * Chia các hàng (kèm tiêu đề phòng ban) thành từng «ĐỢT»: một đợt mở đầu ở hàng có nghỉ thứ 1, 4, 7… và chứa
+ * Chia các hàng (kèm tiêu đề phòng ban) thành từng "ĐỢT": một đợt mở đầu ở hàng có nghỉ thứ 1, 4, 7… và chứa
  * đúng 3 hàng có nghỉ cùng mọi hàng thường xen giữa. Mỗi đợt là một khung `div` riêng.
  */
 function splitIntoBatches(groups: WorkRosterDepartmentGroup[], leaveIds: ReadonlySet<number>): Entry[][] {
@@ -50,7 +50,7 @@ function splitIntoBatches(groups: WorkRosterDepartmentGroup[], leaveIds: Readonl
  *   (2−j)·H — mép giới hạn của cả 3 trùng nhau — và một miếng đệm `margin-top` âm ngay sau nó trả lại đúng chỗ
  *   đó để bố cục không đổi.
  *
- * Đại ca chốt 05/10/2026: «3 row thì từ row 4 5 6 đẩy lên 1 lượt». Mọi bản dùng JS theo dõi cuộn trước đó
+ * Đại ca chốt 05/10/2026: "3 row thì từ row 4 5 6 đẩy lên 1 lượt". Mọi bản dùng JS theo dõi cuộn trước đó
  * (chồng cuốn chiếu, chồng 3 ô) đều bị chê giật/loạn vì JS chạy SAU khi trình duyệt đã cuộn.
  */
 export function WorkRosterGridBody({ groups, days, compact, rowHeight, todayISO, leaveIds }: WorkRosterGridBodyProps) {

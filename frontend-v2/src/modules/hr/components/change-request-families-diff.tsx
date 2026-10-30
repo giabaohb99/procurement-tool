@@ -23,10 +23,10 @@ function indexRows(rows: readonly ChangeRequestFamilyRow[] | null | undefined): 
 }
 
 /**
- * Hộ gia đình của đề nghị sửa hồ sơ (duoc-CR-676): ba bảng «Lúc gửi» / «Hiện tại» / «Đề nghị».
+ * Hộ gia đình của đề nghị sửa hồ sơ (duoc-CR-676): ba bảng "Lúc gửi" / "Hiện tại" / "Đề nghị".
  *
  * Đề nghị THAY CẢ danh sách, nên so theo cả bảng chứ không theo từng dòng (dòng không có khóa
- * chung — thêm một người ở đầu là mọi dòng lệch chỗ). Bảng «Hiện tại» khác «Lúc gửi» nghĩa là
+ * chung — thêm một người ở đầu là mọi dòng lệch chỗ). Bảng "Hiện tại" khác "Lúc gửi" nghĩa là
  * phòng Nhân sự đã sửa hộ gia đình sau lúc nhân viên gửi: tô lên + nói rõ, vì duyệt lúc đó backend
  * trả 409 (review M3) — duyệt thì GHI ĐÈ mất bản sửa kia.
  *
@@ -54,7 +54,7 @@ export function ChangeRequestFamiliesDiff({ families }: { families: ChangeReques
     changed,
     list: [
       { key: 'before', title: 'Lúc gửi', rows: indexRows(families.before), changed: false },
-      //  Bản backend cũ chưa gửi `current` thì bỏ hẳn bảng giữa, khỏi bày một bảng rỗng đọc như «hồ sơ không có ai».
+      //  Bản backend cũ chưa gửi `current` thì bỏ hẳn bảng giữa, khỏi bày một bảng rỗng đọc như "hồ sơ không có ai".
       ...(families.current !== undefined
         ? [{ key: 'current', title: 'Hiện tại', rows: indexRows(families.current), changed }]
         : []),

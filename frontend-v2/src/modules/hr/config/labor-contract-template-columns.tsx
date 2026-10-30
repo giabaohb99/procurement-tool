@@ -20,7 +20,7 @@ export interface LaborContractTemplateColumnActions {
 }
 
 /**
- * Cột bảng «Mẫu hợp đồng». Là hàm vì cột «Thao tác» cần các callback của trang;
+ * Cột bảng "Mẫu hợp đồng". Là hàm vì cột "Thao tác" cần các callback của trang;
  * trang phải bọc kết quả bằng `useMemo`. Nút bị ẨN theo quyền ở đây — quyền thật do BE.
  */
 export function buildLaborContractTemplateColumns(
@@ -78,7 +78,7 @@ export function buildLaborContractTemplateColumns(
       key: 'is_active',
       header: 'Trạng thái',
       width: 130,
-      //  Cùng kiểu nhãn với bảng «Văn bản mẫu» ở tab bên cạnh (xanh đặc = đang dùng).
+      //  Cùng kiểu nhãn với bảng "Văn bản mẫu" ở tab bên cạnh (xanh đặc = đang dùng).
       cell: (t) => <Badge variant={t.is_active ? 'default' : 'secondary'}>{t.is_active ? 'Đang dùng' : 'Ngừng'}</Badge>,
     },
     {
@@ -97,7 +97,7 @@ export function buildLaborContractTemplateColumns(
     },
   ]
 
-  //  «Tải tệp» luôn có vì cả trang đã đòi `read`, nên cột Thao tác luôn dựng. Một nút «⋯» mở menu icon +
+  //  "Tải tệp" luôn có vì cả trang đã đòi `read`, nên cột Thao tác luôn dựng. Một nút "⋯" mở menu icon +
   //  chữ (cùng kiểu cột thao tác bảng hợp đồng, duoc-CR-633) — cột 240px (CR-610: 120px) nay còn 80px.
   columns.push({
     key: 'actions',

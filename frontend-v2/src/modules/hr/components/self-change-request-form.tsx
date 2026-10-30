@@ -39,11 +39,11 @@ const FAMILIES_NOT_LOADED_MESSAGE =
   'Chưa tải được danh sách hộ gia đình hiện tại — tải lại rồi mới gửi phần hộ gia đình được.'
 
 /**
- * Thân hộp «Đề nghị sửa thông tin» (duoc-CR-676): bốn tab, ô ghi chú, nút Gửi. Hộp ngoài
+ * Thân hộp "Đề nghị sửa thông tin" (duoc-CR-676): bốn tab, ô ghi chú, nút Gửi. Hộp ngoài
  * (`SelfChangeRequestDialog`) dựng lại thân này MỖI LẦN mở nên nháp luôn đi từ hồ sơ mới nhất.
  *
  * ⚠️ KHÔNG dùng `<form>` + react-hook-form: không có luật kiểm phía giao diện (độ dài chặn bằng
- * `maxLength`, giá trị do backend kiểm) nên không có «ô sai ở tab ẩn»; bỏ `<form>` thì Enter trong
+ * `maxLength`, giá trị do backend kiểm) nên không có "ô sai ở tab ẩn"; bỏ `<form>` thì Enter trong
  * ô không vô tình gửi đề nghị. Nháp giữ ở state của thân này nên đổi tab không mất chữ.
  *
  * ⚠️ Chặn bấm đúp bằng `useRef` (bẫy thứ tư): `disabled={isPending}` trễ một nhịp render.
@@ -121,7 +121,7 @@ export function SelfChangeRequestForm({ employee, families, onDone }: SelfChange
           <TabsContent key={group} value={group} className="mt-4">
             <div className="grid gap-4 sm:grid-cols-2">
               {CHANGE_REQUEST_GROUP_FIELDS[group]
-                //  «Số con» chỉ hỏi khi đã khai có gia đình — cùng luật với màn hồ sơ (MARITAL_MARRIED).
+                //  "Số con" chỉ hỏi khi đã khai có gia đình — cùng luật với màn hồ sơ (MARITAL_MARRIED).
                 .filter((field) => field !== 'children_count' || married)
                 .map((field) => (
                   <ChangeRequestFieldInput

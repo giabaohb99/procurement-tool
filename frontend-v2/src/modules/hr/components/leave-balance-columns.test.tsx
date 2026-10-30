@@ -48,7 +48,7 @@ describe('buildLeaveBalanceColumns', () => {
   it('bày sẵn đúng năm cột, sáu cột giải thích ẩn sẵn', () => {
     //  ⚠️ Đây là lý do tồn tại của lần bố trí lại 19/09/2026: bản cũ bày cả
     //  mười một cột và ở màn 1600px thứ bị đẩy ra ngoài mép phải chính là
-    //  «Còn lại» — con số duy nhất người ta mở màn này để xem. Thêm cột vào
+    //  "Còn lại" — con số duy nhất người ta mở màn này để xem. Thêm cột vào
     //  nhóm bày sẵn thì phải đo lại bề ngang trước.
     const columns = buildLeaveBalanceColumns({ expanded: new Set(), onToggle: vi.fn() })
     const shown = columns.filter((c) => !c.defaultHidden).map((c) => c.key)
@@ -63,7 +63,7 @@ describe('buildLeaveBalanceColumns', () => {
     expect(columns.filter((c) => c.defaultHidden)).toHaveLength(6)
   })
 
-  it('cột «Nhân sự» không khai bề rộng cứng nên nó nuốt chỗ thừa', () => {
+  it('cột "Nhân sự" không khai bề rộng cứng nên nó nuốt chỗ thừa', () => {
     //  Khai số cứng thì phần dư chia ĐỀU cho cả năm cột: mỗi cột số phình gần
     //  190px và con số nằm cách tiêu đề của chính nó một gang tay.
     const columns = buildLeaveBalanceColumns({ expanded: new Set(), onToggle: vi.fn() })
@@ -122,7 +122,7 @@ describe('buildLeaveBalanceColumns', () => {
     expect(screen.getByText('9')).toBeTruthy()
   })
 
-  it('«0 còn lại» chỉ tô đỏ khi CÓ quỹ mà tiêu hết, không tô cho loại vốn không cấp', () => {
+  it('"0 còn lại" chỉ tô đỏ khi CÓ quỹ mà tiêu hết, không tô cho loại vốn không cấp', () => {
     //  Loại nghỉ không hạn mức (tang chế, cưới hỏi, nghỉ bù) luôn còn 0 và
     //  chiếm phần lớn số dòng. Tô đỏ hết thì màu đỏ mất nghĩa đúng chỗ nó cần
     //  có nghĩa nhất.
@@ -145,9 +145,9 @@ describe('buildLeaveBalanceColumns', () => {
     expect(container.querySelector('.text-destructive')).toBeNull()
   })
 
-  it('số 0 vẽ thành dấu gạch mờ, trừ cột «Còn lại»', () => {
+  it('số 0 vẽ thành dấu gạch mờ, trừ cột "Còn lại"', () => {
     //  Bảy cột số mà bốn cột hầu như luôn 0; in "0" ra hết thì cả bảng đặc số
-    //  và mắt không nhặt ra được ô nào thật sự có giá trị. Riêng «Còn lại» thì
+    //  và mắt không nhặt ra được ô nào thật sự có giá trị. Riêng "Còn lại" thì
     //  0 nghĩa là HẾT PHÉP — đúng thứ phải đập vào mắt.
     const columns = buildLeaveBalanceColumns({ expanded: new Set(), onToggle: vi.fn() })
     const [row] = flattenLeaveBalanceGroups(groupLeaveBalances([makeBalance()]), new Set())

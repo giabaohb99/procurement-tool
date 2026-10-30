@@ -8,8 +8,8 @@ import { Button } from '@/shared/ui/button'
 import { LaborContractTemplateUploadDialog } from './labor-contract-template-upload-dialog'
 
 /**
- * Nút ở GÓC PHẢI TIÊU ĐỀ trang «Thiết lập văn bản» khi đang ở mục Mẫu hợp đồng lao động: «Danh sách
- * biến» + «Tải lên mẫu». Đứng đúng chỗ nút «Thêm mới» của mục Văn bản mẫu — trước đây hai nút nằm lửng
+ * Nút ở GÓC PHẢI TIÊU ĐỀ trang "Thiết lập văn bản" khi đang ở mục Mẫu hợp đồng lao động: "Danh sách
+ * biến" + "Tải lên mẫu". Đứng đúng chỗ nút "Thêm mới" của mục Văn bản mẫu — trước đây hai nút nằm lửng
  * giữa thanh lọc của bảng, lệch hẳn với tab bên cạnh. Hộp tải lên mẫu MỚI đi theo nút (danh sách tự nạp
  * lại nhờ invalidate của mutation); hộp THAY tệp vẫn ở bảng vì gắn với từng dòng.
  */

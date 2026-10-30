@@ -205,7 +205,7 @@ describe('planApplyPrompt — Kiêm nhiệm (loại 4)', () => {
         [],
         TODAY,
       ),
-    ).toEqual({ kind: 'profile', changes: ['Thêm kiêm nhiệm phòng ban «Phòng Kế toán»'] })
+    ).toEqual({ kind: 'profile', changes: ['Thêm kiêm nhiệm phòng ban "Phòng Kế toán"'] })
   })
 
   it('hỏi THÊM nhưng KHÔNG có nhãn → giữ câu cũ "phòng ban này"', () => {
@@ -233,7 +233,7 @@ describe('planApplyPrompt — Kiêm nhiệm (loại 4)', () => {
         [50],
         TODAY,
       ),
-    ).toEqual({ kind: 'profile', changes: ['Gỡ kiêm nhiệm phòng ban «Phòng Kế toán»'] })
+    ).toEqual({ kind: 'profile', changes: ['Gỡ kiêm nhiệm phòng ban "Phòng Kế toán"'] })
   })
 
   it('đã kết thúc mà phòng cũng không còn trong danh sách → không hỏi', () => {

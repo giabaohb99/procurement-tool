@@ -49,7 +49,7 @@ describe('LaborContractVariableFormDialog', () => {
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
   })
 
-  it.each(['Ho_Ten', '1abc', 'ab-cd', 'x'])('mã «%s» sai hình dạng -> báo lỗi, không gọi API', async (code) => {
+  it.each(['Ho_Ten', '1abc', 'ab-cd', 'x'])('mã "%s" sai hình dạng -> báo lỗi, không gọi API', async (code) => {
     renderDialog(null)
     await userEvent.type(screen.getByLabelText(/Mã biến/), code)
     await userEvent.type(screen.getByLabelText(/Tên hiển thị/), 'Nhãn')

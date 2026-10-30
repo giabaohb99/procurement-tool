@@ -19,7 +19,7 @@ vi.mock('@/core/authorization/use-permission', () => ({
 }))
 vi.mock('@/core/api', () => ({ downloadFile: vi.fn() }))
 
-//  DataTable có nút «Tải lại» dùng QueryClient nên phải bọc provider.
+//  DataTable có nút "Tải lại" dùng QueryClient nên phải bọc provider.
 const render = (ui: ReactElement) =>
   rtlRender(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>)
 

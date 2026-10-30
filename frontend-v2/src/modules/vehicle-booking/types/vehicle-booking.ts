@@ -237,16 +237,16 @@ export interface VehicleBooking {
    *  Gác thẻ Lịch sử phê duyệt bằng ô này, không bằng `approval_running`. Chỉ có ở
    *  phản hồi CHI TIẾT. */
   approval_instance_id?: number | null
-  /** Câu một dòng «Đang ở chặng 2/3 · Duyệt của Giám đốc» — dòng phụ cạnh badge
+  /** Câu một dòng "Đang ở chặng 2/3 · Duyệt của Giám đốc" — dòng phụ cạnh badge
    *  trạng thái, backend dựng sẵn. Rỗng = phiếu chưa vào bộ máy duyệt. */
   approval_summary?: string
   /**
    * LÝ DO đóng phiếu — chỉ có với phiếu *Đã hủy* / *Bị từ chối*.
    *
    * ⚠️ Không phải cột của phiếu: backend rút câu này ra từ NHẬT KÝ THAO TÁC
-   * (`service.close_reasons`). Rỗng có nghĩa thật — «đóng mà không ai ghi lý do»
+   * (`service.close_reasons`). Rỗng có nghĩa thật — "đóng mà không ai ghi lý do"
    * hoặc phiếu nạp từ tệp Excel hệ cũ (đợt nạp đó không có cột lý do) — nên chỗ
-   * hiển thị phải nói thẳng «Không ghi lý do», đừng ẩn dòng đi.
+   * hiển thị phải nói thẳng "Không ghi lý do", đừng ẩn dòng đi.
    */
   cancel_reason?: string
   created_at: string | null
@@ -301,7 +301,7 @@ export interface BookingCompanyOption {
   logo: string
 }
 
-/** `GET /api/vehicle-bookings/pick-options` — dữ liệu hai ô «Công ty» + «Người duyệt». */
+/** `GET /api/vehicle-bookings/pick-options` — dữ liệu hai ô "Công ty" + "Người duyệt". */
 export interface BookingPickOptions {
   companies: BookingCompanyOption[]
   approvers: BookingApproverOption[]

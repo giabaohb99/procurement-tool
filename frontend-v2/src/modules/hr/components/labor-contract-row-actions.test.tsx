@@ -26,13 +26,13 @@ function renderActions(row = makeLaborContract(), busy = false) {
 
 const trigger = () => screen.getByRole('button', { name: /Thao tác với hợp đồng/ })
 
-/** Mở menu «⋯» rồi trả về CHỮ của các mục (theo đúng thứ tự hiện). */
+/** Mở menu "⋯" rồi trả về CHỮ của các mục (theo đúng thứ tự hiện). */
 async function openMenu() {
   await userEvent.click(trigger())
   return (await screen.findAllByRole('menuitem')).map((m) => m.textContent)
 }
 
-//  duoc-CR-633: thao tác là MỘT nút «⋯» mở menu icon + chữ, chia nhóm Xem / Soạn / Trạng thái, Xóa cuối.
+//  duoc-CR-633: thao tác là MỘT nút "⋯" mở menu icon + chữ, chia nhóm Xem / Soạn / Trạng thái, Xóa cuối.
 describe('LaborContractRowActions theo cờ backend', () => {
   it('DRAFT: menu có Sửa / Sinh tệp / Tải lên bản ký / Ký / Hủy / Xóa; chưa có tệp sinh thì KHÔNG có tải .docx', async () => {
     renderActions()
@@ -147,7 +147,7 @@ describe('chọn bản đã ký', () => {
     expect(h.onUploadSigned).not.toHaveBeenCalled()
   })
 
-  it('mục «Tải lên bản đã ký» mở hộp chọn tệp', async () => {
+  it('mục "Tải lên bản đã ký" mở hộp chọn tệp', async () => {
     renderActions()
     const click = vi.spyOn(input(), 'click')
     await openMenu()
@@ -156,7 +156,7 @@ describe('chọn bản đã ký', () => {
   })
 })
 
-describe('Mục «Mở bản lưu trữ ở Văn bản» (duoc-CR-629)', () => {
+describe('Mục "Mở bản lưu trữ ở Văn bản" (duoc-CR-629)', () => {
   const label = 'Mở bản lưu trữ ở Văn bản'
 
   it('can_open_document + document_id>0: có mục, mở tab mới tới đúng văn bản', async () => {

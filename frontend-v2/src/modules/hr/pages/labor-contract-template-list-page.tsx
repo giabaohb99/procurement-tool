@@ -4,12 +4,12 @@ import { LaborContractTemplateCatalog } from '../components/labor-contract-templ
 import { LaborContractTemplateHeaderActions } from '../components/labor-contract-template-header-actions'
 
 /**
- * Trang «Mẫu hợp đồng» NGAY TRONG phân hệ Nhân sự (`/hr/labor-contract-templates`, duoc-CR-643).
+ * Trang "Mẫu hợp đồng" NGAY TRONG phân hệ Nhân sự (`/hr/labor-contract-templates`, duoc-CR-643).
  *
- * duoc-CR-629b từng cho mục menu này nhảy sang «Thiết lập văn bản» của phân hệ Văn bản — người dùng
- * bấm xong bị đẩy khỏi Nhân sự (đại ca: «bấm vô thì nó load ra chứ mẫu mà ko phải điều hướng»). Nay
+ * duoc-CR-629b từng cho mục menu này nhảy sang "Thiết lập văn bản" của phân hệ Văn bản — người dùng
+ * bấm xong bị đẩy khỏi Nhân sự (đại ca: "bấm vô thì nó load ra chứ mẫu mà ko phải điều hướng"). Nay
  * trang dựng lại đúng bảng dùng chung `LaborContractTemplateCatalog` (cùng dữ liệu, cùng quyền
- * `labor_contract_template`); tab «Mẫu hợp đồng lao động» bên Văn bản vẫn giữ cho văn thư.
+ * `labor_contract_template`); tab "Mẫu hợp đồng lao động" bên Văn bản vẫn giữ cho văn thư.
  */
 export function LaborContractTemplateListPage() {
   return (

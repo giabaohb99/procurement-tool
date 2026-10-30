@@ -42,7 +42,7 @@ export function decisionNoteOf(request: {
  * Nhãn cho ô lý do, nói rõ đây là lý do của VIỆC GÌ.
  *
  * Ba kết cục xấu dùng chung cột `decision_note`, nên một đoạn chữ trần trụi
- * đứng cạnh huy hiệu đọc thành lý do NGHỈ (cột «Lý do» ngay bên phải cũng là
+ * đứng cạnh huy hiệu đọc thành lý do NGHỈ (cột "Lý do" ngay bên phải cũng là
  * chữ tự do) chứ không phải lý do bị chặn.
  */
 export function decisionNoteLabelOf(status: number): string {

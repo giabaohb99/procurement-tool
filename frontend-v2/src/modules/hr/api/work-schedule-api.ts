@@ -16,7 +16,7 @@ export const workScheduleApi = {
       params: { employee_id: employeeId, on_date: onDate },
     }),
   /**
-   * Lưới «ai làm, ai nghỉ» cho một khoảng ngày (tối đa 42 ngày), phân trang theo
+   * Lưới "ai làm, ai nghỉ" cho một khoảng ngày (tối đa 42 ngày), phân trang theo
    * nhân sự. Gác `employee.read` + phạm vi nhân sự; lớp nghỉ phép chỉ hiện ở ô
    * nào người xem đọc được đơn.
    */
