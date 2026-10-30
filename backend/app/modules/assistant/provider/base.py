@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 #  ai-CR-192 (13/10/2026): trần chờ HTTP theo LƯỢT. Bước đọc ý định chỉ cần vài giây; khi Gemini quá tải, chờ đủ 25 s
-#  rồi mới đổi model làm một câu «hello» mất 70 s (đo dev 16:27). Provider đọc biến này trước khi lấy trần mặc định.
+#  rồi mới đổi model làm một câu "hello" mất 70 s (đo dev 16:27). Provider đọc biến này trước khi lấy trần mặc định.
 REQUEST_TIMEOUT: contextvars.ContextVar = contextvars.ContextVar("ai_request_timeout", default=None)
 
 

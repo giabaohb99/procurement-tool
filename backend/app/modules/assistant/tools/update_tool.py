@@ -118,15 +118,15 @@ _PARAMS = {
                 "note": {"type": "string", "description": "Ghi chú mới (YCMH/YCBG)."},
                 "print_content": {
                     "type": "string",
-                    "description": "Câu «Nội dung» mới trên bản in YCTT (chỉ YCTT).",
+                    "description": "Câu **Nội dung** mới trên bản in YCTT (chỉ YCTT).",
                 },
                 "print_line_desc": {
                     "type": "string",
-                    "description": "Câu «Diễn giải» mới trong bảng bản in YCTT (chỉ YCTT).",
+                    "description": "Câu **Diễn giải** mới trong bảng bản in YCTT (chỉ YCTT).",
                 },
                 "print_transfer": {
                     "type": "string",
-                    "description": "«Nội dung chuyển khoản» mới trên bản in YCTT (chỉ YCTT).",
+                    "description": "**Nội dung chuyển khoản** mới trên bản in YCTT (chỉ YCTT).",
                 },
                 "from_date": {"type": "string",
                               "description": "Ngày bắt đầu nghỉ mới, YYYY-MM-DD (chỉ đơn nghỉ)."},
@@ -306,7 +306,7 @@ def _old_value(db, entity: str, doc, field: str) -> str:
 def _state_sig(db, entity: str, doc) -> str:
     """Dấu trạng thái phiếu lúc đề xuất (ai-CR-153): giá trị hiện tại của mọi ô sửa được + (id, số lượng) từng dòng.
 
-    Token chỉ có hạn 15 phút, không nhớ đã dùng hay chưa: tải lại trang web rồi bấm lại thẻ «thêm dòng» là thêm trùng
+    Token chỉ có hạn 15 phút, không nhớ đã dùng hay chưa: tải lại trang web rồi bấm lại thẻ "thêm dòng" là thêm trùng
     dòng. Bấm xác nhận thì so dấu này — đã ghi một lần (giá trị đã đổi) hay có người sửa phiếu xen giữa đều lệch dấu,
     trả 409, không ghi. Không cần bảng hay bộ nhớ đệm nào."""
     rules = _ENTITY_RULES[entity]
@@ -601,7 +601,7 @@ def _check_leave_change(db, doc, fields: dict) -> tuple[dict, str | None]:
         found, rows = _find_leave_type(db, fields["leave_type"])
         if found is None:
             names = ", ".join(r.name for r in rows)
-            return {}, f"Không có loại nghỉ «{fields['leave_type']}». Danh mục hiện có: {names}."
+            return {}, f"Không có loại nghỉ **{fields['leave_type']}**. Danh mục hiện có: {names}."
         if len(lines_of(db, doc.id)) > 1:
             return {}, ("Đơn này gồm nhiều loại nghỉ — đổi loại nghỉ phải mở form để chia lại "
                         "số ngày, trợ lý không tự chia.")
@@ -750,7 +750,7 @@ _DELETE_DESC = (
     "người hỏi có quyền xóa: YCMH, YCBG, đơn nghỉ phép, việc Dự án. Đề nghị thanh toán và "
     "phiếu hỗ trợ KHÔNG xóa qua trợ lý. Phiếu đã gửi duyệt / của người khác thì tool trả "
     "lỗi kèm `url` — đưa link đó cho người dùng tự mở hoặc nhờ người có quyền. Chỉ gọi khi "
-    "người dùng nói rõ XÓA phiếu nào; «bỏ», «hủy» mơ hồ thì hỏi lại xóa hẳn hay hủy phiếu. "
+    "người dùng nói rõ XÓA phiếu nào; **bỏ**, **hủy** mơ hồ thì hỏi lại xóa hẳn hay hủy phiếu. "
     "Sau khi gọi, mời người dùng bấm 'Xác nhận xóa' dưới câu trả lời — nhấn mạnh phiếu "
     "CHƯA bị xóa cho tới khi họ bấm."
 )
@@ -783,10 +783,10 @@ def _find_work_task(db, actor, ref: str):
         except HTTPException:
             continue
     if not found:
-        return None, f"Không tìm thấy việc «{ref}» trong các dự án bạn tham gia."
+        return None, f"Không tìm thấy việc **{ref}** trong các dự án bạn tham gia."
     if len(found) > 1:
         options = "; ".join(f"#{t.id} {t.title}" for t in found)
-        return None, f"Có nhiều việc tên «{ref}»: {options} — hỏi người dùng xóa việc số mấy."
+        return None, f"Có nhiều việc tên **{ref}**: {options} — hỏi người dùng xóa việc số mấy."
     return found[0], None
 
 
@@ -796,9 +796,9 @@ def _delete_block(entity: str, doc, user, actor=None) -> tuple[int, str] | None:
     if entity == "work_task":
         from app.modules.work.model import WorkTaskStatus
         if not actor or not actor.employee_id or doc.creator_employee_id != actor.employee_id:
-            return 403, f"Việc «{doc.title}» do người khác tạo — trợ lý chỉ xóa việc chính bạn tạo."
+            return 403, f"Việc **{doc.title}** do người khác tạo — trợ lý chỉ xóa việc chính bạn tạo."
         if int(doc.status or 0) != int(WorkTaskStatus.OPEN):
-            return 400, f"Việc «{doc.title}» đã xong hoặc đã hủy — trợ lý chỉ xóa việc đang mở."
+            return 400, f"Việc **{doc.title}** đã xong hoặc đã hủy — trợ lý chỉ xóa việc đang mở."
         return None
     label = _status_label(entity, doc)
     if doc.created_by != user.id:
@@ -1084,7 +1084,7 @@ def _confirm_delete(db, user, payload: dict, source: int = 0) -> dict:
 
 def delete_doc(db, user, entity: str, doc) -> None:
     """Xóa MỀM một phiếu YCMH / YCBG / đơn nghỉ / YCTT qua ĐÚNG hàm xóa của form (kèm nhật ký).
-    Dùng chung cho nút Xác nhận xóa và cho hoàn tác «tạo» (ai-CR-182)."""
+    Dùng chung cho nút Xác nhận xóa và cho hoàn tác "tạo" (ai-CR-182)."""
     if entity == "purchase_request":
         from app.modules.purchase_request.service import delete_pr
         delete_pr(db, doc.id, user.id)

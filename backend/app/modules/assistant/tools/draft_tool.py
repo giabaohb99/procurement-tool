@@ -481,8 +481,8 @@ _LEAVE_PARAMS = {
         "periods": {
             "type": "array",
             "description": "CÁC KHOẢNG NGÀY nghỉ khi người dùng nghỉ NHIỀU đợt KHÔNG liền nhau trong "
-                           "CÙNG một đơn (tối đa 20, cùng một năm, không trùng ngày). Ví dụ «nghỉ 27/10 và "
-                           "chiều 3/11 tới 7/11» = 2 khoảng: [{from_date:2026-10-27,to_date:2026-10-27}, "
+                           "CÙNG một đơn (tối đa 20, cùng một năm, không trùng ngày). Ví dụ **nghỉ 27/10 và "
+                           "chiều 3/11 tới 7/11** = 2 khoảng: [{from_date:2026-10-27,to_date:2026-10-27}, "
                            "{from_date:2026-11-03,from_session:afternoon,to_date:2026-11-07}]. Mỗi khoảng có "
                            "buổi riêng; khoảng một ngày thì to_date = from_date. Có periods thì BỎ "
                            "from_date/to_date/from_session/to_session. Nghỉ MỘT đợt liền thì KHÔNG dùng "
@@ -554,20 +554,20 @@ _LEAVE_PARAMS = {
 
 _LEAVE_DESC = (
     "SOẠN SẴN dữ liệu cho ĐƠN NGHỈ PHÉP của CHÍNH người hỏi, ở phân hệ Nhân sự ▸ Nghỉ phép. "
-    "Người dùng nói «nghỉ việc ngày X» là XIN NGHỈ PHÉP ngày đó (hệ không làm thủ tục thôi việc — đại ca chốt 09/10). "
+    "Người dùng nói **nghỉ việc ngày X** là XIN NGHỈ PHÉP ngày đó (hệ không làm thủ tục thôi việc — đại ca chốt 09/10). "
     "KHÔNG tạo đơn — chỉ chuẩn bị bản đề xuất; giao diện sẽ hiện nút mở form đơn nghỉ phép đã "
     "điền sẵn để người dùng rà lại và tự bấm Lưu. Form TỰ điền người nghỉ theo hồ sơ người "
     "hỏi — ĐỪNG hỏi lại. Gọi khi người dùng muốn xin nghỉ / lập đơn nghỉ phép và đã cho biết "
     "NGÀY nghỉ. Lý do / loại nghỉ người dùng chưa nói thì cứ gọi với ô đó TRỐNG — tool trả `need_info` để "
     "hỏi lại một lượt (kèm danh sách loại nghỉ); không tự điền thay họ. Nghỉ nửa ngày thì hỏi buổi nào. "
-    "Người dùng nghỉ NHIỀU đợt không liền nhau trong một đơn (ví dụ «27/10 và 3/11 tới 7/11») thì truyền "
+    "Người dùng nghỉ NHIỀU đợt không liền nhau trong một đơn (ví dụ **27/10 và 3/11 tới 7/11**) thì truyền "
     "`periods` (mỗi đợt một phần tử), KHÔNG gộp thành một from_date/to_date liền — gộp là tính nghỉ cả "
     "những ngày giữa các đợt. "
     "Đủ thông tin thì PHẢI gọi ngay trong lượt trả lời — nút "
     "'Tạo đơn nghỉ phép' chỉ xuất hiện khi tool được gọi. Sau khi gọi: tóm tắt bản đề xuất, "
     "nói rõ đơn CHƯA được tạo và CHƯA gửi duyệt, và đọc nguyên các cảnh báo trong `warnings` "
-    "nếu có (trùng đơn cũ, không đủ quỹ phép). ĐỪNG dùng tool này để tạo văn bản «Giấy nghỉ "
-    "phép» ở Văn thư: giấy đó hệ TỰ SINH sau khi đơn được duyệt."
+    "nếu có (trùng đơn cũ, không đủ quỹ phép). ĐỪNG dùng tool này để tạo văn bản **Giấy nghỉ "
+    "phép** ở Văn thư: giấy đó hệ TỰ SINH sau khi đơn được duyệt."
 )
 
 
@@ -699,7 +699,7 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
         return confirm_fields.need(missing)
     reason = reason or "Việc cá nhân"
     if any(p["to_date"] < p["from_date"] for p in period_items):
-        return {"error": "«Đến ngày» đang trước «Từ ngày» — xác nhận lại ngày nghỉ với "
+        return {"error": "**Đến ngày** đang trước **Từ ngày** — xác nhận lại ngày nghỉ với "
                          "người dùng rồi gọi lại."}
 
     #  Giá trị ngoài bộ mã thì về mặc định thay vì nổ lỗi (xem `_session_code`).
@@ -709,7 +709,7 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
             user_text, "ca ngay", "nua ngay", "buoi sang", "buoi chieu", "sang", "chieu", "theo gio", "gio"):
         assumptions.append("nghỉ cả ngày")
     if "reason" in asked and reason == "Việc cá nhân" and not confirm_fields.stated(user_text, reason):
-        assumptions.append("lý do «Việc cá nhân» (anh/chị chưa nêu lý do)")
+        assumptions.append("lý do **Việc cá nhân** (anh/chị chưa nêu lý do)")
     if (from_date == to_date and from_session == LEAVE_SESSION_AFTERNOON
             and to_session == LEAVE_SESSION_MORNING):
         #  Cùng câu chặn với `request_service.check_date_range` — một luật, một câu báo.
@@ -725,7 +725,7 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
         return {"error": "Nghỉ theo giờ phải có đủ from_time và to_time dạng HH:MM — hỏi "
                          "người dùng khung giờ rồi gọi lại."}
     if hourly:
-        #  Khai theo giờ thì CẢ HAI ô buổi phải là «Theo giờ», nếu không backend chặn lúc lưu.
+        #  Khai theo giờ thì CẢ HAI ô buổi phải là "Theo giờ", nếu không backend chặn lúc lưu.
         from_session = to_session = LEAVE_SESSION_HOURLY
         period_items[0]["from_session"] = period_items[0]["to_session"] = LEAVE_SESSION_HOURLY
 
@@ -785,12 +785,12 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
     #  mới ăn câu chặn — nhưng chỉ CẢNH BÁO, không tự sửa: quyết định là của họ.
     cap = float(leave_type.max_days_per_request or 0.0)   # 0 = không giới hạn
     if cap and days > cap:
-        warnings.append(f"«{leave_type.name}» chỉ cho nghỉ tối đa {cap} ngày mỗi lần, "
+        warnings.append(f"**{leave_type.name}** chỉ cho nghỉ tối đa {cap} ngày mỗi lần, "
                         f"đơn này đang {days} ngày.")
     #  Cùng hàm chốt trùng ngày với lúc lưu: ngày KHE giữa hai khoảng của đơn khác không báo nhầm.
     other = request_periods.find_overlap(ctx.db, emp_id, views)
     if other is not None:
-        warnings.append(f"Đã có đơn «{other.code}» nghỉ {period_text(request_periods.periods_of(ctx.db, other))} "
+        warnings.append(f"Đã có đơn **{other.code}** nghỉ {period_text(request_periods.periods_of(ctx.db, other))} "
                         "trùng khoảng ngày này — hệ sẽ chặn lúc lưu.")
     remaining = None
     if leave_type.counts_balance:
@@ -803,7 +803,7 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
             #  Nói cả hai — bảo người dùng "anh hết phép" khi thật ra Nhân sự chưa cấp quỹ
             #  là sai sự thật ở đúng chỗ họ không kiểm chứng được.
             warnings.append(
-                f"Quỹ «{leave_type.name}» chỉ còn {remaining} ngày mà đơn xin {days} ngày — "
+                f"Quỹ **{leave_type.name}** chỉ còn {remaining} ngày mà đơn xin {days} ngày — "
                 "hệ không cho ứng phép, phần vượt phải chuyển sang loại nghỉ không lương."
                 + (" (Còn 0 ngày cũng có thể do quỹ phép năm nay CHƯA được cấp — hỏi lại "
                    "phòng Nhân sự.)" if remaining == 0 else ""))
@@ -841,7 +841,7 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
         "periods_text": period_text(views),
         "note": f"Số ngày {days} là GỢI Ý theo lịch làm việc (đã trừ Chủ nhật và ngày lễ) — "
                 "người dùng sửa được trên form. Đơn này chỉ khai MỘT loại nghỉ; cần nhiều "
-                "loại trong cùng khoảng ngày thì bấm «Thêm loại nghỉ» ngay trên form.",
+                "loại trong cùng khoảng ngày thì bấm **Thêm loại nghỉ** ngay trên form.",
         "reminder": "Đơn CHƯA được tạo và CHƯA gửi duyệt. Hãy tóm tắt bản đề xuất (ngày nghỉ, "
                     "loại nghỉ, số ngày, lý do) rồi mời người dùng bấm nút 'Tạo đơn nghỉ phép' "
                     "dưới câu trả lời để mở form đã điền sẵn — họ rà lại, bấm Lưu nháp rồi "

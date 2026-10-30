@@ -450,7 +450,7 @@ def recent_purchase_orders(ctx: ToolContext, args: dict) -> dict:
     if date_to:
         q = q.filter(PurchaseOrder.order_date <= date_to)
     #  ai-CR-077: lọc theo PHÒNG BAN (phòng yêu cầu hoặc phòng xử lý, khớp tên/mã một phần) và PHÁP NHÂN. Trước đây
-    #  hỏi «đơn của nhà máy» thì Trợ lý không lọc được gì, trả đơn của cả công ty.
+    #  hỏi "đơn của nhà máy" thì Trợ lý không lọc được gì, trả đơn của cả công ty.
     department = _need(args, "department")
     company = _need(args, "company")
     dept_note = ""
@@ -464,7 +464,7 @@ def recent_purchase_orders(ctx: ToolContext, args: dict) -> dict:
                          PurchaseOrder.handler_dept_id.in_(dept_ids or [-1]),
                          PurchaseOrder.department.ilike(like)))
         if not dept_ids:
-            dept_note = f"Không có phòng ban nào tên/mã chứa «{department}» trong danh mục; chỉ lọc theo tên phòng ghi trên đơn."
+            dept_note = f"Không có phòng ban nào tên/mã chứa **{department}** trong danh mục; chỉ lọc theo tên phòng ghi trên đơn."
     if company:
         from app.modules.company.model import Company
 
@@ -798,8 +798,8 @@ SPECS: list[ToolSpec] = [
                 "supplier_code": {"type": "string", "description": "Lọc theo một NCC (tùy chọn)."},
                 "department": {"type": "string",
                                "description": "Lọc theo phòng ban yêu cầu hoặc phòng xử lý — tên hoặc mã, khớp một "
-                                              "phần (tùy chọn). Câu hỏi dùng thuật ngữ công ty (vd «nhà máy») thì truyền TÊN PHÒNG theo "
-                                              "nghĩa trong sổ thuật ngữ (vd «Dego Organic»), không truyền nguyên thuật ngữ."},
+                                              "phần (tùy chọn). Câu hỏi dùng thuật ngữ công ty (vd **nhà máy**) thì truyền TÊN PHÒNG theo "
+                                              "nghĩa trong sổ thuật ngữ (vd **Dego Organic**), không truyền nguyên thuật ngữ."},
                 "company": {"type": "string",
                             "description": "Lọc theo pháp nhân (công ty nhận hóa đơn) — tên hoặc mã, khớp một phần "
                                            "(tùy chọn)."},

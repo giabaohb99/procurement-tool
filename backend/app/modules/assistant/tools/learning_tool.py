@@ -4,7 +4,7 @@
                                       pháp nhân, chức vụ, NCC (khi có quyền xem NCC), tên phòng ghi trên phiếu — kèm số lần
                                       xuất hiện làm bằng chứng. (mục 2: tự dò nghĩa từ dữ liệu)
   - `propose_glossary_term`  (đề xuất): người dùng SỬA cách hiểu một từ, hoặc Trợ lý phải tự suy nghĩa → ghi ĐỀ XUẤT.
-                                      Lời sửa của chính đại ca thì ghi thẳng vào sổ; còn lại chờ đại ca «đúng» trên Telegram.
+                                      Lời sửa của chính đại ca thì ghi thẳng vào sổ; còn lại chờ đại ca "đúng" trên Telegram.
                                       (mục 1: học từ lời sửa)
   - `report_missing_feature` (đề xuất): công cụ thiếu tính năng → ghi sổ chỗ thiếu; lặp lại thì bot mở việc sửa mã.
                                       (mục 5: tự đề xuất sửa công cụ)
@@ -101,27 +101,27 @@ def _report_missing_feature(ctx: ToolContext, args: dict) -> dict:
 
 GLOSSARY_LOOKUP_SPEC = ToolSpec(
     name="glossary_lookup",
-    description=("DÒ NGHĨA một từ / cụm NỘI BỘ công ty (vd «nhà máy», «kho 2», «bên Organic») trong dữ liệu thật: sổ thuật ngữ, "
+    description=("DÒ NGHĨA một từ / cụm NỘI BỘ công ty (vd **nhà máy**, **kho 2**, **bên Organic**) trong dữ liệu thật: sổ thuật ngữ, "
                  "phòng ban, pháp nhân, chức vụ, NCC, tên phòng ghi trên phiếu. Gọi TRƯỚC khi đoán nghĩa một từ nội bộ không có "
                  "trong THUẬT NGỮ CỦA CÔNG TY, hoặc khi công cụ lọc theo từ đó ra rỗng. Sau khi tra (ai-CR-079): "
-                 "CHẮC (một ứng viên rõ ràng) → dùng luôn, nói «em hiểu X là Y», gọi propose_glossary_term kind=inferred; "
+                 "CHẮC (một ứng viên rõ ràng) → dùng luôn, nói **em hiểu X là Y**, gọi propose_glossary_term kind=inferred; "
                  "KHÔNG CHẮC → hỏi người dùng MỘT câu kèm 2–4 lựa chọn ĐÁNH SỐ lấy từ ứng viên (đoán hợp lý nhất đứng đầu) và "
-                 "một lựa chọn «khác»; người dùng chọn số / giải thích → gọi propose_glossary_term kind=user_correction rồi "
+                 "một lựa chọn **khác**; người dùng chọn số / giải thích → gọi propose_glossary_term kind=user_correction rồi "
                  "trả lời tiếp câu gốc."),
     parameters={"type": "object", "properties": {"term": {"type": "string"}}, "required": ["term"]},
     handler=_glossary_lookup,
 )
 PROPOSE_GLOSSARY_TERM_SPEC = ToolSpec(
     name="propose_glossary_term",
-    description=("GHI NHỚ nghĩa một từ nội bộ. Gọi khi: (a) người dùng SỬA cách bạn hiểu một từ («không phải, nhà máy là phòng "
-                 "Dego Organic», «ý anh là…») hoặc CHỌN một lựa chọn bạn vừa đưa → kind=user_correction; hoặc (b) bạn đã TỰ SUY "
+    description=("GHI NHỚ nghĩa một từ nội bộ. Gọi khi: (a) người dùng SỬA cách bạn hiểu một từ (**không phải, nhà máy là phòng "
+                 "Dego Organic**, **ý anh là…**) hoặc CHỌN một lựa chọn bạn vừa đưa → kind=user_correction; hoặc (b) bạn đã TỰ SUY "
                  "nghĩa một từ nội bộ từ kết quả glossary_lookup → kind=inferred, kèm evidence (bằng chứng ngắn). Đề xuất tự suy "
-                 "nằm chờ trong sổ, quản lý xem khi nhắn «cập nhật thuật ngữ» — đừng nhắc người dùng duyệt. KHÔNG gọi cho từ "
+                 "nằm chờ trong sổ, quản lý xem khi nhắn **cập nhật thuật ngữ** — đừng nhắc người dùng duyệt. KHÔNG gọi cho từ "
                  "thông dụng."),
     parameters={"type": "object", "properties": {
-        "term": {"type": "string"}, "meaning": {"type": "string", "description": "Nghĩa ngắn gọn, vd «phòng Dego Organic»."},
+        "term": {"type": "string"}, "meaning": {"type": "string", "description": "Nghĩa ngắn gọn, vd **phòng Dego Organic**."},
         "kind": {"type": "string", "enum": ["user_correction", "inferred"]},
-        "evidence": {"type": "string", "description": "Vì sao (vd «danh mục có 1 phòng tên Dego Organic»)."}},
+        "evidence": {"type": "string", "description": "Vì sao (vd **danh mục có 1 phòng tên Dego Organic**)."}},
         "required": ["term", "meaning", "kind"]},
     handler=_propose_glossary_term,
 )
@@ -132,7 +132,7 @@ REPORT_MISSING_FEATURE_SPEC = ToolSpec(
                  "hỏi mơ hồ. Lặp lại nhiều lần thì quản lý nhận đề xuất sửa phần mềm."),
     parameters={"type": "object", "properties": {
         "user_request": {"type": "string", "description": "Người dùng muốn gì (một câu)."},
-        "missing": {"type": "string", "description": "Thiếu gì, cụ thể (vd «lọc đơn mua hàng theo kho nhận»)."},
+        "missing": {"type": "string", "description": "Thiếu gì, cụ thể (vd **lọc đơn mua hàng theo kho nhận**)."},
         "tool": {"type": "string", "description": "Tên công cụ gần nhất đáng lẽ làm được (nếu có)."}},
         "required": ["user_request", "missing"]},
     handler=_report_missing_feature,

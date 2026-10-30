@@ -77,7 +77,7 @@ def create_set(db: Session, data, user) -> AiSkillSet:
     profile = get_perm_profile(db, user)
     code = (data.code or "").strip()
     if code and db.query(AiSkillSet.id).filter(AiSkillSet.code == code, AiSkillSet.is_deleted.is_(False)).first():
-        raise HTTPException(400, f"Mã bộ skill «{code}» đã có")
+        raise HTTPException(400, f"Mã bộ skill \"{code}\" đã có")
     row = AiSkillSet(code=code, name=data.name.strip(), description=data.description,
                      company_id=data.company_id or int(profile.get("company_id") or 0),
                      owner_department_id=data.owner_department_id, status=data.status,
@@ -178,7 +178,7 @@ def get_skill(db: Session, skill_id: int, user) -> dict:
 def create_skill(db: Session, set_id: int, data, user) -> AiSkill:
     skill_set = _set_or_404(db, set_id, user, "write")
     if _slug_taken(db, skill_set.id, data.slug):
-        raise HTTPException(400, f"Bộ này đã có skill tên «{data.slug}»")
+        raise HTTPException(400, f"Bộ này đã có skill tên \"{data.slug}\"")
     row = AiSkill(skill_set_id=skill_set.id, slug=data.slug, title=data.title or data.slug, summary=data.summary,
                   draft_body_md=data.body_md, draft_updated_at=datetime.now(), sort_order=data.sort_order,
                   status=int(SkillStatus.DRAFT), created_by=user.id, updated_by=user.id)
@@ -313,7 +313,7 @@ def _check_total(db: Session, skill_id: int) -> None:
 
 
 def put_file(db: Session, skill_id: int, path: str, text: str, user) -> AiSkillFile:
-    """Thêm / ghi đè MỘT tệp theo đường dẫn — các tệp khác giữ nguyên (khác «Thay gói»)."""
+    """Thêm / ghi đè MỘT tệp theo đường dẫn — các tệp khác giữ nguyên (khác "Thay gói")."""
     skill, skill_set = _skill_or_404(db, skill_id, user, "write")
     path = check_file_path(path)
     row = _put_file_row(db, skill, path, text, user)

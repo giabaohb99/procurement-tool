@@ -10,7 +10,7 @@ mời người tham dự. Vào bằng menu **Nhân sự ▸ Đặt phòng họp*
   khác giữ mất trong chính lúc đang hỏi. Chỉ chỉ đường tới màn đó.
 - **Không tiết lộ nội dung cuộc họp của người khác.** Ô *Nội dung* và *Mục đích*
   hay chứa chuyện nhân sự, lương, kỷ luật. Người dùng chỉ đọc được phiếu trong
-  phạm vi của họ; hệ trả **404 «Không tìm thấy»** chứ không trả 403, nên khi họ
+  phạm vi của họ; hệ trả **404 *Không tìm thấy*** chứ không trả 403, nên khi họ
   hỏi về một phiếu không đọc được thì **đừng nói là phiếu đó không tồn tại** —
   chỉ nói là không truy cập được.
 
@@ -59,7 +59,7 @@ thời gian — lưới không có chế độ tuần.
   "gửi duyệt rồi thì khoá sửa" ở mục dưới.
 - **Vẫn chặn trùng y hệt.** Kéo vào khung đã có người là bị chặn và khối bật về
   chỗ cũ.
-- **Phiếu đã duyệt bị dời thì người dự nhận thông báo «Đổi giờ họp».**
+- **Phiếu đã duyệt bị dời thì người dự nhận thông báo *Đổi giờ họp*.**
 - **Không kéo sang ngày khác được** — lưới vẽ một ngày, kéo ngang bị kẹp trong
   7:00–20:00 của chính ngày đang xem. Dời sang ngày khác thì mở phiếu ra sửa.
 - Thiếu quyền `room_booking.write` thì **kéo thả tắt hẳn**, khối chỉ bấm mở phiếu.
@@ -70,9 +70,9 @@ thời gian — lưới không có chế độ tuần.
 `Nháp → Chờ duyệt → Đã duyệt`, cộng ba ngã rẽ: *Từ chối*, *Trả về chỉnh sửa*,
 *Đã hủy*.
 
-- **Chỉ sửa được ở «Nháp» và «Trả về chỉnh sửa»** — trừ giờ và phòng, hai thứ đó
+- **Chỉ sửa được ở *Nháp* và *Trả về chỉnh sửa*** — trừ giờ và phòng, hai thứ đó
   kéo thả trên lịch đổi được ở mọi trạng thái còn sống.
-- **«Từ chối» khác «Trả về chỉnh sửa».** Từ chối là khoá hẳn, muốn họp thì lập
+- ***Từ chối* khác *Trả về chỉnh sửa*.** Từ chối là khoá hẳn, muốn họp thì lập
   **phiếu khác**. Trả về là mời sửa rồi gửi lại chính tờ phiếu đó.
 - Chạy trên **bộ máy duyệt dùng chung** như Nghỉ phép và Văn thư. Chưa khai luồng
   nào thì người có `room_booking.approve` bấm **Duyệt thẳng** ngay trên phiếu.
@@ -91,7 +91,7 @@ thời gian — lưới không có chế độ tuần.
   Phòng ban và pháp nhân của phiếu lấy theo **người được đặt hộ**, không lấy theo
   người ngồi gõ.
 - **Phòng ngừng dùng thì không đặt được nữa** nhưng phiếu cũ vẫn đọc được. Muốn
-  dẹp một phòng thì **bỏ tick «Đang dùng»**, đừng xoá — phòng đang có phiếu thì
+  dẹp một phòng thì **bỏ tick *Đang dùng***, đừng xoá — phòng đang có phiếu thì
   hệ chặn xoá.
 - Phòng khai **pháp nhân = trống** nghĩa là **dùng chung mọi pháp nhân**.
 

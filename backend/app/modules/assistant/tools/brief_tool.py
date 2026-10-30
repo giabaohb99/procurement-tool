@@ -1,9 +1,9 @@
 """Tool BẢN TIN (ai-CR-140) — người dùng bật / tắt / hẹn bản tin bằng câu tự nhiên trong chat.
 
-«sáng thứ hai gửi anh công nợ quá hạn của DEGO lúc 8h», «tắt bản tin công nợ», «bản tin sáng đổi sang 6h45 ngày thường».
-ai-CR-179: «mỗi sáng gửi anh tin giá thép, phân bón» → ĐIỂM BÁO (`add_news`, hoặc `add_topic` mà câu hỏi là xin tin tức
+"sáng thứ hai gửi anh công nợ quá hạn của DEGO lúc 8h", "tắt bản tin công nợ", "bản tin sáng đổi sang 6h45 ngày thường".
+ai-CR-179: "mỗi sáng gửi anh tin giá thép, phân bón" → ĐIỂM BÁO (`add_news`, hoặc `add_topic` mà câu hỏi là xin tin tức
 thì tự chuyển): tìm tin mới trên web, bỏ trùng, không chạy cả Trợ lý — xem `agent_hub/news_digest.py`.
-Câu ngắn kiểu «bật bản tin» / «tắt bản tin» bot đã bắt bằng lệnh chữ trước khi tới Trợ lý (`service._brief_by_text`).
+Câu ngắn kiểu "bật bản tin" / "tắt bản tin" bot đã bắt bằng lệnh chữ trước khi tới Trợ lý (`service._brief_by_text`).
 `user_id` luôn là người đang hỏi — model không chọn được người khác. Chạy trong dịch vụ AI (bảng ở DB bot).
 """
 from __future__ import annotations
@@ -41,7 +41,7 @@ def _manage_briefs(ctx: ToolContext, args: dict) -> dict:
             topics = ", ".join(str(t) for t in topics) if isinstance(topics, list) else str(topics or "")
             question = str(args.get("question") or "")
             if action == "add_topic" and not topics:
-                topics = news_digest.detect_topics(question)        # «tin giá thép, phân bón» → điểm báo
+                topics = news_digest.detect_topics(question)        # "tin giá thép, phân bón" → điểm báo
             if action == "add_news" or topics:
                 bs.add_news(ctx.db, uid, topics or question, hour=hour, minute=minute, days=day_mask)
             else:

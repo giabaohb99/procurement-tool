@@ -82,7 +82,7 @@ def confirm_document_update(body: ConfirmUpdateIn,
     from .change_model import ChangeSource
     from .tools.update_tool import confirm_update
 
-    with ai_channel_scope(AI_CHANNEL_WEB):           # ai-CR-230: nhật ký thao tác đánh dấu «qua Trợ lý web»
+    with ai_channel_scope(AI_CHANNEL_WEB):           # ai-CR-230: nhật ký thao tác đánh dấu "qua Trợ lý web"
         result = confirm_update(db, user, body.token, source=int(ChangeSource.WEB))   # ai-CR-182: ghi sổ kênh web
     if result.get("deleted"):   # AI-0006: thẻ đề xuất XÓA dùng chung nút + endpoint này
         return success(result, message=f"Đã xóa {result['entity_label']} {result['code']}")
@@ -243,7 +243,7 @@ def download_report_file(file_id: int, user=Depends(require("assistant", "read")
 def download_report_file_once(token: str, db: Session = Depends(get_db)):
     """ai-CR-207: tải tệp báo cáo bằng đường ký HMAC dùng MỘT lần, 15 phút, KHÔNG cần đăng nhập — cho ứng dụng AI ngoài
     (Claude Desktop qua cổng MCP) không có JWT web. Vẫn chỉ tệp `assistant-report/` của đúng chủ đã ký; lượt tải ghi audit
-    và chính dòng audit đó là dấu «đã dùng» (nonce)."""
+    và chính dòng audit đó là dấu "đã dùng" (nonce)."""
     _guard()
     from urllib.parse import quote
 

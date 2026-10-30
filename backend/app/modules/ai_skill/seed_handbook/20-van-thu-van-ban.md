@@ -28,7 +28,7 @@ Nháp → Gửi duyệt (Đang duyệt) → Duyệt xong → Có hiệu lực
 | **Đã từ chối** | Khoá hẳn | **Không** |
 | **Đã thay thế** · **Hết hiệu lực** · **Bãi bỏ** · **Lưu trữ** | Đã kết thúc vòng đời | Không |
 
-⚠️ **Đừng nhầm «Đã duyệt» với «Chờ ban hành».** Cả hai đều đã ký xong nhưng:
+⚠️ **Đừng nhầm *Đã duyệt* với *Chờ ban hành*.** Cả hai đều đã ký xong nhưng:
 - **Đã duyệt** = *đã ban hành rồi*, **có số hiệu**, không ai phải làm gì nữa, chỉ chờ tới ngày hiệu lực.
 - **Chờ ban hành** = *chưa ban hành*, **chưa có số hiệu**, đang chờ **một con người bấm nút**.
 
@@ -38,7 +38,7 @@ Nói nhầm là người dùng ngồi chờ một việc không bao giờ tới,
 
 ## 2. Ba câu hỏi người dùng hay hỏi nhất
 
-### 2.1 «Sao tôi không sửa được văn bản?»
+### 2.1 **Sao tôi không sửa được văn bản?**
 
 **Không bao giờ trả lời chung chung "liên hệ quản trị".** Có ba lý do khác nhau và
 **ba lối ra khác nhau** — phải hỏi/xem trạng thái rồi trả lời đúng cái:
@@ -53,12 +53,12 @@ Nói nhầm là người dùng ngồi chờ một việc không bao giờ tới,
 Đang duyệt thì khoá **toàn bộ**, không chỉ thân bài: tiêu đề, mức mật, lề trang,
 tệp đính kèm đều khoá.
 
-### 2.2 «Sao tôi không thấy / không mở được văn bản này?»
+### 2.2 **Sao tôi không thấy / không mở được văn bản này?**
 
 ⚠️ Hệ cố ý trả **404 (không tìm thấy)** thay vì 403 khi người dùng không được đọc —
 vì 403 tự nó đã tiết lộ *"có văn bản đó tồn tại"*.
 
-**Cho nên trợ lý TUYỆT ĐỐI không được nói «văn bản này không tồn tại».** Câu đúng là
+**Cho nên trợ lý TUYỆT ĐỐI không được nói *văn bản này không tồn tại*.** Câu đúng là
 *"bạn không nằm trong nhóm được xem văn bản này"*.
 
 Quyền đọc một văn bản đến từ **năm nguồn**, chỉ cần một là đủ:
@@ -72,11 +72,11 @@ Quyền đọc một văn bản đến từ **năm nguồn**, chỉ cần một 
 vai trò, thắng cả quyền theo sổ. Nếu ai đó bị cấm đích danh thì không nguồn nào ở
 trên cứu được.
 
-**Trang in:** bấm In mà ra trang **«Không có quyền mở bản in»** (kèm mã 403) là tài khoản chưa có quyền
+**Trang in:** bấm In mà ra trang ***Không có quyền mở bản in*** (kèm mã 403) là tài khoản chưa có quyền
 xem bản in đó — từ 22/10/2026 mọi trang in kiểm quyền trước khi mở. In văn bản thì cần đọc được văn bản;
 người đang có việc duyệt trên phiếu vẫn in được. Bảo họ nhờ quản trị cấp quyền, đừng tìm đường vòng.
 
-### 2.3 «Phiếu của tôi bị trả về hay bị từ chối?»
+### 2.3 **Phiếu của tôi bị trả về hay bị từ chối?**
 
 Ba nhịp **hoàn toàn khác nhau**, dùng sai từ là người dùng hiểu sai tình trạng:
 
@@ -105,7 +105,7 @@ chữ ký thì phải dùng Trả lại hoặc Từ chối.
   và không dùng chéo loại chứng từ.
 
 ⚠️ **Không hướng dẫn người dùng đi đường tắt.** Đang chạy trong luồng nhiều bước thì
-nút «Duyệt và ban hành» của luồng cũ bị chặn — đó là chốt chặn, không phải lỗi.
+nút **Duyệt và ban hành** của luồng cũ bị chặn — đó là chốt chặn, không phải lỗi.
 
 ---
 
@@ -120,11 +120,11 @@ Ban hành **không lùi lại được**:
   còn *Nháp* **và** chưa cấp số.
 
 Loại nào khai *"ban hành phải kèm Quyết định"* mà thiếu thì bị chặn — phải khai quan
-hệ **«Kèm theo»** tới Quyết định ban hành ở tab Quan hệ.
+hệ ***Kèm theo*** tới Quyết định ban hành ở tab Quan hệ.
 
 ### 4.1 Duyệt xong KHÔNG phải lúc nào cũng ban hành
 
-Cột **«Chờ người soạn ban hành»** trên *Loại văn bản* (`/document/settings?tab=types`)
+Cột ***Chờ người soạn ban hành*** trên *Loại văn bản* (`/document/settings?tab=types`)
 quyết định nhịp cuối:
 
 - **Tắt** (mặc định, hầu hết loại): ký đủ chữ ký là **ban hành luôn**.
@@ -137,7 +137,7 @@ này, và việc đang chờ **chính họ** (nếu họ là người soạn) b�
 
 ### 4.2 Gửi thông báo danh nghĩa địa chỉ khác
 
-Lúc bấm Ban hành có ô **«Gửi thông báo danh nghĩa»**: chọn hộp thư để thư báo đi dưới
+Lúc bấm Ban hành có ô ***Gửi thông báo danh nghĩa***: chọn hộp thư để thư báo đi dưới
 tên một phòng ban thay vì địa chỉ cá nhân — ví dụ nhân sự hành chính đăng nhập bằng
 tài khoản của mình nhưng gửi Thông báo nghỉ lễ danh nghĩa `hr@...`.
 
@@ -184,15 +184,15 @@ của người khác** — kể cả khi người hỏi là quản lý, trừ kh
 
 ---
 
-### 6.1 Bản lưu trữ hợp đồng lao động — nút «Ban hành» khác thường
+### 6.1 Bản lưu trữ hợp đồng lao động — nút **Ban hành** khác thường
 
 Mỗi hợp đồng lao động (HĐLĐ) lập ở phân hệ Nhân sự được hệ **tự sinh một văn bản lưu trữ** ở phân hệ
 Văn bản (loại *HDLD*). Văn bản này **không có trạng thái riêng**: nó chép trạng thái của hợp đồng gốc
 (Nháp → Nháp · Đã ký → Có hiệu lực · Đã chấm dứt → Hết hiệu lực).
 
-- Khi hợp đồng còn **Nháp**, trang văn bản lưu trữ chỉ có **một** nút: **«Ban hành»**. Bấm → hộp
-  hỏi *«Ban hành hợp đồng lao động?»* → xác nhận: hợp đồng gốc chuyển sang **«Đã ký»** với **ngày ký là hôm
-  nay**, văn bản sang **«Có hiệu lực»**. **Không quay lại Nháp được.** Nói cách khác, «Ban hành» ở đây
+- Khi hợp đồng còn **Nháp**, trang văn bản lưu trữ chỉ có **một** nút: ***Ban hành***. Bấm → hộp
+  hỏi ***Ban hành hợp đồng lao động?*** → xác nhận: hợp đồng gốc chuyển sang ***Đã ký*** với **ngày ký là hôm
+  nay**, văn bản sang ***Có hiệu lực***. **Không quay lại Nháp được.** Nói cách khác, **Ban hành** ở đây
   **chính là ký hợp đồng**.
 - Nút chỉ hiện với người **có quyền ghi hợp đồng lao động** trong phạm vi của họ, và chỉ khi hợp đồng còn
   Nháp và chưa bị xóa. Không thấy nút = thiếu quyền hoặc hợp đồng đã ký rồi.

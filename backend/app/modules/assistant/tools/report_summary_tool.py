@@ -92,10 +92,10 @@ REPORTS: dict[str, ReportRoute] = {
                                                            "labor_register_summary"), "/report/labor-register"),
     "labor_usage_report": ReportRoute(ReportKey.LABOR_USAGE_REPORT, _route("labor_register.usage_report_controller",
                                                                            "labor_usage_summary"), "/report/labor-usage-report"),
-    #  duoc-CR-688: phúc lợi, cơ cấu quản lý, điều chuyển — `/summary` chỉ trả số đếm. «Quỹ lương theo pháp nhân»
+    #  duoc-CR-688: phúc lợi, cơ cấu quản lý, điều chuyển — `/summary` chỉ trả số đếm. "Quỹ lương theo pháp nhân"
     #  (khóa 21) CỐ Ý KHÔNG mở cho trợ lý: số lương, chỉ người được giao xem trên màn riêng. Từ duoc-CR-693 nó đọc ô
     #  lương trên hồ sơ (gác `employee.read|export` + khóa 21) — vẫn ĐÓNG, xem `CLOSED_FOR_AI`.
-    #  Khóa 25 «Định biên kế hoạch so với thực tế» đã BỎ hẳn (duoc-CR-692, `RETIRED_REPORT_KEYS`) — không có ở đây.
+    #  Khóa 25 "Định biên kế hoạch so với thực tế" đã BỎ hẳn (duoc-CR-692, `RETIRED_REPORT_KEYS`) — không có ở đây.
     "benefit_audience": ReportRoute(ReportKey.BENEFIT_AUDIENCE, _route("employee.benefit_report_controller",
                                                                        "benefit_summary"), "/report/benefit-audience"),
     "management_span": ReportRoute(ReportKey.MANAGEMENT_SPAN, _route("employee.management_report_controller",
@@ -114,7 +114,7 @@ REPORTS: dict[str, ReportRoute] = {
 }
 _BY_NUMBER = {int(r.key): name for name, r in REPORTS.items()}
 
-#  Khóa CÓ THẬT ở phân hệ Báo cáo nhưng CỐ Ý không mở cho trợ lý / MCP, kèm lý do để model nói đúng thay vì «mã lạ».
+#  Khóa CÓ THẬT ở phân hệ Báo cáo nhưng CỐ Ý không mở cho trợ lý / MCP, kèm lý do để model nói đúng thay vì "mã lạ".
 #  Bài kiểm `test_moi_khoa_bao_cao_deu_co_route_va_dung_khoa_gac` giữ: REPORTS + CLOSED_FOR_AI = mọi ReportKey.
 CLOSED_FOR_AI: dict[ReportKey, str] = {
     ReportKey.USAGE_PROFILE: "dữ liệu hành vi từng người, chỉ xem trên màn riêng",
@@ -132,7 +132,7 @@ def _not_open_reason(raw) -> str | None:
     key = next((k for k in CLOSED_FOR_AI if text == str(int(k)) or text.upper() == k.name), None)
     if key is None:
         return None
-    return f"Báo cáo «{REPORT_META[key][0]}» không mở cho trợ lý AI: {CLOSED_FOR_AI[key]}."
+    return f"Báo cáo **{REPORT_META[key][0]}** không mở cho trợ lý AI: {CLOSED_FOR_AI[key]}."
 
 
 def resolve_report_key(raw) -> str | None:
@@ -244,15 +244,15 @@ def _report_summary(ctx: ToolContext, args: dict) -> dict:
     from app.modules.report_access.service import can_view_report
 
     if not can_view_report(ctx.db, ctx.user, route.key):
-        return {"denied": True, "error": f"Chưa được giao xem báo cáo «{label}» — nhờ quản trị gán ở Phân quyền tài khoản "
+        return {"denied": True, "error": f"Chưa được giao xem báo cáo **{label}** — nhờ quản trị gán ở Phân quyền tài khoản "
                                          "→ tab Báo cáo. Đừng thử công cụ khác để lấy cùng số liệu."}
     params, ignored = _query_params(route, filters)
     try:
         data = call_summary_route(route.load(), ctx.db, ctx.user, params)
     except HTTPException as e:
         if e.status_code == 403:
-            return {"denied": True, "error": f"Báo cáo «{label}»: {e.detail} (thiếu quyền vai trò ở phân hệ gốc)."}
-        return {"error": f"Báo cáo «{label}»: {e.detail}"}
+            return {"denied": True, "error": f"Báo cáo **{label}**: {e.detail} (thiếu quyền vai trò ở phân hệ gốc)."}
+        return {"error": f"Báo cáo **{label}**: {e.detail}"}
     return _shape(name, route, data, ignored)
 
 

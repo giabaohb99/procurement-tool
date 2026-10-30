@@ -7,7 +7,7 @@ chuyển xuống, bộ trường được trả (gọt bớt trường kỹ thu�
   cùng `apply_filters`, cùng `apply_scope` như người đó mở màn. Mỗi lượt tối đa `MAX_PAGES` trang × `MAX_PAGE_SIZE` dòng;
   còn nữa thì `has_more` + `next_page`.
 - Chi tiết: YCMH / YCBG / ĐMH đi qua bộ đọc của `procurement_doc_read` (lọc phạm vi, CHỈ ĐỌC) — KHÔNG gọi route chi tiết
-  YCMH vì route đó ghi ngầm «phương án 0» (`option_service.ensure_option_zero`). Hợp đồng / NCC / sản phẩm gọi route
+  YCMH vì route đó ghi ngầm "phương án 0" (`option_service.ensure_option_zero`). Hợp đồng / NCC / sản phẩm gọi route
   chi tiết (không tác dụng phụ). Ngoài phạm vi và không tồn tại trả CÙNG một câu — không lộ phiếu có tồn tại.
 - Nhận hàng (`goods_receipt`) không có màn riêng: đọc bảng qua `apply_scope(GoodsReceipt, "goods_receipt")`.
 - Không có đường xuất Excel / ghi nhật ký nào trong danh sách trắng.
@@ -243,7 +243,7 @@ def _read(ctx: ToolContext, args: dict, resources: dict) -> dict:
                          + ", ".join(f"{k} ({r.label})" for k, r in resources.items()) + "."}
     #  `entity` rỗng = route gốc mở cho mọi người đăng nhập (diễn đàn) — route tự lọc người xem được gì.
     if res.entity and not ctx.can(res.entity):
-        return {"denied": True, "error": f"Không có quyền xem «{res.label}» (cần quyền đọc {res.entity}) — nhờ quản trị "
+        return {"denied": True, "error": f"Không có quyền xem **{res.label}** (cần quyền đọc {res.entity}) — nhờ quản trị "
                                          "gán vai trò."}
     see_supplier = ctx.can("supplier")
     meta = {"resource": res.key, "label": res.label, "currency": "VND"}
@@ -282,8 +282,8 @@ def _read(ctx: ToolContext, args: dict, resources: dict) -> dict:
                 break
     except HTTPException as e:
         if e.status_code == 403:
-            return {"denied": True, "error": f"«{res.label}»: {e.detail}"}
-        return {"error": f"«{res.label}»: {e.detail}"}
+            return {"denied": True, "error": f"**{res.label}**: {e.detail}"}
+        return {"error": f"**{res.label}**: {e.detail}"}
     last = page + read - 1
     has_more = last * size < total
     out = {**meta, "link": res.list_path, "total": total, "page": page, "page_size": size, "pages_read": read,

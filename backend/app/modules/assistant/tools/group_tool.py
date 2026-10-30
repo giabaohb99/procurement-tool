@@ -75,7 +75,7 @@ def _read_group_file(ctx: ToolContext, args: dict) -> dict:
 LIST_MY_GROUPS_SPEC = ToolSpec(
     name="list_my_groups",
     description=("Liệt kê các NHÓM Telegram mà bot đang ở và người hỏi đọc được (người đã thêm bot vào, hoặc đang là thành "
-                 "viên). Gọi khi người dùng hỏi «nhóm nào», «bot đang ở nhóm nào», hoặc nói tên nhóm chưa rõ."),
+                 "viên). Gọi khi người dùng hỏi **nhóm nào**, **bot đang ở nhóm nào**, hoặc nói tên nhóm chưa rõ."),
     parameters={"type": "object", "properties": {}},
     handler=_list_my_groups,
 )
@@ -83,8 +83,8 @@ READ_GROUP_MESSAGES_SPEC = ToolSpec(
     name="read_group_messages",
     description=("ĐỌC tin nhắn của một nhóm Telegram bot đang ở để TÓM TẮT / tổng hợp / viết báo cáo cho người hỏi. `group` = "
                  "tên nhóm (khớp một phần) hoặc số thứ tự từ list_my_groups; `hours` = bao nhiêu giờ gần nhất (mặc định 24, "
-                 "«hôm nay» ≈ số giờ từ 0h, «tuần này» = 168). Tóm tắt xong: liệt kê các tệp trong nhóm kèm số thứ tự và gợi ý "
-                 "«tóm tắt tệp số n»; giữ `file_ref` của từng tệp để gọi read_group_file."),
+                 "**hôm nay** ≈ số giờ từ 0h, **tuần này** = 168). Tóm tắt xong: liệt kê các tệp trong nhóm kèm số thứ tự và gợi ý "
+                 "**tóm tắt tệp số n**; giữ `file_ref` của từng tệp để gọi read_group_file."),
     parameters={"type": "object", "properties": {"group": {"type": "string"},
                                                  "hours": {"type": "integer", "minimum": 1, "maximum": 720}},
                 "required": ["group"]},

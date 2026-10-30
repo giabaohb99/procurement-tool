@@ -149,13 +149,13 @@ def _denied(what: str) -> dict:
 def run(ctx, ds: Dataset, args: dict) -> dict:
     """Chạy một truy vấn tổng hợp trên bộ `ds` dưới quyền người hỏi (`ctx`). Trả dict theo chuẩn §5.6."""
     if not ctx.can(ds.entity):
-        return _denied(f"Không có quyền xem «{ds.label}» (cần quyền đọc {ds.entity}) — nhờ quản trị gán vai trò.")
+        return _denied(f"Không có quyền xem **{ds.label}** (cần quyền đọc {ds.entity}) — nhờ quản trị gán vai trò.")
     if ds.report_key is not None:
         from app.core.report_keys import REPORT_META
         from app.modules.report_access.service import can_view_report
 
         if not can_view_report(ctx.db, ctx.user, ds.report_key):
-            return _denied(f"Chưa được giao xem báo cáo «{REPORT_META[ds.report_key][0]}» — nhờ quản trị gán ở Phân quyền "
+            return _denied(f"Chưa được giao xem báo cáo **{REPORT_META[ds.report_key][0]}** — nhờ quản trị gán ở Phân quyền "
                            "tài khoản → tab Báo cáo.")
 
     m_keys = _as_list(args.get("measures")) or [ds.measures[0].key]
@@ -173,7 +173,7 @@ def run(ctx, ds: Dataset, args: dict) -> dict:
     for d in dims:
         missing = [e for e in d.needs if not ctx.can(e)]
         if missing:
-            return _denied(f"Chia «{ds.label}» theo {d.label} cần thêm quyền đọc {', '.join(missing)}.")
+            return _denied(f"Chia **{ds.label}** theo {d.label} cần thêm quyền đọc {', '.join(missing)}.")
 
     raw_filters = args.get("filters") if isinstance(args.get("filters"), dict) else {}
     applied, ignored = {}, []

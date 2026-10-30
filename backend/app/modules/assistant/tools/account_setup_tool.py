@@ -1,12 +1,12 @@
 """Tool lập BỘ TÀI KHOẢN thu mua qua Trợ lý AI (bao-CR-435) — tầng GHI có xác nhận.
 
 Ra đời từ hướng dẫn `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`:
-mỗi tài khoản đi qua bốn bước bấm tay, bộ B còn phải mở hộp Phạm vi tìm đúng ô «Loại trừ
-phòng ban». Tool này gom Bước 3 (gán vai trò) + Bước 4 (phạm vi) thành MỘT đề xuất:
+mỗi tài khoản đi qua bốn bước bấm tay, bộ B còn phải mở hộp Phạm vi tìm đúng ô "Loại trừ
+phòng ban". Tool này gom Bước 3 (gán vai trò) + Bước 4 (phạm vi) thành MỘT đề xuất:
 
   · DÒ TRƯỚC: hồ sơ nhân sự có chưa · đã có tài khoản đăng nhập chưa · đang giữ vai trò
     gì · ô phạm vi của từng vai trò đang ghi gì;
-  · ĐỀ XUẤT từng dòng «thêm / bỏ / không đổi» — chạy lại y nguyên thì mọi dòng «không đổi»;
+  · ĐỀ XUẤT từng dòng "thêm / bỏ / không đổi" — chạy lại y nguyên thì mọi dòng "không đổi";
   · NGƯỜI bấm *Xác nhận* thì `confirm_account_setup` mới ghi, qua ĐÚNG hai service của màn
     Phân quyền tài khoản (`assign_roles` + `set_user_scope`) nên nhật ký, xóa cache quyền và
     ba chốt chống tự nâng quyền (`core/privilege_escalation`) ăn nguyên.
@@ -16,7 +16,7 @@ Tool KHÔNG làm — cố ý, đừng nới:
     bấm tay; chưa có tài khoản thì đề xuất DỪNG và nói rõ);
   · không tạo vai trò mới — chỉ gán vai trò CÓ SẴN trong bộ mẫu `TEMPLATE_ROLE_CODES`
     (tạo vai trò theo yêu cầu khách là đợt 2, chưa làm);
-  · không khai «Chỉ trong công ty» (bao-CR-434: pháp nhân trên hồ sơ chỉ là chuyện pháp lý,
+  · không khai "Chỉ trong công ty" (bao-CR-434: pháp nhân trên hồ sơ chỉ là chuyện pháp lý,
     phòng nhà máy mua cho nhiều pháp nhân). Ngược lại có thể GỠ dòng đó khi được bảo.
 
 Quyền: chạy dưới danh tính người hỏi, đòi `user.write` (cửa ghi thật của màn Phân quyền)
@@ -62,12 +62,12 @@ USER_PERMISSION_URL = "/system/permissions/users/{user_id}"
 
 _DESC = (
     "Lập / chỉnh BỘ TÀI KHOẢN thu mua cho MỘT nhân sự: gán vai trò có sẵn (employee, "
-    "dept_head, pur_staff, pur_manager, pur_dept_manager, pur_dept_staff, pur_admin) và khai ô «Loại trừ "
-    "phòng ban» (ví dụ bộ Thu mua trừ nhà máy: loại trừ Dego Organic). Tool CHỈ ĐỀ XUẤT: dò "
+    "dept_head, pur_staff, pur_manager, pur_dept_manager, pur_dept_staff, pur_admin) và khai ô **Loại trừ "
+    "phòng ban** (ví dụ bộ Thu mua trừ nhà máy: loại trừ Dego Organic). Tool CHỈ ĐỀ XUẤT: dò "
     "hồ sơ, tài khoản, vai trò và phạm vi hiện có rồi trả bảng từng dòng thêm / bỏ / không "
     "đổi kèm nút Xác nhận — hệ thống chỉ ghi khi NGƯỜI DÙNG bấm nút. KHÔNG tạo hồ sơ nhân "
     "sự, KHÔNG tạo tài khoản đăng nhập, KHÔNG đụng mật khẩu, KHÔNG tạo vai trò mới. Chạy "
-    "lại cùng yêu cầu thì mọi dòng «không đổi». Chưa có tài khoản đăng nhập thì trả blocked "
+    "lại cùng yêu cầu thì mọi dòng **không đổi**. Chưa có tài khoản đăng nhập thì trả blocked "
     "kèm hướng dẫn tạo tay."
 )
 
@@ -100,7 +100,7 @@ _PARAMS = {
         },
         "remove_company_include": {
             "type": "boolean",
-            "description": "true = gỡ dòng «Chỉ trong công ty» đang có ở các vai trò trong role_codes "
+            "description": "true = gỡ dòng **Chỉ trong công ty** đang có ở các vai trò trong role_codes "
                            "(bao-CR-434: bộ thu mua KHÔNG nên nhốt theo pháp nhân). Mặc định false: "
                            "chỉ cảnh báo nếu đang có.",
         },
@@ -112,7 +112,7 @@ _PARAMS = {
 # ── Dò trước ──────────────────────────────────────────────────────────────────────────────
 
 def _denied(reason: str) -> dict:
-    """`base.denied` nói «không có quyền XEM» — đây là cửa GHI nên câu phải nói cho đúng."""
+    """`base.denied` nói "không có quyền XEM" — đây là cửa GHI nên câu phải nói cho đúng."""
     return {"denied": True, "reason": reason}
 
 
@@ -195,8 +195,8 @@ def _plan_roles(db, target: User, requested: list[Role], replace: bool) -> tuple
 
 def _plan_scope(db, target: User, role: Role, exclude_names: list[str],
                 remove_company_include: bool) -> tuple[dict, list[dict], list[str]]:
-    """Phạm vi MỚI của (tài khoản, vai trò) = phạm vi hiện có + loại trừ thêm (− «Chỉ trong công
-    ty» nếu được bảo). Trả (ScopeUpdate dạng dict, dòng đề xuất, cảnh báo)."""
+    """Phạm vi MỚI của (tài khoản, vai trò) = phạm vi hiện có + loại trừ thêm (− "Chỉ trong công
+    ty" nếu được bảo). Trả (ScopeUpdate dạng dict, dòng đề xuất, cảnh báo)."""
     current = user_service.get_user_scope(db, target.id, role.id)
     new = {k: list(v) for k, v in current.items()}
     lines, warnings = [], []
@@ -207,16 +207,16 @@ def _plan_scope(db, target: User, role: Role, exclude_names: list[str],
             new["exclude_departments"].append(name)
             status = "thêm"
         lines.append({"kind": "scope", "role_code": role.code,
-                      "label": f"{role.name}: loại trừ phòng «{name}»", "status": status})
+                      "label": f"{role.name}: loại trừ phòng **{name}**", "status": status})
     if current["companies"]:
         if remove_company_include:
             new["companies"] = []
             lines.append({"kind": "scope", "role_code": role.code,
-                          "label": f"{role.name}: «Chỉ trong công ty» ({len(current['companies'])} dòng)",
+                          "label": f"{role.name}: **Chỉ trong công ty** ({len(current['companies'])} dòng)",
                           "status": "bỏ"})
         elif role.code in PURCHASING_ROLE_CODES:
             warnings.append(
-                f"Vai trò {role.name} đang có «Chỉ trong công ty» ({len(current['companies'])} pháp "
+                f"Vai trò {role.name} đang có **Chỉ trong công ty** ({len(current['companies'])} pháp "
                 "nhân) — bao-CR-434: bộ thu mua thường KHÔNG nên nhốt theo pháp nhân. Muốn gỡ thì "
                 "gọi lại với remove_company_include = true.")
     return new, lines, warnings
@@ -224,7 +224,7 @@ def _plan_scope(db, target: User, role: Role, exclude_names: list[str],
 
 #  bao-CR-523: màn Phân quyền cho quản trị TỰ bỏ vai trò Quản trị của mình sau một hộp
 #  xác nhận (409 → gửi lại kèm cờ). Tool thì KHÔNG cho hẳn — một câu chat mơ hồ kiểu
-#  «chỉ để tôi làm nhân viên thu mua» + `replace_roles` là tự tước quyền quản trị mà
+#  "chỉ để tôi làm nhân viên thu mua" + `replace_roles` là tự tước quyền quản trị mà
 #  người gõ có khi không nhận ra; việc hệ trọng đó phải bấm tay trên màn.
 SELF_ADMIN_REMOVAL_REFUSED = ("Trợ lý AI không tự bỏ vai trò Quản trị hệ thống của chính bạn. "
                               "Muốn bỏ thì làm tay ở Quản trị › Phân quyền tài khoản.")
@@ -232,7 +232,7 @@ SELF_ADMIN_REMOVAL_REFUSED = ("Trợ lý AI không tự bỏ vai trò Quản tr�
 
 def _block_admin_removal(db, actor, target_id: int, final_ids: list[int]) -> None:
     """Tự bỏ `admin` của chính mình → từ chối hẳn (403). Bỏ `admin` của người khác → chỉ
-    còn chốt «hệ phải còn ít nhất một quản trị đang hoạt động» (400)."""
+    còn chốt "hệ phải còn ít nhất một quản trị đang hoạt động" (400)."""
     if target_id == actor.id and privilege_escalation.removes_system_admin(db, target_id, final_ids):
         raise HTTPException(403, SELF_ADMIN_REMOVAL_REFUSED)
     privilege_escalation.block_admin_role_removal(db, target_id, actor, final_ids,
@@ -264,7 +264,7 @@ def _run_propose(ctx: ToolContext, args: dict) -> dict:
 
     exclude_map, missing = _resolve_departments(ctx.db, args.get("exclude_departments") or [])
     if missing:
-        return {"error": "Không tìm thấy phòng ban để loại trừ: " + ", ".join(f"«{m}»" for m in missing)
+        return {"error": "Không tìm thấy phòng ban để loại trừ: " + ", ".join(f"**{m}**" for m in missing)
                 + ". Kiểm tên ở Nhân sự › Phòng ban rồi gọi lại."}
     exclude_names = list(dict.fromkeys(exclude_map.values()))
     replace = bool(args.get("replace_roles"))
@@ -273,7 +273,7 @@ def _run_propose(ctx: ToolContext, args: dict) -> dict:
     found = _find_employees(ctx, needle)
     if not found:
         return {"status": "blocked", "reason": "not_found",
-                "message": f"Không thấy hồ sơ nhân sự khớp «{needle}» trong phạm vi của bạn. Bước 1 "
+                "message": f"Không thấy hồ sơ nhân sự khớp **{needle}** trong phạm vi của bạn. Bước 1 "
                            "của hướng dẫn (tạo hồ sơ nhân sự) vẫn làm tay ở Nhân sự › Nhân viên."}
     if len(found) > 1:
         return {"status": "ambiguous",
@@ -332,7 +332,7 @@ def _run_propose(ctx: ToolContext, args: dict) -> dict:
             "url": USER_PERMISSION_URL.format(user_id=target.id),
         },
         "total": changed,
-        "reminder": ("Mọi dòng đều «không đổi» — tài khoản đã đúng bộ, không cần xác nhận."
+        "reminder": ("Mọi dòng đều **không đổi** — tài khoản đã đúng bộ, không cần xác nhận."
                      if changed == 0 else
                      "CHƯA ghi gì. Giao diện đang hiện thẻ đề xuất; chỉ khi người dùng bấm "
                      "'Xác nhận' hệ thống mới gán vai trò / đặt phạm vi. Đừng nói đã gán."),

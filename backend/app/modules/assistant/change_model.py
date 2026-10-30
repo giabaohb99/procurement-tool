@@ -84,7 +84,7 @@ class AssistantChange(Base, AuditMixin):
     entity_id: Mapped[int] = mapped_column(BigInteger, default=0)
     doc_code: Mapped[str] = mapped_column(String(50), default="")
     action: Mapped[int] = mapped_column(SmallInteger, default=int(ChangeAction.UPDATE))     # ChangeAction
-    #  Câu tiếng Việt đọc được: «Sửa đơn nghỉ phép NP001: Đến ngày», «Tạo YCMH nháp YCMH00123».
+    #  Câu tiếng Việt đọc được: "Sửa đơn nghỉ phép NP001: Đến ngày", "Tạo YCMH nháp YCMH00123".
     summary: Mapped[str] = mapped_column(String(300), default="")
     #  Ảnh TRƯỚC / SAU của phần đã đổi (các trường + dòng nếu có). Tạo mới: before = NULL; xóa: after = NULL.
     #  Mỗi cột tối đa 64 KB — vượt thì cắt bớt dòng và ghi `truncated: true`.

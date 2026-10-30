@@ -1,7 +1,7 @@
 """Tool NGHỈ PHÉP của trợ lý AI (T35 `my_leave_summary`).
 
-Trả lời đúng ba câu người ta hỏi hằng ngày: «tôi còn mấy ngày phép», «mỗi loại
-còn bao nhiêu», «đơn tôi nộp duyệt tới đâu rồi».
+Trả lời đúng ba câu người ta hỏi hằng ngày: "tôi còn mấy ngày phép", "mỗi loại
+còn bao nhiêu", "đơn tôi nộp duyệt tới đâu rồi".
 
 Ba ràng buộc của phân hệ Nghỉ phép mà tool này phải tuân, không phải tùy chọn:
 
@@ -9,7 +9,7 @@ Ba ràng buộc của phân hệ Nghỉ phép mà tool này phải tuân, không
   duy nhất tính. Đừng cộng trừ các cột của `tab_leave_balance` ở đây.
 * **Một đơn khai NHIỀU loại nghỉ** (`tab_leave_request_line`, 07/09/2026). Hai
   cột đầu đơn là DẪN XUẤT: `total_days` = tổng các dòng, `leave_type_id` = loại
-  của dòng nhiều ngày nhất. Muốn nói đúng «3 ngày phép năm + 2 ngày không lương»
+  của dòng nhiều ngày nhất. Muốn nói đúng "3 ngày phép năm + 2 ngày không lương"
   thì phải đọc THEO DÒNG.
 * **Read-only tuyệt đối.** `balance_service.ensure_balance()` vừa đọc vừa CẤP
   PHÁT một dòng quỹ mới — tool không được gọi nó (luật 4 ở `base.py`). Loại nghỉ
@@ -22,8 +22,8 @@ bắt thêm khóa `leave_balance` nữa là chắc chắn có người quên c�
 
 ⚠️ **Chỉ lọc theo `employee_id`, KHÔNG lọc theo `created_by`** — khác khuôn
 `my_tickets`/`my_procurement_requests` và khác có chủ ý. Ở phân hệ này
-`created_by` nghĩa là «tôi lập hộ NGƯỜI KHÁC», tức dữ liệu nghỉ phép của người
-đó; gộp vào «đơn của tôi» là vừa trả lời sai câu hỏi vừa phát dữ liệu người khác
+`created_by` nghĩa là "tôi lập hộ NGƯỜI KHÁC", tức dữ liệu nghỉ phép của người
+đó; gộp vào "đơn của tôi" là vừa trả lời sai câu hỏi vừa phát dữ liệu người khác
 qua một tool không đi qua `apply_scope`. Hành chính muốn xem đơn mình lập hộ thì
 vào màn Nghỉ phép.
 """
