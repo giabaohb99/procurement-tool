@@ -121,6 +121,9 @@ một dòng bọc bằng nháy kép thì dùng nháy đơn để không vỡ chu
 rồi soát tay 173 chỗ phải chọn in đậm hay in nghiêng, sửa 23 chỗ máy chọn sai; hai tệp JSON (bài Văn bản, cấu hình tra cứu thị
 trường) đối chiếu lại từng khóa để chắc chỉ đổi dấu. Chạy lại 22 script seed_help trên dev và nạp lại kho vector. Prod gom vào
 đợt sau. Cẩm nang trợ lý (seed_handbook) và các bài chỉ nằm trong DB prod không nằm trong phạm vi này, đã liệt kê cho điều phối.
+Bổ sung: ba bài có dấu ngoặc trong TIÊU ĐỀ (Phê duyệt theo quyền, Ô Tên trên hóa đơn, Hệ thống đang bận) đổi sang nháy kép
+thẳng; vì seed tìm bài theo tiêu đề nên lần chạy đầu đã đẻ bài mới bên cạnh bài cũ trên dev. Sửa khuôn chung: tuple bài nhận
+thêm danh sách tên cũ, seed đổi tên tại chỗ (giữ id, giữ thứ tự) và xóa bản trùng. Chạy lại ba seed trên dev, hết trùng.
 Mã nguồn: backend/scripts/*.py, backend/scripts/help_van_ban/bai-viet.json, backend/scripts/data/cau-hinh-tra-cuu-thi-truong-cr684.json, backend/scripts/deploy/deploy.sh, backend/scripts/agent_restore.sh
 Deploy: dev 30/10 (chạy lại 22 seed_help + reindex_help_rag)
 

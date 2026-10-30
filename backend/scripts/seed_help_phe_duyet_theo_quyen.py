@@ -12,7 +12,10 @@ Phòng ban/Công ty/Tất cả, không tính admin, tài khoản mở + có hồ
 from help_seed_common import run_article_upsert
 
 ADMIN_ROOT = "Quản trị Hệ thống"
-TITLE = "Phê duyệt: giao bước duyệt cho 'Người có quyền duyệt (theo phân quyền)'"
+TITLE = 'Phê duyệt: giao bước duyệt cho "Người có quyền duyệt (theo phân quyền)"'
+#  Tên cũ (trước bao-CR-695) — seed đổi tên tại chỗ, không đẻ bài mới
+OLD_TITLES = ["Phê duyệt: giao bước duyệt cho «Người có quyền duyệt (theo phân quyền)»",
+              "Phê duyệt: giao bước duyệt cho 'Người có quyền duyệt (theo phân quyền)'"]
 
 ARTICLES = [
     (ADMIN_ROOT, TITLE,
@@ -59,7 +62,7 @@ trò phù hợp trước.</li>
 <li><strong>Phiếu đặt xe</strong> có ô chọn <em>Người duyệt</em> (danh sách chính là những người giữ quyền ở trên). Phiếu đã chọn người thì bước <strong>Người có quyền duyệt</strong> chỉ giao cho đúng người đó, bất kể công ty trên phiếu (hai ô độc lập); người đó mất quyền trước lúc mở bước thì bước tính như phiếu chưa chọn.</li>
 <li>Không ai thỏa cả bốn điều kiện thì bước xử lý theo ô <strong>Không tìm được người duyệt thì</strong> trong <strong>Tùy chỉnh thêm</strong> — nên khai người dự phòng.</li>
 <li>Danh sách hiện trong lúc khai luồng là <strong>chưa lọc theo phiếu</strong> (lúc đó chưa có phiếu nào); khi chạy thật hệ mới lọc theo phạm vi của từng người.</li>
-</ul>"""),
+</ul>""", OLD_TITLES),
 ]
 
 

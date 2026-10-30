@@ -111,20 +111,38 @@ def _root(db, title: str):
 
 
 def upsert_articles(articles, dry_run: bool) -> list[int]:
-    """`articles` = [(tiêu đề thẻ cha, tiêu đề bài, tóm tắt, HTML)] → id các bài đã ghi."""
+    """`articles` = [(tiêu đề thẻ cha, tiêu đề bài, tóm tắt, HTML[, tên cũ])] → id các bài đã ghi.
+    `tên cũ` (chuỗi hoặc danh sách, bao-CR-695): bài đã đổi tiêu đề thì tìm theo tên cũ dưới cùng thẻ cha rồi ĐỔI TÊN tại
+    chỗ (giữ id, giữ thứ tự), bản trùng còn lại xóa — không đẻ bài mới bên cạnh bài cũ."""
     db = SessionLocal()
     touched = []
     try:
-        for parent_title, title, summary, content in articles:
+        for item in articles:
+            parent_title, title, summary, content = item[:4]
+            old_titles = item[4] if len(item) > 4 else []
+            if isinstance(old_titles, str):
+                old_titles = [old_titles]
             parent = _root(db, parent_title)
             if parent is None:
                 print(f"  BỎ QUA '{title}': không có thẻ cha '{parent_title}' trên hệ này")
                 continue
             row = (db.query(HelpArticle)
                    .filter(HelpArticle.parent_id == parent.id, HelpArticle.title == title).first())
+            stale = []
+            if row is None and old_titles:
+                stale = (db.query(HelpArticle)
+                         .filter(HelpArticle.parent_id == parent.id, HelpArticle.title.in_(old_titles))
+                         .order_by(HelpArticle.id).all())
+                if stale:
+                    row, stale = stale[0], stale[1:]
+                    print(f"  đổi tên: '{row.title}' → '{title}'" + (f" (xóa {len(stale)} bản trùng)" if stale else ""))
             print(f"  {'cập nhật' if row else 'thêm'}: '{title}' (dưới '{parent_title}')")
             if dry_run:
                 continue
+            for extra in stale:
+                db.delete(extra)
+            if row is not None:
+                row.title = title
             if row is None:
                 orders = [a.sort_order or 0 for a in db.query(HelpArticle).filter(HelpArticle.parent_id == parent.id)]
                 row = HelpArticle(parent_id=parent.id, title=title, sort_order=max(orders or [0]) + 1)

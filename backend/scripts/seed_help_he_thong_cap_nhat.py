@@ -17,7 +17,8 @@ from help_seed_common import ref, run_article_upsert
 START_ROOT = "Bắt đầu"
 ADMIN_ROOT = "Quản trị Hệ thống"
 
-BUSY_TITLE = "Gặp thông báo 'Hệ thống đang bận' thì làm gì"
+BUSY_TITLE = 'Gặp thông báo "Hệ thống đang bận" thì làm gì'
+BUSY_OLD_TITLES = ["Gặp thông báo «Hệ thống đang bận» thì làm gì", "Gặp thông báo 'Hệ thống đang bận' thì làm gì"]
 OPS_TITLE = "Vận hành: giới hạn lượt gọi cùng lúc và dọn kho tìm kiếm của Trợ lý AI"
 
 ARTICLES = [
@@ -69,7 +70,8 @@ ARTICLES = [
 #  Hai bài trỏ chéo nhau: chèn liên kết sau khi đã có đủ hai tiêu đề.
 
 ARTICLES = [
-    (parent, title, summary, body.replace("{ops}", ref(OPS_TITLE, OPS_TITLE)).replace("{busy}", ref(BUSY_TITLE, BUSY_TITLE)))
+    (parent, title, summary, body.replace("{ops}", ref(OPS_TITLE, OPS_TITLE)).replace("{busy}", ref(BUSY_TITLE, BUSY_TITLE)),
+     BUSY_OLD_TITLES if title == BUSY_TITLE else [])
     for parent, title, summary, body in ARTICLES
 ]
 

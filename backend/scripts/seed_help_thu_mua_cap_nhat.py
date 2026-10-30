@@ -39,7 +39,7 @@ ARTICLES = [
 <li>Phiếu có nằm trong phạm vi dữ liệu của người duyệt không: thử mở phiếu bằng tài khoản đó, mở được thì mới nhận được chuông.</li>
 <li>Phiếu đã thật sự ở trạng thái chờ duyệt chưa (lưu nháp thì chưa báo).</li>
 </ol>"""),
-    (STAFF_ROOT, "Ô 'Tên trên hóa đơn' tự điền từ danh mục Sản phẩm",
+    (STAFF_ROOT, 'Ô "Tên trên hóa đơn" tự điền từ danh mục Sản phẩm',
      "Khi nào ô Tên trên hóa đơn của dòng Đơn mua hàng tự điền, và muốn có tên sẵn thì khai ở đâu.",
      """<h2>Ô <strong>Tên trên hóa đơn</strong> tự điền từ danh mục Sản phẩm</h2>
 <p>Trên dòng hàng của <strong>Đơn mua hàng</strong>, ô <strong>Tên trên hóa đơn</strong> để trống sẽ được hệ thống tự điền theo tên trên hóa đơn đã khai ở danh mục <strong>Sản phẩm</strong> của đúng mã hàng đó.</p>
@@ -54,7 +54,8 @@ ARTICLES = [
 <li>Bạn đã gõ tên thì hệ thống <strong>giữ nguyên</strong>, không thay bằng tên trong danh mục.</li>
 <li>Sản phẩm chưa khai tên trên hóa đơn thì ô vẫn trống. Muốn có tên sẵn cho mọi đơn sau, hãy khai ở danh mục <strong>Sản phẩm</strong> trước.</li>
 <li>Các đơn cũ còn trống tên đã được hệ thống điền bù một lần khi cập nhật phiên bản.</li>
-</ul>"""),
+</ul>""",
+     ["Ô «Tên trên hóa đơn» tự điền từ danh mục Sản phẩm", "Ô 'Tên trên hóa đơn' tự điền từ danh mục Sản phẩm"]),
     (GENERAL_ROOT, "Báo cáo mua hàng gom theo phòng hiện hành",
      "Vì sao báo cáo mua hàng hiện tên phòng mới sau khi đổi tên phòng, và trường hợp hai phòng trùng tên.",
      """<h2>Báo cáo mua hàng gom theo phòng hiện hành</h2>
