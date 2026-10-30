@@ -71,7 +71,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <h2>III. Các bước thao tác</h2>
 <h3>Bước 1 — Mở trợ lý</h3>
 <ul>
-<li>Bấm <strong>bong bóng trợ lý AI</strong> ở góc dưới bên phải, hoặc chọn phân hệ <strong>Trợ lý AI</strong> từ màn chọn phân hệ.</li>
+<li>Bấm <strong>bong bóng trợ lý AI</strong> ở góc dưới bên phải, hoặc chọn phân hệ <strong>AI</strong> ở màn chọn phân hệ rồi vào mục <strong>Trợ lý AI</strong>.</li>
 </ul>
 
 <h3>Bước 2 — Gõ yêu cầu</h3>

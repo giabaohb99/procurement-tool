@@ -67,7 +67,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <h2>II. Các bước thao tác</h2>
 <h3>Bước 1 — Mở trợ lý AI</h3>
 <ul>
-<li>Nhấn vào <strong>bong bóng trợ lý AI</strong> ở góc dưới bên phải màn hình, hoặc chọn phân hệ <strong>Trợ lý AI</strong> từ màn chọn phân hệ.</li>
+<li>Nhấn vào <strong>bong bóng trợ lý AI</strong> ở góc dưới bên phải màn hình, hoặc chọn phân hệ <strong>AI</strong> ở màn chọn phân hệ rồi vào mục <strong>Trợ lý AI</strong>.</li>
 <li>Khung chat mở ra, bạn nhập câu hỏi bằng tiếng Việt bình thường.</li>
 </ul>
 

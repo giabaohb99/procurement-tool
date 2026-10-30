@@ -25,13 +25,13 @@ CONTENT = f"""<h2>AI riêng của bạn làm được gì trong ERP: công cụ 
 <ul>
 <li><strong>Công cụ</strong>: hàm AI gọi vào ERP để lấy dữ liệu hoặc soạn phiếu. Có sẵn trong hệ thống, quản trị bật / tắt theo nhóm.</li>
 <li><strong>Skill</strong>: cẩm nang công ty viết cho AI (quy trình, mẫu báo cáo, nguyên tắc so giá). Quản trị và trưởng phòng soạn
-trong phân hệ Kho skill AI, gán ai được đọc.</li>
+trong phân hệ AI (nhóm Kho skill ▸ Bộ skill), gán ai được đọc.</li>
 </ul>
 <p><strong>Mọi công cụ chạy dưới quyền của chính bạn.</strong> AI chỉ thấy phiếu bạn được xem trên web, báo cáo bạn được giao;
 thiếu quyền thì AI báo bị từ chối và nói thiếu quyền gì. Nhóm đang bật không có nghĩa bạn thấy tất cả.</p>
 
 <h2>Công cụ theo nhóm</h2>
-<p>Quản trị bật / tắt từng nhóm ở <strong>Kho skill AI ▸ Cấu hình</strong>. Nhóm tắt thì công cụ không hiện trong ứng dụng; AI cố
+<p>Quản trị bật / tắt từng nhóm ở phân hệ AI ▸ <strong>Cấu hình ▸ Cấu hình chung</strong>. Nhóm tắt thì công cụ không hiện trong ứng dụng; AI cố
 gọi thì bị từ chối kèm tên nhóm. Nhóm cần dùng mà đang tắt: nhờ quản trị bật.</p>
 <table>
 <thead><tr><th>Nhóm</th><th>AI làm được</th><th>Trên ERP hiện nay</th></tr></thead>

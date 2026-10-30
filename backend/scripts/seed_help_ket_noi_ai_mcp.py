@@ -238,9 +238,19 @@ TREE = {
         {
             "title": QUAN_TRI,
             "icon": "settings",
-            "summary": "Bộ skill, soạn và xuất bản, mức bảo mật, gán ai được đọc, phát khóa cho nhân sự, ứng dụng AI đã kết nối, bộ Cẩm nang hệ thống, cấu hình",
+            "summary": "Phân hệ AI gom Trợ lý AI và Kho skill AI: bộ skill, soạn và xuất bản, mức bảo mật, gán ai được đọc, màn Kết nối (khóa và kết nối của nhân sự), Nâng cao (ứng dụng AI đã đăng ký), Nhật ký sử dụng, Cẩm nang hệ thống, cấu hình",
             "content": f"""<h2>Dành cho quản trị — Kho skill AI</h2>
-<p>Phân hệ <strong>Kho skill AI</strong> đứng cạnh Trợ lý AI trên màn chọn phân hệ, chỉ hiện với người có quyền <em>Kho skill AI</em> hoặc được giao <em>quản lý khóa kết nối AI của nhân sự</em>. Menu: <strong>Tổng quan · Bộ skill · Khóa nhân sự · Ứng dụng AI đã kết nối · Nhật ký sử dụng · Giới thiệu · Cấu hình</strong>.</p>
+<p>Từ 30/10/2026, Trợ lý AI và Kho skill AI gom thành <strong>một phân hệ AI</strong> trên màn chọn phân hệ. Menu bên trái xếp theo nhóm; mỗi mục chỉ hiện với người có quyền của mục đó, đường dẫn cũ vẫn mở được nên link trong thông báo và bài hướng dẫn không gãy:</p>
+<table>
+<thead><tr><th>Mục</th><th>Dùng để</th><th>Ai thấy</th></tr></thead>
+<tbody>
+<tr><td><strong>Trợ lý AI</strong></td><td>Khung chat trợ lý nội bộ.</td><td>Người có quyền Trợ lý AI.</td></tr>
+<tr><td><strong>Kết nối</strong> (trước là <em>Khóa nhân sự</em>)</td><td>Khóa và kết nối AI của nhân sự: phát hộ, thu hồi, xem ai đang nối bằng gì.</td><td>Người được giao quản lý khóa kết nối AI.</td></tr>
+<tr><td>Nhóm <strong>Kho skill</strong> ▸ <strong>Bộ skill</strong></td><td>Soạn, xuất bản, gán ai được đọc.</td><td>Người có quyền Kho skill AI.</td></tr>
+<tr><td>Nhóm <strong>Giám sát</strong> ▸ <strong>Tổng quan</strong> · <strong>Nhật ký sử dụng</strong> · <strong>Bot Telegram</strong> (gập sẵn: <em>Nhóm chat</em>, <em>Người dùng bot</em>)</td><td>Số liệu, lượt gọi của mọi người, nhóm chat và người dùng bot.</td><td>Người quản lý bot AI; Nhóm chat thì ai vào được Trợ lý AI cũng xem nhóm mình là thành viên.</td></tr>
+<tr><td>Nhóm <strong>Cấu hình</strong> ▸ <strong>Cấu hình chung</strong> · <strong>Nâng cao</strong></td><td>Nhóm công cụ qua MCP, giới hạn, câu dặn thêm; Nâng cao là nơi dọn các ứng dụng AI đã đăng ký.</td><td>Người quản lý bot AI.</td></tr>
+</tbody>
+</table>
 
 <h2>Ba khái niệm</h2>
 <table>
@@ -292,18 +302,18 @@ TREE = {
 </ol>
 <p>Thu hồi một dòng quyền có hiệu lực trong khoảng một phút (bộ đệm quyền).</p>
 
-<h2>Khóa nhân sự: phát hộ và thu hồi</h2>
-<p>Menu <strong>Khóa nhân sự</strong> liệt kê mọi khóa kết nối trong phạm vi bạn quản lý: người, phòng, tên khóa, mức, hạn, lần dùng cuối, trạng thái (<em>Chờ nhận / Đang dùng / Hết hạn / Đã thu hồi</em>). Lọc theo phòng ban và trạng thái.</p>
+<h2>Kết nối: khóa và kết nối AI của nhân sự</h2>
+<p>Menu <strong>Kết nối</strong> liệt kê mọi khóa và kết nối trong phạm vi bạn quản lý, mỗi dòng ghi: <strong>người</strong> (tên, mã nhân viên, email), <strong>phòng</strong>, <strong>cách nối</strong> (<em>khóa riêng</em> dán tay hay <em>OAuth</em> qua đăng nhập ERP), <strong>ứng dụng</strong> (tên tự khai và nơi quay về), tên khóa, mức, hạn, <strong>dùng lần cuối</strong>, trạng thái (<em>Chờ nhận / Đang dùng / Hết hạn / Đã thu hồi</em>). Ô tìm nhận tên, email hoặc mã nhân viên; lọc thêm theo phòng ban và trạng thái. Muốn biết <em>ai đang nối bằng ChatGPT, ai bằng Claude</em> thì nhìn cột cách nối và ứng dụng.</p>
 <ul>
 <li><strong>Phát khóa</strong>: cho một hay nhiều người (chọn theo danh sách nhân sự) hoặc <strong>cả phòng</strong>, tối đa <strong>50 người một lượt</strong>, chọn hạn 7 / 30 / 90 / 180 / 365 ngày. Khóa phát hộ <strong>luôn là Chỉ đọc</strong>; khóa Được ghi chỉ người dùng tự tạo. Người nhận có <strong>chuông</strong>, vào Trang cá nhân bấm <strong>Nhận khóa</strong> mới thấy khóa — bạn không thấy khóa của họ. Có người ngoài phạm vi thì <strong>từ chối cả lượt</strong>; người đã đủ 5 khóa, chưa có tài khoản hoặc tài khoản đã khóa thì bỏ qua kèm lý do.</li>
 <li><strong>Thu hồi</strong>: tick chọn rồi bấm <strong>Thu hồi</strong>; hộp xác nhận chỉ đếm khóa còn hiệu lực. Thu hồi được từng khóa, mọi khóa của một người, hoặc cả một lượt phát. Dòng thu hồi giữ lại để đối soát; AI gọi bằng khóa đó vẫn vào nhật ký với trạng thái <em>Bị từ chối</em>.</li>
 </ul>
 
-<h2>Ứng dụng AI đã kết nối (người quản lý trợ lý AI)</h2>
-<p>Khi nhân sự nối ChatGPT, claude.ai hay Claude Desktop bằng cách {ref(OAUTH, "đăng nhập ERP")}, ứng dụng đó <strong>tự đăng ký</strong> với cổng. Màn này liệt kê mọi ứng dụng đã đăng ký: <strong>tên tự khai</strong> kèm sáu ký tự cuối mã ứng dụng, <strong>nơi quay về</strong> (tên miền), số <strong>kết nối đang sống</strong>, dùng lần cuối, ngày đăng ký; hai cột IP đăng ký và cách xác thực ẩn mặc định (menu Cột).</p>
+<h2>Nâng cao: ứng dụng AI đã đăng ký (người quản lý trợ lý AI)</h2>
+<p>Khi nhân sự nối ChatGPT, claude.ai hay Claude Desktop bằng cách {ref(OAUTH, "đăng nhập ERP")}, ứng dụng đó <strong>tự đăng ký</strong> với cổng. Mục <strong>Cấu hình ▸ Nâng cao</strong> liệt kê mọi ứng dụng đã đăng ký: <strong>tên tự khai</strong> kèm sáu ký tự cuối mã ứng dụng, <strong>nơi quay về</strong> (tên miền), số <strong>kết nối đang sống</strong>, <strong>người đang dùng</strong>, dùng lần cuối, ngày đăng ký; hai cột IP đăng ký và cách xác thực ẩn mặc định (menu Cột). Có ô tìm và ô lọc trạng thái: <em>Còn kết nối</em> · <em>Không còn kết nối</em> · <em>Host lạ</em>.</p>
 <ul>
 <li>⚠️ <strong>Tên là do ứng dụng tự khai, đừng tin.</strong> Nhìn cột nơi quay về: không thuộc ứng dụng AI quen (chatgpt.com, openai.com, claude.ai, anthropic.com, claude.com, máy cục bộ) thì ô tô đỏ kèm nhãn <strong>Host lạ</strong>, dòng tóm tắt trên bảng đếm số host lạ. Host lạ mà có kết nối đang sống nghĩa là đã có người bấm Cho phép cho một ứng dụng không rõ — hỏi người đó, rồi xóa.</li>
-<li><strong>Xóa ứng dụng</strong> (cần quyền ghi quản lý bot AI): hộp xác nhận nêu tên, nơi quay về và số kết nối sẽ bị cắt. <strong>Xóa là cắt mọi kết nối của ứng dụng này ngay</strong>, cả mã làm mới; người đang dùng phải bấm Cho phép lại từ đầu nếu muốn nối tiếp. Dòng khóa tương ứng ở Khóa nhân sự chuyển sang Đã thu hồi.</li>
+<li><strong>Xóa ứng dụng</strong> (cần quyền ghi quản lý bot AI): hộp xác nhận nêu tên, nơi quay về và số kết nối sẽ bị cắt. <strong>Xóa là cắt mọi kết nối của ứng dụng này ngay</strong>, cả mã làm mới; người đang dùng phải bấm Cho phép lại từ đầu nếu muốn nối tiếp. Dòng tương ứng ở màn Kết nối chuyển sang Đã thu hồi.</li>
 <li>Ứng dụng quá 7 ngày không có kết nối sống và không dùng thì hệ tự dọn; màn này chủ yếu để xem và xóa tay ứng dụng lạ.</li>
 </ul>
 
@@ -315,7 +325,7 @@ TREE = {
 <li>Bộ được gán sẵn cho mọi pháp nhân có lúc gieo; <strong>pháp nhân tạo sau</strong> phải vào bộ ▸ tab Ai được đọc gán tay.</li>
 </ul>
 
-<h2>Cấu hình (người quản lý trợ lý AI)</h2>
+<h2>Cấu hình chung (người quản lý trợ lý AI)</h2>
 <ul>
 <li><strong>Nhóm công cụ qua MCP</strong>: bật / tắt từng nhóm (mỗi nhóm ghi số và tên công cụ). Mặc định bật: Việc của tôi, Nghỉ phép, Danh bạ, Báo cáo, Kho skill; các nhóm Thu mua, Công nợ và thanh toán, Văn thư, Soạn việc, Tra cứu thị trường, Lịch và Drive, Sổ nhớ mặc định tắt. Tắt nhóm là công cụ biến khỏi mọi ứng dụng AI đã nối.</li>
 <li><strong>Giới hạn</strong>: lượt mỗi phút theo khóa (mặc định 120) và theo IP (600), số khóa sai mỗi phút theo IP (30), số dòng dữ liệu mỗi phút (3.000), số ngày giữ nhật ký (180). Ô trống không được hiểu là 0; ngoài dải thì màn chặn lưu.</li>
@@ -327,8 +337,8 @@ TREE = {
 <thead><tr><th>Khóa quyền</th><th>Mở gì</th></tr></thead>
 <tbody>
 <tr><td><code>ai_skill</code> (Kho skill AI)</td><td>Đọc · tạo · ghi · xóa bộ và skill; <strong>duyệt</strong> = xuất bản. Phạm vi theo pháp nhân và <strong>phòng chủ quản</strong> của bộ: trưởng phòng chỉ soạn bộ của phòng mình.</td></tr>
-<tr><td><code>ai_mcp_key_admin</code></td><td>Màn Khóa nhân sự: đọc · phát hộ · thu hồi. Phạm vi theo hồ sơ của <strong>chủ khóa</strong>.</td></tr>
-<tr><td>Quản lý bot AI (<code>agent_group</code>)</td><td>Tổng quan, Nhật ký sử dụng của người khác, Ứng dụng AI đã kết nối, Cấu hình.</td></tr>
+<tr><td><code>ai_mcp_key_admin</code></td><td>Màn Kết nối: đọc · phát hộ · thu hồi. Phạm vi theo hồ sơ của <strong>chủ khóa</strong>.</td></tr>
+<tr><td>Quản lý bot AI (<code>agent_group</code>)</td><td>Tổng quan, Nhật ký sử dụng của người khác, Bot Telegram, Cấu hình chung, Nâng cao.</td></tr>
 </tbody>
 </table>
 <p>Hai vai trò mẫu: <strong>Quản trị kho skill AI</strong> (toàn công ty) và <strong>Biên tập skill AI phòng ban</strong> (phòng mình). Hệ đang chạy không tự nhận vai trò mới — vào <strong>Nhân sự ▸ Phân quyền tài khoản</strong> tick tay. Màn <strong>Tổng quan</strong>: số bộ và skill, người đã nối AI, lượt gọi 7 ngày so với 7 ngày trước, số từ chối và lỗi, biểu đồ theo ngày, bảng xếp hạng công cụ, người, skill, khóa sắp hết hạn.</p>
@@ -353,7 +363,7 @@ TREE = {
 <thead><tr><th>Ai</th><th>Xem ở</th><th>Thấy gì</th></tr></thead>
 <tbody>
 <tr><td>Mọi người</td><td>Trang cá nhân ▸ Kết nối AI riêng ▸ khối <strong>20 lượt AI tra cứu gần nhất</strong></td><td>Lượt của chính mình: lúc nào, ứng dụng nào, công cụ gì, thành công hay bị từ chối, lý do.</td></tr>
-<tr><td>Quản trị</td><td>Kho skill AI ▸ <strong>Nhật ký sử dụng</strong></td><td>Mọi lượt trong phạm vi: người, phòng, khóa, ứng dụng, công cụ, skill được đọc, trạng thái, thời gian xử lý, IP. Lọc theo ngày, công cụ, trạng thái; <strong>Xuất CSV (trang hiện tại)</strong>.</td></tr>
+<tr><td>Quản trị</td><td>Phân hệ AI ▸ Giám sát ▸ <strong>Nhật ký sử dụng</strong></td><td>Mọi lượt trong phạm vi: người, phòng, khóa, ứng dụng, công cụ, skill được đọc, trạng thái, thời gian xử lý, IP, và cột <strong>Chứng từ</strong> (mã phiếu của lượt duyệt hay lập phiếu; lượt chỉ tra cứu thì hiện gạch ngang). Ô tìm nhận <strong>tên người hoặc tên công cụ</strong>; lọc theo ngày, công cụ, trạng thái; <strong>Xuất CSV (trang hiện tại)</strong>.</td></tr>
 </tbody>
 </table>
 <p>Mỗi lượt AI gọi vào ERP là một dòng, <strong>kể cả lượt bị từ chối</strong> và lượt khóa sai (lượt sai hàng loạt chỉ ghi 10 dòng đầu mỗi phút). Nhật ký giữ 180 ngày rồi gom thành số đếm theo ngày. Ba trạng thái: <strong>Thành công · Bị từ chối · Lỗi</strong>.</p>
