@@ -591,6 +591,10 @@ export const queryKeys = {
     /** Bộ chọn cho các ô lọc (nguồn / đối tượng / cờ cảnh báo) — backend là nguồn sự thật. */
     syncLogMeta: () => ['system', 'sync-logs', 'meta'] as const,
     syncLogDetail: (id: number) => ['system', 'sync-logs', 'detail', id] as const,
+    /** Việc chạy ngầm (bao-CR-703): danh sách việc nền + lịch sử chạy của một việc — chung nhánh `jobs`. */
+    jobs: (params?: Record<string, unknown>) => ['system', 'jobs', params ?? {}] as const,
+    jobRuns: (code: string, params?: Record<string, unknown>) =>
+      ['system', 'jobs', 'runs', code, params ?? {}] as const,
     /** Hộp thư gửi danh nghĩa địa chỉ khác (26/08/2026). */
     mailboxes: () => ['system', 'mailboxes'] as const,
     /** Mẫu email thông báo theo bước (Đặt xe) — sửa được trong Cấu hình. */

@@ -448,6 +448,8 @@ export const appRoutes = {
      * bằng đường này.
      */
     syncLogs: '/system/sync-logs',
+    /** bao-CR-703: việc nền theo lịch (Celery beat) — chạy lúc nào, bao lâu, thành công hay lỗi. */
+    backgroundJobs: '/system/background-jobs',
     /** Việc của bot Telegram Đậu Đậu (ai-CR-036) — chỉ đọc, thao tác vẫn qua Telegram. */
     agentTasks: '/system/agent-tasks',
     agentTask: (id: number | string) => `/system/agent-tasks/${id}`,

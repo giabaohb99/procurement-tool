@@ -1,5 +1,6 @@
 import {
   AtSign,
+  CalendarClock,
   Database,
   FileDown,
   FileUp,
@@ -122,6 +123,14 @@ export const SYSTEM_DASHBOARD_SHORTCUTS: SystemShortcut[] = [
     path: appRoutes.system.syncLogs,
     icon: RefreshCcwDot,
     entity: 'sync_log',
+  },
+  {
+    //  bao-CR-703 — cùng khóa với mục menu: `setting.read`, không `manage` (màn chỉ đọc).
+    label: 'Việc chạy ngầm',
+    description: 'Việc hệ thống tự chạy theo lịch: lúc nào, bao lâu, thành công hay lỗi, để làm gì.',
+    path: appRoutes.system.backgroundJobs,
+    icon: CalendarClock,
+    entity: 'setting',
   },
   {
     //  duoc-CR-396: màn này nay THUỘC phân hệ Quản trị, không còn là lối tắt
