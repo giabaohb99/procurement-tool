@@ -144,7 +144,7 @@ def get_task(task_id: int, user=Depends(require(ENTITY, "read")), db: Session = 
 
 # ---------------------------------------------------------------------------
 # Liên kết Telegram của CHÍNH MÌNH (ai-CR-038) — chỉ đòi đăng nhập, không cần khóa `agent_task`:
-# ai cũng tự nối được Telegram của mình, như tự đá thiết bị lạ ở «Thiết bị của tôi».
+# ai cũng tự nối được Telegram của mình, như tự đá thiết bị lạ ở "Thiết bị của tôi".
 # ---------------------------------------------------------------------------
 def _serialize_link(link) -> dict:
     return {"id": link.id, "chat": chat_link.mask_chat(link.chat_id), "tg_name": link.tg_name,
@@ -184,8 +184,8 @@ def create_link_code(user=Depends(get_current_user), db: Session = Depends(get_d
     if not settings.AGENT_LINK_ENABLED:
         raise HTTPException(400, "Liên kết Telegram đang tắt")
     if not user_has_permission(db, user, "assistant", "read"):
-        #  ai-CR-131: dùng bot cần quyền «Trợ lý AI» như trên web.
-        raise HTTPException(403, "Tài khoản chưa được cấp quyền «Trợ lý AI» nên chưa nối được bot. Nhờ quản trị cấp quyền.")
+        #  ai-CR-131: dùng bot cần quyền "Trợ lý AI" như trên web.
+        raise HTTPException(403, "Tài khoản chưa được cấp quyền \"Trợ lý AI\" nên chưa nối được bot. Nhờ quản trị cấp quyền.")
     code, expires = chat_link.issue_code(db, user.id)
     bot = telegram.get_bot_username()
     return success({"code": code, "expires_at": _iso(expires),
@@ -209,7 +209,7 @@ class AiKeyIn(BaseModel):
     key: str
     provider: str = "gemini"
     model: Str80 = ""
-    base_url: Str200 = ""     # ai-CR-108: chỉ hãng «tùy chỉnh»
+    base_url: Str200 = ""     # ai-CR-108: chỉ hãng "tùy chỉnh"
     priority: int = 0
     daily_cap: int = 0
 
@@ -371,8 +371,8 @@ def reveal_my_mcp_key(key_id: int, request: Request, user=Depends(get_current_us
 @router.patch("/mcp-keys/{key_id}")
 def toggle_my_mcp_key(key_id: int, body: McpKeyPatch, request: Request, user=Depends(get_current_user),
                       db: Session = Depends(get_db)):
-    """ai-CR-221: bật / tắt tạm khóa của chính mình (cả kết nối OAuth). Tắt thì cổng MCP từ chối với lý do «Khóa đang
-    tắt»; bật lại là chạy ngay. Khác thu hồi (DELETE) — thu hồi là mất hẳn."""
+    """ai-CR-221: bật / tắt tạm khóa của chính mình (cả kết nối OAuth). Tắt thì cổng MCP từ chối với lý do "Khóa đang
+    tắt"; bật lại là chạy ngay. Khác thu hồi (DELETE) — thu hồi là mất hẳn."""
     from . import mcp_log
 
     try:
@@ -417,7 +417,7 @@ def mcp_setup(client: str = Query("", max_length=30), user=Depends(get_current_u
 
 @router.get("/mcp-keys/{key_id}/last-call")
 def my_mcp_key_last_call(key_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    """ai-CR-213 (G8 bước 3 «Kiểm tra kết nối»): lượt gọi gần nhất của MỘT khóa của chính mình."""
+    """ai-CR-213 (G8 bước 3 "Kiểm tra kết nối"): lượt gọi gần nhất của MỘT khóa của chính mình."""
     from sqlalchemy import select as _select
 
     from . import mcp_log
@@ -604,7 +604,7 @@ class KeyRevokeIn(BaseModel):
 @router.post("/mcp-key-admin/revoke")
 def key_admin_revoke(body: KeyRevokeIn, user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Thu hồi: các khóa chỉ định, mọi khóa của một người, hoặc cả một lượt phát. Khóa của người ngoài phạm vi → 403 cả
-    lệnh (không thu hồi lẻ một phần). Dòng giữ lại với trạng thái «Đã thu hồi»."""
+    lệnh (không thu hồi lẻ một phần). Dòng giữ lại với trạng thái "Đã thu hồi"."""
     from . import key_admin_ops
 
     if not (body.key_ids or body.user_id or body.batch_id):
@@ -651,7 +651,7 @@ def list_mcp_calls(date_from: date | None = None, date_to: date | None = None, u
                                      status=status, d_from=date_from, d_to=date_to,
                                      method="tools/call" if kind == "tools" else "")
     names = _user_labels(db, [r.user_id for r in rows if r.user_id])
-    #  Lượt khóa sai không có chủ (user_id = 0) — nhãn nói thẳng thay vì «#0».
+    #  Lượt khóa sai không có chủ (user_id = 0) — nhãn nói thẳng thay vì "#0".
     items = [{**mcp_log.serialize(r), "user_label": names.get(r.user_id, "") if r.user_id else "(khóa sai)"}
              for r in rows]
     return success({"total": total, "page": page, "size": size, "has_more": page * size < total, "items": items,
@@ -720,7 +720,7 @@ def google_disconnect(user=Depends(get_current_user), db: Session = Depends(get_
 
 
 # ---------------------------------------------------------------------------
-# «Bot đang nhớ gì về tôi» (ai-CR-138, phase 13.4) — CHỈ chủ sổ: mọi đường lấy `user.id` của phiên, không nhận user_id
+# "Bot đang nhớ gì về tôi" (ai-CR-138, phase 13.4) — CHỈ chủ sổ: mọi đường lấy `user.id` của phiên, không nhận user_id
 # từ ngoài, không có biến thể cho quản trị. Chỉ đòi đăng nhập: xem / xóa dữ liệu về chính mình không cần quyền nào thêm.
 # ---------------------------------------------------------------------------
 class MemoryLineIn(BaseModel):
@@ -992,7 +992,7 @@ def stats(days: int = Query(30, ge=1, le=365), user=Depends(require(ENTITY, "rea
 
 
 # ---------------------------------------------------------------------------
-# Màn «Nhóm chat» của Trợ lý AI trên ERP v2 (ai-CR-123)
+# Màn "Nhóm chat" của Trợ lý AI trên ERP v2 (ai-CR-123)
 #
 # Hai lớp người xem (đại ca chốt 08/10):
 #   - Ai cũng xem được nhóm MÌNH là thành viên (cùng luật bot: `groups.can_read`) — không cần khóa quyền.
@@ -1250,7 +1250,7 @@ def zalo_refresh_groups(user=Depends(require(GROUP_ENTITY, "write"))):
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-131: «Người dùng bot» — ai đang nối Telegram / Zalo với tài khoản ERP nào, còn quyền dùng bot không
+# ai-CR-131: "Người dùng bot" — ai đang nối Telegram / Zalo với tài khoản ERP nào, còn quyền dùng bot không
 # ---------------------------------------------------------------------------
 @router.get("/links/all")
 def list_all_links(user=Depends(require(GROUP_ENTITY, "read")), db: Session = Depends(get_db)):

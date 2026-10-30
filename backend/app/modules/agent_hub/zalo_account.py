@@ -1,4 +1,4 @@
-"""Zalo hướng B (ai-CR-122): MỘT tài khoản Zalo của công ty làm «bot» — đại ca chốt 08/10/2026.
+"""Zalo hướng B (ai-CR-122): MỘT tài khoản Zalo của công ty làm "bot" — đại ca chốt 08/10/2026.
 
 Tài khoản thường (không phải bot chính thức) nên thấy TRỌN tin trong mọi nhóm nó có mặt. Phiên đăng nhập do tiến trình
 Node `zalo-listener` (thư viện zca-js) giữ; tệp này chỉ nói chuyện với tiến trình đó qua HTTP nội bộ có chữ ký
@@ -9,7 +9,7 @@ Node `zalo-listener` (thư viện zca-js) giữ; tệp này chỉ nói chuyện 
     `status` (đã đăng nhập / phiên văng).
   - Gửi: `POST /send {thread_id, thread_type: user|group, text, file?}` — tiến trình Node tự giãn nhịp gửi (giảm rủi ro
     Zalo khóa số). Tin cá nhân không có HTML: lõi soạn HTML kiểu Telegram, ở đây đổi ra chữ trơn.
-  - Bot KHÔNG nói gì trong nhóm (đại ca chốt «chỉ trả lời riêng như hiện tại»): tin nhóm chỉ ghi lặng vào kho nhóm.
+  - Bot KHÔNG nói gì trong nhóm (đại ca chốt "chỉ trả lời riêng như hiện tại"): tin nhóm chỉ ghi lặng vào kho nhóm.
 
 Quyền đọc một nhóm Zalo: tài khoản Zalo đã đăng nhập ERP (nhắn `/dangnhap <mã>` riêng cho tài khoản công ty) có tên
 trong danh sách thành viên nhóm mà tiến trình Node báo về.
@@ -223,7 +223,7 @@ _LINK = re.compile(r'<a\s+[^>]*href="([^"]+)"[^>]*>(.*?)</a>', re.S | re.I)
 
 
 def to_plain(text: str) -> str:
-    """HTML kiểu Telegram → chữ trơn cho tin Zalo cá nhân: liên kết thành «chữ (địa chỉ)», bỏ thẻ, giữ xuống dòng."""
+    """HTML kiểu Telegram → chữ trơn cho tin Zalo cá nhân: liên kết thành "chữ (địa chỉ)", bỏ thẻ, giữ xuống dòng."""
 
     def _link(m: re.Match) -> str:
         url, label = m.group(1), _TAG.sub("", m.group(2)).strip()
@@ -242,7 +242,8 @@ def _button_lines(buttons: list[tuple[str, str]] | None) -> str:
         return ""
     lines = []
     for label, data in buttons:
-        lines.append(f"- {label}: {data}" if str(data).startswith(("https://", "http://")) else f"- «{label}»")
+        label = html.escape(label)
+        lines.append(f"- {label}: {html.escape(str(data))}" if str(data).startswith(("https://", "http://")) else f"- <b>{label}</b>")
     return "\n\nNhắn lại một trong các lựa chọn:\n" + "\n".join(lines)
 
 
@@ -280,12 +281,12 @@ def send(chat_id: str, text: str, *, buttons: list[tuple[str, str]] | None = Non
     """Gửi chữ tới một chat Zalo của tài khoản công ty. Trả số dương khi gửi được, lỗi thì 0.
 
     Chặn cứng tin vào NHÓM: đại ca chốt bot chỉ trả lời riêng — lỡ một nhánh nào đó trong lõi định trả lời vào chat nhóm
-    thì dừng ở đây. ai-CR-130: giữ chữ đậm / nghiêng (kiểu chữ Zalo), hủy tin «em nhận tin rồi» đang hẹn."""
+    thì dừng ở đây. ai-CR-130: giữ chữ đậm / nghiêng (kiểu chữ Zalo), hủy tin "em nhận tin rồi" đang hẹn."""
     if str(chat_id).startswith(channels.ZALO_GROUP_PREFIX):
         log.warning("agent_hub: chặn một tin định gửi vào nhóm Zalo %s (bot chỉ trả lời riêng)", chat_id)
         return 0
     _settle_ack(chat_id)
-    plain, spans = to_styled((text or "") + html.escape(_button_lines(buttons)))
+    plain, spans = to_styled((text or "") + _button_lines(buttons))
     return _post_parts(chat_id, split_styled(plain, spans))
 
 
@@ -346,10 +347,10 @@ def logout() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-130: chữ đậm / nghiêng trên Zalo cá nhân + báo «đang soạn» / «em nhận tin rồi» khi trả lời lâu
+# ai-CR-130: chữ đậm / nghiêng trên Zalo cá nhân + báo "đang soạn" / "em nhận tin rồi" khi trả lời lâu
 # ---------------------------------------------------------------------------
 #  Zalo cá nhân không nhận HTML; zca-js gửi kiểu chữ bằng danh sách {start, len, st} (vị trí tính theo đơn vị UTF-16 như
-#  chuỗi JavaScript). Đại ca 08/10: câu trả lời giá vàng «không có in đậm nhạt hay chỉ mục» trên Zalo.
+#  chuỗi JavaScript). Đại ca 08/10: câu trả lời giá vàng "không có in đậm nhạt hay chỉ mục" trên Zalo.
 _STYLE_TAGS = {"b": "b", "strong": "b", "i": "i", "em": "i", "u": "u", "ins": "u", "s": "s", "strike": "s", "del": "s"}
 _ANY_TAG = re.compile(r"<(/?)([a-zA-Z0-9-]+)(?:\s[^>]*)?>")
 STYLE_MAX = 200
@@ -459,7 +460,7 @@ def split_styled(text: str, spans: list[tuple[int, int, str]], limit: int = MAX_
     return out
 
 
-#  «Đang soạn» + tin «em nhận tin rồi» khi câu trả lời lâu (đại ca 08/10: «nó phản hồi hơi lâu… bot nhắn là em nhận tin»).
+#  "Đang soạn" + tin "em nhận tin rồi" khi câu trả lời lâu (đại ca 08/10: "nó phản hồi hơi lâu… bot nhắn là em nhận tin").
 ACK_AFTER_SEC = 8
 ACK_QUIET_SEC = 180         # đã báo nhận rồi thì trong chừng này giây không báo lần hai cho cùng một lượt
 ACK_TEXT = "Em nhận tin rồi, đang tìm câu trả lời, anh/chị đợi em chút nhé."
@@ -469,7 +470,7 @@ _ACKED_AT: dict[str, float] = {}
 
 
 def send_typing(chat_id: str) -> None:
-    """Bật «đang soạn tin» trên Zalo và hẹn tin báo nhận sau ACK_AFTER_SEC giây nếu tới lúc đó chưa trả lời. Chỉ chat riêng."""
+    """Bật "đang soạn tin" trên Zalo và hẹn tin báo nhận sau ACK_AFTER_SEC giây nếu tới lúc đó chưa trả lời. Chỉ chat riêng."""
     if not str(chat_id).startswith(channels.ZALO_USER_PREFIX):
         return
     tid, kind = _target(chat_id)

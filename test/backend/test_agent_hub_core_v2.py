@@ -84,7 +84,7 @@ def test_model_nhin_thay_ngay_nguoi_va_dang_do_lich_su_du(db, chat, monkeypatch)
     sysm = prov.seen["system"]
     assert f"{datetime.now():%d/%m/%Y} (hôm nay)" in sysm                  # hôm 14/10 model ghi hạn năm 2025 vì thiếu ngày
     assert "LỊCH" in sysm and "(mai)" in sysm                              # và tính sai thứ sáu = 17/10
-    assert "Trần Minh Được" in sysm and "KHÔNG gọi «đại ca»" in sysm       # biết đang nói với ai
+    assert "Trần Minh Được" in sysm and "KHÔNG gọi **đại ca**" in sysm       # biết đang nói với ai
     assert "KHÔNG dùng emoji" in sysm
     #  ai-CR-202: phần đổi mỗi lượt (giờ, ĐANG DỞ) nằm ở đầu tin mới nhất — system giữ nguyên để trạm đọc cache.
     last = prov.seen["msgs"][-1].content

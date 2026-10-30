@@ -5,8 +5,8 @@ phụ trách ở phân hệ Dự án: **trước hạn một ngày** · **sáng 
 Một tin gộp mỗi sáng (mặc định 08:00 giờ VN, trong cửa sổ SEND_WINDOW để máy khởi động muộn vẫn gửi), mỗi mốc của mỗi
 việc chỉ nhắc một lần — đánh dấu bằng mã `[vh:<id việc>:<mốc>]` ghi vào SỔ (không gửi lên Telegram), cùng cách nhắc họp.
 
-Mặc định BẬT cho ai đã đăng nhập bot và chưa tắt chuông; tắt / đổi giờ bằng câu nhắn («tắt nhắc hạn việc», «nhắc hạn
-việc lúc 7h»). Trạng thái ghi ở `tab_agent_brief_sub` với `kind = Kind.WORK_DUE` (dùng chung bảng bản tin, không thêm
+Mặc định BẬT cho ai đã đăng nhập bot và chưa tắt chuông; tắt / đổi giờ bằng câu nhắn ("tắt nhắc hạn việc", "nhắc hạn
+việc lúc 7h"). Trạng thái ghi ở `tab_agent_brief_sub` với `kind = Kind.WORK_DUE` (dùng chung bảng bản tin, không thêm
 bảng). Dữ liệu việc lấy qua `erp.run_tool(my_work_tasks)` dưới quyền của chính người đó — dịch vụ AI tách (phase 11)
 không đọc thẳng bảng Dự án. Không có lượt model nào.
 """
@@ -38,7 +38,7 @@ class Milestone(IntEnum):
     TODAY = 2         # hạn hôm nay
     OVERDUE = 3       # đã quá hạn
     #  bao-CR-616 (phase 24.1): LỊCH TRÌNH hôm nay — việc đã bắt đầu, chưa tới hạn (hạn xa hơn ngày mai hoặc chưa
-    #  đặt hạn). Không có dấu «đã nhắc»: ngày nào còn đang làm thì bản tin ngày đó vẫn kể.
+    #  đặt hạn). Không có dấu "đã nhắc": ngày nào còn đang làm thì bản tin ngày đó vẫn kể.
     ACTIVE = 4
 
 
@@ -86,10 +86,10 @@ def set_state(db: Session, user_id: int, *, enabled: bool | None = None, hour: i
 def state_text(db: Session, user_id: int) -> str:
     st = state(db, user_id)
     if not st["enabled"]:
-        return "Nhắc hạn việc Dự án: <b>đang tắt</b>. Bật lại: «bật nhắc hạn việc»."
+        return "Nhắc hạn việc Dự án: <b>đang tắt</b>. Bật lại: **bật nhắc hạn việc**."
     return (f"Nhắc hạn việc Dự án: <b>đang bật</b>, mỗi sáng {st['hour']:02d}:{st['minute']:02d} — việc anh/chị phụ "
             "trách sắp tới hạn (trước 1 ngày), tới hạn hôm nay và vừa quá hạn; mỗi mốc nhắc một lần. "
-            "Nhắn «tắt nhắc hạn việc» · «nhắc hạn việc lúc 7h» · «nhắc hạn việc hôm nay».")
+            "Nhắn **tắt nhắc hạn việc** · **nhắc hạn việc lúc 7h** · **nhắc hạn việc hôm nay**.")
 
 
 # ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ def compose(groups: dict[Milestone, list[dict]], today: date) -> tuple[str, str]
     if not lines:
         return "", ""
     text = "<b>Việc Dự án của anh/chị</b>\n" + "\n".join(lines).rstrip() + \
-        "\n<i>Em nhắc mỗi mốc một lần. Tắt: «tắt nhắc hạn việc».</i>"
+        "\n<i>Em nhắc mỗi mốc một lần. Tắt: **tắt nhắc hạn việc**.</i>"
     return text, " ".join(marks)
 
 
@@ -216,7 +216,7 @@ def items_for(db: Session, user, today: date) -> list[dict]:
 
 
 def send_for_user(db: Session, user_id: int, chat_id: str, *, now: datetime | None = None, force: bool = False) -> bool:
-    """Gộp và gửi tin nhắc hạn cho một người. `force` (lệnh «nhắc hạn việc hôm nay») bỏ qua dấu đã nhắc; trả True nếu gửi."""
+    """Gộp và gửi tin nhắc hạn cho một người. `force` (lệnh "nhắc hạn việc hôm nay") bỏ qua dấu đã nhắc; trả True nếu gửi."""
     from . import erp
 
     now = now or now_utc()
@@ -273,7 +273,7 @@ _SHOW = re.compile(r"^(?:xem\s+)?nhac\s+han(?:\s+viec)?(?:\s+du\s+an)?(?:\s+cua\
 
 
 def parse_command(text: str) -> dict | None:
-    """«tắt nhắc hạn việc» · «bật nhắc hạn việc» · «nhắc hạn việc lúc 7h» · «nhắc hạn việc hôm nay» · «nhắc hạn việc»."""
+    """"tắt nhắc hạn việc" · "bật nhắc hạn việc" · "nhắc hạn việc lúc 7h" · "nhắc hạn việc hôm nay" · "nhắc hạn việc"."""
     from app.modules.assistant.glossary import fold
 
     f = " ".join(fold((text or "").strip().rstrip(".!?")).split())

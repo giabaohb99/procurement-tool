@@ -1,14 +1,14 @@
-"""BẢN TIN bật / tắt ngay trong chat (ai-CR-140 — đại ca 09/10/2026: «cần bản tin hằng ngày, hoặc danh sách việc hôm nay,
-bật tắt trong khi chat được không»).
+"""BẢN TIN bật / tắt ngay trong chat (ai-CR-140 — đại ca 09/10/2026: "cần bản tin hằng ngày, hoặc danh sách việc hôm nay,
+bật tắt trong khi chat được không").
 
 Hai loại, mỗi người tự đăng ký (`tab_agent_brief_sub`):
   · BẢN TIN SÁNG (`Kind.DAILY`, mỗi người tối đa một): lịch Google hôm nay (nếu đã nối) · việc riêng · việc Dự án tới hạn /
     quá hạn (`my_work_tasks`) · phiếu chờ mình duyệt. Chỉ ghép chữ, không tốn lượt model. Giờ + thứ chỉnh được.
   · BẢN TIN CHỦ ĐỀ (`Kind.TOPIC`, tối đa MAX_TOPICS): một câu hỏi chạy qua Trợ lý AI như người đó tự hỏi, bằng khóa của
-    chính họ, vào giờ + thứ đã chọn — vd «sáng thứ hai gửi anh công nợ quá hạn của DEGO». Nguồn: lệnh chat (model gọi tool
-    `manage_briefs`) hoặc nút «Bật» trên đề xuất chủ động của 13.5.
+    chính họ, vào giờ + thứ đã chọn — vd "sáng thứ hai gửi anh công nợ quá hạn của DEGO". Nguồn: lệnh chat (model gọi tool
+    `manage_briefs`) hoặc nút "Bật" trên đề xuất chủ động của 13.5.
   · ĐIỂM BÁO (ai-CR-179, phase 23.3) là KIỂU CON của bản tin chủ đề: `sub_code == news_digest.NEWS_CODE`, `topic` = các
-    chủ đề cách nhau bởi dấu phẩy («giá thép, phân bón»). Tới giờ không chạy Trợ lý mà tìm tin mới trên web, bỏ trùng
+    chủ đề cách nhau bởi dấu phẩy ("giá thép, phân bón"). Tới giờ không chạy Trợ lý mà tìm tin mới trên web, bỏ trùng
     với tin đã gửi, tóm bằng MỘT lượt model (không khóa thì gửi bản thô) — xem `news_digest.py`.
 
 Người đã nối Google mà CHƯA có dòng bản tin sáng = đang bật 07:30 mọi ngày (giữ đúng hành vi cũ của ai-CR-064). Tắt là ghi
@@ -101,7 +101,7 @@ def parse_days(values) -> int:
 def parse_time(text: str) -> tuple[int, int] | None:
     """'7h', '7h30', '07:30', '8 giờ', '19h15' → (giờ, phút). Không đọc được → None."""
     m = (re.search(r"(\d{1,2})\s*(?:h|g|giờ|gio|:)\s*(\d{1,2})?", str(text or ""), re.IGNORECASE)
-         or re.search(r"\b(\d{1,2})\s+(\d{2})\b", str(text or "")))       # «07 30» sau khi bỏ dấu câu
+         or re.search(r"\b(\d{1,2})\s+(\d{2})\b", str(text or "")))       # "07 30" sau khi bỏ dấu câu
     if not m:
         return None
     hour, minute = int(m.group(1)), int(m.group(2) or 0)
@@ -217,7 +217,7 @@ def remove(db: Session, user_id: int, sub_id: int) -> bool:
     if row is None or int(row.user_id) != int(user_id):
         return False
     if row.kind == Kind.DAILY:
-        row.enabled = False                 # bản tin sáng: «xóa» = tắt (để không bật lại ngầm theo Google)
+        row.enabled = False                 # bản tin sáng: "xóa" = tắt (để không bật lại ngầm theo Google)
     else:
         db.delete(row)
     db.commit()
@@ -272,7 +272,7 @@ def render_list(db: Session, user_id: int) -> str:
         elif it.get("news"):
             what = f"<b>{it['label']}</b> (tin mới trên web): <i>{esc(it['topic'])}</i>"
         else:
-            what = f"«{esc(it['topic'])}»"
+            what = f"**{esc(it['topic'])}**"
         lines.append(f"{i}. {what} · {it['when']} · {state}")
     from . import work_due
 
@@ -280,7 +280,7 @@ def render_list(db: Session, user_id: int) -> str:
     lines.append(work_due.state_text(db, user_id).split(" — ")[0])     # ai-CR-175: một dòng trạng thái
     lines.append("")
     lines.append("<i>Nhắn: bật bản tin · tắt bản tin · bản tin lúc 6h45 · bản tin hôm nay · tắt bản tin 2 · "
-                 "hoặc nói tự nhiên «sáng thứ hai gửi anh công nợ quá hạn». Điểm báo tin mới trên web: nhắn kiểu mỗi "
+                 "hoặc nói tự nhiên **sáng thứ hai gửi anh công nợ quá hạn**. Điểm báo tin mới trên web: nhắn kiểu mỗi "
                  "sáng gửi anh tin giá thép, phân bón.</i>")
     return "\n".join(lines)
 
@@ -338,7 +338,7 @@ def _candidates(db: Session) -> list[tuple[int, object]]:
 
 def send_one(db: Session, user_id: int, row: AgentBriefSub | None, chat_id: str = "", *,
              now: datetime | None = None) -> bool:
-    """Gửi một bản tin ngay (vòng nền hoặc lệnh «bản tin hôm nay»). Trả True nếu đã gửi."""
+    """Gửi một bản tin ngay (vòng nền hoặc lệnh "bản tin hôm nay"). Trả True nếu đã gửi."""
     from . import erp, groups, service, user_keys
     from .constants import ACT_BRIEF
 

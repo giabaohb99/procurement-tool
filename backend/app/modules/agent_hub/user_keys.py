@@ -1,9 +1,9 @@
 """Khóa AI của NGƯỜI ĐANG CHAT + chuỗi khóa dự phòng (ai-CR-053 D-01; ai-CR-098 C-04).
 
-Đại ca chốt 24/09/2026: bot trên dev là trợ lý của TỪNG NGƯỜI, mỗi người dán khóa của mình ở Trang cá nhân → «Khóa AI»
+Đại ca chốt 24/09/2026: bot trên dev là trợ lý của TỪNG NGƯỜI, mỗi người dán khóa của mình ở Trang cá nhân → "Khóa AI"
 (web, KHÔNG qua chat: Telegram giữ lịch sử vĩnh viễn). Đại ca chốt 07/10/2026 (ai-CR-098): nhiều khóa, nhiều hãng
 (Gemini · Claude · OpenAI · OpenRouter) theo ƯU TIÊN; khóa hỏng vì hết tiền / hạn mức / khóa sai thì tự nhảy sang
-khóa kế, hết khóa cá nhân thì về khóa CÔNG TY có trần lượt/ngày, KHÔNG nhắn gì khi đổi khóa — ai hỏi «còn khóa nào»
+khóa kế, hết khóa cá nhân thì về khóa CÔNG TY có trần lượt/ngày, KHÔNG nhắn gì khi đổi khóa — ai hỏi "còn khóa nào"
 thì liệt kê. Sổ khóa chung cho cả công ty lẫn cá nhân nằm ở `ai_keys.py` (`tab_ai_key`).
 
 Chuỗi khóa của lượt gọi hiện tại nằm trong ContextVar: `service` mở ngữ cảnh (`for_chat` / `for_admin`) quanh mỗi tin
@@ -130,7 +130,7 @@ def prefer(providers: list[str] | tuple[str, ...], *, model: str = ""):
     rank = {p: i for i, p in enumerate(providers)}
 
     def family(r: KeyRef) -> str:
-        #  ai-CR-146: khóa trạm tùy chỉnh (openai_compat, vd modelapi.vn nhóm «claude») mang model Claude / GPT thì tính
+        #  ai-CR-146: khóa trạm tùy chỉnh (openai_compat, vd modelapi.vn nhóm "claude") mang model Claude / GPT thì tính
         #  theo HÃNG CỦA MODEL — không thì khóa Claude mua qua trạm không bao giờ được ưu tiên.
         m = (r.model or "").lower()
         if r.provider == "openai_compat" and m.startswith("claude"):
@@ -211,7 +211,7 @@ def _probe(raw: str) -> int:
 def verify(raw: str, provider: str = PROVIDER_GEMINI) -> None:
     raw = (raw or "").strip()
     if provider not in ai_keys.PROVIDERS:
-        raise InvalidKey(f"Chưa hỗ trợ hãng «{provider}».")
+        raise InvalidKey(f"Chưa hỗ trợ hãng \"{provider}\".")
     if len(raw) < 20 or " " in raw:
         raise InvalidKey("Khóa không đúng dạng.")
     code = _probe(raw) if provider == PROVIDER_GEMINI else ai_keys._probe(provider, raw)
@@ -263,7 +263,7 @@ def key_problem(error: str) -> str:
 
 
 def usage_today(db: Session, owner: int) -> dict[str, int]:
-    """Số lượt model hôm nay của một chủ khóa, chia theo hãng (để trả lời «còn khóa nào, giới hạn bao nhiêu»)."""
+    """Số lượt model hôm nay của một chủ khóa, chia theo hãng (để trả lời "còn khóa nào, giới hạn bao nhiêu")."""
     from sqlalchemy import func
 
     from .model import AgentRun

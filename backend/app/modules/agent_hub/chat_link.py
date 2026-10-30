@@ -1,6 +1,6 @@
 """Mỗi người tự đăng nhập tài khoản ERP ngay trong Telegram (ai-CR-038).
 
-Đường đi: trang cá nhân ERP → «Lấy mã liên kết» (mã 6 số, sống `AGENT_LINK_CODE_MINUTES` phút,
+Đường đi: trang cá nhân ERP → "Lấy mã liên kết" (mã 6 số, sống `AGENT_LINK_CODE_MINUTES` phút,
 chỉ lưu dạng băm) → nhắn `/dangnhap <mã>` cho bot trong chat RIÊNG → chat đó gắn với tài khoản,
 sống `AGENT_LINK_DAYS` ngày → hết hạn, `/dangxuat`, hoặc gỡ ở trang cá nhân.
 
@@ -110,7 +110,7 @@ def list_user_links(db: Session, user_id: int, *, now: datetime | None = None) -
 
 
 def list_all_links(db: Session, *, now: datetime | None = None) -> list[AgentChatLink]:
-    """ai-CR-131: mọi liên kết còn hiệu lực — màn «Người dùng bot» của người quản lý bot AI."""
+    """ai-CR-131: mọi liên kết còn hiệu lực — màn "Người dùng bot" của người quản lý bot AI."""
     now = now or datetime.now()
     return list(db.scalars(select(AgentChatLink).where(
         AgentChatLink.chat_id != "", AgentChatLink.revoked_at.is_(None),

@@ -1,9 +1,9 @@
 """PHẦN THI HÀNH trên VPS: thao tác qua cổng duyệt, sao lưu, hoàn tác, chẩn đoán, tự chữa, báo tài nguyên.
 
 ai-CR-068 (V-02, V-03, V-06) + ai-CR-069/070 (O-02 … O-06). Chạy TRONG máy sửa mã (runner) — chỉ máy có khóa
-SSH lên VPS (cờ «được deploy») mới nhận vé `agent.run_op` / `agent.diagnose_incident` / `agent.resource_report`.
+SSH lên VPS (cờ "được deploy") mới nhận vé `agent.run_op` / `agent.diagnose_incident` / `agent.resource_report`.
 Phần nhận lệnh + cổng duyệt nằm ở `ops.py` (chạy ở bot); tệp này KHÔNG tự quyết được gì — chỉ chạy dòng sổ
-`tab_agent_op` đã ở trạng thái «chờ máy» (đã duyệt, hoặc loại chỉ đọc trên dev, hoặc tự chữa dev trong trần).
+`tab_agent_op` đã ở trạng thái "chờ máy" (đã duyệt, hoặc loại chỉ đọc trên dev, hoặc tự chữa dev trong trần).
 
 Luật thi hành:
   - Kịch bản dựng TỪ SỔ (thư mục, đuôi compose, tên DB) + tham số đã kiểm mẫu; chữ tự do duy nhất đi xuống VPS
@@ -88,7 +88,7 @@ def _q(value: str) -> str:
 
 
 def _path_expr(path: str) -> str:
-    """«~/x» → "$HOME"/'x' (dấu ~ trong ngoặc đơn không nở); đường tuyệt đối → '…'."""
+    """"~/x" → "$HOME"/'x' (dấu ~ trong ngoặc đơn không nở); đường tuyệt đối → '…'."""
     path = path or ""
     if path == "~":
         return '"$HOME"'
@@ -99,7 +99,7 @@ def _path_expr(path: str) -> str:
 
 def _check_env(env: AgentEnv) -> None:
     if not env.dir or not _COMPOSE.match(env.compose_args or "") or not _DIR.match(env.dir):
-        raise OpsError(f"sổ môi trường «{env.name}» thiếu thư mục hoặc đuôi compose lạ")
+        raise OpsError(f"sổ môi trường \"{env.name}\" thiếu thư mục hoặc đuôi compose lạ")
 
 
 def _compose(env: AgentEnv) -> str:
@@ -572,7 +572,7 @@ def send_result(db: Session, op: AgentOp, env: AgentEnv | None) -> None:
     esc = telegram.esc
     secs = int((op.finished_at - op.started_at).total_seconds()) if op.finished_at and op.started_at else 0
     ok = op.status == OPS_OK
-    undo = (f"<i>Muốn trả lại như cũ: «hoàn tác thao tác #{op.id}».</i>"
+    undo = (f"<i>Muốn trả lại như cũ: **hoàn tác thao tác #{op.id}**.</i>"
             if ok and op.undo_params and not op.undone_by_op_id else "")
     if (op.params or {}).get("plain") or op.kind == OP_DATA_PLAN:
         #  ai-CR-073: lệnh sửa dữ liệu bằng lời báo bằng câu thường, không bày output SQL.
@@ -637,7 +637,7 @@ def resource_report(db: Session, *, chat_id: str = "") -> str:
 # ---------------------------------------------------------------------------
 _DIAG_BRIEF = """\
 Bạn là kỹ sư vận hành của hệ thống ERP DEGO (FastAPI + MySQL + Redis + Celery + React, chạy Docker Compose).
-Môi trường «{env}» ({kind}) đang có vấn đề: {symptom}
+Môi trường **{env}** ({kind}) đang có vấn đề: {symptom}
 {question}
 Dưới đây là dữ liệu đã gom trên VPS (CHỈ ĐỌC; bí mật đã che). Đọc và chẩn đoán. KHÔNG dùng công cụ nào, chỉ
 trả lời bằng chữ.
@@ -767,7 +767,7 @@ def _heal_op(db: Session, env: AgentEnv, incident: AgentIncident, diag: dict, *,
 
 
 def handle_incident(db: Session, incident: AgentIncident) -> dict:
-    """Một sự cố vừa mở: gom → chẩn đoán → dev tự chữa (trong trần) / prod đề xuất chờ «đúng» → sổ + tin báo."""
+    """Một sự cố vừa mở: gom → chẩn đoán → dev tự chữa (trong trần) / prod đề xuất chờ "đúng" → sổ + tin báo."""
     from . import ops
 
     env = db.get(AgentEnv, incident.env_id)
@@ -834,18 +834,18 @@ def handle_incident(db: Session, incident: AgentIncident) -> dict:
     db.commit()
     _reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
            f"Tự chữa sự cố #{incident.id} trên <b>{esc(env.name)}</b> KHÔNG ăn (health {code}). Cần đại ca xem; "
-           f"«thao tác #{op.id}» để xem kết quả.")
+           f"**thao tác #{op.id}** để xem kết quả.")
     return {"status": "heal_failed", "incident": incident.id, "op": op.id}
 
 
 # ---------------------------------------------------------------------------
 # Sửa dữ liệu bằng lời (ai-CR-073)
 # ---------------------------------------------------------------------------
-#  Đại ca nói bằng lời («gán chức vụ Nhân viên (Demo) cho các nhân sự có (CR-414) trong tên»). Claude Code đọc mô hình
+#  Đại ca nói bằng lời ("gán chức vụ Nhân viên (Demo) cho các nhân sự có (CR-414) trong tên"). Claude Code đọc mô hình
 #  dữ liệu trong mã nguồn (/app của runner, chỉ Read/Glob/Grep), xin TRA dữ liệu thật bằng các câu SELECT — runner
 #  chạy giúp qua đường chỉ đọc có lan can rồi đưa kết quả lại — tối đa DATA_ROUNDS lượt, rồi trả MỘT câu lệnh sửa.
 #  Runner kiểm lại bằng lan can + quy định (bảng cấm, trần số dòng), đếm số dòng thật, rồi đẻ ra một thao tác
-#  OP_SQL_WRITE «chờ duyệt» với thẻ tiếng Việt. Claude không bao giờ tự chạy lệnh nào trên máy chủ.
+#  OP_SQL_WRITE "chờ duyệt" với thẻ tiếng Việt. Claude không bao giờ tự chạy lệnh nào trên máy chủ.
 DATA_ROUNDS = 4
 DATA_LOOKUPS_PER_ROUND = 5
 DATA_TIMEOUT = 600
@@ -855,8 +855,8 @@ Bạn là kỹ sư dữ liệu của hệ thống ERP DEGO (FastAPI + SQLAlchemy
 mô hình bảng ở app/modules/*/model.py (và các tệp *_model.py), luật nghiệp vụ ở *service.py. Đọc chúng để biết bảng,
 cột, và cách hệ thống tự ghi dữ liệu (ví dụ một giá trị phải ghi cùng lúc vào hai cột: cột id và cột nhãn chép).
 
-Đại ca (người quản lý) nhờ, trên môi trường «{env}»:
-«{request}»
+Đại ca (người quản lý) nhờ, trên môi trường **{env}**:
+**{request}**
 
 Việc của bạn: soạn MỘT câu lệnh SQL làm đúng điều đại ca nhờ, ĐÚNG như hệ thống tự làm khi sửa qua màn hình.
 Bạn KHÔNG chạy được gì. Muốn xem dữ liệu thật (id của danh mục, số dòng khớp, giá trị hiện tại) thì xin tra.
@@ -871,7 +871,7 @@ Mỗi lượt trả lời ĐÚNG một khối JSON, không chữ nào ngoài kh�
      "preview_sql": "SELECT 2-3 cột người đọc hiểu (mã, tên, giá trị HIỆN TẠI của thứ sẽ đổi), đặt bí danh tiếng Việt
                      bằng dấu huyền (vd `Mã`, `Họ tên`, `Chức vụ hiện tại`), KHÔNG cột id, cùng điều kiện, LIMIT 10",
      "assumptions": ["tối đa 2 giả định QUAN TRỌNG đại ca cần biết, bằng lời nghiệp vụ, không tên bảng / cột / hàm"]}}
-   Chi tiết kỹ thuật (bảng, cột, vì sao ghi hai cột…) để trong câu sql — đại ca xem được bằng «thao tác #n».
+   Chi tiết kỹ thuật (bảng, cột, vì sao ghi hai cột…) để trong câu sql — đại ca xem được bằng **thao tác #n**.
 3. Không làm được an toàn bằng một câu SQL (cần đổi cấu trúc bảng, cần nhiều bước có điều kiện, đụng tài khoản /
    phân quyền / mật khẩu, yêu cầu vô nghĩa):
    {{"cannot": "lý do ngắn bằng tiếng Việt, và nên làm cách nào"}}
@@ -880,7 +880,7 @@ Luật: KHÔNG hỏi lại đại ca — yêu cầu mơ hồ thì chọn cách h
 TRUNCATE/DROP. KHÔNG DELETE / REPLACE: bot không xóa dữ liệu ERP bằng lệnh — đại ca nhờ xóa thì trả "cannot" và
 chỉ sang xóa mềm trên màn hình (hoặc UPDATE cột is_deleted / is_active nếu bảng có cột đó và đại ca nói rõ).
 Không đụng bảng tài khoản, vai trò, phân quyền, nhật ký, cấu hình hệ thống, bảng tab_agent_*.
-Khớp chuỗi theo đúng chữ đại ca đưa (LIKE với % hai đầu khi đại ca nói «có trong tên»). Tối đa {max_rows} dòng.
+Khớp chuỗi theo đúng chữ đại ca đưa (LIKE với % hai đầu khi đại ca nói **có trong tên**). Tối đa {max_rows} dòng.
 """
 
 
@@ -896,7 +896,7 @@ def _data_workdir() -> str:
 
 
 def short_text(text: str, limit: int) -> str:
-    """Cắt ở ranh giới câu / chữ rồi thêm «…» — không cụt giữa chữ như «Qu» (thẻ đầu tiên 05/10)."""
+    """Cắt ở ranh giới câu / chữ rồi thêm "…" — không cụt giữa chữ như "Qu" (thẻ đầu tiên 05/10)."""
     text = " ".join((text or "").split())
     if len(text) <= limit:
         return text
@@ -946,7 +946,7 @@ def _count_rows(env: AgentEnv, count_sql: str) -> int:
 
 
 def plan_data(db: Session, op: AgentOp, env: AgentEnv) -> str:
-    """Soạn lệnh sửa dữ liệu từ lời đại ca → thao tác OP_SQL_WRITE chờ «đúng». Trả đoạn nhật ký cho dòng sổ."""
+    """Soạn lệnh sửa dữ liệu từ lời đại ca → thao tác OP_SQL_WRITE chờ "đúng". Trả đoạn nhật ký cho dòng sổ."""
     from uuid import uuid4
 
     from . import ops, policy
@@ -958,7 +958,7 @@ def plan_data(db: Session, op: AgentOp, env: AgentEnv) -> str:
     from app.modules.assistant import glossary
 
     if terms := glossary.prompt_block(db, request):
-        msg += "\n" + terms + "\n"          # ai-CR-077: «nhà máy» = phòng nào — đại ca đã dạy thì dùng luôn
+        msg += "\n" + terms + "\n"          # ai-CR-077: "nhà máy" = phòng nào — đại ca đã dạy thì dùng luôn
     log_lines: list[str] = []
     plan: dict = {}
     for i in range(DATA_ROUNDS):
@@ -984,7 +984,7 @@ def plan_data(db: Session, op: AgentOp, env: AgentEnv) -> str:
         #  rõ ràng rằng bot không xóa dữ liệu ERP bằng lệnh, nhờ xóa mềm trên màn hình.
         if reason == guardrails.SQL_NO_DELETE_REASON or re.match(r"^\s*(drop|truncate)\b", sql, re.IGNORECASE):
             _reply(db, chat, "Yêu cầu này cần XÓA dữ liệu — em không xóa dữ liệu ERP bằng lệnh (kể cả sau duyệt). "
-                   "Nhờ đại ca xóa mềm trên màn hình ERP (nút Xóa của phiếu / bỏ tick «Đang dùng» của danh mục); "
+                   "Nhờ đại ca xóa mềm trên màn hình ERP (nút Xóa của phiếu / bỏ tick **Đang dùng** của danh mục); "
                    "em chỉ nhận UPDATE / INSERT.")
             return "\n".join(log_lines + ["từ chối: lệnh xóa dữ liệu", sql])
         raise OpsError(f"lệnh soạn ra không qua lan can: {reason or 'không phải lệnh sửa'}")

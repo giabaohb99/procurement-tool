@@ -6,7 +6,7 @@ ChatGPT, claude.ai, Claude Desktop (Connectors) không dán được khóa vào 
 `Authorization: Bearer <access_token>`.
 
 Thiết kế:
-- Mỗi lần người dùng bấm «Cho phép» một ứng dụng = MỘT dòng `tab_agent_mcp_key` loại `KIND_OAUTH` (cùng mức chỉ đọc /
+- Mỗi lần người dùng bấm "Cho phép" một ứng dụng = MỘT dòng `tab_agent_mcp_key` loại `KIND_OAUTH` (cùng mức chỉ đọc /
   được ghi, cùng nhật ký, cùng màn Khóa của tôi / Khóa nhân sự, gỡ là cắt ngay). `token_hash` = băm mã truy cập hiện hành
   (hạn `ACCESS_TTL_SEC`), `refresh_hash` = băm mã làm mới hiện hành (xoay vòng mỗi lần đổi), `expires_at` = hạn cả kết nối.
   Cấp lại cho cùng (người, ứng dụng) thì kết nối cũ bị thu hồi — không chất đống dòng.
@@ -51,7 +51,7 @@ _BAD_SCHEMES = frozenset({"javascript", "data", "file", "vbscript", "about", "bl
 _LOOPBACK = frozenset({"localhost", "127.0.0.1", "[::1]", "::1"})
 #  ai-CR-225 (Agent 1 rà 19/10, mục 3 consent-phishing): địa chỉ quay về của các ứng dụng AI quen — khác thì màn đồng ý
 #  cảnh báo đỏ. So theo HOSTNAME (đuôi tên miền), không theo netloc: `https://chatgpt.com@evil.example/cb` có hostname
-#  evil.example (phần trước @ là userinfo) — netloc in ra «chatgpt.com@evil.example» lừa được người đọc lướt.
+#  evil.example (phần trước @ là userinfo) — netloc in ra "chatgpt.com@evil.example" lừa được người đọc lướt.
 KNOWN_REDIRECT_HOSTS = ("chatgpt.com", "openai.com", "claude.ai", "anthropic.com", "claude.com")
 #  Mục 4: bảng ứng dụng / mã cấp quyền không phình vô hạn.
 CODE_KEEP_DAYS = 1                  # mã cấp quyền hết hạn quá 1 ngày → xóa

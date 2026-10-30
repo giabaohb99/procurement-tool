@@ -75,7 +75,7 @@ def test_tool_chuan_hoa_theo_luat_va_ghi_gia_dinh(db, world):
     assert t2["criteria"] == ["Hoàn thành đúng hạn và được người giao xác nhận"]
     #  Giả định gom theo nhóm: 10 việc thiếu tiêu chí vẫn chỉ một dòng, kể 3 tên đầu.
     crit = next(a for a in d["assumptions"] if "tiêu chí mặc định" in a)
-    assert "«Xe đưa đón»" in crit and "việc nữa" in crit and len(d["assumptions"]) <= 8
+    assert "**Xe đưa đón**" in crit and "việc nữa" in crit and len(d["assumptions"]) <= 8
     t3 = d["phases"][1]["tasks"][0]
     assert (t3["start_date"], t3["due_date"]) == ("2026-10-14", "2026-10-18")
     assert any("chưa giao ai" in a for a in d["assumptions"]) and any("đảo lại" in a for a in d["assumptions"])
@@ -106,8 +106,8 @@ def test_chep_cau_nguoi_dung_thi_bat_soan_lai_co_viec_con_va_tieu_chi(db, world)
     ]}]}
     out = _draft(db, world["boss"], flat)
     assert "draft" not in out and len(out["need_refine"]) == 2
-    assert "«Gửi báo giá máy in cho phòng kế toán»: mới 0 việc con, chưa có tiêu chí" in out["need_refine"]
-    assert "«Dọn kho tài liệu tầng 2»: mới 0 việc con" == out["need_refine"][1]       # tiêu chí người dùng đã có
+    assert "**Gửi báo giá máy in cho phòng kế toán**: mới 0 việc con, chưa có tiêu chí" in out["need_refine"]
+    assert "**Dọn kho tài liệu tầng 2**: mới 0 việc con" == out["need_refine"][1]       # tiêu chí người dùng đã có
     assert "refined=true" in out["note"] and "không hỏi người dùng" in out["note"]
     #  Trợ lý gọi lại đủ việc con + tiêu chí.
     flat["refined"] = True

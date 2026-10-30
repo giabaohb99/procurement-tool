@@ -136,7 +136,7 @@ def _probe(provider: str, raw: str) -> int:
             r = requests.get("https://openrouter.ai/api/v1/key", headers={"authorization": f"Bearer {raw}"},
                              timeout=PROBE_TIMEOUT)
         else:
-            raise InvalidKey(f"Chưa hỗ trợ hãng «{provider}».")
+            raise InvalidKey(f"Chưa hỗ trợ hãng \"{provider}\".")
     except requests.RequestException as e:
         raise InvalidKey(f"Không gọi được {PROVIDER_LABELS.get(provider, provider)} để kiểm khóa: {e}") from e
     return r.status_code
@@ -145,7 +145,7 @@ def _probe(provider: str, raw: str) -> int:
 def verify(provider: str, raw: str) -> None:
     raw = (raw or "").strip()
     if provider not in PROVIDERS or provider == PROVIDER_CUSTOM:
-        raise InvalidKey(f"Chưa hỗ trợ hãng «{provider}».")
+        raise InvalidKey(f"Chưa hỗ trợ hãng \"{provider}\".")
     if len(raw) < 20 or " " in raw:
         raise InvalidKey("Khóa không đúng dạng.")
     code = _probe(provider, raw)
@@ -255,17 +255,17 @@ def add_key(db: Session, *, owner_type: int, owner_id: int, provider: str, raw: 
         models = custom_models(base_url, raw) if check else []
         if not model:
             if not models:
-                raise InvalidKey("Trạm không liệt kê model nào — nhập tên model ở «Tùy chọn».")
+                raise InvalidKey("Trạm không liệt kê model nào — nhập tên model ở \"Tùy chọn\".")
             model = models[0]
     else:
         base_url = ""
         if check:
             verify(provider, raw)
         elif provider not in PROVIDERS:
-            raise InvalidKey(f"Chưa hỗ trợ hãng «{provider}».")
+            raise InvalidKey(f"Chưa hỗ trợ hãng \"{provider}\".")
     rows = active_rows(db, owner_type, owner_id)
 
-    #  Hãng tùy chỉnh: một trạm có thể bán nhiều gói (Claude, Kimi, Gemini… mỗi gói một khóa), nên «cùng hãng» chỉ
+    #  Hãng tùy chỉnh: một trạm có thể bán nhiều gói (Claude, Kimi, Gemini… mỗi gói một khóa), nên "cùng hãng" chỉ
     #  là cùng trạm + cùng model — khóa Kimi thêm sau KHÔNG được thay khóa Claude (đại ca gặp 14/10/2026).
     def _same(r: AiKey) -> bool:
         if r.provider != provider:
@@ -348,7 +348,7 @@ def key_problem(error: str, provider: str = "") -> str:
     e = (error or "").lower()
     label = PROVIDER_LABELS.get(provider, "AI") if provider else "Gemini"
     site = PROVIDER_SITES.get(provider or PROVIDER_GEMINI, "")
-    #  ai-CR-200: trạm kiểu new-api (modelapi.vn) báo hết tiền bằng tiếng Trung «用户额度不足, 剩余额度: $-0.03» với mã 403.
+    #  ai-CR-200: trạm kiểu new-api (modelapi.vn) báo hết tiền bằng tiếng Trung "用户额度不足, 剩余额度: $-0.03" với mã 403.
     if ("402" in e or "depleted" in e or "prepayment" in e or "billing" in e or "insufficient" in e
             or "额度不足" in e or "余额不足" in e):
         return (f"Khóa {label} của đại ca <b>hết tiền</b> (hãng báo 402). Nạp thêm ở {site} rồi nhắn lại câu vừa rồi; "
@@ -360,8 +360,8 @@ def key_problem(error: str, provider: str = "") -> str:
             or "invalid_api_key" in e or "authentication_error" in e):
         return (f"Khóa {label} của đại ca <b>không còn hợp lệ</b> (hãng từ chối). Lấy khóa mới ở {site} rồi dán lại "
                 "ở ERP → Trang cá nhân → Khóa AI.")
-    #  ai-CR-199 (14/10 lượt #209): trạm trung gian báo gói của khóa này không chạy được («unknown provider for model»,
-    #  «no available channel», «model not supported») dù trạm vẫn liệt kê model — chuyện của KHÓA/GÓI, không phải câu hỏi.
+    #  ai-CR-199 (14/10 lượt #209): trạm trung gian báo gói của khóa này không chạy được ("unknown provider for model",
+    #  "no available channel", "model not supported") dù trạm vẫn liệt kê model — chuyện của KHÓA/GÓI, không phải câu hỏi.
     if ("unknown provider" in e or "no available channel" in e or "model not supported" in e
             or "does not exist or you do not have access" in e):
         return (f"Gói {label} trên trạm của khóa này <b>đang không chạy</b> (trạm báo không có kênh cho model). Kiểm lại "
@@ -374,14 +374,14 @@ def is_key_problem(error: str) -> bool:
 
 
 def is_transient(error: str) -> bool:
-    """ai-CR-099: hãng quá tải tạm thời (503 «high demand», 500, 504) — thử lại một lần là thường qua."""
+    """ai-CR-099: hãng quá tải tạm thời (503 "high demand", 500, 504) — thử lại một lần là thường qua."""
     e = (error or "").lower()
     return any(k in e for k in (" 503", "lỗi 503", "unavailable", "high demand", "overloaded", " 500:", " 504",
                                 "deadline", "timed out", "timeout"))
 
 
 def short_error(error: str) -> str:
-    """Một câu ngắn thay cho cục JSON của hãng (ai-CR-099: đại ca thấy trả lời «không mượt»)."""
+    """Một câu ngắn thay cho cục JSON của hãng (ai-CR-099: đại ca thấy trả lời "không mượt")."""
     if problem := key_problem(error):
         return problem
     if is_transient(error):

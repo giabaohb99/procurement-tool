@@ -5,7 +5,7 @@ LỒNG THỬ:
 - mỗi mẫu một chat riêng `eval-<nhãn>-<mã mẫu>` (lịch sử sạch, không lẫn chat thật); xong thì xóa tin + lời nhắc của chat đó;
 - không gửi Telegram (bắt lại chữ bot định gửi);
 - KHÔNG ghi gì thật: ghi nháp (`_draft_by_text`), công cụ ERP có ghi (`WRITE_TOOLS`), hoàn tác, vé sửa mã đều chỉ GHI SỔ
-  là «đã gọi» rồi trả như thành công; lối tắt chữ có thể đụng máy sửa mã / quyền / deploy bị tắt.
+  là "đã gọi" rồi trả như thành công; lối tắt chữ có thể đụng máy sửa mã / quyền / deploy bị tắt.
 
 Chấm hai tầng: (1) luật cứng của từng lượt (`Turn`: phải / cấm gọi công cụ, có / cấm ghi nháp, ngày phải đúng…), (2) model
 chấm theo ý mong đợi (so ý, không so nguyên văn). Mẫu đạt khi cả hai đạt.
@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 
 EVAL_PREFIX = "eval-"
-#  Công cụ ERP có GHI — trong lồng thử chỉ ghi sổ rồi trả «coi như xong».
+#  Công cụ ERP có GHI — trong lồng thử chỉ ghi sổ rồi trả "coi như xong".
 WRITE_TOOLS = frozenset({
     "ticket_create", "create_calendar_event", "update_calendar_event", "delete_calendar_event", "remember_fact",
     "forget_fact", "save_note", "add_personal_item", "mark_personal_item", "save_meeting_template",
@@ -45,7 +45,7 @@ class Turn:
     must_not_call: tuple[str, ...] = ()
     commit: bool | None = None                       # True: phải ghi nháp; False: cấm ghi
     drop: bool | None = None                         # True: phải bỏ nháp
-    dates: tuple[str, ...] = ()                      # cụm «thứ sáu», «thứ sáu tuần sau» → ngày dd/mm/yyyy phải có trong tin
+    dates: tuple[str, ...] = ()                      # cụm "thứ sáu", "thứ sáu tuần sau" → ngày dd/mm/yyyy phải có trong tin
     contains: tuple[str, ...] = ()                   # chữ phải có (không phân biệt hoa thường, đã bỏ thẻ HTML)
     no_model: bool = False                           # lối tắt: không được gọi model
     must_write: tuple[str, ...] = ()                 # phải THẬT SỰ ghi (qua được chốt chặn) — tên trong TurnLog.blocked
@@ -65,9 +65,9 @@ class TurnLog:
     text: str
     replies: list[str] = field(default_factory=list)
     tools: list[str] = field(default_factory=list)
-    commits: list[str] = field(default_factory=list)      # cụm đường cũ nhận: «tạo», «thôi»…
+    commits: list[str] = field(default_factory=list)      # cụm đường cũ nhận: "tạo", "thôi"…
     blocked: list[str] = field(default_factory=list)       # công cụ ghi bị chặn (coi như xong)
-    notes: list[str] = field(default_factory=list)         # «tên → kết quả ngắn» cho model chấm
+    notes: list[str] = field(default_factory=list)         # "tên → kết quả ngắn" cho model chấm
     runs: int = 0
     input_tokens: int = 0
     seconds: float = 0.0
@@ -131,15 +131,15 @@ def check_turn(turn: Turn, log: TurnLog, today: date) -> list[str]:
     for phrase in turn.dates:
         for _label, d in resolve_weekdays(phrase, today)[:1]:
             if f"{d:%d/%m/%Y}" not in said and f"{d:%d/%m}" not in said:
-                out.append(f"«{phrase}» phải là {d:%d/%m/%Y}")
+                out.append(f"**{phrase}** phải là {d:%d/%m/%Y}")
     low = said.lower()
     for word in turn.contains:
         if word.lower() not in low:
-            out.append(f"thiếu chữ «{word}»")
+            out.append(f"thiếu chữ **{word}**")
     if turn.no_model and log.runs:
         out.append("lẽ ra đi lối tắt, không gọi model")
     if "«" in said or "»" in said:
-        out.append("dùng ngoặc « » trong tin (luật: in đậm / in nghiêng)")
+        out.append("dùng ngoặc kép góc trong tin (luật: in đậm / in nghiêng)")
     if EMOJI.search(said):
         out.append("dùng emoji")             # luật cứng — model chấm từng coi dấu • là emoji (bộ mẫu lần 4, mẫu 10)
     return out
@@ -165,13 +165,13 @@ class Sandbox:
         from . import telegram
 
         if self.log is not None:
-            #  Như telegram.send thật: polish đổi «…» thành in đậm trước khi gửi (bộ mẫu lần 2, mẫu 15 trượt oan).
+            #  Như telegram.send thật: polish đổi "…" thành in đậm trước khi gửi (bộ mẫu lần 2, mẫu 15 trượt oan).
             self.log.replies.append(telegram.polish(str(text)))
         self._msg_id += 1
         return self._msg_id
 
     def _note(self, name: str, result):
-        """Bộ mẫu lần 3: model chấm chỉ thấy TÊN công cụ nên tưởng commit_draft bị từ chối là «đã tạo» (mẫu 05)."""
+        """Bộ mẫu lần 3: model chấm chỉ thấy TÊN công cụ nên tưởng commit_draft bị từ chối là "đã tạo" (mẫu 05)."""
         if isinstance(result, dict):
             if result.get("error"):
                 brief = "lỗi / từ chối: " + str(result["error"])[:140]
@@ -315,7 +315,7 @@ def run_turn(db: Session, box: Sandbox, chat_id: str, text: str) -> TurnLog:
 
 
 def _close_dangling(db: Session, runs, log: TurnLog) -> None:
-    """Agent 1 15/10: lần chạy thử bỏ dở để lại run #248 «đang chạy» → chặn deploy (deploy chờ hết việc dở). Lượt nào
+    """Agent 1 15/10: lần chạy thử bỏ dở để lại run #248 "đang chạy" → chặn deploy (deploy chờ hết việc dở). Lượt nào
     ném lỗi giữa chừng thì đóng run của nó ngay."""
     from .constants import RUN_ERROR, RUN_RUNNING
 
@@ -338,12 +338,12 @@ def cleanup(db: Session, prefix: str) -> None:
 
 
 JUDGE_SYSTEM = (
-    "Bạn chấm một trợ lý chat tiếng Việt của công ty (bot Telegram, gọi người dùng là «đại ca» khi đó là chủ bot). Với "
+    "Bạn chấm một trợ lý chat tiếng Việt của công ty (bot Telegram, gọi người dùng là **đại ca** khi đó là chủ bot). Với "
     "từng lượt có Ý MONG ĐỢI và câu trả lời THẬT của bot (kèm công cụ bot đã gọi). Chấm theo Ý, không cần nguyên văn. "
     "Trượt khi: không đạt ý chính; bịa số liệu / ngày; nói đã làm mà không có công cụ tương ứng; trả lời lạc đề. "
-    "KHÔNG xét emoji / ký hiệu (luật cứng đã kiểm riêng). Số dòng «(n dòng)» ở kết quả công cụ là số mục công cụ trả, "
+    "KHÔNG xét emoji / ký hiệu (luật cứng đã kiểm riêng). Số dòng **(n dòng)** ở kết quả công cụ là số mục công cụ trả, "
     "bot nêu đủ các mục đó là đủ. Dài dòng / văn phong chưa gọn thì chỉ GHI vào ly_do và trừ điểm, KHÔNG làm trượt (Agent 1 15/10: model chấm "
-    "dao động ở điểm này). Tin «Đã tạo theo nháp …» / «Em bỏ nháp rồi …» là hệ thống tự báo sau khi ghi / bỏ — coi là "
+    "dao động ở điểm này). Tin **Đã tạo theo nháp …** / **Em bỏ nháp rồi …** là hệ thống tự báo sau khi ghi / bỏ — coi là "
     "đúng. Dấu • là gạch đầu dòng, KHÔNG phải emoji. Chào lại ngắn kèm MỘT câu hỏi cần giúp gì (có thể nêu 2–3 việc "
     "hay làm) là đạt, không phải kể lể. Ngày giờ hiện tại ghi ở đầu bài chấm — dùng nó khi xét ngày. Chỉ trả JSON một dòng: {\"dat\": true|false, \"diem\": 0-10, \"ly_do\": \"tối đa 2 câu\"}."
 )
@@ -360,7 +360,7 @@ def judge(sample: Sample, logs: list[TurnLog]) -> dict:
     now = now_local()
     parts = [f"BÂY GIỜ: {now:%H:%M} ngày {now:%d/%m/%Y} (giờ Việt Nam)", f"MẪU: {sample.title}"]
     for i, (turn, log) in enumerate(zip(sample.turns, logs), 1):
-        #  Dấu • (md_to_html đổi từ «- ») đưa cho model chấm thành «-»: nó cứ coi • là emoji (bộ mẫu lần 4, mẫu 10).
+        #  Dấu • (md_to_html đổi từ "- ") đưa cho model chấm thành "-": nó cứ coi • là emoji (bộ mẫu lần 4, mẫu 10).
         said = "\n".join(plain(r) for r in log.replies).replace("•", "-") or "(không trả lời)"
         parts.append(f"--- Lượt {i}\nNGƯỜI DÙNG: {turn.text}\nÝ MONG ĐỢI: {turn.expect}\n"
                      f"CÔNG CỤ BOT GỌI (→ kết quả): {'; '.join(log.notes) or ', '.join(log.tools) or '(không)'}\n"

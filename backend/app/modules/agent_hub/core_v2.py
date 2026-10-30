@@ -1,5 +1,5 @@
-"""Lõi hội thoại mới của bot (ai-CR-198, doc/agent-hub/20 — đại ca chốt 14/10/2026: «đập đi xây lại… ổn định và con
-người hơn»).
+"""Lõi hội thoại mới của bot (ai-CR-198, doc/agent-hub/20 — đại ca chốt 14/10/2026: "đập đi xây lại… ổn định và con
+người hơn").
 
 Một tin chữ vào = MỘT vòng tác tử: model nhìn thấy ngày giờ, người đang nhắn, sổ nhớ, VIỆC ĐANG DỞ (nháp, kế hoạch đang
 hỏi, hoàn tác chờ, vé sửa mã) và 30–40 lượt gần nhất; tự quyết hỏi lại, gợi ý, gọi công cụ nhiều vòng, hay ghi. Không
@@ -35,19 +35,19 @@ from .timeutil import fmt_local, now_local
 log = logging.getLogger("app.agent_hub.core_v2")
 
 HISTORY_WINDOW = timedelta(hours=24)
-#  14/10 lượt #206: «hello em» nạp 39.211 token vì 17 lượt lịch sử chứa nguyên các bản tra giá dài (vàng, bitcoin)
+#  14/10 lượt #206: "hello em" nạp 39.211 token vì 17 lượt lịch sử chứa nguyên các bản tra giá dài (vàng, bitcoin)
 #  → trạm không có prompt caching nên mỗi lượt đọc lại hết, chờ ~7 s. Nay mỗi tin cũ cắt ngắn, tổng trần 12k ký tự;
 #  câu xã giao chỉ mang 6 lượt.
 #  Đợt nén 15/10 (ví trạm trừ 27 USD / ngày): 12k → 6k ký tự, mỗi tin 900 → 600; chỉ phiên hiện tại; bỏ theo khối.
 HISTORY_MAX_CHARS = 6_000
 HISTORY_MSG_CHARS = 600
 HISTORY_BLOCK = 8
-#  ai-CR-224 (đại ca 19/10: 12:31 bàn kế hoạch, 13:34 nhắn «oke tạo đi» → bot quên sạch, lịch sử 0 lượt): 60 phút → 6 giờ.
+#  ai-CR-224 (đại ca 19/10: 12:31 bàn kế hoạch, 13:34 nhắn "oke tạo đi" → bot quên sạch, lịch sử 0 lượt): 60 phút → 6 giờ.
 #  Tiền không tăng đáng kể vì lịch sử vẫn chịu trần HISTORY_MAX_CHARS.
 SESSION_GAP = timedelta(hours=6)
 SMALLTALK_TURNS = 6
 #  ai-CR-224: tệp người dùng gửi vào chat — lượt sau đọc LẠI được bằng công cụ read_chat_file (trước chỉ lượt gửi tệp thấy
-#  nội dung; lượt sau chỉ còn dòng «[tệp …]»). Không lưu chữ: tải lại theo file_id của Telegram / Zalo.
+#  nội dung; lượt sau chỉ còn dòng "[tệp …]"). Không lưu chữ: tải lại theo file_id của Telegram / Zalo.
 FILE_LOOKBACK = timedelta(hours=24)
 FILE_PART_CHARS = 20_000
 FILE_HINT = " (nội dung tệp: gọi read_chat_file nếu cần)"
@@ -57,11 +57,11 @@ MAX_ITERS = 6
 MAX_TOKENS = 1500
 TEMPERATURE = 0.4
 
-#  Mười hai hành vi «con người» của doc 20 §3b, viết thành lời dặn. Ngắn, không câu mẫu, không emoji.
+#  Mười hai hành vi "con người" của doc 20 §3b, viết thành lời dặn. Ngắn, không câu mẫu, không emoji.
 STYLE_RULES = (
     "CÁCH NÓI CHUYỆN (bắt buộc):\n"
     "- Nói tiếng Việt tự nhiên như một trợ lý người thật đã biết việc; câu gọn; 1–2 ý thì viết thành câu, không gạch "
-    "đầu dòng; KHÔNG dùng emoji, KHÔNG lặp câu mẫu, KHÔNG mở đầu bằng «Chào anh/chị» ở mỗi câu.\n"
+    "đầu dòng; KHÔNG dùng emoji, KHÔNG lặp câu mẫu, KHÔNG mở đầu bằng **Chào anh/chị** ở mỗi câu.\n"
     "- Tra số liệu / xác nhận đã làm thì NGẮN. Nhưng hỏi xin LỜI KHUYÊN hay CÁCH LÀM (sức khỏe, tập luyện, ăn uống, học, "
     "công việc, kỹ năng, cách dùng ERP, xử lý một tình huống) thì hỗ trợ TẬN TÌNH như người kèm riêng: đưa kế hoạch / các "
     "bước cụ thể có con số (thời lượng, số hiệp, liều lượng, mốc thời gian), lý do ngắn cho từng ý, phương án thay thế, "
@@ -70,22 +70,22 @@ STYLE_RULES = (
     "CÔNG TY trước khi trả lời; cách dùng ERP thì tra thêm search_docs rồi chỉ từng bước bấm ở màn nào.\n"
     "- Thiếu thông tin quan trọng (dự án nào, giao ai, hạn, số tiền, loại phiếu…) thì HỎI LẠI đúng cái thiếu, tối đa 2 "
     "câu hỏi, kèm 2–3 lựa chọn gợi ý lấy từ dữ liệu thật (tra công cụ trước nếu cần). Không đoán bừa, không ra nháp rỗng.\n"
-    "- Người dùng sửa bằng lời («đổi hạn thứ năm», «giao Giang thay Được», «bỏ việc 2») thì gọi update_draft, đừng bắt "
+    "- Người dùng sửa bằng lời (**đổi hạn thứ năm**, **giao Giang thay Được**, **bỏ việc 2**) thì gọi update_draft, đừng bắt "
     "họ gõ lại từ đầu.\n"
-    "- Hiểu đồng ý / không đồng ý theo MỌI cách nói, kể cả sai chính tả, viết tắt, nói vòng («ok», «được đó», «tao task "
-    "đó giúp anh», «chốt» = đồng ý; «khoan», «thôi», «để anh xem» = chưa). Đồng ý thì gọi commit_draft; chưa thì giữ nháp.\n"
-    "- Trước khi ghi việc lớn (kế hoạch nhiều việc, xóa, gửi duyệt) nhắc lại ngắn cái sắp ghi: «Em hiểu là… đúng không?»\n"
-    "- Xong một việc thì gợi ĐÚNG MỘT bước kế hợp lý («em báo anh Được luôn nhé?»); không hỏi han thừa.\n"
+    "- Hiểu đồng ý / không đồng ý theo MỌI cách nói, kể cả sai chính tả, viết tắt, nói vòng (**ok**, **được đó**, **tao task "
+    "đó giúp anh**, **chốt** = đồng ý; **khoan**, **thôi**, **để anh xem** = chưa). Đồng ý thì gọi commit_draft; chưa thì giữ nháp.\n"
+    "- Trước khi ghi việc lớn (kế hoạch nhiều việc, xóa, gửi duyệt) nhắc lại ngắn cái sắp ghi: **Em hiểu là… đúng không?**\n"
+    "- Xong một việc thì gợi ĐÚNG MỘT bước kế hợp lý (**em báo anh Được luôn nhé?**); không hỏi han thừa.\n"
     "- Không biết hay công cụ lỗi thì nói thật nguyên nhân một câu và cách khác; không bịa số liệu, không bịa trạng thái.\n"
     "- Không bắt người dùng nhớ cú pháp lệnh; chỉ nhắc lệnh khi họ hỏi cách dùng.\n"
-    "- Gọi người đang nhắn theo cách xưng hô ở mục NGƯỜI ĐANG NHẮN (tên, anh/chị), không dùng «anh/chị» chung chung khi "
+    "- Gọi người đang nhắn theo cách xưng hô ở mục NGƯỜI ĐANG NHẮN (tên, anh/chị), không dùng **anh/chị** chung chung khi "
     "đã biết tên.\n"
     "- Ngày tháng trong mọi nháp phải tính từ HÔM NAY ở mục THỜI ĐIỂM (năm hiện tại), viết dạng YYYY-MM-DD."
 )
 
 #  Bản gọn của policy.ASSISTANT_RULES (3,7k ký tự) cho lõi mới: giữ luật an toàn + phạm vi trợ lý cá nhân, bỏ phần dặn
-#  dùng từng công cụ (đã nằm trong mô tả công cụ). Bản cũ còn mâu thuẫn với STYLE_RULES («làm luôn, hỏi tối đa MỘT câu»
-#  so với «thiếu thì hỏi lại kèm gợi ý») — model nhận hai luật ngược nhau là lý do hay trả lời lúc thế này lúc thế khác.
+#  dùng từng công cụ (đã nằm trong mô tả công cụ). Bản cũ còn mâu thuẫn với STYLE_RULES ("làm luôn, hỏi tối đa MỘT câu"
+#  so với "thiếu thì hỏi lại kèm gợi ý") — model nhận hai luật ngược nhau là lý do hay trả lời lúc thế này lúc thế khác.
 CORE_RULES = (
     "PHẠM VI VÀ AN TOÀN:\n"
     "- Bạn là trợ lý CÁ NHÂN của người đang nhắn, không chỉ trợ lý ERP: việc làm được bằng chữ (lịch trình, kế hoạch, "
@@ -93,37 +93,37 @@ CORE_RULES = (
     "Không bao giờ gợi ý phiếu ERP cho nhu cầu cá nhân.\n"
     "- Đủ rõ thì làm luôn; mơ hồ nhẹ thì chọn cách hợp lý nhất và nói rõ giả định. Câu phụ thuộc nơi đang ở (quán, "
     "đường, thời tiết) mà chưa biết khu thì hỏi khu trước.\n"
-    "- Chỉ nói «đã làm» khi công cụ trả thành công; không có công cụ đúng việc thì nói thẳng chưa làm được, không dùng "
-    "công cụ khác làm thay. Công cụ báo thiếu quyền thì nói thiếu quyền gì và gợi ý nhắn «quyền của tôi».\n"
+    "- Chỉ nói **đã làm** khi công cụ trả thành công; không có công cụ đúng việc thì nói thẳng chưa làm được, không dùng "
+    "công cụ khác làm thay. Công cụ báo thiếu quyền thì nói thiếu quyền gì và gợi ý nhắn **quyền của tôi**.\n"
     "- Không bao giờ bảo người dùng gõ SQL, lệnh máy chủ hay mã nguồn. Không ghi mật khẩu, khóa, số thẻ vào sổ nhớ.\n"
-    "- Chỉ GHI (tạo lịch, ghi chú, phiếu, việc) khi người dùng bảo làm đúng việc đó; «lên lịch trình / gợi ý / lập danh "
-    "sách» là việc bằng chữ — làm ngay trong câu trả lời, muốn ghi vào lịch thì hỏi sau.\n"
+    "- Chỉ GHI (tạo lịch, ghi chú, phiếu, việc) khi người dùng bảo làm đúng việc đó; **lên lịch trình / gợi ý / lập danh "
+    "sách** là việc bằng chữ — làm ngay trong câu trả lời, muốn ghi vào lịch thì hỏi sau.\n"
     "- Số liệu ERP đổi theo ngày (ngày phép còn, công nợ, trạng thái đơn / phiếu, tồn kho, việc) LUÔN tra công cụ ở lượt "
     "này; không lấy từ sổ nhớ, ghi chú hay lịch sử chat. Chưa có công cụ thì gọi more_tools.\n"
     "- Cần nhiều công cụ không phụ thuộc nhau thì gọi CÙNG LÚC trong một lượt (mỗi vòng gọi tốn vài giây). Một công cụ đã "
-    "trả đủ thì đừng gọi thêm công cụ trùng nội dung. «Đơn / phiếu của tôi tới đâu»: gọi CÙNG LÚC my_requests_status "
+    "trả đủ thì đừng gọi thêm công cụ trùng nội dung. **Đơn / phiếu của tôi tới đâu**: gọi CÙNG LÚC my_requests_status "
     "(phiếu qua bộ máy duyệt) và my_leave_summary (đơn nghỉ phép KHÔNG đi bộ máy đó). Trả lời nêu ĐỦ từng đơn / phiếu "
     "công cụ trả: đang chờ ai, BỊ TRẢ VỀ / từ chối kèm lý do, nháp — không lược mục nào.\n"
-    "- Câu mơ hồ hai nghĩa (vd «ai đang giữ hồ sơ của chị X»: hồ sơ nhân sự hay phiếu chị trình đang chờ ai) thì HỎI LẠI "
-    "một câu kèm các nghĩa, đừng gọi more_tools hay nói «chưa có công cụ».\n"
+    "- Câu mơ hồ hai nghĩa (vd **ai đang giữ hồ sơ của chị X**: hồ sơ nhân sự hay phiếu chị trình đang chờ ai) thì HỎI LẠI "
+    "một câu kèm các nghĩa, đừng gọi more_tools hay nói **chưa có công cụ**.\n"
     "- Sổ nhớ: theo đúng khối sổ ghi nhớ riêng (kể cả xưng hô); nghe điều ỔN ĐỊNH về họ thì remember_fact và thêm một "
-    "dòng «Em ghi nhớ: …»; họ bảo quên thì forget_fact; nhắc chuyện cũ thì search_notes / search_chat_history trước.\n"
+    "dòng **Em ghi nhớ: …**; họ bảo quên thì forget_fact; nhắc chuyện cũ thì search_notes / search_chat_history trước.\n"
     "- Tạo lịch THEO TỆP người dùng gửi: gọi events_from_file, trình đúng danh sách nó trả rồi create_events_from_file — "
     "không tự soạn giờ, tên điểm hay link. Link (URL) chỉ được đưa khi có NGUYÊN VĂN trong tin người dùng, tệp hoặc kết "
     "quả công cụ; không bịa link rút gọn.\n"
-    "- Khoảng cách, giờ chạy, giá vé / xăng mà không có kết quả công cụ thì ghi rõ «ước lượng, em chưa tra bản đồ» và gợi "
+    "- Khoảng cách, giờ chạy, giá vé / xăng mà không có kết quả công cụ thì ghi rõ **ước lượng, em chưa tra bản đồ** và gợi "
     "ý mở Google Maps để xem chính xác."
 )
 
 DRAFT_FACTS = (
-    "NHÁP CHỨNG TỪ / VIỆC (đại ca 14/10: «cho vào chat thôi, dễ đọc dễ xác nhận»): bot KHÔNG gửi thẻ riêng nữa. Gọi công cụ "
+    "NHÁP CHỨNG TỪ / VIỆC (đại ca 14/10: **cho vào chat thôi, dễ đọc dễ xác nhận**): bot KHÔNG gửi thẻ riêng nữa. Gọi công cụ "
     "draft_* hoặc update_draft xong thì CHÍNH câu trả lời của bạn là bản nháp: mở bằng một câu ngắn, rồi mỗi ô một dòng "
-    "lấy ĐÚNG giá trị ở trường «tom_tat_se_luu» công cụ trả về (không tự tính lại ngày, không thêm ô không có), cuối cùng "
-    "MỘT câu hỏi: muốn đổi gì không, ưng thì nhắn «tạo» hoặc bảo em tạo luôn. Người dùng hỏi xem lại nháp («nháp đâu», "
-    "«cho anh xem bản nháp») thì trình bày lại đúng nháp ở mục ĐANG DỞ; hỏi phiếu nháp đã lưu trên ERP thì gọi my_saved_drafts. Không gọi công cụ thì không có nháp nào — "
+    "lấy ĐÚNG giá trị ở trường **tom_tat_se_luu** công cụ trả về (không tự tính lại ngày, không thêm ô không có), cuối cùng "
+    "MỘT câu hỏi: muốn đổi gì không, ưng thì nhắn **tạo** hoặc bảo em tạo luôn. Người dùng hỏi xem lại nháp (**nháp đâu**, "
+    "**cho anh xem bản nháp**) thì trình bày lại đúng nháp ở mục ĐANG DỞ; hỏi phiếu nháp đã lưu trên ERP thì gọi my_saved_drafts. Không gọi công cụ thì không có nháp nào — "
     "không viết như thể đã soạn. Cần hỏi thêm thì viết thẳng câu hỏi (kèm 2–3 lựa chọn). Đủ tên việc thì cứ soạn với giá trị "
-    "hợp lý cho ô còn thiếu rồi hỏi đổi — ô người dùng CHƯA nói mà bạn tự chọn (dự án, người nhận, hạn) phải ghi rõ «em tạm "
-    "chọn …», không trình như thể họ đã nói. Nháp đang chờ nằm ở mục ĐANG DỞ. Đồng ý → commit_draft (submit=true nếu bảo gửi "
+    "hợp lý cho ô còn thiếu rồi hỏi đổi — ô người dùng CHƯA nói mà bạn tự chọn (dự án, người nhận, hạn) phải ghi rõ **em tạm "
+    "chọn …**, không trình như thể họ đã nói. Nháp đang chờ nằm ở mục ĐANG DỞ. Đồng ý → commit_draft (submit=true nếu bảo gửi "
     "duyệt luôn); sửa → update_draft đúng ô cần đổi; thôi → drop_draft. Chữ tiếng Việt điền vào nháp phải CÓ DẤU đầy đủ."
 )
 NEWS_RULES = (
@@ -131,14 +131,14 @@ NEWS_RULES = (
     "(DEGO). Chỉ dùng dữ liệu công cụ trả về. Bố cục: (1) Tóm tắt 2–3 câu nêu xu hướng chính; (2) Số liệu then chốt — con "
     "số, % tăng giảm, mốc thời gian, ai công bố; (3) Diễn biến theo nhóm (giá, cung cầu, chính sách, doanh nghiệp, quốc tế) "
     "— mỗi ý một dòng, có nguồn [n]; (4) Ý nghĩa với DEGO nếu liên quan (giá đầu vào, thời điểm mua, rủi ro); (5) Nguồn: "
-    "[n] trang — link. Ít nguồn hoặc nguồn cũ thì nói rõ. Không viết chung chung kiểu «thị trường có nhiều biến động»."
+    "[n] trang — link. Ít nguồn hoặc nguồn cũ thì nói rõ. Không viết chung chung kiểu **thị trường có nhiều biến động**."
 )
 
-#  14/10 16:41–16:43 (lượt #211, #212, Kimi): bot hai lần viết «em đang hỏi lại ở thẻ dưới» mà không gọi công cụ nào → đại
+#  14/10 16:41–16:43 (lượt #211, #212, Kimi): bot hai lần viết "em đang hỏi lại ở thẻ dưới" mà không gọi công cụ nào → đại
 #  ca chờ một thẻ không bao giờ tới. Nói tới thẻ mà lượt này không có nháp → bắt model viết lại một lần.
 PHANTOM_CARD = re.compile(r"(?<!\w)(?:(?:the|o the|xem the)\s+(?:ben\s+)?(?:duoi|nhap)|"
                           r"da soan (?:xong )?(?:ban )?nhap|em soan (?:xong|roi) (?:ban )?nhap)(?!\w)")
-#  14/10 17:17 (Gemini lite): «em đã bỏ task nghiên cứu đó rồi» — không gọi drop_draft nào. Nói đã làm mà lượt này không
+#  14/10 17:17 (Gemini lite): "em đã bỏ task nghiên cứu đó rồi" — không gọi drop_draft nào. Nói đã làm mà lượt này không
 #  có công cụ nào chạy → viết lại một lần.
 CLAIMED_DONE = re.compile(r"(?<!\w)(?:em )?da (?:bo|tao|xoa|huy|gui|luu|cap nhat|doi|sua)(?: xong| roi)?(?!\w)")
 PHANTOM_FIX = ("(Hệ thống: tin vừa rồi nói như đã làm / đã có thẻ, nhưng lượt này CHƯA có công cụ nào chạy. Viết lại: "
@@ -154,11 +154,11 @@ LOCAL_TOOLS: tuple[ToolDef, ...] = (
                         "required": ["query"]}),
     ToolDef(name="news_today",
             description="Đọc báo: tin MỚI (trong ~48 giờ) theo từng chủ đề, đã bỏ tin trùng, ưu tiên báo tiếng Việt. Dùng khi "
-                        "người dùng hỏi «hôm nay có tin gì về…», «đọc báo giúp anh…», «điểm tin…». Trả về tiêu đề, đoạn trích, "
+                        "người dùng hỏi **hôm nay có tin gì về…**, **đọc báo giúp anh…**, **điểm tin…**. Trả về tiêu đề, đoạn trích, "
                         "trang, link — tổng hợp thành vài ý chính mỗi chủ đề kèm link.",
             parameters={"type": "object", "properties": {"topics": {"type": "array", "items": {"type": "string"},
                                                                     "description": "1–4 chủ đề, ví dụ [\"giá thép\", \"phân bón\"]"},
-                                         "days": {"type": "integer", "description": "Số ngày gần nhất: 2 mặc định, «tuần này» = 7"}},
+                                         "days": {"type": "integer", "description": "Số ngày gần nhất: 2 mặc định, **tuần này** = 7"}},
                         "required": ["topics"]}),
     ToolDef(name="my_saved_drafts",
             description="Các phiếu / đơn NHÁP người dùng đã lưu trên ERP (chưa gửi duyệt): mã, loại, tên. Nháp đang chờ trong "
@@ -172,7 +172,7 @@ LOCAL_TOOLS: tuple[ToolDef, ...] = (
                                                                                        "ví dụ {\"due_date\": \"2026-10-16\", \"assignee\": \"Nguyễn Văn A\"}"}},
                         "required": ["changes"]}),
     ToolDef(name="commit_draft",
-            description="Người dùng đã đồng ý (tin ngắn kiểu «ok», «tạo đi», «chốt»): tạo thật bản nháp đang chờ (lưu Nháp "
+            description="Người dùng đã đồng ý (tin ngắn kiểu **ok**, **tạo đi**, **chốt**): tạo thật bản nháp đang chờ (lưu Nháp "
                         "trên ERP). Câu yêu cầu đầy đủ gửi lại KHÔNG phải đồng ý. submit=true khi họ muốn gửi duyệt luôn.",
             parameters={"type": "object", "properties": {"submit": {"type": "boolean"}}, "required": []}),
     ToolDef(name="drop_draft",
@@ -181,23 +181,23 @@ LOCAL_TOOLS: tuple[ToolDef, ...] = (
     #  ai-CR-201 (B2, doc 20 §10): nối hoàn tác / nhắc việc / sửa mã vào lõi — model gọi bằng lời tự nhiên.
     ToolDef(name="bot_changes",
             description="Các lần bot đã ghi vào ERP cho người dùng (mới nhất trước): id, phiếu, việc, tóm tắt, còn hoàn tác "
-                        "được không (24 giờ). Dùng khi hỏi «bot vừa làm gì», «em đã ghi gì», hoặc trước khi hoàn tác.",
+                        "được không (24 giờ). Dùng khi hỏi **bot vừa làm gì**, **em đã ghi gì**, hoặc trước khi hoàn tác.",
             parameters={"type": "object", "properties": {}, "required": []}),
     ToolDef(name="undo_change",
             description="Rút lại (hoàn tác) MỘT lần bot ghi, theo id lấy từ bot_changes. CHỈ gọi sau khi người dùng đã xác "
                         "nhận rút lại đúng dòng đó.",
             parameters={"type": "object", "properties": {"change_id": {"type": "integer"}}, "required": ["change_id"]}),
     ToolDef(name="set_reminder",
-            description="Đặt lời nhắc: đúng giờ bot nhắn lại vào chat này. luc = giờ theo lời người dùng («15h», «8h sáng "
-                        "mai», «30 phút nữa»); viec = nội dung nhắc (gọn, không kèm câu hỏi). Câu có GIỜ + chữ nhắc — kể "
-                        "cả gõ sai «hắc / nhác / nhăc», hay «réo / gọi anh lúc…» — là nhờ nhắc: GỌI công cụ này rồi mới "
+            description="Đặt lời nhắc: đúng giờ bot nhắn lại vào chat này. luc = giờ theo lời người dùng (**15h**, **8h sáng "
+                        "mai**, **30 phút nữa**); viec = nội dung nhắc (gọn, không kèm câu hỏi). Câu có GIỜ + chữ nhắc — kể "
+                        "cả gõ sai **hắc / nhác / nhăc**, hay **réo / gọi anh lúc…** — là nhờ nhắc: GỌI công cụ này rồi mới "
                         "trả lời phần còn lại. Lịch Google (create_calendar_event) chỉ khi người dùng nói tạo lịch.",
             parameters={"type": "object", "properties": {"luc": {"type": "string"}, "viec": {"type": "string"}},
                         "required": ["luc", "viec"]}),
-    #  ai-CR-224: đọc lại tệp đã gửi (kế hoạch, báo cáo…) — lịch sử chỉ giữ dòng «[tệp …]».
+    #  ai-CR-224: đọc lại tệp đã gửi (kế hoạch, báo cáo…) — lịch sử chỉ giữ dòng "[tệp …]".
     ToolDef(name="read_chat_file",
             description="Đọc LẠI nội dung tệp người dùng đã gửi vào chat này trong 24 giờ (kế hoạch, báo cáo, bảng tính…). "
-                        "Gọi khi việc cần nội dung tệp — vd «tạo sự kiện theo kế hoạch anh gửi», «làm theo file lúc nãy» — "
+                        "Gọi khi việc cần nội dung tệp — vd **tạo sự kiện theo kế hoạch anh gửi**, **làm theo file lúc nãy** — "
                         "vì lịch sử chỉ còn dòng [tệp …]. ten: một phần tên tệp (bỏ trống = tệp mới nhất); phan: phần thứ "
                         "mấy khi tệp dài (mặc định 1).",
             parameters={"type": "object", "properties": {"ten": {"type": "string"}, "phan": {"type": "integer"}},
@@ -222,11 +222,11 @@ LOCAL_TOOLS: tuple[ToolDef, ...] = (
 CODE_TASK_TOOL = ToolDef(
     name="create_code_task",
     description="Ghi một yêu cầu SỬA PHẦN MỀM (vé AI-xxxx gửi máy sửa mã; máy sẽ gửi kế hoạch để duyệt). CHỈ gọi khi người "
-                "dùng nói rõ muốn sửa / thêm tính năng phần mềm VÀ đã đồng ý với câu bạn nhắc lại cách hiểu («em hiểu là "
-                "sửa màn X để Y, đúng không?»). mo_ta: đầy đủ màn nào, sai gì, muốn gì. Việc nghiệp vụ (task Dự án, phiếu) "
+                "dùng nói rõ muốn sửa / thêm tính năng phần mềm VÀ đã đồng ý với câu bạn nhắc lại cách hiểu (**em hiểu là "
+                "sửa màn X để Y, đúng không?**). mo_ta: đầy đủ màn nào, sai gì, muốn gì. Việc nghiệp vụ (task Dự án, phiếu) "
                 "KHÔNG phải sửa phần mềm.",
     parameters={"type": "object", "properties": {"mo_ta": {"type": "string"}}, "required": ["mo_ta"]})
-#  ai-CR-202 (Agent 1 đo run #232): «thôi bỏ nháp đó đi em» không khớp nhóm nào → tool_router trả None → nạp ĐỦ 73 công cụ
+#  ai-CR-202 (Agent 1 đo run #232): "thôi bỏ nháp đó đi em" không khớp nhóm nào → tool_router trả None → nạp ĐỦ 73 công cụ
 #  (66k ký tự, 230k token). Nay không khớp nhóm thì chỉ nạp CORE + công cụ lõi; model cần thêm thì gọi more_tools, lõi nạp
 #  nhóm đó rồi chạy lại MỘT lần.
 MORE_TOOLS = "more_tools"
@@ -248,12 +248,12 @@ def _more_tools_tool() -> ToolDef:
                     "required": ["nhom"]})
 
 
-#  ai-CR-206: dời từ đường cũ (ý định «du_lieu», ai-CR-073) — đại ca nhờ SỬA DỮ LIỆU trên máy chủ bằng lời. Chỉ chat chủ
+#  ai-CR-206: dời từ đường cũ (ý định "du_lieu", ai-CR-073) — đại ca nhờ SỬA DỮ LIỆU trên máy chủ bằng lời. Chỉ chat chủ
 #  bot và khi thao tác máy chủ bật (AGENT_OPS_ENABLED); máy sửa mã soạn lệnh, đại ca duyệt thẻ rồi mới chạy.
 DATA_CHANGE_TOOL = ToolDef(
     name="request_data_change",
-    description="Đại ca nhờ SỬA / BỔ SUNG DỮ LIỆU trên máy chủ (dev hoặc prod) mà màn hình không làm được — vd «đổi email "
-                "của NV X trên dev», «xóa 3 dòng tồn kho rác ở prod». Ghi yêu cầu cho máy sửa mã soạn lệnh để đại ca DUYỆT; "
+    description="Đại ca nhờ SỬA / BỔ SUNG DỮ LIỆU trên máy chủ (dev hoặc prod) mà màn hình không làm được — vd **đổi email "
+                "của NV X trên dev**, **xóa 3 dòng tồn kho rác ở prod**. Ghi yêu cầu cho máy sửa mã soạn lệnh để đại ca DUYỆT; "
                 "không tự viết SQL. Việc làm được bằng công cụ ERP thường (soạn nháp, sửa phiếu) thì dùng công cụ đó.",
     parameters={"type": "object", "properties": {"yeu_cau": {"type": "string"}, "moi_truong": {"type": "string",
                 "enum": ["dev", "prod"]}}, "required": ["yeu_cau"]})
@@ -265,13 +265,13 @@ LOCAL_TOOL_NAMES = frozenset(t.name for t in LOCAL_TOOLS) | {CODE_TASK_TOOL.name
 # ---------------------------------------------------------------------------
 LANE_SMALLTALK, LANE_QUICK, LANE_NORMAL, LANE_HEAVY = "xa_giao", "tra_nhanh", "thuong", "nang"
 LANE_LABELS = {LANE_SMALLTALK: "xã giao", LANE_QUICK: "tra nhanh", LANE_NORMAL: "thường", LANE_HEAVY: "việc nặng"}
-#  Việc nặng nhận bằng CHỮ của câu (đã bỏ dấu), không bằng công cụ được đưa — nhóm «work» luôn kèm draft_work_plan nên
-#  đo 14/10 «tạo task …» bị đẩy nhầm sang Claude.
+#  Việc nặng nhận bằng CHỮ của câu (đã bỏ dấu), không bằng công cụ được đưa — nhóm "work" luôn kèm draft_work_plan nên
+#  đo 14/10 "tạo task …" bị đẩy nhầm sang Claude.
 HEAVY_TEXT = re.compile(r"(?<!\w)(?:lap ke hoach|len ke hoach|ke hoach (?:viec|thu|chi tiet|tuan|thang)|viet bao cao|"
                         r"bao cao (?:tong|chi tiet|ket thuc)|phan tich|so sanh .{0,40} va |nghien cuu sau|viet lai bien ban|"
                         r"soan (?:van ban|hop dong|de xuat|to trinh))(?!\w)")
 HEAVY_TEXT_CHARS = 600
-#  «đọc báo / điểm tin / tổng hợp tin» cần công cụ news_today của lõi (nhiều chủ đề, bỏ trùng, có link), không đi đường tra
+#  "đọc báo / điểm tin / tổng hợp tin" cần công cụ news_today của lõi (nhiều chủ đề, bỏ trùng, có link), không đi đường tra
 #  nhanh một câu.
 NEWS_TEXT = re.compile(r"(?<!\w)(?:doc bao|diem (?:bao|tin)|tong hop (?:tin|thong tin|bao)|tin tuc|co tin gi|ban tin)(?!\w)")
 
@@ -317,7 +317,7 @@ def _card_talk(text: str) -> bool:
 
 
 def _phantom_card(result) -> bool:
-    """Câu trả lời nói tới «thẻ dưới / thẻ nháp» mà lượt này không có công cụ nào trả nháp."""
+    """Câu trả lời nói tới "thẻ dưới / thẻ nháp" mà lượt này không có công cụ nào trả nháp."""
     from app.modules.assistant.glossary import fold
 
     has_draft = any(isinstance(c, dict) and (isinstance(c.get("draft"), dict) or c.get("name") in LOCAL_TOOL_NAMES)
@@ -366,9 +366,9 @@ def _pending_draft(db: Session, chat_id: str, before_id: int, now) -> tuple[Agen
         return row, {}
 
 
-#  Agent 1 đo 15/10 (run #227): gửi lại NGUYÊN câu «tạo cho anh task nghiên cứu luồng agent, dự án ERP v2, giao Được, hạn
-#  thứ sáu» khi nháp đang chờ → model hiểu là «đồng ý», gọi commit_draft, TẠO THẬT việc #788 + báo chuông người được giao.
-#  Ghi thật chỉ khi tin là lời đồng ý NGẮN («ok», «tạo đi», «chốt», «tạo task đó giúp anh đi»…) và không phải câu yêu cầu
+#  Agent 1 đo 15/10 (run #227): gửi lại NGUYÊN câu "tạo cho anh task nghiên cứu luồng agent, dự án ERP v2, giao Được, hạn
+#  thứ sáu" khi nháp đang chờ → model hiểu là "đồng ý", gọi commit_draft, TẠO THẬT việc #788 + báo chuông người được giao.
+#  Ghi thật chỉ khi tin là lời đồng ý NGẮN ("ok", "tạo đi", "chốt", "tạo task đó giúp anh đi"…) và không phải câu yêu cầu
 #  đã sinh ra nháp gửi lại.
 COMMIT_MAX_WORDS = 10
 COMMIT_CUE = re.compile(r"(?<!\w)(?:ok|oke|okay|okie|chot|dong y|duoc|uh|um|u|yes|tao|lam|gui|luu|ghi|di|luon|nhe|xac nhan|"
@@ -414,7 +414,7 @@ def _open_code_tasks(db: Session, chat_id: str) -> list[AgentTask]:
 
 
 def pending_block(db: Session, chat_id: str, before_id: int, now) -> str:
-    """Khối ĐANG DỞ — thứ model phải nhìn thấy để không trả lời «không có dấu vết» như hôm 14/10."""
+    """Khối ĐANG DỞ — thứ model phải nhìn thấy để không trả lời "không có dấu vết" như hôm 14/10."""
     from . import draft_create
 
     lines: list[str] = []
@@ -441,14 +441,14 @@ def pending_block(db: Session, chat_id: str, before_id: int, now) -> str:
     undo = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_UNDO_WAIT,
                                                 AgentMessage.id < before_id).order_by(AgentMessage.id.desc()).limit(1))
     if undo is not None and now and undo.created_at and now - undo.created_at <= DRAFT_WINDOW:
-        lines.append("- Đang chờ người dùng xác nhận một lệnh hoàn tác («đúng» / «thôi»).")
+        lines.append("- Đang chờ người dùng xác nhận một lệnh hoàn tác (**đúng** / **thôi**).")
     research = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id,
                                                     AgentMessage.action == ACT_RESEARCH_WAIT,
                                                     AgentMessage.id < before_id).order_by(AgentMessage.id.desc()).limit(1))
     if research is not None and now and research.created_at and now - research.created_at <= timedelta(hours=2):
-        lines.append("- Đang chờ người dùng đồng ý chi phí một lượt nghiên cứu sâu («ok» / «thôi»).")
+        lines.append("- Đang chờ người dùng đồng ý chi phí một lượt nghiên cứu sâu (**ok** / **thôi**).")
     #  Đợt nén (Agent 1 16/10: khối ĐANG DỞ ~950 ký tự mỗi lượt): vé sửa mã chỉ còn mã · tên · trạng thái — dòng trạng thái
-    #  đầy đủ (nhánh, máy, cổng kiểm, lệnh gợi ý, HTML) model tra khi cần bằng lối tắt «chi tiết AI-xxxx».
+    #  đầy đủ (nhánh, máy, cổng kiểm, lệnh gợi ý, HTML) model tra khi cần bằng lối tắt "chi tiết AI-xxxx".
     from .constants import TASK_STATUS_LABELS
 
     for t in _open_code_tasks(db, chat_id)[:3]:
@@ -499,18 +499,18 @@ def _history_body(r: AgentMessage) -> str | None:
     """Nội dung một tin trong lịch sử — CHỈ phụ thuộc chính tin đó (không theo vị trí), để tiền tố ổn định giữa các lượt."""
     body = r.body or ""
     if r.direction != DIR_IN and _card_talk(body):
-        #  Tin cũ của bot kiểu «(đã soạn bản nháp, xem thẻ bên dưới)» (đường cũ ghi thay cho thẻ) hay «em hỏi lại ở thẻ
-        #  dưới»: model CHÉP LẠI câu đó thay vì gọi công cụ (đo 14/10 16:50, Kimi). Bỏ hẳn (ghi chú thay thì Kimi chép).
+        #  Tin cũ của bot kiểu "(đã soạn bản nháp, xem thẻ bên dưới)" (đường cũ ghi thay cho thẻ) hay "em hỏi lại ở thẻ
+        #  dưới": model CHÉP LẠI câu đó thay vì gọi công cụ (đo 14/10 16:50, Kimi). Bỏ hẳn (ghi chú thay thì Kimi chép).
         return None
     if r.direction != DIR_IN and (body.startswith(DRAFT_HEADS) or "đang chờ, em chưa tạo:" in body.split("\n", 1)[0]):
         #  ai-CR-202: tin nháp cũ chỉ giữ dòng đầu — nội dung nháp còn chờ đã có ở khối ĐANG DỞ.
         return body.split("\n", 1)[0] + " (chi tiết nháp đã lược)"
     if r.direction == DIR_IN and r.files:
-        #  ai-CR-224: dòng «[tệp …]» — nhắc model đọc lại được (gợi ý cố định theo chính tin này, không phá tiền tố).
+        #  ai-CR-224: dòng "[tệp …]" — nhắc model đọc lại được (gợi ý cố định theo chính tin này, không phá tiền tố).
         return body[:HISTORY_MSG_CHARS] + FILE_HINT
     if len(body) > HISTORY_MSG_CHARS:
         #  Đợt nén: tin dài của bot (bảng số liệu, bản tra giá) là kết quả công cụ cũ — giữ phần đầu là đủ cho mạch chuyện;
-        #  cần số liệu mới thì tra lại (luật «số liệu đổi theo ngày luôn tra công cụ»).
+        #  cần số liệu mới thì tra lại (luật "số liệu đổi theo ngày luôn tra công cụ").
         return body[:HISTORY_MSG_CHARS] + " …(đã rút gọn)"
     return body
 
@@ -519,13 +519,13 @@ WEEKDAYS_VI = ("thứ Hai", "thứ Ba", "thứ Tư", "thứ Năm", "thứ Sáu",
 
 
 def calendar_block(now) -> str:
-    """Hôm nay + 14 ngày tới kèm thứ. 14/10 model ghi «hạn thứ Sáu (17/10)» trong khi 17/10/2026 là thứ Bảy — model tự
+    """Hôm nay + 14 ngày tới kèm thứ. 14/10 model ghi "hạn thứ Sáu (17/10)" trong khi 17/10/2026 là thứ Bảy — model tự
     tính thứ là sai, phải đưa sẵn lịch."""
     days = [now.date() + timedelta(days=i) for i in range(15)]
     cells = [f"{WEEKDAYS_VI[d.weekday()]} {d:%d/%m/%Y}" + (" (hôm nay)" if i == 0 else " (mai)" if i == 1 else "")
              for i, d in enumerate(days)]
-    return ("giờ Việt Nam. LỊCH (dùng đúng bảng này khi đổi «thứ sáu», «tuần sau»… ra ngày): " + "; ".join(cells) + ". "
-            "«thứ X» không kèm «tuần sau / tuần tới» = ngày thứ X GẦN NHẤT tính từ mai; có «tuần sau» mới sang tuần kế. "
+    return ("giờ Việt Nam. LỊCH (dùng đúng bảng này khi đổi **thứ sáu**, **tuần sau**… ra ngày): " + "; ".join(cells) + ". "
+            "**thứ X** không kèm **tuần sau / tuần tới** = ngày thứ X GẦN NHẤT tính từ mai; có **tuần sau** mới sang tuần kế. "
             "Tin có khối NGÀY ĐÃ TÍNH thì dùng đúng ngày trong đó.")
 
 
@@ -534,8 +534,8 @@ WEEKDAY_RX = re.compile(r"(?<!\w)(?:thu (hai|ba|tu|nam|sau|bay|[2-7])|(chu nhat)
 
 
 def resolve_weekdays(text: str, today) -> list[tuple[str, object]]:
-    """«thứ sáu» → ngày cụ thể (Agent 1 15/10: hôm thứ Năm 15/10 model ghi «hạn thứ sáu» = 23/10). Luật: không kèm tuần
-    = thứ đó GẦN NHẤT tính từ mai; «tuần sau / tuần tới» = thứ đó của tuần lịch kế tiếp; «tuần này» = thứ đó tuần này."""
+    """"thứ sáu" → ngày cụ thể (Agent 1 15/10: hôm thứ Năm 15/10 model ghi "hạn thứ sáu" = 23/10). Luật: không kèm tuần
+    = thứ đó GẦN NHẤT tính từ mai; "tuần sau / tuần tới" = thứ đó của tuần lịch kế tiếp; "tuần này" = thứ đó tuần này."""
     out: list[tuple[str, object]] = []
     for m in WEEKDAY_RX.finditer(_folded(text)):
         wd = 6 if m.group(2) else WEEKDAY_NUM[m.group(1)]
@@ -574,7 +574,7 @@ def build_system(db: Session, chat_id: str, row: AgentMessage, user, text: str) 
         pass
     who = f"NGƯỜI ĐANG NHẮN: {name or 'người dùng ERP'}" + (f" — {role}" if role else "")
     who += ("; đây là chat CHỦ BOT (đại ca)." if telegram.is_allowed_chat(chat_id) else
-            "; gọi theo tên hoặc anh/chị, KHÔNG gọi «đại ca».")
+            "; gọi theo tên hoặc anh/chị, KHÔNG gọi **đại ca**.")
     parts = [
         service._persona(chat_id),
         STYLE_RULES,
@@ -638,10 +638,10 @@ def turn_context(db: Session, chat_id: str, row: AgentMessage, user, text: str, 
 # Công cụ
 # ---------------------------------------------------------------------------
 PLAN_ONLY_TOOLS = frozenset({"draft_work_plan"})
-#  ai-CR-202 (Agent 1 đo 15/10, run #223): «tạo YCMH mua 10 thùng giấy A4 cho phòng IT» nạp 37 công cụ (26k ký tự) →
-#  83k token cho MỘT lần gọi, gấp đôi câu «tạo task» (17 công cụ, 44k) — trạm tính nặng theo SỐ công cụ. Câu LẬP phiếu mua
+#  ai-CR-202 (Agent 1 đo 15/10, run #223): "tạo YCMH mua 10 thùng giấy A4 cho phòng IT" nạp 37 công cụ (26k ký tự) →
+#  83k token cho MỘT lần gọi, gấp đôi câu "tạo task" (17 công cụ, 44k) — trạm tính nặng theo SỐ công cụ. Câu LẬP phiếu mua
 #  thì chỉ giữ công cụ nháp + vài công cụ tra cứu cần khi soạn; nhóm tra cứu thu mua (16 công cụ) chỉ nạp khi câu còn hỏi
-#  thêm giá / NCC / lịch sử…; «phòng IT» không kéo theo nhóm phiếu hỗ trợ.
+#  thêm giá / NCC / lịch sử…; "phòng IT" không kéo theo nhóm phiếu hỗ trợ.
 DRAFT_PURCHASE_KEEP = frozenset({"product_search", "my_procurement_requests"})
 PURCHASE_LOOKUP = re.compile(r"\bgia\b|\bncc\b|nha cung cap|lich su|so sanh|cham diem|bao nhieu|tot nhat|re nhat|hop dong"
                              r"|da mua|lan truoc|thong ke|\btop\b")
@@ -676,13 +676,13 @@ def _clip(text: str, limit: int) -> str:
 #  Agent 1 đo 15/10 (run #237–239): câu không khớp nhóm đi qua more_tools tốn 2–3 lần gọi, 82–132k token, 15–24 s. Cách
 #  nói thường gặp thì gắn nhóm ngay ở lõi (không sửa tool_router dùng chung với Trợ lý web).
 CORE_GROUP_HINTS: tuple[tuple[re.Pattern, tuple[str, ...]], ...] = (
-    (re.compile(r"ke hoach"), ("work",)),     # «lập kế hoạch …» cần draft_work_plan
+    (re.compile(r"ke hoach"), ("work",)),     # "lập kế hoạch …" cần draft_work_plan
     (re.compile(r"(?<!\w)off(?!\w)|nghi them|may (hom|bua|ngay) (nghi|off)|nghi duoc|con may (hom|bua)"), ("leave",)),
     (re.compile(r"(?<!\w)(don|phieu|de xuat|yeu cau)(?!\w).{0,40}(toi dau|sao roi|the nao|duyet chua|xong chua|"
                 r"den dau)|(?<!\w)(don|phieu) cua (anh|em|toi|chi|minh)(?!\w)"), ("approval", "leave")),
     #  Run #243: chỉ approval thì đơn nghỉ phép không ra (my_requests_status chỉ đọc bộ máy duyệt) → giữ cả leave.
     (re.compile(r"ho so (cua|nhan su|nhan vien)|ai dang (giu|phu trach|lo)"), ("employee", "approval")),
-    #  «ai đang giữ hồ sơ …» có thể là người / phiếu đang chờ ai (waiting_on của my_requests_status), không chỉ danh bạ.
+    #  "ai đang giữ hồ sơ …" có thể là người / phiếu đang chờ ai (waiting_on của my_requests_status), không chỉ danh bạ.
 )
 
 
@@ -701,7 +701,7 @@ def _can_order_code(db: Session, chat_id: str) -> bool:
 
 
 def _calendar_confirm(db: Session, chat_id: str, text: str) -> bool:
-    """«ok» ngắn ngay sau khi bot trình bản lịch (CONFIRM_FIRST_TOOLS): câu không khớp nhóm nào (còn bị coi là xã giao)
+    """"ok" ngắn ngay sau khi bot trình bản lịch (CONFIRM_FIRST_TOOLS): câu không khớp nhóm nào (còn bị coi là xã giao)
     mà cần công cụ lịch Google."""
     folded = _folded(text)
     if not chat_id or db is None or not folded or len(folded.split()) > COMMIT_MAX_WORDS \
@@ -717,7 +717,7 @@ def select_tools(db: Session, user, text: str, chat_id: str = "", extra_groups: 
     thêm qua more_tools (lượt chạy lại) — khi đó không đưa more_tools nữa."""
     from app.modules.assistant import tool_router
 
-    #  Câu xã giao («hello em», «cảm ơn») không cần 70+ công cụ ERP — hôm 14/10 «hello em» nạp 76 công cụ.
+    #  Câu xã giao ("hello em", "cảm ơn") không cần 70+ công cụ ERP — hôm 14/10 "hello em" nạp 76 công cụ.
     calendar_yes = _calendar_confirm(db, chat_id, text)
     if tool_router.is_smalltalk(text) and not calendar_yes:
         return list(LOCAL_TOOLS)
@@ -734,7 +734,7 @@ def select_tools(db: Session, user, text: str, chat_id: str = "", extra_groups: 
     groups = list(extra_groups or ())
     folded = " " + _folded(text) + " "
     if extra_groups is None and SOFTWARE_RX.search(folded) and chat_id and _can_order_code(db, chat_id):
-        #  Bộ mẫu (mẫu 19, 244k token): «sửa màn YCMH thêm cột …» kéo cả nhóm thu mua + sửa phiếu (chữ «YCMH», «sửa»)
+        #  Bộ mẫu (mẫu 19, 244k token): "sửa màn YCMH thêm cột …" kéo cả nhóm thu mua + sửa phiếu (chữ "YCMH", "sửa")
         #  dù đây là yêu cầu SỬA PHẦN MỀM — chỉ cần công cụ lõi + create_code_task.
         keep = set(tool_router.CORE)
         folded = ""                              # bỏ luôn gợi ý nhóm của lõi
@@ -749,8 +749,8 @@ def select_tools(db: Session, user, text: str, chat_id: str = "", extra_groups: 
             asked |= set(tools)
     all_defs = defs
     defs = [d for d in defs if d.name in keep]
-    #  draft_work_plan (3,5k ký tự mô tả — công cụ lớn nhất) chỉ khi câu thật sự nói «kế hoạch»: nhóm «work» luôn kèm nó
-    #  nên 14/10 câu «tạo task …» nào cũng gánh thêm.
+    #  draft_work_plan (3,5k ký tự mô tả — công cụ lớn nhất) chỉ khi câu thật sự nói "kế hoạch": nhóm "work" luôn kèm nó
+    #  nên 14/10 câu "tạo task …" nào cũng gánh thêm.
     from app.modules.assistant.glossary import fold
 
     if "ke hoach" not in " ".join(fold(text or "").split()):
@@ -799,7 +799,7 @@ NEWS_ARTICLE_CHARS = 1800
 
 def _news_today(topics: list, days: int = 2) -> dict:
     """Tin theo chủ đề trong `days` ngày (tuần = 7), bỏ trùng, kèm NỘI DUNG 3 bài đầu mỗi chủ đề — 14/10 bản chỉ có tiêu
-    đề + đoạn trích 400 ký tự cho ra bản tổng hợp hời hợt «như nói chuyện với con nít» (đại ca)."""
+    đề + đoạn trích 400 ký tự cho ra bản tổng hợp hời hợt "như nói chuyện với con nít" (đại ca)."""
     from concurrent.futures import ThreadPoolExecutor
 
     from . import news_digest, web_search
@@ -865,12 +865,12 @@ def read_chat_file(db: Session, chat_id: str, row: AgentMessage, name: str = "",
     want = (name or "").strip().lower()
     pick = next((f for f in files if want in f["name"].lower()), None) if want else files[0]
     if pick is None:
-        return {"error": f"Không thấy tệp tên có «{name}». Tệp gần đây: " + "; ".join(f["name"] for f in files[:10])}
+        return {"error": f"Không thấy tệp tên có **{name}**. Tệp gần đây: " + "; ".join(f["name"] for f in files[:10])}
     try:
         data, _ = telegram.download_file(pick["file_id"], max_bytes=settings.AGENT_FILE_MAX_MB * 1024 * 1024)
         text = doc_text.extract(pick["name"], pick["mime"], data)
     except Exception as e:  # noqa: BLE001 — tệp hết hạn bên Telegram / Zalo, hỏng định dạng…
-        return {"error": f"Không đọc lại được tệp «{pick['name']}» ({type(e).__name__}) — nhờ người dùng gửi lại."}
+        return {"error": f"Không đọc lại được tệp **{pick['name']}** ({type(e).__name__}) — nhờ người dùng gửi lại."}
     total = max(1, -(-len(text) // FILE_PART_CHARS))
     try:
         n = min(max(int(part or 1), 1), total)
@@ -910,7 +910,7 @@ def events_from_file(db: Session, chat_id: str, row: AgentMessage, name: str = "
         return got
     events = plan["su_kien"]
     if not events:
-        return {"error": f"Tệp «{got['ten']}» không có bảng giờ theo ngày (cột Giờ) để tách thành sự kiện — đọc tệp bằng "
+        return {"error": f"Tệp **{got['ten']}** không có bảng giờ theo ngày (cột Giờ) để tách thành sự kiện — đọc tệp bằng "
                          "read_chat_file rồi hỏi người dùng muốn tạo những mục nào."}
     want = (day or "").strip()
     picked = [e for e in events if not want or e["ngay"].startswith(want) or e["ngay"] == want]
@@ -971,7 +971,7 @@ def create_events_from_file(db: Session, chat_id: str, row: AgentMessage, user, 
 
 
 def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, args: dict) -> dict:
-    """Ba công cụ nháp của lõi: dùng lại nguyên đường «tạo» / «thôi» của service để không lệch luật (quyền, gửi duyệt,
+    """Ba công cụ nháp của lõi: dùng lại nguyên đường "tạo" / "thôi" của service để không lệch luật (quyền, gửi duyệt,
     hỏi nhận việc sau kế hoạch…)."""
     from . import service
 
@@ -1011,7 +1011,7 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
         if name == "commit_draft" and not _is_commit_reply(db, chat_id, pending, row.body or ""):
             out = {"error": NOT_A_CONFIRM}
             if _is_repeat(db, chat_id, pending, row.body or ""):
-                #  Gửi lại y câu cũ: bot tự hỏi «tạo luôn hay soạn lại» (dừng vòng, không gọi model lần hai — run #231 21 s).
+                #  Gửi lại y câu cũ: bot tự hỏi "tạo luôn hay soạn lại" (dừng vòng, không gọi model lần hai — run #231 21 s).
                 tool = info.get("tool") or ""
                 out.update(ask_confirm=True, tool=tool, tom_tat_se_luu=_summary(tool, info.get("draft") or {}))
             return out
@@ -1030,7 +1030,7 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
             done.update({"created": created, "note": "Bot đã tự báo kết quả tạo cho người dùng; bạn chỉ cần một câu ngắn, "
                                                      "không lặp lại mã phiếu."})
         else:
-            done["note"] = "Bot đã báo «không tạo»; bạn chỉ cần một câu ngắn."
+            done["note"] = "Bot đã báo **không tạo**; bạn chỉ cần một câu ngắn."
         return done
     if name == "bot_changes":
         keep = ("id", "when", "entity_label", "doc_code", "action_label", "summary", "can_undo", "undo_reason",
@@ -1066,10 +1066,10 @@ def _run_local(db: Session, chat_id: str, row: AgentMessage, user, name: str, ar
 
 
 def _set_reminder(db: Session, chat_id: str, luc: str, viec: str, *, said: str = "") -> dict:
-    """ai-CR-201: «nhắc anh 3h chiều gọi NCC» nói vòng mà lối tắt chữ không bắt được → model gọi công cụ này.
+    """ai-CR-201: "nhắc anh 3h chiều gọi NCC" nói vòng mà lối tắt chữ không bắt được → model gọi công cụ này.
 
-    Bộ mẫu lần 3 (mẫu 14): «3 giờ chiều nay nhắc anh…» lúc 11 giờ → bot báo «15:00 mai». Người dùng không nói «mai» thì
-    bỏ chữ «mai» model tự thêm; câu báo lại do bot dựng (`reminder_reply`), không để model tự diễn đạt ngày."""
+    Bộ mẫu lần 3 (mẫu 14): "3 giờ chiều nay nhắc anh…" lúc 11 giờ → bot báo "15:00 mai". Người dùng không nói "mai" thì
+    bỏ chữ "mai" model tự thêm; câu báo lại do bot dựng (`reminder_reply`), không để model tự diễn đạt ngày."""
     from . import chat_link, reminders, service
     from .timeutil import to_utc
 
@@ -1081,9 +1081,9 @@ def _set_reminder(db: Session, chat_id: str, luc: str, viec: str, *, said: str =
     now = now_local()
     when = service.parse_schedule_time(luc, now)
     if when is None:
-        return {"error": f"Chưa đọc được giờ «{luc}». Hỏi lại người dùng giờ cụ thể (vd 15h, 8h sáng mai)."}
+        return {"error": f"Chưa đọc được giờ **{luc}**. Hỏi lại người dùng giờ cụ thể (vd 15h, 8h sáng mai)."}
     if len(reminders.open_for_chat(db, chat_id)) >= reminders.MAX_OPEN:
-        return {"error": f"Chat này đã có {reminders.MAX_OPEN} lời nhắc chờ; bảo người dùng bỏ bớt («nhắc gì»)."}
+        return {"error": f"Chat này đã có {reminders.MAX_OPEN} lời nhắc chờ; bảo người dùng bỏ bớt (**nhắc gì**)."}
     link = chat_link.get_active_link(db, chat_id)
     reminders.create(db, chat_id, link.user_id if link else 0, what, when)
     db.commit()
@@ -1095,8 +1095,8 @@ def _set_reminder(db: Session, chat_id: str, luc: str, viec: str, *, said: str =
                                   "lại của câu người dùng (nếu có)."}
 
 
-#  Đại ca 15/10 17:25: «nhắc anh 5h30 chiều đi tập gym em nhé, a nên tập gì em nhỉ» → lối tắt nhắc nuốt cả câu (nội dung nhắc
-#  dính luôn câu hỏi) và không ai trả lời «nên tập gì». Câu vừa nhờ vừa HỎI thì để model làm: gọi set_reminder với nội dung
+#  Đại ca 15/10 17:25: "nhắc anh 5h30 chiều đi tập gym em nhé, a nên tập gì em nhỉ" → lối tắt nhắc nuốt cả câu (nội dung nhắc
+#  dính luôn câu hỏi) và không ai trả lời "nên tập gì". Câu vừa nhờ vừa HỎI thì để model làm: gọi set_reminder với nội dung
 #  gọn + trả lời phần hỏi.
 QUESTION_END = re.compile(r"(?<!\w)(nhi|khong|chua|sao|nao|gi|dau|ha|hen|ta|the|vay)\s*$")
 QUESTION_ANY = re.compile(r"(?<!\w)(the nao|bao nhieu|co nen|nen .{0,30}(gi|nao|khong)|tai sao|vi sao|la gi|o dau|"
@@ -1104,7 +1104,7 @@ QUESTION_ANY = re.compile(r"(?<!\w)(the nao|bao nhieu|co nen|nen .{0,30}(gi|nao|
 
 
 def has_question(text: str) -> bool:
-    """Tin có kèm câu HỎI (dấu ?, hoặc mệnh đề kết bằng nhỉ / không / gì… hay chứa «thế nào, bao nhiêu, nên … gì…»)."""
+    """Tin có kèm câu HỎI (dấu ?, hoặc mệnh đề kết bằng nhỉ / không / gì… hay chứa "thế nào, bao nhiêu, nên … gì…")."""
     if "?" in (text or ""):
         return True
     folded = _folded(text)
@@ -1122,8 +1122,8 @@ def _reminder_shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) 
     return service._reminder_by_text(db, chat_id, row, text)
 
 
-#  Đại ca 16/10: «hẹn 6h chiều nay đi cafe em nhé» → bot chỉ đặt nhắc. Lời nhắc kiểu CUỘC HẸN / sự kiện (không phải việc
-#  phải làm như «gọi NCC») mà người dùng đã nối Google → hỏi luôn có tạo lịch không; «ok» là tạo, không tốn lượt model.
+#  Đại ca 16/10: "hẹn 6h chiều nay đi cafe em nhé" → bot chỉ đặt nhắc. Lời nhắc kiểu CUỘC HẸN / sự kiện (không phải việc
+#  phải làm như "gọi NCC") mà người dùng đã nối Google → hỏi luôn có tạo lịch không; "ok" là tạo, không tốn lượt model.
 APPOINTMENT_RX = re.compile(r"(?<!\w)(hen|gap|hop|cafe|ca phe|uong|an (trua|toi|sang|com|uong)|nhau|kham|don|"
                             r"tiec|sinh nhat|di choi|di xem|xem phim|bay|chuyen bay|du lich|tap|gym|da bong|phong van)(?!\w)")
 CALENDAR_OFFER_WINDOW = timedelta(minutes=30)
@@ -1132,7 +1132,7 @@ CALENDAR_NO = re.compile(r"(?<!\w)(thoi|khong can|khoi|khong|ko|k can|nhac thoi|
 
 
 def calendar_offer(db: Session, chat_id: str, what: str, when_local) -> str:
-    """Câu hỏi «tạo luôn lịch Google?» (rỗng nếu không hợp) + dòng sổ ẩn để «ok» kế tiếp tạo được lịch."""
+    """Câu hỏi "tạo luôn lịch Google?" (rỗng nếu không hợp) + dòng sổ ẩn để "ok" kế tiếp tạo được lịch."""
     from . import chat_link, google_link, service
 
     if not what or not APPOINTMENT_RX.search(" " + _folded(what) + " "):
@@ -1148,7 +1148,7 @@ def calendar_offer(db: Session, chat_id: str, what: str, when_local) -> str:
 
 
 def calendar_offer_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """«ok» / «tạo lịch đi» ngay sau câu hỏi tạo lịch → tạo lịch Google (60 phút); «thôi / không cần» → chỉ nhắc."""
+    """"ok" / "tạo lịch đi" ngay sau câu hỏi tạo lịch → tạo lịch Google (60 phút); "thôi / không cần" → chỉ nhắc."""
     from . import service
 
     offers = db.scalars(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id)
@@ -1205,13 +1205,13 @@ def reminder_reply(chat_id: str, result: dict) -> str:
             "Muốn xem hay bỏ thì nhắn nhắc gì.")
 
 
-#  Bộ mẫu ai-CR-203 (mẫu 19): «sửa giúp anh màn YCMH thêm cột …» → model gọi create_code_task NGAY, không nhắc lại cách
+#  Bộ mẫu ai-CR-203 (mẫu 19): "sửa giúp anh màn YCMH thêm cột …" → model gọi create_code_task NGAY, không nhắc lại cách
 #  hiểu (doc 20 §3c bắt buộc). Chỉ ghi vé khi tin hiện tại là lời xác nhận ngắn VÀ ngay trước đó bot đã trả lời (nhắc
 #  lại cách hiểu) trong 30 phút.
 CODE_CONFIRM_CUE = re.compile(r"(?<!\w)(?:ok|oke|okay|dung|dung roi|phai|chuan|chinh xac|dong y|uh|u|yes|lam di|tao di|"
                               r"ghi di|vay di|duoc|chot)(?!\w)")
 CODE_TASK_NOT_CONFIRMED = ("CHƯA ghi vé. Trước hết nhắc lại cách hiểu trong MỘT câu (màn nào, đang thế nào, muốn thế nào) "
-                           "rồi hỏi «đúng không ạ?»; người dùng xác nhận ở tin SAU thì mới gọi create_code_task.")
+                           "rồi hỏi **đúng không ạ?**; người dùng xác nhận ở tin SAU thì mới gọi create_code_task.")
 
 
 def _code_task_confirmed(db: Session, chat_id: str, row: AgentMessage) -> bool:
@@ -1233,21 +1233,21 @@ def _confirmed_turn(db: Session, chat_id: str, row: AgentMessage) -> bool:
     return False
 
 
-#  Đại ca 16/10 9:44: «hẹn 7h tối nay ăn tối với khách em nhé» → model TỰ tạo lịch Google, tự đặt 1,5 tiếng. «1,5 tiếng ở
-#  đâu ra… như kế hoạch dị á hỏi xác nhận lại rồi có kế hoạch chi tiết chứ… cứng nhắc». Tạo / hủy lịch Google chỉ chạy khi
+#  Đại ca 16/10 9:44: "hẹn 7h tối nay ăn tối với khách em nhé" → model TỰ tạo lịch Google, tự đặt 1,5 tiếng. "1,5 tiếng ở
+#  đâu ra… như kế hoạch dị á hỏi xác nhận lại rồi có kế hoạch chi tiết chứ… cứng nhắc". Tạo / hủy lịch Google chỉ chạy khi
 #  tin hiện tại là lời xác nhận bản lịch bot vừa trình; chưa thì trả lời dặn model trình bản lịch chi tiết trước.
 CONFIRM_FIRST_TOOLS = frozenset({"create_calendar_event", "delete_calendar_event"})
 CALENDAR_WRITE_TOOLS = frozenset({"create_calendar_event", "update_calendar_event"})      # ai-CR-227: lọc link + chồng giờ
 CALENDAR_NOT_CONFIRMED = (
     "CHƯA tạo / hủy gì. Trình bày BẢN LỊCH DỰ KIẾN để người dùng xác nhận: tên, ngày + giờ bắt đầu – kết thúc, địa điểm, "
-    "người mời, có nhắc trước không (gợi ý 30 phút). Ô người dùng CHƯA nói (thời lượng, địa điểm…) ghi rõ «em tạm tính …» "
+    "người mời, có nhắc trước không (gợi ý 30 phút). Ô người dùng CHƯA nói (thời lượng, địa điểm…) ghi rõ **em tạm tính …** "
     "hoặc hỏi luôn; có thể gợi ý 1–2 việc chuẩn bị (đặt bàn, mang tài liệu). Kết bằng MỘT câu: ưng thì nhắn ok, cần đổi gì "
     "thì nói. Người dùng đồng ý ở tin SAU thì mới gọi lại công cụ với đúng các giá trị đã chốt.")
 
 
 def _create_code_task(db: Session, chat_id: str, mo_ta: str) -> dict:
     """ai-CR-201 (doc 20 §3c): ghi yêu cầu sửa phần mềm thành một tin INBOX — vòng gom (triage) tạo vé AI-xxxx và
-    máy sửa mã gửi kế hoạch như đường cũ «ghi việc: …» (ai-CR-096). Chỉ chat được giao việc sửa mã."""
+    máy sửa mã gửi kế hoạch như đường cũ "ghi việc: …" (ai-CR-096). Chỉ chat được giao việc sửa mã."""
     from . import service
 
     if not service._can_order_code(db, chat_id):
@@ -1265,7 +1265,7 @@ def _create_code_task(db: Session, chat_id: str, mo_ta: str) -> dict:
 # ---------------------------------------------------------------------------
 # Gọn token (ai-CR-202, doc 20 §10 việc 2)
 # ---------------------------------------------------------------------------
-#  Mô tả công cụ ERP viết cho Trợ lý WEB («giao diện hiện nút mở form… báo người dùng bấm nút») — sai với chat (nháp nằm
+#  Mô tả công cụ ERP viết cho Trợ lý WEB ("giao diện hiện nút mở form… báo người dùng bấm nút") — sai với chat (nháp nằm
 #  trong chat, ghi bằng commit_draft) và là phần lớn nhất của lời nhắc (~12k ký tự với 15 công cụ). Lõi mới dùng bản
 #  ngắn viết cho chat; web giữ nguyên bản cũ.
 V2_TOOL_DESC: dict[str, str] = {
@@ -1278,7 +1278,7 @@ V2_TOOL_DESC: dict[str, str] = {
         "hỏi giá, số lượng dự kiến (+ đơn vị; chưa biết thì 0), mục đích; thiếu thì hỏi MỘT lượt kèm ngày cần kết quả "
         "(result_due_date), thông số, yêu cầu khác, pháp nhân khác. Không bịa. Đủ thì gọi ngay."),
     "draft_leave_request": (
-        "Soạn NHÁP đơn nghỉ phép của CHÍNH người hỏi — chưa ghi gì. «nghỉ việc ngày X» = xin nghỉ phép ngày đó. Gọi khi đã biết "
+        "Soạn NHÁP đơn nghỉ phép của CHÍNH người hỏi — chưa ghi gì. **nghỉ việc ngày X** = xin nghỉ phép ngày đó. Gọi khi đã biết "
         "NGÀY nghỉ; lý do / loại nghỉ chưa nói thì để trống, tool trả need_info để hỏi một lượt. Nửa ngày thì hỏi buổi. Có "
         "warnings (trùng đơn, thiếu quỹ phép) thì đọc nguyên. Không dùng cho Giấy nghỉ phép ở Văn thư (hệ tự sinh)."),
     "draft_payment_request": (
@@ -1287,7 +1287,7 @@ V2_TOOL_DESC: dict[str, str] = {
         "= hạn trả, invoice_from/invoice_to = ngày hóa đơn, date_from/date_to = ngày phát sinh). NCC có tiền trả trước treo "
         "thì nháp chia sẵn phần cấn trừ."),
     "propose_document_update": (
-        "ĐỀ XUẤT sửa một phiếu ĐÃ CÓ — chưa ghi; bot gửi thẻ cũ → mới, người dùng nhắn «xác nhận» (hoặc bấm nút) mới ghi. Sửa "
+        "ĐỀ XUẤT sửa một phiếu ĐÃ CÓ — chưa ghi; bot gửi thẻ cũ → mới, người dùng nhắn **xác nhận** (hoặc bấm nút) mới ghi. Sửa "
         "được: YCMH mục đích / ngày cần hàng / ghi chú; YCBG mục đích / ghi chú; dòng hàng YCMH, YCBG qua line_ops; đơn nghỉ từ "
         "ngày / đến ngày / loại / lý do (chỉ Nháp hoặc Bị trả lại); YCTT 3 câu chữ bản in. KHÔNG sửa giá, NCC, số tiền, trạng "
         "thái, hạn chi — nói rõ phải sửa tay trên form. Chỉ điền trường được đổi với giá trị MỚI; thiếu thì hỏi."),
@@ -1297,7 +1297,7 @@ V2_TOOL_DESC: dict[str, str] = {
     "payable_lookup": (
         "Tra CÔNG NỢ PHẢI TRẢ nhà cung cấp. Mặc định chỉ khoản CÒN PHẢI TRẢ; summary tính trên toàn bộ kết quả lọc; mỗi khoản "
         "có payable_id (cho draft_payment_request). Ba cặp ngày: date_from/date_to = ngày PHÁT SINH; due_from/due_to = HẠN TRẢ "
-        "(«cần trả tháng này»); invoice_from/invoice_to = NGÀY HÓA ĐƠN. «Bao nhiêu NCC / ai nợ nhiều nhất» → group_by="
+        "(**cần trả tháng này**); invoice_from/invoice_to = NGÀY HÓA ĐƠN. **Bao nhiêu NCC / ai nợ nhiều nhất** → group_by="
         "supplier|company, đừng tự đếm danh sách. Có prepay_hanging thì đọc hint gợi ý cấn trừ."),
     "supplier_scorecard": (
         "CHẤM ĐIỂM nhà cung cấp 0–100 cho một mặt hàng từ dữ liệu ERP (giá 40 · ổn định 20 · giao đúng hạn 20 · pháp lý 20). "
@@ -1377,13 +1377,13 @@ def _bold_label(line: str) -> str:
 
 
 def _bullets(summary: list) -> list[str]:
-    """Mỗi ô một gạch đầu dòng; dòng hàng («- Giấy A4 × 10 Thùng») thụt vào dưới ô «n dòng:» — bộ mẫu ai-CR-203 thấy
-    «• - Thùng giấy A4» (hai dấu đầu dòng chồng nhau)."""
+    """Mỗi ô một gạch đầu dòng; dòng hàng ("- Giấy A4 × 10 Thùng") thụt vào dưới ô "n dòng:" — bộ mẫu ai-CR-203 thấy
+    "• - Thùng giấy A4" (hai dấu đầu dòng chồng nhau)."""
     out = []
     for x in summary:
         x = str(x)
         if x[:1].isspace():
-            #  Bộ mẫu lần 2 (mẫu 15): kế hoạch có việc con «    + …» và «    Tiêu chí: …» — trước bị gắn thêm «• ».
+            #  Bộ mẫu lần 2 (mẫu 15): kế hoạch có việc con "    + …" và "    Tiêu chí: …" — trước bị gắn thêm "• ".
             inner = x.strip()
             out.append("        · " + inner[2:] if inner.startswith("+ ") else "        " + _bold_label(inner))
         elif x.startswith("- "):
@@ -1404,7 +1404,7 @@ def draft_reply(chat_id: str, name: str, result: dict) -> str:
     draft = result.get("draft") or {}
     head = f"Em sửa nháp {label} rồi:" if name == "update_draft" else f"Em soạn nháp {label} như sau:"
     lines = [head] + _bullets(result.get("tom_tat_se_luu") or [])
-    #  Bộ mẫu ai-CR-203 (15/10): «Em tạm hiểu: vào cột Cần làm (…các cột…)» lặp ô «Cột: Cần làm» ngay trên → bỏ ý mà
+    #  Bộ mẫu ai-CR-203 (15/10): "Em tạm hiểu: vào cột Cần làm (…các cột…)" lặp ô "Cột: Cần làm" ngay trên → bỏ ý mà
     #  giá trị đã hiện ở một ô.
     shown = [v.strip().lower() for v in (str(x).partition(": ")[2] for x in result.get("tom_tat_se_luu") or [])
              if len(v.strip()) >= 4]
@@ -1490,14 +1490,14 @@ def shortcut(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
 # ---------------------------------------------------------------------------
 # Vòng tác tử
 # ---------------------------------------------------------------------------
-#  Run #242 (15/10): model truyền nguyên «chị Mi» vào employee_lookup → «không tìm thấy»; lần trước truyền «Mi» thì ra đúng.
+#  Run #242 (15/10): model truyền nguyên "chị Mi" vào employee_lookup → "không tìm thấy"; lần trước truyền "Mi" thì ra đúng.
 HONORIFIC = re.compile(r"^(?:anh|chị|chi|em|cô|co|chú|chu|bác|bac|ông|ong|bà|ba|bạn|ban|sếp|sep|mr\.?|ms\.?|mrs\.?)\s+",
                        re.IGNORECASE)
 NAME_ARGS = {"employee_lookup": ("query",)}
 
 
 def _clean_args(name: str, args: dict) -> dict:
-    """Bỏ xưng hô đứng đầu tên người trước khi tra («chị Mi» → «Mi»)."""
+    """Bỏ xưng hô đứng đầu tên người trước khi tra ("chị Mi" → "Mi")."""
     keys = NAME_ARGS.get(name)
     if not keys:
         return args
@@ -1511,7 +1511,7 @@ def _clean_args(name: str, args: dict) -> dict:
 
 
 def _with_user_text(name: str, args: dict, text: str, turns: list[dict]) -> dict:
-    """Bộ mẫu ai-CR-203 (mẫu 12): công cụ soạn nháp không nhận lời người dùng thì coi MỌI ô là «đã hỏi» và không bao giờ
+    """Bộ mẫu ai-CR-203 (mẫu 12): công cụ soạn nháp không nhận lời người dùng thì coi MỌI ô là "đã hỏi" và không bao giờ
     hỏi ngày cần hàng / kho nhận. Web Trợ lý chèn tham số ẩn này từ lâu (`assistant.service._with_user_text`); lõi mới
     làm y vậy."""
     from app.modules.assistant.tools import confirm_fields
@@ -1577,12 +1577,12 @@ def _add_usage(result, first) -> None:
 def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
     from . import service
 
-    #  ai-CR-201: lối tắt chữ của đường cũ chạy TRƯỚC (không tốn model). Chúng tự đóng dấu tin («lenh», hay để trống cho
-    #  vòng gom như «ghi việc: …»), nên phải chạy khi tin còn dấu rỗng.
+    #  ai-CR-201: lối tắt chữ của đường cũ chạy TRƯỚC (không tốn model). Chúng tự đóng dấu tin ("lenh", hay để trống cho
+    #  vòng gom như "ghi việc: …"), nên phải chạy khi tin còn dấu rỗng.
     if shortcut(db, chat_id, row, text):
         db.commit()
         return
-    #  Đường cũ ghi tin chủ bot với action="" (để gom việc). Lõi mới KHÔNG gom việc từ tin thường → đóng dấu «hỏi» ngay,
+    #  Đường cũ ghi tin chủ bot với action="" (để gom việc). Lõi mới KHÔNG gom việc từ tin thường → đóng dấu "hỏi" ngay,
     #  kẻo _triage_inbox biến mỗi câu chào thành một vé sửa mã.
     row.action = ACT_ASKED
     db.commit()
@@ -1606,7 +1606,7 @@ def handle(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
 
 def _ledger(db: Session, chat_id: str, row: AgentMessage, user, text: str, calls: list, *, result=None,
             error: bool = False) -> None:
-    """ai-CR-230: một dòng sổ ý định cho lượt chat Telegram / Zalo (lõi core_v2) — nguồn số «dùng AI» theo người × ngày
+    """ai-CR-230: một dòng sổ ý định cho lượt chat Telegram / Zalo (lõi core_v2) — nguồn số "dùng AI" theo người × ngày
     (doc/erp/22 §5). Không lưu nguyên văn câu hỏi; hỏng thì nuốt lỗi (`intent_ledger.record` tự lo)."""
     from . import intent_ledger
 
@@ -1679,7 +1679,7 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
                     if span is not None:
                         problem = reply_guard.overlapping(span, created_spans)
                         if problem:
-                            return {"error": f"CHƯA tạo «{args.get('title')}»: {problem}. Báo người dùng, hỏi lại giờ."}
+                            return {"error": f"CHƯA tạo **{args.get('title')}**: {problem}. Báo người dùng, hỏi lại giờ."}
                 out = erp.run_tool(db, user, name, _with_user_text(name, _clean_args(name, args), text, turns))
                 if (name == "create_calendar_event" and span is not None and isinstance(out, dict)
                         and not out.get("error") and not out.get("denied")):
@@ -1741,7 +1741,7 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
         if stopped.get("name") == "commit_draft" and stopped["result"].get("ask_confirm"):
             service.reply(db, chat_id, confirm_reply(chat_id, stopped["result"]), markdown=True, action=ACT_ANSWER)
         elif stopped.get("name") in ("commit_draft", "drop_draft"):
-            #  Đường cũ đã báo «Đã tạo …» / «không tạo» — chỉ ghi một dòng sổ để lịch sử còn lượt của bot.
+            #  Đường cũ đã báo "Đã tạo …" / "không tạo" — chỉ ghi một dòng sổ để lịch sử còn lượt của bot.
             service.log_message(db, DIR_OUT, chat_id, 0,
                                 "(em đã tạo xong theo nháp)" if stopped["name"] == "commit_draft" else "(em đã bỏ nháp)",
                                 action=ACT_ANSWER)
@@ -1759,7 +1759,7 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
                 answer = (draft_reply(chat_id, stopped["name"], stopped["result"]) if stopped
                           else (result.text or "").strip())
                 if reminders_set and not stopped:
-                    #  Đại ca 15/10: «nhắc anh 5h30 chiều đi tập gym, a nên tập gì em nhỉ» — đặt nhắc + trả lời câu hỏi.
+                    #  Đại ca 15/10: "nhắc anh 5h30 chiều đi tập gym, a nên tập gì em nhỉ" — đặt nhắc + trả lời câu hỏi.
                     #  Giờ nhắc do bot báo (model từng nói nhầm ngày), phần hỏi do model trả lời.
                     head = _with_calendar_offer(db, chat_id, "\n".join(reminder_reply(chat_id, r) for r in reminders_set[-3:]),
                                                 reminders_set[-1])
@@ -1772,7 +1772,7 @@ def _answer(db: Session, chat_id: str, row: AgentMessage, text: str, user) -> No
                           markdown=stopped.get("name") != DATA_CHANGE_TOOL.name)     # thẻ ops đã là HTML
         calls = [c for c in (result.tool_calls or []) if isinstance(c, dict) and c.get("name") not in LOCAL_TOOL_NAMES]
         drafts = [c for c in calls if isinstance(c.get("draft"), dict) and _chat_draft(c.get("name"))]
-        for c in drafts:                     # nháp đã nằm trong câu trả lời — chỉ ghi dòng chờ «tạo», không gửi thẻ
+        for c in drafts:                     # nháp đã nằm trong câu trả lời — chỉ ghi dòng chờ "tạo", không gửi thẻ
             service._offer_draft(db, chat_id, user, c, silent=True)
         service.deliver_tool_results(db, chat_id, user, [c for c in calls if c not in drafts])
         run.artifact = {"core": "v2", "lane": lane, "tools": [str(c.get("name") or "") for c in prior_calls + list(

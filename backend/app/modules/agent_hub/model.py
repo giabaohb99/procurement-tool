@@ -210,7 +210,7 @@ class AgentChatLink(Base, AuditMixin):
 
     user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     chat_id: Mapped[str] = mapped_column(String(50), default="", index=True)
-    #  Tên hiển thị Telegram lúc liên kết — để trang cá nhân nói «đang nối với ‹tên›».
+    #  Tên hiển thị Telegram lúc liên kết — để trang cá nhân nói "đang nối với ‹tên›".
     tg_name: Mapped[str] = mapped_column(String(255), default="")
     code_hash: Mapped[str] = mapped_column(String(64), default="", index=True)
     code_expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
@@ -222,7 +222,7 @@ class AgentChatLink(Base, AuditMixin):
 
 
 class AgentGrant(Base, AuditMixin):
-    """Ai được ra lệnh SỬA MÃ qua bot, ở cấp nào (ai-CR-051, K-01 «cách 3»).
+    """Ai được ra lệnh SỬA MÃ qua bot, ở cấp nào (ai-CR-051, K-01 "cách 3").
 
     Cấp bằng CÂU NHẮN của đại ca trên Telegram, không lên web, không build, không khởi động lại.
     Gắn với TÀI KHOẢN ERP (`user_id`), không gắn với chat: người đó đăng nhập bot bằng chat nào cũng
@@ -235,7 +235,7 @@ class AgentGrant(Base, AuditMixin):
 
     user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     level: Mapped[int] = mapped_column(SmallInteger, default=0)
-    #  Chat đã cấp (chỉ có thể là chat đại ca) — để sổ trả lời «ai cấp, lúc nào».
+    #  Chat đã cấp (chỉ có thể là chat đại ca) — để sổ trả lời "ai cấp, lúc nào".
     granted_by_chat: Mapped[str] = mapped_column(String(50), default="")
     note: Mapped[str] = mapped_column(String(255), default="")
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
@@ -258,7 +258,7 @@ class AiKey(Base, AuditMixin):
     owner_id: Mapped[int] = mapped_column(BigInteger, default=0)
     provider: Mapped[str] = mapped_column(String(30), default="gemini")
     model: Mapped[str] = mapped_column(String(80), default="")
-    #  ai-CR-108: địa chỉ trạm cho hãng «tùy chỉnh» (https, tên miền công khai); trống với hãng có sẵn.
+    #  ai-CR-108: địa chỉ trạm cho hãng "tùy chỉnh" (https, tên miền công khai); trống với hãng có sẵn.
     base_url: Mapped[str] = mapped_column(String(200), default="")
     priority: Mapped[int] = mapped_column(SmallInteger, default=1)
     daily_cap: Mapped[int] = mapped_column(Integer, default=0)
@@ -308,7 +308,7 @@ class AgentMemory(Base, AuditMixin):
 
 class AgentNote(Base, AuditMixin):
     """Sổ ghi nhớ cá nhân — tầng KHO (ai-CR-095, C-02): ghi chú dài của từng người, không trần; vector ở collection
-    `agent_personal` của Qdrant (payload `user_id`). «Quên» = `revoked_at`, giữ lịch sử."""
+    `agent_personal` của Qdrant (payload `user_id`). "Quên" = `revoked_at`, giữ lịch sử."""
 
     __tablename__ = "tab_agent_note"
 
@@ -364,7 +364,7 @@ class AgentMeeting(Base, AuditMixin):
     #  ai-CR-114: việc + lịch rút từ biên bản, đánh số cho thẻ duyệt; mỗi mục ghi trạng thái (ActionState) và chỗ đã tạo.
     actions: Mapped[list | None] = mapped_column(JSON, default=None, nullable=True)
     #  ai-CR-162: các bước đã xong (`meetings.Progress`) — hỏng giữa chừng thì báo đúng cái gì đã xong / chưa xong, và
-    #  «thử lại biên bản» làm tiếp từ bước hỏng, không chép lời / viết lại.
+    #  "thử lại biên bản" làm tiếp từ bước hỏng, không chép lời / viết lại.
     steps: Mapped[list | None] = mapped_column(JSON, default=None, nullable=True)
     duration_sec: Mapped[int] = mapped_column(Integer, default=0)
     transcript: Mapped[str] = mapped_column(Text().with_variant(mysql.MEDIUMTEXT(), "mysql"), default="")
@@ -414,7 +414,7 @@ class AgentGroupMessage(Base, AuditMixin):
 
 class AgentGroupSummary(Base, AuditMixin):
     """Bản tóm tắt / câu trả lời về một nhóm mà bot hoặc Trợ lý AI đã viết (ai-CR-123) — để xem lại trên web.
-    `user_id` = người hỏi (tài khoản ERP); `source` = 1 bot nhắn riêng / Trợ lý web, 2 nút «Tóm tắt» trên màn nhóm."""
+    `user_id` = người hỏi (tài khoản ERP); `source` = 1 bot nhắn riêng / Trợ lý web, 2 nút "Tóm tắt" trên màn nhóm."""
 
     __tablename__ = "tab_agent_group_summary"
 
@@ -495,7 +495,7 @@ class AgentIntent(Base, AuditMixin):
 
 class AgentMemoryCandidate(Base, AuditMixin):
     """Điều bot TỰ RÚT về một người (ai-CR-137, phase 13.3), đang đếm số lần gặp lại. Đủ `hits` ≥ 3 trên ≥ 2 ngày thì
-    ghi vào lõi sổ nhớ (`status` 2); không gặp lại thì hết hạn (3); người dùng «quên» thì thành bia mộ (4) — không rút
+    ghi vào lõi sổ nhớ (`status` 2); không gặp lại thì hết hạn (3); người dùng "quên" thì thành bia mộ (4) — không rút
     lại trong một thời gian. `section` 1..4 = bốn mục của lõi. `key_hash` = sha1 của dòng đã bỏ dấu (khử trùng)."""
 
     __tablename__ = "tab_agent_memory_candidate"
@@ -659,7 +659,7 @@ class AgentGoogleLink(Base, AuditMixin):
 class AgentEnv(Base, AuditMixin):
     """SỔ MÔI TRƯỜNG (ai-CR-067, V-01): mỗi dòng = một nơi bot được deploy / xem / thao tác.
 
-    Khai bằng câu nhắn ở chat đại ca («thêm môi trường …»), migration nạp sẵn `dev` và `prod`. Ô máy chủ để
+    Khai bằng câu nhắn ở chat đại ca ("thêm môi trường …"), migration nạp sẵn `dev` và `prod`. Ô máy chủ để
     trống = máy trong .env của runner (`AGENT_VPS_HOST`…) — dev và prod hiện chung một VPS. Thêm VPS mới =
     thêm một dòng có host riêng, không sửa mã. `kind` = 1 dev · 2 prod · 3 preview (constants.ENV_*).
     Ba cột sức khỏe cuối do vòng theo dõi mỗi phút ghi (O-01).
@@ -689,9 +689,9 @@ class AgentEnv(Base, AuditMixin):
 class AgentOp(Base, AuditMixin):
     """NHẬT KÝ THAO TÁC trên VPS (ai-CR-068, V-02 + V-03): mỗi lệnh bot chạy trên một môi trường = một dòng.
 
-    Ghi TRƯỚC khi chạy (thẻ «đúng» hiện nguyên văn `command`), nên dòng sổ là bằng chứng ai cho phép cái gì.
-    Thao tác sửa có `backup_ref` (tệp sao lưu trên VPS) và `undo_params` (cách hoàn tác) — «hoàn tác thao tác
-    #n» đẻ ra một dòng MỚI trỏ `undo_of_op_id` về dòng cũ, không sửa dòng cũ ngoài `undone_by_op_id`.
+    Ghi TRƯỚC khi chạy (thẻ "đúng" hiện nguyên văn `command`), nên dòng sổ là bằng chứng ai cho phép cái gì.
+    Thao tác sửa có `backup_ref` (tệp sao lưu trên VPS) và `undo_params` (cách hoàn tác) — "hoàn tác thao tác
+    #n" đẻ ra một dòng MỚI trỏ `undo_of_op_id` về dòng cũ, không sửa dòng cũ ngoài `undone_by_op_id`.
     `output` đã qua `guardrails.mask_secrets` — không bao giờ có bí mật thô ở đây.
     """
 
@@ -764,7 +764,7 @@ class AgentDbBackup(Base, AuditMixin):
 class AgentBriefSub(Base, AuditMixin):
     """Đăng ký BẢN TIN của một người (ai-CR-140) — bật / tắt ngay trong chat. `kind` 1 = bản tin sáng (lịch, việc riêng,
     việc Dự án tới hạn, chờ duyệt — không tốn lượt model) · 2 = bản tin theo CHỦ ĐỀ (một câu hỏi chạy qua Trợ lý AI bằng
-    khóa của chính người đó, vd «công nợ quá hạn của DEGO»). `days` = mặt nạ thứ trong tuần (thứ hai = 1, … chủ nhật =
+    khóa của chính người đó, vd "công nợ quá hạn của DEGO"). `days` = mặt nạ thứ trong tuần (thứ hai = 1, … chủ nhật =
     64; 127 = mọi ngày). `last_sent_on` = ngày (giờ VN) đã gửi, chặn gửi hai lần. Mã số ở `brief_subs.py`."""
 
     __tablename__ = "tab_agent_brief_sub"

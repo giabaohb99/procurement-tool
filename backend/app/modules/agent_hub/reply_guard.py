@@ -3,8 +3,8 @@
 Lượt run #365–369 (dev 19/10/2026, Lạc Lạc tạo lịch chuyến Phan Rang – Long Hải) có bốn lỗi máy kiểm được:
   - bịa link: `maps.app.goo.gl/HangRai`, `/VinhHy`, `/TapCham`… (tệp chỉ có link `google.com/maps/dir/?api=1…`) →
     `strip_unknown_urls`: URL chỉ được giữ khi có NGUYÊN VĂN trong tin người dùng / kết quả công cụ / tệp đã đọc;
-  - sai thứ: «21/11/2026 Thứ Sáu» (đúng là Thứ Bảy) → `fix_weekdays` tính lại bằng lịch;
-  - emoji «✅» dù luật cấm → `strip_emoji`;
+  - sai thứ: "21/11/2026 Thứ Sáu" (đúng là Thứ Bảy) → `fix_weekdays` tính lại bằng lịch;
+  - emoji "✅" dù luật cấm → `strip_emoji`;
   - tạo lịch chồng giờ → `overlapping` (lõi gọi trước mỗi lần tạo sự kiện).
 Hàm thuần, không gọi DB / model.
 """
@@ -64,7 +64,7 @@ def strip_unknown_urls(text: str, allowed: set[str]) -> tuple[str, list[str]]:
 WEEKDAY_NAMES = ("thứ hai", "thứ ba", "thứ tư", "thứ năm", "thứ sáu", "thứ bảy", "chủ nhật")
 _WD = (r"(?:thứ\s+(?:hai|ba|tư|năm|sáu|bảy|[2-7])|chủ\s+nhật|CN|T[2-7])")
 _DATE = r"(\d{1,2})/(\d{1,2})(?:/(\d{4}))?"
-#  «Thứ Sáu 21/11», «thứ 6, ngày 21/11/2026», «T6 21/11» … và «21/11 (Thứ Sáu)», «21/11/2026 - Thứ Sáu».
+#  "Thứ Sáu 21/11", "thứ 6, ngày 21/11/2026", "T6 21/11" … và "21/11 (Thứ Sáu)", "21/11/2026 - Thứ Sáu".
 BEFORE_RX = re.compile(rf"(?<![\wÀ-ỹ])({_WD})(\s*[,·\-–]?\s*(?:ngày\s+)?){_DATE}(?!\d)", re.I)
 AFTER_RX = re.compile(rf"(?<!\d){_DATE}(\s*(?:\(|[,·\-–]\s*)?\s*)({_WD})(?![\wÀ-ỹ])", re.I)
 
@@ -76,7 +76,7 @@ def _resolve(d: int, m: int, y: str | None, today: date) -> date | None:
         cand = date(today.year, m, d)
     except ValueError:
         return None
-    if cand < today - timedelta(days=120):          # «5/1» nói vào tháng 11 là tháng 1 năm sau
+    if cand < today - timedelta(days=120):          # "5/1" nói vào tháng 11 là tháng 1 năm sau
         try:
             cand = date(today.year + 1, m, d)
         except ValueError:
@@ -85,7 +85,7 @@ def _resolve(d: int, m: int, y: str | None, today: date) -> date | None:
 
 
 def _styled(name: str, like: str) -> str:
-    """Giữ kiểu chữ của bản gốc: «Thứ Sáu» / «thứ sáu» / «THỨ SÁU»; dạng số «thứ 6», «T6», «CN» giữ dạng số."""
+    """Giữ kiểu chữ của bản gốc: "Thứ Sáu" / "thứ sáu" / "THỨ SÁU"; dạng số "thứ 6", "T6", "CN" giữ dạng số."""
     low = like.lower().replace(" ", "")
     if low in ("cn",) or re.fullmatch(r"t[2-7]", low):
         return "CN" if name == "chủ nhật" else "T" + str(WEEKDAY_NAMES.index(name) + 2)
@@ -177,7 +177,7 @@ def overlapping(span: tuple[datetime, datetime], created: list[tuple[str, dateti
         return "sự kiện dài hơn 24 giờ"
     for title, s, e in created:
         if start < e and s < end:
-            return f"chồng giờ với sự kiện vừa tạo «{title}» ({s:%H:%M %d/%m}–{e:%H:%M %d/%m})"
+            return f"chồng giờ với sự kiện vừa tạo **{title}** ({s:%H:%M %d/%m}–{e:%H:%M %d/%m})"
     return None
 
 

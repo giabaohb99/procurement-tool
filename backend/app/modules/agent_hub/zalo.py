@@ -28,7 +28,7 @@ from .telegram import TelegramError
 log = logging.getLogger("app.agent_hub.zalo")
 
 BASE_URL = "https://bot-api.zaloplatforms.com/bot{token}/{method}"
-#  Zalo nhận 1–2000 ký tự một tin. Chừa chỗ cho dấu «(tiếp)».
+#  Zalo nhận 1–2000 ký tự một tin. Chừa chỗ cho dấu "(tiếp)".
 MAX_TEXT = 1900
 #  Một câu trả lời dài cắt tối đa bấy nhiêu tin — quá nữa thì cắt đuôi, đỡ dội cả chục tin vào máy người dùng.
 MAX_PARTS = 5
@@ -162,7 +162,7 @@ _TAG = re.compile(r"</?([a-zA-Z0-9-]+)(?:\s[^>]*)?>")
 
 
 def to_zalo_html(text: str) -> str:
-    """HTML kiểu Telegram (lõi soạn sẵn) → HTML Zalo nhận được: giữ b / i / u / s; liên kết → «chữ (địa chỉ)»;
+    """HTML kiểu Telegram (lõi soạn sẵn) → HTML Zalo nhận được: giữ b / i / u / s; liên kết → "chữ (địa chỉ)";
     code / pre / blockquote / span… bỏ thẻ, giữ chữ. Ký tự đã thoát (&lt; &amp;) giữ nguyên."""
 
     def _link(m: re.Match) -> str:
@@ -205,7 +205,7 @@ def split_text(text: str, limit: int = MAX_TEXT) -> list[str]:
             cut = rest.rfind(" ", 0, limit)
         if cut < limit // 2:
             cut = limit
-        #  Không để cắt rơi vào giữa «<b…>».
+        #  Không để cắt rơi vào giữa "<b…>".
         lt, gt = rest.rfind("<", 0, cut), rest.rfind(">", 0, cut)
         if lt > gt:
             cut = lt
@@ -234,7 +234,7 @@ def _button_lines(buttons: list[tuple[str, str]] | None) -> str:
         if str(data).startswith(("https://", "http://")):
             lines.append(f"- {html.escape(label)}: {data}")
         else:
-            lines.append(f"- «{html.escape(label)}»")
+            lines.append(f"- <b>{html.escape(label)}</b>")
     return "\n\nNhắn lại một trong các lựa chọn:\n" + "\n".join(lines)
 
 

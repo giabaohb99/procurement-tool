@@ -1,4 +1,4 @@
-"""«Bot đang nhớ gì về tôi» (ai-CR-138, phase 13.4): xem / sửa / xóa trí nhớ của CHÍNH MÌNH.
+""""Bot đang nhớ gì về tôi" (ai-CR-138, phase 13.4): xem / sửa / xóa trí nhớ của CHÍNH MÌNH.
 
 Mọi hàm nhận `user_id` của NGƯỜI ĐANG ĐĂNG NHẬP (controller lấy từ phiên, không bao giờ từ tham số). Không có đường nào cho
 quản trị / quản lý đọc sổ người khác — kể cả admin. Thu hồi / nghỉ việc (`service.revoke_user_access`) gọi `wipe`.
@@ -72,7 +72,7 @@ def add_line(db: Session, user_id: int, section: str, text: str, until=None) -> 
 
 
 def edit_line(db: Session, user_id: int, section: str, old: str, text: str) -> dict:
-    """Sửa một dòng. Dòng «tự rút» người dùng sửa lại = của họ: bỏ đuôi «(tự rút)», điều gốc thành bia mộ để bot không
+    """Sửa một dòng. Dòng "tự rút" người dùng sửa lại = của họ: bỏ đuôi "(tự rút)", điều gốc thành bia mộ để bot không
     rút lại câu cũ chen cạnh câu đã sửa."""
     uid = int(user_id)
     line = " ".join((text or "").split()).strip(" .")

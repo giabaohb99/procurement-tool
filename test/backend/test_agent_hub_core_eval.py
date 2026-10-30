@@ -113,7 +113,7 @@ def test_luat_cung():
     log = TurnLog(text="x", replies=["Em soạn nháp: hạn <b>23/10/2026</b> «x»"], tools=["draft_work_task"], commits=["tạo"])
     fails = check_turn(Turn("x", "y", must_call=("update_draft",), commit=False, dates=("thứ sáu",)), log, date(2026, 10, 15))
     assert any("update_draft" in f for f in fails) and any("GHI NHÁP" in f for f in fails)
-    assert any("16/10/2026" in f for f in fails) and any("« »" in f for f in fails)
+    assert any("16/10/2026" in f for f in fails) and any("ngoặc kép góc" in f for f in fails)
     assert check_turn(Turn("x", "y", no_model=True), TurnLog(text="x", replies=["ok"], runs=1), date(2026, 10, 15))
     assert any("emoji" in f for f in check_turn(Turn("x", "y"), TurnLog(text="x", replies=["Dạ 😊"]), date(2026, 10, 15)))
     assert not check_turn(Turn("x", "y"), TurnLog(text="x", replies=["• dòng một"]), date(2026, 10, 15))

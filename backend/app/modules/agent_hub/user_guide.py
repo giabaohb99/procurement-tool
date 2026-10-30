@@ -1,12 +1,12 @@
-"""HƯỚNG DẪN DÙNG BOT bằng câu nhắn (ai-CR-120) — đại ca 08/10/2026: «mấy cái nhắn với bot, anh hỏi thì nó nên liệt kê
-ra, kiểu hướng dẫn người dùng».
+"""HƯỚNG DẪN DÙNG BOT bằng câu nhắn (ai-CR-120) — đại ca 08/10/2026: "mấy cái nhắn với bot, anh hỏi thì nó nên liệt kê
+ra, kiểu hướng dẫn người dùng".
 
-Nhắn «hướng dẫn» / «bot làm được gì» / «/huongdan» → toàn bộ câu lệnh theo nhóm. Nhắn «hướng dẫn <chủ đề>»
-(«hướng dẫn biên bản», «hướng dẫn sổ nhớ»…) → đúng một nhóm. So khớp không dấu. Nhóm «Sửa phần mềm» chỉ hiện cho chat chủ
+Nhắn "hướng dẫn" / "bot làm được gì" / "/huongdan" → toàn bộ câu lệnh theo nhóm. Nhắn "hướng dẫn <chủ đề>"
+("hướng dẫn biên bản", "hướng dẫn sổ nhớ"…) → đúng một nhóm. So khớp không dấu. Nhóm "Sửa phần mềm" chỉ hiện cho chat chủ
 bot và người được cấp quyền sửa mã.
 
-ai-CR-121 (đại ca 08/10: «cái «» khó chịu quá, khó đọc»): mỗi câu lệnh MỘT DÒNG, in kiểu mã (Telegram chạm là chép được),
-giải thích ngắn ở dòng thường — bỏ ngoặc «» và dấu «·» nối nhiều lệnh trên một dòng.
+ai-CR-121 (đại ca 08/10: "cái ngoặc góc khó chịu quá, khó đọc"): mỗi câu lệnh MỘT DÒNG, in kiểu mã (Telegram chạm là chép được),
+giải thích ngắn ở dòng thường — bỏ ngoặc kép góc và dấu "·" nối nhiều lệnh trên một dòng.
 
 Đây là NGUỒN DUY NHẤT của danh sách câu lệnh người dùng thấy — thêm câu lệnh mới cho bot thì thêm một dòng ở đây.
 """
@@ -23,7 +23,7 @@ from app.modules.assistant.glossary import fold
 class Section:
     key: str
     title: str
-    words: tuple[str, ...]                  # chữ (không dấu) để gọi riêng nhóm này: «hướng dẫn <chữ>»
+    words: tuple[str, ...]                  # chữ (không dấu) để gọi riêng nhóm này: "hướng dẫn <chữ>"
     items: tuple[tuple[str, str], ...]      # (câu nhắn mẫu, giải thích); câu rỗng = dòng ghi chú
     admin_only: bool = False
 
@@ -109,7 +109,7 @@ SECTIONS: tuple[Section, ...] = (
         ("dự án X có cột nào", "các cột kanban của dự án (Todo, Đang làm…)"),     # ai-CR-181
         ("tạo task gọi NCC X cho anh Được, vào cột Đang làm", "nói tên cột thì việc vào đúng cột; không nói thì cột đầu"),
         ("", "Mặc định 8h sáng em nhắc việc Dự án anh/chị phụ trách: trước hạn 1 ngày, ngày hạn, khi quá hạn — mỗi mốc "
-             "một lần. «tắt nhắc hạn việc» · «nhắc hạn việc lúc 7h» · «nhắc hạn việc hôm nay»"),
+             "một lần. **tắt nhắc hạn việc** · **nhắc hạn việc lúc 7h** · **nhắc hạn việc hôm nay**"),
     )),
     Section("lich", "Lịch Google, Drive", ("lich", "google", "drive", "hop online"), (
         ("hôm nay anh có họp gì", ""),
@@ -144,7 +144,7 @@ SECTIONS: tuple[Section, ...] = (
     )),
     Section("nhom", "Nhóm Telegram, Zalo", ("nhom", "group", "zalo"), (
         ("", "Thêm em vào nhóm — em không nói gì trong nhóm, chỉ ghi lại tin từ lúc vào. Nhóm Zalo: thêm tài khoản "
-             "Zalo của công ty vào nhóm, rồi nhắn riêng tài khoản đó «/dangnhap mã» một lần để em biết anh/chị là ai"),
+             "Zalo của công ty vào nhóm, rồi nhắn riêng tài khoản đó **/dangnhap mã** một lần để em biết anh/chị là ai"),
         ("bot đang ở nhóm nào", ""),
         ("nhóm Kế toán hôm nay bàn gì", "nhắn riêng với em"),
         ("tổng hợp nhóm Kế toán tuần này", ""),
@@ -210,7 +210,7 @@ _ASK = re.compile(r"^\s*(/?(huong ?dan|help|tro giup|menu)|(bot|em|ban|lac lac) 
 
 
 def match(text: str) -> tuple[bool, str]:
-    """(có phải hỏi hướng dẫn không, chủ đề còn lại). «/start» trơn cũng tính là hỏi hướng dẫn."""
+    """(có phải hỏi hướng dẫn không, chủ đề còn lại). "/start" trơn cũng tính là hỏi hướng dẫn."""
     t = fold(text or "")
     if t in ("/start", "start"):
         return True, ""
@@ -218,7 +218,7 @@ def match(text: str) -> tuple[bool, str]:
     if not m:
         return False, ""
     topic = (m.group(m.lastindex) or "").strip()
-    #  «hướng dẫn tạo đơn nghỉ phép trên ERP» là câu hỏi CÁCH DÙNG ERP (Trợ lý tra HDSD), không phải hỏi câu lệnh bot:
+    #  "hướng dẫn tạo đơn nghỉ phép trên ERP" là câu hỏi CÁCH DÙNG ERP (Trợ lý tra HDSD), không phải hỏi câu lệnh bot:
     #  chỉ nhận chủ đề ngắn và khớp một nhóm.
     if topic and (len(topic.split()) > 3 or _section_for(topic) is None):
         return False, ""
@@ -228,8 +228,8 @@ def match(text: str) -> tuple[bool, str]:
 def _section_for(topic: str) -> Section | None:
     if not topic:
         return None
-    #  So NGUYÊN TỪ: «nhom» không được khớp «nho» của nhóm Sổ ghi nhớ (lỗi bản đầu: «hướng dẫn nhóm» ra sổ nhớ).
-    #  ai-CR-157: nhiều nhóm cùng khớp («sua phieu» khớp cả «phieu») thì lấy nhóm có chữ khớp DÀI nhất.
+    #  So NGUYÊN TỪ: "nhom" không được khớp "nho" của nhóm Sổ ghi nhớ (lỗi bản đầu: "hướng dẫn nhóm" ra sổ nhớ).
+    #  ai-CR-157: nhiều nhóm cùng khớp ("sua phieu" khớp cả "phieu") thì lấy nhóm có chữ khớp DÀI nhất.
     best, size = None, 0
     for sec in SECTIONS:
         for w in sec.words:

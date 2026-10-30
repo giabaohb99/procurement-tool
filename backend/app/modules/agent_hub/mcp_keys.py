@@ -1,6 +1,6 @@
 """KHÓA KẾT NỐI MCP cá nhân (ai-CR-063, M-02 của `doc/agent-hub/04`).
 
-Mỗi người tự tạo khóa ở Trang cá nhân → «Khóa AI» → «Kết nối MCP», dán vào ứng dụng AI của mình (Claude
+Mỗi người tự tạo khóa ở Trang cá nhân → "Khóa AI" → "Kết nối MCP", dán vào ứng dụng AI của mình (Claude
 Desktop, Cursor, ChatGPT…) để ứng dụng đó gọi bộ tool ERP DƯỚI ĐÚNG QUYỀN của người đó. Khóa:
   - gác bằng băm SHA-256; ai-CR-221 (đại ca chốt 19/10): giữ thêm bản MÃ HÓA HAI CHIỀU (`raw_view`, Fernet suy từ
     JWT_SECRET như `app_settings.encrypt`) để CHỦ KHÓA xem lại / chép đoạn cấu hình đã điền khóa. Quản trị không xem được;
@@ -132,13 +132,13 @@ def serialize(row: AgentMcpKey) -> dict:
             "claimed_at": iso(row.claimed_at), "batch_id": row.batch_id or "", "user_id": int(row.user_id or 0),
             "kind": int(row.kind or KIND_MANUAL), "kind_label": KIND_LABELS.get(int(row.kind or KIND_MANUAL), "?"),
             #  ai-CR-221: `enabled` = công tắc của chủ khóa; `revealable` = xem lại được (khóa tạo trước ai-CR-221, kết nối
-            #  OAuth hay khóa chưa nhận thì không — màn hiện «tạo lại để xem»). KHÔNG bao giờ trả khóa thô ở đây.
+            #  OAuth hay khóa chưa nhận thì không — màn hiện "tạo lại để xem"). KHÔNG bao giờ trả khóa thô ở đây.
             "enabled": row.disabled_at is None, "disabled_at": iso(row.disabled_at),
             "revealable": bool(row.raw_view) and st in (KeyState.ACTIVE, KeyState.DISABLED)}
 
 
 # ---------------------------------------------------------------------------------------------------------------------
-# ai-CR-212 (K4 doc/erp/21 §5.3): PHÁT KHÓA HỘ — quản trị phát cho một người / cả phòng, khóa «chờ nhận» tới khi chủ khóa
+# ai-CR-212 (K4 doc/erp/21 §5.3): PHÁT KHÓA HỘ — quản trị phát cho một người / cả phòng, khóa "chờ nhận" tới khi chủ khóa
 # bấm Nhận ở Trang cá nhân (xem được đúng MỘT lần). Chỉ phát mức CHỈ ĐỌC (khóa được ghi chỉ người dùng tự tạo — Q5).
 # ---------------------------------------------------------------------------------------------------------------------
 class KeyState(IntEnum):

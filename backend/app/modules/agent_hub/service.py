@@ -1,7 +1,7 @@
 """Luồng của Agent Hub — nơi Telegram, sổ và bot quản lý gặp nhau.
 
 Mọi tin chữ (chủ bot lẫn người đã liên kết) đi LÕI HỘI THOẠI `core_v2.handle` (ai-CR-206, 15/10/2026 — đường cũ
-«đọc ý định rồi rẽ» đã xóa): lối tắt chữ chạy trước (lệnh trên việc, nhắc, hoàn tác, thẻ chờ…), còn lại một vòng tác tử
+"đọc ý định rồi rẽ" đã xóa): lối tắt chữ chạy trước (lệnh trên việc, nhắc, hoàn tác, thẻ chờ…), còn lại một vòng tác tử
 model + công cụ trả lời tại chỗ. Nhờ sửa phần mềm thì lõi (công cụ `create_code_task`, sau khi người dùng xác nhận cách
 hiểu) ghi tin vào `tab_agent_message` với `task_id = 0` (hàng đợi INBOX); vòng gom biến lô tin đó thành task, mỗi task một
 thẻ Telegram có nút. Tệp này giữ các lối tắt chữ, thẻ, vòng gom, dây chuyền sửa mã mà lõi gọi tới.
@@ -158,7 +158,7 @@ def poll_once(db: Session, *, timeout: int = telegram.POLL_TIMEOUT) -> int:
     offset = get_cursor(db).value
     #  ĐÓNG giao dịch TRƯỚC khi chờ Telegram (ai-CR-025). MySQL mặc định REPEATABLE READ: giữ giao
     #  dịch mở suốt 25 giây long-poll thì lúc xử tin, mọi thứ runner/worker vừa ghi đều vô hình —
-    #  đại ca bấm «Làm tiếp» AI-0007 mà bot thấy việc còn «Thất bại», lặng lẽ không làm gì.
+    #  đại ca bấm "Làm tiếp" AI-0007 mà bot thấy việc còn "Thất bại", lặng lẽ không làm gì.
     db.commit()
     updates = telegram.fetch_updates(offset, timeout=timeout)
     if not updates:
@@ -294,8 +294,8 @@ _ZALO_STATE_TEXT = {
 }
 
 
-#  ai-CR-135: đại ca 09/10 «nhắc một lần thôi, khi nào anh hỏi thì nhắc tiếp» — mỗi lần dựng lại stack, zalo-listener khởi
-#  động lại, thử phiên cũ hỏng → lại báo «MẤT KẾT NỐI» (9:21, 9:31…). Báo mất kết nối MỘT lần cho tới khi nối lại được;
+#  ai-CR-135: đại ca 09/10 "nhắc một lần thôi, khi nào anh hỏi thì nhắc tiếp" — mỗi lần dựng lại stack, zalo-listener khởi
+#  động lại, thử phiên cũ hỏng → lại báo "MẤT KẾT NỐI" (9:21, 9:31…). Báo mất kết nối MỘT lần cho tới khi nối lại được;
 #  muốn biết tình trạng thì hỏi `/zalo` hoặc xem thẻ Zalo trên màn Nhóm chat.
 ZALO_DOWN_CURSOR = "zalo_down_alerted"
 
@@ -465,7 +465,7 @@ def _document_by_message(db: Session, msg: dict, chat_id: str, text: str) -> boo
     info = {"kind": "doc", "file_id": str(doc["file_id"]), "name": name, "mime": mime}
     if not text:
         #  ai-CR-115: tệp KHÔNG kèm chú thích — người dùng hay gửi tệp rồi mới gõ câu hỏi ở tin sau (08/10 đại ca gửi báo
-        #  cáo rồi nhắn «phân tích báo cáo này» → bot trả lời HAI lần: một bản tóm tắt + một bản phân tích). Chờ
+        #  cáo rồi nhắn "phân tích báo cáo này" → bot trả lời HAI lần: một bản tóm tắt + một bản phân tích). Chờ
         #  DOC_WAIT_SEC giây: có câu hỏi thì trả lời theo câu đó, không có thì tự tóm tắt.
         row = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), f"[tệp {name}]"[:4000],
                           action=ACT_DOC_WAIT)
@@ -485,7 +485,7 @@ def _document_by_message(db: Session, msg: dict, chat_id: str, text: str) -> boo
 
 DOC_WAIT_SEC = 20
 DOC_DEFAULT_QUESTION = "Tóm tắt tệp này: ý chính, số liệu quan trọng, việc cần làm (nếu có)."
-#  Dặn thêm cho mọi câu hỏi về tệp (ai-CR-115: đại ca 08/10 «góc nhìn oke, chi tiết hơn thì oke hơn»).
+#  Dặn thêm cho mọi câu hỏi về tệp (ai-CR-115: đại ca 08/10 "góc nhìn oke, chi tiết hơn thì oke hơn").
 DOC_GUIDE = ("(Đọc HẾT các trang tính / mục của tệp trước khi trả lời. Trả lời đầy đủ và chi tiết: nêu số liệu cụ thể kèm "
              "đơn vị, so sánh giữa các kỳ / đơn vị, tỷ lệ tự tính được thì tính và ghi rõ là tự tính, chỉ ra điểm bất thường "
              "và rủi ro, cuối cùng là nhận xét + đề xuất. Không bỏ dở giữa chừng.)")
@@ -516,7 +516,7 @@ def _answer_document(db: Session, chat_id: str, info: dict, question: str, befor
     try:
         data, _ = telegram.download_file(str(info.get("file_id") or ""), max_bytes=settings.AGENT_FILE_MAX_MB * 1024 * 1024)
     except telegram.TelegramError as e:
-        reply(db, chat_id, f"Em chưa đọc được tệp «{telegram.esc(name)}»: {telegram.esc(str(e))}.")
+        reply(db, chat_id, f"Em chưa đọc được tệp **{telegram.esc(name)}**: {telegram.esc(str(e))}.")
         db.commit()
         return
     _answer_document_bytes(db, chat_id, name, mime, data, question, before_id)
@@ -530,11 +530,11 @@ def _answer_document_bytes(db: Session, chat_id: str, name: str, mime: str, data
     try:
         content = doc_text.extract(name, mime, data)
     except doc_text.DocTextError as e:
-        reply(db, chat_id, f"Em chưa đọc được tệp «{telegram.esc(name)}»: {telegram.esc(str(e))}.")
+        reply(db, chat_id, f"Em chưa đọc được tệp **{telegram.esc(name)}**: {telegram.esc(str(e))}.")
         db.commit()
         return
     origin = f" (tải từ {source})" if source else ""
-    answer_question(db, chat_id, f"{question}\n\n{DOC_GUIDE}\n\nNỘI DUNG TỆP «{name}»{origin}:\n{content}",
+    answer_question(db, chat_id, f"{question}\n\n{DOC_GUIDE}\n\nNỘI DUNG TỆP **{name}**{origin}:\n{content}",
                     before_id=before_id, kind="document")
 
 
@@ -568,14 +568,14 @@ def _doc_followup(db: Session, chat_id: str, row: AgentMessage, text: str) -> bo
 
 
 def _persona(chat_id: str) -> str:
-    """ai-CR-106: «đại ca» chỉ cho chat chủ bot; người khác là «anh/chị» / tên."""
+    """ai-CR-106: "đại ca" chỉ cho chat chủ bot; người khác là "anh/chị" / tên."""
     from .constants import BOT_PERSONA_OTHER
 
     return BOT_PERSONA if telegram.is_allowed_chat(chat_id) else BOT_PERSONA_OTHER
 
 
 def _quoted_text(msg: dict) -> str:
-    """Câu được trích khi người dùng bấm «Trả lời» một tin trên Telegram (ai-CR-100)."""
+    """Câu được trích khi người dùng bấm "Trả lời" một tin trên Telegram (ai-CR-100)."""
     rep = msg.get("reply_to_message") or {}
     return " ".join(str(rep.get("text") or rep.get("caption") or "").split())[:500]
 
@@ -590,12 +590,12 @@ def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
         return
     #  ai-CR-035: ảnh gửi kèm chú thích thì chú thích là nội dung tin.
     text = (msg.get("text") or msg.get("caption") or "").strip()
-    #  ai-CR-100: 07/10 đại ca bấm «Trả lời» tin «giá vàng hôm nay» rồi nhắn «trả lời cho tao» — bot chỉ thấy câu sau,
+    #  ai-CR-100: 07/10 đại ca bấm "Trả lời" tin "giá vàng hôm nay" rồi nhắn "trả lời cho tao" — bot chỉ thấy câu sau,
     #  không biết hỏi gì. Ghép câu được trích lên đầu để phân loại và Trợ lý đọc đúng ý. Lệnh `/` giữ nguyên.
     quoted = _quoted_text(msg)
     if quoted and text and not text.startswith("/"):
         text = f"{quoted}\n({text})"
-    #  ai-CR-104: tệp họp (audio / video / tin thoại dài) hoặc link Drive kèm chữ «họp / biên bản / ghi âm» → biên bản.
+    #  ai-CR-104: tệp họp (audio / video / tin thoại dài) hoặc link Drive kèm chữ "họp / biên bản / ghi âm" → biên bản.
     if _meeting_by_message(db, msg, chat_id, text):
         return
     if _document_by_message(db, msg, chat_id, text):
@@ -650,15 +650,15 @@ def _handle_message(db: Session, msg: dict, chat_id: str) -> None:
 
     _adopt_pending_photos(db, chat_id, row)
     with _instant_ack(chat_id, text):
-        #  ai-CR-206 (đại ca 15/10: «bỏ cái cũ luôn, sử dụng luồng mới cho code nó gọn lại»): mọi tin chữ đi lõi hội thoại
+        #  ai-CR-206 (đại ca 15/10: "bỏ cái cũ luôn, sử dụng luồng mới cho code nó gọn lại"): mọi tin chữ đi lõi hội thoại
         #  mới (doc/agent-hub/20); đường cũ (đọc ý định + Trợ lý) đã xóa.
         core_v2.handle(db, chat_id, row, text)
 
 
 @contextlib.contextmanager
 def _instant_ack(chat_id: str, text: str):
-    """ai-CR-194 (đại ca 13/10): mọi tin chữ được báo nhận NGAY («Em nhận rồi, đang xử lý…») trước khi gọi model; xong thì
-    xóa tin đó (câu trả lời tự đứng). Không ghi sổ (tin tạm, cùng loại «đang soạn tin»). Gửi hỏng thì bỏ qua."""
+    """ai-CR-194 (đại ca 13/10): mọi tin chữ được báo nhận NGAY ("Em nhận rồi, đang xử lý…") trước khi gọi model; xong thì
+    xóa tin đó (câu trả lời tự đứng). Không ghi sổ (tin tạm, cùng loại "đang soạn tin"). Gửi hỏng thì bỏ qua."""
     mid = 0
     if settings.AGENT_ACK_ENABLED and text and not text.startswith("/") and channels.is_telegram(chat_id):
         try:
@@ -711,7 +711,7 @@ def _transcribe_voice(db: Session, msg: dict, chat_id: str) -> str:
     if not text:
         reply(db, chat_id, "Em không nghe ra lời nào trong tin thoại. Đại ca nói lại hoặc nhắn chữ giúp em.")
         return ""
-    reply(db, chat_id, f"Em nghe: «{telegram.esc(text)}»", action=ACT_VOICE)
+    reply(db, chat_id, f"Em nghe: **{telegram.esc(text)}**", action=ACT_VOICE)
     return text
 
 
@@ -799,10 +799,10 @@ def _get_tg_name(msg: dict) -> str:
     return name or (f"@{who['username']}" if who.get("username") else "")
 
 
-#  ai-CR-131: đại ca 08/10 «họ có quyền thì mới hỏi được». Dùng bot (Telegram / Zalo) cần đúng quyền như Trợ lý AI trên
+#  ai-CR-131: đại ca 08/10 "họ có quyền thì mới hỏi được". Dùng bot (Telegram / Zalo) cần đúng quyền như Trợ lý AI trên
 #  web — khóa `assistant.read` ở màn Phân quyền; số liệu ERP trong câu trả lời vẫn lọc theo quyền của từng người như cũ.
 BOT_USE_PERMISSION = ("assistant", "read")
-_NO_BOT_RIGHT = ("Tài khoản ERP <b>{name}</b> chưa được cấp quyền «Trợ lý AI» nên chưa dùng được bot. Nhờ quản trị cấp quyền ở "
+_NO_BOT_RIGHT = ("Tài khoản ERP <b>{name}</b> chưa được cấp quyền **Trợ lý AI** nên chưa dùng được bot. Nhờ quản trị cấp quyền ở "
                  "màn Phân quyền tài khoản rồi đăng nhập lại.")
 
 
@@ -832,14 +832,14 @@ def _login_by_code(db: Session, msg: dict, chat_id: str, code: str, *, log_row: 
     reply(db, chat_id, f"Đã đăng nhập tài khoản ERP <b>{telegram.esc(name)}</b> cho chat này"
           + (f" ({telegram.esc(detail)})" if detail else "")
           + f". Hết hạn sau {settings.AGENT_LINK_DAYS} ngày. Cứ nhắn câu hỏi, em trả lời đúng quyền của tài khoản đó. "
-          "Chuông ERP của anh/chị (phiếu chờ duyệt, việc được giao) sẽ báo vào đây; nhắn «tắt chuông» để tắt, "
-          "«chuông tất cả» để nhận hết. Đăng xuất: <code>/dangxuat</code>.")
+          "Chuông ERP của anh/chị (phiếu chờ duyệt, việc được giao) sẽ báo vào đây; nhắn **tắt chuông** để tắt, "
+          "**chuông tất cả** để nhận hết. Đăng xuất: <code>/dangxuat</code>.")
 
 
 # ---------------------------------------------------------------------------
-# Hỏi chi phí bằng chữ (ai-CR-043) — màn «Việc của bot» đã ẩn (ai-CR-039), đại ca hỏi bot thay
+# Hỏi chi phí bằng chữ (ai-CR-043) — màn "Việc của bot" đã ẩn (ai-CR-039), đại ca hỏi bot thay
 # ---------------------------------------------------------------------------
-#  Chỉ bắt câu nói về tiền CỦA BOT: «chi phí» đứng một mình là từ nghiệp vụ ERP (chi phí thu mua).
+#  Chỉ bắt câu nói về tiền CỦA BOT: "chi phí" đứng một mình là từ nghiệp vụ ERP (chi phí thu mua).
 _COST_Q = re.compile(
     r"(?<!\w)(chi phí|tốn|hết)(?!\w).{0,30}(?<!\w)(bot|token|gemini|claude|đậu đậu|ai[-\s]?\d+|recap|biên bản)(?!\w)"
     r"|(?<!\w)(bot|đậu đậu|ai[-\s]?\d+)(?!\w).{0,20}(?<!\w)(tốn|chi phí|hết bao nhiêu)(?!\w)")
@@ -872,7 +872,7 @@ def _research_command(db: Session, chat_id: str, text: str, *, allow_docs: bool)
 
 def _research_error_text(error: str) -> str:
     """ai-CR-099: không bao giờ đổ cục JSON của hãng ra chat. 429 ở lượt tìm Google thường là hạn mức TÌM KIẾM của
-    dự án (gói miễn phí rất thấp) chứ không phải hết lượt hỏi — 07/10 khóa mới hỏi được nhưng «giá vàng hôm nay» 429."""
+    dự án (gói miễn phí rất thấp) chứ không phải hết lượt hỏi — 07/10 khóa mới hỏi được nhưng "giá vàng hôm nay" 429."""
     from . import ai_keys
 
     e = (error or "").lower()
@@ -886,8 +886,8 @@ def _research_error_text(error: str) -> str:
 def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
     """Một lượt nghiên cứu: gọi `research.run`, ghi sổ chi phí, nhắn kết quả + nguồn."""
     if not question:
-        reply(db, chat_id, "Đại ca nhắn luôn điều cần tra, ví dụ «tìm hiểu giúp anh thuế nhập khẩu thép "
-              "2026» hoặc «có đúng là hóa đơn điện tử phải xuất trong ngày không».")
+        reply(db, chat_id, "Đại ca nhắn luôn điều cần tra, ví dụ **tìm hiểu giúp anh thuế nhập khẩu thép "
+              "2026** hoặc **có đúng là hóa đơn điện tử phải xuất trong ngày không**.")
         return
     if not user_keys.active_key():
         reply(db, chat_id, user_keys.NO_KEY_HELP)
@@ -917,8 +917,8 @@ def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
     _ledger(db, chat_id, manager.INTENT_RESEARCH, mode=mode)
 
 
-#  «xuất word giúp anh», «gửi bản word», «cho file word» — chỉ khi chat này VỪA tra xong (trong
-#  RESEARCH_WORD_WINDOW) và câu ngắn: «xuất word báo cáo công nợ tháng 9» là việc của Trợ lý ERP.
+#  "xuất word giúp anh", "gửi bản word", "cho file word" — chỉ khi chat này VỪA tra xong (trong
+#  RESEARCH_WORD_WINDOW) và câu ngắn: "xuất word báo cáo công nợ tháng 9" là việc của Trợ lý ERP.
 _WORD_Q = re.compile(r"(?<!\w)word(?!\w)")
 RESEARCH_WORD_WINDOW = timedelta(minutes=30)
 
@@ -939,13 +939,13 @@ def _word_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bo
 
 
 def export_research_word(db: Session, chat_id: str) -> None:
-    """«/word»: bản Word của lượt nghiên cứu GẦN NHẤT của chính chat này (R-04)."""
+    """"/word": bản Word của lượt nghiên cứu GẦN NHẤT của chính chat này (R-04)."""
     runs = db.scalars(select(AgentRun).where(AgentRun.stage == STAGE_RESEARCH, AgentRun.status == RUN_OK)
                       .order_by(AgentRun.id.desc()).limit(50)).all()
     art = next((r.artifact for r in runs if isinstance(r.artifact, dict) and r.artifact.get("chat_id") == chat_id), None)
     if not art:
         reply(db, chat_id, "Chat này chưa có lần tìm hiểu nào để xuất Word. Đại ca nhắn điều cần tìm trước, "
-              "ví dụ «tìm hiểu giúp anh …».")
+              "ví dụ **tìm hiểu giúp anh …**.")
         return
     data = research.build_docx(art.get("mode", research.MODE_WEB), art.get("question", ""),
                                art.get("text", ""), art.get("sources") or [])
@@ -960,9 +960,9 @@ def export_research_word(db: Session, chat_id: str) -> None:
 
 
 def _deep_research_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """ai-CR-178 (phase 23.1 / 23.2): «nghiên cứu sâu: …» / «báo cáo nghiên cứu về …» → nhiều câu tìm con + báo cáo có
-    trích nguồn; «tổng hợp / so sánh các tài liệu này» kèm link / tệp → bản tổng hợp. Cũng nhận «ok» / «thôi» cho thẻ ước
-    tính chi phí của chính nó. Đứng TRƯỚC `_doc_followup` vì câu «tổng hợp các tài liệu này» phải gom HẾT tệp vừa gửi,
+    """ai-CR-178 (phase 23.1 / 23.2): "nghiên cứu sâu: …" / "báo cáo nghiên cứu về …" → nhiều câu tìm con + báo cáo có
+    trích nguồn; "tổng hợp / so sánh các tài liệu này" kèm link / tệp → bản tổng hợp. Cũng nhận "ok" / "thôi" cho thẻ ước
+    tính chi phí của chính nó. Đứng TRƯỚC `_doc_followup` vì câu "tổng hợp các tài liệu này" phải gom HẾT tệp vừa gửi,
     không phải chỉ tệp đang chờ. Chỉ chat đã đăng nhập ERP và có khóa AI; thiếu thì câu hướng dẫn sẵn có."""
     from . import deep_research
 
@@ -976,7 +976,7 @@ def _deep_research_by_text(db: Session, chat_id: str, row: AgentMessage, text: s
     if kind == deep_research.KIND_DOCS:
         items = deep_research.collect_items(db, chat_id, row.id, text)
         if not items:
-            return False                        # «tổng hợp báo cáo công nợ» không kèm tài liệu — việc của Trợ lý ERP
+            return False                        # "tổng hợp báo cáo công nợ" không kèm tài liệu — việc của Trợ lý ERP
     row.action = ACT_COMMAND
     row.scope = SCOPE_PERSONAL
     db.commit()
@@ -991,7 +991,7 @@ def _deep_research_by_text(db: Session, chat_id: str, row: AgentMessage, text: s
     return True
 
 
-#  ai-CR-158: hỏi chi phí của một biên bản họp («chi phí token cho cái recap này», «biên bản vừa rồi tốn bao nhiêu»).
+#  ai-CR-158: hỏi chi phí của một biên bản họp ("chi phí token cho cái recap này", "biên bản vừa rồi tốn bao nhiêu").
 _MEETING_WORDS = re.compile(r"(?<!\w)(recap|biên bản|cuộc họp|buổi họp|chép lời)(?!\w)")
 
 
@@ -1097,9 +1097,9 @@ def cost_report(db: Session, *, task: AgentTask | None = None, now: datetime | N
 
 
 def describe_user(db: Session, user) -> tuple[str, str]:
-    """(nhãn, chi tiết) của một tài khoản ERP cho người đọc: «Họ tên (MÃ NV)», «Phòng … · Email …».
+    """(nhãn, chi tiết) của một tài khoản ERP cho người đọc: "Họ tên (MÃ NV)", "Phòng … · Email …".
 
-    ai-CR-042: bản đầu chỉ in email, tài khoản không có email thì ra «#238» — đại ca không biết là ai.
+    ai-CR-042: bản đầu chỉ in email, tài khoản không có email thì ra "#238" — đại ca không biết là ai.
     """
     if user is None:
         return "", ""
@@ -1132,7 +1132,7 @@ def _account_fact(db: Session, chat_id: str, user) -> str:
 
 
 def show_account(db: Session, chat_id: str) -> None:
-    """«/taikhoan»: chat này hỏi Trợ lý dưới tài khoản nào, và cách đổi (ai-CR-040)."""
+    """"/taikhoan": chat này hỏi Trợ lý dưới tài khoản nào, và cách đổi (ai-CR-040)."""
     link = chat_link.get_active_link(db, chat_id)
     if link is not None:
         name, detail = describe_user(db, erp.user_by_id(db, link.user_id))
@@ -1181,7 +1181,7 @@ def user_guide_topic(text: str) -> str:
 
 
 def _send_guide(db: Session, chat_id: str, topic: str, user_id: int = 0) -> None:
-    """Hướng dẫn dùng bot (ai-CR-120). Nhóm «Sửa phần mềm» chỉ cho chat chủ bot / người được cấp quyền."""
+    """Hướng dẫn dùng bot (ai-CR-120). Nhóm "Sửa phần mềm" chỉ cho chat chủ bot / người được cấp quyền."""
     from . import user_guide
 
     admin = telegram.is_allowed_chat(chat_id) or bool(user_id and grants.level_for(db, user_id))
@@ -1206,7 +1206,7 @@ def _send_permissions(db: Session, chat_id: str) -> None:
 def _guide_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     from . import user_guide
 
-    if user_guide.is_permission_question(text):         # ai-CR-157: «quyền của tôi», «tôi dùng được gì»
+    if user_guide.is_permission_question(text):         # ai-CR-157: "quyền của tôi", "tôi dùng được gì"
         row.action = ACT_COMMAND
         _send_permissions(db, chat_id)
         return True
@@ -1253,7 +1253,7 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
     db.commit()
     low = (text or "").strip().lower()
     if not _LOGOUT_CMD.match(low) and not may_use_bot(db, link.user_id):
-        #  ai-CR-131: bị thu quyền «Trợ lý AI» sau khi đã nối — không trả lời, nói rõ vì sao (liên kết vẫn để đó: cấp lại
+        #  ai-CR-131: bị thu quyền "Trợ lý AI" sau khi đã nối — không trả lời, nói rõ vì sao (liên kết vẫn để đó: cấp lại
         #  quyền là dùng tiếp, khỏi đăng nhập lại).
         row.action = ACT_COMMAND
         name, _ = describe_user(db, erp.user_by_id(db, link.user_id))
@@ -1285,8 +1285,8 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
         answer_question(db, chat_id, text[4:].strip(), before_id=row.id)
         return True
     #  ai-CR-051 (K-04): người được đại ca cấp quyền ra lệnh trên việc bằng chữ như đại ca, nhưng PHẢI
-    #  nêu mã việc («gộp AI-0007», «AI-0007 xong chưa»): họ trò chuyện với Trợ lý nhiều, một câu «xong
-    #  rồi» trơn không được phép đóng việc nào. Đủ cấp hay không do `_grant_allows` xét.
+    #  nêu mã việc ("gộp AI-0007", "AI-0007 xong chưa"): họ trò chuyện với Trợ lý nhiều, một câu "xong
+    #  rồi" trơn không được phép đóng việc nào. Đủ cấp hay không do `_grant_allows` xét.
     if grants.level_for(db, link.user_id) and _CODE_IN_TEXT.search(low) and route_task_command(db, chat_id, row, text):
         return True
     with _instant_ack(chat_id, text):
@@ -1295,19 +1295,19 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-133: «tóm tắt bài viết này giúp anh» kèm (hoặc ngay sau) một đường link — đọc trang rồi tóm tắt
+# ai-CR-133: "tóm tắt bài viết này giúp anh" kèm (hoặc ngay sau) một đường link — đọc trang rồi tóm tắt
 # ---------------------------------------------------------------------------
-#  09/10 đại ca gửi link Facebook / VnExpress, bot trả lời «em không có công cụ mở link». Trước đây không có đường nào đọc
+#  09/10 đại ca gửi link Facebook / VnExpress, bot trả lời "em không có công cụ mở link". Trước đây không có đường nào đọc
 #  một trang theo địa chỉ; tra mạng chỉ TÌM theo câu hỏi.
 _LINK_ASK = re.compile(r"(?<!\w)(tom tat|doc|tom luoc|phan tich|xem giup|noi dung|y chinh|bai (viet|bao|nay)|link nay|"
                        r"trang nay|summary|summarize)(?!\w)")
 _LINK_LOOKBACK = timedelta(minutes=15)
 #  Link vào chính ERP có đường riêng (Trợ lý tra ERP). ai-CR-134: link Google Drive / Docs nay đọc được (tệp chia sẻ công
-#  khai); link Drive kèm chữ «họp / biên bản» vẫn đi đường biên bản họp (xét trước ở `_meeting_by_message`).
+#  khai); link Drive kèm chữ "họp / biên bản" vẫn đi đường biên bản họp (xét trước ở `_meeting_by_message`).
 _LINK_SKIP_HOSTS = ("meet.google.com",)
 _LINK_FAIL = {
-    "drive_private": ("Em không mở được tệp Google này: tệp chưa chia sẻ công khai. Anh/chị bật chia sẻ «Bất kỳ ai có "
-                      "đường liên kết» (quyền Người xem), hoặc tải tệp về rồi gửi thẳng vào đây, em đọc ngay."),
+    "drive_private": ("Em không mở được tệp Google này: tệp chưa chia sẻ công khai. Anh/chị bật chia sẻ **Bất kỳ ai có "
+                      "đường liên kết** (quyền Người xem), hoặc tải tệp về rồi gửi thẳng vào đây, em đọc ngay."),
     "too_large": "Tệp qua link lớn hơn {mb} MB, em chưa đọc được. Anh/chị gửi bản nhỏ hơn hoặc phần cần đọc.",
 }
 
@@ -1419,7 +1419,7 @@ def _run_command(db: Session, chat_id: str, text: str) -> None:
         if not n:
             reply(db, chat_id, "Không có tin nào đang chờ gom.")
     else:
-        #  ai-CR-120: lệnh lạ / «/huongdan» / «/help» → hướng dẫn đầy đủ (chat chủ bot thấy cả nhóm sửa phần mềm).
+        #  ai-CR-120: lệnh lạ / "/huongdan" / "/help" → hướng dẫn đầy đủ (chat chủ bot thấy cả nhóm sửa phần mềm).
         from . import user_guide
 
         reply(db, chat_id, user_guide.render(user_guide.match(text)[1], admin=True, bot_name=BOT_NAME))
@@ -1435,13 +1435,13 @@ FOLLOW_UP_WINDOW = timedelta(minutes=10)
 # ---------------------------------------------------------------------------
 # Báo nhận + báo đang chạy (ai-CR-021)
 # ---------------------------------------------------------------------------
-HEARTBEAT_AFTER = timedelta(seconds=90)     # im quá chừng này thì nhắn «em vẫn đang làm»
+HEARTBEAT_AFTER = timedelta(seconds=90)     # im quá chừng này thì nhắn "em vẫn đang làm"
 HEARTBEAT_STOP = timedelta(minutes=60)      # quá chừng này thì thôi sửa tin (việc kẹt thì /xem)
 _TRIAGE_ACTIVE = timedelta(minutes=15)      # việc ở TRIAGE lâu hơn = kẹt, vòng nhặt việc kẹt lo
 
 
 def ack_task_message(db: Session, chat_id: str, row: AgentMessage) -> None:
-    """Một câu «em nhận rồi» cho tin vừa được xếp là việc. Cả chùm tin liên tiếp chỉ một câu:
+    """Một câu "em nhận rồi" cho tin vừa được xếp là việc. Cả chùm tin liên tiếp chỉ một câu:
     đã báo nhận trong khoảng gom mà vẫn còn tin chờ gom thì thôi."""
     window = timedelta(seconds=settings.AGENT_TRIAGE_DELAY_SEC + 120)
     last_ack = db.scalar(
@@ -1503,14 +1503,14 @@ def _active_stage(db: Session, task: AgentTask) -> tuple[str, datetime | None]:
 
 
 #  ai-CR-127: lượt lập lại kế hoạch chạy NGAY trong tiến trình nhận tin; bot bị dựng lại giữa chừng (deploy dev) thì lượt
-#  đó mất hẳn — 08/10 đại ca trả lời AI-0005 lúc 16:45, Agent 1 dựng lại bot lúc 16:47, việc nằm im ở «Đang hỏi lại».
+#  đó mất hẳn — 08/10 đại ca trả lời AI-0005 lúc 16:45, Agent 1 dựng lại bot lúc 16:47, việc nằm im ở "Đang hỏi lại".
 REPLAN_RESUME_AFTER = timedelta(minutes=3)
 #  Nhặt lại một lần rồi mà vẫn không ra lượt lập kế hoạch nào (lần nhặt cũng bị ngắt) thì chờ chừng này mới thử lần nữa.
 REPLAN_RESUME_RETRY = timedelta(minutes=15)
 
 
 def resume_lost_replans(db: Session, now: datetime | None = None) -> int:
-    """Vòng beat mỗi phút: việc «Đang hỏi lại» mà câu hỏi đã được trả lời (`questions` rỗng, có tin trả lời) quá 3 phút
+    """Vòng beat mỗi phút: việc "Đang hỏi lại" mà câu hỏi đã được trả lời (`questions` rỗng, có tin trả lời) quá 3 phút
     vẫn chưa có lượt lập kế hoạch nào bắt đầu sau câu trả lời đó → lượt ấy đã bị ngắt; báo một câu rồi lập lại."""
     now = now or datetime.now()
     resumed = 0
@@ -1527,7 +1527,7 @@ def resume_lost_replans(db: Session, now: datetime | None = None) -> int:
         if ran is not None:
             continue                                # đã lập (xong hoặc hỏng có ghi sổ) — không lặp
         #  Đã nhặt lại rồi mà lượt đó còn đang chạy (dòng sổ chỉ ghi lúc xong): vòng beat kế tiếp không nhặt lần hai —
-        #  08/10 tin «bị ngắt, em làm lại» tới hai lần, 17:00 và 17:01.
+        #  08/10 tin "bị ngắt, em làm lại" tới hai lần, 17:00 và 17:01.
         again = db.scalar(select(AgentMessage.created_at).where(
             AgentMessage.task_id == task.id, AgentMessage.action == ACT_REPLAN_RESUME,
             AgentMessage.id > ans.id).order_by(AgentMessage.id.desc()).limit(1))
@@ -1549,8 +1549,8 @@ def _heartbeat_text(task: AgentTask, doing: str, minutes: int) -> str:
 
 
 def heartbeat(db: Session, now: datetime | None = None) -> int:
-    """Vòng beat mỗi phút: việc đang chạy mà quá 90 giây chưa có tin nào thì nhắn «em vẫn đang
-    làm»; đã nhắn rồi thì SỬA chính tin đó cho đúng số phút (không kêu chuông lần nữa).
+    """Vòng beat mỗi phút: việc đang chạy mà quá 90 giây chưa có tin nào thì nhắn "em vẫn đang
+    làm"; đã nhắn rồi thì SỬA chính tin đó cho đúng số phút (không kêu chuông lần nữa).
     Trả số tin đã gửi hoặc sửa."""
     now = now or datetime.now()
     chat_id = settings.AGENT_TELEGRAM_CHAT_ID
@@ -1589,25 +1589,25 @@ def heartbeat(db: Session, now: datetime | None = None) -> int:
 # ---------------------------------------------------------------------------
 # Lệnh gõ bằng chữ trên một việc (ai-CR-027)
 # ---------------------------------------------------------------------------
-#  Đại ca 23/09: «anh không thích chọn option dưới dòng tin nhắn, anh thích nhắn vào». Chữ «gộp»,
-#  «bỏ» còn nằm trong chính yêu cầu sửa phần mềm («bỏ ô Từ–Đến»), nên một tin chỉ là LỆNH khi:
-#  nêu mã việc (AI-0007), HOẶC là câu ngắn chỉ vào việc vừa làm («này», «vừa sửa»…), HOẶC chỉ gồm
-#  vài chữ («duyệt», «gộp đi», «xong rồi»). Câu dạng HỎI thì chỉ trả lời tình trạng, không làm gì.
+#  Đại ca 23/09: "anh không thích chọn option dưới dòng tin nhắn, anh thích nhắn vào". Chữ "gộp",
+#  "bỏ" còn nằm trong chính yêu cầu sửa phần mềm ("bỏ ô Từ–Đến"), nên một tin chỉ là LỆNH khi:
+#  nêu mã việc (AI-0007), HOẶC là câu ngắn chỉ vào việc vừa làm ("này", "vừa sửa"…), HOẶC chỉ gồm
+#  vài chữ ("duyệt", "gộp đi", "xong rồi"). Câu dạng HỎI thì chỉ trả lời tình trạng, không làm gì.
 _CODE_IN_TEXT = re.compile(r"(?i)\bai[-\s]?0*(\d{1,6})\b")
-#  «Chỉ vào việc» phải là cụm CÓ DANH TỪ («việc này», «fix này», «code vừa sửa», «commit mới này»):
-#  «mới», «này» đứng một mình thì «bỏ nút tạo mới này» — một yêu cầu MỚI — thành lệnh bỏ việc.
+#  "Chỉ vào việc" phải là cụm CÓ DANH TỪ ("việc này", "fix này", "code vừa sửa", "commit mới này"):
+#  "mới", "này" đứng một mình thì "bỏ nút tạo mới này" — một yêu cầu MỚI — thành lệnh bỏ việc.
 _TASK_DEICTIC = re.compile(
     r"(?<!\w)(việc|kế hoạch|fix|bản sửa|bản vá|commit|code|mã)(?!\w).{0,25}(?<!\w)(này|nãy|đó|vừa|mới)(?!\w)")
-#  ai-CR-125: 08/10 đại ca nhắn «bỏ kế hoạch 0005 đi» — không có chữ «AI-» nên bot không nhận ra mã việc, gắn câu đó làm
-#  câu trả lời kế hoạch. Nhận thêm «việc / kế hoạch / task <số>» và số 4 chữ số đệm 0 («0005») đứng riêng.
+#  ai-CR-125: 08/10 đại ca nhắn "bỏ kế hoạch 0005 đi" — không có chữ "AI-" nên bot không nhận ra mã việc, gắn câu đó làm
+#  câu trả lời kế hoạch. Nhận thêm "việc / kế hoạch / task <số>" và số 4 chữ số đệm 0 ("0005") đứng riêng.
 _TASK_NUMBER = re.compile(r"(?<!\w)(?:việc|kế hoạch|task)\s+(?:số\s+)?0*(\d{1,6})(?!\w)|(?<![\w.,])(0\d{3})(?![\w.,])")
-#  Lời chào trơn («lô», «alo», «chào em») KHÔNG phải câu trả lời cho thẻ hỏi lại, cũng không phải việc (QĐ-12). So trên
+#  Lời chào trơn ("lô", "alo", "chào em") KHÔNG phải câu trả lời cho thẻ hỏi lại, cũng không phải việc (QĐ-12). So trên
 #  chữ đã bỏ dấu.
 _GREETING = re.compile(r"^(a?\s*l[oô]+|al+o+|hello|hi|chao(\s+(em|anh|bot|ban|lac lac|ca nha))?|e|oi|em oi)[\s.!?,~]*$")
 
 
 def _task_code_in(low: str) -> str:
-    """Mã việc «AI-0007» trong câu: «AI-7», «ai 0007», «việc 7», «kế hoạch 0005», «0005». Không có thì ""."""
+    """Mã việc "AI-0007" trong câu: "AI-7", "ai 0007", "việc 7", "kế hoạch 0005", "0005". Không có thì ""."""
     m = _CODE_IN_TEXT.search(low)
     if m:
         return f"AI-{int(m.group(1)):04d}"
@@ -1621,8 +1621,8 @@ def is_greeting(text: str) -> bool:
     from app.modules.assistant.glossary import fold
 
     return bool(_GREETING.match(fold(text or "").strip()))
-#  Lệnh TRƠN (không mã việc, không cụm chỉ vào việc): chỉ gồm động từ + vài chữ đệm. «gộp hai cột
-#  ngày» không khớp -> không phải lệnh, đi đường cũ thành việc mới.
+#  Lệnh TRƠN (không mã việc, không cụm chỉ vào việc): chỉ gồm động từ + vài chữ đệm. "gộp hai cột
+#  ngày" không khớp -> không phải lệnh, đi đường cũ thành việc mới.
 _BARE = {
     "merge": r"^(tự\s+)?(gộp|merge)(\s+(đi|luôn|nhé|nha|code|vào|qua|lên|erp[-\s]?v2|dev|nhánh|nền|giúp|anh|em"
              r"|và|rồi|deploy|triển khai|đẩy))*[.! ]*$",
@@ -1717,7 +1717,7 @@ def route_task_command(db: Session, chat_id: str, row: AgentMessage, text: str) 
         if not found:
             if bare:
                 row.action = ACT_COMMAND
-                reply(db, chat_id, "Không có việc nào đang ở bước đó. Nhắn kèm mã việc, ví dụ «gộp AI-0007».")
+                reply(db, chat_id, "Không có việc nào đang ở bước đó. Nhắn kèm mã việc, ví dụ **gộp AI-0007**.")
                 return True
             return False
         if len(found) > 1:
@@ -1756,21 +1756,21 @@ def _run_task_command(db: Session, chat_id: str, row: AgentMessage, task: AgentT
     elif action == "detail":
         show_task(db, chat_id, task.code)
     elif task.status in CLOSED_STATUSES:
-        reply(db, chat_id, f"<b>{code}</b> đã đóng rồi. Xem lại: «chi tiết {code}».", task_id=task.id)
+        reply(db, chat_id, f"<b>{code}</b> đã đóng rồi. Xem lại: **chi tiết {code}**.", task_id=task.id)
     elif action in ("merge", "deploy"):
         #  Đại ca GÕ lệnh gộp = đồng ý gộp (luật ai-CR-014: muốn gộp phải hỏi, anh đồng ý mới làm).
-        #  «gộp» CHỈ gộp vào nhánh nền; lên dev phải nói ra (ai-CR-029).
+        #  "gộp" CHỈ gộp vào nhánh nền; lên dev phải nói ra (ai-CR-029).
         deploy = action == "deploy" or bool(_DEPLOY_WORDS.search(text.lower()))
         merged = bool(coder.merged_sha_for(db, task))
         if action == "deploy" and not merged:
             reply(db, chat_id, f"<b>{code}</b> chưa gộp vào <code>{telegram.esc(settings.AGENT_BASE_BRANCH)}"
-                  f"</code> nên chưa lên dev được. Nhắn «gộp và deploy dev {code}» để làm cả hai.", task_id=task.id)
+                  f"</code> nên chưa lên dev được. Nhắn **gộp và deploy dev {code}** để làm cả hai.", task_id=task.id)
             db.commit()
             return
         if merged and not deploy:
             reply(db, chat_id, f"<b>{code}</b> đã gộp vào <code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code> "
                   + ("và đã lên dev rồi." if task.deployed_dev_at else f"rồi, dev chưa lên. Muốn lên dev thì nhắn "
-                     f"«deploy dev {code}»."), task_id=task.id)
+                     f"**deploy dev {code}**."), task_id=task.id)
             db.commit()
             return
         what = _deploy_what(deploy, merged)
@@ -1781,7 +1781,7 @@ def _run_task_command(db: Session, chat_id: str, row: AgentMessage, task: AgentT
             _new_deploy_run(db, task, STAGE_DEPLOY, "hen_gio", deploy=deploy,
                             scheduled_for=to_utc(when).isoformat(timespec="minutes"), approved_by=chat_id)
             reply(db, chat_id, f"Đã hẹn <b>{when:%H:%M %d/%m}</b>: {what} <b>{code}</b>. Đổi ý thì nhắn "
-                  f"«hủy hẹn {code}».", task_id=task.id)
+                  f"**hủy hẹn {code}**.", task_id=task.id)
         else:
             _dispatch_deploy(db, chat_id, "", task, deploy=deploy)
     elif action == "revert":
@@ -1794,7 +1794,7 @@ def _run_task_command(db: Session, chat_id: str, row: AgentMessage, task: AgentT
     elif action == "replan":
         body = re.split(r"[:：]", text, maxsplit=1)[-1].strip()
         if not body:
-            reply(db, chat_id, "Nhắn «sửa: &lt;điều cần đổi&gt;» để em lập lại kế hoạch.", task_id=task.id)
+            reply(db, chat_id, "Nhắn **sửa: &lt;điều cần đổi&gt;** để em lập lại kế hoạch.", task_id=task.id)
         else:
             _answer_plan(db, chat_id, row, body, task.id)
     elif action == "continue":
@@ -1844,13 +1844,13 @@ def task_status_line(db: Session, task: AgentTask) -> str:
     if gate:
         parts.append(f"Cổng kiểm: {esc(coder._gate_brief(gate))}.")
     nxt = {
-        ST_PLAN: f"Nhắn «duyệt» để em sửa mã hoặc «sửa: …».",
-        ST_REVIEW: (f"Nhắn «sửa cho xanh {code}»." if _red_gate(db, task)
-                    else f"Gộp được: nhắn «gộp {code}» (chỉ gộp, chưa lên dev) hoặc «gộp và deploy dev "
-                         f"{code}»; thêm «lúc 20h» để hẹn giờ."),
-        ST_PROD: (f"Nhắn «xong {code}» nếu ổn, «thu hồi {code}» nếu không." if task.deployed_dev_at
-                  else f"Dev chưa lên: nhắn «deploy dev {code}», hoặc «thu hồi {code}» nếu gộp nhầm."),
-        ST_NEEDS_INPUT: (f"Nhắn «làm tiếp {code}»." if coder.resumable_session(db, task)
+        ST_PLAN: f"Nhắn **duyệt** để em sửa mã hoặc **sửa: …**.",
+        ST_REVIEW: (f"Nhắn **sửa cho xanh {code}**." if _red_gate(db, task)
+                    else f"Gộp được: nhắn **gộp {code}** (chỉ gộp, chưa lên dev) hoặc **gộp và deploy dev "
+                         f"{code}**; thêm **lúc 20h** để hẹn giờ."),
+        ST_PROD: (f"Nhắn **xong {code}** nếu ổn, **thu hồi {code}** nếu không." if task.deployed_dev_at
+                  else f"Dev chưa lên: nhắn **deploy dev {code}**, hoặc **thu hồi {code}** nếu gộp nhầm."),
+        ST_NEEDS_INPUT: (f"Nhắn **làm tiếp {code}**." if coder.resumable_session(db, task)
                          else "Em đang chờ đại ca trả lời câu hỏi ở thẻ kế hoạch."),
     }.get(task.status, "")
     if nxt:
@@ -1859,7 +1859,7 @@ def task_status_line(db: Session, task: AgentTask) -> str:
 
 
 def _rule_by_text(db: Session, chat_id: str, row: AgentMessage, action: str) -> bool:
-    """«ghi sổ» / «không ghi» cho thẻ đề xuất sổ quyết định gần nhất đang chờ (ai-CR-027)."""
+    """"ghi sổ" / "không ghi" cho thẻ đề xuất sổ quyết định gần nhất đang chờ (ai-CR-027)."""
     runs = db.scalars(select(AgentRun).where(AgentRun.stage == STAGE_RULE)
                       .order_by(AgentRun.id.desc()).limit(5)).all()
     run = next((r for r in runs if isinstance(r.artifact, dict) and r.artifact.get("state") == "cho_duyet"), None)
@@ -1878,7 +1878,7 @@ def _rule_by_text(db: Session, chat_id: str, row: AgentMessage, action: str) -> 
 
 
 def _choice_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """Trả lời bằng chữ cho câu «làm luôn hay ghi việc» (thay hai nút, ai-CR-027)."""
+    """Trả lời bằng chữ cho câu "làm luôn hay ghi việc" (thay hai nút, ai-CR-027)."""
     low = text.strip().lower()
     kind = "hoi" if re.fullmatch(r"(làm luôn|hỏi|trả lời|làm ngay)[.! ]*", low) else \
         "viec" if re.fullmatch(r"(ghi việc|việc|sửa mã|ghi thành việc)[.! ]*", low) else ""
@@ -1899,10 +1899,10 @@ def _choice_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
 # ---------------------------------------------------------------------------
 # Hiểu ý thao tác theo ngữ cảnh (ai-CR-028)
 # ---------------------------------------------------------------------------
-#  Đại ca: «thay vì lệnh thì trợ lý phân tích ý định dựa trên văn bản mà làm, ví dụ anh nói đồng ý».
+#  Đại ca: "thay vì lệnh thì trợ lý phân tích ý định dựa trên văn bản mà làm, ví dụ anh nói đồng ý".
 #  Lệnh gõ đúng mẫu vẫn đi đường nhanh ở `route_task_command` (không tốn lượt model). Câu tự do
 #  thì lượt phân loại SẴN CÓ đọc thêm danh sách việc đang mở + tin bot vừa nhắn, và trả thêm một
-#  loại «thao_tac». Chắc thì làm; chưa chắc thì hỏi lại một câu, và câu «đúng» sau đó chạy bằng
+#  loại "thao_tac". Chắc thì làm; chưa chắc thì hỏi lại một câu, và câu "đúng" sau đó chạy bằng
 #  dấu đã ghi chứ không hỏi model lần nữa.
 TASK_CONTEXT_LIMIT = 5          # ai-CR-194: 8 → 5 dòng việc trong lời nhắc phân loại (bớt token, bớt chờ)
 _YES = re.compile(r"^(đúng|đúng rồi|ừ|ừm|ờ|ok|oke|okay|được|đồng ý|phải|chuẩn|chính xác|làm đi|triển"
@@ -1930,7 +1930,7 @@ def _strip_tags(html: str) -> str:
 def _run_intent_action(db: Session, chat_id: str, row: AgentMessage, task: AgentTask, action: str,
                        text: str, detail: str) -> None:
     if action == "replan":
-        #  Câu tự do không có dấu «sửa:» — đưa thẳng ý cần đổi cho trạm kế hoạch.
+        #  Câu tự do không có dấu "sửa:" — đưa thẳng ý cần đổi cho trạm kế hoạch.
         _answer_plan(db, chat_id, row, detail or text, task.id)
         db.commit()
         return
@@ -1938,7 +1938,7 @@ def _run_intent_action(db: Session, chat_id: str, row: AgentMessage, task: Agent
 
 
 def _confirm_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """«đúng» / «không» cho câu bot vừa hỏi xác nhận thao tác (ai-CR-028)."""
+    """"đúng" / "không" cho câu bot vừa hỏi xác nhận thao tác (ai-CR-028)."""
     low = text.strip().lower()
     yes, no = bool(_YES.match(low)), bool(_NO.match(low))
     if not (yes or no):
@@ -1957,7 +1957,7 @@ def _confirm_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) ->
         return False
     row.action = ACT_COMMAND
     row.task_id = task.id
-    last.action = ACT_COMMAND       # câu hỏi đã được trả lời, «đúng» lần hai không chạy lại
+    last.action = ACT_COMMAND       # câu hỏi đã được trả lời, "đúng" lần hai không chạy lại
     db.commit()
     if no:
         reply(db, chat_id, "Dạ, em không làm. Đại ca nhắn lại ý khác giúp em.", task_id=task.id)
@@ -1973,7 +1973,7 @@ def _confirm_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) ->
 
 
 # ---------------------------------------------------------------------------
-# Ai được ra lệnh sửa mã (ai-CR-051, K-01 «cách 3» + K-04)
+# Ai được ra lệnh sửa mã (ai-CR-051, K-01 "cách 3" + K-04)
 # ---------------------------------------------------------------------------
 GRANT_WINDOW = timedelta(minutes=15)
 
@@ -1987,8 +1987,8 @@ def _grant_level(db: Session, chat_id: str) -> int:
 
 
 def _grant_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """Chat đại ca: «cho anh Được quyền gộp dev» → hỏi lại → «đúng» ghi sổ; «gỡ quyền …»; «ai đang được
-    sửa mã». Chỉ chat đại ca cấp được — chat khác nhắn câu này thì đi đường thường (Trợ lý trả lời)."""
+    """Chat đại ca: "cho anh Được quyền gộp dev" → hỏi lại → "đúng" ghi sổ; "gỡ quyền …"; "ai đang được
+    sửa mã". Chỉ chat đại ca cấp được — chat khác nhắn câu này thì đi đường thường (Trợ lý trả lời)."""
     if not telegram.is_allowed_chat(chat_id):
         return False
     low = text.strip().lower()
@@ -2012,13 +2012,13 @@ def _grant_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
     users = grants.find_users(db, parsed["name"])
     esc = telegram.esc
     if not users:
-        reply(db, chat_id, f"Em không tìm thấy tài khoản ERP nào tên «{esc(parsed['name'])}». Đại ca nhắn họ tên "
+        reply(db, chat_id, f"Em không tìm thấy tài khoản ERP nào tên **{esc(parsed['name'])}**. Đại ca nhắn họ tên "
               "đầy đủ hoặc tên đăng nhập giúp em.")
         db.commit()
         return True
     if len(users) > 1:
         names = " · ".join(esc(describe_user(db, u)[0]) for u in users[:5])
-        reply(db, chat_id, f"Có {len(users)} người khớp «{esc(parsed['name'])}»: {names}. Đại ca nhắn rõ tên hơn giúp em.")
+        reply(db, chat_id, f"Có {len(users)} người khớp **{esc(parsed['name'])}**: {names}. Đại ca nhắn rõ tên hơn giúp em.")
         db.commit()
         return True
     user = users[0]
@@ -2028,7 +2028,7 @@ def _grant_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
             reply(db, chat_id, f"<b>{esc(label)}</b> hiện không có quyền sửa mã nào để gỡ.")
             db.commit()
             return True
-        question = f"Gỡ quyền sửa mã của <b>{esc(label)}</b>? Nhắn «đúng» để gỡ, «thôi» để giữ."
+        question = f"Gỡ quyền sửa mã của <b>{esc(label)}</b>? Nhắn **đúng** để gỡ, **thôi** để giữ."
         info = {"op": "revoke", "user_id": user.id}
     else:
         level = parsed["level"]
@@ -2040,7 +2040,7 @@ def _grant_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
         note = "" if grants.is_linked(db, user.id) else (" Người này CHƯA đăng nhập bot; cấp trước được, có "
                                                           "hiệu lực khi họ nhắn /dangnhap.")
         question = (f"Cấp cho <b>{esc(label)}</b> cấp <b>{grants.LEVEL_LABELS[level]}</b> "
-                    f"({esc(grants.LEVEL_SCOPE[level])})?{esc(note)} Nhắn «đúng» để cấp, «thôi» để bỏ.")
+                    f"({esc(grants.LEVEL_SCOPE[level])})?{esc(note)} Nhắn **đúng** để cấp, **thôi** để bỏ.")
         info = {"op": "grant", "user_id": user.id, "level": level}
     reply(db, chat_id, question)
     log_message(db, DIR_OUT, chat_id, 0, json.dumps(info), action=ACT_GRANT_WAIT)
@@ -2072,7 +2072,7 @@ def _grant_confirm(db: Session, chat_id: str, row: AgentMessage, pending: AgentM
     level = int(info.get("level") or grants.LEVEL_PLAN)
     grants.grant(db, user.id, level, by_chat=chat_id)
     reply(db, chat_id, f"Đã cấp cho <b>{esc(label)}</b> cấp <b>{grants.LEVEL_LABELS.get(level, '?')}</b>. Ghi sổ "
-          f"{fmt_local(datetime.now())}. Hỏi «ai đang được sửa mã» để xem lại; «gỡ quyền của {esc(label.split(' (')[0])}» để gỡ.")
+          f"{fmt_local(datetime.now())}. Hỏi **ai đang được sửa mã** để xem lại; **gỡ quyền của {esc(label.split(' (')[0])}** để gỡ.")
     log.info("agent_hub: cấp quyền sửa mã user=%s cấp %s bởi chat %s", user.id, level, chat_id)
     return True
 
@@ -2103,11 +2103,11 @@ def _grant_allows(db: Session, chat_id: str, row: AgentMessage, task: AgentTask,
     esc = telegram.esc
     row.action = ACT_DENIED
     have = grants.LEVEL_LABELS.get(level, "chưa có quyền")
-    reply(db, chat_id, f"Lệnh «{esc(_ACTION_LABELS.get(action, action))}» cần cấp <b>{grants.LEVEL_LABELS.get(need, 'đại ca')}"
+    reply(db, chat_id, f"Lệnh **{esc(_ACTION_LABELS.get(action, action))}** cần cấp <b>{grants.LEVEL_LABELS.get(need, 'đại ca')}"
           f"</b>; anh/chị đang ở cấp <b>{have}</b>. Em đã báo đại ca.", task_id=task.id)
     reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
-          f"<b>{esc(label)}</b> vừa nhắn «{esc(text[:80])}» trên <b>{esc(task.code)}</b> nhưng chỉ ở cấp {have}. "
-          f"Muốn cho thì nhắn «cho {esc(label.split(' (')[0])} quyền {grants.LEVEL_LABELS.get(need, 'gộp dev')}».",
+          f"<b>{esc(label)}</b> vừa nhắn **{esc(text[:80])}** trên <b>{esc(task.code)}</b> nhưng chỉ ở cấp {have}. "
+          f"Muốn cho thì nhắn **cho {esc(label.split(' (')[0])} quyền {grants.LEVEL_LABELS.get(need, 'gộp dev')}**.",
           task_id=task.id)
     db.commit()
     return False
@@ -2126,7 +2126,7 @@ def _runner_wait_note(db: Session, task: AgentTask, chat_id: str = "") -> None:
     seen = f" (liên lạc lần cuối {fmt_local(rn.last_seen_at)})" if rn.last_seen_at else " (chưa liên lạc lần nào)"
     reply(db, chat_id or settings.AGENT_TELEGRAM_CHAT_ID,
           f"<b>{telegram.esc(task.code)}</b> đang chờ máy <b>{telegram.esc(rn.name)}</b> bật{telegram.esc(seen)}. "
-          "Bật máy là em làm ngay; muốn máy khác làm thì nhắn «" + telegram.esc(task.code) + " cho máy ‹tên› làm».",
+          "Bật máy là em làm ngay; muốn máy khác làm thì nhắn **" + telegram.esc(task.code) + " cho máy ‹tên› làm**.",
           task_id=task.id)
 
 
@@ -2134,7 +2134,7 @@ def _runner_listing(db: Session) -> str:
     rows = runners.active(db)
     if not rows:
         return ("Chưa đăng ký máy sửa mã nào: bot và runner đang chạy chung một máy (hàng đợi cũ). Thêm máy: "
-                "«thêm máy của anh Được».")
+                "**thêm máy của anh Được**.")
     esc = telegram.esc
     lines = ["<b>Máy sửa mã:</b>"]
     for r in rows:
@@ -2146,8 +2146,8 @@ def _runner_listing(db: Session) -> str:
 
 
 def _runner_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """Chat đại ca: «thêm máy của anh Được» → hỏi lại → «đúng» tạo mã máy (hiện MỘT lần); «tắt máy …»;
-    «máy nào đang bật»; «AI-0012 cho máy anh Được làm»; «cho máy … được deploy»."""
+    """Chat đại ca: "thêm máy của anh Được" → hỏi lại → "đúng" tạo mã máy (hiện MỘT lần); "tắt máy …";
+    "máy nào đang bật"; "AI-0012 cho máy anh Được làm"; "cho máy … được deploy"."""
     if not telegram.is_allowed_chat(chat_id):
         return False
     low = text.strip().lower()
@@ -2176,22 +2176,22 @@ def _runner_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
         if len(users) == 1:
             owner_id, owner_label = users[0].id, describe_user(db, users[0])[0]
         raw_name = owner_label.split(" (")[0].split()[-1] if owner_label else parsed["name"]
-        #  «thêm máy may-dai-ca» giữ nguyên tên đã có tiền tố; «thêm máy của anh Được» → may-duoc.
+        #  "thêm máy may-dai-ca" giữ nguyên tên đã có tiền tố; "thêm máy của anh Được" → may-duoc.
         name = runners.slug(raw_name) if runners.slug(raw_name).startswith("may-") else runners.slug("may " + raw_name)
         if runners.by_name(db, name) is not None:
-            reply(db, chat_id, f"Đã có máy tên <b>{esc(name)}</b> rồi. Xem «máy nào đang bật».")
+            reply(db, chat_id, f"Đã có máy tên <b>{esc(name)}</b> rồi. Xem **máy nào đang bật**.")
             db.commit()
             return True
         who = f", chủ máy <b>{esc(owner_label)}</b>" if owner_label else " (không gắn chủ máy: em không tìm thấy tài khoản ERP tên đó)"
         reply(db, chat_id, f"Thêm máy sửa mã <b>{esc(name)}</b>{who}? Máy mới mặc định KHÔNG được deploy dev. "
-              "Nhắn «đúng» để em phát mã máy, «thôi» để bỏ.")
+              "Nhắn **đúng** để em phát mã máy, **thôi** để bỏ.")
         log_message(db, DIR_OUT, chat_id, 0, json.dumps({"op": "add", "name": name, "owner_user_id": owner_id,
                                                          "note": parsed["name"]}), action=ACT_RUNNER_WAIT)
         db.commit()
         return True
     found = runners.find(db, parsed["name"])
     if not found:
-        reply(db, chat_id, f"Không có máy nào khớp «{esc(parsed['name'])}». Xem «máy nào đang bật».")
+        reply(db, chat_id, f"Không có máy nào khớp **{esc(parsed['name'])}**. Xem **máy nào đang bật**.")
         db.commit()
         return True
     if len(found) > 1:
@@ -2201,7 +2201,7 @@ def _runner_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
     rn = found[0]
     if op == "remove":
         reply(db, chat_id, f"Gỡ máy <b>{esc(rn.name)}</b>? Máy đó bị từ chối ngay ở lượt kế, việc đang dính máy sẽ chờ "
-              "cho tới khi đại ca giao máy khác. Nhắn «đúng» để gỡ, «thôi» để giữ.")
+              "cho tới khi đại ca giao máy khác. Nhắn **đúng** để gỡ, **thôi** để giữ.")
         log_message(db, DIR_OUT, chat_id, 0, json.dumps({"op": "remove", "runner_id": rn.id}), action=ACT_RUNNER_WAIT)
         db.commit()
         return True
@@ -2265,8 +2265,8 @@ def _runner_confirm(db: Session, chat_id: str, row: AgentMessage, pending: Agent
     reply(db, chat_id,
           f"Đã thêm máy <b>{esc(rn.name)}</b>. Mã máy (hiện MỘT lần, chép xong đại ca XÓA tin này):\n"
           f"<code>AGENT_RUNNER_NAME={esc(rn.name)}</code>\n<code>AGENT_RUNNER_TOKEN={esc(raw)}</code>\n"
-          "Dán hai dòng vào <code>.env</code> của runner trên máy đó rồi bật. Máy tự báo «còn sống» mỗi 30 giây; "
-          "hỏi «máy nào đang bật» để kiểm. Muốn máy này deploy dev: «cho máy " + esc(rn.name) + " được deploy».")
+          "Dán hai dòng vào <code>.env</code> của runner trên máy đó rồi bật. Máy tự báo **còn sống** mỗi 30 giây; "
+          "hỏi **máy nào đang bật** để kiểm. Muốn máy này deploy dev: **cho máy " + esc(rn.name) + " được deploy**.")
     log.info("agent_hub: thêm máy sửa mã %s bởi chat %s", rn.name, chat_id)
     return True
 
@@ -2312,10 +2312,10 @@ def _gloss_decide(db: Session, chat_id: str, pid: int, accept: bool, uid: int) -
     if item is None:
         reply(db, chat_id, f"Đề xuất thuật ngữ #{pid} không còn chờ duyệt.")
     elif accept:
-        reply(db, chat_id, f"<b>ĐÃ NHỚ</b>\n«{esc(item['term'])}» = {esc(item['meaning'])}\n\n"
-              f"<i>Sai thì «quên thuật ngữ {esc(item['term'])}».</i>")
+        reply(db, chat_id, f"<b>ĐÃ NHỚ</b>\n**{esc(item['term'])}** = {esc(item['meaning'])}\n\n"
+              f"<i>Sai thì **quên thuật ngữ {esc(item['term'])}**.</i>")
     else:
-        reply(db, chat_id, f"Dạ, bỏ đề xuất thuật ngữ #{pid} («{esc(item['term'])}»).")
+        reply(db, chat_id, f"Dạ, bỏ đề xuất thuật ngữ #{pid} (**{esc(item['term'])}**).")
     db.commit()
 
 
@@ -2330,14 +2330,14 @@ _MEM_EXPORT = re.compile(r"^xuất sổ nhớ\s*[.!]*$", re.IGNORECASE)
 
 
 def _memory_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """Sổ ghi nhớ riêng (ai-CR-095, C-02): «nhớ: anh ở Cần Thơ» · «quên: Cần Thơ» · «ghi chú: …» · «sổ nhớ» · «xuất sổ nhớ».
+    """Sổ ghi nhớ riêng (ai-CR-095, C-02): "nhớ: anh ở Cần Thơ" · "quên: Cần Thơ" · "ghi chú: …" · "sổ nhớ" · "xuất sổ nhớ".
     Mọi chat đã đăng nhập đều dùng được; sổ là của tài khoản ERP gắn với chat, không phải của chat."""
     raw = (text or "").strip()
     m_teach, m_forget, m_note = _MEM_TEACH.match(raw), _MEM_FORGET.match(raw), _MEM_NOTE.match(raw)
     if not (m_teach or m_forget or m_note or _MEM_SHOW.match(raw) or _MEM_EXPORT.match(raw)):
         return False
     if m_teach and _GLOSS_TEACH.match(raw) and telegram.is_allowed_chat(chat_id):
-        return False    # «nhớ: nhà máy = phòng SX-TM» dạng «X là/= Y» ở chat đại ca vẫn là dạy THUẬT NGỮ công ty
+        return False    # "nhớ: nhà máy = phòng SX-TM" dạng "X là/= Y" ở chat đại ca vẫn là dạy THUẬT NGỮ công ty
     row.action = ACT_COMMAND
     row.scope = SCOPE_PERSONAL
     esc = telegram.esc
@@ -2349,7 +2349,7 @@ def _memory_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
     if m_teach:
         until = personal_memory.resolve_until(m_teach.group("when") or "") if m_teach.group("when") else None
         if m_teach.group("when") and until is None:
-            reply(db, chat_id, "Em chưa đọc được ngày hết hạn. Nhắn kiểu «nhớ đến 15/10: …», «nhớ tuần này: …».",
+            reply(db, chat_id, "Em chưa đọc được ngày hết hạn. Nhắn kiểu **nhớ đến 15/10: …**, **nhớ tuần này: …**.",
                   scope=SCOPE_PERSONAL)
             return True
         out = personal_memory.remember(db, uid, m_teach.group("line"), until=until)
@@ -2361,7 +2361,7 @@ def _memory_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
         else:
             extra = f"\n<i>{esc(out['warning'])}</i>" if out.get("warning") else ""
             reply(db, chat_id, f"Em ghi nhớ ({esc(out['label'])}): {esc(out.get('line') or m_teach.group('line'))}\n"
-                               f"<i>Sai thì nhắn «quên: …». Xem cả sổ: «sổ nhớ».</i>{extra}", scope=SCOPE_PERSONAL)
+                               f"<i>Sai thì nhắn **quên: …**. Xem cả sổ: **sổ nhớ**.</i>{extra}", scope=SCOPE_PERSONAL)
         return True
     if m_forget:
         removed = personal_memory.forget(db, uid, m_forget.group("needle"))
@@ -2391,7 +2391,7 @@ def _memory_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
     chars, cap = personal_memory.usage(db, uid)
     notes = personal_memory.list_notes(db, uid, limit=20)
     body = f"<b>SỔ GHI NHỚ RIÊNG</b> · {chars}/{cap} ký tự\n\n"
-    body += esc(core) if core else "<i>Chưa có gì. Dạy em bằng «nhớ: anh ở Cần Thơ».</i>"
+    body += esc(core) if core else "<i>Chưa có gì. Dạy em bằng **nhớ: anh ở Cần Thơ**.</i>"
     if notes:
         body += "\n\n<b>Kho ghi chú</b> (" + str(len(notes)) + "):\n" + "\n".join(
             f"• #{n.id} {esc(n.title)} · {n.chars} ký tự" for n in notes)
@@ -2402,15 +2402,15 @@ def _memory_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
     if watching:
         body += "\n\n<b>Em đang để ý</b> (chưa ghi, cần nhắc lại thêm):\n" + "\n".join(
             f"• {esc(c.line)} · {c.hits}/{auto_memory.MIN_HITS} lần" for c in watching[:5])
-    body += ("\n\n<i>«nhớ: …» thêm · «nhớ tuần này: …» / «nhớ đến 15/10: …» nhớ có hạn · «quên: …» bớt · "
-             "«ghi chú: tiêu đề | nội dung» vào kho · «xuất sổ nhớ» lấy tệp. Cuối mỗi buổi chat (im lặng 30 phút) "
-             "em tự tóm tắt vào kho. Xem, sửa, xóa từng dòng: ERP › Trang cá nhân › «Bot nhớ gì về tôi».</i>")
+    body += ("\n\n<i>**nhớ: …** thêm · **nhớ tuần này: …** / **nhớ đến 15/10: …** nhớ có hạn · **quên: …** bớt · "
+             "**ghi chú: tiêu đề | nội dung** vào kho · **xuất sổ nhớ** lấy tệp. Cuối mỗi buổi chat (im lặng 30 phút) "
+             "em tự tóm tắt vào kho. Xem, sửa, xóa từng dòng: ERP › Trang cá nhân › **Bot nhớ gì về tôi**.</i>")
     reply(db, chat_id, body, scope=SCOPE_PERSONAL)
     return True
 
 
-#  ai-CR-140: bản tin bật / tắt ngay trong chat. So trên chữ ĐÃ BỎ DẤU. Câu tự nhiên dài hơn («sáng thứ hai gửi anh công
-#  nợ quá hạn của DEGO») đi Trợ lý AI — model gọi tool `manage_briefs`.
+#  ai-CR-140: bản tin bật / tắt ngay trong chat. So trên chữ ĐÃ BỎ DẤU. Câu tự nhiên dài hơn ("sáng thứ hai gửi anh công
+#  nợ quá hạn của DEGO") đi Trợ lý AI — model gọi tool `manage_briefs`.
 _BRIEF_SHOW = re.compile(r"^(?:ban tin cua (?:toi|anh|chi|em|minh)|xem ban tin|danh sach ban tin)\s*\??$")
 _BRIEF_NOW = re.compile(r"^(?:ban tin hom nay|(?:danh sach )?viec hom nay|hom nay (?:anh |chi |toi |em |minh )?co "
                         r"(?:nhung )?viec gi)\s*\??$")
@@ -2421,8 +2421,8 @@ _BRIEF_TIME = re.compile(r"^(?:dat |doi )?ban tin(?: sang)? (?:luc|vao) (?P<rest
 
 
 def _work_due_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """ai-CR-175: «tắt nhắc hạn việc» · «bật nhắc hạn việc» · «nhắc hạn việc lúc 7h» · «nhắc hạn việc hôm nay» ·
-    «nhắc hạn việc» (xem trạng thái). Của TÀI KHOẢN ERP gắn với chat."""
+    """ai-CR-175: "tắt nhắc hạn việc" · "bật nhắc hạn việc" · "nhắc hạn việc lúc 7h" · "nhắc hạn việc hôm nay" ·
+    "nhắc hạn việc" (xem trạng thái). Của TÀI KHOẢN ERP gắn với chat."""
     from . import brief_subs, work_due
 
     cmd = work_due.parse_command(text)
@@ -2446,7 +2446,7 @@ def _work_due_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     elif cmd["op"] == "at":
         when = brief_subs.parse_time(cmd["rest"])
         if when is None:
-            reply(db, chat_id, "Em chưa đọc được giờ. Ví dụ: «nhắc hạn việc lúc 7h30».", scope=SCOPE_PERSONAL)
+            reply(db, chat_id, "Em chưa đọc được giờ. Ví dụ: **nhắc hạn việc lúc 7h30**.", scope=SCOPE_PERSONAL)
             return True
         work_due.set_state(db, uid, enabled=True, hour=when[0], minute=when[1])
     reply(db, chat_id, work_due.state_text(db, uid), scope=SCOPE_PERSONAL)
@@ -2454,8 +2454,8 @@ def _work_due_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
 
 
 def _brief_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """«bật bản tin» · «tắt bản tin» · «bản tin lúc 6h45» · «bản tin hôm nay» · «bản tin của tôi» · «tắt bản tin 2» ·
-    «tắt hết bản tin». Bản tin là của TÀI KHOẢN ERP gắn với chat."""
+    """"bật bản tin" · "tắt bản tin" · "bản tin lúc 6h45" · "bản tin hôm nay" · "bản tin của tôi" · "tắt bản tin 2" ·
+    "tắt hết bản tin". Bản tin là của TÀI KHOẢN ERP gắn với chat."""
     from app.modules.assistant.glossary import fold
 
     from . import brief_subs
@@ -2510,16 +2510,16 @@ def _brief_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
     elif "moi ngay" in rest or "hang ngay" in rest:
         days = brief_subs.ALL_DAYS
     if rest.strip() and when is None and days is None:
-        reply(db, chat_id, "Em chưa đọc được giờ. Nhắn kiểu «bản tin lúc 6h45» hoặc «bật bản tin lúc 7h ngày thường».",
+        reply(db, chat_id, "Em chưa đọc được giờ. Nhắn kiểu **bản tin lúc 6h45** hoặc **bật bản tin lúc 7h ngày thường**.",
               scope=SCOPE_PERSONAL)
         return True
     st = brief_subs.set_daily(db, uid, enabled=on, hour=when[0] if when else None, minute=when[1] if when else None,
                               days=days)
     if on:
         msg = (f"Đã bật bản tin sáng lúc {st['hour']:02d}:{st['minute']:02d}, {brief_subs.days_text(st['days'])}: lịch, "
-               "việc riêng, việc Dự án tới hạn, phiếu chờ duyệt. Muốn xem ngay: «bản tin hôm nay».")
+               "việc riêng, việc Dự án tới hạn, phiếu chờ duyệt. Muốn xem ngay: **bản tin hôm nay**.")
     else:
-        msg = "Đã tắt bản tin sáng. Bật lại: «bật bản tin»."
+        msg = "Đã tắt bản tin sáng. Bật lại: **bật bản tin**."
     reply(db, chat_id, msg + "\n\n" + brief_subs.render_list(db, uid), scope=SCOPE_PERSONAL)
     return True
 
@@ -2528,7 +2528,7 @@ _GHI_VIEC = re.compile(r"^ghi việc\s*:\s*(?P<body>.+)$", re.IGNORECASE | re.DO
 
 
 def _ghi_viec_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """«ghi việc: màn đơn hàng lọc sai» (ai-CR-096): bỏ tiền tố, để tin nằm INBOX (action rỗng) cho vòng gom — không
+    """"ghi việc: màn đơn hàng lọc sai" (ai-CR-096): bỏ tiền tố, để tin nằm INBOX (action rỗng) cho vòng gom — không
     qua bộ phân loại, không hỏi lại."""
     m = _GHI_VIEC.match((text or "").strip())
     if not m:
@@ -2539,7 +2539,7 @@ def _ghi_viec_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     return True
 
 
-#  ai-CR-148: «oke phát triển tính năng», «làm tính năng này đi», «em bắt đầu sửa luôn chưa» ngay sau khi bot vừa nói chưa
+#  ai-CR-148: "oke phát triển tính năng", "làm tính năng này đi", "em bắt đầu sửa luôn chưa" ngay sau khi bot vừa nói chưa
 #  có tính năng → GIAO VIỆC sửa phần mềm, mô tả lấy từ mạch trước. So trên chữ ĐÃ BỎ DẤU.
 _DEV_REQUEST = re.compile(
     r"^(?:(?:ok|oke|okay|ok e|uh|u|vang|duoc|dong y|the thi|vay thi)\s+)*(?:em\s+)?"
@@ -2559,7 +2559,7 @@ def _can_order_code(db: Session, chat_id: str) -> bool:
 
 def _dev_request_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     """Câu ngắn nhờ phát triển tính năng → tin vào INBOX cho vòng gom, kèm câu hỏi + câu trả lời gần nhất làm mô tả
-    (một mình «oke phát triển tính năng» thì vòng gom không biết tính năng nào)."""
+    (một mình "oke phát triển tính năng" thì vòng gom không biết tính năng nào)."""
     from app.modules.assistant.glossary import fold
 
     f = " ".join(fold(text).split())
@@ -2590,7 +2590,7 @@ _KEYS_Q = re.compile(
 
 
 def _keys_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """«khóa AI» · «còn khóa nào» · «giới hạn bao nhiêu» (ai-CR-098): liệt kê chuỗi khóa của chat này + lượt đã dùng.
+    """"khóa AI" · "còn khóa nào" · "giới hạn bao nhiêu" (ai-CR-098): liệt kê chuỗi khóa của chat này + lượt đã dùng.
     Đại ca 07/10: đổi khóa không nhắn; ai hỏi mới nói."""
     from . import ai_keys
 
@@ -2636,7 +2636,7 @@ def _scope_of(db: Session, msg_id: int) -> int:
 
 
 def _glossary_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """«ghi nhớ: nhà máy là phòng Dego Organic» · «thuật ngữ» · «quên thuật ngữ nhà máy». Chỉ chat đại ca.
+    """"ghi nhớ: nhà máy là phòng Dego Organic" · "thuật ngữ" · "quên thuật ngữ nhà máy". Chỉ chat đại ca.
     Dạy là LÀM LUÔN (policy: việc có hoàn tác ngay bằng một câu), trả lời kèm cách xóa."""
     from app.modules.assistant import glossary
 
@@ -2687,9 +2687,9 @@ def _glossary_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
             lines = ["<b>SỔ THUẬT NGỮ</b> đang trống."]
         if waiting:
             lines += ["", f"<b>Chờ duyệt</b> · {len(waiting)} đề xuất"]
-            lines += [f"• #{w['id']} «{esc(w['term'])}» = {esc(w['meaning'])}" for w in waiting[:10]]
-            lines += ["<i>«duyệt thuật ngữ #n» · «bỏ thuật ngữ #n».</i>"]
-        lines += ["", "<i>Thêm: «ghi nhớ: X là Y» · xóa: «quên thuật ngữ X».</i>"]
+            lines += [f"• #{w['id']} **{esc(w['term'])}** = {esc(w['meaning'])}" for w in waiting[:10]]
+            lines += ["<i>**duyệt thuật ngữ #n** · **bỏ thuật ngữ #n**.</i>"]
+        lines += ["", "<i>Thêm: **ghi nhớ: X là Y** · xóa: **quên thuật ngữ X**.</i>"]
         reply(db, chat_id, "\n".join(lines))
         db.commit()
         return True
@@ -2697,7 +2697,7 @@ def _glossary_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         row.action = ACT_COMMAND
         term = m.group("term").strip(" «»\"'")
         ok = glossary.remove(db, term, uid)
-        reply(db, chat_id, f"Đã quên thuật ngữ «{esc(term)}»." if ok else f"Sổ không có thuật ngữ «{esc(term)}».")
+        reply(db, chat_id, f"Đã quên thuật ngữ **{esc(term)}**." if ok else f"Sổ không có thuật ngữ **{esc(term)}**.")
         db.commit()
         return True
     m = _GLOSS_TEACH.match(raw)
@@ -2715,11 +2715,11 @@ def _glossary_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         db.commit()
         return True
     head = "<b>ĐÃ NHỚ</b>" if not old else "<b>ĐÃ SỬA NGHĨA</b>"
-    lines = [head, f"«{esc(item['term'])}» = {esc(item['meaning'])}"]
+    lines = [head, f"**{esc(item['term'])}** = {esc(item['meaning'])}"]
     if old:
         lines.append(f"<i>Nghĩa cũ: {esc(old)}</i>")
-    lines += ["", "<i>Áp cho Trợ lý trên web lẫn Telegram từ câu hỏi kế tiếp. Sai thì «quên thuật ngữ "
-              f"{esc(item['term'])}».</i>"]
+    lines += ["", "<i>Áp cho Trợ lý trên web lẫn Telegram từ câu hỏi kế tiếp. Sai thì **quên thuật ngữ "
+              f"{esc(item['term'])}**.</i>"]
     reply(db, chat_id, "\n".join(lines))
     db.commit()
     return True
@@ -2728,7 +2728,7 @@ REMIND_WINDOW = timedelta(minutes=10)
 
 
 def _reminder_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """«nhắc anh 15h gọi NCC X» · «nhắc gì» · «bỏ nhắc 2» (ai-CR-060). Thiếu giờ thì hỏi lại một câu."""
+    """"nhắc anh 15h gọi NCC X" · "nhắc gì" · "bỏ nhắc 2" (ai-CR-060). Thiếu giờ thì hỏi lại một câu."""
     esc = telegram.esc
     cmd = reminders.parse_command(text)
     if cmd is not None:
@@ -2744,12 +2744,12 @@ def _reminder_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
             rows = reminders.open_for_chat(db, chat_id)
             if 1 <= cmd["n"] <= len(rows):
                 reminders.cancel(db, rows[cmd["n"] - 1])
-                reply(db, chat_id, f"Đã bỏ lời nhắc «{esc(rows[cmd['n'] - 1].text)}».")
+                reply(db, chat_id, f"Đã bỏ lời nhắc **{esc(rows[cmd['n'] - 1].text)}**.")
             else:
-                reply(db, chat_id, "Không có lời nhắc số đó. Xem lại: «nhắc gì».")
+                reply(db, chat_id, "Không có lời nhắc số đó. Xem lại: **nhắc gì**.")
         db.commit()
         return True
-    #  Câu trả lời giờ cho câu hỏi «lúc mấy giờ?» vừa rồi.
+    #  Câu trả lời giờ cho câu hỏi "lúc mấy giờ?" vừa rồi.
     pending = db.scalar(select(AgentMessage).where(
         AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_REMIND_WAIT, AgentMessage.id < row.id)
         .order_by(AgentMessage.id.desc()).limit(1))
@@ -2764,11 +2764,11 @@ def _reminder_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         return False
     row.action = ACT_COMMAND
     if not parsed["what"]:
-        reply(db, chat_id, "Nhắc việc gì ạ? Nhắn ví dụ «nhắc anh 15h gọi nhà cung cấp X».")
+        reply(db, chat_id, "Nhắc việc gì ạ? Nhắn ví dụ **nhắc anh 15h gọi nhà cung cấp X**.")
         db.commit()
         return True
     if parsed["when"] is None:
-        reply(db, chat_id, f"Nhắc «{esc(parsed['what'])}» lúc mấy giờ? (ví dụ «15h», «8h sáng mai», «30 phút nữa»)")
+        reply(db, chat_id, f"Nhắc **{esc(parsed['what'])}** lúc mấy giờ? (ví dụ **15h**, **8h sáng mai**, **30 phút nữa**)")
         log_message(db, DIR_OUT, chat_id, 0, parsed["what"], action=ACT_REMIND_WAIT)
         db.commit()
         return True
@@ -2777,12 +2777,12 @@ def _reminder_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
 
 def _create_reminder(db: Session, chat_id: str, what: str, when_local) -> bool:
     if len(reminders.open_for_chat(db, chat_id)) >= reminders.MAX_OPEN:
-        reply(db, chat_id, f"Chat này đang có {reminders.MAX_OPEN} lời nhắc chờ, bỏ bớt rồi đặt thêm («nhắc gì»).")
+        reply(db, chat_id, f"Chat này đang có {reminders.MAX_OPEN} lời nhắc chờ, bỏ bớt rồi đặt thêm (**nhắc gì**).")
         db.commit()
         return True
     link = chat_link.get_active_link(db, chat_id)
     reminders.create(db, chat_id, link.user_id if link else 0, what, when_local)
-    text = f"Được, em nhắc lúc <b>{fmt_local(to_utc(when_local))}</b>: {telegram.esc(what)}. Xem lại: «nhắc gì»."
+    text = f"Được, em nhắc lúc <b>{fmt_local(to_utc(when_local))}</b>: {telegram.esc(what)}. Xem lại: **nhắc gì**."
     #  ai-CR-206: nhắc kiểu cuộc hẹn + đã nối Google → hỏi tạo luôn lịch (đại ca 16/10).
     if offer := core_v2.calendar_offer(db, chat_id, what, when_local):
         text += "\n" + telegram.md_to_html(offer)
@@ -2809,7 +2809,7 @@ def _over_daily_cap(db: Session, chat_id: str, row: AgentMessage) -> bool:
 
 
 def _bell_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """«tắt chuông» · «bật chuông» · «chuông tất cả» — mức chuông ERP chuyển sang chat này (ai-CR-059)."""
+    """"tắt chuông" · "bật chuông" · "chuông tất cả" — mức chuông ERP chuyển sang chat này (ai-CR-059)."""
     mode = bells.parse_mode(text)
     if mode is None:
         return False
@@ -2821,10 +2821,10 @@ def _bell_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bo
         return True
     link.notify_mode = mode
     db.commit()
-    reply(db, chat_id, {0: "Đã tắt chuông ERP ở chat này. Bật lại: «bật chuông».",
+    reply(db, chat_id, {0: "Đã tắt chuông ERP ở chat này. Bật lại: **bật chuông**.",
                         1: "Chuông ERP ở chat này: <b>việc của tôi</b> (chờ anh/chị duyệt, giao cho anh/chị, bị trả lại). "
-                           "Muốn nhận hết: «chuông tất cả».",
-                        2: "Chuông ERP ở chat này: <b>tất cả</b>. Thu về: «chuông việc của tôi», tắt: «tắt chuông»."}[mode])
+                           "Muốn nhận hết: **chuông tất cả**.",
+                        2: "Chuông ERP ở chat này: <b>tất cả</b>. Thu về: **chuông việc của tôi**, tắt: **tắt chuông**."}[mode])
     return True
 
 
@@ -2836,7 +2836,7 @@ def _notify_admin_action(db: Session, chat_id: str, task: AgentTask, action: str
     label = describe_user(db, erp.user_by_id(db, link.user_id))[0] if link is not None else f"chat {chat_link.mask_chat(chat_id)}"
     esc = telegram.esc
     reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
-          f"<b>{esc(label)}</b> vừa nhắn «{esc(text[:80])}» → {esc(_ACTION_LABELS.get(action, action))} "
+          f"<b>{esc(label)}</b> vừa nhắn **{esc(text[:80])}** → {esc(_ACTION_LABELS.get(action, action))} "
           f"<b>{esc(task.code)}</b>.", task_id=task.id)
 
 
@@ -2845,15 +2845,15 @@ def _ask_intent_choice(db: Session, chat_id: str, row: AgentMessage) -> None:
     row.action = ACT_WAIT_CHOICE
     reply(db, chat_id,
           "Em chưa chắc đại ca đang nhờ em làm ngay hay nhờ sửa phần mềm. "
-          + ("Nhắn «làm luôn» hoặc «ghi việc»." if settings.AGENT_TG_COMPACT else "Đại ca chọn giúp:"),
+          + ("Nhắn **làm luôn** hoặc **ghi việc**." if settings.AGENT_TG_COMPACT else "Đại ca chọn giúp:"),
           buttons=[("Làm luôn", f"hoi:{row.id}"),
                    ("Ghi thành việc sửa mã", f"viec:{row.id}")])
 
 
 
 def _pending_draft_note(db: Session, chat_id: str, before_id: int) -> str:
-    """ai-CR-180: đang có BẢN NHÁP chờ «tạo» (trong DRAFT_WINDOW) thì nói cho trạm phân loại biết — tin «tạo task đó»,
-    «ok làm đi» ngay sau là câu trả lời cho thẻ nháp (hoi), không phải việc sửa phần mềm."""
+    """ai-CR-180: đang có BẢN NHÁP chờ "tạo" (trong DRAFT_WINDOW) thì nói cho trạm phân loại biết — tin "tạo task đó",
+    "ok làm đi" ngay sau là câu trả lời cho thẻ nháp (hoi), không phải việc sửa phần mềm."""
     pending = db.scalar(select(AgentMessage).where(
         AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_DRAFT_WAIT, AgentMessage.id < before_id)
         .order_by(AgentMessage.id.desc()).limit(1))
@@ -2869,8 +2869,8 @@ def _pending_draft_note(db: Session, chat_id: str, before_id: int) -> str:
         info = {}
     label = draft_create.LABELS.get(str(info.get("kind") or ""), "phiếu")
     title = str((info.get("draft") or {}).get("title") or "")[:80]
-    return (f"Bot: (đang chờ người dùng nhắn «tạo» hoặc «thôi» cho bản nháp {label}"
-            + (f" «{title}»" if title else "") + " vừa soạn — nhắn «tạo …» là đồng ý tạo, KHÔNG phải sửa phần mềm)")
+    return (f"Bot: (đang chờ người dùng nhắn **tạo** hoặc **thôi** cho bản nháp {label}"
+            + (f" **{title}**" if title else "") + " vừa soạn — nhắn **tạo …** là đồng ý tạo, KHÔNG phải sửa phần mềm)")
 
 
 
@@ -2921,7 +2921,7 @@ def _ask_patch(db: Session, chat_id: str, row: AgentMessage, text: str, task_id:
 
 
 def _invite_patch_question(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
-    """Nút «Hỏi thêm về bản vá»: mở mạch hỏi, tin chữ kế tiếp của đại ca là câu hỏi."""
+    """Nút "Hỏi thêm về bản vá": mở mạch hỏi, tin chữ kế tiếp của đại ca là câu hỏi."""
     code = telegram.esc(task.code)
     if not coder.session_id_for(db, task):
         telegram.answer_callback(cb_id, "Việc này chưa có phiên sửa mã để hỏi")
@@ -2943,10 +2943,10 @@ def _invite_patch_question(db: Session, chat_id: str, cb_id: str, task: AgentTas
 # ---------------------------------------------------------------------------
 # Gộp erp-v2 + deploy dev có hỏi trước (GĐ2b·2, ai-CR-014)
 # ---------------------------------------------------------------------------
-#  Đường đi: thẻ kết quả «Gộp erp-v2 + deploy dev» (mg) -> THẺ HỎI kể rõ ba bước sẽ làm ->
-#  «Đồng ý» (mgok) chạy ngay · «Hẹn giờ» (mgat) rồi nhắn giờ · «Thôi» (mgno). Mỗi lượt là một
+#  Đường đi: thẻ kết quả "Gộp erp-v2 + deploy dev" (mg) -> THẺ HỎI kể rõ ba bước sẽ làm ->
+#  "Đồng ý" (mgok) chạy ngay · "Hẹn giờ" (mgat) rồi nhắn giờ · "Thôi" (mgno). Mỗi lượt là một
 #  dòng sổ STAGE_DEPLOY tạo NGAY lúc bấm/hẹn: hẹn giờ nằm trong sổ chứ không trong bộ nhớ
-#  worker, vòng beat `agent.deploy_due` nhặt tới giờ. Đã lên dev mà đổi ý: «Thu hồi» (rv ->
+#  worker, vòng beat `agent.deploy_due` nhặt tới giờ. Đã lên dev mà đổi ý: "Thu hồi" (rv ->
 #  rvok) revert bản gộp + deploy lại.
 _DEAD_RUN_AFTER = timedelta(seconds=coder.DEPLOY_TIMEOUT_SEC + 900)
 _REL_UNIT_MIN = {"phút": 1, "phut": 1, "p": 1, "tiếng": 60, "tieng": 60, "giờ": 60, "gio": 60, "h": 60}
@@ -2955,7 +2955,7 @@ _REL_UNIT_MIN = {"phút": 1, "phut": 1, "p": 1, "tiếng": 60, "tieng": 60, "gi�
 def parse_schedule_time(text: str, now: datetime) -> datetime | None:
     """Đọc giờ hẹn kiểu đại ca nhắn: `14:30` · `20h` · `20h30` · `8 giờ sáng mai` · `45 phút nữa` ·
     `2 tiếng nữa` · `sau 30 phút`. Không đọc được -> None (bot hỏi lại, không đoán).
-    Giờ tuyệt đối đã qua trong hôm nay thì hiểu là ngày mai; «chiều»/«tối» cộng 12 cho giờ < 12."""
+    Giờ tuyệt đối đã qua trong hôm nay thì hiểu là ngày mai; "chiều"/"tối" cộng 12 cho giờ < 12."""
     t = text.strip().lower()
     if not t:
         return None
@@ -3000,7 +3000,7 @@ def _scheduled_for(run: AgentRun) -> datetime | None:
 
 def _deploy_blocker(db: Session, task: AgentTask, *, for_revert: bool = False) -> str:
     """Vì sao CHƯA gộp/thu hồi được lúc này; rỗng = được. Một chỗ cho cả nút lẫn giờ hẹn.
-    Lượt «đang chạy» quá lâu (worker chết giữa chừng) thì đóng luôn ở đây để không kẹt việc mãi."""
+    Lượt "đang chạy" quá lâu (worker chết giữa chừng) thì đóng luôn ở đây để không kẹt việc mãi."""
     if not settings.AGENT_DEPLOY_ENABLED:
         return "Gộp + deploy dev đang TẮT (AGENT_DEPLOY_ENABLED=false)."
     if not settings.AGENT_CODER_ENABLED:
@@ -3013,7 +3013,7 @@ def _deploy_blocker(db: Session, task: AgentTask, *, for_revert: bool = False) -
         if phase == "hen_gio":
             when = _scheduled_for(run)
             return (f"Đã có lịch hẹn lúc {fmt_local(when)}. " if when else "Đã có lịch hẹn. ") + \
-                "Bấm «Hủy hẹn» trước nếu muốn đổi."
+                "Bấm **Hủy hẹn** trước nếu muốn đổi."
         if run.started_at and datetime.now() - run.started_at > _DEAD_RUN_AFTER:
             coder._close_run(run, status=RUN_ERROR, error="mất dấu: runner không đóng lượt này")
             db.commit()
@@ -3024,7 +3024,7 @@ def _deploy_blocker(db: Session, task: AgentTask, *, for_revert: bool = False) -
             return "Việc này chưa gộp vào nhánh nền, không có gì để thu hồi."
         return ""
     if task.status == ST_PROD and task.deployed_dev_at:
-        return "Đã gộp và lên dev rồi. Đổi ý thì bấm «Thu hồi»."
+        return "Đã gộp và lên dev rồi. Đổi ý thì bấm **Thu hồi**."
     if task.status not in (ST_REVIEW, ST_PROD):
         return "Chưa có bản vá đã commit để gộp."
     return ""
@@ -3040,7 +3040,7 @@ def _new_deploy_run(db: Session, task: AgentTask, stage: int, phase: str, **extr
 
 
 def _confirm_deploy(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
-    """Nút «Gộp erp-v2 + deploy dev»: KHÔNG gộp gì, chỉ kể rõ ba bước và hỏi. Đây là chỗ thực
+    """Nút "Gộp erp-v2 + deploy dev": KHÔNG gộp gì, chỉ kể rõ ba bước và hỏi. Đây là chỗ thực
     hiện điều đại ca chốt: muốn gộp là phải hỏi, đồng ý mới làm."""
     esc = telegram.esc
     code, base = esc(task.code), esc(settings.AGENT_BASE_BRANCH)
@@ -3072,8 +3072,8 @@ def _confirm_deploy(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> N
     gate_line = {"pass": "XANH", "fail": "ĐỎ — gộp là gộp cả lỗi vào nhánh nền"}.get(
         gate.get("status"), "không có bài kiểm backend bị đụng")
     tail = ["", f"{len(files)} tệp · +{added}/−{deleted} dòng · Cổng kiểm: <b>{gate_line}</b>", "",
-            "Đại ca có muốn em gộp + deploy dev không? «Đồng ý» là chạy ngay; «Hẹn giờ» rồi nhắn "
-            "giờ; «Thôi» thì không gì chạy cả."]
+            "Đại ca có muốn em gộp + deploy dev không? **Đồng ý** là chạy ngay; **Hẹn giờ** rồi nhắn "
+            "giờ; **Thôi** thì không gì chạy cả."]
     telegram.answer_callback(cb_id, "Đọc thẻ rồi bấm đồng ý")
     reply(db, chat_id, "\n".join(head + steps + tail), task_id=task.id, buttons=[
         ("Đồng ý: gộp + deploy ngay", f"mgok:{task.id}"), ("Hẹn giờ", f"mgat:{task.id}"),
@@ -3087,8 +3087,8 @@ def _auto_deploy_on() -> bool:
 
 
 def auto_deploy_after_code(db: Session, task: AgentTask, gate: dict) -> bool:
-    """ai-CR-154: sửa xong + đã commit + cổng kiểm không đỏ → tự gộp + deploy dev, vì «ok» trên thẻ xác nhận đã đồng
-    ý bước này (thẻ nói trước). Đỏ thì dừng ở thẻ kết quả như cũ (đại ca nhắn «sửa cho xanh»). Trả True nếu đã giao."""
+    """ai-CR-154: sửa xong + đã commit + cổng kiểm không đỏ → tự gộp + deploy dev, vì "ok" trên thẻ xác nhận đã đồng
+    ý bước này (thẻ nói trước). Đỏ thì dừng ở thẻ kết quả như cũ (đại ca nhắn "sửa cho xanh"). Trả True nếu đã giao."""
     if not _auto_deploy_on() or task.status != ST_REVIEW or (gate or {}).get("status") == "fail":
         return False
     if _deploy_blocker(db, task):
@@ -3098,8 +3098,8 @@ def auto_deploy_after_code(db: Session, task: AgentTask, gate: dict) -> bool:
 
 
 def _dispatch_deploy(db: Session, chat_id: str, cb_id: str, task: AgentTask, *, deploy: bool = True) -> None:
-    """Nút «Đồng ý» / lệnh chữ: ghi dòng sổ rồi giao runner. Đây là lần DUY NHẤT lệnh gộp được phát.
-    `deploy=False` = chỉ gộp vào nhánh nền (ai-CR-029); nút bấm cũ ghi «Gộp + deploy dev» nên mặc định True."""
+    """Nút "Đồng ý" / lệnh chữ: ghi dòng sổ rồi giao runner. Đây là lần DUY NHẤT lệnh gộp được phát.
+    `deploy=False` = chỉ gộp vào nhánh nền (ai-CR-029); nút bấm cũ ghi "Gộp + deploy dev" nên mặc định True."""
     code = telegram.esc(task.code)
     if blocked := _deploy_blocker(db, task):
         telegram.answer_callback(cb_id, "Chưa gộp được, xem lý do")
@@ -3139,7 +3139,7 @@ def _invite_deploy_time(db: Session, chat_id: str, cb_id: str, task: AgentTask) 
 
 
 def _cancel_deploy(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
-    """«Thôi, chưa gộp» / «Hủy hẹn»: gỡ lịch hẹn nếu có; lượt đang chạy thì không hủy được nữa."""
+    """"Thôi, chưa gộp" / "Hủy hẹn": gỡ lịch hẹn nếu có; lượt đang chạy thì không hủy được nữa."""
     code = telegram.esc(task.code)
     run = coder.pending_deploy_run(db, task)
     if run is not None and _run_phase(run) == "hen_gio":
@@ -3158,7 +3158,7 @@ def _cancel_deploy(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> No
 
 
 def _deploy_time_target(db: Session, chat_id: str, row: AgentMessage) -> int:
-    """Tin này có phải giờ hẹn trả lời lời mời «Hẹn giờ» không. Trả id việc, hoặc 0."""
+    """Tin này có phải giờ hẹn trả lời lời mời "Hẹn giờ" không. Trả id việc, hoặc 0."""
     last = db.scalar(
         select(AgentMessage)
         .where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id,
@@ -3190,7 +3190,7 @@ def _schedule_deploy(db: Session, chat_id: str, row: AgentMessage, text: str, ta
     when = parse_schedule_time(text, now_local())
     if when is None:
         reply(db, chat_id,
-              f"Em chưa hiểu giờ «{telegram.esc(text[:60])}». Nhắn lại dạng <code>14:30</code> · "
+              f"Em chưa hiểu giờ **{telegram.esc(text[:60])}**. Nhắn lại dạng <code>14:30</code> · "
               "<code>20h</code> · <code>45 phút nữa</code> · <code>2 tiếng nữa</code> · "
               "<code>8h sáng mai</code>.", task_id=task.id, action=ACT_WAIT_DEPLOY_TIME)
         return
@@ -3199,7 +3199,7 @@ def _schedule_deploy(db: Session, chat_id: str, row: AgentMessage, text: str, ta
     reply(db, chat_id,
           f"Đã hẹn <b>{when:%H:%M %d/%m}</b>: gộp <b>{code}</b> vào "
           f"<code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code> + deploy dev. Tới giờ em tự "
-          "chạy và gửi thẻ; đổi ý thì bấm «Hủy hẹn».",
+          "chạy và gửi thẻ; đổi ý thì bấm **Hủy hẹn**.",
           task_id=task.id, buttons=[("Hủy hẹn", f"mgno:{task.id}")])
 
 
@@ -3218,7 +3218,7 @@ def _confirm_revert(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> N
         f"1. <code>git revert -m 1 {esc(sha[:10])}</code> trên <code>{base}</code> (thêm một bản đảo "
         "ngược, KHÔNG xóa lịch sử) rồi đẩy GitHub.",
         f"2. SSH lên VPS: reset về <code>origin/{base}</code>, build lại đúng service.",
-        "3. Việc về «Đang hỏi lại» — nhắn cần sửa gì rồi /gom để bot làm lại từ đầu.", "",
+        "3. Việc về **Đang hỏi lại** — nhắn cần sửa gì rồi /gom để bot làm lại từ đầu.", "",
         "Đại ca có chắc muốn thu hồi không?",
     ]), task_id=task.id, buttons=[("Đồng ý thu hồi", f"rvok:{task.id}"),
                                  ("Thôi, giữ nguyên", f"rvno:{task.id}")])
@@ -3302,7 +3302,7 @@ def _plan_answer_target(db: Session, chat_id: str, row: AgentMessage) -> int:
     """Tin này có phải câu trả lời cho lần hỏi lại gần nhất của trạm kế hoạch không. Trả id việc, hoặc 0.
 
     Ba chốt: dấu chờ gần nhất còn trong cửa sổ; từ dấu đó tới giờ đại ca CHƯA nhắn hay bấm gì
-    khác (có tin/bấm nút xen giữa là đã sang chuyện khác); và việc vẫn đang «Đang hỏi lại».
+    khác (có tin/bấm nút xen giữa là đã sang chuyện khác); và việc vẫn đang "Đang hỏi lại".
     """
     wait = db.scalar(
         select(AgentMessage)
@@ -3338,7 +3338,7 @@ def _answer_plan(db: Session, chat_id: str, row: AgentMessage, text: str, task_i
     db.add(AgentTaskItem(task_id=task.id, source=SRC_TELEGRAM, ref_id=row.id,
                          merged_by=MERGED_BY_BOT))
     #  Câu rà soát nêu coi như đã trả lời: lập lại kế hoạch không được hỏi lại chúng (AI-0007 bị
-    #  hỏi lại đúng hai câu đại ca vừa đáp «oke theo ý của em» — ai-CR-022).
+    #  hỏi lại đúng hai câu đại ca vừa đáp "oke theo ý của em" — ai-CR-022).
     scan = coder.latest_scan_run(db, task)
     if scan is not None and isinstance(scan.artifact, dict):
         scan.artifact = {**scan.artifact, "answered": True}
@@ -3367,12 +3367,12 @@ def _pending_rule_run(db: Session, task: AgentTask) -> AgentRun | None:
 
 
 def propose_rule(db: Session, chat_id: str, task: AgentTask, asked: list[str], answer: str) -> None:
-    """Thẻ «Lần sau gặp tương tự em tự làm vậy nhé?». Luật 1 của sổ: bot CHỈ đề xuất."""
+    """Thẻ "Lần sau gặp tương tự em tự làm vậy nhé?". Luật 1 của sổ: bot CHỈ đề xuất."""
     esc = telegram.esc
     topic = playbook.protected_topic("\n".join([task.title or "", *asked, answer]))
     if int(task.risk_level or 0) >= RISK_HIGH or topic:
         #  Im lặng (ai-CR-021): việc công nợ thì câu trả lời nào cũng rơi vào đây, nhắn mỗi lần một
-        #  câu «dính tiền nên em vẫn hỏi» chỉ làm khung chat dài thêm.
+        #  câu "dính tiền nên em vẫn hỏi" chỉ làm khung chat dài thêm.
         log.info("agent_hub: %s chạm chủ đề luôn hỏi (%s), không đề xuất ghi sổ", task.code,
                  topic or "rủi ro cao")
         return
@@ -3400,7 +3400,7 @@ def propose_rule(db: Session, chat_id: str, task: AgentTask, asked: list[str], a
         f"Em sẽ làm: {esc(entry['action'])}",
         f"Không áp khi: {esc(entry['not_when'] or 'chưa ghi')}", "",
         "Việc dính tiền, công nợ, phân quyền, cấu trúc DB, prod hay gộp mã thì em vẫn luôn hỏi.",
-        *(["Nhắn «ghi sổ» để em ghi, «không ghi» thì thôi."] if settings.AGENT_TG_COMPACT else []),
+        *(["Nhắn **ghi sổ** để em ghi, **không ghi** thì thôi."] if settings.AGENT_TG_COMPACT else []),
     ]), task_id=task.id, buttons=[("Ghi vào sổ", f"qdok:{task.id}"),
                                   ("Không, lần nào cũng hỏi", f"qdno:{task.id}")])
 
@@ -3416,7 +3416,7 @@ def _resolve_rule(db: Session, chat_id: str, cb_id: str, action: str, task: Agen
         db.commit()
         telegram.answer_callback(cb_id, "Được, lần sau em vẫn hỏi")
         return
-    source = f"đại ca bấm «Ghi vào sổ» trên Telegram {now_local():%d/%m/%Y}, từ việc {task.code}"
+    source = f"đại ca bấm **Ghi vào sổ** trên Telegram {now_local():%d/%m/%Y}, từ việc {task.code}"
     try:
         qd_id = playbook.append_entry(art.get("entry") or {}, source=source)
     except playbook.PlaybookError as e:
@@ -3431,7 +3431,7 @@ def _resolve_rule(db: Session, chat_id: str, cb_id: str, action: str, task: Agen
     title = telegram.esc((art.get("entry") or {}).get("title") or "")
     reply(db, chat_id,
           f"Đã ghi <b>{qd_id} · {title}</b> vào sổ quyết định. Từ lần sau gặp tình huống này em "
-          f"tự làm và ghi rõ «Theo {qd_id}». Muốn sửa hay gỡ thì sửa tay tệp "
+          f"tự làm và ghi rõ **Theo {qd_id}**. Muốn sửa hay gỡ thì sửa tay tệp "
           "<code>doc/agent-hub/03-so-quyet-dinh.md</code>.", task_id=task.id)
 
 
@@ -3456,7 +3456,7 @@ def _handle_callback(db: Session, cb: dict, chat_id: str) -> None:
         #  cổng này trước đây chỉ cho chat quản trị. Chat đã liên kết ERP được bấm các nút dành cho họ; mọi nhánh
         #  trả sớm đều answer_callback để Telegram thôi xoay.
         if chat_link.get_active_link(db, chat_id) is None:
-            telegram.answer_callback(cb_id, "Chat này chưa đăng nhập ERP — nhắn «đăng nhập» trước")
+            telegram.answer_callback(cb_id, "Chat này chưa đăng nhập ERP — nhắn **đăng nhập** trước")
             return
         if action not in LINKED_CHAT_CALLBACKS:
             telegram.answer_callback(cb_id, "Nút này chỉ dành cho chat quản trị bot")
@@ -3488,7 +3488,7 @@ def _handle_callback(db: Session, cb: dict, chat_id: str) -> None:
         return
 
     if action == "ask":
-        #  KHÔNG gỡ nút của thẻ kết quả: «Mở PR» / «Bỏ việc này» còn phải dùng sau khi hỏi xong,
+        #  KHÔNG gỡ nút của thẻ kết quả: "Mở PR" / "Bỏ việc này" còn phải dùng sau khi hỏi xong,
         #  và bấm hỏi hai lần cũng chỉ là hai lời mời, không tốn gì.
         log_message(db, DIR_IN, chat_id, 0, data, action=action, task_id=task.id)
         if task.status in CLOSED_STATUSES:
@@ -3498,7 +3498,7 @@ def _handle_callback(db: Session, cb: dict, chat_id: str) -> None:
         return
     if action == "ans":
         #  Mở lại cửa trả lời khi đại ca trả lời trễ quá cửa sổ, hoặc sau khi đã nhắn chuyện khác.
-        #  Không gỡ nút: «Bỏ việc này» trên cùng thẻ còn dùng.
+        #  Không gỡ nút: "Bỏ việc này" trên cùng thẻ còn dùng.
         log_message(db, DIR_IN, chat_id, 0, data, action=action, task_id=task.id)
         if task.status != ST_NEEDS_INPUT:
             telegram.answer_callback(cb_id, "Việc này không còn chờ trả lời")
@@ -3507,8 +3507,8 @@ def _handle_callback(db: Session, cb: dict, chat_id: str) -> None:
         _invite_plan_answer(db, chat_id, task, again=True)
         return
     if action in ("mg", "rv"):
-        #  Hai nút MỞ THẺ HỎI của ai-CR-014, cũng không gỡ nút thẻ cũ: thẻ hỏi có nút «Thôi»,
-        #  thôi xong đại ca còn cần «Đẩy GitHub» / «Hỏi thêm» trên thẻ kết quả; mở thẻ hỏi hai
+        #  Hai nút MỞ THẺ HỎI của ai-CR-014, cũng không gỡ nút thẻ cũ: thẻ hỏi có nút "Thôi",
+        #  thôi xong đại ca còn cần "Đẩy GitHub" / "Hỏi thêm" trên thẻ kết quả; mở thẻ hỏi hai
         #  lần chẳng chạy gì. Gộp thật chỉ xảy ra ở `mgok`/`rvok` — có gỡ nút.
         log_message(db, DIR_IN, chat_id, 0, data, action=action, task_id=task.id)
         if task.status in CLOSED_STATUSES:
@@ -3583,7 +3583,7 @@ def cancel_task(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
     task.closed_at = datetime.now()
     task.note = "Đại ca bỏ từ Telegram"
     #  ai-CR-088: lượt đang dở của việc bị bỏ (máy sửa mã đang chạy / máy tắt giữa chừng) đóng luôn — không thì nó
-    #  nằm «đang chạy» mãi và báo tài nguyên sáng 06/10 đếm thành «1 lượt kẹt quá 2 giờ».
+    #  nằm "đang chạy" mãi và báo tài nguyên sáng 06/10 đếm thành "1 lượt kẹt quá 2 giờ".
     for run in db.scalars(select(AgentRun).where(AgentRun.task_id == task.id, AgentRun.status == RUN_RUNNING)):
         run.status = RUN_ERROR
         run.error = (run.error or "") + " việc đã bỏ"
@@ -3615,7 +3615,7 @@ def _red_gate(db: Session, task: AgentTask) -> bool:
 
 
 def start_fix_gate(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
-    """«Sửa cho xanh» (ai-CR-026): cổng kiểm đỏ -> bot sửa tiếp đúng phiên, chạy lại cổng."""
+    """"Sửa cho xanh" (ai-CR-026): cổng kiểm đỏ -> bot sửa tiếp đúng phiên, chạy lại cổng."""
     if not _red_gate(db, task):
         telegram.answer_callback(cb_id, "Việc này không còn ở trạng thái cổng kiểm đỏ")
         if not cb_id:
@@ -3633,12 +3633,12 @@ def start_fix_gate(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> No
 
 
 def start_continue(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
-    """«Làm tiếp» sau khi hết lượt (ai-CR-023): nối đúng phiên, đúng worktree đang dở."""
+    """"Làm tiếp" sau khi hết lượt (ai-CR-023): nối đúng phiên, đúng worktree đang dở."""
     can_resume = task.status == ST_NEEDS_INPUT and bool(coder.resumable_session(db, task))
     can_phase = task.status in (ST_NEEDS_INPUT, ST_REVIEW) and bool(coder.phases_left(db, task)) \
         and not coder.merged_sha_for(db, task)
     if not (can_resume or can_phase) and task.status in (ST_CODE, ST_SCANNING):
-        #  ai-CR-092: đại ca nhắn «oke làm đi» khi bot ĐÃ tự duyệt và đang sửa — trả lời «đang làm», đừng nói «không có phiên».
+        #  ai-CR-092: đại ca nhắn "oke làm đi" khi bot ĐÃ tự duyệt và đang sửa — trả lời "đang làm", đừng nói "không có phiên".
         telegram.answer_callback(cb_id, "Em đang làm rồi")
         if not cb_id:
             reply(db, chat_id, f"<b>{telegram.esc(task.code)}</b>: em đang làm rồi, xong em báo.", task_id=task.id)
@@ -3663,7 +3663,7 @@ def start_continue(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> No
 
 
 def close_done(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
-    #  Đại ca thử trên dev thấy ổn. Prod đang tạm dừng deploy (chốt 19/09/2026) nên «xong»
+    #  Đại ca thử trên dev thấy ổn. Prod đang tạm dừng deploy (chốt 19/09/2026) nên "xong"
     #  ở đây là xong việc của bot; lên prod là chuyện của người, ghi ở sổ khác.
     task.status = ST_DONE
     task.closed_at = datetime.now()
@@ -3677,7 +3677,7 @@ def close_done(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
 
 
 def _dispatch_publish(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
-    """Nút «Gửi link PR để anh tự merge» (ai-CR-012): giao cho runner đẩy nhánh đã commit của việc."""
+    """Nút "Gửi link PR để anh tự merge" (ai-CR-012): giao cho runner đẩy nhánh đã commit của việc."""
     code = telegram.esc(task.code)
     if task.status != ST_REVIEW:
         telegram.answer_callback(cb_id, "Việc này chưa có bản vá để đẩy")
@@ -3843,8 +3843,8 @@ def _recent_turns(db: Session, chat_id: str, before_id: int) -> list[dict]:
     rows = list(db.scalars(q))
     if not rows:
         return []
-    #  ai-CR-100: mốc là TIN ĐANG HỎI. Bản cũ lấy tin lịch sử MỚI NHẤT làm mốc, nên 07/10 «trả lời cho tao» kéo
-    #  nguyên cuộc «lên lịch trình» hôm 06/10 vào mạch (các tin sáng 07/10 là lệnh / tra cứu, không nằm trong sổ hỏi
+    #  ai-CR-100: mốc là TIN ĐANG HỎI. Bản cũ lấy tin lịch sử MỚI NHẤT làm mốc, nên 07/10 "trả lời cho tao" kéo
+    #  nguyên cuộc "lên lịch trình" hôm 06/10 vào mạch (các tin sáng 07/10 là lệnh / tra cứu, không nằm trong sổ hỏi
     #  đáp) và bot trả lời chuyện hôm qua.
     current = db.get(AgentMessage, before_id) if before_id else None
     newest = (current.created_at if current is not None and current.created_at else
@@ -3908,12 +3908,12 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
     telegram.send_chat_action(chat_id)
     try:
         #  `system` của người gọi chỉ CHÈN THÊM vào cuối, không đè định nghĩa và rào an toàn của
-        #  Trợ lý AI; nên web vẫn là «Trợ lý AI», chỉ kênh Telegram mới là Đậu Đậu (ai-CR-016).
+        #  Trợ lý AI; nên web vẫn là "Trợ lý AI", chỉ kênh Telegram mới là Đậu Đậu (ai-CR-016).
         #  ai-CR-053: `provider="agent_gemini"` = khóa của NGƯỜI đang chat, không phải khóa công ty của web.
         #  ai-CR-095 (C-02): sổ ghi nhớ riêng của NGƯỜI ĐÃ ĐĂNG NHẬP chat này — không phải của tài khoản bot mặc định.
         link = chat_link.get_active_link(db, chat_id)
         memory_block = personal_memory.prompt_block(db, link.user_id if link is not None else 0, question)
-        #  ai-CR-138 (13.5): đối tượng «như mọi lần» từ sổ ý định — thiếu thì dùng và NÓI RÕ giả định.
+        #  ai-CR-138 (13.5): đối tượng "như mọi lần" từ sổ ý định — thiếu thì dùng và NÓI RÕ giả định.
         from . import intent_ledger
 
         habits = intent_ledger.habit_block(db, link.user_id if link is not None else 0)
@@ -3928,7 +3928,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
         _close_answer_run(db, answer_run, None, error=str(e))
-        #  Đại ca 13/10: «Em gặp lỗi khi gọi AI» chung chung quá — kèm mã lượt + loại lỗi để gửi lại cho người sửa.
+        #  Đại ca 13/10: "Em gặp lỗi khi gọi AI" chung chung quá — kèm mã lượt + loại lỗi để gửi lại cho người sửa.
         text = user_keys.key_problem(str(e)) or ai_keys.short_error(str(e))
         if not user_keys.key_problem(str(e)) and not ai_keys.is_transient(str(e)):
             text += f"\n<i>Mã lượt #{answer_run.id} · {telegram.esc(type(e).__name__)}</i>"      # không in chữ lỗi thô (bài persona)
@@ -3946,7 +3946,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
                            ledger=ledger)
 
 
-#  Đoạn mở đầu kiểu «suy nghĩ thành tiếng» của model suy luận (DeepSeek / Kimi / Claude qua trạm) — chỉ xét ĐOẠN ĐẦU (tới
+#  Đoạn mở đầu kiểu "suy nghĩ thành tiếng" của model suy luận (DeepSeek / Kimi / Claude qua trạm) — chỉ xét ĐOẠN ĐẦU (tới
 #  dòng trống đầu tiên): đoạn đó mở kiểu suy nghĩ VÀ không có chữ tiếng Việt có dấu. Không xét cả 600 ký tự vì đoạn suy
 #  nghĩ hay trích lại lời người dùng tiếng Việt ngay sau (lượt #358); câu trả lời tiếng Việt bình thường không bị chặn.
 _REASONING_OPENER = re.compile(r"^\s*(?:the user\b|okay[,.]|ok[,.]|alright[,.]|let me\b|i need to\b|i should\b|we need to\b|"
@@ -3981,7 +3981,7 @@ def _deliver_answer(db: Session, chat_id: str, user, result: dict, *, question: 
     has_draft = any(isinstance(c, dict) and isinstance(c.get("draft"), dict)
                     and draft_create.kind_of(str(c.get("name") or "")) for c in tool_calls)
     if has_draft:
-        #  ai-CR-048: tool soạn nháp dặn model «mời người dùng bấm nút mở form» (đúng cho web), nên câu chữ
+        #  ai-CR-048: tool soạn nháp dặn model "mời người dùng bấm nút mở form" (đúng cho web), nên câu chữ
         #  của Trợ lý nói ngược thẻ tóm tắt của bot. Chỉ GHI SỔ câu đó (giữ mạch hội thoại), không gửi.
         #  ai-CR-183: dừng sớm nên thường không còn câu chữ — ghi một dòng ngắn để mạch hội thoại vẫn có lượt bot.
         log_message(db, DIR_OUT, chat_id, 0, result.get("text") or "(đã soạn bản nháp, xem thẻ bên dưới)", action=ACT_ANSWER)
@@ -4069,8 +4069,8 @@ def _assistant_user(db: Session, chat_id: str = ""):
 # ---------------------------------------------------------------------------
 # Kết quả tool của Trợ lý AI đưa ra Telegram (ai-CR-009)
 # ---------------------------------------------------------------------------
-#  Trên web, mỗi khối trong `tool_calls` thành một "lời mời" dưới câu trả lời: nút «Tải
-#  báo cáo» cho `file`, thẻ so sánh cũ/mới + nút «Xác nhận sửa» cho `proposal`, nút mở
+#  Trên web, mỗi khối trong `tool_calls` thành một "lời mời" dưới câu trả lời: nút "Tải
+#  báo cáo" cho `file`, thẻ so sánh cũ/mới + nút "Xác nhận sửa" cho `proposal`, nút mở
 #  form cho `draft`. Telegram không có màn hình ERP nên ba khối đó phải đi ba đường khác:
 #  tệp đẩy thẳng bằng `sendDocument`, đề xuất thành thẻ có hai nút, nháp phiếu chỉ báo
 #  là phải mở web (form soạn nháp không dựng được trong khung chat).
@@ -4087,10 +4087,10 @@ def deliver_tool_results(db: Session, chat_id: str, user, tool_calls: list) -> N
 
 
 # ---------------------------------------------------------------------------
-# Bản nháp chứng từ -> tạo thật khi người dùng nhắn «tạo» (ai-CR-046)
+# Bản nháp chứng từ -> tạo thật khi người dùng nhắn "tạo" (ai-CR-046)
 # ---------------------------------------------------------------------------
 DRAFT_WINDOW = timedelta(minutes=15)
-#  ai-CR-047: một câu vừa tạo vừa gửi duyệt — «tạo và gửi duyệt», «gửi duyệt luôn», «tạo rồi gửi duyệt đi».
+#  ai-CR-047: một câu vừa tạo vừa gửi duyệt — "tạo và gửi duyệt", "gửi duyệt luôn", "tạo rồi gửi duyệt đi".
 _CREATE_SUBMIT = re.compile(r"^((tạo|lưu)\s+(và|rồi|xong)\s+)?gửi duyệt(\s+(luôn|đi|nhé|nha|em|giúp|anh|giùm|lên|"
                             r"đơn|phiếu|này|đó))*[.! ]*$")
 _CREATE_YES = re.compile(r"^(tạo|lưu|ok|oke|okay|đồng ý|đúng|ừ|được|làm đi|chuẩn)(\s+(đi|luôn|nhé|nha|em|giúp|"
@@ -4099,18 +4099,18 @@ _CREATE_YES = re.compile(r"^(tạo|lưu|ok|oke|okay|đồng ý|đúng|ừ|đư�
 
 _LOOSE_YES = re.compile(r"(?<!\w)(tạo|lưu|ok|oke|okay|đồng ý|được|làm đi|link|gửi|nháp|xác nhận)(?!\w)")
 _LOOSE_BLOCK = re.compile(r"\d|(?<!\w)(khác|thêm|sửa|đổi|thành|không|thôi|đừng|hủy|bỏ|chưa)(?!\w)")
-#  ai-CR-180 (13/10): «vậy tao task đó igups anh đi nhé» — gõ thiếu dấu nên «tao» không khớp «tạo», tin rơi xuống bộ phân
-#  loại và thành việc sửa mã AI-0007. So thêm trên chữ ĐÃ BỎ DẤU; «tao» chỉ tính là «tạo» khi đứng trước một vật
-#  («tao task / việc / phiếu / đơn / nó / đi / luôn…») — «trả lời cho tao» (ai-CR-100) thì không.
+#  ai-CR-180 (13/10): "vậy tao task đó igups anh đi nhé" — gõ thiếu dấu nên "tao" không khớp "tạo", tin rơi xuống bộ phân
+#  loại và thành việc sửa mã AI-0007. So thêm trên chữ ĐÃ BỎ DẤU; "tao" chỉ tính là "tạo" khi đứng trước một vật
+#  ("tao task / việc / phiếu / đơn / nó / đi / luôn…") — "trả lời cho tao" (ai-CR-100) thì không.
 _LOOSE_YES_FOLD = re.compile(r"(?<!\w)(?:tao|luu)\s+(?:task|viec|phieu|don|nhap|no|cai|do|nay|di|luon|gium|giup|cho|"
                              r"lun|nhe|nha|em)(?!\w)|(?<!\w)(?:xac nhan|dong y|duoc roi)(?!\w)")
 _LOOSE_WORDS_MAX = 10
 
 
 def _loose_confirm(low: str) -> bool:
-    """ai-CR-048: đang có nháp chờ thì «oke tạo đơn nháp đi», «gửi cho anh cái link» cũng là xác nhận.
-    Câu dài, có số, hoặc có ý đổi («khác», «sửa», «thêm»…) thì KHÔNG — đó là nhờ soạn lại.
-    ai-CR-180: chịu được gõ thiếu dấu / sai chính tả vài chữ («tao task đó igups anh đi nhé»)."""
+    """ai-CR-048: đang có nháp chờ thì "oke tạo đơn nháp đi", "gửi cho anh cái link" cũng là xác nhận.
+    Câu dài, có số, hoặc có ý đổi ("khác", "sửa", "thêm"…) thì KHÔNG — đó là nhờ soạn lại.
+    ai-CR-180: chịu được gõ thiếu dấu / sai chính tả vài chữ ("tao task đó igups anh đi nhé")."""
     from app.modules.assistant.glossary import fold
 
     if len(low.split()) > _LOOSE_WORDS_MAX or _LOOSE_BLOCK.search(low):
@@ -4119,7 +4119,7 @@ def _loose_confirm(low: str) -> bool:
 
 
 def draft_card(kind: str, draft: dict, *, replaced: bool = False, reuse: list[dict] | None = None) -> str:
-    """Thẻ bản nháp (đại ca 09/10: bỏ ngoặc «», làm lại cho dễ đọc): tiêu đề in hoa · nhãn in đậm · điều em TỰ HIỂU
+    """Thẻ bản nháp (đại ca 09/10: bỏ ngoặc kép góc, làm lại cho dễ đọc): tiêu đề in hoa · nhãn in đậm · điều em TỰ HIỂU
     (người dùng chưa nói) tách riêng để xác nhận · các câu trả lời dạng mã (chạm là chép) mỗi câu một dòng."""
     esc = telegram.esc
     out = [f"<b>BẢN NHÁP {esc(draft_create.LABELS[kind].upper())}</b>" + (" <i>(thay bản nháp trước)</i>" if replaced else "")]
@@ -4143,7 +4143,7 @@ def draft_card(kind: str, draft: dict, *, replaced: bool = False, reuse: list[di
         out += [f"{i}. <b>{esc(x['code'])}</b> · {esc(x.get('title') or '')}" for i, x in enumerate(reuse, 1)]
         actions = actions[:1] + [("thêm vào 1", "thêm các dòng này vào phiếu nháp số 1"),
                                  ("ghi đè 1", "thay nội dung phiếu nháp số 1 bằng bản này")] + actions[1:]
-    #  Doc 20 §10 việc 4 (ai-CR-203): dòng cuối thành câu tự nhiên thay cho khối «Trả lời: • tạo — … • thôi — …»; giữ
+    #  Doc 20 §10 việc 4 (ai-CR-203): dòng cuối thành câu tự nhiên thay cho khối "Trả lời: • tạo — … • thôi — …"; giữ
     #  <code> để chạm là chép.
     asks = [f"<code>{esc(cmd)}</code> để {esc(note)}" for cmd, note in actions]
     joined = asks[0] if len(asks) == 1 else ", ".join(asks[:-1]) + ", hoặc " + asks[-1]
@@ -4152,7 +4152,7 @@ def draft_card(kind: str, draft: dict, *, replaced: bool = False, reuse: list[di
 
 
 def _offer_draft(db: Session, chat_id: str, user, call: dict, *, silent: bool = False) -> None:
-    """Tool vừa soạn nháp: tóm tắt + chờ «tạo». Đề nghị thanh toán thì gửi link form web điền sẵn."""
+    """Tool vừa soạn nháp: tóm tắt + chờ "tạo". Đề nghị thanh toán thì gửi link form web điền sẵn."""
     esc = telegram.esc
     kind = draft_create.kind_of(str(call.get("name") or ""))
     draft = call["draft"]
@@ -4172,8 +4172,8 @@ def _offer_draft(db: Session, chat_id: str, user, call: dict, *, silent: bool = 
     #  ai-CR-156: đã có phiếu nháp YCMH / YCBG cùng loại → mời dùng lại thay vì lập thêm phiếu.
     reuse = draft_create.same_kind_drafts(erp.my_drafts(db, user), kind) if user is not None else []
     if not silent:
-        #  ai-CR-198 (đại ca 14/10: «cho nó vào chat thôi, dễ đọc dễ xác nhận hơn»): lõi mới tự trình bày nháp trong câu
-        #  trả lời, không gửi thẻ riêng — chỉ ghi dòng chờ «tạo» bên dưới.
+        #  ai-CR-198 (đại ca 14/10: "cho nó vào chat thôi, dễ đọc dễ xác nhận hơn"): lõi mới tự trình bày nháp trong câu
+        #  trả lời, không gửi thẻ riêng — chỉ ghi dòng chờ "tạo" bên dưới.
         reply(db, chat_id, draft_card(kind, draft, replaced=bool(replaced), reuse=reuse))
     log_message(db, DIR_OUT, chat_id, 0, json.dumps({"tool": call.get("name"), "kind": kind,
                                                      "user_id": getattr(user, "id", 0), "draft": draft,
@@ -4202,7 +4202,7 @@ def _my_drafts_text(items: list[dict]) -> str:
 
 
 def _my_drafts_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """«đơn nháp của tôi» · «xóa đơn nháp 2 3» · «xóa hết đơn nháp» → thẻ xác nhận → «đúng» / «thôi». Chỉ phiếu NHÁP do
+    """"đơn nháp của tôi" · "xóa đơn nháp 2 3" · "xóa hết đơn nháp" → thẻ xác nhận → "đúng" / "thôi". Chỉ phiếu NHÁP do
     chính mình lập; xóa bằng đúng hàm xóa của web."""
     from app.modules.assistant.glossary import fold
 
@@ -4264,7 +4264,7 @@ def _my_drafts_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     elif everything:
         chosen = items
     else:
-        #  «xóa bớt đơn nháp» chưa nói số nào → đưa danh sách để chọn, chưa xóa gì.
+        #  "xóa bớt đơn nháp" chưa nói số nào → đưa danh sách để chọn, chưa xóa gì.
         reply(db, chat_id, _my_drafts_text(items))
         return True
     if not chosen:
@@ -4282,7 +4282,7 @@ def _my_drafts_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     return True
 
 
-#  ai-CR-156: «thêm vào 1» / «gộp vào phiếu 2» / «ghi đè 1» / «thay phiếu 1» trên thẻ nháp YCMH / YCBG.
+#  ai-CR-156: "thêm vào 1" / "gộp vào phiếu 2" / "ghi đè 1" / "thay phiếu 1" trên thẻ nháp YCMH / YCBG.
 _REUSE_DRAFT = re.compile(r"^(?P<verb>thêm vào|gộp vào|ghi đè|đè|thay)(?:\s+(?:lên|vào))?\s*(?:phiếu|đơn)?\s*(?:số)?\s*"
                           r"(?P<n>\d+)[.! ]*$")
 
@@ -4309,7 +4309,7 @@ def _reuse_draft(db: Session, chat_id: str, row: AgentMessage, pending: AgentMes
         return True
     mode = "append" if m.group("verb") in ("thêm vào", "gộp vào") else "replace"
     target = choices[n - 1]
-    #  Chốt dấu TRƯỚC khi ghi phiếu: «thêm vào 1» lần hai không được thêm lần hai.
+    #  Chốt dấu TRƯỚC khi ghi phiếu: "thêm vào 1" lần hai không được thêm lần hai.
     pending.action = ACT_DRAFT_DONE
     db.commit()
     try:
@@ -4334,7 +4334,7 @@ def _reuse_draft(db: Session, chat_id: str, row: AgentMessage, pending: AgentMes
 
 
 def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """«tạo» / «thôi» cho bản nháp đang chờ của chat này (trong DRAFT_WINDOW)."""
+    """"tạo" / "thôi" cho bản nháp đang chờ của chat này (trong DRAFT_WINDOW)."""
     low = text.strip().lower()
     pending = db.scalar(select(AgentMessage).where(
         AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_DRAFT_WAIT, AgentMessage.id < row.id)
@@ -4350,7 +4350,7 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
     if not (yes or no):
         return (not live) and _detail_recent(db, chat_id, row, low)
     if not live:
-        #  Không còn nháp chờ: «gửi duyệt luôn» ngay sau một lần «tạo» thì gửi duyệt phiếu vừa tạo.
+        #  Không còn nháp chờ: "gửi duyệt luôn" ngay sau một lần "tạo" thì gửi duyệt phiếu vừa tạo.
         return want_submit and _submit_recent(db, chat_id, row)
     row.action = ACT_COMMAND
     try:
@@ -4374,9 +4374,9 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
         if missing := draft_create.missing_for_submit(kind, info.get("draft") or {}):
             db.commit()
             reply(db, chat_id, f"Chưa gửi duyệt được: {telegram.esc(missing)} Em chưa tạo gì — đại ca bổ sung "
-                  "rồi nhờ soạn lại, hoặc nhắn «tạo» để lưu Nháp trước.")
+                  "rồi nhờ soạn lại, hoặc nhắn **tạo** để lưu Nháp trước.")
             return True
-    #  Chốt dấu TRƯỚC khi ghi phiếu: service có thể rollback, và dấu chưa chốt thì «tạo» lần hai tạo lần hai.
+    #  Chốt dấu TRƯỚC khi ghi phiếu: service có thể rollback, và dấu chưa chốt thì "tạo" lần hai tạo lần hai.
     pending.action = ACT_DRAFT_DONE
     db.commit()
     #  ai-CR-143: đã có đơn nghỉ NHÁP của chính mình trùng ngày → sửa đè đơn đó, không lập đơn thứ hai.
@@ -4394,7 +4394,7 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
                 if "quyền" in str(e) else "")
         reply(db, chat_id, f"Chưa tạo được {label}: {telegram.esc(str(e)[:400])}{hint}")
         return True
-    #  Nhớ phiếu vừa tạo trên chính dòng sổ nháp, để «gửi duyệt luôn» nhắn sau vẫn biết phiếu nào.
+    #  Nhớ phiếu vừa tạo trên chính dòng sổ nháp, để "gửi duyệt luôn" nhắn sau vẫn biết phiếu nào.
     pending.body = json.dumps({**info, "created": {"id": oid, "code": code}}, ensure_ascii=False, default=str)
     db.commit()
     if want_submit and kind in draft_create.SUBMITTABLE:
@@ -4436,14 +4436,14 @@ def _doc_link_html(kind: str, oid: int) -> str:
 def _reply_created(db: Session, chat_id: str, kind: str, oid: int, head: str, tail: str = "", *,
                    undo: bool = True) -> None:
     """Báo phiếu vừa tạo / gửi duyệt KÈM thông tin đọc lại từ DB + link (ai-CR-049). Ghi dấu câu trả lời
-    để lượt hỏi sau Trợ lý biết phiếu ĐÃ tạo — không thì «cho chi tiết phiếu» lại bị soạn nháp lần nữa.
-    ai-CR-184: `undo` = tin báo một lần ghi hoàn tác được (tạo / sửa đè / thêm dòng) → thêm chân «Rút lại trong 24 giờ»;
+    để lượt hỏi sau Trợ lý biết phiếu ĐÃ tạo — không thì "cho chi tiết phiếu" lại bị soạn nháp lần nữa.
+    ai-CR-184: `undo` = tin báo một lần ghi hoàn tác được (tạo / sửa đè / thêm dòng) → thêm chân "Rút lại trong 24 giờ";
     gửi duyệt chỉ ghi sổ, không hoàn tác được, nên truyền False."""
     lines = [f"<b>{telegram.esc(head)}</b>"]
     lines += [telegram.esc(x) for x in erp.created_details(db, kind, oid)]
     lines.append(_doc_link_html(kind, oid))
     if tail:
-        lines.append(tail)      # HTML sẵn (ai-CR-184: câu lệnh in kiểu <code>, không dùng « »)
+        lines.append(tail)      # HTML sẵn (ai-CR-184: câu lệnh in kiểu <code>, không dùng " ")
     if undo:
         lines.append(change_undo.UNDO_FOOTER)
     reply(db, chat_id, "\n".join(lines), action=ACT_ANSWER)
@@ -4466,7 +4466,7 @@ def _submit_and_report(db: Session, chat_id: str, user, kind: str, oid: int, cod
 
 
 def _submit_recent(db: Session, chat_id: str, row: AgentMessage) -> bool:
-    """«gửi duyệt (luôn)» trong DRAFT_WINDOW sau khi vừa «tạo»: gửi duyệt đúng phiếu đó, một lần."""
+    """"gửi duyệt (luôn)" trong DRAFT_WINDOW sau khi vừa "tạo": gửi duyệt đúng phiếu đó, một lần."""
     done = db.scalar(select(AgentMessage).where(
         AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_DRAFT_DONE, AgentMessage.id < row.id)
         .order_by(AgentMessage.id.desc()).limit(1))
@@ -4493,7 +4493,7 @@ def _submit_recent(db: Session, chat_id: str, row: AgentMessage) -> bool:
     return True
 
 
-#  ai-CR-049: vừa tạo xong mà hỏi «chi tiết / thông tin / link» thì trả phiếu vừa tạo, không đi Trợ lý.
+#  ai-CR-049: vừa tạo xong mà hỏi "chi tiết / thông tin / link" thì trả phiếu vừa tạo, không đi Trợ lý.
 _DETAIL_Q = re.compile(r"(?<!\w)(chi tiết|thông tin|link|xem|mở)(?!\w)")
 
 
@@ -4548,8 +4548,8 @@ def _send_report_file(db: Session, chat_id: str, user, meta: dict) -> None:
 
 #  ai-CR-196 (14/10, Agent 1 phát hiện khi kiểm 616): nút bấm từ chat KHÔNG phải đại ca bị `_handle_callback` bỏ im lặng →
 #  người đã liên kết (anh Được) không bao giờ xác nhận được thẻ sửa / xóa phiếu. Agent 2 vá cửa nút; bên này thêm ĐƯỜNG CHỮ cho
-#  thẻ đề xuất (ai-CR-027: mọi nút đều có câu chữ tương đương): «xác nhận» / «xác nhận sửa» / «đồng ý» → ghi; «không sửa» /
-#  «thôi» / «bỏ» → bỏ. Chỉ nhận trong 15 phút sau thẻ, thẻ dùng một lần (`_resolve_proposal` tự chốt dấu).
+#  thẻ đề xuất (ai-CR-027: mọi nút đều có câu chữ tương đương): "xác nhận" / "xác nhận sửa" / "đồng ý" → ghi; "không sửa" /
+#  "thôi" / "bỏ" → bỏ. Chỉ nhận trong 15 phút sau thẻ, thẻ dùng một lần (`_resolve_proposal` tự chốt dấu).
 _PROPOSAL_YES = re.compile(r"^(?:ok|oke|okay|dong y|xac nhan|chot|duoc)(?:\s+(?:sua|xoa|di|luon|nhe|nha|em|anh|phieu|don))*[.! ]*$")
 _PROPOSAL_NO = re.compile(r"^(?:khong|ko|thoi|bo|huy|dung)(?:\s+(?:sua|xoa|di|nua|nhe|nha|em|phieu|don|lam))*[.! ]*$")
 PROPOSAL_TEXT_WINDOW = timedelta(minutes=15)
@@ -4567,7 +4567,7 @@ def _proposal_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         AgentMessage.id < row.id).order_by(AgentMessage.id.desc()).limit(1))
     if card is None or (row.created_at and card.created_at and row.created_at - card.created_at > PROPOSAL_TEXT_WINDOW):
         return False
-    #  Có thẻ chờ KHÁC mới hơn (nháp, xóa nháp, hoàn tác, cấp quyền…) thì «đúng / thôi» thuộc về thẻ đó, không phải thẻ này.
+    #  Có thẻ chờ KHÁC mới hơn (nháp, xóa nháp, hoàn tác, cấp quyền…) thì "đúng / thôi" thuộc về thẻ đó, không phải thẻ này.
     newer = db.scalar(select(AgentMessage.id).where(
         AgentMessage.chat_id == chat_id, AgentMessage.id > card.id, AgentMessage.id < row.id,
         AgentMessage.action.in_((ACT_DRAFT_WAIT, ACT_DRAFT_DEL_WAIT, ACT_GRANT_WAIT, ACT_OP_WAIT, ACT_RUNNER_WAIT,
@@ -4774,7 +4774,7 @@ def start_quick(db: Session, task: AgentTask) -> None:
     """Đường tắt (ai-CR-057): báo một dòng rồi lập kế hoạch gọn; kế hoạch gọn thì tự duyệt (xem `_finish_plan`)."""
     reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
           f"<b>{telegram.esc(task.code)}</b> · {telegram.esc(task.title)}: việc nhỏ, em làm luôn (1–2 phút). "
-          "Muốn em làm kỹ hơn thì nhắn «làm kỹ " + telegram.esc(task.code) + "».", task_id=task.id)
+          "Muốn em làm kỹ hơn thì nhắn **làm kỹ " + telegram.esc(task.code) + "**.", task_id=task.id)
     plan_task(db, task)
 
 
@@ -4783,8 +4783,8 @@ _FORCE_QUICK = re.compile(r"(?<!\w)(làm luôn|làm nhanh|sửa luôn|đổi lu�
 
 
 def _lane_for(group: dict) -> int:
-    """ai-CR-057: đường tắt khi trạm gom chấm «việc nhỏ» (risk 1) và đại ca không dặn «làm kỹ».
-    Chữ của đại ca thắng model: «làm kỹ» → đầy đủ, «làm luôn» → tắt (vẫn phải risk 1)."""
+    """ai-CR-057: đường tắt khi trạm gom chấm "việc nhỏ" (risk 1) và đại ca không dặn "làm kỹ".
+    Chữ của đại ca thắng model: "làm kỹ" → đầy đủ, "làm luôn" → tắt (vẫn phải risk 1)."""
     text = str(group.get("summary") or "").lower()
     if int(group.get("risk_level") or 2) != RISK_LOW or _FORCE_FULL.search(text):
         return LANE_FULL
@@ -4905,7 +4905,7 @@ def _tickets_of(db: Session, task: AgentTask) -> list[dict]:
 
 
 def report_to_tickets(db: Session, task: AgentTask, *, done: bool) -> None:
-    """Việc đóng -> báo lại trên phiếu gốc. Xong: «Đã trả lời». Bỏ: trả phiếu về hàng chờ người."""
+    """Việc đóng -> báo lại trên phiếu gốc. Xong: "Đã trả lời". Bỏ: trả phiếu về hàng chờ người."""
     tickets = _tickets_of(db, task)
     if not tickets:
         return
@@ -4928,7 +4928,7 @@ def _quota_left(db: Session) -> int:
     Trần này canh CHI PHÍ lẫn sự tỉnh táo: một vòng gom hỏng có thể đẻ ra hàng chục
     task, mỗi task một lượt gọi model và một tiếng chuông.
     """
-    #  «Hôm nay» theo giờ Việt Nam: tính theo UTC thì trần reset lúc 7 giờ sáng (ai-CR-020).
+    #  "Hôm nay" theo giờ Việt Nam: tính theo UTC thì trần reset lúc 7 giờ sáng (ai-CR-020).
     today = to_utc(now_local().replace(hour=0, minute=0, second=0, microsecond=0))
     used = db.scalar(select(func.count(AgentTask.id)).where(AgentTask.created_at >= today)) or 0
     return max(0, settings.AGENT_DAILY_TASK_CAP - used)
@@ -4947,7 +4947,7 @@ def plan_task(db: Session, task: AgentTask) -> None:
     """Lập kế hoạch. Gọi từ worker (ngoài ngữ cảnh) thì chạy bằng khóa của đại ca (ai-CR-053)."""
     db.refresh(task)
     if task.status in CLOSED_STATUSES:
-        #  ai-CR-109: AI-0004 bị bỏ lúc máy sửa mã đang rà soát; rà xong vẫn đi lập kế hoạch rồi báo «lỗi 503».
+        #  ai-CR-109: AI-0004 bị bỏ lúc máy sửa mã đang rà soát; rà xong vẫn đi lập kế hoạch rồi báo "lỗi 503".
         return
     if user_keys.in_context():
         _plan_task(db, task)
@@ -4958,7 +4958,7 @@ def plan_task(db: Session, task: AgentTask) -> None:
 
 def _confirm_from_scan(db: Session, task: AgentTask) -> None:
     """ai-CR-149: dây chuyền gọn — KHÔNG gọi model quản lý viết kế hoạch. Lấy đoạn hiểu việc + tệp + câu hỏi từ lượt rà
-    soát của Claude Code; còn câu hỏi thì hỏi (tối đa 3), không thì một thẻ xác nhận «ok». Claude Code tự lập kế hoạch
+    soát của Claude Code; còn câu hỏi thì hỏi (tối đa 3), không thì một thẻ xác nhận "ok". Claude Code tự lập kế hoạch
     lúc sửa."""
     run = coder.latest_scan_run(db, task)
     art = run.artifact if run is not None and isinstance(run.artifact, dict) else {}
@@ -4986,7 +4986,7 @@ def _plan_task(db: Session, task: AgentTask) -> None:
     except Exception as e:  # noqa: BLE001
         finish_run(db, run, error=str(e))
         db.commit()
-        #  Kèm nút lập lại: không có nó thì việc vừa nhận câu trả lời nằm ở «Đang hỏi lại» mà không
+        #  Kèm nút lập lại: không có nó thì việc vừa nhận câu trả lời nằm ở "Đang hỏi lại" mà không
         #  còn câu hỏi, không nút, không lối ra (AI-0007, 23/09/2026).
         reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
               f"Lập kế hoạch cho <b>{telegram.esc(task.code)}</b> lỗi: "
@@ -5007,7 +5007,7 @@ def _plan_task(db: Session, task: AgentTask) -> None:
     if assumptions and (strict or task.risk_level >= RISK_HIGH):
         #  Model tự giả định trên một việc rủi ro cao (kể cả khi chính lượt này mới nâng mức):
         #  luật 3 nói việc đó luôn hỏi, nên mọi giả định thành câu hỏi. Thi hành ở mã, không nhờ lời nhắc.
-        #  ai-CR-021: gọn lại — «Chưa làm: … chờ đại ca quyết: Q» chỉ giữ Q, câu trùng bỏ bớt.
+        #  ai-CR-021: gọn lại — "Chưa làm: … chờ đại ca quyết: Q" chỉ giữ Q, câu trùng bỏ bớt.
         task.questions = merge_questions(
             list(task.questions or []) + [assumption_question(a) for a in assumptions] + open_scan_qs)
         needs = True
@@ -5025,11 +5025,11 @@ def _plan_task(db: Session, task: AgentTask) -> None:
         elif missing:
             task.plan = (task.plan or "").rstrip() + "\n\n**Còn chờ đại ca quyết:**\n" + \
                 "\n".join(f"- {q}" for q in missing)
-    #  ai-CR-144 (AI-0006): «cần hỏi» mà không có câu hỏi nào (vd `plan_files` rỗng) thì thẻ rơi sang dạng duyệt — mời
-    #  «duyệt» một việc đang ở «đang hỏi lại», đại ca nhắn duyệt thì bot báo không có việc nào. Luôn có ít nhất một câu.
+    #  ai-CR-144 (AI-0006): "cần hỏi" mà không có câu hỏi nào (vd `plan_files` rỗng) thì thẻ rơi sang dạng duyệt — mời
+    #  "duyệt" một việc đang ở "đang hỏi lại", đại ca nhắn duyệt thì bot báo không có việc nào. Luôn có ít nhất một câu.
     if needs and not task.questions:
         task.questions = ["Em chưa chốt được phạm vi tệp cần sửa cho việc này. Đại ca nói rõ thêm phần nào cần làm "
-                          "trước (hoặc nhắn «sửa: lập lại kế hoạch» để em thử lại)."]
+                          "trước (hoặc nhắn **sửa: lập lại kế hoạch** để em thử lại)."]
     #  `plan_files` rỗng = bot không viết nổi phạm vi cụ thể = CẤM đi tiếp (luật B2).
     #  Đây là chỗ thi hành luật đó, không phải câu nhắc gửi cho model.
     task.status = ST_NEEDS_INPUT if needs else ST_PLAN
@@ -5039,7 +5039,7 @@ def _plan_task(db: Session, task: AgentTask) -> None:
         small = (not needs and 1 <= len(files) <= QUICK_MAX_FILES and int(task.risk_level or 2) == RISK_LOW
                  and not coder.approve_gate(task))
         if small:
-            #  Tự duyệt: không thẻ kế hoạch, không chờ. Kế hoạch vẫn nằm trong sổ («chi tiết AI-000x»).
+            #  Tự duyệt: không thẻ kế hoạch, không chờ. Kế hoạch vẫn nằm trong sổ ("chi tiết AI-000x").
             task.approved_by_chat = "bot:duong-tat"
             task.approved_at = datetime.now()
             db.commit()
@@ -5056,9 +5056,9 @@ def _plan_task(db: Session, task: AgentTask) -> None:
 
 
 def _auto_code(db: Session, task: AgentTask, needs: bool) -> bool:
-    """ai-CR-086 (đại ca 05/10: «gọn gàng rồi sửa code luôn, xong a review lại, a đâu quan tâm quá trình»): việc rủi ro
+    """ai-CR-086 (đại ca 05/10: "gọn gàng rồi sửa code luôn, xong a review lại, a đâu quan tâm quá trình"): việc rủi ro
     thấp / vừa, kế hoạch không còn câu hỏi, không đụng tệp cấm → tự duyệt, báo MỘT dòng, sửa mã luôn. Chốt duyệt thật
-    vẫn là «gộp» sau thẻ kết quả. Việc rủi ro cao (tiền, phân quyền, cấu trúc DB, prod) vẫn chờ «duyệt»."""
+    vẫn là "gộp" sau thẻ kết quả. Việc rủi ro cao (tiền, phân quyền, cấu trúc DB, prod) vẫn chờ "duyệt"."""
     from . import policy
 
     files = [f for f in (task.plan_files or []) if isinstance(f, str) and f.strip()]
@@ -5073,7 +5073,7 @@ def _auto_code(db: Session, task: AgentTask, needs: bool) -> bool:
     size = f"{len(phases)} phần, {len(files)} tệp" if len(phases) > 1 else f"{len(files)} tệp"
     reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
           f"<b>{esc(task.code)}</b> · {esc(task.title)}\nEm làm luôn ({size}), xong gửi kết quả để đại ca xem.\n"
-          f"<i>«chi tiết {esc(task.code)}» để xem kế hoạch · «bỏ {esc(task.code)}» nếu không muốn làm.</i>",
+          f"<i>**chi tiết {esc(task.code)}** để xem kế hoạch · **bỏ {esc(task.code)}** nếu không muốn làm.</i>",
           task_id=task.id)
     _dispatch_coder(db, settings.AGENT_TELEGRAM_CHAT_ID, task, quiet=True)
     db.commit()
@@ -5274,18 +5274,18 @@ def _send_confirm_card(db: Session, task: AgentTask, lines: list[str]) -> None:
           buttons=[("Làm", f"ok:{task.id}"), ("Sửa lại", f"fix:{task.id}"), ("Bỏ việc này", f"no:{task.id}")])
 
 
-#  ai-CR-149: «ok» / «oke» / «làm đi» ngay sau thẻ xác nhận của MỘT việc = duyệt việc đó (không qua bộ phân loại).
+#  ai-CR-149: "ok" / "oke" / "làm đi" ngay sau thẻ xác nhận của MỘT việc = duyệt việc đó (không qua bộ phân loại).
 _OK_CONFIRM = re.compile(r"^(ok|oke|okay|okee|ok em|uh|ừ|ừm|được|đồng ý|làm đi|làm luôn|triển|triển đi|chốt)"
                          r"(\s+(đi|luôn|nhé|nha|em|làm|thôi|rồi))*[.!]*$")
-#  ai-CR-150 (đại ca 09/10, ngay sau «chi tiết AI-0006»: «sửa nó đi em» → Trợ lý trả «em không sửa được»): câu GIỤC làm
-#  việc vừa xem — sửa / làm / chạy / code nó đi — cũng là «ok» cho việc đó.
+#  ai-CR-150 (đại ca 09/10, ngay sau "chi tiết AI-0006": "sửa nó đi em" → Trợ lý trả "em không sửa được"): câu GIỤC làm
+#  việc vừa xem — sửa / làm / chạy / code nó đi — cũng là "ok" cho việc đó.
 _GO_CONFIRM = re.compile(r"^(sửa|làm|chạy|code|triển khai|tiếp tục|bắt đầu)(\s+(nó|việc này|việc đó|luôn|tiếp))*"
                          r"(\s+(đi|luôn|nhé|nha|em|thôi|giúp anh|giùm))+[.!]*$")
 OK_CONFIRM_WINDOW = timedelta(minutes=60)
 
 
 def _ok_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """Tin bot gần nhất (không tính bản sao vận hành) là thẻ xác nhận của việc đang chờ duyệt → «ok» là duyệt."""
+    """Tin bot gần nhất (không tính bản sao vận hành) là thẻ xác nhận của việc đang chờ duyệt → "ok" là duyệt."""
     low = text.strip().lower()
     if not settings.AGENT_CODE_FLOW_SIMPLE or not (_OK_CONFIRM.match(low) or _GO_CONFIRM.match(low)):
         return False
@@ -5299,7 +5299,7 @@ def _ok_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool
     if task is None or task.status not in (ST_PLAN, ST_NEEDS_INPUT):
         return False
     if task.status == ST_NEEDS_INPUT and not _GO_CONFIRM.match(low):
-        return False        # đang hỏi lại: «ok» trơn có thể là câu trả lời — chỉ câu GIỤC làm mới vượt qua câu hỏi
+        return False        # đang hỏi lại: "ok" trơn có thể là câu trả lời — chỉ câu GIỤC làm mới vượt qua câu hỏi
     row.action = ACT_COMMAND
     row.task_id = task.id
     db.commit()
@@ -5328,8 +5328,8 @@ def send_plan_card(db: Session, task: AgentTask) -> None:
         lines += [f"• {telegram.esc(q)}" for q in task.questions]
         minutes = int(PLAN_ANSWER_WINDOW.total_seconds() // 60)
         lines += ["", f"Đại ca nhắn trả lời ngay bên dưới (trong {minutes} phút), em lập lại kế "
-                      "hoạch luôn. " + (f"Trả lời trễ hơn thì nhắn «sửa: …»." if settings.AGENT_TG_COMPACT
-                                        else "Trả lời trễ hơn thì bấm «Trả lời câu hỏi» trước.")]
+                      "hoạch luôn. " + (f"Trả lời trễ hơn thì nhắn **sửa: …**." if settings.AGENT_TG_COMPACT
+                                        else "Trả lời trễ hơn thì bấm **Trả lời câu hỏi** trước.")]
         reply(db, settings.AGENT_TELEGRAM_CHAT_ID, "\n".join(lines), task_id=task.id,
               action=ACT_WAIT_PLAN_ANSWER,
               buttons=[("Trả lời câu hỏi", f"ans:{task.id}"), ("Bỏ việc này", f"no:{task.id}")])
@@ -5346,12 +5346,12 @@ def send_plan_card(db: Session, task: AgentTask) -> None:
         #  ai-CR-082: việc lớn chạy theo từng phần — nói trước để đại ca biết bot sẽ commit từng phần.
         lines += [f"<b>Làm theo {len(phases)} phần:</b>"]
         lines += [f"{p['index']}. {telegram.esc(p['label'])} — {len(p['files'])} tệp" for p in phases]
-        lines += ["<i>Mỗi phần kiểm + commit riêng; vướng ở phần nào thì dừng ở đó, «làm tiếp» để chạy nốt.</i>", ""]
+        lines += ["<i>Mỗi phần kiểm + commit riêng; vướng ở phần nào thì dừng ở đó, **làm tiếp** để chạy nốt.</i>", ""]
     if len(task.plan_files or []) <= 5:
         lines += ["<b>Tệp sẽ đụng:</b>"] + [f"• <code>{telegram.esc(f)}</code>" for f in task.plan_files]
     else:
-        lines += [f"<b>Tệp sẽ đụng:</b> {len(task.plan_files)} tệp <i>(«chi tiết {telegram.esc(task.code)}» để xem)</i>"]
-    #  ai-CR-022: bỏ mục «Tài liệu đã tra» (AI-0007 lặp change-log.md bốn lần) và câu giải thích
+        lines += [f"<b>Tệp sẽ đụng:</b> {len(task.plan_files)} tệp <i>(**chi tiết {telegram.esc(task.code)}** để xem)</i>"]
+    #  ai-CR-022: bỏ mục "Tài liệu đã tra" (AI-0007 lặp change-log.md bốn lần) và câu giải thích
     #  rủi ro cố định — thẻ dài mà không giúp bấm Duyệt hay không. Danh sách tài liệu vẫn nằm
     #  trong sổ và trong đề bài của runner.
     lines += ["", f"Rủi ro: <b>{RISK_LABELS.get(task.risk_level, '?')}</b>"]
@@ -5363,8 +5363,8 @@ def send_plan_card(db: Session, task: AgentTask) -> None:
     if n_items > 1:
         lines += [f"Gom từ {n_items} tin nhắn."]
     if settings.AGENT_TG_COMPACT:
-        lines += ["", "Nhắn «duyệt» để em sửa mã, «sửa: &lt;điều cần đổi&gt;» để em lập lại kế hoạch, "
-                      "hoặc «bỏ việc này»."]
+        lines += ["", "Nhắn **duyệt** để em sửa mã, **sửa: &lt;điều cần đổi&gt;** để em lập lại kế hoạch, "
+                      "hoặc **bỏ việc này**."]
     reply(db, settings.AGENT_TELEGRAM_CHAT_ID, "\n".join(lines), task_id=task.id,
           buttons=[("Duyệt", f"ok:{task.id}"), ("Sửa lại", f"fix:{task.id}"),
                    ("Bỏ việc này", f"no:{task.id}")])
@@ -5438,7 +5438,7 @@ def show_task(db: Session, chat_id: str, arg: str) -> None:
         head.append(esc(timing))
     gem = sum(float(r.cost_usd or 0) for r in runs if r.provider != coder.PROVIDER)
     if gem or runs:
-        #  ai-CR-147: ghi đúng model đã chạy (trước ghi cứng «Gemini» dù bot đang chạy DeepSeek).
+        #  ai-CR-147: ghi đúng model đã chạy (trước ghi cứng "Gemini" dù bot đang chạy DeepSeek).
         head.append(f"Chi phí AI ({esc(_models_of(runs) or 'chưa gọi model')}, tiền thật): {_money(gem)} · chi tiết: "
                     f"/chiphi {esc(task.code)}")
     parts = ["\n".join(head)]
@@ -5486,17 +5486,17 @@ def send_task_list(db: Session, chat_id: str) -> None:
 # Ghi sổ
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-# ai-CR-132: bản sao tin vận hành cho người có quyền «Nhận tin vận hành của bot»
+# ai-CR-132: bản sao tin vận hành cho người có quyền "Nhận tin vận hành của bot"
 # ---------------------------------------------------------------------------
 OPS_ENTITY = "agent_ops"
 OPS_CACHE_SEC = 120
 ACT_OPS_COPY = "ban_sao_vh"
-#  Tin «em vẫn đang làm» được SỬA số phút liên tục trên chat chủ bot — bản sao không sửa theo được, bỏ cho đỡ rác.
+#  Tin "em vẫn đang làm" được SỬA số phút liên tục trên chat chủ bot — bản sao không sửa theo được, bỏ cho đỡ rác.
 _OPS_SKIP_ACTIONS = {ACT_HEARTBEAT}
 _OPS_CACHE: dict = {}
 
 
-#  ai-CR-167 (đại ca chốt 10/10/2026): «chỉ anh nhận thôi, của người nào yêu cầu sửa thì nhận tin của người đó». Bỏ hẳn
+#  ai-CR-167 (đại ca chốt 10/10/2026): "chỉ anh nhận thôi, của người nào yêu cầu sửa thì nhận tin của người đó". Bỏ hẳn
 #  bản sao theo quyền `agent_ops.read` (ai-CR-132) — vai trò admin tự có quyền đó nên mọi admin nối Telegram đều nhận cả
 #  thẻ việc sửa mã. Nay: tin vận hành CHỈ chat chủ bot; tin về một việc sửa mã (`task_id`) gửi thêm MỘT bản sao không nút
 #  cho chat đã gửi yêu cầu đó (khi không phải chat chủ bot).

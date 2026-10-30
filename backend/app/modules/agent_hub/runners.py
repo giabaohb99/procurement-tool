@@ -1,20 +1,20 @@
 """Sổ MÁY SỬA MÃ (ai-CR-054, D-03 + D-05 của `doc/agent-hub/04`).
 
-Đại ca chốt 24/09/2026: phần chạy Claude Code tách khỏi bot thành «runner», đặt trên máy đại ca (máy số 1)
+Đại ca chốt 24/09/2026: phần chạy Claude Code tách khỏi bot thành "runner", đặt trên máy đại ca (máy số 1)
 và máy nào đại ca đăng ký thêm. Bot (trên dev) chỉ xếp việc; máy nối lên, kéo việc về, ghi kết quả lên.
 
   - Mỗi máy = một dòng `tab_agent_runner`: tên, chủ máy (tài khoản ERP), mã máy (chỉ giữ băm), cờ được deploy
-    dev, lần liên lạc cuối. Đăng ký/gỡ bằng CÂU NHẮN ở chat đại ca («thêm máy của anh Được», «tắt máy …»),
+    dev, lần liên lạc cuối. Đăng ký/gỡ bằng CÂU NHẮN ở chat đại ca ("thêm máy của anh Được", "tắt máy …"),
     giống K-01. Gỡ là máy bị từ chối ngay ở lượt tiếp theo — không build, không khởi động lại gì.
   - Mỗi máy nghe hàng đợi RIÊNG `agent_code.<tên máy>`. Vé nằm trong Redis tới khi máy nối vào, nên máy tắt
     thì việc chờ, không mất. Việc DÍNH máy đã bắt đầu nó (`AgentTask.runner_id`): worktree và phiên Claude
-    Code chỉ có trên máy đó. Việc mới → máy đang bật ít việc nhất; đại ca chỉ định được («AI-0012 cho máy anh
-    Được làm»). Không có máy nào bật → máy mặc định (`AGENT_DEFAULT_RUNNER`) hoặc máy liên lạc gần nhất,
+    Code chỉ có trên máy đó. Việc mới → máy đang bật ít việc nhất; đại ca chỉ định được ("AI-0012 cho máy anh
+    Được làm"). Không có máy nào bật → máy mặc định (`AGENT_DEFAULT_RUNNER`) hoặc máy liên lạc gần nhất,
     bot nói rõ đang chờ máy nào.
   - Chưa đăng ký máy nào (phase 0/1, bot và runner cùng máy) → hàng đợi cũ `agent_code`, y như trước.
 
-Máy tự xưng bằng `AGENT_RUNNER_NAME` + `AGENT_RUNNER_TOKEN` trong `.env` của runner; mỗi 30 giây ghi «tôi còn
-sống». Bot coi máy «đang bật» khi liên lạc trong `AGENT_RUNNER_ONLINE_SEC` gần nhất.
+Máy tự xưng bằng `AGENT_RUNNER_NAME` + `AGENT_RUNNER_TOKEN` trong `.env` của runner; mỗi 30 giây ghi "tôi còn
+sống". Bot coi máy "đang bật" khi liên lạc trong `AGENT_RUNNER_ONLINE_SEC` gần nhất.
 """
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def queue_name(runner_name: str) -> str:
 
 
 def slug(name: str) -> str:
-    """«máy của anh Được» → `may-cua-anh-duoc`: tên hàng đợi và tên container không có dấu/khoảng trắng."""
+    """"máy của anh Được" → `may-cua-anh-duoc`: tên hàng đợi và tên container không có dấu/khoảng trắng."""
     import unicodedata
 
     s = (name or "").replace("đ", "d").replace("Đ", "D")
@@ -98,7 +98,7 @@ def register(db: Session, name: str, *, owner_user_id: int = 0, note: str = "", 
     if not name:
         raise ValueError("Tên máy trống.")
     if by_name(db, name) is not None:
-        raise ValueError(f"Đã có máy tên «{name}».")
+        raise ValueError(f"Đã có máy tên \"{name}\".")
     raw = secrets.token_urlsafe(24)
     row = AgentRunner(name=name, owner_user_id=owner_user_id, token_hash=hash_token(raw), note=note[:255],
                       can_deploy=bool(can_deploy), registered_by_chat=str(by_chat)[:50], created_by=0, updated_by=0)
@@ -284,7 +284,7 @@ def _check_version(db: Session, r: AgentRunner, now: datetime, notify) -> bool:
 # ---------------------------------------------------------------------------
 # Canh máy (ai-CR-072): mất liên lạc thì báo đại ca MỘT lần, nối lại thì báo lại
 # ---------------------------------------------------------------------------
-#  Dấu «đã báo mất liên lạc» nằm ở `tab_agent_cursor` (tên `runner_down:<id>`, giá trị 1/0) — không cần
+#  Dấu "đã báo mất liên lạc" nằm ở `tab_agent_cursor` (tên `runner_down:<id>`, giá trị 1/0) — không cần
 #  bảng mới. Máy chưa từng liên lạc thì không báo (vừa đăng ký, chưa cài).
 DOWN_CURSOR = "runner_down:{id}"
 
@@ -346,7 +346,7 @@ def watch(db: Session, *, now: datetime | None = None, notify=None) -> dict:
 _TAIL = r"(\s+(nhé|nha|đi|luôn|giúp em|giúp anh))*[.!]*"
 _ADD = re.compile(rf"^(thêm|đăng ký|dang ky|đăng kí)\s+máy(\s+sửa mã)?(\s+(của|cho))?\s+(?P<name>.+?){_TAIL}$")
 _REMOVE = re.compile(rf"^(tắt|gỡ|bỏ|xóa|thu hồi)\s+máy(\s+sửa mã)?(\s+của)?\s+(?P<name>.+?){_TAIL}$")
-#  «máy nào đang bật» · gõ thiếu «máy nào đang bậ» · «danh sách máy» · «các máy sửa mã»: cứ hỏi «máy nào …» là liệt kê.
+#  "máy nào đang bật" · gõ thiếu "máy nào đang bậ" · "danh sách máy" · "các máy sửa mã": cứ hỏi "máy nào …" là liệt kê.
 _LIST = re.compile(r"^(máy nào\b|(những\s+)?máy(\s+sửa mã)?\s+(đang\s+)?(bật|sống|chạy|online)"
                    r"|(danh sách|ds|xem|liệt kê)\s+máy(\s+sửa mã)?|các máy( sửa mã)?)")
 _ASSIGN = re.compile(rf"^(?P<code>ai[-\s]?\d+)\s+(cho|giao|để)\s+máy(\s+(của|cho))?\s+(?P<name>.+?)\s+làm{_TAIL}$"

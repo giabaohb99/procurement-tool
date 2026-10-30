@@ -6,8 +6,8 @@ beat mỗi phút đọc các dòng mới hơn con trỏ `bell_offset` và gửi 
 nhận. Nhờ vậy nguồn chuông nào cũng đi, kể cả nguồn thêm sau này.
 
 Mỗi liên kết chọn một mức (`AgentChatLink.notify_mode`), đổi ở Trang cá nhân → Telegram hoặc nhắn bot:
-  0 tắt · 1 «việc của tôi» (mặc định — chờ tôi duyệt, giao cho tôi, trả lại cho tôi) · 2 tất cả.
-Đại ca chốt mặc định 25/09/2026: chỉ «chờ bạn duyệt / việc giao cho bạn», không đẩy toàn bộ chuông.
+  0 tắt · 1 "việc của tôi" (mặc định — chờ tôi duyệt, giao cho tôi, trả lại cho tôi) · 2 tất cả.
+Đại ca chốt mặc định 25/09/2026: chỉ "chờ bạn duyệt / việc giao cho bạn", không đẩy toàn bộ chuông.
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ from .model import AgentChatLink, AgentCursor, AgentMessage
 CURSOR_NAME = "bell_offset"
 BATCH = 300                 # dòng chuông tối đa một lượt
 PER_CHAT = 5                # tin tối đa một chat một lượt; dư thì gộp thành một dòng đếm
-#  Chuông «của tôi»: chờ tôi duyệt / xử lý, được phân công, giao cho tôi, bị trả lại cho tôi, nhắc tôi.
+#  Chuông "của tôi": chờ tôi duyệt / xử lý, được phân công, giao cho tôi, bị trả lại cho tôi, nhắc tôi.
 _MINE = re.compile(
     r"(chờ|cần|đến lượt|mời)\s+(bạn|anh/chị|anh|chị)\s+(duyệt|xử lý|xác nhận|ký)"
     r"|bạn được (phân công|giao|chọn|ủy quyền)|giao cho bạn|phân công .{0,30}cho bạn|bàn giao cho bạn"
@@ -110,7 +110,7 @@ def _send(db: Session, chat_id: str, text: str, bell_id: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Câu nhắn đổi mức: «tắt chuông» · «bật chuông» · «chuông tất cả» · «chuông việc của tôi»
+# Câu nhắn đổi mức: "tắt chuông" · "bật chuông" · "chuông tất cả" · "chuông việc của tôi"
 # ---------------------------------------------------------------------------
 _OFF = re.compile(r"^(tắt|ngưng|dừng|thôi)\s+(chuông|thông báo)(\s+erp)?[.! ]*$")
 _ALL = re.compile(r"^(chuông|thông báo)\s+(tất cả|hết|toàn bộ)[.! ]*$|^(bật|nhận)\s+(tất cả|hết|toàn bộ)\s+(chuông|thông báo)[.! ]*$")

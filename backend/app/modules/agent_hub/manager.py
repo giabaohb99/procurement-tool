@@ -51,14 +51,14 @@ NO_KEY_MSG = "Chưa có khóa AI nào dùng được cho chat này (Trang cá nh
 
 class AgentGeminiProvider(GeminiProvider):
     """Provider của bot: Gemini bằng khóa của NGƯỜI đang chat (QĐ-AI-7, ai-CR-053) + bộ định tuyến chuỗi khóa nhiều
-    hãng (ai-CR-098, C-04). Giữ tên «agent_gemini» cho mọi chỗ gọi cũ.
+    hãng (ai-CR-098, C-04). Giữ tên "agent_gemini" cho mọi chỗ gọi cũ.
 
     Bot chạy nền và tự gọi model; dùng chung khóa với Trợ lý AI thì một ngày bot bận là hạn mức cạn, và thứ chết
     trước là trợ lý người dùng đang gõ trực tiếp — chết im lặng, giữa giờ làm.
 
     Mỗi lượt: lấy khóa đang dùng trong chuỗi (`user_keys.active_ref()`); khóa Gemini thì chạy chính lớp này, hãng khác
     giao cho adapter tương ứng (`_DELEGATES`). Hãng trả lỗi vì CHUYỆN CỦA KHÓA (hết tiền 402, hạn mức 429, khóa sai
-    401/403 — `ai_keys.key_problem`) thì nhảy sang khóa kế và gọi lại, im lặng (đại ca 07/10: «khỏi cần báo»). Hết
+    401/403 — `ai_keys.key_problem`) thì nhảy sang khóa kế và gọi lại, im lặng (đại ca 07/10: "khỏi cần báo"). Hết
     chuỗi thì ném lỗi cuối cho người gọi nói thẳng. Model: khóa khai `model` thì dùng; khóa Gemini không khai thì theo
     model người gọi đưa (cấu hình bot); hãng khác không khai thì mặc định của hãng.
     """
@@ -85,7 +85,7 @@ class AgentGeminiProvider(GeminiProvider):
         return user_keys.active_key()
 
     def is_configured(self) -> bool:
-        #  Chỉ «có khóa» khi đang ở trong ngữ cảnh của bot: đăng ký vào registry của Trợ lý web nhưng
+        #  Chỉ "có khóa" khi đang ở trong ngữ cảnh của bot: đăng ký vào registry của Trợ lý web nhưng
         #  đường chọn nhà mặc định của web không bao giờ được rơi vào provider này.
         from . import user_keys
 
@@ -146,7 +146,7 @@ class AgentGeminiProvider(GeminiProvider):
                     continue
                 if ai_keys.is_transient(str(e)):
                     if not retried:
-                        #  ai-CR-099: 07/10 «alo how are u» chết vì Gemini 503 «high demand» → thẻ hỏi lại vô duyên.
+                        #  ai-CR-099: 07/10 "alo how are u" chết vì Gemini 503 "high demand" → thẻ hỏi lại vô duyên.
                         #  ai-CR-106: Gemini thì đổi sang model DỰ PHÒNG (model chính đang quá tải, thử lại y nguyên vẫn treo).
                         retried = True
                         current = self._model_for(ref, model) or ""
@@ -157,8 +157,8 @@ class AgentGeminiProvider(GeminiProvider):
                         log.warning("agent_hub: %s quá tải, thử lại sau %ss", ref.provider, TRANSIENT_WAIT_SEC)
                         time.sleep(TRANSIENT_WAIT_SEC)
                         continue
-                    #  ai-CR-198 (14/10): khóa Gemini-trạm trả 500 «upstream error» hai lần liền → trước đây ném lỗi luôn
-                    #  dù đại ca còn 3 khóa khác phía sau. HÃNG quá tải (5xx, «overloaded», «upstream») SAU khi đã thử lại
+                    #  ai-CR-198 (14/10): khóa Gemini-trạm trả 500 "upstream error" hai lần liền → trước đây ném lỗi luôn
+                    #  dù đại ca còn 3 khóa khác phía sau. HÃNG quá tải (5xx, "overloaded", "upstream") SAU khi đã thử lại
                     #  thì nhảy sang khóa kế. Lỗi mạng phía mình (timeout) vẫn KHÔNG nhảy — đổi khóa không chữa được.
                     if _server_side(str(e)) and user_keys.advance():
                         log.warning("agent_hub: %s …%s vẫn quá tải sau khi thử lại, nhảy sang khóa kế",
@@ -193,7 +193,7 @@ class AgentGeminiProvider(GeminiProvider):
 
 
 #  ai-CR-149: id khóa → model thay thế khi model ghi trên khóa không còn ở trạm (sống tới lúc tiến trình khởi động lại).
-#  (khóa, model được xin) → (model thay, hết hạn). ai-CR-204 (15/10): trạm bày giá claude-haiku-5-5 nhưng nhóm «claude» chưa
+#  (khóa, model được xin) → (model thay, hết hạn). ai-CR-204 (15/10): trạm bày giá claude-haiku-5-5 nhưng nhóm "claude" chưa
 #  có tài khoản nguồn → 404 model_not_found. Bản cũ gắn theo KHÓA và sống tới khi khởi động lại: một lần Haiku hỏng là
 #  MỌI lượt của khóa đó (cả việc nặng) đổi model, và trạm mở Haiku rồi cũng không thử lại. Nay gắn theo (khóa, model xin),
 #  hết hạn sau MODEL_SWAP_TTL_SEC; model thay chọn bản RẺ NHẤT đã biết giá cùng họ (tránh rơi vào Opus).
@@ -212,7 +212,7 @@ def _swapped(ref, wanted: str) -> str:
 
 
 def _swap_missing_model(ref, error: str, wanted: str = "") -> str:
-    """Lỗi «model_not_found» của khóa trạm tùy chỉnh → model trạm đang có (cùng họ, rẻ nhất đã biết giá trước). Rỗng nếu
+    """Lỗi "model_not_found" của khóa trạm tùy chỉnh → model trạm đang có (cùng họ, rẻ nhất đã biết giá trước). Rỗng nếu
     không đổi được."""
     from . import ai_keys
     from .constants import MODEL_PRICES_USD
@@ -345,7 +345,7 @@ def extract_json_with(text: str, key: str) -> dict | None:
 
     ai-CR-144 (AI-0006, 09/10/2026): model rẻ (DeepSeek flash qua openai_compat) xả cả đoạn suy nghĩ tiếng Anh vào phần
     chữ, trong đó có mảnh `{…}` lẻ — `parse_json` cắt từ `{` đầu tới `}` cuối ra một object RỖNG, kế hoạch thành chuỗi
-    rỗng mà vẫn đi tiếp: thẻ trắng trơn kèm «nhắn duyệt», còn việc thì kẹt ở «đang hỏi lại» nên «duyệt» báo không có
+    rỗng mà vẫn đi tiếp: thẻ trắng trơn kèm "nhắn duyệt", còn việc thì kẹt ở "đang hỏi lại" nên "duyệt" báo không có
     việc nào. Nay đọc từng object, chỉ nhận object có đúng khóa cần."""
     raw = _FENCE.sub("", text or "")
     dec = json.JSONDecoder()
@@ -386,8 +386,8 @@ Luật:
 6. Mọi `id` bạn nhận vào phải xuất hiện đúng MỘT lần trong kết quả. Không bịa id mới.
 7. `quick`: true CHỈ KHI việc vừa NHỎ vừa RÕ — đổi một đoạn chữ/nhãn/màu/thứ tự/ẩn hiện một ô trên
    giao diện, người nhắn nói rõ màn hình và chữ cũ/mới, không cần nghĩ thiết kế, không đụng backend,
-   cơ sở dữ liệu, quyền, tiền, luồng duyệt (risk_level phải là 1). Mơ hồ, nhiều màn, hoặc «sửa lỗi»
-   chưa rõ nguyên nhân → false. Người nhắn ghi «làm kỹ» → false; «làm luôn» / «làm nhanh» → true nếu risk 1.
+   cơ sở dữ liệu, quyền, tiền, luồng duyệt (risk_level phải là 1). Mơ hồ, nhiều màn, hoặc **sửa lỗi**
+   chưa rõ nguyên nhân → false. Người nhắn ghi **làm kỹ** → false; **làm luôn** / **làm nhanh** → true nếu risk 1.
 
 CHỈ trả JSON, không thêm chữ nào ngoài JSON:
 {"groups": [{"title": "...", "summary": "...", "message_ids": [1,2], "risk_level": 2, "quick": false}]}
@@ -474,7 +474,7 @@ Luật:
    hỏi đại ca còn cần làm gì thêm, đừng lập kế hoạch sửa lại thứ đã có.
    Câu nghiệp vụ PHỤ mà rà soát nêu (ví dụ có gửi thư báo không, xử lý lịch lặp thế nào): TỰ CHỌN
    cách an toàn nhất, ít bất ngờ nhất, dễ đảo lại; ghi vào `assumptions` dạng "Em giả định: ...".
-   (ai-CR-086, đại ca 05/10: «gọn gàng rồi sửa code luôn, xong a review lại».) Chỉ khi câu đó dính
+   (ai-CR-086, đại ca 05/10: **gọn gàng rồi sửa code luôn, xong a review lại**.) Chỉ khi câu đó dính
    tiền, công nợ, phân quyền thì mới bỏ phần đó ra và ghi "Chưa làm: <phần đó> — chờ đại ca quyết: <câu>".
 2. Chỗ chưa rõ: tra SỔ QUYẾT ĐỊNH CỦA ĐẠI CA (nếu có ở cuối đề bài) TRƯỚC khi hỏi.
    - Có mục khớp: làm theo, ghi vào `assumptions` dạng "Theo QĐ-07: ...".
@@ -578,7 +578,7 @@ def _run_plan(parts: list[str], review: str, docs: list[dict]) -> tuple[dict, Ch
     data = extract_json_with(result.text, "plan")
     if data is None:
         #  Cụt, rác, hoặc model xả suy nghĩ ra phần chữ: thử lại MỘT lần, tắt suy nghĩ, dặn thẳng chỉ trả JSON.
-        log.warning("agent_hub: kế hoạch không ra JSON có «plan» (%s), thử lại", (result.text or "")[:120])
+        log.warning("agent_hub: kế hoạch không ra JSON có **plan** (%s), thử lại", (result.text or "")[:120])
         result = get_provider().ask(
             [ChatMessage(role="user", content="\n".join(parts) + _JSON_ONLY)],
             model=_plan_model(), system=PLAN_SYSTEM.replace("__BOT_NAME__", BOT_NAME),
@@ -586,7 +586,7 @@ def _run_plan(parts: list[str], review: str, docs: list[dict]) -> tuple[dict, Ch
         )
         data = extract_json_with(result.text, "plan")
     if data is None:
-        #  Ném lỗi để người gọi báo «lập kế hoạch lỗi» kèm nút lập lại — KHÔNG đi tiếp với kế hoạch rỗng.
+        #  Ném lỗi để người gọi báo "lập kế hoạch lỗi" kèm nút lập lại — KHÔNG đi tiếp với kế hoạch rỗng.
         raise ProviderError("model không trả kế hoạch đúng khuôn JSON hai lần liền (có thể đang xả suy nghĩ ra chữ); "
                             f"đầu câu trả lời: {(result.text or '')[:160]}")
     files = [str(f) for f in data.get("plan_files") or [] if str(f).strip()]

@@ -3,9 +3,9 @@
 Tệp sống ở `doc/agent-hub/03-so-quyet-dinh.md` của kho mã, mount vào container ở
 `settings.AGENT_PLAYBOOK_PATH`. Mô-đun này chỉ làm ba việc: đọc phần mục (từ `## QĐ-01` trở
 xuống) để nhét vào lời nhắc, soi xem một đoạn chữ có chạm chủ đề LUÔN HỎI không, và nối một
-mục đại ca vừa bấm «Ghi vào sổ» vào cuối tệp.
+mục đại ca vừa bấm "Ghi vào sổ" vào cuối tệp.
 
-Luật 3 của sổ («tiền, công nợ, phân quyền, cấu trúc DB, prod, main, gộp mã luôn hỏi») được
+Luật 3 của sổ ("tiền, công nợ, phân quyền, cấu trúc DB, prod, main, gộp mã luôn hỏi") được
 thi hành ở ĐÂY và ở người gọi, không nhờ lời dặn trong sổ: việc rủi ro cao không được nạp sổ
 (`prompt_block`), và mục chạm các chủ đề đó không ghi được (`append_entry`).
 """
@@ -33,8 +33,8 @@ _PROTECTED_TOPICS: tuple[tuple[str, str], ...] = (
     ("tiền", r"\btiền\b|đơn giá|tỷ giá|thanh toán|hóa đơn|hoá đơn|\bthuế\b|\bvat\b"),
     ("công nợ", r"công nợ"),
     ("phân quyền", r"phân quyền|\bquyền\b|permission|scoping|apply_scope|vai trò"),
-    #  KHÔNG bắt «thêm cột» trơn: phần lớn là cột của BẢNG GIAO DIỆN (lượt thử thật 23/09 bắt
-    #  nhầm luật «cột mới trên bảng danh sách để ẩn»). Cột dưới DB thì câu chữ nhắc tới DB.
+    #  KHÔNG bắt "thêm cột" trơn: phần lớn là cột của BẢNG GIAO DIỆN (lượt thử thật 23/09 bắt
+    #  nhầm luật "cột mới trên bảng danh sách để ẩn"). Cột dưới DB thì câu chữ nhắc tới DB.
     ("cấu trúc cơ sở dữ liệu",
      r"migration|alembic|cơ sở dữ liệu|\bcsdl\b|\bdb\b|model\.py|cấu trúc bảng"),
     ("prod", r"\bprod\b|production|thumua\.degoholding"),
@@ -114,10 +114,10 @@ def append_entry(entry: dict, *, source: str) -> str:
     nằm trong sổ lượt chạy cả phút trước khi đại ca bấm, và đây là cửa cuối trước khi thành luật."""
     for key in ("title", "situation", "action"):
         if not _clean(entry.get(key)):
-            raise PlaybookError(f"bản nháp thiếu ý «{key}»")
+            raise PlaybookError(f"bản nháp thiếu ý \"{key}\"")
     blob = " ".join(_clean(entry.get(k)) for k in ("title", "situation", "action", "not_when"))
     if topic := protected_topic(blob):
-        raise PlaybookError(f"mục này chạm chủ đề «{topic}» — loại đó luôn phải hỏi, không ghi vào sổ")
+        raise PlaybookError(f"mục này chạm chủ đề \"{topic}\" — loại đó luôn phải hỏi, không ghi vào sổ")
     path = _path()
     try:
         raw = path.read_text(encoding="utf-8")

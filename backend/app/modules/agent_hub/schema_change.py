@@ -1,13 +1,13 @@
 """BOT SỬA MÃ ĐƯỢC ĐỔI CẤU TRÚC DB — có trình bày, đại ca duyệt (ai-CR-076).
 
 Đại ca chốt 05/10/2026: *"làm tính năng thì buộc nhiều khi cũng phải thêm xóa sửa cấu trúc db, thì nó trình bày, a duyệt
-thì lên thôi không sao"*. Luật C3 cũ («không tự sinh migration, dừng và leo thang») đổi thành: được viết migration, nhưng
+thì lên thôi không sao"*. Luật C3 cũ ("không tự sinh migration, dừng và leo thang") đổi thành: được viết migration, nhưng
 
   1. Đề bài cho Claude ghi sẵn ĐẦU migration hiện tại của nhánh nền → `down_revision` phải nối đúng vào đó.
   2. Cổng kiểm: tệp migration phải dịch được (cú pháp) và cả kho chỉ còn ĐÚNG MỘT đầu. Hai đầu = đỏ (vụ dev sập 25/09
      chính là hai nhánh cùng đẻ migration).
-  3. Thẻ kết quả có mục «CÓ ĐỔI CẤU TRÚC DB» liệt kê từng thay đổi; thay đổi làm mất dữ liệu (xóa bảng/cột, đổi kiểu,
-     đổi tên, chạy SQL tay) in đậm kèm cảnh báo. Đại ca đọc rồi mới «gộp».
+  3. Thẻ kết quả có mục "CÓ ĐỔI CẤU TRÚC DB" liệt kê từng thay đổi; thay đổi làm mất dữ liệu (xóa bảng/cột, đổi kiểu,
+     đổi tên, chạy SQL tay) in đậm kèm cảnh báo. Đại ca đọc rồi mới "gộp".
   4. Lúc gộp: kiểm lại một đầu SAU khi gộp vào nhánh nền (có thể ai đó vừa đẩy migration khác) — hai đầu thì không đẩy.
   5. Trước khi deploy dev bản có migration: sao lưu CẢ DB dev; sao lưu hỏng thì không deploy.
 
@@ -79,7 +79,7 @@ def summarize(text: str) -> list[dict]:
         name = m.group(1)
         if name not in _OPS:
             continue
-        #  Đọc từ sau «op.x(» tới lệnh op kế tiếp — không để lệnh này nuốt mất lệnh sau.
+        #  Đọc từ sau "op.x(" tới lệnh op kế tiếp — không để lệnh này nuốt mất lệnh sau.
         seg = src[m.end():starts[i + 1].start() if i + 1 < len(starts) else len(src)]
         fa = _FIRST_ARG.match(seg)
         first = fa.group(1) if fa else ""
@@ -128,7 +128,7 @@ def check(worktree: str, touched: list[str]) -> dict:
 
 
 def card_lines(schema: dict, esc) -> list[str]:
-    """Mục «CÓ ĐỔI CẤU TRÚC DB» cho thẻ kết quả (HTML Telegram)."""
+    """Mục "CÓ ĐỔI CẤU TRÚC DB" cho thẻ kết quả (HTML Telegram)."""
     if not schema or not schema.get("files"):
         return []
     lines = ["<b>CÓ ĐỔI CẤU TRÚC DB</b> (migration):"]

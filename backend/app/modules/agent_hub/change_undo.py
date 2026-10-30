@@ -2,17 +2,17 @@
 
 Lõi nằm ở ERP (ai-CR-182, `doc/agent-hub/18-so-thay-doi-va-hoan-tac.md`): `erp.my_changes` trả DÒNG của chính người hỏi
 (mới nhất trước, mỗi dòng kèm `can_undo` + `undo_reason`), `erp.undo_change` làm ngược qua đúng service của form và
-kiểm lại luật TỪ ĐẦU lúc bấm. Phía bot chỉ là ba lệnh chữ, cùng khuôn «đơn nháp của tôi» / «xóa đơn nháp 2» (ai-CR-143):
+kiểm lại luật TỪ ĐẦU lúc bấm. Phía bot chỉ là ba lệnh chữ, cùng khuôn "đơn nháp của tôi" / "xóa đơn nháp 2" (ai-CR-143):
 
-  «bot vừa làm gì» · «em vừa ghi gì» · «sổ thay đổi»   → thẻ ≤ 10 dòng mới nhất, đánh số; thứ tự id ghi vào dòng sổ ẩn
-                                                          `ds_thay_doi` để «hoàn tác 2» trỏ đúng dòng số 2 của thẻ ĐÓ.
-  «hoàn tác» · «hoàn tác n» · «rút lại n» · «undo»     → thẻ xác nhận một chạm (dòng sổ ẩn `cho_hoan_tac`, sống 15 phút,
+  "bot vừa làm gì" · "em vừa ghi gì" · "sổ thay đổi"   → thẻ ≤ 10 dòng mới nhất, đánh số; thứ tự id ghi vào dòng sổ ẩn
+                                                          `ds_thay_doi` để "hoàn tác 2" trỏ đúng dòng số 2 của thẻ ĐÓ.
+  "hoàn tác" · "hoàn tác n" · "rút lại n" · "undo"     → thẻ xác nhận một chạm (dòng sổ ẩn `cho_hoan_tac`, sống 15 phút,
                                                           dùng một lần). Không số = dòng mới nhất; dòng đó không hoàn tác
                                                           được thì nói lý do và liệt kê lại cho chọn số.
-  «đúng» / «thôi» trên thẻ đó                           → `erp.undo_change` / giữ nguyên.
+  "đúng" / "thôi" trên thẻ đó                           → `erp.undo_change` / giữ nguyên.
 
 Chân thẻ `UNDO_FOOTER` gắn vào mỗi tin bot báo đã tạo / sửa / xóa (CREATE / UPDATE / DELETE / REUSE) — không gắn cho gửi
-duyệt hay lập bộ tài khoản, hai loại đó chỉ ghi sổ (luật ở doc 18 §2). Lời bot: HTML Telegram, không dùng ký tự « ».
+duyệt hay lập bộ tài khoản, hai loại đó chỉ ghi sổ (luật ở doc 18 §2). Lời bot: HTML Telegram, không dùng ký tự " ".
 """
 from __future__ import annotations
 
@@ -49,13 +49,13 @@ from .timeutil import fmt_local
 log = logging.getLogger(__name__)
 
 LIST_LIMIT = 10
-UNDO_WINDOW = timedelta(minutes=15)       # thẻ xác nhận «Rút lại?» và thứ tự thẻ liệt kê sống chừng này
+UNDO_WINDOW = timedelta(minutes=15)       # thẻ xác nhận "Rút lại?" và thứ tự thẻ liệt kê sống chừng này
 UNDO_FOOTER = "<i>Rút lại trong 24 giờ: nhắn hoàn tác</i>"
-#  Thẻ hỏi đúng / thôi của đường khác gửi SAU thẻ hoàn tác → câu «đúng» là của thẻ mới hơn, không phải của mình.
+#  Thẻ hỏi đúng / thôi của đường khác gửi SAU thẻ hoàn tác → câu "đúng" là của thẻ mới hơn, không phải của mình.
 _NEWER_CARDS = (ACT_DRAFT_WAIT, ACT_DRAFT_DEL_WAIT, ACT_PROPOSAL, ACT_GRANT_WAIT, ACT_RUNNER_WAIT, ACT_OP_WAIT,
                 ACT_GLOSS_WAIT, ACT_REMIND_WAIT, ACT_RESEARCH_WAIT)
 
-#  So trên chữ đã bỏ dấu (glossary.fold): «Bot vừa làm gì?» → «bot vua lam gi».
+#  So trên chữ đã bỏ dấu (glossary.fold): "Bot vừa làm gì?" → "bot vua lam gi".
 _LIST = re.compile(
     r"^(?:(?:bot|em|lac lac|may|no)\s+)?(?:vua|da|moi|vua moi)\s+(?:lam|ghi|sua|tao|thay doi|lam duoc)\s+"
     r"(?:nhung gi|gi|cai gi)(?:\s+(?:vay|the|a|nhi|ha|roi|do|nay|em|cho (?:toi|anh|chi)))*$")
@@ -78,12 +78,12 @@ def parse_command(folded: str) -> dict | None:
 
 
 def with_undo_footer(text: str) -> str:
-    """Nối chân thẻ «Rút lại trong 24 giờ» vào một tin báo đã tạo / sửa / xóa."""
+    """Nối chân thẻ "Rút lại trong 24 giờ" vào một tin báo đã tạo / sửa / xóa."""
     return f"{text}\n{UNDO_FOOTER}"
 
 
 def _fmt_when(iso: str) -> str:
-    """ISO (giờ UTC không múi, như cột created_at của ERP) → «hh:mm dd/mm» giờ Việt Nam."""
+    """ISO (giờ UTC không múi, như cột created_at của ERP) → "hh:mm dd/mm" giờ Việt Nam."""
     try:
         dt = datetime.fromisoformat(str(iso or ""))
     except ValueError:
@@ -177,7 +177,7 @@ def _send_list(db: Session, chat_id: str, user, items: list[dict], lead: str = "
 def _send_confirm(db: Session, chat_id: str, user, item: dict) -> None:
     from . import service
 
-    #  Thẻ mới thay thẻ cũ còn treo: «đúng» luôn nói về dòng vừa hỏi.
+    #  Thẻ mới thay thẻ cũ còn treo: "đúng" luôn nói về dòng vừa hỏi.
     for old in db.scalars(select(AgentMessage).where(AgentMessage.chat_id == chat_id,
                                                      AgentMessage.action == ACT_UNDO_WAIT)):
         old.action = ACT_UNDO_DROPPED
@@ -192,7 +192,7 @@ def _send_confirm(db: Session, chat_id: str, user, item: dict) -> None:
 # Lệnh chữ
 # ---------------------------------------------------------------------------
 def handle_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """«bot vừa làm gì» · «hoàn tác» · «hoàn tác n» · «đúng» / «thôi» trên thẻ Rút lại. Trả True khi đã xử."""
+    """"bot vừa làm gì" · "hoàn tác" · "hoàn tác n" · "đúng" / "thôi" trên thẻ Rút lại. Trả True khi đã xử."""
     from app.modules.assistant.glossary import fold
 
     from . import service
@@ -268,7 +268,7 @@ def _resolve_confirm(db: Session, chat_id: str, row: AgentMessage, pending: Agen
         db.commit()
         service.reply(db, chat_id, "Dạ, em giữ nguyên, không hoàn tác.", scope=SCOPE_PERSONAL)
         return True
-    #  Chốt dấu TRƯỚC khi gọi ERP: «đúng» lần hai không chạy lại, service của form có thể rollback.
+    #  Chốt dấu TRƯỚC khi gọi ERP: "đúng" lần hai không chạy lại, service của form có thể rollback.
     pending.action = ACT_UNDO_DONE
     db.commit()
     user = service._assistant_user(db, chat_id)

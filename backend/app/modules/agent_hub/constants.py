@@ -105,8 +105,8 @@ RISK_MEDIUM = 2
 RISK_HIGH = 3  # Đụng tiền, phân quyền, migration, hoặc nhánh `main` (luật B6)
 
 #  ai-CR-057: LÀN của một việc. Việc nhỏ và rõ (đổi chữ/nhãn/màu/thứ tự trên giao diện, mục tiêu nêu rõ,
-#  risk 1) đi ĐƯỜNG TẮT: không rà soát riêng, không chờ «duyệt» — lập kế hoạch gọn rồi sửa luôn, xong
-#  mới báo một dòng. Việc khác đi làn đầy đủ như trước. Đại ca ép bằng chữ: «làm kỹ» → đầy đủ, «làm luôn» → tắt.
+#  risk 1) đi ĐƯỜNG TẮT: không rà soát riêng, không chờ "duyệt" — lập kế hoạch gọn rồi sửa luôn, xong
+#  mới báo một dòng. Việc khác đi làn đầy đủ như trước. Đại ca ép bằng chữ: "làm kỹ" → đầy đủ, "làm luôn" → tắt.
 #  ai-CR-059: mức chuông ERP chuyển sang Telegram của một liên kết (P-01).
 NOTIFY_OFF = 0
 NOTIFY_MINE = 1     # mặc định: chờ tôi duyệt, giao cho tôi, trả lại cho tôi, nhắc tôi
@@ -156,7 +156,7 @@ STAGE_RULE = 24
 #  (đoạn phân tích đã nhắn đại ca), `info` (JSON: files, root_cause, already_fixed…), `head`.
 STAGE_SCAN = 25
 #  Nghiên cứu (ai-CR-044): một lượt tìm web / kiểm chứng / hỏi tài liệu nội bộ. artifact giữ `chat_id`,
-#  `mode`, `question`, `text`, `sources` — để «/word» xuất lại đúng bản của chat đó.
+#  `mode`, `question`, `text`, `sources` — để "/word" xuất lại đúng bản của chat đó.
 STAGE_RESEARCH = 26
 #  Chép tin thoại thành chữ (ai-CR-061): một lượt Gemini nghe audio, trả chữ.
 STAGE_VOICE = 27
@@ -169,7 +169,7 @@ STAGE_COMPACT = 30
 #  Tự rút ghi nhớ sau buổi chat riêng (ai-CR-137, phase 13.3).
 STAGE_MEMORY = 31
 #  Một lượt Trợ lý AI trả lời câu hỏi trên Telegram / Zalo (ai-CR-160, phase 16.1). Trước đây lượt này KHÔNG ghi sổ nên
-#  báo chi phí «AI theo khóa» thiếu hẳn phần lớn nhất.
+#  báo chi phí "AI theo khóa" thiếu hẳn phần lớn nhất.
 STAGE_ANSWER = 32
 #  Nhãn bước cho màn Việc của bot (ai-CR-036).
 STAGE_LABELS = {
@@ -198,8 +198,8 @@ STAGE_LABELS = {
 #  phải đóng một dấu ở đây, không thì nó vừa được trả lời vừa biến thành một đầu việc.
 ACT_COMMAND = "lenh"      # Tin bắt đầu bằng `/` — lệnh, không bao giờ là việc
 ACT_ASKED = "hoi"         # Đã chuyển cho Trợ lý AI trả lời tại chỗ
-#  Bot đoán được thao tác nhưng chưa chắc, đang chờ «đúng»/«không» (ai-CR-028). Dấu thật là
-#  `cho_xn:<thao tác>` — chép luôn tên thao tác vào dấu để câu «đúng» chạy đúng thứ đã hỏi, khỏi
+#  Bot đoán được thao tác nhưng chưa chắc, đang chờ "đúng"/"không" (ai-CR-028). Dấu thật là
+#  `cho_xn:<thao tác>` — chép luôn tên thao tác vào dấu để câu "đúng" chạy đúng thứ đã hỏi, khỏi
 #  hỏi lại model lần hai.
 ACT_WAIT_CONFIRM = "cho_xn:"
 ACT_READING = "dang_doc"  # ai-CR-109: đang đọc ý — vòng gom KHÔNG được nhặt (đọc ý chậm hơn khoảng lặng 10 s)
@@ -214,20 +214,20 @@ ACT_PROPOSAL_DROPPED = "bo_sua"  # Đại ca bấm Không sửa, hoặc xác nh�
 #  Hỏi thêm về bản vá (ai-CR-013). Ba dấu nối thành một mạch riêng, tách khỏi mạch Trợ lý AI:
 #  bot mời hỏi -> đại ca hỏi -> Claude Code (đúng phiên đã sửa) trả lời. Tin kế tiếp trong
 #  `service.FOLLOW_UP_WINDOW` sau bất kỳ dấu nào trong ba dấu này là hỏi tiếp, không đi phân loại.
-ACT_WAIT_PATCH_Q = "cho_hoi_va"   # Tin bot: đã bấm «Hỏi thêm», đang chờ câu hỏi
+ACT_WAIT_PATCH_Q = "cho_hoi_va"   # Tin bot: đã bấm "Hỏi thêm", đang chờ câu hỏi
 ACT_PATCH_Q = "hoi_va"            # Tin đại ca: câu hỏi về bản vá, đã giao cho runner
 ACT_PATCH_ANSWER = "tra_loi_va"   # Tin bot: câu trả lời của Claude Code về bản vá
 #  Hẹn giờ gộp + deploy dev (ai-CR-014): bot mời nhắn giờ; tin kế tiếp trong FOLLOW_UP_WINDOW là
 #  giờ hẹn, không đi phân loại. Chỉ một dấu vì câu trả lời của bot là câu thường (đã hẹn/không hiểu).
 ACT_WAIT_DEPLOY_TIME = "cho_hen_gio"
 #  Trả lời câu hỏi lại của trạm kế hoạch (ai-CR-015): trước đây câu trả lời rơi vào INBOX và
-#  đẻ thành VIỆC MỚI, việc cũ treo ở «Đang hỏi lại». Nay tin kế sau dấu chờ gắn thẳng vào việc.
+#  đẻ thành VIỆC MỚI, việc cũ treo ở "Đang hỏi lại". Nay tin kế sau dấu chờ gắn thẳng vào việc.
 ACT_WAIT_PLAN_ANSWER = "cho_tra_loi_kh"   # Tin bot: thẻ kế hoạch đang hỏi lại / mời nói rõ thêm
 ACT_PLAN_ANSWER = "tra_loi_kh"            # Tin đại ca: câu trả lời, đã gắn vào việc + lập lại kế hoạch
 ACT_REPLAN_RESUME = "lap_lai_kh"          # Tin bot (ai-CR-127): lượt lập lại kế hoạch bị ngắt, đang làm lại
 ACT_DEPLOY_TIME = "hen_gio"       # Tin đại ca: giờ hẹn gộp + deploy, đã ghi vào sổ lượt chạy
 #  ai-CR-021: tin bot báo đã nhận việc, và tin báo việc đang chạy (bot sửa lại chính tin đó để
-#  cập nhật số phút). Hai loại này KHÔNG phải một lượt hội thoại: các mạch nối tin «ngay trước»
+#  cập nhật số phút). Hai loại này KHÔNG phải một lượt hội thoại: các mạch nối tin "ngay trước"
 #  (hẹn giờ gộp, hỏi thêm bản vá) phải bỏ qua chúng, không thì một tin báo của việc khác chen
 #  vào là đứt mạch.
 #  ai-CR-035: ảnh gửi không kèm chữ nằm chờ câu mô tả; ảnh đã ghép vào một tin khác; câu báo nhận ảnh.
@@ -236,24 +236,24 @@ ACT_PHOTO_USED = "anh_da_ghep"
 ACT_PHOTO_ACK = "da_nhan_anh"
 ACT_ACK = "da_nhan"
 ACT_HEARTBEAT = "dang_chay"
-#  Ảnh và câu báo nhận ảnh cũng là «nhiễu» với các mạch hỏi-đáp: gửi kèm ảnh giữa lúc bot đang chờ
+#  Ảnh và câu báo nhận ảnh cũng là "nhiễu" với các mạch hỏi-đáp: gửi kèm ảnh giữa lúc bot đang chờ
 #  giờ hẹn / câu trả lời kế hoạch không được làm đứt mạch đó (ai-CR-035).
-#  ai-CR-046: bản nháp chứng từ chờ «tạo». Dòng sổ ẩn (không gửi Telegram), `body` = JSON
+#  ai-CR-046: bản nháp chứng từ chờ "tạo". Dòng sổ ẩn (không gửi Telegram), `body` = JSON
 #  {tool, kind, user_id, draft}; dùng xong đổi sang `da_tao` / `bo_tao`.
 ACT_DRAFT_WAIT = "cho_tao"
 ACT_DOC_WAIT = "cho_hoi_tep"   # ai-CR-115: tệp gửi riêng chưa kèm câu hỏi, chờ tin chữ kế tiếp (DOC_WAIT_SEC)
 ACT_DRAFT_DONE = "da_tao"
 ACT_DRAFT_DROPPED = "bo_tao"
-ACT_DRAFT_DEL_WAIT = "cho_xoa_nhap"     # ai-CR-143: thẻ «xóa N phiếu nháp?» đang chờ đúng / thôi
+ACT_DRAFT_DEL_WAIT = "cho_xoa_nhap"     # ai-CR-143: thẻ "xóa N phiếu nháp?" đang chờ đúng / thôi
 ACT_DRAFT_DEL_DONE = "da_xoa_nhap"
 #  bao-CR-616 (phase 24.1) — bot điều phối việc theo kế hoạch: tin hỏi nhận việc nhân danh chủ kế hoạch.
-ACT_PLAN_ASK = "hoi_nhan_viec"          # Tin bot gửi người làm: «việc X, nhận không?», body = JSON {task_id, list_id…}
+ACT_PLAN_ASK = "hoi_nhan_viec"          # Tin bot gửi người làm: "việc X, nhận không?", body = JSON {task_id, list_id…}
 ACT_PLAN_ASK_WAIT = "cho_ly_do_viec"    # Tin bot: đã bấm Giờ khác / Từ chối, chờ người làm nhắn giờ hoặc lý do
 ACT_PLAN_REPLY = "tra_loi_nhan_viec"    # Tin người làm: câu trả lời đã ghi vào việc
 ACT_PLAN_NOTIFY = "bao_chu_ke_hoach"    # Tin bot gửi chủ kế hoạch: ai nhận / từ chối / xong việc gì
 #  ai-CR-184: sổ thay đổi do bot ghi + hoàn tác 24 giờ (phase 15.2). Hai dòng sổ ẩn (không gửi Telegram):
-#  `ds_thay_doi` giữ JSON {user_id, ids} = thứ tự dòng của thẻ «bot vừa làm gì» vừa liệt kê, để «hoàn tác 2» trỏ đúng dòng;
-#  `cho_hoan_tac` = thẻ xác nhận «Rút lại: …?» đang chờ đúng / thôi, body JSON {user_id, change_id, summary}; dùng một lần.
+#  `ds_thay_doi` giữ JSON {user_id, ids} = thứ tự dòng của thẻ "bot vừa làm gì" vừa liệt kê, để "hoàn tác 2" trỏ đúng dòng;
+#  `cho_hoan_tac` = thẻ xác nhận "Rút lại: …?" đang chờ đúng / thôi, body JSON {user_id, change_id, summary}; dùng một lần.
 ACT_CHANGES_LIST = "ds_thay_doi"
 ACT_UNDO_WAIT = "cho_hoan_tac"
 ACT_UNDO_DONE = "da_hoan_tac"
@@ -263,7 +263,7 @@ ACT_UNDO_DROPPED = "bo_hoan_tac"
 ACT_RESEARCH_JOB = "nghien_cuu_sau"
 ACT_RESEARCH_WAIT = "cho_ok_nghien_cuu"
 ACT_RESEARCH_OK_DONE = "ok_nghien_cuu_xong"
-#  ai-CR-051: thẻ hỏi lại «cấp cho X cấp Y?» của đại ca; `body` = JSON {op, user_id, level}.
+#  ai-CR-051: thẻ hỏi lại "cấp cho X cấp Y?" của đại ca; `body` = JSON {op, user_id, level}.
 ACT_GRANT_WAIT = "cho_cap_quyen"
 ACT_GRANT_DONE = "da_cap_quyen"
 ACT_GRANT_DROPPED = "bo_cap_quyen"
@@ -271,11 +271,11 @@ ACT_GRANT_DROPPED = "bo_cap_quyen"
 ACT_DENIED = "tu_choi"
 #  ai-CR-059: tin bot gửi = một dòng chuông ERP chuyển tiếp (P-01).
 ACT_BELL = "chuong"
-#  ai-CR-060: tin bot gửi = lời nhắc tới giờ (T-10); thẻ hỏi lại «lúc mấy giờ?» giữ nội dung nhắc trong body.
+#  ai-CR-060: tin bot gửi = lời nhắc tới giờ (T-10); thẻ hỏi lại "lúc mấy giờ?" giữ nội dung nhắc trong body.
 ACT_REMINDER = "nhac"
 ACT_REMIND_WAIT = "cho_gio_nhac"
-#  ai-CR-206 (đại ca 16/10: «hẹn 6h chiều nay đi cafe» chỉ được đặt nhắc — «sao không tạo lịch luôn… hoặc hỏi lại để a xác
-#  nhận»): sau khi đặt nhắc kiểu cuộc hẹn mà người dùng đã nối Google, bot hỏi tạo luôn lịch; dòng sổ ẩn giữ việc + giờ.
+#  ai-CR-206 (đại ca 16/10: "hẹn 6h chiều nay đi cafe" chỉ được đặt nhắc — "sao không tạo lịch luôn… hoặc hỏi lại để a xác
+#  nhận"): sau khi đặt nhắc kiểu cuộc hẹn mà người dùng đã nối Google, bot hỏi tạo luôn lịch; dòng sổ ẩn giữ việc + giờ.
 ACT_CALENDAR_OFFER = "moi_tao_lich"
 #  ai-CR-061: tin thoại đã chép thành chữ (T-07).
 ACT_VOICE = "thoai"
@@ -284,17 +284,17 @@ ACT_BRIEF = "ban_tin"
 ACT_MEETING = "nhac_hop"
 #  ai-CR-175: tin nhắc hạn việc Dự án (T-14); body giữ mã [vh:<id việc>:<mốc>] để mỗi mốc chỉ nhắc một lần.
 ACT_WORK_DUE = "nhac_han_viec"
-#  ai-CR-054: thẻ hỏi lại «thêm / tắt máy sửa mã?» của đại ca; `body` = JSON {op, name, owner_user_id, runner_id}.
+#  ai-CR-054: thẻ hỏi lại "thêm / tắt máy sửa mã?" của đại ca; `body` = JSON {op, name, owner_user_id, runner_id}.
 ACT_RUNNER_WAIT = "cho_may"
 ACT_RUNNER_DONE = "da_may"
 ACT_RUNNER_DROPPED = "bo_may"
-#  ai-CR-068: thẻ hỏi «đúng» trước một thao tác trên VPS; `body` = JSON {op_id}. Tin báo kết quả thao tác /
+#  ai-CR-068: thẻ hỏi "đúng" trước một thao tác trên VPS; `body` = JSON {op_id}. Tin báo kết quả thao tác /
 #  sự cố / tài nguyên mang dấu ACT_OPS — tin chiều ra, không vào mạch hội thoại.
 ACT_OP_WAIT = "cho_thao_tac"
 ACT_OP_DONE = "da_thao_tac"
 ACT_OP_DROPPED = "bo_thao_tac"
 ACT_OPS = "van_hanh"
-#  ai-CR-078: thẻ đề xuất thuật ngữ chờ «đúng»; `body` = JSON {pid}.
+#  ai-CR-078: thẻ đề xuất thuật ngữ chờ "đúng"; `body` = JSON {pid}.
 ACT_GLOSS_WAIT = "cho_thuat_ngu"
 ACT_GLOSS_DONE = "da_thuat_ngu"
 ACT_GLOSS_DROPPED = "bo_thuat_ngu"
@@ -331,15 +331,15 @@ OP_KIND_LABELS = {
     OP_SQL_WRITE: "SQL sửa", OP_SHELL_WRITE: "lệnh sửa", OP_DEPLOY: "deploy", OP_RESTORE: "khôi phục",
     OP_BOT_DB_RESTORE: "quay lại DB bot",
 }
-#  Loại CHỈ ĐỌC: trên dev chạy luôn, trên prod vẫn phải «đúng» (đại ca chốt 05/10/2026).
+#  Loại CHỈ ĐỌC: trên dev chạy luôn, trên prod vẫn phải "đúng" (đại ca chốt 05/10/2026).
 OP_READ_KINDS = (OP_VIEW, OP_SQL_READ, OP_SHELL_READ, OP_DATA_PLAN)
 
-OPS_WAITING = 1      # thẻ «đúng» đang chờ
+OPS_WAITING = 1      # thẻ "đúng" đang chờ
 OPS_QUEUED = 2       # đã duyệt, chờ máy sửa mã nhận
 OPS_RUNNING = 3
 OPS_OK = 4
 OPS_FAILED = 5
-OPS_CANCELLED = 6    # đại ca «thôi» hoặc thẻ hết hạn
+OPS_CANCELLED = 6    # đại ca "thôi" hoặc thẻ hết hạn
 OP_STATUS_LABELS = {
     OPS_WAITING: "chờ duyệt", OPS_QUEUED: "chờ máy", OPS_RUNNING: "đang chạy", OPS_OK: "xong",
     OPS_FAILED: "hỏng", OPS_CANCELLED: "đã bỏ",
@@ -350,7 +350,7 @@ OP_STATUS_LABELS = {
 # ---------------------------------------------------------------------------
 INC_DIAGNOSING = 1   # vừa phát hiện, máy sửa mã đang gom log + chẩn đoán
 INC_HEALING = 2      # đang chạy thao tác tự chữa (chỉ dev)
-INC_WAITING = 3      # chờ người: prod chờ «đúng», hoặc chạm trần tự chữa, hoặc không có thao tác an toàn
+INC_WAITING = 3      # chờ người: prod chờ "đúng", hoặc chạm trần tự chữa, hoặc không có thao tác an toàn
 INC_RESOLVED = 4     # health xanh trở lại
 INC_STATUS_LABELS = {
     INC_DIAGNOSING: "đang chẩn đoán", INC_HEALING: "đang tự chữa", INC_WAITING: "chờ người",
@@ -378,21 +378,21 @@ MODEL_PRICES_USD = {
     "gemini-2.5-flash-lite": (0.10, 0.40),
     #  ai-CR-147: DeepSeek qua trạm modelapi.vn (đọc /api/pricing 09/10/2026). Trạm tính quota = (vào + ra × completion_ratio)
     #  × model_ratio × group_ratio, 500.000 quota = 1 USD của trạm → USD/1 triệu token = 2 × model_ratio × group_ratio.
-    #  GIÁ PHỤ THUỘC NHÓM của khóa — hiện mỗi tên model chỉ thuộc một nhóm: v4.1-flash ở «deepseek_tự_host» (×7), các bản
-    #  v4 ở «deepseek» (×43,2). Trạm có giảm giá phần vào trùng bộ đệm nên số thật có thể thấp hơn.
+    #  GIÁ PHỤ THUỘC NHÓM của khóa — hiện mỗi tên model chỉ thuộc một nhóm: v4.1-flash ở "deepseek_tự_host" (×7), các bản
+    #  v4 ở "deepseek" (×43,2). Trạm có giảm giá phần vào trùng bộ đệm nên số thật có thể thấp hơn.
     "deepseek-v4.1-flash": (2.10, 8.40),
     "deepseek-flash": (6.48, 25.92),
     "deepseek-v4-flash": (9.50, 28.51),
     "deepseek-v4-pro": (28.51, 85.54),
     #  ai-CR-203 (15/10, ví trạm trừ 27 USD / 24 giờ mà sổ ghi 0): Claude qua trạm, đọc /api/pricing 15/10/2026 — nhóm
-    #  «claude» ×2 → USD/1 triệu = 2 × model_ratio × 2; ra = vào × completion_ratio (5). Phần ĐỌC bộ đệm tính theo
+    #  "claude" ×2 → USD/1 triệu = 2 × model_ratio × 2; ra = vào × completion_ratio (5). Phần ĐỌC bộ đệm tính theo
     #  MODEL_CACHE_RATIO, phần GHI bộ đệm theo MODEL_CACHE_WRITE_RATIO (create_cache_ratio của trạm — Agent 1 đọc 15/10:
     #  Sonnet / Opus ×2, Haiku ×1,25). 24 giờ 14–15/10: GHI bộ đệm chiếm ~60% tiền Claude.
     "claude-sonnet-5-5": (4.0, 20.0),
     "claude-sonnet-5": (4.0, 20.0),
     "claude-opus-5-5": (8.0, 40.0),
     "claude-haiku-5-5": (0.2, 1.0),
-    "kimi-k3": (24.0, 120.0),          # nhóm «kimi» ×1,2, model_ratio 10
+    "kimi-k3": (24.0, 120.0),          # nhóm "kimi" ×1,2, model_ratio 10
 }
 MODEL_CACHE_RATIO = {"claude-sonnet-5-5": 0.1, "claude-sonnet-5": 0.1, "claude-opus-5-5": 0.05, "claude-haiku-5-5": 1.0,
                      "kimi-k3": 0.1}
@@ -439,36 +439,36 @@ from app.core.config import settings as _settings  # noqa: E402 — chỉ để 
 BOT_NAME = _settings.AGENT_BOT_NAME or "Đậu Đậu"
 BOT_PERSONA = (
     f"Trong kênh Telegram này bạn tên là {BOT_NAME}, trợ lý của DEGO Holding trên Telegram. "
-    f"Tự xưng «em», gọi người đang nhắn là «đại ca». Khi được hỏi tên hay được bảo giới thiệu "
-    f"thì nói em là {BOT_NAME}. Không gọi mình là «Trợ lý AI» trong kênh này. "
+    f"Tự xưng **em**, gọi người đang nhắn là **đại ca**. Khi được hỏi tên hay được bảo giới thiệu "
+    f"thì nói em là {BOT_NAME}. Không gọi mình là **Trợ lý AI** trong kênh này. "
     #  ai-CR-106: cách xưng hô trong SỔ GHI NHỚ RIÊNG thắng mặc định.
     "Nếu sổ ghi nhớ riêng của người đang nhắn có ghi cách xưng hô thì theo sổ."
 )
-#  ai-CR-106: chat của NGƯỜI KHÁC (đã đăng nhập ERP) — 07/10 Được nhắn «ê cu», bot đáp «Dạ, em nghe đây đại ca!».
-#  «đại ca» chỉ dành cho chat chủ bot.
+#  ai-CR-106: chat của NGƯỜI KHÁC (đã đăng nhập ERP) — 07/10 Được nhắn "ê cu", bot đáp "Dạ, em nghe đây đại ca!".
+#  "đại ca" chỉ dành cho chat chủ bot.
 BOT_PERSONA_OTHER = (
     f"Trong kênh Telegram này bạn tên là {BOT_NAME}, trợ lý cá nhân của người đang nhắn (nhân sự DEGO Holding). "
-    f"Xưng hô MẶC ĐỊNH: tự xưng «em», gọi người đang nhắn là «anh/chị» hoặc theo tên của họ trong ERP — không gọi «đại "
-    f"ca». Khi được hỏi tên thì nói em là {BOT_NAME}. Không gọi mình là «Trợ lý AI» trong kênh này. "
-    #  Đại ca 07/10: «mỗi người có cách xưng hô khác nhau mà, có sổ riêng mà» — sổ ghi nhớ riêng THẮNG mặc định.
-    "Nếu sổ ghi nhớ riêng của người đang nhắn có ghi cách xưng hô (vd «gọi anh là sếp», «xưng tôi – bạn») thì theo sổ."
+    f"Xưng hô MẶC ĐỊNH: tự xưng **em**, gọi người đang nhắn là **anh/chị** hoặc theo tên của họ trong ERP — không gọi **đại "
+    f"ca**. Khi được hỏi tên thì nói em là {BOT_NAME}. Không gọi mình là **Trợ lý AI** trong kênh này. "
+    #  Đại ca 07/10: "mỗi người có cách xưng hô khác nhau mà, có sổ riêng mà" — sổ ghi nhớ riêng THẮNG mặc định.
+    "Nếu sổ ghi nhớ riêng của người đang nhắn có ghi cách xưng hô (vd **gọi anh là sếp**, **xưng tôi – bạn**) thì theo sổ."
 )
-#  ai-CR-040: bot từng BỊA cách đổi tài khoản («quét mã QR», «token phiên») khi đại ca hỏi. Đây là cơ chế
+#  ai-CR-040: bot từng BỊA cách đổi tài khoản ("quét mã QR", "token phiên") khi đại ca hỏi. Đây là cơ chế
 #  thật (ai-CR-038), nói rõ để model không phải đoán.
-#  ai-CR-046: trên Telegram không có nút mở form — bot tự gửi bản tóm tắt và chờ «tạo».
+#  ai-CR-046: trên Telegram không có nút mở form — bot tự gửi bản tóm tắt và chờ "tạo".
 BOT_DRAFT_FACTS = (
     "Trên Telegram KHÔNG có nút mở form. Khi đã soạn nháp chứng từ bằng công cụ, đừng bảo người dùng bấm "
     "nút hay mở form trên web; chỉ nói ngắn là đã soạn xong, bot gửi bản tóm tắt ngay bên dưới và họ nhắn "
-    "«tạo» để lưu Nháp, «tạo và gửi duyệt» để gửi duyệt luôn, «thôi» để bỏ. Có cảnh báo (quỹ phép không đủ, trùng "
+    "**tạo** để lưu Nháp, **tạo và gửi duyệt** để gửi duyệt luôn, **thôi** để bỏ. Có cảnh báo (quỹ phép không đủ, trùng "
     "ngày…) thì vẫn nói rõ cảnh báo đó. Khi GỌI công cụ soạn nháp, mọi chữ tiếng Việt điền vào (lý do, mục "
     "đích, chủ đề, nội dung, tên hàng) phải viết CÓ DẤU đầy đủ như người dùng gõ — không bỏ dấu."
 )
-#  ai-CR-148 (đại ca 09/10: «oke phát triển tính năng» → bot trả «em không phải bên sửa phần mềm»): chat GIAO ĐƯỢC việc sửa
+#  ai-CR-148 (đại ca 09/10: "oke phát triển tính năng" → bot trả "em không phải bên sửa phần mềm"): chat GIAO ĐƯỢC việc sửa
 #  mã (chat chủ bot / người được cấp quyền) thì bot CÓ máy sửa mã — không được chối.
 BOT_CODE_FACT = (
     "Chat này giao được việc SỬA / PHÁT TRIỂN PHẦN MỀM cho máy sửa mã của bot. Người dùng muốn thêm, sửa, phát triển "
-    "một tính năng thì KHÔNG nói «em không sửa được phần mềm» hay «chỉ ghi đề xuất» — nói ngắn: em ghi thành việc sửa "
-    "phần mềm ngay, lập kế hoạch rồi gửi thẻ để duyệt; họ chỉ cần nhắn «phát triển tính năng» hoặc «ghi việc: <mô tả>». "
+    "một tính năng thì KHÔNG nói **em không sửa được phần mềm** hay **chỉ ghi đề xuất** — nói ngắn: em ghi thành việc sửa "
+    "phần mềm ngay, lập kế hoạch rồi gửi thẻ để duyệt; họ chỉ cần nhắn **phát triển tính năng** hoặc **ghi việc: <mô tả>**. "
     "Đừng gọi report_missing_feature cho trường hợp này."
 )
 BOT_LOGIN_FACTS = (
@@ -476,16 +476,16 @@ BOT_LOGIN_FACTS = (
     "Cách đăng nhập tài khoản ERP trong Telegram (chỉ có đúng cách này, không có quét QR, không hỏi mật "
     "khẩu): tài khoản của một chat Telegram KHÔNG đổi theo trang web — đăng nhập tài khoản khác trên web "
     "không làm chat này đổi theo. Muốn đổi: đăng nhập ERP bằng tài khoản muốn dùng, vào Trang cá nhân → "
-    "tab «Telegram» → «Lấy mã liên kết», rồi nhắn cho bot «/dangnhap <mã 6 số>» (mã dùng một lần, hết "
-    "hạn sau vài phút). «/dangxuat» để bỏ liên kết, «/taikhoan» để xem chat đang dùng tài khoản nào."
+    "tab **Telegram** → **Lấy mã liên kết**, rồi nhắn cho bot **/dangnhap <mã 6 số>** (mã dùng một lần, hết "
+    "hạn sau vài phút). **/dangxuat** để bỏ liên kết, **/taikhoan** để xem chat đang dùng tài khoản nào."
 )
 
 
 # ---------------------------------------------------------------------------
 # Nhóm bot đang ở — phân loại (ai-CR-123, `tab_agent_group.category`)
 # ---------------------------------------------------------------------------
-#  Đại ca 08/10: «các nhóm có chia theo loại, theo bot không». Loại do chủ nhóm hoặc người quản lý bot AI gán trên
-#  màn «Nhóm chat» của ERP v2; bot không tự đoán. Số đã cấp không đổi / không tái dùng.
+#  Đại ca 08/10: "các nhóm có chia theo loại, theo bot không". Loại do chủ nhóm hoặc người quản lý bot AI gán trên
+#  màn "Nhóm chat" của ERP v2; bot không tự đoán. Số đã cấp không đổi / không tái dùng.
 GROUP_CAT_NONE = 0
 GROUP_CAT_INTERNAL = 1      # nội bộ phòng ban
 GROUP_CAT_PROJECT = 2       # dự án

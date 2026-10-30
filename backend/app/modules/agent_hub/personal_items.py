@@ -41,7 +41,7 @@ STATUS_LABEL = {ItemStatus.OPEN: "còn", ItemStatus.DONE: "xong", ItemStatus.CAN
 
 
 def parse_when(text: str) -> datetime | None:
-    """«2026-10-08 14:00» · «2026-10-08» · «14:00» (hôm nay) → giờ Việt Nam (naive). Sai dạng → None."""
+    """"2026-10-08 14:00" · "2026-10-08" · "14:00" (hôm nay) → giờ Việt Nam (naive). Sai dạng → None."""
     t = " ".join((text or "").split())
     if not t:
         return None

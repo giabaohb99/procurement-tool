@@ -1,6 +1,6 @@
 """Bậc 2 của Agent Hub (ai-CR-011): bấm Duyệt là bot SỬA MÃ THẬT bằng Claude Code.
 
-Đường đi của một việc sau khi đại ca bấm «Duyệt» trên thẻ kế hoạch:
+Đường đi của một việc sau khi đại ca bấm "Duyệt" trên thẻ kế hoạch:
 
   service.handle_callback("ok")
       -> approve_gate()      chốt trước khi giao: có phạm vi tệp chưa, có đụng tệp cấm không
@@ -16,10 +16,10 @@
            send_review_card  thẻ kết quả + tệp .diff, việc chuyển sang REVIEW
 
 Giai đoạn 2a (ai-CR-012): `_try_publish` đẩy nhánh lên GitHub + mở PR vào erp-v2, hoặc nút trên thẻ.
-Giai đoạn 2b phần 1 (ai-CR-013): nút «Hỏi thêm về bản vá» -> tin kế của đại ca -> `agent.ask_task`
+Giai đoạn 2b phần 1 (ai-CR-013): nút "Hỏi thêm về bản vá" -> tin kế của đại ca -> `agent.ask_task`
 -> `answer_patch_question` chạy `claude -p --resume` đúng phiên, chỉ đọc, trả lời lên Telegram.
 Phiên CLI cất ở `<AGENT_WORKTREE_ROOT>/.claude` (CLAUDE_CONFIG_DIR) để sống qua recreate container.
-Giai đoạn 2b phần 2 (ai-CR-014): nút «Gộp erp-v2 + deploy dev» -> thẻ hỏi -> đại ca đồng ý (ngay
+Giai đoạn 2b phần 2 (ai-CR-014): nút "Gộp erp-v2 + deploy dev" -> thẻ hỏi -> đại ca đồng ý (ngay
 hoặc hẹn giờ) -> `agent.deploy_task` -> `merge_and_deploy`: merge --no-ff vào nhánh nền, push
 (không --force), ssh lên VPS reset về origin/erp-v2 + build lại đúng service, chờ health 200.
 Thu hồi = `revert_and_deploy` (git revert -m 1 bản gộp rồi deploy lại). Xem khối cuối tệp.
@@ -150,14 +150,14 @@ class CoderError(RuntimeError):
 
 class MaxTurnsError(CoderError):
     """`claude -p` hết `--max-turns` khi đang làm dở (ai-CR-023). KHÔNG phải thất bại: phần đã sửa
-    còn nguyên trong worktree và phiên còn nguyên — nút «Làm tiếp» nối đúng phiên đó."""
+    còn nguyên trong worktree và phiên còn nguyên — nút "Làm tiếp" nối đúng phiên đó."""
 
     def __init__(self, message: str, data: dict):
         super().__init__(message)
         self.data = data
 
 
-#  Số lượt cho một lần «Làm tiếp» (ai-CR-023).
+#  Số lượt cho một lần "Làm tiếp" (ai-CR-023).
 CONTINUE_MAX_TURNS = 60
 
 
@@ -230,7 +230,7 @@ def build_env(worktree: str, *, with_token: bool = True) -> dict[str, str]:
         "PYTHONDONTWRITEBYTECODE": "1",
         "DISABLE_AUTOUPDATER": "1",
         #  Phiên/cấu hình của CLI nằm trong volume worktree, không ở ~/.claude của container
-        #  (ai-CR-013): recreate container là mất phiên, mà «Hỏi thêm» cần --resume đúng phiên.
+        #  (ai-CR-013): recreate container là mất phiên, mà "Hỏi thêm" cần --resume đúng phiên.
         "CLAUDE_CONFIG_DIR": claude_config_dir(),
     }
     if with_token:
@@ -380,7 +380,7 @@ ca nào và cần đại ca quyết gì.
 1. Từng tệp đã sửa: đường dẫn + giải thích ngắn vì sao sửa và sửa gì.
 2. Bài kiểm đã chạy: lệnh nguyên văn + kết quả (số xanh/đỏ).
 3. Tệp ngoài kế hoạch (nếu có) + lý do.
-4. Tự quyết không hỏi (mỗi dòng mở đầu «Theo QĐ-xx:» hoặc «Em giả định:») · chưa làm được / \
+4. Tự quyết không hỏi (mỗi dòng mở đầu **Theo QĐ-xx:** hoặc **Em giả định:**) · chưa làm được / \
 cần đại ca quyết (nếu có).
 Dòng CUỐI CÙNG mở đầu đúng chữ `TÓM TẮT:` rồi 1-3 câu cho đại ca đọc trên điện thoại: đã sửa LOGIC gì \
 (không liệt kê tệp), đã kiểm gì, đánh giá rủi ro. Đại ca chỉ đọc dòng này; muốn chi tiết sẽ hỏi.
@@ -425,7 +425,7 @@ def build_brief(task: AgentTask, docs: list[dict], *, from_scan: bool = False,
     đoạn tài liệu và đoạn rà soát (đã nằm trong phiên), dặn dùng lại những gì đã đọc."""
     lines = [
         f"# Việc {task.code}: {task.title}", "",
-        f"Bạn là {BOT_NAME}, bot sửa mã của Agent Hub (tự xưng «em», gọi người đọc tổng kết là «đại ca»), "
+        f"Bạn là {BOT_NAME}, bot sửa mã của Agent Hub (tự xưng **em**, gọi người đọc tổng kết là **đại ca**), "
         "đang đứng trong một worktree sạch cắt từ nhánh "
         f"`{settings.AGENT_BASE_BRANCH}` của kho procurement-tool (ERP nội bộ DEGO). "
         "Làm đúng kế hoạch đã được duyệt dưới đây, rồi in tổng kết.", "",
@@ -478,8 +478,8 @@ def build_brief(task: AgentTask, docs: list[dict], *, from_scan: bool = False,
     else:
         hard_extra, soft_rule = "", (
             "Không tái hiện được lỗi, hay thiếu dữ liệu để quyết, KHÔNG còn là lý do dừng: tra sổ quyết "
-            "định ở trên, có mục khớp thì làm theo và ghi «Theo QĐ-xx: …»; không có thì chọn cách an "
-            "toàn nhất, dễ đảo lại, và ghi «Em giả định: …». Trừ khi chỗ đó dính tiền, công nợ, phân "
+            "định ở trên, có mục khớp thì làm theo và ghi **Theo QĐ-xx: …**; không có thì chọn cách an "
+            "toàn nhất, dễ đảo lại, và ghi **Em giả định: …**. Trừ khi chỗ đó dính tiền, công nợ, phân "
             "quyền — thì dừng và hỏi.")
     lines += [_RULES_BRIEF.format(max_files=settings.AGENT_MAX_FILES_TOUCHED, hard_extra=hard_extra,
                                   c1_rule=_c1_rule(),
@@ -519,7 +519,7 @@ def parse_cli_json(stdout: str) -> dict:
 
 
 def run_claude_continue(worktree: str, *, session_id: str, timeout: int) -> dict:
-    """«Làm tiếp» (ai-CR-023): nối ĐÚNG phiên đã hết lượt, cùng quyền sửa, thêm CONTINUE_MAX_TURNS lượt."""
+    """"Làm tiếp" (ai-CR-023): nối ĐÚNG phiên đã hết lượt, cùng quyền sửa, thêm CONTINUE_MAX_TURNS lượt."""
     cmd = [
         settings.AGENT_CODER_CMD, "-p", *model_args(),
         "--output-format", "json",
@@ -531,7 +531,7 @@ def run_claude_continue(worktree: str, *, session_id: str, timeout: int) -> dict
     return _run_cli(_with_files_dir(cmd), _CONTINUE_BRIEF, worktree, timeout)
 
 
-#  Vòng «Sửa cho xanh» (ai-CR-026): lỗi cổng kiểm đưa thẳng vào đúng phiên đã sửa.
+#  Vòng "Sửa cho xanh" (ai-CR-026): lỗi cổng kiểm đưa thẳng vào đúng phiên đã sửa.
 FIX_GATE_MAX_TURNS = 40
 
 
@@ -632,7 +632,7 @@ def is_in_plan(path: str, plan_files: list[str]) -> bool:
 def check_drift(touched: list[str], plan_files: list[str], *, max_files: int, ratio: bool | None = None) -> str:
     """Trả lý do leo thang, rỗng nếu trong phạm vi cho phép.
 
-    `ratio` (ai-CR-151): có xét luật «lệch quá 30% so với kế hoạch» không. Mặc định theo dây chuyền: dây chuyền gọn
+    `ratio` (ai-CR-151): có xét luật "lệch quá 30% so với kế hoạch" không. Mặc định theo dây chuyền: dây chuyền gọn
     (`AGENT_CODE_FLOW_SIMPLE`) KHÔNG xét — danh sách tệp ở bước rà soát chỉ là dự kiến; AI-0006 làm xong, xanh, mà
     bị dừng vì 4 tệp nhỏ ngoài dự kiến. Tệp cấm và trần số tệp thì luôn xét.
     """
@@ -674,7 +674,7 @@ def run_gate(worktree: str, touched: list[str], *, fe_note: str = "") -> dict:
 
     Trả {status, tests, output, frontend}. status gộp: "fail" nếu một bên đỏ; "pass" nếu có bên
     xanh và không bên nào đỏ; "none" nếu không bên nào chạy. Frontend không cài được thư viện thì
-    KHÔNG tính là xanh — thẻ nói rõ «chưa kiểm được».
+    KHÔNG tính là xanh — thẻ nói rõ "chưa kiểm được".
     """
     backend = _run_backend_gate(worktree, touched)
     frontend = run_fe_gate(worktree, touched, note=fe_note)
@@ -695,7 +695,7 @@ def _head_of(worktree: str) -> str:
     return heads[0] if len(heads) == 1 else ""
 
 
-#  ai-CR-153: đụng phần bot / trợ lý / cổng B thì cổng kiểm chạy thêm hai bài canh «bot tách khỏi ERP». AI-0006 xanh
+#  ai-CR-153: đụng phần bot / trợ lý / cổng B thì cổng kiểm chạy thêm hai bài canh "bot tách khỏi ERP". AI-0006 xanh
 #  hết mà nút xác nhận trên Telegram vẫn hỏng ở dev, vì bài kiểm của nó chạy bot và ERP chung một DB.
 BOUNDARY_PATHS = ("backend/app/modules/agent_hub/", "backend/app/modules/assistant/",
                   "backend/app/modules/agent_gateway/")
@@ -818,7 +818,7 @@ def _prune_fe_deps(*, keep: Path, tag: str = "fe-v2") -> None:
 def link_fe_deps(worktree: str, fe_dir: str = FE_DIR) -> str:
     """Gắn `<fe_dir>/node_modules` của worktree vào bộ thư viện dùng chung. Trả lý do nếu
     KHÔNG gắn được (rỗng = ổn). Không bao giờ ném lỗi: thiếu thư viện chỉ làm cổng frontend
-    báo «chưa kiểm được», không được làm hỏng cả lượt sửa mã."""
+    báo "chưa kiểm được", không được làm hỏng cả lượt sửa mã."""
     if not (Path(worktree) / fe_dir / "package.json").is_file():
         return f"worktree không có {fe_dir}"
     try:
@@ -905,7 +905,7 @@ def run_fe_gate(worktree: str, touched: list[str], *, note: str = "") -> dict:
 # ---------------------------------------------------------------------------
 #  Bản cũ chỉ có typescript (không eslint, không vitest) và sẵn vài lỗi kiểu cũ. Câu Q4 để trống nên
 #  em chọn: chạy tsc cả cây, CHỈ đỏ khi có lỗi nằm trong tệp bot vừa sửa; lỗi ở tệp khác ghi số đếm
-#  («có thể là lỗi cũ») chứ không chặn.
+#  ("có thể là lỗi cũ") chứ không chặn.
 V1_DIR = "frontend"
 _TSC_ERROR = re.compile(r"^(?P<file>[^\s(][^(]*)\((?P<line>\d+),(?P<col>\d+)\): error TS\d+", re.MULTILINE)
 
@@ -1126,7 +1126,7 @@ def _try_publish(task: AgentTask, worktree: str, branch: str, **kw) -> dict:
 
 
 def dispatch_publish(task_id: int) -> None:
-    """Nút «Gửi link PR để anh tự merge» trên thẻ kết quả: việc vào hàng đợi của runner (chỗ có worktree)."""
+    """Nút "Gửi link PR để anh tự merge" trên thẻ kết quả: việc vào hàng đợi của runner (chỗ có worktree)."""
     from app.core.celery_app import celery_app
 
     celery_app.send_task("agent.publish_task", args=[task_id], queue=queue_for(task_id))
@@ -1206,7 +1206,7 @@ def build_question_brief(task: AgentTask, question: str) -> str:
         "Định dạng: Markdown đơn giản — chữ đậm, gạch đầu dòng, `mã` — KHÔNG bảng, KHÔNG tiêu "
         "đề, vì câu trả lời hiện trên Telegram.",
         "KHÔNG sửa tệp, KHÔNG chạy bài kiểm: lượt này chỉ đọc và giải thích. Nếu câu hỏi thực "
-        "chất là yêu cầu đổi bản vá thì nói rõ điều đó và bảo đại ca bấm «Sửa» trên thẻ kế "
+        "chất là yêu cầu đổi bản vá thì nói rõ điều đó và bảo đại ca bấm **Sửa** trên thẻ kế "
         "hoạch để bot làm lại, đừng tự sửa.",
         "",
         "Câu hỏi:",
@@ -1380,7 +1380,7 @@ def dispatch_continue(task_id: int) -> None:
 
 
 def _abandoned(db: Session, task: AgentTask, run: AgentRun, data: dict | None = None) -> dict | None:
-    """ai-CR-089: đại ca bỏ việc TRONG LÚC claude đang chạy → không commit, không đưa việc về «chờ gộp».
+    """ai-CR-089: đại ca bỏ việc TRONG LÚC claude đang chạy → không commit, không đưa việc về "chờ gộp".
 
     Trạng thái việc đọc lại từ DB (bên bot ghi), vì phiên này giữ bản cũ từ lúc bắt đầu lượt.
     """
@@ -1395,10 +1395,10 @@ def _abandoned(db: Session, task: AgentTask, run: AgentRun, data: dict | None = 
 
 def _stop_at_max_turns(db: Session, task: AgentTask, run: AgentRun, worktree: str, session_id: str,
                        err: MaxTurnsError) -> dict:
-    """Hết lượt: giữ phần đã sửa + phiên, việc về «Đang hỏi lại», thẻ có nút «Làm tiếp» (ai-CR-023)."""
+    """Hết lượt: giữ phần đã sửa + phiên, việc về "Đang hỏi lại", thẻ có nút "Làm tiếp" (ai-CR-023)."""
     from . import service
 
-    #  ai-CR-082: giữ `phases_left` / `phases_total` của việc chia phần — «làm tiếp» xong phần dở còn biết phần sau.
+    #  ai-CR-082: giữ `phases_left` / `phases_total` của việc chia phần — "làm tiếp" xong phần dở còn biết phần sau.
     keep = {k: v for k, v in (run.artifact or {}).items() if k in ("phases_left", "phases_total")}
     _close_run(run, status=RUN_ERROR, error=str(err), data=err.data,
                artifact={**keep, "session_id": session_id, "stopped": "max_turns"})
@@ -1408,14 +1408,14 @@ def _stop_at_max_turns(db: Session, task: AgentTask, run: AgentRun, worktree: st
     added = sum(a for a, _d in numstat.values())
     deleted = sum(d for _a, d in numstat.values())
     task.status = ST_NEEDS_INPUT
-    task.note = f"Hết lượt khi đang sửa dở ({len(numstat)} tệp đã sửa); bấm «Làm tiếp» để nối phiên."
+    task.note = f"Hết lượt khi đang sửa dở ({len(numstat)} tệp đã sửa); bấm **Làm tiếp** để nối phiên."
     db.commit()
     esc = telegram.esc
     service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
                   f"<b>{esc(task.code)}</b>: em hết lượt khi đang sửa dở — đã sửa {len(numstat)} tệp "
-                  f"(+{added}/−{deleted} dòng), chưa xong hẳn. Phần đã sửa vẫn giữ nguyên. Bấm «Làm tiếp» "
+                  f"(+{added}/−{deleted} dòng), chưa xong hẳn. Phần đã sửa vẫn giữ nguyên. Bấm **Làm tiếp** "
                   f"để em nối đúng phiên cũ (thêm tối đa {CONTINUE_MAX_TURNS} lượt)."
-                  + cmd_hint(f"Nhắn «làm tiếp {esc(task.code)}» để em làm tiếp, hoặc «bỏ {esc(task.code)}»."),
+                  + cmd_hint(f"Nhắn **làm tiếp {esc(task.code)}** để em làm tiếp, hoặc **bỏ {esc(task.code)}**."),
                   task_id=task.id, buttons=[("Làm tiếp", f"cont:{task.id}"), ("Bỏ việc này", f"no:{task.id}")])
     return {"task": task.code, "status": task.status, "files": len(numstat), "escalation": "max_turns"}
 
@@ -1443,7 +1443,7 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
     if resume and not previous and not left_phases:
         raise CoderError("không còn phiên hết lượt hay phần nào để làm tiếp")
     if left_phases:
-        #  ai-CR-082: «làm tiếp» sau khi một phần đỏ / các phần trước đã xong — chạy nốt phần còn lại, cùng phiên.
+        #  ai-CR-082: "làm tiếp" sau khi một phần đỏ / các phần trước đã xong — chạy nốt phần còn lại, cùng phiên.
         last = latest_code_run(db, task)
         art = (last.artifact if last is not None and isinstance(last.artifact, dict) else {}) or {}
         sid = str(art.get("session_id") or "")
@@ -1461,7 +1461,7 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
                            resume_first=True, fe_note=fe_note)
     fix_brief = ""
     if fix_gate:
-        #  «Sửa cho xanh» (ai-CR-026): nối phiên của lượt sửa vừa xong, đưa kèm lỗi cổng kiểm.
+        #  "Sửa cho xanh" (ai-CR-026): nối phiên của lượt sửa vừa xong, đưa kèm lỗi cổng kiểm.
         last = latest_code_run(db, task)
         art = (last.artifact if last is not None and isinstance(last.artifact, dict) else {}) or {}
         previous = str(art.get("session_id") or "")
@@ -1479,7 +1479,7 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
     db.commit()
 
     if previous or scan_sid:
-        #  Dùng lại ĐÚNG worktree phiên đã đọc: cắt lại thì mọi tệp bị coi là «đổi sau khi đọc» và
+        #  Dùng lại ĐÚNG worktree phiên đã đọc: cắt lại thì mọi tệp bị coi là "đổi sau khi đọc" và
         #  Claude phải đọc lại hết — mất đúng cái lợi của việc nối phiên.
         worktree = str(Path(settings.AGENT_WORKTREE_ROOT) / task.code)
         if not Path(worktree).exists():
@@ -1600,7 +1600,7 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
         service.auto_deploy_after_code(db, task, gate)        # ai-CR-154: ok trên thẻ xác nhận đã đồng ý bước này
     if carry and not escalation:
         service.reply(db, chat_id, f"<b>{telegram.esc(task.code)}</b> · còn {len(carry['phases_left'])} phần chưa làm"
-                      f"\n\n<i>Nhắn «làm tiếp {telegram.esc(task.code)}» để em làm phần còn lại.</i>", task_id=task.id)
+                      f"\n\n<i>Nhắn **làm tiếp {telegram.esc(task.code)}** để em làm phần còn lại.</i>", task_id=task.id)
     if patch.strip() and not settings.AGENT_TG_COMPACT:     # ai-CR-027: gọn thì không gửi .diff
         try:
             telegram.send_document(chat_id, f"{task.code}.diff", patch.encode("utf-8"),
@@ -1615,10 +1615,10 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
 # Chế độ TÍNH NĂNG LỚN (ai-CR-082): chia theo lớp, chạy nối tiếp trong cùng phiên + cùng nhánh
 # ---------------------------------------------------------------------------
 #  Đại ca 05/10: tính năng lớn (bảng mới + API + màn hình) dễ chạm trần 25 tệp / 120 lượt rồi dừng giữa chừng. Nay việc
-#  chạm từ 2 lớp trở lên VÀ từ BIG_MIN_FILES tệp (hoặc đại ca dặn «làm theo từng phần») được chia: cấu trúc dữ liệu →
+#  chạm từ 2 lớp trở lên VÀ từ BIG_MIN_FILES tệp (hoặc đại ca dặn "làm theo từng phần") được chia: cấu trúc dữ liệu →
 #  nghiệp vụ backend → giao diện (tài liệu đi kèm phần cuối). Mỗi phần một lượt Claude nối tiếp CÙNG phiên (nhớ phần
 #  trước), kiểm + commit riêng; trần tệp tính theo TỪNG phần. Đỏ / hết lượt / lệch kế hoạch ở phần nào thì dừng ở đó,
-#  các phần đã xong giữ nguyên; «làm tiếp» chạy nốt phần còn lại (`phases_left` trong sổ lượt chạy).
+#  các phần đã xong giữ nguyên; "làm tiếp" chạy nốt phần còn lại (`phases_left` trong sổ lượt chạy).
 BIG_MIN_FILES = 8
 MAX_PHASES = 3
 _FORCE_PHASES = re.compile(r"làm theo từng phần|tính năng lớn|chia (?:thành )?(?:từng )?phần", re.IGNORECASE)
@@ -1693,7 +1693,7 @@ def _run_phases(db: Session, task: AgentTask, run: AgentRun, *, worktree: str, b
             data = run_claude(worktree, msg, session_id=session_id, timeout=settings.AGENT_RUN_TIMEOUT_SEC,
                               resume=bool(resume_first or i > 0))
         except MaxTurnsError as e:
-            #  «làm tiếp» nối đúng phiên để xong phần này; các phần sau vẫn nằm trong phases_left.
+            #  "làm tiếp" nối đúng phiên để xong phần này; các phần sau vẫn nằm trong phases_left.
             run.artifact = {**(run.artifact or {}), "phases_left": rest}
             db.commit()
             return _stop_at_max_turns(db, task, run, worktree, session_id, e)
@@ -1760,7 +1760,7 @@ def _run_phases(db: Session, task: AgentTask, run: AgentRun, *, worktree: str, b
                       f"<b>{esc(task.code)}</b> · đã xong {total - len(left)}/{total} phần\n\n"
                       + "\n".join(f"• Còn phần {p['index']}: {esc(p['label'])} ({len(p['files'])} tệp)" for p in left)
                       + "\n\n<i>" + ("Sửa cho xanh trước rồi " if gate.get("status") == "fail" else "")
-                      + f"nhắn «làm tiếp {esc(task.code)}» để em làm phần còn lại.</i>", task_id=task.id)
+                      + f"nhắn **làm tiếp {esc(task.code)}** để em làm phần còn lại.</i>", task_id=task.id)
     return {"task": task.code, "status": task.status, "files": len(files), "escalation": escalation,
             "phases_left": len(left)}
 
@@ -1776,7 +1776,7 @@ _TIMING_GROUPS = ((STAGE_SCAN, "rà soát"), (STAGE_PLAN, "kế hoạch"), (STAG
 
 
 def fmt_minutes(ms: int) -> str:
-    """Số phút dạng Việt: «45 giây» · «6,6 phút» · «33 phút»."""
+    """Số phút dạng Việt: "45 giây" · "6,6 phút" · "33 phút"."""
     sec = max(int(ms // 1000), 0)
     if sec < 60:
         return f"{sec} giây"
@@ -1785,7 +1785,7 @@ def fmt_minutes(ms: int) -> str:
 
 
 def timing_line(db: Session, task: AgentTask, *, now: datetime | None = None) -> str:
-    """«Thời gian: 33 phút từ lúc nhận việc; bot chạy 24 phút (rà soát 6,6 · …); chờ 9 phút.»"""
+    """"Thời gian: 33 phút từ lúc nhận việc; bot chạy 24 phút (rà soát 6,6 · …); chờ 9 phút.\""""
     runs = (db.query(AgentRun).filter(AgentRun.task_id == task.id).order_by(AgentRun.id).all())
     now = now or datetime.now()
     per: dict[int, int] = {}
@@ -1817,7 +1817,7 @@ _SUMMARY = re.compile(r"(?im)^\W*tóm tắt\W*:\s*(.+)$")
 
 
 def report_summary(report: str) -> str:
-    """Dòng «TÓM TẮT:» cuối tổng kết của bot (ai-CR-027); không có thì lấy đoạn đầu, cắt ngắn."""
+    """Dòng "TÓM TẮT:" cuối tổng kết của bot (ai-CR-027); không có thì lấy đoạn đầu, cắt ngắn."""
     hits = _SUMMARY.findall(report or "")
     if hits:
         return hits[-1].strip().strip("*").strip()
@@ -1827,7 +1827,7 @@ def report_summary(report: str) -> str:
 
 
 def _gate_brief(gate: dict) -> str:
-    """Một dòng «đã kiểm gì» cho thẻ gọn."""
+    """Một dòng "đã kiểm gì" cho thẻ gọn."""
     parts = []
     backend = gate.get("backend", gate.get("status"))
     if backend == "pass":
@@ -1861,11 +1861,11 @@ def send_compact_review_card(db: Session, task: AgentTask, *, gate: dict, escala
     lines = [f"<b>{code}</b> · {esc(task.title)}"]
     if escalation:
         lines += [f"<b>Em dừng, chưa commit:</b> {esc(escalation)}"]
-        #  ai-CR-087: nói luôn VÌ SAO dừng (dòng TÓM TẮT của bot) — trước đây chỉ «không sửa tệp nào», đại ca phải
-        #  «chi tiết» mới biết bot dừng vì một bài kiểm an toàn cần đại ca quyết.
+        #  ai-CR-087: nói luôn VÌ SAO dừng (dòng TÓM TẮT của bot) — trước đây chỉ "không sửa tệp nào", đại ca phải
+        #  "chi tiết" mới biết bot dừng vì một bài kiểm an toàn cần đại ca quyết.
         if summary := report_summary(report):
             lines += [service._card_md(summary, limit=700)]
-        lines += [f"Nhắn «chi tiết {code}» để xem đủ, «sửa: …» để em làm lại theo ý đại ca, hoặc «bỏ {code}»."]
+        lines += [f"Nhắn **chi tiết {code}** để xem đủ, **sửa: …** để em làm lại theo ý đại ca, hoặc **bỏ {code}**."]
     else:
         if summary := report_summary(report):
             lines += [service._card_md(summary, limit=900)]
@@ -1876,10 +1876,10 @@ def send_compact_review_card(db: Session, task: AgentTask, *, gate: dict, escala
         if pr.get("status") == "ok" and pr.get("url"):
             lines += [f"PR: {esc(pr['url'])}"]
         if gate.get("status") == "fail":
-            lines += [f"Nhắn «sửa cho xanh {code}» để em sửa cho qua cổng kiểm, «chi tiết {code}» để xem."]
+            lines += [f"Nhắn **sửa cho xanh {code}** để em sửa cho qua cổng kiểm, **chi tiết {code}** để xem."]
         else:
-            lines += [f"Nhắn «gộp {code}» để gộp vào <code>{esc(settings.AGENT_BASE_BRANCH)}</code> (chưa lên "
-                      f"dev) · «gộp và deploy dev {code}» để làm cả hai · «chi tiết {code}» để xem kỹ."]
+            lines += [f"Nhắn **gộp {code}** để gộp vào <code>{esc(settings.AGENT_BASE_BRANCH)}</code> (chưa lên "
+                      f"dev) · **gộp và deploy dev {code}** để làm cả hai · **chi tiết {code}** để xem kỹ."]
     service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID, "\n".join(lines), task_id=task.id)
 
 
@@ -1936,7 +1936,7 @@ def send_review_card(db: Session, task: AgentTask, run: AgentRun, *, files: list
     head += schema_change.card_lines(gate.get("schema") or {}, esc)
     if timing := timing_line(db, task):
         head += [esc(timing)]
-    tail = ["", "Bấm «Hỏi thêm» rồi nhắn câu hỏi: em đưa cho đúng phiên đã sửa việc này trả lời."]
+    tail = ["", "Bấm <b>Hỏi thêm</b> rồi nhắn câu hỏi: em đưa cho đúng phiên đã sửa việc này trả lời."]
     room = CARD_BUDGET - len("\n".join(head)) - len("\n".join(tail)) - 40
     body = []
     if report and room > 200:
@@ -2250,7 +2250,7 @@ def _merge_worktree() -> str:
 
 
 #  ai-CR-092: sổ CHỈ GHI THÊM — bot và người cùng thêm mục cuối sổ trong một buổi là gộp xung đột (AI-0003, 06/10),
-#  dù hai bên không đụng nhau. Gộp kiểu «union» giữ cả hai mục. Khai ở info/attributes của kho trên runner, không
+#  dù hai bên không đụng nhau. Gộp kiểu "union" giữ cả hai mục. Khai ở info/attributes của kho trên runner, không
 #  khai vào kho chung: chỉ lượt gộp của bot dùng, người gộp tay vẫn thấy xung đột như thường.
 APPEND_ONLY_DOCS = (
     "doc/tai-lieu-ky-thuat/change-log-ai.md",
@@ -2302,7 +2302,7 @@ def merge_into_base(task: AgentTask) -> str:
     if len(heads) > 1:
         #  ai-CR-076: nhánh nền vừa có migration khác chen vào → gộp xong thành hai đầu = dev không khởi động được.
         raise CoderError(f"sau khi gộp, kho có {len(heads)} đầu migration ({', '.join(heads)}) — nhánh nền vừa có "
-                         "migration khác. Em KHÔNG đẩy. Nhắn «sửa cho xanh» để bot nối lại down_revision rồi gộp lại.")
+                         "migration khác. Em KHÔNG đẩy. Nhắn **sửa cho xanh** để bot nối lại down_revision rồi gộp lại.")
     sha = _git(wt, "rev-parse", "HEAD", timeout=60).strip()
     _push_base_branch(wt)
     return sha
@@ -2357,9 +2357,9 @@ def _fail_deploy(db: Session, task: AgentTask, run: AgentRun, err: str, *, pushe
         task.deployed_dev_at = None
         text = (f"<b>{esc(task.code)}</b>: đã gộp vào <code>{esc(settings.AGENT_BASE_BRANCH)}</code> "
                 f"(bản gộp <code>{esc(str(art.get('merge_sha') or '')[:10])}</code>) nhưng deploy dev "
-                f"HỎNG: {esc(err[:700])}\n\nBấm «Deploy dev lại» sau khi sửa nguyên nhân, hoặc «Thu hồi» "
+                f"HỎNG: {esc(err[:700])}\n\nBấm **Deploy dev lại** sau khi sửa nguyên nhân, hoặc **Thu hồi** "
                 "để bot revert bản gộp và deploy lại bản trước."
-                + cmd_hint(f"Nhắn «deploy dev {esc(task.code)}» để deploy lại, «thu hồi {esc(task.code)}» "
+                + cmd_hint(f"Nhắn **deploy dev {esc(task.code)}** để deploy lại, **thu hồi {esc(task.code)}** "
                            "để revert."))
         buttons = [("Deploy dev lại", f"mgok:{task.id}"), ("Thu hồi khỏi erp-v2 + dev", f"rv:{task.id}")]
     else:
@@ -2367,7 +2367,7 @@ def _fail_deploy(db: Session, task: AgentTask, run: AgentRun, err: str, *, pushe
         text = (f"<b>{esc(task.code)}</b>: chưa gộp được vào "
                 f"<code>{esc(settings.AGENT_BASE_BRANCH)}</code>: {esc(err[:700])}\n\n"
                 "Nhánh nền không đổi. Sửa nguyên nhân rồi bấm gộp lại, hoặc đi đường PR."
-                + cmd_hint(f"Nhắn «gộp {esc(task.code)}» để thử lại, «mở PR {esc(task.code)}» để đi "
+                + cmd_hint(f"Nhắn **gộp {esc(task.code)}** để thử lại, **mở PR {esc(task.code)}** để đi "
                            "đường PR."))
         buttons = [("Gộp erp-v2 + deploy dev", f"mg:{task.id}"), ("Gửi link PR để anh tự merge", f"pr:{task.id}")]
     db.commit()
@@ -2378,10 +2378,10 @@ def _fail_deploy(db: Session, task: AgentTask, run: AgentRun, err: str, *, pushe
 def merge_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
     """Một lượt: gộp (nếu chưa) -> đẩy -> [ssh deploy -> health] -> thẻ. Mọi lỗi thành thẻ + trạm đúng.
 
-    Cờ `deploy` trong dòng sổ (ai-CR-029): đại ca nhắn «gộp» là CHỈ gộp vào nhánh nền, không lên dev;
-    «deploy dev» / «gộp và deploy dev» mới SSH. Thiếu cờ (nút bấm cũ ghi «Gộp + deploy dev») = cả hai.
+    Cờ `deploy` trong dòng sổ (ai-CR-029): đại ca nhắn "gộp" là CHỈ gộp vào nhánh nền, không lên dev;
+    "deploy dev" / "gộp và deploy dev" mới SSH. Thiếu cờ (nút bấm cũ ghi "Gộp + deploy dev") = cả hai.
 
-    Bước gộp + đẩy chỉ chạy khi việc CHƯA có bản gộp sống (`merged_sha_for`): «Deploy dev lại» sau
+    Bước gộp + đẩy chỉ chạy khi việc CHƯA có bản gộp sống (`merged_sha_for`): "Deploy dev lại" sau
     một lượt deploy hỏng thì đi thẳng tới ssh. `run.artifact["merged"]` được ghi và commit NGAY sau
     khi đẩy, trước khi ssh — hỏng giữa chừng vẫn biết mã đã lên nhánh nền.
     """
@@ -2502,7 +2502,7 @@ def _require_ancestor(sha: str, head: str) -> None:
 
 
 def send_merge_card(db: Session, task: AgentTask, *, sha: str) -> None:
-    """Thẻ «chỉ gộp, chưa lên dev» (ai-CR-029)."""
+    """Thẻ "chỉ gộp, chưa lên dev" (ai-CR-029)."""
     from . import service
 
     esc = telegram.esc
@@ -2511,7 +2511,7 @@ def send_merge_card(db: Session, task: AgentTask, *, sha: str) -> None:
         f"<b>{code}</b> · {esc(task.title)}",
         f"Đã gộp vào <code>{esc(settings.AGENT_BASE_BRANCH)}</code> (bản gộp <code>{esc(sha[:10])}</code>). "
         "Dev CHƯA deploy.",
-        f"Muốn lên dev thì nhắn «deploy dev {code}»; gộp nhầm thì «thu hồi {code}».",
+        f"Muốn lên dev thì nhắn **deploy dev {code}**; gộp nhầm thì **thu hồi {code}**.",
     ]), task_id=task.id)
 
 
@@ -2522,7 +2522,7 @@ def _code_artifact(db: Session, task: AgentTask) -> dict:
 
 def revert_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
     """Thu hồi: `git revert -m 1 <bản gộp>` trên nhánh nền -> đẩy -> deploy dev lại -> việc về
-    «Đang hỏi lại» (đường tiếp là đại ca nói sửa gì rồi /gom; git không gộp lại cùng nhánh sau revert)."""
+    "Đang hỏi lại" (đường tiếp là đại ca nói sửa gì rồi /gom; git không gộp lại cùng nhánh sau revert)."""
     sha = merged_sha_for(db, task)
     if not sha:
         return _fail_deploy(db, task, run, "việc này không có bản gộp nào đang sống trên nhánh nền",
@@ -2598,14 +2598,14 @@ def send_deploy_card(db: Session, task: AgentTask, *, sha: str, services: list[s
         head = [f"<b>{esc(task.code)}</b> · {esc(task.title)}",
                 f"Đã THU HỒI khỏi <code>{base}</code> bằng bản revert <code>{esc(sha[:10])}</code>. "
                 "Dev chưa từng lên bản này nên không deploy lại.", "",
-                "Việc về «Đang hỏi lại»: nhắn cần sửa gì rồi /gom để bot làm lại từ đầu."]
+                "Việc về **Đang hỏi lại**: nhắn cần sửa gì rồi /gom để bot làm lại từ đầu."]
         buttons = [("Hỏi thêm về bản vá", f"ask:{task.id}"), ("Bỏ việc này", f"no:{task.id}")]
     elif reverted:
         head = [f"<b>{esc(task.code)}</b> · {esc(task.title)}",
                 f"Đã THU HỒI khỏi <code>{base}</code> bằng bản revert <code>{esc(sha[:10])}</code> "
                 "và deploy lại dev bản trước.",
                 f"Build lại: {svc}", health_line, "",
-                "Việc về «Đang hỏi lại»: nhắn cần sửa gì rồi /gom để bot làm lại từ đầu."]
+                "Việc về **Đang hỏi lại**: nhắn cần sửa gì rồi /gom để bot làm lại từ đầu."]
         buttons = [("Hỏi thêm về bản vá", f"ask:{task.id}"), ("Bỏ việc này", f"no:{task.id}")]
     else:
         ui = settings.AGENT_DEV_UI_URL
@@ -2617,10 +2617,10 @@ def send_deploy_card(db: Session, task: AgentTask, *, sha: str, services: list[s
         if ui:
             head += [f"Thử ở: {esc(ui)}"]
         if settings.AGENT_TG_COMPACT:
-            head += ["", f"Thử xong: ổn thì nhắn «xong {esc(task.code)}»; không ổn thì «thu hồi "
-                         f"{esc(task.code)}» — em revert bản gộp và deploy lại bản trước."]
+            head += ["", f"Thử xong: ổn thì nhắn **xong {esc(task.code)}**; không ổn thì **thu hồi "
+                         f"{esc(task.code)}** — em revert bản gộp và deploy lại bản trước."]
         else:
-            head += ["", "Thử xong: ổn thì bấm «Xong»; không ổn thì «Thu hồi» — bot revert bản gộp "
+            head += ["", "Thử xong: ổn thì bấm **Xong**; không ổn thì **Thu hồi** — bot revert bản gộp "
                          "và deploy lại bản trước, hoặc nhắn sửa gì để bot làm tiếp."]
         buttons = [("Thu hồi khỏi erp-v2 + dev", f"rv:{task.id}"),
                    ("Hỏi thêm về bản vá", f"ask:{task.id}"), ("Xong, đóng việc", f"done:{task.id}")]
@@ -2645,8 +2645,8 @@ def dispatch_revert(task_id: int, run_id: int) -> None:
 # ---------------------------------------------------------------------------
 # Dọn nhánh sau khi việc đóng (ai-CR-033)
 # ---------------------------------------------------------------------------
-#  Đại ca để trống câu «xóa lúc gộp hay lúc xong»; em chọn lúc việc ĐÓNG («xong» hoặc «bỏ»): sau
-#  gộp vẫn còn «thu hồi» và «hỏi thêm về bản vá» cần worktree + phiên. Bản gộp trên nhánh nền giữ
+#  Đại ca để trống câu "xóa lúc gộp hay lúc xong"; em chọn lúc việc ĐÓNG ("xong" hoặc "bỏ"): sau
+#  gộp vẫn còn "thu hồi" và "hỏi thêm về bản vá" cần worktree + phiên. Bản gộp trên nhánh nền giữ
 #  nguyên lịch sử nên xóa nhánh bot không mất gì. Chỉ đụng nhánh bắt đầu bằng `bot/`.
 def dispatch_cleanup(task_id: int) -> None:
     from app.core.celery_app import celery_app
@@ -2717,7 +2717,7 @@ def build_scan_brief(task: AgentTask, docs: list[dict], head: str, main_head: st
                      images: list[str] | None = None) -> str:
     lines = [
         f"# Rà soát việc {task.code}: {task.title}", "",
-        f"Bạn là {BOT_NAME}, trợ lý lập trình của DEGO (tự xưng «em», gọi người đọc là «đại ca»). Bạn "
+        f"Bạn là {BOT_NAME}, trợ lý lập trình của DEGO (tự xưng **em**, gọi người đọc là **đại ca**). Bạn "
         f"đang đứng trong một worktree cắt từ nhánh `{settings.AGENT_BASE_BRANCH}` MỚI NHẤT trên "
         f"GitHub (commit `{head[:10]}`) của kho procurement-tool (ERP nội bộ).",
         "Lượt này CHỈ ĐỌC: không sửa tệp, không chạy bài kiểm. Mục đích là hiểu đúng việc trước "
@@ -2760,8 +2760,8 @@ def build_scan_brief(task: AgentTask, docs: list[dict], head: str, main_head: st
     lines += [
         "## Định dạng trả lời (bắt buộc)",
         "Phần 1 là tin nhắn gửi đại ca trên Telegram: tiếng Việt, như một đồng nghiệp báo cáo sau "
-        "khi đã đọc mã; dòng ĐẦU TIÊN bắt đầu bằng `**Kết luận:**` (không câu dẫn kiểu «giờ trả "
-        "lời»); TỐI ĐA 12 dòng — chỉ kết luận, dẫn chứng chính và hướng sửa, bỏ phần kể lể; "
+        "khi đã đọc mã; dòng ĐẦU TIÊN bắt đầu bằng `**Kết luận:**` (không câu dẫn kiểu **giờ trả "
+        "lời**); TỐI ĐA 12 dòng — chỉ kết luận, dẫn chứng chính và hướng sửa, bỏ phần kể lể; "
         "Markdown đơn giản (chữ đậm, gạch đầu dòng, `mã`), KHÔNG "
         "bảng, KHÔNG tiêu đề `#`. Câu cần đại ca quyết thì đưa vào `questions` của khối JSON.",
         "Phần 2, ở CUỐI CÙNG, đúng MỘT khối ```json gồm: "
@@ -2823,7 +2823,7 @@ OUTCOME_MAX_CHARS = 200
 
 
 def outcomes_of(task: AgentTask) -> list[str]:
-    """ai-CR-153: các câu «xong thì người dùng làm được gì» của lượt rà soát gần nhất — rỗng nếu chưa có."""
+    """ai-CR-153: các câu "xong thì người dùng làm được gì" của lượt rà soát gần nhất — rỗng nếu chưa có."""
     from sqlalchemy.orm import object_session
 
     db = object_session(task)
@@ -2916,9 +2916,9 @@ def scan_task(db: Session, task: AgentTask) -> dict:
     })
     task.status = ST_TRIAGE
     db.commit()
-    #  ai-CR-086 (đại ca 05/10: «chỉ cần viết sơ bộ thôi, khi nào a cần chi tiết thì mới viết chi tiết»): KHÔNG gửi
-    #  đoạn phân tích rà soát nữa — nó nằm trong sổ lượt chạy, đại ca xem bằng «chi tiết AI-xxxx». Tin kế tiếp đại ca
-    #  nhận là một dòng «em làm luôn» (tự duyệt) hoặc thẻ kế hoạch gọn (việc rủi ro cao).
+    #  ai-CR-086 (đại ca 05/10: "chỉ cần viết sơ bộ thôi, khi nào a cần chi tiết thì mới viết chi tiết"): KHÔNG gửi
+    #  đoạn phân tích rà soát nữa — nó nằm trong sổ lượt chạy, đại ca xem bằng "chi tiết AI-xxxx". Tin kế tiếp đại ca
+    #  nhận là một dòng "em làm luôn" (tự duyệt) hoặc thẻ kế hoạch gọn (việc rủi ro cao).
     _ = SCAN_MESSAGE_MAX
     service.plan_task(db, task)
     return {"status": "ok", "files": info.get("files") or [], "head": head}

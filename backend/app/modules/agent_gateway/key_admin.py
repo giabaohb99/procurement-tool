@@ -2,8 +2,8 @@
 
 Bảng khóa nằm ở DB dịch vụ AI (`tab_agent_mcp_key`), còn ai được phát hộ cho ai thì tính ở ERP: entity
 `ai_mcp_key_admin` (read · create · delete), phạm vi đặt trên HỒ SƠ NHÂN SỰ của CHỦ KHÓA (`SCOPE_FIELDS` = pháp nhân +
-phòng ban + chính mình, như entity `employee`). Dịch vụ AI hỏi qua cổng B: «trong những người này / phòng này, người phát
-được đụng tới ai» — rồi mới phát / liệt kê / thu hồi.
+phòng ban + chính mình, như entity `employee`). Dịch vụ AI hỏi qua cổng B: "trong những người này / phòng này, người phát
+được đụng tới ai" — rồi mới phát / liệt kê / thu hồi.
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def people_in_scope(db: Session, admin, action: str, *, user_ids: list[int] | No
                     limit: int = MAX_PEOPLE, employee_ids: list[int] | None = None) -> list[dict] | None:
     """Tài khoản ĐANG HOẠT ĐỘNG có hồ sơ nhân sự nằm trong phạm vi `action` của `admin`. None = không có quyền.
 
-    Tài khoản chưa gắn nhân sự không có phòng ban để tính phạm vi → không bao giờ lọt vào (kể cả phạm vi «toàn hệ»)."""
+    Tài khoản chưa gắn nhân sự không có phòng ban để tính phạm vi → không bao giờ lọt vào (kể cả phạm vi "toàn hệ")."""
     from app.core.auth import get_perm_profile, user_has_permission
     from app.core.scoping import apply_scope
     from app.modules.department.model import Department
