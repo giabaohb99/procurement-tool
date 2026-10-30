@@ -133,3 +133,44 @@ describe('OAuthClientsPage', () => {
     expect(await screen.findByText(/Ứng dụng xuất hiện ở đây khi có người bấm "Cho phép"/)).toBeInTheDocument()
   })
 })
+
+describe('OAuthClientsPage filters (bao-CR-696)', () => {
+  function renderAt(url: string) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[url]}>
+          <OAuthClientsPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+  }
+
+  const apps = [
+    client(1, { client_name: 'ChatGPT', live_grants: 2 }),
+    client(2, { client_name: 'Trình kết nối lạ', redirect_hosts: ['evil.example'], trusted: false }),
+  ]
+
+  it('filters on screen by status from the URL, keeps the totals of the whole list, and asks the server only once', async () => {
+    mockServer(apps)
+    renderAt('/ai-skill/oauth-clients?status=untrusted')
+    expect(await screen.findByText('Trình kết nối lạ')).toBeInTheDocument()
+    expect(screen.queryByText('ChatGPT')).not.toBeInTheDocument()
+    //  Dòng tóm tắt vẫn nói cả danh sách — lọc không làm "mất" ứng dụng trong con số.
+    expect(screen.getByText(/2 ứng dụng · 2 kết nối đang sống/)).toBeInTheDocument()
+    expect(apiGet.mock.calls.filter(([u]) => String(u).endsWith('/oauth-clients'))).toHaveLength(1)
+  })
+
+  it('searches by redirect host without accents mattering, and says the table is empty because of the filter', async () => {
+    const user = userEvent.setup()
+    mockServer(apps)
+    renderAt('/ai-skill/oauth-clients')
+    await screen.findByText('ChatGPT')
+    await user.type(screen.getByRole('textbox', { name: 'Tìm ứng dụng' }), 'ket noi')
+    await waitFor(() => expect(screen.queryByText('ChatGPT')).not.toBeInTheDocument())
+    expect(screen.getByText('Trình kết nối lạ')).toBeInTheDocument()
+    await user.clear(screen.getByRole('textbox', { name: 'Tìm ứng dụng' }))
+    await user.type(screen.getByRole('textbox', { name: 'Tìm ứng dụng' }), 'khong co ung dung nay')
+    expect(await screen.findByText('Không có ứng dụng nào khớp bộ lọc.')).toBeInTheDocument()
+  })
+})

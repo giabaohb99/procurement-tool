@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import { aiUsageApi } from '../api/ai-skill-api'
-import type { KeyIssueInput, KeyRevokeInput, McpCallFilters, McpSettings, McpSettingsPatch } from '../types/ai-skill'
+import type { KeyAdminKeysParams, KeyIssueInput, KeyRevokeInput, McpCallFilters, McpSettings, McpSettingsPatch } from '../types/ai-skill'
 
 /** Khóa kết nối AI của nhân sự (K4) + nhật ký lượt gọi (K3) — qua cổng dịch vụ AI. */
 
@@ -11,10 +11,7 @@ export function useKeyAdminMeta() {
   return useQuery({ queryKey: queryKeys.aiSkill.keyAdminMeta(), queryFn: () => aiUsageApi.keyAdminMeta() })
 }
 
-export function useKeyAdminKeys(
-  params: { department_id?: number; state?: number; user_id?: number; page: number; size: number },
-  enabled = true,
-) {
+export function useKeyAdminKeys(params: KeyAdminKeysParams, enabled = true) {
   return useQuery({
     queryKey: queryKeys.aiSkill.keyAdminKeys(params),
     queryFn: () => aiUsageApi.keyAdminKeys(params),

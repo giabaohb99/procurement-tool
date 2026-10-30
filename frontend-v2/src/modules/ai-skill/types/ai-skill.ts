@@ -187,6 +187,29 @@ export interface AdminMcpKey {
   department_id: number
   department: string
   issued_by_label: string
+  /**
+   * bao-CR-696 (màn Kết nối) — trường BẢN ĐỀ NGHỊ, hợp đồng chưa chốt. Chỉ đọc qua `toConnectionRow`
+   * (`utils/ai-row-mappers.ts`); đổi tên khi hợp đồng chốt thì sửa ở đây và ở hàm đó, không chỗ nào khác.
+   * Máy chủ cũ chưa trả thì hàm map lùi về `owner_label` / `department` / `kind` / `name`.
+   */
+  person_name?: string | null
+  employee_code?: string | null
+  email?: string | null
+  dept_name?: string | null
+  connection_type?: string | null
+  app_name?: string | null
+  app_redirect_uri?: string | null
+}
+
+/** Tham số bảng màn Kết nối. `q` (bao-CR-696, bản đề nghị): tìm theo tên / email / mã NV — máy chủ cũ bỏ qua. */
+//  `type` chứ không `interface`: khóa truy vấn nhận `Record<string, unknown>`, interface không gán được vào đó.
+export type KeyAdminKeysParams = {
+  department_id?: number
+  state?: number
+  user_id?: number
+  q?: string
+  page: number
+  size: number
 }
 
 export interface KeyIssueInput {
@@ -234,6 +257,14 @@ export interface McpCall {
   result_chars?: number
   ip: string
   user_label: string
+  /**
+   * bao-CR-696 (cột Chứng từ) — trường BẢN ĐỀ NGHỊ, hợp đồng chưa chốt: mã phiếu cho lượt GHI (duyệt, lập phiếu).
+   * Chỉ đọc qua `readCallDocument` (`utils/ai-row-mappers.ts`). Lượt chỉ đọc, dòng cũ, máy chủ cũ: thiếu / null.
+   */
+  doc_code?: string | null
+  doc_type?: string | number | null
+  doc_id?: number | null
+  doc_url?: string | null
 }
 
 export interface McpCallPage extends PagedItems<McpCall> {
@@ -249,6 +280,8 @@ export interface McpCallFilters {
   status?: number
   /** `tools` = chỉ lượt gọi công cụ (`tools/call`), ẩn initialize / tools/list / notifications/* (ai-CR-219). */
   kind?: 'tools'
+  /** bao-CR-696: tìm nhanh theo người hoặc công cụ (bản đề nghị — máy chủ cũ bỏ qua tham số này). */
+  q?: string
   page: number
   size: number
 }

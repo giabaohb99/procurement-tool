@@ -1,19 +1,24 @@
-import { Plug, ShieldAlert, Trash2 } from 'lucide-react'
+import { Search, ShieldAlert, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { ErrorState } from '@/shared/ui/error-state'
+import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { useDeleteOAuthClient, useOAuthClients } from '../hooks/use-ai-usage'
 import type { OAuthClient } from '../types/ai-skill'
+import { filterOAuthClients, OAUTH_CLIENT_STATUS, OAUTH_CLIENT_STATUS_OPTIONS } from '../utils/ai-row-mappers'
 
 /**
  * bao-CR-635 — Ứng dụng AI đã kết nối: các ứng dụng (ChatGPT, claude.ai…) tự đăng ký OAuth với cổng MCP khi có người bấm
@@ -21,6 +26,9 @@ import type { OAuthClient } from '../types/ai-skill'
  * nhận ra thật giả; host ngoài danh sách ứng dụng quen thì máy chủ trả `trusted = false` và màn tô cảnh báo.
  * Xóa ứng dụng = cắt mọi kết nối của nó ngay (mã truy cập + mã làm mới chết), người dùng muốn nối lại phải "Cho phép" lần nữa.
  * Xem cần `agent_group.read` (như Cấu hình) — thiếu thì nói rõ, không gọi để ăn 403; xóa theo `can_delete` máy chủ trả.
+ *
+ * bao-CR-696: nằm ở menu Cấu hình > Nâng cao (chỉ người quản lý bot AI thấy mục), thêm ô tìm + lọc trạng thái. Lọc
+ * NGAY TRÊN MÁY (`filterOAuthClients`) vì máy chủ trả cả danh sách một lần, không phân trang.
  */
 export function OAuthClientsPage() {
   const { can } = usePermission()
@@ -29,6 +37,10 @@ export function OAuthClientsPage() {
   const remove = useDeleteOAuthClient()
   const canDelete = data?.can_delete ?? false
   const rows = data?.items
+  const { value: keyword, setValue: setKeyword, debouncedValue: q } = useUrlSearchParam('q')
+  const [status, setStatus] = useUrlParamState('status', OAUTH_CLIENT_STATUS.all)
+  const shownRows = useMemo(() => (rows ? filterOAuthClients(rows, q, status) : undefined), [rows, q, status])
+  const filtering = q.trim() !== '' || status !== OAUTH_CLIENT_STATUS.all
 
   const columns = useMemo<DataTableColumn<OAuthClient>[]>(() => {
     const base: DataTableColumn<OAuthClient>[] = [
@@ -152,15 +164,41 @@ export function OAuthClientsPage() {
         <DataTable
           fillHeight
           columns={columns}
-          rows={rows}
+          rows={shownRows}
           getRowId={(c) => c.id}
           isLoading={isLoading}
           isError={isError}
-          emptyMessage='Chưa có ứng dụng nào. Ứng dụng xuất hiện ở đây khi có người bấm "Cho phép" trên màn đồng ý kết nối (ChatGPT, claude.ai…).'
+          emptyMessage={
+            filtering
+              ? 'Không có ứng dụng nào khớp bộ lọc.'
+              : 'Chưa có ứng dụng nào. Ứng dụng xuất hiện ở đây khi có người bấm "Cho phép" trên màn đồng ý kết nối (ChatGPT, claude.ai…).'
+          }
           storageKey="ai-skill.oauth-clients"
           toolbar={
             <>
-              <Plug className="hidden size-4 text-muted-foreground md:block" />
+              <div className="relative min-w-48 flex-1 md:max-w-xs">
+                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Tìm tên, mã ứng dụng, nơi quay về"
+                  aria-label="Tìm ứng dụng"
+                  value={keyword}
+                  maxLength={80}
+                  onChange={(e) => setKeyword(e.target.value)}
+                />
+              </div>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="w-44" aria-label="Lọc trạng thái">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {OAUTH_CLIENT_STATUS_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {rows && (
                 <span className="text-sm text-muted-foreground">
                   {rows.length} ứng dụng · {live} kết nối đang sống

@@ -119,11 +119,15 @@ Màn chọn phân hệ chỉ còn một thẻ AI thay cho hai thẻ Trợ lý AI
 bên trong là Nhóm chat và Người dùng bot), nhóm Cấu hình (Cấu hình chung và Nâng cao, nơi quản trị dọn các ứng dụng AI đã đăng ký,
 chỉ người quản lý trợ lý AI thấy). Quyền từng mục giữ như cũ, mọi đường dẫn cũ vẫn mở được nên link trong thông báo và bài hướng
 dẫn không gãy. Khung phân hệ dùng chung thêm khái niệm đường gốc phụ để một phân hệ nhận được hai tiền tố đường dẫn.
-Còn lại: đợt 2 gồm màn Kết nối mới (người, cách nối, ứng dụng, dùng lần cuối, ô tìm), lọc ở màn Nâng cao, ô tìm và cột Chứng từ ở
-Nhật ký sử dụng, đang chờ hợp đồng API của phần máy chủ.
+Đợt 2 làm theo bản đề nghị hợp đồng API, chờ hợp đồng thật của phần máy chủ mới đẩy: màn Kết nối mỗi dòng ghi người (tên, mã
+nhân viên, email), phòng, cách nối (khóa riêng hay OAuth), ứng dụng (tên và nơi quay về), dùng lần cuối, trạng thái, thêm ô tìm
+theo tên, email, mã nhân viên; màn Nâng cao thêm ô tìm và lọc trạng thái (còn kết nối, không còn kết nối, host lạ); Nhật ký sử dụng
+thêm ô tìm theo người hoặc công cụ và cột Chứng từ (mã phiếu của lượt duyệt, lập phiếu; không có thì hiện gạch ngang). Máy chủ cũ
+chưa trả trường mới thì màn vẫn đủ cột từ dữ liệu sẵn có.
+Còn lại: khớp tên trường và tham số khi phần máy chủ chốt hợp đồng, rồi đẩy đợt 2.
 Kiểm: typecheck 0 lỗi; lint 0 lỗi, 30 cảnh báo như bản gốc; bài kiểm thư mục AI, Kho skill, điều hướng và khung trang 213 bài xanh;
 mở thử trên trình duyệt ở màn rộng 1440 và màn điện thoại.
-Mã nguồn: frontend-v2/src/modules/ai/routes.tsx, frontend-v2/src/modules/ai/routes.test.tsx, frontend-v2/src/app/router/module-definition.ts, frontend-v2/src/app/router/use-active-module.ts, frontend-v2/src/app/router/module-registry.ts
+Mã nguồn: frontend-v2/src/modules/ai/routes.tsx, frontend-v2/src/modules/ai/routes.test.tsx, frontend-v2/src/app/router/module-definition.ts, frontend-v2/src/app/router/use-active-module.ts, frontend-v2/src/app/router/module-registry.ts, frontend-v2/src/modules/ai-skill/utils/ai-row-mappers.ts, frontend-v2/src/modules/ai-skill/pages/key-admin-page.tsx, frontend-v2/src/modules/ai-skill/pages/oauth-clients-page.tsx, frontend-v2/src/modules/ai-skill/pages/call-log-page.tsx
 
 ## bao-CR-695-giao-dien | Bỏ dấu ngoặc kép góc trên giao diện ERP v2 và giao diện thu mua cũ
 - status: xong

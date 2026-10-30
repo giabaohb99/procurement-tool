@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,7 +10,7 @@ import type { AdminMcpKey, KeyAdminMeta } from '../types/ai-skill'
 import { KeyAdminPage } from './key-admin-page'
 
 /**
- * Màn "Khóa nhân sự" (G5). Chỗ dễ lủng: tick chọn cả khóa đã thu hồi / hết hạn rồi bấm Thu hồi thì hộp xác nhận phải
+ * Màn "Kết nối" (G5, tên cũ Khóa nhân sự). Chỗ dễ lủng: tick chọn cả khóa đã thu hồi / hết hạn rồi bấm Thu hồi thì hộp xác nhận phải
  * nói đúng số khóa CÒN HIỆU LỰC và chỉ gửi những khóa đó; quyền xem / phát / thu hồi lấy từ `meta` của máy chủ.
  */
 
@@ -134,5 +134,76 @@ describe('KeyAdminPage', () => {
     renderPage()
     expect(await screen.findByText('Không có quyền')).toBeInTheDocument()
     expect(apiGet).not.toHaveBeenCalledWith('/api/agent-hub/mcp-key-admin/keys', expect.anything())
+  })
+})
+
+describe('KeyAdminPage as the Connections screen (bao-CR-696)', () => {
+  function headerIndex(label: string): number {
+    const index = screen.getAllByRole('columnheader').findIndex((h) => h.textContent?.trim() === label)
+    expect(index, label).toBeGreaterThanOrEqual(0)
+    return index
+  }
+
+  function cellOf(rowText: string, column: string): HTMLElement {
+    const row = screen.getByText(rowText).closest('tr')
+    if (!row) throw new Error(`không thấy dòng ${rowText}`)
+    return within(row).getAllByRole('cell')[headerIndex(column)]
+  }
+
+  beforeEach(() => localStorage.clear())
+
+  it('shows who, how, which app and where it returns to, from the proposed fields', async () => {
+    mockServer(META, [
+      {
+        ...key(1, 2, 'An'),
+        person_name: 'Nguyễn Văn An', employee_code: 'NSU001', email: 'an@dego.vn', dept_name: 'Kế toán',
+        connection_type: 'oauth', app_name: 'ChatGPT', app_redirect_uri: 'https://chatgpt.com/connector/oauth/x',
+      },
+    ])
+    renderPage()
+    expect(await screen.findByText('Nguyễn Văn An')).toBeInTheDocument()
+    expect(screen.getByText('NSU001 · an@dego.vn')).toBeInTheDocument()
+    expect(cellOf('Nguyễn Văn An', 'Cách nối')).toHaveTextContent('OAuth')
+    expect(cellOf('Nguyễn Văn An', 'Ứng dụng')).toHaveTextContent('ChatGPT')
+    expect(cellOf('Nguyễn Văn An', 'Ứng dụng')).toHaveTextContent('chatgpt.com')
+    expect(cellOf('Nguyễn Văn An', 'Phòng')).toHaveTextContent('Kế toán')
+  })
+
+  it('still fills every column from an older server, with a real dash for the unknown app', async () => {
+    mockServer(META, [key(2, 2, 'Bình')])
+    renderPage()
+    expect(await screen.findByText('Bình')).toBeInTheDocument()
+    expect(cellOf('Bình', 'Cách nối')).toHaveTextContent('Khóa riêng')
+    expect(cellOf('Bình', 'Ứng dụng')).toHaveTextContent(/^—$/)
+    expect(cellOf('Bình', 'Dùng lần cuối')).toHaveTextContent('Chưa dùng')
+    expect(cellOf('Bình', 'Trạng thái')).toHaveTextContent('Đang dùng')
+    expect(document.body.textContent).not.toMatch(/undefined|NaN/)
+  })
+
+  it('searches by name, email or employee code through the server, not before the user stops typing', async () => {
+    const user = userEvent.setup()
+    mockServer(META, [key(1, 2, 'An')])
+    renderPage()
+    await screen.findByText('An')
+    await user.type(screen.getByRole('textbox', { name: 'Tìm theo tên, email, mã nhân viên' }), 'NSU001')
+    await waitFor(() =>
+      expect(apiGet).toHaveBeenCalledWith('/api/agent-hub/mcp-key-admin/keys', {
+        params: expect.objectContaining({ q: 'NSU001', page: 1 }),
+      }),
+    )
+    const sentQs = apiGet.mock.calls
+      .filter(([u]) => u === '/api/agent-hub/mcp-key-admin/keys')
+      .map(([, cfg]) => (cfg as { params: { q?: string } }).params.q)
+    //  Hoãn gõ: không có lượt nào gửi từng mẩu dở dang "N", "NS"…
+    expect(sentQs.filter((q) => q && q !== 'NSU001')).toEqual([])
+  })
+
+  it('tells an empty search apart from an empty system', async () => {
+    const user = userEvent.setup()
+    mockServer(META, [])
+    renderPage()
+    expect(await screen.findByText('Chưa có kết nối nào. Bấm Phát khóa để cấp cho một phòng.')).toBeInTheDocument()
+    await user.type(screen.getByRole('textbox', { name: 'Tìm theo tên, email, mã nhân viên' }), 'không ai')
+    expect(await screen.findByText('Không có kết nối nào khớp bộ lọc.')).toBeInTheDocument()
   })
 })
