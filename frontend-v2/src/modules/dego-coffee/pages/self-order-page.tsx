@@ -22,7 +22,7 @@ interface CartLine {
 
 /**
  * TỰ ĐẶT NƯỚC (chốt 08/09/2026): menu + ảnh đọc thẳng từ POS365, nhân sự bấm
- * đặt → DEGO tạo đơn trên POS365 (trả trọn bằng «Trừ điểm», gắn khách đã ghép)
+ * đặt → DEGO tạo đơn trên POS365 (trả trọn bằng "Trừ điểm", gắn khách đã ghép)
  * → quầy thấy đơn và pha → điểm trừ vào ví qua vòng kéo.
  */
 export function SelfOrderPage() {

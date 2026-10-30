@@ -69,7 +69,7 @@ export function MemberFormDialog({ member, onClose }: MemberFormDialogProps) {
       title={member ? `Sửa thành viên — ${member.employee_name}` : 'Thêm thành viên'}
       description={
         member
-          ? 'Chuyển sang «Đã nghỉ» sẽ THU HỒI toàn bộ số dư (có dòng sổ) và khóa ví.'
+          ? 'Chuyển sang "Đã nghỉ" sẽ THU HỒI toàn bộ số dư (có dòng sổ) và khóa ví.'
           : 'Người được gán sẽ nhận điểm từ kỳ cấp phát kế tiếp.'
       }
       dirty={dirty}

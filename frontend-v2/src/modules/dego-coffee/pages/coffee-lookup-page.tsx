@@ -61,7 +61,7 @@ export function CoffeeLookupPage() {
         <div className="text-center">
           <h1 className="text-2xl font-semibold">Tra cứu điểm cà phê</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Nhập MÃ NHÂN VIÊN hoặc SỐ ĐIỆN THOẠI rồi Enter — kiểm tra trước khi bấm «Trừ điểm»
+            Nhập MÃ NHÂN VIÊN hoặc SỐ ĐIỆN THOẠI rồi Enter — kiểm tra trước khi bấm <strong>Trừ điểm</strong>{' '}
             với đơn lớn.
           </p>
         </div>
@@ -92,7 +92,7 @@ export function CoffeeLookupPage() {
                 ∞
               </div>
               <div className="text-sm text-muted-foreground">
-                Không giới hạn — cứ bấm «Trừ điểm», không cần hỏi
+                Không giới hạn — cứ bấm <strong>Trừ điểm</strong>, không cần hỏi
               </div>
             </Card>
           ) : result.found ? (

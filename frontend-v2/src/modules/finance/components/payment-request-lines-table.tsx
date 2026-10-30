@@ -45,7 +45,7 @@ interface PaymentRequestLinesTableProps {
   rows: EditablePaymentLine[]
   editable: boolean
   /**
-   * bao-CR-547 — cho tick nhiều dòng rồi «Xóa đã chọn». Trang bật khi phiếu là form tạo hoặc
+   * bao-CR-547 — cho tick nhiều dòng rồi "Xóa đã chọn". Trang bật khi phiếu là form tạo hoặc
    * đang Nháp (đại ca chốt 01/10/2026); phiếu Bị trả lại vẫn xóa từng dòng như cũ.
    */
   bulkRemovable?: boolean

@@ -41,7 +41,7 @@ export function usePaymentRequest(id: number) {
   })
 }
 
-/** bao-CR-553 — danh sách cho ô «Trưởng bộ phận» (chỉ gọi khi ô còn sửa được). */
+/** bao-CR-553 — danh sách cho ô "Trưởng bộ phận" (chỉ gọi khi ô còn sửa được). */
 export function useDepartmentManagers(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.finance.departmentManagers(),

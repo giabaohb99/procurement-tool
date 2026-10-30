@@ -53,7 +53,7 @@ export function ResetApproveDialog({ onClose }: ResetApproveDialogProps) {
       {isLoading && <p className="text-sm text-muted-foreground">Đang tính bảng dự kiến…</p>}
       {isError && (
         <p className="text-sm text-destructive">
-          Không tải được bảng dự kiến — kiểm tra quyền «Duyệt» trên Sổ điểm.
+          Không tải được bảng dự kiến — kiểm tra quyền <strong>Duyệt</strong> trên Sổ điểm.
         </p>
       )}
       {rows.length > 0 && (
@@ -95,8 +95,8 @@ export function ResetApproveDialog({ onClose }: ResetApproveDialogProps) {
       )}
       {data && data.no_policy.length > 0 && (
         <p className="text-sm text-amber-600 dark:text-amber-400">
-          {data.no_policy.length} người có cấp CHƯA khai mức điểm — không nằm trong bảng, khai ở
-          «Chính sách cấp điểm» rồi mở lại.
+          {data.no_policy.length} người có cấp CHƯA khai mức điểm — không nằm trong bảng, khai ở{' '}
+          <strong>Chính sách cấp điểm</strong> rồi mở lại.
         </p>
       )}
       {rows.length > 0 && pending.length > 0 && (
