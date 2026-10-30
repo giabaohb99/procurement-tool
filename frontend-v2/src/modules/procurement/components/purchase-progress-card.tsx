@@ -17,7 +17,7 @@ import type { PurchaseProgressRow } from '../types/purchase-progress'
  * thì sáu thẻ liền nhau mở đầu giống hệt nhau. Thứ phân biệt chúng là MẶT HÀNG
  * nào, giao LẦN mấy.
  *
- * ⚠️ **«Lần giao» phải có mặt** dù ở bảng nó là cột `defaultHidden`: trên bảng
+ * ⚠️ **"Lần giao" phải có mặt** dù ở bảng nó là cột `defaultHidden`: trên bảng
  * người ta phân biệt các đợt bằng vị trí dòng và cột Ngày nhận đứng cạnh nhau,
  * còn thẻ thì mỗi cái một khối rời — thiếu số lần thì hai đợt của cùng một mặt
  * hàng không có gì khác nhau ngoài con số đã nhận.

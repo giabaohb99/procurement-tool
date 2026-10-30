@@ -112,7 +112,7 @@ export function DocumentStatusBadge({ status }: { status: string }) {
 const PROGRESS_CLASS: Record<string, string> = {
   no_po: TONE_CLASS.neutral,
   //  bao-CR-691 (A1 chốt 28/10): CAM như thumua (#d97706 = amber-600, nền trong
-  //  ~13%) — tách khỏi «Chưa tạo đơn» xám: đã có đơn mà chưa đặt là việc phải
+  //  ~13%) — tách khỏi "Chưa tạo đơn" xám: đã có đơn mà chưa đặt là việc phải
   //  giục, khác hẳn dòng chưa ai đụng tới. Áp cho cả hệ (chi tiết YCMH, ĐMH).
   not_ordered: 'bg-amber-600/13 text-amber-600 dark:text-amber-400',
   ordered: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',

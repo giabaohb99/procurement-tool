@@ -98,7 +98,7 @@ export function SurveyReportItemDialog({
         <DialogHeader>
           <DialogTitle>{item ? 'Sửa nút dòng hàng' : 'Thêm nút dòng hàng'}</DialogTitle>
           <DialogDescription>
-            Nút dùng để lọc hồ sơ báo cáo theo dòng hàng. Hồ sơ «Chung» hiện ở mọi nút.
+            Nút dùng để lọc hồ sơ báo cáo theo dòng hàng. Hồ sơ <strong>Chung</strong> hiện ở mọi nút.
           </DialogDescription>
         </DialogHeader>
 

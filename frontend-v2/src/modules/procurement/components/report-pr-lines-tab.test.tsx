@@ -87,7 +87,7 @@ const FULL_ROW: PrLineRow = {
   latest_po_supplier: 'NCC Giấy Cần Thơ',
 }
 
-//  Máy chủ BẢN CŨ: mười chín trường mới vắng hẳn — màn không được nổ, ô in «—».
+//  Máy chủ BẢN CŨ: mười chín trường mới vắng hẳn — màn không được nổ, ô in "—".
 const OLD_SERVER_ROW: PrLineRow = { ...BASE_ROW, id: 12, product_name: 'Băng keo trong' }
 
 function build() {
@@ -163,7 +163,7 @@ describe('ReportPrLinesTab — cột mới (bao-CR-691)', () => {
   })
 
   it('names the two status columns after their owner, line progress first', () => {
-    //  Đại ca chốt 28/10: «Tiến độ» / «Trạng thái» trần làm người đọc lẫn tiến
+    //  Đại ca chốt 28/10: "Tiến độ" / "Trạng thái" trần làm người đọc lẫn tiến
     //  độ của DÒNG với trạng thái của PHIẾU.
     build()
 
@@ -186,7 +186,7 @@ describe('ReportPrLinesTab — cột mới (bao-CR-691)', () => {
 
     const row = screen.getByText('Băng keo trong').closest('tr')
     if (!row) throw new Error('không thấy dòng của máy chủ bản cũ')
-    //  Ba cột mới đang hiện đều in «—», không in "0" hay "undefined".
+    //  Ba cột mới đang hiện đều in "—", không in "0" hay "undefined".
     expect(within(row).getAllByText('—').length).toBeGreaterThanOrEqual(3)
     expect(row.textContent).not.toContain('undefined')
     expect(row.textContent).not.toContain('null')

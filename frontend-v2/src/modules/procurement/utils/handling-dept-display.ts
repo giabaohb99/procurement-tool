@@ -1,12 +1,12 @@
 /**
- * «Phòng xử lý» của YCMH · YCBG · ĐMH — bao-CR-480, đổi ở bao-CR-524.
+ * "Phòng xử lý" của YCMH · YCBG · ĐMH — bao-CR-480, đổi ở bao-CR-524.
  *
  * Một ô, một cách gọi ở cả ba chứng từ: phòng nào sẽ đi mua cho phiếu này. Nhà máy tự mua thì
  * là chính phòng nhà máy (backend tự điền lúc lập phiếu cho phòng có bộ máy mua riêng).
  *
- * bao-CR-524 (khách chốt 30/09/2026): KHÔNG còn mục ảo «Thu mua chung» (giá trị `0`). Phòng thu
- * mua mặc định là một PHÒNG THẬT trong danh mục (mã cấu hình được, mặc định PBA017 «Sản xuất
- * -Thu mua»), backend tự ghi id thật khi phiếu không nhờ phòng nào và trả kèm tên phòng — kể cả
+ * bao-CR-524 (khách chốt 30/09/2026): KHÔNG còn mục ảo "Thu mua chung" (giá trị `0`). Phòng thu
+ * mua mặc định là một PHÒNG THẬT trong danh mục (mã cấu hình được, mặc định PBA017 "Sản xuất
+ * -Thu mua"), backend tự ghi id thật khi phiếu không nhờ phòng nào và trả kèm tên phòng — kể cả
  * phiếu cũ còn `0`. Giao diện vì thế chỉ bày danh mục phòng ban, không tự chế mục nào.
  */
 import type { Department } from '@/modules/hr/types/department'
@@ -46,7 +46,7 @@ export function handlingDeptLabel(
 type HandlingDeptDraft = { handler_dept_id?: number | null; handler_dept_assigned?: boolean }
 
 /**
- * bao-CR-488 — lúc LẬP phiếu, ô «Phòng xử lý» ẩn sau ô tick «Nhờ phòng khác xử lý». Người dùng
+ * bao-CR-488 — lúc LẬP phiếu, ô "Phòng xử lý" ẩn sau ô tick "Nhờ phòng khác xử lý". Người dùng
  * chưa đụng ô tick thì suy từ dữ liệu: bản nháp chép từ phiếu nguồn đã có phòng xử lý (YCBG
  * tạo từ YCMH) thì coi như đã tick, để không âm thầm rơi mất phòng đó.
  */
@@ -66,18 +66,18 @@ export function handlingDeptForCreate(draft: HandlingDeptDraft): number | undefi
 }
 
 /**
- * 03/10/2026 — lúc LẬP YCMH bỏ ô tick «Nhờ phòng khác xử lý»: chỉ còn MỘT ô chọn, mặc định hiện
- * «Phòng thu mua mặc định», bấm vào mới xổ danh mục phòng ban.
+ * 03/10/2026 — lúc LẬP YCMH bỏ ô tick "Nhờ phòng khác xử lý": chỉ còn MỘT ô chọn, mặc định hiện
+ * "Phòng thu mua mặc định", bấm vào mới xổ danh mục phòng ban.
  *
- * ⚠️ Mục mặc định KHÔNG phải phòng `0` hay một phòng cụ thể — nó là trạng thái «CHƯA nhờ»
+ * ⚠️ Mục mặc định KHÔNG phải phòng `0` hay một phòng cụ thể — nó là trạng thái "CHƯA nhờ"
  * (`handler_dept_assigned = false`), để `handlingDeptForCreate` KHÔNG gửi gì và backend tự chọn:
  * người nhà máy → chính phòng nhà máy, còn lại → phòng thu mua mặc định. Quy nó về `0` là ép
  * mọi phiếu nhà máy sang thu mua chung. Muốn nhờ hẳn phòng thu mua thì chọn phòng thật
- * «Sản xuất -Thu mua» trong danh sách. Khóa chuỗi riêng (không phải `'0'`) để không lẫn với id.
+ * "Sản xuất -Thu mua" trong danh sách. Khóa chuỗi riêng (không phải `'0'`) để không lẫn với id.
  */
 export const HANDLING_DEPT_DEFAULT_OPTION = 'default'
 
-/** Mục chọn lúc LẬP phiếu: «Phòng thu mua mặc định» đứng đầu, sau đó là danh mục phòng ban. */
+/** Mục chọn lúc LẬP phiếu: "Phòng thu mua mặc định" đứng đầu, sau đó là danh mục phòng ban. */
 export function handlingDeptCreateOptions(
   departments: Pick<Department, 'id' | 'name' | 'is_active'>[],
   currentId: number | null | undefined,
@@ -108,7 +108,7 @@ export function handlingDeptCreateChange(value: string): {
 
 /**
  * Mục chọn cho ô Phòng xử lý: phòng đang hoạt động trong danh mục — KHÔNG có mục ảo nào (bao-CR-524
- * bỏ «Thu mua chung» giá trị `0`); phòng đã tắt nhưng phiếu cũ còn trỏ tới thì giữ lại để không
+ * bỏ "Thu mua chung" giá trị `0`); phòng đã tắt nhưng phiếu cũ còn trỏ tới thì giữ lại để không
  * mất nhãn.
  */
 export function handlingDeptOptions(

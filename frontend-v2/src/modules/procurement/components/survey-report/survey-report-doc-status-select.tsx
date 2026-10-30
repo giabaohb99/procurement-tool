@@ -24,7 +24,7 @@ const STATUS_PILL: Record<number, string> = {
 
 interface ReportDocStatusSelectProps {
   doc: SurveyReportDoc
-  /** Hồ sơ đang chờ tiên quyết — không chọn được «Hoàn thành», cùng luật với nút ✓. */
+  /** Hồ sơ đang chờ tiên quyết — không chọn được "Hoàn thành", cùng luật với nút ✓. */
   locked: boolean
   /** Không có quyền sửa: chỉ bày pill chữ, không có ô chọn. */
   readOnly: boolean
@@ -35,7 +35,7 @@ interface ReportDocStatusSelectProps {
 
 /**
  * Trạng thái hồ sơ NGAY TRÊN DÒNG — ô chọn nhỏ mang màu pill để liếc vẫn đọc được
- * trạng thái (bao-CR-602). Dùng chung cho dòng hồ sơ 2 tầng và dạng «Bảng»
+ * trạng thái (bao-CR-602). Dùng chung cho dòng hồ sơ 2 tầng và dạng "Bảng"
  * (duoc-CR-612) để hai nơi không lệch màu / lệch luật khóa.
  */
 export function ReportDocStatusSelect({
@@ -64,7 +64,7 @@ export function ReportDocStatusSelect({
     <Select
       value={String(doc.status)}
       onValueChange={(value) => {
-        //  `''` (ca lạ của Radix) mà đọc thành số là 0 = «Chưa bắt đầu» — lặng lẽ mở lại hồ sơ.
+        //  `''` (ca lạ của Radix) mà đọc thành số là 0 = "Chưa bắt đầu" — lặng lẽ mở lại hồ sơ.
         if (!value) return
         const next = Number(value)
         if (next !== doc.status) onChange(next)

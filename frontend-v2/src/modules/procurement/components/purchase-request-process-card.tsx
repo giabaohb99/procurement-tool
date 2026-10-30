@@ -518,7 +518,7 @@ function OptionsTable({
         hideable: false,
         cell: (option) => (
           <div className="flex items-center gap-0.5">
-            {/* bao-CR-583: «phương án 0 xem như phương án nhập tay và chỉnh sửa lại được» —
+            {/* bao-CR-583: "phương án 0 xem như phương án nhập tay và chỉnh sửa lại được" —
                 phương án khảo sát không sửa ở đây (thông số là kết quả khảo sát). */}
             {canEditDetails && option.source !== PR_OPTION_SOURCE_SURVEY && (
               <Button
@@ -564,7 +564,7 @@ function OptionsTable({
       getRowId={(option) => option.id}
       storageKey="procurement.pr-process.options"
       emptyMessage="Chưa có phương án nào cho dòng hàng này."
-      //  Bảng con theo từng dòng — nhãn «Phương án n» đã là định danh, cột ID (bao-CR-578) thừa.
+      //  Bảng con theo từng dòng — nhãn "Phương án n" đã là định danh, cột ID (bao-CR-578) thừa.
       idColumn={false}
     />
     {editingOption && (
@@ -634,7 +634,7 @@ function AvailableSurveyLinesPicker({
 
   const effectiveSupplier = supplierCode === ALL_SUPPLIERS ? '' : supplierCode
   const hasCriteria = !!effectiveSupplier || !!itemGroup || !!debouncedSearch.trim()
-  //  «Bỏ lọc» đưa về MẶC ĐỊNH (NCC tất cả, phân loại của dòng, không từ khóa) — nên chỉ hiện
+  //  "Bỏ lọc" đưa về MẶC ĐỊNH (NCC tất cả, phân loại của dòng, không từ khóa) — nên chỉ hiện
   //  khi lệch mặc định. Theo ô nhập thô (không đợi hoãn) để nút hiện ngay khi vừa gõ.
   const lineItemGroup = item.item_group || ''
   const isFilterChanged = !!effectiveSupplier || itemGroup !== lineItemGroup || !!search.trim()
@@ -841,9 +841,9 @@ function AvailableSurveyLinesPicker({
           }}
         />
 
-        {/* bao-CR-586 + bao-CR-589 (đại ca 05/10/2026): «Bỏ lọc» về phân loại của dòng để vẫn
+        {/* bao-CR-586 + bao-CR-589 (đại ca 05/10/2026): "Bỏ lọc" về phân loại của dòng để vẫn
             thấy kết quả — bỏ hết thì backend không trả gì (tránh bung cả kho khảo sát). Nút
-            «Về phân loại dòng» cũ gộp vào đây. */}
+            "Về phân loại dòng" cũ gộp vào đây. */}
         {isFilterChanged && (
           <Button
             type="button"

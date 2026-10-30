@@ -123,7 +123,7 @@ export interface PurchaseOrderDetail {
   /** bao-CR-480: tên phòng xử lý do backend trả kèm. */
   handler_dept_name?: string
   /**
-   * bao-CR-490 — NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt») và
+   * bao-CR-490 — NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng ("Trưởng phòng phê duyệt") và
    * trưởng phòng THEO HỒ SƠ phòng ban (`Department.manager_id`) — hai người ký chọn được trên
    * bản in nội bộ. Phiếu cũ: id 0, tên rỗng.
    */
@@ -393,7 +393,7 @@ export function costStageLabel(stage: number): string {
  * `purchase_cost_type`, bảng `tab_po_cost_type`, đường API `/api/po-cost-types`).
  *
  * `code` là số: 1..14 là mười lăm loại cũ seed sẵn, 15 trở đi là loại người dùng
- * tự thêm, 99 là «Chi phí khác» — chỗ rơi của mã lạ, không xóa được.
+ * tự thêm, 99 là "Chi phí khác" — chỗ rơi của mã lạ, không xóa được.
  */
 /**
  * Khai bằng `type` chứ KHÔNG phải `interface`: `CrudConfig<T>` ràng

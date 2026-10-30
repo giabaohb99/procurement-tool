@@ -1,12 +1,12 @@
 /**
  * Luật của bảng Phân công phụ trách — bao-CR-527 (khách chốt 30/09/2026).
  *
- * Đúng 1 NSTM chính (bắt buộc) + tối đa 1 dự phòng (khác người chính), cả hai phải «Chính
- * thức» và đang hoạt động. Backend chặn thật ở `category_assignee.service.validate_assignee_pair`
+ * Đúng 1 NSTM chính (bắt buộc) + tối đa 1 dự phòng (khác người chính), cả hai phải "Chính
+ * thức" và đang hoạt động. Backend chặn thật ở `category_assignee.service.validate_assignee_pair`
  * (mọi cửa ghi); ở đây chỉ để ô chọn không mời người không hợp lệ và để bấm Lưu báo ngay tại chỗ.
  */
 
-/** Mã «Chính thức» của `tab_employee.status` — bộ mã sinh ở `shared/constants/statuses.ts`. */
+/** Mã "Chính thức" của `tab_employee.status` — bộ mã sinh ở `shared/constants/statuses.ts`. */
 export const OFFICIAL_EMPLOYEE_STATUS = 'official'
 
 export interface AssigneeEmployee {
@@ -25,7 +25,7 @@ export interface AssigneeOption {
   official: boolean
 }
 
-/** «Chính thức» + đang hoạt động. Thiếu mã trạng thái thì KHÔNG tính (không đoán). */
+/** "Chính thức" + đang hoạt động. Thiếu mã trạng thái thì KHÔNG tính (không đoán). */
 export function isOfficialEmployee(employee: AssigneeEmployee | null | undefined): boolean {
   if (!employee) return false
   return employee.is_active !== false && employee.status === OFFICIAL_EMPLOYEE_STATUS
@@ -38,7 +38,7 @@ export function employeeStatusText(employee: AssigneeEmployee): string {
 }
 
 /**
- * Mục chọn cho hai ô NSTM: chỉ người «Chính thức» đang hoạt động. Người ĐANG được gán mà nay không
+ * Mục chọn cho hai ô NSTM: chỉ người "Chính thức" đang hoạt động. Người ĐANG được gán mà nay không
  * còn đạt (nghỉ thai sản, nghỉ việc…) vẫn được giữ trong danh sách kèm tình trạng — không thì ô
  * hiện trống và người sửa không biết dòng này đang giao cho ai.
  */
@@ -71,7 +71,7 @@ export function validateAssigneePair(
   ] as const) {
     const employee = id ? byId.get(id) : undefined
     if (employee && !isOfficialEmployee(employee)) {
-      return `${role} ${employee.full_name} đang ở tình trạng «${employeeStatusText(employee)}» — chỉ phân công được nhân sự «Chính thức» đang hoạt động`
+      return `${role} ${employee.full_name} đang ở tình trạng "${employeeStatusText(employee)}" — chỉ phân công được nhân sự "Chính thức" đang hoạt động`
     }
   }
   return null

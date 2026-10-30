@@ -1,4 +1,4 @@
-// Các hàm HIỂN THỊ của trang chi tiết thuốc BVTV (01/10/2026 — làm lại thẻ «Thông tin đăng ký»).
+// Các hàm HIỂN THỊ của trang chi tiết thuốc BVTV (01/10/2026 — làm lại thẻ "Thông tin đăng ký").
 // Chỉ đổi cách bày, KHÔNG đổi giá trị lưu: chuỗi gốc của trang nguồn vẫn là thứ được lưu và xuất.
 
 export type ToxicitySeverity = 'high' | 'medium' | 'low' | 'unknown'
@@ -23,7 +23,7 @@ function severityOf(label: string): ToxicitySeverity {
 }
 
 /**
- * Tách chuỗi «Nhóm độc» thành từng nhóm để bày thành thẻ nhỏ thay cho một dòng chữ dài.
+ * Tách chuỗi "Nhóm độc" thành từng nhóm để bày thành thẻ nhỏ thay cho một dòng chữ dài.
  * Đoạn không khớp khuôn KHÔNG bị bỏ — trả nguyên văn (`code` rỗng) để không mất thông tin.
  */
 export function parsePesticideToxicity(raw: string | null | undefined): ToxicityItem[] {

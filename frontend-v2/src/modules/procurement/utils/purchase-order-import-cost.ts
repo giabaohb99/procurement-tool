@@ -304,7 +304,7 @@ export function isTaxCostType(costType: number): boolean {
  *
  * Ưu tiên danh mục lấy từ `/api/po-cost-types`; danh mục chưa nạp (hoặc người
  * dùng thiếu quyền đọc) thì rơi về bộ mã cứng cũ. Loại đang gắn trên dòng mà đã
- * bị tắt trong danh mục vẫn phải còn trong danh sách, kèm chữ «(đã tắt)» — nếu
+ * bị tắt trong danh mục vẫn phải còn trong danh sách, kèm chữ "(đã tắt)" — nếu
  * không thì mở đơn cũ ra là ô chọn nhảy sang loại khác.
  */
 export function buildCostTypeOptions(

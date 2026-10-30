@@ -1,7 +1,7 @@
 /**
- * Ô chọn «Mẫu in» của bản in Phiếu đề xuất mua hàng — bao-CR-546.
+ * Ô chọn "Mẫu in" của bản in Phiếu đề xuất mua hàng — bao-CR-546.
  *
- * Thay hai nhóm nút bật/tắt cũ («Có chữ ký | Không chữ ký» và «Mẫu thường | Mẫu thuế»): nhóm
+ * Thay hai nhóm nút bật/tắt cũ ("Có chữ ký | Không chữ ký" và "Mẫu thường | Mẫu thuế"): nhóm
  * chữ ký biến mất khi chọn Mẫu thuế nên thanh nút nhảy, đại ca chê trông như giao diện cũ. Đại
  * ca chốt BA mẫu cố định trong một ô chọn; mỗi mẫu quy về đúng cặp cờ tờ phiếu đã dùng.
  */
@@ -30,11 +30,11 @@ export function isPrintTemplateValue(value: string): value is PrintTemplateValue
 }
 
 /**
- * bao-CR-574 (đại ca chốt 03/10/2026) — ô «Mẫu in» gom luôn việc TÁCH THEO NHÀ CUNG CẤP.
+ * bao-CR-574 (đại ca chốt 03/10/2026) — ô "Mẫu in" gom luôn việc TÁCH THEO NHÀ CUNG CẤP.
  *
- * Trước đây nút «In phiếu» mở bản nào là do quyền người bấm (CR-420), còn chuyển bản phải bấm một
+ * Trước đây nút "In phiếu" mở bản nào là do quyền người bấm (CR-420), còn chuyển bản phải bấm một
  * nút lẻ trên thanh công cụ. Nay nút luôn mở phiếu chung; người có quyền xem NCC thấy thêm nhóm
- * «Tách theo nhà cung cấp» trong cùng ô chọn, đủ ba mẫu. Một lựa chọn = (kiểu bản in, mẫu).
+ * "Tách theo nhà cung cấp" trong cùng ô chọn, đủ ba mẫu. Một lựa chọn = (kiểu bản in, mẫu).
  */
 export const PRINT_LAYOUTS = [
   { value: 'common', label: 'Phiếu chung' },

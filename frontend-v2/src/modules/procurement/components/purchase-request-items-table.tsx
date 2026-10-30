@@ -65,7 +65,7 @@ interface ItemsTableProps {
   editing: boolean
   onChange: (items: PurchaseRequestItem[]) => void
   /**
-   * bao-CR-547 — cho tick nhiều dòng rồi «Xóa đã chọn». Trang bật khi phiếu là form tạo hoặc
+   * bao-CR-547 — cho tick nhiều dòng rồi "Xóa đã chọn". Trang bật khi phiếu là form tạo hoặc
    * đang Nháp (đại ca chốt 01/10/2026); phiếu Bị trả lại vẫn xóa từng dòng như cũ.
    */
   bulkRemovable?: boolean
@@ -544,7 +544,7 @@ export function PurchaseRequestItemsTable({
 
       case 'assignee':
         return canAssign ? (
-          //  «Bỏ chọn» cũ nay là nút xóa của ô (trả về `''`), chỉ hiện khi đang có người.
+          //  "Bỏ chọn" cũ nay là nút xóa của ô (trả về `''`), chỉ hiện khi đang có người.
           <SearchSelect
             searchInTrigger
             clearable
@@ -759,7 +759,7 @@ function CatalogSelect({
   onChange: (value: string) => void
 }) {
   const resolved = resolveCatalogSelection(value, options)
-  //  Mục «-- Kho --» / «-- ĐVT --» cũ (chọn để bỏ trống) nay là nút xóa của ô, cũng trả `''`.
+  //  Mục "-- Kho --" / "-- ĐVT --" cũ (chọn để bỏ trống) nay là nút xóa của ô, cũng trả `''`.
   return (
     <SearchSelect
       searchInTrigger

@@ -1,4 +1,4 @@
-// Mục «Thuốc BVTV» của Tra cứu thị trường (29/09/2026) — khớp `pesticide_service` backend.
+// Mục "Thuốc BVTV" của Tra cứu thị trường (29/09/2026) — khớp `pesticide_service` backend.
 
 /**
  * Tình trạng đăng ký — mã SỐ theo luật R2, khớp `PesticideStatus` ở
@@ -57,7 +57,7 @@ export interface CustomsPesticideUse {
   usage: string
 }
 
-/** Một thuốc rút gọn trong khối «cùng công ty» / «cùng hoạt chất» (01/10/2026). */
+/** Một thuốc rút gọn trong khối "cùng công ty" / "cùng hoạt chất" (01/10/2026). */
 export interface CustomsPesticideBrief {
   id: number
   trade_name: string
@@ -97,7 +97,7 @@ export interface CustomsPesticideOptions {
   sectors: { value: string; count: number }[]
   /** Số thuốc tự thêm trên màn — nạp lại giữ chúng. */
   manual_count: number
-  /** Số hoạt chất cấm đem ra đối chiếu — 0 = CHƯA nạp danh sách cấm (khác «không thuốc nào dính»). */
+  /** Số hoạt chất cấm đem ra đối chiếu — 0 = CHƯA nạp danh sách cấm (khác "không thuốc nào dính"). */
   banned_rules: number
   /** Số thuốc có ít nhất một hoạt chất cấm. */
   banned_count: number
@@ -112,8 +112,8 @@ export interface CustomsPesticideImportResult {
   dropped: number
   retag: { total: number; tagged: number; technical: number }
   /**
-   * `replace` = tệp toàn bộ danh mục/bản cào gốc (THAY cả danh mục); `merge` = tệp xuất «Trang
-   * hiện tại» (chỉ CẬP NHẬT đúng các thuốc có trong tệp, phần còn lại giữ nguyên) — backend tự
+   * `replace` = tệp toàn bộ danh mục/bản cào gốc (THAY cả danh mục); `merge` = tệp xuất "Trang
+   * hiện tại" (chỉ CẬP NHẬT đúng các thuốc có trong tệp, phần còn lại giữ nguyên) — backend tự
    * nhận ra qua sheet ẩn trong tệp. Backend CŨ chưa trả field này; thiếu thì coi như chưa biết
    * mode, tự ghép câu thông báo như trước (xem `customs-pesticide-import-dialog.tsx`).
    */

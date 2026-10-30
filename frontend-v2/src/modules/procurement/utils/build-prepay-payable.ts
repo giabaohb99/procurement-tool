@@ -2,7 +2,7 @@ import type { Payable } from '@/modules/finance/types/payable'
 import type { PurchaseOrderDetail } from '../types/purchase-order-detail'
 
 /**
- * Dựng MỘT dòng công nợ ẢO cho luồng «thanh toán TRƯỚC» (CR-067).
+ * Dựng MỘT dòng công nợ ẢO cho luồng "thanh toán TRƯỚC" (CR-067).
  *
  * Đơn chưa nhận hàng thì `tab_payable` chưa có dòng nào — công nợ do backend sinh
  * ngầm lúc nhận hàng, không ai nhập tay được. Nhưng nghiệp vụ có thật: nhiều NCC

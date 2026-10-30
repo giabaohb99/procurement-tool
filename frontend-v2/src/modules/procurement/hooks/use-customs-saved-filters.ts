@@ -30,7 +30,7 @@ export function useCustomsSavedFilterMutations() {
   const create = useMutation({
     mutationFn: createCustomsSavedFilter,
     onSuccess: (f) => {
-      toast.success(`Đã lưu bộ lọc «${f.name}»`)
+      toast.success(`Đã lưu bộ lọc "${f.name}"`)
       void refresh()
     },
   })
@@ -38,7 +38,7 @@ export function useCustomsSavedFilterMutations() {
     mutationFn: ({ id, ...body }: { id: number; name?: string; params?: string }) =>
       updateCustomsSavedFilter(id, body),
     onSuccess: (f) => {
-      toast.success(`Đã cập nhật bộ lọc «${f.name}»`)
+      toast.success(`Đã cập nhật bộ lọc "${f.name}"`)
       void refresh()
     },
   })

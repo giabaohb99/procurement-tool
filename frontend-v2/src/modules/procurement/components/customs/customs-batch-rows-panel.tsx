@@ -24,7 +24,7 @@ const ROW_STATUS_META: Record<number, { label: string; tone: string }> = {
   [CUSTOMS_ROW_STATUS.IGNORED]: { label: 'Bỏ qua', tone: TONE_CLASS.pending },
 }
 
-/** bao-CR-608 — ba kết cục chỉ có khi tệp có cột «ID» / «Thao tác»: ô đếm 0 thì không hiện cho đỡ rối. */
+/** bao-CR-608 — ba kết cục chỉ có khi tệp có cột "ID" / "Thao tác": ô đếm 0 thì không hiện cho đỡ rối. */
 const OPTIONAL_CHIPS = [
   { value: CUSTOMS_ROW_STATUS.UPDATED, key: 'updated' },
   { value: CUSTOMS_ROW_STATUS.DELETED, key: 'deleted' },
@@ -32,11 +32,11 @@ const OPTIONAL_CHIPS = [
 ] as const
 
 /**
- * Hộp «Nhật ký lô» theo TỪNG DÒNG của tệp — bao-CR-496 (F01, ghi chú 25/09 của chị Mi).
+ * Hộp "Nhật ký lô" theo TỪNG DÒNG của tệp — bao-CR-496 (F01, ghi chú 25/09 của chị Mi).
  *
  * Đầu hộp là tổng theo kết cục, bấm vào một ô là lọc; bảng liệt kê đủ MỌI dòng dữ liệu (không
- * chỉ dòng có cảnh báo như nhật ký cũ). bao-CR-541: «Trùng trong tệp» và «Đã có» là dòng BỎ
- * QUA, không ghi vào bảng giá; dòng «Thêm mới» nghi sửa giá thì câu ghi chú nói rõ để rà.
+ * chỉ dòng có cảnh báo như nhật ký cũ). bao-CR-541: "Trùng trong tệp" và "Đã có" là dòng BỎ
+ * QUA, không ghi vào bảng giá; dòng "Thêm mới" nghi sửa giá thì câu ghi chú nói rõ để rà.
  */
 interface CustomsBatchRowsPanelProps {
   batchId: number
@@ -121,7 +121,7 @@ export function CustomsBatchRowsPanel({ batchId, className }: CustomsBatchRowsPa
         ))}
         {counts && counts.total === 0 && (
           <span className="text-xs text-muted-foreground">
-            Lô này nạp trước khi có nhật ký từng dòng — xem thẻ «Ghi chú lỗi / cảnh báo».
+            Lô này nạp trước khi có nhật ký từng dòng — xem thẻ <em>Ghi chú lỗi / cảnh báo</em>.
           </span>
         )}
       </div>

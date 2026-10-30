@@ -1,4 +1,4 @@
-// Hai khối «cùng công ty» / «cùng hoạt chất» của trang chi tiết thuốc BVTV (01/10/2026). Chặn ở
+// Hai khối "cùng công ty" / "cùng hoạt chất" của trang chi tiết thuốc BVTV (01/10/2026). Chặn ở
 // tầng `@/core/api` (luật testing.md) để khẳng định đúng tham số `limit` gửi đi.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'

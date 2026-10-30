@@ -1,8 +1,8 @@
 // bao-CR-571 — nháp F5 của màn TẠO phiếu khảo sát, tách theo từng tài khoản.
 //
 // Trước bản này nháp nằm ở một khóa chung `survey_new_draft` cho MỌI tài khoản trên cùng
-// trình duyệt, và đăng xuất không xóa nó. Người sau mở «Tạo phiếu» là nạp nguyên nháp của
-// người trước — kể cả «NSPT phụ trách», ô bị khóa nên không ai sửa được (ca Quyên mở ra
+// trình duyệt, và đăng xuất không xóa nó. Người sau mở "Tạo phiếu" là nạp nguyên nháp của
+// người trước — kể cả "NSPT phụ trách", ô bị khóa nên không ai sửa được (ca Quyên mở ra
 // thấy tên chị Phương, 02/10/2026).
 
 import type { AuthUser } from '@/core/auth/auth-types'

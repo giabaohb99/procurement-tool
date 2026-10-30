@@ -55,11 +55,11 @@ type ChecklistViewMode = 'phase' | 'item'
 
 const VIEW_STORAGE_KEY = 'erp.dossier-checklist.view'
 
-/** «Không gập nhóm nào» — hằng số để lượt render nào cũng dùng lại đúng một tập. */
+/** "Không gập nhóm nào" — hằng số để lượt render nào cũng dùng lại đúng một tập. */
 const EMPTY_KEYS: ReadonlySet<string> = new Set<string>()
 
 /**
- * THẺ THỬ «Hồ sơ cần hoàn thành» — bản sao bố cục của khối *Báo cáo thực hiện*,
+ * THẺ THỬ "Hồ sơ cần hoàn thành" — bản sao bố cục của khối *Báo cáo thực hiện*,
  * chạy bằng **kho Hồ sơ** (21/09/2026, đại ca yêu cầu dựng song song để đánh giá).
  *
  * Ánh xạ: giai đoạn = **Loại hồ sơ** · đầu việc = **tờ hồ sơ** · nút dòng hàng =
@@ -72,12 +72,12 @@ const EMPTY_KEYS: ReadonlySet<string> = new Set<string>()
  * danh mục toàn công ty từ trong một tờ YCBG. Thay bằng link mở kho hồ sơ.
  *
  * ⚠️ **Không có nút tick.** Phân hệ Hồ sơ chưa có chỗ lưu trạng thái theo từng
- * phiếu; «xong» ở đây nghĩa là tờ giấy đã có trong kho của công ty. Đó là khác
+ * phiếu; "xong" ở đây nghĩa là tờ giấy đã có trong kho của công ty. Đó là khác
  * biệt lớn nhất so với bản gốc, và vì hai thẻ giờ trông y hệt nhau nên **phải
- * nói thành lời**: dòng chú thích dưới danh sách (chỗ của câu «hồ sơ khóa = …»
+ * nói thành lời**: dòng chú thích dưới danh sách (chỗ của câu "hồ sơ khóa = …"
  * bên bản gốc) là nơi duy nhất còn nói điều đó — đừng gỡ cho gọn.
  *
- * ⚠️ Huy hiệu «BẢN THỬ» và khung chú thích hổ phách ở chân thẻ đã BỎ
+ * ⚠️ Huy hiệu "BẢN THỬ" và khung chú thích hổ phách ở chân thẻ đã BỎ
  * (21/09/2026, đại ca chốt): yêu cầu là hai thẻ nhìn không phân biệt được.
  */
 export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: number }) {
@@ -130,7 +130,7 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
   )
   //  Cột Tiến trình LUÔN đi theo giai đoạn và LUÔN đếm trên toàn bộ hồ sơ —
   //  giống hệt bản gốc, nơi khung tracking cố ý bỏ qua ô tìm và ô lọc trạng
-  //  thái. Trước đây nó dùng chung `groups`, nên bấm sang «Theo dòng hàng» là
+  //  thái. Trước đây nó dùng chung `groups`, nên bấm sang "Theo dòng hàng" là
   //  cột Tiến trình liệt kê ba dòng hàng thay vì năm giai đoạn, còn gõ vào ô
   //  tìm thì tiến độ tụt xuống theo từ khóa đang gõ.
   const phaseGroups = useMemo(() => groupByPhase(docs, types), [docs, types])
@@ -156,7 +156,7 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
   //  được nằm sau một dòng đang gập, người dùng tưởng là không có.
   const hasFilter = query.trim() !== '' || statusFilter !== CHECKLIST_STATUS_ALL
 
-  //  Nút «Mở tất cả / Thu gọn» gạt ĐÚNG TRỤC đang xem: dạng tổng gạt giai đoạn
+  //  Nút "Mở tất cả / Thu gọn" gạt ĐÚNG TRỤC đang xem: dạng tổng gạt giai đoạn
   //  (nhớ cái GẬP), dạng dòng hàng gạt dòng bảng (nhớ cái MỞ). Một nút, hai
   //  nghĩa — vì mỗi lúc chỉ một trục hiện ra. Y như bản gốc.
   const allOpen =
@@ -186,7 +186,7 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
   /**
    * Nhãn nút dòng hàng của một tờ hồ sơ: rỗng = **CHUNG** (áp cả phiếu).
    *
-   * ⚠️ Hồ sơ khớp NHIỀU dòng thì ghi «n dòng hàng» chứ không nối tên: nhãn có
+   * ⚠️ Hồ sơ khớp NHIỀU dòng thì ghi "n dòng hàng" chứ không nối tên: nhãn có
    * trần 144px, nối hai cái tên dài là cả hai đều cụt và không đọc ra được cái
    * nào — rê chuột đọc đủ ở `title`.
    */
@@ -197,8 +197,8 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
     return line?.label ?? `Dòng ${doc.matched_lines[0]}`
   }
 
-  //  Bấm ô tick: xong thì mở lại về «Đang làm», chưa xong thì đóng thành
-  //  «Hoàn thành» — cùng luật với `handleToggleDoc` của khối Báo cáo thực hiện.
+  //  Bấm ô tick: xong thì mở lại về "Đang làm", chưa xong thì đóng thành
+  //  "Hoàn thành" — cùng luật với `handleToggleDoc` của khối Báo cáo thực hiện.
   const handleToggleDone = (doc: ApplicableDossier) =>
     setProgress.mutate({
       dossierId: doc.id,
@@ -314,7 +314,7 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
             />
             {/*  Đếm trên dữ liệu ĐẦY ĐỦ, không theo bộ lọc — cùng lẽ với ba ô
                  bên trái. Dạng Theo dòng hàng đếm dòng hàng THẬT của phiếu,
-                 không cộng dòng «Chung (cả phiếu)» vào: nó không phải mặt hàng. */}
+                 không cộng dòng "Chung (cả phiếu)" vào: nó không phải mặt hàng. */}
             <SummaryTile
               label={viewMode === 'phase' ? 'Giai đoạn' : 'Dòng hàng'}
               value={String(
@@ -362,8 +362,8 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
                 />
               )}
 
-              {/*  Chỗ của dòng chú thích «hồ sơ khóa = …» bên bản gốc. Câu này
-                   phải còn: hai cột «đã xong» và «đã có giấy» nghe giống nhau
+              {/*  Chỗ của dòng chú thích "hồ sơ khóa = …" bên bản gốc. Câu này
+                   phải còn: hai cột "đã xong" và "đã có giấy" nghe giống nhau
                    nhưng đếm hai thứ khác hẳn, và người đọc không có cách nào
                    đoán ra điều đó từ giao diện. */}
               <div className="space-y-1 text-xs text-muted-foreground">

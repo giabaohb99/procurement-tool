@@ -52,7 +52,7 @@ export function executionReportApi(entity: ReportOwnerEntity) {
     /** Ô chọn mẫu của hộp khởi tạo — chỉ đọc. */
     templates: (id: number) => apiGet<ReportTemplateOption[]>(`${base(entity, id)}/templates`),
     /**
-     * «Tạo mẫu»: đổ mẫu chung vào một nút dòng hàng (`0` = Chung), hoặc chỉ vào
+     * "Tạo mẫu": đổ mẫu chung vào một nút dòng hàng (`0` = Chung), hoặc chỉ vào
      * một giai đoạn. CỘNG THÊM — hồ sơ trùng tiêu đề đã có thì bỏ qua, nên bấm hai
      * lần không nhân đôi; số hồ sơ không đổi nghĩa là mẫu đã có đủ ở đó.
      */
@@ -71,7 +71,7 @@ export function executionReportApi(entity: ReportOwnerEntity) {
       apiPost<SurveyRequestReport>(`${base(entity, id)}/items`, { name }),
     renameItem: (id: number, itemId: number, name: string) =>
       apiPatch<SurveyRequestReport>(`${base(entity, id)}/items/${itemId}`, { name }),
-    /** Xóa nút — hồ sơ đang gắn nút chuyển về «Chung», không bị xóa lây. */
+    /** Xóa nút — hồ sơ đang gắn nút chuyển về "Chung", không bị xóa lây. */
     deleteItem: (id: number, itemId: number) =>
       apiDelete<SurveyRequestReport>(`${base(entity, id)}/items/${itemId}`),
 
@@ -90,7 +90,7 @@ export function executionReportApi(entity: ReportOwnerEntity) {
       apiPatch<SurveyRequestReport>(`${base(entity, id)}/docs/${docId}`, payload),
     deleteDoc: (id: number, docId: number) =>
       apiDelete<SurveyRequestReport>(`${base(entity, id)}/docs/${docId}`),
-    /** Ô chọn của hộp «Thêm hồ sơ» khi khối còn trống — chỉ đọc, không dựng gì. */
+    /** Ô chọn của hộp "Thêm hồ sơ" khi khối còn trống — chỉ đọc, không dựng gì. */
     firstDocOptions: (id: number) =>
       apiGet<ReportFirstDocOptions>(`${base(entity, id)}/first-doc-options`),
     /** Hồ sơ ĐẦU TIÊN: backend dựng khung (5 giai đoạn + nút theo dòng) rồi thêm đúng hồ sơ này. */

@@ -149,7 +149,7 @@ export const procurementModule: ErpModule = {
           path: buildCustomsSectionPath(section.key),
           icon: section.icon,
           entity: 'customs_price' as const,
-          //  «Cấu hình»: quản lý `customs_price` (từ khóa + đồng nghĩa) HOẶC đọc
+          //  "Cấu hình": quản lý `customs_price` (từ khóa + đồng nghĩa) HOẶC đọc
           //  `customs_regulation` (danh mục hóa chất) — cùng luật `showConfigTab` của trang.
           ...(section.key === 'config' && {
             manage: true,
@@ -211,7 +211,7 @@ export const procurementModule: ErpModule = {
       group: 'Cấu hình',
     },
     // bao-CR-501: ba danh mục của Tra cứu thị trường — hóa chất theo văn bản (bao-CR-470), từ
-    // khóa nhãn + từ đồng nghĩa (bao-CR-494 / 495) — đã dời vào thẻ «Cấu hình» của chính màn
+    // khóa nhãn + từ đồng nghĩa (bao-CR-494 / 495) — đã dời vào thẻ "Cấu hình" của chính màn
     // đó, không còn mục menu / màn riêng.
   ],
 
@@ -377,14 +377,14 @@ export const procurementModule: ErpModule = {
         Component: (await import('./pages/po-cost-type-detail-page')).PoCostTypeDetailPage,
       }),
     },
-    // bao-CR-470 — Tra cứu thị trường (danh mục hóa chất nằm trong thẻ «Cấu hình», bao-CR-501)
+    // bao-CR-470 — Tra cứu thị trường (danh mục hóa chất nằm trong thẻ "Cấu hình", bao-CR-501)
     {
       path: appRoutes.procurement.customsPrices,
       lazy: async () => ({
         Component: (await import('./pages/customs-price-page')).CustomsPricePage,
       }),
     },
-    //  duoc-CR-492 — chi tiết một thuốc BVTV. Nằm DƯỚI đường mục «Thuốc BVTV» nên `canAccessRoute`
+    //  duoc-CR-492 — chi tiết một thuốc BVTV. Nằm DƯỚI đường mục "Thuốc BVTV" nên `canAccessRoute`
     //  gác bằng chính mục menu đó (`customs_price.read`), không mở cửa riêng.
     {
       path: appRoutes.procurement.customsPesticideDetail(':id'),

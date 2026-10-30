@@ -19,9 +19,9 @@ interface SurveyReportTrackingProps {
 /**
  * Khung TRACKING dọc của khối báo cáo: mỗi giai đoạn một điểm từ trên xuống.
  *
- * Điểm NHẤP NHÁY = giai đoạn hiện tại của track đang xem. Ở «Tất cả», mỗi nút
+ * Điểm NHẤP NHÁY = giai đoạn hiện tại của track đang xem. Ở "Tất cả", mỗi nút
  * dòng hàng có track riêng nên có thể nhiều điểm cùng nháy — huy hiệu trên
- * điểm ghi SỐ THỨ TỰ nút (1, 2…), nhiều nút đứng cùng giai đoạn thì ghi «+n»
+ * điểm ghi SỐ THỨ TỰ nút (1, 2…), nhiều nút đứng cùng giai đoạn thì ghi "+n"
  * (rê chuột đọc tên đầy đủ). Track dựa theo bộ lọc NÚT, cố ý bỏ qua ô tìm kiếm
  * và bộ lọc trạng thái — tiến độ thật không đổi theo từ khóa đang gõ.
  */

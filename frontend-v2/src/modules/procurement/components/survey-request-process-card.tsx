@@ -111,7 +111,7 @@ export function SurveyRequestProcessCard({
   const canFinish = myLines.length > 0 && !myLines.every((line) => line.is_completed)
 
   const startComplete = () => {
-    //  bao-CR-565 (02/10/2026): bỏ chốt chặn «mọi phương án phải có Mã SP hệ thống» — đại ca chốt
+    //  bao-CR-565 (02/10/2026): bỏ chốt chặn "mọi phương án phải có Mã SP hệ thống" — đại ca chốt
     //  để trống vẫn chốt được, gắn mã sau; backend chưa bao giờ bắt ở bước này (chỉ chặn TRÙNG mã
     //  lúc tạo YCMH).
     const emptyLines = myLines.filter(
@@ -536,7 +536,7 @@ function AvailableLinesPicker({
   const addMutation = useAddProcessOption(surveyRequestId)
 
   const hasCriteria = hasAvailableLinesCriteria({ supplierCodes, itemGroups, search: debouncedSearch })
-  // Nút «Bỏ lọc» nhìn theo ô đang gõ, không đợi debounce — bấm là sạch ngay.
+  // Nút "Bỏ lọc" nhìn theo ô đang gõ, không đợi debounce — bấm là sạch ngay.
   const filterActive = hasAvailableLinesCriteria({ supplierCodes, itemGroups, search })
   const clearFilters = () => {
     setSupplierCodes([])

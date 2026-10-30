@@ -1,12 +1,12 @@
-// Mục «Thuốc BVTV» của Tra cứu thị trường (29/09/2026): danh mục thuốc bảo vệ thực vật được đăng
+// Mục "Thuốc BVTV" của Tra cứu thị trường (29/09/2026): danh mục thuốc bảo vệ thực vật được đăng
 // ký tại Việt Nam — tra theo tên thuốc, hoạt chất, công ty hoặc số đăng ký; bấm một dòng xem phạm
-// vi sử dụng. Nguồn: bản cào danhmuc.thuocbvtv.com, nạp lại bằng nút «Nạp danh mục».
+// vi sử dụng. Nguồn: bản cào danhmuc.thuocbvtv.com, nạp lại bằng nút "Nạp danh mục".
 //
 // Bộ lọc nằm trên URL với tên RIÊNG (`pq`, `pstatus`, `pgroup`, `pbanned`) — duoc-CR-492: bấm một
 // dòng là sang trang chi tiết, bấm lùi phải về đúng bộ lọc đang xem. Không dùng chung `q`: thanh
 // lọc dòng hàng hải quan của các mục khác giữ `q` trên URL, dùng chung thì ô tìm thuốc bị ghi đè.
 // Số trang vẫn là state cục bộ (về trang 1 khi quay lại) — đổi bộ lọc phải kéo trang về 1.
-// Mặc định lọc «Còn hiệu lực» (đại ca chốt 29/09) — thuốc hết hiệu lực vẫn có, bỏ lọc là thấy.
+// Mặc định lọc "Còn hiệu lực" (đại ca chốt 29/09) — thuốc hết hiệu lực vẫn có, bỏ lọc là thấy.
 import { Plus, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -48,7 +48,7 @@ const DEFAULT_STATUS = String(PESTICIDE_STATUS.active)
 //  Quyền SỬA danh mục là khóa riêng `customs_pesticide` (duoc-CR-490); XEM theo `customs_price.read`
 //  — trang cha đã gác quyền xem trước khi dựng mục này.
 export function CustomsPesticideTab() {
-  //  Sửa / xóa ở trang chi tiết; mục danh sách chỉ còn «Thêm thuốc» và «Nạp danh mục».
+  //  Sửa / xóa ở trang chi tiết; mục danh sách chỉ còn "Thêm thuốc" và "Nạp danh mục".
   const { canCreate, canImport, canExport } = usePesticidePermissions()
   const [creating, setCreating] = useState(false)
   const navigate = useNavigate()
@@ -82,7 +82,7 @@ export function CustomsPesticideTab() {
   const options = useCustomsPesticideOptions()
   const list = useCustomsPesticides({ ...buildPesticideParams(filters), page, page_size: pageSize })
   const catalogTotal = options.data?.total ?? 0
-  //  «Xóa lọc» khai tay: «xóa» nghĩa là về MẶC ĐỊNH (còn hiệu lực), không phải bỏ hết
+  //  "Xóa lọc" khai tay: "xóa" nghĩa là về MẶC ĐỊNH (còn hiệu lực), không phải bỏ hết
   //  (docs/ui/table.md §3). Đặt bốn param trong MỘT lượt — gọi bốn setter liền tay thì lượt sau
   //  đọc URL cũ và ghi đè lượt trước (xem `useSetUrlParams`).
   const filtersActive =
@@ -115,7 +115,7 @@ export function CustomsPesticideTab() {
         filtersActive={filtersActive}
         onResetFilters={resetFilters}
         //  Một hàng duy nhất: tìm → ba ô chọn → Nạp danh mục …… Xóa lọc · Tải lại · Cột
-        //  (docs/ui/table.md §3). Ô chọn dùng `Select` có mục «Tất cả …» như mọi màn danh sách.
+        //  (docs/ui/table.md §3). Ô chọn dùng `Select` có mục "Tất cả …" như mọi màn danh sách.
         toolbar={
           <>
             <CustomsPesticideFilterControls

@@ -139,7 +139,7 @@ describe('CustomsLineDetailDialog — bao-CR-608', () => {
     await userEvent.clear(quantity)
     await userEvent.type(quantity, '-5')
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
-    expect(await screen.findByText(/«Lượng» phải là số không âm/)).toBeInTheDocument()
+    expect(await screen.findByText(/"Lượng" phải là số không âm/)).toBeInTheDocument()
     expect(patchCalls).toHaveLength(0)
   })
 

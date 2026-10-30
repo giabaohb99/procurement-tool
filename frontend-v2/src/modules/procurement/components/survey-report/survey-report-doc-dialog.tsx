@@ -53,7 +53,7 @@ interface SurveyReportDocDialogProps {
   pending: boolean
   /**
    * Thêm mới gửi đủ trường; SỬA chỉ gửi trường đã đổi trong hộp (duoc-CR-612): hộp nạp
-   * ảnh hồ sơ lúc mở, mà ô vừa sửa trên dạng «Bảng» có thể còn đang lưu — gửi nguyên
+   * ảnh hồ sơ lúc mở, mà ô vừa sửa trên dạng "Bảng" có thể còn đang lưu — gửi nguyên
    * ảnh cũ là đè mất chỉnh sửa đó.
    */
   onSave: (vars: SaveReportDocVars) => Promise<unknown>
@@ -238,7 +238,7 @@ export function SurveyReportDocDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Dòng hàng</Label>
-              {/* `SearchSelect wrap`: tên hàng dài (vd «BTP CHESSIN V1 bột trắng ngà (Pymetrozine…)»)
+              {/* `SearchSelect wrap`: tên hàng dài (vd "BTP CHESSIN V1 bột trắng ngà (Pymetrozine…)")
                   xuống dòng trong ô chọn thay vì bị cắt — ô Select thường cắt một dòng (bao-CR-602). */}
               <SearchSelect
                 wrap
@@ -335,7 +335,7 @@ export function SurveyReportDocDialog({
               />
             </div>
           </div>
-          {/* Cột «Time xử lý (ngày)» của bảng kế hoạch Excel thu mua (bao-CR-602): chỉ là
+          {/* Cột "Time xử lý (ngày)" của bảng kế hoạch Excel thu mua (bao-CR-602): chỉ là
               dòng ghi chú SUY RA từ hai mốc, không cho sửa (đại ca chốt 06/10). */}
           <DurationNote start={draft.start_date} planned={draft.planned_date} />
 
@@ -429,7 +429,7 @@ export function SurveyReportDocDialog({
   )
 }
 
-/** Ghi chú «Số ngày xử lý» = dự định hoàn tất − ngày bắt đầu; thiếu một mốc thì không hiện. */
+/** Ghi chú "Số ngày xử lý" = dự định hoàn tất − ngày bắt đầu; thiếu một mốc thì không hiện. */
 function DurationNote({ start, planned }: { start: string; planned: string }) {
   const days = durationDays(start, planned)
   if (days === null) return null

@@ -7,7 +7,7 @@ import { Button } from '@/shared/ui/button'
 import { retagCustomsKinds } from '../api/customs-kind-api'
 
 /**
- * Nút «Gắn lại nhãn» trên danh mục từ khóa — bao-CR-494.
+ * Nút "Gắn lại nhãn" trên danh mục từ khóa — bao-CR-494.
  *
  * Dòng hàng đã nạp KHÔNG tự đổi nhãn khi admin sửa từ khóa (nhãn tính lúc nạp, lưu xuống cột
  * để lọc được). Phải có một nút chạy lại cho toàn bộ, không thì admin thêm từ khóa xong mà

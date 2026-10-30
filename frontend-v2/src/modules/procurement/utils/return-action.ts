@@ -1,6 +1,6 @@
-// bao-CR-498 — MỘT nút «Trả về» cho hai đường trả khác nhau của YCMH / YCBG.
+// bao-CR-498 — MỘT nút "Trả về" cho hai đường trả khác nhau của YCMH / YCBG.
 //
-// Sau bao-CR-489 (đổi nhãn «Trả về phòng lập» thành «Trả về») màn chi tiết có HAI nút cùng
+// Sau bao-CR-489 (đổi nhãn "Trả về phòng lập" thành "Trả về") màn chi tiết có HAI nút cùng
 // tên đứng cạnh nhau, đại ca chốt 26/09/2026: chỉ một nút, còn xử lý thì tùy trường hợp:
 //   · `requester`  — trả người lập sửa rồi gửi duyệt lại (đường luồng duyệt, phiếu đổi trạng thái);
 //   · `department` — trả cả phiếu về phòng thu mua mặc định (bao-CR-414/524, trạng thái giữ nguyên);
@@ -20,7 +20,7 @@ export function resolveReturnAction(canReturnToRequester: boolean, canReturnToDe
 export const RETURN_TARGET_LABELS: Record<ReturnTarget, { title: string; description: string }> = {
   requester: {
     title: 'Trả người lập sửa lại',
-    description: 'Phiếu về trạng thái «Trả về», người lập sửa nội dung rồi gửi duyệt lại từ đầu.',
+    description: 'Phiếu về trạng thái "Trả về", người lập sửa nội dung rồi gửi duyệt lại từ đầu.',
   },
   department: {
     title: 'Trả về phòng thu mua',

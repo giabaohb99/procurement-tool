@@ -40,8 +40,8 @@ export function parseFilterParams(
 }
 
 /**
- * bao-CR-502 — bản cũ lọc theo THÁNG tới 26/09/2026 nên bộ lọc lưu từ đó mang «YYYY-MM», mà ô
- * khoảng ngày chỉ đọc «YYYY-MM-DD»: bảng vẫn lọc (backend hiểu cả hai) nhưng ô trông như trống.
+ * bao-CR-502 — bản cũ lọc theo THÁNG tới 26/09/2026 nên bộ lọc lưu từ đó mang "YYYY-MM", mà ô
+ * khoảng ngày chỉ đọc "YYYY-MM-DD": bảng vẫn lọc (backend hiểu cả hai) nhưng ô trông như trống.
  * Đổi ra ngày đầu / cuối tháng — cùng khoảng backend vẫn áp, nên kết quả không đổi.
  */
 export function expandMonthToDay(value: string, edge: 'start' | 'end'): string {
@@ -54,7 +54,7 @@ export function expandMonthToDay(value: string, edge: 'start' | 'end'): string {
   return `${year}-${month}-${String(lastDay).padStart(2, '0')}`
 }
 
-/** Bộ lọc đã lưu có khớp điều kiện đang áp không — để bày «đang dùng» / «Cập nhật». */
+/** Bộ lọc đã lưu có khớp điều kiện đang áp không — để bày "đang dùng" / "Cập nhật". */
 export function sameFilterParams(a: string, b: string, filterNames: readonly string[]): boolean {
   return (
     collectFilterParams(new URLSearchParams(a), filterNames) ===

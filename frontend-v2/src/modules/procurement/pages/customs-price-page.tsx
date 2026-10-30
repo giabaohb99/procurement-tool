@@ -10,8 +10,8 @@
 // Bộ lọc và mục đang mở nằm TRÊN ĐƯỜNG DẪN — gửi link cho người khác là họ thấy đúng kết
 // quả đang xem. Thanh lọc dùng chung cho mọi mục, đổi mục (menu `keepSearch`) không mất bộ lọc.
 //
-// bao-CR-493 (yêu cầu phòng Thu mua 25/09): thẻ thứ sáu «Lịch sử nạp» thay hộp thoại; hàng
-// «Lọc thêm» với sáu ô theo sheet 4 (nguyên tệ, giao hàng, lô nguồn, ba khoảng số); doanh
+// bao-CR-493 (yêu cầu phòng Thu mua 25/09): thẻ thứ sáu "Lịch sử nạp" thay hộp thoại; hàng
+// "Lọc thêm" với sáu ô theo sheet 4 (nguyên tệ, giao hàng, lô nguồn, ba khoảng số); doanh
 // nghiệp / đối tác chọn được NHIỀU (chip cộng dồn, id nối dấu phẩy trên URL).
 import {
   ChevronDown,
@@ -102,14 +102,14 @@ import {
  * `-v3` (bao-CR-493): bề rộng cột mới đủ cho tiêu đề + hai cột VND — bản lưu cũ giữ bề rộng cũ
  * nên tiêu đề vẫn cụt, phải đổi khóa để bố cục mới thắng.
  */
-//  v4: bao-CR-494 thêm cột «Phân loại» — đổi khóa để bố cục cột đã lưu không che mất cột mới.
+//  v4: bao-CR-494 thêm cột "Phân loại" — đổi khóa để bố cục cột đã lưu không che mất cột mới.
 /** bao-CR-494 — khớp `ProductKind` backend (1 Thành phẩm · 2 Nguyên liệu). */
 const PRODUCT_KIND_OPTIONS = [
   { value: '1', label: 'Thành phẩm' },
   { value: '2', label: 'Nguyên liệu' },
 ]
 
-//  v5: bao-CR-608 thêm cột «ID» đầu bảng — đổi khóa để bố cục đã lưu không giấu mất cột mới.
+//  v5: bao-CR-608 thêm cột "ID" đầu bảng — đổi khóa để bố cục đã lưu không giấu mất cột mới.
 const STORAGE_KEY = 'procurement.customs-lines-v5'
 const DEFAULT_PAGE_SIZE = 50
 /** Tham số lọc trên URL — "Xóa lọc" dọn đúng bộ này, giữ nguyên thẻ đang mở. */
@@ -136,7 +136,7 @@ const FILTER_PARAMS = [
   'rate_max',
   'product_kind',
 ] as const
-/** Sáu ô của hàng «Lọc thêm» — có giá trị thì hàng tự mở khi vào trang bằng link. */
+/** Sáu ô của hàng "Lọc thêm" — có giá trị thì hàng tự mở khi vào trang bằng link. */
 const EXTRA_FILTER_PARAMS = [
   'currency',
   'incoterm',
@@ -192,10 +192,10 @@ export function CustomsPricePage() {
   const requested = section ?? legacyTab ?? 'list'
   const current = visibleSections.find((item) => item.key === requested) ?? visibleSections[0]
   const tab: CustomsSectionKey = current.key
-  //  «Pháp lý», «Thuốc BVTV», «Cấu hình» có ô tìm riêng, không dùng bộ lọc dòng hàng hải quan — ẩn
+  //  "Pháp lý", "Thuốc BVTV", "Cấu hình" có ô tìm riêng, không dùng bộ lọc dòng hàng hải quan — ẩn
   //  thanh lọc + dải cảnh báo (mục Pháp lý tự bày cảnh báo của từ khóa đang tra).
   const usesLineFilters = tab !== 'config' && tab !== 'pesticides' && tab !== 'legal'
-  //  06/10/2026 — mục «Tra cứu hóa chất» chỉ còn tiêu đề + hai nút + bảng hóa chất: dải phủ dữ liệu
+  //  06/10/2026 — mục "Tra cứu hóa chất" chỉ còn tiêu đề + hai nút + bảng hóa chất: dải phủ dữ liệu
   //  hải quan và câu mô tả về tệp GTT02 không nói gì về bảng này, để lại chỉ làm rối (đại ca chốt).
   const isLegal = tab === 'legal'
 
@@ -350,7 +350,7 @@ export function CustomsPricePage() {
 
   //  Link cũ `?tab=` hoặc mục không được xem (gõ tay `/config` khi thiếu quyền) → về đúng đường
   //  của mục đang hiện, giữ nguyên bộ lọc. `replace` để nút Back không quay lại link hỏng.
-  //  `/list` cũng về đường gốc — «Danh sách» chỉ có MỘT đường, không thì mục menu không sáng.
+  //  `/list` cũng về đường gốc — "Danh sách" chỉ có MỘT đường, không thì mục menu không sáng.
   if (legacyTab !== null || (section && (section !== tab || section === 'list'))) {
     const next = new URLSearchParams(searchParams)
     next.delete('tab')
@@ -361,7 +361,7 @@ export function CustomsPricePage() {
     <PageContainer className="flex flex-col gap-3">
       <PageHeader
         //  03/10/2026 — tiêu đề = ĐÚNG tên mục đang sáng ở menu trái (năm thẻ tra giá →
-        //  «Giá thị trường»). Ngữ cảnh «Tra cứu thị trường» nằm ở breadcrumb cấp hai, ghép
+        //  "Giá thị trường"). Ngữ cảnh "Tra cứu thị trường" nằm ở breadcrumb cấp hai, ghép
         //  thêm vào đây là lặp lại chính dòng ngay trên.
         title={isCustomsTabSection(tab) ? CUSTOMS_TAB_GROUP_LABEL : current.label}
         description={
@@ -375,7 +375,7 @@ export function CustomsPricePage() {
               <History className="size-4" />
               Lịch sử nạp
             </Button>
-            {/*  06/10/2026 — nút xuất dời từ thanh công cụ của bảng lên đây, đứng kế «Nạp dữ liệu». */}
+            {/*  06/10/2026 — nút xuất dời từ thanh công cụ của bảng lên đây, đứng kế "Nạp dữ liệu". */}
             {tab === 'list' && canExport && (
               <Button
                 type="button"
@@ -398,10 +398,10 @@ export function CustomsPricePage() {
         }
       />
 
-      {/*  bao-CR-605 (07/10/2026): bỏ dải «Dữ liệu: … · lần nạp gần nhất … · T1…T12» ở mọi mục của
+      {/*  bao-CR-605 (07/10/2026): bỏ dải "Dữ liệu: … · lần nạp gần nhất … · T1…T12" ở mọi mục của
           cụm Tra cứu thị trường — đại ca chốt: dư, không mang nhiều giá trị. Số đếm `coverage`
-          vẫn giữ cho câu «chưa có dữ liệu» của bảng dòng hàng. */}
-      {/*  bao-CR-501 — mục «Cấu hình» (và «Thuốc BVTV») không dùng bộ lọc dòng hàng: ẩn thanh lọc. */}
+          vẫn giữ cho câu "chưa có dữ liệu" của bảng dòng hàng. */}
+      {/*  bao-CR-501 — mục "Cấu hình" (và "Thuốc BVTV") không dùng bộ lọc dòng hàng: ẩn thanh lọc. */}
       <Card className={cn('gap-3 p-4', !usesLineFilters && 'hidden')}>
         <div className="flex flex-wrap items-center gap-2">
           <SearchField
@@ -418,7 +418,7 @@ export function CustomsPricePage() {
               value={productKind}
               onChange={setProductKind}
               options={PRODUCT_KIND_OPTIONS}
-              //  bao-CR-516: câu dài «Thành phẩm + Nguyên liệu» tràn ba dòng trong ô 11rem.
+              //  bao-CR-516: câu dài "Thành phẩm + Nguyên liệu" tràn ba dòng trong ô 11rem.
               placeholder="Tất cả phân loại"
               searchPlaceholder="Tìm phân loại…"
               clearable
@@ -540,7 +540,7 @@ export function CustomsPricePage() {
                 clearable
               />
             </div>
-            {/* bao-CR-503 — sheet 4 mục 13: tệp nguồn chọn NHIỀU (backend nhận «1,2» từ bao-CR-493). */}
+            {/* bao-CR-503 — sheet 4 mục 13: tệp nguồn chọn NHIỀU (backend nhận "1,2" từ bao-CR-493). */}
             <div className="w-64 max-md:w-full">
               <MultiPicker
                 value={splitIdList(batchId)}
@@ -586,7 +586,7 @@ export function CustomsPricePage() {
 
       {alertItems.length > 0 && usesLineFilters && (
         <CustomsNotice tone="danger" icon={<TriangleAlert className="size-4" />}>
-          <p className="font-semibold">Lưu ý pháp lý cho «{filters.q}»:</p>
+          <p className="font-semibold">Lưu ý pháp lý cho <strong>{filters.q}</strong>:</p>
           <ul className="mt-1 list-disc space-y-0.5 pl-5">
             {alertItems.slice(0, 5).map((alert) => (
               <li key={alert.id}>
@@ -696,7 +696,7 @@ export function CustomsPricePage() {
   )
 }
 
-/** Cặp ô «từ – tới» cho một khoảng số; để trống một đầu là chỉ chặn đầu kia. */
+/** Cặp ô "từ – tới" cho một khoảng số; để trống một đầu là chỉ chặn đầu kia. */
 function RangeFilter({
   label,
   from,

@@ -41,7 +41,7 @@ interface TransferDeptDialogProps {
  *
  * `mode = 'transfer'`: chọn phòng đích (bỏ phòng đang xử lý) + lý do bắt buộc.
  * `mode = 'return'`: chỉ hỏi lý do, đích là phòng thu mua mặc định (bao-CR-524: gửi 0, backend
- * ghi id thật của phòng «Sản xuất -Thu mua»).
+ * ghi id thật của phòng "Sản xuất -Thu mua").
  * Không có lựa chọn chuyển MỘT PHẦN dòng — cả phiếu đi cùng nhau (luật đã chốt ở HDSD).
  */
 export function TransferDeptDialog({

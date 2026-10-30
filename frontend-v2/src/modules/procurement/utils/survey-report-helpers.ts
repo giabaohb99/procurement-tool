@@ -10,7 +10,7 @@ import {
   type SurveyRequestReport,
 } from '../types/survey-request-report'
 
-/** Giá trị bộ lọc «Tất cả». Không dùng 0 làm mốc — 0 là id thật của «Chung». */
+/** Giá trị bộ lọc "Tất cả". Không dùng 0 làm mốc — 0 là id thật của "Chung". */
 export const REPORT_FILTER_ALL = -1
 
 export function isReportDocDone(doc: SurveyReportDoc): boolean {
@@ -126,8 +126,8 @@ export function addDaysIso(from: string, days: number): string {
 }
 
 /**
- * «Số ngày xử lý» của một hồ sơ = dự định hoàn tất − ngày bắt đầu (cột «Time xử
- * lý» của bảng kế hoạch Excel thu mua, bao-CR-602). Không lưu — suy từ hai mốc;
+ * "Số ngày xử lý" của một hồ sơ = dự định hoàn tất − ngày bắt đầu (cột "Time xử
+ * lý" của bảng kế hoạch Excel thu mua, bao-CR-602). Không lưu — suy từ hai mốc;
  * thiếu một mốc trả `null` để ô nhập hiện trống chứ không hiện 0 giả.
  */
 export function durationDays(start: string, planned: string): number | null {
@@ -168,13 +168,13 @@ export function lineReportProgress(
   return out
 }
 
-/** Giá trị bộ lọc trạng thái «Tất cả» — 0 là mã thật (Chưa bắt đầu), sentinel phải âm. */
+/** Giá trị bộ lọc trạng thái "Tất cả" — 0 là mã thật (Chưa bắt đầu), sentinel phải âm. */
 export const REPORT_STATUS_FILTER_ALL = -1
 
 /**
- * Chuẩn hóa chữ để tìm kiếm: thường hóa + bỏ dấu tiếng Việt («giấy phép» khớp
- * «giay phep»). Dùng NFKD chứ không NFD để chỉ số hóa học cũng khớp: «KNO₃»
- * gõ «kno3» phải ra — ₃ (U+2083) chỉ tách thành 3 ở dạng tương thích.
+ * Chuẩn hóa chữ để tìm kiếm: thường hóa + bỏ dấu tiếng Việt ("giấy phép" khớp
+ * "giay phep"). Dùng NFKD chứ không NFD để chỉ số hóa học cũng khớp: "KNO₃"
+ * gõ "kno3" phải ra — ₃ (U+2083) chỉ tách thành 3 ở dạng tương thích.
  */
 export function normalizeSearchText(value: string): string {
   return value
@@ -188,7 +188,7 @@ export function normalizeSearchText(value: string): string {
  * Hồ sơ có khớp từ khóa tìm kiếm không — soi TẤT CẢ thông tin chữ của hồ sơ:
  * tiêu đề, mô tả, tệp/link, nhãn trạng thái và tên nút dòng hàng nó gắn vào.
  * Khớp theo TỪNG TỪ (mọi từ đều phải có mặt, không cần đứng cạnh nhau):
- * «giấy phép công an» phải ra hồ sơ có tiêu đề «Giấy phép… — Bộ Công An».
+ * "giấy phép công an" phải ra hồ sơ có tiêu đề "Giấy phép… — Bộ Công An".
  */
 export function matchReportDoc(doc: SurveyReportDoc, query: string, itemName: string): boolean {
   const words = normalizeSearchText(query).split(/\s+/).filter(Boolean)
@@ -213,7 +213,7 @@ export function currentReportPhaseId(report: SurveyRequestReport, itemId: number
   return null
 }
 
-/** Một điểm nhấp nháy trên khung tracking: nhãn («2» / «+3») + tên các dòng hàng đứng đó. */
+/** Một điểm nhấp nháy trên khung tracking: nhãn ("2" / "+3") + tên các dòng hàng đứng đó. */
 export interface TrackingMarker {
   phaseId: number
   /** Rỗng = chấm không số (xem một tab, hoặc khối chưa khai nút nào). */
@@ -225,8 +225,8 @@ export interface TrackingMarker {
  * Các điểm nhấp nháy của khung tracking theo bộ lọc đang chọn.
  *
  * - Xem MỘT tab: một chấm tại giai đoạn hiện tại của tab đó.
- * - «Tất cả»: mỗi nút dòng hàng một chấm tại giai đoạn hiện tại của nó; nhiều
- *   nút đứng cùng giai đoạn thì gộp một chấm ghi «+n». Nhãn là SỐ THỨ TỰ nút
+ * - "Tất cả": mỗi nút dòng hàng một chấm tại giai đoạn hiện tại của nó; nhiều
+ *   nút đứng cùng giai đoạn thì gộp một chấm ghi "+n". Nhãn là SỐ THỨ TỰ nút
  *   (1, 2…) theo đúng thứ tự dãy nút lọc, để nhìn chấm biết ngay là nút nào.
  * - Khối chưa khai nút nào: một chấm không số cho toàn bộ hồ sơ.
  */

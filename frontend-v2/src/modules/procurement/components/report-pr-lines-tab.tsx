@@ -372,7 +372,7 @@ export function ReportPrLinesTab({
       },
       //  bao-CR-691 (đại ca chốt 28/10): hai cột trạng thái mang tên rõ chủ — tiến
       //  độ của DÒNG hàng đứng trước, trạng thái của PHIẾU YCMH đứng sau. Tên cũ
-      //  «Tiến độ» / «Trạng thái» làm người đọc lẫn hai thứ với nhau.
+      //  "Tiến độ" / "Trạng thái" làm người đọc lẫn hai thứ với nhau.
       {
         key: 'line_status',
         header: 'Tiến độ dòng',
@@ -400,7 +400,7 @@ export function ReportPrLinesTab({
         cell: (row) => row.assignee_name || row.assignee || '—',
       },
       //  bao-CR-691 — ba cột theo dõi đặt / nhận HIỆN sẵn: đó là câu hỏi chính
-      //  của báo cáo («đã đặt đủ chưa, về tới đâu rồi»).
+      //  của báo cáo ("đã đặt đủ chưa, về tới đâu rồi").
       {
         key: 'qty_ordered',
         header: 'SL đã đặt',
@@ -421,7 +421,7 @@ export function ReportPrLinesTab({
         width: 170,
         cell: (row) => <PoCodeLinks raw={row.po_codes} linkable={canReadPurchaseOrder} />,
       },
-      //  Các cột còn lại ẨN mặc định — bật ở menu «Cột». Nhớ: `defaultHidden`
+      //  Các cột còn lại ẨN mặc định — bật ở menu "Cột". Nhớ: `defaultHidden`
       //  chỉ áp cho người chưa từng đụng menu Cột (bảng nhớ bố cục).
       {
         key: 'po_count',
@@ -648,7 +648,7 @@ export function ReportPrLinesTab({
  * Bảng khai **18 cột**, bề rộng tự nhiên **2350px** trong khung 322px (đo
  * 12/09/2026 ở 390px): phần nhìn thấy được là *Mã PYC · ID · Ngày tạo* — ba cột
  * hành chính — còn **tên sản phẩm, số lượng, tiến độ** thì nằm ngoài mép phải.
- * Tức đúng ba thứ mà báo cáo này sinh ra để trả lời («mã nào chưa được đặt»)
+ * Tức đúng ba thứ mà báo cáo này sinh ra để trả lời ("mã nào chưa được đặt")
  * lại là ba thứ không thấy.
  *
  * ⚠️ **TÊN SẢN PHẨM lên dòng đầu.** Đây là báo cáo theo DÒNG HÀNG, không phải
@@ -656,7 +656,7 @@ export function ReportPrLinesTab({
  * hai ba lần liền nhau — dòng định danh mà không định danh được dòng nào.
  *
  * ⚠️ **Giữ đủ cặp huy hiệu *Trạng thái phiếu* + *Tiến độ dòng*.** Hai thứ khác
- * nhau và đều cần: phiếu «Đã duyệt» mà dòng «Chưa được đặt hàng» chính là ca
+ * nhau và đều cần: phiếu "Đã duyệt" mà dòng "Chưa được đặt hàng" chính là ca
  * mà người dùng mở màn này ra để tìm. Bỏ một cái là mất luôn câu hỏi.
  *
  * Bảy cột còn lại (bộ phận · kho · phân loại · gram · VAT · người yêu cầu ·
@@ -691,7 +691,7 @@ function PrLineCard({ row }: { row: PrLineRow }) {
       {/*  ⚠️ **Hai huy hiệu phải có NHÃN đi kèm.** Ở bảng, tiêu đề cột nói cái
            nào là *Trạng thái* (của phiếu) và cái nào là *Tiến độ* (của dòng);
            trên thẻ thì không còn tiêu đề, mà hai huy hiệu hoàn toàn có thể in
-           ra chữ y hệt nhau — «Hoàn thành» cạnh «Hoàn thành» — thành hai nhãn
+           ra chữ y hệt nhau — "Hoàn thành" cạnh "Hoàn thành" — thành hai nhãn
            giống nhau không biết cái nào nói gì. Dùng đúng hai từ của tiêu đề
            cột để bảng và thẻ nói cùng một thứ tiếng. */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-muted-foreground">

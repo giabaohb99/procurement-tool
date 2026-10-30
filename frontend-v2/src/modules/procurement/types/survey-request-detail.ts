@@ -73,7 +73,7 @@ export interface SurveyRequestDetail {
   head_of_dept_id: number
   head_of_dept: string
   /**
-   * bao-CR-490 — NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt») và
+   * bao-CR-490 — NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng ("Trưởng phòng phê duyệt") và
    * trưởng phòng THEO HỒ SƠ phòng ban (`Department.manager_id`) — hai người ký chọn được trên
    * bản in nội bộ. Phiếu cũ: id 0, tên rỗng.
    */
@@ -83,8 +83,8 @@ export interface SurveyRequestDetail {
   /** bao-CR-414: PHÒNG XỬ LÝ phiếu (bao-CR-524: id thật, kể cả phòng thu mua mặc định). */
   handler_dept_id: number
   /**
-   * bao-CR-488 — CHỈ ở giao diện, không có trên API: lúc LẬP phiếu người dùng đã tick «Nhờ phòng
-   * khác xử lý» chưa. Chưa tick thì không gửi `handler_dept_id`, backend tự chọn mặc định.
+   * bao-CR-488 — CHỈ ở giao diện, không có trên API: lúc LẬP phiếu người dùng đã tick "Nhờ phòng
+   * khác xử lý" chưa. Chưa tick thì không gửi `handler_dept_id`, backend tự chọn mặc định.
    */
   handler_dept_assigned?: boolean
   /** bao-CR-480: tên phòng xử lý do backend trả kèm. */
@@ -93,7 +93,7 @@ export interface SurveyRequestDetail {
   can_transfer_dept?: boolean
   can_return_dept?: boolean
   /**
-   * bao-CR-554: được «Trả về» cho người lập — người duyệt, phiếu chờ duyệt, hoặc đã duyệt / đang xử
+   * bao-CR-554: được "Trả về" cho người lập — người duyệt, phiếu chờ duyệt, hoặc đã duyệt / đang xử
    * lý mà chưa dòng nào hoàn thành, chưa chọn phương án, chưa sinh YCMH. Backend tính, giao diện chỉ đọc.
    */
   can_return_requester?: boolean

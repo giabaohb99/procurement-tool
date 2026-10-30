@@ -1,4 +1,4 @@
-// bao-CR-498 — hộp «Trả về đâu?» trả đúng đích đã chọn và tự đóng.
+// bao-CR-498 — hộp "Trả về đâu?" trả đúng đích đã chọn và tự đóng.
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -12,7 +12,7 @@ describe('ReturnChoiceDialog', () => {
     render(<ReturnChoiceDialog open docLabel="yêu cầu mua hàng" onOpenChange={onOpenChange} onPick={onPick} />)
 
     expect(screen.getByRole('heading', { name: /trả yêu cầu mua hàng về đâu/i })).toBeInTheDocument()
-    //  bao-CR-524: đích «department» nay là phòng thu mua mặc định, không còn «phòng lập tự xử lý».
+    //  bao-CR-524: đích "department" nay là phòng thu mua mặc định, không còn "phòng lập tự xử lý".
     await userEvent.click(screen.getByRole('button', { name: /trả về phòng thu mua/i }))
     expect(onPick).toHaveBeenCalledWith('department')
     expect(onOpenChange).toHaveBeenCalledWith(false)

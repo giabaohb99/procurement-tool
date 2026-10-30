@@ -17,7 +17,7 @@ describe('buildWarehouseValueBars', () => {
   })
 
   it('never makes a Khác bar out of a single leftover warehouse — shows it by name instead', () => {
-    //  Một cột «Khác» chứa đúng một kho là giấu tên kho đó mà chẳng gọn thêm chút nào.
+    //  Một cột "Khác" chứa đúng một kho là giấu tên kho đó mà chẳng gọn thêm chút nào.
     const bars = buildWarehouseValueBars([row('A', 3), row('B', 2), row('C', 1)], 2)
     expect(bars.map((b) => b.label)).toEqual(['A', 'B', 'C'])
   })

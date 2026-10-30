@@ -1,4 +1,4 @@
-// Nút «Xuất Excel» (2 lựa chọn) của mục «Thuốc BVTV». Chặn ở `@/core/api/download-file` —
+// Nút "Xuất Excel" (2 lựa chọn) của mục "Thuốc BVTV". Chặn ở `@/core/api/download-file` —
 // đúng chỗ tải tệp thật nằm (luật testing.md: mock ở tầng `@/core/api`; đường blob không đi qua
 // `apiGet`/`apiPost` của barrel nên phải chặn đúng submodule, như `purchase-progress-page.test.tsx`).
 import { render, screen, waitFor } from '@testing-library/react'

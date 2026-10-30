@@ -1,4 +1,4 @@
-// duoc-CR-612 — ô chữ sửa tại chỗ của dạng «Bảng». Mỗi lần lưu là một PATCH ghi thẳng DB và
+// duoc-CR-612 — ô chữ sửa tại chỗ của dạng "Bảng". Mỗi lần lưu là một PATCH ghi thẳng DB và
 // một dòng Lịch sử thao tác, nên lỗi đáng sợ nhất là lưu THỪA (rời ô không đổi gì vẫn gửi,
 // Enter rồi blur gửi hai lần) hoặc lưu NHẦM (Esc mà vẫn lưu, tên rỗng lọt xuống backend).
 import { fireEvent, render, screen } from '@testing-library/react'

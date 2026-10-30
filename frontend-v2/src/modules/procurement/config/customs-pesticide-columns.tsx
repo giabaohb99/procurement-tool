@@ -1,4 +1,4 @@
-// Cột của bảng mục «Thuốc BVTV» (Tra cứu thị trường, 29/09/2026).
+// Cột của bảng mục "Thuốc BVTV" (Tra cứu thị trường, 29/09/2026).
 //
 // ⚠️ Đổi thứ tự / thêm bớt cột thì đổi luôn `PESTICIDE_TABLE_STORAGE_KEY`: bảng nhớ bố cục
 // theo khóa đó và bản lưu cũ THẮNG toàn bộ (docs/ui/table.md §4).
@@ -11,7 +11,7 @@ import { formatDate } from '@/shared/utils/format-date'
 import { CustomsPesticideStatusBadge } from '../components/customs/customs-pesticide-status-badge'
 import type { CustomsPesticide } from '../types/customs-pesticide'
 
-//  v2 (29/09/2026): thêm cột «Hoạt chất cấm».
+//  v2 (29/09/2026): thêm cột "Hoạt chất cấm".
 export const PESTICIDE_TABLE_STORAGE_KEY = 'procurement.customs-pesticides-v2'
 
 export const CUSTOMS_PESTICIDE_COLUMNS: DataTableColumn<CustomsPesticide>[] = [
@@ -33,7 +33,7 @@ export const CUSTOMS_PESTICIDE_COLUMNS: DataTableColumn<CustomsPesticide>[] = [
     ),
   },
   { key: 'active_ingredient', header: 'Hoạt chất', width: 260, cell: (row) => row.active_ingredient },
-  //  Đối chiếu với danh sách cấm TT 75/2025 ở mục «Pháp lý» — khớp theo tên, thường trống vì
+  //  Đối chiếu với danh sách cấm TT 75/2025 ở mục "Pháp lý" — khớp theo tên, thường trống vì
   //  nguồn đã bỏ thuốc cấm. Có chữ ở cột này là danh mục vừa lọt một thuốc cần xem lại.
   {
     key: 'banned',

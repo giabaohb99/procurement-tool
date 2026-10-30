@@ -26,7 +26,7 @@ describe('buildPesticideParams', () => {
     expect(buildPesticideParams({ q: '   ', status: '', pestGroup: '' })).toEqual({})
   })
 
-  it('treats the «Tất cả …» option as no filter for both selects', () => {
+  it('treats the "Tất cả …" option as no filter for both selects', () => {
     expect(buildPesticideParams({ q: '', status: 'all', pestGroup: 'all' })).toEqual({})
   })
 
@@ -48,7 +48,7 @@ describe('resolvePesticideEmptyMessage', () => {
 })
 
 describe('banned-ingredient filter', () => {
-  it('sends banned_only only for the «only» choice', () => {
+  it('sends banned_only only for the "only" choice', () => {
     expect(buildPesticideParams({ q: '', status: '', pestGroup: '', banned: 'only' })).toEqual({
       banned_only: 'true',
     })
@@ -83,7 +83,7 @@ describe('buildPesticideParams — sector', () => {
 })
 
 describe('buildPesticideListSearch', () => {
-  //  «Tra cứu nhanh» đếm trên MỌI tình trạng — mở danh sách mà để mặc định «Còn hiệu lực» là lệch số.
+  //  "Tra cứu nhanh" đếm trên MỌI tình trạng — mở danh sách mà để mặc định "Còn hiệu lực" là lệch số.
   it('always opens the list on every status', () => {
     expect(new URLSearchParams(buildPesticideListSearch({})).get('pstatus')).toBe('all')
   })

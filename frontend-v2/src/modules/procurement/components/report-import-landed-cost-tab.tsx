@@ -73,11 +73,11 @@ export function ReportImportLandedCostTab({ companyId }: ReportImportLandedCostT
       <style>{LANDED_COST_TABLE_STYLES}</style>
 
       {/*  ⚠️ Khổ điện thoại xếp lại thành HAI hàng, không phải bốn:
-           «ô mã đơn + Xem + hai nút phụ» / «hai ô ngày».
+           "ô mã đơn + Xem + hai nút phụ" / "hai ô ngày".
 
            Bản gốc bày bốn hàng bậc thang ≈230px chắn trên đầu số liệu. Cắt
-           được là nhờ ba việc: bỏ nhãn ô *Mã đơn* (câu gợi ý «PO-001,
-           PO-002…» đã nói đúng cái nhãn đó), hai nút phụ bỏ chữ, và hai ô
+           được là nhờ ba việc: bỏ nhãn ô *Mã đơn* (câu gợi ý "PO-001,
+           PO-002…" đã nói đúng cái nhãn đó), hai nút phụ bỏ chữ, và hai ô
            ngày tách xuống hàng riêng.
 
            ⚠️ **Hai ô ngày phải có hàng RIÊNG, đừng gộp tiếp cho ngắn.** Một ô
@@ -86,7 +86,7 @@ export function ReportImportLandedCostTab({ companyId }: ReportImportLandedCostT
            nào là chúng phải co, mà co thì **mất hẳn phần chữ ngày, chỉ còn
            biểu tượng lịch và dấu ×** — đã dựng nhầm đúng kiểu đó một lần
            (12/09/2026, ô còn ~80px). Một ô ngày không đọc được ngày thì không
-           còn là ô ngày nữa. Nhãn cũng không bỏ được: «Ngày đặt từ» / «đến»
+           còn là ô ngày nữa. Nhãn cũng không bỏ được: "Ngày đặt từ" / "đến"
            là thứ duy nhất phân biệt hai ô. */}
       <div className="flex flex-wrap items-end gap-3 max-md:gap-2">
         <div className="flex items-end gap-2 max-md:w-full">

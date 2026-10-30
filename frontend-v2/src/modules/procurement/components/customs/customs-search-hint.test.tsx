@@ -23,8 +23,11 @@ describe('CustomsSearchHint', () => {
         }}
       />,
     )
-    expect(screen.getByText('Có «3,6%»: 3.6 · 3,6 · 36G/L · 36 G/L')).toBeInTheDocument()
-    expect(screen.getByText('Không có «TC»: TC')).toBeInTheDocument()
+    // Từ khóa in đậm nên câu tách thành nhiều nút chữ: khớp cả dòng qua textContent.
+    expect(screen.getByText('3,6%', { selector: 'strong' }).parentElement).toHaveTextContent(
+      'Có 3,6%: 3.6 · 3,6 · 36G/L · 36 G/L',
+    )
+    expect(screen.getByText(/^Không có/, { selector: 'span' })).toHaveTextContent('Không có TC: TC')
   })
 
   it('caps a long synonym list', () => {
@@ -34,6 +37,6 @@ describe('CustomsSearchHint', () => {
         explain={{ include: [{ term: 'X', matches: ['a', 'b', 'c', 'd', 'e', 'f'] }], exclude: [] }}
       />,
     )
-    expect(screen.getByText('Có «X»: a · b · c · d · +2')).toBeInTheDocument()
+    expect(screen.getByText(/^Có/, { selector: 'span' })).toHaveTextContent('Có X: a · b · c · d · +2')
   })
 })

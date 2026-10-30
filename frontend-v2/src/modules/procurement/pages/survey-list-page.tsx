@@ -66,7 +66,7 @@ const FILTER_CONFIG = {
   fields: SURVEY_FILTER_FIELDS,
   allowConjunctionToggle: true,
   //  `product_code` từng nằm đây nhưng màn không có ô nào ghi nó — bản v1 có ô
-  //  «Mã SP (NCC)» riêng, còn ở đây ô tìm kiếm đã gánh luôn phần đó (backend đọc
+  //  "Mã SP (NCC)" riêng, còn ở đây ô tìm kiếm đã gánh luôn phần đó (backend đọc
   //  `code` / `q` / `search` / `product_code` vào CÙNG một câu tìm đa trường).
   preserveParams: ['status', 'survey_type', 'item_group', 'nspt', 'pending', 'sort_by', 'sort_dir'],
 }
@@ -175,7 +175,7 @@ function SurveyListContent() {
     [navigate],
   )
 
-  //  Huy hiệu trên nút «Bộ lọc» của khổ hẹp đếm CẢ HAI tầng — ô lọc nhanh và
+  //  Huy hiệu trên nút "Bộ lọc" của khổ hẹp đếm CẢ HAI tầng — ô lọc nhanh và
   //  điều kiện nâng cao — vì cả hai nay nằm sau đúng một nút đó. Đếm thiếu một
   //  tầng thì người dùng thấy nút không dấu gì mà danh sách vẫn đang bị lọc.
   const activeCount =
@@ -499,7 +499,7 @@ function SurveyListContent() {
               </div>
 
               {/*  ⚠️ Ô trong tờ trượt phải có NHÃN. Trên thanh công cụ, ô chọn tự
-                   giải nghĩa bằng giá trị đang chọn («Tất cả loại»); xếp dọc mấy
+                   giải nghĩa bằng giá trị đang chọn ("Tất cả loại"); xếp dọc mấy
                    ô như vậy trong một tờ trắng thì thành danh sách chữ trôi nổi,
                    người đọc không biết ô nào lọc cái gì cho tới khi bấm thử. */}
               <QuickFilterSheet

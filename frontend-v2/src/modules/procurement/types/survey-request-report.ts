@@ -10,7 +10,7 @@
 /** Chứng từ chủ của khối báo cáo — trùng tên entity phân quyền. */
 export type ReportOwnerEntity = 'survey_request' | 'purchase_order'
 
-/** Một NÚT lọc theo dòng hàng (vd «K₂SO₄»). Hồ sơ `item_id = 0` là CHUNG. */
+/** Một NÚT lọc theo dòng hàng (vd "K₂SO₄"). Hồ sơ `item_id = 0` là CHUNG. */
 export interface SurveyReportItem {
   id: number
   name: string
@@ -66,7 +66,7 @@ export interface SurveyRequestReport {
   items: SurveyReportItem[]
   phases: SurveyReportPhase[]
   docs: SurveyReportDoc[]
-  /** Có bản «đã xóa» chưa hoàn tác không — FE hiện nút Hoàn tác. */
+  /** Có bản "đã xóa" chưa hoàn tác không — FE hiện nút Hoàn tác. */
   restorable: boolean
   /** Id dòng Lịch sử thao tác của lần xóa gần nhất (để gắn nút Hoàn tác đúng dòng). */
   restorable_audit_id: number
@@ -75,7 +75,7 @@ export interface SurveyRequestReport {
 //  Bộ mã SỐ gõ tay theo `backend/.../survey_request/report_constants.py` —
 //  `gen_status_ts.py` chỉ sinh cho bộ mã CHUỖI (cùng cảnh `hr/types/leave.ts`).
 //  Đổi ở backend thì phải nhớ sửa tay bên này.
-/** Ô chọn của hộp «Thêm hồ sơ» khi khối còn trống (duoc-CR-611). */
+/** Ô chọn của hộp "Thêm hồ sơ" khi khối còn trống (duoc-CR-611). */
 export interface ReportFirstDocOptions {
   /** Dòng của chứng từ (dòng YCBG / dòng ĐMH) — nút dòng hàng CHƯA có lúc này. */
   lines: { line_id: number; name: string }[]

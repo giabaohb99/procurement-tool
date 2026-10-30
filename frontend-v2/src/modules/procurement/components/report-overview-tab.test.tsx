@@ -36,7 +36,7 @@ beforeEach(() => {
   mobile = false
 })
 
-describe('ReportOverviewTab — khối «Lưu ý cách đọc số»', () => {
+describe('ReportOverviewTab — khối "Lưu ý cách đọc số"', () => {
   /**
    * Ở màn rộng khối này mở sẵn và KHÔNG có nút đóng: nó là lời giải thích vì
    * sao *Giá trị đặt hàng* khác biểu đồ *Chi phí mua theo tháng* — hai con số
@@ -76,7 +76,7 @@ describe('ReportOverviewTab — khối «Lưu ý cách đọc số»', () => {
     expect(screen.queryByText(BODY)).not.toBeInTheDocument()
   })
 
-  //  Câu nhắc «đang lọc theo tháng X» chỉ mọc khi thật sự đang lọc — nó giải
+  //  Câu nhắc "đang lọc theo tháng X" chỉ mọc khi thật sự đang lọc — nó giải
   //  thích vì sao thẻ số và biểu đồ không cùng một kỳ.
   it('thêm câu nhắc khi đang lọc theo một tháng', () => {
     renderTab('2026-07')

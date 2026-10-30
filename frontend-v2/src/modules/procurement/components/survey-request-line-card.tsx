@@ -34,7 +34,7 @@ interface SurveyRequestLineCardProps {
  * là cùng một đường mà nút bút chì trên bảng vẫn dùng ở khổ rộng. Không đụng gì
  * vào bảng nên hợp đồng hiển thị của `LinesTable` nguyên vẹn.
  *
- * ⚠️ **Dấu «thiếu ô bắt buộc» là bắt buộc phải có.** Bấm *Gửi duyệt* mà còn ô
+ * ⚠️ **Dấu "thiếu ô bắt buộc" là bắt buộc phải có.** Bấm *Gửi duyệt* mà còn ô
  * trống thì bảng tô đỏ đúng ô *Phân loại* — ở chế độ thẻ không còn ô nào để tô,
  * nên không có dấu này thì người dùng bấm Gửi duyệt, bị chặn, và KHÔNG có cách
  * nào biết dòng nào thiếu. Cùng luật `SurveyLineCard`.

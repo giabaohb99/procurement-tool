@@ -1,5 +1,5 @@
 /**
- * bao-CR-474 — ô «Trưởng bộ phận (TBP) / Người liên hệ» của YCMH hiện AI.
+ * bao-CR-474 — ô "Trưởng bộ phận (TBP) / Người liên hệ" của YCMH hiện AI.
  *
  * Luật đại ca chốt 24/09/2026: ô này LUÔN phải hiện một người. Đã chọn thì người
  * đó; chưa chọn (`head_of_dept_id = 0` — phiếu mới, hoặc vừa đổi người yêu cầu sang
@@ -26,7 +26,7 @@ export function resolveShownDeptHead(
 }
 
 /**
- * bao-CR-590 — ghi THẬT xuống phiếu người đang hiện ở hai ô TBP + «Trưởng phòng phê duyệt».
+ * bao-CR-590 — ghi THẬT xuống phiếu người đang hiện ở hai ô TBP + "Trưởng phòng phê duyệt".
  *
  * Trước đây màn hình HIỆN TBP mặc định ở cả hai ô nhưng bản nháp vẫn giữ id 0, nên lúc tạo
  * phiếu, người dùng thấy ô đã có người mà dữ liệu gửi lên thì trống — và bộ kiểm lúc gửi duyệt

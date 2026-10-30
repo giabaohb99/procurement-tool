@@ -140,9 +140,9 @@ export function PurchaseReportPage() {
   const controls = (
     //  ⚠️ **Khổ điện thoại gom thành MỘT hàng** (`flex-nowrap`), bản cũ là hai:
     //  hai ô chọn một hàng, ba nút một hàng — cộng cả dòng tiêu đề và dòng
-    //  «Tính lúc» thành bốn tầng chồng nhau trước khi tới dải tab. Đo vừa đủ ở
+    //  "Tính lúc" thành bốn tầng chồng nhau trước khi tới dải tab. Đo vừa đủ ở
     //  358px: ô năm 84 + ba nút vuông 36×3 + bốn khe 6px = 216, ô công ty nhận
-    //  142px còn lại — vẫn in trọn «Tất cả công ty» (~139px). Dôi đúng 13px,
+    //  142px còn lại — vẫn in trọn "Tất cả công ty" (~139px). Dôi đúng 13px,
     //  nên đừng nới thêm thứ gì vào hàng này.
     <div className="flex flex-wrap items-center gap-2 print:hidden max-md:w-full max-md:flex-nowrap max-md:gap-1.5">
       <Select value={companyId} onValueChange={setCompanyId}>
@@ -242,7 +242,7 @@ export function PurchaseReportPage() {
       <PageHeader
         title="Báo cáo mua hàng"
         description={
-          //  ⚠️ Khổ hẹp CHỈ giữ mốc «Tính lúc». Hai vế đầu (kỳ · công ty) là
+          //  ⚠️ Khổ hẹp CHỈ giữ mốc "Tính lúc". Hai vế đầu (kỳ · công ty) là
           //  chính nội dung của hai ô chọn nằm ngay bên dưới, nên trên điện
           //  thoại chúng nói lại đúng thứ người dùng vừa đọc — mất hai dòng ở
           //  đầu trang cho một câu thừa. Mốc tính thì không ô nào nói: báo cáo
@@ -269,9 +269,9 @@ export function PurchaseReportPage() {
            *Cập nhật* cũng vậy: nó tính lại đúng cái bảng đang đọc dở.
 
            Vì sao KHÔNG dùng `PageHeader sticky` (đã thử, đo được 125px): dải
-           ghim khi đó mang theo dòng tiêu đề «Báo cáo mua hàng» — **đúng chữ
+           ghim khi đó mang theo dòng tiêu đề "Báo cáo mua hàng" — **đúng chữ
            mà thanh ứng dụng ngay phía trên đã in rồi**, hai dòng giống hệt
-           nhau cách nhau 40px — cộng dòng «Tính lúc» vốn là thông tin tham
+           nhau cách nhau 40px — cộng dòng "Tính lúc" vốn là thông tin tham
            khảo chứ không phải nút bấm. 125px trên màn 844px là 15% màn hình
            nằm im vĩnh viễn. Ghim riêng dải điều khiển còn ~53px, và thứ trôi
            đi (tiêu đề) thì thanh ứng dụng vẫn giữ hộ.
@@ -281,8 +281,8 @@ export function PurchaseReportPage() {
       {isMobile && (
         //  ⚠️ `z-30`, KHÔNG phải `z-20`. Ô đầu bảng của các tab ma trận khai
         //  `sticky left-0 z-20` (ghim cột tên khi cuộn ngang); cùng mức z mà
-        //  đứng SAU trong cây DOM thì chúng thắng, và lúc cuộn dọc hàng «# ·
-        //  Nhà cung cấp» in đè lên chính dải đang ghim — đọc ra như hai lớp
+        //  đứng SAU trong cây DOM thì chúng thắng, và lúc cuộn dọc hàng "# ·
+        //  Nhà cung cấp" in đè lên chính dải đang ghim — đọc ra như hai lớp
         //  giao diện chồng nhau (thấy được 12/09/2026 ở tab Nhà cung cấp).
         //
         //  ⚠️ **BÓNG ĐỔ + VẠCH CHÂN chỉ hiện khi ĐÃ CUỘN** — cùng luật với
@@ -290,7 +290,7 @@ export function PurchaseReportPage() {
         //  trang trí. Dưới dải này là bốn hàng công cụ có viền (ô tìm, hai ô
         //  ngày, ô sắp xếp); không có bóng thì lúc chúng trôi qua, mắt đọc
         //  đường viền bị cắt ngang thân là **lỗi vẽ** chứ không phải là một
-        //  lớp nổi bên trên (khách báo 12/09/2026, đúng cảnh ô «Sắp xếp» bị
+        //  lớp nổi bên trên (khách báo 12/09/2026, đúng cảnh ô "Sắp xếp" bị
         //  xén đôi). Có bóng thì cùng hình ảnh đó lại đọc thành chiều sâu.
         //  Đổ sẵn từ lúc chưa cuộn thì ngược lại: dải nổi giữa một trang đứng
         //  yên, bóng nói "có nội dung đang trôi bên dưới" trong khi chưa có gì.

@@ -1,7 +1,7 @@
 // bao-CR-608 — biểu mẫu SỬA một dòng hàng, hiện ngay trong hộp chi tiết dòng (đại ca 07/10/2026).
 //
 // Chỉ gửi ô ĐÃ ĐỔI (`buildCustomsLinePatch`). Bốn ô suy ra / tự tính để trống = hệ thống tự làm;
-// gõ vào = giá trị do người nhập, «Gắn lại nhãn» không ghi đè. Bản trước khi sửa được backend chụp
+// gõ vào = giá trị do người nhập, "Gắn lại nhãn" không ghi đè. Bản trước khi sửa được backend chụp
 // lại (`tab_customs_line_change`) và ghi nhật ký thao tác.
 //
 // Bẫy biểu mẫu (duoc-CR-317): chặn bấm đúp bằng `useRef`; Enter trong ô một dòng không lưu;
@@ -32,7 +32,7 @@ import {
 import { CustomsNotice } from './customs-controls'
 
 const FORM_ID = 'customs-line-edit-form'
-/** Ô chọn phương tiện: Radix Select không cho giá trị rỗng — dùng mốc riêng cho «chưa khai». */
+/** Ô chọn phương tiện: Radix Select không cho giá trị rỗng — dùng mốc riêng cho "chưa khai". */
 const NO_TRANSPORT = 'none'
 
 function blockEnter(event: KeyboardEvent<HTMLInputElement>) {

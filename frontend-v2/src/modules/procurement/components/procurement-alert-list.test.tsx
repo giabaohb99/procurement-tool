@@ -60,7 +60,7 @@ describe('ProcurementAlertList', () => {
     expect(screen.queryByRole('button', { name: /Xem thêm/ })).not.toBeInTheDocument()
   })
 
-  //  Vừa đúng ngưỡng thì đừng mọc nút: «Xem thêm 0 việc» là câu vô nghĩa, mà
+  //  Vừa đúng ngưỡng thì đừng mọc nút: "Xem thêm 0 việc" là câu vô nghĩa, mà
   //  `alerts.length - MOBILE_PREVIEW` rất dễ ra 0 vì backend hay trả ít việc.
   it('không mọc nút khi số việc vừa đúng phần bày sẵn', () => {
     mobile = true

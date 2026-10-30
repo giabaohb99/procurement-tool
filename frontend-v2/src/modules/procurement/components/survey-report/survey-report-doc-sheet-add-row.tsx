@@ -1,4 +1,4 @@
-// duoc-CR-612 — hàng cuối «+ Thêm hồ sơ» của dạng «Bảng» trong khối Báo cáo thực hiện.
+// duoc-CR-612 — hàng cuối "+ Thêm hồ sơ" của dạng "Bảng" trong khối Báo cáo thực hiện.
 import { Loader2, Plus } from 'lucide-react'
 import { useState } from 'react'
 
@@ -25,7 +25,7 @@ import {
 } from './survey-report-doc-sheet-layout'
 
 interface ReportDocSheetAddRowProps {
-  /** Số cột ô nút «Thêm» trải ra — phần còn lại của bảng sau 4 cột đầu. */
+  /** Số cột ô nút "Thêm" trải ra — phần còn lại của bảng sau 4 cột đầu. */
   restColSpan: number
   phaseOptions: SelectOption[]
   itemOptions: SelectOption[]
@@ -35,7 +35,7 @@ interface ReportDocSheetAddRowProps {
 }
 
 /**
- * Hàng cuối «+ Thêm hồ sơ»: gõ tên, (đổi giai đoạn / dòng hàng nếu cần), Enter là thêm — các ô
+ * Hàng cuối "+ Thêm hồ sơ": gõ tên, (đổi giai đoạn / dòng hàng nếu cần), Enter là thêm — các ô
  * còn lại sửa ngay trên hàng vừa hiện. Giữ nguyên giai đoạn / dòng hàng sau mỗi lần
  * thêm để nhập liền tay nhiều hồ sơ cùng chỗ.
  */
@@ -110,7 +110,7 @@ export function ReportDocSheetAddRow({
           className="h-7 text-xs"
           onChange={(event) => setTitle(event.target.value)}
           onKeyDown={(event) => {
-            //  Enter chốt chữ của bộ gõ tiếng Việt (`isComposing`) không phải Enter «thêm».
+            //  Enter chốt chữ của bộ gõ tiếng Việt (`isComposing`) không phải Enter "thêm".
             if (event.nativeEvent.isComposing) return
             if (event.key === 'Enter') {
               event.preventDefault()

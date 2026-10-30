@@ -27,7 +27,7 @@ import {
 } from '../utils/handling-dept-display'
 
 interface SurveyRequestInfoCardProps {
-  /** bao-CR-499 — người duyệt được chứng từ này (nguồn ô «Trưởng phòng phê duyệt»). */
+  /** bao-CR-499 — người duyệt được chứng từ này (nguồn ô "Trưởng phòng phê duyệt"). */
   approverCandidates?: DeptHeadCandidate[]
   data: SurveyRequestDetail
   editing: boolean
@@ -127,7 +127,7 @@ export function SurveyRequestInfoCard({
     void fillDeptHead(department.id, department.name)
   }
 
-  // bao-CR-480: ô «Phòng xử lý» — cùng nhãn / mục chọn với YCMH, luật ở util dùng chung.
+  // bao-CR-480: ô "Phòng xử lý" — cùng nhãn / mục chọn với YCMH, luật ở util dùng chung.
   const handlingDeptOptionList = handlingDeptOptions(departments, data.handler_dept_id)
   const handlingDeptText = handlingDeptLabel(data.handler_dept_id, data.handler_dept_name, departments)
   const handlingDeptAssigned = isHandlingDeptAssigned(data)
@@ -262,12 +262,12 @@ export function SurveyRequestInfoCard({
         </div>
 
         {/*
-          bao-CR-414 / bao-CR-480 — «Phòng xử lý»: phòng nào sẽ đi mua cho phiếu này, cùng
-          luật với YCMH. bao-CR-524: không còn mục «Thu mua chung» (0), chỉ phòng thật.
+          bao-CR-414 / bao-CR-480 — "Phòng xử lý": phòng nào sẽ đi mua cho phiếu này, cùng
+          luật với YCMH. bao-CR-524: không còn mục "Thu mua chung" (0), chỉ phòng thật.
         */}
         {editing && isNew && departments.length ? (
           /* bao-CR-488: lúc LẬP phiếu ô Phòng xử lý ẩn — hệ thống tự chọn mặc định (nhà máy → chính
-             phòng mình, còn lại → phòng thu mua mặc định). Tick «Nhờ phòng khác xử lý» mới bung ô
+             phòng mình, còn lại → phòng thu mua mặc định). Tick "Nhờ phòng khác xử lý" mới bung ô
              chọn; đã tick thì gửi đúng phòng đã chọn (để trống = phòng thu mua mặc định). */
           <div className="space-y-1.5">
             <Label htmlFor="sr-handler-dept">Phòng xử lý</Label>

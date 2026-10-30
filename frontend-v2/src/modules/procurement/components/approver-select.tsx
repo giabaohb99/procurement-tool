@@ -6,11 +6,11 @@ import { SearchSelect } from '@/shared/ui/search-select'
 import type { DeptHeadCandidate } from '../types/purchase-request-detail'
 
 /**
- * Ô «Trưởng phòng phê duyệt» dùng chung cho YCMH · YCBG · ĐMH — bao-CR-499 (đại ca chốt 26/09/2026).
+ * Ô "Trưởng phòng phê duyệt" dùng chung cho YCMH · YCBG · ĐMH — bao-CR-499 (đại ca chốt 26/09/2026).
  *
  * Một cột, hai nghĩa theo thời điểm: TRƯỚC khi duyệt là người ĐƯỢC CHỌN (hệ gửi chuông + mail cho
  * người này lúc gửi duyệt); bấm Duyệt xong hệ ghi đè bằng người THỰC duyệt (bao-CR-490) và ô khóa.
- * Bản in luôn in tên đang nằm trong cột. Cố ý KHÔNG gộp với ô «Trưởng bộ phận» (CR-474): đại ca
+ * Bản in luôn in tên đang nằm trong cột. Cố ý KHÔNG gộp với ô "Trưởng bộ phận" (CR-474): đại ca
  * muốn giữ hai ô tách để sau này bỏ ô này được mà không đụng ô kia.
  *
  * Danh sách chọn = người DUYỆT ĐƯỢC chứng từ này (backend `core/approver_candidates.py`), không

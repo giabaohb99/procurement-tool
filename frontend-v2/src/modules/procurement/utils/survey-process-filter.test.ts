@@ -16,11 +16,11 @@ describe('survey-process-filter — bao-CR-487', () => {
     expect(hasAvailableLinesCriteria({ supplierCodes: [], itemGroups: [], search: 'x' })).toBe(true)
   })
 
-  it('hides «Về phân loại dòng» only when the box holds exactly the line group', () => {
+  it('hides "Về phân loại dòng" only when the box holds exactly the line group', () => {
     expect(isLineGroupOnly(['Nhãn'], 'Nhãn')).toBe(true)
     expect(isLineGroupOnly(['Nhãn', 'Thùng'], 'Nhãn')).toBe(false)
     expect(isLineGroupOnly([], 'Nhãn')).toBe(false)
-    // Dòng không có phân loại: ô rỗng là «đúng như dòng», chọn gì đó thì không.
+    // Dòng không có phân loại: ô rỗng là "đúng như dòng", chọn gì đó thì không.
     expect(isLineGroupOnly([], '')).toBe(true)
     expect(isLineGroupOnly(['Nhãn'], '')).toBe(false)
   })

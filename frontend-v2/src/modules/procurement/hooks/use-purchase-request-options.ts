@@ -167,7 +167,7 @@ export function useUpdatePrOptionDetails(prId: number) {
   })
 }
 
-/** bao-CR-583 — «Khôi phục ban đầu» cho phương án 0. */
+/** bao-CR-583 — "Khôi phục ban đầu" cho phương án 0. */
 export function useResetPrOptionZero(prId: number) {
   const queryClient = useQueryClient()
   return useMutation({

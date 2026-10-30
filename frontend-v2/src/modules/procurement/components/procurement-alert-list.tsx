@@ -7,7 +7,7 @@ import { cn } from '@/shared/utils/cn'
 import type { DashboardAlert } from '../api/procurement-dashboard-api'
 
 /**
- * Số việc bày sẵn ở khổ điện thoại trước khi phải bấm «Xem thêm».
+ * Số việc bày sẵn ở khổ điện thoại trước khi phải bấm "Xem thêm".
  *
  * Ba, vì mỗi câu cảnh báo ở đây dài **ba đến bốn dòng** — backend nhét cả tên
  * sản phẩm lẫn ngày hẹn vào một chuỗi (`Giao hàng TRỄ: PO00130 · Thùng Tago
@@ -15,7 +15,7 @@ import type { DashboardAlert } from '../api/procurement-dashboard-api'
  * một việc ở 390px. Ba việc ≈ 240px, xấp xỉ đúng phần mà ô cuộn 320px của màn
  * rộng bày ra một lúc. Cắt ở đây KHÔNG giấu gì thêm so với màn rộng: nút nói rõ
  * còn mấy việc, mà backend thì trả tối đa **6** việc (`alerts[:6]`) nên câu dài
- * nhất nút này in ra là «Xem thêm 3 việc».
+ * nhất nút này in ra là "Xem thêm 3 việc".
  */
 const MOBILE_PREVIEW = 3
 

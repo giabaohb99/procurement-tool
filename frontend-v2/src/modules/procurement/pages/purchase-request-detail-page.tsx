@@ -191,7 +191,7 @@ export function PurchaseRequestDetailPage() {
   const { data: relatedOrdersData } = useRelatedPurchaseOrders(isNew ? '' : serverData?.code || '')
   const { data: companiesData } = useCompanies({ page_size: 500, is_active: true })
   const { data: employeesData } = useEmployees({ page_size: 1000, is_active: true })
-  // bao-CR-414: danh mục phòng ban cho ô «Phòng xử lý» (bao-CR-480 đổi tên). Mọi vai trò seed đều đọc được
+  // bao-CR-414: danh mục phòng ban cho ô "Phòng xử lý" (bao-CR-480 đổi tên). Mọi vai trò seed đều đọc được
   // `department`, nhưng vẫn gác bằng quyền để người bị cắt quyền không ăn 403 lúc mở phiếu.
   const { data: departmentsData } = useDepartments(
     { page_size: 500 },
@@ -229,7 +229,7 @@ export function PurchaseRequestDetailPage() {
     editing,
   )
   const { data: defaultDeptHead } = useDefaultDeptHead(formDepartment, formDepartmentId, editing)
-  //  bao-CR-499: ô «Trưởng phòng phê duyệt» chỉ liệt kê người DUYỆT ĐƯỢC phiếu này.
+  //  bao-CR-499: ô "Trưởng phòng phê duyệt" chỉ liệt kê người DUYỆT ĐƯỢC phiếu này.
   const { data: approverData } = useApproverCandidates(
     'purchase-requests',
     isNew ? 0 : purchaseRequestId,
@@ -264,7 +264,7 @@ export function PurchaseRequestDetailPage() {
   //  bao-CR-567 (02/10/2026): phiếu đã nằm sẵn trong bộ nhớ đệm React Query (mở 127 → sang 128 →
   //  quay lại 127) thì `serverData` có ngay từ lượt vẽ ĐẦU, `useHasChanged` không báo đổi, và nếu
   //  lượt tải lại trả dữ liệu y hệt (React Query giữ nguyên tham chiếu) thì KHÔNG BAO GIỜ dựng
-  //  `draft` — bấm «Sửa» chỉ bật cờ, mọi ô gõ vào rơi vào `patch` với `draft = null` nên không đổi
+  //  `draft` — bấm "Sửa" chỉ bật cờ, mọi ô gõ vào rơi vào `patch` với `draft = null` nên không đổi
   //  được gì, tải lại trang mới sửa được (đại ca báo trên dev: PYC02102601). Có dữ liệu mà chưa có
   //  bản nháp thì dựng ngay, một lần.
   const draftMissing = !isNew && draft === null && !!serverData
@@ -336,9 +336,9 @@ export function PurchaseRequestDetailPage() {
     data.items.length > 0 &&
     data.items.every((item) => ['completed', 'cancelled'].includes(item.line_status))
   /**
-   * NSTM chọn được — bao-CR-486: đọc từ API theo ô «Phòng xử lý» của phiếu (phòng
+   * NSTM chọn được — bao-CR-486: đọc từ API theo ô "Phòng xử lý" của phiếu (phòng
    * tự mua → người thu mua của phòng đó; phòng thu mua mặc định → người thu mua chung). Trước đó lọc
-   * danh mục nhân sự theo TÊN phòng có chữ «thu mua», nên phiếu nhà máy vẫn thấy người
+   * danh mục nhân sự theo TÊN phòng có chữ "thu mua", nên phiếu nhà máy vẫn thấy người
    * thu mua chung. Ô chọn hiện TÊN nhưng lưu MÃ nhân viên.
    * QA 29/08: bổ sung người đã gán ở từng dòng dù họ nằm ngoài danh sách (gán trước khi
    * chuyển phòng, hoặc danh sách chưa tải xong) — không thì ô Select hiện trống như chưa
@@ -437,7 +437,7 @@ export function PurchaseRequestDetailPage() {
   }
 
   async function handleSave(submitAfterSave = false) {
-    //  bao-CR-590: hai ô TBP + «Trưởng phòng phê duyệt» đang HIỆN người mặc định thì ghi thật
+    //  bao-CR-590: hai ô TBP + "Trưởng phòng phê duyệt" đang HIỆN người mặc định thì ghi thật
     //  người đó xuống phiếu — kiểm và lưu đúng thứ người dùng nhìn thấy.
     const draftToSave = fillApproverDefaults(
       loadedDraft,
@@ -459,7 +459,7 @@ export function PurchaseRequestDetailPage() {
         head_of_dept: draftToSave.head_of_dept,
         head_of_dept_id: draftToSave.head_of_dept_id,
         approver_employee_id: draftToSave.approver_employee_id ?? 0,   // bao-CR-499 · bao-CR-590
-        // bao-CR-488: lúc tạo, chưa tick «Nhờ phòng khác xử lý» thì không gửi để backend chọn mặc định.
+        // bao-CR-488: lúc tạo, chưa tick "Nhờ phòng khác xử lý" thì không gửi để backend chọn mặc định.
         handler_dept_id: isNew ? handlingDeptForCreate(loadedDraft) : loadedDraft.handler_dept_id,
         purpose: loadedDraft.purpose,
         request_date: loadedDraft.request_date,
@@ -501,7 +501,7 @@ export function PurchaseRequestDetailPage() {
     }
   }
 
-  //  bao-CR-498: hai đường «Trả về» gộp vào một nút. bao-CR-554: đường luồng duyệt nay theo cờ
+  //  bao-CR-498: hai đường "Trả về" gộp vào một nút. bao-CR-554: đường luồng duyệt nay theo cờ
   //  backend `can_return` (quản lý hoặc người duyệt; chờ duyệt, hoặc đã duyệt / đã điều phối mà chưa
   //  dòng nào lên ĐMH); đường trả phòng lập theo cờ `can_return_dept` (bao-CR-414).
   const canReturnToRequester = Boolean(loadedData.can_return)
@@ -814,10 +814,10 @@ export function PurchaseRequestDetailPage() {
     </>
   ) : (
     <>
-      {/* bao-CR-420 (17/09/2026): MỘT nút in, KHÔNG sổ xuống, nhãn «In phiếu» cho mọi người.
+      {/* bao-CR-420 (17/09/2026): MỘT nút in, KHÔNG sổ xuống, nhãn "In phiếu" cho mọi người.
           bao-CR-574 (đại ca chốt 03/10/2026): nút LUÔN mở phiếu chung, không còn mở theo quyền.
-          Bản tách theo nhà cung cấp chọn ngay trong ô «Mẫu in» của trang in (nhóm «Tách theo
-          nhà cung cấp», chỉ người có quyền xem NCC thấy) — hai người ngồi cạnh nhau bấm cùng một
+          Bản tách theo nhà cung cấp chọn ngay trong ô "Mẫu in" của trang in (nhóm "Tách theo
+          nhà cung cấp", chỉ người có quyền xem NCC thấy) — hai người ngồi cạnh nhau bấm cùng một
           nút là ra cùng một tờ. */}
       <Button variant="outline" asChild>
         <Link to={appRoutes.procurement.purchaseRequestPrint(data.id)} onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)} target="_blank" rel="noreferrer">
@@ -848,7 +848,7 @@ export function PurchaseRequestDetailPage() {
           Sửa
         </Button>
       )}
-      {/* bao-CR-498: MỘT nút «Trả về» cho hai đường (trả người lập sửa lại / trả phòng lập tự
+      {/* bao-CR-498: MỘT nút "Trả về" cho hai đường (trả người lập sửa lại / trả phòng lập tự
           xử lý — bao-CR-414). Cả hai đường cùng mở thì hỏi; một đường thì đi thẳng. */}
       {returnResolution !== null && (
         <Button

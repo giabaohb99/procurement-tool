@@ -1,4 +1,4 @@
-// Mục «Thuốc BVTV»: mặc định lọc «Còn hiệu lực», nút nạp gác theo quyền, câu bảng rỗng đúng
+// Mục "Thuốc BVTV": mặc định lọc "Còn hiệu lực", nút nạp gác theo quyền, câu bảng rỗng đúng
 // ngữ cảnh, bấm dòng mở TRANG chi tiết (duoc-CR-492) và lùi về vẫn giữ bộ lọc. Chặn ở tầng
 // `@/core/api` (luật testing.md).
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -192,7 +192,7 @@ describe('CustomsPesticideTab', () => {
     catalogTotal = 0
     build()
     expect(
-      await screen.findByText(/Chưa có danh mục thuốc BVTV\. Bấm «Nạp danh mục»/),
+      await screen.findByText(/Chưa có danh mục thuốc BVTV\. Bấm "Nạp danh mục"/),
     ).toBeInTheDocument()
   })
 
@@ -201,7 +201,7 @@ describe('CustomsPesticideTab', () => {
     build()
     fireEvent.click(await screen.findByText('Bipyrhone 20EC'))
     expect(await screen.findByText('đốm vòng')).toBeInTheDocument()
-    //  01/10/2026 — tab «Sử dụng & tài liệu» mở sẵn; bảng có tiêu đề «Phạm vi sử dụng» + số dòng.
+    //  01/10/2026 — tab "Sử dụng & tài liệu" mở sẵn; bảng có tiêu đề "Phạm vi sử dụng" + số dòng.
     expect(screen.getByRole('tab', { name: 'Sử dụng & tài liệu' })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -211,7 +211,7 @@ describe('CustomsPesticideTab', () => {
     expect(screen.getAllByText('Nguồn không ghi').length).toBeGreaterThan(0)
   })
 
-  it('offers «Xóa lọc» once a filter moves off the default and puts the default status back', async () => {
+  it('offers "Xóa lọc" once a filter moves off the default and puts the default status back', async () => {
     build()
     const search = await screen.findByRole('textbox', { name: 'Tìm thuốc BVTV' })
     expect(screen.queryByRole('button', { name: /Xóa lọc/ })).not.toBeInTheDocument()
@@ -264,7 +264,7 @@ describe('CustomsPesticideTab', () => {
       const last = calls.filter((call) => call.url.endsWith('/pesticides')).at(-1)
       expect(last?.params).toMatchObject({ banned_only: 'true', status: '1', page: 1 })
     })
-    //  Rỗng lúc này là KẾT QUẢ TỐT — không được bảo người dùng «thử bỏ lọc».
+    //  Rỗng lúc này là KẾT QUẢ TỐT — không được bảo người dùng "thử bỏ lọc".
     expect(
       await screen.findByText(/Không thuốc nào trong bộ lọc đang chọn chứa hoạt chất cấm/),
     ).toBeInTheDocument()
@@ -339,7 +339,7 @@ describe('CustomsPesticideTab', () => {
       build()
       fireEvent.click(await screen.findByText('Bipyrhone 20EC'))
       fireEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
-      expect(await screen.findByText(/lần «Nạp danh mục» sau sẽ ghi đè/)).toBeInTheDocument()
+      expect(await screen.findByText(/sau sẽ ghi đè/)).toHaveTextContent(/lần Nạp danh mục sau sẽ ghi đè/)
       expect(screen.getByLabelText(/Tên thuốc/)).toHaveValue('Bipyrhone 20EC')
       fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
       await waitFor(() =>
@@ -355,7 +355,7 @@ describe('CustomsPesticideTab', () => {
       fireEvent.click(await screen.findByText('Bipyrhone 20EC'))
       await screen.findByText('đốm vòng')
       expect(screen.queryByRole('button', { name: 'Sửa' })).not.toBeInTheDocument()
-      //  Tên ĐÚNG «Xóa» — trang chi tiết nay có cột tra cứu với nút «Xóa bộ lọc» (01/10/2026),
+      //  Tên ĐÚNG "Xóa" — trang chi tiết nay có cột tra cứu với nút "Xóa bộ lọc" (01/10/2026),
       //  không liên quan quyền xóa thuốc.
       expect(screen.queryByRole('button', { name: 'Xóa' })).not.toBeInTheDocument()
     })
@@ -396,7 +396,7 @@ describe('CustomsPesticideTab', () => {
     items = [ROW]
     const { unmount } = build()
     fireEvent.click(await screen.findByText('Bipyrhone 20EC'))
-    //  Tệp đính kèm nằm chung tab «Sử dụng & tài liệu» (mở sẵn) với bảng phạm vi sử dụng.
+    //  Tệp đính kèm nằm chung tab "Sử dụng & tài liệu" (mở sẵn) với bảng phạm vi sử dụng.
     expect(await screen.findByText('Chứng từ & Tài liệu đính kèm')).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: /Upload chứng từ/ })).toBeInTheDocument()
     await waitFor(() =>
@@ -410,7 +410,7 @@ describe('CustomsPesticideTab', () => {
     granted = new Set()
     build()
     fireEvent.click(await screen.findByText('Bipyrhone 20EC'))
-    //  Tệp đính kèm nằm chung tab «Sử dụng & tài liệu» (mở sẵn) với bảng phạm vi sử dụng.
+    //  Tệp đính kèm nằm chung tab "Sử dụng & tài liệu" (mở sẵn) với bảng phạm vi sử dụng.
     expect(await screen.findByText('Chứng từ & Tài liệu đính kèm')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Upload chứng từ/ })).not.toBeInTheDocument()
   })
