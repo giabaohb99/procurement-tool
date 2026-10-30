@@ -1,5 +1,5 @@
 // duoc-CR-490 (bê từ bản v2 `frontend-v2/src/modules/procurement/utils/customs-pesticide.ts`) —
-// hàm thuần của mục «Thuốc BVTV» (Tra cứu thị trường, bản cũ). Bản v2 chưa có form thêm/sửa/xóa
+// hàm thuần của mục "Thuốc BVTV" (Tra cứu thị trường, bản cũ). Bản v2 chưa có form thêm/sửa/xóa
 // nên các hàm chuyển đổi form ↔ API (cuối tệp) là thiết kế RIÊNG của bản cũ, khớp
 // `backend/app/modules/customs/pesticide_schema.py`.
 
@@ -40,7 +40,7 @@ export type PesticideFilters = {
   banned: string
 }
 
-/** Mặc định lọc «Còn hiệu lực» (đại ca chốt 29/09) — thuốc hết hiệu lực vẫn có, bỏ lọc là thấy. */
+/** Mặc định lọc "Còn hiệu lực" (đại ca chốt 29/09) — thuốc hết hiệu lực vẫn có, bỏ lọc là thấy. */
 export const DEFAULT_PESTICIDE_FILTERS: PesticideFilters = {
   q: '', status: String(PESTICIDE_STATUS.active), pestGroup: '', banned: '',
 }
@@ -57,8 +57,8 @@ export function buildPesticideParams(f: PesticideFilters): Record<string, string
 }
 
 /**
- * Nhãn mục «Có hoạt chất cấm» của ô lọc. `bannedRules` chưa có (đang tải ô lọc) → nói trơn,
- * đừng vội bảo «chưa có danh sách cấm». Bằng 0 mới thật sự là CHƯA nạp danh sách cấm.
+ * Nhãn mục "Có hoạt chất cấm" của ô lọc. `bannedRules` chưa có (đang tải ô lọc) → nói trơn,
+ * đừng vội bảo "chưa có danh sách cấm". Bằng 0 mới thật sự là CHƯA nạp danh sách cấm.
  */
 export function formatBannedFilterLabel(bannedRules?: number, bannedCount?: number): string {
   if (bannedRules === undefined) return 'Có hoạt chất cấm'
@@ -67,10 +67,10 @@ export function formatBannedFilterLabel(bannedRules?: number, bannedCount?: numb
 }
 
 /**
- * Câu bảng rỗng phân biệt «chưa có danh mục» với «bộ lọc loại hết» — một câu chung thì người
- * vừa gõ nhầm một chữ đọc ra «chưa có dữ liệu» và tin là vậy.
+ * Câu bảng rỗng phân biệt "chưa có danh mục" với "bộ lọc loại hết" — một câu chung thì người
+ * vừa gõ nhầm một chữ đọc ra "chưa có dữ liệu" và tin là vậy.
  *
- * `bannedRules` chỉ truyền khi đang lọc «Có hoạt chất cấm»: rỗng lúc đó là KẾT QUẢ TỐT (danh mục
+ * `bannedRules` chỉ truyền khi đang lọc "Có hoạt chất cấm": rỗng lúc đó là KẾT QUẢ TỐT (danh mục
  * không lọt thuốc cấm), phải nói thẳng — trừ khi chưa có danh sách cấm để mà đối chiếu.
  */
 export function resolvePesticideEmptyMessage(
@@ -84,16 +84,16 @@ export function resolvePesticideEmptyMessage(
     }
     return bannedRules > 0
       ? 'Không thuốc nào trong bộ lọc đang chọn chứa hoạt chất cấm theo TT 75/2025 (khớp theo tên hoạt chất).'
-      : 'Chưa có danh sách hoạt chất cấm để đối chiếu — danh sách này nạp cùng danh mục pháp lý (mục «Pháp lý»).'
+      : 'Chưa có danh sách hoạt chất cấm để đối chiếu — danh sách này nạp cùng danh mục pháp lý (mục "Pháp lý").'
   }
   return canImport
-    ? 'Chưa có danh mục thuốc BVTV. Bấm «Nạp danh mục» để tải tệp thuoc-bvtv.json / .xlsx.'
+    ? 'Chưa có danh mục thuốc BVTV. Bấm "Nạp danh mục" để tải tệp thuoc-bvtv.json / .xlsx.'
     : 'Chưa có danh mục thuốc BVTV — nhờ người phụ trách nạp tệp danh mục.'
 }
 
 // ── Form thêm / sửa (bản v2 chưa có, thiết kế riêng cho bản cũ) ─────────────────────────────
 // Trần chữ khớp ĐÚNG `_LIMITS` / `_USE_LIMITS` ở `backend/.../customs/pesticide_reader.py` —
-// lệch thì chuỗi quá dài đi thẳng xuống MySQL, ra lỗi 500 thay vì câu «tối đa n ký tự».
+// lệch thì chuỗi quá dài đi thẳng xuống MySQL, ra lỗi 500 thay vì câu "tối đa n ký tự".
 export const PESTICIDE_FIELD_LIMITS = {
   trade_name: 255, active_ingredient: 500, concentration: 100, pest_group: 100, sector: 100,
   registrant: 255, registration_no: 60, toxicity: 500, source_url: 255,
@@ -210,8 +210,8 @@ export function extractPesticideErrorMessage(e: any, fallback = 'Lỗi khi lưu'
 }
 
 /**
- * Query string mở mục «Thuốc BVTV» từ cột tra cứu của trang chi tiết (01/10/2026, đồng bộ bản v2).
- * Ép `pstatus=all`: số đếm của «Tra cứu nhanh» tính trên MỌI tình trạng.
+ * Query string mở mục "Thuốc BVTV" từ cột tra cứu của trang chi tiết (01/10/2026, đồng bộ bản v2).
+ * Ép `pstatus=all`: số đếm của "Tra cứu nhanh" tính trên MỌI tình trạng.
  */
 export function buildPesticideListSearch(f: { q?: string; pestGroup?: string; sector?: string }): string {
   const p = new URLSearchParams({ pstatus: 'all' })

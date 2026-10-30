@@ -64,7 +64,7 @@ export default function EmployeeAccountCard({ employeeId, email }: { employeeId:
   async function submitPassword() {
     // bao-CR-405 (BM-016): chép đúng luật của `backend/app/core/password_policy.py`.
     // Luật cấm-trùng (mật khẩu chứa mã nhân viên / email) chỉ máy chủ kiểm được.
-    // bao-CR-653: bỏ luật «phải có cả chữ và số», khớp backend.
+    // bao-CR-653: bỏ luật "phải có cả chữ và số", khớp backend.
     if (pw1.length < 8) {
       toast.error('Mật khẩu tối thiểu 8 ký tự'); return
     }

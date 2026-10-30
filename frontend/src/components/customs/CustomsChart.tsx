@@ -1,4 +1,4 @@
-// bao-CR-470 — thẻ «Biểu đồ» của màn Tra cứu giá hải quan (bản cũ).
+// bao-CR-470 — thẻ "Biểu đồ" của màn Tra cứu giá hải quan (bản cũ).
 //
 // Bản cũ KHÔNG có thư viện biểu đồ — vẽ SVG tay (không sửa pages/Reports.tsx, không thêm thư
 // viện). Bốn luật lấy từ số liệu thật của ATRAZINE (04-giao-dien.md §4), đừng "làm cho đẹp" mà bỏ:
@@ -24,8 +24,8 @@ const PRICE_H = 280, PRICE_T = 12, PRICE_B = 28
 const QTY_H = 150, QTY_T = 18, QTY_B = 26
 const BAND = 'rgba(0,174,239,.16)'
 const GREEN = '#16a34a'
-// bao-CR-519 (đại ca chọn 28/09): bỏ tô nền cột của 518 (làm hàng «Giá tốt nhất» chìm).
-// Bốn cột giá gom thành NHÓM: tiêu đề nhóm «Giá (USD/đơn vị)» + hai vạch dọc đậm hai bên.
+// bao-CR-519 (đại ca chọn 28/09): bỏ tô nền cột của 518 (làm hàng "Giá tốt nhất" chìm).
+// Bốn cột giá gom thành NHÓM: tiêu đề nhóm "Giá (USD/đơn vị)" + hai vạch dọc đậm hai bên.
 const GROUP_EDGE = '2px solid #94a3b8'
 
 export default function CustomsChart({ filters }: { filters: CustomsFilters }) {

@@ -232,7 +232,7 @@ export default function CrudList() {
   async function handleDeleteSelected() {
     if (selectedIds.length === 0) return;
 
-    // bao-CR-547 (đại ca chốt 01/10/2026): chỉ xóa phiếu NHÁP. Cột tick dùng chung với «Xuất Excel»
+    // bao-CR-547 (đại ca chốt 01/10/2026): chỉ xóa phiếu NHÁP. Cột tick dùng chung với "Xuất Excel"
     // nên lựa chọn có thể lẫn phiếu khác trạng thái — lọc lấy phiếu Nháp, phần còn lại giữ nguyên
     // và nói rõ trong hộp xác nhận. Lựa chọn tự xóa mỗi lần nạp trang nên mọi id đều nằm trong `items`.
     const selected = items.filter((item) => selectedIds.includes(item.id));

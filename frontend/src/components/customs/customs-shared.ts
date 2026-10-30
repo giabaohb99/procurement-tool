@@ -9,13 +9,13 @@ export type CustomsFilters = {
   origin: string
   unit: string
   formulation: string
-  importer_id: string     // bao-CR-493: nhiều id nối dấu phẩy («12,34»), backend tự tách, nhiều là HOẶC
-  importer_name: string   // chỉ để hiện chip "đang lọc theo doanh nghiệp", không gửi lên API; nhiều tên nối «|»
-  partner_id: string      // bao-CR-493: đối tác nước ngoài, cùng luật «nhiều id nối dấu phẩy»
+  importer_id: string     // bao-CR-493: nhiều id nối dấu phẩy ("12,34"), backend tự tách, nhiều là HOẶC
+  importer_name: string   // chỉ để hiện chip "đang lọc theo doanh nghiệp", không gửi lên API; nhiều tên nối "|"
+  partner_id: string      // bao-CR-493: đối tác nước ngoài, cùng luật "nhiều id nối dấu phẩy"
   partner_name: string    // chỉ để in chip, không gửi lên API
   date_from: string
   date_to: string
-  // bao-CR-493 — sáu ô «Lọc thêm» theo sheet 4 yêu cầu phòng Thu mua. Rỗng = không lọc.
+  // bao-CR-493 — sáu ô "Lọc thêm" theo sheet 4 yêu cầu phòng Thu mua. Rỗng = không lọc.
   currency: string
   incoterm: string
   batch_id: string
@@ -71,7 +71,7 @@ export function fromSavedParams(params: string): CustomsFilters {
 }
 
 /**
- * bao-CR-502 — bộ lọc lưu từ bản cũ TRƯỚC khi đổi sang khoảng ngày còn mang «YYYY-MM».
+ * bao-CR-502 — bộ lọc lưu từ bản cũ TRƯỚC khi đổi sang khoảng ngày còn mang "YYYY-MM".
  * Đổi ra ngày đầu / cuối tháng để ô chọn ngày hiện được; backend hiểu cả hai nên kết quả không đổi.
  */
 export function monthToDay(value: string, edge: 'start' | 'end'): string {
@@ -86,12 +86,12 @@ export const sameSavedParams = (a: string, b: string) =>
   toSavedParams(fromSavedParams(a)) === toSavedParams(fromSavedParams(b))
 
 
-/** Sáu ô của hàng «Lọc thêm» — có giá trị thì hàng tự mở. */
+/** Sáu ô của hàng "Lọc thêm" — có giá trị thì hàng tự mở. */
 export const EXTRA_FILTER_KEYS: (keyof CustomsFilters)[] = [
   'currency', 'incoterm', 'batch_id', 'price_min', 'price_max', 'qty_min', 'qty_max', 'rate_min', 'rate_max',
 ]
 
-// bao-CR-493 — doanh nghiệp chọn NHIỀU: `importer_id` là id nối dấu phẩy, `importer_name` là tên nối «|»
+// bao-CR-493 — doanh nghiệp chọn NHIỀU: `importer_id` là id nối dấu phẩy, `importer_name` là tên nối "|"
 // cùng thứ tự (tên chỉ để in chip). Ba hàm dưới giữ hai chuỗi luôn song song.
 export type NamedId = { id: string; name: string }
 export function splitNamedIds(ids: string, names: string): NamedId[] {
@@ -125,7 +125,7 @@ export const UNIT_LABELS: Record<string, string> = {
   PKG: 'gói / kiện', BAG: 'bao', BBL: 'thùng phuy', ROL: 'cuộn', PAIL: 'xô / thùng nhỏ',
 }
 export const unitLabel = (u?: string) => (u ? UNIT_LABELS[u] || u : '')
-// Nhãn nút chọn đơn vị: «lít (LTR)»; mã chưa rõ nghĩa thì chỉ mã.
+// Nhãn nút chọn đơn vị: "lít (LTR)"; mã chưa rõ nghĩa thì chỉ mã.
 export const unitChip = (u: string) => (UNIT_LABELS[u] ? `${UNIT_LABELS[u]} (${u})` : u)
 
 export function toParams(f: CustomsFilters): Record<string, string> {
@@ -194,7 +194,7 @@ export function niceScale(lo: number, hi: number, count = 5) {
 
 export const fmtTick = (v: number) => v.toLocaleString('vi-VN', { maximumFractionDigits: 2 })
 
-// Số lượng gọn cho trục: 2.000.000 → «2 tr», 500.000 → «500 N».
+// Số lượng gọn cho trục: 2.000.000 → "2 tr", 500.000 → "500 N".
 export function fmtCompact(v: number) {
   if (v >= 1e9) return `${fmtTick(v / 1e9)} tỷ`
   if (v >= 1e6) return `${fmtTick(v / 1e6)} tr`

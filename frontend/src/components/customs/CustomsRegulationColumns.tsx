@@ -1,11 +1,11 @@
 // duoc-CR-598 (07/10/2026) — các cột DÙNG CHUNG của bảng hóa chất theo văn bản ở bản cũ, khớp đúng
 // thứ tự bản v2 (`frontend-v2/.../config/customs-regulation-columns.tsx`):
 //   STT · Phụ lục / Văn bản · Tên khoa học · Tên chất · Mã số CAS · Công thức hóa học · Ngưỡng / Mức cấm
-// Bảng duyệt (`CustomsRegulationBrowse`) thêm «Thuốc BVTV chứa» rồi «Lưu ý»; bảng cảnh báo theo từ khóa
-// (`CustomsRegulationAlertTable`) thêm «Lưu ý». Gom về một chỗ vì hai bảng từng lệch nhau (bảng cảnh
+// Bảng duyệt (`CustomsRegulationBrowse`) thêm "Thuốc BVTV chứa" rồi "Lưu ý"; bảng cảnh báo theo từ khóa
+// (`CustomsRegulationAlertTable`) thêm "Lưu ý". Gom về một chỗ vì hai bảng từng lệch nhau (bảng cảnh
 // báo còn 5 cột cũ trong khi bảng duyệt đã đổi) — đại ca bắt được ngày 07/10/2026.
 // duoc-CR-609 (07/10/2026): khai thành MẢNG CỘT có khóa (`TableColumn`) để bảng duyệt ẩn / hiện được
-// từng cột qua nút «Cột»; hai component Headers / Cells bên dưới vẫn dựng từ chính mảng này.
+// từng cột qua nút "Cột"; hai component Headers / Cells bên dưới vẫn dựng từ chính mảng này.
 import type { TableColumn } from '../../hooks/useTableColumns'
 import {
   describeMissingLimit, formatBannedLabel, formatMixtureLimit, formatThresholdKg, regulationBadgeClass,
@@ -62,7 +62,7 @@ export function RegulationCommonCells({ r }: { r: any }) {
   return <RegulationRowCells columns={REGULATION_COMMON_COLUMNS} r={r} />
 }
 
-/** Ô «Ngưỡng / Mức cấm»: cấm (đỏ) > tồn trữ kg (cam đậm) > hàm lượng hỗn hợp (chữ thường) > không có. */
+/** Ô "Ngưỡng / Mức cấm": cấm (đỏ) > tồn trữ kg (cam đậm) > hàm lượng hỗn hợp (chữ thường) > không có. */
 function LimitCell({ r }: { r: any }) {
   if (r.list_code === 10) {
     return <span className="badge err" style={{ fontWeight: 700 }}>{formatBannedLabel(r.banned_year)}</span>

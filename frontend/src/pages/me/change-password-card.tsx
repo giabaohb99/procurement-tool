@@ -17,7 +17,7 @@ export default function ChangePasswordCard() {
   // Cảnh báo ngay khi gõ, không đợi bấm nút mới báo lỗi.
   // bao-CR-405 (BM-016): chép đúng luật của `backend/app/core/password_policy.py` —
   // trước đây ô này chỉ đòi 6 ký tự nên giao diện hứa một đằng máy chủ nhận một nẻo.
-  // bao-CR-653: bỏ luật «phải có cả chữ và số», khớp backend.
+  // bao-CR-653: bỏ luật "phải có cả chữ và số", khớp backend.
   const weak = newP.length < 8
   const tooShort = newP.length > 0 && weak
   const mismatch = conf.length > 0 && newP !== conf

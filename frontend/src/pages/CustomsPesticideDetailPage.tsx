@@ -1,7 +1,7 @@
 // duoc-CR-493 — CHI TIẾT MỘT THUỐC BVTV (bản cũ): `/customs-prices/pesticides/:id`.
 //
 // Trang riêng thay cho hộp thoại, đồng bộ bản v2 (duoc-CR-492): tiêu đề + nút Sửa / Xóa ở đầu, thẻ
-// «Thông tin đăng ký», bảng «Phạm vi sử dụng» có tiêu đề + câu giải thích, lịch sử thao tác cuối
+// "Thông tin đăng ký", bảng "Phạm vi sử dụng" có tiêu đề + câu giải thích, lịch sử thao tác cuối
 // trang. Nút lùi quay về ĐÚNG chỗ đã mở trang (bộ lọc của thẻ Thuốc BVTV nằm trên URL, hoặc mục
 // Pháp lý) nhờ `state.from`; mở thẳng link thì về thẻ Thuốc BVTV.
 // Quyền: xem theo `customs_price.read`; Sửa / Xóa theo khóa riêng `customs_pesticide` (duoc-CR-490).
@@ -59,8 +59,8 @@ export default function CustomsPesticideDetailPage() {
     const ok = await askConfirm({
       title: 'Xóa thuốc BVTV',
       message: data.is_manual
-        ? `Xóa «${data.trade_name}»? Không hoàn tác được.`
-        : `Xóa «${data.trade_name}»? Thuốc này lấy từ bản cào — lần «Nạp danh mục» sau sẽ thêm lại nó theo nguồn.`,
+        ? `Xóa "${data.trade_name}"? Không hoàn tác được.`
+        : `Xóa "${data.trade_name}"? Thuốc này lấy từ bản cào — lần "Nạp danh mục" sau sẽ thêm lại nó theo nguồn.`,
       confirmText: 'Xóa',
     })
     if (!ok) return
@@ -126,7 +126,7 @@ export default function CustomsPesticideDetailPage() {
   return (
     <div>
       {/* 01/10/2026 — bố cục đồng bộ v2: THẺ ĐẦU TRANG + hai tab (Sử dụng & tài liệu · Thuốc liên quan);
-          cột «Tìm thuốc khác» + «Tra cứu nhanh» bên phải, màn hẹp xuống cuối trang
+          cột "Tìm thuốc khác" + "Tra cứu nhanh" bên phải, màn hẹp xuống cuối trang
           (`pesticide-detail-layout` trong index.css). */}
       <div className="pesticide-detail-layout">
       <div style={{ minWidth: 0 }}>
@@ -181,7 +181,7 @@ export default function CustomsPesticideDetailPage() {
               ))}
               {data.uses.length === 0 && (
                 <tr><td colSpan={5} className="table-empty">
-                  {manual ? 'Chưa nhập phạm vi sử dụng nào — bấm «Sửa» để thêm.' : 'Nguồn không ghi phạm vi sử dụng cho thuốc này.'}
+                  {manual ? 'Chưa nhập phạm vi sử dụng nào — bấm "Sửa" để thêm.' : 'Nguồn không ghi phạm vi sử dụng cho thuốc này.'}
                 </td></tr>
               )}
             </tbody>

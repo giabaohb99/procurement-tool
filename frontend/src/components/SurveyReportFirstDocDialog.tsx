@@ -1,4 +1,4 @@
-// duoc-CR-613 (09/10/2026) — bản v1 của hộp «Thêm hồ sơ đầu tiên» (v2: duoc-CR-611,
+// duoc-CR-613 (09/10/2026) — bản v1 của hộp "Thêm hồ sơ đầu tiên" (v2: duoc-CR-611,
 // `frontend-v2/.../survey-report/survey-report-first-doc-dialog.tsx`). Khối Báo cáo thực hiện
 // còn TRỐNG: chọn dòng hàng + giai đoạn mặc định + tên; backend dựng khung (5 giai đoạn + nút
 // theo dòng, KHÔNG đổ mẫu) rồi thêm đúng hồ sơ đó. Ô chọn lấy từ `GET .../first-doc-options`.
@@ -28,7 +28,7 @@ export interface ReportFirstDocPayload {
 type Props = {
   /** `/api/execution-report/{entity}/{id}` — gốc đường API của khối. */
   base: string
-  /** «phiếu» / «đơn» — chữ của dòng Chung. */
+  /** "phiếu" / "đơn" — chữ của dòng Chung. */
   ownerLabel: string
   busy: boolean
   onSave: (payload: ReportFirstDocPayload) => Promise<boolean>
@@ -134,7 +134,7 @@ export default function SurveyReportFirstDocDialog({ base, ownerLabel, busy, onS
             placeholder="VD: Giấy phép nhập khẩu chuyên ngành"
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => {
-              //  Enter chốt chữ của bộ gõ tiếng Việt không phải Enter «thêm».
+              //  Enter chốt chữ của bộ gõ tiếng Việt không phải Enter "thêm".
               if (e.nativeEvent.isComposing) return
               //  Enter = lưu, chặn mặc định để không submit form cha (bẫy biểu mẫu CR-317).
               if (e.key === 'Enter') { e.preventDefault(); void save() }

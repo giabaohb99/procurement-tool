@@ -5,7 +5,7 @@ import SearchSelect from './SearchSelect'
  *
  * `mode = 'transfer'`: chọn phòng đích (bỏ phòng đang xử lý) + lý do bắt buộc.
  * `mode = 'return'`: chỉ hỏi lý do, đích là phòng thu mua mặc định (gửi 0, backend ghi id thật của
- * «Sản xuất -Thu mua» — bao-CR-524).
+ * "Sản xuất -Thu mua" — bao-CR-524).
  * Không có lựa chọn chuyển MỘT PHẦN dòng — cả phiếu đi cùng nhau (luật đã chốt ở HDSD). */
 interface TransferDeptModalProps {
   open: boolean

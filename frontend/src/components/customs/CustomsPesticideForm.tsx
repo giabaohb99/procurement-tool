@@ -27,7 +27,7 @@ export default function CustomsPesticideForm({ pesticideId, onClose, onSaved }: 
   const isNew = pesticideId == null
   const [form, setForm] = useState<PesticideForm>(blankPesticideForm())
   const [loading, setLoading] = useState(!isNew)
-  // Thuốc LẤY TỪ NGUỒN (không phải tự thêm) — sửa xong vẫn bị ghi đè ở lần «Nạp danh mục» sau.
+  // Thuốc LẤY TỪ NGUỒN (không phải tự thêm) — sửa xong vẫn bị ghi đè ở lần "Nạp danh mục" sau.
   const [isManualSource, setIsManualSource] = useState(true)
   const [err, setErr] = useState('')
   const [saving, setSaving] = useState(false)
@@ -74,13 +74,13 @@ export default function CustomsPesticideForm({ pesticideId, onClose, onSaved }: 
       {loading ? <div style={{ color: 'var(--muted)' }}>Đang tải…</div> : (
         <>
           <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
-            Tên thuốc / hoạt chất vừa sửa chỉ gắn vào dòng hàng hải quan sau khi bấm «Gắn lại nhãn»
-            ở mục «Cấu hình», hoặc lần «Nạp danh mục» kế tiếp.
+            Tên thuốc / hoạt chất vừa sửa chỉ gắn vào dòng hàng hải quan sau khi bấm <strong>Gắn lại nhãn</strong>{' '}
+            ở mục <strong>Cấu hình</strong>, hoặc lần <strong>Nạp danh mục</strong> kế tiếp.
           </div>
           {!isNew && isManualSource && (
             <div style={{ border: '1px solid #f5c26b', background: '#fff8e8', color: '#8a5a00', borderRadius: 8,
               padding: '8px 12px', fontSize: 13, marginBottom: 12 }}>
-              <i className="ti ti-alert-triangle" /> Thuốc này lấy từ bản cào — lần «Nạp danh mục» sau sẽ ghi đè
+              <i className="ti ti-alert-triangle" /> Thuốc này lấy từ bản cào — lần <strong>Nạp danh mục</strong> sau sẽ ghi đè
               chỗ sửa tay theo nguồn.
             </div>
           )}

@@ -79,15 +79,15 @@ function buildPatch(initial: Record<string, string>, form: Record<string, string
   const patch: Record<string, any> = {}
   for (const f of FIELDS) {
     const v = form[f.key].trim()
-    if (f.required && !v) return { patch: {}, error: `Chưa nhập «${f.label}»` }
+    if (f.required && !v) return { patch: {}, error: `Chưa nhập "${f.label}"` }
     if (v === initial[f.key].trim()) continue
     if (f.kind === 'text') patch[f.key] = v
     else if (f.kind === 'date') patch[f.key] = v || null
     else if (f.kind === 'transport') patch[f.key] = v ? Number(v) : null
     else {
       const n = parseNumber(v)
-      if (Number.isNaN(n)) return { patch: {}, error: `«${f.label}» phải là số không âm` }
-      if (f.kind === 'integer' && n !== null && !Number.isInteger(n)) return { patch: {}, error: `«${f.label}» phải là số nguyên` }
+      if (Number.isNaN(n)) return { patch: {}, error: `"${f.label}" phải là số không âm` }
+      if (f.kind === 'integer' && n !== null && !Number.isInteger(n)) return { patch: {}, error: `"${f.label}" phải là số nguyên` }
       patch[f.key] = n
     }
   }

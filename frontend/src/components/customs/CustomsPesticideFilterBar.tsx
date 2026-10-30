@@ -1,4 +1,4 @@
-// Cụm ô tìm + bốn ô chọn + nút «Xóa lọc» của mục «Thuốc BVTV» — tách khỏi `CustomsPesticideTab.tsx`
+// Cụm ô tìm + bốn ô chọn + nút "Xóa lọc" của mục "Thuốc BVTV" — tách khỏi `CustomsPesticideTab.tsx`
 // (02/10/2026) để tệp đó không vượt 200 dòng. Thuần hiển thị: nhận giá trị/hàm đặt giá trị từ
 // trang cha, không tự giữ state hay gọi API — xem `customs-pesticide-filter-controls.tsx` ở
 // frontend-v2 (bản này dựng cùng tinh thần, khác khuôn component vì v1 không dùng shadcn).

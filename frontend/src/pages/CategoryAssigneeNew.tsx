@@ -7,9 +7,9 @@ import AuditTimeline from '../components/AuditTimeline'
 
 type Opt = { value: number; label: string }
 type AssigneeRow = { id: number; item_group_id: number; department_id?: number }
-/** bao-CR-527: nhân sự kèm tình trạng để ô chọn chỉ mời người «Chính thức» đang hoạt động. */
+/** bao-CR-527: nhân sự kèm tình trạng để ô chọn chỉ mời người "Chính thức" đang hoạt động. */
 type EmpOpt = Opt & { official: boolean; statusText: string }
-/** bao-CR-524: KHÔNG còn mục ảo «Thu mua chung». Để trống = backend ghi phòng thu mua mặc định. */
+/** bao-CR-524: KHÔNG còn mục ảo "Thu mua chung". Để trống = backend ghi phòng thu mua mặc định. */
 const DEFAULT_DEPT_LABEL = 'Phòng thu mua mặc định'
 const selStyle = {
   control: (b: any) => ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7' }),
@@ -29,7 +29,7 @@ export default function CategoryAssigneeNew() {
   const [primary, setPrimary] = useState<EmpOpt | null>(null)
   const [backup, setBackup] = useState<EmpOpt | null>(null)
   // Phòng áp dụng: mặc định lấy từ URL (?dept=); null = để trống → backend ghi phòng thu mua mặc
-  // định (bao-CR-524, id thật của «Sản xuất -Thu mua»).
+  // định (bao-CR-524, id thật của "Sản xuất -Thu mua").
   const [dept, setDept] = useState<Opt | null>(() => {
     const id = Number(sp.get('dept')) || 0
     return id ? { value: id, label: `#${id}` } : null
@@ -53,7 +53,7 @@ export default function CategoryAssigneeNew() {
     api.get('/api/item-groups', { params: { page_size: 1000 } }).then(r => setCats((r.data.data.items || []).map((x: any) => ({ value: x.id, label: x.name }))))
     api.get('/api/employees', { params: { page_size: 1000 } }).then(r => setEmps((r.data.data.items || []).map((x: any) => ({
       value: x.id, label: x.full_name + (x.code ? ` · ${x.code}` : ''),
-      // bao-CR-527: «Chính thức» + đang hoạt động mới nhận việc được
+      // bao-CR-527: "Chính thức" + đang hoạt động mới nhận việc được
       official: x.status === 'official' && x.is_active !== false,
       statusText: x.is_active === false ? 'ngừng hoạt động' : (x.status_label || x.status || 'chưa rõ'),
     }))))
@@ -70,7 +70,7 @@ export default function CategoryAssigneeNew() {
     const found = depts.find(d => d.value === dept.value)
     if (found && found.label !== dept.label) setDept(found)
   }, [depts])
-  // bao-CR-527: ô chọn chỉ mời người «Chính thức»; người ĐANG được gán mà nay không còn đạt thì vẫn
+  // bao-CR-527: ô chọn chỉ mời người "Chính thức"; người ĐANG được gán mà nay không còn đạt thì vẫn
   // hiện kèm tình trạng để người sửa thấy phải đổi.
   const empOptions = useMemo(() => emps
     .filter(e => e.official || e.value === primary?.value || e.value === backup?.value)
@@ -105,11 +105,11 @@ export default function CategoryAssigneeNew() {
     setErr('')
     if (selCats.length === 0) { setErr('Chọn ít nhất 1 phân loại'); return }
     if (!primary) { setErr('Chọn NSTM chính'); return }
-    // bao-CR-527: dự phòng khác người chính; cả hai phải «Chính thức» (backend chặn lại lần nữa)
+    // bao-CR-527: dự phòng khác người chính; cả hai phải "Chính thức" (backend chặn lại lần nữa)
     if (backup && backup.value === primary.value) { setErr('NSTM dự phòng phải là người khác NSTM chính'); return }
     for (const [who, role] of [[primary, 'NSTM chính'], [backup, 'NSTM dự phòng']] as const) {
       if (who && !who.official) {
-        setErr(`${role} ${who.label} đang ở tình trạng «${who.statusText}» — chỉ phân công được nhân sự «Chính thức» đang hoạt động`)
+        setErr(`${role} ${who.label} đang ở tình trạng "${who.statusText}" — chỉ phân công được nhân sự "Chính thức" đang hoạt động`)
         return
       }
     }
@@ -209,14 +209,14 @@ export default function CategoryAssigneeNew() {
               <label>NSTM chính <span className="req" style={{ color: '#dc2626' }}>*</span></label>
               <Select classNamePrefix="rs" value={primary} options={empOptions} onChange={(v: any) => setPrimary(v)} isClearable placeholder="Chọn/tìm NSTM…" styles={selStyle} menuPortalTarget={portal} menuPosition="fixed" />
               <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, fontWeight: 'normal' }}>
-                Bắt buộc, chỉ nhân sự «Chính thức» đang hoạt động. Người nhận yêu cầu mua hàng thuộc các phân loại này.
+                Bắt buộc, chỉ nhân sự <strong>Chính thức</strong> đang hoạt động. Người nhận yêu cầu mua hàng thuộc các phân loại này.
               </div>
             </div>
             <div className="form-row">
               <label>NSTM dự phòng</label>
               <Select classNamePrefix="rs" value={backup} options={empOptions.filter(e => e.value !== primary?.value)} onChange={(v: any) => setBackup(v)} isClearable placeholder="Chọn/tìm NSTM…" styles={selStyle} menuPortalTarget={portal} menuPosition="fixed" />
               <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, fontWeight: 'normal' }}>
-                Tối đa một người, khác NSTM chính, cũng phải «Chính thức». Nhận việc khi NSTM chính không còn «Chính thức». Có thể bỏ trống.
+                Tối đa một người, khác NSTM chính, cũng phải <strong>Chính thức</strong>. Nhận việc khi NSTM chính không còn <strong>Chính thức</strong>. Có thể bỏ trống.
               </div>
             </div>
           </div>

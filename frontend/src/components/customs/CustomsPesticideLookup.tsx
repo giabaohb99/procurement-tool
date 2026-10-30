@@ -1,7 +1,7 @@
-// Cột «Tìm thuốc khác» + «Tra cứu nhanh» của trang chi tiết thuốc BVTV (01/10/2026, đồng bộ bản v2
+// Cột "Tìm thuốc khác" + "Tra cứu nhanh" của trang chi tiết thuốc BVTV (01/10/2026, đồng bộ bản v2
 // `customs-pesticide-lookup-sidebar.tsx`, bê theo cột trái của trang nguồn danhmuc.thuocbvtv.com):
-// đang đọc một thuốc mà muốn tra thuốc khác thì gõ / chọn ngay tại đây. Bấm «Lọc» hay một phân nhóm
-// là mở mục «Thuốc BVTV» với đúng bộ lọc đó (`buildPesticideListSearch`).
+// đang đọc một thuốc mà muốn tra thuốc khác thì gõ / chọn ngay tại đây. Bấm "Lọc" hay một phân nhóm
+// là mở mục "Thuốc BVTV" với đúng bộ lọc đó (`buildPesticideListSearch`).
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'

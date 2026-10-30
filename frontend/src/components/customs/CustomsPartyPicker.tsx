@@ -1,6 +1,6 @@
 // bao-CR-503 (bản cũ) — ô gõ có gợi ý để THÊM doanh nghiệp nhập khẩu / đối tác nước ngoài vào bộ
 // lọc, bê từ `customs-party-picker.tsx` bản v2. Chọn một mục là cộng thêm một chip (cùng cơ chế nút
-// «Lọc theo doanh nghiệp này»), ô tự trống lại để gõ tiếp. Tra phía server (`/api/customs/parties`)
+// "Lọc theo doanh nghiệp này"), ô tự trống lại để gõ tiếp. Tra phía server (`/api/customs/parties`)
 // vì đối tượng có hàng nghìn, không nạp hết được.
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api/client'
@@ -56,7 +56,7 @@ export default function CustomsPartyPicker({ partyType, selectedIds, placeholder
         onChange={(e) => { setKeyword(e.target.value); setOpen(true) }}
         onKeyDown={(e) => {
           if (e.key === 'Escape') setOpen(false)
-          // Enter chọn mục đầu — và chặn Enter lan ra ô lọc cha (sẽ bấm «Tìm» với ô chưa chọn gì).
+          // Enter chọn mục đầu — và chặn Enter lan ra ô lọc cha (sẽ bấm "Tìm" với ô chưa chọn gì).
           if (e.key === 'Enter') { e.preventDefault(); if (shown[0]) pick(shown[0]) }
         }} />
       {open && (

@@ -22,9 +22,9 @@ import {
 } from '../utils/surveyReportHelpers'
 
 /**
- * bao-CR-390: khối «Báo cáo thực hiện» trên chi tiết YCBG — bản v1 (`frontend/`).
+ * bao-CR-390: khối "Báo cáo thực hiện" trên chi tiết YCBG — bản v1 (`frontend/`).
  * bao-CR-602: dùng chung cho ĐMH (`entity="purchase_order"`): nút dòng hàng bám theo dòng
- * đơn (`itemsLocked`), cột «Kết quả», ô «Số ngày xử lý», và lệnh `focusItem` qua ref để
+ * đơn (`itemsLocked`), cột "Kết quả", ô "Số ngày xử lý", và lệnh `focusItem` qua ref để
  * bảng dòng hàng của đơn cuộn tới + sổ đúng nút.
  * Chép hành vi của `frontend-v2/.../survey-report/survey-report-card.tsx` sang phong
  * cách v1 (CSS thuần `.srp-*`, tabler icons, askConfirm/toast). Backend dùng chung,
@@ -52,7 +52,7 @@ type Props = {
   onReport?: (report: SurveyRequestReport | null) => void
 }
 
-/** Lệnh từ ngoài: bảng dòng hàng của chứng từ bấm «Hồ sơ» → cuộn tới và sổ đúng nút. */
+/** Lệnh từ ngoài: bảng dòng hàng của chứng từ bấm "Hồ sơ" → cuộn tới và sổ đúng nút. */
 export type SurveyReportCardHandle = { focusItem: (itemId: number) => void }
 
 type DocDialogState = { doc: SurveyReportDoc | null; defaults?: Partial<SurveyReportDocPayload> }
@@ -66,7 +66,7 @@ function todayIso(): string {
   return `${d.getFullYear()}-${mm}-${dd}`
 }
 
-/** Cắt nhãn dài cho thẻ phụ trong danh sách: quá 28 ký tự thì «…». */
+/** Cắt nhãn dài cho thẻ phụ trong danh sách: quá 28 ký tự thì "…". */
 function shortLabel(text: string, max = 28): string {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text
 }
@@ -76,8 +76,8 @@ function isLink(text: string): boolean {
 }
 
 /**
- * duoc-CR-612: chưa lưu gì thì màn rộng mở «Bảng», màn hẹp (< 1024px, bảng 2100px cuộn ngang
- * khó dùng) mở «Xem tổng». Đã chọn thì theo lựa chọn.
+ * duoc-CR-612: chưa lưu gì thì màn rộng mở "Bảng", màn hẹp (< 1024px, bảng 2100px cuộn ngang
+ * khó dùng) mở "Xem tổng". Đã chọn thì theo lựa chọn.
  */
 function readViewMode(): ViewMode {
   let stored: string | null = null
@@ -86,7 +86,7 @@ function readViewMode(): ViewMode {
   try { return window.matchMedia('(max-width: 1023px)').matches ? 'phase' : 'table' } catch { return 'phase' }
 }
 
-/** Chỉ các trường THỰC SỰ khác giữa hai bản — hộp «Sửa hồ sơ» không được ghi đè ô vừa sửa ngoài bảng bằng ảnh cũ. */
+/** Chỉ các trường THỰC SỰ khác giữa hai bản — hộp "Sửa hồ sơ" không được ghi đè ô vừa sửa ngoài bảng bằng ảnh cũ. */
 function changedDocFields(initial: SurveyReportDocPayload, next: SurveyReportDocPayload): Partial<SurveyReportDocPayload> {
   const changes: Record<string, unknown> = {}
   for (const key of Object.keys(next) as (keyof SurveyReportDocPayload)[]) {
@@ -117,7 +117,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
   const [report, setReport] = useState<SurveyRequestReport | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
-  //  duoc-CR-612: MỌI lệnh ghi của thẻ chạy LẦN LƯỢT qua một hàng đợi (ô «Bảng» bắn PATCH liên tục;
+  //  duoc-CR-612: MỌI lệnh ghi của thẻ chạy LẦN LƯỢT qua một hàng đợi (ô "Bảng" bắn PATCH liên tục;
   //  về sai thứ tự thì bản cũ đè bản mới). `pendingWrites` đếm cả lượt đang chạy.
   const writeTail = useRef<Promise<unknown>>(Promise.resolve())
   const pendingWrites = useRef(0)
@@ -131,9 +131,9 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
   const [docDialog, setDocDialog] = useState<DocDialogState | null>(null)
   const [itemDialog, setItemDialog] = useState<ItemDialogState | null>(null)
   const [phaseDialog, setPhaseDialog] = useState<PhaseDialogState | null>(null)
-  /** Hộp «Thêm hồ sơ đầu tiên» của khối còn TRỐNG (duoc-CR-613, v2: duoc-CR-611). */
+  /** Hộp "Thêm hồ sơ đầu tiên" của khối còn TRỐNG (duoc-CR-613, v2: duoc-CR-611). */
   const [firstDocOpen, setFirstDocOpen] = useState(false)
-  /** Hộp CHỌN MẪU của «Khởi tạo báo cáo mẫu» (duoc-CR-614). */
+  /** Hộp CHỌN MẪU của "Khởi tạo báo cáo mẫu" (duoc-CR-614). */
   const [initOpen, setInitOpen] = useState(false)
 
   function setViewMode(mode: ViewMode) {
@@ -141,7 +141,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
     try { localStorage.setItem(VIEW_KEY, mode) } catch { /* private mode */ }
   }
 
-  //  Nút «Hồ sơ n%» trên bảng dòng hàng của chứng từ (bao-CR-602): mở khối, chuyển
+  //  Nút "Hồ sơ n%" trên bảng dòng hàng của chứng từ (bao-CR-602): mở khối, chuyển
   //  dạng xem theo dòng hàng, sổ đúng dòng rồi cuộn tới.
   useImperativeHandle(ref, () => ({
     focusItem: (itemId: number) => {
@@ -192,7 +192,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
   /**
    * Chạy một mutation: khối mới thay vào state, toast, báo cha nạp lại lịch sử.
    * Mặc định bị cổng `busy` chặn (thao tác nặng: xóa, khởi tạo…); `force` bỏ cổng + không bật
-   * `busy` — dùng cho ô sửa tại chỗ của dạng «Bảng» để sửa nhanh liên tiếp không bị rớt.
+   * `busy` — dùng cho ô sửa tại chỗ của dạng "Bảng" để sửa nhanh liên tiếp không bị rớt.
    */
   async function mutate(run: () => Promise<any>, message?: string | ((next: SurveyRequestReport) => string | null), force = false): Promise<boolean> {
     if (!force) {
@@ -238,7 +238,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
   }
 
   // --- hành động ---
-  //  duoc-CR-614 — khởi tạo theo MẪU ĐÃ CHỌN; xong thì mở khối ở dạng «Bảng» để sửa ngay (đại ca 09/10).
+  //  duoc-CR-614 — khởi tạo theo MẪU ĐÃ CHỌN; xong thì mở khối ở dạng "Bảng" để sửa ngay (đại ca 09/10).
   async function initReport(template: number): Promise<boolean> {
     const ok = await mutate(() => api.post(`${base}/init`, { template }), 'Đã khởi tạo báo cáo theo mẫu đã chọn')
     if (ok) {
@@ -271,7 +271,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
       () => api.post(`${base}/apply-template`, { item_id: itemId, phase_id: phaseId }),
       (next) => {
         const added = next.docs.length - before
-        //  «Tạo mẫu» đổ MẪU CỦA KHỐI (chọn lúc khởi tạo, duoc-CR-614), không phải luôn mẫu chung.
+        //  "Tạo mẫu" đổ MẪU CỦA KHỐI (chọn lúc khởi tạo, duoc-CR-614), không phải luôn mẫu chung.
         if (added > 0) return `Đã tạo ${added} hồ sơ theo mẫu của báo cáo`
         toast.info('Mẫu đã có đủ ở đây — không thêm hồ sơ nào')
         return null
@@ -303,7 +303,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
       'Đã lưu hồ sơ',
     )
   }
-  //  Hàng «+ Thêm hồ sơ» của dạng Bảng: xếp hàng như mọi lệnh ghi nhưng không bị cổng `busy` làm rớt.
+  //  Hàng "+ Thêm hồ sơ" của dạng Bảng: xếp hàng như mọi lệnh ghi nhưng không bị cổng `busy` làm rớt.
   const createDocInline = (payload: SurveyReportDocPayload) =>
     mutate(() => api.post(`${base}/docs`, payload), 'Đã thêm hồ sơ', true)
   async function deleteDoc(doc: SurveyReportDoc): Promise<boolean> {
@@ -404,12 +404,12 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
     const lateDays = reportDocLateDays(doc, today)
     const plannedTitle = [`Dự định hoàn tất: ${fmtDateStr(doc.planned_date)}`, lateDays > 0 ? `Trễ ${lateDays} ngày` : isDone ? 'Đã hoàn thành' : ''].filter(Boolean).join(' · ')
     const descTitle = [doc.description, doc.result && `Kết quả: ${doc.result}`].filter(Boolean).join('\n')
-    //  duoc-CR-607 (07/10/2026, đại ca chốt «dòng 2 tầng»): trước đây 8–9 thứ nằm chung MỘT hàng nên tên
-    //  hồ sơ bị ép tới 6 dòng («Đơn / mua / hàng / (PO)…») và mô tả cụt «Bản sao…». Nay 3 vùng: ô tick ·
+    //  duoc-CR-607 (07/10/2026, đại ca chốt "dòng 2 tầng"): trước đây 8–9 thứ nằm chung MỘT hàng nên tên
+    //  hồ sơ bị ép tới 6 dòng ("Đơn / mua / hàng / (PO)…") và mô tả cụt "Bản sao…". Nay 3 vùng: ô tick ·
     //  [tên ở tầng trên, thông tin phụ ở tầng dưới] · [trạng thái + sửa + xóa] luôn nằm gọn bên phải.
-    //  Vòng 2 (cùng ngày, «cho dễ nhìn hơn»): viền trái mang màu trạng thái (trễ hạn → đỏ) để liếc cột
+    //  Vòng 2 (cùng ngày, "cho dễ nhìn hơn"): viền trái mang màu trạng thái (trễ hạn → đỏ) để liếc cột
     //  trái là đọc được tiến độ, không phải dò sang ô trạng thái tận mép phải; hồ sơ khóa KHÔNG làm mờ
-    //  cả dòng nữa (đọc không ra chữ) mà nói thẳng «Chờ: ‹hồ sơ tiên quyết›».
+    //  cả dòng nữa (đọc không ra chữ) mà nói thẳng "Chờ: ‹hồ sơ tiên quyết›".
     const accent = lateDays > 0 && !isDone ? 'late' : `st-${doc.status}`
     return (
       <div key={doc.id} className={`srp-doc ${accent}${isDone ? ' done' : ''}${locked ? ' locked' : ''}`}>
@@ -427,7 +427,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
             <span className={`srp-title${locked && pending.length > 0 ? ' with-wait' : ''}`} title={doc.title}>{doc.title}</span>
             {locked && pending.length > 0 && (
               <span className="srp-wait" title={`Chờ hồ sơ tiên quyết: ${pending.map((p) => p.title).join(', ')}`}>
-                <i className="ti ti-lock" /> chờ «{pending[0].title}»{pending.length > 1 && ` +${pending.length - 1}`}
+                <i className="ti ti-lock" /> chờ <strong>{pending[0].title}</strong>{pending.length > 1 && ` +${pending.length - 1}`}
               </span>
             )}
           </div>
@@ -693,7 +693,7 @@ const SurveyReportCard = forwardRef<SurveyReportCardHandle, Props>(function Surv
   const currentPhaseName = report.phases.find((p) => p.id === currentPhaseId)?.name
 
   return (
-    //  marginBottom như mọi thẻ khác của trang (`.card` không tự cách) — thiếu thì dính sát khối «Trao đổi».
+    //  marginBottom như mọi thẻ khác của trang (`.card` không tự cách) — thiếu thì dính sát khối "Trao đổi".
     <div ref={rootRef} className="card" style={{ padding: 18, marginBottom: 16, scrollMarginTop: 12 }}>
       <div className="srp-head" onClick={() => setOpen((o) => !o)}>
         <i className={`ti ti-chevron-${open ? 'down' : 'right'}`} style={{ color: '#94a3b8' }} />
@@ -1030,7 +1030,7 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
           <label>Dự định hoàn tất</label>
           <DateInput value={form.planned_date} onChange={(v) => set('planned_date', v)} />
         </div>
-        {/* bao-CR-602: cột «Time xử lý (ngày)» của bảng kế hoạch Excel — chỉ là dòng ghi chú
+        {/* bao-CR-602: cột "Time xử lý (ngày)" của bảng kế hoạch Excel — chỉ là dòng ghi chú
             SUY RA từ hai mốc, không cho sửa (đại ca chốt 06/10). */}
         {durationDays(form.start_date, form.planned_date) !== null && (
           <div className="form-row full" style={{ marginTop: -6, fontSize: 12.5, color: 'var(--muted)' }}>
@@ -1072,7 +1072,7 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
                   />
                   <span>{d.title}</span>
                   {/* Thẻ dòng hàng chỉ bày khi KHÁC dòng hàng đang chọn, và cắt ngắn — tên hàng dài
-                      (vd «BTP CHESSIN V1 bột trắng ngà (Pymetrozine…)») lặp ở mọi dòng làm danh sách
+                      (vd "BTP CHESSIN V1 bột trắng ngà (Pymetrozine…)") lặp ở mọi dòng làm danh sách
                       không đọc nổi (đại ca soi popup 06/10). Rê chuột đọc đủ. */}
                   {(d.item_id !== form.item_id || isReportDocDone(d)) && (
                     <span style={{ color: 'var(--muted)', fontSize: 11.5 }} title={itemLabel(d.item_id)}>

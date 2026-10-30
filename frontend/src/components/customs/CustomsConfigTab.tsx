@@ -1,4 +1,4 @@
-// bao-CR-502 — thẻ «Cấu hình» của màn Tra cứu thị trường (bản cũ), bê từ bao-CR-501 bản v2.
+// bao-CR-502 — thẻ "Cấu hình" của màn Tra cứu thị trường (bản cũ), bê từ bao-CR-501 bản v2.
 // Ba danh mục nằm NGAY trong màn tra cứu, không màn / mục menu riêng (đại ca chốt 26/09:
 // chức năng này càng ít màn hình càng tốt): từ khóa nhãn Thành phẩm / Nguyên liệu (bao-CR-494),
 // từ đồng nghĩa tìm kiếm (bao-CR-495), danh mục hóa chất theo văn bản (bao-CR-470).
@@ -50,7 +50,7 @@ const activeBadge = (v: any) => (
 
 const KIND_KEYWORDS: Catalog = {
   title: 'Từ khóa Thành phẩm / Nguyên liệu',
-  description: 'Bộ từ khóa để màn Tra cứu thị trường tự gắn nhãn từng dòng hàng. Tên hàng chứa từ khóa loại «Nguyên liệu» thì là nguyên liệu kỹ thuật, còn lại là thành phẩm. Sửa xong bấm «Gắn lại nhãn».',
+  description: 'Bộ từ khóa để màn Tra cứu thị trường tự gắn nhãn từng dòng hàng. Tên hàng chứa từ khóa loại "Nguyên liệu" thì là nguyên liệu kỹ thuật, còn lại là thành phẩm. Sửa xong bấm "Gắn lại nhãn".',
   entity: 'customs_price',
   apiPath: '/api/customs-kind-keywords',
   unitLabel: 'từ khóa',
@@ -68,15 +68,15 @@ const KIND_KEYWORDS: Catalog = {
   ],
   fields: [
     { key: 'keyword', label: 'Từ khóa', fullWidth: true,
-      hint: 'Không phân biệt hoa/thường. Từ ngắn (TC, TG…) chỉ khớp khi đứng thành một từ — «TC» không dính «ATC». Từ dài khớp cả khi nằm trong chuỗi («kỹ thuật» khớp «Thuốc kỹ thuật ATRAZINE»).' },
+      hint: 'Không phân biệt hoa/thường. Từ ngắn (TC, TG…) chỉ khớp khi đứng thành một từ — "TC" không dính "ATC". Từ dài khớp cả khi nằm trong chuỗi ("kỹ thuật" khớp "Thuốc kỹ thuật ATRAZINE").' },
     { key: 'kind', label: 'Gắn nhãn', type: 'select', options: KIND_OPTIONS, default: '2',
-      hint: 'Thường là «Nguyên liệu». Chọn «Thành phẩm» cho từ khóa NGOẠI LỆ muốn thắng ngược (vd tên chứa TECHNOLOGY nhưng vẫn là thành phẩm).' },
+      hint: 'Thường là "Nguyên liệu". Chọn "Thành phẩm" cho từ khóa NGOẠI LỆ muốn thắng ngược (vd tên chứa TECHNOLOGY nhưng vẫn là thành phẩm).' },
     { key: 'note', label: 'Ghi chú', type: 'textarea', fullWidth: true },
     { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, default: 'true',
       hint: 'Ngừng dùng thì lần gắn lại nhãn tới không còn xét từ khóa này.' },
   ],
   itemName: (r) => r.keyword,
-  deleteWarning: 'Xóa từ khóa thì các dòng đang mang nhãn nhờ nó KHÔNG tự đổi — bấm «Gắn lại nhãn» sau khi xóa. Muốn tạm tắt thì chuyển sang «Ngừng dùng».',
+  deleteWarning: 'Xóa từ khóa thì các dòng đang mang nhãn nhờ nó KHÔNG tự đổi — bấm "Gắn lại nhãn" sau khi xóa. Muốn tạm tắt thì chuyển sang "Ngừng dùng".',
   retag: true,
 }
 
@@ -100,14 +100,14 @@ const SEARCH_SYNONYMS: Catalog = {
     { key: 'is_active', label: 'Trạng thái', render: (r) => activeBadge(r.is_active) },
   ],
   fields: [
-    { key: 'term', label: 'Từ gốc', fullWidth: true, hint: 'Cách viết chính, vd «Abamectin».' },
+    { key: 'term', label: 'Từ gốc', fullWidth: true, hint: 'Cách viết chính, vd "Abamectin".' },
     { key: 'synonyms', label: 'Từ đồng nghĩa', type: 'textarea', fullWidth: true,
-      hint: 'Mỗi cách viết một dòng hoặc ngăn bằng «;», vd «Abamectine; Aba». Không phân biệt hoa/thường.' },
+      hint: 'Mỗi cách viết một dòng hoặc ngăn bằng ";", vd "Abamectine; Aba". Không phân biệt hoa/thường.' },
     { key: 'note', label: 'Ghi chú', type: 'textarea', fullWidth: true },
     { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, default: 'true' },
   ],
   itemName: (r) => r.term,
-  deleteWarning: 'Xóa nhóm thì gõ các từ trong nhóm không còn ra nhau nữa. Muốn tạm tắt thì chuyển sang «Ngừng dùng».',
+  deleteWarning: 'Xóa nhóm thì gõ các từ trong nhóm không còn ra nhau nữa. Muốn tạm tắt thì chuyển sang "Ngừng dùng".',
 }
 
 // duoc-CR-684: mã dạng chế phẩm (EC, SC, WG…) — danh mục tra cứu, không điều khiển gắn nhãn / tìm kiếm.
@@ -128,14 +128,14 @@ const FORMULATION_CODES: Catalog = {
     { key: 'is_active', label: 'Trạng thái', render: (r) => activeBadge(r.is_active) },
   ],
   fields: [
-    { key: 'code', label: 'Mã', hint: 'Viết hoa, tối đa 20 ký tự, vd «EC».' },
+    { key: 'code', label: 'Mã', hint: 'Viết hoa, tối đa 20 ký tự, vd "EC".' },
     { key: 'name_en', label: 'Tên tiếng Anh', fullWidth: true },
     { key: 'name_vi', label: 'Tên tiếng Việt', fullWidth: true },
     { key: 'description', label: 'Đặc điểm', type: 'textarea', fullWidth: true },
     { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, default: 'true' },
   ],
   itemName: (r) => r.code,
-  deleteWarning: 'Xóa mã thì chỉ mất dòng tra cứu này. Muốn tạm tắt thì chuyển sang «Ngừng dùng».',
+  deleteWarning: 'Xóa mã thì chỉ mất dòng tra cứu này. Muốn tạm tắt thì chuyển sang "Ngừng dùng".',
 }
 
 // Danh mục hóa chất dùng lại NGUYÊN cột + ô nhập của màn CRUD cũ (config/cruds.tsx), khỏi chép hai nơi.
@@ -154,7 +154,7 @@ const REGULATIONS: Catalog = {
   columns: REGULATION_CFG.columns.filter((c) => c.key !== 'updated_at'),
   fields: REGULATION_CFG.fields,
   itemName: (r) => r.name,
-  deleteWarning: 'Xóa khỏi danh mục thì màn Tra cứu thị trường thôi cảnh báo cho hóa chất này. Muốn tạm tắt thì chuyển sang «Ngừng dùng».',
+  deleteWarning: 'Xóa khỏi danh mục thì màn Tra cứu thị trường thôi cảnh báo cho hóa chất này. Muốn tạm tắt thì chuyển sang "Ngừng dùng".',
 }
 
 export default function CustomsConfigTab({ canConfigure, canReadRegulations }: {
@@ -340,7 +340,7 @@ function CatalogForm({ catalog, item, onClose, onSaved }: {
   async function remove() {
     const ok = await askConfirm({
       title: `Xóa ${catalog.unitLabel}`,
-      message: `Xóa «${catalog.itemName(item)}»? ${catalog.deleteWarning}`,
+      message: `Xóa "${catalog.itemName(item)}"? ${catalog.deleteWarning}`,
       confirmText: 'Xóa',
     })
     if (!ok) return
