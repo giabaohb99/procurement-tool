@@ -6,7 +6,7 @@ từ 20 MB lên 128 MB. Số đếm của lô đã nằm sẵn ở `ImportBatch`
 duplicate_rows), nên chi tiết từng dòng loại thường chỉ cần trong vài tuần đầu để rà.
 
 Luật dọn (A1 / đại ca chốt 30/10):
-  · XÓA: Thêm mới, Đã có, Trùng cũ hơn `customs_row_log_keep_days` ngày (mặc định 30, 0 = tắt);
+  · XÓA: Thêm mới, Đã có, Trùng cũ hơn `customs_row_log_keep_days` ngày (mặc định 7, 0 = tắt);
   · GIỮ vĩnh viễn: Lỗi, Ghi đè, Xóa, Bỏ qua, và dòng Thêm mới "nghi sửa giá" (chị Mi còn rà).
 Xóa theo lô nhỏ như `system_log.retention._delete_month`, có trần số lô mỗi đêm.
 """

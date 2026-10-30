@@ -157,7 +157,7 @@ class Settings(BaseSettings):
     NOTIFICATION_KEEP_DAYS: int = 10   # thông báo cũ hơn N ngày sẽ tự xóa
     # bao-CR-698: nhật ký TỪNG DÒNG của lô hải quan (Thêm mới / Đã có / Trùng) cũ hơn N ngày tự dọn hằng đêm;
     # 0 = tắt. Dòng Lỗi / Ghi đè / Xóa / Bỏ qua và dòng nghi sửa giá giữ vĩnh viễn.
-    CUSTOMS_ROW_LOG_KEEP_DAYS: int = 30
+    CUSTOMS_ROW_LOG_KEEP_DAYS: int = 7     # đại ca chốt 30/10
 
     # --- Trợ lý AI (Phase 0: nền lớp provider) ---
     # Tắt mặc định — bật ở .env môi trường muốn dùng. Off thì endpoint /api/assistant trả 403.
