@@ -111,8 +111,19 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-695-giao-dien-dau-sao | Không để lộ dấu sao in đậm ở màn chi tiết việc của bot
+- status: xong
+- date: 2026-10-30
+Phần máy chủ đổi câu của bot, Trợ lý và mô tả công cụ sang kiểu in đậm bằng hai dấu sao. Soát các màn ERP v2 đang hiện những câu
+đó bằng chữ thường: chỉ màn chi tiết việc của bot sửa mã (Quản trị) bị lộ dấu sao ở ghi chú, rà soát mã, kế hoạch, câu hỏi và
+hội thoại. Thêm một bộ vẽ dùng chung biến hai dấu sao thành chữ đậm, một dấu sao thành chữ nghiêng, không bắt nhầm dấu nhân hay gạch
+đầu dòng, rồi dùng ở màn đó. Khung chat Trợ lý, bản tóm tắt nhóm, Cấu hình, Nhật ký, Kho skill và thông báo nổi không bị lộ. Mô tả
+việc Dự án tạo từ biên bản họp đang ghi sẵn dấu sao vào dữ liệu, đã báo phần máy chủ.
+Kiểm: bài kiểm bộ vẽ mới và thư mục Quản trị xanh; typecheck 0 lỗi; lint 0 lỗi, 30 cảnh báo như bản gốc.
+Mã nguồn: frontend-v2/src/shared/utils/inline-emphasis.ts, frontend-v2/src/shared/ui/inline-emphasis-text.tsx, frontend-v2/src/modules/system/pages/agent-task-detail-page.tsx
+
 ## bao-CR-696-giao-dien | Gom Trợ lý AI và Kho skill AI thành một phân hệ AI
-- status: dang-lam
+- status: xong
 - date: 2026-10-30
 Màn chọn phân hệ chỉ còn một thẻ AI thay cho hai thẻ Trợ lý AI và Kho skill AI. Menu bên trái xếp theo nhóm: Trợ lý AI, Kết nối
 (tên mới của màn Khóa nhân sự), nhóm Kho skill (Bộ skill), nhóm Giám sát (Tổng quan, Nhật ký sử dụng và mục Bot Telegram gập sẵn,
@@ -124,7 +135,7 @@ nhân viên, email), phòng, cách nối (khóa riêng hay OAuth), ứng dụng 
 theo tên, email, mã nhân viên; màn Nâng cao thêm cột người đang dùng ứng dụng, ô tìm và lọc trạng thái (còn kết nối, không còn kết nối, host lạ); Nhật ký sử dụng
 thêm ô tìm theo người hoặc công cụ và cột Chứng từ (mã phiếu của lượt duyệt, lập phiếu; không có thì hiện gạch ngang). Máy chủ cũ
 chưa trả trường mới thì màn vẫn đủ cột từ dữ liệu sẵn có.
-Còn lại: đẩy đợt 2 khi phần máy chủ đã lên nhánh chung.
+Đợt 2 đã đẩy sau khi phần máy chủ lên nhánh chung, thử lại trên trình duyệt với máy chủ mới: tìm ở Kết nối, tìm và cột Chứng từ ở Nhật ký, màn Nâng cao.
 Kiểm: typecheck 0 lỗi; lint 0 lỗi, 30 cảnh báo như bản gốc; bài kiểm thư mục AI, Kho skill, điều hướng và khung trang 213 bài xanh;
 mở thử trên trình duyệt ở màn rộng 1440 và màn điện thoại.
 Mã nguồn: frontend-v2/src/modules/ai/routes.tsx, frontend-v2/src/modules/ai/routes.test.tsx, frontend-v2/src/app/router/module-definition.ts, frontend-v2/src/app/router/use-active-module.ts, frontend-v2/src/app/router/module-registry.ts, frontend-v2/src/modules/ai-skill/utils/ai-row-mappers.ts, frontend-v2/src/modules/ai-skill/pages/key-admin-page.tsx, frontend-v2/src/modules/ai-skill/pages/oauth-clients-page.tsx, frontend-v2/src/modules/ai-skill/pages/call-log-page.tsx
