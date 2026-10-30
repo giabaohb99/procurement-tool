@@ -68,6 +68,7 @@ celery_app.conf.update(
         "app.modules.feature_usage.tasks",           # ... gom theo chức năng 04:45 (duoc-CR-655)
         "app.modules.capability.tasks",              # Năng lực theo loại việc (duoc-CR-656): dựng vòng đời phiếu 05:00
         "app.modules.sync_log.tasks",       # Chuông 08:00 cho dòng sổ đồng bộ lỗi quá 24h (bao-CR-449)
+        "app.modules.customs.tasks",        # Dọn nhật ký từng dòng lô hải quan 02:45 (bao-CR-698)
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
     ],
@@ -114,6 +115,12 @@ celery_app.conf.update(
         #  dọn trước, đóng gói sau, và phần bị dọn không nằm trong gói nào.
         #  (Bản thân việc dọn còn tự kiểm tra R2 trước khi xóa, nhưng đặt lịch
         #  đúng thì không phải trông vào chốt cuối.)
+        #  bao-CR-698: nhật ký từng dòng của lô hải quan (Thêm mới / Đã có / Trùng) quá N ngày — 02:45, giữa dọn
+        #  thông báo (02:30) và đóng gói tháng (03:00); xóa theo lô nhỏ, có trần số lô mỗi đêm.
+        "cleanup-customs-row-logs": {
+            "task": "customs.cleanup_row_logs",
+            "schedule": crontab(hour=2, minute=45),  # 02:45 VN, mỗi ngày
+        },
         "cleanup-get-logs": {
             "task": "request_log.cleanup",
             "schedule": crontab(hour=3, minute=40),  # 03:40 VN, mỗi ngày

@@ -151,6 +151,11 @@ FIELDS = [
      "label": "Số ngày giữ thông báo trong hệ thống",
      "hint": "Thông báo cũ hơn số ngày này bị vòng dọn dẹp xóa đi. Để trống hoặc 0 thì hệ thống "
              "dùng lại mức mặc định chứ không xóa sạch."},
+    #  bao-CR-698 — nhật ký từng dòng của lô nạp hải quan.
+    {"key": "customs_row_log_keep_days", "group": "system", "type": "int",
+     "label": "Số ngày giữ nhật ký từng dòng của lô hải quan",
+     "hint": "Dòng Thêm mới / Đã có / Trùng cũ hơn số ngày này bị vòng dọn đêm xóa (số đếm của lô vẫn còn). "
+             "Dòng Lỗi, Ghi đè, Xóa, Bỏ qua và dòng nghi sửa giá giữ vĩnh viễn. Đặt 0 để tắt việc dọn."},
     {"key": "backup_keep", "group": "system", "type": "int",
      "label": "Số bản sao lưu cơ sở dữ liệu giữ lại",
      "hint": "Giữ bấy nhiêu bản mới nhất, cũ hơn thì xóa cả tệp lẫn dòng ghi. Chạy hai lần mỗi "

@@ -84,6 +84,7 @@ REGISTRY = {
     #  Thông số chung.
     "frontend_url": ("str", "FRONTEND_URL"),
     "notification_keep_days": ("int", "NOTIFICATION_KEEP_DAYS"),
+    "customs_row_log_keep_days": ("int", "CUSTOMS_ROW_LOG_KEEP_DAYS"),   # bao-CR-698
     "backup_keep": ("int", "BACKUP_KEEP"),
     #  duoc-CR-641: công tắc thu sự kiện giao diện cho hồ sơ cách làm việc (mặc định BẬT).
     "usage_tracking_enabled": ("bool", "USAGE_TRACKING_ENABLED"),

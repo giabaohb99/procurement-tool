@@ -19,6 +19,7 @@ Mỗi dòng dữ liệu trong tệp có đúng MỘT dòng nhật ký mang `row_
 Ghi bằng lệnh chèn hàng loạt: một tệp ~18.000 dòng, `db.add` từng dòng vừa chậm vừa kích
 hoạt nhật ký trước/sau của `change_tracker`.
 """
+import json
 from dataclasses import dataclass, field
 
 from sqlalchemy import func, insert
@@ -165,14 +166,34 @@ def _row_query(db: Session, batch_id: int):
     return db.query(ImportLog).filter(ImportLog.batch_id == batch_id, ImportLog.row_status != 0)
 
 
-def count_rows(db: Session, batch_id: int) -> dict:
-    """Tổng theo từng kết cục cho đầu hộp "Nhật ký lô" — một truy vấn GROUP BY."""
+def count_rows(db: Session, batch_id: int, batch: ImportBatch | None = None) -> dict:
+    """Tổng theo từng kết cục cho đầu hộp "Nhật ký lô" — một truy vấn GROUP BY.
+
+    bao-CR-698: nhật ký Thêm mới / Đã có / Trùng quá hạn bị dọn (`row_log_cleanup`) → có `batch` thì lấy số
+    của lô (created_count + sheet_info.existing_rows / duplicate_rows) khi số dòng nhật ký hụt, kèm cờ `pruned`
+    và câu ghi chú cho đầu hộp."""
     rows = (_row_query(db, batch_id).with_entities(ImportLog.row_status, func.count(ImportLog.id))
             .group_by(ImportLog.row_status).all())
     by = {int(s): int(n) for s, n in rows}
-    out = {"total": sum(by.values())}
-    out.update({key: by.get(status, 0) for status, key in _COUNT_KEY.items()})
-    return out
+    out = {key: by.get(status, 0) for status, key in _COUNT_KEY.items()}
+    if batch is not None:
+        out["pruned"], out["pruned_note"] = False, ""
+        try:
+            info = json.loads(batch.sheet_info or "{}")
+        except ValueError:
+            info = {}
+        info = info if isinstance(info, dict) else {}
+        kept = {"new": int(batch.created_count or 0), "existing": int(info.get("existing_rows") or 0),
+                "duplicate": int(info.get("duplicate_rows") or 0)}
+        if any(kept[k] > out[k] for k in kept):
+            from .row_log_cleanup import keep_days
+
+            out.update({k: max(out[k], v) for k, v in kept.items()})
+            days = keep_days()
+            out["pruned"] = True
+            out["pruned_note"] = ("Nhật ký chi tiết các dòng Thêm mới / Đã có / Trùng đã được dọn"
+                                  + (f" sau {days} ngày" if days else "") + "; số đếm lấy từ lô.")
+    return {"total": sum(out[k] for k in _COUNT_KEY.values()), **out}
 
 
 def list_rows(db: Session, batch_id: int, row_status: int | None, pg: dict):

@@ -63,8 +63,7 @@ def delete_saved_filter(fid: int, db: Session = Depends(get_db), user=Depends(re
 # ── Nhật ký từng dòng của lô ────────────────────────────────────────────────────────────────
 @router.get("/imports/{bid}/rows/summary")
 def batch_row_summary(bid: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
-    _get_batch(db, bid)
-    counts = row_log.count_rows(db, bid)
+    counts = row_log.count_rows(db, bid, _get_batch(db, bid))
     counts["labels"] = {int(s): IMPORT_ROW_STATUS_LABELS[s] for s in ImportRowStatus if s != ImportRowStatus.NONE}
     return success(counts)
 
