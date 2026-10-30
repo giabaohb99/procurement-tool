@@ -39,13 +39,13 @@ interface BookDocumentsTabProps {
 const DEFAULT_SORT = '-book_seq_no'
 
 /**
- * TAB «VĂN BẢN TRONG SỔ» của trang chi tiết Sổ văn bản (duoc-CR-474, 23/09/2026).
+ * TAB "VĂN BẢN TRONG SỔ" của trang chi tiết Sổ văn bản (duoc-CR-474, 23/09/2026).
  *
  * Đè lại quyết định 25/08/2026 (CR-175, commit `89d04519`): khi đó bảng này bị
  * gỡ với lý do "tra theo sổ thì lọc ở màn Văn bản, không cần bảng thứ hai
  * trong trang khai báo sổ". Khách đổi ý 23/09/2026 — muốn bấm sổ ra thẳng danh
  * sách văn bản trong sổ mà không phải vòng qua bộ lọc nâng cao của màn Văn bản.
- * Cả hai đường vẫn cùng tồn tại: nút «Mở ở màn Văn bản» bên dưới dẫn sang đó
+ * Cả hai đường vẫn cùng tồn tại: nút "Mở ở màn Văn bản" bên dưới dẫn sang đó
  * cho ai cần bộ lọc đầy đủ.
  *
  * Đi qua ĐÚNG `/api/documents` — không có API riêng, không đường vòng quyền:

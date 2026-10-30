@@ -35,7 +35,7 @@ interface FolderMoveDialogProps {
 }
 
 /**
- * «CHUYỂN TỚI…» — chọn cha mới bằng chính cây thư mục, KHÔNG dùng dạng kéo
+ * "CHUYỂN TỚI…" — chọn cha mới bằng chính cây thư mục, KHÔNG dùng dạng kéo
  * thả: đây là lối THAY THẾ cho kéo thả (xem "Rủi ro" ở phase-05), dành cho
  * bàn phím và cho lúc đích nằm ngoài màn hình đang cuộn tới.
  *
@@ -75,7 +75,7 @@ export function FolderMoveDialog({ open, onOpenChange, folder, rows }: FolderMov
   //  xem được → phải hỏi lại trước khi bấm hẳn (bảng "Thấy một phần", phase-04).
   const needsConfirm = destinationId != null && folder.document_count_branch > 0
   const folderLabel = folder.display_name || folder.name
-  //  Đã nằm ở gốc thì «ra gốc» là không đổi gì — khóa lựa chọn đó.
+  //  Đã nằm ở gốc thì "ra gốc" là không đổi gì — khóa lựa chọn đó.
   const canMoveToRoot = folder.parent_id !== ROOT_PARENT_ID
 
   function reset() {
@@ -110,9 +110,9 @@ export function FolderMoveDialog({ open, onOpenChange, folder, rows }: FolderMov
     >
       <DialogContent className="flex max-h-[80dvh] flex-col sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Chuyển «{folderLabel}» tới…</DialogTitle>
+          <DialogTitle>Chuyển <strong>{folderLabel}</strong> tới…</DialogTitle>
           <DialogDescription>
-            Chọn thư mục cha mới, hoặc «Gốc cây» để đưa ra ngoài cùng. Thư mục ghi «không hợp lệ» là
+            Chọn thư mục cha mới, hoặc <strong>Gốc cây</strong> để đưa ra ngoài cùng. Thư mục ghi <em>không hợp lệ</em> là
             chính nó, con cháu của nó, vượt {MAX_FOLDER_DEPTH} cấp, hoặc bạn chưa đủ mức Đóng góp ở đó.
           </DialogDescription>
         </DialogHeader>

@@ -10,8 +10,8 @@ import { ApprovalFlowListPage } from './pages/approval-flow-list-page'
 /**
  * PHÊ DUYỆT — bộ máy dùng chung, **không phải một phân hệ nghiệp vụ**.
  *
- * ⚠️ **Chỉ còn phần CẤU HÌNH** (21/08/2026). Màn «Việc của tôi» đã xóa hẳn:
- * hộp việc nay nằm trong chính phân hệ của chứng từ («Chờ tôi duyệt» của Văn
+ * ⚠️ **Chỉ còn phần CẤU HÌNH** (21/08/2026). Màn "Việc của tôi" đã xóa hẳn:
+ * hộp việc nay nằm trong chính phân hệ của chứng từ ("Chờ tôi duyệt" của Văn
  * bản), và duyệt thì bấm ngay trên chứng từ sau khi đã mở ra đọc. Một danh sách
  * gom chung có nút duyệt trên từng dòng mời người ta ký thứ chỉ nhìn thấy mỗi
  * cái tiêu đề — đúng cái đường tắt mà bộ máy này sinh ra để bịt.

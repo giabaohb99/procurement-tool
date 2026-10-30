@@ -164,7 +164,7 @@ describe('FolderListView — rỗng', () => {
 describe('FolderListView — thư mục TRƯỚC, văn bản SAU (đặc tả B, phản hồi 24/09/2026)', () => {
   it('DOM liệt kê đúng thứ tự: thư mục rồi tới từng văn bản', () => {
     render(<Harness children={[FOLDER]} documents={[DOC_A, DOC_B]} />)
-    //  Khớp CHÍNH XÁC tên (không dùng regex/chuỗi con) — nút «Chia sẻ Phụ lục»
+    //  Khớp CHÍNH XÁC tên (không dùng regex/chuỗi con) — nút "Chia sẻ Phụ lục"
     //  của dòng thư mục cũng chứa chữ "Phụ lục" nên regex phần-chuỗi sẽ bắt
     //  nhầm cả nút đó vào danh sách.
     const rowNames = ['Phụ lục', 'Thông báo A', 'Thông báo B']
@@ -174,7 +174,7 @@ describe('FolderListView — thư mục TRƯỚC, văn bản SAU (đặc tả B,
     expect(rows.map((row) => row.getAttribute('aria-label'))).toEqual(rowNames)
   })
 
-  //  25/09/2026: dòng thư mục từng để «—» cả ba cột — nay có người tạo, ngày tạo, trạng thái.
+  //  25/09/2026: dòng thư mục từng để "—" cả ba cột — nay có người tạo, ngày tạo, trạng thái.
   it('folder row shows who created it, when, and whether it is still in use', () => {
     render(
       <Harness
@@ -190,7 +190,7 @@ describe('FolderListView — thư mục TRƯỚC, văn bản SAU (đặc tả B,
     expect(within(row).getByText('Đang dùng')).toBeInTheDocument()
   })
 
-  it('folder row falls back to «—» when the API sends no creator or date (older payloads)', () => {
+  it('folder row falls back to "—" when the API sends no creator or date (older payloads)', () => {
     render(<Harness children={[FOLDER]} documents={[]} />)
     const row = screen.getByRole('button', { name: 'Phụ lục' })
     expect(within(row).getAllByText('—').length).toBe(2)
@@ -306,10 +306,10 @@ describe('FolderListView — chọn kiểu Drive + menu chuột phải', () => {
 
   //  Radix `ContextMenu` (chuột phải) không có mẫu kiểm THẬT nào trong cả repo
   //  (dựa vào `contextmenu`/pointer-capture native, không ổn định trên jsdom)
-  //  — kiểm qua nút «⋯» LUÔN THẤY (`showMenuButton`), cùng danh sách mục với
+  //  — kiểm qua nút "⋯" LUÔN THẤY (`showMenuButton`), cùng danh sách mục với
   //  chuột phải (`buildFolderItemMenuActions`, xem `folder-item-context-menu.tsx`).
   //  Mỗi bài chỉ dựng ĐÚNG MỘT dòng nên "Thêm tùy chọn" không trùng tên.
-  it('nút «⋯» của một dòng văn bản có «Xem chi tiết», không còn «Mở» trùng việc', async () => {
+  it('nút "⋯" của một dòng văn bản có "Xem chi tiết", không còn "Mở" trùng việc', async () => {
     const user = userEvent.setup()
     render(<Harness children={[]} documents={[DOC_A]} />)
     await user.click(screen.getByRole('button', { name: 'Thêm tùy chọn' }))
@@ -317,8 +317,8 @@ describe('FolderListView — chọn kiểu Drive + menu chuột phải', () => {
     expect(screen.queryByRole('menuitem', { name: 'Mở' })).not.toBeInTheDocument()
   })
 
-  //  Yêu cầu 25/09/2026: «Chia sẻ…» của văn bản mở hộp quyền truy cập ngay tại thư mục.
-  it('document row «⋯» → «Chia sẻ…» hands that exact document to the share handler', async () => {
+  //  Yêu cầu 25/09/2026: "Chia sẻ…" của văn bản mở hộp quyền truy cập ngay tại thư mục.
+  it('document row "⋯" → "Chia sẻ…" hands that exact document to the share handler', async () => {
     const user = userEvent.setup()
     const onShareDocument = vi.fn()
     render(<Harness children={[]} documents={[DOC_A]} onShareDocument={onShareDocument} />)
@@ -353,7 +353,7 @@ describe('FolderListView — chọn kiểu Drive + menu chuột phải', () => {
     expect(screen.queryByRole('menuitem', { name: 'Chia sẻ…' })).not.toBeInTheDocument()
   })
 
-  it('nút «⋯» của một dòng thư mục QUẢN LÝ có đủ Đổi tên/Chuyển tới/Chia sẻ/Xóa', async () => {
+  it('nút "⋯" của một dòng thư mục QUẢN LÝ có đủ Đổi tên/Chuyển tới/Chia sẻ/Xóa', async () => {
     const user = userEvent.setup()
     render(<Harness children={[FOLDER]} documents={[]} />)
     await user.click(screen.getByRole('button', { name: 'Thêm tùy chọn' }))
@@ -363,7 +363,7 @@ describe('FolderListView — chọn kiểu Drive + menu chuột phải', () => {
     expect(screen.getByRole('menuitem', { name: /^Xóa/ })).toBeInTheDocument()
   })
 
-  //  Gốc «Thư mục của bạn» (`folder-my-drive-panel.tsx`, duoc-CR-476) dùng lại
+  //  Gốc "Thư mục của bạn" (`folder-my-drive-panel.tsx`, duoc-CR-476) dùng lại
   //  chế độ Danh sách để vẽ thư mục PHÁP NHÂN — dòng đó phải truyền đúng
   //  `isCompanyRoot` cho `FolderItemContextMenu`.
   it('company folder row offers Rename and Move like any folder', async () => {

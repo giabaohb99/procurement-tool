@@ -187,7 +187,7 @@ export function DocumentVersionDialog({
               onChange={(event) => setReason(event.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Hiện ngay trên dòng phiên bản — đây là thứ trả lời được «vì sao có bản này»
+              Hiện ngay trên dòng phiên bản — đây là thứ trả lời được <em>vì sao có bản này</em>{' '}
               khi ai đó tra lại sau vài tháng.
             </p>
           </div>

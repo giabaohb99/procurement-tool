@@ -23,7 +23,7 @@ interface ApprovalNodeAdvancedProps {
 }
 
 /**
- * «Tùy chỉnh thêm» của một bước — phần chín trên mười bước KHÔNG cần đụng tới.
+ * "Tùy chỉnh thêm" của một bước — phần chín trên mười bước KHÔNG cần đụng tới.
  *
  * Tách khỏi form chính không phải để giấu, mà vì mỗi ô ở đây trả lời một câu
  * người khai luồng chỉ hỏi khi họ đã gặp vấn đề: *"cùng một người ký hai lần
@@ -125,7 +125,7 @@ export function ApprovalNodeAdvanced({
         </Select>
         {/*  Nói thẳng vì sao thiếu lựa chọn mà người dùng có thể đang tìm. */}
         <p className="text-xs text-muted-foreground">
-          Cố ý <b>không có</b> lựa chọn «tự động duyệt qua»: với văn bản, nó tạo ra văn
+          Cố ý <b>không có</b> lựa chọn <strong>tự động duyệt qua</strong>: với văn bản, nó tạo ra văn
           bản có hiệu lực mà không ai chịu trách nhiệm.
         </p>
       </div>

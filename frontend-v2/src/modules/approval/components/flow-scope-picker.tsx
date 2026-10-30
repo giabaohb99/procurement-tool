@@ -44,9 +44,9 @@ export function FlowScopePicker({ condition, onChange, entity }: FlowScopePicker
   const nangCao = laDieuKienNangCao(condition)
 
   //  Kiểu đang chọn giữ ở state RIÊNG, không suy thẳng từ chuỗi điều kiện.
-  //  Chuỗi chỉ mang được lựa chọn ĐÃ ĐỦ: chọn «một số loại văn bản» mà chưa tick
-  //  loại nào thì `buildScopeCondition` trả chuỗi rỗng, đọc ngược lại ra «tất
-  //  cả» — nên bộ chọn bật lại về dòng đầu và ô tick không bao giờ hiện ra.
+  //  Chuỗi chỉ mang được lựa chọn ĐÃ ĐỦ: chọn "một số loại văn bản" mà chưa tick
+  //  loại nào thì `buildScopeCondition` trả chuỗi rỗng, đọc ngược lại ra "tất
+  //  cả" — nên bộ chọn bật lại về dòng đầu và ô tick không bao giờ hiện ra.
   const [kind, setKind] = useState<FlowScopeKind>(saved.kind)
   const ids = saved.kind === kind ? saved.ids : []
 

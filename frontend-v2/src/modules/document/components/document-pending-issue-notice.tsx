@@ -11,7 +11,7 @@ interface DocumentPendingIssueNoticeProps {
 }
 
 /**
- * BĂNG «CHỜ BAN HÀNH» (26/08/2026).
+ * BĂNG "CHỜ BAN HÀNH" (26/08/2026).
  *
  * Trạng thái này rất dễ đọc nhầm là hệ đứng: chữ ký đã đủ, phiên duyệt đã đóng,
  * mà văn bản vẫn chưa có số hiệu và chưa có hiệu lực. Không nói ra thì người

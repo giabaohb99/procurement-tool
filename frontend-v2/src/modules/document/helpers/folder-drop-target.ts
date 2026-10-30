@@ -30,12 +30,12 @@ export interface FolderDropCandidate {
 
 /**
  * Thư mục ĐÍCH có nhận được thư mục đang kéo hay không — hàm THUẦN, không đọc
- * API/state nào, để `TreeView` (native DnD) và hộp thoại «Chuyển tới…» dùng
+ * API/state nào, để `TreeView` (native DnD) và hộp thoại "Chuyển tới…" dùng
  * chung đúng MỘT luật thay vì hai bản chép lệch nhau.
  *
  * Bốn điều kiện: chính nó · con cháu của chính nó · vượt {@link MAX_FOLDER_DEPTH}
  * cấp sau khi chuyển · mức quyền của người kéo trên đích < Đóng góp. Điều kiện
- * «khác pháp nhân» đã BỎ 24/09/2026 (đại ca chốt: chuyển đâu tùy người dùng).
+ * "khác pháp nhân" đã BỎ 24/09/2026 (đại ca chốt: chuyển đâu tùy người dùng).
  */
 export function isValidFolderDropTarget(
   source: FolderDragSource,
@@ -73,7 +73,7 @@ export interface FolderReorderCandidate {
  * THUẦN, cùng vai trò với {@link isValidFolderDropTarget} nhưng luật khác hẳn:
  * backend `_ensure_reorder_access` đòi quyền QUẢN LÝ trên THƯ MỤC CHA CHUNG
  * (không phải trên chính dòng đích như đổi cha), và chỉ nhận anh em CÙNG một
- * cha — đổi cha phải đi đường kéo-thả-vào hoặc hộp thoại «Chuyển tới…».
+ * cha — đổi cha phải đi đường kéo-thả-vào hoặc hộp thoại "Chuyển tới…".
  */
 export function isValidFolderReorderTarget(
   source: FolderReorderSource,

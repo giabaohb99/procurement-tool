@@ -67,7 +67,7 @@ interface ApprovalTrailCardProps {
    */
   trailingEvents?: TrailExtraEvent[]
   /**
-   * Ẩn nút «In» của thẻ. Chứng từ đã có bản in RIÊNG (đơn nghỉ phép in tờ đơn kèm
+   * Ẩn nút "In" của thẻ. Chứng từ đã có bản in RIÊNG (đơn nghỉ phép in tờ đơn kèm
    * chữ ký) thì nút này chỉ in lại cả trang màn hình — người dùng bấm nhầm tưởng là
    * in đơn (bao-CR-506).
    */
@@ -76,7 +76,7 @@ interface ApprovalTrailCardProps {
 }
 
 /**
- * DÒNG TIÊU ĐỀ của một mốc — «‹tên người› ‹đã làm gì›» kèm mốc giờ.
+ * DÒNG TIÊU ĐỀ của một mốc — "‹tên người› ‹đã làm gì›" kèm mốc giờ.
  *
  * ⚠️ **`break-words` không được bỏ.** Tên người vào đây từ `actor_name`, và
  * không có gì bảo đảm nó là một cái tên có dấu cách: ô đó nhận cả email lẫn mã
@@ -91,8 +91,8 @@ const TRAIL_TITLE_LINE = 'min-w-0 text-sm leading-5 break-words'
  * MỐC GIỜ — xuống dòng riêng ở khổ hẹp, đi liền sau câu từ `sm` trở lên.
  *
  * ⚠️ Để nó trôi inline ở khổ hẹp thì nó dính vào đúng mảnh chữ cuối của câu vừa
- * ngắt dòng, và đọc ra như một phần của câu: *«…đã cập nhật bước xử **lý
- * 05/09/2026 14:48**»* (khách báo 09/09/2026). Tên người càng dài thì càng chắc
+ * ngắt dòng, và đọc ra như một phần của câu: *"…đã cập nhật bước xử **lý
+ * 05/09/2026 14:48**"* (khách báo 09/09/2026). Tên người càng dài thì càng chắc
  * rơi vào ca đó, nhưng tên NGẮN cũng dính — chỗ ngắt dòng là do bề rộng, không
  * do độ dài tên.
  *
@@ -184,7 +184,7 @@ export function ApprovalTrailCard({
       <CardHeader className="flex min-h-16 flex-row items-center justify-between gap-3 border-b px-4 py-4 sm:gap-4 sm:px-5">
         {/*  ⚠️ Tiêu đề thẻ KHÔNG `truncate`. Ở khổ 390px cụm này còn ~230px cho
              cả chữ lẫn huy hiệu trạng thái, nên `truncate` cắt ra
-             **«Lịch sử phê ...»** — một tiêu đề cụt giữa chừng trong khi ngay
+             **"Lịch sử phê ..."** — một tiêu đề cụt giữa chừng trong khi ngay
              dưới nó là cả một thẻ trống chỗ. Cho xuống dòng thì thẻ cao thêm
              một dòng ở khổ hẹp, đổi lại tiêu đề đọc được. */}
         <CardTitle className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-base">
@@ -220,13 +220,13 @@ export function ApprovalTrailCard({
         </CardContent>
       )}
 
-      {/*  KHÔNG dựng dải tóm tắt «Luồng xử lý · Người trình · Bắt đầu · Vị trí
-           hiện tại» ở đây nữa (bỏ 03/09/2026). Bốn ô đó nói lại đúng những gì
+      {/*  KHÔNG dựng dải tóm tắt "Luồng xử lý · Người trình · Bắt đầu · Vị trí
+           hiện tại" ở đây nữa (bỏ 03/09/2026). Bốn ô đó nói lại đúng những gì
            dòng thời gian ngay dưới đã nói, mà nói bằng từ của bộ máy nên người
-           đọc phải dịch: mốc «đã bắt đầu trình duyệt» ở cuối danh sách vốn đã
+           đọc phải dịch: mốc "đã bắt đầu trình duyệt" ở cuối danh sách vốn đã
            mang đủ người trình + thời điểm + tên luồng và số bản (backend ghi
-           sẵn vào `comment`), «Vị trí hiện tại» thì trùng với mốc «Đang chờ
-           phản hồi» nằm đầu danh sách, còn kết cục đã có huy hiệu ở tiêu đề. */}
+           sẵn vào `comment`), "Vị trí hiện tại" thì trùng với mốc "Đang chờ
+           phản hồi" nằm đầu danh sách, còn kết cục đã có huy hiệu ở tiêu đề. */}
       {!isLoading && instance && (
         <>
           <CardContent className="px-5 py-5">
@@ -252,7 +252,7 @@ export function ApprovalTrailCard({
               <div className="mb-5 flex items-center gap-2">
                 <h3 className="text-sm font-semibold">Hoạt động</h3>
                 {/*  CHIỀU ĐỌC phải nói ra. Danh sách này đảo ngược (mới nhất
-                     trên cùng) trong khi ô «Bắt đầu» ở dải tóm tắt lại là mốc
+                     trên cùng) trong khi ô "Bắt đầu" ở dải tóm tắt lại là mốc
                      CŨ NHẤT — người đọc mặc định trên-xuống là xuôi thời gian
                      nên hiểu ngược toàn bộ trình tự ký. */}
                 <Badge variant="outline" className="font-normal">
@@ -314,13 +314,13 @@ export function ApprovalTrailCard({
 /**
  * Sắc thái của phiên duyệt.
  *
- * ⚠️ **KHÔNG dùng `variant="default"` (nền `primary`) cho «Đã duyệt».** Nền
+ * ⚠️ **KHÔNG dùng `variant="default"` (nền `primary`) cho "Đã duyệt".** Nền
  * primary là navy — đúng màu nút hành động chính của cả bộ giao diện — nên huy
  * hiệu đọc ra như một cái nút bấm được nằm cạnh tiêu đề. Tô nền theo NGHĨA
  * (xanh lá = xong tốt) chứ không theo thang nhấn mạnh của bộ giao diện.
  *
- * ⚠️ Và không để bốn trạng thái còn lại chung một `outline` xám: «Đang chạy»,
- * «Trả về» và «Đã rút» là ba tình huống phải làm ba việc khác nhau.
+ * ⚠️ Và không để bốn trạng thái còn lại chung một `outline` xám: "Đang chạy",
+ * "Trả về" và "Đã rút" là ba tình huống phải làm ba việc khác nhau.
  */
 const INSTANCE_TONES: Partial<Record<number, string>> = {
   [INSTANCE_STATUS.running]:
@@ -408,7 +408,7 @@ function ApprovalEvent({ line, showRail }: { line: ApprovalAction; showRail: boo
           </p>
         )}
 
-        {/*  Chặng để thành huy hiệu: đây là thứ nối mốc này với thẻ «Luồng» ở
+        {/*  Chặng để thành huy hiệu: đây là thứ nối mốc này với thẻ "Luồng" ở
              trên, mà chữ mờ 12px thì lẫn mất giữa ý kiến và dòng ủy quyền. */}
         {(line.node_seq > 0 || line.node_name) && (
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">

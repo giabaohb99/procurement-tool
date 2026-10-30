@@ -26,7 +26,7 @@ function fileKindLabel(file: DocumentVersionFile): string {
 }
 
 /**
- * Bảng danh sách tệp của tab «Tệp» (phase 09) khi văn bản có TỪ HAI TỆP trở
+ * Bảng danh sách tệp của tab "Tệp" (phase 09) khi văn bản có TỪ HAI TỆP trở
  * lên — bấm dòng mở khung xem chi tiết (`document-file-viewer-layout.tsx`).
  * Ca 0/1 tệp không đi qua bảng này, xem `document-files-tab.tsx`.
  */

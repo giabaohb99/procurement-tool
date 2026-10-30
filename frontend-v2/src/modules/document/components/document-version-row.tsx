@@ -44,14 +44,14 @@ const STATUS_HINTS: Record<number, string> = {
  *
  * ⚠️ **Không đi theo `is_locked`.** Cột đó chỉ bật lúc DUYỆT XONG, nên bản đang
  * trình duyệt có `is_locked = false` — trong khi backend vẫn chặn ghi bằng
- * `chan_khi_dang_duyet` (D-029). Đọc theo `is_locked` là dòng «Đang duyệt» ghi
+ * `chan_khi_dang_duyet` (D-029). Đọc theo `is_locked` là dòng "Đang duyệt" ghi
  * "Sửa được", mở ra gõ xong bấm lưu thì ăn 409, mà nhãn trạng thái ngay bên
  * cạnh lại vừa nói "không sửa được nữa" — một dòng tự mâu thuẫn.
  */
 const LOCK_REASONS: Record<number, string> = {
   [VERSION_STATUS.draft]: 'Bản nháp — mở ra gõ trực tiếp được, tới khi gửi duyệt thì đóng lại.',
   [VERSION_STATUS.submitted]:
-    'Đang trình duyệt nên đóng băng: người duyệt đọc bản nào thì ký đúng bản đó. Bị trả về thì bản chuyển sang «Trả về» và gõ tiếp được; rút phiếu thì về Nháp.',
+    'Đang trình duyệt nên đóng băng: người duyệt đọc bản nào thì ký đúng bản đó. Bị trả về thì bản chuyển sang "Trả về" và gõ tiếp được; rút phiếu thì về Nháp.',
   [VERSION_STATUS.approved]:
     'Bản đã chốt thì khóa một chiều, mở ra chỉ đọc. Cần đổi nội dung thì mở một phiên bản mới.',
   [VERSION_STATUS.superseded]:
@@ -134,7 +134,7 @@ export function DocumentVersionRow({
 }: DocumentVersionRowProps) {
   const editLevel = editLevelLabel(version.change_kind)
   //  Bản bị TRẢ VỀ cũng sửa được — backend mở đúng như bản nháp
-  //  (`version_service.chan_khi_dang_duyet` chỉ chặn «đang duyệt» và «đã từ chối»).
+  //  (`version_service.chan_khi_dang_duyet` chỉ chặn "đang duyệt" và "đã từ chối").
   const editable =
     version.status === VERSION_STATUS.draft || version.status === VERSION_STATUS.returned
 
@@ -171,18 +171,18 @@ export function DocumentVersionRow({
             <Badge variant={version.is_current ? 'default' : 'outline'} className="font-normal">
               {version.status_label}
             </Badge>
-            <HelpHint label={`«${version.status_label}» nghĩa là gì`} className="relative z-10">
+            <HelpHint label={`"${version.status_label}" nghĩa là gì`} className="relative z-10">
               {STATUS_HINTS[version.status]}
             </HelpHint>
 
-            {/*  «Đã duyệt» và «Bản đang dùng» là HAI TRỤC khác nhau: một văn bản
+            {/*  "Đã duyệt" và "Bản đang dùng" là HAI TRỤC khác nhau: một văn bản
                  có nhiều bản đã duyệt, nhưng chỉ một bản đang dùng. */}
             {version.is_current && (
               <>
                 <Badge variant="secondary" className="font-normal">
                   Bản đang dùng
                 </Badge>
-                <HelpHint label="«Bản đang dùng» nghĩa là gì" className="relative z-10">
+                <HelpHint label='"Bản đang dùng" nghĩa là gì' className="relative z-10">
                   Bản đang có hiệu lực — ai mở văn bản này ra cũng đọc đúng bản này. Các bản
                   còn lại chỉ để tra cứu.
                 </HelpHint>
@@ -194,7 +194,7 @@ export function DocumentVersionRow({
                 <Badge variant="outline" className={cn('font-normal', editLevel.tong)}>
                   {editLevel.nhan}
                 </Badge>
-                <HelpHint label={`«${editLevel.nhan}» nghĩa là gì`} className="relative z-10">
+                <HelpHint label={`"${editLevel.nhan}" nghĩa là gì`} className="relative z-10">
                   {editLevel.giai_thich}
                 </HelpHint>
               </>
@@ -231,7 +231,7 @@ export function DocumentVersionRow({
           )}
 
           {/*  Lý do sửa: đã bắt khai ở hộp thoại thì phải trả lại ra màn hình.
-               Đây là thứ duy nhất trả lời được «ba tháng trước vì sao có bản 2.0». */}
+               Đây là thứ duy nhất trả lời được "ba tháng trước vì sao có bản 2.0". */}
           {version.change_reason && (
             <p className="text-sm text-muted-foreground">
               <span className="text-xs">Vì sao sửa: </span>
@@ -246,7 +246,7 @@ export function DocumentVersionRow({
                 label="Vì sao phải xác nhận đọc lại"
                 className="relative z-10 text-amber-700 hover:text-amber-900"
               >
-                Bản này đổi nội dung có ảnh hưởng tới cách làm việc, nên chữ ký «đã đọc» ở
+                Bản này đổi nội dung có ảnh hưởng tới cách làm việc, nên chữ ký "đã đọc" ở
                 bản trước không còn tính — hệ thống hỏi lại từng người.
               </HelpHint>
             </p>

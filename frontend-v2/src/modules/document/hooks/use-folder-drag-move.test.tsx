@@ -166,7 +166,7 @@ describe('useFolderDragMove — nhận payload ngoài cây (kéo từ khung ph�
 })
 
 //  Lỗi báo 24/09/2026: kéo thư mục con ra GỐC cây không có chỗ nào để thả.
-//  Nhãn «THƯ MỤC» ở đầu cây nay là đích thả — xem `canDropOnRoot`/`dropOnRoot`.
+//  Nhãn "THƯ MỤC" ở đầu cây nay là đích thả — xem `canDropOnRoot`/`dropOnRoot`.
 describe('useFolderDragMove — thả ra GỐC cây', () => {
   const PARENT = folderRow({ id: 1, name: 'Cha', path: '/1/', depth: 1 })
   const CHILD = folderRow({ id: 5, parent_id: 1, name: 'Con', path: '/1/5/', depth: 2 })

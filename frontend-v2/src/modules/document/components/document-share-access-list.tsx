@@ -20,7 +20,7 @@ interface DocumentShareAccessListProps {
   onRevoke: (row: DocumentAccess) => void
 }
 
-/** «xem · sửa · xóa» của một dòng cho phép. */
+/** "xem · sửa · xóa" của một dòng cho phép. */
 function describeRights(row: DocumentAccess): string {
   const rights = [row.can_read && 'Xem', row.can_write && 'Sửa', row.can_delete && 'Xóa'].filter(
     Boolean,
@@ -29,12 +29,12 @@ function describeRights(row: DocumentAccess): string {
 }
 
 /**
- * Danh sách «Người có quyền riêng» trong hộp Chia sẻ văn bản — cùng khuôn
+ * Danh sách "Người có quyền riêng" trong hộp Chia sẻ văn bản — cùng khuôn
  * `folder-share-people-list.tsx` (khung viền, avatar, tên + dòng phụ, nhãn bên
  * phải) để hai hộp Chia sẻ nhìn như một.
  *
  * Chỉ dòng CÒN HIỆU LỰC — dòng đã thu hồi (kèm mốc + lý do) vẫn xem được ở
- * khối «Quyền truy cập» của trang chi tiết; nhét vào đây thì hộp chia sẻ thành
+ * khối "Quyền truy cập" của trang chi tiết; nhét vào đây thì hộp chia sẻ thành
  * sổ lịch sử. Dòng CHẶN lên đầu: nó thắng mọi dòng cho phép.
  */
 export function DocumentShareAccessList({

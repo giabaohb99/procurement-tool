@@ -152,7 +152,7 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
     </Select>
   )
 
-  //  Đếm ô lọc ĐANG KHÁC MẶC ĐỊNH để báo lên nút «Bộ lọc» ở khổ hẹp. Chỉ đếm
+  //  Đếm ô lọc ĐANG KHÁC MẶC ĐỊNH để báo lên nút "Bộ lọc" ở khổ hẹp. Chỉ đếm
   //  được ô trạng thái vì nó là ô duy nhất `CatalogTable` tự giữ state; ô của
   //  `filters` do trang ngoài giữ nên không đọc được từ đây.
   //  ⚠️ Cộng CẢ điều kiện nâng cao: dưới 768px hai tầng lọc nằm sau đúng một

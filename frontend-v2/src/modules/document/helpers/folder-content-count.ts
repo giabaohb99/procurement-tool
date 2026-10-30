@@ -18,7 +18,7 @@ export function countSubfoldersByParent(
 
 /**
  * Dòng phụ trên thẻ thư mục (chốt 24/09/2026, kiểu thẻ Google Drive + số
- * lượng): «2 thư mục · 5 văn bản», bỏ vế nào bằng 0, cả hai bằng 0 → «Trống».
+ * lượng): "2 thư mục · 5 văn bản", bỏ vế nào bằng 0, cả hai bằng 0 → "Trống".
  * Số văn bản là `document_count_branch` — đếm CẢ NHÁNH, đã khử trùng.
  */
 export function formatFolderContentCount(subfolderCount: number, documentCount: number): string {

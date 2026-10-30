@@ -26,8 +26,8 @@ interface FolderContentsPanelProps {
  * đã có sẵn `useDocFolder(folderId)` — không truyền lặp `folder.name`/
  * `my_level` qua đây).
  *
- * ⚠️ KHÔNG còn tab «Phân quyền» (chốt lead 23/09/2026) — phân quyền nay là
- * POPUP `FolderShareDialog`, mở từ nút «Chia sẻ» / menu chuột phải / khung
+ * ⚠️ KHÔNG còn tab "Phân quyền" (chốt lead 23/09/2026) — phân quyền nay là
+ * POPUP `FolderShareDialog`, mở từ nút "Chia sẻ" / menu chuột phải / khung
  * chi tiết, tất cả nằm trong `FolderDocumentsTable`. `tab`/`onTabChange` GIỮ
  * NGUYÊN chữ ký (trang cha, `document-folder-page.tsx`, vẫn truyền hai prop
  * này) chỉ để TƯƠNG THÍCH NGƯỢC với lối vào cũ từ cây bên trái

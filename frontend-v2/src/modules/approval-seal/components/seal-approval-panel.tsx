@@ -48,7 +48,7 @@ export function SealApprovalPanel({ requestId }: { requestId: number }) {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Luồng «{instance.flow_name}»
+        Luồng <strong>{instance.flow_name}</strong>
         {running && <> — đang ở bước {instance.current_seq}</>}.
       </p>
 

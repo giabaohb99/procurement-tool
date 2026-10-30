@@ -26,7 +26,7 @@ interface FolderTreePanelDialogsProps {
  * nhánh có văn bản) gom vào một tệp riêng, để `folder-tree-panel.tsx` chỉ còn
  * phần cây + thanh công cụ.
  *
- * ⚠️ «Thêm thư mục con» KHÔNG còn là hộp thoại (duoc-CR-476, 23/09/2026) — dòng
+ * ⚠️ "Thêm thư mục con" KHÔNG còn là hộp thoại (duoc-CR-476, 23/09/2026) — dòng
  * nhập tạm hiện NGAY trong cây (`insertTempChildNode`), nên không cần `onExpand`/
  * `onSelectFolder` ở đây nữa.
  */
@@ -56,8 +56,8 @@ export function FolderTreePanelDialogs({ actions, drag, rows }: FolderTreePanelD
           <AlertDialogHeader>
             <AlertDialogTitle className="break-words">
               {pendingDrop?.targetId === ROOT_PARENT_ID
-                ? `Chuyển «${pendingDrop?.source.name}» ra gốc cây?`
-                : `Chuyển «${pendingDrop?.source.name}» tới thư mục này?`}
+                ? `Chuyển "${pendingDrop?.source.name}" ra gốc cây?`
+                : `Chuyển "${pendingDrop?.source.name}" tới thư mục này?`}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingDrop?.source.document_count_branch} văn bản bạn xem được, và có thể còn văn

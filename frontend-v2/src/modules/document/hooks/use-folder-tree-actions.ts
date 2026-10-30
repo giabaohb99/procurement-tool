@@ -14,7 +14,7 @@ import type { FolderNodeAction } from '../components/folder-tree-actions-menu'
 /**
  * State + mutation cho MỌI thao tác của menu `⋯`/chuột phải trên một nút cây
  * (`folder-tree-panel.tsx`) — tách khỏi component vẽ để tệp đó không vượt quá
- * 200 dòng (đổi tên tại chỗ, tạo thư mục kiểu VS Code «New Folder», chuyển,
+ * 200 dòng (đổi tên tại chỗ, tạo thư mục kiểu VS Code "New Folder", chuyển,
  * ngừng dùng/khôi phục, xóa đều cần state hoặc mutation RIÊNG).
  *
  * ⚠️ Tạo thư mục KHÔNG còn mở hộp thoại (duoc-CR-476, yêu cầu 23/09/2026) — dòng
@@ -62,7 +62,7 @@ export function useFolderTreeActions() {
     setNewFolderValue('')
   }
 
-  /** Dòng «thư mục mới» ở GỐC cây — thư mục tự do, backend cho người tạo mức Quản lý. */
+  /** Dòng "thư mục mới" ở GỐC cây — thư mục tự do, backend cho người tạo mức Quản lý. */
   function startCreateAtRoot() {
     setCreatingUnder({ parentId: ROOT_PARENT_ID, parentName: '' })
     setNewFolderValue('')
@@ -73,7 +73,7 @@ export function useFolderTreeActions() {
     setNewFolderValue('')
   }
 
-  /** Enter/rời ô của dòng «thư mục mới» — tên rỗng thì HỦY (không tạo bản ghi rỗng). */
+  /** Enter/rời ô của dòng "thư mục mới" — tên rỗng thì HỦY (không tạo bản ghi rỗng). */
   function commitCreate(onCreated: (folder: DocFolderTreeNode) => void) {
     if (!creatingUnder || creatingRef.current) return
     const trimmed = newFolderValue.trim()

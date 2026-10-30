@@ -10,8 +10,8 @@ import type { ApprovalFlow, ApprovalNode, ApprovalSwitch, Delegation } from '../
 
 /**
  * `enabled = false` cho những chỗ dựng hook trên MỌI dòng/thẻ nhưng chỉ vài dòng
- * thật sự cần hỏi (vd cụm nút của phiếu đặt xe, dựng trên từng thẻ «Chuyến của
- * tôi» mà chỉ phiếu đang chạy luồng duyệt mới cần biết lượt ký).
+ * thật sự cần hỏi (vd cụm nút của phiếu đặt xe, dựng trên từng thẻ "Chuyến của
+ * tôi" mà chỉ phiếu đang chạy luồng duyệt mới cần biết lượt ký).
  */
 export function useMyTasks(entity?: string, enabled = true) {
   return useQuery({
@@ -25,7 +25,7 @@ export function useMyTasks(entity?: string, enabled = true) {
 }
 
 /**
- * «Đã duyệt gần đây» — nhìn lại phiếu chính mình vừa quyết định.
+ * "Đã duyệt gần đây" — nhìn lại phiếu chính mình vừa quyết định.
  *
  * Không tự hỏi lại theo nhịp: danh sách này chỉ dài thêm khi CHÍNH người dùng
  * bấm duyệt, mà lúc đó `useInvalidateApproval` đã nạp lại cả cụm rồi.
@@ -46,7 +46,7 @@ export function useApprovalOptions() {
   })
 }
 
-/** Người đang giữ quyền Duyệt trên khóa `entity` — chỉ hỏi khi bước chọn «Người có quyền duyệt». */
+/** Người đang giữ quyền Duyệt trên khóa `entity` — chỉ hỏi khi bước chọn "Người có quyền duyệt". */
 export function usePermissionApprovers(entity: string, enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.approval.permissionApprovers(entity),
@@ -227,8 +227,8 @@ interface ApprovalActionInput {
  * của phiên duyệt, nên nạp lại mỗi cụm `approval` là chưa đủ.
  *
  * ⚠️ LỖI ĐÃ XẢY RA (24/08/2026): trả lại một văn bản ngay trên trang chi tiết thì
- * băng đổi thành «Văn bản bị trả về» nhưng nhãn trạng thái ở đầu trang vẫn ghi
- * «Đang duyệt», nội dung vẫn khóa, nút *Gửi duyệt* vẫn chưa hiện — tới khi người
+ * băng đổi thành "Văn bản bị trả về" nhưng nhãn trạng thái ở đầu trang vẫn ghi
+ * "Đang duyệt", nội dung vẫn khóa, nút *Gửi duyệt* vẫn chưa hiện — tới khi người
  * dùng tự F5. Một trang tự mâu thuẫn với chính nó, và người đọc thì kết luận là
  * bấm chưa ăn. Cùng đúng loại lỗi đã vá ở `use-documents.ts::refresh`, chỉ là ở
  * đầu bên kia.
@@ -242,7 +242,7 @@ const HO_QUERY_CUA_CHUNG_TU: Record<string, readonly string[]> = {
   //  họ `hr`, vì một phiếu xuất hiện ở danh sách, ở chi tiết và ở lịch.
   leave_request: queryKeys.hr.all,
   room_booking: queryKeys.hr.all,
-  //  Thiếu tới 23/09/2026: ký xong phiếu đặt xe, trang chi tiết vẫn «Chờ duyệt»
+  //  Thiếu tới 23/09/2026: ký xong phiếu đặt xe, trang chi tiết vẫn "Chờ duyệt"
   //  và nút Duyệt vẫn còn đó cho tới lần F5 — bấm lần nữa là nhận lỗi.
   vehicle_booking: queryKeys.vehicleBooking.all,
 }
@@ -273,7 +273,7 @@ export function useApprovalAction(instanceId: number, entity?: string) {
     onSuccess: (_data, variables) => {
       toast.success(SUCCESS_LABELS[variables.kind])
       invalidate()
-      //  «Ghi ý kiến» KHÔNG đổi trạng thái chứng từ (xem `action_service.gop_y`)
+      //  "Ghi ý kiến" KHÔNG đổi trạng thái chứng từ (xem `action_service.gop_y`)
       //  nên không cần kéo cả họ query của nó về lại.
       const ho = variables.kind !== 'comment' && entity ? HO_QUERY_CUA_CHUNG_TU[entity] : undefined
       if (ho) void queryClient.invalidateQueries({ queryKey: ho })

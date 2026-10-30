@@ -34,7 +34,7 @@ function renderMenu(props: Partial<Parameters<typeof FolderTreeNewMenu>[0]> = {}
 describe('FolderTreeNewMenu', () => {
   //  Mở 24/09/2026: ở GỐC (chưa chọn thư mục) vẫn tạo được thư mục tự do.
   //  Hai mục văn bản cần một thư mục đích nên ở gốc không hiện.
-  it('at root offers only «Thư mục mới» — document items need a target folder', async () => {
+  it('at root offers only "Thư mục mới" — document items need a target folder', async () => {
     const user = userEvent.setup()
     renderMenu()
     await user.click(screen.getByRole('button', { name: 'Mới' }))
@@ -43,7 +43,7 @@ describe('FolderTreeNewMenu', () => {
     expect(screen.queryByRole('menuitem', { name: 'Tạo nhanh từ tệp' })).not.toBeInTheDocument()
   })
 
-  //  Lỗi lead bắt khi test UI 24/09/2026: người CHỈ XEM vẫn thấy nút «+ Mới».
+  //  Lỗi lead bắt khi test UI 24/09/2026: người CHỈ XEM vẫn thấy nút "+ Mới".
   it('is hidden entirely for a view-only user, inside a folder too', () => {
     renderMenu({ folderId: 5, canCreateFolder: false, canCreateDocument: false })
     expect(screen.queryByRole('button', { name: 'Mới' })).not.toBeInTheDocument()
@@ -62,7 +62,7 @@ describe('FolderTreeNewMenu', () => {
     expect(screen.queryByRole('menuitem', { name: 'Thư mục mới' })).not.toBeInTheDocument()
   })
 
-  //  Lỗi báo 24/09/2026: chọn «Thư mục mới» không ra gì — menu modal giữ
+  //  Lỗi báo 24/09/2026: chọn "Thư mục mới" không ra gì — menu modal giữ
   //  focus nên ô nhập mở lúc menu còn mở bị mất focus. Việc tạo phải chạy SAU
   //  khi menu đóng, và chạy đúng MỘT lần.
   it('runs onCreateFolder exactly once after the menu closes', async () => {
@@ -83,7 +83,7 @@ describe('FolderTreeNewMenu', () => {
     expect(onCreateFolder).not.toHaveBeenCalled()
   })
 
-  it('«Tạo nhanh từ tệp» opens the quick dialog for the current folder and its company', async () => {
+  it('"Tạo nhanh từ tệp" opens the quick dialog for the current folder and its company', async () => {
     const user = userEvent.setup()
     renderMenu({ folderId: 23, folderCompanyId: 2 })
     await user.click(screen.getByRole('button', { name: 'Mới' }))

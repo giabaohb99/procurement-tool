@@ -86,7 +86,7 @@ describe('FolderDocumentsTable — chuyển Lưới/Danh sách, nhớ localStora
     expect(screen.getByRole('button', { name: 'Xem dạng lưới' })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('bấm «Xem dạng lưới» → đổi ngay và GHI vào localStorage', async () => {
+  it('bấm "Xem dạng lưới" → đổi ngay và GHI vào localStorage', async () => {
     const user = userEvent.setup()
     renderTable()
     await user.click(screen.getByRole('button', { name: 'Xem dạng lưới' }))
@@ -114,19 +114,19 @@ describe('FolderDocumentsTable — chuyển Lưới/Danh sách, nhớ localStora
 })
 
 describe('FolderDocumentsTable — không có gì chọn thì không có thanh thao tác', () => {
-  it('chưa chọn dòng nào → không hiện thanh «n mục đã chọn»', () => {
+  it('chưa chọn dòng nào → không hiện thanh "n mục đã chọn"', () => {
     renderTable()
     expect(screen.queryByText(/mục đã chọn/)).not.toBeInTheDocument()
   })
 })
 
 describe('FolderDocumentsTable — Hàng 2 (tìm/lọc) GIỐNG HỆT ở cả hai chế độ', () => {
-  it('ô tìm + nút «Bộ lọc» có mặt ở CẢ Danh sách lẫn Lưới (bug lead bắt 23/09/2026: Lưới từng rớt từng ô một dòng)', async () => {
+  it('ô tìm + nút "Bộ lọc" có mặt ở CẢ Danh sách lẫn Lưới (bug lead bắt 23/09/2026: Lưới từng rớt từng ô một dòng)', async () => {
     const user = userEvent.setup()
     renderTable()
 
     expect(screen.getByPlaceholderText(/Tìm tên, số hiệu/)).toBeInTheDocument()
-    //  Ba ô Loại/Trạng thái/Năm nay GẤP vào popover «Bộ lọc» (chốt dọn gọn lead
+    //  Ba ô Loại/Trạng thái/Năm nay GẤP vào popover "Bộ lọc" (chốt dọn gọn lead
     //  24/09/2026 tối) — mở popover trước khi tìm combobox bên trong.
     await user.click(screen.getByRole('button', { name: 'Bộ lọc' }))
     expect(screen.getByRole('combobox', { name: 'Lọc theo loại văn bản' })).toBeInTheDocument()

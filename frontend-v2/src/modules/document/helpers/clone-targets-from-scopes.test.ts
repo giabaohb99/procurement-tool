@@ -52,7 +52,7 @@ describe('cloneTargetsFromScopes', () => {
     expect(cloneTargetsFromScopes(rows, ISSUING_COMPANY)).toEqual([2])
   })
 
-  it('«gồm cả đơn vị con» KHÔNG tự bung thành các công ty con', () => {
+  it('"gồm cả đơn vị con" KHÔNG tự bung thành các công ty con', () => {
     //  Clone đẻ ra văn bản thật mang số hiệu vĩnh viễn — không thể sinh theo
     //  một danh sách còn đổi (công ty con mở thêm sau này).
     const rows = [row({ company_id: 2, include_children: true })]

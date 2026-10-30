@@ -47,8 +47,8 @@ export function emptyDocumentForm(seed: DocumentFormSeed = {}): DocumentRecordFo
     department_id: seed.department_id || 0,
     book_id: null,
     owner_employee_id: seed.employee_id || 0,
-    //  Người SOẠN mặc định là người đang gõ — khác «người chịu trách nhiệm nội
-    //  dung» ở chỗ ai hỏi thì trả lời, nhưng lúc lập mới thì thường là một người.
+    //  Người SOẠN mặc định là người đang gõ — khác "người chịu trách nhiệm nội
+    //  dung" ở chỗ ai hỏi thì trả lời, nhưng lúc lập mới thì thường là một người.
     drafter_employee_id: seed.employee_id || null,
     signer_employee_id: null,
     title: '',

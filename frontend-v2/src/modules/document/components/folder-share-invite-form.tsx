@@ -21,12 +21,12 @@ interface FolderShareInviteFormProps {
 }
 
 /**
- * Khối MỜI trên cùng của hộp «Chia sẻ» kiểu Drive (đặc tả §C/§P7, làm lại UI
+ * Khối MỜI trên cùng của hộp "Chia sẻ" kiểu Drive (đặc tả §C/§P7, làm lại UI
  * 23/09/2026) — ô chọn nhiều đứng RIÊNG, không còn bọc trong khung viền to
- * (bug lead bắt: "remove the big bordered box"). Ô mức quyền + nút «Cấp
- * quyền» CHỈ HIỆN khi đã chọn ≥1 đối tượng — trước đó form chỉ có mỗi ô chọn,
+ * (bug lead bắt: "remove the big bordered box"). Ô mức quyền + nút "Cấp
+ * quyền" CHỈ HIỆN khi đã chọn ≥1 đối tượng — trước đó form chỉ có mỗi ô chọn,
  * đúng luồng "chọn người rồi mới quyết định cấp gì" của Drive thay vì bày sẵn
- * hết mọi ô. «Cấm» + hiệu lực từ–đến + lý do gấp trong «Tùy chọn nâng cao» —
+ * hết mọi ô. "Cấm" + hiệu lực từ–đến + lý do gấp trong "Tùy chọn nâng cao" —
  * Cho là mặc định, không còn cặp radio Cho/Cấm nổi bật ngay ngoài.
  *
  * Chỉ hiện khi `folder-share-dialog.tsx` đã xác nhận người xem đủ mức Quản

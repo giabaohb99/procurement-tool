@@ -9,7 +9,7 @@ interface AttachmentViewerDialogProps {
   /** Số hiệu văn bản, in vào watermark để ảnh chụp lọt ra ngoài còn truy được. */
   documentCode?: string
   onClose: () => void
-  /** In chìm tên người xem — mặc định BẬT; cột tệp của tab «Văn bản» tắt (xem `AttachmentViewerPane`). */
+  /** In chìm tên người xem — mặc định BẬT; cột tệp của tab "Văn bản" tắt (xem `AttachmentViewerPane`). */
   watermark?: boolean
 }
 
@@ -18,7 +18,7 @@ interface AttachmentViewerDialogProps {
  *
  * Chỉ còn là vỏ `Dialog` bọc `AttachmentViewerPane` (tách ra ở phase 09) —
  * logic blob/HTML/watermark nằm nguyên trong đó, đừng chép lại ở đây. Dùng ở
- * nơi xem TỪ MỘT DANH SÁCH (vd `document-attachment-list.tsx`); tab «Tệp» của
+ * nơi xem TỪ MỘT DANH SÁCH (vd `document-attachment-list.tsx`); tab "Tệp" của
  * văn bản (nhiều tệp, có cây bên cạnh) dùng thẳng `AttachmentViewerPane` qua
  * `document-file-viewer-layout.tsx`, không qua hộp thoại này.
  */

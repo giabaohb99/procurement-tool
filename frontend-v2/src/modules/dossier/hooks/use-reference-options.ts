@@ -23,7 +23,7 @@ const referenceKeys = {
 }
 
 /**
- * Danh sách mục cho ô «Chọn từ danh mục», có TRA CỨU phía server.
+ * Danh sách mục cho ô "Chọn từ danh mục", có TRA CỨU phía server.
  *
  * ⚠️ Tra phía server chứ không nạp hết rồi lọc trong trình duyệt, và không phải
  * vì tối ưu: danh mục Sản phẩm có **6803 dòng** còn trần phân trang của backend

@@ -90,7 +90,7 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
                  CĂNG ra cho bằng hàng, mà `FormItem` là `grid` với hàng `auto`
                  nên phần dư bị chia đều cho các hàng con — ô nào ít dòng hơn
                  (Tên sổ không có câu mô tả) thì nhãn và ô nhập bị đẩy giãn ra.
-                 Đo được: ô nhập «Tên sổ» thấp hơn «Mã sổ» đúng 14px. */}
+                 Đo được: ô nhập "Tên sổ" thấp hơn "Mã sổ" đúng 14px. */}
             <div className="grid items-start gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
@@ -129,7 +129,7 @@ export function DocumentBookForm({ formId, book, onSubmit }: DocumentBookFormPro
                     <FormControl>
                       <Input placeholder="VD: Sổ công văn đến 2026" {...field} />
                     </FormControl>
-                    {/*  Có câu mô tả để hàng này cân với ô «Mã sổ» bên trái, và
+                    {/*  Có câu mô tả để hàng này cân với ô "Mã sổ" bên trái, và
                          cũng để nói rõ tên sổ là thứ người dùng NHÌN THẤY khắp
                          nơi — khác mã sổ vốn chỉ là khóa của bộ đếm. */}
                     <FormDescription>Tên hiện trong ô chọn sổ khi soạn văn bản.</FormDescription>

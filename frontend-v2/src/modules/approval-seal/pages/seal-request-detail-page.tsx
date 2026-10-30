@@ -56,7 +56,7 @@ export function SealRequestDetailPage() {
 
   //  ⚠️ Thứ tự và trọng lượng của dải nút này là CÓ CHỦ Ý (xếp lại 22/09/2026):
   //  trước hết là việc PHẢI LÀM với phiếu (duyệt / gửi duyệt), rồi tới vạch ngăn,
-  //  cuối cùng là menu «…» chứa mấy việc lúc nào làm cũng được (in · nhân bản ·
+  //  cuối cùng là menu "…" chứa mấy việc lúc nào làm cũng được (in · nhân bản ·
   //  xóa). Bày cả sáu thành nút ngang thì người duyệt phải đọc hết sáu nhãn mới
   //  tìm ra nút của mình, mà tên văn bản — thứ đáng đọc trước khi bấm — bị bóp
   //  còn một nửa.
@@ -85,7 +85,7 @@ export function SealRequestDetailPage() {
           hở chỗ đó thành **21px** trong khi mọi khoảng khác là 8px — đo trên
           trình duyệt. Bản thân vạch màu `border` trên nền tiêu đề gần như không
           thấy, nên mắt không đọc ra "ngăn nhóm", chỉ đọc ra một lỗ trống giữa
-          dải nút. Nút «…» vốn đã khác hẳn phần còn lại (vuông, chỉ có biểu
+          dải nút. Nút "…" vốn đã khác hẳn phần còn lại (vuông, chỉ có biểu
           tượng) nên tự nó đã tách nhóm; nhịp đều 8px đáng giá hơn. */}
       <SealRequestMoreMenu request={data} canCreate={canCreate} canDelete={canDelete} />
     </>
@@ -174,7 +174,7 @@ export function SealRequestDetailPage() {
                  nhau. Tiêu đề phiếu chỉ có tên + chức danh, người văn thư còn cần
                  email/điện thoại để gọi lại khi văn bản thiếu trang. */}
             <SealRequesterCard request={data} />
-            {/*  Tiến trình «ai lập → ai duyệt → ai đóng dấu» — dựng ở mọi chế độ; lúc
+            {/*  Tiến trình "ai lập → ai duyệt → ai đóng dấu" — dựng ở mọi chế độ; lúc
                  đang sửa nó tự bỏ TÊN người sẽ duyệt (giá trị đó là ô chọn bên trái),
                  xem chú thích trong `utils/build-seal-stages.ts`. */}
             <SealProgressCard request={data} editing={canEdit} />

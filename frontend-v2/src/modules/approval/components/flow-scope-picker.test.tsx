@@ -44,10 +44,10 @@ vi.mock('@/modules/approval-seal/hooks/use-seal-types', () => ({
 }))
 
 describe('FlowScopePicker', () => {
-  it('chọn «một số loại văn bản» thì hiện ngay ô chọn loại', async () => {
+  it('chọn "một số loại văn bản" thì hiện ngay ô chọn loại', async () => {
     //  LỖI ĐÃ XẢY RA: kiểu đang chọn suy thẳng từ chuỗi điều kiện, mà chuỗi chỉ
     //  mang được lựa chọn đã đủ — chưa tick loại nào thì chuỗi rỗng, đọc ngược
-    //  ra «tất cả», ô chọn bật về dòng đầu và KHÔNG có gì hiện ra để tick.
+    //  ra "tất cả", ô chọn bật về dòng đầu và KHÔNG có gì hiện ra để tick.
     const user = userEvent.setup()
     render(<FlowScopePicker entity="document" condition="" onChange={vi.fn()} />)
 
@@ -57,7 +57,7 @@ describe('FlowScopePicker', () => {
     expect(screen.getByRole('button', { name: /Chọn loại văn bản/ })).toBeInTheDocument()
   })
 
-  it('chọn «một số văn bản cụ thể» thì hiện ô chọn văn bản', async () => {
+  it('chọn "một số văn bản cụ thể" thì hiện ô chọn văn bản', async () => {
     const user = userEvent.setup()
     render(<FlowScopePicker entity="document" condition="" onChange={vi.fn()} />)
 
@@ -98,7 +98,7 @@ describe('FlowScopePicker', () => {
   })
 
   it('vehicle booking without a condition is the default flow, not the document picker', () => {
-    //  LỖI ĐÃ XẢY RA (bao-CR-579): Đặt xe rơi vào câu «chưa có bộ chọn riêng» dù
+    //  LỖI ĐÃ XẢY RA (bao-CR-579): Đặt xe rơi vào câu "chưa có bộ chọn riêng" dù
     //  bộ máy duyệt đã đọc được điều kiện trên phiếu đặt xe — người cấu hình không
     //  khai nổi luồng riêng cho phiếu giao hàng.
     render(<FlowScopePicker entity="vehicle_booking" condition="" onChange={vi.fn()} />)

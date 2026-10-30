@@ -53,7 +53,7 @@ const SUGGESTION_REF: Record<number, string> = {
  *
  * Mặc định chỉ hỏi **ba câu**: bước tên gì, ai duyệt, nhiều người thì tính sao.
  * Chín trên mười bước chỉ cần đúng ba câu đó. Mọi thứ còn lại — trùng người,
- * hạn duyệt, không tìm được ai, rẽ nhánh — nằm sau nút «Tùy chỉnh thêm».
+ * hạn duyệt, không tìm được ai, rẽ nhánh — nằm sau nút "Tùy chỉnh thêm".
  *
  * Bản trước bày cả mười ô cùng lúc. Người khai luồng phải đọc hết mười ô để
  * biết mình không cần đụng tám trong số đó, và mỗi ô không hiểu là một lần họ
@@ -108,7 +108,7 @@ export function ApprovalNodeForm({
   const roleCodes = (form.approver_ref ?? '').split(',').map((s) => s.trim()).filter(Boolean)
   //  Chỉ hai cách còn cần ô GÕ TAY (số cấp, tên ô trên phiếu); vai trò đã có ô
   //  chọn riêng, ba cách còn lại tự suy ra người nên không bày ô.
-  //  «Lấy từ một ô trên phiếu»: loại chứng từ đã khai danh mục ô thì CHỌN, không
+  //  "Lấy từ một ô trên phiếu": loại chứng từ đã khai danh mục ô thì CHỌN, không
   //  gõ tay tên cột — gõ sai một chữ là bước không ra ai (bao-CR-579).
   const approverFields = approverFieldsOf(entity)
   const pickField = form.approver_kind === APPROVER_KIND.field && approverFields.length > 0
@@ -183,7 +183,7 @@ export function ApprovalNodeForm({
 
         {form.approver_kind === APPROVER_KIND.directManager && (
           <p className="text-xs text-muted-foreground">
-            Đọc ô «Quản lý trực tiếp» trên hồ sơ của người nộp. Hồ sơ chưa gán, hoặc người
+            Đọc ô <strong>Quản lý trực tiếp</strong> trên hồ sơ của người nộp. Hồ sơ chưa gán, hoặc người
             quản lý đã nghỉ việc / bị khóa tài khoản, thì bước chuyển cho trưởng bộ phận
             người nộp — đơn không bị kẹt.
           </p>

@@ -6,7 +6,7 @@ import type { DossierType } from '../types/dossier-type'
 import { buildDossierFormFields, fieldsOfType } from './dossier-form-fields'
 
 /**
- * BIỂU MẪU ĐỔI THEO LOẠI HỒ SƠ — phần «metadata» của phân hệ.
+ * BIỂU MẪU ĐỔI THEO LOẠI HỒ SƠ — phần "metadata" của phân hệ.
  *
  * Bài kiểm ở đây đi cùng `test/backend/test_ho_so_truong_tuy_bien.py`: backend
  * canh luật, còn chỗ này canh **hình dạng biểu mẫu** dựng ra từ luật ấy. Hai
@@ -63,7 +63,7 @@ describe('buildDossierFormFields', () => {
     expect(optionsOf({ dossier_type_id: 3 })).toEqual([1, 2, 3])
   })
 
-  it('ô «Loại hồ sơ» là BẮT BUỘC', () => {
+  it('ô "Loại hồ sơ" là BẮT BUỘC', () => {
     const field = buildDossierFormFields(types, {}).find(
       (f) => f.name === 'dossier_type_id',
     )
@@ -72,7 +72,7 @@ describe('buildDossierFormFields', () => {
 
 })
 
-describe('ô TỰ VẼ giữ các hàng «trường riêng»', () => {
+describe('ô TỰ VẼ giữ các hàng "trường riêng"', () => {
   const types = [type({ id: 1, field_schema: [def(), def({ key: 'gt', label: 'Giá trị', type: 'number' })] })]
   const withEditor = (values: Record<string, unknown>) =>
     buildDossierFormFields(types, values, {
@@ -92,7 +92,7 @@ describe('ô TỰ VẼ giữ các hàng «trường riêng»', () => {
     //  ⚠️ Trùng tên thì `buildFormDefaults` thấy bản ghi đã có khóa đó và lấy
     //  thẳng giá trị đã lưu — tức danh sách khai báo TRẦN, chưa ghép giá trị —
     //  nên `defaultValue` dựng công phu ở dưới không bao giờ được dùng, và mọi ô
-    //  «Giá trị» hiện trống dù dữ liệu có sẵn.
+    //  "Giá trị" hiện trống dù dữ liệu có sẵn.
     const field = withEditor({}).find((f) => f.name === 'custom_rows')
     expect(field).toBeDefined()
     expect(withEditor({}).map((f) => f.name)).not.toContain('custom_fields')
@@ -140,7 +140,7 @@ describe('BỘ Ô KHUNG chỉ còn BA — khách chốt 17/09/2026', () => {
       'code', 'status', 'issued_date', 'owner_employee_id',
       'department_id', 'company_id', 'storage_location', 'note',
     ]) {
-      expect(names, `ô «${removed}» đã gỡ khỏi biểu mẫu`).not.toContain(removed)
+      expect(names, `ô "${removed}" đã gỡ khỏi biểu mẫu`).not.toContain(removed)
     }
   })
 
@@ -153,16 +153,16 @@ describe('BỘ Ô KHUNG chỉ còn BA — khách chốt 17/09/2026', () => {
     //  còn `dept` và `company` KHÔNG ra hồ sơ nào.
     //
     //  Bài này không phải để chặn — nó để người sau đọc ra được hệ quả đó từ
-    //  chính bộ test, thay vì phát hiện lúc người dùng báo «tôi không thấy hồ
-    //  sơ nào». Cột vẫn còn dưới DB và API vẫn nhận; bật lại chỉ là thêm ô.
+    //  chính bộ test, thay vì phát hiện lúc người dùng báo "tôi không thấy hồ
+    //  sơ nào". Cột vẫn còn dưới DB và API vẫn nhận; bật lại chỉ là thêm ô.
     const names = buildDossierFormFields([type()], {}).map((f) => f.name)
     const scopeFields = ['owner_employee_id', 'department_id', 'company_id']
     expect(scopeFields.filter((f) => names.includes(f))).toEqual([])
   })
 
-  it('ô CHỌN «Loại hồ sơ» mặc định 0, KHÔNG phải chuỗi rỗng', () => {
-    //  `''` gửi lên ô khai `int` thì backend trả 422 «unable to parse string as
-    //  an integer». `0` là đúng cách backend nói «chưa gắn».
+  it('ô CHỌN "Loại hồ sơ" mặc định 0, KHÔNG phải chuỗi rỗng', () => {
+    //  `''` gửi lên ô khai `int` thì backend trả 422 "unable to parse string as
+    //  an integer". `0` là đúng cách backend nói "chưa gắn".
     const fields = buildDossierFormFields([type()], {})
     expect(fields.find((f) => f.name === 'dossier_type_id')?.defaultValue).toBe(0)
   })
@@ -170,7 +170,7 @@ describe('BỘ Ô KHUNG chỉ còn BA — khách chốt 17/09/2026', () => {
   it('ô NGÀY để trống gửi null, KHÔNG gửi chuỗi rỗng', () => {
     //  `DatePicker` không có cách nào khác để nói "chưa chọn" — nó luôn giữ
     //  `''`. Mà `''` không phải một ngày: schema `date | None` trả 422 kèm câu
-    //  «input is too short». Vá nằm ở `toApiPayload` của khung chung.
+    //  "input is too short". Vá nằm ở `toApiPayload` của khung chung.
     const fields = buildDossierFormFields([type()], {})
     expect(toApiPayload(fields, buildFormDefaults(fields, null)).expiry_date).toBeNull()
   })

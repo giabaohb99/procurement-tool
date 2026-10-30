@@ -12,9 +12,9 @@ import { documentModule } from './routes'
  * backend đã mở một khe riêng cho nhóm người khác. Người bị giấu mất mục menu
  * không có cách nào biết — họ chỉ thấy "chức năng không có tác dụng".
  *
- *  - «Văn bản»      → tab *Văn bản đến* mở cho mọi tài khoản đăng nhập.
- *  - «Chờ tôi duyệt» → người ký trong luồng thường không có vai trò nào ở Văn bản.
- *  - «Sổ văn bản»    → quyền xem sổ còn tới từ bảng thành viên (ô *Người xem sổ*).
+ *  - "Văn bản"      → tab *Văn bản đến* mở cho mọi tài khoản đăng nhập.
+ *  - "Chờ tôi duyệt" → người ký trong luồng thường không có vai trò nào ở Văn bản.
+ *  - "Sổ văn bản"    → quyền xem sổ còn tới từ bảng thành viên (ô *Người xem sổ*).
  *
  * Cái thứ ba là lỗi khách báo 26/08/2026: chia sổ xong người được chia vào
  * trang của mình không thấy sổ đâu. Backend đã mở khe từ 25/08 (`nguoi_doc_so`)
@@ -38,10 +38,10 @@ function chiCo(...allowed: `${PermissionEntity}.${PermissionAction}`[]) {
 
 describe('menu phân hệ Văn thư', () => {
   it.each(MUC_MO_CHO_NGUOI_NGOAI)(
-    'mục «$label» KHÔNG gác quyền vai trò',
+    'mục "$label" KHÔNG gác quyền vai trò',
     ({ label }) => {
       const item = documentModule.nav.find((nav) => nav.label === label)
-      expect(item, `thiếu mục «${label}»`).toBeDefined()
+      expect(item, `thiếu mục "${label}"`).toBeDefined()
       //  Khai `entity` hay `entities` ở đây là khóa lại đúng nhóm người mà
       //  backend vừa mở khe cho.
       expect(item?.entity, label).toBeUndefined()
@@ -50,7 +50,7 @@ describe('menu phân hệ Văn thư', () => {
   )
 
   it.each(MUC_MO_CHO_NGUOI_NGOAI)(
-    'người KHÔNG có quyền nào vẫn thấy mục «$label»',
+    'người KHÔNG có quyền nào vẫn thấy mục "$label"',
     ({ label }) => {
       const labels = visibleNavItems(documentModule, khongCoQuyen).map((item) => item.label)
       expect(labels).toContain(label)
@@ -58,7 +58,7 @@ describe('menu phân hệ Văn thư', () => {
   )
 
   it.each(MUC_MO_CHO_NGUOI_NGOAI)(
-    'gõ thẳng URL của «$label» thì KHÔNG bị chặn 403',
+    'gõ thẳng URL của "$label" thì KHÔNG bị chặn 403',
     ({ path }) => {
       expect(canAccessRoute(documentModule, path, khongCoQuyen)).toBe(true)
     },
@@ -120,7 +120,7 @@ describe('menu phân hệ Văn thư', () => {
     }
   })
 
-  it('mọi mục nhóm «Danh mục» đều khai `manage` — đừng thêm mục mới gác bằng read', () => {
+  it('mọi mục nhóm "Danh mục" đều khai `manage` — đừng thêm mục mới gác bằng read', () => {
     const danhMuc = documentModule.nav.filter((item) => item.group === 'Danh mục')
     expect(danhMuc.length).toBe(3)
     for (const item of danhMuc) expect(item.manage, item.label).toBe(true)

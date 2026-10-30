@@ -81,7 +81,7 @@ export function DocumentLinkAddForm({
                 )}
               </Label>
 
-              <HelpHint label={`Quan hệ «${slot.relation_label}» nghĩa là gì`}>
+              <HelpHint label={`Quan hệ "${slot.relation_label}" nghĩa là gì`}>
                 {RELATION_HINTS[slot.relation]}
               </HelpHint>
 
@@ -150,7 +150,7 @@ export function DocumentLinkAddForm({
                  tiếp theo: gỡ ở chỗ nào. */}
             {complete && (
               <p className="text-xs text-muted-foreground">
-                Ô này đã đủ số lượng tối đa. Gỡ một dòng ở thẻ «Văn bản này trỏ tới» bên
+                Ô này đã đủ số lượng tối đa. Gỡ một dòng ở thẻ <em>Văn bản này trỏ tới</em> bên
                 dưới rồi mới khai thêm được.
               </p>
             )}

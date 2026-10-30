@@ -45,7 +45,7 @@ vi.mock('./folder-quick-document-fields', () => ({
     useEffect(() => {
       form.setValue('doc_type_id', 4)
       if (fieldPreset.title) form.setValue('title', fieldPreset.title)
-      //  Mô phỏng người dùng đổi ô «Lưu vào thư mục» sang thư mục khác.
+      //  Mô phỏng người dùng đổi ô "Lưu vào thư mục" sang thư mục khác.
       if (fieldPreset.folderId) onFolderIdChange(fieldPreset.folderId)
       // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ điền một lần lúc mount
     }, [])
@@ -129,7 +129,7 @@ describe('FolderQuickDocumentDialog', () => {
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
   })
 
-  it('saves into the folder picked in «Lưu vào thư mục», not the folder being viewed', async () => {
+  it('saves into the folder picked in "Lưu vào thư mục", not the folder being viewed', async () => {
     fieldPreset.folderId = 31
     renderDialog()
     pickFiles('a.pdf')

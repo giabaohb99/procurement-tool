@@ -8,7 +8,7 @@ import { queryKeys } from '@/shared/constants/query-keys'
 import { documentApi } from '../api/document-api'
 
 /**
- * Tệp của MỌI phiên bản của một văn bản — nguồn dữ liệu của tab «Tệp»
+ * Tệp của MỌI phiên bản của một văn bản — nguồn dữ liệu của tab "Tệp"
  * (phase 09). Khác `useQuery` của `document-attachment-list.tsx` (chỉ một
  * phiên bản): đây gộp cả văn bản trong một lần gọi.
  */
@@ -21,7 +21,7 @@ export function useDocumentFiles(documentId?: number) {
 }
 
 /**
- * Tải tệp lên PHIÊN BẢN ĐANG DÙNG — nút «Tải tệp lên» của tab Tệp lúc 0 tệp
+ * Tải tệp lên PHIÊN BẢN ĐANG DÙNG — nút "Tải tệp lên" của tab Tệp lúc 0 tệp
  * (`document-files-tab.tsx`). Đi cùng đường với `document-attachment-list.tsx`
  * (`entity = 'document_version'`), chỉ khác nơi gọi và nơi vô hiệu cache.
  */
@@ -44,7 +44,7 @@ export function useUploadDocumentFile(documentId: number, currentVersionId?: num
 }
 
 /**
- * Gỡ MỘT tệp khỏi phiên bản (xóa liên kết `tab_file_link`) — nút «Xóa tệp» của tab Tệp. Backend cho phép khi người
+ * Gỡ MỘT tệp khỏi phiên bản (xóa liên kết `tab_file_link`) — nút "Xóa tệp" của tab Tệp. Backend cho phép khi người
  * dùng có quyền SỬA văn bản (với bản lưu trữ hợp đồng lao động: `labor_contract.write`) và phiên bản chưa bị khóa.
  */
 export function useDeleteDocumentFile(documentId: number) {

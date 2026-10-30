@@ -11,9 +11,9 @@ import { useDocuments } from './use-documents'
 const ALL = 'all'
 
 /**
- * Truy vấn + BỘ LỌC của bảng «Văn bản» trong khung nội dung thư mục — tách
- * khỏi `folder-documents-table.tsx` để tệp đó dưới 200 dòng, đúng luật «xem
- * xét mô-đun hóa» của repo. Gồm cả phần RESET TRANG khi bộ lọc đổi, chạy
+ * Truy vấn + BỘ LỌC của bảng "Văn bản" trong khung nội dung thư mục — tách
+ * khỏi `folder-documents-table.tsx` để tệp đó dưới 200 dòng, đúng luật "xem
+ * xét mô-đun hóa" của repo. Gồm cả phần RESET TRANG khi bộ lọc đổi, chạy
  * trong `useEffect` (không phải giữa render) vì `setPage` ở đây ghi THẲNG vào
  * URL (`setSearchParams` của Router, một component KHÁC) — rà soát
  * code-reviewer 23/09/2026, M10.
@@ -21,7 +21,7 @@ const ALL = 'all'
 export function useFolderDocumentsQuery(folderId: number, sortField: DocumentSortField, sortDir: SortDirection) {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam('q')
   //  Mặc định CHỈ văn bản nằm TRỰC TIẾP trong thư mục (kiểu Drive, chốt lead
-  //  24/09/2026): trước đây mặc định gộp cả nhánh, nên thư mục gốc «Công ty»
+  //  24/09/2026): trước đây mặc định gộp cả nhánh, nên thư mục gốc "Công ty"
   //  chỉ chứa thư mục con vẫn bày 7 văn bản của các thư mục con bên dưới.
   const [subRaw, setSub] = useUrlParamState('sub', '0')
   const includeSubfolders = subRaw === '1'
@@ -34,7 +34,7 @@ export function useFolderDocumentsQuery(folderId: number, sortField: DocumentSor
   const [year, setYear] = useState(ALL)
   //  Tìm toàn văn tự bật khi câu tìm đủ dài — cùng luật màn Văn bản (25/09/2026).
   const isFullText = isFullTextQuery(debouncedValue)
-  //  «Bộ lọc nâng cao» (đặc tả A, phản hồi 24/09/2026) — cùng `DOCUMENT_LIST_FILTER_FIELDS`
+  //  "Bộ lọc nâng cao" (đặc tả A, phản hồi 24/09/2026) — cùng `DOCUMENT_LIST_FILTER_FIELDS`
   //  với danh sách Văn bản chung (`outgoing-documents-tab.tsx`), bọc `FilterProvider`
   //  ở `folder-documents-table.tsx`. `useFilterQuery` tự trả `{}` khi KHÔNG có
   //  `FilterProvider` bao ngoài (test cũ dựng thẳng `FolderDocumentsTable` không cần sửa).

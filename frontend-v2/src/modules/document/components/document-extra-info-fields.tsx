@@ -42,7 +42,7 @@ interface DocumentExtraInfoFieldsProps {
   syncOwned?: boolean
   /**
    * Công tắc TẠM TẮT hạn xem tệp (phase 09, duoc-CR-478, mặc định TẮT) — TẮT
-   * thì ẩn hẳn ô «Xem tệp đính kèm tới ngày» thay vì để nó lên đó hứa suông
+   * thì ẩn hẳn ô "Xem tệp đính kèm tới ngày" thay vì để nó lên đó hứa suông
    * (backend không xét hạn nào cả khi công tắc tắt). Không truyền = coi như
    * BẬT (màn TẠO bước 1 chưa kịp biết giá trị thật thì cứ hiện, xem
    * `document-create-page.tsx`).
@@ -113,7 +113,7 @@ export function DocumentExtraInfoFields({
               </SelectContent>
             </Select>
             {/*  Câu giải thích LẤY TỪ DANH MỤC (`security-level.ts`, cùng nguồn
-                 với màn «Thiết lập văn bản › Mức mật / khẩn»), không tự viết
+                 với màn "Thiết lập văn bản › Mức mật / khẩn"), không tự viết
                  lại ở đây: hai chỗ nói hai kiểu về cùng một mức là người dùng
                  không biết tin chỗ nào. */}
             <FormDescription>
@@ -146,7 +146,7 @@ export function DocumentExtraInfoFields({
             <Select
               value={String(field.value)}
               onValueChange={(value) => {
-                //  Cùng lý do với ô «Mức mật» ở trên.
+                //  Cùng lý do với ô "Mức mật" ở trên.
                 if (value) field.onChange(Number(value))
               }}
             >
@@ -184,7 +184,7 @@ export function DocumentExtraInfoFields({
             <FormLabel>Người ký</FormLabel>
             {/*  Ô GÕ TÌM, không phải `Select`: danh sách nhân sự lên tới cả
                  nghìn dòng nên cuộn tay là không dùng nổi (khách báo
-                 25/08/2026). Hai ô «Mức mật» / «Độ khẩn» ngay trên vẫn để
+                 25/08/2026). Hai ô "Mức mật" / "Độ khẩn" ngay trên vẫn để
                  `Select` — ba bốn mục và mỗi mục còn kèm một câu giải thích,
                  gắn ô tìm vào đó chỉ tổ thêm một bước bấm. */}
             <FormControl>
@@ -296,7 +296,7 @@ export function DocumentExtraInfoFields({
       />
       </SyncOwnedLock>
 
-      {/*  HẠN XEM TỆP — khác hẳn «Hết hiệu lực» ở trên, nên đứng ngay cạnh nó để
+      {/*  HẠN XEM TỆP — khác hẳn "Hết hiệu lực" ở trên, nên đứng ngay cạnh nó để
            người khai nhìn thấy cả hai mà phân biệt: văn bản hết hiệu lực thì vẫn
            phải tra lại được, còn cái này khóa chính TỆP đính kèm.
 

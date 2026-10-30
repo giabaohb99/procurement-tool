@@ -35,7 +35,7 @@ describe('isValidFolderDropTarget', () => {
     ).toBe(false)
   })
 
-  //  Luật «chặn khác pháp nhân» BỎ 24/09/2026 (chuyển đâu tùy người dùng) —
+  //  Luật "chặn khác pháp nhân" BỎ 24/09/2026 (chuyển đâu tùy người dùng) —
   //  thả sang nhánh của một pháp nhân khác nay HỢP LỆ.
   it('allows dropping into a branch of ANOTHER company (company rule removed)', () => {
     expect(

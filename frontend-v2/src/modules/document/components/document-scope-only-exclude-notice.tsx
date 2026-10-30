@@ -22,7 +22,7 @@ export function DocumentScopeOnlyExcludeNotice() {
           Đang chỉ có dòng loại trừ — ban hành xong văn bản sẽ không tới một ai.
         </p>
         <p className="text-muted-foreground">
-          Khai bất kỳ dòng nào là tắt mặc định «áp cho toàn bộ pháp nhân ban hành». Muốn trừ ai đó
+          Khai bất kỳ dòng nào là tắt mặc định <em>áp cho toàn bộ pháp nhân ban hành</em>. Muốn trừ ai đó
           ra thì phải khai thêm một dòng <strong>Bao gồm</strong> nói rõ áp cho ai trước — thường là
           bao gồm chính pháp nhân đứng tên văn bản.
         </p>

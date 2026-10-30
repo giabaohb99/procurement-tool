@@ -111,7 +111,7 @@ export function DocumentSettingsPage() {
   const tabsRef = useRef<HTMLDivElement>(null)
   const scrolled = useScrolled(tabsRef)
 
-  //  Mỗi tab một khóa riêng từ CR-157. Menu chỉ hỏi «có BẤT KỲ khóa nào không», nên vào tới đây rồi
+  //  Mỗi tab một khóa riêng từ CR-157. Menu chỉ hỏi "có BẤT KỲ khóa nào không", nên vào tới đây rồi
   //  vẫn có thể thiếu khóa của vài tab — trang tự lọc. `?tab=` trỏ vào tab không xem được thì rơi về
   //  tab đầu xem được. Nhân sự (chỉ có `labor_contract_template`) chỉ thấy mục mẫu HĐLĐ — luật ở
   //  `resolveSettingsView` (duoc-CR-629b).
@@ -150,7 +150,7 @@ export function DocumentSettingsPage() {
         actions={
           // Tab chỉ đọc (mức mật / khẩn) không có gì để thêm — hiện nút rồi bấm
           // vào không đi đâu thì tệ hơn là không có nút.
-          //  Mẫu HĐLĐ: «Danh sách biến» + «Tải lên mẫu» đứng đúng chỗ «Thêm mới» của các mục khác.
+          //  Mẫu HĐLĐ: "Danh sách biến" + "Tải lên mẫu" đứng đúng chỗ "Thêm mới" của các mục khác.
           laborContract ? (
             <LaborContractTemplateHeaderActions />
           ) : current.newPath ? (
@@ -169,7 +169,7 @@ export function DocumentSettingsPage() {
         }
       />
 
-      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu «đã cuộn» xuống tới dải
+      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu "đã cuộn" xuống tới dải
            thanh công cụ ghim nằm sâu bên trong (do `DataTable` vẽ, tầng này
            không với tới được bằng prop) — xem `list-sticky.ts`. */}
       <Tabs
@@ -182,7 +182,7 @@ export function DocumentSettingsPage() {
         {/*  ⚠️ **Dải này TỪNG là `TabsList` nền xám, và HAI tab cuối không bấm
              được.** `TabsList` khai `w-fit` nên nó rộng theo nội dung và không
              cuộn: đo ở 393px, bốn nhãn kèm biểu tượng cần **628px** trong khung
-             361px — «Mức mật / khẩn» nằm ở `right = 490` và «Đơn vị gửi nhận» ở
+             361px — "Mức mật / khẩn" nằm ở `right = 490` và "Đơn vị gửi nhận" ở
              `right = 641`, cả hai vượt mép màn. Trang cũng không cuộn ngang
              (`documentElement.scrollWidth = 393`) nên chúng bị cắt cụt và
              **không có đường nào chạm tới** — mất đúng một nửa số danh mục.

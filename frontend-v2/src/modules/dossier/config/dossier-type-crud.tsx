@@ -47,7 +47,7 @@ function dossierTypeChips(r: DossierType, quietWhenNormal = false): IdentityChip
  * do đó có sẵn thẻ danh tính và **dòng thời gian chỉnh sửa** (ai sửa gì lúc
  * nào) — thứ hộp thoại không có chỗ chứa.
  *
- * ⚠️ «Mã loại» KHÔNG sửa được sau khi tạo (`readonlyOnEdit`) — backend cũng bỏ
+ * ⚠️ "Mã loại" KHÔNG sửa được sau khi tạo (`readonlyOnEdit`) — backend cũng bỏ
  * `code` khỏi schema cập nhật. Mã là thứ tệp CSV nhập/xuất dùng để trỏ tới dòng
  * này; đổi mã là mọi tệp đã phát ra trỏ vào chỗ khác.
  *
@@ -57,12 +57,12 @@ function dossierTypeChips(r: DossierType, quietWhenNormal = false): IdentityChip
  * **mang nghĩa thật** — nó là thứ tự công việc, và danh sách phải bày đúng 1→5
  * (`defaultSort` bên dưới). Bày ngược là đọc sai cả quy trình.
  *
- * ⚠️ Vẫn **KHÔNG bày cột / ô «Thứ tự hiển thị»**: con số 10·20·30 là chuyện nội
+ * ⚠️ Vẫn **KHÔNG bày cột / ô "Thứ tự hiển thị"**: con số 10·20·30 là chuyện nội
  * bộ, người dùng đọc thứ tự bằng cách nhìn danh sách chứ không bằng cách đọc số
  * (bài học duoc-CR-321). Đổi thứ tự thì sửa `seed_ho_so.py`; chèn giai đoạn mới
  * thì đánh số xen kẽ (15, 25…), đừng đánh lại cả dãy.
  *
- * ⚠️ Cột **«Hồ sơ đang dùng»** đọc từ endpoint riêng `/api/dossier-types/stats`,
+ * ⚠️ Cột **"Hồ sơ đang dùng"** đọc từ endpoint riêng `/api/dossier-types/stats`,
  * KHÔNG đếm trong serializer — serializer chạy cho từng dòng nên đếm ở đó là một
  * truy vấn mỗi dòng (duoc-CR-322), và nó chạy cả ở chỗ chỉ cần tên loại để đổ ô
  * chọn. Thiếu quyền `dossier.read` thì cột TẮT HẲN chứ không hiện `0`, vì
@@ -76,7 +76,7 @@ export const DOSSIER_TYPE_CRUD_CONFIG: CrudConfig<DossierType> = {
   entity: 'dossier_type',
   title: 'Loại hồ sơ',
   description:
-    'Khai loại giấy tờ dùng chung — đây là nguồn của ô «Loại hồ sơ» và là chỗ đặt hạn hiệu lực mặc định.',
+    'Khai loại giấy tờ dùng chung — đây là nguồn của ô "Loại hồ sơ" và là chỗ đặt hạn hiệu lực mặc định.',
   unitLabel: 'loại hồ sơ',
   apiPath: '/api/dossier-types',
   storageKey: 'dossier.dossier-types',
@@ -84,7 +84,7 @@ export const DOSSIER_TYPE_CRUD_CONFIG: CrudConfig<DossierType> = {
   //  Thêm loại mở TRANG RIÊNG chứ không phải hộp thoại — cùng lý lẽ với danh mục
   //  Chức vụ. Không phải vì form dài (4 ô) mà vì mỗi ô kéo theo một hệ quả phải
   //  đọc TRƯỚC khi gõ: mã không sửa lại được, `0` tháng nghĩa là vô thời hạn chứ
-  //  không phải bỏ trống, và tắt «Còn dùng» khác hẳn với xóa. Hộp thoại buộc
+  //  không phải bỏ trống, và tắt "Còn dùng" khác hẳn với xóa. Hộp thoại buộc
   //  phải cắt ngắn những câu đó cho vừa khung.
   createRoute: appRoutes.dossier.typeNew,
   detailRoute: (id) => appRoutes.dossier.typeDetail(id),
@@ -107,9 +107,9 @@ export const DOSSIER_TYPE_CRUD_CONFIG: CrudConfig<DossierType> = {
   getItemName: (r) => `${r.name} (${r.code})`,
   deleteWarning:
     'Xóa rồi thì hồ sơ đang mang loại này mất phân loại. Muốn tạm dẹp thì bỏ tick ' +
-    '«Còn dùng»: loại biến khỏi ô chọn nhưng hồ sơ cũ vẫn đọc được.',
+    '"Còn dùng": loại biến khỏi ô chọn nhưng hồ sơ cũ vẫn đọc được.',
   chips: (r) => dossierTypeChips(r),
-  //  Khổ hẹp: THẺ thay bảng. Mô tả cắt ĐÚNG MỘT dòng bằng «…» (luật chung của
+  //  Khổ hẹp: THẺ thay bảng. Mô tả cắt ĐÚNG MỘT dòng bằng "…" (luật chung của
   //  thẻ danh mục) — đọc đủ thì mở trang chi tiết.
   mobileCard: (r) => (
     <CrudRecordCard
@@ -197,7 +197,7 @@ export const DOSSIER_TYPE_CRUD_CONFIG: CrudConfig<DossierType> = {
   ],
   //  ⚠️ Trình khai bộ trường dựng NGOÀI biểu mẫu chung, có nút Lưu và cửa API
   //  riêng — xem `DossierFieldSchemaEditor`. Khung CRUD chỉ dựng `renderExtra`
-  //  khi bản ghi ĐÃ tồn tại, nên ở màn «Thêm loại» nó không hiện: chưa có id thì
+  //  khi bản ghi ĐÃ tồn tại, nên ở màn "Thêm loại" nó không hiện: chưa có id thì
   //  không PATCH vào đâu được. Tạo loại xong mới khai ô, đúng thứ tự.
   renderExtra: (r) => <DossierFieldSchemaEditor type={r} />,
   //  ⚠️ Mọi `name` ở đây phải nằm trong `filterable=[...]` của
@@ -235,7 +235,7 @@ export const DOSSIER_TYPE_CRUD_CONFIG: CrudConfig<DossierType> = {
       label: 'Tên loại',
       required: true,
       placeholder: 'VD: Hợp đồng',
-      hint: 'Tên này hiện ở ô chọn «Loại hồ sơ» và trên danh sách hồ sơ.',
+      hint: 'Tên này hiện ở ô chọn "Loại hồ sơ" và trên danh sách hồ sơ.',
     },
     {
       name: 'code',
@@ -249,7 +249,7 @@ export const DOSSIER_TYPE_CRUD_CONFIG: CrudConfig<DossierType> = {
       hint: 'Luôn lưu thành CHỮ HOA. Tệp Excel nhập/xuất trỏ vào dòng này bằng mã, nên KHÔNG đổi được sau khi tạo.',
     },
     {
-      //  Ô CHỌN, không phải ô gõ số: «Vô thời hạn» là một dòng bấm được nên không
+      //  Ô CHỌN, không phải ô gõ số: "Vô thời hạn" là một dòng bấm được nên không
       //  còn gì phải giải nghĩa bằng chú thích, và trần 1200 tháng của backend
       //  không cách nào vượt. Mốc + nhãn khai ở `utils/validity-text.ts`.
       name: 'default_valid_months',

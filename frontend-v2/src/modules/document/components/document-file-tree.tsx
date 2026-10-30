@@ -21,7 +21,7 @@ function fileNode(file: DocumentVersionFile): TreeNode<DocumentVersionFile> {
 }
 
 /**
- * CÂY TỆP của tab «Tệp» (phase 09) — nhóm theo phiên bản (*Bản 2.0 · đang
+ * CÂY TỆP của tab "Tệp" (phase 09) — nhóm theo phiên bản (*Bản 2.0 · đang
  * dùng* › tệp…; *Bản 1.0* › tệp…). Chỉ một phiên bản thì cây PHẲNG, không có
  * nút cha thừa (logic gom nằm ở `group-files-by-version.ts`, hàm thuần có
  * test riêng — component này chỉ vẽ).
@@ -68,7 +68,7 @@ export function DocumentFileTree({
         if (node.data) onSelect(node.data)
       }}
       //  ↑↓ (và Home/End) ĐỔI THẲNG tệp đang xem, không đợi Enter — đúng yêu
-      //  cầu «↑↓ chuyển tệp» của phase 09 (như danh sách thư/tệp quen thuộc).
+      //  cầu "↑↓ chuyển tệp" của phase 09 (như danh sách thư/tệp quen thuộc).
       onFocusChange={(node) => {
         if (node.data) onSelect(node.data)
       }}

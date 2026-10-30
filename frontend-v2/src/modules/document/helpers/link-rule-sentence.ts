@@ -8,8 +8,8 @@ import type { DocTypeLinkRuleInput } from '../types/document-link-rule'
  * một hàng chip: *"Căn cứ theo → Thư công · Bắt buộc · Từ 1"*. Người khai phải
  * tự ghép bốn mảnh lại mới hiểu, và ghép sai thì không có gì báo.
  *
- * Câu đầy đủ nói thẳng ra điều luật: *"Mỗi văn bản «Trích lục» phải căn cứ theo
- * ít nhất 1 văn bản «Thư công»."* — đọc một lần là biết mình vừa khai cái gì.
+ * Câu đầy đủ nói thẳng ra điều luật: *"Mỗi văn bản "Trích lục" phải căn cứ theo
+ * ít nhất 1 văn bản "Thư công"."* — đọc một lần là biết mình vừa khai cái gì.
  */
 interface LinkRuleSentenceArgs {
   rule: Pick<DocTypeLinkRuleInput, 'is_required' | 'min_count' | 'max_count'>
@@ -27,14 +27,14 @@ export function linkRuleSentence({
   targetTypeName,
   sourceTypeName,
 }: LinkRuleSentenceArgs): string {
-  const subject = sourceTypeName ? `Mỗi văn bản «${sourceTypeName}»` : 'Văn bản loại này'
+  const subject = sourceTypeName ? `Mỗi văn bản "${sourceTypeName}"` : 'Văn bản loại này'
   //  Nhãn quan hệ viết hoa chữ đầu vì đứng riêng ở cột bảng; vào giữa câu thì
   //  phải thường xuống, không thì đọc thành hai câu ghép vụng.
   const verb = relationLabel.toLowerCase()
 
-  //  Không kén loại thì KHÔNG bỏ vào ngoặc kép: «Loại bất kỳ» đọc ra thành tên
+  //  Không kén loại thì KHÔNG bỏ vào ngoặc kép: "Loại bất kỳ" đọc ra thành tên
   //  một loại văn bản có thật, mà đó lại là chỗ duy nhất không có loại nào.
-  const dich = targetTypeName ? `«${targetTypeName}»` : 'thuộc loại bất kỳ'
+  const dich = targetTypeName ? `"${targetTypeName}"` : 'thuộc loại bất kỳ'
   return `${subject} ${quantified(rule)} ${verb} ${documentFlow(rule)} ${dich}.`
 }
 

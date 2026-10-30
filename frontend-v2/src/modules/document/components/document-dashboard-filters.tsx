@@ -91,14 +91,14 @@ export function DocumentDashboardFilters({
   //  nói gì thì người dùng tưởng hệ hỏng — nói thẳng ra là thiếu khai báo.
   const noDepartmentDeclared = Boolean(companyId) && departmentOptions.length === 0
 
-  //  «Đang lọc» = KHÁC mặc định, chứ không phải «có giá trị»: mặc định của ô
+  //  "Đang lọc" = KHÁC mặc định, chứ không phải "có giá trị": mặc định của ô
   //  thời gian là `all` (Tất cả) chứ không phải rỗng, đếm nó là ô nào cũng
   //  luôn luôn đang lọc và huy hiệu mất hết ý nghĩa.
   const activeCount =
     (companyId ? 1 : 0) + (departmentId ? 1 : 0) + (rangeKey !== 'all' ? 1 : 0)
 
   //  Tên pháp nhân có thể CHƯA về (ô chọn nạp bất đồng bộ) — bỏ qua phần chưa
-  //  biết còn hơn in ra «#12», thứ không nói được gì cho người đọc.
+  //  biết còn hơn in ra "#12", thứ không nói được gì cho người đọc.
   const summary = [
     companies?.items.find((item) => item.id === companyId)?.name,
     departmentOptions.find((item) => item.id === departmentId)?.name,
@@ -255,7 +255,7 @@ export function DocumentDashboardFilters({
 
       {/*  ⚠️ Tóm tắt phải bày RA NGOÀI tờ trượt. Đây là trang tổng quan: mọi con
            số và cả năm biểu đồ đều là kết quả của ba ô kia, mà giấu hết vào sau
-           một cái nút thì người đọc không còn cách nào biết «20 văn bản» là của
+           một cái nút thì người đọc không còn cách nào biết "20 văn bản" là của
            toàn công ty hay của một phòng. Huy hiệu đếm của tờ trượt chỉ nói CÓ
            BAO NHIÊU ô đang lọc, không nói lọc cái gì. Dòng này chỉ mọc ra khi
            thật sự có lọc — chưa lọc gì thì nó là chữ thừa. */}

@@ -17,7 +17,7 @@ interface DocumentAccessFieldsProps {
   onChange: (rows: PendingAccess[]) => void
   /** Tên sổ đang chọn ở ô "Vào sổ" phía trên — trống nghĩa là không vào sổ nào. */
   bookName?: string
-  /** Form có ô «Vào sổ» không — hộp «Tạo nhanh từ tệp» không có, đừng bảo người dùng đi chọn một ô không tồn tại. */
+  /** Form có ô "Vào sổ" không — hộp "Tạo nhanh từ tệp" không có, đừng bảo người dùng đi chọn một ô không tồn tại. */
   hasBookField?: boolean
 }
 
@@ -26,8 +26,8 @@ interface DocumentAccessFieldsProps {
  *
  * Mặc định chỉ là MỘT DÒNG tóm tắt: phần lớn văn bản dùng đúng quyền mặc định
  * (phạm vi vai trò + thành viên sổ), bày sẵn cả bảng ra chỉ làm form dài thêm
- * mà chín trên mười lần không ai đụng tới. Ai cần mới bấm «Cho phép / chặn
- * người cụ thể».
+ * mà chín trên mười lần không ai đụng tới. Ai cần mới bấm "Cho phép / chặn
+ * người cụ thể".
  *
  * Khai ngay lúc tạo chứ không để tạo xong rồi vào tab Thông tin sửa: khoảng
  * giữa hai việc đó là lúc văn bản đã tồn tại mà chưa ai chặn — với văn bản mật

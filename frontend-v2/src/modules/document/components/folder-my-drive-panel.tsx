@@ -27,7 +27,7 @@ interface FolderMyDrivePanelProps {
 }
 
 /**
- * Trạng thái CHƯA CHỌN THƯ MỤC nào ở khung phải, kiểu «Drive của tôi» (đặc tả
+ * Trạng thái CHƯA CHỌN THƯ MỤC nào ở khung phải, kiểu "Drive của tôi" (đặc tả
  * §B, duoc-CR-476, phản hồi 24/09/2026: bản cũ vẽ thẻ RIÊNG to-cao-căn-giữa,
  * khác hẳn khối bên trong một thư mục thật — nay REUSE Y NGUYÊN hai renderer
  * của một thư mục thật: chế độ Lưới → `FolderChildCards` (thẻ pill gọn),
@@ -49,7 +49,7 @@ interface FolderMyDrivePanelProps {
  * KHÔNG có thanh thao tác hàng loạt (`FolderSelectionToolbar`) ở đây — thư
  * mục pháp nhân không "Thêm vào"/"Gỡ khỏi" được (không có `currentFolder`) và
  * backend chặn cứng việc CHUYỂN chúng sang cha khác, nên phần còn lại (chỉ
- * «Xóa» hàng loạt) không đủ giá trị để thêm một thanh riêng — xóa từng cái
+ * "Xóa" hàng loạt) không đủ giá trị để thêm một thanh riêng — xóa từng cái
  * qua menu ⋯ vẫn dùng được bình thường.
  */
 export function FolderMyDrivePanel({ onSelectFolder }: FolderMyDrivePanelProps) {

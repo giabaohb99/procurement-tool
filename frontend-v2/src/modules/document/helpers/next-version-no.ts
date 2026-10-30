@@ -1,7 +1,7 @@
 import { CHANGE_KIND, type DocumentVersion } from '../types/document-record'
 
 /**
- * Số bản mà «mở phiên bản mới» sẽ sinh ra.
+ * Số bản mà "mở phiên bản mới" sẽ sinh ra.
  *
  * Phải khớp `backend/app/modules/document/version_service.py::open_new_version`:
  * sửa lớn `major + 1 . 0`, sửa nhỏ `major . minor + 1`, tính từ **SỐ CAO NHẤT ĐÃ

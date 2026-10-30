@@ -20,9 +20,9 @@ interface FolderGridDocumentCardProps {
 /**
  * THẺ VĂN BẢN của chế độ Lưới (đặc tả §P4, làm lại UI 23/09/2026) — vùng xem
  * trước `bg-muted` + icon lớn tô theo trạng thái, rồi icon nhỏ + tiêu đề MỘT
- * DÒNG (cắt bằng «…»), dòng thứ hai «số hiệu · huy hiệu trạng thái». Ngày tạo
+ * DÒNG (cắt bằng "…"), dòng thứ hai "số hiệu · huy hiệu trạng thái". Ngày tạo
  * chỉ còn trong `title` (tooltip nguyên bản trình duyệt) — trước đây một hàng
- * ngang «huy hiệu · ngày» tràn ra ngoài card khi huy hiệu dài (bug lead bắt
+ * ngang "huy hiệu · ngày" tràn ra ngoài card khi huy hiệu dài (bug lead bắt
  * 23/09/2026: "card footers overflow — dates spill outside").
  *
  * Bấm MỘT LẦN = mở (chốt 24/09/2026, bỏ bấm đúp); Ctrl/⌘/Shift+bấm hoặc

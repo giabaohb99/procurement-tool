@@ -11,7 +11,7 @@ const user = {
 } as AuthUser
 
 describe('idKhongDuocTuChan', () => {
-  //  Lỗi thật 24/08/2026: người dùng tự đưa mình vào cụm «không cho phép» rồi
+  //  Lỗi thật 24/08/2026: người dùng tự đưa mình vào cụm "không cho phép" rồi
   //  bấm Tạo — văn bản ra đời mà chính người lập không mở lại được, và cũng
   //  không còn đường vào để gỡ.
   it('chặn chính mình khi đang khai chiều KHÔNG CHO PHÉP', () => {

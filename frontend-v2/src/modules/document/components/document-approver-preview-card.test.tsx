@@ -195,7 +195,7 @@ describe('một chặng RỖNG — ba lý do khác nhau, ba câu khác nhau', ()
           steps: [
             step({
               unresolved_reason:
-                'Không tìm được người duyệt cho chặng «Bước 1» — phiếu sẽ DỪNG LẠI ở đây và cần quản trị sửa luồng.',
+                'Không tìm được người duyệt cho chặng "Bước 1" — phiếu sẽ DỪNG LẠI ở đây và cần quản trị sửa luồng.',
             }),
           ],
         })}

@@ -311,7 +311,7 @@ export function DocumentTypeForm({
                     type="button"
                     variant="outline"
                     title={
-                      'Ký đủ chữ ký xong, văn bản dừng ở «Chờ ban hành» để chính người ' +
+                      'Ký đủ chữ ký xong, văn bản dừng ở "Chờ ban hành" để chính người ' +
                       'soạn thảo bấm Ban hành và chọn địa chỉ gửi thông báo. Tắt = duyệt ' +
                       'xong ban hành luôn (mặc định).'
                     }

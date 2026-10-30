@@ -7,7 +7,7 @@ export interface GroupableFile {
 
 export interface FileVersionGroup<T> {
   versionId: number
-  /** «Bản 2.0 · đang dùng» hoặc «Bản 1.0» — nhãn cha của nhánh trong cây tệp. */
+  /** "Bản 2.0 · đang dùng" hoặc "Bản 1.0" — nhãn cha của nhánh trong cây tệp. */
   versionLabel: string
   isCurrent: boolean
   files: T[]
@@ -25,7 +25,7 @@ export interface NestedFileGroup<T> {
 }
 
 /**
- * Gom tệp của tab «Tệp» (phase 09) THEO PHIÊN BẢN, cho `document-file-tree.tsx`
+ * Gom tệp của tab "Tệp" (phase 09) THEO PHIÊN BẢN, cho `document-file-tree.tsx`
  * dựng cây: nhiều phiên bản → nhóm theo *Bản n.n · đang dùng* / *Bản n.n* (bản
  * mới trước); CHỈ một phiên bản (ca thường gặp nhất — văn bản chưa từng sửa
  * lớn/nhỏ) → trả cây PHẲNG, không bọc một nút cha vô nghĩa.

@@ -158,7 +158,7 @@ export function DetailPageShell({
                  "đầu danh sách" hiện ra ở mép trái, xa nhất khỏi nút chính. Khổ
                  hẹp thì cụm dồn trái và thứ tự đảo nghĩa: một nút XÓA (không
                  hoàn tác được) nằm ngay đầu hàng, sát chỗ ngón cái quen bấm
-                 «Tệp» / «Lưu». Đẩy về cuối để nó ở xa nhịp thao tác thường ngày.
+                 "Tệp" / "Lưu". Đẩy về cuối để nó ở xa nhịp thao tác thường ngày.
 
                  Trang nào khai `secondaryActions` thì nút này KHÔNG đứng ở đây
                  nữa — nó theo nhóm phụ vào trong `⋯` (xem cuối khối này). */}
@@ -245,8 +245,8 @@ export function DetailPageShell({
                        nhóm. Cụm nút của màn rộng căn PHẢI, nên "đầu cụm" hiện ra
                        ở mép trái — xa nhất khỏi mấy nút hay bấm. Khai ở cuối mã
                        (để nó đi theo nhóm phụ vào `⋯` ở khổ hẹp) mà không có lớp
-                       này thì trên desktop nó dạt sang phải, nằm ngay cạnh «Gửi
-                       duyệt»: một nút không hoàn tác được đứng sát nhịp thao tác
+                       này thì trên desktop nó dạt sang phải, nằm ngay cạnh "Gửi
+                       duyệt": một nút không hoàn tác được đứng sát nhịp thao tác
                        thường ngày. */}
                   {!isCreating && onDelete && (
                     <ConfirmIconButton
@@ -273,9 +273,9 @@ export function DetailPageShell({
       {/* Chỉ bản ghi đã tồn tại mới có lịch sử để xem.
 
           `showMessage`: với văn bản, TIN NẰM Ở CÂU chứ không ở nhãn hành động —
-          «Trả về người nộp: sai thể thức», «Mở phiên bản 2.0: sửa điều 3». Tắt
-          nó đi thì cả thẻ chỉ còn một cột «… — Cập nhật» lặp lại, đọc xong
-          không biết chuyện gì đã xảy ra (khách báo 24/08/2026 là «không log»). */}
+          "Trả về người nộp: sai thể thức", "Mở phiên bản 2.0: sửa điều 3". Tắt
+          nó đi thì cả thẻ chỉ còn một cột "… — Cập nhật" lặp lại, đọc xong
+          không biết chuyện gì đã xảy ra (khách báo 24/08/2026 là "không log"). */}
       {!isCreating && showHistory && audit && (
         <AuditTimeline entity={audit.entity} entityId={audit.id} showMessage />
       )}

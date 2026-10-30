@@ -2,7 +2,7 @@ import type { FolderLinkResult } from '../types/document-folder'
 
 /**
  * Câu báo kết quả thao tác HÀNG LOẠT trên thư mục (thêm/chuyển/gỡ văn bản) —
- * đúng khuôn «đã {động từ} n · bị từ chối m (lý do)» ở `phase-05-...md`.
+ * đúng khuôn "đã {động từ} n · bị từ chối m (lý do)" ở `phase-05-...md`.
  *
  * Hàm THUẦN để test không cần dựng dialog/mutation — `folder-bulk-actions.tsx`
  * chỉ gọi nó rồi vẽ ra.

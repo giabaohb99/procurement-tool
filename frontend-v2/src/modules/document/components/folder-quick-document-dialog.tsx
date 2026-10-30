@@ -48,14 +48,14 @@ function titleFromFileName(name: string): string {
 }
 
 /**
- * «TẠO NHANH TỪ TỆP» ở trang Thư mục (yêu cầu 25/09/2026) — bản rút gọn của
- * trang tạo 3 bước, đi đúng nhánh «Tạo, không soạn thảo» của trang đó
+ * "TẠO NHANH TỪ TỆP" ở trang Thư mục (yêu cầu 25/09/2026) — bản rút gọn của
+ * trang tạo 3 bước, đi đúng nhánh "Tạo, không soạn thảo" của trang đó
  * (`content_mode = files`, `content_html` rỗng): tải tệp · năm ô bắt buộc ·
  * phân quyền · bấm Tạo. Phạm vi, sổ, hiệu lực, mức mật… không hỏi ở đây — mở
  * tab Thông tin của văn bản mà khai sau.
  *
  * Bắt buộc có ít nhất MỘT tệp: văn bản không soạn thảo lại không tệp là cái
- * vỏ rỗng — trang tạo đầy đủ còn hỏi lại cho qua, còn hộp «từ tệp» thì không
+ * vỏ rỗng — trang tạo đầy đủ còn hỏi lại cho qua, còn hộp "từ tệp" thì không
  * có lý do gì để tạo vỏ rỗng.
  */
 export function FolderQuickDocumentDialog({
@@ -156,7 +156,7 @@ export function FolderQuickDocumentDialog({
               Văn bản không soạn thảo. Các thông tin khác khai sau ở tab Thông tin.
             </DialogDescription>
           </div>
-          {/*  «Mở rộng» = sang trang tạo đầy đủ 3 bước, giữ thư mục đích. Thứ
+          {/*  "Mở rộng" = sang trang tạo đầy đủ 3 bước, giữ thư mục đích. Thứ
                đã nhập ở hộp này KHÔNG mang theo — trang kia tự điền lại bốn ô
                theo tài khoản, chỉ phải chọn lại loại + tệp. */}
           <Button

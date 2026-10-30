@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { DocumentPendingIssueNotice } from './document-pending-issue-notice'
 
 /**
- * «Chờ ban hành» là trạng thái dễ đọc nhầm là hệ đứng: chữ ký đủ rồi, phiên
+ * "Chờ ban hành" là trạng thái dễ đọc nhầm là hệ đứng: chữ ký đủ rồi, phiên
  * duyệt đóng rồi, mà văn bản vẫn chưa có số hiệu. Băng này phải nói HAI câu
  * khác nhau cho hai người khác nhau — không thì người soạn ngồi chờ người khác,
  * người khác tưởng xong rồi, và văn bản nằm im vô thời hạn.

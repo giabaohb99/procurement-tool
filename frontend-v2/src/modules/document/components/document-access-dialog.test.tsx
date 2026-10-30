@@ -46,7 +46,7 @@ function row(doi: Partial<DocumentAccessDraft['values']> = {}): DocumentAccessDr
 
 describe('DocumentAccessDialog', () => {
   //  Trang chi tiết trước 25/08/2026 chỉ có nút THU HỒI: muốn nâng một người từ
-  //  «xem» lên «xem · sửa» phải thu hồi rồi chia lại, đổi lấy một dòng đỏ trong
+  //  "xem" lên "xem · sửa" phải thu hồi rồi chia lại, đổi lấy một dòng đỏ trong
   //  nhật ký cho một việc không phải thu hồi.
   it('mở ở chế độ SỬA thì nạp sẵn đối tượng, bộ quyền và lý do đang có', () => {
     render(
@@ -69,7 +69,7 @@ describe('DocumentAccessDialog', () => {
     expect(screen.getByRole('button', { name: 'Lưu' })).toBeInTheDocument()
   })
 
-  it('khai mới thì mở ra trắng, nút chốt là «Xong»', () => {
+  it('khai mới thì mở ra trắng, nút chốt là "Xong"', () => {
     render(<DocumentAccessDialog open onOpenChange={vi.fn()} onSubmit={vi.fn()} />)
 
     expect(screen.getByText('Chia quyền truy cập')).toBeInTheDocument()
@@ -77,11 +77,11 @@ describe('DocumentAccessDialog', () => {
     expect(screen.getByRole('button', { name: /Xong/ })).toBeDisabled()
   })
 
-  //  Lỗi người dùng chỉ ra 25/08/2026: chọn chiều «Không cho phép» là băng xanh
-  //  «đã bỏ … khỏi danh sách» hiện ngay giữa hộp, trong khi người dùng CHƯA
+  //  Lỗi người dùng chỉ ra 25/08/2026: chọn chiều "Không cho phép" là băng xanh
+  //  "đã bỏ … khỏi danh sách" hiện ngay giữa hộp, trong khi người dùng CHƯA
   //  chọn ai. Câu đó chỉ có nghĩa lúc mở danh sách ra tìm mà không thấy tên
   //  mình, nên nó nằm trong ô chọn chứ không phải ngoài hộp.
-  it('không bày băng «tự chặn chính mình» khi chưa mở danh sách chọn', () => {
+  it('không bày băng "tự chặn chính mình" khi chưa mở danh sách chọn', () => {
     render(
       <DocumentAccessDialog
         open
@@ -95,7 +95,7 @@ describe('DocumentAccessDialog', () => {
   })
 
   //  Lỗi bắt khi test UI 25/09/2026: ô tìm người chỉ so theo TÊN, gõ mã nhân
-  //  viên «NSU204» ra «Không có người nào khớp».
+  //  viên "NSU204" ra "Không có người nào khớp".
   describe('tìm người trong ô chọn', () => {
     function openPickerAndType(text: string) {
       render(<DocumentAccessDialog open onOpenChange={vi.fn()} onSubmit={vi.fn()} />)

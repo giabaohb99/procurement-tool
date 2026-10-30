@@ -53,8 +53,8 @@ function emptyCondition(): ApplyCondition {
  *
  * ⚠️ Phải phân biệt được **hai ca rỗng có nghĩa ngược nhau**, vì gập lại thì
  * đây là thứ DUY NHẤT người dùng đọc được về cả khối:
- *   * chưa chọn màn nào → «chưa áp dụng ở đâu»;
- *   * có màn mà không điều kiện → «mọi phiếu», tức đang áp cho TẤT CẢ.
+ *   * chưa chọn màn nào → "chưa áp dụng ở đâu";
+ *   * có màn mà không điều kiện → "mọi phiếu", tức đang áp cho TẤT CẢ.
  * Gộp hai ca thành một câu chung là giấu mất cái thứ hai — thứ đang bật cho cả
  * công ty mà người ta tưởng mình chưa khai gì.
  */
@@ -67,7 +67,7 @@ function summaryText(docKinds: DocKind[], conditionCount: number): string {
 }
 
 /**
- * ĐIỀU KIỆN ÁP DỤNG — *«giấy này phải kèm theo chứng từ nào»*.
+ * ĐIỀU KIỆN ÁP DỤNG — *"giấy này phải kèm theo chứng từ nào"*.
  *
  * Hai tầng, và **tầng trên quyết định tầng dưới có nghĩa hay không**: chọn màn
  * trước, rồi mới khai dòng hàng phải thỏa gì.
@@ -105,7 +105,7 @@ export function DossierApplyRulesEditor({
     })
 
   //  ⚠️ Đổi CHIỀU hay đổi PHÉP thì nắn lại giá trị. Không nắn thì chuyển từ
-  //  «thuộc» (giá trị là MẢNG) sang «là» (giá trị là CHUỖI) làm ô nhập nhận một
+  //  "thuộc" (giá trị là MẢNG) sang "là" (giá trị là CHUỖI) làm ô nhập nhận một
   //  mảng và React hiện `SP-001,SP-002` như một mã sản phẩm duy nhất — lưu
   //  xuống là một mã không tồn tại, im lặng.
   const setCondition = (index: number, patch: Partial<ApplyCondition>) => {
@@ -187,8 +187,8 @@ export function DossierApplyRulesEditor({
 
             {conditions.length === 0 ? (
               //  ⚠️ Câu này là chốt chặn hiểu nhầm nguy hiểm nhất của cả tính
-              //  năng. Bảng trống trông như «chưa khai gì» trong khi nghĩa thật
-              //  của nó là «áp cho TẤT CẢ».
+              //  năng. Bảng trống trông như "chưa khai gì" trong khi nghĩa thật
+              //  của nó là "áp cho TẤT CẢ".
               <p className="rounded-md border border-dashed px-3 py-3 text-center text-sm text-muted-foreground">
                 Chưa có điều kiện nào — hồ sơ sẽ hiện ở{' '}
                 <strong className="text-foreground">mọi</strong>{' '}
@@ -310,7 +310,7 @@ function ConditionRow({ row, index, disabled, onChange, onRemove }: ConditionRow
           value={conditionValueToText(row.value)}
           disabled={disabled}
           //  Chữ gợi ý đổi theo phép so sánh — nó là chỗ DUY NHẤT nói ra rằng
-          //  «thuộc» nhận nhiều giá trị ngăn bằng dấu phẩy.
+          //  "thuộc" nhận nhiều giá trị ngăn bằng dấu phẩy.
           placeholder={multi ? 'SP-001, SP-002, SP-003' : 'SP-001'}
           onChange={(e) => onChange({ value: textToConditionValue(e.target.value, row.op) })}
         />

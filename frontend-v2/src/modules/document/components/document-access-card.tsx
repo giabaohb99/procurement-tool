@@ -130,11 +130,11 @@ export function DocumentAccessCard({ documentId, canWrite }: DocumentAccessCardP
                     destructive
                     confirmTitle={`Hủy quyền của ${row.subject_name}?`}
                     confirmDescription="Dòng này vẫn ở lại bảng kèm mốc hủy — nhật ký chia sẻ chỉ thêm, không xóa."
-                    //  ⚠️ KHÔNG để trống nhãn này thành «Hủy» trơn: nút bỏ qua
-                    //  của hộp xác nhận cũng đang là «Hủy» (xem
+                    //  ⚠️ KHÔNG để trống nhãn này thành "Hủy" trơn: nút bỏ qua
+                    //  của hộp xác nhận cũng đang là "Hủy" (xem
                     //  `confirm-icon-button.tsx`). Hai nút cạnh nhau cùng chữ
-                    //  «Hủy», một cái bỏ qua một cái thi hành, trên đúng một
-                    //  thao tác không hoàn tác được — thêm chữ «quyền» là đủ
+                    //  "Hủy", một cái bỏ qua một cái thi hành, trên đúng một
+                    //  thao tác không hoàn tác được — thêm chữ "quyền" là đủ
                     //  tách hai nghĩa mà vẫn đúng từ khách yêu cầu.
                     confirmLabel="Hủy quyền"
                     onConfirm={() =>

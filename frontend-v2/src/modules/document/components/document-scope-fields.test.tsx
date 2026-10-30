@@ -100,7 +100,7 @@ describe('DocumentScopeFields', () => {
     expect(screen.getByText(/mặc định áp cho toàn bộ pháp nhân ban hành/)).toBeInTheDocument()
   })
 
-  it('thêm rồi thì băng «bỏ trống được» biến mất', async () => {
+  it('thêm rồi thì băng "bỏ trống được" biến mất', async () => {
     const user = userEvent.setup()
     render(<CreateScreen />)
 
@@ -139,7 +139,7 @@ describe('DocumentScopeFields', () => {
     const user = userEvent.setup()
     render(<CreateScreen />)
 
-    //  Ô thứ hai là «Áp theo» (ô đầu là «Cách áp») — đổi chiều sang Phòng ban.
+    //  Ô thứ hai là "Áp theo" (ô đầu là "Cách áp") — đổi chiều sang Phòng ban.
     await user.click(screen.getAllByRole('combobox')[1])
     await user.click(screen.getByRole('option', { name: 'Phòng ban' }))
 

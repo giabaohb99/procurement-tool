@@ -108,8 +108,8 @@ describe('DocumentApprovalBanner', () => {
   })
 
   it('người NGOÀI cuộc không thấy nút duyệt nào', () => {
-    //  LỖI ĐÃ XẢY RA: băng nói với tất cả mọi người là "xử lý ở màn «Việc của
-    //  tôi»". Màn đó chỉ liệt kê việc của CHÍNH người đăng nhập, nên người soạn
+    //  LỖI ĐÃ XẢY RA: băng nói với tất cả mọi người là "xử lý ở màn "Việc của
+    //  tôi"". Màn đó chỉ liệt kê việc của CHÍNH người đăng nhập, nên người soạn
     //  bấm sang chỉ thấy trống trơn và tưởng hệ thống hỏng.
     ve(session())
 
@@ -144,9 +144,9 @@ describe('DocumentApprovalBanner', () => {
   })
 
   it('duyệt hết bước mà văn bản chưa ban hành được thì phải kêu lên', () => {
-    //  LỖI ĐÃ XẢY RA: loại «phải kèm Quyết định» mà thiếu Quyết định thì hook
+    //  LỖI ĐÃ XẢY RA: loại "phải kèm Quyết định" mà thiếu Quyết định thì hook
     //  ban hành ném lỗi, `entity_hooks.fire` nuốt lỗi để giữ chữ ký. Kết quả là
-    //  phiên ghi «Đã duyệt», văn bản nằm lại ở *chờ duyệt* không số, và lý do
+    //  phiên ghi "Đã duyệt", văn bản nằm lại ở *chờ duyệt* không số, và lý do
     //  chỉ nằm trong log container — không ai biết có chuyện.
     ve(
       session({
@@ -154,7 +154,7 @@ describe('DocumentApprovalBanner', () => {
         status_label: 'Đã duyệt',
         tasks: [],
         finish_reason:
-          'Đã duyệt hết các bước nhưng CHƯA hoàn tất được: Loại «Quy trình» phải ban hành kèm một Quyết định.',
+          'Đã duyệt hết các bước nhưng CHƯA hoàn tất được: Loại "Quy trình" phải ban hành kèm một Quyết định.',
       }),
     )
 
@@ -213,8 +213,8 @@ describe('DocumentApprovalBanner', () => {
 
 describe('DocumentApprovalBanner — người trình rút về để sửa', () => {
   //  Backend có sẵn chức năng rút từ lâu nhưng màn hình không có nút: người soạn
-  //  muốn sửa một chữ phải đi nhờ người duyệt bấm «Trả lại» (29/09/2026).
-  it('shows «Rút về để sửa» to the submitter while nobody has approved', () => {
+  //  muốn sửa một chữ phải đi nhờ người duyệt bấm "Trả lại" (29/09/2026).
+  it('shows "Rút về để sửa" to the submitter while nobody has approved', () => {
     useAuthStore.setState({ user: { employee_id: 9 } as AuthUser })
 
     ve(session({ started_by_employee_id: 9 }))
@@ -223,7 +223,7 @@ describe('DocumentApprovalBanner — người trình rút về để sửa', () 
     expect(screen.queryByText(/Bạn không phải làm gì/)).not.toBeInTheDocument()
   })
 
-  it('offers it on the «stuck» banner too, where the submitter needs it most', () => {
+  it('offers it on the "stuck" banner too, where the submitter needs it most', () => {
     useAuthStore.setState({ user: { employee_id: 9 } as AuthUser })
 
     ve(session({ started_by_employee_id: 9, status: INSTANCE_STATUS.blocked }))

@@ -14,8 +14,8 @@ interface FolderQuickDocumentButtonProps {
 }
 
 /**
- * Nút «Tải tệp lên» HIỆN SẴN ở thanh công cụ khung phải — cùng hộp «Tạo nhanh
- * từ tệp» với mục trong menu «+ Mới». Thêm vì chỉ để trong menu thì người
+ * Nút "Tải tệp lên" HIỆN SẴN ở thanh công cụ khung phải — cùng hộp "Tạo nhanh
+ * từ tệp" với mục trong menu "+ Mới". Thêm vì chỉ để trong menu thì người
  * dùng không thấy (phản hồi 25/09/2026). Thiếu `document.create` thì ẩn hẳn.
  */
 export function FolderQuickDocumentButton({

@@ -46,19 +46,19 @@ export const documentModule: ErpModule = {
       end: true,
     },
     {
-      //  KHÔNG gác `entity`: màn này có tab «Văn bản đến» (`/applies-to-me`) mà
+      //  KHÔNG gác `entity`: màn này có tab "Văn bản đến" (`/applies-to-me`) mà
       //  backend mở cho MỌI tài khoản đăng nhập — nhân sự thường phải xem được
-      //  văn bản áp dụng cho họ (ban hành trong pháp nhân của họ). Tab «Văn bản
-      //  đi» (gọi `/api/documents`, gác `document.read`) do CHÍNH trang tự ẩn
+      //  văn bản áp dụng cho họ (ban hành trong pháp nhân của họ). Tab "Văn bản
+      //  đi" (gọi `/api/documents`, gác `document.read`) do CHÍNH trang tự ẩn
       //  khi thiếu quyền, nên bỏ khóa ở đây không làm lộ danh sách gác quyền.
-      //  Cùng một lẽ với «Chờ tôi duyệt» ngay bên dưới.
+      //  Cùng một lẽ với "Chờ tôi duyệt" ngay bên dưới.
       label: 'Văn bản',
       path: appRoutes.document.documents,
       icon: Files,
       group: 'Nghiệp vụ',
     },
     {
-      //  CHỜ TÔI DUYỆT — đứng ngay dưới «Văn bản» vì đó là việc phải làm trong
+      //  CHỜ TÔI DUYỆT — đứng ngay dưới "Văn bản" vì đó là việc phải làm trong
       //  ngày, còn mọi mục dưới nữa là tra cứu và khai báo.
       //
       //  KHÔNG khai `entity`: người duyệt trong luồng thường **không có vai trò
@@ -74,7 +74,7 @@ export const documentModule: ErpModule = {
     {
       //  KHÔNG khai `entity` — lần thứ ba của cùng một cái bẫy (xem hai mục
       //  ngay trên). Quyền xem sổ **không chỉ** tới từ vai trò: văn thư thêm ai
-      //  đó vào ô «Người xem sổ» là đã quyết định cho người ấy xem, và người
+      //  đó vào ô "Người xem sổ" là đã quyết định cho người ấy xem, và người
       //  được chia thường là nhân sự nghiệp vụ, KHÔNG có vai trò nào trên danh
       //  mục Sổ. Gác `document_book.read` ở đây là giấu luôn quyển sổ vừa chia
       //  khỏi mắt họ — mục menu biến mất, gõ thẳng URL thì ăn trang 403, trước
@@ -234,7 +234,7 @@ export const documentModule: ErpModule = {
       }),
     },
     {
-      //  Màn «Áp dụng cho tôi» nay là tab «Văn bản đến» của màn Văn bản. Giữ
+      //  Màn "Áp dụng cho tôi" nay là tab "Văn bản đến" của màn Văn bản. Giữ
       //  đường dẫn cũ để link đã gửi cho nhau và trang đã ghim còn mở được —
       //  chuyển hướng chứ không để 404.
       path: appRoutes.document.appliedToMe,

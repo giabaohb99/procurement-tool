@@ -28,7 +28,7 @@ interface DocumentFilesTabProps {
 const FILE_PARAM = 'file'
 
 /**
- * Tab «Tệp» của văn bản (phase 09) — rẽ theo SỐ TỆP:
+ * Tab "Tệp" của văn bản (phase 09) — rẽ theo SỐ TỆP:
  *  - 0 tệp: trạng thái rỗng + nút tải lên (khi có quyền sửa);
  *  - 1 tệp: mở THẲNG khung xem, không bày danh sách;
  *  - ≥ 2 tệp: bảng danh sách → bấm dòng vào khung xem + cây theo phiên bản.
@@ -115,7 +115,7 @@ export function DocumentFilesTab({
             ? async () => {
                 const ok = await confirm({
                   title: 'Gỡ tệp này khỏi văn bản?',
-                  message: `Tệp «${selectedFile.filename}» sẽ bị gỡ khỏi phiên bản đang dùng.`,
+                  message: `Tệp "${selectedFile.filename}" sẽ bị gỡ khỏi phiên bản đang dùng.`,
                   confirmLabel: 'Gỡ tệp',
                 })
                 if (ok) remove.mutate(selectedFile.id)
@@ -127,7 +127,7 @@ export function DocumentFilesTab({
 
   if (items.length === 1) {
     //  Chỉ MỘT tệp — chiếm cả bề rộng, không có danh sách để về nên không
-    //  truyền `onBackToList`. Không đồng bộ URL: chỉ mình nó, mở lại tab «Văn bản»
+    //  truyền `onBackToList`. Không đồng bộ URL: chỉ mình nó, mở lại tab "Văn bản"
     //  lúc nào cũng ra đúng khung xem này.
     return (
       <>

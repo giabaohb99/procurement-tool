@@ -26,7 +26,7 @@ import { FolderSortButton } from './folder-sort-button'
 interface FolderListViewProps {
   children: DocFolderTreeNode[]
   documents: DocumentRecord[]
-  /** `null` = không gắn với một thư mục cụ thể (gốc «Thư mục của bạn»). */
+  /** `null` = không gắn với một thư mục cụ thể (gốc "Thư mục của bạn"). */
   sourceFolderId: number | null
   isFullText: boolean
   sortField: DocumentSortField
@@ -40,12 +40,12 @@ interface FolderListViewProps {
   onViewDocumentDetails: (document: DocumentRecord) => void
   onDropOnFolder: (targetFolderId: number, payload: FolderDragPayload, keepInSource: boolean) => void
   onMoveDocumentTo: (document: DocumentRecord) => void
-  /** «Chia sẻ…» của một dòng VĂN BẢN — mở hộp quyền truy cập của văn bản đó. Bỏ trống ở gốc «Thư mục của bạn» (không có dòng văn bản). */
+  /** "Chia sẻ…" của một dòng VĂN BẢN — mở hộp quyền truy cập của văn bản đó. Bỏ trống ở gốc "Thư mục của bạn" (không có dòng văn bản). */
   onShareDocument?: (document: DocumentRecord) => void
   onRemoveDocument: (document: DocumentRecord) => void
   canWrite: boolean
   canDelete: boolean
-  /** `false` = bỏ cột ô tick (cả «Chọn tất cả») — gốc «Thư mục của bạn». Mặc định `true`. */
+  /** `false` = bỏ cột ô tick (cả "Chọn tất cả") — gốc "Thư mục của bạn". Mặc định `true`. */
   selectable?: boolean
 }
 

@@ -68,14 +68,14 @@ describe('DocumentDetailPage — bản lưu trữ HĐLĐ chỉ gồm tệp', () 
     await waitFor(() => expect(screen.queryByRole('tab', { name: /Quan hệ/ })).not.toBeInTheDocument())
   }
 
-  it('người GHI: tab chỉ có Văn bản / Thông tin / Phiên bản; thấy «Tải thêm tệp», «Xóa tệp» dù đã có tệp', async () => {
+  it('người GHI: tab chỉ có Văn bản / Thông tin / Phiên bản; thấy "Tải thêm tệp", "Xóa tệp" dù đã có tệp', async () => {
     await ready()
     expect(screen.queryByRole('tab', { name: /Phê duyệt/ })).not.toBeInTheDocument()
     expect(await screen.findByRole('button', { name: /Tải thêm tệp/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Xóa tệp/ })).toBeInTheDocument()
   })
 
-  it('người GHI: «Lệnh khác» có «Chuyển sang soạn thảo», không có lệnh duyệt / ban hành / bãi bỏ / sao chép', async () => {
+  it('người GHI: "Lệnh khác" có "Chuyển sang soạn thảo", không có lệnh duyệt / ban hành / bãi bỏ / sao chép', async () => {
     await ready()
     fireEvent.click(screen.getByRole('button', { name: 'Lệnh khác' }))
     const names = screen.getAllByRole('button').map((b) => b.textContent?.trim() ?? '')
@@ -85,7 +85,7 @@ describe('DocumentDetailPage — bản lưu trữ HĐLĐ chỉ gồm tệp', () 
     }
   })
 
-  it('người GHI: tab «Thông tin» có form sửa + «Lưu thông tin», không có thẻ chia sẻ / phạm vi / chữ ký', async () => {
+  it('người GHI: tab "Thông tin" có form sửa + "Lưu thông tin", không có thẻ chia sẻ / phạm vi / chữ ký', async () => {
     await ready()
     fireEvent.mouseDown(screen.getByRole('tab', { name: /Thông tin/ }), { button: 0 })
     expect(await screen.findByRole('button', { name: /Lưu thông tin/ })).toBeInTheDocument()
@@ -93,7 +93,7 @@ describe('DocumentDetailPage — bản lưu trữ HĐLĐ chỉ gồm tệp', () 
     expect(screen.queryByText(/Phạm vi áp dụng/i)).not.toBeInTheDocument()
   })
 
-  it('người chỉ ĐỌC: không «Tải thêm tệp», «Xóa tệp», «Lưu thông tin», «Chuyển sang soạn thảo»', async () => {
+  it('người chỉ ĐỌC: không "Tải thêm tệp", "Xóa tệp", "Lưu thông tin", "Chuyển sang soạn thảo"', async () => {
     state.write = false
     await ready()
     expect(screen.queryByRole('button', { name: /Tải thêm tệp|Xóa tệp/ })).not.toBeInTheDocument()
@@ -103,13 +103,13 @@ describe('DocumentDetailPage — bản lưu trữ HĐLĐ chỉ gồm tệp', () 
     await waitFor(() => expect(screen.queryByRole('button', { name: /Lưu thông tin/ })).not.toBeInTheDocument())
   })
 
-  it('văn bản thường chỉ-tệp (không phải bản lưu trữ), có tệp + quyền ghi: vẫn có «Tải thêm tệp»', async () => {
+  it('văn bản thường chỉ-tệp (không phải bản lưu trữ), có tệp + quyền ghi: vẫn có "Tải thêm tệp"', async () => {
     state.isArchive = false
     renderPage()
     expect(await screen.findByRole('button', { name: /Tải thêm tệp/ })).toBeInTheDocument()
   })
 
-  it('người GHI: tiêu đề / tóm tắt / ngày bị khóa, ghi chú & nơi lưu sửa được; «Lưu thông tin» chỉ gửi trường sửa được (owner = 0 vẫn lưu được)', async () => {
+  it('người GHI: tiêu đề / tóm tắt / ngày bị khóa, ghi chú & nơi lưu sửa được; "Lưu thông tin" chỉ gửi trường sửa được (owner = 0 vẫn lưu được)', async () => {
     await ready()
     fireEvent.mouseDown(screen.getByRole('tab', { name: /Thông tin/ }), { button: 0 })
     const save = await screen.findByRole('button', { name: /Lưu thông tin/ })
@@ -125,7 +125,7 @@ describe('DocumentDetailPage — bản lưu trữ HĐLĐ chỉ gồm tệp', () 
     expect(body).toHaveProperty('storage_location')
   })
 
-  it('người GHI: tab Phiên bản không có «Mở phiên bản mới»', async () => {
+  it('người GHI: tab Phiên bản không có "Mở phiên bản mới"', async () => {
     await ready()
     fireEvent.mouseDown(screen.getByRole('tab', { name: /Phiên bản/ }), { button: 0 })
     await waitFor(() => expect(screen.queryByRole('button', { name: /Mở phiên bản mới|Phiên bản mới/ })).not.toBeInTheDocument())

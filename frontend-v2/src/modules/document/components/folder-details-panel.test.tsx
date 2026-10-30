@@ -105,7 +105,7 @@ describe('FolderDetailsPanel', () => {
     expect(screen.getByText('Đã chọn 4 mục.')).toBeInTheDocument()
   })
 
-  it('kind=folder mức Xem: hiện tên, đường dẫn, số văn bản, mức quyền — KHÔNG hiện khối «Ai có quyền»', () => {
+  it('kind=folder mức Xem: hiện tên, đường dẫn, số văn bản, mức quyền — KHÔNG hiện khối "Ai có quyền"', () => {
     render(
       <FolderDetailsPanel
         item={{ kind: 'folder', folder: folder({ my_level: FOLDER_ACCESS_LEVEL.view }) }}
@@ -120,7 +120,7 @@ describe('FolderDetailsPanel', () => {
     expect(screen.queryByRole('button', { name: 'Quản lý quyền' })).not.toBeInTheDocument()
   })
 
-  it('kind=folder mức Quản lý: hiện khối «Ai có quyền» kèm số dòng ĐANG HIỆU LỰC', () => {
+  it('kind=folder mức Quản lý: hiện khối "Ai có quyền" kèm số dòng ĐANG HIỆU LỰC', () => {
     render(
       <FolderDetailsPanel
         item={{
@@ -147,7 +147,7 @@ describe('FolderDetailsPanel', () => {
     expect(screen.getByText(/1 người\/nhóm đang có quyền/)).toBeInTheDocument()
   })
 
-  it('kind=folder mức Quản lý: bấm «Quản lý quyền» gọi đúng callback', async () => {
+  it('kind=folder mức Quản lý: bấm "Quản lý quyền" gọi đúng callback', async () => {
     const user = userEvent.setup()
     const onManage = vi.fn()
     render(
@@ -161,7 +161,7 @@ describe('FolderDetailsPanel', () => {
     expect(onManage).toHaveBeenCalledOnce()
   })
 
-  it('kind=document: hiện số hiệu, loại, trạng thái, người soạn, thư mục chứa (đánh dấu «Chính»)', () => {
+  it('kind=document: hiện số hiệu, loại, trạng thái, người soạn, thư mục chứa (đánh dấu "Chính")', () => {
     render(<FolderDetailsPanel item={{ kind: 'document', document: doc() }} onClose={vi.fn()} />)
     expect(screen.getByText('DEGO-QC-009')).toBeInTheDocument()
     expect(screen.getByText('Quy chế / Quy trình')).toBeInTheDocument()
@@ -174,7 +174,7 @@ describe('FolderDetailsPanel', () => {
     expect(screen.getByText(/Không thấy thư mục nào chứa văn bản này/)).toBeInTheDocument()
   })
 
-  it('kind=document: bấm «Mở» gọi đúng callback', async () => {
+  it('kind=document: bấm "Mở" gọi đúng callback', async () => {
     const user = userEvent.setup()
     const onOpen = vi.fn()
     render(<FolderDetailsPanel item={{ kind: 'document', document: doc() }} onClose={vi.fn()} onOpenDocument={onOpen} />)

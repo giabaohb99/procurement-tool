@@ -13,12 +13,12 @@ import { SearchSnippet } from './search-snippet'
 
 /** Tách khỏi `folder-list-row.tsx` để tệp đó dưới 200 dòng — hai ô con dùng CHUNG cho mọi dòng (thư mục lẫn văn bản) của `folder-list-view.tsx`. */
 
-/** Ô «—» khi không có giá trị để hiện. */
+/** Ô "—" khi không có giá trị để hiện. */
 export function Cell({ dash, className }: { dash: boolean; className?: string }) {
   return dash ? <span className={cn('text-muted-foreground', className)}>—</span> : null
 }
 
-/** Cột «Người soạn» — avatar chữ viết tắt + tên; dùng chung cho văn bản (người soạn) và thư mục (người tạo). */
+/** Cột "Người soạn" — avatar chữ viết tắt + tên; dùng chung cho văn bản (người soạn) và thư mục (người tạo). */
 export function PersonCell({ name, className }: { name: string; className?: string }) {
   if (!name) return <Cell dash className={className} />
   return (
@@ -31,7 +31,7 @@ export function PersonCell({ name, className }: { name: string; className?: stri
   )
 }
 
-/** Cột «Trạng thái» của dòng THƯ MỤC — Đang dùng / Ngừng dùng. */
+/** Cột "Trạng thái" của dòng THƯ MỤC — Đang dùng / Ngừng dùng. */
 export function FolderStatusCell({ status, label }: { status: number; label: string }) {
   if (!label) return <Cell dash />
   return (

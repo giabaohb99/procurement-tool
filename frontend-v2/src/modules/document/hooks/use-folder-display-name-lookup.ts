@@ -7,7 +7,7 @@ import { useDocFolderTree } from './use-document-folders'
  * được tên PHÁP LÝ (`FolderBreadcrumbItem`/`DocumentFolderRef`, cả hai chỉ có
  * `name`, backend chưa gộp `display_name` vào hai kiểu đó) nhưng vẫn cần hiện
  * chữ ngắn cho khớp phần còn lại của giao diện (chốt dọn gọn lead 24/09/2026
- * tối: breadcrumb + «Thư mục chứa» từng hiện tên HOA đầy đủ của pháp nhân,
+ * tối: breadcrumb + "Thư mục chứa" từng hiện tên HOA đầy đủ của pháp nhân,
  * lệch với tiêu đề/thẻ/dòng đã đổi sang `display_name` từ trước).
  *
  * Tra qua CÂY đã nạp sẵn (`useDocFolderTree`, cùng cache với khung trái —

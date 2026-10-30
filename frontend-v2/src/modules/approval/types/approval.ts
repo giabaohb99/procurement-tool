@@ -57,19 +57,19 @@ export const APPROVER_KIND = {
    * phòng ban, ngăn bằng dấu phẩy.
    *
    * Khác `deptHead` ở chỗ nó KHÔNG bám theo phòng của người nộp. Nhờ vậy khai
-   * được bước có thật như «đơn nghỉ phép của mọi phòng đều qua trưởng phòng
-   * Nhân sự» mà không phải khai đích danh một con người — người đó chuyển việc
+   * được bước có thật như "đơn nghỉ phép của mọi phòng đều qua trưởng phòng
+   * Nhân sự" mà không phải khai đích danh một con người — người đó chuyển việc
    * là luồng trỏ sai mà không có gì báo (CR-159).
    */
   deptHeadOf: 7,
   /**
-   * QUẢN LÝ TRỰC TIẾP của người nộp — đọc ô «Quản lý trực tiếp» (`manager_id`) trên hồ
+   * QUẢN LÝ TRỰC TIẾP của người nộp — đọc ô "Quản lý trực tiếp" (`manager_id`) trên hồ
    * sơ nhân sự, không cần `approver_ref`. Hồ sơ chưa gán, hoặc người quản lý đã nghỉ /
    * bị khóa tài khoản, thì backend lùi về trưởng bộ phận người nộp (K3, 01/10/2026).
    */
   directManager: 8,
   /**
-   * NGƯỜI CÓ QUYỀN DUYỆT theo màn Phân quyền (duoc-CR-680) — ai giữ vai trò có ô «Duyệt» trên
+   * NGƯỜI CÓ QUYỀN DUYỆT theo màn Phân quyền (duoc-CR-680) — ai giữ vai trò có ô "Duyệt" trên
    * khóa quyền của chính loại chứng từ, trong phạm vi dữ liệu của họ. `approver_ref` do backend
    * tự ghi bằng loại chứng từ của luồng; vai trò `admin` không tính.
    */
@@ -85,8 +85,8 @@ export interface PermissionApprover {
 }
 /**
  * ⚠️ `escalate` (đẩy lên cấp trên) **ĐÃ BỎ** (CR-114) — backend không chạy nhánh
- * đó nữa và cũng không trả nó về trong danh sách chọn, nên ô «Khi không tìm được
- * người duyệt» tự mất lựa chọn này. Giữ số 2 ở đây để luồng cũ đã khai giá trị
+ * đó nữa và cũng không trả nó về trong danh sách chọn, nên ô "Khi không tìm được
+ * người duyệt" tự mất lựa chọn này. Giữ số 2 ở đây để luồng cũ đã khai giá trị
  * đó vẫn đọc ra nhãn thay vì hiện số thô.
  */
 export const ON_NO_APPROVER = { fallback: 1, escalate: 2, block: 3 } as const
@@ -103,7 +103,7 @@ export interface ApprovalOptions {
   multi_modes: ApprovalOption[]
   skip_modes: ApprovalOption[]
   on_no_approver: ApprovalOption[]
-  /** Loại chứng từ dùng được cách «Người có quyền duyệt» (duoc-CR-680). Backend cũ chưa gửi → coi như rỗng. */
+  /** Loại chứng từ dùng được cách "Người có quyền duyệt" (duoc-CR-680). Backend cũ chưa gửi → coi như rỗng. */
   permission_approver_entities?: string[]
 }
 
@@ -177,7 +177,7 @@ export interface ApprovalTask {
   decided_at: string | null
 }
 
-/** Một dòng của hộp việc «Chờ tôi duyệt» — kèm sẵn thông tin phiếu để khỏi gọi thêm. */
+/** Một dòng của hộp việc "Chờ tôi duyệt" — kèm sẵn thông tin phiếu để khỏi gọi thêm. */
 export interface MyTask extends ApprovalTask {
   entity: string
   entity_id: number
@@ -193,7 +193,7 @@ export interface MyTask extends ApprovalTask {
 }
 
 /**
- * Một dòng của «Đã duyệt gần đây» — MỘT quyết định chính tôi đã bấm.
+ * Một dòng của "Đã duyệt gần đây" — MỘT quyết định chính tôi đã bấm.
  *
  * Đọc từ dấu vết chứ không từ bảng việc: dấu vết ghi rõ *đã làm gì* (duyệt /
  * trả lại / từ chối) kèm ý kiến, và ghi đúng tên người BẤM nên người bấm thay

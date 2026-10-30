@@ -14,7 +14,7 @@ interface DocumentAttachmentSidebarProps {
 
 /**
  * CỘT TỆP bên phải trình soạn thảo (24/09/2026). Bấm một mục thì KHUNG CHÍNH
- * đổi theo — «Bản soạn thảo» là trình soạn thảo, mỗi tệp là khung xem tệp đó
+ * đổi theo — "Bản soạn thảo" là trình soạn thảo, mỗi tệp là khung xem tệp đó
  * (không mở hộp thoại). Kiểu TỐI GIẢN (phản hồi cùng ngày): mỗi mục một dòng
  * icon + tên, mục đang xem chỉ tô nền; cột cao bằng khung soạn thảo để hai bên
  * cân đối. Không có ô tải tệp lên — thêm/gỡ tệp ở tab Thông tin.

@@ -10,10 +10,10 @@ import { appRoutes } from '@/shared/constants/app-routes'
  *   `/dossier/list`   → bảng `tab_dossier`,      khóa `dossier`
  *   `/dossier/types`  → bảng `tab_dossier_type`, khóa `dossier_type`
  *
- * Tách hai theo luật «một khóa = một màn hình» (CR-157), và vì hai việc do hai
+ * Tách hai theo luật "một khóa = một màn hình" (CR-157), và vì hai việc do hai
  * nhóm người làm: lập hồ sơ là việc hằng ngày của hành chính mỗi phòng, còn sửa
  * LOẠI thì đổi luôn **khuôn biểu mẫu** (`field_schema`) cho cả công ty — gộp
- * một khóa là ai lập được một tờ giấy phép cũng xóa được ô «Số giấy phép» khỏi
+ * một khóa là ai lập được một tờ giấy phép cũng xóa được ô "Số giấy phép" khỏi
  * mọi hồ sơ cùng loại.
  *
  * ⚠️ **MỌI mục menu ở đây BẮT BUỘC khai `entity`.** Khung điều hướng của
@@ -74,7 +74,7 @@ export const dossierModule: ErpModule = {
     },
     {
       //  ⚠️ Phải đứng TRƯỚC `:id` — cùng khuôn với `/hr/job-positions/new`.
-      //  Đứng sau thì «new» khớp vào `:id`, khung CRUD gọi API chi tiết với một
+      //  Đứng sau thì "new" khớp vào `:id`, khung CRUD gọi API chi tiết với một
       //  id không phải số và trang chỉ hiện lỗi tải.
       path: appRoutes.dossier.newDossier,
       lazy: async () => ({

@@ -74,8 +74,8 @@ function sessionText(code: string): string {
 }
 
 /**
- * Một dòng chữ cho một khoảng: «27/10/2026 (cả ngày) · 1 ngày»,
- * «03/11/2026 (chiều) → 07/11/2026 (cả ngày) · 4.5 ngày».
+ * Một dòng chữ cho một khoảng: "27/10/2026 (cả ngày) · 1 ngày",
+ * "03/11/2026 (chiều) → 07/11/2026 (cả ngày) · 4.5 ngày".
  */
 export function formatGnpLeavePeriod(p: GnpLeavePeriod): string {
   const days = `${p.days} ngày`

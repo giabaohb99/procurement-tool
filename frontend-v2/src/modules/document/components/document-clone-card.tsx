@@ -85,7 +85,7 @@ export function DocumentCloneCard({
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {isIssued
-                ? 'Bấm «Clone xuống pháp nhân» — danh sách đã tick sẵn.'
+                ? 'Bấm "Clone xuống pháp nhân" — danh sách đã tick sẵn.'
                 : 'Bản nháp sinh tự động ngay khi ban hành văn bản này.'}
             </p>
           </div>

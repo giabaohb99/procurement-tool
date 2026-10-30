@@ -25,7 +25,7 @@ interface DocumentWithdrawDialogProps {
  *
  * Backend có sẵn từ lâu (`approval.action_service.withdraw` + hook
  * `document.withdraw_document`) nhưng màn hình chưa từng có nút: người soạn muốn
- * sửa một chữ phải đi nhờ người duyệt bấm «Trả lại», và dấu vết thì ghi như thể
+ * sửa một chữ phải đi nhờ người duyệt bấm "Trả lại", và dấu vết thì ghi như thể
  * văn bản bị đánh giá là chưa đạt (29/09/2026).
  *
  * Luật do BACKEND giữ, hộp thoại chỉ nói trước cho khỏi bấm rồi nhận lỗi:

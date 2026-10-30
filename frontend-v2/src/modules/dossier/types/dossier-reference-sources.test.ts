@@ -7,7 +7,7 @@ import {
 } from './dossier-reference-sources'
 
 /**
- * Bảng danh mục cho ô «Chọn từ danh mục».
+ * Bảng danh mục cho ô "Chọn từ danh mục".
  *
  * Bài kiểm chéo với backend nằm ở phía kia (`test/backend/test_ho_so_truong_rieng.py`
  * đọc thẳng tệp này) vì chỉ bên đó cầm được cả hai danh sách. Ở đây kiểm những
@@ -32,7 +32,7 @@ describe('REFERENCE_SOURCES — hình dạng từng dòng', () => {
   })
 
   it('nhãn KHÔNG trùng nhau', () => {
-    //  Hai dòng cùng nhãn thì ô chọn «Danh mục» bày ra hai mục đọc y hệt nhau,
+    //  Hai dòng cùng nhãn thì ô chọn "Danh mục" bày ra hai mục đọc y hệt nhau,
     //  và người dùng không có cách nào biết mình vừa chọn cái nào.
     const labels = entries.map(([, src]) => src.label)
     expect(new Set(labels).size).toBe(labels.length)

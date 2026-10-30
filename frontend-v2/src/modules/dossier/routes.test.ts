@@ -46,7 +46,7 @@ describe('phân hệ Hồ sơ — chốt phân quyền đường dẫn', () => {
     const entities: string[] = ENTITIES as unknown as string[]
     for (const item of dossierModule.nav) {
       for (const key of [item.entity, ...(item.entities ?? [])].filter(Boolean)) {
-        expect(entities, `mục «${item.label}» khai khóa lạ: ${key}`).toContain(key)
+        expect(entities, `mục "${item.label}" khai khóa lạ: ${key}`).toContain(key)
       }
     }
   })
@@ -79,9 +79,9 @@ describe('phân hệ Hồ sơ — chốt phân quyền đường dẫn', () => {
   })
 
   it('hai màn nằm sau HAI khóa khác nhau, không dùng chung một khóa', () => {
-    //  Luật «một khóa = một màn hình» (CR-157) ở đây không phải chuyện gọn gàng:
+    //  Luật "một khóa = một màn hình" (CR-157) ở đây không phải chuyện gọn gàng:
     //  loại hồ sơ là KHUÔN BIỂU MẪU của hồ sơ (`field_schema`), nên gộp chung
-    //  một khóa là ai lập được một tờ giấy phép cũng xóa được ô «Số giấy phép»
+    //  một khóa là ai lập được một tờ giấy phép cũng xóa được ô "Số giấy phép"
     //  khỏi mọi hồ sơ cùng loại.
     const byPath = new Map(dossierModule.nav.map((item) => [item.path, item.entity]))
     expect(byPath.get(appRoutes.dossier.list)).toBe('dossier')
@@ -101,7 +101,7 @@ describe('phân hệ Hồ sơ — chốt phân quyền đường dẫn', () => {
     ])
 
     //  ⚠️ Thứ tự là luật, không phải thẩm mỹ: react-router khớp theo thứ tự đăng
-    //  ký, nên `/:id` đứng trước thì «new» bị nuốt thành một id — khung CRUD gọi
+    //  ký, nên `/:id` đứng trước thì "new" bị nuốt thành một id — khung CRUD gọi
     //  API chi tiết với `id = "new"` và người dùng chỉ thấy màn báo lỗi tải.
     for (const [staticPath, dynamicPath] of [
       [appRoutes.dossier.newDossier, appRoutes.dossier.detail(':id')],

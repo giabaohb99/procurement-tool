@@ -38,7 +38,7 @@ interface DocumentReviewDialogProps {
  * RÀ VĂN BẢN theo bản gốc — và mở luôn phiên bản mới nếu rà ra là phải sửa.
  *
  * Ca dùng: pháp nhân mẹ ban hành phiên bản mới, mọi bản riêng ở pháp nhân con bị
- * đánh dấu «cần rà lại» (`clone_service.mark_clones_for_review`). Người phụ trách
+ * đánh dấu "cần rà lại" (`clone_service.mark_clones_for_review`). Người phụ trách
  * bản riêng mở bản gốc ra đối chiếu rồi kết luận **một trong hai**:
  *
  *  - **Giữ nguyên** — phần của pháp nhân mình không đụng tới chỗ vừa sửa. Chỉ gỡ
@@ -47,13 +47,13 @@ interface DocumentReviewDialogProps {
  *    ngồi sửa.
  *
  * Trước đây chỗ này chỉ có một hộp hỏi lý do rồi gỡ dấu. Rà ra là phải sửa thì
- * người dùng còn phải tự sang tab «Phiên bản», tự bấm «Mở phiên bản mới», rồi gõ
- * lại y nguyên câu vừa gõ vào ô «Sửa gì» — mà đó lại là ca THƯỜNG GẶP nhất, vì
+ * người dùng còn phải tự sang tab "Phiên bản", tự bấm "Mở phiên bản mới", rồi gõ
+ * lại y nguyên câu vừa gõ vào ô "Sửa gì" — mà đó lại là ca THƯỜNG GẶP nhất, vì
  * bản gốc có sửa thì mới có cái để rà.
  *
  * ⚠️ Thứ tự chạy: **mở phiên bản trước, gỡ dấu sau.** Mở phiên bản là việc hay
  * hỏng nhất (409 khi người khác đang giữ bản nháp, 400 khi bản đang dùng chưa
- * duyệt xong). Gỡ dấu trước rồi mở hỏng thì văn bản mất dấu «cần rà lại» mà chưa
+ * duyệt xong). Gỡ dấu trước rồi mở hỏng thì văn bản mất dấu "cần rà lại" mà chưa
  * ai sửa gì — cái dấu đó là thứ duy nhất nhắc còn việc.
  *
  * Hệ thống **không bao giờ tự chép nội dung** từ bản gốc sang bản riêng: nó chỉ
@@ -132,7 +132,7 @@ export function DocumentReviewDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/*  409 «người khác đang giữ bản nháp» phải Ở LẠI trong hộp thoại kèm
+        {/*  409 "người khác đang giữ bản nháp" phải Ở LẠI trong hộp thoại kèm
              tên người đó — toast bay mất trước khi đọc xong (C14). */}
         {openVersion.isError && (
           <p
@@ -193,7 +193,7 @@ export function DocumentReviewDialog({
                 <span>
                   <span className="font-medium">Giữ nguyên, không phải sửa</span>
                   <span className="block text-muted-foreground">
-                    Chỉ gỡ dấu «cần rà lại» và ghi kết luận vào nhật ký.
+                    Chỉ gỡ dấu <strong>cần rà lại</strong> và ghi kết luận vào nhật ký.
                   </span>
                 </span>
               </label>
@@ -267,7 +267,7 @@ export function DocumentReviewDialog({
             />
             <p className="text-xs text-muted-foreground">
               {openNewVersion
-                ? 'Câu này vào nhật ký rà soát và làm luôn dòng «sửa gì» của phiên bản mới.'
+                ? 'Câu này vào nhật ký rà soát và làm luôn dòng "sửa gì" của phiên bản mới.'
                 : 'Câu này vào nhật ký thao tác — người sau đọc lại phải biết bạn đã đối chiếu ra điều gì.'}
             </p>
           </div>

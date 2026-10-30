@@ -17,14 +17,14 @@ interface FolderViewModeControlsProps {
 /**
  * Segmented Danh sách/Lưới + nút bật/tắt khung chi tiết — tách khỏi
  * `folder-view-toolbar.tsx` (Hàng 1 của một thư mục THẬT) để dùng LẠI y
- * nguyên ở `folder-my-drive-panel.tsx` (Hàng 1 của gốc «Thư mục của bạn»,
- * chưa chọn thư mục nào nên không có `folder`/nút «Chia sẻ» để vẽ). Hai nơi
+ * nguyên ở `folder-my-drive-panel.tsx` (Hàng 1 của gốc "Thư mục của bạn",
+ * chưa chọn thư mục nào nên không có `folder`/nút "Chia sẻ" để vẽ). Hai nơi
  * PHẢI cùng một khối UI — khác nhau là bộ nhớ chế độ lệch giữa gốc và một
  * thư mục thật, người dùng thấy "tự nhảy chế độ" khi mở/đóng thư mục.
  *
  * Đoạn ĐANG BẬT nổi lên nền `bg-background` + bóng trên rãnh `bg-muted`
  * (kiểu segmented của shadcn Tabs), GIỮ icon Danh sách/Lưới của chính nó.
- * Bản trước thay icon bằng dấu `Check` — người dùng nhìn «✓ ⊞» không đọc ra
+ * Bản trước thay icon bằng dấu `Check` — người dùng nhìn "✓ ⊞" không đọc ra
  * đang ở chế độ nào (làm lại 24/09/2026).
  */
 export function FolderViewModeControls({

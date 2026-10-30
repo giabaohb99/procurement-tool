@@ -40,7 +40,7 @@ vi.mock('@/core/authorization/use-permission', () => ({
 //  Không có văn bản nào để nạp trong PHẦN LỚN bài kiểm ở đây (không đụng tới lá
 //  văn bản) — mặc định trả Map rỗng, khỏi cần dựng `QueryClientProvider` thật
 //  cho một `useQueries` không ai kiểm. `vi.fn()` (không phải arrow trần) để
-//  vài bài kiểm RIÊNG (điều hướng lá văn bản, tắt «Hiện văn bản trong cây») tự
+//  vài bài kiểm RIÊNG (điều hướng lá văn bản, tắt "Hiện văn bản trong cây") tự
 //  đổi `mockReturnValue`/kiểm tra được đối số gọi vào.
 vi.mock('../hooks/use-folder-tree-document-leaves', () => ({
   useFolderTreeDocumentLeaves: vi.fn(() => new Map()),
@@ -237,7 +237,7 @@ describe('FolderTreePanel — đổi tên tại chỗ (F2 · Enter · Esc · blu
   })
 })
 
-describe('FolderTreePanel — dòng tạm «thư mục mới» (không mở hộp thoại)', () => {
+describe('FolderTreePanel — dòng tạm "thư mục mới" (không mở hộp thoại)', () => {
   it('bấm "Thư mục mới" ở tiêu đề mở dòng nhập NGAY dưới thư mục đang chọn, Enter tạo đúng cha', async () => {
     const user = userEvent.setup()
     renderPanel(2)
@@ -523,7 +523,7 @@ describe('FolderTreePanel — bấm/kích hoạt LÁ VĂN BẢN (đặc tả §3
   })
 })
 
-describe('FolderTreePanel — «Hiện văn bản trong cây» (đặc tả §2, duoc-CR-476)', () => {
+describe('FolderTreePanel — "Hiện văn bản trong cây" (đặc tả §2, duoc-CR-476)', () => {
   it('mặc định BẬT — vẫn gọi nạp lá cho thư mục đang mở', () => {
     renderPanel(null)
     expect(useFolderTreeDocumentLeaves).toHaveBeenCalledWith(expect.arrayContaining([2]))
@@ -586,9 +586,9 @@ describe('FolderTreePanel — thư mục ĐANG CHỌN đổi từ ngoài tự l�
 })
 
 //  Phản hồi 24/09/2026: lỡ bấm vào một pháp nhân là KẸT, cây không còn chỗ nào
-//  để quay về gốc — «+ Mới» cứ tạo vào pháp nhân đó.
-describe('FolderTreePanel — về gốc «Thư mục của bạn»', () => {
-  it('clicking the «Thư mục» header label calls onSelectRoot', async () => {
+//  để quay về gốc — "+ Mới" cứ tạo vào pháp nhân đó.
+describe('FolderTreePanel — về gốc "Thư mục của bạn"', () => {
+  it('clicking the "Thư mục" header label calls onSelectRoot', async () => {
     const user = userEvent.setup()
     const onSelectRoot = vi.fn()
     render(

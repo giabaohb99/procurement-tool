@@ -22,9 +22,9 @@ export function DossierListPage() {
   const types = useMemo(() => data?.items ?? [], [data])
   const config = useMemo(() => buildDossierCrudConfig(types), [types])
 
-  //  Dựng bảng trước khi có danh mục thì ô lọc «Loại hồ sơ» hiện ra RỖNG —
+  //  Dựng bảng trước khi có danh mục thì ô lọc "Loại hồ sơ" hiện ra RỖNG —
   //  người dùng mở nó, thấy không có mục nào, và kết luận công ty chưa khai loại
-  //  hồ sơ nào. Khung xương nói đúng hơn: «đang tải».
+  //  hồ sơ nào. Khung xương nói đúng hơn: "đang tải".
   if (isLoading) {
     return (
       <div className="space-y-4 p-4 sm:p-6">

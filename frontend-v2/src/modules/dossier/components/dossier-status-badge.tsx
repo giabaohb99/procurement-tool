@@ -12,8 +12,8 @@ import {
 /**
  * HAI huy hiệu, hai câu hỏi khác nhau — đừng gộp.
  *
- * *Tình trạng* trả lời «ai đó đã xếp hồ sơ này vào đâu» (nháp · đang lưu · lưu
- * trữ). *Hiệu lực* trả lời «tờ giấy còn giá trị không», và nó do NGÀY quyết
+ * *Tình trạng* trả lời "ai đó đã xếp hồ sơ này vào đâu" (nháp · đang lưu · lưu
+ * trữ). *Hiệu lực* trả lời "tờ giấy còn giá trị không", và nó do NGÀY quyết
  * định chứ không do ai bấm nút. Một hồ sơ *Đang lưu* mà giấy đã hết hạn là
  * chuyện có thật và cần thấy ngay — gộp hai thứ vào một cột thì đúng ca ấy biến
  * mất.
@@ -59,7 +59,7 @@ interface DossierExpiryBadgeProps {
  * đúng một ngày không ai để ý, mà bản lệch là bản người dùng nhìn.
  */
 export function DossierExpiryBadge({ state, days }: DossierExpiryBadgeProps) {
-  //  Chỉ nói số ngày ở hai mức cần hành động. «Còn hạn · 812 ngày» thì con số
+  //  Chỉ nói số ngày ở hai mức cần hành động. "Còn hạn · 812 ngày" thì con số
   //  không đổi được quyết định nào, chỉ làm ô bảng dài thêm.
   const suffix =
     state === DOSSIER_EXPIRY.NEAR && days !== null

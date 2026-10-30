@@ -70,7 +70,7 @@ export interface DocumentType {
    * Ký đủ chữ ký xong có TỰ ban hành không (26/08/2026).
    *
    * `true` (mặc định) = duyệt xong là ban hành luôn, y như trước.
-   * `false` = văn bản dừng ở «Chờ ban hành»; chính người soạn thảo mở ra, chọn
+   * `false` = văn bản dừng ở "Chờ ban hành"; chính người soạn thảo mở ra, chọn
    * hộp thư gửi thông báo rồi bấm *Ban hành*.
    *
    * ⚠️ Cờ DUY NHẤT mặc định BẬT, nên nó không nằm trong `DOCUMENT_TYPE_FLAGS` —
@@ -134,8 +134,8 @@ export const DOCUMENT_TYPE_FLAGS: {
 ]
 
 /**
- * Cờ mặc định của form thêm mới. «Cần duyệt» BẬT (29/09/2026): ô này nay thật sự
- * bỏ chặng duyệt, quên tích phải là «cần duyệt» — khớp mặc định backend.
+ * Cờ mặc định của form thêm mới. "Cần duyệt" BẬT (29/09/2026): ô này nay thật sự
+ * bỏ chặng duyệt, quên tích phải là "cần duyệt" — khớp mặc định backend.
  */
 export const EMPTY_DOCUMENT_TYPE_FLAGS = {
   needs_approval: true,

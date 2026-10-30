@@ -14,15 +14,15 @@ interface FolderViewToolbarProps {
   onToggleGrid: (grid: boolean) => void
   detailsOpen: boolean
   onToggleDetails: () => void
-  /** Mở hộp «Chia sẻ» cho THƯ MỤC ĐANG XEM (đặc tả §C, chốt lead 23/09/2026 — bỏ tab «Phân quyền», thay bằng popup). */
+  /** Mở hộp "Chia sẻ" cho THƯ MỤC ĐANG XEM (đặc tả §C, chốt lead 23/09/2026 — bỏ tab "Phân quyền", thay bằng popup). */
   onShare: () => void
 }
 
 /**
  * HÀNG 1 kiểu Drive của khung nội dung (đặc tả §P3, chốt UI 23/09/2026) —
- * icon thư mục + tên (một dòng, cắt «…») + dòng phụ «Quyền · số văn bản» bên
- * trái, «Chia sẻ» · chuyển Lưới/Danh sách · `ⓘ` bên phải (làm lại 24/09/2026:
- * bỏ huy hiệu viền, cụm nút KHÔNG bao giờ rớt dòng). Trước đây tệp này còn ôm cả nút «+ Mới» và sắp xếp — «+ Mới»
+ * icon thư mục + tên (một dòng, cắt "…") + dòng phụ "Quyền · số văn bản" bên
+ * trái, "Chia sẻ" · chuyển Lưới/Danh sách · `ⓘ` bên phải (làm lại 24/09/2026:
+ * bỏ huy hiệu viền, cụm nút KHÔNG bao giờ rớt dòng). Trước đây tệp này còn ôm cả nút "+ Mới" và sắp xếp — "+ Mới"
  * đã dời lên đầu khung cây trái (`folder-tree-new-menu.tsx`, Drive không lặp
  * nút tạo mới ở mọi khung), sắp xếp dời sang Hàng 2
  * (`folder-documents-filter-toolbar.tsx`, cùng hàng với ô tìm/lọc).
@@ -33,7 +33,7 @@ interface FolderViewToolbarProps {
  * 23/09/2026, xem `folder-contents-panel.tsx`).
  *
  * Segmented Danh sách/Lưới + nút khung chi tiết dùng LẠI `FolderViewModeControls`
- * — cùng khối UI với Hàng 1 của gốc «Thư mục của bạn» (`folder-my-drive-panel.tsx`).
+ * — cùng khối UI với Hàng 1 của gốc "Thư mục của bạn" (`folder-my-drive-panel.tsx`).
  */
 export function FolderViewToolbar({
   folder,
@@ -50,8 +50,8 @@ export function FolderViewToolbar({
     <div className="flex items-center gap-3 border-b pb-3">
       <FolderNodeIcon data={folder} className="size-6" />
 
-      {/*  `min-w-0 flex-1` — tên pháp nhân dài (vd «CÔNG TY TNHH PHÂN BÓN NHẬP
-          KHẨU AGRICARE») tự cắt «…» chứ KHÔNG đẩy cụm nút xuống dòng riêng
+      {/*  `min-w-0 flex-1` — tên pháp nhân dài (vd "CÔNG TY TNHH PHÂN BÓN NHẬP
+          KHẨU AGRICARE") tự cắt "…" chứ KHÔNG đẩy cụm nút xuống dòng riêng
           như bản cũ (`flex-wrap`, lỗi người dùng chụp 24/09/2026). */}
       <div className="min-w-0 flex-1">
         <IconTooltip label={folder.name}>

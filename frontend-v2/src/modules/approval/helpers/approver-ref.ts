@@ -22,7 +22,7 @@ export function ghepId(ids: number[]): string {
 
 /**
  * Giá trị `approver_ref` ngay khi đổi CÁCH CHỌN người duyệt. Mọi cách xóa trắng (mã nhân sự của
- * cách cũ đọc thành mã vai trò của cách mới là giao nhầm người), riêng «Người có quyền duyệt»
+ * cách cũ đọc thành mã vai trò của cách mới là giao nhầm người), riêng "Người có quyền duyệt"
  * điền sẵn loại chứng từ của luồng — chính là khóa quyền được soi (duoc-CR-680).
  */
 export function refAfterKindChange(kind: number, permissionKind: number, entity: string): string {
@@ -30,7 +30,7 @@ export function refAfterKindChange(kind: number, permissionKind: number, entity:
 }
 
 /**
- * Những cách chọn bày ra cho luồng này. «Người có quyền duyệt» chỉ hiện ở loại chứng từ backend mở
+ * Những cách chọn bày ra cho luồng này. "Người có quyền duyệt" chỉ hiện ở loại chứng từ backend mở
  * (`permission_approver_entities`) — lưu ở loại khác backend trả 422. Bước ĐÃ khai cách đó thì vẫn giữ
  * lựa chọn, kẻo ô chọn hiện trống và người sửa không biết bước đang khai gì.
  */

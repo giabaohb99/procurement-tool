@@ -15,7 +15,7 @@ interface FolderGridViewProps {
   onOpen: (document: DocumentRecord) => void
   onViewDetails: (document: DocumentRecord) => void
   onMoveTo: (document: DocumentRecord) => void
-  /** «Chia sẻ…» — mở hộp quyền truy cập của đúng văn bản đó. */
+  /** "Chia sẻ…" — mở hộp quyền truy cập của đúng văn bản đó. */
   onShare: (document: DocumentRecord) => void
   onRemove: (document: DocumentRecord) => void
   canWrite: boolean
@@ -23,8 +23,8 @@ interface FolderGridViewProps {
 }
 
 /**
- * CHẾ ĐỘ LƯỚI của bảng «Văn bản» trong khung nội dung thư mục (đặc tả §B) —
- * thay `DataTable` khi người dùng bật «Lưới». Cùng cơ chế chọn/kéo/menu chuột
+ * CHẾ ĐỘ LƯỚI của bảng "Văn bản" trong khung nội dung thư mục (đặc tả §B) —
+ * thay `DataTable` khi người dùng bật "Lưới". Cùng cơ chế chọn/kéo/menu chuột
  * phải với chế độ danh sách, khác mỗi cách trình bày một dòng.
  *
  * ⚠️ `canWrite`/`canDelete` là quyền THEO VAI TRÒ (`document.write/delete`),
@@ -64,7 +64,7 @@ export function FolderGridView({
           menuButtonPlacement="corner"
           onOpen={() => onOpen(document)}
           onMoveTo={() => onMoveTo(document)}
-          //  Bản lưu trữ HĐLĐ không chia sẻ được (backend 409) — ẩn mục «Chia sẻ».
+          //  Bản lưu trữ HĐLĐ không chia sẻ được (backend 409) — ẩn mục "Chia sẻ".
           onManagePermissions={isSystemDocumentType(document.doc_type_code) ? undefined : () => onShare(document)}
           onViewDetails={() => onViewDetails(document)}
           onRemove={() => onRemove(document)}

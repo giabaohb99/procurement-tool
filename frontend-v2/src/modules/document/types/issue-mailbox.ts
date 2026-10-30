@@ -12,7 +12,7 @@
  */
 export interface IssueMailbox {
   id: number
-  /** Địa chỉ sẽ hiện ở dòng «Từ» trên thư người nhận mở ra. */
+  /** Địa chỉ sẽ hiện ở dòng "Từ" trên thư người nhận mở ra. */
   email: string
   name: string
   display_name: string

@@ -41,7 +41,7 @@ export function useGrantFolderAccess(folderId: number) {
 }
 
 /**
- * Hộp «Chia sẻ» kiểu Drive — cấp CÙNG một mức cho CẢ danh sách chủ thể trong
+ * Hộp "Chia sẻ" kiểu Drive — cấp CÙNG một mức cho CẢ danh sách chủ thể trong
  * một lượt (phase 10B). Kết quả `{created, updated, skipped}`: báo `skipped`
  * qua toast riêng vì đó là phần backend ÂM THẦM bỏ qua (chủ thể không tồn
  * tại) — im lặng thì người chia tưởng đã cấp cho cả danh sách.
@@ -66,7 +66,7 @@ export function useGrantFolderAccessBulk(folderId: number) {
   })
 }
 
-/** Đổi MỨC tại chỗ — menu thả xuống trên dòng «Người có quyền» của hộp «Chia sẻ». */
+/** Đổi MỨC tại chỗ — menu thả xuống trên dòng "Người có quyền" của hộp "Chia sẻ". */
 export function useUpdateFolderAccessLevel(folderId: number) {
   const queryClient = useQueryClient()
   return useMutation({

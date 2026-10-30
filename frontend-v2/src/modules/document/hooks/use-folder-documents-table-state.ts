@@ -27,7 +27,7 @@ interface UseFolderDocumentsTableStateArgs {
 
 /**
  * TOÀN BỘ state/hook của `FolderDocumentsTable` (chế độ Lưới/Danh sách, sắp
- * xếp, khung chi tiết, hộp «Chia sẻ», truy vấn văn bản + thư mục con, chọn
+ * xếp, khung chi tiết, hộp "Chia sẻ", truy vấn văn bản + thư mục con, chọn
  * kiểu Drive, kéo thả) — tách ra để `folder-documents-table.tsx` chỉ còn lo
  * BỐ CỤC + nối props, dưới 200 dòng (đúng đúng lời tệp đó tự ghi ở đầu).
  */
@@ -74,7 +74,7 @@ export function useFolderDocumentsTableState({
     setDetailsOpen(true)
   }
 
-  //  «Xem chi tiết» của văn bản = vào trang chi tiết (đại ca chốt 25/09/2026),
+  //  "Xem chi tiết" của văn bản = vào trang chi tiết (đại ca chốt 25/09/2026),
   //  không phải bật khung thông tin bên phải như với thư mục.
   function viewDocumentDetails(document: DocumentRecord) {
     openDocument(document)

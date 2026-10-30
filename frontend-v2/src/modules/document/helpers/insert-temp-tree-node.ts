@@ -1,6 +1,6 @@
 import type { TreeNode } from '@/shared/tree/tree-types'
 
-/** id CỦA dòng tạm «thư mục mới» — kiểu VS Code Explorer, không có bản ghi thật đứng sau nó. */
+/** id CỦA dòng tạm "thư mục mới" — kiểu VS Code Explorer, không có bản ghi thật đứng sau nó. */
 export const NEW_FOLDER_TEMP_ID = '__new_folder__'
 
 /** `parent_id` của thư mục ở GỐC cây (pháp nhân + thư mục tự do). */
@@ -8,7 +8,7 @@ export const ROOT_PARENT_ID = 0
 
 /**
  * Chèn một node TẠM (chưa có bản ghi thật, `data` luôn `undefined`) làm con
- * ĐẦU TIÊN của `parentId` — dùng cho dòng nhập «thư mục mới» kiểu VS Code (gõ
+ * ĐẦU TIÊN của `parentId` — dùng cho dòng nhập "thư mục mới" kiểu VS Code (gõ
  * tên ngay trong cây, không mở hộp thoại; xem `folder-tree-panel.tsx`).
  *
  * Hàm THUẦN, trả về CÂY MỚI (không sửa `nodes` gốc) — `parentId` không có

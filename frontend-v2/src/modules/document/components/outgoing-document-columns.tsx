@@ -16,9 +16,9 @@ import {
 import type { DocumentRecord } from '../types/document-record'
 
 /**
- * Chữ ô «Số hiệu» — chưa duyệt thì chưa có số, nói rõ thay vì để ô trống.
+ * Chữ ô "Số hiệu" — chưa duyệt thì chưa có số, nói rõ thay vì để ô trống.
  *
- * Tách ra vì duoc-CR-474 dùng lại đúng dòng chữ này ở bảng «Văn bản trong sổ»
+ * Tách ra vì duoc-CR-474 dùng lại đúng dòng chữ này ở bảng "Văn bản trong sổ"
  * (`book-documents-tab.tsx`) — hai bảng khác nhau nhưng cùng một câu, chép tay
  * lần hai là chỗ dễ trôi chữ đầu tiên khi có ai sửa một bên rồi quên bên kia.
  */
@@ -187,7 +187,7 @@ export function useOutgoingDocumentColumns({
         key: 'folder',
         header: 'Thư mục',
         width: 220,
-        //  Ẩn mặc định cùng lối «Sổ» — cột tổ chức, không phải thứ đọc hằng
+        //  Ẩn mặc định cùng lối "Sổ" — cột tổ chức, không phải thứ đọc hằng
         //  ngày, nhưng vẫn khai đủ để bật lên khi cần lọc/soát.
         defaultHidden: true,
         cell: (row) => {
@@ -229,8 +229,8 @@ export function useOutgoingDocumentColumns({
         header: 'Trạng thái',
         width: 190,
         // Nhãn TÍNH RA lúc hiển thị (hết hạn theo ngày), không phải trạng thái thô.
-        //  «Chờ bạn duyệt» đứng CẠNH trạng thái chứ không thay thế nó: văn bản
-        //  vẫn đang ở «Đang duyệt», thứ thêm vào là *lượt của ai*. Đây là dấu
+        //  "Chờ bạn duyệt" đứng CẠNH trạng thái chứ không thay thế nó: văn bản
+        //  vẫn đang ở "Đang duyệt", thứ thêm vào là *lượt của ai*. Đây là dấu
         //  để người duyệt nhặt ra dòng của mình giữa một bảng dài mà không
         //  phải mở từng cái.
         cell: (row) => (

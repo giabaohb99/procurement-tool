@@ -5,7 +5,7 @@ import type { DocumentBook } from '../types/document-book'
 
 interface DocumentBookCardProps {
   book: DocumentBook
-  /** Năm đang xem — cùng con số mà cột «Đã cấp {year}» của bảng bày. */
+  /** Năm đang xem — cùng con số mà cột "Đã cấp {year}" của bảng bày. */
   year: string
 }
 
@@ -16,19 +16,19 @@ interface DocumentBookCardProps {
  * *Mã sổ* và một mẩu *Tên sổ*, còn **Số kế tiếp** — con số người ta mở màn này
  * ra để xem — nằm sau một lượt cuộn ngang.
  *
- * ⚠️ **«Số kế tiếp» là dòng quan trọng nhất của thẻ**, nên nó được cỡ chữ riêng
+ * ⚠️ **"Số kế tiếp" là dòng quan trọng nhất của thẻ**, nên nó được cỡ chữ riêng
  * chứ không lẫn vào hàng chữ mờ bên dưới. Cả màn Sổ văn bản tồn tại để trả lời
  * *"sổ này đang tới số mấy"*; mọi thứ còn lại là ngữ cảnh.
  *
- * ⚠️ **«Chưa cử ai» phải nói thành lời.** Sổ mở từ trước lúc bắt buộc cử người
+ * ⚠️ **"Chưa cử ai" phải nói thành lời.** Sổ mở từ trước lúc bắt buộc cử người
  * quản lý thì mảng rỗng — để ô trống thì nó đọc ra như dữ liệu chưa tải xong,
  * trong khi đây là thứ cần đi sửa. Giữ nguyên câu của bảng.
  *
  * ⚠️ **Không nút nào trong thẻ**: `DataTableMobileCards` bọc cả thẻ trong một
  * `<button>`, lồng nút vào trong nút là HTML sai.
  *
- * ⚠️ Bấm thẻ này nhảy THẲNG vào tab «Văn bản trong sổ», không phải tab «Thông
- * tin sổ» (duoc-CR-474, 23/09/2026) — đích bấm khai ở `detailPath` của
+ * ⚠️ Bấm thẻ này nhảy THẲNG vào tab "Văn bản trong sổ", không phải tab "Thông
+ * tin sổ" (duoc-CR-474, 23/09/2026) — đích bấm khai ở `detailPath` của
  * `document-book-page.tsx`, thẻ không tự giữ đường dẫn riêng vì cả dòng bảng
  * (desktop) lẫn thẻ (khổ hẹp) đi qua đúng MỘT hàm `onRowClick`.
  */
