@@ -81,7 +81,7 @@ def test_reader_reads_id_and_action_columns_and_aliases():
     assert [r.get("ref_id") for r in res.rows] == [12, None]
     assert [(d["source_row"], d["ref_id"]) for d in res.deletes] == [(3, 34), (4, 5)]
     warns = [m for _, level, m in res.logs if level == LogLevel.WARNING]
-    assert any("«ID» «abc»" in m for m in warns) and any("«Thao tác» «sửa»" in m for m in warns)
+    assert any("\"ID\" \"abc\"" in m for m in warns) and any("\"Thao tác\" \"sửa\"" in m for m in warns)
     #  Tiêu đề «Action» cũng nhận
     assert reader.parse(_xlsx([{"id": 1, "action": "delete"}], action_header="Action"),
                         today=date(2026, 9, 23)).deletes[0]["ref_id"] == 1
@@ -184,7 +184,7 @@ def test_delete_with_blank_or_unknown_id_is_skipped_with_warning(db):
 def test_unknown_action_word_warns_and_row_is_treated_as_plain(db):
     b = _batch(db)
     importer.run(db, b, _xlsx([{**_row(), "action": "sửa"}]), apply=True)
-    assert b.created_count == 1 and any("«Thao tác» «sửa»" in m for m in _warnings(db, b.id))
+    assert b.created_count == 1 and any("\"Thao tác\" \"sửa\"" in m for m in _warnings(db, b.id))
 
 
 def test_same_id_twice_first_row_wins(db):

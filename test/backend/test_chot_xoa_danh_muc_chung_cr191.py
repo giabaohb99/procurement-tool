@@ -27,10 +27,10 @@ def _grant(world, *entities):
 
 
 def _blocked(res, label: str, name, places: int):
-    """400 đúng câu chung: «<Nhãn> «tên» đang được dùng ở n chỗ (...), chỉ có thể ngưng dùng ...»."""
+    """400 đúng câu chung: "<Nhãn> "tên" đang được dùng ở n chỗ (...), chỉ có thể ngưng dùng ..."."""
     assert res.status_code == 400, res.text
     msg = res.json()["error"]["message"]
-    assert f"{label} «{name}» đang được dùng ở {places} chỗ" in msg, msg
+    assert f"{label} \"{name}\" đang được dùng ở {places} chỗ" in msg, msg
     assert "ngưng dùng" in msg and "không xóa được" in msg, msg
     return msg
 
@@ -40,7 +40,7 @@ def _raises_blocked(fn, label: str, name, places: int) -> str:
         fn()
     assert exc.value.status_code == 400
     msg = str(exc.value.detail)
-    assert f"{label} «{name}» đang được dùng ở {places} chỗ" in msg and "ngưng dùng" in msg, msg
+    assert f"{label} \"{name}\" đang được dùng ở {places} chỗ" in msg and "ngưng dùng" in msg, msg
     return msg
 
 
@@ -143,7 +143,7 @@ def test_thuong_hieu_khong_ai_tro_toi_xoa_tu_do(db):
 
 
 def test_csv_hanh_dong_xoa_cung_qua_chot(db, world, client_as):
-    """Nhập CSV với «Hành động = xóa» là đường vòng để xóa — phải vướng đúng chốt, cả tệp không ghi gì."""
+    """Nhập CSV với "Hành động = xóa" là đường vòng để xóa — phải vướng đúng chốt, cả tệp không ghi gì."""
     from app.modules.catalog.model import Unit
     from app.modules.product.model import Product
 
@@ -370,7 +370,7 @@ def test_thu_muc_la_mac_dinh_cua_loai_van_ban_thi_chan_con_van_ban_trong_thu_muc
 
     _raises_blocked(lambda: folder_service.delete_folder(db, tm, 0), "Thư mục văn bản", "Hành chính", 1)
     preview = folder_service.delete_preview(db, tm)
-    assert "Thư mục văn bản «Hành chính»" in preview["blocked_reason"]
+    assert "Thư mục văn bản \"Hành chính\"" in preview["blocked_reason"]
     assert db.get(DocFolder, tm.id) is not None
 
     loai.default_folder_id = 0

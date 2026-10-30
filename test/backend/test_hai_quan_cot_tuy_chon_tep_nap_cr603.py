@@ -79,7 +79,7 @@ def test_missing_import_country_is_accepted_and_left_blank():
 
 def test_other_required_columns_still_rejected():
     headers = [c for c in FULL if c[0] != "product_name"]
-    with pytest.raises(reader.CustomsFileError, match="«Tên hàng»"):
+    with pytest.raises(reader.CustomsFileError, match="\"Tên hàng\""):
         reader.check_headers(_xlsx([ROW], headers))
 
 
@@ -124,7 +124,7 @@ def test_file_values_win_and_blank_cells_fall_back_to_derivation(db, alias):
     assert out[2]["price_vnd_flat"] == round(3 * 26130 * 1.07) and out[2]["price_vnd_flat_from_file"] is False
     #  Lô ghi lại tệp có cột tùy chọn nào
     log = db.query(ImportLog).filter(ImportLog.batch_id == b.id, ImportLog.message.like("Tệp có cột%")).one()
-    assert "«Hoạt chất»" in log.message and "«Đơn giá quy đổi VND (thuế NK 7%)»" in log.message
+    assert "\"Hoạt chất\"" in log.message and "\"Đơn giá quy đổi VND (thuế NK 7%)\"" in log.message
 
 
 def test_vnd_columns_can_come_one_at_a_time(db):
