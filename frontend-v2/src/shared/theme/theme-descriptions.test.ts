@@ -48,7 +48,7 @@ describe('mô tả bảng màu nói đúng màu thật', () => {
         const { hue, chroma, lightness } = measureColor(primary)
         wrong.push(
           `${preset.id}: mô tả nói "${word.word}" nhưng primary ${primary} có ` +
-            `H=${hue} chroma=${chroma.toFixed(2)} L=${lightness} — «${preset.description}»`,
+            `H=${hue} chroma=${chroma.toFixed(2)} L=${lightness} — "${preset.description}"`,
         )
       }
     }
@@ -76,7 +76,7 @@ describe('mô tả bảng màu nói đúng màu thật', () => {
         const { hue, chroma, lightness } = measureColor(background)
         wrong.push(
           `${preset.id}: mô tả nói nền "${word.word}" nhưng background ${background} có ` +
-            `H=${hue} chroma=${chroma.toFixed(2)} L=${lightness} — «${preset.description}»`,
+            `H=${hue} chroma=${chroma.toFixed(2)} L=${lightness} — "${preset.description}"`,
         )
       }
     }
@@ -87,7 +87,7 @@ describe('mô tả bảng màu nói đúng màu thật', () => {
   it('mô tả nào cũng nói được ít nhất một từ màu — mô tả không có màu thì vô dụng lúc chọn', () => {
     const silent = themePresets
       .filter((preset) => !findFirstColorWord(preset.description))
-      .map((preset) => `${preset.id}: «${preset.description}»`)
+      .map((preset) => `${preset.id}: "${preset.description}"`)
 
     expect(silent).toEqual([])
   })

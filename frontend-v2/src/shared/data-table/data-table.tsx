@@ -221,8 +221,8 @@ export interface DataTableProps<T> {
    */
   toolbarActionsClassName?: string
   /**
-   * Nội dung chèn SAU CÙNG của nhóm nút bên phải — sau menu «Cột» (CR qua-trinh-cong-tac,
-   * 03/10/2026). Dùng cho nút hành động chính của cả khu (vd «Thêm dòng») khi màn muốn GỘP
+   * Nội dung chèn SAU CÙNG của nhóm nút bên phải — sau menu "Cột" (CR qua-trinh-cong-tac,
+   * 03/10/2026). Dùng cho nút hành động chính của cả khu (vd "Thêm dòng") khi màn muốn GỘP
    * tiêu đề + nút chuyển chế độ xem + Tải lại + Cột + nút đó vào MỘT hàng duy nhất thay vì
    * dựng thêm một hàng riêng bên trên bảng. Bỏ trống thì nhóm nút phải giữ nguyên như cũ
    * (Xóa lọc · Tải lại · Cột) — cộng thêm, không đổi hành vi mặc định.
@@ -274,11 +274,11 @@ export interface DataTableProps<T> {
    * ⚠️ Thẻ KHÔNG đọc `columns`: cột khai bề rộng, thứ tự, ghim — toàn thứ chỉ
    * có nghĩa trong lưới. Ở thẻ, người dựng tự chọn bày trường nào và bày theo
    * thứ bậc nào; suy máy móc từ danh sách cột chỉ ra một cái bảng dựng đứng.
-   * Cũng vì thế menu «Cột» tự ẩn ở chế độ này — không còn cột nào để ẩn/hiện.
+   * Cũng vì thế menu "Cột" tự ẩn ở chế độ này — không còn cột nào để ẩn/hiện.
    */
   mobileCard?: (row: T) => ReactNode
   /**
-   * Cột «ID» tự thêm ở bìa trái (bao-CR-578). Mặc định BẬT cho mọi bảng; truyền `false` cho
+   * Cột "ID" tự thêm ở bìa trái (bao-CR-578). Mặc định BẬT cho mọi bảng; truyền `false` cho
    * bảng không muốn. Bảng đã tự khai cột `id`, hoặc hàng không có `id` số, thì tự không thêm.
    */
   idColumn?: boolean
@@ -343,7 +343,7 @@ export function DataTable<T>({
       setRefreshing(false)
     }
   }, [onRefresh, queryClient])
-  //  bao-CR-578: cột «ID» mặc định ở bìa trái. `showIdColumn` là boolean nên mảng cột chỉ dựng
+  //  bao-CR-578: cột "ID" mặc định ở bìa trái. `showIdColumn` là boolean nên mảng cột chỉ dựng
   //  lại khi bật/tắt thật, không phải mỗi lần dữ liệu về (`useTableLayout` nhớ theo mảng này).
   const showIdColumn = shouldShowIdColumn(columns, rows, idColumn)
   const tableColumns = useMemo(() => withIdColumn(columns, showIdColumn), [columns, showIdColumn])
@@ -360,7 +360,7 @@ export function DataTable<T>({
     resetLayout,
   } = useTableLayout(tableColumns, storageKey)
 
-  //  duoc-CR-654 (D0a): đo ở handler NGƯỜI BẤM của menu «Cột» / tiêu đề, không đo trong hook layout (hook còn chạy khi tự khôi phục).
+  //  duoc-CR-654 (D0a): đo ở handler NGƯỜI BẤM của menu "Cột" / tiêu đề, không đo trong hook layout (hook còn chạy khi tự khôi phục).
   const trackedToggleColumn = useCallback(
     (key: string) => {
       trackUiAction(UI_ACTION_CODE.COLUMN_TOGGLE)
@@ -388,7 +388,7 @@ export function DataTable<T>({
   }, [resetLayout])
 
   //  Màu hiệu lực = màu người dùng tự chọn, không có thì màu khai SẴN (`defaultColor`) —
-  //  cùng luật `LinesTable`; dùng chung cho menu «Cột», tiêu đề và thân bảng.
+  //  cùng luật `LinesTable`; dùng chung cho menu "Cột", tiêu đề và thân bảng.
   const columnColors = useMemo(() => {
     const merged: Record<string, string> = {}
     for (const column of tableColumns) {
@@ -584,7 +584,7 @@ export function DataTable<T>({
               />
             )}
 
-            {/*  Nút hành động chính của màn (vd «Thêm dòng») — luôn SAU CÙNG,
+            {/*  Nút hành động chính của màn (vd "Thêm dòng") — luôn SAU CÙNG,
                  kể cả ở chế độ thẻ: nó không gắn với cột nào nên không có lý
                  do gì ẩn theo `ColumnVisibilityMenu`. */}
             {toolbarEnd}

@@ -89,13 +89,13 @@ describe('ProfileLaborContractsTab', () => {
     expect(screen.queryByRole('button', { name: /bản đã ký/ })).not.toBeInTheDocument()
   })
 
-  it('không có tệp nào thì báo «Chưa có tệp»', async () => {
+  it('không có tệp nào thì báo "Chưa có tệp"', async () => {
     state.items = [row({ has_generated_file: false, has_signed_file: false })]
     renderTab()
     expect(await screen.findByText('Chưa có tệp')).toBeInTheDocument()
   })
 
-  it('bấm nút gọi đúng đường tải của «của tôi»', async () => {
+  it('bấm nút gọi đúng đường tải của "của tôi"', async () => {
     state.items = [row()]
     renderTab()
     const user = userEvent.setup()
@@ -105,7 +105,7 @@ describe('ProfileLaborContractsTab', () => {
     await waitFor(() => expect(state.downloads).toContain('/api/me/labor-contracts/5/signed-file'))
   })
 
-  it('hết hạn hiện nhãn «Hết hạn»', async () => {
+  it('hết hạn hiện nhãn "Hết hạn"', async () => {
     state.items = [row({ effective_status: 3 })]
     renderTab()
     expect(await screen.findByText('Hết hạn')).toBeInTheDocument()

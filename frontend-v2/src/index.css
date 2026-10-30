@@ -104,7 +104,7 @@
   --success: #16a34a;
   --warning: #d97706;
   --info: #0284c7;
-  /* Thẻ nghỉ phép ĐÃ DUYỆT (lưới «Xem lịch»): nền xanh đậm + chữ trắng. Không dùng thẳng `--info`
+  /* Thẻ nghỉ phép ĐÃ DUYỆT (lưới "Xem lịch"): nền xanh đậm + chữ trắng. Không dùng thẳng `--info`
      làm nền vì trắng trên #0284c7 chỉ 4.1:1 (dưới ngưỡng 4.5:1 của chữ nhỏ); L=0.50 cho ≈6:1. */
   --leave-approved: oklch(0.5 0.13 240);
   --leave-approved-foreground: #ffffff;

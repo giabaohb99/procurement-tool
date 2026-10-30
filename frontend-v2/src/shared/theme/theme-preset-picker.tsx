@@ -8,7 +8,7 @@ import { useThemeStore } from './theme-store'
 import { useColorScheme } from './use-color-scheme'
 
 /**
- * Lưới chọn bảng màu. Dùng chung cho phân hệ Giao diện và tab «Giao diện» ở
+ * Lưới chọn bảng màu. Dùng chung cho phân hệ Giao diện và tab "Giao diện" ở
  * Trang cá nhân, nên nằm ở `shared/` chứ không thuộc phân hệ nào.
  *
  * Bấm là ĐỔI NGAY, không có nút Lưu: đổi màu là loại thay đổi phải nhìn mới

@@ -106,21 +106,21 @@ export const appRoutes = {
     /** bao-CR-453 — danh mục loại chi phí thu mua. */
     poCostTypes: '/procurement/po-cost-types',
     poCostTypeDetail: (id: number | string) => `/procurement/po-cost-types/${id}`,
-    /** bao-CR-470 — Tra cứu giá hải quan. Đường gốc = mục «Danh sách». */
+    /** bao-CR-470 — Tra cứu giá hải quan. Đường gốc = mục "Danh sách". */
     customsPrices: '/procurement/customs-prices',
     /** Các mục con còn lại (biểu đồ, nhà nhập khẩu…) — mỗi mục một đường, đứng thành submenu. */
     customsPriceSection: (section: string) => `/procurement/customs-prices/${section}`,
-    /** duoc-CR-492 — trang chi tiết một thuốc BVTV (nằm dưới mục «Thuốc BVTV» nên cùng khóa gác). */
+    /** duoc-CR-492 — trang chi tiết một thuốc BVTV (nằm dưới mục "Thuốc BVTV" nên cùng khóa gác). */
     customsPesticideDetail: (id: number | string) => `/procurement/customs-prices/pesticides/${id}`,
   },
   /**
-   * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì «Việc của tôi»
+   * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì "Việc của tôi"
    * gom việc của CẢ văn thư lẫn thu mua.
    */
   approval: {
     root: '/approval',
-    //  ⚠️ KHÔNG còn `myTasks`. Màn «Việc của tôi» (`/approval/my-tasks`) đã xóa
-    //  ngày 21/08/2026 — hộp việc nay là «Chờ tôi duyệt» trong phân hệ Văn bản
+    //  ⚠️ KHÔNG còn `myTasks`. Màn "Việc của tôi" (`/approval/my-tasks`) đã xóa
+    //  ngày 21/08/2026 — hộp việc nay là "Chờ tôi duyệt" trong phân hệ Văn bản
     //  (`document.pendingApproval`), và duyệt thì bấm ngay trên văn bản. Một
     //  danh sách thứ hai cho bấm duyệt mà chưa mở chứng từ ra đọc chính là cái
     //  đường tắt vừa bịt. Bật bộ máy duyệt cho Thu mua thì dựng hộp việc trong
@@ -163,12 +163,12 @@ export const appRoutes = {
     /** Nhóm chat Telegram / Zalo mà bot đang ở (ai-CR-123). */
     groups: '/assistant/groups',
     group: (id: number | string) => `/assistant/groups/${id}`,
-    /** Ai đang nối Telegram / Zalo với bot, còn quyền «Trợ lý AI» không (ai-CR-131). */
+    /** Ai đang nối Telegram / Zalo với bot, còn quyền "Trợ lý AI" không (ai-CR-131). */
     botUsers: '/assistant/bot-users',
   },
   /**
    * Kho skill AI (doc/erp/21, K5 bao-CR-623): bộ skill → chi tiết bộ → soạn skill, cộng ba màn quản trị khóa kết nối
-   * AI của nhân sự, nhật ký lượt gọi và cấu hình. Màn «AI của tôi» của từng người nằm ở Trang cá nhân, không ở đây.
+   * AI của nhân sự, nhật ký lượt gọi và cấu hình. Màn "AI của tôi" của từng người nằm ở Trang cá nhân, không ở đây.
    */
   aiSkill: {
     root: '/ai-skill',
@@ -194,13 +194,13 @@ export const appRoutes = {
   forum: {
     /** `/forum` chuyển hướng về `boards` — sếp chốt 03/09: Diễn đàn là tab mặc định. */
     root: '/forum',
-    /** Tab «Bảng tin» — feed kiểu Facebook, dời khỏi gốc khi Diễn đàn thành mặc định. */
+    /** Tab "Bảng tin" — feed kiểu Facebook, dời khỏi gốc khi Diễn đàn thành mặc định. */
     feed: '/forum/feed',
-    /** Tab «Diễn đàn» (F13b/QĐ-D7) — cây nhóm → box chuyên mục kiểu VOZ. */
+    /** Tab "Diễn đàn" (F13b/QĐ-D7) — cây nhóm → box chuyên mục kiểu VOZ. */
     boards: '/forum/boards',
     /** Danh sách thread của một box. */
     boardDetail: (id: number | string) => `/forum/boards/${id}`,
-    /** Tab «Thông báo» (F9a/CR-199) — mọi bài đang được quản trị viên ghim. */
+    /** Tab "Thông báo" (F9a/CR-199) — mọi bài đang được quản trị viên ghim. */
     announcements: '/forum/announcements',
     postDetail: (id: number | string) => `/forum/posts/${id}`,
     /** Trang cá nhân của CHÍNH MÌNH (QĐ-D3) — thấy cả bài bị ẩn của mình. */
@@ -208,15 +208,15 @@ export const appRoutes = {
     userProfile: (id: number | string) => `/forum/users/${id}`,
     /** Tìm bài viết (CR-263) — mở cho MỌI người, kết quả tự lọc theo audience. */
     search: '/forum/search',
-    /** Tab «Quản trị» (CR-263) — chỉ tài khoản có grant `forum_post`/`forum_board`. */
+    /** Tab "Quản trị" (CR-263) — chỉ tài khoản có grant `forum_post`/`forum_board`. */
     admin: '/forum/admin',
   },
   /**
    * Phân hệ DỰ ÁN (CR-216) — task list kiểu Lark Tasks.
    *
    * **Một dự án CHÍNH LÀ một danh sách công việc**, không phải hai tầng. Trước
-   * đây có hai phân hệ mang hai tên cho cùng một thứ: «Công việc» (`/work`, làm
-   * thật) và «Dự án» (`/project`, mới là khung rỗng "Sắp có"). Nay gộp về một —
+   * đây có hai phân hệ mang hai tên cho cùng một thứ: "Công việc" (`/work`, làm
+   * thật) và "Dự án" (`/project`, mới là khung rỗng "Sắp có"). Nay gộp về một —
    * giữ tên **Dự án** cho đúng cách người dùng gọi, giữ đường dẫn `/project`.
    *
    * ⚠️ Chỉ ĐỔI TÊN ở tầng người dùng. Mã nguồn vẫn là `modules/work/`, API vẫn
@@ -251,14 +251,14 @@ export const appRoutes = {
     /** Văn bản đến / đi / nội bộ. */
     documents: '/document/documents',
     /**
-     * Màn Văn bản mở sẵn ở một tab. Mặc định là «đi» (chính là màn Văn bản cũ)
+     * Màn Văn bản mở sẵn ở một tab. Mặc định là "đi" (chính là màn Văn bản cũ)
      * nên đường dẫn của nó SẠCH, không đeo `?tab=`.
      */
     documentsTab: (tab: 'incoming' | 'outgoing') =>
       tab === 'outgoing' ? '/document/documents' : `/document/documents?tab=${tab}`,
     documentNew: '/document/documents/new',
     /**
-     * Mẫu hợp đồng lao động (.docx) — nay nằm trong «Thư viện văn bản mẫu» (duoc-CR-629b bước A).
+     * Mẫu hợp đồng lao động (.docx) — nay nằm trong "Thư viện văn bản mẫu" (duoc-CR-629b bước A).
      * Quyền vẫn là `labor_contract_template`, dữ liệu vẫn ở `/api/labor-contract-templates`.
      */
     laborContractTemplates: '/document/settings?tab=templates&kind=labor-contract',
@@ -269,14 +269,14 @@ export const appRoutes = {
     /**
      * F05 — văn bản mà chính tôi nằm trong phạm vi áp dụng.
      *
-     * ⚠️ KHÔNG còn là một màn riêng: nay là tab «Văn bản đến» của `documents`.
+     * ⚠️ KHÔNG còn là một màn riêng: nay là tab "Văn bản đến" của `documents`.
      * Đường dẫn giữ lại chỉ để CHUYỂN HƯỚNG cho link cũ, đừng trỏ menu vào đây.
      */
     appliedToMe: '/document/applied-to-me',
     /**
      * VĂN BẢN ĐANG CHỜ CHÍNH TÔI DUYỆT.
      *
-     * Khác «Việc của tôi» ở phân hệ Phê duyệt: màn kia gom việc của mọi loại
+     * Khác "Việc của tôi" ở phân hệ Phê duyệt: màn kia gom việc của mọi loại
      * chứng từ và cho bấm duyệt ngay trên dòng. Màn này chỉ có văn bản và **cố
      * ý không có nút bấm** — bấm vào dòng là mở chính văn bản ra đọc rồi duyệt
      * tại đó, đúng thứ người dùng đòi ("vào thẳng văn bản đó duyệt").
@@ -286,9 +286,9 @@ export const appRoutes = {
     books: '/document/books',
     bookNew: '/document/books/new',
     /**
-     * Chi tiết một sổ — hai tab «Thông tin sổ» (mặc định, đường dẫn SẠCH) và
-     * «Văn bản trong sổ» (`?tab=documents`, duoc-CR-474). Thẻ sổ ở màn danh sách và
-     * số «đã cấp» ở bộ đếm nhảy thẳng vào tab văn bản bằng `bookDetail(id, 'documents')`.
+     * Chi tiết một sổ — hai tab "Thông tin sổ" (mặc định, đường dẫn SẠCH) và
+     * "Văn bản trong sổ" (`?tab=documents`, duoc-CR-474). Thẻ sổ ở màn danh sách và
+     * số "đã cấp" ở bộ đếm nhảy thẳng vào tab văn bản bằng `bookDetail(id, 'documents')`.
      */
     bookDetail: (id: number | string, tab?: 'documents') =>
       tab === 'documents' ? `/document/books/${id}?tab=documents` : `/document/books/${id}`,
@@ -411,12 +411,12 @@ export const appRoutes = {
     /** Quản lý sao lưu CSDL hệ thống. */
     backups: '/system/backups',
     /**
-     * Nhật ký NGHIỆP VỤ — dòng thời gian «ai làm gì» đọc thẳng `tab_audit_log`.
+     * Nhật ký NGHIỆP VỤ — dòng thời gian "ai làm gì" đọc thẳng `tab_audit_log`.
      *
      * ⚠️ Đừng lẫn với `system.logs` bên dưới. Màn này chỉ có LỚP KỂ CHUYỆN: lượt
      * gọi bị 403 hay chết 500 trước khi vào service không đẻ dòng audit nào nên
      * không bao giờ hiện ở đây — mà đó đúng là hai thứ người ta đi tìm lúc có sự
-     * cố. Nhãn menu vì vậy đổi thành «Nhật ký nghiệp vụ» (bao-CR-407).
+     * cố. Nhãn menu vì vậy đổi thành "Nhật ký nghiệp vụ" (bao-CR-407).
      */
     auditLogs: '/system/audit-logs',
     /**
@@ -495,14 +495,14 @@ export const appRoutes = {
     employees: '/hr/employees',
     employeeDetail: (id: number | string) => `/hr/employees/${id}`,
     /**
-     * Bản in «Phiếu thông tin nhân viên» BM00../QT01/NS (duoc-CR-676) — đứng NGOÀI khung phân hệ
+     * Bản in "Phiếu thông tin nhân viên" BM00../QT01/NS (duoc-CR-676) — đứng NGOÀI khung phân hệ
      * như mọi trang in (`/print/...`), cổng quyền ở `print-route-access.ts`.
      */
     employeeInfoPrint: (id: number | string) => `/print/employee-info/${id}`,
     /** Bản in phiếu của CHÍNH MÌNH, mở từ Trang cá nhân — dữ liệu qua các cửa `/me`. */
     myEmployeeInfoPrint: '/print/my-employee-info',
     /**
-     * Duyệt ĐỀ NGHỊ SỬA HỒ SƠ do nhân viên tự khai (duoc-CR-676). Mục menu «Duyệt sửa hồ sơ» gác
+     * Duyệt ĐỀ NGHỊ SỬA HỒ SƠ do nhân viên tự khai (duoc-CR-676). Mục menu "Duyệt sửa hồ sơ" gác
      * `employee.write` và là hàng rào cho cả `/:id` (gác điều hướng khớp theo ranh giới `/`).
      */
     profileChangeRequests: '/hr/profile-change-requests',
@@ -513,16 +513,16 @@ export const appRoutes = {
     companyDetail: (id: number | string) => `/hr/companies/${id}`,
     /** Sơ đồ tổ chức tự vẽ từ dữ liệu (duoc-CR-669) — pháp nhân › phòng ban › người. */
     orgChart: '/hr/org-chart',
-    /** Danh mục Chức vụ — nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ. */
+    /** Danh mục Chức vụ — nguồn của ô chọn "Vị trí / Chức vụ" trên hồ sơ. */
     jobPositions: '/hr/job-positions',
     /** Thêm chức vụ mở TRANG RIÊNG, không phải hộp thoại — xem `CrudConfig.createRoute`. */
     jobPositionNew: '/hr/job-positions/new',
     jobPositionDetail: (id: number | string) => `/hr/job-positions/${id}`,
     /** Mẫu hợp đồng lao động (.docx) theo pháp nhân. */
     laborContractTemplates: '/hr/labor-contract-templates',
-    /** Soạn nội dung mẫu trên web (duoc-CR-606) — nằm dưới mục menu «Mẫu hợp đồng» nên chung hàng rào quyền. */
+    /** Soạn nội dung mẫu trên web (duoc-CR-606) — nằm dưới mục menu "Mẫu hợp đồng" nên chung hàng rào quyền. */
     laborContractTemplateEditor: (id: number | string) => `/hr/labor-contract-templates/${id}/edit`,
-    /** Danh sách biến của mẫu hợp đồng (duoc-CR-630) — dưới mục menu «Mẫu hợp đồng» nên chung hàng rào quyền. */
+    /** Danh sách biến của mẫu hợp đồng (duoc-CR-630) — dưới mục menu "Mẫu hợp đồng" nên chung hàng rào quyền. */
     laborContractVariables: '/hr/labor-contract-templates/variables',
     /**
      * Đường CŨ của màn Phân quyền tài khoản — nay chỉ còn route chuyển tiếp sang
@@ -540,7 +540,7 @@ export const appRoutes = {
     leaveRequestNew: '/hr/leave-requests/new',
     leaveRequestDetail: (id: number | string) => `/hr/leave-requests/${id}`,
     leaveRequestPrint: (id: number | string) => `/print/leave-request/${id}`,
-    /** Lịch nghỉ — «tuần tới ai nghỉ». */
+    /** Lịch nghỉ — "tuần tới ai nghỉ". */
     leaveCalendar: '/hr/leave-calendar',
     /** Quỹ phép năm: cấp phát, chỉnh tay. */
     leaveBalances: '/hr/leave-balances',
@@ -558,7 +558,7 @@ export const appRoutes = {
     workScheduleDetail: (id: number | string) => `/hr/work-schedules/${id}`,
     /** ⚠️ KHÔNG nằm dưới `/hr/work-schedules/` — hai mục menu gác độc lập, xem `canAccessRoute`. */
     workScheduleAssignments: '/hr/work-schedule-assignments',
-    /** Lịch tuần/tháng «ai làm, ai nghỉ» — gác `employee.read`, KHÔNG phải quyền quản lý lịch. */
+    /** Lịch tuần/tháng "ai làm, ai nghỉ" — gác `employee.read`, KHÔNG phải quyền quản lý lịch. */
     workRoster: '/hr/work-roster',
 
     //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
@@ -567,7 +567,7 @@ export const appRoutes = {
     roomBookings: '/hr/room-bookings',
     roomBookingNew: '/hr/room-bookings/new',
     roomBookingDetail: (id: number | string) => `/hr/room-bookings/${id}`,
-    /** Lịch đặt phòng — «hôm nay phòng nào còn trống». */
+    /** Lịch đặt phòng — "hôm nay phòng nào còn trống". */
     roomCalendar: '/hr/room-calendar',
     /** Danh mục phòng họp (quản trị). */
     meetingRooms: '/hr/meeting-rooms',
@@ -631,7 +631,7 @@ export const appRoutes = {
   },
   /**
    * Phân hệ HỒ SƠ — kho giấy tờ công ty. Hai màn, hai khóa quyền riêng theo
-   * luật «một khóa = một màn hình» (CR-157):
+   * luật "một khóa = một màn hình" (CR-157):
    *
    *   `/dossier/list`   → bảng `tab_dossier`,      khóa `dossier`
    *   `/dossier/types`  → bảng `tab_dossier_type`, khóa `dossier_type`
@@ -644,12 +644,12 @@ export const appRoutes = {
     root: '/dossier',
     /** Danh sách hồ sơ. Thêm mới và chi tiết đều là TRANG riêng. */
     list: '/dossier/list',
-    /** ⚠️ Route tĩnh, phải đăng ký TRƯỚC `:id` kẻo «new» bị khớp thành id. */
+    /** ⚠️ Route tĩnh, phải đăng ký TRƯỚC `:id` kẻo "new" bị khớp thành id. */
     newDossier: '/dossier/list/new',
     detail: (id: number | string) => `/dossier/list/${id}`,
     /** Danh mục Loại hồ sơ — danh sách, thêm mới và chi tiết đều là TRANG riêng. */
     types: '/dossier/types',
-    /** ⚠️ Route tĩnh, phải đăng ký TRƯỚC `:id` kẻo «new» bị khớp thành id. */
+    /** ⚠️ Route tĩnh, phải đăng ký TRƯỚC `:id` kẻo "new" bị khớp thành id. */
     typeNew: '/dossier/types/new',
     typeDetail: (id: number | string) => `/dossier/types/${id}`,
   },

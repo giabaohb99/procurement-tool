@@ -33,7 +33,7 @@ const TIER_MIN_WIDTH: Record<ToolbarTier, number> = {
  * lệnh khai ở `collapsible-toolbar-commands`; phần còn lại — bốn ô chọn (phóng ·
  * kiểu đoạn · phông · cỡ) — **một mình đã ~440px** vì bề rộng của chúng bị ghim
  * theo nhãn dài nhất (xem bảng số đo ở `toolbar-style-selects`). Trên thanh 358px
- * thì có thu hết 11 lệnh kia vào menu «Thêm» vẫn còn tràn ba hàng. Nên mốc này
+ * thì có thu hết 11 lệnh kia vào menu "Thêm" vẫn còn tràn ba hàng. Nên mốc này
  * không phải "bậc thứ ba", nó là một bố cục khác.
  *
  * **640px** chứ không phải 768px của `useIsMobile`: đây đo bề rộng THẬT của thanh

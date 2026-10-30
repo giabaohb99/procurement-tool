@@ -17,7 +17,7 @@ export interface TreeViewProps<T = unknown> {
   /**
    * Tiêu điểm bàn phím CHUYỂN SANG node khác (↑↓, Home/End, →/← lùi ra cha) —
    * khác `onSelect` (chỉ bấm chuột / Enter / Space). Dùng cho nơi muốn xem
-   * trước đổi NGAY THEO CON TRỎ, kiểu danh sách thư/tệp (tab «Tệp» của văn
+   * trước đổi NGAY THEO CON TRỎ, kiểu danh sách thư/tệp (tab "Tệp" của văn
    * bản, phase 09) — không bắt buộc, bỏ trống thì di chuyển chỉ đổi tiêu điểm.
    */
   onFocusChange?: (node: TreeNode<T>) => void
@@ -91,9 +91,9 @@ export interface TreeViewProps<T = unknown> {
 }
 
 /**
- * CÂY CHỌN dùng chung — thư mục văn bản và cây tệp theo phiên bản (tab «Tệp»,
+ * CÂY CHỌN dùng chung — thư mục văn bản và cây tệp theo phiên bản (tab "Tệp",
  * `document-file-tree.tsx`) đều dựng trên component này. KHÔNG chứa gì riêng
- * của văn bản hay thư mục. Theo đúng mẫu APG «treeview»: `role="tree"` bọc
+ * của văn bản hay thư mục. Theo đúng mẫu APG "treeview": `role="tree"` bọc
  * ngoài, mỗi dòng `role="treeitem"` mang `aria-expanded`/`aria-selected` (vẽ ở
  * `tree-row.tsx`).
  *

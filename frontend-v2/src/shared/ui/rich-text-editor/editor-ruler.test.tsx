@@ -7,7 +7,7 @@ import { EditorRuler, type PageMargins } from './editor-ruler'
  * LỖI ĐÃ XẢY RA (19/08/2026): thước báo thay đổi theo TỪNG KHUNG HÌNH lúc rê
  * chuột, nên trang cha phải hẹn giờ 600ms để gom nhịp. Khe hở đó gây hai lỗi
  * người dùng gặp thật:
- *   - kéo lề xong bấm ngay «In / Xuất PDF» → bản in đọc lề CŨ;
+ *   - kéo lề xong bấm ngay "In / Xuất PDF" → bản in đọc lề CŨ;
  *   - kéo lề rồi chuyển tab trong khoảng đó → hàm dọn dẹp hủy hẹn giờ, MẤT hẳn.
  *
  * Nên `onCommit` phải bắn đúng MỘT LẦN mỗi cú chỉnh, ngay lúc buông tay — và

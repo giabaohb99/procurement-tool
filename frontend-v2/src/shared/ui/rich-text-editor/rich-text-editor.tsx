@@ -68,7 +68,7 @@ interface RichTextEditorProps {
   autoNumber?: boolean
   onAutoNumberChange?: (bat: boolean) => void
   /**
-   * Ảnh chữ ký của CHÍNH người đang đăng nhập, cho nút «Chèn chữ ký».
+   * Ảnh chữ ký của CHÍNH người đang đăng nhập, cho nút "Chèn chữ ký".
    *
    * Cố ý nhận qua prop chứ không tự đọc `useAuth()` bên trong: khung soạn thảo
    * này còn dùng ở ô rich text trong hộp thoại và ở trang dựng mẫu — những nơi

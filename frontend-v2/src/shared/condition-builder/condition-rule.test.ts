@@ -111,7 +111,7 @@ describe('parseCondition', () => {
       [{ field: 'is_urgent', op: 'eq', value: false }],
     )
     //  Backend so bằng chuỗi: str(False) là "False", nên `0` không bao giờ khớp
-    //  — đọc nó thành «Không» là nói dối người dùng.
+    //  — đọc nó thành "Không" là nói dối người dùng.
     expect(parseCondition('[{"field":"is_urgent","op":"eq","value":0}]', PR_FIELDS).advanced).toBe(
       true,
     )

@@ -17,7 +17,7 @@ export interface ModuleNavItem {
    * Mục gom NHIỀU màn con dùng khóa khác nhau — hiện khi có quyền trên **bất kỳ**
    * khóa nào trong đây, rồi để chính trang tự ẩn phần không được xem.
    *
-   * Sinh ra cho «Thiết lập văn bản»: một mục menu chứa bốn tab chạy trên bốn
+   * Sinh ra cho "Thiết lập văn bản": một mục menu chứa bốn tab chạy trên bốn
    * khóa (`doc_type` · `doc_template` · `security_level` · `external_party`).
    * Gác bằng một khóa duy nhất thì người chỉ giữ *Đơn vị gửi nhận* không vào nổi
    * trang chứa đúng tab của mình, còn người có khóa gác mà thiếu khóa của tab
@@ -28,7 +28,7 @@ export interface ModuleNavItem {
   entities?: PermissionEntity[]
   /**
    * Với mục khai `entities` + `manage`: các khóa chỉ cần **ĐỌC** là đủ mở mục (không cần create/write/delete).
-   * Sinh ra cho «Thiết lập văn bản»: người chỉ ĐỌC được mẫu hợp đồng lao động vẫn vào xem mẫu (duoc-CR-629b).
+   * Sinh ra cho "Thiết lập văn bản": người chỉ ĐỌC được mẫu hợp đồng lao động vẫn vào xem mẫu (duoc-CR-629b).
    */
   readEntities?: PermissionEntity[]
   /**
@@ -37,7 +37,7 @@ export interface ModuleNavItem {
    * mức quyền, không mở màn cho người ngoài: chỉ có khóa phụ mà không đọc được
    * `entity` thì vẫn ẩn (trang gọi API của `entity` ngay khi mở).
    *
-   * Sinh ra cho mục «Cấu hình» của Tra cứu thị trường: hai danh mục trong đó cần
+   * Sinh ra cho mục "Cấu hình" của Tra cứu thị trường: hai danh mục trong đó cần
    * QUẢN LÝ `customs_price`, danh mục thứ ba chỉ cần ĐỌC `customs_regulation`.
    * `entities` không nói được hai mức quyền khác nhau trên hai khóa.
    */
@@ -63,7 +63,7 @@ export interface ModuleNavItem {
   /**
    * **Chỉ hiện với ĐIỀU PHỐI VIÊN hoặc TÀI XẾ.** Ngoài luật quyền thường (`entity`),
    * mục còn đòi: có `approve` trên `entity` (điều phối viên) HOẶC là tài xế
-   * (`NavContext.isDriver`). Sinh ra cho *«Chuyến của tôi»* (Đặt xe): người đặt xe
+   * (`NavContext.isDriver`). Sinh ra cho *"Chuyến của tôi"* (Đặt xe): người đặt xe
    * cũng có `vehicle_booking.write` (phạm vi `own`) nên chỉ gác bằng quyền là họ
    * vẫn thấy mục vốn chỉ dành cho người nhận điều phối chuyến.
    */
@@ -78,7 +78,7 @@ export interface ModuleNavItem {
    * Sinh ra cho cụm *Nghỉ phép* (04/09/2026): năm màn giữ nguyên năm đường cũ —
    * link trong thư báo việc duyệt trỏ thẳng `/hr/leave-requests/{id}` — nhưng
    * menu chỉ còn một mục, chuyển qua lại bằng thanh tab trong trang. Không khai
-   * đây thì mở «Lịch nghỉ» xong cả menu trái tối om, không mục nào sáng.
+   * đây thì mở "Lịch nghỉ" xong cả menu trái tối om, không mục nào sáng.
    */
   matchPaths?: string[]
   /**

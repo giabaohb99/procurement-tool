@@ -31,7 +31,7 @@ describe('usePersistedToggle', () => {
     expect(result.current[0]).toBe(true)
   })
 
-  it('đã lưu «tắt» thì KHÔNG bị mặc định «bật» đè lên', () => {
+  it('đã lưu "tắt" thì KHÔNG bị mặc định "bật" đè lên', () => {
     //  Chỗ dễ sai: viết `raw === '1' || macDinh` thì người dùng tắt đi xong mở
     //  lại vẫn thấy bật, vì `'0'` rơi về mặc định.
     localStorage.setItem(KEY, '0')

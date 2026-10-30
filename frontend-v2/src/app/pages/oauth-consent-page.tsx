@@ -112,7 +112,7 @@ export function OAuthConsentPage() {
             <>
               {!info.redirect_trusted && (
                 <ErrorBox
-                  message={`Nơi quay về «${info.redirect_host}» không thuộc ứng dụng AI quen (ChatGPT, Claude). Chỉ bấm Cho phép nếu chính bạn vừa thêm kết nối này trong ứng dụng đó — không thì bấm Từ chối.`}
+                  message={`Nơi quay về "${info.redirect_host}" không thuộc ứng dụng AI quen (ChatGPT, Claude). Chỉ bấm Cho phép nếu chính bạn vừa thêm kết nối này trong ứng dụng đó — không thì bấm Từ chối.`}
                 />
               )}
               <p className="text-sm text-muted-foreground">

@@ -14,13 +14,13 @@ import { HISTORY_KIND } from '@/modules/system/api/login-session-api'
 import { ProfileLoginHistoryTab } from './profile-login-history-tab'
 
 /**
- * Tab «Lịch sử đăng nhập» ở Trang cá nhân (bao-CR-400).
+ * Tab "Lịch sử đăng nhập" ở Trang cá nhân (bao-CR-400).
  *
  * Hai chỗ dễ lủng:
  * 1. Phải gọi cửa TỰ THÂN `/api/auth/sessions/history`, không phải cửa quản trị
  *    `/api/login-sessions/history` — cửa đó đòi khóa `login_session.read`, người
  *    thường mở tab là ăn 403.
- * 2. Số «Phiên đang mở» lấy từ `alive_count` backend đếm, KHÔNG đếm số dòng
+ * 2. Số "Phiên đang mở" lấy từ `alive_count` backend đếm, KHÔNG đếm số dòng
  *    trả về — danh sách bị cắt trang hoặc lẫn phiên chết thì đếm dòng là sai.
  */
 

@@ -10,7 +10,7 @@ describe('maskTime24h', () => {
     expect(maskTime24h('ab1c7:00zz')).toBe('17:00')
   })
 
-  it('typing «8:30» keystroke by keystroke gives 08:30, not 83:0', () => {
+  it('typing "8:30" keystroke by keystroke gives 08:30, not 83:0', () => {
     let text = ''
     for (const ch of '8:30') text = maskTime24h(text + ch)
     expect(text).toBe('08:30')

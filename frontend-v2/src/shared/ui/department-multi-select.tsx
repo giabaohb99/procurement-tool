@@ -11,7 +11,7 @@ interface DepartmentMultiSelectProps {
 }
 
 /**
- * Chọn NHIỀU phòng ban — dùng cho bước duyệt «trưởng bộ phận của phòng ban chỉ định».
+ * Chọn NHIỀU phòng ban — dùng cho bước duyệt "trưởng bộ phận của phòng ban chỉ định".
  *
  * Là lớp mỏng trên `MultiPicker`, cùng khuôn với `EmployeeMultiSelect`: phần
  * bấm / tìm / chip giống hệt mọi bộ chọn nhiều mục khác, chỉ khác ở chỗ biết đọc

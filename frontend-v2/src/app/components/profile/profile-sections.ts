@@ -21,7 +21,7 @@ import {
  * Các mục của Trang cá nhân xếp theo 4 nhóm ở thanh bên trái (doc 21 §6.5 + §7.1, P0).
  *
  * Trước đây là 13 tab nằm ngang một hàng, các phần AI rải rác và khối kết nối AI riêng
- * giấu trong mục «Nâng cao» cuối tab Khóa AI. Đường dẫn `/me?tab=<mục>` vẫn giữ: mọi tên
+ * giấu trong mục "Nâng cao" cuối tab Khóa AI. Đường dẫn `/me?tab=<mục>` vẫn giữ: mọi tên
  * tab cũ còn dùng nguyên (link trong thông báo, nút quay lại của phiếu hỗ trợ, bot), chỉ
  * thêm mục mới `ai-connect` và `password`.
  */
@@ -147,7 +147,7 @@ export function listVisibleProfileGroups(access: ProfileSectionAccess): ProfileG
 
 /**
  * Đọc `?tab=` thành mục đang mở. Giá trị lạ, rỗng, hoặc mục người này không được thấy (vd
- * `?tab=work-history` khi chưa gắn hồ sơ nhân sự) đều rơi về «Thông tin cá nhân» — giống
+ * `?tab=work-history` khi chưa gắn hồ sơ nhân sự) đều rơi về "Thông tin cá nhân" — giống
  * hành vi của bố cục tab cũ, không mở một khung trống.
  */
 export function resolveProfileSection(raw: string | null, access: ProfileSectionAccess): ProfileSectionKey {

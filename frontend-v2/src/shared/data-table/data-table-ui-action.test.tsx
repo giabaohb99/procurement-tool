@@ -44,7 +44,7 @@ describe('selection column -> UI_ACTION', () => {
 })
 
 describe('FilterResetButton -> UI_ACTION', () => {
-  it('«Xóa lọc» ghi FILTER_RESET; không ghi gì khi chỉ render', async () => {
+  it('"Xóa lọc" ghi FILTER_RESET; không ghi gì khi chỉ render', async () => {
     const onReset = vi.fn()
     render(
       <MemoryRouter>

@@ -6,9 +6,9 @@ import type * as CoreApiModule from '@/core/api'
 import { AttachmentPreviewDialog, type PreviewableAttachment } from './attachment-preview-dialog'
 
 /**
- * Lỗi phát hiện lúc kiểm tay bằng Chrome DevTools 03/10/2026 (hộp «Quá trình
- * công tác» nhân sự): hộp này SỐNG trong nhiều trang có `<form>` bọc cả trang
- * (hồ sơ nhân sự…) nhưng nút «Mở tab mới»/«Tải về» không khai `type="button"`
+ * Lỗi phát hiện lúc kiểm tay bằng Chrome DevTools 03/10/2026 (hộp "Quá trình
+ * công tác" nhân sự): hộp này SỐNG trong nhiều trang có `<form>` bọc cả trang
+ * (hồ sơ nhân sự…) nhưng nút "Mở tab mới"/"Tải về" không khai `type="button"`
  * — mặc định HTML là `submit` (bẫy 3 của biểu mẫu). `AttachmentPreviewDialog`
  * là component DÙNG CHUNG (`shared/attachments`) nên sửa một chỗ, an toàn cho
  * MỌI nơi dùng nó, không riêng nhân sự.
@@ -30,7 +30,7 @@ function file(overrides: Partial<PreviewableAttachment> = {}): PreviewableAttach
 }
 
 describe('AttachmentPreviewDialog — mọi nút phải type="button"', () => {
-  it('«Mở tab mới» và «Tải về» đều có type="button", không để mặc định submit', async () => {
+  it('"Mở tab mới" và "Tải về" đều có type="button", không để mặc định submit', async () => {
     fetchBlobUrlMock.mockResolvedValue('blob:fake')
     render(<AttachmentPreviewDialog file={file()} open onOpenChange={vi.fn()} />)
 
@@ -43,7 +43,7 @@ describe('AttachmentPreviewDialog — mọi nút phải type="button"', () => {
 })
 
 describe('AttachmentPreviewDialog — bẫy form lồng: nằm trong <form> không được submit form cha', () => {
-  it('bấm «Mở tab mới»/«Tải về» không gọi onSubmit của form bọc ngoài', async () => {
+  it('bấm "Mở tab mới"/"Tải về" không gọi onSubmit của form bọc ngoài', async () => {
     fetchBlobUrlMock.mockResolvedValue('blob:fake')
     downloadFileMock.mockResolvedValue(undefined)
     const outerSubmit = vi.fn()

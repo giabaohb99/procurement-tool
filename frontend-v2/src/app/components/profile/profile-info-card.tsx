@@ -52,7 +52,7 @@ function Row({ field, profile }: { field: ProfileField; profile: AuthUser }) {
   return (
     //  ⚠️ Khổ hẹp XẾP CHỒNG nhãn trên / giá trị dưới. Một hàng ngang thì riêng
     //  nhãn `w-40` đã chiếm 160px trong 358px dùng được, phần còn lại không đủ
-    //  cho một tên pháp nhân — «CÔNG TY TNHH DEGO HOLDING» bị cắt cụt đúng chỗ
+    //  cho một tên pháp nhân — "CÔNG TY TNHH DEGO HOLDING" bị cắt cụt đúng chỗ
     //  phân biệt được các pháp nhân với nhau. Từ `sm` trở lên về lại một hàng.
     <div className="flex flex-col gap-0.5 border-b border-dashed py-2 last:border-b-0 sm:flex-row sm:items-center sm:gap-3">
       <div className="flex items-center gap-3 sm:shrink-0">
@@ -81,16 +81,16 @@ function Row({ field, profile }: { field: ProfileField; profile: AuthUser }) {
  * gốc của phân hệ Nhân sự, sửa ở hai nơi thì sớm muộn cũng lệch nhau.
  *
  * Nhóm LIÊN HỆ (số điện thoại · hai địa chỉ · người báo tin) là ngoại lệ, tự sửa
- * được từ bao-CR-508 — nhưng ở thẻ «Liên hệ» (`ProfileContactCard`), không ở
- * đây. Số điện thoại trong khối «Tài khoản» vẫn chỉ xem; nó đọc từ phiên đăng
+ * được từ bao-CR-508 — nhưng ở thẻ "Liên hệ" (`ProfileContactCard`), không ở
+ * đây. Số điện thoại trong khối "Tài khoản" vẫn chỉ xem; nó đọc từ phiên đăng
  * nhập và được nạp lại sau khi người dùng tự sửa.
  */
 export function ProfileInfoCard({ profile }: { profile: AuthUser }) {
   return (
     <>
-      {/*  ⚠️ Tên thẻ là «Hồ sơ nhân sự», KHÔNG phải «Thông tin cá nhân» — thẻ
+      {/*  ⚠️ Tên thẻ là "Hồ sơ nhân sự", KHÔNG phải "Thông tin cá nhân" — thẻ
            này bày mã NV, pháp nhân, phòng ban, vị trí, vai trò, tức căn cước
-           của người đó TRONG TỔ CHỨC. «Thông tin cá nhân» nay là tên thẻ nhân
+           của người đó TRONG TỔ CHỨC. "Thông tin cá nhân" nay là tên thẻ nhân
            thân (ngày sinh, dân tộc, hôn nhân…) ngay bên dưới, trùng đúng tên
            `FormSection` mà phân hệ Nhân sự dùng cho cùng bộ trường. Để hai thẻ
            cùng tên nằm sát nhau thì người đọc không biết vì sao phải có hai. */}
@@ -104,7 +104,7 @@ export function ProfileInfoCard({ profile }: { profile: AuthUser }) {
           <span>
             Hồ sơ nhân sự và vai trò do bộ phận Nhân sự / Quản trị hệ thống cập nhật. Nếu thông tin
             chưa đúng, hãy liên hệ bộ phận Nhân sự để được chỉnh sửa. Số điện thoại, địa chỉ và
-            người báo tin thì bạn tự sửa ở thẻ «Liên hệ» bên dưới.
+            người báo tin thì bạn tự sửa ở thẻ <strong>Liên hệ</strong> bên dưới.
           </span>
         </p>
       </FormCard>

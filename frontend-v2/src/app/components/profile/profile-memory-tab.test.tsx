@@ -7,9 +7,9 @@ import type { BotMemory } from '@/modules/system/api/bot-memory-api'
 import { ProfileMemoryTab } from './profile-memory-tab'
 
 /**
- * Tab «Bot nhớ gì về tôi» (ai-CR-138, phase 13.4).
+ * Tab "Bot nhớ gì về tôi" (ai-CR-138, phase 13.4).
  *
- * Chỗ dễ lủng: sửa / xóa phải gửi NGUYÊN VĂN dòng cũ (kể cả đuôi «(tự rút)» + hạn) làm khóa — gửi bản đã bóc đuôi thì
+ * Chỗ dễ lủng: sửa / xóa phải gửi NGUYÊN VĂN dòng cũ (kể cả đuôi "(tự rút)" + hạn) làm khóa — gửi bản đã bóc đuôi thì
  * backend không tìm thấy dòng và trả 409; gửi số thứ tự thì hai tab sửa cùng lúc là sửa nhầm dòng. Lưu hỏng thì ô nhập
  * phải giữ nguyên chữ người dùng đã gõ. Bấm đúp không được ra hai lượt gọi.
  */
@@ -104,7 +104,8 @@ describe('ProfileMemoryTab', () => {
     renderTab()
     expect(await screen.findByText('Muốn trả lời ngắn gọn')).toBeInTheDocument()
     expect(apiGet).toHaveBeenCalledWith('/api/agent-hub/me/memory')
-    expect(screen.getByText('tự rút')).toBeInTheDocument()
+    // Câu giải thích đầu thẻ cũng in đậm chữ "tự rút"; nhãn trên dòng là phần tử khác.
+    expect(screen.getByText('tự rút', { selector: ':not(strong)' })).toBeInTheDocument()
     expect(screen.getByText('1/3 lần · 1/2 ngày')).toBeInTheDocument()
     expect(screen.getByText('DEGO')).toBeInTheDocument()
     //  Đuôi kỹ thuật không lộ ra chữ hiển thị.

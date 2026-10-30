@@ -45,7 +45,7 @@ export const TAB_TRIGGER_UNDERLINE =
 /**
  * Bản gạch chân ở **MỌI khổ màn hình** (01/10/2026) — cho chỗ mà ngay cả màn rộng cũng đã có một
  * điều khiển phân đoạn nền đặc khác ở gần (vd trang chi tiết thuốc BVTV: tab thân trang + bộ chọn
- * «Cùng công ty / Cùng hoạt chất» bên trong). Hai dải nền đặc chồng nhau đọc ra MỘT lưới, không ra
+ * "Cùng công ty / Cùng hoạt chất" bên trong). Hai dải nền đặc chồng nhau đọc ra MỘT lưới, không ra
  * hai cấp — cùng lý do màn Phiếu đặt phòng ở trên, chỉ là xảy ra cả ở màn rộng.
  */
 export const TAB_LIST_UNDERLINE_ALWAYS =

@@ -24,7 +24,7 @@ import { ToolbarButton, ToolbarDivider } from './toolbar-primitives'
  *
  * ⚠️ Bắt buộc đi qua `useEditorState`. Trình soạn thảo giữ state BÊN NGOÀI
  * React nên gõ phím / di con trỏ không làm component vẽ lại — đọc thẳng
- * `editor.isActive('bold')` lúc vẽ thì nút «In đậm» không bao giờ sáng lên.
+ * `editor.isActive('bold')` lúc vẽ thì nút "In đậm" không bao giờ sáng lên.
  * Cùng lý do với `use-toolbar-state.ts`.
  */
 export function RichTextFieldToolbar({

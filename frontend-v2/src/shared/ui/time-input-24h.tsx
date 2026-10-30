@@ -18,10 +18,10 @@ interface TimeInput24hProps {
 const ARROW_STEP_MINUTES = 15
 
 /**
- * Ô nhập giờ LUÔN 24h «HH:MM». Dùng thay `<input type="time">` vì ô gốc theo locale của
- * trình duyệt (en-US hiện «08:00 AM»), còn công ty chốt giờ làm việc luôn dạng 24h.
+ * Ô nhập giờ LUÔN 24h "HH:MM". Dùng thay `<input type="time">` vì ô gốc theo locale của
+ * trình duyệt (en-US hiện "08:00 AM"), còn công ty chốt giờ làm việc luôn dạng 24h.
  *
- * Gõ tự do: «8» «830» «8:30» đều được, tự chèn «:». Gõ đủ 4 số hợp lệ là ghi ngay; gõ dở
+ * Gõ tự do: "8" "830" "8:30" đều được, tự chèn ":". Gõ đủ 4 số hợp lệ là ghi ngay; gõ dở
  * thì chốt khi rời ô (hợp lệ -> chuẩn hóa, sai -> trả về giá trị cũ, không ghi rác). Mũi tên
  * lên/xuống đổi 15 phút, Enter chốt ô mà KHÔNG gửi form cha (gõ dở giờ rồi Enter không được lưu cả mẫu).
  */

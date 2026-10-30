@@ -26,7 +26,7 @@ export const queryKeys = {
     purchaseRequestProgress: (id: number) =>
       ['procurement', 'purchase-requests', id, 'order-progress'] as const,
     /**
-     * bao-CR-486 — NSTM chọn được cho phiếu, đi theo ô «Phòng xử lý». Nằm DƯỚI khóa
+     * bao-CR-486 — NSTM chọn được cho phiếu, đi theo ô "Phòng xử lý". Nằm DƯỚI khóa
      * phiếu để chuyển phòng xử lý (invalidate `purchaseRequest(id)`) kéo danh sách này theo.
      */
     purchaseRequestAssignableStaff: (id: number) =>
@@ -47,13 +47,13 @@ export const queryKeys = {
     /** Những người được phép duyệt bước 1 của một phiếu YCMH (CR-071). */
     /** bao-CR-495 — ô tìm tên hàng hải quan sẽ khớp những cách viết nào. */
     customsSearchExplain: (q: string) => ['procurement', 'customs', 'search-explain', q] as const,
-    /** Mục «Thuốc BVTV» của Tra cứu thị trường — dưới `['procurement', 'customs']` để nạp lại
+    /** Mục "Thuốc BVTV" của Tra cứu thị trường — dưới `['procurement', 'customs']` để nạp lại
         danh mục (kéo theo gắn lại hoạt chất dòng hàng) bỏ hiệu lực cả màn trong một lệnh. */
     customsPesticides: (params: Record<string, unknown>) =>
       ['procurement', 'customs', 'pesticides', 'list', params] as const,
     customsPesticide: (id: number) => ['procurement', 'customs', 'pesticides', 'detail', id] as const,
     customsPesticideOptions: () => ['procurement', 'customs', 'pesticides', 'options'] as const,
-    /** «Cùng công ty» / «cùng hoạt chất» của trang chi tiết thuốc (01/10/2026). */
+    /** "Cùng công ty" / "cùng hoạt chất" của trang chi tiết thuốc (01/10/2026). */
     customsPesticideRelated: (id: number, limit: number) =>
       ['procurement', 'customs', 'pesticides', 'related', id, limit] as const,
     purchaseRequestDeptHeads: (id: number) =>
@@ -103,10 +103,10 @@ export const queryKeys = {
      */
     executionReport: (entity: string, id: number) =>
       ['procurement', 'execution-report', entity, id] as const,
-    /** Ô chọn dòng hàng + giai đoạn của hộp «Thêm hồ sơ» khi khối còn trống (duoc-CR-611). */
+    /** Ô chọn dòng hàng + giai đoạn của hộp "Thêm hồ sơ" khi khối còn trống (duoc-CR-611). */
     executionReportFirstDocOptions: (entity: string, id: number) =>
       ['procurement', 'execution-report', entity, id, 'first-doc-options'] as const,
-    /** Ô chọn MẪU của hộp «Khởi tạo báo cáo mẫu» (duoc-CR-614). */
+    /** Ô chọn MẪU của hộp "Khởi tạo báo cáo mẫu" (duoc-CR-614). */
     executionReportTemplates: (entity: string, id: number) =>
       ['procurement', 'execution-report', entity, id, 'templates'] as const,
     /** Bảng "Kết quả khảo sát đã duyệt" chọn được cho MỘT dòng của khung xử lý. */
@@ -199,18 +199,18 @@ export const queryKeys = {
     changeRequest: (id: number) => ['hr', 'change-requests', 'detail', id] as const,
     /** Sơ đồ tổ chức (duoc-CR-669) — không nằm dưới `employees` vì cũng đổi theo phòng ban; quét bằng `hr.all`. */
     orgChart: () => ['hr', 'org-chart'] as const,
-    /** Ô «Lịch nhắc trong tháng» của Tổng quan Nhân sự (duoc-CR-689) — theo tháng `YYYY-MM`. */
+    /** Ô "Lịch nhắc trong tháng" của Tổng quan Nhân sự (duoc-CR-689) — theo tháng `YYYY-MM`. */
     monthlyReminders: (month: string) => ['hr', 'monthly-reminders', month] as const,
     employeeDepartments: (id: number) => ['hr', 'employees', id, 'departments'] as const,
     /**
-     * Quá trình công tác của MỘT hồ sơ (phase 04, 03/10/2026) — tab «Quá trình
-     * công tác». Nằm DƯỚI khóa hồ sơ nên `invalidateQueries({ queryKey: hr.all })`
+     * Quá trình công tác của MỘT hồ sơ (phase 04, 03/10/2026) — tab "Quá trình
+     * công tác". Nằm DƯỚI khóa hồ sơ nên `invalidateQueries({ queryKey: hr.all })`
      * quét luôn.
      */
     employeeWorkHistory: (id: number) => ['hr', 'employees', id, 'work-history'] as const,
     /** Quá trình công tác của CHÍNH MÌNH (`/api/employees/me/work-history`) — Trang cá nhân đọc bằng khóa này. */
     myWorkHistory: () => ['hr', 'employees', 'me', 'work-history'] as const,
-    /** «Hợp đồng của tôi» (duoc-CR-652) — HĐLĐ đã ký của CHÍNH MÌNH, `/api/me/labor-contracts`. */
+    /** "Hợp đồng của tôi" (duoc-CR-652) — HĐLĐ đã ký của CHÍNH MÌNH, `/api/me/labor-contracts`. */
     myLaborContracts: () => ['hr', 'me', 'labor-contracts'] as const,
     /** Tệp đính kèm của MỘT dòng quá trình công tác (entity `employee_work_history`). */
     workHistoryFiles: (historyId: number) =>
@@ -222,10 +222,10 @@ export const queryKeys = {
     employeeFamilies: (id: number) => ['hr', 'employees', id, 'families'] as const,
     /** Danh sách đối tượng để chọn khi gán lịch làm việc (pháp nhân / phòng ban / nhân sự theo cấp). */
     workScheduleTargets: (level: number) => ['hr', 'work-schedule', 'targets', level] as const,
-    /** Lịch làm việc ĐANG ÁP của một nhân sự — thẻ «Lịch làm việc» trên hồ sơ. */
+    /** Lịch làm việc ĐANG ÁP của một nhân sự — thẻ "Lịch làm việc" trên hồ sơ. */
     workScheduleEffective: (employeeId: number) =>
       ['hr', 'work-schedule', 'effective', employeeId] as const,
-    /** Lưới «Lịch tuần» (ai làm, ai nghỉ) — khóa theo toàn bộ tham số hỏi. */
+    /** Lưới "Lịch tuần" (ai làm, ai nghỉ) — khóa theo toàn bộ tham số hỏi. */
     workRoster: (params: Record<string, unknown>) => ['hr', 'work-schedule', 'roster', params] as const,
     departments: (params?: Record<string, unknown>) => ['hr', 'departments', params ?? {}] as const,
     department: (id: number) => ['hr', 'departments', id] as const,
@@ -234,18 +234,18 @@ export const queryKeys = {
     departmentsByCompanies: (companyIds: number[]) =>
       ['hr', 'departments', 'by-companies', [...companyIds].sort((a, b) => a - b)] as const,
     companies: (params?: Record<string, unknown>) => ['hr', 'companies', params ?? {}] as const,
-    /** Danh mục Chức vụ (duoc-CR-320) — nguồn ô chọn «Vị trí / Chức vụ». */
+    /** Danh mục Chức vụ (duoc-CR-320) — nguồn ô chọn "Vị trí / Chức vụ". */
     /** Gói quyền mặc định của MỘT chức vụ (duoc-CR-653). */
     jobPositionRoles: (positionId: number) => ['hr', 'job-position-roles', positionId] as const,
     jobPositions: (params?: Record<string, unknown>) =>
       ['hr', 'job-positions', params ?? {}] as const,
     company: (id: number) => ['hr', 'companies', id] as const,
-    /** Mẫu hợp đồng lao động theo pháp nhân (màn «Mẫu hợp đồng»). */
+    /** Mẫu hợp đồng lao động theo pháp nhân (màn "Mẫu hợp đồng"). */
     laborContractTemplates: (params?: Record<string, unknown>) =>
       ['hr', 'labor-contract-templates', params ?? {}] as const,
     /** Danh mục biến của mẫu .docx — gần như bất biến, đọc từ backend. */
     laborContractPlaceholders: () => ['hr', 'labor-contract-placeholders'] as const,
-    /** Danh sách biến mẫu HĐLĐ (màn «Danh sách biến», duoc-CR-630). Dưới `hr.all` nên mọi lệnh ghi quét. */
+    /** Danh sách biến mẫu HĐLĐ (màn "Danh sách biến", duoc-CR-630). Dưới `hr.all` nên mọi lệnh ghi quét. */
     laborContractVariables: (params?: Record<string, unknown>) =>
       ['hr', 'labor-contract-variables', params ?? {}] as const,
     laborContractVariable: (id: number) => ['hr', 'labor-contract-variable', id] as const,
@@ -256,7 +256,7 @@ export const queryKeys = {
     laborContractTemplate: (id: number) => ['hr', 'labor-contract-template', id] as const,
     /** Nội dung HTML của một mẫu để soạn trên web (duoc-CR-606). */
     laborContractTemplateContent: (id: number) => ['hr', 'labor-contract-template', id, 'content'] as const,
-    /** HĐLĐ của MỘT hồ sơ (tab «Hợp đồng»). Nằm DƯỚI khóa hồ sơ nên `hr.all` quét luôn. */
+    /** HĐLĐ của MỘT hồ sơ (tab "Hợp đồng"). Nằm DƯỚI khóa hồ sơ nên `hr.all` quét luôn. */
     employeeLaborContracts: (id: number) => ['hr', 'employees', id, 'labor-contracts'] as const,
     /** HĐLĐ sắp hết hạn của cả phạm vi (thẻ Tổng quan Nhân sự, duoc-CR-620). Mọi lệnh ghi HĐLĐ quét lại. */
     laborContractsExpiring: () => ['hr', 'labor-contracts', 'expiring'] as const,
@@ -287,7 +287,7 @@ export const queryKeys = {
       ['hr', 'leave-requests', 'detail', id, 'attachments'] as const,
     //  ── Hộp việc duyệt (CR-260) ───────────────────────────────────────────
     //  Nằm TRONG nhánh `hr` để một lượt duyệt dọn luôn cả ba tab: ký xong thì
-    //  đơn rời tab «Cần tôi duyệt» và rơi sang tab «Tôi đã duyệt» cùng lúc.
+    //  đơn rời tab "Cần tôi duyệt" và rơi sang tab "Tôi đã duyệt" cùng lúc.
     leaveToApprove: () => ['hr', 'leave-requests', 'inbox', 'to-approve'] as const,
     leaveHandled: (params?: Record<string, unknown>) =>
       ['hr', 'leave-requests', 'inbox', 'handled', params ?? {}] as const,
@@ -320,7 +320,7 @@ export const queryKeys = {
       ['hr', 'room-bookings', params ?? {}] as const,
     roomBooking: (id: number) => ['hr', 'room-bookings', 'detail', id] as const,
     //  Hộp việc duyệt nằm TRONG nhánh `hr` để một lượt ký dọn luôn cả ba tab:
-    //  ký xong thì phiếu rời «Cần tôi duyệt» và rơi sang «Tôi đã duyệt».
+    //  ký xong thì phiếu rời "Cần tôi duyệt" và rơi sang "Tôi đã duyệt".
     roomToApprove: () => ['hr', 'room-bookings', 'inbox', 'to-approve'] as const,
     roomHandled: (params?: Record<string, unknown>) =>
       ['hr', 'room-bookings', 'inbox', 'handled', params ?? {}] as const,
@@ -367,7 +367,7 @@ export const queryKeys = {
     /** Số liệu trang tổng quan Văn thư, theo bộ lọc của thanh trên cùng trang. */
     dashboard: (params?: Record<string, unknown>) =>
       ['document', 'dashboard', params ?? {}] as const,
-    /** Gợi ý cho ô «Nơi lưu trữ cứng» — các giá trị đã từng nhập. */
+    /** Gợi ý cho ô "Nơi lưu trữ cứng" — các giá trị đã từng nhập. */
     storageLocations: () => ['document', 'storage-locations'] as const,
     records: (params?: Record<string, unknown>) => ['document', 'records', params ?? {}] as const,
     record: (id: number) => ['document', 'records', id] as const,
@@ -420,16 +420,16 @@ export const queryKeys = {
     prerequisites: (docTypeId: number) => ['document', 'prerequisites', docTypeId] as const,
     numberPreview: (params: Record<string, unknown>) =>
       ['document', 'number-preview', params] as const,
-    /** Thẻ «Người duyệt dự kiến» ở màn tạo/chi tiết nháp (phase 01, duoc-CR-473). */
+    /** Thẻ "Người duyệt dự kiến" ở màn tạo/chi tiết nháp (phase 01, duoc-CR-473). */
     approvalPreview: (params: Record<string, unknown>) =>
       ['document', 'approval-preview', params] as const,
-    /** Tab «Tệp» (phase 09) — tệp của MỌI phiên bản, khác `attachments/*` của PR. */
+    /** Tab "Tệp" (phase 09) — tệp của MỌI phiên bản, khác `attachments/*` của PR. */
     files: (documentId: number) => ['document', 'records', documentId, 'files'] as const,
     /**
      * Tìm TOÀN VĂN (phase 07, duoc-CR-477) — khác `records` (LIKE 6 cột
      * siêu dữ liệu): đọc cả nội dung soạn thảo + chữ trong tệp đính kèm, gọi
      * `/api/documents/search`. Tách khóa riêng, không dùng chung `records`,
-     * để bật/tắt công tắc «Tìm cả nội dung» không đọc nhầm cache của nhau.
+     * để bật/tắt công tắc "Tìm cả nội dung" không đọc nhầm cache của nhau.
      */
     search: (params?: Record<string, unknown>) => ['document', 'search', params ?? {}] as const,
 
@@ -451,7 +451,7 @@ export const queryKeys = {
   approval: {
     all: ['approval'] as const,
     myTasks: (entity: string) => ['approval', 'my-tasks', entity] as const,
-    /** «Đã duyệt gần đây» — phiếu chính tôi vừa quyết định, theo số ngày nhìn lại. */
+    /** "Đã duyệt gần đây" — phiếu chính tôi vừa quyết định, theo số ngày nhìn lại. */
     myHistory: (entity: string, days: number) =>
       ['approval', 'my-history', entity, days] as const,
     options: () => ['approval', 'options'] as const,
@@ -509,7 +509,7 @@ export const queryKeys = {
     /** Một phiếu YCTT theo id — hành động (duyệt/chi…) làm mất hiệu lực khóa này. */
     paymentRequest: (id: number) => ['finance', 'payment-requests', id] as const,
     /**
-     * bao-CR-509 — bản xem trước «Cập nhật theo công nợ» của một phiếu. Nằm DƯỚI khóa
+     * bao-CR-509 — bản xem trước "Cập nhật theo công nợ" của một phiếu. Nằm DƯỚI khóa
      * chi tiết phiếu nên mọi thao tác làm mất hiệu lực phiếu cũng làm mất hiệu lực nó.
      */
     paymentRequestRefreshPreview: (id: number) =>
@@ -517,7 +517,7 @@ export const queryKeys = {
     /** CR-268 — tiền treo (phiếu trả trước đã chi, chưa đối trừ) theo NCC/đơn. */
     prepayHanging: (params?: Record<string, unknown>) =>
       ['finance', 'payment-requests', 'hanging', params ?? {}] as const,
-    /** bao-CR-553 — nguồn ô «Trưởng bộ phận» của YCTT (trưởng phòng mọi phòng). */
+    /** bao-CR-553 — nguồn ô "Trưởng bộ phận" của YCTT (trưởng phòng mọi phòng). */
     departmentManagers: () => ['finance', 'payment-requests', 'department-managers'] as const,
   },
   system: {
@@ -525,7 +525,7 @@ export const queryKeys = {
     /** Cấu hình chạy nóng (email, lưu trữ, công tắc quy trình) — một khóa duy nhất. */
     settings: () => ['system', 'settings'] as const,
     /**
-     * «Ai xem được báo cáo nào» — tab Báo cáo của Phân quyền tài khoản (phase 06,
+     * "Ai xem được báo cáo nào" — tab Báo cáo của Phân quyền tài khoản (phase 06,
      * kế hoạch `plans/261002-0836-phan-quyen-tung-bao-cao`). Một khóa duy nhất:
      * 13 báo cáo nạp cả danh sách một lần, không phân trang.
      */
@@ -623,7 +623,7 @@ export const queryKeys = {
      * khóa này. Tách khỏi `feed` để lời thăm dò không đè cache của feed.
      */
     feedHead: () => ['forum', 'posts', 'head'] as const,
-    /** Bài đang ghim (F9a) — dải đầu Bảng tin + tab «Thông báo», không phân trang. */
+    /** Bài đang ghim (F9a) — dải đầu Bảng tin + tab "Thông báo", không phân trang. */
     pinned: () => ['forum', 'posts', 'pinned'] as const,
     post: (id: number) => ['forum', 'posts', id] as const,
     /** Mọi tủ bài viết cá nhân — dùng để reset cả cụm sau khi đăng/xóa bài. */
@@ -635,12 +635,12 @@ export const queryKeys = {
     /** Trang bình luận GỐC của một bài (F4) — phản hồi tải riêng khi bung, không có khóa. */
     comments: (postId: number) => ['forum', 'posts', postId, 'comments'] as const,
     /**
-     * Cây nhóm → box của tab «Diễn đàn» (F13b). Khóa này đồng thời là GỐC của
+     * Cây nhóm → box của tab "Diễn đàn" (F13b). Khóa này đồng thời là GỐC của
      * nhánh boards — invalidate nó là quét luôn mọi trang thread bên dưới.
      */
     boards: () => ['forum', 'boards'] as const,
-    /** Sidebar «Đang sôi nổi» + «Mới nhất» (F13c) — nằm dưới gốc `boards` để
-     * invalidate sau khi đăng bài quét luôn (thread mới phải vào «Mới nhất»). */
+    /** Sidebar "Đang sôi nổi" + "Mới nhất" (F13c) — nằm dưới gốc `boards` để
+     * invalidate sau khi đăng bài quét luôn (thread mới phải vào "Mới nhất"). */
     boardHighlights: () => ['forum', 'boards', 'highlights'] as const,
     /** Một trang thread của box — phân trang SỐ TRANG, khác feed con trỏ. */
     boardThreads: (boardId: number, page: number) =>
@@ -701,7 +701,7 @@ export const queryKeys = {
     mcpSettings: () => ['ai-skill', 'mcp-settings'] as const,
     /** Ứng dụng AI tự đăng ký OAuth (bao-CR-635). */
     oauthClients: () => ['ai-skill', 'oauth-clients'] as const,
-    /** «AI của tôi» (K6). Danh sách khóa của chính mình dùng chung `system.mcpKeys()` với tab cũ. */
+    /** "AI của tôi" (K6). Danh sách khóa của chính mình dùng chung `system.mcpKeys()` với tab cũ. */
     setupClients: () => ['ai-skill', 'setup'] as const,
     setup: (client: string) => ['ai-skill', 'setup', client] as const,
     /** Bản công khai (trang /connect-ai) — khóa riêng để không lẫn với bản đã đăng nhập. */
@@ -784,7 +784,7 @@ export const queryKeys = {
     bookings: (params?: Record<string, unknown>) =>
       ['vehicle-booking', 'bookings', params ?? {}] as const,
     booking: (id: number) => ['vehicle-booking', 'bookings', id] as const,
-    /** Hai ô «Công ty» + «Người duyệt» của form đặt xe (duoc-CR-681). */
+    /** Hai ô "Công ty" + "Người duyệt" của form đặt xe (duoc-CR-681). */
     pickOptions: () => ['vehicle-booking', 'pick-options'] as const,
     /** Số liệu trang Tổng quan Đặt xe (`/api/vehicle-bookings/overview`). */
     overview: (params?: Record<string, unknown>) =>

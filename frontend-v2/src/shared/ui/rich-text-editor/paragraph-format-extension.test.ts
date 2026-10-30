@@ -11,7 +11,7 @@ import { cssToWordLineSpacing } from './word-line-spacing'
 //  ⚠️ **Dựng `Editor` thì phải HỦY.** Mỗi bản Tiptap gắn một `EditorView` của
 //  ProseMirror, và `DOMObserver` của nó hẹn `setTimeout`. Bỏ mặc thì cái hẹn đó
 //  nổ SAU khi Vitest đã dọn jsdom của tệp: `ReferenceError: document is not
-//  defined`, ghi vào mục *Unhandled Errors* nên `npm run check` báo «1 error»
+//  defined`, ghi vào mục *Unhandled Errors* nên `npm run check` báo "1 error"
 //  trong khi mọi bài kiểm vẫn xanh — đúng kiểu lỗi không ai truy được nguồn.
 //  Hủy trong `afterEach` chứ đừng hủy ở cuối mỗi `it`: bài kiểm nào ngã giữa
 //  chừng thì dòng hủy đó không bao giờ chạy tới.

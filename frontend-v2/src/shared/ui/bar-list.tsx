@@ -60,9 +60,9 @@ export function BarList({
                   `md` mới cắt một dòng. Thẻ ở đây xếp bốn cột trên màn rộng nên
                   cắt một dòng là đúng, nhưng ở khổ hẹp thẻ chiếm trọn bề ngang
                   mà vẫn cắt thì tên nhà cung cấp Việt Nam — phần phân biệt nằm ở
-                  ĐUÔI, còn đầu là «CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI…» dùng chung
+                  ĐUÔI, còn đầu là "CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI…" dùng chung
                   — ra năm dòng giống hệt nhau (đo 12/09/2026 ở Top nhà cung cấp:
-                  3/5 nhãn cắt đúng tại chữ «BAO BÌ»). Hai dòng ×270px là đủ chỗ
+                  3/5 nhãn cắt đúng tại chữ "BAO BÌ"). Hai dòng ×270px là đủ chỗ
                   cho gần hết tên thật. */}
               <span
                 className="min-w-0 flex-1 font-medium text-foreground line-clamp-2 md:line-clamp-none md:truncate"

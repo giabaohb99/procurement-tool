@@ -14,7 +14,7 @@ interface ProfileSalaryCardProps {
 const MASK = '••••'
 
 /**
- * «Lương của tôi» ở Trang cá nhân (duoc-CR-693). Hai số đọc thẳng `/api/employees/me` — backend
+ * "Lương của tôi" ở Trang cá nhân (duoc-CR-693). Hai số đọc thẳng `/api/employees/me` — backend
  * chỉ trả số lương cho CHÍNH chủ, người khác (kể cả admin) không có đường nào xem.
  *
  * Mặc định CHE số: Trang cá nhân hay được mở khi đang chia sẻ màn hình (họp trực tuyến, nhờ

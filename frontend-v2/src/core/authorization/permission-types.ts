@@ -88,7 +88,7 @@ export const ENTITIES = [
   'work_task',
   //  Diễn đàn (CR-263): hai khóa CHỈ của vai trò `forum_admin` — kiểm duyệt bài
   //  và dựng chuyên mục. Người thường không có grant nào: đọc/đăng đi theo luật
-  //  audience riêng trong API diễn đàn. FE chỉ dùng để hiện tab «Quản trị».
+  //  audience riêng trong API diễn đàn. FE chỉ dùng để hiện tab "Quản trị".
   'forum_post',
   'forum_board',
   //  Phân hệ Đặt xe nội bộ (DEGO Booking Auto). Ba khóa khớp backend
@@ -124,17 +124,17 @@ export const ENTITIES = [
   //  mắt. Backend đã che thẳng ở tầng serializer (`modules/employee/sensitive.py`)
   //  nên thiếu quyền thì các ô đó về rỗng dù giao diện có vẽ ra hay không.
   'employee_sensitive',
-  //  Danh mục Chức vụ (duoc-CR-320) — nguồn của ô chọn «Vị trí / Chức vụ».
+  //  Danh mục Chức vụ (duoc-CR-320) — nguồn của ô chọn "Vị trí / Chức vụ".
   //  MỌI vai trò được `read` (seed), quyền sửa dành cho `hr_profile`.
   'job_position',
   'dossier_type',
   //  HỒ SƠ (`tab_dossier`, 16/09/2026) — màn `/dossier/list`. Tách khỏi
-  //  `dossier_type` theo luật «một khóa = một màn hình» (CR-157), và vì hai việc
+  //  `dossier_type` theo luật "một khóa = một màn hình" (CR-157), và vì hai việc
   //  do hai người làm: lập hồ sơ là việc hằng ngày của hành chính mỗi phòng,
   //  còn sửa LOẠI thì đổi luôn KHUÔN BIỂU MẪU (`field_schema`) cho cả công ty.
   //  ⚠️ Khác `dossier_type` ở chỗ backend lọc PHẠM VI DỮ LIỆU thật trên khóa
   //  này (pháp nhân · phòng · người lập · người phụ trách) — `can('dossier')`
-  //  chỉ nói được «có vào màn này không», không nói được thấy hồ sơ nào.
+  //  chỉ nói được "có vào màn này không", không nói được thấy hồ sơ nào.
   'dossier',
   //  Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04). Bốn khóa để ba quyền của
   //  PS12 tách được: xem sổ người khác · điều chỉnh tay · chạy đồng bộ.
@@ -145,7 +145,7 @@ export const ENTITIES = [
   'pos_order',
   //  Phiên đăng nhập (bao-CR-395, CR-312 P3b) — một khóa cho màn
   //  `/system/sessions` + thẻ ở hồ sơ nhân sự. `read` = xem, `delete` = đá phiên /
-  //  bắt đăng nhập lại. «Thiết bị của tôi» ở /me KHÔNG cần khóa này (cửa
+  //  bắt đăng nhập lại. "Thiết bị của tôi" ở /me KHÔNG cần khóa này (cửa
   //  `/api/auth/sessions*` chỉ đòi đăng nhập).
   'login_session',
   //  Nhật ký hệ thống (bao-CR-407, CR-312 P5) — màn `/system/logs`.
@@ -157,7 +157,7 @@ export const ENTITIES = [
   'change_log',
   //  Sổ đồng bộ với hệ ngoài (P0 đặt xe) — màn `/system/sync-logs`. MỘT khóa cho
   //  mọi nguồn (app đặt xe, POS365, đơn hàng...). `write` KHÔNG phải sửa dòng sổ
-  //  — sổ không sửa được — mà là nút «Chạy lại», tức gọi ngược sang hệ ngoài.
+  //  — sổ không sửa được — mà là nút "Chạy lại", tức gọi ngược sang hệ ngoài.
   'sync_log',
   'purchase_cost_type',
   // bao-CR-470 — Tra cứu giá hải quan (khớp ENTITIES của backend, canh bởi
@@ -168,7 +168,7 @@ export const ENTITIES = [
   //  Việc của bot Agent Hub (ai-CR-036) — màn `/system/agent-tasks`, chỉ đọc: danh sách việc
   //  Đậu Đậu đã nhận, từng bước đã chạy, chi phí model. Thao tác trên việc vẫn đi qua Telegram.
   'agent_task',
-  // Quản lý nhóm chat của bot (ai-CR-123) — màn «Nhóm chat» của Trợ lý AI.
+  // Quản lý nhóm chat của bot (ai-CR-123) — màn "Nhóm chat" của Trợ lý AI.
   'agent_group',
   // Nhận bản sao tin vận hành của bot qua Telegram (ai-CR-132).
   'agent_ops',

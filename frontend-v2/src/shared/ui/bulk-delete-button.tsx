@@ -19,7 +19,7 @@ import { cn } from '@/shared/utils/cn'
 interface BulkDeleteButtonProps {
   /** Số dòng đang chọn — 0 thì nút không dựng. */
   count: number
-  /** Gọi tên thứ bị xóa, vd «dòng». */
+  /** Gọi tên thứ bị xóa, vd "dòng". */
   unitLabel: string
   /** Câu giải thích trong hộp xác nhận. */
   description?: string
@@ -30,7 +30,7 @@ interface BulkDeleteButtonProps {
 }
 
 /**
- * Nút «Xóa đã chọn (n)» + hộp xác nhận — bao-CR-547 (xóa nhiều dòng trên phiếu Nháp).
+ * Nút "Xóa đã chọn (n)" + hộp xác nhận — bao-CR-547 (xóa nhiều dòng trên phiếu Nháp).
  *
  * `type="button"` vì cùng lý do với `DeleteConfirmButton`: đứng trong form thì mặc định `submit`
  * sẽ lưu trước khi hỏi. Hộp chỉ đóng khi việc xóa XONG — xóa lỗi thì giữ hộp, toast của

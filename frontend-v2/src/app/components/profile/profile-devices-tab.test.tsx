@@ -7,7 +7,7 @@ import type { LoginSessionItem, MySessionsResult } from '@/modules/system/api/lo
 import { ProfileDevicesTab } from './profile-devices-tab'
 
 /**
- * Tab «Thiết bị của tôi» ở Trang cá nhân (bao-CR-395).
+ * Tab "Thiết bị của tôi" ở Trang cá nhân (bao-CR-395).
  *
  * Chỗ dễ lủng: phiên ĐANG BẤM không được có nút đăng xuất — người dùng tự đá
  * chính mình rồi trang đứng im tới 60 giây (cache hồ sơ quyền) trước khi văng
@@ -107,7 +107,7 @@ describe('ProfileDevicesTab', () => {
     ])
     renderTab()
     await screen.findByText('Safari trên iOS')
-    // Đúng MỘT nút «Đăng xuất» theo dòng — của máy kia; máy đang bấm không có.
+    // Đúng MỘT nút "Đăng xuất" theo dòng — của máy kia; máy đang bấm không có.
     const rowButtons = screen.getAllByRole('button', { name: /^Đăng xuất$/ })
     expect(rowButtons).toHaveLength(1)
   })

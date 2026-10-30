@@ -14,7 +14,7 @@ interface Row {
 
 const ROWS: Row[] = [{ id: 1, name: 'Nguyễn Văn A', note: 'ghi chú rất dài '.repeat(20) }]
 
-//  bao-CR-578: bảng tự thêm cột «ID» ở bìa trái. Các bài dưới kiểm tính năng KHÁC và lấy ô
+//  bao-CR-578: bảng tự thêm cột "ID" ở bìa trái. Các bài dưới kiểm tính năng KHÁC và lấy ô
 //  theo vị trí, nên mặc định tắt cột đó; bài riêng của cột ID truyền `idColumn = true`.
 function build(columns: DataTableColumn<Row>[], storageKey?: string, idColumn = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -334,7 +334,7 @@ describe('DataTable — onRowDoubleClick', () => {
 
 /**
  * bao-CR-518 — màu cột khai SẴN (`defaultColor`) cho cột mang nghĩa (bốn cột giá của
- * Tra cứu thị trường). Màu người dùng tự chọn trong menu «Cột» vẫn phải thắng.
+ * Tra cứu thị trường). Màu người dùng tự chọn trong menu "Cột" vẫn phải thắng.
  */
 describe('DataTable — defaultColor', () => {
   const tinted = (cell: Element | null) => (cell as HTMLElement | null)?.style.backgroundImage ?? ''
@@ -381,7 +381,7 @@ describe('DataTable — dividerAfter', () => {
   })
 })
 
-/** bao-CR-578 — cột «ID» mặc định ở bìa trái của mọi bảng danh sách. */
+/** bao-CR-578 — cột "ID" mặc định ở bìa trái của mọi bảng danh sách. */
 describe('DataTable — cột ID mặc định', () => {
   const headers = (table: HTMLTableElement) =>
     Array.from(table.querySelectorAll('thead th')).map((th) => th.textContent?.trim())
@@ -420,7 +420,7 @@ describe('DataTable — cột ID mặc định', () => {
 
 /**
  * `toolbarEnd` (CR qua-trinh-cong-tac, 03/10/2026) — chỗ gắn nút hành động
- * chính SAU CÙNG của dải công cụ (sau menu «Cột»), để màn gộp tiêu đề + nút
+ * chính SAU CÙNG của dải công cụ (sau menu "Cột"), để màn gộp tiêu đề + nút
  * chuyển chế độ xem + Tải lại + Cột + nút đó vào MỘT hàng duy nhất.
  */
 describe('DataTable — toolbarEnd', () => {
@@ -440,13 +440,13 @@ describe('DataTable — toolbarEnd', () => {
     )
   }
 
-  it('renders toolbarEnd AFTER the «Cột» menu button, as the last control of the toolbar row', () => {
+  it('renders toolbarEnd AFTER the "Cột" menu button, as the last control of the toolbar row', () => {
     const { container } = buildWithToolbarEnd()
     const toolbarButtons = Array.from(container.querySelectorAll('.ml-auto button')).map(
       (button) => button.textContent,
     )
     expect(toolbarButtons.at(-1)).toBe('Thêm dòng')
-    //  «Cột» vẫn phải nằm ngay trước nó, không bị toolbarEnd đẩy ra khỏi dải.
+    //  "Cột" vẫn phải nằm ngay trước nó, không bị toolbarEnd đẩy ra khỏi dải.
     expect(toolbarButtons.some((text) => text?.includes('Cột'))).toBe(true)
   })
 

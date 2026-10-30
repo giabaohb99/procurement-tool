@@ -75,7 +75,7 @@ describe('ProfileBriefCard', () => {
       sections: [], chars: 0, max: 8000, watching: [], notes: [], auto_enabled: true,
       habits: [],
       suggestions: [{ sub: 'tra_cuu.cong_no', label: 'Công nợ, thanh toán', weekday: 0, weeks: 3,
-                      text: 'Thứ hai nào cũng hỏi «Công nợ, thanh toán» (3 tuần)' }],
+                      text: 'Thứ hai nào cũng hỏi "Công nợ, thanh toán" (3 tuần)' }],
     }
     apiGet.mockImplementation((url: string) => Promise.resolve(url.endsWith('/me/briefs') ? BRIEFS : mem))
     apiPost.mockResolvedValue(BRIEFS)

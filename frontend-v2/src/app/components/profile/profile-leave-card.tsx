@@ -20,7 +20,7 @@ function formatDays(value: number): string {
 }
 
 /**
- * QUỸ PHÉP của chính mình ở Trang cá nhân — *«còn bao nhiêu ngày phép»*.
+ * QUỸ PHÉP của chính mình ở Trang cá nhân — *"còn bao nhiêu ngày phép"*.
  *
  * ⚠️ **Đọc cửa danh sách có sẵn, KHÔNG mở cửa `/me` riêng như hồ sơ nhân sự.**
  * Hai ca nhìn giống nhau nhưng khác gốc:
@@ -29,7 +29,7 @@ function formatDays(value: number): string {
  *   hồ sơ của chính mình mà không cầm khóa đó — một lỗ hổng thiết kế, nên
  *   duoc-CR-378 phải mở cửa `/api/employees/me`.
  * - Quỹ phép thì **đã có sẵn đường**: `leave_balance.read` cộng phạm vi `own`.
- *   Ghi chú của chính cửa danh sách nói thẳng *«Quỹ của tôi» khi phạm vi = own*.
+ *   Ghi chú của chính cửa danh sách nói thẳng *"Quỹ của tôi" khi phạm vi = own*.
  *   Đục thêm một cửa `/me` ở đây là phá cái cơ chế đang chạy đúng, và bỏ qua
  *   quyết định của bộ phận Nhân sự về việc ai được xem quỹ.
  *
@@ -40,7 +40,7 @@ function formatDays(value: number): string {
  * ⚠️ **Không tự cộng trừ lại con số.** `remaining_days` do
  * `balance_service.remaining()` tính; đó là nơi DUY NHẤT tính ra nó, và cả công
  * ty nhìn vào con số ấy để xin nghỉ. Dựng lại công thức ở đây là đẻ ra nguồn thứ
- * hai — cùng lý do mà tab «Quỹ phép» của màn hồ sơ nhân sự cố ý chỉ dẫn đường
+ * hai — cùng lý do mà tab "Quỹ phép" của màn hồ sơ nhân sự cố ý chỉ dẫn đường
  * chứ không chép bảng.
  */
 export function ProfileLeaveCard({ employeeId, hasHireDate }: ProfileLeaveCardProps) {
@@ -55,8 +55,8 @@ export function ProfileLeaveCard({ employeeId, hasHireDate }: ProfileLeaveCardPr
     { enabled: canRead && employeeId > 0 },
   )
 
-  //  Thiếu khóa thì KHÔNG dựng thẻ: bày một thẻ rỗng kèm câu «bạn không có
-  //  quyền» chỉ làm người dùng đi hỏi một thứ họ không cần.
+  //  Thiếu khóa thì KHÔNG dựng thẻ: bày một thẻ rỗng kèm câu "bạn không có
+  //  quyền" chỉ làm người dùng đi hỏi một thứ họ không cần.
   if (!canRead) return null
 
   const rows = data?.items ?? []
@@ -75,7 +75,7 @@ export function ProfileLeaveCard({ employeeId, hasHireDate }: ProfileLeaveCardPr
         </Button>
       }
     >
-      {/*  ⚠️ Cảnh báo THIẾU NGÀY VÀO LÀM phải có ở đây, giống tab «Quỹ phép» của
+      {/*  ⚠️ Cảnh báo THIẾU NGÀY VÀO LÀM phải có ở đây, giống tab "Quỹ phép" của
            màn hồ sơ nhân sự: không có mốc đó thì thâm niên tính bằng 0 năm và
            người này **mất phần ngày phép cộng thêm** — mà không màn nào khác
            báo. Người xem hồ sơ của chính mình là người có động cơ đi đòi sửa
@@ -109,8 +109,8 @@ export function ProfileLeaveCard({ employeeId, hasHireDate }: ProfileLeaveCardPr
               <span className="min-w-0 flex-1 truncate">{row.leave_type_name || '—'}</span>
 
               {/*  Con số CÒN LẠI to và đậm, tổng để mờ bên cạnh: câu hỏi người ta
-                   mở thẻ này ra để hỏi là «còn mấy ngày», không phải «được cấp
-                   mấy ngày». */}
+                   mở thẻ này ra để hỏi là "còn mấy ngày", không phải "được cấp
+                   mấy ngày". */}
               <span className="shrink-0 tabular-nums">
                 <span className="font-semibold text-navy dark:text-foreground">
                   {formatDays(row.remaining_days)}

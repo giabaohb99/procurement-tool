@@ -11,8 +11,8 @@ import {
 
 /**
  * Mục của Trang cá nhân (P0 doc 21). Chỗ dễ lủng: link cũ `/me?tab=…` nằm sẵn trong thông
- * báo, tin bot, nút quay lại của phiếu hỗ trợ — đổi bố cục mà một tên cũ rơi về «Thông tin
- * cá nhân» là người dùng bấm link và lạc chỗ, không ai báo lỗi.
+ * báo, tin bot, nút quay lại của phiếu hỗ trợ — đổi bố cục mà một tên cũ rơi về "Thông tin
+ * cá nhân" là người dùng bấm link và lạc chỗ, không ai báo lỗi.
  */
 
 const FULL: ProfileSectionAccess = { hasEmployeeProfile: true, canReadTickets: true }

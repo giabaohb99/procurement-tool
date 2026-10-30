@@ -1,4 +1,4 @@
-// duoc-CR-612 — bấm lại đúng ngày đang chọn: lịch «bỏ chọn». Ô có nút ✕ thì KHÔNG được coi đó
+// duoc-CR-612 — bấm lại đúng ngày đang chọn: lịch "bỏ chọn". Ô có nút ✕ thì KHÔNG được coi đó
 // là xóa ngày — ô ngày trong bảng Báo cáo thực hiện lưu ngay khi đổi, xóa nhầm là ghi xuống DB.
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'

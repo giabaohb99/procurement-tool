@@ -99,7 +99,7 @@ describe('MentionInput — nhận tệp', () => {
     expect(() => fireEvent.paste(box, { clipboardData: duLieu([makeFile()]) })).not.toThrow()
   })
 
-  it('KÉO qua ô có tệp thì chặn mặc định, nếu không «thả» sẽ không bao giờ bắn', () => {
+  it('KÉO qua ô có tệp thì chặn mặc định, nếu không "thả" sẽ không bao giờ bắn', () => {
     const { box } = dungO({ onFiles: vi.fn() })
     const bịChặn = !fireEvent.dragOver(box, { dataTransfer: duLieu([makeFile()]) })
     expect(bịChặn).toBe(true)

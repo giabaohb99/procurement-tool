@@ -10,14 +10,14 @@ interface ProfileContactCardProps {
 }
 
 /**
- * Thẻ «Liên hệ» ở Trang cá nhân — nhóm DUY NHẤT người dùng tự sửa được trên hồ
+ * Thẻ "Liên hệ" ở Trang cá nhân — nhóm DUY NHẤT người dùng tự sửa được trên hồ
  * sơ của chính mình (bao-CR-508, khách chốt 28/09/2026).
  *
- * Thay cho thẻ «Địa chỉ» chỉ-xem trước đây: gom số điện thoại + hai địa chỉ về
- * một chỗ, kèm nút «Sửa». Người báo tin nằm ở bảng riêng ngay dưới
+ * Thay cho thẻ "Địa chỉ" chỉ-xem trước đây: gom số điện thoại + hai địa chỉ về
+ * một chỗ, kèm nút "Sửa". Người báo tin nằm ở bảng riêng ngay dưới
  * (`ProfileEmergencyContacts`) vì nó đi cửa API khác và có nút Lưu riêng.
  *
- * Nhãn hai địa chỉ lấy đúng chữ của tab «Liên hệ & Ngân hàng» ở phân hệ Nhân
+ * Nhãn hai địa chỉ lấy đúng chữ của tab "Liên hệ & Ngân hàng" ở phân hệ Nhân
  * sự — người dùng và phòng Nhân sự nói về cùng một ô bằng cùng một tên.
  */
 export function ProfileContactCard({ employee }: ProfileContactCardProps) {

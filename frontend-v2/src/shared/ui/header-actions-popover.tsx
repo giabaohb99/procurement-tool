@@ -30,7 +30,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
  *
  * ⚠️ Nút con ở đây hay tự mở thêm một lớp nổi nữa (menu *Tệp*, hộp thoại *Chữ
  * ký*, xác nhận *Xóa*). Lớp đó portal ra ngoài tấm popover nên Radix tính là
- * «bấm ra ngoài» và đóng popover lại — **đúng ý muốn**: chọn xong một lệnh thì
+ * "bấm ra ngoài" và đóng popover lại — **đúng ý muốn**: chọn xong một lệnh thì
  * tấm này không còn việc gì để ở lại.
  */
 export function HeaderActionsPopover({ children }: { children: ReactNode }) {

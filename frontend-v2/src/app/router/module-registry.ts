@@ -43,7 +43,7 @@ export const allModules: ErpModule[] = [
   documentModule,
   //  HỒ SƠ tạm ẩn — không đăng ký thì không có thẻ, không có mục thanh bên, và
   //  `/dossier/...` ra 404. Cố ý KHÔNG dùng `enabled: false`: cách đó vẫn dựng
-  //  một thẻ «Sắp có» mờ trên màn chọn phân hệ, tức vẫn khoe ra thứ đang muốn
+  //  một thẻ "Sắp có" mờ trên màn chọn phân hệ, tức vẫn khoe ra thứ đang muốn
   //  giấu. Xem `DOSSIER_UI_ENABLED`.
   ...(DOSSIER_UI_ENABLED ? [dossierModule] : []),
   approvalModule,

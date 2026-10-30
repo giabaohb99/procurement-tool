@@ -39,7 +39,7 @@ export function canManageEntity(entity: PermissionEntity, can: CanFn): boolean {
  * - còn lại -> hỏi `read`.
  *
  * ⚠️ **Mục KHÔNG khai `entity` thì luôn hiện** — đó là chủ ý, không phải sót.
- * Có những mục dành cho người NGOÀI phân hệ. Rõ nhất là *«Chờ tôi duyệt»* của
+ * Có những mục dành cho người NGOÀI phân hệ. Rõ nhất là *"Chờ tôi duyệt"* của
  * phân hệ Văn bản: người duyệt trong luồng thường **không có vai trò nào** ở Văn
  * bản, và backend đã mở đúng khe đó (`doc_reader` trong `document/controller.py`).
  *

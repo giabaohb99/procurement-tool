@@ -27,7 +27,7 @@ interface CollapsibleSectionProps {
    * Tóm tắt hiện khi ĐANG GẬP, ngay cạnh tiêu đề.
    *
    * ⚠️ Không có nó thì gập xong chỉ còn một dòng tiêu đề trơ, và người dùng
-   * không phân biệt được *«khối này rỗng»* với *«khối này đang gập»* — hai
+   * không phân biệt được *"khối này rỗng"* với *"khối này đang gập"* — hai
    * tình trạng dẫn tới hai hành động khác hẳn nhau.
    */
   summary?: ReactNode
@@ -77,12 +77,12 @@ export function CollapsibleSection({
   //  ⚠️ `null` = người dùng CHƯA TỪNG bấm gập/mở khối này, và phải phân biệt
   //  với `false`. Bản cũ gộp hai ca bằng cách chốt luôn `defaultOpen` vào
   //  `useState`, và nó sai ở đúng ca thường gặp nhất: lượt vẽ ĐẦU chạy khi bản
-  //  ghi còn đang nạp, nên `defaultOpen` tính trên dữ liệu RỖNG — khối «Điều
-  //  kiện áp dụng» của một hồ sơ đã khai đầy đủ vẫn gập sẵn, mãi mãi, vì
+  //  ghi còn đang nạp, nên `defaultOpen` tính trên dữ liệu RỖNG — khối "Điều
+  //  kiện áp dụng" của một hồ sơ đã khai đầy đủ vẫn gập sẵn, mãi mãi, vì
   //  `useState` không đọc lại lúc dữ liệu về.
   //
   //  Giữ `null` thì `defaultOpen` còn SỐNG cho tới khi người dùng tự quyết —
-  //  đúng luật «bản lưu thắng, không có bản lưu thì theo mặc định» mà bảng dữ
+  //  đúng luật "bản lưu thắng, không có bản lưu thì theo mặc định" mà bảng dữ
   //  liệu đang dùng cho `defaultHidden`.
   const [saved, setSaved] = useState<boolean | null>(() => readSaved(storageKey))
   const open = forceOpen || (saved ?? defaultOpen)

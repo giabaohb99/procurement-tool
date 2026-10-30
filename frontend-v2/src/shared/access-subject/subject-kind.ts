@@ -1,6 +1,6 @@
 /**
  * BỐN LOẠI CHỦ THỂ dùng chung cho mọi màn gán quyền kiểu Drive — người ·
- * phòng ban · pháp nhân · vai trò, cùng chiều tác động «cho phép / cấm»
+ * phòng ban · pháp nhân · vai trò, cùng chiều tác động "cho phép / cấm"
  * (`EFFECT`).
  *
  * Chuyển từ `document/types/document-access.ts` (phase 04, kế hoạch

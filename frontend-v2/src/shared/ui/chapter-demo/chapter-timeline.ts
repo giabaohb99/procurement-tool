@@ -51,7 +51,7 @@ export function cursorAt(path: readonly CursorPoint[], progress: number): Cursor
   return { x: last.x, y: last.y, clicking }
 }
 
-/** Phần chữ đã «gõ» tới `progress`, gõ đều từ `from` tới `to` (tiến độ chương). */
+/** Phần chữ đã "gõ" tới `progress`, gõ đều từ `from` tới `to` (tiến độ chương). */
 export function typedText(full: string, progress: number, from = 0, to = 1): string {
   const p = clampProgress(progress)
   if (to <= from) return p >= from ? full : ''
@@ -66,7 +66,7 @@ export function reached(progress: number, at: number): boolean {
   return clampProgress(progress) >= at
 }
 
-/** Số chương hiển thị hai chữ số: 0 → «01». */
+/** Số chương hiển thị hai chữ số: 0 → "01". */
 export function chapterNumber(index: number): string {
   return String(Math.max(0, Math.trunc(index)) + 1).padStart(2, '0')
 }

@@ -47,7 +47,7 @@ describe('filterTree', () => {
     expect(result.matchedIds.size).toBe(0)
   })
 
-  it('cha khớp tên nhưng KHÔNG kéo theo con không khớp — «giữ tổ tiên» khác «lộ cả nhánh»', () => {
+  it('cha khớp tên nhưng KHÔNG kéo theo con không khớp — "giữ tổ tiên" khác "lộ cả nhánh"', () => {
     //  Hợp đồng của hàm này CHỈ là "giữ đường dẫn tới kết quả", không phải "node
     //  cha khớp thì show hết con". Hai luật khác nhau: cây tài liệu ngàn tệp mà
     //  gõ đúng TÊN THƯ MỤC lại tràn ra mọi tệp bên trong (kể cả không khớp gì)
