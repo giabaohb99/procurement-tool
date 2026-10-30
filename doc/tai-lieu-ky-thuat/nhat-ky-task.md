@@ -111,7 +111,17 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
-## bao-CR-697 | Đánh giá độ phủ nghiệp vụ thu mua và kho so với ERPNext v16
+## bao-CR-697 | App đặt xe cũ: trò chuyện chưa có tin không làm hỏng màn, gỡ listener readStatus thừa
+- status: xong
+- date: 2026-10-30
+- list: Kế hoạch hệ agent
+Trên app đặt xe cũ, mở một cuộc trò chuyện chưa có tin nào thì màn bị hỏng; đồng thời có một listener theo dõi trạng thái đã đọc
+bị đăng ký thừa. Đã sửa cả hai, đã lên prod app cũ (app.degoholding.vn).
+Mã nguồn: repo degoholding-app-frontend
+Commit: 162806c, 69b4572
+Deploy: prod app cũ 30/10
+
+## bao-CR-702 | Đánh giá độ phủ nghiệp vụ thu mua và kho so với ERPNext v16
 - status: xong
 - date: 2026-10-30
 - list: Kế hoạch hệ agent
