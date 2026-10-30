@@ -17731,3 +17731,18 @@ Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md · doc/erp/nghien-cuu/
 **Kết quả:** tài liệu 09 bản 1.1 trên nhánh erp-v2.
 
 Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
+
+## nc-09c-truong-hop-thuong-gap | Viết lại các trường hợp thường gặp trong nghiệp vụ Mua hàng
+- status: xong
+- date: 2026-10-30
+- tag: Nghiên cứu, Mua hàng
+
+**Bối cảnh:** Cần biết với mỗi tình huống thực tế thì người làm phải làm gì ngoài đời và bấm gì trên phần mềm.
+
+**Đã làm**
+- Viết lại mục 9 tài liệu nghiệp vụ Mua hàng thành 24 trường hợp chia năm nhóm: sự cố khi nhận hàng, sự cố với đơn mua, sự cố với hóa đơn, các hình thức mua đặc biệt (dịch vụ, tạm ứng, hợp đồng khung, hàng ký gửi, gia công ngoài, giao thẳng cho khách, tài sản cố định) và thanh toán.
+- Mỗi trường hợp có bảng ba cột theo từng bước: người làm ngoài đời, thao tác trên phần mềm, hệ thống tự làm và bút toán. Gia công ngoài, hàng ký gửi, giao thẳng và tài sản cố định có ví dụ số.
+
+**Kết quả:** tài liệu 09 bản 1.2 trên nhánh erp-v2, kèm bản PDF xuất lại.
+
+Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md

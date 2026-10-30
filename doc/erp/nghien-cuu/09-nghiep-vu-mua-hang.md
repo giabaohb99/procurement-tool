@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Phiên bản | **1.1** — 29/10/2026 (thêm mục 10: trả trước, nhập khẩu, cách cân bằng) |
+| Phiên bản | **1.2** — 30/10/2026 (mục 9 viết lại: các trường hợp thường gặp, thao tác người làm và thao tác trên phần mềm) |
 | Người viết | A5 Nghiên cứu nghiệp vụ |
 | Trạng thái | Tài liệu nghiên cứu nghiệp vụ chuẩn, chưa phải tài liệu yêu cầu |
 | Căn cứ | Cách SAP, Oracle, Odoo, Microsoft Dynamics dựng phân hệ Mua hàng · Chuẩn mực kế toán số 02 · Thông tư 99/2025 (số hiệu tài khoản giữ như Thông tư 200) |
@@ -211,20 +211,231 @@ Kết quả: giá vốn 315 triệu, **15.750.000 đ/tấn**. Lỗ tỷ giá là
 
 ---
 
-## 9. Các luồng đặc biệt
+## 9. Các trường hợp thường gặp và cách xử lý
 
-| Luồng | Cách làm |
+**Cách đọc:** mỗi trường hợp ghi *khi nào gặp*, rồi một bảng ba cột theo từng bước:
+- **Người làm (ngoài đời):** ai làm gì, ký giấy gì, liên hệ ai.
+- **Trên phần mềm:** người dùng bấm gì.
+- **Hệ thống tự làm, bút toán:** phần mềm tự sinh gì, tiền đi vào tài khoản nào.
+
+Nhóm A, B, C là **sự cố** trong luồng mua thường. Nhóm D là **hình thức mua đặc biệt**. Nhóm E là **thanh toán**.
+
+---
+
+### Nhóm A. Sự cố khi nhận hàng
+
+#### A1. NCC giao thiếu hoặc giao nhiều đợt
+*Khi nào:* đặt 1.000, chuyến đầu giao 600.
+
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| Thủ kho đếm, ký biên bản giao nhận 600 | Chọn đơn mua, nhập 600, xác nhận | Phiếu nhập 600. Đơn chuyển *Nhận một phần*, mở đơn dở dang 400. Nợ 152 / Có TK tạm chờ hóa đơn |
+| Người mua hỏi NCC lịch giao phần còn lại | Ghi ngày hẹn mới cho phần 400 | Nhắc khi tới hạn |
+| NCC giao nốt 400 | Thủ kho nhập 400 | Phiếu nhập thứ hai. Đơn chuyển *Nhận đủ* |
+| Nếu NCC báo không giao nữa | Người mua bấm *Đóng sớm*, ghi lý do | Hủy phần 400, giữ phần đã nhận, trả lại ngân sách tạm giữ |
+
+#### A2. NCC giao thừa
+*Khi nào:* đặt 1.000, giao 1.030.
+
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| Thủ kho đếm được 1.030 | Nhập 1.030 | Trong dung sai (ví dụ ±2%) thì cho nhận 1.020, vượt thì chặn |
+| Người mua quyết nhận phần dư hay trả | Nhận: sửa đơn tăng số lượng, trình duyệt lại. Trả: ghi biên bản trả lại phần dư cho tài xế | Nhận: phiếu nhập đủ 1.030. Trả: chỉ nhập 1.000 |
+
+#### A3. Giao sai mã hàng hoặc sai quy cách
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| Thủ kho phát hiện, không nhận, lập biên bản, trả xe | Ghi *từ chối nhận* trên đơn, đính kèm biên bản và ảnh | Không sinh phiếu nhập, không bút toán. Đơn giữ trạng thái chờ giao |
+| Người mua báo NCC giao lại đúng hàng | Cập nhật ngày hẹn | Ghi điểm trừ NCC (giao sai) vào đánh giá NCC |
+
+#### A4. Hàng lỗi khi kiểm chất lượng
+*Khi nào:* nhận 2.000 chai, QC thấy 40 chai móp.
+
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| QC kiểm, lập biên bản hàng lỗi có ảnh | QC nhập kết quả: 1.960 đạt, 40 lỗi | 1.960 sang tồn dùng được, 40 sang kho cách ly |
+| Người mua báo NCC, thống nhất cách xử lý | Chọn một trong bốn cách bên dưới | |
+| **Trả NCC** | Từ phiếu nhập gốc bấm *Trả hàng NCC* | Phiếu xuất trả, phiếu ghi nợ NCC. Nợ 331 / Có 152 (và 1331 nếu đã có hóa đơn) |
+| **NCC đổi hàng** | Trả rồi mở lại lệnh chờ nhận 40 chai | Đơn quay về *Nhận một phần* |
+| **Nhận và giảm giá** | Ghi mức giảm, chờ hóa đơn điều chỉnh | Giá vốn và công nợ cùng giảm khi có hóa đơn điều chỉnh |
+| **Tự hủy, chịu chi phí** | Lập phiếu xuất hủy, kèm biên bản | Nợ 632 hoặc 811 / Có 152 |
+
+#### A5. Đã nhập kho rồi mới phát hiện nhập sai số
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| Thủ kho báo trưởng kho | Mở phiếu nhập sai, bấm *Đảo phiếu*, ghi lý do | Sinh phiếu đảo ngược dấu, trỏ về phiếu cũ. Không sửa, không xóa phiếu cũ |
+| | Lập phiếu nhập mới với số đúng | Kỳ đã khóa thì không đảo được, phải điều chỉnh ở kỳ hiện tại |
+
+---
+
+### Nhóm B. Sự cố với đơn mua
+
+#### B1. Phải sửa đơn đã duyệt
+*Khi nào:* NCC báo tăng giá, cần thêm số lượng, đổi ngày giao.
+
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| Người mua thống nhất với NCC, xin văn bản báo giá mới | Bấm *Sửa đổi đơn*, nhập thay đổi, ghi lý do | Tạo phiên bản mới, giữ phiên bản cũ |
+| Cấp duyệt xem lại | Duyệt phiên bản mới | Giá trị tăng thì bắt buộc duyệt lại. Chỉ đổi ngày giao thì có thể không cần |
+| Gửi NCC bản sửa đổi | In hoặc gửi phiên bản mới | Hóa đơn về sau đối chiếu với phiên bản mới nhất |
+
+#### B2. Hủy đơn
+| Tình huống | Trên phần mềm | Hệ thống |
+|---|---|---|
+| Chưa nhận gì | *Hủy đơn*, ghi lý do | Trả lại ngân sách tạm giữ, báo NCC |
+| Đã nhận một phần | Không hủy được, chỉ *Đóng sớm* | Giữ phần đã nhận |
+| Đã trả trước | Hủy, xử lý tiền đã ứng | Xem mục 10.4 |
+
+#### B3. NCC giao trễ
+| Người làm | Trên phần mềm | Hệ thống |
+|---|---|---|
+| Người mua đôn đốc NCC | Theo dõi danh sách *đơn trễ hạn* | Tự nhắc khi quá ngày hẹn |
+| Báo bộ phận cần hàng, tìm phương án khác nếu gấp | Ghi ngày hẹn mới và lý do trễ | Ghi điểm trừ NCC |
+| Phạt theo hợp đồng nếu có | Ghi khoản phạt | Có 711 khi NCC chấp nhận trả hoặc trừ vào tiền hàng |
+
+---
+
+### Nhóm C. Sự cố với hóa đơn
+
+#### C1. Hóa đơn lệch giá hoặc lệch số lượng
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| Kế toán nhập hóa đơn | Chọn đơn mua, nhập số liệu theo hóa đơn | Đối chiếu ba chiều. Lệch quá dung sai thì **treo** hóa đơn |
+| Người mua làm rõ với NCC | Xem phần lệch trên màn hóa đơn bị treo | |
+| NCC sai thì lập hóa đơn điều chỉnh | Nhập hóa đơn điều chỉnh | Hóa đơn khớp, được ghi sổ |
+| Chấp nhận phần lệch nhỏ | Kế toán trưởng bấm *Duyệt chênh lệch* | Phần chênh vào giá vốn (còn tồn) hoặc 632 (đã xuất) |
+
+#### C2. Hàng và hóa đơn về lệch nhau
+Xem mục 6. Tóm tắt: hàng về trước thì cuối tháng ghi giá tạm tính. Hóa đơn về trước thì ghi 151 hàng đi đường.
+
+#### C3. Hóa đơn ghi sai công ty mua hoặc sai thông tin
+| Người làm | Trên phần mềm | Hệ thống |
+|---|---|---|
+| Kế toán phát hiện | Nhập mã số thuế trên hóa đơn | So với công ty đứng tên đơn mua. Sai thì chặn |
+| Báo NCC lập hóa đơn thay thế | Từ chối hóa đơn, ghi lý do | Hóa đơn bị từ chối không ghi sổ |
+
+#### C4. NCC giảm giá sau khi đã bán
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| NCC gửi hóa đơn điều chỉnh giảm | Nhập hóa đơn điều chỉnh, trỏ về hóa đơn gốc | Nợ 331 / Có 152 (hàng còn) hoặc 632 (hàng đã xuất), Có 1331 |
+
+---
+
+### Nhóm D. Hình thức mua đặc biệt
+
+#### D1. Mua dịch vụ
+*Ví dụ:* sửa máy, thuê xe, tư vấn.
+
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| Bộ phận cần dịch vụ lập yêu cầu | Yêu cầu mua loại dịch vụ, chọn bộ phận chịu chi phí | |
+| Người mua chọn đơn vị, lập đơn | Đơn mua loại dịch vụ | Không sinh lệnh chờ nhận ở kho |
+| Bộ phận yêu cầu nghiệm thu khi làm xong | Bấm *Xác nhận đã làm xong* | Thay cho phiếu nhập kho |
+| Kế toán nhập hóa đơn | Đối chiếu hai chiều | Nợ 627, 641 hoặc 642, Nợ 1331 / Có 331 |
+
+#### D2. Mua lặt vặt bằng tạm ứng
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| Nhân viên xin tạm ứng | Đề nghị tạm ứng, duyệt | Nợ 141 / Có 111 |
+| Mua hàng, lấy hóa đơn | Đề nghị quyết toán tạm ứng, đính kèm hóa đơn | Nợ 642 hoặc 152, Nợ 1331 / Có 141 |
+| Thừa thì nộp lại, thiếu thì được chi thêm | | Nợ 111 / Có 141, hoặc Nợ 141 / Có 111 |
+
+#### D3. Hợp đồng khung
+*Ví dụ:* 200.000 chai giá 2.450 đ trong năm.
+
+| Người làm | Trên phần mềm | Hệ thống |
+|---|---|---|
+| Người mua đàm phán, ký hợp đồng khung một lần | Tạo hợp đồng khung: hàng, giá, tổng lượng, thời hạn. Duyệt theo tổng giá trị | Đưa giá vào bảng giá NCC |
+| Mỗi lần cần hàng | Bấm *Gọi hàng* từ hợp đồng | Sinh đơn mua con, giá tự điền, không cho sửa, duyệt nhẹ |
+| Nhận hàng, hóa đơn, thanh toán | Như luồng chuẩn, theo từng đơn con | |
+| Theo dõi | Xem phần trăm đã dùng | Cảnh báo khi dùng 90% hoặc còn 30 ngày. Chặn khi vượt lượng hoặc hết hạn |
+
+#### D4. Hàng ký gửi
+*Ví dụ:* NCC gửi 10.000 chai ở kho mình, giá 2.450 đ, chốt hằng tháng.
+
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| Ký hợp đồng ký gửi: giá, mức tồn NCC phải giữ, chu kỳ chốt, ai chịu khi thiếu | Khai hợp đồng ký gửi và bảng giá | |
+| NCC đưa hàng tới, thủ kho đếm | Phiếu nhận hàng ký gửi 10.000 | Tồn ký gửi tăng. **Không bút toán, không công nợ** |
+| Xuất dùng 3.200 chai cho sản xuất | Xuất như thường, hệ thống lấy tồn ký gửi trước | Tự chuyển quyền sở hữu: Nợ 152 / Có 331 chờ hóa đơn 7.840.000, rồi Nợ 621 / Có 152 |
+| Cuối tháng gửi NCC bảng kê số đã dùng | Bấm *Chốt hàng ký gửi đã dùng* | In bảng kê 3.200 × 2.450 + VAT = 8.624.000 |
+| NCC xuất hóa đơn theo bảng kê | Nhập hóa đơn, đối chiếu với bảng kê | Nợ 331 chờ hóa đơn, Nợ 1331 / Có 331 NCC. Thanh toán như thường |
+| Kiểm kê thấy thiếu 50 chai | *Ghi nhận thiếu hàng ký gửi* | Coi như đã dùng 50, cộng vào bảng kê. Phần thiếu ghi 1381 để truy trách nhiệm |
+| Chấm dứt hợp đồng | Phiếu trả hàng ký gửi | Tồn ký gửi về 0, không phát sinh tiền |
+
+Mình **trả tiền hàng đã dùng**, không trả phí lưu kho. Hàng ký gửi không tính vào tài sản công ty nhưng MRP vẫn coi là hàng dùng được.
+
+#### D5. Gia công ngoài
+*Ví dụ:* thuê nhà gia công đóng 10.000 chai thuốc 450 ml, phí 3.000 đ/chai, hao hụt cho phép 1%. Mình cấp dung dịch, chai, nhãn.
+
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| Ký hợp đồng gia công: phí, định mức, hao hụt cho phép, ai chịu khi hỏng vượt | Khai định mức gia công và **kho tại nhà gia công** | |
+| Lập đơn gia công | Đơn mua loại gia công: nhận về 10.000 chai thành phẩm | Tự bung vật tư phải cấp, có cộng hao hụt: 4.545 lít, 10.100 chai, 10.100 nhãn |
+| Thủ kho xuất vật tư, giao xe chở sang | *Cấp vật tư gia công* | Phiếu chuyển sang kho nhà gia công. Nợ 154 / Có 152: 302.495.000 |
+| Theo dõi nhà gia công làm hàng | Theo dõi trên đơn gia công | |
+| Nhận thành phẩm, kiểm chất lượng. Nhà gia công báo quyết toán vật tư (dùng 10.060 chai và nhãn, dư 40) | Nhận 10.000 chai, nhập số vật tư thực dùng | Trừ vật tư tại kho nhà gia công. Vượt định mức thì cảnh báo |
+| Nhà gia công xuất hóa đơn phí gia công | Nhập hóa đơn, đối chiếu đơn gia công, phiếu nhập thành phẩm, hóa đơn | Nợ 154 30.000.000, Nợ 1331 3.000.000 / Có 331 |
+| Thuê xe chở thành phẩm | Nhập hóa đơn vận chuyển gắn đơn gia công | Nợ 154 2.000.000 / Có 331 |
+| | Đóng đơn gia công | Tính giá thành 334.377.000, khoảng 33.438 đ/chai. Nợ 155 / Có 154 |
+| Lấy 40 chai và 40 nhãn dư về | Phiếu nhận lại vật tư | Nợ 152 / Có 154: 118.000. Tài khoản 154 của đơn về 0 |
+| Hằng tháng đối chiếu tồn với nhà gia công | In báo cáo tồn tại kho nhà gia công | Tự kết luận Khớp hoặc Lệch |
+
+| Trường hợp phụ | Cách xử lý |
 |---|---|
-| **Mua dịch vụ** | Đơn mua loại dịch vụ, không qua kho. Bên yêu cầu xác nhận *đã làm xong*. Đối chiếu 2 chiều. Ghi vào chi phí 627, 641, 642 |
-| **Hợp đồng khung** | Ký giá và tổng lượng một lần. Mỗi lần cần thì *gọi hàng* sinh đơn mua con. Hệ thống theo dõi phần trăm đã dùng |
-| **Gia công ngoài** | Đơn mua dịch vụ gia công, kèm định mức vật tư gửi đi. Vật tư chuyển sang kho tại nhà gia công. Nhận thành phẩm thì tự trừ vật tư theo định mức. Giá thành = vật tư + phí gia công + vận chuyển |
-| **Nhập khẩu** | Đơn ngoại tệ, theo dõi lô hàng (vận đơn, ngày tàu). Hàng trên biển ghi 151. Về cảng thì gom cước, thuế, phí vào chi phí mua hàng |
-| **Giao thẳng cho khách** | Đơn bán sinh đơn mua, NCC giao thẳng khách. Không qua tồn kho, ghi thẳng giá vốn |
-| **Hàng ký gửi** | Hàng của NCC để ở kho mình. Dùng bao nhiêu ghi nợ bấy nhiêu, NCC xuất hóa đơn theo số đã dùng |
-| **Tài sản cố định** | Nhận hàng xong tự tạo thẻ tài sản và lịch khấu hao. Nợ 211 / Có 331, hằng tháng Nợ 627 hoặc 642 / Có 214 |
-| **Mua lặt vặt** | Tạm ứng (Nợ 141 / Có 111), mua xong nộp hóa đơn quyết toán (Nợ 642 hoặc 152, 1331 / Có 141) |
-| **Trả trước, đặt cọc** | Khoản ứng gắn với đơn mua (Nợ 331 / Có 112). Có hóa đơn thì tự trừ vào nợ |
-| **Hủy đơn** | Chưa nhận gì thì hủy. Đã nhận một phần thì chỉ đóng sớm. Đã ứng trước thì đòi hoàn hoặc trừ vào đơn sau |
+| Nhà gia công tự cấp một phần vật tư | Phần đó không cấp từ kho. Hóa đơn gồm phí gia công và tiền vật tư, cả hai vào 154 |
+| Hỏng vượt định mức do nhà gia công | Đòi bồi thường: trừ vào phí gia công, hoặc Nợ 1388 / Có 154 |
+| Thành phẩm lỗi | Cách ly, nhà gia công làm lại không tính phí hoặc trả lại |
+| Chuyển vật tư giữa hai nhà gia công | Phiếu chuyển giữa hai kho nhà gia công, không qua kho mình |
+
+#### D6. Giao thẳng cho khách
+*Ví dụ:* khách đặt 5 tấn, giá bán 20 triệu/tấn. Mua NCC 15 triệu/tấn. NCC chở thẳng tới khách.
+
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| Kinh doanh nhận đơn của khách | Đơn bán, dòng hàng chọn *Giao thẳng từ NCC* | Duyệt xong tự sinh đơn mua, địa chỉ giao là địa chỉ khách |
+| Người mua kiểm giá, gửi NCC | Duyệt đơn mua | Hai đơn trỏ qua lại |
+| NCC giao tới khách, khách ký biên bản, NCC gửi bản chụp | *Xác nhận đã giao thẳng*, đính kèm biên bản | Nhận và xuất cùng lúc qua kho ảo, tồn thật không đổi. Nợ 632 / Có 331 chờ hóa đơn: 75.000.000 (khách chưa xác nhận đủ thì Nợ 157 trước) |
+| NCC xuất hóa đơn cho **mình** | Nhập hóa đơn mua | Nợ 331 chờ hóa đơn, Nợ 1331 / Có 331 NCC: 82.500.000 |
+| Mình xuất hóa đơn cho khách | Lập hóa đơn bán từ đơn bán | Nợ 131 / Có 511 100.000.000, Có 3331 10.000.000 |
+| Thu khách, trả NCC theo hạn từng bên | Thu tiền, đề nghị thanh toán | Lãi gộp 25 triệu thấy ngay trên đơn bán |
+
+Không qua kho nhưng **vẫn phải có chứng từ nhận và xuất** qua kho ảo, nếu không thì không đối chiếu được với NCC.
+
+#### D7. Mua tài sản cố định
+*Ví dụ:* máy trộn 300 triệu, vận chuyển 5 triệu, lắp đặt chạy thử 15 triệu, dùng 8 năm. Từ 30 triệu đồng và dùng trên một năm là tài sản cố định. Dưới mức đó là công cụ dụng cụ (153, phân bổ qua 242).
+
+| Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|
+| Bộ phận lập đề xuất đầu tư, nêu lý do, công suất | Yêu cầu mua loại tài sản | Duyệt cấp cao, kiểm ngân sách đầu tư |
+| Người mua hỏi giá hoặc đấu thầu | Như mua thường, so cả bảo hành, phụ tùng | |
+| Lập đơn | Đơn mua loại tài sản, chọn nhóm tài sản và bộ phận dùng | |
+| Nhận máy, ký biên bản bàn giao. Lắp đặt, chạy thử | Ghi nhận hàng, gom chi phí lắp đặt | Nợ 241 / Có 331 cho máy, vận chuyển, lắp đặt (cộng 1331) |
+| Ký biên bản nghiệm thu đưa vào dùng | Bấm *Nghiệm thu*, chọn ngày bắt đầu dùng | Nợ 211 / Có 241: 320.000.000. Tự tạo thẻ tài sản |
+| Cuối tháng | Kế toán bấm *Chạy khấu hao* | 320.000.000 / 96 tháng = 3.333.333. Nợ 627 / Có 214 (văn phòng thì 642) |
+
+| Nghiệp vụ sau này | Bút toán |
+|---|---|
+| Sửa chữa thường | Nợ 627 / Có 331, không đổi nguyên giá |
+| Nâng cấp tăng công suất | Nợ 211 / Có 331, tính lại khấu hao |
+| Điều chuyển bộ phận | Không bút toán, khấu hao tháng sau ghi cho bộ phận mới |
+| Thanh lý | Nợ 214, Nợ 811 / Có 211. Thu tiền bán: Nợ 112 / Có 711, 3331 |
+
+#### D8. Nhập khẩu và trả trước
+Xem mục 10.
+
+---
+
+### Nhóm E. Thanh toán
+
+| Trường hợp | Người làm | Trên phần mềm | Hệ thống, bút toán |
+|---|---|---|---|
+| Trả một phần | Kế toán thống nhất với NCC số trả đợt này | Chọn khoản nợ, sửa số tiền nhỏ hơn | Khoản nợ *Trả một phần* |
+| Gộp nhiều hóa đơn một lần chi | | Chọn nhiều khoản nợ của cùng NCC | Một lệnh chi, ghi giảm từng khoản |
+| Chiết khấu trả sớm | Trả trong hạn được giảm | Chọn khoản nợ, hệ thống gợi ý số được giảm | Nợ 331 / Có 515 (phần giảm), Có 112 |
+| Bù trừ (NCC cũng là khách) | Hai bên ký biên bản bù trừ | Lập phiếu bù trừ công nợ | Nợ 331 / Có 131, chỉ chi phần chênh |
+| Nợ ngoại tệ | | Xem mục 10.5 | Chênh lệch tỷ giá vào 515 hoặc 635 |
+| Hóa đơn từ 5 triệu đồng trở lên | | Chọn hình thức chuyển khoản | Cảnh báo nếu chọn tiền mặt, vì mất quyền khấu trừ thuế |
 
 ---
 
