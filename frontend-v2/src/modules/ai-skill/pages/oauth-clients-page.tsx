@@ -136,7 +136,7 @@ export function OAuthClientsPage() {
         <PageHeader title="Ứng dụng AI đã kết nối" description={DESCRIPTION} />
         <ErrorState
           title="Màn này dành cho người quản lý trợ lý AI"
-          description="Bạn vẫn dùng được Bộ skill, Khóa nhân sự và Nhật ký sử dụng ở menu bên trái."
+          description="Bạn vẫn dùng được Bộ skill, Kết nối và Nhật ký sử dụng ở menu bên trái."
         />
       </PageContainer>
     )

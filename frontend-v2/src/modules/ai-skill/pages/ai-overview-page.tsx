@@ -174,7 +174,7 @@ function OverviewBody({ data, loading }: { data?: AiOverview; loading: boolean }
                     ))}
                   </ul>
                   <Link to={appRoutes.aiSkill.keys} className="text-xs text-primary hover:underline">
-                    Mở Khóa nhân sự để phát khóa mới
+                    Mở Kết nối để phát khóa mới
                   </Link>
                 </div>
               )}

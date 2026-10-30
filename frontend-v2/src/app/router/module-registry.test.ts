@@ -32,7 +32,9 @@ describe('module-registry', () => {
   })
 
   it('đường dẫn gốc của phân hệ là duy nhất', () => {
-    const paths = allModules.filter((m) => m.path).map((m) => m.path)
+    //  Tính cả đường gốc PHỤ (`extraPaths`, bao-CR-696): hai phân hệ cùng nhận một tiền tố thì `useActiveModule` bắt
+    //  bừa một trong hai, menu trái đổi theo thứ tự khai báo.
+    const paths = allModules.filter((m) => m.path).flatMap((m) => [m.path, ...(m.extraPaths ?? [])])
     expect(new Set(paths).size).toBe(paths.length)
   })
 
@@ -77,6 +79,7 @@ describe('module-registry', () => {
     expect(moduleRegistry.length).toBeGreaterThan(0)
     for (const module of moduleRegistry) {
       expect(module.path, module.id).toMatch(/^\/[a-z0-9-]+$/)
+      for (const extra of module.extraPaths ?? []) expect(extra, module.id).toMatch(/^\/[a-z0-9-]+$/)
       expect(module.routes.length, module.id).toBeGreaterThan(0)
     }
   })
@@ -86,9 +89,12 @@ describe('module-registry', () => {
       const allItems = module.nav.flatMap((i) => [i, ...(i.children ?? [])])
       for (const item of allItems) {
         if (item.crossModule) continue // lối tắt sang phân hệ khác — xét riêng bên dưới
-        expect(item.path, `${module.id} - ${item.label}`).toMatch(
-          new RegExp(`^${module.path}(/|$)`),
-        )
+        //  Đường gốc phụ (`extraPaths`) cũng là đất của phân hệ — phân hệ AI giữ cả `/assistant` lẫn `/ai-skill`.
+        const roots = [module.path, ...(module.extraPaths ?? [])]
+        expect(
+          roots.some((root) => item.path === root || item.path.startsWith(`${root}/`)),
+          `${module.id} - ${item.label} (${item.path})`,
+        ).toBe(true)
       }
     }
   })

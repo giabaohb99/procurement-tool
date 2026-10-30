@@ -151,6 +151,16 @@ export interface ErpModule {
   /** Đường dẫn gốc; cũng dùng để xác định module đang mở. */
   path: string
   /**
+   * **Đường gốc PHỤ** — URL bắt đầu bằng một trong các đường này cũng thuộc phân hệ này (menu trái, chốt quyền,
+   * thanh trên đều theo phân hệ này).
+   *
+   * Sinh ra cho phân hệ AI (bao-CR-696, 30/10/2026): gộp hai phân hệ cũ *Trợ lý AI* (`/assistant`) và *Kho skill AI*
+   * (`/ai-skill`) làm một mà GIỮ NGUYÊN route cũ — link trong thông báo, dấu trang, bài HDSD đều trỏ vào hai tiền tố
+   * đó. Mục menu được nằm dưới `path` HOẶC một đường phụ (bài kiểm ở `module-registry.test.ts`), và đường phụ không
+   * được trùng `path`/đường phụ của phân hệ khác.
+   */
+  extraPaths?: string[]
+  /**
    * Class Tailwind tô ô icon trên thẻ chọn phân hệ. Mỗi phân hệ một màu để nhận
    * ra bằng mắt thay vì phải đọc chữ.
    *

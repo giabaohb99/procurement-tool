@@ -111,6 +111,20 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-696-giao-dien | Gom Trợ lý AI và Kho skill AI thành một phân hệ AI
+- status: dang-lam
+- date: 2026-10-30
+Màn chọn phân hệ chỉ còn một thẻ AI thay cho hai thẻ Trợ lý AI và Kho skill AI. Menu bên trái xếp theo nhóm: Trợ lý AI, Kết nối
+(tên mới của màn Khóa nhân sự), nhóm Kho skill (Bộ skill), nhóm Giám sát (Tổng quan, Nhật ký sử dụng và mục Bot Telegram gập sẵn,
+bên trong là Nhóm chat và Người dùng bot), nhóm Cấu hình (Cấu hình chung và Nâng cao, nơi quản trị dọn các ứng dụng AI đã đăng ký,
+chỉ người quản lý trợ lý AI thấy). Quyền từng mục giữ như cũ, mọi đường dẫn cũ vẫn mở được nên link trong thông báo và bài hướng
+dẫn không gãy. Khung phân hệ dùng chung thêm khái niệm đường gốc phụ để một phân hệ nhận được hai tiền tố đường dẫn.
+Còn lại: đợt 2 gồm màn Kết nối mới (người, cách nối, ứng dụng, dùng lần cuối, ô tìm), lọc ở màn Nâng cao, ô tìm và cột Chứng từ ở
+Nhật ký sử dụng, đang chờ hợp đồng API của phần máy chủ.
+Kiểm: typecheck 0 lỗi; lint 0 lỗi, 30 cảnh báo như bản gốc; bài kiểm thư mục AI, Kho skill, điều hướng và khung trang 213 bài xanh;
+mở thử trên trình duyệt ở màn rộng 1440 và màn điện thoại.
+Mã nguồn: frontend-v2/src/modules/ai/routes.tsx, frontend-v2/src/modules/ai/routes.test.tsx, frontend-v2/src/app/router/module-definition.ts, frontend-v2/src/app/router/use-active-module.ts, frontend-v2/src/app/router/module-registry.ts
+
 ## bao-CR-695-giao-dien | Bỏ dấu ngoặc kép góc trên giao diện ERP v2 và giao diện thu mua cũ
 - status: xong
 - date: 2026-10-30
