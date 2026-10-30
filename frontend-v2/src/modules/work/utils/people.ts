@@ -8,10 +8,10 @@
 import { nameInitials } from '@/shared/utils/name-initials'
 
 /**
- * Chữ tắt trên avatar: chữ cái đầu của HAI TỪ CUỐI («Huỳnh Gia Bảo» → «GB»),
+ * Chữ tắt trên avatar: chữ cái đầu của HAI TỪ CUỐI ("Huỳnh Gia Bảo" → "GB"),
  * cùng luật với bảng dự án và menu tài khoản. Trước bao-CR-604 thẻ việc và
- * nhật ký lấy hai chữ đầu của TỪ CUỐI («BẢ») — đại ca soi 07/10 thấy xấu và
- * khó nhận ra người. Tên rỗng trả «?» để ô không trống.
+ * nhật ký lấy hai chữ đầu của TỪ CUỐI ("BẢ") — đại ca soi 07/10 thấy xấu và
+ * khó nhận ra người. Tên rỗng trả "?" để ô không trống.
  */
 export function initials(name: string): string {
   return nameInitials(name) || '?'

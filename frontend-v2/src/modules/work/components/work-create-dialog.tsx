@@ -26,8 +26,8 @@ export function WorkCreateDialog({ mode, parentGroupId, onClose }: WorkCreateDia
   const createGroup = useCreateWorkGroup()
 
   //  Nhớ kiểu của lần MỞ gần nhất: tạo xong thì `mode` về `null` NGAY, trong lúc
-  //  hộp thoại còn đang mờ dần — đọc thẳng `mode` thì tiêu đề nháy sang «Tạo
-  //  dự án» ở hộp vừa tạo nhóm dự án.
+  //  hộp thoại còn đang mờ dần — đọc thẳng `mode` thì tiêu đề nháy sang "Tạo
+  //  dự án" ở hộp vừa tạo nhóm dự án.
   const [shownMode, setShownMode] = useState(mode)
   if (mode !== null && mode !== shownMode) setShownMode(mode)
 

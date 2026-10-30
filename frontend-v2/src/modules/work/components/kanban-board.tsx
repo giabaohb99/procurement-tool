@@ -45,7 +45,7 @@ import type { CardFields } from '../types/view-options'
  *
  * PHẢI là hằng ngoài component. Viết thẳng object vào JSX là mỗi lần vẽ lại một
  * tham chiếu mới, `DndContext` thấy cấu hình "đổi" nên hẹn đo lại, đo xong đặt
- * state, state đổi lại vẽ lại — React ngắt bằng «Maximum update depth exceeded»
+ * state, state đổi lại vẽ lại — React ngắt bằng "Maximum update depth exceeded"
  * và cả bảng trắng trang.
  */
 const MEASURING = { droppable: { strategy: MeasuringStrategy.Always } }
@@ -57,7 +57,7 @@ interface KanbanBoardProps {
   fields: CardFields
   canEdit: boolean
   canManage: boolean
-  /** Đang sắp xếp khác «Tay» thì khóa việc đổi thứ tự trong cột (§3.4). */
+  /** Đang sắp xếp khác "Tay" thì khóa việc đổi thứ tự trong cột (§3.4). */
   sortLocked: boolean
   onOpenTask: (taskId: number) => void
   /** Tick xong việc ngay trên thẻ — cùng đường với ô tick của khung Danh sách. */
@@ -71,7 +71,7 @@ interface KanbanBoardProps {
   onDeleteSection: (section: WorkSection) => void
   /**
    * bao-CR-483: số việc CHƯA tải của từng cột (khóa `section_id`). Không truyền
-   * = bảng đã đủ (chế độ đầy đủ), cột không có đuôi «Tải thêm».
+   * = bảng đã đủ (chế độ đầy đủ), cột không có đuôi "Tải thêm".
    */
   remaining?: Record<number, number>
   /** Cột đang tải trang kế; `null` = không cột nào. */
@@ -146,7 +146,7 @@ export function KanbanBoard({
   //  `SortableContext` cũng mới — dnd-kit đo lại toàn bộ ô.
   const columnIds = useMemo(() => sections.map((s) => columnSortableId(s.id)), [sections])
 
-  //  `sortLocked` = đang sắp theo tiêu chí khác «Tay», khi đó thứ tự do
+  //  `sortLocked` = đang sắp theo tiêu chí khác "Tay", khi đó thứ tự do
   //  `sortTasks` quyết và cột KHÔNG được xếp lại theo `sort_order`.
   const byColumn = useMemo(
     () => groupBySection(sections.map((s) => s.id), tasks, sortLocked),
@@ -203,7 +203,7 @@ export function KanbanBoard({
    *
    * Không ghim thì thành vòng lặp vô tận: dời thẻ sang cột B → cả hai cột dựng
    * lại → dnd-kit đo lại và tính ra một đích khác → dời tiếp → đo lại… React đếm
-   * đủ số lần thì ném «Maximum update depth exceeded» và cả bảng trắng trang.
+   * đủ số lần thì ném "Maximum update depth exceeded" và cả bảng trắng trang.
    * Một khung hình đứng yên là đủ để bố cục mới kịp ổn định.
    */
   const collision = useCallback<CollisionDetection>(
@@ -245,7 +245,7 @@ export function KanbanBoard({
 
     const currentSection = preview?.sectionId ?? dragged.section_id
     if (place.sectionId === currentSection) return
-    //  Sắp xếp khác «Tay» vẫn cho đổi cột, nhưng về đúng cột cũ thì thứ tự do
+    //  Sắp xếp khác "Tay" vẫn cho đổi cột, nhưng về đúng cột cũ thì thứ tự do
     //  trường sắp xếp quyết — không xem trước một thứ tự sẽ không được lưu (§3.4).
     if (sortLocked && place.sectionId === dragged.section_id) {
       setPreview(null)
@@ -283,7 +283,7 @@ export function KanbanBoard({
     resetDragState()
     if (!card || !place) return
 
-    //  Sắp xếp khác «Tay»: cho đổi CỘT nhưng không cho đổi thứ tự trong cột —
+    //  Sắp xếp khác "Tay": cho đổi CỘT nhưng không cho đổi thứ tự trong cột —
     //  thứ tự lúc đó do trường sắp xếp quyết, thả xong nó nhảy về chỗ cũ ngay
     //  và người dùng tưởng hỏng (§3.4).
     if (sortLocked && place.sectionId === card.section_id) return

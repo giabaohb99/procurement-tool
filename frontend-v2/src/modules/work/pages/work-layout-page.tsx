@@ -24,7 +24,7 @@ import { useWorkSidebarStore } from '../store/sidebar-store'
 export function WorkLayoutPage() {
   const [dialog, setDialog] = useState<'list' | 'group' | null>(null)
   const [parentGroup, setParentGroup] = useState<number | null>(null)
-  //  bao-CR-482: nhóm đang mở hộp Quản lý nhóm (từ menu «…» của cây bên trái).
+  //  bao-CR-482: nhóm đang mở hộp Quản lý nhóm (từ menu "…" của cây bên trái).
   const [manageGroup, setManageGroup] = useState<WorkGroupNode | null>(null)
   const collapsed = useWorkSidebarStore((s) => s.collapsed)
   const toggleSidebar = useWorkSidebarStore((s) => s.toggle)

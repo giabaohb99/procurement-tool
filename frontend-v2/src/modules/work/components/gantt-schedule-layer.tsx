@@ -15,7 +15,7 @@ interface GanttScheduleLayerProps {
  * Lớp XẾP LỊCH phủ hàng của một việc CHƯA CÓ NGÀY — rê chuột vào hiện một ô nét
  * đứt kèm dấu `+`, bấm là đặt một ngày, kéo ngang là đặt cả quãng.
  *
- * Đúng thứ Lark gọi «Schedule task». Không có nó thì việc chưa đặt ngày nằm chết
+ * Đúng thứ Lark gọi "Schedule task". Không có nó thì việc chưa đặt ngày nằm chết
  * trên biểu đồ: hàng trống trơn, muốn cho nó một cái lịch phải mở panel chi tiết
  * rồi gõ hai ô ngày — trong khi chỗ cần đặt thì đang nhìn thẳng vào.
  *

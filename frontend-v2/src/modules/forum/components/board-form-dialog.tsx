@@ -35,7 +35,7 @@ interface BoardFormDialogProps {
   board: ForumBoardNode | null
   /** Các nhóm cấp 1 để chọn làm cha — box phải nằm trong một nhóm. */
   groups: { id: number; name: string }[]
-  /** Gợi ý cha khi TẠO MỚI (bấm «Thêm box» ngay trên một nhóm); 0 = tạo nhóm. */
+  /** Gợi ý cha khi TẠO MỚI (bấm "Thêm box" ngay trên một nhóm); 0 = tạo nhóm. */
   defaultParentId?: number
 }
 

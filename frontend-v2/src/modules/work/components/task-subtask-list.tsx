@@ -23,7 +23,7 @@ interface TaskSubtaskListProps {
  * danh sách này, không hỏi thêm máy chủ.
  *
  * Bố cục theo Lark: `n/m` và thanh tiến độ nằm CÙNG MỘT HÀNG ở đầu khối (bản cũ
- * để tiêu đề «Việc con» một hàng, số một góc, thanh một hàng nữa — ba hàng cho
+ * để tiêu đề "Việc con" một hàng, số một góc, thanh một hàng nữa — ba hàng cho
  * một con số), mỗi việc con hiện kèm hạn riêng của nó.
  */
 export function TaskSubtaskList({ subtasks, canEdit, onToggle, onAdd }: TaskSubtaskListProps) {
@@ -46,7 +46,7 @@ export function TaskSubtaskList({ subtasks, canEdit, onToggle, onAdd }: TaskSubt
 
   return (
     <div className="w-full space-y-1.5">
-      {/*  Chưa có việc con nào thì KHÔNG vẽ «0 / 0» với một vạch xám rỗng: nó
+      {/*  Chưa có việc con nào thì KHÔNG vẽ "0 / 0" với một vạch xám rỗng: nó
            không nói thêm điều gì mà lại chiếm đúng chỗ dễ thấy nhất của khối. */}
       {tong > 0 && (
         <div className="flex h-7 items-center gap-2">
@@ -112,8 +112,8 @@ export function TaskSubtaskList({ subtasks, canEdit, onToggle, onAdd }: TaskSubt
           />
         ) : (
           //  Không có dấu `+` ở đây: máng trái của hàng đã mang biểu tượng
-          //  «việc con» rồi, và dòng này phải bắt đầu ĐÚNG cùng mốc với «Thêm
-          //  đính kèm» ngay dưới — thêm một ký tự là hai dòng so le (khách đối
+          //  "việc con" rồi, và dòng này phải bắt đầu ĐÚNG cùng mốc với "Thêm
+          //  đính kèm" ngay dưới — thêm một ký tự là hai dòng so le (khách đối
           //  chiếu Lark 03/09/2026).
           <button
             type="button"

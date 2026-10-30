@@ -13,7 +13,7 @@ import { patchBoards, restoreBoards, snapshotBoards } from './board-cache'
 /** Trần `per_section` phía backend — không xin quá số này. */
 const BOARD_PAGE_MAX = 200
 
-/** Số việc đang có trong đệm của mỗi cột (`0` = «Chưa phân cột»). */
+/** Số việc đang có trong đệm của mỗi cột (`0` = "Chưa phân cột"). */
 function loadedPerSection(board: WorkBoard | undefined): Map<number, number> {
   const counts = new Map<number, number>()
   for (const t of board?.tasks ?? []) {
@@ -29,7 +29,7 @@ function loadedPerSection(board: WorkBoard | undefined): Map<number, number> {
  * bao-CR-483: hai chế độ, xem `utils/board-paging.ts`. Ở chế độ nhẹ, lần nạp
  * LẠI (sau khi tick xong, kéo thẻ…) xin đúng bằng số việc đang có trong cột
  * nhiều nhất chứ không quay về 40: người dùng đã cuộn tải thêm ba trang của cột
- * «Xong» mà tick một việc là cột co về 40, họ phải cuộn tải lại từ đầu.
+ * "Xong" mà tick một việc là cột co về 40, họ phải cuộn tải lại từ đầu.
  */
 export function useWorkBoard(listId?: number, mode: BoardMode = 'full') {
   const queryClient = useQueryClient()

@@ -50,15 +50,15 @@ export interface TaskComment {
   can_delete: boolean
   /** Chỉ người viết (E-05) — khác `can_delete`, quản trị KHÔNG sửa được lời người khác. */
   can_edit: boolean
-  /** Đã sửa sau lúc gửi — hiện nhãn «đã sửa» cạnh giờ. */
+  /** Đã sửa sau lúc gửi — hiện nhãn "đã sửa" cạnh giờ. */
   edited: boolean
   mentions: TaskCommentMention[]
   files: TaskCommentFile[]
 }
 
 /**
- * Một trang bình luận. `older_count` / `oldest_id` phục vụ nút «Xem N bình luận
- * trước» — phân trang theo CON TRỎ chứ không `offset`, nên có người gửi thêm
+ * Một trang bình luận. `older_count` / `oldest_id` phục vụ nút "Xem N bình luận
+ * trước" — phân trang theo CON TRỎ chứ không `offset`, nên có người gửi thêm
  * giữa chừng cũng không làm lệch trang.
  */
 export interface TaskCommentPage {

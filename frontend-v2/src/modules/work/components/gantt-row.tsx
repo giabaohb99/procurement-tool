@@ -87,7 +87,7 @@ export const GanttTaskRow = memo(function GanttTaskRow({
   linking,
 }: GanttTaskRowProps) {
   //  `group/ganttrow` là móc để hai chấm nối chỉ hiện khi rê chuột vào HÀNG này.
-  //  `flex items-center` chỉ để chip «cuộn về thanh» có chỗ đứng trong luồng —
+  //  `flex items-center` chỉ để chip "cuộn về thanh" có chỗ đứng trong luồng —
   //  mọi thứ còn lại của hàng đều `absolute` nên không đụng gì tới bố cục.
   //  ⚠️ KHÔNG kẻ ngang trong vùng biểu đồ — chỉ có vạch DỌC của lưới ngày, đúng
   //  lối Lark (khách 31/08/2026: *"cho border dọc hà"*). Kẻ cả hai chiều thì
@@ -136,7 +136,7 @@ export const GanttTaskRow = memo(function GanttTaskRow({
 
   const bar = barGeometry(task, timeline)
   //  Việc CHƯA CÓ NGÀY: hàng trống, nhưng cả hàng là chỗ XẾP LỊCH — rê vào hiện
-  //  ô nét đứt kèm `+`, kéo ngang là chọn quãng. Không có chip «cuộn về thanh»
+  //  ô nét đứt kèm `+`, kéo ngang là chọn quãng. Không có chip "cuộn về thanh"
   //  vì chẳng có thanh nào để về.
   if (!bar)
     return (
@@ -410,7 +410,7 @@ function GanttBar({
  * đếm ô thì ở mức phóng Tuần / Tháng gần như không đếm nổi.
  *
  * `shrink-0` để nó KHÔNG bị cắt: thanh hẹp thì cắt cái tên (tên còn đọc được
- * phần đầu), chứ cắt con số thành «1 ng…» thì nó thành vô nghĩa. Không hiện với
+ * phần đầu), chứ cắt con số thành "1 ng…" thì nó thành vô nghĩa. Không hiện với
  * việc chưa có ngày nào — chẳng có quãng nào để đếm.
  */
 function DayCount({ task }: { task: WorkTask }) {

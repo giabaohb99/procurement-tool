@@ -12,7 +12,7 @@
  * `05-giao-dien.md`). Tab nào chưa làm thì KHÔNG khai ở đây — §2 cấm để tab
  * chết trên thanh; **Dashboard** (D-06) vì thế vẫn vắng mặt.
  *
- * «Hoạt động» đứng CUỐI, đúng thứ tự Lark: ba tab đầu là ba cách nhìn cùng một
+ * "Hoạt động" đứng CUỐI, đúng thứ tự Lark: ba tab đầu là ba cách nhìn cùng một
  * mớ việc, còn nó là nhật ký — xếp xen vào giữa là gãy mạch.
  */
 export const WORK_VIEWS = [
@@ -25,17 +25,17 @@ export const WORK_VIEWS = [
 export type WorkView = (typeof WORK_VIEWS)[number]['value']
 
 /*
- * ⚠️ ĐÃ BỎ nút «lát cắt nhanh» (Tất cả việc / Việc của tôi / Tôi tạo / Đã hoàn
+ * ⚠️ ĐÃ BỎ nút "lát cắt nhanh" (Tất cả việc / Việc của tôi / Tôi tạo / Đã hoàn
  * thành / Đã hủy). Mọi lát cắt đó nay khai bằng BỘ LỌC ĐIỀU KIỆN — trạng thái,
  * người phụ trách, người tạo đều là trường lọc (`config/task-filter-fields.ts`).
  *
  * Không giữ lại "âm thầm ẩn việc đã xong": lát cắt cố định AND với bộ lọc thì
- * lọc «trạng thái = Hoàn thành» ra bảng trống, không ai hiểu vì sao.
+ * lọc "trạng thái = Hoàn thành" ra bảng trống, không ai hiểu vì sao.
  */
 
 /**
- * Sắp xếp trong từng cột (§3.4) — đúng bộ tiêu chí của Lark, thêm «Tiêu đề».
- * «Tay» = theo `sort_order` do kéo thả.
+ * Sắp xếp trong từng cột (§3.4) — đúng bộ tiêu chí của Lark, thêm "Tiêu đề".
+ * "Tay" = theo `sort_order` do kéo thả.
  *
  * Mọi tiêu chí ở đây đọc được từ payload bảng đã tải, không cần gọi thêm máy chủ.
  * Sắp theo Tag thì nay đi đường `label:{fieldId}` như mọi trường tùy biến khác.
@@ -58,7 +58,7 @@ export const WORK_SORTS = [
 export type WorkSort = (typeof WORK_SORTS)[number]['value'] | `label:${number}`
 
 /**
- * Trường vẽ trên thẻ kanban — bật/tắt và ĐỔI THỨ TỰ ở nút «Tùy chỉnh» (§3.6),
+ * Trường vẽ trên thẻ kanban — bật/tắt và ĐỔI THỨ TỰ ở nút "Tùy chỉnh" (§3.6),
  * đúng khuôn *Customize* của Lark.
  *
  * Trường **nhãn tùy biến** (B-08) mang khóa `label:{fieldId}`: mỗi dự án tự khai
@@ -87,7 +87,7 @@ const HIDDEN_BY_DEFAULT: ReadonlySet<string> = new Set(['task_type'])
 export type BuiltinCardFieldKey = (typeof BUILTIN_CARD_FIELDS)[number]['key']
 export type CardFieldKey = BuiltinCardFieldKey | `label:${number}`
 
-/** Một dòng trong menu «Tùy chỉnh». THỨ TỰ trong mảng = thứ tự vẽ trên thẻ. */
+/** Một dòng trong menu "Tùy chỉnh". THỨ TỰ trong mảng = thứ tự vẽ trên thẻ. */
 export interface CardFieldSetting {
   key: CardFieldKey
   visible: boolean
@@ -134,7 +134,7 @@ export function mergeCardFields(saved: CardFields, labelIds: number[]): CardFiel
       tiên, chứ không nối vào cuối như nhãn.
 
       Nối vào cuối thì với mọi người dùng cũ (ai cũng có sẵn một bản lưu trong
-      `localStorage`), «Trạng thái» và «Ngày bắt đầu» rơi xuống sau tất cả nhãn
+      `localStorage`), "Trạng thái" và "Ngày bắt đầu" rơi xuống sau tất cả nhãn
       tùy biến của dự án: ở khung nhìn Gantt, nơi lưới trái chỉ hiện được vài cột
       đầu, chúng bị cắt mất và người dùng kết luận là chưa làm.
 

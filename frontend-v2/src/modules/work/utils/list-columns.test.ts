@@ -34,7 +34,7 @@ describe('buildListColumns', () => {
     expect(columns.map((c) => c.key)).toEqual(['assignees', 'due'])
   })
 
-  it('keeps the order the user dragged in the «Tùy chỉnh» menu', () => {
+  it('keeps the order the user dragged in the "Tùy chỉnh" menu', () => {
     const fields: CardFields = [
       { key: 'label:5', visible: true },
       { key: 'due', visible: true },

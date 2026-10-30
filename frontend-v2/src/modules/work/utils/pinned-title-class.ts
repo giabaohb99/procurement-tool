@@ -1,5 +1,5 @@
 /**
- * Lớp CSS của ô GHIM trái — cột «Tên công việc» ở lưới trái của khung nhìn Gantt.
+ * Lớp CSS của ô GHIM trái — cột "Tên công việc" ở lưới trái của khung nhìn Gantt.
  *
  * Các cột trượt ngang chui xuống dưới ô tên, nên phải có gì đó nói được "nội
  * dung đang chạy VÀO PHÍA SAU ô này" — nếu không thì cạnh cột tên chỉ là một mớ

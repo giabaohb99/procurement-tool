@@ -24,7 +24,7 @@ interface TaskAttachmentsProps {
 /**
  * Đính kèm ở cấp CÔNG VIỆC (E-03) — một hàng thuộc tính trong panel chi tiết.
  *
- * Dáng bám Lark: một dòng bấm **«Thêm đính kèm»** đặt ngay dưới «Thêm việc con»,
+ * Dáng bám Lark: một dòng bấm **"Thêm đính kèm"** đặt ngay dưới "Thêm việc con",
  * KHÔNG phải một hộp kéo-thả to. Panel này là dải thuộc tính mỗi thứ một dòng;
  * nhét vào giữa một khung nét đứt cao 60px thì nó nuốt hết chỗ của những hàng
  * còn lại, mà phần lớn việc chẳng có tệp nào để mà cần một bãi thả rộng thế.
@@ -54,7 +54,7 @@ export function TaskAttachments({ taskId, canEdit }: TaskAttachmentsProps) {
               //  Gỡ là mất tệp khỏi công việc (duoc-CR-627) — hỏi trước, nêu tên tệp.
               const ok = await confirm({
                 title: 'Gỡ tệp',
-                message: `Gỡ tệp «${file.filename}» khỏi công việc này?`,
+                message: `Gỡ tệp "${file.filename}" khỏi công việc này?`,
                 confirmLabel: 'Gỡ tệp',
               })
               if (ok) remove.mutate(file.id)
@@ -89,7 +89,7 @@ export function TaskAttachments({ taskId, canEdit }: TaskAttachmentsProps) {
           {/*  MỘT biểu tượng thôi — cái ở máng trái của hàng (`TaskDetailRow`)
                đã nói rõ đây là đính kèm rồi. Đặt thêm một cái kẹp giấy nữa ngay
                trước chữ là hai biểu tượng giống hệt nhau nằm cạnh nhau, mà chữ
-               thì thụt vào so với «Thêm việc con» ở hàng trên — hai dòng cùng
+               thì thụt vào so với "Thêm việc con" ở hàng trên — hai dòng cùng
                kiểu phải bắt đầu ở cùng một mốc (khách đối chiếu Lark 03/09/2026).
                Lúc đang tải thì mượn chỗ chữ để báo, không mọc thêm vòng quay. */}
           <button

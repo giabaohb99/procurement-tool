@@ -22,7 +22,7 @@ import { AI_PLAN_STATUS_PENDING, type AiPlanSummary } from '../types/ai-plan'
 
 const ALL = 'all'
 
-/** «2 giai đoạn · 7 việc · 3 việc con» — bỏ phần bằng 0 cho gọn. */
+/** "2 giai đoạn · 7 việc · 3 việc con" — bỏ phần bằng 0 cho gọn. */
 function describeCounts({ counts }: AiPlanSummary): string {
   const parts = [
     counts.phases ? `${counts.phases} giai đoạn` : '',

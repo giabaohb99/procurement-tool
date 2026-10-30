@@ -16,8 +16,8 @@ import { patchBoards, restoreBoards, snapshotBoards } from './board-cache'
  * Cả hai đều **cập nhật lạc quan**. Với việc thêm thì đây không phải chuyện làm
  * đẹp: máy chủ mất một nhịp mới trả về, mà trong nhịp ấy người dùng vừa buông
  * chuột và đang nhìn thẳng vào chỗ mũi tên sẽ hiện — trống trơn nghĩa là "thao
- * tác trượt rồi", và họ kéo lại lần nữa. Lần thứ hai chắc chắn ăn 400 «đã có
- * phụ thuộc».
+ * tác trượt rồi", và họ kéo lại lần nữa. Lần thứ hai chắc chắn ăn 400 "đã có
+ * phụ thuộc".
  *
  * Mũi tên tạm mang **id âm** để phân biệt với id thật; nó sống đúng tới lúc
  * `invalidate` kéo bản thật về.

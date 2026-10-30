@@ -13,11 +13,11 @@ interface LoadMoreTasksProps {
 }
 
 /**
- * Đuôi «Tải thêm» của một cột kanban / một nhóm ở khung Danh sách — bao-CR-483.
+ * Đuôi "Tải thêm" của một cột kanban / một nhóm ở khung Danh sách — bao-CR-483.
  *
  * Hai cách kích: cuộn tới đáy (IntersectionObserver trên chính nút) hoặc bấm.
- * Nút vẫn phải có vì (1) cột ngắn không cuộn được thì không có sự kiện «tới
- * đáy» nào, (2) người dùng bàn phím / trình đọc màn hình cần một điểm bấm thật.
+ * Nút vẫn phải có vì (1) cột ngắn không cuộn được thì không có sự kiện "tới
+ * đáy" nào, (2) người dùng bàn phím / trình đọc màn hình cần một điểm bấm thật.
  * jsdom không có IntersectionObserver — bỏ qua phần tự tải, bài kiểm bấm tay.
  */
 export function LoadMoreTasks({ remaining, loading, onLoadMore, className }: LoadMoreTasksProps) {

@@ -46,7 +46,7 @@ export function useAddWorkMember(listId: number) {
  *
  * Dùng chung endpoint với lời mời — `list_service.add_member` là upsert: gặp
  * người đã có thì ghi đè `role` chứ không báo trùng. Tách thành hook riêng chỉ
- * vì hai câu thông báo khác nhau; hiện «Đã mời vào danh sách» khi vừa hạ một
+ * vì hai câu thông báo khác nhau; hiện "Đã mời vào danh sách" khi vừa hạ một
  * người từ Quản trị xuống Khách xem thì đọc như bấm nhầm nút.
  *
  * Dọn cả cụm `work.all` chứ không riêng danh sách thành viên: đổi vai trò của

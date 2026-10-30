@@ -44,7 +44,7 @@ import type { ForumPost } from '../types/forum-post'
 import { stripRichBodyText } from '../utils/rich-body'
 
 /**
- * Tab «Quản trị» diễn đàn (CR-263): Chuyên mục (dựng cây nhóm-box) · Bài ghim
+ * Tab "Quản trị" diễn đàn (CR-263): Chuyên mục (dựng cây nhóm-box) · Bài ghim
  * (bỏ ghim tại chỗ) · Nhật ký kiểm duyệt (bảng ghi từ F5, giờ mới có chỗ đọc).
  * `can()` chỉ để ẩn/hiện — chốt chặn thật là `require()` trên từng API.
  */
@@ -160,7 +160,7 @@ function BoardsTab() {
 
       {(boards.data ?? []).length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">
-          Chưa có nhóm nào — bấm «Thêm nhóm» để dựng chuyên mục đầu tiên.
+          Chưa có nhóm nào — bấm <strong>Thêm nhóm</strong> để dựng chuyên mục đầu tiên.
         </p>
       ) : visibleGroups.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">

@@ -19,7 +19,7 @@ interface SidebarState {
 }
 
 /**
- * Cây «Danh sách dự án» bên trái đang ẨN hay HIỆN.
+ * Cây "Danh sách dự án" bên trái đang ẨN hay HIỆN.
  *
  * Là STORE dùng chung chứ không phải `useState` trong `WorkLayoutPage`, vì có
  * hai nơi cách xa nhau cùng đọc và cùng ghi: khung layout (route cha) quyết

@@ -20,7 +20,7 @@ interface ActivityFeedProps {
 }
 
 /**
- * Tab «Hoạt động» — dòng thời gian gộp của cả dự án (D-09, §8 của
+ * Tab "Hoạt động" — dòng thời gian gộp của cả dự án (D-09, §8 của
  * `05-giao-dien.md`), dựng theo đúng khuôn *Activities* của Lark.
  *
  * Bố cục một cụm ngày, TRẢI HẾT bề ngang:

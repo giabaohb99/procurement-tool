@@ -18,7 +18,7 @@ import { dotClass } from '../utils/work-colors'
 import { NO_GROUP_LABEL, flattenGroups, groupNameOf } from '../utils/work-groups'
 
 /**
- * Bảng liệt kê MỌI dự án — màn giữa của phân hệ, mở bằng mục «Dự án» ở thanh
+ * Bảng liệt kê MỌI dự án — màn giữa của phân hệ, mở bằng mục "Dự án" ở thanh
  * trái. Dựng theo màn *Task List* của Lark: tên · chủ sở hữu · thành viên ·
  * ngày tạo.
  *
@@ -41,7 +41,7 @@ export function ProjectListPage() {
   const groups = useMemo(() => flattenGroups(sidebar), [sidebar])
 
   //  Bảng xếp theo NHÓM trước (đúng thứ tự cây), dự án ngoài nhóm đứng cuối —
-  //  trước CR-482 bảng phẳng, nhìn không ra dự án nào thuộc «DX» dù cây bên trái có.
+  //  trước CR-482 bảng phẳng, nhìn không ra dự án nào thuộc "DX" dù cây bên trái có.
   const rows = useMemo(() => {
     if (!data) return data
     const order = new Map(groups.map((g, i) => [g.id, i]))
@@ -155,7 +155,7 @@ export function ProjectListPage() {
       </header>
 
       {/*  bao-CR-482: cụm NHÓM ngay trên bảng. Nhóm không phải một dòng của bảng
-           (một dòng = một dự án), nhưng phải thấy được ở đây — trước đó «DX» chỉ
+           (một dòng = một dự án), nhưng phải thấy được ở đây — trước đó "DX" chỉ
            có trong cây bên trái, ai ẩn cây là không biết nhóm tồn tại, càng không
            có chỗ nào để đổi tên hay phân quyền cho cả nhóm. */}
       {groups.length > 0 && (
@@ -196,8 +196,8 @@ export function ProjectListPage() {
         isLoading={isLoading}
         isError={isError}
         emptyMessage={
-          //  Nói rõ RỖNG VÌ BỘ LỌC hay rỗng vì chưa có gì: người vừa bật «Hiện
-          //  cả dự án lưu trữ» mà đọc câu chung sẽ tưởng nút đó làm hỏng danh sách.
+          //  Nói rõ RỖNG VÌ BỘ LỌC hay rỗng vì chưa có gì: người vừa bật "Hiện
+          //  cả dự án lưu trữ" mà đọc câu chung sẽ tưởng nút đó làm hỏng danh sách.
           showArchived
             ? 'Bạn chưa tham gia dự án nào, kể cả dự án đã lưu trữ.'
             : 'Bạn chưa tham gia dự án nào.'

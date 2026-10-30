@@ -82,7 +82,7 @@ describe('LabelMultiCell', () => {
     expect(onChange).toHaveBeenCalledWith(null)
   })
 
-  it('«Bỏ chọn hết» gửi null và chỉ hiện khi đang có giá trị', async () => {
+  it('"Bỏ chọn hết" gửi null và chỉ hiện khi đang có giá trị', async () => {
     const nguoi = userEvent.setup()
     const onChange = vi.fn()
     const { rerender } = render(<LabelMultiCell field={truong()} chosen={[]} onChange={onChange} />)
@@ -140,7 +140,7 @@ describe('LabelMultiCell', () => {
     expect(screen.getByText('—')).toBeInTheDocument()
   })
 
-  it('nhiều giá trị thì gom lại thành «+N», tên đầy đủ nằm ở tooltip', () => {
+  it('nhiều giá trị thì gom lại thành "+N", tên đầy đủ nằm ở tooltip', () => {
     //  Ô rộng 150px: hai chip tiếng Việt là đã tràn.
     render(<LabelMultiCell field={truong()} chosen={[10, 11, 12]} onChange={vi.fn()} />)
     expect(screen.getByText('+2')).toHaveAttribute('title', 'Sự kiện, Quảng cáo')

@@ -25,8 +25,8 @@ function quickResultLabel(post: ForumPost): string {
 
 /**
  * Ô tìm trên header Diễn đàn (bao-CR-272 + bao-CR-273.1): gõ đủ 2 ký tự là sổ
- * top 5 bài khớp ngay dưới ô — bấm bài nào nhảy thẳng bài đó; Enter, «Xem tất
- * cả» hay «Bộ lọc nâng cao» mới qua trang Tìm bài đầy đủ (kèm `?q=` tự chạy).
+ * top 5 bài khớp ngay dưới ô — bấm bài nào nhảy thẳng bài đó; Enter, "Xem tất
+ * cả" hay "Bộ lọc nâng cao" mới qua trang Tìm bài đầy đủ (kèm `?q=` tự chạy).
  */
 export function ForumHeaderSearch({ className }: { className?: string }) {
   const navigate = useNavigate()

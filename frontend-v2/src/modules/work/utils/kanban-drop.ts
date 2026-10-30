@@ -66,7 +66,7 @@ export function parseDropTarget(id: string | number | undefined | null): DropTar
 }
 
 /**
- * Mốc «đứng ngay trước» sau một cú kéo bên trong MỘT hàng phẳng; `null` = xuống
+ * Mốc "đứng ngay trước" sau một cú kéo bên trong MỘT hàng phẳng; `null` = xuống
  * cuối. `null` cả hàm khi một trong hai id không có trong hàng — thả ra ngoài.
  *
  * Đúng phép `arrayMove` của dnd-kit: hàng đã BỎ món đang kéo ra, rồi món nào
@@ -185,7 +185,7 @@ export function isSamePlace(
  *
  * ⚠️ `keepOrder` = đang sắp theo TIÊU CHÍ (hạn chót, độ ưu tiên…), khi đó mảng
  * vào đã được `sortTasks` xếp sẵn và hàm này phải GIỮ NGUYÊN. Thiếu tham số này
- * là lỗi đã có thật: mọi lựa chọn ở nút «Sắp xếp» đều bị `sort_order` của kéo
+ * là lỗi đã có thật: mọi lựa chọn ở nút "Sắp xếp" đều bị `sort_order` của kéo
  * thả đè lại, người dùng đổi tiêu chí mà bảng đứng im.
  */
 export function groupBySection(

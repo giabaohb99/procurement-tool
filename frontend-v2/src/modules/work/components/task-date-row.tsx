@@ -25,8 +25,8 @@ type DateSlotKind = 'start' | 'due'
 /**
  * Hàng THỜI GIAN, hai hình dạng:
  *
- * - **Chưa có ngày** → ba nút «Hôm nay · Ngày mai · Khác» như Lark. Hai nút đầu
- *   đặt hạn bằng một cú bấm (hai hạn hay đặt nhất), «Khác» mở lịch.
+ * - **Chưa có ngày** → ba nút "Hôm nay · Ngày mai · Khác" như Lark. Hai nút đầu
+ *   đặt hạn bằng một cú bấm (hai hạn hay đặt nhất), "Khác" mở lịch.
  * - **Đã có ngày** → thu về MỘT giá trị kèm mũi tên (bấm để mở lại lịch) và nút
  *   ✕ xóa, đúng dáng hàng _Cột_ / _Độ ưu tiên_ ngay dưới. Giữ ba nút khi đã
  *   chọn xong thì hàng vừa dài vừa mơ hồ: không nút nào nói ra ngày đang giữ.

@@ -16,7 +16,7 @@ export interface SortContext {
  * sách cùng đúng một thứ tự.
  *
  * Lọc theo điều kiện (trạng thái · người phụ trách · người tạo · ngày…) nằm ở
- * `task-conditions.ts` — nút «Bộ lọc». Ở đây KHÔNG còn lát cắt cố định nào.
+ * `task-conditions.ts` — nút "Bộ lọc". Ở đây KHÔNG còn lát cắt cố định nào.
  */
 
 /** Tìm theo tiêu đề + mô tả, không phân biệt hoa thường (G-02). */
@@ -31,7 +31,7 @@ export function applyKeyword(tasks: WorkTask[], keyword: string): WorkTask[] {
 }
 
 /**
- * Sắp xếp. «Tay» giữ nguyên `sort_order` do kéo thả.
+ * Sắp xếp. "Tay" giữ nguyên `sort_order` do kéo thả.
  *
  * Ba chỗ dễ sai và cố ý xử lý ở đây:
  * - **Ngày rỗng xuống cuối.** Chuỗi rỗng so từ vựng thì bé hơn mọi ngày, để

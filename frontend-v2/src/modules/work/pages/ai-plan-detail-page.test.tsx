@@ -171,7 +171,7 @@ describe('AiPlanDetailPage — sửa và lưu', () => {
             message: 'Kế hoạch chưa hợp lệ',
             details: {
               problems: [
-                { phase: 0, task: 1, subtask: null, key: 'p1t2', field: 'assignees', message: '«Đặt xe»: người #99 đã nghỉ việc' },
+                { phase: 0, task: 1, subtask: null, key: 'p1t2', field: 'assignees', message: '"Đặt xe": người #99 đã nghỉ việc' },
               ],
             },
           },
@@ -185,7 +185,7 @@ describe('AiPlanDetailPage — sửa và lưu', () => {
 
     //  Đúng dòng thứ hai (vị trí task 1), không phải dòng đầu hay câu chung của kế hoạch.
     const row = await screen.findByRole('group', { name: 'Việc: Đặt xe' })
-    expect(within(row).getByText('«Đặt xe»: người #99 đã nghỉ việc')).toBeInTheDocument()
+    expect(within(row).getByText('"Đặt xe": người #99 đã nghỉ việc')).toBeInTheDocument()
     expect(
       within(screen.getByRole('group', { name: 'Việc: Đặt phòng' })).queryByText(/người #99/),
     ).toBeNull()

@@ -51,7 +51,7 @@ describe('mergeCardFields', () => {
   })
 
   it('slots a new builtin field into its own place, NOT after the label fields', () => {
-    //  Nối vào cuối thì «Trạng thái» rơi xuống sau mọi nhãn tùy biến của dự án;
+    //  Nối vào cuối thì "Trạng thái" rơi xuống sau mọi nhãn tùy biến của dự án;
     //  ở Gantt, nơi lưới trái chỉ hiện được vài cột đầu, nó bị cắt mất và người
     //  dùng kết luận là chưa làm.
     const saved: CardFields = [

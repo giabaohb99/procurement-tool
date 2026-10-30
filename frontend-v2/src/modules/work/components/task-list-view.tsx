@@ -53,7 +53,7 @@ interface TaskListViewProps extends TaskRowActions {
  * theo tiền lệ `LinesTable`: bảng thứ hai cho một hình dạng khác hẳn, không
  * phải một bảng tự ghép ở tầng trang.
  *
- * Cột hiện gì và theo thứ tự nào lấy từ chính bộ «Tùy chỉnh» của thẻ kanban
+ * Cột hiện gì và theo thứ tự nào lấy từ chính bộ "Tùy chỉnh" của thẻ kanban
  * (`fields`), nên tắt một trường là nó biến mất ở cả ba khung nhìn. Bề rộng thì
  * kéo giãn được và nhớ riêng theo từng dự án.
  *

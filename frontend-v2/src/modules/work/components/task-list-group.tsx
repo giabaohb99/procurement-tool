@@ -29,7 +29,7 @@ interface TaskListGroupProps extends TaskRowActions {
   onToggleCollapse: () => void
   /** Nhân sự đang đăng nhập — dòng nháp gán sẵn làm người phụ trách. */
   defaultPicId?: number
-  /** Cho kéo xếp lại VIỆC — tắt khi đang sắp theo tiêu chí khác «Tay» (§3.4). */
+  /** Cho kéo xếp lại VIỆC — tắt khi đang sắp theo tiêu chí khác "Tay" (§3.4). */
   draggable: boolean
   /**
    * Cho kéo xếp lại CHÍNH NHÓM này.
@@ -67,7 +67,7 @@ interface TaskListGroupProps extends TaskRowActions {
 }
 
 /**
- * Một NHÓM trên khung nhìn Danh sách: tiêu đề thu/mở + các dòng + «Việc mới».
+ * Một NHÓM trên khung nhìn Danh sách: tiêu đề thu/mở + các dòng + "Việc mới".
  *
  * Số đếm trên tiêu đề là số việc SAU KHI LỌC, không phải tổng của cột — người
  * dùng đang nhìn bộ lọc nào thì con số phải nói về đúng bộ lọc ấy, chứ hiện
@@ -352,7 +352,7 @@ function NewTaskRow({
   }
 
   /*  Cùng bố cục dẫn đầu với `TaskListRow`: chỗ trống bằng đúng nút bung việc
-      con, rồi dấu «+» đứng đúng chỗ ô tick. Nhờ vậy chữ «Việc mới» thẳng hàng
+      con, rồi dấu "+" đứng đúng chỗ ô tick. Nhờ vậy chữ "Việc mới" thẳng hàng
       với tên việc ngay bên trên, thay vì thụt một khoảng lệch nhìn thấy rõ.  */
   return (
     <button
@@ -363,7 +363,7 @@ function NewTaskRow({
     >
       {/*  Ghim phần CHỮ chứ không ghim cả cái nút: nút rộng bằng cả bảng nên
            `sticky` trên nó không dịch được đi đâu, cuộn ngang một quãng là chữ
-           «Việc mới» trôi khỏi màn hình và dòng nhìn như trống trơn. */}
+           "Việc mới" trôi khỏi màn hình và dòng nhìn như trống trơn. */}
       <span
         className={cn('flex items-center gap-1.5', stickyTitle && 'sticky left-0')}
         style={{ paddingLeft: stickyTitle ? ROW_PAD_LEFT : 0 }}

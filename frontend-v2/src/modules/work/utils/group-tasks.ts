@@ -19,7 +19,7 @@ export const UNGROUPED_KEY = 'none'
  * Ba luật, mỗi cái vá một chỗ hỏng âm thầm:
  *
  * 1. **Cột rỗng VẪN hiện.** Bỏ đi thì cột vừa tạo không có chỗ nào bấm được để
- *    thêm việc đầu tiên — dòng «Việc mới» nằm trong nhóm chứ không ở đâu khác.
+ *    thêm việc đầu tiên — dòng "Việc mới" nằm trong nhóm chứ không ở đâu khác.
  * 2. **Thứ tự task giữ NGUYÊN** như mảng đưa vào. Mảng đó đã qua lọc + sắp xếp
  *    (`prepareTasks`); xếp lại ở đây là nuốt mất tiêu chí người dùng đang chọn.
  * 3. **Task trỏ vào cột đã bị xóa** rơi về nhóm "Chưa phân cột" thay vì biến mất.

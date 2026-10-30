@@ -24,13 +24,13 @@ interface PostBodyProps {
   format?: number
   /**
    * Đang ở khung CHI TIẾT (trang riêng / popup): chữ to hơn một nấc và KHÔNG
-   * gấp «Xem thêm» — người ta mở chi tiết là để đọc trọn bài hướng dẫn dài,
+   * gấp "Xem thêm" — người ta mở chi tiết là để đọc trọn bài hướng dẫn dài,
    * bắt bấm thêm một phát nữa là thừa (bao-CR-272).
    */
   detail?: boolean
 }
 
-/** Nội dung bài viết: giữ xuống dòng, link bấm được, bài dài có «Xem thêm».
+/** Nội dung bài viết: giữ xuống dòng, link bấm được, bài dài có "Xem thêm".
  * Bài rich (CR-261) vẽ HTML qua `sanitizeHtml` (DOMPurify — lớp phòng thủ thứ
  * hai sau sanitize server, cùng lý do với bản in văn thư); bài cũ đi đường
  * chữ trơn y như trước, không đổi một pixel. */

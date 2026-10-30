@@ -6,7 +6,7 @@ import type { TaskGroup } from './group-tasks'
  *
  * ⚠️ Đây là **bản sao đúng từng dòng** của thứ mà `TaskGroupsBoard` vẽ ra ở lưới
  * trái: mỗi nhóm một dòng tiêu đề, rồi các việc, việc con của việc đang bung, và
- * dòng «Việc mới» cuối nhóm. Lệch một dòng là mọi thanh bên dưới trượt khỏi tên
+ * dòng "Việc mới" cuối nhóm. Lệch một dòng là mọi thanh bên dưới trượt khỏi tên
  * việc của nó — mà lệch đều nên nhìn vẫn "có vẻ đúng", chỉ khi đối chiếu tên với
  * thanh mới lòi ra.
  *
@@ -36,7 +36,7 @@ export interface GanttTaskRow {
   isSubtask: boolean
 }
 
-/** Dòng «Việc mới» cuối mỗi nhóm — bên trục thời gian là một hàng trống. */
+/** Dòng "Việc mới" cuối mỗi nhóm — bên trục thời gian là một hàng trống. */
 export interface GanttDraftRow {
   kind: 'draft'
   key: string
@@ -51,7 +51,7 @@ export interface BuildGanttRowsOptions {
   expandedTaskId: number | null
   /** Việc con của việc đang bung — nạp lười, có thể rỗng lúc còn đang tải. */
   subtasks: WorkTask[]
-  /** Có dòng «Việc mới» cuối mỗi nhóm không (chỉ khi đủ quyền sửa). */
+  /** Có dòng "Việc mới" cuối mỗi nhóm không (chỉ khi đủ quyền sửa). */
   showDraftRow: boolean
   /**
    * Cột đang bị KÉO — thu lại y như nhóm đang đóng.

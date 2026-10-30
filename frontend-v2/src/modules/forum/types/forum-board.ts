@@ -67,7 +67,7 @@ export interface ForumThreadSummary {
   created_at: string
 }
 
-/** Hai khối máy tự xếp của sidebar «Diễn đàn» — khối «Nổi bật» đi API bài ghim riêng. */
+/** Hai khối máy tự xếp của sidebar "Diễn đàn" — khối "Nổi bật" đi API bài ghim riêng. */
 export interface ForumBoardHighlights {
   /** Top thread theo bình luận + reaction 7 ngày gần nhất. */
   trending: ForumThreadSummary[]

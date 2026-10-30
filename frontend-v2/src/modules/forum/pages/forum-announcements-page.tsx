@@ -7,7 +7,7 @@ import { PostCard } from '../components/post-card'
 import { usePinnedPosts } from '../hooks/use-pinned-posts'
 
 /**
- * Tab «Thông báo» (F9a/CR-199): mọi bài đang được quản trị viên ghim, mốc ghim
+ * Tab "Thông báo" (F9a/CR-199): mọi bài đang được quản trị viên ghim, mốc ghim
  * mới → cũ — chỗ nhìn MỘT PHÁT ra hết thông báo còn hiệu lực (nghỉ lễ, quy
  * định mới...), khỏi lướt ngược feed. Không phân trang: ghim chỉ vài bài.
  */

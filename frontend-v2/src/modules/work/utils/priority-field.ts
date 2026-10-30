@@ -6,7 +6,7 @@ import type { WorkLabelField, WorkLabelOption, WorkTask } from '../types/work'
  *
  * Vài chỗ vẫn cần biết "trường nào là độ ưu tiên" — tô màu thanh Gantt chẳng
  * hạn. Chúng tìm theo `system_key`, KHÔNG theo tên: tên là thứ người dùng đổi
- * được ngay trong menu «Tùy chỉnh», dò theo tên thì đổi tên xong màu biến mất.
+ * được ngay trong menu "Tùy chỉnh", dò theo tên thì đổi tên xong màu biến mất.
  */
 export const PRIORITY_SYSTEM_KEY = 'priority'
 

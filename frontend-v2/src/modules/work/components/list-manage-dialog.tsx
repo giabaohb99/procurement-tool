@@ -19,14 +19,14 @@ interface ListManageDialogProps {
   /** Vai trò của CHÍNH mình trên dự án — quyết định sửa được gì (04 §3). */
   myRole: number | null
   onClose: () => void
-  /** bao-CR-482: nhóm chọn được cho ô «Nhóm» — màn gọi lấy từ cây bên trái. */
+  /** bao-CR-482: nhóm chọn được cho ô "Nhóm" — màn gọi lấy từ cây bên trái. */
   groups?: FlatWorkGroup[]
 }
 
 /**
  * QUẢN LÝ DỰ ÁN — **một hộp, không tab**: Thông tin rồi tới Thành viên.
  *
- * Trước đây là hai mục rời trong menu («Thành viên» và «Sửa dự án»), rồi một hộp
+ * Trước đây là hai mục rời trong menu ("Thành viên" và "Sửa dự án"), rồi một hộp
  * hai tab. Cả hai đều sai cùng một kiểu: quản trị mở hộp này ra thường làm CẢ HAI
  * việc trong một lượt — đổi tên xong mời thêm người — nên chia ngăn chỉ tổ bắt họ
  * bấm qua lại và nhớ mình đang đứng ở đâu. Xếp dọc thì cuộn một cái là thấy hết.

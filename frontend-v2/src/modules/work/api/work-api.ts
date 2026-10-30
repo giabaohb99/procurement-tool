@@ -11,7 +11,7 @@ import type {
 /**
  * Nhóm · danh sách công việc · cấu hình của list.
  *
- * Prefix `/api/work` chứ không `/api/tasks` — đường đó là của tab «Việc cần làm»
+ * Prefix `/api/work` chứ không `/api/tasks` — đường đó là của tab "Việc cần làm"
  * (CR-215), trùng vào là lẫn hai thứ khác hẳn nhau.
  */
 export const workApi = {
@@ -88,7 +88,7 @@ export const workApi = {
   labelFields: (listId: number) =>
     apiGet<WorkLabelField[]>(`/api/work/lists/${listId}/label-fields`),
 
-  /** `field_type` theo `WORK_FIELD_TYPE`; bỏ trống là «chọn một giá trị». */
+  /** `field_type` theo `WORK_FIELD_TYPE`; bỏ trống là "chọn một giá trị". */
   createLabelField: (listId: number, values: { name: string; field_type?: number }) =>
     apiPost<WorkLabelField>(`/api/work/lists/${listId}/label-fields`, values),
 

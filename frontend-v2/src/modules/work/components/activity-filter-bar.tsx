@@ -25,7 +25,7 @@ interface ActivityFilterBarProps {
 }
 
 /**
- * Hai ô lọc nhanh của tab «Hoạt động» (§8): theo LOẠI sự kiện và theo NGƯỜI.
+ * Hai ô lọc nhanh của tab "Hoạt động" (§8): theo LOẠI sự kiện và theo NGƯỜI.
  *
  * Dựng bằng `DropdownMenu` nút chữ không viền, đúng khuôn `ToolbarMenu` của
  * `work-toolbar.tsx` — cùng phân hệ thì hai hàng nút phải nhìn như một.

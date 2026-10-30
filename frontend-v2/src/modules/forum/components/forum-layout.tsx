@@ -15,15 +15,15 @@ import { ForumHeaderSearch } from './forum-header-search'
  * Khung riêng của Diễn đàn (QĐ-D6): một cột giữa kiểu bảng tin, KHÔNG có
  * sidebar nghiệp vụ — vào đây là rời không khí chứng từ. Thanh trên giữ lại
  * đường về màn chọn phân hệ, chuông ERP và menu tài khoản; dải tab chừa sẵn
- * chỗ cho «Hướng dẫn» (QĐ-D4, vào ở F7).
+ * chỗ cho "Hướng dẫn" (QĐ-D4, vào ở F7).
  */
 export function ForumLayout() {
   //  bao-CR-272: màn 1920px mà bó 672px thì hai bên trống hoác (người dùng kêu
-  //  đúng câu đó) — «Diễn đàn»/«Quản trị» nới hẳn 1280px, trang ĐỌC BÀI 896px
+  //  đúng câu đó) — "Diễn đàn"/"Quản trị" nới hẳn 1280px, trang ĐỌC BÀI 896px
   //  cho bài hướng dẫn dài dễ đọc, các feed còn lại 768px.
   const { pathname } = useLocation()
   const { can } = usePermission()
-  //  Tab «Quản trị» (CR-263) chỉ cho người có grant diễn đàn — `can()` là tiện
+  //  Tab "Quản trị" (CR-263) chỉ cho người có grant diễn đàn — `can()` là tiện
   //  ẩn/hiện thôi, chốt chặn thật là `require()` trên từng API.
   const isForumAdmin = can('forum_post', 'write') || can('forum_board', 'write')
   const wide =
@@ -55,9 +55,9 @@ export function ForumLayout() {
           </span>
 
           {/*  4 tab không còn lọt màn 375px — cho dải tab cuộn ngang (giấu thanh
-              cuộn) thay vì cắt cụt «Trang của tôi» và đẩy chuông/avatar ra ngoài. */}
+              cuộn) thay vì cắt cụt "Trang của tôi" và đẩy chuông/avatar ra ngoài. */}
           <nav className="ml-1 flex h-full min-w-0 items-stretch gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:ml-3">
-            {/* «Diễn đàn» đứng đầu + là màn mặc định (sếp chốt 03/09/2026);
+            {/* "Diễn đàn" đứng đầu + là màn mặc định (sếp chốt 03/09/2026);
                 sáng cả ở /forum/boards/:id nên KHÔNG end. */}
             <ForumTab to={appRoutes.forum.boards} label="Diễn đàn" end={false} />
             <ForumTab to={appRoutes.forum.feed} label="Bảng tin" />
@@ -104,7 +104,7 @@ export function ForumLayout() {
   )
 }
 
-/** Tab kiểu gạch chân dưới đáy thanh trên — khuôn cho «Hướng dẫn» sau này. */
+/** Tab kiểu gạch chân dưới đáy thanh trên — khuôn cho "Hướng dẫn" sau này. */
 function ForumTab({ to, label, end = true }: { to: string; label: string; end?: boolean }) {
   return (
     <NavLink

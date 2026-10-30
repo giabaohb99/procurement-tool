@@ -6,7 +6,7 @@ import type { WorkTaskType } from '../types/work'
 /**
  * Danh mục LOẠI VIỆC của Dự án (duoc-CR-656) — quản trị khai, gác `setting` (đọc/ghi).
  *
- * Mở hộp thoại khi bấm dòng (không có trang chi tiết): danh mục chỉ 5 ô. Loại đã có việc dùng thì «Xóa» chỉ NGỪNG DÙNG
+ * Mở hộp thoại khi bấm dòng (không có trang chi tiết): danh mục chỉ 5 ô. Loại đã có việc dùng thì "Xóa" chỉ NGỪNG DÙNG
  * (backend giữ lại để số liệu năng lực cũ còn đọc được tên) — câu cảnh báo bên dưới nói rõ điều đó.
  */
 export const TASK_TYPE_CRUD_CONFIG: CrudConfig<WorkTaskType> = {
@@ -86,7 +86,7 @@ export const TASK_TYPE_CRUD_CONFIG: CrudConfig<WorkTaskType> = {
       type: 'text',
       required: true,
       placeholder: 'VD: Báo giá nhà cung cấp',
-      hint: 'Tên hiện trong ô chọn «Loại việc» của công việc (tối đa 120 ký tự).',
+      hint: 'Tên hiện trong ô chọn "Loại việc" của công việc (tối đa 120 ký tự).',
     },
     {
       name: 'company_id',

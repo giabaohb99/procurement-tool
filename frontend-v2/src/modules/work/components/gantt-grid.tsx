@@ -20,7 +20,7 @@ interface GanttGridProps extends TaskGroupsBoardProps {
 
 /**
  * LƯỚI TRÁI của Gantt — **chính là khung nhìn Danh sách**, đúng như Lark: cùng
- * bộ cột (`buildListColumns`, tức bộ «Tùy chỉnh»), cùng ô sửa tại chỗ, và cùng
+ * bộ cột (`buildListColumns`, tức bộ "Tùy chỉnh"), cùng ô sửa tại chỗ, và cùng
  * ba tầng kéo thả (việc · việc con · cột) nhờ dùng chung `TaskGroupsBoard`.
  *
  * Lưới vẽ ĐỦ cột, còn ô chứa nó thì hẹp (mặc định vừa ~3 cột) — nên nó **tự
@@ -54,7 +54,7 @@ export function GanttGrid({
 
         {/*  Ô tiêu đề cột TÊN cũng ghim trái như ô tên của từng dòng, và thụt
              thêm đúng phần dẫn đầu của dòng (mũi tên bung + ô tick) để chữ
-             «Tên công việc» thẳng hàng với tên việc bên dưới. */}
+             "Tên công việc" thẳng hàng với tên việc bên dưới. */}
         <HeaderCell
           column={titleColumn}
           gridRef={gridRef}

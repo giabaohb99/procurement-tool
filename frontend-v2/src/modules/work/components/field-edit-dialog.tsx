@@ -43,14 +43,14 @@ interface FieldEditDialogProps {
 }
 
 /**
- * Hộp thoại «Sửa trường» — MỘT khuôn duy nhất cho mọi trường hiện trên thẻ:
+ * Hộp thoại "Sửa trường" — MỘT khuôn duy nhất cho mọi trường hiện trên thẻ:
  * tên trường · kiểu trường · bộ giá trị kéo xếp được · xóa trường · nút Lưu.
  *
  * Tag cũng đi đúng cửa này: nó là một trường tùy biến kiểu CHỌN NHIỀU như mọi
  * trường khác kể từ migration `c8a1d4f60b72`, không còn bảng lẫn giao diện
  * riêng.
  *
- * Vì sao là HỘP THOẠI chứ không sửa tại chỗ trong menu «Tùy chỉnh»: menu ấy rộng
+ * Vì sao là HỘP THOẠI chứ không sửa tại chỗ trong menu "Tùy chỉnh": menu ấy rộng
  * 320px và đang là một popover — nhồi thêm ô nhập, ô chọn kiểu và một danh sách
  * kéo thả vào đó thì nửa dưới tràn khỏi màn hình, mà mỗi popover lồng nhau (bảng
  * màu) lại đóng nhầm lớp cha.
@@ -110,7 +110,7 @@ function FieldForm({
     //  Bỏ một giá trị = backend xóa CỨNG nó khỏi mọi việc đang gắn (duoc-CR-627) —
     //  hỏi trước, kể tên ra để người dùng thấy đúng thứ sắp mất.
     const conLai = new Set(options.map((o) => o.id))
-    const biBo = field.options.filter((o) => !conLai.has(o.id)).map((o) => `«${o.name}»`)
+    const biBo = field.options.filter((o) => !conLai.has(o.id)).map((o) => `"${o.name}"`)
     if (
       biBo.length > 0 &&
       !(await confirm({
@@ -151,7 +151,7 @@ function FieldForm({
         //  Backend xóa CỨNG trường cùng mọi giá trị đã gán trên các việc (duoc-CR-627).
         const ok = await confirm({
           title: 'Xóa trường khỏi dự án',
-          message: `Xóa trường «${field.name}»? Giá trị của trường này trên mọi công việc sẽ mất, không khôi phục được.`,
+          message: `Xóa trường "${field.name}"? Giá trị của trường này trên mọi công việc sẽ mất, không khôi phục được.`,
           confirmLabel: 'Xóa',
         })
         if (!ok) return

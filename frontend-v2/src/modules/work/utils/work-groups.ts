@@ -10,7 +10,7 @@ export interface FlatWorkGroup extends WorkGroup {
 /**
  * Duỗi cây nhóm → danh sách phẳng theo thứ tự cây (cha rồi tới con) — bao-CR-482.
  *
- * Ô chọn «Nhóm» của dự án và cụm nhóm ở màn liệt kê đều cần một danh sách phẳng;
+ * Ô chọn "Nhóm" của dự án và cụm nhóm ở màn liệt kê đều cần một danh sách phẳng;
  * cây chỉ có hai cấp (backend chặn cấp 3) nhưng viết đệ quy cho khỏi lệ thuộc.
  */
 export function flattenGroups(sidebar: WorkSidebar | undefined): FlatWorkGroup[] {
@@ -26,7 +26,7 @@ export function flattenGroups(sidebar: WorkSidebar | undefined): FlatWorkGroup[]
   return out
 }
 
-/** Tên nhóm theo id — cho cột «Nhóm» của bảng dự án. Không có = đứng ngoài nhóm. */
+/** Tên nhóm theo id — cho cột "Nhóm" của bảng dự án. Không có = đứng ngoài nhóm. */
 export function groupNameOf(groups: FlatWorkGroup[], groupId: number | null): string {
   if (!groupId) return ''
   return groups.find((g) => g.id === groupId)?.name ?? `Nhóm dự án #${groupId}`

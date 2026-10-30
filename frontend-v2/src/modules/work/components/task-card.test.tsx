@@ -13,7 +13,7 @@ import {
 } from '../types/work'
 
 /**
- * Thân thẻ kanban — ô tick «xong việc» và luật "trường rỗng thì BỎ HẲN dòng".
+ * Thân thẻ kanban — ô tick "xong việc" và luật "trường rỗng thì BỎ HẲN dòng".
  *
  * Vì sao có tệp này: thẻ kanban là chỗ dữ liệu bẩn nhất của phân hệ đổ về. Tên
  * việc do người dùng gõ tự do (dán cả đoạn văn, dán một chuỗi 300 ký tự không
@@ -101,7 +101,7 @@ function onlyFields(...keys: string[]): CardFields {
 
 const checkbox = () => screen.getByRole('checkbox')
 
-// ── Ô tick «xong việc» ──────────────────────────────────────────────────────────
+// ── Ô tick "xong việc" ──────────────────────────────────────────────────────────
 
 describe('TaskCardBody — ô tick xong việc', () => {
   it('tick rồi báo ĐÚNG id và trạng thái muốn chuyển sang', () => {
@@ -258,7 +258,7 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
     expect(screen.getByText(unbrokenTitle)).toBeInTheDocument()
   })
 
-  it('đông người phụ trách thì chỉ vẽ 3 avatar rồi «+n»', () => {
+  it('đông người phụ trách thì chỉ vẽ 3 avatar rồi "+n"', () => {
     const manyAssignees = Array.from({ length: 12 }, (_, i) => ({
       ...ASSIGNEE,
       employee_id: i + 1,
@@ -275,7 +275,7 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
     expect(screen.getByText('+9')).toBeInTheDocument()
   })
 
-  it('đúng 3 người thì KHÔNG có «+0» thừa', () => {
+  it('đúng 3 người thì KHÔNG có "+0" thừa', () => {
     const threeAssignees = Array.from({ length: 3 }, (_, i) => ({ ...ASSIGNEE, employee_id: i + 1 }))
     render(
       <TaskCardBody
@@ -312,14 +312,14 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
     expect(screen.getByText('?')).toBeInTheDocument()
   })
 
-  it('trường BẬT nhưng việc chưa có gì thì bỏ hẳn dòng, không vẽ «Hạn chót —»', () => {
+  it('trường BẬT nhưng việc chưa có gì thì bỏ hẳn dòng, không vẽ "Hạn chót —"', () => {
     render(<TaskCardBody task={makeTask()} labelFields={[]} fields={DEFAULT_CARD_FIELDS} canEdit />)
     for (const label of ['Phụ trách', 'Hạn chót', 'Ngày bắt đầu', 'Việc con', 'Bình luận']) {
       expect(screen.queryByText(label)).not.toBeInTheDocument()
     }
   })
 
-  it('trạng thái «Đang mở» KHÔNG vẽ dòng — mọi thẻ đều thế thì nói làm gì', () => {
+  it('trạng thái "Đang mở" KHÔNG vẽ dòng — mọi thẻ đều thế thì nói làm gì', () => {
     render(<TaskCardBody task={makeTask()} labelFields={[]} fields={onlyFields('status')} canEdit />)
     expect(screen.queryByText('Trạng thái')).not.toBeInTheDocument()
   })

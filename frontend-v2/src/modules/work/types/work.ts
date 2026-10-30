@@ -247,7 +247,7 @@ export interface WorkTask {
 /** Phần chưa tải của một cột ở chế độ nhẹ — bao-CR-483. */
 export interface WorkSectionRemaining {
   count: number
-  /** Việc đầu tiên CHƯA tải — mốc neo cho cú thả «xuống cuối cột». */
+  /** Việc đầu tiên CHƯA tải — mốc neo cho cú thả "xuống cuối cột". */
   next_task_id: number | null
 }
 
@@ -284,7 +284,7 @@ export interface WorkBoard {
   links: WorkTaskLink[]
   /**
    * bao-CR-483: chỉ có khi gọi `per_section > 0`. Khóa là `section_id`
-   * (`0` = «Chưa phân cột»); cột đã tải hết thì KHÔNG có khóa.
+   * (`0` = "Chưa phân cột"); cột đã tải hết thì KHÔNG có khóa.
    */
   remaining?: Record<number, WorkSectionRemaining>
   /** `true` = payload không có `description` của việc (chế độ nhẹ). */
@@ -302,6 +302,6 @@ export type WorkTaskType = {
   default_estimate_hours: string | null
   is_active: boolean
   sort_order: number
-  /** Số việc đang dùng loại này — loại đã có việc dùng thì «Xóa» chỉ là ngừng dùng. */
+  /** Số việc đang dùng loại này — loại đã có việc dùng thì "Xóa" chỉ là ngừng dùng. */
   task_count: number
 }
