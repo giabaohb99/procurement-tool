@@ -111,6 +111,20 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-696-hdsd | Sửa bài hướng dẫn cụm AI theo màn mới: một phân hệ AI, Kết nối, Nâng cao, Nhật ký
+- status: xong
+- date: 2026-10-30
+Giao diện gom Trợ lý AI và Kho skill AI thành một phân hệ AI (bao-CR-696), nên các bài hướng dẫn còn nói hai phân hệ riêng và
+menu cũ phải viết lại. Bài Dành cho quản trị: thay đoạn mở đầu bằng bảng menu theo nhóm (Trợ lý AI, Kết nối, Kho skill, Giám sát,
+Cấu hình) kèm ai thấy mục nào; mục Khóa nhân sự đổi thành Kết nối, ghi các cột mới (người, phòng, cách nối khóa riêng hay OAuth,
+ứng dụng và nơi quay về, dùng lần cuối) và ô tìm theo tên, email, mã nhân viên; mục Ứng dụng AI đã kết nối đổi thành Nâng cao,
+thêm cột người đang dùng, ô tìm và lọc trạng thái; Cấu hình đổi thành Cấu hình chung; bảng quyền sửa tên màn. Bài Nhật ký: chỉ
+đường mới qua nhóm Giám sát, thêm ô tìm theo người hoặc công cụ và cột Chứng từ. Bài AI riêng làm được gì, hai bài Trợ lý AI và
+bài Cách 2 đổi câu chỉ đường. Tài liệu chức năng 22 lên bản 1.4. Viết theo luật bao-CR-695, không dấu ngoặc kép góc. Đã chạy
+seed và nạp lại kho vector trên dev, soát trên devhelp thấy bảng menu mới hiện đúng; prod gom đợt sau.
+Mã nguồn: backend/scripts/seed_help_ket_noi_ai_mcp.py, seed_help_ket_noi_ai_cach_1.py, seed_help_ai_rieng_lam_duoc_gi.py, seed_help_tro_ly_ai.py, seed_help_tro_ly_ai_lap_bo_tai_khoan.py, doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md
+Deploy: dev 30/10
+
 ## bao-CR-695-giao-dien-dau-sao | Không để lộ dấu sao in đậm ở màn chi tiết việc của bot
 - status: xong
 - date: 2026-10-30
