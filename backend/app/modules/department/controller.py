@@ -168,7 +168,7 @@ def import_departments_csv(
     user=Depends(require("department", "import")),
 ):
     """duoc-CR-628: Nhập CSV phòng ban đã NGỪNG (ghi thẳng cột, xóa hàng loạt, không chạy thử).
-    Thay bằng «Quản trị → Quản lý Import → Phòng ban» (Excel, có chạy thử + hoàn tác)."""
+    Thay bằng "Quản trị → Quản lý Import → Phòng ban" (Excel, có chạy thử + hoàn tác)."""
     raise HTTPException(
-        410, "Nhập CSV phòng ban đã ngừng. Dùng «Quản trị → Quản lý Import → Phòng ban» "
+        410, "Nhập CSV phòng ban đã ngừng. Dùng \"Quản trị → Quản lý Import → Phòng ban\" "
              "(Excel, có chạy thử và hoàn tác).")

@@ -196,7 +196,7 @@ def _filter_by_doc_scope(db: Session, users: list[User], entity: str, doc_id: in
             if get_scoped(db, model, entity, doc_id, u, get_perm_profile(db, u), "approve") is not None:
                 out.append(u)
         except Exception:
-            #  Đóng (bỏ người này) nhưng PHẢI để lại dấu vết — im lặng là đúng kiểu lỗi «không ai nhận».
+            #  Đóng (bỏ người này) nhưng PHẢI để lại dấu vết — im lặng là đúng kiểu lỗi "không ai nhận".
             logging.getLogger("app.scoping").warning(
                 "Khong tinh duoc pham vi duyet cho user=%s entity=%s doc=%s", u.id, entity, doc_id,
                 exc_info=True)
@@ -228,7 +228,7 @@ def _legacy_approvers_for_entity(db: Session, entity: str) -> list[User]:
 
 def get_approvers_for_entity(db: Session, entity: str, doc_id: int = 0, *,
                              new_rules: bool = False) -> list[User]:
-    """Người có quyền duyệt `entity` — nguồn người nhận chuông «gửi duyệt» của ĐMH / YCTT.
+    """Người có quyền duyệt `entity` — nguồn người nhận chuông "gửi duyệt" của ĐMH / YCTT.
 
     `new_rules=False` (mặc định) = hành vi CŨ, giữ nguyên cho Duyệt dấu / Đặt xe (ô chọn người duyệt
     của Duyệt dấu dùng hàm này nên không được đổi). Chỉ ĐMH / YCTT truyền `new_rules=True`.
@@ -580,8 +580,8 @@ def trigger_notification(
     else:
         recipients = [creator] if creator else []
 
-    # bao-CR-474 — cộng thêm người nhận theo id NHÂN SỰ (vd người được chọn ở ô «Trưởng bộ
-    # phận» của YCMH). Trước đây chọn TBP khác trưởng phòng mặc định thì người được chọn KHÔNG
+    # bao-CR-474 — cộng thêm người nhận theo id NHÂN SỰ (vd người được chọn ở ô "Trưởng bộ
+    # phận" của YCMH). Trước đây chọn TBP khác trưởng phòng mặc định thì người được chọn KHÔNG
     # nhận chuông: báo duyệt chỉ đi theo phòng ban (manager_id + vai trò dept_head).
     extra_ids = [int(x) for x in (extra_employee_ids or []) if x]
     if extra_ids:

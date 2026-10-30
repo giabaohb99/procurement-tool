@@ -1,7 +1,7 @@
-"""Luật nhận «kiểu làm việc» (thuần) — duoc-CR-641, phase 04. Ngưỡng ở `label_thresholds.py`.
+"""Luật nhận "kiểu làm việc" (thuần) — duoc-CR-641, phase 04. Ngưỡng ở `label_thresholds.py`.
 
 Mỗi luật trả `(score 0..1, [khóa chỉ số đã kích hoạt])` hoặc None. Thiếu dữ liệu tối thiểu hoặc chỉ số cần
-mà `unmeasured` → None (KHÔNG gắn nhãn; khác với «không phải kiểu này»). `score` = mức vượt ngưỡng chuẩn hóa để sắp thứ tự.
+mà `unmeasured` → None (KHÔNG gắn nhãn; khác với "không phải kiểu này"). `score` = mức vượt ngưỡng chuẩn hóa để sắp thứ tự.
 Nhãn chỉ MÔ TẢ cách làm việc có bằng chứng; hồ sơ mặc định đọc theo KẾT QUẢ công việc (§8 thiết kế).
 """
 from dataclasses import dataclass, field

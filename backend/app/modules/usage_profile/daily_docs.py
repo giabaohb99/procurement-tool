@@ -17,7 +17,7 @@ TASK_VERB_BY_ACTION = {
     "approve": "a", "approved": "a", "reject": "r", "rejected": "r",
     "return": "t", "returned": "t", "delete": "d",
 }
-#  Quyết định trong bộ máy duyệt (không tính «gửi duyệt», «rút», «hủy»).
+#  Quyết định trong bộ máy duyệt (không tính "gửi duyệt", "rút", "hủy").
 APPROVAL_DECISION_ACTIONS = frozenset({
     "approve", "approved", "reject", "rejected", "return", "returned", "line_approve",
 })

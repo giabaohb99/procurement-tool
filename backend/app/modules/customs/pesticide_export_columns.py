@@ -1,7 +1,7 @@
 """Cột + dòng của tệp Excel xuất danh mục Thuốc BVTV (02/10/2026).
 
-Giữ ĐÚNG tên và THỨ TỰ 25 cột gốc của bản cào `danhmuc.thuocbvtv.com` (sheet «Danh sach thuoc»)
-và 12 cột gốc (sheet «Pham vi su dung») — để người dùng mở file đối chiếu được với bản cào, và vì
+Giữ ĐÚNG tên và THỨ TỰ 25 cột gốc của bản cào `danhmuc.thuocbvtv.com` (sheet "Danh sach thuoc")
+và 12 cột gốc (sheet "Pham vi su dung") — để người dùng mở file đối chiếu được với bản cào, và vì
 cả hai là NGUYÊN VĂN cấu trúc mà `pesticide_reader` đọc. Cột gốc mà bộ đọc KHÔNG dùng tới (hệ
 thống không giữ riêng trường đó) để TRỐNG: `hoat_chat_danh_sach`, `thoi_han_dang_ky`,
 `nhom_khang_thuoc`, `pham_vi_su_dung` (ô tổng hợp của bản cào — không nhầm với TÊN SHEET),
@@ -56,7 +56,7 @@ def export_id(p: CustomsPesticide, dup_source_ids: frozenset = frozenset()) -> i
 
 def _dedupe_join(values: list[str]) -> str:
     """Danh sách cây trồng / dịch hại của một thuốc → chuỗi duy nhất, giữ ĐÚNG thứ tự xuất hiện
-    đầu tiên (khớp cách bản cào gộp cột `cay_trong`/`dich_hai` ở sheet «Danh sach thuoc»)."""
+    đầu tiên (khớp cách bản cào gộp cột `cay_trong`/`dich_hai` ở sheet "Danh sach thuoc")."""
     seen: set[str] = set()
     out: list[str] = []
     for v in values:
@@ -68,7 +68,7 @@ def _dedupe_join(values: list[str]) -> str:
 
 def list_row(p: CustomsPesticide, uses: list[CustomsPesticideUse],
             dup_source_ids: frozenset = frozenset()) -> list:
-    """Một dòng sheet «Danh sach thuoc» — giá trị LẤY THẲNG từ cột đã lưu, không suy diễn lại."""
+    """Một dòng sheet "Danh sach thuoc" — giá trị LẤY THẲNG từ cột đã lưu, không suy diễn lại."""
     pid = export_id(p, dup_source_ids)
     return [
         pid, p.trade_name, p.pest_group, p.sector,
@@ -82,7 +82,7 @@ def list_row(p: CustomsPesticide, uses: list[CustomsPesticideUse],
 
 def use_rows(p: CustomsPesticide, uses: list[CustomsPesticideUse],
             dup_source_ids: frozenset = frozenset()) -> list[list]:
-    """Các dòng sheet «Pham vi su dung» của MỘT thuốc — `ten_thuoc`/`so_dang_ky`/`phan_nhom`/
+    """Các dòng sheet "Pham vi su dung" của MỘT thuốc — `ten_thuoc`/`so_dang_ky`/`phan_nhom`/
     `tinh_trang` lặp lại (đúng cách bản cào ghi) để đối chiếu chéo được, không phải tra lại sheet
     thuốc."""
     pid = export_id(p, dup_source_ids)

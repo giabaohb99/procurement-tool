@@ -177,8 +177,8 @@ def update_(cid: int, data: ContractUpdate, db: Session = Depends(get_db), user=
 def delete_block_reason(c: Contract, today: str | None = None) -> str:
     """ai-CR-169: lý do KHÔNG cho xóa hợp đồng; rỗng = xóa được.
 
-    Hợp đồng không có trạng thái «nháp» riêng (mặc định tạo ra là `active`, chưa ký), nên
-    «nháp / chưa hiệu lực» hiểu là: chưa ký VÀ chưa tới ngày bắt đầu (hoặc đã bị đánh Hủy).
+    Hợp đồng không có trạng thái "nháp" riêng (mặc định tạo ra là `active`, chưa ký), nên
+    "nháp / chưa hiệu lực" hiểu là: chưa ký VÀ chưa tới ngày bắt đầu (hoặc đã bị đánh Hủy).
     Đã ký, đang hiệu lực theo ngày, hết hạn, thanh lý → chỉ được đổi trạng thái, không xóa —
     xóa cứng là mất luôn tệp hợp đồng thật đính kèm.
     """

@@ -57,7 +57,7 @@ class ReportPhaseIn(BaseModel):
 
 
 class ReportInitIn(BaseModel):
-    """«Khởi tạo báo cáo mẫu» — chọn mẫu (duoc-CR-614). Không gửi = mẫu chung, để client
+    """"Khởi tạo báo cáo mẫu" — chọn mẫu (duoc-CR-614). Không gửi = mẫu chung, để client
     cũ (gửi thân rỗng) vẫn chạy như trước."""
 
     template: int = Field(default=RT_COMMON)
@@ -166,7 +166,7 @@ class ReportFirstDocIn(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     #  Id DÒNG CHỨNG TỪ (dòng YCBG / dòng ĐMH), 0 = Chung — nút dòng hàng chưa tồn tại lúc này.
     line_id: int = Field(default=0, ge=0)
-    #  Vị trí trong 5 giai đoạn mặc định (0 = «Pháp lý & Giấy phép»).
+    #  Vị trí trong 5 giai đoạn mặc định (0 = "Pháp lý & Giấy phép").
     phase_order: int = Field(default=0, ge=0, le=len(DEFAULT_PHASES) - 1)
 
     @field_validator("title")

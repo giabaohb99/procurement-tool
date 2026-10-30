@@ -1,14 +1,14 @@
 """Đối chiếu HAI CHIỀU giữa danh mục thuốc BVTV và danh sách hoạt chất CẤM (TT 75/2025) — 29/09/2026.
 
-  · Mục «Thuốc BVTV»: thuốc nào có hoạt chất nằm trong danh sách cấm thì gắn cờ, lọc riêng được.
-  · Mục «Pháp lý»: mỗi hoạt chất cấm đếm được bao nhiêu thuốc trong danh mục đang chứa nó.
+  · Mục "Thuốc BVTV": thuốc nào có hoạt chất nằm trong danh sách cấm thì gắn cờ, lọc riêng được.
+  · Mục "Pháp lý": mỗi hoạt chất cấm đếm được bao nhiêu thuốc trong danh mục đang chứa nó.
 
 Đo trên bản cào 28/09 thì nguồn đã BỎ HẲN thuốc chứa hoạt chất cấm (kể cả thuốc hết hiệu lực) —
 nên kết quả bình thường là 0. Đây là bước KIỂM CHÉO: danh mục có lọt thuốc cấm thì màn hình báo.
 
 ⚠️ Khớp NGUYÊN TÊN hoạt chất, KHÔNG khớp chuỗi con / từ đầu như `ingredient.IngredientTagger`.
 Danh mục có 10 thuốc chứa Chlorpyrifos **methyl** (không cấm) trong khi thứ bị cấm là Chlorpyrifos
-**ethyl** — khớp theo từ đầu là gắn cờ «cấm» oan cho cả 10. Nới duy nhất: tên thuốc dài hơn tên cấm
+**ethyl** — khớp theo từ đầu là gắn cờ "cấm" oan cho cả 10. Nới duy nhất: tên thuốc dài hơn tên cấm
 ĐÚNG bằng một đuôi muối / dạng chế phẩm (`Paraquat dichloride`, `Glyphosate isopropylamine salt`)
 — đó vẫn là chính hoạt chất ấy. `METHYL` / `ETHYL` cố ý KHÔNG nằm trong bộ đuôi đó.
 
@@ -28,7 +28,7 @@ from .model import CustomsPesticide, CustomsRegulation
 _PAREN = re.compile(r"\(([^)]*)\)")
 #  Hàm lượng CÓ đơn vị (`277g/l`, `10%`, `2.5 %w/w`, `276 g/ l`, `50G`) và dạng chế phẩm dính số
 #  (`20 SL`, `800EC`, `3GR`). Đơn vị bắt buộc — khác `ingredient._AMOUNT`: số trần mà cũng bỏ thì
-#  «2,4-D» mất «2,4» còn trơ «D».
+#  "2,4-D" mất "2,4" còn trơ "D".
 _AMOUNT = re.compile(
     r"\d+(?:[.,]\d+)?\s*(?:%\s*(?:W\s*/\s*W|W\s*/\s*V)?"
     r"|(?:MG|ML|G|KG|L)\s*/\s*(?:KG|L|HA)\b"
@@ -36,12 +36,12 @@ _AMOUNT = re.compile(
     r"|(?:EC|SC|WP|WG|WDG|SL|GR|SP|OD|CS|EW|ME|FS|DP|TC|SE|DF|ZC|GB|RB|AB|BR|DS|SG|TB|KG|G|L)\b)",
     re.IGNORECASE)
 #  Ký tự mà bản cào / văn bản pháp lý hay lẫn vào: khoảng trắng không ngắt, gạch mềm, gạch dài,
-#  α/β của font Symbol (vùng dùng riêng U+F061/F062). Không đổi thì cả tên rơi ở bước «chỉ ASCII».
+#  α/β của font Symbol (vùng dùng riêng U+F061/F062). Không đổi thì cả tên rơi ở bước "chỉ ASCII".
 _CHAR_MAP = str.maketrans({"\xa0": " ", "\xad": "-", "‐": "-", "‑": "-", "‒": "-",
                            "–": "-", "—": "-", "’": "'", "\uf061": "alpha",
                            "\uf062": "beta", "α": "alpha", "β": "beta", "ß": "beta"})
 _SAFENER = re.compile(r"(?i)^\s*ch[aấ]t an to[aà]n\s*")
-#  Tên cấm có nhiều cách gọi: «BHC, Lindane». Chỉ tách ở phẩy CÓ khoảng trắng — «2,4-D» giữ nguyên.
+#  Tên cấm có nhiều cách gọi: "BHC, Lindane". Chỉ tách ở phẩy CÓ khoảng trắng — "2,4-D" giữ nguyên.
 _ALTERNATES = re.compile(r";|,\s+|\s+/\s+")
 _SALT_WORDS = frozenset({
     "DICHLORIDE", "CHLORIDE", "HYDROCHLORIDE", "BROMIDE", "SULFATE", "SULPHATE", "SALT", "SALTS",
@@ -103,8 +103,8 @@ class BannedIngredientMatcher:
 
     def _lookup(self, ingredient: str) -> list[CustomsRegulation]:
         """Khớp nguyên tên, rồi bóc dần đuôi muối từ phải sang (`GLYPHOSATE ISOPROPYLAMINE SALT` →
-        `GLYPHOSATE`) và gom MỌI tầng trúng — không dừng ở tầng đầu: danh sách có cả «Paraquat» lẫn
-        «Paraquat dichloride» thì thuốc Paraquat dichloride phải đếm cho CẢ HAI, bất kể bộ khớp
+        `GLYPHOSATE`) và gom MỌI tầng trúng — không dừng ở tầng đầu: danh sách có cả "Paraquat" lẫn
+        "Paraquat dichloride" thì thuốc Paraquat dichloride phải đếm cho CẢ HAI, bất kể bộ khớp
         được dựng từ những dòng nào (review 29/09: dừng sớm làm số đếm lệch danh sách nó mở ra)."""
         hits = list(self.by_key.get(ingredient, []))
         words = ingredient.split()
@@ -135,7 +135,7 @@ def load_matcher(db: Session) -> BannedIngredientMatcher:
 def build_index(db: Session, matcher: BannedIngredientMatcher | None = None) -> dict[int, set[int]]:
     """id hoạt chất cấm → tập id thuốc chứa nó, quét CẢ danh mục (~7 nghìn dòng, hai cột, vài chục ms).
 
-    Không lưu thành cột: danh sách cấm sửa được trên màn «Cấu hình», lưu sẵn là lệch ngay khi có
+    Không lưu thành cột: danh sách cấm sửa được trên màn "Cấu hình", lưu sẵn là lệch ngay khi có
     người sửa một dòng mà không ai nhớ chạy lại.
     """
     matcher = matcher or load_matcher(db)

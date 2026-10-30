@@ -110,7 +110,7 @@ def _me_payload(db: Session, user) -> dict:
         "signature": getattr(user, 'signature', ''),
         "notify_email": bool(getattr(user, 'notify_email', True)),
         "phone": emp.phone if emp else "",
-        #  CẢ id lẫn tên: màn Tạo văn bản tự điền ô «Phòng chủ trì» theo phòng
+        #  CẢ id lẫn tên: màn Tạo văn bản tự điền ô "Phòng chủ trì" theo phòng
         #  của người đang đăng nhập, mà dò theo TÊN thì sai — một tên phòng có
         #  mặt ở nhiều pháp nhân (xem `department/service.py`).
         "department_id": emp.department_id if emp else 0,
@@ -274,7 +274,7 @@ def change_password(data: schema.ChangePasswordInput, user=Depends(get_current_u
     #  phiên của mình thì đây chính là động tác người dùng làm để đuổi họ ra.
     #
     #  ⚠️ Cố ý KHÔNG tăng `token_version` (khác bản thiết kế §5 viết ban đầu):
-    #  tăng là giết cả vé đang cầm, tức bấm «Đổi mật khẩu» xong bị đá ra màn
+    #  tăng là giết cả vé đang cầm, tức bấm "Đổi mật khẩu" xong bị đá ra màn
     #  đăng nhập. Giữ phiên hiện tại sống nên chấp nhận độ trễ tối đa 60 giây
     #  của đệm tra phiên ở các tiến trình uvicorn khác.
     ctx = get_context()

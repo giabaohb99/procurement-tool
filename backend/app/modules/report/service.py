@@ -640,7 +640,7 @@ def _pr_line_po_links(db, pr_codes: set[str]) -> tuple[dict, dict]:
     """bao-CR-691: đơn mua hàng của các dòng YCMH trên MỘT trang — gom bằng hai truy vấn, không N+1.
 
     Ghép theo (mã YCMH, mã hàng): `PurchaseOrder.pr_code` = mã phiếu VÀ dòng đơn cùng `product_code`. Bỏ đơn đã
-    xóa / đã hủy và dòng đơn Hủy — đúng luật «đã tạo đơn» của `sync_from_purchase_orders` (màn Tiến độ mua hàng).
+    xóa / đã hủy và dòng đơn Hủy — đúng luật "đã tạo đơn" của `sync_from_purchase_orders` (màn Tiến độ mua hàng).
     HẠN CHẾ: hai dòng YCMH cùng mã hàng trong một phiếu nhận CÙNG một tập đơn (đơn không ghi dòng YCMH nguồn).
     Trả (links theo (pr_code, product_code) -> {po_codes, supplier mới nhất, po_item_ids}, giao hàng theo po_item_id)."""
     from sqlalchemy import func
@@ -701,7 +701,7 @@ def _pr_line_rows(db, pairs, *, show_supplier: bool) -> list[dict]:
         link = links.get((pr.code, it.product_code)) if it.product_code else None
         item_ids = link["item_ids"] if link else []
         promised = max((deliveries[i]["promised"] for i in item_ids if i in deliveries), default="")
-        handler_id = int(pr.handler_dept_id or 0) or central_id   # 0 = «Thu mua chung» cũ, đọc như phòng thu mua mặc định
+        handler_id = int(pr.handler_dept_id or 0) or central_id   # 0 = "Thu mua chung" cũ, đọc như phòng thu mua mặc định
         rows.append({
             "id": it.id, "pr_id": pr.id, "pr_code": pr.code, "created_date": pr.request_date,
             "requester": pr.requester, "department": pr.department,

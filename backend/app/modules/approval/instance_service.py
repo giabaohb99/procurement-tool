@@ -96,7 +96,7 @@ def start(db: Session, entity: str, entity_id: int, subject: dict,
     raw_snapshot = flow_service.snapshot(db, flow)
     stage = flow_service.stages(raw_snapshot)
     if not stage:
-        raise HTTPException(400, f"Luồng «{flow.name}» chưa khai bước nào")
+        raise HTTPException(400, f"Luồng \"{flow.name}\" chưa khai bước nào")
 
     instance = ApprovalInstance(
         entity=entity, entity_id=entity_id,
@@ -114,7 +114,7 @@ def start(db: Session, entity: str, entity_id: int, subject: dict,
         #  Chốt chặn THẬT là `running_slot` + UNIQUE ở tầng dữ liệu; câu kiểm
         #  `phien_dang_chay` bên trên chỉ để có câu báo đẹp cho ca thường.
         #  Rơi vào đây nghĩa là một lượt bấm khác vừa ghi xong giữa hai câu lệnh
-        #  của ta — đúng ca NHẤP ĐÚP nút «Gửi duyệt» (dựng lại được 24/08/2026,
+        #  của ta — đúng ca NHẤP ĐÚP nút "Gửi duyệt" (dựng lại được 24/08/2026,
         #  trước khi có ràng buộc thì ra HAI phiếu duyệt cùng chạy).
         db.rollback()
         raise HTTPException(
@@ -123,7 +123,7 @@ def start(db: Session, entity: str, entity_id: int, subject: dict,
 
     record_audit(db, instance, ACTION_START, actor,
                 actor_employee_id=submitter_employee_id,
-                comment=f"Trình duyệt theo luồng «{flow.name}» bản {flow.version_no}")
+                comment=f"Trình duyệt theo luồng \"{flow.name}\" bản {flow.version_no}")
     open_stage(db, instance, subject, stage[0])
     db.commit()
     db.refresh(instance)
@@ -182,8 +182,8 @@ def open_stage(db: Session, instance: ApprovalInstance, subject: dict, seq: int)
         db.add(task)
         new_tasks.append(task)
     db.flush()
-    #  Báo NGAY khi việc mở ra. Không báo thì việc nằm im trong hộp «Việc của
-    #  tôi» tới lúc người duyệt tự nhớ ra mà mở hộp — phiếu chết giữa luồng.
+    #  Báo NGAY khi việc mở ra. Không báo thì việc nằm im trong hộp "Việc của
+    #  tôi" tới lúc người duyệt tự nhớ ra mà mở hộp — phiếu chết giữa luồng.
     task_notification.notify_new_tasks(db, instance, new_tasks)
 
 
@@ -212,7 +212,7 @@ def exclude_submitter_ids(approver_kind: int | None, submitter_employee_id: int 
     * **NP022 (05/09/2026)** — luồng hai chặng cùng một người: chặng 1 sống nhờ
       *người dự phòng* (mà người dự phòng lại chính là người nộp — cùng một luật
       bị bỏ qua ở đường khác), chặng 2 không khai dự phòng nên phiếu **kẹt**:
-      dòng thời gian vẫn ghi «đang chờ phản hồi» trong khi KHÔNG AI có nút duyệt.
+      dòng thời gian vẫn ghi "đang chờ phản hồi" trong khi KHÔNG AI có nút duyệt.
 
     Hai chặng cùng một người thì `split_duplicate_approvers` (I06) mới là chỗ
     quyết định — bật *bỏ qua khi trùng người* thì chặng sau tự qua, tắt thì họ
@@ -231,7 +231,7 @@ def split_duplicate_approvers(ids: list[int], skip_duplicate: int,
 
     HÀM THUẦN, không đọc/ghi gì — tách ra 23/09/2026 khỏi `_split_duplicate_approvers`
     đúng vì lý do đó: phần NÀY (ai bị coi là trùng) là luật dùng chung với màn
-    xem trước; phần GHI (mở việc «tự qua» + dấu vết) chỉ có nghĩa với một phiên
+    xem trước; phần GHI (mở việc "tự qua" + dấu vết) chỉ có nghĩa với một phiên
     duyệt THẬT đang chạy, nên vẫn ở lại `_split_duplicate_approvers`.
 
     `already_approved`: người gọi tự tính — phiên đang chạy hỏi CSDL
@@ -320,7 +320,7 @@ def _handle_no_approver(db: Session, instance: ApprovalInstance, node, subject: 
         task_notification.notify_new_tasks(db, instance, [task])
         return
 
-    _finish(db, instance, f"Bước «{node.name or node.seq}» không tìm được người duyệt")
+    _finish(db, instance, f"Bước \"{node.name or node.seq}\" không tìm được người duyệt")
 
 
 def _finish(db: Session, instance: ApprovalInstance, reason: str) -> None:
@@ -386,7 +386,7 @@ def advance(db: Session, instance: ApprovalInstance, subject: dict) -> None:
 
 
 def open_next_task_in_step(db: Session, instance: ApprovalInstance, node) -> None:
-    """Bước «lần lượt»: người vừa duyệt xong thì mở việc cho người kế."""
+    """Bước "lần lượt": người vừa duyệt xong thì mở việc cho người kế."""
     if node.multi_mode != MULTI_SEQUENTIAL:
         return
     waiting = [row for row in tasks_of_instance(db, instance.id)

@@ -15,7 +15,7 @@ class Notification(Base, AuditMixin):
     body: Mapped[str] = mapped_column(Text)
     link: Mapped[str] = mapped_column(String(500), nullable=True)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
-    #  duoc-CR-641: mốc đánh dấu đã đọc (chỉ từ ngày deploy, không bù) — đo «gửi → đọc mất bao lâu».
+    #  duoc-CR-641: mốc đánh dấu đã đọc (chỉ từ ngày deploy, không bù) — đo "gửi → đọc mất bao lâu".
     read_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 

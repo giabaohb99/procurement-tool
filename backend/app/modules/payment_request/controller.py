@@ -199,8 +199,8 @@ def get_hanging_(supplier_code: str, po_code: str = "", unlinked: int = 0,
 @router.get("/meta/department-managers")
 def department_managers_(db: Session = Depends(get_db),
                          user=Depends(require("payment_request", "read"))):
-    """bao-CR-553 — ô «Trưởng bộ phận» của YCTT: trưởng phòng mọi phòng (có Ban Giám đốc).
-    Khai TRƯỚC `/{rid}`, nếu không FastAPI đem «meta» đi parse int."""
+    """bao-CR-553 — ô "Trưởng bộ phận" của YCTT: trưởng phòng mọi phòng (có Ban Giám đốc).
+    Khai TRƯỚC `/{rid}`, nếu không FastAPI đem "meta" đi parse int."""
     from app.core.approver_candidates import department_managers
     return success({"items": department_managers(db)})
 
@@ -228,7 +228,7 @@ def print_(rid: int, db: Session = Depends(get_db), user=Depends(require("paymen
     data["created_by_name"] = prof["name"]
     data["created_by_position"] = prof["position"]     # Chức vụ
     data["created_by_dept"] = prof["department"]        # Bộ phận
-    # bao-CR-553: ô «Trưởng bộ phận» của phiếu thắng (chị Mi duyệt nhưng bản in nội bộ ghi anh
+    # bao-CR-553: ô "Trưởng bộ phận" của phiếu thắng (chị Mi duyệt nhưng bản in nội bộ ghi anh
     # Dững); để trống thì vẫn là trưởng phòng của người lập như trước.
     data["dept_manager"] = (req.head_of_dept or "").strip() or prof["manager"]   # Trưởng phòng ban/bộ phận
     # Thông tin ngân hàng NCC (khớp theo mã NCC) để in mục HÌNH THỨC THANH TOÁN.

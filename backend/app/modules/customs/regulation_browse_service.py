@@ -1,8 +1,8 @@
-"""Mục «Pháp lý» của Tra cứu thị trường (29/09/2026) — DUYỆT toàn bộ danh mục hóa chất theo văn bản.
+"""Mục "Pháp lý" của Tra cứu thị trường (29/09/2026) — DUYỆT toàn bộ danh mục hóa chất theo văn bản.
 
 Khác `service.lookup_regulations` (tra một từ, tối đa 50 dòng, cho ô tra nhanh): đây là bảng có
 phân trang + lọc theo văn bản, để người thu mua đọc cả danh sách cấm / có ngưỡng / phải công bố.
-Chỉ đọc dòng đang dùng (`is_active`); sửa danh mục vẫn ở mục «Cấu hình» (khóa `customs_regulation`).
+Chỉ đọc dòng đang dùng (`is_active`); sửa danh mục vẫn ở mục "Cấu hình" (khóa `customs_regulation`).
 """
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
@@ -20,7 +20,7 @@ def _filtered(query, q: str, list_code: int | None):
         like = f"%{t}%"
         conds = [CustomsRegulation.name.ilike(like), CustomsRegulation.name_vi.ilike(like),
                  CustomsRegulation.cas_no.ilike(like), CustomsRegulation.formula.ilike(like)]
-        cas = FORMULA_CAS.get(t.upper().replace(" ", ""), "")   # «H2SO4» → CAS 7664-93-9
+        cas = FORMULA_CAS.get(t.upper().replace(" ", ""), "")   # "H2SO4" → CAS 7664-93-9
         if cas:
             conds.append(CustomsRegulation.cas_no == cas)
         query = query.filter(or_(*conds))
@@ -47,7 +47,7 @@ def _pesticide_counts(db: Session, rows: list[CustomsRegulation]) -> dict[int, i
     """Hoạt chất CẤM trên trang → số thuốc trong danh mục BVTV đang chứa nó (khớp tên, tham khảo).
 
     Dòng không phải TT 75 không có khóa; danh mục thuốc CHƯA nạp thì cũng không có khóa (`None`
-    lên màn thành «Chưa nạp danh mục thuốc»), vì «0 thuốc» lúc đó là nói sai: chưa đối chiếu gì.
+    lên màn thành "Chưa nạp danh mục thuốc"), vì "0 thuốc" lúc đó là nói sai: chưa đối chiếu gì.
     Tên cấm không rút ra được khóa nào (`pesticide_matchable` sai) cũng không có số, cùng lý do.
 
     Dựng bộ khớp từ CẢ danh sách cấm, không riêng các dòng trên trang — y hệt danh sách thuốc

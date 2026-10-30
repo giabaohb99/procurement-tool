@@ -47,8 +47,8 @@ APPROVER_FIELD = 6        # lấy từ một ô trên phiếu → approver_ref =
 #  `approver_ref` = danh sách department_id, ngăn bằng dấu phẩy.
 #
 #  Vì sao cần: `APPROVER_DEPT_HEAD` luôn bám theo phòng của người trình, nên
-#  không khai được những bước có thật như «đơn nghỉ phép của mọi phòng đều phải
-#  qua trưởng phòng Nhân sự» hay «hợp đồng qua trưởng phòng Pháp chế». Trước đây
+#  không khai được những bước có thật như "đơn nghỉ phép của mọi phòng đều phải
+#  qua trưởng phòng Nhân sự" hay "hợp đồng qua trưởng phòng Pháp chế". Trước đây
 #  muốn thế phải khai đích danh một CON NGƯỜI (`APPROVER_EMPLOYEE`) — người đó
 #  đổi vị trí là luồng trỏ sai mà không có gì báo.
 APPROVER_DEPT_HEAD_OF = 7
@@ -60,7 +60,7 @@ APPROVER_DEPT_HEAD_OF = 7
 #  trưởng nhóm…). Hồ sơ chưa gán / người quản lý không bấm được → lùi về trưởng bộ
 #  phận người nộp, để đơn không kẹt (xem `approver_resolver._direct_manager`).
 APPROVER_DIRECT_MANAGER = 8
-#  NGƯỜI CÓ QUYỀN DUYỆT theo màn Phân quyền (duoc-CR-680): ai giữ vai trò có ô «Duyệt» trên khóa
+#  NGƯỜI CÓ QUYỀN DUYỆT theo màn Phân quyền (duoc-CR-680): ai giữ vai trò có ô "Duyệt" trên khóa
 #  quyền của chính loại chứng từ này, trong phạm vi dữ liệu của họ. `approver_ref` = khóa quyền,
 #  do máy chủ tự ghi bằng `flow.entity` lúc lưu bước. Xem `permission_approvers.py`.
 APPROVER_PERMISSION = 9

@@ -7,7 +7,7 @@ mã. Danh mục thuần nên dựng bằng `make_crud_router` (khóa quyền ri�
 
 * `before_create` — bỏ trống mã thì tự cấp SỐ kế tiếp từ 15 trở đi, không bao giờ
   cấp 99 (mã 1..14 và 99 là bộ cũ, đã nằm trong dữ liệu);
-* `before_update` — mã 99 «Chi phí khác» là chỗ rơi mặc định của mã lạ nên không
+* `before_update` — mã 99 "Chi phí khác" là chỗ rơi mặc định của mã lạ nên không
   đổi tên, không ngừng dùng được;
 * `before_delete` — chặn xóa mã 99 và mọi loại đang có dòng chi phí trỏ tới.
 
@@ -26,7 +26,7 @@ from app.modules.employee.field_limits import Str50, Str100, Str600
 
 from .model import (AllocationMethod, CostTypeGroup, ImportCostType, POCost, POCostType)
 
-#  Mã mới cấp từ đây trở đi; 1..14 là bộ cũ, 99 là «Chi phí khác».
+#  Mã mới cấp từ đây trở đi; 1..14 là bộ cũ, 99 là "Chi phí khác".
 FIRST_CUSTOM_CODE = 15
 OTHER_CODE = int(ImportCostType.OTHER)
 #  Cột `code` là SMALLINT — mã do người gõ cũng phải nằm trong dải này.
@@ -97,7 +97,7 @@ class POCostTypeResponse(BaseModel):
 def next_cost_type_code(db: Session) -> int:
     """Mã kế tiếp = max(mã hiện có, 14) + 1, nhảy qua 99.
 
-    Mã 99 «Chi phí khác» luôn có trong danh mục nên phải BỎ nó ra khỏi phép max — không thì
+    Mã 99 "Chi phí khác" luôn có trong danh mục nên phải BỎ nó ra khỏi phép max — không thì
     ngay mã tự cấp đầu tiên đã là 100, bỏ trống cả dải 15..98."""
     current = db.query(func.max(POCostType.code)).filter(POCostType.code != OTHER_CODE).scalar() or 0
     code = max(int(current), FIRST_CUSTOM_CODE - 1) + 1
@@ -111,7 +111,7 @@ def _assign_code(db: Session, data: POCostTypeCreate) -> None:
     if not data.code:
         data.code = next_cost_type_code(db)
     elif int(data.code) == OTHER_CODE:
-        raise HTTPException(400, "Mã 99 dành riêng cho «Chi phí khác», chọn mã khác")
+        raise HTTPException(400, "Mã 99 dành riêng cho \"Chi phí khác\", chọn mã khác")
 
 
 def _protect_other(db: Session, obj: POCostType, values: dict) -> None:
@@ -119,9 +119,9 @@ def _protect_other(db: Session, obj: POCostType, values: dict) -> None:
     if int(obj.code) != OTHER_CODE:
         return
     if values.get("is_active") is False:
-        raise HTTPException(400, "«Chi phí khác» (mã 99) không ngừng dùng được — mã lạ đều dồn về đây")
+        raise HTTPException(400, "\"Chi phí khác\" (mã 99) không ngừng dùng được — mã lạ đều dồn về đây")
     if "name" in values and (values["name"] or "").strip() != (obj.name or "").strip():
-        raise HTTPException(400, "«Chi phí khác» (mã 99) không đổi tên được")
+        raise HTTPException(400, "\"Chi phí khác\" (mã 99) không đổi tên được")
 
 
 def count_costs_using(db: Session, code: int) -> int:
@@ -129,14 +129,14 @@ def count_costs_using(db: Session, code: int) -> int:
 
 
 def _block_delete_in_use(db: Session, obj: POCostType) -> None:
-    """Chốt `before_delete`: còn dòng chi phí trỏ tới thì không xóa (bỏ tick «Đang dùng» thay vì xóa)."""
+    """Chốt `before_delete`: còn dòng chi phí trỏ tới thì không xóa (bỏ tick "Đang dùng" thay vì xóa)."""
     if int(obj.code) == OTHER_CODE:
-        raise HTTPException(400, "«Chi phí khác» (mã 99) không xóa được")
+        raise HTTPException(400, "\"Chi phí khác\" (mã 99) không xóa được")
     used = count_costs_using(db, obj.code)
     if used:
         raise HTTPException(
-            400, f"«{obj.name}» đang có {used} dòng chi phí trên các đơn mua hàng nên không xóa được. "
-                 "Bỏ tick «Đang dùng» để ẩn khỏi ô chọn thay vì xóa.")
+            400, f"\"{obj.name}\" đang có {used} dòng chi phí trên các đơn mua hàng nên không xóa được. "
+                 "Bỏ tick \"Đang dùng\" để ẩn khỏi ô chọn thay vì xóa.")
 
 
 router = make_crud_router(

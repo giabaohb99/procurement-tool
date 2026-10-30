@@ -139,7 +139,7 @@ def _resolve_ref_obj(db: Session, ref: str, value):
 
 
 def _resolve_approver_id(db: Session, value) -> int:
-    """«Người duyệt cấp 1» ghi bằng TÊN nhân sự -> id TÀI KHOẢN (khớp first_approver_id).
+    """"Người duyệt cấp 1" ghi bằng TÊN nhân sự -> id TÀI KHOẢN (khớp first_approver_id).
     Hai chặng: Nhân sự theo họ tên -> Tài khoản có employee_id đó."""
     emp = catalog_import.resolve_ref_obj(db, "employee", value)
     if not emp:
@@ -170,7 +170,7 @@ def _create_attachment_placeholders(db, entity: str, entity_id: int, raw, doc_ty
 
 # ── Suy diễn nhiều cột từ MỘT ô (đặt xe) ────────────────────────────────────
 def _derive_vehicle_type(raw, target: dict) -> None:
-    """«Loại yêu cầu» ('Đi công tác' / 'Giao hàng' / '… tự lái') -> request_type + is_self_drive."""
+    """"Loại yêu cầu" ('Đi công tác' / 'Giao hàng' / '… tự lái') -> request_type + is_self_drive."""
     low = _s(raw).lower()
     if not low:
         return
@@ -179,7 +179,7 @@ def _derive_vehicle_type(raw, target: dict) -> None:
 
 
 def _derive_route(raw, target: dict) -> None:
-    """«Lộ trình» 'A -> B -> C' -> điểm đi / điểm đến / điểm dừng (JSON)."""
+    """"Lộ trình" 'A -> B -> C' -> điểm đi / điểm đến / điểm dừng (JSON)."""
     s = _s(raw)
     if not s:
         return
@@ -559,7 +559,7 @@ def run(db: Session, batch, wb, apply: bool) -> None:
 
         counts["created"] += 1
         #  ai-CR-169: ghi lại TRẠNG THÁI lúc nhập (Đặt xe / Duyệt dấu nhập cả lịch sử nên trạng thái
-        #  đến từ file, không phải «nháp»). Hoàn tác so với giá trị này: khác = phiếu đã được xử lý
+        #  đến từ file, không phải "nháp"). Hoàn tác so với giá trị này: khác = phiếu đã được xử lý
         #  sau khi nhập, không hoàn tác nữa.
         snapshot = json.dumps({"status": getattr(header, "status", None)}) if hasattr(header, "status") else ""
         changes.append({"target_id": header.id, "was_new": True, "snapshot": snapshot})
@@ -582,11 +582,11 @@ def _resolve_ref(db, f, code, row_no, code_for_log, log) -> int:
     if obj:
         return obj.id
     log(row_no, LogLevel.REVIEW, "ref_not_found",
-        f"«{f['header']}» = '{code}' không có trong danh mục — để trống", ref_key=code_for_log)
+        f"\"{f['header']}\" = '{code}' không có trong danh mục — để trống", ref_key=code_for_log)
     return 0
 
 
-#  ai-CR-169 — trạng thái «lúc nhập» của các chứng từ mà import KHÔNG đọc trạng thái từ file: luôn là nháp.
+#  ai-CR-169 — trạng thái "lúc nhập" của các chứng từ mà import KHÔNG đọc trạng thái từ file: luôn là nháp.
 #  Đặt xe / Duyệt dấu nhập cả lịch sử (trạng thái từ file) nên không có trong bảng này — lô mới ghi trạng thái
 #  vào `ImportChange.snapshot`, lô cũ (snapshot rỗng) chỉ kiểm phát sinh.
 _INITIAL_STATUS: dict[type, str] = {SurveyRequest: "draft", PurchaseRequest: "draft", Survey: "draft",
@@ -677,7 +677,7 @@ def revert_blockers(db: Session, module: int, changes) -> list[str]:
         expected = _imported_status(ch, header_model)
         if expected is not _UNKNOWN and getattr(h, "status", None) != expected:
             label = getattr(h, "status_label", None) or str(h.status)
-            reasons.insert(0, f"trạng thái đã đổi thành «{label}»")
+            reasons.insert(0, f"trạng thái đã đổi thành \"{label}\"")
         if reasons:
             problems.append(f"{h.code}: {', '.join(reasons)}")
     return problems

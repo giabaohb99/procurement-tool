@@ -57,7 +57,7 @@ def find_error(raw: str, fields: dict) -> str:
     `fields` = {khóa trong bối cảnh phiếu: nhãn tiếng Việt}. Dùng ở CỬA LƯU (màn Cấu hình hệ
     thống), KHÔNG dùng lúc chạy: lúc chạy `parse()` vẫn khoan dung như cũ để một ô cấu hình hỏng
     không chặn được phiếu nào. Chặn ở cửa lưu là để lỗi gõ sai lộ ra ngay lúc bấm Lưu, thay vì
-    lặng lẽ thành «không bỏ qua phiếu nào» như trước.
+    lặng lẽ thành "không bỏ qua phiếu nào" như trước.
     """
     if not (raw or "").strip():
         return ""
@@ -73,10 +73,10 @@ def find_error(raw: str, fields: dict) -> str:
             return f"dòng {index} không phải một điều kiện"
         field = row.get("field")
         if not isinstance(field, str) or field not in fields:
-            return f"dòng {index} dùng trường «{field}» không có. Trường dùng được: {known}"
+            return f"dòng {index} dùng trường \"{field}\" không có. Trường dùng được: {known}"
         op = row.get("op", "eq")
         if not isinstance(op, str) or op not in OPS:
-            return f"dòng {index} dùng phép so «{op}» không có"
+            return f"dòng {index} dùng phép so \"{op}\" không có"
         value = row.get("value")
         if op in LIST_OPS and not _as_list(value):
             return f"dòng {index} ({fields[field]}) chưa chọn giá trị nào"
@@ -144,7 +144,7 @@ def describe(raw: str, labels: dict | None = None) -> str:
     """Câu tiếng Việt của điều kiện, cho bảng theo dõi và bản in dấu vết.
 
     `labels` (tùy chọn, bao-CR-528) đổi khóa trường ra nhãn tiếng Việt — nhật ký màn Cấu hình
-    đọc «Phòng xử lý có giá trị» thay vì «handler_dept_id có giá trị».
+    đọc "Phòng xử lý có giá trị" thay vì "handler_dept_id có giá trị".
     """
     condition = parse(raw)
     if not condition:

@@ -81,7 +81,7 @@ class PosOrderMatchStatus(IntEnum):
 
 
 class PosSyncKind(IntEnum):
-    """Năm vòng chạy nền. Đây là con số giao diện gửi lên khi bấm «Chạy ngay»;
+    """Năm vòng chạy nền. Đây là con số giao diện gửi lên khi bấm "Chạy ngay";
     xuống sổ thì lưu thành MÃ CHỮ ở cột `tab_sync_log.job` — xem `SYNC_JOB_BY_KIND`.
     """
 
@@ -106,7 +106,7 @@ SYNC_JOB_BY_KIND: dict[int, str] = {
 }
 
 #  Chiều ngược: đọc một dòng sổ (chỉ có mã chữ) rồi trả về đúng con số mà màn
-#  «Nhật ký đồng bộ» của Điểm cà phê vẫn dùng để tô màu và lọc.
+#  "Nhật ký đồng bộ" của Điểm cà phê vẫn dùng để tô màu và lọc.
 KIND_BY_SYNC_JOB: dict[str, int] = {job: int(kind) for kind, job in SYNC_JOB_BY_KIND.items()}
 
 

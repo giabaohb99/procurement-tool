@@ -11,8 +11,8 @@ BỎ QUA, nên nạp lại một tệp không nhân đôi dữ liệu. Bản tr�
 của lô khác trong khoảng ngày của tệp rồi chèn lại — tệp mới xuất thiếu là mất dữ liệu cũ
 đúng mà không ai hay (rủi ro R1), và lô đã thay thì không hoàn tác được.
 
-bao-CR-608 (đại ca 07/10/2026) — hai cột ĐIỀU KHIỂN tùy chọn: «ID» có thật → GHI ĐÈ đúng dòng
-đó (giữ id + `batch_id` cũ, tính lại `row_hash`); «Thao tác = xóa» → XÓA dòng có ID đó. Trước khi
+bao-CR-608 (đại ca 07/10/2026) — hai cột ĐIỀU KHIỂN tùy chọn: "ID" có thật → GHI ĐÈ đúng dòng
+đó (giữ id + `batch_id` cũ, tính lại `row_hash`); "Thao tác = xóa" → XÓA dòng có ID đó. Trước khi
 đụng, dòng được chụp đủ vào `tab_customs_line_change` (`line_change.py`) để hoàn tác lô dựng lại
 được. Không có hai cột đó thì nạp y như trên.
 
@@ -43,7 +43,7 @@ SHEET = "GTT02"
 
 _PARTY_KEYS = ("importer_tax_code", "importer_name", "partner_name")
 #  Khóa của dòng trong tệp KHÔNG phải cột của bảng: ba cột đối tượng (đi qua `CustomsParty`) và ô
-#  «ID» của bao-CR-608. Ghi đè còn giữ `source_row` cũ (dòng mấy trong tệp GỐC của lô đã thêm nó).
+#  "ID" của bao-CR-608. Ghi đè còn giữ `source_row` cũ (dòng mấy trong tệp GỐC của lô đã thêm nó).
 _NON_COLUMN_KEYS = frozenset(_PARTY_KEYS) | {REF_ID_KEY}
 _VND_KEYS = ("price_vnd_flat", "price_vnd_line_tax")
 _LOCK_NAME = "customs_declaration_import"
@@ -58,7 +58,7 @@ class CustomsImportBusyError(reader.CustomsFileError):
 def _import_lock(db: Session):
     """Cho từng lô ghi LẦN LƯỢT — kể cả khác tiến trình Celery (khóa có tên của MySQL).
 
-    Hai lô chứa cùng một dòng mà ghi song song thì cả hai cùng thấy «chưa có» và cùng chèn:
+    Hai lô chứa cùng một dòng mà ghi song song thì cả hai cùng thấy "chưa có" và cùng chèn:
     chống trùng thủng đúng ở chỗ nó cần nhất. Khóa giữ trên một kết nối RIÊNG (khóa MySQL gắn
     với kết nối, kết nối của `db` có thể trả về pool giữa chừng). SQLite (pytest) bỏ qua.
     """
@@ -83,13 +83,13 @@ def run(db: Session, batch: ImportBatch, raw: bytes, apply: bool) -> None:
     if res.optional_columns:
         #  bao-CR-603: nói ra tệp có thêm cột gì — người nạp biết hoạt chất / giá VND của lô này
         #  lấy từ tệp (ô trống vẫn suy ra / tính như cũ).
-        names = ", ".join(f"«{(dict(COLUMNS) | OPTIONAL_LABELS)[k]}»" for k in res.optional_columns)
+        names = ", ".join(f"\"{(dict(COLUMNS) | OPTIONAL_LABELS)[k]}\"" for k in res.optional_columns)
         add_log(db, batch, SHEET, 0, LogLevel.INFO, "customs", f"Tệp có cột tùy chọn: {names} — ô có giá trị thì lấy "
                 "của tệp, ô trống thì suy ra / tính như cũ")
     if res.control_columns:
-        names = ", ".join(f"«{CONTROL_LABELS[k]}»" for k in res.control_columns)
+        names = ", ".join(f"\"{CONTROL_LABELS[k]}\"" for k in res.control_columns)
         add_log(db, batch, SHEET, 0, LogLevel.INFO, "customs", f"Tệp có cột {names} — ô ID có thật thì ghi đè "
-                "đúng dòng đó, «Thao tác» = xóa thì xóa dòng có ID đó; hoàn tác lô trả lại như cũ")
+                "đúng dòng đó, \"Thao tác\" = xóa thì xóa dòng có ID đó; hoàn tác lô trả lại như cũ")
     for row_no, level, message in res.logs:
         add_log(db, batch, SHEET, row_no, level, "customs", message)
     with _import_lock(db):
@@ -105,7 +105,7 @@ def _classify_and_write(db: Session, batch: ImportBatch, res: reader.ParseResult
     #  thấy trước bao nhiêu dòng mới, bao nhiêu dòng đã có, bao nhiêu dòng trùng trong tệp.
     identities = dedupe.stamp_rows(rows)
     existing = dedupe.load_existing(db, date_from, date_to, exclude_batch_id=batch.id)
-    #  bao-CR-608: tra MỘT LẦN mọi id mà cột «ID» trỏ tới (từng cụm 1000), không truy vấn từng dòng.
+    #  bao-CR-608: tra MỘT LẦN mọi id mà cột "ID" trỏ tới (từng cụm 1000), không truy vấn từng dòng.
     wanted = {r[REF_ID_KEY] for r in rows if r.get(REF_ID_KEY)} | {d["ref_id"] for d in res.deletes if d["ref_id"]}
     targets = line_change.load_lines_by_id(db, wanted)
     taggers = _Taggers(db) if (targets or (apply and rows)) else None
@@ -119,8 +119,8 @@ def _classify_and_write(db: Session, batch: ImportBatch, res: reader.ParseResult
     batch.total_rows = len(rows) + len(res.deletes) + res.skipped
     batch.skipped_count = res.skipped + cls.ignored
     batch.created_count = len(cls.to_insert)
-    batch.updated_count = len(cls.to_update)    # bao-CR-608 — ghi đè theo cột «ID»
-    batch.deleted_count = len(cls.to_delete)    # bao-CR-608 — xóa theo «Thao tác» (có bản chụp)
+    batch.updated_count = len(cls.to_update)    # bao-CR-608 — ghi đè theo cột "ID"
+    batch.deleted_count = len(cls.to_delete)    # bao-CR-608 — xóa theo "Thao tác" (có bản chụp)
     batch.sheet_info = json.dumps({
         "date_from": date_from.isoformat() if date_from else "",
         "date_to": date_to.isoformat() if date_to else "",
@@ -130,7 +130,7 @@ def _classify_and_write(db: Session, batch: ImportBatch, res: reader.ParseResult
         "existing_rows": row_counts["existing"],       # bao-CR-541: đã có trong bảng giá — bỏ qua
         "suspect_rows": cls.suspect,                   # bao-CR-541: thêm mới nhưng nghi sửa giá
         "updated_rows": row_counts["updated"],         # bao-CR-608: ghi đè theo ID
-        "deleted_rows": row_counts["deleted"],         # bao-CR-608: xóa theo «Thao tác»
+        "deleted_rows": row_counts["deleted"],         # bao-CR-608: xóa theo "Thao tác"
         "ignored_rows": row_counts["ignored"],         # bao-CR-608: xóa hỏng / ID lặp — bỏ qua
         "id_not_found": cls.id_not_found,              # bao-CR-608: ô ID có số mà không có → thêm mới
     }, ensure_ascii=False)
@@ -181,11 +181,11 @@ class _Taggers:
         nhập, `retag_all` không ghi đè); ô trống hoặc tệp không có cột thì suy ra như cũ. Giá VND
         của tệp (nếu có) đã nằm sẵn trong `r`; thiếu thì NULL → lúc đọc tính như cũ.
 
-        bao-CR-608, `previous` = dòng đã lưu mà dòng này GHI ĐÈ (theo cột «ID»): ô của tệp trùng
+        bao-CR-608, `previous` = dòng đã lưu mà dòng này GHI ĐÈ (theo cột "ID"): ô của tệp trùng
         đúng giá trị hệ thống tự suy ra / tự tính — theo dữ liệu MỚI của dòng, hoặc đúng giá trị
         suy ra / tính đang hiện trên màn cho dòng CŨ — thì coi là SUY RA (cờ 0, giá VND NULL).
         Lý do: Excel xuất ra từ màn này điền sẵn cả bốn cột đó; xuất → sửa đơn giá → nạp lại mà
-        coi mọi ô là «của tệp» thì giá VND cũ (tính theo đơn giá cũ) bị đóng băng thành số tay.
+        coi mọi ô là "của tệp" thì giá VND cũ (tính theo đơn giá cũ) bị đóng băng thành số tay.
         """
         active, form, r["product_kind"] = self.derive(r["product_name"])
         file_active = (r.get("active_ingredient") or "").strip()
@@ -232,7 +232,7 @@ def _same_decimal(a, b) -> bool:
 def _tag_overwrites(db: Session, rows: list[dict], targets: dict[int, CustomsLine], taggers: _Taggers) -> set[int]:
     """Gắn nhãn cho các dòng có ID trỏ đúng dòng đã có; → số dòng (trong tệp) có dữ liệu Y HỆT dòng
     đã lưu — những dòng đó bỏ qua, không chụp, không ghi (xuất → sửa vài dòng → nạp lại cả tệp
-    thì chỉ dòng thật sự sửa mới thành «Ghi đè»)."""
+    thì chỉ dòng thật sự sửa mới thành "Ghi đè")."""
     hashes = dedupe.stored_hashes(db, list(targets.values()))
     unchanged: set[int] = set()
     for r in rows:

@@ -331,7 +331,7 @@ TRANSFERABLE_STATUSES = ("approved", "processing")
 def can_transfer_dept(db: Session, s: SurveyRequest) -> bool:
     """Việc khảo sát CHƯA thật sự bắt đầu: phiếu đang duyệt/xử lý (chưa `survey_done`), chưa
     dòng nào Hoàn thành, chưa phương án nào được CHỌN, chưa sinh YCMH nào từ phiếu này.
-    Phương án đã nhập nhưng chưa chọn không chặn (giữ nguyên); dòng «khảo sát lại» vẫn cho."""
+    Phương án đã nhập nhưng chưa chọn không chặn (giữ nguyên); dòng "khảo sát lại" vẫn cho."""
     if s.status not in TRANSFERABLE_STATUSES:
         return False
     lines = lines_of(db, s.id)
@@ -348,7 +348,7 @@ def can_transfer_dept(db: Session, s: SurveyRequest) -> bool:
     return True
 
 
-#  bao-CR-554 — «Trả về» cho người yêu cầu sửa: từ Chờ duyệt như cũ, và từ Đã duyệt / Đang xử lý
+#  bao-CR-554 — "Trả về" cho người yêu cầu sửa: từ Chờ duyệt như cũ, và từ Đã duyệt / Đang xử lý
 #  (đại ca chốt 02/10/2026: quản lý hủy duyệt để nhân viên sửa rồi gửi lại) với cùng chốt chặn
 #  của chuyển phòng — việc khảo sát chưa thật sự bắt đầu.
 def can_return_requester(db: Session, s: SurveyRequest) -> bool:
@@ -358,7 +358,7 @@ def can_return_requester(db: Session, s: SurveyRequest) -> bool:
 
 
 def return_to_requester(db: Session, sid: int, reason: str, user_id: int) -> SurveyRequest:
-    """Trả phiếu về «Bị trả lại» (rejected). Phiếu đã duyệt thì gỡ NSTM + ngày tiếp nhận mọi
+    """Trả phiếu về "Bị trả lại" (rejected). Phiếu đã duyệt thì gỡ NSTM + ngày tiếp nhận mọi
     dòng (duyệt lại sẽ tự gán lại), như chuyển phòng."""
     s = get_sr(db, sid)
     if not can_return_requester(db, s):
@@ -672,8 +672,8 @@ def create_option(db: Session, line: SurveyRequestLine, psl_id: int, user_id: in
         #  có dòng nhật ký nào nói ra chuyện đó.
         sv_group = (survey.item_group or "") if survey else ""
         record(db, user_id, ENTITY, line.survey_request_id, "add_option",
-               f"Gắn {o.display_label} vào dòng «{_line_label(line)}»: "
-               f"{o.snap_product_name or '—'} (khảo sát thuộc «{sv_group or '—'}»)")
+               f"Gắn {o.display_label} vào dòng \"{_line_label(line)}\": "
+               f"{o.snap_product_name or '—'} (khảo sát thuộc \"{sv_group or '—'}\")")
     return o
 
 
@@ -730,7 +730,7 @@ def delete_option(db: Session, line_id: int, oid: int, user_id: int = 0):
     line = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id).first()
     if line:
         record(db, user_id, ENTITY, line.survey_request_id, "del_option",
-               f"Gỡ {label or f'option #{oid}'} khỏi dòng «{_line_label(line)}»: "
+               f"Gỡ {label or f'option #{oid}'} khỏi dòng \"{_line_label(line)}\": "
                f"{product or '—'}")
         req_id = line.survey_request_id
         total_opts = (db.query(SurveyRequestOption)
@@ -789,9 +789,9 @@ def choose_option(db: Session, line_id: int, oid: int, user_id: int) -> SurveyRe
     db.commit()
     db.refresh(target)
     if ln:
-        note = (f"Chốt {target.display_label} cho dòng «{_line_label(ln)}»: "
+        note = (f"Chốt {target.display_label} cho dòng \"{_line_label(ln)}\": "
                 f"{target.snap_product_name or '—'}") if not already else \
-               (f"Bỏ chốt {target.display_label} của dòng «{_line_label(ln)}»")
+               (f"Bỏ chốt {target.display_label} của dòng \"{_line_label(ln)}\"")
         record(db, user_id, ENTITY, ln.survey_request_id,
                "unchoose_option" if already else "choose_option", note)
     return target
@@ -965,7 +965,7 @@ def auto_complete_from_pr(db: Session, pr_id: int, user_id: int = 0) -> None:
 
 
 def _auto_complete_sr(db: Session, sid: int, user_id: int = 0) -> None:
-    """YCBG đang «Đã tạo YCMH» mà MỌI YCMH còn sống sinh từ nó đã hoàn thành -> tự «Hoàn thành».
+    """YCBG đang "Đã tạo YCMH" mà MỌI YCMH còn sống sinh từ nó đã hoàn thành -> tự "Hoàn thành".
     YCMH đã xóa không tính (bao-CR-580) — bình thường dây nối của nó đã gỡ, đây chỉ là lưới đỡ."""
     from app.modules.purchase_request.model import PurchaseRequest
     s = db.get(SurveyRequest, sid)
@@ -989,14 +989,14 @@ def unlink_deleted_pr(db: Session, pr, user_id: int) -> list[int]:
     """bao-CR-580 — YCMH sinh từ YCBG bị xóa (xóa mềm) thì YCBG gỡ liên kết tới nó.
 
     Trước đây chỉ phiếu YCMH mang cờ `is_deleted`, nên YCBG vẫn bày mã YCMH đã xóa, vẫn đứng ở
-    «Đã tạo YCMH», cờ «đã sinh YCMH» trên dòng vẫn khóa chuyển phòng / trả về, và việc tự hoàn
+    "Đã tạo YCMH", cờ "đã sinh YCMH" trên dòng vẫn khóa chuyển phòng / trả về, và việc tự hoàn
     thành vẫn chờ cả phiếu đã xóa. Nay:
       - xóa dây nối `tab_survey_request_pr` của YCMH đó;
       - dòng YCBG đang trỏ tới nó thì trỏ về YCMH gần nhất CÒN LẠI của dòng (mua lại nhiều lần);
         không còn YCMH nào thì xóa dấu, và gỡ cờ `is_completed` trừ khi người YC đã chốt dòng
         Hoàn thành bằng tay;
-      - YCBG «Đã tạo YCMH» không còn YCMH sống nào thì về «Đã khảo sát»; còn thì xét lại việc tự
-        hoàn thành. YCBG đã «Hoàn thành» giữ nguyên.
+      - YCBG "Đã tạo YCMH" không còn YCMH sống nào thì về "Đã khảo sát"; còn thì xét lại việc tự
+        hoàn thành. YCBG đã "Hoàn thành" giữ nguyên.
     Phương án đã chọn lúc tạo YCMH vốn đã tự bỏ chọn — muốn mua lại thì chọn lại như thường.
     Trả về danh sách id YCBG bị đụng."""
     links = db.query(SurveyRequestPr).filter(SurveyRequestPr.pr_id == pr.id).all()
@@ -1033,7 +1033,7 @@ def unlink_deleted_pr(db: Session, pr, user_id: int) -> list[int]:
         message = f"Gỡ liên kết Yêu cầu mua hàng {pr.code} vì phiếu đó đã bị xóa"
         if s.status == "pr_created" and not has_live:
             s.status = "survey_done"
-            message += "; không còn Yêu cầu mua hàng nào nên phiếu về «Đã khảo sát»"
+            message += "; không còn Yêu cầu mua hàng nào nên phiếu về \"Đã khảo sát\""
         s.updated_by = user_id
         db.commit()
         record(db, user_id, ENTITY, sid, "pr_unlinked", message)
@@ -1110,7 +1110,7 @@ def auto_assign(db: Session, s: SurveyRequest, allow_global_assignee: bool = Tru
 
     bao-CR-414 (GĐ2): tra bảng phân công theo PHÒNG ĐANG XỬ LÝ phiếu (phòng được nhờ, không thì
     phòng lập phiếu); `allow_global_assignee=False` (người duyệt chỉ có bậc `dept_proc`) thì
-    không rơi về bộ của phòng thu mua mặc định (bao-CR-524, trước là «Thu mua chung»)."""
+    không rơi về bộ của phòng thu mua mặc định (bao-CR-524, trước là "Thu mua chung")."""
     from app.modules.category_assignee.service import handling_dept_of, resolve_for_group
     dept_id = handling_dept_of(s, get_central_dept_id(db))
     assigned = 0

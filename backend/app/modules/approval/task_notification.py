@@ -1,6 +1,6 @@
-"""THƯ BÁO «có việc chờ bạn duyệt».
+"""THƯ BÁO "có việc chờ bạn duyệt".
 
-Trước đây bộ máy duyệt **không báo cho ai cả**: việc rơi vào hộp «Việc của tôi»
+Trước đây bộ máy duyệt **không báo cho ai cả**: việc rơi vào hộp "Việc của tôi"
 và nằm im tới khi người duyệt tự nhớ ra mà mở hộp. Với văn bản thì đó là văn bản
 nằm chết giữa luồng, còn người trình thì không biết phải giục ai.
 
@@ -40,9 +40,9 @@ ENTITY_LABELS = {
     "room_booking": "Phiếu đặt phòng họp",
     #  Đặt xe có ĐỦ hook (`register_hooks` + `register_subject` + `register_reader`
     #  trong `vehicle_booking/approval_bridge.py`) nhưng bị quên ở hai bảng này,
-    #  nên thư báo ghi «Phiếu XE009» — mất luôn chữ nói đây là việc gì.
+    #  nên thư báo ghi "Phiếu XE009" — mất luôn chữ nói đây là việc gì.
     "vehicle_booking": "Phiếu đặt xe",
-    #  Duyệt dấu có hook duyệt (bridge) — thiếu nhãn thì thư báo ghi «Phiếu <mã>».
+    #  Duyệt dấu có hook duyệt (bridge) — thiếu nhãn thì thư báo ghi "Phiếu <mã>".
     "seal_request": "Phiếu đóng dấu",
 }
 
@@ -106,7 +106,7 @@ def _message_body(instance: ApprovalInstance, task: ApprovalTask,
     code = instance.entity_code or f"#{instance.entity_id}"
     step = task.node_name or f"bước {task.node_seq}"
 
-    message = f"{kind} {code} đang chờ bạn ở «{step}»."
+    message = f"{kind} {code} đang chờ bạn ở \"{step}\"."
     if on_behalf_of:
         #  Ký thay người khác là việc khác hẳn ký cho mình, và nhật ký sẽ ghi cả
         #  hai tên — nói ra ngay trong thư chứ không để họ biết sau khi đã bấm.
@@ -120,7 +120,7 @@ def notify_new_tasks(db: Session, instance: ApprovalInstance,
                  tasks: list[ApprovalTask]) -> int:
     """Báo cho người duyệt của những việc VỪA MỞ. Trả về số thư đã ghi.
 
-    Chỉ báo việc đang ở `TASK_PENDING`: bước «lần lượt» mở việc cho người đầu
+    Chỉ báo việc đang ở `TASK_PENDING`: bước "lần lượt" mở việc cho người đầu
     tiên thôi, báo hết cả hàng là bốn người cùng lao vào một phiếu mà ba người
     trong số đó bấm chưa tới lượt.
 

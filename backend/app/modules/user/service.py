@@ -292,7 +292,7 @@ def reset_password(db: Session, user_id: int, new_password: str, actor_id: int) 
 
 def auto_grants_of(db: Session, user_id: int) -> list[dict]:
     """duoc-CR-653: các vai trò do HỆ THỐNG tự cấp theo chức vụ — để màn Phân quyền hiện huy hiệu
-    «Theo chức vụ: <tên>»."""
+    "Theo chức vụ: <tên>"."""
     from app.modules.employee.position_model import JobPosition
     rows = db.query(UserRole.role_id, UserRole.granted_by_position_id).filter(
         UserRole.user_id == user_id, UserRole.granted_by_position_id > 0).all()
@@ -305,12 +305,12 @@ def auto_grants_of(db: Session, user_id: int) -> list[dict]:
 def assign_roles(db: Session, user_id: int, data: RoleAssign, actor_id: int) -> None:
     before = set(_role_ids(db, user_id))
     #  duoc-CR-653: ĐỐI CHIẾU thay vì xóa sạch rồi chèn lại — dòng vai trò còn trong danh sách giữ
-    #  nguyên (kể cả nhãn «tự cấp theo chức vụ»), chỉ dòng bị bỏ mới xóa.
+    #  nguyên (kể cả nhãn "tự cấp theo chức vụ"), chỉ dòng bị bỏ mới xóa.
     wanted = set(data.role_ids)
     seen: set[int] = set()
     #  M1: trùng (user, role) thì GIỮ dòng GÁN TAY (marker 0) trước, rồi mới tới id thấp nhất — không để
     #  dòng hệ thống đè mất dòng tay. Vai trò hệ thống đang có mà admin lưu lại danh sách: giữ nguyên nhãn
-    #  «tự cấp» (muốn bỏ riêng một người thì đổi gói hoặc chức vụ của họ).
+    #  "tự cấp" (muốn bỏ riêng một người thì đổi gói hoặc chức vụ của họ).
     for row in sorted(db.query(UserRole).filter(UserRole.user_id == user_id).all(),
                       key=lambda r: (1 if r.granted_by_position_id else 0, r.id)):
         if row.role_id not in wanted or row.role_id in seen:

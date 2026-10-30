@@ -1,5 +1,5 @@
 """duoc-CR-598 mục 3 — nạp danh mục hóa chất NĐ 24/2026/NĐ-CP phụ lục I–IV từ tệp Excel của phòng
-Thu mua (`03. KHAI BÁO HOÁ CHẤT.xlsx`, sheet «PHỤ LỤC NGHỊ ĐỊNH», đại ca gửi 06/10/2026).
+Thu mua (`03. KHAI BÁO HOÁ CHẤT.xlsx`, sheet "PHỤ LỤC NGHỊ ĐỊNH", đại ca gửi 06/10/2026).
 
 Hai bước, tách để kiểm được từng bước:
   1. `parse_sheet(rows)` — dòng Excel → danh sách dict (hàm thuần). Bản đã đọc lưu thành JSON trong
@@ -8,11 +8,11 @@ Hai bước, tách để kiểm được từng bước:
      I–IV không còn trong tệp. TT 75/2025 và TT 01/2026 không đụng tới.
 
 Bẫy của tệp nguồn (đọc tay 06/10/2026):
-  - Phụ lục xác định theo dòng tiêu đề «PHỤ LỤC …», KHÔNG theo cột F («Phụ lục I»…): cột đó thiếu ở
+  - Phụ lục xác định theo dòng tiêu đề "PHỤ LỤC …", KHÔNG theo cột F ("Phụ lục I"…): cột đó thiếu ở
     ~45 dòng có số thứ tự đàng hoàng.
-  - Cuối phụ lục IV là «Bảng B» — NHÓM nguy hại (độc cấp tính, chất nổ…) chứ không phải hóa chất,
+  - Cuối phụ lục IV là "Bảng B" — NHÓM nguy hại (độc cấp tính, chất nổ…) chứ không phải hóa chất,
     cột lệch hẳn: bỏ.
-  - Excel tự «sửa» số CAS: `0107-02-08` (đúng: 107-02-8), ô thành NGÀY (7719-09-7 → 2026-…),
+  - Excel tự "sửa" số CAS: `0107-02-08` (đúng: 107-02-8), ô thành NGÀY (7719-09-7 → 2026-…),
     `#VALUE!`, `---`. `normalize_cas` gỡ lại, kiểm số cuối (check digit) trước khi tin.
   - Một hóa chất nhiều số CAS: các số sau nằm ở dòng kế tiếp, chỉ có cột CAS → ghi vào ghi chú.
 """
@@ -42,7 +42,7 @@ _BANG_B_RE = re.compile(r"^\d+\.\s*Bảng\s*B", re.IGNORECASE)
 
 
 def _text(value: Any) -> str:
-    """Ô → chuỗi gọn; gạch ngang thay chỗ trống («---») coi như rỗng."""
+    """Ô → chuỗi gọn; gạch ngang thay chỗ trống ("---") coi như rỗng."""
     if value is None:
         return ""
     s = " ".join(str(value).split())
@@ -69,7 +69,7 @@ def normalize_cas(value: Any) -> str:
         if len(digits) < 5:
             return ""
         value = f"{digits[:-3]}-{digits[-3:-1]}-{digits[-1]}"
-    s = str(value).strip().split(" ")[0]           # «7719-09-07 00:00:00»
+    s = str(value).strip().split(" ")[0]           # "7719-09-07 00:00:00"
     if not s or s.startswith("#") or not s.strip("-"):
         return ""
     m = _CAS_RE.match(s)
@@ -100,7 +100,7 @@ def _threshold(value: Any) -> float | None:
 
 
 def _heading(a: str, b: str, c: str) -> str:
-    """Dòng tiêu đề nhóm trong phụ lục → nhãn phân loại («A. CÁC TIỀN CHẤT CÔNG NGHIỆP»)."""
+    """Dòng tiêu đề nhóm trong phụ lục → nhãn phân loại ("A. CÁC TIỀN CHẤT CÔNG NGHIỆP")."""
     tail = c or b
     if not tail:
         return a[:100]
@@ -131,7 +131,7 @@ def _mixture_pct(list_code: int, group: int, section: str) -> float | None:
 
 
 def parse_sheet(rows: Iterable[tuple]) -> list[dict]:
-    """Dòng sheet «PHỤ LỤC NGHỊ ĐỊNH» (cột A–G) → danh sách hóa chất theo đúng thứ tự văn bản."""
+    """Dòng sheet "PHỤ LỤC NGHỊ ĐỊNH" (cột A–G) → danh sách hóa chất theo đúng thứ tự văn bản."""
     items: list[dict] = []
     list_code = 0
     category = ""
@@ -161,7 +161,7 @@ def parse_sheet(rows: Iterable[tuple]) -> list[dict]:
             seq = a.rstrip(".") if is_stt else (parent["seq_no"] if parent else "")
             cas_list = split_cas(d_raw)
             name, name_vi = b or c, c
-            #  Dòng con không số, không tên khoa học («Dạng hạt», «Dạng tinh thể» của mục 135 phụ
+            #  Dòng con không số, không tên khoa học ("Dạng hạt", "Dạng tinh thể" của mục 135 phụ
             #  lục IV) đứng một mình thì không biết là chất gì → ghép tên dòng cha phía trước.
             if not is_stt and not b and parent:
                 name = f"{parent['name']} — {c}"

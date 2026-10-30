@@ -51,7 +51,7 @@ def flow_out(db: Session, flow: ApprovalFlow, with_steps: bool = False) -> dict:
         "condition": flow.condition,
         "node_count": len(flow_service.nodes_of(db, flow.id)),
         #  bao-CR-579: luồng này đang có bao nhiêu phiếu CHƯA xong. Trả lời câu
-        #  «sửa luồng này thì đụng tới ai» — phiếu đang chạy giữ bản chụp riêng nên
+        #  "sửa luồng này thì đụng tới ai" — phiếu đang chạy giữ bản chụp riêng nên
         #  KHÔNG đổi theo, chỉ phiếu gửi sau mới đi luồng mới.
         "running_count": count_running_instances(db, flow.id),
         #  Hai luồng mặc định cùng bật thì chỉ một cái chạy — nói ra ngay trên
@@ -97,7 +97,7 @@ def approver_names(db: Session, node) -> str:
     """Tên hiện trên thẻ bước. Rỗng = cách chọn này chỉ tính được lúc chạy.
 
     Hai cách chọn dựng được tên ngay lúc khai luồng, và cả hai đều nên dựng:
-    thẻ bước ghi mỗi «Người cụ thể» thì người khai phải mở bảng thuộc tính ra
+    thẻ bước ghi mỗi "Người cụ thể" thì người khai phải mở bảng thuộc tính ra
     mới biết mình vừa cử ai.
 
     `node`: `ApprovalNode` (màn Luồng duyệt) HOẶC `SimpleNamespace` dựng từ bản
@@ -116,7 +116,7 @@ def approver_names(db: Session, node) -> str:
         return ", ".join(_name_of(db, employee_id) for employee_id in ids)
 
     if node.approver_kind == APPROVER_DEPT_HEAD_OF:
-        #  Ghi theo dạng «Trưởng phòng Nhân sự (Nguyễn Văn A)»: người khai chọn
+        #  Ghi theo dạng "Trưởng phòng Nhân sự (Nguyễn Văn A)": người khai chọn
         #  cái GHẾ, nên cần thấy CẢ tên phòng lẫn ai đang ngồi ghế đó. Phòng bỏ
         #  trống ghế trưởng thì nói thẳng — chọn vào đó là bước kẹt lúc chạy.
         from app.modules.department.model import Department
@@ -152,7 +152,7 @@ def instance_out(db: Session, instance: ApprovalInstance, with_details: bool = F
         "current_seq": instance.current_seq,
         "started_by_name": _name_of(db, instance.started_by_employee_id),
         #  Mã nhân sự người trình — giao diện so với người đang đăng nhập để chỉ
-        #  bày nút «Rút phiếu» cho đúng người trình. Backend vẫn tự kiểm lại
+        #  bày nút "Rút phiếu" cho đúng người trình. Backend vẫn tự kiểm lại
         #  (`action_service.withdraw`), đây chỉ để khỏi bày nút cho người khác.
         "started_by_employee_id": instance.started_by_employee_id or 0,
         "started_at": instance.started_at,
@@ -220,7 +220,7 @@ def action_out(db: Session, action: ApprovalAction) -> dict:
 def audit_sentence(db: Session, action: ApprovalAction) -> str:
     """Câu cho BẢN IN dấu vết (I20).
 
-    *"khi kiểm toán hoặc thanh tra hỏi «ai duyệt cái này», câu trả lời phải là
+    *"khi kiểm toán hoặc thanh tra hỏi "ai duyệt cái này", câu trả lời phải là
     một tờ giấy in ra được, không phải một ảnh chụp màn hình"* — nên câu này
     dựng ở backend, để bản in trên web và bản xuất ra tệp không bao giờ lệch chữ.
     """

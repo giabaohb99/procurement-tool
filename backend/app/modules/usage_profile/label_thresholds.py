@@ -1,7 +1,7 @@
-"""Ngưỡng nhận «kiểu làm việc» (duoc-CR-641, phase 04) — gom MỘT chỗ để chỉnh sau 2–4 tuần chạy thật.
+"""Ngưỡng nhận "kiểu làm việc" (duoc-CR-641, phase 04) — gom MỘT chỗ để chỉnh sau 2–4 tuần chạy thật.
 
-Đây là ĐỀ XUẤT ĐẦU (plan §Luật nhận kiểu), chưa phải số đã hiệu chỉnh. Cửa sổ 4 tuần. «×med» = so với trung vị nhóm so sánh.
-Nhóm `MIN_*` là dữ liệu tối thiểu: thiếu thì KHÔNG gắn nhãn (khác với «không phải kiểu này»).
+Đây là ĐỀ XUẤT ĐẦU (plan §Luật nhận kiểu), chưa phải số đã hiệu chỉnh. Cửa sổ 4 tuần. "×med" = so với trung vị nhóm so sánh.
+Nhóm `MIN_*` là dữ liệu tối thiểu: thiếu thì KHÔNG gắn nhãn (khác với "không phải kiểu này").
 """
 # 1 Làm dồn
 BATCH_MONTH_END_SHARE = 0.4

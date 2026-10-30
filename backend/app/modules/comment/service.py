@@ -85,7 +85,7 @@ def resolve_doc(db: Session, user, entity: str, entity_id: int, mode: str = "rea
         actor = resolve_actor(db, user)
         require_employee(actor)
         #  ĐỌC thì thành viên nào cũng được, GỬI thì phải từ MEMBER trở lên:
-        #  «khách xem» là một vai trò thật của phân hệ này (`WorkMemberRole.VIEWER`),
+        #  "khách xem" là một vai trò thật của phân hệ này (`WorkMemberRole.VIEWER`),
         #  và `CAN_EDIT` khai rõ bình luận nằm trong nhóm quyền sửa. Dùng chung
         #  một mức cho cả hai chiều thì hoặc khách xem đọc không được bình luận
         #  của người khác, hoặc họ ghi được vào dự án chỉ được mời vào để xem.
@@ -117,7 +117,7 @@ def resolve_doc(db: Session, user, entity: str, entity_id: int, mode: str = "rea
         return doc, label, route
     #  bao-CR-584: người ĐANG được giao duyệt phiếu (đặt xe, duyệt dấu) đọc và góp ý
     #  được trên phiếu đó dù nằm ngoài phạm vi — đúng lúc họ cần hỏi lại người tạo.
-    #  Trước đây ô Trao đổi báo «không tải được» với chính người phải duyệt.
+    #  Trước đây ô Trao đổi báo "không tải được" với chính người phải duyệt.
     from app.modules.approval.pending_reader import is_pending_approver
 
     if entity == parent and is_pending_approver(db, parent, entity_id, user):

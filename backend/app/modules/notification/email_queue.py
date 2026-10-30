@@ -9,7 +9,7 @@ commit giữa chừng. Ở đây:
 2. Gắn một lần `after_commit` lên phiên: commit xong mới đẩy từng thư sang task `notification.send_email`.
    Giao dịch bị hủy thì dòng `EmailLog` mất theo, hàng đợi bị xóa ở `after_rollback` — không thư ma.
 3. Đẩy sang worker lỗi (Redis chết) thì ghi log, dòng `EmailLog` nằm `pending` để tra — không làm hỏng
-   nghiệp vụ, cùng luật «thư là phụ» với mọi nơi khác.
+   nghiệp vụ, cùng luật "thư là phụ" với mọi nơi khác.
 
 Tôn trọng: mẫu tắt (`enabled=False`), luật loại trừ email theo người / phòng / công ty, người không có địa chỉ.
 """

@@ -39,10 +39,10 @@ class Mailbox(Base, AuditMixin):
 
     code: Mapped[str] = mapped_column(String(30), unique=True)
     name: Mapped[str] = mapped_column(String(200))
-    #  Địa chỉ hiện trên dòng «Từ». Duy nhất — hai dòng cùng địa chỉ mà khác mật
+    #  Địa chỉ hiện trên dòng "Từ". Duy nhất — hai dòng cùng địa chỉ mà khác mật
     #  khẩu thì không ai biết dòng nào đang thật sự gửi được.
     email: Mapped[str] = mapped_column(String(255), unique=True)
-    #  Tên hiện trước địa chỉ: «Phòng Hành chính <hr@gmail.com>». Rỗng thì dùng `name`.
+    #  Tên hiện trước địa chỉ: "Phòng Hành chính <hr@gmail.com>". Rỗng thì dùng `name`.
     display_name: Mapped[str] = mapped_column(String(200), default="")
 
     smtp_host: Mapped[str] = mapped_column(String(200), default="")

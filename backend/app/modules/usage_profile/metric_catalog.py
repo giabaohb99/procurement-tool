@@ -96,7 +96,7 @@ METRIC_CATALOG: dict[str, MetricMeta] = {
 
 #  Chỉ số HOÃN / BỎ (ghi để API và tài liệu không hứa thứ chưa có) — xem metric-definitions.md.
 DEFERRED_METRICS = {
-    "approval_wait_ycmh_dmh": "Duyệt YCMH/ĐMH ngoài bộ máy duyệt: không có mốc «tới lượt» tin được",
+    "approval_wait_ycmh_dmh": "Duyệt YCMH/ĐMH ngoài bộ máy duyệt: không có mốc \"tới lượt\" tin được",
     "comments_own_vs_other": "Tách bình luận phiếu mình/người khác: cần tra chủ phiếu từng entity",
     "http_422_per_field": "Lỗi 422 theo trường: phải bóc response_body.details",
     "unused_permissions_90d": "Quyền 90 ngày không dùng: lượt đọc (GET) không ánh xạ được route → entity",

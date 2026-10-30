@@ -15,7 +15,7 @@ MAX_ROUTE_LEN = 120
 #  năng không tách đôi một màn thành hai. BẢNG DUY NHẤT: đoạn đầu của route thumua → đoạn thay vào (đối chiếu
 #  `frontend/src/App.tsx` + `config/cruds.tsx` với `frontend-v2/src/shared/constants/app-routes.ts`, 20/10/2026).
 #  Thumua không có bản v2 (me, notifications, import-batches, customs-regulations, /print/...) thì GIỮ NGUYÊN — báo cáo
-#  v2 hiện «Giao diện cũ: …». Nguồn app vẫn giữ ở cột `tab_ui_event.app`. Thêm màn: thêm dòng ở đây + một dòng bài kiểm.
+#  v2 hiện "Giao diện cũ: …". Nguồn app vẫn giữ ở cột `tab_ui_event.app`. Thêm màn: thêm dòng ở đây + một dòng bài kiểm.
 _THUMUA_TO_V2 = {
     # Thu mua
     "purchase-requests": "procurement/purchase-requests",

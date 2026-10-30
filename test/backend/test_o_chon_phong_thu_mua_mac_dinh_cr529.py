@@ -80,7 +80,7 @@ def test_blank_means_default_pba017(db, depts):
 def test_unknown_code_is_rejected_and_old_value_kept(db, depts):
     service.save(db, {KEY: "NM01"}, user_id=7)
     detail = _save_error(db, "KHONGCO")
-    assert "không có phòng ban mã «KHONGCO»" in detail
+    assert "không có phòng ban mã \"KHONGCO\"" in detail
     db.rollback()
     assert _stored(db) == "NM01"
 

@@ -1,16 +1,16 @@
 """Chống trùng dòng hàng khi nạp GTT02 — bao-CR-541.
 
-Đại ca chốt 01/10/2026: nguồn «xuất ra rồi bỏ vào luôn», người nạp không biết tệp nào chồng
+Đại ca chốt 01/10/2026: nguồn "xuất ra rồi bỏ vào luôn", người nạp không biết tệp nào chồng
 lên tệp nào, nên hệ thống phải tự so. Luật:
 
   · Mỗi dòng có một MÃ BĂM (`row_hash`, SHA-1 40 ký tự) gói đủ các cột dữ liệu của tệp sau
-    chuẩn hóa. Dòng mới có mã đã nằm trong bảng → BỎ QUA («Đã có»); lặp lại một dòng phía
-    trên trong cùng tệp → BỎ QUA («Trùng trong tệp»). Chỉ dòng thật sự mới được chèn.
+    chuẩn hóa. Dòng mới có mã đã nằm trong bảng → BỎ QUA ("Đã có"); lặp lại một dòng phía
+    trên trong cùng tệp → BỎ QUA ("Trùng trong tệp"). Chỉ dòng thật sự mới được chèn.
   · KHÔNG ghi đè, KHÔNG thay theo khoảng ngày nữa. Tệp không có số tờ khai nên không biết chắc
-    «dòng này là dòng kia đã sửa giá»: đo trên 18.243 dòng thật có 129 nhóm / 327 dòng trùng
+    "dòng này là dòng kia đã sửa giá": đo trên 18.243 dòng thật có 129 nhóm / 327 dòng trùng
     hết các cột nhận diện mà khác giá hoặc lượng — phần lớn là các lô hàng thật khác nhau. Ghi
     đè theo cột nhận diện là tự xóa dòng thật. Thay vào đó dòng như vậy vẫn THÊM, kèm ghi chú
-    «nghi sửa giá» để người nạp rà.
+    "nghi sửa giá" để người nạp rà.
 
 Vì sao băm mà không so thẳng 32 cột trong SQL: MySQL không dựng chỉ mục quá 16 cột, và nhiều
 cột được phép trống mà `NULL = NULL` trong SQL không bao giờ đúng — hai dòng giống hệt nhau
@@ -69,7 +69,7 @@ def compute_row_hash(values: dict, importer_key: str, partner_key: str) -> str:
 
 
 def compute_identity(values: dict, importer_key: str, partner_key: str) -> str:
-    """Mã của các cột nhận diện — chỉ để phát hiện «nghi sửa giá», KHÔNG dùng để bỏ qua dòng."""
+    """Mã của các cột nhận diện — chỉ để phát hiện "nghi sửa giá", KHÔNG dùng để bỏ qua dòng."""
     return _digest([importer_key, partner_key] + [canonical_value(k, values.get(k)) for k in IDENTITY_FIELDS])
 
 
@@ -130,7 +130,7 @@ def load_existing(db: Session, date_from, date_to, exclude_batch_id: int = 0) ->
 
 def stored_hashes(db: Session, lines: list[CustomsLine]) -> dict[int, str]:
     """bao-CR-608 — mã băm HIỆN TẠI của các dòng đã lưu (dòng cũ chưa có mã thì tính), để biết dòng
-    trong tệp có cột «ID» có thật sự đổi gì so với dòng nó trỏ tới không."""
+    trong tệp có cột "ID" có thật sự đổi gì so với dòng nó trỏ tới không."""
     parties = _party_keys(db, {x.importer_id for x in lines} | {x.partner_id for x in lines})
     return {x.id: x.row_hash or compute_row_hash(_stored_values(x), parties.get(x.importer_id, ""),
                                                  parties.get(x.partner_id, "")) for x in lines}

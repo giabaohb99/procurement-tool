@@ -1,7 +1,7 @@
-"""Hoàn tác lô «Nhập Excel Nhân sự» (duoc-CR-628, vòng review).
+"""Hoàn tác lô "Nhập Excel Nhân sự" (duoc-CR-628, vòng review).
 
 Bản chụp mỗi bản ghi SỬA là `{attr: [cũ, mới]}` — CHỈ cột thật sự đổi. Hoàn tác khôi phục từng cột về
-«cũ» chỉ khi giá trị hiện tại vẫn là «mới»; có cột đã bị sửa về sau thì TỪ CHỐI CẢ LƯỢT (nêu mã + tên cột,
+"cũ" chỉ khi giá trị hiện tại vẫn là "mới"; có cột đã bị sửa về sau thì TỪ CHỐI CẢ LƯỢT (nêu mã + tên cột,
 KHÔNG nêu giá trị vì có thể là CCCD/STK). Quyền + phạm vi kiểm CHO TỪNG dòng trước khi đụng gì.
 """
 import json
@@ -160,7 +160,7 @@ def revert(db: Session, changes, user_id: int) -> tuple[int, int]:
     """Mới -> xóa (lõi xóa, dọn bảng con); cũ -> khôi phục các cột đã đổi. Duyệt `changes` theo thứ tự đã
     được `revert_batch` sắp xếp (id GIẢM DẦN): cấp dưới tạo sau được xóa trước người quản lý tạo trước.
 
-    ⚠️ KHÔNG mở lại tài khoản đã bị khóa vì nghỉ việc: «quay lại làm» là quyết định tay (bao-CR-400).
+    ⚠️ KHÔNG mở lại tài khoản đã bị khóa vì nghỉ việc: "quay lại làm" là quyết định tay (bao-CR-400).
     Nhật ký + xóa cache quyền chạy SAU commit qua `after_revert`."""
     deleted = restored = 0
     pending = db.info.setdefault(_PENDING_KEY, [])
@@ -188,7 +188,7 @@ def revert(db: Session, changes, user_id: int) -> tuple[int, int]:
         pos_id, pos_label = old.pop("position_id", None), old.pop("position", None)
         data = EmployeeUpdate.model_construct(_fields_set=set(old), **old)
         try:
-            #  lock_users=True (chốt sản phẩm): hoàn tác về «nghỉ việc / ngưng dùng» thì khóa lại tài khoản.
+            #  lock_users=True (chốt sản phẩm): hoàn tác về "nghỉ việc / ngưng dùng" thì khóa lại tài khoản.
             out = service.update_employee_core(db, emp, data, user_id, lock_users=True)
             if depts:
                 #  Khôi phục CHÍNH XÁC tập phòng ban (cả phòng kiêm nhiệm bị hạ/gỡ), tránh để lại phạm vi rộng hơn.

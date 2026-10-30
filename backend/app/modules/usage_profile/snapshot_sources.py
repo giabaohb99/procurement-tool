@@ -82,7 +82,7 @@ class SnapshotSources:
     export_entities: list = field(default_factory=list)   # (user_id, entity, created_at)
     pageviews: list = field(default_factory=list)   # (user_id, session_id, tab_key, occurred_at, route)
     prev_snapshots: list = field(default_factory=list)    # (user_id, period_start, metrics)
-    ai: AiSources = field(default_factory=AiSources)   # duoc-CR-655: nhóm 3.8 «Dùng AI»
+    ai: AiSources = field(default_factory=AiSources)   # duoc-CR-655: nhóm 3.8 "Dùng AI"
 
 
 def _counts(db: Session, col, *conds) -> dict:
@@ -106,7 +106,7 @@ def load_snapshot_sources(db: Session, week_start: date) -> SnapshotSources:
     s.tracking_since = db.execute(select(func.min(UsageDaily.day)).where(UsageDaily.page_views > 0)).scalar()
 
     in_window = (AuditLog.created_at >= w.utc_lo, AuditLog.created_at < w.utc_hi)
-    #  alias riêng cho truy vấn con: cùng bảng với truy vấn ngoài nên nếu không SQLAlchemy tự «tương quan» và làm rỗng FROM.
+    #  alias riêng cho truy vấn con: cùng bảng với truy vấn ngoài nên nếu không SQLAlchemy tự "tương quan" và làm rỗng FROM.
     sub = aliased(AuditLog)
     submitted_ids = select(sub.entity_id).where(
         sub.entity.in_(TRACKED_DOC_ENTITIES), sub.action.in_(SUBMIT_ACTIONS), sub.actor_kind == ACTOR_KIND_USER,

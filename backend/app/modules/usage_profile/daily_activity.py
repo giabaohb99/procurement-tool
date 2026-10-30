@@ -1,7 +1,7 @@
 """Nhịp làm việc + truy vấn API của MỘT người trong MỘT ngày (thuần) — duoc-CR-641, phase 02.
 
 Phiên làm việc (`work_bursts`) = chuỗi lượt (request ∪ sự kiện giao diện) ngắt khi nghỉ > 30 phút; KHÔNG dùng phiên
-đăng nhập vì nó sống 7 ngày. Lượt `/api/auth/*` (đăng nhập, gia hạn) không tính là «làm việc».
+đăng nhập vì nó sống 7 ngày. Lượt `/api/auth/*` (đăng nhập, gia hạn) không tính là "làm việc".
 """
 from collections import Counter
 from datetime import datetime, timedelta

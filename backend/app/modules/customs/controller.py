@@ -62,7 +62,7 @@ def _batch_out(db: Session, b: ImportBatch) -> dict:
     return {"id": b.id, "mode": b.mode, "status": b.status, "filename": b.filename,
             "file_size": b.file_size, "has_file": bool(b.file_id), "total_rows": b.total_rows,
             "created_count": b.created_count, "deleted_count": b.deleted_count,
-            #  bao-CR-608: ghi đè theo cột «ID» (lô nạp trước CR này luôn là 0).
+            #  bao-CR-608: ghi đè theo cột "ID" (lô nạp trước CR này luôn là 0).
             "updated_count": b.updated_count or 0,
             "skipped_count": b.skipped_count, "warning_count": b.warning_count,
             "error_count": b.error_count, "error_summary": b.error_summary,
@@ -72,7 +72,7 @@ def _batch_out(db: Session, b: ImportBatch) -> dict:
             #  nhưng nghi là nguồn sửa giá của một dòng đã có.
             "duplicate_rows": info.get("duplicate_rows", 0), "existing_rows": info.get("existing_rows", 0),
             "suspect_rows": info.get("suspect_rows", 0),
-            #  bao-CR-608: dòng ghi đè / xóa theo cột «ID» + «Thao tác», dòng xóa hỏng bị bỏ qua, và dòng
+            #  bao-CR-608: dòng ghi đè / xóa theo cột "ID" + "Thao tác", dòng xóa hỏng bị bỏ qua, và dòng
             #  có số ID mà không có dòng đó (đã thêm mới).
             "updated_rows": info.get("updated_rows", 0), "deleted_rows": info.get("deleted_rows", 0),
             "ignored_rows": info.get("ignored_rows", 0), "id_not_found": info.get("id_not_found", 0),
@@ -108,7 +108,7 @@ def line_filters(q: str = "", ingredient: str = "", hs_code: str = "", formulati
                  product_kind: list[str] = Query(default=[])) -> dict:
     """Bộ lọc dùng chung của mọi cửa đọc — MỘT chỗ khai, bốn nơi dùng.
 
-    bao-CR-493: `importer_id` / `partner_id` / `batch_id` nhận LẶP trên URL hoặc «1,2,3»
+    bao-CR-493: `importer_id` / `partner_id` / `batch_id` nhận LẶP trên URL hoặc "1,2,3"
     (service tự tách); khoảng số nhận chuỗi để ô bỏ trống không thành 422.
     """
     return {"q": q, "ingredient": ingredient, "hs_code": hs_code, "formulation": formulation,
@@ -201,10 +201,10 @@ def get_tariff(hs_code: str, db: Session = Depends(get_db), user=Depends(require
 def get_regulations(q: str = "", list_code: int | None = Query(None, ge=0, le=99),
                     pg: dict = Depends(pagination), db: Session = Depends(get_db),
                     user=Depends(require(ENTITY, "read"))):
-    """Mục «Pháp lý» (29/09/2026) — duyệt cả danh mục hóa chất theo văn bản, có phân trang.
+    """Mục "Pháp lý" (29/09/2026) — duyệt cả danh mục hóa chất theo văn bản, có phân trang.
 
     Gác bằng `customs_price.read` như ô tra `/regulations/lookup`: cùng dữ liệu, chỉ khác cách
-    xem. Sửa danh mục vẫn đòi khóa riêng `customs_regulation` (mục «Cấu hình»)."""
+    xem. Sửa danh mục vẫn đòi khóa riêng `customs_regulation` (mục "Cấu hình")."""
     total, items = regulation_browse_service.list_regulations(db, q, list_code, pg["offset"], pg["limit"])
     return success({"total": total, "items": items})
 
@@ -237,13 +237,13 @@ def upload_files(files: list[UploadFile] = File(...), db: Session = Depends(get_
     for f in files:
         name = f.filename or ""
         if not name.lower().endswith(_ACCEPTED):
-            raise HTTPException(400, f"«{name}»: chỉ nhận tệp .xls hoặc .xlsx")
+            raise HTTPException(400, f"\"{name}\": chỉ nhận tệp .xls hoặc .xlsx")
         raw = f.file.read()
         f.file.seek(0)
         try:
             reader.check_headers(raw, name)
         except reader.CustomsFileError as e:
-            raise HTTPException(400, f"«{name}»: {e}")
+            raise HTTPException(400, f"\"{name}\": {e}")
         raws.append(f)
     out = []
     for f in raws:

@@ -1,6 +1,6 @@
 """Bản chụp dòng hàng trước khi ghi đè / xóa, và hoàn tác lô theo bản chụp — bao-CR-608.
 
-Đại ca 07/10/2026: tệp nạp có cột «ID» (ghi đè đúng dòng đó) và «Thao tác = xóa» (xóa dòng đó);
+Đại ca 07/10/2026: tệp nạp có cột "ID" (ghi đè đúng dòng đó) và "Thao tác = xóa" (xóa dòng đó);
 màn hình có thêm sửa / xóa từng dòng. Cả hai đều đụng vào dòng ĐÃ CÓ, nên trước khi đụng phải
 chụp lại đủ mọi cột vào `tab_customs_line_change` (`CustomsLineChange`).
 
@@ -99,7 +99,7 @@ def has_snapshots(db: Session, batch_id: int) -> bool:
 
 
 def _later_touches(db: Session, batch_id: int, line_ids: list[int], after_change_id: int) -> dict[int, str]:
-    """Dòng nào bị lô KHÁC / người sửa tay đụng SAU lô này → id dòng → câu «lô #m» / «sửa tay»."""
+    """Dòng nào bị lô KHÁC / người sửa tay đụng SAU lô này → id dòng → câu "lô #m" / "sửa tay"."""
     out: dict[int, str] = {}
     for i in range(0, len(line_ids), _CHUNK):
         rows = (db.query(CustomsLineChange.line_id, CustomsLineChange.batch_id, CustomsLineChange.source)

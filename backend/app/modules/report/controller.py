@@ -50,7 +50,7 @@ def daily(request: Request, db: Session = Depends(get_db), user=Depends(require(
     # LOẠI TRỪ công nợ thuộc ĐMH nháp/chờ duyệt/hủy/từ chối — khớp biểu đồ "Chi phí mua theo tháng".
     pay_po_ids = {p.po_id for p in pays if p.po_id}
     if pay_po_ids:
-        #  ai-CR-176: đơn đã xóa mềm cũng là «đơn không thật».
+        #  ai-CR-176: đơn đã xóa mềm cũng là "đơn không thật".
         bad_po_ids = {pid for pid, st, gone in
                       db.query(PurchaseOrder.id, PurchaseOrder.status, PurchaseOrder.is_deleted)
                       .filter(PurchaseOrder.id.in_(pay_po_ids)).all()

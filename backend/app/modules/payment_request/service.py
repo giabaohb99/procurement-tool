@@ -644,8 +644,8 @@ def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "
     allowed = ALLOWED_FROM.get(status)
     if not allow_any_source and allowed is not None and req.status not in allowed:
         raise HTTPException(
-            400, f"Phiếu đang ở trạng thái «{STATUS_LABELS.get(req.status, req.status)}» — không chuyển "
-                 f"sang «{STATUS_LABELS.get(status, status)}» được. Tải lại trang để xem trạng thái mới nhất.")
+            400, f"Phiếu đang ở trạng thái \"{STATUS_LABELS.get(req.status, req.status)}\" — không chuyển "
+                 f"sang \"{STATUS_LABELS.get(status, status)}\" được. Tải lại trang để xem trạng thái mới nhất.")
     if status == "submitted":
         check_submit(db, req)
     affected_po_ids: set[int] = set()

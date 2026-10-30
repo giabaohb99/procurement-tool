@@ -1,6 +1,6 @@
 """LUỒNG DUYỆT DẠNG NGANG cho một DANH SÁCH chứng từ (CR-260).
 
-Màn danh sách muốn vẽ trên mỗi dòng một dải chấm «chặng 1 → chặng 2 → …» với
+Màn danh sách muốn vẽ trên mỗi dòng một dải chấm "chặng 1 → chặng 2 → …" với
 chặng đang chờ sáng lên. Câu hỏi đó hỏi cho HAI MƯƠI dòng cùng lúc, nên nó
 không dùng lại được `instance_out(..., with_details=True)` — cái đó dựng cho
 MỘT phiếu và gọi `_name_of` từng phát.
@@ -42,8 +42,8 @@ STEP_REJECTED = "rejected"  # phiếu dừng hẳn tại đây
 STEP_RETURNED = "returned"  # bị trả về người nộp từ chặng này
 STEP_CANCELLED = "cancelled"  # phiếu bị rút nên chặng không còn nghĩa
 #  Chặng KHÔNG CHẠY trên một phiếu đã duyệt xong — bước tùy chọn không cần tới,
-#  nhánh rẽ không đi vào, hoặc luồng nhảy cóc qua nó. Tách khỏi «đã hủy» vì hai
-#  chuyện ngược nhau: «đã hủy» nói phiếu chết, «không chạy» nói phiếu đi đường
+#  nhánh rẽ không đi vào, hoặc luồng nhảy cóc qua nó. Tách khỏi "đã hủy" vì hai
+#  chuyện ngược nhau: "đã hủy" nói phiếu chết, "không chạy" nói phiếu đi đường
 #  ngắn hơn và vẫn duyệt xong. Vẽ chung một màu là người xem đọc một phiếu
 #  hoàn chỉnh thành phiếu bị rút.
 STEP_SKIPPED = "skipped"
@@ -182,7 +182,7 @@ def _one_step(seq: int, group: list[ApprovalTask], planned_name: str | None,
     statuses = {t.status for t in group}
 
     #  Thứ tự xét CÓ Ý NGHĨA: một chặng bị từ chối vẫn còn những việc khác ở
-    #  trạng thái «đã hủy» (bộ máy dọn việc thừa khi phiếu dừng). Xét «đã hủy»
+    #  trạng thái "đã hủy" (bộ máy dọn việc thừa khi phiếu dừng). Xét "đã hủy"
     #  trước thì chặng bị từ chối lại đọc thành chặng bị hủy, và dải chấm mất
     #  đúng thông tin quan trọng nhất — phiếu chết ở đâu.
     if not group:
@@ -280,8 +280,8 @@ def _summary(instance: ApprovalInstance, steps: list[dict], current: dict | None
     if instance.status == INSTANCE_RUNNING and current:
         #  ⚠️ Chỉ người CÒN GIỮ việc. `assignees` mang MỌI việc của chặng, kể cả
         #  việc đã hủy khi luồng bị sửa hoặc khi chuyển người xử lý — liệt kê tất
-        #  thì câu tóm tắt đọc ra *«Đang ở chặng 1/2 · Dego Admin, Trưởng phòng
-        #  Thu mua, Dego Admin»*: ba cái tên cho một chặng một người, trong đó
+        #  thì câu tóm tắt đọc ra *"Đang ở chặng 1/2 · Dego Admin, Trưởng phòng
+        #  Thu mua, Dego Admin"*: ba cái tên cho một chặng một người, trong đó
         #  hai cái đã không còn liên quan và một cái lặp lại (NP006, 07/09/2026).
         #  Người xem đếm tên để biết còn phải chờ mấy chữ ký, nên tên thừa ở đây
         #  là số liệu sai chứ không phải chữ thừa.
@@ -291,7 +291,7 @@ def _summary(instance: ApprovalInstance, steps: list[dict], current: dict | None
         position = f"Đang ở chặng {current['seq']}/{total}"
         if who:
             return f"{position} · {who}"
-        #  Không biết tên người thì nói TÊN CHẶNG — «Đang ở chặng 3/3» một mình
+        #  Không biết tên người thì nói TÊN CHẶNG — "Đang ở chặng 3/3" một mình
         #  đúng nhưng vô dụng, người xem vẫn phải mở phiếu ra mới biết đang nằm
         #  ở đâu. Chặng nạp từ app cũ không có ai được giao trong ERP (việc duyệt
         #  vẫn nằm bên app cũ) nên đây là đường thường gặp, không phải ngoại lệ.
@@ -328,7 +328,7 @@ def has_pending_task(db: Session, entity: str, entity_id: int, employee_id: int)
 
     ⚠️ Chỉ xét việc **đang treo** (`TASK_PENDING`), không xét việc đã xử lý.
     Ký xong là quyền đọc mở thêm đó đóng lại — người duyệt vẫn xem lại được
-    phiếu mình đã ký ở khối «Tôi đã duyệt gần đây», nơi dữ liệu đã lọc sẵn theo
+    phiếu mình đã ký ở khối "Tôi đã duyệt gần đây", nơi dữ liệu đã lọc sẵn theo
     chính họ. Nới rộng hơn thì mỗi lượt ký lại nới thêm một tờ vào tầm nhìn của
     một người, và phạm vi dữ liệu cứ phình ra theo thời gian mà không ai rà.
     """

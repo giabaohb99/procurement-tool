@@ -1,17 +1,17 @@
-"""Sửa / xóa tay MỘT dòng hàng trên màn «Giá thị trường» — bao-CR-608 (đại ca 07/10/2026).
+"""Sửa / xóa tay MỘT dòng hàng trên màn "Giá thị trường" — bao-CR-608 (đại ca 07/10/2026).
 
 Gác: sửa = `customs_price.write`, xóa = `customs_price.delete` (route ở `controller.py`).
 `customs_price` là entity PUBLIC (`SCOPE_FIELDS`) nên không có phạm vi dữ liệu để kiểm thêm.
 
 Mỗi lần sửa / xóa:
-  1. chụp ĐỦ dòng vào `tab_customs_line_change` (nguồn MANUAL, `batch_id` = 0) — dấu vết «trước
-     khi sửa là gì», cùng bảng với bản chụp của lô nạp (`line_change.py`);
+  1. chụp ĐỦ dòng vào `tab_customs_line_change` (nguồn MANUAL, `batch_id` = 0) — dấu vết "trước
+     khi sửa là gì", cùng bảng với bản chụp của lô nạp (`line_change.py`);
   2. ghi; doanh nghiệp nhập khẩu đi qua mã số thuế + tên, đối tác qua tên → tra hoặc tạo
      `CustomsParty` đúng như bộ nạp (`importer.upsert_parties`);
   3. tính lại `row_hash` (chống trùng bao-CR-541 phải thấy nội dung MỚI);
   4. `record(...)` nhật ký thao tác với entity `customs_price`.
 
-Hoạt chất / hàm lượng nhập tay → cờ `*_from_file` = 1: nghĩa của cờ là «giá trị do NGƯỜI nhập»
+Hoạt chất / hàm lượng nhập tay → cờ `*_from_file` = 1: nghĩa của cờ là "giá trị do NGƯỜI nhập"
 (tệp hoặc tay), `retag_all` không ghi đè. Gửi chuỗi rỗng = trả về cho hệ thống suy ra từ tên hàng.
 """
 from fastapi import HTTPException

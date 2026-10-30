@@ -2,7 +2,7 @@
 
 Hai câu hỏi, hai hàm:
 
-* `viec_cua_toi` — **đang chờ tôi** (màn «Chờ tôi duyệt»). Được mở nhiều nhất
+* `viec_cua_toi` — **đang chờ tôi** (màn "Chờ tôi duyệt"). Được mở nhiều nhất
   của cả hệ, nên truy vấn phải bám đúng chỉ mục
   `INDEX(assignee_employee_id, status)` của `tab_approval_task`.
 * `viec_da_xu_ly` — **tôi đã quyết định gần đây**, đọc từ dấu vết.
@@ -88,8 +88,8 @@ def my_tasks(db: Session, employee_id: int, entity: str = "") -> list[dict]:
     return result
 
 
-#  Những việc coi là ĐÃ XỬ LÝ khi nhìn lại. Cố ý KHÔNG gồm «Ý kiến» (ghi ý kiến
-#  không đổi trạng thái phiếu) và «Chuyển người xử lý» (đó là việc của quản trị,
+#  Những việc coi là ĐÃ XỬ LÝ khi nhìn lại. Cố ý KHÔNG gồm "Ý kiến" (ghi ý kiến
+#  không đổi trạng thái phiếu) và "Chuyển người xử lý" (đó là việc của quản trị,
 #  không phải một quyết định trên phiếu).
 HANDLED_ACTIONS = (ACTION_APPROVE, ACTION_REJECT, ACTION_RETURN)
 

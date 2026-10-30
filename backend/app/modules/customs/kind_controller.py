@@ -7,7 +7,7 @@
 
 Khóa quyền: dùng `customs_price` (đọc = ai xem được giá; sửa = `write`, tức người được nạp dữ
 liệu). Cố ý KHÔNG mở khóa mới: hai bảng này không có màn hình nghiệp vụ riêng, chúng là cấu
-hình của chính màn tra cứu (luật «một khóa = một màn hình», CR-157). Tách tệp khỏi
+hình của chính màn tra cứu (luật "một khóa = một màn hình", CR-157). Tách tệp khỏi
 `controller.py` vì bao-CR-493 đang sửa tệp đó — gộp không đụng nhau.
 """
 from fastapi import APIRouter, Depends

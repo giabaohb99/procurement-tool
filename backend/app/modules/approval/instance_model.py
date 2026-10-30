@@ -107,7 +107,7 @@ class ApprovalInstance(Base, AuditMixin):
     #  SQLite).
     #
     #  ⚠️ Câu `SELECT` kiểm trước trong `bat_dau()` KHÔNG đủ, và đây là lỗi đã
-    #  dựng lại được (24/08/2026): nhấp đúp nút «Gửi duyệt» thì hai lượt chạy
+    #  dựng lại được (24/08/2026): nhấp đúp nút "Gửi duyệt" thì hai lượt chạy
     #  sát nhau, cả hai đều đọc thấy "chưa có phiếu nào" rồi cùng ghi → **hai
     #  phiếu duyệt cùng chạy trên một văn bản**. Người duyệt nhận hai phiếu
     #  trùng; duyệt xong phiếu A là văn bản ban hành, phiếu B vẫn tiếp tục chạy

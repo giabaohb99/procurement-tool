@@ -41,7 +41,7 @@ class PurchaseRequest(Base, AuditMixin):
     # bao-CR-414: phòng ĐƯỢC NHỜ xử lý (phòng tự mua nhờ thu mua chung, hoặc ngược lại). Chỉ để
     # tính PHẠM VI (xem `core/scoping._dept_match`), không đổi luồng duyệt; chép sang ĐMH khi lập
     # từ phiếu này. bao-CR-524: phiếu không nhờ phòng nào mang id PHÒNG THU MUA MẶC ĐỊNH (mã
-    # PBA017, `core/central_purchasing`); `0` = «Thu mua chung» cũ, vẫn đọc như phòng đó.
+    # PBA017, `core/central_purchasing`); `0` = "Thu mua chung" cũ, vẫn đọc như phòng đó.
     handler_dept_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     department: Mapped[str] = mapped_column(String(255), default="")       # BẢN CHỤP tên phòng ban (sẽ xóa — N-008)
     head_of_dept: Mapped[str] = mapped_column(String(255), default="")     # trưởng bộ phận (TÊN — dùng để in)
@@ -49,7 +49,7 @@ class PurchaseRequest(Base, AuditMixin):
     # bằng id nhân sự chứ không bằng tên. Ô này CHỈ để lưu + in, KHÔNG khóa quyền duyệt của ai.
     # Cột `head_of_dept` ở trên GIỮ LẠI làm bản chụp tên lúc lập phiếu (phiếu cũ không có id).
     head_of_dept_id: Mapped[int] = mapped_column(BigInteger, default=0)    # id NHÂN SỰ (tab_employee)
-    # bao-CR-490: NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt»). 0 = chưa
+    # bao-CR-490: NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng ("Trưởng phòng phê duyệt"). 0 = chưa
     # duyệt / phiếu trước CR-490 (bản in lùi về nhật ký thao tác). Xem `core/print_signers.py`.
     approver_employee_id: Mapped[int] = mapped_column(BigInteger, default=0)
     purpose: Mapped[str] = mapped_column(String(355), default="")          # mục đích mua hàng

@@ -134,7 +134,7 @@ def _normalize_task(raw: dict, people: dict, types: dict, problems: list[dict], 
         if eid in people:
             assignees.append({"employee_id": eid, "code": people[eid][0], "name": people[eid][1]})
         else:
-            problems.append(_problem(f"«{title}»: người được giao #{eid} không có hoặc đã nghỉ việc", "assignees", where))
+            problems.append(_problem(f"\"{title}\": người được giao #{eid} không có hoặc đã nghỉ việc", "assignees", where))
     start, due = str(raw.get("start_date") or "").strip()[:10], str(raw.get("due_date") or "").strip()[:10]
     for field, name, val in (("start_date", "ngày bắt đầu", start), ("due_date", "hạn", due)):
         if val:
@@ -143,9 +143,9 @@ def _normalize_task(raw: dict, people: dict, types: dict, problems: list[dict], 
                     raise ValueError
                 date.fromisoformat(val)
             except ValueError:
-                problems.append(_problem(f"«{title}»: {name} phải dạng YYYY-MM-DD", field, where))
+                problems.append(_problem(f"\"{title}\": {name} phải dạng YYYY-MM-DD", field, where))
     if start and due and _DATE.match(start) and _DATE.match(due) and due < start:
-        problems.append(_problem(f"«{title}»: hạn trước ngày bắt đầu", "due_date", where))
+        problems.append(_problem(f"\"{title}\": hạn trước ngày bắt đầu", "due_date", where))
     hours = raw.get("estimate_hours")
     if hours in (None, ""):
         hours = None
@@ -155,7 +155,7 @@ def _normalize_task(raw: dict, people: dict, types: dict, problems: list[dict], 
             if not 0 < hours <= 999:
                 raise ValueError
         except (TypeError, ValueError):
-            problems.append(_problem(f"«{title}»: giờ ước lượng phải lớn hơn 0 và không quá 999", "estimate_hours", where))
+            problems.append(_problem(f"\"{title}\": giờ ước lượng phải lớn hơn 0 và không quá 999", "estimate_hours", where))
             hours = None
     task_type = None
     tt = raw.get("task_type")
@@ -167,7 +167,7 @@ def _normalize_task(raw: dict, people: dict, types: dict, problems: list[dict], 
         if tid in types:
             task_type = {"id": tid, "name": types[tid]}
         else:
-            problems.append(_problem(f"«{title}»: loại việc #{tt.get('id')} không có hoặc đã ngừng dùng", "task_type", where))
+            problems.append(_problem(f"\"{title}\": loại việc #{tt.get('id')} không có hoặc đã ngừng dùng", "task_type", where))
     priority = str(raw.get("priority") or "").strip()
     key = str(raw.get("key") or "").strip().lower()
     out = {"key": key if _KEY.match(key) else "", "title": title, "description": str(raw.get("description") or "")[:2000],
@@ -320,7 +320,7 @@ def list_mine(db: Session, user, *, status: int | None = None, page: int = 1, pa
 
 def _require_pending(row: AiPlanProposal) -> None:
     if int(row.status) != int(AiPlanStatus.PENDING):
-        raise NotPending(f"Đề xuất đang ở trạng thái «{AI_PLAN_STATUS_LABELS[AiPlanStatus(row.status)]}», không sửa được nữa.")
+        raise NotPending(f"Đề xuất đang ở trạng thái \"{AI_PLAN_STATUS_LABELS[AiPlanStatus(row.status)]}\", không sửa được nữa.")
 
 
 def save_edit(db: Session, user, row: AiPlanProposal, plan: dict) -> AiPlanProposal:
@@ -379,7 +379,7 @@ def serialize(row: AiPlanProposal, *, detail: bool = False) -> dict:
 # ── nối với lớp nháp dùng chung (draft_create, nhánh work_plan) ─────────────────────────────────────────────────
 
 def submit_for_review(db: Session, user, draft: dict) -> AiPlanProposal:
-    """Công tắc duyệt BẬT: xác nhận bản nháp (Telegram «tạo», MCP `confirm_draft`) chỉ lưu đề xuất Chờ duyệt, CHƯA tạo
+    """Công tắc duyệt BẬT: xác nhận bản nháp (Telegram "tạo", MCP `confirm_draft`) chỉ lưu đề xuất Chờ duyệt, CHƯA tạo
     việc. Khuôn sai → `PlanInvalid`."""
     row = record(db, user, draft, status=AiPlanStatus.PENDING)
     db.commit()
@@ -387,7 +387,7 @@ def submit_for_review(db: Session, user, draft: dict) -> AiPlanProposal:
 
 
 def create_direct(db: Session, user, draft: dict) -> tuple[str, int]:
-    """Công tắc duyệt TẮT: dựng bảng ngay như bao-CR-616 rồi ghi đề xuất «Tạo thẳng» để có dữ liệu học. Ghi sổ hỏng thì
+    """Công tắc duyệt TẮT: dựng bảng ngay như bao-CR-616 rồi ghi đề xuất "Tạo thẳng" để có dữ liệu học. Ghi sổ hỏng thì
     chỉ mất dữ liệu học, không mất bảng đã tạo."""
     from app.modules.work import plan_service
 
@@ -397,5 +397,5 @@ def create_direct(db: Session, user, draft: dict) -> tuple[str, int]:
         db.commit()
     except Exception:  # noqa: BLE001
         db.rollback()
-        log.exception("ai_plan: ghi đề xuất «tạo thẳng» cho kế hoạch #%s hỏng", list_id)
+        log.exception("ai_plan: ghi đề xuất \"tạo thẳng\" cho kế hoạch #%s hỏng", list_id)
     return code, list_id

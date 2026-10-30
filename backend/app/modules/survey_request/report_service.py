@@ -76,12 +76,12 @@ def get_report_payload(db: Session, report_id: int) -> dict:
     """Toàn bộ khối báo cáo — nút, giai đoạn, hồ sơ. `report_id = 0` → khối rỗng.
 
     `depends` trả đã LỌC id chết (hồ sơ tiên quyết bị xóa giữa chừng): id chết
-    mà lọt ra thì tầng hiển thị đếm nó là «chưa xong» và hồ sơ khóa vĩnh viễn.
+    mà lọt ra thì tầng hiển thị đếm nó là "chưa xong" và hồ sơ khóa vĩnh viễn.
     """
     docs = _rows_of(db, SurveyReportDoc, report_id)
     alive_ids = {d.id for d in docs}
     #  Tên nhân sự thực hiện resolve MỘT LƯỢT (tránh N+1) — id chết (nhân sự đã
-    #  xóa) ra chuỗi rỗng, FE hiện «Chưa cử». Không join vì chỉ cần tên.
+    #  xóa) ra chuỗi rỗng, FE hiện "Chưa cử". Không join vì chỉ cần tên.
     assignee_ids = {d.assignee_id for d in docs if d.assignee_id}
     names: dict[int, str] = {}
     if assignee_ids:
@@ -112,7 +112,7 @@ def get_report_payload(db: Session, report_id: int) -> dict:
             "assignee_name": names.get(d.assignee_id, ""),
             "sort_order": d.sort_order,
         } for d in docs],
-        #  Có bản xóa gần nhất chưa hoàn tác không → FE hiện nút «Hoàn tác» đúng
+        #  Có bản xóa gần nhất chưa hoàn tác không → FE hiện nút "Hoàn tác" đúng
         #  dòng lịch sử (`restorable_audit_id`). Chỉ có nghĩa khi khối đang RỖNG.
         **_restorable_fields(db, report_id),
     }
@@ -142,7 +142,7 @@ def snapshot_report(db: Session, report_id: int) -> dict:
     """
     head = db.get(ExecReport, report_id)
     return {
-        #  Mẫu của khối (duoc-CR-614) — hoàn tác phải trả cả mẫu, không thì «Tạo mẫu»
+        #  Mẫu của khối (duoc-CR-614) — hoàn tác phải trả cả mẫu, không thì "Tạo mẫu"
         #  sau hoàn tác đổ nhầm mẫu của lần khởi tạo xen giữa.
         "template": head.template if head else RT_COMMON,
         "items": [{"id": r.id, "name": r.name, "line_id": r.line_id, "sort_order": r.sort_order}
@@ -264,7 +264,7 @@ def required_docs_pending_of(db: Session, entity: str, owner_id: int) -> list[Su
 
 
 def _line_item_name(line: SurveyRequestLine, index: int) -> str:
-    """Tên nút mặc định cho một dòng hàng — dòng YCBG không có ô «tên sản phẩm»
+    """Tên nút mặc định cho một dòng hàng — dòng YCBG không có ô "tên sản phẩm"
     nên lấy thứ gần nhất người đọc nhận ra: mô tả yêu cầu, rồi phân loại."""
     for raw in (line.requirement_detail, line.item_group):
         name = (raw or "").strip().splitlines()[0][:100] if (raw or "").strip() else ""
@@ -285,11 +285,11 @@ def init_report(db: Session, report_id: int, lines: list[LineRef], user_id: int,
                 template: int = RT_COMMON) -> int:
     """Khởi tạo báo cáo theo MẪU ĐÃ CHỌN (duoc-CR-614): giai đoạn của mẫu + một nút cho
     mỗi dòng hàng + bộ hồ sơ CHUNG của mẫu (`apply_template`). Mẫu ghi lên đầu khối để
-    «Tạo mẫu» về sau đổ đúng mẫu đó. Trả về số hồ sơ đã dựng.
+    "Tạo mẫu" về sau đổ đúng mẫu đó. Trả về số hồ sơ đã dựng.
 
     Idempotent: khối đã có giai đoạn hoặc nút thì KHÔNG đụng gì (trả -1) — bấm
     hai lần không nhân đôi khung. Muốn thêm hồ sơ mẫu vào khối đang có thì đi
-    đường «Tạo mẫu» (`apply_template`), nó cộng thêm và bỏ qua trùng.
+    đường "Tạo mẫu" (`apply_template`), nó cộng thêm và bỏ qua trùng.
     """
     if not is_report_empty(db, report_id):
         return -1
@@ -315,14 +315,14 @@ def template_of(db: Session, report_id: int) -> int:
 
 
 def list_templates() -> list[dict]:
-    """Ô chọn mẫu của hộp «Khởi tạo báo cáo mẫu» — đọc từ sổ mẫu, FE không gõ tay danh sách."""
+    """Ô chọn mẫu của hộp "Khởi tạo báo cáo mẫu" — đọc từ sổ mẫu, FE không gõ tay danh sách."""
     return [{"id": code, "name": name, "description": description,
              "phase_count": len(phases), "doc_count": len(docs)}
             for code, (name, description, phases, docs) in REPORT_TEMPLATES.items()]
 
 
 def is_report_empty(db: Session, report_id: int) -> bool:
-    """Khối chưa có giai đoạn, nút dòng hàng lẫn hồ sơ nào — đúng trạng thái «lần đầu»."""
+    """Khối chưa có giai đoạn, nút dòng hàng lẫn hồ sơ nào — đúng trạng thái "lần đầu"."""
     return not (db.query(SurveyReportPhase.id).filter_by(report_id=report_id).first()
                 or db.query(SurveyReportItem.id).filter_by(report_id=report_id).first()
                 or db.query(SurveyReportDoc.id).filter_by(report_id=report_id).first())
@@ -350,7 +350,7 @@ def sync_line_items(db: Session, report_id: int, lines: list[LineRef], user_id: 
     - dòng đổi tên hàng → đổi tên nút;
     - dòng không còn → xóa nút, hồ sơ của nó về Chung (không mất);
     - khối CHƯA khởi tạo (không giai đoạn, không nút) → không làm gì: người chỉ
-      xem không được thấy một khối «có nội dung» chỉ vì đơn có dòng hàng.
+      xem không được thấy một khối "có nội dung" chỉ vì đơn có dòng hàng.
     Nút đặt tay (`line_id = 0`) không đụng tới.
     """
     items = _rows_of(db, SurveyReportItem, report_id)
@@ -410,7 +410,7 @@ def apply_template(db: Session, report_id: int, item_id: int, phase_id: int | No
         if not phase_of_no:
             names = " · ".join(n for n, _ in template_phases)
             raise HTTPException(400, f"Giai đoạn '{target.name}' không có trong mẫu "
-                                     f"«{template_name}» (mẫu chỉ có: {names})")
+                                     f"\"{template_name}\" (mẫu chỉ có: {names})")
     else:
         by_name: dict[str, SurveyReportPhase] = {}
         for p in phases:
@@ -492,7 +492,7 @@ def rename_item(db: Session, report_id: int, item_id: int, name: str, user_id: i
 
 
 def delete_item(db: Session, report_id: int, item_id: int, user_id: int) -> str:
-    """Xóa một nút. Hồ sơ đang gắn nút đó KHÔNG xóa theo — trả về «Chung»
+    """Xóa một nút. Hồ sơ đang gắn nút đó KHÔNG xóa theo — trả về "Chung"
     (`item_id = 0`): hồ sơ là công sức nhập liệu, nút chỉ là nhãn lọc."""
     row = _get_or_404(db, SurveyReportItem, report_id, item_id)
     moved = (db.query(SurveyReportDoc)
@@ -555,8 +555,8 @@ def check_depends(db: Session, report_id: int, doc_id: int, depends: list[int]) 
 
     Vòng tiên quyết (A chờ B, B chờ A) làm cả cụm khóa vĩnh viễn mà không ai
     hiểu vì sao — chặn lúc lưu, đừng để nó thành dữ liệu. Vòng dò có trần độ
-    sâu, và CHẠM TRẦN LÀ CHẶN chứ không trả về im lặng («dò không thấy» không
-    phải «không có» — bài học `block_manager_cycle`).
+    sâu, và CHẠM TRẦN LÀ CHẶN chứ không trả về im lặng ("dò không thấy" không
+    phải "không có" — bài học `block_manager_cycle`).
     """
     depends = list(dict.fromkeys(int(i) for i in depends))       # khử trùng, giữ thứ tự
     if not depends:
@@ -672,16 +672,16 @@ def delete_docs(db: Session, report_id: int, doc_ids: list[int], user_id: int) -
 
 def create_first_doc(db: Session, report_id: int, lines: list[LineRef], data,
                      user_id: int) -> SurveyReportDoc:
-    """duoc-CR-611 — «Thêm hồ sơ» khi khối còn TRỐNG: dựng khung (5 giai đoạn + nút theo
+    """duoc-CR-611 — "Thêm hồ sơ" khi khối còn TRỐNG: dựng khung (5 giai đoạn + nút theo
     dòng hàng, KHÔNG đổ bộ hồ sơ mẫu) rồi thêm đúng một hồ sơ vào dòng hàng + giai đoạn đã
-    chọn. Khối đã có gì rồi → 400: lúc đó nút «Thêm hồ sơ» thường đã có ô chọn nút sẵn, đi
+    chọn. Khối đã có gì rồi → 400: lúc đó nút "Thêm hồ sơ" thường đã có ô chọn nút sẵn, đi
     đường này nữa là dựng khung chồng lên khung."""
     if not is_report_empty(db, report_id):
-        raise HTTPException(400, "Báo cáo đã có nội dung — tải lại rồi dùng nút «Thêm hồ sơ»")
+        raise HTTPException(400, "Báo cáo đã có nội dung — tải lại rồi dùng nút \"Thêm hồ sơ\"")
     if data.line_id and data.line_id not in {line_id for line_id, _ in lines}:
         raise HTTPException(404, "Dòng hàng không còn trên chứng từ — tải lại rồi chọn lại")
     #  Khung ở đây là 5 giai đoạn của MẪU CHUNG → ghi đúng mẫu đó lên đầu khối (đầu khối có
-    #  thể còn mã của lần khởi tạo trước đã bị xóa — «Tạo mẫu» sẽ đổ nhầm mẫu).
+    #  thể còn mã của lần khởi tạo trước đã bị xóa — "Tạo mẫu" sẽ đổ nhầm mẫu).
     _set_template(db, report_id, RT_COMMON, user_id)
     _build_skeleton(db, report_id, lines, user_id)
     phase = (db.query(SurveyReportPhase)

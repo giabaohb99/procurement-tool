@@ -84,12 +84,12 @@ def _subject_exists(db: Session, subject_kind: int, subject_id: int) -> bool:
 
 
 def _describe_subjects(db: Session, rows: list[ReportAccess]) -> str:
-    """«Vai trò «Quản trị» · Phòng ban «Kế toán»…» cho audit — tối đa
+    """"Vai trò "Quản trị" · Phòng ban "Kế toán"…" cho audit — tối đa
     `_AUDIT_SUBJECT_PREVIEW` dòng, phần dư gộp vào "và N đối tượng khác" (cùng kiểu rút
     gọn với `privilege_escalation.block_privilege_escalation`, lô có thể tới 200 dòng)."""
     names = subject_names(db, rows)
     descs = [
-        f"{SUBJECT_LABELS.get(r.subject_kind, '')} «{names.get((r.subject_kind, r.subject_id)) or r.subject_id}»"
+        f"{SUBJECT_LABELS.get(r.subject_kind, '')} \"{names.get((r.subject_kind, r.subject_id)) or r.subject_id}\""
         for r in rows[:_AUDIT_SUBJECT_PREVIEW]
     ]
     text = "; ".join(descs)
@@ -157,7 +157,7 @@ def grant(db: Session, key: ReportKey, data: ReportAccessGrantIn, actor) -> dict
         label = REPORT_META[key][0]
         detail = _describe_subjects(db, touched)
         record(db, actor.id, AUDIT_ENTITY, int(key), "update",
-              f"{verb} xem «{label}» cho {len(touched)} đối tượng: {detail}")
+              f"{verb} xem \"{label}\" cho {len(touched)} đối tượng: {detail}")
     return {"created": created, "updated": updated, "skipped": skipped}
 
 
@@ -181,5 +181,5 @@ def revoke(db: Session, access_id: int, reason: str, actor) -> ReportAccess:
     #  cáo (khóa chỉ 1..13, không soi được dòng cụ thể nào trong tab_audit_log).
     subject_desc = _describe_subjects(db, [row])
     record(db, actor.id, AUDIT_ENTITY, access_id, "update",
-          f"Thu hồi quyền xem «{label}» của {subject_desc}")
+          f"Thu hồi quyền xem \"{label}\" của {subject_desc}")
     return row
