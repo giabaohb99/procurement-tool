@@ -1,7 +1,7 @@
 """KẾT SỔ CUỐI NĂM — số dư đi đâu, và bao giờ thì nó mất.
 
-Trước 07/09/2026 ba ô *«Cho chuyển phép sang năm sau · Chuyển tối đa · Hết hạn
-cuối tháng»* trên màn Loại nghỉ là **cột chết**: lưu được, hiện được, và không
+Trước 07/09/2026 ba ô *"Cho chuyển phép sang năm sau · Chuyển tối đa · Hết hạn
+cuối tháng"* trên màn Loại nghỉ là **cột chết**: lưu được, hiện được, và không
 chỗ nào trong mã đọc tới. Người khai danh mục bật công tắc lên rồi tin là 31/12
 máy sẽ chuyển phép — 31/12 không có gì xảy ra cả. Tệp này là phần việc thật
 đứng sau ba ô đó.

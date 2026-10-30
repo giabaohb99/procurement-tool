@@ -1,4 +1,4 @@
-"""«Bấm số ra danh sách» của báo cáo Quỹ phép năm (duoc-CR-686,
+""""Bấm số ra danh sách" của báo cáo Quỹ phép năm (duoc-CR-686,
 `GET /api/leave-balances/summary/rows`). Hợp đồng chung ở `core/report_drilldown.py`.
 
   - `remaining` (mọi dòng quỹ) · `people_over_quota` (còn lại < 0) · `people_unused` (được cấp > 0,
@@ -87,7 +87,7 @@ def build_rows(db: Session, user, prof: dict, period: Period, params, company_id
 
 
 def _merge_by_person(rows: list[BalanceRow]) -> list[BalanceRow]:
-    """Cộng dồn các dòng quỹ của cùng một người; cột «Loại nghỉ» ghi các loại, cách nhau dấu phẩy."""
+    """Cộng dồn các dòng quỹ của cùng một người; cột "Loại nghỉ" ghi các loại, cách nhau dấu phẩy."""
     by_emp: dict[int, list[BalanceRow]] = {}
     for r in rows:
         by_emp.setdefault(r.employee_id, []).append(r)

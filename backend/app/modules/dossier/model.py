@@ -51,7 +51,7 @@ class Dossier(Base, AuditMixin, SoftDeleteMixin):
     dossier_type_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     dossier_type_name: Mapped[str] = mapped_column(String(100), default="")
 
-    #  Vòng đời do NGƯỜI đặt. «Hết hạn» KHÔNG nằm ở đây — nó suy ra từ
+    #  Vòng đời do NGƯỜI đặt. "Hết hạn" KHÔNG nằm ở đây — nó suy ra từ
     #  `expiry_date`, xem ghi chú dài ở `constants.py`.
     status: Mapped[int] = mapped_column(SmallInteger, default=DOSSIER_DRAFT, index=True)
 
@@ -61,7 +61,7 @@ class Dossier(Base, AuditMixin, SoftDeleteMixin):
     #  doanh nghiệp), không phải ô chưa ai nhập. Chỗ nào đọc cột này mà coi
     #  `NULL` là thiếu dữ liệu thì sẽ đi nhắc người dùng điền một thứ không tồn
     #  tại. Có chỉ mục vì màn danh sách sắp theo nó để trả lời câu hỏi thường
-    #  gặp nhất của cả phân hệ: «cái nào sắp hết hạn?».
+    #  gặp nhất của cả phân hệ: "cái nào sắp hết hạn?".
     expiry_date: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
 
     #  ---- Ba chiều PHẠM VI DỮ LIỆU ----
@@ -72,7 +72,7 @@ class Dossier(Base, AuditMixin, SoftDeleteMixin):
     department_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
 
-    #  Nơi giữ BẢN GIẤY — «Tủ A2 · P. Hành chính». Chuỗi tự do chứ không phải
+    #  Nơi giữ BẢN GIẤY — "Tủ A2 · P. Hành chính". Chuỗi tự do chứ không phải
     #  danh mục: mỗi công ty gọi chỗ cất giấy tờ một kiểu, và dựng một danh mục
     #  cho nó là bắt người dùng khai một cây thư mục trước khi lưu được tờ đầu tiên.
     storage_location: Mapped[str] = mapped_column(String(200), default="")
@@ -89,17 +89,17 @@ class Dossier(Base, AuditMixin, SoftDeleteMixin):
     #
     #  ⚠️ Đây là chỗ đổi lấy, và nó ĐẮT hơn bộ trường của loại: khai ở loại thì
     #  mọi hồ sơ cùng loại chung một bộ ô, còn khai ở đây thì mỗi hồ sơ một kiểu.
-    #  Nhu cầu nào LẶP LẠI thì kéo lên khai ở loại — không thì «Số QĐ» ·
-    #  «So QD» · «SQD» thành ba trường khác nhau và không lọc ra được gì.
+    #  Nhu cầu nào LẶP LẠI thì kéo lên khai ở loại — không thì "Số QĐ" ·
+    #  "So QD" · "SQD" thành ba trường khác nhau và không lọc ra được gì.
     custom_fields: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
-    #  ---- ĐIỀU KIỆN ÁP DỤNG: «giấy này phải kèm theo chứng từ nào» ----
+    #  ---- ĐIỀU KIỆN ÁP DỤNG: "giấy này phải kèm theo chứng từ nào" ----
     #  Luật khớp và hai ca rỗng nằm ở `applicability.py` — đọc đó trước khi động
     #  vào hai cột này.
     #
     #  ⚠️ **`NULL` / rỗng ở `apply_doc_kinds` = KHÔNG BAO GIỜ hiện ra ở đâu**, và
     #  đó phải là mặc định: mọi hồ sơ lập trước 21/09/2026 đều mang `NULL`, đổi
-    #  nghĩa rỗng thành «áp cho tất cả» là một sáng hôm sau cả công ty mở đơn
+    #  nghĩa rỗng thành "áp cho tất cả" là một sáng hôm sau cả công ty mở đơn
     #  mua hàng nào cũng thấy một thẻ hồ sơ không ai gắn.
     apply_doc_kinds: Mapped[list | None] = mapped_column(JSON, nullable=True)
     #  Rỗng mà `apply_doc_kinds` CÓ thì nghĩa ngược lại: áp cho MỌI phiếu loại
@@ -113,7 +113,7 @@ class Dossier(Base, AuditMixin, SoftDeleteMixin):
     #  hành sau khi hợp đồng ký xong, ở mọi thương vụ. Khai ở đây thì khai MỘT
     #  lần cho cả kho, thay vì mỗi tờ phiếu khai lại từ đầu.
     #
-    #  ⚠️ Nhưng **«xong» thì vẫn theo từng phiếu** (`tab_dossier_progress`), nên
+    #  ⚠️ Nhưng **"xong" thì vẫn theo từng phiếu** (`tab_dossier_progress`), nên
     #  chuyện một tờ có đang KHÓA hay không vẫn là câu hỏi của riêng từng phiếu:
     #  ràng buộc dùng chung, trạng thái riêng. Xem `_with_lock` ở
     #  `applicability_controller.py`.
@@ -188,8 +188,8 @@ class Dossier(Base, AuditMixin, SoftDeleteMixin):
     def owner_name(self) -> str:
         #  ⚠️ `full_name`, KHÔNG phải `name` — `tab_employee` không có cột `name`.
         #  Gõ nhầm ở đây hỏng theo kiểu tệ nhất: `AttributeError` bị Pydantic nuốt
-        #  vì `DossierResponse.owner_name` có giá trị mặc định, nên cột «Người phụ
-        #  trách» rỗng VĨNH VIỄN mà không lỗi, không cảnh báo, không dòng log nào.
+        #  vì `DossierResponse.owner_name` có giá trị mặc định, nên cột "Người phụ
+        #  trách" rỗng VĨNH VIỄN mà không lỗi, không cảnh báo, không dòng log nào.
         #  Cột đó trong tệp Excel xuất ra cũng rỗng theo. Canh ở
         #  `test_ho_so.py::test_ba_cai_ten_doc_qua_quan_he_phai_ra_ten_that`.
         return self.owner.full_name if self.owner else ""
@@ -206,7 +206,7 @@ class Dossier(Base, AuditMixin, SoftDeleteMixin):
     #  ⚠️ Xuất CSV lấy giá trị bằng `getattr(item, field)` trên chính đối tượng
     #  ORM (`core/csv_utils.export_csv_response`), **không** đi qua phong bì API.
     #  Khai mấy nhãn này thành `computed_field` của Pydantic thì tệp Excel xuất
-    #  ra có cột «Tình trạng» rỗng trơn ở mọi dòng — không lỗi, không cảnh báo.
+    #  ra có cột "Tình trạng" rỗng trơn ở mọi dòng — không lỗi, không cảnh báo.
     @property
     def status_label(self) -> str:
         return DOSSIER_STATUS_LABELS.get(self.status, "")

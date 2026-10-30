@@ -2,13 +2,13 @@
 
 Bối cảnh: chiều app cũ -> ERP chạy thật; chiều ERP -> app cũ đang TẮT (và anh Được chốt 26/10/2026 không ghi gì
 sang app cũ — bên đó là prod). App cũ vì thế không biết ERP đã làm gì, và mỗi lần phiếu bên đó đổi (cộng lượt quét
-ép 02:15 hằng đêm) chiều nhận lại chép đè: phiếu điều phối trên ERP lùi về «Đã duyệt» nhưng còn giữ xe, phiếu
+ép 02:15 hằng đêm) chiều nhận lại chép đè: phiếu điều phối trên ERP lùi về "Đã duyệt" nhưng còn giữ xe, phiếu
 hoàn tất / đóng dấu trên ERP lùi trạng thái, nội dung người dùng sửa trên ERP bị trả về bản cũ.
 
 Không thể cấm cứng app cũ ghi: người ta VẪN điều phối bên app cũ, ERP đang soi gương (đại ca chốt 17/09/2026).
 Nên phân xử THEO PHIẾU:
 
-* `erp_action_at` — dấu «ERP đã đụng vào phiếu gốc app cũ lúc…». Bộ nghe `_before_flush` tự đóng khi BẤT KỲ cột
+* `erp_action_at` — dấu "ERP đã đụng vào phiếu gốc app cũ lúc…". Bộ nghe `_before_flush` tự đóng khi BẤT KỲ cột
   nghiệp vụ nào đổi NGOÀI lượt đồng bộ (`is_sync_in_progress()` sai) trên phiếu có `legacy_id` — nút trên web, lưu
   nháp, hook bộ máy duyệt, việc nền. Đã đóng thì không gỡ. Migration lấp dấu cho phiếu ERP đã thao tác trước đó
   (nhật ký thao tác của NGƯỜI DÙNG, `actor_kind = 1`).
@@ -57,7 +57,7 @@ def is_erp_owned(row) -> bool:
     return bool(getattr(row, "erp_action_at", ""))
 
 
-#  Cột không phải dữ liệu nghiệp vụ — đổi chúng không tính là «ERP đụng vào phiếu».
+#  Cột không phải dữ liệu nghiệp vụ — đổi chúng không tính là "ERP đụng vào phiếu".
 META_FIELDS = frozenset({"updated_at", "updated_by", "legacy_id", "erp_action_at", "is_deleted"})
 
 

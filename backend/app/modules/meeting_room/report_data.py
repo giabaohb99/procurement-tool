@@ -1,10 +1,10 @@
-"""Nạp dữ liệu cho báo cáo F1 «Sử dụng phòng họp» (duoc-CR-689, khóa 28).
+"""Nạp dữ liệu cho báo cáo F1 "Sử dụng phòng họp" (duoc-CR-689, khóa 28).
 
 Hai loại hàng đưa cho khung báo cáo (cộng bằng Python, cùng một danh sách):
   - hàng `booking`: một phiếu đặt phòng trong kỳ (theo ngày BẮT ĐẦU). Phiếu ĐÃ DUYỆT góp lượt đặt + giờ
-    đã đặt + người dự; phiếu Đã hủy / Từ chối chỉ góp vào «đặt rồi hủy». Nháp / chờ duyệt / trả về bỏ qua;
+    đã đặt + người dự; phiếu Đã hủy / Từ chối chỉ góp vào "đặt rồi hủy". Nháp / chờ duyệt / trả về bỏ qua;
   - hàng `capacity`: giờ làm việc chuẩn của MỘT phòng trong MỘT ngày (hoặc một khung giờ khi xem theo giờ)
-    theo lịch làm việc HỆ THỐNG, trừ ngày lễ của pháp nhân sở hữu phòng. Chỉ góp «Giờ làm việc».
+    theo lịch làm việc HỆ THỐNG, trừ ngày lễ của pháp nhân sở hữu phòng. Chỉ góp "Giờ làm việc".
 
 Số truy vấn CỐ ĐỊNH: phòng (1) · phiếu (1) · lịch làm việc hệ thống (3) · ngày lễ (1).
 Thời gian phiếu lưu giờ địa phương (không múi giờ) nên dùng thẳng, không cộng bù UTC.

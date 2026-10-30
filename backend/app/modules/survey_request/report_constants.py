@@ -20,7 +20,7 @@ REPORT_DOC_STATUS_LABELS = {
 }
 
 #  5 giai đoạn mặc định khi bấm "Khởi tạo báo cáo" — theo mẫu báo cáo nhập khẩu
-#  «Nhập khẩu K₂SO₄ & KNO₃» của Phòng Thu mua (11/09/2026). Chỉ là ĐIỂM XUẤT PHÁT:
+#  "Nhập khẩu K₂SO₄ & KNO₃" của Phòng Thu mua (11/09/2026). Chỉ là ĐIỂM XUẤT PHÁT:
 #  người dùng sửa/xóa/thêm tự do, phiếu mua trong nước cứ đổi tên cho hợp.
 DEFAULT_PHASES = (
     ("Pháp lý & Giấy phép", "Việt Nam — trước khi đặt hàng"),
@@ -31,18 +31,18 @@ DEFAULT_PHASES = (
 )
 
 #  MẪU CHUNG — bộ hồ sơ đi kèm 5 giai đoạn trên (bao-CR-388; nội dung theo mẫu
-#  «Nhập khẩu K₂SO₄ & KNO₃» của Phòng Thu mua, bao-CR-391, rồi GOM về bản chung ở
-#  bao-CR-393). «Khởi tạo báo cáo mẫu» dựng cả hồ sơ chứ không chỉ khung (khung 5
-#  giai đoạn rỗng thì "bấm xong hổng có gì hết trơn"), và nút «Tạo mẫu» trên từng
+#  "Nhập khẩu K₂SO₄ & KNO₃" của Phòng Thu mua, bao-CR-391, rồi GOM về bản chung ở
+#  bao-CR-393). "Khởi tạo báo cáo mẫu" dựng cả hồ sơ chứ không chỉ khung (khung 5
+#  giai đoạn rỗng thì "bấm xong hổng có gì hết trơn"), và nút "Tạo mẫu" trên từng
 #  nút dòng hàng / giai đoạn đổ đúng phần mẫu đó vào. Cố ý để TRONG MÃ NGUỒN, chưa
 #  có bảng: quản lý mẫu (lưu/sửa nhiều mẫu) là việc sau, khi có thì thay nguồn đọc
 #  ở `report_service.apply_template`, chỗ gọi không đổi.
 #  Luật gom (bao-CR-393): mẫu là BỘ CHUNG cho một lô nhập khẩu — mỗi việc đúng
-#  MỘT dòng, KHÔNG tách theo mặt hàng (mẫu gốc từng có hai dòng «Hợp đồng NK» cho
+#  MỘT dòng, KHÔNG tách theo mặt hàng (mẫu gốc từng có hai dòng "Hợp đồng NK" cho
 #  K₂SO₄ và KNO₃, hai dòng Giấy CN lưu hành…). Hồ sơ chỉ một mặt hàng mới cần
 #  (giấy phép tiền chất Bộ Công An, kiểm tra thực tế 100%, sổ theo dõi tiền chất)
-#  người dùng THÊM TAY vào đúng nút dòng hàng đó; mẫu chỉ giữ lại một dòng «Giấy
-#  phép NK chuyên ngành (nếu có)» không bắt buộc để khỏi quên hỏi.
+#  người dùng THÊM TAY vào đúng nút dòng hàng đó; mẫu chỉ giữ lại một dòng "Giấy
+#  phép NK chuyên ngành (nếu có)" không bắt buộc để khỏi quên hỏi.
 #  Mỗi dòng: (số thứ tự giai đoạn trong DEFAULT_PHASES 1..5, tiêu đề, mô tả,
 #  bắt buộc, tiên quyết theo SỐ THỨ TỰ 1-based trong chính danh sách này).
 DEFAULT_TEMPLATE_DOCS = (
@@ -104,20 +104,20 @@ DEFAULT_TEMPLATE_DOCS = (
 )
 
 #  ─── MẪU KHỞI TẠO (duoc-CR-614) ───────────────────────────────────────────────
-#  Người dùng CHỌN mẫu lúc bấm «Khởi tạo báo cáo mẫu»; mẫu đã chọn LƯU ở
-#  `ExecReport.template` (SMALLINT, R2) để nút «Tạo mẫu» trên từng dòng hàng /
+#  Người dùng CHỌN mẫu lúc bấm "Khởi tạo báo cáo mẫu"; mẫu đã chọn LƯU ở
+#  `ExecReport.template` (SMALLINT, R2) để nút "Tạo mẫu" trên từng dòng hàng /
 #  giai đoạn về sau đổ đúng mẫu của khối đó, không mặc định quay về mẫu chung.
 #  Số đã cấp KHÔNG đổi, KHÔNG tái dùng — khối cũ lưu số này trong DB.
 RT_COMMON = 1       # Mẫu chung hồ sơ nhập khẩu — 5 giai đoạn (bao-CR-388/391/393)
 RT_IMPORT_PLAN = 2  # Tiến độ kế hoạch công việc nhập khẩu — 1 giai đoạn, 21 việc
 
-#  Mẫu «Tiến độ kế hoạch công việc nhập khẩu» — chép file Excel cùng tên của Phòng
+#  Mẫu "Tiến độ kế hoạch công việc nhập khẩu" — chép file Excel cùng tên của Phòng
 #  Thu mua (đại ca gửi 09/10/2026): danh sách PHẲNG 21 việc (STT 0–20), không chia
-#  giai đoạn → gom vào MỘT giai đoạn (đại ca chốt). Excel tính «Ngày dự kiến hoàn
-#  thành = ngày bắt đầu + Time xử lý (Ngày)»; đại ca chốt KHÔNG đặt ngày lúc khởi
+#  giai đoạn → gom vào MỘT giai đoạn (đại ca chốt). Excel tính "Ngày dự kiến hoàn
+#  thành = ngày bắt đầu + Time xử lý (Ngày)"; đại ca chốt KHÔNG đặt ngày lúc khởi
 #  tạo, chỉ ghi số ngày xử lý vào mô tả — người dùng tự điền ngày trên dạng Bảng.
-#  Cột «Người/Đơn vị phụ trách» (Nguyên · Tiên · Ngân) không chép: người thực hiện
-#  là nhân sự thật, chọn trên dạng Bảng. Trạng thái «Hủy» của Excel không có — việc
+#  Cột "Người/Đơn vị phụ trách" (Nguyên · Tiên · Ngân) không chép: người thực hiện
+#  là nhân sự thật, chọn trên dạng Bảng. Trạng thái "Hủy" của Excel không có — việc
 #  bị hủy thì xóa dòng (đại ca chốt). Mỗi dòng: (tên việc, số ngày xử lý, bắt buộc).
 IMPORT_PLAN_PHASES = (
     ("Kế hoạch công việc nhập khẩu", "Theo mẫu báo cáo tiến độ của Phòng Thu mua"),
@@ -174,6 +174,6 @@ REPORT_TEMPLATES = {
 #  đồng thời chặn payload rác (cột JSON không tự chặn gì cả, xem duoc-CR-316).
 MAX_DEPENDS = 30
 
-#  Trần số hồ sơ của MỘT lượt «xóa nhiều» — bằng trần số hồ sơ của cả khối
+#  Trần số hồ sơ của MỘT lượt "xóa nhiều" — bằng trần số hồ sơ của cả khối
 #  (`_ROW_CAPS` ở report_service), nên xóa sạch một khối đầy vẫn lọt một lượt.
 MAX_BULK_DELETE_DOCS = 500

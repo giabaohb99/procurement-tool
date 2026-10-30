@@ -5,7 +5,7 @@ phép nhìn thấy nhau: `model.py` (thuộc tính để xuất CSV và bản in
 ORM), `schema.py` (phong bì trả về API) và `service.py`. Để hàm này trong
 `service.py` thì `model.py` phải import ngược lại chính tệp đang import nó.
 
-⚠️ Đây là nơi DUY NHẤT của luật «hết hạn / sắp hết hạn». Đừng chép sang
+⚠️ Đây là nơi DUY NHẤT của luật "hết hạn / sắp hết hạn". Đừng chép sang
 TypeScript để khỏi gọi API — hai bản luật ngày tháng sẽ lệch nhau vào đúng một
 ngày không ai để ý, và bên lệch là bên người dùng nhìn.
 """
@@ -22,8 +22,8 @@ def expiry_state(expiry: date | None, today: date | None = None) -> tuple[int, i
     khẳng định "hôm nay" là bài kiểm sẽ đỏ vào một sáng nào đó mà không ai đụng
     gì vào mã nguồn.
 
-    Số ngày còn lại trả `None` khi vô thời hạn: `0` ở đó đọc ra «hết hạn hôm
-    nay», tức đúng ngược với sự thật.
+    Số ngày còn lại trả `None` khi vô thời hạn: `0` ở đó đọc ra "hết hạn hôm
+    nay", tức đúng ngược với sự thật.
     """
     if not expiry:
         return EXPIRY_NONE, None

@@ -2,8 +2,8 @@
 
 Trước đây `document/export.py` giữ một BẢN CHÉP của bảy cái nhãn, với lý do ghi
 tại chỗ là "file Excel phải đọc được kể cả khi ai đó đổi nhãn trên màn hình".
-Lý do đó chết từ lúc bảy dòng này thành danh mục sửa được: đổi «Nội bộ» thành
-«Lưu hành nội bộ» mà file Excel vẫn in chữ cũ thì đó là lỗi, không phải tính
+Lý do đó chết từ lúc bảy dòng này thành danh mục sửa được: đổi "Nội bộ" thành
+"Lưu hành nội bộ" mà file Excel vẫn in chữ cũ thì đó là lỗi, không phải tính
 năng — hai tờ giấy cùng nói về một văn bản mà gọi hai tên khác nhau.
 """
 from fastapi import HTTPException

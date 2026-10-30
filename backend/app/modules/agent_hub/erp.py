@@ -60,10 +60,10 @@ class ErpUser:
     email: str = ""
     employee_id: int = 0
     is_active: bool = True
-    label: str = ""          # «Họ tên (MÃ NV)» — describe_user
-    detail: str = ""         # «phòng … · tên đăng nhập …»
+    label: str = ""          # "Họ tên (MÃ NV)" — describe_user
+    detail: str = ""         # "phòng … · tên đăng nhập …"
     context: str = ""        # chân dung cho system prompt (assistant.service._caller_context)
-    names: list[str] = field(default_factory=list)   # tên / mã để tìm người («cho anh Được quyền gộp»)
+    names: list[str] = field(default_factory=list)   # tên / mã để tìm người ("cho anh Được quyền gộp")
     department_id: int = 0   # ai-CR-209: phòng ban / pháp nhân của hồ sơ nhân sự — nhật ký MCP chụp lúc gọi
     company_id: int = 0
 
@@ -326,7 +326,7 @@ class _Local:
 
         return draft_create.update_doc_draft(db, user, kind, oid, draft, mode, **_src(source))
 
-    #  ai-CR-151: nút «Xác nhận sửa / xóa» của thẻ đề xuất. Ghi phiếu là việc của ERP — ở chế độ service phải đi qua
+    #  ai-CR-151: nút "Xác nhận sửa / xóa" của thẻ đề xuất. Ghi phiếu là việc của ERP — ở chế độ service phải đi qua
     #  cổng B, không được gọi `confirm_update` trên DB của bot (DB đó không có bảng phiếu).
     @staticmethod
     def confirm_proposal(db, user, token: str, source: int = 0) -> dict:
@@ -392,7 +392,7 @@ class _Local:
 
     @staticmethod
     def ticket_note(db, ticket_id: int, body: str, *, status: str, by_user_id: int, clear_assignee: bool = False) -> None:
-        """Một dòng trả lời của nhóm hỗ trợ + đặt trạng thái (không qua service để khỏi tự đổi «Đã trả lời»)."""
+        """Một dòng trả lời của nhóm hỗ trợ + đặt trạng thái (không qua service để khỏi tự đổi "Đã trả lời")."""
         from app.modules.ticket.model import Ticket, TicketMessage
 
         t = db.get(Ticket, int(ticket_id))
@@ -983,7 +983,7 @@ def skill_file(db, user, name: str, path: str, offset: int = 0) -> dict:
 
 
 #  ai-CR-226 (Agent 1 đọc log dev 19/10): mọi dòng nhật ký thao tác do dịch vụ AI ghi phải qua đây — gọi thẳng
-#  `core.audit.record` ở chế độ tách là ghi vào DB agent_hub (không có bảng) → mất trắng dấu vết «ai nhờ bot làm gì».
+#  `core.audit.record` ở chế độ tách là ghi vào DB agent_hub (không có bảng) → mất trắng dấu vết "ai nhờ bot làm gì".
 AUDIT_TIMEOUT = 5
 AUDIT_MESSAGE_MAX = 2000
 

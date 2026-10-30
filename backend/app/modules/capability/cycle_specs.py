@@ -1,4 +1,4 @@
-"""Định nghĩa «xong» và «làm lại» của từng loại phiếu — CẤU HÌNH, không rải `if` theo loại (duoc-CR-656, D1a, Q2).
+"""Định nghĩa "xong" và "làm lại" của từng loại phiếu — CẤU HÌNH, không rải `if` theo loại (duoc-CR-656, D1a, Q2).
 
 Đổi một định nghĩa = sửa MỘT dòng ở `SPECS` rồi chạy lại `scripts/backfill_work_cycles.py`.
 Tài liệu cho người đọc: `doc/tai-lieu-ky-thuat/nang-luc-theo-loai-viec.md`.
@@ -6,7 +6,7 @@ Tài liệu cho người đọc: `doc/tai-lieu-ky-thuat/nang-luc-theo-loai-viec.
 Mọi giá trị trạng thái ở đây là CHUỖI, vì `tab_change_log.after_value` là chuỗi: cột số `5` thành `"5"`.
 Hai nguồn sự kiện, gộp lại (`cycle_compute` khử trùng):
   · `tab_change_log` (field `status`) — thấy cả bước tự chuyển không ghi audit, nhưng chỉ từ ngày bật (16/09/2026 ở local);
-  · `tab_audit_log` (cho 4 chứng từ Thu mua) — có từ 01/07/2026 và có từ vựng nghiệp vụ («trả về» ≠ «từ chối»).
+  · `tab_audit_log` (cho 4 chứng từ Thu mua) — có từ 01/07/2026 và có từ vựng nghiệp vụ ("trả về" ≠ "từ chối").
 """
 from dataclasses import dataclass, field
 from enum import IntEnum
@@ -17,7 +17,7 @@ from app.core.capability_codes import CycleKind
 class Ev(IntEnum):
     """Loại sự kiện đã chuẩn hóa, độc lập với nguồn."""
 
-    DONE = 1       # tới trạng thái «xong»
+    DONE = 1       # tới trạng thái "xong"
     CANCEL = 2     # hủy
     REJECT = 3     # từ chối (khóa)
     RETURN = 4     # trả về để làm lại  → tính 1 lần làm lại
@@ -33,9 +33,9 @@ class CycleSpec:
     rejected: frozenset = frozenset()       # trạng thái hiện tại = bị từ chối (khóa)
     returned: frozenset = frozenset()       # đổi SANG trạng thái này = trả về làm lại
     ambiguous_reject: frozenset = frozenset()  # YCMH: `rejected` dùng cho cả từ chối lẫn trả về → hỏi audit
-    reopen_status: str | None = None        # task: đổi từ «xong» sang trạng thái này = mở lại
+    reopen_status: str | None = None        # task: đổi từ "xong" sang trạng thái này = mở lại
     done_pick: str = "first"                # `first` | `last` mốc xong khi có nhiều lần
-    sticky_done: bool = False               # văn bản: hết hiệu lực/lưu trữ rồi vẫn là «đã xong» việc soạn
+    sticky_done: bool = False               # văn bản: hết hiệu lực/lưu trữ rồi vẫn là "đã xong" việc soạn
     done_ts_col: str | None = None          # cột mốc của chính bảng, dự phòng khi nhật ký thiếu
     audit_entity: str | None = None
     audit_map: dict = field(default_factory=dict)   # action → Ev
@@ -45,9 +45,9 @@ def _s(*vals) -> frozenset:
     return frozenset(str(v) for v in vals)
 
 
-#  ĐMH: «Đã nhận đủ» (`received`) đã tính là XONG (đại ca chốt 20/10/2026) — `completed` chỉ là bước đóng sổ sau đó;
+#  ĐMH: "Đã nhận đủ" (`received`) đã tính là XONG (đại ca chốt 20/10/2026) — `completed` chỉ là bước đóng sổ sau đó;
 #  mốc xong lấy lần ĐẦU (`done_pick=first`) nên là lúc nhận đủ.
-#  Thu mua: audit có «returned» cho YCMH; YCBG / ĐMH dùng status `rejected` = Trả về (không có «từ chối» thật).
+#  Thu mua: audit có "returned" cho YCMH; YCBG / ĐMH dùng status `rejected` = Trả về (không có "từ chối" thật).
 SPECS: tuple[CycleSpec, ...] = (
     CycleSpec(CycleKind.PURCHASE_REQUEST, "tab_purchase_request",
               done=_s("completed", "done"), cancelled=_s("cancelled"),

@@ -1,4 +1,4 @@
-"""XEM TRƯỚC LUỒNG DUYỆT — «Người duyệt dự kiến» (phase 01, duoc-CR-473).
+"""XEM TRƯỚC LUỒNG DUYỆT — "Người duyệt dự kiến" (phase 01, duoc-CR-473).
 
 Trả lời câu "gửi duyệt NGAY BÂY GIỜ thì ai sẽ ký" mà KHÔNG mở phiên duyệt nào —
 chỉ đọc, không ghi, không commit, không audit.
@@ -32,7 +32,7 @@ MODE_FLOW = "flow"
 MODE_LEGACY = "legacy"
 
 #  Nhãn tiếng Việt cho những ô trên phiếu hay được khai kiểu FIELD — chỉ để câu
-#  «Sẽ là ... — chưa chọn» đọc tự nhiên. Ô lạ (module khác, chưa liệt kê) thì
+#  "Sẽ là ... — chưa chọn" đọc tự nhiên. Ô lạ (module khác, chưa liệt kê) thì
 #  rơi về đúng tên cột, vẫn đọc được, chỉ không đẹp bằng.
 FIELD_LABELS = {
     "signer_employee_id": "người ký",
@@ -172,15 +172,15 @@ def _stage_step(db: Session, node, subject: dict, submitter_employee_id: int | N
         return step
 
     step["unresolved_reason"] = (
-        f"Không tìm được người duyệt cho chặng «{node.name or node.seq}» — "
+        f"Không tìm được người duyệt cho chặng \"{node.name or node.seq}\" — "
         "phiếu sẽ DỪNG LẠI ở đây và cần quản trị sửa luồng."
     )
     return step
 
 
 def _rule_label(db: Session, node) -> str:
-    """Câu QUY TẮC khai trong luồng (không phụ thuộc `subject`) — vd «Theo vai
-    trò: Trưởng phòng Nhân sự». Dùng chung cho cả trợ lý AI (`describe_step`)
+    """Câu QUY TẮC khai trong luồng (không phụ thuộc `subject`) — vd "Theo vai
+    trò: Trưởng phòng Nhân sự". Dùng chung cho cả trợ lý AI (`describe_step`)
     lẫn xem trước ở màn tạo văn bản.
 
     ⚠️ `node` ở đây thường là `SimpleNamespace` dựng từ BẢN CHỤP luồng
@@ -210,7 +210,7 @@ def _rule_label(db: Session, node) -> str:
     elif node.approver_kind == APPROVER_PERMISSION and ref:
         from .task_notification import ENTITY_LABELS
 
-        rule += f": quyền Duyệt «{ENTITY_LABELS.get(ref, ref)}»"
+        rule += f": quyền Duyệt \"{ENTITY_LABELS.get(ref, ref)}\""
     return rule
 
 

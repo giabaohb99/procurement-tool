@@ -165,7 +165,7 @@ def status_label(v: str) -> str:
 def debt_dept_of(po, db: Session | None = None) -> int:
     """Phòng mà khoản nợ của một đơn hàng TÍNH CHO — bao-CR-484 (đại ca chốt 25/09/2026).
 
-    = ô «Phòng xử lý» của đơn (`handler_dept_id`). KHÔNG lùi về phòng lập đơn như luật CR-414
+    = ô "Phòng xử lý" của đơn (`handler_dept_id`). KHÔNG lùi về phòng lập đơn như luật CR-414
     GĐ4: từ CR-480, phòng xử lý trống nghĩa là thu mua chung xử lý, nên nợ của đơn nhà máy xin
     mà thu mua chung mua hộ là nợ của thu mua chung, không phải của nhà máy — họ không trả,
     không cấn trừ, không nên thấy nó ở bậc phòng. Đừng dùng `category_assignee.handling_dept_of`

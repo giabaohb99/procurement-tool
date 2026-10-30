@@ -7,17 +7,17 @@ phiếu duyệt dấu bị giao cho điều phối đặt xe).
 Một người được giao bước khi đủ bốn điều:
 
 1. Giữ một **grant đủ điều kiện**: vai trò có ô **Duyệt** trên khóa đó, phạm vi thuộc `ROW_SCOPES`
-   (Phòng ban · Công ty · Tất cả), và KHÔNG phải vai trò `admin`. Bỏ «Của mình» / «Được giao» /
-   «… đã duyệt»: các bậc đó chỉ với tới phiếu do chính họ tạo hoặc đã qua duyệt, không bao giờ phủ một
+   (Phòng ban · Công ty · Tất cả), và KHÔNG phải vai trò `admin`. Bỏ "Của mình" / "Được giao" /
+   "… đã duyệt": các bậc đó chỉ với tới phiếu do chính họ tạo hoặc đã qua duyệt, không bao giờ phủ một
    phiếu mới của người khác — tính vào chỉ làm danh sách dài ra người không bao giờ được giao (local
-   23/10/2026: 7 «Quản lý thu mua» có Duyệt đặt xe phạm vi «Của mình» vì seed cấp vai trò này mọi khóa).
+   23/10/2026: 7 "Quản lý thu mua" có Duyệt đặt xe phạm vi "Của mình" vì seed cấp vai trò này mọi khóa).
    Bỏ `admin` vì Quản trị có mọi quyền theo ma trận, tính vào là mọi phiếu đổ về tài khoản quản trị.
 2. Tài khoản đang mở và đã gắn hồ sơ nhân sự (việc duyệt giao theo `employee_id`).
 3. **Phạm vi của CHÍNH các grant đủ điều kiện** phủ được phiếu này — cùng điều kiện `get_scoped(..., "approve")`
    dựng (gom một truy vấn cho mọi người), trên một hồ sơ quyền ĐÃ LỌC chỉ còn các grant đó (review C1: dùng nguyên hồ sơ thì grant `admin`
-   «Tất cả» hay grant «Của mình» lọt lại qua cửa sau, điều phối công ty 3 nhận phiếu công ty 5).
+   "Tất cả" hay grant "Của mình" lọt lại qua cửa sau, điều phối công ty 3 nhận phiếu công ty 5).
 4. Loại chứng từ nằm trong `_MODELS`. Chỉ mở cho loại mà phạm vi Phòng ban / Công ty nghĩa đúng là
-   «phiếu của phòng / công ty đó». CỐ Ý CHƯA MỞ: `document` (quyền đọc còn đi qua ACL thư mục + luật
+   "phiếu của phòng / công ty đó". CỐ Ý CHƯA MỞ: `document` (quyền đọc còn đi qua ACL thư mục + luật
    CẤM của `access_service`, giao việc là mở cửa đọc vòng qua các luật đó — review H1) và
    `seal_request` (phạm vi Công ty chỉ phủ phiếu ĐÃ duyệt, không bao giờ khớp phiếu đang chờ — H2).
    Bối cảnh không có `id` thì trả RỖNG, không đoán (M1/M2).
@@ -135,11 +135,11 @@ def resolve(db: Session, raw: str, subject: dict) -> list[int]:
 
 def holder_profiles(db: Session, entity: str) -> list[dict]:
     """Danh sách người giữ grant đủ điều kiện trên `entity`, qua vai trò nào — dùng CHUNG cho màn khai luồng
-    (bước «Người có quyền duyệt») và ô «Người phê duyệt» trên phiếu đặt xe (anh Được 26/10/2026: hai nơi phải
+    (bước "Người có quyền duyệt") và ô "Người phê duyệt" trên phiếu đặt xe (anh Được 26/10/2026: hai nơi phải
     ra cùng một danh sách).
 
     Chưa lọc theo phiếu (lúc khai luồng chưa có phiếu) — phạm vi trả kèm để người khai đọc được
-    «Điều phối viên · Tất cả» khác «Trưởng phòng · Phòng ban». Số truy vấn cố định.
+    "Điều phối viên · Tất cả" khác "Trưởng phòng · Phòng ban". Số truy vấn cố định.
     """
     from app.modules.employee.model import Employee
     from app.modules.role.model import Permission, Role

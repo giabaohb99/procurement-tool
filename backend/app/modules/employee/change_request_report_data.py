@@ -1,4 +1,4 @@
-"""Dữ liệu hàng cho báo cáo E2 «Yêu cầu sửa hồ sơ» (khóa 27, duoc-CR-689).
+"""Dữ liệu hàng cho báo cáo E2 "Yêu cầu sửa hồ sơ" (khóa 27, duoc-CR-689).
 
 Mỗi yêu cầu (`tab_employee_change_request`) là MỘT hàng. Hàng chỉ giữ TÊN các trường bị xin sửa
 (`fields`) — giá trị cũ / mới (có thể là CCCD, số tài khoản) bị bỏ ngay lúc nạp, không bao giờ ra khỏi
@@ -34,7 +34,7 @@ FIELD_LABELS = {
 }
 STATUS_LABELS = {int(Status.PENDING): "Chờ duyệt", int(Status.APPROVED): "Đã duyệt",
                  int(Status.REJECTED): "Từ chối", int(Status.WITHDRAWN): "Đã rút lại"}
-#  Quá ngần này ngày chưa xử lý thì tính là «chờ quá hạn».
+#  Quá ngần này ngày chưa xử lý thì tính là "chờ quá hạn".
 OVERDUE_DAYS = 2
 
 

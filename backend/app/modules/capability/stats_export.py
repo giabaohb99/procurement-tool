@@ -1,6 +1,6 @@
-"""Xuất Excel báo cáo «Năng lực theo loại việc» (duoc-CR-657): một dòng cho mỗi loại việc + mỗi (loại việc × người).
+"""Xuất Excel báo cáo "Năng lực theo loại việc" (duoc-CR-657): một dòng cho mỗi loại việc + mỗi (loại việc × người).
 
-Dưới ngưỡng mẫu: ô số để TRỐNG và cột «Ghi chú» ghi «chưa đủ mẫu» — không điền 0 (0 ngày là một con số có nghĩa).
+Dưới ngưỡng mẫu: ô số để TRỐNG và cột "Ghi chú" ghi "chưa đủ mẫu" — không điền 0 (0 ngày là một con số có nghĩa).
 Ô chữ lọc ký tự mở đầu công thức do `xlsx_response` lo.
 """
 from sqlalchemy.orm import Session

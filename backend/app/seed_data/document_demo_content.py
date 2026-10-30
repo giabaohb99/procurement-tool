@@ -27,7 +27,7 @@ def _heading(type_name: str, subject: str = "") -> str:
 
 
 def _recipients_block(*places: str) -> str:
-    """Khối «Nơi nhận» — phần không ai được quên ở văn bản gửi ra ngoài."""
+    """Khối "Nơi nhận" — phần không ai được quên ở văn bản gửi ra ngoài."""
     return layout.recipients_block(*places, archive_note="Lưu: VT, Ban Hành chính.")
 
 
@@ -202,10 +202,10 @@ bảng biểu lớn được trình bày theo chiều rộng.</p>
 <h3>3. Các lỗi thường gặp khi trình ký</h3>
 <ul>
 <li>Thiếu trích yếu hoặc trích yếu không phản ánh đúng nội dung;</li>
-<li>Thiếu khối «Nơi nhận» ở văn bản gửi ra ngoài;</li>
+<li>Thiếu khối "Nơi nhận" ở văn bản gửi ra ngoài;</li>
 <li>Viện dẫn văn bản đã hết hiệu lực;</li>
 <li>Ghi số hiệu thủ công trên bản thảo trước khi ký;</li>
-<li>Thiếu dấu «./.» kết thúc nội dung./.</li>
+<li>Thiếu dấu "./." kết thúc nội dung./.</li>
 </ul>
 """ + _signature_block("TL. TỔNG GIÁM ĐỐC<br/>TRƯỞNG BAN HÀNH CHÍNH", "Phạm Thị Bích")
 
@@ -245,7 +245,7 @@ FORM_OUTGOING_REGISTER = _heading("SỔ ĐĂNG KÝ VĂN BẢN ĐI") + """
 <ul>
 <li>Ghi ngay sau khi văn bản được ký ban hành, không ghi gộp cuối ngày;</li>
 <li>Văn bản mật đăng ký vào sổ riêng theo Quy định về độ mật;</li>
-<li>Cột «Ghi chú» dùng ghi độ khẩn, văn bản thu hồi hoặc đính chính./.</li>
+<li>Cột "Ghi chú" dùng ghi độ khẩn, văn bản thu hồi hoặc đính chính./.</li>
 </ul>
 """ + _signature_block("TRƯỞNG BAN HÀNH CHÍNH", "Phạm Thị Bích")
 

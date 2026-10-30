@@ -41,29 +41,29 @@ def _string_in_set(value, allowed, name: str, default: str) -> str:
     code = (str(value).strip() if value not in (None, "") else "") or default
     if code not in allowed.values:
         raise HTTPException(
-            400, f"«{name}» không hợp lệ. Giá trị nhận: {', '.join(sorted(allowed.values))}")
+            400, f"\"{name}\" không hợp lệ. Giá trị nhận: {', '.join(sorted(allowed.values))}")
     return code
 
 
 def _number(value, name: str, *, required: bool) -> int:
     if value in (None, ""):
         if required:
-            raise HTTPException(400, f"Thiếu «{name}»")
+            raise HTTPException(400, f"Thiếu \"{name}\"")
         return 0
     try:
         return int(value)
     except (TypeError, ValueError):
-        raise HTTPException(400, f"«{name}» phải là số")
+        raise HTTPException(400, f"\"{name}\" phải là số")
 
 
 def _date(value, name: str) -> str:
     """Nhận `YYYY-MM-DD`, trả lại đúng chuỗi đó. Ngày lưu dạng chuỗi trong JSON."""
     if not value:
-        raise HTTPException(400, f"Thiếu «{name}»")
+        raise HTTPException(400, f"Thiếu \"{name}\"")
     try:
         return date.fromisoformat(str(value)[:10]).isoformat()
     except ValueError:
-        raise HTTPException(400, f"«{name}» không phải ngày hợp lệ (cần YYYY-MM-DD)")
+        raise HTTPException(400, f"\"{name}\" không phải ngày hợp lệ (cần YYYY-MM-DD)")
 
 
 def suggested_days(from_date: str, to_date: str, from_session: str, to_session: str) -> float:
@@ -80,7 +80,7 @@ def suggested_days(from_date: str, to_date: str, from_session: str, to_session: 
     d1, d2 = date.fromisoformat(from_date), date.fromisoformat(to_date)
     if d1 == d2:
         #  Trong CÙNG một ngày thì hai ô buổi cùng nói về ngày ấy — phải xét CẢ
-        #  HAI. Lấy riêng `from_session` như bản cũ thì «Cả ngày → Sáng» ra
+        #  HAI. Lấy riêng `from_session` như bản cũ thì "Cả ngày → Sáng" ra
         #  nguyên một ngày trong khi người khai kết thúc lúc hết buổi sáng.
         return same_day_work_credit(from_session, to_session)
     full_days = (d2 - d1).days - 1
@@ -94,7 +94,7 @@ def _check_leave(payload: dict, creator_employee_id: int | None) -> dict:
     from_date = _date(payload.get("from_date"), "Từ ngày")
     to_date = _date(payload.get("to_date"), "Đến ngày")
     if to_date < from_date:
-        raise HTTPException(400, "«Đến ngày» phải bằng hoặc sau «Từ ngày»")
+        raise HTTPException(400, "\"Đến ngày\" phải bằng hoặc sau \"Từ ngày\"")
 
     from_session = _string_in_set(payload.get("from_session"), LEAVE_SESSION_SET,
                               "Buổi bắt đầu", SESSION_FULL_DAY)
@@ -112,7 +112,7 @@ def _check_leave(payload: dict, creator_employee_id: int | None) -> dict:
 
     reason = (payload.get("reason") or "").strip()
     if not reason:
-        raise HTTPException(400, "Thiếu «Lý do nghỉ»")
+        raise HTTPException(400, "Thiếu \"Lý do nghỉ\"")
 
     #  Số ngày: lấy của người dùng nếu họ sửa, không thì tự tính.
     raw = payload.get("total_days")
@@ -120,9 +120,9 @@ def _check_leave(payload: dict, creator_employee_id: int | None) -> dict:
         day_count = float(raw) if raw not in (None, "") else suggested_days(
             from_date, to_date, from_session, to_session)
     except (TypeError, ValueError):
-        raise HTTPException(400, "«Tổng số ngày» phải là số")
+        raise HTTPException(400, "\"Tổng số ngày\" phải là số")
     if day_count <= 0:
-        raise HTTPException(400, "«Tổng số ngày» phải lớn hơn 0")
+        raise HTTPException(400, "\"Tổng số ngày\" phải lớn hơn 0")
 
     cleaned = {
         "employee_id": leave_taker,
@@ -153,7 +153,7 @@ MAX_LEAVE_LINES = 10
 
 
 def _leave_lines(raw) -> list[dict]:
-    """Bản kê «loại nghỉ nào mấy ngày» của đơn khai NHIỀU loại (07/09/2026).
+    """Bản kê "loại nghỉ nào mấy ngày" của đơn khai NHIỀU loại (07/09/2026).
 
     Chỉ ghi khi có **từ hai dòng trở lên**: đơn một loại thì ô `leave_type` ở
     trên đã nói đủ, và thêm một danh sách một phần tử chỉ làm mọi chỗ đọc giấy

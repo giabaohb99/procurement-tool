@@ -1,7 +1,7 @@
 """`tab_work_cycle` — vòng đời phiếu ĐÃ TÍNH SẴN, nguồn của số liệu năng lực (duoc-CR-656, D1a).
 
 Một dòng / (phiếu, vai, người). Vì sao lưu kết quả thay vì tính lại từ nhật ký mỗi lần hỏi:
-`tab_change_log` chỉ giữ 16 tháng, còn câu hỏi «chị A làm một YCMH trung bình mấy ngày» cần
+`tab_change_log` chỉ giữ 16 tháng, còn câu hỏi "chị A làm một YCMH trung bình mấy ngày" cần
 nhìn xa hơn; và đọc từ bảng này là một truy vấn gom, không phải quét nhật ký.
 
 Không AuditMixin (bảng dẫn xuất, dựng lại được), giữ 3 năm. Chỉ chứa mã + id + số — KHÔNG nội dung phiếu.

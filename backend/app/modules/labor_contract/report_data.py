@@ -7,7 +7,7 @@ có HĐ đã ký. Chỉ số của báo cáo là ĐẾM CỜ nên cộng đượ
 Số truy vấn CỐ ĐỊNH mỗi lần `load_rows` (không tăng theo số HĐ): HĐ trong phạm vi · HĐ cùng
 người (nối tiếp + đếm HĐ có thời hạn) · hồ sơ nhân sự · nhân sự chưa có HĐ.
 
-Luật «HĐ nối tiếp» và «người còn làm» dùng lại của `expiry_service` (cùng một nguồn với chuông
+Luật "HĐ nối tiếp" và "người còn làm" dùng lại của `expiry_service` (cùng một nguồn với chuông
 cảnh báo) — không chép lại. HĐ nối tiếp / số HĐ có thời hạn đọc KHÔNG qua phạm vi: chỉ dùng để
 LOẠI hoặc ĐẾM, không lộ gì ra ngoài.
 """
@@ -46,7 +46,7 @@ _EMP_COLS = (Employee.id, Employee.code, Employee.full_name, Employee.is_active,
 class ContractRow:
     contract_id: int
     contract_code: str
-    contract_type: int          # 0 = hàng «chưa có HĐ»
+    contract_type: int          # 0 = hàng "chưa có HĐ"
     employee_id: int
     employee_code: str
     employee_name: str
@@ -62,7 +62,7 @@ class ContractRow:
 
 
 def type_label(code: int) -> str:
-    """Nhãn loại HĐ; mã lạ trong DB rơi về «Khác» thay vì ném lỗi 500."""
+    """Nhãn loại HĐ; mã lạ trong DB rơi về "Khác" thay vì ném lỗi 500."""
     try:
         return LABOR_CONTRACT_TYPE_LABELS[T(int(code))]
     except (ValueError, KeyError):
@@ -70,7 +70,7 @@ def type_label(code: int) -> str:
 
 
 def is_working(emp) -> bool:
-    """Cùng luật «người còn làm» của `expiry_service`: còn hoạt động và chưa nghỉ việc."""
+    """Cùng luật "người còn làm" của `expiry_service`: còn hoạt động và chưa nghỉ việc."""
     return bool(emp.is_active) and (emp.status or "") != STATUS_RESIGNED
 
 
@@ -78,7 +78,7 @@ def _contract_flags(c, emp, as_of: date, d_from: date, d_to: date, later: list,
                     fixed_signed: int) -> set[str]:
     flags: set[str] = set()
     working = emp is not None and is_working(emp)
-    #  «Đã ký tại as_of»: đang SIGNED, hoặc đã ký rồi bị chấm dứt SAU as_of (xem kỳ quá khứ).
+    #  "Đã ký tại as_of": đang SIGNED, hoặc đã ký rồi bị chấm dứt SAU as_of (xem kỳ quá khứ).
     signed = c.status == int(S.SIGNED) or (
         c.status == int(S.TERMINATED) and c.terminated_date is not None and c.terminated_date > as_of)
     in_force = signed and c.start_date <= as_of and (c.end_date is None or c.end_date >= as_of)

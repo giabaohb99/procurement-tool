@@ -120,7 +120,7 @@ def list_defs(db: Session, user, scope: int) -> list[dict]:
 
 def _deny(tool: str, scope: int) -> dict | None:
     if scope != mcp_keys.SCOPE_WRITE:
-        return {"denied": True, "error": f"Công cụ '{tool}' cần khóa «được ghi» (tạo ở Trang cá nhân → AI của tôi)."}
+        return {"denied": True, "error": f"Công cụ '{tool}' cần khóa **được ghi** (tạo ở Trang cá nhân → AI của tôi)."}
     return None
 
 
@@ -192,7 +192,7 @@ def _open(user, kind: str, draft) -> dict:
     if not isinstance(data, dict) or data.get("u") != int(user.id):
         raise KeyDraftError("Bản nháp này không phải của bạn.")
     if data.get("k") != kind:
-        raise KeyDraftError(f"Bản nháp này là loại «{data.get('k')}», không phải «{kind}».")
+        raise KeyDraftError(f"Bản nháp này là loại \"{data.get('k')}\", không phải \"{kind}\".")
     return data.get("p") or {}
 
 

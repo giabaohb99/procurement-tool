@@ -5,7 +5,7 @@ Hai điều phải nhớ khi đụng vào tệp này:
     thì sửa được, nhưng lần nạp sau ghi đè theo nguồn (hộp nạp nói điều đó với người dùng).
   · KHÔNG tự `retag_all` sau mỗi lần sửa: gắn lại hoạt chất quét mọi dòng hàng hải quan (~18 nghìn
     dòng trên prod), bắt người sửa một dấu chấm phải chờ cả lượt đó là vô lý. Tên thương mại /
-    hoạt chất vừa sửa chỉ vào dòng hàng khi bấm «Gắn lại nhãn» ở mục Cấu hình, hoặc lần nạp sau.
+    hoạt chất vừa sửa chỉ vào dòng hàng khi bấm "Gắn lại nhãn" ở mục Cấu hình, hoặc lần nạp sau.
 """
 from fastapi import HTTPException
 from sqlalchemy import delete, insert
@@ -45,7 +45,7 @@ def create_pesticide(db: Session, data: PesticideIn, user_id: int) -> dict:
     db.add(p)
     db.flush()
     _write_uses(db, p.id, data)
-    record(db, user_id, ENTITY, p.id, "create", f"Thêm thuốc BVTV «{p.trade_name}»")
+    record(db, user_id, ENTITY, p.id, "create", f"Thêm thuốc BVTV \"{p.trade_name}\"")
     db.commit()
     return get_pesticide(db, p.id)
 
@@ -60,7 +60,7 @@ def update_pesticide(db: Session, pesticide_id: int, data: PesticideIn, user_id:
     _write_uses(db, p.id, data)
     fields = f" ({', '.join(changed)})" if changed else ""
     record(db, user_id, ENTITY, p.id, "update",
-           f"Sửa thuốc BVTV «{p.trade_name}»{fields}, {len(data.uses)} dòng phạm vi")
+           f"Sửa thuốc BVTV \"{p.trade_name}\"{fields}, {len(data.uses)} dòng phạm vi")
     db.commit()
     return get_pesticide(db, p.id)
 
@@ -70,7 +70,7 @@ def delete_pesticide(db: Session, pesticide_id: int, user_id: int) -> None:
     name = p.trade_name
     db.execute(delete(CustomsPesticideUse).where(CustomsPesticideUse.pesticide_id == p.id))
     db.delete(p)
-    record(db, user_id, ENTITY, pesticide_id, "delete", f"Xóa thuốc BVTV «{name}»")
+    record(db, user_id, ENTITY, pesticide_id, "delete", f"Xóa thuốc BVTV \"{name}\"")
     db.commit()
     #  Tệp đính kèm của thuốc (duoc-CR-494) — dọn SAU khi xóa xong: dọn chạm tới kho lưu trữ,
     #  không lùi được, nên không để nó chạy trước một lượt xóa có thể còn hỏng.

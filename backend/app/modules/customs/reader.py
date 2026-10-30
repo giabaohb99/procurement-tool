@@ -57,10 +57,10 @@ class ParseResult:
     skipped: int = 0
     date_swap: bool = False
     #  bao-CR-603: khóa của các cột TÙY CHỌN tệp này có (theo thứ tự `OPTIONAL_COLUMNS` +
-    #  `OPTIONAL_IN_COLUMNS`), để lô ghi lại «tệp có thêm cột gì» và bộ ghi biết ô nào lấy từ tệp.
+    #  `OPTIONAL_IN_COLUMNS`), để lô ghi lại "tệp có thêm cột gì" và bộ ghi biết ô nào lấy từ tệp.
     optional_columns: list[str] = field(default_factory=list)
     #  bao-CR-608: khóa các cột ĐIỀU KHIỂN tệp có (`REF_ID_KEY` / `ACTION_KEY`), và các dòng
-    #  «Thao tác = xóa» — tách khỏi `rows` vì dòng xóa chỉ cần ô ID, không qua luật đọc dữ liệu.
+    #  "Thao tác = xóa" — tách khỏi `rows` vì dòng xóa chỉ cần ô ID, không qua luật đọc dữ liệu.
     #  Mỗi phần tử: {"source_row", "ref_id" (None nếu ô trống), "product_name"}.
     control_columns: list[str] = field(default_factory=list)
     deletes: list[dict] = field(default_factory=list)
@@ -69,8 +69,8 @@ class ParseResult:
 def normalize_text(value: object) -> str:
     """Chữ thường, bỏ dấu, gộp khoảng trắng — dùng để khớp tiêu đề và chống trùng tên.
 
-    Nhờ bỏ dấu nên «Tên nuớc xuất xứ» (lỗi chính tả của nguồn) và «Tên nước xuất
-    xứ» ra cùng một chuỗi — nguồn có sửa chính tả thì tệp vẫn khớp.
+    Nhờ bỏ dấu nên "Tên nuớc xuất xứ" (lỗi chính tả của nguồn) và "Tên nước xuất
+    xứ" ra cùng một chuỗi — nguồn có sửa chính tả thì tệp vẫn khớp.
     """
     s = unicodedata.normalize("NFD", str(value or "")).replace("đ", "d").replace("Đ", "D")
     s = "".join(ch for ch in s if unicodedata.category(ch) != "Mn").lower()
@@ -112,7 +112,7 @@ def load_cells(raw: bytes, filename: str = "") -> list[list[Cell]]:
         if b"<html" in head or b"<table" in head or b"<!doctype" in head:
             return _cells_from_html(raw)
     raise CustomsFileError(
-        f"Tệp «{filename}» không phải Excel (.xls hoặc .xlsx). Mở bằng Excel rồi lưu lại dạng .xlsx và nạp lại.")
+        f"Tệp \"{filename}\" không phải Excel (.xls hoặc .xlsx). Mở bằng Excel rồi lưu lại dạng .xlsx và nạp lại.")
 
 
 def _decode_text(raw: bytes) -> str:
@@ -281,7 +281,7 @@ def map_header(header: list[Cell]) -> dict[str, int]:
         else:
             col_of[key] = idx
     if missing:
-        raise CustomsFileError("Tệp thiếu cột: " + ", ".join(f"«{m}»" for m in missing)
+        raise CustomsFileError("Tệp thiếu cột: " + ", ".join(f"\"{m}\"" for m in missing)
                                + ". Tệp phải là kết xuất tra cứu GTT02 (đủ các cột bắt buộc).")
     for key, labels in OPTIONAL_COLUMNS + CONTROL_COLUMNS:
         idx = next((found[normalize_text(lb)] for lb in labels if normalize_text(lb) in found), None)
@@ -291,13 +291,13 @@ def map_header(header: list[Cell]) -> dict[str, int]:
 
 
 def optional_columns_of(col_of: dict[str, int]) -> list[str]:
-    """Khóa các cột tùy chọn NGOÀI GTT02 mà tệp có (bốn cột của `OPTIONAL_COLUMNS`). «Nước nhận
-    hàng» không kể vào đây: nó có ở mọi tệp GTT02 chuẩn, chỉ được phép thiếu chứ không phải cột thêm."""
+    """Khóa các cột tùy chọn NGOÀI GTT02 mà tệp có (bốn cột của `OPTIONAL_COLUMNS`). "Nước nhận
+    hàng" không kể vào đây: nó có ở mọi tệp GTT02 chuẩn, chỉ được phép thiếu chứ không phải cột thêm."""
     return [k for k, _ in OPTIONAL_COLUMNS if k in col_of]
 
 
 def control_columns_of(col_of: dict[str, int]) -> list[str]:
-    """bao-CR-608 — khóa các cột điều khiển («ID», «Thao tác») mà tệp có."""
+    """bao-CR-608 — khóa các cột điều khiển ("ID", "Thao tác") mà tệp có."""
     return [k for k, _ in CONTROL_COLUMNS if k in col_of]
 
 
@@ -305,7 +305,7 @@ def check_headers(raw: bytes, filename: str = "") -> None:
     """Kiểm đồng bộ ngay lúc tải lên — sai là báo liền, không tạo lô."""
     grid = load_cells(raw, filename)
     if not grid:
-        raise CustomsFileError(f"Tệp «{filename}» rỗng.")
+        raise CustomsFileError(f"Tệp \"{filename}\" rỗng.")
     map_header(grid[0])
 
 
@@ -370,7 +370,7 @@ def _read_decimal(cell: Cell) -> Decimal | None:
         try:
             return Decimal(str(cell.value).strip().replace(",", ""))
         except InvalidOperation:
-            raise ValueError(f"không phải số: «{cell.value}»") from None
+            raise ValueError(f"không phải số: \"{cell.value}\"") from None
     return None
 
 
@@ -390,10 +390,10 @@ def _read_transport(cell: Cell) -> int | None:
     m = re.match(r"\s*(\d+)", text)
     code = int(m.group(1)) if m else None
     if code is None:
-        #  bao-CR-603: Excel của màn này xuất ra chỉ ghi nhãn («Đường biển (container)») — tra ngược.
+        #  bao-CR-603: Excel của màn này xuất ra chỉ ghi nhãn ("Đường biển (container)") — tra ngược.
         code = next((int(k) for k, v in TRANSPORT_LABELS.items() if normalize_text(v) == normalize_text(text)), None)
     if code not in {int(t) for t in TransportMode}:
-        raise CustomsFileError(f"Phương tiện vận chuyển lạ: «{text}». Nguồn có thể đã đổi khuôn.")
+        raise CustomsFileError(f"Phương tiện vận chuyển lạ: \"{text}\". Nguồn có thể đã đổi khuôn.")
     return code
 
 
@@ -401,7 +401,7 @@ _MAX_REF_ID = 10 ** 15   # trần hợp lý cho ô ID (cột BIGINT) — số d�
 
 
 def read_ref_id(cell: Cell) -> tuple[int | None, str]:
-    """bao-CR-608 — ô «ID» → (id, câu cảnh báo). Ô trống → (None, ""). Ô không phải số nguyên
+    """bao-CR-608 — ô "ID" → (id, câu cảnh báo). Ô trống → (None, ""). Ô không phải số nguyên
     dương → (None, câu cảnh báo): dòng xử lý như KHÔNG có ID, không đoán."""
     if cell.kind == EMPTY:
         return None, ""
@@ -410,22 +410,22 @@ def read_ref_id(cell: Cell) -> tuple[int | None, str]:
     elif cell.kind == TEXT and re.fullmatch(r"\s*['#]?\s*\d{1,18}\s*", str(cell.value)):
         n = int(re.sub(r"\D", "", str(cell.value)))
     else:
-        return None, f"Ô «ID» «{cell.value}» không phải số — xử lý như dòng không có ID"
+        return None, f"Ô \"ID\" \"{cell.value}\" không phải số — xử lý như dòng không có ID"
     if n <= 0 or n >= _MAX_REF_ID:
-        return None, f"Ô «ID» «{cell.value}» không hợp lệ — xử lý như dòng không có ID"
+        return None, f"Ô \"ID\" \"{cell.value}\" không hợp lệ — xử lý như dòng không có ID"
     return n, ""
 
 
 def read_row_action(cell: Cell) -> tuple[bool, str]:
-    """bao-CR-608 — ô «Thao tác» → (là xóa?, câu cảnh báo). Nhận «xóa» / «xoa» / «delete» / «del»
+    """bao-CR-608 — ô "Thao tác" → (là xóa?, câu cảnh báo). Nhận "xóa" / "xoa" / "delete" / "del"
     (không phân biệt hoa thường, bỏ dấu). Chữ lạ → cảnh báo, xử lý như không có thao tác."""
     text = _read_text(cell)
     if not text:
         return False, ""
     if normalize_text(text) in DELETE_ACTION_WORDS:
         return True, ""
-    return False, (f"Ô «Thao tác» «{text}» không hiểu — xử lý như không có thao tác "
-                   "(chỉ nhận «xóa» / «delete» / «del»)")
+    return False, (f"Ô \"Thao tác\" \"{text}\" không hiểu — xử lý như không có thao tác "
+                   "(chỉ nhận \"xóa\" / \"delete\" / \"del\")")
 
 
 # ── Đọc cả tệp ──────────────────────────────────────────────────────────────
@@ -434,7 +434,7 @@ def parse(raw: bytes, filename: str = "", today: date | None = None) -> ParseRes
 
     grid = load_cells(raw, filename)
     if not grid:
-        raise CustomsFileError(f"Tệp «{filename}» rỗng.")
+        raise CustomsFileError(f"Tệp \"{filename}\" rỗng.")
     col = map_header(grid[0])
     body = [r for r in grid[1:] if any(c.kind != EMPTY for c in r)]
     width = max((len(r) for r in body), default=0)
@@ -447,7 +447,7 @@ def parse(raw: bytes, filename: str = "", today: date | None = None) -> ParseRes
         row_no = offset + 2                      # dòng thật trong tệp (dòng 1 là tiêu đề)
         #  Cột tùy chọn mà tệp không có thì trả ô TRỐNG — mọi luật phía dưới chạy y như cũ.
         get = lambda key: cells[col[key]] if key in col else Cell(EMPTY)   # noqa: E731
-        #  bao-CR-608: hai cột điều khiển. Dòng «xóa» chỉ cần ô ID — tách ra TRƯỚC luật đọc dữ
+        #  bao-CR-608: hai cột điều khiển. Dòng "xóa" chỉ cần ô ID — tách ra TRƯỚC luật đọc dữ
         #  liệu, kẻo bị bỏ vì thiếu Ngày đăng ký.
         ref_id, warn = read_ref_id(get(REF_ID_KEY))
         if warn:
@@ -486,7 +486,7 @@ def parse(raw: bytes, filename: str = "", today: date | None = None) -> ParseRes
                     out[key] = _read_decimal(get(key))
                 except ValueError as e:
                     out[key] = None
-                    res.logs.append((row_no, LogLevel.WARNING, f"Cột «{labels[key]}» {e} — để trống, sẽ tính như cũ"))
+                    res.logs.append((row_no, LogLevel.WARNING, f"Cột \"{labels[key]}\" {e} — để trống, sẽ tính như cũ"))
             else:
                 out[key] = _read_text(get(key))
                 if key == "formulation":
@@ -496,11 +496,11 @@ def parse(raw: bytes, filename: str = "", today: date | None = None) -> ParseRes
                 out[key] = _read_decimal(get(key))
             except ValueError as e:
                 out[key] = None
-                res.logs.append((row_no, LogLevel.WARNING, f"Cột «{labels[key]}» {e} — để trống"))
+                res.logs.append((row_no, LogLevel.WARNING, f"Cột \"{labels[key]}\" {e} — để trống"))
         for key, limit in TEXT_LIMITS.items():
             if key in out and len(out[key]) > limit:
                 res.logs.append((row_no, LogLevel.WARNING,
-                                 f"Cột «{labels[key]}» dài hơn {limit} ký tự — đã cắt"))
+                                 f"Cột \"{labels[key]}\" dài hơn {limit} ký tự — đã cắt"))
                 out[key] = out[key][:limit]
         if ref_id is not None:
             out[REF_ID_KEY] = ref_id          # bao-CR-608 — KHÔNG phải cột của bảng, bộ ghi bóc ra

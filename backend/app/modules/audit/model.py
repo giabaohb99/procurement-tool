@@ -57,6 +57,6 @@ class AuditLog(Base, AuditMixin):
     changed_fields: Mapped[str] = mapped_column(String(500), default="")
     change_count: Mapped[int] = mapped_column(SmallInteger, default=0)
     #  ai-CR-230: kênh AI làm hộ (`logging_codes.AI_CHANNEL_*`), 0 = người tự bấm. Hồ sơ cách làm việc đọc cột này để
-    #  tách «tự làm» với «nhờ AI làm» (doc/erp/22 §5).
+    #  tách "tự làm" với "nhờ AI làm" (doc/erp/22 §5).
     #  Không chỉ mục: bảng lớn, cột ít giá trị; báo cáo lọc theo thời gian (đã có chỉ mục `created_at`) rồi gom.
     ai_channel: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")

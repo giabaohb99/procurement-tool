@@ -48,7 +48,7 @@ def apply_keyword_search(query, keyword: str | None):
     like = f"%{kw}%"
     conds = [getattr(Employee, f).like(like) for f in SEARCH_FIELDS]
     #  duoc-CR-694: từ khóa trông như SỐ ĐIỆN THOẠI thì tìm cả số phụ. Ép JSON về chữ rồi LIKE (chạy được
-    #  cả MySQL lẫn SQLite); chỉ làm khi từ khóa toàn chữ số/ký tự phân cách, kẻo «number» «label»
+    #  cả MySQL lẫn SQLite); chỉ làm khi từ khóa toàn chữ số/ký tự phân cách, kẻo "number" "label"
     #  trong chính JSON khớp với từ khóa chữ bất kỳ.
     if re.fullmatch(r"[0-9\s+.\-()]+", kw) and sum(c.isdigit() for c in kw) >= 3:
         conds.append(cast(Employee.extra_phones, String).like(like))
@@ -116,7 +116,7 @@ def list_employees(db: Session, base_query, pg: dict):
             selectinload(Employee.user),
             selectinload(Employee.company),
             selectinload(Employee.department).selectinload(Department.manager),
-            #  Cột «Quản lý trực tiếp» của màn danh sách (C1). Cùng bài học với
+            #  Cột "Quản lý trực tiếp" của màn danh sách (C1). Cùng bài học với
             #  `company` ở trên: thiếu dòng này là mỗi dòng một truy vấn, và
             #  `test_nhan_su_hien_cong_ty.py` đếm truy vấn nên nó đỏ ngay.
             selectinload(Employee.direct_manager),
@@ -143,7 +143,7 @@ _MAX_MANAGER_DEPTH = 50
 
 
 def block_manager_cycle(db: Session, employee_id: int, manager_id: int) -> None:
-    """Chuỗi «người quản lý trực tiếp» KHÔNG được tạo thành vòng.
+    """Chuỗi "người quản lý trực tiếp" KHÔNG được tạo thành vòng.
 
     ⚠️ Đây không phải một chốt cho gọn gàng dữ liệu. `manager_id` là thứ mà vai
     tương đối `APPROVER_DIRECT_MANAGER` của bộ máy duyệt đọc để tìm người ký.
@@ -193,7 +193,7 @@ def block_manager_cycle(db: Session, employee_id: int, manager_id: int) -> None:
     #  dùng đọc câu này và đi kiểm, hơn là để hệ thống treo về sau.
     raise HTTPException(
         400, f"Chuỗi quản lý vượt quá {_MAX_MANAGER_DEPTH} cấp — nhiều khả năng dữ liệu "
-             "đang có vòng. Kiểm tra lại ô «Người quản lý trực tiếp» của những người trên "
+             "đang có vòng. Kiểm tra lại ô \"Người quản lý trực tiếp\" của những người trên "
              "cấp trước khi gán.")
 
 
@@ -306,7 +306,7 @@ def clear_perm_cache_of(db: Session, employee_id: int) -> None:
 #  xem `core/status_codes.EMPLOYEE_STATUS`). Chuyển SANG mã này, hoặc tắt
 #  `is_active`, là hai cách HR nói "người này không còn làm ở đây".
 STATUS_RESIGNED = "resigned"
-#  bao-CR-527: mã «Chính thức» — chỉ nhân sự mang mã này (và đang hoạt động) mới được phân công
+#  bao-CR-527: mã "Chính thức" — chỉ nhân sự mang mã này (và đang hoạt động) mới được phân công
 #  làm NSTM chính / dự phòng (`category_assignee.service.is_official_employee`).
 STATUS_OFFICIAL = "official"
 
@@ -374,7 +374,7 @@ def set_salary(obj: Employee, salary: int, allowance: int) -> bool:
 class WriteOutcome:
     """Kết quả lõi sửa hồ sơ — bên gọi tự quyết commit / audit / xóa cache (duoc-CR-628)."""
     obj: Employee
-    notes: list[str] = field(default_factory=list)   # «Đổi pháp nhân — gỡ…», «Nghỉ việc — khóa N TK…»
+    notes: list[str] = field(default_factory=list)   # "Đổi pháp nhân — gỡ…", "Nghỉ việc — khóa N TK…"
     left_company: bool = False                         # lần ghi này vừa đưa hồ sơ sang NGHỈ VIỆC
     scope_changed: bool = False                        # (company_id, department_id) đổi → cần xóa cache quyền
     locked_users: list = field(default_factory=list)
@@ -557,7 +557,7 @@ def delete_employee_core(db: Session, eid: int, user_id: int) -> int:
     #  khóa tài khoản rồi mới báo lỗi). HĐ Nháp / Đã hủy thì dọn kèm tệp ở dưới.
     labor_contract_service.ensure_employee_deletable(db, eid)
     #  ai-CR-190: còn phiếu / phân công / thành viên / đang là quản lý của ai / trưởng bộ phận… thì CHẶN 400,
-    #  chỉ cho «ngưng dùng» (bỏ tick Đang dùng hoặc chuyển nghỉ việc). Danh sách chỗ đếm ở `references.py`;
+    #  chỉ cho "ngưng dùng" (bỏ tick Đang dùng hoặc chuyển nghỉ việc). Danh sách chỗ đếm ở `references.py`;
     #  tài khoản gắn hồ sơ KHÔNG tính (xem lý do ở đó) — vẫn tự khóa + gỡ ở `detach_users` bên dưới.
     reference_guard.ensure_deletable(db, ENTITY, obj)
     locked = detach_users(db, eid, user_id)

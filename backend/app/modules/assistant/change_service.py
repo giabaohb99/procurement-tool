@@ -37,7 +37,7 @@ log = logging.getLogger("app.assistant.change")
 UNDO_WINDOW = timedelta(hours=24)
 MAX_JSON_BYTES = 64 * 1024          # trần mỗi cột before / after
 LIST_MAX = 200
-#  Quyền «quản lý bot AI»: xem sổ của mọi người + hoàn tác thay người khác.
+#  Quyền "quản lý bot AI": xem sổ của mọi người + hoàn tác thay người khác.
 MANAGER_PERM = ("agent_group", "read")
 
 ENTITY_LABELS = {
@@ -236,7 +236,7 @@ def url_of(entity: str, entity_id: int) -> str:
 
 
 def user_name_of(db, user_id: int) -> str:
-    """ai-CR-185: tên hiện trên cột «Người» của màn web (chế độ xem mọi người): họ tên nhân sự, không có thì email, không
+    """ai-CR-185: tên hiện trên cột "Người" của màn web (chế độ xem mọi người): họ tên nhân sự, không có thì email, không
     có nữa thì #id. Không có giá trị bí mật nào."""
     from app.modules.employee.model import Employee
     from app.modules.user.model import User

@@ -32,7 +32,7 @@ def require_book_reader(user=Depends(get_current_user)):
     dưới (`dieu_kien_xem_so` / `so_xem_duoc_hoac_404`), vì lớp đó hỏi sai câu:
     nó hỏi *"vai trò của anh có được đụng vào danh mục Sổ văn bản không"*, trong
     khi **quyền xem sổ còn tới từ chính bảng thành viên** — văn thư thêm ai đó
-    vào ô «Người xem sổ» là đã quyết định cho người ấy xem.
+    vào ô "Người xem sổ" là đã quyết định cho người ấy xem.
 
     Hệ quả của việc hỏi sai câu, khách báo 25/08/2026: chia sổ cho một người
     xong họ **không thấy sổ đó ở trang của mình** — mà không phải vì bộ lọc, mà

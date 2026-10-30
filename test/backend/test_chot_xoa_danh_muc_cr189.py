@@ -22,7 +22,7 @@ def test_chua_dang_ky_thi_khong_chan_va_dang_ky_roi_thi_dem_dung(db, seed):
     with pytest.raises(HTTPException) as e:
         rg.ensure_deletable(db, "thu_nghiem", sup)
     assert e.value.status_code == 400 and "2 chỗ" in e.value.detail and "ngưng dùng" in e.value.detail \
-        and "Nhà cung cấp thử" in e.value.detail and "«" in e.value.detail
+        and "Nhà cung cấp thử" in e.value.detail and "\"" in e.value.detail
     #  Điều kiện thêm: chỉ đếm đơn còn hiệu lực.
     rg._REGISTRY["thu_nghiem"] = [rg.Reference(PurchaseOrder, "supplier_code", "đơn mua hàng", key_attr="code",
                                                extra=lambda m: [m.status != "draft"])]

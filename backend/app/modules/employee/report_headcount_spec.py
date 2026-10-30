@@ -1,5 +1,5 @@
 """Khai báo `ReportSpec` (chỉ số + chiều) của báo cáo Biến động nhân sự — tách khỏi
-`report_service.py` để giữ < 200 dòng, và để danh sách «bấm số» (`report_drill_rows.py`) dùng
+`report_service.py` để giữ < 200 dòng, và để danh sách "bấm số" (`report_drill_rows.py`) dùng
 lại ĐÚNG các `DimensionSpec.key_of` khi lọc nhóm."""
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def build_spec(company_name: dict, department_name: dict) -> tuple[ReportSpec, D
             [(r.position_id, r.position_name)] if r.position_id else [])),
         "seniority": DimensionSpec("seniority", "Thâm niên", key_of=lambda r: (
             [(r.seniority_key, r.seniority_label)] if r.seniority_key else [])),
-        #  duoc-CR-687 (A2 Cơ cấu) — khóa rỗng = thiếu dữ liệu → «(Chưa gắn)».
+        #  duoc-CR-687 (A2 Cơ cấu) — khóa rỗng = thiếu dữ liệu → "(Chưa gắn)".
         "age_band": DimensionSpec("age_band", "Nhóm tuổi", key_of=lambda r: (
             [(r.age_key, r.age_label)] if r.age_key else [])),
         "education": DimensionSpec("education", "Trình độ", key_of=lambda r: (

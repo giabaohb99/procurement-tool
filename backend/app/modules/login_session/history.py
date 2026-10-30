@@ -18,7 +18,7 @@ from app.modules.employee.model import Employee
 from app.modules.login_session.model import LoginSession
 from app.modules.login_session.schema import serialize_history_failed, serialize_history_login
 
-#  Lịch sử đăng nhập mặc định 90 ngày (§8.5), trần 365 để câu hỏi «cả năm» vẫn
+#  Lịch sử đăng nhập mặc định 90 ngày (§8.5), trần 365 để câu hỏi "cả năm" vẫn
 #  trả lời được mà không ai kéo nổi toàn bảng.
 HISTORY_DAYS_DEFAULT = 90
 HISTORY_DAYS_MAX = 365

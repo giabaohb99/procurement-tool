@@ -79,8 +79,8 @@ def _context(db: Session, instance: ApprovalInstance, payload: dict) -> dict:
     """Bối cảnh phiếu — LẤY TỪ MÁY CHỦ khi loại chứng từ tự dựng được.
 
     ⚠️ Đây không phải chuyện gọn gàng. `subject` quyết định hai thứ nặng: bước
-    kế chạy NHÁNH nào (`condition_service`), và với cách chọn người duyệt «lấy
-    từ ô trên phiếu» thì nó quyết định luôn AI duyệt bước kế
+    kế chạy NHÁNH nào (`condition_service`), và với cách chọn người duyệt "lấy
+    từ ô trên phiếu" thì nó quyết định luôn AI duyệt bước kế
     (`approver_resolver._tu_o_tren_phieu`). Mà dict ấy trước đây đi thẳng từ
     thân request của **chính người đang bấm Duyệt** xuống bộ máy, không ai đối
     chiếu với chứng từ.
@@ -125,7 +125,7 @@ def steps_of_many(entity: str, ids: str = "", db: Session = Depends(get_db),
                   user=Depends(get_current_user)):
     """LUỒNG DUYỆT DẠNG NGANG cho nhiều chứng từ cùng lúc (CR-260).
 
-    Màn danh sách vẽ trên mỗi dòng một dải chấm «chặng 1 → chặng 2 → …». Hỏi
+    Màn danh sách vẽ trên mỗi dòng một dải chấm "chặng 1 → chặng 2 → …". Hỏi
     từng dòng một là hơn sáu mươi lượt vào cơ sở dữ liệu cho một lần mở trang;
     ở đây gom còn ba, xem `steps_service`.
 
@@ -186,7 +186,7 @@ def instances_of_entity(entity: str, entity_id: int, db: Session = Depends(get_d
     """Phiên duyệt MỚI NHẤT của một chứng từ — `null` nếu nó chưa vào bộ máy.
 
     Trang chi tiết chứng từ cần câu trả lời này để biết phiếu đang nằm ở bước
-    nào và ai đang giữ. Thiếu nó thì màn văn bản chỉ hiện được chữ «Đang duyệt»
+    nào và ai đang giữ. Thiếu nó thì màn văn bản chỉ hiện được chữ "Đang duyệt"
     trơ trọi, còn hai nút ban hành một bước thì vẫn bày ra như chưa hề có luồng.
 
     Trả cả phiên ĐÃ kết thúc, vì `finish_reason` là chỗ duy nhất nói được câu
@@ -238,7 +238,7 @@ def trail(instance_id: int, db: Session = Depends(get_db),
           user=Depends(get_current_user)):
     """I20 — bản in dấu vết duyệt.
 
-    *"khi kiểm toán hoặc thanh tra hỏi «ai duyệt cái này», câu trả lời phải là
+    *"khi kiểm toán hoặc thanh tra hỏi "ai duyệt cái này", câu trả lời phải là
     một tờ giấy in ra được, không phải một ảnh chụp màn hình"*. Câu chữ dựng ở
     backend để bản in trên web và bản xuất ra tệp không bao giờ lệch nhau.
     """

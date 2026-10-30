@@ -41,7 +41,7 @@ def _month(col):
 
 # ── Mua hàng — tab_purchase_history ───────────────────────────────────────────────────────────────────────────────
 #  Bảng LỊCH SỬ GIÁ, không nằm trong ENTITIES nên không có khóa phạm vi: cổng là `product.read` (+ `supplier.read` khi
-#  chia theo NCC) — đúng như màn «Lịch sử mua hàng» và `analytics_query` cũ (test E2 ghi rõ). Trùng số liệu Báo cáo mua
+#  chia theo NCC) — đúng như màn "Lịch sử mua hàng" và `analytics_query` cũ (test E2 ghi rõ). Trùng số liệu Báo cáo mua
 #  hàng nên đòi thêm quyền xem báo cáo đó (ai-CR-207).
 def _purchase() -> Dataset:
     from app.modules.purchase_history.model import PurchaseHistory as PH

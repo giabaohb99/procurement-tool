@@ -61,7 +61,7 @@ def grant_access_bulk(
     db: Session = Depends(get_db),
     user=Depends(require("doc_folder", "write")),
 ):
-    """Hộp «Chia sẻ» kiểu Drive — cấp CÙNG một mức cho CẢ danh sách chủ thể
+    """Hộp "Chia sẻ" kiểu Drive — cấp CÙNG một mức cho CẢ danh sách chủ thể
     trong một lượt (phase 10B, đặc tả §C). `{created, updated, skipped}` —
     không trả danh sách dòng, giao diện tự `invalidateQueries` sau khi thành
     công (đúng lối `useLinkDocumentsToFolder`)."""
@@ -79,8 +79,8 @@ def update_access_level(
     db: Session = Depends(get_db),
     user=Depends(require("doc_folder", "write")),
 ):
-    """Đổi MỨC tại chỗ — menu thả xuống trên dòng «Người có quyền» của hộp
-    «Chia sẻ», không phải thu hồi rồi cấp lại."""
+    """Đổi MỨC tại chỗ — menu thả xuống trên dòng "Người có quyền" của hộp
+    "Chia sẻ", không phải thu hồi rồi cấp lại."""
     profile = get_perm_profile(db, user)
     folder = _folder_for_manage(db, folder_id, user, profile)
     row = folder_access_bulk_service.update_level(db, folder, access_id, data.level, user.id)

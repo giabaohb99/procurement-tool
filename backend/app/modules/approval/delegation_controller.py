@@ -97,8 +97,8 @@ def delete_delegation(delegation_id: int, db: Session = Depends(get_db),
                       user=Depends(require("approval_flow", "delete"))):
     """Ngưng ủy quyền = TẮT, không xóa.
 
-    Dấu vết duyệt trỏ vào `delegation_id`; xóa dòng là bản in mất câu «theo ủy
-    quyền số 12» và không tra lại được ủy quyền đó từng có nội dung gì.
+    Dấu vết duyệt trỏ vào `delegation_id`; xóa dòng là bản in mất câu "theo ủy
+    quyền số 12" và không tra lại được ủy quyền đó từng có nội dung gì.
     """
     row = _load(db, delegation_id)
     row.is_active = False

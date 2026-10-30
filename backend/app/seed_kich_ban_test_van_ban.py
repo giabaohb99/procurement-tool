@@ -53,7 +53,7 @@ CAST = [
 #: Quyền của một NHÂN VIÊN THƯỜNG — cố ý hẹp.
 #:
 #: ⚠️ KHÔNG cấp `document: read`. Người thường không được vào màn danh sách văn
-#: bản; họ chỉ thấy văn bản qua «Văn bản áp dụng cho tôi» và qua đường dẫn trực
+#: bản; họ chỉ thấy văn bản qua "Văn bản áp dụng cho tôi" và qua đường dẫn trực
 #: tiếp. Cấp `document: read` là kịch bản mất luôn ý nghĩa — ai cũng thấy mọi
 #: thứ và không phân biệt được phạm vi có chạy hay không.
 PERMISSIONS = {
@@ -98,7 +98,7 @@ def seed_document_test_scenario(db) -> int:
             .first()
         )
         if department is None:
-            raise SystemExit(f"Không thấy phòng «{department_name}» ở {COMPANY_CODE}.")
+            raise SystemExit(f"Không thấy phòng \"{department_name}\" ở {COMPANY_CODE}.")
 
         emp = db.query(Employee).filter(Employee.code == code).first()
         if emp is None:

@@ -1,6 +1,6 @@
 """Tìm tên hàng bằng từ khóa CÓ / KHÔNG CÓ + quy đổi nồng độ + từ đồng nghĩa — bao-CR-495.
 
-Yêu cầu F02 của chị Mi (22/09 + ghi chú 25/09/2026): ô tìm «Tên hàng» phải
+Yêu cầu F02 của chị Mi (22/09 + ghi chú 25/09/2026): ô tìm "Tên hàng" phải
   · kết hợp nhiều từ khóa bắt buộc có (AND) và loại trừ từ khóa (NOT), không phân biệt hoa/thường;
   · nhận diện các cách viết nồng độ tương đương: `3,6%` ≡ `3.6%` ≡ `3.6EC` ≡ `36 G/L` ≡ `3.6% W/W`
     (phần trăm và g/l hơn kém nhau 10 lần — luật mặc định, ngoại lệ chị Mi bổ sung sau);
@@ -156,7 +156,7 @@ def build_keyword_condition(db: Session, raw: str):
 
 
 def explain_query(db: Session, raw: str) -> dict:
-    """Cho giao diện bày «đang tìm gì»: từng từ và các cách viết nó sẽ khớp."""
+    """Cho giao diện bày "đang tìm gì": từng từ và các cách viết nó sẽ khớp."""
     parsed = parse_query(raw)
     groups = load_synonym_groups(db) if not parsed.empty else []
     return {

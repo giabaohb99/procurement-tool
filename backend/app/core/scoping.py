@@ -105,7 +105,7 @@ SCOPE_FIELDS = {
     "seal_request":     {"company": "company_id", "dept_id": "department_id",
                          "owner": "created_by"},
     #  duoc-CR-681: `company_alt` = cột pháp nhân THỨ HAI — phiếu chọn công ty khác công ty người tạo thì
-    #  người phạm vi «Công ty» ở cả hai bên đều thấy (bậc Công ty + ô «chọn công ty» khớp một trong hai).
+    #  người phạm vi "Công ty" ở cả hai bên đều thấy (bậc Công ty + ô "chọn công ty" khớp một trong hai).
     "vehicle_booking":  {"company": "company_id", "company_alt": "requester_company_id",
                          "dept_id": "department_id", "owner": "created_by"},
 
@@ -220,7 +220,7 @@ SCOPE_FIELDS = {
     #  Mẫu thuộc một pháp nhân, không có chiều phòng ban và KHÔNG khai `owner` (cùng lẽ trên: người
     #  tải mẫu lên pháp nhân nào cũng là `created_by` của dòng mới). Không `owner`, không `self` thì
     #  `own` rơi về `company` (nhánh `scope = "company"` ở `_role_scope_cond`): chỉ mẫu của pháp
-    #  nhân MÌNH; chưa gắn pháp nhân thì chặn hết — không có đường nào thành «thấy tất cả».
+    #  nhân MÌNH; chưa gắn pháp nhân thì chặn hết — không có đường nào thành "thấy tất cả".
     "labor_contract_template": {"company": "company_id"},
 
     # --- Đặt phòng họp (duoc-CR-279) ---
@@ -272,7 +272,7 @@ SCOPE_FIELDS = {
     #  Khai cả `owner` LẪN `self` (khuôn của `leave_request`, CR-259): một bộ hồ
     #  sơ có HAI người dính tới nó — người LẬP (`created_by`, hành chính nhập
     #  hộ) và người PHỤ TRÁCH theo dõi (`owner_employee_id`). Cả hai đều phải
-    #  thấy nó ở phạm vi «của mình», nếu không thì người được giao theo dõi hồ
+    #  thấy nó ở phạm vi "của mình", nếu không thì người được giao theo dõi hồ
     #  sơ lại không mở được chính hồ sơ ấy. Nhánh `own` của `_role_scope_cond`
     #  đã HỢP hai cột và tự chặn khi `employee_id = 0` — thiếu chốt đó thì
     #  `owner_employee_id == 0` trúng mọi hồ sơ CHƯA GẮN người phụ trách, tức là
@@ -323,7 +323,7 @@ SCOPE_FIELDS = {
     #  ai-CR-123: nhóm chat của bot không thuộc pháp nhân / phòng nào; người thường xem nhóm mình là thành viên (lọc ở
     #  `agent_hub/groups.can_read`), khóa `agent_group.read` mở MỌI nhóm cho người quản lý bot AI.
     "agent_group":      PUBLIC,
-    #  ai-CR-132: chỉ là cờ «nhận bản sao tin vận hành» — không có dữ liệu để lọc.
+    #  ai-CR-132: chỉ là cờ "nhận bản sao tin vận hành" — không có dữ liệu để lọc.
     "agent_ops":        PUBLIC,
     #  bao-CR-621: BỘ skill thuộc pháp nhân + phòng CHỦ QUẢN — trưởng phòng (dept) soạn bộ của phòng mình.
     "ai_skill":         {"company": "company_id", "dept_id": "owner_department_id", "owner": "created_by"},
@@ -347,14 +347,14 @@ def _dept_match(model, f, dept_ids, dept_names, central_handler: bool = False):
     tên hoặc dữ liệu nhập tay) mới rơi về so tên, nên tên không bao giờ đè lên id. Xóa nhánh
     tên khi bỏ cột text (N-008). None = không có gì để so.
 
-    bao-CR-524 — phòng thu mua mặc định (`PBA017` «Sản xuất -Thu mua») nay là phòng THẬT, và mọi
-    phiếu không nhờ phòng nào mang `handler_dept_id` = id phòng đó. Nhánh «phiếu được nhờ» vì thế
+    bao-CR-524 — phòng thu mua mặc định (`PBA017` "Sản xuất -Thu mua") nay là phòng THẬT, và mọi
+    phiếu không nhờ phòng nào mang `handler_dept_id` = id phòng đó. Nhánh "phiếu được nhờ" vì thế
     tách hai đường:
       · `central_handler=True` (chỉ bậc `dept_proc` — quản lý thu mua CỦA PHÒNG): phiếu thu mua
         mặc định xử lý cũng là việc của phòng đó, kể cả phiếu cũ còn `0`. Người `dept_proc` của
         phòng thu mua mặc định vì thế thấy phiếu thu mua chung — khách chốt, đúng ý.
-      · còn lại (bậc `dept`, ô «Phòng ban được xem»): phòng thu mua mặc định KHÔNG được tính là
-        «phòng được nhờ». Không có chốt này thì trưởng phòng «Sản xuất -Thu mua» (bậc `dept`)
+      · còn lại (bậc `dept`, ô "Phòng ban được xem"): phòng thu mua mặc định KHÔNG được tính là
+        "phòng được nhờ". Không có chốt này thì trưởng phòng "Sản xuất -Thu mua" (bậc `dept`)
         thấy — và duyệt bước 1 được — phiếu của MỌI phòng trong công ty.
     """
     col_id, col_name = f.get("dept_id"), f.get("dept_name")
@@ -372,7 +372,7 @@ def _dept_match(model, f, dept_ids, dept_names, central_handler: bool = False):
         central = _central_dept_expr()
         if central_handler:
             cs.append(handler.in_(ids))
-            cs.append(and_(handler == 0, central.in_(ids)))   # «0» cũ = phòng thu mua mặc định
+            cs.append(and_(handler == 0, central.in_(ids)))   # "0" cũ = phòng thu mua mặc định
         else:
             cs.append(and_(handler.in_(ids), handler != central))
     if not cs:
@@ -449,7 +449,7 @@ def _proc_status_cond(model, statuses: list[str]):
     hồ sơ chỉ là chuyện pháp lý — phòng nhà máy (Dego Organic) mua cho nhiều công ty và ghi
     hóa đơn về công ty khác mình, nên điền ô Pháp nhân cho một người là họ MẤT phiếu của các
     công ty còn lại mà không ai được báo. Từ nay hồ sơ KHÔNG tự thu hẹp gì cả; muốn nhốt một
-    tài khoản vào một pháp nhân thì khai tận tay ở ô «Chỉ trong công ty» của hộp thoại Phạm
+    tài khoản vào một pháp nhân thì khai tận tay ở ô "Chỉ trong công ty" của hộp thoại Phạm
     vi (`_explicit_cond`, chiều `company`) — giới hạn nào cũng phải là thứ quản trị nhìn thấy.
     """
     return getattr(model, "status").in_(statuses)
@@ -490,7 +490,7 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
         return None
     company_id = profile.get("company_id") or 0
     #  KIÊM NHIỆM (CR-167) — người này có thể có chân ở NHIỀU phòng, phạm vi bậc
-    #  «phòng ban» phải mở đủ cả. Lùi về phòng chính khi hồ sơ quyền chưa có
+    #  "phòng ban" phải mở đủ cả. Lùi về phòng chính khi hồ sơ quyền chưa có
     #  danh sách (bản cache cũ còn sống trong 60 giây sau khi nâng cấp).
     dept_ids = [x for x in (profile.get("dept_ids") or []) if x] \
         or ([profile["dept_id"]] if profile.get("dept_id") else [])
@@ -523,8 +523,8 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             # CR-034: gồm cả 'approved' (TP duyệt xong, ĐANG CHỜ ĐIỀU PHỐI) — thiếu trạng thái này
             # thì chính người phải điều phối lại không nhìn thấy phiếu.
             # Nhánh này CỐ Ý không lọc pháp nhân (bao-CR-434 đảo P1-1, xem `_proc_status_cond`):
-            # nhà máy mua cho nhiều công ty; nhốt theo pháp nhân là việc của ô «Chỉ trong
-            # công ty», không phải của hồ sơ nhân sự.
+            # nhà máy mua cho nhiều công ty; nhốt theo pháp nhân là việc của ô "Chỉ trong
+            # công ty", không phải của hồ sơ nhân sự.
             # bao-CR-371: phải là CẢ vòng đời sau duyệt, không chỉ 2 mốc đầu. Liệt kê tay
             # ["approved","dispatched"] nghĩa là phiếu vừa chạy sang 'processing' là BIẾN MẤT
             # khỏi mắt chính người thu mua đang xử lý nó (mở link ra thì "Không tìm thấy"),
@@ -584,7 +584,7 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             # với đặt xe `dept_proc` == `assigned` (không khoanh phòng, không chặn người chưa
             # gắn phòng) — lệch với luật chung của bậc này ghi ở đầu khối. Nay đi qua cùng
             # một cửa với ba chứng từ thu mua: `assigned`/`proc` giữ nguyên, `dept_proc`
-            # AND thêm «phiếu thuộc phòng mình».
+            # AND thêm "phiếu thuộc phòng mình".
             return _narrow_to_dept(or_(*conds))
         if in_dept_proc:
             # bao-CR-414: entity không phải chứng từ thu mua → `dept_proc` rơi về bậc `dept`
@@ -604,7 +604,7 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
                 cond = or_(cond, model.requester_id == rid)
             #  CR-259 — entity khai CẢ `owner` LẪN `self`: chứng từ có hai người
             #  dính tới nó, người LẬP và người CHỊU (đơn nghỉ phép: `created_by`
-            #  và `employee_id`). Cả hai đều phải thấy nó ở phạm vi «của mình».
+            #  và `employee_id`). Cả hai đều phải thấy nó ở phạm vi "của mình".
             #  Cùng ý với nhánh `requester_id` ngay trên, chỉ khác là tên cột do
             #  `SCOPE_FIELDS` khai chứ không đoán bằng `hasattr`.
             #  ⚠️ Chặn `rid = 0`: `employee_id == 0` sẽ trúng mọi dòng chưa gắn
@@ -747,11 +747,11 @@ def _explicit_cond(model, entity, scopeconf, profile=None):
         raw_exc = (scopeconf.get("exc") or {}).get(dim) or []
         inc = _parse_int_values(entity, dim, "chon", raw_inc)
         exc = _parse_int_values(entity, dim, "loai tru", raw_exc)
-        #  «Loại trừ công ty» CHỈ so cột chính (`company_id` = công ty chọn trên phiếu đặt xe), cố ý không so
+        #  "Loại trừ công ty" CHỈ so cột chính (`company_id` = công ty chọn trên phiếu đặt xe), cố ý không so
         #  `company_alt`: loại trừ là thu hẹp, so cả hai cột là giấu luôn phiếu người công ty bị loại đặt hộ
         #  công ty được xem.
         if inc:
-            #  duoc-CR-681: «chọn công ty» khớp cả cột pháp nhân thứ hai (vd công ty người tạo phiếu đặt xe).
+            #  duoc-CR-681: "chọn công ty" khớp cả cột pháp nhân thứ hai (vd công ty người tạo phiếu đặt xe).
             alt = getattr(model, f["company_alt"]) if dim == "company" and f.get("company_alt") else None
             cs.append(column.in_(inc) if alt is None else or_(column.in_(inc), alt.in_(inc)))
         elif raw_inc:
@@ -767,7 +767,7 @@ def _explicit_cond(model, entity, scopeconf, profile=None):
     exc_ids = (scopeconf.get("exc") or {}).get("department") or []
     exc_names = (scopeconf.get("exc") or {}).get("department_name") or []
     if f.get("handler_dept"):
-        # bao-CR-480 (đại ca chốt 24/09/2026): với chứng từ thu mua, «Loại trừ phòng ban»
+        # bao-CR-480 (đại ca chốt 24/09/2026): với chứng từ thu mua, "Loại trừ phòng ban"
         # so cột PHÒNG XỬ LÝ (`handler_dept_id`), không so phòng lập phiếu nữa. Bộ thu
         # mua chung trừ nhà máy vì thế: KHÔNG thấy phiếu nhà máy đang tự mua (kể cả phiếu
         # phòng khác nhờ nhà máy mua), nhưng THẤY phiếu nhà máy xin mà thu mua chung mua
@@ -859,7 +859,7 @@ def scope_condition(model, entity: str, user, profile: dict, action: str = "read
 
 
 def not_deleted_cond(model):
-    """Điều kiện «chưa xóa mềm» của model, hoặc `None` nếu model không có cột `is_deleted`.
+    """Điều kiện "chưa xóa mềm" của model, hoặc `None` nếu model không có cột `is_deleted`.
 
     ai-CR-170: một chỗ chung cho mọi model gắn `SoftDeleteMixin` (và các model đã có sẵn
     cột `is_deleted` từ trước: YCMH, nghỉ phép, đặt phòng, duyệt dấu, đặt xe). Chỗ đọc
@@ -872,7 +872,7 @@ def not_deleted_cond(model):
 
 
 def exclude_deleted(query, model):
-    """Gắn điều kiện «chưa xóa mềm» vào query nếu model có cột `is_deleted`; không thì trả nguyên."""
+    """Gắn điều kiện "chưa xóa mềm" vào query nếu model có cột `is_deleted`; không thì trả nguyên."""
     cond = not_deleted_cond(model)
     return query if cond is None else query.filter(cond)
 
@@ -881,7 +881,7 @@ def apply_scope(query, model, entity: str, user, profile: dict, action: str = "r
     """Lọc query theo HỢP các grant có quyền `action` trên entity.
 
     ai-CR-170: model có cột `is_deleted` thì TỰ loại phiếu đã xóa mềm — kể cả khi phạm vi là
-    «thấy tất» (`cond is None`). Phiếu đã xóa chỉ còn đọc được bằng truy vấn thẳng, cố ý
+    "thấy tất" (`cond is None`). Phiếu đã xóa chỉ còn đọc được bằng truy vấn thẳng, cố ý
     (vd dọn dữ liệu, giữ mã không tái dùng).
     """
     query = exclude_deleted(query, model)

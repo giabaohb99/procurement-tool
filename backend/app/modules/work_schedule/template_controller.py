@@ -66,7 +66,7 @@ def work_roster(from_date: date, to_date: date, company_id: int = Query(0, ge=0)
                 department_id: int = Query(0, ge=0), q: str = Query("", max_length=100),
                 page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=100),
                 db: Session = Depends(get_db), user=Depends(require("employee", "read"))):
-    """«Ai làm / ai nghỉ» từng ngày — lưới nhân sự × ngày (tối đa 42 ngày, phân trang theo người).
+    """"Ai làm / ai nghỉ" từng ngày — lưới nhân sự × ngày (tối đa 42 ngày, phân trang theo người).
 
     Hàng theo phạm vi `employee.read`; lớp nghỉ phép theo phạm vi `leave_request.read` (xem
     `roster_service`). Số truy vấn cố định."""

@@ -94,7 +94,7 @@ def list_templates(db: Session, user, profile: dict, *, company_id: int | None, 
 def create_template(db: Session, user, profile: dict, data: TemplateCreateIn, fileobj,
                     filename: str) -> LaborContractTemplate:
     #  Phạm vi TRƯỚC mọi kiểm tra tồn tại / trùng tên: ngoài phạm vi phải ra 403 như nhau, không để
-    #  400 «pháp nhân không tồn tại» / «tên đã có» thành đường dò pháp nhân và tên mẫu của nơi khác.
+    #  400 "pháp nhân không tồn tại" / "tên đã có" thành đường dò pháp nhân và tên mẫu của nơi khác.
     probe = LaborContractTemplate(company_id=data.company_id, contract_type=data.contract_type,
                                   name=f"_probe_{user.id}", created_by=user.id, updated_by=user.id)
     if not access.can_create_for(db, LaborContractTemplate, ENTITY, probe, user, profile):
@@ -133,7 +133,7 @@ def replace_file(db: Session, user, row: LaborContractTemplate, fileobj, filenam
 
 def swap_file(db: Session, user, row: LaborContractTemplate, file_bytes: bytes, placeholders: list[str],
               filename: str) -> None:
-    """Gắn tệp ĐÃ KIỂM vào mẫu — dùng chung cho «Thay tệp» và «Soạn trên web» (duoc-CR-606)."""
+    """Gắn tệp ĐÃ KIỂM vào mẫu — dùng chung cho "Thay tệp" và "Soạn trên web" (duoc-CR-606)."""
     old_id = row.file_id
     sf = None
     try:
@@ -173,7 +173,7 @@ def delete_template(db: Session, row: LaborContractTemplate) -> None:
                                             LaborContract.is_deleted == False).count()  # noqa: E712
     if used:
         raise HTTPException(
-            409, f"Mẫu đang được {used} hợp đồng tham chiếu — không xóa được, hãy chọn «Ngừng dùng».")
+            409, f"Mẫu đang được {used} hợp đồng tham chiếu — không xóa được, hãy chọn \"Ngừng dùng\".")
     file_id = row.file_id
     db.delete(row)
     db.commit()

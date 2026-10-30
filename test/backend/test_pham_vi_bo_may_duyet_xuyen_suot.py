@@ -598,7 +598,7 @@ def test_b3_thu_bao_viec_chi_mang_ma_va_tieu_de_do_bo_may_tu_giu(db, world):
     thu = db.query(Notification).filter(
         Notification.user_id == world.actor("b1").user.id).one()
     assert "tâm thần" not in thu.body and "tâm thần" not in thu.title
-    assert thu.body == "Đơn nghỉ phép NP-B3-001 đang chờ bạn ở «Trưởng phòng duyệt»."
+    assert thu.body == "Đơn nghỉ phép NP-B3-001 đang chờ bạn ở \"Trưởng phòng duyệt\"."
 
 
 def test_b4_quyen_khai_hop_thu_khac_quyen_dung_hop_thu(db, world):

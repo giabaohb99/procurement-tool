@@ -131,9 +131,9 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
         can_transfer = bool(service.can_transfer_dept(db, s)
                             and holds_handling_dept(prof, "survey_request", s, get_central_dept_id(db)))
     base["can_transfer_dept"] = can_transfer
-    # bao-CR-524: «Trả về thu mua» chỉ khi phiếu đang ở phòng KHÁC phòng thu mua mặc định.
+    # bao-CR-524: "Trả về thu mua" chỉ khi phiếu đang ở phòng KHÁC phòng thu mua mặc định.
     base["can_return_dept"] = bool(can_transfer and not is_central_dept(db, s.handler_dept_id))
-    # bao-CR-554: nút «Trả về» cho người yêu cầu — người có quyền duyệt, phiếu chờ duyệt hoặc đã
+    # bao-CR-554: nút "Trả về" cho người yêu cầu — người có quyền duyệt, phiếu chờ duyệt hoặc đã
     # duyệt mà việc khảo sát chưa bắt đầu. Giao diện chỉ bày nút theo cờ này.
     base["can_return_requester"] = bool(user is not None and service.can_return_requester(db, s)
                                         and user_has_permission(db, user, "survey_request", "approve"))
@@ -242,7 +242,7 @@ def _users_of_codes(db, codes):
 def approver_candidates_meta(department: str = "", department_id: int = 0, company_id: int = 0,
                              handler_dept_id: int = 0, head_of_dept_id: int = 0, db: Session = Depends(get_db),
                              user=Depends(require("survey_request", "read"))):
-    """bao-CR-499 — người duyệt được chứng từ ĐANG LẬP (chưa có id), cho ô «Trưởng phòng phê duyệt».
+    """bao-CR-499 — người duyệt được chứng từ ĐANG LẬP (chưa có id), cho ô "Trưởng phòng phê duyệt".
 
     Khai TRƯỚC `/{sid}` kẻo FastAPI nuốt "meta" thành id.
     """
@@ -256,7 +256,7 @@ def approver_candidates_meta(department: str = "", department_id: int = 0, compa
 
 @router.get("/meta/department-managers")
 def department_managers_(db: Session = Depends(get_db), user=Depends(require("survey_request", "read"))):
-    """bao-CR-552 — trưởng phòng mọi phòng đang hoạt động, cho ô «Trưởng bộ phận» YCBG của bản v1 chọn
+    """bao-CR-552 — trưởng phòng mọi phòng đang hoạt động, cho ô "Trưởng bộ phận" YCBG của bản v1 chọn
     được (v2 dựng cùng bộ từ danh mục phòng ban). Chỉ đòi quyền đọc YCBG: người lập thường không có
     quyền đọc danh mục phòng ban/nhân sự. Khai TRƯỚC `/{sid}`."""
     from app.core.approver_candidates import department_managers
@@ -478,7 +478,7 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
                                        User.is_active == True).all()
     if not recips:
         recips = get_department_head_users(db, s.department or "", s.department_id or 0)
-    # bao-CR-499: người được CHỌN ở ô «Trưởng phòng phê duyệt» cũng nhận báo duyệt.
+    # bao-CR-499: người được CHỌN ở ô "Trưởng phòng phê duyệt" cũng nhận báo duyệt.
     if s.approver_employee_id:
         from app.modules.user.model import User
         chosen = db.query(User).filter(User.employee_id == s.approver_employee_id,
@@ -496,13 +496,13 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
 def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey_request", "approve"))):
     _in_scope(db, sid, user, "approve")
     s = service.set_status(db, sid, "approved", user.id)
-    # bao-CR-490: ghi nhân sự vừa duyệt vào «Trưởng phòng phê duyệt».
+    # bao-CR-490: ghi nhân sự vừa duyệt vào "Trưởng phòng phê duyệt".
     from app.core.print_signers import stamp_approver
     stamp_approver(db, s, user.id)
     db.commit()
     # bao-CR-414: tự gán NSTM theo phân loại (Task 4) — tra theo phòng đang xử lý phiếu; người
     # duyệt chỉ có bậc `dept_proc` (quản lý thu mua CỦA PHÒNG) thì không rơi về bộ của phòng thu
-    # mua mặc định (bao-CR-524, trước là «Thu mua chung»).
+    # mua mặc định (bao-CR-524, trước là "Thu mua chung").
     dept_only = approves_only_in_dept_proc(get_perm_profile(db, user), "survey_request")
     service.auto_assign(db, s, allow_global_assignee=not dept_only)
     s = service.set_status(db, sid, "processing", user.id)   # duyệt xong -> chuyển sang Đang xử lý
@@ -597,7 +597,7 @@ def transfer_dept_(sid: int, data: TransferDeptIn, background_tasks: BackgroundT
 def return_dept_(sid: int, data: TransferDeptIn, background_tasks: BackgroundTasks,
                  db: Session = Depends(get_db), user=Depends(require("survey_request", "approve"))):
     """bao-CR-414 GĐ5 — TRẢ VỀ THU MUA: cùng điều kiện, đích là phòng thu mua mặc định
-    (bao-CR-524: ghi id thật của PBA017, không còn `0` = «Thu mua chung» ảo)."""
+    (bao-CR-524: ghi id thật của PBA017, không còn `0` = "Thu mua chung" ảo)."""
     return _transfer_dept(db, sid, data, background_tasks, user, target=0,
                           message="Đã trả phiếu về phòng thu mua")
 
@@ -699,7 +699,7 @@ def _out_process(db: Session, s: SurveyRequest, user=None, profile=None) -> dict
 @router.get("/{sid}/assignable-staff")
 def assignable_staff_(sid: int, db: Session = Depends(get_db),
                       user=Depends(require("survey_request", "read"))):
-    """bao-CR-486 — NSTM chọn được cho YCBG này: đi theo ô «Phòng xử lý» (cùng luật YCMH)."""
+    """bao-CR-486 — NSTM chọn được cho YCBG này: đi theo ô "Phòng xử lý" (cùng luật YCMH)."""
     from app.modules.category_assignee.service import assignable_staff
     s = _in_scope(db, sid, user, "read")
     return success({"items": [{"id": e.id, "code": e.code, "full_name": e.full_name,

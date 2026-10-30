@@ -2,7 +2,7 @@
 
 Đường SQL cũ gán TOÀN BỘ ngày của đơn vào kỳ/mốc chứa ngày BẮT ĐẦU. Với mỗi đơn vắt biên:
     chênh lệch = phần ngày THẬT rơi vào kỳ/mốc − phần SQL đã gán (1 nếu ngày bắt đầu trong kỳ).
-Cộng chênh lệch vào Tổng / nhóm / «Top loại nghỉ» / mốc xu hướng ⇒ đơn bắt đầu trước kỳ được CỘNG
+Cộng chênh lệch vào Tổng / nhóm / "Top loại nghỉ" / mốc xu hướng ⇒ đơn bắt đầu trước kỳ được CỘNG
 phần trong kỳ, đơn kéo qua cuối kỳ bị TRỪ phần ngoài kỳ. Chỉ chạm ba số đo ngày
 (`days_approved`/`days_pending`/`days_unpaid`); số ĐƠN/người/tỷ lệ/thời gian duyệt giữ theo
 ngày bắt đầu.
@@ -67,7 +67,7 @@ def _dim_keys(sr: SplitRequest, dim: str) -> list[tuple[int, int | None]]:
 def apply_to_groups(groups: list[dict], srs: list[SplitRequest], dim: str, d_from: date,
                     d_to: date, unpaid_types: set[int], label_of: Callable[[int], str],
                     derived) -> list[dict]:
-    """Cộng chênh lệch vào `groups`. Khóa chưa có nhóm → vào «(Các nhóm khác)» nếu đã bị cắt
+    """Cộng chênh lệch vào `groups`. Khóa chưa có nhóm → vào "(Các nhóm khác)" nếu đã bị cắt
     trần, ngược lại tạo nhóm mới (đơn bắt đầu trước kỳ, nhóm chưa có đơn nào trong kỳ)."""
     by_key = {g["key"]: g for g in groups}
     touched = set()
@@ -94,7 +94,7 @@ def apply_to_groups(groups: list[dict], srs: list[SplitRequest], dim: str, d_fro
 
 def leave_type_approved_deltas(srs: list[SplitRequest], d_from: date, d_to: date
                                ) -> dict[str, float]:
-    """`{khóa loại nghỉ: chênh lệch days_approved}` cho «Top loại nghỉ» (xếp theo ngày đã duyệt)."""
+    """`{khóa loại nghỉ: chênh lệch days_approved}` cho "Top loại nghỉ" (xếp theo ngày đã duyệt)."""
     out: dict[str, float] = {}
     for sr in srs:
         if sr.status != LR_APPROVED:

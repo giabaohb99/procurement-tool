@@ -1,6 +1,6 @@
-"""Lịch của một người trong một ngày + «ngoài giờ» (thuần, nhận DaySpec) — duoc-CR-641, phase 02.
+"""Lịch của một người trong một ngày + "ngoài giờ" (thuần, nhận DaySpec) — duoc-CR-641, phase 02.
 
-`work_capacity`/`leave_days` là mẫu số của «ngày làm việc ròng»: công của ngày theo Lịch làm việc (mặc định
+`work_capacity`/`leave_days` là mẫu số của "ngày làm việc ròng": công của ngày theo Lịch làm việc (mặc định
 T2–T7 08–17), 0 nếu ngày lễ/nghỉ; `leave_days` chỉ tính nửa buổi vừa nghỉ (đơn ĐÃ DUYỆT) vừa phải làm.
 """
 from dataclasses import dataclass

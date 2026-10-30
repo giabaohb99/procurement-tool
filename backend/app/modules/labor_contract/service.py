@@ -75,7 +75,7 @@ def _ensure_contract_no_unique(db: Session, company_id: int, contract_no: str,
     if exclude_id:
         q = q.filter(LaborContract.id != exclude_id)
     if q.first():
-        raise HTTPException(400, f"Số hợp đồng «{contract_no}» đã tồn tại trong pháp nhân này")
+        raise HTTPException(400, f"Số hợp đồng \"{contract_no}\" đã tồn tại trong pháp nhân này")
 
 
 def create(db: Session, user, profile: dict, emp: Employee,
@@ -110,7 +110,7 @@ def update(db: Session, user, row: LaborContract,
     values = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None
               or k == "end_date"}   # end_date=None là hợp lệ (gỡ ngày kết thúc); cột khác không nhận null
     incoming = values.pop("custom_values", None)
-    if incoming is not None:   # gộp (khóa không gửi giữ nguyên); chỉ coi là «đổi» khi dict kết quả khác thật
+    if incoming is not None:   # gộp (khóa không gửi giữ nguyên); chỉ coi là "đổi" khi dict kết quả khác thật
         merged_values = merge_custom_values(db, row.custom_values, incoming)
         if merged_values != dict(row.custom_values or {}):
             values["custom_values"] = merged_values
@@ -154,7 +154,7 @@ def transition(db: Session, user, row: LaborContract, data: TransitionIn) -> Lab
                                      to_status=data.to_status, on_date=data.date, reason=data.reason)
     except rules.RuleViolation as exc:
         raise HTTPException(exc.status_code, exc.message)
-    if int(plan.status) == int(S.SIGNED):   # duoc-CR-630: biến «bắt buộc» còn trống chặn việc ký (lưu nháp thì không)
+    if int(plan.status) == int(S.SIGNED):   # duoc-CR-630: biến "bắt buộc" còn trống chặn việc ký (lưu nháp thì không)
         ensure_required_filled(db, row.custom_values, placeholders_for_signing(db, row), "chuyển sang Đã ký")
     row.status = plan.status
     for key, value in plan.changes.items():
@@ -175,7 +175,7 @@ def ensure_employee_deletable(db: Session, eid: int) -> None:
     if blocking:
         raise HTTPException(
             409, f"Nhân sự còn {blocking} hợp đồng lao động đã ký / đã chấm dứt — không xóa được hồ sơ. "
-                 "Hãy chuyển nhân sự sang «nghỉ việc» thay vì xóa.")
+                 "Hãy chuyển nhân sự sang \"nghỉ việc\" thay vì xóa.")
 
 
 def delete_all_of(db: Session, eid: int) -> None:

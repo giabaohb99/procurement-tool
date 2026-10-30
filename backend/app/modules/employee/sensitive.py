@@ -10,7 +10,7 @@ ba đường vòng mà không đường nào cần biết gõ lệnh gì đặc 
 
 ⚠️ **Hai bảng con (`tab_employee_contact`, `tab_employee_family`) thuộc trọn
 nhóm này.** Chúng KHÔNG có khóa phân quyền riêng, và đó là chủ ý: chúng không có
-màn hình riêng (luật «một khóa = một màn hình», CR-157), mà phạm vi dữ liệu của
+màn hình riêng (luật "một khóa = một màn hình", CR-157), mà phạm vi dữ liệu của
 chúng cũng không diễn đạt được bằng khuôn một-cột của `apply_scope` — bảng con
 chỉ có `employee_id`, không có `company_id`/`department_id`. Nên chốt của chúng
 là chốt của HỒ SƠ CHA: `get_scoped(Employee, "employee", ...)` để xét phạm vi, và
@@ -48,8 +48,8 @@ SENSITIVE_FIELDS: tuple[str, ...] = (
 
 #  LƯƠNG (duoc-CR-693) — LUẬT RIÊNG, chặt hơn nhóm trên: CHỈ chính nhân sự đó đọc được SỐ. Không ai khác —
 #  kể cả người nhập, quản trị, người có `employee_sensitive.read` hay `labor_contract` — xem được số; họ chỉ
-#  biết «đã nhập chưa» qua cờ `salary_set` (không che). Cùng một chốt (`mask` / `mask_many`) với nhóm trên để
-#  CSV, trợ lý AI, bản ghi nhật ký... đi chung một cửa; `mask` MẶC ĐỊNH CHE nếu nơi gọi không nói «đây là chính chủ».
+#  biết "đã nhập chưa" qua cờ `salary_set` (không che). Cùng một chốt (`mask` / `mask_many`) với nhóm trên để
+#  CSV, trợ lý AI, bản ghi nhật ký... đi chung một cửa; `mask` MẶC ĐỊNH CHE nếu nơi gọi không nói "đây là chính chủ".
 SALARY_FIELDS: tuple[str, ...] = ("salary_monthly", "allowance_monthly")
 
 #  Giá trị thay thế khi che. Trả về ĐÚNG KIỂU của trường chứ không trả `None`
@@ -83,7 +83,7 @@ def can_read_sensitive(profile, employee_id: int = 0) -> bool:
     me = int((profile or {}).get("employee_id") or 0)
     #  ⚠️ Chặn `me == 0`: tài khoản chưa gắn nhân sự (admin, tài khoản hệ thống)
     #  có `employee_id = 0`, mà hồ sơ nào chưa lưu cũng có id 0 trong bộ nhớ —
-    #  so bằng thì «chưa gắn ai» hóa ra khớp, và ngoại lệ self mở cho tất cả.
+    #  so bằng thì "chưa gắn ai" hóa ra khớp, và ngoại lệ self mở cho tất cả.
     return bool(me) and me == int(employee_id or 0)
 
 

@@ -54,8 +54,8 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
     hire_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     #  `gender` để LỌC loại nghỉ (thai sản chỉ hiện với nữ). `0` = chưa khai, và
     #  chưa khai thì KHÔNG bị chặn — xem `leave/constants.GENDER_UNKNOWN`.
-    #  ⚠️ Bộ mã của HỒ SƠ có thêm `3` («Khác», 08/09/2026) mà loại nghỉ không có:
-    #  khai «Khác» thì bị chặn khỏi loại nghỉ giới hạn nam/nữ. Xem
+    #  ⚠️ Bộ mã của HỒ SƠ có thêm `3` ("Khác", 08/09/2026) mà loại nghỉ không có:
+    #  khai "Khác" thì bị chặn khỏi loại nghỉ giới hạn nam/nữ. Xem
     #  `employee/constants.GENDER_*`.
     gender: Mapped[int] = mapped_column(SmallInteger, default=0)
 
@@ -89,7 +89,7 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
 
     # Nhóm 2 — công việc
     #  ⚠️ `manager_id` KHÔNG phải trường hiển thị cho đẹp. Đây là dữ liệu mà vai
-    #  tương đối «người quản lý trực tiếp» của bộ máy duyệt đọc
+    #  tương đối "người quản lý trực tiếp" của bộ máy duyệt đọc
     #  (`APPROVER_DIRECT_MANAGER`). Sai ô này thì đơn từ chạy sai đường một cách
     #  im lặng — không có màn nào báo, vì bộ máy duyệt vẫn tìm ra MỘT người.
     #  `0` = chưa gán, và luồng duyệt lùi về trưởng bộ phận để đơn không kẹt.
@@ -220,7 +220,7 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
 
     @property
     def extra_phones_text(self) -> str:
-        """«số (nhãn); …» — cột «Số điện thoại khác» của tệp xuất Excel/CSV (cùng định dạng tệp nhập)."""
+        """"số (nhãn); …" — cột "Số điện thoại khác" của tệp xuất Excel/CSV (cùng định dạng tệp nhập)."""
         from .phone_rules import format_phones_text
         return format_phones_text(self.extra_phones)
 

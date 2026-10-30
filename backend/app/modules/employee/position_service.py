@@ -52,7 +52,7 @@ def check_assignable(db: Session, position_id: int) -> JobPosition | None:
         raise HTTPException(400, "Chức vụ không tồn tại")
     if not obj.is_active:
         raise HTTPException(
-            400, f"Chức vụ «{obj.name}» đã ngừng dùng nên không gán mới được. "
+            400, f"Chức vụ \"{obj.name}\" đã ngừng dùng nên không gán mới được. "
                  "Bật lại ở danh mục Chức vụ, hoặc chọn chức vụ khác.")
     return obj
 
@@ -74,8 +74,8 @@ def sync_label(db: Session, obj: Employee, fields: dict, old_position_id: int = 
 
     ⚠️ `old_position_id` không phải để tối ưu. Màn hồ sơ gửi LẠI mọi ô mỗi lần
     lưu, kể cả ô không đổi — nên hồ sơ đang giữ một chức vụ vừa bị Nhân sự cho
-    ngừng dùng sẽ **không sửa nổi ô nào khác** (mỗi lần Lưu đều ăn câu «chức vụ
-    đã ngừng dùng») cho tới khi có người đi đổi chức vụ của họ. Giữ nguyên giá
+    ngừng dùng sẽ **không sửa nổi ô nào khác** (mỗi lần Lưu đều ăn câu "chức vụ
+    đã ngừng dùng") cho tới khi có người đi đổi chức vụ của họ. Giữ nguyên giá
     trị cũ thì luôn hợp lệ; chốt `check_assignable` chỉ áp cho việc gán MỚI.
     """
     if "position_id" not in fields:
@@ -117,7 +117,7 @@ def resolve_by_name(db: Session, name: str) -> JobPosition | None:
 
     So không phân biệt hoa thường và bỏ khoảng trắng thừa, đúng luật mà
     migration `c5e2a8b31d47` đã dùng để gom dữ liệu cũ: tệp CSV người dùng sửa
-    trong Excel thì «Trưởng phòng» và «Trưởng Phòng » là cùng một chức vụ.
+    trong Excel thì "Trưởng phòng" và "Trưởng Phòng " là cùng một chức vụ.
 
     ⚠️ Không khớp thì trả `None` và chỗ gọi giữ nguyên CHỮ, `position_id = 0` —
     **cố ý không tự tạo dòng danh mục mới**. Tự tạo thì mỗi lỗi gõ trong một tệp

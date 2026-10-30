@@ -5,7 +5,7 @@
   không có nội dung form. `user_id` lấy từ token, không bao giờ từ body.
 - `tab_usage_daily`: một dòng/người/ngày — số gom từ nhật ký sẵn có + sự kiện giao diện. Giữ 3 NĂM.
 - `tab_user_usage_snapshot`: ảnh chụp theo tuần (JSON chỉ chứa số + mã, schema v1, sẵn cho pha 4 AI).
-- `tab_user_usage_label`: nhãn «kiểu làm việc» kèm bằng chứng.
+- `tab_user_usage_label`: nhãn "kiểu làm việc" kèm bằng chứng.
 """
 from datetime import date, datetime
 
@@ -96,7 +96,7 @@ class UsageDaily(Base):
     on_behalf_received: Mapped[int] = _int()
     on_behalf_done: Mapped[int] = _int()
     active_after_resign: Mapped[bool] = mapped_column(Boolean, default=False)
-    # UI (từ tab_ui_event) — NULL-able không cần: 0 và «chưa thu» phân biệt ở tầng snapshot (tracking_since)
+    # UI (từ tab_ui_event) — NULL-able không cần: 0 và "chưa thu" phân biệt ở tầng snapshot (tracking_since)
     page_views: Mapped[int] = _int()
     dwell_ms: Mapped[int] = mapped_column(BigInteger, default=0)
     searches: Mapped[int] = _int()

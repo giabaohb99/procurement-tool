@@ -104,7 +104,7 @@ def build(db: Session, user=None) -> dict:
                 push(f"contract:{c.id}:warn", {"type": "contract", "level": "warn", "title": f"HĐ sắp hết hạn: {c.code} · {who} ({c.end_date})", "link": link})
 
     # 4) Hợp đồng LAO ĐỘNG sắp hết / đã hết hạn (duoc-CR-620) — luật lọc nằm ở `expiry_service`,
-    #    dùng chung với thẻ Tổng quan Nhân sự. Key kèm mức: «vàng» đã ẩn vẫn nổi lại khi sang «đỏ».
+    #    dùng chung với thẻ Tổng quan Nhân sự. Key kèm mức: "vàng" đã ẩn vẫn nổi lại khi sang "đỏ".
     #    ⚠️ `vn_today()` chứ không phải `today` ở trên: container chạy UTC, `datetime.now()` lệch
     #    một ngày từ 00:00–06:59 giờ VN — thẻ Tổng quan đếm theo giờ VN, chuông phải đếm cùng.
     if see_labor_contract:

@@ -58,7 +58,7 @@ def serialize_list(db: Session, rows: list[EmployeeWorkHistory]) -> list[dict]:
 def serialize_one(db: Session, row: EmployeeWorkHistory) -> dict:
     """Trả ĐÚNG MỘT dòng — nhưng `can_apply` của nó phải tính trên TOÀN BỘ các
     dòng của nhân sự này (Low, review 03/10/2026): `compute_can_apply` cần biết
-    dòng CHÍNH MỚI NHẤT để chốt «chỉ áp được dòng chính mới nhất» (#4 của
+    dòng CHÍNH MỚI NHẤT để chốt "chỉ áp được dòng chính mới nhất" (#4 của
     `apply_gate`), mà gọi `serialize_list(db, [row])` với MỘT dòng duy nhất thì
     hàm đó chỉ thấy chính nó — luôn tự so với bản thân, chốt vô nghĩa.
     `is_current` cùng lý do (05/10/2026): cần biết có dòng chính mới hơn không."""

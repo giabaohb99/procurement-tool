@@ -247,8 +247,8 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  loại hồ sơ của phòng Hành chính. Vòng `setdefault` phía dưới
                  #  vẫn cấp `read` cho họ như mọi vai trò khác.
                  "dossier_type",
-                 #  Sổ đồng bộ với hệ ngoài (P0 đặt xe): `write` là nút «Chạy
-                 #  lại», tức bấm một phát là ERP gọi ngược sang app cũ / POS365.
+                 #  Sổ đồng bộ với hệ ngoài (P0 đặt xe): `write` là nút "Chạy
+                 #  lại", tức bấm một phát là ERP gọi ngược sang app cũ / POS365.
                  #  Việc của quản trị hệ thống, không phải của thu mua.
                  "sync_log",
                  #  Hồ sơ (16/09/2026): giấy phép con, hợp đồng nguyên tắc,
@@ -323,9 +323,9 @@ STD_ROLES = {
         #  duoc-CR-640: bản lưu trữ HĐLĐ SỬA được bởi người có `labor_contract.write` — lớp 1 của sửa / tải tệp đòi
         #  thêm `document.write`; phạm vi `own` (= người tạo) vẫn KHÔNG mở thêm văn bản thường nào.
         "document": (["read", "write"], "own"),
-        #  Tab «Tài khoản & thiết bị» trong hồ sơ (bao-CR-395): Nhân sự XEM phiên
+        #  Tab "Tài khoản & thiết bị" trong hồ sơ (bao-CR-395): Nhân sự XEM phiên
         #  đang mở + lịch sử đăng nhập 90 ngày của mọi người. KHÔNG cấp `delete`
-        #  (đá phiên là của admin); nút «Khóa tài khoản + đăng xuất mọi thiết bị»
+        #  (đá phiên là của admin); nút "Khóa tài khoản + đăng xuất mọi thiết bị"
         #  đi qua `user.write`, khóa xong thì hook tự thu hồi phiên.
         "login_session": (["read"], "all"),
     }},
@@ -393,12 +393,12 @@ STD_ROLES = {
         "payment_request": (["read", "create", "write", "print", "export"], "company"),   # bao-CR-525
         "report": (["read"], "dept"),
     }},
-    # bao-CR-526 — NHÂN VIÊN thu mua CỦA MỘT PHÒNG, đi cặp với `pur_dept_manager` thành bộ «thu mua
-    # theo phòng» (đại ca chốt 30/09/2026: tạo sẵn, CHƯA gán cho ai — chờ danh sách nhân sự + phòng
+    # bao-CR-526 — NHÂN VIÊN thu mua CỦA MỘT PHÒNG, đi cặp với `pur_dept_manager` thành bộ "thu mua
+    # theo phòng" (đại ca chốt 30/09/2026: tạo sẵn, CHƯA gán cho ai — chờ danh sách nhân sự + phòng
     # phụ trách rồi các anh chị tự gán). Cùng hành động với `pur_staff`, chỉ khác phạm vi ba chứng
     # từ: `dept_proc` = mọi phiếu đã duyệt mà phòng lập hoặc phòng được nhờ xử lý là phòng mình
-    # (`pur_staff` chỉ thấy phiếu được GIAO). Bộ «Quản lý thu mua» cũ giữ nguyên, tách phần nhà máy
-    # bằng ô «Loại trừ phòng ban» khi gán.
+    # (`pur_staff` chỉ thấy phiếu được GIAO). Bộ "Quản lý thu mua" cũ giữ nguyên, tách phần nhà máy
+    # bằng ô "Loại trừ phòng ban" khi gán.
     "pur_dept_staff": {"name": "Nhân viên thu mua phòng", "perms": {
         **_CATALOG_READ, **_CONTRACT_READ,
         "employee": (["read"], "dept"),
@@ -413,7 +413,7 @@ STD_ROLES = {
         "payment_request": (["read", "create", "write", "print", "export"], "company"),   # như pur_staff (bao-CR-525)
         "report": (["read"], "dept"),
     }},
-    # bao-CR-545 — ADMIN thu mua CỦA MỘT PHÒNG, cùng bộ «thu mua theo phòng» với `pur_dept_staff` +
+    # bao-CR-545 — ADMIN thu mua CỦA MỘT PHÒNG, cùng bộ "thu mua theo phòng" với `pur_dept_staff` +
     # `pur_dept_manager` (đại ca 01/10/2026: bộ chung có Nhân viên · Admin · Quản lý thì bộ theo phòng
     # cũng đủ ba). Chép quyền `pur_admin`, chỉ đổi phạm vi ba chứng từ sang `dept_proc` (phiếu đã duyệt
     # của phòng mình hoặc phòng được nhờ xử lý); công nợ · YCTT · báo cáo theo khuôn hai vai trò theo
@@ -487,7 +487,7 @@ STD_ROLES = {
     # nhiệm) và không lưu nổi — đã bị đúng lỗi đó với vai trò `vanthu_cty`.
     #
     # `security_level` là cái dễ quên nhất vì ô của nó nằm tận BƯỚC 3: thiếu nó
-    # thì `/api/security-levels` trả 403, ô «Mức mật» rỗng danh sách, và form
+    # thì `/api/security-levels` trả 403, ô "Mức mật" rỗng danh sách, và form
     # gửi lên `secrecy_level = 0` → `422` báo lỗi ở một ô người dùng chưa hề mở
     # tới (dựng lại được 24/08/2026 với tài khoản DEMOTP).
     "vanban_xem": {"name": "Văn bản — chỉ xem", "perms": {
@@ -511,7 +511,7 @@ STD_ROLES = {
         #  mình, không xóa, không bãi bỏ văn bản đã ban hành.
         "document": (["read", "create", "write", "print", "export"], "company"),
         "doc_type": (["read"], "all"),
-        #  Người SOẠN phải đọc được thư viện mẫu — ô «Dùng mẫu» ở bước 1 của màn
+        #  Người SOẠN phải đọc được thư viện mẫu — ô "Dùng mẫu" ở bước 1 của màn
         #  Tạo văn bản gọi `/api/document-templates`. Từ CR-157 nó có khóa riêng
         #  (`doc_template`) nên không còn đi kèm `doc_type` nữa; thiếu dòng này
         #  là ô mẫu rỗng và người soạn ăn toast 403 ngay lúc mở màn.
@@ -556,7 +556,7 @@ STD_ROLES = {
     # phiếu ĐƯỢC PHÂN cho mình (nối qua Driver.user_id, xem scoping.py) — nhờ vậy
     # nút của tài xế mới tới đúng người được phân, không phải chỉ phiếu tự tạo.
     "booking_driver": {"name": "Tài xế (Đặt xe)", "perms": {
-        "vehicle_booking": (["read", "write", "export"], "assigned"),   # duoc-CR-675: «Chuyến của tôi» xuất Excel
+        "vehicle_booking": (["read", "write", "export"], "assigned"),   # duoc-CR-675: "Chuyến của tôi" xuất Excel
         "vehicle": (["read", "export"], "all"),
         "driver": (["read", "export"], "all"),
     }},
@@ -589,11 +589,11 @@ STD_ROLES = {
     "seal_director": {"name": "Giám đốc duyệt dấu (Duyệt dấu)", "perms": {
         "seal_request": (["read"], "company"),
     }},
-    #  Pháp lý kiểm tra dấu (bao-CR-584) — bước «Pháp lý kiểm tra» của luồng duyệt dấu,
-    #  tương ứng vai trò «Legal» bên app cũ (một người làm cả 971 lượt kiểm). Khai
+    #  Pháp lý kiểm tra dấu (bao-CR-584) — bước "Pháp lý kiểm tra" của luồng duyệt dấu,
+    #  tương ứng vai trò "Legal" bên app cũ (một người làm cả 971 lượt kiểm). Khai
     #  bước theo VAI TRÒ chứ không theo người cụ thể: đổi người thì gán vai trò, luồng
     #  giữ nguyên. Xem mọi phiếu để tra lại hồ sơ đã kiểm; phiếu đang chờ mình kiểm
-    #  thì mở được nhờ luật «đang được giao duyệt» (`approval/pending_reader.py`).
+    #  thì mở được nhờ luật "đang được giao duyệt" (`approval/pending_reader.py`).
     "seal_legal": {"name": "Pháp lý kiểm tra dấu (Duyệt dấu)", "perms": {
         "seal_request": (["read"], "all"),
         "seal_type": (["read"], "all"),
@@ -658,7 +658,7 @@ for _role_info in STD_ROLES.values():
         "room_booking", (["read", "create", "write", "delete", "cancel"], "own"))
     _role_info["perms"].setdefault("meeting_room", (["read"], "all"))
     #  ⚠️ Danh mục Chức vụ phải ĐỌC được với MỌI vai trò (duoc-CR-320): nó là
-    #  nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ nhân sự. Thiếu `read` thì
+    #  nguồn của ô chọn "Vị trí / Chức vụ" trên hồ sơ nhân sự. Thiếu `read` thì
     #  ô chọn đó rỗng sạch và người dùng đọc ra "công ty chưa khai chức vụ nào",
     #  trong khi thứ họ gặp là một lỗi 403 bị nuốt. Chỉ `read` — thêm bớt chức
     #  vụ là việc của `hr_profile`.
@@ -698,7 +698,7 @@ STD_ROLES["company_head"]["perms"]["room_booking"] = (
 #  động cho ai; gán ở màn *Nhân sự ▸ Phân quyền tài khoản*.
 #
 #  ⚠️ Cho vai trò này là cho quyền **tặng thêm ngày phép cho bất kỳ ai**
-#  (`leave_balance.write` mở cột «điều chỉnh tay»). Đó chính là lý do
+#  (`leave_balance.write` mở cột "điều chỉnh tay"). Đó chính là lý do
 #  `leave_balance` là khóa riêng chứ không đi kèm `leave_request`.
 STD_ROLES["hr_leave"] = {"name": "Nhân sự — Quản lý nghỉ phép", "perms": {
     "leave_request": (["read", "create", "write", "delete", "export"], "all"),
@@ -746,7 +746,7 @@ STD_ROLES["coffee_counter"] = {"name": "Điểm cà phê — Quầy (tra cứu)"
 #  nhân viên thu mua thường không được xem. Nên tách hẳn thành vai trò riêng,
 #  gán tay ở màn Phân quyền. Hai khóa vẫn nằm trong `_SYS_ENTITIES` nên
 #  `pur_manager` không tự nhận lại khi seed chạy.
-#  `customs_regulation` đi kèm vì tab «Cấu hình» của chính màn này đọc danh mục
+#  `customs_regulation` đi kèm vì tab "Cấu hình" của chính màn này đọc danh mục
 #  hóa chất; khóa thuốc BVTV (`customs_pesticide`) vẫn để quản trị tick tay.
 STD_ROLES["market_lookup"] = {"name": "Tra cứu thị trường", "perms": {
     "customs_price": (["read", "create", "write", "delete", "export"], "all"),
@@ -769,7 +769,7 @@ STD_ROLES["ai_skill_editor"] = {"name": "Biên tập skill AI phòng ban", "perm
 
 #  ── Danh mục Loại hồ sơ (16/09/2026) ────────────────────────────────────────
 #  Cùng lý lẽ với danh mục Chức vụ: **mọi vai trò phải ĐỌC được**, vì nó là
-#  nguồn của ô chọn «Loại hồ sơ» trên màn hồ sơ. Thiếu `read` thì ô chọn rỗng
+#  nguồn của ô chọn "Loại hồ sơ" trên màn hồ sơ. Thiếu `read` thì ô chọn rỗng
 #  sạch và người dùng đọc ra "công ty chưa khai loại nào", trong khi thứ họ gặp
 #  là một lỗi 403 bị nuốt (403 trên GET không bật toast). Chỉ `read` — thêm bớt
 #  loại là việc của `dossier_admin`.
@@ -1067,7 +1067,7 @@ def ensure_admin_role(db):
     CỐ Ý chạy mỗi lần khởi động: đây là vai trò "chìa khóa dự phòng" — không được để phân hệ mới
     ra đời mà admin hệ thống không vào được.
 
-    ⚠️ NGOẠI LỆ CÓ CHỦ ĐÍCH của D-018 «seed không ghi đè phân quyền» — CHỈ cho vai trò `admin`
+    ⚠️ NGOẠI LỆ CÓ CHỦ ĐÍCH của D-018 "seed không ghi đè phân quyền" — CHỈ cho vai trò `admin`
     (bao-CR-523, khách chốt 30/09/2026): vai trò Quản trị hệ thống LUÔN FULL mọi
     `ENTITIES × ACTIONS`, phạm vi `all`. Nên ngoài việc THÊM entity còn thiếu, hàm này còn
     ÉP LẠI những dòng có sẵn bị bỏ tick / thu hẹp phạm vi (prod 30/09: 70 dòng cho 72 entity,
@@ -1283,8 +1283,8 @@ def seed_document_phase1(db):
 
     existing_companies = {row.code.upper(): row for row in db.query(Company).all()}
     #  bao-CR-535: mã số thuế đã thuộc công ty khác (khác MÃ) thì KHÔNG tạo thêm — một pháp nhân
-    #  một mã số thuế (bao-CR-534). Thiếu chốt này seed đẻ lại «DEGO HOLDING» mỗi lần deploy sau
-    #  khi bao-CR-532 đã gộp nó vào «DEGO».
+    #  một mã số thuế (bao-CR-534). Thiếu chốt này seed đẻ lại "DEGO HOLDING" mỗi lần deploy sau
+    #  khi bao-CR-532 đã gộp nó vào "DEGO".
     taken_tax_codes = {"".join((row.tax_code or "").split()).upper()
                        for row in existing_companies.values()} - {""}
     for values in DOCUMENT_COMPANIES:
@@ -1661,7 +1661,7 @@ def run():
         else:
             print("Bỏ qua seed tài khoản demo (SEED_DEMO_ACCOUNTS=false).")
 
-        # Bảy tài khoản của nhóm «Tài khoản Test (Data)» trong menu đổi tài khoản
+        # Bảy tài khoản của nhóm "Tài khoản Test (Data)" trong menu đổi tài khoản
         # nhanh — CHỈ local. Trước 24/08/2026 bảy dòng đó nằm trong menu mà không
         # có bản ghi nào trong CSDL, bấm vào chỉ ăn toast lỗi.
         # CHẠY SAU seed_standard_roles vì nó gán vai trò chuẩn.
@@ -1672,7 +1672,7 @@ def run():
             if n_test:
                 print(f"Tạo {n_test} tài khoản test (TESTREQ, DEMONV, DEMOTP…).")
 
-            # bao-CR-414: hai bộ tài khoản «Nhà máy» / «Thu mua chung» cho phòng tự mua hàng.
+            # bao-CR-414: hai bộ tài khoản "Nhà máy" / "Thu mua chung" cho phòng tự mua hàng.
             from app.seed_tai_khoan_cr414 import seed_cr414_accounts
 
             n_cr414 = seed_cr414_accounts(db, company.id)
@@ -1752,7 +1752,7 @@ def run():
 
         from app.modules.ai_skill.handbook_seed import ensure_system_handbook
 
-        #  ai-CR-220: bộ «Cẩm nang hệ thống» cho trợ lý — gieo SAU pháp nhân (gán quyền theo từng pháp nhân), có rồi không đụng.
+        #  ai-CR-220: bộ "Cẩm nang hệ thống" cho trợ lý — gieo SAU pháp nhân (gán quyền theo từng pháp nhân), có rồi không đụng.
         ensure_system_handbook(db)
         print(f"Seed done. Admin login: {settings.ADMIN_CODE} / (mật khẩu trong .env)")
     finally:

@@ -39,7 +39,7 @@ def is_latest_in_force(db: Session, row: LaborContract, today) -> bool:
 
 def sync_profile_salary(db: Session, row: LaborContract, actor_id: int) -> bool:
     """Chép lương cơ bản / phụ cấp của HĐ sang hồ sơ nếu đủ điều kiện. KHÔNG commit (chung giao dịch với việc ký).
-    Trả `True` nếu hồ sơ đổi. Nhật ký chỉ ghi «đã cập nhật lương», không kèm số."""
+    Trả `True` nếu hồ sơ đổi. Nhật ký chỉ ghi "đã cập nhật lương", không kèm số."""
     if not is_latest_in_force(db, row, vn_today()):
         return False
     emp = db.get(Employee, row.employee_id)

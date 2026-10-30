@@ -20,7 +20,7 @@ MAX_FILES = 20
 def _link_or_error(ctx: ToolContext):
     link = gl.get_link(ctx.db, ctx.user.id)
     if link is None:
-        return None, {"error": "Bạn chưa nối Google. Vào Trang cá nhân → Khóa AI → «Nối Google» rồi hỏi lại."}
+        return None, {"error": "Bạn chưa nối Google. Vào Trang cá nhân → Khóa AI → **Nối Google** rồi hỏi lại."}
     return link, None
 
 
@@ -121,7 +121,7 @@ def _find_event(ctx: ToolContext, link, args: dict) -> tuple[dict | None, dict |
 
 
 def _update_calendar_event(ctx: ToolContext, args: dict) -> dict:
-    """ai-CR-084: DỜI / đổi tên một sự kiện ĐÃ CÓ (PATCH) — trước đây Trợ lý «dời» bằng cách tạo thêm, đẻ ra bản trùng."""
+    """ai-CR-084: DỜI / đổi tên một sự kiện ĐÃ CÓ (PATCH) — trước đây Trợ lý "dời" bằng cách tạo thêm, đẻ ra bản trùng."""
     link, err = _link_or_error(ctx)
     if err:
         return err
@@ -261,7 +261,7 @@ UPDATE_CALENDAR_EVENT_SPEC = ToolSpec(
     description=("DỜI / ĐỔI GIỜ / ĐỔI TÊN một sự kiện ĐÃ CÓ trên lịch Google của chính người hỏi ('dời lịch mua thuốc qua mai', "
                  "'đổi họp NCC sang 3h chiều'). Tìm theo event_id (lấy từ my_calendar_events) hoặc theo tên + ngày. Dời ngày mà "
                  "không nói giờ thì GIỮ giờ cũ; giữ nguyên thời lượng nếu không nói. Không chắc sự kiện nào → tool trả lựa chọn, "
-                 "hỏi MỘT câu. Chỉ báo «đã dời» khi tool trả ok."),
+                 "hỏi MỘT câu. Chỉ báo **đã dời** khi tool trả ok."),
     parameters={"type": "object", "properties": {
         "event_id": {"type": "string"}, "title": {"type": "string", "description": "Tên (một phần) để tìm."},
         "date": {"type": "string", "description": "Ngày đang có sự kiện, YYYY-MM-DD (giúp tìm đúng)."},
@@ -275,7 +275,7 @@ DELETE_CALENDAR_EVENT_SPEC = ToolSpec(
                  "'xóa lịch mua thuốc mai'). Chỉ gọi khi người dùng nói rõ muốn hủy; KHÔNG dùng để dời giờ (việc đó là "
                  "update_calendar_event). Tìm theo event_id (lấy từ my_calendar_events) hoặc theo tên + ngày; lịch lặp lại "
                  "thì chỉ hủy buổi của ngày đó. Không chắc sự kiện nào → tool trả lựa chọn, hỏi MỘT câu, không tự chọn. "
-                 "Chỉ báo «đã hủy» khi tool trả ok, kèm tên + giờ sự kiện vừa hủy."),
+                 "Chỉ báo **đã hủy** khi tool trả ok, kèm tên + giờ sự kiện vừa hủy."),
     parameters={"type": "object", "properties": {
         "event_id": {"type": "string"}, "title": {"type": "string", "description": "Tên (một phần) để tìm."},
         "date": {"type": "string", "description": "Ngày đang có sự kiện, YYYY-MM-DD (giúp tìm đúng)."}}},

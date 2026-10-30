@@ -75,7 +75,7 @@ def create_template(file: UploadFile = File(...), name: str = Form(...), company
         row = template_service.create_template(db, user, profile, data, file.file, file.filename or "")
     except TemplateRejected as exc:
         return _rejected(exc)
-    audit_record(db, user.id, ENTITY, row.id, "create", f"Tải mẫu hợp đồng «{row.name}»")
+    audit_record(db, user.id, ENTITY, row.id, "create", f"Tải mẫu hợp đồng \"{row.name}\"")
     return success(_one(db, row), "Đã tạo mẫu hợp đồng", 201)
 
 
@@ -84,7 +84,7 @@ def update_template(template_id: int, data: TemplateUpdate, db: Session = Depend
                     user=Depends(require(ENTITY, "write"))):
     row = _scoped(db, template_id, user, get_perm_profile(db, user), "write")
     row = template_service.update_meta(db, user, row, data)
-    audit_record(db, user.id, ENTITY, row.id, "update", f"Sửa mẫu hợp đồng «{row.name}»")
+    audit_record(db, user.id, ENTITY, row.id, "update", f"Sửa mẫu hợp đồng \"{row.name}\"")
     return success(_one(db, row), "Đã cập nhật mẫu hợp đồng")
 
 
@@ -97,7 +97,7 @@ def replace_template_file(template_id: int, file: UploadFile = File(...), db: Se
     except TemplateRejected as exc:
         return _rejected(exc)
     db.refresh(row)
-    audit_record(db, user.id, ENTITY, row.id, "update", f"Thay tệp mẫu hợp đồng «{row.name}»")
+    audit_record(db, user.id, ENTITY, row.id, "update", f"Thay tệp mẫu hợp đồng \"{row.name}\"")
     return success(_one(db, row), "Đã thay tệp mẫu")
 
 
@@ -127,7 +127,7 @@ def save_template_content(template_id: int, data: TemplateContentIn, db: Session
     except TemplateRejected as exc:
         return _rejected(exc)
     db.refresh(row)
-    audit_record(db, user.id, ENTITY, row.id, "update", f"Soạn lại mẫu hợp đồng «{row.name}» trên web")
+    audit_record(db, user.id, ENTITY, row.id, "update", f"Soạn lại mẫu hợp đồng \"{row.name}\" trên web")
     return success(_one(db, row), "Đã lưu nội dung mẫu")
 
 
@@ -137,5 +137,5 @@ def delete_template(template_id: int, db: Session = Depends(get_db),
     row = _scoped(db, template_id, user, get_perm_profile(db, user), "delete")
     name = row.name
     template_service.delete_template(db, row)
-    audit_record(db, user.id, ENTITY, template_id, "delete", f"Xóa mẫu hợp đồng «{name}»")
+    audit_record(db, user.id, ENTITY, template_id, "delete", f"Xóa mẫu hợp đồng \"{name}\"")
     return success(None, "Đã xóa mẫu hợp đồng")

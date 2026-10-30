@@ -35,18 +35,18 @@ from app.modules.login_session.history import resolve_user_names
 from app.modules.login_session.model import LoginSession
 from app.modules.request_log.model import RequestLog
 
-#  Ba giá trị của ô «Kết quả» trên thanh lọc. Để ở đây chứ không rải chuỗi trong
+#  Ba giá trị của ô "Kết quả" trên thanh lọc. Để ở đây chứ không rải chuỗi trong
 #  controller: bài kiểm gọi thẳng vào đây, và thêm lựa chọn thứ tư thì sửa một chỗ.
 STATUS_ALL = "all"
 STATUS_ERROR = "error"
 STATUS_BLOCKED = "blocked"
 
-#  «Bị chặn» KHÔNG phải là «lỗi». 401/403 là hệ thống làm đúng việc của nó, còn
+#  "Bị chặn" KHÔNG phải là "lỗi". 401/403 là hệ thống làm đúng việc của nó, còn
 #  5xx là hệ thống hỏng — trộn hai thứ vào một bộ lọc thì câu hỏi *"hôm nay hỏng
 #  gì"* luôn bị vùi dưới hàng trăm lượt 403 của người thiếu quyền.
 BLOCKED_CODES = (401, 403)
 
-#  Ô «Phương thức» (bao-CR-582): nhận nhiều giá trị một lượt, cách bằng dấu phẩy
+#  Ô "Phương thức" (bao-CR-582): nhận nhiều giá trị một lượt, cách bằng dấu phẩy
 #  (`POST,PUT`). Không khóa cứng danh sách GET/POST/… — middleware ghi nguyên
 #  `request.method` (tối đa 8 ký tự), lượt HEAD/OPTIONS cũng phải lọc ra được.
 #  Chỉ chặn thứ không thể là tên phương thức: giá trị rác mà lờ đi thì bảng trả
@@ -95,7 +95,7 @@ def parse_request_id(text: str) -> bytes | None:
 def _parse_moment(text: str | None, end_of_day: bool) -> datetime | None:
     """`YYYY-MM-DD` hoặc `YYYY-MM-DDTHH:MM[:SS]` -> `datetime`.
 
-    Ô «Đến» chỉ có ngày thì phải kéo tới 23:59:59, nếu không thì lọc *"hôm nay"*
+    Ô "Đến" chỉ có ngày thì phải kéo tới 23:59:59, nếu không thì lọc *"hôm nay"*
     trả về đúng những gì xảy ra lúc 00:00:00 — một lỗi im lặng, vì màn vẫn có dữ
     liệu nên không ai nghi ngờ.
     """
@@ -189,10 +189,10 @@ def find_request(db: Session, request_id: bytes) -> RequestLog | None:
 
 
 def _first_audit_by_request(db: Session, request_ids: list[bytes]) -> dict[bytes, AuditLog]:
-    """Dòng audit ĐẦU TIÊN của mỗi lượt gọi — cột «Lần bấm» trên màn.
+    """Dòng audit ĐẦU TIÊN của mỗi lượt gọi — cột "Lần bấm" trên màn.
 
     Đầu tiên chứ không phải cuối cùng: một cú Duyệt ghi `approve` rồi mới ghi vài
-    dòng phụ (sinh việc, gửi chuông). Lấy dòng cuối thì cột «Lần bấm» hiện
+    dòng phụ (sinh việc, gửi chuông). Lấy dòng cuối thì cột "Lần bấm" hiện
     *"Tạo thông báo"* cho một hành động mà người ta nhớ là *"Duyệt phiếu"*.
     """
     if not request_ids:
@@ -211,7 +211,7 @@ def _first_audit_by_request(db: Session, request_ids: list[bytes]) -> dict[bytes
 def _change_tables_by_request(db: Session, request_ids: list[bytes]) -> dict[bytes, int]:
     """Số BẢNG khác nhau bị đụng trong mỗi lượt gọi.
 
-    Số TRƯỜNG đã nằm sẵn ở `RequestLog.change_count`; thứ cột «Đổi» còn thiếu là
+    Số TRƯỜNG đã nằm sẵn ở `RequestLog.change_count`; thứ cột "Đổi" còn thiếu là
     *"đụng mấy bảng"* — con số phân biệt một cú sửa ô đơn giá với một cú Duyệt
     kéo theo bảng việc, bảng thông báo và bảng chứng từ.
     """
@@ -256,7 +256,7 @@ def serialize_row(row: RequestLog, audit: AuditLog | None, table_count: int,
         "duration_ms": row.duration_ms,
         "error_code": row.error_code,
         "has_error_detail": bool(row.error_detail),
-        #  Cột «Lần bấm»: câu tiếng Việt của dòng audit đầu tiên. Lượt gọi không
+        #  Cột "Lần bấm": câu tiếng Việt của dòng audit đầu tiên. Lượt gọi không
         #  đẻ dấu vết nào (403, 500 trước khi vào service) thì rơi về
         #  `METHOD path` — thô, nhưng đó chính là lượt cần nhìn nhất, giấu đi là
         #  mất luôn lý do bảng này lấy request_log làm xương sống.
@@ -423,7 +423,7 @@ def build_detail(db: Session, row: RequestLog, *, with_change_log: bool, viewer=
         "request": request_part,
         "audit": [serialize_audit(a, names) for a in audit_rows],
         "changes": changes,
-        #  Tab «Thay đổi» phải phân biệt *"lượt này không đổi gì"* với *"bạn
+        #  Tab "Thay đổi" phải phân biệt *"lượt này không đổi gì"* với *"bạn
         #  không được xem"*. Không có cờ này thì cả hai đều là mảng rỗng.
         "can_read_changes": with_change_log,
         "session": _serialize_session(db, row.session_id),
@@ -503,6 +503,6 @@ def default_range() -> tuple[str, str]:
     là trang đầu luôn nặng dần theo tuổi hệ thống mà không ai thấy nó nặng lên.
     """
     today = datetime.now().date().isoformat()
-    #  Cả hai đầu cùng một ngày: ô «Đến» chỉ có ngày thì `_parse_moment` tự kéo
+    #  Cả hai đầu cùng một ngày: ô "Đến" chỉ có ngày thì `_parse_moment` tự kéo
     #  tới 23:59:59, nên trả thêm một ngày là mở rộng thành hai ngày.
     return (today, today)

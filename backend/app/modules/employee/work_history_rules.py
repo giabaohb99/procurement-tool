@@ -105,12 +105,12 @@ def compute_can_apply(rows: list[EmployeeWorkHistory], today: date) -> dict[int,
 
 
 def compute_is_current(rows: list[EmployeeWorkHistory], today: date) -> dict[int, bool]:
-    """Cờ `is_current` (huy hiệu «Đang hiệu lực»/«Hiện tại») cho CẢ DANH SÁCH.
+    """Cờ `is_current` (huy hiệu "Đang hiệu lực"/"Hiện tại") cho CẢ DANH SÁCH.
 
     Trước 05/10/2026 chỉ xét `to_date` nên hai trường hợp bị báo nhầm:
     - nhập BÙ dòng chính cũ hơn mà không đóng (vd Bổ nhiệm 03/10 nhập sau Điều
-      chuyển 04/10) → cả hai dòng cùng «Đang hiệu lực»;
-    - dòng có `from_date` ở TƯƠNG LAI → «Đang hiệu lực» dù chưa tới ngày.
+      chuyển 04/10) → cả hai dòng cùng "Đang hiệu lực";
+    - dòng có `from_date` ở TƯƠNG LAI → "Đang hiệu lực" dù chưa tới ngày.
     Nay dòng nhóm chính còn bị một dòng nhóm chính KHÁC bắt đầu muộn hơn, đã tới
     ngày (`from_date <= today`), thay thế. Kiêm nhiệm/Khác không bị thay theo
     kiểu này (song song là chuyện thường).

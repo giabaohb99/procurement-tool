@@ -186,7 +186,7 @@ def gather(query: str) -> tuple[list[dict], str]:
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-133: đọc MỘT bài viết theo đường link người dùng gửi («tóm tắt bài này giúp anh»)
+# ai-CR-133: đọc MỘT bài viết theo đường link người dùng gửi ("tóm tắt bài này giúp anh")
 # ---------------------------------------------------------------------------
 #  Đường link do NGƯỜI DÙNG đưa → chặn kỹ hơn `fetch`: tự đi theo chuyển hướng từng bước, bước nào cũng phải là địa chỉ
 #  công khai (chống trỏ vòng vào mạng nội bộ / máy chủ của chính mình).
@@ -277,7 +277,7 @@ def fetch_article(url: str) -> dict:
 # ---------------------------------------------------------------------------
 # ai-CR-134: TỆP qua đường link — PDF / Word / Excel / văn bản, Google Drive / Docs công khai, bài báo khoa học
 # ---------------------------------------------------------------------------
-#  Đại ca 09/10: «đưa một file tài liệu qua link, hoặc bài báo khoa học, nhờ bot tổng hợp / nghiên cứu». Trang HTML đã
+#  Đại ca 09/10: "đưa một file tài liệu qua link, hoặc bài báo khoa học, nhờ bot tổng hợp / nghiên cứu". Trang HTML đã
 #  đọc được (ai-CR-133); đây là phần TỆP — tải về (cùng chốt chặn địa chỉ nội bộ) rồi đưa cho bộ đọc tệp `doc_text`.
 DOC_TYPES = {
     "application/pdf": ".pdf",
@@ -328,7 +328,7 @@ def _doc_name(url: str, ctype: str, disposition: str, title: str = "") -> str:
     name = unquote(m.group(1)).strip() if m else ""
     if not name:
         name = unquote(urlparse(url).path.rstrip("/").rsplit("/", 1)[-1] or "")
-    if title:                                       # bài báo khoa học: tựa bài dễ nhận hơn tên tệp kiểu «thep.pdf»
+    if title:                                       # bài báo khoa học: tựa bài dễ nhận hơn tên tệp kiểu "thep.pdf"
         name = re.sub(r'[\\/:*?"<>|]+', " ", title).strip()[:120]
     ext = DOC_TYPES.get(ctype, "")
     if ext and not name.lower().endswith(ext):
@@ -342,7 +342,7 @@ def _is_doc(url: str, ctype: str) -> bool:
 
 
 def _drive_targets(url: str) -> list[tuple[str, str]]:
-    """Đường tải CÔNG KHAI của một link Google Drive / Docs (chỉ chạy khi tệp chia sẻ «Bất kỳ ai có đường liên kết")."""
+    """Đường tải CÔNG KHAI của một link Google Drive / Docs (chỉ chạy khi tệp chia sẻ "Bất kỳ ai có đường liên kết")."""
     m = _GDOC.search(url)
     if m:
         kind, fid = m.group(1), m.group(2)

@@ -240,8 +240,8 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                             error_detail=None,
                             duration_ms=int((time.perf_counter() - started) * 1000))
         finally:
-            #  ⚠️ Nằm trong `finally`, KHÔNG nằm trong `if wants_log`: dấu «lần
-            #  cuối thấy thiết bị này» phải đúng kể cả với những đường không ghi
+            #  ⚠️ Nằm trong `finally`, KHÔNG nằm trong `if wants_log`: dấu "lần
+            #  cuối thấy thiết bị này" phải đúng kể cả với những đường không ghi
             #  nhật ký (`/api/notifications/unread-count` chẳng hạn). Ghi nhật ký
             #  và ghi phiên là hai câu hỏi khác nhau.
             await run_in_threadpool(self._touch, ctx)

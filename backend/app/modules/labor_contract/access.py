@@ -26,7 +26,7 @@ def get_or_404_scoped(db: Session, model, entity: str, oid: int, user, profile: 
         obj = (db.query(model).filter(model.id == oid).with_for_update()
                .populate_existing().first())
         #  Vừa bị người khác xóa trong lúc chờ khóa — kể cả XÓA MỀM (duoc-CR-627). Thiếu
-        #  nhánh `is_deleted` thì «Ký» chạy đua với «Xóa» ra HĐ đã ký nhưng ẩn khỏi mọi
+        #  nhánh `is_deleted` thì "Ký" chạy đua với "Xóa" ra HĐ đã ký nhưng ẩn khỏi mọi
         #  màn, trong khi chốt xóa nhân sự vẫn đếm nó → hồ sơ không bao giờ xóa được.
         if obj is None or getattr(obj, "is_deleted", False):
             raise HTTPException(404, message)
@@ -47,7 +47,7 @@ def ensure_created_in_scope(db: Session, model, entity: str, row, user, profile:
 
 
 def can_create_for(db: Session, model, entity: str, row, user, profile: dict) -> bool:
-    """Hỏi trước «nếu lập dòng `row` thì có nằm trong phạm vi `create` không» — KHÔNG ghi gì.
+    """Hỏi trước "nếu lập dòng `row` thì có nằm trong phạm vi `create` không" — KHÔNG ghi gì.
 
     Dùng cho ô chọn mẫu theo nhân sự: phải cùng luật với lúc lập thật (`ensure_created_in_scope`),
     nên dựng dòng tạm trong SAVEPOINT, hỏi `get_scoped` rồi hủy savepoint.

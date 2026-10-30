@@ -2,8 +2,8 @@
 
 Khoản nợ sinh theo TỪNG DÒNG HÀNG của từng lần giao (`Payable`: 1 dòng = 1 lần giao × 1 luồng),
 nên một đơn 5 dòng nhận cùng ngày đẻ 5 khoản cùng NCC, cùng hạn. Trước CR này chuông và tab
-Việc cần làm báo mỗi khoản một dòng → đại ca thấy «Công nợ QUÁ HẠN … PO00003» lặp 5 lần y hệt,
-và muốn ẩn thì phải bấm «Đánh dấu làm hết» 5 lần.
+Việc cần làm báo mỗi khoản một dòng → đại ca thấy "Công nợ QUÁ HẠN … PO00003" lặp 5 lần y hệt,
+và muốn ẩn thì phải bấm "Đánh dấu làm hết" 5 lần.
 
 Nay gom theo **đơn + bên được trả** (luồng `source_type` + mã đối tượng: NCC bán hàng, đơn vị vận
 chuyển, bên của dòng chi phí) và theo **mức** (quá hạn / sắp đến hạn tách riêng). Mỗi nhóm một
@@ -13,7 +13,7 @@ Hạn trả không đổi: `Payable.due_date` = ngày nhận + số ngày công 
 (`payable.service.upsert` + `debt_days`).
 
 ⚠️ **Khóa nhóm = `payable:{id lớn nhất trong nhóm}:{mức}`** — cùng khuôn khóa một khoản cũ:
-  · nhóm một khoản ra ĐÚNG khóa cũ → việc người dùng đã «Đánh dấu làm hết» vẫn ẩn;
+  · nhóm một khoản ra ĐÚNG khóa cũ → việc người dùng đã "Đánh dấu làm hết" vẫn ẩn;
   · nhóm có thêm khoản nợ MỚI (id lớn hơn) → khóa đổi → cảnh báo nổi lại, không bị chôn
     dưới một lần đánh dấu cũ.
 Chuông (`alert.controller.build`) và tab Việc cần làm (`dashboard.build_my_tasks`) PHẢI cùng gọi
@@ -56,7 +56,7 @@ class PayableAlertGroup:
         return (self.supplier_name or self.supplier_code) + _SOURCE_SUFFIX.get(self.source_type, "")
 
     def detail(self) -> str:
-        """«5 khoản · còn nợ 12.345.000 đ · trễ 27 ngày (hạn 04/09/2026)» — dùng cho cả chuông lẫn tab."""
+        """"5 khoản · còn nợ 12.345.000 đ · trễ 27 ngày (hạn 04/09/2026)" — dùng cho cả chuông lẫn tab."""
         parts = [f"{self.count} khoản"] if self.count > 1 else []
         parts.append(f"còn nợ {format_money(self.remaining)} đ")
         if self.level == LEVEL_DANGER:
@@ -116,7 +116,7 @@ def group_due_payables(payables, today: date | None = None, warn_days: int = WAR
         try:
             due_day = datetime.strptime(g.due_date, "%Y-%m-%d").date()
         except ValueError:
-            #  Hạn gõ tay sai khuôn (ô «Hạn thanh toán» của dòng chi phí) — vẫn báo, không đếm ngày.
+            #  Hạn gõ tay sai khuôn (ô "Hạn thanh toán" của dòng chi phí) — vẫn báo, không đếm ngày.
             continue
         g.days = (today - due_day).days if g.level == LEVEL_DANGER else (due_day - today).days
     return sorted(groups.values(), key=lambda g: (g.level != LEVEL_DANGER, g.due_date, g.po_code))

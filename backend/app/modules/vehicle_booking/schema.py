@@ -237,7 +237,7 @@ class VehicleBookingResponse(VehicleBookingBase):
     approver_name: str = ""
     company_name: str = ""   # duoc-CR-681: công ty chọn trên phiếu (chi tiết phiếu hiện tên)
     first_approver_name: str = ""   # duoc-CR-681: người duyệt CHỌN trên phiếu (khác approver_name = người đã ký)
-    #  duoc-CR-682b: trang chi tiết hiện người phê duyệt (ảnh + «Mã - Tên») và công ty (logo) — rỗng ở danh sách.
+    #  duoc-CR-682b: trang chi tiết hiện người phê duyệt (ảnh + "Mã - Tên") và công ty (logo) — rỗng ở danh sách.
     first_approver_code: str = ""
     first_approver_avatar: str = ""
     company_logo: str = ""
@@ -264,7 +264,7 @@ class VehicleBookingResponse(VehicleBookingBase):
     # Frontend gác thẻ Lịch sử phê duyệt bằng ô này chứ không bằng `approval_running`
     # — luồng 1 bước xong ngay, gác bằng cờ "đang chạy" là dấu vết không bao giờ hiện.
     approval_instance_id: int | None = None
-    #  Câu một dòng «Đang ở chặng 2/3 · Duyệt của Giám đốc» — đứng CẠNH badge
+    #  Câu một dòng "Đang ở chặng 2/3 · Duyệt của Giám đốc" — đứng CẠNH badge
     #  trạng thái chứ không thay nó (xem `seal_request/schema.py`). Rỗng = phiếu
     #  chưa vào bộ máy duyệt.
     approval_summary: str = ""

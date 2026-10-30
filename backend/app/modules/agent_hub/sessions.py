@@ -1,12 +1,12 @@
 """Tóm tắt CUỐI BUỔI chat vào kho ghi chú riêng (ai-CR-102, nhóm C-02 đợt 2 — đại ca chốt 07/10/2026).
 
-«Hết buổi» = chat IM LẶNG ít nhất SESSION_GAP (30 phút) sau tin hội thoại cuối. Vòng nền mỗi 10 phút (`tick`):
+"Hết buổi" = chat IM LẶNG ít nhất SESSION_GAP (30 phút) sau tin hội thoại cuối. Vòng nền mỗi 10 phút (`tick`):
 với mỗi chat ĐÃ ĐĂNG NHẬP, lấy các tin hỏi / trả lời / tra cứu kể từ dấu tóm tắt trước; đủ MIN_USER_TURNS câu hỏi của
 người dùng thì một lượt model (khóa của chính người đó) viết 3–8 gạch đầu dòng, cất vào `tab_agent_note` (kho, có
-vector) với tiêu đề «Buổi dd/mm HH:MM–HH:MM». Không nhắn gì lên Telegram. Dấu ranh giới là MỘT dòng sổ tin chiều ra
+vector) với tiêu đề "Buổi dd/mm HH:MM–HH:MM". Không nhắn gì lên Telegram. Dấu ranh giới là MỘT dòng sổ tin chiều ra
 `action = tom_tat_buoi` (không gửi đi, không vào mạch hội thoại) — không cần bảng mới.
 
-Lần sau người đó hỏi «hôm trước mình bàn gì về X», `prompt_block` / `search_notes` kéo đúng bản tóm tắt lên.
+Lần sau người đó hỏi "hôm trước mình bàn gì về X", `prompt_block` / `search_notes` kéo đúng bản tóm tắt lên.
 """
 from __future__ import annotations
 

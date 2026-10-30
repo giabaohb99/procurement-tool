@@ -157,7 +157,7 @@ def _next_booking_code(db: Session) -> str:
     """
     #  ⚠️ CẤP MÃ LẦN LƯỢT (duoc-CR-681, ép tải 23/10/2026: 60 người gửi cùng lúc → 57 lỗi 500 — hai người
     #  cùng nhận DX394, cộng deadlock vì mọi phiếu chèn tạm mã rỗng trên cột UNIQUE). Khóa GHI dòng DX
-    #  có id nhỏ nhất làm «cửa xoay»: người sau đợi người trước commit. Đọc danh sách mã bằng câu đọc CÓ
+    #  có id nhỏ nhất làm "cửa xoay": người sau đợi người trước commit. Đọc danh sách mã bằng câu đọc CÓ
     #  KHÓA (`FOR SHARE`) vì REPEATABLE READ cho câu đọc thường thấy ảnh chụp cũ — không thấy mã người
     #  trước vừa cấp. Phiếu đầu tiên của hệ (chưa có dòng DX nào) không có cửa xoay — chấp nhận.
     (db.query(VehicleBooking.id).filter(VehicleBooking.code.like("DX%"))
@@ -434,7 +434,7 @@ def _block_self_approval(db: Session, booking: VehicleBooking, user) -> None:
     """I08 cho ĐƯỜNG DUYỆT MỘT BƯỚC — người lập phiếu không tự ký phiếu của mình.
 
     Bộ máy nhiều bước có luật này từ đầu (`instance_service._exclude_submitter`),
-    còn đường một bước thì chỉ hỏi «phiếu có đang Chờ duyệt không» — mà đây mới
+    còn đường một bước thì chỉ hỏi "phiếu có đang Chờ duyệt không" — mà đây mới
     là đường ĐANG CHẠY THẬT, vì cờ bộ máy mặc định tắt. Ai kiêm một vai có
     `vehicle_booking.approve` tự duyệt phiếu xe của chính mình, nhật ký đọc xuôi
     tới mức không ai soi (đo được 21/09/2026).

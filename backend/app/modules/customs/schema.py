@@ -213,7 +213,7 @@ class SavedFilterCreate(BaseModel):
 
 
 class SavedFilterUpdate(BaseModel):
-    """Đổi tên và/hoặc ghi đè bộ tham số («Cập nhật» = lưu điều kiện đang áp vào tên cũ)."""
+    """Đổi tên và/hoặc ghi đè bộ tham số ("Cập nhật" = lưu điều kiện đang áp vào tên cũ)."""
     name: str | None = Field(None, min_length=1, max_length=120)
     params: str | None = Field(None, max_length=SAVED_FILTER_PARAMS_MAX)
 
@@ -233,10 +233,10 @@ class SavedFilterOut(BaseModel):
     updated_at: datetime | None = None
 
 
-# ── bao-CR-608: sửa tay MỘT dòng hàng trên màn «Giá thị trường» ──────────────────────────
+# ── bao-CR-608: sửa tay MỘT dòng hàng trên màn "Giá thị trường" ──────────────────────────
 #  Trần độ dài khớp ĐÚNG `String(n)` của `CustomsLine` (hai cột đối tượng khớp `CustomsParty`:
 #  `tax_code` String(14), `name` String(255)). Số: trần theo độ chính xác của cột `Numeric(p, s)`
-#  — vượt là MySQL báo «Out of range» thành 500. Ngày: dải hợp lý 2000 → 2100.
+#  — vượt là MySQL báo "Out of range" thành 500. Ngày: dải hợp lý 2000 → 2100.
 _MIN_LINE_DATE = date(2000, 1, 1)
 _MAX_LINE_DATE = date(2100, 12, 31)
 _Price = Field(None, ge=0, le=Decimal("999999999999"))          # Numeric(16, 4)
@@ -262,7 +262,7 @@ def _check_transport(v):
 class CustomsLineUpdate(BaseModel):
     """Hộp sửa dòng — chỉ gửi trường nào đổi (PATCH). Trường bỏ trống chữ = để trống ô.
 
-    Hai trường suy ra «Hoạt chất» / «Hàm lượng / dạng»: gửi chữ = giá trị DO NGƯỜI NHẬP (cờ
+    Hai trường suy ra "Hoạt chất" / "Hàm lượng / dạng": gửi chữ = giá trị DO NGƯỜI NHẬP (cờ
     `_from_file` = 1, `retag_all` không ghi đè); gửi chuỗi rỗng = trả về cho hệ thống suy ra từ
     tên hàng. Hai cột giá VND: gửi số = giữ số đó; gửi null = để hệ thống tính như cũ.
     """

@@ -13,9 +13,9 @@ biên bản chỉ người gửi xem · việc rút ra thì bot hỏi dự án (
 Tệp âm thanh chỉ nằm trong thư mục tạm, xóa ngay sau lượt chạy.
 
 Bước 10.2 (ai-CR-112): mẫu biên bản là DỮ LIỆU — bốn mẫu sẵn + mẫu RIÊNG của từng người (một dòng trong sổ ghi nhớ:
-«Mẫu biên bản «tên»: lời dặn») + lời dặn tại chỗ («theo mẫu: …»). Mẫu đã chọn chép vào phiên (`template_label`,
+"Mẫu biên bản "tên": lời dặn") + lời dặn tại chỗ ("theo mẫu: …"). Mẫu đã chọn chép vào phiên (`template_label`,
 `template_prompt`) để viết lại / tra lại đúng như lúc làm. Viết lại theo mẫu khác KHÔNG chép lời lại (giữ `transcript`).
-Word theo mẫu DEGO (đầu trang, bảng thông tin, bảng việc, chỗ ký với mẫu chính thức), đẩy vào thư mục «Biên bản họp»
+Word theo mẫu DEGO (đầu trang, bảng thông tin, bảng việc, chỗ ký với mẫu chính thức), đẩy vào thư mục "Biên bản họp"
 trên Drive của người gửi.
 """
 from __future__ import annotations
@@ -104,31 +104,31 @@ BUILTIN: dict[str, Template] = {t.key: t for t in (
     Template("dego", "Recap DEGO",
              "Viết RECAP HỌP theo chuẩn DEGO, Markdown, ĐÚNG các mục theo thứ tự sau (mục nào không có nội dung thì bỏ):\n"
              "## TÓM TẮT NHANH — 3–6 gạch đầu dòng, mỗi dòng một ý cốt lõi.\n"
-             "## NỘI DUNG CUỘC HỌP — mỗi vấn đề một mục «### 1. Tên vấn đề»: một đoạn diễn giải ngắn; dòng «Ý CHÍNH:» rồi các "
-             "gạch đầu dòng; dòng «ĐÃ CHỐT:» rồi các dòng bắt đầu bằng «✓ ».\n"
-             "## CÔNG VIỆC CẦN LÀM — bảng | Việc | Người | Hạn | Ưu tiên | (Ưu tiên chỉ ghi Cao / TB / Thấp; thiếu thì «chưa rõ»).\n"
+             "## NỘI DUNG CUỘC HỌP — mỗi vấn đề một mục **### 1. Tên vấn đề**: một đoạn diễn giải ngắn; dòng **Ý CHÍNH:** rồi các "
+             "gạch đầu dòng; dòng **ĐÃ CHỐT:** rồi các dòng bắt đầu bằng **✓ **.\n"
+             "## CÔNG VIỆC CẦN LÀM — bảng | Việc | Người | Hạn | Ưu tiên | (Ưu tiên chỉ ghi Cao / TB / Thấp; thiếu thì **chưa rõ**).\n"
              "## VẤN ĐỀ CÒN MỞ — gạch đầu dòng.\n"
-             "## NGƯỜI THAM DỰ — gạch đầu dòng «Tên – vai trò (nếu nghe được)».\n"
+             "## NGƯỜI THAM DỰ — gạch đầu dòng **Tên – vai trò (nếu nghe được)**.\n"
              "In **đậm** con số, tên riêng, mốc thời gian quan trọng. Không viết tiêu đề lớn ở đầu.",
              ("recap", "chuẩn dego", "mẫu dego", "mẫu công ty")),
     Template("gach_dau_dong", "Tóm tắt nhanh",
-             "Viết 5–12 gạch đầu dòng: mục đích cuộc họp, các ý chính, quyết định đã chốt, rồi mục «Việc cần làm» (mỗi "
-             "dòng: việc — người làm — hạn, thiếu thì ghi «chưa rõ»).",
+             "Viết 5–12 gạch đầu dòng: mục đích cuộc họp, các ý chính, quyết định đã chốt, rồi mục **Việc cần làm** (mỗi "
+             "dòng: việc — người làm — hạn, thiếu thì ghi **chưa rõ**).",
              ("tóm tắt nhanh", "gạch đầu dòng", "ngắn gọn")),
     Template("chinh_thuc", "Biên bản chính thức",
              "Viết biên bản họp chính thức: Thời gian, Thành phần (tên nghe được), Nội dung từng vấn đề đã bàn, Kết luận / "
              "quyết định, Việc cần làm dạng bảng | Việc | Người làm | Hạn |. Không tự đặt tiêu đề lớn (đầu trang đã có).",
              ("chính thức", "hành chính", "trình ký")),
     Template("danh_sach_viec", "Danh sách việc",
-             "Chỉ liệt kê việc cần làm rút ra từ cuộc họp: mỗi dòng «việc — người làm — hạn», nhóm theo người làm; cuối cùng "
+             "Chỉ liệt kê việc cần làm rút ra từ cuộc họp: mỗi dòng **việc — người làm — hạn**, nhóm theo người làm; cuối cùng "
              "là các câu hỏi còn bỏ ngỏ.",
              ("danh sách việc", "việc cần làm", "giao việc")),
-    #  ai-CR-163: video thường (hướng dẫn, bài giảng, webinar) — không ép thành «người tham dự / đã chốt».
+    #  ai-CR-163: video thường (hướng dẫn, bài giảng, webinar) — không ép thành "người tham dự / đã chốt".
     Template("tom_tat_video", "Tóm tắt video",
              "Viết TÓM TẮT VIDEO bằng Markdown, đúng các mục: ## TÓM TẮT NHANH (3–6 gạch đầu dòng) · ## CÁC CHƯƠNG — mỗi "
-             "chương một mục «### [mm:ss] Tên chương» kèm ý chính, giữ đủ số liệu / tên / mốc · ## SỐ LIỆU ĐÁNG CHÚ Ý · "
+             "chương một mục **### [mm:ss] Tên chương** kèm ý chính, giữ đủ số liệu / tên / mốc · ## SỐ LIỆU ĐÁNG CHÚ Ý · "
              "## VIỆC NÊN LÀM (nếu video có gợi ý). Không viết mục người tham dự hay đã chốt. Bản chép không có mốc giờ "
-             "riêng cho từng đoạn thì tiêu đề chương KHÔNG ghi mốc («### Tên chương»), không lặp [00:00], không tự đặt mốc.",
+             "riêng cho từng đoạn thì tiêu đề chương KHÔNG ghi mốc (**### Tên chương**), không lặp [00:00], không tự đặt mốc.",
              ("tóm tắt video", "bài giảng", "video hướng dẫn", "webinar")),
     Template("theo_gio", "Đầy đủ theo giờ",
              "Viết diễn biến theo mốc giờ [mm:ss]: ai nói gì (tóm ý từng đoạn), kết thúc bằng Kết luận và Việc cần làm.",
@@ -138,32 +138,33 @@ BUILTIN: dict[str, Template] = {t.key: t for t in (
 TEMPLATES: dict[str, tuple[str, str]] = {k: (t.label, t.prompt) for k, t in BUILTIN.items()}
 DEFAULT_TEMPLATE = "dego"
 CUSTOM_KEY = "rieng"
-#  Dòng mẫu riêng trong sổ ghi nhớ: «Mẫu biên bản «Giao ban»: lời dặn…».
+#  Dòng mẫu riêng trong sổ ghi nhớ: "Mẫu biên bản "Giao ban": lời dặn…".
 PERSONAL_PREFIX = "Mẫu biên bản"
-_PERSONAL_RE = re.compile(r"^\s*Mẫu biên bản\s*«([^»]{1,40})»\s*:\s*(.+)$", re.IGNORECASE)
-#  Lời dặn tại chỗ trong chú thích tệp: «theo mẫu: …» / «yêu cầu: …».
+#  bao-CR-695: nhận cả dạng cũ (ngoặc góc) lẫn người dùng tự gõ nháy kép / in đậm.
+_PERSONAL_RE = re.compile(r"^\s*Mẫu biên bản\s*(?:«([^»]{1,40})»|\"([^\"]{1,40})\"|\*\*([^*]{1,40})\*\*)\s*:\s*(.+)$", re.IGNORECASE)
+#  Lời dặn tại chỗ trong chú thích tệp: "theo mẫu: …" / "yêu cầu: …".
 _ADHOC_RE = re.compile(r"(?:theo\s+)?(?:mẫu|yêu cầu|cách viết)\s*:\s*(.{8,})", re.IGNORECASE | re.S)
 TEMPLATE_PROMPT_MAX = 1500
 
-#  ai-CR-162: dev 10/10 — video quay màn hình KHÔNG có lời nói mà model «nghe ra» 12.800 ký tự hội thoại bịa. Lời dặn
+#  ai-CR-162: dev 10/10 — video quay màn hình KHÔNG có lời nói mà model "nghe ra" 12.800 ký tự hội thoại bịa. Lời dặn
 #  này chỉ là một lớp; lớp chính là đo phần có tiếng bằng ffmpeg trước khi gọi model (`speech_check`) và kiểm hợp lý sau.
 NO_SPEECH = "[KHONG_CO_LOI_NOI]"
 TRANSCRIBE_PROMPT = (
     "Chép lại NGUYÊN VĂN lời nói tiếng Việt trong đoạn ghi âm cuộc họp này. Mỗi lượt nói một dòng dạng "
-    "«[mm:ss] Người nói: lời nói». Phân biệt người nói bằng tên nếu nghe được, không thì «Người 1», «Người 2»… giữ "
-    "nhất quán. Bỏ tiếng ậm ừ, không tóm tắt, không thêm lời bình. Đoạn không nghe rõ ghi «[không rõ]». "
+    "**[mm:ss] Người nói: lời nói**. Phân biệt người nói bằng tên nếu nghe được, không thì **Người 1**, **Người 2**… giữ "
+    "nhất quán. Bỏ tiếng ậm ừ, không tóm tắt, không thêm lời bình. Đoạn không nghe rõ ghi **[không rõ]**. "
     f"Nếu đoạn ghi âm KHÔNG có lời nói của người (chỉ im lặng, nhạc, tiếng máy, tiếng ồn) thì CHỈ trả đúng chuỗi "
     f"{NO_SPEECH}. TUYỆT ĐỐI không đoán hay bịa lời nói."
 )
 RECAP_SYSTEM = (
     "Bạn là thư ký cuộc họp. Từ bản chép lời bên dưới, viết biên bản tiếng Việt có dấu theo yêu cầu. Chỉ dùng thông tin có "
     "trong bản chép, không bịa tên, số, hạn. Dùng Markdown đơn giản (tiêu đề ngắn, gạch đầu dòng). "
-    #  ai-CR-164: đại ca 10/10 — Word lọt câu «Below is a Vietnamese meeting recap…»; biên bản họp 102 phút quá sơ sài.
+    #  ai-CR-164: đại ca 10/10 — Word lọt câu "Below is a Vietnamese meeting recap…"; biên bản họp 102 phút quá sơ sài.
     "Bắt đầu NGAY bằng tiêu đề mục đầu tiên: không câu dạo đầu, không câu kết, không bọc trong ```. Mỗi chủ đề ghi đủ: bối "
     "cảnh, ý chính (giữ đủ số liệu, tên, mốc thời gian), đã chốt, việc (người — hạn), còn mở. Mục việc cần làm phải quét "
-    "TOÀN BỘ cuộc họp, không chỉ phần cuối. Người nói ghi «Người n» thì giữ nguyên, không tự đặt tên. "
+    "TOÀN BỘ cuộc họp, không chỉ phần cuối. Người nói ghi **Người n** thì giữ nguyên, không tự đặt tên. "
     #  ai-CR-165: đại ca 10/10 — bớt trích nguyên văn.
-    "Viết thành Ý, KHÔNG chép lại câu nói («Người 1 cho rằng…», cụm in đậm trích từ lời thoại); chỉ giữ nguyên văn khi là "
+    "Viết thành Ý, KHÔNG chép lại câu nói (**Người 1 cho rằng…**, cụm in đậm trích từ lời thoại); chỉ giữ nguyên văn khi là "
     "con số, tên riêng hoặc câu chốt quyết định. Bản chép lời đã gửi riêng cho ai cần tra."
 )
 #  ai-CR-164: họp dài tóm HAI TẦNG — từng đoạn ~20 phút trước (giữ đủ chi tiết), rồi gộp thành biên bản cuối.
@@ -203,7 +204,7 @@ def wants_youtube(text: str) -> bool:
 
 
 def youtube_template(db: Session | None, user_id: int, text: str) -> Template:
-    """Video có chữ họp / hội thảo / biên bản → mẫu biên bản như tệp họp; còn lại → «Tóm tắt video»."""
+    """Video có chữ họp / hội thảo / biên bản → mẫu biên bản như tệp họp; còn lại → "Tóm tắt video"."""
     tpl = resolve_template(db, user_id, text)
     if tpl.key == DEFAULT_TEMPLATE and not _MEETING_KIND.search(text or ""):
         return BUILTIN["tom_tat_video"]
@@ -217,7 +218,7 @@ def wants_meeting(text: str) -> bool:
 
 def template_of(text: str) -> str:
     """Khóa mẫu SẴN khớp chữ trong câu (không xét mẫu riêng); không khớp = mẫu mặc định."""
-    #  ai-CR-118: so khớp không dấu («chinh thuc» cũng ra mẫu chính thức).
+    #  ai-CR-118: so khớp không dấu ("chinh thuc" cũng ra mẫu chính thức).
     from app.modules.assistant.glossary import fold
 
     t = fold(text)
@@ -228,29 +229,30 @@ def template_of(text: str) -> str:
 
 
 def personal_templates(db: Session, user_id: int) -> list[Template]:
-    """Mẫu riêng của một người = các dòng «Mẫu biên bản «tên»: …» trong sổ ghi nhớ của họ."""
+    """Mẫu riêng của một người = các dòng "Mẫu biên bản "tên": …" trong sổ ghi nhớ của họ."""
     if int(user_id or 0) <= 0:
         return []
     out = []
     for line in personal_memory.load_core(db, int(user_id)).splitlines():
         m = _PERSONAL_RE.match(line.lstrip("-• ").strip())
         if m:
-            name = m.group(1).strip()
-            prompt = re.sub(r"\s*\(đến \d{2}/\d{2}/\d{4}\)\s*$", "", m.group(2))
+            name = (m.group(1) or m.group(2) or m.group(3) or "").strip()
+            prompt = re.sub(r"\s*\(đến \d{2}/\d{2}/\d{4}\)\s*$", "", m.group(4))
             out.append(Template(CUSTOM_KEY, name, prompt.strip(), (name.lower(),)))
     return out
 
 
 def save_personal_template(db: Session, user_id: int, name: str, prompt: str) -> dict:
-    """Lưu / thay mẫu riêng «name» vào sổ ghi nhớ (mục cách làm việc)."""
+    """Lưu / thay mẫu riêng "name" vào sổ ghi nhớ (mục cách làm việc)."""
     name = " ".join((name or "").split()).strip(" «»\"'")[:40]
     prompt = " ".join((prompt or "").split()).strip()
     if not name or len(prompt) < 8:
         return {"ok": False, "message": "cần tên mẫu và lời dặn (ít nhất vài chữ)"}
     if name.lower() in {t.label.lower() for t in BUILTIN.values()}:
-        return {"ok": False, "message": f"«{name}» trùng tên mẫu sẵn, đặt tên khác giúp em"}
-    personal_memory.forget(db, int(user_id), f"{PERSONAL_PREFIX} «{name}»")
-    res = personal_memory.remember(db, int(user_id), f"{PERSONAL_PREFIX} «{name}»: {prompt}", section="cach_lam_viec")
+        return {"ok": False, "message": f"**{name}** trùng tên mẫu sẵn, đặt tên khác giúp em"}
+    #  bao-CR-695: dòng mẫu riêng là DỮ LIỆU đã lưu (khóa so khớp của forget / _PERSONAL_RE) — GIỮ dạng ngoặc góc cũ khi ghi.
+    personal_memory.forget(db, int(user_id), f"{PERSONAL_PREFIX} \u00ab{name}\u00bb")
+    res = personal_memory.remember(db, int(user_id), f"{PERSONAL_PREFIX} \u00ab{name}\u00bb: {prompt}", section="cach_lam_viec")
     return {**res, "template": name}
 
 
@@ -260,7 +262,7 @@ def list_templates(db: Session, user_id: int) -> list[dict]:
 
 
 def resolve_template(db: Session | None, user_id: int, text: str, *, allow_adhoc: bool = True) -> Template:
-    """Chọn mẫu từ câu của người dùng: lời dặn tại chỗ («theo mẫu: …») → mẫu riêng nhắc tên → mẫu sẵn → mặc định."""
+    """Chọn mẫu từ câu của người dùng: lời dặn tại chỗ ("theo mẫu: …") → mẫu riêng nhắc tên → mẫu sẵn → mặc định."""
     raw = text or ""
     if allow_adhoc:
         m = _ADHOC_RE.search(raw)
@@ -333,12 +335,12 @@ def _download_drive(db: Session, user_id: int, file_id: str, dest: Path) -> tupl
 
     link = google_link.get_link(db, user_id)
     if link is None:
-        raise MeetingError("Tệp trên Drive cần nối Google trước: ERP → Trang cá nhân → Khóa AI → «Nối Google».")
+        raise MeetingError("Tệp trên Drive cần nối Google trước: ERP → Trang cá nhân → Khóa AI → \"Nối Google\".")
     meta = google_link.api_get(db, link, f"{DRIVE_URL}/files/{file_id}",
                                {"fields": "name,mimeType,size", "supportsAllDrives": "true"})
     mime = str(meta.get("mimeType") or "")
     if not mime.startswith(("audio/", "video/")):
-        raise MeetingError(f"Tệp «{meta.get('name') or file_id}» không phải ghi âm / video ({mime or 'không rõ loại'}).")
+        raise MeetingError(f"Tệp \"{meta.get('name') or file_id}\" không phải ghi âm / video ({mime or 'không rõ loại'}).")
     if int(meta.get("size") or 0) > DRIVE_MAX_BYTES:
         raise MeetingError("Tệp lớn hơn 1,5 GB — cắt nhỏ hoặc xuất lại chỉ phần tiếng giúp em.")
     token = google_link.access_token(db, link)
@@ -390,7 +392,7 @@ def audio_streams(path: Path) -> int:
     return len([ln for ln in out.splitlines() if ln.strip()])
 
 
-#  Ngưỡng «có tiếng»: dưới -35 dB coi như im lặng; phải có ít nhất 20 giây VÀ 3% thời lượng có tiếng mới chép lời.
+#  Ngưỡng "có tiếng": dưới -35 dB coi như im lặng; phải có ít nhất 20 giây VÀ 3% thời lượng có tiếng mới chép lời.
 SILENCE_DB = -35
 SILENCE_MIN_SEC = 1.5
 MIN_VOICED_SEC = 20
@@ -621,7 +623,7 @@ def _plain(text: str) -> str:
 
 
 def _md_table(doc, rows: list[list[str]]) -> None:
-    """Bảng Markdown → bảng DEGO: hàng đầu nền teal chữ trắng, cột STT navy, dòng chẵn tô nền; cột «Ưu tiên» tô màu."""
+    """Bảng Markdown → bảng DEGO: hàng đầu nền teal chữ trắng, cột STT navy, dòng chẵn tô nền; cột "Ưu tiên" tô màu."""
     from docx.enum.table import WD_ALIGN_VERTICAL
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.shared import Pt
@@ -689,7 +691,7 @@ def _md_table(doc, rows: list[list[str]]) -> None:
 
 
 def _participants(recap: str) -> str:
-    """Gạch đầu dòng dưới mục «NGƯỜI THAM DỰ» → một dòng cho bảng thông tin (để trống nếu không có)."""
+    """Gạch đầu dòng dưới mục "NGƯỜI THAM DỰ" → một dòng cho bảng thông tin (để trống nếu không có)."""
     out, inside = [], False
     for line in (recap or "").splitlines():
         s = line.strip()
@@ -702,8 +704,8 @@ def _participants(recap: str) -> str:
 
 
 def _md_body(doc, md: str) -> None:
-    """Markdown của model → các khối DEGO: «## TL;DR / TÓM TẮT NHANH» → hộp TL;DR · «## …» → thanh mục teal · «### …» →
-    đề mục con · «Ý CHÍNH: / ĐÃ CHỐT:» → nhãn · «✓ …» → dòng đã chốt · gạch đầu dòng · bảng · đoạn văn."""
+    """Markdown của model → các khối DEGO: "## TL;DR / TÓM TẮT NHANH" → hộp TL;DR · "## …" → thanh mục teal · "### …" →
+    đề mục con · "Ý CHÍNH: / ĐÃ CHỐT:" → nhãn · "✓ …" → dòng đã chốt · gạch đầu dòng · bảng · đoạn văn."""
     from . import dego_docx as D
 
     lines = (md or "").splitlines()
@@ -768,7 +770,7 @@ def build_docx(title: str, when: datetime | None, recap: str, transcript: str, *
 
     when = when or datetime.now()
     doc = D.new_document()
-    #  ai-CR-166: tóm tắt video có đầu trang / phụ đề riêng, không gọi là «recap họp».
+    #  ai-CR-166: tóm tắt video có đầu trang / phụ đề riêng, không gọi là "recap họp".
     video = kind == "video"
     head = (["TÓM TẮT VIDEO", "VIDEO SUMMARY"] if video else
             ["BIÊN BẢN HỌP", "MEETING MINUTES"] if formal else ["RECAP HỌP", "MEETING RECAP"])
@@ -818,7 +820,7 @@ def process(db: Session, meeting_id: int) -> dict:
     try:
         with user_keys.for_chat(db, row.chat_id):
             if row.recap and _has(row, Progress.WRITE):
-                #  ai-CR-162: «thử lại biên bản» sau khi đã viết — chỉ làm tiếp các bước gửi còn thiếu.
+                #  ai-CR-162: "thử lại biên bản" sau khi đã viết — chỉ làm tiếp các bước gửi còn thiếu.
                 row.status = int(MeetingStatus.DONE)
                 db.commit()
                 return _deliver(db, row)
@@ -961,7 +963,7 @@ _RETRY_ASK = re.compile(r"^(thu lai|lam lai|lam tiep|chay lai) (bien ban|recap)(
 
 
 def retry_by_text(db: Session, chat_id: str, msg_row, text: str) -> bool:
-    """«thử lại biên bản» → biên bản HỎNG gần nhất của chính người hỏi trong chat này."""
+    """"thử lại biên bản" → biên bản HỎNG gần nhất của chính người hỏi trong chat này."""
     from sqlalchemy import select
 
     from app.modules.assistant.glossary import fold
@@ -985,7 +987,7 @@ def retry_by_text(db: Session, chat_id: str, msg_row, text: str) -> bool:
 
 
 def retry(db: Session, row: AgentMeeting) -> str:
-    """«thử lại biên bản»: làm tiếp từ bước hỏng. Trả câu báo cho người dùng."""
+    """"thử lại biên bản": làm tiếp từ bước hỏng. Trả câu báo cho người dùng."""
     if row.status != int(MeetingStatus.FAILED):
         return "Biên bản gần nhất không ở trạng thái hỏng, không có gì để thử lại."
     row.status = int(MeetingStatus.QUEUED)
@@ -1098,7 +1100,7 @@ def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Chi phí từng biên bản (ai-CR-158) — đại ca 10/10: «chi phí token cho cái recap này là bao nhiêu»
+# Chi phí từng biên bản (ai-CR-158) — đại ca 10/10: "chi phí token cho cái recap này là bao nhiêu"
 # ---------------------------------------------------------------------------
 class Step(IntEnum):
     TRANSCRIBE = 1      # chép lời
@@ -1180,7 +1182,7 @@ def _author_of(db: Session, user_id: int) -> str:
         return ""
     try:
         return service.describe_user(db, user)[0]
-    except Exception:  # noqa: BLE001 — chỉ là dòng «Người lập»
+    except Exception:  # noqa: BLE001 — chỉ là dòng "Người lập"
         return str(getattr(user, "email", "") or "")
 
 
@@ -1205,7 +1207,7 @@ def _write(db: Session, row: AgentMeeting) -> dict:
                            f"YÊU CẦU: {tpl.prompt}\n\nBẢN CHÉP LỜI:\n{row.transcript[:RECAP_MAX_CHARS]}",
                            max_tokens=RECAP_MAX_TOKENS)
     if was_cut(text) or not clean_recap(text):
-        #  ai-CR-166: model tiêu hết trần vào phần «nghĩ» → lượt hai dặn chỉ in kết quả, trần cao hơn.
+        #  ai-CR-166: model tiêu hết trần vào phần "nghĩ" → lượt hai dặn chỉ in kết quả, trần cao hơn.
         text = _ask_logged(db, row, RECAP_SYSTEM + " CHỈ in biên bản, KHÔNG in suy nghĩ hay kế hoạch viết.",
                            content if len(chunks) > 1 else f"YÊU CẦU: {tpl.prompt}\n\nBẢN CHÉP LỜI:\n"
                                                            f"{row.transcript[:RECAP_MAX_CHARS]}",
@@ -1251,7 +1253,7 @@ _STAMP_LINE = re.compile(r"^\s*\[(?:(\d+):)?(\d{1,2}):(\d{2})\]")
 
 
 def transcript_chunks(transcript: str, seconds: int = CHUNK_SEC) -> list[tuple[str, str]]:
-    """Cắt bản chép theo mốc giờ thành các đoạn ~`seconds` giây: [(nhãn «mm:ss–mm:ss», chữ)]."""
+    """Cắt bản chép theo mốc giờ thành các đoạn ~`seconds` giây: [(nhãn "mm:ss–mm:ss", chữ)]."""
     chunks: list[tuple[int, list[str]]] = []
     for line in (transcript or "").splitlines():
         m = _STAMP_LINE.match(line)
@@ -1275,7 +1277,7 @@ _PREAMBLE = re.compile(r"^(below is|here is|here's|sure|certainly|of course|dư�
 _OUTRO = re.compile(r"^(let me know|hope this|if you need|nếu (anh|chị|bạn) cần|hy vọng)", re.IGNORECASE)
 
 
-#  ai-CR-166: model suy luận (DeepSeek qua trạm) in cả đoạn «nghĩ» bằng tiếng Anh xen giữa biên bản (dev 10/10, tóm tắt
+#  ai-CR-166: model suy luận (DeepSeek qua trạm) in cả đoạn "nghĩ" bằng tiếng Anh xen giữa biên bản (dev 10/10, tóm tắt
 #  video YouTube): dòng tiếng Anh không dấu, nhiều từ nối. Tiếng Việt có dấu nên nhận ra được bằng chữ.
 _EN_WORDS = re.compile(r"\b(the|maybe|let's|lets|need|should|could|would|user|format|hmm|wait|okay|i think|we can|not "
                        r"allowed|instruction|evaluator|draft|chapters?|timestamps?|fine|good|ugly|acceptable|penalize"
@@ -1285,7 +1287,7 @@ CUT_MARK = re.compile(r"_?\(Câu trả lời chạm trần độ dài.*?\)_?", r
 
 
 def _is_model_chatter(line: str) -> bool:
-    """Dòng «nghĩ» của model: văn tiếng Anh (không dấu tiếng Việt, ≥ 2 từ nối), hoặc câu tự nói với mình."""
+    """Dòng "nghĩ" của model: văn tiếng Anh (không dấu tiếng Việt, ≥ 2 từ nối), hoặc câu tự nói với mình."""
     t = line.strip()
     if not t or t.startswith(("#", "|")):
         return False
@@ -1296,8 +1298,8 @@ def _is_model_chatter(line: str) -> bool:
 
 
 def clean_recap(text: str) -> str:
-    """ai-CR-164/166: bỏ chữ của model lọt vào biên bản — rào ```markdown, câu dạo đầu / kết, đoạn «nghĩ» tiếng Anh,
-    dấu cắt của trạm; có tiêu đề «## » thì chỉ lấy từ tiêu đề đầu tiên trở đi."""
+    """ai-CR-164/166: bỏ chữ của model lọt vào biên bản — rào ```markdown, câu dạo đầu / kết, đoạn "nghĩ" tiếng Anh,
+    dấu cắt của trạm; có tiêu đề "## " thì chỉ lấy từ tiêu đề đầu tiên trở đi."""
     text = CUT_MARK.sub("", text or "")
     lines = [ln for ln in text.strip().splitlines() if not ln.strip().startswith("```")]
     lines = [ln for ln in lines if not (_PREAMBLE.match(ln.strip()) and len(ln.strip()) < 300)]
@@ -1325,7 +1327,7 @@ def transcript_file(row: AgentMeeting) -> tuple[str, bytes]:
 
 def _deliver(db: Session, row: AgentMeeting) -> dict:
     """ai-CR-162: các bước SAU khi đã có biên bản — gửi chữ, gửi Word, lưu Drive, rút việc. Bước nào xong rồi (theo
-    `row.steps`) thì bỏ qua, nên «thử lại biên bản» làm tiếp đúng chỗ hỏng. Lỗi tạm (ERP khởi động lại, mạng chậm) thì tự
+    `row.steps`) thì bỏ qua, nên "thử lại biên bản" làm tiếp đúng chỗ hỏng. Lỗi tạm (ERP khởi động lại, mạng chậm) thì tự
     thử lại vài lần trước khi báo hỏng."""
     from . import meeting_actions, service
 
@@ -1358,7 +1360,7 @@ def _deliver(db: Session, row: AgentMeeting) -> dict:
         if drive_link and row.transcript:
             _upload_file(db, row, txt_name, txt_data, "text/plain")
         if drive_link:
-            service.reply(db, row.chat_id, f"Đã lưu lên Drive, thư mục «{DRIVE_FOLDER}» (Word + bản chép lời): "
+            service.reply(db, row.chat_id, f"Đã lưu lên Drive, thư mục **{DRIVE_FOLDER}** (Word + bản chép lời): "
                                            f"{telegram.esc(drive_link)}")
         _done(row, Progress.DRIVE)
         db.commit()
@@ -1368,7 +1370,7 @@ def _deliver(db: Session, row: AgentMeeting) -> dict:
         _done(row, Progress.ACTIONS)
         db.commit()
     if not _has(row, Progress.SPEAKERS):
-        #  ai-CR-164: «Ai là ai?» — chỉ khi bản chép còn «Người n». Hỏng thì thôi, biên bản đã gửi đủ.
+        #  ai-CR-164: "Ai là ai?" — chỉ khi bản chép còn "Người n". Hỏng thì thôi, biên bản đã gửi đủ.
         try:
             offer_speakers(db, row)
         except Exception:  # noqa: BLE001
@@ -1393,7 +1395,7 @@ def word_of(db: Session, row: AgentMeeting) -> tuple[str, bytes]:
 
 
 def resend(db: Session, row: AgentMeeting) -> None:
-    """ai-CR-116: gửi lại biên bản đã làm (chữ + Word) và thẻ việc / lịch còn chờ — «report cuộc họp mới nhất»."""
+    """ai-CR-116: gửi lại biên bản đã làm (chữ + Word) và thẻ việc / lịch còn chờ — "report cuộc họp mới nhất"."""
     from . import meeting_actions, service
 
     tpl = template_for_row(row)
@@ -1485,7 +1487,7 @@ def describe(row: AgentMeeting) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Tin biên bản trong chat + thẻ «Ai là ai?» (ai-CR-164)
+# Tin biên bản trong chat + thẻ "Ai là ai?" (ai-CR-164)
 # ---------------------------------------------------------------------------
 #  ai-CR-165: đại ca 10/10 — tin biên bản trong chat quá dài, đọc không hết. Chat chỉ gửi bản RÚT GỌN cỡ một màn điện
 #  thoại; các mục chi tiết theo chủ đề chỉ nằm trong Word.
@@ -1569,7 +1571,7 @@ _LINE_SPEAKER = re.compile(r"^\s*\[[\d:]+\]\s*Người (\d{1,2}):\s*(.+)$")
 
 
 def speakers_of(transcript: str) -> list[tuple[str, list[str]]]:
-    """[(«Người n», 1–2 câu trích dài nhất của người đó)] theo thứ tự xuất hiện."""
+    """[("Người n", 1–2 câu trích dài nhất của người đó)] theo thứ tự xuất hiện."""
     quotes: dict[str, list[str]] = {}
     for line in (transcript or "").splitlines():
         m = _LINE_SPEAKER.match(line)
@@ -1583,7 +1585,7 @@ def speakers_of(transcript: str) -> list[tuple[str, list[str]]]:
 
 
 def name_hints(transcript: str) -> list[str]:
-    """Tên được gọi trong cuộc họp («anh Dũng», «chị Ngân») — gợi ý cho thẻ Ai là ai."""
+    """Tên được gọi trong cuộc họp ("anh Dũng", "chị Ngân") — gợi ý cho thẻ Ai là ai."""
     count: dict[str, int] = {}
     for name in _ADDRESSED.findall(transcript or ""):
         count[name] = count.get(name, 0) + 1
@@ -1619,7 +1621,7 @@ _SKIP = re.compile(r"^\s*(bỏ qua|thôi|không cần|giữ nguyên)\s*[.!]*\s*$
 
 
 def speakers_by_text(db: Session, chat_id: str, msg_row, text: str) -> bool:
-    """Trả lời thẻ Ai là ai: «Người 1 = Ngân, Người 3 = Phú» → thay tên trong bản chép rồi viết lại biên bản."""
+    """Trả lời thẻ Ai là ai: "Người 1 = Ngân, Người 3 = Phú" → thay tên trong bản chép rồi viết lại biên bản."""
     from datetime import timedelta
 
     from sqlalchemy import select
@@ -1657,7 +1659,7 @@ def speakers_by_text(db: Session, chat_id: str, msg_row, text: str) -> bool:
 
 
 def rename(db: Session, row: AgentMeeting, pairs: dict[int, str]) -> None:
-    """Thay «Người n» bằng tên trong bản chép (và trong việc đã rút), rồi viết lại biên bản. Thẻ việc không gửi lại."""
+    """Thay "Người n" bằng tên trong bản chép (và trong việc đã rút), rồi viết lại biên bản. Thẻ việc không gửi lại."""
     def sub(text: str) -> str:
         return _SPEAKER.sub(lambda m: pairs.get(int(m.group(1)), m.group(0)), text or "")
 
@@ -1819,7 +1821,7 @@ def check_estimate(db: Session, row: AgentMeeting, estimate: dict) -> None:
 YOUTUBE_PROMPT = TRANSCRIBE_PROMPT.replace("đoạn ghi âm cuộc họp này", "video này").replace(
     "Nếu đoạn ghi âm", "Nếu video") + (
     " Bỏ qua hình ảnh, chỉ chép lời nói. Mốc [mm:ss] của MỖI lượt nói lấy theo thời gian thật trong video, không gộp cả "
-    "video vào một mốc. Dòng ĐẦU TIÊN ghi «TIÊU ĐỀ: tên video» rồi mới tới bản chép.")
+    "video vào một mốc. Dòng ĐẦU TIÊN ghi **TIÊU ĐỀ: tên video** rồi mới tới bản chép.")
 _YT_TITLE = re.compile(r"^\s*TIÊU ĐỀ:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 YT_SEGMENT_SEC = 600            # ai-CR-168: 10 phút một đoạn — mốc đầu đoạn là mốc thật, chi phí token không đổi
 

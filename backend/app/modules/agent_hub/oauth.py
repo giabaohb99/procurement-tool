@@ -6,7 +6,7 @@ ChatGPT, claude.ai, Claude Desktop (Connectors) không dán được khóa vào 
 `Authorization: Bearer <access_token>`.
 
 Thiết kế:
-- Mỗi lần người dùng bấm «Cho phép» một ứng dụng = MỘT dòng `tab_agent_mcp_key` loại `KIND_OAUTH` (cùng mức chỉ đọc /
+- Mỗi lần người dùng bấm "Cho phép" một ứng dụng = MỘT dòng `tab_agent_mcp_key` loại `KIND_OAUTH` (cùng mức chỉ đọc /
   được ghi, cùng nhật ký, cùng màn Khóa của tôi / Khóa nhân sự, gỡ là cắt ngay). `token_hash` = băm mã truy cập hiện hành
   (hạn `ACCESS_TTL_SEC`), `refresh_hash` = băm mã làm mới hiện hành (xoay vòng mỗi lần đổi), `expires_at` = hạn cả kết nối.
   Cấp lại cho cùng (người, ứng dụng) thì kết nối cũ bị thu hồi — không chất đống dòng.
@@ -51,7 +51,7 @@ _BAD_SCHEMES = frozenset({"javascript", "data", "file", "vbscript", "about", "bl
 _LOOPBACK = frozenset({"localhost", "127.0.0.1", "[::1]", "::1"})
 #  ai-CR-225 (Agent 1 rà 19/10, mục 3 consent-phishing): địa chỉ quay về của các ứng dụng AI quen — khác thì màn đồng ý
 #  cảnh báo đỏ. So theo HOSTNAME (đuôi tên miền), không theo netloc: `https://chatgpt.com@evil.example/cb` có hostname
-#  evil.example (phần trước @ là userinfo) — netloc in ra «chatgpt.com@evil.example» lừa được người đọc lướt.
+#  evil.example (phần trước @ là userinfo) — netloc in ra "chatgpt.com@evil.example" lừa được người đọc lướt.
 KNOWN_REDIRECT_HOSTS = ("chatgpt.com", "openai.com", "claude.ai", "anthropic.com", "claude.com")
 #  Mục 4: bảng ứng dụng / mã cấp quyền không phình vô hạn.
 CODE_KEEP_DAYS = 1                  # mã cấp quyền hết hạn quá 1 ngày → xóa
@@ -334,10 +334,12 @@ def list_clients(db: Session, now: datetime | None = None) -> list[dict]:
     """Màn quản trị ứng dụng OAuth: mọi ứng dụng đã đăng ký + số kết nối còn sống."""
     now = now or datetime.now()
     counts: dict[int, int] = {}
-    for (cid,) in db.query(AgentMcpKey.oauth_client_id).filter(
+    users: dict[int, set[int]] = {}
+    for cid, uid in db.query(AgentMcpKey.oauth_client_id, AgentMcpKey.user_id).filter(
             AgentMcpKey.kind == mcp_keys.KIND_OAUTH, AgentMcpKey.revoked_at.is_(None),
             (AgentMcpKey.expires_at.is_(None)) | (AgentMcpKey.expires_at > now)):
         counts[int(cid)] = counts.get(int(cid), 0) + 1
+        users.setdefault(int(cid), set()).add(int(uid or 0))
     iso = lambda d: d.isoformat(timespec="seconds") if d else None  # noqa: E731
     out = []
     for c in db.query(AgentOAuthClient).order_by(AgentOAuthClient.id.desc()).limit(500):
@@ -345,8 +347,18 @@ def list_clients(db: Session, now: datetime | None = None) -> list[dict]:
         out.append({"id": c.id, "client_id": c.client_id, "client_name": c.client_name,
                     "redirect_hosts": sorted({h for h, _t in hosts}), "trusted": bool(hosts) and all(t for _h, t in hosts),
                     "auth_method": c.token_endpoint_auth_method, "ip": c.ip, "created_at": iso(c.created_at),
-                    "last_used_at": iso(c.last_used_at), "live_grants": counts.get(int(c.id), 0)})
+                    "last_used_at": iso(c.last_used_at), "live_grants": counts.get(int(c.id), 0),
+                    #  bao-CR-696: số NGƯỜI đang có kết nối sống (một người có thể nối nhiều lần) + id để màn hiện vài tên.
+                    "live_users": len(users.get(int(c.id), ())), "live_user_ids": sorted(users.get(int(c.id), ()))})
     return out
+
+
+def clients_by_pk(db: Session, ids) -> dict[int, AgentOAuthClient]:
+    """bao-CR-696: ứng dụng OAuth theo khóa chính — màn Kết nối hiện tên ứng dụng + nơi quay về cho dòng OAuth."""
+    ids = {int(i) for i in ids if i}
+    if not ids:
+        return {}
+    return {int(c.id): c for c in db.query(AgentOAuthClient).filter(AgentOAuthClient.id.in_(ids))}
 
 
 def delete_client(db: Session, client_pk: int, by_user_id: int = 0) -> int | None:

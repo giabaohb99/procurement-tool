@@ -169,9 +169,9 @@ class VehicleBooking(Base, AuditMixin, LegacyIdMixin):
     department_id: Mapped[int] = mapped_column(BigInteger, default=0)
     company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     #  duoc-CR-681: pháp nhân của NGƯỜI TẠO, chụp lúc tạo. `company_id` = công ty CHỌN trên phiếu (có thể khác);
-    #  phạm vi «Công ty» khớp một trong hai (`SCOPE_FIELDS["vehicle_booking"]["company_alt"]`).
+    #  phạm vi "Công ty" khớp một trong hai (`SCOPE_FIELDS["vehicle_booking"]["company_alt"]`).
     requester_company_id: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0", index=True)
-    #  duoc-CR-682 (Bước 0 đồng bộ app cũ): «ERP đã thao tác nghiệp vụ trên phiếu gốc app cũ lúc…» (UTC, ISO). Có dấu
+    #  duoc-CR-682 (Bước 0 đồng bộ app cũ): "ERP đã thao tác nghiệp vụ trên phiếu gốc app cũ lúc…" (UTC, ISO). Có dấu
     #  thì chiều nhận không chép đè ô tiến trình nữa — xem `legacy_datxe/erp_ownership.py`. Rỗng = soi gương app cũ.
     erp_action_at: Mapped[str] = mapped_column(String(20), default="", server_default="")
 

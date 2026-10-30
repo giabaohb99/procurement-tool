@@ -11,8 +11,8 @@ Dữ liệu YCBG cũ: migration dựng đầu với `id = id phiếu` nên cột
 con chỉ ĐỔI TÊN (`survey_request_id` → `report_id`), không chép dòng nào.
 
 Bảng con là **chi tiết của chứng từ cha** — không có màn danh sách riêng,
-không có mã chứng từ, nên KHÔNG có khóa phân quyền riêng (luật «một khóa = một
-màn hình», CR-157). Chốt là hai lớp của chứng từ cha: phạm vi qua `_in_scope`
+không có mã chứng từ, nên KHÔNG có khóa phân quyền riêng (luật "một khóa = một
+màn hình", CR-157). Chốt là hai lớp của chứng từ cha: phạm vi qua `_in_scope`
 của controller cha → 404 ngoài phạm vi, rồi cờ ghi của cha
 (`survey_request.process` / `purchase_order.write`) cho cửa GHI.
 """
@@ -32,7 +32,7 @@ REPORT_OWNER_ENTITIES = (REPORT_OWNER_SURVEY_REQUEST, REPORT_OWNER_PURCHASE_ORDE
 
 
 class ExecReport(Base, AuditMixin):
-    """ĐẦU của một khối báo cáo — «chứng từ nào sở hữu khối này».
+    """ĐẦU của một khối báo cáo — "chứng từ nào sở hữu khối này".
 
     Chỉ giữ cặp (`owner_entity`, `owner_id`); nội dung nằm ở ba bảng con. Tạo
     LƯỜI: chứng từ chưa ai bấm gì vào khối báo cáo thì không có dòng đầu.
@@ -43,14 +43,14 @@ class ExecReport(Base, AuditMixin):
 
     owner_entity: Mapped[str] = mapped_column(String(32), default=REPORT_OWNER_SURVEY_REQUEST)
     owner_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    #  Mẫu đã chọn lúc «Khởi tạo báo cáo mẫu» (duoc-CR-614) — mã `RT_*` ở
-    #  `report_constants.REPORT_TEMPLATES`. Nút «Tạo mẫu» đọc lại cột này để đổ ĐÚNG mẫu
+    #  Mẫu đã chọn lúc "Khởi tạo báo cáo mẫu" (duoc-CR-614) — mã `RT_*` ở
+    #  `report_constants.REPORT_TEMPLATES`. Nút "Tạo mẫu" đọc lại cột này để đổ ĐÚNG mẫu
     #  của khối. Khối cũ (trước CR) = 1 = mẫu chung, đúng với thứ chúng đã được đổ.
     template: Mapped[int] = mapped_column(SmallInteger, default=1, server_default="1")
 
 
 class SurveyReportItem(Base, AuditMixin):
-    """Một NÚT lọc theo dòng hàng trên khối báo cáo (vd «K₂SO₄», «KNO₃»).
+    """Một NÚT lọc theo dòng hàng trên khối báo cáo (vd "K₂SO₄", "KNO₃").
 
     Là bảng chứ không suy từ dòng chứng từ: trên YCBG người dùng được thêm/sửa/
     xóa nút và đặt tên tùy ý (một nút có thể gom nhiều dòng, hoặc chẳng ứng với
@@ -71,7 +71,7 @@ class SurveyReportItem(Base, AuditMixin):
 
 
 class SurveyReportPhase(Base, AuditMixin):
-    """Một GIAI ĐOẠN của báo cáo (vd «Pháp lý & Giấy phép»). Hồ sơ xếp theo nó."""
+    """Một GIAI ĐOẠN của báo cáo (vd "Pháp lý & Giấy phép"). Hồ sơ xếp theo nó."""
 
     __tablename__ = "tab_exec_report_phase"
 
@@ -98,7 +98,7 @@ class SurveyReportDoc(Base, AuditMixin):
     status: Mapped[int] = mapped_column(SmallInteger, default=0, index=True)
     #  Tên tệp hoặc link tài liệu (Drive…) — chữ tự do, chưa nối kho đính kèm.
     file_note: Mapped[str] = mapped_column(String(500), default="")
-    #  KẾT QUẢ / ghi chú sau khi làm (cột «Kết quả» của bảng kế hoạch Excel thu
+    #  KẾT QUẢ / ghi chú sau khi làm (cột "Kết quả" của bảng kế hoạch Excel thu
     #  mua, bao-CR-602) — khác `description` (việc PHẢI làm, ghi trước khi làm).
     result: Mapped[str] = mapped_column(String(1000), default="")
     #  Danh sách id hồ sơ TIÊN QUYẾT (cùng khối). Hồ sơ bị KHÓA khi còn tiên
@@ -112,7 +112,7 @@ class SurveyReportDoc(Base, AuditMixin):
     expires_at: Mapped[date | None] = mapped_column(Date, nullable=True, default=None)
     #  Ngày DỰ ĐỊNH HOÀN TẤT (kế hoạch ban đầu, bao-CR-392) — khác `expires_at`
     #  (hạn hiệu lực của giấy tờ). Hồ sơ chưa Hoàn thành mà qua ngày này là TRỄ
-    #  so với kế hoạch; FE suy nhãn «Trễ n ngày», không lưu cờ.
+    #  so với kế hoạch; FE suy nhãn "Trễ n ngày", không lưu cờ.
     planned_date: Mapped[date | None] = mapped_column(Date, nullable=True, default=None)
     #  Nhân sự THỰC HIỆN (id `tab_employee`). 0 = chưa cử. Cố ý không FK: xóa
     #  nhân sự không xóa lây hồ sơ; tên hiển thị resolve lúc đọc, id chết ra
@@ -122,11 +122,11 @@ class SurveyReportDoc(Base, AuditMixin):
 
 
 class SurveyReportTrash(Base, AuditMixin):
-    """SỌT RÁC của khối báo cáo — cho phép HOÀN TÁC lần «Xóa báo cáo thực hiện».
+    """SỌT RÁC của khối báo cáo — cho phép HOÀN TÁC lần "Xóa báo cáo thực hiện".
 
     Xóa cả khối là thao tác nặng (mất hàng chục hồ sơ nhập tay), nên trước khi
     xóa, toàn bộ khối được chụp thành `snapshot` JSON và giữ ở đây. Người dùng
-    bấm «Hoàn tác» trên đúng dòng Lịch sử thao tác thì dựng lại từ ảnh chụp này.
+    bấm "Hoàn tác" trên đúng dòng Lịch sử thao tác thì dựng lại từ ảnh chụp này.
 
     Cùng khuôn với `tab_import_change.snapshot` của `import_tool` (revert theo
     ảnh chụp). Không xóa vật lý dòng trash — giữ làm dấu vết; `restored` đánh dấu
@@ -139,7 +139,7 @@ class SurveyReportTrash(Base, AuditMixin):
     #  Ảnh chụp {items, phases, docs} ĐẦY ĐỦ (kèm id cũ để dựng lại `depends`).
     snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
     doc_count: Mapped[int] = mapped_column(SmallInteger, default=0)
-    #  Nối tới dòng Lịch sử thao tác của lần xóa — FE hiện nút «Hoàn tác» đúng
+    #  Nối tới dòng Lịch sử thao tác của lần xóa — FE hiện nút "Hoàn tác" đúng
     #  dòng đó (khớp theo id). 0 = chưa gắn.
     audit_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     restored: Mapped[bool] = mapped_column(Boolean, default=False)

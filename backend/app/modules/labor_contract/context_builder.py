@@ -1,7 +1,7 @@
 """Dựng NGỮ CẢNH render cho mẫu HĐLĐ: bản ghi → dict[str, str] đúng danh mục biến.
 
 THUẦN (không DB): nhận sẵn các đối tượng đã nạp. Mọi giá trị là CHUỖI đã định dạng,
-thiếu dữ liệu → chuỗi rỗng (không bao giờ `None`/«None» lọt vào bản in).
+thiếu dữ liệu → chuỗi rỗng (không bao giờ `None`/"None" lọt vào bản in).
 Khóa trả về PHẢI bằng đúng `KNOWN_KEYS` (có test canh) — thêm biến thì sửa
 `placeholder_catalog.py` và hàm này CÙNG LÚC.
 """
@@ -22,7 +22,7 @@ def fmt_date(d: date | None) -> str:
 
 
 def fmt_money(n: int | None) -> str:
-    """15000000 → «15.000.000» (dấu chấm ngăn nghìn)."""
+    """15000000 → "15.000.000" (dấu chấm ngăn nghìn)."""
     return f"{int(n or 0):,}".replace(",", ".")
 
 
@@ -38,7 +38,7 @@ def _add_months(d: date, months: int) -> date:
 
 
 def describe_duration(start: date | None, end: date | None, contract_type: int) -> str:
-    """«12 tháng» · «6 tháng 15 ngày» · «20 ngày» · «Không xác định thời hạn» · rỗng.
+    """"12 tháng" · "6 tháng 15 ngày" · "20 ngày" · "Không xác định thời hạn" · rỗng.
 
     Ngày kết thúc tính CẢ ngày đó: 01/10/2026 → 30/09/2027 = đúng 12 tháng.
     """
@@ -47,7 +47,7 @@ def describe_duration(start: date | None, end: date | None, contract_type: int) 
     if not start or not end or end < start:
         return ""
     months = (end.year - start.year) * 12 + (end.month - start.month) + 1
-    while True:  # tìm số tháng tròn lớn nhất mà «ngày cuối của kỳ» chưa vượt `end`
+    while True:  # tìm số tháng tròn lớn nhất mà "ngày cuối của kỳ" chưa vượt `end`
         anchor = _add_months(start, months)
         last_day = anchor - timedelta(days=1)
         if last_day <= end:

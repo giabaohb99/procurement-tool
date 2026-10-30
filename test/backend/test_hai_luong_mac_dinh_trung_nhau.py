@@ -42,7 +42,7 @@ def test_hai_luong_mac_dinh_cung_bat_thi_goi_ten_ca_hai(db):
     assert "Ban hành văn bản (mặc định)" in warning
     assert "Ban hành văn bản hành chính" in warning
     #  Phải nói rõ CÁI NÀO chạy, không chỉ "có trùng".
-    assert f"chỉ «{thang.name}» chạy" in warning
+    assert f"chỉ \"{thang.name}\" chạy" in warning
     #  Cái đang thắng cũng thấy cảnh báo — người mở luồng nào cũng phải biết.
     assert flow_service.default_overlap_warning(db, thang) != ""
 

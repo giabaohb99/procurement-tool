@@ -2,7 +2,7 @@
 
 Gác KÉP như mọi báo cáo: `require("setting", …)` VÀ `require_report(ReportKey.WORK_CAPABILITY)` (khóa 16, gán được cho người khác).
 Admin xem tất cả — không `apply_scope` (khóa `setting` không có bảng để lọc). Mỗi lần mở để lại dòng `tab_request_log`
-(GET không bị loại): đủ trả lời «ai đã xem năng lực của ai». `/summary`, `/summary/export` khai TRƯỚC `/load`.
+(GET không bị loại): đủ trả lời "ai đã xem năng lực của ai". `/summary`, `/summary/export` khai TRƯỚC `/load`.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session

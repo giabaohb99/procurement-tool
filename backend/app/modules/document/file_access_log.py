@@ -38,15 +38,15 @@ ACTION_ALERT = "file_alert"
 
 #  ⚠️ ĐÂY KHÔNG PHẢI NHÃN của mã hành động — nhãn nằm ở `core/action_catalog.py`
 #  và chỉ có một chỗ khai (bao-CR-358 / NT-4). Đây là ĐỘNG TỪ để ghép câu
-#  `message`, nên phải đọc xuôi khi đứng trước chữ "tệp": «Mở xem tệp ‹x›».
-#  Lấy nhãn thật lắp vào chỗ này thì ra «Xem tệp tệp ‹x›».
+#  `message`, nên phải đọc xuôi khi đứng trước chữ "tệp": "Mở xem tệp ‹x›".
+#  Lấy nhãn thật lắp vào chỗ này thì ra "Xem tệp tệp ‹x›".
 ACTION_VERB = {ACTION_VIEW: "Mở xem", ACTION_DOWNLOAD: "Tải về"}
 
 
 def log_and_alert(db: Session, doc: Document, user, action: str, file_name: str) -> None:
     """Ghi một lượt mở/tải, rồi báo nếu người này đang mở dồn dập bất thường."""
     record(db, user.id, "document", doc.id, action,
-           f"{ACTION_VERB.get(action, action)} tệp «{file_name}»")
+           f"{ACTION_VERB.get(action, action)} tệp \"{file_name}\"")
 
     threshold = int(setting("doc_file_alert_threshold") or 0)
     if threshold <= 0:  # 0 = tắt hẳn phần cảnh báo
@@ -122,7 +122,7 @@ def _raise_alert(db: Session, doc: Document, user, access_count: int, minutes: i
     title = f"Bất thường: {name} mở {access_count} tệp trong {minutes} phút"
     body = (
         f"{name} vừa mở hoặc tải {access_count} tệp đính kèm văn bản trong {minutes} phút gần đây. "
-        f"Tệp gần nhất thuộc văn bản «{_alert_label(db, doc)}». "
+        f"Tệp gần nhất thuộc văn bản \"{_alert_label(db, doc)}\". "
         f"Mở sổ nhật ký của văn bản để xem chi tiết."
     )
 

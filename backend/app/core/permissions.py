@@ -65,7 +65,7 @@ ENTITIES = [
     # Khóa RIÊNG, tách khỏi `employee`: `employee.read` gần như vai trò nào cũng có (đổ ô chọn
     # người), gộp vào đó là cả công ty đọc được lương của nhau. Cùng lý lẽ `employee_sensitive`.
     "labor_contract",
-    # MẪU hợp đồng lao động (.docx theo pháp nhân) — luật «một khóa = một màn hình» (CR-157):
+    # MẪU hợp đồng lao động (.docx theo pháp nhân) — luật "một khóa = một màn hình" (CR-157):
     # màn Mẫu hợp đồng riêng, người soạn mẫu không nhất thiết là người xem lương.
     "labor_contract_template",
     # Phân hệ Đặt phòng họp (duoc-CR-279). Hai khóa vì hai nhóm người:
@@ -88,28 +88,28 @@ ENTITIES = [
     # có khóa riêng — chúng không có màn hình riêng, và phạm vi của chúng là
     # phạm vi của hồ sơ cha. Xem `modules/employee/sensitive.py`.
     "employee_sensitive",
-    # Danh mục CHỨC VỤ (duoc-CR-320) — nguồn của ô chọn «Vị trí / Chức vụ».
+    # Danh mục CHỨC VỤ (duoc-CR-320) — nguồn của ô chọn "Vị trí / Chức vụ".
     #
-    # Khóa riêng theo luật «một khóa = một màn hình» (CR-157), và vì hai việc do
+    # Khóa riêng theo luật "một khóa = một màn hình" (CR-157), và vì hai việc do
     # hai người làm: ai cũng cần `employee.read` để đổ ô chọn người, nhưng THÊM
     # BỚT chức vụ là việc của Nhân sự — gộp vào `employee.write` thì hành chính
     # sửa số điện thoại một hồ sơ cũng dựng thêm được chức vụ mới.
     "job_position",
-    # Danh mục LOẠI HỒ SƠ (phân hệ Hồ sơ, 16/09/2026) — nguồn của ô chọn «Loại
-    # hồ sơ» và là chỗ khai hạn hiệu lực mặc định của từng loại giấy tờ.
+    # Danh mục LOẠI HỒ SƠ (phân hệ Hồ sơ, 16/09/2026) — nguồn của ô chọn "Loại
+    # hồ sơ" và là chỗ khai hạn hiệu lực mặc định của từng loại giấy tờ.
     #
-    # Khóa riêng theo luật «một khóa = một màn hình» (CR-157): nó có màn quản lý
+    # Khóa riêng theo luật "một khóa = một màn hình" (CR-157): nó có màn quản lý
     # riêng `/dossier/types`. Đừng gộp với khóa `dossier` của bảng hồ sơ (chưa
     # dựng) — đọc hồ sơ là việc hằng ngày của nhiều người, còn thêm bớt LOẠI là
     # đổi luật phân loại cho cả công ty.
     "dossier_type",
     # HỒ SƠ (`tab_dossier`, 16/09/2026) — bộ giấy tờ công ty đang giữ.
     #
-    # Tách khỏi `dossier_type` theo luật «một khóa = một màn hình» (CR-157), và
+    # Tách khỏi `dossier_type` theo luật "một khóa = một màn hình" (CR-157), và
     # vì hai việc do hai người làm: lập hồ sơ là việc hằng ngày của hành chính
     # mỗi phòng, còn thêm bớt LOẠI là đổi luật phân loại — và đổi luôn KHUÔN
     # BIỂU MẪU (`field_schema`) cho cả công ty. Gộp một khóa thì ai lập được một
-    # tờ giấy phép cũng xóa được ô «Số giấy phép» khỏi mọi hồ sơ cùng loại.
+    # tờ giấy phép cũng xóa được ô "Số giấy phép" khỏi mọi hồ sơ cùng loại.
     #
     # ⚠️ Khai CỘT THẬT ở `SCOPE_FIELDS`, không PUBLIC: hồ sơ thuộc về một phòng
     # và một người, khác hẳn danh mục loại.
@@ -123,8 +123,8 @@ ENTITIES = [
     "coffee_policy", "coffee_member", "coffee_ledger", "pos_order",
     # Phiên đăng nhập (bao-CR-395 / CR-312 P3b, doc nhat-ky-va-phien-dang-nhap §8.5).
     # MỘT khóa cho cả ba màn: `/system/sessions` (admin, scope all + delete) ·
-    # tab «Tài khoản & thiết bị» trong hồ sơ nhân sự (HR, read all) · tab «Thiết bị
-    # của tôi» ở `/me`. ⚠️ Riêng «của tôi» đi endpoint `/api/auth/sessions` CHỈ đòi
+    # tab "Tài khoản & thiết bị" trong hồ sơ nhân sự (HR, read all) · tab "Thiết bị
+    # của tôi" ở `/me`. ⚠️ Riêng "của tôi" đi endpoint `/api/auth/sessions` CHỈ đòi
     # đăng nhập, KHÔNG đòi khóa này — hệ đang chạy thì vai trò cũ không tự có khóa
     # mới (D-018), mà ai cũng phải đá được thiết bị lạ của chính mình.
     "login_session",
@@ -142,7 +142,7 @@ ENTITIES = [
     # Sổ đồng bộ với hệ ngoài (P0 đồng bộ app đặt xe, doc dong-bo-dat-xe-duyet-dau §3.3).
     # MỘT khóa cho MỌI nguồn (app đặt xe, POS365, đơn hàng...) vì chỉ có một màn:
     # `/system/sync-logs`. `write` KHÔNG phải quyền sửa dòng sổ — sổ không sửa được —
-    # mà là nút «Chạy lại», tức gọi lại sang hệ ngoài.
+    # mà là nút "Chạy lại", tức gọi lại sang hệ ngoài.
     # ⚠️ Nhật ký đồng bộ RIÊNG của POS365 (`/api/coffee/sync/runs`) vẫn đi bằng
     # `pos_order.read` như cũ dù nay đọc chung một bảng.
     "sync_log",
@@ -164,7 +164,7 @@ ENTITIES = [
     # đã nhận, lịch sử từng bước, chi phí model. Chỉ ĐỌC: mọi thao tác trên việc vẫn đi qua
     # Telegram. Quản trị hệ thống, không phải thu mua (nằm trong `_SYS_ENTITIES` của seed).
     "agent_task",
-    # Quản lý nhóm chat của bot (ai-CR-123) — màn «Nhóm chat» của Trợ lý AI trên ERP v2. Ai cũng xem được nhóm MÌNH
+    # Quản lý nhóm chat của bot (ai-CR-123) — màn "Nhóm chat" của Trợ lý AI trên ERP v2. Ai cũng xem được nhóm MÌNH
     # là thành viên mà không cần khóa này; `read` = thấy MỌI nhóm bot đang ở kể cả nội dung (đại ca chốt 08/10: quản
     # lý AI thấy hết, có nhật ký xem) · `write` = phân loại, ngừng ghi nhóm, đăng nhập Zalo công ty.
     "agent_group",

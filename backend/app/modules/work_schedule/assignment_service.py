@@ -1,5 +1,5 @@
-"""Nghiệp vụ GÁN LỊCH: kiểm đích/mẫu có thật, CẤM chồng khoảng ngày, tự đóng dòng «không
-thời hạn» cũ khi TẠO dòng mới (chốt 05/10/2026), gắn tên đích bằng truy vấn gom.
+"""Nghiệp vụ GÁN LỊCH: kiểm đích/mẫu có thật, CẤM chồng khoảng ngày, tự đóng dòng "không
+thời hạn" cũ khi TẠO dòng mới (chốt 05/10/2026), gắn tên đích bằng truy vấn gom.
 """
 from datetime import date, timedelta
 
@@ -85,7 +85,7 @@ def _check_schedule(db: Session, schedule_id: int, must_be_active: bool) -> None
     if sched is None:
         raise HTTPException(400, "Mẫu lịch không tồn tại")
     if must_be_active and not sched.is_active:
-        raise HTTPException(400, f"Mẫu lịch «{sched.name}» đã tắt, không gán thêm được")
+        raise HTTPException(400, f"Mẫu lịch \"{sched.name}\" đã tắt, không gán thêm được")
 
 
 def _overlaps(db: Session, level: int, target_id: int, start: date, end: date | None,
@@ -109,7 +109,7 @@ def _raise_overlap(db: Session, a: WorkScheduleAssignment) -> None:
     sched = db.get(WorkSchedule, a.schedule_id)
     name = target_names(db, [a]).get((a.target_level, a.target_id), "")
     raise HTTPException(
-        400, f"Đã có lịch «{sched.name if sched else a.schedule_id}» gán cho «{name}» từ "
+        400, f"Đã có lịch \"{sched.name if sched else a.schedule_id}\" gán cho \"{name}\" từ "
              f"{_fmt(a.effective_from)} đến {_fmt(a.effective_to)}; đặt \"Đến ngày\" cho dòng đó trước.")
 
 
@@ -117,7 +117,7 @@ def create_assignment(db: Session, data: AssignmentCreate, user) -> WorkSchedule
     _check_target_exists(db, data.target_level, data.target_id)
     _check_schedule(db, data.schedule_id, must_be_active=True)
     hits = _overlaps(db, data.target_level, data.target_id, data.effective_from, data.effective_to)
-    #  Chỉ dòng «không thời hạn» BẮT ĐẦU TRƯỚC `from` mới được tự đóng; chồng kiểu khác → 400.
+    #  Chỉ dòng "không thời hạn" BẮT ĐẦU TRƯỚC `from` mới được tự đóng; chồng kiểu khác → 400.
     closable = [a for a in hits if a.effective_to is None and a.effective_from < data.effective_from]
     for a in hits:
         if a not in closable:
@@ -125,7 +125,7 @@ def create_assignment(db: Session, data: AssignmentCreate, user) -> WorkSchedule
     new_end = data.effective_from - timedelta(days=1)
     #  Lịch mới CÓ hạn = lịch tạm (VD một tháng làm ca khác): hết hạn thì người đó phải QUAY LẠI
     #  lịch cũ, không được rơi tụt xuống lịch phòng ban/hệ thống. Nên dòng cũ bị cắt đôi: nửa đầu
-    #  đóng ở `from − 1`, nửa sau mở lại «không thời hạn» từ `to + 1`. Không chồng với dòng nào
+    #  đóng ở `from − 1`, nửa sau mở lại "không thời hạn" từ `to + 1`. Không chồng với dòng nào
     #  khác được, vì mọi dòng khác của đối tượng này vốn đã không chồng với dòng cũ vô hạn.
     resumes: list[WorkScheduleAssignment] = []
     for a in closable:
@@ -161,7 +161,7 @@ def create_assignment(db: Session, data: AssignmentCreate, user) -> WorkSchedule
 def update_assignment(db: Session, obj: WorkScheduleAssignment, data: AssignmentUpdate,
                       user) -> WorkScheduleAssignment:
     values = data.model_dump(exclude_unset=True)
-    #  `effective_to` được phép set None (mở lại «không thời hạn»); các trường khác None = bỏ qua.
+    #  `effective_to` được phép set None (mở lại "không thời hạn"); các trường khác None = bỏ qua.
     for key in ("target_level", "target_id", "schedule_id", "effective_from", "note"):
         if key in values and values[key] is None:
             values.pop(key)

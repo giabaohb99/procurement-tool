@@ -69,7 +69,7 @@ def create_rule(db: Session, data: DocTypeLinkRuleCreate, actor: int) -> DocType
         db.rollback()
         raise HTTPException(
             400,
-            f"Đã có quy tắc «{RELATION_LABELS.get(values['relation'], '')}» cho cặp "
+            f"Đã có quy tắc \"{RELATION_LABELS.get(values['relation'], '')}\" cho cặp "
             "loại này. Sửa dòng cũ thay vì thêm dòng thứ hai — hai dòng mâu thuẫn "
             "nhau thì không biết tin dòng nào.",
         )
@@ -96,7 +96,7 @@ def update_rule(db: Session, rule: DocTypeLinkRule, data: DocTypeLinkRuleUpdate,
 
 def delete_rule(db: Session, rule: DocTypeLinkRule):
     #  ai-CR-191: liên kết văn bản đã khai theo quy tắc này (`tab_document_link.rule_id`) thì
-    #  CHẶN xóa, chỉ cho ngưng dùng (bỏ tick «Đang dùng») — xóa là liên kết mất tên luật sinh ra nó.
+    #  CHẶN xóa, chỉ cho ngưng dùng (bỏ tick "Đang dùng") — xóa là liên kết mất tên luật sinh ra nó.
     #  Trước CR này cho xóa và để `rule_id` trỏ vào khoảng không. Sổ khai ở `references.py`.
     from . import references  # noqa: F401
     reference_guard.ensure_deletable(db, "doc_link_rule", rule)

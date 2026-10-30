@@ -25,7 +25,7 @@ def _reject_timezone(value: datetime) -> datetime:
     """
     if value.tzinfo is not None:
         raise ValueError(
-            "Gửi giờ địa phương, KHÔNG kèm múi giờ (vd «2026-09-20T09:00:00»).")
+            "Gửi giờ địa phương, KHÔNG kèm múi giờ (vd \"2026-09-20T09:00:00\").")
     return value
 
 
@@ -94,7 +94,7 @@ class RoomBookingCreate(BaseModel):
     purpose: str = Field("", max_length=5000)
     #  `ge=0`: số người dự ÂM lọt qua mọi chốt vì `check_capacity` chỉ so với
     #  trần trên (-5 < sức chứa nên hợp lệ). Đo được 04/09/2026 — phiếu lưu
-    #  «-5 người» và màn tóm tắt hiện đúng con số đó.
+    #  "-5 người" và màn tóm tắt hiện đúng con số đó.
     attendee_count: int = Field(0, ge=0)
     #  Người ĐẶT. Bỏ trống = chính người đang lập phiếu (thư ký đặt hộ sếp thì
     #  điền id của sếp vào đây).

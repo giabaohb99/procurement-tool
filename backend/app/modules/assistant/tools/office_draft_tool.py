@@ -36,7 +36,7 @@ def _pick(options: list[dict], raw: str, keys: tuple[str, ...], what: str) -> tu
         return hit[0], None
     names = [str(o.get("name") or "") + (f" ({o['code']})" if o.get("code") else "") for o in (hit or options)][:10]
     return None, {"need_choice": what, "options": names,
-                  "note": f"{'Không thấy' if not hit else 'Có nhiều'} {what} khớp «{want}». Hỏi người dùng MỘT câu, đưa danh "
+                  "note": f"{'Không thấy' if not hit else 'Có nhiều'} {what} khớp **{want}**. Hỏi người dùng MỘT câu, đưa danh "
                           "sách đánh số, rồi gọi lại tool với đúng tên / mã."}
 
 
@@ -74,7 +74,7 @@ def _draft_vehicle_booking(ctx: ToolContext, args: dict) -> dict:
     try:
         start, end = _iso_minute(args.get("start_time")), _iso_minute(args.get("end_time"))
     except ValueError as e:
-        return {"error": f"Giờ «{e}» phải dạng YYYY-MM-DD HH:MM (giờ Việt Nam)."}
+        return {"error": f"Giờ **{e}** phải dạng YYYY-MM-DD HH:MM (giờ Việt Nam)."}
     missing = [{"field": f, "question": q} for f, q, ok in (
         ("purpose", "Đi đâu, việc gì (mục đích chuyến)?", purpose),
         ("start_location", "Đón ở đâu?", _text(args.get("start_location"))),

@@ -139,7 +139,7 @@ def test_ma_phuong_tien_la_tu_choi_ca_lo():
 def test_thieu_cot_thi_tu_choi_va_noi_ten_cot():
     headers = [label for _, label in COLUMNS]
     headers[headers.index("Thuế VAT")] = "Cột lạ"
-    with pytest.raises(reader.CustomsFileError, match="«Thuế VAT»"):
+    with pytest.raises(reader.CustomsFileError, match="\"Thuế VAT\""):
         reader.check_headers(_xlsx([_row()], headers=headers))
 
 

@@ -13,7 +13,7 @@ Luật mới, chốt cùng khách 24/08/2026:
   3. người vừa BÃI BỎ nó (`updated_by` — bãi bỏ là bước cuối của vòng đời nên
      cột này không bị nhịp sửa nào ghi đè sau đó),
      ⚠️ Cột này chỉ đúng nghĩa "người bãi bỏ" **nếu mọi đường bãi bỏ đều ghi
-     nó**. Có hai đường: nút «Bãi bỏ» (`service.revoke`) và ban hành văn bản
+     nó**. Có hai đường: nút "Bãi bỏ" (`service.revoke`) và ban hành văn bản
      mang quan hệ *bãi bỏ* (`supersede_service.apply_supersede`). Đường thứ hai
      ban đầu quên ghi, và hậu quả đúng bằng lỗ hổng: người SỬA CUỐI CÙNG trước
      đó giữ nguyên quyền xem. Thêm đường bãi bỏ thứ ba thì phải ghi cột này.

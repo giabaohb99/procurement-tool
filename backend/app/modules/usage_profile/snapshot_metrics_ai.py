@@ -1,4 +1,4 @@
-"""Nhóm chỉ số 3.8 «Dùng AI» của MỘT người (thuần, duoc-CR-655, D0d). Chỉ SỐ và MÃ — không nội dung câu hỏi.
+"""Nhóm chỉ số 3.8 "Dùng AI" của MỘT người (thuần, duoc-CR-655, D0d). Chỉ SỐ và MÃ — không nội dung câu hỏi.
 
 Chưa thu (bảng AI trống / chưa tồn tại / mốc thu sau cửa sổ) → mọi khóa `NOT_COLLECTED`, KHÔNG ghi 0. Đã thu mà người này
 không dùng → 0 (đo được thật). Giá trị MÃ (kênh chính, ứng dụng AI, nhóm công cụ) đi vào `lists`, không thành khóa số: trung vị
@@ -50,7 +50,7 @@ def ai_metrics(src: SnapshotSources, uid: int, usage_rows: list, docs_created: f
     p.put("ai_drafts_confirmed", confirmed)
     p.put("ai_docs_drafted", drafted)
     p.put("ai_docs_share", min(1.0, drafted / docs_created) if docs_created else None)
-    #  Danh sách mã cho khối «Dùng AI» trên hồ sơ — {kênh: lượt}, {mã ứng dụng: lượt}, [[nhóm công cụ, lượt]].
+    #  Danh sách mã cho khối "Dùng AI" trên hồ sơ — {kênh: lượt}, {mã ứng dụng: lượt}, [[nhóm công cụ, lượt]].
     p.lists["ai_channels"] = {str(k): v for k, v in channels.items() if v}
     p.lists["ai_clients"] = {str(k): v for k, v in clients.items() if v}
     p.lists["ai_tool_groups"] = [[k, v] for k, v in groups.most_common(MAX_TOOL_GROUPS)]

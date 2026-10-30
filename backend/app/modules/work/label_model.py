@@ -56,7 +56,7 @@ class WorkLabelField(Base, AuditMixin):
     #  đếm biểu đồ ở Tổng quan) — không khóa gì cả: tên, bộ giá trị, màu và cả
     #  việc xóa trường đều do từng dự án tự quyết, y như mọi trường tùy biến
     #  khác. Không có móc này thì phải dò theo TÊN, mà tên thì người dùng đổi
-    #  được ngay trong menu «Tùy chỉnh».
+    #  được ngay trong menu "Tùy chỉnh".
     system_key: Mapped[str] = mapped_column(String(30), default="", index=True)
 
 

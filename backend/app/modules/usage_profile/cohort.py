@@ -2,7 +2,7 @@
 
 Luật: (1) tập đo = người có dữ liệu trong W; (2) vai trò ứng viên = vai trò của người đó TRỪ vai trò quản trị;
 (3) chọn vai trò CỤ THỂ NHẤT có ≥ 5 người trong tập đo (ít thành viên nhất trong số đạt ngưỡng; hòa → role_id nhỏ) —
-nếu chọn vai trò đông nhất thì «Nhân viên» chung ai cũng có sẽ làm mọi người so với cả công ty;
+nếu chọn vai trò đông nhất thì "Nhân viên" chung ai cũng có sẽ làm mọi người so với cả công ty;
 (4) không vai trò nào đạt → pháp nhân nếu ≥ 5, ngược lại toàn công ty;
 (5) trung vị nhóm tính trên thành viên CÓ giá trị (bỏ người `unmeasured`), chính người đó nằm trong trung vị.
 """

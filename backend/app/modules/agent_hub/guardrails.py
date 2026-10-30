@@ -7,7 +7,7 @@ dừng ở cổng lệch kế hoạch và leo thang cho đại ca, không bao gi
 Ba nhóm luật:
   1. `BANNED_PATTERNS` — tệp cấm khi sửa mã (luật C3, C4, §E, §G + ba luật tự cải thiện V-05).
   2. `classify_shell` / `classify_sql` — lệnh đại ca gõ cho VPS là CHỈ ĐỌC hay SỬA. Chỉ đọc trên dev thì
-     chạy luôn; còn lại phải «đúng». Lệnh đụng bí mật (.env, khóa, mật khẩu) bị từ chối thẳng, kể cả chỉ đọc.
+     chạy luôn; còn lại phải "đúng". Lệnh đụng bí mật (.env, khóa, mật khẩu) bị từ chối thẳng, kể cả chỉ đọc.
   3. `mask_secrets` — che mọi chuỗi giống bí mật trong kết quả trước khi lên Telegram hay vào sổ.
 """
 from __future__ import annotations
@@ -68,7 +68,7 @@ _SECRET_HINT = re.compile(
     r"authorized_keys|known_hosts|\.ssh/|secret|token|passw|credential|vps_ssh_key|\.p12\b|"
     r"MYSQL_ROOT|JWT_|OAUTH|docker\s+(compose\s+)?config(?!\s+--services)|docker\s+inspect\b.*\benv\b",
     re.IGNORECASE)
-#  Thứ không bao giờ chạy qua bot, dù đại ca có «đúng»: xóa hàng loạt, xóa volume, định dạng đĩa, tắt máy.
+#  Thứ không bao giờ chạy qua bot, dù đại ca có "đúng": xóa hàng loạt, xóa volume, định dạng đĩa, tắt máy.
 _NEVER = re.compile(
     r"\brm\s+-[a-z]*r[a-z]*f?\s+(/|~|\$HOME|\*)(\s|$)|\bmkfs|\bdd\s+if=|\bshutdown\b|\breboot\b|\bhalt\b|"
     r"\bdown\b.*(\s-v\b|--volumes)|docker\s+volume\s+(rm|prune)|docker\s+system\s+prune\b.*--volumes|"
@@ -93,7 +93,7 @@ def classify_shell(cmd: str) -> tuple[str, str]:
     for p in parts:
         low = re.sub(r"\s+", " ", p.lower())
         if not any(low == h or low.startswith(h + " ") or (h.endswith("-") and low.startswith(h)) for h in _READ_HEADS):
-            return SHELL_WRITE, f"«{p[:40]}» không nằm trong danh sách lệnh chỉ đọc"
+            return SHELL_WRITE, f"**{p[:40]}** không nằm trong danh sách lệnh chỉ đọc"
     return SHELL_READ, ""
 
 

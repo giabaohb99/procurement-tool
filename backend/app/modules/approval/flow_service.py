@@ -190,10 +190,10 @@ def default_overlap_warning(db: Session, flow: ApprovalFlow) -> str:
 
     ranked = sorted([flow, *overlapping], key=lambda row: (-row.priority, row.id))
     winner = ranked[0]
-    remaining_names = ", ".join(f"«{row.name}»" for row in ranked[1:])
+    remaining_names = ", ".join(f"\"{row.name}\"" for row in ranked[1:])
     return (
         f"Đang có {len(ranked)} luồng mặc định (không khai điều kiện) cùng bật cho "
-        f"«{flow.entity}»: chỉ «{winner.name}» chạy, {remaining_names} sẽ không bao giờ "
+        f"\"{flow.entity}\": chỉ \"{winner.name}\" chạy, {remaining_names} sẽ không bao giờ "
         "được chọn. Khai điều kiện hoặc tắt bớt để khỏi tưởng nhầm là đang chạy."
     )
 

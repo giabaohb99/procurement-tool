@@ -130,13 +130,13 @@ def before_delete(db: Session, level: SecurityLevel):
 
     flow = _flows_pointing_to(db, level)
     if flow:
-        names = ", ".join(f"«{t}»" for t in flow[:5])
+        names = ", ".join(f"\"{t}\"" for t in flow[:5])
         suffix = f" và {len(flow) - 5} chỗ nữa" if len(flow) > 5 else ""
         blockers.append(f"điều kiện phê duyệt đang trỏ tới: {names}{suffix}")
 
     if blockers:
         raise HTTPException(
             400,
-            f"Không xóa được bậc «{level.name}» — " + "; ".join(blockers) + ". "
-            "Muốn thôi dùng thì bỏ tick «Đang dùng» thay vì xóa.",
+            f"Không xóa được bậc \"{level.name}\" — " + "; ".join(blockers) + ". "
+            "Muốn thôi dùng thì bỏ tick \"Đang dùng\" thay vì xóa.",
         )

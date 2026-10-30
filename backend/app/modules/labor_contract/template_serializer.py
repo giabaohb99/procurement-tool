@@ -24,7 +24,7 @@ def serialize_templates(db: Session, rows: list[LaborContractTemplate]) -> list[
     creators = user_names(db, {r.created_by for r in rows})
     file_ids = {r.file_id for r in rows if r.file_id}
     sizes = dict(db.query(StoredFile.id, StoredFile.size).filter(StoredFile.id.in_(file_ids)).all()) if file_ids else {}
-    #  ai-CR-177: HĐ đã xóa mềm không tính vào «đang dùng mẫu».
+    #  ai-CR-177: HĐ đã xóa mềm không tính vào "đang dùng mẫu".
     counts = dict(db.query(LaborContract.template_id, func.count(LaborContract.id))
                   .filter(LaborContract.template_id.in_(ids), LaborContract.is_deleted == False)  # noqa: E712
                   .group_by(LaborContract.template_id).all())

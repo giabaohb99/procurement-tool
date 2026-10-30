@@ -2,7 +2,7 @@
 
 Danh mục biến dùng chung mọi pháp nhân, nên HR chỉ quản một pháp nhân không được sửa nhãn / mặc định /
 ngừng dùng ảnh hưởng mẫu của pháp nhân khác. Quyền hành động vẫn do `require(...)` ở controller gác;
-hàm này chỉ thêm điều kiện «phạm vi của hành động đó là tất cả».
+hàm này chỉ thêm điều kiện "phạm vi của hành động đó là tất cả".
 """
 from fastapi import HTTPException
 
@@ -11,7 +11,7 @@ from app.core.scoping import scope_condition
 from .template_model import LaborContractTemplate
 
 ENTITY = "labor_contract_template"
-UNRESTRICTED_ONLY = ("Chỉ người có phạm vi «tất cả pháp nhân» ở quyền Mẫu hợp đồng lao động "
+UNRESTRICTED_ONLY = ("Chỉ người có phạm vi \"tất cả pháp nhân\" ở quyền Mẫu hợp đồng lao động "
                      "mới được thêm, sửa hoặc xóa biến — danh mục biến dùng chung mọi pháp nhân")
 
 

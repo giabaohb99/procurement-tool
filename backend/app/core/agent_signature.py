@@ -6,7 +6,7 @@ khóa riêng `AGENT_SERVICE_SECRET` ở `.env` hai đầu, và ký THÊM danh t�
     HMAC(secret, "<ts>.<method>.<path>.<user_id>.<sha256(body)>")
 
 `X-Agent-User` = id tài khoản ERP mà lượt gọi chạy DƯỚI QUYỀN. Chiều AI → ERP: ERP tra tài khoản đó, kiểm quyền và lọc
-phạm vi như mọi API khác — dịch vụ AI không có «khóa thần». Chiều ERP → AI (chuyển tiếp web): ERP đã xác thực JWT rồi mới
+phạm vi như mọi API khác — dịch vụ AI không có "khóa thần". Chiều ERP → AI (chuyển tiếp web): ERP đã xác thực JWT rồi mới
 ký, dịch vụ AI tin danh tính trong chữ ký.
 """
 from __future__ import annotations

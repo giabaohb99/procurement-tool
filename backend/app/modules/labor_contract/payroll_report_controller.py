@@ -1,4 +1,4 @@
-"""Báo cáo A5 «Quỹ lương theo pháp nhân» (khóa 21) — duoc-CR-693 (nguồn số: ô lương trên hồ sơ nhân sự).
+"""Báo cáo A5 "Quỹ lương theo pháp nhân" (khóa 21) — duoc-CR-693 (nguồn số: ô lương trên hồ sơ nhân sự).
 
 Router riêng chỉ chứa `/summary` + `/summary/export` + `/summary/rows` (khung báo cáo kiểu Haravan).
 Đường gốc `/api/payroll-fund` cố ý KHÔNG nằm dưới `/api/employees` để khỏi bị `/{id}` của router chính nuốt.

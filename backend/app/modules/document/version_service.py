@@ -189,7 +189,7 @@ def _require_open(db: Session, version: DocumentVersion):
 def block_while_approving(version: DocumentVersion) -> None:
     """ĐANG TRÌNH DUYỆT thì đóng băng — 409 (19/08/2026).
 
-    Trước đây bản «đang duyệt» vẫn ghi được, với lý do "trả lại thì gõ tiếp".
+    Trước đây bản "đang duyệt" vẫn ghi được, với lý do "trả lại thì gõ tiếp".
     Lý do đó chết từ D-029: bị trả lại hay rút phiếu là văn bản **về Nháp** rồi
     mới gõ tiếp, nên không cần mở cửa trong lúc đang duyệt nữa.
 
@@ -200,7 +200,7 @@ def block_while_approving(version: DocumentVersion) -> None:
     lúc khóa nên sau đó không còn gì để đối chiếu ngược.
 
     Đường ra cho người soạn: **Rút phiếu** (về Nháp) hoặc người duyệt **trả về**
-    (bản sang «Trả về», ghi được ngay). Không ai bị kẹt.
+    (bản sang "Trả về", ghi được ngay). Không ai bị kẹt.
 
     Bản **ĐÃ TỪ CHỐI** khóa luôn ở đây: nó không còn đường gửi lại, gõ tiếp chỉ
     là gõ vào một bản chết. Muốn làm lại thì mở phiên bản mới — nó đã nhả

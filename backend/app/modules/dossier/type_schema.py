@@ -2,7 +2,7 @@
 
 ⚠️ Mọi ô chuỗi khai `max_length` khớp ĐÚNG `String(n)` ở model, và ô số khai
 dải. Bài học duoc-CR-316: thiếu khai thì chuỗi dài / số khổng lồ đi thẳng xuống
-MySQL và người dùng nhận «mã sự cố» thay vì câu *«tối đa n ký tự»*.
+MySQL và người dùng nhận "mã sự cố" thay vì câu *"tối đa n ký tự"*.
 
 ⚠️ **SQLite của bộ test KHÔNG ép độ dài `VARCHAR`**, nên bài kiểm nào ghi xuống
 DB rồi khẳng định là xanh giả — phải kiểm thẳng ở tầng schema
@@ -46,7 +46,7 @@ class DossierTypeCreate(BaseModel):
     #  loại hồ sơ có mã nói lên nghĩa (`HD`, `GP`, `ATLD`) chứ không phải số thứ
     #  tự, nên để máy cấp `lhs001` là đẻ ra một danh mục không ai đọc được. Giao
     #  diện cũng bắt buộc ô này — hai phía phải nói cùng một luật, kẻo lặp lại
-    #  lỗi của Chức vụ: câu gợi ý hứa «bỏ trống thì tự sinh» trong khi schema
+    #  lỗi của Chức vụ: câu gợi ý hứa "bỏ trống thì tự sinh" trong khi schema
     #  chặn rỗng trước đó.
     code: Str30
     name: Str100

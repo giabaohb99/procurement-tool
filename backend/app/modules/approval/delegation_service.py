@@ -76,7 +76,7 @@ def validate_before_save(db: Session, from_employee_id: int, to_employee_id: int
     #  chính tầm thường (`approval_flow.create`, thứ hay cấp cho trợ lý và admin
     #  phân hệ): lập một dòng `from = giám đốc, to = chính mình`. Giám đốc không
     #  bấm gì, không nhận thông báo nào, mà từ giây đó kẻ lập ký được MỌI phiếu
-    #  đang chờ ông ấy — dấu vết ghi «ký thay theo ủy quyền số 12», đúng thứ
+    #  đang chờ ông ấy — dấu vết ghi "ký thay theo ủy quyền số 12", đúng thứ
     #  người soát sổ sẽ lướt qua.
     #
     #  Ba luật cũ bên dưới đều đúng nhưng không luật nào hỏi câu này, vì chúng

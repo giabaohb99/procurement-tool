@@ -1,8 +1,8 @@
 """Tạo THẬT chứng từ từ bản nháp của Trợ lý AI, sau khi người dùng xác nhận trong Telegram (ai-CR-046).
 
-Trên web, tool «soạn nháp» của Trợ lý chỉ trả bản nháp; người dùng bấm nút mở form điền sẵn rồi tự
-bấm Lưu. Telegram không mở được form, nên trước đây bot chỉ bảo «lên web». Nay bot tóm tắt bản nháp,
-người dùng nhắn «tạo» là bot tạo đúng như nút Lưu của web:
+Trên web, tool "soạn nháp" của Trợ lý chỉ trả bản nháp; người dùng bấm nút mở form điền sẵn rồi tự
+bấm Lưu. Telegram không mở được form, nên trước đây bot chỉ bảo "lên web". Nay bot tóm tắt bản nháp,
+người dùng nhắn "tạo" là bot tạo đúng như nút Lưu của web:
 
   - kiểm lại quyền `create` của CHÍNH tài khoản đang dùng chat (không tin kết quả tool lúc soạn);
   - tự điền phần đầu phiếu từ hồ sơ nhân sự (người lập, chức vụ, phòng, pháp nhân, ngày) — việc mà
@@ -10,7 +10,7 @@ người dùng nhắn «tạo» là bot tạo đúng như nút Lưu của web:
   - gọi đúng hàm service mà đường API của web gọi, và làm nốt phần đường API tự làm (nhật ký thao
     tác cho đơn nghỉ, báo nhóm hỗ trợ cho phiếu hỗ trợ).
 
-Phiếu tạo ra ở trạng thái NHÁP như bấm Lưu trên web; nhắn «tạo và gửi duyệt» thì gửi duyệt luôn
+Phiếu tạo ra ở trạng thái NHÁP như bấm Lưu trên web; nhắn "tạo và gửi duyệt" thì gửi duyệt luôn
 (ai-CR-047, `submit` ở cuối tệp).
 ⚠️ Đề nghị thanh toán KHÔNG tạo từ chat: dính tiền, một bản nháp có thể tách thành nhiều phiếu theo
 NCC + pháp nhân, và phần kiểm phạm vi công nợ nằm ở đường API. Bot gửi link mở form web điền sẵn.
@@ -82,7 +82,7 @@ def kind_of(tool_name: str) -> str:
 
 
 def payment_link(draft: dict) -> str:
-    """Đường dẫn form tạo đề nghị thanh toán điền sẵn — cùng khuôn nút «Tạo» của web (CR-025/CR-264)."""
+    """Đường dẫn form tạo đề nghị thanh toán điền sẵn — cùng khuôn nút "Tạo" của web (CR-025/CR-264)."""
     ids = [int(i) for i in (draft.get("payable_ids") or []) if str(i).isdigit() and int(i) > 0]
     offsets = [f"{int(k)}:{v}" for k, v in (draft.get("offsets") or {}).items()
                if str(k).isdigit() and isinstance(v, (int, float)) and v > 0]
@@ -112,7 +112,7 @@ def _days(n) -> str:
 
 
 def summarize(kind: str, draft: dict) -> list[str]:
-    """Dòng «Nhãn: giá trị» tóm tắt bản nháp để người dùng đọc trước khi nhắn tạo (thẻ in đậm phần nhãn)."""
+    """Dòng "Nhãn: giá trị" tóm tắt bản nháp để người dùng đọc trước khi nhắn tạo (thẻ in đậm phần nhãn)."""
     if kind == "leave":
         lines = draft.get("lines") or []
         types = ", ".join(f"{ln.get('leave_type') or 'loại #' + str(ln.get('leave_type_id'))}"
@@ -125,7 +125,7 @@ def summarize(kind: str, draft: dict) -> list[str]:
             session += f" → {SESSION_LABELS.get(draft.get('to_session'), '')}"
         draft_periods = _draft_periods(draft)
         if len(draft_periods) > 1:
-            #  Đơn nhiều khoảng: một dòng liệt kê từng khoảng (kèm buổi), thay hai dòng «Ngày nghỉ» + «Buổi».
+            #  Đơn nhiều khoảng: một dòng liệt kê từng khoảng (kèm buổi), thay hai dòng "Ngày nghỉ" + "Buổi".
             from app.modules.leave.period_spans import PeriodView, period_text
 
             shown = period_text([PeriodView(from_date=p.from_date, to_date=p.to_date, from_session=p.from_session,
@@ -284,7 +284,7 @@ def create(db: Session, user, kind: str, draft: dict, source: int = 0) -> tuple[
         elif kind == "work_plan":
             from app.modules.ai_plan import service as ai_plan
 
-            code, oid = ai_plan.create_direct(db, user, draft)     # như bao-CR-616 + ghi đề xuất «Tạo thẳng» (kh-AI1-3)
+            code, oid = ai_plan.create_direct(db, user, draft)     # như bao-CR-616 + ghi đề xuất "Tạo thẳng" (kh-AI1-3)
         elif kind == "vehicle_booking":
             code, oid = _create_vehicle_booking(db, user, draft)
         elif kind == "seal_request":
@@ -396,7 +396,7 @@ def _create_work_task(db: Session, user, draft: dict) -> tuple[str, int]:
     due = f" · hạn {draft['due_date']}" if draft.get("due_date") else ""
     for u in db.query(User).filter(User.employee_id.in_([p for p in pics if p != me] or [-1])):
         db.add(Notification(user_id=u.id, title=f"Việc mới: {data.title}"[:255],
-                            body=f"Bạn được giao việc «{data.title}» ở dự án {draft.get('list_name', '')}{due}.",
+                            body=f"Bạn được giao việc **{data.title}** ở dự án {draft.get('list_name', '')}{due}.",
                             link=f"/project/tasks/{tid}", is_read=False))
     db.commit()
     return f"việc #{tid}", tid
@@ -450,7 +450,7 @@ def _create_purchase(db: Session, user, draft: dict) -> tuple[str, int]:
         if not str(ln.get("product_name") or "").strip():
             raise DraftError("Có dòng chưa có tên hàng.")
         if not float(ln.get("qty") or 0) > 0:
-            raise DraftError(f"Dòng «{ln.get('product_name')}» chưa có số lượng.")
+            raise DraftError(f"Dòng \"{ln.get('product_name')}\" chưa có số lượng.")
         items.append(PRItemIn(**{k: v for k, v in ln.items() if k in keys}))
     if not items:
         raise DraftError("Yêu cầu mua hàng chưa có dòng nào.")
@@ -464,7 +464,7 @@ def _create_purchase(db: Session, user, draft: dict) -> tuple[str, int]:
 
 
 # ---------------------------------------------------------------------------
-# Gửi duyệt ngay sau khi tạo — «tạo và gửi duyệt» (ai-CR-047)
+# Gửi duyệt ngay sau khi tạo — "tạo và gửi duyệt" (ai-CR-047)
 # ---------------------------------------------------------------------------
 #  Phiếu hỗ trợ không có bước duyệt (tạo là tới nhóm hỗ trợ) nên không nằm đây.
 SUBMITTABLE = ("leave", "survey", "purchase", "vehicle_booking")   # duyệt dấu cần tệp đính kèm → gửi trên web
@@ -473,7 +473,7 @@ _SUBMIT_ACTION = {"leave": "write", "survey": "read", "purchase": "read", "vehic
 
 
 def missing_for_submit(kind: str, draft: dict) -> str:
-    """Luật «bắt buộc khi GỬI DUYỆT» mà web chỉ kiểm ở giao diện (`procurement/utils/required-fields.ts`):
+    """Luật "bắt buộc khi GỬI DUYỆT" mà web chỉ kiểm ở giao diện (`procurement/utils/required-fields.ts`):
     backend `submit_pr` / `submit_` không chặn gì, nên bot phải tự kiểm — không thì chat là cửa lách luật.
     Trả câu báo lỗi đầu tiên, rỗng nếu gửi được. Đơn nghỉ phép thì backend tự kiểm (quỹ phép, trùng ngày)."""
     if kind == "purchase":
@@ -488,7 +488,7 @@ def missing_for_submit(kind: str, draft: dict) -> str:
                                                ("Ngày cần hàng", bool(str(ln.get("required_date") or "").strip())))
                        if not ok]
             if missing:
-                return f"Sản phẩm «{ln.get('product_name')}» còn thiếu: {', '.join(missing)}."
+                return f"Sản phẩm **{ln.get('product_name')}** còn thiếu: {', '.join(missing)}."
     if kind == "vehicle_booking":
         #  duoc-CR-681: Công ty + Người phê duyệt bắt buộc khi GỬI DUYỆT (giao diện chặn, backend chỉ kiểm hợp lệ).
         if not int(draft.get("first_approver_id") or 0):
@@ -556,7 +556,7 @@ _TICKET_STATUS = {"open": "Mới", "in_progress": "Đang xử lý", "answered": 
 
 
 def _vn_num(value: float) -> str:
-    """0.5 -> «0,5»: số lẻ viết theo kiểu Việt."""
+    """0.5 -> "0,5": số lẻ viết theo kiểu Việt."""
     return f"{value:g}".replace(".", ",")
 
 
@@ -635,8 +635,8 @@ def created_details(db: Session, kind: str, oid: int) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Đơn nháp của CHÍNH MÌNH: xem · dùng lại · xóa bớt (ai-CR-143 — đại ca 09/10/2026: «tạo nhiều như vậy thì ra nhiều đơn
-# nháp lắm đúng không, có thể tận dụng nó, hoặc anh nhắn là xóa bớt đơn nháp đi»)
+# Đơn nháp của CHÍNH MÌNH: xem · dùng lại · xóa bớt (ai-CR-143 — đại ca 09/10/2026: "tạo nhiều như vậy thì ra nhiều đơn
+# nháp lắm đúng không, có thể tận dụng nó, hoặc anh nhắn là xóa bớt đơn nháp đi")
 # ---------------------------------------------------------------------------
 MINE_MAX = 30
 

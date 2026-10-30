@@ -27,7 +27,7 @@ REGISTRY = {
     "pr_dispatch_enabled": ("bool", "PR_DISPATCH_ENABLED"),
     "pr_dispatch_skip_rules": ("str", "PR_DISPATCH_SKIP_RULES"),   # bao-CR-497
     "pr_options_enabled": ("bool", "PR_OPTIONS_ENABLED"),
-    #  bao-CR-524: mã phòng thu mua mặc định (thay phòng ảo «Thu mua chung»). Đọc ở MỘT chỗ
+    #  bao-CR-524: mã phòng thu mua mặc định (thay phòng ảo "Thu mua chung"). Đọc ở MỘT chỗ
     #  duy nhất: `core/central_purchasing.py`.
     "central_purchasing_dept_code": ("str", "CENTRAL_PURCHASING_DEPT_CODE"),
     #  Cảnh báo mở/tải tệp đính kèm văn bản — sửa được ngay trên màn Cấu hình

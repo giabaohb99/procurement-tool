@@ -2239,7 +2239,7 @@ def test_de_bai_claude_nap_so_tru_viec_rui_ro_cao(db, bot, monkeypatch, tmp_path
     task = _task_with_plan(db, service, ["backend/app/x.py"], risk_level=2)
     brief = coder.build_brief(task, [])
     assert "## Sổ quyết định của đại ca" in brief and "## QĐ-01" in brief
-    assert "KHÔNG còn là lý do dừng" in brief and "«Theo QĐ-xx:»" in brief
+    assert "KHÔNG còn là lý do dừng" in brief and "**Theo QĐ-xx:**" in brief
     assert "tài liệu `.md` không tính" in brief
     high = _task_with_plan(db, service, ["backend/app/x.py"], risk_level=RISK_HIGH)
     brief = coder.build_brief(high, [])
@@ -2267,7 +2267,7 @@ def test_tro_ly_tren_telegram_nhan_persona_dau_dau(db, monkeypatch):
 
     monkeypatch.setattr(assistant_service, "ask", fake_ask)
     service.answer_question(db, "12345", "em tên gì")
-    assert "Đậu Đậu" in seen["system"] and "«em»" in seen["system"]
+    assert "Đậu Đậu" in seen["system"] and "**em**" in seen["system"]
     assert sent[-1] == "Em là Đậu Đậu."
 
     def boom(question, **kw):
@@ -3372,12 +3372,12 @@ def test_the_ket_qua_gon_chi_noi_logic_da_kiem_va_lenh_tiep(db, bot, monkeypatch
     assert buttons == [] and "Tệp đã sửa" not in text and "TỔNG KẾT" not in text
     assert "Đưa 3 ô lọc ra thanh ngoài" in text and "Rủi ro thấp" in text
     assert "giao diện v2 XANH (typecheck · vitest src/modules/finance)" in text
-    assert f"«gộp {task.code}»" in text and f"«chi tiết {task.code}»" in text
+    assert f"**gộp {task.code}**" in text and f"**chi tiết {task.code}**" in text
     assert len(text) < 700
     #  Cổng đỏ: gợi ý sửa cho xanh, không gợi ý gộp.
     red = {**gate, "status": "fail", "frontend": {"status": "fail", "steps": [{"name": "vitest x", "ok": False}]}}
     coder.send_review_card(db, task, run, files=files, gate=red, escalation="", report=report, data={})
-    assert f"«sửa cho xanh {task.code}»" in sent[-1][0] and "«gộp" not in sent[-1][0]
+    assert f"**sửa cho xanh {task.code}**" in sent[-1][0] and "**gộp" not in sent[-1][0]
     #  Không có dòng TÓM TẮT thì lấy đoạn đầu, cắt ngắn.
     assert coder.report_summary("## TỔNG KẾT\n\nĐã sửa lọc ngày.\n\n2. chi tiết") == "Đã sửa lọc ngày."
 
@@ -3431,7 +3431,7 @@ def test_cau_hoi_ve_viec_chi_tra_loi_tinh_trang_khong_lam_gi(db, bot, monkeypatc
     task = _task_with_session(db, service, coder)
     service.handle_message(db, _msg("cái fix này đang trên nhánh nào, có merge sang erp-v2 được không"))
     text = sent[-1][0]
-    assert "bot/x" in text and task.code in text and f"«gộp {task.code}»" in text
+    assert "bot/x" in text and task.code in text and f"**gộp {task.code}**" in text
 
 
 
@@ -3539,7 +3539,7 @@ def test_chi_gop_thi_khong_ssh_va_viec_cho_deploy(db, bot, monkeypatch):
     assert out["deployed"] is False and scripts == []
     assert any(c[1] == "merge" for c in git_calls) and any(c[1] == "push" for c in git_calls)
     assert task.status == service.ST_PROD and task.deployed_dev_at is None
-    assert "Dev CHƯA deploy" in sent[-1][0] and f"«deploy dev {task.code}»" in sent[-1][0]
+    assert "Dev CHƯA deploy" in sent[-1][0] and f"**deploy dev {task.code}**" in sent[-1][0]
     #  «gộp» lần nữa không gộp lại, chỉ nhắc cách lên dev.
     monkeypatch.setattr(coder, "dispatch_deploy", lambda *a: pytest.fail("đã gộp rồi"))
     service.handle_message(db, _msg(f"gộp {task.code}"))
@@ -3565,7 +3565,7 @@ def test_deploy_dev_khi_chua_gop_thi_noi_can_gop_truoc(db, bot, monkeypatch):
     monkeypatch.setattr(service, "_dispatch_deploy", lambda *a, **kw: pytest.fail("chưa gộp"))
     task = _task_with_session(db, service, coder)
     service.handle_message(db, _msg(f"deploy dev {task.code}"))
-    assert "chưa gộp" in sent[-1][0] and f"«gộp và deploy dev {task.code}»" in sent[-1][0]
+    assert "chưa gộp" in sent[-1][0] and f"**gộp và deploy dev {task.code}**" in sent[-1][0]
 
 
 def test_thu_hoi_ban_chi_gop_thi_khong_deploy_lai(db, bot, monkeypatch):
@@ -4101,7 +4101,7 @@ def test_tro_ly_duoc_dan_dung_co_che_dang_nhap_va_tai_khoan_hien_tai(db, monkeyp
     monkeypatch.setattr(assistant_service, "ask",
                         lambda message, *, db, user, history=None, system="", **kw: seen.update(system=system) or {"text": "ok"})
     service.answer_question(db, "12345", "anh mới đổi tài khoản rồi mà")
-    assert "Trang cá nhân → tab «Telegram»" in seen["system"] and "không có quét QR" in seen["system"]
+    assert "Trang cá nhân → tab **Telegram**" in seen["system"] and "không có quét QR" in seen["system"]
     assert "CHƯA đăng nhập bằng mã" in seen["system"] and "BOT01" in seen["system"]
 
 
@@ -4498,7 +4498,7 @@ def test_thieu_truong_bat_buoc_khi_gui_duyet_thi_chua_tao_gi(db, bot, monkeypatc
     draft = {"purpose": "Bảo trì", "lines": [{"product_name": "Thép", "qty": 2}]}
     service.deliver_tool_results(db, "12345", me, [{"name": "draft_purchase_request", "draft": draft}])
     service.handle_message(db, _msg("tạo và gửi duyệt"))
-    assert "Sản phẩm «Thép» còn thiếu: Kho nhận, Ngày cần hàng." in sent[-1] and created == [] and submitted == []
+    assert "Sản phẩm **Thép** còn thiếu: Kho nhận, Ngày cần hàng." in sent[-1] and created == [] and submitted == []
     service.handle_message(db, _msg("tạo"))                        # nháp vẫn chờ: lưu Nháp được
     assert created == ["purchase"]
 
@@ -4698,7 +4698,7 @@ def test_dai_ca_cap_quyen_co_hoi_lai_roi_ghi_so_va_liet_ke(db, bot, monkeypatch)
     service.handle_message(db, _msg("thôi"))
     assert "không đổi quyền gì" in sent[-1] and grants.level_for(db, duoc.id) == grants.LEVEL_PLAN
     service.handle_message(db, _msg("cho anh Tèo quyền gộp dev"))
-    assert "không tìm thấy tài khoản ERP nào tên «tèo»" in sent[-1]
+    assert "không tìm thấy tài khoản ERP nào tên **tèo**" in sent[-1]
     service.handle_message(db, _msg("gỡ quyền của Được"))
     service.handle_message(db, _msg("đúng"))
     assert "Đã gỡ quyền sửa mã của <b>Trần Văn Được (DEGO0009)</b>" in sent[-1]
@@ -4717,7 +4717,7 @@ def test_nhieu_nguoi_trung_ten_thi_hoi_ro_va_nguoi_lien_ket_khong_cap_duoc(db, b
     service.handle_message(db, _msg("thôi"))
     _staff(db, "Lê Gia Bảo", "DEGO0012", "giabao@dego.vn")
     service.handle_message(db, _msg("cho Gia Bảo quyền gộp dev"))
-    assert "Có 2 người khớp «gia bảo»" in sent[-1]
+    assert "Có 2 người khớp **gia bảo**" in sent[-1]
     service.handle_message(db, _msg("cho Trần Gia Bảo quyền gộp dev"))
     assert "Cấp cho <b>Trần Gia Bảo (DEGO0011)</b>" in sent[-1]
     #  Người đã liên kết (không phải đại ca) nhắn câu cấp quyền → chỉ là câu hỏi cho Trợ lý.
@@ -5337,7 +5337,7 @@ def test_tin_thoai_chep_thanh_chu_roi_di_nhu_tin_chu(db, bot, monkeypatch):
     code, _ = chat_link.issue_code(db, lan.id)
     service.handle_message(db, _other_msg(f"/dangnhap {code}"))
     service.handle_message(db, voice)
-    assert any("Em nghe: «ba đơn mua hàng gần nhất»" in t for _c, t in sent)
+    assert any("Em nghe: **ba đơn mua hàng gần nhất**" in t for _c, t in sent)
     assert asked == ["ba đơn mua hàng gần nhất"]
     run = db.query(AgentRun).filter_by(stage=service.STAGE_VOICE).one()
     assert run.owner_id == lan.id and run.input_tokens == 5
@@ -6665,7 +6665,7 @@ def test_so_thuat_ngu_them_sua_xoa_va_chi_chen_tu_co_trong_cau(db):
     assert old == "phòng Dego Organic" and len(g.load(db)) == 1
     g.upsert(db, "PBA017", "phòng thu mua mua hộ nhà máy")
     block = g.prompt_block(db, "đơn hàng gần nhất của NHA MAY")
-    assert "«nhà máy»: phòng Dego Organic (mã NM)" in block and "PBA017" not in block
+    assert "**nhà máy**: phòng Dego Organic (mã NM)" in block and "PBA017" not in block
     assert g.prompt_block(db, "đơn hàng gần nhất") is None
     #  Khớp nguyên cụm, không khớp nửa chữ («máy» trong «máy tính» không kéo «nhà máy» vào).
     assert g.prompt_block(db, "máy tính hỏng") is None
@@ -7102,7 +7102,7 @@ def test_viec_rui_ro_vua_tu_duyet_lam_luon_rui_ro_cao_van_cho_duyet(db, bot, mon
     service.plan_task(db, task)
     assert dispatched == [task.id] and task.approved_by_chat == "bot:tu-duyet"
     msg = sent[-1][0] if dispatched else ""
-    assert "Em làm luôn" in msg and "«chi tiết" in msg and "Duyệt" not in [b[0] for b in sent[-1][1]]
+    assert "Em làm luôn" in msg and "**chi tiết" in msg and "Duyệt" not in [b[0] for b in sent[-1][1]]
 
     _fake_plan(monkeypatch, service, plan_files=["backend/app/modules/payment/service.py"], risk_level=3)
     task2 = _task_with_plan(db, service, [], status=service.ST_TRIAGE)
@@ -8116,7 +8116,7 @@ def test_gemini_qua_tai_doi_sang_model_du_phong_va_xung_ho_nguoi_khac(db, monkey
         out = manager.get_provider().ask([ChatMessage(role="user", content="ê cu")], model="gemini-flash-latest")
     assert out.text == "ok" and seen == ["gemini-flash-latest", "gemini-flash-lite-latest"]
     monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
-    assert "«đại ca»" in service._persona("12345") and "không gọi «đại ca»" in service._persona("1971166074")
+    assert "**đại ca**" in service._persona("12345") and "không gọi **đại ca**" in service._persona("1971166074")
     #  Đại ca 07/10: mỗi người một cách xưng hô — sổ ghi nhớ riêng thắng mặc định, ở cả hai persona.
     assert all("sổ ghi nhớ riêng" in service._persona(c) and "theo sổ" in service._persona(c) for c in ("12345", "1971166074"))
     from app.modules.agent_hub import personal_memory as pm
@@ -8311,7 +8311,7 @@ def test_gui_cho_chat_zalo_di_duong_zalo_khong_dung_telegram(monkeypatch):
     assert mid > 0
     method, payload = calls[-1]
     assert method == "sendMessage" and payload["chat_id"] == "abc" and payload["parse_mode"] == "html"
-    assert "«Đồng ý»" in payload["text"] and "Mở: https://e/x" in payload["text"]
+    assert "<b>Đồng ý</b>" in payload["text"] and "Mở: https://e/x" in payload["text"]
     telegram.send_chat_action("zl:abc")
     assert calls[-1][0] == "sendChatAction"
     assert telegram.edit_text("zl:abc", 5, "x") is False                               # Zalo không sửa tin
@@ -8657,7 +8657,7 @@ def test_the_viec_lich_tu_bien_ban_duyet_roi_moi_tao(db, bot, seed, monkeypatch)
                         lambda db, user, kind, draft: created.append(draft) or (f"việc #{len(created)}", len(created)))
     assert mt.process(db, row.id)["status"] == "done"
     card = sent[-1]
-    assert "Việc và lịch rút từ biên bản «Giao ban»" in card and "1. Chốt so sánh báo giá — Mai — hạn thứ bảy 10/10" in card
+    assert "Việc và lịch rút từ biên bản <i>Giao ban</i>" in card and "1. Chốt so sánh báo giá — Mai — hạn thứ bảy 10/10" in card
     assert "3. Họp giao ban — 09:00 thứ tư 14/10 — tầng 3" in card and "Việc vào dự án nào? 1) Thu mua chung" in card
     assert created == [] and events == []                                   # chưa duyệt thì chưa tạo gì
     #  Nhiều dự án mà chưa nói dự án nào: hỏi lại MỘT câu, chưa tạo.
@@ -8931,7 +8931,7 @@ def test_thu_muc_hop_tren_drive_co_tep_moi_thi_hoi_roi_moi_lam(db, bot, seed, mo
               {"id": "F1", "name": "hop-giao-ban-phan-1.m4a", "mimeType": "audio/mp4", "createdTime": "2026-10-08T02:00:00Z"}]
     assert md.scan(db, now=t0) == 1
     card = sent[-1]
-    assert "Có 2 tệp mới trong thư mục «Họp»" in card and "1) hop-giao-ban-phan-1.m4a" in card
+    assert "Có 2 tệp mới trong thư mục **Họp**" in card and "1) hop-giao-ban-phan-1.m4a" in card
     assert "2) hop-giao-ban-phan-2.m4a (20 phút" in card                # xếp theo giờ tạo
     assert any("'FOLDER1' in parents" in q for q in queries)
     assert md.scan(db, now=t0) == 0                                      # quét lại: không hỏi lại tệp đã báo
@@ -9008,7 +9008,7 @@ def test_report_cuoc_hop_moi_nhat_gui_lai_hoac_lam_tep_moi(db, bot, seed, monkey
     db.commit()
     out = T.run_tool(db, owner, "latest_meeting_report", {})
     assert out["sent"] and "BIÊN BẢN — Giao ban" in sent[-2] and docs[-1].endswith(".docx")
-    assert "Việc và lịch rút từ biên bản «Giao ban»" in sent[-1]                   # thẻ việc còn chờ gửi kèm
+    assert "Việc và lịch rút từ biên bản <i>Giao ban</i>" in sent[-1]                   # thẻ việc còn chờ gửi kèm
     #  Thư mục «Họp» có tệp MỚI hơn cuộc họp đã làm → làm tệp đó.
     files = [{"id": "NEW", "name": "hop-chieu.m4a", "mimeType": "audio/mp4",
               "createdTime": (datetime.utcnow()).strftime("%Y-%m-%dT%H:%M:%SZ")}]
@@ -9037,7 +9037,7 @@ def test_tai_lieu_trong_thu_muc_hop_cung_duoc_bao_va_tom_tat(db, bot, seed, monk
                   "createdTime": "2026-10-08T02:41:42Z"})
     assert md.scan(db, now=datetime(2026, 10, 8, 1, 0)) == 1
     assert "mimeType = 'application/pdf'" in queries[-1]
-    assert "Tài liệu: nhắn «tóm tắt tệp 1»" in sent[-1] and "1) 03-KIEN-TRUC-KY-THUAT.pdf" in sent[-1]
+    assert "Tài liệu: nhắn **tóm tắt tệp 1**" in sent[-1] and "1) 03-KIEN-TRUC-KY-THUAT.pdf" in sent[-1]
     #  Chỉ có tài liệu mà nhắn «làm biên bản»: nói rõ, không tạo phiên họp.
     service.handle_message(db, _msg("làm biên bản"))
     assert "Không có tệp ghi âm / video" in sent[-1] and db.query(AgentMeeting).count() == 0
@@ -9248,7 +9248,7 @@ def test_zalo_tk_cong_ty_gui_qua_listener_co_chu_ky_va_chan_tin_vao_nhom(monkeyp
                          buttons=[("Đồng ý", "ok:1")]) > 0
     body = calls[-1][2]
     assert calls[-1][:2] == ("POST", "/send") and body["thread_id"] == "u77" and body["thread_type"] == "user"
-    assert body["text"].startswith("Tổng <5 ĐMH 1 (https://erp.x/po/1)") and "«Đồng ý»" in body["text"]
+    assert body["text"].startswith("Tổng <5 ĐMH 1 (https://erp.x/po/1)") and "- Đồng ý" in body["text"]
     #  Bot chỉ trả lời riêng: tin định gửi vào nhóm bị chặn ngay, không gọi listener.
     n = len(calls)
     assert telegram.send("xin chào cả nhóm", chat_id="zg:g5") == 0 and len(calls) == n
@@ -9578,7 +9578,7 @@ def test_dung_bot_can_quyen_tro_ly_ai(db, bot, seed, monkeypatch, cap_quyen):
     assert r.status_code == 403
     code, _ = chat_link.issue_code(db, other.id)
     service.handle_message(db, _other_msg(f"/dangnhap {code}"))
-    assert "chưa được cấp quyền «Trợ lý AI»" in sent[-1]
+    assert "chưa được cấp quyền **Trợ lý AI**" in sent[-1]
     assert chat_link.get_active_link(db, "777") is None
     #  Được cấp quyền: đăng nhập và hỏi bình thường.
     cap_quyen(other.id, "assistant", read=True)

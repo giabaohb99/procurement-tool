@@ -4,9 +4,9 @@ Không DB, không HTTP — test rẻ. Thông báo lỗi bằng tiếng Việt v�
 nhập (giá trị có thể nhạy cảm như lương): chỉ nêu quy tắc.
 
 Dạng CHUẨN lưu trong `custom_values` / `default_value` theo kiểu:
-    TEXT/MULTILINE  chuỗi đã dọn · NUMBER  «1234.5» (dấu chấm thập phân, không ngăn nghìn)
-    DATE  «YYYY-MM-DD» · MONEY  chuỗi chữ số «15000000»
-Dạng IN ra tệp (`format_value`): ngày «dd/mm/yyyy», tiền «15.000.000», số «1.234,5».
+    TEXT/MULTILINE  chuỗi đã dọn · NUMBER  "1234.5" (dấu chấm thập phân, không ngăn nghìn)
+    DATE  "YYYY-MM-DD" · MONEY  chuỗi chữ số "15000000"
+Dạng IN ra tệp (`format_value`): ngày "dd/mm/yyyy", tiền "15.000.000", số "1.234,5".
 """
 import keyword
 import re
@@ -50,7 +50,7 @@ def check_code(code: str) -> str:
     if "__" in code or code.endswith("_"):
         raise ValueError("Mã biến không có hai dấu gạch dưới liền nhau và không kết thúc bằng dấu gạch dưới")
     if code.endswith(MONEY_WORD_SUFFIX):
-        raise ValueError(f"Mã biến không được kết thúc bằng «{MONEY_WORD_SUFFIX}» — hệ thống tự sinh "
+        raise ValueError(f"Mã biến không được kết thúc bằng \"{MONEY_WORD_SUFFIX}\" — hệ thống tự sinh "
                          "biến đọc bằng chữ cho biến kiểu Tiền")
     if code in RESERVED:
         raise ValueError("Mã biến trùng từ khóa của bộ máy mẫu — hãy chọn mã khác")
@@ -111,7 +111,7 @@ def _money(raw) -> str:
 
 
 def normalize_value(vtype: int, raw) -> str:
-    """Giá trị người dùng nhập → dạng CHUẨN của kiểu. Rỗng/None → «» (nghĩa là «không có giá trị»)."""
+    """Giá trị người dùng nhập → dạng CHUẨN của kiểu. Rỗng/None → chuỗi rỗng (nghĩa là "không có giá trị")."""
     if raw is None or (isinstance(raw, str) and not raw.strip()):
         return ""
     try:

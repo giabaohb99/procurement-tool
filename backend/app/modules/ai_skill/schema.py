@@ -131,7 +131,7 @@ class AccessGrantIn(BaseModel):
         for subject in self.subjects:
             if subject.subject_kind not in SUBJECT_KINDS:
                 raise ValueError(f"Loại đối tượng không hợp lệ: {subject.subject_kind}")
-            #  Cấp bậc 0 = «chưa khai» (JOB_LEVEL_UNKNOWN) — gán quyền cho người CHƯA khai cấp bậc là vô nghĩa.
+            #  Cấp bậc 0 = "chưa khai" (JOB_LEVEL_UNKNOWN) — gán quyền cho người CHƯA khai cấp bậc là vô nghĩa.
             if subject.subject_id <= 0:
                 raise ValueError("Mã đối tượng phải lớn hơn 0")
         return self

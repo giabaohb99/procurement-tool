@@ -31,7 +31,7 @@ def _upload(text: str) -> UploadFile:
 
 def _assert_blocked(exc: HTTPException, label: str, name: str, ref_label: str) -> None:
     assert exc.status_code == 400
-    assert f"{label} «{name}» đang được dùng ở" in exc.detail
+    assert f"{label} \"{name}\" đang được dùng ở" in exc.detail
     assert ref_label in exc.detail and "ngưng dùng" in exc.detail
 
 

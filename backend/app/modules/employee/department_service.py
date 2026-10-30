@@ -32,9 +32,9 @@ from .model import Employee
 def extra_departments_of(db: Session, employee_id: int) -> list[int]:
     """Phòng KIÊM NHIỆM — các phòng NGOÀI phòng chính.
 
-    Phòng chính không nằm trong danh sách này: nó là ô «Phòng ban» của hồ sơ,
-    một thứ khác hẳn. Gộp hai cái vào một danh sách rồi quy ước «phần tử đầu là
-    phòng chính» là dựng ra một luật ngầm mà người dùng không có cách nào biết.
+    Phòng chính không nằm trong danh sách này: nó là ô "Phòng ban" của hồ sơ,
+    một thứ khác hẳn. Gộp hai cái vào một danh sách rồi quy ước "phần tử đầu là
+    phòng chính" là dựng ra một luật ngầm mà người dùng không có cách nào biết.
     """
     from .model import Employee
 
@@ -47,7 +47,7 @@ def set_extra_departments(db: Session, employee: Employee, extra_ids: list[int],
                    actor: int) -> list[int]:
     """Đặt lại danh sách phòng KIÊM NHIỆM. Phòng chính giữ nguyên.
 
-    Phòng chính đổi ở ô «Phòng ban» của hồ sơ, không đổi qua đây — hai thao tác
+    Phòng chính đổi ở ô "Phòng ban" của hồ sơ, không đổi qua đây — hai thao tác
     khác nhau thì hai cửa khác nhau.
     """
     primary = employee.department_id or 0
@@ -138,12 +138,12 @@ def detach_other_company_departments(db: Session, employee: Employee, actor: int
 
     1. `_sync_primary_department` đổi phòng chính thì **hạ phòng cũ xuống kiêm
        nhiệm** chứ không xóa — kể cả khi phòng chính mới là "không có". Nên xóa
-       ô «Phòng ban» ở giao diện không hề gỡ người đó khỏi phòng cũ.
+       ô "Phòng ban" ở giao diện không hề gỡ người đó khỏi phòng cũ.
     2. `_check_departments_exist` (L3) chặn mọi phòng khác pháp nhân.
 
     Kết quả: đổi pháp nhân xong là ăn 400 *"Phòng ban thuộc pháp nhân khác"* trỏ
     vào chính cái phòng vừa bỏ. Mà người dùng cũng không sửa được từ giao diện —
-    thẻ «Kiêm nhiệm» chỉ quản lý phòng PHỤ, còn phòng đang vướng lại là phòng
+    thẻ "Kiêm nhiệm" chỉ quản lý phòng PHỤ, còn phòng đang vướng lại là phòng
     CHÍNH vừa bị hạ xuống.
 
     Gỡ chứ không chặn: chuyển pháp nhân nghĩa là người đó **không còn ở** phòng
@@ -275,7 +275,7 @@ def block_out_of_scope_departments(db: Session, department_ids: list[int], actor
         scope_name = {row[0]: row[1] for row in
                db.query(Department.id, Department.name)
                .filter(Department.id.in_(out_of_scope)).all()}
-        label = ", ".join(f"«{scope_name.get(i, i)}»" for i in out_of_scope)
+        label = ", ".join(f"\"{scope_name.get(i, i)}\"" for i in out_of_scope)
         raise HTTPException(
             403, f"Không gán được phòng ban mà chính bạn không có phạm vi trên đó: {label}. "
                  "Nhờ người phụ trách phòng đó thao tác.")

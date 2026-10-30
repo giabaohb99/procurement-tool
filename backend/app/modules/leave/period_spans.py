@@ -1,6 +1,6 @@
 """KHOẢNG NGÀY ĐỂ ĐỌC (duoc-CR-683) — một đơn nghỉ = một hoặc nhiều khoảng liền.
 
-Mọi chỗ hỏi *"ngày D có nghỉ không"* (Lịch nghỉ, «Ai làm / ai nghỉ», hồ sơ làm việc,
+Mọi chỗ hỏi *"ngày D có nghỉ không"* (Lịch nghỉ, "Ai làm / ai nghỉ", hồ sơ làm việc,
 tải việc, chốt trùng ngày) phải đọc qua đây, KHÔNG đọc `[from_date, to_date]` ở đầu
 đơn: đầu đơn là bao ngoài, nuốt cả khe giữa các khoảng.
 
@@ -97,7 +97,7 @@ def _fmt(d: date, with_year: bool) -> str:
 
 
 def period_text(periods) -> str:
-    """Chữ đọc được cho người/AI: «27/10/2026 · 03/11 (chiều) → 07/11/2026».
+    """Chữ đọc được cho người/AI: "27/10/2026 · 03/11 (chiều) → 07/11/2026".
 
     Năm chỉ hiện ở khoảng đầu và ở đầu cuối mỗi khoảng nhiều ngày khi khác năm khoảng đầu.
     """

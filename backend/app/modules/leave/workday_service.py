@@ -1,6 +1,6 @@
 """NGÀY LÀM VIỆC — đếm số ngày nghỉ thật theo LỊCH LÀM VIỆC của chính người nghỉ, đã trừ ngày lễ.
 
-Từ 05/10/2026 luật «chỉ nghỉ Chủ nhật» không còn cứng ở đây: mỗi ngày trong khoảng
+Từ 05/10/2026 luật "chỉ nghỉ Chủ nhật" không còn cứng ở đây: mỗi ngày trong khoảng
 nghỉ tra lịch của nhân sự (`work_schedule.resolver.load_day_plans`: Nhân sự > Phòng
 ban > Pháp nhân > Hệ thống > mặc định T2–T7 08–17). Chưa gán lịch nào thì ra ĐÚNG
 từng số như trước (bài tương đương đóng băng ở `test_lich_lam_viec_tinh_ngay_nghi.py`).
@@ -139,5 +139,5 @@ def count_leave_days_periods(db: Session, periods, *, company_id: int = 0,
 
 
 def schedule_name_on(db: Session, employee: Employee, on_date: date) -> str:
-    """Tên lịch áp cho nhân sự vào `on_date` — để form hiện «Theo lịch …»."""
+    """Tên lịch áp cho nhân sự vào `on_date` — để form hiện "Theo lịch …"."""
     return resolver.schedule_name_on(db, employee, on_date)

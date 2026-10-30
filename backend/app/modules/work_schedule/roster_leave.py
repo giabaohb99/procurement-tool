@@ -1,4 +1,4 @@
-"""LỚP NGHỈ PHÉP của «Ai làm / ai nghỉ» — tách khỏi `roster_service.py` cho gọn tệp.
+"""LỚP NGHỈ PHÉP của "Ai làm / ai nghỉ" — tách khỏi `roster_service.py` cho gọn tệp.
 
 Phạm vi: chỉ lấy đơn nằm trong `apply_scope(LeaveRequest, 'leave_request')` — thấy người không
 có nghĩa là thấy được đơn nghỉ của người đó (đơn có thể mang lý do riêng tư).
@@ -31,7 +31,7 @@ def _hourly_window(req: LeaveSpan, day: date, spec: DaySpec) -> tuple[time, time
 
 def leave_mask_on(req: LeaveSpan, day: date, spec: DaySpec) -> int:
     """Nửa buổi nào của `day` bị đơn này chiếm. Nghỉ THEO GIỜ: so khoảng giờ của riêng ngày đó
-    với mốc nghỉ trưa của lịch (`leave_mask` coi buổi `HOURLY` là cả ngày — sai với «khám 9–10h»).
+    với mốc nghỉ trưa của lịch (`leave_mask` coi buổi `HOURLY` là cả ngày — sai với "khám 9–10h").
     Chạm đúng mốc trưa (12–13h) không tô nửa nào."""
     if req.from_session == SESSION_HOURLY and req.from_time and req.to_time:
         if spec.start is None or spec.end is None:

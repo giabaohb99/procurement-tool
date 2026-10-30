@@ -19,7 +19,7 @@ router = APIRouter(tags=["purchase_history"])
 
 
 def _attach_invoice_names(db: Session, rows: list[dict]) -> None:
-    """Cột «Tên trên hóa đơn» của popup lịch sử (bao-CR-522).
+    """Cột "Tên trên hóa đơn" của popup lịch sử (bao-CR-522).
 
     Lần mua đi qua ĐMH trên hệ chụp sẵn tên đó vào `extra.invoice_name`. Dòng DỮ LIỆU CŨ (nạp
     từ Excel, `source='legacy'`) không có cột này trong tệp gốc — lùi về tên trên hóa đơn đang khai

@@ -10,7 +10,7 @@ bảng mà mọi lượt gọi API đang ghi vào.
 phân vùng, không đi qua từng dòng. Đổi lại, bảng phải được chia sẵn theo năm —
 việc đó làm một lần ở migration `f2c5b9d71a48`.
 
-Tệp này **chỉ biết DDL**, cố ý không biết gì về R2. Luật «gói xong mới xóa»
+Tệp này **chỉ biết DDL**, cố ý không biết gì về R2. Luật "gói xong mới xóa"
 nằm ở `retention.py`, nơi đã có `archive_marker_key` và `ARCHIVE_TABLES`; để
 chiều phụ thuộc một hướng (`retention` → `partition`) thì không tệp nào phải
 import ngược lại tệp kia.

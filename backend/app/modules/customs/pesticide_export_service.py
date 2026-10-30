@@ -1,8 +1,8 @@
-"""Xuất Excel danh mục Thuốc BVTV — mục «Thuốc BVTV» của Tra cứu thị trường (02/10/2026).
+"""Xuất Excel danh mục Thuốc BVTV — mục "Thuốc BVTV" của Tra cứu thị trường (02/10/2026).
 
 Hai phạm vi:
   · `scope=all`  — CẢ danh mục (kể cả thuốc tự thêm, xem `pesticide_export_columns.export_id`),
-    BỎ QUA bộ lọc: nạp lại («Nạp danh mục») là THAY TOÀN BỘ, nên chỉ tệp đầy đủ mới nạp lại an
+    BỎ QUA bộ lọc: nạp lại ("Nạp danh mục") là THAY TOÀN BỘ, nên chỉ tệp đầy đủ mới nạp lại an
     toàn — lọc bớt rồi nạp lại là xóa sạch phần không nằm trong tệp.
   · `scope=page` — ĐÚNG các dòng của MỘT TRANG màn tra cứu, dùng lại `pesticide_service.
     export_query` (cùng bộ lọc + sắp xếp với `list_pesticides`) — để xem/đối chiếu, không nhằm
@@ -69,12 +69,12 @@ def _check_caps(pesticide_count: int, use_count: int) -> None:
     if pesticide_count > reader.MAX_RECORDS:
         raise HTTPException(422, (
             f"Danh mục có {pesticide_count:,} thuốc, vượt trần {reader.MAX_RECORDS:,} của bộ nạp "
-            "— tệp xuất ra sẽ không nạp lại được bằng «Nạp danh mục». Hãy xuất theo trang/bộ lọc."
+            "— tệp xuất ra sẽ không nạp lại được bằng \"Nạp danh mục\". Hãy xuất theo trang/bộ lọc."
         ).replace(",", "."))
     if use_count > reader.MAX_USE_ROWS:
         raise HTTPException(422, (
             f"Danh mục có {use_count:,} dòng phạm vi sử dụng, vượt trần {reader.MAX_USE_ROWS:,} "
-            "của bộ nạp — tệp xuất ra sẽ không nạp lại được bằng «Nạp danh mục». Hãy xuất theo "
+            "của bộ nạp — tệp xuất ra sẽ không nạp lại được bằng \"Nạp danh mục\". Hãy xuất theo "
             "trang/bộ lọc."
         ).replace(",", "."))
 
@@ -188,7 +188,7 @@ def _check_output_size(file_size: int) -> None:
         cap_mb = reader.MAX_UPLOAD_BYTES / (1024 * 1024)
         raise HTTPException(422, (
             f"Tệp xuất ra {got_mb:.1f} MB, vượt trần {cap_mb:.0f} MB của bộ nạp — sẽ không nạp "
-            "lại được bằng «Nạp danh mục». Hãy xuất theo trang/bộ lọc."))
+            "lại được bằng \"Nạp danh mục\". Hãy xuất theo trang/bộ lọc."))
 
 
 def export_to_tempfile(db: Session, user, scope: str, q: str, status: int | None, pest_group: str,

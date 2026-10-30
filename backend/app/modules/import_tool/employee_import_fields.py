@@ -1,7 +1,7 @@
-"""Bộ cột + bộ parse ô của «Nhập Excel Nhân sự» (duoc-CR-628).
+"""Bộ cột + bộ parse ô của "Nhập Excel Nhân sự" (duoc-CR-628).
 
 Một nguồn duy nhất cho: tiêu đề cột (kèm alias để tệp XUẤT cũ nhập lại được), kiểu ô, cờ nhạy cảm
-(tính từ `employee.sensitive.SENSITIVE_FIELDS`, KHÔNG gõ danh sách thứ hai) và sheet «Huong dan».
+(tính từ `employee.sensitive.SENSITIVE_FIELDS`, KHÔNG gõ danh sách thứ hai) và sheet "Huong dan".
 
 Luật ô: cột vắng hoặc ô TRỐNG = giữ nguyên (không đưa vào dict ghi). Chỉ ô ghi `__/empty_value/__`
 mới xóa. Parse sai KHÔNG đoán bừa mà ném `CellError` để dòng đó thành lỗi.
@@ -43,7 +43,7 @@ EMPLOYEE_FIELDS: list[dict] = [
     _ef("Email", "email"),
     _ef("Điện thoại", "phone", aliases=["Số điện thoại"]),
     _ef("Nhãn số chính", "phone_label"),   # duoc-CR-694
-    _ef("Số điện thoại khác", "extra_phones", "phones"),   # duoc-CR-694: «số (nhãn); số (nhãn)», tối đa 4
+    _ef("Số điện thoại khác", "extra_phones", "phones"),   # duoc-CR-694: "số (nhãn); số (nhãn)", tối đa 4
     _ef("Email cá nhân", "personal_email"),
     _ef("Giới tính", "gender", "code"),
     _ef("Tình trạng hôn nhân", "marital_status", "code"),

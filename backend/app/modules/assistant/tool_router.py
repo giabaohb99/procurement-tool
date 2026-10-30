@@ -2,7 +2,7 @@
 
 Đo trên dev 10/10/2026: mỗi câu hỏi gửi kèm đủ 69 khai báo công cụ (~69.000 ký tự); một lượt trả lời web trung bình
 ~85.000 token vào. Ở đây chọn trước, KHÔNG gọi model: nhóm LÕI luôn gửi, cộng các nhóm nghiệp vụ mà câu hỏi chạm tới
-(so chữ đã bỏ dấu), cộng nhóm của công cụ vừa dùng ở lượt trước (câu nối tiếp kiểu «xuất Excel», «còn NCC khác không»).
+(so chữ đã bỏ dấu), cộng nhóm của công cụ vừa dùng ở lượt trước (câu nối tiếp kiểu "xuất Excel", "còn NCC khác không").
 
 An toàn trước, rẻ sau:
 - Không khớp nhóm nào → trả None = gửi ĐỦ như cũ.
@@ -52,8 +52,8 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
      r"nghi phep|\bphep\b|xin nghi|don nghi|nghi (thu|ngay|sang|chieu|ca)|\bnp\d+|quy phep|ngay nghi"),
     ("work", frozenset({"my_work_tasks", "draft_work_task", "draft_work_plan"}),
      r"\bviec\b|\btask\b|cong viec|du an|giao viec|han chot|deadline|viec hom nay|viec cua (toi|anh|em)|con gi|qua han"),
-    #  kh-AI1-2: năng lực đội / tốc độ theo loại việc — nhóm RIÊNG, không nhét vào «work» (lõi bot coi nhóm thiếu công cụ là
-    #  chưa nạp, sẽ đòi nạp lại; và câu nào có chữ «việc» cũng kéo theo hai công cụ này).
+    #  kh-AI1-2: năng lực đội / tốc độ theo loại việc — nhóm RIÊNG, không nhét vào "work" (lõi bot coi nhóm thiếu công cụ là
+    #  chưa nạp, sẽ đòi nạp lại; và câu nào có chữ "việc" cũng kéo theo hai công cụ này).
     ("capacity", frozenset({"team_capacity", "task_type_stats", "plan_context"}),
      r"ai (dang |con )?ranh|giao cho ai|nen giao|nang luc|tai viec|dang om|trung vi|mat bao lau|ty le lam lai|lam nhanh"
      r"|phan viec|chia viec|ke hoach|len plan"),
@@ -114,12 +114,12 @@ def groups_selected(message: str, recent_tools=None) -> set[str]:
     return set(groups_for(message)) | set(groups_of_tools(recent_tools))
 
 
-#  ai-CR-192: câu XÃ GIAO (chào, cảm ơn, ok…) — không cần công cụ nghiệp vụ lẫn gói tri thức; đo dev 16:27: «hello» nạp
+#  ai-CR-192: câu XÃ GIAO (chào, cảm ơn, ok…) — không cần công cụ nghiệp vụ lẫn gói tri thức; đo dev 16:27: "hello" nạp
 #  đủ 73 công cụ + 7 gói = 56k token. So trên chữ đã bỏ dấu, chỉ khi CẢ câu là xã giao.
 SMALLTALK = re.compile(r"^(?:(?:a+\s*)?l[oô]+|hello|hi|hey|chao(?: em| anh| chi| bot| ban| ca nha| lac lac| buoi sang| buoi chieu)?|"
                        r"cam on(?: em| anh| chi| nhe| nha| nhieu)*|thanks?|thank you|ok|oke|okay|tot|hay|duoc|good|bye|tam biet|"
                        r"ngu ngon|chuc .{0,30}|em oi|oi|test|ping)"
-                       #  ai-CR-198: «hello em», «hi anh», «alo bot nhé» — lời gọi đứng sau vẫn là xã giao.
+                       #  ai-CR-198: "hello em", "hi anh", "alo bot nhé" — lời gọi đứng sau vẫn là xã giao.
                        r"(?: (?:em|anh|chi|ban|bot|oi|nhe|nha|a|ah|lac lac))*[\s.!?,~]*$")
 
 
@@ -131,7 +131,7 @@ RECENT_WINDOW_MIN = 15
 
 
 def recent_tools(db, user_id: int) -> list[str]:
-    """Công cụ của câu hỏi gần nhất (≤ 15 phút) của người này — câu nối tiếp («xuất Excel», «còn NCC khác không») cần
+    """Công cụ của câu hỏi gần nhất (≤ 15 phút) của người này — câu nối tiếp ("xuất Excel", "còn NCC khác không") cần
     lại đúng nhóm đó. Lấy từ sổ ý định (ai-CR-137). Hỏng thì [] — chỉ làm mất phần nối tiếp, không làm hỏng câu."""
     try:
         from datetime import timedelta
@@ -150,8 +150,8 @@ def recent_tools(db, user_id: int) -> list[str]:
 def select(message: str, recent_tools=None) -> set[str] | None:
     """Tên công cụ gửi kèm câu này; None = gửi đủ (không khớp nhóm nào — an toàn hơn đoán).
 
-    ai-CR-183: không khớp nhóm nào nhưng người này VỪA dùng công cụ (≤ 15 phút) → câu nối tiếp («hạn là thứ 6 tuần
-    sau, em tạo luôn nhé») đi với lõi + nhóm cũ, không gửi đủ 72 công cụ (đo 13/10: 9 → 72 giữa hai câu cùng một việc
+    ai-CR-183: không khớp nhóm nào nhưng người này VỪA dùng công cụ (≤ 15 phút) → câu nối tiếp ("hạn là thứ 6 tuần
+    sau, em tạo luôn nhé") đi với lõi + nhóm cũ, không gửi đủ 72 công cụ (đo 13/10: 9 → 72 giữa hai câu cùng một việc
     làm prompt phình và mất bộ đệm)."""
     picked = set(groups_for(message)) | set(groups_of_tools(recent_tools))
     if not picked:

@@ -1,7 +1,7 @@
 """Định nghĩa vai trò + DANH MỤC CẨM NANG cho lời nhắc của Trợ lý AI.
 
 AI-1 (Phase 1) từng nhồi thẳng 7 gói `packs/*.md` vào phần `system`; ai-CR-183 lọc gói theo chủ đề cho đỡ token. ai-CR-220
-(K7 doc/erp/21 §7.2) bỏ hẳn cách đó: cẩm nang nay là skill trong KHO SKILL AI (`modules/ai_skill`, bộ «Cẩm nang hệ thống»
+(K7 doc/erp/21 §7.2) bỏ hẳn cách đó: cẩm nang nay là skill trong KHO SKILL AI (`modules/ai_skill`, bộ "Cẩm nang hệ thống"
 gieo từ `ai_skill/seed_handbook/`) — một nơi duy nhất, quản trị sửa trên web là lượt sau trợ lý đã đọc bản mới. Lời nhắc
 chỉ mang danh mục ngắn (`handbook_block`: tên gọi + tóm tắt skill người hỏi được đọc); model đọc đúng skill cần bằng tool
 `read_skill` (`tools/skill_tool.py`).

@@ -62,7 +62,7 @@ def _tax_key(value: str | None) -> str:
 def ensure_tax_code_free(db: Session, tax_code: str | None, exclude_id: int = 0) -> None:
     """bao-CR-534: mỗi mã số thuế chỉ thuộc MỘT công ty — trùng là chặn hẳn (đại ca chốt 30/09).
 
-    Sinh ra sau bao-CR-532: hệ từng có hai dòng «DEGO Holding» cùng mã số thuế, chứng từ chia
+    Sinh ra sau bao-CR-532: hệ từng có hai dòng "DEGO Holding" cùng mã số thuế, chứng từ chia
     đôi giữa hai dòng (~1.340 dòng trên prod) và phải viết script gộp. Hệ chỉ chặn trùng ``code``,
     mà ``code`` thì ai cũng tự đặt được, nên đó không phải cái chốt đúng.
 
@@ -77,7 +77,7 @@ def ensure_tax_code_free(db: Session, tax_code: str | None, exclude_id: int = 0)
     if other:
         raise HTTPException(
             400,
-            f"Mã số thuế {tax_code.strip()} đã thuộc công ty «{other.name}» (mã {other.code}). "
+            f"Mã số thuế {tax_code.strip()} đã thuộc công ty \"{other.name}\" (mã {other.code}). "
             "Mỗi pháp nhân chỉ có một mã số thuế — hãy sửa công ty đó thay vì tạo thêm.",
         )
 
@@ -150,7 +150,7 @@ def ensure_companies_deletable(db: Session, rows: list[Company]) -> None:
             blocked.append(f"{row.code or row.id} ({', '.join(f'{n} {lbl}' for lbl, n in refs)})")
     if blocked:
         raise HTTPException(
-            400, "Công ty đang được dùng, chỉ có thể ngưng dùng (bỏ tick «Đang dùng») chứ không xóa được: "
+            400, "Công ty đang được dùng, chỉ có thể ngưng dùng (bỏ tick \"Đang dùng\") chứ không xóa được: "
                  + "; ".join(blocked) + ". Không xóa dòng nào trong lượt này.")
 
 

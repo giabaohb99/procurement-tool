@@ -1,4 +1,4 @@
-"""NẠP 15 HỒ SƠ MẪU vào kho Hồ sơ — dữ liệu để THỬ thay «Báo cáo thực hiện».
+"""NẠP 15 HỒ SƠ MẪU vào kho Hồ sơ — dữ liệu để THỬ thay "Báo cáo thực hiện".
 
     docker compose exec api python -m app.seed_ho_so_mau_ycbg
     docker compose exec api python -m app.seed_ho_so_mau_ycbg --ghi-de
@@ -31,8 +31,8 @@ mặt hàng nào. Xem `app/modules/dossier/applicability.py`.
 việc còn dở:** cờ *Bắt buộc* và *hồ sơ tiên quyết* chỉ có bên Báo cáo thực hiện;
 kho Hồ sơ không có chỗ nào lưu hai thứ đó. Trạng thái cũng lệch thang — báo cáo
 bốn mức (chưa bắt đầu · đang làm · chờ duyệt · hoàn thành), kho hồ sơ hai mức
-(nháp · đang lưu) — nên script gộp «hoàn thành» ↔ «đang lưu», phần còn lại về
-«nháp». Đừng nắn cho bằng nhau, lệch chỗ nào cứ để lệch chỗ đó.
+(nháp · đang lưu) — nên script gộp "hoàn thành" ↔ "đang lưu", phần còn lại về
+"nháp". Đừng nắn cho bằng nhau, lệch chỗ nào cứ để lệch chỗ đó.
 """
 import argparse
 from datetime import date, timedelta
@@ -57,7 +57,7 @@ class DongMau:
 
     `ngay_cap` / `het_han` là SỐ NGÀY lệch so với hôm nay, không phải ngày cố
     định: ghim ngày tuyệt đối thì vài tuần nữa mọi mốc đều thành quá khứ và
-    kịch bản mất sạch ý nghĩa (không còn tờ nào «sắp hết hạn» để xem màu vàng).
+    kịch bản mất sạch ý nghĩa (không còn tờ nào "sắp hết hạn" để xem màu vàng).
     `None` = bỏ trống, tức tờ vô thời hạn / chưa có ngày cấp.
     """
 
@@ -78,7 +78,7 @@ class DongMau:
         self.xong = xong
         self.ngay_cap = ngay_cap
         self.het_han = het_han
-        #  CHỈ khối Báo cáo thực hiện có mốc «dự định hoàn tất»; kho Hồ sơ không
+        #  CHỈ khối Báo cáo thực hiện có mốc "dự định hoàn tất"; kho Hồ sơ không
         #  có cột nào tương ứng. Vẫn gán để ô tổng thứ tư của bản gốc có số mà
         #  xem, chứ không phải để đối chiếu — bên kia ô đó là số dòng hàng.
         self.du_dinh = du_dinh
@@ -96,9 +96,9 @@ class DongMau:
 
 
 #  ⚠️ **Trạng thái và mốc ngày cố ý HỖN HỢP, không phải cho vui.** Seed tất cả ở
-#  mức «Đang lưu» thì thẻ hiện 15/15 · 100%, mọi dòng gạch ngang, tiến trình
+#  mức "Đang lưu" thì thẻ hiện 15/15 · 100%, mọi dòng gạch ngang, tiến trình
 #  xanh hết — nhìn thì đẹp nhưng KHÔNG đánh giá được gì: không thấy thanh tiến
-#  độ chạy, không thấy điểm «đang ở đây» nhấp nháy, không thấy viên ngày đổi
+#  độ chạy, không thấy điểm "đang ở đây" nhấp nháy, không thấy viên ngày đổi
 #  màu, tức đúng mấy thứ cuộc thử cần soi. Kịch bản dưới đây dựng một thương vụ
 #  đang dở ở giai đoạn 2, với đủ BA mức khẩn của hạn hiệu lực:
 #    · −3 ngày  → quá hạn      (đỏ ở cả hai khối)
@@ -110,8 +110,8 @@ class DongMau:
 #  Đó là khác biệt thật, không phải lỗi; tránh mốc như vậy trong bảng này để lúc
 #  đối chiếu không phải giải thích một thứ chẳng liên quan tới bố cục.
 #
-#  ⚠️ **HAI MỐC KHẨN PHẢI NẰM Ở ĐẦU VIỆC CHƯA XONG.** Ô tổng «Hết hiệu lực gần
-#  nhất» của Báo cáo thực hiện CỐ Ý bỏ qua đầu việc đã Hoàn thành (`nearestExpiry`
+#  ⚠️ **HAI MỐC KHẨN PHẢI NẰM Ở ĐẦU VIỆC CHƯA XONG.** Ô tổng "Hết hiệu lực gần
+#  nhất" của Báo cáo thực hiện CỐ Ý bỏ qua đầu việc đã Hoàn thành (`nearestExpiry`
 #  trong `survey-report-helpers.ts`) — xong rồi thì hạn không còn là lời cảnh
 #  báo. Kho Hồ sơ thì ngược lại, tính cả tờ đã có giấy, vì ở đó hạn là hạn của
 #  chính TỜ GIẤY: giấy đã nộp mà sắp hết hiệu lực đúng là thứ phải kêu lên.
@@ -206,10 +206,10 @@ def _nap_kho_ho_so(db, ghi_de: bool) -> str:
         #  Khớp theo cặp (tên · loại), KHÔNG theo mã: mã do máy cấp nên chạy
         #  lại lần hai sẽ ra mã khác và tờ nào cũng thành "chưa có".
         #
-        #  ⚠️ Tên biến phải KHÁC cờ `xong` của dòng mẫu. Đè lên nó thì cờ «đã có
-        #  giấy» lấy từ `MAU` biến mất, và dòng gán `status` bên dưới đọc phải
+        #  ⚠️ Tên biến phải KHÁC cờ `xong` của dòng mẫu. Đè lên nó thì cờ "đã có
+        #  giấy" lấy từ `MAU` biến mất, và dòng gán `status` bên dưới đọc phải
         #  kết quả truy vấn — vốn luôn `None` ở nhánh thêm mới — nên MỌI tờ ra
-        #  «Nháp». Đúng lỗi từng mắc khi sửa tệp này bằng script thay-chuỗi.
+        #  "Nháp". Đúng lỗi từng mắc khi sửa tệp này bằng script thay-chuỗi.
         trong_kho = (
             db.query(Dossier)
             .filter(Dossier.name == dong.ten, Dossier.dossier_type_id == loai.id)
@@ -255,7 +255,7 @@ def _nap_kho_ho_so(db, ghi_de: bool) -> str:
 def _dong_bo_tien_do(db, ycbg_id: int) -> str:
     """Ghi kịch bản vào TIẾN ĐỘ hồ sơ của phiếu (`tab_dossier_progress`).
 
-    ⚠️ Từ 21/09/2026, thẻ «Hồ sơ cần hoàn thành» đo bằng bảng NÀY chứ không đo
+    ⚠️ Từ 21/09/2026, thẻ "Hồ sơ cần hoàn thành" đo bằng bảng NÀY chứ không đo
     bằng `tab_dossier.status`. Chỉ nạp kho hồ sơ thôi thì thẻ ra `0/15` trên
     mọi phiếu — đúng về nghiệp vụ (chưa ai làm gì cho phiếu đó) nhưng không đối
     chiếu được với khối Báo cáo thực hiện.
@@ -345,7 +345,7 @@ def _dong_bo_bao_cao(db, ycbg_id: int) -> str:
     if not docs:
         raise SystemExit(
             f"Phiếu YCBG {ycbg_id} chưa có Báo cáo thực hiện. "
-            "Mở phiếu, bấm «Khởi tạo báo cáo mẫu» rồi chạy lại."
+            "Mở phiếu, bấm \"Khởi tạo báo cáo mẫu\" rồi chạy lại."
         )
 
     theo_ten = {dong.ten: dong for dong in MAU}
@@ -356,8 +356,8 @@ def _dong_bo_bao_cao(db, ycbg_id: int) -> str:
             bo_qua += 1
             continue
         #  Thang trạng thái của báo cáo có BỐN mức, kho hồ sơ chỉ hai. Gộp
-        #  «hoàn thành» ↔ «đang lưu»; phần còn lại về «chưa bắt đầu» chứ không
-        #  rải sang «đang làm»/«chờ duyệt» — hai mức đó không có bên kia, bày ra
+        #  "hoàn thành" ↔ "đang lưu"; phần còn lại về "chưa bắt đầu" chứ không
+        #  rải sang "đang làm"/"chờ duyệt" — hai mức đó không có bên kia, bày ra
         #  là lúc đối chiếu lại phải giải thích một khác biệt của DỮ LIỆU chứ
         #  không phải của bố cục.
         doc.status = RD_DONE if dong.xong else RD_IDLE

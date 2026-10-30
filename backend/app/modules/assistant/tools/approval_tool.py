@@ -1,7 +1,7 @@
 """Tool HỘP VIỆC PHÊ DUYỆT cho Trợ lý AI — chỉ đọc, không ghi.
 
 - `my_approval_tasks`: "tôi có phải duyệt gì không", "việc gì đang chờ tôi". Tái dùng
-  ĐÚNG hàm của màn «Chờ tôi duyệt» (`task_service.viec_cua_toi`) — gồm cả việc được
+  ĐÚNG hàm của màn "Chờ tôi duyệt" (`task_service.viec_cua_toi`) — gồm cả việc được
   ủy quyền bấm thay — để chat và huy hiệu hộp việc không bao giờ đếm hai con số khác nhau.
 - `my_requests_status`: "phiếu tôi trình đang tới đâu", "ai đang giữ phiếu của tôi",
   "văn bản của tôi bị trả lại vì sao". Đọc thẳng bảng phiên duyệt theo
@@ -38,7 +38,7 @@ _DETAIL_URLS = {
     "payment_request": "/finance/payment-requests/{id}",
 }
 
-#  Màn «Chờ tôi duyệt» — hiện chỉ Văn bản chạy bộ máy duyệt nên đích này phủ đủ (cùng
+#  Màn "Chờ tôi duyệt" — hiện chỉ Văn bản chạy bộ máy duyệt nên đích này phủ đủ (cùng
 #  lý do với nút hộp việc trên thanh trên, xem `my-tasks-button.tsx`).
 INBOX_URL = "/document/pending-approval"
 
@@ -91,7 +91,7 @@ def _run_my_approval_tasks(ctx: ToolContext, args: dict) -> dict:
     }
     if len(rows) > limit:
         out["note"] = (f"Chỉ liệt kê {limit}/{len(rows)} việc tới hạn sớm nhất — "
-                       "xem đủ ở màn «Chờ tôi duyệt» (inbox_url).")
+                       "xem đủ ở màn **Chờ tôi duyệt** (inbox_url).")
     return out
 
 

@@ -1,6 +1,6 @@
 """Sổ ghi nhớ cá nhân (ai-CR-095 — nhóm C-02): hai tầng, MỖI NGƯỜI MỘT SỔ, lọc cứng theo `user_id`.
 
-Khung mượn của Letta/MemGPT (đại ca chốt 06/10/2026): «lõi» luôn nằm trong câu hỏi, «kho» chỉ lấy đoạn liên quan.
+Khung mượn của Letta/MemGPT (đại ca chốt 06/10/2026): "lõi" luôn nằm trong câu hỏi, "kho" chỉ lấy đoạn liên quan.
 
   Tầng 1 — LÕI  : `tab_agent_memory`, mỗi người đúng MỘT dòng; `text` là Markdown bốn mục cố định (SECTIONS), trần
                   CORE_MAX ký tự (~2.000 token). Nạp NGUYÊN VĂN vào mọi câu hỏi của người đó. Bộ đệm trong tiến trình
@@ -52,14 +52,14 @@ SECTION_KEYS = tuple(k for k, _ in SECTIONS)
 _LABEL_BY_KEY = dict(SECTIONS)
 _KEY_BY_FOLD = {fold(label): key for key, label in SECTIONS}
 
-#  Không bao giờ ghi bí mật vào sổ — dù người dùng tự nhắn «nhớ: mật khẩu wifi là …».
+#  Không bao giờ ghi bí mật vào sổ — dù người dùng tự nhắn "nhớ: mật khẩu wifi là …".
 _SECRET_RE = re.compile(
     r"(mật khẩu|mat khau|password|passwd|token|api[\s_-]?key|secret|private key|số thẻ|so the|cvv|\botp\b|"
     r"số tài khoản|so tai khoan|\d{12,})", re.IGNORECASE)
 
 _CACHE: dict[int, tuple[float, str]] = {}
 
-#  ai-CR-102: dòng CÓ HẠN — đuôi «(đến dd/mm/yyyy)». Quá hạn thì không nạp vào câu hỏi nữa, lần ghi kế tiếp tự bỏ.
+#  ai-CR-102: dòng CÓ HẠN — đuôi "(đến dd/mm/yyyy)". Quá hạn thì không nạp vào câu hỏi nữa, lần ghi kế tiếp tự bỏ.
 _UNTIL_RE = re.compile(r"\s*\(đến (\d{1,2})/(\d{1,2})/(\d{4})\)\s*$")
 
 
@@ -95,7 +95,7 @@ def drop_expired(text: str) -> str:
 
 
 def resolve_until(when: str):
-    """«hôm nay» · «tuần này» (tới Chủ nhật) · «tháng này» · «đến 15/10» · «đến 15/10/2026» · «2026-10-15» → date."""
+    """"hôm nay" · "tuần này" (tới Chủ nhật) · "tháng này" · "đến 15/10" · "đến 15/10/2026" · "2026-10-15" → date."""
     import calendar
     from datetime import date, timedelta
 
@@ -123,7 +123,7 @@ def resolve_until(when: str):
         except ValueError:
             return None
         if not m.group(3) and d < today:
-            d = d.replace(year=year + 1)     # «đến 05/01» gõ hôm 20/12 là sang năm
+            d = d.replace(year=year + 1)     # "đến 05/01" gõ hôm 20/12 là sang năm
         return d
     return None
 
@@ -159,7 +159,7 @@ def load_core(db: Session, user_id: int) -> str:
 
 
 def parse(text: str) -> dict[str, list[str]]:
-    """Markdown bốn mục → {khóa mục: [dòng]}. Dòng ngoài mục nào thì vào «Đã chốt»."""
+    """Markdown bốn mục → {khóa mục: [dòng]}. Dòng ngoài mục nào thì vào "Đã chốt"."""
     out: dict[str, list[str]] = {k: [] for k in SECTION_KEYS}
     current = "da_chot"
     for raw in (text or "").splitlines():
@@ -214,7 +214,7 @@ def _save_core(db: Session, user_id: int, text: str) -> None:
 
 def remember(db: Session, user_id: int, line: str, section: str = "", until=None) -> dict:
     """Thêm MỘT dòng vào lõi. Trả {ok, message, section, chars, max}. Không ghi bí mật, không ghi trùng.
-    `until` (date, ai-CR-102): dòng có hạn — gắn đuôi «(đến dd/mm/yyyy)», quá hạn thì tự rút."""
+    `until` (date, ai-CR-102): dòng có hạn — gắn đuôi "(đến dd/mm/yyyy)", quá hạn thì tự rút."""
     uid = int(user_id or 0)
     line = " ".join((line or "").split()).strip(" .")
     if until is not None:
@@ -226,7 +226,7 @@ def remember(db: Session, user_id: int, line: str, section: str = "", until=None
     if not line:
         return {"ok": False, "message": "chưa có nội dung để nhớ"}
     if len(line) > LINE_MAX:
-        return {"ok": False, "message": f"dòng dài quá {LINE_MAX} ký tự — nội dung dài thì để «ghi chú: …» vào kho"}
+        return {"ok": False, "message": f"dòng dài quá {LINE_MAX} ký tự — nội dung dài thì để **ghi chú: …** vào kho"}
     if is_secret(line):
         return {"ok": False, "message": "em không ghi mật khẩu, khóa, số thẻ hay số tài khoản vào sổ"}
     sections = parse(load_core(db, uid))
@@ -239,8 +239,8 @@ def remember(db: Session, user_id: int, line: str, section: str = "", until=None
     sections[key].append(line)
     text = render(sections)
     if len(text) > CORE_MAX:
-        return {"ok": False, "message": f"sổ lõi đã đầy ({CORE_MAX} ký tự) — «quên: …» bớt dòng cũ, hoặc để nội dung "
-                                        "dài vào «ghi chú: …»"}
+        return {"ok": False, "message": f"sổ lõi đã đầy ({CORE_MAX} ký tự) — **quên: …** bớt dòng cũ, hoặc để nội dung "
+                                        "dài vào **ghi chú: …**"}
     _save_core(db, uid, text)
     out = {"ok": True, "message": "đã ghi", "section": key, "label": _LABEL_BY_KEY[key], "chars": len(text),
            "max": CORE_MAX, "line": line}
@@ -264,7 +264,7 @@ def forget(db: Session, user_id: int, needle: str) -> list[str]:
         sections[key] = keep
     if removed:
         _save_core(db, uid, render(sections))
-    #  ai-CR-137: điều bot tự rút khớp câu «quên» thành bia mộ — không rút lại ngay buổi sau (kể cả điều chưa vào lõi).
+    #  ai-CR-137: điều bot tự rút khớp câu "quên" thành bia mộ — không rút lại ngay buổi sau (kể cả điều chưa vào lõi).
     from . import auto_memory
 
     auto_memory.tombstone(db, uid, needle, removed)

@@ -17,7 +17,7 @@ from .work_history_model import EmployeeWorkHistory
 from .work_history_rules import close_open_main, overlap_warnings
 from .work_history_schema import WorkHistoryIn, WorkHistoryUpdate
 
-#  Validate #5 — trần 200 dòng/người (bảng «cha, mẹ, vợ/chồng» của hồ sơ đã có
+#  Validate #5 — trần 200 dòng/người (bảng "cha, mẹ, vợ/chồng" của hồ sơ đã có
 #  trần riêng ở `field_limits.MAX_PEOPLE_ROWS`; đây là trần của bảng này).
 MAX_ROWS = 200
 
@@ -58,7 +58,7 @@ def _position_label(db: Session, position_id: int) -> str:
 def _check_close_open_main_scope(event_type: int, close_open_main: bool) -> None:
     """Low (review 03/10/2026) — `close_open_main` chỉ có nghĩa khi dòng ĐANG
     GHI là nhóm sự kiện CHÍNH (đóng một dòng chính đang mở để nhường chỗ cho
-    dòng chính khác, validate #7). Gửi cờ này cho «Khác»/«Kiêm nhiệm» là báo
+    dòng chính khác, validate #7). Gửi cờ này cho "Khác"/"Kiêm nhiệm" là báo
     sai nghiệp vụ — chặn 422 ngay, đừng âm thầm đóng nhầm một dòng không liên quan."""
     if close_open_main and WorkEventType(event_type) not in MAIN_TRACK:
         raise HTTPException(
@@ -97,13 +97,13 @@ def _check_refs_exist(db: Session, company_id: int, department_id: int, position
         raise HTTPException(400, "Chức vụ không tồn tại")
 
     if company_id and dept is not None and dept.company_id and dept.company_id != company_id:
-        raise HTTPException(400, f"Phòng ban «{dept.name}» không thuộc pháp nhân đã chọn")
+        raise HTTPException(400, f"Phòng ban \"{dept.name}\" không thuộc pháp nhân đã chọn")
 
 
 def create(db: Session, eid: int, data: WorkHistoryIn, actor
           ) -> tuple[EmployeeWorkHistory, list[str], list[str]]:
     """Trả (dòng mới, cảnh báo, dòng đã đóng do `close_open_main`). Chỉ `flush`
-    — KHÔNG commit, xem «Một giao dịch» ở phase-02."""
+    — KHÔNG commit, xem "Một giao dịch" ở phase-02."""
     check_row_cap(db, eid)
     _check_required_fields(data.event_type, data.department_id, data.position_id)
     _check_refs_exist(db, data.company_id, data.department_id, data.position_id)

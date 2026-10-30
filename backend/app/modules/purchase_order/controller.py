@@ -269,7 +269,7 @@ def _import_cost_summary(rows: list[dict], goods_base: float, shipping_total: fl
 def _out(db: Session, po: PurchaseOrder) -> dict:
     d = {c: getattr(po, c) for c in HEADER}
     d["vat_rate"] = float(po.vat_rate or 0)
-    # bao-CR-480: màn ĐMH từ nay hiện «Phòng xử lý» — trước chỉ có id trần, hai bản giao diện
+    # bao-CR-480: màn ĐMH từ nay hiện "Phòng xử lý" — trước chỉ có id trần, hai bản giao diện
     # đều không bày, nên mở một đơn nhà máy mua hộ phòng khác không có gì báo ai đang mua.
     from app.modules.purchase_request.service import handler_dept_name_of
     d["handler_dept_name"] = handler_dept_name_of(db, po.handler_dept_id)
@@ -328,7 +328,7 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
     d["import_cost_summary"] = _import_cost_summary(costs, goods_base, shipping, po.cost_stage)
     # bao-CR-319 P4 — chi phí chia về từng dòng hàng, CHỈ ĐỂ XEM (không lưu, không vào kho).
     # Tính ở đây để màn hình, bản in và Yêu cầu thanh toán (P5) đọc cùng một con số.
-    # bao-CR-453: một bản chia cho MỖI giai đoạn + bản «effective» theo số hiệu lực từng dòng.
+    # bao-CR-453: một bản chia cho MỖI giai đoạn + bản "effective" theo số hiệu lực từng dòng.
     allocation = {str(int(stage)): service.allocate_import_costs(items, costs, stage)
                   for stage in CostStage}
     allocation["effective"] = service.allocate_import_costs(items, costs)
@@ -414,7 +414,7 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
 def approver_candidates_meta(department: str = "", department_id: int = 0, company_id: int = 0,
                              handler_dept_id: int = 0, head_of_dept_id: int = 0, db: Session = Depends(get_db),
                              user=Depends(require("purchase_order", "read"))):
-    """bao-CR-499 — người duyệt được chứng từ ĐANG LẬP (chưa có id), cho ô «Trưởng phòng phê duyệt».
+    """bao-CR-499 — người duyệt được chứng từ ĐANG LẬP (chưa có id), cho ô "Trưởng phòng phê duyệt".
 
     Khai TRƯỚC `/{pid}` kẻo FastAPI nuốt "meta" thành id.
     """
@@ -560,7 +560,7 @@ def resolve_print_signers(db: Session, po: PurchaseOrder) -> dict:
     out = {"creator_name": resolve_actor(db, po.created_by),
            "creator_signature": resolve_signature(db, po.created_by),
            "approver_name": "", "approver_signature": ""}
-    #  bao-CR-499: cột «Trưởng phòng phê duyệt» giữ người ĐƯỢC CHỌN khi chưa duyệt.
+    #  bao-CR-499: cột "Trưởng phòng phê duyệt" giữ người ĐƯỢC CHỌN khi chưa duyệt.
     #  bao-CR-521 (ticket prod #57): đơn CHƯA duyệt thì ô người duyệt trên bản in để TRỐNG HẲN, cả
     #  tên lẫn chữ ký — tên in sẵn đọc ra như đã ký. Duyệt rồi mới in (nhánh dưới).
     from app.core.print_signers import department_head_block, person_block
@@ -735,7 +735,7 @@ def submit_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,
                          is_urgent=bool(po.is_urgent), link=f"/purchase-orders/{po.id}",
                          doc_id=po.id,   # duoc-CR-662: lọc người duyệt theo phạm vi của chính đơn
-                         # bao-CR-499: người được CHỌN ở ô «Trưởng phòng phê duyệt» cũng nhận báo duyệt.
+                         # bao-CR-499: người được CHỌN ở ô "Trưởng phòng phê duyệt" cũng nhận báo duyệt.
                          extra_employee_ids=[po.approver_employee_id] if po.approver_employee_id else None)
     return success(_out(db, po), "Đã gửi duyệt")
 
@@ -746,7 +746,7 @@ def approve_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depend
     _in_scope(db, pid, user, "approve")
     _require_awaiting_approval(db, pid, "duyệt")
     po = service.set_status(db, pid, "approved", user.id)
-    # bao-CR-490: ghi nhân sự vừa duyệt vào «Trưởng phòng phê duyệt».
+    # bao-CR-490: ghi nhân sự vừa duyệt vào "Trưởng phòng phê duyệt".
     from app.core.print_signers import stamp_approver
     stamp_approver(db, po, user.id)
     db.commit()
@@ -768,7 +768,7 @@ def unapprove_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
     if not (data.reason or "").strip():
         raise HTTPException(400, "Vui lòng nhập lý do hủy duyệt")
     po = service.unapprove_po(db, pid, user.id, data.reason.strip())
-    # bao-CR-499: KHÔNG xóa cột người duyệt nữa — từ nay nó là «người được chọn / đã duyệt»; về Nháp
+    # bao-CR-499: KHÔNG xóa cột người duyệt nữa — từ nay nó là "người được chọn / đã duyệt"; về Nháp
     # thì người vừa duyệt vẫn là người được chọn cho lần gửi duyệt sau, người lập đổi được.
     db.commit()
     return success(_out(db, po), "Đã hủy duyệt — đơn về Nháp")
@@ -908,7 +908,7 @@ def finalize_cost_lines(pid: int, data: CostLinesFinalizeIn, db: Session = Depen
     """bao-CR-469 — Quyết toán NHIỀU dòng chi phí một lượt (tick chọn, hoặc chốt hết).
 
     Đường riêng `cost-lines` chứ không nối thêm vào `/costs/...` để không đứng cạnh đường có
-    tham số id — «finalize» rơi vào chỗ chờ một con số thì lỗi trả về nói chuyện kiểu dữ liệu,
+    tham số id — "finalize" rơi vào chỗ chờ một con số thì lỗi trả về nói chuyện kiểu dữ liệu,
     không ai đoán ra là gọi nhầm đường.
     """
     po = _in_scope(db, pid, user, "write")

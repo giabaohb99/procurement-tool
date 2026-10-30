@@ -6,7 +6,7 @@
   nẻo. Mỗi bước trả kèm hai tầng: QUY TẮC khai trong luồng ("Trưởng bộ phận người nộp")
   và TÊN NGƯỜI cụ thể nếu chính người hỏi nộp phiếu (`approver_resolver`).
 - `my_documents`: "văn bản nào đang áp dụng lên tôi". Tái dùng phép tính phạm vi của văn
-  thư (`scope_service.document_ids_for`) + lọc quyền đọc — y hệt màn «Áp dụng cho tôi»,
+  thư (`scope_service.document_ids_for`) + lọc quyền đọc — y hệt màn "Áp dụng cho tôi",
   để chat và màn hình không bao giờ trả hai danh sách khác nhau.
 - `document_search`: tìm văn bản theo từ khóa — đi đúng luật lọc của MÀN DANH SÁCH
   (`documents_query` + `visible_condition` + giấu bản riêng khi thấy bản gốc), nên chat
@@ -96,7 +96,7 @@ def _my_context(db, user) -> tuple[dict, int | None]:
 
 #  `describe_step` (bước duyệt: quy tắc khai + tên người giải ra cho người hỏi)
 #  chuyển sang `approval/preview_service.py` 23/09/2026 — dùng CHUNG với màn xem
-#  trước «Người duyệt dự kiến» ở màn tạo văn bản, đừng chép lại ở đây.
+#  trước "Người duyệt dự kiến" ở màn tạo văn bản, đừng chép lại ở đây.
 
 
 #  Khi bộ máy luồng nhiều bước chưa chạy (cờ tắt, hoặc bật mà chưa khai luồng) thì văn bản
@@ -136,14 +136,14 @@ def _document_flow(ctx: ToolContext, query: str) -> dict:
 
     if not kind.needs_approval:
         result.update(status="no_approval", total=0,
-                       message=f"Loại văn bản «{kind.name}» KHÔNG cần phê duyệt.")
+                       message=f"Loại văn bản **{kind.name}** KHÔNG cần phê duyệt.")
         return result
 
     flow = flow_service.pick_flow(db, "document", subject) if result["engine_enabled"] else None
     if flow is None:
         result.update(status="one_step", total=0, message=(
             ("Bộ máy luồng nhiều bước đang TẮT cho văn bản. " if not result["engine_enabled"]
-             else f"Chưa khai luồng phê duyệt nào áp cho «{kind.name}». ") + _ONE_STEP_APPROVAL_NOTE))
+             else f"Chưa khai luồng phê duyệt nào áp cho **{kind.name}**. ") + _ONE_STEP_APPROVAL_NOTE))
         return result
 
     steps = [describe_step(db, node, subject, submitter_id)

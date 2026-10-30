@@ -1,7 +1,7 @@
-"""Số liệu vẽ biểu đồ cho «Bộ chỉ số đánh giá» (duoc-CR-651): phân phối của tuần mới nhất + xu hướng trung vị 8 tuần.
+"""Số liệu vẽ biểu đồ cho "Bộ chỉ số đánh giá" (duoc-CR-651): phân phối của tuần mới nhất + xu hướng trung vị 8 tuần.
 
 Hàm THUẦN, không chạm DB (truy vấn nằm ở `metric_catalog_service`). Chỉ trả SỐ — nhãn tiếng Việt ở giao diện (luật R2).
-Mỗi cột phân phối là khoảng NỬA MỞ `[lo, hi)`; cột tràn có `hi = None` (nghĩa «≥ lo»).
+Mỗi cột phân phối là khoảng NỬA MỞ `[lo, hi)`; cột tràn có `hi = None` (nghĩa "≥ lo").
 """
 import math
 
@@ -13,7 +13,7 @@ _P95 = 0.95
 
 
 def _nice_step(raw: float) -> float:
-    """Bước «đẹp» (1/2/5 × 10^k) không nhỏ hơn `raw`."""
+    """Bước "đẹp" (1/2/5 × 10^k) không nhỏ hơn `raw`."""
     if raw <= 0:
         return 1.0
     exp = math.floor(math.log10(raw))
@@ -45,7 +45,7 @@ def build_histogram(unit: str, values: list[float]) -> list[dict]:
     if unit == "flag":  # 0 = không, 1 = có
         yes = sum(1 for v in values if v >= 0.5)
         return [_bucket(0, 1, len(values) - yes), _bucket(1, 2, yes)]
-    #  count / min / h / ms / per100: cột đều theo bước «đẹp» tới p95, cộng một cột tràn.
+    #  count / min / h / ms / per100: cột đều theo bước "đẹp" tới p95, cộng một cột tràn.
     p95 = percentile(values, _P95) or 0.0
     step = _nice_step(p95 / _MAX_BUCKETS)
     if unit == "count":

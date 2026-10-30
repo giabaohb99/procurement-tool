@@ -1,7 +1,7 @@
 """Người ký trên bản in — bao-CR-490 (đại ca chốt 25/09/2026).
 
 Ba chứng từ thu mua (YCMH · YCBG · ĐMH) có thêm cột `approver_employee_id` = NHÂN SỰ thực bấm
-Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt»). Bản in nội bộ cho chọn ô ký hiện:
+Duyệt ở chặng trưởng phòng ("Trưởng phòng phê duyệt"). Bản in nội bộ cho chọn ô ký hiện:
   · người duyệt (`approver_*`, tra theo cột này; phiếu cũ chưa có cột thì lùi về nhật ký), hay
   · trưởng phòng THEO HỒ SƠ phòng ban (`dept_head_*`, `Department.manager_id` của phòng lập).
 Vì sao cần hai: người bấm Duyệt có thể là phó phòng / người được ủy quyền, còn giấy tờ nộp ra
@@ -38,7 +38,7 @@ def department_head_block(db: Session, department_id: int) -> dict:
 
 
 def default_approver_to_head(doc, old_head: int = 0) -> None:
-    """Ô «Trưởng phòng phê duyệt» MẶC ĐỊNH = «Trưởng bộ phận» — bao-CR-499 (đại ca chốt 26/09/2026).
+    """Ô "Trưởng phòng phê duyệt" MẶC ĐỊNH = "Trưởng bộ phận" — bao-CR-499 (đại ca chốt 26/09/2026).
 
     Trống, hoặc đang đúng bằng TBP CŨ (người lập chưa chọn riêng ai) thì đi theo TBP hiện tại;
     người lập đã chọn một người khác TBP thì giữ nguyên lựa chọn đó. Chỉ gọi ở đường lập / sửa /

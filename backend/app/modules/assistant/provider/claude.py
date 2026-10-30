@@ -18,7 +18,7 @@ from .base import (
     ToolExecutor,
 )
 
-#  Model đã trả lỗi «temperature» (ai-CR-232) — nhớ trong tiến trình để lượt sau khỏi tốn một lượt gọi hỏng.
+#  Model đã trả lỗi "temperature" (ai-CR-232) — nhớ trong tiến trình để lượt sau khỏi tốn một lượt gọi hỏng.
 _NO_TEMPERATURE_MODELS: set[str] = set()
 
 
@@ -152,8 +152,8 @@ class ClaudeProvider(Provider):
         return system
 
     def _post(self, payload: dict) -> dict:
-        #  ai-CR-232 (28/10/2026, prod): model Claude đời mới từ chối `temperature` («`temperature` is deprecated for this
-        #  model», 400) — bot Telegram prod hỏng mọi lượt luồng nặng. Model đã từng từ chối thì bỏ hẳn tham số; gặp lần đầu
+        #  ai-CR-232 (28/10/2026, prod): model Claude đời mới từ chối `temperature` ("`temperature` is deprecated for this
+        #  model", 400) — bot Telegram prod hỏng mọi lượt luồng nặng. Model đã từng từ chối thì bỏ hẳn tham số; gặp lần đầu
         #  thì gửi lại MỘT lần không có `temperature`.
         model = str(payload.get("model") or "")
         if model in _NO_TEMPERATURE_MODELS:

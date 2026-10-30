@@ -40,16 +40,16 @@ EXCERPT_FALLBACK = {
 
 #  HAI QUAN HỆ NGƯỢC CHIỀU — trỏ vào cha nhưng KHÔNG phải con.
 #
-#  «A thay thế B» và «A bãi bỏ B» nghĩa là A **khai tử** B; A là công cụ, không
+#  "A thay thế B" và "A bãi bỏ B" nghĩa là A **khai tử** B; A là công cụ, không
 #  phải kẻ phụ thuộc. Mọi quan hệ còn lại (sửa đổi · bổ sung · hướng dẫn · kèm
 #  theo · thuộc về · căn cứ theo · tham chiếu · trích từ) đều mang nghĩa "tôi
 #  dựa vào anh", nên cha chết thì con phải rà lại.
 #
 #  ⚠️ Không loại hai cái này ra thì sinh **báo động tự trỏ vào mình**, dựng lại
-#  được trên dữ liệu thật (văn bản #368 «Thông báo bãi bỏ Văn bản nghỉ lễ 02/09»
+#  được trên dữ liệu thật (văn bản #368 "Thông báo bãi bỏ Văn bản nghỉ lễ 02/09"
 #  ngày 24/08/2026): ban hành thông báo bãi bỏ → nó bãi bỏ văn bản #339 → E08
 #  quét mọi quan hệ trỏ vào #339, gặp luôn quan hệ *bãi bỏ* của chính #368 →
-#  đánh dấu #368 «Văn bản cha «…» đã bị bãi bỏ, rà lại đi». Nó vừa bãi bỏ cái
+#  đánh dấu #368 "Văn bản cha "…" đã bị bãi bỏ, rà lại đi". Nó vừa bãi bỏ cái
 #  đó xong. Và vì MỌI thông báo bãi bỏ đều có đúng quan hệ này nên đây là báo
 #  động sai **có hệ thống**, không phải ca hiếm — đúng thứ làm người dùng quen
 #  mắt với băng vàng rồi thôi không đọc nữa (xem CR-141).
@@ -75,7 +75,7 @@ def _rule_of(db: Session, link: DocumentLink, child: Document,
              parent: Document) -> DocTypeLinkRule | None:
     if link.rule_id:
         return db.get(DocTypeLinkRule, link.rule_id)
-    #  Quan hệ khai trước khi có quy tắc, hoặc «tham chiếu» vốn không cần quy
+    #  Quan hệ khai trước khi có quy tắc, hoặc "tham chiếu" vốn không cần quy
     #  tắc — tra lại theo cặp loại.
     rules = (
         db.query(DocTypeLinkRule)
@@ -170,7 +170,7 @@ def apply_obsolete(db: Session, parent: Document) -> int:
             continue
 
         child.needs_review = True
-        child.needs_review_note = f"Văn bản cha «{parent.title}» đã bị bãi bỏ."
+        child.needs_review_note = f"Văn bản cha \"{parent.title}\" đã bị bãi bỏ."
         #  Chỉ mức 3 mới kéo con chết theo. Mức 2 giữ con còn hiệu lực — Biểu
         #  mẫu vẫn dùng được dù Quy trình cha đã bỏ, chỉ là phải rà lại.
         if item["action"] == OBSOLETE_EXPIRE:

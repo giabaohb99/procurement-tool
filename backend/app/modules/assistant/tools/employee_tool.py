@@ -1,7 +1,7 @@
 """Tool HỒ SƠ NHÂN SỰ của trợ lý AI (T45 `employee_lookup`).
 
-Trả lời «anh Nam phòng nào», «ai là quản lý trực tiếp của tôi», «cho xin email
-của chị Hà bên Kế toán» — tức phần DANH BẠ của hồ sơ nhân sự.
+Trả lời "anh Nam phòng nào", "ai là quản lý trực tiếp của tôi", "cho xin email
+của chị Hà bên Kế toán" — tức phần DANH BẠ của hồ sơ nhân sự.
 
 ⚠️ **Đây là tool ĐẦU TIÊN đọc hồ sơ của NGƯỜI KHÁC.** Mọi tool trước đó chỉ đọc
 chứng từ; hồ sơ nhân sự thì ngoài chức danh còn có ngày sinh, số CCCD, địa chỉ
@@ -53,7 +53,7 @@ _OUT_FIELDS = ("id", "code", "full_name", "position", "job_level_label", "depart
 #  Trường CẤM tuyệt đối với tool này (CR-693) — bài kiểm soi giao với `_OUT_FIELDS` phải rỗng.
 NEVER_FIELDS = ("salary_monthly", "allowance_monthly", "salary_set", "salary_updated_at")
 #  Từ khóa trông như số điện thoại (toàn chữ số / ký tự phân cách, ≥ 3 chữ số) mới quét số phụ — KHỚP luật
-#  `employee.service.apply_keyword_search`, kẻo chữ «number» / «label» trong chính JSON khớp từ khóa chữ bất kỳ.
+#  `employee.service.apply_keyword_search`, kẻo chữ "number" / "label" trong chính JSON khớp từ khóa chữ bất kỳ.
 _PHONE_LIKE = re.compile(r"[0-9\s+.\-()]+")
 
 _PARAMS = {

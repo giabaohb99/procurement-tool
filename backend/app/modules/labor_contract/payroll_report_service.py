@@ -1,4 +1,4 @@
-"""Báo cáo A5 «Quỹ lương theo pháp nhân» (duoc-CR-693, khóa 21) — `GET /api/payroll-fund/summary`.
+"""Báo cáo A5 "Quỹ lương theo pháp nhân" (duoc-CR-693, khóa 21) — `GET /api/payroll-fund/summary`.
 
 Nguồn số = ô lương trên hồ sơ nhân sự (`payroll_report_data.py`), gom theo pháp nhân · phòng ban · chức vụ · nhóm
 vị trí; dòng Tổng = toàn bộ phạm vi người xem. Đây là ẢNH CHỤP HIỆN TẠI: `period` chỉ được trả lại cho khớp hợp đồng
@@ -75,14 +75,14 @@ def _summary(db: Session, rows: list[FundRow], period: Period, group_by: str | N
         "Số hiện tại theo hồ sơ nhân sự (ô Lương và Phụ cấp, đồng / tháng) của người đang làm — là ảnh chụp, không có "
         "lịch sử nên kỳ đang chọn không ảnh hưởng số liệu. Quỹ lương = lương + phụ cấp. Ký hợp đồng lao động sẽ tự cập "
         "nhật ô này theo hợp đồng.",
-        "Dòng Tổng = toàn bộ phạm vi bạn được xem; «Xem theo» chia nhỏ số đó. Báo cáo chỉ có TỔNG, không có lương "
-        "từng người; danh sách «bấm số» chỉ liệt kê người, không kèm số tiền.",
+        "Dòng Tổng = toàn bộ phạm vi bạn được xem; \"Xem theo\" chia nhỏ số đó. Báo cáo chỉ có TỔNG, không có lương "
+        "từng người; danh sách \"bấm số\" chỉ liệt kê người, không kèm số tiền.",
         f"Đang có {missing} người còn làm chưa nhập lương — chưa tính vào quỹ lương.",
     ]
     gb = group_by if group_by in dims else None
     res = suppress_small_groups(data, lambda v: [int(v.get("people_paid") or 0)],
                                 lambda v: int(v.get("people_paid") or 0), NOTE_SMALL, NOTE_EXTRA)
-    if res.unsafe_sides:     # che xong Tổng vẫn lộ lương -> bỏ cả bảng «Xem theo»
+    if res.unsafe_sides:     # che xong Tổng vẫn lộ lương -> bỏ cả bảng "Xem theo"
         drop_unsafe_breakdown(data, gb, dims[gb].label)
     cur = data["totals"]["current"]
     if 0 < int(cur.get("people_paid") or 0) < MIN_GROUP:      # Tổng chỉ 1–2 người: số tiền chính là lương của họ

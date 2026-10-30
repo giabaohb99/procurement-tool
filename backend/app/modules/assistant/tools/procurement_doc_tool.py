@@ -121,7 +121,7 @@ def _fetch_scoped(ctx: ToolContext, model, entity: str, code: str, doc_id):
 def _handler_dept_fields(ctx: ToolContext, doc) -> dict:
     """bao-CR-414 — phòng ĐƯỢC NHỜ xử lý (khác phòng lập phiếu); trả kèm tên phòng để trợ lý nói
     bằng lời. bao-CR-524: `handler_dept_id = 0` (phiếu cũ) là phòng thu mua mặc định — trả id +
-    tên thật của phòng đó, trợ lý không còn nói «Thu mua chung»."""
+    tên thật của phòng đó, trợ lý không còn nói "Thu mua chung"."""
     from app.core.central_purchasing import normalize_handler_dept_id
     dept_id = normalize_handler_dept_id(ctx.db, getattr(doc, "handler_dept_id", 0))
     if not dept_id:

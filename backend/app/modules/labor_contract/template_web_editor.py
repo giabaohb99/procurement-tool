@@ -3,7 +3,7 @@
 Trước đây muốn sửa một chữ trong mẫu phải tải .docx về, sửa bằng Word, tải lên lại — và tự gõ tay
 `{{ ho_ten }}`, gõ sai một chữ là bị chặn. Nay: mở .docx thành HTML cho trình soạn thảo của phân hệ
 Văn bản (`document.docx_html`), lưu thì dựng lại .docx (`document.html_docx`) rồi kiểm ĐÚNG như lúc
-tải lên (`inspect_template`: biến lạ, Jinja ngoài `{{ biến }}`, gói zip) và thay tệp như «Thay tệp».
+tải lên (`inspect_template`: biến lạ, Jinja ngoài `{{ biến }}`, gói zip) và thay tệp như "Thay tệp".
 
 Đánh đổi đã biết: bộ chuyển chỉ giữ thân văn bản (chữ, bảng, ảnh, căn lề, cỡ chữ) và lề TRÁI / PHẢI
 của bản gốc; đầu trang / chân trang và vài định dạng riêng của Word không qua được — màn hình phải
@@ -57,7 +57,7 @@ def read_content(db: Session, row: LaborContractTemplate) -> dict:
         html = docx_to_html(data)
     except Exception as exc:  # tệp Word lạ — vẫn còn đường tải về sửa bằng Word
         raise HTTPException(422, "Không mở được tệp mẫu để soạn trên web — hãy tải về sửa bằng Word "
-                                 "rồi dùng «Thay tệp».") from exc
+                                 "rồi dùng \"Thay tệp\".") from exc
     left, right = page_margins_mm(data)
     return {"html": html, "margin_left_mm": left, "margin_right_mm": right}
 

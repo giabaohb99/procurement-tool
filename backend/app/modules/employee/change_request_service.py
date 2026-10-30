@@ -1,7 +1,7 @@
 """Lõi nghiệp vụ YÊU CẦU SỬA HỒ SƠ (duoc-CR-676): dựng phần KHÁC BIỆT, áp vào hồ sơ, báo người gửi.
 
 ⚠️ Không hàm nào ở đây xét quyền hay commit — chốt quyền ở controller, commit MỘT lần ở controller
-để «áp hồ sơ + đổi trạng thái yêu cầu» là một giao dịch.
+để "áp hồ sơ + đổi trạng thái yêu cầu" là một giao dịch.
 """
 from datetime import date, datetime
 
@@ -96,7 +96,7 @@ def apply_request(db: Session, req: EmployeeChangeRequest, emp: Employee, user_i
 
 def decide(req: EmployeeChangeRequest, status: Status, user_id: int, reason: str = "") -> None:
     req.status = int(status)
-    req.pending_employee_id = None   # nhả chỗ «một yêu cầu chờ duyệt» của nhân sự này
+    req.pending_employee_id = None   # nhả chỗ "một yêu cầu chờ duyệt" của nhân sự này
     req.decided_at = datetime.now()
     req.decided_by = user_id
     req.updated_by = user_id

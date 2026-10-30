@@ -6,7 +6,7 @@ không có bảng Dự án, nên tệp này CHỈ đụng bảng của bot (`Age
 lời) nằm ở `modules/work/plan_service.py`; hằng dùng chung ở `plan_policy.py`.
 
   * `ask_assignees`: nhắn riêng từng người làm đã liên kết, mỗi việc một tin NHÂN DANH chủ kế hoạch, ba nút
-    Nhận · Giờ khác · Từ chối; người chưa liên kết → ô «Nhận việc» = «Nhắn không được» và báo chủ.
+    Nhận · Giờ khác · Từ chối; người chưa liên kết → ô "Nhận việc" = "Nhắn không được" và báo chủ.
   * `handle_callback` / `handle_text`: nhận nút / câu chữ, gọi `erp.plan_reply`, báo lại chủ kế hoạch.
 
 Luật nới nguyên tắc trợ lý cá nhân (doc 18 §11): tin ở đây là tin NHÂN DANH chủ kế hoạch, không phải tin hệ thống; mọi
@@ -41,7 +41,7 @@ def _crit_text(item: dict) -> str:
 
 
 def summary_lines(draft: dict) -> list[str]:
-    """Dòng tóm tắt bản nháp cho thẻ «BẢN NHÁP» trên Telegram: tối đa 8 việc cha, mỗi việc kèm người, hạn, ưu tiên, rồi
+    """Dòng tóm tắt bản nháp cho thẻ "BẢN NHÁP" trên Telegram: tối đa 8 việc cha, mỗi việc kèm người, hạn, ưu tiên, rồi
     các việc con (tên · hạn) và tiêu chí — để sếp duyệt phần bot tự nghĩ ra TRƯỚC khi tạo (sau thử dev 13/10)."""
     c = draft.get("counts") or {}
     out = [f"Kế hoạch: {draft.get('title', '')}",
@@ -109,7 +109,7 @@ def _task_card(task: dict, plan_name: str, owner: str) -> str:
 
     esc = telegram.esc
     span = " → ".join(_vn(x) for x in (task.get("start_date"), task.get("due_date")) if x) or "chưa đặt hạn"
-    lines = [f"<b>Theo kế hoạch «{esc(plan_name)}» của {esc(owner)}</b>",
+    lines = [f"<b>Theo kế hoạch <i>{esc(plan_name)}</i> của {esc(owner)}</b>",
              f"Việc: <b>{esc(task['title'])}</b> (#{task['id']})",
              f"Thời gian: {esc(span)}" + (f" · {esc(task['priority'])}" if task.get("priority") else "")]
     if task.get("criteria"):
@@ -149,7 +149,7 @@ def ask_assignees(db: Session, owner_user, list_id: int) -> dict:
                            ("Từ chối", f"{CB_NO}:{t['id']}")])
             n += 1
         if len(items) > MAX_ASK_PER_PERSON:
-            _send(db, chat_id, f"… và {len(items) - MAX_ASK_PER_PERSON} việc nữa trong kế hoạch «{ov.get('name', '')}», "
+            _send(db, chat_id, f"… và {len(items) - MAX_ASK_PER_PERSON} việc nữa trong kế hoạch **{ov.get('name', '')}**, "
                   "xem ở phân hệ Dự án.", action=ACT_PLAN_ASK)
         asked.append(name)
     return {"asked": asked, "unreachable": unreachable, "tasks": n}
@@ -203,14 +203,14 @@ def handle_callback(db: Session, chat_id: str, cb_id: str, action: str, task_id:
     title, label = out.get("title", ""), out.get("kind", "")
     if action == CB_YES:
         telegram.answer_callback(cb_id, "Đã ghi nhận")
-        _reply(db, chat_id, f"Đã ghi: anh/chị <b>nhận</b> việc «{esc(title)}». Xong thì nhắn <code>xong việc {out['task_id']}</code>.")
-        _notify_owner(db, out, f"{esc(out.get('person', ''))} đã <b>nhận</b> việc «{esc(title)}» "
-                      f"(kế hoạch «{esc(out.get('list_name', ''))}»).", except_user=user.id)
+        _reply(db, chat_id, f"Đã ghi: anh/chị <b>nhận</b> việc **{esc(title)}**. Xong thì nhắn <code>xong việc {out['task_id']}</code>.")
+        _notify_owner(db, out, f"{esc(out.get('person', ''))} đã <b>nhận</b> việc **{esc(title)}** "
+                      f"(kế hoạch **{esc(out.get('list_name', ''))}**).", except_user=user.id)
         return
     telegram.answer_callback(cb_id, "Đã ghi, chờ anh/chị nhắn thêm")
-    ask = ("Anh/chị làm được lúc nào? Nhắn giờ hoặc ngày (ví dụ «chiều mai», «15/10 sáng»)."
+    ask = ("Anh/chị làm được lúc nào? Nhắn giờ hoặc ngày (ví dụ **chiều mai**, **15/10 sáng**)."
            if action == CB_LATER else "Lý do từ chối là gì? Nhắn một câu để em báo lại.")
-    _send(db, chat_id, f"Đã ghi: <b>{esc(label)}</b> việc «{esc(title)}». {ask}", action=ACT_PLAN_ASK_WAIT,
+    _send(db, chat_id, f"Đã ghi: <b>{esc(label)}</b> việc **{esc(title)}**. {ask}", action=ACT_PLAN_ASK_WAIT,
           body={"task_id": out["task_id"], "list_id": out.get("list_id"), "kind": label, "user_id": user.id})
 
 
@@ -221,7 +221,7 @@ _SCORE = re.compile(r"(\d{1,2})\s*(?:diem|/10)")
 
 
 def handle_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
-    """Tin chữ của người làm: (1) giờ khác / lý do sau khi bấm nút · (2) «xong việc N …» · (3) «việc N 80% 7 điểm …»."""
+    """Tin chữ của người làm: (1) giờ khác / lý do sau khi bấm nút · (2) "xong việc N …" · (3) "việc N 80% 7 điểm …"."""
     from app.modules.assistant.glossary import fold
     from . import erp, telegram
 
@@ -246,8 +246,8 @@ def handle_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool
                 pending.action = ACT_COMMAND
                 row.action = ACT_PLAN_REPLY
                 db.commit()
-                _reply(db, chat_id, f"Đã ghi lại cho việc «{esc(out['title'])}»: {esc(text.strip()[:200])}. Em báo chủ kế hoạch.")
-                _notify_owner(db, out, f"{esc(out.get('person', ''))} — việc «{esc(out['title'])}»: "
+                _reply(db, chat_id, f"Đã ghi lại cho việc **{esc(out['title'])}**: {esc(text.strip()[:200])}. Em báo chủ kế hoạch.")
+                _notify_owner(db, out, f"{esc(out.get('person', ''))} — việc **{esc(out['title'])}**: "
                               f"<b>{esc(info.get('kind', ''))}</b> — {esc(text.strip()[:300])}", except_user=user.id)
                 return True
     f = " ".join(fold(text).split())
@@ -263,17 +263,17 @@ def handle_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool
             _reply(db, chat_id, f"Việc #{m.group('id')}: {esc(str((out or {}).get('error') or 'không ghi được'))}.")
             return True
         if out.get("already_done"):
-            _reply(db, chat_id, f"Việc «{esc(out['title'])}» đã ghi xong từ trước rồi.")
+            _reply(db, chat_id, f"Việc **{esc(out['title'])}** đã ghi xong từ trước rồi.")
             return True
         row.action = ACT_PLAN_REPLY
         db.commit()
         tail = f", tự chấm {sc.group(1)}/10" if sc else ""
-        _reply(db, chat_id, f"Đã ghi <b>xong</b> việc «{esc(out['title'])}» lúc {out.get('when', '')}{tail}.")
-        _notify_owner(db, out, f"{esc(out.get('person', ''))} đã <b>xong</b> việc «{esc(out['title'])}» lúc "
+        _reply(db, chat_id, f"Đã ghi <b>xong</b> việc **{esc(out['title'])}** lúc {out.get('when', '')}{tail}.")
+        _notify_owner(db, out, f"{esc(out.get('person', ''))} đã <b>xong</b> việc **{esc(out['title'])}** lúc "
                       f"{out.get('when', '')}{tail}.", except_user=user.id)
         return True
     m = _PROGRESS.match(f)
-    #  `fold` bỏ cả dấu % nên phần trăm bắt trên CÂU GỐC; «điểm» bắt trên bản bỏ dấu.
+    #  `fold` bỏ cả dấu % nên phần trăm bắt trên CÂU GỐC; "điểm" bắt trên bản bỏ dấu.
     pct = _PCT.search(text) if m else None
     sc = _SCORE.search(m.group("rest")) if m else None
     if m and (pct or sc):
@@ -284,8 +284,8 @@ def handle_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool
         bits = ([f"{out['pct']}%"] if "pct" in out else []) + ([f"tự chấm {out['score']}/10"] if "score" in out else [])
         row.action = ACT_PLAN_REPLY
         db.commit()
-        _reply(db, chat_id, f"Đã ghi tiến độ việc «{esc(out['title'])}»: {esc(', '.join(bits))}.")
-        _notify_owner(db, out, f"{esc(out.get('person', ''))} — việc «{esc(out['title'])}»: {esc(', '.join(bits))}"
+        _reply(db, chat_id, f"Đã ghi tiến độ việc **{esc(out['title'])}**: {esc(', '.join(bits))}.")
+        _notify_owner(db, out, f"{esc(out.get('person', ''))} — việc **{esc(out['title'])}**: {esc(', '.join(bits))}"
                       + (f" — {esc(m.group('rest').strip()[:200])}" if m.group("rest").strip() else ""), except_user=user.id)
         return True
     return False

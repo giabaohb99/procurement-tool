@@ -1,4 +1,4 @@
-"""Xuất Excel báo cáo «Mức dùng chức năng» (duoc-CR-655): tiêu đề cột cố định, ô chữ lọc ký tự mở đầu công thức."""
+"""Xuất Excel báo cáo "Mức dùng chức năng" (duoc-CR-655): tiêu đề cột cố định, ô chữ lọc ký tự mở đầu công thức."""
 from sqlalchemy.orm import Session
 
 from app.core.export_xlsx import Col, xlsx_response

@@ -34,7 +34,7 @@ from app.modules.leave.constants import LR_APPROVED, LR_PENDING, LR_REJECTED, LR
 from app.modules.leave.report_sql_merge import ZERO_METRICS, merge_dim_rows, totals_dict  # noqa: F401 (tái xuất)
 from app.modules.leave.request_model import LeaveRequest, LeaveRequestLine
 
-#  Đơn chờ duyệt quá bấy nhiêu giờ kể từ lúc nộp thì tính là «chờ quá 3 ngày».
+#  Đơn chờ duyệt quá bấy nhiêu giờ kể từ lúc nộp thì tính là "chờ quá 3 ngày".
 PENDING_OVERDUE_HOURS = 72
 
 DERIVED = [

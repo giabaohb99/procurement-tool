@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/category-assignees", tags=["category_assignee"])
 
 
 def _effective_dept_expr(db: Session):
-    """Phòng áp dụng THẬT của dòng phân công — bao-CR-524: dòng `0` cũ («Thu mua chung», chưa
+    """Phòng áp dụng THẬT của dòng phân công — bao-CR-524: dòng `0` cũ ("Thu mua chung", chưa
     chạy backfill) đọc là phòng thu mua mặc định. Dùng cho cả JOIN lấy tên, sắp xếp lẫn ô lọc,
     để dòng cũ và dòng mới của cùng phòng đi chung một nhóm."""
     return type_coerce(func.coalesce(func.nullif(CategoryAssignee.department_id, 0),
@@ -43,7 +43,7 @@ def _out(db: Session, obj) -> dict:
     p = db.get(Employee, obj.primary_employee_id) if obj.primary_employee_id else None
     b = db.get(Employee, obj.backup_employee_id) if obj.backup_employee_id else None
     # bao-CR-524: dòng `0` cũ trả về đúng phòng thu mua mặc định (id + tên thật) — màn hình không
-    # còn mục «Thu mua chung» để hiện số 0.
+    # còn mục "Thu mua chung" để hiện số 0.
     dept_id = int(obj.department_id or 0) or get_central_dept_id(db)
     dept = db.get(Department, dept_id) if dept_id else None
     d["department_id"] = dept_id

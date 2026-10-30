@@ -22,7 +22,7 @@ def ensure_system_variables(db: Session) -> int:
     have = {c for c, _ in rows}
     for code, source in rows:   # dòng TÙY CHỈNH trùng mã hệ thống: lệch dữ liệu, chỉ cảnh báo (không tự sửa)
         if int(source) == int(LaborContractVariableSource.CUSTOM) and code in KNOWN_KEYS:
-            log.warning("Biến tùy chỉnh «%s» trùng mã biến hệ thống — giá trị hệ thống sẽ thắng", code)
+            log.warning("Biến tùy chỉnh \"%s\" trùng mã biến hệ thống — giá trị hệ thống sẽ thắng", code)
     added = 0
     for order, p in enumerate(PLACEHOLDERS, start=1):
         if p.key in have:

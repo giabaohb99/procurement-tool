@@ -1,8 +1,8 @@
-"""ĐIỀU KIỆN ÁP DỤNG của hồ sơ — *«giấy này phải kèm theo chứng từ nào»* (21/09/2026).
+"""ĐIỀU KIỆN ÁP DỤNG của hồ sơ — *"giấy này phải kèm theo chứng từ nào"* (21/09/2026).
 
 Mỗi tờ hồ sơ khai hai thứ: **áp cho loại chứng từ nào** (`apply_doc_kinds`) và
 **dòng hàng phải thỏa gì** (`apply_conditions`). Trang chi tiết của chứng từ hỏi
-ngược lại: *«có hồ sơ nào phải kèm theo tôi không?»*
+ngược lại: *"có hồ sơ nào phải kèm theo tôi không?"*
 
     apply_doc_kinds  = ["purchase_order", "survey_request"]
     apply_conditions = [{"field": "product_code", "op": "in",
@@ -108,7 +108,7 @@ def _clean_value(value, op: str, index: int):
         items = value if isinstance(value, list) else [value]
         cleaned = [str(v).strip() for v in items if str(v or "").strip()]
         if not cleaned:
-            raise ValueError(f"Dòng {index}: «{OPS[op]}» cần ít nhất một giá trị")
+            raise ValueError(f"Dòng {index}: \"{OPS[op]}\" cần ít nhất một giá trị")
         if len(cleaned) > MAX_VALUES:
             raise ValueError(f"Dòng {index}: tối đa {MAX_VALUES} giá trị")
         for item in cleaned:
@@ -133,7 +133,7 @@ def matches_line(conditions: list[dict], line: dict) -> bool:
 
 def _one(row: dict, line: dict) -> bool:
     #  ⚠️ So sánh KHÔNG phân biệt hoa thường và bỏ khoảng trắng hai đầu. Mã sản
-    #  phẩm gõ tay ở bốn màn khác nhau, và «sp-001 » với «SP-001» là cùng một
+    #  phẩm gõ tay ở bốn màn khác nhau, và "sp-001 " với "SP-001" là cùng một
     #  thứ với người dùng — khớp đúng từng byte thì điều kiện im lặng trượt.
     actual = str(line.get(row["field"]) or "").strip().casefold()
     op = row["op"]
@@ -172,7 +172,7 @@ def reason_of(conditions: list[dict], line: dict, doc_kind: str) -> str:
     parts = []
     for row in conditions:
         actual = str(line.get(row["field"]) or "").strip()
-        parts.append(f"{FIELDS[row['field']].lower()} «{actual}»")
+        parts.append(f"{FIELDS[row['field']].lower()} \"{actual}\"")
     return f"vì {where}có " + " và ".join(parts)
 
 
@@ -188,7 +188,7 @@ def doc_lines(db, doc_kind: str, doc_id: int) -> list[dict]:
     """Rút các dòng hàng của một chứng từ về dạng `{no, product_code, item_group}`.
 
     Chứng từ không tồn tại, hoặc loại lạ, thì ra danh sách rỗng — nơi gọi đã gác
-    quyền xong nên ở đây không cần phân biệt «không có» với «không được xem».
+    quyền xong nên ở đây không cần phân biệt "không có" với "không được xem".
     """
     if doc_kind == "purchase_request":
         return _lines_of_purchase_request(db, doc_id)
@@ -204,9 +204,9 @@ def doc_lines(db, doc_kind: str, doc_id: int) -> list[dict]:
 def _numbered(rows) -> list[dict]:
     """`rows` = (mã sản phẩm, phân loại, tên hiển thị).
 
-    ⚠️ `label` là thứ NGƯỜI ĐỌC thấy ở chế độ «Theo dòng hàng», nên nó phải tự
+    ⚠️ `label` là thứ NGƯỜI ĐỌC thấy ở chế độ "Theo dòng hàng", nên nó phải tự
     nói ra dòng nào là dòng nào. Rơi về mã sản phẩm rồi mới tới phân loại: dòng
-    YCBG thường chưa có mã, mà cả phiếu toàn «Chưa đặt tên» thì chế độ xem đó
+    YCBG thường chưa có mã, mà cả phiếu toàn "Chưa đặt tên" thì chế độ xem đó
     mất sạch tác dụng.
     """
     return [
@@ -262,7 +262,7 @@ def _lines_of_survey_request(db, doc_id: int) -> list[dict]:
                                                   SurveyRequestLine,
                                                   SurveyRequestOption)
 
-    #  ai-CR-170: phiếu đã xóa mềm = «không tồn tại» → rỗng (nơi gọi đã qua `get_scoped`,
+    #  ai-CR-170: phiếu đã xóa mềm = "không tồn tại" → rỗng (nơi gọi đã qua `get_scoped`,
     #  đây là lưới đỡ cho đường gọi thẳng).
     sr = db.get(SurveyRequest, doc_id)
     if sr is None or sr.is_deleted:
@@ -287,8 +287,8 @@ def _lines_of_survey_request(db, doc_id: int) -> list[dict]:
         .filter(SurveyRequestOption.is_chosen.is_(True))
         .all()
     )
-    #  Nhãn dòng YCBG: PHÂN LOẠI là thứ người dùng gọi tên dòng («Cốc đong»,
-    #  «Chai Hdpe»), còn chi tiết thông số thì dài cả câu — ghép cả hai, cắt
+    #  Nhãn dòng YCBG: PHÂN LOẠI là thứ người dùng gọi tên dòng ("Cốc đong",
+    #  "Chai Hdpe"), còn chi tiết thông số thì dài cả câu — ghép cả hai, cắt
     #  phần đuôi để tiêu đề nhóm không tràn hàng.
     return [
         {

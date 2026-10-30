@@ -1,8 +1,8 @@
-"""Nguồn của nhóm chỉ số 3.8 «Dùng AI» (duoc-CR-655, D0d) — đúng 3 truy vấn SELECT cố định (+1 lần kiểm bảng tồn tại), KHÔNG phụ thuộc số người.
+"""Nguồn của nhóm chỉ số 3.8 "Dùng AI" (duoc-CR-655, D0d) — đúng 3 truy vấn SELECT cố định (+1 lần kiểm bảng tồn tại), KHÔNG phụ thuộc số người.
 
 (1) `tab_ai_usage_daily` (ai-CR-230) trong cửa sổ — số đếm theo người × ngày × kênh, không có nội dung câu hỏi.
-(2) mốc bắt đầu thu = ngày sớm nhất của bảng đó — phân biệt «chưa thu» (không ghi 0) với «thu rồi mà người này không dùng».
-(3) `tab_audit_log` các dòng LẬP phiếu có `ai_channel > 0` (AI làm hộ) — nguồn chính xác nhất cho «phiếu do AI soạn»,
+(2) mốc bắt đầu thu = ngày sớm nhất của bảng đó — phân biệt "chưa thu" (không ghi 0) với "thu rồi mà người này không dùng".
+(3) `tab_audit_log` các dòng LẬP phiếu có `ai_channel > 0` (AI làm hộ) — nguồn chính xác nhất cho "phiếu do AI soạn",
     đúng hơn `tab_assistant_change` vì mang kênh thật (MCP không bị ghi nhầm thành Telegram).
 Bảng chưa tồn tại (ERP cũ chưa chạy migration `aiusage01`) → coi như chưa thu thập.
 """

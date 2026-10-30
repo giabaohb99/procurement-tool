@@ -21,7 +21,7 @@ TIMEOUT = 90
 OPENAI_URL = "https://api.openai.com/v1"
 OPENROUTER_URL = "https://openrouter.ai/api/v1"
 MIN_OUTPUT_TOKENS = 8000
-CUT_NOTE = "\n\n_(Câu trả lời chạm trần độ dài nên bị cắt — nhắn «viết tiếp» để em viết nốt.)_"
+CUT_NOTE = "\n\n_(Câu trả lời chạm trần độ dài nên bị cắt — nhắn **viết tiếp** để em viết nốt.)_"
 
 
 def _wire_content(content):
@@ -41,20 +41,20 @@ def _wire_content(content):
     return out
 
 
-#  ai-CR-151: 09/10 đại ca thấy tin bot mở đầu bằng «<thinking> </thinking>» — model đổi tên thẻ. Bắt cả think /
+#  ai-CR-151: 09/10 đại ca thấy tin bot mở đầu bằng "<thinking> </thinking>" — model đổi tên thẻ. Bắt cả think /
 #  thinking / reasoning, và thẻ lẻ (mở không đóng hoặc ngược lại) còn sót sau khi bỏ khối.
 _THINK_BLOCK = re.compile(r"<(think|thinking|reasoning)>.*?</\1>\s*", re.S | re.I)
 _THINK_TAG = re.compile(r"</?(?:think|thinking|reasoning)>\s*", re.I)
-#  Dấu chuyển sang câu trả lời thật: «Final answer:», «Final:», «Final?» ở đầu dòng (cho phép vài ký hiệu đứng trước).
+#  Dấu chuyển sang câu trả lời thật: "Final answer:", "Final:", "Final?" ở đầu dòng (cho phép vài ký hiệu đứng trước).
 _FINAL_MARK = re.compile(r"(?:^|\n)[^\w\n]{0,6}final(?: answer)?\s*[:?]", re.I)
 
 
 def clean_reply(text: str) -> str:
-    """Bỏ phần «nghĩ» mà model suy luận lỡ trả lẫn vào câu trả lời (ai-CR-112).
+    """Bỏ phần "nghĩ" mà model suy luận lỡ trả lẫn vào câu trả lời (ai-CR-112).
 
     07/10/2026 chạy thử biên bản họp bằng `deepseek-v4.1-flash` qua trạm modelapi: một lần trong bốn, nội dung mở đầu
-    bằng cả đoạn rác («**:», «### Final? Let's prepare final…») rồi mới tới «Final answer:» và biên bản thật. Có khối
-    <think>…</think> thì bỏ khối; có dấu «Final answer:» ở đầu dòng thì chỉ lấy phần sau dấu CUỐI CÙNG (bỏ nốt phần còn
+    bằng cả đoạn rác ("**:", "### Final? Let's prepare final…") rồi mới tới "Final answer:" và biên bản thật. Có khối
+    <think>…</think> thì bỏ khối; có dấu "Final answer:" ở đầu dòng thì chỉ lấy phần sau dấu CUỐI CÙNG (bỏ nốt phần còn
     lại của dòng đó nếu chỉ là ký hiệu). Câu bình thường không có hai dấu này thì giữ nguyên.
     """
     if not text:
@@ -73,8 +73,8 @@ def clean_reply(text: str) -> str:
 
 def _no_temperature(model: str) -> bool:
     """Dòng model suy luận của OpenAI (gpt-5*, o*) từ chối `temperature` khác 1 — bỏ tham số cho nó.
-    ai-CR-198 (14/10): Claude thế hệ 5 qua trạm OpenAI-compat cũng từ chối («claude-sonnet-5-5 does not support
-    non-default temperature», lượt #205) — bỏ luôn cho họ claude-*-5*."""
+    ai-CR-198 (14/10): Claude thế hệ 5 qua trạm OpenAI-compat cũng từ chối ("claude-sonnet-5-5 does not support
+    non-default temperature", lượt #205) — bỏ luôn cho họ claude-*-5*."""
     m = (model or "").lower()
     if m.startswith("claude-") and any(f"-{v}" in m for v in ("5", "6", "7")):
         return True
@@ -125,8 +125,8 @@ class OpenAICompatProvider(Provider):
         return data
 
     def _payload(self, model: str, msgs: list[dict], system: str | None, max_tokens: int, temperature: float) -> dict:
-        #  ai-CR-115: model suy luận (DeepSeek v4, gpt-5, o*…) tính cả phần «nghĩ» vào trần đầu ra — trần 1536 của Trợ lý
-        #  cắt cụt câu trả lời giữa chừng (08/10 bot phân tích báo cáo dừng ở «Chi phí 2026: bán hàng 28,6 · QLDN»). Trần
+        #  ai-CR-115: model suy luận (DeepSeek v4, gpt-5, o*…) tính cả phần "nghĩ" vào trần đầu ra — trần 1536 của Trợ lý
+        #  cắt cụt câu trả lời giữa chừng (08/10 bot phân tích báo cáo dừng ở "Chi phí 2026: bán hàng 28,6 · QLDN"). Trần
         #  chỉ là mức chặn trên, tiền tính theo token thật dùng, nên nâng sàn lên MIN_OUTPUT_TOKENS.
         payload: dict = {"model": model, "messages": ([{"role": "system", "content": system}] if system else []) + msgs,
                          self.max_tokens_field: max(int(max_tokens or 0), MIN_OUTPUT_TOKENS)}

@@ -6,7 +6,7 @@ thì ô để RỖNG. Không gõ danh sách thứ hai — thêm trường nhạy
 là mọi bộ xuất tự che theo.
 
 Lý do tách riêng: hôm nay các bộ xuất chưa có cột nhạy cảm nào, nên chưa gì bị lộ; nhưng đúng
-ngày ai đó thêm «Ngày sinh» hay «Số TK ngân hàng» vào bộ cột (việc rất tự nhiên với Nhân sự),
+ngày ai đó thêm "Ngày sinh" hay "Số TK ngân hàng" vào bộ cột (việc rất tự nhiên với Nhân sự),
 nếu không có chốt này thì người chỉ có `employee.export` kéo được cả công ty. Che ở TẦNG DỮ LIỆU
 xuất chứ không dựa vào việc người viết bộ cột nhớ lọc.
 
@@ -30,7 +30,7 @@ def mask_export_rows(rows: list[dict], employee_ids: list[int], profile) -> list
 
 def masked_row_objects(items: list, keys: list[str], profile) -> list[SimpleNamespace]:
     """Dựng các đối tượng `getattr`-được cho `csv_utils.export_csv_response` (nó đọc bằng
-    `getattr(item, field)`), đã che cột nhạy cảm. Giữ `is_active` để cột «Trạng thái» đúng."""
+    `getattr(item, field)`), đã che cột nhạy cảm. Giữ `is_active` để cột "Trạng thái" đúng."""
     rows = [{k: getattr(it, k, "") for k in keys} for it in items]
     mask_export_rows(rows, [it.id for it in items], profile)
     #  Gộp dict (không truyền `is_active=` riêng): bộ cột nào có sẵn khóa `is_active` thì

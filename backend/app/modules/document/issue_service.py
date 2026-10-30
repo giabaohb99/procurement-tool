@@ -31,7 +31,7 @@ from .supersede_service import SUPERSEDE_EFFECT
 def has_decision(db: Session, doc: Document) -> bool:
     """J11 — văn bản có kèm một Quyết định ban hành không.
 
-    Quan hệ «kèm theo» của chính văn bản này trỏ ra ngoài; loại đích do bảng quy
+    Quan hệ "kèm theo" của chính văn bản này trỏ ra ngoài; loại đích do bảng quy
     tắc quyết định (thường là Quyết định).
     """
     return (
@@ -97,8 +97,8 @@ def preview(db: Session, doc: Document) -> dict:
         blockers.append("Chưa khai đủ quan hệ bắt buộc: " + "; ".join(missing_relations))
     if needs_decision and not decision_exists:
         blockers.append(
-            f"Loại «{doc_type.name}» phải ban hành kèm một Quyết định. "
-            "Khai quan hệ «Kèm theo» tới Quyết định ban hành ở tab Quan hệ."
+            f"Loại \"{doc_type.name}\" phải ban hành kèm một Quyết định. "
+            "Khai quan hệ \"Kèm theo\" tới Quyết định ban hành ở tab Quan hệ."
         )
 
     #  CẢNH BÁO — vẫn ban hành được, nhưng gần như chắc chắn là quên.
@@ -139,6 +139,6 @@ def ensure_can_issue(db: Session, doc: Document):
     if doc_type.needs_decision and not has_decision(db, doc):
         raise HTTPException(
             400,
-            f"Loại «{doc_type.name}» phải ban hành kèm một Quyết định. Khai quan hệ "
-            "«Kèm theo» tới Quyết định ban hành rồi ban hành lại.",
+            f"Loại \"{doc_type.name}\" phải ban hành kèm một Quyết định. Khai quan hệ "
+            "\"Kèm theo\" tới Quyết định ban hành rồi ban hành lại.",
         )

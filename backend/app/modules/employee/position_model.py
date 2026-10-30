@@ -1,7 +1,7 @@
 """DANH MỤC CHỨC VỤ — `tab_job_position` (duoc-CR-320, 08/09/2026).
 
-Trước đợt này ô «Vị trí / Chức vụ» của hồ sơ nhân sự là **chữ gõ tay**, nên mỗi
-người gõ một kiểu — «Trưởng phòng», «TP.», «truong phong», «Trưởng Phòng » (thừa
+Trước đợt này ô "Vị trí / Chức vụ" của hồ sơ nhân sự là **chữ gõ tay**, nên mỗi
+người gõ một kiểu — "Trưởng phòng", "TP.", "truong phong", "Trưởng Phòng " (thừa
 dấu cách). Hệ quả không nằm ở chỗ nhìn xấu: cột đó đi thẳng vào bản in phiếu
 (YCMH, YCBG, đề nghị thanh toán), vào tệp xuất Excel và vào hồ sơ mà trợ lý AI
 đọc — bốn nơi cùng hiện bốn cách viết của một chức vụ.
@@ -23,7 +23,7 @@ from app.core.base_model import AuditMixin, Base
 
 
 class JobPosition(Base, AuditMixin):
-    """Một chức vụ — nguồn duy nhất của ô chọn «Vị trí / Chức vụ» trên hồ sơ."""
+    """Một chức vụ — nguồn duy nhất của ô chọn "Vị trí / Chức vụ" trên hồ sơ."""
 
     __tablename__ = "tab_job_position"
 
@@ -54,7 +54,7 @@ class JobPositionRole(Base, AuditMixin):
 
     ⚠️ Chỉ khai vai trò, KHÔNG khai bậc phạm vi: bậc dòng (own/dept/company/all) nằm ở
     `tab_permission.scope` của từng (vai trò × đối tượng), không nằm ở `tab_user_role`.
-    Muốn «Trưởng phòng ở bậc phòng ban» thì chọn vai trò đã được cấu hình bậc phòng ban.
+    Muốn "Trưởng phòng ở bậc phòng ban" thì chọn vai trò đã được cấu hình bậc phòng ban.
     Không có khóa ngoại cứng (cùng quy ước các bảng danh mục khác); dịch vụ kiểm id tồn tại.
     """
 

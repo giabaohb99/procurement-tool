@@ -72,12 +72,12 @@ def valid_company_id(raw) -> int | None:
 
 def valid_department_id(raw) -> int | None:
     """`department_id` từ query string (duoc-CR-686, ô lọc phòng ban của báo cáo Nhân sự) — rỗng
-    hoặc `all` (giá trị «Tất cả phòng ban» của giao diện) -> None; không phải số nguyên -> 422.
+    hoặc `all` (giá trị "Tất cả phòng ban" của giao diện) -> None; không phải số nguyên -> 422.
     Bên gọi lọc SAU `apply_scope`, chỉ THU HẸP, cùng luật H1 của `company_id`."""
     if raw in (None, "", "all"):
         return None
     s = str(raw).strip()
-    #  `isascii()` chặn chữ số Unicode («²», «٣») — `isdigit()` nhận chúng nhưng `int()` thì ném
+    #  `isascii()` chặn chữ số Unicode ("²", "٣") — `isdigit()` nhận chúng nhưng `int()` thì ném
     #  ValueError, lộ 500 thay vì 422 (review CR-686).
     if not (s.isascii() and s.isdigit()):
         raise HTTPException(422, "department_id phải là số nguyên")
@@ -171,7 +171,7 @@ def payable_rows(db: Session, company_id: int | None, ranges: list[tuple[date, d
 
     #  bao-CR-524: nợ của phòng thu mua mặc định nay mang id thật (PBA017) thay cho `0`. Báo cáo
     #  giữ cách cũ cho nhóm này — lùi về phòng yêu cầu của ĐMH — kẻo mọi khoản nợ thu mua chung
-    #  dồn hết về một dòng «Sản xuất -Thu mua» sau khi chạy backfill.
+    #  dồn hết về một dòng "Sản xuất -Thu mua" sau khi chạy backfill.
     from app.core.central_purchasing import get_central_dept_id
     central = get_central_dept_id(db)
     out = []

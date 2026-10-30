@@ -38,7 +38,7 @@ class EmployeeContact(Base, AuditMixin):
     #
     #  Bản đầu để chữ tự do; khách chốt thành ô CHỌN ngày 08/09/2026, nên thành
     #  danh sách cố định và R2/QĐ-11 áp dụng: lưu SMALLINT, không lưu chữ. Chữ
-    #  tự do làm mỗi người gõ một kiểu («vợ» · «Vợ» · «v/c»), không lọc nổi.
+    #  tự do làm mỗi người gõ một kiểu ("vợ" · "Vợ" · "v/c"), không lọc nổi.
     relation: Mapped[int] = mapped_column(SmallInteger, default=0)
     address: Mapped[str] = mapped_column(String(500), default="")
     phone: Mapped[str] = mapped_column(String(25), default="")

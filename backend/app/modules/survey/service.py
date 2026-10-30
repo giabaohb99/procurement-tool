@@ -95,7 +95,7 @@ def creator_name(db: Session, user_id: int) -> str:
 
 def create_survey(db: Session, data, user_id: int) -> Survey:
     header = {f: getattr(data, f) for f in HEADER_FIELDS}
-    #  bao-CR-571: «NSPT phụ trách (người tạo)» là người tạo — KHÔNG tin giá trị giao diện gửi.
+    #  bao-CR-571: "NSPT phụ trách (người tạo)" là người tạo — KHÔNG tin giá trị giao diện gửi.
     #  Nháp F5 lưu chung trên trình duyệt từng mang tên người lập trước sang phiếu của người sau.
     header["nspt"] = creator_name(db, user_id) or header.get("nspt") or ""
     s = Survey(code=data.code or "", survey_type="combined", status="draft",
@@ -227,9 +227,9 @@ def delete_survey(db: Session, sid: int, user_id: int):
 MISSING = "Thiếu thông tin"
 _LINE_AUDIT = {"id", "survey_id", "created_at", "created_by", "updated_at", "updated_by"}
 
-#  bao-CR-554 — dòng «đã quyết»: duyệt hoặc không duyệt. Chờ duyệt / Thiếu thông tin / rỗng là chưa.
+#  bao-CR-554 — dòng "đã quyết": duyệt hoặc không duyệt. Chờ duyệt / Thiếu thông tin / rỗng là chưa.
 DECIDED_LINE_STATES = ("Đã duyệt", "Không duyệt")
-#  bao-CR-554 — «Trả về» (rejected) được từ Chờ duyệt lẫn Đã duyệt (đại ca chốt 02/10/2026:
+#  bao-CR-554 — "Trả về" (rejected) được từ Chờ duyệt lẫn Đã duyệt (đại ca chốt 02/10/2026:
 #  quản lý hủy duyệt để nhân viên sửa rồi gửi lại); Nháp / đã trả / đã từ chối thì không có gì để trả.
 RETURNABLE_STATUSES = ("submitted", "approved")
 
@@ -252,18 +252,18 @@ PENDING_LINE_STATE = "Chờ duyệt"
 
 
 def clear_for_return(db: Session, sid: int, user_id: int) -> int:
-    """bao-CR-563 — dọn những gì phiếu đã đẩy đi TRƯỚC khi «Trả về» (Bị trả lại).
+    """bao-CR-563 — dọn những gì phiếu đã đẩy đi TRƯỚC khi "Trả về" (Bị trả lại).
 
     Dòng được duyệt là phương án tự gắn sang Yêu cầu báo giá ngay (`sync_options_from_surveys`).
     Trả về mà để nguyên thì ba chuyện xảy ra: phương án cũ vẫn hiện bên YCBG trong lúc phiếu
     đang sửa; sửa phiếu là `_save_product_lines` xóa rồi tạo lại dòng nên phương án trỏ vào dòng
     đã mất; duyệt lại thì gắn thêm phương án mới, thành trùng. Dòng sửa giá xong cũng còn
-    «Đã duyệt», quản lý duyệt lại cả phiếu mà không phải xem lại dòng nào.
+    "Đã duyệt", quản lý duyệt lại cả phiếu mà không phải xem lại dòng nào.
 
     Nên: CHẶN khi phương án đã được CHỌN ở YCBG hoặc đã thành phương án của YCMH — gỡ lúc đó
     là rút ruột một quyết định mua hàng đã chốt (cùng tinh thần chốt chặn trả về của YCBG /
     YCMH ở bao-CR-554). Không vướng thì gỡ phương án ở YCBG và đưa mọi dòng đã quyết về
-    «Chờ duyệt». Dòng «Thiếu thông tin» giữ nguyên — đó chính là chỗ người khảo sát phải sửa.
+    "Chờ duyệt". Dòng "Thiếu thông tin" giữ nguyên — đó chính là chỗ người khảo sát phải sửa.
     Trả về số phương án đã gỡ.
     """
     from app.modules.purchase_request.model import PurchaseRequestItemOption

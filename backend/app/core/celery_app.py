@@ -218,7 +218,7 @@ if settings.AGENT_HUB_ENABLED and not settings.agent_is_erp:
             "schedule": crontab(minute="*"),
             "options": {"expires": 50},
         },
-        #  ai-CR-021: việc chạy lâu mà im quá 90 giây thì nhắn «em vẫn đang làm», rồi cập nhật phút.
+        #  ai-CR-021: việc chạy lâu mà im quá 90 giây thì nhắn "em vẫn đang làm", rồi cập nhật phút.
         "agent-heartbeat": {
             "task": "agent.heartbeat",
             "schedule": crontab(minute="*"),
@@ -283,7 +283,7 @@ if settings.AGENT_HUB_ENABLED and not settings.agent_is_erp:
             "options": {"expires": 540},
         },
         #  ai-CR-105: dọn tin nhóm Telegram quá hạn giữ (mặc định 30 ngày), 03:20 mỗi đêm.
-        "agent-meeting-drive-scan": {             # ai-CR-116: thư mục «Họp» trên Drive
+        "agent-meeting-drive-scan": {             # ai-CR-116: thư mục "Họp" trên Drive
             "task": "agent.meeting_drive_scan",
             "schedule": crontab(minute="*/5"),
             "options": {"expires": 280},
@@ -355,7 +355,7 @@ if not settings.agent_is_erp:
         "schedule": crontab(hour=3, minute=40),
         "options": {"expires": 3000},
     }
-    #  ai-CR-230: số dùng AI theo người × ngày → ERP `tab_ai_usage_daily` (bộ chỉ số «Dùng AI» của hồ sơ cách làm việc).
+    #  ai-CR-230: số dùng AI theo người × ngày → ERP `tab_ai_usage_daily` (bộ chỉ số "Dùng AI" của hồ sơ cách làm việc).
     celery_app.conf.beat_schedule["agent-ai-usage-push"] = {
         "task": "agent.ai_usage_push",
         "schedule": crontab(hour=4, minute=5),

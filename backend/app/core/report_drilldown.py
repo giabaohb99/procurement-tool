@@ -1,10 +1,10 @@
-"""«Bấm vào con số ra danh sách người» của báo cáo kiểu Haravan (duoc-CR-686).
+""""Bấm vào con số ra danh sách người" của báo cáo kiểu Haravan (duoc-CR-686).
 
 Hợp đồng chung cho mọi `GET <gốc>/summary/rows` (chi tiết ở phase-01 của plan
 `261027-1045-kho-mau-bao-cao-nhan-su`):
 
 - Tham số = mọi tham số của `/summary` + `metric` (bắt buộc) + `group_by`/`group_key` (tùy chọn,
-  `group_key=""` là nhóm «(Chưa gắn)»). Nhóm gộp `__other__` không có danh sách → 422.
+  `group_key=""` là nhóm "(Chưa gắn)"). Nhóm gộp `__other__` không có danh sách → 422.
 - Trả `{metric: {key, label}, columns: [{key, label, kind}], rows: [...], total, truncated}`.
   `kind` ∈ `text | date | int | days | money`; mỗi dòng có thể kèm `link` (đường giao diện v2).
 - Trần `ROWS_LIMIT` dòng — `total` luôn là số THẬT trước khi cắt.
@@ -56,7 +56,7 @@ def parse_rows_params(params: Mapping[str, Any], allowed: Mapping[str, str]
     if group_key is not None:
         group_key = str(group_key)
         if group_key == OTHER_GROUP_KEY:
-            raise HTTPException(422, "Nhóm gộp «Các nhóm khác» không có danh sách riêng")
+            raise HTTPException(422, "Nhóm gộp \"Các nhóm khác\" không có danh sách riêng")
     return metric, group_by, group_key
 
 
@@ -68,7 +68,7 @@ def _norm_key(raw) -> str:
 def filter_group(rows: Iterable, dim: DimensionSpec | None, group_key: str | None) -> list:
     """Giữ hàng thuộc nhóm `group_key` theo ĐÚNG `dim.key_of` mà `/summary` dùng để gom — nhờ
     vậy danh sách luôn khớp con số trên bảng. `dim` None hoặc `group_key` None → giữ hết.
-    Hàng có `key_of` rỗng thuộc nhóm `""` («(Chưa gắn)»)."""
+    Hàng có `key_of` rỗng thuộc nhóm `""` ("(Chưa gắn)")."""
     rows = list(rows)
     if dim is None or group_key is None:
         return rows

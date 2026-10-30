@@ -1,4 +1,4 @@
-"""Dữ liệu ô E3 «Lịch nhắc trong tháng» của Tổng quan Nhân sự (duoc-CR-689).
+"""Dữ liệu ô E3 "Lịch nhắc trong tháng" của Tổng quan Nhân sự (duoc-CR-689).
 
 Bốn nhóm, mỗi nhóm tối đa `GROUP_CAP` dòng (`total` vẫn là số thật, `truncated` báo bị cắt):
   - `birthdays`: sinh nhật trong tháng — CHỈ ngày + tháng (không năm sinh, không tuổi); chỉ khi người xem có

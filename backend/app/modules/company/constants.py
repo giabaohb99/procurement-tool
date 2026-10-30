@@ -5,7 +5,7 @@
 `frontend-v2/src/modules/hr/types/company.ts` (`gen_status_ts.py` chỉ sinh bộ mã CHUỖI).
 
 Bộ mã này KHÔNG có `0`: mọi pháp nhân đều biết mình là công ty hay hộ kinh doanh
-ngay lúc tạo, mặc định là công ty. Hệ quả chính của «Hộ kinh doanh» nằm ở bản in
+ngay lúc tạo, mặc định là công ty. Hệ quả chính của "Hộ kinh doanh" nằm ở bản in
 Phiếu đề xuất mua hàng — xem `purchase_request/print_signature_cells.py`.
 """
 from enum import IntEnum
@@ -14,8 +14,8 @@ from enum import IntEnum
 class CompanyType(IntEnum):
     """Loại hình pháp nhân."""
 
-    COMPANY = 1      # Công ty (doanh nghiệp) — ô ký «Giám đốc» = người đại diện pháp luật
-    HOUSEHOLD = 2    # Hộ kinh doanh — bản in chỉ còn «Chủ hộ» + «Người lập», để trống ký tay
+    COMPANY = 1      # Công ty (doanh nghiệp) — ô ký "Giám đốc" = người đại diện pháp luật
+    HOUSEHOLD = 2    # Hộ kinh doanh — bản in chỉ còn "Chủ hộ" + "Người lập", để trống ký tay
 
 
 COMPANY_TYPE_LABELS = {

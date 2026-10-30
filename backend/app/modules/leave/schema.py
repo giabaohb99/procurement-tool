@@ -53,7 +53,7 @@ class LeaveTypeBase(BaseModel):
     @classmethod
     def _upper_code(cls, v: str) -> str:
         #  Mã đi vào metadata của giấy GNP và vào seed — chuẩn hóa một lần ở đây
-        #  còn hơn để «Annual» và «annual» thành hai loại nghỉ khác nhau.
+        #  còn hơn để "Annual" và "annual" thành hai loại nghỉ khác nhau.
         return (v or "").strip().lower()
 
 
@@ -276,7 +276,7 @@ class LeaveRequestBase(BaseModel):
     to_date: date | None = None
     from_session: int = SESSION_FULL
     to_session: int = SESSION_FULL
-    #  Chỉ khai khi buổi là «Theo giờ» (`SESSION_HOURLY`). `None` = không nghỉ
+    #  Chỉ khai khi buổi là "Theo giờ" (`SESSION_HOURLY`). `None` = không nghỉ
     #  theo giờ — xem `request_service.check_hourly`.
     from_time: time | None = None
     to_time: time | None = None

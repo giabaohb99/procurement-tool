@@ -1,7 +1,7 @@
 """Bộ mã LOẠI MẪU trong bảng `tab_document_template` — cột `template_kind` (duoc-CR-629b bước B).
 
 Một bảng chứa hai loại mẫu (single-table inheritance của SQLAlchemy):
-  - HTML: văn bản mẫu theo loại văn bản (thư viện «Văn bản mẫu», mọi vai trò `doc_template.read` đều đọc);
+  - HTML: văn bản mẫu theo loại văn bản (thư viện "Văn bản mẫu", mọi vai trò `doc_template.read` đều đọc);
   - LABOR_CONTRACT_DOCX: mẫu .docx hợp đồng lao động theo pháp nhân (chỉ qua quyền `labor_contract_template`).
 
 Thuần stdlib (như `labor_contract_codes.py`). Số đã cấp GIỮ NGUYÊN, KHÔNG tái dùng.

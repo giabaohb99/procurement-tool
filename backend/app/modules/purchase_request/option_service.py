@@ -25,7 +25,7 @@ MAX_OPTIONS_PER_LINE = 5   # bằng Yêu cầu báo giá — cùng một việc 
 # Chỉ gắn/chốt phương án khi thu mua ĐÃ TIẾP NHẬN phiếu. `dispatched` là mốc đó
 # (xem `service.dispatch_pr` — nó cũng chính là lúc ghi Ngày tiếp nhận, bao-CR-293);
 # công tắc `pr_dispatch_enabled` TẮT thì bước duyệt của TBP đẩy thẳng sang trạng thái
-# này, nên không cần khai thêm `approved`. Ba trạng thái sau là các bậc «đang mua»
+# này, nên không cần khai thêm `approved`. Ba trạng thái sau là các bậc "đang mua"
 # của bao-CR-292 — phiếu chạy tới đó vẫn còn dòng cần thêm phương án.
 STAGE_OPEN = ("dispatched", "processing", "purchasing", "purchased")
 
@@ -484,9 +484,9 @@ def _check_catalog_code(db: Session, code: str) -> None:
     from app.modules.product.model import Product
     prod = db.query(Product).filter(Product.code == code).first()
     if prod is None:
-        raise HTTPException(400, f"Mã VTBB «{code}» không có trong danh mục sản phẩm")
+        raise HTTPException(400, f"Mã VTBB \"{code}\" không có trong danh mục sản phẩm")
     if not prod.is_active:
-        raise HTTPException(400, f"Mã VTBB «{code}» đã ngừng dùng")
+        raise HTTPException(400, f"Mã VTBB \"{code}\" đã ngừng dùng")
 
 
 def _sync_line_code(db: Session, pr: PurchaseRequest, item: PurchaseRequestItem, code: str,
@@ -503,8 +503,8 @@ def _sync_line_code(db: Session, pr: PurchaseRequest, item: PurchaseRequestItem,
 def update_option_details(db: Session, pr: PurchaseRequest, item: PurchaseRequestItem, oid: int,
                           data, user_id: int) -> PurchaseRequestItemOption:
     """bao-CR-583 (đại ca chốt 03/10/2026) — sửa thông tin PHƯƠNG ÁN 0 và phương án NHẬP TAY,
-    ở màn xử lý (NSTM) lẫn màn chọn (thu mua). Đại ca: «phương án 0 xem như phương án nhập tay
-    và chỉnh sửa lại được» — nó sinh từ dòng yêu cầu nên thường thiếu mã VTBB, NCC, giá thật.
+    ở màn xử lý (NSTM) lẫn màn chọn (thu mua). Đại ca: "phương án 0 xem như phương án nhập tay
+    và chỉnh sửa lại được" — nó sinh từ dòng yêu cầu nên thường thiếu mã VTBB, NCC, giá thật.
 
     Cùng khe nới H.10.4 với `set_option_supplier`: KHÔNG chặn theo `options_done`. Soát hết
     rồi mới ghi — mã sai / dòng đã lên ĐMH là từ chối cả gói, không lưu nửa vời.
@@ -551,7 +551,7 @@ def update_option_details(db: Session, pr: PurchaseRequest, item: PurchaseReques
 
 def reset_option_zero(db: Session, pr: PurchaseRequest, item: PurchaseRequestItem, oid: int,
                       user_id: int) -> PurchaseRequestItemOption:
-    """bao-CR-583 — «Khôi phục ban đầu»: chụp lại phương án 0 từ ĐÚNG DÒNG YÊU CẦU như lúc
+    """bao-CR-583 — "Khôi phục ban đầu": chụp lại phương án 0 từ ĐÚNG DÒNG YÊU CẦU như lúc
     sinh (`ensure_option_zero`): tên hàng, ĐVT, giá đề xuất, VAT, mã hàng của dòng; bỏ NCC và
     xóa mọi ô thu mua đã điền. Không đụng việc chọn, không đụng dòng — mã VTBB đã gắn cho
     DÒNG (bao-CR-568) là dữ kiện của dòng, phương án 0 chỉ chép lại."""

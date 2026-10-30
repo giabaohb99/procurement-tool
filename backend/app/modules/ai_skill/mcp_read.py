@@ -22,10 +22,10 @@ from .access_service import visible_skills
 from .constants import SecurityLevel
 from .model import AiSkillFile, AiSkillSet, AiSkillVersion
 
-NOT_FOUND = "Không có skill «{name}» trong những skill bạn được đọc — gọi list_skills để xem tên đúng."
+NOT_FOUND = "Không có skill **{name}** trong những skill bạn được đọc — gọi list_skills để xem tên đúng."
 MAX_LIST = 200
-#  ai-CR-228 (đại ca nối ChatGPT 19/10: ChatGPT đọc skill dài nhất kho rồi bảo «không trả về nội dung», chỉ nhắc lại phần
-#  tóm tắt): câu dặn cũ «đừng đọc lại nguyên văn… tài sản công ty» làm AI tưởng KHÔNG được dùng nội dung. Nói thẳng là
+#  ai-CR-228 (đại ca nối ChatGPT 19/10: ChatGPT đọc skill dài nhất kho rồi bảo "không trả về nội dung", chỉ nhắc lại phần
+#  tóm tắt): câu dặn cũ "đừng đọc lại nguyên văn… tài sản công ty" làm AI tưởng KHÔNG được dùng nội dung. Nói thẳng là
 #  được dùng; chỉ không chép nguyên bài ra ngoài.
 APPLY_NOTE = ("Dùng nội dung này để trả lời và làm việc cho người dùng (được tóm tắt, trích ý, áp dụng vào việc); chỉ "
               "không chép lại nguyên văn cả bài ra ngoài.")
@@ -151,11 +151,11 @@ def file_for_ai(db: Session, user, name: str, path: str, internal: bool = False,
         return {"denied": True, "error": NOT_FOUND.format(name=name)}
     if row["security_level"] != SecurityLevel.OPEN and not internal:
         return {"denied": True, "skill_id": row["skill_id"],
-                "error": f"Bộ skill của «{row['name']}» không mở tệp đính kèm cho AI bên ngoài."}
+                "error": f"Bộ skill của **{row['name']}** không mở tệp đính kèm cho AI bên ngoài."}
     found = (db.query(AiSkillFile).filter(AiSkillFile.skill_id == row["skill_id"],
                                           AiSkillFile.path == (path or "").strip()).first())
     if found is None:
-        return {"error": f"Skill «{row['name']}» không có tệp «{path}» — xem danh sách tệp trong read_skill.",
+        return {"error": f"Skill **{row['name']}** không có tệp **{path}** — xem danh sách tệp trong read_skill.",
                 "skill_id": row["skill_id"]}
     return {"skill_id": row["skill_id"], "name": row["name"], "path": found.path, **page_of(found.content_text, offset),
             "note": APPLY_NOTE}

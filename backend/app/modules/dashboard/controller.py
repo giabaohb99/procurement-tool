@@ -511,7 +511,7 @@ def build_my_tasks(db: Session, user, prof) -> list[dict]:
     tasks = []
 
     # Chờ tôi ký (bộ máy duyệt — hiện chỉ Văn bản chạy). Trước CR-215 khối này
-    # đứng riêng ở nút «Chờ tôi duyệt» trên thanh trên; nay gom về đây.
+    # đứng riêng ở nút "Chờ tôi duyệt" trên thanh trên; nay gom về đây.
     if getattr(user, "employee_id", 0):
         for t in task_service.my_tasks(db, user.employee_id):
             tasks.append({"key": f"sign:{t['id']}", "type": "sign", "label": "Chờ tôi duyệt",
@@ -598,7 +598,7 @@ def build_my_tasks(db: Session, user, prof) -> list[dict]:
 
     if can("labor_contract"):
         # duoc-CR-620: CÙNG hàm, CÙNG key với chuông — thiếu khối này thì cảnh báo HĐLĐ trên chuông
-        # không có chỗ nào ẩn được («Đánh dấu làm hết» chỉ gom key từ danh sách này).
+        # không có chỗ nào ẩn được ("Đánh dấu làm hết" chỉ gom key từ danh sách này).
         from app.core.vn_time import vn_today
         from app.modules.labor_contract.expiry_service import find_expiring
         for c in find_expiring(db, vn_today(), user=user, profile=prof):

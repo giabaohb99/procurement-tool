@@ -15,7 +15,7 @@ và màn hình không bao giờ ra hai con số khác nhau:
 ⚠️ **Trợ lý phải nói ra độ tin cậy và giới hạn.** Dữ liệu hiện chỉ có MỘT năm; một câu khẳng
 định chắc nịch dựa trên 3 dòng là thứ nguy hiểm nhất của cả tính năng, vì người đọc sẽ đặt
 hàng thật theo nó. Nên tool KHÔNG để model tự suy: nó trả sẵn `confidence` + `caveat` bắt
-buộc nhắc lại; câu «có nên mua lúc này» chỉ dựa trên GIÁ NHẬP của thị trường — tool không
+buộc nhắc lại; câu "có nên mua lúc này" chỉ dựa trên GIÁ NHẬP của thị trường — tool không
 biết tồn kho, nhu cầu, hạn dùng, dòng tiền của công ty và câu trả lời phải nói rõ điều đó.
 Phần pháp lý chỉ nói đúng dữ liệu có: dữ liệu KHÔNG có khung mức phạt, cấm tự nêu mức phạt.
 

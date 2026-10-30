@@ -46,13 +46,13 @@ def pending_task_of(db: Session, instance: ApprovalInstance,
     if mine:
         return mine, None
 
-    #  ⚠️ I08 vẫn phải đứng ở đây. Luật «người nộp không duyệt phiếu của chính
-    #  mình» đang cắt ở chỗ DỰNG VIỆC (`_bo_nguoi_nop`), mà ủy quyền thì không
-    #  đi qua chỗ đó: nó xét lúc BẤM và chỉ hỏi «tờ ủy quyền còn hạn không».
+    #  ⚠️ I08 vẫn phải đứng ở đây. Luật "người nộp không duyệt phiếu của chính
+    #  mình" đang cắt ở chỗ DỰNG VIỆC (`_bo_nguoi_nop`), mà ủy quyền thì không
+    #  đi qua chỗ đó: nó xét lúc BẤM và chỉ hỏi "tờ ủy quyền còn hạn không".
     #  Ghép hai cái lại là người trình ký được chính phiếu mình vừa trình —
     #  trưởng phòng đi công tác ủy quyền cho cấp dưới là việc thường ngày, mà
-    #  cấp dưới đúng là người hay trình phiếu. Dấu vết khi đó ghi «B duyệt thay
-    #  A», nhìn qua không thấy gì bất thường (25/08/2026).
+    #  cấp dưới đúng là người hay trình phiếu. Dấu vết khi đó ghi "B duyệt thay
+    #  A", nhìn qua không thấy gì bất thường (25/08/2026).
     if instance.started_by_employee_id == actor_employee_id:
         raise HTTPException(
             403, "Bạn là người trình phiếu này nên không duyệt thay người khác được, "
@@ -71,8 +71,8 @@ def claim_task(db: Session, task: ApprovalTask, new_status: int, actor: int) -> 
     """CHIẾM một việc bằng MỘT câu UPDATE có điều kiện — để CSDL phân xử.
 
     ⚠️ Gán thẳng `task.status = …` là **đọc rồi mới ghi**, và hai lượt chạy sát
-    nhau đều đọc thấy «Đang chờ» rồi cùng ghi. Lỗi dựng lại được 24/08/2026:
-    **nhấp đúp nút «Duyệt» ở bước cuối thì CẢ HAI cú đều thành công** — dấu vết
+    nhau đều đọc thấy "Đang chờ" rồi cùng ghi. Lỗi dựng lại được 24/08/2026:
+    **nhấp đúp nút "Duyệt" ở bước cuối thì CẢ HAI cú đều thành công** — dấu vết
     ghi hai dòng *Duyệt* và hai dòng *Kết thúc* cho một người bấm một lần.
     Văn bản không hỏng (hàm ban hành thấy phiên bản đã khóa nên lần hai ném lỗi
     và bị nuốt), nhưng **bản in dấu vết nói người ta ký hai lần** — mà cả lý do
@@ -180,7 +180,7 @@ def send_back(db: Session, instance: ApprovalInstance, actor_employee_id: int,
 
     #  KIỂM TRƯỚC KHI SỬA. Bản cũ chiếm việc, ghi dấu vết, hủy việc còn treo rồi
     #  mới xét `ve_buoc` — hỏng ở đó thì việc của người bấm đã mang trạng thái
-    #  «đã hủy», và thứ duy nhất cứu là `get_db` cuộn phiên làm việc lại. Dựa
+    #  "đã hủy", và thứ duy nhất cứu là `get_db` cuộn phiên làm việc lại. Dựa
     #  vào một tầng khác để giữ đúng dữ liệu của tầng này là để ngỏ: chỉ cần
     #  chỗ nào phía trên lỡ `commit` là việc biến mất thật, phiếu kẹt không ai
     #  bấm được nữa.
@@ -233,7 +233,7 @@ def withdraw(db: Session, instance: ApprovalInstance, actor_employee_id: int,
     #  là `if instance.started_by_employee_id and … != actor`, nên cột để trống
     #  là cả câu kiểm biến mất và AI cũng rút được phiếu của người khác — rút
     #  xong chứng từ quay về nháp. Ba đường duyệt / trả lại / từ chối tự gác
-    #  bằng «có việc đang chờ mình không», riêng đường này chỉ có mỗi câu đó.
+    #  bằng "có việc đang chờ mình không", riêng đường này chỉ có mỗi câu đó.
     #  Cột để trống khi tài khoản trình phiếu chưa gắn hồ sơ nhân sự.
     if instance.started_by_employee_id != actor_employee_id:
         raise HTTPException(403, "Chỉ người trình duyệt mới rút lại được")
@@ -304,7 +304,7 @@ def reassign(db: Session, task: ApprovalTask, to_employee_id: int,
     #  sang tên mình rồi ký thì không phải bàn giao, đó là chiếm chữ ký; và nó
     #  chỉ cần đúng `approval_flow.write`.
     #
-    #  Nặng hơn ủy quyền một bậc: ủy quyền còn để lại chữ «ký thay A», còn ở đây
+    #  Nặng hơn ủy quyền một bậc: ủy quyền còn để lại chữ "ký thay A", còn ở đây
     #  việc ĐỔI HẲN CHỦ nên bản in dấu vết không còn chỗ nào nói người ký không
     #  phải người được giao ban đầu.
     if (actor_employee_id is not None
@@ -331,9 +331,9 @@ def reassign(db: Session, task: ApprovalTask, to_employee_id: int,
     #  ⚠️ Dấu vết phải nói ĐÚNG BA VAI: ai bấm · lấy của ai · giao cho ai.
     #
     #  Bản cũ ghi `actor_employee_id = người NHẬN` và `on_behalf_of_id = người
-    #  CŨ`, nên dòng thời gian đọc ra *«Quản trị viên đã chuyển người xử lý ·
-    #  Thực hiện thay Trưởng phòng Thu mua»* — sai cả hai vế: người nhận không
-    #  hề bấm gì, và `on_behalf_of` là ô của ỦY QUYỀN («B ký thay A»), mượn sang
+    #  CŨ`, nên dòng thời gian đọc ra *"Quản trị viên đã chuyển người xử lý ·
+    #  Thực hiện thay Trưởng phòng Thu mua"* — sai cả hai vế: người nhận không
+    #  hề bấm gì, và `on_behalf_of` là ô của ỦY QUYỀN ("B ký thay A"), mượn sang
     #  đây thì bản in nói rằng có một tờ ủy quyền không tồn tại. Chuyển người xử
     #  lý là thao tác của NGƯỜI THỨ BA (quản trị / người đang giữ việc nhường
     #  lại), nên tên đứng đầu câu phải là họ; hai người còn lại nói bằng lời.
@@ -356,8 +356,8 @@ def _reassign_comment(db: Session, from_employee_id: int, to_employee_id: int,
     đi vào BẢN IN dấu vết, mà bản in không có chỗ nào tra tên nhân sự.
     """
     names = _employee_names(db, {from_employee_id, to_employee_id})
-    text = (f"Chuyển việc từ «{names.get(from_employee_id) or f'#{from_employee_id}'}» "
-           f"sang «{names.get(to_employee_id) or f'#{to_employee_id}'}»")
+    text = (f"Chuyển việc từ \"{names.get(from_employee_id) or f'#{from_employee_id}'}\" "
+           f"sang \"{names.get(to_employee_id) or f'#{to_employee_id}'}\"")
     return f"{text} · {reason.strip()}" if reason and reason.strip() else text
 
 
@@ -387,7 +387,7 @@ def bulk_handover(db: Session, from_employee_id: int, to_employee_id: int,
 
     #  ⚠️ Cùng luật với `chuyen_nguoi_xu_ly`, nhưng ở đây hậu quả nhân lên theo
     #  số phiếu: MỘT cú gọi quét sạch hộp việc của giám đốc sang tên kẻ gọi, mà
-    #  nhật ký chỉ ghi «Bàn giao 30 việc duyệt» — nhìn y như một thao tác nghỉ
+    #  nhật ký chỉ ghi "Bàn giao 30 việc duyệt" — nhìn y như một thao tác nghỉ
     #  việc bình thường.
     if (actor_employee_id is not None
             and to_employee_id == actor_employee_id

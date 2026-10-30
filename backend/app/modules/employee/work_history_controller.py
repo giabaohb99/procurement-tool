@@ -2,7 +2,7 @@
 cứng ở `phase-02-backend-api-ap-ho-so-dinh-kem.md`).
 
 ⚠️ `/me/work-history` PHẢI khai TRƯỚC `/{eid}/work-history`: FastAPI dò route
-theo thứ tự khai trong CÙNG router, «me» rơi vào `eid: int` thì 422 chứ không
+theo thứ tự khai trong CÙNG router, "me" rơi vào `eid: int` thì 422 chứ không
 chạy hàm `GET /me/work-history`.
 """
 from fastapi import APIRouter, Depends

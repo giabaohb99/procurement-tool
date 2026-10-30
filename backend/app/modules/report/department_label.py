@@ -2,7 +2,7 @@
 
 Chứng từ (ĐMH, YCMH, YCBG) lưu cả `department_id` lẫn cột chữ `department` là BẢN CHỤP tên phòng
 lúc lập phiếu. Báo cáo từng gom theo cột chữ, nên đổi tên một phòng trong Danh mục là số liệu tách
-làm hai dòng («Phòng A» cũ, «Phòng B» mới) và phạm vi theo tên của người dùng lệch theo.
+làm hai dòng ("Phòng A" cũ, "Phòng B" mới) và phạm vi theo tên của người dùng lệch theo.
 
 Quy tắc một chỗ: có `department_id` khớp một phòng thì nhãn = TÊN HIỆN HÀNH của phòng đó (mọi phiếu
 cùng id dồn về một dòng); `department_id = 0` hoặc phòng không còn thì lùi về bản chụp tên cũ.

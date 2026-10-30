@@ -175,7 +175,7 @@ def booking_timeline(
 
 @router.get("/pick-options")
 def pick_options(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Hai ô «Công ty» + «Người duyệt» trên phiếu (duoc-CR-681). Người duyệt = người có quyền Duyệt
+    """Hai ô "Công ty" + "Người duyệt" trên phiếu (duoc-CR-681). Người duyệt = người có quyền Duyệt
     đặt xe theo màn Phân quyền; công ty mặc định = pháp nhân trên hồ sơ người tạo. Mở cho người TẠO
     hoặc SỬA phiếu (người chỉ có `write` cũng dùng form)."""
     if not (user_has_permission(db, user, "vehicle_booking", "create")
@@ -198,7 +198,7 @@ def get_booking(bid: int, db: Session = Depends(get_db),
     #  ⚠️ Người ĐANG PHẢI KÝ phiếu này đọc được nó, dù nó ngoài phạm vi dữ liệu
     #  của họ. Chặng 2 của luồng duyệt gần như luôn là người phòng khác (Hành
     #  chính · Nhân sự · Ban giám đốc), mà nút Duyệt của Đặt xe nằm TRONG trang
-    #  chi tiết phiếu (không còn màn «Việc của tôi» từ 21/08/2026) — 404 ở đây là
+    #  chi tiết phiếu (không còn màn "Việc của tôi" từ 21/08/2026) — 404 ở đây là
     #  phiếu kẹt vĩnh viễn, không chỗ nào đỏ lên. Chỉ nới cửa ĐỌC và chỉ lúc việc
     #  còn treo; xem `approval_bridge.booking_for_approver`.
     if obj is None:
@@ -280,7 +280,7 @@ def dispatch_return_booking(bid: int, data: ReasonIn, background_tasks: Backgrou
                             user=Depends(require("vehicle_booking", "write"))):
     """Điều phối viên YÊU CẦU CHỈNH SỬA phiếu ĐANG Đã điều phối → trả về người tạo (gỡ điều phối)."""
     obj = _scoped_or_404(db, bid, user, "write")
-    #  ⚠️ Cửa này chạy ĐÚNG hàm service mà nút «Yêu cầu chỉnh sửa» của người duyệt
+    #  ⚠️ Cửa này chạy ĐÚNG hàm service mà nút "Yêu cầu chỉnh sửa" của người duyệt
     #  chạy, và `_RETURNABLE` nhận cả *Chờ duyệt* — nên thiếu chốt ở đây là người
     #  có `write` trả phiếu về ngay lúc luồng đang ở chặng 1, phiên duyệt thì vẫn
     #  mở và việc vẫn treo trong hộp người duyệt. Ba nút kia đã khóa từ đầu, hai

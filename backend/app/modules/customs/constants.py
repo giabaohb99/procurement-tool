@@ -48,7 +48,7 @@ class RegulationList(IntEnum):
     """
     ND24_PL1 = 1          # NĐ 24/2026/NĐ-CP — Phụ lục I
     ND24_PL2 = 2          # NĐ 24/2026/NĐ-CP — Phụ lục II
-    ND24_PL3 = 3          # NĐ 24/2026/NĐ-CP — Phụ lục III (cần kiểm soát đặc biệt; duoc-CR-598 sửa nhãn «tiền chất»)
+    ND24_PL3 = 3          # NĐ 24/2026/NĐ-CP — Phụ lục III (cần kiểm soát đặc biệt; duoc-CR-598 sửa nhãn "tiền chất")
     ND24_PL4 = 4          # NĐ 24/2026/NĐ-CP — Phụ lục IV (có NGƯỠNG KHỐI LƯỢNG kg)
     BANNED_TT75 = 10      # TT 75/2025/TT-BNNMT — hoạt chất BVTV CẤM
     PUBLISH_TT01 = 11     # TT 01/2026/TT-BCT Phụ lục XIX — hóa chất phải CÔNG BỐ theo lô
@@ -79,13 +79,13 @@ FORMULA_CAS = {
 MIN_LINES_FOR_BEST = 5
 
 #  bao-CR-493 — quy đổi VND theo yêu cầu phòng Thu mua (chị Mi, FR-PROC-2026-001 sheet 3):
-#  «Đơn giá quy đổi VND = đơn giá × tỷ giá × 1,07», 7% là thuế nhập khẩu tạm tính. Cột thứ hai
+#  "Đơn giá quy đổi VND = đơn giá × tỷ giá × 1,07", 7% là thuế nhập khẩu tạm tính. Cột thứ hai
 #  dùng đúng thuế suất XNK của từng dòng (đại ca chốt 25/09/2026: có CẢ HAI cột).
 FLAT_IMPORT_TAX_RATE = 0.07
 
 #  MỘT danh sách 32 cột, đúng thứ tự và đúng tiêu đề của tệp GTT02 — vừa là chỗ
 #  khớp tiêu đề lúc nạp, vừa là nguồn dựng cột trên màn hình (02 §7). Tiêu đề giữ
-#  NGUYÊN VĂN kể cả lỗi chính tả của nguồn («nuớc»); khớp thì so theo chữ đã
+#  NGUYÊN VĂN kể cả lỗi chính tả của nguồn ("nuớc"); khớp thì so theo chữ đã
 #  chuẩn hóa (thường, bỏ dấu), nên nguồn có sửa chính tả cũng không hỏng.
 COLUMNS: list[tuple[str, str]] = [
     ("reg_date", "Ngày đăng ký"),
@@ -123,7 +123,7 @@ COLUMNS: list[tuple[str, str]] = [
 ]
 
 #  bao-CR-603 — cột trong `COLUMNS` được phép THIẾU trên tệp: thiếu thì ô để trống, nạp như cũ.
-#  «Nước nhận hàng» vẫn đứng trong `COLUMNS` (giữ thứ tự hiển thị, cột Excel xuất và mã băm
+#  "Nước nhận hàng" vẫn đứng trong `COLUMNS` (giữ thứ tự hiển thị, cột Excel xuất và mã băm
 #  chống trùng y như trước) nhưng tệp không có cột đó cũng không bị từ chối.
 OPTIONAL_IN_COLUMNS = frozenset({"import_country"})
 
@@ -165,9 +165,9 @@ TEXT_LIMITS = {
 INSERT_CHUNK = 2000
 
 # ── bao-CR-608: hai cột ĐIỀU KHIỂN của tệp nạp + bảng chụp dòng trước khi ghi đè / xóa ────
-#  «ID» và «Thao tác» KHÔNG phải dữ liệu: không lưu, không vào mã băm chống trùng. Cả hai tùy
+#  "ID" và "Thao tác" KHÔNG phải dữ liệu: không lưu, không vào mã băm chống trùng. Cả hai tùy
 #  chọn; tệp không có thì nạp y như trước. Tiêu đề khớp theo chữ đã chuẩn hóa như `COLUMNS`.
-#  «ID» là tiêu đề cột ĐẦU TIÊN của Excel xuất ra từ màn này — xuất → sửa → nạp lại là ghi đè
+#  "ID" là tiêu đề cột ĐẦU TIÊN của Excel xuất ra từ màn này — xuất → sửa → nạp lại là ghi đè
 #  đúng dòng.
 REF_ID_KEY = "ref_id"
 ACTION_KEY = "row_action"
@@ -176,14 +176,14 @@ CONTROL_COLUMNS: list[tuple[str, tuple[str, ...]]] = [
     (ACTION_KEY, ("Thao tác", "Action", "Hành động")),
 ]
 CONTROL_LABELS = {key: labels[0] for key, labels in CONTROL_COLUMNS}
-#  Ô «Thao tác» mang một trong các chữ này (đã bỏ dấu, chữ thường) = XÓA dòng có ID đó.
+#  Ô "Thao tác" mang một trong các chữ này (đã bỏ dấu, chữ thường) = XÓA dòng có ID đó.
 DELETE_ACTION_WORDS = frozenset({"xoa", "delete", "del"})
 
 
 class CustomsLineChangeAction(IntEnum):
     """Việc đã làm với một dòng hàng có sẵn — `tab_customs_line_change.action` (luật R2)."""
     UPDATE = 1      # ghi đè (nạp tệp có ID / sửa tay)
-    DELETE = 2      # xóa (nạp tệp «Thao tác = xóa» / xóa tay)
+    DELETE = 2      # xóa (nạp tệp "Thao tác = xóa" / xóa tay)
 
 
 class CustomsLineChangeSource(IntEnum):
@@ -217,15 +217,15 @@ PRODUCT_KIND_LABELS = {
 }
 
 #  Bộ từ khóa MẶC ĐỊNH (chị Mi 25/09/2026) — nạp vào `tab_customs_kind_keyword` bằng migration,
-#  admin sửa trên màn hình; mã nguồn không phải nơi cập nhật (yêu cầu phi chức năng «Khả năng
-#  bảo trì»). Tên hàng chứa từ khóa loại NGUYÊN LIỆU → Nguyên liệu, không khớp → Thành phẩm.
+#  admin sửa trên màn hình; mã nguồn không phải nơi cập nhật (yêu cầu phi chức năng "Khả năng
+#  bảo trì"). Tên hàng chứa từ khóa loại NGUYÊN LIỆU → Nguyên liệu, không khớp → Thành phẩm.
 DEFAULT_KIND_KEYWORDS = (
-    ("TC", ProductKind.TECHNICAL, "Thuốc kỹ thuật, vd «ATRAZINE 97% TC»"),
-    ("TECH", ProductKind.TECHNICAL, "Thuốc kỹ thuật, vd «MANCOZEB TECH 86%»"),
+    ("TC", ProductKind.TECHNICAL, "Thuốc kỹ thuật, vd \"ATRAZINE 97% TC\""),
+    ("TECH", ProductKind.TECHNICAL, "Thuốc kỹ thuật, vd \"MANCOZEB TECH 86%\""),
     ("TG", ProductKind.TECHNICAL, "Technical grade"),
     ("TECHNICAL", ProductKind.TECHNICAL, ""),
-    ("KỸ THUẬT", ProductKind.TECHNICAL, "«Thuốc kỹ thuật …»"),
-    ("NGUYÊN LIỆU", ProductKind.TECHNICAL, "«… nguyên liệu dùng SX thuốc …»"),
+    ("KỸ THUẬT", ProductKind.TECHNICAL, "\"Thuốc kỹ thuật …\""),
+    ("NGUYÊN LIỆU", ProductKind.TECHNICAL, "\"… nguyên liệu dùng SX thuốc …\""),
 )
 
 
@@ -233,7 +233,7 @@ class PesticideStatus(IntEnum):
     """Tình trạng đăng ký của thuốc BVTV — lưu SMALLINT theo luật R2.
 
     Nguồn ghi bằng chữ; đọc qua `PESTICIDE_STATUS_BY_LABEL`. Chữ lạ → `UNKNOWN` (không
-    đoán), để nguồn thêm tình trạng mới thì lọc «Còn hiệu lực» không lẫn thuốc sai.
+    đoán), để nguồn thêm tình trạng mới thì lọc "Còn hiệu lực" không lẫn thuốc sai.
     """
     UNKNOWN = 0
     ACTIVE = 1       # Còn hiệu lực

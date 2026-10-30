@@ -1,4 +1,4 @@
-"""Báo cáo «Hồ sơ & tài khoản còn thiếu» kiểu Haravan (duoc-CR-686, khóa 18) —
+"""Báo cáo "Hồ sơ & tài khoản còn thiếu" kiểu Haravan (duoc-CR-686, khóa 18) —
 `GET /api/employees/profile-gaps/summary`.
 
 Tình trạng HIỆN TẠI của hồ sơ: `period` vẫn được trả để khớp hợp đồng chung nhưng KHÔNG ảnh hưởng
@@ -37,7 +37,7 @@ GOOD_DOWN = {k for k in LABELS if k not in ("active_total", "complete")}
 
 
 def visible_gaps(with_sensitive: bool, with_account: bool) -> tuple[str, ...]:
-    """Các cờ «thiếu» người xem được đếm, theo thứ tự cột."""
+    """Các cờ "thiếu" người xem được đếm, theo thứ tự cột."""
     return BASE_GAPS + (SENSITIVE_GAPS if with_sensitive else ()) + (ACCOUNT_GAPS if with_account else ())
 
 
@@ -78,7 +78,7 @@ def build_summary(db: Session, employees_q, period: Period, group_by: str | None
     data["trend"] = []
     data["meta"]["drilldown_metrics"] = ["active_total", *gaps]
     notes = ["Báo cáo cho biết tình trạng HIỆN TẠI của hồ sơ; kỳ đang chọn không ảnh hưởng số liệu.",
-             "«Hồ sơ đủ» = nhân sự đang làm không thiếu trường nào trong các trường ĐANG ĐƯỢC ĐẾM cho "
+             "\"Hồ sơ đủ\" = nhân sự đang làm không thiếu trường nào trong các trường ĐANG ĐƯỢC ĐẾM cho "
              "bạn (ngày vào làm, chức vụ, quản lý, phòng ban, và nhóm nhạy cảm nếu bạn có quyền); "
              "không xét tài khoản và CCCD sắp hết hạn."]
     if not with_sensitive:
@@ -87,7 +87,7 @@ def build_summary(db: Session, employees_q, period: Period, group_by: str | None
     if not with_account:
         notes.append("Các chỉ số về tài khoản không hiển thị vì bạn chưa có quyền xem tài khoản.")
     else:
-        notes.append("«Chưa có tài khoản đang mở» tính cả trường hợp tài khoản đã bị khóa.")
+        notes.append("\"Chưa có tài khoản đang mở\" tính cả trường hợp tài khoản đã bị khóa.")
     data["notes"] = notes
     return data
 

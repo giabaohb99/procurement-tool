@@ -164,8 +164,8 @@ def check_enough(db: Session, employee, year: int, leave_type: LeaveType,
     if days > available:
         raise HTTPException(
             400,
-            f"Không đủ phép: «{leave_type.name}» còn {available} ngày, "
-            f"đơn này xin {days} ngày. Muốn nghỉ tiếp thì chọn loại «Nghỉ không lương».")
+            f"Không đủ phép: \"{leave_type.name}\" còn {available} ngày, "
+            f"đơn này xin {days} ngày. Muốn nghỉ tiếp thì chọn loại \"Nghỉ không lương\".")
 
 
 def reserve(db: Session, employee, year: int, leave_type: LeaveType,
@@ -225,7 +225,7 @@ def refund_used(db: Session, employee_id: int, year: int, leave_type_id: int,
     """Hoàn lại phần ĐÃ TRỪ — huỷ một đơn đã duyệt.
 
     Có thật: người xin nghỉ tuần sau, tuần này đổi ý. Không có nhịp này thì
-    ngày phép của họ mất luôn và Nhân sự phải bù bằng cột «điều chỉnh tay», tức
+    ngày phép của họ mất luôn và Nhân sự phải bù bằng cột "điều chỉnh tay", tức
     là sửa sổ bằng tay cho một việc lẽ ra tự chạy.
     """
     row = get_balance(db, employee_id, year, leave_type_id, for_update=True)

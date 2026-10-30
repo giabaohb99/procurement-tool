@@ -5,7 +5,7 @@ Cột `phone` giữ nguyên là SỐ CHÍNH — khoảng 15 chỗ đọc thẳng
 `{"number": str ≤ 20, "label": str ≤ 50}`, tối đa `MAX_EXTRA_PHONES` (4) phần tử → tổng 5 số kể cả số chính.
 
 Một nơi duy nhất giữ luật: định dạng số, trùng nhau, trùng số chính, và hai chiều chuyển
-danh sách ⇄ chữ (dùng cho cột «Số điện thoại khác» của tệp xuất/nhập Excel).
+danh sách ⇄ chữ (dùng cho cột "Số điện thoại khác" của tệp xuất/nhập Excel).
 """
 import re
 from typing import Annotated
@@ -20,13 +20,13 @@ MIN_DIGITS, MAX_DIGITS = 8, 15
 
 #  Chỉ chữ số, khoảng trắng và + . - ( ) — dán từ Zalo/Excel hay kèm các ký tự này.
 _ALLOWED = re.compile(r"^[0-9\s+.\-()]+$")
-#  «số (nhãn)»: nhãn là cụm ngoặc CUỐI CÙNG, đứng sau một khoảng trắng — nhờ vậy số kiểu «(028) 3822 1234»
+#  "số (nhãn)": nhãn là cụm ngoặc CUỐI CÙNG, đứng sau một khoảng trắng — nhờ vậy số kiểu "(028) 3822 1234"
 #  (ngoặc ở đầu) không bị đọc nhầm thành nhãn.
 _TEXT_ITEM = re.compile(r"^(.*\S)\s+\(([^()]*)\)$")
 
 
 def digits_of(number: str) -> str:
-    """Chỉ giữ chữ số — dùng để so trùng («0901 234 567» = «0901.234.567»)."""
+    """Chỉ giữ chữ số — dùng để so trùng ("0901 234 567" = "0901.234.567")."""
     return re.sub(r"\D", "", number or "")
 
 
@@ -82,7 +82,7 @@ def ensure_distinct_from_main(main_phone: str | None, extras: list | None) -> No
 
 
 def format_phones_text(extras: list | None) -> str:
-    """Danh sách → «số (nhãn); số (nhãn)». Nhãn rỗng thì chỉ có số."""
+    """Danh sách → "số (nhãn); số (nhãn)". Nhãn rỗng thì chỉ có số."""
     parts = []
     for e in extras or []:
         label = (e.get("label") or "").replace(";", ",").replace("(", "[").replace(")", "]").strip()
@@ -91,7 +91,7 @@ def format_phones_text(extras: list | None) -> str:
 
 
 def parse_phones_text(text: str) -> list[dict]:
-    """«số (nhãn); số» → danh sách dict. Ném `ValueError` (câu tiếng Việt) khi sai — nơi gọi bọc lại.
+    """"số (nhãn); số" → danh sách dict. Ném `ValueError` (câu tiếng Việt) khi sai — nơi gọi bọc lại.
 
     Chỉ tách; định dạng/trùng/số lượng do `ExtraPhones` kiểm khi dựng schema."""
     out: list[dict] = []

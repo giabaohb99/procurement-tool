@@ -1,6 +1,6 @@
 """Dựng `tab_work_cycle` — GIA TĂNG mỗi đêm + dựng lại toàn bộ (duoc-CR-656, D1a).
 
-Giữ «mốc đã chạm tới» (watermark) ở `tab_setting` khóa `capability_cycle_watermark`. Mỗi lượt lấy lại
+Giữ "mốc đã chạm tới" (watermark) ở `tab_setting` khóa `capability_cycle_watermark`. Mỗi lượt lấy lại
 `since = watermark - 1 ngày` cho chắc (phiếu sửa đúng lúc job chạy). Số truy vấn mỗi lô cố định
 (`cycle_sources`), ghi bằng: xóa dòng cũ của lô + chèn nhiều dòng — lặp lại không nhân đôi.
 """

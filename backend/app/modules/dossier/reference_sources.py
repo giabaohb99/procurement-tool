@@ -1,8 +1,8 @@
-"""DANH MỤC mà một ô «Chọn từ danh mục» được phép trỏ tới.
+"""DANH MỤC mà một ô "Chọn từ danh mục" được phép trỏ tới.
 
 Trường tùy biến kiểu `reference` lưu **ID** của một dòng trong danh mục có sẵn,
 thay vì một chuỗi người dùng tự gõ. Chữa đúng chỗ tệ nhất của ô chọn tự gõ: mỗi
-người gõ một kiểu, không ai sửa tập trung được, và «Nhân sự thực hiện» thì gõ
+người gõ một kiểu, không ai sửa tập trung được, và "Nhân sự thực hiện" thì gõ
 tên xong đổi tên nhân sự là dữ liệu trôi.
 
 ⚠️ **DANH SÁCH TRẮNG theo KHÓA, tuyệt đối không nhận URL từ máy khách.** Cho
@@ -61,8 +61,8 @@ def exists(db, source: str, row_id: int) -> bool:
     ai nhập. Không lỗi, không cảnh báo, không cách nào biết hồ sơ đang mất dữ
     liệu. Một câu 422 lúc lưu rẻ hơn nhiều so với việc đó.
 
-    ⚠️ CỐ Ý không lọc theo phạm vi dữ liệu người gọi: đây là câu hỏi «dòng này
-    có thật không», không phải «anh có được xem nó không». Cửa API của chính
+    ⚠️ CỐ Ý không lọc theo phạm vi dữ liệu người gọi: đây là câu hỏi "dòng này
+    có thật không", không phải "anh có được xem nó không". Cửa API của chính
     danh mục đó mới là chỗ trả lời câu thứ hai, và ô chọn gọi nó bằng token của
     người dùng.
     """

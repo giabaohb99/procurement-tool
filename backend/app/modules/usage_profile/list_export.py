@@ -1,5 +1,5 @@
 """Xuất Excel danh sách hồ sơ (duoc-CR-641, phase 05). Dữ liệu cá nhân rời hệ thống nên MỖI lần xuất ghi `tab_export_log`
-(entity `usage_profile`); lượt GET này cũng nằm trong `tab_request_log` — đủ trả lời «ai đã xem/xuất hồ sơ ai»."""
+(entity `usage_profile`); lượt GET này cũng nằm trong `tab_request_log` — đủ trả lời "ai đã xem/xuất hồ sơ ai"."""
 from sqlalchemy.orm import Session
 
 from app.core.export_xlsx import Col, check_row_limit, xlsx_response

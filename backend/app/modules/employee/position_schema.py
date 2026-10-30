@@ -2,7 +2,7 @@
 
 ⚠️ Mọi ô chuỗi khai `max_length` khớp ĐÚNG `String(n)` ở model. Bài học
 duoc-CR-316: thiếu khai thì chuỗi dài đi thẳng xuống MySQL và người dùng nhận
-«mã sự cố» thay vì câu *«tối đa n ký tự»* — và **SQLite của bộ test không ép độ
+"mã sự cố" thay vì câu *"tối đa n ký tự"* — và **SQLite của bộ test không ép độ
 dài `VARCHAR`**, nên chỗ này phải có test ở tầng schema mới bắt được.
 """
 from pydantic import BaseModel, Field, field_validator
@@ -28,8 +28,8 @@ class JobPositionCreate(BaseModel):
     #  ⚠️ `code` ĐỂ TRỐNG ĐƯỢC, và đó là đường đi bình thường: bộ sinh CRUD tự
     #  cấp `cv001`, `cv002`… khi ô này rỗng (`code_prefix="cv"` ở controller).
     #
-    #  Trước 08/09/2026 ô này bắt buộc, nên câu gợi ý trên biểu mẫu — *«bỏ trống
-    #  thì hệ thống tự sinh»* — là một **lời hứa chưa từng chạy**: schema chặn
+    #  Trước 08/09/2026 ô này bắt buộc, nên câu gợi ý trên biểu mẫu — *"bỏ trống
+    #  thì hệ thống tự sinh"* — là một **lời hứa chưa từng chạy**: schema chặn
     #  rỗng trước khi bộ sinh kịp cấp mã, người dùng làm đúng như chỉ dẫn thì ăn
     #  lỗi 422. Đừng thêm lại `_require_text` cho `code` nếu không đồng thời gỡ
     #  `code_prefix` và sửa câu gợi ý.
@@ -89,9 +89,9 @@ class JobPositionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-#  ⚠️ CỐ Ý KHÔNG trả kèm «số người đang giữ chức vụ này». Bộ sinh CRUD dựng câu
+#  ⚠️ CỐ Ý KHÔNG trả kèm "số người đang giữ chức vụ này". Bộ sinh CRUD dựng câu
 #  trả lời bằng `OutSchema.model_validate(obj)` trên từng dòng, nên muốn có số
 #  đó phải hoặc thêm một property truy vấn DB (một câu đếm cho MỖI dòng danh
 #  sách — đúng khuôn N+1), hoặc viết tay lại cả bộ CRUD cho một con số. Người
 #  dùng vẫn biết trước khi mất dữ liệu: chốt `before_delete` đếm và nói rõ
-#  «đang có N hồ sơ giữ chức vụ này».
+#  "đang có N hồ sơ giữ chức vụ này".

@@ -1,4 +1,4 @@
-"""Tab «Tệp» của văn bản (phase 09, duoc-CR-478) — tệp của MỌI phiên bản trong
+"""Tab "Tệp" của văn bản (phase 09, duoc-CR-478) — tệp của MỌI phiên bản trong
 MỘT lần gọi.
 
 Khác `GET /api/attachments?entity=document_version&entity_id=<phiên bản>`:
@@ -51,7 +51,7 @@ def list_all_attachments(
             .filter(FileLink.entity == ATTACH_ENTITY, FileLink.entity_id.in_(version_ids))
             .order_by(FileLink.sort_order.asc(), FileLink.id.desc()).all())
 
-    #  «Người tải» — MỘT truy vấn gộp cho cả trang, không tra tên trong vòng lặp
+    #  "Người tải" — MỘT truy vấn gộp cho cả trang, không tra tên trong vòng lặp
     #  (đúng nguyên tắc của `document/serializer.py`). Số dòng của một văn bản
     #  hiếm khi vượt vài chục nên không cần phân trang cho riêng đường này.
     creator_ids = {link.created_by for link, _ in rows if link.created_by}

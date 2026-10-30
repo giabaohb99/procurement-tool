@@ -1,16 +1,16 @@
-"""DUYỆT MỘT BƯỚC trong màn «Chờ tôi duyệt» — việc CHỜ và việc ĐÃ LÀM (25/09/2026).
+"""DUYỆT MỘT BƯỚC trong màn "Chờ tôi duyệt" — việc CHỜ và việc ĐÃ LÀM (25/09/2026).
 
-Màn «Chờ tôi duyệt» đọc việc của BỘ MÁY DUYỆT (`/api/approvals/my-tasks`). Văn
+Màn "Chờ tôi duyệt" đọc việc của BỘ MÁY DUYỆT (`/api/approvals/my-tasks`). Văn
 bản không khớp luồng nào thì chạy đường DUYỆT MỘT BƯỚC kiểu cũ — không sinh
 phiên, không sinh việc — nên người có quyền duyệt không bao giờ thấy nó ở màn
 đó, phải tự lần trong danh sách Văn bản (lỗi bắt khi test UI 25/09/2026).
 
-Luật "ai duyệt được" ĐÚNG Y nút «Duyệt và ban hành» ở `controller.approve_document`:
+Luật "ai duyệt được" ĐÚNG Y nút "Duyệt và ban hành" ở `controller.approve_document`:
   1. vai trò có `document.approve`            → `require(...)` của route;
   2. đọc được văn bản                          → `access_service.visible_condition`
      (phạm vi vai trò + chia đích danh − CHẶN đích danh);
   3. có phiên bản đang ở `VERSION_SUBMITTED`   → gồm cả bản sửa đổi 2.0 của văn
-     bản đang hiệu lực (khi đó `Document.status` vẫn là «Có hiệu lực»);
+     bản đang hiệu lực (khi đó `Document.status` vẫn là "Có hiệu lực");
   4. KHÔNG có phiên duyệt nhiều bước còn mở   → cùng điều kiện `block_legacy_path`,
      không thì văn bản hiện HAI dòng: một ở đây, một ở việc của bộ máy.
 Lệch một điều là danh sách hứa một nút bấm mà màn chi tiết lại chặn.
@@ -84,19 +84,19 @@ def legacy_pending(db: Session = Depends(get_db), user=Depends(require("document
 
 
 # ── ĐÃ DUYỆT ────────────────────────────────────────────────────────────────
-#  Nhóm «Đã duyệt» của màn đọc `/api/approvals/my-history` — sổ của bộ máy
+#  Nhóm "Đã duyệt" của màn đọc `/api/approvals/my-history` — sổ của bộ máy
 #  duyệt. Duyệt một bước không đi qua bộ máy nên duyệt xong là văn bản BIẾN khỏi
 #  màn, như thể chưa ký gì. Nguồn thật của lượt bấm đó là nhật ký văn bản mà
 #  `controller.approve_document` / `reject_document` ghi ngay lúc bấm.
 #
-#  ⚠️ Nhật ký «approve» còn được ghi khi NGƯỜI SOẠN bấm ban hành văn bản đã
-#  qua luồng nhiều bước (nhịp «Chờ ban hành»). Lượt đó không phải một quyết
+#  ⚠️ Nhật ký "approve" còn được ghi khi NGƯỜI SOẠN bấm ban hành văn bản đã
+#  qua luồng nhiều bước (nhịp "Chờ ban hành"). Lượt đó không phải một quyết
 #  định duyệt, và các chặng của luồng đã có sẵn trong sổ bộ máy — nên loại MỌI
 #  văn bản từng có phiên duyệt, không thì cùng một văn bản hiện hai dòng.
 
 #  Mã quyết định dùng lại của bộ máy duyệt để giao diện tô cùng một màu huy hiệu.
 _ACTION_APPROVE, _ACTION_RETURN = 2, 4
-#  `reject_document` ghi «Trả về: <lý do>» dưới action `update` (bảng nhật ký
+#  `reject_document` ghi "Trả về: <lý do>" dưới action `update` (bảng nhật ký
 #  chỉ có create/update/delete/approve). Tiền tố này là thứ duy nhất phân biệt.
 _RETURN_PREFIX = "Trả về: "
 
@@ -132,7 +132,7 @@ def list_legacy_decisions(db: Session, user, days: int) -> list[dict]:
             "action_label": "Trả lại" if returned else "Duyệt",
             "comment": log.message[len(_RETURN_PREFIX):] if returned else "",
             "decided_at": log.created_at,
-            #  Trạng thái HIỆN TẠI của văn bản — «tôi đã duyệt» khác «giờ nó ra sao».
+            #  Trạng thái HIỆN TẠI của văn bản — "tôi đã duyệt" khác "giờ nó ra sao".
             "status_label": STATUS_LABELS.get(doc.status, ""),
         })
     return out

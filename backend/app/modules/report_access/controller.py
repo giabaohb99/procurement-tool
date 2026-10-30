@@ -1,4 +1,4 @@
-"""`/api/report-access` — màn cấu hình tab «Báo cáo» của Phân quyền tài khoản.
+"""`/api/report-access` — màn cấu hình tab "Báo cáo" của Phân quyền tài khoản.
 
 Gác bằng `role.read`/`role.write` (B-07: không thêm entity mới — đây là cấu
 hình QUYỀN, không phải dữ liệu nghiệp vụ của một phân hệ cụ thể). Controller

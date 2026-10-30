@@ -41,7 +41,7 @@ def _find_root(db: Session, company_id: int) -> DocFolder | None:
 
 
 def get_or_create_company_group(db: Session, actor: int = 0) -> DocFolder:
-    """Thư mục NHÓM «Công ty» ở gốc cây — chứa mọi thư mục pháp nhân (24/09/2026).
+    """Thư mục NHÓM "Công ty" ở gốc cây — chứa mọi thư mục pháp nhân (24/09/2026).
     Đúng MỘT dòng (`kind = COMPANY_GROUP`); migration `c0mpgr0up01` đã tạo sẵn
     trên hệ đang chạy, ở đây chỉ còn là lưới đỡ cho DB mới (bài kiểm, seed)."""
     group = db.query(DocFolder).filter(DocFolder.kind == int(FolderKind.COMPANY_GROUP)).first()
@@ -62,7 +62,7 @@ def get_or_create_company_group(db: Session, actor: int = 0) -> DocFolder:
 
 
 def _insert_root(db: Session, company_id: int, actor: int) -> DocFolder | None:
-    """Chèn MỘT gốc cho `company_id` — NẰM TRONG thư mục nhóm «Công ty»
+    """Chèn MỘT gốc cho `company_id` — NẰM TRONG thư mục nhóm "Công ty"
     (24/09/2026), không phải ở gốc cây. Trả `None` nếu thua cuộc đua (một giao
     dịch khác vừa chèn xong) — người gọi tự đọc lại nếu cần lấy đúng dòng đó."""
     group = get_or_create_company_group(db, actor)

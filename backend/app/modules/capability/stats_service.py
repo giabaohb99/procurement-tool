@@ -7,7 +7,7 @@
 Luật diễn giải (chốt 20/10/2026):
   · dòng `is_estimated` KHÔNG BAO GIỜ trộn vào p50/p90 — chỉ được đếm riêng ở `n_estimated` (đặt xe nhập từ hệ cũ toàn là dòng này);
   · số theo nhóm chỉ hiện khi ≥ `min_samples` (mặc định 5); dưới ngưỡng trả `None` + `below_threshold`;
-  · «chậm» có thể chỉ là việc khó — hàm chỉ đo, không chấm điểm.
+  · "chậm" có thể chỉ là việc khó — hàm chỉ đo, không chấm điểm.
 
 ⚠️ KHÔNG TỰ GÁC QUYỀN. Người gọi kiểm quyền (khóa báo cáo 16) và truyền phạm vi. Muốn lấy KHÔNG lọc phạm vi phải bật `unrestricted=True`
 một cách tường minh (đường API quản trị đã qua `require_report`); mặc định, không truyền phạm vi nào thì trả rỗng.
@@ -91,7 +91,7 @@ def fetch_stats(db: Session, f: StatsFilter) -> dict:
         est_type[(kind, tid)] += n
         est_person[(kind, tid, emp)] += n
 
-    #  Nhóm chỉ có dòng ước tính cũng phải hiện (n_done = 0) để người xem thấy «có việc nhưng chưa đo được».
+    #  Nhóm chỉ có dòng ước tính cũng phải hiện (n_done = 0) để người xem thấy "có việc nhưng chưa đo được".
     type_keys = set(by_type) | set(est_type)
     person_keys = set(by_person) | set(est_person)
     type_names = _type_names(db, {k[1] for k in type_keys if k[1]})

@@ -13,14 +13,14 @@ from app.modules.attachment.model import StoredFile
 from .model import (ImportBatch, ImportChange, ImportLog, ImportMode,
                     ImportModule, ImportStatus, LogLevel)
 
-# Bộ lọc điều kiện («Bộ lọc») chỉ được đụng các cột này qua cú pháp `<field>__<op>`.
+# Bộ lọc điều kiện ("Bộ lọc") chỉ được đụng các cột này qua cú pháp `<field>__<op>`.
 _FILTER_OPS = [
     "status", "mode", "module", "filename", "created_at", "total_rows",
     "created_count", "updated_count", "skipped_count",
     "warning_count", "review_count", "error_count",
 ]
 
-# Ô chọn «Phân hệ» -> tập ĐỐI TƯỢNG (module) thuộc phân hệ đó (khớp data-modules ở FE).
+# Ô chọn "Phân hệ" -> tập ĐỐI TƯỢNG (module) thuộc phân hệ đó (khớp data-modules ở FE).
 _SUBSYSTEM_MODULES = {
     "hr": [ImportModule.COMPANY, ImportModule.DEPARTMENT, ImportModule.EMPLOYEE],
     "procurement": [ImportModule.SURVEY_REQUEST, ImportModule.PURCHASE_REQUEST,
@@ -131,7 +131,7 @@ def list_batches(db: Session, request, module: int | None, status: int | None, m
             q = q.filter(ImportBatch.created_by.in_(uids))
         else:
             q = q.filter(ImportBatch.id < 0)  # no match
-    # «Bộ lọc» điều kiện (chỉ nhánh `<field>__<op>`; param trần để các ô chọn ở trên lo).
+    # "Bộ lọc" điều kiện (chỉ nhánh `<field>__<op>`; param trần để các ô chọn ở trên lo).
     if request is not None:
         q = apply_filters(q, ImportBatch, request, [], _FILTER_OPS)
     total = q.count()
@@ -161,8 +161,8 @@ def get_batch(db: Session, bid: int) -> ImportBatch | None:
 def get_logs(db: Session, batch_id: int, level: int | None, pg: dict):
     #  CHỈ dòng nhật ký thường (`row_status = 0`). Từ bao-CR-496, nạp hải quan ghi thêm MỖI dòng
     #  dữ liệu một dòng kết cục vào cùng bảng này (tệp GTT02 cỡ 18.000 dòng) — không lọc thì
-    #  hộp «Nhật ký lô» và màn Quản lý Import ngập hàng trăm trang «Thêm mới», câu «Không có
-    #  ghi chú nào» không bao giờ hiện nữa. Dòng kết cục có đường riêng: `customs/row_log`.
+    #  hộp "Nhật ký lô" và màn Quản lý Import ngập hàng trăm trang "Thêm mới", câu "Không có
+    #  ghi chú nào" không bao giờ hiện nữa. Dòng kết cục có đường riêng: `customs/row_log`.
     q = db.query(ImportLog).filter(ImportLog.batch_id == batch_id, ImportLog.row_status == 0)
     if level is not None:
         q = q.filter(ImportLog.level == level)

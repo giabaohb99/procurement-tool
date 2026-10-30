@@ -4,14 +4,14 @@ Một bảng, một API — ba màn đọc cùng nó, khác nhau ở khóa quy�
 (`doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` §8.5):
 
 * `/system/sessions` — admin: `login_session` scope `all` + `delete` để đá.
-* Tab «Tài khoản & thiết bị» trong hồ sơ nhân sự — HR: `login_session.read`
+* Tab "Tài khoản & thiết bị" trong hồ sơ nhân sự — HR: `login_session.read`
   scope `all`, KHÔNG `delete`; nút khóa tài khoản đi qua `user.write` và hook
   `user/service.set_active` tự thu hồi phiên.
-* Tab «Thiết bị của tôi» ở `/me` — KHÔNG ở đây. Nó nằm ở `/api/auth/sessions`
+* Tab "Thiết bị của tôi" ở `/me` — KHÔNG ở đây. Nó nằm ở `/api/auth/sessions`
   (`modules/auth/controller.py`) và chỉ đòi đăng nhập: hệ đang chạy thì vai
   trò cũ không tự có khóa mới (D-018), mà ai cũng phải đá được thiết bị lạ
-  của chính mình. ⚠️ Đây là chỗ LỆCH với bản thiết kế («`login_session` own
-  mặc định cho mọi vai trò») — cố ý, ghi ở §8.5.
+  của chính mình. ⚠️ Đây là chỗ LỆCH với bản thiết kế ("`login_session` own
+  mặc định cho mọi vai trò") — cố ý, ghi ở §8.5.
 
 Hai đường cắt phiên KHÁC NHAU về hiệu lực, đừng gộp:
 

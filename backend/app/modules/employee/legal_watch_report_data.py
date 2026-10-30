@@ -1,4 +1,4 @@
-"""Dữ liệu hàng cho báo cáo B4 «Đối tượng cần chú ý theo luật» (khóa 29, duoc-CR-689).
+"""Dữ liệu hàng cho báo cáo B4 "Đối tượng cần chú ý theo luật" (khóa 29, duoc-CR-689).
 
 Mỗi (nhân sự, loại) là MỘT hàng — một người có thể vừa sắp nghỉ hưu vừa đang nuôi con nhỏ. Tình trạng tại
 mốc `as_of` (= min(cuối kỳ, hôm nay)), không có trục thời gian. Chỉ nhân sự ĐANG LÀM, trong phạm vi.
@@ -8,7 +8,7 @@ Bốn loại (`KINDS`):
     Cần ngày sinh + giới tính (nam / nữ); thiếu một trong hai thì không tính.
   - `past_retirement`: thời điểm nghỉ hưu đã QUA (< `as_of`) mà người đó vẫn đang làm (hàng nhân sự chỉ gồm người đang làm).
   - `maternity_now`: TÍNH CẢ HAI (một người đếm 1 lần) — (a) có đơn nghỉ ĐÃ DUYỆT loại thai sản phủ `as_of`, hoặc
-    (b) hồ sơ nhân sự đang ở trạng thái «Nghỉ thai sản» (`STATUS_MATERNITY`). Trạng thái hồ sơ là trạng thái
+    (b) hồ sơ nhân sự đang ở trạng thái "Nghỉ thai sản" (`STATUS_MATERNITY`). Trạng thái hồ sơ là trạng thái
     HIỆN TẠI nên nhánh (b) chỉ áp khi `as_of` là hôm nay (kỳ chưa kết thúc); kỳ quá khứ chỉ theo đơn. Người
     không có đơn thì mốc = None. Nhánh (b) không cần quyền nghỉ phép, nhánh (a) vẫn theo phạm vi đơn nghỉ. NHẬN LOẠI THAI SẢN bằng mã loại nghỉ
     `maternity` (`tab_leave_type.code`, seed `seed_nghi_phep.py`, `core/leave_codes.py`) — loại nào mang mã
@@ -42,7 +42,7 @@ from .service import STATUS_RESIGNED
 
 KINDS = ("retire_12m", "past_retirement", "maternity_now", "child_under_12m")
 MATERNITY_CODE = "maternity"
-STATUS_MATERNITY = "maternity_leave"      # mã `Employee.status` «Nghỉ thai sản» (core/status_codes.EMPLOYEE_STATUS)
+STATUS_MATERNITY = "maternity_leave"      # mã `Employee.status` "Nghỉ thai sản" (core/status_codes.EMPLOYEE_STATUS)
 
 
 @dataclass(frozen=True)

@@ -1,7 +1,7 @@
 """API GÓI QUYỀN MẶC ĐỊNH CỦA CHỨC VỤ — `/api/job-positions/{id}/roles` (duoc-CR-653).
 
 Gác bằng quyền QUẢN LÝ VAI TRÒ (`role.read` / `role.write`), không phải `job_position.write`: người
-sửa danh mục chức vụ (Nhân sự) chưa chắc được quyết ai nhận quyền gì. Sửa gói và «Áp lại» còn qua chốt
+sửa danh mục chức vụ (Nhân sự) chưa chắc được quyết ai nhận quyền gì. Sửa gói và "Áp lại" còn qua chốt
 chống nâng quyền L2 của `core/privilege_escalation` — gói là cách cấp quyền cho người KHÁC.
 """
 from fastapi import APIRouter, Depends, HTTPException
@@ -49,7 +49,7 @@ def set_position_roles(position_id: int, data: PositionRolesUpdate, db: Session 
     svc.set_bundle(db, position, new_ids, user.id)
     return success({"roles": svc.get_bundle(db, position_id),
                     "eligible_holders": svc.count_eligible_holders(db, position_id)},
-                   "Đã lưu quyền mặc định của chức vụ. Chưa áp cho người đang giữ — bấm «Áp lại» nếu cần.")
+                   "Đã lưu quyền mặc định của chức vụ. Chưa áp cho người đang giữ — bấm \"Áp lại\" nếu cần.")
 
 
 @router.post("/{position_id}/roles/apply")

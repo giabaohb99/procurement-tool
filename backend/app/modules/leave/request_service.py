@@ -97,7 +97,7 @@ def resolve_leave_taker(db: Session, user, employee_id: int) -> Employee:
 def ensure_can_create_for(db: Session, user, employee: Employee) -> None:
     """LẬP HỘ — ai được đứng tên người khác trên tờ đơn nghỉ (07/09/2026).
 
-    ⚠️ Trước hôm nay ô «người nghỉ» chỉ có ở API chứ không có trên màn hình, và
+    ⚠️ Trước hôm nay ô "người nghỉ" chỉ có ở API chứ không có trên màn hình, và
     **không ai gác nó**: gửi kèm `employee_id` bất kỳ là nộp được đơn đứng tên
     người đó, ở bất kỳ pháp nhân nào. Nay màn hình có ô chọn thật nên chốt này
     là bắt buộc, không phải trang trí.
@@ -105,7 +105,7 @@ def ensure_can_create_for(db: Session, user, employee: Employee) -> None:
     Hai điều kiện, cả hai đều phải đúng — mỗi cái trả lời một câu khác nhau:
 
     1. **Được phép lập hộ** — có ít nhất một vai trò cho `leave_request.create`
-       với phạm vi RỘNG HƠN «của mình». Người thường chỉ có `own`: họ nộp đơn
+       với phạm vi RỘNG HƠN "của mình". Người thường chỉ có `own`: họ nộp đơn
        cho chính mình, chấm hết.
     2. **Người đó nằm trong tầm mình** — hồ sơ nhân sự ấy phải đọc được trong
        phạm vi khóa `employee`. Trưởng phòng lập hộ cho người phòng mình được,
@@ -129,11 +129,11 @@ def ensure_can_create_for(db: Session, user, employee: Employee) -> None:
     if not can_create_for_others:
         raise HTTPException(
             403, "Bạn chỉ nộp được đơn nghỉ cho chính mình. Muốn lập hộ người khác "
-                 "thì cần vai trò có phạm vi rộng hơn «của mình».")
+                 "thì cần vai trò có phạm vi rộng hơn \"của mình\".")
 
     if get_scoped(db, Employee, "employee", employee.id, user, profile, "read") is None:
         raise HTTPException(
-            403, f"«{employee.full_name}» nằm ngoài phạm vi nhân sự của bạn.")
+            403, f"\"{employee.full_name}\" nằm ngoài phạm vi nhân sự của bạn.")
 
 
 # ── Kiểm tra tờ đơn ────────────────────────────────────────────────────────────
@@ -143,7 +143,7 @@ def check_date_range(from_date: date, to_date: date,
                      from_time: time | None = None,
                      to_time: time | None = None) -> None:
     if to_date < from_date:
-        raise HTTPException(400, "«Đến ngày» phải bằng hoặc sau «Từ ngày»")
+        raise HTTPException(400, "\"Đến ngày\" phải bằng hoặc sau \"Từ ngày\"")
     #  ⚠️ Chặn khoảng DÀI QUÁ TRẦN — không có chốt này thì `date_range` lặng lẽ
     #  dừng ở `MAX_RANGE_DAYS` và trả về một con số nhỏ hơn sự thật: gõ nhầm năm
     #  2036 (3651 ngày) ra đúng **343 ngày**, một con số trông hoàn toàn hợp lý.
@@ -180,17 +180,17 @@ def check_hourly(from_date: date, to_date: date, from_session: int, to_session: 
         #  khoảng giờ mà không chỗ nào đọc: lần sau có người đọc nó thật.
         if from_time is not None or to_time is not None:
             raise HTTPException(
-                400, "Có khoảng giờ nhưng buổi nghỉ không phải «Theo giờ» — chọn lại buổi.")
+                400, "Có khoảng giờ nhưng buổi nghỉ không phải \"Theo giờ\" — chọn lại buổi.")
         return
 
     if from_session != to_session:
-        raise HTTPException(400, "Nghỉ theo giờ thì cả hai ô buổi đều phải là «Theo giờ»")
+        raise HTTPException(400, "Nghỉ theo giờ thì cả hai ô buổi đều phải là \"Theo giờ\"")
     if from_time is None or to_time is None:
-        raise HTTPException(400, "Nghỉ theo giờ phải nhập đủ «Từ giờ» và «Đến giờ»")
+        raise HTTPException(400, "Nghỉ theo giờ phải nhập đủ \"Từ giờ\" và \"Đến giờ\"")
     #  Chỉ so giờ khi CÙNG MỘT NGÀY: nghỉ 14:00 hôm nay tới 10:00 ngày kia thì
-    #  «đến giờ» nhỏ hơn «từ giờ» là chuyện bình thường.
+    #  "đến giờ" nhỏ hơn "từ giờ" là chuyện bình thường.
     if from_date == to_date and to_time <= from_time:
-        raise HTTPException(400, "«Đến giờ» phải sau «Từ giờ»")
+        raise HTTPException(400, "\"Đến giờ\" phải sau \"Từ giờ\"")
 
 
 def check_gender(leave_type: LeaveType, employee: Employee) -> None:
@@ -202,14 +202,14 @@ def check_gender(leave_type: LeaveType, employee: Employee) -> None:
     want = int(leave_type.gender or GENDER_UNKNOWN)
     got = int(getattr(employee, "gender", 0) or GENDER_UNKNOWN)
     if want and got and want != got:
-        raise HTTPException(400, f"Loại nghỉ «{leave_type.name}» không áp dụng cho hồ sơ này")
+        raise HTTPException(400, f"Loại nghỉ \"{leave_type.name}\" không áp dụng cho hồ sơ này")
 
 
 def check_max_days(leave_type: LeaveType, days: float) -> None:
     trần = float(leave_type.max_days_per_request or 0.0)
     if trần and days > trần:
         raise HTTPException(
-            400, f"«{leave_type.name}» chỉ cho nghỉ tối đa {trần} ngày mỗi lần, đơn này xin {days}.")
+            400, f"\"{leave_type.name}\" chỉ cho nghỉ tối đa {trần} ngày mỗi lần, đơn này xin {days}.")
 
 
 #  ⚠️ KHÔNG có chốt "phải nộp trước N ngày" (bỏ 05/09/2026). Cột
@@ -261,8 +261,8 @@ def compute_days(db: Session, leave_type: LeaveType, employee: Employee,
     if days <= 0:
         raise HTTPException(
             400, "Khoảng ngày này không có ngày làm việc nào theo lịch làm việc áp cho "
-                 f"«{employee.full_name}» (rơi trọn vào ngày nghỉ hoặc ngày lễ). Sửa lại ngày, "
-                 "hoặc nhập tay «Tổng số ngày».")
+                 f"\"{employee.full_name}\" (rơi trọn vào ngày nghỉ hoặc ngày lễ). Sửa lại ngày, "
+                 "hoặc nhập tay \"Tổng số ngày\".")
     return days
 
 
@@ -277,7 +277,7 @@ def hourly_days(db: Session, from_date: date, to_date: date,
     luôn nghiêng về phía NGƯỜI LAO ĐỘNG (trừ ít hơn) chứ không ngược lại.
     """
     if from_time is None or to_time is None:
-        raise HTTPException(400, "Nghỉ theo giờ phải nhập đủ «Từ giờ» và «Đến giờ»")
+        raise HTTPException(400, "Nghỉ theo giờ phải nhập đủ \"Từ giờ\" và \"Đến giờ\"")
     days = workday_service.count_hourly_days(
         db, from_date, to_date, from_time, to_time,
         company_id=company_id, exclude_holiday=exclude_holiday, employee=employee)
@@ -337,7 +337,7 @@ def resolve_period_days(db: Session, pairs: list[tuple[LeaveType, float]], emplo
         if d <= 0:
             raise HTTPException(
                 400, f"{request_periods.label_of(i, p)} không có ngày làm việc nào theo lịch "
-                     f"làm việc áp cho «{employee.full_name}» (rơi trọn vào ngày nghỉ hoặc "
+                     f"làm việc áp cho \"{employee.full_name}\" (rơi trọn vào ngày nghỉ hoặc "
                      "ngày lễ). Bỏ khoảng này khỏi đơn.")
     if len(pairs) > 1:
         resolved = resolve_days(db, pairs, employee, first.from_date, first.to_date,
@@ -410,7 +410,7 @@ def resolve_days(db: Session, pairs: list[tuple[LeaveType, float]], employee: Em
     for leave_type, days in pairs:
         if days <= 0:
             raise HTTPException(
-                400, f"Dòng «{leave_type.name}» chưa có số ngày. Đơn nhiều loại nghỉ "
+                400, f"Dòng \"{leave_type.name}\" chưa có số ngày. Đơn nhiều loại nghỉ "
                      "phải ghi rõ mỗi loại mấy ngày.")
         resolved.append((leave_type, round(days, 2)))
     return resolved
@@ -430,11 +430,11 @@ def check_lines(pairs: list[tuple[LeaveType, float]], periods: list[PeriodView])
     for leave_type, days in pairs:
         if leave_type.id in seen:
             raise HTTPException(
-                400, f"Loại nghỉ «{leave_type.name}» khai hai lần — gộp lại thành "
+                400, f"Loại nghỉ \"{leave_type.name}\" khai hai lần — gộp lại thành "
                      "một dòng.")
         seen.add(leave_type.id)
         if days <= 0:
-            raise HTTPException(400, f"Dòng «{leave_type.name}» phải có số ngày lớn hơn 0")
+            raise HTTPException(400, f"Dòng \"{leave_type.name}\" phải có số ngày lớn hơn 0")
         check_max_days(leave_type, days)
 
     total = round(sum(days for _, days in pairs), 2)
@@ -557,7 +557,7 @@ def create(db: Session, data, user) -> LeaveRequest:
         **request_periods.header_of(periods),
         from_time=data.from_time, to_time=data.to_time,
         #  `unit` bám theo cách khai, không để người gửi tự đặt: đơn theo giờ mà
-        #  ghi đơn vị «Ngày» thì mọi báo cáo đọc sau này hiểu sai bản chất.
+        #  ghi đơn vị "Ngày" thì mọi báo cáo đọc sau này hiểu sai bản chất.
         unit=UNIT_HOUR if hourly else (data.unit or UNIT_DAY), total_days=days,
         reason=(data.reason or "").strip()[:1000],
         contact_phone=(data.contact_phone or "").strip()[:30],
@@ -633,7 +633,7 @@ def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
 
     periods = request_periods.normalize_update(db, obj, values, data)
     #  Đổi buổi mà KHÔNG gửi kèm giờ thì đọc giờ cũ trên phiếu — trừ khi vừa
-    #  chuyển ra khỏi «Theo giờ», lúc đó giờ cũ phải bị xóa chứ không giữ lại.
+    #  chuyển ra khỏi "Theo giờ", lúc đó giờ cũ phải bị xóa chứ không giữ lại.
     hourly = any(request_periods.is_hourly_period(p) for p in periods)
     from_time = values.get("from_time", obj.from_time if hourly else None)
     to_time = values.get("to_time", obj.to_time if hourly else None)
@@ -693,13 +693,13 @@ def check_ready_to_submit(obj: LeaveRequest) -> None:
     Người duyệt mở đơn ra mà không có lý do nghỉ thì họ duyệt cái gì.
     """
     if not (obj.reason or "").strip():
-        raise HTTPException(400, "Thiếu «Lý do nghỉ» — nhập đủ trước khi gửi duyệt.")
+        raise HTTPException(400, "Thiếu \"Lý do nghỉ\" — nhập đủ trước khi gửi duyệt.")
     if obj.total_days <= 0:
-        raise HTTPException(400, "«Tổng số ngày» phải lớn hơn 0")
+        raise HTTPException(400, "\"Tổng số ngày\" phải lớn hơn 0")
 
 
 def check_required_attachment(db: Session, obj: LeaveRequest) -> None:
-    """Loại nghỉ bật «Bắt buộc đính kèm» thì đơn phải có ít nhất một tệp (HR1-2, CR-661).
+    """Loại nghỉ bật "Bắt buộc đính kèm" thì đơn phải có ít nhất một tệp (HR1-2, CR-661).
 
     Đơn nhiều loại: chỉ cần MỘT loại bật cờ là đơn phải có tệp. Tệp treo ở tờ đơn
     (`tab_file_link`, entity `leave_request`) chứ không ở từng dòng nên không phân
@@ -720,11 +720,11 @@ def check_required_attachment(db: Session, obj: LeaveRequest) -> None:
                 .first())
     if has_file:
         return
-    names = ", ".join(f"«{n}»" for (n,) in required)
+    names = ", ".join(f"\"{n}\"" for (n,) in required)
     raise HTTPException(
         400,
         f"Loại nghỉ {names} bắt buộc đính kèm giấy tờ (giấy khám bệnh, giấy chứng nhận…) — "
-        "tải tệp lên ở mục «Tệp đính kèm» rồi gửi duyệt lại.")
+        "tải tệp lên ở mục \"Tệp đính kèm\" rồi gửi duyệt lại.")
 
 
 def prepare_submit(db: Session, obj: LeaveRequest, user) -> Employee:

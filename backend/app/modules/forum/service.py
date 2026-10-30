@@ -134,7 +134,7 @@ MAX_PINNED = 50   # trần phòng hờ — dải ghim mà tới đây là admin 
 
 
 def list_pinned_posts(db: Session, user, profile: dict) -> list[ForumPost]:
-    """Mọi bài ĐANG GHIM người này được thấy — dải đầu Bảng tin + tab «Thông báo».
+    """Mọi bài ĐANG GHIM người này được thấy — dải đầu Bảng tin + tab "Thông báo".
 
     Vẫn nguyên luật audience: thông báo ghim phạm vi phòng ban thì phòng khác
     không thấy. Không con trỏ (ghim chỉ vài bài), sắp mốc ghim mới → cũ.
@@ -299,7 +299,7 @@ def _last_comment_subquery(db: Session):
 
 def last_comment_at_map(db: Session, post_ids: list[int]) -> dict[int, datetime]:
     """{post_id: mốc bình luận CUỐI} cho các bài trong trang — controller ghép
-    với `created_at` thành cột «hoạt động cuối» của thread list (F13b)."""
+    với `created_at` thành cột "hoạt động cuối" của thread list (F13b)."""
     from app.modules.comment.model import Comment
 
     if not post_ids:
@@ -344,7 +344,7 @@ def list_board_threads(db: Session, user, profile: dict, board_id: int,
 
 
 HIGHLIGHT_LIMIT = 5        # mỗi khối sidebar 5 dòng — vừa một tầm mắt (F13c)
-HIGHLIGHT_WINDOW_DAYS = 7  # «Đang sôi nổi» đếm bình luận + reaction trong 7 ngày
+HIGHLIGHT_WINDOW_DAYS = 7  # "Đang sôi nổi" đếm bình luận + reaction trong 7 ngày
 
 
 def _visible_box_ids(db: Session, user) -> list[int]:
@@ -362,10 +362,10 @@ def _visible_box_ids(db: Session, user) -> list[int]:
 
 def list_highlight_threads(db: Session, user, profile: dict,
                            limit: int = HIGHLIGHT_LIMIT):
-    """(«Đang sôi nổi», «Mới nhất») cho sidebar màn «Diễn đàn» (F13c).
+    """("Đang sôi nổi", "Mới nhất") cho sidebar màn "Diễn đàn" (F13c).
 
     Sôi nổi = top thread theo TỔNG bình luận + reaction 7 ngày gần nhất — máy
-    tự xếp, không ai chọn tay (chốt 03/09/2026); khối «Nổi bật» thì đi API bài
+    tự xếp, không ai chọn tay (chốt 03/09/2026); khối "Nổi bật" thì đi API bài
     ghim sẵn có, không nằm ở đây. Hai khối đều chỉ lấy THREAD trong box còn
     nhìn thấy, nguyên luật status/audience của `list_board_threads`.
     """
@@ -403,7 +403,7 @@ def list_highlight_threads(db: Session, user, profile: dict,
     trending: list[ForumPost] = []
     if scores:
         rows = thread_query().filter(ForumPost.id.in_(list(scores))).all()
-        # điểm bằng nhau thì bài mới hơn đứng trước — cùng chiều với «Mới nhất»
+        # điểm bằng nhau thì bài mới hơn đứng trước — cùng chiều với "Mới nhất"
         rows.sort(key=lambda p: (-scores[p.id], -p.id))
         trending = rows[:max(1, limit)]
     return trending, latest

@@ -30,7 +30,7 @@ def move_folder(db: Session, folder: DocFolder, new_parent_id: int, actor: int,
     chia sẻ đích danh thì kế thừa theo `path` mới.
     """
     if folder.kind == int(FolderKind.COMPANY_GROUP):
-        raise HTTPException(400, "Thư mục nhóm «Công ty» luôn nằm ở gốc cây, không chuyển được")
+        raise HTTPException(400, "Thư mục nhóm \"Công ty\" luôn nằm ở gốc cây, không chuyển được")
     if new_parent_id == folder.parent_id:
         return folder
 
@@ -64,7 +64,7 @@ def move_folder(db: Session, folder: DocFolder, new_parent_id: int, actor: int,
         parent_id, parent_path, parent_depth, parent_name = 0, "/", 0, "gốc cây"
 
     #  Thư mục pháp nhân chưa đặt tên tay có `name = ""` — bỏ qua kiểm trùng,
-    #  không thì hai gốc pháp nhân gặp nhau là "«» đã tồn tại".
+    #  không thì hai gốc pháp nhân gặp nhau là """ đã tồn tại".
     if folder.name:
         ensure_name_unique_among_siblings(db, parent_id, folder.name, exclude_id=folder.id)
 

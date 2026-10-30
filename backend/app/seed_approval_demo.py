@@ -63,14 +63,14 @@ def wipe(db) -> dict[str, int]:
 def _assign_department_head(db, people) -> None:
     """Khai TRƯỞNG PHÒNG cho các phòng chưa có.
 
-    Bước đầu của mọi luồng mẫu chọn người duyệt kiểu «trưởng bộ phận người nộp»
+    Bước đầu của mọi luồng mẫu chọn người duyệt kiểu "trưởng bộ phận người nộp"
     (`_truong_bo_phan` đọc `Department.manager_id`). Phòng bỏ trống cột đó thì
     bước 1 không tìm ra ai, phiên duyệt rơi thẳng vào trạng thái **KẸT** và
-    không sinh việc nào — màn «Việc của tôi» trống trơn dù luồng khai đúng.
+    không sinh việc nào — màn "Việc của tôi" trống trơn dù luồng khai đúng.
 
     ⚠️ **Người này PHẢI KHÁC `chanh_vp`** (22/08/2026). Trước đây cả hai là một,
-    nên mọi luồng hai bước sụp thành một chữ ký: bước 1 «trưởng bộ phận người
-    nộp» và bước 2 «Chánh Văn phòng ký» ra cùng một người, bước 2 **tự qua vì
+    nên mọi luồng hai bước sụp thành một chữ ký: bước 1 "trưởng bộ phận người
+    nộp" và bước 2 "Chánh Văn phòng ký" ra cùng một người, bước 2 **tự qua vì
     trùng người** và văn bản ban hành xong chỉ có ĐÚNG MỘT người ký — trong khi
     nhìn cấu hình luồng thì tưởng có hai. Luật tự-qua là cố ý và đúng; cái sai
     nằm ở chỗ dữ liệu mẫu chọn trùng người.
@@ -108,7 +108,7 @@ def enable_switch(db) -> str:
     trong bảng vẫn có sẵn hai phiên do chính seed này gọi tay vào engine.
 
     Chỉ áp cho `document` — các loại chứng từ khác vẫn giữ nguyên trạng thái của
-    chúng, và tắt lại lúc nào cũng được ở màn «Bộ máy duyệt».
+    chúng, và tắt lại lúc nào cũng được ở màn "Bộ máy duyệt".
     """
     from app.modules.approval.flow_model import ApprovalSwitch
 
@@ -180,8 +180,8 @@ class _Factory:
         return node
 
     def hr_department(self) -> str:
-        """Id phòng Nhân sự dạng chuỗi, cho `approver_ref` của bước «trưởng bộ
-        phận của phòng ban chỉ định».
+        """Id phòng Nhân sự dạng chuỗi, cho `approver_ref` của bước "trưởng bộ
+        phận của phòng ban chỉ định".
 
         Dò theo MÃ trước rồi mới tới chuỗi con trong tên: tên phòng khác nhau
         giữa các nơi ("Phòng Nhân sự", "Phòng Nhân sự - Hành chính"). Không thấy
@@ -202,7 +202,7 @@ class _Factory:
     def type_condition(self, *type_code: str) -> str:
         """`[{"field":"doc_type_id","op":"in","value":[...]}]` — đúng dạng bộ dựng
         điều kiện trên giao diện sinh ra, để mở lên sửa được chứ không thành
-        «điều kiện khai tay»."""
+        "điều kiện khai tay"."""
         import json
 
         ids = [self.kind[code].id for code in type_code if code in self.kind]
@@ -246,14 +246,14 @@ def seed_delegations(db, people) -> int:
 
 
 def assign_document_roles(db) -> int:
-    """Trình hai văn bản đang chờ duyệt vào bộ máy, để «Việc của tôi» có dữ liệu.
+    """Trình hai văn bản đang chờ duyệt vào bộ máy, để "Việc của tôi" có dữ liệu.
 
-    Đi qua đúng `service.submit` — cùng một cửa mà người dùng bấm «Gửi duyệt» —
+    Đi qua đúng `service.submit` — cùng một cửa mà người dùng bấm "Gửi duyệt" —
     chứ không gọi thẳng `instance_service.bat_dau`.
 
     Gọi thẳng vào engine thì mở được phiên duyệt nhưng **bỏ quên phiên bản**: nó
     vẫn nằm ở trạng thái nháp. Hậu quả thấy ngay trên màn hình: văn bản ghi
-    «Đang duyệt» mà nút «Gửi duyệt» vẫn bày ra, và tới lúc duyệt xong hết bước
+    "Đang duyệt" mà nút "Gửi duyệt" vẫn bày ra, và tới lúc duyệt xong hết bước
     thì `service.approve` báo "Không có bản nào đang chờ duyệt" — phiếu ghi đã
     duyệt còn văn bản thì không ban hành được. Dữ liệu mẫu phải đi đúng đường
     của người dùng, nếu không nó dựng ra một trạng thái không ai tạo nổi bằng

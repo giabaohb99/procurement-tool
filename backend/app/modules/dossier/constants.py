@@ -11,10 +11,10 @@ tay bên kia; có test chốt số mục.
 # --------------------------------------------------------------------------
 # Tình trạng hồ sơ — VÒNG ĐỜI DO NGƯỜI ĐẶT, ba mức
 # --------------------------------------------------------------------------
-#  ⚠️ **Cố ý KHÔNG có mã «Hết hạn» / «Sắp hết hạn».** Hai thứ đó suy ra được từ
+#  ⚠️ **Cố ý KHÔNG có mã "Hết hạn" / "Sắp hết hạn".** Hai thứ đó suy ra được từ
 #  `expiry_date` và ngày hôm nay, nên lưu chúng thành cột là tự dựng một sự thật
 #  thứ hai: tới nửa đêm nó sai, và phải có một tác vụ chạy nền đi lật từng dòng
-#  để nó đúng lại. Bỏ quên tác vụ ấy một tuần thì màn hình báo «Còn hiệu lực»
+#  để nó đúng lại. Bỏ quên tác vụ ấy một tuần thì màn hình báo "Còn hiệu lực"
 #  cho giấy phép đã hết hạn — đúng loại sai nguy hiểm nhất của cả phân hệ này.
 #  Tình trạng hiệu lực tính ở `service.expiry_state()`, mỗi lần đọc một lần
 #  tính, không bao giờ cũ.
@@ -48,7 +48,7 @@ EXPIRY_STATE_LABELS = {
     EXPIRY_OVER: "Hết hạn",
 }
 
-#  Bao nhiêu ngày trước hạn thì kêu «sắp hết hạn».
+#  Bao nhiêu ngày trước hạn thì kêu "sắp hết hạn".
 #
 #  30 ngày vì đó là khoảng xin gia hạn giấy phép con thực tế cần — cảnh báo muộn
 #  hơn thì không kịp làm gì, mà sớm hơn nhiều thì cả danh sách vàng khè quanh
@@ -63,12 +63,12 @@ EXPIRY_WARN_DAYS = 30
 #      lưu/lưu trữ) — một giá trị cho cả công ty.
 #    · `tab_dossier_progress.status` = việc làm tờ giấy đó CHO MỘT PHIẾU cụ thể
 #      tới đâu rồi — mỗi phiếu một giá trị.
-#  Tờ «Giấy đăng ký kinh doanh của NCC» đang lưu trong kho (`DOSSIER_ACTIVE`)
-#  vẫn có thể «Chưa bắt đầu» ở một phiếu mới lập, vì chưa ai đi lấy bản sao kèm
+#  Tờ "Giấy đăng ký kinh doanh của NCC" đang lưu trong kho (`DOSSIER_ACTIVE`)
+#  vẫn có thể "Chưa bắt đầu" ở một phiếu mới lập, vì chưa ai đi lấy bản sao kèm
 #  vào phiếu đó. Gộp hai thang là mất đúng thông tin người dùng cần.
 #
-#  Bốn mức chép của `survey_request/report_constants.py` để thẻ «Hồ sơ cần hoàn
-#  thành» nói cùng một ngôn ngữ với khối «Báo cáo thực hiện». Cố ý KHÔNG import
+#  Bốn mức chép của `survey_request/report_constants.py` để thẻ "Hồ sơ cần hoàn
+#  thành" nói cùng một ngôn ngữ với khối "Báo cáo thực hiện". Cố ý KHÔNG import
 #  từ đó: phân hệ Hồ sơ không được phụ thuộc vào phân hệ Thu mua — thẻ này chạy
 #  ở cả bốn loại chứng từ, trong đó có hai loại không thuộc Thu mua.
 DP_IDLE = 0     # Chưa bắt đầu
@@ -85,8 +85,8 @@ DP_STATUS_LABELS = {
     DP_DONE: "Hoàn thành",
 }
 
-#  Trần số hồ sơ tiên quyết của MỘT tờ hồ sơ. Cùng con số với khối «Báo cáo thực
-#  hiện» (`report_constants.MAX_DEPENDS`) — không phải vì hai bên dùng chung mã,
+#  Trần số hồ sơ tiên quyết của MỘT tờ hồ sơ. Cùng con số với khối "Báo cáo thực
+#  hiện" (`report_constants.MAX_DEPENDS`) — không phải vì hai bên dùng chung mã,
 #  mà vì cùng một cỡ dữ liệu: một tờ giấy chờ quá ba bốn tờ khác đã là dấu hiệu
 #  khai sai, 30 chỉ để chặn ca dán nhầm cả danh sách.
 MAX_DOSSIER_DEPENDS = 30

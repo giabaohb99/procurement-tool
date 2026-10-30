@@ -99,7 +99,7 @@ def report_xlsx(slug: str, data: dict) -> Response:
 
 def _blank_suppressed(resp: Response, excel_rows: list[int], first_metric_col: int) -> Response:
     """`export_xlsx.cell_value` quy `None` của cột số về 0 nên nhóm bị che (xem `suppressed` ở báo cáo
-    Nhóm tuổi) đọc ra «0» — người xem tưởng nhóm không có ai. Xóa các ô số đó sau khi dựng; báo cáo khác
+    Nhóm tuổi) đọc ra "0" — người xem tưởng nhóm không có ai. Xóa các ô số đó sau khi dựng; báo cáo khác
     không có nhóm bị che thì không đi qua đây."""
     wb = load_workbook(BytesIO(resp.body))
     ws = wb.active

@@ -24,7 +24,7 @@ from app.modules.assistant.change_model import ChangeSource
 
 log = logging.getLogger("app.agent_gateway")
 #  ai-CR-182: kênh ghi vào sổ thay đổi cho mọi lượt ghi đi qua cổng B. Dịch vụ AI hiện chỉ nhận lệnh từ Telegram
-#  (Zalo hướng B còn chờ — đại ca chốt 09/10 «Telegram trước, Zalo sau»); khi mở Zalo thì thêm header kênh ở
+#  (Zalo hướng B còn chờ — đại ca chốt 09/10 "Telegram trước, Zalo sau"); khi mở Zalo thì thêm header kênh ở
 #  `agent_hub/erp._Remote._call` rồi đọc ở đây thay hằng số.
 GATEWAY_SOURCE = int(ChangeSource.TELEGRAM)
 router = APIRouter(prefix="/api/agent-gw", tags=["agent-gateway"])
@@ -322,7 +322,7 @@ def draft_delete(body: DraftDeleteIn, user=Depends(gateway_user), db: Session = 
     return success(L.delete_my_drafts(db, user, [i.model_dump() for i in body.items], source=GATEWAY_SOURCE))
 
 
-#  ai-CR-151: nút «Xác nhận sửa / xóa» trên Telegram. Token Fernet do ERP cấp lúc chạy tool đề xuất; ở đây ERP kiểm
+#  ai-CR-151: nút "Xác nhận sửa / xóa" trên Telegram. Token Fernet do ERP cấp lúc chạy tool đề xuất; ở đây ERP kiểm
 #  lại TOÀN BỘ (token, hạn, đúng người, quyền, phạm vi, trạng thái) đúng như nút trên web.
 class ProposalConfirmIn(BaseModel):
     token: str = Field(min_length=1, max_length=8000)

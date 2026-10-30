@@ -102,17 +102,17 @@ def ensure_can_use(db: Session, mailbox_id: int,
     """
     mailbox = get_or_404(db, mailbox_id)
     if not mailbox.is_active:
-        raise HTTPException(400, f"Hộp thư «{mailbox.email}» đã ngừng dùng")
+        raise HTTPException(400, f"Hộp thư \"{mailbox.email}\" đã ngừng dùng")
     if not can_use(db, mailbox_id, employee_id):
         raise HTTPException(
             403,
-            f"Bạn chưa được cấp quyền gửi thư danh nghĩa «{mailbox.email}». "
+            f"Bạn chưa được cấp quyền gửi thư danh nghĩa \"{mailbox.email}\". "
             "Đề nghị quản trị thêm bạn vào hộp thư này.",
         )
     if not ready_to_send(mailbox):
         raise HTTPException(
             400,
-            f"Hộp thư «{mailbox.email}» chưa khai đủ đường SMTP (máy chủ và mật "
+            f"Hộp thư \"{mailbox.email}\" chưa khai đủ đường SMTP (máy chủ và mật "
             "khẩu ứng dụng) nên chưa gửi được.",
         )
     return mailbox

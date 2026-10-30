@@ -409,7 +409,7 @@ def _resolve_chain(db: Session, user, entity: str, entity_id: int):
     # import trong hàm để tránh circular import với các module nghiệp vụ
     #  Lớp model tên là `POItem`, không phải `PurchaseOrderItem` — câu import cũ
     #  ném `ImportError` nên CẢ HAI endpoint `/chain` và `/chain/zip` trả 500 từ
-    #  ngày CR-007/008 tới nay (trang «Chứng từ» của `frontend/` và nút "Tải tất
+    #  ngày CR-007/008 tới nay (trang "Chứng từ" của `frontend/` và nút "Tải tất
     #  cả (.zip)" của `frontend-v2` cùng chết theo). Bắt được lúc làm B-08.
     from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
     from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
@@ -657,7 +657,7 @@ def _get_file_with_permission(db: Session, user, link_id: int,
         try:
             _check(db, user, lk.entity, "read", lk.entity_id)
         except HTTPException as e:
-            #  Đường lùi CHỈ cho lượt tải một tệp: trang «Chứng từ» liệt kê cả
+            #  Đường lùi CHỈ cho lượt tải một tệp: trang "Chứng từ" liệt kê cả
             #  chuỗi PO → PYC → PKS → YCKS rồi cho bấm tải từng dòng, mà các
             #  dòng PYC/PKS/YCKS thường nằm ngoài phạm vi vai trò của người xem
             #  đơn. Không nới thêm gì — `chain/zip` đã cho tải trọn chuỗi đó cho
@@ -665,8 +665,8 @@ def _get_file_with_permission(db: Session, user, link_id: int,
             if e.status_code != 403 or not reachable_from_scoped_po(db, user, lk.entity, lk.entity_id):
                 raise
 
-    #  HẠN XEM xét SAU quyền: hết hạn là 403 «chỉ xem được tới ngày…», khác hẳn
-    #  «không có quyền». Đặt trước phần quyền thì người vốn không được xem lại
+    #  HẠN XEM xét SAU quyền: hết hạn là 403 "chỉ xem được tới ngày…", khác hẳn
+    #  "không có quyền". Đặt trước phần quyền thì người vốn không được xem lại
     #  nhận đúng ngày hết hạn của một tệp họ không được biết là có.
     from app.modules.document.attachment_window import block_if_expired
     block_if_expired(db, lk.entity, lk.entity_id)

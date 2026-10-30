@@ -181,7 +181,7 @@ def row_values(po: PurchaseOrder, it: POItem, dl: PODelivery | None, show_suppli
         "delivery_no": dl.delivery_no if dl else None,
         # bao-CR-411 (ticket prod 50): kho nhận LÙI VỀ kho mặc định của dòng hàng khi lần giao
         # chưa có (hoặc chưa ai chọn kho cho lần giao đó). Trên dữ liệu thật: 240/240 dòng hàng
-        # đều đã khai «Kho nhận mặc định», nhưng 78 hàng chưa phát sinh lần giao nào -> ô Kho
+        # đều đã khai "Kho nhận mặc định", nhưng 78 hàng chưa phát sinh lần giao nào -> ô Kho
         # trống trơn, người theo đơn không biết hàng sẽ về đâu để đi kiểm.
         "warehouse_code": (dl.warehouse_code if dl else "") or it.warehouse_code or "",
         "carrier_code": dl.carrier_code if dl else "",

@@ -91,7 +91,7 @@ def _rebuild_tasks(db: Session, instance: ApprovalInstance, node: ApprovalNode,
     #  lại là nhân đôi dòng nhật ký cho cùng một sự việc.
 
     #  ⚠️ **AI ĐÃ KÝ CHẶNG NÀY RỒI THÌ KHÔNG GIAO LẠI** (ép tải 07/09/2026).
-    #  Chặng song song «cả hai phải duyệt» mà A ký xong, B chưa: quản trị đổi
+    #  Chặng song song "cả hai phải duyệt" mà A ký xong, B chưa: quản trị đổi
     #  B → C thì bản cũ tính ra danh sách [A, C] và mở việc mới cho CẢ HAI —
     #  A bị đòi ký lần thứ hai cho đúng chặng vừa ký, và chặng đứng im chờ chữ
     #  ký đó. Nghĩa là một lượt sửa luồng nhằm GỠ tắc lại đẻ ra tắc mới, im
@@ -216,7 +216,7 @@ def sync_after_step_edit(db: Session, node: ApprovalNode, actor: int,
         elif instance.status == INSTANCE_RUNNING:
             instance_service._finish(
                 db, instance,
-                f"Bước «{node.name or node.seq}» sau khi đổi người duyệt "
+                f"Bước \"{node.name or node.seq}\" sau khi đổi người duyệt "
                 f"không còn ai duyệt được")
         instance.updated_by = actor
 

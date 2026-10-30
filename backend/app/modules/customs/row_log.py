@@ -4,16 +4,16 @@
 Mỗi dòng dữ liệu trong tệp có đúng MỘT dòng nhật ký mang `row_status` (`ImportRowStatus`):
 
   · NEW       — đọc được và chưa có, ghi vào bảng giá. Trùng các cột nhận diện với một dòng
-                đã có mà khác giá / lượng thì câu ghi «nghi sửa giá» để người nạp rà — vẫn
+                đã có mà khác giá / lượng thì câu ghi "nghi sửa giá" để người nạp rà — vẫn
                 THÊM, không ghi đè (xem `dedupe.py`: đo trên dữ liệu thật, đa số là lô thật);
   · ERROR     — bộ đọc bỏ dòng (hiện chỉ có một lý do: không đọc được Ngày đăng ký);
   · DUPLICATE — giống hệt một dòng ĐỨNG TRƯỚC trong cùng tệp → BỎ QUA;
   · EXISTING  — giống hệt một dòng đã lưu (lô khác) → BỎ QUA;
-  · UPDATED   — bao-CR-608: ô «ID» trỏ đúng một dòng đã có → GHI ĐÈ dòng đó («Ghi đè ID n»);
-  · DELETED   — bao-CR-608: ô «Thao tác» = xóa và ID có thật → XÓA dòng đó («Xóa ID n»);
+  · UPDATED   — bao-CR-608: ô "ID" trỏ đúng một dòng đã có → GHI ĐÈ dòng đó ("Ghi đè ID n");
+  · DELETED   — bao-CR-608: ô "Thao tác" = xóa và ID có thật → XÓA dòng đó ("Xóa ID n");
   · IGNORED   — bao-CR-608: xóa mà ID trống / không có, hoặc ID đã xử lý ở dòng trên → BỎ QUA.
 
-«Giống hệt» = cùng mã băm `row_hash` (đủ các cột dữ liệu sau chuẩn hóa). Đại ca chốt
+"Giống hệt" = cùng mã băm `row_hash` (đủ các cột dữ liệu sau chuẩn hóa). Đại ca chốt
 01/10/2026: trùng thì bỏ qua — bản bao-CR-496 chỉ đánh dấu rồi vẫn ghi, prod dồn 806 dòng thừa.
 
 Ghi bằng lệnh chèn hàng loạt: một tệp ~18.000 dòng, `db.add` từng dòng vừa chậm vừa kích
@@ -59,11 +59,11 @@ def classify_rows(res: ParseResult, identities: list[str], existing: ExistingInd
     `res.rows` phải đã qua `dedupe.stamp_rows` (có `row_hash`); `identities` cùng thứ tự.
     Dòng lỗi lấy từ `res.logs` (mức ERROR, có số dòng).
 
-    bao-CR-608: `target_ids` = các id mà ô «ID» của tệp trỏ tới VÀ có thật trong bảng;
+    bao-CR-608: `target_ids` = các id mà ô "ID" của tệp trỏ tới VÀ có thật trong bảng;
     `unchanged_rows` = số dòng (trong tệp) có ID mà dữ liệu y hệt dòng đã lưu. Luật:
-      · «Thao tác = xóa»: ID có thật → XÓA; ID trống / không có → BỎ QUA kèm cảnh báo;
-      · ô ID có thật → GHI ĐÈ, không qua bộ lọc trùng (dòng ghi đè không bao giờ là «trùng
-        trong tệp»); y hệt dòng đã lưu → «Đã có», không ghi gì;
+      · "Thao tác = xóa": ID có thật → XÓA; ID trống / không có → BỎ QUA kèm cảnh báo;
+      · ô ID có thật → GHI ĐÈ, không qua bộ lọc trùng (dòng ghi đè không bao giờ là "trùng
+        trong tệp"); y hệt dòng đã lưu → "Đã có", không ghi gì;
       · ô ID có số mà không có → THÊM MỚI như dòng thường (vẫn qua chống trùng), kèm cảnh báo;
       · một ID xuất hiện ở nhiều dòng → dòng ĐẦU TIÊN thắng, các dòng sau BỎ QUA kèm cảnh báo.
     """
@@ -140,7 +140,7 @@ def write_row_logs(db: Session, batch: ImportBatch, statuses: list[RowStatus]) -
     """Chèn hàng loạt nhật ký từng dòng cho lô (kết quả `classify_rows`); → số dòng theo kết cục.
 
     KHÔNG tăng các bộ đếm cảnh báo/lỗi của lô — dòng lỗi đã được `add_log` đếm ở mức ERROR
-    rồi; ở đây chỉ thêm góc nhìn «mỗi dòng một kết cục».
+    rồi; ở đây chỉ thêm góc nhìn "mỗi dòng một kết cục".
     """
     payload = [{"batch_id": batch.id, "sheet": SHEET, "row_no": row_no, "level": int(LogLevel.INFO),
                 "category": CATEGORY, "message": message, "ref_key": name[:120],
@@ -156,7 +156,7 @@ def write_row_logs(db: Session, batch: ImportBatch, statuses: list[RowStatus]) -
 
 _COUNT_KEY = {int(ImportRowStatus.NEW): "new", int(ImportRowStatus.ERROR): "error",
               int(ImportRowStatus.DUPLICATE): "duplicate", int(ImportRowStatus.EXISTING): "existing",
-              #  bao-CR-608 — ghi đè / xóa theo cột «ID» + «Thao tác», và dòng bỏ qua vì xóa hỏng.
+              #  bao-CR-608 — ghi đè / xóa theo cột "ID" + "Thao tác", và dòng bỏ qua vì xóa hỏng.
               int(ImportRowStatus.UPDATED): "updated", int(ImportRowStatus.DELETED): "deleted",
               int(ImportRowStatus.IGNORED): "ignored"}
 
@@ -166,7 +166,7 @@ def _row_query(db: Session, batch_id: int):
 
 
 def count_rows(db: Session, batch_id: int) -> dict:
-    """Tổng theo từng kết cục cho đầu hộp «Nhật ký lô» — một truy vấn GROUP BY."""
+    """Tổng theo từng kết cục cho đầu hộp "Nhật ký lô" — một truy vấn GROUP BY."""
     rows = (_row_query(db, batch_id).with_entities(ImportLog.row_status, func.count(ImportLog.id))
             .group_by(ImportLog.row_status).all())
     by = {int(s): int(n) for s, n in rows}

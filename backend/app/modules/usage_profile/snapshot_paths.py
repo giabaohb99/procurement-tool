@@ -1,7 +1,7 @@
 """Đường đi A→B→C giữa các màn (thuần) — duoc-CR-641, phase 04.
 
 Chuỗi PAGE_VIEW tách theo (user, session_id, tab_key): mở nhiều tab xen kẽ KHÔNG tạo bộ ba giả. Bước lặp liền nhau
-(F5, đổi bộ lọc trong cùng màn) gộp làm một. «Vòng» = A→B→A (a == c, b ≠ a). Chỉ dùng được trong 90 ngày (sự kiện thô).
+(F5, đổi bộ lọc trong cùng màn) gộp làm một. "Vòng" = A→B→A (a == c, b ≠ a). Chỉ dùng được trong 90 ngày (sự kiện thô).
 """
 from collections import Counter, defaultdict
 

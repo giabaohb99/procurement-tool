@@ -17,7 +17,7 @@ from app.core.response import success
 from app.modules.import_tool.model import IMPORT_ROW_STATUS_LABELS, ImportRowStatus
 
 from . import row_log
-#  Dùng CHUNG chốt «lô này có phải lô hải quan không» với đường tải tệp gốc của bao-CR-493.
+#  Dùng CHUNG chốt "lô này có phải lô hải quan không" với đường tải tệp gốc của bao-CR-493.
 #  Đây là chốt bảo mật (bảng lô là của CẢ công cụ nhập — thiếu nó thì người có quyền hải quan
 #  đọc được từng dòng của lô nhập nhân sự), nên chỉ được có MỘT bản; hai bản chép sẽ lệch nhau.
 from .controller import _get_batch

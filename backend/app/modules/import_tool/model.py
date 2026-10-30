@@ -67,7 +67,7 @@ class ImportRowStatus(IntEnum):
     """Kết cục của TỪNG DÒNG DỮ LIỆU trong tệp nạp — bao-CR-496 (luật R2).
 
     `NONE` = dòng nhật ký thường (cảnh báo / thông báo của lô), không phải dòng dữ liệu.
-    Cố ý KHÔNG có «Cập nhật»: nguồn GTT02 không có số tờ khai nên không dựng được khóa
+    Cố ý KHÔNG có "Cập nhật": nguồn GTT02 không có số tờ khai nên không dựng được khóa
     để biết dòng nào là cùng một dòng cũ đã sửa (02 §3.1).
     bao-CR-541 (đại ca chốt 01/10/2026): dòng trùng thì BỎ QUA — `DUPLICATE` (lặp một dòng
     phía trên trong cùng tệp) và `EXISTING` (giống hệt một dòng đã lưu) đều không ghi vào
@@ -78,10 +78,10 @@ class ImportRowStatus(IntEnum):
     ERROR = 2        # Lỗi — bỏ dòng
     DUPLICATE = 3    # Trùng với một dòng khác trong CÙNG tệp — bỏ qua
     EXISTING = 4     # Giống hệt một dòng đã có trong bảng giá — bỏ qua (bao-CR-541)
-    #  bao-CR-608 (đại ca 07/10/2026): tệp nạp có cột «ID» / «Thao tác» thì người nạp CHỈ RA dòng
-    #  nào — không cần đoán bằng khóa nữa, nên mới có «Ghi đè» / «Xóa». Thêm mã mới, mã cũ giữ nguyên.
+    #  bao-CR-608 (đại ca 07/10/2026): tệp nạp có cột "ID" / "Thao tác" thì người nạp CHỈ RA dòng
+    #  nào — không cần đoán bằng khóa nữa, nên mới có "Ghi đè" / "Xóa". Thêm mã mới, mã cũ giữ nguyên.
     UPDATED = 5      # Ô ID trỏ đúng một dòng đã có → ghi đè dòng đó
-    DELETED = 6      # Ô «Thao tác» = xóa, ID có thật → xóa dòng đó
+    DELETED = 6      # Ô "Thao tác" = xóa, ID có thật → xóa dòng đó
     IGNORED = 7      # Bỏ qua: xóa mà ID trống / không có, hoặc ID đã xử lý ở dòng trên
 
 

@@ -1,7 +1,7 @@
 """Bot trong NHÓM Telegram (ai-CR-105) — trợ lý cá nhân đọc nhóm hộ chủ (đại ca chốt 07/10/2026).
 
-Định hướng: mỗi người coi bot là trợ lý riêng; ai thêm bot vào nhóm nào thì nhắn RIÊNG cho bot «tóm tắt nhóm X hôm nay»,
-«nhóm Y có tệp gì», «tóm tắt tệp 2» — không cần gọi @bot trong nhóm, bot không nói gì trong nhóm. Không liên quan bot IDA.
+Định hướng: mỗi người coi bot là trợ lý riêng; ai thêm bot vào nhóm nào thì nhắn RIÊNG cho bot "tóm tắt nhóm X hôm nay",
+"nhóm Y có tệp gì", "tóm tắt tệp 2" — không cần gọi @bot trong nhóm, bot không nói gì trong nhóm. Không liên quan bot IDA.
 
   - Bot phải được TẮT chế độ riêng tư (BotFather → /setprivacy → Disable) hoặc làm quản trị nhóm mới thấy mọi tin.
   - Bot chỉ thấy tin TỪ LÚC vào nhóm (Bot API không đọc tin cũ).
@@ -122,7 +122,7 @@ def capture(db: Session, msg: dict) -> None:
         return
     from_id, name = _sender(msg)
     if channels.is_zalo(row.chat_id) and not row.owner_user_id:
-        #  ai-CR-111: Zalo không báo «ai thêm bot vào nhóm» — người đã đăng nhập ERP nói câu đầu tiên trong nhóm là chủ.
+        #  ai-CR-111: Zalo không báo "ai thêm bot vào nhóm" — người đã đăng nhập ERP nói câu đầu tiên trong nhóm là chủ.
         zid = str((msg.get("from") or {}).get("zalo_id") or "")
         link = chat_link.get_active_link(db, channels.zalo_chat(zid)) if zid else None
         if link is not None:
@@ -169,7 +169,7 @@ def _zalo_account_member(db: Session, user_id: int, group: AgentGroup) -> bool:
     return bool(members & _zalo_uids_of(db, user_id))
 
 
-#  ai-CR-123: màn «Nhóm chat» hỏi quyền cho cả danh sách nhóm mỗi lần mở — nhớ câu trả lời của Telegram vài phút
+#  ai-CR-123: màn "Nhóm chat" hỏi quyền cho cả danh sách nhóm mỗi lần mở — nhớ câu trả lời của Telegram vài phút
 #  thay vì gọi `getChatMember` N lần mỗi lượt.
 _MEMBER_CACHE: dict[tuple[str, int], tuple[float, bool]] = {}
 MEMBER_CACHE_SEC = 300
@@ -273,7 +273,7 @@ def private_chat_of(db: Session, user_id: int) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Màn «Nhóm chat» trên ERP v2 (ai-CR-123)
+# Màn "Nhóm chat" trên ERP v2 (ai-CR-123)
 # ---------------------------------------------------------------------------
 CHANNEL_TELEGRAM = "telegram"
 CHANNEL_ZALO_ACCOUNT = "zalo_account"
@@ -281,7 +281,7 @@ CHANNEL_ZALO_BOT = "zalo_bot"
 CHANNEL_LABELS = {CHANNEL_TELEGRAM: "Telegram", CHANNEL_ZALO_ACCOUNT: "Zalo (tài khoản công ty)",
                   CHANNEL_ZALO_BOT: "Zalo (bot chính thức)"}
 SOURCE_ASK = 1          # bản tóm tắt sinh ra khi người dùng hỏi bot / Trợ lý web
-SOURCE_BUTTON = 2       # nút «Tóm tắt» trên màn nhóm
+SOURCE_BUTTON = 2       # nút "Tóm tắt" trên màn nhóm
 SUMMARY_TOOL = "read_group_messages"
 PAGE_MAX = 200
 
@@ -452,7 +452,7 @@ def record_answers(db: Session, user, question: str, tool_calls: list[dict] | No
 
 
 SUMMARY_PROMPT = (
-    "Dưới đây là tin nhắn của nhóm chat «{title}» trong {hours} giờ qua (mỗi dòng: [giờ] người gửi: nội dung). "
+    "Dưới đây là tin nhắn của nhóm chat **{title}** trong {hours} giờ qua (mỗi dòng: [giờ] người gửi: nội dung). "
     "Viết bản tóm tắt tiếng Việt cho người bận: (1) các chủ đề chính, (2) việc / quyết định đã chốt, (3) ai hứa làm "
     "gì, hạn khi nào, (4) việc còn treo hoặc câu hỏi chưa ai trả lời, (5) tệp đáng chú ý. Ngắn gọn, gạch đầu dòng, "
     "chỉ dựa vào tin bên dưới, không bịa.\n\n{messages}{files}"
@@ -460,7 +460,7 @@ SUMMARY_PROMPT = (
 
 
 def summarize_now(db: Session, group: AgentGroup, user, *, hours: int = 24) -> dict:
-    """Nút «Tóm tắt» trên màn nhóm: đọc tin trong `hours` giờ, nhờ model viết, lưu lại. Không qua công cụ (người quản
+    """Nút "Tóm tắt" trên màn nhóm: đọc tin trong `hours` giờ, nhờ model viết, lưu lại. Không qua công cụ (người quản
     lý không phải thành viên vẫn tóm tắt được nhóm họ được quyền xem)."""
     from app.modules.assistant import service as assistant_service
 

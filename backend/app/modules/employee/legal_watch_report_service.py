@@ -1,7 +1,7 @@
-"""Báo cáo B4 «Đối tượng cần chú ý theo luật» kiểu Haravan (khóa 29, duoc-CR-689) — `/api/legal-watch/summary`.
+"""Báo cáo B4 "Đối tượng cần chú ý theo luật" kiểu Haravan (khóa 29, duoc-CR-689) — `/api/legal-watch/summary`.
 
 Tình trạng tại mốc `as_of = min(cuối kỳ, hôm nay)`; không có xu hướng, không có kỳ so sánh. Dữ liệu dùng
-ngày sinh và con nhỏ nên controller đòi `employee_sensitive.read`. «Đang nghỉ thai sản» = đơn đã duyệt (theo phạm
+ngày sinh và con nhỏ nên controller đòi `employee_sensitive.read`. "Đang nghỉ thai sản" = đơn đã duyệt (theo phạm
 vi đơn nghỉ phép, `leave_q`) HỢP hồ sơ ở trạng thái nghỉ thai sản (chỉ khi mốc là hôm nay); thiếu quyền xem đơn
 thì chỉ còn nhánh hồ sơ. `/rows` không in ngày sinh — chỉ MỐC.
 """
@@ -74,15 +74,15 @@ def build_summary(db: Session, employees_q, period: Period, group_by: str | None
         "Tuổi nghỉ hưu theo lộ trình Nghị định 135/2020/NĐ-CP, điều kiện lao động bình thường; thời điểm nghỉ hưu là cuối tháng đủ tuổi "
         "(nam 60 tuổi 3 tháng năm 2021, tăng 3 tháng mỗi năm tới 62 tuổi năm 2028; nữ 55 tuổi 4 tháng, "
         "tăng 4 tháng mỗi năm tới 60 tuổi năm 2035). Chỉ tính người đã có ngày sinh và giới tính; "
-        "không xét nghề nặng nhọc, độc hại được nghỉ sớm. «Đã quá tuổi nghỉ hưu» là người qua thời điểm đó mà vẫn đang làm.",
-        "«Nuôi con dưới 12 tháng» tính từ danh sách hộ gia đình: nhân sự nữ có con trai / con gái sinh trong 12 tháng gần nhất."]
+        "không xét nghề nặng nhọc, độc hại được nghỉ sớm. \"Đã quá tuổi nghỉ hưu\" là người qua thời điểm đó mà vẫn đang làm.",
+        "\"Nuôi con dưới 12 tháng\" tính từ danh sách hộ gia đình: nhân sự nữ có con trai / con gái sinh trong 12 tháng gần nhất."]
     data["notes"].append(
-        "«Đang nghỉ thai sản» đếm cả người có đơn nghỉ thai sản đã duyệt phủ ngày tính (theo phạm vi đơn nghỉ phép của bạn) "
-        "lẫn người có hồ sơ nhân sự ở trạng thái «Nghỉ thai sản»; một người chỉ đếm một lần, người không có đơn thì "
-        "«Ngày đi làm lại» để trống.")
+        "\"Đang nghỉ thai sản\" đếm cả người có đơn nghỉ thai sản đã duyệt phủ ngày tính (theo phạm vi đơn nghỉ phép của bạn) "
+        "lẫn người có hồ sơ nhân sự ở trạng thái \"Nghỉ thai sản\"; một người chỉ đếm một lần, người không có đơn thì "
+        "\"Ngày đi làm lại\" để trống.")
     if as_of < vn_today():
         data["notes"].append("Trạng thái hồ sơ nhân sự là trạng thái hiện tại nên không dùng cho kỳ đã qua: "
-                             "«Đang nghỉ thai sản» của kỳ này chỉ theo đơn nghỉ thai sản đã duyệt.")
+                             "\"Đang nghỉ thai sản\" của kỳ này chỉ theo đơn nghỉ thai sản đã duyệt.")
     return data
 
 

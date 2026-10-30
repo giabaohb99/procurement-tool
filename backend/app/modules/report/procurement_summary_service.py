@@ -116,7 +116,7 @@ def compute_procurement_summary(db: Session, user, period: Period, company_id, g
     #  bao-CR-533: công nợ còn lại / quá hạn tính trên TOÀN công ty (`debt_snapshot` không biết
     #  phòng ban) — người chỉ có phạm vi phòng (`allow` là tập) từng thấy tổng nợ cả công ty trong
     #  khi mọi dòng chi phí khác đã khoanh đúng phòng mình. Chưa có luật chia nợ theo phòng, nên
-    #  với họ bỏ hẳn hai chỉ số đó (vắng khóa = «—», như nhóm ở M1) thay vì đưa một con số sai phạm vi.
+    #  với họ bỏ hẳn hai chỉ số đó (vắng khóa = "—", như nhóm ở M1) thay vì đưa một con số sai phạm vi.
     data = build_report(fetch, spec, period, group_by=group_by,
                         snapshot=rows.debt_snapshot(db, cid) if allow is None else None)
     data["notes"] = data.get("notes", []) + [

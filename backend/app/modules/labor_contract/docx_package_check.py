@@ -32,14 +32,14 @@ class TemplateRejected(Exception):
 def _read_bounded(zf: zipfile.ZipFile, info: zipfile.ZipInfo, limit: int) -> bytes:
     """Đọc tối đa `limit` byte; vượt → từ chối (không đọc hết phần bị khai gian)."""
     if info.file_size > limit:
-        raise TemplateRejected(f"Tệp .docx có thành phần «{info.filename}» quá lớn.")
+        raise TemplateRejected(f"Tệp .docx có thành phần \"{info.filename}\" quá lớn.")
     try:
         with zf.open(info) as part:
             data = part.read(limit + 1)
     except (zipfile.BadZipFile, RuntimeError, NotImplementedError, OSError):
         raise TemplateRejected("Tệp .docx hỏng hoặc dùng kiểu nén / mã hóa không hỗ trợ.")
     if len(data) > limit:
-        raise TemplateRejected(f"Tệp .docx có thành phần «{info.filename}» quá lớn.")
+        raise TemplateRejected(f"Tệp .docx có thành phần \"{info.filename}\" quá lớn.")
     return data
 
 

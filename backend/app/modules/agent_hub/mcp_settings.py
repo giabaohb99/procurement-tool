@@ -1,8 +1,8 @@
 """Cấu hình cổng MCP do quản trị chỉnh trên màn G7 (ai-CR-216, doc/erp/21 §6.2 G7 + §5.2).
 
 - BẬT / TẮT NHÓM tool ERP qua MCP. Mỗi tool thuộc ĐÚNG MỘT nhóm (bài kiểm canh: tool mới quên xếp nhóm là đỏ). Mặc
-  định theo Q4 (doc 21 §9): «đợt đầu chỉ nhóm tra cứu của chính mình + nghỉ phép + danh bạ; nhóm công nợ / tài chính
-  tắt» — cộng thêm báo cáo gom sẵn + Kho skill (Agent 1 chốt 17/10). Nhóm khác TẮT sẵn, quản trị bật trên màn.
+  định theo Q4 (doc 21 §9): "đợt đầu chỉ nhóm tra cứu của chính mình + nghỉ phép + danh bạ; nhóm công nợ / tài chính
+  tắt" — cộng thêm báo cáo gom sẵn + Kho skill (Agent 1 chốt 17/10). Nhóm khác TẮT sẵn, quản trị bật trên màn.
 - Trần tần suất, ngân sách dòng, số ngày giữ nhật ký, câu dặn thêm cho AI (nối sau INSTRUCTIONS).
 
 Lưu MỘT dòng JSON ở `tab_setting` của ERP (khóa `SETTING_KEY`) qua `erp.setting_raw_get/put` — chạy được cả chế độ nhúng
@@ -56,7 +56,7 @@ GROUPS: tuple[ToolGroup, ...] = (
         "draft_work_task", "draft_work_plan", "team_capacity", "task_type_stats", "plan_context"})),
     #  kh-AI2-3: đọc phiếu văn phòng — tắt mặc định như các nhóm nghiệp vụ khác, quản trị bật ở G7.
     ToolGroup("office", "Đặt xe, duyệt dấu, tồn kho, diễn đàn (chỉ đọc)", False, frozenset({"office_read"})),
-    #  kh-AI2-6: LẬP phiếu đặt xe / duyệt dấu — nhóm RIÊNG, tắt mặc định: nhóm đọc «office» đang bật trên prod, gộp vào đó
+    #  kh-AI2-6: LẬP phiếu đặt xe / duyệt dấu — nhóm RIÊNG, tắt mặc định: nhóm đọc "office" đang bật trên prod, gộp vào đó
     #  là mở quyền tạo phiếu cho mọi khóa được ghi mà quản trị không chủ động bật.
     ToolGroup("office_write", "Lập phiếu đặt xe, duyệt dấu (khóa được ghi, có xác nhận)", False, frozenset({
         "draft_vehicle_booking", "draft_seal_request"})),

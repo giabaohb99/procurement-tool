@@ -92,7 +92,7 @@ def _latest_per_request(tasks: list[dict]) -> list[dict]:
 
 
 def _rows_from_tasks(db: Session, tasks: list[dict], key: str) -> dict:
-    """Ghép «việc của bộ máy» với «tờ đơn» thành một dòng đọc được.
+    """Ghép "việc của bộ máy" với "tờ đơn" thành một dòng đọc được.
 
     Việc nào trỏ tới một tờ đơn đã xóa mềm thì BỎ HẲN dòng đó, không trả ra một
     dòng trống: người dùng bấm vào chỉ ăn 404, mà con số đếm trên tab thì vẫn
@@ -132,7 +132,7 @@ def _rows_from_tasks(db: Session, tasks: list[dict], key: str) -> dict:
         #  ⚠️ Người NHẬN BÀN GIAO phải đi kèm ngay ở đây, không để người duyệt
         #  mở tờ đơn ra mới thấy. *Thiếu người bàn giao* là lý do trả đơn phổ
         #  biến nhất, nên nó chính là thứ quyết định họ bấm Duyệt hay Trả về —
-        #  mà cả tính năng «duyệt ngay trên dòng» sinh ra để họ khỏi phải mở.
+        #  mà cả tính năng "duyệt ngay trên dòng" sinh ra để họ khỏi phải mở.
         data["handovers"] = request_serializer.dump_handovers(obj, names)
         items.append(data)
 

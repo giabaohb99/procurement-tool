@@ -50,7 +50,7 @@ SAMPLES: tuple[Sample, ...] = (
     Sample("11", "Hồ sơ của chị Mi (run #242/#244)", (
         Turn("ai đang giữ hồ sơ của chị Mi",
              "Câu hai nghĩa: HỎI LẠI kèm hai nghĩa (hồ sơ nhân sự hay phiếu chị Mi trình đang chờ ai) — có thể tra tên trước "
-             "(bỏ xưng hô) hoặc hỏi luôn. Không xin thêm công cụ, không nói «chưa có công cụ».",
+             "(bỏ xưng hô) hoặc hỏi luôn. Không xin thêm công cụ, không nói **chưa có công cụ**.",
              must_not_call=("more_tools",)),)),
     Sample("12", "Lập YCMH (run #223)", (
         Turn("tạo YCMH mua 10 thùng giấy A4 cho phòng IT, cần trước thứ sáu",

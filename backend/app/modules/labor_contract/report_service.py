@@ -1,11 +1,11 @@
 """Báo cáo Hợp đồng lao động kiểu Haravan (duoc-CR-686, khóa 17) — `GET /api/labor-contracts/summary`.
 
 Chỉ số là ĐẾM CỜ trạng thái của từng hàng (xem `report_data.py`), không phải số tại một thời điểm
-(`snapshot`) — nhờ vậy có ở cả Tổng lẫn từng nhóm «Xem theo». Mốc tính trạng thái `as_of =
+(`snapshot`) — nhờ vậy có ở cả Tổng lẫn từng nhóm "Xem theo". Mốc tính trạng thái `as_of =
 min(cuối kỳ, hôm nay)`; kỳ so sánh tính lại tại mốc cuối kỳ của chính nó. Không có trục thời gian
 nên `trend = []` (giao diện ẩn biểu đồ).
 
-`/summary/rows` («bấm số ra danh sách») dùng đúng `load_rows` + đúng `key_of` của chiều gom nên
+`/summary/rows` ("bấm số ra danh sách") dùng đúng `load_rows` + đúng `key_of` của chiều gom nên
 danh sách luôn khớp con số trên bảng.
 
 ⚠️ Danh sách có LƯƠNG (cơ bản · đóng BHXH · phụ cấp) — chốt: ai có `labor_contract.read` thì thấy,
@@ -82,10 +82,10 @@ def build_summary(db: Session, contracts_q, employees_q, period: Period, group_b
     data["notes"] = [
         "Trạng thái HĐ tính tại ngày cuối kỳ (hoặc hôm nay nếu kỳ chưa kết thúc); kỳ so sánh tính "
         "lại tại ngày cuối kỳ của chính nó.",
-        "Chỉ số «Hết hạn trong N ngày» là tích lũy (30 ⊂ 60 ⊂ 90), không tính người đã có HĐ nối "
+        "Chỉ số \"Hết hạn trong N ngày\" là tích lũy (30 ⊂ 60 ⊂ 90), không tính người đã có HĐ nối "
         "tiếp hoặc đã nghỉ việc — cùng luật với chuông cảnh báo HĐLĐ.",
-        "«Đang hiệu lực» chỉ đếm HĐ của người còn làm; HĐ còn hạn của người đã nghỉ vào «Người đã nghỉ, HĐ chưa chấm dứt».",
-        "«Đang làm, chưa có HĐ» tính theo tình trạng nhân sự HIỆN TẠI (chưa lưu lịch sử trạng thái).",
+        "\"Đang hiệu lực\" chỉ đếm HĐ của người còn làm; HĐ còn hạn của người đã nghỉ vào \"Người đã nghỉ, HĐ chưa chấm dứt\".",
+        "\"Đang làm, chưa có HĐ\" tính theo tình trạng nhân sự HIỆN TẠI (chưa lưu lịch sử trạng thái).",
     ]
     return data
 

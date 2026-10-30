@@ -55,7 +55,7 @@ def _stuck_targets(db) -> list[tuple[str, int]]:
 
 
 def _close_superseded(db, entity: str, local_id: int) -> None:
-    """Dòng *chờ* do nút «Chạy lại» đẻ ra: lượt gửi mới đã thay nó, đóng lại cho khỏi treo."""
+    """Dòng *chờ* do nút "Chạy lại" đẻ ra: lượt gửi mới đã thay nó, đóng lại cho khỏi treo."""
     for row in db.execute(select(SyncLog).where(
             SyncLog.source == SOURCE_DATXE,
             SyncLog.direction == int(SyncDirection.OUTBOUND),

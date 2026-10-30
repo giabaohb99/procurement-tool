@@ -68,7 +68,7 @@ def _check_unique(db: Session, company_id: int, code: str, except_id: int = 0) -
     if except_id:
         q = q.filter(WorkTaskType.id != except_id)
     if q.first():
-        raise HTTPException(409, f"Mã loại việc «{code}» đã có trong pháp nhân này")
+        raise HTTPException(409, f"Mã loại việc \"{code}\" đã có trong pháp nhân này")
 
 
 def _clean(text: str, label: str) -> str:
@@ -79,7 +79,7 @@ def _clean(text: str, label: str) -> str:
 
 
 def _hours_or_none(v):
-    """`0` coi như chưa khai — một loại việc không có «ước lượng mặc định 0 giờ»."""
+    """`0` coi như chưa khai — một loại việc không có "ước lượng mặc định 0 giờ"."""
     return v if v else None
 
 

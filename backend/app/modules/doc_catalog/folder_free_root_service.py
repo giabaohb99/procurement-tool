@@ -12,7 +12,7 @@ Ba luật đi kèm để việc mở này KHÔNG làm hỏng phân quyền đang
    mục vừa tạo — xem `folder_access_service.effective_levels`.
 2. **`default_access = PRIVATE`** — người có `document.read` scope `all` không
    tự nhiên nhìn thấy thư mục riêng của người khác. Muốn cho ai xem thì bấm
-   «Chia sẻ», giống thư mục tự tạo trên Drive.
+   "Chia sẻ", giống thư mục tự tạo trên Drive.
 3. **Nhận văn bản của MỌI pháp nhân** (`folder_link_service.validate_folder_for_company`
    cho qua khi `folder.company_id == 0`). Gắn vào thư mục KHÔNG mở quyền đọc
    văn bản — `document/access_service.visible_condition` vẫn lọc như cũ.
@@ -38,7 +38,7 @@ FREE_ROOT_DEPTH = 1
 
 
 def grant_owner_manage(db: Session, folder: DocFolder, owner_employee_id: int, actor: int) -> None:
-    """Thêm dòng chia sẻ «Quản lý» đích danh cho người tạo/người chuyển —
+    """Thêm dòng chia sẻ "Quản lý" đích danh cho người tạo/người chuyển —
     bỏ qua nếu họ đã có sẵn một dòng CHO PHÉP còn hiệu lực trên thư mục này.
     Không `commit` — nơi gọi gộp vào giao dịch của mình."""
     exists = (db.query(DocFolderAccess.id)

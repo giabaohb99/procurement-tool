@@ -132,7 +132,7 @@ def feed(limit: int = Query(service.PAGE_SIZE, ge=1, le=50),
 
 @router.get("/posts/pinned")
 def pinned_feed(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Bài đang ghim (F9a/CR-199) — dải đầu Bảng tin + tab «Thông báo».
+    """Bài đang ghim (F9a/CR-199) — dải đầu Bảng tin + tab "Thông báo".
 
     PHẢI khai TRƯỚC `GET /posts/{pid}` — không thì "pinned" bị nuốt vào `pid`
     (khuôn static-trước-dynamic của router văn thư).
@@ -395,7 +395,7 @@ def unpin_post(pid: int, db: Session = Depends(get_db),
 
 @router.get("/boards")
 def list_boards(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Cây nhóm → box kèm bộ đếm + khối bài-mới-nhất — màn «Diễn đàn» (F13b)."""
+    """Cây nhóm → box kèm bộ đếm + khối bài-mới-nhất — màn "Diễn đàn" (F13b)."""
     groups = service.list_boards(db, user)
     # tra tên/avatar người viết cuối cho mọi khối bài-mới-nhất — 2 query cho cả cây
     last_blocks = [b["last_post"] for g in groups
@@ -411,8 +411,8 @@ def list_boards(db: Session = Depends(get_db), user=Depends(get_current_user)):
 @router.get("/boards/highlights")
 def list_board_highlights(db: Session = Depends(get_db),
                           user=Depends(get_current_user)):
-    """Sidebar phải màn «Diễn đàn» (F13c): «Đang sôi nổi» (auto 7 ngày) +
-    «Mới nhất». Khối «Nổi bật» FE gọi `GET /posts/pinned` sẵn có.
+    """Sidebar phải màn "Diễn đàn" (F13c): "Đang sôi nổi" (auto 7 ngày) +
+    "Mới nhất". Khối "Nổi bật" FE gọi `GET /posts/pinned` sẵn có.
 
     PHẢI khai TRƯỚC nhóm route `/boards/{board_id}` — khuôn static-trước-dynamic
     (cùng lý do `GET /posts/pinned` đứng trước `GET /posts/{pid}`).
@@ -460,7 +460,7 @@ def list_board_threads(board_id: int,
     rows, total = service.list_board_threads(db, user, profile, board_id,
                                              page=page, per_page=per_page)
     items = _pack(db, rows, user)
-    # cột «hoạt động cuối» của từng thread = max(lúc đăng, bình luận cuối) —
+    # cột "hoạt động cuối" của từng thread = max(lúc đăng, bình luận cuối) —
     # cùng công thức với thứ tự sắp ở service, thêm đúng 1 query cho cả trang.
     last_comments = service.last_comment_at_map(db, [p.id for p in rows])
     for item, p in zip(items, rows):

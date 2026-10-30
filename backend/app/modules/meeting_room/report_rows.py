@@ -1,4 +1,4 @@
-"""Danh sách «bấm số ra lượt đặt» của báo cáo F1 (duoc-CR-689): `GET /api/room-usage/summary/rows`."""
+"""Danh sách "bấm số ra lượt đặt" của báo cáo F1 (duoc-CR-689): `GET /api/room-usage/summary/rows`."""
 from __future__ import annotations
 
 from fastapi import HTTPException

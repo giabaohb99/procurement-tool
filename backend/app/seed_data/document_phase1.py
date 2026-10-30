@@ -134,7 +134,7 @@ LABOR_CONTRACT_ARCHIVE_DOC_TYPE = _doc_type(
     needs_signature=False,
     needs_approval=False,
     is_personal=True,
-    #  Mức mật tối thiểu «Mật» cho mọi bản lưu trữ (có lương, CCCD) — lớp gác theo mức mật cũng chặn thêm.
+    #  Mức mật tối thiểu "Mật" cho mọi bản lưu trữ (có lương, CCCD) — lớp gác theo mức mật cũng chặn thêm.
     is_confidential_type=True,
 )
 
@@ -145,7 +145,7 @@ for _sort_order, _row in enumerate(ALL_DOC_TYPES, start=1):
 
 # 13 dòng theo tập dữ liệu đang có và hai pháp nhân được tài liệu B8 nêu đích danh
 # nhưng còn thiếu (SAM, AGRIPLANT). Chỉ điền các trường đang trống, không ghi đè.
-# bao-CR-535: bỏ dòng «DEGO HOLDING» (trùng mã số thuế với «DEGO») — bao-CR-532 đã gộp nó vào DEGO
+# bao-CR-535: bỏ dòng "DEGO HOLDING" (trùng mã số thuế với "DEGO") — bao-CR-532 đã gộp nó vào DEGO
 # id 1, để lại dòng này thì mỗi lần deploy seed lại đẻ ra bản trùng.
 DOCUMENT_COMPANIES = [
     {"code": "DEGO", "name": "CÔNG TY TNHH DEGO HOLDING", "tax_code": "1801722464",
@@ -199,7 +199,7 @@ DEPARTMENT_DOCUMENT_CONFIG = {
 #
 #   1. Dòng "bất kỳ tham chiếu bất kỳ" KHÔNG seed. `source_type_id` là cột bắt
 #      buộc nên khai cho đủ 33 loại sẽ làm bảng 15–25 dòng phình gấp đôi mà
-#      không thêm nghĩa. Thay vào đó `link_service` cho quan hệ «tham chiếu» đi
+#      không thêm nghĩa. Thay vào đó `link_service` cho quan hệ "tham chiếu" đi
 #      qua thẳng không cần quy tắc — nó vốn là liên kết mềm.
 #   2. Tài liệu ghi "BM thuộc về QT, QC — bắt buộc, từ 1", nghĩa là bắt buộc ÍT
 #      NHẤT MỘT TRONG HAI loại đích. Bảng quy tắc khóa theo từng cặp nên hai
@@ -213,7 +213,7 @@ DOC_TYPE_LINK_RULES = [
     #  Bốn loại dưới đây đều khai `needs_decision` ở `ALL_DOC_TYPES`, nghĩa là
     #  không có Quyết định kèm theo thì `ensure_can_issue` từ chối ban hành.
     #  Thiếu dòng quy tắc tương ứng ở đây là khóa chết: người soạn muốn khai
-    #  quan hệ «Kèm theo» tới Quyết định cũng bị bảng quy tắc chặn, nên văn bản
+    #  quan hệ "Kèm theo" tới Quyết định cũng bị bảng quy tắc chặn, nên văn bản
     #  không còn đường nào ra. Đã từng thiếu ba dòng CS · QDI · QT.
     ("QC", 5, "QD", True, 1, 1),      # Quy chế ban hành kèm 1 Quyết định
     ("CS", 5, "QD", True, 1, 1),      # Chính sách — như trên

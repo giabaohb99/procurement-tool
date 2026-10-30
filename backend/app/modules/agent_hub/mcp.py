@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, Header, Request, Response
 from sqlalchemy.orm import Session
@@ -36,9 +37,9 @@ INSTRUCTIONS = ("Bộ công cụ ERP nội bộ DEGO Holding. Mọi tool chạy 
                 "cần và làm theo; áp dụng nội dung vào việc, không đọc lại nguyên văn cả skill. Muốn tạo phiếu: gọi tool "
                 "draft_* để có bản nháp, đưa người dùng xem, rồi gọi confirm_draft với đúng bản nháp đó (submit=true để "
                 "gửi duyệt luôn). Báo lỗi hệ thống: report_issue.")
-#  ai-CR-207 (đại ca 16/10 qua Agent 1: «vá 4 lỗi đó luôn»): khóa CHỈ ĐỌC trước đây lọc theo danh sách ĐEN (draft_* + 3 tên)
+#  ai-CR-207 (đại ca 16/10 qua Agent 1: "vá 4 lỗi đó luôn"): khóa CHỈ ĐỌC trước đây lọc theo danh sách ĐEN (draft_* + 3 tên)
 #  nên vẫn thấy tạo / sửa / xóa lịch, ghi / quên sổ nhớ, ghi chú, bản tin, viết lại biên bản, nghiên cứu sâu (tốn tiền ví
-#  công ty)… Nay ĐẢO LUẬT: khóa chỉ đọc chỉ thấy tool trong danh sách TRẮNG dưới đây; tool mới mặc định là «ghi» cho tới khi
+#  công ty)… Nay ĐẢO LUẬT: khóa chỉ đọc chỉ thấy tool trong danh sách TRẮNG dưới đây; tool mới mặc định là "ghi" cho tới khi
 #  được khai vào đây (bài kiểm canh: mọi tool khóa đọc thấy phải thuộc READ_TOOLS).
 READ_TOOLS = frozenset({
     "approval_flow_lookup", "contract_count_by_status", "contract_list_by_expiry",
@@ -151,7 +152,7 @@ def list_tools(db: Session, user, scope: int) -> list[dict]:
     #  ai-CR-216: nhóm tool đang tắt qua MCP (màn G7) thì không liệt kê.
     out = [d for d in SKILL_TOOL_DEFS if mcp_settings.tool_listed(db, d["name"])]   # bao-CR-622: cẩm nang đứng đầu
     #  ai-CR-207 lỗi 1: trước gọi erp.tool_defs(db) KHÔNG kèm người dùng → chế độ tách dịch vụ gọi cổng B GET /tools với
-    #  user_id rỗng → «Tài khoản không tồn tại» → danh sách chỉ còn tool cục bộ (mất purchase_report, payable_lookup…).
+    #  user_id rỗng → "Tài khoản không tồn tại" → danh sách chỉ còn tool cục bộ (mất purchase_report, payable_lookup…).
     for d in erp.tool_defs(db, user):
         #  ai-CR-220: sổ tool của Trợ lý nay có bản NỘI BỘ của ba tool skill (đọc cả bộ Khóa) — cổng giữ bản riêng ở trên.
         if d.name in HIDDEN or d.name in MCP_RETIRED or d.name in SKILL_TOOLS:
@@ -188,7 +189,7 @@ def call_tool(db: Session, user, scope: int, name: str, args: dict) -> dict:
     if name == "confirm_draft":
         if scope != mcp_keys.SCOPE_WRITE:
             return {"denied": True,
-                    "error": "Khóa này chỉ đọc; tạo phiếu cần khóa «được ghi» (tạo ở Trang cá nhân → Khóa AI)."}
+                    "error": "Khóa này chỉ đọc; tạo phiếu cần khóa **được ghi** (tạo ở Trang cá nhân → Khóa AI)."}
         return _confirm_draft(db, user, args)
     if name in HIDDEN or (scope != mcp_keys.SCOPE_WRITE and is_write_tool(name)):
         return {"denied": True, "error": f"Công cụ '{name}' không mở cho khóa này."}
@@ -276,7 +277,7 @@ def _confirm_draft(db: Session, user, args: dict) -> dict:
         return mcp_admin.confirm(db, user, mcp_keys.SCOPE_WRITE, kind, draft)
     if kind in PROPOSAL_KINDS:
         return _confirm_proposal(db, user, kind, draft)
-    if kind in ("vehicle_booking", "seal_request"):         # kh-AI2-6: nhóm «office_write» tắt thì chặn cả bước tạo
+    if kind in ("vehicle_booking", "seal_request"):         # kh-AI2-6: nhóm "office_write" tắt thì chặn cả bước tạo
         from . import mcp_settings
 
         if blocked := mcp_settings.tool_blocked(db, f"draft_{kind}"):
@@ -334,7 +335,7 @@ def _change_source_mcp() -> int:
 
 
 def _proposal_note(result):
-    """Đề xuất sửa / xóa qua MCP: thay lời dặn «bấm nút» của Trợ lý web bằng cách xác nhận của cổng."""
+    """Đề xuất sửa / xóa qua MCP: thay lời dặn "bấm nút" của Trợ lý web bằng cách xác nhận của cổng."""
     if isinstance(result, dict) and isinstance(result.get("proposal"), dict) \
             and result["proposal"].get("kind") == "approval_proposal":
         verb = "duyệt" if result["proposal"].get("action") == "approve" else "từ chối"
@@ -392,7 +393,7 @@ def list_prompts(db: Session, user) -> list[dict]:
             "description": "Xem công ty có cẩm nang nào cho việc này rồi làm theo.", "arguments": PROMPT_ARGS}]
     for s in erp.skill_list(db, user, "", "").get("items") or []:
         out.append({"name": s["name"], "title": s["title"],
-                    "description": f"Làm theo cẩm nang «{s['title']}»: {s['summary']}"[:500], "arguments": PROMPT_ARGS})
+                    "description": f"Làm theo cẩm nang **{s['title']}**: {s['summary']}"[:500], "arguments": PROMPT_ARGS})
     return out
 
 
@@ -406,7 +407,7 @@ def get_prompt(db: Session, user, name: str, args: dict) -> dict | None:
         text = ("Trước khi làm, gọi list_skills để xem công ty có cẩm nang nào liên quan, rồi read_skill đúng cái cần và "
                 "làm theo hướng dẫn đó.")
     else:
-        text = (f"Đọc cẩm nang «{prompt['title']}» bằng công cụ read_skill với name = \"{name}\" (có next_offset thì đọc "
+        text = (f"Đọc cẩm nang **{prompt['title']}** bằng công cụ read_skill với name = \"{name}\" (có next_offset thì đọc "
                 "tiếp các trang), rồi làm theo hướng dẫn đó khi trả lời.")
     if request:
         text += f"\n\nViệc cần làm: {request}"
@@ -446,7 +447,7 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
         got = get_prompt(db, user, name, params.get("arguments") if isinstance(params.get("arguments"), dict) else {})
         if got is None:
             trace.update(status=mcp_log.CallStatus.ERROR, reason="Không có lời nhắc")
-            return _err(rid, -32602, f"Không có lời nhắc «{name}» trong danh sách bạn được dùng.")
+            return _err(rid, -32602, f"Không có lời nhắc **{name}** trong danh sách bạn được dùng.")
         return _ok(rid, got)
     if method == "tools/list":
         return _ok(rid, {"tools": list_tools(db, user, int(key.scope or 0))})
@@ -482,6 +483,8 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
             trace.update(status=mcp_log.CallStatus.DENIED, reason=str(result.get("error") or result.get("reason") or ""))
         elif isinstance(result, dict) and result.get("error"):
             trace.update(status=mcp_log.CallStatus.ERROR, reason=str(result["error"]))
+        elif is_write_tool(name) and not name.startswith(("draft_", "propose_")):   # bản nháp / đề xuất chưa ghi gì
+            trace.update(doc_ref(result))
         text = json.dumps(result, ensure_ascii=False, default=str)
         trace["result_chars"] = len(text)        # ai-CR-228: kết quả quá dài thì ứng dụng AI có thể bỏ qua — nhật ký ghi lại
         out = {"content": [{"type": "text", "text": text}], "isError": bool(isinstance(result, dict) and result.get("error"))}
@@ -490,6 +493,21 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
         return _ok(rid, out)
     trace.update(status=mcp_log.CallStatus.ERROR, reason=f"Không có phương thức '{method}'")
     return _err(rid, -32601, f"Không có phương thức '{method}'")
+
+
+def doc_ref(result) -> dict:
+    """bao-CR-696: chứng từ mà lượt GHI vừa tạo / sửa / xóa / duyệt — mã (`code`) + đường màn nội bộ (`url` / `link`,
+    đã nối gốc ERP thì cắt lại còn đường "/…"). Không có thì rỗng."""
+    if not isinstance(result, dict):
+        return {}
+    code = str(result.get("code") or result.get("doc_code") or "").strip()
+    url = str(result.get("url") or result.get("link") or "").strip()
+    if url and not url.startswith("/"):
+        parts = urlsplit(url)
+        url = parts.path + (f"?{parts.query}" if parts.query else "") if parts.scheme in ("http", "https") else ""
+    if not url.startswith("/") or url.startswith("//"):
+        url = ""
+    return {"doc_code": code[:40], "doc_url": url[:200]} if code or url else {}
 
 
 def _www_authenticate(request: Request, authorization: str | None) -> str:
@@ -609,7 +627,8 @@ async def mcp_endpoint(request: Request, authorization: str | None = Header(None
     mcp_log.save(db, [mcp_log.new_row(key_id=key.id, person=person, client_name=client, method=t.get("method", ""),
                                        tool=t.get("tool", ""), status=t.get("status", mcp_log.CallStatus.OK),
                                        reason=t.get("reason", ""), duration_ms=t["ms"], ip=ip,
-                                       skill_id=t.get("skill_id", 0), result_chars=t.get("result_chars", 0))
+                                       skill_id=t.get("skill_id", 0), result_chars=t.get("result_chars", 0),
+                                       doc_code=t.get("doc_code", ""), doc_url=t.get("doc_url", ""))
                        for t in traces])
     if not out:
         return Response(status_code=202)

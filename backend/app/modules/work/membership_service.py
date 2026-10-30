@@ -71,7 +71,7 @@ def visible_list_ids(db: Session, employee_id: int) -> set[int]:
 
     ⚠️ **Cố ý KHÔNG lọc thêm theo pháp nhân** (sửa 15/09/2026). Bản cũ chốt thêm
     `WorkList.company_id == <pháp nhân người đang xem>`, và chốt đó chặn nhầm
-    người thật chứ không chặn kẻ lạ: dự án «ERP v2» trên dev do người **chưa gắn
+    người thật chứ không chặn kẻ lạ: dự án "ERP v2" trên dev do người **chưa gắn
     pháp nhân** (`company_id = 0`) tạo, mời một người thuộc pháp nhân `16` — dòng
     thành viên có thật, vai trò đúng, nhưng danh sách trả về RỖNG và không chỗ
     nào báo lỗi. Người được mời tưởng mình chưa được gán, người mời tưởng đã xong.
