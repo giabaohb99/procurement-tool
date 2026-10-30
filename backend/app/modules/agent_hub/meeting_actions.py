@@ -384,7 +384,8 @@ def create_items(db: Session, user, meeting: AgentMeeting, chosen: list[dict], p
     esc = telegram.esc
     out: list[str] = []
     link = google_link.get_link(db, meeting.user_id)
-    note = f"Từ biên bản họp **{meeting.title}** ({(meeting.finished_at or datetime.now()):%d/%m/%Y})."
+    #  bao-CR-695: mô tả việc là DỮ LIỆU lưu, màn Dự án hiện chữ trơn — nháy thẳng, không markdown.
+    note = f"Từ biên bản họp \"{meeting.title}\" ({(meeting.finished_at or datetime.now()):%d/%m/%Y})."
     for it in chosen:
         try:
             if it["kind"] == "task" and project is not None:
