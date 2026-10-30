@@ -8,7 +8,7 @@ góc trái trên cùng, và bản in ra khác hẳn tờ giấy họ đang dùng
 Hai cột dựng bằng **bảng không viền** vì trình soạn thảo (tiptap) không có tab
 stop — đó cũng đúng cách Word dựng khối này. Viền tắt bằng `border-*: hidden`
 đặt thẳng vào từng ô: đó là dạng mà `table-cell-background-extension.ts` đọc
-được, nên mở lên là menu «Viền bảng» hiện đúng "Không viền", sửa tiếp được.
+được, nên mở lên là menu "Viền bảng" hiện đúng "Không viền", sửa tiếp được.
 
 ⚠️ Bề ngang cột tính theo trang A4 lề 30/20mm: 794 − 113 − 76 ≈ 605px.
 """
@@ -108,7 +108,7 @@ def dual_signature_block(left_title: str, right_title: str) -> str:
 
 
 def recipients_block(*places: str, archive_note: str = "Lưu: VT, ………") -> str:
-    """Khối «Nơi nhận» — phần không ai được quên ở văn bản gửi ra ngoài."""
+    """Khối "Nơi nhận" — phần không ai được quên ở văn bản gửi ra ngoài."""
     return ("<p><strong>Nơi nhận:</strong></p><ul>"
             + "".join(f"<li>{n};</li>" for n in places)
             + f"<li>{archive_note}</li></ul>")

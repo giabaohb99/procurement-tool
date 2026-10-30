@@ -56,7 +56,7 @@ def parent_records(db: Session, entity: str, entity_id: int):
 
     def _live(parent_model, ids):
         """ai-CR-176: bỏ id của chứng từ cha đã xóa mềm (PKS · ĐMH · YCTT) — không còn id nào
-        thì `ensure_in_scope` trả 404 «Chứng từ của tệp không còn tồn tại», cùng cửa với YCBG."""
+        thì `ensure_in_scope` trả 404 "Chứng từ của tệp không còn tồn tại", cùng cửa với YCBG."""
         cond = not_deleted_cond(parent_model)
         if cond is None or not ids:
             return parent_model, ids
@@ -84,7 +84,7 @@ def parent_records(db: Session, entity: str, entity_id: int):
         return _live(Survey, ids)
 
     if entity == "survey_request":
-        #  ai-CR-170: YCBG xóa mềm → id không còn → 404 «Chứng từ của tệp không còn tồn tại»
+        #  ai-CR-170: YCBG xóa mềm → id không còn → 404 "Chứng từ của tệp không còn tồn tại"
         #  (tệp vẫn nằm trong DB, chỉ không còn cửa mở). `survey_request_line` đi qua
         #  `apply_scope` ở `ensure_in_scope` nên tự lọc, không cần tra lại ở đây.
         from app.modules.survey_request.model import SurveyRequest
@@ -295,7 +295,7 @@ def ensure_in_scope(db: Session, user, entity: str, entity_id: int, mode: str = 
 def reachable_from_scoped_po(db: Session, user, entity: str, entity_id: int) -> bool:
     """Tệp này có nằm trong CHUỖI chứng từ của một đơn mua hàng mình mở được không.
 
-    Đường lùi CHỈ dùng cho lượt tải một tệp. Trang «Chứng từ» liệt kê cả chuỗi
+    Đường lùi CHỈ dùng cho lượt tải một tệp. Trang "Chứng từ" liệt kê cả chuỗi
     PO → PYC → PKS → YCKS rồi cho bấm tải từng dòng; những dòng PYC/PKS/YCKS đó
     thường nằm ngoài phạm vi vai trò của người xem đơn, nên siết thẳng là trang
     liệt kê ra tệp mà bấm vào thì 403.

@@ -13,9 +13,9 @@ MAX_AMOUNT = 10**15 - 1
 
 
 def read_amount_vi(amount) -> str:
-    """Số tiền → chữ, vd 15_000_000 → «Mười lăm triệu đồng chẵn».
+    """Số tiền → chữ, vd 15_000_000 → "Mười lăm triệu đồng chẵn".
 
-    Làm tròn về ĐỒNG (half-up như `Math.round`); ≤ 0 / rỗng / không phải số → «Không đồng».
+    Làm tròn về ĐỒNG (half-up như `Math.round`); ≤ 0 / rỗng / không phải số → "Không đồng".
     Quá `MAX_AMOUNT` → ValueError (không đọc bậy).
     """
     try:
@@ -25,7 +25,7 @@ def read_amount_vi(amount) -> str:
     if not value.is_finite() or value <= 0:
         return "Không đồng"
     #  Chặn TRƯỚC khi `quantize`: số quá lớn làm quantize ném InvalidOperation (độ chính xác 28
-    #  chữ số) — nuốt lỗi đó thành «Không đồng» là im lặng sai trên một bản in tiền.
+    #  chữ số) — nuốt lỗi đó thành "Không đồng" là im lặng sai trên một bản in tiền.
     if value > MAX_AMOUNT:
         raise ValueError("Số tiền vượt giới hạn đọc thành chữ")
     remaining = int(value.quantize(Decimal(1), rounding=ROUND_HALF_UP))
@@ -41,7 +41,7 @@ def read_amount_vi(amount) -> str:
     for index in range(len(groups) - 1, -1, -1):
         if groups[index] == 0:
             continue
-        #  Nhóm không phải nhóm cao nhất thì luôn đọc đủ hàng trăm («một triệu KHÔNG TRĂM năm mươi nghìn»).
+        #  Nhóm không phải nhóm cao nhất thì luôn đọc đủ hàng trăm ("một triệu KHÔNG TRĂM năm mươi nghìn").
         parts.append(_read_triple(groups[index], index < len(groups) - 1) + _SCALES[index])
 
     text = " ".join(" ".join(parts).split())

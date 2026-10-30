@@ -5,12 +5,12 @@ Nhóm chỉ có 1–2 người cho phép đoán số liệu (tuổi, lương) c�
 1) Sơ cấp: nhóm bị che CẢ NHÓM (mọi giá trị kỳ này + kỳ so sánh -> None, cờ `suppressed` để xuất Excel
    ghi ô TRỐNG chứ không phải 0) nếu BẤT KỲ số đếm người nào của nhóm ở MỘT TRONG HAI kỳ bằng 1 hoặc 2.
 2) Thứ cấp (xét RIÊNG từng kỳ, và chỉ ở kỳ mà một nhóm bị che có 1–2 người ở chính kỳ đó): dòng Tổng vẫn
-   hiện nên «Tổng − Σ nhóm hiện» lộ đúng phần bị che. Trong các nhóm bị che còn người ở kỳ đó phải có >= 2
+   hiện nên "Tổng − Σ nhóm hiện" lộ đúng phần bị che. Trong các nhóm bị che còn người ở kỳ đó phải có >= 2
    nhóm với tổng >= `MIN_GROUP` người, nếu không che thêm nhóm hiện nhỏ nhất còn người; lặp tới khi đủ hoặc
    hết nhóm. Nhóm bị che thêm ở một kỳ thì che ở cả hai.
 3) Không cứu được (`unsafe_sides`): hết nhóm để che thêm mà phần bị che vẫn < 2 nhóm hoặc < `MIN_GROUP`
    người (vd. bộ lọc chỉ còn một nhóm, hai nhóm 1 người) — Tổng đã lộ trọn phần đó. Hàm này KHÔNG tự bỏ
-   nhóm; nơi gọi gọi `drop_unsafe_breakdown` để bỏ cả bảng «Xem theo» của lượt trả lời đó.
+   nhóm; nơi gọi gọi `drop_unsafe_breakdown` để bỏ cả bảng "Xem theo" của lượt trả lời đó.
 Ai chịu che (mọi người xem hay chỉ người thiếu quyền) do NƠI GỌI quyết định.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ MIN_GROUP = 3
 _SIDES = ("current", "compare")
 
 CountsOf = Callable[[dict], list[int]]   # các số ĐẾM NGƯỜI nằm sau một tập giá trị của nhóm
-SizeOf = Callable[[dict], int]            # quy mô nhóm (để chọn «nhóm nhỏ nhất kế tiếp»)
+SizeOf = Callable[[dict], int]            # quy mô nhóm (để chọn "nhóm nhỏ nhất kế tiếp")
 
 
 def hide_group(g: dict) -> None:
@@ -43,7 +43,7 @@ class SmallGroupResult:
 
 
 def drop_unsafe_breakdown(data: dict, dim_key: str | None, dim_label: str) -> None:
-    """Bỏ hẳn bảng «Xem theo» (và danh sách top cùng chiều) của lượt trả lời + ghi chú lý do."""
+    """Bỏ hẳn bảng "Xem theo" (và danh sách top cùng chiều) của lượt trả lời + ghi chú lý do."""
     data["groups"] = []
     if dim_key and isinstance(data.get("breakdowns"), dict) and dim_key in data["breakdowns"]:
         data["breakdowns"][dim_key] = []

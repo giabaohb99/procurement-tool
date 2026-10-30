@@ -92,8 +92,8 @@ def key_exists(key: str) -> bool:
     """Trên R2 có sẵn đối tượng này chưa — hỏi bằng `head_object`, không tải về.
 
     Chưa nối R2 thì trả `False` thẳng, KHÔNG nhìn xuống `uploads/`: nơi gọi duy
-    nhất hôm nay là việc dọn nhật ký (bao-CR-448), và với nó «bản sao ở máy
-    này» không phải bản sao — xem `is_remote_storage_ready`.
+    nhất hôm nay là việc dọn nhật ký (bao-CR-448), và với nó "bản sao ở máy
+    này" không phải bản sao — xem `is_remote_storage_ready`.
     """
     s3 = _client()
     if not s3:

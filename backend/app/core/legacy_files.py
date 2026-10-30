@@ -159,7 +159,7 @@ def _fetch_datxe_bytes(stored_file) -> bytes:
 def sign_request(path: str, body: str = "") -> dict[str, str]:
     """Chữ ký máy-gọi-máy cho một lời gọi sang app cũ (mục 6 của bản mô tả).
 
-    Ký lên `«thời điểm».«đường».«thân»` bằng khóa chung. Thời điểm nằm TRONG
+    Ký lên `"thời điểm"."đường"."thân"` bằng khóa chung. Thời điểm nằm TRONG
     phần được ký chứ không chỉ đi kèm — không thì kẻ bắt được gói cũ chỉ cần sửa
     số thời điểm là dùng lại được, mà luật "lệch quá 5 phút thì từ chối" của bên
     nhận lại chính là thứ họ muốn lách.
@@ -175,7 +175,7 @@ def request_legacy_file_url(external_id: str) -> str:
 
     ⚠️ Đường `GET /api/v1/sync/files/{id}/url` BÊN APP CŨ CHƯA TỒN TẠI (nó nằm
     trong phần việc của app cũ, xem §10.1). Chừng nào chưa có thì lời gọi này
-    trả 404/503 và người dùng nhận đúng câu «không lấy được tệp» ở trên — chứ
+    trả 404/503 và người dùng nhận đúng câu "không lấy được tệp" ở trên — chứ
     không phải một lỗi lạ. Tên hai đầu đề chữ ký ở đây là bản đề xuất của phía
     ERP; khi dựng đường bên kia phải khớp đúng hai tên này.
     """

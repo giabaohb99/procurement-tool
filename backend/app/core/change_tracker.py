@@ -73,8 +73,8 @@ NOISE_COLUMNS = frozenset({"updated_at"})
 #
 #  Hai bảng con của hồ sơ nhân sự (người báo tin, hộ gia đình) cũng theo luật này
 #  (HRM §7.10, 02/10/2026): cả hai thuộc TRỌN nhóm nhạy cảm — tên, số điện thoại,
-#  địa chỉ, ngày sinh, số CCCD của người thân. Chỉ giữ cột cho biết «thêm/bớt một
-#  người, quan hệ gì», không giữ người đó là ai.
+#  địa chỉ, ngày sinh, số CCCD của người thân. Chỉ giữ cột cho biết "thêm/bớt một
+#  người, quan hệ gì", không giữ người đó là ai.
 _PEOPLE_ROW_SAFE_COLUMNS = frozenset({
     "id", "employee_id", "relation", "gender", "sort_order", "created_by", "updated_by",
 })

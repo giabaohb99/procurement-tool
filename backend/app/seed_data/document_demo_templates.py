@@ -34,7 +34,7 @@ def _meeting_minutes() -> str:
     """BIÊN BẢN HỌP — dựng riêng, không dùng `_mau`.
 
     Khác mọi mẫu khác ở hai chỗ và cả hai đều đúng với biên bản ngoài đời:
-    **không có khối «Nơi nhận»** (biên bản không gửi đi đâu, nó là bản ghi của
+    **không có khối "Nơi nhận"** (biên bản không gửi đi đâu, nó là bản ghi của
     cuộc họp), và **ký hai bên** — thư ký ghi, chủ trì xác nhận. Một chữ ký thì
     biên bản không có giá trị đối chiếu.
     """

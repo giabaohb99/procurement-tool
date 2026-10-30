@@ -1,7 +1,7 @@
-"""BẢY TÀI KHOẢN TEST của menu «Đổi tài khoản nhanh» (24/08/2026).
+"""BẢY TÀI KHOẢN TEST của menu "Đổi tài khoản nhanh" (24/08/2026).
 
 Menu DEV ở `frontend-v2/src/app/layouts/demo-accounts.ts` bày một nhóm
-**«Tài khoản Test (Data)»** gồm bảy mã: TESTREQ · DEMONV · DEMOTP · DEMOQL ·
+**"Tài khoản Test (Data)"** gồm bảy mã: TESTREQ · DEMONV · DEMOTP · DEMOQL ·
 DEMOAD · DEMOTP2 · DEMOTP3. Trên CSDL local **không có mã nào trong bảy mã đó** —
 `seed.py::seed_demo_accounts` chỉ *đồng bộ mật khẩu* cho chúng nếu hồ sơ nhân sự
 đã tồn tại (dấu vết của một lần nạp dữ liệu thật), còn máy dựng mới thì bấm vào
@@ -96,7 +96,7 @@ def seed_test_accounts(db, company_id: int = COMPANY_ME_ID) -> int:
     for code, full_name, job_title, role_code, department_name, _note in ACCOUNTS:
         role = _role(db, role_code)
         if role is None:
-            print(f"  Bỏ qua {code}: chưa có vai trò «{role_code}».")
+            print(f"  Bỏ qua {code}: chưa có vai trò \"{role_code}\".")
             continue
 
         emp = db.query(Employee).filter(Employee.code == code).first()
@@ -138,7 +138,7 @@ def seed_test_accounts(db, company_id: int = COMPANY_ME_ID) -> int:
         for extra_code in EXTRA_ROLES.get(code, []):
             extra_role = _role(db, extra_code)
             if extra_role is None:
-                print(f"  {code}: chưa có vai trò «{extra_code}», bỏ phần đó.")
+                print(f"  {code}: chưa có vai trò \"{extra_code}\", bỏ phần đó.")
                 continue
             extra_role_ids.add(extra_role.id)
             db.add(UserRole(user_id=user.id, role_id=extra_role.id, created_by=1, updated_by=1))

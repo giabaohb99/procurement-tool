@@ -1,25 +1,25 @@
 """HAI BỘ TÀI KHOẢN TEST cho "Phòng ban tự mua hàng" (bao-CR-414, 17/09/2026).
 
-Menu DEV «Đổi tài khoản nhanh» (`frontend-v2/src/app/layouts/demo-accounts.ts`) có
-thêm hai nhóm **«CR-414 · Nhà máy»** và **«CR-414 · Thu mua»**. Tệp này tạo đúng
+Menu DEV "Đổi tài khoản nhanh" (`frontend-v2/src/app/layouts/demo-accounts.ts`) có
+thêm hai nhóm **"CR-414 · Nhà máy"** và **"CR-414 · Thu mua"**. Tệp này tạo đúng
 các tài khoản đó, dựng theo ba bộ phạm vi đã chốt:
 
-  · Bộ NHÀ MÁY (phòng «Dego Organic» tự mua hàng):
+  · Bộ NHÀ MÁY (phòng "Dego Organic" tự mua hàng):
       NM_YC  — nhân sự lập phiếu (`employee`, phạm vi own);
       NM_TP  — trưởng phòng duyệt bước 1 (`dept_head`, phạm vi dept);
       NM_MUA — quản lý thu mua CỦA PHÒNG (`pur_dept_manager`, phạm vi `dept_proc`):
                chỉ thấy phiếu đã duyệt của phòng mình + phiếu được nhờ cho phòng mình;
       NM_NV  — nhân viên thu mua của phòng (`pur_staff`, phạm vi assigned).
-  · Bộ THU MUA CHUNG (phòng «Sản xuất -Thu mua»):
+  · Bộ THU MUA CHUNG (phòng "Sản xuất -Thu mua"):
       TM_FULL — quản lý thu mua toàn quyền (`pur_manager`, phạm vi all) — không đổi gì;
       TM_QL   — quản lý thu mua (`pur_manager`, phạm vi all, đủ quyền duyệt/sửa/hủy) + ô
-                «Loại trừ phòng ban» = Dego Organic: KHÔNG thấy phiếu nhà máy, TRỪ phiếu
+                "Loại trừ phòng ban" = Dego Organic: KHÔNG thấy phiếu nhà máy, TRỪ phiếu
                 nhà máy nhờ phòng mình. Ô loại trừ áp cả cho phạm vi `all` (điều kiện loại
                 trừ nằm ngoài nhánh vai trò trong `core/scoping.scope_condition`);
       TM_AD   — admin thu mua (`pur_admin`, phạm vi proc) + cùng ô loại trừ như TM_QL;
       TM_NV   — nhân viên thu mua chung (`pur_staff`).
-  · Cặp thường để đối chiếu «phiếu phòng khác vẫn y như cũ»:
-      MKT_YC / MKT_TP ở phòng «Hành chính» (local không có phòng Marketing).
+  · Cặp thường để đối chiếu "phiếu phòng khác vẫn y như cũ":
+      MKT_YC / MKT_TP ở phòng "Hành chính" (local không có phòng Marketing).
 
 Mật khẩu = mã nhân viên, đúng quy ước của `demo-accounts.ts`.
 
@@ -58,7 +58,7 @@ ACCOUNTS = [
     ("MKT_TP", "Trưởng phòng thường (CR-414)", "Trưởng phòng", "dept_head", OTHER_DEPT),
 ]
 
-#  Ô «Loại trừ phòng ban» gắn thêm cho tài khoản: mã → danh sách tên phòng bị loại trừ.
+#  Ô "Loại trừ phòng ban" gắn thêm cho tài khoản: mã → danh sách tên phòng bị loại trừ.
 EXCLUDED_DEPARTMENTS = {
     "TM_QL": [FACTORY_DEPT],
     "TM_AD": [FACTORY_DEPT],
@@ -82,11 +82,11 @@ def seed_cr414_accounts(db, company_id: int = COMPANY_ME_ID) -> int:
     for code, full_name, job_title, role_code, department_name in ACCOUNTS:
         role = _find_role(db, role_code)
         if role is None:
-            print(f"  Bỏ qua {code}: chưa có vai trò «{role_code}».")
+            print(f"  Bỏ qua {code}: chưa có vai trò \"{role_code}\".")
             continue
         dept_id = _find_department_id(db, department_name)
         if dept_id is None:
-            print(f"  Bỏ qua {code}: chưa có phòng «{department_name}».")
+            print(f"  Bỏ qua {code}: chưa có phòng \"{department_name}\".")
             continue
 
         emp = db.query(Employee).filter(Employee.code == code).first()
@@ -123,13 +123,13 @@ def seed_cr414_accounts(db, company_id: int = COMPANY_ME_ID) -> int:
         db.add(UserRole(user_id=user.id, role_id=role.id, created_by=1, updated_by=1))
 
         db.query(UserScope).filter(UserScope.user_id == user.id).delete(synchronize_session=False)
-        # bao-CR-434: KHÔNG khai «Chỉ trong công ty» cho bộ mẫu nữa. Pháp nhân trên hồ sơ chỉ
+        # bao-CR-434: KHÔNG khai "Chỉ trong công ty" cho bộ mẫu nữa. Pháp nhân trên hồ sơ chỉ
         # là chuyện pháp lý, phòng nhà máy mua cho nhiều pháp nhân — dòng include cũ che mất
         # đúng ca đó, nên trên dev chưa ai thấy P1-1 cắt phiếu pháp nhân khác.
         for excluded_name in EXCLUDED_DEPARTMENTS.get(code, []):
             excluded_id = _find_department_id(db, excluded_name)
             if excluded_id is None:
-                print(f"  {code}: chưa có phòng «{excluded_name}» để loại trừ, bỏ phần đó.")
+                print(f"  {code}: chưa có phòng \"{excluded_name}\" để loại trừ, bỏ phần đó.")
                 continue
             db.add(UserScope(user_id=user.id, role_id=role.id, entity="", dim="department",
                              value=str(excluded_id), is_exclude=True, created_by=1, updated_by=1))

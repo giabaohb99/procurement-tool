@@ -75,7 +75,7 @@ LABOR_CONTRACT_STATUS_SET = register(CodeSet("labor_contract_status", "Trạng t
 
 
 #  duoc-CR-652: trạng thái LƯU mà chính người lao động được xem HĐ của mình (và bản lưu trữ ở Văn bản).
-#  «Hết hạn» là SUY RA từ SIGNED nên đã nằm trong SIGNED; Nháp / Đã hủy KHÔNG hiện (còn soạn, lương chưa chốt).
+#  "Hết hạn" là SUY RA từ SIGNED nên đã nằm trong SIGNED; Nháp / Đã hủy KHÔNG hiện (còn soạn, lương chưa chốt).
 SELF_VIEW_STATUSES: tuple[int, ...] = (int(LaborContractStatus.SIGNED), int(LaborContractStatus.TERMINATED))
 
 

@@ -3,7 +3,7 @@
 Màn *Phân quyền tài khoản* là cửa duy nhất trong hệ mà thao tác của người dùng
 quyết định chính quyền hạn của người dùng. Trước 25/08/2026 nó không có chốt nào,
 nên **bất kỳ ai có `user.write` đều tự phong mình làm quản trị hệ thống trong một
-lần bấm**: mở trang của chính mình, tick «Quản trị hệ thống», bấm *Lưu vai trò*.
+lần bấm**: mở trang của chính mình, tick "Quản trị hệ thống", bấm *Lưu vai trò*.
 Dựng lại được qua API — sau cú bấm đó `/api/auth/me` trả hồ sơ quyền đủ **42/42**
 entity. Cùng lỗ đó còn ba lối vào khác: gán admin cho người khác rồi nhờ họ gán
 ngược lại · tick full ma trận của chính vai trò mình đang giữ (`role.write`) ·
@@ -90,7 +90,7 @@ def is_system_admin(db: Session, user_id: int) -> bool:
 
 
 def block_edit_own_permissions(user_id: int, actor, db: Session | None = None) -> None:
-    """L1. Gọi ở mọi cửa ghi phân quyền có tham số «tài khoản đích».
+    """L1. Gọi ở mọi cửa ghi phân quyền có tham số "tài khoản đích".
 
     Truyền `db` thì Quản trị hệ thống được miễn (bao-CR-523). Không truyền thì
     giữ L1 cứng — quên truyền là CHẶN THỪA chứ không mở lỗ.
@@ -117,7 +117,7 @@ def count_active_admins(db: Session, exclude_user_id: int | None = None) -> int:
 
 
 def block_last_admin_loss(db: Session, user_id: int) -> None:
-    """Chốt «còn ít nhất một quản trị»: gọi TRƯỚC khi tài khoản #user_id thôi là
+    """Chốt "còn ít nhất một quản trị": gọi TRƯỚC khi tài khoản #user_id thôi là
     quản trị đang hoạt động (bỏ vai trò, khóa, xóa). Người đó không giữ `admin`
     thì không có gì để mất, cho qua."""
     if not is_system_admin(db, user_id):
@@ -138,7 +138,7 @@ def block_admin_role_removal(db: Session, user_id: int, actor, new_role_ids,
                              confirm_self_removal: bool = False) -> None:
     """Hai chốt khi một lượt gán vai trò bỏ `admin` khỏi tài khoản #user_id.
 
-    Xếp «còn ít nhất một quản trị» (400) TRƯỚC «tự bỏ phải xác nhận» (409): hỏi
+    Xếp "còn ít nhất một quản trị" (400) TRƯỚC "tự bỏ phải xác nhận" (409): hỏi
     người ta xác nhận một việc rồi đằng nào cũng từ chối là trêu người dùng.
     """
     if not removes_system_admin(db, user_id, new_role_ids):
@@ -201,7 +201,7 @@ def block_privilege_escalation(db: Session, actor, to_grant: set[tuple[str, str]
     #  Kể tên vài cái đầu thôi: người khai quyền cần biết vướng ở đâu, không cần
     #  một danh sách 300 dòng.
     names = sorted({ENTITY_LABELS.get(entity, entity) for entity, _ in excess})
-    head = ", ".join(f"«{item}»" for item in names[:4])
+    head = ", ".join(f"\"{item}\"" for item in names[:4])
     suffix = f" và {len(names) - 4} mục nữa" if len(names) > 4 else ""
     raise HTTPException(
         403,
@@ -211,12 +211,12 @@ def block_privilege_escalation(db: Session, actor, to_grant: set[tuple[str, str]
 
 
 def block_role_escalation(db: Session, actor, role_ids: list[int]) -> None:
-    """Gộp L2 cho cửa «gán vai trò cho tài khoản»."""
+    """Gộp L2 cho cửa "gán vai trò cho tài khoản"."""
     block_privilege_escalation(db, actor, permissions_of_roles(db, role_ids))
 
 
 def block_edit_own_role(db: Session, role_id: int, actor) -> None:
-    """L1 cho cửa «sửa ma trận quyền của một vai trò».
+    """L1 cho cửa "sửa ma trận quyền của một vai trò".
 
     Cửa này không đụng tới tài khoản nào nên nhìn qua tưởng vô hại, nhưng tick
     thêm ô vào vai trò mình đang giữ thì quyền của mình lên ngay ở request sau —

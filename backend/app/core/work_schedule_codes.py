@@ -8,7 +8,7 @@ Thuần stdlib (cùng lý do `hr_work_history_codes.py`): `code_sets.py` phải 
 ở máy không cài SQLAlchemy để chạy `scripts/gen_status_ts.py`.
 
 Luật bất biến: số đã cấp GIỮ NGUYÊN mãi mãi, không tái dùng; `0` không hợp lệ
-(quy ước «0 = chưa khai»); loại mới cấp số TIẾP THEO.
+(quy ước "0 = chưa khai"); loại mới cấp số TIẾP THEO.
 """
 from enum import IntEnum
 

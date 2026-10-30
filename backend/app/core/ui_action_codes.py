@@ -1,8 +1,8 @@
-"""Bộ mã «BẤM CHỨC NĂNG» (duoc-CR-654, D0a) — số đã cấp KHÔNG ĐỔI, KHÔNG TÁI DÙNG.
+"""Bộ mã "BẤM CHỨC NĂNG" (duoc-CR-654, D0a) — số đã cấp KHÔNG ĐỔI, KHÔNG TÁI DÙNG.
 
 R2/QĐ-11: cột `tab_ui_event.action_key` là `SMALLINT` + `IntEnum`; tiếng Việt chỉ ở tầng hiển thị.
 Cấp số theo KHỐI để thêm mã không phải chèn giữa. Khối 300–319 (Duyệt) để trống: cấp khi có duyệt hàng
-loạt thật — mã có trong danh mục mà không gắn sẽ làm báo cáo hiện «không ai dùng» sai.
+loạt thật — mã có trong danh mục mà không gắn sẽ làm báo cáo hiện "không ai dùng" sai.
 
 Thuần stdlib (cùng `usage_codes.py`): `code_sets.py` phải nạp được khi chạy `scripts/gen_status_ts.py`.
 """

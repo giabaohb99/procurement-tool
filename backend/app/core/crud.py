@@ -18,7 +18,7 @@ def remove_or_mark_deleted(db: Session, obj, user_id: int) -> bool:
 
     Model gắn `SoftDeleteMixin` (có cột `is_deleted`, vd Hồ sơ) → đánh cờ xóa mềm + mốc + người;
     model không có cột đó → `db.delete` như cũ. Trả `True` khi là xóa mềm. Rẽ ở đây MỘT lần cho cả
-    nút xóa lẫn dòng CSV hành động «xóa», để không danh mục nào phải viết tay lại bộ CRUD chỉ vì
+    nút xóa lẫn dòng CSV hành động "xóa", để không danh mục nào phải viết tay lại bộ CRUD chỉ vì
     muốn xóa mềm.
     """
     if getattr(type(obj), "is_deleted", None) is not None:
@@ -67,7 +67,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
     cả bộ CRUD.
 
     **Xóa mềm (ai-CR-177).** Model gắn `SoftDeleteMixin` thì `delete_item` và dòng CSV
-    hành động «xóa» chỉ đánh cờ `is_deleted` (xem `remove_or_mark_deleted`); `get_scoped` /
+    hành động "xóa" chỉ đánh cờ `is_deleted` (xem `remove_or_mark_deleted`); `get_scoped` /
     `apply_scope` tự giấu bản ghi đã xóa nên xóa lần hai là 404. Model không có cột đó vẫn
     xóa cứng như trước. Chốt trùng `unique_field` CỐ Ý đếm cả hàng đã xóa — mã không tái dùng.
 
@@ -182,7 +182,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
 
     #  ⚠️ XUẤT và NHẬP tách nhau được, và có danh mục CHỈ xuất được.
     #
-    #  `csv_headers` là bảng «cột nào bày ra tệp», nên nó hay chứa trường SUY RA
+    #  `csv_headers` là bảng "cột nào bày ra tệp", nên nó hay chứa trường SUY RA
     #  — nhãn tình trạng, tên người phụ trách đọc qua quan hệ… Đường NHẬP thì
     #  `setattr` thẳng từng khóa của bảng đó lên bản ghi, nên gặp một `@property`
     #  không có setter là **500**. Nó cũng KHÔNG gọi `before_create`/
@@ -190,7 +190,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
     #  biến, chặn loại đã ngừng dùng) bị đi vòng qua hết.
     #
     #  Phân hệ Hồ sơ trúng cả hai (17/09/2026): nhập một dòng CSV bất kỳ đều ra
-    #  «mã sự cố», và nếu lọt thì đẻ ra hồ sơ `dossier_type_id = 0` — thứ mà
+    #  "mã sự cố", và nếu lọt thì đẻ ra hồ sơ `dossier_type_id = 0` — thứ mà
     #  schema cấm thẳng. Nên nó khai `csv_import=False`.
     if csv_headers and csv_import:
         @router.post("/import/csv")

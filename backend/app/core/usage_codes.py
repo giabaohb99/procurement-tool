@@ -6,7 +6,7 @@ Dùng bởi `tab_ui_event.event_type/form_key`, `tab_user_usage_snapshot.cohort_
 
 Luật bất biến (cùng `report_keys.py`): số đã cấp giữ nguyên mãi mãi, không gán lại cho
 mục khác; mục bỏ thì để trống số; mục mới cấp số TIẾP THEO. `0` không hợp lệ ở bộ nào
-trừ `UiForm` (0 = «không phải form», ghi rõ ở schema telemetry).
+trừ `UiForm` (0 = "không phải form", ghi rõ ở schema telemetry).
 
 Thuần stdlib (không import SQLAlchemy) vì `code_sets.py` phải nạp được khi chạy
 `scripts/gen_status_ts.py` ở máy không cài SQLAlchemy.

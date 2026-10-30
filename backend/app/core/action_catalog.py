@@ -9,7 +9,7 @@ thứ đi kèm mỗi mã thì nằm ở hai tệp khác nhau, chẳng cái nào 
 
 Thêm một lời gọi `record(...)` với mã mới là hợp lệ về cú pháp, chạy được, và
 lặng lẽ sinh ra dòng nhật ký **không nhãn** (người đọc thấy mã Anh trần giữa
-câu tiếng Việt: *«Dego Admin — assign: Phân bổ NSTM»*) và **không nhóm**
+câu tiếng Việt: *"Dego Admin — assign: Phân bổ NSTM"*) và **không nhóm**
 (`action_group = 0`, tức dòng đó biến mất khỏi mọi bộ lọc theo nhóm). Đo trên
 dữ liệu thật ngày 05/09/2026: **971 dòng** mất nhãn, 36 dòng `closed` mất nhóm.
 Không ai làm sai cả — cơ chế "nhớ cập nhật thêm hai bảng nữa" là thứ sai.
@@ -257,7 +257,7 @@ _AUTH = (
     #  để so. Giữ trong bảng chứ không xóa: P3 thêm lời gọi là chạy ngay.
     ActionCode("refresh_ip_changed", "Gia hạn phiên từ IP khác", ACTION_GROUP_AUTH),
     #  bao-CR-395 / CR-312 P3b — màn Phiên đăng nhập. `session_revoked` = cắt MỘT
-    #  thiết bị (admin đá, hoặc chính chủ đá từ tab «Thiết bị của tôi»);
+    #  thiết bị (admin đá, hoặc chính chủ đá từ tab "Thiết bị của tôi");
     #  `logout_all` = cắt MỌI thiết bị của một người (bắt đăng nhập lại / đăng
     #  xuất mọi thiết bị khác). Cả hai ghi lên `entity=auth`, `entity_id=` người
     #  BỊ cắt, `created_by=` người bấm — nên tra lịch sử một người là ra đủ.
@@ -349,11 +349,11 @@ def _build(*groups: tuple[ActionCode, ...]) -> dict[str, ActionCode]:
             if not (code.label or "").strip():
                 #  Nhãn rỗng còn tệ hơn mã trần: dòng dấu vết mất luôn phần
                 #  "làm gì", người đọc không có gì để suy ra.
-                raise ValueError(f"mã hành động «{code.value}» thiếu nhãn tiếng Việt")
+                raise ValueError(f"mã hành động \"{code.value}\" thiếu nhãn tiếng Việt")
             if code.group not in ACTION_GROUP_LABELS:
-                raise ValueError(f"mã hành động «{code.value}» khai nhóm lạ: {code.group}")
+                raise ValueError(f"mã hành động \"{code.value}\" khai nhóm lạ: {code.group}")
             if code.value in table:
-                raise ValueError(f"mã hành động «{code.value}» khai hai lần")
+                raise ValueError(f"mã hành động \"{code.value}\" khai hai lần")
             table[code.value] = code
     return table
 
@@ -377,7 +377,7 @@ def _warn_once(action: str) -> None:
     _warned.add(action)
     LOGGER.warning(
         "Mã hành động chưa khai trong ACTION_CATALOG: %r. Dòng nhật ký vẫn được "
-        "ghi nhưng người đọc thấy mã Anh trần và nó rơi vào nhóm «Không rõ». "
+        "ghi nhưng người đọc thấy mã Anh trần và nó rơi vào nhóm \"Không rõ\". "
         "Khai thêm một dòng ở app/core/action_catalog.py.", action)
 
 
@@ -402,7 +402,7 @@ def label_of_action(action: str) -> str:
         return code.label
     for family in ACTION_FAMILIES:
         if action.startswith(family.prefix) and len(action) > len(family.prefix):
-            return f"{family.label_prefix} «{action[len(family.prefix):]}»"
+            return f"{family.label_prefix} \"{action[len(family.prefix):]}\""
     if action:
         _warn_once(action)
     return action

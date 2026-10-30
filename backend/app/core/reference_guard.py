@@ -23,7 +23,7 @@ class Reference:
 
     model: type
     column: str
-    label: str                                  # tiếng Việt, số nhiều: «đơn mua hàng», «nhân sự»
+    label: str                                  # tiếng Việt, số nhiều: "đơn mua hàng", "nhân sự"
     key_attr: str = "id"                        # thuộc tính của dòng danh mục dùng làm khóa (id / code)
     extra: Callable[[object], list] | None = None   # (model) -> [điều kiện SQLAlchemy thêm], vd party_type == "supplier"
 
@@ -71,8 +71,8 @@ def deletable_error(entity: str, obj, refs: list[tuple[str, int]]) -> str:
     name = name or getattr(obj, "id", "")
     total = sum(n for _, n in refs)
     detail = ", ".join(f"{n} {lbl}" for lbl, n in refs)
-    return (f"{label} «{name}» đang được dùng ở {total} chỗ ({detail}), chỉ có thể ngưng dùng "
-            f"(bỏ tick «Đang dùng») chứ không xóa được.")
+    return (f"{label} \"{name}\" đang được dùng ở {total} chỗ ({detail}), chỉ có thể ngưng dùng "
+            f"(bỏ tick \"Đang dùng\") chứ không xóa được.")
 
 
 def ensure_deletable(db: Session, entity: str, obj) -> None:
