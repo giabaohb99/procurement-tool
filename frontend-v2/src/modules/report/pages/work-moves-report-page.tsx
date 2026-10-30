@@ -22,8 +22,8 @@ const CONFIG: ReportPageConfig = {
 
 /**
  * Điều chuyển & bổ nhiệm (D1, duoc-CR-688, khóa 24). Hàng = dòng quá trình công tác có
- * «Từ ngày» trong kỳ (đã áp hay chưa áp đều tính — xem `notes`). «Xem theo Phòng đi → Phòng
- * đến» cho thấy dòng người chảy giữa các phòng.
+ * "Từ ngày" trong kỳ (đã áp hay chưa áp đều tính — xem `notes`). "Xem theo Phòng đi → Phòng
+ * đến" cho thấy dòng người chảy giữa các phòng.
  */
 export function WorkMovesReportPage() {
   return <ReportAnalyticsPage config={CONFIG} />

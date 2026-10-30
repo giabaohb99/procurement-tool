@@ -33,9 +33,9 @@ interface LoginSessionUserCardProps {
 }
 
 /**
- * Thẻ PHIÊN ĐĂNG NHẬP của một nhân sự (bao-CR-395) — đặt ở tab «Tài khoản»
+ * Thẻ PHIÊN ĐĂNG NHẬP của một nhân sự (bao-CR-395) — đặt ở tab "Tài khoản"
  * của hồ sơ nhân sự. Gác bằng `login_session.read`; nút cắt phiên đòi
- * `login_session.delete`; nút «Khóa tài khoản + đăng xuất mọi thiết bị» đi
+ * `login_session.delete`; nút "Khóa tài khoản + đăng xuất mọi thiết bị" đi
  * qua `PUT /api/users/{id}/active` nên đòi `user.write` (backend tự thu hồi
  * phiên với lý do ACCOUNT_LOCKED khi khóa).
  *
@@ -170,7 +170,7 @@ export function LoginSessionUserCard({
           )}
         </section>
 
-        {/* bao-CR-400 — cùng một bản vẽ với tab «Lịch sử đăng nhập» ở /me. */}
+        {/* bao-CR-400 — cùng một bản vẽ với tab "Lịch sử đăng nhập" ở /me. */}
         <LoginHistoryList
           data={history.data}
           isLoading={history.isLoading}

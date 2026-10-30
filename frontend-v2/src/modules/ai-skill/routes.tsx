@@ -13,7 +13,7 @@ const SKILLS_PATH = `${appRoutes.aiSkill.root}/skills`
  *
  * Thẻ phân hệ hiện khi người dùng đọc được `ai_skill` HOẶC `ai_mcp_key_admin` (Agent 1 chốt) — không khai `entity` ở
  * cấp phân hệ vì nó chỉ nhận một khóa; `canOpenModule` đếm mục menu còn hiện, nên mỗi mục tự gác khóa của mình là đủ.
- * Màn «AI của tôi» của từng người nằm ở Trang cá nhân (`/me?tab=ai-connect`), ai cũng có — không ở đây.
+ * Màn "AI của tôi" của từng người nằm ở Trang cá nhân (`/me?tab=ai-connect`), ai cũng có — không ở đây.
  */
 export const aiSkillModule: ErpModule = {
   id: 'ai-skill',
@@ -68,7 +68,7 @@ export const aiSkillModule: ErpModule = {
       icon: ScrollText,
       entities: ['ai_skill', 'ai_mcp_key_admin'],
     },
-    //  Mục «Giới thiệu» (`/ai-skill/intro`) TẠM ẨN ngày 26/10/2026 để làm lại; trang `pages/ai-skill-intro-page.tsx` giữ
+    //  Mục "Giới thiệu" (`/ai-skill/intro`) TẠM ẨN ngày 26/10/2026 để làm lại; trang `pages/ai-skill-intro-page.tsx` giữ
     //  nguyên. Bật lại: thêm lại mục `{ label: 'Giới thiệu', path: appRoutes.aiSkill.intro, icon: PlayCircle, entities:
     //  ['ai_skill', 'ai_mcp_key_admin'] }` ở đây và trả route bên dưới về `lazy` nạp `AiSkillIntroPage`.
     {

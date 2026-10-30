@@ -27,7 +27,7 @@ import {
 import { useCreateSkillSet, useUpdateSkillSet } from '../hooks/use-ai-skill'
 import type { SkillSet } from '../types/ai-skill'
 
-/** Bộ không gắn phòng chủ quản lưu `0` ở backend — đó là một lựa chọn thật, không phải «chưa chọn». */
+/** Bộ không gắn phòng chủ quản lưu `0` ở backend — đó là một lựa chọn thật, không phải "chưa chọn". */
 const NO_DEPARTMENT = '0'
 
 interface SkillSetFormDialogProps {

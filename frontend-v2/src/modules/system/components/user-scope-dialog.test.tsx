@@ -189,7 +189,7 @@ function build(props: Partial<Parameters<typeof UserScopeDialog>[0]> = {}) {
 }
 
 /**
- * Mở mục «Ngoại lệ» — MẶC ĐỊNH ĐÓNG từ 19/09/2026 (đại ca chốt gộp hai tầng).
+ * Mở mục "Ngoại lệ" — MẶC ĐỊNH ĐÓNG từ 19/09/2026 (đại ca chốt gộp hai tầng).
  *
  * `Collapsible` của Radix HỦY MOUNT phần thân khi đóng, nên mọi chip công ty /
  * phòng ban / nhân sự đều không có trong DOM cho tới khi bấm nút này. Bài kiểm
@@ -352,7 +352,7 @@ describe('A4 — đổi vai trò thì nạp lại phạm vi của vai trò đó'
     )
     //  Giữ nguyên `MemoryRouter` ở gốc để React GIỮ đúng một instance hộp thoại —
     //  đổi kiểu thẻ gốc là remount, và remount thì state nào cũng sạch, bài kiểm
-    //  thành xanh giả. Mục «Ngoại lệ» vì thế vẫn đang mở.
+    //  thành xanh giả. Mục "Ngoại lệ" vì thế vẫn đang mở.
 
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'DGF' })).toHaveAttribute('aria-pressed', 'true'),
@@ -643,7 +643,7 @@ describe('A11 — MỘT khối trả lời "tài khoản này thấy gì"', () =
     )
   })
 
-  it('bậc toàn «Tất cả» thì nói thẳng ô xem thêm phòng ban không đổi được gì', async () => {
+  it('bậc toàn "Tất cả" thì nói thẳng ô xem thêm phòng ban không đổi được gì', async () => {
     //  `scope_condition` bỏ qua phần cộng thêm khi bậc vai trò đã thấy hết. Không
     //  nói ra thì người khai tick cả buổi mà không có gì thay đổi, rồi kết luận
     //  là hệ hỏng.
@@ -653,7 +653,7 @@ describe('A11 — MỘT khối trả lời "tài khoản này thấy gì"', () =
 
     await openExceptions(user)
     await waitFor(() =>
-      expect(screen.getByText(/đã ở bậc «Tất cả» nên cộng thêm phòng ban/)).toBeInTheDocument(),
+      expect(screen.getByText(/đã ở bậc "Tất cả" nên cộng thêm phòng ban/)).toBeInTheDocument(),
     )
   })
 })
@@ -680,7 +680,7 @@ describe('A12 — NGOẠI LỆ gấp lại, nhưng không được giấu', () =
   })
 
   it('gọi ô phòng ban là CỘNG THÊM, đúng chiều của backend', async () => {
-    //  Đây là chỗ hiểu nhầm đắt nhất của màn này: tên cũ «Phòng ban được xem» đọc
+    //  Đây là chỗ hiểu nhầm đắt nhất của màn này: tên cũ "Phòng ban được xem" đọc
     //  ra thành "chỉ thấy phòng này", trong khi `scope_condition` ghép nó bằng
     //  `or_` — tức là MỞ RỘNG. Khai nhầm chiều thì tài khoản thấy NHIỀU hơn ý
     //  người khai, và không có triệu chứng nào.

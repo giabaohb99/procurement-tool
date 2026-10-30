@@ -94,7 +94,7 @@ export function useDeleteOAuthClient() {
           : 'Đã xóa ứng dụng (không có kết nối nào đang sống).',
       )
       void queryClient.invalidateQueries({ queryKey: queryKeys.aiSkill.oauthClients() })
-      //  Kết nối OAuth cũng là một dòng khóa ở màn Khóa nhân sự (ai-CR-218) — làm tươi để trạng thái «Đã thu hồi» hiện ngay.
+      //  Kết nối OAuth cũng là một dòng khóa ở màn Khóa nhân sự (ai-CR-218) — làm tươi để trạng thái "Đã thu hồi" hiện ngay.
       void queryClient.invalidateQueries({ queryKey: queryKeys.aiSkill.keyAdminKeysAll() })
     },
   })

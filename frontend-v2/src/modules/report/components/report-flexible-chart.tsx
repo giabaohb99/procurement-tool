@@ -48,14 +48,14 @@ interface ReportFlexibleChartProps {
   metric: string
   compareMode: ReportCompareMode
   isLoading: boolean
-  /** Bấm một cột / một lát của nhóm thật → mở ngăn «Danh sách». Bỏ trống = không bấm được. */
+  /** Bấm một cột / một lát của nhóm thật → mở ngăn "Danh sách". Bỏ trống = không bấm được. */
   onSelectGroup?: (group: { key: string; label: string }) => void
 }
 
 /**
- * «Biểu đồ linh hoạt» (duoc-CR-688, §3.4 của `doc/erp/hrm/05-bao-cao-nhan-su.md`) — thay khối
+ * "Biểu đồ linh hoạt" (duoc-CR-688, §3.4 của `doc/erp/hrm/05-bao-cao-nhan-su.md`) — thay khối
  * xu hướng cố định của mọi trang `ReportAnalyticsPage`. MẶC ĐỊNH trông y như cũ (đường xu hướng
- * chỉ số đang chọn, kèm kỳ so sánh); người xem đổi «Vẽ theo» thời gian / chiều «Xem theo», kiểu
+ * chỉ số đang chọn, kèm kỳ so sánh); người xem đổi "Vẽ theo" thời gian / chiều "Xem theo", kiểu
  * biểu đồ và Top N — ba lựa chọn nằm trên URL.
  */
 export function ReportFlexibleChart({
@@ -81,7 +81,7 @@ export function ReportFlexibleChart({
       : null
 
   //  Đang tải lần đầu (`trend` rỗng vì CHƯA có số) thì vẫn coi như có trục thời gian — khỏi
-  //  nháy sang «theo nhóm» rồi nháy về khi số về.
+  //  nháy sang "theo nhóm" rồi nháy về khi số về.
   //  Trục thời gian chỉ khi `trend` thật sự MANG chỉ số này (chỉ số thời điểm, hay chỉ số máy
   //  chủ bỏ khỏi `trend`, thì vắng khóa ở mọi mốc — vẽ ra chỉ là một đường số 0 giả).
   const trendHasMetric = trend.some((point) => metric in point.current)

@@ -5,7 +5,7 @@ import { buildPatch, isPatchEmpty, toDraft, validateDraft } from './mcp-settings
 
 /**
  * Bản nháp màn Cấu hình cổng (G7). Hai lỗ dễ lọt nhất: ô bỏ trống thành 0 (`Number('')` = 0, mà 0 ở trần tần suất
- * nghĩa là «không chặn»), và gửi cả bản cấu hình thì đè lên thay đổi người khác vừa lưu ở trường mình không đụng.
+ * nghĩa là "không chặn"), và gửi cả bản cấu hình thì đè lên thay đổi người khác vừa lưu ở trường mình không đụng.
  */
 
 function settings(over: Partial<McpSettings> = {}): McpSettings {

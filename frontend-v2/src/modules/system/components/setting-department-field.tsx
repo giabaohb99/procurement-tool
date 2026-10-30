@@ -22,7 +22,7 @@ interface SettingDepartmentFieldProps {
  * backend tự chọn (câu gợi ý nói rõ là phòng nào).
  *
  * Thiếu quyền đọc danh mục Phòng ban thì rơi về ô chữ: cứ mount là gọi thì người
- * chỉ có quyền cấu hình ăn 403, và ô chọn rỗng trông như «chưa có phòng nào».
+ * chỉ có quyền cấu hình ăn 403, và ô chọn rỗng trông như "chưa có phòng nào".
  */
 export function SettingDepartmentField({ field, disabled, onChange }: SettingDepartmentFieldProps) {
   const inputId = `setting-${field.key}`

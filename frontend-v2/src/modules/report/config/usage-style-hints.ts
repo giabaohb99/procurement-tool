@@ -19,7 +19,7 @@ export const USAGE_STYLE_HINTS: Record<number, string> = {
   10: 'Ít vào hệ thống so với nhóm. Có thể việc của họ ít qua hệ thống — hỏi trước khi kết luận.',
 }
 
-/** Tên kiểu theo mã; mã lạ (backend thêm trước FE) hiện «Kiểu N». */
+/** Tên kiểu theo mã; mã lạ (backend thêm trước FE) hiện "Kiểu N". */
 export function styleLabel(code: number): string {
   return USAGE_STYLE.find((o) => o.value === String(code))?.label ?? `Kiểu ${code}`
 }

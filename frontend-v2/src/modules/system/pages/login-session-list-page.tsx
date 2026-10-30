@@ -28,8 +28,8 @@ import {
  * PHIÊN ĐĂNG NHẬP toàn hệ (bao-CR-395, CR-312 P3b) — `/system/sessions`.
  *
  * Ai đang vào hệ thống, từ máy nào, lần cuối lúc nào; hai nút cắt:
- * - «Đá phiên» — chỉ phiên đó, có trễ tối đa 60 giây (cache hồ sơ quyền);
- * - «Bắt đăng nhập lại» — mọi phiên của người đó, hiệu lực tức thì
+ * - "Đá phiên" — chỉ phiên đó, có trễ tối đa 60 giây (cache hồ sơ quyền);
+ * - "Bắt đăng nhập lại" — mọi phiên của người đó, hiệu lực tức thì
  *   (`token_version` tăng).
  * Cả hai đòi `login_session.delete`; phạm vi `own` chỉ thấy phiên của mình.
  */

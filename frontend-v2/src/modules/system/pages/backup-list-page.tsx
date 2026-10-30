@@ -40,8 +40,8 @@ export function BackupListPage() {
   const canCreate = can('backup', 'create')
   const canDelete = can('backup', 'delete')
 
-  //  ai-CR-139: «DB ERP | DB bot (agent_hub)». DB bot không có nút xóa bản và KHÔNG có nút khôi phục (quay lại DB làm
-  //  trên máy chủ bằng scripts/agent_restore.sh); chỉ có «Khôi phục thử» — nạp vào DB tạm, kiểm, rồi xóa.
+  //  ai-CR-139: "DB ERP | DB bot (agent_hub)". DB bot không có nút xóa bản và KHÔNG có nút khôi phục (quay lại DB làm
+  //  trên máy chủ bằng scripts/agent_restore.sh); chỉ có "Khôi phục thử" — nạp vào DB tạm, kiểm, rồi xóa.
   const [target, setTarget] = useState<BackupTarget>('erp')
   const isAgent = target === 'agent'
   const [page, setPage] = useState(1)
@@ -304,7 +304,7 @@ export function BackupListPage() {
           <Info className="mt-0.5 size-4 shrink-0 text-blue-600 dark:text-blue-400" />
           {agentOff ? (
             <p>
-              Bot đang chạy chung DB ERP ở môi trường này — bảng của bot đã nằm trong bản sao lưu «DB ERP», không có bản
+              Bot đang chạy chung DB ERP ở môi trường này — bảng của bot đã nằm trong bản sao lưu <strong>DB ERP</strong>, không có bản
               riêng.
             </p>
           ) : (
@@ -316,7 +316,7 @@ export function BackupListPage() {
                 {data?.stale_hours ?? 26} giờ không có bản thành công, hoặc sao lưu lỗi, bot nhắn người quản lý bot.
               </p>
               <p>
-                Mỗi chủ nhật bot tự «khôi phục thử» bản mới nhất vào DB tạm rồi xóa. Không có nút khôi phục trên web —
+                Mỗi chủ nhật bot tự <strong>khôi phục thử</strong> bản mới nhất vào DB tạm rồi xóa. Không có nút khôi phục trên web —
                 quay lại DB làm trên máy chủ theo quy trình trong tài liệu vận hành.
               </p>
             </div>

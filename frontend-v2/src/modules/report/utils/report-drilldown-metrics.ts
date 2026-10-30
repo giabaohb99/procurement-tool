@@ -37,9 +37,9 @@ export function pickDefaultDrilldownMetric(
 }
 
 /**
- * Chỉ số mở sẵn khi bấm «Xem» ở MỘT dòng nhóm: ưu tiên như `pickDefaultDrilldownMetric`
+ * Chỉ số mở sẵn khi bấm "Xem" ở MỘT dòng nhóm: ưu tiên như `pickDefaultDrilldownMetric`
  * (chỉ số biểu đồ, rồi thẻ KPI) nhưng chỉ nhận chỉ số mà dòng đó có giá trị > 0 — nếu không,
- * ngăn mở ra «0 dòng» dù dòng đang ghi 103 người. Thử cả phần còn lại của `options` theo thứ tự
+ * ngăn mở ra "0 dòng" dù dòng đang ghi 103 người. Thử cả phần còn lại của `options` theo thứ tự
  * backend; dòng không chỉ số nào > 0 thì lùi về mặc định.
  */
 export function pickDrilldownMetricForRow(

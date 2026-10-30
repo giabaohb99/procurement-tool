@@ -86,14 +86,14 @@ describe('ReportFlexibleChart — default look', () => {
     expect(lastSearch).toBe('')
   })
 
-  it('defaults to «by group» on a hideTrend page and hides the time option', () => {
+  it('defaults to "by group" on a hideTrend page and hides the time option', () => {
     renderChart({ hideTrend: true, trend: [] })
     expect(screen.getByText('Số người theo Phòng ban')).toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: 'Vẽ theo' })).not.toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Cột ngang' })).toHaveAttribute('aria-checked', 'true')
   })
 
-  it('defaults to «by group» for a snapshot metric', () => {
+  it('defaults to "by group" for a snapshot metric', () => {
     renderChart({
       metric: 'end',
       groups: [{ key: 'kt', label: 'Kế toán', current: { end: 7 }, compare: null }],
@@ -180,7 +180,7 @@ describe('ReportFlexibleChart — click to drill down', () => {
     expect(onSelectGroup).toHaveBeenCalledWith({ key: 'kt', label: 'Kế toán' })
   })
 
-  it('never offers the merged «Khác» slice as a list', () => {
+  it('never offers the merged "Khác" slice as a list', () => {
     const onSelectGroup = vi.fn()
     const groups = ['a', 'b', 'c', 'd', 'e', 'f'].map((k, i) => ({
       key: k,

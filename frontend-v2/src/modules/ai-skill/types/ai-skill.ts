@@ -175,7 +175,7 @@ export interface AdminMcpKey {
   claimed_at: string | null
   batch_id: string
   user_id: number
-  /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` «Kết nối OAuth»); máy chủ cũ chưa có thì coi như dán tay. */
+  /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` "Kết nối OAuth"); máy chủ cũ chưa có thì coi như dán tay. */
   kind?: number
   kind_label?: string
   /** ai-CR-221: bật / tắt (tắt ≠ thu hồi, bật lại là chạy). Máy chủ cũ chưa có thì coi như bật. */
@@ -254,7 +254,7 @@ export interface McpCallFilters {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// K6 (doc/agent-hub/06 §6.1–6.2, ai-CR-213): màn «AI của tôi» ở Trang cá nhân + Tổng quan.
+// K6 (doc/agent-hub/06 §6.1–6.2, ai-CR-213): màn "AI của tôi" ở Trang cá nhân + Tổng quan.
 // ---------------------------------------------------------------------------------------------------------------------
 
 /** Khóa kết nối AI CỦA CHÍNH MÌNH (`Key` §6.1). `key` (khóa thô) chỉ có trong kết quả tạo / nhận, đúng một lần. */
@@ -273,7 +273,7 @@ export interface MyMcpKey {
   claimed_at: string | null
   batch_id: string
   user_id: number
-  /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` «Kết nối OAuth»); máy chủ cũ chưa có thì coi như dán tay. */
+  /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` "Kết nối OAuth"); máy chủ cũ chưa có thì coi như dán tay. */
   kind?: number
   kind_label?: string
   /** ai-CR-221: bật / tắt (tắt ≠ thu hồi, bật lại là chạy). Máy chủ cũ chưa có thì coi như bật. */
@@ -428,7 +428,7 @@ export type McpSettingsPatch = {
 
 /**
  * Ứng dụng AI tự đăng ký OAuth (ai-CR-225, màn bao-CR-635): `GET /api/agent-hub/oauth-clients`. `client_name` là do ứng
- * dụng TỰ KHAI — không tin; `redirect_hosts` là nơi quay về đã rút về hostname (máy cục bộ ghi «máy tính của bạn»),
+ * dụng TỰ KHAI — không tin; `redirect_hosts` là nơi quay về đã rút về hostname (máy cục bộ ghi "máy tính của bạn"),
  * `trusted` = mọi host thuộc ứng dụng AI quen (chatgpt.com, openai.com, claude.ai, anthropic.com, claude.com) hoặc máy cục bộ.
  */
 export interface OAuthClient {

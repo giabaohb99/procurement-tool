@@ -9,7 +9,7 @@ import { formatDateTime } from '@/shared/utils/format-date'
 
 import type { LoginHistoryItem, LoginHistoryResult } from '../api/login-session-api'
 
-/** Tối đa bao nhiêu dòng lịch sử vẽ ra trước khi bấm «Xem thêm». */
+/** Tối đa bao nhiêu dòng lịch sử vẽ ra trước khi bấm "Xem thêm". */
 export const HISTORY_PREVIEW_ROWS = 10
 
 interface LoginHistoryListProps {
@@ -17,7 +17,7 @@ interface LoginHistoryListProps {
   isLoading: boolean
   /** Số ngày đang xem — cho câu rỗng lúc `data` chưa về. */
   days: number
-  /** Dòng tiêu đề «Lịch sử N ngày · x lần đăng nhập · y lần thất bại».
+  /** Dòng tiêu đề "Lịch sử N ngày · x lần đăng nhập · y lần thất bại".
    *  Tắt khi thẻ bọc ngoài đã có tiêu đề riêng (tab ở Trang cá nhân). */
   heading?: boolean
   className?: string
@@ -25,8 +25,8 @@ interface LoginHistoryListProps {
 
 /**
  * Danh sách LỊCH SỬ ĐĂNG NHẬP — dùng chung cho hai chỗ (bao-CR-400):
- * thẻ «Phiên đăng nhập» ở hồ sơ nhân sự (dữ liệu từ cửa quản trị) và tab
- * «Lịch sử đăng nhập» ở Trang cá nhân (dữ liệu từ cửa tự thân). Hai cửa trả cùng
+ * thẻ "Phiên đăng nhập" ở hồ sơ nhân sự (dữ liệu từ cửa quản trị) và tab
+ * "Lịch sử đăng nhập" ở Trang cá nhân (dữ liệu từ cửa tự thân). Hai cửa trả cùng
  * một hình `LoginHistoryResult`, nên phần vẽ chỉ có một bản: dòng thành công
  * bày máy + IP + kết cục của phiên, dòng thất bại bày câu lỗi backend ghi.
  */

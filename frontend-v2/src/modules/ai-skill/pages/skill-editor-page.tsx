@@ -59,7 +59,7 @@ const SNIPPETS = {
 } as const
 
 /**
- * G4 — soạn một skill (doc 21 §6.2). Hai cột: trái soạn Markdown, phải «Xem như AI đọc». Lưu là lưu NHÁP (Ctrl+S);
+ * G4 — soạn một skill (doc 21 §6.2). Hai cột: trái soạn Markdown, phải "Xem như AI đọc". Lưu là lưu NHÁP (Ctrl+S);
  * AI chỉ đọc bản đã XUẤT BẢN, nên nháp sửa thoải mái không ảnh hưởng ai. Xuất bản cần quyền duyệt và tóm tắt cho AI.
  */
 export function SkillEditorPage() {
@@ -124,7 +124,7 @@ function SkillEditor({ skill, canWrite, canPublish }: { skill: SkillDetail; canW
     }
   }
 
-  //  Ctrl+S / Cmd+S lưu nháp thay vì mở hộp «Lưu trang» của trình duyệt.
+  //  Ctrl+S / Cmd+S lưu nháp thay vì mở hộp "Lưu trang" của trình duyệt.
   const saveRef = useRef(save)
   useEffect(() => {
     saveRef.current = save

@@ -19,7 +19,7 @@ interface ReportDrilldownTableProps {
 }
 
 /**
- * Bảng của ngăn «Danh sách người» — cột dựng THẲNG từ `columns` backend trả (không gõ
+ * Bảng của ngăn "Danh sách người" — cột dựng THẲNG từ `columns` backend trả (không gõ
  * tay), định dạng ô theo `kind`. Dòng có `link` nội bộ thì bấm mở trang đó (hồ sơ nhân
  * sự, đơn nghỉ…). Tối đa 500 dòng, không phân trang.
  */

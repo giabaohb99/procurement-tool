@@ -19,8 +19,8 @@ interface SystemLogSummaryChartsProps {
 /**
  * Ba biểu đồ tóm tắt của màn nhật ký hệ thống (bao-CR-407, §8.2).
  *
- * Chúng trả lời ba câu khác nhau: *«lúc nào đông và lúc nào hỏng»* ·
- * *«đường nào bị gọi nhiều»* · *«hỏng vì mã lỗi gì»*. Cùng một bộ lọc với bảng
+ * Chúng trả lời ba câu khác nhau: *"lúc nào đông và lúc nào hỏng"* ·
+ * *"đường nào bị gọi nhiều"* · *"hỏng vì mã lỗi gì"*. Cùng một bộ lọc với bảng
  * bên dưới — lọc bảng mà biểu đồ vẫn toàn hệ thì người đọc so hai thứ không so
  * được với nhau.
  */

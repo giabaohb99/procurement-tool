@@ -38,7 +38,7 @@ function renderCell(row: ReportTableRow, compare: 'previous' | 'none' = 'previou
   )
 }
 
-//  Đại ca chê 01/10/2026: dòng Tổng mỗi ô một badge «Mới» bên dưới con số, ô có
+//  Đại ca chê 01/10/2026: dòng Tổng mỗi ô một badge "Mới" bên dưới con số, ô có
 //  ô không, số lệch hàng nhau. Chỉ một mức thay đổi THẬT mới được đứng cạnh số.
 describe('ReportMetricValueCell — total row', () => {
   it('shows the signed change on the same line when there is a real change', () => {

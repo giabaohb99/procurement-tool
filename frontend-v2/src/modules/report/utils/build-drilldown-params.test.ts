@@ -15,7 +15,7 @@ describe('buildDrilldownParams', () => {
     })
   })
 
-  it('sends the group of the clicked row, including the empty «(Chưa gắn)» key', () => {
+  it('sends the group of the clicked row, including the empty "(Chưa gắn)" key', () => {
     const params = buildDrilldownParams(
       { ...BASE, group_key: 'stale' },
       { metric: 'active', group: { by: 'company', key: '', dimensionLabel: 'Công ty', label: '(Chưa gắn)' } },

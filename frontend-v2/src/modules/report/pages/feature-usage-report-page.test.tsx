@@ -65,7 +65,7 @@ describe('FeatureUsageReportPage (duoc-CR-655)', () => {
     renderPage()
     expect(await screen.findByText('Chức năng nhiều người dùng nhất')).toBeInTheDocument()
     expect(screen.getAllByText('Xuất Excel').length).toBeGreaterThan(0)
-    expect(screen.getByText('In')).toBeInTheDocument()   // nằm trong danh sách «chưa ai dùng»
+    expect(screen.getByText('In')).toBeInTheDocument()   // nằm trong danh sách "chưa ai dùng"
     expect(screen.getByText(/Số liệu chỉ có từ ngày/)).toBeInTheDocument()
     expect(screen.queryByText(/Chưa thu thập — kỳ này/)).not.toBeInTheDocument()
   })

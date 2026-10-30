@@ -51,7 +51,7 @@ describe('UsageMetricChartCard', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
-  it('shows «Chưa thu thập» when there is no snapshot week at all', () => {
+  it('shows "Chưa thu thập" when there is no snapshot week at all', () => {
     renderCard({ ...base, measured_users: 0, company_median: null, histogram: [], trend: [] }, false)
     expect(screen.getByText('Chưa thu thập')).toBeInTheDocument()
   })

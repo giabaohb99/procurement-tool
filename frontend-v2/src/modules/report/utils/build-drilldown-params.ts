@@ -6,7 +6,7 @@ import type { ReportDrilldownTarget } from '../types/report-drilldown'
  *
  * - Dòng Tổng / thẻ KPI → `group_by=none`, không `group_key`: đè hẳn `group_by` của trang,
  *   kẻo backend hiểu là "lọc nhóm" khi chỉ muốn cả danh sách.
- * - Dòng nhóm → `group_by` + `group_key` của nhóm đó; `group_key=""` là «(Chưa gắn)» và PHẢI
+ * - Dòng nhóm → `group_by` + `group_key` của nhóm đó; `group_key=""` là "(Chưa gắn)" và PHẢI
  *   được gửi (gửi thiếu = cả danh sách, đọc nhầm thành danh sách của nhóm chưa gắn).
  */
 export function buildDrilldownParams(

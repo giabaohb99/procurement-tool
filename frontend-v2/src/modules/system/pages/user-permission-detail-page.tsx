@@ -94,17 +94,17 @@ export function UserPermissionDetailPage() {
   //
   //  - Chép vào state rồi đồng bộ theo MỌI lượt nạp lại thì một lượt nạp rơi
   //    vào giữa lúc đang tick là các ô vừa chọn lặng lẽ quay về bản đã lưu, và
-  //    cú «Lưu vai trò» ngay sau đó ghi xuống đúng bản cũ (khách báo 25/08/2026).
+  //    cú "Lưu vai trò" ngay sau đó ghi xuống đúng bản cũ (khách báo 25/08/2026).
   //    React Query nạp lại bất cứ lúc nào: hết hạn 30 giây, `invalidateQueries`
   //    của một thao tác khác, người khác vừa sửa cùng tài khoản.
-  //  - Chép vào state rồi CHỈ đồng bộ khi dữ liệu «đổi» thì hỏng ở lượt mount
+  //  - Chép vào state rồi CHỈ đồng bộ khi dữ liệu "đổi" thì hỏng ở lượt mount
   //    có sẵn bộ đệm: vào trang, quay ra, vào lại — lần này `account` có ngay ở
-  //    lượt render đầu nên không có gì «đổi» cả, state đứng nguyên ở rỗng và
+  //    lượt render đầu nên không có gì "đổi" cả, state đứng nguyên ở rỗng và
   //    mọi dấu tick biến mất cho tới khi tải lại trang (đại ca báo 25/09/2026).
   //
   //  Đọc thẳng như dưới đây thì không lượt render nào là lượt đặc biệt.
   const selectedRoleIds = draftRoleIds ?? account.role_ids
-  //  duoc-CR-653: vai trò do hệ thống tự cấp theo chức vụ → huy hiệu «Theo chức vụ: …».
+  //  duoc-CR-653: vai trò do hệ thống tự cấp theo chức vụ → huy hiệu "Theo chức vụ: …".
   const autoGrantByRole = new Map(
     (account.auto_grants ?? []).map((g) => [g.role_id, g.position_name]),
   )
@@ -122,7 +122,7 @@ export function UserPermissionDetailPage() {
   //
   // bao-CR-523: quản trị TỰ bỏ vai trò Quản trị của mình thì backend trả 409 kèm
   // câu hỏi. Hiện nguyên câu đó trong hộp xác nhận; đồng ý thì gửi lại đúng tập
-  // vai trò ấy kèm cờ. 400 «phải còn ít nhất một quản trị» không vào nhánh này —
+  // vai trò ấy kèm cờ. 400 "phải còn ít nhất một quản trị" không vào nhánh này —
   // hook đã toast, hỏi lại cũng vô ích.
   const saveRoles = (confirmSelfAdminRemoval = false) => {
     const roleIds = selectedRoleIds

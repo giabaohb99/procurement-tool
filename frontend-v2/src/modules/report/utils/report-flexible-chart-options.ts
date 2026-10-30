@@ -1,17 +1,17 @@
 /**
- * Lựa chọn của «Biểu đồ linh hoạt» (duoc-CR-688, `doc/erp/hrm/05-bao-cao-nhan-su.md` §3.4):
+ * Lựa chọn của "Biểu đồ linh hoạt" (duoc-CR-688, `doc/erp/hrm/05-bao-cao-nhan-su.md` §3.4):
  * vẽ theo gì, kiểu gì, bao nhiêu nhóm. Ba lựa chọn nằm trên URL để gửi đường dẫn là người
  * nhận mở đúng góc nhìn — tệp này chỉ có hàm thuần: đọc giá trị thô từ URL, suy ra lựa chọn
  * ĐANG HIỆU LỰC theo dữ liệu của trang, và dựng MỘT bản vá URL cho mỗi lần đổi.
  */
 
-/** Vẽ theo trục thời gian (`trend[]`) hay theo chiều «Xem theo» đang chọn (`groups[]`). */
+/** Vẽ theo trục thời gian (`trend[]`) hay theo chiều "Xem theo" đang chọn (`groups[]`). */
 export type FlexibleChartBy = 'time' | 'group'
 
 /** `hbar` = cột ngang, `bar` = cột dọc, `donut` = vành khuyên. */
 export type FlexibleChartType = 'line' | 'bar' | 'hbar' | 'donut'
 
-/** Số nhóm lớn nhất được vẽ riêng; `all` = vẽ hết, không gộp «Khác». */
+/** Số nhóm lớn nhất được vẽ riêng; `all` = vẽ hết, không gộp "Khác". */
 export type FlexibleChartTop = '5' | '10' | '20' | 'all'
 
 export interface FlexibleChartOptions {
@@ -53,7 +53,7 @@ export const FLEXIBLE_CHART_TYPE_LABELS: Record<FlexibleChartType, string> = {
 export interface FlexibleChartContext {
   /** Có trục thời gian để vẽ (không `hideTrend`, chỉ số không phải `snapshot`, `trend` có mốc). */
   hasTime: boolean
-  /** Có chiều «Xem theo» thật để vẽ theo nhóm. */
+  /** Có chiều "Xem theo" thật để vẽ theo nhóm. */
   hasGroup: boolean
   /** Ưu tiên vẽ theo nhóm khi URL chưa chọn: trang `hideTrend` hoặc chỉ số thời điểm. */
   preferGroup: boolean
@@ -109,7 +109,7 @@ export function resolveFlexibleChartOptions(
 
 /**
  * Bản vá URL cho MỘT lần đổi — ghi cả ba tham số trong cùng một lượt `setParams` (bẫy hai
- * `setSearchParams` trong một lần bấm, xem `use-url-param-state.ts`). Đổi «Vẽ theo» mà không
+ * `setSearchParams` trong một lần bấm, xem `use-url-param-state.ts`). Đổi "Vẽ theo" mà không
  * nói kiểu thì kiểu về mặc định của trục mới (đường không có nghĩa cho nhóm). Giá trị trùng
  * mặc định thì XÓA khỏi URL — link sạch, đổi mặc định sau này không làm hỏng link cũ.
  */

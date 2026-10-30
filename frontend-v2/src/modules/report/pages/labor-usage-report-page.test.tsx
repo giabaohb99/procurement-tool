@@ -112,7 +112,7 @@ describe('LaborUsageReportPage (mẫu 01/PLI, khóa 20)', () => {
     expect(screen.getByText(/điền tay trước khi nộp/)).toBeInTheDocument()
   })
 
-  it('labels the export «Xuất mẫu 01/PLI» and downloads from the form endpoint', async () => {
+  it('labels the export "Xuất mẫu 01/PLI" and downloads from the form endpoint', async () => {
     const user = userEvent.setup()
     renderPage()
     await screen.findAllByText('Tổng lao động')

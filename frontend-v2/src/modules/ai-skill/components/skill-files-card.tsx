@@ -21,7 +21,7 @@ interface SkillFilesCardProps {
 }
 
 /**
- * Khối «Tệp đi kèm» của trang soạn skill (G4): biểu mẫu, bảng tra, ví dụ mà SKILL.md nhắc tới. Chỉ nhận tệp CHỮ
+ * Khối "Tệp đi kèm" của trang soạn skill (G4): biểu mẫu, bảng tra, ví dụ mà SKILL.md nhắc tới. Chỉ nhận tệp CHỮ
  * (≤ 2 MB mỗi tệp) vì AI đọc chúng dạng chữ qua cổng kết nối. Kéo thả tệp có sẵn hoặc gõ tay một tệp mới. Ghi đè:
  * lưu lại đúng tên cũ là thay nội dung.
  */

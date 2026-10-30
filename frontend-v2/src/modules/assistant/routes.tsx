@@ -10,8 +10,8 @@ import { appRoutes } from '@/shared/constants/app-routes'
  * cho admin / pur_manager / company_head). Bật/tắt sâu hơn ở máy chủ bằng cờ
  * `AI_ENABLED`; khi tắt, endpoint trả 403 và trang tự hiện thông báo chưa sẵn sàng.
  *
- * ai-CR-123: mục «Nhóm chat» — tin, tệp, bản tóm tắt bot đã ghi ở nhóm Telegram / Zalo. Không gác thêm khóa: ai vào
- * được phân hệ đều xem được nhóm MÌNH là thành viên; khóa `agent_group` mở thêm «Tất cả nhóm» trong trang.
+ * ai-CR-123: mục "Nhóm chat" — tin, tệp, bản tóm tắt bot đã ghi ở nhóm Telegram / Zalo. Không gác thêm khóa: ai vào
+ * được phân hệ đều xem được nhóm MÌNH là thành viên; khóa `agent_group` mở thêm "Tất cả nhóm" trong trang.
  */
 export const assistantModule: ErpModule = {
   id: 'assistant',

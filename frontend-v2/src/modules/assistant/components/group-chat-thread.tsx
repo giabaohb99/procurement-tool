@@ -19,11 +19,11 @@ interface GroupChatThreadProps {
 }
 
 /**
- * Tin nhắn của một nhóm, dựng theo khung hội thoại của Trợ lý AI (ai-CR-123, đại ca 08/10: «giao diện tin nhắn xấu
- * quá, tận dụng giao diện tin nhắn của Trợ lý AI»): cột đọc giữa màn, bong bóng bo tròn, cũ trên mới dưới, vạch ngày,
+ * Tin nhắn của một nhóm, dựng theo khung hội thoại của Trợ lý AI (ai-CR-123, đại ca 08/10: "giao diện tin nhắn xấu
+ * quá, tận dụng giao diện tin nhắn của Trợ lý AI"): cột đọc giữa màn, bong bóng bo tròn, cũ trên mới dưới, vạch ngày,
  * gộp tin liên tiếp của cùng một người, tệp là chip bấm để tải.
  *
- * Mở ra thì cuộn xuống tin mới nhất; bấm «Xem tin cũ hơn» thì GIỮ chỗ đang đọc (không giật về đáy).
+ * Mở ra thì cuộn xuống tin mới nhất; bấm "Xem tin cũ hơn" thì GIỮ chỗ đang đọc (không giật về đáy).
  */
 export function GroupChatThread({ groupId }: GroupChatThreadProps) {
   const [search, setSearch] = useState('')

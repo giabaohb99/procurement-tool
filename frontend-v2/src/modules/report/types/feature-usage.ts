@@ -22,7 +22,7 @@ export interface FeatureSummary {
   /** Ngày đầu tiên có số liệu; null = chưa từng thu. */
   tracking_since: string | null
   has_data: boolean
-  /** Mẫu số cho «% người dùng»: số người có hoạt động trong kỳ. */
+  /** Mẫu số cho "% người dùng": số người có hoạt động trong kỳ. */
   active_users: number
   actions: FeatureRow[]
   forms: FeatureRow[]

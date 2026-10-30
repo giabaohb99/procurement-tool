@@ -305,7 +305,7 @@ function OAuthGuide({ detail }: { detail: McpSetupDetail }) {
           <CopyButton value={url} label="địa chỉ kết nối" />
         </div>
         {/* Một đoạn duy nhất: phần chung của mọi kết nối OAuth + ý riêng của ứng dụng (note) nối đuôi — trước đây hai
-            đoạn cùng mở đầu «Không cần khóa» in chồng nhau. */}
+            đoạn cùng mở đầu "Không cần khóa" in chồng nhau. */}
         <p className="text-xs text-muted-foreground">
           Không cần khóa: {detail.label} sẽ mở trang ERP để bạn đăng nhập và bấm Cho phép. Kết nối dùng 90 ngày, hết thì
           kết nối lại; nó hiện trong danh sách khóa với nhãn Kết nối OAuth, tắt hoặc gỡ ở đó khi không dùng nữa.

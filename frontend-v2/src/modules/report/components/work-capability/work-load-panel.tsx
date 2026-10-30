@@ -11,7 +11,7 @@ import { formatCount } from '../../utils/usage-format'
 const num = (width = 110) => ({ width, align: 'right' as const, sortable: false })
 const n = (v: number) => <span className="tabular-nums">{formatCount(v)}</span>
 
-/** Một số + «(x quá hạn)» khi có việc quá hạn — để người đọc thấy ngay chỗ nghẽn mà không phải cộng thêm cột. */
+/** Một số + "(x quá hạn)" khi có việc quá hạn — để người đọc thấy ngay chỗ nghẽn mà không phải cộng thêm cột. */
 const withOverdue = (v: number, over: number) => (
   <span className="tabular-nums">
     {formatCount(v)}
@@ -46,7 +46,7 @@ const COLUMNS: DataTableColumn<WorkLoadRow>[] = [
 ]
 
 /**
- * Tải đang ôm tính tức thì (D1c) — các số THÀNH PHẦN, không quy ra một điểm. «Tổng đếm thô» chỉ là tổng số đầu việc,
+ * Tải đang ôm tính tức thì (D1c) — các số THÀNH PHẦN, không quy ra một điểm. "Tổng đếm thô" chỉ là tổng số đầu việc,
  * không nói việc nặng hay nhẹ. Cần chọn pháp nhân hoặc phòng ban: máy chủ không trả cả công ty khi không nói rõ.
  */
 export function WorkLoadPanel({ params }: { params: Record<string, string> | null }) {

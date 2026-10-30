@@ -32,7 +32,7 @@ export const SYNC_DIRECTION = { INBOUND: 1, OUTBOUND: 2 } as const
  * Vòng đời một dòng sổ — khớp `SyncStatus`.
  *
  * Ba mã số dưới đây là chỗ DUY NHẤT frontend được biết con số: chuông 08:00 đi
- * vào màn bằng `?status=4`, ô lọc nhanh «chưa gắn được người» cần biết đâu là
+ * vào màn bằng `?status=4`, ô lọc nhanh "chưa gắn được người" cần biết đâu là
  * lỗi, và thẻ đếm tô màu theo trạng thái. Nhãn thì vẫn lấy từ backend.
  */
 export const SYNC_STATUS = {
@@ -43,7 +43,7 @@ export const SYNC_STATUS = {
   SKIPPED: 5,
 } as const
 
-/** Cờ «không tra ra nhân sự» — ô lọc nhanh *Chưa gắn được người* (P4 mục 6). */
+/** Cờ "không tra ra nhân sự" — ô lọc nhanh *Chưa gắn được người* (P4 mục 6). */
 export const WARN_NO_EMPLOYEE = 'no_employee'
 
 /** Trạng thái bấm được nút *Chạy lại* — khớp `RETRYABLE_STATUSES` bên backend. */

@@ -8,7 +8,7 @@ import {
 } from '../api/system-log-api'
 
 /**
- * Nhịp thăm dò của «Theo dõi trực tiếp» — 5 giây, đúng con số ở §8.2 của
+ * Nhịp thăm dò của "Theo dõi trực tiếp" — 5 giây, đúng con số ở §8.2 của
  * `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md`.
  *
  * Cách dùng màn này hay gặp nhất là mở hai tab: một tab bấm nút, một tab xem log

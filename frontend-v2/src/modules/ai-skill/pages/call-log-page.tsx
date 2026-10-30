@@ -85,7 +85,7 @@ export function CallLogPage() {
         hideable: false,
         cell: (c) => <span className="whitespace-nowrap">{formatDateTime(c.created_at)}</span>,
       },
-      //  Lượt khóa sai không có người (user_id = 0) — máy chủ mới trả «(khóa sai)», bản cũ trả rỗng thì in gạch.
+      //  Lượt khóa sai không có người (user_id = 0) — máy chủ mới trả "(khóa sai)", bản cũ trả rỗng thì in gạch.
       { key: 'user', header: 'Người', width: 180, cell: (c) => c.user_label || (c.user_id ? `#${c.user_id}` : '—') },
       { key: 'client', header: 'Ứng dụng AI', width: 160, cell: (c) => c.client_name || '—' },
       {
@@ -157,7 +157,7 @@ export function CallLogPage() {
               ? 'Không có lượt nào khớp bộ lọc.'
               : allMethods
                 ? 'Chưa có lượt gọi nào.'
-                : 'Chưa có lượt gọi công cụ nào — bỏ tick «Chỉ lượt gọi công cụ» để xem cả lượt khởi tạo kết nối.'
+                : 'Chưa có lượt gọi công cụ nào — bỏ tick "Chỉ lượt gọi công cụ" để xem cả lượt khởi tạo kết nối.'
           }
           storageKey="ai-skill.calls"
           pagination={{

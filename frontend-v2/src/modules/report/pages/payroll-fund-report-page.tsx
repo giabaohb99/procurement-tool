@@ -34,7 +34,7 @@ const CONFIG: ReportPageConfig = {
 
 /**
  * Quỹ lương theo pháp nhân (A5, khóa 21). Từ duoc-CR-693 số là lương + phụ cấp nhập ở hồ sơ, tại
- * thời điểm xem. Nhóm dưới 3 người backend trả `null` → ô hiện «—»; danh sách người không có tiền.
+ * thời điểm xem. Nhóm dưới 3 người backend trả `null` → ô hiện "—"; danh sách người không có tiền.
  */
 export function PayrollFundReportPage() {
   return <ReportAnalyticsPage config={CONFIG} />

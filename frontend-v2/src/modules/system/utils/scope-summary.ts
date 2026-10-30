@@ -37,7 +37,7 @@ export const SCOPE_MEANINGS: Record<string, string> = {
  *
  * Vì sao câu tóm tắt phải đọc hồ sơ: `_role_scope_cond` lấy công ty và phòng ban
  * từ chính hồ sơ này (`profile["company_id"]`, `profile["dept_ids"]`). Bậc
- * «Công ty» của một tài khoản thuộc ABA nghĩa là *công ty ABA*, không phải một
+ * "Công ty" của một tài khoản thuộc ABA nghĩa là *công ty ABA*, không phải một
  * ô ai đó phải đi tick. Đại ca nói đúng chỗ này ngày 19/09/2026: "tài khoản
  * thuộc công ty ABA thì mặc định phạm vi của nó là ABA".
  */
@@ -204,7 +204,7 @@ export function summarizeScopeLimits(labels: ScopeLimitLabels): string[] {
 /**
  * Đếm số mục NGOẠI LỆ đang khai ở tầng 2.
  *
- * Con số này đứng trên nhãn mục «Ngoại lệ» đang gấp lại — không có nó thì gấp
+ * Con số này đứng trên nhãn mục "Ngoại lệ" đang gấp lại — không có nó thì gấp
  * xong là giấu luôn cả thứ đang có hiệu lực, và người khai quyền không biết
  * mình cần mở ra xem hay không.
  */

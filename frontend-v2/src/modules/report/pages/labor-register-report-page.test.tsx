@@ -101,7 +101,7 @@ describe('LaborRegisterReportPage (sổ quản lý lao động, khóa 19)', () =
     expect(callParams(ROWS)).toMatchObject({ metric: 'missing_required', group_by: 'none', department_id: '5' })
   })
 
-  it('labels the export «Xuất sổ (Excel)» and downloads the register file', async () => {
+  it('labels the export "Xuất sổ (Excel)" and downloads the register file', async () => {
     const user = userEvent.setup()
     renderPage()
     await screen.findAllByText('Người trong sổ')

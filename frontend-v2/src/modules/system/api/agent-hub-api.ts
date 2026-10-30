@@ -148,7 +148,7 @@ export interface AiKeyItem {
   hint: string
   verified_at: string | null
   used_today: number
-  /** Địa chỉ trạm — chỉ hãng «Tương thích OpenAI (tùy chỉnh)» (ai-CR-108). */
+  /** Địa chỉ trạm — chỉ hãng "Tương thích OpenAI (tùy chỉnh)" (ai-CR-108). */
   base_url?: string
 }
 
@@ -174,7 +174,7 @@ export interface CompanyAiKeys {
 export interface AiKeyInput {
   key: string
   provider?: string
-  /** Bắt buộc với hãng «openai_compat»: https://tên-miền/v1 (ai-CR-108). */
+  /** Bắt buộc với hãng "openai_compat": https://tên-miền/v1 (ai-CR-108). */
   base_url?: string
   model?: string
   priority?: number

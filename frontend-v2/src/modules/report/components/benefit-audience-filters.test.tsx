@@ -77,7 +77,7 @@ describe('BenefitAudienceFilters', () => {
     await waitFor(() => expect(url().get('amount_manager')).toBe('1000000000'))
   })
 
-  it('«Bỏ hết điều kiện» clears every H1 param in one write and the inputs follow the URL', async () => {
+  it('"Bỏ hết điều kiện" clears every H1 param in one write and the inputs follow the URL', async () => {
     const user = userEvent.setup()
     const { writes, url } = renderFilters('?amount_staff=200000&birth_month=3&include_on_leave=0&preset=today')
     expect(screen.getByLabelText('Mức quà nhân viên (đ)')).toHaveValue('200.000')

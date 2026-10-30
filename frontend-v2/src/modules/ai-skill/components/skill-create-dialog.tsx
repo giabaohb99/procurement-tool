@@ -24,7 +24,7 @@ interface SkillCreateDialogProps {
 }
 
 /**
- * Hộp «Thêm skill» trong một bộ: chỉ hỏi TÊN SKILL (mã AI gọi) và tiêu đề, tạo xong mở thẳng trang soạn — nội dung,
+ * Hộp "Thêm skill" trong một bộ: chỉ hỏi TÊN SKILL (mã AI gọi) và tiêu đề, tạo xong mở thẳng trang soạn — nội dung,
  * tóm tắt cho AI, tệp đi kèm soạn ở đó cho đủ chỗ.
  */
 export function SkillCreateDialog({ open, onOpenChange, setId, onCreated }: SkillCreateDialogProps) {

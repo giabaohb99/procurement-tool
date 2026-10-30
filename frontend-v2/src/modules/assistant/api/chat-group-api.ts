@@ -96,7 +96,7 @@ export interface ChatGroupSummary {
   id: number
   user_id: number
   user_label: string
-  /** 1 = sinh ra khi hỏi bot / Trợ lý web · 2 = nút «Tóm tắt» trên màn này. */
+  /** 1 = sinh ra khi hỏi bot / Trợ lý web · 2 = nút "Tóm tắt" trên màn này. */
   source: number
   hours: number
   question: string
@@ -130,7 +130,7 @@ export interface ZaloAccountStatus {
   qr_image?: string
 }
 
-/** Một chat Telegram / Zalo đang nối với tài khoản ERP (ai-CR-131, màn «Người dùng bot»). */
+/** Một chat Telegram / Zalo đang nối với tài khoản ERP (ai-CR-131, màn "Người dùng bot"). */
 export interface BotUserLink {
   id: number
   user_id: number
@@ -144,7 +144,7 @@ export interface BotUserLink {
   linked_at: string | null
   expires_at: string | null
   last_message_at: string | null
-  /** Còn quyền «Trợ lý AI» không — thiếu thì bot không trả lời dù vẫn nối. */
+  /** Còn quyền "Trợ lý AI" không — thiếu thì bot không trả lời dù vẫn nối. */
   has_permission: boolean
   notify_mode: number
 }

@@ -17,7 +17,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
   )
 }
 
-/** Dải số tổng + hai biểu đồ cột (chức năng nhiều người dùng nhất · biểu mẫu hay bỏ dở nhất), cùng kiểu thẻ «Bộ chỉ số đánh giá». */
+/** Dải số tổng + hai biểu đồ cột (chức năng nhiều người dùng nhất · biểu mẫu hay bỏ dở nhất), cùng kiểu thẻ "Bộ chỉ số đánh giá". */
 export function FeatureUsageOverviewCards({ data }: { data: FeatureSummary }) {
   const topActions = data.actions
     .reduce<Map<number, { users: number }>>((m, r) => m.set(r.code, { users: Math.max(m.get(r.code)?.users ?? 0, r.users) }), new Map())

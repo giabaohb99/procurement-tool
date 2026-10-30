@@ -16,7 +16,7 @@ export interface PrDispatchConditionField extends ConditionField {
 }
 
 /**
- * Các ô của phiếu YCMH đem ra làm «điều kiện bỏ qua bước thu mua duyệt lần 2»
+ * Các ô của phiếu YCMH đem ra làm "điều kiện bỏ qua bước thu mua duyệt lần 2"
  * (ô `pr_dispatch_skip_rules` ở màn Cấu hình hệ thống — bao-CR-497, bộ chọn ở
  * bao-CR-528).
  *
@@ -24,10 +24,10 @@ export interface PrDispatchConditionField extends ConditionField {
  * điều kiện (bảng `DISPATCH_CONTEXT_FIELDS` cùng tệp). Thêm một ô ở đây mà
  * backend không gửi khóa đó thì cửa lưu trả 400 — đó là cố ý, đừng nới.
  *
- * ⚠️ «Phòng xử lý»: bối cảnh phiếu đưa phòng thu mua mặc định (Sản xuất -Thu
- * mua) vào dưới dạng **0** — tức «để trống». Vì vậy phòng đó KHÔNG có trong danh
- * sách chọn của ô này: chọn nó ở phép «thuộc» thì không phiếu nào khớp. Điều
- * kiện hay dùng nhất là «Phòng xử lý có giá trị» = phiếu nhờ phòng khác xử lý.
+ * ⚠️ "Phòng xử lý": bối cảnh phiếu đưa phòng thu mua mặc định (Sản xuất -Thu
+ * mua) vào dưới dạng **0** — tức "để trống". Vì vậy phòng đó KHÔNG có trong danh
+ * sách chọn của ô này: chọn nó ở phép "thuộc" thì không phiếu nào khớp. Điều
+ * kiện hay dùng nhất là "Phòng xử lý có giá trị" = phiếu nhờ phòng khác xử lý.
  */
 export const PR_DISPATCH_CONDITION_FIELDS: PrDispatchConditionField[] = [
   {

@@ -10,7 +10,7 @@ import type { AdminMcpKey, KeyAdminMeta } from '../types/ai-skill'
 import { KeyAdminPage } from './key-admin-page'
 
 /**
- * Màn «Khóa nhân sự» (G5). Chỗ dễ lủng: tick chọn cả khóa đã thu hồi / hết hạn rồi bấm Thu hồi thì hộp xác nhận phải
+ * Màn "Khóa nhân sự" (G5). Chỗ dễ lủng: tick chọn cả khóa đã thu hồi / hết hạn rồi bấm Thu hồi thì hộp xác nhận phải
  * nói đúng số khóa CÒN HIỆU LỰC và chỉ gửi những khóa đó; quyền xem / phát / thu hồi lấy từ `meta` của máy chủ.
  */
 

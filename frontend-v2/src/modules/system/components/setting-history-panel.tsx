@@ -99,7 +99,7 @@ export function SettingHistoryPanel() {
                                 </span>
                               </>
                             ) : (
-                              //  Dòng của khóa bí mật («… đã đặt giá trị mới») không
+                              //  Dòng của khóa bí mật ("… đã đặt giá trị mới") không
                               //  có cặp trước/sau — hiện nguyên văn, đừng bỏ qua.
                               <span className="text-muted-foreground">{line}</span>
                             )}

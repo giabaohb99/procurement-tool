@@ -168,7 +168,7 @@ export function RolePermissionMatrix({
           <span className={cn('text-foreground', allEntityKeys.length === 0 && 'text-muted-foreground')}>
             Đang lọc <b className="tabular-nums">{allEntityKeys.length}</b>/
             <span className="tabular-nums">{totalEntityCount}</span> chức năng
-            {!readOnly && allEntityKeys.length > 0 && ' — «chọn hết» chỉ áp cho các dòng đang hiện'}
+            {!readOnly && allEntityKeys.length > 0 && ' — "chọn hết" chỉ áp cho các dòng đang hiện'}
           </span>
         ) : (
           !readOnly && (
@@ -257,7 +257,7 @@ export function RolePermissionMatrix({
                 {isFiltering ? (
                   <>
                     <p className="text-sm text-muted-foreground">
-                      Không có chức năng nào khớp «{keyword.trim()}».
+                      Không có chức năng nào khớp <strong>{keyword.trim()}</strong>.
                     </p>
                     <button
                       type="button"

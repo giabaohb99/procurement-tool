@@ -17,9 +17,9 @@ import type { OAuthClient } from '../types/ai-skill'
 
 /**
  * bao-CR-635 — Ứng dụng AI đã kết nối: các ứng dụng (ChatGPT, claude.ai…) tự đăng ký OAuth với cổng MCP khi có người bấm
- * «Cho phép» (ai-CR-225). Tên là do ứng dụng TỰ KHAI nên không tin được — cột «Nơi quay về» (hostname) mới là thứ để
+ * "Cho phép" (ai-CR-225). Tên là do ứng dụng TỰ KHAI nên không tin được — cột "Nơi quay về" (hostname) mới là thứ để
  * nhận ra thật giả; host ngoài danh sách ứng dụng quen thì máy chủ trả `trusted = false` và màn tô cảnh báo.
- * Xóa ứng dụng = cắt mọi kết nối của nó ngay (mã truy cập + mã làm mới chết), người dùng muốn nối lại phải «Cho phép» lần nữa.
+ * Xóa ứng dụng = cắt mọi kết nối của nó ngay (mã truy cập + mã làm mới chết), người dùng muốn nối lại phải "Cho phép" lần nữa.
  * Xem cần `agent_group.read` (như Cấu hình) — thiếu thì nói rõ, không gọi để ăn 403; xóa theo `can_delete` máy chủ trả.
  */
 export function OAuthClientsPage() {
@@ -118,8 +118,8 @@ export function OAuthClientsPage() {
     const ok = await confirm({
       title: 'Xóa ứng dụng AI',
       message:
-        `Xóa ứng dụng «${name}» (nơi quay về: ${c.redirect_hosts.join(', ') || 'không khai'})? ` +
-        `Xóa là cắt mọi kết nối của ứng dụng này: ${live}người đang dùng phải bấm «Cho phép» lại từ đầu nếu muốn nối tiếp.`,
+        `Xóa ứng dụng "${name}" (nơi quay về: ${c.redirect_hosts.join(', ') || 'không khai'})? ` +
+        `Xóa là cắt mọi kết nối của ứng dụng này: ${live}người đang dùng phải bấm "Cho phép" lại từ đầu nếu muốn nối tiếp.`,
       confirmLabel: 'Xóa ứng dụng',
     })
     if (!ok) return
@@ -156,7 +156,7 @@ export function OAuthClientsPage() {
           getRowId={(c) => c.id}
           isLoading={isLoading}
           isError={isError}
-          emptyMessage="Chưa có ứng dụng nào. Ứng dụng xuất hiện ở đây khi có người bấm «Cho phép» trên màn đồng ý kết nối (ChatGPT, claude.ai…)."
+          emptyMessage='Chưa có ứng dụng nào. Ứng dụng xuất hiện ở đây khi có người bấm "Cho phép" trên màn đồng ý kết nối (ChatGPT, claude.ai…).'
           storageKey="ai-skill.oauth-clients"
           toolbar={
             <>
@@ -181,7 +181,7 @@ export function OAuthClientsPage() {
 }
 
 const DESCRIPTION =
-  'Ứng dụng AI tự đăng ký khi có người bấm «Cho phép» (ChatGPT, claude.ai…). Tên là do ứng dụng tự khai, đừng tin — nhìn nơi quay về để biết thật giả.'
+  'Ứng dụng AI tự đăng ký khi có người bấm "Cho phép" (ChatGPT, claude.ai…). Tên là do ứng dụng tự khai, đừng tin — nhìn nơi quay về để biết thật giả.'
 
 /** `client_id` dạng `dego_oc_…` dài và ngẫu nhiên — chỉ hiện 6 ký tự cuối để đối chiếu với nhật ký, tránh bảng tràn. */
 function shortId(clientId: string): string {

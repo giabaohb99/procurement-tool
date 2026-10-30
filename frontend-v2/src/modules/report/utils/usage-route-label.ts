@@ -16,7 +16,7 @@ const stripQuery = (path: string) => path.split(/[?#]/, 1)[0]
 /**
  * Route MẪU (`/procurement/purchase-orders/:id`) → {phân hệ, màn}: dò mục menu có
  * đường dẫn là tiền tố DÀI NHẤT của route. Phần còn lại bắt đầu bằng `:` thì là
- * trang chi tiết. Không khớp (màn của giao diện cũ, màn đã gỡ) → «Giao diện cũ».
+ * trang chi tiết. Không khớp (màn của giao diện cũ, màn đã gỡ) → "Giao diện cũ".
  */
 export function labelRoute(pattern: string, modules: readonly ErpModule[]): RouteLabel {
   let best: { module: ErpModule; label: string; path: string } | null = null

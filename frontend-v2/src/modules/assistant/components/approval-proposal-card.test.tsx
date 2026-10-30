@@ -11,7 +11,7 @@ import { ApprovalProposalCard } from './approval-proposal-card'
  * Thẻ xác nhận duyệt / từ chối qua Trợ lý web (kh-AI2-7) — tầng GHI có xác nhận.
  *
  * Chỗ dễ lủng:
- * - Nút phải nói đúng việc: đề xuất TỪ CHỐI mà nút ghi «Xác nhận duyệt» là người dùng duyệt nhầm.
+ * - Nút phải nói đúng việc: đề xuất TỪ CHỐI mà nút ghi "Xác nhận duyệt" là người dùng duyệt nhầm.
  * - Bấm đúp ra hai lượt duyệt (chặng 1 rồi chặng 2 nếu người đó duyệt cả hai) — chặn bằng ref, không chỉ `disabled`.
  * - Phiếu đổi trạng thái từ lúc đề xuất (409): token cũ vô dụng, thẻ phải bảo hỏi lại AI và gỡ nút xác nhận.
  * - Không có nút duyệt hàng loạt: một thẻ một phiếu.

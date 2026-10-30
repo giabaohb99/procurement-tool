@@ -27,8 +27,8 @@ interface UsageMetricWithCohortProps {
 }
 
 /**
- * Một chỉ số: giá trị + «nhóm: trung vị» + xu hướng. Chỉ số CHƯA ĐO ĐƯỢC (có mặt trong
- * `unmeasured` hoặc không có giá trị) hiện «Chưa đo được — {lý do}», KHÔNG BAO GIỜ hiện 0.
+ * Một chỉ số: giá trị + "nhóm: trung vị" + xu hướng. Chỉ số CHƯA ĐO ĐƯỢC (có mặt trong
+ * `unmeasured` hoặc không có giá trị) hiện "Chưa đo được — {lý do}", KHÔNG BAO GIỜ hiện 0.
  */
 export function UsageMetricWithCohort({ snapshot, metricKey, className }: UsageMetricWithCohortProps) {
   const metric = snapshot.metrics[metricKey]

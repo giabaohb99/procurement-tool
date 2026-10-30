@@ -115,7 +115,7 @@ export function buildGroupThread(messages: ChatGroupMessage[], now: Date = new D
   return out
 }
 
-/** Chữ trên ô ảnh đại diện: chữ đầu của hai từ cuối («Trần Được» → «TĐ», «Pltgiang» → «P»). */
+/** Chữ trên ô ảnh đại diện: chữ đầu của hai từ cuối ("Trần Được" → "TĐ", "Pltgiang" → "P"). */
 export function getInitials(name: string | null | undefined): string {
   const words = (name ?? '').trim().split(/\s+/).filter(Boolean)
   if (!words.length) return '?'

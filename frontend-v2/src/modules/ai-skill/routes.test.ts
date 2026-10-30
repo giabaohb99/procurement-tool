@@ -33,7 +33,7 @@ describe('aiSkillModule visibility', () => {
   it('opens for a key admin who cannot read skills, with keys and the log only', () => {
     const can = canFrom({ ai_mcp_key_admin: ['read'] })
     expect(canOpenModule(aiSkillModule, can)).toBe(true)
-    //  bao-CR-635: «Ứng dụng AI đã kết nối» gác theo hai khóa của phân hệ như Cấu hình, trang tự kiểm `agent_group`.
+    //  bao-CR-635: "Ứng dụng AI đã kết nối" gác theo hai khóa của phân hệ như Cấu hình, trang tự kiểm `agent_group`.
     expect(visibleNavItems(aiSkillModule, can).map((i) => i.label)).toEqual([
       'Tổng quan', 'Khóa nhân sự', 'Ứng dụng AI đã kết nối', 'Nhật ký sử dụng', 'Cấu hình',
     ])

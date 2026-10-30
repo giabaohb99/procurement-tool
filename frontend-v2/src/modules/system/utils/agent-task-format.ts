@@ -42,13 +42,13 @@ export function agentTaskTone(status: number): StatusTone {
   return TONE_BY_STATUS[status] ?? 'neutral'
 }
 
-/** `$0.031` — chi phí model rất nhỏ nên giữ 3 chữ số lẻ; 0 thì ghi «—». */
+/** `$0.031` — chi phí model rất nhỏ nên giữ 3 chữ số lẻ; 0 thì ghi "—". */
 export function formatUsd(value: number | null | undefined): string {
   if (!value) return '—'
   return `$${value < 1 ? value.toFixed(3) : value.toFixed(2)}`
 }
 
-/** `45 giây` · `6,6 phút` · `33 phút` — cùng lối với dòng «Thời gian» trên thẻ Telegram. */
+/** `45 giây` · `6,6 phút` · `33 phút` — cùng lối với dòng "Thời gian" trên thẻ Telegram. */
 export function formatDurationMs(ms: number | null | undefined): string {
   const sec = Math.max(Math.floor((ms ?? 0) / 1000), 0)
   if (!sec) return '—'

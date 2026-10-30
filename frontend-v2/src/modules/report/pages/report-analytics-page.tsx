@@ -53,7 +53,7 @@ function buildSourceHref(
  * Trang báo cáo Haravan CHUNG — mỗi báo cáo mới chỉ cần khai một
  * `ReportPageConfig` (~30 dòng) + một dòng danh mục, không viết thêm trang
  * riêng. Bố cục cố định: thanh lọc kỳ → thân trang (`ReportAnalyticsBody`) →
- * ngăn «Danh sách người» khi bấm «Xem danh sách» (duoc-CR-686).
+ * ngăn "Danh sách người" khi bấm "Xem danh sách" (duoc-CR-686).
  *
  * Toàn bộ số liệu/nhãn đọc từ `meta` + response của `config.endpoint` — trang
  * này không tự tính hay tự dịch mã trạng thái nào (backend là nguồn duy nhất).

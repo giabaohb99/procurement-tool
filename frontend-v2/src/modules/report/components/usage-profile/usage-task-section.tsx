@@ -50,7 +50,7 @@ export function UsageTaskSection({ snapshot }: { snapshot: UsageSnapshot }) {
     [],
   )
   return (
-    <UsageSectionCard title="Cách làm phiếu" description="Theo loại phiếu: số liệu trong cửa sổ của hồ sơ. Cột «nhóm» nằm cạnh từng chỉ số bên dưới.">
+    <UsageSectionCard title="Cách làm phiếu" description='Theo loại phiếu: số liệu trong cửa sổ của hồ sơ. Cột "nhóm" nằm cạnh từng chỉ số bên dưới.'>
       {rows.length > 0 ? (
         <DataTable columns={columns} rows={rows} getRowId={(r) => r.entity} storageKey="report.usage-docs" emptyMessage="Chưa có phiếu nào." />
       ) : (

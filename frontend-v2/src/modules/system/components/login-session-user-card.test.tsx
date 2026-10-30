@@ -10,13 +10,13 @@ import { HISTORY_KIND } from '../api/login-session-api'
 import { LoginSessionUserCard } from './login-session-user-card'
 
 /**
- * Thẻ «Phiên đăng nhập» ở tab Tài khoản của hồ sơ nhân sự (bao-CR-395).
+ * Thẻ "Phiên đăng nhập" ở tab Tài khoản của hồ sơ nhân sự (bao-CR-395).
  *
  * Ba chỗ dễ lủng:
  * 1. Thẻ mượn dữ liệu của phân hệ Quản trị — thiếu `login_session.read` thì
  *    KHÔNG được gọi API (mount là gọi → toast 403 ngay khi mở tab, xem CLAUDE.md
  *    mục tab Nhà cung cấp).
- * 2. Nút «Khóa tài khoản» đi qua `PUT /api/users/{id}/active` nên gác bằng
+ * 2. Nút "Khóa tài khoản" đi qua `PUT /api/users/{id}/active` nên gác bằng
  *    `user.write`, không phải `login_session.delete` — hai khóa khác nhau.
  * 3. Đá phiên phải gọi đúng cửa quản trị `/api/login-sessions/{id}/revoke`,
  *    không phải cửa tự phục vụ `/api/auth/sessions/{id}/revoke` (cửa đó chỉ đá

@@ -1,7 +1,7 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '@/core/api'
 
 /**
- * «Bot đang nhớ gì về tôi» (ai-CR-138, phase 13.4). Mọi cửa lấy người dùng từ phiên đăng nhập — không có tham số chọn
+ * "Bot đang nhớ gì về tôi" (ai-CR-138, phase 13.4). Mọi cửa lấy người dùng từ phiên đăng nhập — không có tham số chọn
  * người khác, không có biến thể cho quản trị.
  */
 export type MemorySectionKey = 'ban_than' | 'so_thich' | 'cach_lam_viec' | 'da_chot'
@@ -9,7 +9,7 @@ export type MemorySectionKey = 'ban_than' | 'so_thich' | 'cach_lam_viec' | 'da_c
 export interface MemoryLine {
   /** Nguyên văn dòng trong sổ — dùng làm khóa khi sửa / xóa (đổi ở tab khác thì backend trả 409). */
   text: string
-  /** Dòng đã bỏ đuôi «(tự rút)» và đuôi hạn. */
+  /** Dòng đã bỏ đuôi "(tự rút)" và đuôi hạn. */
   fact: string
   auto: boolean
   until: string | null

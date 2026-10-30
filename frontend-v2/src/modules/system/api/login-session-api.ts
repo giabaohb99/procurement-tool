@@ -6,11 +6,11 @@ import type { ListParams } from '@/shared/types/api'
  *
  * - `/system/sessions`      — toàn hệ, cần khóa `login_session` (read / delete);
  * - thẻ ở hồ sơ nhân sự     — phiên + lịch sử 90 ngày của MỘT người, cùng khóa;
- * - «Thiết bị của tôi» ở /me — cửa `/api/auth/sessions*`, CHỈ đòi đăng nhập.
+ * - "Thiết bị của tôi" ở /me — cửa `/api/auth/sessions*`, CHỈ đòi đăng nhập.
  *
  * Hai đường cắt phiên khác nhau về tốc độ: đá MỘT phiên đi qua `revoked_at`
- * (token cũ còn sống tối đa 60 giây vì cache hồ sơ quyền), còn «bắt đăng nhập
- * lại» tăng `token_version` nên hiệu lực tức thì. Nhãn trên nút phải nói rõ
+ * (token cũ còn sống tối đa 60 giây vì cache hồ sơ quyền), còn "bắt đăng nhập
+ * lại" tăng `token_version` nên hiệu lực tức thì. Nhãn trên nút phải nói rõ
  * điều đó, đừng hứa "đá ngay" ở nút đầu.
  */
 
@@ -24,7 +24,7 @@ export const REVOKE_REASON = {
   PASSWORD_CHANGED: 3,
   FORCE_RELOGIN: 4,
   ACCOUNT_LOCKED: 5,
-  /** bao-CR-400 — hồ sơ nhân sự chuyển «Nghỉ việc» hoặc bị xóa. */
+  /** bao-CR-400 — hồ sơ nhân sự chuyển "Nghỉ việc" hoặc bị xóa. */
   EMPLOYEE_RESIGNED: 6,
 } as const
 
@@ -32,7 +32,7 @@ export const REVOKE_REASON = {
 export interface LoginSessionItem {
   id: number
   user_id: number
-  /** Tên nhân sự › email › `User #id` — rỗng ở cửa «Thiết bị của tôi». */
+  /** Tên nhân sự › email › `User #id` — rỗng ở cửa "Thiết bị của tôi". */
   user_name: string
   ip: string
   last_seen_ip: string
@@ -57,9 +57,9 @@ export interface LoginSessionItem {
   revoke_reason_label: string
   /** Chưa thu hồi VÀ chưa quá hạn. */
   is_alive: boolean
-  /** Câu tình trạng đã dựng sẵn: «Còn hiệu lực» · «Hết hạn» · «Đã đá bởi …». */
+  /** Câu tình trạng đã dựng sẵn: "Còn hiệu lực" · "Hết hạn" · "Đã đá bởi …". */
   ending: string
-  /** Chính phiên đang gọi API — chỉ có nghĩa ở cửa «Thiết bị của tôi». */
+  /** Chính phiên đang gọi API — chỉ có nghĩa ở cửa "Thiết bị của tôi". */
   is_current: boolean
 }
 

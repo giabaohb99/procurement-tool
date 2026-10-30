@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { agentHubApi } from '../api/agent-hub-api'
 
-/** Liên kết Telegram của chính mình (ai-CR-038) — tab «Telegram» ở Trang cá nhân. */
+/** Liên kết Telegram của chính mình (ai-CR-038) — tab "Telegram" ở Trang cá nhân. */
 export function useTelegramLinks() {
   return useQuery({
     queryKey: queryKeys.system.telegramLinks(),
