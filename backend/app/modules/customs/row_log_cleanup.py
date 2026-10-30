@@ -7,7 +7,7 @@ duplicate_rows), nên chi tiết từng dòng loại thường chỉ cần trong
 
 Luật dọn (A1 / đại ca chốt 30/10):
   · XÓA: Thêm mới, Đã có, Trùng cũ hơn `customs_row_log_keep_days` ngày (mặc định 7, 0 = tắt);
-  · GIỮ vĩnh viễn: Lỗi, Ghi đè, Xóa, Bỏ qua, và dòng Thêm mới "nghi sửa giá" (chị Mi còn rà).
+  · GIỮ vĩnh viễn: Lỗi, Ghi đè, Xóa, Bỏ qua, và dòng Thêm mới "cần rà" (nghi sửa giá / khác ô — chị Mi còn rà).
 Xóa theo lô nhỏ như `system_log.retention._delete_month`, có trần số lô mỗi đêm.
 """
 import logging
@@ -25,7 +25,8 @@ from .row_log import CATEGORY
 log = logging.getLogger("app.customs.row_log_cleanup")
 
 PRUNABLE = (int(ImportRowStatus.NEW), int(ImportRowStatus.EXISTING), int(ImportRowStatus.DUPLICATE))
-SUSPECT_MARK = "nghi sửa giá"
+#  bao-CR-699: mọi dòng Thêm mới cần rà (nghi sửa giá, hoặc cùng tờ khai / giá / lượng mà khác ô) đều kết bằng chữ này.
+SUSPECT_MARK = "cần rà"
 
 
 def keep_days() -> int:

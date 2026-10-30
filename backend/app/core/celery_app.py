@@ -121,6 +121,12 @@ celery_app.conf.update(
             "task": "customs.cleanup_row_logs",
             "schedule": crontab(hour=2, minute=45),  # 02:45 VN, mỗi ngày
         },
+        #  bao-CR-699: gộp dòng hàng hải quan trùng nửa tháng một lần — ngày 1 và 16 lúc 03:30 (sau đóng gói tháng 03:00
+        #  ngày 1, trước dọn GET 03:40). Có công tắc customs_line_merge_enabled.
+        "merge-customs-duplicate-lines": {
+            "task": "customs.merge_duplicate_lines",
+            "schedule": crontab(day_of_month="1,16", hour=3, minute=30),
+        },
         "cleanup-get-logs": {
             "task": "request_log.cleanup",
             "schedule": crontab(hour=3, minute=40),  # 03:40 VN, mỗi ngày

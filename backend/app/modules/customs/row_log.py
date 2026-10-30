@@ -28,11 +28,12 @@ from sqlalchemy.orm import Session
 from app.modules.import_tool.model import (IMPORT_ROW_STATUS_LABELS, ImportBatch, ImportLog,
                                            ImportRowStatus, LogLevel)
 
-from .constants import INSERT_CHUNK, REF_ID_KEY
-from .dedupe import ExistingIndex
+from .constants import COLUMNS, INSERT_CHUNK, REF_ID_KEY
+from .dedupe import ExistingIndex, conflict_fields
 from .reader import ParseResult
 
 SHEET = "GTT02"
+_LABELS = dict(COLUMNS)
 CATEGORY = "customs_row"
 
 #  (dòng trong tệp, ImportRowStatus, câu, tên hàng)
@@ -54,7 +55,8 @@ class Classification:
 
 def classify_rows(res: ParseResult, identities: list[str], existing: ExistingIndex,
                   target_ids: frozenset[int] | set[int] = frozenset(),
-                  unchanged_rows: frozenset[int] | set[int] = frozenset()) -> Classification:
+                  unchanged_rows: frozenset[int] | set[int] = frozenset(),
+                  matches: list[tuple[str, tuple[str, ...]]] | None = None) -> Classification:
     """Phân loại từng dòng của tệp theo THỨ TỰ DÒNG.
 
     `res.rows` phải đã qua `dedupe.stamp_rows` (có `row_hash`); `identities` cùng thứ tự.
@@ -67,15 +69,21 @@ def classify_rows(res: ParseResult, identities: list[str], existing: ExistingInd
         trong tệp"); y hệt dòng đã lưu → "Đã có", không ghi gì;
       · ô ID có số mà không có → THÊM MỚI như dòng thường (vẫn qua chống trùng), kèm cảnh báo;
       · một ID xuất hiện ở nhiều dòng → dòng ĐẦU TIÊN thắng, các dòng sau BỎ QUA kèm cảnh báo.
+
+    bao-CR-699: `matches` (cùng thứ tự `res.rows`, từ `dedupe.match_rows`) — dòng khác mã băm nhưng cùng tờ khai +
+    giá + lượng với một dòng đã lưu / dòng phía trên trong tệp, và KHÔNG xung đột ô nào (bằng nhau hoặc một bên trống)
+    → "Đã có" / "Trùng"; có xung đột → vẫn THÊM, ghi chú cần rà.
     """
     out = Classification()
     for row_no, level, message in res.logs:
         if row_no > 0 and level == LogLevel.ERROR:
             out.statuses.append((row_no, int(ImportRowStatus.ERROR), message, ""))
+    match_of = {id(r): m for r, m in zip(res.rows, matches)} if matches else {}
     items = [(r["source_row"], False, r, identity) for r, identity in zip(res.rows, identities)]
     items += [(d["source_row"], True, d, "") for d in res.deletes]
     items.sort(key=lambda t: t[0])
     first_seen: dict[str, int] = {}
+    first_match: dict[str, tuple[int, tuple[str, ...]]] = {}     # mã khớp → (dòng trong tệp, các ô chuẩn hóa)
     claimed: dict[int, int] = {}          # id → dòng đã xử lý nó
 
     def skip(row_no: int, name: str, message: str) -> None:
@@ -124,9 +132,29 @@ def classify_rows(res: ParseResult, identities: list[str], existing: ExistingInd
             out.statuses.append((row_no, int(ImportRowStatus.DUPLICATE),
                                  f"{prefix}Giống hệt dòng {first_seen[h]} trong cùng tệp — bỏ qua", name))
         else:
+            match_key, canon = match_of.get(id(r), ("", ()))
+            stored = existing.by_match.get(match_key) if match_key else None
+            earlier = first_match.get(match_key) if match_key else None
+            if stored and not conflict_fields(canon, stored[1]):
+                out.statuses.append((row_no, int(ImportRowStatus.EXISTING),
+                                     f"{prefix}Đã có trong bảng giá (cùng tờ khai, giá, lượng — lô #{stored[0]}) — bỏ qua",
+                                     name))
+                continue
+            if earlier and not conflict_fields(canon, earlier[1]):
+                out.statuses.append((row_no, int(ImportRowStatus.DUPLICATE),
+                                     f"{prefix}Trùng dòng {earlier[0]} trong cùng tệp (cùng tờ khai, giá, lượng) — bỏ qua",
+                                     name))
+                continue
             first_seen[h] = row_no
+            if match_key:
+                first_match.setdefault(match_key, (row_no, canon))
             out.to_insert.append(r)
-            if identity in existing.by_identity:
+            clash = conflict_fields(canon, stored[1]) if stored else []
+            if clash:
+                out.suspect += 1
+                message = (f"{prefix}Thêm mới — cùng tờ khai, giá, lượng với dòng ở lô #{stored[0]} nhưng khác "
+                           f"{', '.join(_LABELS[k] for k in clash[:4])}, cần rà")
+            elif identity in existing.by_identity:
                 out.suspect += 1
                 message = (f"{prefix}Thêm mới — nghi sửa giá/số lượng so với dòng đã có ở lô "
                            f"#{existing.by_identity[identity]}, cần rà")

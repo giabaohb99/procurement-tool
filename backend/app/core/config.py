@@ -158,6 +158,8 @@ class Settings(BaseSettings):
     # bao-CR-698: nhật ký TỪNG DÒNG của lô hải quan (Thêm mới / Đã có / Trùng) cũ hơn N ngày tự dọn hằng đêm;
     # 0 = tắt. Dòng Lỗi / Ghi đè / Xóa / Bỏ qua và dòng nghi sửa giá giữ vĩnh viễn.
     CUSTOMS_ROW_LOG_KEEP_DAYS: int = 7     # đại ca chốt 30/10
+    # bao-CR-699: gộp dòng hàng hải quan trùng (cùng tờ khai + giá + lượng, không xung đột) ngày 1 và 16 lúc 03:30.
+    CUSTOMS_LINE_MERGE_ENABLED: bool = True
 
     # --- Trợ lý AI (Phase 0: nền lớp provider) ---
     # Tắt mặc định — bật ở .env môi trường muốn dùng. Off thì endpoint /api/assistant trả 403.

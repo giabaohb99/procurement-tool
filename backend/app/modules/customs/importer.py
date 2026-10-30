@@ -110,7 +110,8 @@ def _classify_and_write(db: Session, batch: ImportBatch, res: reader.ParseResult
     targets = line_change.load_lines_by_id(db, wanted)
     taggers = _Taggers(db) if (targets or (apply and rows)) else None
     unchanged = _tag_overwrites(db, rows, targets, taggers) if targets else set()
-    cls = row_log.classify_rows(res, identities, existing, frozenset(targets), unchanged)
+    cls = row_log.classify_rows(res, identities, existing, frozenset(targets), unchanged,
+                                matches=dedupe.match_rows(rows))   # bao-CR-699: cùng tờ khai + giá + lượng
     for row_no, message in cls.warnings:
         add_log(db, batch, SHEET, row_no, LogLevel.WARNING, "customs", message)
     #  bao-CR-496: mỗi dòng dữ liệu một dòng nhật ký mang kết cục — ghi ở CẢ chạy thử lẫn ghi thật.

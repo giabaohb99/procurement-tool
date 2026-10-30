@@ -156,6 +156,11 @@ FIELDS = [
      "label": "Số ngày giữ nhật ký từng dòng của lô hải quan",
      "hint": "Dòng Thêm mới / Đã có / Trùng cũ hơn số ngày này bị vòng dọn đêm xóa (số đếm của lô vẫn còn). "
              "Dòng Lỗi, Ghi đè, Xóa, Bỏ qua và dòng nghi sửa giá giữ vĩnh viễn. Đặt 0 để tắt việc dọn."},
+    #  bao-CR-699 — gộp dòng hàng hải quan trùng.
+    {"key": "customs_line_merge_enabled", "group": "system", "type": "bool",
+     "label": "Tự gộp dòng hàng hải quan trùng (ngày 1 và 16)",
+     "hint": "Dòng cùng tờ khai, giá, lượng mà không khác ô nào (hoặc chỉ một bên trống) được gộp về dòng nạp sớm "
+             "nhất, ô trống điền bù. Nhóm khác ô hoặc từng sửa tay thì để nguyên. Tắt để dừng việc gộp định kỳ."},
     {"key": "backup_keep", "group": "system", "type": "int",
      "label": "Số bản sao lưu cơ sở dữ liệu giữ lại",
      "hint": "Giữ bấy nhiêu bản mới nhất, cũ hơn thì xóa cả tệp lẫn dòng ghi. Chạy hai lần mỗi "
