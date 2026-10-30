@@ -2,8 +2,8 @@ import type { DocumentAccess, DocumentAccessDraft } from '../types/document-acce
 import { useGrantAccess, useRevokeAccess } from './use-document-access'
 
 /**
- * Hai thao tác GHI của hộp khai quyền văn bản, dùng chung cho khối «Quyền truy
- * cập» ở trang chi tiết (`document-access-card.tsx`) và hộp «Chia sẻ» ở trang
+ * Hai thao tác GHI của hộp khai quyền văn bản, dùng chung cho khối "Quyền truy
+ * cập" ở trang chi tiết (`document-access-card.tsx`) và hộp "Chia sẻ" ở trang
  * Thư mục (`document-share-dialog.tsx`) — một luật, hai nơi gọi.
  */
 export function useDocumentAccessEditor(documentId: number) {

@@ -45,7 +45,7 @@ interface ToolbarStyleSelectsProps {
  * Ô MỨC PHÓNG, tách riêng khỏi ba ô kia.
  *
  * Ở khổ hẹp nó là ô chọn DUY NHẤT còn đứng trên thanh (ba ô kiểu chữ dọn vào tờ
- * trượt «Định dạng»). Không phải chọn bừa: trang giấy A4 rộng 794px không vừa
+ * trượt "Định dạng"). Không phải chọn bừa: trang giấy A4 rộng 794px không vừa
  * màn 390px, nên mức phóng là thứ quyết định người ta có đọc được dòng mình vừa
  * gõ hay không — nó thuộc về nhịp gõ, không thuộc về định dạng. Google Docs trên
  * điện thoại cũng để đúng ô này ngoài thanh.

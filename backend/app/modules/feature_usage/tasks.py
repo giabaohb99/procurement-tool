@@ -1,4 +1,4 @@
-"""Celery của báo cáo «Mức dùng chức năng» (duoc-CR-655): gom ngày 04:45 (sau `usage.aggregate_daily` 04:30) + dọn 3 năm."""
+"""Celery của báo cáo "Mức dùng chức năng" (duoc-CR-655): gom ngày 04:45 (sau `usage.aggregate_daily` 04:30) + dọn 3 năm."""
 import logging
 from datetime import date, timedelta
 

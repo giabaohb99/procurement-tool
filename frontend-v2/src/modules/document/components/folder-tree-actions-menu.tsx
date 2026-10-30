@@ -31,7 +31,7 @@ interface FolderTreeActionsMenuProps {
 
 /**
  * Menu `⋯` theo ĐÚNG `my_level` của node — thư mục PHÁP NHÂN chỉ có "Thêm
- * thư mục con" + "Chia sẻ…" (mở hộp «Chia sẻ» kiểu Drive ở khung phải, xem
+ * thư mục con" + "Chia sẻ…" (mở hộp "Chia sẻ" kiểu Drive ở khung phải, xem
  * `?tab=access`), còn lại rẽ theo ba mức (Xem · Đóng góp · Quản lý) như bảng
  * ở `phase-04-phan-quyen-thu-muc.md`.
  *
@@ -96,7 +96,7 @@ function FolderTreeActionsDropdown({ data, onAction }: FolderTreeActionsMenuProp
   const canAddChild = can('doc_folder', 'create')
   const canManage = data.my_level >= FOLDER_ACCESS_LEVEL.manage
   const isArchived = data.status === FOLDER_STATUS.archived
-  //  «Xóa» LUÔN hiện (phản hồi lead 24/09/2026) — người chỉ thấy thư mục pháp
+  //  "Xóa" LUÔN hiện (phản hồi lead 24/09/2026) — người chỉ thấy thư mục pháp
   //  nhân trước đây không có cách nào biết tính năng này tồn tại vì mục bị
   //  GIẤU hẳn. `null` = xóa được.
   const deleteDisabledReason = folderDeleteDisabledReason(data)
@@ -114,9 +114,9 @@ function FolderTreeActionsDropdown({ data, onAction }: FolderTreeActionsMenuProp
         align="start"
         onClick={(event) => event.stopPropagation()}
         onCloseAutoFocus={(event) => {
-          //  «Thêm thư mục con» / «Đổi tên» mở Ô NHẬP TẠI CHỖ trên cây — chạy
+          //  "Thêm thư mục con" / "Đổi tên" mở Ô NHẬP TẠI CHỖ trên cây — chạy
           //  SAU KHI menu đóng hẳn (menu modal giữ focus, dựng ô lúc menu còn
-          //  mở thì gõ không vào, lỗi báo 24/09/2026), và không trả focus về «⋯».
+          //  mở thì gõ không vào, lỗi báo 24/09/2026), và không trả focus về "⋯".
           const pending = pendingInlineEditRef.current
           if (!pending) return
           event.preventDefault()

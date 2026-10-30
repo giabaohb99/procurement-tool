@@ -1,4 +1,4 @@
-// bao-CR-499 — danh sách chọn ô «Trưởng phòng phê duyệt» của bản v1: chỉ người DUYỆT ĐƯỢC chứng
+// bao-CR-499 — danh sách chọn ô "Trưởng phòng phê duyệt" của bản v1: chỉ người DUYỆT ĐƯỢC chứng
 // từ đó (backend `core/approver_candidates.py`), cùng nguồn với bản v2 — không lấy cả danh mục
 // nhân sự nữa (đại ca chốt hướng 1, 26/09/2026).
 import { api } from '../api/client'

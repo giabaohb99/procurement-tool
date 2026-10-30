@@ -3,12 +3,12 @@
 //
 // bao-CR-541 (đại ca chốt 01/10/2026): trùng thì BỎ QUA — dòng giống hệt một dòng đã có trong
 // bảng giá hoặc lặp lại trong cùng tệp không được ghi; không xóa, không ghi đè dòng cũ nào nữa
-// (bỏ luật «thay theo khoảng ngày» của bao-CR-470). Dòng mới trùng cột nhận diện mà khác giá
-// thì vẫn thêm, chỉ đếm «nghi sửa giá» để người nạp rà ở Nhật ký lô.
+// (bỏ luật "thay theo khoảng ngày" của bao-CR-470). Dòng mới trùng cột nhận diện mà khác giá
+// thì vẫn thêm, chỉ đếm "nghi sửa giá" để người nạp rà ở Nhật ký lô.
 //
-// bao-CR-608 (đại ca 07/10/2026): tệp có thêm cột «ID» (tùy chọn) thì ID có thật → GHI ĐÈ đúng
-// dòng đó; cột «Thao tác» = xóa → XÓA dòng có ID đó. Excel xuất ra từ màn này có sẵn cột ID đầu
-// và cột «Thao tác» rỗng cuối. Bảng chạy thử có thêm hai cột Ghi đè / Xóa.
+// bao-CR-608 (đại ca 07/10/2026): tệp có thêm cột "ID" (tùy chọn) thì ID có thật → GHI ĐÈ đúng
+// dòng đó; cột "Thao tác" = xóa → XÓA dòng có ID đó. Excel xuất ra từ màn này có sẵn cột ID đầu
+// và cột "Thao tác" rỗng cuối. Bảng chạy thử có thêm hai cột Ghi đè / Xóa.
 //
 // Hai nút Chạy thử / Áp dụng chặn bấm đúp bằng `useRef` ngay trong lượt bấm — `disabled`
 // chỉ đổi ở lượt vẽ sau, bấm liền tay vẫn lọt hai lệnh.
@@ -73,7 +73,7 @@ export function CustomsImportDialog({ onClose }: CustomsImportDialogProps) {
   const usable = dry.filter(isBatchUsable)
   const skipped = sumSkippedLines(dry)
   //  Mọi lô chạy thử xong, không lô nào lỗi, mà không còn dòng mới: tệp đã nạp rồi — nói rõ
-  //  thay vì câu «không tệp nào dùng được» (nghe như tệp hỏng).
+  //  thay vì câu "không tệp nào dùng được" (nghe như tệp hỏng).
   const nothingNew =
     dryDone && !usable.length && dry.every((batch) => batch.status === CUSTOMS_BATCH_STATUS.done)
   const appliedDone = applied.length > 0 && applied.every((batch) => !isBatchRunning(batch))
@@ -154,7 +154,7 @@ export function CustomsImportDialog({ onClose }: CustomsImportDialogProps) {
               <p className="text-xs text-muted-foreground">
                 Cột <b>ID</b> (tùy chọn): ô ghi ID của một dòng đang có thì dòng đó bị <b>ghi đè</b>{' '}
                 toàn bộ bằng dữ liệu trong tệp; ID không có thì dòng được thêm mới như thường; ô trống
-                thì như cũ. Cột <b>Thao tác</b> (tùy chọn, nhận cả tiêu đề «Action», «Hành động»): ghi{' '}
+                thì như cũ. Cột <b>Thao tác</b> (tùy chọn, nhận cả tiêu đề <strong>Action</strong>, <strong>Hành động</strong>): ghi{' '}
                 <b>xóa</b> / <b>delete</b> thì <b>xóa</b> dòng có ID đó — dòng xóa chỉ cần ô ID. Excel
                 xuất từ màn này có sẵn cột ID ở đầu và cột Thao tác trống ở cuối: xuất → sửa → nạp lại.
                 Hoàn tác lô trả lại đủ dòng đã ghi đè / xóa.
@@ -220,7 +220,7 @@ export function CustomsImportDialog({ onClose }: CustomsImportDialogProps) {
                   <b>{skipped.suspect} dòng mới</b> trùng ngày, doanh nghiệp, đối tác, mã HS, số thứ
                   tự và tên hàng với một dòng đã có nhưng khác giá hoặc lượng — vẫn được thêm (thường
                   là lô hàng khác). Nếu là nguồn sửa số liệu thì hoàn tác lô cũ rồi nạp lại; xem ghi
-                  chú «nghi sửa giá» ở Nhật ký lô.
+                  chú <strong>nghi sửa giá</strong> ở Nhật ký lô.
                 </CustomsNotice>
               )}
               {stage === 'dry' && nothingNew && (
@@ -301,7 +301,7 @@ function BatchTable({ rows, applying }: { rows: CustomsImportBatch[]; applying: 
         hideable: false,
         cell: (b) => (b.status === CUSTOMS_BATCH_STATUS.done ? b.created_count : '—'),
       },
-      //  bao-CR-608 — ghi đè theo cột «ID», xóa theo cột «Thao tác».
+      //  bao-CR-608 — ghi đè theo cột "ID", xóa theo cột "Thao tác".
       {
         key: 'updated_count',
         header: applying ? 'Đã ghi đè' : 'Ghi đè',

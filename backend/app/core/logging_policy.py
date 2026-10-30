@@ -239,16 +239,16 @@ def sensitive_keys_for_path(path: str) -> frozenset:
     """Những khóa phải che THÊM với riêng đường dẫn này (ngoài luật chung)."""
     if path == _LABOR_CONTRACT_PATH_PREFIX or path.startswith(_LABOR_CONTRACT_PATH_PREFIX + "/"):
         return _LABOR_CONTRACT_KEYS
-    #  duoc-CR-652: «Hợp đồng của tôi» chỉ GET, nhưng giữ cùng luật cho chắc.
+    #  duoc-CR-652: "Hợp đồng của tôi" chỉ GET, nhưng giữ cùng luật cho chắc.
     if path == _MY_LABOR_CONTRACT_PATH_PREFIX or path.startswith(_MY_LABOR_CONTRACT_PATH_PREFIX + "/"):
         return _LABOR_CONTRACT_KEYS
     if not (path == _EMPLOYEE_PATH_PREFIX or path.startswith(_EMPLOYEE_PATH_PREFIX + "/")):
         return frozenset()
     #  Nhập muộn: `employee.sensitive` là tệp thuần không phụ thuộc gì, nhưng tầng
     #  `core` không nên kéo phân hệ vào lúc khởi động chỉ để đọc một hằng số.
-    from app.modules.employee.sensitive import SENSITIVE_FIELDS
+    from app.modules.employee.sensitive import SALARY_FIELDS, SENSITIVE_FIELDS
 
-    keys = frozenset(SENSITIVE_FIELDS)
+    keys = frozenset(SENSITIVE_FIELDS) | frozenset(SALARY_FIELDS)   # duoc-CR-693: lương hồ sơ che như lương HĐ
     if "/labor-contracts" in path:
         keys |= _LABOR_CONTRACT_KEYS
     if _EMPLOYEE_PEOPLE_PATH.match(path):
@@ -472,7 +472,7 @@ CLEANUP_MAX_BATCHES = 500
 #  dòng đánh dấu trong `tab_audit_log` (`anomaly_alert`, khóa ở `doc_code`),
 #  cùng cách `file_access_log` dùng cho cảnh báo mở tệp dồn dập.
 ANOMALY_WINDOW_MINUTES = 30
-#  IP «lạ» = chưa từng thấy ở phiên nào của CHÍNH người đó trong 30 ngày trước.
+#  IP "lạ" = chưa từng thấy ở phiên nào của CHÍNH người đó trong 30 ngày trước.
 #  Lần đăng nhập đầu tiên của một tài khoản không tính — chưa có gì để so.
 ANOMALY_KNOWN_IP_DAYS = 30
 #  Từ ngần này dòng bị xóa trong MỘT `request_id` thì gọi là xóa hàng loạt.

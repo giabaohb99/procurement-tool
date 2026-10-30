@@ -1,21 +1,21 @@
 """Phòng thu mua MẶC ĐỊNH (thu mua trung tâm) — bao-CR-524, khách chốt 30/09/2026.
 
-Trước CR này, số `0` ở các cột phòng của chứng từ thu mua mang nghĩa «Thu mua chung» — một
+Trước CR này, số `0` ở các cột phòng của chứng từ thu mua mang nghĩa "Thu mua chung" — một
 phòng ẢO không có trong danh mục (bao-CR-414/480/484/486/488):
   · `handler_dept_id = 0` trên YCMH (`tab_purchase_request`) · YCBG (`tab_survey_request`) ·
     ĐMH (`tab_purchase_order`);
   · `department_id = 0` trên công nợ (`tab_payable`, khoản nợ có đơn) và YCTT
     (`tab_payment_request`, phiếu gom nợ của đơn thu mua chung);
-  · `department_id = 0` trên bảng phân công (`tab_category_assignee`) = bộ «Thu mua chung».
+  · `department_id = 0` trên bảng phân công (`tab_category_assignee`) = bộ "Thu mua chung".
 
 Khách bỏ phòng ảo đó: phòng thu mua mặc định là một PHÒNG THẬT trong danh mục — mã
-`PBA017` «Sản xuất -Thu mua». Đây là NƠI DUY NHẤT tra mã → id phòng. KHÔNG gõ cứng id (id
+`PBA017` "Sản xuất -Thu mua". Đây là NƠI DUY NHẤT tra mã → id phòng. KHÔNG gõ cứng id (id
 local / dev / prod khác nhau); mã đổi được ở màn Cấu hình hệ thống (khóa
 `central_purchasing_dept_code`).
 
 Tương thích ngược: `0` còn sót (phiếu cũ chưa chạy `scripts/backfill_central_purchasing_dept.py`)
 vẫn được coi là phòng thu mua mặc định ở MỌI chỗ đọc — trước và sau khi chạy script, không chỗ
-nào gãy. Chỉ giao diện là thôi mời chọn «Thu mua chung».
+nào gãy. Chỉ giao diện là thôi mời chọn "Thu mua chung".
 Danh mục chưa có phòng mang mã đã cấu hình thì mọi hàm ở đây trả `0` = quay về đúng hành vi cũ.
 """
 from sqlalchemy import select
@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 SETTING_KEY = "central_purchasing_dept_code"
 DEFAULT_CODE = "PBA017"
 
-#  Giá trị cũ của phòng ảo «Thu mua chung» — chỉ còn để ĐỌC dữ liệu chưa backfill.
+#  Giá trị cũ của phòng ảo "Thu mua chung" — chỉ còn để ĐỌC dữ liệu chưa backfill.
 LEGACY_CENTRAL_ID = 0
 
 
@@ -73,14 +73,14 @@ def is_central_dept(db: Session, dept_id) -> bool:
 
 
 def normalize_handler_dept_id(db: Session, dept_id) -> int:
-    """Giá trị GHI xuống cột phòng xử lý: `0` (không nhờ phòng nào / «Thu mua chung» cũ) →
+    """Giá trị GHI xuống cột phòng xử lý: `0` (không nhờ phòng nào / "Thu mua chung" cũ) →
     id phòng thu mua mặc định. Danh mục chưa có phòng đó thì giữ `0` như trước."""
     value = int(dept_id or 0)
     return value or get_central_dept_id(db)
 
 
 def central_dept_ids(db: Session) -> set[int]:
-    """Mọi giá trị mang nghĩa «phòng thu mua mặc định» trên dữ liệu: `{0, id thật}`."""
+    """Mọi giá trị mang nghĩa "phòng thu mua mặc định" trên dữ liệu: `{0, id thật}`."""
     ids = {LEGACY_CENTRAL_ID}
     central = get_central_dept_id(db)
     if central:

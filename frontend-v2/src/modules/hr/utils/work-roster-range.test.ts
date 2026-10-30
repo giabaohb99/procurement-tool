@@ -67,7 +67,7 @@ describe('parseRosterMode', () => {
 })
 
 describe('todayInVietnamISO', () => {
-  //  Lỗi cũ: «hôm nay» lấy theo múi giờ máy — máy giờ UTC lúc 00:30 sáng VN vẫn hiện hôm qua.
+  //  Lỗi cũ: "hôm nay" lấy theo múi giờ máy — máy giờ UTC lúc 00:30 sáng VN vẫn hiện hôm qua.
   it('reads the Vietnam calendar day across the UTC midnight boundary', () => {
     expect(todayInVietnamISO(new Date('2026-10-05T16:59:59Z'))).toBe('2026-10-05')
     expect(todayInVietnamISO(new Date('2026-10-05T17:00:00Z'))).toBe('2026-10-06')

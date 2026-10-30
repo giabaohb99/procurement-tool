@@ -36,7 +36,7 @@ export function WorkOverviewPage() {
                không cần rộng. Cùng lưới với trang Tổng quan Nhân sự.
 
                Năm ô chia hai cột thì ô cuối đứng một mình nửa hàng; cố ý xếp
-               «Đã hoàn thành» vào chỗ đó — nó là ô ÍT phải hành động nhất. */}
+               "Đã hoàn thành" vào chỗ đó — nó là ô ÍT phải hành động nhất. */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
             <StatCard
               icon={FolderKanban}
@@ -97,8 +97,8 @@ export function WorkOverviewPage() {
             </ChartCard>
           </div>
 
-          {/*  ⚠️ Hai khối này là phần BÙ cho dải thẻ đếm ở trên. Thẻ nói «22
-               việc quá hạn» rồi dừng — người đọc biết mình có vấn đề nhưng
+          {/*  ⚠️ Hai khối này là phần BÙ cho dải thẻ đếm ở trên. Thẻ nói "22
+               việc quá hạn" rồi dừng — người đọc biết mình có vấn đề nhưng
                không có chỗ nào bấm vào để xem vấn đề nằm ở đâu. Hai biểu đồ
                cũng vậy: chúng nói *bao nhiêu* và *ở đâu*, không nói *việc nào*.
 

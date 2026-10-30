@@ -125,7 +125,7 @@ export function useCreateExcerpt(documentId: number) {
     mutationFn: (values: DocumentExcerptInput) =>
       documentLinkApi.createExcerpt(documentId, values),
     onSuccess: (excerpt) => {
-      toast.success(`Đã tạo bản trích «${excerpt.title}»`)
+      toast.success(`Đã tạo bản trích "${excerpt.title}"`)
       invalidate()
       //  Bản trích là một VĂN BẢN MỚI — danh sách văn bản phải thấy nó ngay.
       void queryClient.invalidateQueries({ queryKey: queryKeys.document.all })

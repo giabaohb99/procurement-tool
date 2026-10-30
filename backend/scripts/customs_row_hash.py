@@ -8,7 +8,7 @@ Chạy (trong container api, sau `alembic upgrade head`):
     python -m scripts.customs_row_hash --dedupe --apply      # xóa dòng thừa (chép ra tệp trước)
 
 Dòng thừa = dòng có cùng mã băm với một dòng khác; mỗi nhóm GIỮ dòng id nhỏ nhất (nạp sớm
-nhất). Đây là phần dồn lại từ luật bao-CR-496 «trùng trong lô vẫn ghi» — đo 30/09 trên prod
+nhất). Đây là phần dồn lại từ luật bao-CR-496 "trùng trong lô vẫn ghi" — đo 30/09 trên prod
 có 576 nhóm / 806 dòng thừa, cùng nằm trong một lô.
 
 ⚠️ `--apply` chép mọi dòng sắp xóa ra một tệp JSON (`--dump`, mặc định đặt theo giờ chạy)

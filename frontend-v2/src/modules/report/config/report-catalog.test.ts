@@ -10,7 +10,7 @@ import { REPORT_CATALOG } from './report-catalog'
 
 /**
  * Dàn phẳng menu (kể cả mục con) của mọi phân hệ trừ Báo cáo, kèm khóa quyền
- * THỰC SỰ gác mục đó: mục không khai `entity` (vd «Văn bản» — cố ý, xem
+ * THỰC SỰ gác mục đó: mục không khai `entity` (vd "Văn bản" — cố ý, xem
  * `modules/document/routes.tsx`) thì chỉ còn khóa của PHÂN HỆ gác.
  */
 function flattenSourceNav(): (ModuleNavItem & { gate?: string })[] {
@@ -26,11 +26,11 @@ function flattenSourceNav(): (ModuleNavItem & { gate?: string })[] {
 /**
  * Báo cáo mà trang BẢNG gốc gác bằng khóa KHÁC khóa của báo cáo — chỉ khi phân hệ gốc
  * không có màn danh sách riêng cho dữ liệu đó. Hợp đồng lao động (khóa 17) nằm ở tab của
- * hồ sơ nhân sự, nên «Xem bảng chi tiết» mở danh sách nhân sự (`employee`) còn báo cáo
- * gác `labor_contract` như `/api/labor-contracts/summary`. Quỹ lương theo pháp nhân (khóa 21,
- * duoc-CR-688) cùng lý do: số lấy từ HĐLĐ, gác `labor_contract`. Thêm dòng mới phải có lý do.
+ * hồ sơ nhân sự, nên "Xem bảng chi tiết" mở danh sách nhân sự (`employee`) còn báo cáo
+ * gác `labor_contract` như `/api/labor-contracts/summary`. Quỹ lương (khóa 21) từng nằm đây; từ
+ * duoc-CR-693 nó đọc ô lương hồ sơ và gác `employee` nên không còn là ngoại lệ. Thêm dòng mới phải có lý do.
  */
-const SOURCE_GATE_EXCEPTIONS: Record<number, string> = { 17: 'employee', 21: 'employee' }
+const SOURCE_GATE_EXCEPTIONS: Record<number, string> = { 17: 'employee' }
 
 describe('REPORT_CATALOG', () => {
   it('each report path lives under /report and is unique', () => {
@@ -44,8 +44,8 @@ describe('REPORT_CATALOG', () => {
   it('permission key matches the source module menu item for the same page', () => {
     const sourceNav = flattenSourceNav()
     for (const r of REPORT_CATALOG) {
-      //  Mục CHA và mục CON có thể chung đường dẫn (vd «Nghỉ phép» gom 4 khóa ›
-      //  «Đơn nghỉ phép» khai `leave_request`) — lấy mục khai khóa RIÊNG, nó mới
+      //  Mục CHA và mục CON có thể chung đường dẫn (vd "Nghỉ phép" gom 4 khóa ›
+      //  "Đơn nghỉ phép" khai `leave_request`) — lấy mục khai khóa RIÊNG, nó mới
       //  là khóa gác thật của trang đó.
       const matches = sourceNav.filter((i) => i.path === r.sourcePath && !i.crossModule)
       const src = matches.find((i) => i.entity) ?? matches[0]

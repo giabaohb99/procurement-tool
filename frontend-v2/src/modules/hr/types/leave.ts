@@ -61,7 +61,7 @@ export const LEAVE_SESSION_LABELS: Record<number, string> = {
   [LEAVE_SESSION.HOURLY]: 'Theo giờ',
 }
 
-/** Đơn khai theo GIỜ — hai ô buổi đều là «Theo giờ», và chỉ trong MỘT ngày. */
+/** Đơn khai theo GIỜ — hai ô buổi đều là "Theo giờ", và chỉ trong MỘT ngày. */
 export function isHourlyLeave(fromSession: number, toSession: number): boolean {
   return fromSession === LEAVE_SESSION.HOURLY || toSession === LEAVE_SESSION.HOURLY
 }
@@ -214,7 +214,7 @@ export interface LeaveRequestLine {
  * là một đơn hai khoảng. Backend luôn trả ≥1 khoảng; đơn cũ = đúng một khoảng bằng đầu đơn.
  *
  * ⚠️ Đầu đơn (`from_date` … `to_date`) là BAO NGOÀI của các khoảng, nuốt cả ngày khe ở
- * giữa. Hỏi «ngày D có nghỉ không» thì đi qua `utils/leave-periods.ts`, đừng so đầu đơn.
+ * giữa. Hỏi "ngày D có nghỉ không" thì đi qua `utils/leave-periods.ts`, đừng so đầu đơn.
  */
 export interface LeavePeriod {
   id: number
@@ -260,7 +260,7 @@ export interface LeaveRequest {
    * `periodsOf(request)` (rơi về một khoảng dựng từ đầu đơn), đừng đọc thẳng.
    */
   periods?: LeavePeriod[]
-  /** `HH:MM:SS` — chỉ có khi buổi là «Theo giờ». */
+  /** `HH:MM:SS` — chỉ có khi buổi là "Theo giờ". */
   from_time?: string | null
   to_time?: string | null
   unit: number
@@ -292,7 +292,7 @@ export interface LeaveRequest {
   handovers?: LeaveHandover[]
 }
 
-/** Dữ liệu của ô «số phép còn lại» trên form — ràng buộc §6.1 của kế hoạch. */
+/** Dữ liệu của ô "số phép còn lại" trên form — ràng buộc §6.1 của kế hoạch. */
 export interface LeaveBalanceHint {
   employee_id: number
   year: number
@@ -360,7 +360,7 @@ export interface ApprovalFlowStrip {
   steps: ApprovalStep[]
 }
 
-/** Việc duyệt của CHÍNH tôi trên một tờ đơn (tab «Cần tôi duyệt»). */
+/** Việc duyệt của CHÍNH tôi trên một tờ đơn (tab "Cần tôi duyệt"). */
 export interface LeaveApprovalTask {
   id: number
   instance_id: number
@@ -370,7 +370,7 @@ export interface LeaveApprovalTask {
   is_overdue?: boolean
   /** Bấm THAY ai theo ủy quyền — rỗng nghĩa là việc của chính mình. */
   on_behalf_of_name?: string
-  /** Chỉ có ở tab «Tôi đã duyệt»: tôi đã làm gì với tờ đơn này. */
+  /** Chỉ có ở tab "Tôi đã duyệt": tôi đã làm gì với tờ đơn này. */
   action_label?: string
   decided_at?: string | null
 }

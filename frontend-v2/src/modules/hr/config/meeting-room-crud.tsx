@@ -21,7 +21,7 @@ function meetingRoomChips(r: MeetingRoom, quietWhenNormal = false): IdentityChip
     { icon: Hash, text: r.code, tone: 'code' },
     ...(r.location ? [{ icon: MapPin, text: r.location, tone: 'muted' as const }] : []),
     //  `0` = CHƯA ĐO, không phải "không chứa được ai" — không có số thì không
-    //  dựng huy hiệu, đừng in «0 chỗ».
+    //  dựng huy hiệu, đừng in "0 chỗ".
     ...(r.capacity ? [{ icon: Users, text: `${r.capacity} chỗ`, tone: 'ok' as const }] : []),
     ...(normal
       ? []
@@ -38,7 +38,7 @@ function meetingRoomChips(r: MeetingRoom, quietWhenNormal = false): IdentityChip
 /**
  * DANH MỤC PHÒNG HỌP — khai bằng dữ liệu, không viết trang riêng (duoc-CR-279).
  *
- * ⚠️ Ô «Mã phòng» KHÔNG sửa được sau khi tạo (`readonlyOnEdit`): mã đó là cách
+ * ⚠️ Ô "Mã phòng" KHÔNG sửa được sau khi tạo (`readonlyOnEdit`): mã đó là cách
  * người ta gọi nhau ("họp ở P301") và nó nằm trong mọi phiếu đã đặt. Backend
  * chặn lớp thứ hai bằng cách bỏ `code` khỏi schema cập nhật.
  *
@@ -61,7 +61,7 @@ export const MEETING_ROOM_CRUD_CONFIG: CrudConfig<MeetingRoom> = {
   //  cột của nó cộng lại **960px**, vừa trong 976px lòng trang.
   //
   //  Cái giá của `max-w-none` thì trả ở tab Thông tin — tab mở ra đầu tiên: trên
-  //  màn 1440px ô «Tên phòng» dài 545px và ô «Thiết bị» dài 1090px để chứa hai
+  //  màn 1440px ô "Tên phòng" dài 545px và ô "Thiết bị" dài 1090px để chứa hai
   //  chữ, mắt phải quét ngang gần cả màn hình mới đi hết một dòng. Bề ngang của ô
   //  nhập là lời hứa về lượng chữ phải gõ.
   listRoute: appRoutes.hr.meetingRooms,
@@ -70,8 +70,8 @@ export const MEETING_ROOM_CRUD_CONFIG: CrudConfig<MeetingRoom> = {
   createRoute: appRoutes.hr.meetingRoomNew,
   searchParam: 'name',
   //  Ngắn để ĐỌC HẾT được ở khổ hẹp: ô tìm còn ~180px sau khi chia chỗ cho nút
-  //  «Bộ lọc» và nút «Tải lại», bản cũ *«Tìm theo tên hoặc mã phòng…»* cần 226px
-  //  nên cụt thành «Tìm theo». Một ô tìm không nói nổi mình tìm được những gì
+  //  "Bộ lọc" và nút "Tải lại", bản cũ *"Tìm theo tên hoặc mã phòng…"* cần 226px
+  //  nên cụt thành "Tìm theo". Một ô tìm không nói nổi mình tìm được những gì
   //  thì người dùng đoán, và thường đoán là chỉ tìm được mã.
   searchPlaceholder: 'Tìm tên, mã phòng…',
   quickFilters: [
@@ -86,18 +86,18 @@ export const MEETING_ROOM_CRUD_CONFIG: CrudConfig<MeetingRoom> = {
     },
   ],
   getItemName: (r) => `${r.name} (${r.code})`,
-  //  Câu này người dùng đọc, không phải lập trình viên: đừng nhắc «backend»,
-  //  «tham chiếu» hay tên bảng. Nói ĐIỀU GÌ XẢY RA và LÀM GÌ THAY THẾ.
+  //  Câu này người dùng đọc, không phải lập trình viên: đừng nhắc "backend",
+  //  "tham chiếu" hay tên bảng. Nói ĐIỀU GÌ XẢY RA và LÀM GÌ THAY THẾ.
   deleteWarning:
     'Phòng đang có phiếu đặt thì không xóa được. Xóa rồi thì các phiếu cũ mất tên phòng. ' +
-    'Muốn dẹp phòng mà vẫn giữ lịch sử đặt thì bỏ tick «Đang dùng».',
+    'Muốn dẹp phòng mà vẫn giữ lịch sử đặt thì bỏ tick "Đang dùng".',
   chips: meetingRoomChips,
   //  Khổ hẹp: thẻ thay bảng. Bảng khai 7 cột, bề rộng tự nhiên ~1210px — trên
   //  máy 390px chỉ thấy *Mã phòng* + *Tên phòng*, tức đúng hai cột KHÔNG dùng để
   //  chọn phòng; sức chứa, vị trí và thiết bị đều nằm sau một lượt cuộn ngang.
   //
   //  ⚠️ **Thẻ chỉ nói cái BẤT THƯỜNG, không nói lại cái mặc định.** Bản thử đầu
-  //  in đủ *«Dùng chung mọi pháp nhân»* và huy hiệu *«Đang dùng»* trên mọi thẻ,
+  //  in đủ *"Dùng chung mọi pháp nhân"* và huy hiệu *"Đang dùng"* trên mọi thẻ,
   //  và vì 21/21 phòng đều như vậy nên hai dòng đó chỉ là **21 dòng giống hệt
   //  nhau**, mỗi dòng ăn một hàng của thẻ (thẻ cao 4 hàng thay vì 2). Đúng lỗi
   //  đã phải vá ở `RoomDayList`.
@@ -119,7 +119,7 @@ export const MEETING_ROOM_CRUD_CONFIG: CrudConfig<MeetingRoom> = {
             <span className="block">Riêng pháp nhân #{r.company_id}</span>
           )}
           {/*  Thiết bị là chữ tự do, không giới hạn độ dài ở tầng nhập — cắt
-               ĐÚNG MỘT dòng bằng «…» (luật chung của thẻ danh mục, khách chốt
+               ĐÚNG MỘT dòng bằng "…" (luật chung của thẻ danh mục, khách chốt
                10/09/2026). Đầy đủ thì đọc ở trang chi tiết. */}
           {r.equipment && <span className="block truncate">{r.equipment}</span>}
         </>

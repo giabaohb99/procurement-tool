@@ -164,7 +164,7 @@ describe('hourLabels', () => {
 
 
 describe('nowLineTop', () => {
-  it('đặt vạch «bây giờ» đúng vị trí khi đang xem HÔM NAY', () => {
+  it('đặt vạch "bây giờ" đúng vị trí khi đang xem HÔM NAY', () => {
     const top = nowLineTop(DAY, new Date(2026, 8, 10, 13, 40))
     //  13:40 cách mốc 7:00 đúng 6 giờ 40 phút.
     expect(top).toBeCloseTo((6 + 40 / 60) * HOUR_HEIGHT, 5)
@@ -284,7 +284,7 @@ describe('dimBandsX + nowLineLeft', () => {
     expect(last.leftPercent + last.widthPercent).toBeCloseTo(100, 5)
   })
 
-  it('vạch «bây giờ» đặt theo % và biến mất ở ngày khác', () => {
+  it('vạch "bây giờ" đặt theo % và biến mất ở ngày khác', () => {
     expect(nowLineLeft(DAY, new Date(2026, 8, 10, 13, 40))).toBeCloseTo((400 / 780) * 100, 5)
     expect(nowLineLeft(new Date(2026, 8, 11), new Date(2026, 8, 10, 13, 40))).toBeNull()
   })

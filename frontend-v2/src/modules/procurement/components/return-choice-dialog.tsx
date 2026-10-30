@@ -13,12 +13,12 @@ import {
 import { RETURN_TARGET_LABELS, type ReturnTarget } from '../utils/return-action'
 
 /**
- * Hộp hỏi «Trả về đâu?» — bao-CR-498. Chỉ mở khi phiếu đang mở CẢ HAI đường trả
- * (`resolveReturnAction` trả `choose`); một đường thì nút «Trả về» đi thẳng, không hỏi.
+ * Hộp hỏi "Trả về đâu?" — bao-CR-498. Chỉ mở khi phiếu đang mở CẢ HAI đường trả
+ * (`resolveReturnAction` trả `choose`); một đường thì nút "Trả về" đi thẳng, không hỏi.
  */
 interface ReturnChoiceDialogProps {
   open: boolean
-  /** Tên chứng từ để đọc trong câu: «yêu cầu mua hàng», «yêu cầu báo giá». */
+  /** Tên chứng từ để đọc trong câu: "yêu cầu mua hàng", "yêu cầu báo giá". */
   docLabel: string
   onOpenChange: (open: boolean) => void
   onPick: (target: ReturnTarget) => void

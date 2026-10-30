@@ -15,7 +15,7 @@ from .people_data import PersonRow
 NUM_COLS = 27
 HEADER_CELLS: list[tuple[int, int, int, int, str]] = [
     #  Đối chiếu bản PDF Mẫu số 01/PLI Phụ lục I Nghị định 145/2020 (27/10/2026): nhãn và cách gộp ô
-    #  giữ ĐÚNG câu chữ của mẫu — Sở Nội vụ soi theo mẫu, đừng «viết lại cho dễ đọc».
+    #  giữ ĐÚNG câu chữ của mẫu — Sở Nội vụ soi theo mẫu, đừng "viết lại cho dễ đọc".
     (0, 1, 2, 1, "STT"), (0, 2, 2, 2, "Họ tên"), (0, 3, 2, 3, "Mã số BHXH"),
     (0, 4, 2, 4, "Ngày tháng năm sinh"), (0, 5, 2, 5, "Giới tính"),
     (0, 6, 2, 6, "Số CCCD/CMND/Hộ chiếu"), (0, 7, 2, 7, "Cấp bậc, chức vụ, chức danh nghề, nơi làm việc"),
@@ -41,7 +41,7 @@ JOB_CATEGORY_COLUMN = {JOB_CATEGORY_MANAGER: 8, JOB_CATEGORY_HIGH_SKILL: 9, JOB_
                        JOB_CATEGORY_OTHER: 11}
 NOTE_JOB_CATEGORY = ("(2) Vị trí việc làm: Nhà quản lý là người giữ chức vụ quản lý, điều hành; Chuyên môn kỹ thuật "
                      "bậc cao là nghề đòi hỏi trình độ đại học trở lên; Chuyên môn kỹ thuật bậc trung là nghề đòi hỏi "
-                     "trình độ cao đẳng, trung cấp; còn lại ghi vào cột «Khác». Đánh dấu «x» vào một cột tương ứng.")
+                     "trình độ cao đẳng, trung cấp; còn lại ghi vào cột \"Khác\". Đánh dấu \"x\" vào một cột tương ứng.")
 BLANK_NOTE = ("Các cột 13–15, 17, 18–19, 25–26 chưa có dữ liệu trong hệ thống: Nhân sự điền tay trước khi nộp.")
 
 

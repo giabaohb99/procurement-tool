@@ -54,7 +54,7 @@ import { buildSettingValues } from '../utils/build-setting-values'
  *
  * ⚠️ Ba tab cuối thêm ở bao-CR-429: đây là các thông số trước kia chỉ sửa được
  * bằng cách vào máy chủ sửa tệp môi trường rồi dựng lại dịch vụ. Hai hệ ngoài
- * tách thành HAI tab chứ không gộp một tab «Đồng bộ» — mỗi hệ có cầu dao và mã
+ * tách thành HAI tab chứ không gộp một tab "Đồng bộ" — mỗi hệ có cầu dao và mã
  * đăng nhập riêng, xếp chung một thẻ thì lúc cần tắt gấp một hệ rất dễ tắt nhầm
  * hệ kia.
  */

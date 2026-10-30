@@ -7,11 +7,11 @@ import { HR_REPORT_CATALOG } from './report-catalog-hr'
 
 /**
  * Bốn báo cáo Nhân sự đợt 3 (duoc-CR-688). Nhãn phải trùng HẲN `REPORT_KEY` sinh từ backend
- * (`report_keys.py` → `gen_status_ts.py`): tab «Báo cáo» của phân quyền đọc nhãn backend, menu
+ * (`report_keys.py` → `gen_status_ts.py`): tab "Báo cáo" của phân quyền đọc nhãn backend, menu
  * đọc nhãn ở đây — lệch một chữ là người gán quyền tưởng đang gán một báo cáo khác.
  */
 const WAVE_3 = [
-  { key: 21, path: appRoutes.report.payrollFund, entity: 'labor_contract', endpoint: '/api/payroll-fund/summary' },
+  { key: 21, path: appRoutes.report.payrollFund, entity: 'employee', endpoint: '/api/payroll-fund/summary' },
   { key: 22, path: appRoutes.report.benefitAudience, entity: 'employee', endpoint: '/api/benefit-audience/summary' },
   { key: 23, path: appRoutes.report.managementSpan, entity: 'employee', endpoint: '/api/management-span/summary' },
   { key: 24, path: appRoutes.report.workMoves, entity: 'employee', endpoint: '/api/work-moves/summary' },
@@ -41,15 +41,18 @@ describe('HR_REPORT_CATALOG — đợt 3', () => {
     }
   })
 
-  it('payroll page states the numbers are contract salaries with small groups hidden', () => {
+  it('payroll page states the numbers come from the profile salary field with small groups hidden', () => {
+    // duoc-CR-693: nguồn là ô lương ở hồ sơ, không còn là lương trên HĐLĐ.
     const entry = HR_REPORT_CATALOG.find((r) => r.key === 21)
     expect(entry?.description).toMatch(/dưới 3 người bị che/)
+    expect(entry?.description).toMatch(/hồ sơ/)
+    expect(entry?.description).not.toMatch(/hợp đồng lao động/)
   })
 })
 
 /**
  * Báo cáo Nhân sự đợt 4 (duoc-CR-689). Cùng luật nhãn với đợt 3: phải trùng HẲN `REPORT_KEY`.
- * Khóa 25 «Số người kế hoạch so với thực tế» ĐÃ BỎ cùng Kế hoạch nhân sự (duoc-CR-692) — không tái cấp.
+ * Khóa 25 "Số người kế hoạch so với thực tế" ĐÃ BỎ cùng Kế hoạch nhân sự (duoc-CR-692) — không tái cấp.
  */
 const WAVE_4 = [
   { key: 26, path: '/report/attendance', entity: 'employee', endpoint: '/api/attendance-report/summary' },
@@ -69,7 +72,7 @@ describe('HR_REPORT_CATALOG — đợt 4', () => {
   })
 
   it('keeps sensitive and period-capped reports off the shared overview strip', () => {
-    //  29 đòi `employee_sensitive.read`; 26 chặn kỳ > 92 ngày — trang Tổng quan chọn «Năm nay» là hỏng.
+    //  29 đòi `employee_sensitive.read`; 26 chặn kỳ > 92 ngày — trang Tổng quan chọn "Năm nay" là hỏng.
     for (const key of [26, 29]) {
       expect(HR_REPORT_CATALOG.find((r) => r.key === key)?.overviewKpis).toEqual([])
     }

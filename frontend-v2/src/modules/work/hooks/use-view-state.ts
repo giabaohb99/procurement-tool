@@ -44,7 +44,7 @@ function storageKey(listId: number): string {
 }
 
 /**
- * Đọc phần «trường hiện trên thẻ», CHỊU ĐƯỢC bản lưu theo khuôn cũ.
+ * Đọc phần "trường hiện trên thẻ", CHỊU ĐƯỢC bản lưu theo khuôn cũ.
  *
  * Khuôn cũ là một object bảy công tắc (`{priority: true, labels: false, …}`),
  * khuôn mới là MẢNG có thứ tự. Ai đang mở dở màn hình mà không đổi được thì mở
@@ -75,8 +75,8 @@ function readFields(saved: unknown): CardFields {
  *
  * Bản lưu là JSON cũ trong máy người dùng: `"priority"` từng là một tiêu chí
  * cứng, nay độ ưu tiên thành trường tùy biến nên khóa ấy không còn. Để nguyên
- * thì nút «Sắp xếp:» hiện một nhãn RỖNG và bảng xếp theo tiêu đề một cách khó
- * hiểu — rơi về «Tay» là hành vi đúng.
+ * thì nút "Sắp xếp:" hiện một nhãn RỖNG và bảng xếp theo tiêu đề một cách khó
+ * hiểu — rơi về "Tay" là hành vi đúng.
  */
 function readSort(saved: unknown): WorkSort {
   if (typeof saved !== 'string') return DEFAULTS.sort

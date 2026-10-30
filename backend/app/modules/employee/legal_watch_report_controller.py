@@ -1,4 +1,4 @@
-"""Báo cáo B4 «Đối tượng cần chú ý theo luật» (khóa 29) — duoc-CR-689.
+"""Báo cáo B4 "Đối tượng cần chú ý theo luật" (khóa 29) — duoc-CR-689.
 
 Router riêng chỉ chứa `/summary` + `/summary/export` + `/summary/rows` (khung báo cáo kiểu Haravan).
 Đường gốc `/api/legal-watch` cố ý không nằm dưới router chính có `/{id}`.
@@ -33,7 +33,7 @@ SENSITIVE_MSG = ("Báo cáo này dùng ngày sinh và thông tin con của nhân
 
 def _inputs(request: Request, db: Session, user, action: str) -> tuple:
     prof = get_perm_profile(db, user)
-    if not can_read_sensitive(prof):        # `employee_id=0`: danh sách, không có ngoại lệ «chính mình»
+    if not can_read_sensitive(prof):        # `employee_id=0`: danh sách, không có ngoại lệ "chính mình"
         raise HTTPException(403, SENSITIVE_MSG)
     qp = request.query_params
     q = apply_scope(db.query(Employee), Employee, "employee", user, prof, action)

@@ -30,7 +30,7 @@ class DocTypeCreate(BaseModel):
     is_personal: bool = False
 
     #  Mặc định BẬT (29/09/2026): ô này nay thật sự bỏ chặng duyệt, quên tích thì
-    #  phải là «cần duyệt», không phải «ai soạn cũng tự ban hành» (code-review I1).
+    #  phải là "cần duyệt", không phải "ai soạn cũng tự ban hành" (code-review I1).
     needs_approval: bool = True
     needs_signature: bool = False
     needs_decision: bool = False

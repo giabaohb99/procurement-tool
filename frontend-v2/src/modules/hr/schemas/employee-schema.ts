@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import type { Employee } from '../types/employee'
+import { cleanExtraPhones, extraPhonesFormError, extraPhonesSchema, sameExtraPhones, type ExtraPhone } from './extra-phones-schema'
 
 /**
  * Form hồ sơ nhân sự. Bám sát `EmployeeCreate` của backend để không dính 422.
@@ -48,7 +49,7 @@ export const employeeSchema = z.object({
   //  Backend coi rỗng là 0 năm và màn Quỹ phép trưng cảnh báo ra.
   hire_date: z.string().trim(),
   //  0 = chưa khai · 1 nam · 2 nữ · 3 khác. Dùng để LỌC loại nghỉ (thai sản chỉ
-  //  áp cho nữ); chưa khai thì KHÔNG bị chặn loại nào, còn «Khác» thì CÓ — xem
+  //  áp cho nữ); chưa khai thì KHÔNG bị chặn loại nào, còn "Khác" thì CÓ — xem
   //  `employee/constants.GENDER_OTHER` ở backend.
   gender: z.number().int().min(0).max(3),
 
@@ -86,6 +87,19 @@ export const EMPTY_EMPLOYEE_FORM: EmployeeFormValues = {
   date_of_birth: '',
 }
 
+/** Trần ô lương hồ sơ — khớp `SalaryAmount` (`le=10**10`) ở `backend/.../employee/field_limits.py`. */
+export const MAX_PROFILE_SALARY = 10 ** 10
+
+/** Ô tiền lương của hồ sơ (duoc-CR-693): nguyên đồng 0..10^10; `null` = không đụng. */
+function salaryMoney(label: string) {
+  return z
+    .number()
+    .int(`${label} phải là số nguyên đồng`)
+    .min(0, `${label} không được âm`)
+    .max(MAX_PROFILE_SALARY, `${label} vượt mức cho phép`)
+    .nullable()
+}
+
 /**
  * HỒ SƠ ĐẦY ĐỦ — bản mở rộng dùng cho MÀN CHI TIẾT (duoc-CR-314 Đợt 2).
  *
@@ -100,7 +114,8 @@ export const EMPTY_EMPLOYEE_FORM: EmployeeFormValues = {
  * Nhận đường dẫn từ client là cho phép trỏ ô ảnh vào một URL bên ngoài, rồi màn
  * hồ sơ và bản in sẽ tải nó về hộ.
  */
-export const employeeProfileSchema = employeeSchema.extend({
+export const employeeProfileSchema = employeeSchema
+  .extend({
   // Nhóm 1 — cá nhân
   place_of_birth: z.string().trim().max(255, 'Tối đa 255 ký tự'),
   ethnicity: z.string().trim().max(50, 'Tối đa 50 ký tự'),
@@ -137,7 +152,23 @@ export const employeeProfileSchema = employeeSchema.extend({
   social_insurance_no: z.string().trim().max(20, 'Tối đa 20 ký tự'),
   health_care_place: z.string().trim().max(255, 'Tối đa 255 ký tự'),
   health_care_code: z.string().trim().max(20, 'Tối đa 20 ký tự'),
+
+  //  LƯƠNG (duoc-CR-693) — `null` = KHÔNG ĐỤNG, giữ nguyên số đã lưu; `0` = xóa.
+  //  ⚠️ Form KHÔNG BAO GIỜ nạp số từ API vào hai ô này (xem `employeeProfileFormValues`): người
+  //  khác không nhận được số, còn chính chủ có số nhưng tự sửa lương mình thì backend trả 403.
+  salary_monthly: salaryMoney('Lương'),
+  allowance_monthly: salaryMoney('Phụ cấp'),
+
+  //  SỐ ĐIỆN THOẠI KHÁC (duoc-CR-694) — `phone` ở trên là số chính. Luật ở `extra-phones-schema.ts`.
+  //  Nhãn của số chính — khớp `String(50)` của `phone_label`.
+  phone_label: z.string().trim().max(50, 'Nhãn tối đa 50 ký tự'),
+  extra_phones: extraPhonesSchema,
 })
+  //  Số phụ không được trùng nhau hay trùng số chính — cần nhìn hai ô cùng lúc nên đặt ở cấp form.
+  .superRefine((values, ctx) => {
+    const message = extraPhonesFormError(values.phone, values.extra_phones)
+    if (message) ctx.addIssue({ code: 'custom', message, path: ['extra_phones'] })
+  })
 
 export type EmployeeProfileFormValues = z.infer<typeof employeeProfileSchema>
 
@@ -170,6 +201,10 @@ export const EMPTY_EMPLOYEE_PROFILE_FORM: EmployeeProfileFormValues = {
   social_insurance_no: '',
   health_care_place: '',
   health_care_code: '',
+  salary_monthly: null,
+  allowance_monthly: null,
+  phone_label: '',
+  extra_phones: [],
 }
 
 /**
@@ -220,7 +255,14 @@ export function employeeProfileFormValues(
     id_issue_date: employee.id_issue_date ?? '',
     id_expiry_date: employee.id_expiry_date ?? '',
     gender: employee.gender ?? 0,
+    phone_label: employee.phone_label ?? '',
     position_id: employee.position_id ?? 0,
+    //  ⚠️ Không lấy số từ API — chính chủ nhận được số nhưng KHÔNG được tự sửa (403), nạp vào
+    //  form là lần Lưu nào của họ (sửa số điện thoại) cũng gửi kèm lương và ăn 403.
+    salary_monthly: null,
+    allowance_monthly: null,
+    //  Hồ sơ cũ / dữ liệu giả chưa có khóa này → danh sách rỗng (ô nhập cần mảng thật).
+    extra_phones: employee.extra_phones ?? [],
   }
 }
 
@@ -248,6 +290,12 @@ export const SENSITIVE_PROFILE_FIELDS = [
   'social_insurance_no',
 ] as const satisfies readonly (keyof EmployeeProfileFormValues)[]
 
+/** Hai ô lương của hồ sơ — chỉ gửi khi người dùng gõ số mới hoặc bấm xóa (duoc-CR-693). */
+export const SALARY_PROFILE_FIELDS = [
+  'salary_monthly',
+  'allowance_monthly',
+] as const satisfies readonly (keyof EmployeeProfileFormValues)[]
+
 /**
  * Bỏ các ô NHẠY CẢM khỏi payload khi người lưu không được xem chúng.
  *
@@ -263,9 +311,17 @@ export const SENSITIVE_PROFILE_FIELDS = [
 export function pickWritableProfile(
   values: EmployeeProfileFormValues,
   canReadSensitive: boolean,
+  savedExtraPhones?: readonly ExtraPhone[] | null,
 ): Partial<EmployeeProfileFormValues> {
-  if (canReadSensitive) return values
   const out: Partial<EmployeeProfileFormValues> = { ...values }
+  //  SỐ PHỤ (duoc-CR-694): gửi là THAY CẢ danh sách, nên chỉ gửi khi KHÁC bản đã lưu (bỏ dòng trống số);
+  //  không đổi thì bỏ hẳn khỏi PATCH để lần lưu một ô khác không đè lên số người khác vừa thêm.
+  if (sameExtraPhones(values.extra_phones, savedExtraPhones)) delete out.extra_phones
+  else out.extra_phones = cleanExtraPhones(values.extra_phones)
+  //  LƯƠNG (duoc-CR-693): `null` = người dùng không đụng ô → KHÔNG gửi. Gửi `0` là XÓA số thật
+  //  mà người lưu không nhìn thấy; gửi `null` thì backend cũng giữ nguyên nhưng bỏ hẳn cho sạch.
+  for (const field of SALARY_PROFILE_FIELDS) if (out[field] == null) delete out[field]
+  if (canReadSensitive) return out
   for (const field of SENSITIVE_PROFILE_FIELDS) delete out[field]
   return out
 }

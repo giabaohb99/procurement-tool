@@ -16,7 +16,7 @@ function toFiniteNumber(value: unknown): number | null {
 }
 
 /**
- * Định dạng MỘT ô của ngăn «Danh sách người» theo `kind` backend khai (duoc-CR-686):
+ * Định dạng MỘT ô của ngăn "Danh sách người" theo `kind` backend khai (duoc-CR-686):
  * `date` → dd/MM/yyyy · `int` → 1.234 · `days` → "2,5 ngày" · `money` → "1.500.000 đ".
  *
  * Giá trị trống (`null`, `""`, thiếu khóa) hoặc không đọc được → `""` (ô trống), KHÔNG

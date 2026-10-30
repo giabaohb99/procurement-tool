@@ -1,4 +1,4 @@
-// bao-CR-499 — ô «Trưởng phòng phê duyệt» chọn được trước khi duyệt, khóa sau khi duyệt.
+// bao-CR-499 — ô "Trưởng phòng phê duyệt" chọn được trước khi duyệt, khóa sau khi duyệt.
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -27,7 +27,7 @@ describe('ApproverSelect', () => {
     expect(screen.getByText('Đoàn Minh Khôi')).toBeInTheDocument()
   })
 
-  it('shows «Chưa chọn» when nothing is stored', () => {
+  it('shows "Chưa chọn" when nothing is stored', () => {
     render(<ApproverSelect id="x" value={0} name="" candidates={[]} editable={false} onChange={vi.fn()} />)
     expect(screen.getByText('Chưa chọn')).toBeInTheDocument()
   })

@@ -7,7 +7,7 @@ Thuần stdlib (cùng lý do `work_schedule_codes.py`): `code_sets.py` phải n�
 không cài SQLAlchemy để chạy `scripts/gen_status_ts.py`.
 
 Luật bất biến: số đã cấp GIỮ NGUYÊN mãi mãi, không tái dùng; `0` không hợp lệ ở bộ nào
-(riêng `outcome` của task: `0` = «chưa đánh giá», KHÔNG nằm trong bộ mã); loại mới cấp số TIẾP THEO.
+(riêng `outcome` của task: `0` = "chưa đánh giá", KHÔNG nằm trong bộ mã); loại mới cấp số TIẾP THEO.
 """
 from enum import IntEnum
 

@@ -8,7 +8,7 @@ export function heatLevel(value: number, max: number): number {
 
 export type DayKind = 'worked' | 'leave' | 'holiday' | 'absent' | 'off'
 
-/** Phân loại một ngày: nghỉ phép / lễ / ngày nghỉ xếp TRƯỚC «không vào» để không bị đọc nhầm là vắng. */
+/** Phân loại một ngày: nghỉ phép / lễ / ngày nghỉ xếp TRƯỚC "không vào" để không bị đọc nhầm là vắng. */
 export function classifyDay(day: UsageDailyRow): DayKind {
   if (day.active) return 'worked' // có vào thì là đi làm, kể cả ngày lễ / cuối tuần
   if (day.is_holiday) return 'holiday'
@@ -17,7 +17,7 @@ export function classifyDay(day: UsageDailyRow): DayKind {
   return 'absent'
 }
 
-/** Tổng thời gian ở lại theo phân hệ (ms) từ danh sách màn — dùng cho vòng «% thời gian theo phân hệ». */
+/** Tổng thời gian ở lại theo phân hệ (ms) từ danh sách màn — dùng cho vòng "% thời gian theo phân hệ". */
 export function sumDwellByModule(
   screens: { route: string; dwell_ms: number }[],
   moduleOf: (route: string) => string,
@@ -41,7 +41,7 @@ const SECURITY_KEYS = [
   'http_403',
 ]
 
-/** Khóa nào được coi là «bất thường»: có giá trị > 0 (riêng số IP chỉ khi ≥ 2 nơi cùng lúc). */
+/** Khóa nào được coi là "bất thường": có giá trị > 0 (riêng số IP chỉ khi ≥ 2 nơi cùng lúc). */
 export function findSecurityFlags(snapshot: UsageSnapshot): string[] {
   return SECURITY_KEYS.filter((key) => {
     const v = snapshot.metrics[key]?.v
@@ -52,7 +52,7 @@ export function findSecurityFlags(snapshot: UsageSnapshot): string[] {
 
 export const USAGE_WEEK_OPTIONS = [4, 8, 12] as const
 
-/** Dòng «đang so với …» — nói rõ nhóm so sánh, và LÝ DO khi phải lùi về pháp nhân / toàn công ty. */
+/** Dòng "đang so với …" — nói rõ nhóm so sánh, và LÝ DO khi phải lùi về pháp nhân / toàn công ty. */
 export function describeCohort(cohort: NonNullable<UsageProfileDetail['latest']>['cohort']): string {
   if (!cohort) return 'Chưa có nhóm so sánh.'
   if (cohort.kind === 1) return `Đang so với: vai trò ${cohort.name} (${cohort.size} người).`

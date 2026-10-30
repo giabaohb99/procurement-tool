@@ -79,11 +79,11 @@ export function StatCard({
            đập vào mắt trước cả nội dung. Chặn sàn đúng bằng chiều cao biểu
            tượng (32px) thì một dòng hay hai dòng cũng cao như nhau: 2 dòng
            `text-xs` + `leading-tight` = 30px, vẫn lọt. Đo ở 1440px: trước khi
-           có nó, thẻ «Đơn nghỉ chờ duyệt» có số nằm thấp hơn bốn thẻ kia 3px. */}
+           có nó, thẻ "Đơn nghỉ chờ duyệt" có số nằm thấp hơn bốn thẻ kia 3px. */}
       {/*  ⚠️ `px-4` dưới 640px là chỗ THỞ CHO CHỮ, không phải tinh chỉnh: dải KPI
            ở khổ điện thoại xếp hai ô một hàng, mỗi ô còn ~171px, trừ đệm và ô
            biểu tượng thì nhãn chỉ còn ~95px. Mỗi bên bớt 4px là nhãn dài kiểu
-           «YC báo giá chờ duyệt» đổi từ ba dòng (vượt `line-clamp-2`, mất chữ
+           "YC báo giá chờ duyệt" đổi từ ba dòng (vượt `line-clamp-2`, mất chữ
            cuối) xuống hai dòng. Từ `sm` trở lên thẻ đã rộng, trả về `px-5`. */}
       <CardHeader className="flex min-h-8 flex-row items-center gap-2 px-4 pb-0 sm:px-5">
         <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
@@ -108,7 +108,7 @@ export function StatCard({
           //    thẻ khai `col-span-2` có tới 326px — luật theo `max-sm:` sẽ bóp
           //    nhầm cả thẻ đang rộng rãi. 200px là chỗ `1.463.393.999 đ` ở
           //    `text-xl` (~141px + 32px đệm) bắt đầu không vừa.
-          //  · Chỉ áp cho số DÀI (`isLongValue`): thẻ đếm việc bày «0» hay «96»,
+          //  · Chỉ áp cho số DÀI (`isLongValue`): thẻ đếm việc bày "0" hay "96",
           //    hạ cỡ chúng là làm nhỏ đi đúng thứ người ta mở trang ra để đọc,
           //    mà chúng thì có bao giờ chật chỗ đâu.
           //

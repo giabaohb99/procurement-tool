@@ -43,7 +43,7 @@ export const WORK_SCHEDULE_CRUD_CONFIG: CrudConfig<WorkSchedule> = {
   listRoute: appRoutes.hr.workSchedules,
   detailRoute: (id) => appRoutes.hr.workScheduleDetail(id),
   createRoute: appRoutes.hr.workScheduleNew,
-  //  Đổi tên mẫu thì cột «Mẫu lịch» ở màn Gán lịch phải đổi theo.
+  //  Đổi tên mẫu thì cột "Mẫu lịch" ở màn Gán lịch phải đổi theo.
   alsoInvalidate: ['/api/work-schedule-assignments'],
   searchParam: 'name',
   searchPlaceholder: 'Tìm theo tên mẫu lịch…',

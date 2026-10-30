@@ -37,7 +37,7 @@ export function EmployeeWorkHistoryToolbarTitle({ title, view, onChange }: Emplo
 interface EmployeeWorkHistoryTimelineToolbarProps extends EmployeeWorkHistoryToolbarTitleProps {
   /** Bỏ trống = tự làm mới MỌI query đang hoạt động — khớp mặc định của `DataTable`. */
   onRefresh?: () => void | Promise<unknown>
-  /** Nút «Thêm dòng» — bỏ trống ở khu Quyết định (chỉ đọc) và ở thẻ Trang cá nhân `/me`. */
+  /** Nút "Thêm dòng" — bỏ trống ở khu Quyết định (chỉ đọc) và ở thẻ Trang cá nhân `/me`. */
   addButton?: ReactNode
 }
 
@@ -48,7 +48,7 @@ interface EmployeeWorkHistoryTimelineToolbarProps extends EmployeeWorkHistoryToo
  * lại phải TỰ DỰNG ở đây — lặp lại đúng class của dải công cụ trong
  * `data-table.tsx` (`mb-4 flex shrink-0 flex-wrap items-center gap-3` +
  * `ml-auto flex items-center gap-2`) để đổi Bảng ↔ Dòng thời gian không nhảy
- * hình. KHÔNG có menu «Cột» ở đây — hết bảng thì hết cột để ẩn/hiện.
+ * hình. KHÔNG có menu "Cột" ở đây — hết bảng thì hết cột để ẩn/hiện.
  */
 export function EmployeeWorkHistoryTimelineToolbar({
   title,

@@ -200,8 +200,8 @@ export function AssistantPage() {
         <div className="flex min-w-0 flex-1 flex-col">
           {/*  ⚠️ Hàng này CHỈ có ở khổ hẹp, và nó là đường DUY NHẤT tới danh
                sách hội thoại ở đó — cột trái đã tắt (xem `ConversationSidebar`).
-               Không có nó thì hội thoại cũ không mở lại được và nút «Hội thoại
-               mới» cũng mất theo. */}
+               Không có nó thì hội thoại cũ không mở lại được và nút "Hội thoại
+               mới" cũng mất theo. */}
           <div className="flex items-center border-b px-1 py-1 md:hidden">
             <ConversationSheet
               items={conversationsQuery.data ?? []}

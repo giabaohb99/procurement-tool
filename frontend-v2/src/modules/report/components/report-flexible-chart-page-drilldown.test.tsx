@@ -14,7 +14,7 @@ import type { ReportAnalyticsResponse, ReportPageConfig } from '../types/report-
 
 /**
  * Bấm cột của biểu đồ linh hoạt trên TRANG THẬT (duoc-CR-688): đi hết đường biểu đồ →
- * `ReportAnalyticsBody` → `useReportDrilldownState.openRow` → ngăn «Danh sách» → `/summary/rows`.
+ * `ReportAnalyticsBody` → `useReportDrilldownState.openRow` → ngăn "Danh sách" → `/summary/rows`.
  * Chỉ giả biên mạng (`@/core/api`) và khung đo của recharts (jsdom đo ra 0×0).
  */
 vi.mock('@/core/api', async (importOriginal) => {
@@ -118,7 +118,7 @@ function clickBar(container: HTMLElement, index: number) {
 }
 
 describe('ReportAnalyticsPage — flexible chart click opens the group list', () => {
-  it('sends the chart metric and the clicked group key, "" included for «(Chưa gắn)»', async () => {
+  it('sends the chart metric and the clicked group key, "" included for "(Chưa gắn)"', async () => {
     const { container } = renderPage()
     expect(await screen.findByText('Đang hiệu lực theo Phòng ban')).toBeInTheDocument()
     clickBar(container, 1)
@@ -149,8 +149,8 @@ describe('ReportAnalyticsPage — flexible chart click opens the group list', ()
 
 describe('ReportAnalyticsPage — snapshot metric carried by groups', () => {
   it('lets the snapshot KPI be picked and draws it by group, even in a period with no movement', async () => {
-    //  Biến động nhân sự tháng không ai vào/nghỉ: chỉ số theo kỳ toàn 0, nhưng «Định biên cuối
-    //  kỳ» (thời điểm) vẫn có ở từng phòng — không được thay cả khối bằng «Kỳ này chưa có dữ liệu».
+    //  Biến động nhân sự tháng không ai vào/nghỉ: chỉ số theo kỳ toàn 0, nhưng "Định biên cuối
+    //  kỳ" (thời điểm) vẫn có ở từng phòng — không được thay cả khối bằng "Kỳ này chưa có dữ liệu".
     vi.mocked(apiGet).mockImplementation(async () => {
       const base = summary()
       return {

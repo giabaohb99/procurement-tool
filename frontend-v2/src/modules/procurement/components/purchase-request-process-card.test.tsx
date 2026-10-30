@@ -241,9 +241,9 @@ describe('PurchaseRequestProcessCard', () => {
     expect(screen.queryByRole('button', { name: 'Chốt' })).toBeNull()
   })
 
-  // Đại ca 03/10/2026: «cho nút bỏ lọc filter» ở khối tra kho khảo sát của màn xử lý; 05/10/2026
-  // chốt «Bỏ lọc» về phân loại của dòng để vẫn thấy kết quả (bao-CR-589).
-  it('«Bỏ lọc» resets to the line defaults and keeps searching by the line item group', () => {
+  // Đại ca 03/10/2026: "cho nút bỏ lọc filter" ở khối tra kho khảo sát của màn xử lý; 05/10/2026
+  // chốt "Bỏ lọc" về phân loại của dòng để vẫn thấy kết quả (bao-CR-589).
+  it('"Bỏ lọc" resets to the line defaults and keeps searching by the line item group', () => {
     mockUser = { employee_id: 77, emp_code: 'NSTM01' }
     grantedPermissions = ['purchase_request:read', 'purchase_request:write', 'supplier:read']
 
@@ -251,7 +251,7 @@ describe('PurchaseRequestProcessCard', () => {
 
     // Đang đứng ở mặc định (phân loại của dòng 'Bao bì') thì không có gì để bỏ.
     expect(screen.queryByRole('button', { name: 'Bỏ lọc' })).toBeNull()
-    // Nút cũ «Về phân loại dòng» đã gộp vào «Bỏ lọc».
+    // Nút cũ "Về phân loại dòng" đã gộp vào "Bỏ lọc".
     expect(screen.queryByRole('button', { name: 'Về phân loại dòng' })).toBeNull()
 
     const keyword = screen.getByPlaceholderText('Tìm theo tên SP / mã / NCC...')
@@ -267,7 +267,7 @@ describe('PurchaseRequestProcessCard', () => {
     expect(enabled).toBe(true)
   })
 
-  it('«Bỏ lọc» on a line without item group falls back to the search prompt', () => {
+  it('"Bỏ lọc" on a line without item group falls back to the search prompt', () => {
     mockUser = { employee_id: 77, emp_code: 'NSTM01' }
     grantedPermissions = ['purchase_request:read', 'purchase_request:write', 'supplier:read']
 
@@ -412,7 +412,7 @@ describe('PurchaseRequestProcessCard', () => {
     expect(screen.queryByText(/Thêm phương án từ kết quả khảo sát/)).toBeNull()
   })
 
-  // bao-CR-583: «phương án 0 xem như phương án nhập tay và chỉnh sửa lại được» — sửa ngay ở màn
+  // bao-CR-583: "phương án 0 xem như phương án nhập tay và chỉnh sửa lại được" — sửa ngay ở màn
   // xử lý. Phương án khảo sát thì không (thông số là kết quả khảo sát); phương án 0 không gỡ được.
   describe('editing options on the processing screen (bao-CR-583)', () => {
     const optionZero = () =>

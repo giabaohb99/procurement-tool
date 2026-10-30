@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nạp cấu hình «Tra cứu thị trường» — duoc-CR-684 (từ tệp CauHinh_TraCuuThiTruong_20261026.xlsx).
+"""Nạp cấu hình "Tra cứu thị trường" — duoc-CR-684 (từ tệp CauHinh_TraCuuThiTruong_20261026.xlsx).
 
 Chạy (local):
   docker compose exec -T api python scripts/load_customs_lookup_config_cr684.py --dry-run
@@ -15,7 +15,7 @@ Nạp gì (đều đi qua ORM — KHÔNG dùng `mysql -e` với tiếng Việt, 
 Chạy lại bao nhiêu lần cũng được (idempotent). Không bao giờ đè giá trị người dùng đã sửa trên màn
 hình: từ khóa đã có (kể cả đã tắt / khác loại) được giữ nguyên và ghi vào báo cáo.
 Thêm từ khóa xong tự gắn lại nhãn cho mọi dòng hàng (cùng `POST /api/customs/kinds/retag`), trừ
-khi `--no-retag`; khi đó phải bấm «Gắn lại nhãn» trên màn Tra cứu thị trường → Cấu hình.
+khi `--no-retag`; khi đó phải bấm "Gắn lại nhãn" trên màn Tra cứu thị trường → Cấu hình.
 """
 import argparse
 import json
@@ -156,7 +156,7 @@ def _print(report: dict, dry_run: bool) -> None:
     if report["retag"] is not None:
         print(f"[retag] {report['retag']}")
     elif not dry_run:
-        print("[retag] không chạy — nếu có từ khóa mới hãy bấm «Gắn lại nhãn» trên màn Tra cứu thị trường → Cấu hình.")
+        print("[retag] không chạy — nếu có từ khóa mới hãy bấm 'Gắn lại nhãn' trên màn Tra cứu thị trường → Cấu hình.")
 
 
 def main() -> int:

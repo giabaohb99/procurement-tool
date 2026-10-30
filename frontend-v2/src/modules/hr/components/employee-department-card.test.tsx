@@ -35,7 +35,7 @@ function newQueryClient() {
 }
 
 //  Truyền sẵn một `queryClient` khi cần dựng lại thẻ trên cùng bộ đệm — đó là
-//  cảnh «quay ra danh sách rồi mở lại hồ sơ», khác hẳn cảnh mở lần đầu.
+//  cảnh "quay ra danh sách rồi mở lại hồ sơ", khác hẳn cảnh mở lần đầu.
 function build(queryClient = newQueryClient()) {
   const { unmount } = render(
     <QueryClientProvider client={queryClient}>
@@ -71,8 +71,8 @@ describe('EmployeeDepartmentCard', () => {
     //  bằng `[]` nên thẻ hiện ra KHÔNG TICK phòng nào.
     //
     //  Khẳng định ở đây là HẬU QUẢ thật chứ không phải vẻ ngoài: cửa lưu nhận
-    //  cả danh sách chứ không nhận phần chênh, nên người dùng bấm «Lưu kiêm
-    //  nhiệm» trên một thẻ trống là XÓA SẠCH phòng kiêm nhiệm có thật.
+    //  cả danh sách chứ không nhận phần chênh, nên người dùng bấm "Lưu kiêm
+    //  nhiệm" trên một thẻ trống là XÓA SẠCH phòng kiêm nhiệm có thật.
     const nguoi = userEvent.setup()
 
     const lanDau = build()
@@ -89,7 +89,7 @@ describe('EmployeeDepartmentCard', () => {
 
   it('chưa ai có kiêm nhiệm thì lưu đúng danh sách rỗng, không bịa ra phòng nào', async () => {
     //  Mặt kia của chốt trên: khởi tạo đọc thẳng dữ liệu máy chủ nên phải phân
-    //  biệt được «máy chủ trả rỗng» với «chưa tải xong».
+    //  biệt được "máy chủ trả rỗng" với "chưa tải xong".
     apiGet.mockImplementation((url: string) =>
       url === '/api/employees/9/departments'
         ? Promise.resolve({ primary_department_id: 1, extra_department_ids: [] })

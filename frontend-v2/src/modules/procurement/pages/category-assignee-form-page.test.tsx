@@ -1,5 +1,5 @@
 // bao-CR-530 — ô NSTM chính / dự phòng của màn Phân công phụ trách gõ tìm được (đại ca báo 30/09:
-// «chỗ nhân viên trong phần phân công phụ trách không có search tên»). Trước đó là `Select`
+// "chỗ nhân viên trong phần phân công phụ trách không có search tên"). Trước đó là `Select`
 // thường, danh sách nhân sự dài phải cuộn tay, trong khi ô Phòng / Phân loại ngay trên tìm được.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
@@ -71,7 +71,7 @@ describe('CategoryAssigneeFormPage — ô NSTM gõ tìm được (bao-CR-530)', 
     const list = openList()
     expect(list.getByText('Trần Thị Bình · NV02')).toBeInTheDocument()
     expect(list.queryByText('Nguyễn Văn An · NV01')).not.toBeInTheDocument()
-    //  bao-CR-527 giữ nguyên: người không «Chính thức» không có trong danh sách dù khớp chữ.
+    //  bao-CR-527 giữ nguyên: người không "Chính thức" không có trong danh sách dù khớp chữ.
     expect(list.queryByText(/Trần Văn Cường/)).not.toBeInTheDocument()
   })
 

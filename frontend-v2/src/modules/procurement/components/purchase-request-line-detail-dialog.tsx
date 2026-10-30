@@ -171,7 +171,7 @@ export function PurchaseRequestLineDetailDialog({
               ) : canEditProgress && (draft.line_status || 'no_po') === 'no_po' ? (
                 //  bao-CR-568: phiếu đã điều phối, NSTM / quản lý vẫn gắn hoặc đổi mã VTBB cho
                 //  dòng CHƯA lên ĐMH (phiếu sinh từ YCBG thường chưa có mã) — chọn từ danh mục
-                //  để mã luôn có thật; lưu bằng nút «Lưu dòng» như các ô tiến độ.
+                //  để mã luôn có thật; lưu bằng nút "Lưu dòng" như các ô tiến độ.
                 <div className="space-y-1">
                   <PurchaseRequestProductPicker
                     code={draft.product_code}

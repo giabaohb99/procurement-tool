@@ -19,7 +19,7 @@ interface DossierReferenceValueProps {
 }
 
 /**
- * Ô GIÁ TRỊ của trường kiểu «Chọn từ danh mục» — tra cứu thẳng trên danh mục thật.
+ * Ô GIÁ TRỊ của trường kiểu "Chọn từ danh mục" — tra cứu thẳng trên danh mục thật.
  *
  * Thay cho ô chọn tự gõ danh sách bằng dấu phẩy: người dùng không phải gõ lại
  * tên nhân sự / nhà cung cấp, và hồ sơ lưu **ID** nên đổi tên trong danh mục là

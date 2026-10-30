@@ -2,13 +2,13 @@
 
 Hai ô ĐỘC LẬP (anh Được chốt 23/10/2026): chọn công ty không lọc danh sách người duyệt và ngược lại.
 
-**Danh sách người duyệt** = ĐÚNG danh sách bước «Người có quyền duyệt (theo phân quyền)» của màn khai luồng
+**Danh sách người duyệt** = ĐÚNG danh sách bước "Người có quyền duyệt (theo phân quyền)" của màn khai luồng
 (`permission_approvers.holder_profiles`): vai trò tick Duyệt trên `vehicle_booking`, phạm vi Phòng ban / Công ty /
 Tất cả, không tính vai trò Quản trị, tài khoản mở + hồ sơ còn làm. Anh Được chốt 26/10/2026 — trên dev màn khai
-luồng hiện 3 người thì ô chọn cũng phải đúng 3 người (bản 24/10 từng nới ra «mọi phạm vi, kể cả Quản trị»: bỏ).
+luồng hiện 3 người thì ô chọn cũng phải đúng 3 người (bản 24/10 từng nới ra "mọi phạm vi, kể cả Quản trị": bỏ).
 Người được chọn được mở quyền xem + duyệt riêng phiếu đó (`approval_bridge.is_picked_legacy_approver`). `first_approver_id` lưu id TÀI KHOẢN (cột có từ bản cũ).
 
-Người được chọn đi đâu: bộ máy duyệt TẮT → thư «Gửi duyệt» chỉ tới người đó (`notify._approvers`);
+Người được chọn đi đâu: bộ máy duyệt TẮT → thư "Gửi duyệt" chỉ tới người đó (`notify._approvers`);
 bộ máy BẬT → bước cách 9 chỉ giao cho người đó (`permission_approvers.resolve` đọc
 `picked_approver_employee_id` của bối cảnh), rồi `_after_submit` gửi thư cho người nhận việc.
 """
@@ -52,7 +52,7 @@ def company_options(db: Session) -> list[dict]:
 
 
 def pick_options(db: Session, default_company_id: int) -> dict:
-    """Dữ liệu cho hai ô «Công ty» + «Người duyệt» của form đặt xe — một lượt gọi."""
+    """Dữ liệu cho hai ô "Công ty" + "Người duyệt" của form đặt xe — một lượt gọi."""
     return {"companies": company_options(db), "approvers": approver_options(db),
             "default_company_id": int(default_company_id or 0)}
 

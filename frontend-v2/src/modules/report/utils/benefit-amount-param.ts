@@ -12,7 +12,7 @@ export function parseAmountParam(raw: string | null | undefined): number {
   return Math.min(Math.floor(Number(s)), BENEFIT_MAX_AMOUNT)
 }
 
-/** Số tiền → giá trị URL; 0 = «chưa nhập» → xóa khỏi URL (backend hiểu trống = 0). */
+/** Số tiền → giá trị URL; 0 = "chưa nhập" → xóa khỏi URL (backend hiểu trống = 0). */
 export function formatAmountParam(value: number): string {
   const n = Math.floor(Math.max(0, Math.min(value, BENEFIT_MAX_AMOUNT)))
   return n > 0 ? String(n) : ''

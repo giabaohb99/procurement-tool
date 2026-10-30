@@ -3,7 +3,7 @@ import { apiGet } from '@/core/api'
 import type { DeptHeadCandidate } from '../types/purchase-request-detail'
 
 /**
- * bao-CR-499 — người DUYỆT ĐƯỢC chứng từ, nguồn cho ô «Trưởng phòng phê duyệt». Backend hỏi đúng
+ * bao-CR-499 — người DUYỆT ĐƯỢC chứng từ, nguồn cho ô "Trưởng phòng phê duyệt". Backend hỏi đúng
  * luật phạm vi duyệt, không phụ thuộc quyền xem danh mục nhân sự của người đang lập.
  * bao-CR-552 (01/10/2026): mọi người duyệt được TRỪ tài khoản Quản trị hệ thống, LUÔN kèm Trưởng
  * bộ phận — nên phòng không có trưởng phòng duyệt theo phòng (vd IT) vẫn chọn được.

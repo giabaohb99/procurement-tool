@@ -61,7 +61,7 @@ def _outcome(spec: CycleSpec, f: Facts, has_done_event: bool, events: list) -> C
     if cur in spec.cancelled:
         return CycleOutcome.CANCELLED
     if cur in spec.ambiguous_reject:
-        #  YCMH: `rejected` là «từ chối» hay «trả về»? Sự kiện sau cùng trong hai loại ấy quyết định.
+        #  YCMH: `rejected` là "từ chối" hay "trả về"? Sự kiện sau cùng trong hai loại ấy quyết định.
         last = max(((at, ev) for at, ev in events if ev in (Ev.REJECT, Ev.RETURN)), default=None)
         return CycleOutcome.OPEN if last and last[1] == Ev.RETURN else CycleOutcome.REJECTED
     if cur in spec.rejected:

@@ -18,9 +18,9 @@ interface TaskOutcomeBoxProps {
 }
 
 /**
- * Hộp «Đánh giá kết quả» — chỉ hiện khi việc ĐÃ XONG (duoc-CR-656).
+ * Hộp "Đánh giá kết quả" — chỉ hiện khi việc ĐÃ XONG (duoc-CR-656).
  *
- * Người giao (hoặc quản lý dự án) chọn «Đạt» hay «Phải làm lại»; «Phải làm lại» MỞ LẠI việc nên hỏi xác nhận
+ * Người giao (hoặc quản lý dự án) chọn "Đạt" hay "Phải làm lại"; "Phải làm lại" MỞ LẠI việc nên hỏi xác nhận
  * trước. Quyền thật do máy chủ kiểm (403 kèm câu giải thích hiện qua toast); giao diện chỉ ẩn nút với người chỉ xem.
  * Chặn bấm đúp bằng `useRef` (đổi ngay trong tick), `disabled` chỉ để báo hiệu — luật bẫy biểu mẫu #4.
  */
@@ -35,7 +35,7 @@ export function TaskOutcomeBox({ task, listId, canEdit, done }: TaskOutcomeBoxPr
       if (outcome === WORK_TASK_OUTCOME_CODE.REWORK) {
         const ok = await confirm({
           title: 'Yêu cầu làm lại',
-          message: `Mở lại công việc «${task.title}» để làm lại? Công việc sẽ trở về trạng thái đang mở.`,
+          message: `Mở lại công việc "${task.title}" để làm lại? Công việc sẽ trở về trạng thái đang mở.`,
           confirmLabel: 'Làm lại',
         })
         if (!ok) return

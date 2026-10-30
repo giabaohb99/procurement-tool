@@ -18,7 +18,7 @@ import { KpiTrendCard } from './kpi-trend-card'
 
 /** Chỉ số `snapshot` (vd công nợ) — số dư tại-một-thời-điểm, không cộng dồn theo kỳ. */
 const SNAPSHOT_HINT = 'Số dư hiện tại — không có xu hướng theo kỳ'
-/** Chỉ số thời điểm mà các nhóm «Xem theo» CÓ số — bấm được, biểu đồ vẽ theo nhóm (duoc-CR-688). */
+/** Chỉ số thời điểm mà các nhóm "Xem theo" CÓ số — bấm được, biểu đồ vẽ theo nhóm (duoc-CR-688). */
 const SNAPSHOT_GROUPED_HINT = 'Số dư hiện tại — bấm để vẽ theo nhóm'
 
 interface ReportKpiRowProps {
@@ -32,11 +32,11 @@ interface ReportKpiRowProps {
   /** Bỏ trống = thẻ tĩnh, không bấm đổi biểu đồ (trang `hideTrend` không có biểu đồ để đổi). */
   onSelectMetric?: (metric: string) => void
   isLoading: boolean
-  /** Chỉ số có danh sách (`meta.drilldown_metrics` ∩ `metrics`) — thẻ của chúng có nút «Xem danh sách». */
+  /** Chỉ số có danh sách (`meta.drilldown_metrics` ∩ `metrics`) — thẻ của chúng có nút "Xem danh sách". */
   drilldownMetrics?: ReadonlySet<string>
   onDrilldown?: (metric: string) => void
   /**
-   * Chỉ số `snapshot` mà các dòng nhóm có số (vd «Định biên cuối kỳ» theo phòng ban) — thẻ
+   * Chỉ số `snapshot` mà các dòng nhóm có số (vd "Định biên cuối kỳ" theo phòng ban) — thẻ
    * của chúng bấm được để biểu đồ linh hoạt vẽ THEO NHÓM. Vắng mặt = thẻ snapshot tĩnh như cũ.
    */
   groupedSnapshotMetrics?: ReadonlySet<string>

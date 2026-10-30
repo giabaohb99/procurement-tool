@@ -23,7 +23,7 @@ export interface LaborContractVariable {
   label: string
   description: string
   example: string
-  /** Dạng CHUẨN của kiểu (tiền «15000000», số «1.5», ngày «2026-10-01»). */
+  /** Dạng CHUẨN của kiểu (tiền "15000000", số "1.5", ngày "2026-10-01"). */
   default_value: string
   is_required: boolean
   is_active: boolean
@@ -39,9 +39,9 @@ export interface LaborContractVariable {
 export interface LaborContractVariableList {
   total: number
   items: LaborContractVariable[]
-  /** Quyền GHI (thêm / sửa) = có `write` VÀ phạm vi «tất cả pháp nhân» — backend tính. */
+  /** Quyền GHI (thêm / sửa) = có `write` VÀ phạm vi "tất cả pháp nhân" — backend tính. */
   can_manage: boolean
-  /** Quyền XÓA = có `delete` VÀ phạm vi «tất cả pháp nhân». */
+  /** Quyền XÓA = có `delete` VÀ phạm vi "tất cả pháp nhân". */
   can_delete: boolean
 }
 

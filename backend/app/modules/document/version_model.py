@@ -51,7 +51,7 @@ VERSION_STATUS_LABELS = {
 #  `open_slot` (chưa mở được bản nháp thứ hai) nhưng KHÔNG ghi nội dung được
 #  nữa — xem `version_service.chan_khi_dang_duyet`.
 #
-#  «Đã từ chối» CỐ Ý không nằm ở đây: bản đó chết hẳn, phải nhả chỗ cho một bản
+#  "Đã từ chối" CỐ Ý không nằm ở đây: bản đó chết hẳn, phải nhả chỗ cho một bản
 #  mới, không thì văn bản bị một phiên bản từ chối chặn vĩnh viễn.
 OPEN_STATUSES = (VERSION_DRAFT, VERSION_SUBMITTED, VERSION_RETURNED)
 

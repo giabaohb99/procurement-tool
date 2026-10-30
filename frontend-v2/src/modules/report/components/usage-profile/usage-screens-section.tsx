@@ -15,7 +15,7 @@ const screenName = (route: string) => {
   return l.module ? `${l.module} › ${l.screen}` : l.screen
 }
 
-/** Bảng màu có 4 bậc: giữ 3 phân hệ đầu, phần còn lại gom «Khác» (xám trung tính). */
+/** Bảng màu có 4 bậc: giữ 3 phân hệ đầu, phần còn lại gom "Khác" (xám trung tính). */
 function groupSlices(slices: { label: string; value: number }[]) {
   const head = slices.length > CHART_COLORS.length ? slices.slice(0, CHART_COLORS.length - 1) : slices
   const rest = slices.slice(head.length)

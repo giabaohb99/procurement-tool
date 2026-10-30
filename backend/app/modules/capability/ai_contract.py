@@ -8,7 +8,7 @@ Quyền (hai lớp, hàm tự kiểm — A1 chỉ cần truyền đúng `user`):
   · Phạm vi do NGƯỜI GỌI quyết: phải truyền `company_id` / `department_ids` / `employee_ids` (trưởng phòng: phòng mình + phòng con;
     hàm không tự mở rộng). Không truyền phạm vi nào thì trả `[]`.
 
-Số theo người chỉ có khi ≥ 5 mẫu CÙNG loại (`below_threshold` = True thì mọi số là `None` — hãy nói «chưa đủ mẫu», đừng suy đoán).
+Số theo người chỉ có khi ≥ 5 mẫu CÙNG loại (`below_threshold` = True thì mọi số là `None` — hãy nói "chưa đủ mẫu", đừng suy đoán).
 Dòng `is_estimated` không bao giờ vào trung vị/p90. Không có điểm tổng hợp: A1 tự cân tải với tốc độ và GIẢI THÍCH.
 """
 from datetime import datetime, timedelta
@@ -26,7 +26,7 @@ MAX_LIMIT = 20
 
 
 class CapabilityForbidden(PermissionError):
-    """Người gọi chưa được giao khóa báo cáo «Năng lực theo loại việc»."""
+    """Người gọi chưa được giao khóa báo cáo "Năng lực theo loại việc"."""
 
 
 def _window(days: int = DEFAULT_WINDOW_DAYS, now: datetime | None = None):

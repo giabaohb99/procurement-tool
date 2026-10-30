@@ -4,8 +4,8 @@ Bốn kết cục của bộ máy đều phải có mặt ở đây, đúng như
 
     approved  →  phòng thuộc về phiếu này, báo cho người được mời
     rejected  →  nhả phòng, phiếu khóa
-    returned  →  nhả phòng, phiếu về «Trả về» để sửa rồi gửi lại
-    withdrawn →  nhả phòng, phiếu về «Nháp»
+    returned  →  nhả phòng, phiếu về "Trả về" để sửa rồi gửi lại
+    withdrawn →  nhả phòng, phiếu về "Nháp"
 
 ⚠️ Ở đây "nhả phòng" **chỉ là đổi trạng thái** chứ không phải cộng trừ một con số
 như quỹ phép — nhưng hậu quả của việc quên thì giống hệt: phòng bị khóa vĩnh viễn
@@ -17,8 +17,8 @@ không luồng nào áp; lúc đó phiếu vẫn vào *Chờ duyệt* với `app
 và người có quyền `room_booking.approve` bấm duyệt thẳng. Không có đường lùi này
 thì cài mới xong là không ai đặt nổi phòng cho tới khi quản trị khai xong luồng.
 
-**Và cả cái cờ nữa** (`ApprovalSwitch` cho entity `room_booking`, màn «Bật bộ máy
-duyệt»). Trước đây đặt phòng trình thẳng vào bộ máy không hỏi cờ, nên dòng công
+**Và cả cái cờ nữa** (`ApprovalSwitch` cho entity `room_booking`, màn "Bật bộ máy
+duyệt"). Trước đây đặt phòng trình thẳng vào bộ máy không hỏi cờ, nên dòng công
 tắc của nó bày ra cũng chỉ là nút giả. Nay `start_approval` hỏi cờ trước: TẮT thì
 đi đúng đường lùi ở đoạn trên. Đó là điểm khác biệt so với "chưa khai luồng" —
 đường lùi kia là *tình cờ chưa có luồng*, còn cái này là *cố ý tắt để quay về*.
@@ -45,8 +45,8 @@ def entity_context(obj: RoomBooking) -> dict:
     Chỉ những ô THẬT SỰ dùng để rẽ nhánh — đổ cả bản ghi vào đây thì người khai
     luồng thấy hai chục tên cột và không biết chọn cái nào.
 
-    `department_id` là của NGƯỜI ĐẶT (chép lúc lập phiếu), nên bước «trưởng bộ
-    phận của phòng chủ trì» trỏ đúng vào sếp của họ chứ không phải sếp của thư ký
+    `department_id` là của NGƯỜI ĐẶT (chép lúc lập phiếu), nên bước "trưởng bộ
+    phận của phòng chủ trì" trỏ đúng vào sếp của họ chứ không phải sếp của thư ký
     đặt hộ.
     """
     return {
@@ -60,7 +60,7 @@ def entity_context(obj: RoomBooking) -> dict:
 
 
 def is_enabled(db: Session) -> bool:
-    """Bộ máy duyệt nhiều bước có đang bật cho đặt phòng họp không (màn «Bật bộ máy duyệt»)."""
+    """Bộ máy duyệt nhiều bước có đang bật cho đặt phòng họp không (màn "Bật bộ máy duyệt")."""
     return flow_service.is_enabled(db, ENTITY)
 
 
@@ -199,14 +199,14 @@ def _on_rejected(db: Session, booking_id: int, instance) -> None:
 def _on_returned(db: Session, booking_id: int, instance) -> None:
     """Trả về người đặt → sửa được và gửi duyệt LẠI được.
 
-    Khác «từ chối» đúng ở chỗ đó, và phải khác: người đặt mở phiếu ra mà chỉ
-    thấy «Nháp» thì không biết mình vừa bị dẹp hay đang được mời sửa lại.
+    Khác "từ chối" đúng ở chỗ đó, và phải khác: người đặt mở phiếu ra mà chỉ
+    thấy "Nháp" thì không biết mình vừa bị dẹp hay đang được mời sửa lại.
     """
     _release_and_set(db, booking_id, instance, RB_RETURNED, "Trả về chỉnh sửa")
 
 
 def _on_withdrawn(db: Session, booking_id: int, instance) -> None:
-    """Người đặt tự rút → về **Nháp**, không phải «Trả về»: không ai trả gì cho họ."""
+    """Người đặt tự rút → về **Nháp**, không phải "Trả về": không ai trả gì cho họ."""
     _release_and_set(db, booking_id, instance, RB_DRAFT, "")
 
 
@@ -233,7 +233,7 @@ def can_read_booking(db: Session, booking_id: int, user) -> bool:
 
     Vế sau không có thì bộ máy giao việc cho người duyệt rồi chặn chính họ mở
     phiếu ra đọc — đúng lỗi đã vá ở Nghỉ phép (CR-260). Nới đúng **lúc đang có
-    việc treo**, không nới cho người «đã từng ký»: ký xong quyền đó đóng lại.
+    việc treo**, không nới cho người "đã từng ký": ký xong quyền đó đóng lại.
     """
     from app.core.auth import get_perm_profile
     from app.core.scoping import get_scoped

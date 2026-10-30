@@ -11,12 +11,12 @@ import { SealSectionHeader } from './seal-section-header'
 
 /**
  * Thẻ **TIẾN TRÌNH DUYỆT & ĐÓNG DẤU** — Lập phiếu → TBP duyệt → Văn thư đóng dấu,
- * xếp trên một trục dọc (22/09/2026, thay thẻ bốn dòng «Thông tin phê duyệt &
- * Đóng dấu»).
+ * xếp trên một trục dọc (22/09/2026, thay thẻ bốn dòng "Thông tin phê duyệt &
+ * Đóng dấu").
  *
  * Thẻ cũ bày bốn ô nhãn-trái/giá-trị-phải; phiếu mới thì cả bốn là dấu gạch, và
  * người LẬP phiếu — mắt xích đầu tiên — không có mặt ở đâu cả. Ở đây chặng chưa
- * tới lượt vẫn hiện, nhưng hiện thành một CÂU («Chờ Trưởng bộ phận duyệt») với
+ * tới lượt vẫn hiện, nhưng hiện thành một CÂU ("Chờ Trưởng bộ phận duyệt") với
  * vòng tròn nét đứt, nên nhìn phát biết phiếu đang dừng ở đâu và còn ai phải ký.
  *
  * Luật chặng nằm ở `utils/build-seal-stages.ts` (hàm thuần, có bài kiểm). Khuôn
@@ -66,7 +66,7 @@ export function SealProgressCard({
  * Một chặng: TÊN CHẶNG một dòng, người + mốc giờ xuống dòng dưới.
  *
  * Xếp cả ba thứ trên một dòng chỉ đẹp ở cột rộng; thẻ này sống ở CỘT PHỤ 380px,
- * ở đó «Chờ Trưởng bộ phận duyệt · Trần Trưởng Phòng · 17/09/2026 11:42» gãy
+ * ở đó "Chờ Trưởng bộ phận duyệt · Trần Trưởng Phòng · 17/09/2026 11:42" gãy
  * dòng tùy tiện và tên chặng — thứ duy nhất cần liếc là thấy — chìm giữa hai mẩu
  * chữ xám.
  */
@@ -94,7 +94,7 @@ function StageRow({ stage }: { stage: SealStage }) {
 
       {stage.time && <span className="text-xs tabular-nums text-muted-foreground">{stage.time}</span>}
 
-      {/*  ⚠️ Lý do là CHỮ THƯỜNG, cùng nhịp với dòng «Người xử lý» ngay trên nó.
+      {/*  ⚠️ Lý do là CHỮ THƯỜNG, cùng nhịp với dòng "Người xử lý" ngay trên nó.
           Bản trước đóng khung đỏ nhạt (viền + nền) — trong một cột hẹp nó đọc ra
           như một hộp cảnh báo của hệ thống chứ không ra lời người duyệt viết, mà
           chặng đã có vòng tròn đỏ + tiêu đề đỏ rồi, thêm mảng đỏ thứ ba là thừa.

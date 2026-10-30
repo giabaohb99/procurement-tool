@@ -142,7 +142,7 @@ export function DepartmentMembersTable({
             setStatus(ALL)
           }}
           //  ⚠️ Gài đường quay lại vào `state` — xem `use-back-target.ts`. Không
-          //  có nó thì nút lùi trên hồ sơ nhân sự ghi «Danh sách nhân sự» và
+          //  có nó thì nút lùi trên hồ sơ nhân sự ghi "Danh sách nhân sự" và
           //  bấm vào ném người dùng ra khỏi phòng ban đang xem.
           onRowClick={(employee) =>
             navigate(appRoutes.hr.employeeDetail(employee.id), { state: fromHere(location) })
@@ -158,7 +158,7 @@ export function DepartmentMembersTable({
           //  Khổ hẹp: THẺ thay bảng. Sáu cột cộng lại ~1170px, trên máy 390px
           //  chỉ thấy *Mã NV* và một mẩu *Họ tên* — mất đúng hai thứ trả lời
           //  câu hỏi của bảng này (*ai là trưởng bộ phận*, *còn làm việc
-          //  không*). Huy hiệu tình trạng chỉ nói khi KHÁC «Chính thức».
+          //  không*). Huy hiệu tình trạng chỉ nói khi KHÁC "Chính thức".
           mobileCard={(employee: Employee) => (
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1">

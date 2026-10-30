@@ -11,7 +11,7 @@ interface PostImageGridProps {
 /**
  * Khối media của bài viết. ẢNH xếp lưới kiểu bảng tin: 1 tấm nguyên khổ · 2 tấm
  * chia đôi · 3 tấm = 1 ngang + 2 vuông · từ 4 tấm là ô 2x2, dư bao nhiêu đè
- * «+N» lên ô cuối; bấm ảnh nào mở đèn chiếu tại đúng ảnh đó. VIDEO (D-Q3) đứng
+ * "+N" lên ô cuối; bấm ảnh nào mở đèn chiếu tại đúng ảnh đó. VIDEO (D-Q3) đứng
  * riêng dưới lưới, mỗi clip nguyên khổ ngang kèm nút phát của trình duyệt —
  * không nhét vào lưới vì ô vuông cắt mất khung hình và đèn chiếu chỉ chiếu ảnh.
  */

@@ -7,8 +7,8 @@ DB nhỏ nên dump gọn trong bộ nhớ.
 **Không nhận client MariaDB (phiếu kh-sao-luu-dung, 22/10/2026).** Image cũ cài
 `default-mysql-client` — trên Debian đó là MariaDB. `mariadb-dump` ghi cả giá trị
 của cột sinh (`tab_approval_instance.running_slot`, `tab_document_version.open_slot`)
-vào câu INSERT, nên nạp vào MySQL 8.4 chết ở lỗi 3105 — tức bản sao lưu «thành
-công» mà không khôi phục được. Gặp client MariaDB thì `dump_sql` ném lỗi, lượt sao
+vào câu INSERT, nên nạp vào MySQL 8.4 chết ở lỗi 3105 — tức bản sao lưu "thành
+công" mà không khôi phục được. Gặp client MariaDB thì `dump_sql` ném lỗi, lượt sao
 lưu ghi `failed`, không đẩy bản hỏng lên kho.
 
 **Chặn dọn bản cũ khi bản mới đáng ngờ** (`prune_backups`, dùng chung với DB bot).
@@ -51,7 +51,7 @@ from app.core.config import settings
 from app.core.storage import env_prefix, upload_fileobj, delete_key, is_remote_storage_ready
 from app.modules.audit.tasks import ARCHIVE_TABLES
 
-#  ⚠️ MỘT nguồn sự thật cho «bốn bảng nhật ký», và nó cố ý **suy ra** từ
+#  ⚠️ MỘT nguồn sự thật cho "bốn bảng nhật ký", và nó cố ý **suy ra** từ
 #  `ARCHIVE_TABLES` thay vì chép tay lại tên bảng ở đây. Bản thiết kế §9 nói
 #  khai hằng này trong chính tệp này; chép tay thì đúng câu chữ nhưng lại dựng
 #  lên đúng thứ câu sau của nó cảnh báo — hai nơi khai cùng một danh sách là
@@ -82,7 +82,7 @@ def keep_count() -> int:
     Phải là HÀM chứ không phải hằng số: từ bao-CR-429 con số này sửa được trên
     màn Cấu hình hệ thống, mà hằng số ở đầu tệp thì chốt giá trị ngay lúc nạp
     module — người dùng đổi xong vẫn phải dựng lại dịch vụ mới có tác dụng.
-    Sàn 1 để một ô rỗng không biến thành «xóa sạch mọi bản sao lưu».
+    Sàn 1 để một ô rỗng không biến thành "xóa sạch mọi bản sao lưu".
     """
     return max(1, int(app_settings.get("backup_keep") or 0) or settings.BACKUP_KEEP or 30)
 

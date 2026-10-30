@@ -1,4 +1,4 @@
-// bao-CR-501 — thẻ «Cấu hình» của màn Tra cứu thị trường: gom BỐN danh mục vào NGAY màn tra
+// bao-CR-501 — thẻ "Cấu hình" của màn Tra cứu thị trường: gom BỐN danh mục vào NGAY màn tra
 // cứu — từ khóa nhãn Thành phẩm / Nguyên liệu (bao-CR-494), từ đồng nghĩa tìm kiếm (bao-CR-495)
 // danh mục hóa chất theo văn bản (bao-CR-470) và mã dạng chế phẩm (duoc-CR-684). Đại ca chốt 26/09: chức năng này càng ít màn
 // hình càng tốt, không đẻ màn / mục menu riêng.
@@ -29,7 +29,7 @@ const PAGE_SIZE = 10
 
 /**
  * Ba khối đầu (từ khóa, đồng nghĩa, mã dạng chế phẩm) thuộc khóa `customs_price` (hiện khi sửa được — `canConfigure`), khối hóa chất
- * thuộc khóa riêng `customs_regulation` (hiện khi XEM được — trước đây nút «Danh mục hóa chất»
+ * thuộc khóa riêng `customs_regulation` (hiện khi XEM được — trước đây nút "Danh mục hóa chất"
  * trên đầu màn cũng mở cho người chỉ có quyền đọc).
  */
 export function CustomsConfigTab({
@@ -97,7 +97,7 @@ function CustomsCatalogCard<T extends CrudRecord>({ config }: { config: CrudConf
         emptyMessage={
           isFiltering
             ? `Không có ${config.unitLabel} nào khớp bộ lọc.`
-            : `Chưa có ${config.unitLabel} nào. Bấm «Thêm ${config.unitLabel}» để tạo.`
+            : `Chưa có ${config.unitLabel} nào. Bấm "Thêm ${config.unitLabel}" để tạo.`
         }
         storageKey={config.storageKey}
         onRowClick={(row: T) => setFormItem(row)}

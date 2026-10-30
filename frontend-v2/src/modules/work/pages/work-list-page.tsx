@@ -147,14 +147,14 @@ function WorkListContent({ listId }: { listId: number }) {
   //  Quản lý dự án — hai lối vào, một đường ghi.
   const updateList = useUpdateWorkList()
   const moveTask = useMoveTask(listId)
-  /*  Thả «xuống cuối cột» khi cột đang tải dở thì neo trước thẻ chưa tải đầu
+  /*  Thả "xuống cuối cột" khi cột đang tải dở thì neo trước thẻ chưa tải đầu
       tiên — không thì thẻ rơi xuống phần chưa tải và biến khỏi màn hình ngay
       khi bảng nạp lại (`anchorInsideLoaded`).  */
   function moveTaskAnchored(taskId: number, place: KanbanDropPlace) {
     moveTask.mutate({ taskId, place: anchorInsideLoaded(place, board) })
   }
   const moveSection = useMoveSection(listId)
-  //  Nguồn cho ô «Phụ trách» và trường tùy biến kiểu NGƯỜI sửa ngay trên dòng
+  //  Nguồn cho ô "Phụ trách" và trường tùy biến kiểu NGƯỜI sửa ngay trên dòng
   //  danh sách — panel chi tiết cũng nạp đúng query này nên không tốn thêm lượt.
   const { data: members = [] } = useWorkMembers(listId)
   const setAssignees = useSetAssignees(listId)
@@ -233,7 +233,7 @@ function WorkListContent({ listId }: { listId: number }) {
   const [editingSection, setEditingSection] = useState<WorkSection | null>(null)
 
   const myRole = board?.list.my_role ?? null
-  //  bao-CR-482: ô «Nhóm» trong hộp Quản lý dự án lấy nhóm từ cây bên trái.
+  //  bao-CR-482: ô "Nhóm" trong hộp Quản lý dự án lấy nhóm từ cây bên trái.
   const { data: sidebar } = useWorkSidebar()
   const manageGroups = useMemo(() => flattenGroups(sidebar), [sidebar])
   const canEdit = myRole !== null && myRole <= WORK_ROLE.MEMBER && !board?.list.is_archived
@@ -273,7 +273,7 @@ function WorkListContent({ listId }: { listId: number }) {
   const priorityField = useMemo(() => findPriorityField(labelFields), [labelFields])
 
   //  Ba lớp, đúng thứ tự: từ khóa → sắp xếp (`prepareTasks`) → BỘ LỌC ĐIỀU KIỆN
-  //  của nút «Lọc».
+  //  của nút "Lọc".
   const tasks = useMemo(
     () =>
       applyTaskConditions(
@@ -319,7 +319,7 @@ function WorkListContent({ listId }: { listId: number }) {
       <header className="flex flex-wrap items-start justify-between gap-3">
         {/*  Nút mở lại cây dự án đứng NGANG tiêu đề (chỉ hiện khi cây đang ẩn),
              chứ không phải một cột nút riêng bên trái — xem `WorkSidebarPeekButton`. */}
-        {/*  ⚠️ `flex-1` (chứ không chỉ `min-w-0`) là thứ giữ nút «Quản lý dự án»
+        {/*  ⚠️ `flex-1` (chứ không chỉ `min-w-0`) là thứ giữ nút "Quản lý dự án"
              ở LẠI hàng tiêu đề. Trong một khung `flex-wrap`, chỗ xuống hàng
              tính theo bề rộng NỘI DUNG của từng phần tử, mà cụm tên + mô tả thì
              luôn dài hơn một màn điện thoại — nên nút bị đẩy xuống hàng riêng
@@ -328,7 +328,7 @@ function WorkListContent({ listId }: { listId: number }) {
         <div className="flex min-w-0 flex-1 items-start gap-2">
           <WorkSidebarPeekButton />
           {/*  Tên và mô tả sửa NGAY TẠI ĐÂY — bấm vào chữ là thành ô nhập. Hộp
-               thoại «Sửa dự án» trong menu bên phải vẫn còn vì nó giữ thêm ô MÀU;
+               thoại "Sửa dự án" trong menu bên phải vẫn còn vì nó giữ thêm ô MÀU;
                cả hai đường đều đi qua `useUpdateWorkList` nên không có hai luật. */}
           <ProjectHeaderInlineEdit
             list={board.list}
@@ -413,9 +413,9 @@ function WorkListContent({ listId }: { listId: number }) {
             chỗ Lark đặt. Ở cạnh ba tab khung nhìn thì nó nhìn như tab thứ tư. */}
       </div>
 
-      {/*  Thanh công cụ là của BA khung nhìn việc: «Việc mới», lọc điều kiện,
+      {/*  Thanh công cụ là của BA khung nhìn việc: "Việc mới", lọc điều kiện,
           sắp xếp, trường hiện trên thẻ — không cái nào có nghĩa trên một cuốn
-          nhật ký. Tab «Hoạt động» mang bộ lọc riêng của nó (`ActivityFilterBar`). */}
+          nhật ký. Tab "Hoạt động" mang bộ lọc riêng của nó (`ActivityFilterBar`). */}
       {view !== 'activities' && (
         <WorkToolbar
           listId={listId}

@@ -44,7 +44,7 @@ export function SystemLogDetailSheet({ requestId, onClose }: SystemLogDetailShee
       <SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-3xl">
         {/*  Tiêu đề = danh thiếp của lượt gọi: ĐỘNG TỪ có màu · đường dẫn · kết quả ·
             mất bao lâu. Bản trước để động từ là chữ mono xám lẫn vào đường dẫn, và
-            mã trạng thái nằm tận trong tab «Tổng quan» — tức là thứ đầu tiên người
+            mã trạng thái nằm tận trong tab "Tổng quan" — tức là thứ đầu tiên người
             trực muốn biết (*lượt này hỏng hay chạy được?*) lại phải bấm thêm một
             lần mới thấy. */}
         <SheetHeader className="gap-2 border-b bg-muted/30">
@@ -214,7 +214,7 @@ interface InfoRowProps {
 }
 
 /**
- * Một ô «nhãn — giá trị».
+ * Một ô "nhãn — giá trị".
  *
  * Có KHUNG NỀN chứ không phải hai dòng chữ trần (đổi 22/09/2026): tám ô xếp lưới
  * hai cột, ô nào cũng chữ xám nhỏ trên chữ thường dưới, thì mắt không có mốc nào

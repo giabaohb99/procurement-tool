@@ -99,7 +99,7 @@ describe('ExpiringLaborContractsCard', () => {
     expect(screen.queryByText(/lương/i)).not.toBeInTheDocument()
   })
 
-  //  Rà soát M2: thẻ cảnh báo tải hỏng mà nói «không có hợp đồng nào» là trấn an giả.
+  //  Rà soát M2: thẻ cảnh báo tải hỏng mà nói "không có hợp đồng nào" là trấn an giả.
   it('says the list failed to load instead of claiming nothing is expiring', async () => {
     apiGet.mockRejectedValue(new Error('500'))
     build()

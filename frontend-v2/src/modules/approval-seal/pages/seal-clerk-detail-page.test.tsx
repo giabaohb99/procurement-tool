@@ -134,7 +134,7 @@ describe('SealClerkDetailPage', () => {
     expect(screen.getByTestId('audit-timeline')).toBeInTheDocument()
   })
 
-  //  Thẻ «Tổng quan phân công» bỏ ngày 22/09/2026 — nó chỉ soi lại ba ô đang
+  //  Thẻ "Tổng quan phân công" bỏ ngày 22/09/2026 — nó chỉ soi lại ba ô đang
   //  chỉnh ở cột trái (và soi cả thay đổi CHƯA LƯU), nên không nói được điều gì
   //  mà nhìn sang cột trái không thấy. Bài kiểm này giữ cho nó đừng mọc lại.
   it('không dựng lại thẻ tổng quan soi ngược cấu hình bên trái', () => {

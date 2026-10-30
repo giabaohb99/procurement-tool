@@ -13,8 +13,8 @@ const DEFAULT_CENTRAL_DEPT_CODE = 'PBA017'
 type Catalog = { id: number; code?: string; name?: string; full_name?: string; is_active?: boolean }
 
 /**
- * BỘ CHỌN ĐIỀU KIỆN cho ô «Điều kiện bỏ qua điều phối» (bao-CR-528) — bản v1, cùng tính năng
- * với `frontend-v2` (`SettingConditionField`). Mỗi dòng «trường · phép so · giá trị», nối nhau
+ * BỘ CHỌN ĐIỀU KIỆN cho ô "Điều kiện bỏ qua điều phối" (bao-CR-528) — bản v1, cùng tính năng
+ * với `frontend-v2` (`SettingConditionField`). Mỗi dòng "trường · phép so · giá trị", nối nhau
  * bằng VÀ, câu tiếng Việt tổng kết bên dưới. Giá trị gửi lên vẫn là chuỗi JSON cũ.
  *
  * Trước CR này ô là ô chữ bắt quản trị gõ `[{"field":"handler_dept_id","op":"not_empty"}]`.
@@ -52,8 +52,8 @@ export default function ConditionRuleEditor({
     if (f.source === 'handler_department' || f.source === 'department') {
       return departments
         .filter((d) => d.is_active !== false)
-        //  Phòng thu mua mặc định = «để trống» trong bối cảnh phiếu; chọn nó ở «thuộc» thì
-        //  không phiếu nào khớp, nên gỡ khỏi ô «Phòng xử lý».
+        //  Phòng thu mua mặc định = "để trống" trong bối cảnh phiếu; chọn nó ở "thuộc" thì
+        //  không phiếu nào khớp, nên gỡ khỏi ô "Phòng xử lý".
         .filter((d) => f.source === 'department' || d.code !== centralCode)
         .map((d) => ({ id: d.id, label: d.name || String(d.id) }))
     }
@@ -139,7 +139,7 @@ export default function ConditionRuleEditor({
                   ) : f.kind === 'number' ? (
                     <input type="number" min={0} disabled={disabled} placeholder="Nhập số…" style={{ width: '100%' }}
                       value={typeof row.value === 'number' ? row.value : ''}
-                      //  Ô trống = «chưa nhập» (null), không phải 0: «số dòng từ 0 trở xuống» là điều kiện thật.
+                      //  Ô trống = "chưa nhập" (null), không phải 0: "số dòng từ 0 trở xuống" là điều kiện thật.
                       onChange={(e) => changeRow(i, { value: e.target.value === '' ? null : Number(e.target.value) })} />
                   ) : (
                     <select value={String(row.value || '')} disabled={disabled} style={{ width: '100%' }}

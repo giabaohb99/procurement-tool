@@ -4,21 +4,22 @@
 Mỗi dòng dữ liệu trong tệp có đúng MỘT dòng nhật ký mang `row_status` (`ImportRowStatus`):
 
   · NEW       — đọc được và chưa có, ghi vào bảng giá. Trùng các cột nhận diện với một dòng
-                đã có mà khác giá / lượng thì câu ghi «nghi sửa giá» để người nạp rà — vẫn
+                đã có mà khác giá / lượng thì câu ghi "nghi sửa giá" để người nạp rà — vẫn
                 THÊM, không ghi đè (xem `dedupe.py`: đo trên dữ liệu thật, đa số là lô thật);
   · ERROR     — bộ đọc bỏ dòng (hiện chỉ có một lý do: không đọc được Ngày đăng ký);
   · DUPLICATE — giống hệt một dòng ĐỨNG TRƯỚC trong cùng tệp → BỎ QUA;
   · EXISTING  — giống hệt một dòng đã lưu (lô khác) → BỎ QUA;
-  · UPDATED   — bao-CR-608: ô «ID» trỏ đúng một dòng đã có → GHI ĐÈ dòng đó («Ghi đè ID n»);
-  · DELETED   — bao-CR-608: ô «Thao tác» = xóa và ID có thật → XÓA dòng đó («Xóa ID n»);
+  · UPDATED   — bao-CR-608: ô "ID" trỏ đúng một dòng đã có → GHI ĐÈ dòng đó ("Ghi đè ID n");
+  · DELETED   — bao-CR-608: ô "Thao tác" = xóa và ID có thật → XÓA dòng đó ("Xóa ID n");
   · IGNORED   — bao-CR-608: xóa mà ID trống / không có, hoặc ID đã xử lý ở dòng trên → BỎ QUA.
 
-«Giống hệt» = cùng mã băm `row_hash` (đủ các cột dữ liệu sau chuẩn hóa). Đại ca chốt
+"Giống hệt" = cùng mã băm `row_hash` (đủ các cột dữ liệu sau chuẩn hóa). Đại ca chốt
 01/10/2026: trùng thì bỏ qua — bản bao-CR-496 chỉ đánh dấu rồi vẫn ghi, prod dồn 806 dòng thừa.
 
 Ghi bằng lệnh chèn hàng loạt: một tệp ~18.000 dòng, `db.add` từng dòng vừa chậm vừa kích
 hoạt nhật ký trước/sau của `change_tracker`.
 """
+import json
 from dataclasses import dataclass, field
 
 from sqlalchemy import func, insert
@@ -27,11 +28,12 @@ from sqlalchemy.orm import Session
 from app.modules.import_tool.model import (IMPORT_ROW_STATUS_LABELS, ImportBatch, ImportLog,
                                            ImportRowStatus, LogLevel)
 
-from .constants import INSERT_CHUNK, REF_ID_KEY
-from .dedupe import ExistingIndex
+from .constants import COLUMNS, INSERT_CHUNK, REF_ID_KEY
+from .dedupe import ExistingIndex, conflict_fields
 from .reader import ParseResult
 
 SHEET = "GTT02"
+_LABELS = dict(COLUMNS)
 CATEGORY = "customs_row"
 
 #  (dòng trong tệp, ImportRowStatus, câu, tên hàng)
@@ -53,28 +55,35 @@ class Classification:
 
 def classify_rows(res: ParseResult, identities: list[str], existing: ExistingIndex,
                   target_ids: frozenset[int] | set[int] = frozenset(),
-                  unchanged_rows: frozenset[int] | set[int] = frozenset()) -> Classification:
+                  unchanged_rows: frozenset[int] | set[int] = frozenset(),
+                  matches: list[tuple[str, tuple[str, ...]]] | None = None) -> Classification:
     """Phân loại từng dòng của tệp theo THỨ TỰ DÒNG.
 
     `res.rows` phải đã qua `dedupe.stamp_rows` (có `row_hash`); `identities` cùng thứ tự.
     Dòng lỗi lấy từ `res.logs` (mức ERROR, có số dòng).
 
-    bao-CR-608: `target_ids` = các id mà ô «ID» của tệp trỏ tới VÀ có thật trong bảng;
+    bao-CR-608: `target_ids` = các id mà ô "ID" của tệp trỏ tới VÀ có thật trong bảng;
     `unchanged_rows` = số dòng (trong tệp) có ID mà dữ liệu y hệt dòng đã lưu. Luật:
-      · «Thao tác = xóa»: ID có thật → XÓA; ID trống / không có → BỎ QUA kèm cảnh báo;
-      · ô ID có thật → GHI ĐÈ, không qua bộ lọc trùng (dòng ghi đè không bao giờ là «trùng
-        trong tệp»); y hệt dòng đã lưu → «Đã có», không ghi gì;
+      · "Thao tác = xóa": ID có thật → XÓA; ID trống / không có → BỎ QUA kèm cảnh báo;
+      · ô ID có thật → GHI ĐÈ, không qua bộ lọc trùng (dòng ghi đè không bao giờ là "trùng
+        trong tệp"); y hệt dòng đã lưu → "Đã có", không ghi gì;
       · ô ID có số mà không có → THÊM MỚI như dòng thường (vẫn qua chống trùng), kèm cảnh báo;
       · một ID xuất hiện ở nhiều dòng → dòng ĐẦU TIÊN thắng, các dòng sau BỎ QUA kèm cảnh báo.
+
+    bao-CR-699: `matches` (cùng thứ tự `res.rows`, từ `dedupe.match_rows`) — dòng khác mã băm nhưng cùng tờ khai +
+    giá + lượng với một dòng đã lưu / dòng phía trên trong tệp, và KHÔNG xung đột ô nào (bằng nhau hoặc một bên trống)
+    → "Đã có" / "Trùng"; có xung đột → vẫn THÊM, ghi chú cần rà.
     """
     out = Classification()
     for row_no, level, message in res.logs:
         if row_no > 0 and level == LogLevel.ERROR:
             out.statuses.append((row_no, int(ImportRowStatus.ERROR), message, ""))
+    match_of = {id(r): m for r, m in zip(res.rows, matches)} if matches else {}
     items = [(r["source_row"], False, r, identity) for r, identity in zip(res.rows, identities)]
     items += [(d["source_row"], True, d, "") for d in res.deletes]
     items.sort(key=lambda t: t[0])
     first_seen: dict[str, int] = {}
+    first_match: dict[str, tuple[int, tuple[str, ...]]] = {}     # mã khớp → (dòng trong tệp, các ô chuẩn hóa)
     claimed: dict[int, int] = {}          # id → dòng đã xử lý nó
 
     def skip(row_no: int, name: str, message: str) -> None:
@@ -123,9 +132,29 @@ def classify_rows(res: ParseResult, identities: list[str], existing: ExistingInd
             out.statuses.append((row_no, int(ImportRowStatus.DUPLICATE),
                                  f"{prefix}Giống hệt dòng {first_seen[h]} trong cùng tệp — bỏ qua", name))
         else:
+            match_key, canon = match_of.get(id(r), ("", ()))
+            stored = existing.by_match.get(match_key) if match_key else None
+            earlier = first_match.get(match_key) if match_key else None
+            if stored and not conflict_fields(canon, stored[1]):
+                out.statuses.append((row_no, int(ImportRowStatus.EXISTING),
+                                     f"{prefix}Đã có trong bảng giá (cùng tờ khai, giá, lượng — lô #{stored[0]}) — bỏ qua",
+                                     name))
+                continue
+            if earlier and not conflict_fields(canon, earlier[1]):
+                out.statuses.append((row_no, int(ImportRowStatus.DUPLICATE),
+                                     f"{prefix}Trùng dòng {earlier[0]} trong cùng tệp (cùng tờ khai, giá, lượng) — bỏ qua",
+                                     name))
+                continue
             first_seen[h] = row_no
+            if match_key:
+                first_match.setdefault(match_key, (row_no, canon))
             out.to_insert.append(r)
-            if identity in existing.by_identity:
+            clash = conflict_fields(canon, stored[1]) if stored else []
+            if clash:
+                out.suspect += 1
+                message = (f"{prefix}Thêm mới — cùng tờ khai, giá, lượng với dòng ở lô #{stored[0]} nhưng khác "
+                           f"{', '.join(_LABELS[k] for k in clash[:4])}, cần rà")
+            elif identity in existing.by_identity:
                 out.suspect += 1
                 message = (f"{prefix}Thêm mới — nghi sửa giá/số lượng so với dòng đã có ở lô "
                            f"#{existing.by_identity[identity]}, cần rà")
@@ -140,7 +169,7 @@ def write_row_logs(db: Session, batch: ImportBatch, statuses: list[RowStatus]) -
     """Chèn hàng loạt nhật ký từng dòng cho lô (kết quả `classify_rows`); → số dòng theo kết cục.
 
     KHÔNG tăng các bộ đếm cảnh báo/lỗi của lô — dòng lỗi đã được `add_log` đếm ở mức ERROR
-    rồi; ở đây chỉ thêm góc nhìn «mỗi dòng một kết cục».
+    rồi; ở đây chỉ thêm góc nhìn "mỗi dòng một kết cục".
     """
     payload = [{"batch_id": batch.id, "sheet": SHEET, "row_no": row_no, "level": int(LogLevel.INFO),
                 "category": CATEGORY, "message": message, "ref_key": name[:120],
@@ -156,7 +185,7 @@ def write_row_logs(db: Session, batch: ImportBatch, statuses: list[RowStatus]) -
 
 _COUNT_KEY = {int(ImportRowStatus.NEW): "new", int(ImportRowStatus.ERROR): "error",
               int(ImportRowStatus.DUPLICATE): "duplicate", int(ImportRowStatus.EXISTING): "existing",
-              #  bao-CR-608 — ghi đè / xóa theo cột «ID» + «Thao tác», và dòng bỏ qua vì xóa hỏng.
+              #  bao-CR-608 — ghi đè / xóa theo cột "ID" + "Thao tác", và dòng bỏ qua vì xóa hỏng.
               int(ImportRowStatus.UPDATED): "updated", int(ImportRowStatus.DELETED): "deleted",
               int(ImportRowStatus.IGNORED): "ignored"}
 
@@ -165,14 +194,34 @@ def _row_query(db: Session, batch_id: int):
     return db.query(ImportLog).filter(ImportLog.batch_id == batch_id, ImportLog.row_status != 0)
 
 
-def count_rows(db: Session, batch_id: int) -> dict:
-    """Tổng theo từng kết cục cho đầu hộp «Nhật ký lô» — một truy vấn GROUP BY."""
+def count_rows(db: Session, batch_id: int, batch: ImportBatch | None = None) -> dict:
+    """Tổng theo từng kết cục cho đầu hộp "Nhật ký lô" — một truy vấn GROUP BY.
+
+    bao-CR-698: nhật ký Thêm mới / Đã có / Trùng quá hạn bị dọn (`row_log_cleanup`) → có `batch` thì lấy số
+    của lô (created_count + sheet_info.existing_rows / duplicate_rows) khi số dòng nhật ký hụt, kèm cờ `pruned`
+    và câu ghi chú cho đầu hộp."""
     rows = (_row_query(db, batch_id).with_entities(ImportLog.row_status, func.count(ImportLog.id))
             .group_by(ImportLog.row_status).all())
     by = {int(s): int(n) for s, n in rows}
-    out = {"total": sum(by.values())}
-    out.update({key: by.get(status, 0) for status, key in _COUNT_KEY.items()})
-    return out
+    out = {key: by.get(status, 0) for status, key in _COUNT_KEY.items()}
+    if batch is not None:
+        out["pruned"], out["pruned_note"] = False, ""
+        try:
+            info = json.loads(batch.sheet_info or "{}")
+        except ValueError:
+            info = {}
+        info = info if isinstance(info, dict) else {}
+        kept = {"new": int(batch.created_count or 0), "existing": int(info.get("existing_rows") or 0),
+                "duplicate": int(info.get("duplicate_rows") or 0)}
+        if any(kept[k] > out[k] for k in kept):
+            from .row_log_cleanup import keep_days
+
+            out.update({k: max(out[k], v) for k, v in kept.items()})
+            days = keep_days()
+            out["pruned"] = True
+            out["pruned_note"] = ("Nhật ký chi tiết các dòng Thêm mới / Đã có / Trùng đã được dọn"
+                                  + (f" sau {days} ngày" if days else "") + "; số đếm lấy từ lô.")
+    return {"total": sum(out[k] for k in _COUNT_KEY.values()), **out}
 
 
 def list_rows(db: Session, batch_id: int, row_status: int | None, pg: dict):

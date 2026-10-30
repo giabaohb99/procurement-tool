@@ -4,8 +4,8 @@ import type { LeaveBalance } from '../types/leave'
  * Dòng quỹ này có QUỸ THẬT không — tức có gì để mà tiêu hết hay không.
  *
  * ⚠️ Đây là thứ phân biệt hai nghĩa của con số **0 còn lại**, mà chúng ngược
- * hẳn nhau: *«đã tiêu hết phép»* (đáng báo động, tô đỏ) và *«loại nghỉ này công
- * ty không cấp hạn mức»* (bình thường, để mờ). Bảng quỹ của một người có tám
+ * hẳn nhau: *"đã tiêu hết phép"* (đáng báo động, tô đỏ) và *"loại nghỉ này công
+ * ty không cấp hạn mức"* (bình thường, để mờ). Bảng quỹ của một người có tám
  * dòng thì sáu dòng thuộc vế sau — Nghỉ tang chế, Nghỉ bù, Nghỉ cưới hỏi… đều
  * hạn mức 0. Tô đỏ hết thì màu đỏ mất nghĩa đúng ở chỗ nó cần có nghĩa nhất.
  *

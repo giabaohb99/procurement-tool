@@ -1,5 +1,5 @@
-// duoc-CR-612 — MỘT hàng hồ sơ của dạng «Bảng» trong khối Báo cáo thực hiện: mọi ô sửa
-// tại chỗ trừ tiên quyết (sửa qua hộp ✎). Đánh dấu xong = chọn «Hoàn thành» ở cột Trạng thái. Người không có quyền sửa thấy chữ thường.
+// duoc-CR-612 — MỘT hàng hồ sơ của dạng "Bảng" trong khối Báo cáo thực hiện: mọi ô sửa
+// tại chỗ trừ tiên quyết (sửa qua hộp ✎). Đánh dấu xong = chọn "Hoàn thành" ở cột Trạng thái. Người không có quyền sửa thấy chữ thường.
 import { Lock, Paperclip, Pencil, Trash2 } from 'lucide-react'
 
 import { Button } from '@/shared/ui/button'
@@ -71,7 +71,7 @@ export function ReportDocSheetRow({
   const readOnly = !canEdit
   const isLink = /^https?:\/\//i.test(doc.file_note)
   //  Ô chọn / ô ngày / ô tick lưu ngay: lỗi đã có toast của lớp API chung và cache đã được
-  //  trả về ảnh cũ — ở đây chỉ nuốt lời từ chối cho khỏi «unhandled rejection».
+  //  trả về ảnh cũ — ở đây chỉ nuốt lời từ chối cho khỏi "unhandled rejection".
   const save = (changes: ReportDocInlineChanges) => {
     onPatch(changes).catch(() => undefined)
   }
@@ -85,7 +85,7 @@ export function ReportDocSheetRow({
   const itemLabel =
     itemOptions.find((option) => option.value === String(doc.item_id))?.label ?? '—'
 
-  //  Ô ngày: đổi là lưu ngay; `''` = xóa ngày (backend phân biệt với «không gửi»).
+  //  Ô ngày: đổi là lưu ngay; `''` = xóa ngày (backend phân biệt với "không gửi").
   const dateCell = (
     field: 'start_date' | 'planned_date' | 'expires_at',
     note?: { text: string; tone: 'overdue' | 'soon' } | null,
@@ -98,7 +98,7 @@ export function ReportDocSheetRow({
           size="sm"
           clearable
           value={doc[field]}
-          //  Cột đã có tên ở tiêu đề — chữ gợi ý ngắn để khỏi bị cắt «Hết hiệu …».
+          //  Cột đã có tên ở tiêu đề — chữ gợi ý ngắn để khỏi bị cắt "Hết hiệu …".
           placeholder="Chọn ngày"
           className="h-7 w-full px-2 text-xs"
           onChange={(value) => {

@@ -24,7 +24,7 @@ beforeEach(() => {
  * component cách nhau cả màn hình.
  */
 describe('useLeaveBalanceAdjustForm', () => {
-  it('xem trước «còn lại» = gỡ lần chỉnh cũ rồi cộng lần mới', () => {
+  it('xem trước "còn lại" = gỡ lần chỉnh cũ rồi cộng lần mới', () => {
     //  Ô này GHI ĐÈ chứ không cộng dồn: đang +3 mà gõ 5 thì còn lại tăng 2, chứ
     //  không tăng 5. Cộng thẳng vào là con số xem trước sai ngay từ đầu.
     const { result } = renderHook(() =>

@@ -9,7 +9,7 @@ import {
 } from './id-column'
 import type { DataTableColumn } from './types'
 
-// bao-CR-578 — mọi bảng danh sách tự có cột «ID» ở bìa trái (đại ca chốt 03/10/2026).
+// bao-CR-578 — mọi bảng danh sách tự có cột "ID" ở bìa trái (đại ca chốt 03/10/2026).
 
 type Row = { id?: unknown; name: string }
 

@@ -18,7 +18,7 @@ import { DOSSIER_TYPES_FOR_FORM_KEY } from '../hooks/use-dossier-types'
 import type { DossierType } from '../types/dossier-type'
 
 /**
- * TRÌNH KHAI BỘ TRƯỜNG của một loại hồ sơ — phần «metadata» nhìn thấy được.
+ * TRÌNH KHAI BỘ TRƯỜNG của một loại hồ sơ — phần "metadata" nhìn thấy được.
  *
  * Đây là chỗ người dùng tự định nghĩa biểu mẫu: khai ô nào ở đây thì màn lập hồ
  * sơ của loại đó mọc ra ô ấy, không phải chờ ai sửa mã nguồn.
@@ -88,7 +88,7 @@ export function DossierFieldSchemaEditor({ type }: { type: DossierType }) {
     //  hiện nó nữa, và không còn lời giải nghĩa `so_gp` từng là gì.
     const ok = await confirm({
       message:
-        `Bỏ ô «${field.label || field.key}» khỏi loại này? Hồ sơ đang giữ giá trị của ô đó ` +
+        `Bỏ ô "${field.label || field.key}" khỏi loại này? Hồ sơ đang giữ giá trị của ô đó ` +
         'vẫn còn dữ liệu dưới cơ sở dữ liệu, nhưng sẽ không màn hình nào hiện ra nữa.',
     })
     if (ok) setFields((prev) => prev.filter((_, i) => i !== index))
@@ -142,7 +142,7 @@ export function DossierFieldSchemaEditor({ type }: { type: DossierType }) {
         <div className="space-y-3">
           {fields.map((field, index) => (
             //  ⚠️ Khóa theo VỊ TRÍ, không theo `field.key`: mã trường đổi theo
-            //  từng phím gõ ở ô «Tên ô» (nó tự gợi ý mã), nên lấy mã làm khóa là
+            //  từng phím gõ ở ô "Tên ô" (nó tự gợi ý mã), nên lấy mã làm khóa là
             //  React hủy và dựng lại ô nhập sau mỗi ký tự — con trỏ nhảy về đầu
             //  ô và người dùng không gõ nổi một chữ. Dòng ở đây xáo trộn bằng
             //  nút Lên/Xuống chứ không bằng thứ tự dữ liệu, nên khóa vị trí an toàn.

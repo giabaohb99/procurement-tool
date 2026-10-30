@@ -55,7 +55,7 @@ def readable_archive_ids(user, profile: dict):
 
 
 def _owner_condition(user):
-    """Điều kiện «HĐ của chính người này, đã ký/chấm dứt, chưa xóa mềm» (duoc-CR-652); `None` nếu chưa gắn nhân sự."""
+    """Điều kiện "HĐ của chính người này, đã ký/chấm dứt, chưa xóa mềm" (duoc-CR-652); `None` nếu chưa gắn nhân sự."""
     employee_id = int(getattr(user, "employee_id", 0) or 0)
     if employee_id <= 0:
         return None
@@ -211,10 +211,10 @@ def ensure_not_archive(db: Session, doc: Document) -> None:
 
 
 def issue_state(db: Session, doc: Document, user, profile: dict) -> tuple[int, bool]:
-    """`(id HĐ, được «Ban hành» không)` cho nút Ban hành ở trang văn bản (duoc-CR-659).
+    """`(id HĐ, được "Ban hành" không)` cho nút Ban hành ở trang văn bản (duoc-CR-659).
 
-    «Ban hành» bản lưu trữ = KÝ hợp đồng gốc qua đường `/api/labor-contracts/{id}/transition` — văn bản không có
-    trạng thái riêng, đồng bộ sau khi ký sẽ đưa nó sang «Có hiệu lực». Bật khi HĐ chưa xóa, đang Nháp và người xem
+    "Ban hành" bản lưu trữ = KÝ hợp đồng gốc qua đường `/api/labor-contracts/{id}/transition` — văn bản không có
+    trạng thái riêng, đồng bộ sau khi ký sẽ đưa nó sang "Có hiệu lực". Bật khi HĐ chưa xóa, đang Nháp và người xem
     ghi được HĐ trong phạm vi `labor_contract`. Chỉ là cờ hiện nút; chốt thật ở endpoint transition."""
     from app.core.labor_contract_codes import LaborContractStatus
     from app.modules.labor_contract.access import ids_allowed
@@ -268,7 +268,7 @@ def check_doc_type(db: Session) -> list[str]:
 def blocked_archive_doc_ids(db: Session, viewer, doc_ids) -> set[int]:
     """Trong `doc_ids`, những văn bản thuộc diện bản lưu trữ HĐLĐ mà `viewer` KHÔNG đọc được.
 
-    «Thuộc diện» = có HĐ trỏ tới HOẶC loại HDLD (kể cả HĐ đã xóa cứng, văn bản xóa mềm / mồ côi) ⇒ dòng
+    "Thuộc diện" = có HĐ trỏ tới HOẶC loại HDLD (kể cả HĐ đã xóa cứng, văn bản xóa mềm / mồ côi) ⇒ dòng
     nhật ký không hiện lại khi HĐ biến mất. `viewer = (user, profile)`; `None` ⇒ đóng."""
     ids = {int(i) for i in doc_ids if i}
     if not ids:
@@ -308,7 +308,7 @@ def blocked_contract_ids(db: Session, viewer, contract_ids) -> set[int]:
 def audit_row_filter(db: Session, user):
     """Điều kiện lọc `tab_audit_log`: dòng của bản lưu trữ HĐLĐ (`entity=document`) và của chính HĐLĐ
     (`entity=labor_contract`) chỉ hiện cho người ĐỌC được chúng — kể cả quản trị có quyền `audit` mà không có
-    `labor_contract`. Tập «bản lưu trữ» gồm cả văn bản loại HDLD / HĐ đã xóa cứng (giấu vĩnh viễn, N1)."""
+    `labor_contract`. Tập "bản lưu trữ" gồm cả văn bản loại HDLD / HĐ đã xóa cứng (giấu vĩnh viễn, N1)."""
     from app.core.auth import get_perm_profile
     from app.modules.audit.model import AuditLog
 

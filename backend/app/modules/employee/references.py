@@ -3,8 +3,8 @@
 KHÔNG khai ở đây (cố ý):
 - Bảng con của chính hồ sơ (liên hệ, gia đình, kiêm nhiệm, quá trình công tác, HĐLĐ nháp/đã hủy) — `delete_employee`
   dọn kèm; HĐLĐ đã ký / đã chấm dứt vẫn chặn 409 ở `labor_contract.ensure_employee_deletable` (giữ nguyên, chạy trước).
-- `tab_user.employee_id`: tài khoản gắn hồ sơ KHÔNG tính là tham chiếu — `delete_user` đã chặn «tài khoản còn hồ sơ thì
-  không xóa», nếu chiều này cũng chặn thì không bao giờ xóa được cả hai (bế tắc). Giữ lối CR-023: xóa hồ sơ → tự khóa
+- `tab_user.employee_id`: tài khoản gắn hồ sơ KHÔNG tính là tham chiếu — `delete_user` đã chặn "tài khoản còn hồ sơ thì
+  không xóa", nếu chiều này cũng chặn thì không bao giờ xóa được cả hai (bế tắc). Giữ lối CR-023: xóa hồ sơ → tự khóa
   + gỡ tài khoản kèm theo.
 - `created_by` / `updated_by` / `actor_employee_id` (lịch sử duyệt) / `creator_employee_id`: nhật ký.
 Tệp này được `employee/service.py` import lúc khởi động.

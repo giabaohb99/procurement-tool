@@ -36,11 +36,11 @@ interface AccountScopeSummaryPanelProps {
  *
  * Bản trước bày hai khối "Tầng 1" / "Tầng 2" nằm cạnh nhau kèm mấy đoạn giải
  * thích cơ chế. Đại ca bác ngày 19/09/2026: "viết dài quá đâu ai hiểu đâu, vậy
- * thì 2 tầng thành 1 rồi" — và đại ca nói đúng phần cốt lõi: bậc «Công ty» của
+ * thì 2 tầng thành 1 rồi" — và đại ca nói đúng phần cốt lõi: bậc "Công ty" của
  * backend vốn đã nghĩa là *công ty trong hồ sơ của chính người này*, nên gán
  * vai trò xong là tài khoản có phạm vi đó luôn, không ai phải đi tick gì cả.
  * Vì thế khối này in thẳng TÊN THẬT lấy từ hồ sơ, còn năm ô tick tụt xuống mục
- * «Ngoại lệ» gấp lại bên dưới.
+ * "Ngoại lệ" gấp lại bên dưới.
  *
  * CHỈ ĐỌC, cố ý: bậc thuộc về vai trò nên sửa ở đây là lặng lẽ đổi phạm vi của
  * mọi tài khoản khác đang mang vai trò đó — thứ không ai chờ đợi khi đang mở
@@ -68,7 +68,7 @@ export function AccountScopeSummaryPanel({
     <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
       <p className="flex items-center gap-1.5 text-xs font-semibold text-navy">
         <Eye className="size-3.5" />
-        Tài khoản này thấy gì với vai trò «{roleName}»
+        Tài khoản này thấy gì với vai trò <strong>{roleName}</strong>
       </p>
 
       {isLoading ? (

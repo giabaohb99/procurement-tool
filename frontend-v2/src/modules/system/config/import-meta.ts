@@ -116,7 +116,7 @@ export const IMPORT_LEVEL_LABELS: Record<number, string> = {
 }
 
 /**
- * Nhãn tiếng Việt cho «Phân loại» (category) của từng dòng nhật ký import.
+ * Nhãn tiếng Việt cho "Phân loại" (category) của từng dòng nhật ký import.
  * Khớp mã category ghi ở backend (`import_tool/{catalog_import,doc_import}.py`).
  */
 export const IMPORT_CATEGORY_LABELS: Record<string, string> = {

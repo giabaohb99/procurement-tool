@@ -2,7 +2,7 @@
 
 Danh sách người nhận KHÔNG được tự suy lại ở đây. Nó dùng thẳng
 ``scope_service.applies_to`` để bốn luật bao gồm/loại trừ/cho phép lại chạy
-giống hệt màn «Văn bản áp dụng cho tôi».
+giống hệt màn "Văn bản áp dụng cho tôi".
 """
 import html
 import logging
@@ -157,12 +157,12 @@ def notify_document_issued(
 
 
 def create_forum_announcement(db: Session, doc: Document, user: User):
-    """CR-200 (F12) — ô «Đăng thông báo lên diễn đàn» trong hộp thoại Ban hành.
+    """CR-200 (F12) — ô "Đăng thông báo lên diễn đàn" trong hộp thoại Ban hành.
 
     Clone văn bản vừa ban hành thành MỘT bài diễn đàn ĐÃ GHIM (tiêu đề + số
     hiệu + link về văn bản) — diễn đàn chỉ giữ bản sao thông báo, văn bản gốc
-    vẫn nằm ở Văn thư (chốt với sếp 27/08/2026: «clone thành 1 bài viết bên này
-    là đúng logic hơn»). Bài đứng tên chính người ban hành, đối tượng xem
+    vẫn nằm ở Văn thư (chốt với sếp 27/08/2026: "clone thành 1 bài viết bên này
+    là đúng logic hơn"). Bài đứng tên chính người ban hành, đối tượng xem
     TOÀN TẬP ĐOÀN: thông báo ban hành sinh ra để mọi người thấy — ai được đọc
     NỘI DUNG văn bản vẫn do phạm vi bên Văn thư gác, link chỉ dẫn tới cửa.
 

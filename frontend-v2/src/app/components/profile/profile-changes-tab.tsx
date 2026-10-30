@@ -39,11 +39,11 @@ const SNAPSHOT_KEYS = [
 ] as const
 
 /**
- * Tab «Bot đã ghi gì» ở Trang cá nhân (ai-CR-185, phase 15.3).
+ * Tab "Bot đã ghi gì" ở Trang cá nhân (ai-CR-185, phase 15.3).
  *
  * Bot ghi gì vào ERP thay mình thì mình phải THẤY được và RÚT LẠI được trong 24 giờ — hợp đồng ở
  * `doc/agent-hub/18-so-thay-doi-va-hoan-tac.md`. Mặc định chỉ sổ của chính mình; người có
- * `agent_group.read` (quản lý bot AI) có công tắc «Xem của mọi người». Nút Hoàn tác chỉ bật khi
+ * `agent_group.read` (quản lý bot AI) có công tắc "Xem của mọi người". Nút Hoàn tác chỉ bật khi
  * backend bảo `can_undo` (lý do tắt nằm ở `undo_reason`), và lúc bấm backend kiểm lại từ đầu — nên
  * 409 ở đây là chuyện thường (phiếu vừa bị người khác sửa), không phải lỗi màn.
  */

@@ -2,7 +2,7 @@
 
 Bản gốc bị bãi bỏ là tin nặng nhất trong cả vòng đời văn bản: pháp nhân con đang
 áp dụng một bản riêng **căn cứ theo** một văn bản vừa chết. Trước ngày
-24/08/2026, `service.revoke` chỉ lặng lẽ bật cờ «cần rà lại» lên văn bản con qua
+24/08/2026, `service.revoke` chỉ lặng lẽ bật cờ "cần rà lại" lên văn bản con qua
 `parent_change_service.apply_obsolete` và **không báo cho ai một tiếng nào** —
 người phụ trách bản riêng chỉ biết khi nào tình cờ mở văn bản đó ra.
 
@@ -60,8 +60,8 @@ def notify_clones_revoked(db: Session, source: Document, reason: str, actor: int
                 user_id=user.id,
                 title=subject,
                 body=(
-                    f"Văn bản gốc «{origin}» đã bị bãi bỏ. "
-                    f"Bản riêng «{clone.title}» của pháp nhân bạn đang căn cứ theo văn bản này "
+                    f"Văn bản gốc \"{origin}\" đã bị bãi bỏ. "
+                    f"Bản riêng \"{clone.title}\" của pháp nhân bạn đang căn cứ theo văn bản này "
                     f"— mở ra rà lại xem còn dùng được không."
                 ),
                 #  Trỏ vào BẢN RIÊNG chứ không vào bản gốc: người nhận thường

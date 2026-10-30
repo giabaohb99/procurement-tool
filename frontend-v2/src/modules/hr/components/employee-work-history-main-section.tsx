@@ -29,17 +29,17 @@ interface EmployeeWorkHistoryMainSectionProps {
   /** Bỏ trống = chỉ đọc (Trang cá nhân `/me`) — không cột/nút Thao tác. */
   actions?: EmployeeWorkHistoryRowActions
   storageKey: string
-  /** Bỏ trống = ẨN nút «Thêm dòng» (chỉ đọc). */
+  /** Bỏ trống = ẨN nút "Thêm dòng" (chỉ đọc). */
   onAddClick?: () => void
-  /** Bỏ trống = ẨN nút «Tạo dòng đầu từ hồ sơ» ở trạng thái rỗng. */
+  /** Bỏ trống = ẨN nút "Tạo dòng đầu từ hồ sơ" ở trạng thái rỗng. */
   onCreateFromProfileClick?: () => void
   /** Việc chạy khi bấm Tải lại. Bỏ trống = tự làm mới mọi query đang hoạt động. */
   onRefresh?: () => void | Promise<unknown>
 }
 
 /**
- * Khu «Quá trình công tác» (đại ca chốt 03/10/2026) — MỌI dòng (khác khu
- * «Quyết định bổ nhiệm» chỉ lọc dòng có số QĐ), giữ nguyên nút Thêm dòng / Áp /
+ * Khu "Quá trình công tác" (đại ca chốt 03/10/2026) — MỌI dòng (khác khu
+ * "Quyết định bổ nhiệm" chỉ lọc dòng có số QĐ), giữ nguyên nút Thêm dòng / Áp /
  * Sửa / Xóa đã có từ trước, nay thêm nút chuyển Bảng | Dòng thời gian.
  *
  * Dùng lại Ở CẢ HAI NƠI: tab hồ sơ (`actions`/`onAddClick` có giá trị — ghi
@@ -119,7 +119,7 @@ export function EmployeeWorkHistoryMainSection({
           onRefresh={onRefresh}
           //  Toggle Bảng|Dòng thời gian ghi `whView` lên URL (xem `useUrlParamState`
           //  trên) — tự suy "đang lọc" từ query string sẽ đọc nhầm nó thành bộ lọc
-          //  và hiện lố nút «Xóa lọc» (bấm vào xóa luôn cả tham số đó). Khu này
+          //  và hiện lố nút "Xóa lọc" (bấm vào xóa luôn cả tham số đó). Khu này
           //  không có bộ lọc thật nào, nên khóa cứng về false.
           filtersActive={false}
           toolbar={<EmployeeWorkHistoryToolbarTitle title={TITLE} view={view} onChange={setView} />}

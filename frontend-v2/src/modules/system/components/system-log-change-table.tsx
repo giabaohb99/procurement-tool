@@ -7,7 +7,7 @@ import { changeValueText, tableLabel } from '../utils/system-log-format'
 
 interface SystemLogChangeTableProps {
   changes: SystemLogChangeEntry[]
-  /** `false` = người xem thiếu khóa `change_log`, KHÔNG phải «lượt này không đổi gì». */
+  /** `false` = người xem thiếu khóa `change_log`, KHÔNG phải "lượt này không đổi gì". */
   canRead: boolean
 }
 
@@ -31,7 +31,7 @@ export function SystemLogChangeTable({ changes, canRead }: SystemLogChangeTableP
           <p className="font-medium text-foreground">Bạn không được xem giá trị trước/sau</p>
           <p className="mt-0.5">
             Phần này cần khóa quyền <span className="font-mono text-xs">change_log</span>. Lượt gọi
-            vẫn có thể đã sửa dữ liệu — đây là thiếu quyền xem, không phải «không đổi gì».
+            vẫn có thể đã sửa dữ liệu — đây là thiếu quyền xem, không phải <strong>không đổi gì</strong>.
           </p>
         </div>
       </div>
@@ -106,7 +106,7 @@ interface ChangeValueCellProps {
 /**
  * Một ô giá trị.
  *
- * Đỏ/xanh chỉ tô khi có chữ THẬT: tô «(trống)» hay «(đã che)» thành đỏ thì hai
+ * Đỏ/xanh chỉ tô khi có chữ THẬT: tô "(trống)" hay "(đã che)" thành đỏ thì hai
  * ghi chú của hệ thống trông như dữ liệu người dùng nhập.
  */
 function ChangeValueCell({ value, masked, side }: ChangeValueCellProps) {

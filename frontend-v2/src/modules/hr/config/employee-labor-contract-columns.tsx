@@ -11,12 +11,12 @@ export interface LaborContractColumnOptions extends LaborContractRowActionHandle
   canReadSigned: boolean
 }
 
-/** «01/01/2026 – 31/12/2026»; HĐ không xác định thời hạn: «từ 01/01/2026». */
+/** "01/01/2026 – 31/12/2026"; HĐ không xác định thời hạn: "từ 01/01/2026". */
 export function formatContractPeriod(start: string, end: string | null): string {
   return end ? `${formatDate(start)} – ${formatDate(end)}` : `Từ ${formatDate(start)}`
 }
 
-/** Cột bảng tab «Hợp đồng». Là hàm vì cột Thao tác cần callback; nơi gọi bọc `useMemo`. */
+/** Cột bảng tab "Hợp đồng". Là hàm vì cột Thao tác cần callback; nơi gọi bọc `useMemo`. */
 export function buildEmployeeLaborContractColumns(
   options: LaborContractColumnOptions,
 ): DataTableColumn<LaborContract>[] {
@@ -82,7 +82,7 @@ export function buildEmployeeLaborContractColumns(
     {
       key: 'actions',
       header: 'Thao tác',
-      //  MỘT nút icon «⋯» mở menu icon + chữ (duoc-CR-633) — không còn dãy 7-8 icon trơn.
+      //  MỘT nút icon "⋯" mở menu icon + chữ (duoc-CR-633) — không còn dãy 7-8 icon trơn.
       width: 80,
       hideable: false,
       stickyRight: true,

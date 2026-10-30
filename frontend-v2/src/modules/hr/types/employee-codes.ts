@@ -76,8 +76,8 @@ export const JOB_LEVEL_OPTIONS: readonly CodeOption[] = [
 //  08/09/2026). Bảng hộ gia đình ghi quan hệ với CHỦ HỘ, bảng người báo tin ghi
 //  quan hệ với NHÂN VIÊN — cùng một bộ từ, khác gốc quy chiếu.
 //
-//  ⚠️ `99` = «Khác» là CỐ Ý nhảy số: chừa chỗ cho quan hệ thêm về sau được đánh
-//  liền mạch, và «Khác» thì luôn đứng cuối. Khớp `constants.RELATION_LABELS`.
+//  ⚠️ `99` = "Khác" là CỐ Ý nhảy số: chừa chỗ cho quan hệ thêm về sau được đánh
+//  liền mạch, và "Khác" thì luôn đứng cuối. Khớp `constants.RELATION_LABELS`.
 export const RELATION_OPTIONS: readonly CodeOption[] = [
   { value: 0, label: '' },
   { value: 1, label: 'Chủ hộ' },
@@ -97,7 +97,7 @@ export const RELATION_OPTIONS: readonly CodeOption[] = [
 ]
 
 /**
- * Tình trạng hôn nhân «Có gia đình» — ô «Số con» CHỈ hiện khi bằng mã này
+ * Tình trạng hôn nhân "Có gia đình" — ô "Số con" CHỈ hiện khi bằng mã này
  * (khách chốt 08/09/2026).
  *
  * ⚠️ Luật cũ là "ẩn khi Độc thân", tức *Ly hôn* và *Chưa khai* vẫn thấy ô đó.

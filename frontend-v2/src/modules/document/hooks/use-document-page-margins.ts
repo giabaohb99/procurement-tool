@@ -11,7 +11,7 @@ import { useSaveVersionMargins } from './use-document-versions'
  * Bản đầu có hẹn 600ms để gộp các nhịp rê chuột — hỏng theo hai đường, cả hai
  * đều gặp thật:
  *
- *  1. Kéo lề xong bấm ngay «In / Xuất PDF» thì tab bản in mở ra và đọc bản ghi
+ *  1. Kéo lề xong bấm ngay "In / Xuất PDF" thì tab bản in mở ra và đọc bản ghi
  *     **trước khi** lượt hẹn kịp bay đi → in ra lề cũ.
  *  2. Kéo lề rồi chuyển tab (hoặc rời trang) trong khoảng đó thì hàm dọn dẹp
  *     hủy luôn hẹn giờ → mất hẳn thay đổi, không có gì báo.

@@ -17,7 +17,7 @@ Hiệu năng: Số truy vấn CỐ ĐỊNH, không tăng theo số nhân sự (x
 vấn). `company_id` (H1) lọc SAU `apply_scope` ở MỌI truy vấn (chỉ thu hẹp).
 Tên công ty/phòng ban chỉ tra khi `group_by` thật sự cần.
 
-Ngoại lệ DUY NHẤT trong `SENSITIVE_FIELDS`: `date_of_birth`, đọc chỉ để chọn «Nhóm tuổi»
+Ngoại lệ DUY NHẤT trong `SENSITIVE_FIELDS`: `date_of_birth`, đọc chỉ để chọn "Nhóm tuổi"
 (duoc-CR-687, `report_headcount_dims.py`) và không bao giờ trả ra; nhóm tuổi < 3 người bị che
 với người thiếu `employee_sensitive.read` (`report_headcount_privacy.py`).
 """

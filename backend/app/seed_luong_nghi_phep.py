@@ -12,7 +12,7 @@ cũng ra một luồng.
     Chặng 1 — trưởng bộ phận CỦA NGƯỜI XIN NGHỈ  (dự phòng: trưởng phòng Nhân sự)
     Chặng 2 — trưởng phòng NHÂN SỰ               (dự phòng: người đại diện pháp nhân)
 
-Chặng 2 dùng cách chọn **«trưởng bộ phận của phòng ban chỉ định»** — mới có từ
+Chặng 2 dùng cách chọn **"trưởng bộ phận của phòng ban chỉ định"** — mới có từ
 CR-159. Trước đó phải khai đích danh một CON NGƯỜI, và người đó chuyển việc là
 luồng trỏ sai mà không có gì báo. Trỏ vào GHẾ thì đổi người ngồi ghế là luồng tự
 đi theo.
@@ -76,12 +76,12 @@ def run() -> int:
     try:
         if db.query(ApprovalFlow).filter(ApprovalFlow.entity == "document",
                                          ApprovalFlow.code == FLOW_CODE).first():
-            print(f"BỎ QUA: luồng «{FLOW_CODE}» đã có. Sửa thì mở màn Luồng duyệt.")
+            print(f"BỎ QUA: luồng \"{FLOW_CODE}\" đã có. Sửa thì mở màn Luồng duyệt.")
             return 0
 
         kind = db.query(DocType).filter(DocType.code == DOC_TYPE_CODE).first()
         if kind is None:
-            print(f"DỪNG: chưa có loại văn bản «{DOC_TYPE_CODE}» trong danh mục.")
+            print(f"DỪNG: chưa có loại văn bản \"{DOC_TYPE_CODE}\" trong danh mục.")
             return 2
 
         hr_dept = find_hr_department(db)
@@ -90,7 +90,7 @@ def run() -> int:
                   "hoặc tự khai chặng 2 trên màn Luồng duyệt.")
             return 2
         if not hr_dept.manager_id:
-            print(f"CẢNH BÁO: phòng «{hr_dept.name}» chưa có trưởng bộ phận — "
+            print(f"CẢNH BÁO: phòng \"{hr_dept.name}\" chưa có trưởng bộ phận — "
                   "chặng 2 sẽ rơi về người dự phòng cho tới khi cử trưởng phòng.")
 
         #  Người dự phòng của chặng cuối: đại diện pháp nhân. Không có thì để
@@ -147,14 +147,14 @@ def run() -> int:
             db.add(ApprovalSwitch(entity="document", is_enabled=True,
                                   created_by=ACTOR, updated_by=ACTOR))
         elif not switch_row.is_enabled:
-            print("CẢNH BÁO: bộ máy duyệt đang TẮT cho «document» — bật ở màn "
+            print("CẢNH BÁO: bộ máy duyệt đang TẮT cho \"document\" — bật ở màn "
                   "Luồng duyệt thì đơn nghỉ phép mới chạy qua luồng này.")
 
         db.commit()
-        print(f"Đã khai luồng «{flow.name}» (id={flow.id}) cho loại {DOC_TYPE_CODE}:")
+        print(f"Đã khai luồng \"{flow.name}\" (id={flow.id}) cho loại {DOC_TYPE_CODE}:")
         print("   chặng 1 — Trưởng bộ phận của người xin nghỉ"
               + (f" (dự phòng: #{hr_dept.manager_id})" if hr_dept.manager_id else ""))
-        print(f"   chặng 2 — Trưởng «{hr_dept.name}» (phòng #{hr_dept.id})"
+        print(f"   chặng 2 — Trưởng \"{hr_dept.name}\" (phòng #{hr_dept.id})"
               + (f", dự phòng: #{representative}" if representative else ""))
         return 0
     finally:

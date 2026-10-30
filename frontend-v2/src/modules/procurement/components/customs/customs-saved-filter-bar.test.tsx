@@ -65,7 +65,7 @@ describe('CustomsSavedFilterBar — bao-CR-496', () => {
     await waitFor(() => expect(api.create).toHaveBeenCalledWith({ name: 'Mới', params: 'q=x' }))
   })
 
-  it('shows «Cập nhật» only when the selected filter differs from what is applied, then overwrites it', async () => {
+  it('shows "Cập nhật" only when the selected filter differs from what is applied, then overwrites it', async () => {
     api.update.mockResolvedValue({ ...SAVED[1], params: 'hs_code=3808&origin=IN' })
     mount('hs_code=3808&origin=IN')
     await userEvent.click(await screen.findByRole('combobox', { name: /bộ lọc đã lưu/i }))
@@ -76,7 +76,7 @@ describe('CustomsSavedFilterBar — bao-CR-496', () => {
     )
   })
 
-  it('hides «Cập nhật» when the applied params equal the saved ones (order/page noise ignored)', async () => {
+  it('hides "Cập nhật" when the applied params equal the saved ones (order/page noise ignored)', async () => {
     mount('origin=CN&q=abamectin+3.6')
     await userEvent.click(await screen.findByRole('combobox', { name: /bộ lọc đã lưu/i }))
     await userEvent.click(await screen.findByRole('option', { name: 'Abamectin 3.6 EC' }))

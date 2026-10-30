@@ -2,8 +2,8 @@
 
 Gác KÉP như 13 báo cáo cũ: `require("setting", …)` (cửa quyền phân hệ Quản trị) VÀ `require_report(ReportKey.USAGE_PROFILE)`
 (chủ sản phẩm: mặc định chỉ admin; admin gán thêm ở Phân quyền → Báo cáo). Admin xem TẤT CẢ người (không `apply_scope`:
-khóa `setting` không có bảng để lọc). KHÔNG có đường «hồ sơ của tôi», không mở cho quản lý. Mỗi lần mở hồ sơ để lại một dòng
-`tab_request_log` (GET không bị loại) — đủ trả lời «ai đã xem hồ sơ ai».
+khóa `setting` không có bảng để lọc). KHÔNG có đường "hồ sơ của tôi", không mở cho quản lý. Mỗi lần mở hồ sơ để lại một dòng
+`tab_request_log` (GET không bị loại) — đủ trả lời "ai đã xem hồ sơ ai".
 `/summary`, `/summary/export`, `/cohorts`, `/metrics`, `/by-app` khai TRƯỚC `/{user_id}` để không bị đường tham số nuốt.
 """
 from datetime import date

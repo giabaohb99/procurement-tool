@@ -1,9 +1,9 @@
-"""SỔ «TRỢ LÝ THIẾU CHỨC NĂNG» (ai-CR-078, mục 5 của đề xuất tự cải thiện).
+"""SỔ "TRỢ LÝ THIẾU CHỨC NĂNG" (ai-CR-078, mục 5 của đề xuất tự cải thiện).
 
 Khi Trợ lý không đáp được một yêu cầu vì CÔNG CỤ thiếu tính năng (thiếu bộ lọc, thiếu cột, không có công cụ cho loại câu
-hỏi đó — như vụ «đơn của nhà máy» trước ai-CR-077), nó gọi tool `report_missing_feature`. Mỗi chỗ thiếu gom theo một
+hỏi đó — như vụ "đơn của nhà máy" trước ai-CR-077), nó gọi tool `report_missing_feature`. Mỗi chỗ thiếu gom theo một
 khóa (chữ thường không dấu của câu mô tả). Cùng chỗ thiếu lặp từ GAP_MIN lần → bot trên dev mở một VIỆC SỬA MÃ đi
-đường thường (rà soát → kế hoạch → đại ca duyệt) — giống vòng «sự cố lặp lại → việc sửa gốc rễ» (O-06).
+đường thường (rà soát → kế hoạch → đại ca duyệt) — giống vòng "sự cố lặp lại → việc sửa gốc rễ" (O-06).
 
 Lưu ở `tab_setting` khóa `assistant_feature_gaps` (JSON) — không bảng mới.
 """

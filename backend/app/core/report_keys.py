@@ -55,15 +55,15 @@ class ReportKey(IntEnum):
     BENEFIT_AUDIENCE = 22     # Phúc lợi & sự kiện (Nhân sự) — duoc-CR-688
     MANAGEMENT_SPAN = 23      # Cơ cấu quản lý (Nhân sự) — duoc-CR-688
     WORK_MOVES = 24           # Điều chuyển & bổ nhiệm (Nhân sự) — duoc-CR-688
-    #  25 = «Định biên kế hoạch so với thực tế» — ĐÃ BỎ duoc-CR-692, KHÔNG tái cấp số này (xóa cả dòng `tab_report_access` khóa 25).
+    #  25 = "Định biên kế hoạch so với thực tế" — ĐÃ BỎ duoc-CR-692, KHÔNG tái cấp số này (xóa cả dòng `tab_report_access` khóa 25).
     ATTENDANCE_DAILY = 26     # Có mặt theo ngày (Nhân sự) — duoc-CR-689
     PROFILE_CHANGES = 27      # Yêu cầu sửa hồ sơ (Nhân sự) — duoc-CR-689
     ROOM_USAGE = 28           # Sử dụng phòng họp (Nhân sự) — duoc-CR-689
     LEGAL_WATCH = 29          # Đối tượng cần chú ý theo luật (Nhân sự) — duoc-CR-689; có ngày sinh, con nhỏ
 
 
-#  Số đã cấp rồi BỎ (để trống, không tái cấp) — test «khóa liên tục» cho phép đúng các khoảng trống này.
-RETIRED_REPORT_KEYS: frozenset[int] = frozenset({25})   # «Định biên kế hoạch so với thực tế», bỏ duoc-CR-692
+#  Số đã cấp rồi BỎ (để trống, không tái cấp) — test "khóa liên tục" cho phép đúng các khoảng trống này.
+RETIRED_REPORT_KEYS: frozenset[int] = frozenset({25})   # "Định biên kế hoạch so với thực tế", bỏ duoc-CR-692
 
 
 #  {khóa: (nhãn, nhóm phân hệ)} — nhãn KHỚP `label`, nhóm KHỚP `group` ở danh

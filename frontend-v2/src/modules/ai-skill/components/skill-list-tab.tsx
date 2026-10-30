@@ -20,7 +20,7 @@ interface SkillListTabProps {
   canDelete: boolean
 }
 
-/** Tab «Skill» của chi tiết bộ (G3): bảng skill, bấm dòng mở trang soạn; thêm skill / tải gói / xóa skill. */
+/** Tab "Skill" của chi tiết bộ (G3): bảng skill, bấm dòng mở trang soạn; thêm skill / tải gói / xóa skill. */
 export function SkillListTab({ setId, canWrite, canDelete }: SkillListTabProps) {
   const navigate = useNavigate()
   const { data, isLoading, isError } = useSkills(setId)

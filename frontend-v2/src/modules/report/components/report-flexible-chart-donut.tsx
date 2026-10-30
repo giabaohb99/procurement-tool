@@ -15,8 +15,8 @@ interface ReportFlexibleChartDonutProps {
 
 /**
  * Vành khuyên tỷ trọng theo nhóm — chỉ được chọn khi `canDrawDonut` (≤ 6 nhóm có số, không âm,
- * không phải tỷ lệ). Chú giải là các NÚT khi bấm được: đường vào bằng bàn phím của «bấm lát mở
- * danh sách», vì lát bánh của recharts không nhận Tab.
+ * không phải tỷ lệ). Chú giải là các NÚT khi bấm được: đường vào bằng bàn phím của "bấm lát mở
+ * danh sách", vì lát bánh của recharts không nhận Tab.
  */
 export function ReportFlexibleChartDonut({
   items,

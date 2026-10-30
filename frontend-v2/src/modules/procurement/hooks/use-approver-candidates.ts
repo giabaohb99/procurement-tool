@@ -10,7 +10,7 @@ import {
 } from '../api/approver-candidates-api'
 
 /**
- * bao-CR-499 — danh sách chọn ô «Trưởng phòng phê duyệt». Chứng từ đã lưu hỏi theo id (đúng
+ * bao-CR-499 — danh sách chọn ô "Trưởng phòng phê duyệt". Chứng từ đã lưu hỏi theo id (đúng
  * phạm vi của chính nó); đang lập thì hỏi theo phòng ban / pháp nhân / phòng xử lý trên form.
  * Chỉ gọi khi ô còn chọn được (`enabled`) — phiếu đã duyệt thì ô khóa, không cần danh sách.
  */

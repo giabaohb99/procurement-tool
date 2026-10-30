@@ -40,7 +40,7 @@ def build_flows(x, people) -> list:
         condition=x.type_condition("QC", "QDI", "QT", "CS"), priority=20)
     x.step(governance_flow, 1, "Trưởng bộ phận soạn thảo rà soát",
            ai=APPROVER_DEPT_HEAD, role=ROLE_CHECK, due_hours=24)
-    #  MỘT bước, HAI người, «tất cả phải duyệt» — đây mới là song song thật.
+    #  MỘT bước, HAI người, "tất cả phải duyệt" — đây mới là song song thật.
     #  Khai thành hai bước cùng chặng là RẼ NHÁNH: chỉ một nhánh được chạy.
     x.step(governance_flow, 2, "Pháp chế và Tài chính cùng rà soát",
            ai=APPROVER_EMPLOYEE,

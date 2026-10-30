@@ -1,7 +1,7 @@
-"""Báo cáo D1 «Điều chuyển & bổ nhiệm» (khóa 24, duoc-CR-688) — `GET /api/work-moves/summary`.
+"""Báo cáo D1 "Điều chuyển & bổ nhiệm" (khóa 24, duoc-CR-688) — `GET /api/work-moves/summary`.
 
 Hàng = dòng quá trình công tác có `from_date` trong kỳ (đã áp lẫn chưa áp vào hồ sơ). Hai chỉ số
-THỜI ĐIỂM «kiêm nhiệm đang hiệu lực / hết trong 30 ngày» tính tại `min(cuối kỳ, hôm nay)` và chỉ có ở
+THỜI ĐIỂM "kiêm nhiệm đang hiệu lực / hết trong 30 ngày" tính tại `min(cuối kỳ, hôm nay)` và chỉ có ở
 Tổng. Dữ liệu ở `work_move_report_data.py`; `/summary/rows` dùng đúng `MoveRow` + `key_of`.
 """
 from __future__ import annotations
@@ -105,11 +105,11 @@ def build_summary(db: Session, user, prof: dict, period: Period, group_by: str |
                         group_by=group_by, snapshot=_snapshot(db, user, prof, kw))
     data["meta"]["drilldown_metrics"] = list(DRILLDOWN_METRICS)
     data["notes"] = [
-        "Tính cả dòng đã áp lẫn CHƯA áp vào hồ sơ; kỳ lọc theo «Từ ngày» (ngày hiệu lực) của dòng.",
+        "Tính cả dòng đã áp lẫn CHƯA áp vào hồ sơ; kỳ lọc theo \"Từ ngày\" (ngày hiệu lực) của dòng.",
         "Bộ lọc phòng ban/công ty theo hồ sơ HIỆN TẠI của người có dòng đó, không theo phòng đến/đi.",
-        "«Phòng đi» lấy từ dòng nhóm chính liền trước của cùng người; dòng đầu tiên mà chưa rõ phòng "
-        f"đi hiện là «{UNKNOWN}».",
-        f"«Kiêm nhiệm đang hiệu lực / hết trong {EXPIRING_DAYS} ngày» là số tại cuối kỳ (hoặc hôm nay "
+        "\"Phòng đi\" lấy từ dòng nhóm chính liền trước của cùng người; dòng đầu tiên mà chưa rõ phòng "
+        f"đi hiện là \"{UNKNOWN}\".",
+        f"\"Kiêm nhiệm đang hiệu lực / hết trong {EXPIRING_DAYS} ngày\" là số tại cuối kỳ (hoặc hôm nay "
         "nếu kỳ chưa kết thúc), chỉ hiện ở Tổng.",
         "Số tháng tới lần bổ nhiệm bỏ qua dòng bổ nhiệm của người thiếu ngày vào làm.",
     ]
@@ -147,7 +147,7 @@ def build_rows(db: Session, user, prof: dict, period: Period, metric: str, group
     lines.sort(key=lambda r: (r.from_date, r.line_id), reverse=True)
     move_counts: dict[int, int] = {}
     if metric == "people_moved":
-        #  Thẻ đếm NGƯỜI nên danh sách mỗi người một dòng: lấy sự kiện mới nhất trong kỳ + «Số lượt».
+        #  Thẻ đếm NGƯỜI nên danh sách mỗi người một dòng: lấy sự kiện mới nhất trong kỳ + "Số lượt".
         for r in lines:
             move_counts[r.employee_id] = move_counts.get(r.employee_id, 0) + 1
         seen: set[int] = set()

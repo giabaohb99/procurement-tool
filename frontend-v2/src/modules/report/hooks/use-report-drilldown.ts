@@ -12,10 +12,10 @@ const drilldownKeys = {
 }
 
 /**
- * Danh sách người của ngăn «Xem danh sách» (duoc-CR-686). `params = null` (ngăn đang đóng)
+ * Danh sách người của ngăn "Xem danh sách" (duoc-CR-686). `params = null` (ngăn đang đóng)
  * thì KHÔNG gọi — mở trang báo cáo không tốn lượt `/rows` nào.
  *
- * Không `keepPreviousData`: đổi chỉ số là đổi cả bộ cột (vd «Chưa được cấp quỹ» có cột
+ * Không `keepPreviousData`: đổi chỉ số là đổi cả bộ cột (vd "Chưa được cấp quỹ" có cột
  * khác hẳn dòng quỹ) — giữ bảng cũ tới khi bảng mới về là vẽ dữ liệu mới lên cột cũ.
  */
 export function useReportDrilldown(endpoint: string | undefined, params: Record<string, string> | null) {

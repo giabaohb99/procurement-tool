@@ -1,13 +1,13 @@
 """SỔ MÔI TRƯỜNG + CỔNG DUYỆT THAO TÁC VPS + THEO DÕI SỨC KHỎE — phần chạy ở BOT (ai-CR-067..070).
 
 Phase 6 (nhóm V) + phase 7 (nhóm O) của `doc/agent-hub/04`. Đại ca chốt 05/10/2026:
-  - Bot code được vào VPS 1 xem và sửa, NHƯNG qua cổng: xem dev tự do · xem prod cần «đúng» · sửa dev cần «đúng»
-    + sao lưu trước + nhật ký + lệnh hoàn tác · sửa prod cần «đúng» (+ OTP — TẠM BỎ QUA theo lệnh đại ca, V-04).
+  - Bot code được vào VPS 1 xem và sửa, NHƯNG qua cổng: xem dev tự do · xem prod cần "đúng" · sửa dev cần "đúng"
+    + sao lưu trước + nhật ký + lệnh hoàn tác · sửa prod cần "đúng" (+ OTP — TẠM BỎ QUA theo lệnh đại ca, V-04).
   - Sổ môi trường khai bằng câu nhắn; thêm VPS = thêm dòng.
   - Theo dõi health mỗi phút; hỏng liên tiếp → mở sự cố → máy sửa mã chẩn đoán → dev tự chữa trong danh sách thao
-    tác an toàn (trần 3 lần/giờ), prod chỉ đề xuất chờ «đúng»; sự cố lặp lại → mở việc sửa gốc rễ.
+    tác an toàn (trần 3 lần/giờ), prod chỉ đề xuất chờ "đúng"; sự cố lặp lại → mở việc sửa gốc rễ.
 
-Tệp này CHỈ nhận lệnh, kiểm lan can, ghi sổ, hỏi «đúng» và giao vé cho máy sửa mã (`agent.run_op`); phần chạy
+Tệp này CHỈ nhận lệnh, kiểm lan can, ghi sổ, hỏi "đúng" và giao vé cho máy sửa mã (`agent.run_op`); phần chạy
 thật trên VPS ở `ops_runner.py`. Cả hai tệp nằm trong danh sách cấm của bot code (V-05).
 Chỉ CHAT CỦA ĐẠI CA (`telegram.is_allowed_chat`) ra lệnh được; công tắc tổng `AGENT_OPS_ENABLED`.
 """
@@ -105,7 +105,7 @@ def env_listing(db: Session) -> str:
     esc = telegram.esc
     rows = active_envs(db)
     if not rows:
-        return "Sổ môi trường trống. Thêm: «thêm môi trường staging: dir=~/x compose=\"-f a.yml\" branch=erp-v2 health=https://…»."
+        return "Sổ môi trường trống. Thêm: **thêm môi trường staging: dir=~/x compose=\"-f a.yml\" branch=erp-v2 health=https://…**."
     lines = ["<b>Sổ môi trường:</b>"]
     for e in rows:
         health = ("chưa đo" if not e.last_health_at else
@@ -130,7 +130,7 @@ def parse_env_fields(rest: str) -> tuple[dict, str]:
     for m in _FIELD.finditer(rest or ""):
         key = _ENV_KEYS.get(m.group(1).lower())
         if key is None:
-            return {}, f"không hiểu khóa «{m.group(1)}» (dùng: dir, compose, branch, health, db, kind, host, port, user, heal, note)"
+            return {}, f"không hiểu khóa **{m.group(1)}** (dùng: dir, compose, branch, health, db, kind, host, port, user, heal, note)"
         val = m.group(3) if m.group(3) is not None else (m.group(4) if m.group(4) is not None else m.group(2))
         out[key] = val.strip()
     if "kind" in out:
@@ -167,7 +167,7 @@ def add_env(db: Session, name: str, fields: dict) -> AgentEnv:
     if not _ENV_NAME.match(name):
         raise ValueError("tên môi trường chỉ gồm chữ thường không dấu, số, gạch nối")
     if env_by_name(db, name) is not None:
-        raise ValueError(f"đã có môi trường «{name}»")
+        raise ValueError(f"đã có môi trường \"{name}\"")
     if not fields.get("dir") or not fields.get("branch"):
         raise ValueError("thiếu dir hoặc branch")
     row = AgentEnv(name=name, kind=int(fields.get("kind") or ENV_PREVIEW), created_by=0, updated_by=0,
@@ -181,7 +181,7 @@ def add_env(db: Session, name: str, fields: dict) -> AgentEnv:
 # Thao tác (V-02, V-03)
 # ---------------------------------------------------------------------------
 def needs_approval(env: AgentEnv, kind: int) -> bool:
-    """Luật đại ca chốt 05/10, đọc từ `policy.py`: xem dev tự do; xem prod / sửa bất kỳ đâu = «đúng».
+    """Luật đại ca chốt 05/10, đọc từ `policy.py`: xem dev tự do; xem prod / sửa bất kỳ đâu = "đúng".
     Bước tra để soạn lệnh sửa dữ liệu (OP_DATA_PLAN) làm luôn ở mọi môi trường (policy.DATA_PLAN_READ)."""
     from . import policy
 
@@ -205,7 +205,7 @@ def describe_action(env: AgentEnv, action: str, services: list[str]) -> str:
 
 def new_op(db: Session, env: AgentEnv, kind: int, *, title: str, command: str, params: dict | None = None,
            chat_id: str = "", auto: bool = False, incident_id: int = 0) -> AgentOp:
-    """Ghi sổ TRƯỚC khi chạy. Tự chữa (auto) và loại chỉ đọc trên dev vào thẳng «chờ máy»; còn lại «chờ duyệt»."""
+    """Ghi sổ TRƯỚC khi chạy. Tự chữa (auto) và loại chỉ đọc trên dev vào thẳng "chờ máy"; còn lại "chờ duyệt"."""
     queued = auto or not needs_approval(env, kind)
     op = AgentOp(env_id=env.id, kind=kind, status=OPS_QUEUED if queued else OPS_WAITING, title=title[:255],
                  command=command or "", params=params or {}, undo_params={}, chat_id=str(chat_id or "")[:50],
@@ -250,7 +250,7 @@ def dispatch_op(db: Session, op: AgentOp) -> bool:
 
 
 def format_rows(out: str, *, limit: int = 5) -> list[str]:
-    """Kết quả SQL đọc (dòng `COLS=[...]` + mỗi dòng một mảng JSON) → vài dòng chữ «cột: giá trị · …»."""
+    """Kết quả SQL đọc (dòng `COLS=[...]` + mỗi dòng một mảng JSON) → vài dòng chữ "cột: giá trị · …"."""
     cols: list = []
     rows: list[str] = []
     for line in (out or "").splitlines():
@@ -289,12 +289,12 @@ def _env_badge(env: AgentEnv) -> str:
 
 def _answer_line(op: AgentOp) -> str:
     return (f"Nhắn <b>đúng</b> để chạy · <b>thôi</b> để bỏ\n"
-            f"<i>Quá 15 phút thì nhắn «chạy thao tác #{op.id}».</i>")
+            f"<i>Quá 15 phút thì nhắn **chạy thao tác #{op.id}**.</i>")
 
 
 def _plain_card(op: AgentOp, env: AgentEnv) -> str:
     """Thẻ duyệt cho lệnh sửa dữ liệu bằng lời (ai-CR-073/075): tiếng Việt, nhãn đậm, KHÔNG bày câu SQL
-    (xem bằng «thao tác #n»). Bố cục: tiêu đề · sẽ làm · số dòng · ví dụ · giả định · an toàn · cách trả lời."""
+    (xem bằng "thao tác #n"). Bố cục: tiêu đề · sẽ làm · số dòng · ví dụ · giả định · an toàn · cách trả lời."""
     esc = telegram.esc
     p = op.params or {}
     blocks = [f"<b>SỬA DỮ LIỆU</b> trên {_env_badge(env)} · thao tác #{op.id}",
@@ -306,7 +306,7 @@ def _plain_card(op: AgentOp, env: AgentEnv) -> str:
     if notes:
         blocks.append("\n".join(f"<i>Em hiểu là: {esc(a[:200])}</i>" for a in notes))
     blocks.append(f"<b>An toàn:</b> sao lưu phần dữ liệu này trước khi chạy.\n"
-                  f"<i>Muốn trả lại như cũ: «hoàn tác thao tác #{op.id}».</i>")
+                  f"<i>Muốn trả lại như cũ: **hoàn tác thao tác #{op.id}**.</i>")
     if is_prod(env):
         blocks.append("<i>OTP cho prod tạm bỏ qua theo lệnh đại ca 05/10.</i>")
     blocks.append(_answer_line(op))
@@ -324,14 +324,14 @@ def _card(op: AgentOp, env: AgentEnv) -> str:
     if op.kind == OP_SQL_WRITE:
         _, _, tables = guardrails.classify_sql(op.command)
         safety = (f"<b>An toàn:</b> sao lưu bảng <code>{esc(', '.join(tables))}</code> trước khi chạy.\n"
-                  f"<i>Hoàn tác «hoàn tác thao tác #{op.id}» nạp lại bản sao lưu — thay đổi khác lên các bảng này sau "
+                  f"<i>Hoàn tác **hoàn tác thao tác #{op.id}** nạp lại bản sao lưu — thay đổi khác lên các bảng này sau "
                   "lúc sao lưu cũng mất.</i>")
     elif op.kind == OP_RESTORE:
         safety = "<b>An toàn:</b> sao lưu trạng thái hiện tại trước khi nạp lại, để hoàn tác được cả lượt này."
     elif op.kind == OP_DEPLOY:
         safety = ("<b>An toàn:</b> một lượt một lúc · commit phải nằm trên nhánh của môi trường · health hỏng thì tự quay "
                   "về bản trước" + (" · sao lưu CẢ DB prod trước" if is_prod(env) else "") + ".\n"
-                  f"<i>Hoàn tác: «hoàn tác thao tác #{op.id}» deploy lại commit trước.</i>")
+                  f"<i>Hoàn tác: **hoàn tác thao tác #{op.id}** deploy lại commit trước.</i>")
     elif op.kind == OP_SHELL_WRITE:
         safety = "<b>Lưu ý:</b> lệnh tự do — <i>không có cách hoàn tác tự động</i>, em chỉ ghi nhật ký kết quả."
     elif op.kind == OP_BOT_DB_RESTORE:
@@ -363,7 +363,7 @@ def ask_approval(db: Session, chat_id: str, op: AgentOp, env: AgentEnv, *, lead:
 
 def approve(db: Session, op: AgentOp, chat_id: str) -> str:
     if op.status != OPS_WAITING:
-        return f"Thao tác #{op.id} đang ở trạng thái «{OP_STATUS_LABELS.get(op.status, '?')}», không chạy lại được."
+        return f"Thao tác #{op.id} đang ở trạng thái **{OP_STATUS_LABELS.get(op.status, '?')}**, không chạy lại được."
     if op.created_at and now_utc() - op.created_at > OP_EXPIRE:
         op.status = OPS_CANCELLED
         op.error = "quá 24 giờ chưa duyệt"
@@ -388,7 +388,7 @@ def cancel(db: Session, op: AgentOp) -> str:
 
 
 def undo(db: Session, op: AgentOp, chat_id: str) -> tuple[AgentOp | None, str]:
-    """Hoàn tác = một dòng MỚI theo `undo_params` của dòng cũ, cũng qua cổng «đúng»."""
+    """Hoàn tác = một dòng MỚI theo `undo_params` của dòng cũ, cũng qua cổng "đúng"."""
     env = db.get(AgentEnv, op.env_id)
     up = dict(op.undo_params or {})
     if env is None:
@@ -435,8 +435,8 @@ def bot_backup_listing(db: Session, limit: int = 10) -> str:
     for r in rows:
         lines.append(f"#{r.id} · {_fmt_time(r.started_at)} · {int(r.size_bytes or 0) // 1024} KB")
     lines.append("")
-    lines.append("<i>Quay lại toàn bộ: «quay lại db bot dev bản #12». Lấy lại vài dòng: "
-                 "«lấy lại tab_agent_memory của db bot dev bản #12: user_id = 7». Cả hai đều qua thẻ «đúng».</i>")
+    lines.append("<i>Quay lại toàn bộ: **quay lại db bot dev bản #12**. Lấy lại vài dòng: "
+                 "**lấy lại tab_agent_memory của db bot dev bản #12: user_id = 7**. Cả hai đều qua thẻ **đúng**.</i>")
     return "\n".join(lines)
 
 
@@ -451,13 +451,13 @@ def new_bot_restore_op(db: Session, env: AgentEnv, backup_id: int, chat_id: str,
 
     src = db.get(AgentDbBackup, int(backup_id))
     if src is None or src.kind != db_backup.Kind.BACKUP or src.status != db_backup.Status.SUCCESS or not src.file_key:
-        return None, f"Không có bản sao lưu DB bot #{backup_id} thành công. Xem «sao lưu db bot»."
+        return None, f"Không có bản sao lưu DB bot #{backup_id} thành công. Xem **sao lưu db bot**."
     part = bool(table)
     if part:
         if not re.fullmatch(r"tab_[a-z0-9_]+", table):
             return None, "Tên bảng lạ."
         if not _WHERE_OK.match(where or "") or "--" in where or "/*" in where:
-            return None, "Điều kiện chỉ được là phép so sánh đơn giản, vd «user_id = 7» (không «;», không chú thích)."
+            return None, "Điều kiện chỉ được là phép so sánh đơn giản, vd **user_id = 7** (không **;**, không chú thích)."
     name = src.file_key.rsplit("/", 1)[-1]
     taken = _fmt_time(src.started_at)
     url = presigned_url(src.file_key, expires=BOT_RESTORE_URL_TTL)
@@ -498,7 +498,7 @@ def op_listing(db: Session, env: AgentEnv | None = None, *, deploy_only: bool = 
                      f"{esc(OP_KIND_LABELS.get(o.kind, '?'))}: {esc(o.title[:70])}{esc(extra)} — "
                      f"{esc(OP_STATUS_LABELS.get(o.status, '?'))}" + (" (tự chạy)" if o.auto else "")
                      + (f" · đã hoàn tác bằng #{o.undone_by_op_id}" if o.undone_by_op_id else ""))
-    lines.append("Xem chi tiết: «thao tác #n».")
+    lines.append("Xem chi tiết: **thao tác #n**.")
     return "\n".join(lines)
 
 
@@ -517,7 +517,7 @@ def op_detail(db: Session, op: AgentOp) -> str:
     if op.output:
         lines.append(f"<pre>{esc(op.output[-1500:])}</pre>")
     if op.undo_params and op.status == OPS_OK and not op.undone_by_op_id:
-        lines.append(f"Hoàn tác: «hoàn tác thao tác #{op.id}».")
+        lines.append(f"Hoàn tác: **hoàn tác thao tác #{op.id}**.")
     return "\n".join(lines)
 
 
@@ -544,7 +544,7 @@ def incident_listing(db: Session, env: AgentEnv | None = None, *, limit: int = 1
 
 
 def activity_text(db: Session) -> str:
-    """Phần «việc của bot» trong báo tài nguyên (V-06)."""
+    """Phần "việc của bot" trong báo tài nguyên (V-06)."""
     since = now_utc() - timedelta(hours=24)
     open_tasks = int(db.scalar(select(func.count(AgentTask.id)).where(AgentTask.status.notin_(CLOSED_STATUSES))) or 0)
     new_tasks = int(db.scalar(select(func.count(AgentTask.id)).where(AgentTask.created_at >= since)) or 0)
@@ -630,7 +630,7 @@ def _fetch_code(url: str) -> int:
 
 
 #  ai-CR-231 — sự cố #4 22/10: DNS vùng .vn (DNSSEC VNNIC) hỏng, máy giám sát không phân giải được tên miền nên báo prod
-#  «không kết nối được» trong khi prod vẫn sống. Health không trả mã nào (`code == 0`) thì hỏi địa chỉ qua DNS công cộng
+#  "không kết nối được" trong khi prod vẫn sống. Health không trả mã nào (`code == 0`) thì hỏi địa chỉ qua DNS công cộng
 #  bằng HTTPS (`cd` = bỏ kiểm DNSSEC) rồi gọi thẳng địa chỉ đó, chia ba kiểu hỏng:
 #    · dns   — đi thẳng vẫn 200: server sống → sự cố MỨC NHẸ, không chẩn đoán, không tự chữa;
 #    · blind — DNS công cộng cũng không hỏi được (có thể chính mạng máy giám sát hỏng) → chưa kết luận, cũng MỨC NHẸ;
@@ -818,7 +818,7 @@ def check_health(db: Session, *, fetch=None, probe=None, now: datetime | None = 
                 code = BLIND_CODE
         prev = int(env.last_health_code or 0) if env.last_health_at else 200     # chưa đo lần nào = coi như xanh
         if code == BLIND_CODE and _failure_kind(prev) in ("down", "dns"):
-            #  «Không kiểm chứng được» = không rõ: giữ kiểu hỏng của vòng trước, không đặt lại bộ đếm — server sập thật mà
+            #  "Không kiểm chứng được" = không rõ: giữ kiểu hỏng của vòng trước, không đặt lại bộ đếm — server sập thật mà
             #  DNS công cộng chập chờn vẫn phải leo thang; DNS ↔ không rõ qua lại thì không báo gì thêm (A2 rà 22/10).
             code = prev
         env.last_health_code = code
@@ -837,7 +837,7 @@ def check_health(db: Session, *, fetch=None, probe=None, now: datetime | None = 
                 service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID, _resolved_text(env, cur, mins), action=ACT_OPS)
             continue
         kind = _failure_kind(code)
-        #  Đổi kiểu hỏng (DNS ↔ sập ↔ không kiểm được) thì đếm lại từ 1 để «N phút liền» đúng kiểu đang thấy.
+        #  Đổi kiểu hỏng (DNS ↔ sập ↔ không kiểm được) thì đếm lại từ 1 để "N phút liền" đúng kiểu đang thấy.
         env.fail_streak = int(env.fail_streak or 0) + 1 if _failure_kind(prev) in ("ok", kind) else 1
         if cur is not None:
             #  Đang mở sự cố nhẹ mà đi thẳng địa chỉ cũng hỏng đủ số vòng liền (ít nhất hai — một vòng chậm không tính):
@@ -882,7 +882,7 @@ STUCK_NOTE = "máy sửa mã chưa nhận sau 5 phút"
 
 
 def remind_stuck_ops(db: Session, *, now: datetime | None = None) -> int:
-    """Thao tác đã duyệt mà nằm «chờ máy» quá 5 phút → báo đại ca MỘT lần (05/10: máy sửa mã thiếu quyền DB
+    """Thao tác đã duyệt mà nằm "chờ máy" quá 5 phút → báo đại ca MỘT lần (05/10: máy sửa mã thiếu quyền DB
     nên nhận vé rồi chết lặng, đại ca chờ mà không ai báo). Dấu đã báo = `error` ghi STUCK_NOTE."""
     from . import service
 
@@ -894,7 +894,7 @@ def remind_stuck_ops(db: Session, *, now: datetime | None = None) -> int:
         service.reply(db, op.chat_id or settings.AGENT_TELEGRAM_CHAT_ID,
                       f"Thao tác <b>#{op.id}</b> ({telegram.esc(op.title[:80])}) đã duyệt hơn 5 phút mà máy sửa mã chưa "
                       "nhận hoặc nhận rồi hỏng trước khi ghi được kết quả. Máy có thể đang tắt, mất đường hầm, hoặc thiếu "
-                      "quyền DB — em đang chờ; «máy nào đang bật» để xem máy.", action=ACT_OPS)
+                      "quyền DB — em đang chờ; **máy nào đang bật** để xem máy.", action=ACT_OPS)
     if rows:
         db.commit()
     return len(rows)
@@ -929,13 +929,13 @@ _P = {
     "approve_id": re.compile(rf"^(đúng|chạy|duyệt)\s+thao tác\s+#?(?P<n>\d+){_TAIL}$"),
     "cancel_id": re.compile(rf"^(bỏ|hủy|thôi)\s+thao tác\s+#?(?P<n>\d+){_TAIL}$"),
     "incidents": re.compile(rf"^(sổ sự cố|các sự cố|lịch sử sự cố|sự cố)(\s+(?P<env>[a-z0-9-]+))?{_TAIL}$"),
-    #  ai-CR-141: quay lại DB bot (agent_hub) từ bản sao lưu R2 — qua thẻ «đúng».
+    #  ai-CR-141: quay lại DB bot (agent_hub) từ bản sao lưu R2 — qua thẻ "đúng".
     "bot_backups": re.compile(rf"^(các bản |danh sách |xem )?sao lưu db bot{_TAIL}$"),
     "bot_restore": re.compile(rf"^quay lại db bot\s+(?P<env>[a-z0-9-]+)\s+(về\s+)?bản\s+#?(?P<n>\d+){_TAIL}$"),
     "bot_restore_part": re.compile(r"^lấy lại\s+(?P<table>tab_[a-z0-9_]+)\s+(của\s+)?db bot\s+(?P<env>[a-z0-9-]+)\s+bản\s+"
                                    r"#?(?P<n>\d+)\s*:\s*(?P<where>.+)$", re.DOTALL),
 }
-#  Điều kiện lấy lại một phần: chỉ ký tự của một biểu thức so sánh đơn giản — không «;», không chú thích SQL.
+#  Điều kiện lấy lại một phần: chỉ ký tự của một biểu thức so sánh đơn giản — không ";", không chú thích SQL.
 _WHERE_OK = re.compile(r"^[A-Za-z0-9_ =<>!'.,()%-]{1,300}$")
 BOT_RESTORE_URL_TTL = 26 * 3600
 #  SQL / shell giữ NGUYÊN chữ hoa-thường của đại ca, nên khớp trên chữ gốc (không hạ chữ).
@@ -951,7 +951,7 @@ def parse(text: str) -> dict | None:
         return {"op": "shell", "env": m.group("env").lower(), "body": m.group("body").strip()}
     low = re.sub(r"\s+", " ", raw.lower())
     if re.search(r"\bai[-\s]?\d+\b", low):
-        return None      # lệnh trên một VIỆC («deploy dev AI-0007») — để đường cũ xử
+        return None      # lệnh trên một VIỆC ("deploy dev AI-0007") — để đường cũ xử
     for op, pat in _P.items():
         m = pat.match(low)
         if m:
@@ -973,7 +973,7 @@ _WAITS = (ACT_OP_WAIT, ACT_RUNNER_WAIT, ACT_GRANT_WAIT, ACT_GLOSS_WAIT)
 
 
 def _pending(db: Session, chat_id: str, row: AgentMessage) -> AgentMessage | None:
-    """Thẻ «đúng» thao tác còn sống, và là thẻ chờ MỚI NHẤT của chat (thẻ máy / cấp quyền mới hơn thì nhường)."""
+    """Thẻ "đúng" thao tác còn sống, và là thẻ chờ MỚI NHẤT của chat (thẻ máy / cấp quyền mới hơn thì nhường)."""
     last = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.action.in_(_WAITS),
                                                 AgentMessage.id < row.id).order_by(AgentMessage.id.desc()).limit(1))
     if last is None or last.action != ACT_OP_WAIT:
@@ -1017,7 +1017,7 @@ def handle_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool
     if parsed is None:
         return False
     op_name = parsed["op"]
-    #  «hỏi/kiểm tra <tên lạ>», «log <x>» … mà tên môi trường không có trong sổ thì có thể là câu thường — trả lại.
+    #  "hỏi/kiểm tra <tên lạ>", "log <x>" … mà tên môi trường không có trong sổ thì có thể là câu thường — trả lại.
     env_name = parsed.get("env") or ("dev" if op_name in ("logs",) else "")
     env = env_by_name(db, env_name) if env_name else None
     if op_name in ("diagnose", "logs", "status", "incidents", "history") and env_name and env is None:
@@ -1044,7 +1044,7 @@ def handle_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool
         except ValueError as e:
             return say(esc(str(e)))
         return say(f"Đã thêm môi trường <b>{esc(new.name)}</b> ({esc(ENV_KIND_LABELS.get(new.kind, '?'))}). "
-                   "Kiểm thử: «trạng thái " + esc(new.name) + "».")
+                   "Kiểm thử: **trạng thái " + esc(new.name) + "**.")
     if op_name == "env_remove":
         if env is None:
             return say(f"Không có môi trường <b>{esc(parsed['name'])}</b>.")
@@ -1080,12 +1080,12 @@ def handle_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool
         return True
 
     if env is None:
-        return say(f"Không có môi trường <b>{esc(env_name or '?')}</b> trong sổ. Xem «môi trường».")
+        return say(f"Không có môi trường <b>{esc(env_name or '?')}</b> trong sổ. Xem **môi trường**.")
 
     if op_name == "heal":
         on = parsed["on"] == "bật"
         if on and is_prod(env):
-            return say("Prod không bao giờ tự chữa — chỉ đề xuất chờ «đúng».")
+            return say("Prod không bao giờ tự chữa — chỉ đề xuất chờ **đúng**.")
         env.auto_heal = on
         db.commit()
         tail = "" if settings.AGENT_HEAL_ENABLED else " (công tắc tổng <code>AGENT_HEAL_ENABLED</code> đang tắt nên chưa chạy)"

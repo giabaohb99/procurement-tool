@@ -36,9 +36,9 @@ FIELDS = [
      "condition_entity": "pr_dispatch",
      "label": "Yêu cầu mua hàng: BỎ QUA bước thu mua duyệt lần 2 cho phiếu thỏa điều kiện",
      "hint": "Chỉ có tác dụng khi công tắc ở trên đang BẬT. Không đặt điều kiện nào = không bỏ qua phiếu nào. "
-             "Bấm «Thêm điều kiện» rồi chọn trường, phép so và giá trị; có nhiều điều kiện thì phiếu phải thỏa "
-             "TẤT CẢ. Phòng thu mua mặc định (Sản xuất -Thu mua) được tính là «để trống», nên điều kiện hay dùng "
-             "nhất là «Phòng xử lý có giá trị» — nghĩa là phiếu nhờ phòng khác (ví dụ nhà máy tự mua) xử lý. "
+             "Bấm \"Thêm điều kiện\" rồi chọn trường, phép so và giá trị; có nhiều điều kiện thì phiếu phải thỏa "
+             "TẤT CẢ. Phòng thu mua mặc định (Sản xuất -Thu mua) được tính là \"để trống\", nên điều kiện hay dùng "
+             "nhất là \"Phòng xử lý có giá trị\" — nghĩa là phiếu nhờ phòng khác (ví dụ nhà máy tự mua) xử lý. "
              "Phiếu thỏa điều kiện thì trưởng bộ phận duyệt xong là hệ thống tự phân bổ nhân sự theo bộ phân công "
              "RIÊNG của phòng xử lý; phiếu còn lại vẫn chờ thu mua duyệt lần 2."},
     #  bao-CR-529: `type: "department"` = giao diện vẽ Ô CHỌN từ danh mục Phòng ban thay cho ô gõ
@@ -47,7 +47,7 @@ FIELDS = [
     {"key": "central_purchasing_dept_code", "group": "workflow", "type": "department",
      "label": "Phòng thu mua mặc định",
      "hint": "Phòng nhận mọi YCMH · YCBG · ĐMH không nhờ phòng nào khác xử lý, và là đích của nút "
-             "«Trả về thu mua». Để trống = PBA017 «Sản xuất -Thu mua». "
+             "\"Trả về thu mua\". Để trống = PBA017 \"Sản xuất -Thu mua\". "
              "Đổi phòng KHÔNG tự chuyển phiếu cũ sang phòng mới."},
     {"key": "pr_options_enabled", "group": "workflow", "type": "bool",
      "label": "Yêu cầu mua hàng: bật cụm phương án (báo giá) trên phiếu",
@@ -61,7 +61,7 @@ FIELDS = [
     {"key": "doc_attachment_view_window_enabled", "group": "document", "type": "bool",
      "label": "Văn bản: bật hạn xem tệp đính kèm",
      "hint": "TẮT (mặc định — tạm chốt 23/09/2026): mọi tệp đính kèm văn bản xem/tải được "
-             "bình thường dù đã quá ngày «Xem tệp đính kèm tới ngày» đã khai — cho xem thoải "
+             "bình thường dù đã quá ngày \"Xem tệp đính kèm tới ngày\" đã khai — cho xem thoải "
              "mái trong lúc dồn dữ liệu cũ vào hệ. "
              "BẬT: quay lại luật cũ — quá ngày đó thì không ai mở hay tải tệp được nữa, kể cả "
              "bằng đường dẫn cũ. Ngày đã khai trên từng văn bản KHÔNG mất khi tắt, bật lại là "
@@ -100,7 +100,7 @@ FIELDS = [
     {"key": "ai_plan_review_enabled", "group": "ai", "type": "bool",
      "label": "Kế hoạch AI soạn phải chờ duyệt rồi mới tạo việc",
      "hint": "BẬT: xác nhận kế hoạch trên Telegram / ứng dụng AI chỉ lưu thành đề xuất chờ duyệt; người hỏi mở màn "
-             "«Duyệt kế hoạch AI» để sửa rồi bấm Duyệt mới tạo việc trong Dự án. TẮT: tạo bảng Dự án ngay như "
+             "\"Duyệt kế hoạch AI\" để sửa rồi bấm Duyệt mới tạo việc trong Dự án. TẮT: tạo bảng Dự án ngay như "
              "trước (vẫn ghi lại đề xuất để học). Chỉ bật khi màn duyệt đã có."},
     {"key": "email_workflow_enabled", "group": "email", "type": "bool",
      "label": "Gửi email cho luồng duyệt",
@@ -139,7 +139,7 @@ FIELDS = [
      "hint": "Trống thì mọi lời gọi POS365 dừng ngay trước khi ra khỏi máy."},
     {"key": "pos365_username", "group": "pos365", "type": "str", "label": "Tài khoản POS365"},
     {"key": "pos365_payment_account_id", "group": "pos365", "type": "int",
-     "label": "Mã tài khoản thanh toán «Trừ điểm»",
+     "label": "Mã tài khoản thanh toán \"Trừ điểm\"",
      "hint": "Chỉ đơn hàng POS365 đi qua tài khoản này mới được ghi vào sổ điểm. Điền sai số là "
              "nhặt nhầm đơn của phương thức khác, hoặc không nhặt được đơn nào."},
     #  Thông số chung.
@@ -151,6 +151,16 @@ FIELDS = [
      "label": "Số ngày giữ thông báo trong hệ thống",
      "hint": "Thông báo cũ hơn số ngày này bị vòng dọn dẹp xóa đi. Để trống hoặc 0 thì hệ thống "
              "dùng lại mức mặc định chứ không xóa sạch."},
+    #  bao-CR-698 — nhật ký từng dòng của lô nạp hải quan.
+    {"key": "customs_row_log_keep_days", "group": "system", "type": "int",
+     "label": "Số ngày giữ nhật ký từng dòng của lô hải quan",
+     "hint": "Dòng Thêm mới / Đã có / Trùng cũ hơn số ngày này bị vòng dọn đêm xóa (số đếm của lô vẫn còn). "
+             "Dòng Lỗi, Ghi đè, Xóa, Bỏ qua và dòng nghi sửa giá giữ vĩnh viễn. Đặt 0 để tắt việc dọn."},
+    #  bao-CR-699 — gộp dòng hàng hải quan trùng.
+    {"key": "customs_line_merge_enabled", "group": "system", "type": "bool",
+     "label": "Tự gộp dòng hàng hải quan trùng (ngày 1 và 16)",
+     "hint": "Dòng cùng tờ khai, giá, lượng mà không khác ô nào (hoặc chỉ một bên trống) được gộp về dòng nạp sớm "
+             "nhất, ô trống điền bù. Nhóm khác ô hoặc từng sửa tay thì để nguyên. Tắt để dừng việc gộp định kỳ."},
     {"key": "backup_keep", "group": "system", "type": "int",
      "label": "Số bản sao lưu cơ sở dữ liệu giữ lại",
      "hint": "Giữ bấy nhiêu bản mới nhất, cũ hơn thì xóa cả tệp lẫn dòng ghi. Chạy hai lần mỗi "
@@ -160,7 +170,7 @@ FIELDS = [
      "label": "Thu thập cách dùng giao diện (hồ sơ cách làm việc)",
      "hint": "BẬT: giao diện gửi về máy chủ các sự kiện như màn hình đã mở, thời gian ở lại, mở/gửi/bỏ dở "
              "biểu mẫu, số lần tìm kiếm và số kết quả (KHÔNG ghi từ khóa, KHÔNG ghi nội dung nhập), giữ 90 ngày. "
-             "Chỉ tài khoản được giao xem báo cáo «Hồ sơ cách làm việc» mới đọc được. Phải thông báo nhân viên "
+             "Chỉ tài khoản được giao xem báo cáo \"Hồ sơ cách làm việc\" mới đọc được. Phải thông báo nhân viên "
              "trước khi bật. TẮT: máy chủ bỏ mọi lô sự kiện, không ghi gì; số liệu gom từ nhật ký sẵn có vẫn chạy."},
 ]
 # Trường bí mật: NHẬP được (mã hóa lưu DB), KHÔNG hiển thị lại
@@ -275,16 +285,16 @@ def _normalize(field: dict, val, db: Session | None = None) -> str:
         return raw if parse(raw) else ""
     if kind == "department":
         #  bao-CR-529: lưu MÃ phòng. Mã không có trong danh mục thì `core/central_purchasing` lặng
-        #  lẽ quay về «phòng xử lý để trống» — đúng loại lỗi không ai hay, nên chặn ngay ở cửa lưu.
+        #  lẽ quay về "phòng xử lý để trống" — đúng loại lỗi không ai hay, nên chặn ngay ở cửa lưu.
         raw = "" if val is None else str(val).strip()
         if not raw or db is None or raw == str(app_settings.get(field["key"]) or "").strip():
             return raw
         from app.modules.department.model import Department
         dep = db.query(Department).filter(Department.code == raw).first()
         if not dep:
-            raise HTTPException(400, f"\"{nhan}\": không có phòng ban mã «{raw}» trong danh mục")
+            raise HTTPException(400, f"\"{nhan}\": không có phòng ban mã \"{raw}\" trong danh mục")
         if not dep.is_active:
-            raise HTTPException(400, f"\"{nhan}\": phòng «{dep.name}» đã ngừng dùng")
+            raise HTTPException(400, f"\"{nhan}\": phòng \"{dep.name}\" đã ngừng dùng")
         return raw
     return str(val)
 
@@ -345,9 +355,9 @@ def _format_value(field: dict, raw: str) -> str:
         if label:
             return label
     if field.get("type") == "condition" and raw.strip():
-        #  bao-CR-528: nhật ký đọc ra câu («Phòng xử lý có giá trị») chứ không bày chuỗi JSON.
+        #  bao-CR-528: nhật ký đọc ra câu ("Phòng xử lý có giá trị") chứ không bày chuỗi JSON.
         #  Chuỗi hỏng (khai tay từ trước) thì giữ nguyên văn — `describe` sẽ đọc nó thành
-        #  «Mọi phiếu», nói sai hẳn nghĩa.
+        #  "Mọi phiếu", nói sai hẳn nghĩa.
         from app.modules.approval.condition_service import describe, parse
         if parse(raw):
             return describe(raw, _get_condition_fields(field.get("condition_entity", "")))
@@ -355,7 +365,7 @@ def _format_value(field: dict, raw: str) -> str:
 
 
 def _collect_changes(values: dict) -> list[tuple[str, str]]:
-    """Liệt kê những ô THẬT SỰ đổi giá trị: `(khóa, câu «Nhãn: trước -> sau»)`.
+    """Liệt kê những ô THẬT SỰ đổi giá trị: `(khóa, câu "Nhãn: trước -> sau")`.
 
     Giá trị "trước" lấy từ `app_settings.get` — tức giá trị đang có hiệu lực
     (DB, thiếu thì `.env`), đúng thứ người dùng vừa nhìn thấy trên màn hình.

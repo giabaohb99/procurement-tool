@@ -5,7 +5,7 @@ import { documentApi } from '../api/document-api'
 import type { DocumentRecord } from '../types/document-record'
 
 /** Trần dòng lá văn bản NẠP MỘT LƯỢT dưới một thư mục — vượt trần thì dòng lá
- * cuối «Xem thêm n văn bản…» chọn thư mục đó ở khung nội dung thay vì tải
+ * cuối "Xem thêm n văn bản…" chọn thư mục đó ở khung nội dung thay vì tải
  * thêm ngay trong cây (yêu cầu giao diện kiểu VS Code, §4). */
 export const FOLDER_LEAF_DOCUMENT_PAGE_SIZE = 100
 

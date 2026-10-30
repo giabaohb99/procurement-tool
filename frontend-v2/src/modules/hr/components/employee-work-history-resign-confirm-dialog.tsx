@@ -24,34 +24,34 @@ interface EmployeeWorkHistoryResignConfirmDialogProps {
    * đang giữ + cho chuyển trước khi khóa; còn việc treo vẫn cho qua (xác nhận), nút đổi nhãn.
    */
   employeeId?: number
-  /** Nhãn nút phụ — mặc định «Chỉ lưu dòng» (hộp LƯU dòng mới, phase 04). */
+  /** Nhãn nút phụ — mặc định "Chỉ lưu dòng" (hộp LƯU dòng mới, phase 04). */
   cancelLabel?: string
-  /** Nhãn nút đỏ — mặc định «Lưu và chuyển sang nghỉ việc». */
+  /** Nhãn nút đỏ — mặc định "Lưu và chuyển sang nghỉ việc". */
   confirmLabel?: string
   /**
    * Hành động của nút phụ. Bỏ trống → gọi `onConfirm(false)` (tương thích hộp
-   * LƯU dòng cũ: vẫn lưu dòng, chỉ không áp vào hồ sơ). H1 (nút ▶ «Áp vào hồ
-   * sơ» trên dòng có sẵn) truyền riêng — ở đó không có khái niệm "lưu dòng",
+   * LƯU dòng cũ: vẫn lưu dòng, chỉ không áp vào hồ sơ). H1 (nút ▶ "Áp vào hồ
+   * sơ" trên dòng có sẵn) truyền riêng — ở đó không có khái niệm "lưu dòng",
    * nút phụ phải KHÔNG gọi gì cả, chỉ đóng hộp.
    */
   onCancel?: () => void
-  /** `true` = «Lưu và chuyển sang nghỉ việc» → gửi `apply_to_profile:true`. */
+  /** `true` = "Lưu và chuyển sang nghỉ việc" → gửi `apply_to_profile:true`. */
   onConfirm: (applyToProfile: boolean) => void
 }
 
 /**
- * Hộp xác nhận RIÊNG của dòng «Thôi việc» (Q2) — KHÔNG dùng `confirm()` chung
+ * Hộp xác nhận RIÊNG của dòng "Thôi việc" (Q2) — KHÔNG dùng `confirm()` chung
  * của hộp thêm/sửa, vì hệ quả ở đây nặng hơn một câu hỏi "cập nhật hồ sơ?":
  * khóa tài khoản đăng nhập và đăng xuất khỏi MỌI thiết bị ngay lập tức.
  *
- * Hai nút nói đúng việc — không dùng «Đồng ý»/«Hủy» chung chung — để người bấm
+ * Hai nút nói đúng việc — không dùng "Đồng ý"/"Hủy" chung chung — để người bấm
  * nhầm có một lối ra an toàn (chỉ lưu dòng, chưa đụng tới hồ sơ) thay vì chỉ có
- * «Hủy» (không lưu được dòng vừa nhập).
+ * "Hủy" (không lưu được dòng vừa nhập).
  *
  * Esc / bấm ra ngoài / nút đóng → CHỈ đóng hộp, không gọi `onConfirm`/`onCancel`
  * — người dùng đổi ý thì dòng vừa nhập trong form cha vẫn còn nguyên, chưa gửi gì.
  *
- * Dùng LẠI ở nút ▶ «Áp vào hồ sơ» của từng dòng có sẵn (H1,
+ * Dùng LẠI ở nút ▶ "Áp vào hồ sơ" của từng dòng có sẵn (H1,
  * `employee-tab-work-history.tsx`) với `cancelLabel="Hủy"` +
  * `confirmLabel="Chuyển sang nghỉ việc"` + `onCancel` riêng (không lưu gì).
  */
@@ -83,7 +83,7 @@ export function EmployeeWorkHistoryResignConfirmDialog({
                 Mọi tài khoản đăng nhập của người này sẽ bị <strong>KHÓA</strong> và bị{' '}
                 <strong>ĐĂNG XUẤT</strong> khỏi mọi thiết bị ngay lập tức.
               </p>
-              <p>Mở lại tài khoản phải làm tay ở tab «Tài khoản».</p>
+              <p>Mở lại tài khoản phải làm tay ở tab <strong>Tài khoản</strong>.</p>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -115,7 +115,7 @@ export function EmployeeWorkHistoryResignConfirmDialog({
 }
 
 /**
- * Nhãn nút đỏ: còn việc duyệt treo thì thêm «Vẫn … (còn việc treo)». Tách thành component để
+ * Nhãn nút đỏ: còn việc duyệt treo thì thêm "Vẫn … (còn việc treo)". Tách thành component để
  * hook chỉ chạy khi có `employeeId` (hộp dùng không kèm hồ sơ không cần QueryClient).
  */
 function ConfirmLabelWithPendingWork({ employeeId, label }: { employeeId: number; label: string }) {

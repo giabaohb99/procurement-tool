@@ -51,8 +51,8 @@ const ALL = 'all'
 
 /**
  * `preserveParams`: mọi tham số khác của màn phải kể tên ở đây, không thì bấm
- * «Áp dụng» là chúng bị xóa khỏi URL — mất `scope` thì nhảy về phạm vi mặc định,
- * mất `status`/`leave_type_id` thì hai ô chọn trên thanh công cụ tự nhảy về «Tất cả».
+ * "Áp dụng" là chúng bị xóa khỏi URL — mất `scope` thì nhảy về phạm vi mặc định,
+ * mất `status`/`leave_type_id` thì hai ô chọn trên thanh công cụ tự nhảy về "Tất cả".
  */
 const FILTER_CONFIG = {
   fields: LEAVE_REQUEST_FILTER_FIELDS,

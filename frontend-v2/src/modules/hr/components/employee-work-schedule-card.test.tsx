@@ -57,7 +57,7 @@ describe('EmployeeWorkScheduleCard', () => {
     permissions = {}
   })
 
-  it('shows «Mặc định hệ thống» and NO validity dates for the built-in fallback', async () => {
+  it('shows "Mặc định hệ thống" and NO validity dates for the built-in fallback', async () => {
     apiGet.mockResolvedValue(
       effective({
         is_fallback: true,
@@ -104,21 +104,21 @@ describe('EmployeeWorkScheduleCard', () => {
     expect(await screen.findAllByText('nghỉ trưa 12:00–13:00')).toHaveLength(5)
   })
 
-  it('labels the SYSTEM level «Toàn hệ thống»', async () => {
+  it('labels the SYSTEM level "Toàn hệ thống"', async () => {
     apiGet.mockResolvedValue(effective({ level: 1, target_name: undefined }))
     renderCard()
     expect(await screen.findByText('Toàn hệ thống')).toBeInTheDocument()
     expect(screen.queryByText('Toàn công ty')).not.toBeInTheDocument()
   })
 
-  it('does not crash on empty days: every weekday chip shows «—», never invented as «Nghỉ»', async () => {
+  it('does not crash on empty days: every weekday chip shows "—", never invented as "Nghỉ"', async () => {
     apiGet.mockResolvedValue(effective({ days: [], weekly_workdays: 0 }))
     renderCard()
     expect(await screen.findAllByText('—')).toHaveLength(7)
     expect(screen.queryByText('Nghỉ')).not.toBeInTheDocument()
   })
 
-  it('shows «—» only for weekdays the backend left out', async () => {
+  it('shows "—" only for weekdays the backend left out', async () => {
     const days = buildDefaultWeek().filter((d) => d.weekday !== 3)
     apiGet.mockResolvedValue(effective({ days }))
     renderCard()
@@ -133,7 +133,7 @@ describe('EmployeeWorkScheduleCard', () => {
     expect(screen.queryByRole('link', { name: 'Gán lịch' })).not.toBeInTheDocument()
   })
 
-  it('hides «Gán lịch» without work_schedule.write and shows it with', async () => {
+  it('hides "Gán lịch" without work_schedule.write and shows it with', async () => {
     apiGet.mockResolvedValue(effective())
     const { unmount } = renderCard()
     await screen.findByText('Theo phòng ban: Kế toán')

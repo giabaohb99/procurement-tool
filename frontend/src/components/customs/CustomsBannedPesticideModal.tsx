@@ -1,4 +1,4 @@
-// duoc-CR-490 — thẻ «Pháp lý», bấm số ở cột «Thuốc BVTV chứa» của một hoạt chất CẤM (TT 75/2025):
+// duoc-CR-490 — thẻ "Pháp lý", bấm số ở cột "Thuốc BVTV chứa" của một hoạt chất CẤM (TT 75/2025):
 // danh sách thuốc trong danh mục BVTV đang chứa hoạt chất đó — MỌI tình trạng (số ở cột đếm đủ
 // mọi tình trạng, lọc riêng ở đây thì số và danh sách sẽ lệch nhau). Bấm một thuốc mở TRANG chi
 // tiết thuốc (duoc-CR-493); nút lùi của trang đưa về lại mục Pháp lý.
@@ -43,7 +43,7 @@ export default function CustomsBannedPesticideModal({ regulation, onClose }: {
     onClose()
   }
 
-  // bao-CR-558: màn «Pháp lý» dựng hộp này THƯỜNG TRỰC (chỉ đổi `regulation`), mà khung
+  // bao-CR-558: màn "Pháp lý" dựng hộp này THƯỜNG TRỰC (chỉ đổi `regulation`), mà khung
   // `CustomsModal` của bản cũ không có cờ mở/đóng — thiếu dòng này thì vừa vào màn là hộp hiện,
   // bấm Đóng cũng không tắt. Bản v2 dùng Dialog có `open` nên không dính.
   if (regulation == null) return null

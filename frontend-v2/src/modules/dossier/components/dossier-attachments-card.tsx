@@ -32,7 +32,7 @@ function fileIcon(file: DossierAttachment) {
 }
 
 /**
- * BẢN SCAN của một hồ sơ — tab «Tệp đính kèm» ở trang chi tiết.
+ * BẢN SCAN của một hồ sơ — tab "Tệp đính kèm" ở trang chi tiết.
  *
  * ⚠️ **Không dùng lại `DocumentAttachmentsCard` của Thu mua**, dù hai màn nhìn
  * gần giống nhau. Bản đó dựng quanh khái niệm THƯ MỤC theo danh mục `doc_type`
@@ -74,7 +74,7 @@ export function DossierAttachmentsCard({ dossierId }: { dossierId: number }) {
     try {
       await downloadFile(dossierAttachmentDownloadUrl(file.id), file.filename)
     } catch {
-      toast.error(`Không tải được tệp «${file.filename}».`)
+      toast.error(`Không tải được tệp "${file.filename}".`)
     }
   }
 
@@ -102,7 +102,7 @@ export function DossierAttachmentsCard({ dossierId }: { dossierId: number }) {
         </div>
       ) : !files || files.length === 0 ? (
         //  ⚠️ Câu rỗng nói rõ CÓ THỂ LÀM GÌ, và nói khác nhau theo quyền: người
-        //  không tải lên được mà đọc «Kéo tệp vào đây» thì đi tìm một vùng thả
+        //  không tải lên được mà đọc "Kéo tệp vào đây" thì đi tìm một vùng thả
         //  không tồn tại.
         <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
           {canManage
@@ -152,7 +152,7 @@ export function DossierAttachmentsCard({ dossierId }: { dossierId: number }) {
                       icon={Trash2}
                       title="Gỡ tệp"
                       confirmTitle="Gỡ tệp đính kèm?"
-                      confirmDescription={`Gỡ «${file.filename}» khỏi hồ sơ này? Tệp sẽ không mở lại được từ đây nữa.`}
+                      confirmDescription={`Gỡ "${file.filename}" khỏi hồ sơ này? Tệp sẽ không mở lại được từ đây nữa.`}
                       destructive
                       disabled={deleteMutation.isPending}
                       onConfirm={() => deleteMutation.mutate(file.id)}

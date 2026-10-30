@@ -124,6 +124,18 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 |---|---|---|---|
 | TM3-1 | Chuyển 5 luồng duyệt Thu mua sang bộ máy duyệt chung (tùy chọn; đại ca 22/10 dặn giữ nguyên) | Chỉ làm khi đại ca mở lại | doc cũ 13 |
 
+**Đã ghi nhận, chưa lên lịch — chỗ hở kho và nhận hàng so với chuẩn (bao-CR-702, 30/10/2026; đại ca chốt chỉ ghi, chưa làm)**
+
+Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) mục 6 (top 10 chỗ hở, đã xếp theo giá trị cho phòng thu mua). Nửa sau luồng (nhận hàng, kho, công nợ) mới đạt 43 % so với ERPNext v16.
+
+| Mã | Việc | Điều kiện xong | Nguồn |
+|---|---|---|---|
+| TM-GN-1 | Số lượng từ chối và kiểm chất lượng chặn nhập: số chấp nhận / số từ chối trên lần giao, `qc_result` thành bộ mã cố định, tồn và công nợ tính theo số chấp nhận | Lần giao QC Lỗi chưa có số chấp nhận thì không sinh công nợ; 92 đạt 8 lỗi ghi được | tài liệu 11 mục 6 #1, tài liệu 01 mục 8.1 |
+| TM-GN-2 | Trả hàng nhà cung cấp: phiếu trả tham chiếu lần giao, giảm tồn, sinh khoản giảm trừ công nợ, giữ phiếu nhập gốc | Trả hàng không còn phải xóa lần giao | tài liệu 11 mục 6 #2 |
+| TM-GN-3 | Phiếu nhập kho do thủ kho lập: màn nhập riêng, số thực nhận do kho xác nhận, tách quyền nhận hàng khỏi quyền sửa đơn | Đơn chỉ hiện số nhận từ phiếu kho | tài liệu 11 mục 6 #3, tài liệu 01 mục 8.2 |
+| TM-GN-4 | Xuất kho và chuyển kho: phiếu xuất (sản xuất, bán, hao hụt) và phiếu chuyển, sổ kho chỉ thêm, có ngày ghi sổ | Tồn giảm được bằng chứng từ, không qua điều chỉnh tay | tài liệu 11 mục 6 #4, tài liệu 01 mục 8.2 |
+| TM-GN-5 | Sáu việc còn lại của top 10: hóa đơn NCC đối chiếu ba chiều, mức tồn tối thiểu tự đề nghị mua, chi phí nhập khẩu vào giá vốn, sổ kho khóa kỳ, hợp đồng khung có số lượng và giá, chấm điểm NCC định kỳ | Xem tài liệu 11 mục 6 #5 tới #10 | tài liệu 11 |
+
 **Câu chờ quyết:**
 - Bật công tắc phương án YCMH trên prod khi nào — đại ca.
 - Có chuyển luồng duyệt Thu mua sang bộ máy chung không — đại ca (hiện: giữ nguyên).

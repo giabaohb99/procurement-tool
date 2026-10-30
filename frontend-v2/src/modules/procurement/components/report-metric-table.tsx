@@ -81,10 +81,10 @@ export function ReportMetricTable({
     })
   }, [rows, sort, period])
 
-  //  ⚠️ **Khổ điện thoại bày THẺ, không bày bảng thu nhỏ.** Ở chế độ «Dọc» màn
+  //  ⚠️ **Khổ điện thoại bày THẺ, không bày bảng thu nhỏ.** Ở chế độ "Dọc" màn
   //  này dựng tới MƯỜI bảng (một tổng năm + chín tháng), mỗi bảng lặp lại đúng
-  //  hàng tiêu đề «# · Nhà cung cấp · Số lần giao dịch» và một thanh cuộn ngang
-  //  riêng, còn cột tên thì bị bóp tới mức ba dòng «CÔNG TY TNHH …» xếp chồng.
+  //  hàng tiêu đề "# · Nhà cung cấp · Số lần giao dịch" và một thanh cuộn ngang
+  //  riêng, còn cột tên thì bị bóp tới mức ba dòng "CÔNG TY TNHH …" xếp chồng.
   //  Đọc ra là một bức tường chữ lặp, mà vẫn phải kéo ngang mới thấy hai chỉ số
   //  còn lại. Thẻ thì bày ĐỦ tên trên một dòng chảy và mọi chỉ số nằm ngay dưới
   //  — hết cuộn ngang, hết cắt tên, hết chín hàng tiêu đề.

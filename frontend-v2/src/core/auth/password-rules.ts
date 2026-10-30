@@ -30,4 +30,4 @@ export const newPasswordField = () =>
     .refine((value) => byteLength(value) <= PASSWORD_MAX_BYTES, {
       message: `Mật khẩu quá dài — tối đa ${PASSWORD_MAX_BYTES} byte`,
     })
-    // bao-CR-653: bỏ luật «phải có cả chữ và số», khớp backend.
+    // bao-CR-653: bỏ luật "phải có cả chữ và số", khớp backend.

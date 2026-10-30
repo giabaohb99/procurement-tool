@@ -262,7 +262,7 @@ export function SurveyLinesTable({
                thẻ không còn cột nào để ẩn/hiện, ghim hay kéo giãn, nên ba nút
                *Bảng đầy đủ · Vừa nội dung · Cột* là mời người dùng bấm vào một
                bảng điều khiển không điều khiển thứ gì đang nhìn thấy — cùng
-               luật `DataTable` đã áp cho menu «Cột». */}
+               luật `DataTable` đã áp cho menu "Cột". */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium">{lines.length} dòng</span>
             {selectAllLabel}

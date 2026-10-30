@@ -1046,9 +1046,9 @@ Nếu dòng YCMH đã được đặt thủ công thành `"Hủy đơn"` trên Y
 
 Sau khi cập nhật toàn bộ dòng, hệ thống gọi lại `recompute_status` để suy lại trạng thái tổng của phiếu YCMH.
 
-### H.5 Màn hình Tiến độ mua hàng (`/purchase-progress`)
+### H.5 Màn hình Tiến độ đơn mua hàng (`/purchase-progress`; tên cũ *Tiến độ mua hàng*, đổi nhãn bao-CR-691)
 
-Màn hình riêng tại đường dẫn `/purchase-progress` (nhãn menu "Tiến độ mua hàng"), sử dụng endpoint `GET /api/purchase-progress`. Hiển thị dạng bảng phẳng, mỗi dòng = 1 dòng hàng (`po_item`) kèm thông tin lần giao tương ứng. Các cột chính: Mã ĐMH, Mã MISA, Mã PYC, Công ty, Bộ phận, NCC, NSPT, Ngày đặt, Mã SP, Tên SP, Tên hóa đơn, Nhóm hàng, Mã HH, Số HĐ, Ngày cần, **Dự kiến nhận** (`po_item.expected_date` — xem §10a; trước CR-062 lấy nhầm từ `po_delivery.expected_date` nên hiện số rác), ĐVT, SL đặt, Đơn giá, Thành tiền đặt, **Tiến độ** (`progress_status`), Lần giao, Kho, Ngày nhận, Ngày quy định, CL cam kết, CL quy định, CL vs YC, Hồ sơ CT (`document_status`). Sắp xếp theo cột; phân trang. Xuất Excel toàn bộ kết quả đang lọc: xem §J.2.
+Màn hình riêng tại đường dẫn `/purchase-progress` (nhãn menu "Tiến độ đơn mua hàng" — trước bao-CR-691 là "Tiến độ mua hàng"), sử dụng endpoint `GET /api/purchase-progress`. Hiển thị dạng bảng phẳng, mỗi dòng = 1 dòng hàng (`po_item`) kèm thông tin lần giao tương ứng. Các cột chính: Mã ĐMH, Mã MISA, Mã PYC, Công ty, Bộ phận, NCC, NSPT, Ngày đặt, Mã SP, Tên SP, Tên hóa đơn, Nhóm hàng, Mã HH, Số HĐ, Ngày cần, **Dự kiến nhận** (`po_item.expected_date` — xem §10a; trước CR-062 lấy nhầm từ `po_delivery.expected_date` nên hiện số rác), ĐVT, SL đặt, Đơn giá, Thành tiền đặt, **Tiến độ** (`progress_status`), Lần giao, Kho, Ngày nhận, Ngày quy định, CL cam kết, CL quy định, CL vs YC, Hồ sơ CT (`document_status`). Sắp xếp theo cột; phân trang. Xuất Excel toàn bộ kết quả đang lọc: xem §J.2.
 
 **Lọc (CR-080, CR-081).** Thanh lọc cố định còn 6 ô cơ bản: **Công ty · Bộ phận · Trạng thái tiến độ · Tình trạng nhận · Ngày đặt hàng (khoảng) · Tìm kiếm**. "Tình trạng nhận" bắt buộc ở lại vì là cột TÍNH — cộng dồn số lượng nhận của mọi lần giao, không có cột nào trong DB để lọc trực tiếp; Bộ phận và khoảng Ngày đặt hàng ở lại vì là hai lát cắt dùng gần như mọi lần mở màn (CR-081). Mọi cột còn lại (bộ phận, NSPT, NCC, các mốc ngày, số lượng, tiền…) lọc bằng **Bộ lọc điều kiện** — nút ở cuối thanh lọc, chọn trường + phép so sánh (chứa, bằng, khác, lớn/nhỏ hơn, trong khoảng, đang trống…), nhiều điều kiện nối VÀ / HOẶC. Người không có quyền `supplier.read` thì cụm NCC / vận chuyển không xuất hiện trong danh sách trường, đúng như cột đó bị ẩn trên bảng.
 
@@ -1129,7 +1129,7 @@ Tiền VC · QC · TT giao · Thành tiền nhận · SL còn lại · Trạng t
 Tên file `don-mua-hang-DDMMYYYY.xlsx`. Quy ước định dạng và trần 5.000 dòng/lần xuất — xem
 [03-yeu-cau-mua-hang.md §G](03-yeu-cau-mua-hang.md).
 
-### J.2 Màn Tiến độ mua hàng
+### J.2 Màn Tiến độ đơn mua hàng
 
 Nút **"Xuất Excel"** đặt cạnh dòng đếm *"· N dòng"* ở đầu màn `/purchase-progress`.
 Endpoint: `GET /api/purchase-progress/export/xlsx`. Màn này vốn đã phẳng (một hàng = **một lần giao**

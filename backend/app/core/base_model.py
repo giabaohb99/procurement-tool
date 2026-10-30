@@ -25,7 +25,7 @@ class SoftDeleteMixin:
 
     Ba cột: `is_deleted` 0/1 · `deleted_at` thời điểm xóa · `deleted_by` id tài khoản xóa.
     Model gắn mixin này thì `core/scoping.apply_scope` / `get_scoped` TỰ thêm điều kiện
-    «chưa xóa» — chỗ đọc đi qua phạm vi không phải lọc tay. Chỗ đọc thẳng (`db.get`,
+    "chưa xóa" — chỗ đọc đi qua phạm vi không phải lọc tay. Chỗ đọc thẳng (`db.get`,
     `db.query(Model).filter(code == ...)`) vẫn phải tự lọc, xem `doc/erp/nen-tang/20-ra-soat-xoa-cung.md` §5.
 
     Dòng con / đính kèm / bình luận / nhật ký của phiếu đã xóa GIỮ NGUYÊN; mã phiếu không tái

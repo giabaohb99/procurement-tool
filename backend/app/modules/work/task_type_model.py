@@ -2,7 +2,7 @@
 
 Vì sao có danh mục này: `kind` TASK/MILESTONE không phải loại nghiệp vụ, còn trường tùy
 biến (`tab_work_label_field`) khai theo TỪNG dự án nên không gom được toàn công ty. Muốn
-trả lời «thời gian trọn vòng của loại việc X» thì phải có một cột thật, dùng chung.
+trả lời "thời gian trọn vòng của loại việc X" thì phải có một cột thật, dùng chung.
 
 Theo pháp nhân (`company_id`), tùy chọn gắn phòng ban (`department_id`; 0 = cả pháp nhân).
 Quản trị khai (gác `setting.write`). Không xóa cứng khi đã có task dùng — chuyển `is_active = 0`.

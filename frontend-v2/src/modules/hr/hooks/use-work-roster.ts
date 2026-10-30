@@ -5,7 +5,7 @@ import { workScheduleApi } from '../api/work-schedule-api'
 import type { WorkRosterParams } from '../types/work-roster'
 
 /**
- * Lưới «ai làm, ai nghỉ». `keepPreviousData`: bấm sang tuần sau thì lưới cũ ở lại
+ * Lưới "ai làm, ai nghỉ". `keepPreviousData`: bấm sang tuần sau thì lưới cũ ở lại
  * (mờ đi) thay vì chớp trắng. Không thử lại khi lỗi — 422 (quá 42 ngày) hay 403
  * thử lại cũng không khác đi. Luôn nạp lại khi mở màn: xem ghi chú ở `staleTime`.
  */

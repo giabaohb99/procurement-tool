@@ -24,7 +24,7 @@ export function validateTemplateFile(file: File | null | undefined): string | nu
 
 /**
  * Dựng `multipart/form-data` cho hộp tải lên. Ném lỗi khi `company_id` / `contract_type`
- * còn 0: `0` là «chưa chọn», gửi đi chỉ để ăn 422 hoặc — tệ hơn — gắn nhầm pháp nhân.
+ * còn 0: `0` là "chưa chọn", gửi đi chỉ để ăn 422 hoặc — tệ hơn — gắn nhầm pháp nhân.
  * KHÔNG đặt tay `Content-Type` (trình duyệt tự thêm boundary).
  */
 export function buildTemplateFormData(

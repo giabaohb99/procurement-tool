@@ -112,11 +112,11 @@ def _apply_concurrent(db: Session, emp: Employee, row: EmployeeWorkHistory,
         new_list, action = [d for d in existing if d != dept], "gỡ"
 
     department_service.set_extra_departments(db, emp, new_list, actor.id)
-    return [f"Kiêm nhiệm — {action} phòng «{_department_label(db, dept)}»"]
+    return [f"Kiêm nhiệm — {action} phòng \"{_department_label(db, dept)}\""]
 
 
 def _apply_resign(db: Session, emp: Employee, row: EmployeeWorkHistory, actor) -> list[str]:
-    """Loại 6 — đúng đường nghỉ việc SẴN CÓ của tab «Chung» (Q2, bao-CR-400)."""
+    """Loại 6 — đúng đường nghỉ việc SẴN CÓ của tab "Chung" (Q2, bao-CR-400)."""
     try:
         check_resign_after_hire(emp.hire_date, row.from_date)
     except ValueError as e:

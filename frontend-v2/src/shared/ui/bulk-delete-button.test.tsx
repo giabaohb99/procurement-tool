@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { BulkDeleteButton } from './bulk-delete-button'
 
-// bao-CR-547 — nút «Xóa đã chọn (n)»: không có gì chọn thì không dựng; xóa lỗi thì giữ hộp.
+// bao-CR-547 — nút "Xóa đã chọn (n)": không có gì chọn thì không dựng; xóa lỗi thì giữ hộp.
 describe('BulkDeleteButton', () => {
   it('renders nothing when nothing is selected', () => {
     render(<BulkDeleteButton count={0} unitLabel="phiếu Nháp" onConfirm={vi.fn()} />)

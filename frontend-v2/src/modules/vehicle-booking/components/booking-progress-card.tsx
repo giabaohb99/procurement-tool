@@ -108,11 +108,11 @@ function StageRow({ stage, badge }: { stage: BookingStage; badge?: ReactNode }) 
 }
 
 /**
- * Một dòng «Theo luồng …» — trả lời «phiếu này đang chạy luồng duyệt nào»
+ * Một dòng "Theo luồng …" — trả lời "phiếu này đang chạy luồng duyệt nào"
  * (bao-CR-579). Chỉ hỏi máy chủ khi phiếu thật sự có phiên duyệt; phiếu đi đường
  * một bước có sẵn thì không vẽ gì.
  *
- * Cố ý KHÔNG dựng lại khung «Luồng duyệt nhiều bước» đã bỏ ngày 23/09/2026 —
+ * Cố ý KHÔNG dựng lại khung "Luồng duyệt nhiều bước" đã bỏ ngày 23/09/2026 —
  * chỉ một dòng chữ, chặng đang chờ ai thì dải tiêu đề đã ghi.
  */
 function BookingFlowLine({ booking }: { booking: VehicleBooking }) {

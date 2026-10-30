@@ -76,13 +76,13 @@ function dossierChips(r: Dossier, quiet = false): IdentityChip[] {
  * trong `useMemo` — xem `pages/dossier-list-page.tsx`.
  *
  * ⚠️ `formFields` khai bằng HÀM (`CrudFormFieldsSpec`): khung CRUD gọi lại nó
- * sau mỗi phím gõ, nên đổi ô «Loại hồ sơ» là cụm ô bên dưới mọc ra ngay. Hàm đó
+ * sau mỗi phím gõ, nên đổi ô "Loại hồ sơ" là cụm ô bên dưới mọc ra ngay. Hàm đó
  * phải thuần và rẻ — đừng nhét lời gọi mạng vào.
  *
  * ⚠️ **Không có cột / bộ lọc theo `expiry_state`.** Nó là trường SUY RA, không
  * phải cột, nên `apply_filters` của backend bỏ qua trong im lặng — người dùng
  * đặt điều kiện, bấm Áp dụng, và nhận về nguyên danh sách cũ mà không có lỗi
- * nào để lần. Câu hỏi «cái nào sắp hết hạn» trả lời bằng cách **sắp xếp** theo
+ * nào để lần. Câu hỏi "cái nào sắp hết hạn" trả lời bằng cách **sắp xếp** theo
  * cột *Hạn hiệu lực* (cột đó có chỉ mục dưới DB và `apply_sort` nhận nó).
  */
 export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier> {
@@ -103,7 +103,7 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
     searchParam: 'name',
     searchPlaceholder: 'Tìm hồ sơ theo tên…',
     //  HẠN GẦN NHẤT LÊN TRƯỚC — thứ tự này chính là câu trả lời cho việc người
-    //  ta mở màn hình này ra: «còn tờ nào sắp hết hạn không?». Sắp theo *mới
+    //  ta mở màn hình này ra: "còn tờ nào sắp hết hạn không?". Sắp theo *mới
     //  nhất trước* thì phải cuộn cả danh sách mới thấy.
     //  ⚠️ Hồ sơ vô thời hạn (`expiry_date` NULL) xuống CUỐI — nhưng **không tự
     //  nhiên như vậy**: MySQL xếp `NULL` LÊN ĐẦU khi sắp tăng dần. Backend phải
@@ -123,7 +123,7 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
     getItemName: (r) => `${r.name} (${r.code})`,
     deleteWarning:
       'Xóa là mất luôn mọi thông tin riêng của hồ sơ này và các bản scan đã đính kèm. ' +
-      'Hồ sơ hết vòng đời thì chuyển sang «Đã lưu trữ» — nó biến khỏi việc theo dõi ' +
+      'Hồ sơ hết vòng đời thì chuyển sang "Đã lưu trữ" — nó biến khỏi việc theo dõi ' +
       'hằng ngày nhưng vẫn tra được.',
     chips: (r) => dossierChips(r),
     mobileCard: (r) => (
@@ -222,7 +222,7 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
     ],
     //  Không khai `formSections`: biểu mẫu còn ba ô khung, mà `formSections`
     //  sinh ra cho biểu mẫu 8–10 ô. Ba ô mà bọc một tiêu đề là một cái khung
-    //  rỗng. Khối «Trường riêng» tự mang tiêu đề của nó.
+    //  rỗng. Khối "Trường riêng" tự mang tiêu đề của nó.
     formFields: (values: CrudRecord) =>
       buildDossierFormFields(types, values, {
         renderCustomFields: ({ control, name, disabled, typeId }) => (
@@ -266,7 +266,7 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
       const submitted = (payload.extra_fields as Record<string, unknown>) ?? {}
       const fromForm = Object.entries(submitted).filter(([key]) => declared.has(key))
 
-      //  ③ **TÁCH các hàng «trường riêng» thành hai phần.** Trên biểu mẫu chúng
+      //  ③ **TÁCH các hàng "trường riêng" thành hai phần.** Trên biểu mẫu chúng
       //  đứng chung một hàng (tên · kiểu · bắt buộc · giá trị) vì người dùng
       //  nghĩ về chúng như một; dưới DB thì khai báo ở `custom_fields` còn giá
       //  trị đi chung kho `extra_fields` với ô của loại. Phép tách nằm gọn ở
@@ -276,14 +276,14 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
       )
 
       //  ④ **TÁCH điều kiện áp dụng** — cùng khuôn ③: một ô trên biểu mẫu
-      //  («áp cho đơn mua hàng, khi có SP-001»), hai cột dưới DB. Phép tách ở
+      //  ("áp cho đơn mua hàng, khi có SP-001"), hai cột dưới DB. Phép tách ở
       //  `fromApplyRules`, kèm luật dọn điều kiện treo khi bỏ chọn hết màn.
       const applyRules = fromApplyRules(
         payload[APPLY_RULES_FIELD] as DossierApplyRules | undefined,
       )
 
       //  Ô giữ các hàng chỉ sống trên biểu mẫu — gửi lên là backend trả 422
-      //  «Extra inputs are not permitted».
+      //  "Extra inputs are not permitted".
       const rest = { ...payload }
       delete rest[CUSTOM_ROWS_FIELD]
       delete rest[APPLY_RULES_FIELD]

@@ -68,7 +68,7 @@ beforeEach(() => {
     typeof useDeleteDocument
   >)
   //  Mặc định KHÔNG có quyền xóa văn bản — đúng hành vi cũ trước khi thêm nút
-  //  «Xóa» (các bài kiểm HIỆN CÓ ở dưới không quan tâm tới quyền này).
+  //  "Xóa" (các bài kiểm HIỆN CÓ ở dưới không quan tâm tới quyền này).
   vi.mocked(usePermission).mockReturnValue({ can: () => false } as unknown as ReturnType<typeof usePermission>)
   vi.mocked(confirm).mockResolvedValue(true)
 })
@@ -100,7 +100,7 @@ describe('FolderSelectionToolbar — hiện/ẩn theo thành phần lượt ch�
     expect(screen.getByText('2 mục đã chọn')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Thêm vào thư mục' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Chuyển tới' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Gỡ khỏi «Hợp đồng»' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gỡ khỏi "Hợp đồng"' })).toBeInTheDocument()
   })
 
   it('có LẪN thư mục trong lượt chọn: ẩn Thêm vào thư mục / Gỡ khỏi, chỉ còn Chuyển tới', () => {
@@ -121,7 +121,7 @@ describe('FolderSelectionToolbar — hiện/ẩn theo thành phần lượt ch�
 })
 
 describe('FolderSelectionToolbar — hành động + kết quả báo qua toast', () => {
-  it('bấm «Gỡ khỏi» gọi unlink đúng payload, báo kết quả qua toast, rồi tự bỏ chọn', async () => {
+  it('bấm "Gỡ khỏi" gọi unlink đúng payload, báo kết quả qua toast, rồi tự bỏ chọn', async () => {
     const user = userEvent.setup()
     const onClear = vi.fn()
     unlinkMutate.mockImplementation((_payload, opts) => {
@@ -137,7 +137,7 @@ describe('FolderSelectionToolbar — hành động + kết quả báo qua toast'
         onShowDetails={vi.fn()}
       />,
     )
-    await user.click(screen.getByRole('button', { name: 'Gỡ khỏi «Hợp đồng»' }))
+    await user.click(screen.getByRole('button', { name: 'Gỡ khỏi "Hợp đồng"' }))
 
     expect(unlinkMutate).toHaveBeenCalledWith(
       { document_ids: [1, 2], folder_id: 5 },
@@ -147,7 +147,7 @@ describe('FolderSelectionToolbar — hành động + kết quả báo qua toast'
     expect(onClear).toHaveBeenCalledOnce()
   })
 
-  it('bấm nút «Chi tiết» gọi onShowDetails', async () => {
+  it('bấm nút "Chi tiết" gọi onShowDetails', async () => {
     const user = userEvent.setup()
     const onShowDetails = vi.fn()
     render(
@@ -229,8 +229,8 @@ describe('FolderSelectionToolbar — trần chọn hàng loạt', () => {
   })
 })
 
-describe('FolderSelectionToolbar — nút «Xóa» (phản hồi lead 24/09/2026)', () => {
-  it('chỉ chọn THƯ MỤC: «Xóa» hiện dù KHÔNG có quyền document.delete (folder tự thử được)', () => {
+describe('FolderSelectionToolbar — nút "Xóa" (phản hồi lead 24/09/2026)', () => {
+  it('chỉ chọn THƯ MỤC: "Xóa" hiện dù KHÔNG có quyền document.delete (folder tự thử được)', () => {
     render(
       <FolderSelectionToolbar
         selectedFolderIds={[9]}
@@ -243,7 +243,7 @@ describe('FolderSelectionToolbar — nút «Xóa» (phản hồi lead 24/09/2026
     expect(screen.getByRole('button', { name: 'Xóa' })).toBeInTheDocument()
   })
 
-  it('chỉ chọn VĂN BẢN, thiếu document.delete → «Xóa» ẨN HẲN, không phải khóa', () => {
+  it('chỉ chọn VĂN BẢN, thiếu document.delete → "Xóa" ẨN HẲN, không phải khóa', () => {
     render(
       <FolderSelectionToolbar
         selectedFolderIds={[]}
@@ -256,7 +256,7 @@ describe('FolderSelectionToolbar — nút «Xóa» (phản hồi lead 24/09/2026
     expect(screen.queryByRole('button', { name: 'Xóa' })).not.toBeInTheDocument()
   })
 
-  it('chỉ chọn VĂN BẢN, ĐỦ document.delete → «Xóa» hiện, bấm gọi xóa từng văn bản rồi bỏ chọn', async () => {
+  it('chỉ chọn VĂN BẢN, ĐỦ document.delete → "Xóa" hiện, bấm gọi xóa từng văn bản rồi bỏ chọn', async () => {
     vi.mocked(usePermission).mockReturnValue({ can: () => true } as unknown as ReturnType<typeof usePermission>)
     const user = userEvent.setup()
     const onClear = vi.fn()
@@ -275,7 +275,7 @@ describe('FolderSelectionToolbar — nút «Xóa» (phản hồi lead 24/09/2026
     expect(onClear).toHaveBeenCalledOnce()
   })
 
-  it('bấm «Xóa» rồi HỦY hộp xác nhận → không gọi mutate nào', async () => {
+  it('bấm "Xóa" rồi HỦY hộp xác nhận → không gọi mutate nào', async () => {
     vi.mocked(confirm).mockResolvedValue(false)
     const user = userEvent.setup()
     render(

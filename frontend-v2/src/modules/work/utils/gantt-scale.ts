@@ -26,7 +26,7 @@ export type GanttZoom = 'day' | 'week' | 'month'
  *
  * Mức Ngày nới 38 → 44 → 56 → **64** (khách 31/08/2026, ba lượt): 38px hẹp hơn
  * cả chiều cao hàng nên lưới nhìn dẹt và bị nén; 44 mới vừa vuông; 56 vẫn chưa
- * đủ chỗ cho hai dòng «21 / T3» thở.
+ * đủ chỗ cho hai dòng "21 / T3" thở.
  *
  * ⚠️ Con số này nhân thẳng với 730 ngày của khung hai năm (`khungToiThieu`):
  * 64 × 730 ≈ **46.700px** bề rộng nội dung. Vẫn chịu được vì lưới nền vẽ theo Ô

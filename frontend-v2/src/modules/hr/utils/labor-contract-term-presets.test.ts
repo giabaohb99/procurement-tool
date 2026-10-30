@@ -8,7 +8,7 @@ const months = (n: number) => ({ label: `${n} tháng`, months: n })
 const days = (n: number) => ({ label: `${n} ngày`, days: n })
 
 describe('endDateForPreset — theo tháng', () => {
-  it('ends the day before the same date N months later, like the printed «12 tháng»', () => {
+  it('ends the day before the same date N months later, like the printed "12 tháng"', () => {
     expect(endDateForPreset('2026-11-01', months(12))).toBe('2027-10-31')
     expect(endDateForPreset('2026-10-06', months(36))).toBe('2029-10-05')
   })
@@ -19,7 +19,7 @@ describe('endDateForPreset — theo tháng', () => {
   })
 
   it('clamps to the end of a shorter target month before stepping back one day (matches backend _add_months)', () => {
-    //  31/01 + 1 tháng → kẹp 28/02 → lùi 1 ngày = 27/02. Lệch luật backend thì «Thời hạn» in ra sai.
+    //  31/01 + 1 tháng → kẹp 28/02 → lùi 1 ngày = 27/02. Lệch luật backend thì "Thời hạn" in ra sai.
     expect(endDateForPreset('2026-01-31', months(1))).toBe('2026-02-27')
     expect(endDateForPreset('2027-01-31', months(13))).toBe('2028-02-28') // 2028 nhuận: kẹp 29/02 → 28/02
     expect(endDateForPreset('2026-08-31', months(3))).toBe('2026-11-29')

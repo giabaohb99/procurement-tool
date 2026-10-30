@@ -24,7 +24,7 @@ export function PurchaseOrderPrintGoodsForm({
   const supplier = data.supplier ?? {}
   const warehouseNames = data.wh_names ?? {}
   const signers = data.signers
-  //  bao-CR-499: ô Trưởng bộ phận luôn in cột «Trưởng phòng phê duyệt» (người thực duyệt / người được chọn).
+  //  bao-CR-499: ô Trưởng bộ phận luôn in cột "Trưởng phòng phê duyệt" (người thực duyệt / người được chọn).
   const head = { name: signers?.approver_name ?? '', signature: signers?.approver_signature ?? '' }
   const total = data.order_total || 0
   const tax = Math.round((total - (data.order_subtotal || 0)) * 100) / 100

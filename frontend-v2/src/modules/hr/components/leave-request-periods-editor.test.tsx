@@ -8,7 +8,7 @@ import { LEAVE_SESSION, MAX_LEAVE_PERIODS } from '../types/leave'
 import type { LeavePeriodValue } from '../utils/leave-form-values'
 
 /**
- * «+ Thêm khoảng ngày» (duoc-CR-683). Hành vi người dùng thấy được: thêm / bỏ hàng, số ngày
+ * "+ Thêm khoảng ngày" (duoc-CR-683). Hành vi người dùng thấy được: thêm / bỏ hàng, số ngày
  * từng hàng + tổng, khóa theo giờ, báo chồng ngày, trần 20 hàng. Ô ngày là `DatePicker` (nút
  * mở lịch), nên ngày của hàng mới kiểm qua giá trị form mà cha nhận được.
  */
@@ -61,7 +61,7 @@ describe('LeaveRequestPeriodsEditor — one period looks like before', () => {
   })
 
   it('the add button is type="button" so it never submits the page form', () => {
-    //  Bẫy biểu mẫu số 3: thiếu `type` là bấm «Thêm» thành LƯU đơn.
+    //  Bẫy biểu mẫu số 3: thiếu `type` là bấm "Thêm" thành LƯU đơn.
     render(<Harness initial={[day('2026-10-27')]} />)
     expect(screen.getByRole('button', { name: /Thêm khoảng ngày/ })).toHaveAttribute('type', 'button')
   })
@@ -137,7 +137,7 @@ describe('LeaveRequestPeriodsEditor — days and rules', () => {
     expect(screen.getByLabelText('Từ giờ')).toBeInTheDocument()
   })
 
-  it('with two rows the «Theo giờ» option is disabled', async () => {
+  it('with two rows the "Theo giờ" option is disabled', async () => {
     const user = userEvent.setup()
     render(<Harness initial={[day('2026-10-27'), day('2026-11-03')]} />)
     await user.click(screen.getByRole('combobox', { name: 'Buổi bắt đầu khoảng 1' }))
@@ -152,7 +152,7 @@ describe('LeaveRequestPeriodsEditor — days and rules', () => {
 
   it('flags a row whose end date is before its start date', () => {
     render(<Harness initial={[day('2026-11-07', '2026-11-03')]} />)
-    expect(screen.getByText('«Đến ngày» phải từ «Từ ngày» trở đi.')).toBeInTheDocument()
+    expect(screen.getByText(/phải từ/)).toHaveTextContent('Đến ngày phải từ Từ ngày trở đi.')
   })
 
   it('shows the backend estimate error (e.g. cross-year) for a multi-period request', () => {
@@ -170,7 +170,7 @@ describe('LeaveRequestPeriodsEditor — days and rules', () => {
 })
 
 /**
- * Trình đọc màn hình (L9 của bản rà duoc-CR-683): đơn nhiều khoảng có năm cụm «Từ ngày» giống
+ * Trình đọc màn hình (L9 của bản rà duoc-CR-683): đơn nhiều khoảng có năm cụm "Từ ngày" giống
  * hệt nhau — thiếu tên hàng thì người dùng không biết mình đang ở khoảng nào.
  */
 describe('LeaveRequestPeriodsEditor — accessible names per row', () => {

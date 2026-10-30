@@ -1,13 +1,13 @@
 """NỐI GOOGLE CÁ NHÂN của từng người (ai-CR-064, M-06 của `doc/agent-hub/04`, phase 5).
 
-Đại ca chốt 25/09/2026: Google CÁ NHÂN (không phải Workspace công ty). Mỗi người bấm «Nối Google» ở Trang cá
+Đại ca chốt 25/09/2026: Google CÁ NHÂN (không phải Workspace công ty). Mỗi người bấm "Nối Google" ở Trang cá
 nhân → Khóa AI, đi qua màn đồng ý của Google (OAuth 2.0 authorization code), ERP giữ refresh token MÃ HÓA Fernet
 (cùng khóa với cấu hình hệ thống). Tool Lịch / Drive chạy bằng token của CHÍNH người hỏi — trên web, Telegram và
 cổng MCP đều vậy — nên bot chỉ thấy lịch và tệp của người đó, không thấy của ai khác.
 
 Dùng lại OAuth client của đăng nhập Google (`GOOGLE_CLIENT_ID`, bao-CR-406) + thêm `GOOGLE_CLIENT_SECRET`; redirect
 URI là `<AGENT_ERP_URL>/api/agent-hub/google/callback`, phải khai ở Google Cloud Console. Ứng dụng phải ở trạng thái
-«In production» (không cần xác minh): để «Testing» thì Google thu hồi token sau 7 ngày.
+"In production" (không cần xác minh): để "Testing" thì Google thu hồi token sau 7 ngày.
 
 Gỡ kết nối = thu hồi token phía Google + đóng dòng. Nghỉ việc đóng cùng phiên.
 """
@@ -133,7 +133,7 @@ def exchange_code(db: Session, user_id: int, code: str) -> AgentGoogleLink:
     refresh = str(tok.get("refresh_token") or "")
     access = str(tok.get("access_token") or "")
     if not refresh or not access:
-        raise GoogleError("Google không cấp refresh token — thử «Nối lại» (màn đồng ý phải hiện ra đầy đủ).")
+        raise GoogleError("Google không cấp refresh token — thử \"Nối lại\" (màn đồng ý phải hiện ra đầy đủ).")
     email = ""
     try:
         info = requests.get(USERINFO_URL, headers={"Authorization": f"Bearer {access}"}, timeout=TIMEOUT)

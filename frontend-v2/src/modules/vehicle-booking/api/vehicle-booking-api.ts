@@ -14,7 +14,7 @@ export const vehicleBookingApi = {
 
   get: (id: number) => apiGet<VehicleBooking>(`${BASE_URL}/${id}`),
 
-  /** Hai ô «Công ty» + «Người duyệt» của form (duoc-CR-681). */
+  /** Hai ô "Công ty" + "Người duyệt" của form (duoc-CR-681). */
   pickOptions: () => apiGet<BookingPickOptions>(`${BASE_URL}/pick-options`),
 
   /** `submit=true` gửi duyệt luôn; ngược lại lưu nháp. */

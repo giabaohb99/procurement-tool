@@ -79,7 +79,7 @@ def _latest_per_booking(tasks: list[dict]) -> list[dict]:
 
 
 def _rows_from_tasks(db: Session, tasks: list[dict]) -> dict:
-    """Ghép «việc của bộ máy» với «tờ phiếu» thành một dòng đọc được.
+    """Ghép "việc của bộ máy" với "tờ phiếu" thành một dòng đọc được.
 
     Việc nào trỏ tới phiếu đã xóa mềm thì BỎ HẲN dòng đó, không trả một dòng
     trống: người dùng bấm vào chỉ ăn 404, mà con số trên tab thì vẫn đếm nó.

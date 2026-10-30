@@ -14,7 +14,7 @@ describe('bộ mã trạng thái phiếu đóng dấu', () => {
 
   //  Lỗi thật đã xảy ra: trang Tổng quan tô bánh bằng một mảng NĂM màu đánh
   //  theo thứ hạng (`STATUS_COLORS[i % 5]`) trong khi bộ mã có BẢY trạng thái,
-  //  nên «Yêu cầu chỉnh sửa» tô lại đúng màu của «Nháp» — hai ô chú giải xanh
+  //  nên "Yêu cầu chỉnh sửa" tô lại đúng màu của "Nháp" — hai ô chú giải xanh
   //  y hệt nhau. Hai bài kiểm dưới canh đúng chỗ đó: đủ màu, và không trùng.
   it('mọi trạng thái đều có màu biểu đồ riêng', () => {
     for (const status of ALL_STATUSES) {

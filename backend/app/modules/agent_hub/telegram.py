@@ -49,7 +49,7 @@ def is_enabled() -> bool:
     """Đủ cấu hình để chạy chưa. Thiếu một trong ba thì cả bộ máy nằm im.
 
     ai-CR-054: máy sửa mã tách rời KHÔNG giữ token bot — nó có `AGENT_RUNNER_NAME` và gửi tin vòng qua
-    hàng đợi cho worker trên dev gửi hộ (`relaying()`), nên với nó «có token» = «có tên máy».
+    hàng đợi cho worker trên dev gửi hộ (`relaying()`), nên với nó "có token" = "có tên máy".
     """
     return bool(
         settings.AGENT_HUB_ENABLED
@@ -125,7 +125,7 @@ def download_file(file_id: str, *, max_bytes: int) -> tuple[bytes, str]:
     """Tải một tệp người dùng gửi (ai-CR-035). Trả (nội dung, đường dẫn phía Telegram).
 
     Lỗi KHÔNG được mang URL tải: URL chứa token của bot.
-    ai-CR-111: «file_id» mang tiền tố `zlurl:` là đường tải của Zalo → tải bên `zalo`."""
+    ai-CR-111: "file_id" mang tiền tố `zlurl:` là đường tải của Zalo → tải bên `zalo`."""
     if file_id.startswith(channels.ZALO_FILE_PREFIX):
         from . import zalo
 
@@ -293,7 +293,7 @@ def send_chat_action(chat_id: str = "", action: str = "typing") -> None:
     if relaying():
         return
     if channels.is_zalo_account(chat_id):
-        #  ai-CR-130: «đang soạn» trên Zalo + hẹn tin «em nhận tin rồi» nếu trả lời lâu.
+        #  ai-CR-130: "đang soạn" trên Zalo + hẹn tin "em nhận tin rồi" nếu trả lời lâu.
         from . import zalo_account
 
         zalo_account.send_typing(chat_id)
@@ -320,19 +320,22 @@ def _button(label: str, data: str) -> dict:
     return {"text": label, "callback_data": data}
 
 
-#  Đại ca chốt (ai-CR-121, nhắc lại 09/10/2026): KHÔNG để ngoặc «» trong tin bot gửi — khó đọc. Hàng trăm câu cũ trong
-#  mã dùng «lệnh» để chỉ chữ cần nhắn; đổi tại MỘT cửa ra (mọi tin Telegram / Zalo đi qua `send` / `edit_text`) thành
-#  chữ đậm, khỏi sửa từng câu và câu mới lỡ tay cũng không lọt. Không đụng phần trong <pre> / <code>.
-_GUILLEMET = re.compile(r"«([^«»\n<>]{1,160})»")
+#  Đại ca chốt (ai-CR-121, nhắc lại 09/10/2026): KHÔNG để ngoặc kép góc trong tin bot gửi — khó đọc. bao-CR-695 (30/10): câu
+#  trong mã nay đánh dấu chữ cần nhắn bằng **in đậm** (markdown); cửa ra này (mọi tin Telegram / Zalo đi qua `send` /
+#  `edit_text`) đổi **…** thành <b>…</b> cho tin gửi dạng HTML thường. Dấu ngoặc góc vẫn đổi thành chữ đậm phòng câu
+#  mô hình / dữ liệu cũ còn mang. Không đụng phần trong <pre> / <code>.
+_GUILLEMET = re.compile(r"\u00ab([^\u00ab\u00bb\n<>]{1,160})\u00bb")
+_MD_STRONG = re.compile(r"\*\*([^*\n<>]{1,160})\*\*")
 _RAW_BLOCK = re.compile(r"(<pre>.*?</pre>|<code>.*?</code>)", re.DOTALL)
 
 
 def polish(text: str) -> str:
-    if not text or "«" not in text:
+    if not text or ("\u00ab" not in text and "**" not in text):
         return text
     parts = _RAW_BLOCK.split(text)
     for i in range(0, len(parts), 2):          # phần lẻ là khối <pre> / <code> — giữ nguyên
-        parts[i] = _GUILLEMET.sub(r"<b>\1</b>", parts[i]).replace("«", "").replace("»", "")
+        part = _GUILLEMET.sub(r"<b>\1</b>", parts[i]).replace("\u00ab", "").replace("\u00bb", "")
+        parts[i] = _MD_STRONG.sub(r"<b>\1</b>", part)
     return "".join(parts)
 
 
@@ -409,9 +412,9 @@ _TAG = re.compile(r"<[^>]+>")
 
 
 def send_payload(payload: dict) -> dict:
-    """`sendMessage` với một lần lùi: Telegram chê HTML («can't parse entities» — thường do một cặp
+    """`sendMessage` với một lần lùi: Telegram chê HTML ("can't parse entities" — thường do một cặp
     `<…>` trong chữ của model hay của kế hoạch) thì gửi lại bản chữ trơn, còn hơn im lặng (ai-CR-057:
-    thẻ kế hoạch AI-0001 trên dev mất vì «<điều cần đổi>»)."""
+    thẻ kế hoạch AI-0001 trên dev mất vì "<điều cần đổi>")."""
     try:
         return _call("sendMessage", payload)
     except TelegramError as e:
@@ -427,7 +430,7 @@ def send_document(chat_id: str, filename: str, data: bytes, *, caption: str = ""
                   content_type: str = "") -> int:
     """Gửi một tệp (báo cáo Excel/Word do Trợ lý AI xuất) làm tệp đính kèm. Trả `message_id`.
 
-    Web có nút «Tải báo cáo» gọi endpoint cần Bearer; Telegram không đăng nhập được vào
+    Web có nút "Tải báo cáo" gọi endpoint cần Bearer; Telegram không đăng nhập được vào
     ERP nên bot phải đọc byte từ kho rồi đẩy thẳng qua `sendDocument` (multipart).
     `caption` là HTML đã thoát, tối đa 1024 ký tự theo Telegram.
     """
@@ -469,7 +472,7 @@ def answer_callback(callback_id: str, text: str = "") -> None:
 
 def edit_text(chat_id: str, message_id: int, text: str) -> bool:
     """Sửa chữ của một tin đã gửi (ai-CR-021: tin báo đang chạy cập nhật số phút mà không kêu
-    chuông lần nữa). Trả False nếu hỏng — kể cả lỗi «message is not modified», không sao."""
+    chuông lần nữa). Trả False nếu hỏng — kể cả lỗi "message is not modified", không sao."""
     if not message_id or not channels.is_telegram(chat_id):
         return False                    # Zalo không cho sửa tin đã gửi
     try:

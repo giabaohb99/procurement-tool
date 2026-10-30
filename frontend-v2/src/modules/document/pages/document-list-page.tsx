@@ -27,9 +27,9 @@ const DESCRIPTIONS: Record<string, string> = {
 }
 
 /**
- * MÀN VĂN BẢN — hai tab «Văn bản đến» và «Văn bản đi».
+ * MÀN VĂN BẢN — hai tab "Văn bản đến" và "Văn bản đi".
  *
- * Gộp từ hai mục menu cũ («Văn bản» và «Áp dụng cho tôi»): người dùng không nghĩ
+ * Gộp từ hai mục menu cũ ("Văn bản" và "Áp dụng cho tôi"): người dùng không nghĩ
  * theo kiểu "danh sách nào" mà nghĩ theo **hướng của văn bản** — cái tôi phải
  * làm theo, và cái đơn vị mình phát ra.
  *
@@ -40,7 +40,7 @@ const DESCRIPTIONS: Record<string, string> = {
  * nằm được ở cả hai tab — đúng thực tế: văn bản đơn vị mình ban hành thì chính
  * mình cũng phải làm theo.
  *
- * **Mặc định là tab đi** vì nó chính là màn «Văn bản» cũ: mục menu không đổi
+ * **Mặc định là tab đi** vì nó chính là màn "Văn bản" cũ: mục menu không đổi
  * nghĩa, và mọi đường quay lại danh sách sau khi tạo / sửa / xóa vẫn về đúng chỗ
  * văn bản vừa đụng tới đang nằm.
  *
@@ -53,9 +53,9 @@ export function DocumentListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
 
-  //  Nhân sự thường KHÔNG có quyền `document.read` — họ chỉ được xem «Văn bản
-  //  đến» (`/api/documents/applies-to-me`, backend mở cho mọi tài khoản đăng
-  //  nhập). Tab «Văn bản đi» gọi `/api/documents` (gác `document.read`), nên khi
+  //  Nhân sự thường KHÔNG có quyền `document.read` — họ chỉ được xem "Văn bản
+  //  đến" (`/api/documents/applies-to-me`, backend mở cho mọi tài khoản đăng
+  //  nhập). Tab "Văn bản đi" gọi `/api/documents` (gác `document.read`), nên khi
   //  thiếu quyền phải ẩn HẲN cả nút tab lẫn nội dung — Radix mount sẵn mọi
   //  `TabsContent`, để lại là component con vẫn gọi API và ăn 403.
   const canViewOutgoing = can('document', 'read')
@@ -88,7 +88,7 @@ export function DocumentListPage() {
       value={tab}
       onValueChange={changeTab}
       data-scrolled={scrolled ? '' : undefined}
-      //  `group` + `data-scrolled` là đường dẫn tín hiệu «trang đã cuộn» xuống
+      //  `group` + `data-scrolled` là đường dẫn tín hiệu "trang đã cuộn" xuống
       //  dải ghim nằm sâu bên trong (thanh công cụ do `DataTable` vẽ, tầng trang
       //  không với tới được bằng prop).
       className="group flex h-full min-h-0 flex-col max-md:h-auto"
@@ -107,9 +107,9 @@ export function DocumentListPage() {
           //  không ép thì nó dán mép phải với một khoảng trống dài bên trái.
           actionsClassName="max-md:[&>button]:flex-1"
           actions={
-            //  «Tạo văn bản» đứng ở đầu trang cho cả hai tab: soạn một văn bản
+            //  "Tạo văn bản" đứng ở đầu trang cho cả hai tab: soạn một văn bản
             //  mới là việc bắt đầu từ đây bất kể đang đứng ở tab nào. Còn
-            //  «Export» thì nằm trong thanh công cụ của tab đi, vì nó xuất
+            //  "Export" thì nằm trong thanh công cụ của tab đi, vì nó xuất
             //  đúng bộ điều kiện đang lọc ở đó.
             <PermissionGate entity="document" action="create">
               <Button onClick={() => navigate(appRoutes.document.documentNew)}>
@@ -120,8 +120,8 @@ export function DocumentListPage() {
           }
         />
 
-        {/*  Chỉ dựng thanh tab khi có cả hai tab. Người chỉ xem được «Văn bản
-             đến» thì một tab đơn độc trông như lỗi — bỏ hẳn, tiêu đề trang đã
+        {/*  Chỉ dựng thanh tab khi có cả hai tab. Người chỉ xem được "Văn bản
+             đến" thì một tab đơn độc trông như lỗi — bỏ hẳn, tiêu đề trang đã
              nói rõ đang xem gì.
 
              ⚠️ Khổ hẹp: dải tab GHIM đỉnh khung cuộn (`LIST_TABS_STICKY`) và

@@ -5,10 +5,10 @@ import { DEVICE_TYPE } from '../api/login-session-api'
 import { LoginSessionDevice, LoginSessionEnding } from './login-session-device'
 
 /**
- * Ô «Thiết bị» của phiên đăng nhập (bao-CR-395).
+ * Ô "Thiết bị" của phiên đăng nhập (bao-CR-395).
  *
  * Backend dựng `device_label` từ User-Agent; UA lạ (script, curl, bot) thì nhãn
- * rỗng và cả `browser`/`os` cũng rỗng. Màn hình phải nói «Không rõ thiết bị»
+ * rỗng và cả `browser`/`os` cũng rỗng. Màn hình phải nói "Không rõ thiết bị"
  * chứ không để ô trống — ô trống đọc thành "không có gì đáng ngờ", trong khi
  * phiên từ UA lạ chính là thứ quản trị cần thấy nhất.
  */

@@ -10,17 +10,17 @@ import type { EmployeeWorkHistory, EmployeeWorkHistoryListResult } from '@/modul
 import { ProfilePage } from './profile-page'
 
 /**
- * Hai mục «Quá trình công tác» / «Quyết định bổ nhiệm» (đại ca chốt
- * 03/10/2026 — tách từ tab con lồng trong thẻ cuối tab «Thông tin cá nhân»,
+ * Hai mục "Quá trình công tác" / "Quyết định bổ nhiệm" (đại ca chốt
+ * 03/10/2026 — tách từ tab con lồng trong thẻ cuối tab "Thông tin cá nhân",
  * không ai thấy): mục xuất hiện/ẩn theo `employee_id`, mỗi mục hiện đúng khu,
  * không nút ghi. Từ P0 doc 21 (17/10/2026) các mục nằm ở thanh bên trái 4 nhóm
  * thay cho dải tab ngang — bài kiểm đọc thanh bên, không đọc `role=tab`.
  *
  * KHÔNG resolve `/api/auth/me` (giữ `null`, giống `user` rỗng trong store) để
- * mục «Thông tin cá nhân» chỉ dựng khung Skeleton — tránh phải dựng cả chuỗi
+ * mục "Thông tin cá nhân" chỉ dựng khung Skeleton — tránh phải dựng cả chuỗi
  * phụ thuộc của `ProfileInfoCard`/`SignatureCard`/`EmailNotificationCard` khi
- * đó không phải phần đang kiểm. Trang chỉ dựng mục đang mở, nên mục «Thông
- * tin cá nhân» không mở thì các thẻ đó cũng không dựng.
+ * đó không phải phần đang kiểm. Trang chỉ dựng mục đang mở, nên mục "Thông
+ * tin cá nhân" không mở thì các thẻ đó cũng không dựng.
  */
 
 const state = vi.hoisted(() => ({
@@ -98,7 +98,7 @@ beforeEach(() => {
 })
 
 describe('ProfilePage — hai mục quá trình công tác', () => {
-  it('tài khoản CÓ hồ sơ nhân sự: hai mục xuất hiện ngay sau «Thông tin cá nhân»', async () => {
+  it('tài khoản CÓ hồ sơ nhân sự: hai mục xuất hiện ngay sau "Thông tin cá nhân"', async () => {
     state.myEmployee = employee()
 
     renderPage()
@@ -113,7 +113,7 @@ describe('ProfilePage — hai mục quá trình công tác', () => {
     expect(decisionIdx).toBe(2)
   })
 
-  it('tab «Quá trình công tác» hiện đúng khu, không nút ghi', async () => {
+  it('tab "Quá trình công tác" hiện đúng khu, không nút ghi', async () => {
     state.myEmployee = employee()
     state.workHistory = { items: [row({ position_label: 'Nhân viên kinh doanh' })], can_edit: false, can_open_files: true }
 
@@ -121,12 +121,12 @@ describe('ProfilePage — hai mục quá trình công tác', () => {
 
     await screen.findByText('Nhân viên kinh doanh')
     expect(screen.queryByRole('button', { name: /Thêm dòng/ })).not.toBeInTheDocument()
-    //  Mục «Thông tin cá nhân» không mở → không mount, không có khu quá
+    //  Mục "Thông tin cá nhân" không mở → không mount, không có khu quá
     //  trình công tác nào lẫn trong đó (khác bản cũ trước khi tách tab).
     expect(screen.getAllByRole('heading', { name: 'Quá trình công tác' }).length).toBeGreaterThan(0)
   })
 
-  it('tab «Quyết định bổ nhiệm» CHỈ hiện dòng có decision_no, không nút ghi', async () => {
+  it('tab "Quyết định bổ nhiệm" CHỈ hiện dòng có decision_no, không nút ghi', async () => {
     state.myEmployee = employee()
     state.workHistory = {
       items: [
@@ -169,7 +169,7 @@ describe('ProfilePage — hai mục quá trình công tác', () => {
 })
 
 describe('ProfilePage — thanh bên 4 nhóm (P0 doc 21)', () => {
-  it('đặt «Kết nối AI riêng» đầu nhóm Trợ lý AI và mở được bằng ?tab=ai-connect', async () => {
+  it('đặt "Kết nối AI riêng" đầu nhóm Trợ lý AI và mở được bằng ?tab=ai-connect', async () => {
     renderPage('/me?tab=ai-connect')
 
     const connect = await screen.findByRole('button', { name: 'Kết nối AI riêng' })
@@ -179,7 +179,7 @@ describe('ProfilePage — thanh bên 4 nhóm (P0 doc 21)', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Kết nối AI riêng' })).toBeInTheDocument()
   })
 
-  it('link cũ ?tab=ai-key (tab «Khóa AI») mở mục «Khóa model AI»', async () => {
+  it('link cũ ?tab=ai-key (tab "Khóa AI") mở mục "Khóa model AI"', async () => {
     renderPage('/me?tab=ai-key')
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Khóa model AI' })).toBeInTheDocument()

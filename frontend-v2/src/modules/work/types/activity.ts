@@ -1,7 +1,7 @@
 /**
  * Dòng hoạt động cấp dự án (D-09, §8 của `05-giao-dien.md`).
  *
- * Khác khối «Lịch sử thao tác» trong panel một việc (E-04, `@/shared/audit`):
+ * Khác khối "Lịch sử thao tác" trong panel một việc (E-04, `@/shared/audit`):
  * đây gộp nhật ký của CẢ dự án — việc + thành viên vào ra + sửa dự án và cột.
  */
 
@@ -33,7 +33,7 @@ export interface WorkActivityPage {
   has_more: boolean
 }
 
-/** Người từng thao tác trên dự án — nguồn cho ô lọc «theo người». */
+/** Người từng thao tác trên dự án — nguồn cho ô lọc "theo người". */
 export interface WorkActivityActor {
   /** `user_id` (trục của `tab_audit_log`), KHÔNG phải id nhân sự. */
   id: number
@@ -56,7 +56,7 @@ export const WORK_ACTIVITY_KIND = {
 export type WorkActivityKind =
   (typeof WORK_ACTIVITY_KIND)[keyof typeof WORK_ACTIVITY_KIND]
 
-/** Mục của ô lọc «loại sự kiện»; `null` = không lọc. */
+/** Mục của ô lọc "loại sự kiện"; `null` = không lọc. */
 export const WORK_ACTIVITY_KIND_OPTIONS: { value: WorkActivityKind | null; label: string }[] = [
   { value: null, label: 'Tất cả hoạt động' },
   { value: WORK_ACTIVITY_KIND.TASK, label: 'Công việc' },

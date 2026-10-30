@@ -38,13 +38,13 @@ interface FolderItemContextMenuProps extends FolderItemMenuInput {
   onViewDetails: () => void
   onRemove?: () => void
   /**
-   * Thêm nút «⋯» LUÔN THẤY (không cần chuột phải) — thẻ pill của thư mục con
+   * Thêm nút "⋯" LUÔN THẤY (không cần chuột phải) — thẻ pill của thư mục con
    * kiểu Drive (đặc tả §P5, chốt UI 23/09/2026: "icon + tên + ⋯"). Bỏ trống =
    * chỉ có menu chuột phải như trước (thẻ Lưới của văn bản).
    */
   showMenuButton?: boolean
   /**
-   * Vị trí nút «⋯» khi `showMenuButton` — `'center'` (mặc định) canh giữa
+   * Vị trí nút "⋯" khi `showMenuButton` — `'center'` (mặc định) canh giữa
    * chiều cao, đúng cho DÒNG THẤP (pill/list); `'corner'` ghim GÓC TRÊN PHẢI,
    * đúng cho THẺ CAO (thẻ Lưới văn bản, `folder-grid-document-card.tsx`) —
    * canh giữa trên một khối cao ~130px thả nút vào giữa vùng xem trước, không
@@ -52,15 +52,15 @@ interface FolderItemContextMenuProps extends FolderItemMenuInput {
    */
   menuButtonPlacement?: 'center' | 'corner'
   /**
-   * Nút menu LUÔN hiện (icon «⋮» dọc, kiểu thẻ thư mục Google Drive) thay vì
+   * Nút menu LUÔN hiện (icon "⋮" dọc, kiểu thẻ thư mục Google Drive) thay vì
    * chỉ hiện khi rê chuột — thẻ thư mục con (`folder-child-cards.tsx`).
    */
   menuButtonAlwaysVisible?: boolean
   /**
-   * Vì sao mục «Xóa» bị KHÓA — chỉ có nghĩa khi `kind = 'folder'` (phản hồi
-   * lead 24/09/2026: «Xóa» của thư mục nay LUÔN hiện, xem
+   * Vì sao mục "Xóa" bị KHÓA — chỉ có nghĩa khi `kind = 'folder'` (phản hồi
+   * lead 24/09/2026: "Xóa" của thư mục nay LUÔN hiện, xem
    * `folder-delete-disabled-reason.ts`). `null`/bỏ trống = xóa được bình
-   * thường. Văn bản không dùng prop này — mục «Xóa» của văn bản vẫn ẨN hẳn
+   * thường. Văn bản không dùng prop này — mục "Xóa" của văn bản vẫn ẨN hẳn
    * khi thiếu `canDeleteDocument` (không đổi).
    */
   removeDisabledReason?: string | null
@@ -86,13 +86,13 @@ const ICONS: Record<string, typeof Eye> = {
 
 /**
  * MENU trên một dòng (thư mục hoặc văn bản) — đặc tả §B. Bọc quanh
- * thẻ/dòng đang có (`children`), chỉ THÊM sự kiện chuột phải (+ nút «⋯» tùy
+ * thẻ/dòng đang có (`children`), chỉ THÊM sự kiện chuột phải (+ nút "⋯" tùy
  * chọn), không đổi hành vi bấm trái của nội dung bên trong.
  *
  * Danh sách mục hiện ra do {@link buildFolderItemMenuActions} quyết định (hàm
  * THUẦN, có test riêng) — tệp này chỉ lo phần DỰNG GIAO DIỆN + nối handler,
  * dùng CHUNG một danh sách cho cả `ContextMenu` (chuột phải) lẫn `DropdownMenu`
- * (nút «⋯», khi `showMenuButton`).
+ * (nút "⋯", khi `showMenuButton`).
  */
 export function FolderItemContextMenu({
   children,
@@ -121,7 +121,7 @@ export function FolderItemContextMenu({
     action,
     Icon: ICONS[action],
     handler: handlers[action],
-    //  Chỉ «Xóa» có lý do khóa RIÊNG (thư mục pháp nhân / thiếu quyền Quản lý)
+    //  Chỉ "Xóa" có lý do khóa RIÊNG (thư mục pháp nhân / thiếu quyền Quản lý)
     //  — mọi mục khác disable đơn thuần vì thiếu handler.
     disabledReason: action === FOLDER_ITEM_MENU_ACTION.remove ? removeDisabledReason : null,
   }))
@@ -185,7 +185,7 @@ export function FolderItemContextMenu({
   )
 }
 
-/** Nhãn một mục menu — kèm dòng chữ mờ nhỏ giải thích lý do KHÓA (chỉ «Xóa» dùng, xem `removeDisabledReason`). */
+/** Nhãn một mục menu — kèm dòng chữ mờ nhỏ giải thích lý do KHÓA (chỉ "Xóa" dùng, xem `removeDisabledReason`). */
 function MenuItemLabel({
   label,
   disabledReason,

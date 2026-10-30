@@ -6,7 +6,7 @@ import { formatCount, formatRatio } from '../../utils/usage-format'
 
 const num = (width = 110) => ({ width, align: 'right' as const, sortable: false })
 
-/** Ô số: dưới ngưỡng mẫu thì hiện chữ «chưa đủ mẫu» (một lần ở ô đầu) thay vì số, để không ai đọc «—» thành 0. */
+/** Ô số: dưới ngưỡng mẫu thì hiện chữ "chưa đủ mẫu" (một lần ở ô đầu) thay vì số, để không ai đọc "—" thành 0. */
 function stat(render: (r: CapabilityStats) => string) {
   return (r: CapabilityStats) =>
     r.below_threshold ? (

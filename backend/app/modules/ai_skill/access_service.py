@@ -1,4 +1,4 @@
-"""Ai được ĐỌC skill nào (doc 21 §4.2) — hàm duy nhất `visible_skills`, cổng MCP / màn «AI của tôi» đều gọi nó.
+"""Ai được ĐỌC skill nào (doc 21 §4.2) — hàm duy nhất `visible_skills`, cổng MCP / màn "AI của tôi" đều gọi nó.
 
 Luật:
   1. Skill đọc được khi BỘ của nó đọc được và skill không bị thu hẹp. Skill có dòng quyền RIÊNG (bất kỳ chủ thể nào)
@@ -53,7 +53,7 @@ def _employee_extras(db: Session, employee_id: int) -> tuple[int, int]:
 
 
 def department_ancestors(db: Session, dept_ids: list[int]) -> set[int]:
-    """Mọi phòng TỔ TIÊN của các phòng đã cho (không gồm chính chúng) — để khớp dòng «kể cả phòng con»."""
+    """Mọi phòng TỔ TIÊN của các phòng đã cho (không gồm chính chúng) — để khớp dòng "kể cả phòng con"."""
     from app.modules.department.model import Department
 
     out: set[int] = set()

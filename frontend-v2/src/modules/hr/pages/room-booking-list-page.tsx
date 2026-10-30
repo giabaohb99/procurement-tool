@@ -12,8 +12,8 @@ import { UnifiedRoomBookingTable } from '../components/unified-room-booking-tabl
 /**
  * PHIẾU ĐẶT PHÒNG — bảng thống nhất cùng khuôn với màn Đơn nghỉ phép (CR-260).
  *
- * «Cần tôi duyệt · Phiếu của tôi · Tôi đã duyệt» không còn là 3 tab riêng mà
- * là 4 tuỳ chọn trong dropdown «Phạm vi» của thanh công cụ.  Phần điều hướng
+ * "Cần tôi duyệt · Phiếu của tôi · Tôi đã duyệt" không còn là 3 tab riêng mà
+ * là 4 tuỳ chọn trong dropdown "Phạm vi" của thanh công cụ.  Phần điều hướng
  * giữa Lịch · Phiếu · Danh mục đã chuyển sang submenu sidebar, nên `RoomSectionTabs`
  * cũng không cần hiển thị nữa.
  */

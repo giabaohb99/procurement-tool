@@ -98,7 +98,7 @@ def _eval_formulas(data: bytes, cells: list[tuple[str, str]]) -> dict[tuple[str,
     """Tự tính các ô CÔNG THỨC mà tệp không lưu sẵn kết quả (ai-CR-115).
 
     Tệp do phần mềm / script sinh ra (chưa từng mở bằng Excel rồi lưu) chỉ có công thức, không có giá trị tính sẵn —
-    openpyxl đọc ra ô trống, bot tưởng tệp «chưa có số» (đại ca gửi báo cáo nhân sự 08/10: biên lợi nhuận, ROA, % hoàn
+    openpyxl đọc ra ô trống, bot tưởng tệp "chưa có số" (đại ca gửi báo cáo nhân sự 08/10: biên lợi nhuận, ROA, % hoàn
     thành… đều trống). Dùng pycel tính lại; ô nào tính hỏng thì bỏ, để chỗ gọi in công thức gốc.
     """
     if not cells:
@@ -132,7 +132,7 @@ def _eval_formulas(data: bytes, cells: list[tuple[str, str]]) -> dict[tuple[str,
 
 def _xlsx(data: bytes) -> str:
     """Mọi trang tính (tối đa XLSX_SHEETS), mỗi dòng có SỐ DÒNG ở đầu để model lần theo công thức. Ô công thức chưa có kết
-    quả lưu sẵn thì tự tính; tính không được thì in «=công thức»."""
+    quả lưu sẵn thì tự tính; tính không được thì in "=công thức"."""
     from openpyxl import load_workbook
 
     small = len(data) <= FORMULA_FILE_MAX
@@ -153,7 +153,7 @@ def _xlsx(data: bytes) -> str:
     out = []
     if pending:
         out.append(f"(Tệp lưu {len(pending)} ô công thức chưa có kết quả tính sẵn; em đã tự tính {len(computed)} ô, ô "
-                   "nào còn dạng «=…» là công thức chưa tính được.)")
+                   "nào còn dạng **=…** là công thức chưa tính được.)")
     sheets = values.worksheets
     for ws in sheets[:XLSX_SHEETS]:
         out.append(f"## Trang tính: {ws.title}")

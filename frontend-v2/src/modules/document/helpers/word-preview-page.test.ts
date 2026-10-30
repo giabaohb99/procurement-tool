@@ -18,7 +18,7 @@ describe('unitlessWordLineHeights', () => {
     )
   })
 
-  it('leaves exact spacing in px untouched (Word «Exactly» line spacing)', () => {
+  it('leaves exact spacing in px untouched (Word "Exactly" line spacing)', () => {
     const html = '<p style="line-height: 18px">a</p>'
     expect(unitlessWordLineHeights(html)).toBe(html)
   })

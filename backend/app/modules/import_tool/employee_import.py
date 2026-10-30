@@ -1,4 +1,4 @@
-"""Hook adapter «Nhập Excel Nhân sự» (duoc-CR-628) — prepare / apply_row / finalize / revert.
+"""Hook adapter "Nhập Excel Nhân sự" (duoc-CR-628) — prepare / apply_row / finalize / revert.
 
 Nguyên tắc: MỌI dòng đi qua `employee.service.*_core` (cùng lõi ghi với màn hồ sơ) trong SAVEPOINT
 riêng, KHÔNG `setattr` trần. Có phạm vi dữ liệu + quyền `employee.create/write`; cột nhạy cảm cần
@@ -116,7 +116,7 @@ def _build_fields(db, ctx, existing, raw: dict, log, r: int, code: str) -> dict:
             else:
                 fields[attr] = parse_scalar(spec, v)
         except CellError as e:
-            raise CellError(f"«{label_of(attr)}»: {e}") from None
+            raise CellError(f"\"{label_of(attr)}\": {e}") from None
     return fields
 
 
@@ -149,17 +149,17 @@ def _build_ref(db, spec, text, fields, existing, log, r, code) -> None:
             fields["position_id"] = jp.id
         else:
             #  Không khớp danh mục: giữ CHỮ làm chức danh VÀ bỏ gắn danh mục (position_id = 0) để hai cột
-            #  không lệch nhau (M3). Gán sau lõi ghi vì `sync_label` coi 0 là «bỏ chọn» rồi xóa nhãn.
+            #  không lệch nhau (M3). Gán sau lõi ghi vì `sync_label` coi 0 là "bỏ chọn" rồi xóa nhãn.
             fields["position"] = text[:100]
             fields["_free_position"] = text[:100]
             log(r, LogLevel.REVIEW, "position_not_found",
-                f"«Chức vụ» = '{text}' không có trong danh mục Chức vụ — giữ làm chữ, chưa gắn danh mục",
+                f"\"Chức vụ\" = '{text}' không có trong danh mục Chức vụ — giữ làm chữ, chưa gắn danh mục",
                 ref_key=code)
 
 
 def _same(cur, new) -> bool:
     if cur is None:
-        return new in ("", 0, None)
+        return new in ("", 0, None, [])
     return cur == new
 
 
@@ -169,9 +169,9 @@ def _snapshot(emp: Employee) -> dict:
 
 def snapshot_diff(before: dict, emp: Employee) -> dict:
     """H1: CHỈ các cột thật sự đổi, dạng {attr: [cũ, mới]} — hoàn tác chỉ khôi phục đúng chúng và chỉ
-    khi giá trị hiện tại vẫn là «mới» (không đè lên sửa đổi về sau)."""
+    khi giá trị hiện tại vẫn là "mới" (không đè lên sửa đổi về sau)."""
     after = _snapshot(emp)
-    blank = ("", 0, None)
+    blank = ("", 0, None, [])
     return {a: [before[a], after[a]] for a in SNAPSHOT_ATTRS
             if not (before[a] == after[a] or (before[a] in blank and after[a] in blank))}
 
@@ -212,7 +212,7 @@ def _validation_message(e: ValidationError) -> str:
         attr = loc[0] if loc else ""
         name = label_of(attr) if attr in {f["attr"] for f in EMPLOYEE_FIELDS} else str(attr)
         msg = str(err.get("msg", "")).removeprefix("Value error, ")
-        parts.append(f"«{name}»: {msg}")
+        parts.append(f"\"{name}\": {msg}")
     return "; ".join(parts)
 
 
@@ -256,7 +256,7 @@ def apply_row(db: Session, ctx: EmployeeImportCtx, r: int, code: str, raw: dict,
         if not ctx.can_create:
             return fail("no_permission", "Bạn không có quyền tạo Nhân sự mới")
         if not fields.get("full_name"):
-            return fail("missing_required", "Thiếu «Họ tên» — không tạo được nhân sự mới")
+            return fail("missing_required", "Thiếu \"Họ tên\" — không tạo được nhân sự mới")
 
     #  Phòng ban ĐỔI THẬT: cùng hai chốt L1/L2 với PATCH hồ sơ (bao-CR-507).
     new_dept = fields.get("department_id")
@@ -302,7 +302,7 @@ def apply_row(db: Session, ctx: EmployeeImportCtx, r: int, code: str, raw: dict,
                     #  duoc-CR-653: chức vụ chữ tự do = bỏ chọn danh mục → thu hồi vai trò tự cấp theo chức vụ cũ.
                     position_role_service.sync_employee_roles(db, obj, ctx.user.id, "nhập Excel")
             db.flush()
-            db.refresh(obj, ["updated_at"])     # M-B: dấu thời gian cùng đồng hồ DB, để hoàn tác biết «bị sửa sau»
+            db.refresh(obj, ["updated_at"])     # M-B: dấu thời gian cùng đồng hồ DB, để hoàn tác biết "bị sửa sau"
             #  Kiểm phạm vi SAU ghi: đổi công ty/phòng ban mà đẩy hồ sơ ra khỏi tầm nhìn của chính người nhập
             #  thì lùi savepoint (không tạo hồ sơ "mồ côi").
             if get_scoped(db, Employee, "employee", obj.id, ctx.user, ctx.profile,

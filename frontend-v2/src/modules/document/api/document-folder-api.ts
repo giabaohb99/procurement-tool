@@ -83,14 +83,14 @@ export const documentFolderApi = {
     apiPost<FolderAccessEntry>(`${DOC_FOLDER_URL}/${folderId}/access`, payload),
 
   /**
-   * Hộp «Chia sẻ» kiểu Drive — cấp CÙNG một mức cho CẢ danh sách chủ thể
+   * Hộp "Chia sẻ" kiểu Drive — cấp CÙNG một mức cho CẢ danh sách chủ thể
    * trong một lượt, MỘT giao dịch phía backend (phase 10B). Không trả danh
    * sách dòng — nơi gọi tự `invalidateQueries` để nạp lại `listAccess`.
    */
   grantAccessBulk: (folderId: number, payload: FolderAccessBulkGrantInput) =>
     apiPost<FolderAccessBulkResult>(`${DOC_FOLDER_URL}/${folderId}/access/bulk`, payload),
 
-  /** Đổi MỨC tại chỗ — menu thả xuống trên dòng «Người có quyền», không thu hồi rồi cấp lại. */
+  /** Đổi MỨC tại chỗ — menu thả xuống trên dòng "Người có quyền", không thu hồi rồi cấp lại. */
   updateAccessLevel: (folderId: number, accessId: number, payload: FolderAccessLevelPatchInput) =>
     apiPatch<FolderAccessEntry>(`${DOC_FOLDER_URL}/${folderId}/access/${accessId}`, payload),
 

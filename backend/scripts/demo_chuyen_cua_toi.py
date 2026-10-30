@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Dựng dữ liệu DEMO cho màn «Chuyến của tôi» (`/vehicle-booking/my-trips`).
+"""Dựng dữ liệu DEMO cho màn "Chuyến của tôi" (`/vehicle-booking/my-trips`).
 
 CHỈ DÙNG Ở MÁY LOCAL. Đây là dữ liệu rác để xem/chỉnh giao diện, đừng chạy trên
 dev/prod.
@@ -12,7 +12,7 @@ Chạy:
 
 KHÔNG truyền gì thì script tự lấy tài khoản của PHIÊN ĐĂNG NHẬP GẦN NHẤT. Máy
 local hay có vài phiên chạy song song (mỗi người một tài khoản trên cùng một DB),
-mà màn «Chuyến của tôi» lọc theo NGƯỜI ĐANG XEM — dựng nhầm tài khoản thì màn vẫn
+mà màn "Chuyến của tôi" lọc theo NGƯỜI ĐANG XEM — dựng nhầm tài khoản thì màn vẫn
 rỗng trong khi DB đầy dữ liệu, và không có gì trên màn hình nói ra điều đó.
 
 CHẠY LẠI ĐƯỢC: mỗi lần dựng đều xóa sạch phiếu demo cũ (nhận ra nhờ dấu
@@ -51,7 +51,7 @@ from app.modules.vehicle_booking.model import (
 )
 
 #  Dấu nhận biết phiếu do script này tạo. Nằm trong `note`, và `note` CÓ hiện —
-#  khối «Ghi chú» ở trang chi tiết phiếu bày nguyên văn. Nên viết thành câu người
+#  khối "Ghi chú" ở trang chi tiết phiếu bày nguyên văn. Nên viết thành câu người
 #  đọc hiểu chứ không phải một chuỗi mã: mở phiếu ra thấy `[DEMO-XXX]` thì người
 #  dùng không biết đó là rác của script hay một quy ước nghiệp vụ nào đó.
 MARKER = "Dữ liệu demo — dựng bằng scripts/demo_chuyen_cua_toi.py, xoá được bằng --xoa"
@@ -179,7 +179,7 @@ def _ensure_driver(db, user: User, emp: Employee | None) -> Driver:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Dựng dữ liệu demo cho màn «Chuyến của tôi»")
+    ap = argparse.ArgumentParser(description="Dựng dữ liệu demo cho màn 'Chuyến của tôi'")
     ap.add_argument("--user", type=int, default=0,
                     help="id tài khoản sẽ thấy các chuyến này")
     ap.add_argument("--email", default="",
@@ -246,7 +246,7 @@ def main() -> int:
                 note=MARKER,
                 created_by=user.id,
                 updated_by=user.id,
-                #  Màn hình lọc «Ngày tạo» 30 ngày gần nhất — rải trong khoảng đó,
+                #  Màn hình lọc "Ngày tạo" 30 ngày gần nhất — rải trong khoảng đó,
                 #  không để `server_default` vì mọi phiếu sẽ trùng đúng một mốc.
                 created_at=now - timedelta(days=offset + 1, hours=3),
                 updated_at=now - timedelta(days=offset + 1, hours=3),
@@ -273,7 +273,7 @@ def main() -> int:
             seq += 1
 
         db.commit()
-        print(f"Đã tạo {len(TRIPS)} phiếu cho tài khoản «{_display_name(user, emp)}» "
+        print(f"Đã tạo {len(TRIPS)} phiếu cho tài khoản '{_display_name(user, emp)}' "
               f"(id={user.id}), hồ sơ tài xế #{driver.id}.")
         print("Mở http://localhost:5174/vehicle-booking/my-trips để xem.")
         return 0

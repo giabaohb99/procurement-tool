@@ -25,14 +25,14 @@ import { blockingOnly, formatSlotHour } from '../utils/room-calendar-grid'
 import { toApiTime } from '../utils/room-time'
 
 /**
- * LỊCH ĐẶT PHÒNG — «hôm nay phòng nào còn trống».
+ * LỊCH ĐẶT PHÒNG — "hôm nay phòng nào còn trống".
  *
  * Lưới xếp **mỗi phòng một HÀNG, giờ chạy ngang** — xem `RoomTimelineGrid` về
  * lý do đảo trục (20 phòng thì bản cột dọc rộng 4.500px).
  *
  * Chỉ có chế độ **NGÀY**, cố ý: một ngày làm việc đã chiếm gần trọn bề ngang,
  * nhân bảy lần thì mỗi cuộc họp còn vài pixel. Muốn nhìn xa hơn một ngày thì tab
- * «Phiếu đặt phòng» có bộ lọc theo phòng và khoảng thời gian.
+ * "Phiếu đặt phòng" có bộ lọc theo phòng và khoảng thời gian.
  *
  * Ngày đang xem nằm trên URL (`?date=`) để dán link cho nhau được — cùng cách
  * làm với Lịch nghỉ.
@@ -49,7 +49,7 @@ export function RoomCalendarPage() {
   const allRooms = useMemo(() => roomData?.items ?? [], [roomData])
 
   //  Lọc phòng ngay trên lưới. Bốn phòng thì không cần, nhưng hai chục phòng
-  //  (khách hỏi 04/09/2026) thì cuộn dọc tìm đúng «Tầng 3» là việc hằng ngày —
+  //  (khách hỏi 04/09/2026) thì cuộn dọc tìm đúng "Tầng 3" là việc hằng ngày —
   //  và ô này rẻ hơn nhiều so với dựng cây địa điểm.
   const [roomQuery, setRoomQuery] = useUrlParamState('room', '')
   const rooms = useMemo(
@@ -82,8 +82,8 @@ export function RoomCalendarPage() {
   const dateOnly = { day: '2-digit', month: '2-digit', year: 'numeric' } as const
   const fullDayLabel = day.toLocaleDateString('vi-VN', { weekday: 'long', ...dateOnly })
   //  ⚠️ `weekday: 'narrow'`, KHÔNG phải `'short'`: với `vi-VN` thì `'short'` ra
-  //  «Thứ 4, 09/09/2026» — dài gần bằng bản đầy đủ và vẫn bị cắt trên màn 390px.
-  //  `'narrow'` mới ra «T4», thứ thật sự vừa chỗ.
+  //  "Thứ 4, 09/09/2026" — dài gần bằng bản đầy đủ và vẫn bị cắt trên màn 390px.
+  //  `'narrow'` mới ra "T4", thứ thật sự vừa chỗ.
   const shortDayLabel = day.toLocaleDateString('vi-VN', { weekday: 'narrow', ...dateOnly })
 
   return (
@@ -114,7 +114,7 @@ export function RoomCalendarPage() {
         {/*  THANH CÔNG CỤ — mọi phần tử cao ĐÚNG 32px và cùng một đường tim.
              Bản đầu trộn ba chiều cao (nút 32px · khối ngày hai dòng 36px · ô
              lọc 32px) nên hàng gãy làm ba mức, nhìn lệch dù từng cụm đều đúng.
-             Con số «lượt giữ phòng» tách khỏi nút ngày thành chip riêng chính
+             Con số "lượt giữ phòng" tách khỏi nút ngày thành chip riêng chính
              vì nó là thứ làm nút đó cao hơn mọi thứ khác.
 
              ⚠️ CHÚ GIẢI bên TRÁI, cụm điều khiển bên PHẢI (khách chốt
@@ -125,7 +125,7 @@ export function RoomCalendarPage() {
           {/*  ⚠️ CHÚ GIẢI MÀU bỏ hẳn dưới `md`. Ở khổ hẹp lưới đổi thành danh
                sách (`RoomDayList`) và mỗi phiếu ở đó tự mang huy hiệu chữ, nên
                ba mục chú giải chỉ còn là một hàng đi giải nghĩa thứ ngay bên
-               dưới đã nói thành lời — mà «Ngoài giờ làm» thì hết nghĩa luôn,
+               dưới đã nói thành lời — mà "Ngoài giờ làm" thì hết nghĩa luôn,
                danh sách không có dải nền giờ nào để tô. */}
           <div className="flex h-8 items-center gap-3 border-r pr-3 text-xs text-muted-foreground max-md:hidden">
             <span className="flex items-center gap-1.5">
@@ -148,7 +148,7 @@ export function RoomCalendarPage() {
                ⚠️ Chia hàng bằng HAI KHỐI BỌC tường minh, không trông vào
                `flex-wrap`: bốn phần tử cùng `flex-wrap` thì hai ô co giãn (nút
                ngày và ô lọc) tranh nhau chỗ, và bản thử đầu cho ra nút ngày bị
-               bóp còn *«Thứ …»* trong khi ô lọc trèo lên cùng hàng. `md:contents`
+               bóp còn *"Thứ …"* trong khi ô lọc trèo lên cùng hàng. `md:contents`
                gỡ hai khối bọc ở khổ rộng để bốn phần tử về lại đúng một hàng
                ngang như cũ; `md:order-*` giữ nguyên thứ tự trái→phải của bản
                desktop (con số · lọc · ngày · điều hướng). */}
@@ -156,7 +156,7 @@ export function RoomCalendarPage() {
             <div className="flex items-center gap-2 md:contents">
 
             {/*  TÊN NGÀY là nút mở lịch — gộp hai thứ vốn lặp nhau: bản đầu có
-                 cả dòng «Thứ Sáu, 04/09/2026» LẪN một ô `<input type="date">`
+                 cả dòng "Thứ Sáu, 04/09/2026" LẪN một ô `<input type="date">`
                  ghi đúng ngày đó ngay bên cạnh. Ô ngày gốc của trình duyệt còn
                  mỗi hệ điều hành một kiểu và trên Windows hiện `mm/dd/yyyy`
                  trong khi cả hệ dùng `dd/mm/yyyy` — xem `shared/ui/date-picker.tsx`. */}
@@ -167,7 +167,7 @@ export function RoomCalendarPage() {
                   className="h-8 min-w-0 flex-1 justify-start gap-1.5 px-2 font-semibold md:order-3 md:flex-none md:text-base"
                   aria-label="Chọn ngày xem lịch"
                 >
-                  {/*  Khổ hẹp rút «Thứ Tư» thành «T4» và bỏ cỡ chữ `text-base`:
+                  {/*  Khổ hẹp rút "Thứ Tư" thành "T4" và bỏ cỡ chữ `text-base`:
                        cả cụm ngày + ba nút điều hướng phải nằm trọn MỘT hàng
                        358px, bản đầy đủ một mình đã ăn ~190px. */}
                   <span className="truncate md:hidden">{shortDayLabel}</span>
@@ -223,10 +223,10 @@ export function RoomCalendarPage() {
             <div className="flex items-center gap-2 md:contents">
               {/*  ⚠️ Con số tổng ẨN dưới `md`. Ở khổ hẹp nó ngồi cùng hàng với
                    ô lọc và bóp ô đó còn ~205px, đủ để câu gợi ý bị cắt giữa
-                   chừng («Lọc phòng, tầng, thi») — một ô tìm mà không đọc nổi
+                   chừng ("Lọc phòng, tầng, thi") — một ô tìm mà không đọc nổi
                    nó tìm được những gì (khách báo 09/09/2026). Bỏ đi không mất
-                   thông tin: hai tiêu đề phần ngay dưới đã nói *«Đang có lịch ·
-                   N phòng»* và *«Còn trống · M phòng»*. Chỉ «lượt giữ» là không
+                   thông tin: hai tiêu đề phần ngay dưới đã nói *"Đang có lịch ·
+                   N phòng"* và *"Còn trống · M phòng"*. Chỉ "lượt giữ" là không
                    còn, mà con số ấy chính là mấy dòng phiếu đang bày bên dưới. */}
               <span className="flex h-8 shrink-0 items-center rounded-md bg-muted px-2.5 text-xs text-muted-foreground tabular-nums max-md:hidden md:order-1">
                 {heldCount} lượt giữ ·{' '}
@@ -241,7 +241,7 @@ export function RoomCalendarPage() {
                    Dùng `SearchField` chứ không `<Input>` trần: nó mang sẵn **nút
                    xóa chữ**, thứ đáng giá nhất trên điện thoại — không có thì bỏ
                    bộ lọc là giữ · kéo hai đầu · bấm xóa, cho một việc đáng ra một
-                   chạm. `h-8` để giữ luật «mọi thứ trên thanh này cao đúng 32px»
+                   chạm. `h-8` để giữ luật "mọi thứ trên thanh này cao đúng 32px"
                    ở khổ rộng. */}
               {allRooms.length > 6 && (
                 <SearchField

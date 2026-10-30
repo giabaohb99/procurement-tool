@@ -1,26 +1,34 @@
-import { Plug, ShieldAlert, Trash2 } from 'lucide-react'
+import { Search, ShieldAlert, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { ErrorState } from '@/shared/ui/error-state'
+import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { useDeleteOAuthClient, useOAuthClients } from '../hooks/use-ai-usage'
 import type { OAuthClient } from '../types/ai-skill'
+import { filterOAuthClients, OAUTH_CLIENT_STATUS, OAUTH_CLIENT_STATUS_OPTIONS } from '../utils/ai-row-mappers'
 
 /**
  * bao-CR-635 — Ứng dụng AI đã kết nối: các ứng dụng (ChatGPT, claude.ai…) tự đăng ký OAuth với cổng MCP khi có người bấm
- * «Cho phép» (ai-CR-225). Tên là do ứng dụng TỰ KHAI nên không tin được — cột «Nơi quay về» (hostname) mới là thứ để
+ * "Cho phép" (ai-CR-225). Tên là do ứng dụng TỰ KHAI nên không tin được — cột "Nơi quay về" (hostname) mới là thứ để
  * nhận ra thật giả; host ngoài danh sách ứng dụng quen thì máy chủ trả `trusted = false` và màn tô cảnh báo.
- * Xóa ứng dụng = cắt mọi kết nối của nó ngay (mã truy cập + mã làm mới chết), người dùng muốn nối lại phải «Cho phép» lần nữa.
+ * Xóa ứng dụng = cắt mọi kết nối của nó ngay (mã truy cập + mã làm mới chết), người dùng muốn nối lại phải "Cho phép" lần nữa.
  * Xem cần `agent_group.read` (như Cấu hình) — thiếu thì nói rõ, không gọi để ăn 403; xóa theo `can_delete` máy chủ trả.
+ *
+ * bao-CR-696: nằm ở menu Cấu hình > Nâng cao (chỉ người quản lý bot AI thấy mục), thêm ô tìm + lọc trạng thái. Lọc
+ * NGAY TRÊN MÁY (`filterOAuthClients`) vì máy chủ trả cả danh sách một lần, không phân trang.
  */
 export function OAuthClientsPage() {
   const { can } = usePermission()
@@ -29,6 +37,10 @@ export function OAuthClientsPage() {
   const remove = useDeleteOAuthClient()
   const canDelete = data?.can_delete ?? false
   const rows = data?.items
+  const { value: keyword, setValue: setKeyword, debouncedValue: q } = useUrlSearchParam('q')
+  const [status, setStatus] = useUrlParamState('status', OAUTH_CLIENT_STATUS.all)
+  const shownRows = useMemo(() => (rows ? filterOAuthClients(rows, q, status) : undefined), [rows, q, status])
+  const filtering = q.trim() !== '' || status !== OAUTH_CLIENT_STATUS.all
 
   const columns = useMemo<DataTableColumn<OAuthClient>[]>(() => {
     const base: DataTableColumn<OAuthClient>[] = [
@@ -68,6 +80,24 @@ export function OAuthClientsPage() {
         header: 'Kết nối đang sống',
         width: 140,
         cell: (c) => <span className={cn('tabular-nums', c.live_grants === 0 && 'text-muted-foreground')}>{c.live_grants}</span>,
+      },
+      {
+        //  bao-CR-696: AI đang dùng ứng dụng này — để biết xóa thì cắt của ai. Máy chủ cũ chưa có thì gạch ngang.
+        key: 'live_users',
+        header: 'Người đang dùng',
+        width: 240,
+        wrap: true,
+        cell: (c) => {
+          const names = c.live_user_names ?? []
+          if (typeof c.live_users !== 'number' || c.live_users === 0) return <span className="text-muted-foreground">—</span>
+          const more = c.live_users - names.length
+          return (
+            <span className="text-sm">
+              {names.join(', ')}
+              {more > 0 && <span className="text-muted-foreground">{names.length > 0 ? ` và ${more} người khác` : `${more} người`}</span>}
+            </span>
+          )
+        },
       },
       {
         key: 'last_used_at',
@@ -118,8 +148,8 @@ export function OAuthClientsPage() {
     const ok = await confirm({
       title: 'Xóa ứng dụng AI',
       message:
-        `Xóa ứng dụng «${name}» (nơi quay về: ${c.redirect_hosts.join(', ') || 'không khai'})? ` +
-        `Xóa là cắt mọi kết nối của ứng dụng này: ${live}người đang dùng phải bấm «Cho phép» lại từ đầu nếu muốn nối tiếp.`,
+        `Xóa ứng dụng "${name}" (nơi quay về: ${c.redirect_hosts.join(', ') || 'không khai'})? ` +
+        `Xóa là cắt mọi kết nối của ứng dụng này: ${live}người đang dùng phải bấm "Cho phép" lại từ đầu nếu muốn nối tiếp.`,
       confirmLabel: 'Xóa ứng dụng',
     })
     if (!ok) return
@@ -136,7 +166,7 @@ export function OAuthClientsPage() {
         <PageHeader title="Ứng dụng AI đã kết nối" description={DESCRIPTION} />
         <ErrorState
           title="Màn này dành cho người quản lý trợ lý AI"
-          description="Bạn vẫn dùng được Bộ skill, Khóa nhân sự và Nhật ký sử dụng ở menu bên trái."
+          description="Bạn vẫn dùng được Bộ skill, Kết nối và Nhật ký sử dụng ở menu bên trái."
         />
       </PageContainer>
     )
@@ -152,15 +182,41 @@ export function OAuthClientsPage() {
         <DataTable
           fillHeight
           columns={columns}
-          rows={rows}
+          rows={shownRows}
           getRowId={(c) => c.id}
           isLoading={isLoading}
           isError={isError}
-          emptyMessage="Chưa có ứng dụng nào. Ứng dụng xuất hiện ở đây khi có người bấm «Cho phép» trên màn đồng ý kết nối (ChatGPT, claude.ai…)."
+          emptyMessage={
+            filtering
+              ? 'Không có ứng dụng nào khớp bộ lọc.'
+              : 'Chưa có ứng dụng nào. Ứng dụng xuất hiện ở đây khi có người bấm "Cho phép" trên màn đồng ý kết nối (ChatGPT, claude.ai…).'
+          }
           storageKey="ai-skill.oauth-clients"
           toolbar={
             <>
-              <Plug className="hidden size-4 text-muted-foreground md:block" />
+              <div className="relative min-w-48 flex-1 md:max-w-xs">
+                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Tìm ứng dụng, người dùng"
+                  aria-label="Tìm ứng dụng"
+                  value={keyword}
+                  maxLength={80}
+                  onChange={(e) => setKeyword(e.target.value)}
+                />
+              </div>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="w-44" aria-label="Lọc trạng thái">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {OAUTH_CLIENT_STATUS_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {rows && (
                 <span className="text-sm text-muted-foreground">
                   {rows.length} ứng dụng · {live} kết nối đang sống
@@ -181,7 +237,7 @@ export function OAuthClientsPage() {
 }
 
 const DESCRIPTION =
-  'Ứng dụng AI tự đăng ký khi có người bấm «Cho phép» (ChatGPT, claude.ai…). Tên là do ứng dụng tự khai, đừng tin — nhìn nơi quay về để biết thật giả.'
+  'Ứng dụng AI tự đăng ký khi có người bấm "Cho phép" (ChatGPT, claude.ai…). Tên là do ứng dụng tự khai, đừng tin — nhìn nơi quay về để biết thật giả.'
 
 /** `client_id` dạng `dego_oc_…` dài và ngẫu nhiên — chỉ hiện 6 ký tự cuối để đối chiếu với nhật ký, tránh bảng tràn. */
 function shortId(clientId: string): string {

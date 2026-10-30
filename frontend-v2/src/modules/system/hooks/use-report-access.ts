@@ -8,7 +8,7 @@ import { reportAccessApi } from '../api/report-access-api'
 import type { GrantReportAccessInput } from '../types/report-access'
 
 /**
- * Cấu hình «ai xem được báo cáo nào» — tab Báo cáo của Phân quyền tài khoản
+ * Cấu hình "ai xem được báo cáo nào" — tab Báo cáo của Phân quyền tài khoản
  * (phase 06, kế hoạch `plans/261002-0836-phan-quyen-tung-bao-cao`).
  */
 export function useReportAccessList() {

@@ -76,14 +76,14 @@ const FULL_LIST_PAGE_SIZE = 5000
  *
  * ⚠️ **Bảng GOM THEO NGƯỜI, loại nghỉ là dòng con** (19/09/2026). Trước đó bảng
  * bày phẳng mười một cột, một dòng cho mỗi (người × loại nghỉ). Hai chỗ hỏng:
- * ở màn 1600px bảng vẫn tràn và thứ bị đẩy ra ngoài mép phải đúng là cột «Còn
- * lại» — con số duy nhất người ta mở màn này để xem; còn công ty khai đủ tám
+ * ở màn 1600px bảng vẫn tràn và thứ bị đẩy ra ngoài mép phải đúng là cột "Còn
+ * lại" — con số duy nhất người ta mở màn này để xem; còn công ty khai đủ tám
  * loại nghỉ thì bảng dài gấp tám lần số người và câu hỏi *"anh A còn mấy ngày"*
  * phải tự cộng tám dòng mới trả lời được. Luật gom nằm ở
  * `utils/group-leave-balances.ts`, cột ở `components/leave-balance-columns.tsx`.
  *
  * ⚠️ Thanh công cụ đi ĐÚNG KHUÔN màn Đơn nghỉ phép: ô tìm bên trái rồi tới các
- * ô chọn. Trước 03/09/2026 màn này chỉ có mỗi ô «Năm», nên một công ty vài trăm
+ * ô chọn. Trước 03/09/2026 màn này chỉ có mỗi ô "Năm", nên một công ty vài trăm
  * người là vài chục trang cuộn tay để tìm một cái tên.
  */
 export function LeaveBalancePage() {
@@ -126,7 +126,7 @@ export function LeaveBalancePage() {
   const canCloseYear = can('leave_balance', 'write')
 
   //  Năm đang mở bảng ĐỐI CHIẾU kết sổ (duoc-CR-664); `null` = đóng. Tự mở ngay sau
-  //  khi kết sổ xong, và mở lại được bằng nút «Đối chiếu» để xem lần sau / xuất Excel.
+  //  khi kết sổ xong, và mở lại được bằng nút "Đối chiếu" để xem lần sau / xuất Excel.
   const [reviewYear, setReviewYear] = useState<number | null>(null)
 
   //  Kết sổ năm TRƯỚC năm đang xem: số dư của năm vừa xong mới là thứ cần đẩy
@@ -138,9 +138,9 @@ export function LeaveBalancePage() {
     const ok = await confirm({
       title: `Kết sổ quỹ phép năm ${target}?`,
       message:
-        `Số dư năm ${target} của những loại nghỉ có khai «Mang sang năm sau» hoặc ` +
-        `«Quy đổi sang loại nghỉ khác» sẽ được đẩy sang năm ${target + 1}. ` +
-        'Loại để mặc định «Hết năm là mất» thì không đụng tới. ' +
+        `Số dư năm ${target} của những loại nghỉ có khai "Mang sang năm sau" hoặc ` +
+        `"Quy đổi sang loại nghỉ khác" sẽ được đẩy sang năm ${target + 1}. ` +
+        'Loại để mặc định "Hết năm là mất" thì không đụng tới. ' +
         'Chạy lại được: dòng đã kết sổ sẽ bị bỏ qua, không nhân đôi số ngày.',
       confirmLabel: 'Kết sổ',
       tone: 'default',
@@ -256,7 +256,7 @@ export function LeaveBalancePage() {
                  người ta bấm nhầm, mà nhầm ở đây là dời phép của cả công ty.
 
                  ⚠️ Khổ hẹp: hai nút CHIA ĐÔI một hàng (`max-md:flex-1`) và rút
-                 nhãn còn «Kết sổ 2025» / «Cấp quỹ 2026». Nhãn đầy đủ làm mỗi nút
+                 nhãn còn "Kết sổ 2025" / "Cấp quỹ 2026". Nhãn đầy đủ làm mỗi nút
                  chiếm trọn một hàng, tức 96px chỉ để bày hai việc mà phòng Nhân
                  sự bấm vài lần một NĂM — trong khi thứ người ta mở màn này để
                  xem bị đẩy xuống dưới nếp gấp.
@@ -303,7 +303,7 @@ export function LeaveBalancePage() {
         }
       />
 
-      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu «trang đã cuộn» xuống
+      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu "trang đã cuộn" xuống
            tới dải ghim nằm sâu bên trong (thanh công cụ do `DataTable` vẽ, tầng
            trang không với tới được bằng prop). Bóng đổ của dải đó đọc thuộc tính
            này — xem `list-sticky.ts`. */}
@@ -332,10 +332,10 @@ export function LeaveBalancePage() {
             emptyMessage={
               filtering
                 ? 'Không có dòng quỹ nào khớp bộ lọc.'
-                : `Chưa cấp quỹ phép năm ${year}. Bấm «Cấp quỹ năm ${year}» để tạo.`
+                : `Chưa cấp quỹ phép năm ${year}. Bấm "Cấp quỹ năm ${year}" để tạo.`
             }
-            //  ⚠️ Khóa `.v2`: bộ cột đổi hẳn (thêm «Tổng cấp», năm cột giải
-            //  thích chuyển sang ẩn sẵn). Ai đã từng đụng menu «Cột» thì bản lưu
+            //  ⚠️ Khóa `.v2`: bộ cột đổi hẳn (thêm "Tổng cấp", năm cột giải
+            //  thích chuyển sang ẩn sẵn). Ai đã từng đụng menu "Cột" thì bản lưu
             //  trong localStorage THẮNG `defaultHidden`, nên giữ khóa cũ là họ
             //  vẫn thấy nguyên cái bảng tràn màn hình vừa đi sửa.
             storageKey="hr.leave-balances.v2"
@@ -376,7 +376,7 @@ export function LeaveBalancePage() {
 
                      Câu gợi ý ngắn để ĐỌC HẾT được ở khổ hẹp: ô còn 142px sau khi
                      chia chỗ cho nút Bộ lọc và nút Tải lại, bản cũ cần 206px nên
-                     cụt thành «Tìm theo tên hoặc m». */}
+                     cụt thành "Tìm theo tên hoặc m". */}
                 <SearchField
                   value={keyword}
                   onChange={setKeyword}
@@ -384,7 +384,7 @@ export function LeaveBalancePage() {
                   className="md:min-w-56 md:max-w-xs"
                 />
 
-                {/*  ⚠️ Huy hiệu trên nút «Bộ lọc» đếm CẢ Ô NĂM khi nó khác năm hiện
+                {/*  ⚠️ Huy hiệu trên nút "Bộ lọc" đếm CẢ Ô NĂM khi nó khác năm hiện
                      tại. Năm là thứ quyết định mọi con số trên bảng, mà ở khổ hẹp
                      nó nằm khuất trong tờ trượt — không có dấu này thì người dùng
                      xem quỹ 2024 và tưởng đang xem 2026, rồi đi hỏi vì sao ai cũng

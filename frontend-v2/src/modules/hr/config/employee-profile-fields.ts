@@ -11,12 +11,12 @@ import type { ChangeRequestGroup } from '../types/employee-change-request'
 import { formatDate } from '@/shared/utils/format-date'
 
 /**
- * SỔ TRƯỜNG HỒ SƠ NHÂN SỰ dùng chung cho ba nơi của duoc-CR-676: hộp «Đề nghị sửa thông tin»
+ * SỔ TRƯỜNG HỒ SƠ NHÂN SỰ dùng chung cho ba nơi của duoc-CR-676: hộp "Đề nghị sửa thông tin"
  * (Trang cá nhân), màn duyệt của phòng Nhân sự (bảng so sánh) và bản in Phiếu thông tin nhân
  * viên BM00../QT01/NS. Một chỗ khai nhãn + kiểu → ba màn gọi cùng một tên cho cùng một ô.
  *
  * Nhãn lấy đúng chữ của màn chi tiết nhân sự (`employee-tab-*.tsx`); ba ô CCCD thêm đuôi
- * «CCCD» vì trong bảng so sánh chúng đứng lẫn với ô khác, «Ngày cấp» trơn thì không biết cấp gì.
+ * "CCCD" vì trong bảng so sánh chúng đứng lẫn với ô khác, "Ngày cấp" trơn thì không biết cấp gì.
  *
  * `maxLength` khớp bí danh `StrNN` của `backend/.../employee/field_limits.py` (đi qua
  * `change_request_schema.py`): chặn ngay ở ô, khỏi ăn 422 tiếng Anh lúc gửi.
@@ -57,7 +57,7 @@ export const EMPLOYEE_FIELD_DEFS = {
   work_location: { label: 'Nơi làm việc', kind: 'text' },
   hire_date: { label: 'Ngày vào làm', kind: 'date' },
   email: { label: 'Email công việc', kind: 'text' },
-  // Nhóm 3 — liên hệ (tự sửa ngay ở thẻ «Liên hệ», không qua đề nghị)
+  // Nhóm 3 — liên hệ (tự sửa ngay ở thẻ "Liên hệ", không qua đề nghị)
   phone: { label: 'Số điện thoại', kind: 'text' },
   permanent_address: { label: 'Địa chỉ thường trú', kind: 'text' },
   current_address: { label: 'Địa chỉ hiện nay (tạm trú)', kind: 'text' },
@@ -128,9 +128,9 @@ export function getEmployeeFieldLabel(field: string): string {
 /**
  * Giá trị một ô → chữ để HIỂN THỊ / IN.
  *
- * ⚠️ `null` / `undefined` / mã `0` của ô chọn đều ra chuỗi RỖNG, không bao giờ ra chữ «null»
- * hay «Chưa khai» — ô bị che (thiếu quyền nhạy cảm) và ô chưa nhập đều phải in thành ô trống.
- * Số con `0` là câu trả lời THẬT nên giữ «0».
+ * ⚠️ `null` / `undefined` / mã `0` của ô chọn đều ra chuỗi RỖNG, không bao giờ ra chữ "null"
+ * hay "Chưa khai" — ô bị che (thiếu quyền nhạy cảm) và ô chưa nhập đều phải in thành ô trống.
+ * Số con `0` là câu trả lời THẬT nên giữ "0".
  */
 export function formatEmployeeFieldValue(field: string, value: unknown): string {
   if (value === null || value === undefined) return ''

@@ -35,7 +35,7 @@ NEED_FILTER_MSG = "Nhập tên hàng / hoạt chất hoặc chọn mã HS để 
 
 # ── Lọc ─────────────────────────────────────────────────────────────────────
 def _id_list(value) -> list[int]:
-    """Một id, một chuỗi «1,2,3» hay một danh sách → danh sách id > 0 (bao-CR-493: chọn NHIỀU)."""
+    """Một id, một chuỗi "1,2,3" hay một danh sách → danh sách id > 0 (bao-CR-493: chọn NHIỀU)."""
     if value in (None, "", 0):
         return []
     items = value if isinstance(value, (list, tuple)) else str(value).split(",")
@@ -73,7 +73,7 @@ def apply_line_filters(q, f: dict):
     cond = build_keyword_condition(q.session, f.get("q") or "")
     if cond is not None:
         q = q.filter(cond)
-    #  bao-CR-494: lọc nhãn Thành phẩm / Nguyên liệu (chọn nhiều, lặp URL hoặc «1,2»).
+    #  bao-CR-494: lọc nhãn Thành phẩm / Nguyên liệu (chọn nhiều, lặp URL hoặc "1,2").
     kinds = _id_list(f.get("product_kind"))
     if kinds:
         q = q.filter(CustomsLine.product_kind.in_(kinds))
@@ -119,7 +119,7 @@ def _as_date(value: str, start: bool) -> date:
             return date(y, m, 1) if start else date(y, m, calendar.monthrange(y, m)[1])
         return date.fromisoformat(s[:10])
     except ValueError:
-        raise HTTPException(400, f"Ngày không hợp lệ: «{value}»") from None
+        raise HTTPException(400, f"Ngày không hợp lệ: \"{value}\"") from None
 
 
 def has_chart_filter(f: dict) -> bool:
@@ -134,7 +134,7 @@ def _num(v):
 
 
 def compute_vnd_prices(ln: CustomsLine) -> tuple[float | None, float | None]:
-    """Hai cột «Đơn giá quy đổi VND» (bao-CR-493) → (theo thuế 7% tạm tính, theo thuế suất XNK của dòng).
+    """Hai cột "Đơn giá quy đổi VND" (bao-CR-493) → (theo thuế 7% tạm tính, theo thuế suất XNK của dòng).
 
     Gốc quy đổi là GIÁ HIỆU LỰC (điều chỉnh nếu có, không thì khai báo — cùng luật với biểu đồ)
     nhân tỷ giá USD của ngày đăng ký. Thiếu tỷ giá thì cả hai cột trống; thiếu thuế suất XNK thì
@@ -181,7 +181,7 @@ def serialize_lines(db: Session, lines: list[CustomsLine]) -> list[dict]:
                 d[key] = v.isoformat() if isinstance(v, date) else _num(v)
         d["effective_price_usd"] = _num(ln.adj_price_usd if ln.adj_price_usd is not None else ln.price_usd)
         #  bao-CR-603: giá VND LẤY TỪ TỆP thắng (từng cột một); cột nào tệp không có thì tính như
-        #  cũ. Kèm cờ nguồn để màn hình nói «từ tệp» / «suy ra» cho hoạt chất, hàm lượng, giá VND.
+        #  cũ. Kèm cờ nguồn để màn hình nói "từ tệp" / "suy ra" cho hoạt chất, hàm lượng, giá VND.
         flat, line_tax = compute_vnd_prices(ln)
         d["price_vnd_flat"] = _num(ln.price_vnd_flat) if ln.price_vnd_flat is not None else flat
         d["price_vnd_line_tax"] = _num(ln.price_vnd_line_tax) if ln.price_vnd_line_tax is not None else line_tax
@@ -414,7 +414,7 @@ def rank_importers(db: Session, f: dict, unit: str = "", limit: int = 20) -> dic
 
 # ── Thị trường: đối tác nước ngoài · nước xuất xứ · lô gần nhất (bao-CR-481) ──
 def market_overview(db: Session, f: dict, unit: str = "", limit: int = 10, recent: int = 5) -> dict:
-    """Cho trợ lý AI trả lời «ai nhập / mua của ai / từ nước nào / lô gần nhất giá bao nhiêu».
+    """Cho trợ lý AI trả lời "ai nhập / mua của ai / từ nước nào / lô gần nhất giá bao nhiêu".
 
     Cùng bộ lọc với màn tra cứu (`apply_line_filters`) và cùng MỘT đơn vị tính (mặc định
     đơn vị nhiều dòng nhất) — gom kg với lít là ra thị phần vô nghĩa. Giá = giá điều chỉnh
@@ -465,8 +465,8 @@ def market_overview(db: Session, f: dict, unit: str = "", limit: int = 10, recen
     }
 
 
-# ── Đánh giá THỜI ĐIỂM HIỆN TẠI cho câu «có nên mua lúc này» (bao-CR-481) ───
-#  Dữ liệu cũ hơn chừng này ngày so với hôm nay thì phải nói ra — giá «hiện tại» khi đó
+# ── Đánh giá THỜI ĐIỂM HIỆN TẠI cho câu "có nên mua lúc này" (bao-CR-481) ───
+#  Dữ liệu cũ hơn chừng này ngày so với hôm nay thì phải nói ra — giá "hiện tại" khi đó
 #  thật ra là giá của mấy tháng trước.
 STALE_DATA_DAYS = 45
 
@@ -479,7 +479,7 @@ def assess_current_price(stats: dict, today: date | None = None) -> dict:
     Tháng gần nhất ít dòng (< MIN_LINES_FOR_BEST) thì vẫn trả nhưng gắn cờ `reliable=False`,
     kèm `reference_month` = tháng ĐỦ dữ liệu gần nhất để trợ lý có mốc đáng tin mà nói.
     Xu hướng cũng chỉ tính trên tháng đủ dữ liệu — một lô lẻ không được lật cả câu chuyện
-    (dữ liệu thật 24/09: ATRAZINE 09/2026 chỉ 1 dòng mà suýt thành «đang giảm»).
+    (dữ liệu thật 24/09: ATRAZINE 09/2026 chỉ 1 dòng mà suýt thành "đang giảm").
     """
     today = today or date.today()
     months = [s for s in stats.get("series", []) if s.get("wavg") is not None]
@@ -548,7 +548,7 @@ def list_options(db: Session) -> dict:
         rows = (db.query(col, func.count(CustomsLine.id)).filter(col != "")
                 .group_by(col).order_by(func.count(CustomsLine.id).desc()).limit(limit).all())
         return [{"value": v, "count": n} for v, n in rows]
-    #  bao-CR-493: lô nạp làm ô lọc «tệp nguồn» (sheet 4 mục 13) — chỉ lô ghi thật đã xong, mới nhất trước.
+    #  bao-CR-493: lô nạp làm ô lọc "tệp nguồn" (sheet 4 mục 13) — chỉ lô ghi thật đã xong, mới nhất trước.
     batches = (db.query(ImportBatch.id, ImportBatch.filename, ImportBatch.created_count)
                .filter(ImportBatch.module == ImportModule.CUSTOMS_DECLARATION,
                        ImportBatch.mode == ImportMode.APPLY, ImportBatch.status == ImportStatus.DONE)
@@ -587,9 +587,9 @@ def export_lines_xlsx(db: Session, f: dict) -> bytes:
     ws = wb.active
     ws.title = "Tra cuu gia hai quan"
     #  bao-CR-603: bốn cột cuối mang đúng tiêu đề bộ đọc chấp nhận (`OPTIONAL_COLUMNS`), nên tệp
-    #  xuất ra sửa tay rồi nạp lại được; bỏ chữ «(suy ra)» vì giá trị có thể lấy từ tệp.
-    #  bao-CR-608: cột «ID» ĐẦU TIÊN + cột «Thao tác» RỖNG ở CUỐI — xuất → sửa ô → nạp lại là ghi
-    #  đè đúng dòng; gõ «xóa» vào ô Thao tác là xóa dòng đó (bộ đọc nhận hai cột này, `reader.py`).
+    #  xuất ra sửa tay rồi nạp lại được; bỏ chữ "(suy ra)" vì giá trị có thể lấy từ tệp.
+    #  bao-CR-608: cột "ID" ĐẦU TIÊN + cột "Thao tác" RỖNG ở CUỐI — xuất → sửa ô → nạp lại là ghi
+    #  đè đúng dòng; gõ "xóa" vào ô Thao tác là xóa dòng đó (bộ đọc nhận hai cột này, `reader.py`).
     header = ([CONTROL_LABELS[REF_ID_KEY]] + [label for _, label in COLUMNS]
               + [OPTIONAL_LABELS[k] for k, _ in OPTIONAL_COLUMNS] + [CONTROL_LABELS[ACTION_KEY]])
     ws.append(header)

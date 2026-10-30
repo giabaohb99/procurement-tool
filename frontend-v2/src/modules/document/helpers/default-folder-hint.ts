@@ -2,7 +2,7 @@ import { FOLDER_KIND, FOLDER_STATUS } from '../types/document-folder'
 import type { DocFolderTreeNode } from '../types/document-folder'
 
 /**
- * Câu «để trống thì vào đâu» ở ô «Lưu vào thư mục» (phase 06, duoc-CR-476).
+ * Câu "để trống thì vào đâu" ở ô "Lưu vào thư mục" (phase 06, duoc-CR-476).
  *
  * Người dùng không chọn thư mục nào KHÔNG có nghĩa văn bản mất tích — nó tự
  * vào thư mục MẶC ĐỊNH của loại văn bản (nếu loại có khai, còn thuộc đúng

@@ -15,8 +15,8 @@ const STATUS_ICON_COLOR: Record<string, string> = {
 }
 
 /**
- * Icon của MỘT DÒNG LÁ chèn thêm dưới thư mục — văn bản trực tiếp / «(trống)»
- * / «đang tải…» / «Xem thêm…» (bốn loại, xem `insert-folder-document-leaves.ts`).
+ * Icon của MỘT DÒNG LÁ chèn thêm dưới thư mục — văn bản trực tiếp / "(trống)"
+ * / "đang tải…" / "Xem thêm…" (bốn loại, xem `insert-folder-document-leaves.ts`).
  * Tách khỏi `folder-tree-item.tsx` (chỉ lo icon THƯ MỤC) để cả hai tệp giữ
  * dưới 200 dòng.
  */
@@ -34,9 +34,9 @@ export function FolderTreeLeafIcon({ leaf }: { leaf: FolderTreeLeafData }) {
 }
 
 /**
- * Nhãn dòng lá — văn bản hiện TIÊU ĐỀ như một dòng thường; «Xem thêm…» tô màu
- * NHƯ LIÊN KẾT (mời bấm); «(trống)»/«đang tải…» chữ mờ nghiêng kiểu chú thích
- * (đúng ý VS Code Explorer: dòng «No matching results» trong panel rỗng).
+ * Nhãn dòng lá — văn bản hiện TIÊU ĐỀ như một dòng thường; "Xem thêm…" tô màu
+ * NHƯ LIÊN KẾT (mời bấm); "(trống)"/"đang tải…" chữ mờ nghiêng kiểu chú thích
+ * (đúng ý VS Code Explorer: dòng "No matching results" trong panel rỗng).
  */
 export function FolderTreeLeafLabel({ leaf, label }: { leaf: FolderTreeLeafData; label: string }) {
   if (leaf.type === 'document') {

@@ -4,7 +4,7 @@ Máy tính số, AI viết chữ: mọi con số lấy từ `capability/ai_contr
 quyết PHẠM VI theo người hỏi, đọc tham số và gọt kết quả cho gọn.
 
 Quyền (A1 chốt 22/10, phương án A — *AI chỉ đề xuất, người quyết*):
-  · có khóa báo cáo 16 «Năng lực theo loại việc» → thấy đủ số, phòng nào cũng được (bỏ trống = pháp nhân của mình);
+  · có khóa báo cáo 16 "Năng lực theo loại việc" → thấy đủ số, phòng nào cũng được (bỏ trống = pháp nhân của mình);
   · trưởng phòng (`Department.manager_id`) không có khóa 16 → `team_capacity` chỉ trả THỨ TỰ gợi ý trong phòng mình + phòng
     con, không số; `task_type_stats` từ chối;
   · người khác → từ chối, câu giải thích nói cần khóa 16 và ai giao được.
@@ -29,7 +29,7 @@ LOAD_FIELDS = ("open_items_total", "work_open", "work_overdue", "work_estimate_h
 STAT_FIELDS = ("n_done", "n_estimated", "below_threshold", "p50_days", "p90_days", "mean_days", "rework_rate",
                "first_pass_rate", "late_rate", "est_ratio_p50")
 KEY_HINT = ("Số năng lực theo từng người cần ĐỦ HAI quyền như màn Năng lực theo loại việc: quyền xem Cấu hình hệ thống "
-            "(setting.read, theo vai trò) và khóa báo cáo 16 «Năng lực theo loại việc» — quản trị giao ở Phân quyền tài "
+            "(setting.read, theo vai trò) và khóa báo cáo 16 **Năng lực theo loại việc** — quản trị giao ở Phân quyền tài "
             "khoản → tab Báo cáo.")
 MAX_SCOPE = 500
 
@@ -115,9 +115,9 @@ def _match_department(depts: list, allowed: set[int] | None, raw: str) -> tuple[
     hit = [d for d in pool if (d.code or "").lower() == raw.strip().lower()] or \
           [d for d in pool if key and key in fold(d.name or "")]
     if not hit:
-        return [], {"error": f"Không thấy phòng «{raw}» trong các phòng bạn được xem năng lực."}
+        return [], {"error": f"Không thấy phòng **{raw}** trong các phòng bạn được xem năng lực."}
     if len(hit) > 1:
-        return [], {"need_choice": True, "error": f"Có {len(hit)} phòng khớp «{raw}» — hỏi người dùng chọn một.",
+        return [], {"need_choice": True, "error": f"Có {len(hit)} phòng khớp **{raw}** — hỏi người dùng chọn một.",
                     "choices": [{"code": d.code, "name": d.name} for d in hit[:10]]}
     return sorted(_add_children(depts, {int(hit[0].id)}) & (allowed if allowed is not None else {int(d.id) for d in depts})), None
 
@@ -125,7 +125,7 @@ def _match_department(depts: list, allowed: set[int] | None, raw: str) -> tuple[
 def _parse_kind(raw) -> tuple[int, dict | None]:
     code = str(raw or "work_task").strip().lower()[:MAX_TEXT]
     if code not in KIND_CODES:
-        return 0, {"error": f"Loại phiếu «{code}» không có. Dùng một trong: {', '.join(KIND_CODES)}."}
+        return 0, {"error": f"Loại phiếu **{code}** không có. Dùng một trong: {', '.join(KIND_CODES)}."}
     return int(CycleKind[code.upper()]), None
 
 
@@ -143,9 +143,9 @@ def _find_task_type(ctx: ToolContext, raw) -> tuple[dict | None, dict | None]:
     key = fold(text)
     hit = [r for r in rows if (r.code or "").lower() == text.lower()] or [r for r in rows if key and key in fold(r.name or "")]
     if not hit:
-        return None, {"error": f"Không thấy loại việc «{text}» trong danh mục Loại việc của Dự án."}
+        return None, {"error": f"Không thấy loại việc **{text}** trong danh mục Loại việc của Dự án."}
     if len(hit) > 1:
-        return None, {"need_choice": True, "error": f"Có {len(hit)} loại việc khớp «{text}» — hỏi người dùng chọn một.",
+        return None, {"need_choice": True, "error": f"Có {len(hit)} loại việc khớp **{text}** — hỏi người dùng chọn một.",
                       "choices": [{"code": r.code, "name": r.name} for r in hit[:10]]}
     return {"id": int(hit[0].id), "code": hit[0].code, "name": hit[0].name}, None
 
@@ -214,7 +214,7 @@ def _team_capacity(ctx: ToolContext, args: dict) -> dict:
     if not detail:
         note += " Chỉ có thứ tự gợi ý, không có số. " + KEY_HINT
     else:
-        note += " Thời gian tính bằng ngày lịch; tỷ lệ là số 0…1. Số `None` = chưa đủ 5 mẫu, nói «chưa đủ mẫu», đừng đoán."
+        note += " Thời gian tính bằng ngày lịch; tỷ lệ là số 0…1. Số `None` = chưa đủ 5 mẫu, nói **chưa đủ mẫu**, đừng đoán."
     return {"kind": CycleKind(kind).name.lower(), "kind_label": CYCLE_KIND_LABELS[CycleKind(kind)], "task_type": tt,
             "departments": [names[i] for i in dept_ids if i in names][:20] or None, "company_id": company_id,
             "detail": detail, "total": len(scope), "has_more": len(scope) > len(people), "people": people, "note": note}
@@ -248,7 +248,7 @@ def _task_type_stats(ctx: ToolContext, args: dict) -> dict:
     if person:
         emp = ctx.db.query(Employee.id).filter(Employee.code == person).first()
         if emp is None:
-            return {"error": f"Không thấy nhân sự mã «{person}» — dùng employee_lookup để lấy mã."}
+            return {"error": f"Không thấy nhân sự mã **{person}** — dùng employee_lookup để lấy mã."}
         emp_ids = (int(emp.id),)
     window = _clamp_int(args.get("window_days"), 180, 30, 365)
     d_from, d_to = _window(window)
@@ -262,7 +262,7 @@ def _task_type_stats(ctx: ToolContext, args: dict) -> dict:
     return {"window": {"from": d_from.isoformat(), "to": d_to.isoformat(), "days": window}, "task_type": tt,
             "by_person": by_person, "total": len(rows), "has_more": len(rows) > MAX_ROWS, "rows": out,
             "note": ("Thời gian tính bằng ngày lịch từ lúc nhận tới lúc xong; tỷ lệ là số 0…1. Số `None` = chưa đủ 5 việc "
-                     "cùng loại đã xong — nói «chưa đủ mẫu», đừng đoán. Dòng ước tính (nhập từ hệ cũ) chỉ đếm ở "
+                     "cùng loại đã xong — nói **chưa đủ mẫu**, đừng đoán. Dòng ước tính (nhập từ hệ cũ) chỉ đếm ở "
                      "n_estimated, không vào trung vị. Chậm có thể là việc khó: chỉ đo, không chấm điểm người.")}
 
 
@@ -290,7 +290,7 @@ TASK_TYPE_STATS_SPEC = ToolSpec(
     name="task_type_stats",
     description=("Thống kê tốc độ theo loại việc: trung vị / p90 số ngày từ nhận tới xong, tỷ lệ trễ, tỷ lệ phải làm lại, "
                  "số mẫu — theo loại hoặc theo từng người. Câu hỏi kiểu 'loại việc X thường mất bao lâu', 'ai làm YCMH "
-                 "nhanh nhất', 'tỷ lệ làm lại của phòng Y'. Chỉ người có khóa báo cáo 16 «Năng lực theo loại việc»."),
+                 "nhanh nhất', 'tỷ lệ làm lại của phòng Y'. Chỉ người có khóa báo cáo 16 **Năng lực theo loại việc**."),
     parameters={"type": "object", "properties": {
         "kind": _KIND_PARAM, "task_type": _TASK_TYPE_PARAM,
         "department": {"type": "string", "description": "Tên hoặc mã phòng (kèm phòng con); bỏ trống = mọi phòng."},

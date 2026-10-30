@@ -32,8 +32,8 @@ interface ReportDrilldownSheetProps {
 const formatCount = (n: number) => formatReportMetricValue(n, 'int')
 
 /**
- * Ngăn «Danh sách người» (duoc-CR-686): bấm «Xem danh sách» ở thẻ KPI hay ở một dòng
- * «Xem theo» → ra đúng những người/đơn/hợp đồng làm nên con số đó, cùng bộ lọc trang.
+ * Ngăn "Danh sách người" (duoc-CR-686): bấm "Xem danh sách" ở thẻ KPI hay ở một dòng
+ * "Xem theo" → ra đúng những người/đơn/hợp đồng làm nên con số đó, cùng bộ lọc trang.
  * Đổi chỉ số ngay trong ngăn, nhóm giữ nguyên.
  */
 export function ReportDrilldownSheet({
@@ -109,7 +109,7 @@ export function ReportDrilldownSheet({
               <ReportDrilldownTable
                 data={data}
                 storageKey={`${storageKey}.rows.${data.metric.key}`}
-                emptyMessage={`Không có ai theo chỉ số «${data.metric.label}»${
+                emptyMessage={`Không có ai theo chỉ số "${data.metric.label}"${
                   target?.group ? ' ở nhóm này' : ''
                 } — đổi chỉ số ở ô phía trên.`}
               />

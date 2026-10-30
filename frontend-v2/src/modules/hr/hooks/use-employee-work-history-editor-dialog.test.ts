@@ -38,7 +38,7 @@ describe('useEmployeeWorkHistoryEditorDialog', () => {
     expect(result.current.createTitle).toBeUndefined()
   })
 
-  it('openCreate() không tham số → mở, editRow null, seed undefined (khuôn «Thêm dòng» cũ)', () => {
+  it('openCreate() không tham số → mở, editRow null, seed undefined (khuôn "Thêm dòng" cũ)', () => {
     const { result } = renderHook(() => useEmployeeWorkHistoryEditorDialog())
     act(() => result.current.openCreate())
 
@@ -49,7 +49,7 @@ describe('useEmployeeWorkHistoryEditorDialog', () => {
     expect(result.current.createTitle).toBeUndefined()
   })
 
-  it('openCreate(seed, {requireDecisionNo, createTitle}) → giữ đúng cả ba (nút «+ Thêm quyết định»)', () => {
+  it('openCreate(seed, {requireDecisionNo, createTitle}) → giữ đúng cả ba (nút "+ Thêm quyết định")', () => {
     const { result } = renderHook(() => useEmployeeWorkHistoryEditorDialog())
     act(() =>
       result.current.openCreate({ event_type: 3 }, { requireDecisionNo: true, createTitle: 'Thêm quyết định bổ nhiệm' }),

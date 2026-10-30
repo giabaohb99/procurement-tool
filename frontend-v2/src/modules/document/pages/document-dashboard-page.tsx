@@ -30,7 +30,7 @@ import type { DocumentTodo } from '../types/document-dashboard'
  * đúng phạm vi dữ liệu như danh sách văn bản.
  */
 export function DocumentDashboardPage() {
-  //  Mặc định «Tất cả»: mở trang lên là thấy toàn cảnh. Mặc định "Hôm nay" thì
+  //  Mặc định "Tất cả": mở trang lên là thấy toàn cảnh. Mặc định "Hôm nay" thì
   //  gần như lúc nào cũng là một trang trắng toàn số 0, và người dùng kết luận
   //  hệ thống hỏng chứ không nghĩ tới bộ lọc.
   const [companyId, setCompanyId] = useState<number | undefined>()
@@ -250,10 +250,10 @@ function TodoRow({ item }: { item: DocumentTodo }) {
 }
 
 /**
- * Một dòng của khối «Văn bản gần đây».
+ * Một dòng của khối "Văn bản gần đây".
  *
  * ⚠️ **Khổ hẹp xếp HAI DÒNG, tiêu đề lên trước.** Bốn phần nhét trên một hàng
- * 358px thì «chưa cấp số» — chuỗi dài nhất và ít giá trị nhất — chiếm gần một
+ * 358px thì "chưa cấp số" — chuỗi dài nhất và ít giá trị nhất — chiếm gần một
  * phần ba, còn tên văn bản (thứ duy nhất nói đó là văn bản gì) bị cắt còn dăm
  * chữ. Ở màn rộng một hàng vẫn đúng: thẻ này trải 3/4 cột nên bốn phần đều đủ
  * chỗ.
@@ -273,7 +273,7 @@ function RecentRow({ row }: { row: DocumentRecord }) {
         <span className="min-w-0 truncate font-medium md:order-2 md:flex-1">{row.title}</span>
 
         <span className="flex min-w-0 items-center gap-2 md:contents">
-          {/*  `font-mono` chỉ dành cho SỐ HIỆU thật. Câu «chưa cấp số» là lời
+          {/*  `font-mono` chỉ dành cho SỐ HIỆU thật. Câu "chưa cấp số" là lời
                nói, không phải mã: bày bằng chữ đều nét thì các chữ cái dãn ra
                như một dãy ký tự rời, đọc ra như lỗi hiển thị chứ không như một
                câu. */}

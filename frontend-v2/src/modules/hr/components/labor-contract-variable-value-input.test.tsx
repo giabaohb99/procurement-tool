@@ -41,7 +41,7 @@ describe('LaborContractVariableValueInput', () => {
     expect(screen.getByRole('button', { name: /01\/10\/2026/ })).toBeInTheDocument()
   })
 
-  it('số: gõ «1,5» ra giá trị chuẩn «1.5», chữ trong ô giữ nguyên «1,5»', async () => {
+  it('số: gõ "1,5" ra giá trị chuẩn "1.5", chữ trong ô giữ nguyên "1,5"', async () => {
     const spy = vi.fn()
     render(<Harness type={VARIABLE_TYPE_NUMBER} spy={spy} />)
     await userEvent.type(screen.getByRole('textbox', { name: 'Ô thử' }), '1,5')
@@ -70,7 +70,7 @@ describe('LaborContractVariableValueInput', () => {
     expect(spy).toHaveBeenLastCalledWith(String(10 ** 12))
   })
 
-  it('số 0 là một giá trị thật (tiền và số); xóa sạch ô mới là «không có giá trị»', async () => {
+  it('số 0 là một giá trị thật (tiền và số); xóa sạch ô mới là "không có giá trị"', async () => {
     const money = vi.fn()
     const { unmount } = render(<Harness type={VARIABLE_TYPE_MONEY} spy={money} />)
     const box = screen.getByRole('textbox', { name: 'Ô thử' })

@@ -191,3 +191,53 @@ describe('employeeSchema (tạo nhanh) vs employeeProfileSchema (đầy đủ)',
     }
   })
 })
+
+/**
+ * Ô LƯƠNG của hồ sơ (duoc-CR-693). Chỉ chính chủ nhận được số; người khác sửa "mù" nên mọi
+ * đường từ form ra PATCH phải coi `null` là KHÔNG ĐỤNG và không bao giờ nạp số từ API vào form.
+ */
+describe('ô lương — đường form → PATCH', () => {
+  it.each([true, false])('drops untouched (null) salary keys whatever the sensitive right (%s)', (canRead) => {
+    const out = pickWritableProfile({ ...EMPTY_EMPLOYEE_PROFILE_FORM }, canRead)
+    expect(Object.keys(out)).not.toContain('salary_monthly')
+    expect(Object.keys(out)).not.toContain('allowance_monthly')
+  })
+
+  it('keeps an explicit 0 (clear) and a typed number', () => {
+    const out = pickWritableProfile(
+      { ...EMPTY_EMPLOYEE_PROFILE_FORM, salary_monthly: 0, allowance_monthly: 2_000_000 },
+      false,
+    )
+    expect(out).toMatchObject({ salary_monthly: 0, allowance_monthly: 2_000_000 })
+  })
+
+  it('never loads the numbers the API returns to the employee into the form', () => {
+    //  Chính chủ nhận số; nạp vào form là lần Lưu nào của họ cũng gửi lương và ăn 403.
+    const out = employeeProfileFormValues({
+      ...(EMPTY_EMPLOYEE_PROFILE_FORM as unknown as Employee),
+      salary_monthly: 15_000_000,
+      allowance_monthly: 500_000,
+      salary_set: true,
+    } as Employee)
+    expect(out.salary_monthly).toBeNull()
+    expect(out.allowance_monthly).toBeNull()
+  })
+
+  it.each([
+    ['negative', -1],
+    ['fractional đồng', 1.5],
+    ['above the backend ceiling (SalaryAmount le=10^10)', 10 ** 10 + 1],
+    ['NaN', Number.NaN],
+  ])('rejects a %s salary', (_case, value) => {
+    const base = { ...EMPTY_EMPLOYEE_PROFILE_FORM, full_name: 'A' }
+    expect(employeeProfileSchema.safeParse({ ...base, salary_monthly: value }).success).toBe(false)
+    expect(employeeProfileSchema.safeParse({ ...base, allowance_monthly: value }).success).toBe(false)
+  })
+
+  it('accepts null, 0 and the ceiling', () => {
+    const base = { ...EMPTY_EMPLOYEE_PROFILE_FORM, full_name: 'A' }
+    for (const value of [null, 0, 10 ** 10]) {
+      expect(employeeProfileSchema.safeParse({ ...base, salary_monthly: value }).success).toBe(true)
+    }
+  })
+})

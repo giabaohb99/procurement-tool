@@ -14,7 +14,7 @@ import {
   SignatureSection,
 } from './purchase-request-print-page'
 
-// bao-CR-531: cụm «XÉT DUYỆT» vẽ 2, 3 hoặc 4 ô theo backend; «Không chữ ký» bỏ cả tên lẫn ảnh.
+// bao-CR-531: cụm "XÉT DUYỆT" vẽ 2, 3 hoặc 4 ô theo backend; "Không chữ ký" bỏ cả tên lẫn ảnh.
 
 function makeSource(cells?: PrintSignatureCell[]): PrintSignatureSource {
   return {
@@ -35,7 +35,7 @@ const fourCells: PrintSignatureCell[] = [
   { key: 'preparer', role: 'Người lập', name: 'Nguoi Lap', signature: 'https://cdn/ky-lap.png' },
 ]
 
-//  bao-CR-536 — ca ICARE: đại diện = TP/BP đề xuất → tên lên «Giám đốc», ô đề xuất GIỮ nhưng trống.
+//  bao-CR-536 — ca ICARE: đại diện = TP/BP đề xuất → tên lên "Giám đốc", ô đề xuất GIỮ nhưng trống.
 const icareCells: PrintSignatureCell[] = [
   { key: 'director', role: 'Giám đốc', name: 'Le Phuoc Huu', signature: 'https://cdn/ky-huu.png' },
   { key: 'purchasing_head', role: 'TP/BP mua hàng', name: 'Pham Khanh Ngan', signature: '' },
@@ -43,7 +43,7 @@ const icareCells: PrintSignatureCell[] = [
   { key: 'preparer', role: 'Người lập', name: 'Nguoi Lap', signature: 'https://cdn/ky-lap.png' },
 ]
 
-//  bao-CR-539 — hộ kinh doanh 4 ô như công ty, chỉ đổi nhãn ô đầu thành «Chủ hộ»; có tên.
+//  bao-CR-539 — hộ kinh doanh 4 ô như công ty, chỉ đổi nhãn ô đầu thành "Chủ hộ"; có tên.
 const householdCells: PrintSignatureCell[] = [
   { key: 'household_owner', role: 'Chủ hộ', name: 'Le Phuoc Huu', signature: 'https://cdn/ky-huu.png' },
   { key: 'purchasing_head', role: 'TP/BP mua hàng', name: 'Pham Khanh Ngan', signature: '' },
@@ -67,8 +67,8 @@ describe('SignatureSection', () => {
     expect(screen.getAllByRole('img')).toHaveLength(2)
   })
 
-  it('keeps all four cells and puts the legal representative into «Giám đốc» (ICARE case)', () => {
-    //  bao-CR-531 bỏ hẳn ô «TP/BP đề xuất» — đại ca báo thiếu ô (PYC29092603). Nay ô vẫn có, chỉ trống.
+  it('keeps all four cells and puts the legal representative into "Giám đốc" (ICARE case)', () => {
+    //  bao-CR-531 bỏ hẳn ô "TP/BP đề xuất" — đại ca báo thiếu ô (PYC29092603). Nay ô vẫn có, chỉ trống.
     const { grid } = renderSection(icareCells)
     expect(screen.getByText('TP/BP đề xuất')).toBeInTheDocument()
     expect(within(grid).getAllByText('(Ký, ghi rõ họ tên)')).toHaveLength(4)
@@ -77,8 +77,8 @@ describe('SignatureSection', () => {
     expect(screen.getAllByText('Le Phuoc Huu')).toHaveLength(1)
   })
 
-  it('draws four cells for a household business, first one labelled «Chủ hộ», with names', () => {
-    //  PYC29092604 (DR.XANH): bản 536 ra 3 ô, đại ca báo «còn thiếu phần TP bên thu mua».
+  it('draws four cells for a household business, first one labelled "Chủ hộ", with names', () => {
+    //  PYC29092604 (DR.XANH): bản 536 ra 3 ô, đại ca báo "còn thiếu phần TP bên thu mua".
     const { grid } = renderSection(householdCells)
     expect(screen.getByText('Chủ hộ')).toBeInTheDocument()
     expect(screen.getByText('TP/BP mua hàng')).toBeInTheDocument()
@@ -117,7 +117,7 @@ describe('SignatureSection', () => {
   })
 })
 
-// bao-CR-544 → bao-CR-546 — ô tick «Ẩn nơi giao»: GIỮ cột «Nơi giao» (khuôn mẫu không đổi), chỉ để
+// bao-CR-544 → bao-CR-546 — ô tick "Ẩn nơi giao": GIỮ cột "Nơi giao" (khuôn mẫu không đổi), chỉ để
 // trống chữ. Bản CR-544 xóa hẳn cột, đại ca chê lệch khuôn (ảnh PYC29092603).
 function makeItem(id: number, warehouse: string): PurchaseRequestItem {
   //  why: tờ phiếu chỉ đọc vài trường của dòng — dựng đủ kiểu dòng YCMH ở đây là nhiễu.
@@ -252,8 +252,8 @@ describe('PurchaseRequestPrintOptions (bao-CR-546)', () => {
   })
 })
 
-// bao-CR-574 (đại ca chốt 03/10/2026): nút «In phiếu» luôn mở phiếu chung; người có quyền xem
-// nhà cung cấp chọn bản tách ngay trong ô «Mẫu in». Hai nút lẻ cũ đã bỏ.
+// bao-CR-574 (đại ca chốt 03/10/2026): nút "In phiếu" luôn mở phiếu chung; người có quyền xem
+// nhà cung cấp chọn bản tách ngay trong ô "Mẫu in". Hai nút lẻ cũ đã bỏ.
 describe('PurchaseRequestPrintOptions — supplier layout group (bao-CR-574)', () => {
   function renderOptions(props: Partial<Parameters<typeof PurchaseRequestPrintOptions>[0]> = {}) {
     const onTemplateChange = vi.fn()

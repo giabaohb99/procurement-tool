@@ -79,7 +79,7 @@ ACTION_GROUP_LABELS = {
 # Kênh AI làm hộ — `tab_audit_log.ai_channel` + `tab_ai_usage_daily.channel` (ai-CR-230, doc/erp/22 §5)
 # --------------------------------------------------------------------------
 #  0 = người tự bấm (không qua AI). Thao tác do Trợ lý web / bot / ứng dụng AI ngoài qua cổng MCP làm hộ mang số kênh,
-#  để hồ sơ cách làm việc tách được «tự làm» với «nhờ AI làm». Số đã cấp không đổi / không tái dùng.
+#  để hồ sơ cách làm việc tách được "tự làm" với "nhờ AI làm". Số đã cấp không đổi / không tái dùng.
 AI_CHANNEL_NONE = 0
 AI_CHANNEL_WEB = 1        # Trợ lý AI trên web ERP
 AI_CHANNEL_TELEGRAM = 2   # bot Telegram (lõi core_v2)

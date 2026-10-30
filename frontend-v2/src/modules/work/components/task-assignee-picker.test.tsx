@@ -6,13 +6,13 @@ import type { WorkAssignee, WorkMember } from '../types/work'
 import { WORK_ASSIGNEE_KIND, WORK_ROLE } from '../types/work'
 
 /**
- * Ô «Người phụ trách» — dáng CỤM AVATAR CHỒNG NHAU (CR-256).
+ * Ô "Người phụ trách" — dáng CỤM AVATAR CHỒNG NHAU (CR-256).
  *
  * Bản trước là một dải chip, mỗi người một viên mang họ tên đầy đủ: ba người là
  * tràn sang hàng thứ hai và hàng này cao gấp đôi mọi hàng thuộc tính khác. Bài
  * này ghim ba thứ dễ hỏng lặng lẽ:
- *   - đếm sai «N người» (đếm cả người THEO DÕI vào),
- *   - quá 3 người thì phần dư phải dồn vào «+N», không kéo dài mãi,
+ *   - đếm sai "N người" (đếm cả người THEO DÕI vào),
+ *   - quá 3 người thì phần dư phải dồn vào "+N", không kéo dài mãi,
  *   - chỉ xem thì KHÔNG được dựng nút bấm — nút không ăn gì là lừa người dùng.
  */
 
@@ -51,13 +51,13 @@ function renderPicker(assignees: WorkAssignee[], disabled = false) {
 }
 
 describe('TaskAssigneePicker — dáng đầy đủ (panel chi tiết)', () => {
-  it('MỘT người thì hiện TÊN họ, không phải «1 người phụ trách»', () => {
+  it('MỘT người thì hiện TÊN họ, không phải "1 người phụ trách"', () => {
     //  Đọc tên thẳng vẫn nhanh hơn phải bấm ra xem là ai.
     renderPicker([makeAssignee(1, 'Trần Minh Được')])
     expect(screen.getByText('Trần Minh Được')).toBeInTheDocument()
   })
 
-  it('NHIỀU người thì gom thành «N người phụ trách»', () => {
+  it('NHIỀU người thì gom thành "N người phụ trách"', () => {
     renderPicker([makeAssignee(1, 'Trần Minh Được'), makeAssignee(2, 'Mộc')])
     expect(screen.getByText('2 người phụ trách')).toBeInTheDocument()
   })
@@ -86,14 +86,14 @@ describe('TaskAssigneePicker — dáng đầy đủ (panel chi tiết)', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('quá 3 người thì dồn phần dư vào «+N», không vẽ mãi', () => {
+  it('quá 3 người thì dồn phần dư vào "+N", không vẽ mãi', () => {
     //  Việc giao cho cả phòng: 8 avatar liền nhau là tràn hết hàng.
     renderPicker(Array.from({ length: 8 }, (_, i) => makeAssignee(i + 1, `Nhân sự ${i + 1}`)))
     expect(screen.getByText('+5')).toBeInTheDocument()
     expect(screen.getByText('8 người phụ trách')).toBeInTheDocument()
   })
 
-  it('đúng 3 người thì KHÔNG có «+0» thừa', () => {
+  it('đúng 3 người thì KHÔNG có "+0" thừa', () => {
     renderPicker([makeAssignee(1, 'A Một'), makeAssignee(2, 'B Hai'), makeAssignee(3, 'C Ba')])
     expect(screen.queryByText('+0')).not.toBeInTheDocument()
   })
@@ -104,7 +104,7 @@ describe('TaskAssigneePicker — dáng đầy đủ (panel chi tiết)', () => {
     expect(screen.getByText('?')).toBeInTheDocument()
   })
 
-  it('cả cụm là MỘT nút duy nhất — không có nút «+» riêng bên cạnh', () => {
+  it('cả cụm là MỘT nút duy nhất — không có nút "+" riêng bên cạnh', () => {
     //  Hai chỗ bấm cho cùng một việc chỉ tổ bắt người dùng chọn.
     renderPicker([makeAssignee(1, 'Trần Minh Được'), makeAssignee(2, 'Mộc')])
     expect(screen.getAllByRole('button')).toHaveLength(1)

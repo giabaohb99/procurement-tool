@@ -1,11 +1,11 @@
 """Cảnh báo khóa AI hết tiền / hết hạn mức / hỏng (ai-CR-200).
 
 Đại ca 14/10/2026: ví trạm modelapi.vn âm tiền → cả 3 khóa trạm (dùng chung một ví) hỏng cùng lúc, bot lặng lẽ rơi xuống
-Gemini lite và trả lời «như con nít»; em chỉ biết khi đại ca chê bài viết. Nay mỗi lần chuỗi khóa nhảy vì CHUYỆN CỦA KHÓA,
+Gemini lite và trả lời "như con nít"; em chỉ biết khi đại ca chê bài viết. Nay mỗi lần chuỗi khóa nhảy vì CHUYỆN CỦA KHÓA,
 bot nhắn riêng chủ khóa một tin (khóa cá nhân → chat của chính người đó; khóa công ty / `.env` → chat chủ bot), gom theo
 trạm + loại lỗi và chỉ nhắn lại sau ALERT_EVERY — 3 khóa cùng một ví không thành 3 tin.
 
-Không đọc được số dư: trạm kiểu new-api trả «hard_limit_usd» của khóa (khóa không giới hạn = 100 triệu USD), không phải
+Không đọc được số dư: trạm kiểu new-api trả "hard_limit_usd" của khóa (khóa không giới hạn = 100 triệu USD), không phải
 ví — nên tin chỉ báo hiện tượng, không bịa số dư.
 """
 from __future__ import annotations

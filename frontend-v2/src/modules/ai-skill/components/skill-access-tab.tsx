@@ -36,7 +36,7 @@ interface SkillAccessTabProps {
 }
 
 /**
- * Tab «Ai được đọc» (G3, doc 21 §6.2): dòng quyền của một BỘ (hoặc một skill lẻ). Sáu loại đối tượng — người · phòng
+ * Tab "Ai được đọc" (G3, doc 21 §6.2): dòng quyền của một BỘ (hoặc một skill lẻ). Sáu loại đối tượng — người · phòng
  * ban (kể cả phòng con) · pháp nhân · vai trò · chức vụ · cấp bậc. Dòng CẤM tô đỏ và thắng mọi dòng cho phép.
  *
  * Cùng khuôn hộp quyền xem báo cáo (`report-access-dialog.tsx`): khối trên liệt kê + thu hồi, khối dưới gán thêm một

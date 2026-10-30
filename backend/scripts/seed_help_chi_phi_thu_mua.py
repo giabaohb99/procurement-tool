@@ -2,12 +2,12 @@
 """Seed Trung tâm trợ giúp: CHI PHÍ THU MUA trên đơn mua hàng (bao-CR-453).
 
 Kho hướng dẫn đang chạy có bài về Đơn mua hàng, Công nợ và Báo cáo mua hàng nhưng chưa
-bài nào nói về thẻ «Chi phí thu mua» — thứ vừa đổi từ «Chi phí lô hàng nhập khẩu» (chỉ đơn
+bài nào nói về thẻ "Chi phí thu mua" — thứ vừa đổi từ "Chi phí lô hàng nhập khẩu" (chỉ đơn
 nhập khẩu, hai cờ Dự kiến / Thực tế) sang ba giai đoạn Dự toán → Tạm tính → Quyết toán trên
 mọi loại đơn, kèm danh mục Loại chi phí thu mua do người dùng tự quản.
 
-Script dựng MỘT bài dưới nhóm có sẵn «Dành cho Nhân viên Mua hàng» (không đẻ nhóm mới):
-«Chi phí thu mua trên đơn mua hàng» — kể đủ: khai dòng chi phí, ba giai đoạn và nút chốt,
+Script dựng MỘT bài dưới nhóm có sẵn "Dành cho Nhân viên Mua hàng" (không đẻ nhóm mới):
+"Chi phí thu mua trên đơn mua hàng" — kể đủ: khai dòng chi phí, ba giai đoạn và nút chốt,
 mở lại, quyết toán riêng một dòng, công nợ sinh từ cột Quyết toán, chặn Hoàn thành, phân bổ
 theo giai đoạn, danh mục loại chi phí, báo cáo giá vốn theo giai đoạn.
 
@@ -68,7 +68,7 @@ SUMMARY = (
 )
 
 CONTENT = f"""<h2>I. Chi phí thu mua là gì</h2>
-<p>Ngoài tiền trả cho nhà cung cấp bán hàng, một đơn mua hàng còn kéo theo nhiều khoản chi khác: cước vận tải, phí tại cảng, thuế nhập khẩu, phí kiểm định, bảo hiểm, lưu kho, vận chuyển nội địa... Mỗi khoản thường do <strong>một nhà cung cấp khác</strong> thu tiền và có hóa đơn riêng. Thẻ <strong>«Chi phí thu mua»</strong> trên màn chi tiết {ref(PO_ARTICLE_TITLE, "Đơn mua hàng")} là nơi khai các khoản đó, ngay dưới bảng Dòng hàng.</p>
+<p>Ngoài tiền trả cho nhà cung cấp bán hàng, một đơn mua hàng còn kéo theo nhiều khoản chi khác: cước vận tải, phí tại cảng, thuế nhập khẩu, phí kiểm định, bảo hiểm, lưu kho, vận chuyển nội địa... Mỗi khoản thường do <strong>một nhà cung cấp khác</strong> thu tiền và có hóa đơn riêng. Thẻ <strong>Chi phí thu mua</strong> trên màn chi tiết {ref(PO_ARTICLE_TITLE, "Đơn mua hàng")} là nơi khai các khoản đó, ngay dưới bảng Dòng hàng.</p>
 <p>Thẻ này dùng cho <strong>mọi loại đơn</strong>, không riêng đơn nhập khẩu. Đơn trong nước chưa có khoản nào thì thẻ thu gọn, chỉ còn nút <em>Thêm chi phí</em>.</p>
 <p>Điểm quan trọng nhất: mỗi khoản chi phí có <strong>ba con số</strong> theo ba giai đoạn, và <strong>chỉ con số Quyết toán mới sinh công nợ</strong>. Số dự toán hay tạm tính chỉ để lập kế hoạch và so lệch.</p>
 
@@ -102,14 +102,14 @@ CONTENT = f"""<h2>I. Chi phí thu mua là gì</h2>
 <li><strong>Quyết toán riêng một dòng</strong>: hóa đơn của một khoản về sớm trong khi cả đơn còn ở Dự toán hay Tạm tính, dùng menu <em>Quyết toán dòng này</em> ở cột Hành động. Dòng đó khóa ở cột Quyết toán và sinh công nợ ngay, các dòng khác không đổi.</li>
 <li><strong>Mở lại</strong> (lùi về giai đoạn trước, hoặc mở lại một dòng đã quyết toán riêng): cần <strong>quyền duyệt đơn mua hàng</strong> và <strong>lý do tối thiểu 10 ký tự</strong>, lý do ghi vào nhật ký. Số ở cột đã mở không bị xóa, chỉ mở khóa. Dòng đã có tiền chi thì <strong>giữ nguyên quyết toán và giữ công nợ</strong>, dòng chưa chi thì gỡ công nợ.</li>
 </ul>
-<p>Ngày và người chốt từng giai đoạn hiện trên dải ba bước; đơn cũ không có dòng nhật ký thì ghi «chốt khi nâng cấp».</p>
+<p>Ngày và người chốt từng giai đoạn hiện trên dải ba bước; đơn cũ không có dòng nhật ký thì ghi <em>chốt khi nâng cấp</em>.</p>
 
 <h2>V. Công nợ và thanh toán</h2>
-<p>Mỗi dòng chi phí đã quyết toán thành <strong>một khoản công nợ</strong> loại «Chi phí thu mua» ở màn {ref(PAYABLE_ARTICLE_TITLE, "Công nợ")}, khi đủ bốn điều kiện: đơn đã duyệt; dòng ở giai đoạn Quyết toán; dòng có nhà cung cấp và số tiền lớn hơn 0; loại chi phí có bật <em>Sinh công nợ</em>. Sửa số Quyết toán, nhà cung cấp hay hóa đơn của dòng thì khoản nợ cập nhật theo; hạ số xuống dưới số đã chi thì hệ thống từ chối.</p>
+<p>Mỗi dòng chi phí đã quyết toán thành <strong>một khoản công nợ</strong> loại <strong>Chi phí thu mua</strong> ở màn {ref(PAYABLE_ARTICLE_TITLE, "Công nợ")}, khi đủ bốn điều kiện: đơn đã duyệt; dòng ở giai đoạn Quyết toán; dòng có nhà cung cấp và số tiền lớn hơn 0; loại chi phí có bật <em>Sinh công nợ</em>. Sửa số Quyết toán, nhà cung cấp hay hóa đơn của dòng thì khoản nợ cập nhật theo; hạ số xuống dưới số đã chi thì hệ thống từ chối.</p>
 <p>Dòng <strong>đã có tiền chi thì không xóa được</strong>. Hủy đơn thì gỡ các khoản chưa chi, giữ khoản đã chi.</p>
 <p>Tạo Yêu cầu thanh toán cho chi phí có ba đường, đều đưa về màn lập phiếu và hệ thống tự tách mỗi nhà cung cấp một phiếu:</p>
 <ul>
-<li>Khối <strong>«Thanh toán chi phí theo nhà cung cấp»</strong> dưới bảng: mỗi nhà cung cấp một dòng Phải trả, Đã chi, Còn lại và nút <em>Tạo YCTT</em>. Đây là đường chính.</li>
+<li>Khối <strong>Thanh toán chi phí theo nhà cung cấp</strong> dưới bảng: mỗi nhà cung cấp một dòng Phải trả, Đã chi, Còn lại và nút <em>Tạo YCTT</em>. Đây là đường chính.</li>
 <li>Tick các dòng trên bảng chi phí rồi bấm <em>Tạo YCTT (n dòng đã tick)</em>.</li>
 <li>Popup <em>Tạo yêu cầu thanh toán</em> của đơn, tab <em>Chi phí thu mua</em>.</li>
 </ul>
@@ -120,7 +120,7 @@ CONTENT = f"""<h2>I. Chi phí thu mua là gì</h2>
 <p>Riêng <strong>đơn nhập khẩu</strong> giữ luật chặt hơn: mọi khoản chi phí phải đã <strong>chi đủ</strong> mới Hoàn thành; còn dòng nào chưa trả hết thì hệ thống liệt kê từng dòng và số còn lại.</p>
 
 <h2>VII. Phân bổ về dòng hàng, bản in, giá vốn</h2>
-<p>Panel <strong>«Chi phí theo dòng hàng»</strong> dưới thẻ chia từng khoản về các dòng hàng theo cách phân bổ đã chọn (theo giá trị, khối lượng, số lượng, chỉ định một mã, hoặc nhập tay). Panel có <strong>nút chọn giai đoạn</strong> để xem phân bổ theo Dự toán, Tạm tính hay Quyết toán mà không cần tải lại; giai đoạn chưa có số thì nút mờ. Kết quả chỉ để xem, <strong>không lưu và không đẩy vào kho</strong>.</p>
+<p>Panel <strong>Chi phí theo dòng hàng</strong> dưới thẻ chia từng khoản về các dòng hàng theo cách phân bổ đã chọn (theo giá trị, khối lượng, số lượng, chỉ định một mã, hoặc nhập tay). Panel có <strong>nút chọn giai đoạn</strong> để xem phân bổ theo Dự toán, Tạm tính hay Quyết toán mà không cần tải lại; giai đoạn chưa có số thì nút mờ. Kết quả chỉ để xem, <strong>không lưu và không đẩy vào kho</strong>.</p>
 <p>Bản in <em>In Đơn nhập khẩu</em> in số của giai đoạn hiện hành và ghi rõ giai đoạn trên tiêu đề khối, không in ba cột.</p>
 <p>Tab <strong>Giá vốn nhập khẩu</strong> trong {ref(REPORT_ARTICLE_TITLE, "Báo cáo mua hàng")} có ô lọc <strong>Giai đoạn</strong> (mặc định Quyết toán) và ô tick <strong>Gồm đơn trong nước</strong>; mỗi đơn hiện thêm chi phí dự toán, chi phí quyết toán và số lệch để so sánh.</p>
 
@@ -129,8 +129,8 @@ CONTENT = f"""<h2>I. Chi phí thu mua là gì</h2>
 <ul>
 <li>Mỗi loại có <strong>mã số</strong> (bỏ trống thì hệ thống tự cấp, không sửa được sau khi tạo), tên, nhóm (Thuế nộp ngân sách / Dịch vụ), nhà cung cấp mặc định, cách phân bổ mặc định, VAT mặc định và thứ tự hiện trong ô chọn.</li>
 <li>Ô <strong>Sinh công nợ</strong>: tắt đi thì các dòng mang loại này <strong>không thành công nợ</strong> và không chặn Hoàn thành, nhưng vẫn cộng vào tổng chi phí và phân bổ. Dùng cho khoản đã trả ngoài hệ thống.</li>
-<li>Loại đã dùng trên đơn thì <strong>không xóa được</strong>; bỏ tick <em>Đang dùng</em> để ẩn khỏi ô chọn. Dòng cũ đang mang loại đã tắt vẫn lưu được, tên hiện kèm «(đã tắt)».</li>
-<li>Loại <strong>«Chi phí khác»</strong> (mã 99) là chỗ rơi của mọi mã lạ: không đổi tên, không tắt, không xóa.</li>
+<li>Loại đã dùng trên đơn thì <strong>không xóa được</strong>; bỏ tick <em>Đang dùng</em> để ẩn khỏi ô chọn. Dòng cũ đang mang loại đã tắt vẫn lưu được, tên hiện kèm <em>(đã tắt)</em>.</li>
+<li>Loại <strong>Chi phí khác</strong> (mã 99) là chỗ rơi của mọi mã lạ: không đổi tên, không tắt, không xóa.</li>
 </ul>
 
 <h2>IX. Câu hỏi thường gặp</h2>
@@ -188,7 +188,7 @@ def seed_one(db, parent, title: str, summary: str, content: str, default_order: 
     if old is not None:
         order = old.sort_order
         removed = delete_subtree(db, old.id)
-        print(f"  Đã xóa bài cũ «{title}»: {removed} bài (id={old.id}).")
+        print(f"  Đã xóa bài cũ '{title}': {removed} bài (id={old.id}).")
     if order is None:
         order = default_order
 
@@ -201,7 +201,7 @@ def seed_one(db, parent, title: str, summary: str, content: str, default_order: 
     )
     db.add(art)
     db.flush()
-    print(f"  Đã dựng «{title}» (id={art.id}) dưới «{parent.title}» "
+    print(f"  Đã dựng '{title}' (id={art.id}) dưới '{parent.title}' "
           f"(id={parent.id}, sort_order={order}).")
 
 
@@ -212,7 +212,7 @@ def main():
         for parent_title, *_ in ARTICLES:
             group = find_group(db, parent_title)
             if group is None:
-                print(f"Không thấy nhóm «{parent_title}» — dừng, không tạo bài gốc mới.")
+                print(f"Không thấy nhóm '{parent_title}' — dừng, không tạo bài gốc mới.")
                 sys.exit(1)
             groups[parent_title] = group
 

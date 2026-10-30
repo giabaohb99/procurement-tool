@@ -18,14 +18,14 @@ import { MemberStack, ProgressCell } from './project-cells'
  * cho gọn thì thẻ chỉ còn là một cái nhãn tên, và người dùng phải mở từng dự án
  * mới biết cái nào cần đụng tới.
  *
- * ⚠️ **Mỗi dòng chữ đúng MỘT hàng, dài thì «…»** (luật chung của thẻ danh mục,
+ * ⚠️ **Mỗi dòng chữ đúng MỘT hàng, dài thì "…"** (luật chung của thẻ danh mục,
  * khách chốt 10/09/2026) — thẻ cao thấp so le nhau thì mắt phải dò lại mép trên
  * của từng thẻ thay vì lướt một cột đều.
  *
  * ⚠️ **Thẻ chỉ nói cái BẤT THƯỜNG.** Huy hiệu *Đã lưu trữ* chỉ mọc khi dự án đã
  * lưu trữ — mà danh sách mặc định không có dự án nào như vậy, nó chỉ xuất hiện
- * sau khi người dùng tự bật «Hiện cả dự án lưu trữ». Dòng mô tả cũng vậy: dự án
- * không có mô tả thì bỏ hẳn dòng, đừng in một dấu «—» cho thẳng hàng.
+ * sau khi người dùng tự bật "Hiện cả dự án lưu trữ". Dòng mô tả cũng vậy: dự án
+ * không có mô tả thì bỏ hẳn dòng, đừng in một dấu "—" cho thẳng hàng.
  */
 export function ProjectCard({ project }: { project: WorkList }) {
   const owner = project.owner?.employee_name

@@ -45,7 +45,7 @@ _FORMATS = {
     # bao-CR (P03 báo cáo Haravan): giá trị LƯU SẴN theo thang 0-100 (vd 42.5 = "42.5%"),
     # định dạng CHỮ "%" gắn thẳng vào chuỗi định dạng nên KHÔNG nhân lại 100 như toán tử % thật.
     "percent": '0.0"%"',
-    # duoc-CR-657: số thập phân thuần (ngày, tỷ lệ) — None là «chưa có số», để RỖNG chứ không phải 0.
+    # duoc-CR-657: số thập phân thuần (ngày, tỷ lệ) — None là "chưa có số", để RỖNG chứ không phải 0.
     "decimal": "#,##0.00",
     "date": "dd/mm/yyyy",
     "datetime": "dd/mm/yyyy hh:mm",

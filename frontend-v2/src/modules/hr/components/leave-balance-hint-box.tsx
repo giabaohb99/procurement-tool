@@ -21,7 +21,7 @@ interface LeaveBalanceHintBoxProps {
  * Ba trạng thái, mỗi cái nói một chuyện khác nhau:
  *  · loại nghỉ KHÔNG trừ quỹ → nói thẳng là không giới hạn, đừng để trống;
  *  · đủ phép                 → hiện số còn lại;
- *  · KHÔNG đủ                → cảnh báo đỏ + chỉ đường sang «Nghỉ không lương»,
+ *  · KHÔNG đủ                → cảnh báo đỏ + chỉ đường sang "Nghỉ không lương",
  *    đúng câu backend sẽ chặn (QĐ-NP2 — không cho ứng phép).
  */
 export function LeaveBalanceHintBox({
@@ -75,8 +75,8 @@ export function LeaveBalanceHintBox({
            trọn chiều cao hộp trong khi cả ba nói về cùng một quỹ — khách bác
            đúng chỗ đó. Ba mảnh, mảnh nào không có số thì không dựng:
              · quỹ còn lại  — luôn có;
-             · CHỜ DUYỆT    — phần giữ chỗ, phải nói ra vì nó đã bị trừ khỏi «còn
-               lại» rồi; im thì người ta thấy hụt ngày và tưởng máy tính sai;
+             · CHỜ DUYỆT    — phần giữ chỗ, phải nói ra vì nó đã bị trừ khỏi "còn
+               lại" rồi; im thì người ta thấy hụt ngày và tưởng máy tính sai;
              · TRỪ ĐƠN NÀY  — nhẩm hộ người dùng; nhẩm sai thì họ nộp một tờ đơn
                sẽ bị chặn. Vượt quỹ thì bỏ, số âm ở đây vô nghĩa và đã có câu
                cảnh báo riêng bên dưới. */}
@@ -105,7 +105,7 @@ export function LeaveBalanceHintBox({
       {!enough && (
         <p className="mt-1 text-xs font-medium">
           Đơn này xin {requestedDays} ngày — vượt quỹ nên sẽ bị chặn lúc gửi duyệt. Muốn nghỉ
-          tiếp thì chọn loại «Nghỉ không lương».
+          tiếp thì chọn loại <strong>Nghỉ không lương</strong>.
         </p>
       )}
 

@@ -9,7 +9,7 @@ import type { DocKind, DossierProgressStatus } from '../types/dossier-applicabil
  * Ô nào KHÔNG gửi thì giữ nguyên — đường này là PATCH.
  *
  * ⚠️ `planned_date: null` (xóa ngày) khác hẳn *không gửi khóa đó* (đừng đụng
- * vào). Gửi `undefined` thì `JSON.stringify` bỏ khóa luôn, đúng ý «đừng đụng»;
+ * vào). Gửi `undefined` thì `JSON.stringify` bỏ khóa luôn, đúng ý "đừng đụng";
  * muốn xóa ngày phải gửi `null` tường minh.
  */
 export interface DossierProgressPayload {

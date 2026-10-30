@@ -33,7 +33,7 @@ describe('formatValidity', () => {
 
 describe('VALIDITY_OPTIONS', () => {
   it('nhãn lấy đúng formatValidity — ô chọn và cột bảng không được nói khác nhau', () => {
-    //  LỖI ĐÃ TRÁNH: ô chọn ghi «3 năm» còn cột *Hạn mặc định* ghi «36 tháng» cho
+    //  LỖI ĐÃ TRÁNH: ô chọn ghi "3 năm" còn cột *Hạn mặc định* ghi "36 tháng" cho
     //  cùng một dòng, người dùng đọc ra hai giá trị và đi tìm chỗ mình sửa hụt.
     for (const option of VALIDITY_OPTIONS) {
       expect(option.label).toBe(formatValidity(Number(option.value)))

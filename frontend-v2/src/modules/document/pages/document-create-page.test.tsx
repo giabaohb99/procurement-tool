@@ -98,7 +98,7 @@ function renderPage() {
   )
 }
 
-//  «Tạo, không soạn thảo» hỏi lại khi chưa đính tệp — cho qua luôn trong test.
+//  "Tạo, không soạn thảo" hỏi lại khi chưa đính tệp — cho qua luôn trong test.
 vi.mock('@/shared/ui/confirm-dialog', () => ({ confirm: vi.fn(async () => true) }))
 
 async function goToLastStep() {
@@ -110,7 +110,7 @@ async function goToLastStep() {
   )
 }
 
-//  24/09/2026: màn chi tiết bỏ tab «Tệp», tab «Văn bản» đọc `content_mode` để
+//  24/09/2026: màn chi tiết bỏ tab "Tệp", tab "Văn bản" đọc `content_mode` để
 //  chọn trình soạn thảo / trình xem tệp. Nút cuối là lượt SỬA bản nháp đã sinh
 //  ở bước 1 — thiếu trường này ở đó là văn bản chỉ gồm tệp mở ra trang trắng.
 describe('DocumentCreatePage — lưu CÁCH TẠO (content_mode)', () => {
@@ -119,7 +119,7 @@ describe('DocumentCreatePage — lưu CÁCH TẠO (content_mode)', () => {
     mutateAsyncMock.mockClear()
   })
 
-  it('«Tạo và soạn thảo» sends content_mode = compose', async () => {
+  it('"Tạo và soạn thảo" sends content_mode = compose', async () => {
     renderPage()
     await goToLastStep()
     fireEvent.click(screen.getByRole('button', { name: 'Tạo và soạn thảo' }))
@@ -127,7 +127,7 @@ describe('DocumentCreatePage — lưu CÁCH TẠO (content_mode)', () => {
     expect(mutateMock.mock.calls[0][0].values.content_mode).toBe(DOCUMENT_CONTENT_MODE.compose)
   })
 
-  it('«Tạo, không soạn thảo» sends content_mode = files and empty content', async () => {
+  it('"Tạo, không soạn thảo" sends content_mode = files and empty content', async () => {
     renderPage()
     await goToLastStep()
     fireEvent.click(screen.getByRole('button', { name: 'Tạo, không soạn thảo' }))
@@ -139,7 +139,7 @@ describe('DocumentCreatePage — lưu CÁCH TẠO (content_mode)', () => {
 })
 
 describe('DocumentCreatePage — chặn bấm đúp nút Tạo', () => {
-  it('bấm đúp «Tạo và soạn thảo» liền tay chỉ gọi MỘT lệnh tạo văn bản', async () => {
+  it('bấm đúp "Tạo và soạn thảo" liền tay chỉ gọi MỘT lệnh tạo văn bản', async () => {
     renderPage()
 
     //  Bước 1 → 2: sinh bản nháp trên máy chủ (mock `mutateAsync`).

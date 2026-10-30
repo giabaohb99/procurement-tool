@@ -1,5 +1,5 @@
 // Nạp lại danh mục thuốc BVTV — chấp nhận CẢ BA loại tệp: bản cào gốc (`thuoc-bvtv.json` /
-// `.xlsx` từ danhmuc.thuocbvtv.com), tệp xuất «Toàn bộ danh mục» hoặc tệp xuất «Trang hiện tại»
+// `.xlsx` từ danhmuc.thuocbvtv.com), tệp xuất "Toàn bộ danh mục" hoặc tệp xuất "Trang hiện tại"
 // (xem `customs-pesticide-export-menu.tsx`). Backend tự nhận ra loại tệp qua sheet ẩn và trả về
 // `mode`: bản cào gốc/tệp toàn bộ → THAY cả danh mục (GIỮ thuốc tự thêm, duoc-CR-490); tệp theo
 // trang → chỉ CẬP NHẬT đúng các thuốc có trong tệp, phần còn lại giữ nguyên. Hộp thoại không tự
@@ -98,8 +98,8 @@ export function CustomsPesticideImportDialog({
         </DialogHeader>
 
         <CustomsNotice tone="info" icon={<Info className="size-4" />}>
-          Tệp toàn bộ danh mục (bản cào gốc hoặc xuất «Toàn bộ danh mục») sẽ{' '}
-          <b>thay cả danh mục</b>. Tệp xuất «Trang hiện tại» chỉ <b>cập nhật</b> đúng các thuốc có
+          Tệp toàn bộ danh mục (bản cào gốc hoặc xuất <strong>Toàn bộ danh mục</strong>) sẽ{' '}
+          <b>thay cả danh mục</b>. Tệp xuất <strong>Trang hiện tại</strong> chỉ <b>cập nhật</b> đúng các thuốc có
           trong tệp (thêm thuốc mới nếu chưa có), phần còn lại giữ nguyên.
         </CustomsNotice>
 

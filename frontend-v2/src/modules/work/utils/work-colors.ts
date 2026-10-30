@@ -78,8 +78,8 @@ export function priorityColor(priority: number): string {
 }
 
 /**
- * Ô tick «xong» của việc / việc con (thẻ kanban, dòng danh sách, danh sách việc con):
- * tô XANH LÁ (`--success`) cho khớp chip «Hoàn thành» ở panel chi tiết — mặc định của
+ * Ô tick "xong" của việc / việc con (thẻ kanban, dòng danh sách, danh sách việc con):
+ * tô XANH LÁ (`--success`) cho khớp chip "Hoàn thành" ở panel chi tiết — mặc định của
  * `Checkbox` là màu chủ đạo xanh biển, hai chỗ lệch màu nhau (bao-CR-604, đại ca soi 07/10).
  */
 export const DONE_CHECK_CLASS =

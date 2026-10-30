@@ -19,11 +19,11 @@ import { useCustomsSavedFilterMutations, useCustomsSavedFilters } from '../../ho
 import { parseFilterParams, sameFilterParams } from '../../utils/customs-saved-filter'
 
 /**
- * «Bộ lọc đã lưu» + «Lưu bộ lọc này» trên thanh lọc của màn Tra cứu giá hải quan — bao-CR-496 (F07).
+ * "Bộ lọc đã lưu" + "Lưu bộ lọc này" trên thanh lọc của màn Tra cứu giá hải quan — bao-CR-496 (F07).
  *
  * Bộ lọc là của RIÊNG tài khoản, lưu ở backend (đổi máy không mất — đại ca chốt, không dùng
  * localStorage). Chọn một bộ → trang về ĐÚNG trạng thái đó (ô không có trong bộ bị xóa khỏi
- * URL). Đang đứng trên một bộ mà điều kiện đã đổi thì có «Cập nhật» để ghi đè; «Xóa» hỏi lại.
+ * URL). Đang đứng trên một bộ mà điều kiện đã đổi thì có "Cập nhật" để ghi đè; "Xóa" hỏi lại.
  */
 interface CustomsSavedFilterBarProps {
   /** Chuỗi ô lọc đang áp (từ `collectFilterParams`). */
@@ -99,7 +99,7 @@ export function CustomsSavedFilterBar({
     if (!selected) return
     const ok = await confirm({
       title: 'Xóa bộ lọc đã lưu',
-      message: `Xóa bộ lọc «${selected.name}»? Điều kiện đang áp trên màn hình không đổi.`,
+      message: `Xóa bộ lọc "${selected.name}"? Điều kiện đang áp trên màn hình không đổi.`,
       confirmLabel: 'Xóa',
     })
     if (!ok) return
@@ -178,7 +178,7 @@ export function CustomsSavedFilterBar({
           <DialogHeader>
             <DialogTitle>Lưu bộ lọc này</DialogTitle>
             <DialogDescription>
-              Đặt tên cho tổ hợp điều kiện đang áp (ví dụ «Abamectin 3.6 EC»). Lần sau chọn tên
+              Đặt tên cho tổ hợp điều kiện đang áp (ví dụ <em>Abamectin 3.6 EC</em>). Lần sau chọn tên
               này là màn hình về đúng trạng thái đó. Bộ lọc là của riêng bạn.
             </DialogDescription>
           </DialogHeader>

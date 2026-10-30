@@ -1,7 +1,7 @@
 """Tách LỊCH TRÌNH có giờ từ tệp kế hoạch (Markdown) thành danh sách sự kiện — máy làm, không để model nhớ (ai-CR-227).
 
 Lượt run #368–369 (dev 19/10/2026): tệp ghi 01:30 ngủ khách sạn Ruby Trảng Bom, 05:15 đổ xăng Trảng Bom, 09:00 ăn sáng quán
-Tazon — Lạc Lạc tạo lịch 01:30 «Dừng Long Thành», 04:00 «Ăn sáng Phan Thiết» (soạn lại từ trí nhớ hội thoại). Nay giờ, tên
+Tazon — Lạc Lạc tạo lịch 01:30 "Dừng Long Thành", 04:00 "Ăn sáng Phan Thiết" (soạn lại từ trí nhớ hội thoại). Nay giờ, tên
 điểm, việc làm, ghi chú lấy NGUYÊN VĂN từ bảng trong tệp; link bản đồ lấy đúng link có trong tệp.
 
 Khuôn đọc được: mỗi ngày một tiêu đề `## …` có ngày `dd/mm` (năm lấy từ `dd/mm/yyyy` đầu tiên trong tệp), bên dưới một
@@ -23,7 +23,7 @@ DECOR_RX = re.compile("[\U0001F000-\U0001FAFF☀-➿⬀-⯿️‍*_`]")
 MAX_GAP = timedelta(hours=6)          # khoảng tới dòng kế tiếp dài hơn thế thì coi như hết việc, mặc định 60 phút
 DEFAULT_LEN = timedelta(minutes=60)
 MAX_EVENTS = 200
-#  «nghỉ ~45 phút», «Tham quan 1–1,5 tiếng», «Ngủ ~3,5 tiếng» — lấy số ĐẦU làm thời lượng (không vượt giờ dòng kế tiếp).
+#  "nghỉ ~45 phút", "Tham quan 1–1,5 tiếng", "Ngủ ~3,5 tiếng" — lấy số ĐẦU làm thời lượng (không vượt giờ dòng kế tiếp).
 DURATION_RX = re.compile(r"(\d+(?:[.,]\d+)?)\s*(?:[–-]\s*\d+(?:[.,]\d+)?\s*)?(phút|tiếng|giờ)", re.I)
 
 
@@ -73,7 +73,7 @@ def extract(text: str, today: date | None = None) -> dict:
                 try:
                     section["ngay"] = date(int(m.group(3) or year), int(m.group(2)), int(m.group(1)))
                 except ValueError:
-                    warnings.append(f"Ngày lạ ở tiêu đề «{_clean(line[3:])}» — bỏ qua phần này.")
+                    warnings.append(f"Ngày lạ ở tiêu đề **{_clean(line[3:])}** — bỏ qua phần này.")
             sections.append(section)
             header = None
             continue
@@ -99,7 +99,7 @@ def extract(text: str, today: date | None = None) -> dict:
             continue
         hh, mm = int(m.group(1)), int(m.group(2))
         if hh > 23 or mm > 59:
-            warnings.append(f"Giờ lạ «{cells[0]}» ở {section['tieu_de']} — bỏ dòng này.")
+            warnings.append(f"Giờ lạ **{cells[0]}** ở {section['tieu_de']} — bỏ dòng này.")
             continue
         col = {name: (cells[i] if i < len(cells) else "") for i, name in enumerate(header)}
         day = section["ngay"]

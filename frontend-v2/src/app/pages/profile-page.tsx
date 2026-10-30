@@ -15,6 +15,7 @@ import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
 import { ProfileLaborContractsTab } from '@/app/components/profile/profile-labor-contracts-tab'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
 import { ProfileLeaveCard } from '@/app/components/profile/profile-leave-card'
+import { ProfileSalaryCard } from '@/app/components/profile/profile-salary-card'
 import { ProfileLoginHistoryTab } from '@/app/components/profile/profile-login-history-tab'
 import { ProfileMemoryTab } from '@/app/components/profile/profile-memory-tab'
 import { ProfilePasswordCard } from '@/app/components/profile/profile-password-card'
@@ -123,7 +124,7 @@ export function ProfilePage() {
                    dưới bề rộng nội dung tối thiểu — mà các dòng hồ sơ dùng
                    `truncate` (= `white-space: nowrap`), nên bề rộng tối
                    thiểu của chúng là TOÀN BỘ chuỗi chưa cắt. Đo ở 390px:
-                   dòng «Công ty / Pháp nhân» đòi 418px, kéo cả cột lên
+                   dòng "Công ty / Pháp nhân" đòi 418px, kéo cả cột lên
                    452px trong khi chỗ có là 358px — thẻ tràn khỏi màn và
                    `truncate` không bao giờ có dịp cắt chữ. */}
               <div className="grid items-stretch gap-4 lg:grid-cols-2">
@@ -133,8 +134,8 @@ export function ProfilePage() {
                 <div className="flex min-w-0 flex-col gap-4">
                   <SignatureCard signature={profile.signature} />
 
-                  {/*  QUỸ PHÉP của chính mình (duoc-CR-379) — «còn bao
-                       nhiêu ngày phép» là câu hỏi hay gặp nhất về hồ sơ
+                  {/*  QUỸ PHÉP của chính mình (duoc-CR-379) — "còn bao
+                       nhiêu ngày phép" là câu hỏi hay gặp nhất về hồ sơ
                        của bản thân. Thẻ tự tắt khi thiếu `leave_balance.read`
                        hoặc tài khoản chưa gắn nhân sự; xem ghi chú trong
                        `ProfileLeaveCard` về việc vì sao ở đây KHÔNG mở cửa
@@ -145,6 +146,8 @@ export function ProfilePage() {
                       hasHireDate={Boolean(myEmployee.hire_date)}
                     />
                   )}
+                  {/*  duoc-CR-693 — lương của chính mình, mặc định che số (xem ghi chú trong thẻ). */}
+                  {myEmployee && <ProfileSalaryCard employee={myEmployee} />}
                   {/* bao-CR-349 — công tắc email thông báo của chính mình.
                       Xếp dưới Chữ ký để hai cột cân nhau; đây cũng là cửa
                       người dùng TỰ tắt, ba cửa còn lại là của quản trị. */}
@@ -163,10 +166,10 @@ export function ProfilePage() {
 
                    `myEmployee` rỗng khi tài khoản chưa gắn hồ sơ nhân sự
                    (admin, tài khoản hệ thống): không dựng khối nào, và thẻ
-                   «Hồ sơ nhân sự» phía trên đã có sẵn câu nhắc liên hệ bộ
+                   "Hồ sơ nhân sự" phía trên đã có sẵn câu nhắc liên hệ bộ
                    phận Nhân sự. */}
-              {/*  bao-CR-508 — nhóm LIÊN HỆ tự sửa được: thẻ «Liên hệ» cắm
-                   vào cuối lưới hồ sơ (thay thẻ «Địa chỉ» chỉ-xem cũ), bảng
+              {/*  bao-CR-508 — nhóm LIÊN HỆ tự sửa được: thẻ "Liên hệ" cắm
+                   vào cuối lưới hồ sơ (thay thẻ "Địa chỉ" chỉ-xem cũ), bảng
                    người báo tin chạy hết bề ngang ngay dưới vì mỗi dòng có
                    bốn ô nhập. */}
               {myEmployee && (
@@ -192,7 +195,7 @@ export function ProfilePage() {
               )}
 
               {/*  ⚠️ Gọi TRẦN, đừng bọc `FormCard`. `AuditTimeline` tự dựng
-                   `Card` kèm tiêu đề «Lịch sử thao tác» của chính nó, nên
+                   `Card` kèm tiêu đề "Lịch sử thao tác" của chính nó, nên
                    bọc thêm là **thẻ trong thẻ, tiêu đề in hai lần** — hai
                    khung viền lồng nhau còn ăn thêm hai lớp đệm, ở khổ điện
                    thoại thì thấy rõ ngay. Mọi màn khác đều gọi trần. */}

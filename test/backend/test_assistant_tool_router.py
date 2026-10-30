@@ -5,6 +5,14 @@ import pytest
 from app.modules.assistant import tool_router as tr
 
 
+def _core_active() -> set[str]:
+    """Nhóm lõi THỰC gửi đi: `search_docs` chỉ có khi `AI_RAG_ENABLED` bật (máy local thường tắt) — đếm cứng `len(CORE)`
+    là bài kiểm đỏ / xanh tùy tệp .env của từng máy."""
+    from app.modules.assistant import tools as T
+
+    return set(tr.CORE) & {d.name for d in T.tool_defs()}
+
+
 def test_moi_cong_cu_deu_co_nhom(db):
     """Thêm công cụ mới mà quên xếp nhóm thì nó chỉ còn được gửi khi câu hỏi không khớp nhóm nào — ĐỎ ở đây."""
     from app.core.config import settings
@@ -77,7 +85,7 @@ def test_model_bao_thieu_cong_cu_thi_hoi_lai_voi_du(db, seed, monkeypatch):
     plain.append(True)
     #  ai-CR-192: câu xã giao → chỉ nhóm lõi (có lời dặn lọc); câu không rõ nhóm → đủ công cụ, không lời dặn lọc.
     out = service.ask("chào em", db=db, user=db.get(User, seed.u_req_id))
-    assert len(calls) == 1 and calls[0][0] == len(tr.CORE) and tr.ROUTED_NOTE in calls[0][1] and out["usage"]["tools_retried"] is False
+    assert len(calls) == 1 and calls[0][0] == len(_core_active()) and tr.ROUTED_NOTE in calls[0][1] and out["usage"]["tools_retried"] is False
     calls.clear()
     out = service.ask("cho anh hỏi cái này được không", db=db, user=db.get(User, seed.u_req_id))
     assert len(calls) == 1 and calls[0][0] > 40 and tr.ROUTED_NOTE not in calls[0][1]

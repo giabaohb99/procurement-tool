@@ -1,6 +1,6 @@
 """Tìm nguồn hàng cho Thu mua (phase 23.4 + 23.5, `doc/agent-hub/15` mục Phase 23).
 
-Hai tool, cùng tinh thần «AI chỉ gợi ý, người quyết»:
+Hai tool, cùng tinh thần "AI chỉ gợi ý, người quyết":
 
 * `market_price_search` (ai-CR-173) — tìm GIÁ + LINK sản phẩm trên web công khai (trang hãng, nhà phân phối, sàn TMĐT),
   trả danh sách NGUỒN (tiêu đề, link, nơi bán, đoạn trích có giá) để model của Trợ lý tự đọc và lập bảng; đặt cạnh GIÁ
@@ -146,7 +146,7 @@ def _dedupe_key(url: str) -> str:
 
 
 def search_product_sources(product: str, limit: int) -> tuple[list[dict], list[str]]:
-    """Tìm web 1–2 lượt («giá <sp>», «báo giá <sp>») rồi đọc vài trang đầu. Trả (nguồn, các câu đã tìm).
+    """Tìm web 1–2 lượt ("giá <sp>", "báo giá <sp>") rồi đọc vài trang đầu. Trả (nguồn, các câu đã tìm).
 
     Dùng `web_search.search` + `web_search.fetch` của Agent Hub (DuckDuckGo → Bing, trang công khai). Lượt hai chỉ chạy
     khi lượt một chưa đủ `limit` nguồn — đỡ gọi máy tìm vô ích.
@@ -601,7 +601,7 @@ def supplier_scorecard(ctx: ToolContext, args: dict) -> dict:
             slot["units"].add(r.unit)
         if r.order_date >= slot["last_order_date"]:
             slot["last_order_date"] = r.order_date
-    #  NCC được nêu tên nhưng chưa từng mua mặt hàng này vẫn vào bảng (điểm 0, ghi thiếu) — đúng ý «so NCC A với B».
+    #  NCC được nêu tên nhưng chưa từng mua mặt hàng này vẫn vào bảng (điểm 0, ghi thiếu) — đúng ý "so NCC A với B".
     for code in wanted:
         agg.setdefault(code, {"supplier_code": code, "supplier_name": "", "times": 0, "qty": 0.0, "value": 0.0,
                               "last_order_date": "", "units": set()})

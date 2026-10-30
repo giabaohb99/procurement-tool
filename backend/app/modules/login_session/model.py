@@ -55,7 +55,7 @@ class LoginSession(Base):
     device_type: Mapped[int] = mapped_column(SmallInteger, default=9)   # DeviceType
     os: Mapped[str] = mapped_column(String(60), default="")
     browser: Mapped[str] = mapped_column(String(60), default="")
-    #  Chuỗi hiện cho NGƯỜI đọc ở màn «Thiết bị của tôi» (P3b). Dựng sẵn lúc ghi
+    #  Chuỗi hiện cho NGƯỜI đọc ở màn "Thiết bị của tôi" (P3b). Dựng sẵn lúc ghi
     #  chứ không ghép lúc đọc: ba mảnh ở trên là mã để LỌC, còn câu này là thứ
     #  người dùng nhìn để nhận ra máy của mình.
     device_label: Mapped[str] = mapped_column(String(120), default="")

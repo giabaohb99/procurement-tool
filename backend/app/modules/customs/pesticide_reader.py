@@ -1,8 +1,8 @@
-"""Đọc tệp danh mục thuốc BVTV — mục «Thuốc BVTV» của Tra cứu thị trường (29/09/2026).
+"""Đọc tệp danh mục thuốc BVTV — mục "Thuốc BVTV" của Tra cứu thị trường (29/09/2026).
 
 Nhận ĐÚNG hai tệp mà bản cào danhmuc.thuocbvtv.com xuất ra (`plans/260928-1553-thuoc-bvtv-danh-muc/`):
   · `thuoc-bvtv.json`  — mảng lồng nhau, mỗi thuốc mang sẵn `pham_vi_su_dung`;
-  · `thuoc-bvtv.xlsx`  — sheet «Danh sach thuoc» + sheet «Pham vi su dung» (dòng phẳng, nối bằng `id`).
+  · `thuoc-bvtv.xlsx`  — sheet "Danh sach thuoc" + sheet "Pham vi su dung" (dòng phẳng, nối bằng `id`).
 
 Hai tệp đọc ra CÙNG một dạng (`PesticideRecord` = dict), để phần ghi không phải biết tệp gốc là gì.
 Đọc hết và kiểm hết TRƯỚC khi ghi: tệp hỏng thì ném `ValueError`, danh mục đang có không bị đụng.
@@ -18,7 +18,7 @@ from .constants import PESTICIDE_STATUS_BY_LABEL, PesticideStatus
 
 LIST_SHEET = "Danh sach thuoc"
 USE_SHEET = "Pham vi su dung"
-#  Cột THÊM của hệ thống ở cuối sheet «Danh sach thuoc» — bản cào gốc không có cột này, nên
+#  Cột THÊM của hệ thống ở cuối sheet "Danh sach thuoc" — bản cào gốc không có cột này, nên
 #  tệp cào thật luôn đọc rỗng ở đây. `pesticide_export_columns` (02/10) ghi NGUYÊN VĂN cột
 #  `resistance` đã lưu vào đây — bộ đọc ưu tiên cột này nếu có+không rỗng, bỏ qua bước tách
 #  rồi ghép lại qua `_resistance()` (H2, review 02/10/2026): chữ tự do có thể chứa `;`/`:`
@@ -81,7 +81,7 @@ def _status(label) -> int:
 def _resistance(items: list[tuple[str, list[str]]]) -> str:
     """[(hoạt chất, [mã, nhóm, phương thức])] → `Tên: FRAC 19 | nhóm | phương thức; …`.
 
-    Bỏ phần rỗng, và bỏ hẳn hoạt chất không có gì ngoài tên — nguồn ghi «Chitosan:  |  | »
+    Bỏ phần rỗng, và bỏ hẳn hoạt chất không có gì ngoài tên — nguồn ghi "Chitosan:  |  | "
     cho hoạt chất chưa xếp nhóm kháng, bày ra chỉ là một dòng trống có dấu hai chấm."""
     out = []
     for name, parts in items:
@@ -188,11 +188,11 @@ def _read_xlsx(content: bytes) -> tuple[list[dict], str]:
         raise ValueError("Tệp Excel không mở được") from exc
     try:
         if LIST_SHEET not in wb.sheetnames:
-            raise ValueError(f"Tệp Excel thiếu sheet «{LIST_SHEET}» — cần đúng tệp thuoc-bvtv.xlsx")
+            raise ValueError(f"Tệp Excel thiếu sheet \"{LIST_SHEET}\" — cần đúng tệp thuoc-bvtv.xlsx")
         #  Thiếu sheet phạm vi thì TỪ CHỐI, đừng nạp: nạp là thay toàn bộ, nên tệp thiếu sheet
         #  lặng lẽ xóa sạch mười lăm nghìn dòng phạm vi đang có (review 29/09).
         if USE_SHEET not in wb.sheetnames:
-            raise ValueError(f"Tệp Excel thiếu sheet «{USE_SHEET}» — cần đúng tệp thuoc-bvtv.xlsx")
+            raise ValueError(f"Tệp Excel thiếu sheet \"{USE_SHEET}\" — cần đúng tệp thuoc-bvtv.xlsx")
         mode = marker.detect_mode(wb)
         uses: dict[int, list[tuple[int, dict]]] = defaultdict(list)
         for n, row in enumerate(_sheet_dicts(wb[USE_SHEET]), start=1):
@@ -215,12 +215,12 @@ def _read_xlsx(content: bytes) -> tuple[list[dict], str]:
                 continue
             if rid in seen_ids:
                 raise ValueError(
-                    f"Tệp có id {rid} trùng nhau ở sheet «{LIST_SHEET}» — kiểm lại tệp trước khi nạp")
+                    f"Tệp có id {rid} trùng nhau ở sheet \"{LIST_SHEET}\" — kiểm lại tệp trước khi nạp")
             seen_ids.add(rid)
-            #  Ô nhóm kháng: «Tên: mã | nhóm | phương thức; Tên 2: …» → tách lại rồi dọn phần rỗng.
+            #  Ô nhóm kháng: "Tên: mã | nhóm | phương thức; Tên 2: …" → tách lại rồi dọn phần rỗng.
             items = []
             for chunk in _text(row.get("quan_ly_tinh_khang")).split(";"):
-                #  Tách ở «: » chứ không ở «:» — nguồn có tên hoạt chất dính cả URL (`https://…`, id 3670).
+                #  Tách ở ": " chứ không ở ":" — nguồn có tên hoạt chất dính cả URL (`https://…`, id 3670).
                 name, _, rest = chunk.partition(": ")
                 items.append((name, rest.split("|")))
             raw_resistance = _text(row.get(RAW_RESISTANCE_COLUMN))
@@ -250,7 +250,7 @@ def _validate(records: list[dict]) -> list[dict]:
     if use_total > MAX_USE_ROWS:
         raise _too_many("dòng phạm vi sử dụng", MAX_USE_ROWS)
     #  Nạp là thay toàn bộ: tệp không có dòng phạm vi nào là tệp hỏng / nhầm, không phải
-    #  «danh mục mới không có phạm vi» — nạp vào là xóa sạch phạm vi đang có.
+    #  "danh mục mới không có phạm vi" — nạp vào là xóa sạch phạm vi đang có.
     if not use_total:
         raise ValueError("Tệp không có dòng phạm vi sử dụng nào — kiểm lại tệp trước khi nạp")
     return records

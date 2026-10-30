@@ -133,7 +133,7 @@ def test_row_that_is_not_an_object_is_rejected(db):
 
 def test_unknown_field_is_rejected_with_the_usable_list(db):
     message = _save_error(db, '[{"field": "handler_dept", "op": "not_empty"}]')
-    assert "«handler_dept»" in message
+    assert "\"handler_dept\"" in message
     assert "Phòng xử lý (handler_dept_id)" in message
 
 
@@ -144,7 +144,7 @@ def test_field_of_wrong_type_is_rejected_not_crashed(db):
 
 def test_unknown_op_is_rejected(db):
     message = _save_error(db, '[{"field": "line_count", "op": "like", "value": 1}]')
-    assert "phép so «like»" in message
+    assert "phép so \"like\"" in message
 
 
 def test_error_names_the_offending_row(db):

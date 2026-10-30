@@ -31,7 +31,7 @@ const personColumns = buildPersonColumns()
 const typeRowId = (r: CapabilityTypeRow) => `${r.kind}:${r.task_type_id}`
 const personRowId = (r: CapabilityPersonRow) => `${r.kind}:${r.task_type_id}:${r.employee_id}`
 
-/** Dải nhắc đầu trang: chốt của chủ sản phẩm 20/10/2026 — chỉ để tham khảo, không chấm điểm; «chậm» có thể là việc khó. */
+/** Dải nhắc đầu trang: chốt của chủ sản phẩm 20/10/2026 — chỉ để tham khảo, không chấm điểm; "chậm" có thể là việc khó. */
 function CapabilityNotice() {
   return (
     <div
@@ -40,15 +40,15 @@ function CapabilityNotice() {
     >
       <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
       <span>
-        Số liệu chỉ dùng tham khảo, không dùng để chấm điểm hay xếp hạng người. «Chậm» có thể chỉ vì việc khó hơn, nhiều bước hơn hoặc phải chờ bên
-        khác. Ô «chưa đủ mẫu» nghĩa là dưới 5 phiếu cùng loại; phiếu có mốc xong là ước tính được đếm riêng, không nằm trong trung vị và P90.
+        Số liệu chỉ dùng tham khảo, không dùng để chấm điểm hay xếp hạng người. <strong>Chậm</strong> có thể chỉ vì việc khó hơn, nhiều bước hơn hoặc phải chờ bên
+        khác. Ô <strong>chưa đủ mẫu</strong> nghĩa là dưới 5 phiếu cùng loại; phiếu có mốc xong là ước tính được đếm riêng, không nằm trong trung vị và P90.
       </span>
     </div>
   )
 }
 
 /**
- * «Năng lực theo loại việc» (duoc-CR-657, ReportKey 16): mỗi loại phiếu / loại việc mất bao lâu, làm lại bao nhiêu,
+ * "Năng lực theo loại việc" (duoc-CR-657, ReportKey 16): mỗi loại phiếu / loại việc mất bao lâu, làm lại bao nhiêu,
  * từng người trong loại đó (chỉ khi ≥ 5 mẫu) và tải đang ôm tức thì. Mặc định chỉ quản trị.
  */
 export function WorkCapabilityReportPage() {

@@ -39,12 +39,12 @@ describe('leaveTypeLabel', () => {
     expect(leaveTypeLabel(request({ lines: [twoLines[0]] }))).toBe('Phép năm')
   })
 
-  it('đơn nhiều loại hiện «loại chính +n» — ô bảng cao 35px không chứa nổi hai tên', () => {
+  it('đơn nhiều loại hiện "loại chính +n" — ô bảng cao 35px không chứa nổi hai tên', () => {
     expect(leaveTypeLabel(request({ lines: twoLines }))).toBe('Phép năm +1')
   })
 
-  it('KHÔNG có bản kê thì vẫn hiện tên loại chính, không hiện «+0»', () => {
-    //  Đường trả về nào không gom bản kê thì `lines` rỗng. Thiếu chữ «+1» còn hơn
+  it('KHÔNG có bản kê thì vẫn hiện tên loại chính, không hiện "+0"', () => {
+    //  Đường trả về nào không gom bản kê thì `lines` rỗng. Thiếu chữ "+1" còn hơn
     //  bịa ra một con số.
     expect(leaveTypeLabel(request({ lines: [] }))).toBe('Phép năm')
     expect(leaveTypeLabel(request({ lines: undefined }))).toBe('Phép năm')

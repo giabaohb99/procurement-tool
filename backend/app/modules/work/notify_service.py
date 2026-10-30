@@ -23,7 +23,7 @@ Luật chung:
   bị 500 vì chuông lỗi là tệ hơn việc không có chuông.
 - Dùng thẳng bảng `tab_notification` giống `comment/controller._push` và
   `trigger_notification`; KHÔNG dùng `trigger_notification` vì hàm đó dành cho
-  chứng từ (nhãn «Yêu cầu mua hàng»/«Phiếu khảo sát», email workflow) và sẽ
+  chứng từ (nhãn "Yêu cầu mua hàng"/"Phiếu khảo sát", email workflow) và sẽ
   commit/gửi mail ngoài ý muốn.
 - Link đích là `/project/tasks/{id}` — trang trung chuyển `TaskRedirectPage`
   tra dự án chứa việc rồi mở panel (khớp `core/comment_registry.py`).
@@ -190,14 +190,14 @@ def comment_recipient_user_ids(db: Session, task: WorkTask, user_ids) -> set[int
 
 
 def notify_assigned(db: Session, actor, task: WorkTask, new_pic_ids, background_tasks=None) -> int:
-    """F-01 — «Bạn được giao việc». Chỉ gọi với PIC MỚI (không có trong bộ cũ)."""
+    """F-01 — "Bạn được giao việc". Chỉ gọi với PIC MỚI (không có trong bộ cũ)."""
     if not new_pic_ids:
         return 0
     try:
         who = _actor_name(db, actor)
         due = f" · hạn {task.due_date}" if task.due_date else ""
         return send_bell(db, task, new_pic_ids, f"Bạn được giao việc: {_clip(task.title, 80)}",
-                         f"{who} đã giao cho bạn việc «{_clip(task.title)}»{due}.",
+                         f"{who} đã giao cho bạn việc \"{_clip(task.title)}\"{due}.",
                          task_link(task.id), actor, background_tasks)
     except Exception:
         db.rollback()
@@ -211,9 +211,9 @@ def notify_status_changed(db: Session, actor, task: WorkTask, new_status: int,
     try:
         verb = _STATUS_TEXT.get(int(new_status), "cập nhật")
         who = _actor_name(db, actor)
-        title = f"Việc «{_clip(task.title, 80)}» đã {verb}"
+        title = f"Việc \"{_clip(task.title, 80)}\" đã {verb}"
         return send_bell(db, task, watcher_employee_ids(db, task.id), title,
-                         f"{who} vừa chuyển việc «{_clip(task.title)}» sang trạng thái {verb}.",
+                         f"{who} vừa chuyển việc \"{_clip(task.title)}\" sang trạng thái {verb}.",
                          task_link(task.id), actor, background_tasks)
     except Exception:
         db.rollback()

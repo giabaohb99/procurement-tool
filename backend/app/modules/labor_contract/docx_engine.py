@@ -73,7 +73,7 @@ def _open(data: bytes) -> DocxTemplate:
 def _render_to_bytes(tpl: DocxTemplate, ctx: dict[str, str]) -> bytes:
     try:
         tpl.render(ctx, jinja_env=_make_env(), autoescape=True)
-    except ForbiddenTemplateSyntax as exc:  # câu đã trọn nghĩa — không nối thêm mẹo «gõ lại biến»
+    except ForbiddenTemplateSyntax as exc:  # câu đã trọn nghĩa — không nối thêm mẹo "gõ lại biến"
         raise TemplateRejected(f"{exc}.")
     except TemplateError as exc:  # gồm TemplateSyntaxError và SecurityError của sandbox
         line = getattr(exc, "lineno", None)
@@ -100,7 +100,7 @@ def inspect_template(data: bytes, allowed: frozenset[str] = KNOWN_KEYS, sample: 
     tpl = _open(data)
     try:
         used = tpl.get_undeclared_template_variables(jinja_env=_make_env())
-    except ForbiddenTemplateSyntax as exc:  # câu đã trọn nghĩa — không nối thêm mẹo «gõ lại biến»
+    except ForbiddenTemplateSyntax as exc:  # câu đã trọn nghĩa — không nối thêm mẹo "gõ lại biến"
         raise TemplateRejected(f"{exc}.")
     except TemplateError as exc:
         raise TemplateRejected(

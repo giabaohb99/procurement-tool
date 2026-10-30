@@ -300,7 +300,7 @@ def block_edit_while_approving(doc: Document) -> None:
                                  "thông tin. Muốn sửa thì nhờ người duyệt trả lại.")
     if doc.status == STATUS_REJECTED:
         raise HTTPException(409, "Văn bản đã bị từ chối nên khóa. "
-                                 "Muốn làm lại thì bấm «Sao chép» để có bản nháp mới.")
+                                 "Muốn làm lại thì bấm \"Sao chép\" để có bản nháp mới.")
 
 
 def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int,
@@ -331,8 +331,8 @@ def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int
         raise HTTPException(400, "Văn bản đã có số hiệu, không đổi được pháp nhân ban hành")
     if "doc_type_id" in values and values["doc_type_id"] != doc.doc_type_id:
         new_kind = doc_type_or_400(db, values["doc_type_id"])
-        #  Đổi một bản nháp «Quy chế» (cần duyệt) sang loại KHÔNG cần duyệt là lối
-        #  tắt bỏ qua người duyệt — rồi bấm «Ban hành» thẳng (code-review
+        #  Đổi một bản nháp "Quy chế" (cần duyệt) sang loại KHÔNG cần duyệt là lối
+        #  tắt bỏ qua người duyệt — rồi bấm "Ban hành" thẳng (code-review
         #  29/09/2026, I2). Chỉ người có quyền Duyệt mới được đổi theo chiều đó.
         old_kind = db.get(DocType, doc.doc_type_id)
         if (old_kind and old_kind.needs_approval and not new_kind.needs_approval
@@ -450,7 +450,7 @@ def delete_document(db: Session, doc: Document, actor: int = 0):
     `is_deleted`. Dòng chỉ mục tìm toàn văn thì XÓA (`search_index_service.reindex` coi văn
     bản đã xóa như không còn) để FULLTEXT không trả về nó.
     """
-    #  Cả «Trả về»: bản đó chưa từng được ban hành nên chưa có gì trong sổ để mà
+    #  Cả "Trả về": bản đó chưa từng được ban hành nên chưa có gì trong sổ để mà
     #  thủng. Bắt người soạn giữ lại một bản nháp bị trả mà họ đã quyết định bỏ
     #  thì danh sách chỉ dài thêm.
     if doc.status not in EDITABLE_STATUSES:
@@ -475,8 +475,8 @@ def delete_document(db: Session, doc: Document, actor: int = 0):
 def discard_own_draft(db: Session, doc: Document, actor: int) -> None:
     """Bỏ BẢN NHÁP DO CHÍNH MÌNH vừa mở ra — không đòi quyền `delete`.
 
-    Từ 24/08/2026 màn *Tạo văn bản* bấm «Tiếp tục» là đã ghi một bản nháp thật
-    xuống CSDL (để quay lại không mất dữ liệu đã gõ), nên nút «Hủy» buộc phải dọn
+    Từ 24/08/2026 màn *Tạo văn bản* bấm "Tiếp tục" là đã ghi một bản nháp thật
+    xuống CSDL (để quay lại không mất dữ liệu đã gõ), nên nút "Hủy" buộc phải dọn
     được cái nháp đó. Nhưng vai trò soạn thảo tiêu chuẩn (`vanban_sua`) **cố ý
     không có `delete`** — không cho xóa văn bản của người khác. Kết quả dựng lại
     được: bấm Tiếp tục rồi bấm Hủy → **403**, và bản nháp nằm lại vĩnh viễn vì
@@ -484,7 +484,7 @@ def discard_own_draft(db: Session, doc: Document, actor: int) -> None:
 
     Nên tách một cửa hẹp riêng: **tự bỏ nháp của mình** đi cùng quyền `create`,
     vì đúng là mặt sau của thao tác vừa tạo ra nó. Hẹp ở ba chốt:
-    - chỉ trạng thái **Nháp** (còn «Trả về» đã đi qua tay người duyệt, bỏ nó là
+    - chỉ trạng thái **Nháp** (còn "Trả về" đã đi qua tay người duyệt, bỏ nó là
       xóa thật, vẫn phải có `delete`);
     - chỉ **tài khoản đã tạo** ra nó;
     - chưa cấp số — chốt này `delete_document` bên dưới giữ.
@@ -499,10 +499,10 @@ def discard_own_draft(db: Session, doc: Document, actor: int) -> None:
 def _ensure_submittable_content(db: Session, doc: Document, version) -> None:
     """Chặn gửi duyệt khi văn bản CHƯA CÓ GÌ để duyệt.
 
-    Văn bản «Tạo, không soạn thảo» (`CONTENT_MODE_FILES`) cố ý để `content_html`
+    Văn bản "Tạo, không soạn thảo" (`CONTENT_MODE_FILES`) cố ý để `content_html`
     rỗng — tệp đính kèm CHÍNH LÀ nội dung (bản scan, hợp đồng đã ký). Trước
     25/09/2026 chốt này chỉ hỏi `content_html` nên MỌI văn bản chỉ gồm tệp đều
-    kẹt ở «Nội dung văn bản còn trống», không gửi duyệt được bằng đường nào.
+    kẹt ở "Nội dung văn bản còn trống", không gửi duyệt được bằng đường nào.
     Với loại đó phải hỏi TỆP của đúng phiên bản đang trình.
     """
     if doc.content_mode == CONTENT_MODE_FILES:
@@ -522,7 +522,7 @@ def _check_ready_to_send(db: Session, doc: Document, verb: str = "gửi duyệt"
     """Mọi điều kiện để một bản nháp RỜI tay người soạn — dùng chung cho *Gửi
     duyệt* (`submit`) và *Ban hành không qua duyệt* (`issue_without_approval`).
 
-    Tách ra 29/09/2026: loại văn bản khai «không cần duyệt» ban hành thẳng từ bản
+    Tách ra 29/09/2026: loại văn bản khai "không cần duyệt" ban hành thẳng từ bản
     nháp, nhưng vẫn phải đủ đúng những thứ người duyệt lẽ ra kiểm — nội dung
     không rỗng, đủ liên kết bắt buộc, đủ phần riêng của loại. Hai bản chép là hai
     luật lệch nhau từ lần sửa đầu tiên.
@@ -532,7 +532,7 @@ def _check_ready_to_send(db: Session, doc: Document, verb: str = "gửi duyệt"
     #  đường ra nào cho người đọc.
     if doc.status == STATUS_REJECTED:
         raise HTTPException(400, f"Văn bản đã bị từ chối, không {verb} được. "
-                                 "Bấm «Sao chép» để có bản nháp mới.")
+                                 "Bấm \"Sao chép\" để có bản nháp mới.")
     version = open_version(db, doc)
     if not version:
         raise HTTPException(400, f"Văn bản không có bản nháp nào để {verb}")
@@ -563,14 +563,14 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
     của trạng thái đó: sửa xong thì gửi lại trên chính văn bản này, không phải
     dựng bản mới.
 
-    Cố ý KHÔNG chặn loại «không cần duyệt» ở đây: cột `needs_approval` mặc định
+    Cố ý KHÔNG chặn loại "không cần duyệt" ở đây: cột `needs_approval` mặc định
     False, loại nào tạo ra mà quên tích là cả luồng duyệt biến mất trong im lặng.
     Chỗ đổi hành vi là màn hình (bày *Ban hành* thay *Gửi duyệt*) và đường
     `issue_without_approval` — gửi duyệt một loại không cần duyệt vẫn chạy như cũ.
     """
     version = _check_ready_to_send(db, doc)
 
-    #  Kiểm TRA LUỒNG trước khi chuyển bản nháp sang «Đang duyệt». Bản clone
+    #  Kiểm TRA LUỒNG trước khi chuyển bản nháp sang "Đang duyệt". Bản clone
     #  bắt buộc có luồng riêng của pháp nhân nhận; chặn sau `db.commit()` sẽ để
     #  lại một văn bản đang duyệt nhưng không có phiên duyệt nào nhặt nó lên.
     from .approval_bridge import (ensure_dedicated_flow, is_enabled,
@@ -640,9 +640,9 @@ def is_pending_issue(db: Session, doc: Document) -> bool:
 
     Bản đầu tiên thì `doc.status = STATUS_PENDING_ISSUE` là đủ. Từ bản thứ hai,
     `mark_pending_issue` cố ý KHÔNG đổi trạng thái văn bản (bản cũ vẫn có hiệu
-    lực), nên phải nhận ra bằng: bản đang mở ở tư thế «chờ duyệt», không còn
+    lực), nên phải nhận ra bằng: bản đang mở ở tư thế "chờ duyệt", không còn
     phiên duyệt nào chạy, và phiên gần nhất đã DUYỆT xong. Thiếu hàm này thì bản
-    2 chờ ban hành bày nút «Duyệt và ban hành» cho mọi người có quyền Duyệt, còn
+    2 chờ ban hành bày nút "Duyệt và ban hành" cho mọi người có quyền Duyệt, còn
     người soạn thì không có nút nào (code-review 29/09/2026, I4).
     """
     if doc.status == STATUS_PENDING_ISSUE:
@@ -678,10 +678,10 @@ def can_issue(db: Session, doc: Document, user) -> bool:
 def issue_without_approval(db: Session, doc: Document, actor: int,
                            apply_mode: int | None = None,
                            mailbox_id: int | None = None) -> Document:
-    """BAN HÀNH THẲNG từ bản nháp — chỉ cho loại văn bản khai «không cần duyệt».
+    """BAN HÀNH THẲNG từ bản nháp — chỉ cho loại văn bản khai "không cần duyệt".
 
-    Đại ca chốt 29/09/2026: ô «Cần duyệt» của loại văn bản trước đây chỉ để
-    trưng — thẻ *Người duyệt dự kiến* báo «KHÔNG cần phê duyệt» mà văn bản vẫn
+    Đại ca chốt 29/09/2026: ô "Cần duyệt" của loại văn bản trước đây chỉ để
+    trưng — thẻ *Người duyệt dự kiến* báo "KHÔNG cần phê duyệt" mà văn bản vẫn
     phải gửi duyệt. Nay loại đó bỏ hẳn chặng duyệt: người soạn bấm *Ban hành* là
     cấp số, vào sổ, có hiệu lực — qua đúng `approve()` nên mọi tác động của ban
     hành (số hiệu, sổ, dây chuyền, bản riêng, thông báo) giữ nguyên một đường.
@@ -691,21 +691,21 @@ def issue_without_approval(db: Session, doc: Document, actor: int,
     """
     kind = doc_type_or_400(db, doc.doc_type_id)
     if kind.needs_approval:
-        raise HTTPException(400, f"Loại văn bản «{kind.name}» phải gửi duyệt trước khi ban hành")
+        raise HTTPException(400, f"Loại văn bản \"{kind.name}\" phải gửi duyệt trước khi ban hành")
     #  Văn bản ĐÃ TỪNG vào bộ máy duyệt (bị trả về, tự rút…) thì đi tiếp bằng
-    #  đường duyệt — ban hành thẳng lúc này là xóa lời «Trả lại» của người duyệt
+    #  đường duyệt — ban hành thẳng lúc này là xóa lời "Trả lại" của người duyệt
     #  (code-review 29/09/2026, I2).
     from .approval_bridge import latest_instance
     if latest_instance(db, doc.id) is not None:
         raise HTTPException(400, "Văn bản này đã từng gửi duyệt — hãy gửi duyệt tiếp, "
                                  "không ban hành thẳng được")
     #  Không hỏi `doc.status`: phiên bản thứ hai trở đi soạn trong lúc văn bản vẫn
-    #  «Có hiệu lực» bằng bản cũ. Điều kiện thật nằm ở PHIÊN BẢN đang mở (có bản
+    #  "Có hiệu lực" bằng bản cũ. Điều kiện thật nằm ở PHIÊN BẢN đang mở (có bản
     #  nháp, chưa chờ duyệt, chưa bị từ chối) — `_check_ready_to_send` hỏi đủ.
     version = _check_ready_to_send(db, doc, "ban hành")
-    #  `approve()` chỉ nhận bản đang «chờ duyệt» — đặt cờ đó rồi chạy tiếp ngay
+    #  `approve()` chỉ nhận bản đang "chờ duyệt" — đặt cờ đó rồi chạy tiếp ngay
     #  trong cùng giao dịch (approve tự commit), không có lúc nào văn bản nằm ở
-    #  «Đang duyệt» mà không ai duyệt.
+    #  "Đang duyệt" mà không ai duyệt.
     version.status, version.updated_by = VERSION_SUBMITTED, actor
     return approve(db, doc, actor, apply_mode, mailbox_id=mailbox_id)
 
@@ -842,7 +842,7 @@ def approve(db: Session, doc: Document, actor: int,
         db.commit()
 
     #  Văn bản CŨ vừa bị bãi bỏ bởi chính văn bản này: pháp nhân con giữ bản
-    #  riêng của nó phải được báo, y như khi bấm nút «Bãi bỏ».
+    #  riêng của nó phải được báo, y như khi bấm nút "Bãi bỏ".
     notify_revocation_by_relation(db, revoked_docs, doc, actor)
 
     #  Thành viên thuộc phạm vi nhận cả chuông lẫn email có link chỉ đọc. Làm
@@ -937,7 +937,7 @@ def withdraw_document(db: Session, doc: Document, reason: str, actor: int) -> Do
 
 
 def confirm_reviewed(db: Session, doc: Document, conclusion: str, actor: int) -> Document:
-    """TẮT cờ «cần rà lại» sau khi người phụ trách đã đối chiếu xong.
+    """TẮT cờ "cần rà lại" sau khi người phụ trách đã đối chiếu xong.
 
     Cờ này có **năm chỗ bật** (bản gốc lên bản mới, cha bị bãi bỏ, cha lên bản
     mới, hai luật của bản trích) mà trước đây **không có chỗ nào tắt** — rà xong,
@@ -946,8 +946,8 @@ def confirm_reviewed(db: Session, doc: Document, conclusion: str, actor: int) ->
     không ai còn nhìn nữa.
 
     Bắt ghi KẾT LUẬN chứ không cho bấm một cái cho xong: người sau mở nhật ký ra
-    phải đọc được «đã đối chiếu, vẫn đúng, không phải sửa» hay «đã sửa theo
-    Chương II» — hai câu đó dẫn tới hai hành động khác hẳn nhau nếu về sau có
+    phải đọc được "đã đối chiếu, vẫn đúng, không phải sửa" hay "đã sửa theo
+    Chương II" — hai câu đó dẫn tới hai hành động khác hẳn nhau nếu về sau có
     tranh chấp. Kết luận đi vào `audit` ở tầng controller, không thêm cột.
 
     Không kiểm trạng thái văn bản: rà soát là việc đọc, làm được ở mọi trạng
@@ -1112,7 +1112,7 @@ def notify_revocation_by_relation(db: Session, revoked_docs: list[Document],
                             by_document: Document, actor: int) -> None:
     """Báo cho pháp nhân con của những văn bản vừa bị bãi bỏ BỞI MỘT VĂN BẢN KHÁC.
 
-    Có HAI đường đưa một văn bản sang trạng thái bãi bỏ: bấm nút «Bãi bỏ»
+    Có HAI đường đưa một văn bản sang trạng thái bãi bỏ: bấm nút "Bãi bỏ"
     (`revoke`) và ban hành một văn bản mang quan hệ *bãi bỏ* (`apply_supersede`).
     Đường thứ hai trước đây **không báo cho ai** — cùng một chuyện với người nhận
     mà chỉ vì người ban hành thao tác kiểu khác.
@@ -1143,8 +1143,8 @@ def _apply_effective_side_effects(db: Session, doc: Document) -> list[Document]:
     tháng sau thì lúc ban hành CHƯA được chạy — văn bản cũ còn hiệu lực nguyên
     tháng đó. Tới ngày, `activate_due_versions()` mới gọi vào đây.
 
-    Không có hàm này thì «Quyết định 47 hiệu lực từ 01/09» sẽ không bao giờ đẩy
-    «Quyết định 15» sang *bị thay thế* — nó nằm im mãi ở trạng thái có hiệu lực.
+    Không có hàm này thì "Quyết định 47 hiệu lực từ 01/09" sẽ không bao giờ đẩy
+    "Quyết định 15" sang *bị thay thế* — nó nằm im mãi ở trạng thái có hiệu lực.
     """
     from .clone_notification import notify_clones_stale
     from .clone_service import clones_of, mark_clones_for_review

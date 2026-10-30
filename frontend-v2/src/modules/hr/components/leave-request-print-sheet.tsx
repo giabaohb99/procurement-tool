@@ -1,4 +1,4 @@
-// Mặt đơn của bản in nghỉ phép — dựng theo mẫu Word 2026 «ĐƠN XIN NGHỈ PHÉP / NGHỈ CHẾ ĐỘ»
+// Mặt đơn của bản in nghỉ phép — dựng theo mẫu Word 2026 "ĐƠN XIN NGHỈ PHÉP / NGHỈ CHẾ ĐỘ"
 // (`2026 Mau_Don_Xin_Nghi_Phep_Che_Do_Thai_San.docx`, đại ca gửi 06/10/2026): Quốc hiệu thay logo,
 // ba mục đánh số, ba ô loại hình nghỉ, hai ô ký (Người xin nghỉ · Trưởng bộ phận).
 // Lề trang 20mm = lề 1152 twip của tệp Word; cỡ chữ theo đúng tệp (thân 11pt, tiêu đề 18pt).
@@ -38,10 +38,10 @@ function describeSession(session: number): string {
 }
 
 /**
- * «Từ ngày … đến hết ngày …» của mẫu, kèm buổi / giờ khi không nghỉ trọn ngày.
+ * "Từ ngày … đến hết ngày …" của mẫu, kèm buổi / giờ khi không nghỉ trọn ngày.
  *
- * Đơn nhiều khoảng (duoc-CR-683): mỗi khoảng một câu đúng mẫu, nối bằng «; » — in một câu bao
- * ngoài «Từ 27/10 đến hết 07/11» là tờ giấy ký xin nghỉ cả tuần người đó vẫn đi làm.
+ * Đơn nhiều khoảng (duoc-CR-683): mỗi khoảng một câu đúng mẫu, nối bằng "; " — in một câu bao
+ * ngoài "Từ 27/10 đến hết 07/11" là tờ giấy ký xin nghỉ cả tuần người đó vẫn đi làm.
  */
 function formatLeaveRange(request: LeaveRequest): string {
   const periods = periodsOf(request)

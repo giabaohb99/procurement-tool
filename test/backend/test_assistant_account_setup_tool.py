@@ -176,7 +176,7 @@ def test_propose_then_confirm_writes_roles_and_scope_via_services(db, world):
     assert db.query(UserRole).filter(UserRole.user_id == target.id).count() == 0
     assert db.query(UserScope).filter(UserScope.user_id == target.id).count() == 0
     #  Tên phòng gõ thường vẫn ra tên chính thức trong danh mục.
-    assert any("«Dego Organic»" in line["label"] for line in proposal["lines"])
+    assert any("**Dego Organic**" in line["label"] for line in proposal["lines"])
 
     result = confirm_account_setup(db, actor, proposal["confirm_token"])
     assert result["updated"] == ["vai trò", "phạm vi Nhân sự", "phạm vi Nhân viên thu mua"]

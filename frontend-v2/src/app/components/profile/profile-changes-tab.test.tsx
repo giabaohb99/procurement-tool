@@ -9,11 +9,11 @@ import type { BotChange, BotChangeDetail, UndoChangeResult } from '@/modules/sys
 import { ProfileChangesTab } from './profile-changes-tab'
 
 /**
- * Tab «Bot đã ghi gì» (ai-CR-185, phase 15.3).
+ * Tab "Bot đã ghi gì" (ai-CR-185, phase 15.3).
  *
  * Chỗ dễ lủng:
  * 1. Người thường KHÔNG được gửi `all=1` — backend trả 403 và người ta ăn một toast lỗi ngay lúc mở tab
- *    dù chẳng bấm gì. Công tắc «Xem của mọi người» chỉ hiện khi có `agent_group.read`.
+ *    dù chẳng bấm gì. Công tắc "Xem của mọi người" chỉ hiện khi có `agent_group.read`.
  * 2. Nút Hoàn tác phải TẮT đúng theo `can_undo` của backend và nói lý do; bật thì bấm → xác nhận → gọi
  *    undo đúng MỘT lần (bấm đúp không ra hai lượt), rồi làm tươi danh sách.
  * 3. Lỗi nghiệp vụ (409 phiếu đã đổi) phải hiện đúng câu trong phong bì, không phải câu chung.

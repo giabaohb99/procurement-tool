@@ -1,9 +1,9 @@
-"""Danh sách chọn cho ô «Trưởng phòng phê duyệt» của YCMH · YCBG · ĐMH — bao-CR-499, sửa ở bao-CR-552.
+"""Danh sách chọn cho ô "Trưởng phòng phê duyệt" của YCMH · YCBG · ĐMH — bao-CR-499, sửa ở bao-CR-552.
 
 Đại ca chốt 01/10/2026 (bao-CR-552): ô liệt kê MỌI người duyệt được đúng chứng từ đó — không chỉ
 trưởng phòng theo phòng như bản 26/09 — NHƯNG bỏ hẳn tài khoản giữ vai trò Quản trị hệ thống
-(«lòi ra tài khoản admin, hoặc tài khoản của anh thì không hay»), và LUÔN có Trưởng bộ phận của
-phiếu («phòng IT không có người duyệt nhưng lại ra anh Giang thì ô phê duyệt cũng phải có»).
+("lòi ra tài khoản admin, hoặc tài khoản của anh thì không hay"), và LUÔN có Trưởng bộ phận của
+phiếu ("phòng IT không có người duyệt nhưng lại ra anh Giang thì ô phê duyệt cũng phải có").
 
 Luật: tài khoản đang hoạt động, có gắn nhân sự, giữ một vai trò có quyền Duyệt trên entity, KHÔNG
 giữ vai trò `admin`; rồi hỏi ĐÚNG `apply_scope(..., action="approve")` xem phạm vi duyệt của người
@@ -103,21 +103,21 @@ def candidates_for_draft(db: Session, model, entity: str, fields: dict,
 
 
 def list_candidates_for_row(db: Session, model, entity: str, row) -> list[dict]:
-    """Ô «Trưởng phòng phê duyệt» của một phiếu ĐÃ lưu: người duyệt được + Trưởng bộ phận."""
+    """Ô "Trưởng phòng phê duyệt" của một phiếu ĐÃ lưu: người duyệt được + Trưởng bộ phận."""
     return candidates_for_row(db, model, entity, row.id, (get_head_of_dept_id(db, row),))
 
 
 def list_candidates_for_draft(db: Session, model, entity: str, fields: dict,
                               head_of_dept_id: int = 0) -> list[dict]:
-    """Ô «Trưởng phòng phê duyệt» của màn TẠO MỚI: người duyệt được + Trưởng bộ phận (ô TBP đang
+    """Ô "Trưởng phòng phê duyệt" của màn TẠO MỚI: người duyệt được + Trưởng bộ phận (ô TBP đang
     chọn, trống thì trưởng phòng của phòng lập)."""
     head = int(head_of_dept_id or 0) or get_department_head_id(db, int(fields.get("department_id") or 0))
     return candidates_for_draft(db, model, entity, fields, (head,))
 
 
 def department_managers(db: Session) -> list[dict]:
-    """Trưởng phòng (Department.manager_id) của mọi phòng đang hoạt động — đúng bộ ô «Trưởng bộ
-    phận» của YCBG (v2 dựng cùng danh sách ở `survey-request-info-card.tsx`)."""
+    """Trưởng phòng (Department.manager_id) của mọi phòng đang hoạt động — đúng bộ ô "Trưởng bộ
+    phận" của YCBG (v2 dựng cùng danh sách ở `survey-request-info-card.tsx`)."""
     from app.modules.department.model import Department
     ids = {int(m) for (m,) in db.query(Department.manager_id).filter(Department.is_active == True,   # noqa: E712
                                                                       Department.manager_id > 0).all()}

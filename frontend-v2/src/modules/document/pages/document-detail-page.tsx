@@ -211,8 +211,8 @@ export function DocumentDetailPage() {
   //  ⚠️ `dangDuyetNhieuBuoc` khai ở ĐẦU hàm (cạnh `useEntityApproval`) vì
   //  `useDocument` cần nó để bật nhịp hỏi lại. Đang chạy nhiều bước thì hai nút
   //  của luồng MỘT BƯỚC cũ phải biến mất: lỗi đã xảy ra là văn bản nằm ở chặng 1
-  //  chờ trưởng bộ phận, người có quyền `document.approve` bấm «Duyệt và ban
-  //  hành» là văn bản được cấp số và chuyển hiệu lực ngay, còn phiên duyệt vẫn
+  //  chờ trưởng bộ phận, người có quyền `document.approve` bấm "Duyệt và ban
+  //  hành" là văn bản được cấp số và chuyển hiệu lực ngay, còn phiên duyệt vẫn
   //  chạy tiếp trên một văn bản đã ban hành. Backend nay cũng chặn
   //  (`approval_bridge.chan_duong_cu`) — ẩn nút ở đây là để người dùng không
   //  thấy một cái nút chỉ để nhận lỗi.
@@ -223,7 +223,7 @@ export function DocumentDetailPage() {
   //  đó sang B. A không còn việc nào ở phiếu này, mà khe đọc của A vốn mở ra
   //  CHÍNH VÌ việc đó (xem `doc_reader` ở backend) — nên từ nhịp hỏi lại kế
   //  tiếp, API trả 404. Không xử ở đây thì A ngồi trong một trang đã chết, với
-  //  nút «Duyệt» sáng trưng, bấm vào chỉ nhận lỗi.
+  //  nút "Duyệt" sáng trưng, bấm vào chỉ nhận lỗi.
   useEffect(() => {
     if (!unreadableItem) return
     //  Hai nguyên nhân, nói cả hai: văn bản vừa bị BÃI BỎ (bãi bỏ thu hồi luôn
@@ -235,11 +235,11 @@ export function DocumentDetailPage() {
     navigate(appRoutes.document.documentsTab('outgoing'), { replace: true })
   }, [unreadableItem, navigate])
 
-  //  Tab «Tệp» đã BỎ (24/09/2026) — tệp nay xem ngay trong tab «Văn bản» của
-  //  văn bản tạo bằng «Tạo, không soạn thảo». Đường dẫn cũ `?tab=files` (đã
-  //  gửi qua thư/đánh dấu trang) rơi về tab «Văn bản», không ra tab trống.
+  //  Tab "Tệp" đã BỎ (24/09/2026) — tệp nay xem ngay trong tab "Văn bản" của
+  //  văn bản tạo bằng "Tạo, không soạn thảo". Đường dẫn cũ `?tab=files` (đã
+  //  gửi qua thư/đánh dấu trang) rơi về tab "Văn bản", không ra tab trống.
   const activeTab = tab === 'files' ? 'compose' : tab
-  //  Văn bản CHỈ GỒM TỆP: tab «Văn bản» là trình XEM TỆP thay cho trình soạn
+  //  Văn bản CHỈ GỒM TỆP: tab "Văn bản" là trình XEM TỆP thay cho trình soạn
   //  thảo, và mọi nút của trình soạn thảo ẩn đi.
   const isFilesOnly = record?.content_mode === DOCUMENT_CONTENT_MODE.files
   const isEditorTab = activeTab === 'compose' && !isFilesOnly
@@ -256,7 +256,7 @@ export function DocumentDetailPage() {
     const ok = await confirm({
       title: 'Chuyển sang soạn thảo?',
       message:
-        'Tab «Văn bản» sẽ mở trình soạn thảo để gõ nội dung. Tệp đính kèm vẫn giữ nguyên, nằm ở cột bên phải — bấm vào là xem được.',
+        'Tab "Văn bản" sẽ mở trình soạn thảo để gõ nội dung. Tệp đính kèm vẫn giữ nguyên, nằm ở cột bên phải — bấm vào là xem được.',
       confirmLabel: 'Chuyển sang soạn thảo',
       tone: 'default',
     })
@@ -343,7 +343,7 @@ export function DocumentDetailPage() {
 
   // Bản đang mở (nháp · đang duyệt · bị trả về)
   const openVersion = versions.find((item) => !item.is_locked)
-  //  «Bị trả về» đi CHUNG nhánh với nháp: cả nút *Gửi duyệt* lẫn quyền gõ nội
+  //  "Bị trả về" đi CHUNG nhánh với nháp: cả nút *Gửi duyệt* lẫn quyền gõ nội
   //  dung đều bám cờ này, mà cả mục đích của trạng thái đó là sửa rồi gửi lại.
   //  Tách ra thành nhánh riêng là văn bản bị trả nằm chết, không nút nào bấm được.
   const isDraft = openVersion
@@ -352,11 +352,11 @@ export function DocumentDetailPage() {
   //  CHỜ BAN HÀNH (26/08/2026) — ký đủ rồi, chờ chính người soạn thảo bấm.
   //
   //  ⚠️ Phải tách RA KHỎI `isSubmitted`. Ở trạng thái này phiên bản vẫn mang cờ
-  //  «đang chờ duyệt» (cố ý, để `approve()` chạy được lần sau), nên `isSubmitted`
+  //  "đang chờ duyệt" (cố ý, để `approve()` chạy được lần sau), nên `isSubmitted`
   //  vẫn đúng — mà phiên duyệt thì đã đóng, tức `isMultiStepApproval` đã tắt.
   //  Không tách thì cụm nút *Trả lại / Duyệt và ban hành* bày ra cho mọi người
   //  có quyền `document.approve`, và họ bấm vào chỉ nhận 403.
-  //  Backend báo cả ca bản 2+ chờ ban hành (văn bản vẫn «Có hiệu lực» nên không
+  //  Backend báo cả ca bản 2+ chờ ban hành (văn bản vẫn "Có hiệu lực" nên không
   //  suy được từ `status`) — code-review 29/09/2026, I4.
   const isPendingIssue =
     record?.is_pending_issue ?? record?.status === DOCUMENT_STATUS.pendingIssue
@@ -373,7 +373,7 @@ export function DocumentDetailPage() {
     !!currentUser?.employee_id &&
     (currentUser.employee_id === record?.drafter_employee_id ||
       currentUser.employee_id === record?.owner_employee_id)
-  //  Loại «không cần duyệt» (29/09/2026): bỏ chặng duyệt, nút *Gửi duyệt* đổi
+  //  Loại "không cần duyệt" (29/09/2026): bỏ chặng duyệt, nút *Gửi duyệt* đổi
   //  thành *Ban hành*. Thiếu cờ (bản ghi cũ trong cache) thì coi là CẦN duyệt.
   const needsApproval = record?.doc_type_needs_approval !== false
 
@@ -383,8 +383,8 @@ export function DocumentDetailPage() {
   //
   //  ⚠️ KHÔNG suy được từ `is_locked`: cột đó chỉ bật lúc DUYỆT XONG, nên bản bị
   //  từ chối vẫn `is_locked = false` — đúng cái bẫy đã ghi ở `document-version-row`.
-  //  Đọc trạng thái của BẢN ĐANG XEM (bản 2.0 bị từ chối thì văn bản vẫn «Có
-  //  hiệu lực» bằng bản 1.0, nên nhìn `record.status` là không thấy gì).
+  //  Đọc trạng thái của BẢN ĐANG XEM (bản 2.0 bị từ chối thì văn bản vẫn "Có
+  //  hiệu lực" bằng bản 1.0, nên nhìn `record.status` là không thấy gì).
   const rejected =
     version?.status === VERSION_STATUS.rejected || record?.status === DOCUMENT_STATUS.rejected
 
@@ -396,7 +396,7 @@ export function DocumentDetailPage() {
   //  Cột tệp chỉ hiện khi văn bản CÓ tệp — không có ô tải lên ở đó (đại ca chốt).
   const showFileColumn = hasFiles
 
-  //  Thẻ «Người duyệt dự kiến» (phase 01, duoc-CR-473) — nằm TRONG tab Phê
+  //  Thẻ "Người duyệt dự kiến" (phase 01, duoc-CR-473) — nằm TRONG tab Phê
   //  duyệt, chỉ khi CÒN NHÁP và chưa có phiên duyệt; gửi duyệt xong thì tab
   //  đọc phiên thật (`DocumentApprovalTab`) thay vì dự đoán. Hook chỉ HỎI khi
   //  thẻ thật sự hiện (đối số thứ hai) — hỏi thừa lúc đã gửi duyệt thì người
@@ -433,9 +433,9 @@ export function DocumentDetailPage() {
                    giấy được `useFillViewportHeight` tính bằng CHỖ CÒN LẠI, nên
                    cắt ở trên là cộng thẳng vào chiều cao giấy.
 
-                   Ba thứ ĐỘNG thì ở lại: huy hiệu trạng thái, nhãn «Chỉ đọc» và
+                   Ba thứ ĐỘNG thì ở lại: huy hiệu trạng thái, nhãn "Chỉ đọc" và
                    tình trạng tự lưu — chúng đổi theo lúc, giấu đi là người đang
-                   gõ mất tín hiệu «đã lưu hay chưa». Số hiệu và loại vẫn tra được
+                   gõ mất tín hiệu "đã lưu hay chưa". Số hiệu và loại vẫn tra được
                    ở tab *Thông tin*. */}
               <span className="max-md:hidden">
                 {record.display_code || 'Chưa cấp số'} · {record.doc_type_name}
@@ -446,7 +446,7 @@ export function DocumentDetailPage() {
                 <>
                   {/*  Dấu ngăn ẩn CÙNG vế đứng trước nó. Vế trước là khối tĩnh ở
                        trên, đã `max-md:hidden`; để dấu này ở lại thì khổ hẹp mở
-                       ra một dòng bắt đầu bằng «· Nháp» — một dấu chấm giữa mồ
+                       ra một dòng bắt đầu bằng "· Nháp" — một dấu chấm giữa mồ
                        côi treo ở đầu dòng. */}
                   <span aria-hidden className="max-md:hidden">
                     ·
@@ -590,7 +590,7 @@ export function DocumentDetailPage() {
                 Gửi duyệt
               </Button>
             )}
-            {/*  Loại «không cần duyệt» — người soạn / người chịu trách nhiệm (hoặc
+            {/*  Loại "không cần duyệt" — người soạn / người chịu trách nhiệm (hoặc
                  người có quyền Duyệt) ban hành thẳng từ bản nháp. Backend giữ
                  cùng luật ở `/issue`; đây chỉ để khỏi bày nút cho người ngoài. */}
             {isDraft && canWrite && !isArchive && !needsApproval && (isDrafter || canApprove) && (
@@ -606,7 +606,7 @@ export function DocumentDetailPage() {
                 Ban hành
               </Button>
             )}
-            {/*  Bản lưu trữ HĐLĐ (duoc-CR-659): nút DUY NHẤT là «Ban hành» = ký HĐ gốc. */}
+            {/*  Bản lưu trữ HĐLĐ (duoc-CR-659): nút DUY NHẤT là "Ban hành" = ký HĐ gốc. */}
             {issueArchiveContractId > 0 && <ArchiveContractIssueButton contractId={issueArchiveContractId} />}
             {isSubmitted && !isMultiStepApproval && (
               <PermissionGate entity="document" action="approve">
@@ -676,7 +676,7 @@ export function DocumentDetailPage() {
                  rộng cả trang và sinh thanh cuộn ngang — đã gặp thật. Ở ngoài
                  chỉ giữ lệnh dùng theo nhịp soạn (Nhập tệp, Lưu, Gửi duyệt). */}
             {/*  Văn bản CHỈ GỒM TỆP không có nội dung soạn thảo để in/xuất — ẩn cả
-                 menu (chữ «Tệp» ở đây lại dễ đọc nhầm thành tệp đính kèm). */}
+                 menu (chữ "Tệp" ở đây lại dễ đọc nhầm thành tệp đính kèm). */}
             {isFilesOnly && canWrite && !isLocked && !viLocaleKey && (
               <Button
                 type="button"
@@ -824,7 +824,7 @@ export function DocumentDetailPage() {
              nhất là biết khi nó kẹt — dù họ đang đứng ở tab nào. */}
         <DocumentApprovalBanner instance={approval} documentId={documentId} />
 
-        {/*  Cũng NGOÀI mọi tab, và vì cùng lý do: «Chờ ban hành» là lúc dễ tưởng
+        {/*  Cũng NGOÀI mọi tab, và vì cùng lý do: "Chờ ban hành" là lúc dễ tưởng
              hệ đứng nhất — ký đủ rồi mà văn bản vẫn chưa có số hiệu. */}
         {isPendingIssue && (
           <DocumentPendingIssueNotice isDrafter={isDrafter} drafterName={record?.drafter_name} />
@@ -859,7 +859,7 @@ export function DocumentDetailPage() {
           )}
 
           {/*  Văn bản CHỈ GỒM TỆP: xem tệp ngay tại đây, danh sách tệp bên phải
-               (thay cho tab «Tệp» cũ, 24/09/2026). */}
+               (thay cho tab "Tệp" cũ, 24/09/2026). */}
           {isFilesOnly && (
             <DocumentFilesTab
               documentId={documentId}
@@ -894,7 +894,7 @@ export function DocumentDetailPage() {
                     />
                   ) : (
                     <p className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
-                      Tệp «{viewingFile.filename}» không xem được ngay trong trang — tải về từ tab
+                      Tệp <strong>{viewingFile.filename}</strong> không xem được ngay trong trang — tải về từ tab
                       Thông tin để mở.
                     </p>
                   ))}
@@ -989,11 +989,11 @@ export function DocumentDetailPage() {
               folders={record?.folders ?? []}
               canWrite={canWrite}
             />
-            {/*  Chỉ còn PHẠM VI ở đây. Thẻ «Bản clone ở pháp nhân con» đã bỏ:
+            {/*  Chỉ còn PHẠM VI ở đây. Thẻ "Bản clone ở pháp nhân con" đã bỏ:
                  nơi nhận bản riêng nay SUY từ chính khối phạm vi này, nên nó
                  chỉ lặp lại cùng một danh sách bằng một cách nói khác. Muốn
                  xem bản riêng đã sinh ra chưa, ai đang lệch bản — mở tab
-                 «Quan hệ», thẻ Cây tài liệu liệt kê đủ kèm tên pháp nhân. */}
+                 "Quan hệ", thẻ Cây tài liệu liệt kê đủ kèm tên pháp nhân. */}
             {!isArchive && (
               <>
                 <DocumentScopeCard
@@ -1012,7 +1012,7 @@ export function DocumentDetailPage() {
             <DocumentVersionTab
               document={record}
               activeVersionId={versionId}
-              //  Bản lưu trữ HĐLĐ không có luồng duyệt nên không «Mở phiên bản mới» (duoc-CR-640).
+              //  Bản lưu trữ HĐLĐ không có luồng duyệt nên không "Mở phiên bản mới" (duoc-CR-640).
               canWrite={canWrite && !isArchive}
               onSelect={(picked) => {
                 setPickedVersionId(picked.id)

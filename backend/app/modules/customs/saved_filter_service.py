@@ -36,7 +36,7 @@ def create(db: Session, user_id: int, name: str, params: str) -> CustomsSavedFil
     dup = (db.query(CustomsSavedFilter)
            .filter(CustomsSavedFilter.user_id == user_id, CustomsSavedFilter.name == name).first())
     if dup:
-        raise HTTPException(400, f"Bạn đã có bộ lọc tên «{name}» — chọn tên khác hoặc bấm Cập nhật bộ đó")
+        raise HTTPException(400, f"Bạn đã có bộ lọc tên \"{name}\" — chọn tên khác hoặc bấm Cập nhật bộ đó")
     obj = CustomsSavedFilter(user_id=user_id, name=name, params=params or "", is_shared=False,
                              created_by=user_id, updated_by=user_id)
     db.add(obj)
@@ -52,7 +52,7 @@ def update(db: Session, user_id: int, fid: int, name: str | None, params: str | 
                .filter(CustomsSavedFilter.user_id == user_id, CustomsSavedFilter.name == name,
                        CustomsSavedFilter.id != fid).first())
         if dup:
-            raise HTTPException(400, f"Bạn đã có bộ lọc tên «{name}»")
+            raise HTTPException(400, f"Bạn đã có bộ lọc tên \"{name}\"")
         obj.name = name
     if params is not None:
         obj.params = params

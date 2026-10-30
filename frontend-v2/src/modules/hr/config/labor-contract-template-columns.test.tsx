@@ -23,15 +23,15 @@ function renderActions(canWrite: boolean, canDelete: boolean, row = template) {
   return actions
 }
 
-/** Mở menu «⋯» của dòng rồi trả về tên các mục trong đó. */
+/** Mở menu "⋯" của dòng rồi trả về tên các mục trong đó. */
 async function openMenu(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: /Thao tác với mẫu/ }))
   return (await screen.findAllByRole('menuitem')).map((item) => item.textContent)
 }
 
 describe('cột Thao tác của bảng Mẫu hợp đồng', () => {
-  //  Sau góp ý UI 19/10: một nút «⋯» như bảng hợp đồng (CR-633) — không còn icon trơn đứng ngoài.
-  it('mỗi dòng chỉ có MỘT nút «⋯», chưa mở thì không thấy mục nào', () => {
+  //  Sau góp ý UI 19/10: một nút "⋯" như bảng hợp đồng (CR-633) — không còn icon trơn đứng ngoài.
+  it('mỗi dòng chỉ có MỘT nút "⋯", chưa mở thì không thấy mục nào', () => {
     renderActions(true, true)
     expect(screen.getAllByRole('button')).toHaveLength(1)
     expect(screen.queryByRole('menuitem')).toBeNull()
@@ -79,7 +79,7 @@ describe('cột Thao tác của bảng Mẫu hợp đồng', () => {
 })
 
 
-//  Lỗi thật (test Chrome 06/10): local có hai pháp nhân cùng tên «CÔNG TY TNHH DEGO HOLDING» (id 1
+//  Lỗi thật (test Chrome 06/10): local có hai pháp nhân cùng tên "CÔNG TY TNHH DEGO HOLDING" (id 1
 //  mã DEGO, id 17 mã DEGO HOLDING). Bảng chỉ hiện tên ⇒ mẫu của công ty này trông như của công ty kia.
 describe('company column', () => {
   function renderCompany(row: LaborContractTemplate) {

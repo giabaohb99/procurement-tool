@@ -1,14 +1,14 @@
-"""Thư mục «Họp» trên Google Drive → biên bản (ai-CR-116, phase 10 bước 10.4).
+"""Thư mục "Họp" trên Google Drive → biên bản (ai-CR-116, phase 10 bước 10.4).
 
 Đại ca 08/10/2026: *"họp xong, anh đưa file mới nhất lên thư mục họp trên Drive, thì em nhận thông tin và hỏi anh, hoặc anh
 nói cần report cuộc họp mới nhất, em tìm và trả cho anh, kèm thông tin công việc trích xuất từ recap đó"*.
 
   - Vòng nền 5 phút (`agent.meeting_drive_scan`): với mỗi người đã nối Google + có chat riêng với bot, tìm tệp ghi âm /
-    video MỚI trong thư mục tên «Họp» (scope drive.readonly). Lần đầu chỉ đặt mốc «từ bây giờ», không lôi tệp cũ ra hỏi.
-  - Có tệp mới → HỎI (không tự chạy — tốn khóa AI của chính họ): «làm biên bản» (gộp mọi tệp thành MỘT cuộc họp, nối theo
-    giờ tạo — họp ghi thành nhiều phần), «làm tệp 2» (chọn một / vài tệp — vd hai điện thoại cùng ghi một buổi thì chọn
-    tệp rõ nhất), kèm tên mẫu nếu muốn («làm biên bản chính thức»), hoặc «bỏ qua».
-  - «Report cuộc họp mới nhất» (tool `latest_meeting_report`): thư mục «Họp» có tệp mới hơn cuộc họp đã làm → làm luôn;
+    video MỚI trong thư mục tên "Họp" (scope drive.readonly). Lần đầu chỉ đặt mốc "từ bây giờ", không lôi tệp cũ ra hỏi.
+  - Có tệp mới → HỎI (không tự chạy — tốn khóa AI của chính họ): "làm biên bản" (gộp mọi tệp thành MỘT cuộc họp, nối theo
+    giờ tạo — họp ghi thành nhiều phần), "làm tệp 2" (chọn một / vài tệp — vd hai điện thoại cùng ghi một buổi thì chọn
+    tệp rõ nhất), kèm tên mẫu nếu muốn ("làm biên bản chính thức"), hoặc "bỏ qua".
+  - "Report cuộc họp mới nhất" (tool `latest_meeting_report`): thư mục "Họp" có tệp mới hơn cuộc họp đã làm → làm luôn;
     không thì gửi lại biên bản + Word + thẻ việc / lịch của cuộc họp gần nhất.
 """
 from __future__ import annotations
@@ -32,7 +32,7 @@ FOLDER_NAME = "Họp"
 DRIVE_URL = "https://www.googleapis.com/drive/v3/files"
 FOLDER_MIME = "application/vnd.google-apps.folder"
 CURSOR_PREFIX = "drive_hop:"
-ACT_ASK = "hop_moi_cho"            # thẻ «có tệp họp mới» đang chờ trả lời
+ACT_ASK = "hop_moi_cho"            # thẻ "có tệp họp mới" đang chờ trả lời
 ACT_ASK_DONE = "hop_moi_lam"
 ACT_ASK_DROPPED = "hop_moi_bo"
 ASK_WINDOW = timedelta(hours=48)
@@ -45,7 +45,7 @@ FOLDER_TTL = 600
 # Drive
 # ---------------------------------------------------------------------------
 def folder_ids(db: Session, link: AgentGoogleLink) -> list[str]:
-    """Id các thư mục tên «Họp» (không phân biệt hoa thường do Drive so khớp chính xác tên → thử hai dạng)."""
+    """Id các thư mục tên "Họp" (không phân biệt hoa thường do Drive so khớp chính xác tên → thử hai dạng)."""
     from . import google_link
 
     hit = _FOLDER_CACHE.get(int(link.id or 0))
@@ -61,8 +61,8 @@ def folder_ids(db: Session, link: AgentGoogleLink) -> list[str]:
     return ids
 
 
-#  ai-CR-116 (đại ca 08/10 thả một tệp PDF vào «Họp» rồi chờ — bot chỉ nhìn ghi âm nên im lặng): tài liệu trong thư mục
-#  «Họp» (tài liệu họp, báo cáo) cũng được báo, kèm lựa chọn «tóm tắt tệp n».
+#  ai-CR-116 (đại ca 08/10 thả một tệp PDF vào "Họp" rồi chờ — bot chỉ nhìn ghi âm nên im lặng): tài liệu trong thư mục
+#  "Họp" (tài liệu họp, báo cáo) cũng được báo, kèm lựa chọn "tóm tắt tệp n".
 DOC_MIMES = (
     "application/pdf", "application/msword", "text/plain",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -79,7 +79,7 @@ def is_media(f: dict) -> bool:
 
 def media_files(db: Session, link: AgentGoogleLink, *, since: datetime | None = None, limit: int = 20,
                 with_docs: bool = False) -> list[dict]:
-    """Tệp ghi âm / video (và tài liệu khi `with_docs`) trong thư mục «Họp», mới nhất trước. `since` (UTC) = chỉ tệp tạo
+    """Tệp ghi âm / video (và tài liệu khi `with_docs`) trong thư mục "Họp", mới nhất trước. `since` (UTC) = chỉ tệp tạo
     SAU mốc đó."""
     from . import google_link
 
@@ -148,7 +148,7 @@ def ask(db: Session, chat_id: str, files: list[dict], *, intro: str = "") -> Non
     media = sorted([f for f in files if is_media(f)], key=lambda f: str(f.get("createdTime") or ""))[:MAX_FILES]
     docs = sorted([f for f in files if not is_media(f)], key=lambda f: str(f.get("createdTime") or ""))[:MAX_FILES]
     files = media + docs
-    lines = [intro or f"Có {len(files)} tệp mới trong thư mục «{FOLDER_NAME}» trên Drive:"]
+    lines = [intro or f"Có {len(files)} tệp mới trong thư mục **{FOLDER_NAME}** trên Drive:"]
     if media and docs:
         lines.append("<b>Ghi âm / video</b>")
     lines += [_fmt_file(i, f) for i, f in enumerate(media, 1)]
@@ -157,14 +157,14 @@ def ask(db: Session, chat_id: str, files: list[dict], *, intro: str = "") -> Non
         lines += [_fmt_file(i, f) for i, f in enumerate(docs, len(media) + 1)]
     lines.append("")
     if len(media) > 1:
-        lines.append("Nhắn «làm biên bản» để em gộp các ghi âm thành MỘT cuộc họp (nối theo giờ tạo), hoặc «làm tệp 1» nếu "
+        lines.append("Nhắn **làm biên bản** để em gộp các ghi âm thành MỘT cuộc họp (nối theo giờ tạo), hoặc **làm tệp 1** nếu "
                      "chỉ cần một tệp (vd hai máy cùng ghi một buổi thì chọn tệp rõ nhất).")
     elif media:
-        lines.append("Nhắn «làm biên bản» để em làm biên bản (thêm tên mẫu nếu muốn, vd «làm biên bản chính thức»).")
+        lines.append("Nhắn **làm biên bản** để em làm biên bản (thêm tên mẫu nếu muốn, vd **làm biên bản chính thức**).")
     if docs:
         first_doc = len(media) + 1
-        lines.append(f"Tài liệu: nhắn «tóm tắt tệp {first_doc}», hoặc hỏi thẳng «phân tích tệp {first_doc} …».")
-    lines.append("«bỏ qua» nếu không cần.")
+        lines.append(f"Tài liệu: nhắn **tóm tắt tệp {first_doc}**, hoặc hỏi thẳng **phân tích tệp {first_doc} …**.")
+    lines.append("**bỏ qua** nếu không cần.")
     for old in db.scalars(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_ASK)):
         old.action = ACT_ASK_DROPPED
     db.commit()
@@ -225,7 +225,7 @@ _YES = re.compile(r"^\s*(?:(?:ok|[uừ]|[dđ][uư][oợ]c|c[oó])[,!]?\s+)?"
                   r"(l[aà]m|g[oộ]p|t[oó]m\s*t[aắ]t|[dđ][oọ]c|ph[aâ]n\s*t[ií]ch)\b(.*)$", re.I | re.S)
 #  Động từ hỏi về TÀI LIỆU, tra theo dạng không dấu (`fold`).
 _DOC_VERBS = {"tom tat": "tóm tắt", "doc": "đọc", "phan tich": "phân tích"}
-#  Sau «làm / gộp» chỉ nhận các chữ này đứng đầu — «làm sao để…», «làm ơn tra giá…» không phải trả lời thẻ.
+#  Sau "làm / gộp" chỉ nhận các chữ này đứng đầu — "làm sao để…", "làm ơn tra giá…" không phải trả lời thẻ.
 _YES_NEXT = ("bien", "recap", "tep", "di", "luon", "het", "nhe", "giup", "ca", "theo", "mau", "bao", "ngay")
 _NO = re.compile(r"^\s*(b[oỏ]\s+qua|b[oỏ]|kh[oô]ng\s+c[aầ]n|kh[oô]ng|th[oô]i)(\s+(nh[eé]|[dđ]i|h[eế]t))?\s*[.!]?\s*$", re.I)
 _FILLER = re.compile(r"(?<!\w)(bi[eê]n\s+b[aả]n|recap|t[eệ]p|[dđ]i|lu[oô]n|nh[eé]|gi[uú]p(\s+em)?|h[eế]t|c[aả]|ngay)(?!\w)", re.I)
@@ -237,7 +237,7 @@ def pending_ask(db: Session, chat_id: str, before_id: int) -> AgentMessage | Non
                                                AgentMessage.id < before_id).order_by(AgentMessage.id.desc()).limit(1))
     if row is None or (row.created_at and datetime.now() - row.created_at > ASK_WINDOW):
         return None
-    #  Thẻ khác cùng chữ «làm / tạo / bỏ» mới hơn (nháp phiếu, thẻ việc biên bản) thì nhường.
+    #  Thẻ khác cùng chữ "làm / tạo / bỏ" mới hơn (nháp phiếu, thẻ việc biên bản) thì nhường.
     from .meeting_actions import ACT_CARD
     from .service import ACT_DRAFT_WAIT
 
@@ -248,8 +248,8 @@ def pending_ask(db: Session, chat_id: str, before_id: int) -> AgentMessage | Non
 
 
 def parse_reply(text: str, n_files: int) -> tuple[str, list[int], str] | None:
-    """(«yes»|«doc»|«no», số tệp chọn (rỗng = tất cả), phần chữ còn lại — tên mẫu, hoặc câu hỏi về tài liệu).
-    Không phải trả lời thẻ → None. «tóm tắt / đọc / phân tích» = hỏi về TÀI LIỆU."""
+    """("yes"|"doc"|"no", số tệp chọn (rỗng = tất cả), phần chữ còn lại — tên mẫu, hoặc câu hỏi về tài liệu).
+    Không phải trả lời thẻ → None. "tóm tắt / đọc / phân tích" = hỏi về TÀI LIỆU."""
     low = " ".join((text or "").split())
     if _NO.match(low):
         return "no", [], ""
@@ -270,7 +270,7 @@ def parse_reply(text: str, n_files: int) -> tuple[str, list[int], str] | None:
         if not picks:
             return None
         rest = rest[:pm.start()] + rest[pm.end():]
-    #  Bỏ chữ đệm còn sót («tệp», «đi», «luôn», «giúp em»…) để phần còn lại chỉ là tên mẫu hoặc câu hỏi.
+    #  Bỏ chữ đệm còn sót ("tệp", "đi", "luôn", "giúp em"…) để phần còn lại chỉ là tên mẫu hoặc câu hỏi.
     rest = " ".join(_FILLER.sub(" ", rest).split())
     if verb in _DOC_VERBS:
         return "doc", picks, (f"{_DOC_VERBS[verb]} {rest.strip()}".strip() if rest.strip() else "")
@@ -280,9 +280,9 @@ def parse_reply(text: str, n_files: int) -> tuple[str, list[int], str] | None:
 def handle_text(db: Session, chat_id: str, msg_row: AgentMessage, text: str) -> bool:
     from . import meetings, service
 
-    if meetings.retry_by_text(db, chat_id, msg_row, text):     # ai-CR-162: «thử lại biên bản»
+    if meetings.retry_by_text(db, chat_id, msg_row, text):     # ai-CR-162: "thử lại biên bản"
         return True
-    if meetings.speakers_by_text(db, chat_id, msg_row, text):  # ai-CR-164: «Người 1 = Ngân, Người 3 = Phú»
+    if meetings.speakers_by_text(db, chat_id, msg_row, text):  # ai-CR-164: "Người 1 = Ngân, Người 3 = Phú"
         return True
     if meetings.cost_ok_by_text(db, chat_id, msg_row, text):   # ai-CR-163: ok / thôi cho thẻ ước tính chi phí
         return True
@@ -314,7 +314,7 @@ def handle_text(db: Session, chat_id: str, msg_row: AgentMessage, text: str) -> 
         docs = [f for f in chosen if not is_media(f)]
         if not docs:
             db.commit()
-            service.reply(db, chat_id, "Tệp đó là ghi âm / video — nhắn «làm biên bản» để em làm biên bản.")
+            service.reply(db, chat_id, "Tệp đó là ghi âm / video — nhắn **làm biên bản** để em làm biên bản.")
             return True
         db.commit()
         read_docs(db, int(link.user_id), chat_id, docs[:MAX_DOCS], rest)
@@ -322,7 +322,7 @@ def handle_text(db: Session, chat_id: str, msg_row: AgentMessage, text: str) -> 
     media = [f for f in chosen if is_media(f)]
     if not media:
         db.commit()
-        service.reply(db, chat_id, "Không có tệp ghi âm / video nào để làm biên bản — tài liệu thì nhắn «tóm tắt tệp n».")
+        service.reply(db, chat_id, "Không có tệp ghi âm / video nào để làm biên bản — tài liệu thì nhắn **tóm tắt tệp n**.")
         return True
     card.action = ACT_ASK_DONE
     db.commit()
@@ -331,7 +331,7 @@ def handle_text(db: Session, chat_id: str, msg_row: AgentMessage, text: str) -> 
 
 
 def read_docs(db: Session, user_id: int, chat_id: str, docs: list[dict], question: str = "") -> None:
-    """Đọc tài liệu trong thư mục «Họp» (pdf / Word / Excel / Google Docs) rồi trả lời — mặc định tóm tắt."""
+    """Đọc tài liệu trong thư mục "Họp" (pdf / Word / Excel / Google Docs) rồi trả lời — mặc định tóm tắt."""
     from . import google_link, service
 
     link = google_link.get_link(db, user_id)
@@ -345,11 +345,11 @@ def read_docs(db: Session, user_id: int, chat_id: str, docs: list[dict], questio
             text = google_link.export_text(db, link, str(f["id"]), str(f.get("mime") or f.get("mimeType") or ""),
                                            max_chars=60_000)
         except google_link.GoogleError as e:
-            service.reply(db, chat_id, f"Em chưa đọc được «{telegram.esc(name)}»: {telegram.esc(str(e))}")
+            service.reply(db, chat_id, f"Em chưa đọc được **{telegram.esc(name)}**: {telegram.esc(str(e))}")
             continue
-        row = service.log_message(db, service.DIR_IN, chat_id, 0, f"[Drive «{name}»] {q}"[:4000], action=service.ACT_ASKED)
+        row = service.log_message(db, service.DIR_IN, chat_id, 0, f"[Drive **{name}**] {q}"[:4000], action=service.ACT_ASKED)
         db.commit()
-        service.answer_question(db, chat_id, f"{q}\n\n{service.DOC_GUIDE}\n\nNỘI DUNG TỆP «{name}»:\n{text}",
+        service.answer_question(db, chat_id, f"{q}\n\n{service.DOC_GUIDE}\n\nNỘI DUNG TỆP **{name}**:\n{text}",
                                 before_id=row.id, kind="document")
 
 
@@ -364,7 +364,7 @@ def start(db: Session, user_id: int, chat_id: str, files: list[dict], text: str 
                           template=tpl)
     db.commit()
     more = f", gộp {len(files)} tệp" if len(files) > 1 else ""
-    service.reply(db, chat_id, f"Em nhận rồi, đang làm biên bản «{telegram.esc(title)}» ({tpl.label.lower()}{more}). "
+    service.reply(db, chat_id, f"Em nhận rồi, đang làm biên bản **{telegram.esc(title)}** ({tpl.label.lower()}{more}). "
                                "Họp một giờ mất khoảng 3–5 phút; xong em gửi biên bản, tệp Word và thẻ việc / lịch.")
     db.commit()
     try:
@@ -376,10 +376,10 @@ def start(db: Session, user_id: int, chat_id: str, files: list[dict], text: str 
 
 
 # ---------------------------------------------------------------------------
-# «Report cuộc họp mới nhất»
+# "Report cuộc họp mới nhất"
 # ---------------------------------------------------------------------------
 def latest_report(db: Session, user_id: int, chat_id: str, text: str = "") -> dict:
-    """Tệp mới nhất trong «Họp» chưa làm → làm luôn; không thì gửi lại cuộc họp gần nhất đã làm."""
+    """Tệp mới nhất trong "Họp" chưa làm → làm luôn; không thì gửi lại cuộc họp gần nhất đã làm."""
     from . import google_link, meetings
 
     last = next(iter(meetings.recent(db, user_id, 1)), None)
@@ -399,15 +399,15 @@ def latest_report(db: Session, user_id: int, chat_id: str, text: str = "") -> di
     if newest is not None:
         row = start(db, user_id, chat_id, [newest], text)
         return {"started": True, "meeting": row.title,
-                "message": f"Thư mục «{FOLDER_NAME}» có tệp mới «{row.title}», em đang làm biên bản, xong gửi kèm Word và "
+                "message": f"Thư mục **{FOLDER_NAME}** có tệp mới **{row.title}**, em đang làm biên bản, xong gửi kèm Word và "
                            "thẻ việc / lịch."}
     if last is None:
-        hint = ("Chưa nối Google — nối ở ERP → Trang cá nhân → «Nối Google» để em đọc thư mục «Họp»." if link is None
-                else f"Thư mục «{FOLDER_NAME}» trên Drive chưa có tệp ghi âm / video nào.")
+        hint = ("Chưa nối Google — nối ở ERP → Trang cá nhân → **Nối Google** để em đọc thư mục **Họp**." if link is None
+                else f"Thư mục **{FOLDER_NAME}** trên Drive chưa có tệp ghi âm / video nào.")
         return {"error": "chưa có cuộc họp nào", "hint": hint}
     if last.status != int(meetings.MeetingStatus.DONE):
         return {"started": True, "meeting": last.title,
-                "message": f"Biên bản «{last.title}» đang được làm, xong em gửi ngay."}
+                "message": f"Biên bản **{last.title}** đang được làm, xong em gửi ngay."}
     meetings.resend(db, last)
     return {"sent": True, "meeting": last.title,
             "message": "Đã gửi lại biên bản, tệp Word và thẻ việc / lịch (nếu còn mục chờ) vào chat riêng. Chỉ cần báo "

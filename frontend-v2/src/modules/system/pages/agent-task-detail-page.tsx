@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { DetailPageHeader } from '@/shared/ui/detail-page-header'
 import { ErrorState } from '@/shared/ui/error-state'
+import { InlineEmphasisText } from '@/shared/ui/inline-emphasis-text'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
@@ -100,7 +101,7 @@ export function AgentTaskDetailPage() {
           {task.note && (
             <p className="whitespace-pre-wrap text-sm sm:col-span-2 lg:col-span-4">
               <span className="text-muted-foreground">Ghi chú: </span>
-              {task.note}
+              <InlineEmphasisText text={task.note} />
             </p>
           )}
           {task.pr_url && (
@@ -154,7 +155,9 @@ export function AgentTaskDetailPage() {
                 {m.direction_label} · {formatDateTime(m.created_at)}
                 {m.files > 0 && ` · ${m.files} ảnh`}
               </div>
-              <div className="whitespace-pre-wrap break-words">{stripTelegramHtml(m.body)}</div>
+              <div className="whitespace-pre-wrap break-words">
+                <InlineEmphasisText text={stripTelegramHtml(m.body)} />
+              </div>
             </div>
           ))}
         </CardContent>
@@ -171,7 +174,10 @@ function TextBlock({ title, body }: { title: string; body: string }) {
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="whitespace-pre-wrap break-words text-sm">{body}</div>
+        {/*  bao-CR-695: chữ của bot (rà soát, kế hoạch, ghi chú) nay đánh dấu **in đậm** — vẽ thành chữ đậm, không lộ dấu sao. */}
+        <div className="whitespace-pre-wrap break-words text-sm">
+          <InlineEmphasisText text={body} />
+        </div>
       </CardContent>
     </Card>
   )

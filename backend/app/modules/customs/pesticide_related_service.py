@@ -1,8 +1,8 @@
-"""Hai khối «Sản phẩm khác cùng công ty» và «Thuốc cùng hoạt chất» của trang chi tiết thuốc BVTV
+"""Hai khối "Sản phẩm khác cùng công ty" và "Thuốc cùng hoạt chất" của trang chi tiết thuốc BVTV
 (01/10/2026 — bê theo trang nguồn danhmuc.thuocbvtv.com). Tính từ chính danh mục đã nạp, không cào
 thêm.
 
-«Cùng hoạt chất» = cùng TẬP tên hoạt chất sau khi bỏ hàm lượng: "Chitosan 2% + Oligo-Alginate 10%"
+"Cùng hoạt chất" = cùng TẬP tên hoạt chất sau khi bỏ hàm lượng: "Chitosan 2% + Oligo-Alginate 10%"
 khớp "Oligo-Alginate 5% + Chitosan 3%" (thứ tự và hàm lượng khác nhau vẫn là cùng hoạt chất, đúng
 như trang nguồn ghi "(Chitosan + Oligo-Alginate)"). Lọc thô bằng `LIKE` từng tên ở SQL rồi so tập
 chính xác ở Python — danh mục ~7.000 thuốc, mỗi tên chỉ còn vài chục dòng phải so.
@@ -16,10 +16,10 @@ from sqlalchemy.orm import Session
 from .constants import PESTICIDE_STATUS_LABELS
 from .model import CustomsPesticide
 
-#  Số thuốc mỗi khối mặc định — bằng trang nguồn. «Xem tất cả» gọi lại với `limit` tới trần
+#  Số thuốc mỗi khối mặc định — bằng trang nguồn. "Xem tất cả" gọi lại với `limit` tới trần
 #  `MAX_RELATED_LIMIT` (công ty nhiều thuốc nhất trong danh mục thật có 219 thuốc) và MỞ RỘNG ngay
-#  trong khối — không chuyển sang danh sách vì ô tìm ở đó khớp chuỗi liền, «Chitosan +
-#  Oligo-Alginate» sẽ không ra «Chitosan 2% + Oligo-Alginate 10%».
+#  trong khối — không chuyển sang danh sách vì ô tìm ở đó khớp chuỗi liền, "Chitosan +
+#  Oligo-Alginate" sẽ không ra "Chitosan 2% + Oligo-Alginate 10%".
 RELATED_LIMIT = 10
 MAX_RELATED_LIMIT = 300
 _PAREN = re.compile(r"\([^)]*\)")

@@ -13,7 +13,7 @@ const CONFIG: ReportPageConfig = {
   description:
     'HĐ đang hiệu lực, sắp hết hạn, đã quá hạn mà người vẫn đi làm, nhân sự chưa có HĐ — xem theo công ty, phòng ban, loại hợp đồng.',
   slug: 'labor-contract',
-  //  HĐLĐ không có màn danh sách riêng — nằm ở tab «Hợp đồng» của hồ sơ nhân sự.
+  //  HĐLĐ không có màn danh sách riêng — nằm ở tab "Hợp đồng" của hồ sơ nhân sự.
   sourcePath: appRoutes.hr.employees,
   kpis: ['active', 'expiring_30', 'overdue', 'no_contract'],
   //  Bắt buộc theo kiểu, nhưng không dùng: `hideTrend` (backend luôn trả `trend: []`).

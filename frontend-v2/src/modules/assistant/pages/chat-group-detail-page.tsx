@@ -34,7 +34,7 @@ import {
 } from '../hooks/use-chat-groups'
 import { describeGroupState, formatFileSize, getChannelTone } from '../utils/chat-group-format'
 
-/** Khoảng tóm tắt cho nút «Tóm tắt» — trần là hạn giữ tin (90 ngày). */
+/** Khoảng tóm tắt cho nút "Tóm tắt" — trần là hạn giữ tin (90 ngày). */
 const SUMMARY_RANGES = [
   { hours: 24, label: '24 giờ qua' },
   { hours: 72, label: '3 ngày qua' },
@@ -45,8 +45,8 @@ const SUMMARY_RANGES = [
 /**
  * CHI TIẾT MỘT NHÓM CHAT (ai-CR-123) — `/assistant/groups/:id`.
  *
- * Tin + tệp bot đã ghi, các bản tóm tắt đã lưu (từ câu hỏi gửi bot / Trợ lý web, hoặc nút «Tóm tắt» ở đây). Người
- * quản lý bot AI mở nhóm mình không ở thì backend ghi nhật ký — tab «Nhật ký xem» cho thấy ai đã mở.
+ * Tin + tệp bot đã ghi, các bản tóm tắt đã lưu (từ câu hỏi gửi bot / Trợ lý web, hoặc nút "Tóm tắt" ở đây). Người
+ * quản lý bot AI mở nhóm mình không ở thì backend ghi nhật ký — tab "Nhật ký xem" cho thấy ai đã mở.
  */
 export function ChatGroupDetailPage() {
   const { id } = useParams()
@@ -193,7 +193,7 @@ interface MessageListProps {
   filesOnly?: boolean
 }
 
-/** Tab «Tệp»: chỉ các tin có tệp, mới nhất trước. Tin nhắn thường xem ở khung chat (`GroupChatThread`). */
+/** Tab "Tệp": chỉ các tin có tệp, mới nhất trước. Tin nhắn thường xem ở khung chat (`GroupChatThread`). */
 function MessageList({ groupId, filesOnly = false }: MessageListProps) {
   const [search, setSearch] = useState('')
   const q = useDebouncedValue(search, 300).trim()
@@ -318,7 +318,7 @@ function SummaryList({ groupId }: { groupId: number }) {
         {summaries.isLoading && <Skeleton className="h-24 w-full" />}
         {!summaries.isLoading && items.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            Chưa có bản tóm tắt nào. Bấm «Tóm tắt», hoặc hỏi bot / Trợ lý AI «nhóm này hôm nay bàn gì» — câu trả lời
+            Chưa có bản tóm tắt nào. Bấm <strong>Tóm tắt</strong>, hoặc hỏi bot / Trợ lý AI <em>nhóm này hôm nay bàn gì</em> — câu trả lời
             sẽ được lưu ở đây.
           </p>
         )}

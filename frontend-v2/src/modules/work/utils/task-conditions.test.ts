@@ -10,7 +10,7 @@ import { applyTaskConditions, multiKey, toFilterableTask } from './task-conditio
  *
  * Chỗ dễ hỏng nhất là các trường ĐA TRỊ (người phụ trách, và trường tùy biến
  * kiểu chọn nhiều — Tag chẳng hạn): chúng bị dẹp thành chuỗi rồi so bằng phép
- * «chứa», nên thiếu rào `|` là id 1 vớ luôn id 12.
+ * "chứa", nên thiếu rào `|` là id 1 vớ luôn id 12.
  */
 
 function task(patch: Partial<WorkTask> = {}): WorkTask {
@@ -85,7 +85,7 @@ describe('toFilterableTask', () => {
     expect(String(ra.label_5).includes(multiKey(9))).toBe(false)
   })
 
-  it('trường CHƯA có giá trị thì không sinh khóa — «đang trống» mới bắt được', () => {
+  it('trường CHƯA có giá trị thì không sinh khóa — "đang trống" mới bắt được', () => {
     expect(toFilterableTask(task()).label_5).toBeUndefined()
   })
 
@@ -114,11 +114,11 @@ describe('toFilterableTask', () => {
     expect(ra.pic_keys).toBe('')
   })
 
-  it('mô tả HTML được lột thẻ trước khi lọc, không thì điều kiện «chứa p» khớp tất', () => {
+  it('mô tả HTML được lột thẻ trước khi lọc, không thì điều kiện "chứa p" khớp tất', () => {
     expect(toFilterableTask(task({ description: '<p>In tem</p>' })).description).toBe('In tem')
   })
 
-  it('việc không người phụ trách để chuỗi RỖNG, để «đang trống» hỏi được', () => {
+  it('việc không người phụ trách để chuỗi RỖNG, để "đang trống" hỏi được', () => {
     expect(toFilterableTask(task()).pic_keys).toBe('')
   })
 })
@@ -151,7 +151,7 @@ describe('applyTaskConditions', () => {
     expect(ra[0]).toBe(rows[0])
   })
 
-  it('«đang trống» bắt đúng việc chưa gán ai, không bắt việc đã gán', () => {
+  it('"đang trống" bắt đúng việc chưa gán ai, không bắt việc đã gán', () => {
     const rows = [
       task({ id: 1 }),
       task({
@@ -196,7 +196,7 @@ describe('applyTaskConditions', () => {
 
   it('điều kiện chưa nhập giá trị bị BỎ QUA, không lọc sạch bảng', () => {
     //  Dòng dở dang (chọn trường xong chưa nhập gì) không được coi là điều kiện
-    //  hợp lệ — nếu không, vừa bấm «Thêm điều kiện» là bảng trắng.
+    //  hợp lệ — nếu không, vừa bấm "Thêm điều kiện" là bảng trắng.
     const rows = [task({ id: 1 }), task({ id: 2 })]
     const ra = applyTaskConditions(
       rows,
@@ -205,7 +205,7 @@ describe('applyTaskConditions', () => {
     expect(ra).toHaveLength(2)
   })
 
-  it('lọc theo LOẠI VIỆC (duoc-CR-656): «là» khớp đúng loại, «không phải» giữ cả việc chưa chọn loại', () => {
+  it('lọc theo LOẠI VIỆC (duoc-CR-656): "là" khớp đúng loại, "không phải" giữ cả việc chưa chọn loại', () => {
     const rows = [task({ id: 1, task_type_id: 3 }), task({ id: 2, task_type_id: 4 }), task({ id: 3, task_type_id: 0 })]
     const is = applyTaskConditions(rows, state([{ name: 'task_type_id', type: 'combobox', operator: 'is', value: '3' }]))
     expect(is.map((t) => t.id)).toEqual([1])

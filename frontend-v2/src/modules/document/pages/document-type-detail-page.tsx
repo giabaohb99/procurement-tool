@@ -103,7 +103,7 @@ export function DocumentTypeDetailPage() {
       title={isCreating ? 'Thêm loại văn bản' : (documentType?.name ?? '')}
       //  ⚠️ Dòng mô tả ẨN ở khổ hẹp — cùng lý do với chi tiết Sổ văn bản
       //  (duoc-CR-372): ở trang đã có bản ghi nó chỉ nhắc lại *mã loại* (ô đầu
-      //  tiên của biểu mẫu) và *mẫu số hiệu* (hiện ngay trong thẻ «Số hiệu» bên
+      //  tiên của biểu mẫu) và *mẫu số hiệu* (hiện ngay trong thẻ "Số hiệu" bên
       //  dưới), mà dải này GHIM nên mỗi dòng là chỗ đứng yên vĩnh viễn — riêng
       //  câu này rớt hai hàng, đẩy dải từ 97px lên **145px = 18%** màn 796px.
       //  Trang thêm mới thì giữ: ở đó chưa có ô nào điền.

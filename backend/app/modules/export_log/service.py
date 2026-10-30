@@ -52,7 +52,7 @@ def can_view_any(db: Session, user) -> bool:
 
 def can_download(db: Session, user, x) -> bool:
     """Tải lại TỆP đã xuất (duoc-CR-660, review H1): tệp là ảnh chụp theo quyền của NGƯỜI XUẤT nên chỉ người đó, hoặc người
-    có `export` phạm vi «tất cả» trên đúng bảng đó, được tải. Tệp nhân sự còn đòi đọc nhạy cảm phạm vi «tất cả» — tệp do người
+    có `export` phạm vi "tất cả" trên đúng bảng đó, được tải. Tệp nhân sự còn đòi đọc nhạy cảm phạm vi "tất cả" — tệp do người
     có quyền nhạy cảm xuất thì không che, người tải lại không có quyền đó sẽ đọc được CCCD / tài khoản ngân hàng."""
     from app.core.auth import get_perm_profile
     from app.core.scoping import has_global_scope

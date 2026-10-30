@@ -19,11 +19,11 @@ import { Switch } from '@/shared/ui/switch'
 import { formatDateTime, formatRelativeTime } from '@/shared/utils/format-date'
 
 /**
- * Tab «Thiết bị của tôi» ở Trang cá nhân (bao-CR-395, CR-312 P3b).
+ * Tab "Thiết bị của tôi" ở Trang cá nhân (bao-CR-395, CR-312 P3b).
  *
  * Đọc `/api/auth/sessions` — cửa CHỈ đòi đăng nhập, không cần khóa
  * `login_session`, nên mọi tài khoản đều thấy được máy nào đang giữ phiên của
- * mình và tự đá máy lạ. Phiên đang bấm được đánh dấu «Thiết bị này» và không
+ * mình và tự đá máy lạ. Phiên đang bấm được đánh dấu "Thiết bị này" và không
  * có nút đá (muốn thoát máy này thì bấm Đăng xuất như thường).
  */
 export function ProfileDevicesTab() {
@@ -35,7 +35,7 @@ export function ProfileDevicesTab() {
   const rows = data?.items ?? []
   const otherAlive = rows.filter((r) => r.is_alive && !r.is_current)
   //  bao-CR-400 — số phiên còn hiệu lực do backend đếm, không đếm `rows`: tắt
-  //  «Chỉ còn hiệu lực» thì `rows` gồm cả phiên đã chết mà con số vẫn phải đúng.
+  //  "Chỉ còn hiệu lực" thì `rows` gồm cả phiên đã chết mà con số vẫn phải đúng.
   const aliveCount = data?.alive_count ?? 0
 
   async function handleRevoke(row: LoginSessionItem) {

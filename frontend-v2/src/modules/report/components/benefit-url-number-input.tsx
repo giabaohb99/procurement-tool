@@ -18,8 +18,8 @@ interface BenefitUrlNumberInputProps {
 /**
  * Ô số nguyên không âm của bộ lọc H1, nguồn sự thật là URL. Ô hiện dấu ngăn nghìn kiểu VN
  * (`NumberInput` dùng chung), gõ chạy bằng state cục bộ và chỉ ghi URL sau khi ngừng gõ;
- * URL đổi từ nơi khác (bấm dịp có sẵn, «Bỏ hết điều kiện», nút Back) thì ô theo
- * (`useUrlSearchParam`). Số 0 = «chưa nhập» → xóa khỏi URL.
+ * URL đổi từ nơi khác (bấm dịp có sẵn, "Bỏ hết điều kiện", nút Back) thì ô theo
+ * (`useUrlSearchParam`). Số 0 = "chưa nhập" → xóa khỏi URL.
  */
 export function BenefitUrlNumberInput({
   name,

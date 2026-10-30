@@ -7,7 +7,7 @@ Bốn chốt (A1 giao 26/10, đại ca gật):
      phạm vi duyệt). Ghi bằng ĐÚNG hàm route duyệt của màn web; lúc xác nhận kiểm lại từ đầu.
   2. Mỗi phiếu một lần xác nhận, token 15 phút, trạng thái phiếu / chặng đổi giữa hai bước thì chặn. Không có duyệt hàng loạt.
   3. Chỉ ba loại phiếu; loại khác từ chối với câu rõ ràng.
-  4. Ghi chú trên phiếu chỉ là dữ liệu. Lịch sử duyệt ghi «qua AI»; nhật ký thao tác mang kênh AI (cổng MCP đóng dấu sẵn).
+  4. Ghi chú trên phiếu chỉ là dữ liệu. Lịch sử duyệt ghi "qua AI"; nhật ký thao tác mang kênh AI (cổng MCP đóng dấu sẵn).
 Không thấy phiếu, không phải người được giao, phiếu không còn chờ duyệt: cùng MỘT câu — không lộ phiếu có tồn tại.
 """
 from __future__ import annotations

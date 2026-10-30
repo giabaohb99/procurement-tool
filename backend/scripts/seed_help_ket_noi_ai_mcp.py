@@ -10,11 +10,11 @@ bao-CR-639 (19/10, tối, đính chính theo ảnh đại ca chụp): ChatGPT n�
 MCP Server URL, Authentication OAuth, tick I trust this application) → Create; Developer mode bật trước; cần gói trả phí.
 Khớp khối chatgpt của `mcp_setup.py`.
 bao-CR-636 (19/10, chiều): thêm bài (g) OAuth (ai-CR-218/222/225); Claude Desktop có hai cách (Connectors hoặc mcp-remote);
-khóa xem lại được + bật / tắt tạm (ai-CR-221) — bỏ câu «chỉ hiện một lần»; quản trị có màn Ứng dụng AI đã kết nối
+khóa xem lại được + bật / tắt tạm (ai-CR-221) — bỏ câu "chỉ hiện một lần"; quản trị có màn Ứng dụng AI đã kết nối
 (bao-CR-635) và bộ Cẩm nang hệ thống 7 skill (ai-CR-220). ⚠️ Nhãn nút Hiện / Tạm tắt ở màn Khóa của bạn viết theo hợp đồng
 API; màn giao diện là bao-CR-633 của Agent 3 — lên dev xong đối chiếu lại nhãn.
 
-Nguồn sự thật của từng bước nối ứng dụng là `app/modules/agent_hub/mcp_setup.py` (màn «AI của tôi» đọc đúng tệp đó);
+Nguồn sự thật của từng bước nối ứng dụng là `app/modules/agent_hub/mcp_setup.py` (màn "AI của tôi" đọc đúng tệp đó);
 bài ở đây chép lại CÙNG bước, cùng tên tệp, cùng khối cấu hình — đổi bên kia thì sửa bên này.
 
 Chạy trong container api:
@@ -28,8 +28,8 @@ Idempotent: có thẻ gốc cũ thì xóa nguyên cây con (con trước, cha sa
 `doc/agent-hub/06-cong-mcp.md` (hợp đồng cổng). Ba nơi lệch nhau thì người dùng đọc một đằng, màn hình làm một nẻo.
 
 ⚠️ Tiêu đề bài phải KHÁC mọi bài đang có trong Trung tâm trợ giúp (portal tra ngược slug -> id trên client, trùng tiêu đề
-là trùng slug). Cụm Trợ lý AI đã có các bài «Trợ lý AI», «Lập bộ tài khoản thu mua bằng Trợ lý AI», «Tạo, sửa, xóa phiếu
-và xem quyền bằng Trợ lý AI» — bài ở đây luôn mang chữ «AI riêng» hoặc «Kho skill AI» để không đụng.
+là trùng slug). Cụm Trợ lý AI đã có các bài "Trợ lý AI", "Lập bộ tài khoản thu mua bằng Trợ lý AI", "Tạo, sửa, xóa phiếu
+và xem quyền bằng Trợ lý AI" — bài ở đây luôn mang chữ "AI riêng" hoặc "Kho skill AI" để không đụng.
 
 ⚠️ KHÔNG bao giờ in khóa thật vào bài: mọi ví dụ dùng chỗ giữ <KHÓA_CỦA_BẠN> đúng như màn hình.
 """
@@ -169,7 +169,7 @@ TREE = {
 <p>Địa chỉ cổng trong khối lấy đúng theo màn AI của tôi của hệ thống bạn đang dùng (môi trường thử là <code>deverp.degoholding.vn</code>).</p>
 
 <h2>Vì sao khóa nằm trong <code>env</code> mà không nằm trong <code>args</code></h2>
-<p>Trên Windows, một khoảng trắng trong <code>args</code> làm hỏng lệnh, mà <em>«Bearer khóa»</em> có khoảng trắng. Nên khóa để ở biến môi trường <code>DEGO_MCP_KEY</code>, còn <code>args</code> chỉ tham chiếu tên biến. Muốn gọn hơn: đặt biến cho cả máy bằng lệnh <code>setx DEGO_MCP_KEY "Bearer {KEY}"</code> thì bỏ được khối <code>env</code>; nhưng <code>setx</code> chỉ có hiệu lực với ứng dụng <strong>mở sau</strong> lệnh — lại phải thoát hẳn Claude Desktop.</p>
+<p>Trên Windows, một khoảng trắng trong <code>args</code> làm hỏng lệnh, mà <em>Bearer khóa</em> có khoảng trắng. Nên khóa để ở biến môi trường <code>DEGO_MCP_KEY</code>, còn <code>args</code> chỉ tham chiếu tên biến. Muốn gọn hơn: đặt biến cho cả máy bằng lệnh <code>setx DEGO_MCP_KEY "Bearer {KEY}"</code> thì bỏ được khối <code>env</code>; nhưng <code>setx</code> chỉ có hiệu lực với ứng dụng <strong>mở sau</strong> lệnh — lại phải thoát hẳn Claude Desktop.</p>
 
 <h2>Ba lỗi hay gặp riêng của Claude Desktop</h2>
 <table>
@@ -183,7 +183,7 @@ TREE = {
 <p>Các lỗi chung (khóa sai, quá tần suất, nhóm công cụ bị tắt): {ref(NHAT_KY, "bài Nhật ký và lỗi thường gặp")}.</p>
 
 <h2>Dùng thử</h2>
-<p>Hỏi Claude: <em>«Liệt kê các skill công ty mà bạn đọc được»</em> — phải ra danh sách cẩm nang bạn được gán. Rồi <em>«Tôi muốn mua 10 thùng giấy A4 thì làm thế nào?»</em> — Claude tự đọc skill quy trình thu mua và trả lời theo cách làm của công ty. Những gì AI làm được: {ref(CONG_CU, "bài Công cụ và skill")}.</p>""",
+<p>Hỏi Claude: <em>Liệt kê các skill công ty mà bạn đọc được</em> — phải ra danh sách cẩm nang bạn được gán. Rồi <em>Tôi muốn mua 10 thùng giấy A4 thì làm thế nào?</em> — Claude tự đọc skill quy trình thu mua và trả lời theo cách làm của công ty. Những gì AI làm được: {ref(CONG_CU, "bài Công cụ và skill")}.</p>""",
         },
         {
             "title": CLIENT_KHAC,
@@ -226,7 +226,7 @@ TREE = {
 <p>Hai nơi này không nhận khóa dán tay; chúng tự mở trang ERP để bạn đăng nhập và bấm <strong>Cho phép</strong>. Xem {ref(OAUTH, "bài Nối ChatGPT và claude.ai bằng đăng nhập ERP")}.</p>
 
 <h2>Sau khi nối</h2>
-<p>Hỏi một câu về ERP (<em>«Tôi còn bao nhiêu ngày phép?»</em>), rồi về màn AI của tôi bấm <strong>Kiểm tra lại</strong>. Mọi lỗi chung xem {ref(NHAT_KY, "bài Nhật ký và lỗi thường gặp")}; AI làm được gì xem {ref(CONG_CU, "bài Công cụ và skill")}.</p>""",
+<p>Hỏi một câu về ERP (<em>Tôi còn bao nhiêu ngày phép?</em>), rồi về màn AI của tôi bấm <strong>Kiểm tra lại</strong>. Mọi lỗi chung xem {ref(NHAT_KY, "bài Nhật ký và lỗi thường gặp")}; AI làm được gì xem {ref(CONG_CU, "bài Công cụ và skill")}.</p>""",
         },
         {
             "title": CONG_CU,
@@ -238,9 +238,19 @@ TREE = {
         {
             "title": QUAN_TRI,
             "icon": "settings",
-            "summary": "Bộ skill, soạn và xuất bản, mức bảo mật, gán ai được đọc, phát khóa cho nhân sự, ứng dụng AI đã kết nối, bộ Cẩm nang hệ thống, cấu hình",
+            "summary": "Phân hệ AI gom Trợ lý AI và Kho skill AI: bộ skill, soạn và xuất bản, mức bảo mật, gán ai được đọc, màn Kết nối (khóa và kết nối của nhân sự), Nâng cao (ứng dụng AI đã đăng ký), Nhật ký sử dụng, Cẩm nang hệ thống, cấu hình",
             "content": f"""<h2>Dành cho quản trị — Kho skill AI</h2>
-<p>Phân hệ <strong>Kho skill AI</strong> đứng cạnh Trợ lý AI trên màn chọn phân hệ, chỉ hiện với người có quyền <em>Kho skill AI</em> hoặc được giao <em>quản lý khóa kết nối AI của nhân sự</em>. Menu: <strong>Tổng quan · Bộ skill · Khóa nhân sự · Ứng dụng AI đã kết nối · Nhật ký sử dụng · Giới thiệu · Cấu hình</strong>.</p>
+<p>Từ 30/10/2026, Trợ lý AI và Kho skill AI gom thành <strong>một phân hệ AI</strong> trên màn chọn phân hệ. Menu bên trái xếp theo nhóm; mỗi mục chỉ hiện với người có quyền của mục đó, đường dẫn cũ vẫn mở được nên link trong thông báo và bài hướng dẫn không gãy:</p>
+<table>
+<thead><tr><th>Mục</th><th>Dùng để</th><th>Ai thấy</th></tr></thead>
+<tbody>
+<tr><td><strong>Trợ lý AI</strong></td><td>Khung chat trợ lý nội bộ.</td><td>Người có quyền Trợ lý AI.</td></tr>
+<tr><td><strong>Kết nối</strong> (trước là <em>Khóa nhân sự</em>)</td><td>Khóa và kết nối AI của nhân sự: phát hộ, thu hồi, xem ai đang nối bằng gì.</td><td>Người được giao quản lý khóa kết nối AI.</td></tr>
+<tr><td>Nhóm <strong>Kho skill</strong> ▸ <strong>Bộ skill</strong></td><td>Soạn, xuất bản, gán ai được đọc.</td><td>Người có quyền Kho skill AI.</td></tr>
+<tr><td>Nhóm <strong>Giám sát</strong> ▸ <strong>Tổng quan</strong> · <strong>Nhật ký sử dụng</strong> · <strong>Bot Telegram</strong> (gập sẵn: <em>Nhóm chat</em>, <em>Người dùng bot</em>)</td><td>Số liệu, lượt gọi của mọi người, nhóm chat và người dùng bot.</td><td>Người quản lý bot AI; Nhóm chat thì ai vào được Trợ lý AI cũng xem nhóm mình là thành viên.</td></tr>
+<tr><td>Nhóm <strong>Cấu hình</strong> ▸ <strong>Cấu hình chung</strong> · <strong>Nâng cao</strong></td><td>Nhóm công cụ qua MCP, giới hạn, câu dặn thêm; Nâng cao là nơi dọn các ứng dụng AI đã đăng ký.</td><td>Người quản lý bot AI.</td></tr>
+</tbody>
+</table>
 
 <h2>Ba khái niệm</h2>
 <table>
@@ -271,7 +281,7 @@ TREE = {
 <ol>
 <li>Mở bộ ▸ tab <strong>Skill</strong> ▸ <strong>Thêm skill</strong>. <strong>Tên skill</strong> 2 tới 100 ký tự, chỉ chữ không dấu, số, gạch ngang, gạch dưới (ví dụ <code>bao-cao-mua-hang-thang</code>) — AI gọi bằng tên này.</li>
 <li>Màn <strong>Soạn skill</strong> hai cột: trái là <strong>Nội dung (Markdown)</strong> có thanh chèn nhanh tiêu đề, chữ đậm, danh sách, bảng; phải là <strong>Xem như AI đọc</strong>.</li>
-<li>Ô <strong>Tóm tắt cho AI</strong> (tối đa 500 ký tự) <strong>bắt buộc trước khi xuất bản</strong>. AI đọc câu này để quyết định có mở skill hay không, nên viết rõ <em>KHI NÀO dùng</em>: <em>«Dùng khi người dùng hỏi cách lập yêu cầu mua hàng»</em>, không viết <em>«Hướng dẫn mua hàng»</em>.</li>
+<li>Ô <strong>Tóm tắt cho AI</strong> (tối đa 500 ký tự) <strong>bắt buộc trước khi xuất bản</strong>. AI đọc câu này để quyết định có mở skill hay không, nên viết rõ <em>KHI NÀO dùng</em>: <em>Dùng khi người dùng hỏi cách lập yêu cầu mua hàng</em>, không viết <em>Hướng dẫn mua hàng</em>.</li>
 <li><strong>Lưu nháp</strong> bằng nút hoặc <strong>Ctrl+S</strong>. Rời trang khi chưa lưu thì màn hỏi lại.</li>
 <li><strong>Xuất bản</strong> (cần quyền duyệt): màn tự lưu nháp rồi mới xuất bản, kèm <strong>Ghi chú thay đổi</strong>. Từ lúc này AI đọc được bản vừa xuất bản; sửa tiếp là nháp mới, AI vẫn đọc bản đã xuất bản cho tới lần xuất bản sau (màn ghi <em>Nháp mới hơn bản AI đang đọc</em>).</li>
 </ol>
@@ -292,18 +302,18 @@ TREE = {
 </ol>
 <p>Thu hồi một dòng quyền có hiệu lực trong khoảng một phút (bộ đệm quyền).</p>
 
-<h2>Khóa nhân sự: phát hộ và thu hồi</h2>
-<p>Menu <strong>Khóa nhân sự</strong> liệt kê mọi khóa kết nối trong phạm vi bạn quản lý: người, phòng, tên khóa, mức, hạn, lần dùng cuối, trạng thái (<em>Chờ nhận / Đang dùng / Hết hạn / Đã thu hồi</em>). Lọc theo phòng ban và trạng thái.</p>
+<h2>Kết nối: khóa và kết nối AI của nhân sự</h2>
+<p>Menu <strong>Kết nối</strong> liệt kê mọi khóa và kết nối trong phạm vi bạn quản lý, mỗi dòng ghi: <strong>người</strong> (tên, mã nhân viên, email), <strong>phòng</strong>, <strong>cách nối</strong> (<em>khóa riêng</em> dán tay hay <em>OAuth</em> qua đăng nhập ERP), <strong>ứng dụng</strong> (tên tự khai và nơi quay về), tên khóa, mức, hạn, <strong>dùng lần cuối</strong>, trạng thái (<em>Chờ nhận / Đang dùng / Hết hạn / Đã thu hồi</em>). Ô tìm nhận tên, email hoặc mã nhân viên; lọc thêm theo phòng ban và trạng thái. Muốn biết <em>ai đang nối bằng ChatGPT, ai bằng Claude</em> thì nhìn cột cách nối và ứng dụng.</p>
 <ul>
 <li><strong>Phát khóa</strong>: cho một hay nhiều người (chọn theo danh sách nhân sự) hoặc <strong>cả phòng</strong>, tối đa <strong>50 người một lượt</strong>, chọn hạn 7 / 30 / 90 / 180 / 365 ngày. Khóa phát hộ <strong>luôn là Chỉ đọc</strong>; khóa Được ghi chỉ người dùng tự tạo. Người nhận có <strong>chuông</strong>, vào Trang cá nhân bấm <strong>Nhận khóa</strong> mới thấy khóa — bạn không thấy khóa của họ. Có người ngoài phạm vi thì <strong>từ chối cả lượt</strong>; người đã đủ 5 khóa, chưa có tài khoản hoặc tài khoản đã khóa thì bỏ qua kèm lý do.</li>
 <li><strong>Thu hồi</strong>: tick chọn rồi bấm <strong>Thu hồi</strong>; hộp xác nhận chỉ đếm khóa còn hiệu lực. Thu hồi được từng khóa, mọi khóa của một người, hoặc cả một lượt phát. Dòng thu hồi giữ lại để đối soát; AI gọi bằng khóa đó vẫn vào nhật ký với trạng thái <em>Bị từ chối</em>.</li>
 </ul>
 
-<h2>Ứng dụng AI đã kết nối (người quản lý trợ lý AI)</h2>
-<p>Khi nhân sự nối ChatGPT, claude.ai hay Claude Desktop bằng cách {ref(OAUTH, "đăng nhập ERP")}, ứng dụng đó <strong>tự đăng ký</strong> với cổng. Màn này liệt kê mọi ứng dụng đã đăng ký: <strong>tên tự khai</strong> kèm sáu ký tự cuối mã ứng dụng, <strong>nơi quay về</strong> (tên miền), số <strong>kết nối đang sống</strong>, dùng lần cuối, ngày đăng ký; hai cột IP đăng ký và cách xác thực ẩn mặc định (menu Cột).</p>
+<h2>Nâng cao: ứng dụng AI đã đăng ký (người quản lý trợ lý AI)</h2>
+<p>Khi nhân sự nối ChatGPT, claude.ai hay Claude Desktop bằng cách {ref(OAUTH, "đăng nhập ERP")}, ứng dụng đó <strong>tự đăng ký</strong> với cổng. Mục <strong>Cấu hình ▸ Nâng cao</strong> liệt kê mọi ứng dụng đã đăng ký: <strong>tên tự khai</strong> kèm sáu ký tự cuối mã ứng dụng, <strong>nơi quay về</strong> (tên miền), số <strong>kết nối đang sống</strong>, <strong>người đang dùng</strong>, dùng lần cuối, ngày đăng ký; hai cột IP đăng ký và cách xác thực ẩn mặc định (menu Cột). Có ô tìm và ô lọc trạng thái: <em>Còn kết nối</em> · <em>Không còn kết nối</em> · <em>Host lạ</em>.</p>
 <ul>
 <li>⚠️ <strong>Tên là do ứng dụng tự khai, đừng tin.</strong> Nhìn cột nơi quay về: không thuộc ứng dụng AI quen (chatgpt.com, openai.com, claude.ai, anthropic.com, claude.com, máy cục bộ) thì ô tô đỏ kèm nhãn <strong>Host lạ</strong>, dòng tóm tắt trên bảng đếm số host lạ. Host lạ mà có kết nối đang sống nghĩa là đã có người bấm Cho phép cho một ứng dụng không rõ — hỏi người đó, rồi xóa.</li>
-<li><strong>Xóa ứng dụng</strong> (cần quyền ghi quản lý bot AI): hộp xác nhận nêu tên, nơi quay về và số kết nối sẽ bị cắt. <strong>Xóa là cắt mọi kết nối của ứng dụng này ngay</strong>, cả mã làm mới; người đang dùng phải bấm Cho phép lại từ đầu nếu muốn nối tiếp. Dòng khóa tương ứng ở Khóa nhân sự chuyển sang Đã thu hồi.</li>
+<li><strong>Xóa ứng dụng</strong> (cần quyền ghi quản lý bot AI): hộp xác nhận nêu tên, nơi quay về và số kết nối sẽ bị cắt. <strong>Xóa là cắt mọi kết nối của ứng dụng này ngay</strong>, cả mã làm mới; người đang dùng phải bấm Cho phép lại từ đầu nếu muốn nối tiếp. Dòng tương ứng ở màn Kết nối chuyển sang Đã thu hồi.</li>
 <li>Ứng dụng quá 7 ngày không có kết nối sống và không dùng thì hệ tự dọn; màn này chủ yếu để xem và xóa tay ứng dụng lạ.</li>
 </ul>
 
@@ -315,7 +325,7 @@ TREE = {
 <li>Bộ được gán sẵn cho mọi pháp nhân có lúc gieo; <strong>pháp nhân tạo sau</strong> phải vào bộ ▸ tab Ai được đọc gán tay.</li>
 </ul>
 
-<h2>Cấu hình (người quản lý trợ lý AI)</h2>
+<h2>Cấu hình chung (người quản lý trợ lý AI)</h2>
 <ul>
 <li><strong>Nhóm công cụ qua MCP</strong>: bật / tắt từng nhóm (mỗi nhóm ghi số và tên công cụ). Mặc định bật: Việc của tôi, Nghỉ phép, Danh bạ, Báo cáo, Kho skill; các nhóm Thu mua, Công nợ và thanh toán, Văn thư, Soạn việc, Tra cứu thị trường, Lịch và Drive, Sổ nhớ mặc định tắt. Tắt nhóm là công cụ biến khỏi mọi ứng dụng AI đã nối.</li>
 <li><strong>Giới hạn</strong>: lượt mỗi phút theo khóa (mặc định 120) và theo IP (600), số khóa sai mỗi phút theo IP (30), số dòng dữ liệu mỗi phút (3.000), số ngày giữ nhật ký (180). Ô trống không được hiểu là 0; ngoài dải thì màn chặn lưu.</li>
@@ -327,8 +337,8 @@ TREE = {
 <thead><tr><th>Khóa quyền</th><th>Mở gì</th></tr></thead>
 <tbody>
 <tr><td><code>ai_skill</code> (Kho skill AI)</td><td>Đọc · tạo · ghi · xóa bộ và skill; <strong>duyệt</strong> = xuất bản. Phạm vi theo pháp nhân và <strong>phòng chủ quản</strong> của bộ: trưởng phòng chỉ soạn bộ của phòng mình.</td></tr>
-<tr><td><code>ai_mcp_key_admin</code></td><td>Màn Khóa nhân sự: đọc · phát hộ · thu hồi. Phạm vi theo hồ sơ của <strong>chủ khóa</strong>.</td></tr>
-<tr><td>Quản lý bot AI (<code>agent_group</code>)</td><td>Tổng quan, Nhật ký sử dụng của người khác, Ứng dụng AI đã kết nối, Cấu hình.</td></tr>
+<tr><td><code>ai_mcp_key_admin</code></td><td>Màn Kết nối: đọc · phát hộ · thu hồi. Phạm vi theo hồ sơ của <strong>chủ khóa</strong>.</td></tr>
+<tr><td>Quản lý bot AI (<code>agent_group</code>)</td><td>Tổng quan, Nhật ký sử dụng của người khác, Bot Telegram, Cấu hình chung, Nâng cao.</td></tr>
 </tbody>
 </table>
 <p>Hai vai trò mẫu: <strong>Quản trị kho skill AI</strong> (toàn công ty) và <strong>Biên tập skill AI phòng ban</strong> (phòng mình). Hệ đang chạy không tự nhận vai trò mới — vào <strong>Nhân sự ▸ Phân quyền tài khoản</strong> tick tay. Màn <strong>Tổng quan</strong>: số bộ và skill, người đã nối AI, lượt gọi 7 ngày so với 7 ngày trước, số từ chối và lỗi, biểu đồ theo ngày, bảng xếp hạng công cụ, người, skill, khóa sắp hết hạn.</p>
@@ -353,7 +363,7 @@ TREE = {
 <thead><tr><th>Ai</th><th>Xem ở</th><th>Thấy gì</th></tr></thead>
 <tbody>
 <tr><td>Mọi người</td><td>Trang cá nhân ▸ Kết nối AI riêng ▸ khối <strong>20 lượt AI tra cứu gần nhất</strong></td><td>Lượt của chính mình: lúc nào, ứng dụng nào, công cụ gì, thành công hay bị từ chối, lý do.</td></tr>
-<tr><td>Quản trị</td><td>Kho skill AI ▸ <strong>Nhật ký sử dụng</strong></td><td>Mọi lượt trong phạm vi: người, phòng, khóa, ứng dụng, công cụ, skill được đọc, trạng thái, thời gian xử lý, IP. Lọc theo ngày, công cụ, trạng thái; <strong>Xuất CSV (trang hiện tại)</strong>.</td></tr>
+<tr><td>Quản trị</td><td>Phân hệ AI ▸ Giám sát ▸ <strong>Nhật ký sử dụng</strong></td><td>Mọi lượt trong phạm vi: người, phòng, khóa, ứng dụng, công cụ, skill được đọc, trạng thái, thời gian xử lý, IP, và cột <strong>Chứng từ</strong> (mã phiếu của lượt duyệt hay lập phiếu; lượt chỉ tra cứu thì hiện gạch ngang). Ô tìm nhận <strong>tên người hoặc tên công cụ</strong>; lọc theo ngày, công cụ, trạng thái; <strong>Xuất CSV (trang hiện tại)</strong>.</td></tr>
 </tbody>
 </table>
 <p>Mỗi lượt AI gọi vào ERP là một dòng, <strong>kể cả lượt bị từ chối</strong> và lượt khóa sai (lượt sai hàng loạt chỉ ghi 10 dòng đầu mỗi phút). Nhật ký giữ 180 ngày rồi gom thành số đếm theo ngày. Ba trạng thái: <strong>Thành công · Bị từ chối · Lỗi</strong>.</p>
@@ -384,7 +394,7 @@ TREE = {
 <tr><td><em>Quá tần suất (khóa)</em> · <em>Quá tần suất: tối đa n lượt / phút…</em></td><td>Một khóa gọi hơn 120 lượt trong một phút (AI đang lặp, hoặc nhiều máy dùng chung một khóa).</td><td>Đợi một phút. Mỗi máy nên một khóa riêng.</td></tr>
 <tr><td><em>Quá tần suất (IP)</em> · <em>Quá tần suất (khóa sai liên tục)</em></td><td>Cả văn phòng chung một địa chỉ mạng vượt 600 lượt / phút, hoặc có máy đang thử khóa sai liên tục (30 lần / phút).</td><td>Đợi một phút; báo quản trị nếu lặp lại — có thể là máy ai đó cấu hình sai.</td></tr>
 <tr><td>AI báo <em>công cụ bị từ chối</em> kèm <strong>tên nhóm</strong></td><td>Quản trị tắt nhóm đó qua cổng (ví dụ Công nợ).</td><td>Không phải lỗi. Cần thì xin quản trị bật nhóm ở Cấu hình.</td></tr>
-<tr><td><em>Khóa này chỉ đọc; tạo phiếu cần khóa «được ghi»</em></td><td>Nhờ AI tạo phiếu bằng khóa Chỉ đọc.</td><td>Tạo khóa mức <strong>Được ghi</strong> ở Trang cá nhân, dán vào ứng dụng.</td></tr>
+<tr><td><em>Khóa này chỉ đọc; tạo phiếu cần khóa được ghi</em></td><td>Nhờ AI tạo phiếu bằng khóa Chỉ đọc.</td><td>Tạo khóa mức <strong>Được ghi</strong> ở Trang cá nhân, dán vào ứng dụng.</td></tr>
 <tr><td>AI báo <em>bị từ chối, thiếu quyền…</em> khi hỏi báo cáo hay phiếu</td><td>Phạm vi dữ liệu của bạn trên ERP, giống như không thấy trên web.</td><td>Xin quản trị mở quyền / giao báo cáo; không phải lỗi kết nối.</td></tr>
 <tr><td>AI báo <em>không có skill đó</em></td><td>Skill chưa xuất bản, hoặc không gán cho bạn — hệ cố ý trả cùng câu với skill không tồn tại.</td><td>Hỏi người soạn skill của phòng.</td></tr>
 <tr><td>AI báo <em>bộ ở mức Bảo vệ, không mở tệp</em></td><td>Quản trị đặt mức Bảo vệ cho bộ đó.</td><td>Đúng ý thiết kế; nội dung skill vẫn đọc được.</td></tr>
@@ -395,14 +405,14 @@ TREE = {
 <h2>Không phải lỗi, nhưng hay bị tưởng là lỗi</h2>
 <ul>
 <li><strong>Số công cụ khác nhau giữa hai người</strong> — khóa Chỉ đọc thấy ít hơn khóa Được ghi, và nhóm công cụ do quản trị bật.</li>
-<li><strong>AI trả lời không theo quy trình công ty</strong> — AI chưa mở skill. Nhắc: <em>«Hãy xem cẩm nang công ty trước khi trả lời»</em>; vẫn không có thì bạn chưa được gán skill đó.</li>
+<li><strong>AI trả lời không theo quy trình công ty</strong> — AI chưa mở skill. Nhắc: <em>Hãy xem cẩm nang công ty trước khi trả lời</em>; vẫn không có thì bạn chưa được gán skill đó.</li>
 <li><strong>Kiểm tra kết nối báo chưa thấy</strong> dù ứng dụng đã liệt kê công cụ — liệt kê công cụ là lượt <em>khởi tạo</em>; hỏi một câu để có lượt gọi thật rồi bấm <strong>Kiểm tra lại</strong>.</li>
 <li><strong>Sửa skill mà AI vẫn trả lời như cũ</strong> — chưa bấm <strong>Xuất bản</strong>, AI chỉ đọc bản đã xuất bản.</li>
 <li><strong>Nhật ký có dòng <em>key/reveal</em> từ ứng dụng ERP web</strong> — đó là bạn vừa bấm xem lại khóa, không phải ai đó lấy khóa qua AI.</li>
 </ul>
 
 <h2>Báo lỗi hệ thống</h2>
-<p>Nhờ chính AI: <em>«Báo lỗi: nối ERP bị từ chối lúc 9:10, màn AI của tôi»</em> — công cụ báo lỗi luôn mở kể cả khóa Chỉ đọc, tạo phiếu hỗ trợ gắn bộ phận phụ trách. Hoặc lập phiếu ở Trang cá nhân ▸ <strong>Yêu cầu hỗ trợ</strong>, kèm giờ thử để quản trị tra đúng dòng nhật ký. <strong>Che khóa</strong> trước khi chụp màn hình.</p>""",
+<p>Nhờ chính AI: <em>Báo lỗi: nối ERP bị từ chối lúc 9:10, màn AI của tôi</em> — công cụ báo lỗi luôn mở kể cả khóa Chỉ đọc, tạo phiếu hỗ trợ gắn bộ phận phụ trách. Hoặc lập phiếu ở Trang cá nhân ▸ <strong>Yêu cầu hỗ trợ</strong>, kèm giờ thử để quản trị tra đúng dòng nhật ký. <strong>Che khóa</strong> trước khi chụp màn hình.</p>""",
         },
     ],
 }

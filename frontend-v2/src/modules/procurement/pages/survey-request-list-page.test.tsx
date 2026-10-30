@@ -230,7 +230,7 @@ describe('SurveyRequestListPage — nút Xóa lọc', () => {
     build(
       '/procurement/survey-requests?company_id=1&status=approved&assignee=NSU209&pending=1&code__contains=YCBG',
     )
-    //  Hai nút cùng tên «Bộ lọc»: popover nâng cao (khổ rộng) và tờ trượt (khổ hẹp) — nút
+    //  Hai nút cùng tên "Bộ lọc": popover nâng cao (khổ rộng) và tờ trượt (khổ hẹp) — nút
     //  *Xóa lọc* nằm ở tờ trượt.
     const sheetTrigger = screen
       .getAllByRole('button', { name: 'Bộ lọc' })

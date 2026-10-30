@@ -97,10 +97,10 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
             #  thẳng để người dùng không đi tìm một bản riêng không còn hiện ở đâu.
             if existing[1]:
                 raise HTTPException(
-                    400, f"Pháp nhân «{company.name}» từng có bản clone của văn bản này nhưng đã xóa; "
+                    400, f"Pháp nhân \"{company.name}\" từng có bản clone của văn bản này nhưng đã xóa; "
                          "hệ thống còn giữ lại nên không tạo lại được — báo quản trị nếu cần phục hồi")
             raise HTTPException(
-                400, f"Pháp nhân «{company.name}» đã có bản clone của văn bản này rồi"
+                400, f"Pháp nhân \"{company.name}\" đã có bản clone của văn bản này rồi"
             )
 
         clone = Document(

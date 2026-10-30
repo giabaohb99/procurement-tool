@@ -57,7 +57,7 @@ export function LeaveApprovalTimeline({ request }: LeaveApprovalTimelineProps) {
         instanceId={request.approval_instance_id}
         extraEvents={outcome ? [outcome] : undefined}
         trailingEvents={[createdEvent(request)]}
-        //  Đơn nghỉ phép có nút «In đơn» riêng ở đầu trang — nút «In» của thẻ này
+        //  Đơn nghỉ phép có nút "In đơn" riêng ở đầu trang — nút "In" của thẻ này
         //  chỉ in lại cả màn hình, bỏ đi cho khỏi bấm nhầm (bao-CR-506).
         hidePrint
       />
@@ -71,8 +71,8 @@ export function LeaveApprovalTimeline({ request }: LeaveApprovalTimelineProps) {
  * Ba kết cục không-duyệt: ĐỘNG TỪ của người chốt, câu dự phòng khi không biết ai
  * chốt, và biểu tượng.
  *
- * ⚠️ **Ba kết cục này KHÁC NHAU, không được gộp câu chữ.** «Từ chối» là người
- * duyệt bác đơn, «Trả về» là bảo đi sửa rồi nộp lại, còn «Đã hủy» là chính người
+ * ⚠️ **Ba kết cục này KHÁC NHAU, không được gộp câu chữ.** "Từ chối" là người
+ * duyệt bác đơn, "Trả về" là bảo đi sửa rồi nộp lại, còn "Đã hủy" là chính người
  * nộp đổi ý rút đơn. Đọc cả ba thành một câu thì người xem mất luôn khả năng
  * phân biệt đơn mình tự rút với đơn bị sếp bác — mà hai chuyện đó dẫn tới hai
  * hành động hoàn toàn khác.
@@ -125,7 +125,7 @@ function badOutcomeParts(
 }
 
 /**
- * Mốc «vì sao đơn hỏng» để chèn lên đầu dấu vết của bộ máy duyệt.
+ * Mốc "vì sao đơn hỏng" để chèn lên đầu dấu vết của bộ máy duyệt.
  *
  * ⚠️ **Chỉ chèn cho ĐƠN BỊ HỦY, không chèn cho Từ chối / Trả về.**
  *
@@ -157,12 +157,12 @@ function badOutcomeEvent(request: LeaveRequest): TrailExtraEvent | null {
 }
 
 /**
- * Mốc «LẬP ĐƠN» — phần đầu câu chuyện mà bộ máy duyệt không biết.
+ * Mốc "LẬP ĐƠN" — phần đầu câu chuyện mà bộ máy duyệt không biết.
  *
  * Dấu vết của bộ máy bắt đầu từ lượt GỬI, nên trước 07/09/2026 tờ đơn đã duyệt
  * chỉ kể được ba mốc: trình duyệt → ký → kết thúc. Người xem không thấy đơn ra
  * đời lúc nào, cũng không thấy AI lập nó — mà hành chính lập hộ là chuyện
- * thường ở đây, nên «người nghỉ» và «người lập» không phải một.
+ * thường ở đây, nên "người nghỉ" và "người lập" không phải một.
  *
  * ⚠️ Đi vào `trailingEvents` chứ không `extraEvents`: danh sách đọc mới nhất
  * trước, mốc lập đơn là mốc CŨ NHẤT nên phải nằm đáy. Chèn lên đầu thì dòng
@@ -267,7 +267,7 @@ function buildSteps(request: LeaveRequest): TimelineStep[] {
       icon: Send,
       title: submitted ? 'Đã gửi duyệt' : 'Chưa gửi duyệt',
       time: request.submitted_at,
-      detail: submitted ? undefined : 'Bấm «Gửi duyệt» khi đã nhập đủ.',
+      detail: submitted ? undefined : 'Bấm "Gửi duyệt" khi đã nhập đủ.',
       tone: submitted ? 'done' : 'todo',
     },
   ]

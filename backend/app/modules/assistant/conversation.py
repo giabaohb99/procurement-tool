@@ -189,7 +189,7 @@ def chat(db: Session, user, body) -> dict:
     from app.modules.agent_hub import intent_ledger
     from app.modules.agent_hub.constants import CONV_WEB
 
-    #  ai-CR-138 (13.5): đối tượng «như mọi lần» từ sổ ý định — thiếu thì dùng và nói rõ giả định.
+    #  ai-CR-138 (13.5): đối tượng "như mọi lần" từ sổ ý định — thiếu thì dùng và nói rõ giả định.
     habits = intent_ledger.habit_block(db, user.id)
     try:
         result = service.ask(
@@ -204,7 +204,7 @@ def chat(db: Session, user, body) -> dict:
             attachments=blocks,
         )
     except Exception:
-        #  ai-CR-137: sổ ý định ghi cả lượt hỏng (kết cục «lỗi») rồi để lỗi đi tiếp như cũ.
+        #  ai-CR-137: sổ ý định ghi cả lượt hỏng (kết cục "lỗi") rồi để lỗi đi tiếp như cũ.
         db.rollback()
         intent_ledger.record(db, user_id=user.id, channel=intent_ledger.Channel.WEB, scope=CONV_WEB,
                              scope_key=str(conv.id) if conv is not None else "", intent=intent_ledger.Intent.ASK,

@@ -25,7 +25,7 @@ const CONFIG: ReportPageConfig = {
 
 /**
  * Cơ cấu quản lý (A3, duoc-CR-688, khóa 23). Số tại mốc `min(cuối kỳ, hôm nay)` theo ô
- * «Quản lý trực tiếp» của hồ sơ; «Xem theo Quản lý» cho mỗi quản lý một dòng.
+ * "Quản lý trực tiếp" của hồ sơ; "Xem theo Quản lý" cho mỗi quản lý một dòng.
  */
 export function ManagementSpanReportPage() {
   return <ReportAnalyticsPage config={CONFIG} />

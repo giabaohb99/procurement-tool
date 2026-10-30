@@ -166,15 +166,15 @@ def add_link(db: Session, source: Document, relation: int, target_document_id: i
         raise HTTPException(400, "Văn bản không thể có quan hệ với chính nó")
 
     rule = _rule_for(db, source, relation, target)
-    #  «Tham chiếu» là LIÊN KẾT MỀM — tài liệu khai nó là "bất kỳ tham chiếu bất
+    #  "Tham chiếu" là LIÊN KẾT MỀM — tài liệu khai nó là "bất kỳ tham chiếu bất
     #  kỳ", tức không ràng buộc loại nào. Bảng quy tắc lại bắt buộc có
     #  `source_type_id`, nên khai cho đủ 33 loại thì bảng 15–25 dòng phình lên
     #  gấp đôi mà không thêm nghĩa gì. Cho qua thẳng, `rule_id` để rỗng.
     if rule is None and relation != RELATION_REFERENCE:
         raise HTTPException(
             400,
-            f"Loại «{_type_name(db, source.doc_type_id)}» không được khai quan hệ "
-            f"«{RELATION_LABELS[relation]}» tới loại «{_type_name(db, target.doc_type_id)}». "
+            f"Loại \"{_type_name(db, source.doc_type_id)}\" không được khai quan hệ "
+            f"\"{RELATION_LABELS[relation]}\" tới loại \"{_type_name(db, target.doc_type_id)}\". "
             "Muốn cho phép thì thêm dòng ở Quy tắc quan hệ.",
         )
 
@@ -194,14 +194,14 @@ def add_link(db: Session, source: Document, relation: int, target_document_id: i
     if rule and rule.max_count and registered >= rule.max_count:
         raise HTTPException(
             400,
-            f"Quan hệ «{RELATION_LABELS[relation]}» chỉ được khai tối đa "
+            f"Quan hệ \"{RELATION_LABELS[relation]}\" chỉ được khai tối đa "
             f"{rule.max_count} văn bản.",
         )
 
     if would_cycle(db, source.id, target.id, relation):
         raise HTTPException(
             400,
-            f"Nối quan hệ này tạo thành vòng lặp: lần theo «{RELATION_LABELS[relation]}» "
+            f"Nối quan hệ này tạo thành vòng lặp: lần theo \"{RELATION_LABELS[relation]}\" "
             "từ văn bản đích sẽ quay về chính văn bản đang khai.",
         )
 
@@ -241,7 +241,7 @@ def missing_required(db: Session, doc: Document) -> list[str]:
         if existing < can:
             target_name = _type_name(db, rule.target_type_id) if rule.target_type_id else "văn bản"
             missing.append(
-                f"«{RELATION_LABELS[rule.relation]}» tới {target_name} "
+                f"\"{RELATION_LABELS[rule.relation]}\" tới {target_name} "
                 f"(cần {can}, đang có {existing})"
             )
     return missing

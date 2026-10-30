@@ -453,7 +453,7 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     Số hôm nay: **91** lần trên 32 tệp / 31 module (ba trong số đó là dòng
     docstring, đã ghi rõ trong bảng). Đợt vá phạm vi 05/09/2026 làm con số nhích
     từ 64 lên 65 (07/09/2026): `leave/catalog_controller.py` tra loại nghỉ ĐÍCH
-    của «quy đổi số dư cuối năm» — danh mục PUBLIC nên không cần lọc phạm vi.
+    của "quy đổi số dư cuối năm" — danh mục PUBLIC nên không cần lọc phạm vi.
     Trước đó từ 63 lên 64: `leave/request_controller.py` mọc thêm một dòng docstring kể
     lại lỗ cũ của `resolve_leave_taker` — bản thân đường đó nay đi qua
     `get_scoped(..., "leave_balance")`, tức bảng dày thêm mà mã thì chặt lại.

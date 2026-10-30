@@ -37,7 +37,7 @@ interface DossierFieldRowProps {
  *
  * ⚠️ Mọi `<Button>` ở đây khai `type="button"`. Component này nằm NGOÀI biểu mẫu
  * CRUD hôm nay, nhưng mặc định của HTML là `submit` — ai dời nó vào trong một
- * `<form>` mà quên thì bấm «Xóa ô» sẽ LƯU bản ghi trước, rồi hộp xác nhận mới
+ * `<form>` mà quên thì bấm "Xóa ô" sẽ LƯU bản ghi trước, rồi hộp xác nhận mới
  * mở (bẫy thứ ba của duoc-CR-317, đã trúng ~11 màn chi tiết).
  */
 export function DossierFieldRow({

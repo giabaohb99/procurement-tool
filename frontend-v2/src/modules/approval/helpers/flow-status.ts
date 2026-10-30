@@ -36,7 +36,7 @@ export function flowStatus(
       label: 'Chờ bật bộ máy',
       hint:
         'Luồng đã bật nhưng bộ máy duyệt mới của loại chứng từ này đang TẮT, ' +
-        'nên phiếu vẫn đi đường duyệt cũ. Bật ở màn «Bật bộ máy duyệt».',
+        'nên phiếu vẫn đi đường duyệt cũ. Bật ở màn "Bật bộ máy duyệt".',
       tone: 'waiting',
     }
   }

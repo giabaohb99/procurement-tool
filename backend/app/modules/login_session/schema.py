@@ -1,7 +1,7 @@
 """Dạng trả ra của một dòng phiên + một dòng lịch sử đăng nhập (bao-CR-395, P3b).
 
 Chỉ có hàm dựng dict, không có lớp Pydantic: ba màn (`/system/sessions`, tab
-«Thiết bị của tôi», tab «Tài khoản & thiết bị» của hồ sơ) đọc CÙNG một hình
+"Thiết bị của tôi", tab "Tài khoản & thiết bị" của hồ sơ) đọc CÙNG một hình
 dạng, và cả ba đều là màn chỉ-xem — không có body ghi nào cần kiểm kiểu. Mã số
 (`device_type`, `login_method`, `revoke_reason`) trả kèm nhãn để giao diện khỏi
 chép bảng nhãn sang TypeScript (R2/QĐ-11).
@@ -13,7 +13,7 @@ from app.modules.login_session.constants import (DEVICE_TYPE_LABELS, LOGIN_METHO
 from app.modules.login_session.model import LoginSession
 
 #  Kết cục của một phiên, ngoài các lý do thu hồi. Trả chữ ở đây vì đây là một
-#  cột hiển thị (cột «Kết thúc thế nào» của lịch sử), không phải mã lưu xuống DB.
+#  cột hiển thị (cột "Kết thúc thế nào" của lịch sử), không phải mã lưu xuống DB.
 ENDED_ALIVE = "Còn hiệu lực"
 ENDED_EXPIRED = "Hết hạn"
 
@@ -24,7 +24,7 @@ HISTORY_KIND_LOGIN_FAILED = 2
 
 
 def describe_ending(row: LoginSession, now: datetime | None = None) -> str:
-    """Câu «kết thúc thế nào» của một phiên: lý do thu hồi, hết hạn, hay còn sống."""
+    """Câu "kết thúc thế nào" của một phiên: lý do thu hồi, hết hạn, hay còn sống."""
     if row.revoked_at is not None:
         return REVOKE_REASON_LABELS.get(row.revoke_reason, f"Mã {row.revoke_reason}")
     now = now or datetime.now()
@@ -64,7 +64,7 @@ def serialize_session(row: LoginSession, *, current_session_id: int = 0,
         "revoke_reason": row.revoke_reason,
         "revoke_reason_label": (REVOKE_REASON_LABELS.get(row.revoke_reason, "")
                                 if row.revoked_at is not None else ""),
-        #  «Còn hiệu lực» theo nghĩa của bảng: chưa thu hồi và chưa quá `expires_at`.
+        #  "Còn hiệu lực" theo nghĩa của bảng: chưa thu hồi và chưa quá `expires_at`.
         #  Vé access có thể đã hết hạn trước đó — chuyện của refresh, không phải của phiên.
         "is_alive": ending == ENDED_ALIVE,
         "ending": ending,

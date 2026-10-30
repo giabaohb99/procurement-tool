@@ -45,8 +45,8 @@ beforeEach(() => {
 })
 
 describe('DocumentSettingsPage', () => {
-  //  CR-157: bốn tab chạy trên BỐN khóa khác nhau, còn mục menu chỉ hỏi «có bất
-  //  kỳ khóa nào không». Trước đó cả trang gác bằng đúng `doc_type`: người chỉ
+  //  CR-157: bốn tab chạy trên BỐN khóa khác nhau, còn mục menu chỉ hỏi "có bất
+  //  kỳ khóa nào không". Trước đó cả trang gác bằng đúng `doc_type`: người chỉ
   //  giữ *Đơn vị gửi nhận* không vào nổi trang chứa đúng tab của mình, còn người
   //  có `doc_type` mà thiếu `security_level` thì vào được rồi bấm tab ăn 403.
   it('chỉ hiện tab mà tài khoản đọc được', () => {
@@ -60,7 +60,7 @@ describe('DocumentSettingsPage', () => {
   })
 
   it('chỉ có khóa của tab CUỐI thì vẫn mở đúng tab đó, không rơi vào tab trống', () => {
-    //  `?tab=` mặc định trỏ vào «Loại văn bản» — tab người này không được xem.
+    //  `?tab=` mặc định trỏ vào "Loại văn bản" — tab người này không được xem.
     canRead = ['external_party']
     build()
 

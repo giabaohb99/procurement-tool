@@ -6,19 +6,19 @@
       "url": "https://cipac.org/index.php/m-p/further-information/formulation-codes",
       "collected": "Thu thập 26/10/2026"
     },
-    "reading": "Nguồn chân lý của bộ nạp scripts/load_customs_lookup_config_cr684.py. kind: 1 Thành phẩm · 2 Nguyên liệu. proposed=true là dòng đề xuất thêm (chưa có trên hệ). Mã ghép «WG / WDG» của tệp gốc được tách thành hai dòng."
+    "reading": "Nguồn chân lý của bộ nạp scripts/load_customs_lookup_config_cr684.py. kind: 1 Thành phẩm · 2 Nguyên liệu. proposed=true là dòng đề xuất thêm (chưa có trên hệ). Mã ghép \"WG / WDG\" của tệp gốc được tách thành hai dòng."
   },
   "kind_keywords": [
     {
       "keyword": "NGUYÊN LIỆU",
       "kind": 2,
-      "note": "«… nguyên liệu dùng SX thuốc …»",
+      "note": "\"… nguyên liệu dùng SX thuốc …\"",
       "proposed": false
     },
     {
       "keyword": "KỸ THUẬT",
       "kind": 2,
-      "note": "«Thuốc kỹ thuật …»",
+      "note": "\"Thuốc kỹ thuật …\"",
       "proposed": false
     },
     {
@@ -36,19 +36,19 @@
     {
       "keyword": "TECH",
       "kind": 2,
-      "note": "Thuốc kỹ thuật, vd «MANCOZEB TECH 86%»",
+      "note": "Thuốc kỹ thuật, vd \"MANCOZEB TECH 86%\"",
       "proposed": false
     },
     {
       "keyword": "TC",
       "kind": 2,
-      "note": "Thuốc kỹ thuật, vd «ATRAZINE 97% TC»",
+      "note": "Thuốc kỹ thuật, vd \"ATRAZINE 97% TC\"",
       "proposed": false
     },
     {
       "keyword": "NLSX",
       "kind": 2,
-      "note": "Viết tắt nguyên liệu sản xuất, vd «NLSX Thuốc trừ cỏ GLUFOSINATE 95% TECH»",
+      "note": "Viết tắt nguyên liệu sản xuất, vd \"NLSX Thuốc trừ cỏ GLUFOSINATE 95% TECH\"",
       "proposed": true
     },
     {
@@ -60,7 +60,7 @@
     {
       "keyword": "TECHNICAL GRADE",
       "kind": 2,
-      "note": "Vd «… technical grade 97%»",
+      "note": "Vd \"… technical grade 97%\"",
       "proposed": true
     },
     {

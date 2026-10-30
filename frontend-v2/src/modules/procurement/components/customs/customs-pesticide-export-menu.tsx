@@ -1,7 +1,7 @@
-// Nút «Xuất Excel» của mục «Thuốc BVTV» — hai lựa chọn: trang đang xem (kèm đúng bộ lọc /
+// Nút "Xuất Excel" của mục "Thuốc BVTV" — hai lựa chọn: trang đang xem (kèm đúng bộ lọc /
 // phân trang màn đang dùng để gọi `GET /pesticides`) hoặc cả danh mục. Quyền `customs_price.export`
 // — giống nút Xuất Excel của thẻ Danh sách, KHÁC quyền sửa danh mục `customs_pesticide` của nút
-// «Nạp danh mục» cạnh nó. `useSingleFlight` chặn bấm dồn (xem ghi chú ở hook đó).
+// "Nạp danh mục" cạnh nó. `useSingleFlight` chặn bấm dồn (xem ghi chú ở hook đó).
 import { useState } from 'react'
 import { FileSpreadsheet, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -74,7 +74,7 @@ export function CustomsPesticideExportMenu({
           <span className="flex min-w-0 flex-col gap-0.5">
             <span>Trang hiện tại ({pageRowCount} dòng)</span>
             <span className="text-xs font-normal text-muted-foreground">
-              Chỉ các dòng đang xem theo bộ lọc hiện tại. Nạp lại tệp này qua «Nạp danh mục» chỉ
+              Chỉ các dòng đang xem theo bộ lọc hiện tại. Nạp lại tệp này qua <strong>Nạp danh mục</strong> chỉ
               cập nhật đúng các thuốc có trong tệp, phần còn lại giữ nguyên.
             </span>
           </span>
@@ -83,7 +83,7 @@ export function CustomsPesticideExportMenu({
           <span className="flex min-w-0 flex-col gap-0.5">
             <span>Toàn bộ danh mục</span>
             <span className="text-xs font-normal text-muted-foreground">
-              Xuất hết, không theo bộ lọc. Nạp lại tệp này qua «Nạp danh mục» sẽ thay toàn bộ danh
+              Xuất hết, không theo bộ lọc. Nạp lại tệp này qua <strong>Nạp danh mục</strong> sẽ thay toàn bộ danh
               mục; thuốc thêm tay không có trong lần nạp (vẫn giữ trên hệ thống).
             </span>
           </span>

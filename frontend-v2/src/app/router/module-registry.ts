@@ -1,8 +1,7 @@
-import { aiSkillModule } from '@/modules/ai-skill/routes'
+import { aiModule } from '@/modules/ai/routes'
 import { appearanceModule } from '@/modules/appearance/routes'
 import { approvalModule } from '@/modules/approval/routes'
 import { approvalSealModule } from '@/modules/approval-seal/routes'
-import { assistantModule } from '@/modules/assistant/routes'
 import { customerModule } from '@/modules/customer/routes'
 import { degoCoffeeModule } from '@/modules/dego-coffee/routes'
 import { documentModule } from '@/modules/document/routes'
@@ -43,7 +42,7 @@ export const allModules: ErpModule[] = [
   documentModule,
   //  HỒ SƠ tạm ẩn — không đăng ký thì không có thẻ, không có mục thanh bên, và
   //  `/dossier/...` ra 404. Cố ý KHÔNG dùng `enabled: false`: cách đó vẫn dựng
-  //  một thẻ «Sắp có» mờ trên màn chọn phân hệ, tức vẫn khoe ra thứ đang muốn
+  //  một thẻ "Sắp có" mờ trên màn chọn phân hệ, tức vẫn khoe ra thứ đang muốn
   //  giấu. Xem `DOSSIER_UI_ENABLED`.
   ...(DOSSIER_UI_ENABLED ? [dossierModule] : []),
   approvalModule,
@@ -52,9 +51,8 @@ export const allModules: ErpModule[] = [
   degoCoffeeModule,
   reportModule,
   supportModule,
-  assistantModule,
-  //  Kho skill AI (doc/erp/21, bao-CR-623) — đứng cạnh Trợ lý AI cho dễ tìm.
-  aiSkillModule,
+  //  AI (bao-CR-696): gộp Trợ lý AI + Kho skill AI làm một thẻ, route cũ giữ nguyên.
+  aiModule,
   forumModule,
   systemModule,
   //  Không phải phân hệ nghiệp vụ: tuỳ chọn hiển thị của chính người đang đăng

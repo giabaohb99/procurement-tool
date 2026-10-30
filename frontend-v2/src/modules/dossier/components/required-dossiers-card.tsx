@@ -17,14 +17,14 @@ interface RequiredDossiersCardProps {
 }
 
 /**
- * THẺ «HỒ SƠ CẦN KÈM» — mọc ra ở chân trang chi tiết của bốn loại chứng từ
+ * THẺ "HỒ SƠ CẦN KÈM" — mọc ra ở chân trang chi tiết của bốn loại chứng từ
  * (YCMH · ĐMH · YCBG · Phiếu khảo sát) khi có dòng hàng khớp điều kiện áp dụng
  * của một tờ hồ sơ. Luật khớp ở `backend/.../dossier/applicability.py`.
  *
- * ⚠️ **KHÔNG có gì để bày thì KHÔNG vẽ gì cả** — kể cả khung rỗng hay câu «chưa
- * có hồ sơ nào». Khác hẳn mục *Bàn giao công việc* của Nghỉ phép, thứ luôn dựng
- * kể cả khi rỗng (CR-260): ở đó «không ai bàn giao» là một câu trả lời người
- * duyệt cần, còn ở đây «không hồ sơ nào khớp» là tình trạng của **gần như mọi**
+ * ⚠️ **KHÔNG có gì để bày thì KHÔNG vẽ gì cả** — kể cả khung rỗng hay câu "chưa
+ * có hồ sơ nào". Khác hẳn mục *Bàn giao công việc* của Nghỉ phép, thứ luôn dựng
+ * kể cả khi rỗng (CR-260): ở đó "không ai bàn giao" là một câu trả lời người
+ * duyệt cần, còn ở đây "không hồ sơ nào khớp" là tình trạng của **gần như mọi**
  * chứng từ trong hệ. Dựng khung rỗng ở bốn màn đông người dùng nhất là thêm một
  * khối vô nghĩa vào trang của họ mỗi ngày.
  *

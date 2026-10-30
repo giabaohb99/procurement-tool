@@ -35,7 +35,7 @@ export function useChatGroup(id: number) {
   })
 }
 
-/** Tin nhóm, mới nhất trước; «Xem tin cũ hơn» kéo thêm trang bằng `before_id`. */
+/** Tin nhóm, mới nhất trước; "Xem tin cũ hơn" kéo thêm trang bằng `before_id`. */
 export function useChatGroupMessages(id: number, params: Omit<ChatGroupMessageParams, 'before_id'>) {
   return useInfiniteQuery({
     queryKey: queryKeys.assistant.chatGroupMessages(id, params as Record<string, unknown>),
@@ -96,7 +96,7 @@ export function useZaloLogin() {
   })
 }
 
-/** ai-CR-131: ai đang nối bot, còn quyền «Trợ lý AI» không. */
+/** ai-CR-131: ai đang nối bot, còn quyền "Trợ lý AI" không. */
 export function useBotUserLinks() {
   return useQuery({
     queryKey: queryKeys.assistant.botUsers(),

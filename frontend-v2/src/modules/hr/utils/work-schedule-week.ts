@@ -58,7 +58,7 @@ export function buildDefaultWeek(): WorkScheduleDay[] {
   )
 }
 
-/** Các thứ (0..6) THỰC SỰ có mặt trong mảng — để phân biệt «backend không trả thứ đó» với «thứ đó nghỉ». */
+/** Các thứ (0..6) THỰC SỰ có mặt trong mảng — để phân biệt "backend không trả thứ đó" với "thứ đó nghỉ". */
 export function presentWeekdays(days: unknown): Set<number> {
   const present = new Set<number>()
   if (!Array.isArray(days)) return present
@@ -71,7 +71,7 @@ export function presentWeekdays(days: unknown): Set<number> {
 
 /**
  * Đủ 7 hàng theo thứ tự T2..CN từ mảng bất kỳ: thiếu thứ nào thì hàng đó là
- * «Nghỉ», thứ lạ (ngoài 0..6) bị bỏ, trùng thì dòng sau thắng. Giờ được chuẩn
+ * "Nghỉ", thứ lạ (ngoài 0..6) bị bỏ, trùng thì dòng sau thắng. Giờ được chuẩn
  * hóa về "HH:MM". Backend lỗi dữ liệu cũng không làm bảng nổ.
  */
 export function fillWeek(days: unknown): WorkScheduleDay[] {
@@ -98,7 +98,7 @@ export function fillWeek(days: unknown): WorkScheduleDay[] {
 /**
  * Đổi loại ngày của MỘT hàng. Loại ngày THỰC SỰ đổi thì đặt lại giờ chuẩn của loại
  * mới, KHÔNG giữ giờ cũ: Cả ngày 08–17 đổi sang Buổi sáng mà giữ nguyên thì thành
- * «sáng 08–17» — nghỉ phép theo giờ ở backend tính sai im lặng. Cùng loại (chọn lại
+ * "sáng 08–17" — nghỉ phép theo giờ ở backend tính sai im lặng. Cùng loại (chọn lại
  * đúng mục đang chọn) thì giữ giờ người dùng đã sửa.
  *
  *  - Cả ngày:   08:00–17:00, nghỉ trưa 12:00–13:00

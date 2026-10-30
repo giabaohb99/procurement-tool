@@ -14,7 +14,7 @@ class AiPlanStatus(IntEnum):
     APPROVED = 2    # Người thật đã duyệt → đã dựng bảng Dự án
     REJECTED = 3    # Người duyệt từ chối
     CANCELLED = 4   # Chủ đề xuất tự hủy
-    #  Công tắc duyệt TẮT: «tạo» dựng bảng ngay như bao-CR-616. Ghi riêng để dữ liệu học không lẫn lần tạo thẳng với lần
+    #  Công tắc duyệt TẮT: "tạo" dựng bảng ngay như bao-CR-616. Ghi riêng để dữ liệu học không lẫn lần tạo thẳng với lần
     #  người thật gật (A1 chốt 22/10).
     DIRECT = 5
 

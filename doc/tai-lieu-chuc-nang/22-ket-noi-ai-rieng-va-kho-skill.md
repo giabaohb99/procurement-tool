@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 1.3 — 27/10/2026 (1.3 bao-CR-663: Connector là cách chính, ghi chú chạy thật trên prod, mức Được ghi cho xuất tệp, hải quan chỉ tra; bao-CR-631; 1.1 bao-CR-636; 1.2 bao-CR-639 bước ChatGPT mới: OAuth ChatGPT / claude.ai, xem lại khóa + tạm tắt, màn Ứng dụng AI đã kết nối, bộ Cẩm nang hệ thống) |
+| Bản | 1.4 — 30/10/2026 (1.4 bao-CR-696: một phân hệ AI, Khóa nhân sự đổi thành Kết nối, Nâng cao, Nhật ký tìm người / công cụ + cột Chứng từ; 1.3 bao-CR-663: Connector là cách chính, ghi chú chạy thật trên prod, mức Được ghi cho xuất tệp, hải quan chỉ tra; bao-CR-631; 1.1 bao-CR-636; 1.2 bao-CR-639 bước ChatGPT mới: OAuth ChatGPT / claude.ai, xem lại khóa + tạm tắt, màn Ứng dụng AI đã kết nối, bộ Cẩm nang hệ thống) |
 | CR | **bao-CR-631** + **bao-CR-636** — bài Trung tâm trợ giúp + tài liệu này; mã của cụm ở ai-CR-063, 207–225 (cổng MCP, OAuth, xem lại khóa), bao-CR-620–625 (Trang cá nhân, Kho skill K1–K6), bao-CR-635 (Ứng dụng AI đã kết nối) |
 | Giao diện | **chỉ có trên `frontend-v2/`**: Trang cá nhân ▸ *Trợ lý AI của tôi* ▸ *Kết nối AI riêng* (`/me?tab=ai-connect`, mọi người) · phân hệ **Kho skill AI** (`/ai-skill/*`, quản trị) |
 | Bài Help Center | `backend/scripts/seed_help_ket_noi_ai_mcp.py` — thẻ *Hướng dẫn sử dụng Kết nối AI riêng và Kho skill AI* + 7 bài theo tác vụ (a–g). **Nội dung ở đây và ở seed phải khớp nhau** |
@@ -190,8 +190,14 @@ phép thứ Sáu tuần sau* → xem nháp → *tạo và gửi duyệt*.
 
 ## 6. Quản trị Kho skill AI (bài e)
 
-Phân hệ *Kho skill AI* hiện với người có `ai_skill.read` hoặc `ai_mcp_key_admin.read`. Menu: Tổng quan · Bộ skill · Khóa
-nhân sự · **Ứng dụng AI đã kết nối** (bao-CR-635) · Nhật ký sử dụng · Giới thiệu · Cấu hình.
+Từ bao-CR-696 (30/10/2026) Trợ lý AI và Kho skill AI gom thành **một phân hệ AI** (`modules/ai/routes.tsx`, khung phân hệ nhận
+hai tiền tố đường dẫn nên mọi đường cũ vẫn mở). Menu theo nhóm: **Trợ lý AI** · **Kết nối** (tên mới của *Khóa nhân sự*, thêm
+cột người / phòng / cách nối khóa riêng hay OAuth / ứng dụng + nơi quay về / dùng lần cuối, ô tìm tên · email · mã NV) · nhóm
+**Kho skill**: Bộ skill · nhóm **Giám sát**: Tổng quan · Nhật ký sử dụng (ô tìm người / công cụ, cột **Chứng từ** = mã phiếu của
+lượt duyệt / lập phiếu) · Bot Telegram (Nhóm chat, Người dùng bot) · nhóm **Cấu hình**: Cấu hình chung · **Nâng cao** (= *Ứng dụng
+AI đã kết nối* bao-CR-635, thêm cột người đang dùng, ô tìm, lọc Còn kết nối / Không còn / Host lạ). Quyền từng mục giữ nguyên.
+Bản cũ (trước 30/10): phân hệ *Kho skill AI* riêng, menu Tổng quan · Bộ skill · Khóa nhân sự · Ứng dụng AI đã kết nối · Nhật ký
+sử dụng · Giới thiệu · Cấu hình.
 
 | Khái niệm | Bảng | Ghi chú |
 |---|---|---|

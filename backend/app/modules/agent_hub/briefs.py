@@ -34,7 +34,7 @@ def _targets(db: Session, now: datetime) -> list[tuple[AgentGoogleLink, list[Age
 
 def _send(db: Session, chat_id: str, text: str, action: str, marker: str = "") -> None:
     """`marker` chỉ ghi vào SỔ (để khỏi nhắc hai lần), không gửi lên Telegram — ai-CR-087: trước đây mã sự kiện
-    «[qbqj613…]» hiện thẳng trong tin «Sắp họp»."""
+    "[qbqj613…]" hiện thẳng trong tin "Sắp họp"."""
     try:
         mid = telegram.send(text, chat_id=chat_id)
     except telegram.TelegramError as e:
@@ -142,7 +142,7 @@ def _already_reminded(db: Session, chat_id: str, event_id: str, now: datetime) -
 
 
 def send_meeting_reminders(db: Session, *, now: datetime | None = None) -> int:
-    """Sự kiện bắt đầu trong (lead - window, lead] phút tới → một tin «Sắp họp» mỗi sự kiện mỗi chat."""
+    """Sự kiện bắt đầu trong (lead - window, lead] phút tới → một tin "Sắp họp" mỗi sự kiện mỗi chat."""
     from app.modules.assistant.tools.google_tool import list_events
 
     now = now or now_utc()

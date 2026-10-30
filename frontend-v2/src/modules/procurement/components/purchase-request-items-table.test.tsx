@@ -144,7 +144,7 @@ describe('PurchaseRequestItemsTable — khổ điện thoại', () => {
   })
 })
 
-// bao-CR-547 — tick nhiều dòng rồi «Xóa đã chọn», chỉ khi trang bật `bulkRemovable` (form tạo / Nháp).
+// bao-CR-547 — tick nhiều dòng rồi "Xóa đã chọn", chỉ khi trang bật `bulkRemovable` (form tạo / Nháp).
 describe('PurchaseRequestItemsTable — xóa nhiều dòng (bao-CR-547)', () => {
   const second: PurchaseRequestItem = { ...ITEMS[0], id: 8, product_code: 'NAP0030', product_name: 'Nắp nhựa phi 30' }
 

@@ -18,12 +18,12 @@ import {
 } from './room-booking-columns'
 
 /**
- * Hai tab HỘP VIỆC DUYỆT — «Cần tôi duyệt» và «Tôi đã duyệt».
+ * Hai tab HỘP VIỆC DUYỆT — "Cần tôi duyệt" và "Tôi đã duyệt".
  *
  * Một component cho cả hai vì chúng chỉ khác nhau ở nguồn dữ liệu và vài cột;
  * tách đôi là hai bản chép cùng một bảng.
  *
- * ⚠️ Tab «Tôi đã duyệt» KHÔNG dựng cột «Việc của tôi» và «Hạn xử lý»: mọi dòng
+ * ⚠️ Tab "Tôi đã duyệt" KHÔNG dựng cột "Việc của tôi" và "Hạn xử lý": mọi dòng
  * ở đó đều do chính người đang xem quyết, nên hai cột ấy chỉ lặp lại tên tab và
  * một mốc giờ không dùng để làm gì — trong khi chúng chiếm 330px đầu bảng, đẩy
  * những cột thật sự phân biệt các dòng trôi sang phải (bài học của Nghỉ phép).
@@ -65,10 +65,10 @@ export function RoomInboxTab({ mode }: { mode: 'to-approve' | 'handled' }) {
       onRowClick={(r) => navigate(appRoutes.hr.roomBookingDetail(r.id))}
       //  Màn hẹp: thẻ thay bảng.
       //
-      //  ⚠️ Tab «Cần tôi duyệt» TẮT huy hiệu trạng thái: mọi phiếu ở đó đều là
-      //  «Chờ duyệt», in lại y hệt trên từng thẻ chỉ ăn chỗ của dòng tiêu đề
+      //  ⚠️ Tab "Cần tôi duyệt" TẮT huy hiệu trạng thái: mọi phiếu ở đó đều là
+      //  "Chờ duyệt", in lại y hệt trên từng thẻ chỉ ăn chỗ của dòng tiêu đề
       //  đứng cạnh nó. Đổi lại nó bày HẠN XỬ LÝ — thứ duy nhất phân biệt hai
-      //  việc đang chờ cùng một người. Tab «Tôi đã duyệt» thì ngược lại: trạng
+      //  việc đang chờ cùng một người. Tab "Tôi đã duyệt" thì ngược lại: trạng
       //  thái ở đó khác nhau (duyệt · từ chối · trả về) nên nó là thông tin.
       mobileCard={(r) =>
         mode === 'to-approve' ? (

@@ -40,7 +40,7 @@ export function dimBands(): { top: number; height: number }[] {
 }
 
 /**
- * Vị trí vạch «bây giờ» trên lưới, `null` nếu đang xem ngày khác hoặc giờ hiện
+ * Vị trí vạch "bây giờ" trên lưới, `null` nếu đang xem ngày khác hoặc giờ hiện
  * tại nằm ngoài khung lưới.
  *
  * Vạch này là mốc neo mắt quan trọng nhất của một màn lịch: không có nó thì
@@ -252,7 +252,7 @@ export function dimBandsX(): { leftPercent: number; widthPercent: number }[] {
   ].filter((band) => band.widthPercent > 0)
 }
 
-/** Vị trí vạch «bây giờ» theo % trục NGANG, `null` nếu không phải hôm nay. */
+/** Vị trí vạch "bây giờ" theo % trục NGANG, `null` nếu không phải hôm nay. */
 export function nowLineLeft(day: Date, now: Date): number | null {
   const top = nowLineTop(day, now)
   if (top === null) return null

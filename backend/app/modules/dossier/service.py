@@ -53,8 +53,8 @@ def sync_type_label(db: Session, values: dict,
     if not obj.is_active and not unchanged:
         raise HTTPException(
             400,
-            f"Loại hồ sơ «{obj.name}» đã ngừng dùng, không gán cho hồ sơ mới được. "
-            "Bật lại «Còn dùng» ở danh mục Loại hồ sơ nếu vẫn cần.",
+            f"Loại hồ sơ \"{obj.name}\" đã ngừng dùng, không gán cho hồ sơ mới được. "
+            "Bật lại \"Còn dùng\" ở danh mục Loại hồ sơ nếu vẫn cần.",
         )
     values["dossier_type_name"] = obj.name
     return obj
@@ -65,7 +65,7 @@ def apply_extra_fields(db: Session, values: dict, current: Dossier | None = None
 
     ⚠️ **`tab_dossier_type.field_schema` KHÔNG còn là luật ở đây** (đổi
     17/09/2026). Nó tụt xuống thành **KHUÔN**: màn lập hồ sơ đổ nó vào bảng
-    «Trường riêng» khi người dùng chọn loại, rồi họ sửa/xóa tự do — xóa dòng nào
+    "Trường riêng" khi người dùng chọn loại, rồi họ sửa/xóa tự do — xóa dòng nào
     thì TỜ NÀY không có ô đó, loại vẫn nguyên và hồ sơ khác cùng loại vẫn có.
 
     Nên nguồn khai duy nhất là `tab_dossier.custom_fields`. Giữ cả hai như trước
@@ -86,7 +86,7 @@ def apply_extra_fields(db: Session, values: dict, current: Dossier | None = None
         return
 
     #  ⚠️ Khai báo lấy từ payload NẾU lần lưu này có gửi, không thì từ bản ghi
-    #  cũ. Lấy danh sách rỗng là mọi ô riêng bỗng thành «không còn khai báo» —
+    #  cũ. Lấy danh sách rỗng là mọi ô riêng bỗng thành "không còn khai báo" —
     #  mất luôn chốt bắt buộc của chúng.
     if "custom_fields" in values:
         raw_custom = values["custom_fields"]
@@ -103,7 +103,7 @@ def apply_extra_fields(db: Session, values: dict, current: Dossier | None = None
 
 
 def _check_references(db: Session, defs, extra: dict) -> None:
-    """Ô «Chọn từ danh mục» phải trỏ vào một dòng CÓ THẬT.
+    """Ô "Chọn từ danh mục" phải trỏ vào một dòng CÓ THẬT.
 
     ⚠️ Không kiểm thì một id trỏ vào hư không hiện ra **trống trơn** trên màn
     hình — nhìn y hệt ô chưa ai nhập. Không lỗi, không cảnh báo, và hồ sơ mất
@@ -121,7 +121,7 @@ def _check_references(db: Session, defs, extra: dict) -> None:
         if not reference_exists(db, d.source, int(row_id)):
             raise HTTPException(
                 422,
-                f"«{d.label}» trỏ tới một mục không còn tồn tại trong danh mục. "
+                f"\"{d.label}\" trỏ tới một mục không còn tồn tại trong danh mục. "
                 "Chọn lại từ danh sách.",
             )
 
@@ -134,7 +134,7 @@ def propagate_type_rename(db: Session, type_id: int, new_name: str) -> int:
 
     ⚠️ Không đụng `updated_at` / `updated_by` của hồ sơ: đây không phải ai đó
     sửa hồ sơ, mà là hệ chép lại một cái nhãn. Ghi dấu vết vào đây thì cả nghìn
-    hồ sơ cùng nhảy lên đầu danh sách «vừa cập nhật» vì một lần sửa chính tả.
+    hồ sơ cùng nhảy lên đầu danh sách "vừa cập nhật" vì một lần sửa chính tả.
     """
     return (db.query(Dossier)
             .filter(Dossier.dossier_type_id == type_id,
@@ -148,11 +148,11 @@ def count_by_type(db: Session, type_id: int) -> int:
 
     ⚠️ Cố ý khác với con số bày cho người xem (duoc-CR-322): đây là chốt toàn
     vẹn dữ liệu, không phải một ô thống kê. Lọc theo phạm vi người bấm nút Xóa
-    thì người chỉ thấy phòng mình sẽ đọc được «0 hồ sơ» và xóa mất loại mà phòng
+    thì người chỉ thấy phòng mình sẽ đọc được "0 hồ sơ" và xóa mất loại mà phòng
     khác đang dùng.
     """
     #  ai-CR-177: hồ sơ đã XÓA MỀM không tính — người dùng không còn thấy tờ đó ở đâu, bắt họ
-    #  giữ loại vì một hồ sơ vô hình là «còn 1 hồ sơ dùng» mà không chỉ ra được tờ nào.
+    #  giữ loại vì một hồ sơ vô hình là "còn 1 hồ sơ dùng" mà không chỉ ra được tờ nào.
     #  Nhãn loại đã chép sẵn vào `dossier_type_name` nên tờ đã xóa không mất tên loại.
     return (db.query(Dossier)
             .filter(Dossier.dossier_type_id == type_id, Dossier.is_deleted == False)  # noqa: E712

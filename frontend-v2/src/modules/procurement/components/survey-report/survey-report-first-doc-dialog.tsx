@@ -1,5 +1,5 @@
-// duoc-CR-611 (07/10/2026) — «Thêm hồ sơ» khi khối Báo cáo thực hiện còn TRỐNG. Trước đây khối
-// trống chỉ có «Khởi tạo báo cáo mẫu» (đổ cả bộ mẫu) hoặc «Thêm giai đoạn»; muốn ghi đúng MỘT
+// duoc-CR-611 (07/10/2026) — "Thêm hồ sơ" khi khối Báo cáo thực hiện còn TRỐNG. Trước đây khối
+// trống chỉ có "Khởi tạo báo cáo mẫu" (đổ cả bộ mẫu) hoặc "Thêm giai đoạn"; muốn ghi đúng MỘT
 // hồ sơ cho MỘT dòng hàng thì phải đổ mẫu rồi xóa bớt. Hộp này chọn dòng hàng + giai đoạn mặc
 // định + tên; backend dựng khung (5 giai đoạn + nút theo dòng, không đổ mẫu) rồi thêm hồ sơ đó.
 import { Loader2 } from 'lucide-react'
@@ -44,7 +44,7 @@ interface SurveyReportFirstDocDialogProps {
   onOpenChange: (open: boolean) => void
   ownerId: number
   entity: ReportOwnerEntity
-  /** «phiếu» / «đơn» — chữ của dòng Chung. */
+  /** "phiếu" / "đơn" — chữ của dòng Chung. */
   ownerLabel: string
   pending: boolean
   onSave: (payload: ReportFirstDocPayload) => Promise<unknown>

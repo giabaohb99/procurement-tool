@@ -1,7 +1,7 @@
 """Đường API YÊU CẦU SỬA HỒ SƠ (duoc-CR-676, C6) + đọc hộ gia đình của chính mình (C5, bản in).
 
 Chung tiền tố `/api/employees` với `controller.py` nên router này PHẢI được include TRƯỚC
-`employee_router` trong `main.py` — nếu không «me» và «change-requests» rơi vào `/{eid}` (422).
+`employee_router` trong `main.py` — nếu không "me" và "change-requests" rơi vào `/{eid}` (422).
 
 Hai nửa:
   * TỰ PHỤC VỤ (`/me/...`): chỉ đòi đăng nhập, hồ sơ lấy từ `user.employee_id` (cùng lý lẽ `GET /me`).
@@ -137,7 +137,7 @@ def list_change_requests(
         query = query.filter(Req.employee_id == employee_id)
     kw = (q or "").strip()
     if kw:
-        #  Thoát % và _ để người gõ «NS_01» không khớp «NSx01».
+        #  Thoát % và _ để người gõ "NS_01" không khớp "NSx01".
         esc = kw.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         like = f"%{esc}%"
         query = query.filter(or_(Employee.code.like(like, escape="\\"),

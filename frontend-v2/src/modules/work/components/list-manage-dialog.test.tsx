@@ -8,7 +8,7 @@ import type { WorkList, WorkMember } from '../types/work'
 import { WORK_ROLE } from '../types/work'
 
 /**
- * STRESS TEST hộp «Quản lý dự án».
+ * STRESS TEST hộp "Quản lý dự án".
  *
  * Bài này đi tìm chỗ VỠ, không đi xác nhận chỗ chạy. Bốn nhóm rủi ro:
  *
@@ -96,7 +96,7 @@ function show(myRole: number | null, list: Partial<WorkList> = {}) {
 /** Dòng thành viên mang tên này — dùng để soi cục nút bên phải của đúng dòng đó. */
 function rowOf(name: string): HTMLElement {
   const row = screen.getByText(name).closest('li')
-  if (!row) throw new Error(`Không thấy dòng của «${name}»`)
+  if (!row) throw new Error(`Không thấy dòng của "${name}"`)
   return row
 }
 
@@ -194,7 +194,7 @@ describe('ListManageDialog — bất biến MỘT chủ sở hữu', () => {
 })
 
 describe('ListManageDialog — dữ liệu bẩn từ máy chủ', () => {
-  it('tên rỗng lùi về «Nhân sự #id», không để dòng trắng', () => {
+  it('tên rỗng lùi về "Nhân sự #id", không để dòng trắng', () => {
     members.mockReturnValue([member(1, 'Lý Phó Phòng', WORK_ROLE.OWNER), member(77, '')])
     show(WORK_ROLE.OWNER)
     expect(screen.getByText('Nhân sự #77')).toBeInTheDocument()
@@ -265,7 +265,7 @@ describe('ListManageDialog — số lượng lớn', () => {
     expect(screen.getByText('Lý Phó Phòng')).toBeInTheDocument()
   })
 
-  it('lọc không ra ai thì báo rõ, KHÁC hẳn câu «chưa mời ai»', () => {
+  it('lọc không ra ai thì báo rõ, KHÁC hẳn câu "chưa mời ai"', () => {
     //  Hai câu này lẫn nhau là người dùng tưởng vừa mất sạch thành viên.
     members.mockReturnValue([
       member(1, 'Lý Phó Phòng', WORK_ROLE.OWNER),

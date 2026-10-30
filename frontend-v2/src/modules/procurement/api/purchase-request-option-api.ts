@@ -79,7 +79,7 @@ export const purchaseRequestOptionApi = {
       payload,
     ),
 
-  /** bao-CR-583 — «Khôi phục ban đầu»: phương án 0 về đúng như dòng yêu cầu lúc sinh. */
+  /** bao-CR-583 — "Khôi phục ban đầu": phương án 0 về đúng như dòng yêu cầu lúc sinh. */
   resetZero: (id: number, itemId: number, optionId: number) =>
     apiPost<PurchaseRequestOption>(
       `${BASE_URL}/${id}/items/${itemId}/options/${optionId}/zero/reset`,

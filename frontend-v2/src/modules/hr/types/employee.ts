@@ -1,4 +1,5 @@
 import { EMPLOYEE_STATUS, labelOf } from '@/shared/constants/statuses'
+import type { ExtraPhone } from '../schemas/extra-phones-schema'
 
 /** Nhân viên — khớp `EmployeeOut` của backend. */
 export interface Employee {
@@ -6,7 +7,12 @@ export interface Employee {
   code: string
   full_name: string
   email: string
+  /** SỐ CHÍNH — các số còn lại ở `extra_phones` (duoc-CR-694). */
   phone: string
+  /** Nhãn của số chính (duoc-CR-694). Tùy chọn như mọi cột thêm sau. */
+  phone_label?: string
+  /** Số điện thoại khác, tối đa 4. Tùy chọn: dữ liệu dựng trước cột này không có khóa. */
+  extra_phones?: ExtraPhone[]
   company_id: number
   /** Tên pháp nhân, backend trả kèm (`EmployeeOut.company_name`). */
   company_name?: string | null
@@ -53,7 +59,7 @@ export interface Employee {
   //  không có `employee_sensitive.read` — chúng về `''` / `null`, y như chưa
   //  nhập. Không có cách nào phân biệt từ đây, và đó là chủ ý: người không có
   //  quyền không cần biết ô đó có dữ liệu hay không. Muốn nói với người dùng
-  //  «bạn không được xem» thì hỏi `can('employee_sensitive', 'read')` rồi đổi
+  //  "bạn không được xem" thì hỏi `can('employee_sensitive', 'read')` rồi đổi
   //  câu chữ, ĐỪNG suy từ giá trị rỗng.
 
   // Nhóm 1 — cá nhân
@@ -78,7 +84,7 @@ export interface Employee {
    * NGƯỜI QUẢN LÝ TRỰC TIẾP. `0` = chưa gán.
    *
    * ⚠️ Không phải trường hiển thị cho đẹp — đây là dữ liệu mà vai tương đối
-   * «người quản lý trực tiếp» của bộ máy duyệt đọc để tìm người ký. Sai ô này
+   * "người quản lý trực tiếp" của bộ máy duyệt đọc để tìm người ký. Sai ô này
    * thì đơn từ chạy sai đường mà không màn nào báo.
    */
   manager_id?: number
@@ -127,6 +133,14 @@ export interface Employee {
 
   // Nhóm 7 — tùy biến
   extra_fields?: Record<string, unknown>
+
+  // Lương (duoc-CR-693) — CHỈ chính nhân sự này nhận được số (kể cả admin cũng không).
+  /** Lương đ/tháng. Vắng / `null` khi người xem không phải chính người đó. */
+  salary_monthly?: number | null
+  /** Phụ cấp đ/tháng. Vắng / `null` khi người xem không phải chính người đó. */
+  allowance_monthly?: number | null
+  /** Người khác nhận cờ này thay cho hai số: đã nhập lương/phụ cấp hay chưa. */
+  salary_set?: boolean
 }
 
 /** Bản chi tiết — kèm id tài khoản đăng nhập (0 = nhân sự chưa được cấp tài khoản). */
@@ -142,7 +156,7 @@ export interface EmployeeContact {
    * MÃ SỐ quan hệ với NHÂN VIÊN — xem `RELATION_OPTIONS`.
    *
    * Từng là chữ tự do; khách chốt thành ô CHỌN 08/09/2026 vì mỗi người gõ một
-   * kiểu («vợ» · «Vợ» · «v/c») nên không lọc được, không đếm được.
+   * kiểu ("vợ" · "Vợ" · "v/c") nên không lọc được, không đếm được.
    */
   relation: number
   address: string
@@ -168,11 +182,11 @@ export interface EmployeeFamily {
  * Giới tính của HỒ SƠ NHÂN SỰ — khớp `leave/constants.py` (`GENDER_*`).
  *
  * ⚠️ Khác `GENDER_LABELS` ở `types/leave.ts` ở HAI chỗ:
- * · bên đó `0` là *«Mọi giới»* vì nó mô tả một LOẠI NGHỈ áp cho ai; ở đây `0` là
- *   *«Chưa khai»* — nó mô tả một con người, và một người thì không thể "mọi
- *   giới". Dùng nhầm bảng nhãn là màn hồ sơ hiện «Mọi giới» cho người chưa nhập,
+ * · bên đó `0` là *"Mọi giới"* vì nó mô tả một LOẠI NGHỈ áp cho ai; ở đây `0` là
+ *   *"Chưa khai"* — nó mô tả một con người, và một người thì không thể "mọi
+ *   giới". Dùng nhầm bảng nhãn là màn hồ sơ hiện "Mọi giới" cho người chưa nhập,
  *   đọc ra như đã khai xong.
- * · bên đó KHÔNG có `3` («Khác»): loại nghỉ "chỉ dành cho giới Khác" không có
+ * · bên đó KHÔNG có `3` ("Khác"): loại nghỉ "chỉ dành cho giới Khác" không có
  *   nghĩa. Mã `3` chỉ sống trong hồ sơ con người (08/09/2026).
  */
 export const EMPLOYEE_GENDER_OPTIONS = [

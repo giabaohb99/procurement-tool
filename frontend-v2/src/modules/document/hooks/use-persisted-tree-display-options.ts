@@ -23,8 +23,8 @@ function writeBoolean(key: string, value: boolean): void {
 
 /**
  * Hai công tắc HIỂN THỊ của khung cây (menu `⋯` ở tiêu đề — yêu cầu đại ca
- * 23/09/2026 tối, duoc-CR-476): «Hiện thư mục ngừng dùng» và «Hiện văn bản
- * trong cây». Cả hai NHỚ qua `localStorage` — trước đây `includeArchived` chỉ
+ * 23/09/2026 tối, duoc-CR-476): "Hiện thư mục ngừng dùng" và "Hiện văn bản
+ * trong cây". Cả hai NHỚ qua `localStorage` — trước đây `includeArchived` chỉ
  * là một `useState` cục bộ trong `folder-tree-panel.tsx`, mất ngay khi rời
  * trang. Tách thành hook riêng để tệp đó giữ dưới 200 dòng.
  *

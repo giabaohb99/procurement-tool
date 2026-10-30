@@ -34,7 +34,7 @@ def ensure_name_unique_among_siblings(db: Session, parent_id: int, name: str, *,
         q = q.filter(DocFolder.id != exclude_id)
     for sibling in q.all():
         if fold(sibling.name) == folded:
-            raise HTTPException(400, f"Thư mục «{name}» đã tồn tại trong cùng cấp")
+            raise HTTPException(400, f"Thư mục \"{name}\" đã tồn tại trong cùng cấp")
 
 
 def branch_ids(db: Session, folder: DocFolder) -> list[int]:

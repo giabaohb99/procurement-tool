@@ -33,7 +33,7 @@ describe('AttachmentViewerPane — in chìm (watermark)', () => {
     expect(screen.getByText(CAPTION)).toBeInTheDocument()
   })
 
-  //  Chốt 24/09/2026: tab «Văn bản» của văn bản chỉ gồm tệp là chỗ đọc hằng
+  //  Chốt 24/09/2026: tab "Văn bản" của văn bản chỉ gồm tệp là chỗ đọc hằng
   //  ngày — lớp chữ phủ kín trang gây khó đọc, bỏ ở đó.
   it('watermark={false} renders the file with no stamp and no caption', async () => {
     render(

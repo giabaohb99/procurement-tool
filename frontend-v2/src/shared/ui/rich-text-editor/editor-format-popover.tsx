@@ -19,8 +19,8 @@ interface EditorFormatPopoverProps {
  * lục · hoàn tác · làm lại · mức phóng — còn lại nằm sau nút này.
  *
  * ⚠️ **`onOpenAutoFocus` phải `preventDefault`.** Radix kéo tiêu điểm vào tấm
- * vừa mở, mà mất tiêu điểm là **mất vùng chọn** trong vùng soạn thảo — bấm «In
- * đậm» xong chữ không đậm, và không có gì báo lỗi. Cùng lý do với
+ * vừa mở, mà mất tiêu điểm là **mất vùng chọn** trong vùng soạn thảo — bấm "In
+ * đậm" xong chữ không đậm, và không có gì báo lỗi. Cùng lý do với
  * `onMouseDown → preventDefault` của `ToolbarButton`.
  *
  * ⚠️ **Tấm KHÔNG tự đóng sau mỗi lệnh.** Định dạng là việc làm theo chuỗi —

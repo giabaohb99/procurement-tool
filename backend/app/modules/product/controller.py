@@ -235,7 +235,7 @@ def import_products_csv(
         if existing:
             if action in ["xóa", "delete"]:
                 # ai-CR-169: nhập file cũng không được xóa sản phẩm còn chứng từ — hạ xuống
-                # «ngưng dùng» (đếm vào cột ẩn), không chặn cả file vì một dòng.
+                # "ngưng dùng" (đếm vào cột ẩn), không chặn cả file vì một dòng.
                 if service.count_references(db, existing.code):
                     existing.is_active = False
                     existing.updated_by = user.id

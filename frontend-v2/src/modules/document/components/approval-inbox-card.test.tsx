@@ -66,16 +66,16 @@ describe('ApprovalInboxCard', () => {
   })
 
   /**
-   * Hộp duyệt phần lớn là văn bản ĐANG TRÌNH, chưa cấp số. «Chưa cấp số» là một
+   * Hộp duyệt phần lớn là văn bản ĐANG TRÌNH, chưa cấp số. "Chưa cấp số" là một
    * lời nói chứ không phải một mã — để `font-mono` thì nó dãn ra và đọc như lỗi
    * hiển thị (bài học duoc-CR-364).
    */
-  it('nói rõ «Chưa cấp số» và KHÔNG lấy chữ đều nét cho câu đó', () => {
+  it('nói rõ "Chưa cấp số" và KHÔNG lấy chữ đều nét cho câu đó', () => {
     render(<ApprovalInboxCard row={pendingRow({ code: '' })} />)
     expect(screen.getByText('Chưa cấp số').className).not.toContain('font-mono')
   })
 
-  it('dòng CHỜ mang huy hiệu «Cần duyệt», quá hạn thì đổi thành «Quá hạn»', () => {
+  it('dòng CHỜ mang huy hiệu "Cần duyệt", quá hạn thì đổi thành "Quá hạn"', () => {
     const { rerender } = render(<ApprovalInboxCard row={pendingRow()} />)
     expect(screen.getByText('Cần duyệt')).toBeInTheDocument()
     expect(screen.queryByText('Quá hạn')).not.toBeInTheDocument()
@@ -87,21 +87,21 @@ describe('ApprovalInboxCard', () => {
   /**
    * ⚠️ Huy hiệu tình trạng là thứ DUY NHẤT phân biệt hai nửa của bảng gộp — ở
    * bảng nó là cột không ẩn được và được ghim phải. Bỏ nó khỏi thẻ cho gọn là
-   * xóa luôn ranh giới giữa «việc cần làm» và «việc đã xong».
+   * xóa luôn ranh giới giữa "việc cần làm" và "việc đã xong".
    */
-  it('dòng ĐÃ BẤM mang huy hiệu việc đã làm chứ không phải «Cần duyệt»', () => {
+  it('dòng ĐÃ BẤM mang huy hiệu việc đã làm chứ không phải "Cần duyệt"', () => {
     render(<ApprovalInboxCard row={doneRow({ actionLabel: 'Trả lại', action: ACTION.return })} />)
     expect(screen.getByText('Trả lại')).toBeInTheDocument()
     expect(screen.queryByText('Cần duyệt')).not.toBeInTheDocument()
   })
 
   /**
-   * ⚠️ «Tôi đã ký bước của mình» KHÁC «phiếu đã xong». Ở bảng hai thứ đó là hai
+   * ⚠️ "Tôi đã ký bước của mình" KHÁC "phiếu đã xong". Ở bảng hai thứ đó là hai
    * cột, và chính TIÊU ĐỀ cột phân biệt chúng; thẻ không có tiêu đề cột, nên
-   * trạng thái phiếu phải mang theo chữ «Phiếu». Thiếu nó thì hai huy hiệu đứng
-   * liền nhau đọc ra «Duyệt · Đã duyệt» — hai chữ gần như đồng nghĩa.
+   * trạng thái phiếu phải mang theo chữ "Phiếu". Thiếu nó thì hai huy hiệu đứng
+   * liền nhau đọc ra "Duyệt · Đã duyệt" — hai chữ gần như đồng nghĩa.
    */
-  it('gắn chữ «Phiếu» cho trạng thái tờ phiếu, không để nó thành huy hiệu trần', () => {
+  it('gắn chữ "Phiếu" cho trạng thái tờ phiếu, không để nó thành huy hiệu trần', () => {
     render(<ApprovalInboxCard row={doneRow()} />)
     expect(screen.getByText('Phiếu: Đã duyệt')).toBeInTheDocument()
   })

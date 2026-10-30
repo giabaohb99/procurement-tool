@@ -30,7 +30,7 @@ class Survey(Base, AuditMixin, SoftDeleteMixin):
     item_name: Mapped[str] = mapped_column(String(255), default="")         # Tên VTBB (tự điền theo mã)
     uom: Mapped[str] = mapped_column(String(25), default="")               # ĐVT
     proposed_rate: Mapped[float] = mapped_column(Numeric(18, 4), default=0)  # Giá đề xuất — đơn giá giữ 4 số lẻ
-    # bao-CR-556 (02/10/2026): cột `approve_status` (B-04, «kết quả xét duyệt» pending/approved/
+    # bao-CR-556 (02/10/2026): cột `approve_status` (B-04, "kết quả xét duyệt" pending/approved/
     # rejected) ĐÃ BỎ — không màn hình nào đọc, chỉ là bản sao của `status` sau khi bao-CR-554 cho
     # trả về cả phiếu đã duyệt. Lý do trả về / từ chối vẫn ở `approve_note`.
     approve_note: Mapped[str] = mapped_column(Text, default="")

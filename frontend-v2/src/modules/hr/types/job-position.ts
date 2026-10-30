@@ -1,7 +1,7 @@
 /**
  * DANH MỤC CHỨC VỤ — `tab_job_position` (duoc-CR-320).
  *
- * Nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ nhân sự. Trước đợt này ô đó là
+ * Nguồn của ô chọn "Vị trí / Chức vụ" trên hồ sơ nhân sự. Trước đợt này ô đó là
  * chữ gõ tay, nên cùng một chức vụ hiện ra bốn cách viết trên bản in, tệp Excel
  * và hồ sơ mà trợ lý AI đọc.
  *
@@ -21,7 +21,7 @@ export type JobPosition = {
   is_active: boolean
   sort_order: number
   note: string
-  /** `0` = chức vụ dùng chung mọi phòng ban, không phải «chưa chọn». */
+  /** `0` = chức vụ dùng chung mọi phòng ban, không phải "chưa chọn". */
   department_id: number
   updated_at?: string | null
 }

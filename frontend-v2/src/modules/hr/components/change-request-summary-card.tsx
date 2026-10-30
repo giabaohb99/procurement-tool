@@ -4,7 +4,7 @@ import { Card } from '@/shared/ui/card'
 import { formatDateTime } from '@/shared/utils/format-date'
 
 /**
- * Khối «gửi lúc / xử lý lúc / ghi chú / lý do từ chối» của màn duyệt một đề nghị sửa hồ sơ
+ * Khối "gửi lúc / xử lý lúc / ghi chú / lý do từ chối" của màn duyệt một đề nghị sửa hồ sơ
  * (duoc-CR-676). Ghi chú luôn có dòng, kể cả khi trống — người duyệt cần biết nhân viên KHÔNG ghi
  * gì, chứ không phải màn thiếu mục.
  */

@@ -68,7 +68,7 @@ def list_requests(
     db: Session = Depends(get_db),
     user=Depends(require(ENTITY, "read")),
 ):
-    """Danh sách đơn trong phạm vi người xem («Đơn của tôi» khi phạm vi = own).
+    """Danh sách đơn trong phạm vi người xem ("Đơn của tôi" khi phạm vi = own).
 
     `from_date`/`to_date` lọc theo GIAO NHAU của khoảng, không phải theo cột
     `from_date` đơn lẻ — màn Lịch nghỉ hỏi "tuần này ai nghỉ", và một đơn nghỉ
@@ -162,7 +162,7 @@ def get_request(rid: int, db: Session = Depends(get_db),
     data["decided_by_name"] = decided_by
     #  AI LẬP tờ đơn — mốc đầu tiên của dòng thời gian. Hành chính lập hộ là
     #  chuyện thường ở phân hệ này (`created_by` khác `employee_id`), nên ghi
-    #  «{tên người nghỉ} lập đơn» là gán nhầm việc cho người không làm.
+    #  "{tên người nghỉ} lập đơn" là gán nhầm việc cho người không làm.
     data["created_by_name"] = resolve_actor(db, obj.created_by)
     data["handovers"] = request_serializer.dump_handovers(obj, names)
 
@@ -429,7 +429,7 @@ def my_balance(leave_type_id: int, year: int = 0, employee_id: int = 0,
     lại — bắt cấp thêm một khóa nữa là chắc chắn có người quên cấp, rồi ô đó
     hiện 0 vĩnh viễn.
 
-    Vế «của người mình đang lập hộ» thì PHẢI bó — xem `_ensure_balance_in_scope`.
+    Vế "của người mình đang lập hộ" thì PHẢI bó — xem `_ensure_balance_in_scope`.
     """
     from datetime import date as _date
 

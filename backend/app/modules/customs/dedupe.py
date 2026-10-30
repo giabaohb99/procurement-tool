@@ -1,16 +1,16 @@
 """Chống trùng dòng hàng khi nạp GTT02 — bao-CR-541.
 
-Đại ca chốt 01/10/2026: nguồn «xuất ra rồi bỏ vào luôn», người nạp không biết tệp nào chồng
+Đại ca chốt 01/10/2026: nguồn "xuất ra rồi bỏ vào luôn", người nạp không biết tệp nào chồng
 lên tệp nào, nên hệ thống phải tự so. Luật:
 
   · Mỗi dòng có một MÃ BĂM (`row_hash`, SHA-1 40 ký tự) gói đủ các cột dữ liệu của tệp sau
-    chuẩn hóa. Dòng mới có mã đã nằm trong bảng → BỎ QUA («Đã có»); lặp lại một dòng phía
-    trên trong cùng tệp → BỎ QUA («Trùng trong tệp»). Chỉ dòng thật sự mới được chèn.
+    chuẩn hóa. Dòng mới có mã đã nằm trong bảng → BỎ QUA ("Đã có"); lặp lại một dòng phía
+    trên trong cùng tệp → BỎ QUA ("Trùng trong tệp"). Chỉ dòng thật sự mới được chèn.
   · KHÔNG ghi đè, KHÔNG thay theo khoảng ngày nữa. Tệp không có số tờ khai nên không biết chắc
-    «dòng này là dòng kia đã sửa giá»: đo trên 18.243 dòng thật có 129 nhóm / 327 dòng trùng
+    "dòng này là dòng kia đã sửa giá": đo trên 18.243 dòng thật có 129 nhóm / 327 dòng trùng
     hết các cột nhận diện mà khác giá hoặc lượng — phần lớn là các lô hàng thật khác nhau. Ghi
     đè theo cột nhận diện là tự xóa dòng thật. Thay vào đó dòng như vậy vẫn THÊM, kèm ghi chú
-    «nghi sửa giá» để người nạp rà.
+    "nghi sửa giá" để người nạp rà.
 
 Vì sao băm mà không so thẳng 32 cột trong SQL: MySQL không dựng chỉ mục quá 16 cột, và nhiều
 cột được phép trống mà `NULL = NULL` trong SQL không bao giờ đúng — hai dòng giống hệt nhau
@@ -39,6 +39,10 @@ _PARTY_COLUMNS = frozenset({"importer_tax_code", "importer_name", "partner_name"
 HASH_FIELDS: tuple[str, ...] = tuple(k for k, _ in COLUMNS if k not in _PARTY_COLUMNS)
 #  Cột NHẬN DIỆN: trùng hết mấy cột này mà khác giá/lượng thì nghi là nguồn sửa số liệu.
 IDENTITY_FIELDS: tuple[str, ...] = ("reg_date", "office_code", "hs_code", "line_no", "product_name")
+#  bao-CR-699: cột KHỚP — nhận diện + giá + lượng. Hai dòng cùng mã khớp mà KHÔNG xung đột (mọi cột dữ liệu bằng
+#  nhau hoặc một bên trống) là MỘT dòng hàng nạp hai lần (đo prod 30/10: ~44.900 dòng thừa, khác nhau chủ yếu ở
+#  Nước nhận hàng có / không, ngày đã vá, số hợp đồng) → lúc nạp bỏ qua, việc gộp định kỳ gộp lại.
+MATCH_FIELDS: tuple[str, ...] = IDENTITY_FIELDS + ("price_usd", "quantity")
 
 _NULL = "\x00"
 _SEP = "\x1f"
@@ -69,8 +73,27 @@ def compute_row_hash(values: dict, importer_key: str, partner_key: str) -> str:
 
 
 def compute_identity(values: dict, importer_key: str, partner_key: str) -> str:
-    """Mã của các cột nhận diện — chỉ để phát hiện «nghi sửa giá», KHÔNG dùng để bỏ qua dòng."""
+    """Mã của các cột nhận diện — chỉ để phát hiện "nghi sửa giá", KHÔNG dùng để bỏ qua dòng."""
     return _digest([importer_key, partner_key] + [canonical_value(k, values.get(k)) for k in IDENTITY_FIELDS])
+
+
+def compute_match(values: dict, importer_key: str, partner_key: str) -> str:
+    """bao-CR-699 — mã của các cột khớp (nhận diện + giá + lượng)."""
+    return _digest([importer_key, partner_key] + [canonical_value(k, values.get(k)) for k in MATCH_FIELDS])
+
+
+def canon_values(values: dict) -> tuple[str, ...]:
+    """Các ô dữ liệu (đủ `HASH_FIELDS`) ở dạng chuẩn — để so xung đột giữa hai dòng cùng mã khớp."""
+    return tuple(canonical_value(k, values.get(k)) for k in HASH_FIELDS)
+
+
+def is_blank(canon: str) -> bool:
+    return canon in (_NULL, "")
+
+
+def conflict_fields(a: tuple[str, ...], b: tuple[str, ...]) -> list[str]:
+    """Cột mà CẢ HAI dòng đều có chữ / số mà khác nhau. Rỗng = không xung đột (bằng nhau hoặc một bên trống)."""
+    return [k for k, x, y in zip(HASH_FIELDS, a, b) if x != y and not is_blank(x) and not is_blank(y)]
 
 
 def file_party_keys(row: dict) -> tuple[str, str]:
@@ -84,6 +107,8 @@ class ExistingIndex:
     """Mã của các dòng ĐÃ LƯU trong khoảng ngày của tệp → lô chứa nó."""
     by_hash: dict[str, int] = field(default_factory=dict)
     by_identity: dict[str, int] = field(default_factory=dict)
+    #  bao-CR-699: mã khớp → (lô, các ô chuẩn hóa) của dòng đầu tiên mang mã đó.
+    by_match: dict[str, tuple[int, tuple[str, ...]]] = field(default_factory=dict)
 
 
 def _party_keys(db: Session, ids: set[int]) -> dict[int, str]:
@@ -120,6 +145,7 @@ def load_existing(db: Session, date_from, date_to, exclude_batch_id: int = 0) ->
             healed.append({"id": x.id, "row_hash": row_hash})
         index.by_hash.setdefault(row_hash, x.batch_id)
         index.by_identity.setdefault(compute_identity(values, imp, par), x.batch_id)
+        index.by_match.setdefault(compute_match(values, imp, par), (x.batch_id, canon_values(values)))
     for i in range(0, len(healed), INSERT_CHUNK):
         db.execute(update(CustomsLine), healed[i:i + INSERT_CHUNK])
     #  Đọc xong thì bỏ khỏi phiên — vài chục nghìn đối tượng ORM ngồi lại tới lúc commit là phí bộ nhớ.
@@ -130,7 +156,7 @@ def load_existing(db: Session, date_from, date_to, exclude_batch_id: int = 0) ->
 
 def stored_hashes(db: Session, lines: list[CustomsLine]) -> dict[int, str]:
     """bao-CR-608 — mã băm HIỆN TẠI của các dòng đã lưu (dòng cũ chưa có mã thì tính), để biết dòng
-    trong tệp có cột «ID» có thật sự đổi gì so với dòng nó trỏ tới không."""
+    trong tệp có cột "ID" có thật sự đổi gì so với dòng nó trỏ tới không."""
     parties = _party_keys(db, {x.importer_id for x in lines} | {x.partner_id for x in lines})
     return {x.id: x.row_hash or compute_row_hash(_stored_values(x), parties.get(x.importer_id, ""),
                                                  parties.get(x.partner_id, "")) for x in lines}
@@ -144,6 +170,15 @@ def stamp_rows(rows: list[dict]) -> list[str]:
         r["row_hash"] = compute_row_hash(r, imp, par)
         identities.append(compute_identity(r, imp, par))
     return identities
+
+
+def match_rows(rows: list[dict]) -> list[tuple[str, tuple[str, ...]]]:
+    """bao-CR-699 — (mã khớp, các ô chuẩn hóa) của từng dòng trong tệp, cùng thứ tự `rows`."""
+    out = []
+    for r in rows:
+        imp, par = file_party_keys(r)
+        out.append((compute_match(r, imp, par), canon_values(r)))
+    return out
 
 
 def backfill_hashes(db: Session, chunk: int = 5000) -> int:

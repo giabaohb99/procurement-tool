@@ -29,7 +29,7 @@ export function useCanReadSensitive(employeeId: number): boolean {
   const { user } = useAuth()
   if (can('employee_sensitive', 'read')) return true
   //  Chặn `employee_id = 0`: tài khoản chưa gắn nhân sự (admin, tài khoản hệ
-  //  thống) mang `0`, và so bằng mà không chặn thì «chưa gắn ai» khớp mọi hồ sơ.
+  //  thống) mang `0`, và so bằng mà không chặn thì "chưa gắn ai" khớp mọi hồ sơ.
   const me = user?.employee_id ?? 0
   return me > 0 && me === employeeId
 }

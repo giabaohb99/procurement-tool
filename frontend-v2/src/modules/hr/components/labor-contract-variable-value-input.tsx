@@ -21,7 +21,7 @@ interface ValueInputProps {
   /** Kiểu giá trị (`LaborContractVariableType`). */
   valueType: number
   /**
-   * Giá trị ở dạng chuỗi CHUẨN của backend (tiền «15000000», số «1.5», ngày «2026-10-01», chữ nguyên văn);
+   * Giá trị ở dạng chuỗi CHUẨN của backend (tiền "15000000", số "1.5", ngày "2026-10-01", chữ nguyên văn);
    * chuỗi rỗng = chưa có giá trị.
    */
   value: string
@@ -33,11 +33,11 @@ interface ValueInputProps {
 }
 
 /**
- * Ô nhập giá trị theo KIỂU của biến — dùng ở hộp mặc định của biến (phase 04) và ô «Thông tin bổ sung»
+ * Ô nhập giá trị theo KIỂU của biến — dùng ở hộp mặc định của biến (phase 04) và ô "Thông tin bổ sung"
  * trong hộp Lập / Sửa hợp đồng (phase 05). Giá trị ra/vào là chuỗi chuẩn nên form chỉ cần lưu chuỗi.
  *
- * Số 0 là MỘT GIÁ TRỊ THẬT cho kiểu Số và Tiền («0» thỏa «bắt buộc», in ra «0»); ô để trống mới là
- * «chưa có giá trị». Vì vậy tiền không dùng `NumberInput` (nó hiện ô trống cho 0).
+ * Số 0 là MỘT GIÁ TRỊ THẬT cho kiểu Số và Tiền ("0" thỏa "bắt buộc", in ra "0"); ô để trống mới là
+ * "chưa có giá trị". Vì vậy tiền không dùng `NumberInput` (nó hiện ô trống cho 0).
  */
 export function LaborContractVariableValueInput({
   valueType,
@@ -105,8 +105,8 @@ export function LaborContractVariableValueInput({
 }
 
 /**
- * Ô «Số»: gõ `1,5` hay `1.5` đều được, giữ NGUYÊN chữ đang gõ (không định dạng nghìn kẻo nhảy con trỏ);
- * giá trị ra ngoài là dạng chuẩn «1.5». Chữ đang gõ giữ ở state cục bộ, ngoài đổi (reset form) thì
+ * Ô "Số": gõ `1,5` hay `1.5` đều được, giữ NGUYÊN chữ đang gõ (không định dạng nghìn kẻo nhảy con trỏ);
+ * giá trị ra ngoài là dạng chuẩn "1.5". Chữ đang gõ giữ ở state cục bộ, ngoài đổi (reset form) thì
  * hiện lại theo giá trị ngoài — không cần effect.
  */
 function NumberTextInput({
@@ -132,7 +132,7 @@ function NumberTextInput({
   )
 }
 
-/** Ô «Tiền»: chỉ chữ số (không âm, không lẻ), hiện ngăn nghìn kiểu Việt, kẹp ở trần 10^12; trống ≠ 0. */
+/** Ô "Tiền": chỉ chữ số (không âm, không lẻ), hiện ngăn nghìn kiểu Việt, kẹp ở trần 10^12; trống ≠ 0. */
 function MoneyTextInput({
   value,
   onChange,

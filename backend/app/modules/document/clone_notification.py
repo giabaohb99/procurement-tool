@@ -59,7 +59,7 @@ def notify_clone_created(db: Session, source: Document, clone: Document) -> int:
             title=f"Bản nháp cần xử lý: {clone.title}",
             #  Thân thư nêu đủ ba thứ F09 đòi: bản gốc, bản nháp, hạn xử lý.
             body=(
-                f"Pháp nhân của bạn nhận một bản nháp được clone từ văn bản «{origin}». "
+                f"Pháp nhân của bạn nhận một bản nháp được clone từ văn bản \"{origin}\". "
                 f"Để nguyên nếu dùng được, hoặc soạn lại cho đúng pháp nhân mình.{due_note}"
             ),
             link=f"/document/documents/{clone.id}",
@@ -83,7 +83,7 @@ def notify_clones_stale(db: Session, source: Document, clones: list[Document]) -
                 user_id=user.id,
                 title=f"Cần rà lại: {clone.title}",
                 body=(
-                    f"Văn bản gốc «{origin}» đã lên phiên bản mới. Rà lại bản của pháp "
+                    f"Văn bản gốc \"{origin}\" đã lên phiên bản mới. Rà lại bản của pháp "
                     "nhân mình xem còn đúng không."
                 ),
                 link=f"/document/documents/{clone.id}",

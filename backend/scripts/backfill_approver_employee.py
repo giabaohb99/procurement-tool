@@ -1,4 +1,4 @@
-"""Điền lại «Trưởng phòng phê duyệt» — bao-CR-498 + bao-CR-499.
+"""Điền lại "Trưởng phòng phê duyệt" — bao-CR-498 + bao-CR-499.
 
 Hai việc, cùng chỉ đụng dòng đang trống (`approver_employee_id = 0`):
   1. Chứng từ ĐÃ DUYỆT trước bao-CR-490: điền người THỰC duyệt từ nhật ký thao tác (bao-CR-498).
@@ -6,7 +6,7 @@ Hai việc, cùng chỉ đụng dòng đang trống (`approver_employee_id = 0`)
      (`head_of_dept_id`) — đại ca chốt 26/09/2026 ô này mặc định bằng TBP (bao-CR-499).
 
 Cột `approver_employee_id` chỉ được ghi từ lúc bấm Duyệt sau khi CR-490 lên (dev 25/09/2026).
-Phiếu duyệt trước đó ô trống, màn hình hiện «Chưa ghi nhận». Script tra nhật ký thao tác
+Phiếu duyệt trước đó ô trống, màn hình hiện "Chưa ghi nhận". Script tra nhật ký thao tác
 (`tab_audit_log`, dòng `approved` GẦN NHẤT của từng chứng từ — cùng nguồn bản in đang lùi về)
 rồi ghi nhân sự của tài khoản đó vào cột. Chỉ đụng dòng đang = 0 và đang ở trạng thái sau duyệt.
 

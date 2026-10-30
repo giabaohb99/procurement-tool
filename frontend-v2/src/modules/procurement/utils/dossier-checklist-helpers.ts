@@ -1,20 +1,20 @@
 /**
- * Phần TÍNH TOÁN của thẻ thử «Hồ sơ cần hoàn thành» — gom hồ sơ thành giai
+ * Phần TÍNH TOÁN của thẻ thử "Hồ sơ cần hoàn thành" — gom hồ sơ thành giai
  * đoạn / dòng hàng, lọc, đo tiến độ.
  *
  * ⚠️ **Ánh xạ nền: Loại hồ sơ ↔ Giai đoạn.** Danh mục `tab_dossier_type` đã
- * được seed đúng năm giai đoạn nhập khẩu của «Báo cáo thực hiện» (`PLGP` ·
+ * được seed đúng năm giai đoạn nhập khẩu của "Báo cáo thực hiện" (`PLGP` ·
  * `DHHD` · `SXVC` · `KTTQ` · `NHVK`), nên một loại hồ sơ CHÍNH LÀ một giai
  * đoạn. Đây là lý do cuộc thử có cơ sở — không phải nắn dữ liệu cho vừa khuôn.
  *
- * ⚠️ **«Xong» = xong CHO PHIẾU ĐANG MỞ**, đọc `progress_status` của bảng
+ * ⚠️ **"Xong" = xong CHO PHIẾU ĐANG MỞ**, đọc `progress_status` của bảng
  * `tab_dossier_progress` — KHÔNG đọc `status` của tờ giấy.
  *
  * Tới 21/09/2026 thì nó đọc `status` thật, và hậu quả là tick xong ở một tờ
- * YCBG làm hai chục phiếu khác cũng hiện «đã xong»: con số tiến độ của mọi
+ * YCBG làm hai chục phiếu khác cũng hiện "đã xong": con số tiến độ của mọi
  * phiếu giống hệt nhau nên không nói lên điều gì. Hai thang vẫn cùng tồn tại và
- * vẫn cần cả hai — `status` trả lời «công ty có tờ giấy này chưa»,
- * `progress_status` trả lời «việc làm nó cho phiếu này tới đâu» — nên đừng gộp
+ * vẫn cần cả hai — `status` trả lời "công ty có tờ giấy này chưa",
+ * `progress_status` trả lời "việc làm nó cho phiếu này tới đâu" — nên đừng gộp
  * lại, và đừng đo tiến độ bằng thang thứ nhất lần nữa.
  */
 import { DOSSIER_EXPIRY } from '@/modules/dossier/types/dossier'
@@ -28,7 +28,7 @@ import {
 } from '@/modules/dossier/types/dossier-applicability'
 import type { DossierType } from '@/modules/dossier/types/dossier-type'
 
-/** Mã của ô lọc «Mọi trạng thái». `-1` chứ không phải `0`: `0` là mã thật. */
+/** Mã của ô lọc "Mọi trạng thái". `-1` chứ không phải `0`: `0` là mã thật. */
 export const CHECKLIST_STATUS_ALL = -1
 
 export interface ChecklistGroup {
@@ -36,7 +36,7 @@ export interface ChecklistGroup {
   name: string
   /**
    * Phụ đề xám cạnh tên nhóm — vai trò của `phase.location` bên bản gốc
-   * («Trước khi đặt hàng», «Làm việc với NCC»). Ở đây lấy MÔ TẢ của Loại hồ sơ.
+   * ("Trước khi đặt hàng", "Làm việc với NCC"). Ở đây lấy MÔ TẢ của Loại hồ sơ.
    */
   hint?: string
   /** Thứ tự lấy từ `sort_order` của danh mục — không tự đánh số ở đây. */
@@ -51,7 +51,7 @@ export interface ChecklistGroup {
  */
 export const UNKNOWN_PHASE_ORDER = 9999
 
-/** Đã xong CHO PHIẾU ĐANG MỞ — xem cảnh báo ở đầu tệp về nghĩa của «xong». */
+/** Đã xong CHO PHIẾU ĐANG MỞ — xem cảnh báo ở đầu tệp về nghĩa của "xong". */
 export function isDossierDone(doc: ApplicableDossier): boolean {
   return doc.progress_status === DOSSIER_PROGRESS.DONE
 }
@@ -89,19 +89,19 @@ export function groupByPhase(
   return sortGroups([...buckets.values()])
 }
 
-/** Khóa của DÒNG «Chung (cả phiếu)» trong bảng — gom hồ sơ `matched_lines` rỗng. */
+/** Khóa của DÒNG "Chung (cả phiếu)" trong bảng — gom hồ sơ `matched_lines` rỗng. */
 export const CHUNG_ROW_KEY = 'chung'
 
 /**
- * GOM THEO DÒNG HÀNG — vai trò của «nút dòng hàng» bên Báo cáo thực hiện:
+ * GOM THEO DÒNG HÀNG — vai trò của "nút dòng hàng" bên Báo cáo thực hiện:
  * **mỗi dòng hàng của phiếu một dòng bảng**, bấm vào sổ ra hồ sơ của dòng đó.
  *
  * ⚠️ **Hồ sơ CHUNG đứng RIÊNG một dòng, không lặp xuống mọi dòng hàng.** Bản
  * trước nhân bản cả bộ chung vào từng dòng, nên ba dòng hàng của phiếu 2931 đều
  * ghi y hệt nhau `6/15 · 40%` — con số của cả phiếu, không nói gì về dòng đó —
  * và dòng TỔNG của bảng đếm một tờ giấy tới bốn lần. Đây đúng là lý lẽ bản gốc
- * đã ghi ở `SurveyReportCard` («bảng có dòng TỔNG, mà lặp thì một hồ sơ bị đếm
- * nhiều lần»). Nhãn `CHUNG` trên từng dòng hồ sơ vẫn giữ nguyên nghĩa cũ.
+ * đã ghi ở `SurveyReportCard` ("bảng có dòng TỔNG, mà lặp thì một hồ sơ bị đếm
+ * nhiều lần"). Nhãn `CHUNG` trên từng dòng hồ sơ vẫn giữ nguyên nghĩa cũ.
  *
  * ⚠️ Khung dựng từ `lines` của CHỨNG TỪ, không dựng từ hồ sơ. Dựng từ hồ sơ thì
  * dòng hàng nào chưa có tờ giấy nào khớp sẽ biến mất khỏi danh sách — mà đó
@@ -151,8 +151,8 @@ export function filterDocs(
     if (status !== CHECKLIST_STATUS_ALL && doc.progress_status !== status) return false
     if (!needle) return true
     //  Tìm cả trong MÃ, LÝ DO, GHI CHÚ RIÊNG và TÊN NGƯỜI THỰC HIỆN, không chỉ
-    //  tên tờ giấy: người dùng nhớ «HS0007», nhớ «vì dòng 3», hoặc nhớ «việc
-    //  của chị Lan» thường xuyên hơn nhớ đúng tên đầy đủ của tờ giấy.
+    //  tên tờ giấy: người dùng nhớ "HS0007", nhớ "vì dòng 3", hoặc nhớ "việc
+    //  của chị Lan" thường xuyên hơn nhớ đúng tên đầy đủ của tờ giấy.
     return [doc.code, doc.name, doc.dossier_type_name, doc.reason,
             doc.progress_note, doc.assignee_name]
       .join(' ')
@@ -231,6 +231,6 @@ export function expiryTone(state: number): ExpiryTone {
   return 'normal'
 }
 
-/** Bộ mã cho ô lọc — bốn mức TIẾN ĐỘ, cùng thang với khối «Báo cáo thực hiện». */
+/** Bộ mã cho ô lọc — bốn mức TIẾN ĐỘ, cùng thang với khối "Báo cáo thực hiện". */
 export const CHECKLIST_STATUS_OPTIONS: { value: DossierProgressStatus; label: string }[] =
   DOSSIER_PROGRESS_ORDER.map((value) => ({ value, label: DOSSIER_PROGRESS_LABEL[value] }))

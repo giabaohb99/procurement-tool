@@ -121,7 +121,7 @@ export function PrLinesReportPage() {
           //  ⚠️ Khổ điện thoại BỎ HẲN dòng này: nó chỉ đọc lại nội dung của hai
           //  ô chọn nằm ngay bên dưới, mất một dòng ở đầu trang cho một câu
           //  thừa. Khác trang Báo cáo mua hàng — bên đó dòng mô tả còn mang mốc
-          //  «Tính lúc», thứ không ô nào nói, nên phải giữ lại vế ấy.
+          //  "Tính lúc", thứ không ô nào nói, nên phải giữ lại vế ấy.
           <span className="max-md:hidden">
             Kỳ: {yearLabel} · {companyLabel}
           </span>
@@ -133,8 +133,8 @@ export function PrLinesReportPage() {
            cả `PageHeader`.** Danh sách thẻ ở đây dài ~2400px, mà hai ô *công
            ty* · *năm* quyết định toàn bộ số liệu bên dưới: cuộn xuống giữa
            danh sách rồi muốn đổi năm là phải cuộn ngược lên đầu. Không dùng
-           `PageHeader sticky` vì dải ghim khi đó mang theo dòng tiêu đề «Chi
-           tiết YC mua hàng» — **đúng chữ mà thanh ứng dụng ngay phía trên đã
+           `PageHeader sticky` vì dải ghim khi đó mang theo dòng tiêu đề "Chi
+           tiết YC mua hàng" — **đúng chữ mà thanh ứng dụng ngay phía trên đã
            in rồi**. Cùng lời giải và cùng số đo với trang Báo cáo mua hàng:
            dải này 53px, thanh công cụ của bảng ghim ngay dưới ở `top-[53px]`.
 
@@ -146,7 +146,7 @@ export function PrLinesReportPage() {
           //  là thanh công cụ của bảng, cũng ghim, cũng nền đục, mà dải này nằm
           //  TRÊN (`z-30` so với `z-20`): bóng của nó sẽ vẽ ĐÈ lên mặt thanh
           //  công cụ, ra một **vệt xám ngang giữa hai dải** chứ không ra chiều
-          //  sâu. Luật «chỉ dải DƯỚI CÙNG đổ bóng» đã ghi sẵn ở
+          //  sâu. Luật "chỉ dải DƯỚI CÙNG đổ bóng" đã ghi sẵn ở
           //  `hr/utils/list-sticky.ts`; ở đây dải dưới cùng là thanh công cụ.
           <div
             className={cn(

@@ -29,7 +29,7 @@ interface EmployeeWorkScheduleCardProps {
   employeeId: number
 }
 
-/** Nguồn của lịch: «Gán riêng» / «Theo phòng ban: …» / «Theo pháp nhân: …» / «Toàn hệ thống» / «Mặc định hệ thống». */
+/** Nguồn của lịch: "Gán riêng" / "Theo phòng ban: …" / "Theo pháp nhân: …" / "Toàn hệ thống" / "Mặc định hệ thống". */
 function describeSource(schedule: EffectiveWorkSchedule): string {
   if (schedule.is_fallback) return 'Mặc định hệ thống'
   const target = schedule.target_name ? `: ${schedule.target_name}` : ''
@@ -47,21 +47,21 @@ function describeSource(schedule: EffectiveWorkSchedule): string {
   }
 }
 
-/** «Từ 01/11/2026 · Không thời hạn» hoặc «Từ … đến …»; không có ngày bắt đầu thì để trống. */
+/** "Từ 01/11/2026 · Không thời hạn" hoặc "Từ … đến …"; không có ngày bắt đầu thì để trống. */
 function describeValidity(schedule: EffectiveWorkSchedule): string {
   if (schedule.is_fallback || !schedule.effective_from) return ''
   const to = schedule.effective_to ? `đến ${formatDate(schedule.effective_to)}` : 'Không thời hạn'
   return `Từ ${formatDate(schedule.effective_from)} · ${to}`
 }
 
-/** Thứ nào backend không trả thì không có trong Map -> chip hiện «—», không bịa thành «Nghỉ». */
+/** Thứ nào backend không trả thì không có trong Map -> chip hiện "—", không bịa thành "Nghỉ". */
 function indexByWeekday(days: unknown): Map<number, WorkScheduleDay> {
   const present = presentWeekdays(days)
   return new Map(fillWeek(days).filter((d) => present.has(d.weekday)).map((d) => [d.weekday, d]))
 }
 
 /**
- * Thẻ «Lịch làm việc» trên hồ sơ nhân sự: nhân sự này đang theo mẫu nào, lấy từ
+ * Thẻ "Lịch làm việc" trên hồ sơ nhân sự: nhân sự này đang theo mẫu nào, lấy từ
  * cấp nào, và bảy ngày trong tuần ra sao. Là thẻ PHỤ — lỗi (404 ngoài phạm vi,
  * 403…) chỉ hiện một câu ngắn, không toast, không chặn phần còn lại của hồ sơ.
  *

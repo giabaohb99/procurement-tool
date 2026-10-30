@@ -7,10 +7,10 @@ import type { DbBackupListResponse } from '../types/backup'
 import { BackupListPage } from './backup-list-page'
 
 /**
- * Màn Sao lưu — lựa chọn «DB ERP | DB bot (agent_hub)» (ai-CR-139).
+ * Màn Sao lưu — lựa chọn "DB ERP | DB bot (agent_hub)" (ai-CR-139).
  *
  * Chỗ dễ lủng: DB bot phải gọi qua proxy `/api/agent-hub/backups*`, không được rơi về `/api/backups` của ERP; DB bot
- * KHÔNG có nút xóa bản và KHÔNG có đường khôi phục thật — chỉ «Khôi phục thử». Bot chạy chung DB ERP thì phải nói rõ là
+ * KHÔNG có nút xóa bản và KHÔNG có đường khôi phục thật — chỉ "Khôi phục thử". Bot chạy chung DB ERP thì phải nói rõ là
  * bản ERP đã gồm bảng bot, và khóa nút chạy.
  */
 
@@ -112,7 +112,7 @@ describe('BackupListPage — DB bot', () => {
  * kh-SL-nut-chap-nhan — nút *Chấp nhận cỡ mới* (máy chủ có từ bao-CR-656).
  *
  * CSDL thu nhỏ hợp lệ thì lượt sao lưu đánh dấu bản mới là đáng ngờ (`message` mở đầu
- * «Bỏ qua dọn bản cũ:») và ngừng dọn bản cũ. Nút gỡ dấu đó — hệ quả là lượt sau XÓA các
+ * "Bỏ qua dọn bản cũ:") và ngừng dọn bản cũ. Nút gỡ dấu đó — hệ quả là lượt sau XÓA các
  * bản to cũ, nên chỉ người có `backup.delete` thấy và phải xác nhận trước.
  */
 describe('BackupListPage — Chấp nhận cỡ mới', () => {
@@ -205,7 +205,7 @@ describe('BackupListPage — Chấp nhận cỡ mới', () => {
   })
 
   it('stays usable after the server refuses — the error toast comes from http-client', async () => {
-    //  Máy chủ trả 400 «Không có bản sao lưu nào đang bị đánh dấu đáng ngờ» khi người
+    //  Máy chủ trả 400 "Không có bản sao lưu nào đang bị đánh dấu đáng ngờ" khi người
     //  khác vừa chấp nhận trước; `http-client` toast đúng câu đó cho mọi lệnh ghi.
     apiPost.mockRejectedValue(new Error('400'))
     apiGet.mockResolvedValue(suspect())

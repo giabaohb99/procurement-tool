@@ -43,17 +43,17 @@ interface WorkToolbarProps {
   onKeywordChange: (value: string) => void
   fields: CardFields
   onFieldsChange: (fields: CardFields) => void
-  /** Bộ nhãn tùy biến của dự án — menu «Tùy chỉnh» lấy tên trường từ đây. */
+  /** Bộ nhãn tùy biến của dự án — menu "Tùy chỉnh" lấy tên trường từ đây. */
   labelFields: WorkLabelField[]
   /** Mở màn Thiết lập để khai thêm nhãn; vắng = không đủ quyền. */
   onAddField?: () => void
   canEdit: boolean
-  /** ADMIN trở lên: được sửa tag / trường tùy biến ngay trong menu «Tùy chỉnh». */
+  /** ADMIN trở lên: được sửa tag / trường tùy biến ngay trong menu "Tùy chỉnh". */
   canManage: boolean
   onNewTask: () => void
   /**
-   * Thêm CỘT MỐC (B-14) — nằm trong mũi tên cạnh «Việc mới». Vắng = không đủ
-   * quyền sửa. Tách khỏi «Việc mới» vì mốc mang ngày khác hẳn (chỉ một mốc) và
+   * Thêm CỘT MỐC (B-14) — nằm trong mũi tên cạnh "Việc mới". Vắng = không đủ
+   * quyền sửa. Tách khỏi "Việc mới" vì mốc mang ngày khác hẳn (chỉ một mốc) và
    * hiện thành hình thoi trên Gantt.
    */
   onNewMilestone?: () => void
@@ -64,7 +64,7 @@ interface WorkToolbarProps {
 /**
  * Thanh công cụ khung nhìn (D-07) — clone hàng nút của Lark.
  *
- * Hình dáng bám đúng bản gốc: **một nút tách đôi** «Việc mới ▾» có viền, rồi
+ * Hình dáng bám đúng bản gốc: **một nút tách đôi** "Việc mới ▾" có viền, rồi
  * một dải nút CHỮ KHÔNG VIỀN (lọc · sắp xếp · tùy chỉnh) và ô tìm thu gọn ở mép
  * phải. Trước đây mỗi thứ là một ô `Select` viền kín rộng cố định, nên nhãn dài
  * bị cắt cụt ngay trên thanh (`Sắp xếp: Tay (kéo th…`).
@@ -72,8 +72,8 @@ interface WorkToolbarProps {
  * Mọi thứ ở đây là **hiển thị**: lọc/sắp ngay tại trình duyệt trên payload bảng
  * đã tải — một list vài trăm việc thì đi vòng máy chủ chỉ tốn thêm một nhịp chờ.
  *
- * ⚠️ Nút «lát cắt nhanh» ĐÃ BỎ (Tất cả việc / Việc của tôi…): mọi lát cắt đó nay
- * khai bằng bộ lọc điều kiện. Còn thiếu **«Gom nhóm»** (§3.5) — chưa dựng nút
+ * ⚠️ Nút "lát cắt nhanh" ĐÃ BỎ (Tất cả việc / Việc của tôi…): mọi lát cắt đó nay
+ * khai bằng bộ lọc điều kiện. Còn thiếu **"Gom nhóm"** (§3.5) — chưa dựng nút
  * chết ở đây: bấm vào không làm gì còn tệ hơn là thiếu hẳn.
  */
 export function WorkToolbar({
@@ -93,7 +93,7 @@ export function WorkToolbar({
   onNewMilestone,
   onAddSection,
 }: WorkToolbarProps) {
-  //  Mũi tên chỉ mọc ra khi có ÍT NHẤT một mục khác «Việc mới» — một menu chỉ
+  //  Mũi tên chỉ mọc ra khi có ÍT NHẤT một mục khác "Việc mới" — một menu chỉ
   //  chứa đúng cái nút bên cạnh đã làm là menu thừa.
   const hasMenu = Boolean(onNewMilestone || onAddSection)
 
@@ -182,14 +182,14 @@ export function WorkToolbar({
 
       {canEdit && <span aria-hidden className="mx-1.5 h-5 w-px bg-border" />}
 
-      {/*  Nút «Lọc» của bộ lọc điều kiện dùng chung. Lọc chạy tại trình duyệt
+      {/*  Nút "Lọc" của bộ lọc điều kiện dùng chung. Lọc chạy tại trình duyệt
           trên payload bảng đã tải — xem `applyTaskConditions`.
 
           ⚠️ Khổ hẹp: ba nút này rút về CÒN BIỂU TƯỢNG. Đo ở 390px thì cả thanh
           rộng ~550px trên 358px dùng được nên nó rớt xuống hai hàng, mà hàng
           thứ hai ăn thêm 40px chiều cao của một màn vốn đã phải cuộn. Bỏ ba
-          nhãn («Bộ lọc» 83px · «Sắp xếp: …» 188px · «Tùy chỉnh» 106px) là vừa
-          một hàng. Giữ nhãn cho «Việc mới» vì đó là hành động chính, và giữ
+          nhãn ("Bộ lọc" 83px · "Sắp xếp: …" 188px · "Tùy chỉnh" 106px) là vừa
+          một hàng. Giữ nhãn cho "Việc mới" vì đó là hành động chính, và giữ
           huy hiệu đếm điều kiện vì nó là thứ nói bảng ĐANG BỊ LỌC — mất nó thì
           người dùng nhìn bảng thiếu việc mà không hiểu vì sao. */}
       <ConditionalFilter
@@ -248,7 +248,7 @@ export function WorkToolbar({
  *
  * ⚠️ **Ô phải CÓ VIỀN.** Bản trước khai `border-transparent bg-transparent
  * shadow-none`, viền chỉ hiện khi rê chuột: trên nền canvas xam xám nó gần như
- * tàng hình, và trên máy cảm ứng thì không có nhịp «rê chuột» nào cả — bấm kính
+ * tàng hình, và trên máy cảm ứng thì không có nhịp "rê chuột" nào cả — bấm kính
  * lúp xong người dùng thấy con trỏ nháy giữa khoảng không, không rõ gõ vào đâu
  * và vùng gõ rộng tới đâu. Ô nhập là chỗ NHẬN thao tác, nó phải tự nói ra mình
  * ở đâu chứ không đợi được hỏi.
@@ -264,7 +264,7 @@ function ToolbarSearch({
   onChange: (value: string) => void
   open: boolean
   onOpenChange: (value: boolean) => void
-  /** Nở hết hàng — khổ hẹp, xem ghi chú «chế độ tìm» ở `WorkToolbar`. */
+  /** Nở hết hàng — khổ hẹp, xem ghi chú "chế độ tìm" ở `WorkToolbar`. */
   fullWidth?: boolean
 }) {
   if (!open) {
@@ -297,7 +297,7 @@ function ToolbarSearch({
       />
       {/*  ⚠️ Nút X LUÔN có, kể cả khi chưa gõ gì, và nó ĐÓNG ô chứ không chỉ xóa
            chữ. Đường đóng duy nhất trước đây là rời ô — trên máy cảm ứng thì
-           «rời ô» nghĩa là chạm vào bảng phía dưới, mà mọi thứ dưới đó đều kéo
+           "rời ô" nghĩa là chạm vào bảng phía dưới, mà mọi thứ dưới đó đều kéo
            thả được: định thoát tìm kiếm thì nhấc nhầm một cái thẻ việc. Xóa
            chữ và đóng ô gộp làm một vì tách ra là tự mâu thuẫn: còn từ khóa thì
            ô lại mở ra ngay (xem `searchOpen`), mà đóng ô trong khi bảng vẫn
@@ -327,7 +327,7 @@ interface ToolbarMenuProps<T extends string> {
   icon: LucideIcon
   /** Tên trường — chỉ cho trình đọc màn hình, vì nút hiện GIÁ TRỊ đang chọn. */
   srLabel: string
-  /** Chữ dẫn trước giá trị trên nút, ví dụ «Sắp xếp: ». */
+  /** Chữ dẫn trước giá trị trên nút, ví dụ "Sắp xếp: ". */
   prefix?: string
   value: T
   options: readonly { value: T; label: string }[]
@@ -356,7 +356,7 @@ function ToolbarMenu<T extends string>({
         <Button
           variant="ghost"
           size="sm"
-          //  Nút chỉ hiện GIÁ TRỊ đang chọn («Tất cả việc (chưa xong)»), nên tên
+          //  Nút chỉ hiện GIÁ TRỊ đang chọn ("Tất cả việc (chưa xong)"), nên tên
           //  cho trình đọc màn hình phải kèm luôn tên trường — không thì nghe
           //  xong vẫn không biết đó là lát cắt hay bộ lọc nào.
           aria-label={`${srLabel}: ${current?.label ?? ''}`}

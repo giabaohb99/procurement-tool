@@ -151,7 +151,7 @@ def meta_of(spec: "ReportSpec", group_by: str | None) -> dict:
     và `snapshot` (số THỜI ĐIỂM, chỉ đúng ở Tổng) — FE/Excel dựa vào hai cờ này để ẩn cột.
     `additive` (duoc-CR-688): CỘNG các nhóm lại được không — chỉ số `value_of` thì được; đếm
     PHÂN BIỆT (`distinct_of`, một người có thể ở nhiều nhóm) và chỉ số DẪN XUẤT (tỷ lệ, bình
-    quân) thì không. Biểu đồ dựa vào cờ này khi gộp phần dư thành «Khác»."""
+    quân) thì không. Biểu đồ dựa vào cờ này khi gộp phần dư thành "Khác"."""
     metrics = [{"key": m.key, "label": m.label, "kind": m.kind, "good": m.good,
                "helper": m.helper, "snapshot": m.snapshot, "additive": m.value_of is not None}
                for m in spec.metrics]

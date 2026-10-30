@@ -1,4 +1,4 @@
-"""Sổ ý định (ai-CR-137, phase 13.1–13.2 «Hiểu ý định + tự ghi nhớ», đại ca duyệt 09/10/2026).
+"""Sổ ý định (ai-CR-137, phase 13.1–13.2 "Hiểu ý định + tự ghi nhớ", đại ca duyệt 09/10/2026).
 
 Mỗi câu hỏi người dùng gửi bot (Telegram / Zalo riêng) hoặc Trợ lý AI web = MỘT dòng `tab_agent_intent`:
 ai hỏi · kênh · cuộc nào (scope + scope_key, dùng lại khóa của nén hội thoại ai-CR-136) · nhãn lớn (6 nhãn của bộ phân
@@ -184,7 +184,7 @@ TOOL_SUB: dict[str, Sub] = {
     "list_personal_items": Sub.LOOKUP_PERSONAL,
     "my_tickets": Sub.LOOKUP_TICKET,
     "search_docs": Sub.LOOKUP_GUIDE, "glossary_lookup": Sub.LOOKUP_GUIDE,
-    #  ai-CR-220 (K7): đọc cẩm nang trong Kho skill — cùng loại «hỏi cách làm» với tra HDSD.
+    #  ai-CR-220 (K7): đọc cẩm nang trong Kho skill — cùng loại "hỏi cách làm" với tra HDSD.
     "list_skills": Sub.LOOKUP_GUIDE, "read_skill": Sub.LOOKUP_GUIDE, "read_skill_file": Sub.LOOKUP_GUIDE,
     "analytics_query": Sub.LOOKUP_ANALYTICS,
     #  ai-CR-208 / 210 / 211: ba tool dữ liệu cho AI (báo cáo gom sẵn, bảng số tổng hợp, đọc danh sách / chi tiết phiếu).
@@ -433,7 +433,7 @@ _WEEKDAYS = ("thứ hai", "thứ ba", "thứ tư", "thứ năm", "thứ sáu", "
 
 
 def defaults_of(db: Session, user_id: int, *, days: int = HABIT_DAYS) -> list[dict]:
-    """Đối tượng «như mọi lần» của MỘT người: mỗi loại (pháp nhân, NCC, dự án, phòng) lấy giá trị nhắc nhiều nhất nếu đủ
+    """Đối tượng "như mọi lần" của MỘT người: mỗi loại (pháp nhân, NCC, dự án, phòng) lấy giá trị nhắc nhiều nhất nếu đủ
     HABIT_MIN lần và chiếm ≥ HABIT_SHARE. Chỉ lấy mã / tên (id trần không nói gì với model)."""
     counts: dict[str, dict[str, int]] = {}
     for r in recent(db, user_id, days=days, limit=1000):
@@ -468,7 +468,7 @@ def habit_block(db: Session, user_id: int) -> str:
     lines = [f"- {x['label']} hay hỏi: {x['value']} ({x['count']}/{x['total']} lần nhắc gần đây)" for x in items]
     return ("THÓI QUEN CỦA NGƯỜI ĐANG NHẮN (đếm từ các câu hỏi trước, chỉ của chính họ):\n" + "\n".join(lines) + "\n"
             "Câu hỏi THIẾU đối tượng loại trên mà công cụ cần thì dùng giá trị thói quen VÀ nói rõ giả định ngay câu đầu, "
-            "ví dụ «Em hiểu là pháp nhân DEGO như mọi lần — khác thì anh/chị nói em nhé.». Câu đã nêu đối tượng thì làm "
+            "ví dụ **Em hiểu là pháp nhân DEGO như mọi lần — khác thì anh/chị nói em nhé.**. Câu đã nêu đối tượng thì làm "
             "đúng theo câu, bỏ thói quen. Không tự gửi gì khi người dùng chưa hỏi.")
 
 
@@ -489,6 +489,6 @@ def suggestions_of(db: Session, user_id: int, *, now=None) -> list[dict]:
         if len(seen) >= SUGGEST_MIN_WEEKS:
             code, label = SUB_CODES.get(Sub(sub), ("", ""))
             out.append({"sub": code, "label": label, "weekday": wd, "weeks": len(seen),
-                        "text": f"{_WEEKDAYS[wd].capitalize()} nào cũng hỏi «{label}» ({len(seen)} tuần) — có thể bật bản "
+                        "text": f"{_WEEKDAYS[wd].capitalize()} nào cũng hỏi **{label}** ({len(seen)} tuần) — có thể bật bản "
                                 f"tin gửi sẵn sáng {_WEEKDAYS[wd]}."})
     return out[:5]

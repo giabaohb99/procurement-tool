@@ -87,7 +87,7 @@ function daysInput(line = 1) {
   return screen.getByLabelText(`Số ngày dòng ${line}`)
 }
 
-/** Form một dòng «Phép năm» — hình dạng của gần như mọi tờ đơn. */
+/** Form một dòng "Phép năm" — hình dạng của gần như mọi tờ đơn. */
 function formWith(overrides: Partial<LeaveFormValues> = {}): LeaveFormValues {
   return {
     ...emptyLeaveForm(),
@@ -102,7 +102,7 @@ function hourlyPeriods() {
   return [{ ...p, from_session: LEAVE_SESSION.HOURLY, to_session: LEAVE_SESSION.HOURLY }]
 }
 
-/** Form một dòng «Phép năm» với số ngày đã có sẵn. */
+/** Form một dòng "Phép năm" với số ngày đã có sẵn. */
 function formWithDays(days: number, overrides: Partial<LeaveFormValues> = {}) {
   return formWith({ lines: [{ leave_type_id: 1, days }], ...overrides })
 }
@@ -148,7 +148,7 @@ describe('LeaveRequestForm — ô Số ngày', () => {
 })
 
 describe('LeaveRequestForm — nghỉ theo GIỜ', () => {
-  it('chọn «Theo giờ» thì mọc thêm ô giờ ở CẢ HAI đầu, hai ô ngày còn nguyên', async () => {
+  it('chọn "Theo giờ" thì mọc thêm ô giờ ở CẢ HAI đầu, hai ô ngày còn nguyên', async () => {
     //  Khách bác bản gộp hai ô ngày làm một (07/09/2026): nghỉ từ 14:00 ngày A
     //  đến 10:00 ngày B là tờ đơn có thật.
     const user = userEvent.setup()
@@ -184,7 +184,7 @@ describe('LeaveRequestForm — nghỉ theo GIỜ', () => {
 
   it('đơn theo giờ LUÔN bám con số máy tính, kể cả khi mở lại đơn đã lưu', () => {
     //  Bắt được lúc test tay 07/09/2026: mở đơn theo giờ đã lưu 0.38 rồi đổi
-    //  «Đến ngày», ô số ngày đứng im — vì con số đã lưu bị coi là "người dùng gõ
+    //  "Đến ngày", ô số ngày đứng im — vì con số đã lưu bị coi là "người dùng gõ
     //  tay", mà đơn theo giờ thì không có đường gõ tay nào cả.
     useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 2.31 } })
     render(
@@ -199,7 +199,7 @@ describe('LeaveRequestForm — nghỉ theo GIỜ', () => {
     expect(screen.getByText('Tổng cộng 2.31 ngày')).toBeInTheDocument()
   })
 
-  it('bỏ «Theo giờ» thì XÓA khoảng giờ đã nhập', async () => {
+  it('bỏ "Theo giờ" thì XÓA khoảng giờ đã nhập', async () => {
     const user = userEvent.setup()
     render(
       <Harness
@@ -278,7 +278,7 @@ describe('LeaveRequestForm — nhiều loại nghỉ trong một đơn', () => {
   })
 
   it('loại đã chọn ở dòng khác thì KHÔNG chọn lại được', async () => {
-    //  Backend chặn với câu «khai hai lần», nhưng để người dùng chọn xong mới
+    //  Backend chặn với câu "khai hai lần", nhưng để người dùng chọn xong mới
     //  báo là bắt họ làm hai lần.
     const user = userEvent.setup()
     render(<Harness initial={twoLines()} />)
@@ -303,12 +303,12 @@ describe('LeaveRequestForm — nhiều loại nghỉ trong một đơn', () => {
 })
 
 describe('LeaveRequestForm — lập hộ người khác', () => {
-  it('có quyền đọc danh bạ thì hiện ô «Người nghỉ»', () => {
+  it('có quyền đọc danh bạ thì hiện ô "Người nghỉ"', () => {
     render(<Harness initial={formWith()} />)
     expect(screen.getByText('Người nghỉ')).toBeInTheDocument()
   })
 
-  it('đơn MỚI thì ô «Người nghỉ» điền sẵn CHÍNH MÌNH', () => {
+  it('đơn MỚI thì ô "Người nghỉ" điền sẵn CHÍNH MÌNH', () => {
     //  Để trống kèm câu "mặc định là bạn" thì người dùng vẫn phải đoán đơn đứng
     //  tên ai — mà chỗ đó đáng ra là câu trả lời.
     render(<Harness initial={formWith()} />)
@@ -371,7 +371,7 @@ describe('LeaveRequestForm — nhiều khoảng ngày (duoc-CR-683)', () => {
     expect(screen.getByRole('button', { name: 'Bỏ khoảng ngày 2' })).toBeInTheDocument()
   })
 
-  it('switching to «Theo giờ» on a single period hides «Thêm khoảng ngày»', async () => {
+  it('switching to "Theo giờ" on a single period hides "Thêm khoảng ngày"', async () => {
     const user = userEvent.setup()
     render(<Harness initial={formWith()} />)
     await user.click(screen.getByRole('combobox', { name: 'Buổi bắt đầu' }))
@@ -382,7 +382,7 @@ describe('LeaveRequestForm — nhiều khoảng ngày (duoc-CR-683)', () => {
 
 /**
  * MỞ LẠI ĐƠN ĐÃ LƯU rồi đổi ngày (duoc-CR-683 M3). Trước bản vá, mọi đơn đã lưu đều bị coi là
- * «số gõ tay»: đổi 27/10 + 03/11→07/11 thành 27/10 + 01/11→05/11 mà ô vẫn 5.5 (đúng ra 5), và
+ * "số gõ tay": đổi 27/10 + 03/11→07/11 thành 27/10 + 01/11→05/11 mà ô vẫn 5.5 (đúng ra 5), và
  * lưu là giữ quỹ 5.5 ngày. Số đã gõ đè thật thì vẫn phải đứng yên.
  */
 describe('LeaveRequestForm — reopening a saved request (duoc-CR-683 M3)', () => {
@@ -453,7 +453,7 @@ describe('LeaveRequestForm — reopening a saved request (duoc-CR-683 M3)', () =
   })
 
   it('a saved single-period request matching the first estimate follows later date changes', () => {
-    //  Đơn một khoảng: chỉ nhận ra «số máy» bằng cách so với con số ước lượng đầu tiên.
+    //  Đơn một khoảng: chỉ nhận ra "số máy" bằng cách so với con số ước lượng đầu tiên.
     const single = saved(3, { periods: [{ ...periods[0], to_date: '2026-10-29', days: 3 }] })
     useEstimateLeavePeriods.mockReturnValue({ data: { total_days: 3 } })
     const { rerender } = render(<Harness initial={single} />)

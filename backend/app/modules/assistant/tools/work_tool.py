@@ -1,8 +1,8 @@
-"""Tool SOẠN NHÁP VIỆC ở phân hệ Dự án (ai-CR-080) — «lên task» từ câu nói.
+"""Tool SOẠN NHÁP VIỆC ở phân hệ Dự án (ai-CR-080) — "lên task" từ câu nói.
 
-Đại ca 05/10/2026 muốn thử «lên task hoặc thông báo, lên lịch». Theo quy định hỏi và làm (sửa = hỏi một lần), tool chỉ
+Đại ca 05/10/2026 muốn thử "lên task hoặc thông báo, lên lịch". Theo quy định hỏi và làm (sửa = hỏi một lần), tool chỉ
 SOẠN NHÁP: tìm dự án theo tên trong các dự án người hỏi THẤY được, tìm người phụ trách theo mã / tên nhân sự, đọc hạn.
-Trên Telegram bot tóm tắt rồi chờ «tạo» (`agent_hub/draft_create.py` gọi đúng `work.task_service.create_task` của web),
+Trên Telegram bot tóm tắt rồi chờ "tạo" (`agent_hub/draft_create.py` gọi đúng `work.task_service.create_task` của web),
 tạo xong báo CHUÔNG cho người được giao — chuông chuyển tiếp sang Telegram của ai đã nối (P-01).
 Mơ hồ (nhiều dự án / nhiều người cùng tên) thì trả lựa chọn để Trợ lý hỏi MỘT câu, không đoán bừa.
 """
@@ -44,9 +44,9 @@ def _find_people(ctx: ToolContext, names: list) -> tuple[list[dict], list[str]]:
         if len(rows) == 1:
             found.append({"employee_id": rows[0].id, "name": rows[0].full_name, "code": rows[0].code})
         elif not rows:
-            problems.append(f"không thấy nhân sự «{raw}»")
+            problems.append(f"không thấy nhân sự **{raw}**")
         else:
-            problems.append(f"«{raw}» khớp nhiều người: " + "; ".join(f"{e.full_name} ({e.code})" for e in rows[:5]))
+            problems.append(f"**{raw}** khớp nhiều người: " + "; ".join(f"{e.full_name} ({e.code})" for e in rows[:5]))
     return found, problems
 
 
@@ -60,7 +60,7 @@ def _sections_of(ctx: ToolContext, list_id: int) -> list[dict]:
 
 
 def _pick_section(sections: list[dict], want: str) -> tuple[dict | None, dict | None]:
-    """Tên cột người dùng nói («todo», «đang làm») → đúng MỘT cột (so không dấu, khớp trọn tên trước, rồi chứa)."""
+    """Tên cột người dùng nói ("todo", "đang làm") → đúng MỘT cột (so không dấu, khớp trọn tên trước, rồi chứa)."""
     from app.modules.assistant.glossary import fold
 
     f = " ".join(fold(want).split())
@@ -72,7 +72,7 @@ def _pick_section(sections: list[dict], want: str) -> tuple[dict | None, dict | 
         return hit[0], None
     return None, {"need_choice": "section", "options": [s["name"] for s in sections][:10],
                   "note": ("Hỏi người dùng MỘT câu: việc này vào cột nào (đưa đúng tên các cột của dự án, đánh số)."
-                           if hit else f"Dự án không có cột «{want}». Hỏi người dùng chọn một trong các cột (đánh số).")}
+                           if hit else f"Dự án không có cột **{want}**. Hỏi người dùng chọn một trong các cột (đánh số).")}
 
 
 def _draft_work_task(ctx: ToolContext, args: dict) -> dict:
@@ -111,8 +111,8 @@ def _draft_work_task(ctx: ToolContext, args: dict) -> dict:
             return {"error": f"{label} phải dạng YYYY-MM-DD"}
     no_due = not (due or "due_date" in asked or confirm_fields.mentions(user_text, "han", "deadline"))
     assumptions = ["chưa đặt hạn"] if no_due else []
-    #  ai-CR-181 (đại ca 13/10): «trạng thái là todo» = CỘT kanban của dự án. Nói tên cột thì vào đúng cột; không nói
-    #  thì cột đầu của dự án và ghi vào «em đang hiểu là» để người dùng sửa trước khi «tạo».
+    #  ai-CR-181 (đại ca 13/10): "trạng thái là todo" = CỘT kanban của dự án. Nói tên cột thì vào đúng cột; không nói
+    #  thì cột đầu của dự án và ghi vào "em đang hiểu là" để người dùng sửa trước khi "tạo".
     sections = _sections_of(ctx, lst.id)
     section = None
     if want_section := " ".join(str(args.get("section") or "").split()):
@@ -128,7 +128,7 @@ def _draft_work_task(ctx: ToolContext, args: dict) -> dict:
              "assignees": people, "section_id": int(section["id"]) if section else 0,
              "section_name": section["name"] if section else ""}
     return {"draft": draft,
-            "note": ("Đã soạn nháp. Trên Telegram bot tự gửi bản tóm tắt để người dùng nhắn «tạo»; trên web hãy nói người "
+            "note": ("Đã soạn nháp. Trên Telegram bot tự gửi bản tóm tắt để người dùng nhắn **tạo**; trên web hãy nói người "
                      "dùng tạo ở màn Dự án hoặc nhắn qua Telegram. Đừng tự báo là đã tạo.")}
 
 
@@ -163,7 +163,7 @@ def _pick_lists(ctx: ToolContext, want: str, lists: list[int]) -> tuple[list[int
     if len(hit) == 1:
         return [hit[0].id], hit[0].name, None
     if not hit:
-        return [], "", {"error": f"không thấy dự án «{want}» trong các dự án anh/chị tham gia",
+        return [], "", {"error": f"không thấy dự án **{want}** trong các dự án anh/chị tham gia",
                         "options": [w.name for w in rows][:10]}
     return [], "", {"need_choice": "project", "options": [w.name for w in hit][:8],
                     "note": "Hỏi người dùng MỘT câu: ý là dự án nào (đưa danh sách đánh số)."}
@@ -174,7 +174,7 @@ def _my_work_tasks(ctx: ToolContext, args: dict) -> dict:
     gồm cả việc quá hạn. Chỉ trong các dự án người hỏi thấy được; bỏ việc đã xóa mềm.
 
     ai-CR-175 (đại ca 10/10: trợ lý cá nhân liệt kê việc THEO DỰ ÁN): thêm `project` (lọc một dự án theo tên),
-    `all_open` (mọi việc đang mở, kể cả chưa đặt hạn — cho câu «dự án X còn gì»), `only_mine=false` (việc của cả dự án,
+    `all_open` (mọi việc đang mở, kể cả chưa đặt hạn — cho câu "dự án X còn gì"), `only_mine=false` (việc của cả dự án,
     kèm tên người phụ trách); kết quả luôn có `by_project` gom theo dự án để model in theo nhóm."""
     from datetime import date
 
@@ -227,7 +227,7 @@ def _my_work_tasks(ctx: ToolContext, args: dict) -> dict:
     items = []
     for t, name, section in rows:
         it = {"id": t.id, "title": t.title, "project": name, "section": section or "", "due_date": t.due_date,
-              "start_date": t.start_date or "",      # bao-CR-616: bản tin sáng gom «đang làm hôm nay»
+              "start_date": t.start_date or "",      # bao-CR-616: bản tin sáng gom "đang làm hôm nay"
               "overdue": bool(t.due_date) and t.due_date < today, "subtask": t.parent_id is not None}
         if not only_mine:
             it["assignees"] = pics.get(t.id, [])
@@ -239,7 +239,7 @@ def _my_work_tasks(ctx: ToolContext, args: dict) -> dict:
            "by_project": [{"project": p, "count": len(v), "items": v} for p, v in groups.items()]}
     if project:
         out["project"] = project
-        #  ai-CR-181: hỏi về MỘT dự án thì trả luôn danh sách cột kanban («dự án X có cột nào»).
+        #  ai-CR-181: hỏi về MỘT dự án thì trả luôn danh sách cột kanban ("dự án X có cột nào").
         out["sections"] = [s["name"] for s in _sections_of(ctx, lists[0])]
     if not only_mine:
         out["note"] = "Việc của cả dự án (không chỉ của người hỏi); `assignees` = người phụ trách."
@@ -269,7 +269,7 @@ MY_WORK_TASKS_SPEC = ToolSpec(
 #  ---------------------------------------------------------------------------------------------------------------
 #  bao-CR-616 (phase 24.1, doc/agent-hub/18) — SOẠN NHÁP CẢ CÂY KẾ HOẠCH: giai đoạn → việc cha → việc con, mỗi việc
 #  có người làm, khung ngày, mức ưu tiên, tiêu chí đánh giá. Tool chỉ chuẩn hóa theo bộ luật (`plan_policy`) và ghi
-#  điều tự hiểu vào `assumptions`; tạo thật là việc của `agent_hub/work_plan.build` sau khi người dùng nhắn «tạo».
+#  điều tự hiểu vào `assumptions`; tạo thật là việc của `agent_hub/work_plan.build` sau khi người dùng nhắn "tạo".
 #  ---------------------------------------------------------------------------------------------------------------
 _PRIORITY_WORDS = {
     "gap": "Gấp", "khan": "Gấp", "p1": "Gấp", "urgent": "Gấp",
@@ -311,7 +311,7 @@ _ASSUMPTION_TEXT = {
 def _assumption_lines(assumptions: dict) -> list[str]:
     out = []
     for key, titles in assumptions.items():
-        names = ", ".join(f"«{t}»" for t in titles[:3]) + (f" và {len(titles) - 3} việc nữa" if len(titles) > 3 else "")
+        names = ", ".join(f"**{t}**" for t in titles[:3]) + (f" và {len(titles) - 3} việc nữa" if len(titles) > 3 else "")
         out.append(f"{names}: {_ASSUMPTION_TEXT.get(key, key)}")
     return out[:8]
 
@@ -324,7 +324,7 @@ def _plan_dates(item: dict, label: str, assumptions: dict, policy: dict) -> tupl
     due = str(item.get("due_date") or "").strip()
     for name, val in (("start_date", start), ("due_date", due)):
         if val and not _DATE.match(val):
-            return "", "", f"{name} của «{label}» phải dạng YYYY-MM-DD"
+            return "", "", f"{name} của **{label}** phải dạng YYYY-MM-DD"
     if start and due and due < start:
         start, due = due, start
         _note(assumptions, "swapped", label)
@@ -477,7 +477,7 @@ def _draft_work_plan(ctx: ToolContext, args: dict) -> dict:
              "counts": {"phases": len(phases), "tasks": n_tasks, "subtasks": n_subs},
              "policy": plan_policy.describe(policy)}
     return {"draft": draft,
-            "note": ("Đã soạn nháp kế hoạch. Trên Telegram bot tự gửi bản tóm tắt để người dùng nhắn «tạo» (tạo bảng "
+            "note": ("Đã soạn nháp kế hoạch. Trên Telegram bot tự gửi bản tóm tắt để người dùng nhắn **tạo** (tạo bảng "
                      "trong Dự án rồi hỏi từng người nhận việc). Đừng tự báo là đã tạo.")}
 
 
@@ -494,7 +494,7 @@ def _weak_tasks(phases: list[dict], policy: dict) -> list[str]:
             if not t.get("_own_criteria"):
                 lack.append("chưa có tiêu chí")
             if lack:
-                out.append(f"«{t['title']}»: {', '.join(lack)}")
+                out.append(f"**{t['title']}**: {', '.join(lack)}")
     return out
 
 

@@ -14,7 +14,7 @@ interface EmployeeDepartmentCardProps {
   employeeId: number
   /** Nhân sự thuộc pháp nhân nào — chỉ chọn được phòng của chính pháp nhân đó. */
   companyId: number
-  /** Phòng CHÍNH, lấy từ ô «Phòng ban» của hồ sơ. Chỉ để loại khỏi danh sách chọn. */
+  /** Phòng CHÍNH, lấy từ ô "Phòng ban" của hồ sơ. Chỉ để loại khỏi danh sách chọn. */
   primaryDepartmentId: number
   canWrite: boolean
   /** Đúng tài khoản đang đăng nhập: khóa lại, không ai tự đổi phòng của mình. */
@@ -25,10 +25,10 @@ interface EmployeeDepartmentCardProps {
 /**
  * KIÊM NHIỆM — những phòng người này phụ trách **THÊM**, ngoài phòng chính.
  *
- * ⚠️ Phòng CHÍNH không nằm ở đây. Nó là ô «Phòng ban» trong khối *Công việc*
+ * ⚠️ Phòng CHÍNH không nằm ở đây. Nó là ô "Phòng ban" trong khối *Công việc*
  * của hồ sơ, và vẫn đổi ở đúng chỗ đó. Bản đầu gộp cả hai vào một ô rồi quy ước
- * «phần tử đầu là phòng chính» — một luật ngầm mà người dùng không có cách nào
- * biết, và làm ô «Phòng ban» của hồ sơ thành thừa (khách bác 25/08/2026).
+ * "phần tử đầu là phòng chính" — một luật ngầm mà người dùng không có cách nào
+ * biết, và làm ô "Phòng ban" của hồ sơ thành thừa (khách bác 25/08/2026).
  *
  * Thẻ RIÊNG chứ không nhét vào form hồ sơ: backend gác cửa này bằng ba chốt
  * chống vượt quyền (xem `employee/department_service.py`), trộn chung vào cùng
@@ -102,7 +102,7 @@ export function EmployeeDepartmentCard({
           <Button
             // ⚠️ Cùng cái bẫy với nút ở `employee-account-card`: thẻ này nằm
             // TRONG `<form>` của trang chi tiết, thiếu `type` là mặc định
-            // `submit` — bấm «Lưu kiêm nhiệm» kéo theo một lần lưu cả hồ sơ.
+            // `submit` — bấm "Lưu kiêm nhiệm" kéo theo một lần lưu cả hồ sơ.
             type="button"
             size="sm"
             onClick={() => save.mutate(selection, { onSuccess: () => setDangChonDo(false) })}

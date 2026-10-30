@@ -16,7 +16,7 @@ interface SelfChangeRequestDialogProps {
 }
 
 /**
- * Hộp «Đề nghị sửa thông tin» của Trang cá nhân (duoc-CR-676, C6) — khung hộp thoại; thân ở
+ * Hộp "Đề nghị sửa thông tin" của Trang cá nhân (duoc-CR-676, C6) — khung hộp thoại; thân ở
  * `self-change-request-form.tsx`.
  *
  * Bốn tab Cá nhân · Ngân hàng · Giấy tờ · Hộ gia đình, điền sẵn từ hồ sơ hiện tại. Gửi đi CHỈ ô đã
@@ -29,8 +29,8 @@ export function SelfChangeRequestDialog({ open, onOpenChange, employee, families
         <DialogHeader>
           <DialogTitle>Đề nghị sửa thông tin hồ sơ</DialogTitle>
           <DialogDescription>
-            Sửa những ô cần đổi rồi bấm «Gửi đề nghị». Phòng Nhân sự duyệt rồi mới cập nhật vào hồ
-            sơ. Số điện thoại, địa chỉ và người báo tin thì bạn tự sửa ngay ở thẻ «Liên hệ».
+            Sửa những ô cần đổi rồi bấm <strong>Gửi đề nghị</strong>. Phòng Nhân sự duyệt rồi mới cập nhật vào hồ
+            sơ. Số điện thoại, địa chỉ và người báo tin thì bạn tự sửa ngay ở thẻ <strong>Liên hệ</strong>.
           </DialogDescription>
         </DialogHeader>
         {/*  Thân dựng lại MỖI LẦN mở: nháp luôn bắt đầu từ hồ sơ mới nhất, không sót chữ lần trước. */}

@@ -73,7 +73,7 @@ export function fetchCustomsAlerts(params: Params) {
   return apiGet<CustomsRegulationHit[]>(`${BASE}/alerts`, { params })
 }
 
-/** Mục «Pháp lý» — duyệt cả danh mục hóa chất theo văn bản (phân trang, lọc theo văn bản). */
+/** Mục "Pháp lý" — duyệt cả danh mục hóa chất theo văn bản (phân trang, lọc theo văn bản). */
 export function fetchCustomsRegulations(params: Params) {
   return apiGet<CustomsRegulationList>(`${BASE}/regulations`, { params })
 }

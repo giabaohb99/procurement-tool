@@ -1,15 +1,15 @@
-"""Hỏi lại cho ĐỦ trước khi soạn nháp (đại ca 09/10/2026: «có những trường cần thiết nhưng nó không hỏi lại, xác nhận lại
-để đủ thông tin hơn»).
+"""Hỏi lại cho ĐỦ trước khi soạn nháp (đại ca 09/10/2026: "có những trường cần thiết nhưng nó không hỏi lại, xác nhận lại
+để đủ thông tin hơn").
 
-Ca thật: «tạo đơn nghỉ việc vào thứ 2 tuần sau» → bot soạn luôn loại «Phép năm» (tool tự lấy mặc định) và lý do «Việc
-cá nhân» (model tự bịa). Ba lớp chặn:
+Ca thật: "tạo đơn nghỉ việc vào thứ 2 tuần sau" → bot soạn luôn loại "Phép năm" (tool tự lấy mặc định) và lý do "Việc
+cá nhân" (model tự bịa). Ba lớp chặn:
 
   1. Ô QUAN TRỌNG còn trống → tool không tự lấy mặc định nữa mà trả `need_info` (kèm lựa chọn nếu có) để Trợ lý hỏi MỘT
      tin gồm mọi ý còn thiếu.
   2. Ô do model điền nhưng NGƯỜI DÙNG CHƯA NÓI → coi như trống. Trợ lý chèn câu chữ gần nhất của người dùng vào tham số
      ẩn `_user_text` (`assistant.service`), tool so: giá trị phải xuất hiện (cụm hai chữ, bỏ dấu) trong lời người dùng.
-  3. Ô có mặc định hợp lý (nghỉ cả ngày, chưa đặt hạn) → vẫn soạn, nhưng ghi vào `assumptions` để thẻ nháp hiện «Em
-     hiểu là: …» cho người dùng xác nhận khi nhắn «tạo».
+  3. Ô có mặc định hợp lý (nghỉ cả ngày, chưa đặt hạn) → vẫn soạn, nhưng ghi vào `assumptions` để thẻ nháp hiện "Em
+     hiểu là: …" cho người dùng xác nhận khi nhắn "tạo".
 
 Người dùng đã được hỏi mà bảo bỏ qua → Trợ lý gọi lại với `asked_fields` chứa ô đó, tool không hỏi lần hai.
 """
@@ -74,7 +74,7 @@ def mentions(user_text: str, *hints: str) -> bool:
 
 
 def need(items: list[dict]) -> dict:
-    """Kết quả «chưa đủ thông tin»: Trợ lý hỏi MỘT tin gồm mọi ý, đánh số, đưa lựa chọn nếu có."""
+    """Kết quả "chưa đủ thông tin": Trợ lý hỏi MỘT tin gồm mọi ý, đánh số, đưa lựa chọn nếu có."""
     return {
         "need_info": items,
         "note": ("CHƯA soạn nháp. Hỏi người dùng MỘT tin gồm các ý dưới đây (đánh số, kèm lựa chọn nếu có). KHÔNG tự "

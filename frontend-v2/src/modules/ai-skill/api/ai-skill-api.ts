@@ -10,6 +10,7 @@ import type {
   MyMcpKey,
   OAuthClientList,
   VisibleSkill,
+  KeyAdminKeysParams,
   KeyAdminMeta,
   KeyIssueInput,
   KeyIssueResult,
@@ -77,7 +78,7 @@ export const aiSkillApi = {
 /** Khóa kết nối AI của nhân sự (K4 ai-CR-212) + nhật ký lượt gọi (K3 ai-CR-209) — qua cổng `/api/agent-hub`. */
 export const aiUsageApi = {
   keyAdminMeta: () => apiGet<KeyAdminMeta>(`${HUB}/mcp-key-admin/meta`),
-  keyAdminKeys: (params: { department_id?: number; state?: number; user_id?: number; page: number; size: number }) =>
+  keyAdminKeys: (params: KeyAdminKeysParams) =>
     apiGet<PagedItems<AdminMcpKey>>(`${HUB}/mcp-key-admin/keys`, { params: compact(params) }),
   issueKeys: (body: KeyIssueInput) => apiPost<KeyIssueResult>(`${HUB}/mcp-key-admin/issue`, body),
   revokeKeys: (body: KeyRevokeInput) => apiPost<{ revoked: number }>(`${HUB}/mcp-key-admin/revoke`, body),
@@ -91,7 +92,7 @@ export const aiUsageApi = {
 }
 
 /**
- * «AI của tôi» (G8) + Tổng quan (G1) — K6, hợp đồng doc/agent-hub/06 §6. Khóa của CHÍNH MÌNH đi chung đường
+ * "AI của tôi" (G8) + Tổng quan (G1) — K6, hợp đồng doc/agent-hub/06 §6. Khóa của CHÍNH MÌNH đi chung đường
  * `mcp-keys` với tab cũ (ai-CR-063), nay kèm trạng thái và khóa chờ nhận do quản trị phát hộ.
  */
 export const myAiApi = {

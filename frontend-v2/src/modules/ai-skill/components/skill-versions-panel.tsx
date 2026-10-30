@@ -15,12 +15,12 @@ const DRAFT = 'draft'
 
 interface SkillVersionsPanelProps {
   skillId: number
-  /** Nội dung nháp đang trên màn (kể cả chưa lưu) — để so «nháp này khác bản AI đang đọc chỗ nào». */
+  /** Nội dung nháp đang trên màn (kể cả chưa lưu) — để so "nháp này khác bản AI đang đọc chỗ nào". */
   draftBody: string
 }
 
 /**
- * Tab «Phiên bản» của trang soạn (G4): danh sách bản đã xuất bản + so HAI bản cạnh nhau, dòng bớt tô đỏ bên trái,
+ * Tab "Phiên bản" của trang soạn (G4): danh sách bản đã xuất bản + so HAI bản cạnh nhau, dòng bớt tô đỏ bên trái,
  * dòng thêm tô xanh bên phải. Mặc định so bản AI đang đọc với bản nháp đang soạn — câu hỏi hay gặp nhất trước khi bấm
  * Xuất bản.
  */

@@ -63,7 +63,7 @@ interface DateTimePickerProps {
   minuteStep?: number
   /** Giờ điền sẵn khi người dùng chọn NGÀY trước mà chưa chọn giờ. */
   defaultTime?: string
-  /** Tên của cả cụm cho trình đọc màn hình (vd «Bắt đầu»). */
+  /** Tên của cả cụm cho trình đọc màn hình (vd "Bắt đầu"). */
   label?: string
   className?: string
 }

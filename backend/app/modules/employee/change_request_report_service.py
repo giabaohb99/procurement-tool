@@ -1,7 +1,7 @@
-"""Báo cáo E2 «Yêu cầu sửa hồ sơ» kiểu Haravan (khóa 27, duoc-CR-689) — `/api/profile-change-report`.
+"""Báo cáo E2 "Yêu cầu sửa hồ sơ" kiểu Haravan (khóa 27, duoc-CR-689) — `/api/profile-change-report`.
 
-Trục thời gian = NGÀY GỬI yêu cầu (giờ VN). «Chờ quá 2 ngày» tính tới hôm nay. Một yêu cầu xin sửa
-nhiều trường thì xuất hiện ở nhiều nhóm khi xem theo «Trường bị xin sửa» (tổng vẫn đếm một lần).
+Trục thời gian = NGÀY GỬI yêu cầu (giờ VN). "Chờ quá 2 ngày" tính tới hôm nay. Một yêu cầu xin sửa
+nhiều trường thì xuất hiện ở nhiều nhóm khi xem theo "Trường bị xin sửa" (tổng vẫn đếm một lần).
 `/summary/rows` dùng đúng `load_rows` + đúng `key_of` của chiều gom nên danh sách khớp con số, và
 KHÔNG trả giá trị cũ / mới của trường.
 """
@@ -70,9 +70,9 @@ def build_summary(db: Session, employees_q, period: Period, group_by: str | None
         spec, period, group_by=group_by)
     data["meta"]["drilldown_metrics"] = list(PREDICATES)
     data["notes"] = list(data.get("notes") or []) + [
-        "Tính theo NGÀY GỬI yêu cầu. «Chờ quá 2 ngày» tính tới hôm nay, không phụ thuộc kỳ đang chọn.",
+        "Tính theo NGÀY GỬI yêu cầu. \"Chờ quá 2 ngày\" tính tới hôm nay, không phụ thuộc kỳ đang chọn.",
         "Giờ xử lý bình quân chỉ tính yêu cầu đã duyệt hoặc từ chối (không tính yêu cầu bị rút lại).",
-        "Một yêu cầu xin sửa nhiều trường sẽ hiện ở nhiều dòng khi xem theo «Trường bị xin sửa».",
+        "Một yêu cầu xin sửa nhiều trường sẽ hiện ở nhiều dòng khi xem theo \"Trường bị xin sửa\".",
         "Báo cáo không hiển thị nội dung cũ / mới của các trường được xin sửa."]
     return data
 

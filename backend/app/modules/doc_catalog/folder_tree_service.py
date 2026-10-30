@@ -175,8 +175,8 @@ def _node(f: DocFolder, company_names: dict[int, str], company_short_names: dict
         #  Mức hiệu lực của NGƯỜI GỌI trên đúng nút này (`0` không xảy ra ở
         #  đây — không thấy thì `_filter_visible` đã loại khỏi `folders`).
         "my_level": levels.get(f.id, 0),
-        #  Cột «Người tạo» / «Ngày tạo» của dòng thư mục trong danh sách (25/09/2026).
-        #  `created_by = 0` = hệ thống tự dựng (thư mục pháp nhân, nhóm «Công ty»).
+        #  Cột "Người tạo" / "Ngày tạo" của dòng thư mục trong danh sách (25/09/2026).
+        #  `created_by = 0` = hệ thống tự dựng (thư mục pháp nhân, nhóm "Công ty").
         "created_at": f.created_at,
         "created_by_name": (creators or {}).get(f.created_by or 0, "") if f.created_by else "Hệ thống",
     }
@@ -234,8 +234,8 @@ def get_detail(db: Session, folder: DocFolder, user) -> dict:
     company_names = _company_names(db, {folder.company_id})
     company_short_names = _company_short_names(db, {folder.company_id})
     #  Đếm CẢ NHÁNH phải có mặt thư mục con — chỉ đưa `[folder]` thì
-    #  `document_count_branch` = số trực tiếp, và tiêu đề thư mục gốc «Công ty»
-    #  ghi «0 văn bản» trong khi bảng (mặc định «Gồm thư mục con») liệt kê 7
+    #  `document_count_branch` = số trực tiếp, và tiêu đề thư mục gốc "Công ty"
+    #  ghi "0 văn bản" trong khi bảng (mặc định "Gồm thư mục con") liệt kê 7
     #  (lỗi người dùng chụp 24/09/2026). Cùng bộ lọc thấy/lưu trữ với `tree()`.
     branch_folders = _filter_visible(
         db.query(DocFolder).filter(DocFolder.path.like(f"{folder.path}%")),
@@ -253,8 +253,8 @@ def get_detail(db: Session, folder: DocFolder, user) -> dict:
                  _creator_names(db, {folder.created_by}))
     node["description"] = folder.description
     node["breadcrumb"] = crumbs.get(folder.id, [])
-    #  Hộp «Chia sẻ» kiểu Drive cần đọc ĐÚNG mức mặc định đang khai để hiện sẵn
-    #  trong ô chọn «Quyền chung» (rà UI 23/09/2026 — trước nay cột này chỉ
+    #  Hộp "Chia sẻ" kiểu Drive cần đọc ĐÚNG mức mặc định đang khai để hiện sẵn
+    #  trong ô chọn "Quyền chung" (rà UI 23/09/2026 — trước nay cột này chỉ
     #  NHẬN qua `FolderUpdate`, chưa từng có mặt trong response nào, nên ô chọn
     #  luôn hiện placeholder dù đã có giá trị). Chỉ thêm ở CHI TIẾT — `tree()`
     #  không cần, giữ nguyên hình dạng cũ để không phình response của MỌI nút.

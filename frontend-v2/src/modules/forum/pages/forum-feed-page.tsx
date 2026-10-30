@@ -14,12 +14,12 @@ import { useInfiniteSentinel } from '../hooks/use-infinite-sentinel'
 import { useNewPostSignal } from '../hooks/use-new-post-signal'
 import { usePinnedPosts } from '../hooks/use-pinned-posts'
 
-/** Dải ghim chỉ chiếm chỗ này trên Bảng tin — còn lại xem ở tab «Thông báo». */
+/** Dải ghim chỉ chiếm chỗ này trên Bảng tin — còn lại xem ở tab "Thông báo". */
 const MAX_PINNED_ON_FEED = 2
 
 /**
  * Bảng tin: ô đăng bài trên cùng (F3), cuộn vô hạn bằng lính canh
- * IntersectionObserver ở đáy danh sách, kèm nút nổi «Có bài viết mới» khi máy
+ * IntersectionObserver ở đáy danh sách, kèm nút nổi "Có bài viết mới" khi máy
  * chủ đã có bài mới hơn màn hình.
  */
 export function ForumFeedPage() {

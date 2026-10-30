@@ -107,7 +107,7 @@ def test_confirm_rejects_missing_tampered_foreign_wrong_kind_and_reused_drafts(o
     cap_quyen(org.kt.id, "ai_skill", scope="all", read=True, write=True)
     assert "không phải của bạn" in _confirm(db, org.kt, out)[0]["error"]
     cap_quyen(org.kt.id, "ai_skill", scope="all", read=True, write=True, approve=True)
-    assert "không phải «skill_publish»" in _confirm(db, admin, out, kind="skill_publish")[0]["error"]
+    assert "không phải \"skill_publish\"" in _confirm(db, admin, out, kind="skill_publish")[0]["error"]
     assert _confirm(db, admin, out)[0]["ok"]
     db.refresh(skill)
     assert skill.draft_body_md == "# Mới"

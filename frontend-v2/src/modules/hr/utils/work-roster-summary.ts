@@ -2,9 +2,9 @@ import type { WorkRosterCell, WorkRosterDay, WorkRosterItem } from '../types/wor
 import { describeRosterCell } from './work-roster-cell'
 
 /**
- * Hàng tổng đầu bảng: «Đang làm x / Nghỉ y» của MỘT ngày, tính trên các hàng đang xem.
+ * Hàng tổng đầu bảng: "Đang làm x / Nghỉ y" của MỘT ngày, tính trên các hàng đang xem.
  * Nhận sẵn bản đồ ngày → ô của từng hàng (`indexCellsByDate`) để tra O(1), không `find` lại.
- * «Nghỉ» gồm người nghỉ phép cả ngày + nghỉ theo lịch + ngày lễ.
+ * "Nghỉ" gồm người nghỉ phép cả ngày + nghỉ theo lịch + ngày lễ.
  */
 export function summarizeRosterDay(
   cellMaps: readonly ReadonlyMap<string, WorkRosterCell>[],
@@ -30,7 +30,7 @@ export interface WorkRosterDepartmentGroup {
 /**
  * Gom hàng theo phòng ban, giữ nguyên thứ tự backend trả (đã xếp phòng ban rồi tên).
  * Khóa là `department_id` — `0` là giá trị thật (nhân sự chưa có phòng ban), không
- * được coi như «không có».
+ * được coi như "không có".
  */
 export function groupByDepartment(items: readonly WorkRosterItem[]): WorkRosterDepartmentGroup[] {
   const groups = new Map<number, WorkRosterDepartmentGroup>()

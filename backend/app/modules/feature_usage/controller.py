@@ -1,4 +1,4 @@
-"""API báo cáo «Mức dùng chức năng» (duoc-CR-655, D0c) — `prefix=/api/feature-usage`, ReportKey 15.
+"""API báo cáo "Mức dùng chức năng" (duoc-CR-655, D0c) — `prefix=/api/feature-usage`, ReportKey 15.
 
 Gác KÉP như 13 báo cáo cũ: `require("setting", …)` VÀ `require_report(ReportKey.FEATURE_USAGE)` (mặc định chỉ admin).
 Chỉ số gom theo chức năng / phòng ban — không có đường xem theo từng người (muốn xem người → hồ sơ, khóa 14).

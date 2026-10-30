@@ -120,7 +120,7 @@ def count_unexpired_in_year(db: Session, model, year: int, cutoff: datetime) -> 
     ngoài mốc. Nó tồn tại vì bảng thứ tư: `tab_login_session` gom theo lúc MỞ
     nhưng hết hạn theo lúc ĐÓNG, nên trên giấy vẫn có ca một phiên mở cuối năm
     mà tới nay chưa đóng. Phiên sống tối đa 7 ngày nên ca đó gần như không xảy
-    ra — nhưng «gần như» không phải thứ để đánh cược với một thao tác không
+    ra — nhưng "gần như" không phải thứ để đánh cược với một thao tác không
     hoàn tác được.
     """
     start, end = year_bounds(year)
@@ -167,7 +167,7 @@ def drop_expired_partitions(db: Session, *, now: datetime, months: int = 0,
         table = model.__tablename__
         for year in partition.list_partition_years(db, table):
             #  Năm kết thúc lúc 01/01 năm sau; mốc đã làm tròn về đầu tháng nên
-            #  «cả năm nằm ngoài mốc» rút gọn đúng thành phép so năm này.
+            #  "cả năm nằm ngoài mốc" rút gọn đúng thành phép so năm này.
             if year >= cutoff.year:
                 continue
             missing = find_missing_archive_months(db, model, name, year)

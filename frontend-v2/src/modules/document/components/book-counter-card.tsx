@@ -64,7 +64,7 @@ export function BookCounterCard({ bookId, year, onYearChange }: BookCounterCardP
         ) : (
           <div className="grid gap-4 sm:grid-cols-3">
             <Figure label="Số kế tiếp" value={data.next_number_display} mono />
-            {/*  Bấm được → nhảy thẳng tab «Văn bản trong sổ» đúng NĂM đang xem
+            {/*  Bấm được → nhảy thẳng tab "Văn bản trong sổ" đúng NĂM đang xem
                  (duoc-CR-474, 23/09/2026). Số này chính là số dòng sẽ thấy ở tab đó,
                  nên là điểm bấm tự nhiên nhất để đi tra danh sách. */}
             <Figure
@@ -92,12 +92,12 @@ function Figure({
   label: string
   value: string
   mono?: boolean
-  /** Có thì số hiện thành liên kết — xem chỗ gọi cho «Đã cấp trong năm». */
+  /** Có thì số hiện thành liên kết — xem chỗ gọi cho "Đã cấp trong năm". */
   href?: string
 }) {
   //  `text-sm` — ĐÚNG cỡ của `shared/ui/read-only-value.tsx`, vì ba thứ này
   //  chính là ô chỉ xem chứ không phải tiêu đề.
-  //  Đã phải hạ hai lần: `text-lg` (18px) to hơn cả tiêu đề thẻ «Bộ đếm»
+  //  Đã phải hạ hai lần: `text-lg` (18px) to hơn cả tiêu đề thẻ "Bộ đếm"
   //  (16px), rồi `text-base` vẫn bị kêu to ở ô MÃ. Lý do ô mã trông to hơn
   //  hai ô kia dù cùng số đo: chữ đẳng khoảng có bề ngang và chiều cao chữ
   //  thường lớn hơn font giao diện ở cùng `font-size` (đo được: 16px mono

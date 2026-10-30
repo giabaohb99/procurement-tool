@@ -7,7 +7,7 @@ import { GRID_MIN_WIDTH } from '../utils/gantt-layout'
  * Bề rộng của LƯỚI TRÁI trên Gantt — người dùng kéo thanh chia đôi để đổi, nhớ
  * theo từng dự án.
  *
- * Vì sao phải có: lưới trái lấy cột từ bộ «Tùy chỉnh» dùng chung, mà một dự án
+ * Vì sao phải có: lưới trái lấy cột từ bộ "Tùy chỉnh" dùng chung, mà một dự án
  * khai năm bảy trường tùy biến là tổng bề rộng cột vượt cả màn hình — mở Gantt
  * ra chỉ thấy một cái bảng, không thấy biểu đồ đâu, phải cuộn ngang mới gặp.
  *

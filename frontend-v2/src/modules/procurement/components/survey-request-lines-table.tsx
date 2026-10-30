@@ -61,7 +61,7 @@ interface SurveyRequestLinesTableProps {
   lines: SurveyRequestLine[]
   editing: boolean
   /**
-   * bao-CR-547 — cho tick nhiều dòng rồi «Xóa đã chọn». Trang bật khi phiếu là form tạo hoặc
+   * bao-CR-547 — cho tick nhiều dòng rồi "Xóa đã chọn". Trang bật khi phiếu là form tạo hoặc
    * đang Nháp (đại ca chốt 01/10/2026); phiếu Bị trả lại vẫn xóa từng dòng như cũ.
    */
   bulkRemovable?: boolean
@@ -356,7 +356,7 @@ export function SurveyRequestLinesTable({
 
       case 'assignee':
         return canAssignNstm && line.id ? (
-          //  «Bỏ chọn» cũ nay là nút xóa của ô (trả về `''`), chỉ hiện khi đang có người.
+          //  "Bỏ chọn" cũ nay là nút xóa của ô (trả về `''`), chỉ hiện khi đang có người.
           <SearchSelect
             searchInTrigger
             clearable
@@ -507,7 +507,7 @@ function CatalogSelect({
   options: { value: string; label: string }[]
   onChange: (value: string) => void
 }) {
-  //  Mục «-- Phân loại --» / «-- ĐVT --» cũ (chọn để bỏ trống) nay là nút xóa của ô,
+  //  Mục "-- Phân loại --" / "-- ĐVT --" cũ (chọn để bỏ trống) nay là nút xóa của ô,
   //  cũng trả `''`. Ô gõ nằm bên trong nên viền đỏ phải nhắm vào `input`.
   return (
     <SearchSelect

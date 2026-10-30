@@ -52,10 +52,10 @@ interface SurveyLineCardProps {
  * HTML sai và trên máy cảm ứng hai vùng chạm đè nhau. Xếp cả ba thành hàng
  * ngang cùng cấp thì mỗi thứ có vùng chạm riêng.
  *
- * ⚠️ **Dấu «thiếu ô bắt buộc» là bắt buộc phải có.** Bấm *Gửi duyệt* mà còn ô
+ * ⚠️ **Dấu "thiếu ô bắt buộc" là bắt buộc phải có.** Bấm *Gửi duyệt* mà còn ô
  * trống thì bảng tô đỏ đúng ô đó — ở chế độ thẻ không còn ô nào để tô, nên
  * không có dấu này thì người dùng bấm Gửi duyệt, bị chặn, và KHÔNG có cách nào
- * biết dòng nào thiếu. Cùng họ với bẫy «ô sai ở tab đang ẩn» trong CLAUDE.md.
+ * biết dòng nào thiếu. Cùng họ với bẫy "ô sai ở tab đang ẩn" trong CLAUDE.md.
  */
 export function SurveyLineCard({
   table,

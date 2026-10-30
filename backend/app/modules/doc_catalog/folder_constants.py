@@ -5,7 +5,7 @@ Thiết kế đầy đủ: `frontend-v2/plans/260923-1000-van-ban-thu-muc-nguoi-
 from enum import IntEnum
 
 #  Sâu tối đa của cây, TÍNH CẢ gốc (gốc = 1). Đại ca mở từ 7 lên 100 ngày
-#  26/09/2026 — ngang trần của Google Drive; 7 cấp trừ tầng «Công ty» và tầng
+#  26/09/2026 — ngang trần của Google Drive; 7 cấp trừ tầng "Công ty" và tầng
 #  pháp nhân thì người dùng chỉ còn 5 cấp tự tạo, quá chật.
 MAX_DEPTH = 100
 
@@ -25,7 +25,7 @@ class FolderKind(IntEnum):
 
     COMPANY = 1   # thư mục pháp nhân — mỗi Company một dòng, tên lấy từ Company
     NORMAL = 2    # thư mục thường, nằm dưới một nhánh pháp nhân
-    #  Thư mục NHÓM «Công ty» ở gốc cây (24/09/2026) — chứa mọi thư mục pháp
+    #  Thư mục NHÓM "Công ty" ở gốc cây (24/09/2026) — chứa mọi thư mục pháp
     #  nhân. Đúng MỘT dòng, `company_id = 0`, AI thấy cây cũng thấy nó (chỉ là
     #  lối vào), không xóa/chuyển được.
     COMPANY_GROUP = 3

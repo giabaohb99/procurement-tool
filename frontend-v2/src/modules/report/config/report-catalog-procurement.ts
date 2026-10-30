@@ -67,7 +67,7 @@ export const PROCUREMENT_REPORT_CATALOG: ReportCatalogEntry[] = [
     entity: 'purchase_request',
     group: 'Thu mua',
     endpoint: '/api/purchase-progress/summary',
-    //  KHÔNG lấy `on_time_rate` — Báo cáo mua hàng đã có thẻ «Giao đúng hạn» cùng tên trên Tổng quan.
+    //  KHÔNG lấy `on_time_rate` — Báo cáo mua hàng đã có thẻ "Giao đúng hạn" cùng tên trên Tổng quan.
     overviewKpis: ['late_deliveries'],
     load: async () =>
       (await import('../pages/purchase-progress-chart-page')).PurchaseProgressChartPage,

@@ -6,7 +6,7 @@ export interface CustomsSavedFilter {
   name: string
   /** Chuỗi tham số URL của trang tra cứu (`q=…&hs_code=…`), giữ nguyên, không tách cột. */
   params: string
-  /** Chưa dùng — cột chừa sẵn để sau mở «bộ lọc chung». */
+  /** Chưa dùng — cột chừa sẵn để sau mở "bộ lọc chung". */
   is_shared: boolean
   updated_at: string | null
 }
@@ -23,9 +23,9 @@ export const CUSTOMS_ROW_STATUS = {
   DUPLICATE: 3,
   /** bao-CR-541 — giống hệt một dòng đã có trong bảng giá, bỏ qua. */
   EXISTING: 4,
-  /** bao-CR-608 — ô «ID» trỏ đúng một dòng đã có → ghi đè dòng đó. */
+  /** bao-CR-608 — ô "ID" trỏ đúng một dòng đã có → ghi đè dòng đó. */
   UPDATED: 5,
-  /** bao-CR-608 — ô «Thao tác» = xóa, ID có thật → xóa dòng đó. */
+  /** bao-CR-608 — ô "Thao tác" = xóa, ID có thật → xóa dòng đó. */
   DELETED: 6,
   /** bao-CR-608 — xóa mà ID trống / không có, hoặc ID đã xử lý ở dòng trên → bỏ qua. */
   IGNORED: 7,

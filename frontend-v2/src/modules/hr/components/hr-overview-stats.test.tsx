@@ -46,7 +46,7 @@ describe('HrOverviewStats', () => {
   it('nói rõ "không có quyền xem" thay vì khẳng định hồ sơ đã khai đủ', () => {
     //  Thiếu `employee.read` thì `useHrOverview` tắt truy vấn, mọi con số về 0.
     //  0 ở đây KHÔNG phải "không có ai" — thẻ phải nói ra, nếu không người dùng
-    //  đọc «Hồ sơ cần bổ sung 0 — Đã khai đủ» và tin là thật (bắt được khi bấm
+    //  đọc "Hồ sơ cần bổ sung 0 — Đã khai đủ" và tin là thật (bắt được khi bấm
     //  tay trên trình duyệt, 19/09/2026).
     render(
       <HrOverviewStats

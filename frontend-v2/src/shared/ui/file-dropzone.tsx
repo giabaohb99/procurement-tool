@@ -9,8 +9,8 @@ interface FileDropzoneProps {
   /** Dòng chữ chính giữa vùng thả. */
   hint?: string
   /**
-   * Dòng chữ NHỎ dưới dòng gợi ý — thường là «định dạng nhận · dung lượng tối
-   * đa», để người dùng biết trước tệp nào sẽ bị từ chối thay vì chọn xong mới
+   * Dòng chữ NHỎ dưới dòng gợi ý — thường là "định dạng nhận · dung lượng tối
+   * đa", để người dùng biết trước tệp nào sẽ bị từ chối thay vì chọn xong mới
    * ăn lỗi. Khác `children`: dòng này vẫn nằm trong vùng bấm được.
    */
   description?: string

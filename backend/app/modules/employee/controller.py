@@ -29,6 +29,9 @@ def list_employees(
     query = apply_filters(db.query(service.Employee), service.Employee, request, service.FILTERABLE)
     query = service.apply_keyword_search(query, request.query_params.get("search"))
     query = apply_scope(query, service.Employee, "employee", user, get_perm_profile(db, user))
+    #  duoc-CR-693: không sắp xếp theo lương — thứ tự cũng là thông tin (kéo xuống để biết ai lương cao nhất).
+    if (request.query_params.get("sort_by") or "").strip() in (*sensitive.SALARY_FIELDS, "salary_updated_at"):
+        raise HTTPException(400, "Không sắp xếp theo lương")
     query = apply_sort_from_request(query, service.Employee, request)
     total, items = service.list_employees(db, query, pg)
     rows = [EmployeeOut.model_validate(i).model_dump() for i in items]
@@ -59,7 +62,7 @@ def get_my_employee(db: Session = Depends(get_db), user=Depends(get_current_user
 
     Nhóm trường nhạy cảm vẫn đi qua `sensitive.mask` như mọi cửa khác; nhánh
     `self` của `can_read_sensitive` cho chính chủ đọc đủ — chính là ca mà ghi chú
-    ở đó đã lường trước («chặn thì màn Trang cá nhân rỗng một nửa với chính chủ»).
+    ở đó đã lường trước ("chặn thì màn Trang cá nhân rỗng một nửa với chính chủ").
 
     Tài khoản chưa gắn nhân sự (admin, tài khoản hệ thống) trả `None` kèm câu
     giải thích, KHÔNG phải 404: đó là trạng thái hợp lệ, không phải lỗi.
@@ -81,7 +84,7 @@ def _my_detail(db: Session, user, obj) -> dict:
     """Bản chi tiết hồ sơ của chính mình, đi qua `sensitive.mask` như mọi cửa."""
     data = EmployeeDetailOut.model_validate(obj).model_dump()
     profile = get_perm_profile(db, user)
-    return sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id))
+    return sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id), profile)
 
 
 # ── Tự sửa LIÊN HỆ ở Trang cá nhân (bao-CR-508) ─────────────────────────────
@@ -90,7 +93,7 @@ def _my_detail(db: Session, user, obj) -> dict:
 #  khác. Schema `SelfContactUpdate` / `SelfContactsIn` cấm khóa lạ — gửi kèm
 #  `department_id` hay `bank_account_no` là 422, không phải lờ đi.
 #
-#  ⚠️ Cả ba cửa phải khai TRƯỚC `/{eid}` và `/{eid}/contacts`: «me» rơi vào
+#  ⚠️ Cả ba cửa phải khai TRƯỚC `/{eid}` và `/{eid}/contacts`: "me" rơi vào
 #  `eid: int` là 422 chứ FastAPI không dò tiếp route sau.
 
 @router.patch("/me/contact")
@@ -136,13 +139,13 @@ def set_my_contacts(data: SelfContactsIn, db: Session = Depends(get_db),
 
 
 #  ⚠️ `/me` phải khai TRƯỚC `/{eid}`: FastAPI dò route theo thứ tự khai, để sau
-#  thì «me» rơi vào `eid: int` và trả 422 thay vì chạy hàm trên.
+#  thì "me" rơi vào `eid: int` và trả 422 thay vì chạy hàm trên.
 @router.get("/{eid}")
 def get_employee(eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "read"))):
     obj = service.get_employee(db, eid)
     data = EmployeeDetailOut.model_validate(obj).model_dump()
     profile = get_perm_profile(db, user)
-    return success(sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id)))
+    return success(sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id), profile))
 
 
 @router.get("/{eid}/pending-work")
@@ -329,22 +332,23 @@ def update_employee(
     eid: int, data: EmployeeUpdate, db: Session = Depends(get_db),
     user=Depends(require("employee", "write")),
 ):
-    #  ⚠️ Đổi ô «Phòng ban» của hồ sơ CŨNG là đổi phạm vi dữ liệu người đó nhìn
+    #  ⚠️ Đổi ô "Phòng ban" của hồ sơ CŨNG là đổi phạm vi dữ liệu người đó nhìn
     #  thấy — y hệt thêm một phòng kiêm nhiệm. Trước CR-167 cửa này không có chốt
     #  nào: vai trò `employee.write` phạm vi *own* là có thật, nên tự đổi phòng
     #  của mình sang phòng khác là đọc được dữ liệu phòng đó, không cần đụng tới
     #  màn Phân quyền. Hai cửa cùng đổi một thứ thì phải cùng một luật.
     #
     #  ⚠️ Chỉ chặn khi phòng ban ĐỔI THẬT (bao-CR-507). Màn hồ sơ gửi lại MỌI ô mỗi
-    #  lần lưu, kể cả ô phòng ban không ai đụng tới — chặn theo «có gửi» thì người có
-    #  `employee.write` sửa số điện thoại của chính mình cũng ăn câu «không tự đổi
-    #  phòng ban», dù họ không đổi gì ở đó.
+    #  lần lưu, kể cả ô phòng ban không ai đụng tới — chặn theo "có gửi" thì người có
+    #  `employee.write` sửa số điện thoại của chính mình cũng ăn câu "không tự đổi
+    #  phòng ban", dù họ không đổi gì ở đó.
     #
     #  bao-CR-533: nạp hồ sơ QUA PHẠM VI (404 nếu ngoài). Trước đây cửa này chỉ có
     #  `require("employee", "write")`: gõ thẳng id lên URL là sửa được hồ sơ — kể cả EMAIL, mà email
     #  hồ sơ kéo theo email tài khoản (bao-CR-472) và email đó là khóa đăng nhập Google.
     profile = get_perm_profile(db, user)
     current = _employee_in_scope(db, eid, user, profile, "write")
+    _block_self_salary_change(data, profile, current)
     if (data.department_id is not None
             and int(data.department_id or 0) != int(current.department_id or 0)):
         department_service.block_edit_own_department(db, eid, user)
@@ -352,6 +356,20 @@ def update_employee(
 
     obj = service.update_employee(db, eid, data, user.id)
     return success(_masked(db, obj, user), "Đã cập nhật")
+
+
+def _block_self_salary_change(data: EmployeeUpdate, profile, current) -> None:
+    """duoc-CR-693: không ai tự đổi lương / phụ cấp của CHÍNH MÌNH (kể cả quản trị) → 403.
+
+    Chỉ chặn khi giá trị THỰC SỰ ĐỔI: chính chủ đọc được số của mình, nên màn hồ sơ gửi lại nguyên giá trị cũ
+    mỗi lần lưu một ô khác — chặn theo "có gửi" thì họ không sửa nổi số điện thoại. `None` = không đổi.
+    """
+    if not sensitive.is_self(profile, current.id):
+        return
+    for field in sensitive.SALARY_FIELDS:
+        new = getattr(data, field, None)
+        if new is not None and int(new) != int(getattr(current, field) or 0):
+            raise HTTPException(403, "Không được tự sửa lương / phụ cấp của chính mình — nhờ người khác trong phòng Nhân sự")
 
 
 def _masked(db: Session, obj, user) -> dict:
@@ -363,8 +381,8 @@ def _masked(db: Session, obj, user) -> dict:
     đường vòng không cần biết gõ gì đặc biệt.
     """
     data = EmployeeOut.model_validate(obj).model_dump()
-    allowed = sensitive.can_read_sensitive(get_perm_profile(db, user), obj.id)
-    return sensitive.mask(data, allowed)
+    profile = get_perm_profile(db, user)
+    return sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id), profile)
 
 
 def _employee_in_scope(db, eid: int, user, profile, action: str = "read"):
@@ -400,9 +418,9 @@ def list_employee_departments(
 ):
     """Phòng chính + phòng kiêm nhiệm, TÁCH BẠCH hai khóa.
 
-    Không gộp thành một danh sách rồi quy ước «phần tử đầu là phòng chính»: đó
-    là một luật ngầm mà người dùng không có cách nào biết, và nó làm ô «Phòng
-    ban» của hồ sơ thành thừa.
+    Không gộp thành một danh sách rồi quy ước "phần tử đầu là phòng chính": đó
+    là một luật ngầm mà người dùng không có cách nào biết, và nó làm ô "Phòng
+    ban" của hồ sơ thành thừa.
     """
     emp = _employee_in_scope(db, eid, user, get_perm_profile(db, user))
     return success({"primary_department_id": emp.department_id or 0,
@@ -416,7 +434,7 @@ def set_employee_departments(
 ):
     """KIÊM NHIỆM — đặt lại các phòng phụ trách THÊM. Phòng chính giữ nguyên.
 
-    Phòng chính đổi ở ô «Phòng ban» của hồ sơ (`PATCH /employees/{id}`) — hai
+    Phòng chính đổi ở ô "Phòng ban" của hồ sơ (`PATCH /employees/{id}`) — hai
     thao tác khác nhau thì hai cửa khác nhau. Cả hai cửa đều qua đúng ba chốt
     chống vượt quyền dưới đây, vì cả hai đều đổi phạm vi dữ liệu người đó nhìn
     thấy. Lý lẽ đầy đủ ở `employee/department_service.py`.
@@ -586,13 +604,15 @@ def export_employees_csv(
         if id_list:
             query = query.filter(Employee.id.in_(id_list))
 
-    #  duoc-CR-675: «Phòng ban» đọc qua quan hệ — không nạp trước thì MỖI dòng một truy vấn (2000 hồ sơ = 2000 lượt).
+    #  duoc-CR-675: "Phòng ban" đọc qua quan hệ — không nạp trước thì MỖI dòng một truy vấn (2000 hồ sơ = 2000 lượt).
     items = query.options(selectinload(Employee.department)).order_by(Employee.id.desc()).all()
     headers_map = {
         "code": "Mã NV",
         "full_name": "Họ tên",
         "email": "Email",
         "phone": "Số điện thoại",
+        "phone_label": "Nhãn số chính",
+        "extra_phones_text": "Số điện thoại khác",   # duoc-CR-694
         "department_name": "Phòng ban",
         "position": "Vị trí",          # CR-022: chức danh hiển thị, KHÔNG phải phân quyền
         # B-03: xuất NHÃN chứ không xuất mã. Cột này người dùng mở bằng Excel để đọc và
@@ -624,7 +644,7 @@ def export_employees_xlsx(
     id_list = parse_ids(ids)
     if id_list:
         query = query.filter(Employee.id.in_(id_list))
-    #  duoc-CR-675: «Phòng ban» + «Công ty» đọc qua quan hệ — nạp trước, không thì mỗi dòng một truy vấn.
+    #  duoc-CR-675: "Phòng ban" + "Công ty" đọc qua quan hệ — nạp trước, không thì mỗi dòng một truy vấn.
     items = (query.options(selectinload(Employee.department), selectinload(Employee.company))
              .order_by(Employee.id.desc()).all())
     check_row_limit(len(items))
@@ -634,6 +654,8 @@ def export_employees_xlsx(
         Col("full_name", "Họ tên", width=28),
         Col("email", "Email", width=24),
         Col("phone", "Số điện thoại", width=16),
+        Col("phone_label", "Nhãn số chính", width=14),
+        Col("extra_phones_text", "Số điện thoại khác", width=34),   # duoc-CR-694
         Col("department_name", "Phòng ban", width=22),
         Col("company_name", "Công ty", width=22),
         Col("position", "Vị trí", width=18),
@@ -651,7 +673,7 @@ def import_employees_csv(
 ):
     """duoc-CR-628: Nhập CSV nhân sự đã NGỪNG. Đường cũ ghi thẳng cột, bỏ qua chốt của màn hồ sơ
     (vòng quản lý, nhãn chức vụ, khóa tài khoản khi nghỉ việc, phạm vi dữ liệu) và cho phép xóa hàng
-    loạt. Thay bằng «Nhập Excel» (có chạy thử + hoàn tác)."""
+    loạt. Thay bằng "Nhập Excel" (có chạy thử + hoàn tác)."""
     raise HTTPException(
-        410, "Nhập CSV nhân sự đã ngừng. Dùng «Nhập Excel» ở màn Nhân sự (ERP v2) — "
+        410, "Nhập CSV nhân sự đã ngừng. Dùng \"Nhập Excel\" ở màn Nhân sự (ERP v2) — "
              "có chạy thử và hoàn tác.")

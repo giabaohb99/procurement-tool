@@ -89,7 +89,7 @@ function boxOf(label: RegExp) {
 }
 
 describe('LeaveRequestPrintPage', () => {
-  //  06/10/2026 — mẫu Word 2026 «ĐƠN XIN NGHỈ PHÉP / NGHỈ CHẾ ĐỘ»: Quốc hiệu thay logo, ba mục
+  //  06/10/2026 — mẫu Word 2026 "ĐƠN XIN NGHỈ PHÉP / NGHỈ CHẾ ĐỘ": Quốc hiệu thay logo, ba mục
   //  đánh số, ba ô loại hình nghỉ, hai ô ký. Mẫu cũ (logo + ba cột ký có P.HCNS) không còn.
   it('renders the 2026 leave form with national header, three numbered sections and two signatures', () => {
     testRequest.current = mockRequest({ company_name: 'Công ty CP DEGO Holding' })
@@ -150,7 +150,7 @@ describe('LeaveRequestPrintPage', () => {
     expect(boxOf(/Nghỉ chế độ bảo hiểm/)).toHaveAccessibleName('Chưa đánh dấu')
   })
 
-  //  Tên mẫu tệp Word là «Chế độ thai sản» — nghỉ thai sản phải rơi đúng ô bảo hiểm.
+  //  Tên mẫu tệp Word là "Chế độ thai sản" — nghỉ thai sản phải rơi đúng ô bảo hiểm.
   it('ticks the insurance box for a maternity leave and leaves annual leave unticked', () => {
     testRequest.current = mockRequest({ leave_type_name: 'Nghỉ thai sản', total_days: 180 })
     render(
@@ -242,8 +242,8 @@ describe('LeaveRequestPrintPage', () => {
     expect(screen.getByText(/3 ngày\./)).toBeInTheDocument()
   })
 
-  it('prints one «Từ ngày … đến hết ngày …» sentence per period, never the outer range', () => {
-    //  duoc-CR-683 — in bao ngoài «27/10 → 07/11» là tờ giấy xin nghỉ cả tuần người đó đi làm.
+  it('prints one "Từ ngày … đến hết ngày …" sentence per period, never the outer range', () => {
+    //  duoc-CR-683 — in bao ngoài "27/10 → 07/11" là tờ giấy xin nghỉ cả tuần người đó đi làm.
     testRequest.current = mockRequest({
       from_date: '2026-10-27',
       to_date: '2026-11-07',

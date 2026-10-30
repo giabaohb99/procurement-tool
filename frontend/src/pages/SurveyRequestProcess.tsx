@@ -138,7 +138,7 @@ interface LineState {
 }
 
 const AVAIL_PAGE_SIZE = 8   // số dòng khảo sát khả dụng mỗi trang
-// bao-CR-487: phân loại của dòng dưới dạng danh sách lọc, và «ô lọc đang đúng bằng phân loại dòng».
+// bao-CR-487: phân loại của dòng dưới dạng danh sách lọc, và "ô lọc đang đúng bằng phân loại dòng".
 const lineGroupsOf = (lineGroup: string | undefined | null): string[] => (lineGroup ? [lineGroup] : [])
 const isLineGroupOnly = (groups: string[], lineGroup: string | undefined | null) => {
   const wanted = lineGroupsOf(lineGroup)
@@ -448,7 +448,7 @@ export default function SurveyRequestProcess() {
                 <i className="ti ti-filter" style={{ marginRight: 4 }} />Tìm kết quả khảo sát để thêm option
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                {/* bao-CR-487: hai ô chọn NHIỀU (trong một ô là HOẶC, hai ô là VÀ); nút «Bỏ lọc» xóa cả ba ô. */}
+                {/* bao-CR-487: hai ô chọn NHIỀU (trong một ô là HOẶC, hai ô là VÀ); nút "Bỏ lọc" xóa cả ba ô. */}
                 <div style={{ width: 260 }}>
                   <Select
                     isMulti

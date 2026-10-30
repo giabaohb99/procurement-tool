@@ -5,7 +5,7 @@
  * nhưng ban hành *Thông báo nghỉ lễ* cho toàn công ty **danh nghĩa
  * `hr@gmail.com`** — người nhận phải thấy thư đến từ phòng Hành chính.
  *
- * Mỗi hộp thư giữ bộ SMTP RIÊNG chứ không chỉ đổi dòng «Từ»: Gmail ghi đè `From`
+ * Mỗi hộp thư giữ bộ SMTP RIÊNG chứ không chỉ đổi dòng "Từ": Gmail ghi đè `From`
  * về đúng tài khoản đã đăng nhập trừ khi địa chỉ kia đã khai *Send mail as*, nên
  * chỉ đổi tiêu đề là người nhận vẫn thấy địa chỉ cũ — hỏng mà không báo.
  */
@@ -14,7 +14,7 @@ export interface Mailbox {
   code: string
   name: string
   email: string
-  /** Tên hiện trước địa chỉ: «Phòng Hành chính &lt;hr@gmail.com&gt;». */
+  /** Tên hiện trước địa chỉ: "Phòng Hành chính &lt;hr@gmail.com&gt;". */
   display_name: string
 
   smtp_host: string

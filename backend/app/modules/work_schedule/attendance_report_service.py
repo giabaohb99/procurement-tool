@@ -1,4 +1,4 @@
-"""Báo cáo C3 «Có mặt theo ngày» (duoc-CR-689, khóa 26) — `GET /api/attendance-report/summary`.
+"""Báo cáo C3 "Có mặt theo ngày" (duoc-CR-689, khóa 26) — `GET /api/attendance-report/summary`.
 
 Đơn vị là NGƯỜI-NGÀY: mỗi người × mỗi ngày họ phải làm (xem `attendance_report_data.py`).
 Chỉ số cộng được: phải làm · nghỉ (đơn đã duyệt) · có mặt; tỷ lệ có mặt / vắng là chỉ số dẫn xuất.
@@ -24,7 +24,7 @@ from .attendance_report_data import DayRow, check_period, load_day_rows
 METRICS = {"on_leave": "Người-ngày nghỉ (đã duyệt)"}     # chỉ số có danh sách `/rows`
 LEAVE_KEYS = ("on_leave", "present", "present_rate", "absence_rate")
 NO_LEAVE_NOTE = ("Bạn chưa có quyền xem đơn nghỉ phép nên các chỉ số nghỉ, có mặt và tỷ lệ để trống; "
-                 "chỉ còn «Người-ngày phải làm».")
+                 "chỉ còn \"Người-ngày phải làm\".")
 COLUMNS = [Col("employee_code", "Mã NV"), Col("employee_name", "Họ tên"), Col("department", "Phòng ban"),
            Col("day", "Ngày", "date"), Col("leave_type", "Loại nghỉ"), Col("session", "Buổi")]
 
@@ -51,7 +51,7 @@ def _spec(dims: dict) -> ReportSpec:
 
 def _blank_leave(data: dict) -> None:
     """Thiếu quyền xem đơn nghỉ: GỠ hẳn các chỉ số liên quan nghỉ khỏi `meta` (màn hình và tệp Excel
-    không có cột đó — để `None` thì Excel quy về 0, đọc nhầm thành «không ai nghỉ», E2E 28/10/2026) và
+    không có cột đó — để `None` thì Excel quy về 0, đọc nhầm thành "không ai nghỉ", E2E 28/10/2026) và
     bỏ giá trị ở Tổng · xu hướng · nhóm."""
     data["meta"]["metrics"] = [m for m in data["meta"]["metrics"] if m["key"] not in LEAVE_KEYS]
 

@@ -17,6 +17,7 @@ MỘT bản.
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from . import phone_rules
 from .model import Employee
 from .schema import SelfContactUpdate
 
@@ -25,6 +26,8 @@ from .schema import SelfContactUpdate
 #  cùng khai là cố ý: schema là cửa, danh sách này là chốt thứ hai.
 SELF_CONTACT_FIELDS: dict[str, str] = {
     "phone": "số điện thoại",
+    "phone_label": "nhãn số chính",
+    "extra_phones": "số điện thoại khác",
     "permanent_address": "địa chỉ thường trú",
     "current_address": "địa chỉ hiện nay (tạm trú)",
 }
@@ -56,7 +59,17 @@ def update_own_contact(db: Session, emp: Employee, data: SelfContactUpdate,
     tường minh đọc thành chuỗi rỗng (xóa ô) — cột là `String NOT NULL` về nghĩa.
     """
     changed: list[str] = []
-    for key, value in data.model_dump(exclude_unset=True).items():
+    fields = data.model_dump(exclude_unset=True)
+    #  duoc-CR-694: số phụ là DANH SÁCH — gửi null = giữ nguyên, gửi [] = xóa hết; so cả danh sách.
+    #  Kiểm trùng số chính theo giá trị CUỐI CÙNG (người dùng có thể chỉ gửi một trong hai ô).
+    new_extras = fields.pop("extra_phones", None)
+    final_phone = (fields["phone"] or "").strip() if "phone" in fields else (emp.phone or "")
+    phone_rules.ensure_distinct_from_main(
+        final_phone, new_extras if new_extras is not None else emp.extra_phones)
+    if new_extras is not None and new_extras != list(emp.extra_phones or []):
+        emp.extra_phones = new_extras
+        changed.append(SELF_CONTACT_FIELDS["extra_phones"])
+    for key, value in fields.items():
         if key not in SELF_CONTACT_FIELDS:
             continue
         new_value = (value or "").strip()

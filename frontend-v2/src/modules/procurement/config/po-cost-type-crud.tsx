@@ -173,7 +173,7 @@ export const PO_COST_TYPE_CRUD_CONFIG: CrudConfig<PoCostType> = {
       type: 'select',
       required: true,
       options: GROUP_KIND_OPTIONS,
-      hint: '«Thuế nộp ngân sách» để tính chi phí nhập khẩu; «Dịch vụ» cho phí cước và dịch vụ.',
+      hint: '"Thuế nộp ngân sách" để tính chi phí nhập khẩu; "Dịch vụ" cho phí cước và dịch vụ.',
     },
     {
       name: 'creates_payable',

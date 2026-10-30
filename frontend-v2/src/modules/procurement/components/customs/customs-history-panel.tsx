@@ -1,7 +1,7 @@
 // bao-CR-470 — lịch sử các lần nạp dữ liệu hải quan (lô chạy thử + lô ghi thật), nhật ký
 // dòng của từng lô và nút hoàn tác.
 //
-// bao-CR-493: từ hộp thoại thành MỘT THẺ trên trang (thẻ «Lịch sử nạp», yêu cầu F11 của phòng
+// bao-CR-493: từ hộp thoại thành MỘT THẺ trên trang (thẻ "Lịch sử nạp", yêu cầu F11 của phòng
 // Thu mua) và thêm nút tải lại tệp GTT02 gốc — chỉ lô nạp qua màn hình mới có tệp (`has_file`),
 // lô nạp bằng script thì nút ẩn.
 //
@@ -13,7 +13,7 @@
 // nạp trước CR đã THAY dòng cũ (deleted_count > 0) thì không: dòng cũ đã xóa lúc ghi, hoàn tác
 // chỉ để lại một khoảng ngày trống — nút bị khóa kèm lời giải thích.
 //
-// bao-CR-608: thêm cột «Ghi đè» / «Xóa» (tệp có cột «ID» + «Thao tác»). Lô ghi đè / xóa có bản
+// bao-CR-608: thêm cột "Ghi đè" / "Xóa" (tệp có cột "ID" + "Thao tác"). Lô ghi đè / xóa có bản
 // chụp nên VẪN hoàn tác được: trả dòng ghi đè về bản cũ, dựng lại dòng đã xóa đúng id cũ.
 import { Download, ListTree, Undo2 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
@@ -129,8 +129,8 @@ export function CustomsHistoryPanel() {
         hideable: false,
         cell: (b) => b.created_count,
       },
-      //  bao-CR-608 — ghi đè theo cột «ID», xóa theo cột «Thao tác». Lô cũ (trước bao-CR-541) có
-      //  «Xóa» là số dòng cũ bị THAY — cột Thao tác khóa nút hoàn tác của lô đó.
+      //  bao-CR-608 — ghi đè theo cột "ID", xóa theo cột "Thao tác". Lô cũ (trước bao-CR-541) có
+      //  "Xóa" là số dòng cũ bị THAY — cột Thao tác khóa nút hoàn tác của lô đó.
       {
         key: 'updated_count',
         header: 'Ghi đè',
@@ -333,8 +333,8 @@ function BatchLogsDialog({ batch, onClose }: { batch: CustomsImportBatch; onClos
           )}
         </DialogHeader>
         {/* bao-CR-496: hai thẻ chứ không xếp dọc hai bảng — hộp chỉ cao 88% màn hình, xếp dọc thì
-             mỗi bảng còn thấy vài dòng. «Từng dòng» đứng trước: nó trả lời «lô này nạp ra sao»;
-             «Ghi chú» là cảnh báo / lỗi đọc tệp mức lô, y như trước 496. */}
+             mỗi bảng còn thấy vài dòng. "Từng dòng" đứng trước: nó trả lời "lô này nạp ra sao";
+             "Ghi chú" là cảnh báo / lỗi đọc tệp mức lô, y như trước 496. */}
         <Tabs defaultValue="rows" className="flex min-h-0 flex-1 flex-col gap-3">
           <TabsList className="self-start">
             <TabsTrigger value="rows">Kết quả từng dòng</TabsTrigger>

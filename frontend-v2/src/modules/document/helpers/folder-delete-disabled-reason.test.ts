@@ -25,7 +25,7 @@ describe('folderDeleteDisabledReason', () => {
     expect(folderDeleteDisabledReason({ my_level: 0 })).toBe('Cần quyền Quản lý')
   })
 
-  //  Đại ca chốt 24/09/2026: thư mục công ty + nhóm «Công ty» không xóa được,
+  //  Đại ca chốt 24/09/2026: thư mục công ty + nhóm "Công ty" không xóa được,
   //  kể cả người có quyền Quản lý.
   it.each([FOLDER_KIND.company, FOLDER_KIND.companyGroup])(
     'company folders (kind %s) are locked even at Manage level',

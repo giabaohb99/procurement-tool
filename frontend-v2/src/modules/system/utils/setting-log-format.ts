@@ -2,7 +2,7 @@
  * Đọc câu nhật ký của màn *Cấu hình hệ thống* (bao-CR-461 ở bản cũ, bao-CR-462 ở bản này).
  *
  * Backend ghi `message` thành nhiều dòng: dòng đầu là câu tóm tắt, mỗi ô đã đổi
- * một dòng dạng «Nhãn: trước -> sau» (xem `backend/app/modules/setting/service.py`).
+ * một dòng dạng "Nhãn: trước -> sau" (xem `backend/app/modules/setting/service.py`).
  * Hai hàm ở đây chỉ TÁCH lại câu đó ra để bày cho gọn — không tự dựng thêm chữ
  * nghĩa nào, vì câu gốc còn phải đọc được nguyên văn ở màn Nhật ký hệ thống.
  */
@@ -43,8 +43,8 @@ export interface SettingChangeLine {
 /**
  * Tách một dòng chi tiết thành ba phần để bày thành cột.
  *
- * Trả `null` khi dòng không có dạng đó — dòng của khóa bí mật («… đã đặt giá trị
- * mới») là một ca như vậy, và nó phải hiện nguyên văn chứ không được nuốt mất.
+ * Trả `null` khi dòng không có dạng đó — dòng của khóa bí mật ("… đã đặt giá trị
+ * mới") là một ca như vậy, và nó phải hiện nguyên văn chứ không được nuốt mất.
  */
 export function parseSettingChangeLine(line: string): SettingChangeLine | null {
   const arrowAt = line.indexOf(ARROW)
@@ -54,7 +54,7 @@ export function parseSettingChangeLine(line: string): SettingChangeLine | null {
   const after = line.slice(arrowAt + ARROW.length).trim()
 
   //  Nhãn lấy tới dấu hai chấm CUỐI CÙNG của vế trái. Nhãn thật có chứa dấu hai
-  //  chấm — «Yêu cầu mua hàng: bắt buộc thu mua duyệt lần 2» — nên cắt ở dấu đầu
+  //  chấm — "Yêu cầu mua hàng: bắt buộc thu mua duyệt lần 2" — nên cắt ở dấu đầu
   //  tiên là nhãn cụt và nửa sau của nhãn nhảy sang chỗ dành cho giá trị cũ.
   const sepAt = head.lastIndexOf(LABEL_SEP)
   if (sepAt < 0) return null

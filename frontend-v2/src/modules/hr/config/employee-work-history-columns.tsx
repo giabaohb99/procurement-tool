@@ -10,7 +10,7 @@ import { formatDate, toDateInputValue } from '@/shared/utils/format-date'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import { workHistoryOpenEndLabel } from '../utils/employee-work-history-display'
 
-/** Hành động trên mỗi dòng — chỉ dựng cột «Thao tác» khi truyền tham số này. */
+/** Hành động trên mỗi dòng — chỉ dựng cột "Thao tác" khi truyền tham số này. */
 export interface EmployeeWorkHistoryRowActions {
   onEdit: (row: EmployeeWorkHistory) => void
   onApply: (row: EmployeeWorkHistory) => void
@@ -23,14 +23,14 @@ interface BuildColumnsOptions {
   /** A9 (Q4) — mở được tệp hay chỉ thấy số lượng. */
   canOpenFiles: boolean
   onOpenFiles: (row: EmployeeWorkHistory) => void
-  /** Bỏ trống = không có cột «Thao tác» (dùng ở Trang cá nhân, phase 05). */
+  /** Bỏ trống = không có cột "Thao tác" (dùng ở Trang cá nhân, phase 05). */
   actions?: EmployeeWorkHistoryRowActions
 }
 
 /**
- * Ô «Tệp» (Q4) — xem mô tả ba nhánh ở `phase-04` §Thiết kế màn.
+ * Ô "Tệp" (Q4) — xem mô tả ba nhánh ở `phase-04` §Thiết kế màn.
  *
- * Xuất ra để dùng lại ở bảng «Quyết định bổ nhiệm»
+ * Xuất ra để dùng lại ở bảng "Quyết định bổ nhiệm"
  * (`employee-work-history-decision-columns.tsx`) và ở dòng thời gian
  * (`employee-work-history-timeline-row.tsx`) — cùng một luật A9/Q4, không chép
  * lại ba nhánh (có tệp+có quyền / có tệp+không quyền / không tệp).
@@ -71,7 +71,7 @@ export function renderFileCell({
   )
 }
 
-/** Dựng bộ cột của bảng «Quá trình công tác». Dùng lại ở cả tab hồ sơ và Trang cá nhân. */
+/** Dựng bộ cột của bảng "Quá trình công tác". Dùng lại ở cả tab hồ sơ và Trang cá nhân. */
 export function buildEmployeeWorkHistoryColumns({
   canOpenFiles,
   onOpenFiles,

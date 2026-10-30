@@ -85,7 +85,7 @@ def _check_session(db: Session, user, claims: dict) -> None:
 
     Đặt ở đây chứ không ở middleware vì **chỉ chỗ này biết lượt gọi có cần đăng
     nhập hay không**: `Depends(get_current_user)` là nguồn sự thật duy nhất của
-    điều đó. Middleware muốn chặn thì phải nuôi một danh sách «đường công khai»
+    điều đó. Middleware muốn chặn thì phải nuôi một danh sách "đường công khai"
     song song, mà danh sách đó lệch theo hai chiều đều hỏng — lệch thiếu thì
     khóa luôn `/login`, lệch thừa thì endpoint mới lặng lẽ không được gác.
 
@@ -99,8 +99,8 @@ def _check_session(db: Session, user, claims: dict) -> None:
     #  MỌI NGƯỜI bị đăng xuất một lần — đã báo trước trong dòng change-log.
     if not token_id:
         raise HTTPException(401, SESSION_EXPIRED_MESSAGE)
-    #  So `ver` với `tab_user` — KHÔNG qua đệm nào, nên «đăng xuất mọi thiết bị»
-    #  và «khóa tài khoản» có hiệu lực ngay lượt gọi kế tiếp. Dòng `db.get` ở
+    #  So `ver` với `tab_user` — KHÔNG qua đệm nào, nên "đăng xuất mọi thiết bị"
+    #  và "khóa tài khoản" có hiệu lực ngay lượt gọi kế tiếp. Dòng `db.get` ở
     #  `get_current_user` đằng nào cũng chạy, nên phép so này tốn 0 truy vấn.
     if int(claims.get("ver") or 0) != int(getattr(user, "token_version", 1) or 1):
         raise HTTPException(401, SESSION_EXPIRED_MESSAGE)

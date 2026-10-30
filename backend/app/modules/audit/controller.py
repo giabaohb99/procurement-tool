@@ -62,7 +62,7 @@ def _guard(db: Session, user, entity: str | None, entity_id: int | None):
     * **Widget lịch sử** — luôn kèm `entity` (+ `entity_id`). Đòi đúng quyền đọc
       chứng từ đó, rồi soi phạm vi của CHÍNH bản ghi đó. Người mở được trang chi
       tiết thì qua được cả hai, nên không màn nào gãy.
-    * **Màn «Nhật ký hệ thống»** — không truyền `entity`. Đây là lối duyệt toàn
+    * **Màn "Nhật ký hệ thống"** — không truyền `entity`. Đây là lối duyệt toàn
       hệ, đòi khóa quản trị. Giao diện v2 đã gác menu đó bằng `setting`
       (`system/routes.tsx:57`); backend nay gác cho khớp. Nhận **`read` HOẶC
       `write`** vì vai trò có thể cấp `write` mà không cấp `read` — chặt hơn
@@ -121,7 +121,7 @@ def _guard(db: Session, user, entity: str | None, entity_id: int | None):
 
     cond = scope_condition(model, entity, user, get_perm_profile(db, user), "read")
     if cond is None:
-        return None          # phạm vi «tất cả» — không phải lọc gì thêm
+        return None          # phạm vi "tất cả" — không phải lọc gì thêm
 
     if entity_id is not None:
         if db.query(model.id).filter(model.id == entity_id, cond).first() is None:
@@ -199,7 +199,7 @@ def list_logs(
             "entity_id": l.entity_id,
             "action": l.action,
             #  Qua hàm chứ không tra thẳng bảng: hàm còn nhận cả HỌ mã theo tiền
-            #  tố (`tool:list_pr` → «Trợ lý AI gọi công cụ ‹list_pr›»), thứ mà
+            #  tố (`tool:list_pr` → "Trợ lý AI gọi công cụ ‹list_pr›"), thứ mà
             #  tra bảng phẳng luôn trượt.
             "action_label": label_of_action(l.action),
             "message": l.message,
@@ -208,7 +208,7 @@ def list_logs(
             "at": l.created_at,
             #  bao-CR-407: ba ô để dòng thời gian của từng phiếu nối được sang màn
             #  `/system/logs`. `request_id` RỖNG với dòng ghi trước P1 — giao diện
-            #  phải tự ẩn nút «Xem chi tiết» khi rỗng, đừng dựng đường dẫn tới
+            #  phải tự ẩn nút "Xem chi tiết" khi rỗng, đừng dựng đường dẫn tới
             #  chuỗi trống. Hai ô còn lại cho biết lượt đó có gì để xem không.
             "request_id": request_id_text(l.request_id),
             "changed_fields": l.changed_fields,

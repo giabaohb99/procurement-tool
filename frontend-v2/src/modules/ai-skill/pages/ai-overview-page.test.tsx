@@ -9,8 +9,8 @@ import { AiOverviewPage } from './ai-overview-page'
 
 /**
  * Tổng quan (G1). Đường `ai-overview` đòi `agent_group.read`: thiếu quyền thì trang phải tự nói rõ và KHÔNG gọi để ăn
- * 403. Bảng «Skill được đọc nhiều» chỉ có `skill_id` — phải tra ra tên, tra không được thì in «Skill #id» chứ không
- * để dòng trống. Máy chủ ERP không trả lời thì `skills = null` — thẻ số in «—», không in 0 như thể kho rỗng.
+ * 403. Bảng "Skill được đọc nhiều" chỉ có `skill_id` — phải tra ra tên, tra không được thì in "Skill #id" chứ không
+ * để dòng trống. Máy chủ ERP không trả lời thì `skills = null` — thẻ số in "—", không in 0 như thể kho rỗng.
  */
 
 const apiGet = vi.fn()
@@ -95,7 +95,7 @@ describe('AiOverviewPage', () => {
 })
 
 /**
- * kh-AI2-4 — khối «Sức khỏe dịch vụ AI» (`service_health`). `null` = không đọc được Redis: in «Không đọc được», không
+ * kh-AI2-4 — khối "Sức khỏe dịch vụ AI" (`service_health`). `null` = không đọc được Redis: in "Không đọc được", không
  * in 0 (0 nghĩa là KHÔNG CÓ lỗi, ngược hẳn ý). `counting_5xx = false` (dịch vụ AI chạy nhúng trong ERP) thì máy chủ
  * không đếm 5xx — ô đó không được in số, và câu `note` phải hiện để người đọc biết vì sao.
  */
@@ -119,7 +119,7 @@ describe('AiOverviewPage — sức khỏe dịch vụ AI (kh-AI2-4)', () => {
     expect(within(block).queryByText('Không đọc được')).not.toBeInTheDocument()
   })
 
-  it('says «Không đọc được» for every null value instead of printing 0', async () => {
+  it('says "Không đọc được" for every null value instead of printing 0', async () => {
     withHealth({ errors_5xx_24h: null, queues: { celery: null, agent_code: null }, counting_5xx: true, note: NOTE })
     const block = await screen.findByRole('region', { name: 'Sức khỏe dịch vụ AI' })
     expect(within(block).getAllByText('Không đọc được')).toHaveLength(3)

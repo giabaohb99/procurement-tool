@@ -102,7 +102,7 @@ describe('buildGroupThread', () => {
   })
 
   it('puts a day separator using Vietnam time, not the UTC date', () => {
-    //  23:30 UTC ngày 07 = 06:30 sáng ngày 08 giờ VN → phải nằm dưới «Hôm nay», không phải «Hôm qua».
+    //  23:30 UTC ngày 07 = 06:30 sáng ngày 08 giờ VN → phải nằm dưới "Hôm nay", không phải "Hôm qua".
     const items = buildGroupThread([msg(1, 'A', '2026-10-07T23:30:00')], now)
     expect(items[0]).toMatchObject({ kind: 'day', label: 'Hôm nay' })
   })

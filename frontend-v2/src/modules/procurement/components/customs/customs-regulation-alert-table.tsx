@@ -1,5 +1,5 @@
 // Bảng cảnh báo pháp lý theo từ khóa đang tra — dòng NẶNG NHẤT lên đầu (bao-CR-477): tra
-// «Ethylene glycol» ra bốn danh sách thì thứ cần thấy trước là dòng có nghĩa vụ.
+// "Ethylene glycol" ra bốn danh sách thì thứ cần thấy trước là dòng có nghĩa vụ.
 import { useMemo } from 'react'
 
 import { DataTable } from '@/shared/data-table'

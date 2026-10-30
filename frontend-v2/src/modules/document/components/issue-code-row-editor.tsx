@@ -18,7 +18,7 @@ interface IssueCodeRowEditorProps {
  * Nút lưu chỉ hiện khi giá trị đã đổi — bày sẵn một hàng nút cho 60 dòng thì
  * mắt không nhặt ra nổi dòng nào mình vừa sửa.
  *
- * Đơn vị **đã cấp số** thì phải bấm HAI lần: lần đầu đổi nút thành «Vẫn đổi» và
+ * Đơn vị **đã cấp số** thì phải bấm HAI lần: lần đầu đổi nút thành "Vẫn đổi" và
  * hiện câu hậu quả. Chốt D07 ở backend vẫn chặn lần bấm thứ nhất; lần thứ hai
  * gửi kèm `force` và đi vào nhật ký thao tác. Người dùng chốt như vậy
  * (21/08/2026) thay cho khóa cứng — nhưng khóa cứng chỉ được nới TẠI ĐÂY, các
@@ -54,7 +54,7 @@ export function IssueCodeRowEditor({ row, pending, onSave }: IssueCodeRowEditorP
           placeholder="(chưa có mã)"
           onChange={(event) => {
             setValue(event.target.value)
-            //  Sửa tiếp sau khi đã bấm «Vẫn đổi» thì phải hỏi lại từ đầu — câu
+            //  Sửa tiếp sau khi đã bấm "Vẫn đổi" thì phải hỏi lại từ đầu — câu
             //  cảnh báo vừa đọc nói về một giá trị khác.
             setXacNhan(false)
           }}
@@ -101,7 +101,7 @@ export function IssueCodeRowEditor({ row, pending, onSave }: IssueCodeRowEditorP
         <p className="col-span-3 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-700" />
           <span>
-            <b>{row.name}</b> đã có văn bản mang số với mã «{row.issue_code || '(trống)'}».
+            <b>{row.name}</b> đã có văn bản mang số với mã <strong>{row.issue_code || '(trống)'}</strong>.
             Số đã cấp giữ nguyên chuỗi cũ, số mới dùng mã mới — sổ sẽ có hai kiểu mã cạnh
             nhau. Lần đổi này đi vào nhật ký thao tác.
           </span>

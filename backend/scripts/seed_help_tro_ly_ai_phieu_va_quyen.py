@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Seed bài Trung tâm trợ giúp: TẠO, SỬA, XÓA PHIẾU VÀ XEM QUYỀN BẰNG TRỢ LÝ AI (ai-CR-159).
 
-Bài CON của bài «Trợ lý AI» (nhóm «Các chức năng khác»), cạnh bài «Lập bộ tài khoản thu mua bằng Trợ lý AI». Không
+Bài CON của bài "Trợ lý AI" (nhóm "Các chức năng khác"), cạnh bài "Lập bộ tài khoản thu mua bằng Trợ lý AI". Không
 đụng nội dung bài cha.
 
 Chạy trong container api (pipe stdin, không cần rebuild):
@@ -148,7 +148,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 
 
 def find_parent(db):
-    """Bài «Trợ lý AI»; nếu trùng tiêu đề thì ưu tiên bài nằm dưới «Các chức năng khác»."""
+    """Bài "Trợ lý AI"; nếu trùng tiêu đề thì ưu tiên bài nằm dưới "Các chức năng khác"."""
     candidates = db.query(HelpArticle).filter(HelpArticle.title == PARENT_TITLE).all()
     if not candidates:
         return None
@@ -187,7 +187,7 @@ def main():
     try:
         parent = find_parent(db)
         if parent is None:
-            print(f"Không thấy bài cha «{PARENT_TITLE}» — dừng, không tạo bài gốc mới.")
+            print(f"Không thấy bài cha '{PARENT_TITLE}' — dừng, không tạo bài gốc mới.")
             sys.exit(1)
 
         old = (
@@ -218,7 +218,7 @@ def main():
         )
         db.add(art)
         db.commit()
-        print(f"Đã dựng bài «{ARTICLE_TITLE}» (id={art.id}) dưới «{parent.title}» "
+        print(f"Đã dựng bài '{ARTICLE_TITLE}' (id={art.id}) dưới '{parent.title}' "
               f"(id={parent.id}, sort_order={order}).")
     except Exception:
         db.rollback()

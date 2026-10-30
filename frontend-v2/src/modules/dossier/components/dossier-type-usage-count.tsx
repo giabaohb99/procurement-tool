@@ -3,7 +3,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { useDossierTypeStats } from '../hooks/use-dossier-type-stats'
 
 /**
- * Ô «Hồ sơ đang dùng» của bảng danh mục Loại hồ sơ.
+ * Ô "Hồ sơ đang dùng" của bảng danh mục Loại hồ sơ.
  *
  * ⚠️ **Hook gọi trong TỪNG Ô, và đó không phải N+1.** TanStack Query gom theo
  * khóa: mọi ô dùng chung `['dossier','dossier-types','stats']` nên cả bảng chỉ
@@ -18,7 +18,7 @@ import { useDossierTypeStats } from '../hooks/use-dossier-type-stats'
  *
  * ⚠️ Con số này **lọc theo phạm vi dữ liệu** của người đang xem, nên nó có thể
  * NHỎ HƠN con số trong câu chặn xóa (chốt toàn vẹn đếm toàn công ty). Hai luật
- * ngược nhau là cố ý; câu chặn đã nói rõ «trên toàn công ty» để hai số lệch
+ * ngược nhau là cố ý; câu chặn đã nói rõ "trên toàn công ty" để hai số lệch
  * nhau không bị đọc thành lỗi.
  */
 export function DossierTypeUsageCount({ typeId }: { typeId: number }) {

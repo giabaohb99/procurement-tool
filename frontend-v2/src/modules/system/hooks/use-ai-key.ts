@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { agentHubApi, type AiKeyInput, type AiKeyPatch } from '../api/agent-hub-api'
 
-/** Khóa AI cá nhân (ai-CR-053 → ai-CR-098 nhiều khóa) — tab «Khóa AI» ở Trang cá nhân. Bot dùng theo thứ tự ưu tiên. */
+/** Khóa AI cá nhân (ai-CR-053 → ai-CR-098 nhiều khóa) — tab "Khóa AI" ở Trang cá nhân. Bot dùng theo thứ tự ưu tiên. */
 export function useAiKey() {
   return useQuery({
     queryKey: queryKeys.system.aiKey(),
@@ -55,7 +55,7 @@ export function useRemoveAiKey() {
   })
 }
 
-/** Khóa AI CÔNG TY (ai-CR-098) — thẻ «Trợ lý AI» ở Cấu hình hệ thống. */
+/** Khóa AI CÔNG TY (ai-CR-098) — thẻ "Trợ lý AI" ở Cấu hình hệ thống. */
 export function useCompanyAiKeys(enabled = true) {
   return useQuery({
     queryKey: queryKeys.system.companyAiKeys(),

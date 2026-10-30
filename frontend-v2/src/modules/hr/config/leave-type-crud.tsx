@@ -19,7 +19,7 @@ import {
  * đổi hạn mức phép năm từ 12 lên 14 ngày là sửa code + deploy. Màn này là chỗ
  * đổi bằng một ô nhập.
  *
- * ⚠️ Ô «Mã loại nghỉ» KHÔNG sửa được sau khi tạo (`readonlyOnEdit`): mã đó đi
+ * ⚠️ Ô "Mã loại nghỉ" KHÔNG sửa được sau khi tạo (`readonlyOnEdit`): mã đó đi
  * vào metadata của mọi giấy GNP đã phát hành. Đổi nó là những giấy ấy trỏ vào
  * một loại không còn tồn tại. Backend chặn lớp thứ hai.
  */
@@ -43,7 +43,7 @@ const YEAR_END_OPTIONS = [
  * HẠN DÙNG phép mang sang — khai bằng Ô CHỌN, không bằng ô gõ số.
  *
  * Cột `carry_over_expire_month` là một con số 0–12, nên ô cũ là một ô `number`
- * trống trơn ghi «3»: người khai phải tự biết 3 là *tháng*, tự biết tháng đó là
+ * trống trơn ghi "3": người khai phải tự biết 3 là *tháng*, tự biết tháng đó là
  * của *năm sau*, tự biết ngày chốt là *ngày cuối tháng*, và tự biết `0` nghĩa là
  * *không hết hạn* — bốn điều không có gì trên màn hình nói ra, mà gõ nhầm 13 hay
  * 2026 thì cũng không ai chặn.
@@ -72,7 +72,7 @@ const leaveTypeChips = (t: LeaveType) => [
   ...(t.counts_balance
     ? [{ icon: Coins, text: `Quỹ ${t.annual_quota_days} ngày/năm`, tone: 'ok' as const }]
     : [{ icon: CalendarOff, text: 'Không trừ quỹ phép', tone: 'muted' as const }]),
-  //  Chỉ hiện khi số dư ĐI ĐÂU ĐÓ. Bày cả «Hết năm là mất» thì mọi loại đều có
+  //  Chỉ hiện khi số dư ĐI ĐÂU ĐÓ. Bày cả "Hết năm là mất" thì mọi loại đều có
   //  thêm một huy hiệu nói đúng thứ mặc định — nhiễu, không phải thông tin.
   ...(t.year_end_mode !== YEAR_END_MODE.DROP
     ? [
@@ -116,7 +116,7 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
   getItemName: (t) => `${t.name} (${t.code})`,
   deleteWarning:
     'Loại nghỉ đã có đơn hoặc đã cấp quỹ phép thì không xóa được. Muốn ẩn khỏi ô chọn ' +
-    'mà vẫn giữ đơn cũ thì bỏ tick «Đang dùng».',
+    'mà vẫn giữ đơn cũ thì bỏ tick "Đang dùng".',
   chips: leaveTypeChips,
   //  Khổ hẹp: thẻ thay bảng — bảng này bảy cột, trên máy 393px chỉ thấy hai cột
   //  đầu (Mã · Tên) nên mọi LUẬT của loại nghỉ nằm sau một thao tác cuộn ngang.
@@ -222,23 +222,23 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
     ],
   },
   //  Mỗi nhóm một câu nói bằng TIẾNG NGƯỜI. Tên nhóm là từ của danh mục
-  //  («Số dư cuối năm»), câu này là thứ trả lời «rồi sao nữa» — người khai
+  //  ("Số dư cuối năm"), câu này là thứ trả lời "rồi sao nữa" — người khai
   //  danh mục là nhân sự, họ đọc tên nhóm xong vẫn phải đoán nó chi phối gì.
   formSections: {
     //  Tên cụm xếp theo ĐÚNG thứ tự ô bên trong: quỹ phép trước (nó chi phối ô
-    //  «Hạn mức mỗi năm»), lương sau. Tiêu đề nói một đằng, ô xếp một nẻo thì
+    //  "Hạn mức mỗi năm"), lương sau. Tiêu đề nói một đằng, ô xếp một nẻo thì
     //  người đọc phải dò lại từ đầu.
     'Quỹ phép và lương': 'Nghỉ loại này có ăn vào quỹ phép năm không, có bị trừ lương không.',
     'Điều kiện áp dụng':
       'Ai được nghỉ loại này, mỗi lần tối đa mấy ngày, máy đếm ngày ra sao, và có phải nộp giấy tờ không.',
     'Số dư cuối năm':
       'Ngày phép chưa dùng hết thì đi đâu khi sang năm mới. Chỉ chạy khi có người bấm ' +
-      '«Kết sổ cuối năm» ở màn Quỹ phép — đêm 31/12 không có gì tự xảy ra.',
+      '"Kết sổ cuối năm" ở màn Quỹ phép — đêm 31/12 không có gì tự xảy ra.',
   },
 
   //  ⚠️ CHIA NHÓM, không bày 15 ô phẳng. Người khai danh mục là nhân sự, không
   //  phải người viết luật — mà ở màn này đoán sai quan hệ giữa hai ô là khai sai
-  //  luật nghỉ cho cả công ty. Bốn ô của cụm «Số dư cuối năm» còn ẩn/hiện theo
+  //  luật nghỉ cho cả công ty. Bốn ô của cụm "Số dư cuối năm" còn ẩn/hiện theo
   //  chế độ đang chọn: hỏi tỷ lệ quy đổi trong khi chưa chọn quy đổi thì câu hỏi
   //  đó không có câu trả lời đúng.
   formFields: [
@@ -261,7 +261,7 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
 
     // ── Quỹ phép & lương ─────────────────────────────────────────────────────
     {
-      //  ĐỨNG ĐẦU, ở cột TRÁI. «Hạn mức mỗi năm» chỉ mọc ra khi nút này bật, mà
+      //  ĐỨNG ĐẦU, ở cột TRÁI. "Hạn mức mỗi năm" chỉ mọc ra khi nút này bật, mà
       //  lưới công tắc xếp theo hàng: nút nào ở cột trái thì ô mọc ra nằm ngay
       //  bên dưới nó. Để `is_paid` trước thì ô hạn mức hiện dưới cột trái, tức
       //  dưới một cái nút KHÁC — bấm bên phải, chữ mọc bên dưới bên trái.
@@ -289,7 +289,7 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       //  Chỉ hỏi khi loại nghỉ CÓ quỹ. Hạn mức của loại không trừ quỹ là con số
       //  không ai đọc, mà nó vẫn nằm đó mời người ta điền.
       showWhen: (values) => Boolean(values.counts_balance),
-      hint: 'Bậc thâm niên cộng thêm khai ở tab «Bậc thâm niên» bên dưới.',
+      hint: 'Bậc thâm niên cộng thêm khai ở tab "Bậc thâm niên" bên dưới.',
     },
 
     // ── Ai được nghỉ, tính ngày thế nào ──────────────────────────────────────
@@ -303,7 +303,7 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       hint: 'Hồ sơ chưa khai giới tính vẫn nộp được.',
     },
     {
-      //  Ở CỤM ĐIỀU KIỆN, không phải cụm «Quỹ phép và lương»: đây là hạn mức của
+      //  Ở CỤM ĐIỀU KIỆN, không phải cụm "Quỹ phép và lương": đây là hạn mức của
       //  MỘT LẦN NGHỈ (luật cứng kiểu cưới hỏi 3 ngày), không dính gì tới quỹ
       //  phép năm. Để nó bên kia thì cụm quỹ phép có đúng một ô nhập lẻ loi, còn
       //  cụm điều kiện chỉ có một ô chọn — hai bên đều chừa nửa hàng trắng.
@@ -315,12 +315,12 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       hint: '0 = không giới hạn. Dùng cho luật cứng như cưới hỏi 3 ngày.',
     },
     {
-      //  ⚠️ ĐI LIỀN «Tối đa mỗi lần nghỉ»: cả hai đều nói về SỐ NGÀY. Trước
+      //  ⚠️ ĐI LIỀN "Tối đa mỗi lần nghỉ": cả hai đều nói về SỐ NGÀY. Trước
       //  07/09/2026 nút giấy tờ chen vào giữa, nên đọc từ trên xuống là *mấy
       //  ngày → giấy tờ → lại mấy ngày*.
       name: 'exclude_holiday',
       //  Ngày nghỉ tuần nay do LỊCH LÀM VIỆC của người nghỉ quyết định (mẫu lịch
-      //  tuần, gán theo nhân sự / phòng ban / pháp nhân), không còn «chỉ Chủ nhật».
+      //  tuần, gán theo nhân sự / phòng ban / pháp nhân), không còn "chỉ Chủ nhật".
       label: 'Trừ ngày nghỉ theo lịch làm việc và ngày lễ',
       type: 'switch',
       defaultValue: true,
@@ -341,22 +341,22 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
     // ── Số dư cuối năm ───────────────────────────────────────────────────────
     {
       name: 'year_end_mode',
-      //  KHÔNG đặt tên trùng tiêu đề cụm («Số dư cuối năm»): hai dòng chữ giống
+      //  KHÔNG đặt tên trùng tiêu đề cụm ("Số dư cuối năm"): hai dòng chữ giống
       //  hệt nhau xếp chồng đọc như một lỗi lặp, mà ô này trả lời câu hỏi khác —
-      //  cụm hỏi *«nói về cái gì»*, ô hỏi *«thì làm gì với nó»*.
+      //  cụm hỏi *"nói về cái gì"*, ô hỏi *"thì làm gì với nó"*.
       label: 'Cách xử lý số dư',
       type: 'select',
       options: YEAR_END_OPTIONS,
       defaultValue: YEAR_END_MODE.DROP,
       section: 'Số dư cuối năm',
-      //  Câu «chạy khi bấm Kết sổ» dời lên mô tả CỤM: nó đúng cho cả ba nước,
+      //  Câu "chạy khi bấm Kết sổ" dời lên mô tả CỤM: nó đúng cho cả ba nước,
       //  không riêng ô này. Chỗ này để dành nói hai nước KHÁC NHAU ra sao —
-      //  «mang sang» với «quy đổi» đọc na ná nhau nếu không nói rõ.
-      hint: '«Mang sang năm sau» giữ nguyên loại nghỉ. «Quy đổi» đổ số ngày sang một loại khác theo tỷ lệ.',
+      //  "mang sang" với "quy đổi" đọc na ná nhau nếu không nói rõ.
+      hint: '"Mang sang năm sau" giữ nguyên loại nghỉ. "Quy đổi" đổ số ngày sang một loại khác theo tỷ lệ.',
     },
-    //  ⚠️ KHÔNG hỏi «Trần số ngày được chuyển» (`carry_over_max_days`) ở đây.
+    //  ⚠️ KHÔNG hỏi "Trần số ngày được chuyển" (`carry_over_max_days`) ở đây.
     //  DEGO không có luật trần: dư bao nhiêu mang sang bấy nhiêu. Mà cái ô ấy
-    //  đứng cạnh chữ «số dư» thì đọc mãi vẫn ra "số dư của người này" — người
+    //  đứng cạnh chữ "số dư" thì đọc mãi vẫn ra "số dư của người này" — người
     //  xem hỏi ngay *"dư thì máy tự tính chứ sao bắt nhập tay"* (07/09/2026),
     //  và họ đúng: số dư từng người do `balance_service.remaining()` tính từ
     //  ngày phép chưa nghỉ, không ai gõ tay bao giờ.
@@ -372,10 +372,10 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       options: CARRY_EXPIRE_OPTIONS,
       defaultValue: 3,
       section: 'Số dư cuối năm',
-      //  Chỉ có nghĩa với «mang sang»: phần đã quy đổi sống theo luật của loại
+      //  Chỉ có nghĩa với "mang sang": phần đã quy đổi sống theo luật của loại
       //  NHẬN, không theo loại nguồn.
       showWhen: (values) => Number(values.year_end_mode) === YEAR_END_MODE.CARRY,
-      //  Luật «tiêu phần mang sang trước» (`carryover_service.expire_carried`)
+      //  Luật "tiêu phần mang sang trước" (`carryover_service.expire_carried`)
       //  quyết định người ta mất bao nhiêu ngày vào 31/3, mà nhìn màn hình
       //  không đoán ra được — phải nói thành lời.
       hint: 'Tính từ 01/01 đến hết ngày cuối của tháng đã chọn — thông lệ là hết 31/3. Phép mang sang luôn được tính là tiêu TRƯỚC phép của năm mới.',
@@ -393,9 +393,9 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       showWhen: (values) => Number(values.year_end_mode) === YEAR_END_MODE.CONVERT,
       //  Hai điều kiện này backend CHẶN NGAY LÚC LƯU (`_check_year_end_config`),
       //  không phải tới 31/12 mới lộ — nói trước để khỏi ăn lỗi 400 rồi mới hiểu.
-      //  Bỏ chữ «loại đích»: đó là từ của người viết mã, người khai danh mục
+      //  Bỏ chữ "loại đích": đó là từ của người viết mã, người khai danh mục
       //  không có gì để suy ra nghĩa của nó.
-      hint: 'Phải là loại KHÁC và có bật «Trừ vào quỹ phép năm», không thì lưu sẽ báo lỗi. Số ngày đổi sang hết hạn theo luật của loại nhận.',
+      hint: 'Phải là loại KHÁC và có bật "Trừ vào quỹ phép năm", không thì lưu sẽ báo lỗi. Số ngày đổi sang hết hạn theo luật của loại nhận.',
     },
     {
       name: 'convert_ratio',
@@ -410,7 +410,7 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
     //  Hai ô cuối KHÔNG gom thành nhóm: một cái ghi chú tự do, một cái bật/tắt —
     //  một tiêu đề chung cho cả hai chỉ là chữ thừa, đặt tên gì cũng không đúng cả hai.
     //
-    //  ⚠️ KHÔNG hỏi «Thứ tự hiển thị» (`sort_order`) ở đây: bộ loại nghỉ chỉ hơn
+    //  ⚠️ KHÔNG hỏi "Thứ tự hiển thị" (`sort_order`) ở đây: bộ loại nghỉ chỉ hơn
     //  chục dòng và thứ tự đã seed sẵn, bắt người khai danh mục tự nghĩ ra một
     //  con số xếp hạng là hỏi một câu họ không có câu trả lời. Cột vẫn còn trong
     //  bảng và backend vẫn xếp theo nó — chỉ là không bày ra form nữa.

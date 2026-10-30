@@ -24,22 +24,22 @@ interface DocumentFileViewerLayoutProps {
   files: DocumentVersionFile[]
   selectedId: number
   onSelect: (id: number) => void
-  /** Có sẵn = hiện nút «Về danh sách». Bỏ trống ở ca CHỈ 1 tệp — không có danh sách để về. */
+  /** Có sẵn = hiện nút "Về danh sách". Bỏ trống ở ca CHỈ 1 tệp — không có danh sách để về. */
   onBackToList?: () => void
   documentCode?: string
 }
 
 /**
- * KHUNG XEM CHI TIẾT của tab «Tệp» (phase 09) — trái khung xem, phải cây tệp
- * theo phiên bản. Màn hẹp: cây chuyển vào `Sheet` mở bằng nút «Danh sách tệp».
+ * KHUNG XEM CHI TIẾT của tab "Tệp" (phase 09) — trái khung xem, phải cây tệp
+ * theo phiên bản. Màn hẹp: cây chuyển vào `Sheet` mở bằng nút "Danh sách tệp".
  *
  * Không còn thanh tiêu đề tên tệp (24/09/2026) — tệp đang xem đã tô sáng
- * trong cây; cụm «Tệp x/y · trước · sau · tải về» nằm ở đầu cột cây, khung xem
+ * trong cây; cụm "Tệp x/y · trước · sau · tải về" nằm ở đầu cột cây, khung xem
  * cao hết màn hình (`fill`).
  *
  * ↑↓ trong cây ĐỔI NGAY tệp đang xem (`DocumentFileTree` → `TreeView`
  * `onFocusChange`); nút trước/sau làm việc tương tự, cả hai đều
- * BỎ QUA tệp đã biết là khóa (403 lúc mở) — bộ luật «Thấy một phần» ở phase 04.
+ * BỎ QUA tệp đã biết là khóa (403 lúc mở) — bộ luật "Thấy một phần" ở phase 04.
  */
 export function DocumentFileViewerLayout({
   files,
@@ -202,7 +202,7 @@ export function DocumentFileViewerLayout({
           <div className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-md border bg-muted/30 p-8 text-center">
             <FileWarning className="size-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Tệp «{current.filename}» không xem được ngay trong trang — tải về máy để mở.
+              Tệp <strong>{current.filename}</strong> không xem được ngay trong trang — tải về máy để mở.
             </p>
             <Button
               type="button"

@@ -25,8 +25,8 @@ export function groupPlaceholders(
 }
 
 /**
- * Lọc biến theo ô tìm của khung «Chèn biến» (duoc-CR-606): khớp mã biến HOẶC nhãn, KHÔNG phân biệt
- * hoa thường lẫn dấu — gõ «luong» phải ra «Lương cơ bản». Chuỗi rỗng / toàn khoảng trắng = giữ hết.
+ * Lọc biến theo ô tìm của khung "Chèn biến" (duoc-CR-606): khớp mã biến HOẶC nhãn, KHÔNG phân biệt
+ * hoa thường lẫn dấu — gõ "luong" phải ra "Lương cơ bản". Chuỗi rỗng / toàn khoảng trắng = giữ hết.
  */
 export function filterPlaceholders(
   items: readonly LaborContractPlaceholder[] | null | undefined,

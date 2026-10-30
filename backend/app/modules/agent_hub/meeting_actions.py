@@ -3,10 +3,10 @@
 Đại ca chốt 07/10/2026: không tự tạo khi chưa duyệt; việc rút ra thì bot hỏi MỘT câu kèm danh sách dự án (Q9).
 
   1. Biên bản viết xong (`meetings._write`) → một lượt model đọc bản chép + biên bản, trả JSON việc (tên · người làm · hạn)
-     và lịch hẹn (tên · giờ bắt đầu · độ dài · nơi). Ngày tương đối («thứ sáu», «tuần sau») tính theo ngày xử lý.
-  2. Lưu vào `tab_agent_meeting.actions`, gửi một thẻ đánh số. Người gửi nhắn «tạo hết» / «tạo 1 3» (kèm «dự án 2» khi
-     có nhiều dự án) hoặc «bỏ».
-  3. Việc → phân hệ Dự án qua ĐÚNG đường «tạo» của nháp việc (`draft_create`, kiểm quyền work_task.create, báo chuông người
+     và lịch hẹn (tên · giờ bắt đầu · độ dài · nơi). Ngày tương đối ("thứ sáu", "tuần sau") tính theo ngày xử lý.
+  2. Lưu vào `tab_agent_meeting.actions`, gửi một thẻ đánh số. Người gửi nhắn "tạo hết" / "tạo 1 3" (kèm "dự án 2" khi
+     có nhiều dự án) hoặc "bỏ".
+  3. Việc → phân hệ Dự án qua ĐÚNG đường "tạo" của nháp việc (`draft_create`, kiểm quyền work_task.create, báo chuông người
      được giao); người làm khớp đúng MỘT nhân sự thì gán, không thì ghi tên vào mô tả. Không có quyền / không ở dự án nào
      → thẻ cá nhân. Lịch → Google Calendar nếu đã nối Google, không thì thẻ cá nhân.
 """
@@ -51,8 +51,8 @@ EXTRACT_SYSTEM = (
     "Bạn rút VIỆC CẦN LÀM và LỊCH HẸN từ một cuộc họp. Chỉ lấy điều có trong bản chép / biên bản, không bịa. Trả về DUY "
     "NHẤT một JSON: {\"tasks\": [{\"title\": \"việc, bắt đầu bằng động từ\", \"owner\": \"tên người làm như trong họp, "
     "không rõ thì rỗng\", \"due\": \"YYYY-MM-DD hoặc rỗng\"}], \"events\": [{\"title\": \"tên cuộc hẹn\", \"start\": "
-    "\"YYYY-MM-DDTHH:MM\", \"minutes\": 60, \"location\": \"nơi hoặc rỗng\"}]}. Ngày tương đối («thứ sáu», «ngày mai», "
-    "«tuần sau») tính theo NGÀY HỌP cho sẵn; không suy ra được ngày cụ thể thì để rỗng. Lịch hẹn chỉ lấy cuộc gặp / cuộc "
+    "\"YYYY-MM-DDTHH:MM\", \"minutes\": 60, \"location\": \"nơi hoặc rỗng\"}]}. Ngày tương đối (**thứ sáu**, **ngày mai**, "
+    "**tuần sau**) tính theo NGÀY HỌP cho sẵn; không suy ra được ngày cụ thể thì để rỗng. Lịch hẹn chỉ lấy cuộc gặp / cuộc "
     "họp có ngày giờ rõ ràng; không có thì mảng rỗng."
 )
 
@@ -211,7 +211,7 @@ def card_text(row: AgentMeeting, items: list[dict], projects: list, google: bool
     esc = telegram.esc
     tasks = [it for it in items if it["kind"] == "task"]
     events = [it for it in items if it["kind"] == "event"]
-    lines = [f"<b>Việc và lịch rút từ biên bản «{esc(row.title)}»</b>"]
+    lines = [f"<b>Việc và lịch rút từ biên bản <i>{esc(row.title)}</i></b>"]
     if tasks:
         lines += ["", "<b>Việc</b>"] + [item_line(it) for it in tasks]
     if events:
@@ -221,15 +221,15 @@ def card_text(row: AgentMeeting, items: list[dict], projects: list, google: bool
         if not projects:
             lines.append("Việc sẽ ghi vào thẻ cá nhân (tài khoản chưa tạo việc được ở phân hệ Dự án).")
         elif len(projects) == 1:
-            lines.append(f"Việc sẽ vào dự án «{esc(projects[0].name)}».")
+            lines.append(f"Việc sẽ vào dự án **{esc(projects[0].name)}**.")
         else:
             opts = " · ".join(f"{i}) {esc(p.name)}" for i, p in enumerate(projects[:8], 1))
             lines.append(f"Việc vào dự án nào? {opts}")
     if events:
         lines.append("Lịch sẽ vào lịch Google của anh/chị." if google
-                     else "Lịch sẽ ghi vào thẻ cá nhân (chưa nối Google: ERP → Trang cá nhân → «Nối Google»).")
-    example = "«tạo hết dự án 1»" if tasks and len(projects) > 1 else "«tạo hết»"
-    lines.append(f"Nhắn {example}, hoặc chọn mục «tạo 1 3», hoặc «bỏ» để thôi. Ngày tính theo hôm xử lý tệp.")
+                     else "Lịch sẽ ghi vào thẻ cá nhân (chưa nối Google: ERP → Trang cá nhân → **Nối Google**).")
+    example = "**tạo hết dự án 1**" if tasks and len(projects) > 1 else "**tạo hết**"
+    lines.append(f"Nhắn {example}, hoặc chọn mục **tạo 1 3**, hoặc **bỏ** để thôi. Ngày tính theo hôm xử lý tệp.")
     return "\n".join(lines)
 
 
@@ -251,7 +251,7 @@ def offer(db: Session, row: AgentMeeting) -> int:
     user = erp.user_by_id(db, int(row.user_id or 0))
     projects = projects_for(db, user)
     google = google_link.get_link(db, row.user_id) is not None
-    #  Thẻ mới thay thẻ cũ còn treo của chat này: «tạo hết» luôn nói về biên bản vừa nhận.
+    #  Thẻ mới thay thẻ cũ còn treo của chat này: "tạo hết" luôn nói về biên bản vừa nhận.
     for old in db.scalars(select(AgentMessage).where(AgentMessage.chat_id == row.chat_id, AgentMessage.action == ACT_CARD)):
         old.action = ACT_CARD_DROPPED
     db.commit()
@@ -264,7 +264,7 @@ def offer(db: Session, row: AgentMeeting) -> int:
 # ---------------------------------------------------------------------------
 # Trả lời thẻ bằng chữ
 # ---------------------------------------------------------------------------
-#  ai-CR-118: nhận cả có dấu lẫn không dấu («tao het du an 2»).
+#  ai-CR-118: nhận cả có dấu lẫn không dấu ("tao het du an 2").
 _YES = re.compile(r"^\s*(?:(?:ok|[uừ]|[dđ][uư][oợ]c)[,!]?\s+)?(t[aạ]o|l[aà]m)\s*"
                   r"(h[eế]t|t[aấ]t\s*c[aả]|c[aả]|c[aá]c\s*m[uụ]c|lu[oô]n)?\b(.*)$", re.I | re.S)
 _NO = re.compile(r"^\s*(b[oỏ]|kh[oô]ng\s+t[aạ]o|kh[oỏ]i\s+t[aạ]o|th[oô]i)(\s+(h[eế]t|[dđ]i|nh[eé]|c[aá]c\s*m[uụ]c))?\s*[.!]?\s*$",
@@ -273,7 +273,7 @@ _PROJECT = re.compile(r"(?:d[uự]\s*[aá]n|project)\s*(?:s[oố]\s*)?(.+)$", re
 
 
 def pending_card(db: Session, chat_id: str, before_id: int) -> AgentMessage | None:
-    """Thẻ việc / lịch đang chờ của chat — chỉ khi nó MỚI HƠN mọi nháp phiếu đang chờ (cùng chữ «tạo»)."""
+    """Thẻ việc / lịch đang chờ của chat — chỉ khi nó MỚI HƠN mọi nháp phiếu đang chờ (cùng chữ "tạo")."""
     from .service import ACT_DRAFT_WAIT
 
     card = db.scalar(select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_CARD,
@@ -286,7 +286,7 @@ def pending_card(db: Session, chat_id: str, before_id: int) -> AgentMessage | No
 
 
 def parse_reply(text: str, n_items: int) -> tuple[str, list[int], str] | None:
-    """«tạo hết dự án 2» → ("yes", [1..n], "2"); «tạo 1 3» → ("yes", [1, 3], ""); «bỏ» → ("no", [], ""). Khác → None."""
+    """"tạo hết dự án 2" → ("yes", [1..n], "2"); "tạo 1 3" → ("yes", [1, 3], ""); "bỏ" → ("no", [], ""). Khác → None."""
     low = " ".join((text or "").split())
     if _NO.match(low):
         return "no", [], ""
@@ -301,7 +301,7 @@ def parse_reply(text: str, n_items: int) -> tuple[str, list[int], str] | None:
         rest = rest[:pm.start()]
     nums = sorted({int(x) for x in re.findall(r"\d+", rest) if 1 <= int(x) <= n_items})
     if re.sub(r"[\d,;.\s]|v[aà]|m[uụ]c|s[oố]", "", rest, flags=re.I).strip():
-        return None                      # còn chữ lạ («tạo phiếu mua hàng…») → không phải trả lời thẻ
+        return None                      # còn chữ lạ ("tạo phiếu mua hàng…") → không phải trả lời thẻ
     if not nums and (m.group(2) or not rest.strip()):
         nums = list(range(1, n_items + 1))
     return ("yes", nums, project) if nums else None
@@ -353,9 +353,9 @@ def handle_text(db: Session, chat_id: str, msg_row: AgentMessage, text: str) -> 
         if project is None:
             opts = " · ".join(f"{i}) {telegram.esc(p.name)}" for i, p in enumerate(projects[:8], 1))
             db.commit()
-            service.reply(db, chat_id, f"Việc vào dự án nào? {opts} — nhắn lại kèm «dự án số», vd «tạo hết dự án 1».")
+            service.reply(db, chat_id, f"Việc vào dự án nào? {opts} — nhắn lại kèm **dự án số**, vd **tạo hết dự án 1**.")
             return True
-    #  Chốt dấu TRƯỚC khi ghi: một lỗi giữa chừng không được để «tạo» lần hai tạo trùng.
+    #  Chốt dấu TRƯỚC khi ghi: một lỗi giữa chừng không được để "tạo" lần hai tạo trùng.
     card.action = ACT_CARD_DONE
     db.commit()
     lines = create_items(db, user, meeting, chosen, project)
@@ -384,7 +384,8 @@ def create_items(db: Session, user, meeting: AgentMeeting, chosen: list[dict], p
     esc = telegram.esc
     out: list[str] = []
     link = google_link.get_link(db, meeting.user_id)
-    note = f"Từ biên bản họp «{meeting.title}» ({(meeting.finished_at or datetime.now()):%d/%m/%Y})."
+    #  bao-CR-695: mô tả việc là DỮ LIỆU lưu, màn Dự án hiện chữ trơn — nháy thẳng, không markdown.
+    note = f"Từ biên bản họp \"{meeting.title}\" ({(meeting.finished_at or datetime.now()):%d/%m/%Y})."
     for it in chosen:
         try:
             if it["kind"] == "task" and project is not None:
@@ -395,7 +396,7 @@ def create_items(db: Session, user, meeting: AgentMeeting, chosen: list[dict], p
                 code, oid = erp.create_draft(db, user, "work_task", draft)
                 it["ref"] = {"type": "work_task", "id": oid}
                 who = f" — giao {esc(person['name'])}" if person else ""
-                out.append(f"{it['no']}. Đã tạo {esc(code)} ở dự án «{esc(project.name)}»{who}.")
+                out.append(f"{it['no']}. Đã tạo {esc(code)} ở dự án **{esc(project.name)}**{who}.")
             elif it["kind"] == "event" and link is not None:
                 st = datetime.fromisoformat(it["start"])
                 body = {"summary": it["title"], "description": note,

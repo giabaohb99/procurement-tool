@@ -32,7 +32,9 @@ describe('module-registry', () => {
   })
 
   it('đường dẫn gốc của phân hệ là duy nhất', () => {
-    const paths = allModules.filter((m) => m.path).map((m) => m.path)
+    //  Tính cả đường gốc PHỤ (`extraPaths`, bao-CR-696): hai phân hệ cùng nhận một tiền tố thì `useActiveModule` bắt
+    //  bừa một trong hai, menu trái đổi theo thứ tự khai báo.
+    const paths = allModules.filter((m) => m.path).flatMap((m) => [m.path, ...(m.extraPaths ?? [])])
     expect(new Set(paths).size).toBe(paths.length)
   })
 
@@ -77,6 +79,7 @@ describe('module-registry', () => {
     expect(moduleRegistry.length).toBeGreaterThan(0)
     for (const module of moduleRegistry) {
       expect(module.path, module.id).toMatch(/^\/[a-z0-9-]+$/)
+      for (const extra of module.extraPaths ?? []) expect(extra, module.id).toMatch(/^\/[a-z0-9-]+$/)
       expect(module.routes.length, module.id).toBeGreaterThan(0)
     }
   })
@@ -86,9 +89,12 @@ describe('module-registry', () => {
       const allItems = module.nav.flatMap((i) => [i, ...(i.children ?? [])])
       for (const item of allItems) {
         if (item.crossModule) continue // lối tắt sang phân hệ khác — xét riêng bên dưới
-        expect(item.path, `${module.id} - ${item.label}`).toMatch(
-          new RegExp(`^${module.path}(/|$)`),
-        )
+        //  Đường gốc phụ (`extraPaths`) cũng là đất của phân hệ — phân hệ AI giữ cả `/assistant` lẫn `/ai-skill`.
+        const roots = [module.path, ...(module.extraPaths ?? [])]
+        expect(
+          roots.some((root) => item.path === root || item.path.startsWith(`${root}/`)),
+          `${module.id} - ${item.label} (${item.path})`,
+        ).toBe(true)
       }
     }
   })
@@ -127,17 +133,17 @@ describe('module-registry', () => {
     }
   })
   it('phân hệ nghiệp vụ không có mục menu bỏ trống khóa quyền — kẻo thẻ mở cho cả người ngoài', () => {
-    //  LỖI ĐÃ XẢY RA (27/08/2026): mục «Tổng quan» của Thu mua / Sản xuất / Kho /
+    //  LỖI ĐÃ XẢY RA (27/08/2026): mục "Tổng quan" của Thu mua / Sản xuất / Kho /
     //  Tài chính / Nhân sự không khai `entity`, mà thẻ phân hệ mở khi CÒN MỘT mục
     //  hiện được — nên tài khoản văn thư (không có quyền nào bên đó) vẫn thấy thẻ
     //  mở, vào trong gặp Tổng quan toàn số 0. Mục mới của phân hệ nghiệp vụ phải
     //  khai `entity`/`entities`; muốn mở công khai thật thì thêm id phân hệ vào
     //  danh sách chủ ý dưới đây kèm lý do.
     const openByDesign = new Set([
-      'document', // «Chờ tôi duyệt» dành cho người duyệt NGOÀI phân hệ (xem module-visibility.ts)
+      'document', // "Chờ tôi duyệt" dành cho người duyệt NGOÀI phân hệ (xem module-visibility.ts)
       'forum', // bảng tin toàn công ty — mọi người đều vào
       'appearance', // tùy chọn hiển thị của chính người đăng nhập
-      //  «Ví điểm của tôi» là phúc lợi của MỌI nhân viên — backend chỉ đòi đăng
+      //  "Ví điểm của tôi" là phúc lợi của MỌI nhân viên — backend chỉ đòi đăng
       //  nhập (`/api/coffee/my-wallet` tự lấy employee_id của người gọi), không
       //  có entity nào để khai. Các màn quản trị trong phân hệ vẫn gác khóa đủ.
       'dego-coffee',

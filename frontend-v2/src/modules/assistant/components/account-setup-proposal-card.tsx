@@ -31,7 +31,7 @@ function LineStatusIcon({ status }: { status: AccountSetupLine['status'] }) {
  * sửa phiếu: trợ lý chỉ ĐỀ XUẤT từng dòng thêm / bỏ / không đổi; hệ thống chỉ gán vai trò
  * và ghi phạm vi khi CHÍNH NGƯỜI DÙNG bấm 'Xác nhận' ở đây. Token hết hạn sau 15 phút và
  * backend kiểm lại quyền / phạm vi / chống tự nâng quyền tại thời điểm bấm.
- * Mọi dòng «không đổi» thì không có nút xác nhận — tài khoản đã đúng bộ.
+ * Mọi dòng "không đổi" thì không có nút xác nhận — tài khoản đã đúng bộ.
  */
 export function AccountSetupProposalCard({
   proposal,

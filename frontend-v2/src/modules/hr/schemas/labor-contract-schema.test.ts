@@ -46,7 +46,7 @@ describe('laborContractSchema', () => {
   it.each([1, 2, 4, 5])('loại %i thiếu ngày kết thúc -> lỗi', (t) => {
     expect(firstError({ contract_type: t, end_date: '' })?.path).toBe('end_date')
   })
-  it('loại «Khác» (9) cho phép có hoặc không ngày kết thúc', () => {
+  it('loại "Khác" (9) cho phép có hoặc không ngày kết thúc', () => {
     expect(firstError({ contract_type: 9, end_date: '' })).toBeNull()
     expect(firstError({ contract_type: 9, end_date: '2026-06-01' })).toBeNull()
   })
@@ -121,7 +121,7 @@ describe('toLaborContractPayload — biến tùy chỉnh (duoc-CR-630)', () => {
     )
     expect(p.custom_values).toEqual({ a_chu: 'xin chào', b_trong: '' })
   })
-  it('kiểu Số: «1,5» -> «1.5», dấu thập phân treo cuối bị bỏ', () => {
+  it('kiểu Số: "1,5" -> "1.5", dấu thập phân treo cuối bị bỏ', () => {
     const p = toLaborContractPayload({ ...base, custom_values: { he_so: '1,5', so_nguyen: '7,' } }, 'create', [field('he_so', 3), field('so_nguyen', 3)])
     expect(p.custom_values).toEqual({ he_so: '1.5', so_nguyen: '7' })
   })

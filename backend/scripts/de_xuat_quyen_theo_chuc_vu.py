@@ -3,11 +3,11 @@
 Với mỗi chức vụ: đếm các tài khoản đang giữ chức vụ (hồ sơ còn làm, tài khoản đang mở), xem mỗi
 vai trò có bao nhiêu người trong số đó giữ. Vai trò có tỷ lệ >= ngưỡng (mặc định 60%) được ĐỀ XUẤT vào gói.
 Không bao giờ đề xuất: vai trò quản trị (admin/ADMINISTRATOR) và vai trò có ghi/tạo/xóa trên Vai trò / Tài khoản
-(review CR-653 M4/M5). Mặc định chỉ đề xuất chức vụ có >= 3 người (mẫu nhỏ thì cả bộ vai trò của một người thành «gói»).
+(review CR-653 M4/M5). Mặc định chỉ đề xuất chức vụ có >= 3 người (mẫu nhỏ thì cả bộ vai trò của một người thành "gói").
 
 Mặc định CHỈ ĐỌC (dry-run), in ra Markdown (hoặc CSV bằng --format csv).
 `--apply --yes` mới ghi gói vào `tab_job_position_role` — chỉ THÊM vai trò đề xuất còn thiếu, không bớt gói
-đã có, và KHÔNG cấp gì cho ai: quản trị bấm «Áp lại cho người đang giữ chức vụ» trên màn Chức vụ sau.
+đã có, và KHÔNG cấp gì cho ai: quản trị bấm "Áp lại cho người đang giữ chức vụ" trên màn Chức vụ sau.
 
 Chạy: docker compose exec -T api python -m scripts.de_xuat_quyen_theo_chuc_vu [--threshold 0.6]
         [--min-holders 3] [--format md|csv] [--out file] [--apply --yes]
@@ -120,7 +120,7 @@ def apply_proposal(db: Session, proposal: list[dict]) -> int:
         if new:
             #  M4: mỗi chức vụ một dòng nhật ký (người thao tác 0 = script vận hành), cùng giao dịch với việc ghi gói.
             record(db, 0, "job_position", p["position_id"], "set_position_roles",
-                   f"Script đề xuất ghi gói quyền mặc định của «{p['position_name']}»: thêm "
+                   f"Script đề xuất ghi gói quyền mặc định của '{p['position_name']}': thêm "
                    + ", ".join(r["name"] for r in new), commit=False)
     db.commit()
     return added
@@ -155,7 +155,7 @@ def main(argv: list[str] | None = None) -> int:
             sys.stdout.write(text + "\n")
         if args.apply:
             n = apply_proposal(db, proposal)
-            print(f"[APPLY] Đã thêm {n} dòng vào gói quyền mặc định. Chưa cấp cho ai — dùng nút «Áp lại».",
+            print(f"[APPLY] Đã thêm {n} dòng vào gói quyền mặc định. Chưa cấp cho ai — dùng nút 'Áp lại'.",
                   file=sys.stderr)
         else:
             print("[DRY-RUN] Không ghi gì. Thêm --apply --yes để ghi gói.", file=sys.stderr)

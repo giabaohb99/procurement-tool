@@ -4,7 +4,7 @@ import { DEMO_ACCOUNTS } from './demo-accounts'
 
 /**
  * LỖI KHÁCH BÁO 11/09/2026 (bao-CR-380): menu *Đổi tài khoản nhanh* trên dev bấm
- * «Hồ Ngọc Quế Anh» thì đăng nhập ra Nguyễn Minh Toàn — dấu tick đậu một dòng, tên
+ * "Hồ Ngọc Quế Anh" thì đăng nhập ra Nguyễn Minh Toàn — dấu tick đậu một dòng, tên
  * trên thanh tiêu đề lại là người khác.
  *
  * Gốc rễ không nằm ở menu mà ở EMAIL: bảy dòng nhóm *TK Đặt xe* đăng nhập bằng

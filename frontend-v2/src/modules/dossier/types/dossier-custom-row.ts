@@ -7,7 +7,7 @@ import { emptyDossierField, type DossierFieldDef } from './dossier-field'
  * ⚠️ Đây là hình dạng của BIỂU MẪU, không phải của kho dữ liệu. Dưới DB chúng
  * nằm ở hai chỗ — khai báo ở `tab_dossier.custom_fields`, giá trị ở
  * `tab_dossier.extra_fields` (chung kho với ô của loại). Gộp lại ở tầng biểu
- * mẫu vì người dùng nhìn thấy MỘT hàng: *«Số QĐ | Chữ | bắt buộc | 1234/QĐ»*;
+ * mẫu vì người dùng nhìn thấy MỘT hàng: *"Số QĐ | Chữ | bắt buộc | 1234/QĐ"*;
  * tách đôi ngay trên màn hình là bắt họ gõ tên ở một chỗ rồi đi tìm ô giá trị
  * ở chỗ khác.
  *
@@ -17,7 +17,7 @@ export interface DossierCustomRow extends DossierFieldDef {
   value: DossierFieldValue
 }
 
-/** Dòng trắng cho nút «Thêm trường». */
+/** Dòng trắng cho nút "Thêm trường". */
 export function emptyCustomRow(): DossierCustomRow {
   return { ...emptyDossierField(), value: '' }
 }
@@ -32,7 +32,7 @@ export function emptyCustomRow(): DossierCustomRow {
  *
  * Ba thứ phải giữ khi đổ, và mỗi thứ chữa một cách mất dữ liệu:
  *
- * 1. **Hàng người dùng TỰ THÊM ở lại.** Họ khai «Số quyết định» rồi mới chọn
+ * 1. **Hàng người dùng TỰ THÊM ở lại.** Họ khai "Số quyết định" rồi mới chọn
  *    loại — cuốn phăng đi là mất công gõ.
  * 2. **Giá trị ĐÃ ĐIỀN ở lại** nếu khuôn mới cũng có khóa đó. Hai loại cùng
  *    dùng `so_giay_phep` thì đổi qua lại không được xóa thứ vừa gõ.
@@ -81,8 +81,8 @@ export function toCustomRows(
 /**
  * DÒNG BIỂU MẪU → BẢN GHI: tách lại thành (khai báo, giá trị).
  *
- * ⚠️ **Bỏ dòng chưa đặt tên.** Người dùng bấm «Thêm trường» rồi đổi ý và không
- * gõ gì — gửi lên thì backend trả 422 «Mã trường không được để trống» cho một
+ * ⚠️ **Bỏ dòng chưa đặt tên.** Người dùng bấm "Thêm trường" rồi đổi ý và không
+ * gõ gì — gửi lên thì backend trả 422 "Mã trường không được để trống" cho một
  * hàng trống mà họ coi như không tồn tại. Lặng lẽ bỏ đúng ở ca này là đúng: nó
  * không mang dữ liệu nào để mà mất.
  */

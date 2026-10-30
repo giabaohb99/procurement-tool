@@ -13,7 +13,7 @@ const detail = appRoutes.report.usageProfileDetail(5)
 
 /**
  * Chốt BẢO MẬT (duoc-CR-641): trang hồ sơ MỘT người không có mục menu riêng, nên nó chỉ
- * được gác nếu nằm DƯỚI đường của mục «Hồ sơ cách làm việc» — route không có mục menu
+ * được gác nếu nằm DƯỚI đường của mục "Hồ sơ cách làm việc" — route không có mục menu
  * khớp thì `canAccessRoute` trả `true` (mở cho mọi người đăng nhập).
  */
 describe('usage profile route gating', () => {
@@ -47,7 +47,7 @@ describe('usage profile route gating', () => {
   })
 })
 
-/** duoc-CR-649: «Bộ chỉ số đánh giá» có mục menu riêng nên được gác đúng như Hồ sơ cách làm việc. */
+/** duoc-CR-649: "Bộ chỉ số đánh giá" có mục menu riêng nên được gác đúng như Hồ sơ cách làm việc. */
 describe('usage metric catalog route gating', () => {
   const path = appRoutes.report.usageMetrics
 

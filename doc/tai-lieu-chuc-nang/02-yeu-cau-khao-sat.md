@@ -719,7 +719,7 @@ người đó. Vai trò **tự tạo tay** cũng phải tick ô "Xuất" mới t
 ## H. Màn "Tiến độ báo giá" (CR-075)
 
 Đường dẫn `/survey-progress`, menu **Mua hàng → Tiến độ báo giá**. Là màn song sinh của
-**Tiến độ mua hàng** nhưng đọc chuỗi Yêu cầu báo giá. Endpoint `GET /api/survey-progress`
+**Tiến độ mua hàng** (từ bao-CR-691 gọi là *Tiến độ đơn mua hàng*) nhưng đọc chuỗi Yêu cầu báo giá. Endpoint `GET /api/survey-progress`
 (module `app/modules/survey_progress/` — **không** dùng chung code với `purchase_progress/`).
 
 **Đơn vị một hàng = MỘT DÒNG yêu cầu**, kèm phương án đã chốt của dòng đó. Khác Tiến độ mua hàng

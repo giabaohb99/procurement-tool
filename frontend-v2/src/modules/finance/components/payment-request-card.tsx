@@ -21,7 +21,7 @@ import {
  * nào; thứ phân biệt chúng là TRẢ CHO AI.
  *
  * ⚠️ **Số tiền KHÔNG rút gọn.** Người duyệt bấm dựa trên đúng con số này, mà
- * «1,2 tr» với «1.234.567 đ» là hai mức tin cậy khác nhau khi thứ theo sau là
+ * "1,2 tr" với "1.234.567 đ" là hai mức tin cậy khác nhau khi thứ theo sau là
  * một chữ ký chi tiền.
  *
  * ⚠️ **Không nút nào trong thẻ**: `DataTableMobileCards` bọc cả thẻ trong một

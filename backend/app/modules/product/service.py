@@ -77,14 +77,14 @@ def count_references(db: Session, code: str) -> list[tuple[str, int]]:
 
 
 def ensure_deletable(db: Session, obj: Product) -> None:
-    """Còn chứng từ tham chiếu thì KHÔNG xóa — chỉ có thể bỏ tick «Đang dùng» (`is_active`)."""
+    """Còn chứng từ tham chiếu thì KHÔNG xóa — chỉ có thể bỏ tick "Đang dùng" (`is_active`)."""
     refs = count_references(db, obj.code)
     if refs:
         total = sum(n for _, n in refs)
         detail = ", ".join(f"{n} {label}" for label, n in refs)
         raise HTTPException(
-            400, f"Sản phẩm «{obj.code}» đang được dùng ở {total} chứng từ ({detail}), "
-                 "chỉ có thể ngưng dùng (bỏ tick «Đang dùng») chứ không xóa được.")
+            400, f"Sản phẩm \"{obj.code}\" đang được dùng ở {total} chứng từ ({detail}), "
+                 "chỉ có thể ngưng dùng (bỏ tick \"Đang dùng\") chứ không xóa được.")
 
 
 def delete_product(db: Session, pid: int, user_id: int) -> None:

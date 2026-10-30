@@ -25,7 +25,7 @@ export interface SystemShortcut {
   entity?: PermissionEntity
   /**
    * Màn mở được bằng BẤT KỲ khóa nào trong danh sách — khai y hệt `entities` của
-   * mục menu tương ứng. Dùng khi backend gác bằng «khóa A hoặc khóa B» chứ không
+   * mục menu tương ứng. Dùng khi backend gác bằng "khóa A hoặc khóa B" chứ không
    * bằng một khóa duy nhất (vd nhật ký hệ thống: `audit` hoặc `setting`).
    */
   entities?: PermissionEntity[]

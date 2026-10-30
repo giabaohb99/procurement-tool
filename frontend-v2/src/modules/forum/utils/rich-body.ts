@@ -1,6 +1,6 @@
 /**
  * Bóc thẻ HTML của bài rich (CR-261) lấy CHỮ TRƠN — để kiểm rỗng ở hộp soạn,
- * ước bài "dài" cho nút «Xem thêm», và làm nhãn một dòng trên sidebar.
+ * ước bài "dài" cho nút "Xem thêm", và làm nhãn một dòng trên sidebar.
  *
  * KHÔNG phải bộ lọc an toàn (việc đó của `sanitizeHtml` + sanitize server) và
  * CHỈ gọi cho body có `body_format = richHtml` — chữ trơn chứa `a < b` mà đi

@@ -130,9 +130,9 @@ def _acl_rows(db: Session, profile: dict) -> tuple[dict[int, int], set[int]]:
 def role_level_cap(profile: dict) -> int:
     """Mức CAO NHẤT mà VAI TRÒ cho phép dùng tới — trần của mọi mức thư mục.
 
-    Thư mục pháp nhân mặc định «Đóng góp» cho cả pháp nhân, nên người chỉ có
-    quyền ĐỌC vẫn nhận `my_level = 2` — giao diện vẽ «Quyền: Đóng góp», nút
-    «+ Mới», «Thêm thư mục con»… để rồi bấm vào ăn 403 vì `require(...)` của
+    Thư mục pháp nhân mặc định "Đóng góp" cho cả pháp nhân, nên người chỉ có
+    quyền ĐỌC vẫn nhận `my_level = 2` — giao diện vẽ "Quyền: Đóng góp", nút
+    "+ Mới", "Thêm thư mục con"… để rồi bấm vào ăn 403 vì `require(...)` của
     từng đường ghi chặn ở vai trò (lỗi lead bắt khi test UI 24/09/2026). Trần ở
     ĐÂY để `my_level` nói đúng điều người đó làm được, và mọi chỗ ở giao diện
     đang đọc `my_level` tự đúng theo, không phải vá từng nút.
@@ -147,7 +147,7 @@ def role_level_cap(profile: dict) -> int:
     if folder_admin.get("create") or folder_admin.get("write") or document.get("create"):
         return int(FolderAccessLevel.MANAGE)
     #  duoc-CR-640: chỉ có `document.write` (vd Nhân sự sửa bản lưu trữ HĐLĐ) — gắn được văn bản đã có vào thư mục
-    #  (ĐÓNG GÓP) nhưng KHÔNG tạo văn bản / thư mục mới, nên không để «+ Mới», «Thêm thư mục con»… hiện rồi ăn 403.
+    #  (ĐÓNG GÓP) nhưng KHÔNG tạo văn bản / thư mục mới, nên không để "+ Mới", "Thêm thư mục con"… hiện rồi ăn 403.
     if document.get("write"):
         return int(FolderAccessLevel.CONTRIBUTE)
     return int(FolderAccessLevel.VIEW)
@@ -233,7 +233,7 @@ def effective_levels(db: Session, user, profile: dict | None = None,
         for ancestor in chain:
             result.setdefault(ancestor, int(FolderAccessLevel.VIEW))
 
-    #  Thư mục NHÓM «Công ty» là LỐI VÀO của thư mục pháp nhân — ai thấy ít
+    #  Thư mục NHÓM "Công ty" là LỐI VÀO của thư mục pháp nhân — ai thấy ít
     #  nhất MỘT thư mục pháp nhân thì phải thấy nó, không thì thư mục của họ
     #  mồ côi (cha vô hình). Không thấy pháp nhân nào thì cũng không bày ra
     #  một thư mục rỗng. Chỉ XEM; quản trị toàn hệ thì Quản lý.

@@ -74,7 +74,7 @@ export function EmployeeAccountCard({ employeeId, email, className }: EmployeeAc
             <div className="space-y-3">
               {/*  CHỈ hiện khi tài khoản BỊ KHÓA (26/08/2026).
 
-                   Trước đây hàng này luôn có hai huy hiệu: «Đang hoạt động» và
+                   Trước đây hàng này luôn có hai huy hiệu: "Đang hoạt động" và
                    một huy hiệu địa chỉ đăng nhập. Bỏ cả hai vì cùng một lý do —
                    chúng nói thứ người dùng đã biết: gần như mọi tài khoản đều
                    đang hoạt động, còn địa chỉ đăng nhập thì chính là ô Email
@@ -138,8 +138,8 @@ export function EmployeeAccountCard({ employeeId, email, className }: EmployeeAc
             {canSetPassword && (account || email) && (
               // ⚠️ `type="button"` là BẮT BUỘC: thẻ này nằm TRONG `<form>` của
               // trang chi tiết nhân sự, mà nút không khai `type` thì mặc định là
-              // `submit`. Bấm «Đặt lại mật khẩu» vừa mở hộp thoại vừa LƯU luôn
-              // hồ sơ — khách thấy bóng «Đã cập nhật nhân sự» hiện lên trong khi
+              // `submit`. Bấm "Đặt lại mật khẩu" vừa mở hộp thoại vừa LƯU luôn
+              // hồ sơ — khách thấy bóng "Đã cập nhật nhân sự" hiện lên trong khi
               // họ chưa sửa gì (báo 26/08/2026).
               <Button
                 type="button"

@@ -240,7 +240,7 @@ def test_danh_sach_nguoi_giu_quyen_kem_vai_tro_va_pham_vi(db):
 
 
 def test_nhan_quy_tac_tren_xem_truoc(db):
-    assert _rule_label(db, _node()) == "Người có quyền duyệt (theo phân quyền): quyền Duyệt «Phiếu đặt xe»"
+    assert _rule_label(db, _node()) == "Người có quyền duyệt (theo phân quyền): quyền Duyệt \"Phiếu đặt xe\""
 
 
 # ─────────────────────────── Chạy thật trong bộ máy ───────────────────────────

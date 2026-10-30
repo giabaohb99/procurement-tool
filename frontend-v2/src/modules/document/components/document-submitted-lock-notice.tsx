@@ -11,7 +11,7 @@ interface DocumentSubmittedLockNoticeProps {
  * Không có băng này thì người soạn mở trang, thấy trang giấy xám ngắt và không
  * bấm được vào đâu, rồi đi hỏi "hệ hỏng à". Nói luôn cả đường ra (D-029): rút
  * phiếu → văn bản về **Nháp**, hoặc chờ người duyệt **trả về** → văn bản sang
- * «Trả về». Hai đường khác tên nhưng cùng một kết quả: gõ tiếp được.
+ * "Trả về". Hai đường khác tên nhưng cùng một kết quả: gõ tiếp được.
  */
 export function DocumentSubmittedLockNotice({ submitted }: DocumentSubmittedLockNoticeProps) {
   if (!submitted) return null

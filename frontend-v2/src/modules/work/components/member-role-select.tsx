@@ -35,7 +35,7 @@ export function MemberRoleSelect({
         {/*  ⚠️ Truyền children TƯỜNG MINH cho `SelectValue`. Mặc định Radix chép
              nguyên children của mục đang chọn vào ô — mà mục ở đây có hai dòng
              (nhãn + câu giải thích), nên ô cao gấp đôi và câu giải thích bị cắt
-             giữa chừng thành «Mời và gỡ người,». Câu giải thích chỉ thuộc về lúc
+             giữa chừng thành "Mời và gỡ người,". Câu giải thích chỉ thuộc về lúc
              ĐANG CHỌN, không thuộc về ô đã chọn xong. */}
         <SelectValue>{ASSIGNABLE_ROLES.find((r) => r.value === value)?.label}</SelectValue>
       </SelectTrigger>

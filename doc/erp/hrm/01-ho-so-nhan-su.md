@@ -768,6 +768,23 @@ Menu **Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức** (`/hr/org-chart`). 
 
 Không có khóa quyền mới. Bài kiểm `test_yeu_cau_sua_ho_so_cr676.py` (37 bài) và 4 tệp vitest ở `frontend-v2/src/modules/hr`.
 
+### 7.15. Ô lương trên hồ sơ — chỉ chính chủ xem được (duoc-CR-693, 29/10/2026)
+
+Anh Được chốt: lương nhập bằng **một chỗ trên hồ sơ** thay vì phải lập hợp đồng; **chỉ chính nhân sự đó xem được số**.
+
+- `tab_employee` + `salary_monthly`, `allowance_monthly` (đồng / tháng, 0 = chưa nhập), `salary_updated_at`. Màn: tab «Chung» › mục «Công việc» › nhóm «Lương».
+- **Đọc:** chính chủ thấy số (ở hồ sơ của mình và thẻ «Lương của tôi» ở Trang cá nhân, che mặc định, bấm con mắt). Mọi người khác — kể cả người nhập, admin, người có `employee_sensitive` hay `labor_contract` — chỉ thấy «Đã nhập (ẩn)» / «Chưa nhập» (cờ `salary_set`). Chốt che duy nhất ở `employee/sensitive.py` (`SALARY_FIELDS`, `is_self`).
+- **Ghi:** người có `employee.write` trong phạm vi; gõ số mới để thay, «Xóa số đã nhập» để xóa; để trống = giữ nguyên. Không ai tự đổi lương của mình. Không sắp xếp danh sách theo lương; nhập Excel bỏ qua cột lương; nhật ký / audit không giữ số.
+- **Ký HĐLĐ** (Nháp → Đã ký) tự chép lương cơ bản / phụ cấp của HĐ sang ô hồ sơ nếu HĐ đó là HĐ hiệu lực mới nhất. HĐ ký trước nhưng hiệu lực tương lai: tới ngày hiệu lực **chưa tự cập nhật** (chưa có việc chạy định kỳ) — sửa tay ô lương.
+- **Báo cáo Quỹ lương** (khóa 21) đọc ô này: ảnh chụp hiện tại, chỉ TỔNG theo pháp nhân · phòng ban · toàn công ty, nhóm dưới 3 người bị che, bấm số chỉ ra danh sách tên không kèm tiền; gác `employee.read` + được giao báo cáo 21. Xem `05-bao-cao-nhan-su.md` A5.
+
+### 7.16. Nhiều số điện thoại (duoc-CR-694, 29/10/2026)
+
+- Cột `phone` giữ làm **số chính** (khoảng 15 chỗ đang đọc: tìm kiếm, phiếu in, trợ lý AI, đặt xe…) + `phone_label` (nhãn số chính) + `extra_phones` JSON: tối đa 4 số phụ `{number, label}`. Migration `emp_phones01`.
+- Luật số (`employee/phone_rules.py`): chữ số, khoảng trắng và `+ . - ( )`, 8–15 chữ số; không trùng nhau (bỏ ký tự phân cách rồi so), không trùng số chính. Không phải trường nhạy cảm (như `phone`).
+- Màn tab «Liên hệ & Ngân hàng» và hộp tự sửa liên hệ ở Trang cá nhân (§7.9): một danh sách «Số điện thoại» (nhãn + số, «Số chính» / «Đặt làm chính» / xóa, «+ Thêm số»), bên dưới một hàng hai ô địa chỉ (thường trú | tạm trú) + nút «Giống địa chỉ thường trú».
+- Tìm nhân sự theo số khớp cả số phụ (chỉ khi từ khóa toàn chữ số / ký tự phân cách, ≥ 3 chữ số). Xuất / nhập Excel có cột «Số điện thoại khác» dạng «số (nhãn); số».
+
 ## Hợp đồng lao động
 
 Hai mục về Hợp đồng lao động từng nằm ở cuối tệp này (bản lưu trữ ở phân hệ Văn bản — duoc-CR-629; danh sách biến của mẫu hợp đồng — duoc-CR-630) đã chuyển sang [`04-hop-dong-lao-dong.md`](04-hop-dong-lao-dong.md) §A.6, §A.7 ngày 23/10/2026 (duoc-CR-673).

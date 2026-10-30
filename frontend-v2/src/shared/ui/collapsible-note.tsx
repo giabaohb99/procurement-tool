@@ -5,7 +5,7 @@ import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/utils/cn'
 
 interface CollapsibleNoteProps {
-  /** Câu gọi tên đoạn ghi chú, vd «Lưu ý cách đọc số». */
+  /** Câu gọi tên đoạn ghi chú, vd "Lưu ý cách đọc số". */
   title: string
   children: ReactNode
   className?: string

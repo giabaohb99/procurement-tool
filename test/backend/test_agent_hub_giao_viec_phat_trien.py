@@ -56,4 +56,4 @@ def test_chat_giao_duoc_viec_thi_tro_ly_khong_choi(db, owner, monkeypatch):
 
     service, _ = owner
     assert service._can_order_code(db, "12345") and not service._can_order_code(db, "999")
-    assert "KHÔNG nói «em không sửa được phần mềm»" in BOT_CODE_FACT
+    assert "KHÔNG nói **em không sửa được phần mềm**" in BOT_CODE_FACT

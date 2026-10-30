@@ -63,7 +63,7 @@ describe('OAuthConsentPage', () => {
     expect(screen.getByText('Người YC (TESTREQ)')).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: /Chỉ đọc/ })).toBeChecked()
     expect(screen.getByRole('radio', { name: /Được ghi/ })).not.toBeChecked()
-    expect(screen.getAllByText(/chatgpt\.com/).length).toBeGreaterThan(0)   // tiêu đề + dòng «quay về»
+    expect(screen.getAllByText(/chatgpt\.com/).length).toBeGreaterThan(0)   // tiêu đề + dòng "quay về"
     expect(apiGet).toHaveBeenCalledWith('/api/agent-hub/oauth/request/abc.sig', expect.anything())
   })
 
@@ -105,7 +105,7 @@ describe('OAuthConsentPage', () => {
     expect(screen.queryByRole('button', { name: /Cho phép/ })).toBeNull()
   })
 
-  //  ai-CR-222 (Agent 1 rà 19/10): kẻ xấu nhúng màn đồng ý vào iframe rồi đè nút giả lên «Cho phép» — nginx đã cấm nhúng,
+  //  ai-CR-222 (Agent 1 rà 19/10): kẻ xấu nhúng màn đồng ý vào iframe rồi đè nút giả lên "Cho phép" — nginx đã cấm nhúng,
   //  đây là lớp thứ hai: bị nhúng thì không gọi API, không có nút nào để bấm.
   it('refuses to work inside a frame: no request read, no buttons', async () => {
     isFramed.mockReturnValue(true)
@@ -117,7 +117,7 @@ describe('OAuthConsentPage', () => {
     expect(screen.queryByRole('button', { name: 'Từ chối' })).toBeNull()
   })
 
-  //  ai-CR-225 (Agent 1 rà 19/10, consent-phishing): tên ứng dụng là TỰ KHAI — kẻ xấu đăng ký «ChatGPT» với địa chỉ quay
+  //  ai-CR-225 (Agent 1 rà 19/10, consent-phishing): tên ứng dụng là TỰ KHAI — kẻ xấu đăng ký "ChatGPT" với địa chỉ quay
   //  về của họ. Nơi quay về phải đứng cạnh tên, và lạ thì cảnh báo đỏ.
   it('puts the return host next to the app name and warns loudly when it is not a known AI app', async () => {
     apiGet.mockResolvedValue({ ...INFO, redirect_host: 'evil.example', redirect_trusted: false })

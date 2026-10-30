@@ -36,8 +36,8 @@ describe('folderAccessLevelLabel', () => {
 })
 
 describe('canBulkSelectFolder', () => {
-  //  Lead chốt 24/09/2026: thẻ thư mục pháp nhân dưới «Công ty» không có ô tick.
-  it('excludes the fixed frame of the tree — company roots and the «Công ty» group', () => {
+  //  Lead chốt 24/09/2026: thẻ thư mục pháp nhân dưới "Công ty" không có ô tick.
+  it('excludes the fixed frame of the tree — company roots and the "Công ty" group', () => {
     expect(canBulkSelectFolder({ kind: FOLDER_KIND.company })).toBe(false)
     expect(canBulkSelectFolder({ kind: FOLDER_KIND.companyGroup })).toBe(false)
     expect(canBulkSelectFolder({ kind: FOLDER_KIND.normal })).toBe(true)

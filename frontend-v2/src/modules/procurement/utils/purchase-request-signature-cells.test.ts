@@ -6,7 +6,7 @@ import {
   type PrintSignatureSource,
 } from './purchase-request-signature-cells'
 
-// bao-CR-531 / bao-CR-536: backend quyết BỘ Ô, giao diện chỉ áp «Không chữ ký» / «Mẫu thuế».
+// bao-CR-531 / bao-CR-536: backend quyết BỘ Ô, giao diện chỉ áp "Không chữ ký" / "Mẫu thuế".
 
 function makeSource(overrides: Partial<PrintSignatureSource> = {}): PrintSignatureSource {
   return {
@@ -20,7 +20,7 @@ function makeSource(overrides: Partial<PrintSignatureSource> = {}): PrintSignatu
   }
 }
 
-//  Ca ICARE theo luật bao-CR-536: đại diện = TP/BP đề xuất → tên lên «Giám đốc», ô đề xuất GIỮ nhưng trống.
+//  Ca ICARE theo luật bao-CR-536: đại diện = TP/BP đề xuất → tên lên "Giám đốc", ô đề xuất GIỮ nhưng trống.
 const mergedCells: PrintSignatureCell[] = [
   { key: 'director', role: 'Giám đốc', name: 'Le Phuoc Huu', signature: 'https://cdn/ky-huu.png' },
   { key: 'purchasing_head', role: 'TP/BP mua hàng', name: 'Pham Khanh Ngan', signature: 'https://cdn/ky-ngan.png' },
@@ -49,7 +49,7 @@ describe('resolvePrintSignatureCells', () => {
   })
 
   it('household prints names like a company, and tax template still blanks them', () => {
-    //  bao-CR-539: hộ kinh doanh 4 ô như công ty, chỉ khác nhãn «Chủ hộ»; CÓ tên.
+    //  bao-CR-539: hộ kinh doanh 4 ô như công ty, chỉ khác nhãn "Chủ hộ"; CÓ tên.
     const household: PrintSignatureCell[] = [
       { key: 'household_owner', role: 'Chủ hộ', name: 'Le Phuoc Huu', signature: 'https://cdn/ky-huu.png' },
       { key: 'purchasing_head', role: 'TP/BP mua hàng', name: 'Pham Khanh Ngan', signature: '' },

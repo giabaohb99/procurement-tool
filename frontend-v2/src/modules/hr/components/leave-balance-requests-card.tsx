@@ -108,8 +108,8 @@ export function LeaveBalanceRequestsCard({ balance }: LeaveBalanceRequestsCardPr
           storageKey="hr.leave-balance-requests"
           onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
           //  ⚠️ Bảng này khai 6 cột với bề rộng cứng, tổng ~830px. Trên máy
-          //  390px người dùng thấy đúng «Số đơn» và một nửa «Trạng thái»; ngay
-          //  cả câu «chưa nộp đơn nào» cũng nằm trong vùng cuộn ngang nên nó bị
+          //  390px người dùng thấy đúng "Số đơn" và một nửa "Trạng thái"; ngay
+          //  cả câu "chưa nộp đơn nào" cũng nằm trong vùng cuộn ngang nên nó bị
           //  cắt giữa chừng (báo 09/09/2026). Thẻ xếp dọc thì cả tờ đơn nằm
           //  trong tầm mắt.
           //  `showEmployee` TẮT: cả danh sách là đơn của đúng một người và tên

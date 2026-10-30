@@ -7,7 +7,7 @@ export type TreeKeyAction<T> =
 
 /**
  * Quy tắc điều hướng bàn phím của `TreeView` (roving tabindex, mẫu APG
- * «treeview») — tách thành hàm THUẦN để test không cần dựng DOM/React. Trả
+ * "treeview") — tách thành hàm THUẦN để test không cần dựng DOM/React. Trả
  * `null` cho phím không xử lý (nơi gọi tự bỏ qua, không gọi `preventDefault`).
  */
 export function resolveTreeKeyAction<T>(

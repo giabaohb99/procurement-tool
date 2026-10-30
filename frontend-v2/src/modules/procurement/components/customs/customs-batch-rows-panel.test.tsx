@@ -1,5 +1,5 @@
 // bao-CR-496 — hộp nhật ký từng dòng: tổng theo kết cục ở đầu, bấm ô là lọc và về trang 1.
-// bao-CR-541 — thêm kết cục «Đã có»; «Trùng trong lô» đổi thành «Trùng trong tệp» (bỏ qua).
+// bao-CR-541 — thêm kết cục "Đã có"; "Trùng trong lô" đổi thành "Trùng trong tệp" (bỏ qua).
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'

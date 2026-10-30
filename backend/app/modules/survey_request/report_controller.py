@@ -3,7 +3,7 @@
 Một bộ đường API cho MỌI chứng từ chủ; `entity` chọn luật ở `_OWNER_RULES`:
 
 - `survey_request` (YCBG, bao-CR-388): ĐỌC = `survey_request.read` + `_in_scope(read)`;
-  GHI = `survey_request.process` — cờ suy ra «là NS Thu mua» (xem ghi chú ở
+  GHI = `survey_request.process` — cờ suy ra "là NS Thu mua" (xem ghi chú ở
   `set_line_assignee_`), nên PHẠM VI vẫn hỏi theo `read`. Nút dòng hàng đặt tay.
 - `purchase_order` (ĐMH, bao-CR-602): ĐỌC = `purchase_order.read` + `_in_scope(read)`;
   GHI = `purchase_order.write` + `_in_scope(write)` — ai sửa được đơn thì sửa được
@@ -11,7 +11,7 @@ Một bộ đường API cho MỌI chứng từ chủ; `entity` chọn luật �
   thêm/đổi tên/xóa tay.
 
 Hai lớp chốt đều tái dùng khóa của chứng từ cha (khối nằm TRONG màn chi tiết, luật
-«một khóa = một màn hình» — không đẻ entity mới). Mọi mutation trả về NGUYÊN khối
+"một khóa = một màn hình" — không đẻ entity mới). Mọi mutation trả về NGUYÊN khối
 báo cáo mới — FE thay cache một lượt, không vá tay.
 """
 from dataclasses import dataclass
@@ -152,7 +152,7 @@ def get_report_(entity: str, owner_id: int, db: Session = Depends(get_db),
 @report_router.get("/templates")
 def list_templates_(entity: str, owner_id: int, db: Session = Depends(get_db),
                     user=Depends(_require_owner("write"))):
-    """Ô chọn mẫu của hộp «Khởi tạo báo cáo mẫu» (duoc-CR-614). Gác như thao tác ghi: chỉ
+    """Ô chọn mẫu của hộp "Khởi tạo báo cáo mẫu" (duoc-CR-614). Gác như thao tác ghi: chỉ
     người khởi tạo được mới cần danh sách này. Không dựng đầu báo cáo."""
     _rule_of(entity).load(db, owner_id, user, _rule_of(entity).write_scope_action)
     return success(report_service.list_templates())
@@ -170,13 +170,13 @@ def init_report_(entity: str, owner_id: int,
         db.commit()
         return success(report_service.get_report_payload(db, report_id))
     return _done(db, entity, parent, report_id, user,
-                 f"Báo cáo: khởi tạo theo mẫu «{REPORT_TEMPLATES[data.template][0]}» ({added} hồ sơ)")
+                 f"Báo cáo: khởi tạo theo mẫu \"{REPORT_TEMPLATES[data.template][0]}\" ({added} hồ sơ)")
 
 
 @report_router.post("/apply-template")
 def apply_template_(entity: str, owner_id: int, data: ReportTemplateApplyIn,
                     db: Session = Depends(get_db), user=Depends(_require_owner("write"))):
-    """Nút «Tạo mẫu» trên một nút dòng hàng / một giai đoạn — đổ mẫu chung vào,
+    """Nút "Tạo mẫu" trên một nút dòng hàng / một giai đoạn — đổ mẫu chung vào,
     cộng thêm, bỏ qua hồ sơ đã có."""
     parent, report_id = _writable(db, entity, owner_id, user)
     added = report_service.apply_template(db, report_id, data.item_id, data.phase_id, user.id)
@@ -200,7 +200,7 @@ def delete_report_(entity: str, owner_id: int, db: Session = Depends(get_db),
     """Xóa CẢ khối báo cáo — có thể HOÀN TÁC từ Lịch sử thao tác.
 
     Chụp ảnh khối vào sọt rác trước khi xóa, rồi gắn `audit_id` của dòng lịch sử
-    vào ảnh chụp để FE hiện nút «Hoàn tác» đúng dòng đó.
+    vào ảnh chụp để FE hiện nút "Hoàn tác" đúng dòng đó.
     """
     parent, report_id = _writable(db, entity, owner_id, user)
     trash = report_service.delete_all(db, report_id, user.id)
@@ -314,7 +314,7 @@ def delete_docs_(entity: str, owner_id: int, data: ReportDocBulkDeleteIn,
                  db: Session = Depends(get_db), user=Depends(_require_owner("write"))):
     parent, report_id = _writable(db, entity, owner_id, user)
     titles = report_service.delete_docs(db, report_id, data.doc_ids, user.id)
-    #  Một dòng lịch sử cho cả lượt; liệt kê tối đa 5 tên, còn lại gộp «+n».
+    #  Một dòng lịch sử cho cả lượt; liệt kê tối đa 5 tên, còn lại gộp "+n".
     shown = ", ".join(f"'{t}'" for t in titles[:5])
     more = f" +{len(titles) - 5}" if len(titles) > 5 else ""
     return _done(db, entity, parent, report_id, user,
@@ -325,7 +325,7 @@ def delete_docs_(entity: str, owner_id: int, data: ReportDocBulkDeleteIn,
 @report_router.get("/first-doc-options")
 def first_doc_options_(entity: str, owner_id: int, db: Session = Depends(get_db),
                        user=Depends(_require_owner("write"))):
-    """Ô chọn của hộp «Thêm hồ sơ» khi khối còn trống: dòng hàng của chứng từ + 5 giai
+    """Ô chọn của hộp "Thêm hồ sơ" khi khối còn trống: dòng hàng của chứng từ + 5 giai
     đoạn mặc định. Chỉ ĐỌC — không dựng đầu báo cáo (người mở hộp rồi hủy không để lại gì)."""
     rule = _rule_of(entity)
     parent = rule.load(db, owner_id, user, rule.write_scope_action)

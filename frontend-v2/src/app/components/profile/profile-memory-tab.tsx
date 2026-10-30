@@ -20,9 +20,9 @@ import { formatDate } from '@/shared/utils/format-date'
 import { ProfileBriefCard } from './profile-brief-card'
 
 /**
- * Tab «Bot nhớ gì về tôi» ở Trang cá nhân (ai-CR-138, phase 13.4).
+ * Tab "Bot nhớ gì về tôi" ở Trang cá nhân (ai-CR-138, phase 13.4).
  *
- * Bot tự nhớ thì người dùng phải THẤY được và XÓA được: sổ lõi bốn mục (dòng bot tự rút có nhãn «tự rút» + hạn), các
+ * Bot tự nhớ thì người dùng phải THẤY được và XÓA được: sổ lõi bốn mục (dòng bot tự rút có nhãn "tự rút" + hạn), các
  * điều bot đang để ý (chưa ghi), thói quen đếm từ sổ ý định, kho ghi chú. Chỉ chủ sổ thấy — cửa API lấy người dùng từ
  * phiên, quản trị cũng không có đường xem sổ người khác. Sửa / xóa gửi kèm NGUYÊN VĂN dòng cũ: dòng đã đổi ở tab khác thì
  * backend trả 409 thay vì sửa nhầm dòng bên cạnh.
@@ -31,7 +31,7 @@ export function ProfileMemoryTab() {
   const { data, isLoading } = useBotMemory()
   const busy = useRef(false)
   const addLine = useBotMemoryAction(botMemoryApi.addLine, 'Đã ghi vào sổ.')
-  //  ai-CR-140: đề xuất chủ động (13.5) bấm «Bật» là thành bản tin chủ đề — bot vẫn không tự bật thay người dùng.
+  //  ai-CR-140: đề xuất chủ động (13.5) bấm "Bật" là thành bản tin chủ đề — bot vẫn không tự bật thay người dùng.
   const addBrief = useBotBriefAction(botBriefApi.addTopic, 'Đã bật bản tin.')
   const editLine = useBotMemoryAction(botMemoryApi.editLine, 'Đã sửa.')
   const deleteLine = useBotMemoryAction(botMemoryApi.deleteLine, 'Đã xóa dòng.')
@@ -72,7 +72,7 @@ export function ProfileMemoryTab() {
         <CardContent className="space-y-4 text-sm">
           <p className="flex items-start gap-1.5 text-muted-foreground">
             <Eye className="mt-0.5 size-4 shrink-0" />
-            Chỉ mình bạn xem được trang này, kể cả quản trị cũng không có đường xem. Dòng gắn nhãn «tự rút» là bot tự ghi
+            Chỉ mình bạn xem được trang này, kể cả quản trị cũng không có đường xem. Dòng gắn nhãn <strong>tự rút</strong> là bot tự ghi
             sau khi bạn nhắc lại nhiều lần; không nhắc lại thì dòng tự hết hạn.
             {!data.auto_enabled && ' Tự rút ghi nhớ đang tắt trên hệ thống.'}
           </p>
@@ -86,7 +86,7 @@ export function ProfileMemoryTab() {
               onDelete={async (line) => {
                 const ok = await confirm({
                   title: 'Xóa dòng nhớ',
-                  message: `Xóa «${line.fact}»? Bot sẽ không tự rút lại điều này trong một thời gian.`,
+                  message: `Xóa "${line.fact}"? Bot sẽ không tự rút lại điều này trong một thời gian.`,
                   confirmLabel: 'Xóa',
                 })
                 if (ok) await once(() => deleteLine.mutateAsync({ section: section.key, old: line.text }))
@@ -150,7 +150,7 @@ export function ProfileMemoryTab() {
             ))}
             {data.habits.length > 0 && (
               <p className="text-muted-foreground">
-                Hỏi tắt mà thiếu đối tượng thì bot dùng giá trị trên và nói rõ «em hiểu là … như mọi lần».
+                Hỏi tắt mà thiếu đối tượng thì bot dùng giá trị trên và nói rõ <em>em hiểu là … như mọi lần</em>.
               </p>
             )}
             {data.suggestions.map((s) => (
@@ -212,7 +212,7 @@ export function ProfileMemoryTab() {
                     variant="ghost"
                     aria-label={`Xóa ghi chú ${n.title}`}
                     onClick={async () => {
-                      const ok = await confirm({ title: 'Xóa ghi chú', message: `Xóa ghi chú «${n.title}»?`, confirmLabel: 'Xóa' })
+                      const ok = await confirm({ title: 'Xóa ghi chú', message: `Xóa ghi chú "${n.title}"?`, confirmLabel: 'Xóa' })
                       if (ok) await once(() => deleteNote.mutateAsync(n.id))
                     }}
                   >
@@ -270,7 +270,7 @@ function MemorySectionBlock({ section, onAdd, onEdit, onDelete }: MemorySectionB
         <Input
           value={draft}
           maxLength={300}
-          placeholder={`Thêm vào «${section.label}»…`}
+          placeholder={`Thêm vào "${section.label}"…`}
           aria-label={`Thêm dòng vào ${section.label}`}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {

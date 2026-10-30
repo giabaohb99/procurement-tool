@@ -39,7 +39,7 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   // TK Đặt xe — 7 tài khoản test phân quyền phân hệ Đặt xe (mật khẩu: dego123).
   //  ⚠️ ĐĂNG NHẬP BẰNG MÃ NHÂN VIÊN, đừng đổi lại thành email (bao-CR-380, 11/09/2026).
   //  Bảy dòng này từng gõ email `@dego.com` mà bản seed dập lên hồ sơ, và danh sách seed
-  //  ngày ấy lệch một mã: bấm «Hồ Ngọc Quế Anh» thì đăng nhập ra Nguyễn Minh Toàn, dấu tick
+  //  ngày ấy lệch một mã: bấm "Hồ Ngọc Quế Anh" thì đăng nhập ra Nguyễn Minh Toàn, dấu tick
   //  đậu một nơi còn tên trên thanh tiêu đề một nẻo — khách bắt được trên dev. Mã nhân viên
   //  là khóa thật của hồ sơ: `authenticate` tra `Employee.code` rồi lấy tài khoản đang hoạt
   //  động của ĐÚNG người đó, không ai dập đè lên được, và `isCurrent` khớp thẳng `emp_code`.
@@ -72,12 +72,12 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   { username: 'DEMO_PURCHASER', password: 'demo123', label: 'Nhân viên Thu mua', group: 'Thu mua' },
 
   // Phòng ban tự mua hàng (bao-CR-414) — do `seed_tai_khoan_cr414.py` tạo, mật khẩu = mã.
-  //  Bộ NHÀ MÁY ở phòng «Dego Organic»: NM_MUA mang vai trò `pur_dept_manager` bậc `dept_proc`
+  //  Bộ NHÀ MÁY ở phòng "Dego Organic": NM_MUA mang vai trò `pur_dept_manager` bậc `dept_proc`
   //  (chỉ thấy phiếu đã duyệt của phòng mình + phiếu được nhờ cho phòng mình).
-  //  Bộ THU MUA ở phòng «Sản xuất -Thu mua»: TM_FULL toàn quyền như cũ; TM_QL cùng vai trò
-  //  quản lý nhưng có «Loại trừ phòng ban» = Dego Organic (không thấy nhà máy, trừ phiếu nhà
+  //  Bộ THU MUA ở phòng "Sản xuất -Thu mua": TM_FULL toàn quyền như cũ; TM_QL cùng vai trò
+  //  quản lý nhưng có "Loại trừ phòng ban" = Dego Organic (không thấy nhà máy, trừ phiếu nhà
   //  máy nhờ mình); TM_AD là admin thu mua bậc `proc` + cùng ô loại trừ.
-  //  MKT_YC / MKT_TP ở phòng «Hành chính» để đối chiếu phiếu phòng thường vẫn y như cũ.
+  //  MKT_YC / MKT_TP ở phòng "Hành chính" để đối chiếu phiếu phòng thường vẫn y như cũ.
   { username: 'NM_YC', password: 'NM_YC', label: 'Nhân sự nhà máy (NM_YC)', group: 'CR-414 · Nhà máy', hint: 'lập YCMH, chỉ xem của mình' },
   { username: 'NM_TP', password: 'NM_TP', label: 'Trưởng phòng nhà máy (NM_TP)', group: 'CR-414 · Nhà máy', hint: 'duyệt bước 1, xem phòng ban' },
   { username: 'NM_MUA', password: 'NM_MUA', label: 'Quản lý thu mua nhà máy (NM_MUA)', group: 'CR-414 · Nhà máy', hint: 'điều phối trong phòng mình' },

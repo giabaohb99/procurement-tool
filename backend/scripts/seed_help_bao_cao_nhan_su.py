@@ -2,14 +2,14 @@
 """Seed Trung tâm trợ giúp cho nhóm báo cáo NHÂN SỰ của phân hệ Báo cáo — duoc-CR-686, mở rộng duoc-CR-687,
 duoc-CR-688 (27/10/2026), duoc-CR-689 (28/10/2026); duoc-CR-692 (29/10/2026) bỏ hẳn phần kế hoạch.
 
-Dựng 1 thẻ phân hệ + 19 bài theo TÁC VỤ cho mười lăm báo cáo ở menu Báo cáo ▸ nhóm «Nhân sự»:
+Dựng 1 thẻ phân hệ + 19 bài theo TÁC VỤ cho mười lăm báo cáo ở menu Báo cáo ▸ nhóm "Nhân sự":
 Biến động nhân sự · Tình hình nghỉ phép · Quỹ phép năm (đã có, mở rộng) · Hợp đồng lao động ·
 Hồ sơ & tài khoản còn thiếu (CR-686) · Sổ quản lý lao động · Báo cáo sử dụng lao động (01/PLI) (CR-687) ·
 Quỹ lương theo pháp nhân · Phúc lợi & sự kiện · Cơ cấu quản lý · Điều chuyển & bổ nhiệm (CR-688) ·
 Có mặt theo ngày · Yêu cầu sửa hồ sơ · Sử dụng phòng họp · Đối tượng cần chú ý theo luật (CR-689), cộng ô
-«Lịch nhắc trong tháng» ở Tổng quan Nhân sự (CR-689).
-Phần chung: ô lọc «Phòng ban» và ngăn «Danh sách» mở từ nút «Xem danh sách» ở thẻ số / nút «Xem» ở
-bảng «Xem theo»; biểu đồ linh hoạt («Vẽ theo», kiểu, Top N, Tải ảnh PNG — CR-688, mọi báo cáo dùng
+"Lịch nhắc trong tháng" ở Tổng quan Nhân sự (CR-689).
+Phần chung: ô lọc "Phòng ban" và ngăn "Danh sách" mở từ nút "Xem danh sách" ở thẻ số / nút "Xem" ở
+bảng "Xem theo"; biểu đồ linh hoạt ("Vẽ theo", kiểu, Top N, Tải ảnh PNG — CR-688, mọi báo cáo dùng
 khung chung). CR-687 thêm 4 chiều cơ cấu vào Biến động nhân sự (Nhóm tuổi · Trình độ · Địa điểm làm
 việc · Nhóm vị trí việc làm) và khóa 19/20 vào bài giao quyền; CR-688 thêm khóa 21–24; CR-689 thêm
 khóa 26–29.
@@ -22,6 +22,13 @@ và phần so kế hoạch ở Quỹ lương. duoc-CR-692 (29/10/2026) đại ca
 báo cáo khóa 25 khỏi bài giao quyền; bài Quỹ lương viết lại chỉ còn lương cơ bản + phụ cấp trên HĐLĐ đang hiệu lực,
 có ghi chú số người đang làm chưa có HĐ. Nhãn A5 đối chiếu bằng đọc mã `labor_contract/payroll_report_service.py`,
 `payroll_report_no_contract.py`, `payroll_report_controller.py` và `report/pages/payroll-fund-report-page.tsx`.
+
+duoc-CR-693 (29/10/2026): Quỹ lương đổi nguồn sang ô Lương + Phụ cấp nhập ở hồ sơ nhân sự (tab Chung ▸ mục Công
+việc ▸ nhóm Lương), không đọc hợp đồng nữa; số hiện tại, không xu hướng / so kỳ; chỉ TỔNG, danh sách bấm số không có
+tiền; gác `employee.read|export` + khóa 21. Viết lại bài PAYROLL_TITLE và các dòng Quỹ lương ở bài giao quyền. Nhãn
+đối chiếu bằng đọc `labor_contract/payroll_report_service.py`, `payroll_report_data.py`, `payroll_report_controller.py`,
+`report/pages/payroll-fund-report-page.tsx`, `payroll-fund-missing-salary-notice.tsx` và ảnh
+`plans/reports/screenshots-cr693/07-*.png`. Bài nhập lương ở hồ sơ nằm ở `seed_help_nhan_su.py`.
 
 Nhãn nút và tên chỉ số chép từ mã màn (`frontend-v2/src/modules/report/`) và từ `meta.metrics` /
 `meta.dimensions` / `notes` của các đường `/summary` gọi trên local (27/10/2026); đổi nhãn ở màn hay ở
@@ -52,6 +59,8 @@ LABOR_USAGE_TITLE = "Báo cáo Nhân sự — Lập báo cáo sử dụng lao đ
 ADMIN_ACCESS_TITLE = "Báo cáo Nhân sự — Dành cho quản trị: giao quyền xem báo cáo"
 CHART_TITLE = "Báo cáo Nhân sự — Đổi kiểu biểu đồ, chọn nhóm để vẽ và tải ảnh biểu đồ"
 PAYROLL_TITLE = "Báo cáo Nhân sự — Đọc báo cáo Quỹ lương theo pháp nhân"
+#  Bài nhập lương ở hồ sơ thuộc cây Nhân sự — Hồ sơ và tổ chức (`seed_help_nhan_su.py`, duoc-CR-693).
+SALARY_TITLE = "Nhân sự — Nhập lương ở hồ sơ và xem lương của mình"
 BENEFIT_TITLE = "Báo cáo Nhân sự — Lập danh sách nhận quà và dự trù kinh phí theo dịp"
 SPAN_TITLE = "Báo cáo Nhân sự — Rà cơ cấu quản lý và người chưa gán quản lý trực tiếp"
 MOVES_TITLE = "Báo cáo Nhân sự — Theo dõi điều chuyển, bổ nhiệm và kiêm nhiệm"
@@ -81,7 +90,7 @@ TREE = {
 <tr><td><strong>Hồ sơ &amp; tài khoản còn thiếu</strong></td><td>Hồ sơ của ai chưa đủ, phòng nào khai kém, tài khoản nào đang để hở</td><td>{ref(PROFILE_GAPS_TITLE, "Tìm hồ sơ và tài khoản còn thiếu")}</td></tr>
 <tr><td><strong>Sổ quản lý lao động</strong></td><td>Thanh tra lao động hỏi thì đưa ngay được sổ, mỗi pháp nhân một bản</td><td>{ref(LABOR_BOOK_TITLE, "Xuất Sổ quản lý lao động")}</td></tr>
 <tr><td><strong>Báo cáo sử dụng lao động (01/PLI)</strong></td><td>Lập báo cáo 6 tháng và báo cáo năm nộp Sở Nội vụ</td><td>{ref(LABOR_USAGE_TITLE, "Lập báo cáo sử dụng lao động mẫu 01/PLI")}</td></tr>
-<tr><td><strong>Quỹ lương theo pháp nhân</strong></td><td>Mỗi công ty đang gánh bao nhiêu tiền lương mỗi tháng, cùng một chức vụ ở các công ty được trả từ bao nhiêu tới bao nhiêu</td><td>{ref(PAYROLL_TITLE, "Đọc báo cáo Quỹ lương theo pháp nhân")}</td></tr>
+<tr><td><strong>Quỹ lương theo pháp nhân</strong></td><td>Hiện mỗi công ty, mỗi phòng đang gánh tổng bao nhiêu tiền lương mỗi tháng, theo số lương nhập ở hồ sơ từng người</td><td>{ref(PAYROLL_TITLE, "Đọc báo cáo Quỹ lương theo pháp nhân")}</td></tr>
 <tr><td><strong>Phúc lợi &amp; sự kiện</strong></td><td>Dịp 8/3, 1/6, Tết… phát quà cho ai, bao nhiêu người, mỗi công ty chi bao nhiêu tiền</td><td>{ref(BENEFIT_TITLE, "Lập danh sách nhận quà và dự trù kinh phí theo dịp")}</td></tr>
 <tr><td><strong>Cơ cấu quản lý</strong></td><td>Mỗi quản lý đang phụ trách bao nhiêu người, ai chưa có quản lý trực tiếp</td><td>{ref(SPAN_TITLE, "Rà cơ cấu quản lý và người chưa gán quản lý trực tiếp")}</td></tr>
 <tr><td><strong>Điều chuyển &amp; bổ nhiệm</strong></td><td>Kỳ này ai chuyển phòng, ai được bổ nhiệm, kiêm nhiệm nào sắp hết</td><td>{ref(MOVES_TITLE, "Theo dõi điều chuyển, bổ nhiệm và kiêm nhiệm")}</td></tr>
@@ -152,7 +161,7 @@ TREE = {
         {
             "title": CHART_TITLE,
             "icon": "bar-chart",
-            "summary": "Biểu đồ dưới thẻ số của mọi báo cáo: bấm thẻ để đổi chỉ số, Vẽ theo thời gian hay theo nhóm, kiểu Đường / Cột / Cột ngang / Vành khuyên, Top 5–20 gộp «Khác», bấm cột ra danh sách người, Tải ảnh PNG, gửi đường dẫn giữ nguyên biểu đồ",
+            "summary": "Biểu đồ dưới thẻ số của mọi báo cáo: bấm thẻ để đổi chỉ số, Vẽ theo thời gian hay theo nhóm, kiểu Đường / Cột / Cột ngang / Vành khuyên, Top 5–20 gộp 'Khác', bấm cột ra danh sách người, Tải ảnh PNG, gửi đường dẫn giữ nguyên biểu đồ",
             "content": f"""<h2>Biểu đồ nằm ở đâu</h2>
 <p>Mọi báo cáo trong phân hệ <strong>Báo cáo</strong> (nhóm Nhân sự và các nhóm khác) có một biểu đồ ngay dưới hàng thẻ số. Mở báo cáo lần đầu, biểu đồ trông như trước:</p>
 <ul>
@@ -455,7 +464,7 @@ TREE = {
 <tbody>
 <tr><td><strong>Tổng lao động</strong></td><td>Số người trong báo cáo</td></tr>
 <tr><td><strong>Nữ</strong></td><td>Số lao động nữ</td></tr>
-<tr><td><strong>Nhà quản lý</strong>, <strong>Chuyên môn kỹ thuật bậc cao</strong></td><td>Hai nhóm đầu của cột «Vị trí việc làm» trong mẫu</td></tr>
+<tr><td><strong>Nhà quản lý</strong>, <strong>Chuyên môn kỹ thuật bậc cao</strong></td><td>Hai nhóm đầu của cột <strong>Vị trí việc làm</strong> trong mẫu</td></tr>
 <tr><td>Chuyên môn kỹ thuật bậc trung, Vị trí việc làm khác</td><td>Hai nhóm còn lại, có sẵn trên bảng</td></tr>
 <tr><td>HĐ không xác định thời hạn, HĐ xác định thời hạn, HĐ khác (thử việc, chưa có HĐ)</td><td>Số người theo loại hợp đồng đang áp, có sẵn trên bảng</td></tr>
 </tbody>
@@ -463,7 +472,7 @@ TREE = {
 <p><strong>Không có trong mẫu:</strong> người ký <strong>hợp đồng khoán việc</strong> hoặc <strong>cộng tác viên</strong> — đây là hợp đồng dân sự, không phải hợp đồng lao động. Mục <strong>Cách tính số liệu</strong> ghi số người bị loại để bạn xem lại; vẫn có trong Sổ quản lý lao động.</p>
 
 <h2>Nhóm vị trí việc làm được tính thế nào</h2>
-<p>Hệ thống không có ô «vị trí việc làm» riêng mà <strong>tự suy</strong> từ hồ sơ, theo chú thích của mẫu:</p>
+<p>Hệ thống không có ô <strong>vị trí việc làm</strong> riêng mà <strong>tự suy</strong> từ hồ sơ, theo chú thích của mẫu:</p>
 <table>
 <thead><tr><th>Nhóm</th><th>Điều kiện</th></tr></thead>
 <tbody>
@@ -491,7 +500,7 @@ TREE = {
 <ol>
 <li><strong>Điền tay các cột để trống</strong> (hệ thống chưa có dữ liệu):
 <ul>
-<li>cột 13–15 và 17: phụ cấp chức vụ, thâm niên vượt khung, thâm niên nghề, các khoản bổ sung (hệ thống chỉ có một ô phụ cấp tổng trên hợp đồng, đã ghi vào cột 16 «Phụ cấp lương»);</li>
+<li>cột 13–15 và 17: phụ cấp chức vụ, thâm niên vượt khung, thâm niên nghề, các khoản bổ sung (hệ thống chỉ có một ô phụ cấp tổng trên hợp đồng, đã ghi vào cột 16 <strong>Phụ cấp lương</strong>);</li>
 <li>cột 18–19: ngành, nghề nặng nhọc, độc hại;</li>
 <li>cột 25–26: thời điểm đơn vị bắt đầu và kết thúc đóng BHXH.</li>
 </ul></li>
@@ -517,63 +526,46 @@ TREE = {
         {
             "title": PAYROLL_TITLE,
             "icon": "banknote",
-            "summary": "Quỹ lương = lương cơ bản + phụ cấp trên hợp đồng lao động đang hiệu lực; xem theo pháp nhân, phòng, chức vụ, nhóm vị trí, loại HĐ; dòng Tổng = toàn công ty; người chưa có HĐ; nhóm dưới 3 người bị che; chỉ giao người được xem lương",
+            "summary": "Quỹ lương = Lương + Phụ cấp nhập ở hồ sơ từng người (số hiện tại); xem theo pháp nhân, phòng ban, chức vụ, nhóm vị trí; chỉ có tổng, nhóm dưới 3 người bị che; danh sách bấm số không có tiền",
             "content": f"""<h2>Báo cáo cho biết gì</h2>
-<p>Báo cáo <strong>Quỹ lương theo pháp nhân</strong> cho Ban Giám đốc biết mỗi công ty đang gánh bao nhiêu tiền lương mỗi tháng.</p>
-<p><strong>Quỹ lương = lương cơ bản + phụ cấp</strong> ghi trên hợp đồng lao động đang hiệu lực của từng người. Hai số này nhập ở tab <strong>Hợp đồng lao động</strong> trong chi tiết nhân sự của người đó; báo cáo không lấy số lương từ nơi nào khác.</p>
-<p>⚠️ Đây là <strong>lương thỏa thuận ghi trên hợp đồng</strong>, không phải lương thực trả. ERP không có chấm công và bảng lương, nên báo cáo không tính làm thêm giờ, thưởng hay khấu trừ. Chỉ hợp đồng đã ký, còn hiệu lực, của người còn làm mới được cộng.</p>
+<p>Báo cáo <strong>Quỹ lương theo pháp nhân</strong> cho Ban Giám đốc biết mỗi công ty, mỗi phòng đang gánh tổng bao nhiêu tiền lương mỗi tháng.</p>
+<p><strong>Quỹ lương = Lương + Phụ cấp</strong> nhập ở <strong>hồ sơ nhân sự</strong> của từng người: tab <strong>Chung</strong> ▸ mục <strong>Công việc</strong> ▸ nhóm <strong>Lương</strong>. Báo cáo không đọc số lương trên hợp đồng lao động. Khi một hợp đồng lao động được đánh dấu đã ký, hệ thống tự chép lương và phụ cấp của hợp đồng đó sang hồ sơ, nên số trong báo cáo vẫn theo kịp hợp đồng mới. Cách nhập xem bài {ref(SALARY_TITLE, "Nhập lương ở hồ sơ và xem lương của mình")}.</p>
+<p>⚠️ Đây là <strong>số hiện tại</strong> trên hồ sơ, không có lịch sử: báo cáo không có nút chọn kỳ, không có biểu đồ xu hướng theo tháng và không so với kỳ trước. Đây cũng là lương thỏa thuận, không phải lương thực trả: ERP không có chấm công và bảng lương, nên báo cáo không tính làm thêm giờ, thưởng hay khấu trừ. Chỉ người đang làm (chưa nghỉ việc) mới được cộng.</p>
 <table>
 <thead><tr><th>Thẻ số / cột</th><th>Ý nghĩa</th></tr></thead>
 <tbody>
-<tr><td><strong>Quỹ lương (lương + phụ cấp)</strong></td><td>Tổng lương cơ bản cộng phụ cấp trên hợp đồng, tính cho một tháng</td></tr>
-<tr><td><strong>Số người hưởng lương</strong></td><td>Số người có hợp đồng đang hiệu lực được cộng vào quỹ lương</td></tr>
-<tr><td><strong>Bình quân / người</strong></td><td>Quỹ lương chia cho số người hưởng lương</td></tr>
-<tr><td><strong>Tổng lương đóng BHXH</strong></td><td>Tổng mức lương đóng bảo hiểm xã hội ghi trên hợp đồng</td></tr>
-<tr><td>Tổng lương cơ bản, Tổng phụ cấp</td><td>Hai phần làm nên quỹ lương, có sẵn trên bảng</td></tr>
-<tr><td>Lương cơ bản thấp nhất, Lương cơ bản cao nhất</td><td>Mức lương cơ bản thấp nhất và cao nhất trong nhóm. Bật ở nút <strong>Cột</strong> của bảng</td></tr>
+<tr><td><strong>Quỹ lương (lương + phụ cấp)</strong></td><td>Tổng Lương cộng Phụ cấp của mọi người trong nhóm, tính cho một tháng</td></tr>
+<tr><td><strong>Lương</strong></td><td>Tổng ô Lương trên hồ sơ</td></tr>
+<tr><td><strong>Phụ cấp</strong></td><td>Tổng ô Phụ cấp trên hồ sơ</td></tr>
+<tr><td><strong>Số người có lương</strong></td><td>Số người đang làm đã được nhập lương hoặc phụ cấp</td></tr>
+<tr><td><strong>Bình quân / người</strong></td><td>Quỹ lương chia cho số người có lương</td></tr>
 </tbody>
 </table>
-<p>Số liệu tính tại <strong>ngày cuối kỳ</strong> (hoặc hôm nay nếu kỳ chưa hết). Ô <strong>Xem theo</strong> cho chia theo <strong>Pháp nhân</strong> (mặc định), <strong>Phòng ban</strong>, <strong>Chức vụ</strong>, <strong>Nhóm vị trí việc làm</strong> hoặc <strong>Loại hợp đồng</strong>.</p>
-<p>Dòng <em>Tổng</em> là <strong>toàn công ty trong phạm vi bạn được xem</strong>; các dòng phía trên chỉ chia nhỏ đúng số đó. Một người có hợp đồng còn hiệu lực ở hai pháp nhân được tính ở cả hai, và dòng Tổng cộng cả hai.</p>
+<p>Hai ô lọc ở đầu trang là <strong>phòng ban</strong> và <strong>công ty</strong>. Ô <strong>Xem theo</strong> của bảng chia theo <strong>Pháp nhân</strong> (mặc định), <strong>Phòng ban</strong>, <strong>Chức vụ</strong> hoặc <strong>Nhóm vị trí việc làm</strong>. Dòng <em>Tổng</em> là <strong>toàn công ty trong phạm vi bạn được xem</strong>; các dòng phía trên chỉ chia nhỏ đúng số đó.</p>
 
-<h2>Người đang làm mà chưa có hợp đồng</h2>
-<p>Người đang làm mà chưa có hợp đồng lao động còn hiệu lực thì không có số lương, nên <strong>không nằm trong quỹ lương</strong>. Mục <strong>Cách tính số liệu</strong> ghi rõ có bao nhiêu người như vậy, ví dụ <em>Đang có 4 người còn làm chưa có hợp đồng lao động hiệu lực — chưa tính vào quỹ lương.</em> Ghi chú này chỉ hiện với người có quyền xem hồ sơ nhân sự, và chỉ đếm người trong phạm vi bạn được xem.</p>
-<p>Muốn quỹ lương đủ, nhập hợp đồng cho những người đó ở tab <strong>Hợp đồng lao động</strong> trong chi tiết nhân sự. Muốn biết đó là ai, xem thẻ <em>Đang làm, chưa có HĐ</em> ở bài {ref(LABOR_CONTRACT_TITLE, "Theo dõi hợp đồng lao động sắp hết hạn")}.</p>
+<h2>Người đang làm mà chưa nhập lương</h2>
+<p>Người đang làm mà chưa được nhập lương thì không có số, nên <strong>không nằm trong quỹ lương</strong>. Ngay dưới hàng thẻ số có dòng nhắc, ví dụ <em>265 người đang làm chưa nhập lương — quỹ lương chưa gồm họ.</em> Mục <strong>Cách tính số liệu</strong> cũng ghi con số này. Dòng nhắc chỉ đếm người trong phạm vi bạn được xem và không hiện khi mọi người đã có lương.</p>
+<p>Muốn quỹ lương đủ, nhờ người sửa được hồ sơ nhân sự nhập lương cho những người đó (bài {ref(SALARY_TITLE, "Nhập lương ở hồ sơ và xem lương của mình")}).</p>
 
-<h2>Xem quỹ lương thay đổi theo tháng</h2>
-<ol>
-<li>Mở <strong>Báo cáo</strong> ▸ <strong>Quỹ lương theo pháp nhân</strong>. Kỳ mở sẵn là <strong>Tháng này</strong>.</li>
-<li>Bấm nút kỳ, chọn <strong>Năm nay</strong> (hoặc <strong>Tùy chọn khoảng ngày</strong> 12 tháng rồi bấm <strong>Áp dụng</strong>).</li>
-<li>Biểu đồ <em>Xu hướng Quỹ lương (lương + phụ cấp)</em> có mỗi tháng một điểm, lấy số tại cuối tháng. Quỹ lương tăng khi tuyển mới hoặc ký lại hợp đồng với mức lương cao hơn, giảm khi có người nghỉ.</li>
-<li>Muốn xem số người thay vì số tiền, bấm thẻ <strong>Số người hưởng lương</strong>.</li>
-</ol>
-<p>Cách đổi biểu đồ sang cột hay vẽ theo pháp nhân xem bài {ref(CHART_TITLE, "Đổi kiểu biểu đồ, chọn nhóm để vẽ và tải ảnh biểu đồ")}.</p>
-
-<h2>So lương cùng một chức vụ ở các công ty để chào lương người mới</h2>
-<ol>
-<li>Chọn <strong>Xem theo</strong> ▸ <strong>Chức vụ</strong>.</li>
-<li>Bấm nút <strong>Cột</strong> của bảng, bật <strong>Lương cơ bản thấp nhất</strong> và <strong>Lương cơ bản cao nhất</strong>.</li>
-<li>Đổi ô <strong>Công ty</strong> lần lượt sang từng pháp nhân để xem cùng một chức vụ ở mỗi công ty đang được trả từ bao nhiêu tới bao nhiêu, cùng mức <strong>Bình quân / người</strong>.</li>
-<li>Chào lương người mới trong khoảng đó để không lệch giữa các công ty.</li>
-</ol>
-<p>Chức vụ nào ở một công ty chỉ có 1–2 người thì bị che số (xem mục dưới). Khi đó để ô <strong>Công ty</strong> ở <em>Tất cả công ty</em> để so trên cả tập đoàn.</p>
-
-<h2>Nhóm dưới 3 người bị che số</h2>
-<p>Nhìn bình quân của một nhóm chỉ 1–2 người là đoán ra lương từng người. Vì vậy với <strong>mọi người xem, kể cả quản trị</strong>:</p>
+<h2>Chỉ có tổng, nhóm dưới 3 người bị che số</h2>
+<p>Báo cáo <strong>không hiện lương của bất kỳ ai</strong>, kể cả với quản trị. Nhìn tổng của một nhóm chỉ 1–2 người là đoán ra lương từng người, vì vậy với mọi người xem:</p>
 <ul>
-<li>nhóm có 1–2 người hưởng lương (ở kỳ đang xem hoặc kỳ so sánh) hiện <strong>—</strong> ở mọi cột. Nếu chỉ một nhóm bị che, hệ thống che thêm nhóm nhỏ kế tiếp để không lấy Tổng trừ các nhóm khác mà ra được. Mục <strong>Cách tính số liệu</strong> có thêm lưu ý <em>Nhóm dưới 3 người được che số để không đoán ra lương từng người</em>;</li>
-<li>dòng <em>Tổng</em> vẫn hiện đủ số;</li>
-<li>nhóm bị che không được vẽ trên biểu đồ, và không mở được danh sách: ngăn báo <em>Nhóm dưới 3 người: không xem danh sách để tránh lộ lương từng người</em>.</li>
+<li>nhóm có 1–2 người có lương hiện <strong>—</strong> ở các cột tiền. Nếu chỉ một nhóm bị che, hệ thống che thêm nhóm nhỏ kế tiếp để không lấy Tổng trừ các nhóm khác mà ra được;</li>
+<li>nếu cả phạm vi đang xem (dòng <em>Tổng</em>) chỉ có 1–2 người có lương thì các thẻ tiền và dòng Tổng cũng hiện <strong>—</strong>. Bỏ bớt bộ lọc phòng ban, công ty để xem;</li>
+<li>khi che xong mà vẫn có thể suy ra lương từng người, bảng <strong>Xem theo</strong> bị bỏ hẳn và mục <strong>Cách tính số liệu</strong> ghi lý do, ví dụ <em>Không đủ người để xem theo Phòng ban mà không lộ thông tin từng người — bỏ bớt bộ lọc để xem</em>;</li>
+<li>nhóm bị che không được vẽ trên biểu đồ.</li>
 </ul>
 
-<h2>Xem lương từng người</h2>
-<p>Bấm <strong>Xem danh sách</strong> ở thẻ <strong>Số người hưởng lương</strong>, hoặc nút <strong>Xem</strong> ở một dòng không bị che. Danh sách có Mã NV, Họ tên, Pháp nhân, Phòng ban, Chức vụ, Loại HĐ, <strong>Lương cơ bản</strong>, <strong>Phụ cấp</strong> và <strong>Lương đóng BHXH</strong>. Bấm một dòng để mở tab hợp đồng trong hồ sơ người đó. Các thẻ tiền (quỹ lương, bình quân) không có nút <strong>Xem danh sách</strong>.</p>
+<h2>Xem ai được tính vào quỹ lương</h2>
+<p>Bấm <strong>Xem danh sách</strong> ở thẻ <strong>Số người có lương</strong>, hoặc nút <strong>Xem</strong> ở một dòng không bị che. Danh sách chỉ có <strong>Mã NV, Họ tên, Pháp nhân, Phòng ban, Chức vụ</strong>, <strong>không có cột tiền nào</strong>. Bấm một dòng để mở hồ sơ người đó. Nhóm bị che không mở được danh sách: ngăn báo <em>Nhóm dưới 3 người: không xem danh sách để tránh lộ lương từng người</em>. Các thẻ tiền không có nút <strong>Xem danh sách</strong>.</p>
+<p>Nút <strong>Xuất Excel</strong> chỉ xuất bảng tổng đã che như trên màn, không có lương từng người.</p>
 
-<h2>Bảo mật và những gì chưa có</h2>
+<h2>Ai mở được báo cáo</h2>
 <ul>
-<li>⚠️ Ai mở được báo cáo này là xem được lương. Báo cáo lúc mới lên <strong>chỉ quản trị thấy</strong>; chỉ giao cho người được phép xem lương (bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}). Báo cáo không hiện ở trang Tổng quan của phân hệ Báo cáo.</li>
-<li><strong>Trợ lý AI không đọc được báo cáo này</strong>, kể cả khi bạn có quyền xem. Cần số lương thì mở thẳng báo cáo.</li>
-<li>Báo cáo chưa có khoản BHXH công ty phải đóng; chỉ có <strong>Tổng lương đóng BHXH</strong> ghi trên hợp đồng.</li>
+<li>Cần hai thứ: được giao xem báo cáo <em>Quỹ lương theo pháp nhân</em> ở tab <strong>Báo cáo</strong> của Phân quyền tài khoản, và có <strong>quyền xem hồ sơ nhân sự</strong>. Không còn cần quyền xem hợp đồng lao động. Nút <strong>Xuất Excel</strong> cần thêm quyền xuất hồ sơ nhân sự. Xem bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</li>
+<li>Số liệu chỉ gồm những người nằm trong phạm vi hồ sơ nhân sự bạn được xem.</li>
+<li><strong>Trợ lý AI không đọc được số lương</strong>, kể cả khi bạn có quyền xem báo cáo. Báo cáo không hiện ở trang Tổng quan của phân hệ Báo cáo.</li>
+<li>Báo cáo chưa có khoản BHXH công ty phải đóng.</li>
 </ul>""",
         },
         {
@@ -753,7 +745,7 @@ TREE = {
 
 <h2>Giới hạn của kỳ</h2>
 <ul>
-<li>Mỗi lần xem tối đa <strong>92 ngày</strong> (một quý vẫn xem được), vì mỗi người × mỗi ngày là một dòng tính. Chọn <strong>Năm nay</strong> thì trang báo <em>Báo cáo «Có mặt theo ngày» chỉ xem được tối đa 92 ngày một lần…</em>; chọn kỳ ngắn hơn rồi xem lại.</li>
+<li>Mỗi lần xem tối đa <strong>92 ngày</strong> (một quý vẫn xem được), vì mỗi người × mỗi ngày là một dòng tính. Chọn <strong>Năm nay</strong> thì trang báo <em>Báo cáo <strong>Có mặt theo ngày</strong> chỉ xem được tối đa 92 ngày một lần…</em>; chọn kỳ ngắn hơn rồi xem lại.</li>
 <li>Báo cáo <strong>chỉ tính tới hết hôm nay</strong>. Kỳ kéo sang ngày chưa tới thì phần đó chưa tính, và mục <strong>Cách tính số liệu</strong> ghi rõ.</li>
 <li>Vì kỳ có giới hạn nên báo cáo này không lên trang Tổng quan của phân hệ Báo cáo.</li>
 </ul>
@@ -834,7 +826,7 @@ TREE = {
             "content": f"""<h2>Báo cáo cho biết gì</h2>
 <p>Báo cáo <strong>Đối tượng cần chú ý theo luật</strong> liệt kê những người đang được hưởng, hoặc sắp phải xử lý, chế độ riêng theo luật lao động. Tình trạng tính tại <strong>ngày cuối kỳ</strong> hoặc <strong>hôm nay</strong>, lấy ngày sớm hơn; báo cáo không có xu hướng theo thời gian.</p>
 <table>
-<thead><tr><th>Thẻ số</th><th>Ai được tính</th><th>Cột «Mốc» trong danh sách</th></tr></thead>
+<thead><tr><th>Thẻ số</th><th>Ai được tính</th><th>Cột <strong>Mốc</strong> trong danh sách</th></tr></thead>
 <tbody>
 <tr><td><strong>Đến tuổi nghỉ hưu trong 12 tháng</strong></td><td>Người sẽ tới thời điểm nghỉ hưu trong 12 tháng tới</td><td>Thời điểm nghỉ hưu</td></tr>
 <tr><td><strong>Đã quá tuổi nghỉ hưu, vẫn đang làm</strong></td><td>Người đã qua thời điểm nghỉ hưu mà vẫn đang làm (cần làm hợp đồng mới hoặc chốt nghỉ)</td><td>Thời điểm nghỉ hưu</td></tr>
@@ -905,7 +897,7 @@ TREE = {
         {
             "title": ADMIN_ACCESS_TITLE,
             "icon": "shield-check",
-            "summary": "Mười hai báo cáo mới lúc đầu chỉ admin thấy; giao ở Phân quyền tài khoản ▸ tab Báo cáo; vẫn cần quyền ở phân hệ gốc; báo cáo quỹ lương chỉ giao người được xem lương",
+            "summary": "Mười hai báo cáo mới lúc đầu chỉ admin thấy; giao ở Phân quyền tài khoản ▸ tab Báo cáo; vẫn cần quyền ở phân hệ gốc; báo cáo quỹ lương chỉ giao đúng từng người",
             "content": f"""<h2>Ai xem được báo cáo nào</h2>
 <p>Muốn mở một báo cáo Nhân sự, người dùng cần đủ <strong>hai lớp quyền</strong>:</p>
 <ol>
@@ -920,7 +912,7 @@ TREE = {
 <tr><td>Quỹ phép năm</td><td>Xem quỹ phép năm</td></tr>
 <tr><td>Hợp đồng lao động</td><td>Xem hợp đồng lao động (người có quyền này xem được cả các cột lương)</td></tr>
 <tr><td>Sổ quản lý lao động · Báo cáo sử dụng lao động (01/PLI)</td><td>Xem hồ sơ nhân sự, <strong>và thêm</strong> xem thông tin nhạy cảm của nhân sự, xem hợp đồng lao động. Thiếu một trong hai quyền thêm thì trang báo rõ thiếu quyền nào</td></tr>
-<tr><td>Quỹ lương theo pháp nhân</td><td>Xem hợp đồng lao động. Ghi chú số người đang làm chưa có hợp đồng cần thêm quyền xem hồ sơ nhân sự</td></tr>
+<tr><td>Quỹ lương theo pháp nhân</td><td>Xem hồ sơ nhân sự (không cần quyền xem hợp đồng lao động). Số liệu chỉ gồm người trong phạm vi hồ sơ bạn được xem</td></tr>
 <tr><td>Phúc lợi &amp; sự kiện</td><td>Xem hồ sơ nhân sự. Lọc theo tuổi, tháng sinh, tuổi con cần thêm quyền xem thông tin nhạy cảm của nhân sự</td></tr>
 <tr><td>Cơ cấu quản lý · Điều chuyển &amp; bổ nhiệm</td><td>Xem hồ sơ nhân sự</td></tr>
 <tr><td>Có mặt theo ngày</td><td>Xem hồ sơ nhân sự. Các cột nghỉ, có mặt và tỷ lệ cần thêm quyền xem đơn nghỉ phép; thiếu thì chỉ còn <em>Người-ngày phải làm</em></td></tr>
@@ -929,7 +921,7 @@ TREE = {
 <tr><td>Đối tượng cần chú ý theo luật</td><td>Xem hồ sơ nhân sự, <strong>và thêm</strong> xem thông tin nhạy cảm của nhân sự (ngày sinh, người thân). Thiếu thì trang báo không tải được kèm lý do</td></tr>
 </tbody>
 </table>
-<p>Nút <strong>Xuất Excel</strong> trên báo cáo cần thêm quyền xuất của phân hệ gốc. Hai nút <strong>Xuất sổ (Excel)</strong> và <strong>Xuất mẫu 01/PLI</strong> cần quyền xuất hồ sơ nhân sự và quyền xuất hợp đồng lao động. Nút <strong>Xuất danh sách ký nhận</strong> của báo cáo Phúc lợi &amp; sự kiện cần quyền xuất hồ sơ nhân sự. Báo cáo <em>Hồ sơ &amp; tài khoản còn thiếu</em> hiện thêm nhóm giấy tờ cá nhân với người có quyền xem thông tin nhạy cảm, và nhóm tài khoản với người có quyền xem tài khoản. Ở báo cáo <em>Biến động nhân sự</em>, người không có quyền xem thông tin nhạy cảm thấy nhóm tuổi dưới 3 người bị che số và không mở được danh sách theo nhóm tuổi.</p>
+<p>Nút <strong>Xuất Excel</strong> trên báo cáo cần thêm quyền xuất của phân hệ gốc. Hai nút <strong>Xuất sổ (Excel)</strong> và <strong>Xuất mẫu 01/PLI</strong> cần quyền xuất hồ sơ nhân sự và quyền xuất hợp đồng lao động. Nút <strong>Xuất danh sách ký nhận</strong> của báo cáo Phúc lợi &amp; sự kiện và nút <strong>Xuất Excel</strong> của báo cáo Quỹ lương theo pháp nhân cần quyền xuất hồ sơ nhân sự. Báo cáo <em>Hồ sơ &amp; tài khoản còn thiếu</em> hiện thêm nhóm giấy tờ cá nhân với người có quyền xem thông tin nhạy cảm, và nhóm tài khoản với người có quyền xem tài khoản. Ở báo cáo <em>Biến động nhân sự</em>, người không có quyền xem thông tin nhạy cảm thấy nhóm tuổi dưới 3 người bị che số và không mở được danh sách theo nhóm tuổi.</p>
 
 <h2>Giao các báo cáo mới cho trưởng phòng Nhân sự và Ban Giám đốc</h2>
 <p>Mười hai báo cáo mới lúc mới lên <strong>chỉ quản trị hệ thống thấy</strong>:</p>
@@ -940,7 +932,7 @@ TREE = {
 <tr><td>Hồ sơ &amp; tài khoản còn thiếu</td><td>Phòng Nhân sự</td></tr>
 <tr><td>Sổ quản lý lao động</td><td>Chỉ trưởng phòng Nhân sự, Ban Giám đốc</td></tr>
 <tr><td>Báo cáo sử dụng lao động (01/PLI)</td><td>Chỉ trưởng phòng Nhân sự, Ban Giám đốc</td></tr>
-<tr><td><strong>Quỹ lương theo pháp nhân</strong></td><td>Chỉ người được phép xem lương, thường là Ban Giám đốc</td></tr>
+<tr><td><strong>Quỹ lương theo pháp nhân</strong></td><td>Chỉ người được phép biết tổng lương, thường là Ban Giám đốc</td></tr>
 <tr><td>Phúc lợi &amp; sự kiện</td><td>Phòng Nhân sự, Hành chính, người lo quà và sự kiện</td></tr>
 <tr><td>Cơ cấu quản lý</td><td>Trưởng phòng Nhân sự, Ban Giám đốc</td></tr>
 <tr><td>Điều chuyển &amp; bổ nhiệm</td><td>Trưởng phòng Nhân sự, Ban Giám đốc</td></tr>
@@ -953,7 +945,7 @@ TREE = {
 <p>Quản trị giao cho người cần dùng như sau:</p>
 <ol>
 <li>Vào màn <strong>Phân quyền tài khoản</strong>, chọn tab <strong>Báo cáo</strong>. Bảng liệt kê mọi báo cáo theo phân hệ, kèm cột <strong>Được xem</strong> và <strong>Bị cấm</strong>.</li>
-<li>Ở dòng <em>Hợp đồng lao động</em>, bấm nút bút chì ở cột <strong>Sửa</strong>. Hộp <strong>Quyền xem «Hợp đồng lao động»</strong> mở ra.</li>
+<li>Ở dòng <em>Hợp đồng lao động</em>, bấm nút bút chì ở cột <strong>Sửa</strong>. Hộp <strong>Quyền xem Hợp đồng lao động</strong> mở ra.</li>
 <li>Ở ô <strong>Thêm người · phòng ban · pháp nhân · vai trò</strong>, chọn người (ví dụ trưởng phòng Nhân sự) hoặc vai trò (ví dụ Ban Giám đốc).</li>
 <li>Để <strong>Chiều tác động</strong> là <strong>Cho phép</strong>. Ghi <strong>Lý do</strong> nếu muốn (không bắt buộc).</li>
 <li>Bấm <strong>Thêm</strong>, rồi <strong>Đóng</strong>. Làm lại cho từng dòng báo cáo còn lại trong bảng trên.</li>
@@ -961,7 +953,7 @@ TREE = {
 <p>Muốn chặn riêng một người dù vai trò của họ được xem, thêm người đó với chiều <strong>Cấm</strong>: cấm luôn thắng cho phép. Người được giao tải lại trang (hoặc đăng nhập lại) thì menu hiện báo cáo mới.</p>
 <p>⚠️ Báo cáo Hợp đồng lao động có cột lương. Chỉ giao cho người được phép xem lương.</p>
 <p>⚠️ <strong>Sổ quản lý lao động</strong> và <strong>Báo cáo sử dụng lao động (01/PLI)</strong> xuất ra tệp có <strong>số CCCD, mã số BHXH, ngày sinh, địa chỉ và lương</strong> của từng người. Chỉ giao hai báo cáo này cho <strong>trưởng phòng Nhân sự</strong> và <strong>Ban Giám đốc</strong>, không giao theo cả phòng ban hay pháp nhân. Người được giao cũng phải có sẵn quyền xem thông tin nhạy cảm và quyền xem hợp đồng lao động thì mới mở được (xem bảng ở trên).</p>
-<p>⚠️ <strong>Quỹ lương theo pháp nhân là số lương.</strong> Người mở được báo cáo thấy tổng lương, lương bình quân, lương thấp nhất và cao nhất của từng nhóm, và bấm ra được lương cơ bản, phụ cấp, lương đóng BHXH của từng người. Nhóm dưới 3 người bị che số với mọi người xem, nhưng việc che đó không thay được việc giao đúng người: lọc hẹp còn 1–2 người thì dòng Tổng chính là lương của họ. Chỉ giao từng người cụ thể được phép xem lương, không giao theo phòng ban, pháp nhân hay vai trò đông người. Trợ lý AI không đọc báo cáo này, và báo cáo không lên trang Tổng quan.</p>
+<p>⚠️ <strong>Quỹ lương theo pháp nhân là số tiền lương.</strong> Báo cáo chỉ có tổng theo nhóm và không bao giờ hiện lương từng người: nhóm dưới 3 người bị che với mọi người xem, danh sách bấm số không có cột tiền. Dù vậy, tổng lương của một pháp nhân hay một phòng vẫn là số nhạy cảm, nên chỉ giao từng người cụ thể, không giao theo phòng ban, pháp nhân hay vai trò đông người. Số lương của từng người chỉ chính người đó xem được ở Trang cá nhân (bài {ref(SALARY_TITLE, "Nhập lương ở hồ sơ và xem lương của mình")}). Trợ lý AI không đọc số lương, và báo cáo không lên trang Tổng quan.</p>
 <p>Quyền ở tab này chỉ quyết định ai mở được trang báo cáo trong phân hệ Báo cáo. Màn danh sách gốc ở từng phân hệ (hồ sơ nhân sự, đơn nghỉ…) vẫn theo quyền vai trò như cũ.</p>""",
         },
     ],

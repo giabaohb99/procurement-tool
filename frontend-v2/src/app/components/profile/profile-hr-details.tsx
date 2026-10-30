@@ -36,19 +36,19 @@ interface Field {
 /** `0` chưa khai · `1` nam · `2` nữ — bộ mã số gõ tay, xem `hr/types/employee-codes.ts`. */
 const GENDER_LABELS: Record<number, string> = { 1: 'Nam', 2: 'Nữ' }
 
-/** Ngày `YYYY-MM-DD` → `dd/MM/yyyy`; rỗng/`null` trả chuỗi rỗng để hiện «Chưa cập nhật». */
+/** Ngày `YYYY-MM-DD` → `dd/MM/yyyy`; rỗng/`null` trả chuỗi rỗng để hiện "Chưa cập nhật". */
 function asDate(value?: string | null): string {
   return value ? formatDate(value) : ''
 }
 
 /**
- * HỒ SƠ NHÂN SỰ ĐẦY ĐỦ ở Trang cá nhân — năm khối CHỈ XEM + chỗ cắm thẻ «Liên hệ».
+ * HỒ SƠ NHÂN SỰ ĐẦY ĐỦ ở Trang cá nhân — năm khối CHỈ XEM + chỗ cắm thẻ "Liên hệ".
  *
  * ⚠️ **Vì sao chỉ xem.** Mã nhân viên, phòng ban, vai trò… là dữ liệu gốc của
  * phân hệ Nhân sự; cho sửa ở hai nơi thì sớm muộn cũng lệch nhau. NGOẠI LỆ duy
  * nhất là nhóm LIÊN HỆ (bao-CR-508, khách chốt 28/09/2026): số điện thoại, hai
  * địa chỉ, người báo tin — người dùng tự sửa. Thẻ đó (`ProfileContactCard`) do
- * nơi gọi truyền vào qua `children` và đứng CUỐI lưới, thay chỗ thẻ «Địa chỉ»
+ * nơi gọi truyền vào qua `children` và đứng CUỐI lưới, thay chỗ thẻ "Địa chỉ"
  * chỉ-xem cũ — khối này không tự gọi API ghi nào.
  *
  * ⚠️ **KHÔNG dựng `SensitiveFieldsNotice` ở đây, và đó là chủ ý.** Ở màn hồ sơ
@@ -65,7 +65,7 @@ function asDate(value?: string | null): string {
  */
 interface ProfileHrDetailsProps {
   employee: Employee
-  /** Thẻ cắm thêm vào cuối lưới — hiện là thẻ «Liên hệ» tự sửa được. */
+  /** Thẻ cắm thêm vào cuối lưới — hiện là thẻ "Liên hệ" tự sửa được. */
   children?: ReactNode
 }
 
@@ -80,8 +80,8 @@ export function ProfileHrDetails({ employee, children }: ProfileHrDetailsProps) 
     {
       icon: Users,
       label: 'Số con',
-      //  `0` là một câu trả lời THẬT («chưa có con»), không phải «chưa nhập» —
-      //  để rơi vào nhánh rỗng thì hồ sơ khai đủ lại hiện «Chưa cập nhật».
+      //  `0` là một câu trả lời THẬT ("chưa có con"), không phải "chưa nhập" —
+      //  để rơi vào nhánh rỗng thì hồ sơ khai đủ lại hiện "Chưa cập nhật".
       value: employee.children_count === undefined ? '' : String(employee.children_count),
     },
     { icon: Mail, label: 'Email cá nhân', value: employee.personal_email },
@@ -96,8 +96,8 @@ export function ProfileHrDetails({ employee, children }: ProfileHrDetailsProps) 
     { icon: UserRound, label: 'Quản lý trực tiếp', value: employee.direct_manager_name },
     { icon: GraduationCap, label: 'Trình độ học vấn', value: employee.education_level_label },
     { icon: GraduationCap, label: 'Chuyên ngành', value: employee.major },
-    //  Chỉ hiện khi CÓ: người đang làm mà thấy dòng «Ngày nghỉ việc — Chưa cập
-    //  nhật» trong hồ sơ của chính mình thì đọc ra như một câu hỏi bỏ ngỏ.
+    //  Chỉ hiện khi CÓ: người đang làm mà thấy dòng "Ngày nghỉ việc — Chưa cập
+    //  nhật" trong hồ sơ của chính mình thì đọc ra như một câu hỏi bỏ ngỏ.
     ...(employee.resign_date
       ? [{ icon: CalendarX, label: 'Ngày nghỉ việc', value: asDate(employee.resign_date) }]
       : []),
@@ -124,10 +124,10 @@ export function ProfileHrDetails({ employee, children }: ProfileHrDetailsProps) 
   ]
 
   //  ⚠️ Thứ tự XẾP THEO CẶP chứ không theo mạch đọc: lưới hai cột lấy chiều cao
-  //  của thẻ CAO NHẤT trong mỗi hàng, nên ghép «Thông tin cá nhân» (9 dòng) với
-  //  «Địa chỉ» (2 dòng) là chừa một lỗ trắng bảy dòng bên phải. Ghép thẻ dài với
-  //  thẻ dài, ngắn với ngắn thì hai cột đi gần bằng nhau. «Bảo hiểm» (3 dòng)
-  //  đứng cặp với thẻ «Liên hệ» (3 dòng) mà nơi gọi cắm vào qua `children`.
+  //  của thẻ CAO NHẤT trong mỗi hàng, nên ghép "Thông tin cá nhân" (9 dòng) với
+  //  "Địa chỉ" (2 dòng) là chừa một lỗ trắng bảy dòng bên phải. Ghép thẻ dài với
+  //  thẻ dài, ngắn với ngắn thì hai cột đi gần bằng nhau. "Bảo hiểm" (3 dòng)
+  //  đứng cặp với thẻ "Liên hệ" (3 dòng) mà nơi gọi cắm vào qua `children`.
   //
   //  Tên thẻ lấy đúng tên `FormSection` mà phân hệ Nhân sự dùng cho cùng bộ
   //  trường ở màn chi tiết nhân sự — người vừa xem hồ sơ người khác rồi mở hồ sơ

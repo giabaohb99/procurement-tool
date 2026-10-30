@@ -7,7 +7,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
  * Phân hệ DEGO COFFEE — điểm cà phê nội bộ trên POS365.
  *
  * Nghiệp vụ (doc/erp/diem-ca-phe/): ERP là SỔ CÁI DUY NHẤT; quầy tiêu bằng
- * phương thức thanh toán «Trừ điểm» trên POS365; điểm reset theo cấp đầu mỗi
+ * phương thức thanh toán "Trừ điểm" trên POS365; điểm reset theo cấp đầu mỗi
  * tháng. Ví của tôi mở cho MỌI người đăng nhập (không cần entity); các màn
  * quản trị gác theo bốn khóa `coffee_*`/`pos_order`.
  */

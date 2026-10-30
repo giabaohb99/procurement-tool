@@ -47,7 +47,7 @@ function findScrollParent(element: HTMLElement): HTMLElement | null {
  * ⚠️ Trước đây khung giấy dùng `max-h-[calc(100vh-16rem)]`. Con số 16rem là ước
  * lượng cho "thanh trên + dải tiêu đề + thanh công cụ", nên nó chỉ đúng đúng một
  * trường hợp. Trang chi tiết văn bản đặt phía trên khung này tới bốn dải có thể
- * hiện hoặc không — băng «cần rà lại», băng «đang trình duyệt nên đã khóa», băng
+ * hiện hoặc không — băng "cần rà lại", băng "đang trình duyệt nên đã khóa", băng
  * tiến trình duyệt, băng phiên bản cũ — và trang CHỈ ĐỌC thì không có thanh công
  * cụ lẫn thước kẻ. Cộng lại lệch cả trăm pixel: người dùng thấy một khoảng xám
  * thừa dưới đáy, còn khi đủ băng thì ngược lại, giấy bị cắt cụt.

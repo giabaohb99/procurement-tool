@@ -11,7 +11,7 @@ export const AI_PLAN_STATUS_PENDING = 1
 export const AI_PLAN_STATUS_APPROVED = 2
 export const AI_PLAN_STATUS_REJECTED = 3
 
-/** Ba mức ưu tiên máy chủ nhận; giá trị lạ bị máy chủ đổi về «Thường». */
+/** Ba mức ưu tiên máy chủ nhận; giá trị lạ bị máy chủ đổi về "Thường". */
 export const AI_PLAN_PRIORITIES = ['Gấp', 'Ưu tiên', 'Thường'] as const
 export type AiPlanPriority = (typeof AI_PLAN_PRIORITIES)[number]
 

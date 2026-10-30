@@ -2,8 +2,8 @@
  * DẢI MỜ ngay sau ô tên ghim của lưới trái Gantt — đặt BÊN TRONG ô ghim.
  *
  * Cột ghim thì các cột khác trượt vào phía sau nó, và mép ghim cắt ngang bất cứ
- * thứ gì đang ở đó: hay gặp nhất là viên chip trạng thái bị xẻ đôi («…g mở»,
- * «…ã hủy») — khách chê đúng chỗ này ba lần. Vạch dọc và bóng đổ
+ * thứ gì đang ở đó: hay gặp nhất là viên chip trạng thái bị xẻ đôi ("…g mở",
+ * "…ã hủy") — khách chê đúng chỗ này ba lần. Vạch dọc và bóng đổ
  * (`PINNED_TITLE_CELL`) nói được "nội dung chạy vào phía sau ô tên" nhưng không
  * làm nửa viên chip kia biến mất. Dải này thì làm: 16px cuối cùng của thứ đang
  * chui vào **tan dần** thay vì đứt ngang.

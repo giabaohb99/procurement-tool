@@ -81,7 +81,7 @@ export const systemModule: ErpModule = {
       manage: true,
     },
     {
-      //  bao-CR-407: đổi tên từ «Nhật ký hệ thống». Màn này đọc `tab_audit_log`
+      //  bao-CR-407: đổi tên từ "Nhật ký hệ thống". Màn này đọc `tab_audit_log`
       //  — dấu vết NGHIỆP VỤ theo từng chứng từ. Tên cũ giành mất chỗ của màn
       //  *Nhật ký hệ thống* thật (bên dưới), thứ lấy lượt gọi API làm xương sống.
       label: 'Nhật ký nghiệp vụ',
@@ -126,7 +126,7 @@ export const systemModule: ErpModule = {
       icon: RefreshCcwDot,
       entity: 'sync_log',
     },
-    //  ai-CR-039: mục «Việc của bot Telegram» (ai-CR-036) TẠM ẨN theo ý đại ca 24/09 — muốn xem gì
+    //  ai-CR-039: mục "Việc của bot Telegram" (ai-CR-036) TẠM ẨN theo ý đại ca 24/09 — muốn xem gì
     //  thì hỏi thẳng bot trên Telegram. Route + trang bên dưới giữ nguyên; bật lại = thêm lại mục
     //  { label: 'Việc của bot Telegram', path: appRoutes.system.agentTasks, icon: Bot, entity: 'agent_task' }
     //  và lối tắt tương ứng ở `config/dashboard-shortcuts.ts`.

@@ -19,11 +19,11 @@ nút chi tiết** thì tra HDSD bằng `search_docs`, đừng tự bịa đườ
 | **Việc con** | Việc nhỏ bên trong một công việc |
 | **Cột mốc** | Công việc chỉ có MỘT ngày (hạn); Gantt vẽ hình thoi |
 
-⚠️ **«Dự án» và «danh sách công việc» là MỘT thứ**, không phải hai tầng chồng nhau.
+⚠️ ***Dự án* và *danh sách công việc* là MỘT thứ**, không phải hai tầng chồng nhau.
 Đừng nói với người dùng là "tạo danh sách trong dự án".
 
-⚠️ Đừng dùng chữ **«task»** trần với người dùng — trên màn hình là **«công việc»**.
-(Chữ "task" trong hệ đã bị bộ máy duyệt và tab «Việc cần làm» chiếm.)
+⚠️ Đừng dùng chữ ***task*** trần với người dùng — trên màn hình là ***công việc***.
+(Chữ "task" trong hệ đã bị bộ máy duyệt và tab **Việc cần làm** chiếm.)
 
 ---
 
@@ -37,7 +37,7 @@ nút chi tiết** thì tra HDSD bằng `search_docs`, đừng tự bịa đườ
 | Đổi bằng | Kéo thẻ sang cột khác | **Tick ô tròn** trên thẻ/dòng, hoặc chọn trong panel |
 | Dùng để | Xếp việc theo quy trình riêng của đội | Đếm việc chưa xong, báo cáo |
 
-**Kéo việc vào cột tên «Xong» KHÔNG làm nó thành «Hoàn thành».**
+**Kéo việc vào cột tên *Xong* KHÔNG làm nó thành *Hoàn thành*.**
 
 Người dùng hỏi *"tôi kéo vào cột Xong rồi mà sao vẫn tính chưa xong?"* → trả lời:
 cột chỉ là nhãn tự đặt, phải **tick ô tròn** ở đầu thẻ (hoặc đổi trạng thái trong
@@ -107,7 +107,7 @@ và cột. Lọc theo **loại sự kiện** và theo **người**.
 
 ### Kéo thả không ăn?
 
-Nguyên nhân hay gặp nhất: **đang sắp xếp theo tiêu chí khác «Tay (kéo thả)»** → hệ
+Nguyên nhân hay gặp nhất: **đang sắp xếp theo tiêu chí khác *Tay (kéo thả)*** → hệ
 khóa kéo, vì thả xong danh sách tự xếp lại chỗ cũ. Đổi lại ở nút **Sắp xếp**.
 
 ---
@@ -117,7 +117,7 @@ khóa kéo, vì thả xong danh sách tự xếp lại chỗ cũ. Đổi lại �
 Mỗi dự án **tự khai bộ trường riêng** (Quản lý dự án → Thiết lập). Sáu kiểu: chọn một ·
 chọn nhiều · người · số · ngày · chữ.
 
-⚠️ **«Độ ưu tiên» chỉ là một trường tùy biến nạp sẵn**, không phải thang cố định của hệ
+⚠️ ***Độ ưu tiên* chỉ là một trường tùy biến nạp sẵn**, không phải thang cố định của hệ
 thống: bậc và màu do từng dự án tự đặt, và **xóa được**. Vì vậy KHÔNG nói "hệ thống có
 4 mức ưu tiên P1–P4" như một luật chung — phải xem dự án cụ thể.
 
@@ -135,8 +135,8 @@ bộ cột dùng chung cho cả ba khung nhìn**.
 - Gửi: nút **Gửi** hoặc **Ctrl/Cmd + Enter**. Có tệp mà không gõ chữ vẫn gửi được.
 - **Xóa** được bình luận của mình. **Sửa** cũng được (từ 22/10/2026) nhưng **chỉ sửa bình luận do
   chính mình viết** — kể cả chủ sở hữu dự án cũng không sửa lời người khác. Bấm biểu tượng bút
-  **«Sửa bình luận»** cạnh bình luận, chữa xong bấm **Lưu** (hoặc **Hủy**). Bình luận đã sửa mang nhãn
-  **«(đã sửa)»**. Khách xem không sửa được. Trong ô sửa, **Ctrl/Cmd + Enter** để lưu, **Esc** để thoát;
+  ***Sửa bình luận*** cạnh bình luận, chữa xong bấm **Lưu** (hoặc **Hủy**). Bình luận đã sửa mang nhãn
+  ***(đã sửa)***. Khách xem không sửa được. Trong ô sửa, **Ctrl/Cmd + Enter** để lưu, **Esc** để thoát;
   người đã được @nhắc giữ nguyên, sửa chính tả không làm chuông kêu lại. Ô sửa **không có bảng gợi ý @** — muốn nhắc
   thêm người thì viết một bình luận mới.
 - Đính kèm ở cấp công việc: tách riêng với tệp trong bình luận, **tối đa 50MB/tệp**.
@@ -154,7 +154,7 @@ dẫn người dùng dán link tệp ra ngoài hay chia sẻ đường dẫn; l�
 |---|---|
 | Được **@nhắc tên** trong bình luận | **Có** |
 | Có **bình luận mới** (người phụ trách + người theo dõi + ai đã bình luận) | **Có** |
-| **Được giao việc** (từ 22/10/2026) | **Có** — «Bạn được giao việc: …» |
+| **Được giao việc** (từ 22/10/2026) | **Có** — **Bạn được giao việc: …** |
 | **Đổi trạng thái** việc (hoàn thành · mở lại · hủy) | **Có**, báo người phụ trách và người theo dõi |
 | **Nhắc hạn** (đến hạn / quá hạn) | **CHƯA** |
 
@@ -166,8 +166,8 @@ Luật chung của chuông Công việc:
   không nhận chuông, kể cả khi tên họ vẫn còn trên việc.
 - Nhân sự **chưa có tài khoản** thì không có chuông để kêu.
 
-**Việc được giao cho tôi nằm ở đâu:** trang cá nhân ▸ nhóm **«Việc của tôi»** ▸ tab **«Việc cần làm»**, mỗi
-việc dự án hiện thành một dòng nhãn **«Việc được giao»** (hoặc **«Việc quá hạn»** nếu đã quá hạn), bấm vào
+**Việc được giao cho tôi nằm ở đâu:** trang cá nhân ▸ nhóm ***Việc của tôi*** ▸ tab ***Việc cần làm***, mỗi
+việc dự án hiện thành một dòng nhãn ***Việc được giao*** (hoặc ***Việc quá hạn*** nếu đã quá hạn), bấm vào
 mở thẳng công việc. Chỉ hiện việc **đang mở** mà bạn là **người phụ trách** (người theo dõi nhận chuông
 chứ không bị tính là phải làm), dự án chưa lưu trữ và bạn còn là thành viên.
 
@@ -180,14 +180,14 @@ chứ không bị tính là phải làm), dự án chưa lưu trữ và bạn c�
 Dashboard thống kê dự án · nhắc hạn · chuyển việc sang dự án khác · định dạng chữ trong bình luận · gom nhóm kanban theo
 người/ưu tiên/hạn (hiện chỉ gom theo cột).
 
-⚠️ **«Xóa» dự án hoặc nhóm là LƯU TRỮ**, không xóa hẳn — nói đúng chữ này, kẻo người
+⚠️ ***Xóa* dự án hoặc nhóm là LƯU TRỮ**, không xóa hẳn — nói đúng chữ này, kẻo người
 dùng tưởng mất dữ liệu. Xóa **công việc** là xóa mềm (dữ liệu còn) và **khôi phục được**: mở
-menu **«Quản lý dự án»** ở đầu dự án ▸ **«Thùng rác»**, bấm **«Khôi phục»** cạnh việc cần lấy lại (khôi phục việc cha
+menu ***Quản lý dự án*** ở đầu dự án ▸ ***Thùng rác***, bấm ***Khôi phục*** cạnh việc cần lấy lại (khôi phục việc cha
 thì các việc con xóa cùng lúc cũng quay lại). Chủ sở hữu và Quản trị dự án khôi phục được mọi việc; thành viên chỉ khôi phục việc
 mình tạo; dự án đã lưu trữ thì khóa; khách xem không thấy mục này.
 
-**Ghim dự án** (từ 22/10/2026): rê chuột vào tên dự án ở thanh bên, bấm biểu tượng ghim («Ghim lên đầu danh sách»)
-để dự án nổi lên khu **«Đã ghim»**; bấm lại («Bỏ ghim») để gỡ. Tối đa **20** dự án ghim, ghim là của riêng từng người
+**Ghim dự án** (từ 22/10/2026): rê chuột vào tên dự án ở thanh bên, bấm biểu tượng ghim (**Ghim lên đầu danh sách**)
+để dự án nổi lên khu ***Đã ghim***; bấm lại (**Bỏ ghim**) để gỡ. Tối đa **20** dự án ghim, ghim là của riêng từng người
 và đi theo tài khoản sang máy khác.
 
 ---

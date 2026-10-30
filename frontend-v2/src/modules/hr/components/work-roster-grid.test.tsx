@@ -88,7 +88,7 @@ describe('WorkRosterGrid', () => {
 
     renderGrid([rosterItem(1, 'An', IT, [])])
     expect(screen.getByText('An')).toBeInTheDocument()
-    //  Thiếu ô thì báo «chưa có dữ liệu» chứ không bịa là đi làm hay nghỉ.
+    //  Thiếu ô thì báo "chưa có dữ liệu" chứ không bịa là đi làm hay nghỉ.
     expect(screen.getAllByTitle(/Chưa có dữ liệu/)).toHaveLength(ROSTER_DAYS.length)
     expect(screen.getAllByTitle('Đang làm 0 · Nghỉ 0')).toHaveLength(ROSTER_DAYS.length)
   })
@@ -141,7 +141,7 @@ describe('WorkRosterGrid', () => {
       expect(stickyNames()).toEqual([])
     })
 
-    //  05/10/2026: «3 row thì từ row 4 5 6 đẩy lên 1 lượt» — mỗi đợt 3 hàng có nghỉ nằm chung MỘT khung để
+    //  05/10/2026: "3 row thì từ row 4 5 6 đẩy lên 1 lượt" — mỗi đợt 3 hàng có nghỉ nằm chung MỘT khung để
     //  trình duyệt tự đẩy cả khối (CSS thuần). Hàng j dính ở đáy đầu bảng + j·H, lề dưới (2−j)·H.
     it('groups leave rows into batches of 3 that stick at stacked offsets under the header', () => {
       renderGrid(Array.from({ length: 7 }, (_, i) => withLeave(i + 1, `Người${i + 1}`)))

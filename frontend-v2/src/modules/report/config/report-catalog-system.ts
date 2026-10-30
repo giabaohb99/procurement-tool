@@ -18,7 +18,7 @@ export const SYSTEM_REPORT_CATALOG: ReportCatalogEntry[] = [
     entity: 'setting',
     group: 'Quản trị',
     endpoint: '/api/usage-profiles/summary',
-    //  Không góp mặt ở dải KPI Tổng quan (số liệu cá nhân) — chỉ ở «Danh sách báo cáo».
+    //  Không góp mặt ở dải KPI Tổng quan (số liệu cá nhân) — chỉ ở "Danh sách báo cáo".
     overviewKpis: [],
     load: async () => (await import('../pages/usage-profile-list-page')).UsageProfileListPage,
   },

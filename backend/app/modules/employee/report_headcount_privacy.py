@@ -23,7 +23,7 @@ def _counts(values: dict) -> list[int]:
 
 def suppress_small_age_groups(data: dict, prof: dict) -> None:
     """Che nhóm tuổi nhỏ cho người KHÔNG có `employee_sensitive.read` (`employee_id=0` ở `can_read_sensitive`
-    = chỉ xét KHÓA quyền, không xét ngoại lệ «chính mình»). Luật sơ cấp/thứ cấp (xét riêng kỳ này và kỳ so
+    = chỉ xét KHÓA quyền, không xét ngoại lệ "chính mình"). Luật sơ cấp/thứ cấp (xét riêng kỳ này và kỳ so
     sánh) ở `core/report_small_group.py`; quy mô nhóm = định biên cuối kỳ. Không cứu được thì bỏ bảng nhóm tuổi."""
     if can_read_sensitive(prof):
         return

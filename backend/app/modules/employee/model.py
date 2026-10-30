@@ -1,6 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import JSON, BigInteger, Boolean, Date, SmallInteger, String
+from sqlalchemy import JSON, BigInteger, Boolean, Date, DateTime, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import Base, AuditMixin, LegacyIdMixin
@@ -19,6 +19,11 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
     full_name: Mapped[str] = mapped_column(String(255))
     email: Mapped[str] = mapped_column(String(255), default="")
     phone: Mapped[str] = mapped_column(String(25), default="")
+    #  duoc-CR-694: các số điện thoại KHÁC (tối đa 4) — `phone` vẫn là SỐ CHÍNH. Mỗi phần tử
+    #  `{"number": ≤20, "label": ≤50}`; luật ở `phone_rules.py`. Luôn GÁN LẠI cả danh sách, đừng sửa tại chỗ.
+    #  Nhãn của SỐ CHÍNH (Cá nhân / Công việc / Zalo…), tự do ≤ 50 ký tự.
+    phone_label: Mapped[str] = mapped_column(String(50), default="")
+    extra_phones: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     company_id: Mapped[int] = mapped_column(BigInteger, default=0)
     department_id: Mapped[int] = mapped_column(BigInteger, default=0)
     #  ⚠️ `position` là NHÃN ĐÃ CHÉP từ danh mục, `position_id` mới là sự thật
@@ -49,8 +54,8 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
     hire_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     #  `gender` để LỌC loại nghỉ (thai sản chỉ hiện với nữ). `0` = chưa khai, và
     #  chưa khai thì KHÔNG bị chặn — xem `leave/constants.GENDER_UNKNOWN`.
-    #  ⚠️ Bộ mã của HỒ SƠ có thêm `3` («Khác», 08/09/2026) mà loại nghỉ không có:
-    #  khai «Khác» thì bị chặn khỏi loại nghỉ giới hạn nam/nữ. Xem
+    #  ⚠️ Bộ mã của HỒ SƠ có thêm `3` ("Khác", 08/09/2026) mà loại nghỉ không có:
+    #  khai "Khác" thì bị chặn khỏi loại nghỉ giới hạn nam/nữ. Xem
     #  `employee/constants.GENDER_*`.
     gender: Mapped[int] = mapped_column(SmallInteger, default=0)
 
@@ -84,7 +89,7 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
 
     # Nhóm 2 — công việc
     #  ⚠️ `manager_id` KHÔNG phải trường hiển thị cho đẹp. Đây là dữ liệu mà vai
-    #  tương đối «người quản lý trực tiếp» của bộ máy duyệt đọc
+    #  tương đối "người quản lý trực tiếp" của bộ máy duyệt đọc
     #  (`APPROVER_DIRECT_MANAGER`). Sai ô này thì đơn từ chạy sai đường một cách
     #  im lặng — không có màn nào báo, vì bộ máy duyệt vẫn tìm ra MỘT người.
     #  `0` = chưa gán, và luồng duyệt lùi về trưởng bộ phận để đơn không kẹt.
@@ -131,6 +136,15 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
     #  `NULL` là `{}` (xem `extra_fields_map`).
     extra_fields: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
+    # Nhóm 8 — lương (duoc-CR-693)
+    #  ⚠️ CHỈ chính nhân sự đó đọc được SỐ (không ai khác, kể cả admin / người có `employee_sensitive`).
+    #  Chốt che ở MỘT chỗ: `sensitive.mask` / `mask_many` (danh sách `SALARY_FIELDS`). Người khác chỉ thấy
+    #  cờ `salary_set` bên dưới. Đồng đã làm tròn (BIGINT), 0 = chưa nhập.
+    salary_monthly: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    allowance_monthly: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    #  Lần cuối ô lương được ghi (tay hoặc do ký HĐLĐ).
+    salary_updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     department = relationship(
         "Department",
         primaryjoin="foreign(Employee.department_id) == Department.id",
@@ -174,6 +188,11 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
         return (self.direct_manager.full_name or "") if self.direct_manager else ""
 
     @property
+    def salary_set(self) -> bool:
+        """Đã nhập lương hoặc phụ cấp chưa — cờ DUY NHẤT người khác được biết (không lộ số)."""
+        return bool(self.salary_monthly or 0) or bool(self.allowance_monthly or 0)
+
+    @property
     def marital_status_label(self) -> str:
         return label_of(MARITAL_STATUS_LABELS, self.marital_status)
 
@@ -198,6 +217,12 @@ class Employee(Base, AuditMixin, LegacyIdMixin):
         một hồ sơ cũ — thứ chỉ lộ ra trên dữ liệu thật.
         """
         return self.extra_fields if isinstance(self.extra_fields, dict) else {}
+
+    @property
+    def extra_phones_text(self) -> str:
+        """"số (nhãn); …" — cột "Số điện thoại khác" của tệp xuất Excel/CSV (cùng định dạng tệp nhập)."""
+        from .phone_rules import format_phones_text
+        return format_phones_text(self.extra_phones)
 
     @property
     def department_name(self) -> str | None:

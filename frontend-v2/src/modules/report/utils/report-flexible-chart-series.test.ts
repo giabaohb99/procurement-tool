@@ -46,7 +46,7 @@ describe('buildFlexibleGroupSeries', () => {
     expect(s.items.map((i) => i.key)).toEqual(['b', 'c', 'a'])
   })
 
-  it('keeps top N and merges the remainder into «Khác» with the right sum', () => {
+  it('keeps top N and merges the remainder into "Khác" with the right sum', () => {
     const groups = [1, 2, 3, 4, 5, 6, 7].map((v) => group(`g${v}`, { n: v }))
     const s = buildFlexibleGroupSeries(groups, 'n', 5, INT)
     expect(s.items).toHaveLength(6)
@@ -57,7 +57,7 @@ describe('buildFlexibleGroupSeries', () => {
     expect(rest?.label).toBe('Khác (2 nhóm)')
   })
 
-  it('does not add «Khác» when the groups fit exactly in top N', () => {
+  it('does not add "Khác" when the groups fit exactly in top N', () => {
     const groups = [1, 2, 3, 4, 5].map((v) => group(`g${v}`, { n: v }))
     expect(buildFlexibleGroupSeries(groups, 'n', 5, INT).items.some((i) => i.isRest)).toBe(false)
   })

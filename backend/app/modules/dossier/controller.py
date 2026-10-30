@@ -45,13 +45,13 @@ def _before_create(db, data: DossierCreate) -> None:
 def _before_update(db, obj: Dossier, values: dict) -> None:
     """Đường sửa trao dict các ô ĐƯỢC GỬI (`exclude_unset`) — sửa tại chỗ.
 
-    `obj` còn mang dữ liệu CŨ ở đây, nên `sync_type_label` đối chiếu được «loại
-    này có phải loại đang giữ không» để nới cho hồ sơ mang loại đã ngừng dùng.
+    `obj` còn mang dữ liệu CŨ ở đây, nên `sync_type_label` đối chiếu được "loại
+    này có phải loại đang giữ không" để nới cho hồ sơ mang loại đã ngừng dùng.
     """
     sync_type_label(db, values, obj)
     apply_extra_fields(db, values, obj)
     #  ⚠️ Chỉ kiểm khi ô này ĐƯỢC GỬI. `values` là `exclude_unset`, nên `"depends"
-    #  in values` phân biệt được «xóa hết tiên quyết» (`[]`) với «đừng đụng vào»
+    #  in values` phân biệt được "xóa hết tiên quyết" (`[]`) với "đừng đụng vào"
     #  (không có khóa) — hai thứ mà `if values.get("depends")` gộp làm một.
     if "depends" in values:
         values["depends"] = check_depends(db, obj.id, values["depends"] or [])
@@ -66,7 +66,7 @@ router = make_crud_router(
     #
     #  KHÔNG có `expiry_state`: nó là trường SUY RA, không phải cột, nên
     #  `apply_filters` không lọc được (`getattr(model, key)` ra `None` → bỏ qua).
-    #  Câu hỏi «cái nào sắp hết hạn» trả lời bằng cách SẮP XẾP theo `expiry_date`
+    #  Câu hỏi "cái nào sắp hết hạn" trả lời bằng cách SẮP XẾP theo `expiry_date`
     #  — cột đó có chỉ mục và `apply_sort` nhận nó.
     filterable=["code", "name", "dossier_type_id", "status", "owner_employee_id",
                 "department_id", "company_id", "storage_location"],
@@ -76,7 +76,7 @@ router = make_crud_router(
     unique_field="code",
     #  ⚠️ Hồ sơ VÔ THỜI HẠN (`expiry_date` NULL) phải xuống CUỐI, không lên đầu.
     #  MySQL xếp `NULL` lên đầu khi sắp tăng dần, mà thứ tự mặc định của màn danh
-    #  sách là `expiry_date asc` — sinh ra để trả lời «tờ nào sắp hết hạn?».
+    #  sách là `expiry_date asc` — sinh ra để trả lời "tờ nào sắp hết hạn?".
     #  Không đẩy xuống thì toàn bộ hồ sơ vô thời hạn (phần lớn danh mục hiện tại
     #  mặc định như vậy) chiếm sạch trang đầu và dìm đúng những tờ cần để mắt.
     sort_nulls_last=("expiry_date", "issued_date"),

@@ -45,7 +45,7 @@ export function InboxScopeFilter({
     //  ⚠️ **Khổ hẹp phải CHO XUỐNG HÀNG, và đây là lỗi chặn chứ không phải
     //  chuyện thẩm mỹ.** Đủ bốn mục (tức đúng lúc CÓ việc quá hạn) thì dãy này
     //  rộng **411px** trong một thanh công cụ 324px; `shrink-0` giữ nó không co,
-    //  mà cả trang lẫn thẻ đều không cuộn ngang — nên mép phải nút «Đã duyệt»
+    //  mà cả trang lẫn thẻ đều không cuộn ngang — nên mép phải nút "Đã duyệt"
     //  nằm ở 441px trên màn 390px và **không có cách nào bấm tới**. Nút biến mất
     //  đúng vào ngày người ta bận nhất.
     //

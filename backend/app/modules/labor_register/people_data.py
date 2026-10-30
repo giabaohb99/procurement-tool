@@ -3,10 +3,10 @@
 Tập người = nhân sự làm việc ở BẤT KỲ lúc nào trong kỳ: vào làm không sau cuối kỳ và (chưa nghỉ hoặc
 ngày nghỉ không trước đầu kỳ). Thiếu `hire_date` thì lấy ngày tạo hồ sơ theo giờ VN (`hire_missing=True`;
 `created_at` lưu UTC nên so với cận kỳ giờ VN qua `VN_OFFSET`). Người
-đã đổi sang «Đã nghỉ» mà KHÔNG ghi `resign_date` không xác định được lúc nghỉ nên không vào tập.
+đã đổi sang "Đã nghỉ" mà KHÔNG ghi `resign_date` không xác định được lúc nghỉ nên không vào tập.
 
 HĐ áp cho mỗi người = HĐ đã ký (SIGNED / TERMINATED) còn hiệu lực tại `as_of = min(cuối kỳ, hôm nay)`
-(luật «đã ký tại as_of» giống báo cáo HĐLĐ), không có thì HĐ bắt đầu gần nhất trước đó.
+(luật "đã ký tại as_of" giống báo cáo HĐLĐ), không có thì HĐ bắt đầu gần nhất trước đó.
 
 Số truy vấn CỐ ĐỊNH: nhân sự · HĐ của những người đó. Hàng mang cả trường nhạy cảm (CCCD, BHXH, ngày
 sinh, địa chỉ, lương) để xuất Excel; lớp trả JSON (`/summary`, `/rows`) KHÔNG được đưa giá trị đó ra.
@@ -145,7 +145,7 @@ def load_people(employees_q, contracts_q, d_from: date, d_to: date, today: date,
             hire_date=e.hire_date or to_local_date(e.created_at),
             hire_missing=e.hire_date is None, resign_date=e.resign_date if resigned else None,
             working_at_end=not left,
-            left_in_period=left and e.resign_date >= d_from,   # người nghỉ SAU `as_of` vẫn «đang làm»
+            left_in_period=left and e.resign_date >= d_from,   # người nghỉ SAU `as_of` vẫn "đang làm"
             contract_type=int(c.contract_type) if c else 0, contract_start=c.start_date if c else None,
             contract_end=c.end_date if c else None,
             contract_terminated=c.terminated_date if c and c.status == int(S.TERMINATED) else None,

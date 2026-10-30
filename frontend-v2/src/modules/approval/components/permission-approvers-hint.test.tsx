@@ -18,7 +18,10 @@ describe('PermissionApproversHint', () => {
     mockUsePermissionApprovers.mockReturnValue({ data: [], isLoading: false, isError: false })
     render(<PermissionApproversHint entity="vehicle_booking" />)
     expect(mockUsePermissionApprovers).toHaveBeenCalledWith('vehicle_booking', true)
-    expect(screen.getByText(/quyền «Duyệt» trên «Đặt xe»/)).toBeInTheDocument()
+    expect(screen.getByText('Đặt xe', { selector: 'strong' })).toBeInTheDocument()
+    expect(screen.getByText('Duyệt', { selector: 'strong' }).parentElement).toHaveTextContent(
+      /quyền Duyệt trên Đặt xe/,
+    )
   })
 
   it('warns that the step will find nobody when no role holds the approve permission', () => {
@@ -55,7 +58,7 @@ describe('PermissionApproversHint', () => {
   it('falls back to the raw key for an entity without a Vietnamese label', () => {
     mockUsePermissionApprovers.mockReturnValue({ data: undefined, isLoading: true, isError: false })
     render(<PermissionApproversHint entity="khoa_moi" />)
-    expect(screen.getByText(/«khoa_moi»/)).toBeInTheDocument()
+    expect(screen.getByText('khoa_moi', { selector: 'strong' })).toBeInTheDocument()
     expect(screen.getByText('Đang tải người giữ quyền…')).toBeInTheDocument()
   })
 

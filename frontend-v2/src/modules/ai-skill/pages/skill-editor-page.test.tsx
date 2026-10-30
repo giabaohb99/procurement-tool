@@ -12,7 +12,7 @@ import { SkillEditorPage } from './skill-editor-page'
  * Trang soạn skill (G4). Chỗ dễ lủng:
  * - Xuất bản đọc bản NHÁP đã lưu ở máy chủ — bấm Xuất bản khi còn sửa chưa lưu mà không lưu trước thì AI nhận bản cũ
  *   hơn cái người soạn đang thấy, không ai biết.
- * - Ctrl+S phải lưu nháp, không mở hộp «Lưu trang» của trình duyệt.
+ * - Ctrl+S phải lưu nháp, không mở hộp "Lưu trang" của trình duyệt.
  * - Người chỉ có quyền đọc không lưu / xuất bản được.
  */
 

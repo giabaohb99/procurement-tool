@@ -37,7 +37,7 @@ interface FieldOptionListProps {
  * (`saveFieldOptions`). Bắn lệnh theo từng phím gõ thì danh sách nhấp nháy và
  * người dùng không có đường lui.
  *
- * `DndContext` RIÊNG, không dùng chung với bảng kanban hay menu «Tùy chỉnh»:
+ * `DndContext` RIÊNG, không dùng chung với bảng kanban hay menu "Tùy chỉnh":
  * ngữ cảnh lồng nhau thì mọi cú kéo ở ngoài cũng bắn vào đây.
  */
 export function FieldOptionList({ options, onChange }: FieldOptionListProps) {

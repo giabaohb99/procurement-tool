@@ -73,7 +73,7 @@ describe('parseCommentBody', () => {
     expect(noiLai('dòng một\n@[34]  hai dấu cách')).toBe('dòng một\n@Mộc  hai dấu cách')
   })
 
-  it('bộ người được nhắc RỖNG thì mọi thẻ về «không rõ», không nổ', () => {
+  it('bộ người được nhắc RỖNG thì mọi thẻ về "không rõ", không nổ', () => {
     expect(noiLai('@[12] ơi', [])).toBe('@không rõ ơi')
   })
 

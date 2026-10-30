@@ -663,6 +663,32 @@ muốn xem số ước tính thì chọn giai đoạn Dự toán / Tạm tính.
 
 ---
 
+### Màn Chi tiết YC mua hàng — dòng hàng YCMH kèm tiến độ đơn (bao-CR-691, 29/10/2026)
+
+Nguồn: phiếu TK28102602 (Dego Organic) cần một bảng liệt kê **mọi** dòng hàng của mọi YCMH, kể cả dòng chưa tạo đơn,
+để đếm số dòng theo trạng thái và kéo Excel. Màn *Tiến độ đơn mua hàng* đi từ ĐMH nên không có dòng chưa có đơn; màn
+Chi tiết YC mua hàng (`/procurement/pr-lines-report`, cũng là tab trong Báo cáo mua hàng; thumua: `/pr-lines-report`)
+đã có đủ dòng, đợt này thêm cột và xuất Excel. Chủ dự án chốt 28/10: sửa cơ bản trên màn này, không popup, không đụng
+Tiến độ đơn mua hàng; đổi nhãn *Tiến độ mua hàng* → *Tiến độ đơn mua hàng* (chỉ nhãn, giữ đường dẫn và khóa quyền).
+
+- **API** `GET /api/reports/pr-lines` (quyền `purchase_request.read`, phạm vi theo phiếu) trả thêm: thông tin phiếu
+  (`company_name`, `purpose`, `is_urgent`, `need_date`, `head_of_dept`, `approver`, `handler_dept`), thông tin dòng
+  (`unit`, `required_date`, `qty_ordered`, `qty_received`, `progress_note`, `line_note`, `suggested_supplier`) và cụm ĐMH
+  ghép theo **mã phiếu + mã hàng** (`po_codes` theo ngày tạo, `po_count`, `po_supplier`, `po_promised_date`,
+  `po_delivery_count`); đơn hủy / xóa và dòng đơn hủy không tính; cả trang gom bằng vài truy vấn. Hai cột NCC chỉ trả khi
+  có `supplier.read`. `line_status` nhận NHIỀU giá trị (`read_multi_param`), giữ lựa chọn gộp `chua_dat`.
+- **Xuất Excel** `GET /api/reports/pr-lines/export` (quyền `report.export`), cùng bộ lọc, không phân trang, trần 5.000
+  dòng (`check_row_limit`), tệp `chi-tiet-yc-mua-hang-theo-dong-<DDMMYYYY>.xlsx`, cột theo `PR_LINE_EXPORT_COLUMNS`
+  (phiếu → dòng → đơn), tiến độ ghi nhãn tiếng Việt.
+- **Giao diện v2** (`report-pr-lines-tab.tsx`): ba cột hiện sẵn *SL đã đặt* · *SL đã nhận* · *Mã ĐMH* (mỗi mã mở danh
+  sách ĐMH lọc sẵn theo mã; thiếu `purchase_order.read` thì chỉ hiện chữ); 16 cột còn lại ẩn mặc định, bật ở menu Cột;
+  hai cột NCC biến mất hẳn khi thiếu quyền. Hai cột trạng thái đổi tên *Tiến độ dòng* (đứng trước) và *Trạng thái phiếu*.
+  Ô lọc tiến độ dòng là `MultiPicker`. Nút Xuất Excel chỉ hiện với quyền xuất báo cáo, bấm đúp chỉ tải một lần.
+  Mục menu dời xuống nhóm Mua hàng, ngay sau *Tiến độ đơn mua hàng*. Thumua: chỉ ba cột hiện sẵn, còn lại qua Excel.
+- **Hạn chế đã biết:** ĐMH không ghi dòng YCMH nguồn, nên hai dòng cùng mã hàng trong một phiếu nhận chung tập đơn.
+- Bài HDSD: `backend/scripts/seed_help_chi_tiet_yc_mua_hang.py` (nhóm Nhân viên Mua hàng, sau bài Tiến độ đơn mua hàng).
+  Bài kiểm: `test/backend/test_bao_cao_dong_ycmh_cot_moi_cr691.py`, `report-pr-lines-tab.test.tsx`.
+
 ### Tính năng giao diện & mobile
 
 | Tính năng | Mô tả |

@@ -23,7 +23,7 @@ export function useSurveyRequestReport(id: number, entity: ReportOwnerEntity = '
 }
 
 /**
- * Ô chọn dòng hàng + giai đoạn của hộp «Thêm hồ sơ» khi khối còn trống (duoc-CR-611).
+ * Ô chọn dòng hàng + giai đoạn của hộp "Thêm hồ sơ" khi khối còn trống (duoc-CR-611).
  * Chỉ gọi khi hộp MỞ — khối đã có nội dung thì không ai cần tới nó.
  */
 export function useReportFirstDocOptions(
@@ -53,7 +53,7 @@ type ReportOptimisticPatch<TVars> = (
 ) => SurveyRequestReport
 
 /**
- * Ô chọn mẫu của hộp «Khởi tạo báo cáo mẫu» (duoc-CR-614). Chỉ gọi khi hộp MỞ, và
+ * Ô chọn mẫu của hộp "Khởi tạo báo cáo mẫu" (duoc-CR-614). Chỉ gọi khi hộp MỞ, và
  * danh sách mẫu nằm trong mã nguồn backend nên giữ lâu không cần tải lại.
  */
 export function useReportTemplates(id: number, entity: ReportOwnerEntity, enabled: boolean) {
@@ -69,7 +69,7 @@ export function useReportTemplates(id: number, entity: ReportOwnerEntity, enable
  * Mọi mutation của khối báo cáo trả về NGUYÊN khối mới → ghi thẳng vào cache
  * thay vì invalidate: đỡ một lượt GET, và màn hình đổi ngay khi bấm ✓.
  *
- * duoc-CR-612 — dạng «Bảng» bắn PATCH liên tục (mỗi ô một lượt), nên:
+ * duoc-CR-612 — dạng "Bảng" bắn PATCH liên tục (mỗi ô một lượt), nên:
  * - Mọi lượt của CÙNG khối chạy LẦN LƯỢT (`scope`): ✓, sửa ô, hộp sửa, xóa… về sai thứ
  *   tự thì bản cũ đè bản mới (ô vừa sửa nhảy về giá trị cũ, ✓ đảo sai chiều).
  * - Còn lượt khác đang chờ phía sau thì KHÔNG ghi cache: lượt sau trả khối mới hơn, ghi
@@ -104,10 +104,10 @@ function useReportMutation<TVars>(
     },
     onSuccess: (data) => {
       if (successMessage) toast.success(successMessage)
-      //  Lượt đang chạy cũng còn tính là «đang chờ» lúc này nên mốc là 1.
+      //  Lượt đang chạy cũng còn tính là "đang chờ" lúc này nên mốc là 1.
       if (queryClient.isMutating({ mutationKey }) <= 1) queryClient.setQueryData(reportKey, data)
       //  Mọi thao tác báo cáo đều ghi Lịch sử thao tác của chứng từ cha — làm mới
-      //  nó để dòng mới hiện ngay (nhất là dòng «Xóa» có nút Hoàn tác).
+      //  nó để dòng mới hiện ngay (nhất là dòng "Xóa" có nút Hoàn tác).
       void queryClient.invalidateQueries({ queryKey: ['audit-logs', entity, id] })
     },
   })
@@ -152,7 +152,7 @@ export function useSurveyReportActions(id: number, entity: ReportOwnerEntity = '
       'Đã khởi tạo báo cáo theo mẫu đã chọn',
     ),
     /**
-     * «Tạo mẫu» vào một nút / một giai đoạn. Không toast ở đây: có thêm mấy hồ
+     * "Tạo mẫu" vào một nút / một giai đoạn. Không toast ở đây: có thêm mấy hồ
      * sơ (hay không thêm gì vì đã đủ) chỉ biết khi so khối trước/sau — chỗ gọi lo.
      */
     applyTemplate: useReportMutation(
@@ -209,7 +209,7 @@ export function useSurveyReportActions(id: number, entity: ReportOwnerEntity = '
       (report, { docId, status }) => mergeDocChanges(report, docId, { status }),
     ),
     /**
-     * Sửa MỘT ô ngay trên dòng của dạng «Bảng» (duoc-CR-612): chỉ gửi trường vừa đổi,
+     * Sửa MỘT ô ngay trên dòng của dạng "Bảng" (duoc-CR-612): chỉ gửi trường vừa đổi,
      * không toast — mỗi ô một lần lưu, báo thành công từng ô thì dội thông báo.
      * Lỗi vẫn hiện qua lớp báo lỗi chung của `@/core/api`.
      */
@@ -259,7 +259,7 @@ export function useSurveyReportActions(id: number, entity: ReportOwnerEntity = '
 
 export type SurveyReportActions = ReturnType<typeof useSurveyReportActions>
 
-/** Hoàn tác lần «Xóa báo cáo thực hiện» — dùng ở nút trên Lịch sử thao tác. */
+/** Hoàn tác lần "Xóa báo cáo thực hiện" — dùng ở nút trên Lịch sử thao tác. */
 export function useRestoreSurveyReport(id: number, entity: ReportOwnerEntity = 'survey_request') {
   return useReportMutation<void>(
     entity,

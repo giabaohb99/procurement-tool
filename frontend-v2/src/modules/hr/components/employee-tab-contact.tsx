@@ -4,7 +4,9 @@ import {
   EmployeeTextField,
   SensitiveFieldsNotice,
 } from './employee-form-fields'
+import { CopyAddressButton } from './copy-address-button'
 import { EmployeePeopleEditor } from './employee-people-editor'
+import { PhoneListEditor } from './phone-list-editor'
 import {
   CONTACT_COLUMNS,
   createEmptyContactRow,
@@ -23,7 +25,7 @@ interface EmployeeTabContactProps {
 }
 
 /**
- * Tab «Liên hệ & Ngân hàng» — nhóm 3 (địa chỉ) + nhóm 4 (ngân hàng) + bảng
+ * Tab "Liên hệ & Ngân hàng" — nhóm 3 (địa chỉ) + nhóm 4 (ngân hàng) + bảng
  * người báo tin.
  *
  * Cả ba khối đều thuộc nhóm NHẠY CẢM, nên thiếu quyền thì tab này gần như trống
@@ -47,14 +49,13 @@ export function EmployeeTabContact({
       <div className="grid gap-5 lg:grid-cols-2">
         <Card className="gap-4 p-5">
           <FormSection title="Liên hệ">
-            {/*  «Email công việc» đã dời sang tab Chung (đại ca chốt 23/09/2026) —
+            {/*  "Email công việc" đã dời sang tab Chung (đại ca chốt 23/09/2026) —
                  nó là email ĐĂNG NHẬP, đứng cạnh Trạng thái hồ sơ, xem ghi chú ở đó. */}
-            <EmployeeTextField
-              name="phone"
-              label="Số điện thoại"
-              type="tel"
-              disabled={!canWrite}
-            />
+            {/*  duoc-CR-694: danh sách số (chính + tối đa 4 số khác) chiếm HẾT chiều ngang khối, rồi mới tới
+                 hàng hai địa chỉ — đọc từ trên xuống, không xen kẽ (đại ca chốt 29/10/2026). */}
+            <div className="sm:col-span-2">
+              <PhoneListEditor disabled={!canWrite} />
+            </div>
             {/*  MỘT trường chữ gộp, cố ý không tách tỉnh/phường như HrOnline:
                  phiếu giấy của công ty cũng ghi một dòng, mà tách ba ô thì phải
                  nuôi thêm danh mục địa giới — thứ vừa đổi cả nước năm 2025. */}
@@ -63,11 +64,14 @@ export function EmployeeTabContact({
               label="Địa chỉ thường trú"
               disabled={lockedField}
             />
-            <EmployeeTextField
-              name="current_address"
-              label="Địa chỉ hiện nay (tạm trú)"
-              disabled={lockedField}
-            />
+            <div className="flex flex-col gap-1">
+              <EmployeeTextField
+                name="current_address"
+                label="Địa chỉ hiện nay (tạm trú)"
+                disabled={lockedField}
+              />
+              {!lockedField && <CopyAddressButton />}
+            </div>
           </FormSection>
         </Card>
 

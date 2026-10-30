@@ -78,7 +78,7 @@ export function DocumentPrerequisiteDialog({
                         <strong>{item.target_type_name}</strong>
                         <span className="text-amber-800">
                           {' '}
-                          — quan hệ «{item.relation_label}»
+                          — quan hệ <strong>{item.relation_label}</strong>
                         </span>
                       </p>
                       <p className="text-amber-800">{prerequisiteText(item)}</p>

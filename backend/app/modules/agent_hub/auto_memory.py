@@ -6,10 +6,10 @@ xuất tối đa MAX_FACTS điều BỀN về người đó (vai trò, thói que
 bốn mục của lõi. Mỗi điều là một dòng `tab_agent_memory_candidate`, đếm số lần gặp lại:
 
   · gặp lần đầu      → chỉ đếm, KHÔNG ghi (điều nói một lần không bao giờ vào sổ);
-  · ≥ MIN_HITS lần trên ≥ MIN_DAYS ngày khác nhau → GHI NGAY vào lõi, đuôi «(tự rút)» + hạn WRITTEN_TTL_DAYS ngày; gặp
-    lại khi sắp hết hạn thì gia hạn; không gặp lại thì tự rút khỏi lõi khi tới hạn (cơ chế «(đến dd/mm/yyyy)» sẵn có);
+  · ≥ MIN_HITS lần trên ≥ MIN_DAYS ngày khác nhau → GHI NGAY vào lõi, đuôi "(tự rút)" + hạn WRITTEN_TTL_DAYS ngày; gặp
+    lại khi sắp hết hạn thì gia hạn; không gặp lại thì tự rút khỏi lõi khi tới hạn (cơ chế "(đến dd/mm/yyyy)" sẵn có);
   · chưa đủ lần mà PENDING_TTL_DAYS ngày không gặp lại → hết hạn, bỏ;
-  · người dùng «quên: …» → bia mộ TOMBSTONE_DAYS ngày, không rút lại điều đó.
+  · người dùng "quên: …" → bia mộ TOMBSTONE_DAYS ngày, không rút lại điều đó.
 
 Ba hàng rào của sổ nhớ dùng lại nguyên: không ghi bí mật (`personal_memory.is_secret`) · trùng thì không thêm ·
 `user_id` lấy từ chat đã đăng nhập, không bao giờ do model điền. KHÔNG BAO GIỜ rút từ tin NHÓM. Lần đầu bot tự ghi cho một
@@ -46,16 +46,16 @@ WRITTEN_TTL_DAYS = 120
 RENEW_BEFORE_DAYS = 30
 TOMBSTONE_DAYS = 90
 AUTO_TAG = "(tự rút)"
-FACT_MAX = personal_memory.LINE_MAX - 40          # chừa chỗ cho đuôi «(tự rút) (đến dd/mm/yyyy)»
+FACT_MAX = personal_memory.LINE_MAX - 40          # chừa chỗ cho đuôi "(tự rút) (đến dd/mm/yyyy)"
 NOTICE_CURSOR = "auto_memory_notice:"
-SOURCE_AUTO = 1                                   # «tự rút» — chỗ chừa cho nguồn khác về sau
+SOURCE_AUTO = 1                                   # "tự rút" — chỗ chừa cho nguồn khác về sau
 
 
 class CandidateStatus(IntEnum):
     PENDING = 1      # đang đếm
     WRITTEN = 2      # đã ghi vào lõi
     EXPIRED = 3      # không gặp lại, hết hạn
-    FORGOTTEN = 4    # người dùng «quên» — bia mộ
+    FORGOTTEN = 4    # người dùng "quên" — bia mộ
 
 
 STATUS_LABELS = {CandidateStatus.PENDING: "Đang để ý", CandidateStatus.WRITTEN: "Đã ghi vào sổ",
@@ -82,7 +82,7 @@ def key_of(line: str) -> str:
 
 
 def strip_tags(line: str) -> str:
-    """Bỏ đuôi hạn «(đến …)» và đuôi «(tự rút)» — để so một dòng trong lõi với điều gốc."""
+    """Bỏ đuôi hạn "(đến …)" và đuôi "(tự rút)" — để so một dòng trong lõi với điều gốc."""
     s = _UNTIL_TAIL.sub("", line or "").strip()
     if s.endswith(AUTO_TAG):
         s = s[: -len(AUTO_TAG)].strip()
@@ -231,7 +231,7 @@ def observe(db: Session, user_id: int, items: list[dict], *, now=None) -> dict:
 
 
 def tombstone(db: Session, user_id: int, needle: str, removed: list[str] | None = None, *, now=None) -> int:
-    """Người dùng «quên: …» → mọi điều đang theo dõi / đã ghi khớp `needle` (hoặc đúng dòng vừa xóa) thành bia mộ."""
+    """Người dùng "quên: …" → mọi điều đang theo dõi / đã ghi khớp `needle` (hoặc đúng dòng vừa xóa) thành bia mộ."""
     uid = int(user_id or 0)
     f = fold(needle or "")
     if uid <= 0 or not f:
@@ -277,11 +277,11 @@ def _notice_once(db: Session, user_id: int, chat_id: str, lines: list[str]) -> b
     from . import service
     from .telegram import esc
 
-    sample = " · ".join(f"«{esc(x)}»" for x in lines[:3])
+    sample = " · ".join(f"**{esc(x)}**" for x in lines[:3])
     service.reply(db, chat_id, (
         f"Em vừa tự ghi vào sổ nhớ của mình: {sample}. Từ nay điều gì nhắc lại từ {MIN_HITS} lần trên {MIN_DAYS} ngày "
-        f"khác nhau em sẽ tự ghi như vậy (đuôi «tự rút», {WRITTEN_TTL_DAYS} ngày không nhắc lại thì tự bỏ). "
-        "Xem sổ: «sổ nhớ». Bỏ một dòng: «quên: …». Tin nhắn trong nhóm em không bao giờ rút."))
+        f"khác nhau em sẽ tự ghi như vậy (đuôi **tự rút**, {WRITTEN_TTL_DAYS} ngày không nhắc lại thì tự bỏ). "
+        "Xem sổ: **sổ nhớ**. Bỏ một dòng: **quên: …**. Tin nhắn trong nhóm em không bao giờ rút."))
     db.commit()
     return True
 

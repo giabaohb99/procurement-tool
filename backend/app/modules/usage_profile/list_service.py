@@ -1,5 +1,5 @@
 """Danh sách hồ sơ theo người (duoc-CR-641, phase 05) — SỐ TRUY VẤN CỐ ĐỊNH ≤ 5 bất kể số người:
-(1) tuần nhãn mới nhất + «dữ liệu từ ngày» · (2) đếm · (3) trang GROUP BY trên `tab_usage_daily` ⨝ người/phòng ban ·
+(1) tuần nhãn mới nhất + "dữ liệu từ ngày" · (2) đếm · (3) trang GROUP BY trên `tab_usage_daily` ⨝ người/phòng ban ·
 (4) nhóm so sánh của người trong trang (tên vai trò/pháp nhân JOIN sẵn) · (5) nhãn của trang.
 Chỉ đọc `tab_usage_daily` + snapshot + nhãn — KHÔNG đọc request_log / ui_event lúc mở màn (nhanh, và đúng §7.7).
 """
@@ -170,7 +170,7 @@ def decorate(db: Session, rows, label_week: date | None, with_metric: bool = Fal
             "labels": labels.get(r.user_id, []),
             "last_active_day": r.last_active_day.isoformat() if r.last_active_day else None,
         }
-        if with_metric:   #  duoc-CR-650: None = chưa đo được (giao diện hiện «Chưa đo được», không phải 0)
+        if with_metric:   #  duoc-CR-650: None = chưa đo được (giao diện hiện "Chưa đo được", không phải 0)
             item["metric_value"] = rnd(float(r.metric_value), 4) if r.metric_value is not None else None
         out.append(item)
     return out

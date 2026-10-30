@@ -17,7 +17,7 @@ export type PrintSignatureSource = Pick<
 
 /**
  * Bốn ô cũ dựng từ các khóa rời — chỉ dùng khi backend chưa gửi `print_signature_cells`
- * (backend cũ). Giữ đúng hành vi trước bao-CR-531: «Giám đốc» luôn trống để ký tay.
+ * (backend cũ). Giữ đúng hành vi trước bao-CR-531: "Giám đốc" luôn trống để ký tay.
  */
 function buildLegacyCells(source: PrintSignatureSource): PrintSignatureCell[] {
   return [
@@ -44,14 +44,14 @@ function buildLegacyCells(source: PrintSignatureSource): PrintSignatureCell[] {
 }
 
 /**
- * Bộ ô ký cụm «XÉT DUYỆT» sẽ vẽ — bao-CR-531, luật bộ ô đổi ở bao-CR-536.
+ * Bộ ô ký cụm "XÉT DUYỆT" sẽ vẽ — bao-CR-531, luật bộ ô đổi ở bao-CR-536.
  *
  * BỘ Ô (mấy ô, nhãn gì, ai ở ô nào) do backend quyết (`print_signature_cells.py`): công ty luôn
- * 4 ô; hộ kinh doanh cũng 4 ô, chỉ đổi nhãn ô đầu thành «Chủ hộ» (bao-CR-539); ô trùng người đại
+ * 4 ô; hộ kinh doanh cũng 4 ô, chỉ đổi nhãn ô đầu thành "Chủ hộ" (bao-CR-539); ô trùng người đại
  * diện để trống.
  * Ở đây chỉ áp hai chế độ phía máy khách:
- *  · «Không chữ ký» → bỏ CẢ ảnh LẪN tên — đây là nút người dùng tự bấm khi muốn ẩn tên;
- *  · «Mẫu thuế» → để trống hết, nhưng vẫn theo đúng bộ ô backend trả.
+ *  · "Không chữ ký" → bỏ CẢ ảnh LẪN tên — đây là nút người dùng tự bấm khi muốn ẩn tên;
+ *  · "Mẫu thuế" → để trống hết, nhưng vẫn theo đúng bộ ô backend trả.
  */
 export function resolvePrintSignatureCells(
   source: PrintSignatureSource,

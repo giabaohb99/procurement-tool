@@ -72,7 +72,7 @@ export function useMySessions(activeOnly = true) {
   })
 }
 
-/** Lịch sử đăng nhập của chính mình — tab «Lịch sử đăng nhập» ở /me (bao-CR-400). */
+/** Lịch sử đăng nhập của chính mình — tab "Lịch sử đăng nhập" ở /me (bao-CR-400). */
 export function useMyLoginHistory(days: number = LOGIN_HISTORY_DAYS) {
   return useQuery({
     queryKey: queryKeys.auth.myLoginHistory(days),

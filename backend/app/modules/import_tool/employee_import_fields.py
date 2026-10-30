@@ -1,7 +1,7 @@
-"""Bộ cột + bộ parse ô của «Nhập Excel Nhân sự» (duoc-CR-628).
+"""Bộ cột + bộ parse ô của "Nhập Excel Nhân sự" (duoc-CR-628).
 
 Một nguồn duy nhất cho: tiêu đề cột (kèm alias để tệp XUẤT cũ nhập lại được), kiểu ô, cờ nhạy cảm
-(tính từ `employee.sensitive.SENSITIVE_FIELDS`, KHÔNG gõ danh sách thứ hai) và sheet «Huong dan».
+(tính từ `employee.sensitive.SENSITIVE_FIELDS`, KHÔNG gõ danh sách thứ hai) và sheet "Huong dan".
 
 Luật ô: cột vắng hoặc ô TRỐNG = giữ nguyên (không đưa vào dict ghi). Chỉ ô ghi `__/empty_value/__`
 mới xóa. Parse sai KHÔNG đoán bừa mà ném `CellError` để dòng đó thành lỗi.
@@ -12,6 +12,7 @@ from datetime import date, datetime
 from app.modules.employee.constants import (EDUCATION_LEVEL_LABELS, EMPLOYMENT_TYPE_LABELS,
                                             GENDER_LABELS, JOB_LEVEL_LABELS,
                                             MARITAL_STATUS_LABELS)
+from app.modules.employee.phone_rules import parse_phones_text
 from app.modules.employee.sensitive import SENSITIVE_FIELDS
 from app.modules.employee.status_parse import status_code_from_text
 
@@ -41,6 +42,8 @@ EMPLOYEE_FIELDS: list[dict] = [
     _ef("Họ tên *", "full_name"),   # bắt buộc khi TẠO (kiểm theo dòng), cột không bắt buộc có mặt
     _ef("Email", "email"),
     _ef("Điện thoại", "phone", aliases=["Số điện thoại"]),
+    _ef("Nhãn số chính", "phone_label"),   # duoc-CR-694
+    _ef("Số điện thoại khác", "extra_phones", "phones"),   # duoc-CR-694: "số (nhãn); số (nhãn)", tối đa 4
     _ef("Email cá nhân", "personal_email"),
     _ef("Giới tính", "gender", "code"),
     _ef("Tình trạng hôn nhân", "marital_status", "code"),
@@ -169,9 +172,11 @@ def parse_scalar(spec: dict, raw):
     if cell_text(raw) == EMPTY_SENTINEL:
         if attr in NOT_CLEARABLE:
             raise CellError("không xóa được ô bắt buộc")
-        return None if t == "date" else (0 if t in ("code", "int") else "")
+        return [] if t == "phones" else (None if t == "date" else (0 if t in ("code", "int") else ""))
     if t == "date":
         return parse_date(raw)
+    if t == "phones":
+        return parse_phones_text(cell_text(raw))
     if t == "code":
         return parse_code(attr, raw)
     if t == "bool":
@@ -196,6 +201,10 @@ TEMPLATE_NOTES: list[tuple[str, str]] = [
                     "đăng nhập) hoặc Đang dùng = 0."),
     ("Ngày", "dd/mm/yyyy hoặc yyyy-mm-dd, hoặc ô kiểu ngày của Excel. Năm từ 1900 đến 2200."),
     ("Số CCCD / Số tài khoản / Điện thoại", "Định dạng ô là Văn bản (Text) để Excel không cắt số 0 ở đầu."),
+    ("Nhãn số chính", "Nhãn tự do (≤ 50 ký tự) của cột Điện thoại, vd Cá nhân, Zalo."),
+    ("Số điện thoại khác", "Tối đa 4 số, ngăn cách bằng dấu chấm phẩy, nhãn đặt trong ngoặc sau số: "
+                           "0901234567 (Zalo); 0287654321 (Nhà riêng). Mỗi số 8–15 chữ số, không trùng nhau "
+                           "và không trùng số chính. Ô có dữ liệu sẽ THAY cả danh sách cũ."),
     ("Giới tính", "1 = Nam, 2 = Nữ, 3 = Khác (hoặc gõ chữ)."),
     ("Tình trạng hôn nhân", "1 = Độc thân, 2 = Có gia đình, 3 = Ly hôn (hoặc gõ chữ)."),
     ("Trình độ học vấn", "1 = Phổ thông, 2 = Trung cấp, 3 = Cao đẳng, 4 = Đại học, 5 = Sau đại học."),

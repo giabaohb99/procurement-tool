@@ -33,12 +33,12 @@ const GRID_COLS: Record<number, string> = { 1: 'md:grid-cols-1', 2: 'md:grid-col
 
 interface MonthlyRemindersCardProps {
   className?: string
-  /** «Hôm nay» do trang truyền xuống — tháng mở đầu tiên; bài kiểm truyền ngày cố định. */
+  /** "Hôm nay" do trang truyền xuống — tháng mở đầu tiên; bài kiểm truyền ngày cố định. */
   today?: Date
 }
 
 /**
- * Ô «Lịch nhắc trong tháng» (E3, duoc-CR-689): sinh nhật · kỷ niệm năm làm việc · HĐ / thử việc
+ * Ô "Lịch nhắc trong tháng" (E3, duoc-CR-689): sinh nhật · kỷ niệm năm làm việc · HĐ / thử việc
  * hết hạn trong tháng đang chọn, mỗi dòng bấm mở hồ sơ. Nơi gọi chỉ dựng khi có `employee.read`.
  *
  * Nhóm nào người xem thiếu quyền thì backend bỏ khóa → nhóm đó KHÔNG hiện (kể cả khung). Không
@@ -97,7 +97,7 @@ export function MonthlyRemindersCard({ className, today }: MonthlyRemindersCardP
             ))}
           </div>
         ) : query.isError ? (
-          //  Ô NHẮC VIỆC mà tải hỏng thì không được nói «không có gì» — đó là trấn an giả.
+          //  Ô NHẮC VIỆC mà tải hỏng thì không được nói "không có gì" — đó là trấn an giả.
           <p className="py-6 text-center text-sm text-muted-foreground">
             Không tải được lịch nhắc. Tải lại trang để thử lại.
           </p>
@@ -149,7 +149,7 @@ function ReminderGroup({ group, partial }: { group: MonthlyReminderGroup; partia
           Chỉ hiện {group.rows.length} trên {group.total} người — còn người khác chưa hiện.
         </p>
       )}
-      {/*  Nguồn HĐ chỉ nhìn trước 180 ngày: tháng xa hơn thì «không có ai» chưa chắc đúng. */}
+      {/*  Nguồn HĐ chỉ nhìn trước 180 ngày: tháng xa hơn thì "không có ai" chưa chắc đúng. */}
       {partial && (
         <p className="pt-2 text-xs text-muted-foreground">
           Chỉ thấy hợp đồng hết hạn trong {CONTRACT_LOOKAHEAD_DAYS} ngày tới — tháng này có thể còn thiếu.

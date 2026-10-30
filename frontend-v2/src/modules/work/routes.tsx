@@ -12,14 +12,14 @@ import { appRoutes } from '@/shared/constants/app-routes'
  *
  * **MỘT DỰ ÁN CHÍNH LÀ MỘT DANH SÁCH CÔNG VIỆC** (`WorkList`), không phải hai
  * tầng chồng nhau. Trước đây hệ có hai phân hệ mang hai tên cho cùng một thứ:
- * «Công việc» làm thật ở đây, và «Dự án» chỉ là khung rỗng "Sắp có". Nay gộp về
+ * "Công việc" làm thật ở đây, và "Dự án" chỉ là khung rỗng "Sắp có". Nay gộp về
  * một, lấy tên **Dự án** vì đó là cách người dùng gọi.
  *
  * ⚠️ Chỉ đổi tên ở tầng NGƯỜI DÙNG. Thư mục vẫn là `modules/work/`, API vẫn
  * `/api/work/...`, entity phân quyền vẫn `work_task`, bảng vẫn `tab_work_*`:
  * đổi mấy thứ đó phải kèm migration và nạp lại phân quyền trên máy thật, tốn mà
  * người dùng không thấy gì. Chữ "task" trần thì vẫn cấm dùng — nó đã bị bộ máy
- * duyệt và tab «Việc cần làm» (`/api/dashboard/tasks`, CR-215) chiếm.
+ * duyệt và tab "Việc cần làm" (`/api/dashboard/tasks`, CR-215) chiếm.
  */
 export const workModule: ErpModule = {
   id: 'work',

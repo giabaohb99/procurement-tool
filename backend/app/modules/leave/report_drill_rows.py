@@ -1,10 +1,10 @@
-"""«Bấm số ra danh sách ĐƠN» của báo cáo Tình hình nghỉ phép (duoc-CR-686,
+""""Bấm số ra danh sách ĐƠN" của báo cáo Tình hình nghỉ phép (duoc-CR-686,
 `GET /api/leave-requests/summary/rows`). Hợp đồng chung ở `core/report_drilldown.py`.
 
 Khớp với con số trên bảng:
   - `requests` / `requests_pending_over_3d`: đơn có NGÀY BẮT ĐẦU trong kỳ (như `/summary`).
-  - `days_approved` / `days_pending`: đơn có NGÀY rơi vào kỳ (kể cả bắt đầu trước kỳ); cột «Số
-    ngày trong kỳ» là phần ngày đã chia theo `report_day_split` — cộng cột này = con số ngày.
+  - `days_approved` / `days_pending`: đơn có NGÀY rơi vào kỳ (kể cả bắt đầu trước kỳ); cột "Số
+    ngày trong kỳ" là phần ngày đã chia theo `report_day_split` — cộng cột này = con số ngày.
   - Nhóm (`group_by`/`group_key`) lọc bằng `core.report_drilldown.filter_group` trên đúng cột mà
     `/summary` gom theo; riêng `leave_type` + chỉ số ngày thì mỗi DÒNG loại nghỉ là một mục.
 Số truy vấn cố định: đơn · dòng · (khoảng + lịch + ngày lễ khi có đơn vắt biên) · tên NV/phòng.

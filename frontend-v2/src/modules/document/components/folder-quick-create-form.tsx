@@ -14,7 +14,7 @@ interface FolderQuickCreateFormProps {
 }
 
 /**
- * Nút nhỏ «Tạo thư mục mới» trong popover chọn thư mục — chỉ tạo được CON của
+ * Nút nhỏ "Tạo thư mục mới" trong popover chọn thư mục — chỉ tạo được CON của
  * thư mục pháp nhân đang chọn (không cho tự chọn cha khác trong ô này, giữ
  * cho ô chọn văn bản đơn giản; muốn dựng cây sâu thì mở trang Quản lý cây
  * thư mục, phase 05).

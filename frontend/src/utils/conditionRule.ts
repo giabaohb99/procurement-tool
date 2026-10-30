@@ -2,7 +2,7 @@
  * ĐIỀU KIỆN kiểu bộ máy duyệt — đọc/ghi giữa bộ chọn điều kiện và chuỗi JSON (bao-CR-528).
  *
  * Bản v1 của `frontend-v2/src/shared/condition-builder/condition-rule.ts` — HAI BẢN PHẢI KHỚP
- * NHAU: cùng phép so, cùng cách đọc «khai tay», cùng chuỗi JSON gửi lên. Backend
+ * NHAU: cùng phép so, cùng cách đọc "khai tay", cùng chuỗi JSON gửi lên. Backend
  * (`approval/condition_service.py`) nối các dòng bằng VÀ; cửa lưu của màn Cấu hình chặn
  * trường lạ / phép lạ bằng câu tiếng Việt.
  */
@@ -41,10 +41,10 @@ export const OP_LABELS: Record<ConditionOp, string> = {
 }
 
 /**
- * Ô của phiếu YCMH cho «điều kiện bỏ qua bước thu mua duyệt lần 2». Đúng bằng khóa
+ * Ô của phiếu YCMH cho "điều kiện bỏ qua bước thu mua duyệt lần 2". Đúng bằng khóa
  * `purchase_request/service.dispatch_context()` đưa vào (bảng `DISPATCH_CONTEXT_FIELDS`).
- * «Phòng xử lý»: phòng thu mua mặc định đi vào dưới dạng 0 = «để trống», nên bị gỡ khỏi danh
- * sách chọn — điều kiện hay dùng là «Phòng xử lý có giá trị» = phiếu nhờ phòng khác xử lý.
+ * "Phòng xử lý": phòng thu mua mặc định đi vào dưới dạng 0 = "để trống", nên bị gỡ khỏi danh
+ * sách chọn — điều kiện hay dùng là "Phòng xử lý có giá trị" = phiếu nhờ phòng khác xử lý.
  */
 export const PR_DISPATCH_CONDITION_FIELDS: ConditionField[] = [
   { name: 'handler_dept_id', label: 'Phòng xử lý', source: 'handler_department',
@@ -137,7 +137,7 @@ function describeRow(op: ConditionOp, label: string, v: string): string {
   }
 }
 
-/** Câu tiếng Việt của cả điều kiện, nối bằng «và» — đúng cách backend đọc. */
+/** Câu tiếng Việt của cả điều kiện, nối bằng "và" — đúng cách backend đọc. */
 export function conditionText(
   rows: ConditionRow[], fields: ConditionField[], getOptions: (f: ConditionField) => ConditionChoice[],
 ): string {

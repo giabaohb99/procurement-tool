@@ -29,7 +29,7 @@ interface RoomTimelineGridProps {
    * khối vẫn bấm mở phiếu như cũ.
    */
   onReschedule?: (booking: RoomBooking, roomId: number, start: string, end: string) => void
-  /** Mốc «bây giờ». Truyền vào để bài kiểm không phụ thuộc đồng hồ máy. */
+  /** Mốc "bây giờ". Truyền vào để bài kiểm không phụ thuộc đồng hồ máy. */
   now?: Date
 }
 
@@ -50,7 +50,7 @@ function barPercent(start: string, end: string) {
 /**
  * LƯỚI MỘT NGÀY — **mỗi phòng một HÀNG**, giờ chạy ngang.
  *
- * ⚠️ Đảo trục từ bản «cột = phòng» vì khách hỏi đúng câu quyết định: *"20 phòng
+ * ⚠️ Đảo trục từ bản "cột = phòng" vì khách hỏi đúng câu quyết định: *"20 phòng
  * thì sao?"* — 20 cột là 4.500px bề ngang, cuộn bốn màn hình mới xem hết. Đảo
  * trục thì số phòng chỉ làm lưới **dài xuống** (cuộn dọc, thao tác ai cũng làm
  * sẵn), còn cả ngày làm việc nằm trọn trong một màn.
@@ -101,7 +101,7 @@ export function RoomTimelineGrid({
       <div className="flex flex-col items-center justify-center gap-2 p-10 text-center">
         <p className="text-sm font-medium">Không có phòng nào</p>
         <p className="max-w-sm text-sm text-muted-foreground">
-          Bỏ bớt bộ lọc, hoặc vào tab «Danh mục phòng» để thêm phòng.
+          Bỏ bớt bộ lọc, hoặc vào tab <strong>Danh mục phòng</strong> để thêm phòng.
         </p>
       </div>
     )

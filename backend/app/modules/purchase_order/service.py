@@ -200,7 +200,7 @@ def product_invoice_names_map(db: Session, codes) -> dict[str, str]:
 
 
 def fill_blank_invoice_name(db: Session, fields: dict, cache: dict | None = None) -> dict:
-    """Điền «Tên trên hóa đơn» từ sản phẩm master vào `fields` (dict cột dòng ĐMH) khi còn trống.
+    """Điền "Tên trên hóa đơn" từ sản phẩm master vào `fields` (dict cột dòng ĐMH) khi còn trống.
     Dùng chung cho nhập Excel và sao chép ĐMH (duoc-CR-663); `cache` {mã: tên} để khỏi truy vấn lặp.
     Không ghi đè tên đã có; master không có tên thì giữ nguyên (trống)."""
     if (fields.get("invoice_name") or "").strip():
@@ -305,7 +305,7 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
         # Chỉ điền lúc TẠO dòng: dòng đang sửa mà người dùng cố ý xóa trắng thì giữ trắng.
         if not (data.get("spec") or "").strip() and not data.get("id"):
             data["spec"] = specs_by_code.get((data.get("product_code") or "").strip(), "")
-        # duoc-CR-663: «Tên trên hóa đơn» GHI VÀO CỘT lúc lưu (lấy từ sản phẩm master theo mã hàng
+        # duoc-CR-663: "Tên trên hóa đơn" GHI VÀO CỘT lúc lưu (lấy từ sản phẩm master theo mã hàng
         # khi ô còn trống) — trước đây chỉ suy ở lúc trả (serializer) nên báo cáo / xuất file /
         # truy vấn thẳng cột đều thấy trống. Người dùng đã gõ tên thì giữ nguyên; master không có
         # tên thì để trống (không đoán từ tên hàng).
@@ -374,7 +374,7 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
 
 # ───────────────── Chi phí thu mua (bao-CR-319 P3 · ba giai đoạn bao-CR-453) ─────────────────
 # Tên hàm / khóa API vẫn mang chữ `import_cost` vì đó là tên lịch sử đã nằm trong dữ liệu
-# (`tab_payable.source_type`) và trong hai bản giao diện; chỉ NHÃN đổi thành «Chi phí thu mua».
+# (`tab_payable.source_type`) và trong hai bản giao diện; chỉ NHÃN đổi thành "Chi phí thu mua".
 def import_costs_of(db: Session, po_id: int):
     return (db.query(POCost).filter(POCost.po_id == po_id)
             .order_by(POCost.id.asc()).all())
@@ -386,7 +386,7 @@ def cost_type_map(db: Session) -> dict[int, POCostType]:
 
 
 def cost_type_name(code: int, types: dict[int, POCostType] | None = None) -> str:
-    """Tên loại chi phí: ưu tiên danh mục, không có thì lùi về bộ mã cứng, mã lạ thì «Chi phí khác»."""
+    """Tên loại chi phí: ưu tiên danh mục, không có thì lùi về bộ mã cứng, mã lạ thì "Chi phí khác"."""
     if types and int(code or 0) in types:
         return types[int(code)].name or ""
     try:
@@ -497,8 +497,8 @@ def sync_import_cost_payables(db: Session, po: PurchaseOrder, user_id: int,
 
     bao-CR-453: chỉ số QUYẾT TOÁN mới thành nợ — Dự toán / Tạm tính là số để chốt giá bán,
     chưa có hóa đơn nên chưa nợ ai cả. Đơn (hoặc riêng dòng) lên Quyết toán là nợ hiện ra
-    ngay; mở lại thì nợ chưa chi bị gỡ, y như lúc bỏ NCC. Loại chi phí khai «không sinh
-    công nợ» trong danh mục thì bỏ qua dù đã quyết toán.
+    ngay; mở lại thì nợ chưa chi bị gỡ, y như lúc bỏ NCC. Loại chi phí khai "không sinh
+    công nợ" trong danh mục thì bỏ qua dù đã quyết toán.
     """
     rows = import_costs_of(db, po.id)
     if not rows:
@@ -543,7 +543,7 @@ def block_complete_unpaid_import_costs(db: Session, po: PurchaseOrder) -> None:
     Đơn trong nước không đổi luật.
 
     bao-CR-453: chỉ xét số QUYẾT TOÁN (chốt `block_complete_not_final_costs` chạy trước nên
-    tới đây mọi dòng đã ở Quyết toán); loại chi phí «không sinh công nợ» đứng ngoài.
+    tới đây mọi dòng đã ở Quyết toán); loại chi phí "không sinh công nợ" đứng ngoài.
     """
     if int(po.order_type or OrderType.DOMESTIC) != int(OrderType.IMPORT):
         return
@@ -602,7 +602,7 @@ def _fill_stage_from_previous(row, target: CostStage, po) -> bool:
     """Giai đoạn `target` của dòng chưa có số thì CHÉP số + tỷ giá của giai đoạn đã điền cao nhất
     bên dưới sang (Dự toán → Tạm tính → Quyết toán). Trả True nếu có chép.
 
-    bao-CR-478: số 0 cũng tính là «chưa có số» — bản cũ (v1) gửi ô bỏ trống thành 0
+    bao-CR-478: số 0 cũng tính là "chưa có số" — bản cũ (v1) gửi ô bỏ trống thành 0
     (`Number(x) || 0`), nên chỉ xét `None` thì luật chép không bao giờ chạy với dữ liệu nhập
     từ v1. Cùng luật với `has_estimate`."""
     if cost_amount_of(row, target):
@@ -762,7 +762,7 @@ def finalize_cost_lines(db: Session, po: PurchaseOrder, cost_ids: list[int] | No
         chosen = rows
     todo = [r for r in chosen if not is_final_cost(r, po)]
     # bao-CR-478 — dòng KHÔNG có Dự toán thì không được quyết toán (đại ca chốt 24/09/2026).
-    # BỎ QUA dòng đó và chốt phần còn lại, KHÔNG ném lỗi cả lượt: nút «Quyết toán tất cả» của v2
+    # BỎ QUA dòng đó và chốt phần còn lại, KHÔNG ném lỗi cả lượt: nút "Quyết toán tất cả" của v2
     # gửi đích danh mọi id chưa chốt, ném 400 thì chỉ một dòng trống Dự toán là cả nút chết.
     # Controller nói ra số dòng bị bỏ qua; chỉ khi không còn dòng nào chốt được mới báo lỗi.
     no_estimate = [r for r in todo if not has_estimate(r)]
@@ -770,7 +770,7 @@ def finalize_cost_lines(db: Session, po: PurchaseOrder, cost_ids: list[int] | No
     if not todo:
         if no_estimate:
             types = cost_type_map(db)
-            names = ", ".join(f"«{_cost_label(r, types)}»" for r in no_estimate[:COST_FINAL_NAMES_IN_LOG])
+            names = ", ".join(f"\"{_cost_label(r, types)}\"" for r in no_estimate[:COST_FINAL_NAMES_IN_LOG])
             raise HTTPException(400, f"Dòng chưa có Dự toán thì không quyết toán được: {names}. "
                                      f"Nhập số Dự toán trước rồi mới chốt.")
         raise HTTPException(400, "Không còn dòng chi phí nào để quyết toán")
@@ -786,7 +786,7 @@ def finalize_cost_lines(db: Session, po: PurchaseOrder, cost_ids: list[int] | No
         row.updated_by = user_id
     db.flush()
     types = cost_type_map(db)
-    names = [f"«{_cost_label(r, types)}»" for r in todo[:COST_FINAL_NAMES_IN_LOG]]
+    names = [f"\"{_cost_label(r, types)}\"" for r in todo[:COST_FINAL_NAMES_IN_LOG]]
     them = len(todo) - len(names)
     note = f"Quyết toán {len(todo)} dòng chi phí: {', '.join(names)}"
     if them > 0:
@@ -804,12 +804,12 @@ def reopen_cost_line(db: Session, po: PurchaseOrder, cost_id: int, reason: str, 
     if stage_of(row.line_stage) <= stage_of(po.cost_stage):
         raise HTTPException(400, "Dòng này đang theo giai đoạn của đơn; muốn lùi thì mở lại cả đơn")
     if row.id in paid_cost_ids(db, po.id):
-        raise HTTPException(400, f"Dòng chi phí «{_cost_label(row)}» đã có tiền chi, không mở lại được")
+        raise HTTPException(400, f"Dòng chi phí \"{_cost_label(row)}\" đã có tiền chi, không mở lại được")
     row.line_stage = int(stage_of(po.cost_stage))
     row.updated_by = user_id
     db.flush()
     record(db, user_id, "purchase_order", po.id, "cost_line_reopen",
-           f"Mở lại dòng chi phí «{_cost_label(row)}» về {_stage_label(po.cost_stage)}: {reason}",
+           f"Mở lại dòng chi phí \"{_cost_label(row)}\" về {_stage_label(po.cost_stage)}: {reason}",
            doc_code=po.code or "")
     sync_import_cost_payables(db, po, user_id)
     db.commit()
@@ -1046,7 +1046,7 @@ def is_cost_row_changed(row: POCost, data: dict, stage_fields: dict, manual: dic
         new = stage_fields.get(f"{prefix}_amount")
         #  Trống (None) và 0 là MỘT với phép so này: bản v1 gửi 0 cho ô chưa gõ, còn dòng chuyển
         #  từ khuôn cũ (migration 05a62d38a47a) để trống cột Dự toán / Tạm tính — so khắt khe thì
-        #  mọi lần lưu ĐMH trên v1 đều ăn 400 «đã quyết toán» (rà bản sao prod 28/09/2026, PO00122).
+        #  mọi lần lưu ĐMH trên v1 đều ăn 400 "đã quyết toán" (rà bản sao prod 28/09/2026, PO00122).
         if round(float(old or 0), 2) != round(float(new or 0), 2):
             return True
     old_manual = parse_manual_allocation(row.manual_allocation)
@@ -1084,7 +1084,7 @@ def _save_import_costs(db: Session, po: PurchaseOrder, costs, user_id: int):
             if ctype is None:
                 raise HTTPException(400, f"Loại chi phí mã {code} không có trong danh mục")
             if not ctype.is_active and not (row is not None and int(row.cost_type or 0) == code):
-                raise HTTPException(400, f"Loại chi phí «{ctype.name}» đã ngừng dùng, chọn loại khác")
+                raise HTTPException(400, f"Loại chi phí \"{ctype.name}\" đã ngừng dùng, chọn loại khác")
             data["cost_type"] = code
         else:
             try:
@@ -1111,7 +1111,7 @@ def _save_import_costs(db: Session, po: PurchaseOrder, costs, user_id: int):
         if row is not None and is_final_cost(row, po):
             if is_cost_row_changed(row, data, stage_fields, manual):
                 raise HTTPException(
-                    400, f"Dòng chi phí «{_cost_label(row, types)}» đã quyết toán, không sửa được. "
+                    400, f"Dòng chi phí \"{_cost_label(row, types)}\" đã quyết toán, không sửa được. "
                          f"Mở lại dòng đó rồi hãy sửa.")
             keep.add(row.id)
             continue
@@ -1156,7 +1156,7 @@ def _save_import_costs(db: Session, po: PurchaseOrder, costs, user_id: int):
             # chỉ tốn một cú bấm để đi vòng — xóa dòng rồi gõ lại một dòng mới y hệt.
             if is_final_cost(row, po):
                 raise HTTPException(
-                    400, f"Dòng chi phí «{_cost_label(row, types)}» đã quyết toán, không xóa được. "
+                    400, f"Dòng chi phí \"{_cost_label(row, types)}\" đã quyết toán, không xóa được. "
                          f"Mở lại dòng đó rồi hãy xóa.")
             block_delete_paid_import_cost(db, row)
             db.delete(row)
@@ -1954,7 +1954,7 @@ def set_item_progress(db: Session, pid: int, item_id: int, target: str, reason: 
         if not (reason or "").strip():
             raise HTTPException(400, f"Cần nhập lý do {PO_PROGRESS_STATUS.label_of(target).lower()}.")
         #  bao-CR-538: chặn trước khi gán — cột `pause_reason` là String(500), để MySQL từ chối
-        #  là ra 500 «lỗi không lường trước».
+        #  là ra 500 "lỗi không lường trước".
         clean_reason = ensure_max_length(reason.strip(), column_limit(POItem, "pause_reason"),
                                          "Lý do tạm ngưng / hủy")
         if target == PROG_PAUSED:

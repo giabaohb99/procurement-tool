@@ -114,7 +114,7 @@ export function DocumentExcerptDialog({
         <DialogHeader>
           <DialogTitle>Tạo bản trích nội bộ</DialogTitle>
           <DialogDescription>
-            Tách một phần nội dung của «{sourceTitle}» thành văn bản riêng để chia
+            Tách một phần nội dung của <strong>{sourceTitle}</strong> thành văn bản riêng để chia
             xuống nhà máy, lab hoặc dây chuyền.
           </DialogDescription>
         </DialogHeader>
@@ -173,7 +173,7 @@ export function DocumentExcerptDialog({
                  thì rơi vào một ô chữ trơn, dán vào là mất đậm/nghiêng, mất
                  bảng, mất cả ngắt đoạn.
 
-                 Cặp «Xem trước / Sửa mã» cũ bỏ luôn: nó chỉ tồn tại vì ô nhập
+                 Cặp "Xem trước / Sửa mã" cũ bỏ luôn: nó chỉ tồn tại vì ô nhập
                  là chữ trơn nên phải có một khối riêng để nhìn ra hình văn bản.
                  Ô này đã vừa gõ vừa hiện đúng hình, mà bày mã HTML ra cho người
                  làm văn thư thì vốn là bắt họ đọc thứ không phải việc của họ.

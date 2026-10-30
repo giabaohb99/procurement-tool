@@ -10,6 +10,10 @@ paths:
   - "doc/erp/hrm/**"
   - "backend/app/modules/import_tool/employee_import*.py"
   - "test/backend/*cr628*"
+  - "test/backend/*cr693*"
+  - "test/backend/*cr694*"
+  - "backend/app/modules/labor_contract/payroll_report*"
+  - "backend/app/modules/labor_contract/salary_sync.py"
 ---
 # Hồ sơ nhân sự mở rộng và danh mục Chức vụ
 
@@ -272,3 +276,45 @@ thống tự cấp gói. Mã: `employee/position_role_service.py` (+ `position_r
   worker khác. Có sẵn cho mọi thao tác phân quyền, CR-653 chỉ thêm thu hồi hàng loạt; chưa chuyển cache sang Redis.
 - Script đề xuất: mặc định dry-run, `--min-holders 3`, loại vai trò cấm, `--apply --yes` chỉ THÊM gói + ghi nhật ký, không
   cấp cho ai (dùng «Áp lại» sau).
+
+
+### Ô LƯƠNG TRÊN HỒ SƠ (duoc-CR-693, 29/10/2026)
+
+`tab_employee` có `salary_monthly` + `allowance_monthly` (BIGINT đồng, 0 = chưa nhập) + `salary_updated_at`. Migration `emp_salary01`.
+Đại ca chốt: **CHỈ chính nhân sự đó đọc được SỐ**. Người khác — kể cả người nhập, admin, người có `employee_sensitive` /
+`labor_contract` — chỉ thấy cờ `salary_set` (đã nhập chưa).
+
+- ⚠️ **Một chốt che duy nhất: `sensitive.mask` / `mask_many` (`SALARY_FIELDS`).** Khác nhóm nhạy cảm: KHÔNG mở bằng khóa quyền, chỉ
+  nhánh `self` (`is_self`, chặn `employee_id = 0`). `mask(data, allowed, profile)` **mặc định CHE** nếu không truyền `profile` —
+  đường mới quên truyền thì lương về 0 chứ không lộ. Mọi cửa trả hồ sơ (`/`, `/me`, `/{id}`, PATCH, CSV/XLSX qua `export_mask`)
+  đi qua đây; trợ lý AI dùng danh sách trắng nên không có lương; nhật ký (`change_tracker` denylist + `logging_policy` theo đường
+  dẫn) không giữ số; audit chỉ ghi «Cập nhật lương».
+- ⚠️ **Che bằng 0 nên màn sửa hồ sơ PHẢI không gửi hai ô này khi người xem không phải chính chủ** (cùng bẫy `pickWritableProfile`):
+  gửi 0 đè lương thật. Backend không phân biệt «bị che» với «muốn xóa». Gửi `null`/vắng = giữ nguyên; xóa = gửi 0.
+- Ghi: `employee.write` trong phạm vi; **không ai tự đổi lương của mình** (403 khi giá trị đổi thật — gửi lại nguyên giá trị cũ thì
+  qua, vì chính chủ đọc được số). Đường ghi duy nhất: `employee.service.set_salary` (PATCH và ký HĐLĐ dùng chung).
+- Không sắp xếp danh sách theo lương (400): thứ tự cũng là thông tin. Nhập Excel nhân sự KHÔNG có cột lương: tiêu đề «Lương/Phụ cấp»
+  bị bỏ qua + cảnh báo (`ignored_headers` của adapter ở `catalog_import.py`).
+- Ký HĐLĐ (DRAFT→SIGNED) tự chép `base_salary`/`allowance` sang hồ sơ nếu HĐ đó là **hiệu lực mới nhất** (`labor_contract/salary_sync.py`:
+  đã bắt đầu, chưa hết hạn, không HĐ Đã ký nào khác bắt đầu muộn hơn). Chỉ Nháp sửa được lương HĐ nên không có đường «sửa HĐ đã ký».
+- Báo cáo Quỹ lương (khóa 21) đọc ô này, không đọc HĐ: ảnh chụp hiện tại, không kỳ so sánh/xu hướng, chỉ TỔNG, nhóm/Tổng dưới 3 người bị
+  che, `/rows` không có cột tiền, gác `employee.read|export` + `require_report(21)`. Test: `test_o_luong_ho_so_cr693.py`, `test_bao_cao_quy_luong_cr688.py`.
+
+
+### NHIỀU SỐ ĐIỆN THOẠI (duoc-CR-694, 29/10/2026)
+
+`tab_employee.phone` VẪN là **số chính** (~15 chỗ đọc thẳng cột này: tìm kiếm, phiếu in, trợ lý AI, đặt xe, auth — đừng đổi nghĩa).
+Số còn lại ở `extra_phones` (JSON NOT NULL, `[{number ≤20, label ≤50}]`, tối đa 4 → tổng 5 số). Migration `emp_phones01`.
+Luật một nơi: `employee/phone_rules.py` (8–15 chữ số, chỉ `0-9 khoảng-trắng + . - ( )`, không trùng nhau sau khi bỏ ký tự phân cách,
+không trùng số chính). Không thuộc nhóm nhạy cảm (như `phone`).
+
+- ⚠️ **Trùng số chính kiểm ở SERVICE (422), không ở validator**: PATCH có thể chỉ gửi một trong hai ô. `ensure_distinct_from_main` gọi ở
+  `create_employee_core`, `update_employee_core` và `update_own_contact` theo giá trị CUỐI CÙNG. Gửi `extra_phones` = THAY CẢ danh sách;
+  vắng/`null` = giữ nguyên; `[]` = xóa hết. Số chính có nhãn riêng ở `phone_label` (String 50, cùng migration); «Đặt làm chính» hoán đổi CẢ số lẫn nhãn. Excel: cột «Nhãn số chính».
+- Tìm nhanh (`apply_keyword_search`) chỉ quét số phụ khi từ khóa toàn chữ số/ký tự phân cách và ≥ 3 chữ số — nếu không, `number`/`label`
+  trong chính JSON khớp từ khóa chữ bất kỳ. Cột «Số điện thoại khác» ở xuất CSV/XLSX và nhập Excel: «số (nhãn); số (nhãn)»; ô có dữ liệu
+  THAY cả danh sách, `__/empty_value/__` xóa hết.
+- Frontend: `PhoneListEditor` (đọc/ghi `phone` + `extra_phones` qua `useFormContext`) dùng chung ở tab «Liên hệ & Ngân hàng» và hộp
+  «Sửa thông tin liên hệ» ở Trang cá nhân; `pickWritableProfile(values, canRead, savedExtraPhones)` chỉ gửi `extra_phones` khi KHÁC bản đã lưu.
+  «Đặt làm chính» hoán đổi trên form, nhãn đi theo số.
+- Test: `test_nhieu_so_dien_thoai_cr694.py`; vitest `extra-phones-schema.test.ts`, `phone-list-editor.test.tsx`, `profile-contact-card.test.tsx`.

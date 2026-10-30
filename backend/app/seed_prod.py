@@ -12,7 +12,7 @@ Khác `app/seed.py` (bản đầy đủ, dùng cho LOCAL):
 Việc nó làm — đúng phần tối thiểu để hệ thống chạy được:
   1. Vai trò 'admin' có đủ quyền cho MỌI entity (chìa khóa dự phòng khi ra phân hệ mới).
      Thêm entity còn thiếu VÀ ép lại dòng có sẵn bị bỏ tick / thu hẹp phạm vi về FULL + `all`
-     — ngoại lệ có chủ đích của luật «không ghi đè» (D-018), CHỈ cho vai trò 'admin'
+     — ngoại lệ có chủ đích của luật "không ghi đè" (D-018), CHỈ cho vai trò 'admin'
      (bao-CR-523: vai trò Quản trị hệ thống luôn đủ mọi quyền). Xem `seed.ensure_admin_role`.
   2. Tạo vai trò chuẩn nào CHƯA có (STD_ROLES). Vai trò đã có thì GIỮ NGUYÊN quyền đang chạy.
   3. Tài khoản quản trị đầu tiên — chỉ khi DB chưa có tài khoản admin nào (cài mới).
@@ -115,7 +115,7 @@ def run():
 
         n_handbook = ensure_system_handbook(db)   # ai-CR-220 — chỉ gieo khi CHƯA từng có bộ, có rồi không đụng
         if n_handbook:
-            print(f"Gieo bộ skill «Cẩm nang hệ thống»: {n_handbook} skill.")
+            print(f"Gieo bộ skill \"Cẩm nang hệ thống\": {n_handbook} skill.")
 
         print("Seed prod done (không nạp dữ liệu mẫu, không ghi đè dữ liệu đã có).")
     finally:

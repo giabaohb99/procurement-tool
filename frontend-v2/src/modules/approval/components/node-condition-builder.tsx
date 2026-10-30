@@ -15,7 +15,7 @@ interface NodeConditionBuilderProps {
 }
 
 /**
- * «Bước này chỉ chạy khi …» — **thay cho ô gõ JSON**.
+ * "Bước này chỉ chạy khi …" — **thay cho ô gõ JSON**.
  *
  * Ô cũ bắt người khai luồng gõ tay
  * `[{"field":"secrecy_level","op":"gte","value":3}]`. Ba thứ hỏng cùng lúc: họ

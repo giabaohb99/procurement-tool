@@ -39,7 +39,7 @@ interface WorkSidebarTreeProps {
   onManageGroup: (group: WorkGroupNode) => void
   /**
    * Bản HÉ RA khi rê chuột vào mép trái (cây đang ẩn, chưa ghim lại). Lúc ấy nút
-   * ở dải tiêu đề đổi nghĩa: không phải «Ẩn» nữa mà là «Ghim» — bấm để cây ở lại
+   * ở dải tiêu đề đổi nghĩa: không phải "Ẩn" nữa mà là "Ghim" — bấm để cây ở lại
    * hẳn thay vì biến mất ngay khi con trỏ đi chỗ khác.
    */
   peeking?: boolean
@@ -188,7 +188,7 @@ function GroupNode({
 }: GroupNodeProps) {
   const [mo, setMo] = useState(true)
   const Icon = mo ? ChevronDown : ChevronRight
-  //  Cây chỉ hai cấp (backend chặn cấp 3) — nhóm con không có mục «Thêm nhóm con».
+  //  Cây chỉ hai cấp (backend chặn cấp 3) — nhóm con không có mục "Thêm nhóm con".
   const canNest = depth === 0
 
   return (

@@ -70,7 +70,7 @@ describe('DocumentVersionRow', () => {
   })
 
   //  Lỗi thật: `is_locked` chỉ bật lúc DUYỆT XONG, nên bản đang trình duyệt có
-  //  `is_locked = false`. Đọc theo cột đó thì dòng «Đang duyệt» ghi "Sửa được",
+  //  `is_locked = false`. Đọc theo cột đó thì dòng "Đang duyệt" ghi "Sửa được",
   //  mở ra gõ xong bấm lưu là ăn 409 của `chan_khi_dang_duyet`.
   it('bản đang trình duyệt vẫn là chỉ đọc, dù is_locked chưa bật', () => {
     renderRow(
@@ -100,7 +100,7 @@ describe('DocumentVersionRow', () => {
   //  dòng thì người dùng chỉ định đọc giải thích lại bị nhảy sang bản khác.
   it('bấm nút giải thích không kéo theo hành vi mở phiên bản', async () => {
     const onSelect = renderRow(makeVersion())
-    await userEvent.click(screen.getByRole('button', { name: /«Đã duyệt» nghĩa là gì/ }))
+    await userEvent.click(screen.getByRole('button', { name: /"Đã duyệt" nghĩa là gì/ }))
     expect(onSelect).not.toHaveBeenCalled()
   })
 })

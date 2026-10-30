@@ -40,19 +40,19 @@ def _block_delete_used_type(db: Session, obj: LeaveType) -> None:
             LeaveRequestLine.leave_type_id == obj.id).count()
     if used:
         raise HTTPException(
-            400, f"«{obj.name}» đang có đơn nghỉ phép nên không xóa được. "
-                 "Bỏ tick «Đang dùng» để ẩn khỏi ô chọn thay vì xóa.")
+            400, f"\"{obj.name}\" đang có đơn nghỉ phép nên không xóa được. "
+                 "Bỏ tick \"Đang dùng\" để ẩn khỏi ô chọn thay vì xóa.")
     if db.query(LeaveBalance).filter(LeaveBalance.leave_type_id == obj.id).count():
         raise HTTPException(
-            400, f"«{obj.name}» đang có quỹ phép đã cấp nên không xóa được.")
+            400, f"\"{obj.name}\" đang có quỹ phép đã cấp nên không xóa được.")
     #  Hỏi luôn chiều NGƯỢC: loại khác đang quy đổi VÀO nó. Xóa mất thì kết sổ
     #  cuối năm âm thầm bỏ qua những dòng đó và số dư của người ta mất trắng.
     pointing = (db.query(LeaveType)
                 .filter(LeaveType.convert_to_type_id == obj.id).all())
     if pointing:
-        names = ", ".join(f"«{t.name}»" for t in pointing[:5])
+        names = ", ".join(f"\"{t.name}\"" for t in pointing[:5])
         raise HTTPException(
-            400, f"{names} đang quy đổi số dư sang «{obj.name}» nên không xóa được. "
+            400, f"{names} đang quy đổi số dư sang \"{obj.name}\" nên không xóa được. "
                  "Đổi cách xử lý số dư cuối năm của các loại đó trước.")
 
 
@@ -69,18 +69,18 @@ def _check_year_end_config(db: Session, mode: int, target_id: int, ratio: float,
     if ratio is not None and ratio <= 0:
         raise HTTPException(400, "Tỷ lệ quy đổi phải lớn hơn 0.")
     if not target_id:
-        raise HTTPException(400, "Chọn «Quy đổi sang loại nghỉ khác» thì phải chọn loại đích.")
+        raise HTTPException(400, "Chọn \"Quy đổi sang loại nghỉ khác\" thì phải chọn loại đích.")
     if target_id == self_id:
         #  Tự trỏ vào chính mình là vòng lặp: kết sổ sẽ trừ rồi cộng lại vào
-        #  cùng một dòng quỹ. Muốn giữ nguyên loại thì đó là «Mang sang năm sau».
+        #  cùng một dòng quỹ. Muốn giữ nguyên loại thì đó là "Mang sang năm sau".
         raise HTTPException(400, "Loại đích phải khác chính nó — muốn giữ nguyên loại "
-                                 "thì chọn «Mang sang năm sau».")
+                                 "thì chọn \"Mang sang năm sau\".")
     target = db.get(LeaveType, target_id)
     if target is None:
         raise HTTPException(400, "Loại nghỉ đích không tồn tại.")
     if not target.counts_balance:
-        raise HTTPException(400, f"«{target.name}» không trừ vào quỹ phép nên không "
-                                 "nhận được ngày quy đổi. Bật «Trừ vào quỹ phép năm» "
+        raise HTTPException(400, f"\"{target.name}\" không trừ vào quỹ phép nên không "
+                                 "nhận được ngày quy đổi. Bật \"Trừ vào quỹ phép năm\" "
                                  "cho loại đó trước.")
 
 
@@ -98,7 +98,7 @@ def _block_code_change(db: Session, obj: LeaveType, values: dict) -> None:
     """
     new_code = values.get("code")
     if new_code and new_code != obj.code:
-        raise HTTPException(400, "Không đổi được «Mã loại nghỉ» sau khi đã tạo.")
+        raise HTTPException(400, "Không đổi được \"Mã loại nghỉ\" sau khi đã tạo.")
 
     #  Sửa lẻ một ô thì ba ô kia lấy giá trị ĐANG CÓ — người dùng bật chế độ quy
     #  đổi mà không gửi lại loại đích vẫn phải bị kiểm theo loại đích cũ.
@@ -172,7 +172,7 @@ def _check_tier(db: Session, leave_type_id: int, years_from: int, years_to: int,
     if db.get(LeaveType, leave_type_id) is None:
         raise HTTPException(400, "Loại nghỉ không tồn tại")
     if years_to and years_to <= years_from:
-        raise HTTPException(400, "«Đến năm» phải lớn hơn «Từ năm» (để 0 nếu không có trần)")
+        raise HTTPException(400, "\"Đến năm\" phải lớn hơn \"Từ năm\" (để 0 nếu không có trần)")
 
     query = (db.query(LeaveTypeSeniority)
              .filter(LeaveTypeSeniority.leave_type_id == leave_type_id))
@@ -184,7 +184,7 @@ def _check_tier(db: Session, leave_type_id: int, years_from: int, years_to: int,
         b_to = other.years_to or 9999
         if years_from < b_to and other.years_from < a_to:
             raise HTTPException(
-                400, f"Bậc này chồng lên bậc «từ {other.years_from} năm» đã khai.")
+                400, f"Bậc này chồng lên bậc \"từ {other.years_from} năm\" đã khai.")
 
 
 @seniority_router.post("")

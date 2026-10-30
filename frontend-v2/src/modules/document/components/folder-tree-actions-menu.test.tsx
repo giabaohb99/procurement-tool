@@ -35,10 +35,10 @@ async function openMenu(data: DocFolderTreeNode, onAction = vi.fn()) {
 }
 
 //  Đại ca chốt 24/09/2026 (ĐẢO quyết định cho xóa gốc pháp nhân trước đó cùng
-//  ngày): thư mục pháp nhân + nhóm «Công ty» KHÔNG xóa được. Mục «Xóa» vẫn HIỆN
+//  ngày): thư mục pháp nhân + nhóm "Công ty" KHÔNG xóa được. Mục "Xóa" vẫn HIỆN
 //  nhưng KHÓA kèm lý do — giấu hẳn thì người dùng tưởng tính năng biến mất.
 describe('FolderTreeActionsMenu — thư mục PHÁP NHÂN không xóa được, còn lại như thư mục thường', () => {
-  it('Manage level: «Xóa» is DISABLED with a reason; rename/move/archive still offered', async () => {
+  it('Manage level: "Xóa" is DISABLED with a reason; rename/move/archive still offered', async () => {
     const root = folderNode({
       kind: FOLDER_KIND.company,
       name: 'CÔNG TY ABC',
@@ -55,7 +55,7 @@ describe('FolderTreeActionsMenu — thư mục PHÁP NHÂN không xóa được,
     expect(screen.getByRole('menuitem', { name: 'Chuyển tới…' })).toBeInTheDocument()
   })
 
-  it('thư mục pháp nhân ĐANG NGỪNG DÙNG, mức Quản lý → có «Khôi phục» thay vì «Ngừng dùng»', async () => {
+  it('thư mục pháp nhân ĐANG NGỪNG DÙNG, mức Quản lý → có "Khôi phục" thay vì "Ngừng dùng"', async () => {
     const root = folderNode({
       kind: FOLDER_KIND.company,
       name: 'CÔNG TY ABC',
@@ -67,14 +67,14 @@ describe('FolderTreeActionsMenu — thư mục PHÁP NHÂN không xóa được,
     expect(screen.queryByRole('menuitem', { name: 'Ngừng dùng' })).not.toBeInTheDocument()
   })
 
-  it('clicking the disabled «Xóa» of a company folder does NOT fire delete', async () => {
+  it('clicking the disabled "Xóa" of a company folder does NOT fire delete', async () => {
     const root = folderNode({ kind: FOLDER_KIND.company, my_level: FOLDER_ACCESS_LEVEL.manage })
     const { user, onAction } = await openMenu(root)
     await user.click(screen.getByRole('menuitem', { name: /^Xóa/ }))
     expect(onAction).not.toHaveBeenCalledWith('delete')
   })
 
-  it('company GROUP «Công ty»: delete locked and no «Chuyển tới…» (it always stays at the root)', async () => {
+  it('company GROUP "Công ty": delete locked and no "Chuyển tới…" (it always stays at the root)', async () => {
     const group = folderNode({
       kind: FOLDER_KIND.companyGroup,
       name: 'Công ty',
@@ -96,7 +96,7 @@ describe('FolderTreeActionsMenu — thư mục THƯỜNG, mức Quản lý → �
     expect(screen.getByRole('menuitem', { name: 'Xóa' })).toBeEnabled()
   })
 
-  it('mức Đóng góp (chưa đủ Quản lý) → «Xóa» khóa, không Đổi tên/Chuyển tới/Ngừng dùng', async () => {
+  it('mức Đóng góp (chưa đủ Quản lý) → "Xóa" khóa, không Đổi tên/Chuyển tới/Ngừng dùng', async () => {
     await openMenu(folderNode({ my_level: FOLDER_ACCESS_LEVEL.contribute }))
     expect(screen.queryByRole('menuitem', { name: 'Đổi tên tại chỗ' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Ngừng dùng' })).not.toBeInTheDocument()
@@ -104,7 +104,7 @@ describe('FolderTreeActionsMenu — thư mục THƯỜNG, mức Quản lý → �
   })
 })
 
-describe('FolderTreeActionsMenu — dưới mức Đóng góp thì KHÔNG có nút «⋯» nào cả', () => {
+describe('FolderTreeActionsMenu — dưới mức Đóng góp thì KHÔNG có nút "⋯" nào cả', () => {
   it('mức Xem → không dựng nút', () => {
     render(
       <FolderTreeActionsMenu

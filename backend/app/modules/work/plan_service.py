@@ -7,11 +7,11 @@ nên KHÔNG import tệp này; bot gọi qua `agent_hub/erp.py` (`plan_overview`
 
   * `build`: dựng một bảng Dự án (kế hoạch) → mỗi giai đoạn một cột kanban → việc cha → việc con, bằng đúng các hàm
     service của web (kiểm quyền thành viên như web). Các ô của kế hoạch là TRƯỜNG TÙY BIẾN của bảng (không cột cứng,
-    không migration): «Độ ưu tiên» có sẵn (P1/P2/P3), «Tiêu chí», «Nhận việc», «Tiến độ %», «Tự chấm (1-10)»,
-    «Ghi nhận». Sếp sửa ngay trên màn Dự án.
+    không migration): "Độ ưu tiên" có sẵn (P1/P2/P3), "Tiêu chí", "Nhận việc", "Tiến độ %", "Tự chấm (1-10)",
+    "Ghi nhận". Sếp sửa ngay trên màn Dự án.
   * `overview`: cây việc + người làm + tài khoản của họ (để bot tìm chat); chỉ thành viên thấy bảng mới đọc được.
   * `reply`: ghi câu trả lời của người làm (nhận / giờ khác / từ chối / ghi chú / xong / tiến độ) vào việc.
-Tên trường, nhãn «Nhận việc» và mã hành động dùng chung nằm ở `agent_hub/plan_policy.py`.
+Tên trường, nhãn "Nhận việc" và mã hành động dùng chung nằm ở `agent_hub/plan_policy.py`.
 """
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ def _priority_field(fields: dict):
 
 
 def _option(db: Session, field, name: str):
-    """Giá trị của trường chọn theo tên (so khớp đầu chuỗi: «P1» khớp «P1 — Khẩn»)."""
+    """Giá trị của trường chọn theo tên (so khớp đầu chuỗi: "P1" khớp "P1 — Khẩn")."""
     from app.modules.work.label_model import WorkLabelOption
 
     rows = db.query(WorkLabelOption).filter(WorkLabelOption.field_id == field.id).order_by(WorkLabelOption.sort_order).all()
@@ -199,13 +199,13 @@ def build(db: Session, user, draft: dict) -> tuple[str, int]:
                 _one(s, None, tid)
                 n_subs += 1
     db.commit()
-    log.info("work_plan: tạo kế hoạch #%s «%s»: %s giai đoạn, %s việc, %s việc con", list_id, title, len(phases),
+    log.info("work_plan: tạo kế hoạch #%s \"%s\": %s giai đoạn, %s việc, %s việc con", list_id, title, len(phases),
              n_tasks, n_subs)
     return f"kế hoạch #{list_id}", list_id
 
 
 def details(db: Session, list_id: int) -> list[str]:
-    """Dòng tóm tắt đọc lại từ DB cho tin «Đã tạo» (cùng khuôn `draft_create.created_details`)."""
+    """Dòng tóm tắt đọc lại từ DB cho tin "Đã tạo" (cùng khuôn `draft_create.created_details`)."""
     from app.modules.employee.model import Employee
     from app.modules.work.model import WorkList
     from app.modules.work.task_model import WorkSection, WorkTask, WorkTaskAssignee

@@ -51,6 +51,6 @@ export interface IssueCodeUpdateInput {
   id: number
   company_id?: number
   issue_code: string
-  /** Người dùng đã đọc cảnh báo «đã cấp số» và vẫn muốn đổi. */
+  /** Người dùng đã đọc cảnh báo "đã cấp số" và vẫn muốn đổi. */
   force?: boolean
 }

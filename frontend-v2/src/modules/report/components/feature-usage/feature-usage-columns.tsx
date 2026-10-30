@@ -18,7 +18,7 @@ function usersCell(activeUsers: number) {
   }
 }
 
-/** Cột «Chức năng» (bấm nút): tên · màn · người dùng · lượt. */
+/** Cột "Chức năng" (bấm nút): tên · màn · người dùng · lượt. */
 export function buildActionColumns(activeUsers: number): DataTableColumn<FeatureRow>[] {
   return [
     { key: 'name', header: 'Chức năng', hideable: false, wrap: true, cell: (r) => actionName(r.code) },
@@ -28,7 +28,7 @@ export function buildActionColumns(activeUsers: number): DataTableColumn<Feature
   ]
 }
 
-/** Cột «Biểu mẫu»: mở · gửi · bỏ dở · tỷ lệ bỏ dở · thời gian gửi trung bình. */
+/** Cột "Biểu mẫu": mở · gửi · bỏ dở · tỷ lệ bỏ dở · thời gian gửi trung bình. */
 export function buildFormColumns(activeUsers: number): DataTableColumn<FeatureRow>[] {
   return [
     { key: 'name', header: 'Biểu mẫu', hideable: false, wrap: true, cell: (r) => formName(r.code) },
@@ -51,7 +51,7 @@ export function buildFormColumns(activeUsers: number): DataTableColumn<FeatureRo
   ]
 }
 
-/** Cột «Màn hình»: lượt xem · người xem · thời gian ở lại trung bình. */
+/** Cột "Màn hình": lượt xem · người xem · thời gian ở lại trung bình. */
 export function buildScreenColumns(activeUsers: number): DataTableColumn<FeatureRow>[] {
   return [
     { key: 'route', header: 'Màn hình', hideable: false, wrap: true, cell: (r) => screenName(r.route) },
@@ -66,7 +66,7 @@ export function buildScreenColumns(activeUsers: number): DataTableColumn<Feature
   ]
 }
 
-/** Cột «Lỗi giao diện» theo màn: số lỗi · số người gặp. */
+/** Cột "Lỗi giao diện" theo màn: số lỗi · số người gặp. */
 export function buildErrorColumns(): DataTableColumn<FeatureRow>[] {
   return [
     { key: 'route', header: 'Màn hình', hideable: false, wrap: true, cell: (r) => screenName(r.route) },
@@ -75,7 +75,7 @@ export function buildErrorColumns(): DataTableColumn<FeatureRow>[] {
   ]
 }
 
-/** Cột «Tìm kiếm» theo màn: lượt tìm · lượt không ra kết quả. */
+/** Cột "Tìm kiếm" theo màn: lượt tìm · lượt không ra kết quả. */
 export function buildSearchColumns(): DataTableColumn<FeatureRow>[] {
   return [
     { key: 'route', header: 'Màn hình', hideable: false, wrap: true, cell: (r) => screenName(r.route) },

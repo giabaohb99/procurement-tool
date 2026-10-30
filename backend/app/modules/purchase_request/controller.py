@@ -138,7 +138,7 @@ def _in_approve_scope(db: Session, user, pid: int) -> bool:
 
     ⚠️ Trước bản vá này hàm KHÔNG truyền `action`, tức mượn phạm vi `read`. Sai cả hai
     chiều trên cùng một dòng: cấu hình "xem toàn công ty, duyệt phòng mình" làm cổng duyệt
-    rộng bằng cổng xem; còn người chỉ được tick ô «Duyệt» mà không tick ô «Xem» thì
+    rộng bằng cổng xem; còn người chỉ được tick ô "Duyệt" mà không tick ô "Xem" thì
     `scope_condition` bỏ qua mọi grant (không grant nào có `read`) và trả `false()` — cổng
     đóng với MỌI phiếu, kể cả phòng mình. Truyền đúng `action="approve"` bịt cả hai vế.
     """
@@ -181,7 +181,7 @@ def _purchasing_head(db: Session, dispatcher_uid: int) -> tuple[str, str, int]:
     `Department.manager_id` — cột trưởng bộ phận chọn cứng ở danh mục Phòng ban.
 
     Phần tử thứ ba là id NHÂN SỰ trưởng phòng — bao-CR-531 so nó với người đại diện pháp luật
-    để gộp ô «Giám đốc».
+    để gộp ô "Giám đốc".
 
     Trả `("", "", 0)` khi không suy ra được (tài khoản chưa gắn nhân sự, nhân sự chưa có
     phòng, phòng chưa gán trưởng) — chỗ gọi tự lùi về người điều phối như trước CR này.
@@ -215,11 +215,11 @@ def _approval_signers(db: Session, pr) -> dict:
     không có thu mua nào chạm vào phiếu. Phiếu cũ (trước CR-485) vẫn có dòng `dispatched` nên
     đi đường thường.
 
-    bao-CR-531: kèm hai id NHÂN SỰ để `print_signature_cells` gộp ô «Giám đốc»:
-    `proposer_employee_id` = người của ô «TP/BP đề xuất» — cột `approver_employee_id` (người được
+    bao-CR-531: kèm hai id NHÂN SỰ để `print_signature_cells` gộp ô "Giám đốc":
+    `proposer_employee_id` = người của ô "TP/BP đề xuất" — cột `approver_employee_id` (người được
     chọn / người thực duyệt, có cả khi phiếu CHƯA duyệt: tên để trống nhưng bộ ô đã biết), phiếu cũ
     cột rỗng thì nhân sự của tài khoản bấm Duyệt trong nhật ký; `purchasing_head_employee_id` =
-    người đang in ở ô «TP/BP mua hàng» (trưởng phòng, hoặc người điều phối khi lùi). 0 = chưa biết.
+    người đang in ở ô "TP/BP mua hàng" (trưởng phòng, hoặc người điều phối khi lùi). 0 = chưa biết.
     """
     from app.core.audit import resolve_actor, resolve_signature
     from app.core.print_signers import employee_id_of_user
@@ -229,11 +229,11 @@ def _approval_signers(db: Session, pr) -> dict:
            "dispatcher_name": "", "dispatcher_signature": "",
            "purchasing_head_name": "", "purchasing_head_signature": "",
            "proposer_employee_id": 0, "purchasing_head_employee_id": 0}
-    #  bao-CR-499: cột «Trưởng phòng phê duyệt» giữ người ĐƯỢC CHỌN khi chưa duyệt, người THỰC duyệt
+    #  bao-CR-499: cột "Trưởng phòng phê duyệt" giữ người ĐƯỢC CHỌN khi chưa duyệt, người THỰC duyệt
     #  sau khi duyệt.
-    #  bao-CR-521 (ticket prod #57, 28/09/2026): phiếu CHƯA duyệt thì ô «TP/BP đề xuất» để TRỐNG
+    #  bao-CR-521 (ticket prod #57, 28/09/2026): phiếu CHƯA duyệt thì ô "TP/BP đề xuất" để TRỐNG
     #  HẲN — cả tên lẫn chữ ký. Bản 504 còn in tên người được chọn, người đọc hiểu là trưởng phòng
-    #  đã ký. Người được chọn vẫn hiện ở màn chi tiết (ô «Trưởng phòng phê duyệt»).
+    #  đã ký. Người được chọn vẫn hiện ở màn chi tiết (ô "Trưởng phòng phê duyệt").
     from app.core.print_signers import person_block
     stored_id = int(getattr(pr, "approver_employee_id", 0) or 0)
     stored = person_block(db, stored_id)
@@ -367,10 +367,10 @@ def _out(db: Session, pr, user=None) -> dict:
         else:
             d["department_id"], d["department"] = service.resolve_employee_department(db, pr.requester_id)
     # bao-CR-480: tên phòng xử lý đi kèm phiếu — màn hình không cần quyền đọc danh mục phòng
-    # ban mới hiện được tên (trước đây người thiếu quyền chỉ thấy «Phòng #5»).
+    # ban mới hiện được tên (trước đây người thiếu quyền chỉ thấy "Phòng #5").
     d["handler_dept_name"] = service.handler_dept_name_of(db, pr.handler_dept_id)
     # bao-CR-524: phiếu cũ còn `0` hiện đúng id phòng thu mua mặc định — ô chọn không còn mục
-    # «Thu mua chung» mang số 0 để khớp.
+    # "Thu mua chung" mang số 0 để khớp.
     d["handler_dept_id"] = normalize_handler_dept_id(db, pr.handler_dept_id)
     # bao-CR-490: trưởng phòng phê duyệt (người thực bấm Duyệt) + trưởng phòng theo hồ sơ.
     from app.core.print_signers import approver_fields
@@ -398,7 +398,7 @@ def _out(db: Session, pr, user=None) -> dict:
     d["can_transfer_dept"] = bool(user is not None and service.can_transfer_dept(db, pr)
                                   and holds_handling_dept(get_perm_profile(db, user), "purchase_request", pr,
                                                           get_central_dept_id(db)))
-    # bao-CR-524: «Trả về thu mua» chỉ có nghĩa khi phiếu đang ở phòng KHÁC phòng thu mua mặc định.
+    # bao-CR-524: "Trả về thu mua" chỉ có nghĩa khi phiếu đang ở phòng KHÁC phòng thu mua mặc định.
     d["can_return_dept"] = bool(d["can_transfer_dept"] and not is_central_dept(db, pr.handler_dept_id))
     # Duyệt bước 1: cũng phải tính ở server vì có quyền `approve` chưa chắc đúng PHẠM VI —
     # Admin thu mua (phạm vi 'proc') có approve để duyệt điều phối nhưng không duyệt bước 1.
@@ -407,7 +407,7 @@ def _out(db: Session, pr, user=None) -> dict:
     d["can_approve"] = bool(user is not None and pr.status == "submitted"
                             and user_has_permission(db, user, "purchase_request", "approve")
                             and _in_approve_scope(db, user, pr.id))
-    # bao-CR-554: nút «Trả về» cho người yêu cầu — server tính vì phải hỏi cả phạm vi lẫn dòng ĐMH.
+    # bao-CR-554: nút "Trả về" cho người yêu cầu — server tính vì phải hỏi cả phạm vi lẫn dòng ĐMH.
     d["can_return"] = bool(user is not None and _can_return_requester(db, user, pr))
     # NCC "hiệu lực" ở cột cũ (suggested_supplier*) — che nếu không có supplier.read (giữ Task 5).
     if not can_sup_read:
@@ -445,7 +445,7 @@ def _out(db: Session, pr, user=None) -> dict:
         comp = db.query(Company).filter(Company.id == pr.company_id).first()
         if comp:
             d["company_name"] = comp.name
-    # bao-CR-531: bộ ô ký cụm «XÉT DUYỆT» đã rút gọn (hộ kinh doanh · gộp ô Giám đốc) — hai giao
+    # bao-CR-531: bộ ô ký cụm "XÉT DUYỆT" đã rút gọn (hộ kinh doanh · gộp ô Giám đốc) — hai giao
     # diện chỉ vẽ lại. Các khóa cũ (approver_name…) giữ nguyên cho giao diện chưa cập nhật.
     from .print_signature_cells import build_print_signature_cells
     d["print_signature_cells"] = build_print_signature_cells(
@@ -478,7 +478,7 @@ def _out(db: Session, pr, user=None) -> dict:
     chosen_by_item = option_service.chosen_map(db, item_ids)
     #  bao-CR-601: tên NSTM phụ trách trả sẵn theo dòng. Trước đây hai bản giao diện tự tra
     #  tên từ danh sách nhân sự tải về — danh sách đó lọc theo PHẠM VI người xem, nên ai bị
-    #  giới hạn pháp nhân (mà 259 hồ sơ nhân sự đang để pháp nhân 0) chỉ thấy mã «NSU012».
+    #  giới hạn pháp nhân (mà 259 hồ sơ nhân sự đang để pháp nhân 0) chỉ thấy mã "NSU012".
     assignee_codes = {i.assignee for i in items if i.assignee}
     assignee_names: dict[str, str] = {}
     if assignee_codes:
@@ -662,7 +662,7 @@ def _see_all_items(profile: dict, pr, user) -> bool:
 def approver_candidates_meta(department: str = "", department_id: int = 0, company_id: int = 0,
                              handler_dept_id: int = 0, head_of_dept_id: int = 0, db: Session = Depends(get_db),
                              user=Depends(require("purchase_request", "read"))):
-    """bao-CR-499 — người duyệt được chứng từ ĐANG LẬP (chưa có id), cho ô «Trưởng phòng phê duyệt».
+    """bao-CR-499 — người duyệt được chứng từ ĐANG LẬP (chưa có id), cho ô "Trưởng phòng phê duyệt".
 
     Khai TRƯỚC `/{pid}` kẻo FastAPI nuốt "meta" thành id.
     """
@@ -709,7 +709,7 @@ def dept_head_candidates_meta(department: str = "", company_id: int = 0, db: Ses
 @router.get("/{pid}/assignable-staff")
 def assignable_staff_(pid: int, db: Session = Depends(get_db),
                       user=Depends(require("purchase_request", "read"))):
-    """bao-CR-486 — NSTM chọn được cho phiếu này: đi theo ô «Phòng xử lý» (xem
+    """bao-CR-486 — NSTM chọn được cho phiếu này: đi theo ô "Phòng xử lý" (xem
     `category_assignee.service.assignable_staff`). Ô chọn ở màn chi tiết đọc từ đây thay vì lọc
     danh mục nhân sự theo tên phòng."""
     from app.modules.category_assignee.service import assignable_staff
@@ -828,7 +828,7 @@ def _ensure_can_return_or_reject(db: Session, user, pr: PurchaseRequest):
     """Trả về / Từ chối: Quản lý (quyền cancel) làm được mọi giai đoạn;
     Người duyệt (quyền approve) chỉ làm được ở bước Chờ duyệt (submitted) VÀ trong phạm vi của mình.
 
-    ⚠️ Nhánh «Quản lý» ĐI TẮT trước khi tới `_in_approve_scope`, nên trước bản vá này nó chỉ
+    ⚠️ Nhánh "Quản lý" ĐI TẮT trước khi tới `_in_approve_scope`, nên trước bản vá này nó chỉ
     hỏi QUYỀN chứ không hỏi PHẠM VI — đọc lướt rất dễ tưởng cả hàm đã lọc. Nay mỗi nhánh
     kiểm phạm vi của ĐÚNG hành động đã cho nó đi qua (`cancel` / `approve`).
     """
@@ -842,7 +842,7 @@ def _ensure_can_return_or_reject(db: Session, user, pr: PurchaseRequest):
 
 
 def _can_return_requester(db: Session, user, pr: PurchaseRequest) -> bool:
-    """bao-CR-554 — cờ «Trả về» cho người yêu cầu (đại ca chốt 02/10/2026): quản lý (quyền Hủy)
+    """bao-CR-554 — cờ "Trả về" cho người yêu cầu (đại ca chốt 02/10/2026): quản lý (quyền Hủy)
     hoặc người duyệt (quyền Duyệt, trong phạm vi) — cả hai ở Chờ duyệt lẫn Đã duyệt / Đã điều
     phối, miễn chưa dòng nào lên ĐMH (`service.can_return_requester`). Người duyệt trước đây chỉ
     trả được ở Chờ duyệt."""
@@ -940,7 +940,7 @@ def _transfer_dept(db: Session, pid: int, data: TransferDeptIn, background_tasks
 def transfer_dept_(pid: int, data: TransferDeptIn, background_tasks: BackgroundTasks,
                    db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
     """bao-CR-414 GĐ5 — CHUYỂN PHÒNG XỬ LÝ (đường 2): gỡ NSTM mọi dòng, đổi phòng, phiếu về
-    «Đã duyệt (chưa điều phối)» để phòng nhận điều phối lại. Lý do bắt buộc, ghi nhật ký."""
+    "Đã duyệt (chưa điều phối)" để phòng nhận điều phối lại. Lý do bắt buộc, ghi nhật ký."""
     return _transfer_dept(db, pid, data, background_tasks, user, target=data.handler_dept_id,
                           message="Đã chuyển phòng xử lý")
 
@@ -949,8 +949,8 @@ def transfer_dept_(pid: int, data: TransferDeptIn, background_tasks: BackgroundT
 def return_dept_(pid: int, data: TransferDeptIn, background_tasks: BackgroundTasks,
                  db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
     """bao-CR-414 GĐ5 — TRẢ VỀ THU MUA: cùng điều kiện với chuyển phòng, đích là phòng thu mua
-    mặc định (bao-CR-524: ghi id thật của PBA017, không còn `0` = «Thu mua chung» ảo). Khác «Trả
-    về (Bị trả lại)»: phiếu KHÔNG mất trạng thái đã duyệt."""
+    mặc định (bao-CR-524: ghi id thật của PBA017, không còn `0` = "Thu mua chung" ảo). Khác "Trả
+    về (Bị trả lại)": phiếu KHÔNG mất trạng thái đã duyệt."""
     return _transfer_dept(db, pid, data, background_tasks, user, target=0,
                           message="Đã trả phiếu về phòng thu mua")
 
@@ -1049,7 +1049,7 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
         department_id=pr.department_id or 0,
         # bao-CR-474: người được chọn ở ô TBP cũng nhận chuông báo duyệt (ngoài trưởng phòng
         # gán cứng + vai trò dept_head của phòng). Người trong danh sách chọn đều duyệt được.
-        # bao-CR-499: người được CHỌN ở ô «Trưởng phòng phê duyệt» cũng nhận chuông + mail.
+        # bao-CR-499: người được CHỌN ở ô "Trưởng phòng phê duyệt" cũng nhận chuông + mail.
         extra_employee_ids=[x for x in (pr.head_of_dept_id, pr.approver_employee_id) if x] or None,
     )
     return success(_out(db, pr, user), "Đã gửi duyệt")
@@ -1065,16 +1065,16 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
     # CR-034: mặc định KHÔNG tự động phân bổ NSTM ở đây — phiếu dừng ở "Đã duyệt", chờ Quản lý/Admin
     # thu mua duyệt lần 2 (/dispatch). Nếu công tắc `pr_dispatch_enabled` bị TẮT thì chạy luôn bước
     # điều phối ngay tại đây (luồng cũ: duyệt phát là có nhân sự phụ trách).
-    # bao-CR-485: đường công tắc TẮT ghi sổ ĐÚNG MỘT dòng «Duyệt» của trưởng phòng (kèm ghi chú
-    # hệ thống tự phân bổ) — trước đây ghi thêm dòng «Điều phối» dưới tên họ, đọc như thể trưởng
+    # bao-CR-485: đường công tắc TẮT ghi sổ ĐÚNG MỘT dòng "Duyệt" của trưởng phòng (kèm ghi chú
+    # hệ thống tự phân bổ) — trước đây ghi thêm dòng "Điều phối" dưới tên họ, đọc như thể trưởng
     # phòng bấm Điều phối, một việc họ không có quyền.
-    # bao-CR-497: ngoài công tắc chung, phiếu THỎA «điều kiện bỏ qua điều phối» (màn Cấu hình hệ
+    # bao-CR-497: ngoài công tắc chung, phiếu THỎA "điều kiện bỏ qua điều phối" (màn Cấu hình hệ
     # thống) cũng đi thẳng — để nhà máy tự mua không phải qua thu mua chung trong khi các phòng
     # khác vẫn hai bước. Ô điều kiện rỗng = hành vi cũ.
     pr = service.get_pr(db, pid)
     auto_dispatch = service.skip_dispatch_for(db, pr)
     pr = service.set_status(db, pid, "approved", user.id, audit=not auto_dispatch)
-    # bao-CR-490: ghi nhân sự vừa duyệt vào «Trưởng phòng phê duyệt».
+    # bao-CR-490: ghi nhân sự vừa duyệt vào "Trưởng phòng phê duyệt".
     from app.core.print_signers import stamp_approver
     stamp_approver(db, pr, user.id)
     db.commit()
@@ -1089,7 +1089,7 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
         # bao-CR-497: phiếu bỏ qua điều phối NHỜ điều kiện mà có phòng xử lý riêng thì chỉ dùng bộ
         # phân công của phòng đó — tách hẳn khỏi thu mua chung là mục đích của việc bỏ qua.
         # bao-CR-524: phiếu phòng thu mua mặc định xử lý (id PBA017 hoặc `0` cũ) KHÔNG tính là
-        # «có phòng xử lý riêng» — giữ đúng hành vi thời «Thu mua chung».
+        # "có phòng xử lý riêng" — giữ đúng hành vi thời "Thu mua chung".
         dept_only = dept_only or (service.dispatch_enabled()
                                   and not is_central_dept(db, pr.handler_dept_id))
         pr, n, blank_count = service.dispatch_pr(db, pid, user.id, allow_global_assignee=not dept_only,
@@ -1306,7 +1306,7 @@ def update_option_details(pid: int, item_id: int, oid: int, data: PROptionDetail
 @router.post("/{pid}/items/{item_id}/options/{oid}/zero/reset")
 def reset_option_zero(pid: int, item_id: int, oid: int, db: Session = Depends(get_db),
                       user=Depends(require("purchase_request", "write"))):
-    """bao-CR-583 — «Khôi phục ban đầu»: phương án 0 về đúng như dòng yêu cầu lúc sinh."""
+    """bao-CR-583 — "Khôi phục ban đầu": phương án 0 về đúng như dòng yêu cầu lúc sinh."""
     if not user_has_permission(db, user, "supplier", "read"):
         raise HTTPException(403, "Cần quyền xem nhà cung cấp để khôi phục phương án 0")
     pr, item = _open_line(db, pid, item_id, user, "write")
@@ -1371,7 +1371,7 @@ def choose_option(pid: int, item_id: int, oid: int, db: Session = Depends(get_db
     pr, item = _open_line(db, pid, item_id, user, "read")
     option_service.ensure_can_choose(
         pr, user, user_has_permission(db, user, "purchase_request", "approve"))
-    # bao-CR-570 (02/10/2026): BỎ cổng «NSTM phải chốt hoàn thành xử lý dòng» (đợt 3b). Đại ca
+    # bao-CR-570 (02/10/2026): BỎ cổng "NSTM phải chốt hoàn thành xử lý dòng" (đợt 3b). Đại ca
     # chốt làm như YCBG — phương án gắn tới đâu người yêu cầu thấy và chọn tới đó, vì người lập
     # đơn là chính nhân sự thu mua, không cần thêm một nhịp bàn giao.
     o = option_service.choose_option(db, pr, item, oid, user.id)

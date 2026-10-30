@@ -16,7 +16,7 @@ import type { DossierFieldDef, DossierFieldType } from './dossier-field'
  * CHUỖI; đổi ở `backend/.../dossier/constants.py` thì phải nhớ sửa tay bên này
  * (có test chốt số mục).
  *
- * ⚠️ **Cố ý KHÔNG có «Hết hạn» / «Sắp hết hạn».** Hai thứ đó suy ra từ
+ * ⚠️ **Cố ý KHÔNG có "Hết hạn" / "Sắp hết hạn".** Hai thứ đó suy ra từ
  * `expiry_date`, xem `DOSSIER_EXPIRY` bên dưới. Lưu chúng thành trạng thái là
  * tự dựng một sự thật thứ hai: tới nửa đêm nó sai, và phải có tác vụ chạy nền
  * đi lật từng dòng cho nó đúng lại.
@@ -131,7 +131,7 @@ export type Dossier = {
   /**
    * HỒ SƠ TIÊN QUYẾT — `id` các tờ phải hoàn thành trước tờ này.
    *
-   * ⚠️ Ràng buộc thuộc về TỜ GIẤY (khai một lần cho cả kho), nhưng «xong» thì
+   * ⚠️ Ràng buộc thuộc về TỜ GIẤY (khai một lần cho cả kho), nhưng "xong" thì
    * tính theo TỪNG CHỨNG TỪ — nên một tờ đang khóa ở phiếu A có thể đã mở ở
    * phiếu B. Chỗ tính khóa nằm ở backend, xem `ApplicableDossier.locked`.
    */

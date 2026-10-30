@@ -20,8 +20,8 @@ def report_route_keys() -> dict[str, int]:
         from fastapi.routing import APIRoute
 
         from app.main import app
-    except Exception:  # noqa: BLE001 — worker không nạp được app thì chỉ mất chỉ số «báo cáo hay mở»
-        log.warning("Không nạp được app để dựng bảng báo cáo — chỉ số «báo cáo hay mở» tạm rỗng, sẽ thử lại", exc_info=True)
+    except Exception:  # noqa: BLE001 — worker không nạp được app thì chỉ mất chỉ số "báo cáo hay mở"
+        log.warning("Không nạp được app để dựng bảng báo cáo — chỉ số \"báo cáo hay mở\" tạm rỗng, sẽ thử lại", exc_info=True)
         return {}
     out: dict[str, int] = {}
     for route in app.routes:

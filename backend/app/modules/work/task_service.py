@@ -55,7 +55,7 @@ def _shape(tasks: list[WorkTask], extra: dict, light: bool = False) -> list[dict
 
 
 #  bao-CR-483 — trần mặc định mỗi cột khi bảng tải ở chế độ nhẹ. Đủ cao để cột
-#  bình thường không bao giờ phải «Tải thêm», đủ thấp để cột «Xong» 160 việc của
+#  bình thường không bao giờ phải "Tải thêm", đủ thấp để cột "Xong" 160 việc của
 #  sổ nhật ký không kéo cả bảng chậm theo.
 BOARD_PAGE_SIZE = 40
 BOARD_PAGE_MAX = 200
@@ -97,7 +97,7 @@ def board(db: Session, actor: Actor, list_id: int, per_section: int = 0,
         khóa, sắp xếp và bộ lọc điều kiện cần trọn bộ dữ liệu ở trình duyệt.
       · `per_section > 0` (NHẸ): mỗi cột tối đa chừng ấy task theo đúng thứ tự
         kanban; phần dư ghi ở `remaining[section_id] = {count, next_task_id}` để
-        giao diện «Tải thêm» qua `section_tasks` và, khi thả thẻ xuống cuối cột
+        giao diện "Tải thêm" qua `section_tasks` và, khi thả thẻ xuống cuối cột
         đang tải dở, neo thẻ NGAY TRƯỚC `next_task_id` cho nó không biến mất.
     `light` bỏ `description` (xem `serializer.task_out`).
     """
@@ -136,7 +136,7 @@ def board(db: Session, actor: Actor, list_id: int, per_section: int = 0,
 
 def section_tasks(db: Session, actor: Actor, list_id: int, section_id: int,
                   offset: int = 0, limit: int = BOARD_PAGE_SIZE, light: bool = True) -> dict:
-    """Trang kế của MỘT cột (bao-CR-483) — `section_id = 0` là «Chưa phân cột».
+    """Trang kế của MỘT cột (bao-CR-483) — `section_id = 0` là "Chưa phân cột".
 
     Thứ tự y hệt bảng (`sort_order, id`) nên `offset` = số thẻ giao diện đang có
     của cột đó. Trả `remaining` + `next_task_id` cùng nghĩa với `board`.
@@ -474,7 +474,7 @@ def _write_label_retrying_deadlock(db: Session, field, task_id: int, value,
     một khoảng chỉ mục theo hai thứ tự khác nhau — MySQL bắn 1213 và giết một
     bên. Đây không phải chuyện hiếm: ô chọn NHIỀU giữ menu mở để tick liên tiếp,
     mỗi lần tick là một lượt gọi, và hai người cùng sửa một việc cũng ra y vậy.
-    Người dùng thì thấy toast «Hệ thống gặp lỗi không lường trước».
+    Người dùng thì thấy toast "Hệ thống gặp lỗi không lường trước".
 
     Nạn nhân của deadlock đã bị cuộn lại sạch sẽ nên thử lại là an toàn — đúng
     khuyến nghị của MySQL. Không thử lại vô hạn: lỗi 1213 lặp ba lần liền là dấu

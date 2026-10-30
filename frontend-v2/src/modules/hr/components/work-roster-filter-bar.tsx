@@ -4,7 +4,7 @@ import { Input } from '@/shared/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import type { LookupOption } from '@/shared/types/api'
 
-/** `0` = «mọi …» — cùng quy ước với tham số backend. */
+/** `0` = "mọi …" — cùng quy ước với tham số backend. */
 export const ALL_OPTION = '0'
 
 interface WorkRosterFilterBarProps {

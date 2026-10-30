@@ -73,8 +73,8 @@ def auto_clone_after_issue(db: Session, source: Document, actor: int) -> list[Do
     cả việc ban hành — mà số hiệu thì đã cấp ra rồi.
 
     Cũng vì thế mà hàm này **không được ném lỗi lên trên**: văn bản gốc đã ban
-    hành xong và đúng. Clone hỏng thì để nguyên đó, thẻ «Bản clone ở pháp nhân
-    con» vẫn còn nút bấm tay và vẫn liệt kê những nơi chưa nhận.
+    hành xong và đúng. Clone hỏng thì để nguyên đó, thẻ "Bản clone ở pháp nhân
+    con" vẫn còn nút bấm tay và vẫn liệt kê những nơi chưa nhận.
 
     Không có phạm vi pháp nhân nào ngoài nơi ban hành → trả rỗng, không làm gì.
     """

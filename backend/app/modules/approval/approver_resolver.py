@@ -124,7 +124,7 @@ def _refs_as_ints(raw: str) -> list[int]:
 
 def _by_role(db: Session, raw: str) -> list[int]:
     #  bao-CR-577: `UserRole` nằm ở user.model. Nhập nhầm từ role.model làm mọi
-    #  bước «theo vai trò» nổ ImportError từ ngày dựng bộ máy (fda76b43).
+    #  bước "theo vai trò" nổ ImportError từ ngày dựng bộ máy (fda76b43).
     from app.modules.role.model import Role
     from app.modules.user.model import User, UserRole
 
@@ -180,19 +180,19 @@ def _direct_manager(db: Session, submitter_employee_id: int | None, subject: dic
     """QUẢN LÝ TRỰC TIẾP của người nộp (`Employee.manager_id`), lùi về trưởng bộ phận khi
     không dùng được.
 
-    Bốn trường hợp LÙI về `_submitter_department_head` (cùng luật «bỏ trống thì đơn
-    chuyển cho trưởng bộ phận» mà ô «Quản lý trực tiếp» trên hồ sơ đã hứa):
+    Bốn trường hợp LÙI về `_submitter_department_head` (cùng luật "bỏ trống thì đơn
+    chuyển cho trưởng bộ phận" mà ô "Quản lý trực tiếp" trên hồ sơ đã hứa):
 
     1. Không biết người nộp là ai (phiếu do hệ thống / tài khoản chưa gắn hồ sơ);
     2. Hồ sơ người nộp chưa gán quản lý (`manager_id = 0`) — dữ liệu cũ phần lớn ở
-       cảnh này, màn danh sách nhân sự đã cảnh báo «Chưa gán» (K5);
+       cảnh này, màn danh sách nhân sự đã cảnh báo "Chưa gán" (K5);
     3. Người quản lý đã nghỉ việc hoặc mọi tài khoản đều khóa — giao cho họ là phiếu
        nằm im vĩnh viễn (cùng định nghĩa `_only_active_employees`);
     4. Người quản lý trùng chính người nộp (dữ liệu sai — `block_manager_cycle` chặn
        vòng lúc lưu, nhưng dữ liệu nhập tay cũ thì chưa chắc).
 
     Lùi chứ không trả rỗng: trả rỗng là đẩy sang `on_no_approver`, mà luồng khai sẵn
-    thường để «dừng phiếu» — một hồ sơ chưa ai kịp gán quản lý không được làm kẹt
+    thường để "dừng phiếu" — một hồ sơ chưa ai kịp gán quản lý không được làm kẹt
     đơn nghỉ phép của người đó.
     """
     if submitter_employee_id:
@@ -209,15 +209,15 @@ def _heads_of_specified_departments(db: Session, raw: str) -> list[int]:
 
     Khác `_truong_bo_phan` ở đúng một chỗ, và đó là chỗ quan trọng: hàm kia bám
     theo phòng của NGƯỜI NỘP, hàm này bám theo phòng GHI TRONG LUỒNG. Nhờ vậy
-    khai được những bước có thật mà trước đây không khai nổi — «đơn nghỉ phép của
-    mọi phòng đều qua trưởng phòng Nhân sự», «hợp đồng qua trưởng phòng Pháp chế».
+    khai được những bước có thật mà trước đây không khai nổi — "đơn nghỉ phép của
+    mọi phòng đều qua trưởng phòng Nhân sự", "hợp đồng qua trưởng phòng Pháp chế".
 
     Khai đích danh một CON NGƯỜI cũng ra kết quả giống hệt hôm nay, nhưng người
     đó chuyển việc là luồng trỏ sai mà không có gì báo. Trỏ vào GHẾ thì đổi người
     ngồi ghế là luồng tự đi theo.
 
     Khai được NHIỀU phòng: một bước có thể cần cả trưởng Nhân sự lẫn trưởng Tài
-    chính cùng ký. Giữ nguyên thứ tự khai vì bước «lần lượt» đọc thứ tự đó.
+    chính cùng ký. Giữ nguyên thứ tự khai vì bước "lần lượt" đọc thứ tự đó.
     """
     department_ids = _refs_as_ints(raw)
     if not department_ids:

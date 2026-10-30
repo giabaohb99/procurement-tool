@@ -9,7 +9,7 @@ import type { ApprovalPreviewInput, ApprovalPreviewResult } from '../types/appro
 const DEBOUNCE_MS = 400
 
 /**
- * XEM TRƯỚC «Người duyệt dự kiến» ở màn tạo văn bản / chi tiết nháp.
+ * XEM TRƯỚC "Người duyệt dự kiến" ở màn tạo văn bản / chi tiết nháp.
  *
  * Chỉ theo dõi ĐÚNG bảy trường ảnh hưởng tới luồng duyệt — Loại · Pháp nhân ·
  * Phòng ban · Độ mật · Độ khẩn · Người ký · bản gốc (đổi sang bản clone) —

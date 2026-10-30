@@ -50,7 +50,7 @@ export function LeaveGlanceCard({ glance, className }: LeaveGlanceCardProps) {
       loading={glance.isLoading}
     >
       {/* Câu "rỗng" dựng TRONG nội dung chứ không qua `isEmpty` của `ChartCard`:
-          `isEmpty` thay thẳng cả khối con nên dòng chân («Mở lịch nghỉ») mất
+          `isEmpty` thay thẳng cả khối con nên dòng chân ("Mở lịch nghỉ") mất
           theo — đúng lúc người ta cần nó nhất là lúc tuần này trống và họ muốn
           nhìn xa hơn bảy ngày. Cùng lẽ với thẻ Lịch họp. */}
       <div className="flex flex-1 flex-col">
@@ -85,7 +85,7 @@ export function LeaveGlanceCard({ glance, className }: LeaveGlanceCardProps) {
 }
 
 function LeaveRow({ request, today }: { request: LeaveRequest; today: string }) {
-  //  Theo KHOẢNG, không theo bao ngoài: ngày khe giữa hai khoảng không phải «Hôm nay» nghỉ.
+  //  Theo KHOẢNG, không theo bao ngoài: ngày khe giữa hai khoảng không phải "Hôm nay" nghỉ.
   const isOffToday = coversDay(request, today)
 
   return (

@@ -2,7 +2,7 @@
 
 Hai loại dòng (xem `variable_model.py`): HỆ THỐNG chỉ sửa nhãn / mô tả / ẩn, mã bất biến, không xóa;
 TÙY CHỈNH sửa đủ nhưng KHÓA mã + kiểu khi đã được dùng (mẫu chứa biến hoặc hợp đồng giữ giá trị), và
-chỉ xóa được khi chưa ai dùng — còn lại phải «Ngừng dùng». Quyền ghi (phạm vi tất cả) gác ở controller.
+chỉ xóa được khi chưa ai dùng — còn lại phải "Ngừng dùng". Quyền ghi (phạm vi tất cả) gác ở controller.
 """
 from fastapi import HTTPException
 from sqlalchemy import or_
@@ -43,7 +43,7 @@ def list_variables(db: Session, *, q: str, source: int | None, value_type: int |
         query = query.filter(V.is_active == is_active)
     keyword = (q or "").strip()[:100]
     if keyword:
-        #  Mã biến chứa dấu «_» nên KHÔNG bỏ nó đi như ô tìm mẫu — thoát ký tự đại diện của LIKE.
+        #  Mã biến chứa dấu "_" nên KHÔNG bỏ nó đi như ô tìm mẫu — thoát ký tự đại diện của LIKE.
         like = "%" + keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
         query = query.filter(or_(V.code.like(like, escape="\\"), V.label.like(like, escape="\\")))
     total = query.count()
@@ -131,7 +131,7 @@ def update(db: Session, user, row: V, data) -> V:
 
 def _prepare_custom_update(db: Session, row: V, fields: dict) -> None:
     if "is_hidden" in fields:
-        raise HTTPException(422, "Biến tùy chỉnh không ẩn được — hãy dùng «Ngừng dùng»")
+        raise HTTPException(422, "Biến tùy chỉnh không ẩn được — hãy dùng \"Ngừng dùng\"")
     if "code" in fields:
         fields["code"] = fields["code"].strip()
     code_changes = "code" in fields and fields["code"] != row.code
@@ -160,12 +160,12 @@ def _prepare_custom_update(db: Session, row: V, fields: dict) -> None:
 def delete(db: Session, user, profile: dict, row: V) -> str:
     """Xóa CỨNG biến chưa ai dùng; trả mã để ghi nhật ký. Đang dùng → `VariableInUse`."""
     if int(row.source) == int(Src.SYSTEM):
-        raise HTTPException(409, "Biến hệ thống không xóa được — hãy dùng «Ẩn»")
+        raise HTTPException(409, "Biến hệ thống không xóa được — hãy dùng \"Ẩn\"")
     info = usage(db, user, profile, row)
     if info["template_count"] or info["contract_count"]:
         raise VariableInUse(
             f"{_in_use_sentence(info['template_count'], info['contract_count'])} — không xóa được, "
-            "hãy chọn «Ngừng dùng»",
+            "hãy chọn \"Ngừng dùng\"",
             {"templates": info["templates"], "hidden_template_count": info["hidden_template_count"],
              "contract_count": info["contract_count"]})
     code = row.code

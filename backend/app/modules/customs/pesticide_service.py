@@ -1,4 +1,4 @@
-"""Danh mục thuốc BVTV — mục «Thuốc BVTV» của Tra cứu thị trường (29/09/2026).
+"""Danh mục thuốc BVTV — mục "Thuốc BVTV" của Tra cứu thị trường (29/09/2026).
 
 Bảng `tab_customs_pesticide` có HAI người đọc:
   · màn tra cứu (danh sách + phạm vi sử dụng) — tệp này;
@@ -56,7 +56,7 @@ def replace_catalog(db: Session, records: list[dict], user_id: int, filename: st
     ⚠️ GIỮ NGUYÊN id của thuốc vẫn còn trong nguồn (khớp theo `source_id`) — duoc-CR-494: tệp đính
     kèm và nhật ký thao tác gắn theo id thuốc, cấp id mới mỗi lần nạp là mọi tệp mất chủ. Id cho
     thuốc MỚI luôn lớn hơn mọi id đã từng có, để id của thuốc vừa rơi khỏi nguồn không bao giờ bị
-    cấp lại — tái dùng là thuốc mới «nhận» tệp của thuốc cũ. Thuốc rơi khỏi nguồn thì tệp của nó
+    cấp lại — tái dùng là thuốc mới "nhận" tệp của thuốc cũ. Thuốc rơi khỏi nguồn thì tệp của nó
     được dọn SAU khi giao dịch chính xong (dọn tệp chạm tới kho lưu trữ, không lùi được).
     """
     with _import_lock(db):
@@ -137,7 +137,7 @@ def export_query(db: Session, q: str, status: int | None, pest_group: str, secto
 
 def _banned_ids(db: Session, matcher: "banned_match.BannedIngredientMatcher", banned_only: bool,
                 banned_regulation_id: int | None) -> set[int] | None:
-    """Lọc «có hoạt chất cấm» (mọi hoạt chất, hoặc đúng một dòng TT 75) → tập id thuốc; `None` = không lọc."""
+    """Lọc "có hoạt chất cấm" (mọi hoạt chất, hoặc đúng một dòng TT 75) → tập id thuốc; `None` = không lọc."""
     if not banned_only and banned_regulation_id is None:
         return None
     index = banned_match.build_index(db, matcher)
@@ -209,7 +209,7 @@ def options(db: Session) -> dict:
         "pest_groups": counted(CustomsPesticide.pest_group),
         "sectors": counted(CustomsPesticide.sector),
         #  `banned_rules` = số hoạt chất cấm đang dùng để đối chiếu: 0 nghĩa là CHƯA nạp danh sách
-        #  cấm, khác hẳn «đối chiếu rồi, không thuốc nào dính» (`banned_count` = 0).
+        #  cấm, khác hẳn "đối chiếu rồi, không thuốc nào dính" (`banned_count` = 0).
         #  Thuốc tự thêm trên màn — nạp lại danh mục GIỮ chúng (hộp nạp nói số này).
         "manual_count": db.query(func.count(CustomsPesticide.id))
                           .filter(CustomsPesticide.is_manual.is_(True)).scalar() or 0,

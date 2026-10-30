@@ -16,7 +16,7 @@ interface BenefitOccasionPresetChipsProps {
 }
 
 /**
- * Hàng nút «Dịp có sẵn» của H1. Mỗi lần bấm = MỘT lượt ghi URL gồm đủ bộ lọc của dịp + tên
+ * Hàng nút "Dịp có sẵn" của H1. Mỗi lần bấm = MỘT lượt ghi URL gồm đủ bộ lọc của dịp + tên
  * dịp (+ ngày dịp với dịp dương lịch cố định) — gọi nhiều setter liên tiếp thì lượt sau đè
  * lượt trước (`useSetUrlParams`).
  */

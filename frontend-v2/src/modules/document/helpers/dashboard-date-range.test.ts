@@ -56,7 +56,7 @@ describe('DATE_RANGES', () => {
 })
 
 describe('khoảng ngày TỰ CHỌN', () => {
-  it('mức «custom» lấy hai đầu người dùng chấm trên lịch', () => {
+  it('mức "custom" lấy hai đầu người dùng chấm trên lịch', () => {
     //  Hai đầu KHÔNG suy được từ `rangeKey` như mấy mức bày sẵn — chúng nằm ở
     //  state của trang và truyền vào qua tham số cuối.
     expect(
@@ -68,7 +68,7 @@ describe('khoảng ngày TỰ CHỌN', () => {
   })
 
   it('mức bày sẵn thì BỎ QUA khoảng tự chọn còn sót lại', () => {
-    //  Người dùng chấm một khoảng rồi đổi về «Hôm nay»: khoảng cũ vẫn nằm trong
+    //  Người dùng chấm một khoảng rồi đổi về "Hôm nay": khoảng cũ vẫn nằm trong
     //  state, ăn nhầm nó là trang hiện số liệu của kỳ họ vừa bỏ.
     const out = toDashboardParams(undefined, undefined, 'today', {
       from: '2020-01-01',
@@ -77,7 +77,7 @@ describe('khoảng ngày TỰ CHỌN', () => {
     expect(out.from_date).not.toBe('2020-01-01')
   })
 
-  it('chọn «custom» mà chưa chấm ngày nào thì không gửi tham số rỗng lên backend', () => {
+  it('chọn "custom" mà chưa chấm ngày nào thì không gửi tham số rỗng lên backend', () => {
     //  `from_date=` là một tham số CÓ MẶT nhưng vô nghĩa — backend sẽ đem so với
     //  chuỗi rỗng thay vì bỏ qua.
     const out = toDashboardParams(undefined, undefined, 'custom', { from: '', to: '' })

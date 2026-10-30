@@ -11,7 +11,7 @@ interface ReportCatalogListProps {
 }
 
 /**
- * «Danh sách báo cáo» kiểu Haravan: mỗi phân hệ một thẻ, mỗi báo cáo một dòng
+ * "Danh sách báo cáo" kiểu Haravan: mỗi phân hệ một thẻ, mỗi báo cáo một dòng
  * bấm được (biểu tượng · tên · mô tả · mũi tên).
  */
 export function ReportCatalogList({ reports }: ReportCatalogListProps) {

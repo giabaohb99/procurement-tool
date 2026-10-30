@@ -1,4 +1,4 @@
-// bao-CR-470 — thẻ «So sánh» (B-05): giá bình quân gia quyền của 2–5 mặt hàng / hoạt chất
+// bao-CR-470 — thẻ "So sánh" (B-05): giá bình quân gia quyền của 2–5 mặt hàng / hoạt chất
 // trên CÙNG một đơn vị tính. Bộ lọc khác (mã HS, xuất xứ, khoảng ngày…) áp chung cho mọi
 // mặt hàng. Kỳ trống của một mặt hàng để TRỐNG, đường đứt ở đó chứ không nối qua.
 import { GitCompareArrows, Plus, X } from 'lucide-react'

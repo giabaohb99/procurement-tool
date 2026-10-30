@@ -1,5 +1,5 @@
 /**
- * Kiểu dữ liệu của màn «Xem lịch» (ai làm, ai nghỉ) — khớp hợp đồng API
+ * Kiểu dữ liệu của màn "Xem lịch" (ai làm, ai nghỉ) — khớp hợp đồng API
  * `GET /api/work-schedules/tools/roster` ở
  * `plans/261005-0925-hr-lich-lam-viec/phase-07-*.md`.
  */

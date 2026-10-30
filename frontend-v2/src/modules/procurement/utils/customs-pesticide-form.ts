@@ -33,7 +33,7 @@ export const PESTICIDE_USE_LIMITS = {
   usage: 20_000,
 } as const
 
-/** Ô chọn tình trạng — nhãn khớp `PESTICIDE_STATUS_LABELS` backend; «Chưa rõ» để cuối. */
+/** Ô chọn tình trạng — nhãn khớp `PESTICIDE_STATUS_LABELS` backend; "Chưa rõ" để cuối. */
 export const PESTICIDE_STATUS_OPTIONS = [
   { value: PESTICIDE_STATUS.active, label: 'Còn hiệu lực' },
   { value: PESTICIDE_STATUS.expired, label: 'Hết hiệu lực' },
@@ -107,7 +107,7 @@ function trimUse(use: CustomsPesticideUseInput): CustomsPesticideUseInput {
 
 /**
  * Giá trị form → thân gửi API: cắt khoảng trắng, ngày rỗng thành `null` (FastAPI không nhận
- * chuỗi rỗng cho `date`), bỏ dòng phạm vi TRỐNG HẲN — người dùng bấm «Thêm dòng» rồi bỏ đó là
+ * chuỗi rỗng cho `date`), bỏ dòng phạm vi TRỐNG HẲN — người dùng bấm "Thêm dòng" rồi bỏ đó là
  * chuyện thường, lưu một dòng trắng lên danh mục thì bảng phạm vi có một hàng ma.
  */
 export function buildPesticidePayload(input: CustomsPesticideInput): CustomsPesticideInput {

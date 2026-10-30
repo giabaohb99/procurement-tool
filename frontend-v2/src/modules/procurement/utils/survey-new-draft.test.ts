@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { LEGACY_SURVEY_DRAFT_KEY, getSurveyDraftKey, restoreSurveyDraft } from './survey-new-draft'
 
-// bao-CR-571 — lỗi có thật 02/10/2026: tài khoản Quyên mở «Tạo phiếu khảo sát» thấy nháp
+// bao-CR-571 — lỗi có thật 02/10/2026: tài khoản Quyên mở "Tạo phiếu khảo sát" thấy nháp
 // ngày 28/09 của chị Phương, ô NSPT (khóa) mang tên chị Phương. Khóa nháp từng dùng chung.
 
 function memoryStorage(seed: Record<string, string> = {}) {

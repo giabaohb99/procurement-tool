@@ -137,7 +137,7 @@ def _report_denied(db, user, name: str) -> dict | None:
 
     if can_view_report(db, user, key):
         return None
-    return {"denied": True, "error": f"Chưa được giao xem báo cáo «{REPORT_META[key][0]}» — nhờ quản trị gán ở Phân quyền "
+    return {"denied": True, "error": f"Chưa được giao xem báo cáo **{REPORT_META[key][0]}** — nhờ quản trị gán ở Phân quyền "
                                      "tài khoản → tab Báo cáo. Đừng thử công cụ khác để lấy cùng số liệu."}
 
 

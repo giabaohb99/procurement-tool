@@ -23,14 +23,14 @@ export const CUSTOMS_SECTIONS = [
   { key: 'chart', label: 'Biểu đồ', icon: ChartLine, tabbed: true },
   { key: 'importers', label: 'Doanh nghiệp', icon: Factory, tabbed: true },
   { key: 'compare', label: 'So sánh', icon: GitCompareArrows, tabbed: true },
-  //  29/09/2026 — «Pháp lý & thuế» chia đôi. Khóa `legal` giữ cho mục này (bảng duyệt hóa chất
+  //  29/09/2026 — "Pháp lý & thuế" chia đôi. Khóa `legal` giữ cho mục này (bảng duyệt hóa chất
   //  theo văn bản) để link cũ `/legal` / `?tab=legal` vẫn rơi đúng chỗ.
-  //  03/10/2026 — đổi tên hiển thị «Pháp lý» → «Tra cứu hóa chất» (khóa `legal` + đường dẫn
+  //  03/10/2026 — đổi tên hiển thị "Pháp lý" → "Tra cứu hóa chất" (khóa `legal` + đường dẫn
   //  GIỮ NGUYÊN).
   { key: 'legal', label: 'Tra cứu hóa chất', icon: Scale, tabbed: false },
   { key: 'tariff', label: 'Thuế', icon: Percent, tabbed: true },
   //  29/09/2026 — danh mục thuốc BVTV (bản cào danhmuc.thuocbvtv.com), có nạp tệp trên màn.
-  //  06/10/2026 — đổi tên hiển thị «Thuốc BVTV» → «Tra cứu Thuốc BVTV» (khóa + đường dẫn giữ nguyên).
+  //  06/10/2026 — đổi tên hiển thị "Thuốc BVTV" → "Tra cứu Thuốc BVTV" (khóa + đường dẫn giữ nguyên).
   { key: 'pesticides', label: 'Tra cứu Thuốc BVTV', icon: Sprout, tabbed: false },
   { key: 'history', label: 'Lịch sử nạp', icon: History, tabbed: false },
   //  bao-CR-501 — ba danh mục cấu hình (từ khóa nhãn, từ đồng nghĩa, hóa chất theo văn bản).
@@ -50,7 +50,7 @@ export function isCustomsTabSection(key: CustomsSectionKey): boolean {
   return CUSTOMS_TAB_SECTIONS.some((section) => section.key === key)
 }
 
-/** «Danh sách» nằm ở đường gốc (link cũ không đổi); các mục khác là `/customs-prices/<key>`. */
+/** "Danh sách" nằm ở đường gốc (link cũ không đổi); các mục khác là `/customs-prices/<key>`. */
 export function buildCustomsSectionPath(key: CustomsSectionKey): string {
   return key === 'list'
     ? appRoutes.procurement.customsPrices

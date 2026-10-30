@@ -30,8 +30,8 @@ const MODES: { value: CalendarMode; label: string }[] = [
  * `segmented` trải hết hàng thì dải dưới **to hơn và xanh hơn dải trên**, hai
  * dải đọc thành cùng một cấp và mắt không biết cái nào chuyển màn, cái nào đổi
  * cách nhìn (khách bác 09/09/2026: *"tab này làm lại theo hướng khác ở mobile"*).
- * Chữ + gạch chân là đúng kiểu tab con đã dùng ở «Thiết lập ▸ Loại nghỉ / Lịch
- * ngày lễ» (`LeaveSectionTabs.SubTabLink`) — cùng một hệ, không phải phát minh
+ * Chữ + gạch chân là đúng kiểu tab con đã dùng ở "Thiết lập ▸ Loại nghỉ / Lịch
+ * ngày lễ" (`LeaveSectionTabs.SubTabLink`) — cùng một hệ, không phải phát minh
  * thêm kiểu thứ ba.
  */
 export function LeaveCalendarModeSwitch({

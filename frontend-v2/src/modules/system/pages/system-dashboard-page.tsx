@@ -23,7 +23,7 @@ export function SystemDashboardPage() {
   //  không làm được thì tệ hơn là không có thẻ.
   //  Khóa nào cũng theo luật của chính mục menu: `manage` thì hỏi ba quyền sửa,
   //  còn lại hỏi `read`. Màn khai NHIỀU khóa thì có một khóa là đủ — giống hệt
-  //  `itemAllowed` của menu trái, vì backend cũng gác bằng «hoặc».
+  //  `itemAllowed` của menu trái, vì backend cũng gác bằng "hoặc".
   const allowEntity = (entity: (typeof SYSTEM_DASHBOARD_SHORTCUTS)[number]['entity'], manage?: boolean) =>
     entity ? (manage ? canManageEntity(entity, can) : can(entity, 'read')) : false
 

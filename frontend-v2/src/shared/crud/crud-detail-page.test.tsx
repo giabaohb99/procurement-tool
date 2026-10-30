@@ -126,7 +126,7 @@ describe('CrudDetailPage — thêm mới', () => {
   it('bấm Tạo BA LẦN liên tiếp chỉ gửi MỘT lệnh', async () => {
     //  LỖI ĐÃ XẢY RA (04/09/2026): ba cú bấm ra ba POST — bản ghi chỉ tạo một
     //  (ràng buộc duy nhất ở DB đỡ hộ) nhưng người dùng nhận một toast xanh rồi
-    //  hai toast đỏ «Hệ thống gặp lỗi không lường trước». Danh mục không có cột
+    //  hai toast đỏ "Hệ thống gặp lỗi không lường trước". Danh mục không có cột
     //  duy nhất thì đó là ba bản ghi trùng.
     build('/hr/leave-types/new')
     await userEvent.type(await screen.findByLabelText(/Mã loại nghỉ/), 'moi')

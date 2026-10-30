@@ -16,12 +16,12 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { formatDateTime } from '@/shared/utils/format-date'
 
 /**
- * Tab «Telegram» ở Trang cá nhân (ai-CR-038) — tự đăng nhập tài khoản ERP trong bot Telegram.
+ * Tab "Telegram" ở Trang cá nhân (ai-CR-038) — tự đăng nhập tài khoản ERP trong bot Telegram.
  *
  * Lấy mã 6 số dùng một lần (sống vài phút) rồi nhắn `/dangnhap <mã>` cho bot. KHÔNG bao giờ gõ
  * mật khẩu vào khung chat: Telegram giữ lịch sử vĩnh viễn. Trong Telegram chỉ hỏi được Trợ lý AI,
  * theo đúng quyền của tài khoản này. Cửa API chỉ đòi đăng nhập — ai cũng tự nối được Telegram
- * của chính mình, như tự đá thiết bị lạ ở «Thiết bị của tôi».
+ * của chính mình, như tự đá thiết bị lạ ở "Thiết bị của tôi".
  */
 export function ProfileTelegramTab() {
   const { data, isLoading, refetch } = useTelegramLinks()

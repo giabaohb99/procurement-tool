@@ -28,12 +28,12 @@ import { effectiveStatusBadge } from './outgoing-document-columns'
  * phải thường chỉ ~650px vì còn menu ERP + cây bên trái, ba cột cố định cũ
  * (170+120+130px) ép cột Tên còn ~120px, tên văn bản cụt sau vài chữ (lỗi đại
  * ca bắt 24/09/2026). Khung hẹp thì GIẤU cột Người soạn — kiểu Drive giấu cột
- * «Chủ sở hữu» — để Tên được phần còn lại.
+ * "Chủ sở hữu" — để Tên được phần còn lại.
  */
 export const FOLDER_LIST_GRID_TEMPLATE =
   'grid grid-cols-[1rem_minmax(0,1fr)_6rem_6.5rem_2rem] @2xl:grid-cols-[1rem_minmax(0,1fr)_10rem_6rem_7rem_2rem] items-center gap-3'
 
-/** Cùng khuôn nhưng KHÔNG có cột ô tick đầu dòng — gốc «Thư mục của bạn» (chốt 24/09/2026: gốc không chọn hàng loạt). */
+/** Cùng khuôn nhưng KHÔNG có cột ô tick đầu dòng — gốc "Thư mục của bạn" (chốt 24/09/2026: gốc không chọn hàng loạt). */
 export const FOLDER_LIST_GRID_TEMPLATE_NO_SELECT =
   'grid grid-cols-[minmax(0,1fr)_6rem_6.5rem_2rem] @2xl:grid-cols-[minmax(0,1fr)_10rem_6rem_7rem_2rem] items-center gap-3'
 
@@ -49,7 +49,7 @@ interface FolderListRowProps {
   isFullText: boolean
   /**
    * Thư mục ĐANG XEM — nguồn của lượt kéo khi thả dòng này ra ngoài. `null` =
-   * không gắn với một thư mục cụ thể (gốc «Thư mục của bạn» — xem
+   * không gắn với một thư mục cụ thể (gốc "Thư mục của bạn" — xem
    * `folder-child-cards.tsx`).
    */
   sourceFolderId: number | null
@@ -67,7 +67,7 @@ interface FolderListRowProps {
   onDragOverFolder?: () => void
   onDragLeaveFolder?: () => void
   onDropOnFolder?: (payload: FolderDragPayload, keepInSource: boolean) => void
-  /** `false` = không vẽ ô tick đầu dòng (gốc «Thư mục của bạn»). Mặc định `true`. */
+  /** `false` = không vẽ ô tick đầu dòng (gốc "Thư mục của bạn"). Mặc định `true`. */
   selectable?: boolean
 }
 
@@ -76,7 +76,7 @@ interface FolderListRowProps {
  * hồi 24/09/2026 — chốt dọn gọn tối 24/09: BỎ hẳn ô tick, "Drive selection
  * model" ở đây chỉ còn TÔ NỀN dòng đang chọn (`bg-accent`), không có biểu
  * tượng nào khác đứng chồng lên icon) — dùng CHUNG cho thư mục con lẫn văn
- * bản, cao 48px (`h-12`). Menu `⋯` + (thư mục) nút «Chia sẻ» nổi ở mép phải
+ * bản, cao 48px (`h-12`). Menu `⋯` + (thư mục) nút "Chia sẻ" nổi ở mép phải
  * qua `FolderItemContextMenu`.
  *
  * Bấm MỘT LẦN = mở; ô tick đầu dòng hoặc Ctrl/⌘/Shift+bấm = chọn
@@ -174,7 +174,7 @@ export function FolderListRow({
         <NameCell item={item} isFullText={isFullText} />
 
         {/*  Thư mục cũng có người tạo / ngày tạo / trạng thái (25/09/2026 —
-             trước đây ba cột này để «—» cho mọi dòng thư mục). */}
+             trước đây ba cột này để "—" cho mọi dòng thư mục). */}
         <PersonCell
           className={FOLDER_LIST_OWNER_COLUMN}
           name={

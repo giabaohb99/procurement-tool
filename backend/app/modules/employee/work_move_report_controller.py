@@ -1,4 +1,4 @@
-"""Báo cáo D1 «Điều chuyển & bổ nhiệm» (khóa 24) — duoc-CR-688.
+"""Báo cáo D1 "Điều chuyển & bổ nhiệm" (khóa 24) — duoc-CR-688.
 
 Router riêng chỉ chứa `/summary` + `/summary/export` + `/summary/rows` (khung báo cáo kiểu Haravan).
 Đường gốc `/api/work-moves` cố ý KHÔNG nằm dưới `/api/employees` / `/api/labor-contracts` để khỏi bị

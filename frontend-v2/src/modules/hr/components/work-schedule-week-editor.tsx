@@ -24,10 +24,10 @@ interface WorkScheduleWeekEditorProps {
 }
 
 /**
- * Khối «Lịch 7 ngày» của MẪU LỊCH TUẦN: tiêu đề + tổng công + thao tác nhanh ở đầu,
+ * Khối "Lịch 7 ngày" của MẪU LỊCH TUẦN: tiêu đề + tổng công + thao tác nhanh ở đầu,
  * rồi bảy hàng. Không giữ state riêng: giá trị nằm trong react-hook-form và mỗi lần sửa
  * phát lại cả mảng 7 hàng đã chuẩn hóa — thiếu thứ nào (dữ liệu lỗi) thì hàng đó hiện
- * «Nghỉ» và được gửi lên đủ. Giờ luôn hiện 24h «HH:MM» (xem `TimeInput24h`).
+ * "Nghỉ" và được gửi lên đủ. Giờ luôn hiện 24h "HH:MM" (xem `TimeInput24h`).
  */
 export function WorkScheduleWeekEditor({
   control,

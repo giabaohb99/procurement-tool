@@ -56,7 +56,7 @@ export function orderLineAmount(item: PurchaseOrderItem): number {
 }
 
 /**
- * Hậu tố `-v3`: bộ cột vừa đổi (bao-CR-602 thêm cột «Hồ sơ» = tiến độ báo cáo thực
+ * Hậu tố `-v3`: bộ cột vừa đổi (bao-CR-602 thêm cột "Hồ sơ" = tiến độ báo cáo thực
  * hiện theo dòng; `-v2` trước đó thêm Phân loại + Quy đổi VNĐ). `useTableLayout` ưu
  * tiên bố cục đã lưu và nối cột lạ vào cuối, nên bố cục cũ trong `localStorage` sẽ
  * đẩy cột mới xuống cuối bảng. Đổi bộ cột lần sau thì tăng số.
@@ -174,7 +174,7 @@ interface PurchaseOrderItemsTableProps {
   /** Sửa được nội dung dòng (đơn chưa chốt + có quyền ghi). */
   editable: boolean
   /**
-   * bao-CR-547 — cho tick nhiều dòng rồi «Xóa đã chọn». Trang bật khi phiếu là form tạo hoặc
+   * bao-CR-547 — cho tick nhiều dòng rồi "Xóa đã chọn". Trang bật khi phiếu là form tạo hoặc
    * đang Nháp (đại ca chốt 01/10/2026); phiếu Bị trả lại vẫn xóa từng dòng như cũ.
    */
   bulkRemovable?: boolean
@@ -198,10 +198,10 @@ interface PurchaseOrderItemsTableProps {
   order?: Pick<PurchaseOrderDetail, 'order_type' | 'currency' | 'exchange_rate'>
   /**
    * bao-CR-602 — tiến độ báo cáo thực hiện theo `item.id` (dòng đã lưu). Không
-   * truyền (màn tạo mới) thì cột «Hồ sơ» ẩn hẳn.
+   * truyền (màn tạo mới) thì cột "Hồ sơ" ẩn hẳn.
    */
   lineReport?: Map<number, LineReportProgress>
-  /** Bấm ô «Hồ sơ» của dòng — trang cuộn tới khối báo cáo và sổ nút của dòng đó. */
+  /** Bấm ô "Hồ sơ" của dòng — trang cuộn tới khối báo cáo và sổ nút của dòng đó. */
   onOpenLineReport?: (progress: LineReportProgress) => void
 }
 

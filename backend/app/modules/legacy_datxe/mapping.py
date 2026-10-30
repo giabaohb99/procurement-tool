@@ -169,7 +169,7 @@ USER_MANUAL_MAP: dict[str, int] = {
     #  phiếu của hai UID kia rơi mất — hôm nay là 0, mai người ta đặt xe thì khác.
     "EL1KRQfUkqhIwYWJHpluRr733CB2": 221,  # Phạm Lê Triết Giang    ·  0 phiếu
 
-    #  bao-CR-595, đại ca chốt 05/10: tài khoản «Đào Trúc Nhi (Đặt xe)» (vai trò
+    #  bao-CR-595, đại ca chốt 05/10: tài khoản "Đào Trúc Nhi (Đặt xe)" (vai trò
     #  Admin bên app cũ, email trucnhi.work@gmail.com) là chị Đào Trúc Nhi NSU206
     #  (hồ sơ 228, đeo `legacy_id` của tài khoản Legal). Gộp vào 228; hồ sơ phụ
     #  NSU262 (id 311) bị gỡ `legacy_id` và khóa tài khoản. Lúc gộp: 0 phiếu.

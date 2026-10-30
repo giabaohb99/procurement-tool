@@ -26,8 +26,8 @@ interface ItemGroupOption {
 }
 
 /**
- * Nhãn cột Phòng. bao-CR-524: backend trả id + tên THẬT cho mọi dòng, kể cả dòng `0` cũ («Thu mua
- * chung» → phòng thu mua mặc định «Sản xuất -Thu mua»). Nhãn dự phòng chỉ còn cho trường hợp danh
+ * Nhãn cột Phòng. bao-CR-524: backend trả id + tên THẬT cho mọi dòng, kể cả dòng `0` cũ ("Thu mua
+ * chung" → phòng thu mua mặc định "Sản xuất -Thu mua"). Nhãn dự phòng chỉ còn cho trường hợp danh
  * mục chưa có phòng mặc định.
  */
 function departmentLabel(row: CategoryAssignee): string {
@@ -36,7 +36,7 @@ function departmentLabel(row: CategoryAssignee): string {
 }
 
 /**
- * bao-CR-527 — cảnh báo dòng có NSTM chính NAY không còn «Chính thức» (nghỉ thai sản, nghỉ
+ * bao-CR-527 — cảnh báo dòng có NSTM chính NAY không còn "Chính thức" (nghỉ thai sản, nghỉ
  * việc, hồ sơ bị tắt…). Tự gán lúc duyệt sẽ rơi sang dự phòng (hoặc để trống), nên dòng này cần
  * người sửa. Chỉ báo, không chặn đọc.
  */
@@ -48,7 +48,7 @@ function PrimaryNotOfficialBadge({ row }: { row: CategoryAssignee }) {
     <Badge
       variant="outline"
       className="border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
-      title={`NSTM chính đang «${status}» — tự gán sẽ rơi sang dự phòng. Hãy đổi NSTM chính.`}
+      title={`NSTM chính đang "${status}" — tự gán sẽ rơi sang dự phòng. Hãy đổi NSTM chính.`}
     >
       <TriangleAlert />
       Không còn Chính thức
@@ -78,10 +78,10 @@ export function CategoryAssigneeListPage() {
 
   const search = searchParams.get('search') || ''
   const catFilter = searchParams.get('cat') || 'all'
-  //  Lọc theo phòng: 'all' = mọi dòng, '<id>' = một phòng. bao-CR-524: không còn mục «Thu mua
-  //  chung» (0) — bộ đó nay là phòng thật «Sản xuất -Thu mua», nằm trong danh mục như mọi phòng.
+  //  Lọc theo phòng: 'all' = mọi dòng, '<id>' = một phòng. bao-CR-524: không còn mục "Thu mua
+  //  chung" (0) — bộ đó nay là phòng thật "Sản xuất -Thu mua", nằm trong danh mục như mọi phòng.
   const deptFilter = searchParams.get('dept') || 'all'
-  //  Danh mục phòng ban chỉ để dựng ô lọc; thiếu quyền thì ô chỉ còn «Tất cả phòng».
+  //  Danh mục phòng ban chỉ để dựng ô lọc; thiếu quyền thì ô chỉ còn "Tất cả phòng".
   const { data: departmentsData } = useDepartments(
     { page_size: 500 },
     { enabled: can('department', 'read') },
@@ -289,7 +289,7 @@ export function CategoryAssigneeListPage() {
            về cùng một danh sách đứng cùng một dòng (230px + 90px = 320px, vừa
            358px).
 
-           Bỏ luôn `font-mono` của huy hiệu: chữ đều nét làm «15 phân loại» dãn
+           Bỏ luôn `font-mono` của huy hiệu: chữ đều nét làm "15 phân loại" dãn
            ra đọc như một mẩu mã nguồn chứ không như một con số đếm. */}
       <PageHeader
         title={
@@ -421,7 +421,7 @@ export function CategoryAssigneeListPage() {
  * *chính* và cái nào là *dự phòng*; trên thẻ thì không còn tiêu đề, mà hai dòng
  * tên người thì trông y hệt nhau — đọc nhầm là giao việc cho sai người.
  *
- * ⚠️ Ô trống in **«Chưa gán»** chứ không phải dấu gạch ngang: cột này thiếu
+ * ⚠️ Ô trống in **"Chưa gán"** chứ không phải dấu gạch ngang: cột này thiếu
  * người là một việc CẦN LÀM (phân loại đó duyệt YCMH xong không ai nhận), gạch
  * ngang thì đọc ra như "không áp dụng".
  */
@@ -480,7 +480,7 @@ function CategoryAssigneeCard({
   )
 }
 
-/** Một dòng «vai trò → người» trong thẻ. */
+/** Một dòng "vai trò → người" trong thẻ. */
 function AssigneeLine({
   label,
   name,

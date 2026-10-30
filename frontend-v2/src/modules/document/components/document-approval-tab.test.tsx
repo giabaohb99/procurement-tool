@@ -110,7 +110,7 @@ describe('DocumentApprovalTab', () => {
   })
 
 
-  //  Ảnh người dùng gửi 24/08/2026: chặng 1 hiện BỐN dòng — ba dòng «Đã hủy»,
+  //  Ảnh người dùng gửi 24/08/2026: chặng 1 hiện BỐN dòng — ba dòng "Đã hủy",
   //  hai dòng trùng tên nhau — và không đọc ra ai mới là người thật sự đã ký.
   //  Việc bị hủy sinh ra khi trả phiếu về một bước phía trước: bộ máy hủy việc
   //  cũ rồi mở việc mới, nên chặng đó tích lại nhiều lượt giao cho cùng những
@@ -137,7 +137,7 @@ describe('DocumentApprovalTab', () => {
     expect(screen.queryByText('Trưởng bộ phận (Demo)')).not.toBeInTheDocument()
   })
 
-  it('chỉ hiện MỘT người, còn lại giấu sau nút «Xem thêm»', async () => {
+  it('chỉ hiện MỘT người, còn lại giấu sau nút "Xem thêm"', async () => {
     const user = userEvent.setup()
     render(
       <DocumentApprovalTab

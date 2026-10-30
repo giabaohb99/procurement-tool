@@ -66,14 +66,14 @@ export function uploadForumMedia(files: File[]): Promise<ForumUploadedFile[]> {
   return apiPost<ForumUploadedFile[]>(`${ATTACHMENT_URL}/upload-file`, body)
 }
 
-/** Cây nhóm → box kèm bộ đếm + khối bài-mới-nhất — màn «Diễn đàn» (F13b). */
+/** Cây nhóm → box kèm bộ đếm + khối bài-mới-nhất — màn "Diễn đàn" (F13b). */
 export function fetchForumBoards(): Promise<ForumBoardGroup[]> {
   return apiGet<ForumBoardGroup[]>(`${FORUM_URL}/boards`)
 }
 
 /**
- * Hai khối sidebar màn «Diễn đàn» (F13c): «Đang sôi nổi» (auto theo tương tác
- * 7 ngày) + «Mới nhất» — bản thread GỌN, khối «Nổi bật» đi `fetchPinnedForumPosts`.
+ * Hai khối sidebar màn "Diễn đàn" (F13c): "Đang sôi nổi" (auto theo tương tác
+ * 7 ngày) + "Mới nhất" — bản thread GỌN, khối "Nổi bật" đi `fetchPinnedForumPosts`.
  */
 export function fetchBoardHighlights(): Promise<ForumBoardHighlights> {
   return apiGet<ForumBoardHighlights>(`${FORUM_URL}/boards/highlights`)

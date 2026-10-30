@@ -35,7 +35,7 @@ interface BookingWorkflowActionsProps {
    * `driver` = CHỈ dựng nhóm nút của tài xế (chấp nhận · bắt đầu · hoàn thành ·
    * từ chối chuyến), bỏ nhóm duyệt và nhóm điều phối.
    *
-   * Dùng ở màn «Chuyến của tôi»: màn đó nói rõ "nhận, bắt đầu và hoàn tất tại
+   * Dùng ở màn "Chuyến của tôi": màn đó nói rõ "nhận, bắt đầu và hoàn tất tại
    * đây", nhưng ai có quyền `approve` (điều phối viên, admin) mở ra lại thấy
    * thêm _Điều phối lại_ · _Yêu cầu chỉnh sửa_ · _Từ chối yêu cầu_ — ba việc
    * của NGƯỜI KHÁC, và chúng đứng TRƯỚC nút mà họ thật sự cần bấm.
@@ -52,9 +52,9 @@ interface BookingWorkflowActionsProps {
    */
   layout?: 'inline' | 'menu'
   /**
-   * Cỡ nút. `sm` dành cho chỗ HẸP — cụ thể là thẻ ở màn «Chuyến của tôi»: ở lưới
+   * Cỡ nút. `sm` dành cho chỗ HẸP — cụ thể là thẻ ở màn "Chuyến của tôi": ở lưới
    * ba cột, phần bấm được của thẻ chỉ rộng 285px, mà hai nút cỡ thường
-   * («Chấp nhận» + «Từ chối chuyến») cần 286px nên nút thứ hai bị cắt cụt đuôi
+   * ("Chấp nhận" + "Từ chối chuyến") cần 286px nên nút thứ hai bị cắt cụt đuôi
    * ngay trong viền thẻ (thấy ngày 22/09/2026).
    */
   size?: 'default' | 'sm'
@@ -80,10 +80,10 @@ interface WorkflowAction {
  * Phiếu duyệt theo hai đường tùy cờ `ApprovalSwitch` lúc gửi: đường MỘT BƯỚC cũ
  * (API `/approve · /return · /reject` của đặt xe) hoặc luồng NHIỀU BƯỚC của bộ
  * máy chung. Bật/tắt cờ thì người duyệt phải thấy Y HỆT nhau: ✓ Duyệt tô đặc,
- * «Yêu cầu chỉnh sửa» · «Từ chối» trong `⋯`, cùng hộp lý do. Chỉ lúc GỬI mới rẽ:
+ * "Yêu cầu chỉnh sửa" · "Từ chối" trong `⋯`, cùng hộp lý do. Chỉ lúc GỬI mới rẽ:
  * phiếu đang chạy luồng → hành động của bộ máy trên phiên; không → API cũ.
  *
- * Trước đó luồng nhiều bước có nút riêng «Xử lý duyệt» mở hộp thoại của bộ máy,
+ * Trước đó luồng nhiều bước có nút riêng "Xử lý duyệt" mở hộp thoại của bộ máy,
  * đặt cạnh phiếu đường cũ là hai dải nút khác hẳn cho cùng một việc.
  *
  * Hai điều KHÁC nhau có chủ ý giữa hai đường:
@@ -91,8 +91,8 @@ interface WorkflowAction {
  *   gác bằng LƯỢT KÝ (trưởng phòng được giao chặng 1 không cần quyền đó). Backend
  *   chặn thật ở cả hai: `block_legacy_path` khóa API cũ khi phiếu đang chạy luồng,
  *   bộ máy từ chối người không có việc treo trên phiên.
- * · «Trả lại» của bộ máy không truyền `to_step` → về NGƯỜI NỘP, phiếu sang
- *   «Yêu cầu chỉnh sửa» — đúng nghĩa của nút cũ, không phải lùi một chặng.
+ * · "Trả lại" của bộ máy không truyền `to_step` → về NGƯỜI NỘP, phiếu sang
+ *   "Yêu cầu chỉnh sửa" — đúng nghĩa của nút cũ, không phải lùi một chặng.
  */
 
 /** Loại dialog lý do đang mở (mỗi loại một hành động khác nhau). */
@@ -147,7 +147,7 @@ export function BookingWorkflowActions({
   //  và không ở màn chỉ-tài-xế — xem `useMyBookingApprovalTask`.
   //  ⚠️ `Boolean(...)` là bắt buộc: `approval_running` là ô TÙY CHỌN (danh sách
   //  có thể không gửi), mà `undefined` truyền vào tham số có mặc định `= true`
-  //  thì JS hiểu là "không truyền" → BẬT — mỗi thẻ «Chuyến của tôi» lại đi hỏi.
+  //  thì JS hiểu là "không truyền" → BẬT — mỗi thẻ "Chuyến của tôi" lại đi hỏi.
   const flowTask = useMyBookingApprovalTask(id, Boolean(booking.approval_running) && !driverOnly)
   const flowAction = useApprovalAction(flowTask?.instance_id ?? 0, 'vehicle_booking')
   //  Tiêu đề hộp thoại lấy MỤC ĐÍCH chuyến (lùi về mã phiếu nếu trống) thay cho mã.
@@ -187,7 +187,7 @@ export function BookingWorkflowActions({
   //  23/09/2026. Bản trước mở thêm cho ai có quyền `write` để "thao tác thay",
   //  nhưng backend (`_ensure_can_drive`) chặn người ĐÃ LÀ tài xế mà không được
   //  phân chuyến này — nên một tài xế có `write` mở chuyến của đồng nghiệp thấy
-  //  nút «Chấp nhận», bấm vào ăn 403 "Bạn không phải tài xế được phân…".
+  //  nút "Chấp nhận", bấm vào ăn 403 "Bạn không phải tài xế được phân…".
   //  Cái giá: admin/điều phối không còn nút thao tác thay trên giao diện nữa
   //  (backend vẫn cho) — tài xế báo qua điện thoại thì phải tự vào bấm.
   const driverStage = isDispatched && booking.is_assigned_driver

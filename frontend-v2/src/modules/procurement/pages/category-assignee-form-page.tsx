@@ -31,8 +31,8 @@ interface Option {
 }
 
 /**
- * Chữ mờ của ô Phòng áp dụng khi chưa chọn — bao-CR-524: không còn mục ảo «Thu mua chung»; để
- * trống thì backend ghi phòng thu mua mặc định (phòng THẬT «Sản xuất -Thu mua» trong danh mục).
+ * Chữ mờ của ô Phòng áp dụng khi chưa chọn — bao-CR-524: không còn mục ảo "Thu mua chung"; để
+ * trống thì backend ghi phòng thu mua mặc định (phòng THẬT "Sản xuất -Thu mua" trong danh mục).
  */
 const DEPARTMENT_PLACEHOLDER = 'Để trống = phòng thu mua mặc định'
 
@@ -42,10 +42,10 @@ export function CategoryAssigneeFormPage() {
   const { can } = usePermission()
 
   const [itemGroups, setItemGroups] = useState<Option[]>([])
-  //  bao-CR-527: giữ cả mã trạng thái + cờ hoạt động để ô chọn chỉ mời người «Chính thức».
+  //  bao-CR-527: giữ cả mã trạng thái + cờ hoạt động để ô chọn chỉ mời người "Chính thức".
   const [employees, setEmployees] = useState<AssigneeEmployee[]>([])
   //  Toàn bộ dòng phân công của MỌI phòng: cùng một phân loại có thể có một dòng
-  //  chung và một dòng riêng cho từng phòng, nên map «phân loại → id dòng» phải
+  //  chung và một dòng riêng cho từng phòng, nên map "phân loại → id dòng" phải
   //  tính theo phòng đang chọn chứ không gộp cả bảng.
   const [rows, setRows] = useState<CategoryAssignee[]>([])
 
@@ -145,7 +145,7 @@ export function CategoryAssigneeFormPage() {
       toast.error('Vui lòng chọn ít nhất 1 phân loại')
       return
     }
-    //  bao-CR-527: chính bắt buộc + «Chính thức»; dự phòng khác người chính + «Chính thức».
+    //  bao-CR-527: chính bắt buộc + "Chính thức"; dự phòng khác người chính + "Chính thức".
     const pairError = validateAssigneePair(primaryId, backupId, employees)
     if (pairError) {
       toast.error(pairError)
@@ -188,7 +188,7 @@ export function CategoryAssigneeFormPage() {
     return departments.find((d) => d.value === departmentId)?.label || `#${departmentId}`
   }, [departmentId, departments])
 
-  //  bao-CR-527: chỉ mời người «Chính thức» đang hoạt động; người đang được gán mà nay không còn
+  //  bao-CR-527: chỉ mời người "Chính thức" đang hoạt động; người đang được gán mà nay không còn
   //  đạt thì vẫn hiện kèm tình trạng để người sửa thấy phải đổi.
   const employeeOptions = useMemo(
     () => assigneeOptions(employees, [primaryId, backupId]),
@@ -203,8 +203,8 @@ export function CategoryAssigneeFormPage() {
     //  trắng, còn cụm Hủy/Lưu rơi xuống một hàng riêng dán mép trái.
     //  `PageHeader` có sẵn khe `leading` đúng cho nút quay lại.
     <PageContainer className="mx-auto max-w-5xl">
-      {/*  `sticky` — prop có sẵn của `PageHeader` cho «form dài, nút Lưu nằm
-           trên đầu»: cuộn xuống chỉnh xong rồi muốn lưu mà phải cuộn ngược lên
+      {/*  `sticky` — prop có sẵn của `PageHeader` cho "form dài, nút Lưu nằm
+           trên đầu": cuộn xuống chỉnh xong rồi muốn lưu mà phải cuộn ngược lên
            thì thao tác nào cũng mất hai lần cuộn.
 
            ⚠️ Ghi lại số đo cho người sau khỏi tưởng đây là chỗ nó phát huy:
@@ -267,12 +267,12 @@ export function CategoryAssigneeFormPage() {
             </h2>
 
             {/*  Phòng áp dụng đứng TRÊN ô phân loại: đổi phòng là đổi bộ dòng
-                 «đã có» bên dưới, chọn xuôi từ trên xuống thì người dùng không
+                 "đã có" bên dưới, chọn xuôi từ trên xuống thì người dùng không
                  phải quay lên sửa lại. */}
             <div className="space-y-2">
               <Label htmlFor="ca-department">Phòng áp dụng</Label>
-              {/*  bao-CR-524: KHÔNG còn mục ảo «Thu mua chung». Danh sách chỉ gồm phòng thật; để
-                   trống thì backend ghi phòng thu mua mặc định («Sản xuất -Thu mua»). */}
+              {/*  bao-CR-524: KHÔNG còn mục ảo "Thu mua chung". Danh sách chỉ gồm phòng thật; để
+                   trống thì backend ghi phòng thu mua mặc định ("Sản xuất -Thu mua"). */}
               <SearchSelect
                 id="ca-department"
                 value={departmentId ? String(departmentId) : ''}
@@ -325,7 +325,7 @@ export function CategoryAssigneeFormPage() {
               onChange={setPrimaryId}
               placeholder="Chọn Nhân sự thu mua chính"
               employees={employeeOptions}
-              hint="Bắt buộc, chỉ chọn được nhân sự «Chính thức» đang hoạt động. Nhân viên này sẽ được hệ thống ưu tiên tự động gán xử lý các dòng thuộc phân loại trên YCMH."
+              hint='Bắt buộc, chỉ chọn được nhân sự "Chính thức" đang hoạt động. Nhân viên này sẽ được hệ thống ưu tiên tự động gán xử lý các dòng thuộc phân loại trên YCMH.'
             />
 
             <EmployeeSelect
@@ -336,12 +336,12 @@ export function CategoryAssigneeFormPage() {
               onChange={setBackupId}
               placeholder="Không có dự phòng"
               employees={employeeOptions.filter((e) => e.value !== primaryId)}
-              hint="Tối đa một người, khác NSTM chính, cũng phải «Chính thức». Được gán xử lý khi NSTM chính không còn «Chính thức» (nghỉ thai sản, nghỉ việc…)."
+              hint='Tối đa một người, khác NSTM chính, cũng phải "Chính thức". Được gán xử lý khi NSTM chính không còn "Chính thức" (nghỉ thai sản, nghỉ việc…).'
             />
           </Card>
         </div>
 
-        {/*  ⚠️ KHÔNG tự dựng tiêu đề «Lịch sử thao tác» ở đây — `AuditTimeline`
+        {/*  ⚠️ KHÔNG tự dựng tiêu đề "Lịch sử thao tác" ở đây — `AuditTimeline`
              đã tự in đúng câu đó. Bản cũ có cả hai nên khi đã cuộn tới, màn
              hình hiện **hai dòng tiêu đề giống hệt nhau chồng lên nhau**; ở bố
              cục ba cột của màn rộng nó lọt lưới vì thẻ nằm ngoài tầm mắt, xuống
@@ -369,7 +369,7 @@ export function CategoryAssigneeFormPage() {
 /**
  * Ô chọn MỘT nhân sự thu mua — gõ tìm theo tên hoặc mã (bao-CR-530, `SearchSelect` tìm bỏ dấu).
  *
- * «Chưa chọn ai» = chuỗi rỗng ở ô, quy về `0` khi bắn ra ngoài. Ô dự phòng có nút xóa
+ * "Chưa chọn ai" = chuỗi rỗng ở ô, quy về `0` khi bắn ra ngoài. Ô dự phòng có nút xóa
  * (`clearable`) vì để trống là hợp lệ; ô chính thì không — bắt buộc chọn.
  */
 function EmployeeSelect({
@@ -406,7 +406,7 @@ function EmployeeSelect({
         options={employees.map((employee) => ({ value: String(employee.value), label: employee.label }))}
         placeholder={placeholder}
         searchPlaceholder="Gõ tên hoặc mã nhân viên…"
-        emptyMessage="Không có nhân sự «Chính thức» nào khớp"
+        emptyMessage='Không có nhân sự "Chính thức" nào khớp'
         clearable={clearable}
         className="w-full"
       />

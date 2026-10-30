@@ -7,7 +7,7 @@ import type { PendingAccess } from '../components/document-access-fields'
 
 /**
  * Gửi QUYỀN + TỆP đang xếp hàng ngay sau khi văn bản có id — dùng chung cho
- * trang tạo 3 bước và hộp «Tạo nhanh từ tệp» ở trang Thư mục.
+ * trang tạo 3 bước và hộp "Tạo nhanh từ tệp" ở trang Thư mục.
  *
  * Quyền gửi tuần tự để dòng nào hỏng thì báo đúng dòng đó. Tệp gửi MỘT LƯỢT
  * (API nhận nhiều tệp trong một lần gọi) và treo vào PHIÊN BẢN, nên thiếu

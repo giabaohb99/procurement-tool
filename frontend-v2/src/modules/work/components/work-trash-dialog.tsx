@@ -60,7 +60,7 @@ export function WorkTrashDialog({ open, listId, onClose }: WorkTrashDialogProps)
                   {item.title}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {item.parent_id ? `Việc con của «${item.parent_title}» · ` : ''}
+                  {item.parent_id ? `Việc con của "${item.parent_title}" · ` : ''}
                   Xóa {formatDateTime(item.deleted_at)}
                   {item.deleted_by_name ? ` bởi ${item.deleted_by_name}` : ''}
                 </p>

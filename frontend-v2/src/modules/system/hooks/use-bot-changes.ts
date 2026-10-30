@@ -6,7 +6,7 @@ import { queryKeys } from '@/shared/constants/query-keys'
 import { botChangesApi } from '../api/bot-changes-api'
 
 /**
- * Sổ thay đổi do bot ghi (ai-CR-185) — tab «Bot đã ghi gì» ở Trang cá nhân.
+ * Sổ thay đổi do bot ghi (ai-CR-185) — tab "Bot đã ghi gì" ở Trang cá nhân.
  *
  * `all = true` gọi `all=1` (của mọi người): nơi gọi PHẢI gác bằng `can('agent_group', 'read')` trước,
  * backend trả 403 cho người thiếu khóa.

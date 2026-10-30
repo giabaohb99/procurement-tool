@@ -152,7 +152,7 @@ ROUTE_SPECS = [
      "/api/labor-contracts/summary", "/api/labor-contracts/summary/export"),
     (ReportKey.HR_PROFILE_GAPS, "employee",
      "/api/employees/profile-gaps/summary", "/api/employees/profile-gaps/summary/export"),
-    (ReportKey.PAYROLL_FUND, "labor_contract",
+    (ReportKey.PAYROLL_FUND, "employee",      # duoc-CR-693: đổi nguồn sang ô lương hồ sơ -> gác employee
      "/api/payroll-fund/summary", "/api/payroll-fund/summary/export"),
     (ReportKey.BENEFIT_AUDIENCE, "employee",
      "/api/benefit-audience/summary", "/api/benefit-audience/summary/export"),

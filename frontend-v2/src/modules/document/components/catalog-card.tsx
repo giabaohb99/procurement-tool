@@ -36,9 +36,9 @@ interface CatalogCardProps {
  *
  * ⚠️ **TÊN lên trước, mã xuống dòng phụ.** Bảng để *Mã* ở cột đầu vì cột đầu là
  * cột định danh và được ghim; trên thẻ thì mã là thứ ít dùng hơn — người ta tìm
- * «Quyết định» chứ ít khi tìm «QD». Cùng bài học với `DocumentCard` (CR-364/365).
+ * "Quyết định" chứ ít khi tìm "QD". Cùng bài học với `DocumentCard` (CR-364/365).
  *
- * ⚠️ **Mỗi dòng chữ đúng MỘT hàng, dài thì «…»** — thẻ cao thấp so le thì mắt
+ * ⚠️ **Mỗi dòng chữ đúng MỘT hàng, dài thì "…"** — thẻ cao thấp so le thì mắt
  * phải dò lại mép trên của từng thẻ thay vì lướt một cột đều.
  *
  * ⚠️ **Không nút nào trong thẻ**: `DataTableMobileCards` bọc cả thẻ trong một
@@ -55,7 +55,7 @@ export function CatalogCard({
 }: CatalogCardProps) {
   //  Lọc mẩu rỗng NGAY TẠI ĐÂY chứ không bắt bốn nơi gọi tự lo: trường như
   //  `contact_person`, `phone` của đơn vị gửi nhận thường để trống, mà nối thẳng
-  //  thì ra chuỗi «· ·» — một dãy dấu chấm giữa không có chữ nào ở giữa.
+  //  thì ra chuỗi "· ·" — một dãy dấu chấm giữa không có chữ nào ở giữa.
   const parts = (meta ?? []).map((item) => item?.trim()).filter(Boolean)
 
   return (
@@ -77,7 +77,7 @@ export function CatalogCard({
           <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
             {/*  ⚠️ `shrink-0` cho MÃ — nó là chuỗi ngắn nhất nhưng lại là thứ
                  định danh dòng, để nó co cùng mấy vế kia thì gặp dòng dài là ra
-                 «B…» (đo thấy ở loại *Bản ghi nhớ*, mã `BGN`): ba ký tự bị cắt
+                 "B…" (đo thấy ở loại *Bản ghi nhớ*, mã `BGN`): ba ký tự bị cắt
                  còn một, không còn nhận ra là mã gì. Phần bị chật để mấy vế sau
                  gánh — chúng dài và cắt đuôi vẫn đoán được. */}
             {code && <span className="shrink-0 font-mono text-navy">{code}</span>}

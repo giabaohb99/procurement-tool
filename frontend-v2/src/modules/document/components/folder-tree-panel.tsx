@@ -33,11 +33,11 @@ export interface FolderTreePanelProps {
    * mở hẳn trang chi tiết văn bản thì bấm ĐÚP/Enter (xem `handleActivate`).
    */
   onSelectDocument: (folderId: number, documentId: number) => void
-  /** Bấm "Chia sẻ…" ở menu — chọn thư mục đó VÀ chuyển khung phải sang `?tab=access` (khung phải tự mở hộp «Chia sẻ» kiểu Drive). */
+  /** Bấm "Chia sẻ…" ở menu — chọn thư mục đó VÀ chuyển khung phải sang `?tab=access` (khung phải tự mở hộp "Chia sẻ" kiểu Drive). */
   onOpenAccessTab: (folderId: number) => void
   /** Chỉ có khi dựng trong `FolderTreePanelShell` (desktop) — thêm một nút "Thu gọn khung" ở tiêu đề. */
   onCollapsePanel?: () => void
-  /** Bấm nhãn «THƯ MỤC» ở đầu cây — bỏ chọn, về gốc «Thư mục của bạn». */
+  /** Bấm nhãn "THƯ MỤC" ở đầu cây — bỏ chọn, về gốc "Thư mục của bạn". */
   onSelectRoot?: () => void
 }
 
@@ -74,7 +74,7 @@ export function FolderTreePanel({
   }, [search.searchOpen])
   const { data: rows, isLoading, isFetching, refetch } = useDocFolderTree(includeArchived)
   const expansion = usePersistedFolderTreeExpansion()
-  //  Nhóm «Công ty» (24/09/2026) — mở sẵn MỘT LẦN cho mỗi máy, để thư mục pháp
+  //  Nhóm "Công ty" (24/09/2026) — mở sẵn MỘT LẦN cho mỗi máy, để thư mục pháp
   //  nhân không "biến mất" sau đợt dời vào nhóm. Người dùng gập lại thì thôi,
   //  không tự bung lại mỗi lần vào trang.
   const companyGroupId = rows?.find((row) => row.kind === FOLDER_KIND.companyGroup)?.id
@@ -101,21 +101,21 @@ export function FolderTreePanel({
 
   const canStartRename = (node: DocFolderTreeNode) => node.my_level >= FOLDER_ACCESS_LEVEL.manage
 
-  /** Mở dòng nhập TẠM «thư mục mới» — xóa từ khóa tìm (chắc chắn cha còn hiện) + mở sẵn cha. */
+  /** Mở dòng nhập TẠM "thư mục mới" — xóa từ khóa tìm (chắc chắn cha còn hiện) + mở sẵn cha. */
   function beginCreate(node: DocFolderTreeNode) {
     search.close()
     expansion.expand(node.id)
     actions.startCreate(node)
   }
 
-  /** Dòng nhập «thư mục mới» ở GỐC cây — thư mục tự do, không thuộc pháp nhân nào. */
+  /** Dòng nhập "thư mục mới" ở GỐC cây — thư mục tự do, không thuộc pháp nhân nào. */
   function beginCreateAtRoot() {
     search.close()
     actions.startCreateAtRoot()
   }
 
   const selectedNode = rows?.find((row) => row.id === selectedFolderId)
-  //  Chưa chọn thư mục nào = đang đứng ở GỐC → «Thư mục mới» tạo thư mục tự do
+  //  Chưa chọn thư mục nào = đang đứng ở GỐC → "Thư mục mới" tạo thư mục tự do
   //  ở gốc (mở 24/09/2026), chỉ cần quyền `doc_folder.create`.
   const atRoot = selectedFolderId == null
   const canCreateHere = atRoot

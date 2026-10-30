@@ -8,7 +8,7 @@ import type { ChatGroupItem, ChatGroupMeta } from '../api/chat-group-api'
 import { ChatGroupListPage } from './chat-group-list-page'
 
 /**
- * Màn «Nhóm chat» (ai-CR-123). Chỗ dễ lủng: người thường KHÔNG được thấy lối «Tất cả nhóm» (đại ca chốt 08/10: chỉ
+ * Màn "Nhóm chat" (ai-CR-123). Chỗ dễ lủng: người thường KHÔNG được thấy lối "Tất cả nhóm" (đại ca chốt 08/10: chỉ
  * quản lý bot AI thấy hết), và danh sách phải xin đúng `scope` — gửi nhầm `all` cho người thường thì backend vẫn chặn,
  * nhưng gửi `mine` cho người quản lý là họ tưởng bot chưa ở nhóm nào.
  */

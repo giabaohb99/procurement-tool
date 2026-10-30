@@ -30,7 +30,7 @@ describe('useFolderContentSelection', () => {
     expect(result.current.selectedIds.size).toBe(1)
 
     //  Mô phỏng ĐÚNG kịch bản bug đã vá: chọn 2 văn bản ở thư mục A rồi
-    //  chuyển sang thư mục B — «Chuyển tới…» không được còn động tới id cũ.
+    //  chuyển sang thư mục B — "Chuyển tới…" không được còn động tới id cũ.
     rerender({ resetSignal: ['folder-B', 1], documentKeys: DOC_KEYS_PAGE_2 })
     expect(result.current.selectedIds.size).toBe(0)
   })

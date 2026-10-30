@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { aiSkillApi, aiUsageApi, myAiApi } from '../api/ai-skill-api'
 
-/** «AI của tôi» (G8) + Tổng quan (G1) — K6, hợp đồng doc/agent-hub/06 §6. */
+/** "AI của tôi" (G8) + Tổng quan (G1) — K6, hợp đồng doc/agent-hub/06 §6. */
 
 export function useSetupClients(enabled = true) {
   return useQuery({
@@ -105,7 +105,7 @@ export function useRemoveMyKey() {
   })
 }
 
-/** Kiểm tra kết nối: KHÔNG tự hỏi lại theo chu kỳ — người dùng bấm «Kiểm tra lại» sau khi hỏi AI một câu. */
+/** Kiểm tra kết nối: KHÔNG tự hỏi lại theo chu kỳ — người dùng bấm "Kiểm tra lại" sau khi hỏi AI một câu. */
 export function useLastCall(keyId: number) {
   return useQuery({
     queryKey: queryKeys.aiSkill.lastCall(keyId),
@@ -131,8 +131,8 @@ export function useAiOverview(enabled: boolean) {
 }
 
 /**
- * Tên của các skill trong bảng «Skill được đọc nhiều» — `ai-overview` chỉ trả `skill_id`. Mỗi id một lượt
- * `GET /skills/{id}` (tối đa 10, có cache); skill đã xóa / không đọc được thì để trống, màn tự in «Skill #id».
+ * Tên của các skill trong bảng "Skill được đọc nhiều" — `ai-overview` chỉ trả `skill_id`. Mỗi id một lượt
+ * `GET /skills/{id}` (tối đa 10, có cache); skill đã xóa / không đọc được thì để trống, màn tự in "Skill #id".
  */
 export function useSkillTitles(ids: number[]) {
   const results = useQueries({

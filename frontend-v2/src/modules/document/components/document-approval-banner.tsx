@@ -20,12 +20,12 @@ interface DocumentApprovalBannerProps {
 /**
  * BĂNG TIẾN TRÌNH DUYỆT trên đầu trang chi tiết văn bản.
  *
- * Trước đây trang này chỉ hiện đúng hai chữ «Đang duyệt» — không nói phiếu đang
+ * Trước đây trang này chỉ hiện đúng hai chữ "Đang duyệt" — không nói phiếu đang
  * ở bước nào, ai đang giữ, và nhất là không nói khi có chuyện. Người soạn muốn
  * biết chờ ai thì phải đi hỏi người.
  *
  * **Người duyệt bấm NGAY TẠI ĐÂY (21/08/2026).** Bản trước chỉ dẫn họ sang màn
- * «Việc của tôi» rồi bấm trên dòng danh sách — nghĩa là ký một văn bản mà chưa
+ * "Việc của tôi" rồi bấm trên dòng danh sách — nghĩa là ký một văn bản mà chưa
  * mở nó ra đọc, hoặc phải đi hai vòng: mở văn bản để đọc, rồi quay lại hộp việc
  * để bấm. Nút đặt ở đây thì thứ tự tự nhiên lại đúng: đọc xong, bấm ngay.
  *
@@ -34,7 +34,7 @@ interface DocumentApprovalBannerProps {
  *
  * - **KẸT** — không tìm được người duyệt, phiếu không tự đi tiếp được;
  * - **duyệt hết bước rồi mà chưa ban hành được** — ví dụ loại này phải kèm một
- *   Quyết định mà chưa khai. Phiên ghi «Đã duyệt» nhưng văn bản vẫn ở *chờ
+ *   Quyết định mà chưa khai. Phiên ghi "Đã duyệt" nhưng văn bản vẫn ở *chờ
  *   duyệt* và chưa có số; lý do nằm ở `finish_reason`.
  */
 export function DocumentApprovalBanner({ instance, documentId }: DocumentApprovalBannerProps) {
@@ -132,8 +132,8 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
           <div className="min-w-0 flex-1 text-sm">
             <p className="font-semibold">Đang chờ bạn duyệt.</p>
             <p className="text-muted-foreground">
-              Bước «{myTasks.node_name || `Bước ${myTasks.node_seq}`}» của luồng «
-              {instance.flow_name}»
+              Bước <strong>{myTasks.node_name || `Bước ${myTasks.node_seq}`}</strong> của luồng{' '}
+              <strong>{instance.flow_name}</strong>
               {myTasks.started_by_name && ` · ${myTasks.started_by_name} trình`}
               {myTasks.due_at && (
                 <span className={myTasks.is_overdue ? 'font-medium text-destructive' : undefined}>
@@ -170,7 +170,7 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
   }
 
   //  Người TRÌNH còn rút về được (chưa ai duyệt) → mọc nút ngay trên băng, chỗ
-  //  người soạn nhìn thấy «Đang duyệt». Cùng luật backend, xem `canWithdrawApproval`.
+  //  người soạn nhìn thấy "Đang duyệt". Cùng luật backend, xem `canWithdrawApproval`.
   const canWithdraw = canWithdrawApproval(instance, employeeId)
 
   return (
@@ -179,7 +179,7 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
         <Clock className="size-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1 text-sm">
           <p className="font-medium">
-            Đang chạy luồng «{instance.flow_name}» — bước {instance.current_seq}
+            Đang chạy luồng <strong>{instance.flow_name}</strong> — bước {instance.current_seq}
             {pending.length > 0 && ` · ${pending[0].node_name}`}
           </p>
           {pending.length > 0 && (

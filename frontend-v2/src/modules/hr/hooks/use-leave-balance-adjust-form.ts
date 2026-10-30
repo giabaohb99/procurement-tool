@@ -50,7 +50,7 @@ export function useLeaveBalanceAdjustForm(balance: LeaveBalance): LeaveBalanceAd
     setNote,
     canSave: note.trim().length > 0 && !adjust.isPending,
     isPending: adjust.isPending,
-    //  Người dùng gõ số điều chỉnh nhưng thứ họ quan tâm là «còn lại» sẽ thành
+    //  Người dùng gõ số điều chỉnh nhưng thứ họ quan tâm là "còn lại" sẽ thành
     //  bao nhiêu. Bắt họ tự cộng trừ là bắt họ tính sai.
     preview: Math.round((balance.remaining_days - balance.adjusted_days + days) * 100) / 100,
     submit: () =>

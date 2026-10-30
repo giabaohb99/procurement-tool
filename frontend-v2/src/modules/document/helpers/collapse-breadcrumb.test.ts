@@ -21,7 +21,7 @@ describe('collapseBreadcrumb', () => {
     expect(collapseBreadcrumb(crumbs)).toEqual({ head: [], collapsed: [], tail: crumbs })
   })
 
-  it('vượt ngưỡng (5 đoạn) → gập đúng giữa: đầu 1, cuối 2, giữa gập vào «…»', () => {
+  it('vượt ngưỡng (5 đoạn) → gập đúng giữa: đầu 1, cuối 2, giữa gập vào "…"', () => {
     const crumbs = [crumb(1), crumb(2), crumb(3), crumb(4), crumb(5)]
     expect(collapseBreadcrumb(crumbs)).toEqual({
       head: [crumb(1)],

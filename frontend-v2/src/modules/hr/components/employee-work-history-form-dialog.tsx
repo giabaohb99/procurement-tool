@@ -42,20 +42,20 @@ interface EmployeeWorkHistoryFormDialogProps {
   allRows: EmployeeWorkHistory[]
   /** Phòng kiêm nhiệm hiện tại — cho `planApplyPrompt` xét loại Kiêm nhiệm. */
   extraDeptIds: number[]
-  /** A9 (Q4) — `false` thì ẨN vùng thả tệp (tạo mới) VÀ nút «Quản lý tệp» (sửa),
+  /** A9 (Q4) — `false` thì ẨN vùng thả tệp (tạo mới) VÀ nút "Quản lý tệp" (sửa),
    *  không gọi API đính kèm (M4). */
   canOpenFiles: boolean
-  /** Điền sẵn khi mở từ nút «Tạo dòng đầu từ hồ sơ» hoặc «+ Thêm quyết định». */
+  /** Điền sẵn khi mở từ nút "Tạo dòng đầu từ hồ sơ" hoặc "+ Thêm quyết định". */
   seed?: Partial<EmployeeWorkHistoryFormValues>
-  /** Nút «+ Thêm quyết định» (mục 3, 03/10/2026) ép Số QĐ bắt buộc — hộp thêm/sửa dùng
-   *  CHUNG, chỉ đổi quy tắc kiểm. Bỏ trống = Số QĐ vẫn tùy chọn (tab «Quá trình công tác»). */
+  /** Nút "+ Thêm quyết định" (mục 3, 03/10/2026) ép Số QĐ bắt buộc — hộp thêm/sửa dùng
+   *  CHUNG, chỉ đổi quy tắc kiểm. Bỏ trống = Số QĐ vẫn tùy chọn (tab "Quá trình công tác"). */
   requireDecisionNo?: boolean
-  /** Đè tiêu đề lúc TẠO MỚI. Bỏ trống = «Thêm quá trình công tác». */
+  /** Đè tiêu đề lúc TẠO MỚI. Bỏ trống = "Thêm quá trình công tác". */
   createTitle?: string
 }
 
 /**
- * Hộp thêm/sửa một dòng «Quá trình công tác» — dựng ô nhập + hộp con, giao LƯU
+ * Hộp thêm/sửa một dòng "Quá trình công tác" — dựng ô nhập + hộp con, giao LƯU
  * + câu hỏi áp hồ sơ cho `useEmployeeWorkHistoryFormSubmit` (tách ra để mỗi
  * tệp dưới ~200 dòng, CLAUDE.md §"File Size Management").
  *

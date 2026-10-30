@@ -11,7 +11,7 @@ import {
 import { multiKey } from '../utils/task-conditions'
 
 /**
- * Khai các trường cho BỘ LỌC ĐIỀU KIỆN của bảng công việc (§3.3) — nút «Lọc»
+ * Khai các trường cho BỘ LỌC ĐIỀU KIỆN của bảng công việc (§3.3) — nút "Lọc"
  * trên thanh công cụ, đúng chỗ Lark đặt nó.
  *
  * Lọc chạy hoàn toàn Ở TRÌNH DUYỆT (`applyClientFilter`) vì bảng đã tải cả
@@ -54,7 +54,7 @@ export function buildTaskFilterFields(
       name: 'pic_keys',
       label: 'Người phụ trách',
       type: 'combobox',
-      //  Một việc có nhiều người phụ trách nên «bằng» vô nghĩa: chỉ hỏi được
+      //  Một việc có nhiều người phụ trách nên "bằng" vô nghĩa: chỉ hỏi được
       //  danh sách đó CÓ CHỨA người này không.
       operators: ['contains', 'not_contains', 'is_empty', 'is_not_empty'],
       fetchOptions: async () => {
@@ -66,7 +66,7 @@ export function buildTaskFilterFields(
       },
     },
     {
-      //  Thay cho lát cắt «Tôi tạo» đã bỏ khỏi thanh công cụ.
+      //  Thay cho lát cắt "Tôi tạo" đã bỏ khỏi thanh công cụ.
       name: 'creator_employee_id',
       label: 'Người tạo',
       type: 'combobox',
@@ -102,7 +102,7 @@ export function buildTaskFilterFields(
  * Một TRƯỜNG TÙY BIẾN thành một trường lọc. Độ ưu tiên đi đúng đường này — nó
  * không còn là cột cứng nên cũng không còn khai tay ở danh sách trên.
  *
- * Trường có bộ giá trị dùng phép «chứa» chứ không «bằng»: kiểu chọn nhiều thì
+ * Trường có bộ giá trị dùng phép "chứa" chứ không "bằng": kiểu chọn nhiều thì
  * một việc mang nhiều giá trị, mà chuỗi đã rào `|` nên không khớp nhầm.
  */
 function labelFilterField(field: WorkLabelField): FilterFieldDefinition {

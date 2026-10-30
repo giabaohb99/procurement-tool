@@ -14,7 +14,7 @@ import { z } from 'zod'
 const documentRecordBaseSchema = z.object({
     doc_type_id: z.coerce.number().int().positive('Chọn loại văn bản'),
     company_id: z.coerce.number().int().positive('Chọn pháp nhân ban hành'),
-    //  Bắt buộc: bước đầu luồng duyệt là «trưởng bộ phận của phòng chủ trì»,
+    //  Bắt buộc: bước đầu luồng duyệt là "trưởng bộ phận của phòng chủ trì",
     //  bỏ trống thì gửi duyệt xong phiên chốt ở trạng thái KẸT và văn bản không
     //  đi tiếp được bằng đường nào.
     department_id: z.coerce.number().int().positive('Chọn phòng chủ trì'),
@@ -53,7 +53,7 @@ const documentRecordBaseSchema = z.object({
      *
      * Để lỏng ở đây có chủ ý: khối này chỉ hiện khi loại văn bản là `GNP`, mà
      * zod thì không biết loại nào đang chọn. Ràng buộc thật nằm ở hai chỗ —
-     * `LEAVE_FIELDS` kiểm lúc bấm «Tiếp tục» (chỉ khi khối đang hiện), và
+     * `LEAVE_FIELDS` kiểm lúc bấm "Tiếp tục" (chỉ khi khối đang hiện), và
      * backend `type_metadata.py` là chốt cuối.
      */
     leave: z

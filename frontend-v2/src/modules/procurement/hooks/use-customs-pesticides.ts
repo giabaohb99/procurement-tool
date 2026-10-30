@@ -1,4 +1,4 @@
-// Mục «Thuốc BVTV» của Tra cứu thị trường — hook TanStack Query.
+// Mục "Thuốc BVTV" của Tra cứu thị trường — hook TanStack Query.
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 
 import { usePermission } from '@/core/authorization/use-permission'
@@ -42,7 +42,7 @@ export function useCustomsPesticide(id: number | null) {
   })
 }
 
-/** Hai khối thuốc liên quan của trang chi tiết; đổi `limit` (bấm «Xem tất cả») giữ số cũ tới khi số mới về. */
+/** Hai khối thuốc liên quan của trang chi tiết; đổi `limit` (bấm "Xem tất cả") giữ số cũ tới khi số mới về. */
 export function useCustomsPesticideRelated(id: number, limit: number) {
   return useQuery({
     queryKey: queryKeys.procurement.customsPesticideRelated(id, limit),

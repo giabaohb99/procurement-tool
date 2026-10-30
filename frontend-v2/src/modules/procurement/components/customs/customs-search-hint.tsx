@@ -4,7 +4,7 @@ import type { CustomsSearchExplain } from '../../api/customs-kind-api'
  * Dòng giải thích dưới ô tìm tên hàng — bao-CR-495.
  *
  * Ô trống: nhắc cú pháp (cách nhau = có cả hai từ, dấu trừ = loại trừ). Có chữ: bày từng từ và
- * các cách viết nó sẽ khớp, để người dùng thấy vì sao «3,6%» ra cả dòng «36 G/L».
+ * các cách viết nó sẽ khớp, để người dùng thấy vì sao "3,6%" ra cả dòng "36 G/L".
  */
 interface CustomsSearchHintProps {
   query: string
@@ -29,12 +29,12 @@ export function CustomsSearchHint({ query, explain }: CustomsSearchHintProps) {
     <p className="text-xs text-muted-foreground">
       {explain.include.map((part) => (
         <span key={`in-${part.term}`} className="mr-3">
-          Có «{part.term}»: {joinMatches(part.matches)}
+          Có <strong>{part.term}</strong>: {joinMatches(part.matches)}
         </span>
       ))}
       {explain.exclude.map((part) => (
         <span key={`ex-${part.term}`} className="mr-3 text-destructive">
-          Không có «{part.term}»: {joinMatches(part.matches)}
+          Không có <strong>{part.term}</strong>: {joinMatches(part.matches)}
         </span>
       ))}
     </p>

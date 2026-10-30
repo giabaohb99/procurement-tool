@@ -1,6 +1,6 @@
-"""Bảng gom ngày theo CHỨC NĂNG (duoc-CR-655, D0c) — nguồn cho báo cáo «Mức dùng chức năng» (ReportKey 15).
+"""Bảng gom ngày theo CHỨC NĂNG (duoc-CR-655, D0c) — nguồn cho báo cáo "Mức dùng chức năng" (ReportKey 15).
 
-Mức hạt `người × ngày × loại × mã × route` để đếm được «số người khác nhau trong cả kỳ»; API chỉ trả số đã gom
+Mức hạt `người × ngày × loại × mã × route` để đếm được "số người khác nhau trong cả kỳ"; API chỉ trả số đã gom
 theo chức năng / phòng ban, KHÔNG trả `user_id` ra ngoài. Không chứa chữ người dùng gõ. Bảng hệ thống ghi, không
 dùng `AuditMixin` (cùng tiền lệ `tab_usage_daily`). Giữ 3 năm.
 

@@ -62,7 +62,7 @@ export function DocumentPriorityMatrix({ data }: DocumentPriorityMatrixProps) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        <b>Khẩn cấp</b> = độ khẩn của văn bản từ mức «Khẩn» trở lên. <b>Quan trọng</b> = văn
+        <b>Khẩn cấp</b> = độ khẩn của văn bản từ mức <strong>Khẩn</strong> trở lên. <b>Quan trọng</b> = văn
         bản thuộc loại bắt buộc qua duyệt hoặc bắt buộc kèm Quyết định ban hành.
       </p>
     </div>
@@ -78,7 +78,7 @@ function ColumnHeader({ children }: { children: React.ReactNode }) {
 /**
  * Nhãn của một hàng — nằm ngang ở màn rộng, **XOAY DỌC** ở khổ hẹp.
  *
- * ⚠️ Cột nhãn khai `auto` nên nó rộng bằng nhãn dài nhất: «Không quan trọng» ≈
+ * ⚠️ Cột nhãn khai `auto` nên nó rộng bằng nhãn dài nhất: "Không quan trọng" ≈
  * 120px. Trên 358px dùng được, một phần ba bề ngang đi vào chỗ chữ, hai ô số
  * còn ~111px mỗi cái — HẸP HƠN CHÍNH CHIỀU CAO của chúng, nên bốn con số đọc ra
  * như bốn cột dựng đứng nép bên phải, chừa một khoảng trắng bên trái. Xoay chữ

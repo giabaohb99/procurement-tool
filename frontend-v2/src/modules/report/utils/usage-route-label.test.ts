@@ -14,7 +14,7 @@ describe('labelRouteInApp', () => {
   })
 
   it('does not match a path that merely shares a string prefix', () => {
-    //  Chỉ khớp theo ĐOẠN đường dẫn: không được dán nhãn «Đơn mua hàng» cho một đường chỉ giống chuỗi đầu.
+    //  Chỉ khớp theo ĐOẠN đường dẫn: không được dán nhãn "Đơn mua hàng" cho một đường chỉ giống chuỗi đầu.
     const label = labelRouteInApp('/procurement/purchase-orders-archive')
     expect(label.screen).not.toContain('Đơn mua hàng')
     expect(label.screen).toContain('purchase-orders-archive')

@@ -41,7 +41,7 @@ describe('insertFolderDocumentLeaves', () => {
     })
   })
 
-  it('thư mục mở, KHÔNG có thư mục con lẫn văn bản: hiện đúng MỘT dòng «(trống)»', () => {
+  it('thư mục mở, KHÔNG có thư mục con lẫn văn bản: hiện đúng MỘT dòng "(trống)"', () => {
     const tree = [folderNode(1, 'A')]
     const { tree: out, leaves } = insertFolderDocumentLeaves(tree, new Set([1]), new Map([[1, state()]]))
     const children = out[0].children ?? []
@@ -50,14 +50,14 @@ describe('insertFolderDocumentLeaves', () => {
     expect(leaves.get(makeEmptyLeafId(1))).toEqual({ type: 'empty' })
   })
 
-  it('có thư mục con thật nhưng KHÔNG có văn bản trực tiếp: KHÔNG hiện dòng «(trống)» (thư mục không thật sự rỗng)', () => {
+  it('có thư mục con thật nhưng KHÔNG có văn bản trực tiếp: KHÔNG hiện dòng "(trống)" (thư mục không thật sự rỗng)', () => {
     const tree = [folderNode(1, 'A', [folderNode(2, 'Con')])]
     const { tree: out } = insertFolderDocumentLeaves(tree, new Set([1]), new Map([[1, state()]]))
     const children = out[0].children ?? []
     expect(children.map((c) => c.id)).toEqual([2])
   })
 
-  it('đang tải và CHƯA có thư mục con thật: hiện dòng «Đang tải…», không phải «(trống)»', () => {
+  it('đang tải và CHƯA có thư mục con thật: hiện dòng "Đang tải…", không phải "(trống)"', () => {
     const tree = [folderNode(1, 'A')]
     const { tree: out, leaves } = insertFolderDocumentLeaves(
       tree,
@@ -80,7 +80,7 @@ describe('insertFolderDocumentLeaves', () => {
     expect(children.map((c) => c.id)).toEqual([2])
   })
 
-  it('vượt trần trang: thêm dòng «Xem thêm n văn bản…» với số CÒN LẠI đúng', () => {
+  it('vượt trần trang: thêm dòng "Xem thêm n văn bản…" với số CÒN LẠI đúng', () => {
     const tree = [folderNode(1, 'A')]
     const leavesByFolder = new Map([[1, state({ documents: [doc(10, 'X')], total: 101 })]])
     const { tree: out, leaves } = insertFolderDocumentLeaves(tree, new Set([1]), leavesByFolder)

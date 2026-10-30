@@ -16,11 +16,11 @@ import { stripRichBodyText } from '../utils/rich-body'
 import { ThreadPrefixChip } from './thread-prefix-chip'
 
 /**
- * Sidebar phải màn «Diễn đàn» (F13c, chốt 03/09/2026 theo màn hình VOZ):
- * «Nổi bật» = bài đang ghim (admin quyết, API bài ghim sẵn có) · «Đang sôi
- * nổi» = top thread theo bình luận + reaction 7 ngày (máy tự xếp) · «Mới
- * nhất» = thread mới toàn diễn đàn. Chỉ hiện desktop màn rộng; mobile giấu
- * sidebar và DỒN riêng khối «Nổi bật» lên đầu trang (`PinnedSpotlight`).
+ * Sidebar phải màn "Diễn đàn" (F13c, chốt 03/09/2026 theo màn hình VOZ):
+ * "Nổi bật" = bài đang ghim (admin quyết, API bài ghim sẵn có) · "Đang sôi
+ * nổi" = top thread theo bình luận + reaction 7 ngày (máy tự xếp) · "Mới
+ * nhất" = thread mới toàn diễn đàn. Chỉ hiện desktop màn rộng; mobile giấu
+ * sidebar và DỒN riêng khối "Nổi bật" lên đầu trang (`PinnedSpotlight`).
  */
 export function BoardsSidebar({ className }: { className?: string }) {
   const pinned = usePinnedPosts()
@@ -86,7 +86,7 @@ export function BoardsSidebar({ className }: { className?: string }) {
 }
 
 /**
- * Khối «Nổi bật» phiên bản MOBILE — đứng đầu trang khi sidebar bị giấu
+ * Khối "Nổi bật" phiên bản MOBILE — đứng đầu trang khi sidebar bị giấu
  * (`lg:hidden` do trang cài). Cùng nguồn `usePinnedPosts` nên không gọi thêm
  * API: TanStack Query gộp theo khóa với khối trong sidebar.
  */

@@ -30,7 +30,7 @@ export const DOCUMENT_STATUS = {
    * Bị trả về — CÒN đường đi tiếp: sửa rồi gửi duyệt lại trên chính văn bản này.
    *
    * Trước 24/08/2026 trả lại và từ chối đều đổ về `draft`, nên mở văn bản ra chỉ
-   * thấy «Nháp» và không cách nào biết nó vừa bị trả (lý do chỉ nằm ở dấu vết
+   * thấy "Nháp" và không cách nào biết nó vừa bị trả (lý do chỉ nằm ở dấu vết
    * tab Phê duyệt). Hai mã dưới đây tách đúng chỗ đó ra.
    */
   returned: 9,
@@ -142,12 +142,12 @@ export const APPLY_MODE = {
 
 /**
  * CÁCH TẠO văn bản (24/09/2026) — khớp `model.CONTENT_MODE_*` ở backend. Quyết
- * định tab «Văn bản» ở màn chi tiết là trình SOẠN THẢO hay trình XEM TỆP.
+ * định tab "Văn bản" ở màn chi tiết là trình SOẠN THẢO hay trình XEM TỆP.
  */
 export const DOCUMENT_CONTENT_MODE = {
-  /** «Tạo và soạn thảo». */
+  /** "Tạo và soạn thảo". */
   compose: 1,
-  /** «Tạo, không soạn thảo» — văn bản chỉ gồm tệp có sẵn. */
+  /** "Tạo, không soạn thảo" — văn bản chỉ gồm tệp có sẵn. */
   files: 2,
 } as const
 
@@ -168,7 +168,7 @@ export interface DocumentRecord {
   allow_manual_number: boolean
   /** Số hiệu của bản GIẤY trước khi lên hệ thống; tìm kiếm chấp nhận số này. */
   legacy_code: string
-  /** Bản giấy đang nằm ở đâu — «Tủ A2 · Kệ 3 · Bìa 12». Tìm kiếm chấp nhận cả ô này. */
+  /** Bản giấy đang nằm ở đâu — "Tủ A2 · Kệ 3 · Bìa 12". Tìm kiếm chấp nhận cả ô này. */
   storage_location: string
   /**
    * Thông tin RIÊNG của loại văn bản — Giấy nghỉ phép khai 8 ô ở đây.
@@ -188,7 +188,7 @@ export interface DocumentRecord {
   doc_type_needs_approval?: boolean
   /**
    * Đã ký đủ, chờ NGƯỜI SOẠN bấm Ban hành — kể cả phiên bản 2+ (lúc đó `status`
-   * vẫn là «Có hiệu lực»). Chỉ có ở bản ghi chi tiết.
+   * vẫn là "Có hiệu lực"). Chỉ có ở bản ghi chi tiết.
    */
   is_pending_issue?: boolean
   doc_type_code: string
@@ -226,7 +226,7 @@ export interface DocumentRecord {
   attachment_view_until: string | null
   /**
    * Công tắc TẠM TẮT hạn xem tệp (phase 09, duoc-CR-478) — mặc định TẮT.
-   * TẮT thì giao diện ẩn ô «Xem tệp đính kèm tới ngày»: hiện ô lên mà backend
+   * TẮT thì giao diện ẩn ô "Xem tệp đính kèm tới ngày": hiện ô lên mà backend
    * không xét hạn nào cả là hứa suông. Đọc thẳng từ bản ghi (không cần
    * `setting.read`) vì giá trị giống nhau cho mọi văn bản.
    */
@@ -365,6 +365,6 @@ export interface DocumentPermissions {
   is_archive?: boolean
   /** Id hợp đồng gốc của bản lưu trữ (0 = văn bản thường) — duoc-CR-659. */
   archive_contract_id?: number
-  /** Hiện nút «Ban hành» (= ký HĐ gốc): HĐ đang Nháp, chưa xóa, người xem ghi được HĐ — duoc-CR-659. */
+  /** Hiện nút "Ban hành" (= ký HĐ gốc): HĐ đang Nháp, chưa xóa, người xem ghi được HĐ — duoc-CR-659. */
   can_issue_archive?: boolean
 }

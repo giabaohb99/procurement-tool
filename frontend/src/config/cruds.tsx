@@ -60,7 +60,7 @@ export type CrudConfig = {
    *  màn hình chỉ có thanh lọc cơ bản. `name` PHẢI nằm trong FILTERABLE của controller. */
   condFilters?: FilterFieldDefinition[]
   importExport?: boolean
-  /** duoc-CR-628: ẩn nút «Import CSV» (backend đã trả 410) nhưng GIỮ «Export CSV». */
+  /** duoc-CR-628: ẩn nút "Import CSV" (backend đã trả 410) nhưng GIỮ "Export CSV". */
   importDisabled?: boolean
   /** CR-068 — hiện nút "Xuất Excel": gọi GET {apiPath}/export/xlsx với bộ lọc + dòng đã tick +
    *  danh sách cột đang hiện. Backend phải có route đó và cấp hành động `export`.
@@ -68,7 +68,7 @@ export type CrudConfig = {
   exportXlsx?: boolean
   /** Cho phép nút "Xóa đã chọn" (xóa hàng loạt qua `DELETE {apiPath}?ids=`). Mặc định TẮT:
    *  cột tick chọn của CR-068 chỉ để chọn phiếu cần xuất, không mở thêm đường xóa dữ liệu. */
-  /** bao-CR-547: bật nút «Xóa đã chọn». Chỉ xóa phiếu đang Nháp (`status === 'draft'`); phiếu khác
+  /** bao-CR-547: bật nút "Xóa đã chọn". Chỉ xóa phiếu đang Nháp (`status === 'draft'`); phiếu khác
    *  trạng thái trong lựa chọn được giữ nguyên. Backend cũng chặn cả lô nếu lọt phiếu không Nháp. */
   bulkDelete?: boolean
   rowStyle?: (row: any) => any   // tô màu dòng theo điều kiện (vd HĐ sắp hết hạn)
@@ -265,10 +265,10 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'name', label: 'Tên pháp nhân', group: 'Định danh' },
       { key: 'tax_code', label: 'MST', group: 'Định danh' },
       // bao-CR-531: mã SỐ theo `company/constants.py` (CompanyType). Hộ kinh doanh -> bản in
-      // Phiếu đề xuất mua hàng chỉ còn hai ô ký «Chủ hộ» + «Người lập».
+      // Phiếu đề xuất mua hàng chỉ còn hai ô ký "Chủ hộ" + "Người lập".
       { key: 'company_type', label: 'Loại hình', type: 'select', default: '1', group: 'Định danh',
         options: COMPANY_TYPE_OPTIONS,
-        hint: 'Hộ kinh doanh: phiếu đề xuất mua hàng in hai ô ký «Chủ hộ» + «Người lập».' },
+        hint: 'Hộ kinh doanh: phiếu đề xuất mua hàng in hai ô ký "Chủ hộ" + "Người lập".' },
       { key: 'invoice_email', label: 'Email nhận hóa đơn', group: 'Hóa đơn & Liên hệ',
         hint: 'Nơi nhận hóa đơn điện tử của pháp nhân này.' },
       { key: 'address', label: 'Địa chỉ', type: 'textarea', group: 'Hóa đơn & Liên hệ' },
@@ -810,7 +810,7 @@ export const cruds: Record<string, CrudConfig> = {
   },
   'payment-requests': {
     slug: 'payment-requests', entity: 'payment_request', title: 'Yêu cầu thanh toán', apiPath: '/api/payment-requests', txn: true,
-    // bao-CR-525 — nút «Xuất Excel»: tệp THEO DÒNG CHI TIẾT (mỗi dòng PO / hóa đơn một hàng), xem payment_request/export.py.
+    // bao-CR-525 — nút "Xuất Excel": tệp THEO DÒNG CHI TIẾT (mỗi dòng PO / hóa đơn một hàng), xem payment_request/export.py.
     exportXlsx: true,
     columns: [
       { key: 'code', label: 'Mã phiếu' },
@@ -945,7 +945,7 @@ export const cruds: Record<string, CrudConfig> = {
         hint: 'Ngừng dùng sẽ ẩn khỏi ô chọn loại chi phí; dòng đang dùng vẫn hiện tên kèm "(đã tắt)".' },
     ],
   },
-  // bao-CR-470 — danh mục hóa chất theo văn bản, nguồn của thẻ «Pháp lý & thuế» màn Tra cứu giá
+  // bao-CR-470 — danh mục hóa chất theo văn bản, nguồn của thẻ "Pháp lý & thuế" màn Tra cứu giá
   // hải quan. Nạp sẵn bằng scripts/load_customs_catalogs.py; màn này để sửa / thêm khi văn bản đổi.
   // `list_code` là SỐ (RegulationList ở backend/app/modules/customs/constants.py).
   'customs-regulations': {

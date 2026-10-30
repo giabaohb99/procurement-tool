@@ -6,9 +6,9 @@ import type { SettingField } from '../types/setting'
 import { SettingFieldRow } from './setting-field-row'
 
 /**
- * bao-CR-529 — ô «Phòng thu mua mặc định» CHỌN từ danh mục Phòng ban, không gõ mã.
+ * bao-CR-529 — ô "Phòng thu mua mặc định" CHỌN từ danh mục Phòng ban, không gõ mã.
  *
- * Đại ca: «sao chỗ này để mã PBA017, sao không cho chọn từ danh sách phòng ban».
+ * Đại ca: "sao chỗ này để mã PBA017, sao không cho chọn từ danh sách phòng ban".
  * Giá trị vẫn là MÃ phòng — backend lưu mã từ bao-CR-524.
  */
 
@@ -39,7 +39,7 @@ const field = (value: string): SettingField => ({
   label: 'Phòng thu mua mặc định',
   type: 'department',
   value,
-  hint: 'Để trống = PBA017 «Sản xuất -Thu mua».',
+  hint: 'Để trống = PBA017 "Sản xuất -Thu mua".',
 })
 
 describe('SettingFieldRow — ô chọn phòng ban (bao-CR-529)', () => {

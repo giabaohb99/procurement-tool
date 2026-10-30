@@ -28,7 +28,7 @@ interface ReportAnalyticsBodyProps {
 
 /**
  * Thân trang báo cáo Haravan khi KHÔNG lỗi: lưu ý cách tính → thẻ KPI → biểu đồ xu hướng
- * (trừ `hideTrend`) → breakdown phụ → bảng «Xem theo». Kỳ trống thay ba khối sau cùng
+ * (trừ `hideTrend`) → breakdown phụ → bảng "Xem theo". Kỳ trống thay ba khối sau cùng
  * bằng MỘT thông báo — trừ trang `hidePeriod` (tình trạng hiện tại, không có "kỳ trống").
  */
 export function ReportAnalyticsBody({
@@ -47,8 +47,8 @@ export function ReportAnalyticsBody({
     () => [...config.kpis, ...(config.tableMetrics ?? [])],
     [config.kpis, config.tableMetrics],
   )
-  //  Bấm cột/lát → ngăn «Danh sách» của nhóm đó, chỉ khi chỉ số đang vẽ có danh sách. Chặn thêm
-  //  lúc `meta.group_by` (số đang hiện, `keepPreviousData`) còn lệch «Xem theo» vừa đổi — không
+  //  Bấm cột/lát → ngăn "Danh sách" của nhóm đó, chỉ khi chỉ số đang vẽ có danh sách. Chặn thêm
+  //  lúc `meta.group_by` (số đang hiện, `keepPreviousData`) còn lệch "Xem theo" vừa đổi — không
   //  thì mở danh sách với chiều MỚI nhưng khóa nhóm của chiều CŨ.
   const canDrillGroup =
     drilldown.enabled && drilldown.metricKeys.has(chartMetric) && meta.group_by === filters.groupBy
@@ -61,7 +61,7 @@ export function ReportAnalyticsBody({
       isEmpty: false,
       isSuppressed: false,
     })
-  //  Chỉ số thời điểm mà nhóm có số (vd «Định biên cuối kỳ» theo phòng ban) — thẻ KPI của nó
+  //  Chỉ số thời điểm mà nhóm có số (vd "Định biên cuối kỳ" theo phòng ban) — thẻ KPI của nó
   //  bấm được để biểu đồ linh hoạt vẽ theo nhóm (duoc-CR-688).
   const groupedSnapshotMetrics = useMemo(
     () =>
@@ -75,7 +75,7 @@ export function ReportAnalyticsBody({
   )
   //  Kỳ không phát sinh gì: mọi chỉ số THEO KỲ ở dòng Tổng bằng 0/`null`. Bỏ qua
   //  chỉ số `snapshot` (công nợ còn lại…) — số dư vẫn còn dù kỳ này chẳng mua gì.
-  //  duoc-CR-688: nhóm còn mang số thời điểm (vd «Định biên cuối kỳ» theo phòng ban) thì kỳ
+  //  duoc-CR-688: nhóm còn mang số thời điểm (vd "Định biên cuối kỳ" theo phòng ban) thì kỳ
   //  KHÔNG trống — tháng không ai vào/nghỉ vẫn phải xem được quân số từng phòng.
   const isPeriodEmpty =
     !config.hidePeriod &&

@@ -2,7 +2,7 @@ import { List } from 'lucide-react'
 
 import { Button } from '@/shared/ui/button'
 
-/** Nút «Xem» của cột «Danh sách» trong bảng «Xem theo» — chặn nổi bọt để không dính sự kiện của dòng. */
+/** Nút "Xem" của cột "Danh sách" trong bảng "Xem theo" — chặn nổi bọt để không dính sự kiện của dòng. */
 export function ReportDrilldownRowButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <Button

@@ -43,7 +43,7 @@ PERMISSIONS = {
     #  Tên entity phải khớp `core/permissions.py::ENTITIES` — là `document_book`,
     #  KHÔNG phải `doc_book`. Gõ sai thì `require("document_book", "read")` ở
     #  `book_controller` không thấy dòng nào, văn thư ăn 403 lúc mở màn Tạo văn
-    #  bản và ô «Vào sổ» chỉ còn mỗi mục "Không vào sổ" — hỏng đúng việc chính
+    #  bản và ô "Vào sổ" chỉ còn mỗi mục "Không vào sổ" — hỏng đúng việc chính
     #  của họ mà không có câu báo nào.
     "document_book": (["read"], "all"),
     "approval_flow": (["read"], "all"),

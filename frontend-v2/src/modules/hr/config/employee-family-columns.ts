@@ -3,10 +3,10 @@ import type { EmployeeFamily } from '../types/employee'
 import type { ChangeRequestFamilyRow } from '../types/employee-change-request'
 
 /**
- * Cột của bảng «Thành viên hộ gia đình» (kê khai BHXH).
+ * Cột của bảng "Thành viên hộ gia đình" (kê khai BHXH).
  *
- * Dùng chung cho tab «Giấy tờ & BHXH» của hồ sơ nhân sự, tab «Hộ gia đình» trong hộp «Đề nghị
- * sửa thông tin» ở Trang cá nhân (duoc-CR-676), bảng so sánh ở màn duyệt và bản in phiếu — cùng
+ * Dùng chung cho tab "Giấy tờ & BHXH" của hồ sơ nhân sự, tab "Hộ gia đình" trong hộp "Đề nghị
+ * sửa thông tin" ở Trang cá nhân (duoc-CR-676), bảng so sánh ở màn duyệt và bản in phiếu — cùng
  * lẽ với `employee-contact-columns.ts`: thêm cột một nơi mà quên nơi kia thì nhân viên khai xong,
  * phòng Nhân sự mở ra lại thiếu ô.
  */

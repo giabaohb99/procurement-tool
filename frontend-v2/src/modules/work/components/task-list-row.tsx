@@ -35,10 +35,10 @@ export interface TaskRowActions {
   onRename: (taskId: number, title: string) => void
   onSetAssignees: (taskId: number, picIds: number[]) => void
   onSetDue: (taskId: number, dueDate: string) => void
-  /** Ngày BẮT ĐẦU — cột `start` của bộ «Tùy chỉnh», cũng là mép trái thanh Gantt. */
+  /** Ngày BẮT ĐẦU — cột `start` của bộ "Tùy chỉnh", cũng là mép trái thanh Gantt. */
   onSetStart: (taskId: number, startDate: string) => void
   /**
-   * Đặt trạng thái BẤT KỲ (kể cả «Đã hủy») — khác `onToggleDone` chỉ lật hai
+   * Đặt trạng thái BẤT KỲ (kể cả "Đã hủy") — khác `onToggleDone` chỉ lật hai
    * chiều xong/chưa xong bằng ô tick.
    */
   onSetStatus: (taskId: number, status: number) => void
@@ -65,7 +65,7 @@ interface TaskListRowProps extends TaskRowActions {
    */
   subtaskGroup?: { parentId: number; siblingIds: number[] }
   /**
-   * Cho kéo đổi thứ tự / đổi cột. TẮT khi đang sắp theo tiêu chí khác «Tay»
+   * Cho kéo đổi thứ tự / đổi cột. TẮT khi đang sắp theo tiêu chí khác "Tay"
    * (§3.4) — thả xong mà danh sách tự xếp lại thì người dùng tưởng lỗi.
    */
   draggable?: boolean

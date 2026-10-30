@@ -96,9 +96,9 @@ def _runner_guard(db, task: AgentTask | None, *, deploy: bool = False) -> dict |
         return None
     me = runners.authenticate(db, settings.AGENT_RUNNER_NAME, settings.AGENT_RUNNER_TOKEN)
     if me is None:
-        reason = f"máy «{settings.AGENT_RUNNER_NAME}» không có trong sổ máy hoặc đã bị gỡ"
+        reason = f"máy **{settings.AGENT_RUNNER_NAME}** không có trong sổ máy hoặc đã bị gỡ"
     elif deploy and not me.can_deploy:
-        reason = f"máy «{me.name}» không được deploy dev (đại ca nhắn «cho máy {me.name} được deploy» để mở)"
+        reason = f"máy **{me.name}** không được deploy dev (đại ca nhắn **cho máy {me.name} được deploy** để mở)"
     else:
         return None
     log.warning("agent_hub: từ chối việc: %s", reason)
@@ -110,7 +110,7 @@ def _runner_guard(db, task: AgentTask | None, *, deploy: bool = False) -> dict |
 
 
 def _start_heartbeat() -> None:
-    """Máy sửa mã ghi «tôi còn sống» mỗi 30 giây (ai-CR-054). Chỉ chạy khi có tên máy."""
+    """Máy sửa mã ghi "tôi còn sống" mỗi 30 giây (ai-CR-054). Chỉ chạy khi có tên máy."""
     import threading
     import time
 
@@ -122,7 +122,7 @@ def _start_heartbeat() -> None:
             try:
                 if runners.beat(db, settings.AGENT_RUNNER_NAME, settings.AGENT_RUNNER_TOKEN,
                                 version=runners.version_tag()) is None:
-                    log.warning("agent_hub: nhịp tim bị từ chối — máy «%s» chưa đăng ký hoặc đã gỡ",
+                    log.warning("agent_hub: nhịp tim bị từ chối — máy **%s** chưa đăng ký hoặc đã gỡ",
                                 settings.AGENT_RUNNER_NAME)
                 else:
                     #  ai-CR-124: lệch bản với bot quá 5 phút mà đang rảnh thì tự kéo mã khớp bot rồi khởi động lại.
@@ -149,7 +149,7 @@ try:
             runner_update.mark_busy(False)     # khởi động lại giữa chừng thì dấu cũ không còn đúng
             _start_heartbeat()
 
-    #  ai-CR-124: tiến trình con làm vé đánh dấu «đang bận» trên đĩa — nhịp tim ở tiến trình chính không tự cập nhật giữa
+    #  ai-CR-124: tiến trình con làm vé đánh dấu "đang bận" trên đĩa — nhịp tim ở tiến trình chính không tự cập nhật giữa
     #  lúc máy đang sửa mã.
     @task_prerun.connect
     def _on_task_start(**_kw) -> None:
@@ -625,7 +625,7 @@ def forward_bells_task() -> dict:
 
 @celery_app.task(name="agent.heartbeat")
 def heartbeat_task() -> dict:
-    """Vòng beat mỗi phút (ai-CR-021): nhắn / cập nhật tin «em vẫn đang làm» cho việc chạy lâu."""
+    """Vòng beat mỗi phút (ai-CR-021): nhắn / cập nhật tin "em vẫn đang làm" cho việc chạy lâu."""
     if (off := _off()) is not None:
         return off
     db = SessionLocal()
@@ -646,7 +646,7 @@ def heartbeat_task() -> dict:
 # Phase 6–7 (ai-CR-068..070): thao tác VPS, chẩn đoán + tự chữa, báo tài nguyên.
 # Ba việc đầu chạy TRONG máy sửa mã có khóa SSH (cờ deploy); hai vòng beat cuối chạy ở worker của bot.
 # `acks_late=False` cho cả ba việc runner: thao tác chạy hai lần (máy chết giữa chừng rồi nhận lại) là
-# hai lần sửa dữ liệu — dòng sổ còn «đang chạy» thì đại ca thấy trong «lịch sử thao tác» và quyết.
+# hai lần sửa dữ liệu — dòng sổ còn "đang chạy" thì đại ca thấy trong "lịch sử thao tác" và quyết.
 # ---------------------------------------------------------------------------
 @celery_app.task(name="agent.run_op", time_limit=coder.DEPLOY_TIMEOUT_SEC + 900, acks_late=False)
 def run_op_task(op_id: int) -> dict:
@@ -834,7 +834,7 @@ def meeting_process_task(meeting_id: int) -> dict:
 
 @celery_app.task(name="agent.meeting_drive_scan")
 def meeting_drive_scan_task() -> dict:
-    """ai-CR-116: mỗi 5 phút tìm tệp họp mới trong thư mục «Họp» trên Drive của từng người, có thì HỎI làm biên bản."""
+    """ai-CR-116: mỗi 5 phút tìm tệp họp mới trong thư mục "Họp" trên Drive của từng người, có thì HỎI làm biên bản."""
     if (off := _off()) is not None:
         return off
     from . import meeting_drive

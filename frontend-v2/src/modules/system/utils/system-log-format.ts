@@ -52,7 +52,7 @@ export function formatDuration(ms: number): string {
 }
 
 /**
- * Cột «Đổi»: số TRƯỜNG và số BẢNG.
+ * Cột "Đổi": số TRƯỜNG và số BẢNG.
  *
  * Hai con số nói hai chuyện. `change_count` là số trường — thứ trả lời *"sửa
  * nhiều hay ít"*. `change_table_count` là số bảng — thứ phân biệt một cú sửa ô
@@ -70,7 +70,7 @@ export function changeSummaryText(changeCount: number, tableCount: number): stri
  * khoảng lọc trải qua nhiều ngày.
  *
  * Kèm ngày khi cần là bắt buộc chứ không phải cho đẹp: lọc ba ngày mà trục X chỉ
- * có giờ thì ba cột «10:00» đứng cạnh nhau, và đỉnh lỗi lúc 10 giờ **ngày nào**
+ * có giờ thì ba cột "10:00" đứng cạnh nhau, và đỉnh lỗi lúc 10 giờ **ngày nào**
  * là thông tin duy nhất người ta đang đi tìm.
  */
 export function formatHourLabel(hour: string, withDay = false): string {
@@ -90,7 +90,7 @@ export function spansMultipleDays(from: string, to: string): boolean {
  * Khoảng mặc định lúc mở màn: HÔM NAY.
  *
  * Giữ song song với `default_range()` của backend — **cả hai đầu cùng một ngày**.
- * Trả thêm một ngày ở đầu «Đến» là mở thành hai ngày, vì backend tự kéo ô đó tới
+ * Trả thêm một ngày ở đầu "Đến" là mở thành hai ngày, vì backend tự kéo ô đó tới
  * 23:59:59 khi nó chỉ có ngày.
  *
  * Nhận `now` để bài kiểm khỏi phụ thuộc "hôm nay".
@@ -158,7 +158,7 @@ export function httpMethodTone(method: string): StatusTone {
  * `(text ?? '').trim()`: lượt `GET` không có thân nên `null` lọt qua, còn lượt
  * `POST`/`PATCH` nào có thân cũng ném *"(intermediate value).trim is not a
  * function"* — và vì ném lúc render nên **cả trang** rơi vào màn báo lỗi chứ
- * không riêng tab «Request» (lỗi thật, bắt được 22/09/2026 ở
+ * không riêng tab "Request" (lỗi thật, bắt được 22/09/2026 ở
  * `PATCH /api/dossiers/applicable/36/progress`).
  *
  * Nhận `unknown` là cố ý: đây là dữ liệu NGOÀI luồng gõ kiểu (backend không có
@@ -182,7 +182,7 @@ export function logBodyText(value: unknown): string {
 }
 
 /**
- * Năm phương thức bày trên ô lọc «Phương thức» (bao-CR-582) — đúng năm thứ
+ * Năm phương thức bày trên ô lọc "Phương thức" (bao-CR-582) — đúng năm thứ
  * người đi tra hỏi tới. HEAD/OPTIONS hiếm gặp nên không chiếm chỗ trong danh
  * sách; đường API vẫn lọc được chúng nếu cần.
  */

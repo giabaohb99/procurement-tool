@@ -3,10 +3,10 @@
 //
 // bao-CR-541 (đại ca chốt 01/10/2026): trùng thì BỎ QUA — dòng giống hệt một dòng đã có trong
 // bảng giá hoặc lặp lại trong cùng tệp không được ghi; không xóa, không ghi đè dòng cũ nào nữa
-// (bỏ luật «thay theo khoảng ngày»). Dòng mới trùng cột nhận diện mà khác giá vẫn thêm, chỉ đếm
-// «nghi sửa giá». Bản v2: `customs-import-dialog.tsx` — giữ hai bản nói cùng một luật.
+// (bỏ luật "thay theo khoảng ngày"). Dòng mới trùng cột nhận diện mà khác giá vẫn thêm, chỉ đếm
+// "nghi sửa giá". Bản v2: `customs-import-dialog.tsx` — giữ hai bản nói cùng một luật.
 //
-// bao-CR-608 (đại ca 07/10/2026): cột «ID» (tùy chọn) có thật → GHI ĐÈ đúng dòng đó; cột «Thao tác»
+// bao-CR-608 (đại ca 07/10/2026): cột "ID" (tùy chọn) có thật → GHI ĐÈ đúng dòng đó; cột "Thao tác"
 // = xóa → XÓA dòng có ID đó. Lô chỉ ghi đè / chỉ xóa cũng là lô có việc để áp dụng.
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../api/client'
@@ -129,7 +129,7 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
           <p style={{ fontSize: 12, color: 'var(--muted)' }}>
             Cột <b>ID</b> (tùy chọn): ô ghi ID của một dòng đang có thì dòng đó bị <b>ghi đè</b> toàn bộ bằng dữ liệu
             trong tệp; ID không có thì dòng được thêm mới như thường; ô trống thì như cũ. Cột <b>Thao tác</b> (tùy chọn,
-            nhận cả tiêu đề «Action», «Hành động»): ghi <b>xóa</b> / <b>delete</b> thì <b>xóa</b> dòng có ID đó — dòng xóa
+            nhận cả tiêu đề <strong>Action</strong>, <strong>Hành động</strong>): ghi <b>xóa</b> / <b>delete</b> thì <b>xóa</b> dòng có ID đó — dòng xóa
             chỉ cần ô ID. Excel xuất từ màn này có sẵn cột ID ở đầu và cột Thao tác trống ở cuối: xuất → sửa → nạp lại.
             Hoàn tác lô trả lại đủ dòng đã ghi đè / xóa.
           </p>
@@ -161,7 +161,7 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
               borderRadius: 8, padding: '8px 12px', fontSize: 13 }}>
               <i className="ti ti-alert-triangle" /> <b>{suspect} dòng mới</b> trùng ngày, doanh nghiệp, đối tác, mã HS,
               số thứ tự và tên hàng với một dòng đã có nhưng khác giá hoặc lượng — vẫn được thêm (thường là lô hàng
-              khác). Nếu là nguồn sửa số liệu thì hoàn tác lô cũ rồi nạp lại; xem ghi chú «nghi sửa giá» ở Nhật ký lô.
+              khác). Nếu là nguồn sửa số liệu thì hoàn tác lô cũ rồi nạp lại; xem ghi chú <strong>nghi sửa giá</strong> ở Nhật ký lô.
             </div>
           )}
           {stage === 'dry' && nothingNew && (

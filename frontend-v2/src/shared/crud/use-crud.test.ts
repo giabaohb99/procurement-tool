@@ -59,7 +59,7 @@ describe('khóa cache lớp CRUD', () => {
 
 /**
  * Regression (HR Lịch làm việc): Gán lịch đổi `assignment_count` của Mẫu lịch, mà
- * hook chỉ dọn cache của CHÍNH apiPath nên cảnh báo «Mẫu đang gán n nơi» cũ rích.
+ * hook chỉ dọn cache của CHÍNH apiPath nên cảnh báo "Mẫu đang gán n nơi" cũ rích.
  */
 describe('invalidateCrudRoots', () => {
   const own = '/api/work-schedule-assignments'

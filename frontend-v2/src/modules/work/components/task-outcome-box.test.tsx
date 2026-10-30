@@ -31,14 +31,14 @@ beforeEach(() => {
 })
 
 describe('TaskOutcomeBox — duoc-CR-656', () => {
-  it('«Đạt» gọi API ngay, không hỏi lại', async () => {
+  it('"Đạt" gọi API ngay, không hỏi lại', async () => {
     renderBox()
     await userEvent.click(screen.getByRole('button', { name: 'Đạt' }))
     await waitFor(() => expect(workTaskTypeApi.setOutcome).toHaveBeenCalledWith(5, 1))
     expect(confirmMock).not.toHaveBeenCalled()
   })
 
-  it('«Phải làm lại» hỏi xác nhận; từ chối thì không gọi API', async () => {
+  it('"Phải làm lại" hỏi xác nhận; từ chối thì không gọi API', async () => {
     confirmMock.mockResolvedValueOnce(false)
     renderBox()
     await userEvent.click(screen.getByRole('button', { name: 'Phải làm lại' }))

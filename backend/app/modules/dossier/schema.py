@@ -2,8 +2,8 @@
 
 ⚠️ Mọi ô chuỗi khai `max_length` khớp ĐÚNG `String(n)` ở model, mọi ô số khai
 dải, mọi ô ngày khai dải NĂM. Bài học duoc-CR-316: thiếu khai thì chuỗi dài /
-ngày năm 0001 đi thẳng xuống MySQL và người dùng nhận «mã sự cố» thay vì câu
-*«tối đa n ký tự»*.
+ngày năm 0001 đi thẳng xuống MySQL và người dùng nhận "mã sự cố" thay vì câu
+*"tối đa n ký tự"*.
 
 ⚠️ **SQLite của bộ test KHÔNG ép độ dài `VARCHAR`**, nên bài kiểm nào ghi xuống
 DB rồi khẳng định là xanh giả — phải kiểm thẳng ở tầng schema
@@ -261,7 +261,7 @@ class DossierResponse(BaseModel):
     expiry_state: int = 0
     expiry_state_label: str = ""
     #  Số ngày còn lại; âm = đã quá hạn; `None` = vô thời hạn (KHÁC `0`, vốn đọc
-    #  ra «hết hạn hôm nay»).
+    #  ra "hết hạn hôm nay").
     expiry_days: int | None = None
 
     model_config = {"from_attributes": True, "populate_by_name": True}

@@ -20,8 +20,8 @@ import { getChannelTone } from '../utils/chat-group-format'
 /**
  * NGƯỜI DÙNG BOT (ai-CR-131) — `/assistant/bot-users`.
  *
- * Đại ca 08/10: «họ có quyền thì mới hỏi được, nhưng chưa biết làm sao check quyền của họ». Màn này liệt kê mọi chat
- * Telegram / Zalo đang nối với một tài khoản ERP, và tài khoản đó CÒN quyền «Trợ lý AI» không — thiếu quyền thì bot
+ * Đại ca 08/10: "họ có quyền thì mới hỏi được, nhưng chưa biết làm sao check quyền của họ". Màn này liệt kê mọi chat
+ * Telegram / Zalo đang nối với một tài khoản ERP, và tài khoản đó CÒN quyền "Trợ lý AI" không — thiếu quyền thì bot
  * không trả lời dù vẫn nối. Cấp / thu quyền vẫn ở màn Phân quyền tài khoản; ở đây chỉ xem và gỡ liên kết.
  */
 export function BotUserListPage() {
@@ -63,7 +63,7 @@ export function BotUserListPage() {
             'rounded-full px-2 py-0.5 text-xs font-medium',
             r.has_permission ? TONE_CLASS.done : TONE_CLASS.danger,
           )}
-          title={r.has_permission ? undefined : 'Bot không trả lời người này cho tới khi được cấp quyền «Trợ lý AI»'}
+          title={r.has_permission ? undefined : 'Bot không trả lời người này cho tới khi được cấp quyền "Trợ lý AI"'}
         >
           {r.has_permission ? 'Có' : 'Thiếu — bot không trả lời'}
         </span>
@@ -105,7 +105,7 @@ export function BotUserListPage() {
     <PageContainer fill>
       <PageHeader
         title="Người dùng bot"
-        description="Ai đang nối Telegram / Zalo với tài khoản ERP. Dùng bot cần quyền «Trợ lý AI» — cấp ở màn Phân quyền tài khoản"
+        description='Ai đang nối Telegram / Zalo với tài khoản ERP. Dùng bot cần quyền "Trợ lý AI" — cấp ở màn Phân quyền tài khoản'
         actions={
           <Button variant="outline" size="sm" onClick={() => refetch()} title="Làm mới danh sách">
             <RotateCw className="mr-1.5 size-4" /> Làm mới
@@ -121,7 +121,7 @@ export function BotUserListPage() {
           isLoading={isLoading}
           isError={isError}
           onRefresh={() => refetch()}
-          emptyMessage="Chưa ai nối bot. Mỗi người lấy mã ở Trang cá nhân rồi nhắn bot «/dangnhap <mã>»."
+          emptyMessage='Chưa ai nối bot. Mỗi người lấy mã ở Trang cá nhân rồi nhắn bot "/dangnhap <mã>".'
           storageKey="assistant.bot_users"
         />
       </Card>

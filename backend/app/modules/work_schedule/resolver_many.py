@@ -1,4 +1,4 @@
-"""BẢN GOM của bộ phân giải lịch — cho màn «Ai làm / ai nghỉ» (một trang nhân sự × nhiều ngày).
+"""BẢN GOM của bộ phân giải lịch — cho màn "Ai làm / ai nghỉ" (một trang nhân sự × nhiều ngày).
 
 Tách khỏi `resolver.py` cho gọn tệp; dùng lại đúng `_pick` / `_candidate_pairs` / `_load_days`
 của bản một người nên hai bản không thể lệch luật thắng.

@@ -82,7 +82,7 @@ def applies_to_me(db: Session = Depends(get_db), user=Depends(get_current_user))
     #  `document_ids_for` chỉ đọc `tab_document_scope` — nó trả lời "phạm vi áp
     #  dụng có bao gồm tôi không". Nó KHÔNG biết tới `tab_document_access`, nơi
     #  chứa các dòng chia sẻ / CẤM đích danh. Nên người bị cấm đọc một văn bản
-    #  vẫn thấy nó nằm trong «Áp dụng cho tôi», bấm vào thì nhận 404 (`can()`
+    #  vẫn thấy nó nằm trong "Áp dụng cho tôi", bấm vào thì nhận 404 (`can()`
     #  xét dòng cấm và từ chối).
     #
     #  Đúng cái bẫy đã ghi ở `doc/erp/van-thu/06-kich-ban-test.md` §4.6: danh

@@ -87,7 +87,7 @@ describe('EmployeeWorkHistoryMainSection', () => {
     expect(screen.getByTestId('where')).toHaveTextContent('whView=timeline')
   })
 
-  it('dòng thời gian sắp mới nhất trước, có «Hiện tại»', async () => {
+  it('dòng thời gian sắp mới nhất trước, có "Hiện tại"', async () => {
     renderSection([
       row({ id: 1, from_date: '2020-01-01', is_current: false }),
       row({ id: 2, from_date: '2026-06-01', is_current: true }),
@@ -122,7 +122,7 @@ describe('EmployeeWorkHistoryMainSection', () => {
     expect(actions.onEdit).toHaveBeenCalledWith(target)
   })
 
-  it('onAddClick bỏ trống → KHÔNG nút «Thêm dòng»; truyền vào → có nút và gọi đúng handler', async () => {
+  it('onAddClick bỏ trống → KHÔNG nút "Thêm dòng"; truyền vào → có nút và gọi đúng handler', async () => {
     const onAddClick = vi.fn()
     renderSection([row({ id: 1 })], { onAddClick })
 
@@ -136,12 +136,12 @@ describe('EmployeeWorkHistoryMainSection', () => {
     expect(screen.queryByRole('button', { name: /Thêm dòng/ })).not.toBeInTheDocument()
   })
 
-  it('danh sách rỗng + onCreateFromProfileClick → hiện nút «Tạo dòng đầu từ hồ sơ»', () => {
+  it('danh sách rỗng + onCreateFromProfileClick → hiện nút "Tạo dòng đầu từ hồ sơ"', () => {
     renderSection([], { onCreateFromProfileClick: vi.fn() })
     expect(screen.getByRole('button', { name: 'Tạo dòng đầu từ hồ sơ' })).toBeInTheDocument()
   })
 
-  it('CÓ dòng rồi (không rỗng) → KHÔNG hiện nút «Tạo dòng đầu từ hồ sơ» dù có handler', () => {
+  it('CÓ dòng rồi (không rỗng) → KHÔNG hiện nút "Tạo dòng đầu từ hồ sơ" dù có handler', () => {
     renderSection([row({ id: 1 })], { onCreateFromProfileClick: vi.fn() })
     expect(screen.queryByRole('button', { name: 'Tạo dòng đầu từ hồ sơ' })).not.toBeInTheDocument()
   })
@@ -160,8 +160,8 @@ describe('EmployeeWorkHistoryMainSection', () => {
 
 /**
  * Gộp hàng điều khiển thành MỘT HÀNG (đại ca chê hai hàng rời rạc, 03/10/2026):
- * tiêu đề + toggle đi qua `toolbar` của `DataTable`, «Thêm dòng» đi qua
- * `toolbarEnd` (sau menu «Cột»), Tải lại tự dựng lại ở chế độ Dòng thời gian.
+ * tiêu đề + toggle đi qua `toolbar` của `DataTable`, "Thêm dòng" đi qua
+ * `toolbarEnd` (sau menu "Cột"), Tải lại tự dựng lại ở chế độ Dòng thời gian.
  */
 describe('EmployeeWorkHistoryMainSection — gộp thanh điều khiển một hàng', () => {
   it('chế độ Bảng: có Tải lại + Cột + Thêm dòng, Thêm dòng đứng SAU Cột, không có Xóa lọc', () => {
@@ -169,7 +169,7 @@ describe('EmployeeWorkHistoryMainSection — gộp thanh điều khiển một h
 
     expect(screen.getByRole('button', { name: 'Tải lại dữ liệu' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cột' })).toBeInTheDocument()
-    //  «Xóa lọc» chỉ nên hiện khi THẬT SỰ có bộ lọc — khu này không có bộ lọc
+    //  "Xóa lọc" chỉ nên hiện khi THẬT SỰ có bộ lọc — khu này không có bộ lọc
     //  nào, chỉ có `whView` (không phải lọc), nên dù `toolbar` nay đã khai
     //  (trước đây trống, chưa từng gặp nhánh này) thì nút đó vẫn phải ẩn.
     expect(screen.queryByRole('button', { name: 'Xóa lọc' })).not.toBeInTheDocument()

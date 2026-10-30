@@ -43,10 +43,10 @@ class Settings(BaseSettings):
     
     GOOGLE_CLIENT_ID: str = ""
     # ai-CR-064 (M-06): bí mật của cùng OAuth client, để nối Google cá nhân (Lịch + Drive) từng người.
-    # Ứng dụng phải ở trạng thái «In production» trên Google Cloud Console (Testing thì token chết sau 7 ngày).
+    # Ứng dụng phải ở trạng thái "In production" trên Google Cloud Console (Testing thì token chết sau 7 ngày).
     GOOGLE_CLIENT_SECRET: str = ""
-    # ai-CR-083: OAuth client RIÊNG cho «Nối Google» của Trợ lý (đại ca 05/10: dùng client mới). Trống thì dùng lại
-    # GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET như ai-CR-064. Tách ra để không đụng «Đăng nhập bằng Google».
+    # ai-CR-083: OAuth client RIÊNG cho "Nối Google" của Trợ lý (đại ca 05/10: dùng client mới). Trống thì dùng lại
+    # GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET như ai-CR-064. Tách ra để không đụng "Đăng nhập bằng Google".
     AGENT_GOOGLE_CLIENT_ID: str = ""
     AGENT_GOOGLE_CLIENT_SECRET: str = ""
 
@@ -111,7 +111,7 @@ class Settings(BaseSettings):
     # duyệt chung). Rỗng = không bỏ qua phiếu nào, luồng y như công tắc trên. Giá trị thật ở màn
     # Cấu hình hệ thống (key `pr_dispatch_skip_rules`).
     PR_DISPATCH_SKIP_RULES: str = ""
-    # bao-CR-524: MÃ phòng thu mua mặc định (thay phòng ảo «Thu mua chung», id 0). Tra mã → id ở
+    # bao-CR-524: MÃ phòng thu mua mặc định (thay phòng ảo "Thu mua chung", id 0). Tra mã → id ở
     # `core/central_purchasing.py`; giá trị thật ở màn Cấu hình hệ thống (key
     # `central_purchasing_dept_code`). Không gõ cứng id vì id mỗi môi trường một khác.
     CENTRAL_PURCHASING_DEPT_CODE: str = "PBA017"
@@ -155,6 +155,11 @@ class Settings(BaseSettings):
 
     # --- Dọn dẹp ---
     NOTIFICATION_KEEP_DAYS: int = 10   # thông báo cũ hơn N ngày sẽ tự xóa
+    # bao-CR-698: nhật ký TỪNG DÒNG của lô hải quan (Thêm mới / Đã có / Trùng) cũ hơn N ngày tự dọn hằng đêm;
+    # 0 = tắt. Dòng Lỗi / Ghi đè / Xóa / Bỏ qua và dòng nghi sửa giá giữ vĩnh viễn.
+    CUSTOMS_ROW_LOG_KEEP_DAYS: int = 7     # đại ca chốt 30/10
+    # bao-CR-699: gộp dòng hàng hải quan trùng (cùng tờ khai + giá + lượng, không xung đột) ngày 1 và 16 lúc 03:30.
+    CUSTOMS_LINE_MERGE_ENABLED: bool = True
 
     # --- Trợ lý AI (Phase 0: nền lớp provider) ---
     # Tắt mặc định — bật ở .env môi trường muốn dùng. Off thì endpoint /api/assistant trả 403.
@@ -191,21 +196,21 @@ class Settings(BaseSettings):
     AI_COMPACT_DROP_PCT: int = 90
     AI_COMPACT_KEEP_TURNS: int = 3
     AI_COMPACT_TIMEOUT_SEC: int = 25
-    # Telegram / Zalo không có «cuộc hội thoại» như web: tin cách tin trước quá chừng này giờ là cuộc mới (bỏ tóm tắt cũ).
+    # Telegram / Zalo không có "cuộc hội thoại" như web: tin cách tin trước quá chừng này giờ là cuộc mới (bỏ tóm tắt cũ).
     AI_COMPACT_SESSION_HOURS: int = 12
 
     # --- Hiểu ý định + tự ghi nhớ (ai-CR-137, phase 13 doc/agent-hub/17) ---
     # Sau mỗi buổi chat RIÊNG đã tóm tắt, một lượt model rẻ rút điều bền về người đó; nhắc lại ≥ 3 lần trên ≥ 2 ngày mới
-    # ghi vào lõi sổ nhớ (đuôi «tự rút»). Tắt thì sổ ý định vẫn ghi, chỉ thôi rút.
+    # ghi vào lõi sổ nhớ (đuôi "tự rút"). Tắt thì sổ ý định vẫn ghi, chỉ thôi rút.
     AGENT_AUTO_MEMORY_ENABLED: bool = True
-    # kh-AI1-3: kế hoạch AI soạn phải nằm chờ duyệt trên màn «Duyệt kế hoạch AI» rồi mới tạo việc. TẮT tới khi màn đó lên
-    # (Agent 3); tắt thì «tạo» dựng bảng Dự án ngay như bao-CR-616 và ghi đề xuất trạng thái «Tạo thẳng».
+    # kh-AI1-3: kế hoạch AI soạn phải nằm chờ duyệt trên màn "Duyệt kế hoạch AI" rồi mới tạo việc. TẮT tới khi màn đó lên
+    # (Agent 3); tắt thì "tạo" dựng bảng Dự án ngay như bao-CR-616 và ghi đề xuất trạng thái "Tạo thẳng".
     AI_PLAN_REVIEW_ENABLED: bool = False
-    # ai-CR-229 (prod đợt hai 19/10: «tắt mọi vòng tốn tiền model»): cờ riêng cho ba vòng chạy nền gọi model. Mặc định BẬT
+    # ai-CR-229 (prod đợt hai 19/10: "tắt mọi vòng tốn tiền model"): cờ riêng cho ba vòng chạy nền gọi model. Mặc định BẬT
     # để dev giữ nguyên; prod đặt false.
     #   AGENT_BRIEFS_ENABLED          — bản tin / điểm báo theo giờ (agent-briefs-due) + nhắc trước họp (agent-meeting-reminders)
     #   AGENT_SESSION_SUMMARY_ENABLED — tóm tắt cuối buổi chat vào ghi chú (agent-session-summary; kéo theo tự rút ghi nhớ)
-    #   AGENT_TRIAGE_ENABLED          — gom vé sửa mã / phiếu hỗ trợ giao bot / việc «Trợ lý thiếu chức năng»
+    #   AGENT_TRIAGE_ENABLED          — gom vé sửa mã / phiếu hỗ trợ giao bot / việc "Trợ lý thiếu chức năng"
     #                                   (agent-triage-inbox, agent-pull-tickets, agent-learning-tick)
     AGENT_BRIEFS_ENABLED: bool = True
     AGENT_SESSION_SUMMARY_ENABLED: bool = True
@@ -333,23 +338,23 @@ class Settings(BaseSettings):
     # theo, mà lúc đó không ai biết vì sao.
     AGENT_GEMINI_API_KEY: str = ""
     AGENT_MANAGER_MODEL: str = "gemini-flash-latest"
-    #  Đại ca 15/10 (qua Agent 1): «cho agent 4 sửa nghiên cứu sâu dùng Claude» — GIỮ thứ tự sổ khóa (deepseek đứng đầu), nên
+    #  Đại ca 15/10 (qua Agent 1): "cho agent 4 sửa nghiên cứu sâu dùng Claude" — GIỮ thứ tự sổ khóa (deepseek đứng đầu), nên
     #  mọi lượt model của nghiên cứu sâu ưu tiên khóa họ claude với ĐÚNG model này (không theo luồng — luồng thường đang xin
     #  Haiku), dự phòng deepseek; Kimi không nằm trong dự phòng (~24 USD / 1 triệu token vào qua trạm).
     AGENT_DEEP_RESEARCH_PROVIDERS: str = "claude,deepseek"
     AGENT_DEEP_RESEARCH_MODEL: str = "claude-sonnet-5-5"
-    #  ai-CR-194: tin «Em nhận rồi, đang xử lý…» gửi NGAY khi nhận tin chữ, xóa khi đã trả lời.
+    #  ai-CR-194: tin "Em nhận rồi, đang xử lý…" gửi NGAY khi nhận tin chữ, xóa khi đã trả lời.
     AGENT_ACK_ENABLED: bool = True
-    #  ai-CR-198 (doc/agent-hub/20, đại ca 14/10: «đập đi xây lại… ổn định và con người hơn»): LÕI HỘI THOẠI MỚI — tin chữ
+    #  ai-CR-198 (doc/agent-hub/20, đại ca 14/10: "đập đi xây lại… ổn định và con người hơn"): LÕI HỘI THOẠI MỚI — tin chữ
     #  đi vào một vòng tác tử (model + công cụ nhiều vòng). ai-CR-206 (đại ca 15/10): bỏ đường cũ, bỏ cờ
     #  AGENT_CORE_V2_ENABLED / AGENT_CORE_V2_CHATS / AGENT_INTENT_* — mọi chat đi lõi này (biến cũ trong .env bị bỏ qua).
     AGENT_CORE_V2_HISTORY_TURNS: int = 40
-    #  ai-CR-199 (đại ca 14/10: «cần một chỗ xác nhận nội dung là gì mà gọi model tương ứng»): bảng phân luồng model —
-    #  luồng=hãng ưu tiên (thứ tự), ngăn bằng «;». Chọn luồng bằng LUẬT (không gọi model). Hãng: deepseek · kimi · claude
+    #  ai-CR-199 (đại ca 14/10: "cần một chỗ xác nhận nội dung là gì mà gọi model tương ứng"): bảng phân luồng model —
+    #  luồng=hãng ưu tiên (thứ tự), ngăn bằng ";". Chọn luồng bằng LUẬT (không gọi model). Hãng: deepseek · kimi · claude
     #  · openai · gemini · openai_compat. Khóa hãng đó hỏng / không có thì tự rơi về các khóa còn lại theo thứ tự màn Khóa AI.
-    #  14/10 16:55 đo lại: Kimi K3 qua trạm KHÔNG gọi công cụ (nói «đã soạn nháp» mà không soạn), Claude gọi đúng
+    #  14/10 16:55 đo lại: Kimi K3 qua trạm KHÔNG gọi công cụ (nói "đã soạn nháp" mà không soạn), Claude gọi đúng
     #  draft_work_task / update_draft → luồng thường và việc nặng dùng Claude; Kimi / DeepSeek chỉ cho câu không cần công cụ.
-    #  Đợt nén 15/10 (ví trạm trừ 27 USD / ngày; đại ca chốt «Haiku thường, Sonnet việc nặng»): claude đứng đầu mọi luồng,
+    #  Đợt nén 15/10 (ví trạm trừ 27 USD / ngày; đại ca chốt "Haiku thường, Sonnet việc nặng"): claude đứng đầu mọi luồng,
     #  model Claude theo luồng ở AGENT_CORE_V2_LANE_MODELS (Haiku 5.5 vào 0,2 / ra 1 USD mỗi triệu — rẻ hơn DeepSeek
     #  v4.1 flash qua trạm và rẻ hơn Sonnet 5.5 ~20 lần).
     AGENT_CORE_V2_ROUTES: str = ("xa_giao=claude,deepseek,kimi;tra_nhanh=claude,deepseek,kimi;thuong=claude,deepseek,kimi;"
@@ -358,15 +363,15 @@ class Settings(BaseSettings):
     #  claude-haiku-5-5). Luồng không khai = model của khóa (việc nặng giữ Sonnet).
     AGENT_CORE_V2_LANE_MODELS: str = "xa_giao=claude-haiku-5-5;tra_nhanh=claude-haiku-5-5;thuong=claude-haiku-5-5"
     # ai-CR-145: bước LẬP KẾ HOẠCH (bot sửa mã) ưu tiên khóa của các hãng này trong chuỗi khóa của đại ca (thứ tự = ưu
-    # tiên). Không có khóa hãng đó thì dùng chuỗi như thường. Model lấy theo khóa (ô «Model» ở Khóa AI) hoặc
+    # tiên). Không có khóa hãng đó thì dùng chuỗi như thường. Model lấy theo khóa (ô "Model" ở Khóa AI) hoặc
     # AGENT_PLAN_MODEL khi khóa để trống.
-    # ai-CR-149 (đại ca 09/10: «kế hoạch code thì thằng Claude CLI ở local mới biết … làm gọn lại, hỏi xác nhận vài câu okee
-    # thì làm thôi»): BỎ bước model quản lý viết kế hoạch. Rà soát (Claude Code, chỉ đọc) → thẻ xác nhận (kèm câu hỏi của
-    # rà soát nếu có) → «ok» → Claude Code tự lập kế hoạch và sửa. Tắt = dây chuyền cũ.
+    # ai-CR-149 (đại ca 09/10: "kế hoạch code thì thằng Claude CLI ở local mới biết … làm gọn lại, hỏi xác nhận vài câu okee
+    # thì làm thôi"): BỎ bước model quản lý viết kế hoạch. Rà soát (Claude Code, chỉ đọc) → thẻ xác nhận (kèm câu hỏi của
+    # rà soát nếu có) → "ok" → Claude Code tự lập kế hoạch và sửa. Tắt = dây chuyền cũ.
     AGENT_CODE_FLOW_SIMPLE: bool = True
-    # ai-CR-154 — đại ca 09/10/2026: «em cảnh báo trước mà anh vẫn chấp nhận làm thì có thể đẩy code luôn». Dây chuyền
-    # gọn: «ok» trên thẻ xác nhận (thẻ đã nói trước rủi ro + việc sẽ tự đẩy) là đồng ý luôn bước gộp erp-v2 + deploy dev
-    # khi cổng kiểm không đỏ. Tắt = như cũ, sửa xong chờ đại ca nhắn «gộp và deploy dev».
+    # ai-CR-154 — đại ca 09/10/2026: "em cảnh báo trước mà anh vẫn chấp nhận làm thì có thể đẩy code luôn". Dây chuyền
+    # gọn: "ok" trên thẻ xác nhận (thẻ đã nói trước rủi ro + việc sẽ tự đẩy) là đồng ý luôn bước gộp erp-v2 + deploy dev
+    # khi cổng kiểm không đỏ. Tắt = như cũ, sửa xong chờ đại ca nhắn "gộp và deploy dev".
     AGENT_AUTO_DEPLOY_AFTER_OK: bool = True
     # ai-CR-155: bản gộp đụng mã chạy trong bot (agent_hub, assistant, core, migrations_agent, …) thì lượt deploy dev
     # dựng lại luôn stack bot `~/agent-hub` (đích `agent` của deploy.sh). Trước đây chỉ dựng ERP dev — bot tự sửa chính
@@ -390,7 +395,7 @@ class Settings(BaseSettings):
     #  ai-CR-057: 90 → 30. Chùm tin vẫn gom chung (tin sau tới trong 30 giây), nhưng một câu lệnh lẻ
     #  không phải đợi một phút rưỡi mới được đọc.
     #  ai-CR-091: 30 → 10 + gọi vòng gom ngay khi hết khoảng lặng (không chờ nhịp beat mỗi phút). Đại ca 06/10:
-    #  «quy trình phản hồi hơi lâu» — trước đó một câu lệnh lẻ chờ 30–90 giây mới được đọc.
+    #  "quy trình phản hồi hơi lâu" — trước đó một câu lệnh lẻ chờ 30–90 giây mới được đọc.
     AGENT_TRIAGE_DELAY_SEC: int = 10
     # Trần tin nhắn gom trong MỘT lời gọi Gemini. Vượt thì để lượt sau.
     AGENT_TRIAGE_BATCH: int = 20
@@ -431,7 +436,7 @@ class Settings(BaseSettings):
     # đại ca đăng ký bằng câu nhắn). Trống = phase 0/1: bot và runner cùng máy, hàng đợi cũ `agent_code`.
     AGENT_RUNNER_NAME: str = ""
     AGENT_RUNNER_TOKEN: str = ""
-    # Máy «đang bật» = có nhịp tim trong chừng này giây (runner ghi mỗi 30 giây).
+    # Máy "đang bật" = có nhịp tim trong chừng này giây (runner ghi mỗi 30 giây).
     AGENT_RUNNER_ONLINE_SEC: int = 120
     # ai-CR-124: máy sửa mã lệch bản với bot quá 5 phút mà đang rảnh thì tự kéo mã khớp bot (thử lần lượt các nhánh
     # dưới, lấy nhánh băm ra đúng vân tay của bot) rồi khởi động lại. Tắt = báo lệch bản như cũ để người dựng lại tay.
@@ -447,7 +452,7 @@ class Settings(BaseSettings):
     # đúng lúc spawn, để khóa không bao giờ nằm trong đối tượng settings (dump/log/`/hoi`).
     # Cũng không có `AGENT_MAX_CONCURRENT_RUNS`: một việc một lúc do runner chạy `-c 1`.
     # --- Bậc 2, giai đoạn 2a (ai-CR-012): runner đẩy nhánh lên GitHub + mở PR vào nhánh nền ---
-    # TẮT thì nhánh chỉ nằm trong volume runner như GĐ1; thẻ kết quả có nút «Đẩy GitHub + mở PR»
+    # TẮT thì nhánh chỉ nằm trong volume runner như GĐ1; thẻ kết quả có nút "Đẩy GitHub + mở PR"
     # để đẩy tay từng việc. BẬT thì runner tự đẩy + mở PR ngay sau khi commit.
     AGENT_PR_ENABLED: bool = False
     AGENT_GITHUB_REPO: str = "giabaohb99/procurement-tool"
@@ -467,7 +472,7 @@ class Settings(BaseSettings):
     # ai-CR-018: nhánh chạy thật, lượt rà soát so với nhánh nền để biết lỗi đã sửa ở đây chưa gộp.
     AGENT_MAIN_BRANCH: str = "main"
     # ai-CR-027: đại ca 23/09 — thẻ gọn (logic đã sửa, đã kiểm gì, đánh giá), KHÔNG nút dưới tin nhắn,
-    # ra lệnh bằng chữ («gộp AI-0007», «duyệt», «xong»…), không gửi kèm tệp .diff. false = như cũ.
+    # ra lệnh bằng chữ ("gộp AI-0007", "duyệt", "xong"…), không gửi kèm tệp .diff. false = như cũ.
     AGENT_TG_COMPACT: bool = True
     # ai-CR-035: ảnh chụp lỗi đại ca gửi kèm. Poller ghi vào volume `agent_files`, runner đọc
     # (chỉ đọc) và mở cho Claude Code bằng --add-dir. Trần 20 MB là trần tải về của Bot API.
@@ -475,7 +480,7 @@ class Settings(BaseSettings):
     # ai-CR-037: phiếu hỗ trợ ERP làm nguồn việc. Hai cửa, cửa nào trống là tắt cửa đó:
     #  - AGENT_TICKET_ASSIGNEE = email tài khoản ERP của bot: nhóm hỗ trợ GIAO phiếu cho tài khoản
     #    này là bot nhận (cửa chính — có người chủ động chọn);
-    #  - AGENT_TICKET_DEPARTMENTS = danh sách nhãn «Bộ phận / Nhóm», cách nhau dấu phẩy: phiếu MỚI
+    #  - AGENT_TICKET_DEPARTMENTS = danh sách nhãn "Bộ phận / Nhóm", cách nhau dấu phẩy: phiếu MỚI
     #    mang nhãn đó tự vào hàng việc của bot.
     AGENT_TICKET_ASSIGNEE: str = ""
     # ai-CR-038: mỗi người tự đăng nhập ERP trong Telegram bằng mã một lần lấy ở trang cá nhân.
@@ -485,7 +490,7 @@ class Settings(BaseSettings):
     AGENT_LINK_CODE_MINUTES: int = 10
     # Tên bot (không có @) để trang cá nhân dựng link mở thẳng bot; trống thì chỉ hướng dẫn chữ.
     AGENT_TELEGRAM_BOT_USERNAME: str = ""
-    # ai-CR-056: tên bot TỰ XƯNG theo môi trường (máy đại ca «Đậu Đậu», dev «Lạc Lạc»). Tên hiển thị
+    # ai-CR-056: tên bot TỰ XƯNG theo môi trường (máy đại ca "Đậu Đậu", dev "Lạc Lạc"). Tên hiển thị
     # trên Telegram vẫn đổi ở BotFather; đây chỉ là chữ trong câu bot nói và trong lời nhắc model.
     AGENT_BOT_NAME: str = "Đậu Đậu"
     # ai-CR-043: tỷ giá TẠM để báo chi phí bot kèm tiền Việt. Chỉ để đọc cho dễ, không phải số kế toán.
@@ -493,7 +498,7 @@ class Settings(BaseSettings):
     # Khóa Gemini là của từng người, nhưng bot vẫn chặn vòng lặp / spam làm cạn khóa của họ. 0 = không chặn.
     AGENT_USER_DAILY_TURNS: int = 200
     AGENT_USD_VND: int = 26000
-    # ai-CR-049: gốc giao diện ERP chứa phiếu bot tạo (link «Mở phiếu»). Trống = FRONTEND_URL. Stack bot
+    # ai-CR-049: gốc giao diện ERP chứa phiếu bot tạo (link "Mở phiếu"). Trống = FRONTEND_URL. Stack bot
     # local tạo phiếu vào DB riêng nên phải trỏ giao diện của stack đó (agent-erp, cổng 8084).
     AGENT_ERP_URL: str = ""
     AGENT_TICKET_DEPARTMENTS: str = ""
@@ -512,7 +517,7 @@ class Settings(BaseSettings):
     AGENT_MCP_BAD_KEY_PER_IP: int = 30
     AGENT_MCP_LOG_RETENTION_DAYS: int = 180
     # ai-CR-213 (đại ca lo erp_read nặng máy): ngân sách DỮ LIỆU mỗi phút mỗi khóa cho tool đọc danh sách — đủ thì từ
-    # chối kèm lời dặn lọc hẹp, nhật ký ghi «Quá ngân sách dữ liệu». 0 = không chặn.
+    # chối kèm lời dặn lọc hẹp, nhật ký ghi "Quá ngân sách dữ liệu". 0 = không chặn.
     AGENT_MCP_ROW_BUDGET_PER_MIN: int = 3000
     # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =
     # không có; compose của stack bot đặt `/local-docs` cho agent-runner.

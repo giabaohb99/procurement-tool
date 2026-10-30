@@ -67,7 +67,7 @@ def _sequential_nodes(instances: list) -> set[tuple[int, int]]:
 
 def approval_metrics(tasks: list, siblings: list, instances: list, emp_user: dict, utc_lo: datetime,
                      utc_hi: datetime) -> dict[int, Partial]:
-    """Tới lượt → xử lý (giờ lịch). Bước «lần lượt» tạo sẵn việc ở trạng thái chờ nên mốc «tới lượt» của người sau
+    """Tới lượt → xử lý (giờ lịch). Bước "lần lượt" tạo sẵn việc ở trạng thái chờ nên mốc "tới lượt" của người sau
     là lúc người liền trước quyết định (chỉ áp cho bước đọc được là tuần tự trong `flow_snapshot`)."""
     sequential = _sequential_nodes(instances)
     prior: dict[tuple, list] = defaultdict(list)
@@ -162,9 +162,9 @@ def work_task_metrics(work_tasks: list, emp_user: dict, window_end: date) -> dic
         if completed is not None:
             per[uid]["done"] += 1
             #  `completed_at` lưu UTC, `due_date` là ngày VN → đổi sang ngày VN trước khi so (việc xong 00:00–06:59 VN
-            #  ngày D+1 nằm ở ngày D theo UTC nên trước đây bị tính «đúng hạn»).
+            #  ngày D+1 nằm ở ngày D theo UTC nên trước đây bị tính "đúng hạn").
             per[uid]["on_time"] += 1 if (completed + VN_OFFSET).date().isoformat() <= due else 0
-        elif due < window_end.isoformat():   # «quá hạn» tính tại CUỐI cửa sổ (loại trừ), không phải hôm nay → dựng lại tuần cũ ra cùng số
+        elif due < window_end.isoformat():   # "quá hạn" tính tại CUỐI cửa sổ (loại trừ), không phải hôm nay → dựng lại tuần cũ ra cùng số
             per[uid]["overdue"] += 1
     out: dict[int, Partial] = {}
     for uid, s in per.items():

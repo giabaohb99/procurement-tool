@@ -1,18 +1,18 @@
 """Lớp bảo vệ độ dài ô chữ + câu báo lỗi nói thành lời — bao-CR-538 (phần 2, 3, 4).
 
-Sự cố D30D24DF (30/09/2026): lưu phiếu khảo sát, ô «Ghi chú NSPT» dài hơn cột, schema không
-chặn nên xuống tới MySQL mới bị từ chối «Data too long for column 'nspt_note'» → người dùng
-thấy «Hệ thống gặp lỗi không lường trước». Đại ca chốt: phải validate kỹ, KHÔNG để model trả
+Sự cố D30D24DF (30/09/2026): lưu phiếu khảo sát, ô "Ghi chú NSPT" dài hơn cột, schema không
+chặn nên xuống tới MySQL mới bị từ chối "Data too long for column 'nspt_note'" → người dùng
+thấy "Hệ thống gặp lỗi không lường trước". Đại ca chốt: phải validate kỹ, KHÔNG để model trả
 lỗi lên rồi SQL trả lên. Tệp này gom ba lớp:
 
   1. `describe_validation_errors` — biến danh sách lỗi Pydantic (tiếng Anh) thành MỘT câu
-     tiếng Việt: «Ô "Mục đích" tối đa 355 ký tự (đang nhập 412)». Lỗi đầu tiên + «và n lỗi
-     khác». `main.validation_exception_handler` dùng câu này làm `message`, `details` giữ y.
+     tiếng Việt: "Ô "Mục đích" tối đa 355 ký tự (đang nhập 412)". Lỗi đầu tiên + "và n lỗi
+     khác". `main.validation_exception_handler` dùng câu này làm `message`, `details` giữ y.
   2. `ensure_max_length` / `ensure_model_fits` — cho những đường ghi KHÔNG đi qua schema
      (Body `dict`, Form, gán thẳng trong service): kiểm trước khi gán, sai thì 422 cùng một
      kiểu câu.
   3. `describe_data_error` — LƯỚI CUỐI: lọt hết hai lớp trên mà MySQL vẫn báo 1406 thì đổi
-     thành 422 «Ô X dài quá, tối đa n ký tự» (n tra từ model theo bảng/cột), không ra 500.
+     thành 422 "Ô X dài quá, tối đa n ký tự" (n tra từ model theo bảng/cột), không ra 500.
 """
 import re
 import typing
@@ -216,7 +216,7 @@ def _describe_one(err: dict, models: list[type[BaseModel]]) -> str:
 
 
 def describe_validation_errors(errors: list[dict], models: list[type[BaseModel]] | None = None) -> str:
-    """MỘT câu tiếng Việt cho cả danh sách lỗi: lỗi đầu + «và n lỗi khác»."""
+    """MỘT câu tiếng Việt cho cả danh sách lỗi: lỗi đầu + "và n lỗi khác"."""
     if not errors:
         return "Dữ liệu không hợp lệ"
     first = _describe_one(errors[0], models or [])

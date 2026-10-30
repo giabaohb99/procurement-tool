@@ -73,8 +73,8 @@ NOISE_COLUMNS = frozenset({"updated_at"})
 #
 #  Hai bảng con của hồ sơ nhân sự (người báo tin, hộ gia đình) cũng theo luật này
 #  (HRM §7.10, 02/10/2026): cả hai thuộc TRỌN nhóm nhạy cảm — tên, số điện thoại,
-#  địa chỉ, ngày sinh, số CCCD của người thân. Chỉ giữ cột cho biết «thêm/bớt một
-#  người, quan hệ gì», không giữ người đó là ai.
+#  địa chỉ, ngày sinh, số CCCD của người thân. Chỉ giữ cột cho biết "thêm/bớt một
+#  người, quan hệ gì", không giữ người đó là ai.
 _PEOPLE_ROW_SAFE_COLUMNS = frozenset({
     "id", "employee_id", "relation", "gender", "sort_order", "created_by", "updated_by",
 })
@@ -105,11 +105,11 @@ def _table_field_denylist() -> dict[str, frozenset]:
     `bank_account_no` của nhà cung cấp phải giữ giá trị (đổi tài khoản nhận tiền là
     thứ cần dấu vết nhất). Nhập muộn: tầng `core` không kéo phân hệ lúc khởi động.
     """
-    from app.modules.employee.sensitive import SENSITIVE_FIELDS
+    from app.modules.employee.sensitive import SALARY_FIELDS, SENSITIVE_FIELDS
 
     #  `tab_labor_contract`: lương / bảo hiểm / phụ cấp nằm sau khóa quyền riêng `labor_contract`,
     #  nhật ký hệ thống (khóa `change_log`) không được thành đường vòng đọc lương.
-    return {"tab_employee": frozenset(SENSITIVE_FIELDS),
+    return {"tab_employee": frozenset(SENSITIVE_FIELDS) | frozenset(SALARY_FIELDS),   # duoc-CR-693: + lương hồ sơ
             "tab_labor_contract": frozenset({"base_salary", "insurance_salary", "allowance",
                                              "allowance_note", "custom_values"})}
 

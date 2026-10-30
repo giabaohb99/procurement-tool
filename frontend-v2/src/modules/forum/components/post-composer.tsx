@@ -9,7 +9,7 @@ import { PostComposerDialog } from './post-composer-dialog'
 
 /**
  * Thẻ mồi đăng bài ở đầu bảng tin — bấm vào đâu cũng mở hộp thoại đăng bài
- * (kiểu «Bạn đang nghĩ gì?» quen mắt của mạng xã hội).
+ * (kiểu "Bạn đang nghĩ gì?" quen mắt của mạng xã hội).
  */
 export function PostComposer() {
   const { user } = useAuth()

@@ -4,7 +4,7 @@ import { LeaveCalendarEntry } from './leave-calendar-entry'
 
 interface LeaveCalendarDayRowProps {
   date: Date
-  /** Nhãn thứ («T2»…«CN») — xem `WEEKDAY_LABELS`. */
+  /** Nhãn thứ ("T2"…"CN") — xem `WEEKDAY_LABELS`. */
   weekdayLabel: string
   items: LeaveRequest[]
   holidayNames: string[]
@@ -12,10 +12,10 @@ interface LeaveCalendarDayRowProps {
   weekend: boolean
   /** Mở chế độ NGÀY cho hàng này — lối thoát khi hàng quá đông. */
   onPick: (date: Date) => void
-  /** Quá số này thì phần dư gộp thành nút «+N người nữa». */
+  /** Quá số này thì phần dư gộp thành nút "+N người nữa". */
   maxVisible: number
   /**
-   * Ghi «Không ai nghỉ» khi hàng trống trơn. Lưới TUẦN bật (nó bày đủ bảy ngày
+   * Ghi "Không ai nghỉ" khi hàng trống trơn. Lưới TUẦN bật (nó bày đủ bảy ngày
    * nên phải nói rõ ngày nào trống); bản liệt kê THÁNG tắt — nó chỉ liệt kê ngày
    * CÓ người, một dòng "không ai nghỉ" ở đó là tự mâu thuẫn.
    */

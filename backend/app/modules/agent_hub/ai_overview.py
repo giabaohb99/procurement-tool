@@ -69,7 +69,7 @@ def build(db: Session, *, now: datetime | None = None, labels=None) -> dict:
         "skills": skills,                                  # {skill_sets, skills} hoặc None khi ERP lỗi
         "connected_users": connected, "connected_days": CONNECTED_DAYS,
         "calls_7d": calls_7, "calls_prev_7d": calls_prev,
-        #  ai-CR-219: chỉ lượt gọi công cụ (tools/call) — thẻ «Lượt gọi 7 ngày» khỏi lệch với «Công cụ dùng nhiều».
+        #  ai-CR-219: chỉ lượt gọi công cụ (tools/call) — thẻ "Lượt gọi 7 ngày" khỏi lệch với "Công cụ dùng nhiều".
         "tool_calls_7d": _count(db, week, now, method="tools/call"),
         "tool_calls_prev_7d": _count(db, prev, week, method="tools/call"),
         "calls_change_pct": round((calls_7 - calls_prev) / calls_prev * 100, 1) if calls_prev else None,

@@ -6,7 +6,8 @@ from app.core.status_codes import EMPLOYEE_STATUS
 from .constants import (EDUCATION_LEVEL_LABELS, EMPLOYMENT_TYPE_LABELS,
                         GENDER_VALUES, JOB_LEVEL_LABELS, MARITAL_STATUS_LABELS,
                         MAX_EXTRA_FIELDS, RELATION_LABELS)
-from .field_limits import (MAX_PEOPLE_ROWS, ProfileDate, Str20, Str25, Str50,
+from .phone_rules import ExtraPhones
+from .field_limits import (MAX_PEOPLE_ROWS, ProfileDate, SalaryAmount, Str20, Str25, Str50,
                            Str100, Str255, Str500, check_extra_fields,
                            check_resign_after_hire)
 
@@ -24,12 +25,15 @@ DateOnly = ProfileDate
 class EmployeeBase(BaseModel):
     #  ⚠️ Bí danh `Str<n>` = `max_length=n` khớp ĐÚNG `String(n)` ở `model.py`.
     #  Thiếu nó thì chuỗi dài đi thẳng xuống cột và MySQL là chỗ đầu tiên phản
-    #  đối — người dùng nhận 500 «lỗi không lường trước» thay vì câu «tối đa n
-    #  ký tự». Lỗ hổng này có ở CẢ trường cũ (từ trước duoc-CR-314), vá luôn.
+    #  đối — người dùng nhận 500 "lỗi không lường trước" thay vì câu "tối đa n
+    #  ký tự". Lỗ hổng này có ở CẢ trường cũ (từ trước duoc-CR-314), vá luôn.
     code: Str25 = ""
     full_name: Str255
     email: Str255 = ""
     phone: Str25 = ""
+    phone_label: Str50 = ""      # duoc-CR-694: nhãn của số chính
+    #  duoc-CR-694: số điện thoại KHÁC; `phone` ở trên là số chính. Luật ở `phone_rules`.
+    extra_phones: ExtraPhones = []
     company_id: int = 0
     department_id: int = 0
     #  ⚠️ `position` là NHÃN, `position_id` là thứ giao diện GỬI LÊN
@@ -65,7 +69,7 @@ class EmployeeBase(BaseModel):
         Cột khai `default=0` nhưng đó là mặc định lúc INSERT: bản ghi dựng trong
         bộ nhớ mà chưa flush vẫn mang `None`, và dòng cũ có trước cột này cũng
         có thể `NULL`. Ném ở đây thì **cả màn danh sách nhân sự** trả 500 vì một
-        ô chưa ai nhập — đắt hơn nhiều so với việc đọc nó thành «chưa khai».
+        ô chưa ai nhập — đắt hơn nhiều so với việc đọc nó thành "chưa khai".
         """
         return 0 if v is None else v
 
@@ -121,6 +125,17 @@ class EmployeeBase(BaseModel):
     # Nhóm 7 — tùy biến
     extra_fields: dict = {}
 
+    @field_validator("phone_label", mode="before")
+    @classmethod
+    def _phone_label_none_is_empty(cls, v):
+        return "" if v is None else v
+
+    @field_validator("extra_phones", mode="before")
+    @classmethod
+    def _extra_phones_none_is_empty(cls, v):
+        """Hồ sơ chưa flush mang `None` ở cột có `default=` — đọc thành danh sách rỗng."""
+        return [] if v is None else v
+
     @field_validator("extra_fields", mode="before")
     @classmethod
     def _extra_fields_none_is_empty(cls, v):
@@ -135,7 +150,7 @@ class EmployeeBase(BaseModel):
     #
     #  Thiếu hai hàm này thì `EmployeeOut.model_validate(...)` ném 26 lỗi cùng
     #  lúc, và triệu chứng ở chạy thật là **cả màn danh sách nhân sự trả 500**
-    #  vì một ô chưa ai nhập. Đọc `None` thành «chưa khai» rẻ hơn nhiều.
+    #  vì một ô chưa ai nhập. Đọc `None` thành "chưa khai" rẻ hơn nhiều.
     _NONE_TO_BLANK_TEXT = (
         "place_of_birth", "ethnicity", "religion", "personal_email", "tax_code", "major",
         "work_location", "permanent_address", "current_address",
@@ -183,7 +198,7 @@ def _check_gender_value(v: int) -> int:
     """Giới tính chỉ nhận `GENDER_VALUES` — một hàm cho cả ba schema.
 
     Ba bản chép rời trước đây (Create · Update · thành viên hộ gia đình) là ba
-    chỗ phải nhớ sửa mỗi lần bộ mã đổi; thêm mã `3` («Khác») lộ ra ngay điều đó.
+    chỗ phải nhớ sửa mỗi lần bộ mã đổi; thêm mã `3` ("Khác") lộ ra ngay điều đó.
     """
     if int(v) not in GENDER_VALUES:
         raise ValueError(
@@ -266,6 +281,9 @@ class EmployeeUpdate(BaseModel):
     full_name: Str255 | None = None
     email: Str255 | None = None
     phone: Str25 | None = None
+    phone_label: Str50 | None = None
+    #  `None`/vắng = giữ nguyên; muốn xóa hết gửi []. Gửi là THAY CẢ danh sách.
+    extra_phones: ExtraPhones | None = None
     company_id: int | None = None
     department_id: int | None = None
     position: Str100 | None = None
@@ -316,6 +334,11 @@ class EmployeeUpdate(BaseModel):
     health_care_code: Str20 | None = None
 
     extra_fields: dict | None = None
+
+    #  Lương / phụ cấp (duoc-CR-693). `None`/vắng = giữ nguyên; muốn xóa gửi 0. Ghi cần `employee.write`
+    #  trong phạm vi và KHÔNG phải hồ sơ của chính mình — chốt ở controller (`_guard_salary_write`).
+    salary_monthly: SalaryAmount | None = None
+    allowance_monthly: SalaryAmount | None = None
 
     #  ⚠️ `id_front_image` / `id_back_image` CỐ Ý KHÔNG có ở đây — hai ô ảnh chỉ
     #  đặt được qua cửa upload (`POST /employees/{id}/id-image`). Cho PATCH ghi
@@ -414,6 +437,18 @@ class EmployeeOut(EmployeeBase):
     #  `selectinload(Employee.direct_manager)`, không thì mỗi dòng một truy vấn.
     direct_manager_name: str = ""
 
+    #  Lương (duoc-CR-693). ⚠️ Hai SỐ bị `sensitive.mask` / `mask_many` xóa về 0 với MỌI người xem trừ chính
+    #  nhân sự đó; `salary_set` (đã nhập chưa) thì ai có `employee.read` phạm vi hồ sơ cũng thấy.
+    salary_monthly: int = 0
+    allowance_monthly: int = 0
+    salary_set: bool = False
+
+    @field_validator("salary_monthly", "allowance_monthly", mode="before")
+    @classmethod
+    def _salary_none_is_zero(cls, v):
+        """Bản ghi chưa flush mang `None` (cùng bẫy `_code_none_is_unknown`) — đọc là 0, đừng 500."""
+        return 0 if v is None else v
+
     model_config = {"from_attributes": True}
 
 
@@ -477,7 +512,7 @@ class EmployeeFamilyOut(EmployeeFamilyIn):
 
 
 #  ⚠️ TRẦN SỐ DÒNG. Không có nó thì `PUT` 5000 dòng lọt thẳng — đã thử được
-#  trên MySQL thật ngày 08/09/2026. Đây là bảng «cha, mẹ, vợ/chồng» nằm trong
+#  trên MySQL thật ngày 08/09/2026. Đây là bảng "cha, mẹ, vợ/chồng" nằm trong
 #  một tab, vài chục dòng đã vô lý; và `sort_order` là `SMALLINT` nên dòng thứ
 #  32768 còn tràn kiểu. Trần đặt ở SCHEMA chứ không ở service: chặn trước khi
 #  xóa sạch bảng cũ, kẻo một lần gửi hỏng là mất luôn dữ liệu đang có.
@@ -514,6 +549,8 @@ class SelfContactUpdate(BaseModel):
     model_config = {"extra": "forbid"}
 
     phone: Str25 | None = None
+    phone_label: Str50 | None = None
+    extra_phones: ExtraPhones | None = None
     permanent_address: Str500 | None = None
     current_address: Str500 | None = None
 

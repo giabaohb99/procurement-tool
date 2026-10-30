@@ -1,6 +1,6 @@
-"""Dữ liệu hàng cho báo cáo «Hồ sơ & tài khoản còn thiếu» (duoc-CR-686, khóa 18).
+"""Dữ liệu hàng cho báo cáo "Hồ sơ & tài khoản còn thiếu" (duoc-CR-686, khóa 18).
 
-Mỗi nhân sự trong phạm vi là một hàng mang các CỜ «thiếu gì» đã tính sẵn. Báo cáo chỉ đếm cờ.
+Mỗi nhân sự trong phạm vi là một hàng mang các CỜ "thiếu gì" đã tính sẵn. Báo cáo chỉ đếm cờ.
 Tình trạng HIỆN TẠI: không có trục thời gian.
 
 Quyền của NGƯỜI XEM quyết định cờ nào được tính:
@@ -29,7 +29,7 @@ BASE_GAPS = ("missing_hire_date", "missing_position", "missing_manager", "missin
 SENSITIVE_GAPS = ("missing_dob", "missing_id_number", "missing_tax_code", "missing_social_insurance",
                   "missing_bank", "id_expiring_90")
 ACCOUNT_GAPS = ("no_account", "account_no_role", "resigned_active_account")
-#  Cờ «thiếu trường» — dùng cho `complete` (đủ hết mọi trường đang được đếm).
+#  Cờ "thiếu trường" — dùng cho `complete` (đủ hết mọi trường đang được đếm).
 _FIELD_GAPS = BASE_GAPS + SENSITIVE_GAPS[:-1]
 
 _BASE_COLS = (Employee.id, Employee.code, Employee.full_name, Employee.company_id, Employee.department_id,
@@ -74,7 +74,7 @@ def load_rows(db: Session, employees_q, today: date, *, with_sensitive: bool, wi
         q = q.filter(Employee.department_id == department_id)
     working_cond = and_(Employee.status != STATUS_RESIGNED, Employee.is_active == True)  # noqa: E712
     if with_account:
-        #  Người đã nghỉ chỉ cần cho cờ «tài khoản còn mở» -> chỉ nạp người đã nghỉ CÓ tài khoản đang mở.
+        #  Người đã nghỉ chỉ cần cho cờ "tài khoản còn mở" -> chỉ nạp người đã nghỉ CÓ tài khoản đang mở.
         has_open_account = exists().where(User.employee_id == Employee.id, User.is_active == True)  # noqa: E712
         q = q.filter(or_(working_cond, and_(Employee.status == STATUS_RESIGNED, has_open_account)))
     else:

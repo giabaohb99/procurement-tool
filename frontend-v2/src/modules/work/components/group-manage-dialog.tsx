@@ -29,7 +29,7 @@ interface GroupManageDialogProps {
  *
  * Trước CR này nhóm chỉ TẠO được: đặt tên xong là không đổi được, không mời ai,
  * không lưu trữ — trong khi cửa API đã có sẵn từ bao-CR-216. Đại ca muốn phân
- * quyền cho cả cụm «DX» một lần thay vì mời từng người vào từng dự án.
+ * quyền cho cả cụm "DX" một lần thay vì mời từng người vào từng dự án.
  *
  * Hai ngưỡng quyền, theo backend (`group_service.py`):
  *   · sửa thông tin / lưu trữ → `CAN_OWN` (Chủ sở hữu nhóm);
@@ -139,7 +139,7 @@ export function GroupManageDialog({ open, group, onClose }: GroupManageDialogPro
         {canEditInfo && (
           <DialogFooter className="sm:justify-between">
             {/*  Lưu trữ đứng riêng bên trái, xa nút Lưu — một cú bấm nhầm là cả
-                 nhóm biến khỏi cây (dù khôi phục được qua «Hiện cả dự án lưu trữ»). */}
+                 nhóm biến khỏi cây (dù khôi phục được qua "Hiện cả dự án lưu trữ"). */}
             <div>
               {confirmArchive ? (
                 <span className="flex items-center gap-2 text-sm">

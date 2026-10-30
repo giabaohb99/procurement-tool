@@ -7,7 +7,7 @@ import type { DocumentRecord } from '../types/document-record'
  * sắp tay không đáng lo hiệu năng.
  *
  * ⚠️ `DocumentRecord` KHÔNG có cột "ngày sửa cuối" (`updated_at`) — backend
- * chỉ trả `created_at`. Nhãn vì vậy là «Ngày tạo», không phải «Ngày sửa» như
+ * chỉ trả `created_at`. Nhãn vì vậy là "Ngày tạo", không phải "Ngày sửa" như
  * chữ trong đặc tả gốc; bịa ra một cột không có thật còn tệ hơn đặt nhãn khác
  * chữ đặc tả một chút.
  */

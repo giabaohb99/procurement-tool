@@ -135,7 +135,7 @@ describe('ReportAccessTab', () => {
     ])
     renderTab(true)
 
-    await user.click(screen.getByRole('button', { name: 'Sửa quyền xem «Báo cáo khảo sát»' }))
+    await user.click(screen.getByRole('button', { name: 'Sửa quyền xem "Báo cáo khảo sát"' }))
 
     expect(screen.getByTestId('dialog-open')).toHaveTextContent('Báo cáo khảo sát')
   })
@@ -149,7 +149,7 @@ describe('ReportAccessTab', () => {
 
       const { rerenderWithCanWrite } = renderTab(true)
 
-      await user.click(screen.getByRole('button', { name: 'Sửa quyền xem «Báo cáo mua hàng»' }))
+      await user.click(screen.getByRole('button', { name: 'Sửa quyền xem "Báo cáo mua hàng"' }))
       expect(screen.getByTestId('dialog-open')).toHaveTextContent('1 chủ thể')
 
       //  Giả lập gán/thu hồi THÀNH CÔNG rồi `useReportAccessList` nạp lại: dòng

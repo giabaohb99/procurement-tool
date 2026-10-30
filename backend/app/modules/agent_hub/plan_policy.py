@@ -4,7 +4,7 @@ Luật là DỮ LIỆU, không phải mã: bản nháp nằm ở `DEFAULTS`, b�
 `agent_plan_policy`, chuỗi JSON). Khóa nào sếp không khai thì lấy mặc định — một ô cấu hình gõ sai không được phép làm
 bot ngừng lập kế hoạch, nên JSON hỏng cũng rơi về mặc định (và ghi log).
 
-Ba mức ưu tiên của kế hoạch ánh xạ sang trường tùy biến «Độ ưu tiên» có sẵn của phân hệ Dự án (P1…P4):
+Ba mức ưu tiên của kế hoạch ánh xạ sang trường tùy biến "Độ ưu tiên" có sẵn của phân hệ Dự án (P1…P4):
 Gấp → P1 · Ưu tiên → P2 · Thường → P3.
 """
 from __future__ import annotations
@@ -19,7 +19,7 @@ MIN_SUBTASKS = 2                     # mỗi việc cha phải chia ít nhất c
 
 PRIORITY_URGENT, PRIORITY_HIGH, PRIORITY_NORMAL = "Gấp", "Ưu tiên", "Thường"
 PRIORITY_LEVELS = (PRIORITY_URGENT, PRIORITY_HIGH, PRIORITY_NORMAL)
-#  Tên mức → tên giá trị trong trường «Độ ưu tiên» (`list_config_service.PRIORITY_OPTIONS`).
+#  Tên mức → tên giá trị trong trường "Độ ưu tiên" (`list_config_service.PRIORITY_OPTIONS`).
 PRIORITY_TO_OPTION = {PRIORITY_URGENT: "P1", PRIORITY_HIGH: "P2", PRIORITY_NORMAL: "P3"}
 
 DEFAULTS: dict = {

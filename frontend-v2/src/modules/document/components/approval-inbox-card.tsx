@@ -16,10 +16,10 @@ import type { InboxRow } from './approval-inbox-row'
  * ⚠️ **TÊN VĂN BẢN LÊN TRƯỚC, số hiệu tụt xuống dòng phụ** — cùng lý do và cùng
  * bài học với `DocumentCard` (duoc-CR-364/365). Ở đây còn nặng hơn: hộp duyệt
  * phần lớn là văn bản **đang trình, chưa cấp số**, nên cột đầu của bảng in ra
- * một dãy «Chưa cấp số» giống hệt nhau — dòng định danh mà không định danh được
+ * một dãy "Chưa cấp số" giống hệt nhau — dòng định danh mà không định danh được
  * dòng nào.
  *
- * ⚠️ **«Chưa cấp số» KHÔNG dùng `font-mono`**: nó là một lời nói, không phải một
+ * ⚠️ **"Chưa cấp số" KHÔNG dùng `font-mono`**: nó là một lời nói, không phải một
  * mã. Chữ đều nét làm nó dãn ra và đọc như lỗi hiển thị.
  *
  * ⚠️ **Hai loại dòng bày HAI bộ trường khác nhau** — đây là chỗ thẻ làm được mà
@@ -30,8 +30,8 @@ import type { InboxRow } from './approval-inbox-row'
  *
  * ⚠️ **Huy hiệu tình trạng phải còn nguyên trên thẻ.** Ở bảng nó là cột duy nhất
  * không ẩn được và được ghim phải, vì nó là thứ DUY NHẤT phân biệt hai nửa của
- * bảng gộp. Bỏ nó khỏi thẻ cho gọn là xóa luôn ranh giới giữa *«việc cần làm»*
- * và *«việc đã xong»* — trong khi đó chính là câu hỏi người ta mở màn này ra để
+ * bảng gộp. Bỏ nó khỏi thẻ cho gọn là xóa luôn ranh giới giữa *"việc cần làm"*
+ * và *"việc đã xong"* — trong khi đó chính là câu hỏi người ta mở màn này ra để
  * trả lời.
  *
  * ⚠️ **Không nút nào trong thẻ**: `DataTableMobileCards` bọc cả thẻ trong một
@@ -65,7 +65,7 @@ export function ApprovalInboxCard({ row }: { row: InboxRow }) {
 
         <div className="flex flex-wrap items-center gap-1.5">
           {pending ? (
-            //  Quá hạn tô đỏ ngay ở huy hiệu, y như cột «Tình trạng» của bảng:
+            //  Quá hạn tô đỏ ngay ở huy hiệu, y như cột "Tình trạng" của bảng:
             //  mức gấp gáp không được phụ thuộc vào việc dòng hạn bên dưới có
             //  chỗ hiện hay không.
             <Badge variant={row.isOverdue ? 'destructive' : 'default'}>
@@ -105,11 +105,11 @@ export function ApprovalInboxCard({ row }: { row: InboxRow }) {
                   <span className="tabular-nums">{formatDateTime(row.decidedAt)}</span>
                 )}
 
-                {/*  ⚠️ «Phiếu bây giờ» phải đi kèm CHỮ «Phiếu», không được là một
+                {/*  ⚠️ "Phiếu bây giờ" phải đi kèm CHỮ "Phiếu", không được là một
                      huy hiệu trần. Ở bảng nó là một cột có tiêu đề, chính tiêu đề
-                     đó phân biệt nó với cột «Tình trạng» bên cạnh; thẻ không có
+                     đó phân biệt nó với cột "Tình trạng" bên cạnh; thẻ không có
                      tiêu đề cột, nên hai huy hiệu đứng liền nhau đọc ra
-                     «Duyệt · Đã duyệt» — hai chữ gần như đồng nghĩa, người đọc
+                     "Duyệt · Đã duyệt" — hai chữ gần như đồng nghĩa, người đọc
                      không đoán được cái nào nói việc CỦA TÔI và cái nào nói cả
                      TỜ PHIẾU. Mà đó đúng là hai chuyện khác nhau: tôi ký xong
                      bước của mình không có nghĩa là phiếu đã xong. */}

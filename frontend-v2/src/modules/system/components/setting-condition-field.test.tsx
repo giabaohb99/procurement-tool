@@ -8,9 +8,9 @@ import type { SettingField } from '../types/setting'
 import { SettingFieldRow } from './setting-field-row'
 
 /**
- * bao-CR-528 — ô «Điều kiện bỏ qua điều phối» vẽ BỘ CHỌN, không còn là ô gõ JSON.
+ * bao-CR-528 — ô "Điều kiện bỏ qua điều phối" vẽ BỘ CHỌN, không còn là ô gõ JSON.
  *
- * Đại ca chê ô cũ «cấu hình là gõ code vào à». Hàng cấu hình đọc cờ
+ * Đại ca chê ô cũ "cấu hình là gõ code vào à". Hàng cấu hình đọc cờ
  * `type: 'condition'` + `condition_entity` backend khai để quyết định vẽ gì.
  */
 
@@ -132,9 +132,9 @@ describe('usePrDispatchConditionChoices', () => {
   const handler = PR_DISPATCH_CONDITION_FIELDS.find((item) => item.name === 'handler_dept_id')
   const department = PR_DISPATCH_CONDITION_FIELDS.find((item) => item.name === 'department_id')
 
-  it('drops the default purchasing department from «Phòng xử lý» because it counts as empty', () => {
+  it('drops the default purchasing department from "Phòng xử lý" because it counts as empty', () => {
     //  Bối cảnh phiếu đưa phòng thu mua mặc định vào dưới dạng 0; chọn nó ở phép
-    //  «thuộc» là một điều kiện không phiếu nào khớp.
+    //  "thuộc" là một điều kiện không phiếu nào khớp.
     const { result } = renderHook(() => usePrDispatchConditionChoices(''))
     if (!handler || !department) throw new Error('thiếu ô trong cấu hình')
 

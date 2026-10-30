@@ -44,7 +44,7 @@ export function holdsSystemAdminRole(
 }
 
 /**
- * Lỗi này có phải câu hỏi «bạn đang tự bỏ vai trò Quản trị, tiếp tục?» của
+ * Lỗi này có phải câu hỏi "bạn đang tự bỏ vai trò Quản trị, tiếp tục?" của
  * backend không. Có thì trả NGUYÊN câu backend gửi (một nguồn chữ duy nhất),
  * không thì `null`.
  */

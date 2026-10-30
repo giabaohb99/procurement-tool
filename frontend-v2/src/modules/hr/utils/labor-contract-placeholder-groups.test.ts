@@ -23,12 +23,12 @@ describe('groupPlaceholders', () => {
     expect(groupPlaceholders(undefined)).toEqual([])
   })
 
-  it('biến thiếu nhóm rơi vào «Khác» thay vì mất', () => {
+  it('biến thiếu nhóm rơi vào "Khác" thay vì mất', () => {
     expect(groupPlaceholders([item('a', '')])[0].group).toBe('Khác')
   })
 })
 
-//  duoc-CR-606 — ô tìm của khung «Chèn biến».
+//  duoc-CR-606 — ô tìm của khung "Chèn biến".
 describe('filterPlaceholders', () => {
   const items = [
     { key: 'ho_ten', label: 'Họ và tên', group: 'Người lao động', example: '' },

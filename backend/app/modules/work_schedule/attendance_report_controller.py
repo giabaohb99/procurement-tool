@@ -1,4 +1,4 @@
-"""Báo cáo C3 «Có mặt theo ngày» (khóa 26) — duoc-CR-689.
+"""Báo cáo C3 "Có mặt theo ngày" (khóa 26) — duoc-CR-689.
 
 Router riêng chỉ chứa `/summary` + `/summary/export` + `/summary/rows` (khung báo cáo kiểu Haravan).
 Đường gốc `/api/attendance-report` cố ý không nằm dưới router chính có `/{id}`.

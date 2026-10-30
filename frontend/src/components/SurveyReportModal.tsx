@@ -1,5 +1,5 @@
-// Khung hộp thoại dùng chung của khối «Báo cáo thực hiện» bản v1 — tách khỏi
-// `SurveyReportCard.tsx` (duoc-CR-613) để hộp «Thêm hồ sơ đầu tiên» ở tệp riêng dùng lại được.
+// Khung hộp thoại dùng chung của khối "Báo cáo thực hiện" bản v1 — tách khỏi
+// `SurveyReportCard.tsx` (duoc-CR-613) để hộp "Thêm hồ sơ đầu tiên" ở tệp riêng dùng lại được.
 // C-01: chỉ đóng bằng Hủy / X; form dở thì hỏi xác nhận; KHÔNG bọc <form> để Enter trong ô
 // con không submit form cha của trang.
 import { askConfirm } from './confirm'

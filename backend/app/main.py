@@ -199,7 +199,7 @@ app.add_middleware(RequestContextMiddleware)
 
 #  duoc-CR-671: cổng số lượt gọi đồng thời đăng ký SAU nhật ký, TRƯỚC CORS → bọc ngoài
 #  `RequestContextMiddleware` (phần ghi nhật ký cũng nằm trong suất đã cấp) nhưng nằm trong CORS,
-#  nên câu 503 «đang bận» vẫn mang header CORS — trình duyệt đọc được, không ra lỗi CORS khó hiểu.
+#  nên câu 503 "đang bận" vẫn mang header CORS — trình duyệt đọc được, không ra lỗi CORS khó hiểu.
 #  Xem `core/concurrency_gate.py` vì sao không được bỏ.
 app.add_middleware(
     ConcurrencyGateMiddleware,
@@ -231,8 +231,8 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """bao-CR-538: `message` là câu tiếng Việt chỉ đúng ô sai («Ô "Mục đích" tối đa 355 ký tự
-    (đang nhập 412)», lỗi đầu + «và n lỗi khác») thay cho «Dữ liệu không hợp lệ» trơn.
+    """bao-CR-538: `message` là câu tiếng Việt chỉ đúng ô sai ("Ô "Mục đích" tối đa 355 ký tự
+    (đang nhập 412)", lỗi đầu + "và n lỗi khác") thay cho "Dữ liệu không hợp lệ" trơn.
     `details` GIỮ NGUYÊN danh sách lỗi Pydantic cho máy đọc."""
     errors = exc.errors()
     models = body_models_of(request.scope.get("route"))
@@ -243,8 +243,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.exception_handler(DataError)
 async def data_error_handler(request: Request, exc: DataError):
     """bao-CR-538 — LƯỚI CUỐI: chuỗi lọt qua schema và helper, xuống MySQL mới bị từ chối
-    (1406 «Data too long for column …»). Trả 422 câu tiếng Việt thay cho 500 «lỗi không lường
-    trước»; ghi WARNING kèm đường API + tên cột để vá chỗ thiếu chặn. Phiên DB đã được
+    (1406 "Data too long for column …"). Trả 422 câu tiếng Việt thay cho 500 "lỗi không lường
+    trước"; ghi WARNING kèm đường API + tên cột để vá chỗ thiếu chặn. Phiên DB đã được
     `get_db` rollback khi lỗi đi ngang qua dependency."""
     import logging
     message, column = describe_data_error(exc)
@@ -261,8 +261,8 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
     Trước 25/08/2026 chỗ này bỏ trống, nên mọi lỗi ngoài dự tính rơi ra ngoài
     thành `500 Internal Server Error` **thân rỗng, không phải JSON**. Giao diện
-    không bóc được phong bì nên chỉ hiện đúng một dòng «Request failed with
-    status code 500»: người dùng không biết chuyện gì, người sửa cũng không có
+    không bóc được phong bì nên chỉ hiện đúng một dòng "Request failed with
+    status code 500": người dùng không biết chuyện gì, người sửa cũng không có
     gì để lần — phải mò lại từ log container mà không biết dòng nào là của họ.
 
     Nay mỗi lần nổ sinh một mã ngắn, in ra log **cùng** trả về cho người dùng:
@@ -415,7 +415,7 @@ app.include_router(customs_kind_keyword_router)
 app.include_router(customs_search_synonym_router)
 app.include_router(customs_formulation_code_router)   # duoc-CR-684
 app.include_router(customs_saved_filter_router)     # bao-CR-496
-app.include_router(customs_pesticide_router)        # mục «Thuốc BVTV» (29/09/2026)
+app.include_router(customs_pesticide_router)        # mục "Thuốc BVTV" (29/09/2026)
 app.include_router(export_log_router)
 app.include_router(backup_router)
 app.include_router(help_center_router)
@@ -495,7 +495,7 @@ from app.modules.usage_profile.telemetry_controller import router as telemetry_r
 from app.modules.usage_profile.controller import router as usage_profile_router  # noqa: E402
 app.include_router(telemetry_router)
 app.include_router(usage_profile_router)
-#  duoc-CR-655: báo cáo «Mức dùng chức năng» (ReportKey 15)
+#  duoc-CR-655: báo cáo "Mức dùng chức năng" (ReportKey 15)
 from app.modules.feature_usage.controller import router as feature_usage_router  # noqa: E402
 app.include_router(feature_usage_router)
 #  duoc-CR-656: năng lực theo loại việc — tải đang ôm (admin)

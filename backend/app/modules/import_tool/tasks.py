@@ -145,8 +145,8 @@ def _csv_to_workbook(raw: bytes):
 
     Dấu phân cách chọn theo dấu ÁP ĐẢO ở DÒNG ĐẦU (`;` / tab / `,`) — bền hơn
     `csv.Sniffer` ở đúng bộ dữ liệu này: nhãn cột có sẵn dấu phẩy
-    (vd «VAT (tỉ lệ, vd 0.08)») và Excel VN xuất bằng `;` vì `,` là dấu thập phân
-    («0,1»); để Sniffer tự đoán là nó cắt nhầm ngay tại dấu phẩy trong nhãn.
+    (vd "VAT (tỉ lệ, vd 0.08)") và Excel VN xuất bằng `;` vì `,` là dấu thập phân
+    ("0,1"); để Sniffer tự đoán là nó cắt nhầm ngay tại dấu phẩy trong nhãn.
     """
     import csv
 

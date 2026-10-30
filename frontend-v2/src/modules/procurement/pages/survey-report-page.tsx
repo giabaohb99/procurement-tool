@@ -341,8 +341,8 @@ export function SurveyReportPage() {
   const navigate = useNavigate()
 
   //  Bản NHÁP của bộ lọc phụ ở khổ hẹp. Khổ rộng giữ nháp bên trong
-  //  `ExtraFilterPopover`; tờ trượt thì không có chỗ nào để giữ, vì nút «Áp
-  //  dụng» của nó nằm ở `QuickFilterSheet` chứ không nằm trong bộ ô.
+  //  `ExtraFilterPopover`; tờ trượt thì không có chỗ nào để giữ, vì nút "Áp
+  //  dụng" của nó nằm ở `QuickFilterSheet` chứ không nằm trong bộ ô.
   //
   //  ⚠️ Vẫn phải là NHÁP chứ không ghi thẳng: năm ô kia là ô NHẬP CHỮ, ghi ngay
   //  lúc gõ thì mỗi ký tự một lượt gọi API cho một báo cáo quét cả nghìn dòng.
@@ -350,7 +350,7 @@ export function SurveyReportPage() {
 
   //  Đồng bộ nháp khi bộ lọc thật đổi từ NƠI KHÁC (popover khổ rộng, nút xóa
   //  lọc, hoặc người dùng sửa thẳng thanh địa chỉ). Thiếu nhịp này thì mở tờ
-  //  trượt ra vẫn thấy giá trị cũ và bấm «Áp dụng» là lặng lẽ ghi đè ngược.
+  //  trượt ra vẫn thấy giá trị cũ và bấm "Áp dụng" là lặng lẽ ghi đè ngược.
   const extraChanged = useHasChanged(JSON.stringify(extra))
   if (extraChanged) setExtraDraft(extra)
 
@@ -501,7 +501,7 @@ export function SurveyReportPage() {
         {summary && (
           //  ⚠️ Vẫn XUỐNG HÀNG chứ không cuộn ngang ở khổ hẹp. Năm chip này vừa
           //  là bộ lọc vừa là bảng TỔNG — giấu hai cái cuối sau mép màn hình thì
-          //  số «Không duyệt» và «Thiếu thông tin», hai con số người ta mở báo
+          //  số "Không duyệt" và "Thiếu thông tin", hai con số người ta mở báo
           //  cáo để tìm, chỉ thấy được nếu tình cờ vuốt ngang. Bù lại bóp chữ và
           //  đệm ở khổ hẹp để năm chip nằm gọn trong HAI hàng thay vì ba.
           <div className="mb-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
@@ -568,12 +568,12 @@ export function SurveyReportPage() {
             //  ≈ 190px** chắn trên đầu danh sách, mà thanh này còn được GHIM.
             <>
               {/*  Câu gợi ý RÚT GỌN ở khổ hẹp: bản đầy đủ liệt kê sáu thứ tìm
-                   được, dài 330px, nên bị xén thành «Tìm mã phiếu, mã YCBG/PYC,
-                   mã» — mất đúng phần đuôi, thứ người đọc chưa đoán được.
+                   được, dài 330px, nên bị xén thành "Tìm mã phiếu, mã YCBG/PYC,
+                   mã" — mất đúng phần đuôi, thứ người đọc chưa đoán được.
 
                    ⚠️ Phải vừa cả khi ĐANG LỌC: lúc đó bảng mọc thêm nút *Xóa
                    lọc* trên cùng hàng, ô tìm hụt thêm ~40px và bản ba vế
-                   («…SP, NCC») lại cụt giữa chừng thành «Tìm phiếu,». */}
+                   ("…SP, NCC") lại cụt giữa chừng thành "Tìm phiếu,". */}
               <SearchField
                 value={keyword}
                 onChange={setKeyword}
@@ -668,8 +668,8 @@ function StatusChip({
         //  trên máy 390px, mà dải này đứng NGAY TRÊN danh sách nên mỗi hàng là
         //  một hàng đẩy dòng đầu tiên xuống dưới.
         //
-        //  ⚠️ `max-md:grow` — năm chip có bề rộng rất lệch nhau («Tất cả 13» so
-        //  với «Thiếu thông tin 3»), nên khi xuống hai hàng thì hàng dưới chỉ
+        //  ⚠️ `max-md:grow` — năm chip có bề rộng rất lệch nhau ("Tất cả 13" so
+        //  với "Thiếu thông tin 3"), nên khi xuống hai hàng thì hàng dưới chỉ
         //  chứa hai chip và hụt ~120px bên phải: cả dải đọc ra so le, nhìn như
         //  vẽ lỗi. Cho chúng GIÃN lấp đầy hàng thì hai mép thẳng.
         //
@@ -791,7 +791,7 @@ function ExtraFilterPopover({
  * lại phần ruột. Chép ra hai bản là sớm muộn hai khổ màn lọc ra hai kết quả
  * khác nhau cho cùng một điều kiện (cùng lý do `ConditionalFilterBody` tồn tại).
  *
- * ⚠️ **Không tự dựng nút «Áp dụng».** Cả hai khung chứa đều đã có nút chính của
+ * ⚠️ **Không tự dựng nút "Áp dụng".** Cả hai khung chứa đều đã có nút chính của
  * riêng nó; thêm nút thứ hai là bắt người dùng đoán cái nào ăn — đoán sai thì
  * mất trắng mấy ô vừa gõ.
  */

@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { botBriefApi, botMemoryApi, type BotMemory, type BriefList } from '../api/bot-memory-api'
 
-/** Trí nhớ bot giữ về chính mình (ai-CR-138) — tab «Bot nhớ gì về tôi» ở Trang cá nhân. */
+/** Trí nhớ bot giữ về chính mình (ai-CR-138) — tab "Bot nhớ gì về tôi" ở Trang cá nhân. */
 export function useBotMemory() {
   return useQuery({
     queryKey: queryKeys.system.botMemory(),

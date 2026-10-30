@@ -27,7 +27,7 @@ REGISTRY = {
     "pr_dispatch_enabled": ("bool", "PR_DISPATCH_ENABLED"),
     "pr_dispatch_skip_rules": ("str", "PR_DISPATCH_SKIP_RULES"),   # bao-CR-497
     "pr_options_enabled": ("bool", "PR_OPTIONS_ENABLED"),
-    #  bao-CR-524: mã phòng thu mua mặc định (thay phòng ảo «Thu mua chung»). Đọc ở MỘT chỗ
+    #  bao-CR-524: mã phòng thu mua mặc định (thay phòng ảo "Thu mua chung"). Đọc ở MỘT chỗ
     #  duy nhất: `core/central_purchasing.py`.
     "central_purchasing_dept_code": ("str", "CENTRAL_PURCHASING_DEPT_CODE"),
     #  Cảnh báo mở/tải tệp đính kèm văn bản — sửa được ngay trên màn Cấu hình
@@ -84,6 +84,8 @@ REGISTRY = {
     #  Thông số chung.
     "frontend_url": ("str", "FRONTEND_URL"),
     "notification_keep_days": ("int", "NOTIFICATION_KEEP_DAYS"),
+    "customs_row_log_keep_days": ("int", "CUSTOMS_ROW_LOG_KEEP_DAYS"),   # bao-CR-698
+    "customs_line_merge_enabled": ("bool", "CUSTOMS_LINE_MERGE_ENABLED"),   # bao-CR-699
     "backup_keep": ("int", "BACKUP_KEEP"),
     #  duoc-CR-641: công tắc thu sự kiện giao diện cho hồ sơ cách làm việc (mặc định BẬT).
     "usage_tracking_enabled": ("bool", "USAGE_TRACKING_ENABLED"),

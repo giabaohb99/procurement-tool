@@ -1,6 +1,6 @@
 """NHẮC VIỆC bằng câu nói (ai-CR-060, T-10 của `doc/agent-hub/04`).
 
-«nhắc anh 3h gọi nhà cung cấp X» · «nhắc tôi mai 9h họp» · «30 phút nữa nhắc em nộp báo cáo»: bot đọc giờ
+"nhắc anh 3h gọi nhà cung cấp X" · "nhắc tôi mai 9h họp" · "30 phút nữa nhắc em nộp báo cáo": bot đọc giờ
 bằng `parse_schedule_time` (cùng bộ đọc giờ của hẹn gộp + deploy, ai-CR-014), ghi một dòng `tab_agent_reminder`
 và vòng beat mỗi phút gửi lại đúng chat đó khi tới giờ. Không đọc được giờ thì hỏi lại, không đoán.
 Ai đã đăng nhập bot đều dùng được, không cần khóa Gemini (không có lượt model nào).
@@ -22,7 +22,7 @@ _LEAD_MID = re.compile(r"^(?P<pre>.{1,40}?)\s+(nhắc|nhắc nhở)\s+(anh|tôi|
 _LIST = re.compile(r"^(nhắc gì|xem nhắc|danh sách nhắc|các lời nhắc|nhắc việc gì|lịch nhắc)[?.! ]*$", re.I)
 _CANCEL = re.compile(r"^(bỏ|xóa|hủy)\s+(lời )?nhắc\s+(số\s+)?(?P<n>\d+)[.! ]*$", re.I)
 _CANCEL_ALL = re.compile(r"^(bỏ|xóa|hủy)\s+(hết|tất cả)\s+(lời )?nhắc[.! ]*$", re.I)
-#  Cụm giờ để bóc khỏi nội dung: «3h», «14:30», «20h30», «8 giờ sáng mai», «45 phút nữa», «sau 2 tiếng», «mai», «tối».
+#  Cụm giờ để bóc khỏi nội dung: "3h", "14:30", "20h30", "8 giờ sáng mai", "45 phút nữa", "sau 2 tiếng", "mai", "tối".
 _TIME_BITS = re.compile(
     r"((lúc|vào|vào lúc)\s+)?(\d{1,2}\s*(?::|h|g|giờ|gio)\s*\d{0,2}(\s*(sáng|trưa|chiều|tối))?(\s+mai)?"
     r"|\d{1,3}\s*(phút|phut|tiếng|tieng|giờ|gio)\s+(nữa|nua)|sau\s+\d{1,3}\s*(phút|phut|tiếng|tieng|giờ|gio)"
@@ -38,7 +38,7 @@ def parse(text: str, *, now: datetime | None = None) -> dict | None:
     if m:
         body = raw[m.end():].strip()
     else:
-        #  Cụm giờ đứng trước: «30 phút nữa nhắc em nộp báo cáo», «mai 9h nhắc anh họp».
+        #  Cụm giờ đứng trước: "30 phút nữa nhắc em nộp báo cáo", "mai 9h nhắc anh họp".
         mm = _LEAD_MID.match(raw)
         if not mm or _TIME_BITS.sub("", mm.group("pre")).strip(" ,.:;-"):
             return None
@@ -88,11 +88,11 @@ def listing(db: Session, chat_id: str) -> str:
 
     rows = open_for_chat(db, chat_id)
     if not rows:
-        return "Chưa có lời nhắc nào đang chờ. Nhắn ví dụ «nhắc anh 15h gọi nhà cung cấp X»."
+        return "Chưa có lời nhắc nào đang chờ. Nhắn ví dụ **nhắc anh 15h gọi nhà cung cấp X**."
     lines = ["<b>Lời nhắc đang chờ:</b>"]
     for i, r in enumerate(rows, 1):
         lines.append(f"{i}. {fmt_local(r.due_at)} — {telegram.esc(r.text)}")
-    lines.append("Bỏ một lời: «bỏ nhắc 2»; bỏ hết: «bỏ hết nhắc».")
+    lines.append("Bỏ một lời: **bỏ nhắc 2**; bỏ hết: **bỏ hết nhắc**.")
     return "\n".join(lines)
 
 

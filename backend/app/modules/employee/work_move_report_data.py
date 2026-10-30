@@ -1,13 +1,13 @@
-"""Nạp dữ liệu báo cáo D1 «Điều chuyển & bổ nhiệm» (khóa 24, duoc-CR-688) từ
+"""Nạp dữ liệu báo cáo D1 "Điều chuyển & bổ nhiệm" (khóa 24, duoc-CR-688) từ
 `tab_employee_work_history`: mỗi dòng quá trình công tác là một hàng `MoveRow`.
 
 Phạm vi: `apply_scope(Employee, 'employee', action)` áp lên NGƯỜI của dòng (join `Employee`), rồi
 `company_id`/`department_id` lọc theo hồ sơ HIỆN TẠI của người đó — chỉ thu hẹp thêm.
 
-«Phòng đi» = phòng của dòng NHÓM CHÍNH liền trước cùng người (bỏ dòng không khai phòng); không có
+"Phòng đi" = phòng của dòng NHÓM CHÍNH liền trước cùng người (bỏ dòng không khai phòng); không có
 thì, với dòng CHƯA ÁP vào hồ sơ (trừ Tuyển dụng), lấy phòng hồ sơ hiện tại — CHỈ khi không có dòng nhóm
-chính nào ĐÃ ÁP muộn hơn có khai phòng (dòng đó đã đổi phòng hiện tại nên không còn là phòng «trước»);
-còn lại 0 = «(Chưa rõ)». Số truy vấn CỐ ĐỊNH: 1 (dòng) + 1 mỗi 900 người (lịch sử để tra phòng đi).
+chính nào ĐÃ ÁP muộn hơn có khai phòng (dòng đó đã đổi phòng hiện tại nên không còn là phòng "trước");
+còn lại 0 = "(Chưa rõ)". Số truy vấn CỐ ĐỊNH: 1 (dòng) + 1 mỗi 900 người (lịch sử để tra phòng đi).
 
 ⚠️ KHÔNG đọc/trả tệp quyết định (gác bằng `employee_sensitive.read`) — chỉ số quyết định.
 """

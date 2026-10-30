@@ -5,7 +5,7 @@ import { queryKeys } from '@/shared/constants/query-keys'
 
 import { searchForumPosts } from '../api/forum-api'
 
-/** Số bài sổ xuống dưới ô tìm — muốn xem hết thì bấm «Xem tất cả» qua trang Tìm bài. */
+/** Số bài sổ xuống dưới ô tìm — muốn xem hết thì bấm "Xem tất cả" qua trang Tìm bài. */
 export const QUICK_SEARCH_LIMIT = 5
 /** Dưới 2 ký tự chưa tìm — 1 chữ cái LIKE quét gần hết diễn đàn, gợi ý vô nghĩa. */
 export const QUICK_SEARCH_MIN_CHARS = 2

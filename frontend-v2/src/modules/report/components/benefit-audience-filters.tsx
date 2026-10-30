@@ -25,7 +25,7 @@ import { BenefitOccasionPresetChips } from './benefit-occasion-preset-chips'
 import { BenefitUrlNumberInput } from './benefit-url-number-input'
 import { ReportDepartmentFilter } from './report-department-filter'
 
-/** Mốc «Mọi giới tính» — chuỗi, KHÔNG `0`: `gender=0` là nhóm «Chưa khai» thật. */
+/** Mốc "Mọi giới tính" — chuỗi, KHÔNG `0`: `gender=0` là nhóm "Chưa khai" thật. */
 const ALL_GENDERS = 'all'
 
 function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
@@ -38,7 +38,7 @@ function Field({ id, label, children }: { id: string; label: string; children: R
 }
 
 /**
- * Ô lọc riêng của «Phúc lợi & sự kiện» (H1, duoc-CR-688, `ReportPageConfig.extraFilters`):
+ * Ô lọc riêng của "Phúc lợi & sự kiện" (H1, duoc-CR-688, `ReportPageConfig.extraFilters`):
  * một khung đủ hàng ngang (dịp có sẵn · ngày dịp · tên dịp · giới tính · tuổi · mức quà ·
  * người đang nghỉ) rồi ô phòng ban đứng chung hàng với ô Công ty. Mọi giá trị nằm trên URL,
  * `useReportFilters().queryParams` tự gom gửi `/summary`, `/rows` và tệp ký nhận.
@@ -49,7 +49,7 @@ function Field({ id, label, children }: { id: string; label: string; children: R
 export function BenefitAudienceFilters() {
   const { can } = usePermission()
   const canUseSensitive = can('employee_sensitive', 'read')
-  //  Tắt «Tính người đang nghỉ» làm backend đọc đơn nghỉ phép → đòi `leave_request.read`.
+  //  Tắt "Tính người đang nghỉ" làm backend đọc đơn nghỉ phép → đòi `leave_request.read`.
   const canReadLeave = can('leave_request', 'read')
   const [searchParams] = useSearchParams()
   const setParams = useSetUrlParams()
@@ -139,7 +139,7 @@ export function BenefitAudienceFilters() {
           <div className="flex items-center gap-2 self-end pb-2">
             <Switch
               id="benefit-include-on-leave"
-              //  Thiếu quyền: tham số URL bị bỏ khi gọi API nên công tắc luôn hiện «bật».
+              //  Thiếu quyền: tham số URL bị bỏ khi gọi API nên công tắc luôn hiện "bật".
               checked={!canReadLeave || onLeave !== '0'}
               disabled={!canReadLeave}
               onCheckedChange={(checked) => setOnLeave(checked ? '1' : '0')}
@@ -156,7 +156,7 @@ export function BenefitAudienceFilters() {
         )}
         {!canReadLeave && (
           <p className="text-xs text-muted-foreground">
-            Tắt «Tính người đang nghỉ» cần quyền xem đơn nghỉ phép của nhân sự.
+            Tắt <strong>Tính người đang nghỉ</strong> cần quyền xem đơn nghỉ phép của nhân sự.
           </p>
         )}
       </section>

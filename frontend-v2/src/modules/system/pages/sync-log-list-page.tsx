@@ -39,7 +39,7 @@ import { SyncLogDetailSheet } from '../components/sync-log-detail-sheet'
 import { useSyncLogMeta, useSyncLogStats, useSyncLogs } from '../hooks/use-sync-logs'
 import { runCountsText, shortMessage, syncStatusTone } from '../utils/sync-log-format'
 
-/** Khoảng thời gian chọn được. Cố ý không có «tất cả»: sổ này là bảng dày nhất hệ. */
+/** Khoảng thời gian chọn được. Cố ý không có "tất cả": sổ này là bảng dày nhất hệ. */
 const DAY_OPTIONS = [
   { value: '1', label: '24 giờ qua' },
   { value: '7', label: '7 ngày qua' },
@@ -408,8 +408,8 @@ export function SyncLogListPage() {
                 className="h-8 w-56"
               />
 
-              {/*  Ô lọc nhanh đặt riêng chứ không nằm trong danh sách cờ: «chưa
-                   gắn được người» là hàng đợi soát THẬT SỰ có người đi xử —
+              {/*  Ô lọc nhanh đặt riêng chứ không nằm trong danh sách cờ: "chưa
+                   gắn được người" là hàng đợi soát THẬT SỰ có người đi xử —
                    phiếu đã vào ERP nhưng chưa biết của ai. Mấy cờ còn lại chỉ
                    là ghi chú dữ liệu. */}
               <Button

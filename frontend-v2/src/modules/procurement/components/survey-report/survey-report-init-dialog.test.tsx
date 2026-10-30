@@ -1,4 +1,4 @@
-// duoc-CR-614 — «Khởi tạo báo cáo mẫu» có chọn mẫu. Chạy qua NGUYÊN `SurveyReportCard` (chỉ giả
+// duoc-CR-614 — "Khởi tạo báo cáo mẫu" có chọn mẫu. Chạy qua NGUYÊN `SurveyReportCard` (chỉ giả
 // tầng `@/core/api`): gửi nhầm mã mẫu là khối dựng sai cả bộ hồ sơ, và đại ca muốn khởi tạo xong
 // là thấy ngay dạng Bảng để sửa.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -116,7 +116,7 @@ describe('SurveyReportCard — pick a template when initialising', () => {
   })
 
   it('sends the picked import-plan template and lands on the editable table view', async () => {
-    //  Người dùng từng chọn «Theo dòng hàng» — khởi tạo xong vẫn phải về Bảng.
+    //  Người dùng từng chọn "Theo dòng hàng" — khởi tạo xong vẫn phải về Bảng.
     localStorage.setItem('erp.survey-report.view', 'item')
     renderCard()
     const dialog = await openInitDialog()

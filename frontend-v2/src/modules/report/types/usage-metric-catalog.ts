@@ -1,5 +1,5 @@
 /** Hợp đồng JSON của `GET /api/usage-profiles/metrics` (duoc-CR-649): chỉ khóa và mã, chữ nằm ở lớp hiển thị. */
-/** Một cột phân phối của tuần mới nhất: khoảng nửa mở `[lo, hi)`; cột tràn có `hi = null` (nghĩa «≥ lo»). */
+/** Một cột phân phối của tuần mới nhất: khoảng nửa mở `[lo, hi)`; cột tràn có `hi = null` (nghĩa "≥ lo"). */
 export interface UsageMetricBucket {
   lo: number
   hi: number | null
@@ -15,7 +15,7 @@ export interface UsageMetricTrendPoint {
 
 export interface UsageMetricCatalogItem {
   key: string
-  /** «3.1»…«3.6» — mục của backend. */
+  /** "3.1"…"3.6" — mục của backend. */
   section: string
   unit: string
   phase: number

@@ -66,7 +66,7 @@ def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | Non
     #  ⚠️ `selectinload(manager)` là chốt HIỆU NĂNG, không phải tối ưu vặt:
     #  `DepartmentOut.manager_name` đọc qua quan hệ `Department.manager`, nên
     #  thiếu nó là **mỗi dòng một truy vấn** ngay trong vòng `model_validate` của
-    #  controller. Ô chọn phòng ban ở tab «Người đang giữ» (màn Chức vụ) gọi
+    #  controller. Ô chọn phòng ban ở tab "Người đang giữ" (màn Chức vụ) gọi
     #  endpoint này với `page_size=200`, tức mở một cái tab là hai trăm câu SELECT.
     #  Dùng `selectinload` chứ không `joinedload`: nhánh `q` bên dưới đã tự
     #  `outerjoin` sang `Employee` để tìm theo tên trưởng bộ phận, thêm một phép

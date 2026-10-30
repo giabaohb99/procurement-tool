@@ -1,7 +1,7 @@
 // bao-CR-608 — biểu mẫu sửa một dòng hàng: chỉ gửi ô ĐÃ ĐỔI, ô suy ra để trống = hệ thống tự làm.
 //
 // Gửi đủ mọi ô là lỗi im lặng: lần lưu nào cũng ghi lại doanh nghiệp / đối tác và biến hoạt chất
-// đang suy ra thành «do người nhập» (cờ `_from_file`), «Gắn lại nhãn» hết tác dụng với dòng đó.
+// đang suy ra thành "do người nhập" (cờ `_from_file`), "Gắn lại nhãn" hết tác dụng với dòng đó.
 import { describe, expect, it } from 'vitest'
 
 import type { CustomsLine } from '../types/customs'

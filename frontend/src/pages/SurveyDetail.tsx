@@ -954,7 +954,7 @@ export default function SurveyDetail() {
         {!isNew && sv.status === 'submitted' && canApprove && (
           <button className="btn" onClick={async () => { if (await askConfirm({ message: 'Duyệt cả phiếu khảo sát này?', confirmText: 'Duyệt phiếu', danger: false })) action('approve') }}><i className="ti ti-check" />Duyệt</button>
         )}
-        {/* bao-CR-554: «Trả về» dùng được cả khi phiếu ĐÃ DUYỆT (hủy duyệt để người khảo sát sửa rồi gửi lại). */}
+        {/* bao-CR-554: "Trả về" dùng được cả khi phiếu ĐÃ DUYỆT (hủy duyệt để người khảo sát sửa rồi gửi lại). */}
         {!isNew && ['submitted', 'approved'].includes(sv.status) && canApprove && (
           <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }}
             title={sv.status === 'approved' ? 'Hủy duyệt — trả về để người khảo sát sửa & gửi lại' : 'Trả về để người khảo sát sửa & gửi lại'}

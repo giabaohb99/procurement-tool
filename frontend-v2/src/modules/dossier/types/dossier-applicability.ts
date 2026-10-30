@@ -1,5 +1,5 @@
 /**
- * ĐIỀU KIỆN ÁP DỤNG của hồ sơ — *«giấy này phải kèm theo chứng từ nào»*.
+ * ĐIỀU KIỆN ÁP DỤNG của hồ sơ — *"giấy này phải kèm theo chứng từ nào"*.
  *
  * ⚠️ Bộ mã phải khớp `backend/app/modules/dossier/applicability.py`. Gõ tay ở
  * đây vì `gen_status_ts.py` chỉ sinh cho bộ mã trạng thái CHUỖI — cùng cảnh với
@@ -67,7 +67,7 @@ export const APPLY_FIELD_LABEL: Record<ApplyField, string> = {
 
 /**
  * Phép so sánh. Cố ý KHÔNG có `gt`/`lt` như bộ máy duyệt: so mã sản phẩm
- * «lớn hơn» thì ra một câu không ai đọc được nghĩa.
+ * "lớn hơn" thì ra một câu không ai đọc được nghĩa.
  */
 export const APPLY_OPS = {
   EQ: 'eq',
@@ -114,7 +114,7 @@ export interface ApplyCondition {
  *   · `DOSSIER_STATUS` (nháp/đang lưu/lưu trữ) = tờ giấy ĐÃ CÓ trong kho công
  *     ty chưa — một giá trị cho cả công ty.
  *   · `DOSSIER_PROGRESS` = việc làm tờ giấy đó CHO PHIẾU ĐANG MỞ tới đâu rồi —
- *     mỗi phiếu một giá trị. Thẻ «Hồ sơ cần hoàn thành» đo tiến độ bằng thang
+ *     mỗi phiếu một giá trị. Thẻ "Hồ sơ cần hoàn thành" đo tiến độ bằng thang
  *     NÀY; đo bằng thang kia thì mọi phiếu ra cùng một con số.
  */
 export const DOSSIER_PROGRESS = {
@@ -141,7 +141,7 @@ export const DOSSIER_PROGRESS_ORDER: DossierProgressStatus[] = [
   DOSSIER_PROGRESS.DONE,
 ]
 
-/** Hồ sơ khớp một chứng từ — bộ trường vừa đủ cho thẻ «Hồ sơ cần kèm». */
+/** Hồ sơ khớp một chứng từ — bộ trường vừa đủ cho thẻ "Hồ sơ cần kèm". */
 export interface ApplicableDossier {
   id: number
   code: string
@@ -151,7 +151,7 @@ export interface ApplicableDossier {
   dossier_type_name: string
   status: number
   status_label: string
-  /** Ghi chú ngắn — cột MÔ TẢ trên dòng hồ sơ của thẻ «Hồ sơ cần hoàn thành». */
+  /** Ghi chú ngắn — cột MÔ TẢ trên dòng hồ sơ của thẻ "Hồ sơ cần hoàn thành". */
   note: string
   expiry_date: string | null
   expiry_state: number
@@ -162,16 +162,16 @@ export interface ApplicableDossier {
   /**
    * Số thứ tự các dòng hàng mà tờ hồ sơ này khớp.
    *
-   * ⚠️ **RỖNG = hồ sơ CHUNG** (áp cho cả phiếu), KHÔNG phải «không khớp dòng
-   * nào» — hồ sơ không khớp thì backend đã loại khỏi danh sách. Lẫn hai nghĩa
-   * là bộ hồ sơ chung biến mất khỏi chế độ xem «Theo dòng hàng», đúng nhóm
+   * ⚠️ **RỖNG = hồ sơ CHUNG** (áp cho cả phiếu), KHÔNG phải "không khớp dòng
+   * nào" — hồ sơ không khớp thì backend đã loại khỏi danh sách. Lẫn hai nghĩa
+   * là bộ hồ sơ chung biến mất khỏi chế độ xem "Theo dòng hàng", đúng nhóm
    * đông nhất và quan trọng nhất.
    */
   matched_lines: number[]
 
   //  ----- TIẾN ĐỘ RIÊNG CỦA CHỨNG TỪ ĐANG MỞ (`tab_dossier_progress`) -----
   //  ⚠️ Cặp (chứng từ × hồ sơ) chưa ai động tới thì KHÔNG có dòng dưới DB;
-  //  backend trả bộ mặc định «chưa bắt đầu · bắt buộc · chưa ai nhận». Nên mấy
+  //  backend trả bộ mặc định "chưa bắt đầu · bắt buộc · chưa ai nhận". Nên mấy
   //  ô này LUÔN có giá trị, không bao giờ `undefined`.
   progress_status: DossierProgressStatus
   progress_status_label: string
@@ -192,7 +192,7 @@ export interface ApplicableDossier {
   /** `id` các tờ phải xong TRƯỚC tờ này, TRÊN PHIẾU NÀY. */
   depends: number[]
   /**
-   * Những tờ tiên quyết CHƯA xong — kèm tên để dựng câu «chờ: …» khỏi phải tra
+   * Những tờ tiên quyết CHƯA xong — kèm tên để dựng câu "chờ: …" khỏi phải tra
    * ngược. Rỗng = tờ này mở khóa.
    *
    * ⚠️ **Backend tính, đừng tự suy từ `depends` ở TypeScript.** Luật có lọc id
@@ -204,7 +204,7 @@ export interface ApplicableDossier {
   locked: boolean
 }
 
-/** MỘT dòng hàng của chứng từ — khung của chế độ xem «Theo dòng hàng». */
+/** MỘT dòng hàng của chứng từ — khung của chế độ xem "Theo dòng hàng". */
 export interface ApplicableDocLine {
   no: number
   /** Tên dễ đọc do backend dựng (tên SP, hoặc phân loại + thông số với YCBG). */
@@ -225,7 +225,7 @@ export interface ApplicableDossiersResult {
 /**
  * Đọc `value` của một dòng điều kiện ra CHUỖI cho ô nhập, và ngược lại.
  *
- * ⚠️ Một chỗ duy nhất biết luật «ngăn bằng dấu phẩy». Rải ra hai nơi thì nơi
+ * ⚠️ Một chỗ duy nhất biết luật "ngăn bằng dấu phẩy". Rải ra hai nơi thì nơi
  * ĐỌC và nơi GHI sẽ lệch nhau ở đúng ca có khoảng trắng thừa, và người dùng gõ
  * `SP-001, SP-002` rồi lưu ra một mã tên là `" SP-002"`.
  */

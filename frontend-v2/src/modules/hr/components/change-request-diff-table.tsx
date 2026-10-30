@@ -34,7 +34,7 @@ function ChangedBadge() {
 /**
  * Bảng so sánh một NHÓM của đề nghị sửa hồ sơ (duoc-CR-676): Trường · Lúc gửi · Hiện tại · Đề nghị.
  *
- * Dòng có «Hiện tại» khác «Lúc gửi» được tô và gắn nhãn «Đã đổi sau khi gửi» — hồ sơ đã bị sửa
+ * Dòng có "Hiện tại" khác "Lúc gửi" được tô và gắn nhãn "Đã đổi sau khi gửi" — hồ sơ đã bị sửa
  * (bởi phòng Nhân sự, nhập Excel…) sau lúc nhân viên gửi, nên người duyệt phải biết mình sắp ghi
  * đè lên giá trị nào. Dòng bị che (thiếu quyền nhạy cảm) không so được nên không tô.
  */
@@ -79,12 +79,12 @@ export function ChangeRequestDiffTable({ items }: ChangeRequestDiffTableProps) {
     <DataTable
       columns={columns}
       rows={rows}
-      //  Bảng con 4 cột cố định trong trang chi tiết: tắt cột ID + thanh «Tải lại / Cột» (mọi cột
+      //  Bảng con 4 cột cố định trong trang chi tiết: tắt cột ID + thanh "Tải lại / Cột" (mọi cột
       //  `hideable: false` thì bảng không dựng thanh đó) — có chúng chỉ thêm nhiễu.
       idColumn={false}
       getRowId={(item) => `${item.group}-${item.field}`}
       emptyMessage="Nhóm này không có ô nào đổi."
-      //  Màn hẹp: bốn cột 880px không vừa 390px, cột «Đề nghị» — thứ quan trọng nhất — trôi khỏi
+      //  Màn hẹp: bốn cột 880px không vừa 390px, cột "Đề nghị" — thứ quan trọng nhất — trôi khỏi
       //  tầm mắt. Thẻ xếp dọc bày đủ ba giá trị của một ô.
       mobileCard={(item) => (
         <div className="flex flex-col gap-1 text-sm">

@@ -156,6 +156,6 @@ def expire_excerpts(db: Session, source: Document) -> int:
             continue
         excerpt.status = STATUS_EXPIRED
         excerpt.needs_review = True
-        excerpt.needs_review_note = f"Bản gốc «{source.title}» đã bị bãi bỏ."
+        excerpt.needs_review_note = f"Bản gốc \"{source.title}\" đã bị bãi bỏ."
         count += 1
     return count

@@ -61,9 +61,9 @@ export function toRoomPayload(values: RoomBookingFormValues): RoomBookingPayload
  * boolean — nút mờ đi mà không nói vì sao là kiểu chặn khó chịu nhất.
  */
 export function missingBeforeSubmit(values: RoomBookingFormValues): string {
-  if (!values.title.trim()) return 'Thiếu «Nội dung cuộc họp»'
+  if (!values.title.trim()) return 'Thiếu "Nội dung cuộc họp"'
   if (!values.roomId) return 'Chưa chọn phòng họp'
   if (!values.startAt || !values.endAt) return 'Chưa chọn khung giờ'
-  if (values.endAt <= values.startAt) return '«Kết thúc» phải sau «Bắt đầu»'
+  if (values.endAt <= values.startAt) return '"Kết thúc" phải sau "Bắt đầu"'
   return ''
 }

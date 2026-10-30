@@ -47,7 +47,7 @@ describe('groupTasksBySection', () => {
     expect(groups[1].tasks.map((t) => t.id)).toEqual([1])
   })
 
-  it('shows an EMPTY column — that is the only place its «Việc mới» row can live', () => {
+  it('shows an EMPTY column — that is the only place its "Việc mới" row can live', () => {
     const groups = groupTasksBySection([], [section(10, 'To do'), section(20, 'Doing')])
 
     expect(groups).toHaveLength(2)
@@ -61,7 +61,7 @@ describe('groupTasksBySection', () => {
     expect(groups[0].tasks.map((t) => t.id)).toEqual([9, 3, 7])
   })
 
-  it('drops tasks with no column into «Chưa phân cột», placed last', () => {
+  it('drops tasks with no column into "Chưa phân cột", placed last', () => {
     const groups = groupTasksBySection([task(1, null), task(2, 10)], [section(10, 'To do')])
 
     expect(groups.map((g) => g.key)).toEqual(['section:10', UNGROUPED_KEY])
@@ -76,7 +76,7 @@ describe('groupTasksBySection', () => {
     expect(groups.find((g) => g.key === UNGROUPED_KEY)?.tasks.map((t) => t.id)).toEqual([1])
   })
 
-  it('omits «Chưa phân cột» entirely when every task has a column', () => {
+  it('omits "Chưa phân cột" entirely when every task has a column', () => {
     const groups = groupTasksBySection([task(1, 10)], [section(10, 'To do')])
 
     expect(groups.map((g) => g.key)).toEqual(['section:10'])
@@ -86,7 +86,7 @@ describe('groupTasksBySection', () => {
     expect(groupTasksBySection([], [])).toEqual([])
   })
 
-  it('puts everything under «Chưa phân cột» when the list has no columns yet', () => {
+  it('puts everything under "Chưa phân cột" when the list has no columns yet', () => {
     const groups = groupTasksBySection([task(1, null), task(2, null)], [])
 
     expect(groups).toHaveLength(1)

@@ -189,9 +189,9 @@ export function UnifiedRoomBookingTable() {
   ])
 
   // ── Cột theo phạm vi ───────────────────────────────────────────────────────
-  //  «Cần tôi duyệt»: thêm cột Luồng duyệt + Việc của tôi + Hạn xử lý.
-  //  «Tôi đã duyệt»: thêm Luồng duyệt, bỏ Việc/Hạn (không còn tác dụng).
-  //  Còn lại: cột chuẩn + huy hiệu «Cần bạn duyệt» trên trạng thái.
+  //  "Cần tôi duyệt": thêm cột Luồng duyệt + Việc của tôi + Hạn xử lý.
+  //  "Tôi đã duyệt": thêm Luồng duyệt, bỏ Việc/Hạn (không còn tác dụng).
+  //  Còn lại: cột chuẩn + huy hiệu "Cần bạn duyệt" trên trạng thái.
   const columns = useMemo<DataTableColumn<RoomBooking>[]>(() => {
     const base: DataTableColumn<RoomBooking>[] = [
       codeColumn<RoomBooking>(),
@@ -315,7 +315,7 @@ export function UnifiedRoomBookingTable() {
         ? 'Bạn chưa duyệt phiếu đặt phòng nào trong 30 ngày qua.'
         : currentScope === ROOM_SCOPE.MINE
           ? 'Bạn chưa có phiếu đặt phòng nào.'
-          : 'Chưa có phiếu đặt phòng nào. Bấm «Đặt phòng» để tạo.'
+          : 'Chưa có phiếu đặt phòng nào. Bấm "Đặt phòng" để tạo.'
 
   return (
     <DataTable

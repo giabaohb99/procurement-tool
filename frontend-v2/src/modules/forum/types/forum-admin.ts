@@ -1,5 +1,5 @@
 /**
- * Kiểu dữ liệu của tab «Quản trị» diễn đàn (CR-263) — chuyên mục, nhật ký
+ * Kiểu dữ liệu của tab "Quản trị" diễn đàn (CR-263) — chuyên mục, nhật ký
  * kiểm duyệt. Chỉ tài khoản có grant `forum_post`/`forum_board` gọi được các
  * API tương ứng; người thường ăn 403.
  */

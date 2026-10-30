@@ -1,7 +1,7 @@
 """ai-CR-191 — sổ tham chiếu của bốn danh mục nền Thu mua (kho / đơn vị tính / nhóm hàng / thương hiệu).
 
 Khai một lần ở đây, `catalog/controller.py` import lúc khởi động; `core/crud.make_crud_router` tự gọi
-`reference_guard.ensure_deletable(db, entity, obj)` ở nút xóa và dòng CSV «xóa» nên danh mục CRUD chung
+`reference_guard.ensure_deletable(db, entity, obj)` ở nút xóa và dòng CSV "xóa" nên danh mục CRUD chung
 không cần `before_delete`.
 
 Ba danh mục này KHÔNG có khóa ngoại — chứng từ chép CHUỖI:

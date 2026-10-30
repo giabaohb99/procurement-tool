@@ -233,7 +233,7 @@ export function DriverForm({ item, title, onDone }: DriverFormProps) {
         <CatalogFormField
           label="Trạng thái"
           fullWidth
-          hint="Tài xế «Nghỉ phép» / «Ngưng sử dụng» vẫn nằm trong danh mục nhưng không nên phân chuyến."
+          hint='Tài xế "Nghỉ phép" / "Ngưng sử dụng" vẫn nằm trong danh mục nhưng không nên phân chuyến.'
         >
           <Select value={form.status} onValueChange={(v) => set('status', v)}>
             <SelectTrigger className="w-full">

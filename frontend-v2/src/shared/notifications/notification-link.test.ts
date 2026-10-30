@@ -30,7 +30,7 @@ describe('toAppPath', () => {
     expect(toAppPath('/import-batches/3')).toBe('/system/imports/3')
   })
 
-  it('link «Xử lý khảo sát» kiểu cũ phải rơi về chi tiết YCBG, không giữ đuôi /process', () => {
+  it('link "Xử lý khảo sát" kiểu cũ phải rơi về chi tiết YCBG, không giữ đuôi /process', () => {
     //  LỖI ĐÃ XẢY RA (29/08/2026): backend ghi `/survey-requests/{id}/process`
     //  khi phiếu được duyệt / dòng được gán NSTM. Bảng tiền tố dịch máy móc
     //  thành `/procurement/survey-requests/{id}/process` — route không tồn tại

@@ -33,11 +33,11 @@ interface FolderTreePanelHeaderProps {
   onToggleSearch: () => void
   includeArchived: boolean
   onIncludeArchivedChange: (value: boolean) => void
-  /** «Hiện văn bản trong cây» (duoc-CR-476) — tắt thì cây chỉ còn thư mục, không tự nạp lá văn bản. */
+  /** "Hiện văn bản trong cây" (duoc-CR-476) — tắt thì cây chỉ còn thư mục, không tự nạp lá văn bản. */
   showDocuments: boolean
   onShowDocumentsChange: (value: boolean) => void
   /**
-   * Về GỐC — bỏ chọn thư mục, khung phải hiện «Thư mục của bạn». Không có
+   * Về GỐC — bỏ chọn thư mục, khung phải hiện "Thư mục của bạn". Không có
    * đường này thì lỡ bấm vào một pháp nhân là KẸT ở đó: cây không còn chỗ nào
    * để bỏ chọn (phản hồi 24/09/2026). Bỏ trống = nhãn chỉ là chữ như cũ.
    */
@@ -83,7 +83,7 @@ export function FolderTreePanelHeader({
   return (
     <div className="group/header flex items-center justify-between gap-1 px-2 pt-2">
       {onSelectRoot ? (
-        <IconTooltip label="Về «Thư mục của bạn»">
+        <IconTooltip label='Về "Thư mục của bạn"'>
           <button
             type="button"
             onClick={onSelectRoot}

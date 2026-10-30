@@ -77,7 +77,7 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
   const { data: purchaseRequest, isLoading, isError } = fromPo ? byOrder : byRequest
   const unmatchedLines = fromPo ? (byOrder.data?.po_lines_unmatched ?? 0) : 0
   const { data: warehouses } = usePurchaseRequestPrintWarehouses()
-  //  bao-CR-546: MỘT ô chọn «Mẫu in» thay hai nhóm nút chữ ký / thường-thuế; ô tick ẩn nơi giao riêng.
+  //  bao-CR-546: MỘT ô chọn "Mẫu in" thay hai nhóm nút chữ ký / thường-thuế; ô tick ẩn nơi giao riêng.
   //  bao-CR-574: mẫu đi theo `?mau=` để đổi qua lại với bản tách theo NCC không mất lựa chọn.
   const [searchParams] = useSearchParams()
   const [template, setTemplate] = useState<PrintTemplateValue>(() =>
@@ -166,8 +166,8 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
           )}
         </div>
 
-        {/* bao-CR-574: chuyển sang bản tách theo NCC nằm NGAY trong ô «Mẫu in» (nhóm thứ hai),
-            thay nút lẻ «Xem bản tách theo nhà cung cấp». Chỉ người có quyền xem NCC thấy nhóm
+        {/* bao-CR-574: chuyển sang bản tách theo NCC nằm NGAY trong ô "Mẫu in" (nhóm thứ hai),
+            thay nút lẻ "Xem bản tách theo nhà cung cấp". Chỉ người có quyền xem NCC thấy nhóm
             đó — trang bên kia tự gác lại lần nữa (N-17). Mở từ ĐƠN MUA HÀNG thì KHÔNG có nhóm
             này: `id` trên URL lúc đó là id của đơn, bắc sang sẽ ra nhầm phiếu. */}
         <PurchaseRequestPrintOptions
@@ -228,7 +228,7 @@ export function PurchaseRequestPrintSheet({
   warehouseCode: (name: string) => string
   taxMode: boolean
   showSignature: boolean
-  /** bao-CR-546 — tick «Ẩn nơi giao» thì GIỮ cột «Nơi giao», chỉ để trống chữ trong ô từng dòng. */
+  /** bao-CR-546 — tick "Ẩn nơi giao" thì GIỮ cột "Nơi giao", chỉ để trống chữ trong ô từng dòng. */
   hideDeliveryPlace?: boolean
 }) {
   return (
@@ -424,7 +424,7 @@ function PurchaseRequestPrintItems({
               <td className="text-right tabular-nums">
                 {formatMoney(item.qty * line.price)}
               </td>
-              {/* bao-CR-546: «Ẩn nơi giao» giữ cột (khuôn mẫu không đổi), chỉ để trống chữ —
+              {/* bao-CR-546: "Ẩn nơi giao" giữ cột (khuôn mẫu không đổi), chỉ để trống chữ —
                   bản CR-544 xóa hẳn cột, đại ca chê lệch khuôn. */}
               <td>{hideDeliveryPlace ? '' : warehouseCode(item.warehouse)}</td>
               <td>{item.note}</td>
@@ -476,11 +476,11 @@ export function SignatureSection({
   showSignature: boolean
 }) {
   //  bao-CR-531 → bao-CR-536: BỘ Ô do backend quyết (`print_signature_cells`) — công ty luôn 4 ô,
-  //  hộ kinh doanh cũng 4 ô, chỉ đổi nhãn ô đầu thành «Chủ hộ» (bao-CR-539); người đại diện trùng ô
-  //  nào thì tên lên ô đầu, ô trùng GIỮ nhưng trống. Lưới vẫn theo số ô thật backend trả. Ở đây chỉ áp «Không chữ ký»
-  //  (bỏ cả ảnh lẫn tên) và «Mẫu thuế» (trống hết).
-  //  Ô «TP/BP đề xuất» vẫn là người trong cột «Trưởng phòng phê duyệt» (bao-CR-499/521), ô
-  //  «TP/BP mua hàng» vẫn là TRƯỞNG PHÒNG của người bấm Điều phối (bao-CR-397).
+  //  hộ kinh doanh cũng 4 ô, chỉ đổi nhãn ô đầu thành "Chủ hộ" (bao-CR-539); người đại diện trùng ô
+  //  nào thì tên lên ô đầu, ô trùng GIỮ nhưng trống. Lưới vẫn theo số ô thật backend trả. Ở đây chỉ áp "Không chữ ký"
+  //  (bỏ cả ảnh lẫn tên) và "Mẫu thuế" (trống hết).
+  //  Ô "TP/BP đề xuất" vẫn là người trong cột "Trưởng phòng phê duyệt" (bao-CR-499/521), ô
+  //  "TP/BP mua hàng" vẫn là TRƯỞNG PHÒNG của người bấm Điều phối (bao-CR-397).
   const cells = resolvePrintSignatureCells(purchaseRequest, { taxMode, showSignature })
 
   return (
@@ -527,7 +527,7 @@ export function SignatureSection({
  * gãy dòng; màn hẹp thì cả cụm xuống hàng. Bản in gốc và bản tách theo NCC dùng chung.
  *
  * bao-CR-574 (đại ca chốt 03/10/2026): `supplierLayout` có mặt thì ô chọn chia hai nhóm —
- * «Phiếu chung» và «Tách theo nhà cung cấp», mỗi nhóm đủ ba mẫu. Không có quyền xem NCC thì
+ * "Phiếu chung" và "Tách theo nhà cung cấp", mỗi nhóm đủ ba mẫu. Không có quyền xem NCC thì
  * truyền `undefined`: ô chọn y như cũ. `enabled: false` = nhóm tách hiện nhưng mờ, kèm lý do.
  * Chọn mẫu CÙNG nhóm gọi `onTemplateChange`; chọn sang nhóm kia gọi `onLayoutChange`.
  */

@@ -1,6 +1,6 @@
-"""Excel «Danh sách ký nhận» của báo cáo H1 (duoc-CR-688): MỖI PHÁP NHÂN MỘT SHEET.
+"""Excel "Danh sách ký nhận" của báo cáo H1 (duoc-CR-688): MỖI PHÁP NHÂN MỘT SHEET.
 
-Mỗi sheet: tiêu đề «DANH SÁCH NHẬN QUÀ <tên dịp>», STT + cột như `/rows`, ô «Ký nhận» để trống, dòng
+Mỗi sheet: tiêu đề "DANH SÁCH NHẬN QUÀ <tên dịp>", STT + cột như `/rows`, ô "Ký nhận" để trống, dòng
 Tổng tiền, khối ký người lập / người duyệt. Chuỗi do người nhập (tên dịp, họ tên, chức vụ) đi qua
 `text_cell` nên không bị Excel hiểu thành công thức. Không có ngày sinh / tên con.
 """
@@ -50,7 +50,7 @@ def _sheet(ws, company: str, rows: list[BenefitRow], flt: Filters, department_na
             if heads[i - 1][0] == "amount":
                 c.number_format = "#,##0"
     r += 1
-    last = n - 1     # cột «Mức quà»
+    last = n - 1     # cột "Mức quà"
     text_cell(ws, r, 1, "Tổng tiền", font=BOLD, border=BORDER)
     for i in range(2, n + 1):
         ws.cell(row=r, column=i).border = BORDER

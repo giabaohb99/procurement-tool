@@ -61,7 +61,7 @@ export function IncomingDocumentsTab() {
  * dụng**, tức là phải làm theo (F05, trước đây là màn riêng "Áp dụng cho tôi").
  *
  * Khác "tất cả văn bản tôi đọc được": đọc được mà không thuộc phạm vi áp dụng
- * thì không hiện ở đây — đó là tab «Văn bản đi» bên cạnh.
+ * thì không hiện ở đây — đó là tab "Văn bản đi" bên cạnh.
  *
  * ⚠️ Tìm và lọc chạy NGAY TẠI TRÌNH DUYỆT, khác mọi màn danh sách khác trong
  * hệ. Không phải chọn cho tiện: `/api/documents/applies-to-me` tính phạm vi bằng
@@ -220,7 +220,7 @@ function IncomingDocumentsContent() {
             : 'Chưa có văn bản nào áp dụng cho bạn.'
         }
         //  Khổ hẹp: THẺ thay bảng — xem `DocumentCard`. `showReviewFlag` vì
-        //  «Cần rà lại» là lý do chính người ta mở tab này.
+        //  "Cần rà lại" là lý do chính người ta mở tab này.
         mobileCard={(row: DocumentRecord) => <DocumentCard doc={row} showReviewFlag />}
         toolbar={
           <>

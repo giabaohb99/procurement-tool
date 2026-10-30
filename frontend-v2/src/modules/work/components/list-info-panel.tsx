@@ -31,7 +31,7 @@ interface ListInfoPanelProps {
    */
   canEdit: boolean
   /**
-   * bao-CR-482: nhóm chọn được cho ô «Nhóm». Không truyền = màn gọi không có cây
+   * bao-CR-482: nhóm chọn được cho ô "Nhóm". Không truyền = màn gọi không có cây
    * nhóm trong tay → ô chỉ hiện chữ, không đổi được.
    */
   groups?: FlatWorkGroup[]

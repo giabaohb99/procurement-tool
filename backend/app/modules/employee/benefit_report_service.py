@@ -1,4 +1,4 @@
-"""Báo cáo H1 «Phúc lợi & sự kiện» (khóa 22, duoc-CR-688) — `GET /api/benefit-audience/summary`.
+"""Báo cáo H1 "Phúc lợi & sự kiện" (khóa 22, duoc-CR-688) — `GET /api/benefit-audience/summary`.
 
 Ngày dịp = cuối kỳ (`date_to`). Đơn vị tính: người, hoặc CON khi đặt `child_max_age`.
 `managers` / `staff` đếm theo đơn vị ấy, nên `budget` = managers × mức quản lý + staff × mức nhân viên.
@@ -69,12 +69,12 @@ def build_summary(db: Session, employees_q, period: Period, group_by: str | None
     unit = "con" if flt.child_max_age is not None else "người"
     data["notes"] = [
         f"Tính theo ngày dịp {period.date_to:%d/%m/%Y} (cuối kỳ đã chọn): chỉ nhân sự đang làm vào ngày đó.",
-        f"Quản lý = cấp bậc từ Phó phòng trở lên. «Quản lý» và «Nhân viên» đếm theo {unit}; "
+        f"Quản lý = cấp bậc từ Phó phòng trở lên. \"Quản lý\" và \"Nhân viên\" đếm theo {unit}; "
         "Tổng kinh phí = số lượng × mức quà tương ứng."]
     no_hire = sum(1 for r in rows if r.hire_estimated)
     if no_hire:
         data["notes"].append(f"Có {no_hire} người thiếu ngày vào làm — báo cáo tạm lấy ngày TẠO hồ sơ làm ngày "
-                             "vào (đủ điều kiện «đã vào làm» và tính thâm niên có thể lệch), cần Nhân sự bổ sung.")
+                             "vào (đủ điều kiện \"đã vào làm\" và tính thâm niên có thể lệch), cần Nhân sự bổ sung.")
     if flt.child_max_age is not None:
         notes = "Đơn vị tính là CON (con trai, con gái) có tuổi không quá mức đã chọn tại ngày dịp, theo hồ sơ người thân."
         data["notes"].append(notes)

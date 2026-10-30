@@ -1,7 +1,7 @@
 """Sự kiện giao diện tách theo ỨNG DỤNG gửi (bao-CR-649) — đọc thẳng `tab_ui_event` (giữ 90 ngày).
 
 Số gom ngày (`tab_usage_daily`) cố ý GIỮ NGUYÊN, cộng cả hai app: hồ sơ một người là một người, dù làm trên
-thumua hay ERP v2. Màn này chỉ trả lời «phòng Thu mua đang làm ở app nào, bao nhiêu» để biết bộ thu bên thumua có
+thumua hay ERP v2. Màn này chỉ trả lời "phòng Thu mua đang làm ở app nào, bao nhiêu" để biết bộ thu bên thumua có
 dữ liệu và để chủ sản phẩm quyết tắt app cũ lúc nào. Chỉ số + mã, không có chữ người dùng.
 """
 from datetime import date

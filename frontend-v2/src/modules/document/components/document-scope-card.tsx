@@ -69,8 +69,8 @@ export function DocumentScopeCard({
                 {data.issuer_company_name || 'pháp nhân ban hành'}.
               </p>
               <p className="text-muted-foreground">
-                Mọi phòng ban, mọi nhân sự của chính pháp nhân này đều thấy văn bản trong mục «Văn
-                bản áp dụng cho tôi». Chỉ khai thêm dòng khi muốn đi XA HƠN (pháp nhân khác) hoặc
+                Mọi phòng ban, mọi nhân sự của chính pháp nhân này đều thấy văn bản trong mục <em>Văn
+                bản áp dụng cho tôi</em>. Chỉ khai thêm dòng khi muốn đi XA HƠN (pháp nhân khác) hoặc
                 HẸP LẠI (một phòng ban, một người).
               </p>
             </div>

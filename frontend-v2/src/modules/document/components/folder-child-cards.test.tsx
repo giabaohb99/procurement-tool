@@ -96,7 +96,7 @@ describe('FolderChildCards — bấm một lần MỞ, Ctrl/Shift+bấm CHỌN',
   })
 })
 
-//  Gốc «Thư mục của bạn» (`folder-my-drive-panel.tsx`, duoc-CR-476) REUSE
+//  Gốc "Thư mục của bạn" (`folder-my-drive-panel.tsx`, duoc-CR-476) REUSE
 //  nguyên xi component này để vẽ thư mục PHÁP NHÂN — phải truyền đúng
 //  `isCompanyRoot` cho `FolderItemContextMenu`, không thì menu ⋯ lộ ra
 //  Đổi tên/Chuyển tới cho một loại thư mục backend luôn từ chối hai việc đó.

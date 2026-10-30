@@ -1,4 +1,4 @@
-// Mục «Pháp lý»: bảng duyệt cả danh mục hóa chất theo văn bản + thẻ cảnh báo của từ khóa đang
+// Mục "Pháp lý": bảng duyệt cả danh mục hóa chất theo văn bản + thẻ cảnh báo của từ khóa đang
 // tra. Chặn ở tầng `@/core/api` (luật testing.md).
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -142,7 +142,7 @@ describe('CustomsRegulationTab', () => {
     expect(within(row).queryByText('null')).not.toBeInTheDocument()
   })
 
-  //  duoc-CR-598 — ô trống bị đọc thành «thiếu dữ liệu». PL IV có ngưỡng TỒN TRỮ kg; PL II / III có
+  //  duoc-CR-598 — ô trống bị đọc thành "thiếu dữ liệu". PL IV có ngưỡng TỒN TRỮ kg; PL II / III có
   //  ngưỡng HÀM LƯỢNG hỗn hợp % (câu ghi chú của NĐ 24, tệp Excel không có); PL I không có ngưỡng nào.
   it('fills the limit cell with kg, the mixture percentage, or says there is none', async () => {
     items = [
@@ -168,7 +168,9 @@ describe('CustomsRegulationTab', () => {
 
   it('shows the keyword alerts card only when the current keyword hits something', async () => {
     const { unmount } = build({ keyword: 'paraquat', alerts: [hit({ id: 9, list_code: 10, name: 'Paraquat' })] })
-    expect(await screen.findByText('Cảnh báo cho từ khóa đang tra «paraquat»')).toBeInTheDocument()
+    expect(await screen.findByText(/Cảnh báo cho từ khóa đang tra/)).toHaveTextContent(
+      'Cảnh báo cho từ khóa đang tra paraquat',
+    )
     unmount()
     build({ keyword: 'paraquat', alerts: [] })
     await screen.findByText(/khớp/)
@@ -181,7 +183,7 @@ describe('CustomsRegulationTab', () => {
     expect(await screen.findByText(/Chưa có danh mục hóa chất theo văn bản/)).toBeInTheDocument()
   })
 
-  it('searches by the typed keyword and resets it with «Xóa lọc»', async () => {
+  it('searches by the typed keyword and resets it with "Xóa lọc"', async () => {
     build()
     const search = await screen.findByRole('textbox', { name: 'Tìm hóa chất theo văn bản' })
     fireEvent.change(search, { target: { value: 'H2SO4' } })
@@ -193,7 +195,7 @@ describe('CustomsRegulationTab', () => {
     expect(search).toHaveValue('')
   })
 
-  describe('cột «Thuốc BVTV chứa»', () => {
+  describe('cột "Thuốc BVTV chứa"', () => {
     const banned = (over: Partial<CustomsRegulationHit>) =>
       hit({ id: 9, list_code: 10, list_label: 'TT 75/2025 · Hoạt chất cấm', name: 'Chlorpyrifos ethyl',
         threshold_kg: null, banned_year: 2019, legal_basis: 'TT 75/2025/TT-BNNMT', ...over })
@@ -206,7 +208,7 @@ describe('CustomsRegulationTab', () => {
       expect(screen.queryByRole('button', { name: /thuốc$/ })).not.toBeInTheDocument()
     })
 
-    //  «0» khi chưa nạp danh mục thuốc sẽ đọc thành «đã đối chiếu, sạch» — sai.
+    //  "0" khi chưa nạp danh mục thuốc sẽ đọc thành "đã đối chiếu, sạch" — sai.
     it('says the pesticide catalog is not loaded instead of showing 0', async () => {
       items = [banned({ pesticide_count: null })]
       build()

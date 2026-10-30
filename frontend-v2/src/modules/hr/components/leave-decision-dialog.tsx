@@ -121,14 +121,14 @@ export function LeaveDecisionDialog({
             <Field label="Số đơn" value={row.code} />
             <Field label="Người nghỉ" value={row.employee_name || `#${row.employee_id}`} />
             {/*  Đơn nhiều loại phải nói RA từng loại mấy ngày, không rút thành
-                 «Phép năm +1»: người duyệt đang quyết chính vào con số đó —
+                 "Phép năm +1": người duyệt đang quyết chính vào con số đó —
                  3 ngày phép năm khác hẳn 3 ngày không lương về mặt tiền lương. */}
             <Field label="Loại nghỉ" value={leaveLinesText(row) || row.leave_type_name || '—'} />
             <Field label="Số ngày" value={`${row.total_days} ngày`} />
             <Field
               label="Thời gian nghỉ"
               //  Đơn nhiều khoảng nói đủ từng khoảng: người duyệt quyết vào chính những ngày
-              //  vắng mặt, «27/10 → 07/11» giấu mất cả tuần đi làm ở giữa (duoc-CR-683).
+              //  vắng mặt, "27/10 → 07/11" giấu mất cả tuần đi làm ở giữa (duoc-CR-683).
               value={
                 hasMultiplePeriods(row)
                   ? formatRequestPeriods(row)

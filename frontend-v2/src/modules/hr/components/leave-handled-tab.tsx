@@ -30,13 +30,13 @@ import {
 } from './leave-request-columns'
 
 /**
- * Tab «TÔI ĐÃ DUYỆT» — nhìn lại những đơn chính tôi vừa quyết định (CR-260).
+ * Tab "TÔI ĐÃ DUYỆT" — nhìn lại những đơn chính tôi vừa quyết định (CR-260).
  *
  * ⚠️ Đây là màn *"nhớ lại hôm qua mình ký cái gì"*, **không phải sổ tra cứu**:
  * backend chặn ở 30 ngày gần nhất và không phân trang. Muốn tra đủ lịch sử thì
  * mở dấu vết của chính tờ đơn, nơi có cả những người khác đã làm gì.
  *
- * ⚠️ **Không dựng cột «Tôi đã» và «Lúc»** (bỏ 03/09/2026). Mọi dòng trong tab
+ * ⚠️ **Không dựng cột "Tôi đã" và "Lúc"** (bỏ 03/09/2026). Mọi dòng trong tab
  * này đều do chính người đang xem quyết, nên hai cột đó chỉ lặp lại cái tên của
  * tab và một mốc giờ mà không ai dùng để làm gì — trong khi chúng chiếm 260px
  * đầu bảng, đẩy những cột thật sự phân biệt các dòng (ai nghỉ, ngày nào) trôi
@@ -50,7 +50,7 @@ export function LeaveHandledTab() {
   )
 }
 
-//  `tab` phải giữ lại, nếu không bấm «Áp dụng» là màn nhảy về tab mặc định.
+//  `tab` phải giữ lại, nếu không bấm "Áp dụng" là màn nhảy về tab mặc định.
 const FILTER_CONFIG = {
   fields: LEAVE_INBOX_FILTER_FIELDS,
   allowConjunctionToggle: true,
@@ -99,7 +99,7 @@ function LeaveHandledContent() {
       storageKey="hr.leave-handled"
       onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
       //  Màn hẹp: thẻ thay bảng. Giữ huy hiệu trạng thái — ở tab này nó chính
-      //  là thứ phân biệt các dòng («hôm qua tôi duyệt hay trả về đơn nào»).
+      //  là thứ phân biệt các dòng ("hôm qua tôi duyệt hay trả về đơn nào").
       mobileCard={(r) => <LeaveRequestCard request={r} />}
       toolbar={
         <LeaveRowsFilterBar

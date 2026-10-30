@@ -13,7 +13,7 @@
 /** Chứng từ chủ của khối báo cáo — trùng tên entity phân quyền. */
 export type ReportOwnerEntity = 'survey_request' | 'purchase_order'
 
-/** Một NÚT lọc theo dòng hàng (vd «K₂SO₄»). Hồ sơ `item_id = 0` là CHUNG. */
+/** Một NÚT lọc theo dòng hàng (vd "K₂SO₄"). Hồ sơ `item_id = 0` là CHUNG. */
 export interface SurveyReportItem {
   id: number
   name: string
@@ -66,7 +66,7 @@ export interface SurveyRequestReport {
   items: SurveyReportItem[]
   phases: SurveyReportPhase[]
   docs: SurveyReportDoc[]
-  /** Có bản «đã xóa» chưa hoàn tác không — FE hiện nút Hoàn tác. */
+  /** Có bản "đã xóa" chưa hoàn tác không — FE hiện nút Hoàn tác. */
   restorable: boolean
   /** Id dòng Lịch sử thao tác của lần xóa gần nhất. */
   restorable_audit_id: number
@@ -100,7 +100,7 @@ export function addDaysIso(from: string, days: number): string {
 }
 
 /**
- * «Số ngày xử lý» = dự định hoàn tất − ngày bắt đầu (cột «Time xử lý» của bảng kế
+ * "Số ngày xử lý" = dự định hoàn tất − ngày bắt đầu (cột "Time xử lý" của bảng kế
  * hoạch Excel thu mua, bao-CR-602). Không lưu; thiếu một mốc trả `null`.
  */
 export function durationDays(start: string, planned: string): number | null {
@@ -159,13 +159,13 @@ export const REPORT_DOC_STATUS_BADGE: Record<number, string> = {
   [REPORT_DOC_DONE]: 'done',
 }
 
-/** Id của nhóm «Chung (cả phiếu)». */
+/** Id của nhóm "Chung (cả phiếu)". */
 export const COMMON_ROW_ID = 0
 
-/** Giá trị bộ lọc «Tất cả». Không dùng 0 làm mốc — 0 là id thật của «Chung». */
+/** Giá trị bộ lọc "Tất cả". Không dùng 0 làm mốc — 0 là id thật của "Chung". */
 export const REPORT_FILTER_ALL = -1
 
-/** Giá trị bộ lọc trạng thái «Tất cả» — 0 là mã thật (Chưa bắt đầu), sentinel phải âm. */
+/** Giá trị bộ lọc trạng thái "Tất cả" — 0 là mã thật (Chưa bắt đầu), sentinel phải âm. */
 export const REPORT_STATUS_FILTER_ALL = -1
 
 export function isReportDocDone(doc: SurveyReportDoc): boolean {
@@ -256,8 +256,8 @@ export function reportDocsById(report: SurveyRequestReport): Map<number, SurveyR
 }
 
 /**
- * Chuẩn hóa chữ để tìm kiếm: thường hóa + bỏ dấu tiếng Việt («giấy phép» khớp
- * «giay phep»). Dùng NFKD để chỉ số hóa học cũng khớp: «KNO₃» gõ «kno3» phải ra.
+ * Chuẩn hóa chữ để tìm kiếm: thường hóa + bỏ dấu tiếng Việt ("giấy phép" khớp
+ * "giay phep"). Dùng NFKD để chỉ số hóa học cũng khớp: "KNO₃" gõ "kno3" phải ra.
  */
 export function normalizeSearchText(value: string): string {
   return value
@@ -294,7 +294,7 @@ export function currentReportPhaseId(report: SurveyRequestReport, itemId: number
   return null
 }
 
-/** Một điểm nhấp nháy trên khung tracking: nhãn («2» / «+3») + tên các dòng hàng đứng đó. */
+/** Một điểm nhấp nháy trên khung tracking: nhãn ("2" / "+3") + tên các dòng hàng đứng đó. */
 export interface TrackingMarker {
   phaseId: number
   /** Rỗng = chấm không số (xem một tab, hoặc khối chưa khai nút nào). */
@@ -305,7 +305,7 @@ export interface TrackingMarker {
 /**
  * Các điểm nhấp nháy của khung tracking theo bộ lọc đang chọn.
  * - Xem MỘT tab: một chấm tại giai đoạn hiện tại của tab đó.
- * - «Tất cả»: mỗi nút dòng hàng một chấm; nhiều nút cùng giai đoạn gộp «+n».
+ * - "Tất cả": mỗi nút dòng hàng một chấm; nhiều nút cùng giai đoạn gộp "+n".
  * - Khối chưa khai nút nào: một chấm không số cho toàn bộ hồ sơ.
  */
 export function trackingMarkers(report: SurveyRequestReport, itemFilter: number): TrackingMarker[] {

@@ -19,14 +19,14 @@ interface DossierDependsEditorProps<T extends FieldValues> {
 type Candidate = Pick<Dossier, 'id' | 'code' | 'name' | 'dossier_type_name'>
 
 /**
- * KHAI HỒ SƠ TIÊN QUYẾT — *«tờ này chỉ làm được sau khi mấy tờ kia xong»*.
+ * KHAI HỒ SƠ TIÊN QUYẾT — *"tờ này chỉ làm được sau khi mấy tờ kia xong"*.
  *
  * ⚠️ **Khai MỘT lần cho cả kho, ở đây.** Trình tự giấy tờ của công ty là một:
  * đơn mua hàng chỉ phát hành sau khi hợp đồng ký xong, ở mọi thương vụ. Thẻ
  * *Hồ sơ cần hoàn thành* trên các trang chứng từ chỉ ĐỌC ràng buộc này để vẽ
  * ổ khóa — bên đó không khai được, và không nên khai được.
  *
- * ⚠️ Nhưng **«xong» thì vẫn theo từng phiếu**, nên một tờ đang khóa ở phiếu A
+ * ⚠️ Nhưng **"xong" thì vẫn theo từng phiếu**, nên một tờ đang khóa ở phiếu A
  * có thể đã mở ở phiếu B. Ràng buộc dùng chung, trạng thái riêng.
  *
  * ⚠️ **Vòng lặp do BACKEND chặn**, ở đây không dò lại (`depends_service.py`).
@@ -37,7 +37,7 @@ type Candidate = Pick<Dossier, 'id' | 'code' | 'name' | 'dossier_type_name'>
  * thẳng cả 40+ tờ vào một ô cuộn cao 13rem nằm giữa biểu mẫu: cuộn-trong-cuộn,
  * dòng trên cùng luôn bị cắt ngang, và chiều cao đó chiếm chỗ ngay cả khi
  * không khai gì. Ô chọn nhiều mục dùng chung đã giải xong mấy chuyện đó (tìm
- * có bỏ dấu, chip gộp «+n», trần số dòng) và giống hệt mọi ô khác trong app.
+ * có bỏ dấu, chip gộp "+n", trần số dòng) và giống hệt mọi ô khác trong app.
  */
 export function DossierDependsEditor<T extends FieldValues>({
   control,
@@ -47,7 +47,7 @@ export function DossierDependsEditor<T extends FieldValues>({
   const { can } = usePermission()
   //  ⚠️ Id lấy từ URL (`/dossier/list/:id`), KHÔNG lấy từ giá trị biểu mẫu:
   //  biểu mẫu không có ô `id` nên `values.id` là `undefined`, và khi đó chính
-  //  tờ đang sửa vẫn nằm trong danh sách — tick được «chờ chính mình» rồi ăn
+  //  tờ đang sửa vẫn nằm trong danh sách — tick được "chờ chính mình" rồi ăn
   //  400 ở lượt lưu. Trang TẠO MỚI có `id = 'new'` → `NaN` → `0`, đúng ý.
   const { id } = useParams()
   const currentId = Number(id) || 0
@@ -80,8 +80,8 @@ export function DossierDependsEditor<T extends FieldValues>({
             description="Tờ hồ sơ này chỉ làm được sau khi những tờ chọn dưới đây hoàn thành ở chính chứng từ đó. Khai một lần, dùng chung cho mọi chứng từ."
             summary={picked.length > 0 ? `chờ ${picked.length} hồ sơ` : 'không có'}
             storageKey="dossier.depends"
-            //  ⚠️ Chưa khai gì thì GẬP SẴN, cùng lẽ với khối «Điều kiện áp
-            //  dụng»: phần lớn hồ sơ không có tiên quyết, mở sẵn một khối rỗng
+            //  ⚠️ Chưa khai gì thì GẬP SẴN, cùng lẽ với khối "Điều kiện áp
+            //  dụng": phần lớn hồ sơ không có tiên quyết, mở sẵn một khối rỗng
             //  ở mọi tờ là bắt tất cả cuộn qua thứ hầu hết không dùng.
             defaultOpen={picked.length > 0}
           >
@@ -96,20 +96,20 @@ export function DossierDependsEditor<T extends FieldValues>({
               searchPlaceholder="Tìm theo tên hoặc loại…"
               emptyMessage="Kho chưa có hồ sơ nào khác."
               disabled={disabled}
-              //  ⚠️ Bỏ «Chọn tất cả»: chọn mọi tờ trong kho làm tiên quyết cho
+              //  ⚠️ Bỏ "Chọn tất cả": chọn mọi tờ trong kho làm tiên quyết cho
               //  một tờ thì tờ đó khóa gần như vĩnh viễn, mà nút lại nằm đúng
               //  chỗ dễ bấm nhầm nhất — ngay trên mục đầu tiên. Ở đây người
               //  dùng chọn một hai tờ, không bao giờ chọn hết.
               hideSelectAll
               //  ⚠️ Chip NẰM TRONG khung, không rải thành dải riêng bên dưới.
               //  Dải riêng làm ô này cao hai hàng cho đúng một lựa chọn, mà
-              //  hàng trên chỉ ghi «Đã chọn 1» — phải nhìn xuống hàng dưới mới
+              //  hàng trên chỉ ghi "Đã chọn 1" — phải nhìn xuống hàng dưới mới
               //  biết chọn tờ nào. Ở đây thường chỉ một hai tờ nên chip vừa
               //  khung, và khung tự giãn khi nhiều hơn.
               chipsInTrigger
-              //  Dấu X «bỏ hết» vào luôn trong khung, cùng lý do gộp hàng.
+              //  Dấu X "bỏ hết" vào luôn trong khung, cùng lý do gộp hàng.
               clearInTrigger
-              //  Nhãn hồ sơ dài («Hợp đồng mua bán / hợp đồng nguyên tắc»), ô
+              //  Nhãn hồ sơ dài ("Hợp đồng mua bán / hợp đồng nguyên tắc"), ô
               //  mặc định `w-80` là cụt ngay ở dòng đầu.
               contentClassName="w-[28rem]"
             />

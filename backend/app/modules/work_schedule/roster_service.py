@@ -1,4 +1,4 @@
-"""«AI LÀM / AI NGHỈ» — dựng lưới nhân sự × ngày cho màn Lịch làm việc dạng lịch (phase 07).
+""""AI LÀM / AI NGHỈ" — dựng lưới nhân sự × ngày cho màn Lịch làm việc dạng lịch (phase 07).
 
 ⚠️ SỐ TRUY VẤN CỐ ĐỊNH, không phụ thuộc số người × số ngày: đếm + trang nhân sự (2) · dòng
 gán lịch · ngày của mẫu · tên mẫu (3, `resolver_many`) · ngày lễ (1) · đơn nghỉ kèm tên loại (1).
@@ -39,7 +39,7 @@ def _employee_page(db: Session, user, profile: dict, p: dict):
     không muộn hơn `to_date`.
 
     `resign_date` đã khai thì NÓ quyết định (còn làm tới ngày đó, kể cả khi HR đã đặt trạng thái
-    «đã nghỉ» sớm để khóa hồ sơ). Chưa khai `resign_date` mới dựa vào `status`/`is_active`.
+    "đã nghỉ" sớm để khóa hồ sơ). Chưa khai `resign_date` mới dựa vào `status`/`is_active`.
     `hire_date` rỗng = không biết → vẫn liệt kê.
     """
     q = (db.query(Employee, Department.name)

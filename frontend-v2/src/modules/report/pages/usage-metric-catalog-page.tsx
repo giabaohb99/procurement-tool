@@ -19,7 +19,7 @@ import { USAGE_DEFERRED_METRICS, USAGE_METRIC_SECTIONS } from '../config/usage-m
 import { useUsageMetricCatalog } from '../hooks/use-usage-metric-catalog'
 
 /**
- * «Bộ chỉ số đánh giá» (duoc-CR-649, dạng biểu đồ duoc-CR-651): từ điển các chỉ số của Hồ sơ cách làm việc — ý nghĩa, cách tính, nguồn,
+ * "Bộ chỉ số đánh giá" (duoc-CR-649, dạng biểu đồ duoc-CR-651): từ điển các chỉ số của Hồ sơ cách làm việc — ý nghĩa, cách tính, nguồn,
  * chiều tốt/xấu — kèm trạng thái đo THỰC của tuần snapshot mới nhất. Bấm dòng mở danh sách Hồ sơ cách làm việc xếp theo chỉ số đó (duoc-CR-650).
  */
 export function UsageMetricCatalogPage() {

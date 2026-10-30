@@ -3,7 +3,7 @@ import type { MyLaborContractListResult } from '../types/my-labor-contract'
 
 const ME_URL = '/api/me/labor-contracts'
 
-/** API «Hợp đồng của tôi» — CHỈ ĐỌC; người xem do server suy ra từ phiên đăng nhập, không gửi id nhân sự. */
+/** API "Hợp đồng của tôi" — CHỈ ĐỌC; người xem do server suy ra từ phiên đăng nhập, không gửi id nhân sự. */
 export const myLaborContractApi = {
   list: () => apiGet<MyLaborContractListResult>(ME_URL),
 

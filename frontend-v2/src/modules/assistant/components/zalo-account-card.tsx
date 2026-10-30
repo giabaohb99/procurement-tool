@@ -37,7 +37,7 @@ export function ZaloAccountCard({ canManage }: ZaloAccountCardProps) {
   const signOut = async () => {
     const ok = await confirm({
       title: 'Đăng xuất Zalo',
-      message: `Ngắt phiên Zalo «${status.data?.name || 'tài khoản hiện tại'}» và xóa phiên đã lưu. Bot thôi ghi tin các nhóm cho tới khi quét QR lại bằng tài khoản công ty.`,
+      message: `Ngắt phiên Zalo "${status.data?.name || 'tài khoản hiện tại'}" và xóa phiên đã lưu. Bot thôi ghi tin các nhóm cho tới khi quét QR lại bằng tài khoản công ty.`,
       confirmLabel: 'Đăng xuất',
     })
     if (!ok) return

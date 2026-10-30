@@ -185,7 +185,7 @@ def ensure_submit_ready(db: Session, pr: PurchaseRequest, user_id: int) -> None:
     if not pr.department_id:
         if (pr.department or "").strip():
             raise HTTPException(400,
-                                f"Không gửi duyệt được: phòng ban «{pr.department}» trên phiếu "
+                                f"Không gửi duyệt được: phòng ban \"{pr.department}\" trên phiếu "
                                 "không khớp phòng ban nào đang có trong hệ thống (có thể phòng "
                                 "đã đổi tên hoặc đã ngừng hoạt động). Nhờ quản trị kiểm tra lại "
                                 "danh mục Phòng ban.")
@@ -196,7 +196,7 @@ def ensure_submit_ready(db: Session, pr: PurchaseRequest, user_id: int) -> None:
                             "người yêu cầu, rồi bấm Gửi duyệt lại — hệ thống sẽ tự điền.")
     if not pr.head_of_dept_id:
         raise HTTPException(400,
-                            f"Không gửi duyệt được: phòng «{pr.department}» chưa gán Trưởng bộ "
+                            f"Không gửi duyệt được: phòng \"{pr.department}\" chưa gán Trưởng bộ "
                             "phận nên phiếu không có người đứng tên duyệt. Nhờ quản trị gán "
                             "Trưởng bộ phận trong danh mục Phòng ban, rồi bấm Gửi duyệt lại.")
 
@@ -240,7 +240,7 @@ def list_self_purchasing_dept_ids(db: Session) -> set[int]:
     """Các phòng TỰ MUA HÀNG — bao-CR-480.
 
     Một phòng là phòng tự mua khi có người đang hoạt động giữ vai trò thu mua bậc
-    `dept_proc` trên yêu cầu mua hàng (vai trò «Quản lý thu mua phòng» của bao-CR-414).
+    `dept_proc` trên yêu cầu mua hàng (vai trò "Quản lý thu mua phòng" của bao-CR-414).
     Suy từ phân quyền thay vì thêm một ô cấu hình: chính phân quyền là thứ đã quyết
     "phòng này có bộ máy mua riêng" — lập một bộ tài khoản cho nhà máy là nhà máy tự
     mua, gỡ hết là thôi, không có chỗ thứ hai để hai bên lệch nhau.
@@ -263,8 +263,8 @@ def default_handler_dept_id(db: Session, department_id: int) -> int:
     """Phòng xử lý mặc định lúc LẬP phiếu — bao-CR-480, đổi ở bao-CR-524.
 
     Người của phòng tự mua hàng lập phiếu thì phòng xử lý là chính phòng họ; ai khác thì là
-    PHÒNG THU MUA MẶC ĐỊNH (bao-CR-524: id thật của mã PBA017 «Sản xuất -Thu mua», trước đó là
-    `0` = «Thu mua chung» ảo; danh mục chưa có phòng đó thì vẫn `0`). Chỉ áp lúc tạo mới: sau đó
+    PHÒNG THU MUA MẶC ĐỊNH (bao-CR-524: id thật của mã PBA017 "Sản xuất -Thu mua", trước đó là
+    `0` = "Thu mua chung" ảo; danh mục chưa có phòng đó thì vẫn `0`). Chỉ áp lúc tạo mới: sau đó
     người lập đổi phòng xử lý là lựa chọn có chủ ý, cửa cập nhật không được tra đè.
 
     Vì sao phải mặc định: từ CR-480 bộ thu mua chung loại trừ theo PHÒNG XỬ LÝ, nên phiếu
@@ -281,16 +281,16 @@ def backfill_handling_dept(db: Session, dept_ids: set[int] | None = None,
                            dry_run: bool = False) -> dict[str, int]:
     """Chuyển đổi phiếu CŨ của phòng tự mua hàng sang luật bao-CR-480 — chạy lại được.
 
-    Trước CR-480, phiếu của nhà máy «không nhờ ai» (`handler_dept_id = 0`) ngầm hiểu là
+    Trước CR-480, phiếu của nhà máy "không nhờ ai" (`handler_dept_id = 0`) ngầm hiểu là
     nhà máy tự lo. Từ CR-480, `0` nghĩa là THU MUA CHUNG xử lý — nên phiếu cũ của phòng tự
-    mua nếu để nguyên sẽ (1) hiện «Thu mua chung» sai sự thật và (2) lọt vào tầm mắt bộ thu
+    mua nếu để nguyên sẽ (1) hiện "Thu mua chung" sai sự thật và (2) lọt vào tầm mắt bộ thu
     mua chung, đúng thứ nhà máy muốn tránh. Hàm này gán lại phòng xử lý = phòng lập cho
     YCMH · YCBG · ĐMH có `handler_dept_id = 0` mà phòng lập là phòng tự mua; phiếu rỗng
     phòng ban thì tra hồ sơ nhân sự của người yêu cầu (ĐMH thì theo YCMH nguồn).
 
-    ⚠️ Phải chạy MỖI KHI một phòng vừa được cấp bộ máy mua riêng (vai trò «Quản lý thu mua
-    phòng») — xem bài HDSD «Lập bộ tài khoản phòng tự mua hàng». Không tự chạy lúc khởi động:
-    phiếu nhà máy đã chủ động chọn «Thu mua chung» sau CR này cũng mang `0`, chạy tự động
+    ⚠️ Phải chạy MỖI KHI một phòng vừa được cấp bộ máy mua riêng (vai trò "Quản lý thu mua
+    phòng") — xem bài HDSD "Lập bộ tài khoản phòng tự mua hàng". Không tự chạy lúc khởi động:
+    phiếu nhà máy đã chủ động chọn "Thu mua chung" sau CR này cũng mang `0`, chạy tự động
     là lật ngược lựa chọn đó mỗi lần deploy. Trả `{bảng: số dòng đã đổi}`.
     """
     from app.modules.employee.model import Employee
@@ -301,7 +301,7 @@ def backfill_handling_dept(db: Session, dept_ids: set[int] | None = None,
     counts = {"purchase_request": 0, "survey_request": 0, "purchase_order": 0}
     if not targets:
         return counts
-    # bao-CR-524: phiếu «thu mua chung» nay mang id phòng thu mua mặc định chứ không chỉ `0` —
+    # bao-CR-524: phiếu "thu mua chung" nay mang id phòng thu mua mặc định chứ không chỉ `0` —
     # quét cả hai để chạy lại hàm này sau backfill CR-524 vẫn cho đúng kết quả như trước.
     central_values = list(central_dept_ids(db))
 
@@ -445,10 +445,10 @@ def dept_head_candidates(db: Session, pr: PurchaseRequest) -> list[dict]:
 
 
 def complete_head_choices(db: Session, rows: list[dict], department_id: int) -> list[dict]:
-    """bao-CR-552 — ô «Trưởng bộ phận (TBP) / Người liên hệ» LUÔN chọn được.
+    """bao-CR-552 — ô "Trưởng bộ phận (TBP) / Người liên hệ" LUÔN chọn được.
 
-    Danh sách gốc chỉ có người duyệt theo phạm vi phòng; phòng không có ai như vậy (vd «Lập trình &
-    IT nội bộ») thì rỗng và hai giao diện khóa cứng ô TBP — đại ca báo lỗi 01/10/2026. Luôn kèm trưởng
+    Danh sách gốc chỉ có người duyệt theo phạm vi phòng; phòng không có ai như vậy (vd "Lập trình &
+    IT nội bộ") thì rỗng và hai giao diện khóa cứng ô TBP — đại ca báo lỗi 01/10/2026. Luôn kèm trưởng
     phòng của phòng lập; vẫn rỗng thì đưa trưởng phòng mọi phòng (đúng bộ ô TBP của YCBG).
     """
     from app.core.approver_candidates import department_managers, get_department_head_id
@@ -566,9 +566,9 @@ def _misa_covered_codes(db: Session, pr_code: str) -> set[str]:
     return {r[0] for r in rows}
 
 
-#  bao-CR-619: đơn CÒN SỐNG nhưng chưa duyệt — chưa tính là «đã đặt», nhưng tạo thêm đơn mà không
-#  thấy chúng là đặt trùng. «Bị trả lại» (rejected) vẫn sửa rồi trình lại được nên cũng nằm đây;
-#  «Đã từ chối» (cancelled) là điểm cuối, không tính.
+#  bao-CR-619: đơn CÒN SỐNG nhưng chưa duyệt — chưa tính là "đã đặt", nhưng tạo thêm đơn mà không
+#  thấy chúng là đặt trùng. "Bị trả lại" (rejected) vẫn sửa rồi trình lại được nên cũng nằm đây;
+#  "Đã từ chối" (cancelled) là điểm cuối, không tính.
 PO_PENDING_STATUSES = ("draft", "submitted", "rejected")
 PO_DEAD_STATUSES = ("cancelled",)
 PO_STATUS_LABELS = {
@@ -581,11 +581,11 @@ PO_STATUS_LABELS = {
 def order_progress(db: Session, pr_code: str) -> dict:
     """Số đã đặt theo mã hàng của một YCMH, gộp từ mọi ĐMH cùng mã PYC.
 
-    - `ordered`: CHỈ ĐMH đã duyệt trở đi, bỏ dòng «Chưa đặt hàng» / «Hủy đơn» — giữ nguyên nghĩa cũ
-      (prefill «còn thiếu», khớp `sync_from_purchase_orders`).
+    - `ordered`: CHỈ ĐMH đã duyệt trở đi, bỏ dòng "Chưa đặt hàng" / "Hủy đơn" — giữ nguyên nghĩa cũ
+      (prefill "còn thiếu", khớp `sync_from_purchase_orders`).
     - `pending` (bao-CR-619): số trên đơn nháp / chờ duyệt / bị trả lại (bỏ dòng Hủy đơn).
     - `orders` (bao-CR-619): theo mã hàng, từng đơn còn sống kèm trạng thái + SL đặt + SL đã nhận,
-      để cảnh báo đặt vượt nói được «đã đặt ở đơn nào, đơn đó tới đâu»."""
+      để cảnh báo đặt vượt nói được "đã đặt ở đơn nào, đơn đó tới đâu"."""
     from app.modules.purchase_order.model import PurchaseOrder, POItem
     from app.modules.purchase_order import service as po_service
 
@@ -631,9 +631,9 @@ def recompute_status(db: Session, pr: PurchaseRequest) -> None:
 
     bao-CR-292 (ticket 22): 'Đang xử lý' tách thành BA mốc theo mã đơn MISA + độ phủ mã hàng
     (luật chốt với khách 05/09/2026, phải khớp nhãn tiến độ dòng của luồng gộp — doc/erp/12 P6-13):
-      - processing  «Đang xử lý»  : đã có ĐMH (kể cả đơn Nháp) nhưng CHƯA đơn nào nhập MISA;
-      - purchasing  «Đang mua hàng»: có ĐMH nhập MISA nhưng mới phủ MỘT PHẦN mã hàng;
-      - purchased   «Đã mua hàng» : MỌI mã hàng (trừ dòng Hủy) đều có ĐMH đã nhập MISA.
+      - processing  "Đang xử lý"  : đã có ĐMH (kể cả đơn Nháp) nhưng CHƯA đơn nào nhập MISA;
+      - purchasing  "Đang mua hàng": có ĐMH nhập MISA nhưng mới phủ MỘT PHẦN mã hàng;
+      - purchased   "Đã mua hàng" : MỌI mã hàng (trừ dòng Hủy) đều có ĐMH đã nhập MISA.
     Mốc lên 'processing' cũng ĐỔI theo khách: trước đây phải có dòng ĐÃ ĐẶT HÀNG, nay chỉ cần
     NSTM đã tạo ĐMH ('not_ordered' trở đi) là phiếu rời 'dispatched'."""
     threshold = ["dispatched", "processing", "purchasing", "purchased", "completed"]
@@ -865,9 +865,9 @@ def _set_item_product_code(db: Session, rows: dict, row: PurchaseRequestItem, ra
     if new:
         prod = db.query(Product).filter(Product.code == new).first()
         if prod is None:
-            raise HTTPException(400, f"Mã VTBB «{new}» không có trong danh mục sản phẩm")
+            raise HTTPException(400, f"Mã VTBB \"{new}\" không có trong danh mục sản phẩm")
         if not prod.is_active:
-            raise HTTPException(400, f"Mã VTBB «{new}» đã ngừng dùng")
+            raise HTTPException(400, f"Mã VTBB \"{new}\" đã ngừng dùng")
     others = [(r.product_code or "") for r in rows.values() if r.id != row.id]
     assert_unique_product_codes(others + [new], old_codes=[(r.product_code or "") for r in rows.values()])
     row.product_code = new
@@ -998,7 +998,7 @@ def can_transfer_dept(db: Session, pr: PurchaseRequest) -> bool:
 
 def validate_transfer_target(db: Session, ticket, handler_dept_id: int, reason: str) -> None:
     """Chốt chung cho YCMH và YCBG: lý do bắt buộc; phòng đích phải có thật, đang hoạt động
-    và khác phòng đang xử lý; «Trả về thu mua» (đích = 0) chỉ khi phiếu đang ở phòng khác.
+    và khác phòng đang xử lý; "Trả về thu mua" (đích = 0) chỉ khi phiếu đang ở phòng khác.
 
     bao-CR-524: đích `0` và phiếu cũ còn `0` đều hiểu là PHÒNG THU MUA MẶC ĐỊNH, so bằng id
     thật — nên chuyển phiếu thu mua chung về chính phòng lập (nhà máy) nay hợp lệ, còn chuyển
@@ -1025,7 +1025,7 @@ def transfer_handler_dept(db: Session, pid: int, handler_dept_id: int, reason: s
     """Đẩy YCMH sang phòng xử lý khác (hoặc TRẢ VỀ THU MUA khi `handler_dept_id` = 0 — bao-CR-524:
     đích là phòng thu mua mặc định, ghi id thật).
 
-    Gỡ NSTM khỏi mọi dòng, đổi phòng, đưa phiếu về «Đã duyệt (chưa điều phối)» để phòng
+    Gỡ NSTM khỏi mọi dòng, đổi phòng, đưa phiếu về "Đã duyệt (chưa điều phối)" để phòng
     nhận điều phối lại. GIỮ `line_status` (đã kiểm là `no_po`/`cancelled`) và GIỮ cụm NCC.
     Không chuyển một phần dòng."""
     pr = get_pr(db, pid)
@@ -1104,13 +1104,13 @@ DISPATCH_CONTEXT_FIELDS = {
 def dispatch_context(db: Session, pr: PurchaseRequest) -> dict:
     """Bối cảnh phiếu cho điều kiện bỏ qua điều phối — bao-CR-497.
 
-    Một dict PHẲNG, đúng khuôn «bối cảnh phiếu» của bộ máy duyệt chung (`approval/condition_service`),
+    Một dict PHẲNG, đúng khuôn "bối cảnh phiếu" của bộ máy duyệt chung (`approval/condition_service`),
     để sau này đưa YCMH lên bộ máy đó (P6) thì điều kiện admin đã khai dùng lại nguyên. Thêm trường
     mới thì thêm ở ĐÂY một chỗ, màn Cấu hình chỉ cần nhắc tên trường.
     """
     lines = items_of(db, pr.id)
     # bao-CR-524: phiếu phòng thu mua mặc định xử lý vẫn đưa `handler_dept_id = 0` vào điều kiện
-    # — giữ nguyên nghĩa của mọi điều kiện admin đã khai kiểu «handler_dept_id not_empty» (= nhà
+    # — giữ nguyên nghĩa của mọi điều kiện admin đã khai kiểu "handler_dept_id not_empty" (= nhà
     # máy tự mua). Đưa id thật vào đây là mọi phiếu thu mua chung cũng bỏ qua điều phối.
     handler = int(pr.handler_dept_id or 0)
     return {
@@ -1167,7 +1167,7 @@ def dispatch_pr(db: Session, pid: int, user_id: int,
 
     `audit_action` (bao-CR-485): bước này ghi sổ dưới hành động nào. Bấm nút Điều phối thật thì
     `dispatched` (mặc định). Công tắc điều phối TẮT thì đường duyệt gọi nó với `approved` — cả
-    cú duyệt lẫn phần hệ thống tự phân bổ gói vào MỘT dòng «Duyệt» của trưởng phòng; ghi hai
+    cú duyệt lẫn phần hệ thống tự phân bổ gói vào MỘT dòng "Duyệt" của trưởng phòng; ghi hai
     dòng thì người xem sổ tưởng trưởng phòng bấm Điều phối, một việc họ không có quyền.
 
     Trả về (phiếu, số dòng vừa gán tự động, số dòng vẫn chưa có người)."""
@@ -1463,8 +1463,8 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
     # nhờ phòng thu mua mặc định (nhà máy nhờ thu mua mua hộ) — phải giữ, không tra lại.
     if data.handler_dept_id is None:
         pr.handler_dept_id = default_handler_dept_id(db, pr.department_id)
-    # bao-CR-524: gửi 0 (tick «Nhờ phòng khác xử lý» mà để trống / chọn thu mua) = phòng thu mua
-    # mặc định — ghi id thật, không còn phòng ảo «Thu mua chung».
+    # bao-CR-524: gửi 0 (tick "Nhờ phòng khác xử lý" mà để trống / chọn thu mua) = phòng thu mua
+    # mặc định — ghi id thật, không còn phòng ảo "Thu mua chung".
     pr.handler_dept_id = normalize_handler_dept_id(db, pr.handler_dept_id)
     # Tự điền Trưởng bộ phận theo phòng ban của người yêu cầu (nếu phòng có trưởng)
     if not pr.head_of_dept_id and (pr.department_id or pr.department):

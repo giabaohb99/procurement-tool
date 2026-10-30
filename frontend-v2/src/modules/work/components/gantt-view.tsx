@@ -73,7 +73,7 @@ interface GanttViewProps extends TaskRowActions {
   links: WorkTaskLink[]
   labelFields: WorkLabelField[]
   members: WorkMember[]
-  /** Bộ «Tùy chỉnh» — nguồn cột DUY NHẤT, dùng chung với Bảng và Danh sách. */
+  /** Bộ "Tùy chỉnh" — nguồn cột DUY NHẤT, dùng chung với Bảng và Danh sách. */
   fields: CardFields
   /**
    * Trường ĐỘ ƯU TIÊN của dự án — thanh việc tô theo màu bậc ưu tiên. Vắng =
@@ -85,7 +85,7 @@ interface GanttViewProps extends TaskRowActions {
   canEdit: boolean
   /** Quản trị dự án — chỉ họ mới xếp lại được CỘT. */
   canManage: boolean
-  /** Cho kéo xếp lại việc/cột không — tắt khi đang sắp theo tiêu chí khác «Tay». */
+  /** Cho kéo xếp lại việc/cột không — tắt khi đang sắp theo tiêu chí khác "Tay". */
   dragEnabled: boolean
   defaultPicId?: number
   /**
@@ -111,7 +111,7 @@ interface GanttViewProps extends TaskRowActions {
  * với Bảng và Danh sách.
  *
  * Bố cục bám **Lark**: lưới trái **chính là khung nhìn Danh sách** (cùng bộ cột,
- * cùng ô sửa tại chỗ, cùng ba tầng kéo thả, có cả dòng «Việc mới» cuối nhóm) ·
+ * cùng ô sửa tại chỗ, cùng ba tầng kéo thả, có cả dòng "Việc mới" cuối nhóm) ·
  * trục thời gian bên phải với hai hàng tiêu đề · hàng NHÓM có thanh tổng gom con ·
  * cột mốc hình thoi · mũi tên phụ thuộc · vạch hôm nay · kéo thanh dời lịch, kéo
  * hai mép đổi ngày.
@@ -200,7 +200,7 @@ export function GanttView({
   const taskRows = useMemo(() => indexTaskRows(rows), [rows])
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks])
 
-  /*  Cột lấy ĐỦ từ bộ «Tùy chỉnh» y như khung nhìn Danh sách — nhưng ô chứa
+  /*  Cột lấy ĐỦ từ bộ "Tùy chỉnh" y như khung nhìn Danh sách — nhưng ô chứa
       lưới thì hẹp (mặc định vừa khoảng ba cột), nên lưới TỰ CUỘN NGANG và ô tên
       ghim lại ở mép trái. Trước đây bản này gõ cứng ba cột và cắt phần thừa;
       khách chốt 31/08/2026 là phải hiện đủ, chỉ mặc định thấy ba.  */
@@ -324,7 +324,7 @@ export function GanttView({
         : (barGeometry(task, timeline)?.left ?? null)
       if (left === null) return
 
-      //  Đặt thanh ở khoảng một phần ba bên trái, cùng chỗ nút «Hôm nay» đưa
+      //  Đặt thanh ở khoảng một phần ba bên trái, cùng chỗ nút "Hôm nay" đưa
       //  vạch hôm nay về: còn thấy được cả quãng trước lẫn quãng sau của nó.
       box.scrollTo({ left: Math.max(0, left - box.clientWidth / 3), behavior: 'smooth' })
     },
@@ -458,7 +458,7 @@ export function GanttView({
 
              Ẩn lưới thì GỠ HẲN khỏi cây, không phải `w-0` hay `hidden`: giữ lại
              thì `syncGridScroll` vẫn gán `scrollTop` mỗi nhịp cuộn cho một thứ
-             không ai thấy, và `IntersectionObserver` của chip «cuộn về thanh»
+             không ai thấy, và `IntersectionObserver` của chip "cuộn về thanh"
              vẫn phải theo dõi từng thanh trong đó.  */}
         {!gridHidden && (
           <div
@@ -536,7 +536,7 @@ export function GanttView({
                   className={cn(
                     'h-full shrink-0 border-r border-border/60',
                     //  Cuối tuần tô nhạt hơn hẳn ngày làm việc — nhìn phát ra ngay
-                    //  quãng nào là ngày nghỉ, khỏi dò dòng «T7 · CN» ở tiêu đề.
+                    //  quãng nào là ngày nghỉ, khỏi dò dòng "T7 · CN" ở tiêu đề.
                     //  Đặt TRƯỚC `isNow` để cột hôm nay vẫn thắng khi hôm nay rơi
                     //  vào thứ Bảy hay Chủ nhật.
                     cell.isWeekend && 'bg-muted-foreground/[0.07]',
@@ -565,7 +565,7 @@ export function GanttView({
                   return <GanttGroupBar key={row.key} row={row} timeline={timeline} />
                 }
                 if (row.kind === 'draft') {
-                  //  Hàng đối diện dòng «Việc mới» — trống, chỉ giữ chỗ cho hai
+                  //  Hàng đối diện dòng "Việc mới" — trống, chỉ giữ chỗ cho hai
                   //  bên khỏi lệch nhau.
                   return (
                     <div key={row.key} style={{ height: ROW_HEIGHT }} className="bg-muted/20" />
@@ -626,7 +626,7 @@ export function GanttView({
              không có nền) và cao đúng một hàng tiêu đề. Để nút trong suốt thì
              nhãn tháng — nó `sticky left-0`, xem `GanttTimelineHeader` — trượt
              vào ĐÚNG chỗ này khi cuộn ngang và chữ chồng lên biểu tượng thành
-             một mớ («áng[icon]1/2026»). Cụm điều khiển ở mép phải đã phải vá y
+             một mớ ("áng[icon]1/2026"). Cụm điều khiển ở mép phải đã phải vá y
              hệt vì cùng một lý do; hai chỗ này là một cặp, sửa thì sửa cả hai.  */}
         <div
           className="absolute top-0 z-40 flex items-center bg-muted"
@@ -670,11 +670,11 @@ export function GanttView({
 
              ⚠️ Nhưng PHẢI có nền `bg-muted` (đúng màu dải tiêu đề, nên nhìn như
              không có nền): để trong suốt thì nhãn tháng cuộn ngang chui xuống
-             dưới và chồng chữ lên nhau — đo được «Tháng 9/2026» đè lên «Hôm nay»
+             dưới và chồng chữ lên nhau — đo được "Tháng 9/2026" đè lên "Hôm nay"
              thành một mớ không đọc nổi.  */}
         {/*  ⚠️ Nền phải phủ KÍN cả ô tiêu đề tháng, không chừa khe nào. Bản trước
              đặt `top-1.5 right-3` cho thoáng, thành ra hở 6px trên và 12px phải —
-             đúng hai khe ấy nhãn tháng cuộn ngang lòi ra một mẩu («/2» của "Tháng
+             đúng hai khe ấy nhãn tháng cuộn ngang lòi ra một mẩu ("/2" của "Tháng
              9/2027") nhìn như rác. Nay hộp bám `top-0`, cao đúng một hàng tiêu
              đề, còn khoảng thở chuyển vào `pr-3` (đệm TRONG hộp) nên nút vẫn
              không dính mép mà nền thì liền một mảnh.

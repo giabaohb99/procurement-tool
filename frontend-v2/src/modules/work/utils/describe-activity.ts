@@ -20,7 +20,7 @@ export function describeActivity(activity: WorkActivity): string {
  * Bỏ cái đuôi `: {tên việc}` khi tên việc đã hiện ở dòng trên.
  *
  * Backend ghi cả câu (`Sửa công việc: Dựng khung`) vì nhật ký của nó phải đọc
- * được một mình. Trên tab «Hoạt động» thì tên việc đứng riêng một dòng, để
+ * được một mình. Trên tab "Hoạt động" thì tên việc đứng riêng một dòng, để
  * nguyên là mỗi dòng lặp tên việc hai lần — đúng chỗ trông rối nhất.
  *
  * So bằng ĐÚNG cả đuôi chứ không cắt ở dấu hai chấm cuối: câu

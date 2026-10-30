@@ -1,8 +1,8 @@
-"""Đọc báo cáo «Mức dùng chức năng» (duoc-CR-655, D0c) — số truy vấn CỐ ĐỊNH, gom bằng SQL trên `tab_feature_usage_daily`.
+"""Đọc báo cáo "Mức dùng chức năng" (duoc-CR-655, D0c) — số truy vấn CỐ ĐỊNH, gom bằng SQL trên `tab_feature_usage_daily`.
 
-KHÔNG có `user_id` / tên người trong kết quả: chỉ có «bao nhiêu người khác nhau» và phân rã theo phòng ban.
+KHÔNG có `user_id` / tên người trong kết quả: chỉ có "bao nhiêu người khác nhau" và phân rã theo phòng ban.
 `/summary` = 3 truy vấn (gom theo chức năng · mẫu số người hoạt động · mốc bắt đầu thu). `/breakdown` = 2 truy vấn.
-«Chức năng không ai dùng» lấy từ danh mục mã (UiAction / UiForm) trừ đi mã đã thấy; màn hình chưa ai mở do giao diện so với menu.
+"Chức năng không ai dùng" lấy từ danh mục mã (UiAction / UiForm) trừ đi mã đã thấy; màn hình chưa ai mở do giao diện so với menu.
 """
 from dataclasses import dataclass
 from datetime import date

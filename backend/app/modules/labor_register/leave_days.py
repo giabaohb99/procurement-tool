@@ -1,7 +1,7 @@
-"""Ngày nghỉ có lương / không lương trong kỳ của từng người, cho hai cột nghỉ «trong kỳ» của Sổ quản lý lao động.
+"""Ngày nghỉ có lương / không lương trong kỳ của từng người, cho hai cột nghỉ "trong kỳ" của Sổ quản lý lao động.
 
 Chỉ đơn ĐÃ DUYỆT. Đơn gọn trong kỳ lấy nguyên `line.days`; đơn vắt qua biên kỳ chia ngày theo đúng luật của
-báo cáo Nghỉ phép (`leave/report_day_split.py`, CR-686) nên số khớp với báo cáo đó. Loại nghỉ «không lương»
+báo cáo Nghỉ phép (`leave/report_day_split.py`, CR-686) nên số khớp với báo cáo đó. Loại nghỉ "không lương"
 = `LeaveType.is_paid is False`; mọi loại còn lại tính là có lương.
 Đơn nghỉ đi qua `apply_scope(..., "leave_request")` của người xem (nơi gọi dựng `leave_q`), nên người không
 thấy đơn của ai thì không có số của người đó. Số truy vấn CỐ ĐỊNH (đơn · dòng · loại nghỉ · các truy vấn chia ngày), không tăng theo số người.

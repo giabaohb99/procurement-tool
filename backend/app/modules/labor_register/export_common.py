@@ -1,6 +1,6 @@
 """Phần dùng chung của hai tệp Excel (Sổ quản lý lao động, mẫu 01/PLI) — duoc-CR-687.
 
-Mỗi pháp nhân MỘT sheet. Người chưa gắn pháp nhân vào sheet «Chưa gắn pháp nhân». Chuỗi người nhập tay
+Mỗi pháp nhân MỘT sheet. Người chưa gắn pháp nhân vào sheet "Chưa gắn pháp nhân". Chuỗi người nhập tay
 (tên, địa chỉ…) luôn ghi ở dạng chuỗi để Excel không hiểu nhầm thành công thức.
 """
 from __future__ import annotations
@@ -88,7 +88,7 @@ def text_cell(ws, row: int, col: int, value, **style):
 
 
 def money_text(n: int) -> str:
-    """1234567 -> «1.234.567» (kiểu viết số tiền của Việt Nam)."""
+    """1234567 -> "1.234.567" (kiểu viết số tiền của Việt Nam)."""
     return f"{int(n):,}".replace(",", ".")
 
 

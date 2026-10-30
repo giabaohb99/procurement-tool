@@ -24,8 +24,8 @@ const FORM_ID = 'document-book-form'
 /**
  * Trang MỞ SỔ / SỬA SỔ.
  *
- * Sổ đã tồn tại thì có HAI tab: «Thông tin sổ» (form khai báo + bộ đếm đang
- * tới đâu) và «Văn bản trong sổ» (duoc-CR-474, 23/09/2026). Trang thêm mới chỉ có
+ * Sổ đã tồn tại thì có HAI tab: "Thông tin sổ" (form khai báo + bộ đếm đang
+ * tới đâu) và "Văn bản trong sổ" (duoc-CR-474, 23/09/2026). Trang thêm mới chỉ có
  * form: sổ chưa tồn tại thì chưa có số nào để đếm và chưa có văn bản nào để
  * liệt kê, nên không có gì để tách tab.
  */
@@ -82,10 +82,10 @@ export function DocumentBookDetailPage() {
       //  ăn khớp: một `<form>` duy nhất, luôn ở trong DOM). Trang đã có sổ thì
       //  tách hai tab bằng Radix `Tabs`, mà Radix HỦY MOUNT `TabsContent` đang
       //  ẩn — nút Lưu mặc định trỏ `form={FORM_ID}` vẫn đứng ở đầu trang bất kể
-      //  tab nào đang mở, nên đứng ở tab «Văn bản trong sổ» thì `<form>` đã biến
+      //  tab nào đang mở, nên đứng ở tab "Văn bản trong sổ" thì `<form>` đã biến
       //  khỏi DOM và bấm Lưu không làm gì cả, không báo lỗi (cùng bẫy đã ghi ở
       //  `document-detail-page.tsx`). Tự dựng `actions`, chỉ bày nút Lưu khi
-      //  đang đứng ở tab «info».
+      //  đang đứng ở tab "info".
       actions={
         isCreating ? undefined : (
           <>

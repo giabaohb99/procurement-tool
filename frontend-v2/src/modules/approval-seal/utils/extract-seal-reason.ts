@@ -18,7 +18,7 @@ const REASON_MARK = ' — Lý do: '
 
 /**
  * Câu nhật ký của các bước LÙI/CHẶN. Phải soi theo câu chứ không theo `action`:
- * backend ghi «Yêu cầu chỉnh sửa» dưới action `update` — đúng action mà mọi lần
+ * backend ghi "Yêu cầu chỉnh sửa" dưới action `update` — đúng action mà mọi lần
  * sửa phiếu bình thường cũng dùng.
  */
 const STOP_PREFIXES = ['Từ chối', 'Yêu cầu chỉnh sửa']

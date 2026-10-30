@@ -22,15 +22,15 @@ from app.core.base_model import AuditMixin, Base
 
 
 class EmployeeDepartment(Base, AuditMixin):
-    """Một dòng = «nhân sự X có chân ở phòng Y»."""
+    """Một dòng = "nhân sự X có chân ở phòng Y"."""
 
     __tablename__ = "tab_employee_department"
     __table_args__ = (
         #  Khai trùng một phòng hai lần không thêm nghĩa gì, chỉ làm mọi phép
         #  đếm theo phòng cộng dư.
         UniqueConstraint("employee_id", "department_id", name="uq_employee_department"),
-        #  Hai chiều tra đều nóng: «người này thuộc phòng nào» (dựng hồ sơ quyền,
-        #  chạy mỗi request) và «phòng này có ai» (gửi thông báo, đếm quân số).
+        #  Hai chiều tra đều nóng: "người này thuộc phòng nào" (dựng hồ sơ quyền,
+        #  chạy mỗi request) và "phòng này có ai" (gửi thông báo, đếm quân số).
         Index("ix_employee_department_employee", "employee_id"),
         Index("ix_employee_department_department", "department_id"),
     )

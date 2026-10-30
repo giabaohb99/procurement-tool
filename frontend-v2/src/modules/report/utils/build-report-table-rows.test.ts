@@ -101,7 +101,7 @@ describe('buildReportTableRows — "nhóm khác" (gói A3, backend report_aggreg
   })
 })
 
-//  duoc-CR-687 — «Xem theo Nhóm tuổi»: nhóm dưới 3 người bị backend che, mọi số thành `null`.
+//  duoc-CR-687 — "Xem theo Nhóm tuổi": nhóm dưới 3 người bị backend che, mọi số thành `null`.
 describe('buildReportTableRows — suppressed groups (every value null)', () => {
   it('flags an all-null group as suppressed but never a zero group, a mixed group or Tổng', () => {
     const rows = buildReportTableRows(

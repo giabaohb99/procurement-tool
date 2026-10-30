@@ -62,7 +62,7 @@ def _check_name_free(db: Session, name: str, exclude_id: int = 0) -> None:
     if exclude_id:
         q = q.filter(WorkSchedule.id != exclude_id)
     if q.first():
-        raise HTTPException(400, f"Đã có mẫu lịch tên «{name}»")
+        raise HTTPException(400, f"Đã có mẫu lịch tên \"{name}\"")
 
 
 def _day_row(schedule_id: int, d: DayIn, user_id: int) -> WorkScheduleDay:
@@ -82,7 +82,7 @@ def create_schedule(db: Session, data: ScheduleCreate, user) -> WorkSchedule:
     db.add_all([_day_row(obj.id, d, user.id) for d in data.days])
     commit_or_conflict(db, "Mẫu lịch bị trùng tên")
     db.refresh(obj)
-    record(db, user.id, ENTITY, obj.id, "create", f"Tạo mẫu lịch «{obj.name}»")
+    record(db, user.id, ENTITY, obj.id, "create", f"Tạo mẫu lịch \"{obj.name}\"")
     return obj
 
 
@@ -105,7 +105,7 @@ def update_schedule(db: Session, obj: WorkSchedule, data: ScheduleUpdate, user) 
         db.add_all([_day_row(obj.id, d, user.id) for d in data.days])
     commit_or_conflict(db, "Mẫu lịch bị trùng tên")
     db.refresh(obj)
-    record(db, user.id, ENTITY, obj.id, "update", f"Sửa mẫu lịch «{obj.name}»")
+    record(db, user.id, ENTITY, obj.id, "update", f"Sửa mẫu lịch \"{obj.name}\"")
     return obj
 
 
@@ -115,10 +115,10 @@ def delete_schedule(db: Session, obj: WorkSchedule, user) -> None:
     used = assignment_counts(db, [obj.id]).get(obj.id, 0)
     if used:
         raise HTTPException(
-            400, f"«{obj.name}» đang được gán {used} lần nên không xóa được. "
-                 "Bỏ tick «Đang dùng» để ẩn khỏi ô chọn thay vì xóa.")
+            400, f"\"{obj.name}\" đang được gán {used} lần nên không xóa được. "
+                 "Bỏ tick \"Đang dùng\" để ẩn khỏi ô chọn thay vì xóa.")
     name, oid = obj.name, obj.id
     db.query(WorkScheduleDay).filter(WorkScheduleDay.schedule_id == oid).delete()
     db.delete(obj)
     db.commit()
-    record(db, user.id, ENTITY, oid, "delete", f"Xóa mẫu lịch «{name}»")
+    record(db, user.id, ENTITY, oid, "delete", f"Xóa mẫu lịch \"{name}\"")

@@ -11,8 +11,8 @@ interface DocumentPendingAttachmentsProps {
   files: File[]
   onChange: (files: File[]) => void
   /**
-   * Bỏ thẻ bao + câu nhắc «mở tab Thông tin» — kiểu của hộp «Tạo nhanh từ
-   * tệp», nơi tệp là phần chính nên vùng thả to và đứng đầu hộp.
+   * Bỏ thẻ bao + câu nhắc "mở tab Thông tin" — kiểu của hộp "Tạo nhanh từ
+   * tệp", nơi tệp là phần chính nên vùng thả to và đứng đầu hộp.
    */
   bare?: boolean
 }

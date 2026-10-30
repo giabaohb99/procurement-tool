@@ -5,13 +5,13 @@ Chạy:
 
 **Dừng ngay ở lỗi đầu tiên (phiếu kh-sao-luu-dung, 22/10/2026).** Bản cũ chạy client
 với `-f` (bỏ qua lỗi, nạp tiếp) rồi in SUCCESS: bản dump hỏng ở cột sinh (lỗi 3105)
-vẫn «thành công», ra một CSDL thiếu dòng mà không ai biết. Nay client chạy KHÔNG có
+vẫn "thành công", ra một CSDL thiếu dòng mà không ai biết. Nay client chạy KHÔNG có
 `-f`, mã thoát khác 0 thì in lỗi và thoát mã 1, không chạy bước nào phía sau.
 
 **Chỉ mục tìm văn bản (bẫy từ dừng FULLTEXT ngram, migration `83679db84fd1`).**
 Bản dump dựng lại 4 chỉ mục FULLTEXT của `tab_document_search` ngay ở câu
 CREATE TABLE, đọc `innodb_ft_enable_stopword` từ SESSION đang nạp — mặc định là BẬT,
-tức tìm «văn», «bản», «toàn» sẽ ra rỗng. Nên phiên nạp đặt sẵn
+tức tìm "văn", "bản", "toàn" sẽ ra rỗng. Nên phiên nạp đặt sẵn
 `SET SESSION innodb_ft_enable_stopword = 0` qua `--init-command`, và nạp xong thì
 kiểm lại bằng chính `reindex_documents.check_stopwords_disabled` (hỏng thì
 `fix_stopwords` dựng lại 4 chỉ mục).
@@ -113,7 +113,7 @@ def live_table_names() -> set[str]:
 
 
 def ensure_fulltext_stopwords_off() -> None:
-    """Nạp xong: chỉ mục tìm văn bản phải tra được chữ «văn»; không thì dựng lại 4 chỉ mục.
+    """Nạp xong: chỉ mục tìm văn bản phải tra được chữ "văn"; không thì dựng lại 4 chỉ mục.
 
     Bản sao lưu cũ (trước duoc-CR-477) không có `tab_document_search` thì bỏ qua —
     `alembic upgrade head` lúc khởi động sẽ tạo bảng đúng cách.

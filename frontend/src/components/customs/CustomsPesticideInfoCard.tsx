@@ -24,7 +24,7 @@ export default function CustomsPesticideInfoCard({ data, leading, actions }: {
   actions?: ReactNode
 }) {
   const manual = !!data.is_manual
-  //  Trống thì nói rõ: thuốc từ bản cào là «Nguồn không ghi», thuốc tự thêm là «Chưa nhập».
+  //  Trống thì nói rõ: thuốc từ bản cào là "Nguồn không ghi", thuốc tự thêm là "Chưa nhập".
   const missing = manual ? 'Chưa nhập' : 'Nguồn không ghi'
   const remaining = describeRemainingTerm(data.expires_on, new Date())
   const toxicity = parsePesticideToxicity(data.toxicity)
@@ -119,7 +119,7 @@ function ToxicityChip({ item }: { item: ToxicityItem }) {
       display: 'inline-flex', alignItems: 'baseline', gap: 4, borderRadius: 6, padding: '2px 8px',
       fontSize: 12, fontWeight: 500, ...TOXICITY_TONE[item.severity],
     }}>
-      {/* Mã nhóm KHÔNG được bẻ dòng — «GHS» một dòng, «5» một dòng là đọc không ra. */}
+      {/* Mã nhóm KHÔNG được bẻ dòng — "GHS" một dòng, "5" một dòng là đọc không ra. */}
       {item.code && <b style={{ whiteSpace: 'nowrap' }}>{item.code}</b>}
       {item.code && item.label && <span aria-hidden>·</span>}
       <span>{item.label}</span>

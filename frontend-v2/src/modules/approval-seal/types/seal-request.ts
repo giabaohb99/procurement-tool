@@ -49,7 +49,7 @@ export const SEAL_STATUS_BADGE: Record<number, BadgeTone> = {
  *
  * ⚠️ Bản trước lấy `STATUS_COLORS[i % 5]` với `i` là vị trí sau khi đã lọc bỏ
  * trạng thái rỗng. Hai lỗi cùng lúc: bộ mã có BẢY trạng thái mà bảng màu chỉ
- * năm màu nên «Yêu cầu chỉnh sửa» tô lại đúng màu của «Nháp» (thấy được trên
+ * năm màu nên "Yêu cầu chỉnh sửa" tô lại đúng màu của "Nháp" (thấy được trên
  * máy thật: hai ô chú giải xanh y hệt nhau); và vì đánh theo thứ hạng nên kỳ
  * nào không có phiếu Nháp là toàn bộ màu dịch một bậc — người đã quen "xanh lá
  * là xong" đọc sai cả biểu đồ.
@@ -117,7 +117,7 @@ export interface SealRequest {
    *  Gác thẻ Lịch sử phê duyệt bằng ô này, không bằng `approval_running`. Chỉ có ở
    *  phản hồi CHI TIẾT. */
   approval_instance_id?: number | null
-  /** Câu một dòng «Đang ở chặng 3/3 · Duyệt Brand & Pháp chế» — dòng phụ cạnh badge
+  /** Câu một dòng "Đang ở chặng 3/3 · Duyệt Brand & Pháp chế" — dòng phụ cạnh badge
    *  trạng thái, backend dựng sẵn. Rỗng = phiếu chưa vào bộ máy duyệt. */
   approval_summary?: string
   /** Người xem có được thao tác CỔNG-2 (đóng dấu / trả / từ chối) không — CHỈ Văn thư

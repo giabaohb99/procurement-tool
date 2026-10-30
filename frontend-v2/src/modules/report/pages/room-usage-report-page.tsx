@@ -23,7 +23,7 @@ const CONFIG: ReportPageConfig = {
 }
 
 /**
- * Sử dụng phòng họp (F1, duoc-CR-689, khóa 28). «Xem theo Khung giờ» / «Thứ trong tuần» cho
+ * Sử dụng phòng họp (F1, duoc-CR-689, khóa 28). "Xem theo Khung giờ" / "Thứ trong tuần" cho
  * thấy giờ cao điểm — chỗ để quyết có cần thêm phòng hay không.
  */
 export function RoomUsageReportPage() {

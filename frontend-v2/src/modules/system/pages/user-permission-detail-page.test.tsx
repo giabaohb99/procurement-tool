@@ -38,7 +38,7 @@ vi.mock('@/core/auth/use-auth', () => ({
   useAuth: () => ({ user: { id: currentUserId, role_ids: currentRoleIds } }),
 }))
 
-//  Trang chỉ cần biết «được ghi» — chốt quyền thật nằm ở backend.
+//  Trang chỉ cần biết "được ghi" — chốt quyền thật nằm ở backend.
 vi.mock('@/core/authorization/permission-gate', () => ({
   PermissionGate: ({ children }: { children: ReactNode }) => children,
 }))
@@ -72,7 +72,7 @@ function newQueryClient() {
 }
 
 //  Truyền sẵn một `queryClient` khi cần dựng lại trang trên cùng bộ đệm — đó là
-//  cảnh «back ra rồi vào lại», khác hẳn cảnh mở trang lần đầu.
+//  cảnh "back ra rồi vào lại", khác hẳn cảnh mở trang lần đầu.
 function build(queryClient = newQueryClient()) {
   const { unmount } = render(
     <QueryClientProvider client={queryClient}>
@@ -110,7 +110,7 @@ beforeEach(() => {
 })
 
 describe('UserPermissionDetailPage', () => {
-  it('hiện huy hiệu «Theo chức vụ» đúng ở vai trò hệ thống tự cấp (duoc-CR-653)', async () => {
+  it('hiện huy hiệu "Theo chức vụ" đúng ở vai trò hệ thống tự cấp (duoc-CR-653)', async () => {
     apiGet.mockImplementation((url: string) =>
       url === '/api/users/31'
         ? Promise.resolve({
@@ -130,16 +130,16 @@ describe('UserPermissionDetailPage', () => {
   })
 
   it('giữ nguyên các ô vừa tick khi dữ liệu tài khoản được nạp lại giữa chừng', async () => {
-    //  Lỗi khách báo 25/08/2026: «Chọn quyền, Lưu vai trò, out ra vào lại thì mất
-    //  quyền đã chọn». React Query nạp lại `account` bất cứ lúc nào — hết hạn 30
+    //  Lỗi khách báo 25/08/2026: "Chọn quyền, Lưu vai trò, out ra vào lại thì mất
+    //  quyền đã chọn". React Query nạp lại `account` bất cứ lúc nào — hết hạn 30
     //  giây rồi mount lại, một thao tác khác gọi `invalidateQueries(['hr'])`,
     //  người khác vừa sửa cùng tài khoản. Bản cũ đồng bộ state theo MỌI lượt nạp
     //  lại, nên lượt nạp rơi vào giữa lúc đang tick là các ô vừa chọn lặng lẽ
-    //  quay về bản đã lưu, rồi cú «Lưu vai trò» ghi xuống đúng bản cũ đó.
+    //  quay về bản đã lưu, rồi cú "Lưu vai trò" ghi xuống đúng bản cũ đó.
     const nguoi = userEvent.setup()
     //  ⚠️ Lượt nạp lại phải trả về dữ liệu KHÁC ĐI thì mới dựng lại được lỗi:
     //  React Query dùng structural sharing, nạp lại đúng y dữ liệu cũ thì object
-    //  giữ nguyên danh tính và `useHasChanged` không nổ. Ngoài đời cái «khác đi»
+    //  giữ nguyên danh tính và `useHasChanged` không nổ. Ngoài đời cái "khác đi"
     //  ấy tới rất dễ — quản trị thứ hai vừa khóa/mở tài khoản, hoặc chính người
     //  này vừa đổi hồ sơ nhân sự ở tab khác.
     let khoa = false
@@ -190,10 +190,10 @@ describe('UserPermissionDetailPage', () => {
     //  lại thì mọi dấu tick biến mất, phải tải lại cả trang mới hiện ra.
     //
     //  Lần vào thứ hai React Query trả dữ liệu từ bộ đệm NGAY ở lượt render đầu.
-    //  Bản cũ chép `account.role_ids` vào state và chỉ chép khi dữ liệu «đổi so
-    //  với lượt render trước», mà ở lượt render ĐẦU TIÊN thì không có gì đổi cả
+    //  Bản cũ chép `account.role_ids` vào state và chỉ chép khi dữ liệu "đổi so
+    //  với lượt render trước", mà ở lượt render ĐẦU TIÊN thì không có gì đổi cả
     //  — nên state đứng nguyên ở rỗng. Lần vào đầu tiên không lộ vì lúc đó dữ
-    //  liệu chưa có, phải chờ tải xong, và chính cú «chưa có -> có» là nhịp chép.
+    //  liệu chưa có, phải chờ tải xong, và chính cú "chưa có -> có" là nhịp chép.
     apiGet.mockImplementation((url: string) =>
       url === '/api/users/31' ? Promise.resolve(account([2])) : Promise.resolve(ROLES),
     )
@@ -292,7 +292,7 @@ describe('UserPermissionDetailPage', () => {
     expect(oAdmin).not.toBeChecked()
   })
 
-  it('400 «phải còn ít nhất một quản trị» thì báo lỗi, không hỏi xác nhận', async () => {
+  it('400 "phải còn ít nhất một quản trị" thì báo lỗi, không hỏi xác nhận', async () => {
     const nguoi = userEvent.setup()
     currentUserId = 31
     currentRoleIds = [1, 2]

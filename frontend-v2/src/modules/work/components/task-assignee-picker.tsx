@@ -16,7 +16,7 @@ interface TaskAssigneePickerProps {
   /**
    * `true` = dáng MỘT DÒNG cho ô bảng ở khung nhìn Danh sách: avatar chồng nhau
    * + tên người đầu, cả cụm là nút mở danh sách. Dáng mặc định (dải chip có nút
-   * ✕ riêng từng người + nút «+») cao gấp đôi và xuống dòng trong ô hẹp.
+   * ✕ riêng từng người + nút "+") cao gấp đôi và xuống dòng trong ô hẹp.
    */
   compact?: boolean
   onChange: (picIds: number[]) => void
@@ -89,7 +89,7 @@ export function TaskAssigneePicker({
   /*  Dáng ĐẦY ĐỦ (panel chi tiết) — cũng là cụm avatar chồng nhau, chỉ khác bản
       `compact` ở chỗ có kèm chữ. Bản trước là một dải CHIP, mỗi người một viên
       bo tròn mang avatar + họ tên đầy đủ + nút ✕: ba người là tràn sang hàng thứ
-      hai và hàng «Người phụ trách» cao gấp đôi mọi hàng thuộc tính khác, trong
+      hai và hàng "Người phụ trách" cao gấp đôi mọi hàng thuộc tính khác, trong
       khi thứ cần đọc chỉ là "ai đang làm việc này". Lark gom thành một cụm
       `[avatar chồng nhau] 2 owners` — khách đối chiếu 03/09/2026.
 
@@ -137,7 +137,7 @@ export function TaskAssigneePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        {/*  CẢ CỤM là một nút mở danh sách — không còn nút «+» riêng bên cạnh:
+        {/*  CẢ CỤM là một nút mở danh sách — không còn nút "+" riêng bên cạnh:
              hai chỗ bấm cho cùng một việc chỉ tổ bắt người dùng chọn. */}
         <button
           type="button"
@@ -155,7 +155,7 @@ export function TaskAssigneePicker({
   )
 }
 
-/** Số avatar vẽ ra trước khi dồn phần còn lại vào một vòng «+N». */
+/** Số avatar vẽ ra trước khi dồn phần còn lại vào một vòng "+N". */
 const MAX_FACES = 3
 
 /**
@@ -165,7 +165,7 @@ const MAX_FACES = 3
  * cái là cắt cụt cả hai thành vô nghĩa. Avatar đọc nhanh hơn hẳn khi lướt dọc
  * cả cột, và tên đầy đủ vẫn có ở `title` khi rê chuột lẫn trong popover.
  *
- * Quá {@link MAX_FACES} người thì phần dư dồn vào một vòng «+N» thay vì kéo dài
+ * Quá {@link MAX_FACES} người thì phần dư dồn vào một vòng "+N" thay vì kéo dài
  * mãi — đúng lối avatar-group của shadcn.
  */
 function CompactFaces({ picked }: { picked: WorkAssignee[] }) {

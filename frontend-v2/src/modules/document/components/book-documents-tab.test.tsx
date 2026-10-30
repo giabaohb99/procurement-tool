@@ -10,8 +10,8 @@ import { useDocuments } from '../hooks/use-documents'
 import { DOCUMENT_STATUS, type DocumentRecord } from '../types/document-record'
 
 /**
- * `DataTable` tự gọi `useQueryClient()` (nút «Tải lại») VÀ `useSearchParams()`
- * (nút «Xóa lọc», qua `FilterResetButton`), nên cần cả `QueryClientProvider`
+ * `DataTable` tự gọi `useQueryClient()` (nút "Tải lại") VÀ `useSearchParams()`
+ * (nút "Xóa lọc", qua `FilterResetButton`), nên cần cả `QueryClientProvider`
  * thật lẫn `MemoryRouter` thật — mock trần `react-router-dom` chỉ còn
  * `useNavigate` thì hai chỗ kia chết ngay ở bước dựng cây.
  */
@@ -173,7 +173,7 @@ describe('BookDocumentsTab', () => {
     expect(navigate).toHaveBeenCalledWith('/document/documents/501')
   })
 
-  it('nút «Mở ở màn Văn bản» dẫn sang danh sách lọc theo book_id__eq của đúng sổ', async () => {
+  it('nút "Mở ở màn Văn bản" dẫn sang danh sách lọc theo book_id__eq của đúng sổ', async () => {
     const user = userEvent.setup()
     renderTab({ bookId: 9, year: 2026, onYearChange: vi.fn() })
 

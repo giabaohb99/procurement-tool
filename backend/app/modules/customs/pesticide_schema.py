@@ -2,7 +2,7 @@
 
 Mọi cột chữ khai `max_length` khớp ĐÚNG `String(n)` ở `model.py` — lấy thẳng từ trần của bộ đọc
 tệp (`pesticide_reader._LIMITS`) để hai cửa ghi không lệch nhau. Thiếu thì chuỗi quá dài đi
-thẳng xuống MySQL và ra lỗi 500 thay vì câu «tối đa n ký tự» (duoc-CR-316); pytest chạy SQLite
+thẳng xuống MySQL và ra lỗi 500 thay vì câu "tối đa n ký tự" (duoc-CR-316); pytest chạy SQLite
 không ép độ dài nên chốt phải nằm ở đây.
 
 Sửa là GỬI ĐỦ cả bản ghi lẫn danh sách phạm vi sử dụng (thay toàn bộ phạm vi) — màn sửa luôn
@@ -33,8 +33,8 @@ class PesticideUseIn(BaseModel):
 
 
 class PesticideIn(BaseModel):
-    #  Không khai `min_length`: nó chạy TRƯỚC `_not_blank` và trả câu tiếng Anh «String should have
-    #  at least 1 character» lên màn. Chuỗi rỗng / toàn khoảng trắng do `_not_blank` chặn.
+    #  Không khai `min_length`: nó chạy TRƯỚC `_not_blank` và trả câu tiếng Anh "String should have
+    #  at least 1 character" lên màn. Chuỗi rỗng / toàn khoảng trắng do `_not_blank` chặn.
     trade_name: str = Field(..., max_length=_LIMITS["trade_name"])
     active_ingredient: str = Field(..., max_length=_LIMITS["active_ingredient"])
     concentration: str = Field("", max_length=_LIMITS["concentration"])
@@ -42,7 +42,7 @@ class PesticideIn(BaseModel):
     sector: str = Field("", max_length=_LIMITS["sector"])
     registrant: str = Field("", max_length=_LIMITS["registrant"])
     registration_no: str = Field("", max_length=_LIMITS["registration_no"])
-    #  Dải năm hợp lý: MySQL nhận tới năm 9999, gõ nhầm «0202» là hạn đăng ký hai nghìn năm trước.
+    #  Dải năm hợp lý: MySQL nhận tới năm 9999, gõ nhầm "0202" là hạn đăng ký hai nghìn năm trước.
     registered_on: date | None = None
     expires_on: date | None = None
     status: int = int(PesticideStatus.ACTIVE)

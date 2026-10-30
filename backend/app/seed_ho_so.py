@@ -35,7 +35,7 @@ import app.core.all_models  # noqa: F401  — nạp đủ model để mapper c�
 from app.core.database import SessionLocal
 from app.modules.dossier.type_model import DossierType
 
-#  BỘ TRƯỜNG TÙY BIẾN gợi ý cho từng giai đoạn — phần «metadata» của loại hồ sơ
+#  BỘ TRƯỜNG TÙY BIẾN gợi ý cho từng giai đoạn — phần "metadata" của loại hồ sơ
 #  (16/09/2026). Đây là thứ làm biểu mẫu lập hồ sơ đổi theo loại đang chọn.
 #
 #  ⚠️ Chỉ là ĐIỂM XUẤT PHÁT, không phải quy định. Người dùng sửa thẳng trên màn

@@ -26,7 +26,7 @@ const MONTHS = Array.from({ length: 12 }, (_, i) => i)
  * Thanh điều hướng của LỊCH NGHỈ.
  *
  * ⚠️ Gộp thành **ba cụm liền khối**, không rải sáu thứ rời nhau thành một hàng.
- * Bản đầu (03/09/2026) đặt tabs, hai nút mũi tên, nhãn khoảng, nút «Hôm nay» và
+ * Bản đầu (03/09/2026) đặt tabs, hai nút mũi tên, nhãn khoảng, nút "Hôm nay" và
  * hai ô chọn cạnh nhau với cùng một khoảng hở — mắt không nhóm được cái nào với
  * cái nào, và cả dải đọc ra như sáu điều khiển không liên quan. Nay: *đi tới
  * lui* là một khối, *nhảy tháng/năm* là một khối, *đổi chế độ* là một khối.
@@ -41,11 +41,11 @@ const MONTHS = Array.from({ length: 12 }, (_, i) => i)
  *
  * · hàng 1 — `[‹] [Tháng 9/2026 ▾] [›]`: nhãn khoảng NUỐT LUÔN hai ô chọn
  *   tháng/năm, xem `LeaveCalendarMonthPicker`;
- * · hàng 2 — bộ chọn *Ngày · Tuần · Tháng* trải hết hàng, nút «Hôm nay» đứng
+ * · hàng 2 — bộ chọn *Ngày · Tuần · Tháng* trải hết hàng, nút "Hôm nay" đứng
  *   cuối.
  *
  * ⚠️ Rẽ bằng `useIsMobile` chứ không bằng hai khối `md:hidden` / `hidden md:flex`:
- * hai khối nghĩa là **hai nút «Tháng», hai nút «Lùi lại»** cùng nằm trong cây
+ * hai khối nghĩa là **hai nút "Tháng", hai nút "Lùi lại"** cùng nằm trong cây
  * DOM: trình đọc màn hình đọc cả sáu chế độ xem, và mọi bài kiểm tìm nút theo
  * tên đều vớ phải hai kết quả.
  */
@@ -73,7 +73,7 @@ export function LeaveCalendarToolbar({
       <div className="flex flex-col gap-2">
         {/*  Hàng 1 — **trái là "đang ở đâu", phải là "đi đâu"**. Nhãn khoảng
              đóng vai tiêu đề (bấm vào để nhảy tháng/năm), còn hai mũi tên dính
-             liền thành MỘT khối ở mép phải, cạnh nút «Hôm nay».
+             liền thành MỘT khối ở mép phải, cạnh nút "Hôm nay".
 
              ⚠️ Không cho khối nào trải hết hàng nữa. Bản trước xếp
              `[‹] [nhãn trải hết hàng] [›]`: ba khung viền rời nhau cách đều,

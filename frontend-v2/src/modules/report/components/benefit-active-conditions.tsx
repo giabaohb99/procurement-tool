@@ -23,9 +23,9 @@ function describeConditions(params: URLSearchParams): { key: string; text: strin
 }
 
 /**
- * Dải «Đang lọc» của H1: điều kiện dịp đặt sẵn (bấm ✕ bỏ từng cái) + nút «Bỏ hết điều kiện».
+ * Dải "Đang lọc" của H1: điều kiện dịp đặt sẵn (bấm ✕ bỏ từng cái) + nút "Bỏ hết điều kiện".
  * Nút này cũng là lối thoát khi báo cáo trả 403 vì lọc nhạy cảm (link được gửi từ người có
- * quyền): «Đặt lại bộ lọc» của thẻ lỗi chỉ đưa «Xem theo» về mặc định, không biết tới các
+ * quyền): "Đặt lại bộ lọc" của thẻ lỗi chỉ đưa "Xem theo" về mặc định, không biết tới các
  * tham số riêng của trang. Mỗi nút = MỘT lượt ghi URL.
  */
 export function BenefitActiveConditions() {

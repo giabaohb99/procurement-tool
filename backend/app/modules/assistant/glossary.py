@@ -1,7 +1,7 @@
 """SỔ THUẬT NGỮ của công ty cho Trợ lý AI (ai-CR-077).
 
 Đại ca 05/10/2026: *"các thuật ngữ chắc lưu ở đâu đó trong memory thôi… còn nhiều thuật ngữ nữa và mình có thể dạy nó
-trong khung chat luôn"*. Ví dụ đầu tiên: «nhà máy» = phòng Dego Organic — Trợ lý không biết nên trả đơn của cả công ty.
+trong khung chat luôn"*. Ví dụ đầu tiên: "nhà máy" = phòng Dego Organic — Trợ lý không biết nên trả đơn của cả công ty.
 
   - Lưu ở `tab_setting` khóa `assistant_glossary` (JSON) qua `setting.service._upsert` → có sẵn nhật ký trước/sau
     (bao-CR-461), không cần bảng mới, không migration.
@@ -26,7 +26,7 @@ MEANING_MAX = 300
 
 
 def fold(text: str) -> str:
-    """Hạ chữ + bỏ dấu + gộp khoảng trắng: «Nhà  Máy» → «nha may»."""
+    """Hạ chữ + bỏ dấu + gộp khoảng trắng: "Nhà  Máy" → "nha may"."""
     s = (text or "").replace("đ", "d").replace("Đ", "D")
     s = "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn").lower()
     return " ".join(re.sub(r"[^\w()\-]+", " ", s).split())
@@ -34,7 +34,7 @@ def fold(text: str) -> str:
 
 def _read_raw(db: Session, key: str) -> str:
     """Chuỗi JSON của một khóa `tab_setting`. ai-CR-128: ở DỊCH VỤ AI (DB riêng, không có `tab_setting`) đọc qua cổng B —
-    08/10 vòng tự học (`learning.tick`) đổ lỗi «Table 'agent_hub.tab_setting' doesn't exist» mỗi 5 phút."""
+    08/10 vòng tự học (`learning.tick`) đổ lỗi "Table 'agent_hub.tab_setting' doesn't exist" mỗi 5 phút."""
     from app.core.config import settings
 
     if settings.agent_is_service:
@@ -136,11 +136,11 @@ def prompt_block(db: Session | None, *texts: str) -> str | None:
     if not found:
         return None
     return ("THUẬT NGỮ CỦA CÔNG TY (do quản lý dạy — hiểu đúng như vậy, ưu tiên hơn suy đoán; dùng nghĩa này khi chọn "
-            "bộ lọc của công cụ):\n" + "\n".join(f"- «{i['term']}»: {i['meaning']}" for i in found))
+            "bộ lọc của công cụ):\n" + "\n".join(f"- **{i['term']}**: {i['meaning']}" for i in found))
 
 
 def listing(items: list[dict]) -> list[str]:
-    return [f"«{i['term']}»: {i['meaning']}" for i in sorted(items, key=lambda i: fold(i["term"]))]
+    return [f"**{i['term']}**: {i['meaning']}" for i in sorted(items, key=lambda i: fold(i["term"]))]
 
 
 # ---------------------------------------------------------------------------

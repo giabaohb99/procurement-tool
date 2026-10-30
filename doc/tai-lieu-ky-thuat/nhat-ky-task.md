@@ -111,6 +111,119 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-697 | App đặt xe cũ: trò chuyện chưa có tin không làm hỏng màn, gỡ listener readStatus thừa
+- status: xong
+- date: 2026-10-30
+- list: Kế hoạch hệ agent
+Trên app đặt xe cũ, mở một cuộc trò chuyện chưa có tin nào thì màn bị hỏng; đồng thời có một listener theo dõi trạng thái đã đọc
+bị đăng ký thừa. Đã sửa cả hai, đã lên prod app cũ (app.degoholding.vn).
+Mã nguồn: repo degoholding-app-frontend
+Commit: 162806c, 69b4572
+Deploy: prod app cũ 30/10
+
+## bao-CR-702 | Đánh giá độ phủ nghiệp vụ thu mua và kho so với ERPNext v16
+- status: xong
+- date: 2026-10-30
+- list: Kế hoạch hệ agent
+Người chủ muốn biết luồng thu mua và kho hiện tại nằm được bao nhiêu phần trăm so với nghiệp vụ chuẩn, lấy ERPNext v16 (site học
+dựng 30/10) làm mốc. Tài liệu nghiên cứu số 11 chấm 52 chức năng trên tám chặng, từ dữ liệu gốc tới báo cáo, mỗi chức năng ba
+mức Có, Một phần, Chưa kèm chỗ tương ứng trong mã nguồn và màn hình để người sau kiểm lại. Kết quả chung 30,5 trên 52, tức 59
+phần trăm: nửa trước luồng (yêu cầu mua, hỏi giá, đơn mua và duyệt) đạt 72 phần trăm và nhiều chỗ đi trước ERPNext; nửa sau
+(nhận hàng và kiểm chất lượng, kho, hóa đơn và công nợ) chỉ 43 phần trăm, trùng với các điểm đã soát ở tài liệu 01 mục 7.
+Xếp mười chỗ hở theo giá trị cho phòng thu mua: số lượng từ chối và kiểm chất lượng chặn nhập, trả hàng nhà cung cấp, phiếu nhập
+do thủ kho lập, xuất và chuyển kho, hóa đơn nhà cung cấp đối chiếu ba chiều, mức tồn tối thiểu tự đề nghị mua, chi phí nhập khẩu
+vào giá vốn, sổ kho có ngày ghi sổ và khóa kỳ, hợp đồng khung có số lượng và giá, chấm điểm nhà cung cấp định kỳ. Có mục riêng
+liệt kê chỗ ERP DEGO đi xa hơn ERPNext để nhìn công bằng. Người chủ chốt 30/10: chưa làm, chỉ ghi nhận; bốn việc
+đầu (số lượng từ chối và QC chặn nhập, trả hàng NCC, phiếu nhập do thủ kho lập, xuất và chuyển kho) đã ghi vào kế hoạch theo
+module mục Thu mua với trạng thái đã ghi nhận, chưa lên lịch; sáu việc còn lại ghi một dòng dẫn về tài liệu 11.
+Mã nguồn: doc/erp/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md
+
+## bao-CR-696-hdsd | Sửa bài hướng dẫn cụm AI theo màn mới: một phân hệ AI, Kết nối, Nâng cao, Nhật ký
+- status: xong
+- date: 2026-10-30
+Giao diện gom Trợ lý AI và Kho skill AI thành một phân hệ AI (bao-CR-696), nên các bài hướng dẫn còn nói hai phân hệ riêng và
+menu cũ phải viết lại. Bài Dành cho quản trị: thay đoạn mở đầu bằng bảng menu theo nhóm (Trợ lý AI, Kết nối, Kho skill, Giám sát,
+Cấu hình) kèm ai thấy mục nào; mục Khóa nhân sự đổi thành Kết nối, ghi các cột mới (người, phòng, cách nối khóa riêng hay OAuth,
+ứng dụng và nơi quay về, dùng lần cuối) và ô tìm theo tên, email, mã nhân viên; mục Ứng dụng AI đã kết nối đổi thành Nâng cao,
+thêm cột người đang dùng, ô tìm và lọc trạng thái; Cấu hình đổi thành Cấu hình chung; bảng quyền sửa tên màn. Bài Nhật ký: chỉ
+đường mới qua nhóm Giám sát, thêm ô tìm theo người hoặc công cụ và cột Chứng từ. Bài AI riêng làm được gì, hai bài Trợ lý AI và
+bài Cách 2 đổi câu chỉ đường. Tài liệu chức năng 22 lên bản 1.4. Viết theo luật bao-CR-695, không dấu ngoặc kép góc. Đã chạy
+seed và nạp lại kho vector trên dev, soát trên devhelp thấy bảng menu mới hiện đúng; prod gom đợt sau.
+Mã nguồn: backend/scripts/seed_help_ket_noi_ai_mcp.py, seed_help_ket_noi_ai_cach_1.py, seed_help_ai_rieng_lam_duoc_gi.py, seed_help_tro_ly_ai.py, seed_help_tro_ly_ai_lap_bo_tai_khoan.py, doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md
+Deploy: dev 30/10
+
+## bao-CR-695-giao-dien-dau-sao | Không để lộ dấu sao in đậm ở màn chi tiết việc của bot
+- status: xong
+- date: 2026-10-30
+Phần máy chủ đổi câu của bot, Trợ lý và mô tả công cụ sang kiểu in đậm bằng hai dấu sao. Soát các màn ERP v2 đang hiện những câu
+đó bằng chữ thường: chỉ màn chi tiết việc của bot sửa mã (Quản trị) bị lộ dấu sao ở ghi chú, rà soát mã, kế hoạch, câu hỏi và
+hội thoại. Thêm một bộ vẽ dùng chung biến hai dấu sao thành chữ đậm, một dấu sao thành chữ nghiêng, không bắt nhầm dấu nhân hay gạch
+đầu dòng, rồi dùng ở màn đó. Khung chat Trợ lý, bản tóm tắt nhóm, Cấu hình, Nhật ký, Kho skill và thông báo nổi không bị lộ. Mô tả
+việc Dự án tạo từ biên bản họp đang ghi sẵn dấu sao vào dữ liệu, đã báo phần máy chủ.
+Kiểm: bài kiểm bộ vẽ mới và thư mục Quản trị xanh; typecheck 0 lỗi; lint 0 lỗi, 30 cảnh báo như bản gốc.
+Mã nguồn: frontend-v2/src/shared/utils/inline-emphasis.ts, frontend-v2/src/shared/ui/inline-emphasis-text.tsx, frontend-v2/src/modules/system/pages/agent-task-detail-page.tsx
+
+## bao-CR-696-giao-dien | Gom Trợ lý AI và Kho skill AI thành một phân hệ AI
+- status: xong
+- date: 2026-10-30
+Màn chọn phân hệ chỉ còn một thẻ AI thay cho hai thẻ Trợ lý AI và Kho skill AI. Menu bên trái xếp theo nhóm: Trợ lý AI, Kết nối
+(tên mới của màn Khóa nhân sự), nhóm Kho skill (Bộ skill), nhóm Giám sát (Tổng quan, Nhật ký sử dụng và mục Bot Telegram gập sẵn,
+bên trong là Nhóm chat và Người dùng bot), nhóm Cấu hình (Cấu hình chung và Nâng cao, nơi quản trị dọn các ứng dụng AI đã đăng ký,
+chỉ người quản lý trợ lý AI thấy). Quyền từng mục giữ như cũ, mọi đường dẫn cũ vẫn mở được nên link trong thông báo và bài hướng
+dẫn không gãy. Khung phân hệ dùng chung thêm khái niệm đường gốc phụ để một phân hệ nhận được hai tiền tố đường dẫn.
+Đợt 2 khớp hợp đồng API phần máy chủ đã chốt ngày 30/10, đẩy sau khi phần máy chủ lên nhánh chung: màn Kết nối mỗi dòng ghi người (tên, mã
+nhân viên, email), phòng, cách nối (khóa riêng hay OAuth), ứng dụng (tên và nơi quay về), dùng lần cuối, trạng thái, thêm ô tìm
+theo tên, email, mã nhân viên; màn Nâng cao thêm cột người đang dùng ứng dụng, ô tìm và lọc trạng thái (còn kết nối, không còn kết nối, host lạ); Nhật ký sử dụng
+thêm ô tìm theo người hoặc công cụ và cột Chứng từ (mã phiếu của lượt duyệt, lập phiếu; không có thì hiện gạch ngang). Máy chủ cũ
+chưa trả trường mới thì màn vẫn đủ cột từ dữ liệu sẵn có.
+Đợt 2 đã đẩy sau khi phần máy chủ lên nhánh chung, thử lại trên trình duyệt với máy chủ mới: tìm ở Kết nối, tìm và cột Chứng từ ở Nhật ký, màn Nâng cao.
+Kiểm: typecheck 0 lỗi; lint 0 lỗi, 30 cảnh báo như bản gốc; bài kiểm thư mục AI, Kho skill, điều hướng và khung trang 213 bài xanh;
+mở thử trên trình duyệt ở màn rộng 1440 và màn điện thoại.
+Mã nguồn: frontend-v2/src/modules/ai/routes.tsx, frontend-v2/src/modules/ai/routes.test.tsx, frontend-v2/src/app/router/module-definition.ts, frontend-v2/src/app/router/use-active-module.ts, frontend-v2/src/app/router/module-registry.ts, frontend-v2/src/modules/ai-skill/utils/ai-row-mappers.ts, frontend-v2/src/modules/ai-skill/pages/key-admin-page.tsx, frontend-v2/src/modules/ai-skill/pages/oauth-clients-page.tsx, frontend-v2/src/modules/ai-skill/pages/call-log-page.tsx
+
+## bao-CR-695-giao-dien | Bỏ dấu ngoặc kép góc trên giao diện ERP v2 và giao diện thu mua cũ
+- status: xong
+- date: 2026-10-30
+Giao diện ERP v2 và giao diện thu mua cũ không còn dấu ngoặc kép góc: 4.968 cặp trong 1.429 tệp ở bản v2, 364 cặp trong 58 tệp
+ở bản cũ. Luật áp dụng theo chốt ngày 30/10: chữ hiện trên màn mà định dạng được thì tên nút, tên màn, tên ô thành chữ in đậm,
+lời trích và ví dụ thành chữ in nghiêng; chuỗi thuần như thông báo nổi, chữ gợi ý trong ô, chú giải khi rê chuột, nhãn lựa chọn
+và chú thích trong mã dùng nháy kép thẳng. Làm bằng một script đọc cây cú pháp TypeScript để biết từng dấu nằm trong chú thích,
+chuỗi hay chữ hiển thị, rồi soát tay các chỗ đổi sang in đậm, in nghiêng (giữ khoảng trắng khi câu xuống dòng, một chỗ ô chỉ nhận
+chuỗi nên giữ nháy thẳng). Sửa theo 11 khẳng định ở 7 tệp trong bài kiểm vốn khớp nguyên câu có dấu. Dữ liệu giả lập câu máy chủ trong bài
+kiểm đổi sang nháy thẳng cho khớp phần máy chủ cùng đợt.
+Kiểm: typecheck 0 lỗi; lint 0 lỗi, 30 cảnh báo như bản gốc; bài kiểm v2 chạy theo từng thư mục đều xanh, riêng bài nạp danh mục báo cáo hết giờ 5 giây giống hệt trên bản gốc; tsc bản cũ giữ đúng 4 lỗi cũ.
+Mã nguồn: frontend-v2/src/**, frontend/src/**
+
+## bao-CR-695-hdsd | Bỏ dấu ngoặc kép góc trong bài hướng dẫn và các script máy chủ
+- status: xong
+- date: 2026-10-30
+Toàn bộ thư mục backend/scripts không còn dấu ngoặc kép góc: 650 chỗ trong 53 tệp. Luật áp dụng theo chốt ngày 30/10: trong nội
+dung bài hướng dẫn (HTML), tên nút, màn, ô, trạng thái thành chữ in đậm, lời trích và ví dụ thành chữ in nghiêng, chỗ đã nằm sẵn
+trong thẻ in đậm hay in nghiêng thì chỉ bỏ dấu; câu in ra màn hình dòng lệnh, chú thích và docstring dùng nháy kép thẳng (chuỗi
+một dòng bọc bằng nháy kép thì dùng nháy đơn để không vỡ chuỗi). Làm bằng một script phân loại theo từng loại chuỗi của Python
+rồi soát tay 173 chỗ phải chọn in đậm hay in nghiêng, sửa 23 chỗ máy chọn sai; hai tệp JSON (bài Văn bản, cấu hình tra cứu thị
+trường) đối chiếu lại từng khóa để chắc chỉ đổi dấu. Chạy lại 22 script seed_help trên dev và nạp lại kho vector. Prod gom vào
+đợt sau. Cẩm nang trợ lý (seed_handbook) và các bài chỉ nằm trong DB prod không nằm trong phạm vi này, đã liệt kê cho điều phối.
+Bổ sung: ba bài có dấu ngoặc trong TIÊU ĐỀ (Phê duyệt theo quyền, Ô Tên trên hóa đơn, Hệ thống đang bận) đổi sang nháy kép
+thẳng; vì seed tìm bài theo tiêu đề nên lần chạy đầu đã đẻ bài mới bên cạnh bài cũ trên dev. Sửa khuôn chung: tuple bài nhận
+thêm danh sách tên cũ, seed đổi tên tại chỗ (giữ id, giữ thứ tự) và xóa bản trùng. Chạy lại ba seed trên dev, hết trùng.
+Mã nguồn: backend/scripts/*.py, backend/scripts/help_van_ban/bai-viet.json, backend/scripts/data/cau-hinh-tra-cuu-thi-truong-cr684.json, backend/scripts/deploy/deploy.sh, backend/scripts/agent_restore.sh
+Deploy: dev 30/10 (chạy lại 22 seed_help + reindex_help_rag)
+
+## bao-CR-691-hdsd | Bài hướng dẫn và tài liệu cho màn Chi tiết YC mua hàng mở rộng, đổi tên Tiến độ đơn mua hàng
+- status: xong
+- date: 2026-10-29
+Màn Chi tiết YC mua hàng sau bao-CR-691 có thêm cột phiếu, cột dòng, cột đơn mua hàng và nút xuất Excel, nhưng Trung tâm trợ giúp
+chưa có bài nào cho màn này. Viết bài mới dưới nhóm Dành cho Nhân viên Mua hàng, đứng ngay sau bài Tiến độ đơn mua hàng: màn này
+khác Tiến độ đơn mua hàng ở chỗ có cả dòng chưa tạo đơn và chưa đặt hàng; cách đọc hai cột Tiến độ dòng và Trạng thái phiếu; ba
+cột tiến độ hiện sẵn và mười sáu cột ẩn bật ở menu Cột; lọc nhiều tiến độ dòng, lựa chọn gộp Chưa được đặt hàng; xuất Excel
+theo bộ lọc, trần 5.000 dòng; hạn chế ghép đơn theo mã phiếu và mã hàng. Đổi tên Tiến độ mua hàng thành Tiến độ đơn mua hàng
+ở hai bài có sẵn của Trung tâm trợ giúp (bài riêng và câu nhắc trong bài nhóm) bằng script sửa thẳng vì hai bài đó không có
+tệp seed. Tài liệu chức năng: thêm mục Màn Chi tiết YC mua hàng ở tài liệu Hệ thống và Báo cáo (API, xuất Excel, giao diện,
+hạn chế), đổi nhãn ở tài liệu Đơn mua hàng và Yêu cầu khảo sát. Đã nạp bài mới lên dev kèm kho vector; prod nạp 30/10 sau khi người chủ gật (bài số 211, kho vector 5 đoạn).
+Mã nguồn: backend/scripts/seed_help_chi_tiet_yc_mua_hang.py (mới), doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md, 04-don-mua-hang.md, 02-yeu-cau-khao-sat.md
+Deploy: dev 29/10 (bài mới + đổi tên hai bài, kho vector nạp lại); prod 30/10 (bài mới)
+
 ## bao-CR-693 | Mở chi tiết chứng từ ở tab mới từ trang danh sách đang lọc
 - status: xong
 - date: 2026-10-29
@@ -17656,6 +17769,25 @@ Gỡ màn kế hoạch nhân sự, mẫu khoản chi phí, nhóm chi phí, các 
 Đã gỡ xong ở cả backend, giao diện và bài hướng dẫn. Báo cáo quỹ lương còn bốn chỉ số thực tế, xem theo pháp nhân, phòng ban, chức vụ, nhóm vị trí, loại hợp đồng, dòng tổng là toàn công ty; thêm dòng nhắc số người đang làm chưa có hợp đồng hiệu lực để biết quỹ lương còn thiếu ai. Migration bỏ bảng chạy được cả lên lẫn xuống; loại văn bản căn cứ kế hoạch nhân sự chưa có văn bản nào thì xóa, có thì tắt.
 Mã nguồn: backend/app/modules/headcount_plan/ (xóa), backend/app/modules/labor_contract/payroll_report_*.py, frontend-v2/src/modules/hr, frontend-v2/src/modules/report
 
+## duoc-CR-693 | Ô lương trên hồ sơ nhân sự, chỉ chính người đó xem được
+- status: xong
+- date: 2026-10-29
+- pic: NSU231
+- tag: Được
+Anh Được muốn nhập lương ngay ở hồ sơ nhân sự bằng một ô, thay vì phải lập hợp đồng lao động. Nhập xong thì chỉ chính người đó xem được lương của mình ở trang cá nhân, người khác không xem được.
+Thêm ô lương và phụ cấp mỗi tháng ở tab chung của hồ sơ; người có quyền sửa hồ sơ nhập được nhưng sau khi lưu chỉ thấy đã nhập, không thấy số. Ký hợp đồng lao động thì ô này tự cập nhật theo hợp đồng. Báo cáo quỹ lương cộng ô lương của từng người ra tổng theo pháp nhân, phòng ban và toàn công ty, không hiện lương từng người.
+Đã làm xong và thử trên trình duyệt: người nhập chỉ thấy đã nhập, chính nhân sự thấy đúng số ở thẻ lương của tôi trên trang cá nhân; lưu hồ sơ không đụng ô lương thì không đè mất số. Số lương không lộ qua xuất tệp, nhật ký hay trợ lý AI; nhập Excel bỏ qua cột lương. Hợp đồng ký trước mà hiệu lực ở tương lai thì tới ngày đó chưa tự cập nhật ô lương, cần sửa tay.
+Mã nguồn: backend/app/modules/employee/, backend/app/modules/labor_contract/payroll_report_*.py, frontend-v2/src/modules/hr, frontend-v2/src/modules/report
+
+## duoc-CR-694 | Nhập nhiều số điện thoại trong hồ sơ nhân sự
+- status: xong
+- date: 2026-10-29
+- pic: NSU231
+- tag: Được
+Anh Được muốn mục liên hệ của hồ sơ cho nhập nhiều số điện thoại thay vì một số. Nay hồ sơ có một danh sách số, mỗi số kèm nhãn như cá nhân, công việc, Zalo; dòng đầu là số chính và vẫn được dùng cho tìm kiếm, phiếu in, đặt xe như trước; nút đặt làm chính đổi cả số lẫn nhãn; tối đa năm số, kiểm định dạng và không cho trùng.
+Theo góp ý giao diện, danh sách số chiếm cả chiều ngang, hai ô địa chỉ nằm chung một hàng bên dưới và có nút giống địa chỉ thường trú. Nhân viên tự sửa được ở trang cá nhân; tìm nhân sự theo số phụ được; xuất và nhập Excel có thêm cột số điện thoại khác và nhãn số chính.
+Mã nguồn: backend/app/modules/employee/phone_rules.py, migration emp_phones01, frontend-v2/src/modules/hr/components/phone-list-editor.tsx
+
 
 ## kh-prod-2910 | Đợt prod 29/10: nhân sự của anh Được, Chi tiết YC mua hàng, nút trợ lý, quyền xuất báo cáo cho thu mua
 - status: xong
@@ -17668,3 +17800,82 @@ Mã nguồn: backend/app/modules/headcount_plan/ (xóa), backend/app/modules/lab
 **Kết quả:** bốn trang trả 200, cổng MCP chưa khóa trả 401, migration ở đầu hcplan04, log api và cụm AI không có lỗi; đường xuất Excel mới có trên prod.
 
 Commit: 0c7b2104 (main) · Deploy: prod toàn bộ dịch vụ ERP và cụm AI, 29/10/2026 sáng
+
+## nc-09-10-nghiep-vu-mua-hang-kho | Tài liệu nghiệp vụ chuẩn riêng cho Mua hàng và Kho
+- status: xong
+- date: 2026-10-29
+- tag: Nghiên cứu, Mua hàng, Kho
+
+**Bối cảnh:** Cụm chuỗi cung ứng gồm Mua hàng, Kho và Sản xuất là ba phân hệ ngang hàng. Sản xuất đã có tài liệu nghiệp vụ riêng, được giao tách Mua hàng và Kho thành tài liệu riêng ở mức vừa phải.
+
+**Đã làm**
+- Tài liệu Mua hàng: vai trò, chứng từ và trạng thái, nhu cầu mua phát sinh từ đâu, bảy chặng từ yêu cầu mua tới thanh toán, hóa đơn và thời điểm ghi nợ, các khoản chi phí kèm tài khoản, ví dụ có số (mua trong nước và nhập khẩu), các luồng đặc biệt.
+- Tài liệu Kho: dữ liệu gốc, trạng thái tồn, các loại phiếu kho kèm bút toán, nhập, xuất, chuyển kho, kiểm kê, cách tính giá xuất, bổ sung hàng, việc cuối tháng.
+
+**Kết quả:** văn bản số 09 và 10 trên nhánh erp-v2.
+
+Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md · doc/erp/nghien-cuu/10-nghiep-vu-kho.md
+
+## nc-09b-tra-truoc-nhap-khau | Bổ sung trả trước, nhập khẩu và cách cân bằng vào nghiệp vụ Mua hàng
+- status: xong
+- date: 2026-10-29
+- tag: Nghiên cứu, Mua hàng
+
+**Bối cảnh:** Cần thấy rõ tiền trả trước, thuế và phí nhập khẩu được đối trừ thế nào để các tài khoản trung gian về 0.
+
+**Đã làm**
+- Thêm mục 10 vào tài liệu nghiệp vụ Mua hàng: trả trước toàn bộ mà nhà cung cấp giao thiếu, đặt cọc giao hai đợt (hai cách trừ cọc), hủy đơn sau khi trả trước, và một vòng nhập khẩu trọn vẹn gồm trả trước bằng ngoại tệ, hàng đi đường, thuế, phí, chi phí về muộn, chênh lệch tỷ giá.
+- Mỗi trường hợp ghi thao tác trên phần mềm, bút toán và bảng kiểm cân bằng cuối vòng.
+
+**Kết quả:** tài liệu 09 bản 1.1 trên nhánh erp-v2.
+
+Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
+
+## nc-09c-truong-hop-thuong-gap | Viết lại các trường hợp thường gặp trong nghiệp vụ Mua hàng
+- status: xong
+- date: 2026-10-30
+- tag: Nghiên cứu, Mua hàng
+
+**Bối cảnh:** Cần biết với mỗi tình huống thực tế thì người làm phải làm gì ngoài đời và bấm gì trên phần mềm.
+
+**Đã làm**
+- Viết lại mục 9 tài liệu nghiệp vụ Mua hàng thành 24 trường hợp chia năm nhóm: sự cố khi nhận hàng, sự cố với đơn mua, sự cố với hóa đơn, các hình thức mua đặc biệt (dịch vụ, tạm ứng, hợp đồng khung, hàng ký gửi, gia công ngoài, giao thẳng cho khách, tài sản cố định) và thanh toán.
+- Mỗi trường hợp có bảng ba cột theo từng bước: người làm ngoài đời, thao tác trên phần mềm, hệ thống tự làm và bút toán. Gia công ngoài, hàng ký gửi, giao thẳng và tài sản cố định có ví dụ số.
+
+**Kết quả:** tài liệu 09 bản 1.2 trên nhánh erp-v2, kèm bản PDF xuất lại.
+
+Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
+
+## nc-09d-giao-trinh | Dựng lại tài liệu nghiệp vụ Mua hàng dạng giáo trình
+- status: xong
+- date: 2026-10-30
+- tag: Nghiên cứu, Mua hàng
+
+**Bối cảnh:** Người đọc chưa biết kế toán cần một tài liệu đọc từ trên xuống là hiểu, có mục lục, danh sách tài khoản và luồng duyệt theo loại mặt hàng.
+
+**Đã làm**
+- Sắp lại tài liệu 09 thành sáu phần kèm phụ lục: Nền tảng, Tổ chức, Luồng chuẩn, Tiền, Trường hợp thường gặp, Tổng kết. Thêm phần cách đọc và mục lục có liên kết.
+- Viết mới: kế toán căn bản cho người không chuyên (Nợ, Có, chín nhóm tài khoản), danh sách tài khoản dùng trong mua hàng và ý nghĩa, năm loại mặt hàng, luồng duyệt riêng cho từng loại kèm bảng tổng hợp và hạn mức duyệt.
+- Đánh số lại các mục cũ, sửa các tham chiếu chéo; thêm tóm tắt một trang, thuật ngữ và bảng tra nhanh khoản nào ghi vào đâu.
+
+**Kết quả:** tài liệu 09 bản 2.0 trên nhánh erp-v2, bản PDF 29 trang.
+
+Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
+
+## nc-10b-giao-trinh-kho | Dựng lại tài liệu nghiệp vụ Kho dạng giáo trình
+- status: xong
+- date: 2026-10-30
+- tag: Nghiên cứu, Kho
+
+**Bối cảnh:** Tài liệu Kho cần đọc được từ trên xuống như tài liệu Mua hàng bản 2.0, cho người chưa biết kế toán.
+
+**Đã làm**
+- Sắp lại tài liệu 10 thành sáu phần kèm phụ lục, có cách đọc và mục lục liên kết.
+- Viết mới: kế toán kho căn bản (hàng tồn là tài sản, khi nào thành chi phí, ghi sổ liên tục), tài khoản dùng trong kho, kho đặc biệt, ba con số tồn có ví dụ, ai duyệt phiếu nào kèm hạn mức duyệt hủy và điều chỉnh.
+- Luồng nhập, xuất, chuyển kho, kiểm kê viết thành bảng ba cột: người làm, thao tác trên phần mềm, hệ thống và bút toán.
+- Thêm so sánh bình quân di động với nhập trước xuất trước trên cùng số liệu, điều chỉnh giá trị tồn (chi phí về muộn, giá thành tạm, dự phòng giảm giá), ví dụ một tháng của một kho có đối chiếu sổ cái.
+- Thêm 17 trường hợp thường gặp chia năm nhóm, việc cuối tháng, tóm tắt một trang, thuật ngữ và bảng tra phiếu kho với bút toán.
+
+**Kết quả:** tài liệu 10 bản 2.0 trên nhánh erp-v2, bản PDF 25 trang.
+
+Tham chiếu: doc/erp/nghien-cuu/10-nghiep-vu-kho.md

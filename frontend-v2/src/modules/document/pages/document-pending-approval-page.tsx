@@ -5,12 +5,12 @@ import { ApprovalInboxTable } from '../components/approval-inbox-table'
 /**
  * VĂN BẢN ĐANG CHỜ TÔI DUYỆT — và những cái tôi vừa duyệt xong, trong MỘT bảng.
  *
- * Khác «Việc của tôi» cũ ở phân hệ Phê duyệt (đã xóa) ở chỗ **chỉ có văn bản**:
+ * Khác "Việc của tôi" cũ ở phân hệ Phê duyệt (đã xóa) ở chỗ **chỉ có văn bản**:
  * người làm văn thư đứng trong phân hệ Văn bản cả ngày, bắt họ nhảy sang một
  * phân hệ khác để biết mình còn phải ký gì là lý do người dùng bảo *"có đâu nè"*.
  *
- * **Một bảng, không phải hai tab.** Bản trước tách tab «Chờ tôi duyệt» /
- * «Đã duyệt gần đây»: cùng một câu hỏi ("văn bản nào qua tay tôi") ở hai thời
+ * **Một bảng, không phải hai tab.** Bản trước tách tab "Chờ tôi duyệt" /
+ * "Đã duyệt gần đây": cùng một câu hỏi ("văn bản nào qua tay tôi") ở hai thời
  * điểm, mà phải bấm thêm một cú mới biết mình vừa ký cái gì. Nay việc chưa làm
  * xếp trên, việc đã làm xếp dưới, phân biệt bằng huy hiệu ở cột đầu.
  */
@@ -31,12 +31,12 @@ export function DocumentPendingApprovalPage() {
         title="Chờ tôi duyệt"
         //  ⚠️ Dòng mô tả ẨN trên máy hẹp. Nó là câu GIỚI THIỆU, đọc một lần rồi
         //  thôi — nhưng chiếm hai dòng (~60px) ở đầu MỌI lần mở màn, ngay phía
-        //  trên hàng đợi việc mà người ta vào đây để xem. Thứ nó dặn («bấm vào
-        //  một dòng để mở ra duyệt») thì mũi tên ở mép phải mỗi thẻ đã nói rồi.
+        //  trên hàng đợi việc mà người ta vào đây để xem. Thứ nó dặn ("bấm vào
+        //  một dòng để mở ra duyệt") thì mũi tên ở mép phải mỗi thẻ đã nói rồi.
         description={
           <span className="max-md:hidden">
             Bấm vào một dòng để mở văn bản ra đọc rồi duyệt ngay tại đó. Việc đã duyệt xem ở
-            tab «Đã duyệt».
+            tab <strong>Đã duyệt</strong>.
           </span>
         }
       />

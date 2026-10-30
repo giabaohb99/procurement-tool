@@ -64,9 +64,9 @@ export function DocumentVersionTab({
     <Card>
       {/*  `flex` phải khai TƯỜNG MINH: `CardHeader` của shadcn mặc định là
            `grid`, mà `flex-row` một mình không đè được `display` — thiếu nó thì
-           nút «Mở phiên bản mới» rơi xuống hàng dưới và kéo dài hết bề ngang. */}
+           nút "Mở phiên bản mới" rơi xuống hàng dưới và kéo dài hết bề ngang. */}
       {/*  ⚠️ `max-md:flex-col` — ở khổ hẹp hai vế phải XẾP DỌC. Để cùng hàng thì
-           vế phải («Mở phiên bản mới» / câu «Chưa mở được…») chiếm ~150px, cột
+           vế phải ("Mở phiên bản mới" / câu "Chưa mở được…") chiếm ~150px, cột
            trái còn ~250px và câu mô tả gãy thành SÁU dòng hẹp trong khi bên phải
            trống trơn bên dưới. `items-start` giữ nguyên tác dụng ở chiều dọc nên
            nút không bị kéo dài hết hàng. */}

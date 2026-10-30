@@ -69,7 +69,11 @@ def test_ask_truyen_stop_on_draft_va_chi_mang_danh_muc_cam_nang(db, seed, monkey
     #  ai-CR-192: «chào em» là xã giao → chỉ nhóm lõi (nay gồm cả ba tool đọc cẩm nang).
     service.ask("chào em", db=db, user=user)
     assert seen[-1]["stop"] is None and FACTORY not in seen[-1]["system"]
-    assert seen[-1]["n"] == len(__import__("app.modules.assistant.tool_router", fromlist=["CORE"]).CORE)
+    #  Đếm lõi THỰC có mặt: `search_docs` chỉ có khi `AI_RAG_ENABLED` bật (local thường tắt) — đừng đếm cứng `len(CORE)`.
+    from app.modules.assistant import tools as T
+    from app.modules.assistant.tool_router import CORE
+
+    assert seen[-1]["n"] == len(set(CORE) & {d.name for d in T.tool_defs()})
 
 
 def test_telegram_goi_ask_voi_stop_on_draft(db, monkeypatch):

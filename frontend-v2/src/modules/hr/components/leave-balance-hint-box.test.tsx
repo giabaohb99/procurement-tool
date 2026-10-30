@@ -5,7 +5,7 @@ import { LeaveBalanceHintBox } from './leave-balance-hint-box'
 import type { LeaveBalanceHint } from '../types/leave'
 
 /**
- * Ô «số phép còn lại» — ràng buộc §6.1 của kế hoạch Nghỉ phép (CR-259) và lý do
+ * Ô "số phép còn lại" — ràng buộc §6.1 của kế hoạch Nghỉ phép (CR-259) và lý do
  * tồn tại của cả đợt. Doc gọi nó là *"chi tiết nhỏ, nhưng nó cắt phần lớn số đơn
  * sai và phần lớn câu hỏi gửi về phòng Nhân sự"*.
  *
@@ -90,7 +90,7 @@ describe('LeaveBalanceHintBox', () => {
     expect(shownText()).not.toContain('trừ đơn này')
   })
 
-  it('cảnh báo vượt quỹ và chỉ đường sang «Nghỉ không lương» — QĐ-NP2 không cho ứng phép', () => {
+  it('cảnh báo vượt quỹ và chỉ đường sang "Nghỉ không lương" — QĐ-NP2 không cho ứng phép', () => {
     setHint(hint({ remaining_days: 2 }))
     render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={5} />)
 

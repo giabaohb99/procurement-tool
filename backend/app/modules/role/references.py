@@ -23,7 +23,7 @@ rg.register(ENTITY, "Vai trò", [
     rg.Reference(UserRole, "role_id", "tài khoản"),
     #  duoc-CR-653 (H3): vai trò còn nằm trong gói quyền mặc định của chức vụ thì không xóa — gỡ khỏi gói trước.
     rg.Reference(JobPositionRole, "role_id", "quyền mặc định của chức vụ"),
-    #  Chặng duyệt «theo vai trò» lưu MÃ vai trò (chuỗi) ở `approver_ref`.
+    #  Chặng duyệt "theo vai trò" lưu MÃ vai trò (chuỗi) ở `approver_ref`.
     rg.Reference(ApprovalNode, "approver_ref", "chặng duyệt theo vai trò", key_attr="code",
                  extra=lambda m: [m.approver_kind == APPROVER_ROLE]),
     rg.Reference(DocumentAccess, "subject_id", "quyền xem văn bản", extra=_subject_role),

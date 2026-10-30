@@ -73,7 +73,7 @@ class DocumentCreate(DocumentBase):
     #  PHÒNG CHỦ TRÌ bắt buộc khi TẠO (19/08/2026), dù bộ trường chung vẫn cho
     #  rỗng vì văn bản cũ và văn bản pháp luật ngoài không có phòng nào.
     #
-    #  Lý do: bước đầu của luồng duyệt là «trưởng bộ phận của phòng chủ trì».
+    #  Lý do: bước đầu của luồng duyệt là "trưởng bộ phận của phòng chủ trì".
     #  Không có phòng thì không tìm ra người duyệt, phiên duyệt chốt ở trạng thái
     #  KẸT ngay khi vừa gửi, và văn bản không đi tiếp được bằng đường nào —
     #  đã dựng lại được đúng ca đó ngày 19/08. Chặn ở lúc tạo rẻ hơn nhiều so với
@@ -82,7 +82,7 @@ class DocumentCreate(DocumentBase):
 
     #  Nội dung của phiên bản 1.0. Để trống rồi gõ sau ở màn soạn thảo cũng được.
     content_html: str = ""
-    #  1 «Tạo và soạn thảo» · 2 «Tạo, không soạn thảo» — `model.CONTENT_MODE_*`.
+    #  1 "Tạo và soạn thảo" · 2 "Tạo, không soạn thảo" — `model.CONTENT_MODE_*`.
     content_mode: int = Field(default=1, ge=1, le=2)
 
     #  THƯ MỤC LƯU (phase 03 cây thư mục). Bỏ trống → vào thư mục mặc định của
@@ -119,7 +119,7 @@ class DocumentUpdate(BaseModel):
     #  Dải thật kiểm ở service — xem ghi chú ở `DocumentCreate`.
     secrecy_level: int | None = Field(default=None, ge=1, le=99)
     #  Cách tạo — màn tạo văn bản sinh bản nháp ở bước 1 (lúc đó CHƯA biết người
-    #  dùng sẽ bấm «Tạo và soạn thảo» hay «Tạo, không soạn thảo»), nút cuối là
+    #  dùng sẽ bấm "Tạo và soạn thảo" hay "Tạo, không soạn thảo"), nút cuối là
     #  lượt SỬA bản nháp đó, nên trường này phải nhận được ở đây nữa.
     content_mode: int | None = Field(default=None, ge=1, le=2)
     urgency: int | None = Field(default=None, ge=1, le=99)
@@ -292,9 +292,9 @@ class ApproveIn(BaseModel):
     apply_mode: int | None = Field(default=None, ge=1, le=2)
     #  Hộp thư gửi thông báo ban hành (26/08/2026). Bỏ trống = gửi bằng địa chỉ
     #  hệ thống như trước. `0` cũng coi là bỏ trống — ô chọn trên giao diện trả
-    #  về 0 khi người dùng chọn dòng «Địa chỉ mặc định của hệ thống».
+    #  về 0 khi người dùng chọn dòng "Địa chỉ mặc định của hệ thống".
     mailbox_id: int | None = Field(default=None, ge=0)
-    #  CR-200 (F12) — «Đăng thông báo lên diễn đàn»: hệ clone văn bản vừa ban
+    #  CR-200 (F12) — "Đăng thông báo lên diễn đàn": hệ clone văn bản vừa ban
     #  hành thành MỘT bài diễn đàn đã ghim (tiêu đề + số hiệu + link về văn
     #  bản). Văn thư vẫn là nguồn sự thật; diễn đàn chỉ giữ bản sao thông báo.
     forum_announce: bool = False

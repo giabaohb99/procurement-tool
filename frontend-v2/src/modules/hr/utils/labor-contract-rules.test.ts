@@ -31,7 +31,7 @@ describe('trạng thái', () => {
       expect(LABOR_CONTRACT_STATUS.some((o) => o.value === String(code))).toBe(true)
     }
   })
-  it('EXPIRED hiện «Hết hạn»; mã lạ hiện gạch ngang', () => {
+  it('EXPIRED hiện "Hết hạn"; mã lạ hiện gạch ngang', () => {
     expect(contractStatusLabel(CONTRACT_STATUS.EXPIRED)).toBe('Hết hạn')
     expect(contractStatusLabel(77)).toBe('—')
   })

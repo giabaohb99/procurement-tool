@@ -83,7 +83,7 @@ import { SurveyReportItemDialog } from './survey-report-item-dialog'
 import { SurveyReportPhaseDialog } from './survey-report-phase-dialog'
 import { SurveyReportTracking } from './survey-report-tracking'
 
-/** Id của dòng «Chung» trong bảng — trùng `item_id = 0` của hồ sơ chung. */
+/** Id của dòng "Chung" trong bảng — trùng `item_id = 0` của hồ sơ chung. */
 const COMMON_ROW_ID = 0
 /** Số cột của bảng dòng hàng — dùng cho `colSpan` của dải mở rộng và dòng tổng. */
 const ITEM_TABLE_COLUMNS = 6
@@ -100,8 +100,8 @@ type ReportViewMode = 'phase' | 'item' | 'table'
 const VIEW_STORAGE_KEY = 'erp.survey-report.view'
 
 /**
- * Dạng xem MẶC ĐỊNH: «Bảng» trên màn rộng (duoc-CR-612 — mở ra là thấy bảng sửa được
- * ngay). Màn hẹp (< 1024px) về «Xem tổng»: bảng ~2100px mà ba cột ghim đã chiếm 312px
+ * Dạng xem MẶC ĐỊNH: "Bảng" trên màn rộng (duoc-CR-612 — mở ra là thấy bảng sửa được
+ * ngay). Màn hẹp (< 1024px) về "Xem tổng": bảng ~2100px mà ba cột ghim đã chiếm 312px
  * thì điện thoại 390px chỉ còn một khe cuộn ngang.
  */
 function defaultViewMode(): ReportViewMode {
@@ -121,17 +121,17 @@ function readViewMode(): ReportViewMode {
   }
 }
 
-/** Một DÒNG của bảng: nút dòng hàng, hoặc dòng «Chung» gom hồ sơ `item_id = 0`. */
+/** Một DÒNG của bảng: nút dòng hàng, hoặc dòng "Chung" gom hồ sơ `item_id = 0`. */
 interface ReportItemRow {
   id: number
   name: string
-  /** `null` với dòng «Chung» — nó không phải một bản ghi nút, không sửa/xóa được. */
+  /** `null` với dòng "Chung" — nó không phải một bản ghi nút, không sửa/xóa được. */
   item: SurveyReportItem | null
   /** Hồ sơ của RIÊNG dòng này, chưa qua ô tìm / lọc trạng thái. */
   docs: SurveyReportDoc[]
 }
 
-/** Lệnh từ ngoài: bảng dòng hàng của chứng từ bấm «Hồ sơ» → cuộn tới và sổ đúng nút. */
+/** Lệnh từ ngoài: bảng dòng hàng của chứng từ bấm "Hồ sơ" → cuộn tới và sổ đúng nút. */
 export interface SurveyReportCardHandle {
   focusItem: (itemId: number) => void
 }
@@ -155,7 +155,7 @@ interface SurveyReportCardProps {
  * - Cả khối gấp sẵn, bấm tiêu đề mới sổ ra — nó nằm cuối trang chi tiết, dưới
  *   khối kết quả khảo sát, và phần lớn lượt mở phiếu không đụng tới nó.
  * - Trong khối, mỗi NÚT DÒNG HÀNG là một dòng bảng bấm để sổ hồ sơ của nó
- *   (cùng khuôn với «Chi phí theo dòng hàng» của đơn mua hàng nhập khẩu).
+ *   (cùng khuôn với "Chi phí theo dòng hàng" của đơn mua hàng nhập khẩu).
  *
  * Người không có quyền sửa vẫn xem được; khối rỗng thì ẩn hẳn với họ.
  */
@@ -169,7 +169,7 @@ export function SurveyReportCard({
   const { data: report, isLoading, isError } = useSurveyRequestReport(ownerId, entity)
   const actions = useSurveyReportActions(ownerId, entity)
   const { user } = useAuth()
-  //  Chữ gọi chứng từ chủ trong câu chữ của khối: «cả phiếu» / «cả đơn».
+  //  Chữ gọi chứng từ chủ trong câu chữ của khối: "cả phiếu" / "cả đơn".
   const ownerLabel = entity === 'purchase_order' ? 'đơn' : 'phiếu'
   const cardRef = useRef<HTMLDivElement>(null)
   //  Hồ sơ mới điền sẵn người thực hiện = người đang đăng nhập (đổi được).
@@ -190,7 +190,7 @@ export function SurveyReportCard({
     `survey-report:${entity}:${ownerId}`,
   )
   //  `phaseId` bỏ trống = mở từ nút chung, hộp tự điền giai đoạn đầu tiên. Bấm
-  //  «+ hồ sơ» ngay trong một giai đoạn thì điền sẵn ĐÚNG giai đoạn đó.
+  //  "+ hồ sơ" ngay trong một giai đoạn thì điền sẵn ĐÚNG giai đoạn đó.
   const [docDialog, setDocDialog] = useState<{
     doc: SurveyReportDoc | null
     itemId: number
@@ -198,9 +198,9 @@ export function SurveyReportCard({
   } | null>(null)
   const [itemDialog, setItemDialog] = useState<{ item: SurveyReportItem | null } | null>(null)
   const [phaseDialog, setPhaseDialog] = useState<{ phase: SurveyReportPhase | null } | null>(null)
-  /** Hộp «Thêm hồ sơ» của khối còn TRỐNG (duoc-CR-611). */
+  /** Hộp "Thêm hồ sơ" của khối còn TRỐNG (duoc-CR-611). */
   const [firstDocOpen, setFirstDocOpen] = useState(false)
-  /** Hộp CHỌN MẪU của «Khởi tạo báo cáo mẫu» (duoc-CR-614). */
+  /** Hộp CHỌN MẪU của "Khởi tạo báo cáo mẫu" (duoc-CR-614). */
   const [initOpen, setInitOpen] = useState(false)
 
   const changeViewMode = (mode: ReportViewMode) => {
@@ -212,7 +212,7 @@ export function SurveyReportCard({
     }
   }
 
-  //  Nút «Hồ sơ n%» trên bảng dòng hàng của chứng từ (bao-CR-602): mở khối, chuyển
+  //  Nút "Hồ sơ n%" trên bảng dòng hàng của chứng từ (bao-CR-602): mở khối, chuyển
   //  sang dạng xem theo dòng hàng, sổ đúng dòng rồi cuộn tới. Lệnh đi bằng ref
   //  (không qua prop + effect) vì nó là một SỰ KIỆN, không phải trạng thái cần đồng bộ.
   useImperativeHandle(ref, () => ({
@@ -254,16 +254,16 @@ export function SurveyReportCard({
     await actions.deleteReport.mutateAsync()
   }
 
-  //  Bấm ô tick trên một hồ sơ: xong thì mở lại về «Đang làm», chưa xong thì
-  //  đóng thành «Hoàn thành». Dùng chung cho cả hai dạng xem.
+  //  Bấm ô tick trên một hồ sơ: xong thì mở lại về "Đang làm", chưa xong thì
+  //  đóng thành "Hoàn thành". Dùng chung cho cả hai dạng xem.
   const handleToggleDoc = (doc: SurveyReportDoc) =>
     actions.setDocStatus.mutate({
       docId: doc.id,
       status: isReportDocDone(doc) ? REPORT_DOC_DOING : REPORT_DOC_DONE,
     })
 
-  //  Đổi trạng thái NGAY TRÊN DÒNG (ô chọn nhỏ thay pill) — đại ca 06/10: «có cách nào
-  //  chỉnh trạng thái ở ngoài dòng luôn không». Cùng đường với nút ✓, không toast.
+  //  Đổi trạng thái NGAY TRÊN DÒNG (ô chọn nhỏ thay pill) — đại ca 06/10: "có cách nào
+  //  chỉnh trạng thái ở ngoài dòng luôn không". Cùng đường với nút ✓, không toast.
   const handleSetDocStatus = (doc: SurveyReportDoc, status: number) => {
     if (status === doc.status) return
     actions.setDocStatus.mutate({ docId: doc.id, status })
@@ -306,7 +306,7 @@ export function SurveyReportCard({
     return true
   }
 
-  //  «Tạo mẫu» vào một nút dòng hàng (hoặc chỉ một giai đoạn của nút Chung).
+  //  "Tạo mẫu" vào một nút dòng hàng (hoặc chỉ một giai đoạn của nút Chung).
   //  Backend CỘNG THÊM và bỏ qua hồ sơ trùng, nên không cần hỏi xác nhận; thứ
   //  cần nói là ĐÃ THÊM MẤY — so số hồ sơ trước/sau, bằng nhau nghĩa là mẫu đã
   //  có đủ ở đó (bấm hai lần không ra thêm gì, phải báo chứ đừng im).
@@ -314,7 +314,7 @@ export function SurveyReportCard({
     const before = report?.docs.length ?? 0
     const next = await actions.applyTemplate.mutateAsync({ itemId, phaseId })
     const added = next.docs.length - before
-    //  «Tạo mẫu» đổ MẪU CỦA KHỐI (mẫu chọn lúc khởi tạo, duoc-CR-614), không phải luôn mẫu chung.
+    //  "Tạo mẫu" đổ MẪU CỦA KHỐI (mẫu chọn lúc khởi tạo, duoc-CR-614), không phải luôn mẫu chung.
     if (added > 0) toast.success(`Đã tạo ${added} hồ sơ theo mẫu của báo cáo`)
     else toast.info('Mẫu đã có đủ ở đây — không thêm hồ sơ nào')
   }
@@ -329,8 +329,8 @@ export function SurveyReportCard({
       </Card>
     )
   }
-  //  Gọi API HỎNG thì phải NÓI ra, đừng biến mất im lặng: người vừa bấm «Thêm
-  //  Báo cáo thực hiện» nhìn vào một khoảng trống và tưởng nút không ăn, trong
+  //  Gọi API HỎNG thì phải NÓI ra, đừng biến mất im lặng: người vừa bấm "Thêm
+  //  Báo cáo thực hiện" nhìn vào một khoảng trống và tưởng nút không ăn, trong
   //  khi thật ra máy chủ trả lỗi (hay gặp nhất: DB chưa chạy migration của khối).
   if (!report) {
     if (!isError || !canEdit) return null
@@ -351,7 +351,7 @@ export function SurveyReportCard({
   if (isEmpty && !canEdit) return null
 
   //  Khối rỗng thì không gấp — lời mời khởi tạo phải thấy ngay, gấp lại thì
-  //  người vừa bấm «Thêm Báo cáo thực hiện» phải bấm thêm lần nữa mới thấy gì.
+  //  người vừa bấm "Thêm Báo cáo thực hiện" phải bấm thêm lần nữa mới thấy gì.
   const showBody = cardOpen || isEmpty
 
   const docsById = reportDocsById(report)
@@ -359,7 +359,7 @@ export function SurveyReportCard({
   const trimmedQuery = query.trim()
   const hasDocFilter = statusFilter !== REPORT_STATUS_FILTER_ALL || trimmedQuery !== ''
   //  Hai tầng lọc chồng nhau: trạng thái → từ khóa (soi mọi ô chữ của hồ sơ).
-  //  Tầng «nút dòng hàng» không còn là bộ lọc — nó thành dòng bảng sổ được.
+  //  Tầng "nút dòng hàng" không còn là bộ lọc — nó thành dòng bảng sổ được.
   const matchesFilter = (doc: SurveyReportDoc) =>
     (statusFilter === REPORT_STATUS_FILTER_ALL || doc.status === statusFilter) &&
     matchReportDoc(doc, trimmedQuery, itemNameById.get(doc.item_id) ?? '')
@@ -368,7 +368,7 @@ export function SurveyReportCard({
 
   //  Hồ sơ CHUNG đứng riêng một dòng chứ không lặp lại dưới mọi nút dòng hàng:
   //  bảng có dòng TỔNG, mà lặp thì một hồ sơ bị đếm nhiều lần. Ô chọn nút trong
-  //  hộp sửa hồ sơ vẫn giữ nghĩa cũ («Chung» = áp cho cả phiếu).
+  //  hộp sửa hồ sơ vẫn giữ nghĩa cũ ("Chung" = áp cho cả phiếu).
   const commonDocs = report.docs.filter((doc) => doc.item_id === COMMON_ROW_ID)
   const rows: ReportItemRow[] = [
     ...(commonDocs.length > 0 || report.items.length === 0
@@ -429,7 +429,7 @@ export function SurveyReportCard({
       return next
     })
 
-  //  Nút «Mở tất cả / Thu gọn» gạt ĐÚNG TRỤC đang xem: dạng tổng gạt giai đoạn,
+  //  Nút "Mở tất cả / Thu gọn" gạt ĐÚNG TRỤC đang xem: dạng tổng gạt giai đoạn,
   //  dạng dòng hàng gạt dòng hàng. Một nút, hai nghĩa — vì chỉ một trục hiện ra.
   const allOpen = viewMode === 'phase' ? allPhasesOpen : allRowsOpen
   const toggleAll = viewMode === 'phase' ? toggleAllPhases : toggleAllRows
@@ -562,7 +562,7 @@ export function SurveyReportCard({
               <p className="text-sm text-muted-foreground">
                 Chưa có báo cáo cho {ownerLabel} này. Khởi tạo theo một mẫu có sẵn (mẫu chung hồ sơ
                 nhập khẩu, hoặc tiến độ kế hoạch công việc nhập khẩu) rồi chỉnh lại cho hợp, hoặc tự
-                thêm giai đoạn từ đầu. Mỗi dòng hàng / giai đoạn có nút «Tạo mẫu» riêng để đổ thêm
+                thêm giai đoạn từ đầu. Mỗi dòng hàng / giai đoạn có nút <strong>Tạo mẫu</strong> riêng để đổ thêm
                 sau.
                 {itemsLocked && ' Nút dòng hàng bám theo dòng của đơn: thêm/bớt dòng trên đơn là khối tự theo.'}
               </p>
@@ -588,7 +588,7 @@ export function SurveyReportCard({
             </div>
           ) : (
             <>
-              {/* Câu «rỗng vì bộ lọc» phải khác «chưa có gì» — người gõ nhầm một
+              {/* Câu "rỗng vì bộ lọc" phải khác "chưa có gì" — người gõ nhầm một
                   chữ không được đọc ra "chưa có dữ liệu" (bẫy duoc-CR-322). */}
               {hasDocFilter && visibleDocs.length === 0 && (
                 <p className="text-sm text-muted-foreground">
@@ -603,7 +603,7 @@ export function SurveyReportCard({
                   thái, giống khung tracking: số tổng không đổi theo từ khóa đang gõ. */}
               <ReportSummary docs={report.docs} />
 
-              {/* Dạng «Bảng» (duoc-CR-612) chiếm TRỌN bề ngang, không kèm khung tracking: bảng
+              {/* Dạng "Bảng" (duoc-CR-612) chiếm TRỌN bề ngang, không kèm khung tracking: bảng
                   14 cột, chừa 215px bên phải là bắt người dùng cuộn ngang sớm hơn. */}
               {viewMode === 'table' ? (
                 <ReportDocSheetTable
@@ -899,7 +899,7 @@ function ReportPhaseList({
                   >
                     <Plus className="size-3.5" />
                   </button>
-                  {/* «Tạo mẫu» ngay tại giai đoạn: đổ phần mẫu chung của khâu
+                  {/* "Tạo mẫu" ngay tại giai đoạn: đổ phần mẫu chung của khâu
                       này vào hồ sơ Chung — cộng thêm, có rồi thì bỏ qua. Giai
                       đoạn tự đặt tên (không có trong mẫu) thì backend trả 400
                       kèm danh sách tên hợp lệ, toast lỗi tự hiện. */}
@@ -1020,7 +1020,7 @@ interface ReportItemTableProps {
 
 /**
  * DẠNG XEM THEO DÒNG HÀNG: mỗi dòng hàng một dòng bảng, bấm để sổ hồ sơ của
- * riêng nó (cùng khuôn với «Chi phí theo dòng hàng» của đơn mua hàng nhập khẩu).
+ * riêng nó (cùng khuôn với "Chi phí theo dòng hàng" của đơn mua hàng nhập khẩu).
  */
 function ReportItemTable({
   report,
@@ -1092,7 +1092,7 @@ function ReportItemTable({
                             <Pencil className="size-3.5" />
                           </button>
                         )}
-                        {/* duoc-CR-611 — «Xóa cụm»: xóa mọi hồ sơ của dòng hàng này (đang lọc thì
+                        {/* duoc-CR-611 — "Xóa cụm": xóa mọi hồ sơ của dòng hàng này (đang lọc thì
                             chỉ những hồ sơ khớp bộ lọc — đúng thứ đang bày). Nút dòng hàng giữ
                             nguyên: xóa NÚT là việc khác, nằm trong hộp sửa nút. */}
                         {canEdit && (
@@ -1263,8 +1263,8 @@ function ReportRowDetail({
   onToggleDoc,
   onSetDocStatus,
 }: ReportRowDetailProps) {
-  //  duoc-CR-611 — chế độ «chọn nhiều» riêng của dòng này. Ô chọn chỉ hiện khi bật, vì ô ✓
-  //  đầu mỗi hồ sơ đã là «hoàn thành»: hai ô vuông cạnh nhau thường trực thì bấm nhầm.
+  //  duoc-CR-611 — chế độ "chọn nhiều" riêng của dòng này. Ô chọn chỉ hiện khi bật, vì ô ✓
+  //  đầu mỗi hồ sơ đã là "hoàn thành": hai ô vuông cạnh nhau thường trực thì bấm nhầm.
   //  Đếm theo hồ sơ ĐANG BÀY — id đã xóa / đã lọc khuất tự rơi khỏi phép đếm.
   const [selecting, setSelecting] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -1381,7 +1381,7 @@ function ReportRowDetail({
             <Plus />
             {addLabel}
           </Button>
-          {/* «Tạo mẫu» cho riêng dòng hàng này (yêu cầu "bấm ở dòng 3 lớp thì
+          {/* "Tạo mẫu" cho riêng dòng hàng này (yêu cầu "bấm ở dòng 3 lớp thì
               cũng cho cái nút tạo mẫu"): đổ cả bộ mẫu chung vào nút, giai đoạn
               nào của mẫu chưa có thì backend tự dựng — nên KHÔNG khóa khi chưa
               có giai đoạn như nút bên cạnh. */}
@@ -1418,7 +1418,7 @@ const EXPIRY_TONE_CLASS: Record<ExpiryTone, string> = {
   normal: 'bg-muted text-muted-foreground',
 }
 
-/** Ô «Hạn gần nhất» của bảng dòng hàng — rỗng thì gạch ngang chứ không để trống. */
+/** Ô "Hạn gần nhất" của bảng dòng hàng — rỗng thì gạch ngang chứ không để trống. */
 function ExpiryChip({ expiry }: { expiry: string }) {
   const meta = expiry ? expiryMeta(expiry) : null
   if (!expiry || !meta) return <span className="text-muted-foreground">—</span>
@@ -1551,7 +1551,7 @@ function ReportSummary({ docs }: { docs: SurveyReportDoc[] }) {
 }
 
 /**
- * Ô «Dự định hoàn tất» trên dòng hồ sơ (bao-CR-392): đỏ + «Trễ n ngày» khi hồ sơ
+ * Ô "Dự định hoàn tất" trên dòng hồ sơ (bao-CR-392): đỏ + "Trễ n ngày" khi hồ sơ
  * chưa xong mà qua ngày dự định; đã xong hoặc chưa tới ngày thì xám. Rỗng thì không dựng.
  */
 function DocPlannedChip({ doc }: { doc: SurveyReportDoc }) {
@@ -1622,7 +1622,7 @@ interface ClusterDeleteButtonProps {
 }
 
 /**
- * duoc-CR-611 — nút thùng rác «xóa cả cụm» trên tiêu đề một dòng hàng / một giai đoạn.
+ * duoc-CR-611 — nút thùng rác "xóa cả cụm" trên tiêu đề một dòng hàng / một giai đoạn.
  * Chặn nổi bọt: dòng hàng bấm vào là sổ / gấp, bấm xóa mà sổ luôn dòng thì lạ tay.
  */
 function ClusterDeleteButton({ label, count, busy, onClick }: ClusterDeleteButtonProps) {
@@ -1678,8 +1678,8 @@ function ReportDocRow({
   const waiting = pendingDepends(doc, docsById)
   const isLink = /^https?:\/\//i.test(doc.file_note)
 
-  //  duoc-CR-607 (07/10/2026, đại ca chốt «dòng 2 tầng», cùng bố cục bản cũ): trước đây MỘT hàng chứa
-  //  tới 10 thứ nên tên bị cắt «…» ở 45% bề rộng và trạng thái / sửa / xóa TRÀN ra ngoài khung dòng.
+  //  duoc-CR-607 (07/10/2026, đại ca chốt "dòng 2 tầng", cùng bố cục bản cũ): trước đây MỘT hàng chứa
+  //  tới 10 thứ nên tên bị cắt "…" ở 45% bề rộng và trạng thái / sửa / xóa TRÀN ra ngoài khung dòng.
   //  Nay 3 cột: ô tick · [tên ở tầng trên, thông tin phụ ở tầng dưới] · [trạng thái + sửa + xóa].
   //  Cột giữa `minmax(0,1fr)` để tên dài xuống dòng trong khung; cột phải `auto` nên nút không tràn.
   return (

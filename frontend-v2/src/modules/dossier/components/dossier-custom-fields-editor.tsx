@@ -50,7 +50,7 @@ export function DossierCustomFieldsEditor({
   defsOfType,
 }: DossierCustomFieldsEditorProps) {
   //  ⚠️ **CHẶN SUBMIT, không chỉ tô đỏ.** Cảnh báo suông thì người dùng vẫn bấm
-  //  được «Tạo hồ sơ» và nhận một câu 422 của backend — cùng nội dung nhưng ở
+  //  được "Tạo hồ sơ" và nhận một câu 422 của backend — cùng nội dung nhưng ở
   //  dạng toast, rời khỏi đúng cái hàng đang sai. Gắn luật vào `useController`
   //  thì react-hook-form giữ form lại và câu nhắc nằm ngay dưới hàng đó.
   const { field, fieldState } = useController({
@@ -123,7 +123,7 @@ export function DossierCustomFieldsEditor({
 
             {rows.map((row, index) => (
               //  ⚠️ Khóa theo VỊ TRÍ, không theo `row.key`: mã đổi theo từng phím
-              //  gõ ở ô «Tên trường» (nó tự gợi ý mã), nên lấy mã làm khóa là React
+              //  gõ ở ô "Tên trường" (nó tự gợi ý mã), nên lấy mã làm khóa là React
               //  hủy và dựng lại ô nhập sau mỗi ký tự — con trỏ nhảy về đầu ô.
               <DossierCustomFieldRow
                 key={index}
@@ -154,7 +154,7 @@ export function DossierCustomFieldsEditor({
               {rows.length}/{MAX_DOSSIER_FIELDS} trường
             </span>
             {/*  ⚠️ Nói LÝ DO không lưu được, ngay cạnh nút. Không có dòng này
-                 thì bấm «Tạo hồ sơ» là **không có gì xảy ra** — react-hook-form
+                 thì bấm "Tạo hồ sơ" là **không có gì xảy ra** — react-hook-form
                  chặn submit trong im lặng tuyệt đối (bẫy thứ nhất của
                  duoc-CR-317), và câu nhắc của từng hàng thì có thể đang nằm
                  ngoài tầm mắt nếu danh sách dài. */}

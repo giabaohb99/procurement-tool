@@ -145,10 +145,10 @@ export function ReportMatrixTab({
    * tên đi cùng con số.
    *
    * ⚠️ **140 đi CÙNG `line-clamp-3` ở `ReportMetricTable`, đừng tách đôi.** Đã
-   * thử bản «rộng hơn, ít dòng hơn» (170px × 2 dòng, cùng ~44 ký tự trên giấy):
+   * thử bản "rộng hơn, ít dòng hơn" (170px × 2 dòng, cùng ~44 ký tự trên giấy):
    * hỏng cả hai đầu — chữ ngắt theo TỪ nên mỗi dòng chỉ dùng hết ~16 ký tự, ba
-   * nhà cung cấp lại ra cùng một câu «CÔNG TY TNHH SẢN XUẤT BAO BÌ ĐÔNG…», mà
-   * cột *Số lần giao dịch* thì bị đẩy quá mép phải, «65» hiện thành «6». Hẹp +
+   * nhà cung cấp lại ra cùng một câu "CÔNG TY TNHH SẢN XUẤT BAO BÌ ĐÔNG…", mà
+   * cột *Số lần giao dịch* thì bị đẩy quá mép phải, "65" hiện thành "6". Hẹp +
    * ba dòng vừa nhận ra tên vừa còn chỗ cho một cột số trọn vẹn.
    */
   const shownNameWidth = isMobile ? Math.min(nameWidth, 140) : nameWidth
@@ -203,7 +203,7 @@ export function ReportMatrixTab({
    * Các khối tháng của chế độ "Dọc" — **tháng không phát sinh thì bỏ hẳn khối**.
    *
    * Trước đây tháng rỗng vẫn dựng đủ thẻ: viền màu, tiêu đề, hàng tiêu đề bảng
-   * và một ô «Không có dữ liệu» — **~180px cho một thông tin bằng không**, và
+   * và một ô "Không có dữ liệu" — **~180px cho một thông tin bằng không**, và
    * ở khổ điện thoại (mở sẵn chế độ này) mấy tháng đầu năm thường rỗng nên
    * người dùng vuốt qua ba bốn thẻ trống trước khi tới số thật. Danh sách tháng
    * vẫn nguyên ở nút *Tháng: n/12*, nên không mất đường nào để kiểm chứng.
@@ -361,7 +361,7 @@ export function ReportMatrixTab({
       </div>
 
       {/*  Dải sắp xếp chỉ mọc ở khổ điện thoại và chỉ khi có thẻ để mà sắp:
-           chế độ «Ngang» vẫn là bảng pivot, tiêu đề cột của nó bấm được như cũ. */}
+           chế độ "Ngang" vẫn là bảng pivot, tiêu đề cột của nó bấm được như cũ. */}
       {isMobile && (applied || view === 'doc') && (
         <MobileSortSelect
           metrics={metrics}
@@ -502,7 +502,7 @@ const SORT_NONE = 'none'
  * Ở đó `ReportMetricTable` bày thẻ chứ không bày bảng, nên không còn hàng tiêu
  * đề để bấm. Đặt MỘT ô cho cả tab là đúng hơn bản cũ chứ không phải chữa cháy:
  * trạng thái sắp xếp vốn dùng chung cho mọi khối tháng, nên chín hàng tiêu đề
- * bấm được của chế độ «Dọc» thật ra là chín bản sao của cùng một cái công tắc.
+ * bấm được của chế độ "Dọc" thật ra là chín bản sao của cùng một cái công tắc.
  *
  * ⚠️ **MỘT ô chọn, không phải một dải nút tròn.** Bản đầu là bốn nút bo tròn và
  * hỏng hai đường: chúng chiếm **hai hàng ~70px** chồng lên bốn hàng công cụ đã
@@ -543,7 +543,7 @@ function MobileSortSelect({
         <SelectContent>
           <SelectItem value={SORT_NONE}>Mặc định</SelectItem>
           {options.map((option) => {
-            //  Cột TÊN nói «A → Z», cột số nói «cao → thấp»: cùng là `asc` cả
+            //  Cột TÊN nói "A → Z", cột số nói "cao → thấp": cùng là `asc` cả
             //  nhưng đọc lên phải khác nhau, không thì người dùng phải tự dịch.
             const isName = option.key === NAME_SORT_KEY
             return (
@@ -750,8 +750,8 @@ function SectionTitle({
   return (
     //  ⚠️ Khổ hẹp XUỐNG DÒNG, chú thích nằm dưới tiêu đề. Một hàng ngang thì
     //  hai vế chia nhau 324px, mà chú thích của bảng pivot dài gấp ba tiêu đề
-    //  («phân cụm theo tháng · cuộn ngang · cụm xám = tổng cả năm · đỏ = tỷ lệ
-    //  trễ > 30%») nên nó đẩy «Giao dịch nhà cung cấp — Năm 2026» xuống ba dòng
+    //  ("phân cụm theo tháng · cuộn ngang · cụm xám = tổng cả năm · đỏ = tỷ lệ
+    //  trễ > 30%") nên nó đẩy "Giao dịch nhà cung cấp — Năm 2026" xuống ba dòng
     //  mỗi dòng hai chữ, trong khi phần chữ nhỏ màu mờ lại chiếm hai phần ba bề
     //  ngang. Từ `md` thẻ đã rộng, một hàng như cũ.
     <h3 className="mb-3 flex flex-wrap items-center gap-x-1.5 text-sm font-semibold text-navy max-md:flex-col max-md:items-start max-md:gap-y-0.5 dark:text-foreground">

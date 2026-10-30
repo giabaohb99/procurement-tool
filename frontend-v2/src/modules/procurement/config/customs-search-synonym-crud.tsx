@@ -1,6 +1,6 @@
 // bao-CR-495 — cấu hình CRUD danh mục TỪ ĐỒNG NGHĨA cho ô tìm tên hàng.
 //
-// Một dòng = một từ gốc + các cách viết tương đương (ngăn bằng «;»). Gõ từ nào trong nhóm cũng
+// Một dòng = một từ gốc + các cách viết tương đương (ngăn bằng ";"). Gõ từ nào trong nhóm cũng
 // ra kết quả của cả nhóm. Nồng độ tương đương (3,6% ≡ 3.6EC ≡ 36 G/L) hệ tự quy đổi, không cần
 // khai ở đây; bộ từ khóa → hoạt chất có sẵn (HQ4) cũng được dùng làm đồng nghĩa ngầm.
 // Entity dùng chung `customs_price`, đường API `/api/customs-search-synonyms`.
@@ -28,7 +28,7 @@ export const CUSTOMS_SEARCH_SYNONYM_CRUD_CONFIG: CrudConfig<CustomsSearchSynonym
   searchPlaceholder: 'Tìm từ gốc…',
   quickFilters: [{ key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS }],
   getItemName: (row) => row.term,
-  deleteWarning: 'Xóa nhóm thì gõ các từ trong nhóm không còn ra nhau nữa. Muốn tạm tắt thì chuyển sang «Ngừng dùng».',
+  deleteWarning: 'Xóa nhóm thì gõ các từ trong nhóm không còn ra nhau nữa. Muốn tạm tắt thì chuyển sang "Ngừng dùng".',
   openFormOnRowClick: true,
   columns: [
     {
@@ -90,14 +90,14 @@ export const CUSTOMS_SEARCH_SYNONYM_CRUD_CONFIG: CrudConfig<CustomsSearchSynonym
       type: 'text',
       required: true,
       fullWidth: true,
-      hint: 'Cách viết chính, vd «Abamectin».',
+      hint: 'Cách viết chính, vd "Abamectin".',
     },
     {
       name: 'synonyms',
       label: 'Từ đồng nghĩa',
       type: 'textarea',
       fullWidth: true,
-      hint: 'Mỗi cách viết một dòng hoặc ngăn bằng «;», vd «Abamectine; Aba». Không phân biệt hoa/thường.',
+      hint: 'Mỗi cách viết một dòng hoặc ngăn bằng ";", vd "Abamectine; Aba". Không phân biệt hoa/thường.',
     },
     { name: 'note', label: 'Ghi chú', type: 'textarea', fullWidth: true },
     { name: 'is_active', label: 'Đang sử dụng', type: 'switch', defaultValue: true },

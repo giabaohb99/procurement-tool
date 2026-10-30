@@ -61,7 +61,7 @@ def create_role(db: Session, data: RoleCreate, user_id: int) -> Role:
     #  Vai trò mới xuống CUỐI danh sách, không để mặc định 0.
     #  Ép ra được 25/08/2026: người quản trị xếp tay 17 vai trò xong thêm một
     #  vai trò mới, nó mang `sort_order = 0` nên nhảy lên **đứng đầu**, trên cả
-    #  «Quản trị hệ thống» — phá đúng cái thứ tự họ vừa dựng. Thứ mới thêm thì
+    #  "Quản trị hệ thống" — phá đúng cái thứ tự họ vừa dựng. Thứ mới thêm thì
     #  người ta trông nó ở cuối. Danh sách chưa ai xếp (toàn 0) thì vai trò mới
     #  nhận 1, vẫn nằm cuối — đúng như xếp theo `id` trước đây.
     next_no = (db.query(func.max(Role.sort_order)).scalar() or 0) + 1
@@ -106,7 +106,7 @@ def delete_role(db: Session, rid: int, user_id: int) -> None:
     #  Dựng lại được 25/08/2026: xóa một vai trò đang có người giữ ăn 200 gọn ơ.
     #
     #  Chặn chứ không tự gỡ gán: gỡ hộ là quyết định thay người quản trị về việc
-    #  «những người này từ nay không còn vai trò nào» — cùng lẽ với chỗ chặn xóa
+    #  "những người này từ nay không còn vai trò nào" — cùng lẽ với chỗ chặn xóa
     #  luồng duyệt còn phiếu đang chạy.
     #  ai-CR-190: phép đếm dời về sổ chung `reference_guard` (tài khoản + chặng duyệt theo vai trò + quyền xem
     #  văn bản / thư mục / báo cáo cấp cho vai trò) — cùng một câu 400 với mọi danh mục.

@@ -18,7 +18,7 @@ import { FolderViewToolbar } from './folder-view-toolbar'
 //  hằng THUẦN, không kéo theo import ngược từ tầng `hooks/`).
 export const VIEW_STORAGE_KEY = FOLDER_VIEW_STORAGE_KEY
 
-//  «Bộ lọc nâng cao» (đặc tả A, phản hồi 24/09/2026) — CÙNG `DOCUMENT_LIST_FILTER_FIELDS`
+//  "Bộ lọc nâng cao" (đặc tả A, phản hồi 24/09/2026) — CÙNG `DOCUMENT_LIST_FILTER_FIELDS`
 //  với danh sách Văn bản chung (`outgoing-documents-tab.tsx`). `preserveParams`
 //  liệt kê MỌI tham số của trang thư mục + của chính bảng này — thiếu tên nào
 //  là bấm "Áp dụng"/"Xóa lọc" ở bộ lọc nâng cao xóa mất tham số đó khỏi URL.
@@ -34,8 +34,8 @@ interface FolderDocumentsTableProps {
   /** Bấm mở một thư mục con — chuyển trạng thái `?folder=` của TRANG (không phải điều hướng URL rời). */
   onSelectFolder: (id: number) => void
   /**
-   * Tương thích ngược với lối vào «Phân quyền» cũ từ cây bên trái
-   * (`?tab=access`, tab đã bỏ) — `true` thì mở NGAY hộp «Chia sẻ» của thư mục
+   * Tương thích ngược với lối vào "Phân quyền" cũ từ cây bên trái
+   * (`?tab=access`, tab đã bỏ) — `true` thì mở NGAY hộp "Chia sẻ" của thư mục
    * đang xem. `folder-contents-panel.tsx` tự lo phần dọn tham số `tab` khỏi
    * URL (effect riêng của nó), không cần báo ngược lại qua đây.
    */
@@ -48,14 +48,14 @@ interface FolderDocumentsTableProps {
 /**
  * KHUNG NỘI DUNG kiểu Google Drive (đặc tả §B, phase 10B; toolbar làm lại
  * theo §P3 + phản hồi 24/09/2026) — Hàng 1 (`FolderViewToolbar`: tiêu đề + huy
- * hiệu + Chia sẻ/chuyển chế độ/chi tiết), rồi «Văn bản»
+ * hiệu + Chia sẻ/chuyển chế độ/chi tiết), rồi "Văn bản"
  * (`FolderDocumentsView`: Hàng 2 tìm/lọc + Lưới/Danh sách — sắp xếp nay bấm
  * thẳng cột/nhãn, không còn ô Select riêng). Chọn kiểu Drive (bấm/Ctrl/Shift/
  * Esc/Ctrl+A, hợp nhất cả hai loại thẻ), thanh thao tác THAY chỗ hàng tìm/lọc
  * khi có chọn, kéo thả nhận từ khung trái, khung chi tiết bật/tắt được.
  *
- * Bọc `FilterProvider` ở ĐÂY (không phải `folder-contents-panel.tsx`) vì «Bộ
- * lọc nâng cao» chỉ có ý nghĩa với bảng văn bản, không phải toàn khung phải.
+ * Bọc `FilterProvider` ở ĐÂY (không phải `folder-contents-panel.tsx`) vì "Bộ
+ * lọc nâng cao" chỉ có ý nghĩa với bảng văn bản, không phải toàn khung phải.
  *
  * Toàn bộ state/hook nằm ở `use-folder-documents-table-state.ts` — tệp này
  * chỉ còn lo BỐ CỤC + nối props, dưới 200 dòng.

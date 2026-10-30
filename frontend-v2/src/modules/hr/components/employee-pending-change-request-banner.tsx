@@ -13,7 +13,7 @@ interface EmployeePendingChangeRequestBannerProps {
 }
 
 /**
- * Dải báo «người này đang có đề nghị sửa hồ sơ chờ duyệt» trên màn chi tiết nhân sự (duoc-CR-676).
+ * Dải báo "người này đang có đề nghị sửa hồ sơ chờ duyệt" trên màn chi tiết nhân sự (duoc-CR-676).
  *
  * Rẻ: MỘT lời gọi danh sách sẵn có, lọc ĐÚNG `employee_id` + `status = chờ duyệt` (review L1 —
  * bản trước dùng `q = mã NV`, tìm chuỗi con nên NSU001 dính cả NSU0010…NSU0019). Mỗi người tối đa

@@ -340,7 +340,7 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
     #  KHÔNG `rollback` ở nhánh này: bộ tra danh mục có thể vừa đóng dấu
     #  `legacy_id` lên một hàng có sẵn, và dấu đó đúng bất kể phiếu này có được
     #  ghi hay không. `finish_*` tự `commit` nên phần đó đi theo.
-    #  duoc-CR-682 (review H2): KHÓA dòng và đọc lại dấu «ERP đã đụng» + trạng thái ngay trước khi phân xử — không
+    #  duoc-CR-682 (review H2): KHÓA dòng và đọc lại dấu "ERP đã đụng" + trạng thái ngay trước khi phân xử — không
     #  khóa thì một cú bấm Điều phối trên ERP rơi vào khoảng lượt nhận đang chạy sẽ bị lượt nhận đè mất (nó còn cầm
     #  bản đọc lúc chưa có dấu).
     db.refresh(existing, attribute_names=["erp_action_at", "status"], with_for_update=True)
@@ -355,8 +355,8 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
             sync_legacy_approval_history(db, entity=entity, entity_id=existing.id, code=existing.code,
                                          purpose=getattr(existing, "purpose", "") or "", node=node, people=people)
         #  duoc-CR-682 — Bước 0: phiếu ERP ĐÃ THAO TÁC (`erp_action_at`) mà đã chốt thì trạng thái KHÔNG đổi nữa.
-        #  Trước đây nhánh này «chỉ nhận đổi trạng thái», kể cả LÙI: phiếu hoàn tất / đóng dấu trên ERP bị lượt quét
-        #  02:15 kéo về «Đã duyệt» theo ảnh chụp cũ của app cũ (chiều ERP -> app cũ đang tắt nên bên kia không biết).
+        #  Trước đây nhánh này "chỉ nhận đổi trạng thái", kể cả LÙI: phiếu hoàn tất / đóng dấu trên ERP bị lượt quét
+        #  02:15 kéo về "Đã duyệt" theo ảnh chụp cũ của app cũ (chiều ERP -> app cũ đang tắt nên bên kia không biết).
         #  Phiếu chốt BÊN APP CŨ (ERP chỉ soi gương) thì vẫn nhận đổi trạng thái như cũ — đó là thao tác thật bên kia.
         if fresh.status and fresh.status != existing.status and owned:
             return finish_skipped(db, entry,

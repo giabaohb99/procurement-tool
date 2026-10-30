@@ -10,7 +10,7 @@ interface DocumentClonePlanFieldsProps {
   value: DocumentClonePlanInput
   onChange: (value: DocumentClonePlanInput) => void
   /**
-   * Id pháp nhân suy từ khối «Phạm vi áp dụng» — đã bỏ pháp nhân ban hành.
+   * Id pháp nhân suy từ khối "Phạm vi áp dụng" — đã bỏ pháp nhân ban hành.
    * Rỗng thì trang gọi KHÔNG dựng khối này, nên ở đây luôn có ít nhất một nơi.
    */
   companyIds: number[]
@@ -24,7 +24,7 @@ interface DocumentClonePlanFieldsProps {
  * backend từ chối thẳng: *"Chỉ clone được văn bản đã ban hành"*.
  *
  * **Nơi nhận bản riêng KHÔNG khai lại ở đây** — nó chính là các pháp nhân đã
- * chọn ở khối «Phạm vi áp dụng» ngay trên. Hỏi hai lần cùng một câu thì hai
+ * chọn ở khối "Phạm vi áp dụng" ngay trên. Hỏi hai lần cùng một câu thì hai
  * danh sách chắc chắn sẽ lệch nhau, mà không có gì trên màn hình nói cái nào
  * đúng: văn bản áp cho mười pháp nhân nhưng chỉ tách bản riêng cho tám, hai nơi
  * còn lại im lặng dùng chung bản gốc.
@@ -49,7 +49,7 @@ export function DocumentClonePlanFields({
         <span>
           Khai trước thôi — <b>chưa bản nháp nào được sinh ra</b>. Clone chép nội dung
           của phiên bản đang dùng, nên chỉ chạy được sau khi văn bản đã ban hành. Lúc
-          đó thẻ «Bản clone ở pháp nhân con» tick sẵn đúng những nơi dưới đây.
+          đó thẻ <em>Bản clone ở pháp nhân con</em> tick sẵn đúng những nơi dưới đây.
         </span>
       </p>
 

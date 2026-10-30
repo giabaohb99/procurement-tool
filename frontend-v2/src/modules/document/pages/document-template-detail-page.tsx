@@ -165,7 +165,7 @@ export function DocumentTemplateDetailPage() {
                  ⚠️ `md:order-last` để TRẢ LẠI thứ tự cũ trên màn rộng. Dời *Nhập
                  tệp* sang `secondaryActions` cũng dời luôn chỗ nó được dựng: khung
                  chung vẽ nhóm phụ SAU `actions`, nên không có lớp này thì desktop
-                 thành «… Lưu nội dung · Nhập tệp» — việc chính không còn đứng
+                 thành "… Lưu nội dung · Nhập tệp" — việc chính không còn đứng
                  cuối, chỗ mắt quen tìm nút cần bấm. */}
             <Button
               type="submit"

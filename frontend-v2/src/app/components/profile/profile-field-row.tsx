@@ -5,7 +5,7 @@ import { cn } from '@/shared/utils/cn'
 interface ProfileFieldRowProps {
   icon: LucideIcon
   label: string
-  /** Giá trị đã dựng thành chữ. Rỗng thì hiện «Chưa cập nhật» nghiêng, mờ. */
+  /** Giá trị đã dựng thành chữ. Rỗng thì hiện "Chưa cập nhật" nghiêng, mờ. */
   value?: string
 }
 
@@ -18,7 +18,7 @@ interface ProfileFieldRowProps {
  *
  * ⚠️ Khổ hẹp XẾP CHỒNG nhãn trên / giá trị dưới. Một hàng ngang thì riêng nhãn
  * `w-40` đã chiếm 160px trong 358px dùng được, phần còn lại không đủ cho một tên
- * pháp nhân — «CÔNG TY TNHH DEGO HOLDING» bị cắt cụt đúng chỗ phân biệt được các
+ * pháp nhân — "CÔNG TY TNHH DEGO HOLDING" bị cắt cụt đúng chỗ phân biệt được các
  * pháp nhân với nhau. Từ `sm` trở lên về lại một hàng.
  *
  * ⚠️ Khổ hẹp cho XUỐNG DÒNG thay vì cắt (`break-words`, không `truncate`): đọc

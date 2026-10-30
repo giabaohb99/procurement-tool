@@ -9,8 +9,8 @@ import { queryKeys } from '@/shared/constants/query-keys'
 import type { EmployeeWorkHistorySaveResult } from '../types/employee-work-history'
 
 /*  Low FE (code review 03/10/2026): áp thay đổi lên hồ sơ CHÍNH MÌNH (quản trị
-    hệ thống tự sửa, A9/Q3 cho phép ngoại lệ này) phải làm mới CẢ thẻ «Quá trình
-    công tác» ở Trang cá nhân (`myWorkHistory`) LẪN thông tin tài khoản đang
+    hệ thống tự sửa, A9/Q3 cho phép ngoại lệ này) phải làm mới CẢ thẻ "Quá trình
+    công tác" ở Trang cá nhân (`myWorkHistory`) LẪN thông tin tài khoản đang
     đăng nhập (`/api/auth/me`) — không thì sidebar/avatar vẫn hiện chức vụ/phòng
     ban CŨ cho tới lần đăng nhập sau. */
 

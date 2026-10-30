@@ -6,7 +6,7 @@
 // sang mục khác vẫn giữ bộ lọc đang áp — y như bấm thẻ trước đây.
 //
 // 01/10/2026 (cùng đợt bản v2): năm mục TRA GIÁ (`tabbed`) về lại hàng THẺ trên đầu màn, menu
-// trái gom chúng thành MỘT mục con («Giá nhập khẩu»); các mục còn lại vẫn là menu con riêng.
+// trái gom chúng thành MỘT mục con ("Giá nhập khẩu"); các mục còn lại vẫn là menu con riêng.
 // Mỗi thẻ vẫn giữ đường riêng nên link cũ không gãy.
 
 export type CustomsSectionKey =
@@ -29,14 +29,14 @@ export const CUSTOMS_SECTIONS: CustomsSection[] = [
   { key: 'chart', label: 'Biểu đồ', icon: 'ti-chart-line', needFilter: true, tabbed: true },
   { key: 'importers', label: 'Doanh nghiệp', icon: 'ti-building-factory-2', needFilter: true, tabbed: true },
   { key: 'compare', label: 'So sánh', icon: 'ti-arrows-diff', tabbed: true },
-  // duoc-CR-490 — thẻ «Pháp lý & thuế» cũ chia đôi: «Pháp lý» (duyệt cả danh mục hóa chất theo
-  // văn bản) và «Thuế» (biểu thuế theo mã HS, giữ nguyên như cũ).
-  // 06/10/2026 — đổi tên hiển thị «Pháp lý» → «Tra cứu hóa chất» (khớp bản v2); khóa `legal` và
+  // duoc-CR-490 — thẻ "Pháp lý & thuế" cũ chia đôi: "Pháp lý" (duyệt cả danh mục hóa chất theo
+  // văn bản) và "Thuế" (biểu thuế theo mã HS, giữ nguyên như cũ).
+  // 06/10/2026 — đổi tên hiển thị "Pháp lý" → "Tra cứu hóa chất" (khớp bản v2); khóa `legal` và
   // đường `/customs-prices/legal` GIỮ NGUYÊN để link cũ không gãy.
   { key: 'legal', label: 'Tra cứu hóa chất', icon: 'ti-scale' },
   { key: 'tariff', label: 'Thuế', icon: 'ti-receipt-tax', tabbed: true },
   // duoc-CR-490 — danh mục thuốc BVTV đăng ký tại VN (có thêm / sửa / xóa, khóa `customs_pesticide`).
-  // 06/10/2026 — đổi tên hiển thị «Thuốc BVTV» → «Tra cứu Thuốc BVTV» (khớp bản v2; khóa + đường giữ nguyên).
+  // 06/10/2026 — đổi tên hiển thị "Thuốc BVTV" → "Tra cứu Thuốc BVTV" (khớp bản v2; khóa + đường giữ nguyên).
   { key: 'pesticides', label: 'Tra cứu Thuốc BVTV', icon: 'ti-flask' },
   { key: 'history', label: 'Lịch sử nạp', icon: 'ti-history' },
   // bao-CR-502 (bê bao-CR-501 bản v2): ba danh mục cấu hình nằm trong mục này thay vì màn riêng.
@@ -56,10 +56,10 @@ export function isCustomsTabSection(key: CustomsSectionKey): boolean {
 type Can = (entity: string, action: string) => boolean
 
 /**
- * Mục «Cấu hình»: hai danh mục của `customs_price` cần quyền quản lý (tạo / sửa / xóa), danh mục
+ * Mục "Cấu hình": hai danh mục của `customs_price` cần quyền quản lý (tạo / sửa / xóa), danh mục
  * hóa chất mở cho ai XEM được nó. Mọi mục khác theo quyền xem cả màn (`customs_price.read`, gác
  * ở mục cha của menu và ở đầu trang). Menu và trang cùng gọi hàm này — lệch nhau là menu hiện
- * một mục mà bấm vào trang lại đá về «Danh sách».
+ * một mục mà bấm vào trang lại đá về "Danh sách".
  */
 export function canSeeCustomsSection(key: CustomsSectionKey, can: Can): boolean {
   if (key !== 'config') return true
@@ -67,7 +67,7 @@ export function canSeeCustomsSection(key: CustomsSectionKey, can: Can): boolean 
     || can('customs_regulation', 'read')
 }
 
-/** Đoạn URL → mục hợp lệ mà người dùng được xem; lạ / không được xem thì về «Danh sách». */
+/** Đoạn URL → mục hợp lệ mà người dùng được xem; lạ / không được xem thì về "Danh sách". */
 export function resolveCustomsSection(raw: string | undefined, can: Can): CustomsSectionKey {
   const hit = CUSTOMS_SECTIONS.find((s) => s.key === raw)
   return hit && canSeeCustomsSection(hit.key, can) ? hit.key : 'list'

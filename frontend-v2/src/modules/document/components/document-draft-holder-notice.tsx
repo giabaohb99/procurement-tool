@@ -43,7 +43,7 @@ export function DocumentDraftHolderNotice({
       <AlertTriangle className="size-4 shrink-0 text-amber-700" />
 
       <div className="min-w-0 flex-1 text-sm text-amber-900">
-        {/*  «Bản đang mở» chứ không phải «bản nháp»: bản đã GỬI DUYỆT cũng tính
+        {/*  "Bản đang mở" chứ không phải "bản nháp": bản đã GỬI DUYỆT cũng tính
              là đang mở (backend `open_version` lấy cả nháp lẫn đang duyệt), mà
              gọi nó là nháp thì người đọc đi tìm một bản nháp không tồn tại.
              Trạng thái thật để ngay trong ngoặc. */}

@@ -30,7 +30,7 @@ def register(entity: str, *, on_approved: Callable | None = None,
     không gửi duyệt lại được (đường gửi chỉ nhận bản nháp) mà nút duyệt MỘT
     BƯỚC thì mở lại — vì chốt chặn chỉ khóa khi phiên còn ĐANG CHẠY. Đã dựng
     được ca thật: văn bản lên có hiệu lực, cấp số, trong khi phiên duyệt ghi
-    «Đã rút» và không ai ký bước nào.
+    "Đã rút" và không ai ký bước nào.
     """
     _HOOKS[entity] = {
         "approved": on_approved,
@@ -51,7 +51,7 @@ def fire(db: Session, instance, outcome: str) -> None:
 
     ⚠️ Nuốt lỗi KHÔNG có nghĩa là giấu lỗi. Lý do hỏng được ghi vào
     `instance.finish_reason` để nó nổi lên tận màn hình chứng từ. Trước đây lỗi
-    chỉ vào log container: phiếu ghi «Đã duyệt» còn văn bản nằm lại ở *chờ
+    chỉ vào log container: phiếu ghi "Đã duyệt" còn văn bản nằm lại ở *chờ
     duyệt* không số, và không ai — kể cả người vừa ký — biết là có chuyện.
     """
     hook_fn = (_HOOKS.get(instance.entity) or {}).get(outcome)

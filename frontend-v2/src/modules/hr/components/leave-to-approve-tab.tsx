@@ -32,7 +32,7 @@ import {
 } from './leave-request-columns'
 
 /**
- * Tab «CẦN TÔI DUYỆT» — hàng đợi việc đang chờ chính người đăng nhập ký.
+ * Tab "CẦN TÔI DUYỆT" — hàng đợi việc đang chờ chính người đăng nhập ký.
  *
  * ⚠️ **Đơn chỉ hiện khi ĐÃ TỚI LƯỢT mình.** Người ở chặng 2 không thấy đơn đang
  * nằm ở chặng 1: thấy sớm thì họ bấm Duyệt rồi ăn câu "bạn không có việc nào
@@ -46,18 +46,18 @@ import {
  * đọc ai bàn giao, chưa xem còn bao nhiêu phép. Vào chi tiết rồi duyệt — ba nút
  * đó nằm sẵn ở đầu trang chi tiết (`LeaveDetailDecisionActions`).
  *
- * ⚠️ **Không có cột Trạng thái.** Mọi dòng ở đây đều là «Chờ duyệt» — một cột
+ * ⚠️ **Không có cột Trạng thái.** Mọi dòng ở đây đều là "Chờ duyệt" — một cột
  * lặp đúng một giá trị thì không nói thêm được gì.
  *
- * ⚠️ **Bỏ cột «Việc của tôi»** (khách chốt 08/09/2026), và cột «Hạn xử lý» chỉ
+ * ⚠️ **Bỏ cột "Việc của tôi"** (khách chốt 08/09/2026), và cột "Hạn xử lý" chỉ
  * còn ngày giờ trần. Hai tín hiệu mất theo, ghi ra đây để lần sau không ai
  * tưởng là sót:
  *
- * · dấu **«Quá hạn»** — cờ `task.is_overdue` backend vẫn gửi, màn này thôi
+ * · dấu **"Quá hạn"** — cờ `task.is_overdue` backend vẫn gửi, màn này thôi
  *   không vẽ; bày lại thì đọc cờ đó chứ đừng tự so ngày ở TypeScript;
- * · dòng **«Bấm thay X»** — nay không còn chỗ nào trên màn này, người được ủy
- *   quyền ký hộ chỉ biết khi mở chi tiết đơn. Cần bày lại thì gắn vào cột «Số
- *   đơn» hoặc «Người nghỉ», đừng dựng lại cả một cột cho một dòng chữ hiếm khi
+ * · dòng **"Bấm thay X"** — nay không còn chỗ nào trên màn này, người được ủy
+ *   quyền ký hộ chỉ biết khi mở chi tiết đơn. Cần bày lại thì gắn vào cột "Số
+ *   đơn" hoặc "Người nghỉ", đừng dựng lại cả một cột cho một dòng chữ hiếm khi
  *   có.
  *
  * Lọc ở PHÍA MÀN HÌNH: hàng đợi nạp trọn một lượt và không phân trang, nên hỏi
@@ -73,7 +73,7 @@ export function LeaveToApproveTab() {
 }
 
 /**
- * `preserveParams`: thiếu tên nào ở đây thì bấm «Áp dụng» của bộ lọc nâng cao sẽ
+ * `preserveParams`: thiếu tên nào ở đây thì bấm "Áp dụng" của bộ lọc nâng cao sẽ
  * XÓA tham số đó khỏi URL — mà `tab` mất là màn nhảy về tab mặc định ngay sau
  * khi lọc, đúng lúc người dùng vừa nói rõ mình muốn xem gì.
  */
@@ -106,15 +106,15 @@ function LeaveToApproveContent() {
       employeeColumn(),
       leaveTypeColumn(),
       ...dateColumns(),
-      //  ⚠️ Cột «Luồng duyệt» ẩn SẴN, không xóa (khách chốt 08/09/2026): vẫn bật
-      //  lại được ở menu «Cột», và câu tóm tắt do backend dựng
+      //  ⚠️ Cột "Luồng duyệt" ẩn SẴN, không xóa (khách chốt 08/09/2026): vẫn bật
+      //  lại được ở menu "Cột", và câu tóm tắt do backend dựng
       //  (`steps_service._summary`) còn dùng cho bản in.
       { ...flowColumn((row) => row.flow), defaultHidden: true },
       reasonColumn(),
       {
         key: 'due_at',
         header: 'Hạn xử lý',
-        //  ⚠️ CHỈ ngày giờ, KHÔNG có dấu «Quá hạn» (khách chốt 08/09/2026). Cờ
+        //  ⚠️ CHỈ ngày giờ, KHÔNG có dấu "Quá hạn" (khách chốt 08/09/2026). Cờ
         //  `task.is_overdue` backend vẫn gửi và vẫn đúng — chỉ là màn này thôi
         //  không vẽ nó ra; muốn bày lại thì đọc cờ đó, đừng tự so ngày ở TS.
         cell: (row) =>
@@ -146,7 +146,7 @@ function LeaveToApproveContent() {
       storageKey="hr.leave-to-approve"
       onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
       //  Màn hẹp: thẻ thay bảng. Không bày trạng thái (mọi dòng ở đây đều là
-      //  «Chờ duyệt» — cùng lý do bảng không có cột đó), nhưng bày hạn xử lý.
+      //  "Chờ duyệt" — cùng lý do bảng không có cột đó), nhưng bày hạn xử lý.
       mobileCard={(r) => (
         <LeaveRequestCard request={r} showStatus={false} dueAt={r.task.due_at} />
       )}
@@ -163,9 +163,9 @@ function LeaveToApproveContent() {
           <ConditionalFilter />
 
           {/*  ⚠️ Cả cụm này ẨN dưới `sm`, không chỉ rút gọn. Ba lý do cộng lại:
-               câu hướng dẫn nói «bấm vào một DÒNG» mà khổ hẹp vẽ ra THẺ (và mỗi
+               câu hướng dẫn nói "bấm vào một DÒNG" mà khổ hẹp vẽ ra THẺ (và mỗi
                thẻ đã có mũi tên tự nói nó bấm được); con số thì huy hiệu trên
-               tab «Cần tôi duyệt» ngay phía trên đang nói đúng cùng một số; còn
+               tab "Cần tôi duyệt" ngay phía trên đang nói đúng cùng một số; còn
                giữ lại thì 39px + khoảng cách đủ để đẩy nhóm nút bên phải rớt
                xuống một hàng riêng. Vạch `border-l` cũng vì thế chỉ có từ `sm`
                — một nét kẻ dọc mồ côi đầu dòng đọc ra như lỗi vẽ. */}

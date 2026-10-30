@@ -43,7 +43,7 @@ export const AI_SKILL_SUBJECT_ORDER = [
   AI_SKILL_SUBJECT_KIND.employee,
 ] as const
 
-/** Cấp bậc lấy đúng bộ mã của hồ sơ nhân sự (bỏ mã 0 «chưa khai» — gán quyền cho người chưa khai là vô nghĩa). */
+/** Cấp bậc lấy đúng bộ mã của hồ sơ nhân sự (bỏ mã 0 "chưa khai" — gán quyền cho người chưa khai là vô nghĩa). */
 export const JOB_LEVEL_SUBJECT_OPTIONS = JOB_LEVEL_FILTER_OPTIONS.filter((o) => o.value > 0).map((o) => ({
   subject_kind: AI_SKILL_SUBJECT_KIND.jobLevel,
   subject_id: o.value,
@@ -71,7 +71,7 @@ export function fillKeyInSnippet(snippet: string, placeholder: string, key: stri
   return snippet.split(placeholder).join(key)
 }
 
-/** Ô khóa đang ẩn: 12 chấm + 4 ký tự cuối (máy chủ trả `hint` dạng «…abcd»). */
+/** Ô khóa đang ẩn: 12 chấm + 4 ký tự cuối (máy chủ trả `hint` dạng "…abcd"). */
 export function maskKey(hint: string): string {
   const tail = hint.replace(/^…+/, '')
   return `${'•'.repeat(12)}${tail}`
@@ -147,7 +147,7 @@ export function checkPackageFile(file: Pick<File, 'name' | 'size'>): string {
   return ''
 }
 
-/** Viết hoa chữ đầu nhãn máy chủ trả thường (`scope_label` «chỉ đọc») khi nhãn đứng một mình trong ô bảng. */
+/** Viết hoa chữ đầu nhãn máy chủ trả thường (`scope_label` "chỉ đọc") khi nhãn đứng một mình trong ô bảng. */
 export function upperFirst(text: string): string {
   return text ? text.charAt(0).toLocaleUpperCase('vi-VN') + text.slice(1) : text
 }

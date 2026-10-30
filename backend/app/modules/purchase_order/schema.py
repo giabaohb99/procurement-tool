@@ -181,7 +181,7 @@ class CostLinesFinalizeIn(BaseModel):
     """bao-CR-469 — Quyết toán nhiều dòng chi phí một lượt.
 
     Danh sách RỖNG là một lựa chọn có nghĩa chứ không phải thiếu dữ liệu: rỗng = chốt HẾT các
-    dòng chưa quyết toán của đơn (nút «Chốt tất cả»). Trần 200 để một lời gọi hỏng không quét
+    dòng chưa quyết toán của đơn (nút "Chốt tất cả"). Trần 200 để một lời gọi hỏng không quét
     cả bảng chi phí của mọi đơn — một đơn không có tới bằng ấy khoản.
     """
     cost_ids: list[int] = Field(default_factory=list, max_length=200)

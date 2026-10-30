@@ -1,7 +1,7 @@
 """Dựng dữ liệu DEMO cho khối BÁO CÁO THỰC HIỆN của một phiếu YCBG.
 
 Chạy:  docker compose exec api python -m scripts.demo_bao_cao_thuc_hien [ID]
-Mặc định ID = 2927 (phiếu «Thùng carton 3 lớp» trên máy local).
+Mặc định ID = 2927 (phiếu "Thùng carton 3 lớp" trên máy local).
 
 CHẠY LẠI ĐƯỢC — xóa sạch giai đoạn/nút dòng hàng/hồ sơ cũ CỦA ĐÚNG PHIẾU ĐÓ rồi
 dựng lại từ đầu, nên bấm thử hỏng thế nào cũng reset được.

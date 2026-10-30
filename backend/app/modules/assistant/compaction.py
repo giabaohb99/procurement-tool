@@ -5,14 +5,14 @@ bước quên mất đầu câu chuyện. Nay mỗi lượt gọi model gửi: l
 câu mới. Ba mức theo ước lượng token so với một ngân sách cấu hình được (`ai_context_budget_tokens`):
 
   ≥ CLEAR %   lược kết quả công cụ cũ (câu trả lời rút từ tra ERP / tra mạng / đọc tệp), chỉ giữ nguyên KEEP_TURNS lượt gần;
-  ≥ SUMMARY % tóm các lượt cũ bằng MỘT lượt model rẻ, lưu bản tóm tắt + mốc «đã tóm tới tin nào» theo TỪNG cuộc
+  ≥ SUMMARY % tóm các lượt cũ bằng MỘT lượt model rẻ, lưu bản tóm tắt + mốc "đã tóm tới tin nào" theo TỪNG cuộc
               (`tab_agent_conv_summary`); lần sau tóm NỐI TIẾP từ mốc, không tóm lại từ đầu;
   ≥ DROP %    mới bỏ lượt cũ nhất.
 
 Đơn vị nén là TỪNG cuộc — (scope, scope_key) — không bao giờ gộp hay đọc chéo giữa hai người / hai nhóm.
 
 An toàn: lượt tóm hỏng / quá giờ thì quay về cửa sổ trượt cũ (do người gọi đưa vào), KHÔNG chặn câu trả lời. Token của lượt
-tóm ghi vào sổ chi phí (`tab_agent_run`, bước «Tóm tắt hội thoại»).
+tóm ghi vào sổ chi phí (`tab_agent_run`, bước "Tóm tắt hội thoại").
 """
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ SUMMARY_SYSTEM = (
 class Turn:
     role: str                       # "user" | "assistant"
     content: str | list             # chữ, hoặc danh sách khối (web nạp lại tệp)
-    msg_id: int = 0                 # id dòng sổ — dùng làm mốc «đã tóm tới»
+    msg_id: int = 0                 # id dòng sổ — dùng làm mốc "đã tóm tới"
     tool: bool = False              # câu trả lời rút từ kết quả công cụ
 
     def as_message(self) -> dict:
@@ -241,7 +241,7 @@ def forget(db: Session, scope: int, key: str) -> None:
 
 
 def record_cost(db: Session, result, *, channel: str) -> None:
-    """Token của lượt tóm vào sổ chi phí chung (`tab_agent_run`, bước «Tóm tắt hội thoại»), cùng phiên DB của lượt hỏi."""
+    """Token của lượt tóm vào sổ chi phí chung (`tab_agent_run`, bước "Tóm tắt hội thoại"), cùng phiên DB của lượt hỏi."""
     from app.modules.agent_hub import service as agent_service
     from app.modules.agent_hub.constants import STAGE_COMPACT
 

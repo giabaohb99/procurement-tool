@@ -1,4 +1,4 @@
-// duoc-CR-606 (07/10/2026) — «Sửa thông tin» mẫu hợp đồng: tên · loại hợp đồng · ghi chú. Backend
+// duoc-CR-606 (07/10/2026) — "Sửa thông tin" mẫu hợp đồng: tên · loại hợp đồng · ghi chú. Backend
 // đã có PATCH từ đầu nhưng màn hình chưa có nút, đổi tên mẫu phải xóa rồi tải lại. Pháp nhân CỐ Ý
 // không sửa được (mẫu gắn một pháp nhân suốt đời — `TemplateUpdate` backend không nhận `company_id`).
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -59,7 +59,7 @@ function EditDialogBody({ template, onOpenChange }: { template: LaborContractTem
   })
 
   //  `handleSubmit` gọi TRONG sự kiện submit (không lúc render) — gọi lúc render thì lint React
-  //  Compiler báo «đọc ref lúc render». Cùng cách hộp tải mẫu đang làm.
+  //  Compiler báo "đọc ref lúc render". Cùng cách hộp tải mẫu đang làm.
   function save(values: FormValues) {
     if (submittingRef.current) return
     submittingRef.current = true
@@ -79,7 +79,7 @@ function EditDialogBody({ template, onOpenChange }: { template: LaborContractTem
       <DialogHeader>
         <DialogTitle>Sửa thông tin mẫu</DialogTitle>
         <DialogDescription>
-          Pháp nhân «{template.company_name}» cố định theo mẫu. Muốn sửa nội dung hợp đồng thì dùng «Soạn nội dung».
+          Pháp nhân <strong>{template.company_name}</strong> cố định theo mẫu. Muốn sửa nội dung hợp đồng thì dùng <strong>Soạn nội dung</strong>.
         </DialogDescription>
       </DialogHeader>
       <Form {...form}>

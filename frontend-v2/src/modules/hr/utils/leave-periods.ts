@@ -3,7 +3,7 @@ import { LEAVE_SESSION, type LeavePeriod, type LeaveRequest } from '../types/lea
 /**
  * KHOẢNG NGÀY CỦA ĐƠN NGHỈ (duoc-CR-683) — nơi DUY NHẤT ở giao diện hiểu "đơn có nhiều khoảng".
  *
- * Mọi chỗ hỏi *"ngày D có nghỉ không"* (Lịch nghỉ, thẻ «Nhìn nhanh») hay hiện thời gian nghỉ
+ * Mọi chỗ hỏi *"ngày D có nghỉ không"* (Lịch nghỉ, thẻ "Nhìn nhanh") hay hiện thời gian nghỉ
  * phải đi qua đây, KHÔNG so `[from_date, to_date]` ở đầu đơn: đầu đơn là bao ngoài, nuốt cả
  * ngày khe giữa hai khoảng — đơn 27/10 + 03/11→07/11 sẽ hiện nghỉ suốt 28/10→02/11.
  *
@@ -69,7 +69,7 @@ function dayMonthYear(iso: string): string {
 
 /**
  * Chữ gọn của cả danh sách khoảng — chép đúng luật `period_spans.period_text` ở backend để
- * màn hình, giấy GNP và Trợ lý AI nói cùng một câu: «27/10/2026 · 03/11 (chiều) → 07/11/2026».
+ * màn hình, giấy GNP và Trợ lý AI nói cùng một câu: "27/10/2026 · 03/11 (chiều) → 07/11/2026".
  *
  * Năm hiện ở đầu khoảng đầu (và đầu khoảng nào khác năm khoảng đầu), và luôn hiện ở đầu
  * cuối của khoảng nhiều ngày.

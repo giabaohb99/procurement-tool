@@ -2,7 +2,7 @@
  * Ô GIỮ điều kiện áp dụng trên biểu mẫu hồ sơ.
  *
  * ⚠️ **Một ô trên biểu mẫu, HAI cột dưới DB** — cùng khuôn với `custom_rows`
- * (xem `dossier-custom-row.ts`). Người dùng nghĩ về «điều kiện áp dụng» như một
+ * (xem `dossier-custom-row.ts`). Người dùng nghĩ về "điều kiện áp dụng" như một
  * việc: *áp cho đơn mua hàng, khi có sản phẩm SP-001*. Dưới DB thì nó là
  * `apply_doc_kinds` + `apply_conditions`, hai cột JSON riêng.
  *

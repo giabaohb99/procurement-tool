@@ -1,4 +1,4 @@
-"""Lớp «kênh» của bot (ai-CR-111, lộ trình Z-1 ở `doc/agent-hub/12-de-xuat-tom-tat-nhom.md`).
+"""Lớp "kênh" của bot (ai-CR-111, lộ trình Z-1 ở `doc/agent-hub/12-de-xuat-tom-tat-nhom.md`).
 
 Một lõi xử lý tin dùng chung cho nhiều kênh nhắn tin. Mã chat mang TIỀN TỐ kênh để mọi chỗ trong lõi (sổ tin, liên kết
 ERP, sổ ghi nhớ, chuông, nhóm) không phải biết tin tới từ đâu:
@@ -23,7 +23,7 @@ ZALO_ACCOUNT = "zalo_account"
 ZALO_USER_PREFIX = "zu:"
 ZALO_GROUP_PREFIX = "zg:"
 _PREFIXES = (ZALO_PREFIX, ZALO_USER_PREFIX, ZALO_GROUP_PREFIX)
-#  Tệp Zalo gửi kèm (ảnh, tin thoại) là một đường tải, không có file_id kiểu Telegram. Gói đường đó vào «file_id» có
+#  Tệp Zalo gửi kèm (ảnh, tin thoại) là một đường tải, không có file_id kiểu Telegram. Gói đường đó vào "file_id" có
 #  tiền tố riêng để các chỗ tải tệp trong lõi đi chung một hàm `telegram.download_file`.
 ZALO_FILE_PREFIX = "zlurl:"
 #  Cột chat_id ở các bảng của bot là String(50).
@@ -89,5 +89,5 @@ def number_of(text) -> int:
 
 
 def safe_name(chat_id) -> str:
-    """Mã chat dùng được trong tên tệp (bỏ dấu «:»)."""
+    """Mã chat dùng được trong tên tệp (bỏ dấu ":")."""
     return str(chat_id or "").replace(":", "_")

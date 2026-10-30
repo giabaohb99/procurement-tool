@@ -1,5 +1,5 @@
-// Cụm ô tìm + bốn ô chọn của mục «Thuốc BVTV» — tách khỏi `customs-pesticide-tab.tsx` (01/10/2026)
-// để tệp đó không vượt 200 dòng khi thêm nút «Xuất Excel». Thuần hiển thị: nhận giá trị/hàm đặt
+// Cụm ô tìm + bốn ô chọn của mục "Thuốc BVTV" — tách khỏi `customs-pesticide-tab.tsx` (01/10/2026)
+// để tệp đó không vượt 200 dòng khi thêm nút "Xuất Excel". Thuần hiển thị: nhận giá trị/hàm đặt
 // giá trị từ trang cha, không tự giữ state hay gọi API.
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
@@ -91,7 +91,7 @@ export function CustomsPesticideFilterControls({
         <SelectContent>
           <SelectItem value={ALL_PESTICIDE_OPTIONS}>Mọi thuốc</SelectItem>
           <SelectItem value={BANNED_ONLY}>
-            {/* Đang tải thì chưa biết có danh sách cấm hay không — đừng vội nói «chưa có». */}
+            {/* Đang tải thì chưa biết có danh sách cấm hay không — đừng vội nói "chưa có". */}
             {options ? formatBannedFilterLabel(options.banned_rules, options.banned_count) : 'Có hoạt chất cấm'}
           </SelectItem>
         </SelectContent>

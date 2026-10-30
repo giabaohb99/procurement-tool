@@ -1,12 +1,12 @@
 """HỒ SƠ TIÊN QUYẾT — `tab_dossier.depends` (đại ca chốt 21/09/2026).
 
-*«Tờ giấy này chỉ làm được sau khi mấy tờ kia xong.»* Khai **một lần cho cả
+*"Tờ giấy này chỉ làm được sau khi mấy tờ kia xong."* Khai **một lần cho cả
 kho**, ở chính tờ hồ sơ trong phân hệ Hồ sơ — không khai lại trong từng tờ
 phiếu: trình tự giấy tờ của công ty là một, đơn mua hàng chỉ phát hành sau khi
 hợp đồng ký xong, ở mọi thương vụ.
 
-⚠️ **Ràng buộc dùng chung, TRẠNG THÁI thì riêng.** «Xong» vẫn tính theo từng
-phiếu (`tab_dossier_progress`), nên câu hỏi *«tờ này có đang khóa không»* vẫn là
+⚠️ **Ràng buộc dùng chung, TRẠNG THÁI thì riêng.** "Xong" vẫn tính theo từng
+phiếu (`tab_dossier_progress`), nên câu hỏi *"tờ này có đang khóa không"* vẫn là
 câu hỏi của riêng từng phiếu. Hai thứ đừng gộp: gộp về tờ giấy thì khóa/mở lây
 sang mọi phiếu; gộp về phiếu thì mỗi tờ phiếu phải khai lại cả chuỗi. Chỗ tính
 khóa nằm ở `applicability_controller._with_lock`.
@@ -30,7 +30,7 @@ def check_depends(db: Session, dossier_id: int, depends: list[int]) -> list[int]
     vòng nào, chỉ cần kiểm mấy tờ được trỏ tới là có thật.
 
     ⚠️ Vòng dò có TRẦN ĐỘ SÂU, và **chạm trần là CHẶN** chứ không trả về im
-    lặng: «dò không thấy» không phải «không có» (bài học `block_manager_cycle`).
+    lặng: "dò không thấy" không phải "không có" (bài học `block_manager_cycle`).
     """
     depends = list(dict.fromkeys(int(i) for i in depends))   # khử trùng, giữ thứ tự
     if not depends:
@@ -43,7 +43,7 @@ def check_depends(db: Session, dossier_id: int, depends: list[int]) -> list[int]
     #  ⚠️ Đọc CẢ KHO chứ không chỉ mấy tờ được trỏ tới: dò vòng phải đi hết
     #  chuỗi, mà bước thứ hai trở đi là những tờ không có trong `depends`.
     #  Kho hồ sơ cỡ trăm dòng — một truy vấn, không phải chỗ cần tối ưu.
-    #  ai-CR-177: hồ sơ đã xóa mềm KHÔNG còn là tiên quyết hợp lệ — trỏ vào nó báo «không tồn tại»
+    #  ai-CR-177: hồ sơ đã xóa mềm KHÔNG còn là tiên quyết hợp lệ — trỏ vào nó báo "không tồn tại"
     #  như id chết; id đã xóa còn nằm trong cột JSON của tờ khác thì `depends_names` tự lọc khi bày.
     rows = db.query(Dossier.id, Dossier.depends).filter(Dossier.is_deleted == False).all()  # noqa: E712
     graph = {rid: list(deps or []) for rid, deps in rows}

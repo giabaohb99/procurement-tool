@@ -57,7 +57,7 @@ interface DocumentMainInfoFieldsProps {
   templateId?: number | null
   onTemplateChange?: (templateId: number | null) => void
   /**
-   * Ô «Lưu vào thư mục» (phase 06, duoc-CR-476) — chỉ trang TẠO MỚI truyền
+   * Ô "Lưu vào thư mục" (phase 06, duoc-CR-476) — chỉ trang TẠO MỚI truyền
    * prop này. Trang chi tiết KHÔNG dùng field này: đổi thư mục ở đó đi qua thẻ
    * riêng `document-folders-card.tsx` (`PUT .../folders`, không khóa theo
    * trạng thái văn bản), không qua nút "Lưu thông tin" của form này.
@@ -105,8 +105,8 @@ export function DocumentMainInfoFields({
   const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
   const { items: books } = useDocumentBooks()
   const { can } = usePermission()
-  //  Thiếu `doc_folder.read` (trên prod, D-018) thì tắt luôn ô «Lưu vào thư
-  //  mục» — xem điều kiện tương ứng ở JSX bên dưới (H4, rà soát 23/09/2026).
+  //  Thiếu `doc_folder.read` (trên prod, D-018) thì tắt luôn ô "Lưu vào thư
+  //  mục" — xem điều kiện tương ứng ở JSX bên dưới (H4, rà soát 23/09/2026).
   const hasFolderReadAccess = can('doc_folder', 'read')
   //  Chỉ hỏi mạng khi màn TẠO có ô thư mục VÀ có quyền đọc — `enabled` tránh
   //  một cuộc gọi `/api/doc-folders/tree` thừa mỗi lần mở tab Thông tin ở màn
@@ -133,7 +133,7 @@ export function DocumentMainInfoFields({
   //  nhân sự tới cả nghìn, mà `Select` của shadcn không có ô tìm; thứ duy nhất
   //  để lần là typeahead của trình duyệt, và nó chỉ khớp từ ĐẦU nhãn.
   //  `SearchSelect` khớp GIỮA chuỗi và **bỏ dấu** khi so, nên gõ "nghi phep"
-  //  vẫn ra «Giấy nghỉ phép».
+  //  vẫn ra "Giấy nghỉ phép".
   const employeeOptions = (employees?.items ?? []).map((employee) => ({
     value: String(employee.id),
     //  Kèm mã nhân viên: công ty có người trùng họ tên, chọn nhầm thì văn bản
@@ -365,7 +365,7 @@ export function DocumentMainInfoFields({
       />
       </SyncOwnedLock>
 
-      {/*  «Lưu vào thư mục» (phase 06, duoc-CR-476) — ngay dưới «Vào sổ». KHÔNG
+      {/*  "Lưu vào thư mục" (phase 06, duoc-CR-476) — ngay dưới "Vào sổ". KHÔNG
            bọc `FormField`/`FormControl`: đây không phải trường của
            `documentRecordSchema` (tránh `formToPayload` gửi lại `folder_ids` cũ
            đè lên thay đổi làm ở nơi khác trên màn chi tiết — thư mục có đường

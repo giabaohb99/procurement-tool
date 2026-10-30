@@ -1,5 +1,5 @@
 /**
- * DANH MỤC mà một ô «Chọn từ danh mục» được phép trỏ tới.
+ * DANH MỤC mà một ô "Chọn từ danh mục" được phép trỏ tới.
  *
  * ⚠️ **Khóa phải khớp từng chữ với `REFERENCE_MODELS` ở
  * `backend/app/modules/dossier/reference_sources.py`.** Lệch một khóa thì người
@@ -11,7 +11,7 @@
  */
 
 export interface ReferenceSource {
-  /** Nhãn hiện trong ô chọn «Danh mục». */
+  /** Nhãn hiện trong ô chọn "Danh mục". */
   label: string
   url: string
   /** Cột dùng làm nhãn hiển thị. */
@@ -30,7 +30,7 @@ export interface ReferenceSource {
 
 /**
  * ⚠️ Cố ý HẸP. Thêm một dòng ở đây là mở danh mục đó cho mọi người sửa được bộ
- * trường — phải trả lời được «ai đọc được danh mục này?» trước khi thêm. Quyền
+ * trường — phải trả lời được "ai đọc được danh mục này?" trước khi thêm. Quyền
  * vẫn do chính endpoint gác (ô chọn gọi API bằng token của người dùng), nhưng
  * đừng trông vào đó mà thêm bừa.
  */

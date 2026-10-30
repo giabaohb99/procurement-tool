@@ -1,4 +1,4 @@
-"""Cấp QUYỀN TRÊN THƯ MỤC hàng loạt + đổi mức tại chỗ — hộp «Chia sẻ» kiểu
+"""Cấp QUYỀN TRÊN THƯ MỤC hàng loạt + đổi mức tại chỗ — hộp "Chia sẻ" kiểu
 Drive (phase 10B, đặc tả §C, duoc-CR-476 bổ sung).
 
 Tách khỏi `folder_access_grant_service.py` (CRUD đơn lẻ) để mỗi tệp dưới 200
@@ -116,8 +116,8 @@ def grant_bulk(db: Session, folder: DocFolder, data: FolderAccessBulkGrantIn, ac
 
 def update_level(db: Session, folder: DocFolder, access_id: int, level: int,
                  actor: int) -> DocFolderAccess:
-    """`PATCH /{folder_id}/access/{access_id}` — đổi MỨC tại chỗ (dòng «Người
-    có quyền» của hộp «Chia sẻ», menu thả xuống). Chỉ áp cho dòng CHO PHÉP còn
+    """`PATCH /{folder_id}/access/{access_id}` — đổi MỨC tại chỗ (dòng "Người
+    có quyền" của hộp "Chia sẻ", menu thả xuống). Chỉ áp cho dòng CHO PHÉP còn
     hiệu lực, đúng thư mục này — dòng CẤM không có mức để đổi (luôn `PRIVATE`,
     xem `folder_access_model.py`); dòng kế thừa/đã thu hồi phải sửa ở đúng thư
     mục nguồn hoặc cấp lại, không sửa được qua cửa này."""

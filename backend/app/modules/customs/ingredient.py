@@ -148,7 +148,7 @@ class KindTagger:
     Luật: khớp từ khóa loại THÀNH PHẨM → Thành phẩm (ngoại lệ thắng ngược); khớp từ khóa loại
     NGUYÊN LIỆU → Nguyên liệu; không khớp gì → Thành phẩm (mặc định của chị Mi). Từ khóa ngắn
     (≤ 4 ký tự ASCII) khớp NGUYÊN TỪ để `TC` không dính `ATC`/`ETC`; từ dài khớp chuỗi con.
-    So sánh sau khi viết hoa cả hai phía nên «Kỹ Thuật» và «KỸ THUẬT» như nhau.
+    So sánh sau khi viết hoa cả hai phía nên "Kỹ Thuật" và "KỸ THUẬT" như nhau.
     """
 
     def __init__(self, keywords: list[tuple[str, int]]):

@@ -61,7 +61,7 @@ ARCHIVE_CHUNK = 2000
 #  Xếp theo `created_at` cho cả bốn. Với phiên đăng nhập nghĩa là dòng được
 #  gói ở tháng MỞ phiên, và nếu lúc gói phiên còn sống thì bản gói mang
 #  `revoked_at = NULL` — chấp nhận: phiên sống tối đa 7 ngày, và câu cần trả
-#  lời khi tra lại là «ai đăng nhập từ đâu lúc nào», không phải «đóng lúc nào».
+#  lời khi tra lại là "ai đăng nhập từ đâu lúc nào", không phải "đóng lúc nào".
 ARCHIVE_TABLES = (("audit", AuditLog), ("request", RequestLog),
                   ("change", ChangeLog), ("session", LoginSession))
 

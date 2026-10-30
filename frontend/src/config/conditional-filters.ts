@@ -154,6 +154,6 @@ export const CATEGORY_ASSIGNEE_COND_FILTERS: FilterFieldDefinition[] = [
   condSource('item_group_id', 'Phân loại', { url: '/api/item-groups', value: 'id', label: 'name' }),
   condSource('primary_employee_id', 'NSTM chính', { url: '/api/employees', value: 'id', label: 'full_name' }),
   condSource('backup_employee_id', 'NSTM dự phòng', { url: '/api/employees', value: 'id', label: 'full_name' }),
-  // bao-CR-524: lọc theo phòng THẬT — backend coi dòng `0` cũ («Thu mua chung») là phòng thu mua mặc định
+  // bao-CR-524: lọc theo phòng THẬT — backend coi dòng `0` cũ ("Thu mua chung") là phòng thu mua mặc định
   condSource('department_id', 'Phòng', { url: '/api/departments', value: 'id', label: 'name' }),
 ]

@@ -25,14 +25,14 @@ const NHOM: { key: keyof IssueCodeGroups; tab: string; title: string; mo_ta: str
     key: 'companies',
     tab: '{PhapNhan}',
     title: 'Mã pháp nhân',
-    mo_ta: 'Đoạn cuối của số hiệu — «…-DEGO». Chỉ chữ không dấu và số.',
+    mo_ta: 'Đoạn cuối của số hiệu — "…-DEGO". Chỉ chữ không dấu và số.',
   },
   {
     key: 'departments',
     tab: '{PhongBan}',
     title: 'Mã phòng ban',
     mo_ta:
-      'Đoạn giữa — «…-NSHC-…». Bỏ trống thì số hiệu không có đoạn này. Đơn vị kinh doanh và ban dự án không vào số hiệu (A05).',
+      'Đoạn giữa — "…-NSHC-…". Bỏ trống thì số hiệu không có đoạn này. Đơn vị kinh doanh và ban dự án không vào số hiệu (A05).',
   },
   {
     key: 'department_companies',
@@ -46,7 +46,7 @@ const NHOM: { key: keyof IssueCodeGroups; tab: string; title: string; mo_ta: str
     tab: '{LoaiVB}',
     title: 'Mã loại văn bản',
     mo_ta:
-      'Đoạn đầu của phần đuôi — «…/TB-…». Bắt buộc và không trùng nhau: mã này nằm trong khóa bộ đếm.',
+      'Đoạn đầu của phần đuôi — "…/TB-…". Bắt buộc và không trùng nhau: mã này nằm trong khóa bộ đếm.',
   },
   {
     key: 'books',

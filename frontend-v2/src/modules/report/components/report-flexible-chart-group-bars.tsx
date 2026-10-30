@@ -26,7 +26,7 @@ function truncateLabel(value: string): string {
   return value.length > MAX_TICK_CHARS ? `${value.slice(0, MAX_TICK_CHARS - 1)}…` : value
 }
 
-/** Trục số phải chứa cả số âm (vd «Thay đổi ròng») — mặc định `[0, dataMax]` sẽ cắt mất. */
+/** Trục số phải chứa cả số âm (vd "Thay đổi ròng") — mặc định `[0, dataMax]` sẽ cắt mất. */
 const VALUE_DOMAIN: [(min: number) => number, (max: number) => number] = [
   (min) => Math.min(0, min),
   (max) => Math.max(0, max),
@@ -36,13 +36,13 @@ interface ReportFlexibleChartGroupBarsProps {
   items: FlexibleGroupItem[]
   orientation: 'horizontal' | 'vertical'
   formatValue: (value: number) => string
-  /** Bấm một cột của nhóm THẬT (không phải «Khác»). Bỏ trống = biểu đồ chỉ để xem. */
+  /** Bấm một cột của nhóm THẬT (không phải "Khác"). Bỏ trống = biểu đồ chỉ để xem. */
   onSelectItem?: (item: FlexibleGroupItem) => void
 }
 
 /**
- * Cột theo nhóm «Xem theo», đã xếp lớn → nhỏ ở `buildFlexibleGroupSeries`. Một màu cho mọi cột
- * (độ dài đã nói độ lớn); «Khác» xám trung tính vì nó không phải một nhóm thật.
+ * Cột theo nhóm "Xem theo", đã xếp lớn → nhỏ ở `buildFlexibleGroupSeries`. Một màu cho mọi cột
+ * (độ dài đã nói độ lớn); "Khác" xám trung tính vì nó không phải một nhóm thật.
  */
 export function ReportFlexibleChartGroupBars({
   items,
@@ -95,8 +95,8 @@ export function ReportFlexibleChartGroupBars({
 
   if (horizontal) {
     return (
-      //  «Tất cả» ở chiều Nhân sự có thể ra vài trăm dòng — trần cao + cuộn trong thẻ, không
-      //  để thẻ dài hết trang đẩy bảng «Xem theo» xuống tít dưới.
+      //  "Tất cả" ở chiều Nhân sự có thể ra vài trăm dòng — trần cao + cuộn trong thẻ, không
+      //  để thẻ dài hết trang đẩy bảng "Xem theo" xuống tít dưới.
       <div className="max-h-[640px] overflow-y-auto">
         <ResponsiveContainer width="100%" height={items.length * ROW_HEIGHT + 8}>
           <BarChart

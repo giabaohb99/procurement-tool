@@ -56,14 +56,14 @@ function renderTab() {
 }
 
 
-/** duoc-CR-633: thao tác của dòng nằm trong menu «⋯» — mở menu rồi chọn mục theo CHỮ. */
+/** duoc-CR-633: thao tác của dòng nằm trong menu "⋯" — mở menu rồi chọn mục theo CHỮ. */
 async function chooseAction(name: string) {
   await userEvent.click(await screen.findByRole('button', { name: /Thao tác với hợp đồng/ }))
   await userEvent.click(await screen.findByRole('menuitem', { name }))
 }
 
 describe('EmployeeTabLaborContracts', () => {
-  it('danh sách rỗng: câu hướng dẫn; có nút «Lập hợp đồng» khi can_create', async () => {
+  it('danh sách rỗng: câu hướng dẫn; có nút "Lập hợp đồng" khi can_create', async () => {
     api.listByEmployee.mockResolvedValue({ items: [], can_create: true })
     renderTab()
     expect(await screen.findByText('Nhân sự này chưa có hợp đồng lao động nào.')).toBeInTheDocument()
@@ -77,7 +77,7 @@ describe('EmployeeTabLaborContracts', () => {
     expect(screen.queryByRole('button', { name: /Lập hợp đồng/ })).not.toBeInTheDocument()
   })
 
-  it('HĐ đã ký nhưng quá hạn hiện huy hiệu «Hết hạn» (effective_status), không phải «Đã ký»', async () => {
+  it('HĐ đã ký nhưng quá hạn hiện huy hiệu "Hết hạn" (effective_status), không phải "Đã ký"', async () => {
     api.listByEmployee.mockResolvedValue({
       items: [makeLaborContract({ status: 2, effective_status: 3, can_edit: false, transitions: [4] })],
       can_create: true,
@@ -87,7 +87,7 @@ describe('EmployeeTabLaborContracts', () => {
     expect(screen.queryByText('Đã ký – hiệu lực')).not.toBeInTheDocument()
   })
 
-  it('hiện lương, thời hạn, loại; HĐ không xác định thời hạn hiện «Từ …» không có ngày cuối', async () => {
+  it('hiện lương, thời hạn, loại; HĐ không xác định thời hạn hiện "Từ …" không có ngày cuối', async () => {
     api.listByEmployee.mockResolvedValue({
       items: [makeLaborContract({ contract_type: 3, end_date: null })],
       can_create: true,

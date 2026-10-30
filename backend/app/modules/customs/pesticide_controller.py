@@ -1,4 +1,4 @@
-"""API mục «Thuốc BVTV» của Tra cứu thị trường (29/09/2026).
+"""API mục "Thuốc BVTV" của Tra cứu thị trường (29/09/2026).
 
 Hai khóa quyền:
   · ĐỌC = `customs_price.read` — ai xem được Tra cứu thị trường (mục này là một phần của màn đó);
@@ -53,9 +53,9 @@ def export_pesticides(scope: str = Query("page", pattern="^(page|all)$"),
                       banned_regulation_id: int | None = Query(None, ge=1),
                       pg: dict = Depends(pagination),
                       db: Session = Depends(get_db), user=Depends(require(ENTITY, "export"))):
-    """Xuất Excel mục «Thuốc BVTV» — đặt TRƯỚC `/{pesticide_id}` để "export" không bị nuốt làm id.
+    """Xuất Excel mục "Thuốc BVTV" — đặt TRƯỚC `/{pesticide_id}` để "export" không bị nuốt làm id.
 
-    `scope=all` = cả danh mục, nạp lại được ngay bằng «Nạp danh mục» (xem `pesticide_export_
+    `scope=all` = cả danh mục, nạp lại được ngay bằng "Nạp danh mục" (xem `pesticide_export_
     service`). `scope=page` = đúng trang đang lọc/xem, dùng để đối chiếu — KHÔNG nhằm nạp lại.
     """
     path, filename = pesticide_export_service.export_to_tempfile(
@@ -70,7 +70,7 @@ def get_related_pesticides(pesticide_id: int,
                            limit: int = Query(pesticide_related_service.RELATED_LIMIT, ge=1,
                                               le=pesticide_related_service.MAX_RELATED_LIMIT),
                            db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
-    """«Sản phẩm khác cùng công ty» + «Thuốc cùng hoạt chất» của trang chi tiết (01/10/2026)."""
+    """"Sản phẩm khác cùng công ty" + "Thuốc cùng hoạt chất" của trang chi tiết (01/10/2026)."""
     return success(pesticide_related_service.related_pesticides(db, pesticide_id, limit))
 
 

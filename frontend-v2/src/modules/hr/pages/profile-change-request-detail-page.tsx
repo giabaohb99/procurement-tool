@@ -28,8 +28,8 @@ const GROUPS: readonly ChangeRequestGroup[] = ['personal', 'bank', 'documents']
 /**
  * Chi tiết MỘT đề nghị sửa hồ sơ (duoc-CR-676) — phòng Nhân sự đối chiếu rồi Duyệt / Từ chối.
  *
- * Bảng so sánh theo từng nhóm: Trường · Lúc gửi · Hiện tại · Đề nghị. Duyệt là GHI ĐÈ cột «Đề
- * nghị» lên hồ sơ, nên dòng nào hồ sơ đã bị sửa sau lúc gửi thì tô lên cho người duyệt thấy.
+ * Bảng so sánh theo từng nhóm: Trường · Lúc gửi · Hiện tại · Đề nghị. Duyệt là GHI ĐÈ cột "Đề
+ * nghị" lên hồ sơ, nên dòng nào hồ sơ đã bị sửa sau lúc gửi thì tô lên cho người duyệt thấy.
  *
  * Hai nút chỉ hiện khi backend báo `can_decide`; đang chờ mà không bấm được thì nói lý do (tự
  * duyệt đề nghị của mình · thiếu quyền nhạy cảm) thay vì để trống chỗ nút.

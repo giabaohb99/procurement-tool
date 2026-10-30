@@ -1,13 +1,13 @@
 """Quản trị Kho skill BẰNG LỜI qua cổng MCP (bao-CR-634, K9 — doc/erp/21 §7.2 đợt P7).
 
-AI riêng của người quản trị (khóa MCP «được ghi») soạn / xuất bản skill và gán / thu hồi quyền đọc theo đúng khuôn
+AI riêng của người quản trị (khóa MCP "được ghi") soạn / xuất bản skill và gán / thu hồi quyền đọc theo đúng khuôn
 NHÁP → XÁC NHẬN của cổng:
   1. tool `draft_skill` · `draft_skill_publish` · `draft_skill_access` KHÔNG ghi gì — trả bản xem trước cho người dùng
      đọc + một `token` (Fernet, hết hạn TOKEN_TTL, buộc vào đúng người và đúng loại việc, mang DẤU TRẠNG THÁI của đích
      lúc soạn);
   2. `confirm_draft` với đúng bản nháp đó mới ghi — và ghi qua ĐÚNG service của màn web (`service.*`,
      `access_service.grant/revoke`) nên phạm vi quản trị (`get_scoped` của bộ) + luật cấm thắng + nhật ký giữ nguyên.
-     Token chỉ là «tờ đề xuất có hạn dùng», không phải giấy thông hành: quyền / phạm vi kiểm LẠI lúc xác nhận; đích đã
+     Token chỉ là "tờ đề xuất có hạn dùng", không phải giấy thông hành: quyền / phạm vi kiểm LẠI lúc xác nhận; đích đã
      đổi sau lúc soạn (dấu lệch) → từ chối, nhờ soạn lại; xác nhận lần hai cùng bản nháp cũng lệch dấu → từ chối.
 Mọi lượt ghi vào sổ thay đổi của Trợ lý (`assistant/change_service`, kênh MCP) — tạo / sửa skill và gán / thu hồi quyền
 hoàn tác được trong 24 giờ (`undo_check` / `undo_apply` ở cuối tệp); xuất bản chỉ ghi sổ (phiên bản chỉ thêm).
@@ -88,7 +88,7 @@ def _open(user, kind: str, draft) -> dict:
     if not isinstance(data, dict) or data.get("u") != int(user.id):
         raise AdminError("Bản nháp này không phải của bạn.")
     if data.get("k") != kind:
-        raise AdminError(f"Bản nháp này là loại «{data.get('k')}», không phải «{kind}».")
+        raise AdminError(f"Bản nháp này là loại \"{data.get('k')}\", không phải \"{kind}\".")
     return data.get("p") or {}
 
 
@@ -139,8 +139,8 @@ def _find_set(db, user, ref, action: str) -> AiSkillSet:
     if len(hit) == 1:
         return hit[0]
     if len(hit) > 1:
-        raise AdminError(f"«{text}» khớp nhiều bộ: {_describe_sets(hit)} — gửi đúng mã bộ.")
-    raise AdminError(f"Không thấy bộ «{text}» trong những bộ bạn được quản lý: {_describe_sets(rows)}.")
+        raise AdminError(f"\"{text}\" khớp nhiều bộ: {_describe_sets(hit)} — gửi đúng mã bộ.")
+    raise AdminError(f"Không thấy bộ \"{text}\" trong những bộ bạn được quản lý: {_describe_sets(rows)}.")
 
 
 def _split_name(name: str) -> tuple[str, str]:
@@ -165,9 +165,9 @@ def _find_skill(db, user, name, set_ref, action: str) -> tuple[AiSkill, AiSkillS
     if len(hits) == 1:
         return hits[0]
     if len(hits) > 1:
-        raise AdminError(f"Skill «{slug}» có ở nhiều bộ: {', '.join(f'{s.code}/{k.slug}' for k, s in hits)} — gửi "
+        raise AdminError(f"Skill \"{slug}\" có ở nhiều bộ: {', '.join(f'{s.code}/{k.slug}' for k, s in hits)} — gửi "
                          "dạng MÃ-BỘ/tên.")
-    raise AdminError(f"Không thấy skill «{name}» trong những bộ bạn được quản lý.")
+    raise AdminError(f"Không thấy skill \"{name}\" trong những bộ bạn được quản lý.")
 
 
 def _pick_subject_model(db, kind: int):
@@ -196,7 +196,7 @@ def resolve_subject(db, spec) -> tuple[int, int, str]:
         raise AdminError("Mỗi đối tượng là {kind, ref} — kind: employee/department/company/role/position/job_level.")
     kind = SUBJECT_KEYS.get(str(spec.get("kind") or "").strip().lower())
     if kind is None:
-        raise AdminError(f"Loại đối tượng «{spec.get('kind')}» không có — chọn: {', '.join(SUBJECT_KEYS)}.")
+        raise AdminError(f"Loại đối tượng \"{spec.get('kind')}\" không có — chọn: {', '.join(SUBJECT_KEYS)}.")
     ref = str(spec.get("ref") or "").strip()
     sid = spec.get("id")
     if kind == SUBJECT_JOB_LEVEL:
@@ -205,7 +205,7 @@ def resolve_subject(db, spec) -> tuple[int, int, str]:
         for level, label in JOB_LEVEL_LABELS.items():
             if level and ((sid is not None and str(sid) == str(level)) or (ref and ref.lower() == label.lower())):
                 return kind, int(level), label
-        raise AdminError(f"Không có cấp bậc «{ref or sid}» — chọn: "
+        raise AdminError(f"Không có cấp bậc \"{ref or sid}\" — chọn: "
                          f"{', '.join(v for k, v in JOB_LEVEL_LABELS.items() if k)}.")
     model, name_col = _pick_subject_model(db, kind)
     if sid is not None and str(sid).isdigit():
@@ -224,9 +224,9 @@ def resolve_subject(db, spec) -> tuple[int, int, str]:
     if len(hit) == 1:
         return kind, int(hit[0].id), _label_subject(kind, hit[0])
     if hit:
-        raise AdminError(f"«{ref}» khớp nhiều {SUBJECT_WORDS[kind]}: "
+        raise AdminError(f"\"{ref}\" khớp nhiều {SUBJECT_WORDS[kind]}: "
                          f"{'; '.join(_label_subject(kind, r) for r in hit[:MAX_CANDIDATES])} — gửi đúng mã.")
-    raise AdminError(f"Không thấy {SUBJECT_WORDS[kind]} «{ref}».")
+    raise AdminError(f"Không thấy {SUBJECT_WORDS[kind]} \"{ref}\".")
 
 
 def resolve_people(db, user, employees: list, department) -> dict:
@@ -535,7 +535,7 @@ CONFIRMERS = {"skill": _confirm_skill, "skill_publish": _confirm_publish, "skill
 def confirm(db, user, kind: str, draft_obj) -> dict:
     fn = CONFIRMERS.get(kind)
     if fn is None:
-        return {"error": f"Không có loại bản nháp «{kind}»."}
+        return {"error": f"Không có loại bản nháp **{kind}**."}
     try:
         return fn(db, user, _open(user, kind, draft_obj))
     except AdminError as e:

@@ -70,7 +70,7 @@ describe('LeaveBalanceAdjustCard', () => {
     )
   })
 
-  it('nói rõ đang GHI ĐÈ lần trước, và «còn lại» sẽ thành bao nhiêu', () => {
+  it('nói rõ đang GHI ĐÈ lần trước, và "còn lại" sẽ thành bao nhiêu', () => {
     //  Cộng dồn thì bấm Lưu hai lần là gấp đôi, mà không ai đoán được điều đó
     //  từ giao diện — nên phải viết ra thành chữ.
     build(balanceFixture({ adjusted_days: 3, remaining_days: 10, note: 'Bù phép' }))

@@ -103,7 +103,7 @@ export function DocumentCreatePage() {
   const [step, setStep] = useState(0)
   //  Id BẢN NHÁP đã sinh ở bước 1. Khác `null` nghĩa là văn bản đã tồn tại trên
   //  máy chủ, nên từ đó trở đi mọi lần lưu là SỬA chứ không tạo thêm cái nữa —
-  //  quay lại bước 1 rồi bấm «Tiếp tục» lần hai không được đẻ ra hai văn bản.
+  //  quay lại bước 1 rồi bấm "Tiếp tục" lần hai không được đẻ ra hai văn bản.
   const [draftId, setDraftId] = useState<number | null>(null)
   const [draftVersionId, setDraftVersionId] = useState<number | null>(null)
   const [templateId, setTemplateId] = useState<number | null>(null)
@@ -134,7 +134,7 @@ export function DocumentCreatePage() {
   //  ô đó chỉ thật sự vẽ ra ở bước 3, mà bước 3 luôn sau bước 1 nên tới lúc đó
   //  giá trị thật đã về.
   const [attachmentViewWindowEnabled, setAttachmentViewWindowEnabled] = useState(true)
-  //  Ô «Lưu vào thư mục» (phase 06, duoc-CR-476). Giá trị đầu ưu tiên
+  //  Ô "Lưu vào thư mục" (phase 06, duoc-CR-476). Giá trị đầu ưu tiên
   //  `?folder_id=` trên URL (mở form từ một thư mục cụ thể ở trang Quản lý cây
   //  thư mục) — có sẵn thì coi như NGƯỜI DÙNG ĐÃ TỰ CHỌN (`touched=true`) để
   //  đổi loại văn bản sau đó không âm thầm thay bằng mặc định của loại.
@@ -175,7 +175,7 @@ export function DocumentCreatePage() {
   //  nhịp bấm thì người dùng phải chờ một vòng mạng ở đúng nhịp sốt ruột nhất.
   const { data: missingPrerequisite } = useDocumentPrerequisites(docTypeId)
 
-  //  Thẻ «Người duyệt dự kiến» (phase 01, duoc-CR-473) — tự cập nhật theo Loại,
+  //  Thẻ "Người duyệt dự kiến" (phase 01, duoc-CR-473) — tự cập nhật theo Loại,
   //  Pháp nhân, Phòng ban, Độ mật, Độ khẩn, Người ký. Đặt SAU `useForm` để đọc
   //  được `form.watch`, nhưng không cần đợi văn bản có id: đây là màn TẠO, xem
   //  trước phải chạy được cả khi chưa lưu gì.
@@ -191,7 +191,7 @@ export function DocumentCreatePage() {
   })
 
   /**
-   * Bấm «Tiếp tục» ở BƯỚC 1 thì SINH LUÔN BẢN NHÁP trên máy chủ.
+   * Bấm "Tiếp tục" ở BƯỚC 1 thì SINH LUÔN BẢN NHÁP trên máy chủ.
    *
    * Trước đây văn bản chỉ ra đời ở nút cuối cùng, nên bấm nút lùi của trình
    * duyệt — hoặc đóng nhầm tab — ở bước 2, bước 3 là mất sạch bộ thông tin chính
@@ -203,7 +203,7 @@ export function DocumentCreatePage() {
    *
    * ⚠️ Loại văn bản cấp số ngay lúc lưu nháp (`number_when = 1`) sẽ **ăn một số
    * hiệu** tại đây. Bỏ giữa chừng thì bản nháp vẫn nằm đó mang số — người dùng
-   * xóa nó ở danh sách được, và nút «Hủy» bên dưới cũng dọn hộ.
+   * xóa nó ở danh sách được, và nút "Hủy" bên dưới cũng dọn hộ.
    */
   async function goNext() {
     //  Bước 1 có thêm ô của khối nghỉ phép — chỉ kiểm khi khối đó đang hiện.
@@ -221,9 +221,9 @@ export function DocumentCreatePage() {
           id: draftId ?? undefined,
           values: {
             ...formToPayload(form.getValues(), isLeaveForm),
-            //  Thư mục chọn ở BƯỚC 1 — gửi lại mỗi lần bấm «Tiếp tục» (kể cả
+            //  Thư mục chọn ở BƯỚC 1 — gửi lại mỗi lần bấm "Tiếp tục" (kể cả
             //  lượt sửa, khi người dùng quay lại đổi ý) vì đây là nơi DUY NHẤT
-            //  ô «Lưu vào thư mục» còn hiện ra, chưa đăng ký vào `documentRecordSchema`.
+            //  ô "Lưu vào thư mục" còn hiện ra, chưa đăng ký vào `documentRecordSchema`.
             folder_ids: folderIds,
             primary_folder_id: primaryFolderId,
             //  Nội dung mẫu chỉ chép LÚC TẠO. Lần sửa sau mà gửi lại là đè lên
@@ -293,11 +293,11 @@ export function DocumentCreatePage() {
           company_ids: cloneCompanyIds,
         })
       } catch {
-        toast.error('Chưa ghi được kế hoạch clone — khai lại ở thẻ «Bản clone ở pháp nhân con».')
+        toast.error('Chưa ghi được kế hoạch clone — khai lại ở thẻ "Bản clone ở pháp nhân con".')
       }
     }
 
-    //  Quyền + tệp — cùng đường với hộp «Tạo nhanh từ tệp» ở trang Thư mục.
+    //  Quyền + tệp — cùng đường với hộp "Tạo nhanh từ tệp" ở trang Thư mục.
     await sendPendingAccessAndFiles(documentId, versionId, pendingAccess, pendingFiles)
   }
 
@@ -369,7 +369,7 @@ export function DocumentCreatePage() {
   }
 
   /**
-   * Chốt trước khi thật sự lưu — riêng nhánh «Tạo, không soạn thảo» còn phải
+   * Chốt trước khi thật sự lưu — riêng nhánh "Tạo, không soạn thảo" còn phải
    * hỏi lại khi chưa đính kèm tệp nào (yêu cầu phase 09): văn bản không tệp,
    * không soạn thảo là một cái vỏ trống, nhưng KHÔNG CẤM — có văn bản chỉ để
    * lưu dấu bản giấy.
@@ -404,10 +404,10 @@ export function DocumentCreatePage() {
           folder_ids: folderIds,
           primary_folder_id: primaryFolderId,
           //  Lưu hẳn lựa chọn (24/09/2026) — màn chi tiết đọc cột này để tab
-          //  «Văn bản» là trình soạn thảo hay trình xem tệp, không đoán nữa.
+          //  "Văn bản" là trình soạn thảo hay trình xem tệp, không đoán nữa.
           content_mode:
             mode === 'files' ? DOCUMENT_CONTENT_MODE.files : DOCUMENT_CONTENT_MODE.compose,
-          //  «Tạo, không soạn thảo» KHÔNG dùng mẫu nội dung — kể cả khi bước 1
+          //  "Tạo, không soạn thảo" KHÔNG dùng mẫu nội dung — kể cả khi bước 1
           //  đã lỡ ghi sẵn `content_html` của mẫu vào bản nháp (draftId đã có
           //  thì payload thường KHÔNG gửi lại cột này để khỏi đè nội dung
           //  người dùng đang gõ ở tab Soạn thảo, nhưng ở đây người dùng CHƯA
@@ -427,7 +427,7 @@ export function DocumentCreatePage() {
           markSubmitted()
           await sendQueued(record.id, record.current_version_id ?? draftVersionId)
           resetCreatingGuard()
-          //  Hai nút cùng mở trang chi tiết: tab «Văn bản» tự là trình xem tệp
+          //  Hai nút cùng mở trang chi tiết: tab "Văn bản" tự là trình xem tệp
           //  với văn bản chỉ gồm tệp (đọc `content_mode`), không cần `?tab=`.
           navigate(appRoutes.document.documentDetail(record.id), { replace: true })
         },
@@ -458,7 +458,7 @@ export function DocumentCreatePage() {
            giới hạn `max-w-5xl` cũ, nó chừa một khoảng trắng lớn bên phải. */}
       <FormStepper steps={STEPS} current={step} onGoTo={setStep} />
 
-      {/*  MỘT cột (24/09/2026): «Người duyệt dự kiến» nay là MỘT DÒNG ngay trên
+      {/*  MỘT cột (24/09/2026): "Người duyệt dự kiến" nay là MỘT DÒNG ngay trên
            hàng nút của form — thấy được ở cả ba bước mà không chiếm cả cột phải
            như thẻ ghim trước đây. */}
       <div>
@@ -519,7 +519,7 @@ export function DocumentCreatePage() {
 
                     {/*  QUYỀN TRUY CẬP đứng NGAY DƯỚI phạm vi (dời xuống 24/08/2026
                      theo yêu cầu người dùng). Hai khối trả lời hai nửa của cùng
-                     một câu «ai đụng được văn bản này»: phạm vi mở theo diện,
+                     một câu "ai đụng được văn bản này": phạm vi mở theo diện,
                      quyền truy cập vá thêm hoặc chặn đích danh. Đặt cạnh nhau
                      thì rà một lượt là xong; để tách ở hai bước như trước thì
                      phải nhớ mình vừa khai gì ở bước trên. */}
@@ -607,7 +607,7 @@ export function DocumentCreatePage() {
                     </Button>
                   ) : (
                     <>
-                      {/*  «Tạo, không soạn thảo» — văn bản chỉ gồm tệp có sẵn (bản
+                      {/*  "Tạo, không soạn thảo" — văn bản chỉ gồm tệp có sẵn (bản
                        scan, văn bản đến, hợp đồng đã ký). CẢ HAI nút cuối đều
                        `type="submit"` thật (không đổi qua lại như bẫy CR-317 ở
                        nút "Tiếp tục" phía trên), nên `onClick` chỉ ghi lại Ý

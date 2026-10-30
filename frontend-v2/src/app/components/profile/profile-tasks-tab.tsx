@@ -335,7 +335,7 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
           >
             <CheckCheck className="size-4" />
             {/*  Khổ hẹp phải là một câu lệnh HOÀN CHỈNH. Bản cũ giấu riêng chữ
-                 «Đánh dấu» nên nút còn đúng hai chữ «làm hết» — một mẩu câu cụt
+                 "Đánh dấu" nên nút còn đúng hai chữ "làm hết" — một mẩu câu cụt
                  đầu, đọc không ra là lệnh gì. */}
             <span className="sm:hidden">Làm hết</span>
             <span className="hidden sm:inline">Đánh dấu làm hết</span>
@@ -473,7 +473,7 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
                       )}
                       {/*  Khổ hẹp ngày về ĐỨNG CẠNH MÃ, nhường chỗ cho tên việc.
                            Ở cụm nút bên phải nó ăn ~90px trong 390px, đủ để tên
-                           bị cắt còn «Đơn nghỉ phép N…» — mà tên mới là thứ phân
+                           bị cắt còn "Đơn nghỉ phép N…" — mà tên mới là thứ phân
                            biệt việc này với việc kia. */}
                       {item.date && (
                         <span className="text-[10px] text-muted-foreground sm:hidden">

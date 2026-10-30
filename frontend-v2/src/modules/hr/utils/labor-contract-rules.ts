@@ -20,7 +20,7 @@ export const CONTRACT_STATUS = {
 
 export type EndDateRule = 'required' | 'forbidden' | 'optional'
 
-/** Khớp `REQUIRES_END_DATE` (1,2,4,5) / `FORBIDS_END_DATE` (3); loại 9 «Khác» tùy ý. */
+/** Khớp `REQUIRES_END_DATE` (1,2,4,5) / `FORBIDS_END_DATE` (3); loại 9 "Khác" tùy ý. */
 export function endDateRule(contractType: number): EndDateRule {
   if (contractType === CONTRACT_TYPE_INDEFINITE) return 'forbidden'
   if ([1, 2, 4, 5].includes(contractType)) return 'required'

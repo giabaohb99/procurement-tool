@@ -129,7 +129,7 @@ export function CompanyFormDialog({ open, onOpenChange, company }: CompanyFormDi
                       placeholder="Chọn loại hình"
                     />
                     <FormDescription>
-                      Hộ kinh doanh: phiếu đề xuất mua hàng in hai ô ký «Chủ hộ» + «Người lập».
+                      Hộ kinh doanh: phiếu đề xuất mua hàng in hai ô ký <strong>Chủ hộ</strong> + <strong>Người lập</strong>.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

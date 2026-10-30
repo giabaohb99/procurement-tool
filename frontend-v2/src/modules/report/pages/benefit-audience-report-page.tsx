@@ -25,10 +25,10 @@ const CONFIG: ReportPageConfig = {
   defaultGroupBy: 'company',
   defaultPreset: BENEFIT_DEFAULT_PRESET,
   extraFilters: BenefitAudienceFilters,
-  //  Tắt «Tính người đang nghỉ» đòi `leave_request.read` — thiếu quyền thì bỏ tham số (link chia sẻ).
+  //  Tắt "Tính người đang nghỉ" đòi `leave_request.read` — thiếu quyền thì bỏ tham số (link chia sẻ).
   paramsRequirePermission: { [BENEFIT_PARAM.includeOnLeave]: ['leave_request', 'read'] },
   hideTrend: true,
-  //  Kỳ = MỘT ngày dịp, chọn ở ô «Ngày dịp» trong khung lọc — ẩn nút Kỳ báo cáo để không có
+  //  Kỳ = MỘT ngày dịp, chọn ở ô "Ngày dịp" trong khung lọc — ẩn nút Kỳ báo cáo để không có
   //  hai chỗ cùng đặt một thứ.
   hidePeriod: true,
 }
@@ -36,8 +36,8 @@ const CONFIG: ReportPageConfig = {
 /**
  * Phúc lợi & sự kiện (H1, duoc-CR-688, khóa 22). Mức quà nhập tay trên màn, KHÔNG lưu đợt
  * phát. Lọc theo tuổi / tháng sinh / tuổi con đòi `employee_sensitive.read` — thiếu thì
- * backend trả 403 câu dễ hiểu, trang hiện ở thẻ lỗi; nút «Bỏ hết điều kiện» trong khung lọc
- * là lối thoát (thẻ lỗi chỉ đặt lại «Xem theo»).
+ * backend trả 403 câu dễ hiểu, trang hiện ở thẻ lỗi; nút "Bỏ hết điều kiện" trong khung lọc
+ * là lối thoát (thẻ lỗi chỉ đặt lại "Xem theo").
  */
 export function BenefitAudienceReportPage() {
   return <ReportAnalyticsPage config={CONFIG} />

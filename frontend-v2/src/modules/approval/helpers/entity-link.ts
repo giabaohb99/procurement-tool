@@ -37,7 +37,7 @@ const ENTITY_ROUTES: Record<string, (id: number) => string> = {
  * Đường tới chính chứng từ đó. Loại chưa có màn chi tiết ở v2 thì trả về
  * **chuỗi rỗng** — chỗ gọi hiện chữ thường thay vì một link.
  *
- * Trước đây rơi về hộp việc «Việc của tôi». Màn đó đã xóa (21/08/2026), mà kể
+ * Trước đây rơi về hộp việc "Việc của tôi". Màn đó đã xóa (21/08/2026), mà kể
  * cả còn thì đó cũng là câu trả lời sai: bấm "mở chứng từ" rồi quay lại chính
  * danh sách vừa đứng thì người dùng tưởng nút hỏng.
  */

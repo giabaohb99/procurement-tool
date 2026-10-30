@@ -1,7 +1,7 @@
 """Ai được ra lệnh SỬA MÃ qua bot (ai-CR-051, K-01 + K-04 của `doc/agent-hub/04`).
 
-«Cách 3», đại ca chốt 24/09/2026: quyền cấp bằng CÂU NHẮN trên chat của đại ca («cho anh Được quyền
-gộp dev»), bot hỏi lại, «đúng» thì ghi `tab_agent_grant`. Không có màn web, không sửa `.env`, không
+"Cách 3", đại ca chốt 24/09/2026: quyền cấp bằng CÂU NHẮN trên chat của đại ca ("cho anh Được quyền
+gộp dev"), bot hỏi lại, "đúng" thì ghi `tab_agent_grant`. Không có màn web, không sửa `.env`, không
 build, không khởi động lại. Chỉ chat đại ca (`AGENT_TELEGRAM_CHAT_ID`) cấp/gỡ được; chat đó không
 cần dòng nào và không tự gỡ được mình.
 
@@ -45,13 +45,13 @@ NOTIFY_ACTIONS = ("approve", "replan", "merge", "deploy", "revert", "cancel", "d
 _HONORIFICS = r"(anh|chị|chi|em|bạn|ban|ông|bà|cô|chú|a|c)"
 _LEVEL_WORDS = r"(gộp dev|gộp và deploy|gộp|merge|deploy|duyệt kế hoạch|duyệt)"
 _TAIL = r"(\s+(nhé|nha|đi|luôn|giúp em|giúp anh|dùm em|dùm anh))*[.!]*"
-#  «cho anh Được quyền gộp dev» · «cấp cho Bảo quyền duyệt kế hoạch» · «cấp quyền gộp dev cho anh Được»
+#  "cho anh Được quyền gộp dev" · "cấp cho Bảo quyền duyệt kế hoạch" · "cấp quyền gộp dev cho anh Được"
 _GRANT_A = re.compile(rf"^(cấp cho|mở quyền cho|mở cho|cấp|cho)\s+(?P<name>.+?)\s+quyền\s+(?P<level>{_LEVEL_WORDS})"
                       rf"{_TAIL}$")
 _GRANT_B = re.compile(rf"^(cấp|cho|mở)\s+quyền\s+(?P<level>{_LEVEL_WORDS})\s+cho\s+(?P<name>.+?){_TAIL}$")
-#  «gỡ quyền của anh Được» · «thu quyền sửa mã anh Được» · «bỏ quyền Bảo»
+#  "gỡ quyền của anh Được" · "thu quyền sửa mã anh Được" · "bỏ quyền Bảo"
 _REVOKE = re.compile(rf"^(gỡ|thu|thu hồi|bỏ|tắt|khóa)\s+quyền(\s+sửa mã)?(\s+của)?\s+(?P<name>.+?){_TAIL}$")
-#  «ai đang được sửa mã» · «ai có quyền gộp» · «danh sách quyền sửa mã»
+#  "ai đang được sửa mã" · "ai có quyền gộp" · "danh sách quyền sửa mã"
 _LIST = re.compile(r"^((những\s+)?ai\s+(đang\s+)?(được|có)\s+(quyền\s+)?(sửa mã|gộp|duyệt|ra lệnh)"
                    r"|(danh sách|ds|xem)\s+quyền(\s+sửa mã)?)")
 
@@ -62,7 +62,7 @@ def level_of_words(words: str) -> int:
 
 
 def clean_name(raw: str) -> str:
-    """Bỏ «anh / chị / bạn…» đầu tên; «anh Được» → «Được», «anh» trơn → rỗng (không đoán)."""
+    """Bỏ "anh / chị / bạn…" đầu tên; "anh Được" → "Được", "anh" trơn → rỗng (không đoán)."""
     name = re.sub(rf"^{_HONORIFICS}\s+", "", raw.strip(), flags=re.IGNORECASE)
     if re.fullmatch(_HONORIFICS, name, flags=re.IGNORECASE):
         return ""
@@ -88,7 +88,7 @@ def parse(text: str) -> dict | None:
 
 
 def fold(s: str) -> str:
-    """Bỏ dấu + thường hóa để so tên: «Trần Gia Bảo» ~ «bao», «Được» ~ «duoc»."""
+    """Bỏ dấu + thường hóa để so tên: "Trần Gia Bảo" ~ "bao", "Được" ~ "duoc"."""
     s = (s or "").replace("đ", "d").replace("Đ", "D")
     return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn").lower().strip()
 

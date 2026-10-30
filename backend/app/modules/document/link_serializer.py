@@ -125,7 +125,7 @@ def _children(db: Session, document_id: int, depth: int, seen: set[int]) -> list
     #  Bản riêng của pháp nhân con CŨNG tự ghi một quan hệ "căn cứ theo" trỏ về
     #  bản gốc (`clone_service.create_clones`). Không gạt chúng ra khỏi vòng dưới
     #  thì nhánh quan hệ nhặt trước, và bản riêng hiện thành một dòng quan hệ
-    #  thường: mất nhãn «Bản riêng», mất tên pháp nhân, mất trạng thái xử lý.
+    #  thường: mất nhãn "Bản riêng", mất tên pháp nhân, mất trạng thái xử lý.
     private_copy_ids = {row[0] for row in db.query(Document.id)
                      .filter(Document.source_document_id == document_id).all()}
 

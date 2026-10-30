@@ -100,7 +100,7 @@ export default function PurchaseRequestDetail() {
   const [pr, setPr] = useState<any>({
     code: '', requester: '', requester_position: '', department: '', head_of_dept: '', head_of_dept_id: 0,
     handler_dept_id: 0,   // bao-CR-414: phòng được NHỜ xử lý phiếu (0 = tự mua / thu mua chung)
-    handler_dept_assigned: false,   // bao-CR-488: lúc lập phiếu đã tick «Nhờ phòng khác xử lý» chưa (chỉ giao diện)
+    handler_dept_assigned: false,   // bao-CR-488: lúc lập phiếu đã tick "Nhờ phòng khác xử lý" chưa (chỉ giao diện)
     purpose: '', company_id: 0, request_date: new Date().toISOString().slice(0, 10),
     need_date: '', is_urgent: false, note: '', status: 'draft', items: [],
     show_code_on_print: true, suggested_supplier: '', suggested_supplier_tax_code: '', suggested_supplier_contact: '',
@@ -118,7 +118,7 @@ export default function PurchaseRequestDetail() {
   const [units, setUnits] = useState<string[]>([])
   const [warehouses, setWarehouses] = useState<{ code: string; name: string }[]>([])
   const [employees, setEmployees] = useState<any[]>([])
-  // bao-CR-499: người DUYỆT ĐƯỢC chứng từ — nguồn ô «Trưởng phòng phê duyệt» (chỉ nạp khi ô còn chọn được).
+  // bao-CR-499: người DUYỆT ĐƯỢC chứng từ — nguồn ô "Trưởng phòng phê duyệt" (chỉ nạp khi ô còn chọn được).
   const [approverCands, setApproverCands] = useState<any[]>([])
   useEffect(() => {
     if (!(isNew || ['draft', 'rejected'].includes(pr.status))) { setApproverCands([]); return }
@@ -249,7 +249,7 @@ export default function PurchaseRequestDetail() {
   }, [pr.department, pr.company_id])
 
   const editable = isNew || pr.status === 'draft' || pr.status === 'rejected'
-  // bao-CR-547 (đại ca chốt 01/10/2026): tick nhiều dòng rồi «Xóa đã chọn» — CHỈ form tạo hoặc phiếu Nháp;
+  // bao-CR-547 (đại ca chốt 01/10/2026): tick nhiều dòng rồi "Xóa đã chọn" — CHỈ form tạo hoặc phiếu Nháp;
   // phiếu Bị trả lại vẫn xóa từng dòng như cũ. Chọn theo CHỈ SỐ (dòng mới chưa có id) nên đổi số dòng
   // là bỏ hết lựa chọn, kẻo tick trúng dòng khác sau khi ai đó xóa/thêm lẻ.
   const bulkRemovable = editable && (isNew || pr.status === 'draft')
@@ -267,7 +267,7 @@ export default function PurchaseRequestDetail() {
   const prLocked = ['cancelled', 'completed', 'done'].includes(pr.status)   // đã từ chối/hoàn thành → khóa thao tác
   const canAssignPurchaser = can('purchase_request', 'approve') && !prLocked   // phân bổ NSTM (chặn khi phiếu đã kết thúc)
   const canManage = can('purchase_request', 'cancel')             // admin/quản lý: hủy/trả/hoàn thành
-  // bao-CR-498: hai đường «Trả về» gộp vào một nút — đường luồng duyệt + đường trả phòng lập (cờ backend).
+  // bao-CR-498: hai đường "Trả về" gộp vào một nút — đường luồng duyệt + đường trả phòng lập (cờ backend).
   // bao-CR-554: cờ `can_return` do server tính (quyền + phạm vi + chưa dòng nào lên ĐMH) — người
   // duyệt cũng trả được phiếu Đã duyệt; quản lý không còn trả được phiếu đã có đơn.
   const canReturnToRequester = !isNew && !!pr.can_return
@@ -278,7 +278,7 @@ export default function PurchaseRequestDetail() {
   }
   // Nút "Tạo ĐMH" chỉ hiện cho phòng thu mua / quản lý / admin (và có quyền tạo ĐMH)
   // bao-CR-601 (đại ca chốt 06/10/2026): miễn CÓ QUYỀN tạo ĐMH là hiện nút — giống bản mới.
-  // Trước đây còn xét tên phòng ban chứa «thu mua», nên nhân sự nhà máy (phòng «Dego Organic»
+  // Trước đây còn xét tên phòng ban chứa "thu mua", nên nhân sự nhà máy (phòng "Dego Organic"
   // sau bao-CR-591) mất nút dù có quyền. Trạng thái phiếu và dòng chưa đặt vẫn xét ở chỗ dùng.
   const canCreatePO = can('purchase_order', 'create')
   // CR-034: các trạng thái "làm việc được" (tạo ĐMH / hoàn thành phiếu). Bình thường phải qua
@@ -299,7 +299,7 @@ export default function PurchaseRequestDetail() {
   // CR-074: phải tính CẢ hai nhãn "chưa động tới", nếu không thì vừa lập đơn Nháp là nút
   // "Tạo ĐMH" biến mất, trong khi dòng đó vẫn có thể cần thêm đơn cho NCC khác.
   // bao-CR-618: dòng đã có ĐMH nhưng mới đặt MỘT PHẦN số lượng (vd YCMH 221: KCl yêu cầu 2.000.000,
-  // đặt 50 → nhãn «Đã đặt hàng») cũng còn phải mua tiếp — trước đây chỉ xét nhãn nên nút biến mất.
+  // đặt 50 → nhãn "Đã đặt hàng") cũng còn phải mua tiếp — trước đây chỉ xét nhãn nên nút biến mất.
   // Cùng luật với bản v2 (`purchase-request-detail-page.tsx`): còn thiếu = yêu cầu − đã đặt > 0.
   const hasUnorderedItem = (pr.items || []).some((it: any) => {
     const status = it.line_status || LS_NO_PO
@@ -318,9 +318,9 @@ export default function PurchaseRequestDetail() {
   const canLineStatus = (it: any) => canAssignPurchaser || canManage || isAssignee(it)
   const canEditNote = (it: any) => editable || canLineStatus(it)
 
-  // NSTM chọn được — bao-CR-486: đọc từ API theo ô «Phòng xử lý» của phiếu (phòng tự mua → người
+  // NSTM chọn được — bao-CR-486: đọc từ API theo ô "Phòng xử lý" của phiếu (phòng tự mua → người
   // thu mua của phòng đó; phòng thu mua mặc định → người thu mua chung, bao-CR-524). Trước đó lọc danh mục nhân sự theo TÊN phòng có
-  // chữ «thu mua» nên phiếu nhà máy vẫn thấy người thu mua chung. Hiển thị TÊN, lưu MÃ NV; người đã
+  // chữ "thu mua" nên phiếu nhà máy vẫn thấy người thu mua chung. Hiển thị TÊN, lưu MÃ NV; người đã
   // gán ở dòng mà nay ngoài danh sách (gán trước khi chuyển phòng) vẫn giữ để không mất nhãn.
   const purchaserOptions = (() => {
     const opts = assignableStaff.map((e: any) => ({ value: e.code, label: e.full_name }))
@@ -335,9 +335,9 @@ export default function PurchaseRequestDetail() {
   //  người xem nên tra có thể trượt và lòi ra mã.
   const assigneeName = (it: any) => it.assignee_name || empName(it.assignee)
   const companyOptions = companies.map(c => ({ value: String(c.id), label: c.name }))
-  // bao-CR-414 / bao-CR-480: ô «Phòng xử lý» — mọi phòng đang hoạt động (phòng đã tắt nhưng phiếu cũ
-  // còn trỏ tới thì vẫn giữ lại để không mất nhãn). bao-CR-524: KHÔNG còn mục ảo «Thu mua chung» (0) —
-  // phòng thu mua mặc định là phòng thật «Sản xuất -Thu mua»; backend trả id + tên thật cho mọi phiếu.
+  // bao-CR-414 / bao-CR-480: ô "Phòng xử lý" — mọi phòng đang hoạt động (phòng đã tắt nhưng phiếu cũ
+  // còn trỏ tới thì vẫn giữ lại để không mất nhãn). bao-CR-524: KHÔNG còn mục ảo "Thu mua chung" (0) —
+  // phòng thu mua mặc định là phòng thật "Sản xuất -Thu mua"; backend trả id + tên thật cho mọi phiếu.
   // Người không đọc được danh mục phòng ban vẫn thấy tên phòng đang xử lý nhờ `handler_dept_name`.
   const handlerDeptOptions = [
     ...departments
@@ -587,7 +587,7 @@ export default function PurchaseRequestDetail() {
     }))
   }
 
-  //  bao-CR-590: người đang HIỆN ở ô «Trưởng phòng phê duyệt» — đã chọn riêng, hoặc TBP đã chọn,
+  //  bao-CR-590: người đang HIỆN ở ô "Trưởng phòng phê duyệt" — đã chọn riêng, hoặc TBP đã chọn,
   //  hoặc TBP mặc định của phòng (chỉ có TÊN nên khớp theo tên trong danh sách). Lưu và kiểm
   //  đúng người này: trước đây ô hiện sẵn một người mà phiếu gửi lên vẫn để trống.
   function shownApproverId(): number {
@@ -675,7 +675,7 @@ export default function PurchaseRequestDetail() {
       department: pr.department, head_of_dept: pr.head_of_dept,
       head_of_dept_id: Number(pr.head_of_dept_id) || 0, purpose: pr.purpose,
       approver_employee_id: shownApproverId(),   // bao-CR-499 · bao-CR-590: ghi đúng người đang hiện
-      // bao-CR-488: lúc tạo mà chưa tick «Nhờ phòng khác xử lý» thì KHÔNG gửi — backend tự chọn mặc định
+      // bao-CR-488: lúc tạo mà chưa tick "Nhờ phòng khác xử lý" thì KHÔNG gửi — backend tự chọn mặc định
       // (nhà máy → chính phòng mình, còn lại → phòng thu mua mặc định). Đã tick thì gửi đúng số đã chọn, kể cả 0 (bao-CR-524: 0 = phòng thu mua mặc định).
       handler_dept_id: isNew && !pr.handler_dept_assigned ? undefined : Number(pr.handler_dept_id) || 0,
       request_date: pr.request_date, need_date: earliestNeedDate || pr.need_date || '', is_urgent: pr.is_urgent, note: pr.note,
@@ -894,7 +894,7 @@ export default function PurchaseRequestDetail() {
         {!isNew && pr.can_approve && (
           <button className="btn" onClick={() => action('approve')}><i className="ti ti-check" />Duyệt</button>
         )}
-        {/* bao-CR-498: MỘT nút «Trả về» cho hai đường (trả người lập sửa lại / trả phòng lập tự xử lý —
+        {/* bao-CR-498: MỘT nút "Trả về" cho hai đường (trả người lập sửa lại / trả phòng lập tự xử lý —
             bao-CR-414). Cả hai đường cùng mở thì hỏi (ReturnChoiceModal); một đường thì đi thẳng. */}
         {returnResolution !== null && (
           <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }}
@@ -1088,8 +1088,8 @@ export default function PurchaseRequestDetail() {
                 <label>Phòng xử lý <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(phòng sẽ đi mua cho phiếu này)</span></label>
                 {/* bao-CR-414 / bao-CR-480 / bao-CR-524: phòng thu mua mặc định (Sản xuất -Thu mua) là mặc
                     định; nhà máy tự mua thì backend tự điền phòng nhà máy lúc lập phiếu. Chọn phòng thì quản
-                    lý thu mua của phòng đó thấy và điều phối được phiếu; bộ thu mua chung «trừ nhà máy» thì
-                    không thấy. bao-CR-488: lúc LẬP phiếu ô này ẩn sau ô tick «Nhờ phòng khác xử lý» — không
+                    lý thu mua của phòng đó thấy và điều phối được phiếu; bộ thu mua chung "trừ nhà máy" thì
+                    không thấy. bao-CR-488: lúc LẬP phiếu ô này ẩn sau ô tick "Nhờ phòng khác xử lý" — không
                     tick thì không gửi, hệ thống tự chọn; tick rồi để trống = phòng thu mua mặc định. */}
                 {isNew ? (
                   <>
@@ -1160,7 +1160,7 @@ export default function PurchaseRequestDetail() {
               <div className="form-row">
                 <label>Trưởng phòng phê duyệt {editable && <span className="req">*</span>}</label>
                 {editable && approverCands.length > 0 ? (
-                  /* bao-CR-552: TBP để «mặc định của phòng» chỉ có TÊN (head_of_dept_id = 0) nên ô này từng
+                  /* bao-CR-552: TBP để "mặc định của phòng" chỉ có TÊN (head_of_dept_id = 0) nên ô này từng
                      rơi về chữ gợi ý mờ — khớp người mặc định trong danh sách theo tên để hiện như đã chọn. */
                   <SearchSelect value={String(pr.approver_employee_id || pr.head_of_dept_id
                       || approverCands.find((c: any) => c.name === pr.head_of_dept)?.employee_id || '')}

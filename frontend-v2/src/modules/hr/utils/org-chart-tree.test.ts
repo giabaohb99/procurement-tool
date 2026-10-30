@@ -135,7 +135,7 @@ describe('buildOrgChartTree', () => {
     expect(tree[0].departments[0].head?.fullName).toBe('Zed')
   })
 
-  it('người chưa gắn phòng vẫn hiện, trong phòng ảo «Chưa gán phòng ban»', () => {
+  it('người chưa gắn phòng vẫn hiện, trong phòng ảo "Chưa gán phòng ban"', () => {
     const tree = build({
       departments: [dept(10)],
       employees: [emp(1, { department_id: 0 }), emp(2, { department_id: 777 })],
@@ -146,7 +146,7 @@ describe('buildOrgChartTree', () => {
     expect(orphan?.ownHeadcount).toBe(2)
   })
 
-  it('phòng thuộc pháp nhân lạ (company_id 0) gom vào «Chưa gán pháp nhân»', () => {
+  it('phòng thuộc pháp nhân lạ (company_id 0) gom vào "Chưa gán pháp nhân"', () => {
     const tree = build({
       departments: [dept(10, { company_id: 0 })],
       employees: [emp(1, { company_id: 0 })],

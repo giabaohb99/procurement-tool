@@ -1,8 +1,8 @@
 import type { DataTableColumn } from './types'
 
 /**
- * Cột «ID» mặc định của MỌI bảng danh sách (bao-CR-578, đại ca chốt 03/10/2026: «thêm mặc
- * định cột ID ở phía bìa trái, như vậy dễ nhìn hơn»).
+ * Cột "ID" mặc định của MỌI bảng danh sách (bao-CR-578, đại ca chốt 03/10/2026: "thêm mặc
+ * định cột ID ở phía bìa trái, như vậy dễ nhìn hơn").
  *
  * Bảng TỰ thêm, màn hình không phải khai. Khóa riêng `__row_id` để không đụng cột `id` mà vài
  * màn đã tự khai — màn nào đã có cột `id` thì bảng KHÔNG thêm nữa (tránh hai cột ID).

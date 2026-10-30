@@ -52,7 +52,7 @@ class CustomsLine(Base):
     __table_args__ = (
         Index("ix_customs_line_hs_date", "hs_code", "reg_date"),
         Index("ix_customs_line_importer_date", "importer_id", "reg_date"),
-        #  Nút «Các lần nhập khác của đối tác này» lọc theo partner_id — thiếu chỉ mục này
+        #  Nút "Các lần nhập khác của đối tác này" lọc theo partner_id — thiếu chỉ mục này
         #  là quét cả bảng qua mọi phân vùng rồi mới sắp xếp (đo 1,8 giây trên dev, 23/09).
         Index("ix_customs_line_partner_date", "partner_id", "reg_date"),
         #  bao-CR-541: tra mã băm chống trùng. Kèm `reg_date` vì bảng chia phân vùng theo năm
@@ -108,14 +108,14 @@ class CustomsLine(Base):
     #  hàm lượng / dạng bào chế ~93%. Danh mục đổi thì chạy lại `retag_all`.
     active_ingredient: Mapped[str] = mapped_column(String(255), default="", index=True)
     formulation: Mapped[str] = mapped_column(String(40), default="")
-    #  bao-CR-603: tệp nạp có cột «Hoạt chất» / «Hàm lượng / dạng» và ô có chữ thì lấy của tệp,
+    #  bao-CR-603: tệp nạp có cột "Hoạt chất" / "Hàm lượng / dạng" và ô có chữ thì lấy của tệp,
     #  cờ = 1 để `retag_all` KHÔNG ghi đè khi danh mục đổi; ô trống hay tệp không có cột thì suy
     #  ra như cũ (cờ = 0).
-    #  bao-CR-608: tên cột giữ nguyên nhưng nghĩa rộng ra thành «GIÁ TRỊ DO NGƯỜI NHẬP» — lấy từ
+    #  bao-CR-608: tên cột giữ nguyên nhưng nghĩa rộng ra thành "GIÁ TRỊ DO NGƯỜI NHẬP" — lấy từ
     #  tệp nạp HOẶC người sửa tay trên màn (hộp sửa dòng). Cả hai ca `retag_all` đều không ghi đè.
     active_ingredient_from_file: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     formulation_from_file: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
-    #  bao-CR-603: hai cột «Đơn giá quy đổi VND» LẤY TỪ TỆP (tùy chọn). NULL = tệp không có cột
+    #  bao-CR-603: hai cột "Đơn giá quy đổi VND" LẤY TỪ TỆP (tùy chọn). NULL = tệp không có cột
     #  hoặc ô trống → lúc đọc tính như cũ (`service.compute_vnd_prices`). Không vào mã băm chống
     #  trùng: dòng cũ không đổi mã, và cùng một dòng hàng có hay không có giá VND vẫn là một dòng.
     price_vnd_flat: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
@@ -128,14 +128,14 @@ class CustomsLine(Base):
 class CustomsLineChange(Base):
     """bao-CR-608 — BẢN CHỤP ĐẦY ĐỦ một dòng hàng ngay TRƯỚC khi bị ghi đè / xóa.
 
-    Hai nguồn (`CustomsLineChangeSource`): lô nạp tệp có cột «ID» / «Thao tác» (`batch_id` = lô)
+    Hai nguồn (`CustomsLineChangeSource`): lô nạp tệp có cột "ID" / "Thao tác" (`batch_id` = lô)
     và sửa / xóa tay trên màn (`batch_id` = 0). `snapshot` giữ MỌI cột của `tab_customs_line`
     (kèm `id`, `reg_date`, `batch_id`, `importer_id`, `partner_id`, `row_hash`) ở dạng chuỗi /
     số JSON — đủ để chèn lại đúng id cũ khi hoàn tác.
 
     Vì sao cần: dòng bị GHI ĐÈ giữ nguyên `batch_id` của lô đã thêm nó (đổi sang lô mới thì
     hoàn tác lô mới xóa mất dòng cũ), còn dòng bị XÓA thì mất hẳn — hoàn tác lô (`importer.revert`)
-    chỉ dựng lại được nhờ bảng này. Sửa tay thì bảng này là dấu vết «trước khi sửa là gì».
+    chỉ dựng lại được nhờ bảng này. Sửa tay thì bảng này là dấu vết "trước khi sửa là gì".
     """
     __tablename__ = "tab_customs_line_change"
     __table_args__ = (
@@ -175,7 +175,7 @@ class CustomsPesticide(Base, AuditMixin):
     active_ingredient: Mapped[str] = mapped_column(String(500), default="")
     pest_group: Mapped[str] = mapped_column(String(100), default="")
     registrant: Mapped[str] = mapped_column(String(255), default="")
-    #  29/09/2026 — mục «Thuốc BVTV» của Tra cứu thị trường. Nguồn đổi sang bản cào
+    #  29/09/2026 — mục "Thuốc BVTV" của Tra cứu thị trường. Nguồn đổi sang bản cào
     #  danhmuc.thuocbvtv.com (EcoFarm của Cục BVTV, TT 75/2025) vì bản `bvtv_data.js` cũ không
     #  có số đăng ký, hiệu lực, phạm vi sử dụng. Nạp qua `pesticide_service.replace_catalog`.
     #  `pest_group` / `sector` giữ CHỮ của nguồn: đó là phân loại của Cục BVTV (nguồn tự thêm
@@ -186,17 +186,17 @@ class CustomsPesticide(Base, AuditMixin):
     registration_no: Mapped[str] = mapped_column(String(60), default="", index=True)
     registered_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     expires_on: Mapped[date | None] = mapped_column(Date, nullable=True)
-    #  «GHS 5 (GHS - Nhóm 5: …); WHO 4 (…)» — đúng cách tệp Excel của bản cào viết.
+    #  "GHS 5 (GHS - Nhóm 5: …); WHO 4 (…)" — đúng cách tệp Excel của bản cào viết.
     toxicity: Mapped[str] = mapped_column(String(500), default="")
-    #  Nhóm kháng theo hoạt chất: «Polyoxin B: FRAC 19 | nhóm | phương thức; …».
+    #  Nhóm kháng theo hoạt chất: "Polyoxin B: FRAC 19 | nhóm | phương thức; …".
     resistance: Mapped[str] = mapped_column(Text, default="", nullable=True)   # TEXT không có DEFAULT
     source_url: Mapped[str] = mapped_column(String(255), default="")
     #  duoc-CR-490 — thuốc người dùng tự THÊM trên màn (không có trong bản cào). Nạp lại danh mục
     #  GIỮ các dòng này, chỉ thay dòng từ nguồn. Không dựa vào `source_id = 0` để nhận ra: bộ đọc
     #  tệp cũng cho 0 khi dòng nguồn thiếu mã, và dòng đó sẽ nhân đôi sau mỗi lần nạp.
     is_manual: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
-    #  duoc-CR-495 — câu mô tả của trang nguồn («Thuốc trừ bệnh X hoạt chất … sử dụng trên …, phòng
-    #  trừ …, đăng ký bởi …»), trường `tom_tat_su_dung` của bản cào. Giữ nguyên chữ nguồn, không tự
+    #  duoc-CR-495 — câu mô tả của trang nguồn ("Thuốc trừ bệnh X hoạt chất … sử dụng trên …, phòng
+    #  trừ …, đăng ký bởi …"), trường `tom_tat_su_dung` của bản cào. Giữ nguyên chữ nguồn, không tự
     #  ghép lại từ các cột: nguồn là nơi quyết định câu đó nói gì.
     summary: Mapped[str] = mapped_column(Text, default="", nullable=True)   # TEXT không có DEFAULT
 
@@ -271,11 +271,11 @@ class CustomsTariff(Base):
 class CustomsKindKeyword(Base, AuditMixin):
     """Từ khóa nhận diện Thành phẩm / Nguyên liệu — bao-CR-494 (F04 của chị Mi).
 
-    Tên hàng chứa từ khóa loại NGUYÊN LIỆU (TC · TECH · TG · «kỹ thuật» · «nguyên liệu») thì
+    Tên hàng chứa từ khóa loại NGUYÊN LIỆU (TC · TECH · TG · "kỹ thuật" · "nguyên liệu") thì
     dòng là nguyên liệu kỹ thuật, không khớp gì là thành phẩm. Từ khóa loại THÀNH PHẨM là
-    ngoại lệ thắng ngược (vd tên chứa «TECHNOLOGY» mà muốn giữ thành phẩm). Từ khóa ngắn
+    ngoại lệ thắng ngược (vd tên chứa "TECHNOLOGY" mà muốn giữ thành phẩm). Từ khóa ngắn
     (≤ 4 ký tự ASCII) khớp NGUYÊN TỪ để `TC` không dính `ATC`; từ khóa dài khớp chuỗi con.
-    Đặt ở bảng để admin cập nhật, không hard-code (yêu cầu phi chức năng «Khả năng bảo trì»).
+    Đặt ở bảng để admin cập nhật, không hard-code (yêu cầu phi chức năng "Khả năng bảo trì").
     """
     __tablename__ = "tab_customs_kind_keyword"
 
@@ -288,7 +288,7 @@ class CustomsKindKeyword(Base, AuditMixin):
 class CustomsSearchSynonym(Base, AuditMixin):
     """Từ đồng nghĩa cho ô tìm tên hàng — bao-CR-495 (F02, ghi chú 25/09 của chị Mi).
 
-    Một dòng = một TỪ GỐC + các cách viết tương đương (`synonyms`, ngăn bằng dấu «;»). Gõ từ
+    Một dòng = một TỪ GỐC + các cách viết tương đương (`synonyms`, ngăn bằng dấu ";"). Gõ từ
     gốc hay bất kỳ từ nào trong nhóm đều ra kết quả của cả nhóm. Người dùng tự thêm; nhóm
     quy đổi NỒNG ĐỘ (3,6% ≡ 3.6EC ≡ 36 G/L) thì hệ tự sinh, không phải khai ở đây.
     """
@@ -305,7 +305,7 @@ class CustomsSavedFilter(Base, AuditMixin):
 
     Đại ca chốt 25/09/2026: lưu RIÊNG từng người (`user_id` = TÀI KHOẢN, không phải
     employee_id — bộ lọc là thói quen làm việc của tài khoản, nhân sự nghỉ thì mất theo);
-    cột `is_shared` có sẵn, mặc định tắt, để sau mở «bộ lọc chung» mà không phải làm lại.
+    cột `is_shared` có sẵn, mặc định tắt, để sau mở "bộ lọc chung" mà không phải làm lại.
     `params` giữ NGUYÊN chuỗi tham số URL của trang (`q=…&hs_code=…`), không tách cột:
     thêm ô lọc mới (product_kind, từ khóa AND/NOT…) là bộ lọc cũ vẫn nạp được, không
     cần migration. Không lưu localStorage vì đổi máy là mất.

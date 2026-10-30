@@ -144,7 +144,7 @@ def move_documents(db: Session, doc_ids: list[int], folder_id: int, mode: str, u
     #  Nạp văn bản MỘT LƯỢT bằng `IN` (M5, rà soát 23/09/2026) — trước đó
     #  `db.get` từng dòng trong vòng lặp là một query riêng cho mỗi id; `mode`
     #  bị chặn ≤ `MAX_BULK_IDS` (schema) nên đây là MỘT truy vấn có trần.
-    #  `documents_query` (ai-CR-177): văn bản đã xóa mềm → «Không tìm thấy».
+    #  `documents_query` (ai-CR-177): văn bản đã xóa mềm → "Không tìm thấy".
     ids = list(dict.fromkeys(doc_ids or []))
     docs_by_id = {d.id: d for d in documents_query(db).filter(Document.id.in_(ids)).all()} if ids else {}
 

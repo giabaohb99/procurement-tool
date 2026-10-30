@@ -1,4 +1,4 @@
-// bao-CR-470 — thẻ «Biểu đồ» của màn Tra cứu giá hải quan (bản v2, recharts).
+// bao-CR-470 — thẻ "Biểu đồ" của màn Tra cứu giá hải quan (bản v2, recharts).
 //
 // Bốn luật lấy từ số liệu thật của ATRAZINE (doc/erp/hai-quan/04-giao-dien.md §4) —
 // đừng "làm cho đẹp" mà bỏ:
@@ -146,8 +146,8 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         width: 110,
         align: 'right',
         hideable: false,
-        //  bao-CR-519 (đại ca chọn 28/09): bỏ tô nền cột của 518 — nền cột làm hàng «Giá tốt
-        //  nhất» chìm mất. Bốn cột giá gom thành NHÓM bằng hai vạch dọc đậm (sau cột Tổng
+        //  bao-CR-519 (đại ca chọn 28/09): bỏ tô nền cột của 518 — nền cột làm hàng "Giá tốt
+        //  nhất" chìm mất. Bốn cột giá gom thành NHÓM bằng hai vạch dọc đậm (sau cột Tổng
         //  lượng và sau cột Cao nhất), thân bảng để trắng như bản đầu.
         cell: (p) => <span className="tabular-nums">{formatUsd(p.min)}</span>,
       },

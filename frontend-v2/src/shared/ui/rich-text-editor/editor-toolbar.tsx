@@ -82,7 +82,7 @@ export function EditorToolbar({
    * Vẽ lệnh co giãn ĐÚNG CHỖ của nó trong nhóm, hoặc không vẽ gì nếu hết chỗ.
    *
    * ⚠️ Ở chế độ GỌN thì luôn vẽ: cả cụm này nằm trong tấm `⋮`, nơi các nút được
-   * xuống dòng thoải mái. Thu chúng vào menu «Thêm» ở đó là bắt người dùng mở
+   * xuống dòng thoải mái. Thu chúng vào menu "Thêm" ở đó là bắt người dùng mở
    * một menu LỒNG TRONG tấm vừa mở, chỉ để canh giữa một đoạn.
    */
   const inline = (key: CollapsibleKey) => {

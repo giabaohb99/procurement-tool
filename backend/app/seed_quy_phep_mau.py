@@ -3,7 +3,7 @@
     docker compose exec api python -m app.seed_quy_phep_mau
     docker compose exec api python -m app.seed_quy_phep_mau --xoa   # dọn sạch
 
-Vì sao cần: trên CSDL mẫu, **chỉ mỗi «Phép năm» bật «trừ vào quỹ phép»**, nên
+Vì sao cần: trên CSDL mẫu, **chỉ mỗi "Phép năm" bật "trừ vào quỹ phép"**, nên
 nút *Cấp quỹ năm* tạo đúng MỘT dòng cho mỗi người. Màn Quỹ phép vì thế ra 261
 hàng giống hệt nhau — không hàng nào có loại nghỉ thứ hai để gom nhóm, không
 hàng nào có ngày chờ duyệt, không hàng nào hết phép. Nhìn vào đó không nghiệm
@@ -48,7 +48,7 @@ CA_MAU = [
         [(ANNUAL, dict(allocated_days=12, used_days=2))],
     ),
     (
-        "Một loại nghỉ, HẾT PHÉP — «còn lại 0» phải tô ĐỎ",
+        "Một loại nghỉ, HẾT PHÉP — \"còn lại 0\" phải tô ĐỎ",
         [(ANNUAL, dict(allocated_days=12, used_days=12))],
     ),
     (
@@ -67,9 +67,9 @@ CA_MAU = [
     ),
     (
         "Có ngày chuyển từ năm trước và một phần đã HẾT HẠN — "
-        "bật cột «Chuyển năm trước» + «Hết hạn» trong menu Cột để xem",
-        #  ⚠️ Bản đầu cho thêm một dòng «Nghỉ không lương» đã nghỉ 2 ngày ở đây,
-        #  và màn hình ra «Còn lại −2». Đó là một trạng thái KHÔNG THỂ CÓ THẬT:
+        "bật cột \"Chuyển năm trước\" + \"Hết hạn\" trong menu Cột để xem",
+        #  ⚠️ Bản đầu cho thêm một dòng "Nghỉ không lương" đã nghỉ 2 ngày ở đây,
+        #  và màn hình ra "Còn lại −2". Đó là một trạng thái KHÔNG THỂ CÓ THẬT:
         #  `balance_service.consume/reserve` thoát ngay ở đầu hàm khi loại nghỉ
         #  có `counts_balance = False`, nên `used_days` của loại không trừ quỹ
         #  vĩnh viễn bằng 0. Dữ liệu mẫu bịa ra cảnh sản phẩm không dựng nổi thì
@@ -78,11 +78,11 @@ CA_MAU = [
                        carried_expired_days=1, used_days=4))],
     ),
     (
-        "Bị TRỪ TAY 2 ngày — cột «Điều chỉnh tay» là cột duy nhất mang số âm",
+        "Bị TRỪ TAY 2 ngày — cột \"Điều chỉnh tay\" là cột duy nhất mang số âm",
         [(ANNUAL, dict(allocated_days=12, adjusted_days=-2, used_days=1))],
     ),
     (
-        "Đã kết sổ: 4 ngày đã mang sang năm sau — «Đã chuyển đi» giải thích "
+        "Đã kết sổ: 4 ngày đã mang sang năm sau — \"Đã chuyển đi\" giải thích "
         "vì sao số dư tụt mà không ai nghỉ thêm ngày nào. Hai loại nghỉ nên "
         "đây là hàng NHÓM thứ hai, để so cảnh thu gọn với cảnh đang bung",
         [

@@ -92,7 +92,7 @@ def _field_norms(f: dict) -> list[str]:
     """Các tiêu đề (đã chuẩn hoá) mà một field CHẤP NHẬN: tiêu đề chính + alias.
 
     Alias để khớp cả file xuất ra có nhãn cột hơi khác template (vd export ghi
-    «Ngày QĐ (có sẵn)» còn template ghi «Số ngày QĐ (có sẵn)»)."""
+    "Ngày QĐ (có sẵn)" còn template ghi "Số ngày QĐ (có sẵn)")."""
     return [_norm(f["header"]), *(_norm(a) for a in f.get("aliases") or [])]
 
 
@@ -118,8 +118,8 @@ def ensure_file_matches(sheet_label: str, fields: list[dict], field_col: dict) -
     """Kiểm tra file có đúng cho bảng đang nhập không — chặn sớm trước khi ghi.
 
     Luật: MỌI cột BẮT BUỘC của bảng phải có mặt ở dòng tiêu đề của file. Cột bắt
-    buộc mang nhãn riêng từng bảng («Tên pháp lý», «Tên kho», «Mã NV», «Mã
-    phiếu»…) nên thiếu chúng gần như chắc chắn là dùng nhầm file — trong khi vẫn
+    buộc mang nhãn riêng từng bảng ("Tên pháp lý", "Tên kho", "Mã NV", "Mã
+    phiếu"…) nên thiếu chúng gần như chắc chắn là dùng nhầm file — trong khi vẫn
     KHÔNG chặn oan file đúng bảng nhưng lược bớt cột tuỳ chọn.
 
     `field_col`: attr -> chỉ số cột (None nếu file không có cột đó).
@@ -130,7 +130,7 @@ def ensure_file_matches(sheet_label: str, fields: list[dict], field_col: dict) -
     if not missing:
         return
     raise ImportValidationError(
-        f"File không khớp bảng «{sheet_label}» — thiếu cột bắt buộc: "
+        f"File không khớp bảng \"{sheet_label}\" — thiếu cột bắt buộc: "
         f"{', '.join(missing)}. "
         "Kiểm tra lại phân hệ/bảng đã chọn, hoặc tải đúng file mẫu của bảng này."
     )
@@ -186,7 +186,7 @@ def resolve_ref_obj(db: Session, ref: str, value, self_model=None):
     """Tìm bản ghi tham chiếu theo MÃ hoặc TÊN (thử lần lượt các cột ở `_REF_MATCH`).
 
     Nhận cả chuỗi ghép "TÊN - MST" (bản xuất của hệ thống cũ ghi công ty kiểu
-    «CÔNG TY … - 0314562909»): không khớp trọn thì tách phần trước « - » thử theo
+    "CÔNG TY … - 0314562909"): không khớp trọn thì tách phần trước " - " thử theo
     tên và phần sau thử theo MST. `self_model` cho tham chiếu cùng bảng (parent)."""
     v = _s(value)
     if not v:
@@ -249,7 +249,7 @@ ADAPTERS: dict[int, dict] = {
         "model": Department,
         "sheet": "Phong ban",
         "dedupe": "code",
-        "template_action_col": False,   # không xóa được qua file nên không có cột «Hành động» (L-F)
+        "template_action_col": False,   # không xóa được qua file nên không có cột "Hành động" (L-F)
         "allow_delete": False,      # duoc-CR-628 (M6): đường CSV cũ đã 410 và trỏ về đây — không mở lối xóa hàng loạt
         "fields": [
             _f("Mã *", "code", required=True),
@@ -273,6 +273,9 @@ ADAPTERS: dict[int, dict] = {
         "template_action_col": False,
         "template_notes": EMPLOYEE_TEMPLATE_NOTES,
         "max_rows": 2000,
+        #  duoc-CR-693: lương / phụ cấp KHÔNG nhập qua Excel (chỉ ô hồ sơ + ký HĐLĐ) — gặp cột này thì bỏ qua + cảnh báo.
+        "ignored_headers": ("Lương", "Lương cơ bản", "Lương (đ/tháng)", "Phụ cấp", "Phụ cấp (đ/tháng)"),
+        "ignored_note": "Lương / phụ cấp không nhập được từ tệp Excel Nhân sự — bỏ qua các cột",
         "prepare": _employee_hook("prepare"),
         "apply_row": _employee_hook("apply_row"),
         "finalize": _employee_hook("finalize"),
@@ -341,7 +344,7 @@ ADAPTERS: dict[int, dict] = {
         "fields": [
             _f("Mã *", "code", required=True),
             _f("Tên *", "name", required=True),
-            # alias: khớp cả nhãn cột ngắn của file EXPORT («Ngày QĐ (có sẵn)»).
+            # alias: khớp cả nhãn cột ngắn của file EXPORT ("Ngày QĐ (có sẵn)").
             _f("Số ngày QĐ (có sẵn)", "std_days", aliases=["Ngày QĐ (có sẵn)"]),
             _f("Số ngày QĐ (không sẵn)", "std_days_unavail", aliases=["Ngày QĐ (không sẵn)"]),
             _f("Ngày áp dụng", "apply_date"),
@@ -432,6 +435,12 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
     #  Hook `prepare`: dựng ngữ cảnh cả lô (người nhập, quyền…), được phép bỏ bớt cột khỏi `field_col`
     #  (vd cột nhạy cảm khi thiếu quyền) và trả `ctx.pre_logs` = [(level, category, message)] để ghi dòng 0.
     ctx = adapter["prepare"](db, batch, field_col, apply) if adapter.get("prepare") else None
+    #  Cột adapter CỐ Ý không nhận (vd lương hồ sơ Nhân sự, duoc-CR-693): bỏ qua, nhưng báo để người nhập không
+    #  tưởng số đã vào. `ignored_headers` = tiêu đề (chữ thường, không dấu sao) + `ignored_note` = câu cảnh báo.
+    ignored = [h for h in adapter.get("ignored_headers", ()) if _norm(h) in header_col]
+    if ignored and ctx is not None and hasattr(ctx, "pre_logs"):
+        ctx.pre_logs.append((LogLevel.WARNING, "column_ignored",
+                             f"{adapter['ignored_note']}: " + ", ".join(ignored)))
 
     # Cột "Hành động" (tùy chọn) — không thuộc bộ trường, dò riêng theo tiêu đề.
     action_col = next((c for k, c in header_col.items() if k in _ACTION_HEADERS), None)
@@ -466,7 +475,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
         if obj:
             return obj.id
         log(row_no, LogLevel.REVIEW, "ref_not_found",
-            f"«{header}» = '{code}' không có trong danh mục — để trống", ref_key=str(code))
+            f"\"{header}\" = '{code}' không có trong danh mục — để trống", ref_key=str(code))
         return 0
 
     for lvl, cat, msg in (getattr(ctx, "pre_logs", None) or []):
@@ -626,7 +635,7 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
                 if clash:
                     # log(ERROR) đã cộng counts["error"] — không cộng tay lần nữa.
                     log(r, LogLevel.ERROR, "duplicate",
-                        f"Trùng «{nk}» = '{data[nk]}' đã tồn tại (mã '{getattr(clash, dedupe)}') — bỏ qua dòng",
+                        f"Trùng \"{nk}\" = '{data[nk]}' đã tồn tại (mã '{getattr(clash, dedupe)}') — bỏ qua dòng",
                         ref_key=code, target_code=code)
                     continue
             obj = model(created_by=batch.created_by, updated_by=batch.created_by, **data)

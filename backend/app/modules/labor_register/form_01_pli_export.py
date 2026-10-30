@@ -1,6 +1,6 @@
 """Tệp Excel BÁO CÁO TÌNH HÌNH SỬ DỤNG LAO ĐỘNG — Mẫu số 01/PLI (duoc-CR-687, khóa 20), mỗi pháp nhân một sheet.
 
-Bố cục: tên pháp nhân + quốc hiệu · tiêu đề · «Kính gửi: Sở Nội vụ» · mục 1 thông tin chung · bảng 27 cột
+Bố cục: tên pháp nhân + quốc hiệu · tiêu đề · "Kính gửi: Sở Nội vụ" · mục 1 thông tin chung · bảng 27 cột
 (tiêu đề 3 tầng gộp ô, dòng đánh số 1…27) · dòng Tổng · khối ký · chú thích (2). Chi tiết cột ở
 `form_01_pli_layout.py`; ô không có dữ liệu trong ERP để trống cho Nhân sự điền tay.
 """

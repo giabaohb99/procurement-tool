@@ -28,7 +28,7 @@ export function useEmployees(params: ListParams = {}, options: { enabled?: boole
     placeholderData: keepPreviousData,
     //  `enabled` cho phân hệ khác MƯỢN danh bạ này tắt lời gọi khi người dùng
     //  không có `employee.read` — cứ mount là gọi thì họ ăn toast 403 ngay lúc
-    //  mở màn (bẫy đã dính ở tab «Công nợ» của Nhà cung cấp).
+    //  mở màn (bẫy đã dính ở tab "Công nợ" của Nhà cung cấp).
     enabled: options.enabled ?? true,
   })
 }

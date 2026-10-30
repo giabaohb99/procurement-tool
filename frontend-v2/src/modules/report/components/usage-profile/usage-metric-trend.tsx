@@ -17,7 +17,7 @@ export function UsageMetricTrend({ points, unit }: Props) {
   const data = buildTrendData(points)
   const format = (v: number) => formatUsageValue(v, unitKind(unit))
   //  Trục dọc cố định đáy 0: tỷ lệ luôn 0-100%; còn lại tối thiểu tới 1. Không chặn thì toàn trung vị 0 làm recharts
-  //  tự chọn 0-4 → tỷ lệ hiện «0% · 200% · 400%» (thử tay 20/10).
+  //  tự chọn 0-4 → tỷ lệ hiện "0% · 200% · 400%" (thử tay 20/10).
   const domain: [number, number | ((max: number) => number)] = unit === 'ratio' ? [0, 1] : [0, (max: number) => Math.max(1, max)]
   return (
     <ResponsiveContainer width="100%" height={120}>

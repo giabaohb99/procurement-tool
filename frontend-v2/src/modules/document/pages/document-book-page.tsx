@@ -168,12 +168,12 @@ export function DocumentBookPage() {
       />
 
       {/*  Số đếm trên từng tab: người được chia MỘT quyển sổ đi mà tab mặc định
-           là «Văn bản đến» thì mở lên chỉ thấy trống trơn và kết luận là chia sổ
+           là "Văn bản đến" thì mở lên chỉ thấy trống trơn và kết luận là chia sổ
            không có tác dụng. Có số trên tab là thấy ngay sổ của mình nằm ở đâu. */}
       {/*  ⚠️ **Dải này TỪNG là `TabsList` nền xám, và tab thứ ba KHÔNG BẤM ĐƯỢC.**
            `TabsList` khai `w-fit` nên nó rộng theo nội dung và không cuộn: đo ở
-           393px, ba nhãn tiếng Việt cộng số đếm cần **486px**, mép phải tab «Sổ
-           văn bản nội bộ» nằm ở `right = 499`. Cả trang lẫn thẻ đều không cuộn
+           393px, ba nhãn tiếng Việt cộng số đếm cần **486px**, mép phải tab "Sổ
+           văn bản nội bộ" nằm ở `right = 499`. Cả trang lẫn thẻ đều không cuộn
            ngang (`documentElement.scrollWidth = 393`) nên tab đó bị cắt cụt và
            **không có đường nào chạm tới** — tức một phần ba màn hình biến mất
            trên điện thoại. `ScrollableTabsList` cho cuộn ngang kèm hai mũi tên ở
@@ -200,15 +200,15 @@ export function DocumentBookPage() {
         // nhau, dùng chung một khóa thì đổi cột ở tab này lại đổi luôn tab kia.
         storageKey={`document.books.${kind}`}
         //  `kind` ở màn này là TAB, không phải bộ lọc — xóa lọc mà nhảy về tab
-        //  «Văn bản đến» là mất chỗ đang đứng.
+        //  "Văn bản đến" là mất chỗ đang đứng.
         keepFilterParams={['kind']}
         items={items}
         columns={columns}
         searchFields={(row) => [row.code, row.name, row.company_name]}
         searchPlaceholder="Tìm theo mã sổ, tên sổ hoặc pháp nhân…"
         searchPlaceholderShort="Tìm mã sổ, tên sổ…"
-        //  ⚠️ Nhảy THẲNG vào tab «Văn bản trong sổ» (duoc-CR-474, 23/09/2026) — không
-        //  còn tab «Thông tin sổ» mặc định. Lý do bấm một dòng/một thẻ ở màn này
+        //  ⚠️ Nhảy THẲNG vào tab "Văn bản trong sổ" (duoc-CR-474, 23/09/2026) — không
+        //  còn tab "Thông tin sổ" mặc định. Lý do bấm một dòng/một thẻ ở màn này
         //  gần như luôn là để xem SỔ ĐANG CÓ GÌ, không phải để sửa cấu hình sổ;
         //  tab kia vẫn cách đúng một cú bấm. `detailPath` là MỘT hàm dùng chung
         //  cho cả dòng bảng (desktop) lẫn thẻ (khổ hẹp, xem `DocumentBookCard`)

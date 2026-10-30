@@ -117,7 +117,7 @@ describe('LeaveApprovalTimeline — đường DUYỆT THẲNG (chưa khai luồn
     expect(screen.getByText('Không ai ghi lý do.')).toBeInTheDocument()
   })
 
-  it('đơn ĐÃ DUYỆT không dựng dòng «Lý do:» nào', () => {
+  it('đơn ĐÃ DUYỆT không dựng dòng "Lý do:" nào', () => {
     render(
       <LeaveApprovalTimeline
         request={request({ status: LEAVE_STATUS.APPROVED, decision_note: 'nhớ bàn giao' })}
@@ -157,7 +157,7 @@ describe('LeaveApprovalTimeline — đường DUYỆT THẲNG (chưa khai luồn
 })
 
 describe('LeaveApprovalTimeline — đường CÓ LUỒNG nhiều bước', () => {
-  it('chuyền mốc «vì sao đơn hỏng» VÀO thẻ dấu vết, không dựng dải cảnh báo riêng', () => {
+  it('chuyền mốc "vì sao đơn hỏng" VÀO thẻ dấu vết, không dựng dải cảnh báo riêng', () => {
     render(
       <LeaveApprovalTimeline
         request={request({
@@ -189,7 +189,7 @@ describe('LeaveApprovalTimeline — đường CÓ LUỒNG nhiều bước', () =
           })}
         />,
       )
-      //  Chỉ còn mốc «lập đơn» — không có mốc kết cục nào của riêng tờ đơn.
+      //  Chỉ còn mốc "lập đơn" — không có mốc kết cục nào của riêng tờ đơn.
       expect(screen.queryByText(/từ chối|trả .* về/i)).not.toBeInTheDocument()
       expect(screen.getByText('Lập đơn')).toBeInTheDocument()
       unmount()

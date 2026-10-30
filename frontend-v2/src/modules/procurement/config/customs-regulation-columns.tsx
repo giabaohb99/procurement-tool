@@ -1,6 +1,6 @@
-// Cột bảng hóa chất theo văn bản — dùng chung cho mục «Pháp lý» (bảng duyệt cả danh mục) và thẻ
-// cảnh báo theo từ khóa. Tách từ `customs-legal-tab.tsx` cũ khi mục «Pháp lý & thuế» chia đôi
-// thành «Pháp lý» và «Thuế» (29/09/2026).
+// Cột bảng hóa chất theo văn bản — dùng chung cho mục "Pháp lý" (bảng duyệt cả danh mục) và thẻ
+// cảnh báo theo từ khóa. Tách từ `customs-legal-tab.tsx` cũ khi mục "Pháp lý & thuế" chia đôi
+// thành "Pháp lý" và "Thuế" (29/09/2026).
 import type { DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -13,7 +13,7 @@ import { formatBannedLabel, formatThresholdKg } from '../utils/customs'
 /**
  * bao-CR-477 — tông huy hiệu theo MỨC NGHIÊM TRỌNG (xem `regulationSeverity`): cấm và tiền chất
  * vũ khí hóa học = đỏ · có ngưỡng khối lượng = cam · phải công bố theo lô (thủ tục, không phải
- * giới hạn) = xanh · chỉ có tên trong danh mục = xám. Trước đây mọi thứ ngoài «cấm» và «ngưỡng»
+ * giới hạn) = xanh · chỉ có tên trong danh mục = xám. Trước đây mọi thứ ngoài "cấm" và "ngưỡng"
  * đều xanh, nên tiền chất vũ khí hóa học trông nhẹ ngang một thủ tục công bố.
  */
 /** Mã danh sách — khớp `RegulationList` ở `backend/app/modules/customs/constants.py`. */
@@ -34,7 +34,7 @@ function regulationTone(listCode: number): string {
 const LIST_ND24_PL1 = 1
 
 /**
- * Câu thay cho ô «Ngưỡng / Mức cấm» khi dòng KHÔNG có ngưỡng kg lẫn ngưỡng hỗn hợp — `null` = danh
+ * Câu thay cho ô "Ngưỡng / Mức cấm" khi dòng KHÔNG có ngưỡng kg lẫn ngưỡng hỗn hợp — `null` = danh
  * sách đó vốn không có cột này. PL I của NĐ 24 không đặt ngưỡng nào; dòng cha PL IV (Amoni nitrat,
  * Kali nitrat) có ngưỡng ở từng dòng con.
  */
@@ -45,8 +45,8 @@ export function describeMissingLimit(listCode: number): string | null {
 }
 
 /**
- * Ngưỡng hàm lượng hỗn hợp (PL II / III) → «> 5% trong hỗn hợp». Không viết tắt «KL» (đọc lướt không
- * hiểu, «Hỗn hợp > 5% KL» còn bị đọc thành «hàng này là hỗn hợp») — đại ca chốt 06/10/2026.
+ * Ngưỡng hàm lượng hỗn hợp (PL II / III) → "> 5% trong hỗn hợp". Không viết tắt "KL" (đọc lướt không
+ * hiểu, "Hỗn hợp > 5% KL" còn bị đọc thành "hàng này là hỗn hợp") — đại ca chốt 06/10/2026.
  */
 export function formatMixtureLimit(pct: number | null | undefined): string {
   if (pct === null || pct === undefined || !Number.isFinite(pct) || pct < 0) return ''
@@ -54,16 +54,16 @@ export function formatMixtureLimit(pct: number | null | undefined): string {
 }
 
 //  07/10/2026 — đại ca chốt: KHÔNG khóa cột nào (bỏ hết `hideable: false`), mọi cột đều ẩn / hiện
-//  được ở menu «Cột», kể cả «Ngưỡng / Mức cấm» và «Lưu ý».
+//  được ở menu "Cột", kể cả "Ngưỡng / Mức cấm" và "Lưu ý".
 export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[] = [
   //  duoc-CR-598 (06/10/2026) — đúng các cột của phụ lục NĐ 24: STT · Tên khoa học · Tên chất ·
-  //  Mã số CAS · Công thức hóa học. Trước đây tên tiếng Việt chỉ là dòng phụ dưới «Tên».
+  //  Mã số CAS · Công thức hóa học. Trước đây tên tiếng Việt chỉ là dòng phụ dưới "Tên".
   //  07/10/2026 — STT đứng ĐẦU bảng (đại ca chốt), trước cả cột Phụ lục.
   {
     key: 'seq_no',
     header: 'STT',
     width: 64,
-    //  Căn GIỮA cả tiêu đề lẫn số: căn phải thì số lệch hẳn khỏi chữ «STT» (đại ca chụp 07/10/2026).
+    //  Căn GIỮA cả tiêu đề lẫn số: căn phải thì số lệch hẳn khỏi chữ "STT" (đại ca chụp 07/10/2026).
     align: 'center',
     cell: (r) => <span className="tabular-nums">{r.seq_no}</span>,
   },
@@ -89,12 +89,12 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
   { key: 'cas_no', header: 'Mã số CAS', width: 120, cell: (r) => r.cas_no },
   { key: 'formula', header: 'Công thức hóa học', width: 140, wrap: true, cell: (r) => r.formula },
   //  bao-CR-477 — con số quan trọng nhất của dòng đứng thành CỘT RIÊNG, chữ to đậm; trước
-  //  đây nó nằm lẫn giữa một câu chữ thường ở cột «Lưu ý», đọc lướt là trôi mất.
+  //  đây nó nằm lẫn giữa một câu chữ thường ở cột "Lưu ý", đọc lướt là trôi mất.
   {
     key: 'limit',
     header: 'Ngưỡng / Mức cấm',
-    //  duoc-CR-598 (07/10/2026): 150px cắt cụt «Không quy định ngưỡng» / «> 5% trong hỗn hợp» thành
-    //  «Không quy định ngư…» — nới rộng và cho xuống dòng thay vì để dấu ba chấm nuốt mất ý.
+    //  duoc-CR-598 (07/10/2026): 150px cắt cụt "Không quy định ngưỡng" / "> 5% trong hỗn hợp" thành
+    //  "Không quy định ngư…" — nới rộng và cho xuống dòng thay vì để dấu ba chấm nuốt mất ý.
     width: 180,
     wrap: true,
     cell: (r) => {
@@ -143,9 +143,9 @@ export const CUSTOMS_REGULATION_COLUMNS: DataTableColumn<CustomsRegulationHit>[]
 ]
 
 /**
- * Cột «Thuốc BVTV chứa» — chỉ ở bảng duyệt mục «Pháp lý» (thẻ cảnh báo theo từ khóa không có
+ * Cột "Thuốc BVTV chứa" — chỉ ở bảng duyệt mục "Pháp lý" (thẻ cảnh báo theo từ khóa không có
  * số này). Chỉ dòng TT 75 có số; `null` ở dòng TT 75 = danh mục thuốc CHƯA nạp, phải nói ra thay
- * vì hiện «0» (đọc thành «đã đối chiếu, không thuốc nào»). Tên cấm không rút ra được khóa so
+ * vì hiện "0" (đọc thành "đã đối chiếu, không thuốc nào"). Tên cấm không rút ra được khóa so
  * khớp nào (chữ tiếng Việt có dấu…) cũng phải nói ra, cùng lý do. Bấm số → danh sách thuốc đó.
  */
 export function buildRegulationPesticideColumn(

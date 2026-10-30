@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { isSurveyDeletable, isSurveyReturnable } from './survey-detail'
 
-// bao-CR-554 — «Trả về» phiếu khảo sát mở cả khi ĐÃ DUYỆT (hủy duyệt để sửa lại); Duyệt / Từ chối
+// bao-CR-554 — "Trả về" phiếu khảo sát mở cả khi ĐÃ DUYỆT (hủy duyệt để sửa lại); Duyệt / Từ chối
 // vẫn chỉ khi chờ duyệt. Backend `POST /{id}/reject` nhận đúng hai trạng thái này.
 describe('isSurveyReturnable', () => {
   it('allows returning a submitted or an already approved survey', () => {

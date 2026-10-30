@@ -10,7 +10,7 @@ import type { OAuthClient } from '../types/ai-skill'
 import { OAuthClientsPage } from './oauth-clients-page'
 
 /**
- * Màn «Ứng dụng AI đã kết nối» (bao-CR-635). Chỗ dễ lủng: tin tên tự khai (phải tô cảnh báo theo `trusted` của máy chủ,
+ * Màn "Ứng dụng AI đã kết nối" (bao-CR-635). Chỗ dễ lủng: tin tên tự khai (phải tô cảnh báo theo `trusted` của máy chủ,
  * không tự đoán); xóa mà không nói rõ số kết nối sẽ bị cắt; người thiếu quyền quản lý bot AI mở ra ăn 403 thay vì câu
  * giải thích; người chỉ đọc vẫn thấy nút Xóa.
  */
@@ -130,6 +130,62 @@ describe('OAuthClientsPage', () => {
   it('tells where apps come from when the list is empty', async () => {
     mockServer([])
     renderPage()
-    expect(await screen.findByText(/Ứng dụng xuất hiện ở đây khi có người bấm «Cho phép»/)).toBeInTheDocument()
+    expect(await screen.findByText(/Ứng dụng xuất hiện ở đây khi có người bấm "Cho phép"/)).toBeInTheDocument()
+  })
+})
+
+describe('OAuthClientsPage filters (bao-CR-696)', () => {
+  function renderAt(url: string) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[url]}>
+          <OAuthClientsPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+  }
+
+  const apps = [
+    client(1, { client_name: 'ChatGPT', live_grants: 2 }),
+    client(2, { client_name: 'Trình kết nối lạ', redirect_hosts: ['evil.example'], trusted: false }),
+  ]
+
+  it('filters on screen by status from the URL, keeps the totals of the whole list, and asks the server only once', async () => {
+    mockServer(apps)
+    renderAt('/ai-skill/oauth-clients?status=untrusted')
+    expect(await screen.findByText('Trình kết nối lạ')).toBeInTheDocument()
+    expect(screen.queryByText('ChatGPT')).not.toBeInTheDocument()
+    //  Dòng tóm tắt vẫn nói cả danh sách — lọc không làm "mất" ứng dụng trong con số.
+    expect(screen.getByText(/2 ứng dụng · 2 kết nối đang sống/)).toBeInTheDocument()
+    expect(apiGet.mock.calls.filter(([u]) => String(u).endsWith('/oauth-clients'))).toHaveLength(1)
+  })
+
+  it('names the people still connected, and says how many more beyond the five the server lists', async () => {
+    mockServer([
+      client(1, { client_name: 'ChatGPT', live_grants: 9, live_users: 7, live_user_names: ['An (NSU001)', 'Bình (NSU002)'] }),
+      client(2, { client_name: 'Cũ', live_grants: 0, live_users: 0, live_user_names: [] }),
+      client(3, { client_name: 'Máy chủ cũ', live_grants: 1 }),
+    ])
+    renderAt('/ai-skill/oauth-clients')
+    expect(await screen.findByText(/An \(NSU001\), Bình \(NSU002\)/)).toBeInTheDocument()
+    expect(screen.getByText(/và 5 người khác/)).toBeInTheDocument()
+    //  Không có ai / máy chủ cũ thiếu trường: gạch ngang thật, không phải "0" hay "undefined".
+    const dashRows = ['Cũ', 'Máy chủ cũ'].map((name) => screen.getByText(name).closest('tr'))
+    for (const row of dashRows) expect(row?.textContent).toContain('—')
+    expect(document.body.textContent).not.toMatch(/undefined|NaN/)
+  })
+
+  it('searches by redirect host without accents mattering, and says the table is empty because of the filter', async () => {
+    const user = userEvent.setup()
+    mockServer(apps)
+    renderAt('/ai-skill/oauth-clients')
+    await screen.findByText('ChatGPT')
+    await user.type(screen.getByRole('textbox', { name: 'Tìm ứng dụng' }), 'ket noi')
+    await waitFor(() => expect(screen.queryByText('ChatGPT')).not.toBeInTheDocument())
+    expect(screen.getByText('Trình kết nối lạ')).toBeInTheDocument()
+    await user.clear(screen.getByRole('textbox', { name: 'Tìm ứng dụng' }))
+    await user.type(screen.getByRole('textbox', { name: 'Tìm ứng dụng' }), 'khong co ung dung nay')
+    expect(await screen.findByText('Không có ứng dụng nào khớp bộ lọc.')).toBeInTheDocument()
   })
 })

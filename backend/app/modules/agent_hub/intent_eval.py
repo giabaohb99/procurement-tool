@@ -5,7 +5,7 @@ Ba phép đo:
      luật mà tụt dưới `min_accuracy` là chặn (bài kiểm chạy khi có AI_EVAL=1 và khóa AI).
   2. Gắn nhãn tay: xuất ~200 câu thật trên DEV (nhãn máy + đối tượng + nguyên văn lấy qua `message_id` — tệp xuất CHỈ để
      trên máy dev, không commit), người gắn điền cột `true_intent` / `true_sub`, rồi chấm → độ đúng nhãn lớn, nhãn con.
-  3. Tỷ lệ «phải hỏi lại» trước / sau một mốc (vd ngày bật 13.5), theo kênh.
+  3. Tỷ lệ "phải hỏi lại" trước / sau một mốc (vd ngày bật 13.5), theo kênh.
 """
 from __future__ import annotations
 

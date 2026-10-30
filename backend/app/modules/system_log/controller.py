@@ -5,7 +5,7 @@ chuyện phân quyền, và nó là chỗ dễ làm sai nhất của cả đợt
 
 **HAI khóa, không phải một** (`doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` §7):
 
-* `audit` — mở được màn: danh sách, biểu đồ, câu tiếng Việt «ai làm gì».
+* `audit` — mở được màn: danh sách, biểu đồ, câu tiếng Việt "ai làm gì".
 * `change_log` — xem thêm **giá trị trước/sau, thân yêu cầu, thân phản hồi,
   chi tiết lỗi**. Tách ra vì giá trị cũ có thể chứa **tên nhà cung cấp** — đúng
   thứ cả cơ chế phương án dựng ra để giấu với người yêu cầu. Ai tra được nhật ký
@@ -62,7 +62,7 @@ def _guard(db: Session, user) -> None:
 
 
 def _parse_methods_or_422(method: str | None) -> tuple[str, ...]:
-    """Ô «Phương thức» sai thì báo 422, KHÔNG lờ đi — lờ đi là trả toàn hệ (bao-CR-582)."""
+    """Ô "Phương thức" sai thì báo 422, KHÔNG lờ đi — lờ đi là trả toàn hệ (bao-CR-582)."""
     try:
         return service.parse_methods(method)
     except ValueError as exc:
@@ -135,7 +135,7 @@ def read_summary(
 
 
 #  ⚠️ Đặt SAU `/summary`. FastAPI khớp route theo thứ tự khai: để đường có tham số
-#  lên trước thì `/api/system-logs/summary` rơi vào đây và «summary» bị đọc thành
+#  lên trước thì `/api/system-logs/summary` rơi vào đây và "summary" bị đọc thành
 #  một mã request — 404, không ai hiểu vì sao.
 @router.get("/{request_id}")
 def read_detail(

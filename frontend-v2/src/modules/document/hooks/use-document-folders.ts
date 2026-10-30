@@ -60,7 +60,7 @@ export function useDocFolderTree(includeArchived = false, enabled = true) {
  */
 export function useDocFolderSearch(q: string, enabled = true) {
   //  Hoãn 250ms (26/09/2026): trước đây mỗi ký tự là một request, mà mỗi
-  //  request backend tính lại quyền trên TOÀN BỘ cây — gõ «hợp đồng» = 8 lượt.
+  //  request backend tính lại quyền trên TOÀN BỘ cây — gõ "hợp đồng" = 8 lượt.
   const keyword = useDebouncedValue(q.trim(), 250)
   return useQuery({
     queryKey: queryKeys.document.folderSearch(keyword),

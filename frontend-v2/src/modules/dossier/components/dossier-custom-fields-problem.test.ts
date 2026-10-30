@@ -4,7 +4,7 @@ import { firstProblem, problemOf } from './dossier-custom-fields-problem'
 import type { DossierCustomRow } from '../types/dossier-custom-row'
 
 /**
- * Luật CHẶN LƯU của khối «Trường riêng của hồ sơ này».
+ * Luật CHẶN LƯU của khối "Trường riêng của hồ sơ này".
  *
  * ⚠️ Hai ca dưới đây backend đều chặn rồi — nhưng chặn ở đó thì người dùng nhận
  * một **toast** rời khỏi đúng cái hàng đang sai, sau khi đã bấm Lưu và chờ.
@@ -12,7 +12,7 @@ import type { DossierCustomRow } from '../types/dossier-custom-row'
  *
  * ⚠️ Và vì khối này nằm trong biểu mẫu chung, chặn phải đi kèm MỘT CÂU hiện ra:
  * react-hook-form giữ form lại trong im lặng tuyệt đối, nên thiếu câu nhắc thì
- * bấm «Tạo hồ sơ» là *không có gì xảy ra* (bẫy thứ nhất của duoc-CR-317).
+ * bấm "Tạo hồ sơ" là *không có gì xảy ra* (bẫy thứ nhất của duoc-CR-317).
  */
 
 function row(over: Partial<DossierCustomRow> = {}): DossierCustomRow {
@@ -26,7 +26,7 @@ describe('problemOf', () => {
   })
 
   it('hàng CHƯA ĐẶT TÊN thì im lặng, không phải lỗi', () => {
-    //  Người dùng vừa bấm «Thêm trường» và chưa kịp gõ. `fromCustomRows` bỏ hẳn
+    //  Người dùng vừa bấm "Thêm trường" và chưa kịp gõ. `fromCustomRows` bỏ hẳn
     //  hàng đó lúc gửi nên nó vô hại — tô đỏ ngay là quở trách một thao tác
     //  đang dở.
     const blank = row({ key: '', label: '' })
@@ -42,7 +42,7 @@ describe('problemOf', () => {
   })
 
   it('ô CHỌN chưa khai mục nào thì chặn', () => {
-    //  Backend ném «Ô chọn «X» phải khai ít nhất một mục». Bắt trước vì ô giá
+    //  Backend ném "Ô chọn "X" phải khai ít nhất một mục". Bắt trước vì ô giá
     //  trị lúc đó không bấm được gì — người dùng không tự hiểu là thiếu chỗ nào.
     const r = row({ type: 'select', options: [] })
     expect(problemOf(r, 0, [r])).toContain('chưa khai mục nào')

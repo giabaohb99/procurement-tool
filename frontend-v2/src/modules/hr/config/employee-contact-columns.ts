@@ -2,9 +2,9 @@ import type { PeopleColumn } from '../components/employee-people-editor'
 import type { EmployeeContact } from '../types/employee'
 
 /**
- * Cột của bảng «Người báo tin trong trường hợp cần thiết».
+ * Cột của bảng "Người báo tin trong trường hợp cần thiết".
  *
- * Dùng chung cho HAI nơi — tab «Liên hệ & Ngân hàng» của hồ sơ nhân sự và thẻ
+ * Dùng chung cho HAI nơi — tab "Liên hệ & Ngân hàng" của hồ sơ nhân sự và thẻ
  * tự sửa ở Trang cá nhân (bao-CR-508). Tách ra đây để hai bảng không trôi khỏi
  * nhau: thêm một cột ở một nơi mà quên nơi kia thì người dùng tự khai xong,
  * phòng Nhân sự mở ra lại thấy thiếu ô.

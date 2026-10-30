@@ -69,7 +69,7 @@ interface TaskDetailSheetProps {
  * `entity = "work_task"` — xem `api/task-support-api.ts`. Đính kèm là một hàng
  * thuộc tính như mọi hàng khác; bình luận nằm trong mảng nền xám cuối panel.
  *
- * ⚠️ Panel KHÔNG có khối «Lịch sử thao tác» (bỏ 03/09/2026): nhật ký của việc
+ * ⚠️ Panel KHÔNG có khối "Lịch sử thao tác" (bỏ 03/09/2026): nhật ký của việc
  * nay đọc ở tab **Hoạt động** cấp dự án (D-09), nơi gộp đủ mọi việc và mỗi dòng
  * bấm được sang đúng việc. Đừng gắn `AuditTimeline` lại vào đây.
  */
@@ -163,7 +163,7 @@ export function TaskDetailSheet({
                     //  Hỏi trước: giao diện không có chỗ khôi phục việc đã xóa (duoc-CR-627).
                     const ok = await confirm({
                       title: 'Xóa công việc',
-                      message: `Xóa công việc «${task.title}»? Việc con của nó cũng bị xóa theo.`,
+                      message: `Xóa công việc "${task.title}"? Việc con của nó cũng bị xóa theo.`,
                       confirmLabel: 'Xóa',
                     })
                     if (!ok) return
@@ -248,8 +248,8 @@ export function TaskDetailSheet({
                   </TaskDetailRow>
                 ))}
 
-                {/*  Hộp đánh giá khi việc đã xong: «Đạt» / «Phải làm lại» (mở lại việc). Việc đang được làm lại
-                     vẫn giữ nhãn «Phải làm lại» cho tới khi xong lần nữa — chỉ hiện nhãn, không có nút. */}
+                {/*  Hộp đánh giá khi việc đã xong: "Đạt" / "Phải làm lại" (mở lại việc). Việc đang được làm lại
+                     vẫn giữ nhãn "Phải làm lại" cho tới khi xong lần nữa — chỉ hiện nhãn, không có nút. */}
                 {(isDone || task.outcome === WORK_TASK_OUTCOME_CODE.REWORK) && (
                   <div className="py-1.5">
                     <TaskOutcomeBox task={task} listId={listId} canEdit={canEdit} done={isDone} />
@@ -285,7 +285,7 @@ export function TaskDetailSheet({
                  TRAO ĐỔI, không phải thuộc tính sửa được, nên đứng lẫn trong
                  dải hàng ở trên là đọc nhầm.
 
-                 ⚠️ KHÔNG còn khối «Lịch sử thao tác» ở đây (bỏ 03/09/2026 theo
+                 ⚠️ KHÔNG còn khối "Lịch sử thao tác" ở đây (bỏ 03/09/2026 theo
                  yêu cầu khách). Nhật ký của việc nay đọc ở tab **Hoạt động** cấp
                  dự án (D-09) — nó gộp đủ mọi việc trong dự án và mỗi dòng bấm
                  được sang đúng việc, nên để thêm một bản rút gọn ở đây là hai

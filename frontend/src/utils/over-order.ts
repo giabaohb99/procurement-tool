@@ -31,7 +31,7 @@ export const EMPTY_PROGRESS: OrderProgress = { ordered: {}, pending: {}, orders:
 
 const fmtQty = (n: number) => Number(n || 0).toLocaleString('vi-VN')
 
-/** «đã đặt 80 (PO00358 Đã duyệt, đã nhận 10) · đang chờ duyệt 100 (PO00371 Nháp)» — phần nào bằng 0 thì bỏ. */
+/** "đã đặt 80 (PO00358 Đã duyệt, đã nhận 10) · đang chờ duyệt 100 (PO00371 Nháp)" — phần nào bằng 0 thì bỏ. */
 export function describeOrdered(lp: Pick<LineProgress, 'ordered' | 'pending' | 'orders'>): string {
   const live = (lp.orders || []).filter((o) => !o.pending)
   const waiting = (lp.orders || []).filter((o) => o.pending)

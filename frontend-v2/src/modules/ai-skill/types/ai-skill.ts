@@ -175,7 +175,7 @@ export interface AdminMcpKey {
   claimed_at: string | null
   batch_id: string
   user_id: number
-  /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` «Kết nối OAuth»); máy chủ cũ chưa có thì coi như dán tay. */
+  /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` "Kết nối OAuth"); máy chủ cũ chưa có thì coi như dán tay. */
   kind?: number
   kind_label?: string
   /** ai-CR-221: bật / tắt (tắt ≠ thu hồi, bật lại là chạy). Máy chủ cũ chưa có thì coi như bật. */
@@ -187,6 +187,32 @@ export interface AdminMcpKey {
   department_id: number
   department: string
   issued_by_label: string
+  /**
+   * bao-CR-696 (màn Kết nối, hợp đồng Agent 4 chốt 30/10). Người vẫn là `owner_label` ("Họ tên (MÃ)"), phòng vẫn là
+   * `department`, trạng thái vẫn `state` + `state_label`. Chỉ đọc qua `toConnectionRow` (`utils/ai-row-mappers.ts`).
+   * Máy chủ trước bao-CR-696 chưa trả thì hàm map lùi về `kind` / `name`.
+   */
+  /** Mã nhân viên, `""` khi không có. */
+  employee_code?: string | null
+  /** Email, `""` khi không có. */
+  email?: string | null
+  /** `"key"` | `"oauth"`. */
+  connection_type?: string | null
+  /** Tên ứng dụng; `null` với khóa dán tay. */
+  app_name?: string | null
+  /** Nơi quay về ĐẦU TIÊN của ứng dụng OAuth; `null` với khóa tay hoặc khi ứng dụng đã bị xóa. */
+  app_redirect_uri?: string | null
+}
+
+/** Tham số bảng màn Kết nối. `q` (bao-CR-696): họ tên / mã NV / email, không dấu, không phân biệt hoa thường. */
+//  `type` chứ không `interface`: khóa truy vấn nhận `Record<string, unknown>`, interface không gán được vào đó.
+export type KeyAdminKeysParams = {
+  department_id?: number
+  state?: number
+  user_id?: number
+  q?: string
+  page: number
+  size: number
 }
 
 export interface KeyIssueInput {
@@ -234,6 +260,13 @@ export interface McpCall {
   result_chars?: number
   ip: string
   user_label: string
+  /**
+   * bao-CR-696 (cột Chứng từ, hợp đồng Agent 4 chốt 30/10): chỉ lượt GHI thật (`confirm_draft`, công cụ ghi trực tiếp)
+   * mới có; `draft_*` / `propose_*` / lượt đọc là `null`. `doc_url` khi có luôn là đường nội bộ bắt đầu `/`. Chỉ đọc
+   * qua `readCallDocument` (`utils/ai-row-mappers.ts`); máy chủ cũ thiếu trường thì coi như null.
+   */
+  doc_code?: string | null
+  doc_url?: string | null
 }
 
 export interface McpCallPage extends PagedItems<McpCall> {
@@ -249,12 +282,14 @@ export interface McpCallFilters {
   status?: number
   /** `tools` = chỉ lượt gọi công cụ (`tools/call`), ẩn initialize / tools/list / notifications/* (ai-CR-219). */
   kind?: 'tools'
+  /** bao-CR-696: tìm nhanh cả người (họ tên / mã / email) lẫn tên công cụ, khớp một phần. `tool` vẫn là khớp ĐÚNG tên. */
+  q?: string
   page: number
   size: number
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// K6 (doc/agent-hub/06 §6.1–6.2, ai-CR-213): màn «AI của tôi» ở Trang cá nhân + Tổng quan.
+// K6 (doc/agent-hub/06 §6.1–6.2, ai-CR-213): màn "AI của tôi" ở Trang cá nhân + Tổng quan.
 // ---------------------------------------------------------------------------------------------------------------------
 
 /** Khóa kết nối AI CỦA CHÍNH MÌNH (`Key` §6.1). `key` (khóa thô) chỉ có trong kết quả tạo / nhận, đúng một lần. */
@@ -273,7 +308,7 @@ export interface MyMcpKey {
   claimed_at: string | null
   batch_id: string
   user_id: number
-  /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` «Kết nối OAuth»); máy chủ cũ chưa có thì coi như dán tay. */
+  /** ai-CR-218: 1 dán tay · 2 kết nối OAuth (`kind_label` "Kết nối OAuth"); máy chủ cũ chưa có thì coi như dán tay. */
   kind?: number
   kind_label?: string
   /** ai-CR-221: bật / tắt (tắt ≠ thu hồi, bật lại là chạy). Máy chủ cũ chưa có thì coi như bật. */
@@ -428,7 +463,7 @@ export type McpSettingsPatch = {
 
 /**
  * Ứng dụng AI tự đăng ký OAuth (ai-CR-225, màn bao-CR-635): `GET /api/agent-hub/oauth-clients`. `client_name` là do ứng
- * dụng TỰ KHAI — không tin; `redirect_hosts` là nơi quay về đã rút về hostname (máy cục bộ ghi «máy tính của bạn»),
+ * dụng TỰ KHAI — không tin; `redirect_hosts` là nơi quay về đã rút về hostname (máy cục bộ ghi "máy tính của bạn"),
  * `trusted` = mọi host thuộc ứng dụng AI quen (chatgpt.com, openai.com, claude.ai, anthropic.com, claude.com) hoặc máy cục bộ.
  */
 export interface OAuthClient {
@@ -443,6 +478,10 @@ export interface OAuthClient {
   last_used_at: string | null
   /** Kết nối (mã truy cập) còn sống của ứng dụng — xóa ứng dụng là cắt hết. */
   live_grants: number
+  /** bao-CR-696: số NGƯỜI còn kết nối sống (`live_grants` là số kết nối). Máy chủ cũ chưa có. */
+  live_users?: number
+  /** bao-CR-696: tối đa 5 nhãn "Họ tên (MÃ)" của người còn kết nối sống. */
+  live_user_names?: string[]
 }
 
 export interface OAuthClientList {

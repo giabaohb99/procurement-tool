@@ -26,7 +26,7 @@ interface FolderDeleteDialogProps {
  * Xóa được cả khi thư mục CÒN văn bản (đại ca chốt 25/09/2026). Văn bản không
  * bị xóa theo: văn bản còn nằm ở thư mục khác chỉ bị gỡ khỏi thư mục này, còn
  * văn bản CHỈ nằm ở đây sẽ mồ côi — nên hộp BẮT chọn nơi lưu mới cho chúng
- * (gợi ý sẵn thư mục cha) trước khi cho bấm «Xóa». Số đếm là TOÀN HỆ, gồm cả
+ * (gợi ý sẵn thư mục cha) trước khi cho bấm "Xóa". Số đếm là TOÀN HỆ, gồm cả
  * văn bản người xóa không xem được.
  */
 export function FolderDeleteDialog({ folder, onClose }: FolderDeleteDialogProps) {
@@ -70,7 +70,7 @@ export function FolderDeleteDialog({ folder, onClose }: FolderDeleteDialogProps)
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Xóa thư mục</DialogTitle>
-          {/*  Tên thư mục đứng riêng một dòng kèm icon — không kẹp «» vào tiêu đề
+          {/*  Tên thư mục đứng riêng một dòng kèm icon — không kẹp "" vào tiêu đề
                (đại ca chê 25/09/2026, cùng khuôn hộp Chia sẻ). */}
           <DialogDescription className="flex min-w-0 items-center gap-1.5 pr-6 font-medium text-foreground">
             <Folder className="size-4 shrink-0 text-muted-foreground" />

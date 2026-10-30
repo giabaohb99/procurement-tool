@@ -52,8 +52,8 @@ export function SeniorityTierCard({ leaveTypeId }: SeniorityTierCardProps) {
         <CardTitle className="text-base">Bậc phép theo thâm niên</CardTitle>
         <p className="text-sm text-muted-foreground">
           Số ngày <strong>cộng thêm</strong> vào hạn mức năm. Hệ thống lấy bậc{' '}
-          <strong>cao nhất khớp được</strong>, không cộng dồn các bậc — khai «từ 5 năm: +1»
-          và «từ 10 năm: +2» thì người 10 năm được <strong>+2</strong>, không phải +3.
+          <strong>cao nhất khớp được</strong>, không cộng dồn các bậc — khai <strong>từ 5 năm: +1</strong>{' '}
+          và <strong>từ 10 năm: +2</strong> thì người 10 năm được <strong>+2</strong>, không phải +3.
         </p>
       </CardHeader>
 
@@ -132,12 +132,12 @@ export function SeniorityTierCard({ leaveTypeId }: SeniorityTierCardProps) {
             </div>
 
             {/*  ⚠️ Chú thích ĐỨNG RIÊNG một dòng dưới cả cụm, KHÔNG nhét dưới ô
-                «Đến dưới năm thứ». Lưới này căn ĐÁY (`items-end`) để nút bấm
+                "Đến dưới năm thứ". Lưới này căn ĐÁY (`items-end`) để nút bấm
                 thẳng hàng với ô nhập, nên ô nào có thêm một dòng chữ bên dưới là
                 ô nhập của nó bị đẩy lên cao hơn hai ô kia — ba ô nhập nằm ba mức
-                khác nhau, đúng lỗi thấy ở tab «Bậc thâm niên» 07/09/2026. */}
+                khác nhau, đúng lỗi thấy ở tab "Bậc thâm niên" 07/09/2026. */}
             <p className="mt-2 text-xs text-muted-foreground">
-              «Đến dưới năm thứ» để <strong>0</strong> nghĩa là bậc cuối, không có trần trên.
+              <strong>Đến dưới năm thứ</strong> để <strong>0</strong> nghĩa là bậc cuối, không có trần trên.
             </p>
           </div>
         )}

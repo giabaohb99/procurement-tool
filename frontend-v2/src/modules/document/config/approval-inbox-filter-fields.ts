@@ -1,7 +1,7 @@
 import type { FilterFieldDefinition } from '@/shared/conditional-filter'
 
 /**
- * Trường của BỘ LỌC NÂNG CAO trên hộp duyệt văn bản («Chờ tôi duyệt»).
+ * Trường của BỘ LỌC NÂNG CAO trên hộp duyệt văn bản ("Chờ tôi duyệt").
  *
  * ⚠️ Lọc chạy NGAY TẠI TRÌNH DUYỆT (`applyClientFilter`), không gửi query param:
  * bảng này gộp hai nguồn (hộp việc đang chờ + dấu vết đã bấm) rồi mới dựng dòng,

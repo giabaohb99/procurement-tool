@@ -87,10 +87,10 @@ export const hrModule: ErpModule = {
       group: 'Danh mục',
     },
     {
-      //  Danh mục CHỨC VỤ (duoc-CR-320) — nguồn của ô chọn «Vị trí / Chức vụ».
+      //  Danh mục CHỨC VỤ (duoc-CR-320) — nguồn của ô chọn "Vị trí / Chức vụ".
       //  `manage: true`: mọi vai trò đều ĐỌC được danh mục (ô chọn cần thế),
-      //  nhưng vào màn quản lý thì chỉ người SỬA được — cùng luật với «Danh mục
-      //  phòng họp». Không có nó thì cả công ty thấy một mục menu mở ra chỉ để
+      //  nhưng vào màn quản lý thì chỉ người SỬA được — cùng luật với "Danh mục
+      //  phòng họp". Không có nó thì cả công ty thấy một mục menu mở ra chỉ để
       //  nhìn, mọi nút đều xám.
       label: 'Chức vụ',
       path: appRoutes.hr.jobPositions,
@@ -124,7 +124,7 @@ export const hrModule: ErpModule = {
       icon: CalendarOff,
       entities: ['leave_request', 'leave_balance', 'leave_type', 'holiday'],
       //  ⚠️ Phải khai `group`, kẻo mục rơi vào rổ KHÔNG NHÓM — rổ đó đứng trên
-      //  cùng, không tiêu đề, và vốn chỉ dành cho «Tổng quan». Hai mục nghỉ phép
+      //  cùng, không tiêu đề, và vốn chỉ dành cho "Tổng quan". Hai mục nghỉ phép
       //  / phòng họp nằm lửng ở đó đọc như phần đuôi của Tổng quan chứ không ra
       //  mục riêng (khách nêu 14/09/2026).
       group: 'Danh mục',
@@ -183,7 +183,7 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.roomCalendar,
       icon: DoorOpen,
       entities: ['room_booking', 'meeting_room'],
-      //  Cùng lý do với «Nghỉ phép» ngay trên — xem ghi chú ở đó.
+      //  Cùng lý do với "Nghỉ phép" ngay trên — xem ghi chú ở đó.
       group: 'Danh mục',
       matchPaths: [appRoutes.hr.roomBookings, appRoutes.hr.meetingRooms],
       children: [
@@ -208,9 +208,9 @@ export const hrModule: ErpModule = {
         },
       ],
     },
-    //  «Phân quyền tài khoản» đã dời sang phân hệ QUẢN TRỊ (duoc-CR-396) — khai
+    //  "Phân quyền tài khoản" đã dời sang phân hệ QUẢN TRỊ (duoc-CR-396) — khai
     //  ai được làm gì là việc quản trị hệ thống, không phải nghiệp vụ nhân sự.
-    //  Vì vậy menu Nhân sự không còn nhóm «Quản trị» nào.
+    //  Vì vậy menu Nhân sự không còn nhóm "Quản trị" nào.
   ],
 
   routes: [
@@ -403,7 +403,7 @@ export const hrModule: ErpModule = {
         Component: (await import('./pages/labor-contract-variables-page')).LaborContractVariablesPage,
       }),
     },
-    //  duoc-CR-606 — soạn nội dung mẫu trên web. Đường nằm DƯỚI mục menu «Mẫu hợp đồng» nên chung
+    //  duoc-CR-606 — soạn nội dung mẫu trên web. Đường nằm DƯỚI mục menu "Mẫu hợp đồng" nên chung
     //  hàng rào `labor_contract_template` (gác điều hướng khớp theo ranh giới `/`).
     {
       path: appRoutes.hr.laborContractTemplateEditor(':id'),

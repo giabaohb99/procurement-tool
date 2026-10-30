@@ -10,8 +10,8 @@ vào repo; repo chỉ giữ cách đọc.
 Nạp gì:
   - Từ khóa hoạt chất (`ACTIVE_INGREDIENTS`, ~100)      → tab_customs_ingredient_alias  (thay toàn bộ)
   - (29/09/2026) Danh mục thuốc BVTV KHÔNG còn nạp ở đây. Nguồn chuyển sang bản cào
-    danhmuc.thuocbvtv.com — có số đăng ký, hiệu lực, phạm vi sử dụng — nạp bằng nút «Nạp danh
-    mục» của mục Thuốc BVTV (`pesticide_service.replace_catalog`). Nạp lại từ `bvtv_data.js`
+    danhmuc.thuocbvtv.com — có số đăng ký, hiệu lực, phạm vi sử dụng — nạp bằng nút "Nạp danh
+    mục" của mục Thuốc BVTV (`pesticide_service.replace_catalog`). Nạp lại từ `bvtv_data.js`
     sẽ thay toàn bộ bảng bằng bản thiếu cột và xóa sạch phạm vi sử dụng.
   - Biểu thuế XNK 2026 (`bieu_thue_2026.js`)            → tab_customs_tariff            (thay toàn bộ)
   - NĐ 24/2026 PL I–IV, TT 75/2025 cấm, TT 01/2026 công bố → tab_customs_regulation     (CHỈ THÊM)

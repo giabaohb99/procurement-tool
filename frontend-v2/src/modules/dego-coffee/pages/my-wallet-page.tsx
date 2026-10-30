@@ -87,7 +87,7 @@ export function MyWalletPage() {
           <div className="font-medium">Bạn chưa thuộc chương trình điểm cà phê</div>
           <p className="max-w-md text-sm text-muted-foreground">
             Liên hệ phòng Nhân sự để được gán cấp phúc lợi. Sau khi được gán, điểm sẽ tự cấp
-            vào đầu mỗi tháng và bạn tiêu tại quầy bằng phương thức «Trừ điểm» trên POS365.
+            vào đầu mỗi tháng và bạn tiêu tại quầy bằng phương thức <strong>Trừ điểm</strong> trên POS365.
           </p>
         </Card>
       </PageContainer>

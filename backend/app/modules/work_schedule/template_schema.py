@@ -17,8 +17,8 @@ class DayIn(BaseModel):
     """Một dòng ngày của mẫu. Giờ nhận "HH:MM" (pydantic tự đọc ra `time`).
 
     Loại ngày nửa buổi (Sáng/Chiều) là ĐIỀU CHỈ ĐỊNH: loại ngày thắng giờ. Cố ý KHÔNG ràng
-    giờ theo buổi (không bịa mốc 12:00/13:00): «Sáng» mà giờ làm 13:00–17:00 vẫn hợp lệ, khi đó
-    đơn nghỉ bắt đầu «Chiều» của ngày ấy tính 0 vì mặt nạ buổi là Sáng. Chỉ cấm ô nghỉ trưa.
+    giờ theo buổi (không bịa mốc 12:00/13:00): "Sáng" mà giờ làm 13:00–17:00 vẫn hợp lệ, khi đó
+    đơn nghỉ bắt đầu "Chiều" của ngày ấy tính 0 vì mặt nạ buổi là Sáng. Chỉ cấm ô nghỉ trưa.
     """
 
     weekday: int = Field(ge=0, le=6)
@@ -63,7 +63,7 @@ class DayIn(BaseModel):
                 raise ValueError("Ngày làm nửa ngày không có giờ nghỉ trưa")
             return self
         if sum(x is not None for x in has_lunch) == 1:
-            raise ValueError("Giờ nghỉ trưa phải nhập đủ cặp «từ — đến» hoặc bỏ trống cả hai")
+            raise ValueError("Giờ nghỉ trưa phải nhập đủ cặp \"từ — đến\" hoặc bỏ trống cả hai")
         if self.lunch_start is not None and not (
                 self.start_time < self.lunch_start < self.lunch_end < self.end_time):
             raise ValueError("Nghỉ trưa phải nằm trong giờ làm: bắt đầu < trưa từ < trưa đến < kết thúc")

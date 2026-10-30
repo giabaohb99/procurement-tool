@@ -22,7 +22,7 @@ describe('buildTemplateFormData', () => {
     expect(form.get('file')).toBeInstanceOf(File)
   })
 
-  // 0 là «chưa chọn»: gửi đi sẽ gắn nhầm pháp nhân hoặc ăn 422 vô ích.
+  // 0 là "chưa chọn": gửi đi sẽ gắn nhầm pháp nhân hoặc ăn 422 vô ích.
   it.each([0, -1, 1.5, Number.NaN])('chặn company_id = %p', (company_id) => {
     expect(() => buildTemplateFormData({ ...values, company_id }, docx())).toThrow('Chọn pháp nhân')
   })

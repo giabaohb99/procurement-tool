@@ -29,7 +29,7 @@ interface ReportAccessDialogProps {
 }
 
 /**
- * Hộp «Sửa quyền xem báo cáo»: khối 1 (`ReportAccessGrantList`) liệt kê + thu
+ * Hộp "Sửa quyền xem báo cáo": khối 1 (`ReportAccessGrantList`) liệt kê + thu
  * hồi dòng đang sống, khối 2 gán thêm. Được gán chỉ MỞ báo cáo — số liệu bên
  * trong vẫn theo quyền phân hệ gốc + phạm vi dữ liệu (gác kép, phase-02 kế
  * hoạch `plans/261002-0836-phan-quyen-tung-bao-cao`).
@@ -41,7 +41,7 @@ export function ReportAccessDialog({ report, onOpenChange }: ReportAccessDialogP
           nút Đóng không được trôi tuột xuống dưới màn hình khi danh sách dài. */}
       <DialogContent className="flex max-h-[85dvh] flex-col overflow-hidden sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Quyền xem «{report?.label}»</DialogTitle>
+          <DialogTitle>Quyền xem <strong>{report?.label}</strong></DialogTitle>
           <DialogDescription>
             Được gán chỉ mở báo cáo; số liệu vẫn theo quyền phân hệ gốc. Cấm thắng cho phép.
           </DialogDescription>

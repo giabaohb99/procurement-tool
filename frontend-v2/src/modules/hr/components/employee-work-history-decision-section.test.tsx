@@ -75,7 +75,7 @@ describe('EmployeeWorkHistoryDecisionSection', () => {
   it('toggle Bảng → Dòng thời gian: đổi hiển thị VÀ ghi vào URL param decView', async () => {
     renderSection([row({ id: 1, decision_no: 'QD-02' })])
 
-    //  Mặc định «Bảng»: bảng dùng cấu trúc <table>, không có <ol> dòng thời gian.
+    //  Mặc định "Bảng": bảng dùng cấu trúc <table>, không có <ol> dòng thời gian.
     expect(screen.getByRole('table')).toBeInTheDocument()
     expect(screen.getByTestId('where')).not.toHaveTextContent('decView')
 
@@ -117,7 +117,7 @@ describe('EmployeeWorkHistoryDecisionSection', () => {
   })
 })
 
-describe('EmployeeWorkHistoryDecisionSection — nút «+ Thêm quyết định» (mục 3, đại ca chốt 03/10/2026)', () => {
+describe('EmployeeWorkHistoryDecisionSection — nút "+ Thêm quyết định" (mục 3, đại ca chốt 03/10/2026)', () => {
   it('rỗng + có onAddClick → hiện CẢ nút ở thanh công cụ LẪN nút gợi ý giữa khu, bấm nút nào cũng gọi đúng handler', async () => {
     const onAddClick = vi.fn()
     renderSection([], { onAddClick })
@@ -137,7 +137,7 @@ describe('EmployeeWorkHistoryDecisionSection — nút «+ Thêm quyết định�
 
   it('CÓ dòng rồi (không rỗng) → vẫn hiện nút Ở THANH CÔNG CỤ (khác nút gợi ý giữa khu, chỉ ẨN khi rỗng)', () => {
     renderSection([row({ id: 1, decision_no: 'QD-06' })], { onAddClick: vi.fn() })
-    //  Đúng MỘT nút «Thêm quyết định» (toolbarEnd) — nút gợi ý giữa khu chỉ hiện lúc rỗng.
+    //  Đúng MỘT nút "Thêm quyết định" (toolbarEnd) — nút gợi ý giữa khu chỉ hiện lúc rỗng.
     expect(screen.getAllByRole('button', { name: /Thêm quyết định/ })).toHaveLength(1)
   })
 
@@ -148,7 +148,7 @@ describe('EmployeeWorkHistoryDecisionSection — nút «+ Thêm quyết định�
     expect(screen.getAllByRole('button', { name: /Thêm quyết định/ })).toHaveLength(1)
   })
 
-  it('chế độ Dòng thời gian: nút «+ Thêm quyết định» đứng cạnh Tải lại ở hàng công cụ', async () => {
+  it('chế độ Dòng thời gian: nút "+ Thêm quyết định" đứng cạnh Tải lại ở hàng công cụ', async () => {
     const onAddClick = vi.fn()
     renderSection([row({ id: 1, decision_no: 'QD-09' })], { onAddClick })
 
@@ -162,7 +162,7 @@ describe('EmployeeWorkHistoryDecisionSection — nút «+ Thêm quyết định�
 
 /**
  * Gộp hàng điều khiển thành MỘT HÀNG (đại ca chê hai hàng rời rạc, 03/10/2026).
- * Khu này KHÔNG có nút «Thêm dòng» (chỉ đọc) — khác khu Quá trình công tác.
+ * Khu này KHÔNG có nút "Thêm dòng" (chỉ đọc) — khác khu Quá trình công tác.
  */
 describe('EmployeeWorkHistoryDecisionSection — gộp thanh điều khiển một hàng', () => {
   it('chế độ Bảng: có Tải lại + Cột, không Thêm dòng, không Xóa lọc', () => {

@@ -29,8 +29,8 @@ interface AccessGroupEditDialogProps {
    * quyền lẫn danh sách đối tượng.
    *
    * ⚠️ Trước 24/08/2026 hộp này chỉ nhận mỗi `count` và mở ra với form TRẮNG:
-   * người dùng bấm «Sửa» để xem lại mình đã cho những ai, được làm gì, hạn tới
-   * bao giờ — và thấy một form rỗng y như khai mới. Bấm «Áp cho cả cụm» là ghi
+   * người dùng bấm "Sửa" để xem lại mình đã cho những ai, được làm gì, hạn tới
+   * bao giờ — và thấy một form rỗng y như khai mới. Bấm "Áp cho cả cụm" là ghi
    * đè hết bằng giá trị trắng đó.
    */
   rows: DocumentAccessDraft[]

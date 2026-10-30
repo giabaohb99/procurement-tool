@@ -70,8 +70,8 @@ type SupplierOption = { code: string; name: string }
  *
  * bao-CR-570 (02/10/2026): thẻ HIỆN MỌI DÒNG ngay khi phiếu đã điều phối — đại ca chốt
  * làm như YCBG, phương án NSTM gắn tới đâu người yêu cầu chọn tới đó, không đợi NSTM bấm
- * «Chốt hoàn thành xử lý» (người lập đơn chính là nhân sự thu mua). Dòng NSTM chưa chốt
- * mang nhãn «NSTM đang xử lý»; nút «Mở lại cho NSTM xử lý» chỉ còn ở dòng ĐÃ chốt.
+ * "Chốt hoàn thành xử lý" (người lập đơn chính là nhân sự thu mua). Dòng NSTM chưa chốt
+ * mang nhãn "NSTM đang xử lý"; nút "Mở lại cho NSTM xử lý" chỉ còn ở dòng ĐÃ chốt.
  */
 export function PurchaseRequestChooseCard({ purchaseRequest }: PurchaseRequestChooseCardProps) {
   const { user } = useAuth()
@@ -293,8 +293,8 @@ function ChooseLineSection({
         </div>
       )}
 
-      {/* bao-CR-583: phương án 0 và nhập tay mở hộp sửa ĐỦ thông tin (phương án 0 kèm «Khôi
-          phục ban đầu»); phương án khảo sát giữ hộp chỉ sửa giá. */}
+      {/* bao-CR-583: phương án 0 và nhập tay mở hộp sửa ĐỦ thông tin (phương án 0 kèm "Khôi
+          phục ban đầu"); phương án khảo sát giữ hộp chỉ sửa giá. */}
       {editingOption && editingOption.source !== PR_OPTION_SOURCE_SURVEY && (
         <PurchaseRequestOptionEditDialog
           purchaseRequestId={purchaseRequestId}
@@ -534,7 +534,7 @@ function OptionPurchaseEditDialog({
 
   return (
     //  bao-CR-570: dựng lại cho gọn — một cột, ô nào cũng chiếm hết bề ngang hộp (bản cũ để
-    //  ô chọn + ô gõ tay w-64 cạnh nhau, rớt dòng lệch nhau, nhãn «Đơn giá» chen ngang ô).
+    //  ô chọn + ô gõ tay w-64 cạnh nhau, rớt dòng lệch nhau, nhãn "Đơn giá" chen ngang ô).
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -547,7 +547,7 @@ function OptionPurchaseEditDialog({
         </DialogHeader>
 
         {/* `min-w-0`: `DialogContent` là lưới, cột tự giãn theo chữ dài nhất. Tên NCC dài trong ô
-            chọn (vd «NCCKS030 — Cty TNHH Thương Mại Dịch Vụ Và Phát Triển Thiên An Phát») đẩy cả
+            chọn (vd "NCCKS030 — Cty TNHH Thương Mại Dịch Vụ Và Phát Triển Thiên An Phát") đẩy cả
             khối tràn ra ngoài khung trắng — ô sản phẩm phía trên lòi một mảng xám ở mép phải. */}
         <div className="min-w-0 space-y-4">
           <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">

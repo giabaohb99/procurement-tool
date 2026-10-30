@@ -19,8 +19,8 @@ type Row = {
   id: number; item_group_id: number; item_group_name: string
   primary_employee_id: number; primary_name: string; primary_code: string
   backup_employee_id: number; backup_name: string; backup_code: string
-  // bao-CR-524: backend trả id + tên THẬT, kể cả dòng `0` cũ («Thu mua chung» → phòng thu mua
-  // mặc định «Sản xuất -Thu mua»). Không còn mục ảo nào để in riêng.
+  // bao-CR-524: backend trả id + tên THẬT, kể cả dòng `0` cũ ("Thu mua chung" → phòng thu mua
+  // mặc định "Sản xuất -Thu mua"). Không còn mục ảo nào để in riêng.
   department_id: number; department_name: string | null
   // bao-CR-527: tình trạng HIỆN TẠI của NSTM chính — cờ để gắn cảnh báo.
   primary_status_label?: string | null; primary_is_active?: boolean | null; primary_not_official?: boolean
@@ -35,13 +35,13 @@ const DEFAULT_DEPT_LABEL = 'Phòng thu mua mặc định'
 const deptLabel = (r: Row): string =>
   r.department_name || (r.department_id ? `#${r.department_id}` : DEFAULT_DEPT_LABEL)
 
-/** bao-CR-527 — cảnh báo dòng có NSTM chính NAY không còn «Chính thức»: tự gán sẽ rơi sang dự phòng. */
+/** bao-CR-527 — cảnh báo dòng có NSTM chính NAY không còn "Chính thức": tự gán sẽ rơi sang dự phòng. */
 function NotOfficialBadge({ row }: { row: Row }) {
   if (!row.primary_not_official || !row.primary_employee_id) return null
   const status = row.primary_is_active === false ? 'ngừng hoạt động' : (row.primary_status_label || 'không rõ')
   return (
     <span className="badge warn" style={{ marginLeft: 6, fontSize: 11 }}
-      title={`NSTM chính đang «${status}» — tự gán sẽ rơi sang dự phòng. Hãy đổi NSTM chính.`}>
+      title={`NSTM chính đang "${status}" — tự gán sẽ rơi sang dự phòng. Hãy đổi NSTM chính.`}>
       <i className="ti ti-alert-triangle" /> Không còn Chính thức
     </span>
   )
@@ -57,7 +57,7 @@ export default function CategoryAssignees() {
   const [cats, setCats] = useState<{ id: number; name: string }[]>([])
   const [depts, setDepts] = useState<{ id: number; name: string }[]>([])
   // Bộ lọc lưu trên URL (?cat=&name=&code=&dept=) → F5 / gửi link giữ nguyên bộ lọc
-  // dept: '' = tất cả, '<id>' = một phòng (bao-CR-524: không còn mục «Thu mua chung» = 0)
+  // dept: '' = tất cả, '<id>' = một phòng (bao-CR-524: không còn mục "Thu mua chung" = 0)
   const [f, setF] = useUrlFilters({ cat: '', name: '', code: '', dept: '' })
   const { cat: fCat, name: fName, code: fCode, dept: fDept } = f
   const setFCat = (v: string) => setF((s) => ({ ...s, cat: v }))

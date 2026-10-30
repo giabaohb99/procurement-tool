@@ -20,14 +20,14 @@ import { ZaloAccountCard } from '../components/zalo-account-card'
 import { useChatGroupMeta, useChatGroups } from '../hooks/use-chat-groups'
 import { describeGroupState, getChannelTone } from '../utils/chat-group-format'
 
-//  `-1` chứ không `0`: loại 0 «Chưa phân loại» là một giá trị lọc thật (luật bảng có bộ lọc, duoc-CR-322).
+//  `-1` chứ không `0`: loại 0 "Chưa phân loại" là một giá trị lọc thật (luật bảng có bộ lọc, duoc-CR-322).
 const ALL = '-1'
 
 /**
  * NHÓM CHAT CỦA BOT (ai-CR-123) — `/assistant/groups`.
  *
  * Bot cá nhân đọc nhóm Telegram / Zalo, ghi tin + tệp + bản tóm tắt, nhưng chỉ trả lời riêng. Màn này là chỗ xem lại
- * những gì bot đã ghi: «Nhóm của tôi» = nhóm mình là thành viên; «Tất cả nhóm» chỉ cho người quản lý bot AI.
+ * những gì bot đã ghi: "Nhóm của tôi" = nhóm mình là thành viên; "Tất cả nhóm" chỉ cho người quản lý bot AI.
  */
 export function ChatGroupListPage() {
   const navigate = useNavigate()
@@ -139,7 +139,7 @@ export function ChatGroupListPage() {
               ? 'Không có nhóm nào khớp bộ lọc.'
               : scope === 'all'
                 ? 'Bot chưa ở nhóm nào.'
-                : 'Anh/chị chưa ở nhóm nào có bot. Thêm bot (Telegram) hoặc tài khoản Zalo công ty vào nhóm, rồi nhắn riêng bot «/dangnhap <mã>» một lần.'
+                : 'Anh/chị chưa ở nhóm nào có bot. Thêm bot (Telegram) hoặc tài khoản Zalo công ty vào nhóm, rồi nhắn riêng bot "/dangnhap <mã>" một lần.'
           }
           storageKey="assistant.chat_groups"
           toolbar={

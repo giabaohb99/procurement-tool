@@ -5,7 +5,7 @@ Dùng ở hai nơi: `guard.require_report` (gác `/summary` + `/summary/export`)
 xem `auth/controller.py::_me_payload`). MỘT nguồn, không tính theo hai luật
 khác nhau ở hai nơi.
 
-Số truy vấn CỐ ĐỊNH = 1 (đúng luật «API báo cáo nhanh nhất» —
+Số truy vấn CỐ ĐỊNH = 1 (đúng luật "API báo cáo nhanh nhất" —
 `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md` không áp ở đây, nhưng cùng
 tinh thần với mọi API báo cáo khác trong repo: không N+1 theo số dòng).
 """

@@ -23,7 +23,7 @@ export function HrOverviewStats({ overview, leave }: HrOverviewStatsProps) {
   //  Ba ô đọc hồ sơ nhân sự. Thiếu `employee.read` thì truy vấn không chạy
   //  (`enabled` ở `useHrOverview`) nên mọi con số về 0 — mà 0 ở đây KHÔNG phải
   //  "không có ai", nó là "không được xem". Không nói ra thì người dùng đọc
-  //  «Hồ sơ cần bổ sung 0 — Đã khai đủ» và tin rằng hồ sơ công ty đã khai đủ,
+  //  "Hồ sơ cần bổ sung 0 — Đã khai đủ" và tin rằng hồ sơ công ty đã khai đủ,
   //  trong khi các thẻ ngay bên dưới đã báo đúng là họ không có quyền xem.
   //  Cùng lối xử lý với hai ô nghỉ phép: vẫn dựng thẻ, chỉ đổi dòng chú thích.
   const noPermHint = 'Không có quyền xem'
@@ -82,9 +82,9 @@ export function HrOverviewStats({ overview, leave }: HrOverviewStatsProps) {
         loading={leave.isLoadingPending}
       />
 
-      {/* Câu chú thích cũ «Thiếu ô bắt buộc, xem thẻ bên dưới» gãy hai dòng ở
+      {/* Câu chú thích cũ "Thiếu ô bắt buộc, xem thẻ bên dưới" gãy hai dòng ở
           mọi cửa sổ dưới 1500px, mà nửa sau vốn thừa: thẻ ngay bên dưới đã mang
-          đúng tên «Hồ sơ cần bổ sung» và liệt kê từng ô. */}
+          đúng tên "Hồ sơ cần bổ sung" và liệt kê từng ô. */}
       <StatCard
         icon={TriangleAlert}
         label="Hồ sơ cần bổ sung"

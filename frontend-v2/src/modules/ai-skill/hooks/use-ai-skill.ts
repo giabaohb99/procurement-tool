@@ -7,7 +7,7 @@ import type { SkillAccessGrantInput, SkillInput, SkillPatch, SkillSetInput, Skil
 
 /**
  * Hook TanStack Query của Kho skill AI. Lỗi của lệnh ghi đã có toast tự động ở `http-client` (in nguyên câu backend,
- * vd «Thiếu tóm tắt cho AI»), nên ở đây chỉ báo thành công và làm tươi khóa liên quan.
+ * vd "Thiếu tóm tắt cho AI"), nên ở đây chỉ báo thành công và làm tươi khóa liên quan.
  */
 
 export function useSkillSets() {
@@ -91,7 +91,7 @@ export function useSkill(id: number) {
   return useQuery({ queryKey: queryKeys.aiSkill.skill(id), queryFn: () => aiSkillApi.getSkill(id), enabled: id > 0 })
 }
 
-/** Lưu NHÁP — `silent` cho lần lưu tự động trước khi xuất bản (một toast «Đã xuất bản» là đủ). */
+/** Lưu NHÁP — `silent` cho lần lưu tự động trước khi xuất bản (một toast "Đã xuất bản" là đủ). */
 export function useUpdateSkill(id: number) {
   const queryClient = useQueryClient()
   return useMutation({

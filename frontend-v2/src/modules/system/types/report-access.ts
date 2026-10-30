@@ -1,5 +1,5 @@
 /**
- * PHÂN QUYỀN TỪNG BÁO CÁO — tab «Báo cáo» của màn Phân quyền tài khoản.
+ * PHÂN QUYỀN TỪNG BÁO CÁO — tab "Báo cáo" của màn Phân quyền tài khoản.
  *
  * Gác KÉP với quyền phân hệ gốc (xem `backend/app/core/report_keys.py` +
  * `app/modules/report_access/`, phase 01-02 của kế hoạch

@@ -7,7 +7,7 @@ import type { WorkGroup, WorkMember } from '../types/work'
 import { WORK_ROLE } from '../types/work'
 
 /**
- * Hộp «Quản lý nhóm» — bao-CR-482. Ba thứ dễ vỡ lặng:
+ * Hộp "Quản lý nhóm" — bao-CR-482. Ba thứ dễ vỡ lặng:
  *  1. Hai ngưỡng quyền: Chủ sở hữu mới sửa tên / lưu trữ; Quản trị chỉ mời + gỡ.
  *  2. Lưu chỉ gửi khi CÓ ĐỔI và tên không rỗng — nút Lưu phải khóa đúng lúc.
  *  3. Lưu trữ phải hỏi lại một nhịp, không bấm một cái là mất nhóm.

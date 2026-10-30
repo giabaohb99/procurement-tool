@@ -35,7 +35,7 @@ interface AuditTimelineProps {
   /** Bố cục gọn dành cho trang chứng từ xếp các khối full-width. */
   dense?: boolean
   /**
-   * Tùy chọn: hành động gắn vào MỘT dòng nhật ký (vd nút «Hoàn tác»). Trả về
+   * Tùy chọn: hành động gắn vào MỘT dòng nhật ký (vd nút "Hoàn tác"). Trả về
    * `null` cho dòng không có hành động. Mặc định không có — timeline chỉ đọc.
    */
   renderEntryAction?: (log: AuditLogEntry) => ReactNode
@@ -118,7 +118,7 @@ export function AuditTimeline({
                           <>
                             <span aria-hidden>·</span>
                             {/*
-                              Dòng này chỉ kể «ai làm gì»; lượt gọi bên kia mới có
+                              Dòng này chỉ kể "ai làm gì"; lượt gọi bên kia mới có
                               giá trị TRƯỚC/SAU, thân yêu cầu, IP và thiết bị. Nối
                               bằng `request_id` chứ không bằng thời điểm — hai
                               thao tác trong cùng một giây là chuyện thường.

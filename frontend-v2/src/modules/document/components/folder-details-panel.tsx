@@ -23,12 +23,12 @@ interface FolderDetailsPanelProps {
 
 /**
  * KHUNG CHI TIẾT bên phải kiểu Drive (đặc tả §B) — thư mục → đường dẫn, số
- * văn bản, mức quyền của tôi, tóm tắt «Ai có quyền»; văn bản → số hiệu, loại,
+ * văn bản, mức quyền của tôi, tóm tắt "Ai có quyền"; văn bản → số hiệu, loại,
  * trạng thái, các thư mục chứa nó, người soạn.
  *
  * `effective_access` chỉ có nội dung khi `my_level >= Quản lý` (backend cố ý
  * để rỗng với người mức thấp hơn — xem `types/document-folder.ts`), nên khối
- * «Ai có quyền» tự ẩn khi không đủ mức thay vì hiện "0 người".
+ * "Ai có quyền" tự ẩn khi không đủ mức thay vì hiện "0 người".
  */
 export function FolderDetailsPanel({
   item,

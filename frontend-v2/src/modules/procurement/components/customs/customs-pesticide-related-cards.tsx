@@ -1,10 +1,10 @@
-// Bảng «Thuốc liên quan» của trang chi tiết thuốc BVTV (01/10/2026 — bê theo trang nguồn
-// danhmuc.thuocbvtv.com): «Cùng công ty» và «Cùng hoạt chất». Số liệu tính ở backend
+// Bảng "Thuốc liên quan" của trang chi tiết thuốc BVTV (01/10/2026 — bê theo trang nguồn
+// danhmuc.thuocbvtv.com): "Cùng công ty" và "Cùng hoạt chất". Số liệu tính ở backend
 // (`pesticide_related_service.py`): cùng hoạt chất = cùng TẬP tên hoạt chất, bỏ hàm lượng.
 //
 // Lần thứ ba mới chốt bố cục: hai thẻ danh sách link xanh (lệch nhau) → lưới ô có viền (nặng, rời
-// rạc) → nay là BẢNG cùng khuôn với bảng «Phạm vi sử dụng» ngay phía trên: cột thẳng hàng, nhãn
-// tình trạng chung một cột, phân trang thay cho nút «Xem tất cả».
+// rạc) → nay là BẢNG cùng khuôn với bảng "Phạm vi sử dụng" ngay phía trên: cột thẳng hàng, nhãn
+// tình trạng chung một cột, phân trang thay cho nút "Xem tất cả".
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -49,7 +49,7 @@ const STATUS_COLUMN: DataTableColumn<CustomsPesticideBrief> = {
   key: 'status',
   header: 'Tình trạng',
   width: 130,
-  //  Chỉ gắn nhãn khi KHÔNG còn hiệu lực — cột toàn «Còn hiệu lực» thì nhãn lạc thường bị chìm;
+  //  Chỉ gắn nhãn khi KHÔNG còn hiệu lực — cột toàn "Còn hiệu lực" thì nhãn lạc thường bị chìm;
   //  ô trống ở đây nghĩa là còn hiệu lực.
   cell: (row) =>
     row.status !== PESTICIDE_STATUS.active ? (
@@ -77,7 +77,7 @@ const COLUMNS: Record<RelatedTab, DataTableColumn<CustomsPesticideBrief>[]> = {
 
 interface CustomsPesticideRelatedCardsProps {
   pesticideId: number
-  /** Công ty của thuốc ĐANG xem — dòng ngữ cảnh của tab «Cùng công ty», kể cả khi tab rỗng. */
+  /** Công ty của thuốc ĐANG xem — dòng ngữ cảnh của tab "Cùng công ty", kể cả khi tab rỗng. */
   registrant: string
 }
 
@@ -119,7 +119,7 @@ export function CustomsPesticideRelatedCards({
           : 'Chưa có thuốc nào khác cùng hoạt chất trong danh mục.'
       }
       storageKey={`procurement.customs-pesticide-related-${tab}-v1`}
-      //  Bảng nhỏ trong trang chi tiết: «Tải lại» / «Cột» chỉ thêm rối, ẩn đi.
+      //  Bảng nhỏ trong trang chi tiết: "Tải lại" / "Cột" chỉ thêm rối, ẩn đi.
       toolbarActionsClassName="hidden"
       //  Nút lùi ở trang thuốc kia quay về ĐÚNG thuốc đang xem, không về danh sách.
       onRowClick={(row) =>

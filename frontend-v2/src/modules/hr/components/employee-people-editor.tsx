@@ -52,8 +52,8 @@ interface EmployeePeopleEditorProps<T extends { id: number }> {
   isSaving: boolean
   onSave: (rows: T[]) => void
   /**
-   * Báo nháp ra ngoài sau MỖI thay đổi — cho nơi gom bảng này vào một lần gửi chung (hộp «Đề nghị
-   * sửa thông tin», duoc-CR-676). Có prop này thì nút «Lưu danh sách» của bảng không dựng nữa:
+   * Báo nháp ra ngoài sau MỖI thay đổi — cho nơi gom bảng này vào một lần gửi chung (hộp "Đề nghị
+   * sửa thông tin", duoc-CR-676). Có prop này thì nút "Lưu danh sách" của bảng không dựng nữa:
    * hai nút lưu cho một hộp thoại là người dùng bấm nhầm nút.
    */
   onDraftChange?: (rows: T[]) => void
@@ -139,20 +139,20 @@ export function EmployeePeopleEditor<T extends { id: number }>({
         </p>
       )}
 
-      {/*  ⚠️ CHẶN «gửi biểu mẫu ngầm» của trình duyệt.
+      {/*  ⚠️ CHẶN "gửi biểu mẫu ngầm" của trình duyệt.
 
            Bảng này nằm BÊN TRONG `<form>` của màn hồ sơ. Gõ tên người báo tin
            rồi quen tay nhấn Enter là trình duyệt tự bấm nút submit đầu tiên —
            tức **lưu HỒ SƠ**, trong khi dòng đang gõ dở thì KHÔNG được lưu (nó
            đi một cửa API khác). Đã dựng lại được trên trình duyệt thật
-           08/09/2026: một `PATCH /api/employees/{id}` chạy, toast báo «Đã cập
-           nhật nhân sự», và người dùng tin rằng dòng vừa gõ đã lưu xong.
+           08/09/2026: một `PATCH /api/employees/{id}` chạy, toast báo "Đã cập
+           nhật nhân sự", và người dùng tin rằng dòng vừa gõ đã lưu xong.
 
            Đó là kiểu lỗi tệ nhất: thao tác sai nhưng **báo thành công**.
 
            Enter ở đây cố ý KHÔNG làm gì — không lưu bảng, không thêm dòng.
            Đoán ý người dùng ở một phím bấm nhầm là đổi một lỗi im lặng lấy một
-           lỗi khác. Muốn lưu thì có nút «Lưu danh sách» ngay trên đầu.
+           lỗi khác. Muốn lưu thì có nút "Lưu danh sách" ngay trên đầu.
 
            Không chặn cho `<textarea>`: ở đó Enter là xuống dòng, trình duyệt
            vốn không submit. Bảng này chưa có ô nào như vậy, nhưng khai sẵn để
@@ -263,7 +263,7 @@ function PeopleField<T>({ column, value, disabled, onChange }: PeopleFieldProps<
     //  `style` nội tuyến. Lưới dòng là `md:grid-cols-12` — dưới ngưỡng đó nó chỉ
     //  MỘT cột, nhưng `style` thì không có điểm ngắt nên `grid-column: span 3`
     //  vẫn ăn: trình duyệt tự đẻ ra 3 cột ngầm và ô co lại còn một phần ba bề
-    //  ngang, ô «Điện thoại» hẹp tới mức không đọc nổi số vừa gõ (khách báo
+    //  ngang, ô "Điện thoại" hẹp tới mức không đọc nổi số vừa gõ (khách báo
     //  10/09/2026). Ở khổ hẹp mỗi ô phải chiếm trọn một dòng.
     <div className={cn('flex flex-col gap-1.5', COLUMN_SPAN[column.span ?? 3])}>
       <label htmlFor={id} className="text-xs font-medium text-muted-foreground">
@@ -293,8 +293,8 @@ interface PeopleCellProps {
 function PeopleCell({ id, kind, value, placeholder, disabled, onChange }: PeopleCellProps) {
   //  Hai kiểu ô CHỌN dùng chung một khối: khác nhau đúng ở bộ mục.
   //
-  //  ⚠️ «Quan hệ» từng là ô gõ tay. Khách chốt thành ô chọn 08/09/2026 vì chữ
-  //  tự do làm mỗi người gõ một kiểu — «vợ» · «Vợ» · «v/c» · «vo» — nên không
+  //  ⚠️ "Quan hệ" từng là ô gõ tay. Khách chốt thành ô chọn 08/09/2026 vì chữ
+  //  tự do làm mỗi người gõ một kiểu — "vợ" · "Vợ" · "v/c" · "vo" — nên không
   //  lọc được, không đếm được, và bản in ra không đều. Cột cũng đổi sang
   //  SMALLINT theo R2/QĐ-11.
   if (kind === 'gender' || kind === 'relation') {
@@ -311,7 +311,7 @@ function PeopleCell({ id, kind, value, placeholder, disabled, onChange }: People
         <SelectContent>
           {options.map((item) => (
             <SelectItem key={item.value} value={String(item.value)}>
-              {/*  Mục `0` là «chưa khai» — nhãn của nó rỗng, nên phải mượn
+              {/*  Mục `0` là "chưa khai" — nhãn của nó rỗng, nên phải mượn
                    `placeholder` của cột, không thì ô chọn có một dòng trắng
                    không ai biết bấm vào để làm gì. */}
               {item.value === 0 ? (placeholder ?? '— Chưa khai —') : item.label}

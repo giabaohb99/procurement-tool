@@ -51,7 +51,7 @@ function DesktopPeek() {
   const [open, setOpen] = useState(false)
   const [dialog, setDialog] = useState<'list' | 'group' | null>(null)
   const [parentGroup, setParentGroup] = useState<number | null>(null)
-  //  bao-CR-482: nhóm đang mở hộp Quản lý nhóm từ menu «…» của cây.
+  //  bao-CR-482: nhóm đang mở hộp Quản lý nhóm từ menu "…" của cây.
   const [manageGroup, setManageGroup] = useState<WorkGroupNode | null>(null)
 
   return (
@@ -142,7 +142,7 @@ function MobilePeek() {
   const [open, setOpen] = useState(false)
   const [dialog, setDialog] = useState<'list' | 'group' | null>(null)
   const [parentGroup, setParentGroup] = useState<number | null>(null)
-  //  bao-CR-482: nhóm đang mở hộp Quản lý nhóm từ menu «…» của cây.
+  //  bao-CR-482: nhóm đang mở hộp Quản lý nhóm từ menu "…" của cây.
   const [manageGroup, setManageGroup] = useState<WorkGroupNode | null>(null)
 
   return (

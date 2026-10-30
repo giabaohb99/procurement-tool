@@ -35,9 +35,9 @@ def _in_labels(labels: dict, field_name: str):
 
     ⚠️ Vá lỗi 26/08/2026. `approver_kind` từng khai `le=6` bằng tay; tới khi thêm
     `APPROVER_DEPT_HEAD_OF = 7` thì `/options` bày ra lựa chọn thứ bảy nhưng
-    validator vẫn chặn ở 6 — người khai luồng chọn *«Trưởng bộ phận của phòng
-    ban chỉ định»* rồi lưu là ăn đúng một dòng đỏ **«approver_kind: Input should
-    be less than or equal to 6»**, không có cách nào khai được cái vừa bày ra.
+    validator vẫn chặn ở 6 — người khai luồng chọn *"Trưởng bộ phận của phòng
+    ban chỉ định"* rồi lưu là ăn đúng một dòng đỏ **"approver_kind: Input should
+    be less than or equal to 6"**, không có cách nào khai được cái vừa bày ra.
 
     Biên số viết tay lúc nào cũng là bản chép thứ hai của bảng nhãn, và bản chép
     thứ hai thì sớm muộn cũng lệch. Buộc thẳng vào bảng nhãn thì thêm giá trị
@@ -112,11 +112,11 @@ def options(user=Depends(require("approval_flow", "read"))):
         "approver_kinds": options_of(APPROVER_KIND_LABELS),
         "multi_modes": options_of(MULTI_MODE_LABELS),
         "skip_modes": options_of(SKIP_MODE_LABELS),
-        #  CHỈ những lựa chọn còn khai được — «Đẩy lên cấp trên» đã bỏ (CR-114)
+        #  CHỈ những lựa chọn còn khai được — "Đẩy lên cấp trên" đã bỏ (CR-114)
         #  nên không bày ra ô chọn nữa, dù nhãn của nó vẫn còn để đọc dữ liệu cũ.
         "on_no_approver": [{"value": code, "label": NO_APPROVER_LABELS[code]}
                            for code in NO_APPROVER_CHOICES],
-        #  Loại chứng từ dùng được cách «Người có quyền duyệt» — giao diện ẩn lựa chọn đó ở luồng khác.
+        #  Loại chứng từ dùng được cách "Người có quyền duyệt" — giao diện ẩn lựa chọn đó ở luồng khác.
         "permission_approver_entities": list(permission_approvers.SUPPORTED_ENTITIES),
     })
 
@@ -124,16 +124,16 @@ def options(user=Depends(require("approval_flow", "read"))):
 @router.get("/permission-approvers")
 def permission_approvers_of(entity: str, db: Session = Depends(get_db),
                             user=Depends(require("approval_flow", "read"))):
-    """Ai đang giữ quyền Duyệt trên khóa `entity` — cho cách chọn «Người có quyền duyệt» (duoc-CR-680)."""
+    """Ai đang giữ quyền Duyệt trên khóa `entity` — cho cách chọn "Người có quyền duyệt" (duoc-CR-680)."""
     #  Chỉ loại chứng từ dùng được cách 9 — không cho đường này thành chỗ dò ai giữ quyền Duyệt
     #  trên `employee`, `labor_contract`… (review M3).
     if entity not in permission_approvers.SUPPORTED_ENTITIES:
-        raise HTTPException(404, "Loại chứng từ này chưa dùng được cách «Người có quyền duyệt»")
+        raise HTTPException(404, "Loại chứng từ này chưa dùng được cách \"Người có quyền duyệt\"")
     return success(permission_approvers.holder_profiles(db, entity))
 
 
 def _node_values(flow: ApprovalFlow, data: "NodeIn") -> dict:
-    """Giá trị bước sẽ ghi. Cách chọn «Người có quyền duyệt» thì máy chủ TỰ ghi `approver_ref`
+    """Giá trị bước sẽ ghi. Cách chọn "Người có quyền duyệt" thì máy chủ TỰ ghi `approver_ref`
     = loại chứng từ của luồng — khóa quyền và bảng chứng từ phải là một (xem `permission_approvers`)."""
     values = data.model_dump()
     if values["approver_kind"] == APPROVER_PERMISSION:
@@ -145,7 +145,7 @@ def _node_values(flow: ApprovalFlow, data: "NodeIn") -> dict:
 def _block_unsupported_permission_kind(entity: str) -> None:
     """Cách 9 chỉ mở cho `permission_approvers.SUPPORTED_ENTITIES` — xem điều 4 ở docstring tệp đó."""
     if entity not in permission_approvers.SUPPORTED_ENTITIES:
-        raise HTTPException(422, f"Loại chứng từ «{entity}» chưa dùng được cách «Người có quyền duyệt» "
+        raise HTTPException(422, f"Loại chứng từ \"{entity}\" chưa dùng được cách \"Người có quyền duyệt\" "
                                  "— chọn cách khác cho bước này")
 
 
@@ -184,7 +184,7 @@ def set_switch(data: SwitchIn, db: Session = Depends(get_db),
     mà kiểm — nó lật một cờ áp cho **cả 13 pháp nhân**. Chỉ `require(...)` thôi
     thì một văn thư pháp nhân con có `approval_flow.write` phạm vi *công ty* tắt
     được bộ máy duyệt của toàn hệ: từ giây đó mọi văn bản rơi về đường duyệt cũ,
-    mà nhật ký chỉ ghi một dòng «Tắt bộ máy duyệt mới cho document».
+    mà nhật ký chỉ ghi một dòng "Tắt bộ máy duyệt mới cho document".
 
     Cùng một họ lỗi với `handover` và ủy quyền: quyền vai trò trả lời *"được làm
     việc này không"*, không trả lời *"được làm trên phạm vi nào"*.
@@ -192,7 +192,7 @@ def set_switch(data: SwitchIn, db: Session = Depends(get_db),
     if not has_global_scope(get_perm_profile(db, user), "approval_flow", "write"):
         raise HTTPException(
             403, "Công tắc này áp cho toàn hệ thống nên chỉ người quản trị có phạm vi "
-                 "«tất cả» mới bật/tắt được.")
+                 "\"tất cả\" mới bật/tắt được.")
 
     row = db.query(ApprovalSwitch).filter(ApprovalSwitch.entity == data.entity).first()
     if row is None:
@@ -226,7 +226,7 @@ def create_flow(data: FlowIn, db: Session = Depends(get_db),
     #  ⚠️ SỬA thì `_load` gác bằng `get_scoped`, còn TẠO MỚI thì trước đây không
     #  ai hỏi gì — mà tạo mới đủ sức cướp luôn đường duyệt của cả tập đoàn:
     #  khai một luồng `company_id = None` (áp cho MỌI pháp nhân) với `priority`
-    #  cao nhất và đúng một bước «người duyệt = tôi», thế là mọi văn bản mới đều
+    #  cao nhất và đúng một bước "người duyệt = tôi", thế là mọi văn bản mới đều
     #  chạy về tay người khai. Không giả chữ ký của ai, chỉ đổi chỗ cần chữ ký.
     _block_scope_on_declare(db, user, data.company_id, "create")
 
@@ -252,7 +252,7 @@ def get_flow(flow_id: int, db: Session = Depends(get_db),
 def update_flow(flow_id: int, data: FlowIn, db: Session = Depends(get_db),
                 user=Depends(require("approval_flow", "write"))):
     flow = _load(db, flow_id, user, "write")
-    #  Sửa `company_id` sang pháp nhân khác (hoặc sang «mọi pháp nhân») là cùng
+    #  Sửa `company_id` sang pháp nhân khác (hoặc sang "mọi pháp nhân") là cùng
     #  một cuộc chiếm đường duyệt như lúc tạo mới, chỉ khác là đi vòng qua một
     #  luồng vốn thuộc phạm vi của mình.
     if data.company_id != flow.company_id:
@@ -397,7 +397,7 @@ def _block_scope_on_declare(db: Session, user, company_id: int | None, action: s
     if not company_id:
         raise HTTPException(
             403, "Luồng để trống pháp nhân là áp cho MỌI pháp nhân — chỉ người quản trị "
-                 "có phạm vi «tất cả» mới khai được. Hãy chọn đúng pháp nhân của bạn.")
+                 "có phạm vi \"tất cả\" mới khai được. Hãy chọn đúng pháp nhân của bạn.")
     mine = get_perm_profile(db, user).get("company_id") or 0
     if company_id != mine:
         raise HTTPException(403, "Không khai được luồng duyệt cho pháp nhân khác")
@@ -439,8 +439,8 @@ def _next_version(db: Session, flow: ApprovalFlow) -> int:
     mà `code` **được phép bỏ trống** — nên hai luồng khác nhau cùng mã rỗng là
     chuyện bình thường trên dữ liệu thật. Lúc đó luồng B lên bản 2 sẽ đâm vào
     luồng A đang giữ bản 2, `IntegrityError` bay thẳng ra ngoài thành **500 trần
-    không có nội dung** — người dùng chỉ thấy «Request failed with status code
-    500» và bước vừa khai biến mất (lỗi khách báo 25/08/2026, dựng lại được:
+    không có nội dung** — người dùng chỉ thấy "Request failed with status code
+    500" và bước vừa khai biến mất (lỗi khách báo 25/08/2026, dựng lại được:
     `Duplicate entry 'document--2' for key 'uq_approval_flow_code_version'`).
 
     Nhảy qua số đã có người giữ: số bản chỉ để người đọc tra lịch sử, không cần
@@ -485,7 +485,7 @@ def _block_delete_step_in_use(db: Session, flow_id: int, node: ApprovalNode) -> 
     if stuck:
         raise HTTPException(
             400,
-            f"Còn {stuck} phiếu đang dừng ở bước «{node.name or node.seq}». Xóa bước "
+            f"Còn {stuck} phiếu đang dừng ở bước \"{node.name or node.seq}\". Xóa bước "
             f"này thì không còn đường đổi người duyệt cho chúng nữa. Đổi người "
             f"duyệt của bước, hoặc đợi các phiếu đó đi qua rồi hãy xóa.",
         )
@@ -502,5 +502,5 @@ def _block_while_running(db: Session, flow_id: int) -> None:
         raise HTTPException(
             400,
             f"Còn {running} phiếu đang chạy theo luồng này. Tắt luồng "
-            f"(bỏ «Đang dùng») thay vì xóa — phiếu đang chạy vẫn đi hết bản của chúng.",
+            f"(bỏ \"Đang dùng\") thay vì xóa — phiếu đang chạy vẫn đi hết bản của chúng.",
         )

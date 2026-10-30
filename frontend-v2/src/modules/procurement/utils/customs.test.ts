@@ -197,7 +197,7 @@ describe('batch state helpers', () => {
     expect(isBatchUsable(makeBatch({ status: 3, created_count: 10 }))).toBe(false)
   })
 
-  //  bao-CR-608 — tệp chỉ ghi đè / chỉ xóa theo cột «ID» vẫn là tệp có việc để áp dụng.
+  //  bao-CR-608 — tệp chỉ ghi đè / chỉ xóa theo cột "ID" vẫn là tệp có việc để áp dụng.
   it('applies dry runs that only overwrite or delete', () => {
     expect(isBatchUsable(makeBatch({ status: 2, created_count: 0, updated_count: 3 }))).toBe(true)
     expect(isBatchUsable(makeBatch({ status: 2, created_count: 0, deleted_count: 1 }))).toBe(true)
@@ -238,7 +238,7 @@ describe('batch state helpers', () => {
     expect(resolveRevertState(makeBatch({ mode: 1, status: 1, deleted_count: 0 }))).toBe('hidden')
   })
 
-  //  bao-CR-608 — lô xóa theo cột «Thao tác» có bản chụp: hoàn tác được; chỉ lô cũ mới khóa.
+  //  bao-CR-608 — lô xóa theo cột "Thao tác" có bản chụp: hoàn tác được; chỉ lô cũ mới khóa.
   it('trusts the backend legacy flag over deleted_count', () => {
     expect(
       resolveRevertState(makeBatch({ mode: 1, status: 2, deleted_count: 3, legacy_replace: false })),
@@ -452,7 +452,7 @@ describe('formatCompactQuantity', () => {
 // bao-CR-477 — ngưỡng khối lượng và mức nghiêm trọng của danh mục hóa chất theo văn bản.
 describe('formatThresholdKg', () => {
   it('keeps sub-kilogram thresholds instead of rounding them to zero', () => {
-    // Methyl isocyanate có ngưỡng 0,15 kg: làm tròn thành «0 kg» là nói ngược hẳn với luật.
+    // Methyl isocyanate có ngưỡng 0,15 kg: làm tròn thành "0 kg" là nói ngược hẳn với luật.
     expect(formatThresholdKg(0.15)).toBe('0,15 kg')
     expect(formatThresholdKg(0.75)).toBe('0,75 kg')
   })

@@ -6,7 +6,7 @@ Làm 5 việc, chạy lại bao nhiêu lần cũng không sinh trùng:
    Quản lý điều phối, luồng có điều kiện), Duyệt dấu (TBP → Giám đốc duyệt dấu).
 3. Phân văn thư DEGO cho công ty 1.
 4. Bật công tắc bộ máy duyệt cho `vehicle_booking` và `seal_request`.
-5. Tạo phiếu mẫu (mục đích bắt đầu bằng «[THỬ LUỒNG]») bằng đúng tầng dịch vụ.
+5. Tạo phiếu mẫu (mục đích bắt đầu bằng "[THỬ LUỒNG]") bằng đúng tầng dịch vụ.
 
 Chạy trong container api:
     docker compose exec -T api python scripts/local_test/setup_flow_test_booking_seal.py
@@ -75,7 +75,7 @@ FLOWS = [
     },
     {
         #  Ca LỚN: luồng riêng có điều kiện, ưu tiên cao hơn nên được xét trước luồng
-        #  mặc định. Phiếu đặt xe chưa có ô giá trị tài sản, nên mượn «giao hàng» làm
+        #  mặc định. Phiếu đặt xe chưa có ô giá trị tài sản, nên mượn "giao hàng" làm
         #  ví dụ cho điều kiện. Giám đốc ở đây là tài khoản DEMOTP3 đóng vai.
         "entity": "vehicle_booking", "code": "THU-DX-3B",
         "name": "Đặt xe giao hàng — thêm Giám đốc duyệt (thử local)",
@@ -97,7 +97,7 @@ FLOWS = [
     },
 ]
 
-#  Bản PDF nhỏ nhất đọc được, làm «chứng từ có chữ ký sống» cho phiếu dấu.
+#  Bản PDF nhỏ nhất đọc được, làm "chứng từ có chữ ký sống" cho phiếu dấu.
 TINY_PDF = (b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
             b"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
             b"3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\n"
@@ -163,7 +163,7 @@ def ensure_flows(db) -> list[str]:
         db.add(flow)
         db.flush()
         for seq, (name, kind, ref) in enumerate(spec["steps"], start=1):
-            if ref.startswith("@"):   # «@MÃ» = id hồ sơ nhân sự của tài khoản đó
+            if ref.startswith("@"):   # "@MÃ" = id hồ sơ nhân sự của tài khoản đó
                 ref = str(find_user(db, ref[1:]).employee_id)
             db.add(ApprovalNode(flow_id=flow.id, seq=seq, branch_key="", name=name,
                                 node_kind=NODE_APPROVAL, flow_role=ROLE_APPROVE,

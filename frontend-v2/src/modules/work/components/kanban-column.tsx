@@ -147,7 +147,7 @@ export function KanbanColumn({
           vào cột này rồi (xem `displayed` ở `kanban-board.tsx`), đó mới là dấu hiệu
           rõ nhất. Tô thêm một mảng xanh mờ chỉ làm cả cột nhấp nháy.
           Thân cột TỰ CUỘN (`overflow-y-auto`), tiêu đề đứng yên phía trên: cột
-          «Xong» dài thì vẫn thấy tên cột + số đếm. Chuỗi `min-h-0` ở cột và ở
+          "Xong" dài thì vẫn thấy tên cột + số đếm. Chuỗi `min-h-0` ở cột và ở
           khung bảng là thứ cho phép thân co lại — thiếu một nấc là cả bảng cuộn
           chung và tiêu đề trôi mất như trước. */}
       <div

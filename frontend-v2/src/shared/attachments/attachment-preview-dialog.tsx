@@ -20,7 +20,7 @@ import {
  *
  * ⚠️ `url` là đường đọc THẲNG kho lưu trữ, **không qua kiểm quyền**, và backend
  * để RỖNG với entity riêng tư (`document_version`, `dossier`). Ở đây nó chỉ là
- * đường lùi cho nút «Mở tab mới»; mọi việc đọc nội dung đều đi
+ * đường lùi cho nút "Mở tab mới"; mọi việc đọc nội dung đều đi
  * `/api/attachments/{id}/view` qua `httpClient`.
  */
 export interface PreviewableAttachment {

@@ -5,9 +5,9 @@
 // Đại ca chốt 23/09/2026: biểu đồ nằm chung màn với danh sách, CHỈ hiện khi đã có bộ lọc
 // (từ khóa hoặc mã HS); không có trang tổng quan riêng, không tính sẵn, không tác vụ định kỳ.
 // Quyền: `customs_price` (đọc / ghi = nạp tệp / xóa = hoàn tác / xuất = Excel); riêng thẻ
-// «Thuốc BVTV» còn có khóa SỬA riêng `customs_pesticide` (duoc-CR-490, 29/09/2026).
-// bao-CR-493 (yêu cầu phòng Thu mua 25/09, bê từ bản v2): thẻ «Lịch sử nạp» thay hộp thoại;
-// hàng «Lọc thêm» sáu ô; doanh nghiệp chọn NHIỀU (chip cộng dồn); hai cột VND ở cuối bảng.
+// "Thuốc BVTV" còn có khóa SỬA riêng `customs_pesticide` (duoc-CR-490, 29/09/2026).
+// bao-CR-493 (yêu cầu phòng Thu mua 25/09, bê từ bản v2): thẻ "Lịch sử nạp" thay hộp thoại;
+// hàng "Lọc thêm" sáu ô; doanh nghiệp chọn NHIỀU (chip cộng dồn); hai cột VND ở cuối bảng.
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
@@ -49,9 +49,9 @@ const sourceTitle = (value: any, fromFile: any, derived: string) =>
   (value == null || value === '' ? undefined : fromFile ? 'Lấy từ cột trong tệp nạp' : derived)
 
 // 32 cột ĐÚNG thứ tự và tiêu đề của tệp GTT02, hiện HẾT mặc định (đại ca chốt 23/09/2026),
-// rồi hai cột suy ra ở cuối. Ai muốn gọn thì tự ẩn ở menu «Cột».
+// rồi hai cột suy ra ở cuối. Ai muốn gọn thì tự ẩn ở menu "Cột".
 const COLS: TableColumn[] = [
-  // bao-CR-608 — mã dòng, ĐẦU bảng như cột «ID» đầu tệp Excel xuất ra (xuất → sửa → nạp lại = ghi đè).
+  // bao-CR-608 — mã dòng, ĐẦU bảng như cột "ID" đầu tệp Excel xuất ra (xuất → sửa → nạp lại = ghi đè).
   { key: 'id', label: 'ID', width: 70, align: 'right' },
   { key: 'reg_date', label: 'Ngày đăng ký', width: 105, cell: (r) => (
     <span title={r.date_fixed ? 'Ngày trong tệp bị đảo ngày/tháng — đã đọc lại' : undefined}>
@@ -88,7 +88,7 @@ const COLS: TableColumn[] = [
   { key: 'tax_environment', label: 'Thuế môi trường', width: 115, align: 'right', cell: (r) => fmtUsd(r.tax_environment) },
   { key: 'tax_safeguard', label: 'Thuế tự vệ', width: 110, align: 'right', cell: (r) => fmtUsd(r.tax_safeguard) },
   { key: 'import_country', label: 'Nước nhận hàng', width: 110 },
-  // bao-CR-603 — bỏ chữ «(suy ra)»: tệp nạp có cột thì giá trị là của tệp; rê chuột thấy nguồn.
+  // bao-CR-603 — bỏ chữ "(suy ra)": tệp nạp có cột thì giá trị là của tệp; rê chuột thấy nguồn.
   { key: 'active_ingredient', label: 'Hoạt chất', width: 160,
     cell: (r) => <span title={sourceTitle(r.active_ingredient, r.active_ingredient_from_file, 'Suy ra từ tên hàng')}>{r.active_ingredient || ''}</span> },
   { key: 'formulation', label: 'Hàm lượng / dạng', width: 130,
@@ -236,7 +236,7 @@ export default function CustomsPrices() {
   )
 
   const chartReady = hasChartFilter(filters)
-  // bao-CR-502 — thẻ «Cấu hình»: hai danh mục của `customs_price` cần quyền quản lý (tạo / sửa / xóa,
+  // bao-CR-502 — thẻ "Cấu hình": hai danh mục của `customs_price` cần quyền quản lý (tạo / sửa / xóa,
   // như mục menu danh mục cũ); danh mục hóa chất mở cho ai XEM được nó (như nút cũ trên đầu màn).
   const canConfigure = can('customs_price', 'create') || can('customs_price', 'write') || can('customs_price', 'delete')
   const canReadRegulations = can('customs_regulation', 'read')
@@ -245,20 +245,20 @@ export default function CustomsPrices() {
   // Khóa theo bộ lọc: đổi lọc là dựng lại thẻ biểu đồ / xếp hạng với đơn vị mặc định — một lượt gọi API thay vì hai.
   const filterKey = JSON.stringify(toParams(filters))
   const empty = coverage && coverage.total === 0
-  //  06/10/2026 — mục «Tra cứu hóa chất» chỉ còn tiêu đề + hai nút + bảng hóa chất: dải phủ dữ liệu
+  //  06/10/2026 — mục "Tra cứu hóa chất" chỉ còn tiêu đề + hai nút + bảng hóa chất: dải phủ dữ liệu
   //  hải quan và cụm lọc dòng hàng không dùng cho bảng này, để lại chỉ làm rối (đại ca chốt).
   const isLegal = tab === 'legal'
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        {/* 06/10/2026 — tiêu đề = ĐÚNG tên mục đang sáng ở menu trái (năm thẻ tra giá → «Giá thị
-             trường»); ngữ cảnh «Tra cứu thị trường» đã nằm ở breadcrumb. */}
+        {/* 06/10/2026 — tiêu đề = ĐÚNG tên mục đang sáng ở menu trái (năm thẻ tra giá → "Giá thị
+             trường"); ngữ cảnh "Tra cứu thị trường" đã nằm ở breadcrumb. */}
         <h2 className="page-title" style={{ margin: 0, flex: 1 }}>
           {isCustomsTabSection(tab) ? CUSTOMS_TAB_GROUP_LABEL : sectionLabel}
         </h2>
         <button className="btn ghost" onClick={() => setTab('history')}><i className="ti ti-history" />Lịch sử nạp</button>
-        {/* 06/10/2026 — nút xuất dời từ thanh công cụ của bảng lên đây, đứng kế «Nạp dữ liệu». */}
+        {/* 06/10/2026 — nút xuất dời từ thanh công cụ của bảng lên đây, đứng kế "Nạp dữ liệu". */}
         {tab === 'list' && can('customs_price', 'export') && (
           <button className="btn ghost" disabled={exporting || !total} onClick={exportXlsx}
             title="Xuất đúng các dòng đang lọc (tối đa 50.000 dòng)">
@@ -270,9 +270,9 @@ export default function CustomsPrices() {
         )}
       </div>
 
-      {/* bao-CR-605 (07/10/2026): bỏ dải «Dữ liệu: … · T1…T12» ở mọi mục — đại ca chốt: dư. */}
+      {/* bao-CR-605 (07/10/2026): bỏ dải "Dữ liệu: … · T1…T12" ở mọi mục — đại ca chốt: dư. */}
 
-      {/* bao-CR-502 / duoc-CR-490 — thẻ «Cấu hình», «Thuốc BVTV» và «Tra cứu hóa chất» không dùng bộ lọc
+      {/* bao-CR-502 / duoc-CR-490 — thẻ "Cấu hình", "Thuốc BVTV" và "Tra cứu hóa chất" không dùng bộ lọc
            dòng hàng: ẩn cả cụm lọc (state giữ nguyên ở trang; các thẻ này lọc bằng state cục bộ riêng). */}
       {tab !== 'config' && tab !== 'pesticides' && !isLegal && (<>
       {/* bao-CR-496 — bộ lọc đã lưu RIÊNG từng tài khoản, chung kho với bản v2. */}
@@ -337,7 +337,7 @@ export default function CustomsPrices() {
               <SearchSelect value={draft.incoterm} placeholder="Tất cả"
                 options={optionList('incoterms')} onChange={set('incoterm')} />
             </FilterItem>
-            {/* bao-CR-503 — sheet 4 mục 13: tệp nguồn chọn NHIỀU (backend nhận «1,2»). */}
+            {/* bao-CR-503 — sheet 4 mục 13: tệp nguồn chọn NHIỀU (backend nhận "1,2"). */}
             <FilterItem label="Tệp nguồn (lô nạp)" width={240}>
               <MultiCheckSelect value={draft.batch_id.split(',').map((v) => v.trim()).filter(Boolean)}
                 options={optionList('batches')} onChange={(ids) => set('batch_id')(ids.join(','))} />
@@ -388,7 +388,7 @@ export default function CustomsPrices() {
       {alerts.length > 0 && (
         <div style={{ border: '1px solid #fecaca', background: '#fef2f2', color: '#991b1b', borderRadius: 8,
           padding: '8px 12px', fontSize: 13, marginBottom: 10 }}>
-          <i className="ti ti-alert-triangle" /> <b>Lưu ý pháp lý cho «{filters.q}»:</b>
+          <i className="ti ti-alert-triangle" /> <b>Lưu ý pháp lý cho "{filters.q}":</b>
           <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
             {/* bao-CR-477 (bản cũ): dải chỉ bày 5 mục nên xếp nặng nhất lên đầu, và bôi đậm con số */}
             {sortRegulationsBySeverity(alerts).slice(0, 5).map((a) => (
@@ -436,7 +436,7 @@ export default function CustomsPrices() {
                 {!loading && rows.length === 0 && (
                   <tr><td colSpan={table.columns.length} className="table-empty">
                     {empty
-                      ? <>Chưa có dữ liệu hải quan.{can('customs_price', 'write') ? ' Bấm «Nạp dữ liệu» để tải tệp GTT02.' : ''}</>
+                      ? <>Chưa có dữ liệu hải quan.{can('customs_price', 'write') ? ' Bấm "Nạp dữ liệu" để tải tệp GTT02.' : ''}</>
                       : 'Không có dòng hàng nào khớp bộ lọc — thử bỏ bớt điều kiện hoặc đổi từ khóa.'}
                   </td></tr>
                 )}
@@ -490,8 +490,8 @@ function SearchHint({ query, explain }: { query: string; explain: any }) {
   )
   return (
     <div style={style}>
-      {(explain.include || []).map((p: any) => <span key={`i-${p.term}`} style={{ marginRight: 12 }}>Có «{p.term}»: {join(p.matches || [])}</span>)}
-      {(explain.exclude || []).map((p: any) => <span key={`e-${p.term}`} style={{ marginRight: 12, color: '#b91c1c' }}>Không có «{p.term}»: {join(p.matches || [])}</span>)}
+      {(explain.include || []).map((p: any) => <span key={`i-${p.term}`} style={{ marginRight: 12 }}>Có <strong>{p.term}</strong>: {join(p.matches || [])}</span>)}
+      {(explain.exclude || []).map((p: any) => <span key={`e-${p.term}`} style={{ marginRight: 12, color: '#b91c1c' }}>Không có <strong>{p.term}</strong>: {join(p.matches || [])}</span>)}
     </div>
   )
 }

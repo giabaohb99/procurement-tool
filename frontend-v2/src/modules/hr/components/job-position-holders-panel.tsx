@@ -35,11 +35,11 @@ const ALL_DEPARTMENTS = -1
 //  lặng với mã này và chỉ lên tiếng ở ba mã còn lại — xem `mobileCard`.
 //  ⚠️ `official`, KHÔNG phải `active`: bộ mã ở `shared/constants/statuses.ts`
 //  (sinh từ backend) không hề có mã nào tên `active`, đoán tên là huy hiệu
-//  «Chính thức» hiện trên mọi thẻ.
+//  "Chính thức" hiện trên mọi thẻ.
 const STATUS_NORMAL = 'official'
 
 /**
- * Tab «Người đang giữ» của một chức vụ (duoc-CR-322) — đếm ngược từ hồ sơ.
+ * Tab "Người đang giữ" của một chức vụ (duoc-CR-322) — đếm ngược từ hồ sơ.
  *
  * Trả lời hai câu người quản lý danh mục thực sự hỏi trước khi sửa hay dẹp một
  * chức vụ: *bao nhiêu người đang mang chức danh này* và *họ nằm ở phòng nào*.
@@ -47,21 +47,21 @@ const STATUS_NORMAL = 'official'
  *
  * ⚠️ Đây là tab MƯỢN dữ liệu của phân hệ khác, nên phải tự tắt khi thiếu quyền
  * `employee.read` — cứ mount là gọi thì người dùng ăn toast 403 ngay lúc mở tab
- * (bẫy đã dính ở tab «Công nợ» của Nhà cung cấp).
+ * (bẫy đã dính ở tab "Công nợ" của Nhà cung cấp).
  *
  * ⚠️ Danh sách này **lọc theo phạm vi dữ liệu** của người đang xem, y như màn
  * Nhân sự. Nên nó có thể ngắn hơn con số backend nêu khi từ chối xóa — câu chặn
- * đó nói rõ «trên toàn công ty» đúng vì lý do này.
+ * đó nói rõ "trên toàn công ty" đúng vì lý do này.
  *
  * ⚠️ **Phân trang THẬT, không cắt trần rồi thôi** (08/09/2026). Bản đầu lấy 200
  * dòng một lượt và chỉ ghi một dòng chú thích khi vượt — nghĩa là chức vụ đông
  * người thì phần đuôi **không có cách nào xem được từ màn này**, phải sang màn
- * Nhân sự mà lọc lại từ đầu. «Nhân viên» là chức vụ mà cả công ty cùng mang,
+ * Nhân sự mà lọc lại từ đầu. "Nhân viên" là chức vụ mà cả công ty cùng mang,
  * nên đó không phải trường hợp hiếm.
  *
  * ⚠️ MỘT thẻ, bộ lọc phòng ban nằm trong THANH CÔNG CỤ của bảng. Bản trước tách
  * một thẻ tóm tắt riêng ở trên với dãy chip phòng ban: nó chiếm nguyên một khối
- * chỉ để nói con số mà chân bảng đã nói (*«Tổng 11 người»*), và dãy chip dài ra
+ * chỉ để nói con số mà chân bảng đã nói (*"Tổng 11 người"*), và dãy chip dài ra
  * theo số phòng ban — công ty mười phòng là nó tràn hai dòng, đẩy bảng xuống
  * dưới mép màn hình. Ô chọn thì cao bằng nhau bất kể bao nhiêu phòng.
  *
@@ -80,8 +80,8 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
   const isMobile = useIsMobile()
 
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  //  ⚠️ Sentinel «mọi phòng ban» là `-1`, KHÔNG phải `0`. Nhóm giả «(Chưa gắn
-  //  phòng ban)» mang đúng `id = 0` — lấy `0` làm «tất cả» thì chọn chính nhóm
+  //  ⚠️ Sentinel "mọi phòng ban" là `-1`, KHÔNG phải `0`. Nhóm giả "(Chưa gắn
+  //  phòng ban)" mang đúng `id = 0` — lấy `0` làm "tất cả" thì chọn chính nhóm
   //  đó lại ra toàn bộ danh sách, và những hồ sơ chưa gắn phòng thành thứ duy
   //  nhất không lọc ra được. `department_id=0` là một bộ lọc THẬT: `apply_filters`
   //  so khớp chính xác nên nó trả về đúng nhóm chưa gắn.
@@ -94,7 +94,7 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
   const search = useDebouncedValue(keyword)
 
   //  ⚠️ Đổi BẤT KỲ bộ lọc nào cũng phải về trang 1 — đứng ở trang 4 rồi lọc còn
-  //  3 người thì backend trả rỗng, và người dùng đọc ra «phòng này không có ai».
+  //  3 người thì backend trả rỗng, và người dùng đọc ra "phòng này không có ai".
   //
   //  Dùng hook chung chứ không `useEffect(() => setPage(1), [...])`: effect chạy
   //  SAU khi commit, nên lượt render đầu sau khi đổi bộ lọc vẫn gọi API với số
@@ -167,7 +167,7 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
   //  ⚠️ Mốc là **có phòng ban nào không**, không còn là "từ hai phòng trở lên"
   //  (19/09/2026). Mốc hai phòng đúng khi danh sách này là các phòng ĐANG GIỮ
   //  chức vụ — gom gọn trong một phòng thì mọi câu trả lời cho ra cùng kết quả.
-  //  Nay nó là cả danh mục, và ô chọn còn mang mục «(Chưa gắn phòng ban)», nên
+  //  Nay nó là cả danh mục, và ô chọn còn mang mục "(Chưa gắn phòng ban)", nên
   //  một phòng thôi đã có ba câu trả lời khác nhau. Danh mục rỗng thì mới tắt.
   const departmentSelect = departments.length > 0 && (
     <Select
@@ -179,7 +179,7 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={String(ALL_DEPARTMENTS)}>Tất cả phòng ban</SelectItem>
-        {/*  ⚠️ Nhóm «chưa gắn phòng ban» phải có mặt: `department_id = 0` là một
+        {/*  ⚠️ Nhóm "chưa gắn phòng ban" phải có mặt: `department_id = 0` là một
              bộ lọc THẬT (`apply_filters` so khớp chính xác), và đó chính là nhóm
              người quản lý danh mục đi tìm để gắn cho đủ. Danh mục phòng ban
              không có dòng nào mang id 0 nên phải tự thêm. */}
@@ -283,7 +283,7 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
               </span>
             </div>
 
-            {/*  Tình trạng chỉ nói khi KHÁC «Đang làm việc»: cả trăm hồ sơ đều
+            {/*  Tình trạng chỉ nói khi KHÁC "Đang làm việc": cả trăm hồ sơ đều
                  đang làm việc nên in ra là trăm dòng giống hệt nhau, còn người
                  đã nghỉ mới là thứ người quản lý danh mục cần nhặt ra. */}
             {row.status !== STATUS_NORMAL && row.status_label && (
@@ -300,13 +300,13 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
         emptyMessage={
           //  Nói rõ RỖNG VÌ BỘ LỌC hay rỗng vì thật sự chưa ai giữ. Một câu
           //  chung cho cả hai thì người vừa gõ nhầm một chữ trong ô tìm kiếm
-          //  đọc ra «chức vụ này chưa ai giữ» và tin là vậy.
+          //  đọc ra "chức vụ này chưa ai giữ" và tin là vậy.
           keyword || status || departmentId !== ALL_DEPARTMENTS
             ? 'Không có hồ sơ nào khớp bộ lọc đang đặt.'
             : 'Chưa có hồ sơ nào giữ chức vụ này.'
         }
         //  ⚠️ Gài đường quay lại vào `state`. Không có nó thì nút lùi trên hồ sơ
-        //  nhân sự ghi «Danh sách nhân sự» và bấm vào ném người dùng sang một
+        //  nhân sự ghi "Danh sách nhân sự" và bấm vào ném người dùng sang một
         //  màn họ chưa từng đứng — mất luôn tab đang mở và bộ lọc. Xem
         //  `use-back-target.ts`.
         onRowClick={(row: Employee) =>
@@ -324,11 +324,11 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
               {/*  ⚠️ Câu gợi ý RÚT GỌN ở khổ hẹp — và phải đo theo lúc ĐANG LỌC,
                    không phải lúc thảnh thơi. Nút *Bộ lọc* nở thêm 24px khi mọc
                    huy hiệu số, nên phần gõ chữ tụt từ 141px xuống **117px**: bản
-                   «Tìm mã NV, họ tên…» (130px) vừa khít lúc chưa lọc rồi cụt đuôi
+                   "Tìm mã NV, họ tên…" (130px) vừa khít lúc chưa lọc rồi cụt đuôi
                    ngay khi người dùng chọn một phòng ban. Bản này 110px, còn dư ở
                    cả hai trạng thái.
                    Rút bằng tay chứ không để trình duyệt cắt: chữ đứt giữa từ đọc
-                   ra như lỗi vẽ, còn «…» sau một cụm trọn nghĩa thì đọc ra là
+                   ra như lỗi vẽ, còn "…" sau một cụm trọn nghĩa thì đọc ra là
                    "còn tìm được thứ khác nữa". Bản đầy đủ giữ từ `md` — ở đó ô
                    rộng 224px. */}
               <SearchField

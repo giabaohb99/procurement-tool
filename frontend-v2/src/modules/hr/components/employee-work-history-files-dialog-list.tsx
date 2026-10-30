@@ -25,8 +25,8 @@ interface EmployeeWorkHistoryFilesDialogListProps {
 }
 
 /**
- * Danh sách tệp (hoặc chữ thay thế lúc đang tải/rỗng) của hộp «Tệp quyết
- * định» — tách khỏi `employee-work-history-files-dialog.tsx` để tệp đó giữ
+ * Danh sách tệp (hoặc chữ thay thế lúc đang tải/rỗng) của hộp "Tệp quyết
+ * định" — tách khỏi `employee-work-history-files-dialog.tsx` để tệp đó giữ
  * dưới ~200 dòng (CLAUDE.md §"File Size Management"). Thuần trình bày, không
  * tự gọi mutation nào — nhận sẵn hàm xử lý từ nơi gọi.
  */
@@ -97,7 +97,7 @@ export function EmployeeWorkHistoryFilesDialogList({
                   icon={Trash2}
                   title="Gỡ tệp"
                   confirmTitle="Gỡ tệp đính kèm?"
-                  confirmDescription={`Gỡ «${file.filename}» khỏi dòng quá trình công tác này?`}
+                  confirmDescription={`Gỡ "${file.filename}" khỏi dòng quá trình công tác này?`}
                   destructive
                   disabled={deleting}
                   onConfirm={() => onDelete(file.id)}

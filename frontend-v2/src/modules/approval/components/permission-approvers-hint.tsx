@@ -7,11 +7,11 @@ interface PermissionApproversHintProps {
 }
 
 /**
- * Cách chọn «Người có quyền duyệt (theo phân quyền)» (duoc-CR-680): nói rõ luật và bày luôn
+ * Cách chọn "Người có quyền duyệt (theo phân quyền)" (duoc-CR-680): nói rõ luật và bày luôn
  * AI đang giữ quyền Duyệt trên loại chứng từ này, qua vai trò nào, phạm vi nào — người khai
  * luồng không phải mở màn Phân quyền tài khoản ra dò.
  *
- * Danh sách chưa lọc theo phiếu (lúc khai luồng chưa có phiếu): người phạm vi «Công ty» chỉ nhận
+ * Danh sách chưa lọc theo phiếu (lúc khai luồng chưa có phiếu): người phạm vi "Công ty" chỉ nhận
  * phiếu của công ty mình khi chạy thật.
  */
 export function PermissionApproversHint({ entity }: PermissionApproversHintProps) {
@@ -21,8 +21,8 @@ export function PermissionApproversHint({ entity }: PermissionApproversHintProps
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
-        Bước giao cho những người được tick quyền «Duyệt» trên «{label}» ở màn Phân quyền tài
-        khoản, trong phạm vi dữ liệu của họ (phạm vi «Công ty» chỉ nhận phiếu của công ty mình).
+        Bước giao cho những người được tick quyền <strong>Duyệt</strong> trên <strong>{label}</strong> ở màn Phân quyền tài
+        khoản, trong phạm vi dữ liệu của họ (phạm vi <strong>Công ty</strong> chỉ nhận phiếu của công ty mình).
         Chỉ tính phạm vi Phòng ban, Công ty, Tất cả; không tính vai trò Quản trị hệ thống. Đổi phân
         quyền thì phiếu gửi sau tự theo.
       </p>

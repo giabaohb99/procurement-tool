@@ -15,10 +15,12 @@ import {
  * khi form bị truyền nhầm nguyên object hồ sơ.
  */
 describe('toSelfContactPayload', () => {
-  it('sends exactly the three contact keys even when the values carry extra fields', () => {
+  it('sends exactly the four contact keys even when the values carry extra fields', () => {
     //  Kịch bản thật: ai đó truyền nguyên object hồ sơ vào thay cho giá trị form.
     const polluted = {
       phone: '0901',
+      phone_label: '',
+      extra_phones: [],
       permanent_address: 'A',
       current_address: 'B',
       department_id: 9,
@@ -29,17 +31,17 @@ describe('toSelfContactPayload', () => {
 
     const payload = toSelfContactPayload(polluted)
 
-    expect(Object.keys(payload).sort()).toEqual(['current_address', 'permanent_address', 'phone'])
+    expect(Object.keys(payload).sort()).toEqual(['current_address', 'extra_phones', 'permanent_address', 'phone', 'phone_label'])
   })
 
   it('trims surrounding whitespace so pasted numbers do not carry spaces', () => {
     expect(
-      toSelfContactPayload({ phone: '  0987 ', permanent_address: ' Huế ', current_address: '' }),
-    ).toEqual({ phone: '0987', permanent_address: 'Huế', current_address: '' })
+      toSelfContactPayload({ phone: '  0987 ', phone_label: ' Zalo ', extra_phones: [], permanent_address: ' Huế ', current_address: '' }),
+    ).toEqual({ phone: '0987', phone_label: 'Zalo', extra_phones: [], permanent_address: 'Huế', current_address: '' })
   })
 
   it('keeps an emptied field as an empty string so the backend clears it', () => {
-    expect(toSelfContactPayload({ phone: '   ', permanent_address: '', current_address: '' }).phone).toBe('')
+    expect(toSelfContactPayload({ phone: '   ', phone_label: '', extra_phones: [], permanent_address: '', current_address: '' }).phone).toBe('')
   })
 })
 
@@ -49,6 +51,8 @@ describe('toSelfContactFormValues', () => {
     //  là chuyển từ không-kiểm-soát sang có-kiểm-soát và React cảnh báo.
     expect(toSelfContactFormValues({ phone: '0901' })).toEqual({
       phone: '0901',
+      phone_label: '',
+      extra_phones: [],
       permanent_address: '',
       current_address: '',
     })
@@ -56,10 +60,11 @@ describe('toSelfContactFormValues', () => {
 })
 
 describe('selfContactSchema length limits match the backend columns', () => {
-  const base = { phone: '', permanent_address: '', current_address: '' }
+  const base = { phone: '', phone_label: '', extra_phones: [], permanent_address: '', current_address: '' }
 
   it.each([
     ['phone', 25],
+    ['phone_label', 50],
     ['permanent_address', 500],
     ['current_address', 500],
   ] as const)('accepts %s at exactly %i characters and rejects one more', (field, limit) => {
@@ -70,5 +75,36 @@ describe('selfContactSchema length limits match the backend columns', () => {
 
   it('does not count surrounding spaces against the limit', () => {
     expect(selfContactSchema.safeParse({ ...base, phone: `  ${'1'.repeat(25)}  ` }).success).toBe(true)
+  })
+})
+
+describe('số điện thoại khác (duoc-CR-694)', () => {
+  const base = { phone: '0901000111', phone_label: '', permanent_address: '', current_address: '' }
+
+  it('bỏ dòng trống số và cắt khoảng trắng khi dựng thân PATCH', () => {
+    const payload = toSelfContactPayload({
+      ...base,
+      extra_phones: [
+        { number: ' 0912 345 678 ', label: ' Zalo ' },
+        { number: '  ', label: 'bỏ' },
+      ],
+    })
+    expect(payload.extra_phones).toEqual([{ number: '0912 345 678', label: 'Zalo' }])
+  })
+
+  it('chặn số sai định dạng, số trùng nhau và số trùng số chính', () => {
+    const run = (extra_phones: { number: string; label: string }[]) =>
+      selfContactSchema.safeParse({ ...base, extra_phones }).success
+    expect(run([{ number: 'abc12345678', label: '' }])).toBe(false)
+    expect(run([{ number: '123', label: '' }])).toBe(false)
+    expect(run([{ number: '0912345678', label: '' }, { number: '0912.345.678', label: '' }])).toBe(false)
+    expect(run([{ number: '0901 000 111', label: '' }])).toBe(false)
+    expect(run([{ number: '0912345678', label: 'Zalo' }])).toBe(true)
+  })
+
+  it('tối đa 4 số khác', () => {
+    const five = Array.from({ length: 5 }, (_, i) => ({ number: `091234567${i}`, label: '' }))
+    expect(selfContactSchema.safeParse({ ...base, extra_phones: five }).success).toBe(false)
+    expect(selfContactSchema.safeParse({ ...base, extra_phones: five.slice(0, 4) }).success).toBe(true)
   })
 })

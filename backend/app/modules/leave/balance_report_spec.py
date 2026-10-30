@@ -85,7 +85,7 @@ def rows_of(db: Session, user, prof: dict, year: int, type_name: dict, emp_dept:
     if conds:   # lọc NGAY trong SQL bằng truy vấn con — không thêm truy vấn riêng
         q = q.filter(LeaveBalance.employee_id.in_(db.query(Employee.id).filter(*conds)))
     rows = q.filter(LeaveBalance.year == year).with_entities(*BAL_COLS).all()
-    #  «Chưa nghỉ ngày nào» xét THEO NGƯỜI: tổng cấp > 0 và tổng (dùng + giữ chỗ) = 0 trên MỌI
+    #  "Chưa nghỉ ngày nào" xét THEO NGƯỜI: tổng cấp > 0 và tổng (dùng + giữ chỗ) = 0 trên MỌI
     #  dòng quỹ — người đã nghỉ phép năm nhưng còn quỹ ốm chưa đụng thì KHÔNG tính.
     granted_sum, spent_sum = {}, {}
     for r in rows:

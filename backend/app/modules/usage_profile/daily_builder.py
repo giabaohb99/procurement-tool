@@ -1,7 +1,7 @@
 """Ghép số liệu thành dòng `tab_usage_daily` và ghi idempotent (duoc-CR-641, phase 02).
 
 Mỗi người dùng đang hoạt động (có hồ sơ nhân sự) có MỘT dòng mỗi ngày kể cả khi không vào — thiếu thì mẫu số
-«ngày làm việc ròng» sai. Tài khoản không có nhân sự (admin máy) có dòng nếu có hoạt động, lịch = mặc định hệ thống.
+"ngày làm việc ròng" sai. Tài khoản không có nhân sự (admin máy) có dòng nếu có hoạt động, lịch = mặc định hệ thống.
 Ghi: DELETE các dòng của ngày rồi bulk INSERT (chạy lại không nhân đôi). JSON cắt theo trần để tổng ≤ 16 KB.
 """
 import json

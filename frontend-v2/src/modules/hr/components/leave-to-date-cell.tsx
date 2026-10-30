@@ -3,10 +3,10 @@ import type { LeaveRequest } from '../types/leave'
 import { formatRequestPeriods, periodsOf } from '../utils/leave-periods'
 
 /**
- * Ô «Đến ngày» của bảng đơn nghỉ (duoc-CR-683).
+ * Ô "Đến ngày" của bảng đơn nghỉ (duoc-CR-683).
  *
  * Hai cột Từ/Đến ngày là BAO NGOÀI của đơn — đơn nhiều khoảng thì giữa hai mốc đó có ngày đi
- * làm. Ô bảng cao 35px không đủ chỗ kê từng khoảng, nên chỉ thêm chữ mờ «· 2 khoảng» để người
+ * làm. Ô bảng cao 35px không đủ chỗ kê từng khoảng, nên chỉ thêm chữ mờ "· 2 khoảng" để người
  * đọc biết đây không phải một đợt liền; rê chuột vào ô thì `title` kê đủ các khoảng, trình đọc màn hình đọc bản `sr-only`.
  */
 export function LeaveToDateCell({ request }: { request: LeaveRequest }) {

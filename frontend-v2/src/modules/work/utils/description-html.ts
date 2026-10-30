@@ -21,7 +21,7 @@ export function plainText(value: string): string {
  *
  * Tiptap trả `<p></p>` cho ô vừa xóa sạch — chuỗi ấy dài 7 ký tự nhưng người
  * dùng thấy là trống, để nguyên thì panel hiện một khối trắng thay cho câu mời
- * «Thêm mô tả». Ngược lại, bài chỉ có MỘT TẤM ẢNH thì chữ trơn rỗng mà nội dung
+ * "Thêm mô tả". Ngược lại, bài chỉ có MỘT TẤM ẢNH thì chữ trơn rỗng mà nội dung
  * thì có thật.
  */
 export function isRichEmpty(value: string): boolean {

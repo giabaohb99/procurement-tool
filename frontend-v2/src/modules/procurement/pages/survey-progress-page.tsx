@@ -331,7 +331,7 @@ function SurveyProgressContent() {
     />
   )
 
-  //  Huy hiệu trên nút «Bộ lọc» của khổ hẹp đếm CẢ HAI tầng — ô lọc nhanh và
+  //  Huy hiệu trên nút "Bộ lọc" của khổ hẹp đếm CẢ HAI tầng — ô lọc nhanh và
   //  điều kiện nâng cao — vì cả hai nay nằm sau đúng một nút đó. Đếm thiếu một
   //  tầng thì người dùng thấy nút không dấu gì mà danh sách vẫn đang bị lọc.
   const activeFilterCount =
@@ -465,11 +465,11 @@ function SurveyProgressContent() {
               </div>
 
               {/*  ⚠️ Ô trong tờ trượt phải có NHÃN. Trên thanh công cụ, ô chọn tự
-                   giải nghĩa bằng giá trị đang chọn («Tất cả tiến độ»); xếp dọc
+                   giải nghĩa bằng giá trị đang chọn ("Tất cả tiến độ"); xếp dọc
                    mấy ô như vậy trong một tờ trắng thì thành danh sách chữ trôi
                    nổi, người đọc không biết ô nào lọc cái gì cho tới khi bấm
-                   thử. Riêng ô «Trễ hạn» thì nhãn là BẮT BUỘC: giá trị mặc định
-                   của nó đọc trơ trọi là «Tất cả», không nói được tất cả cái gì. */}
+                   thử. Riêng ô "Trễ hạn" thì nhãn là BẮT BUỘC: giá trị mặc định
+                   của nó đọc trơ trọi là "Tất cả", không nói được tất cả cái gì. */}
               <QuickFilterSheet
                 activeCount={activeFilterCount}
                 onClearAll={() => {

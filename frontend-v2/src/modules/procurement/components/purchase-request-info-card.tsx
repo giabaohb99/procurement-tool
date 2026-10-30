@@ -32,18 +32,18 @@ import {
 import { ApproverSelect } from './approver-select'
 
 interface InfoCardProps {
-  /** bao-CR-499 — người duyệt được chứng từ này (nguồn ô «Trưởng phòng phê duyệt»). */
+  /** bao-CR-499 — người duyệt được chứng từ này (nguồn ô "Trưởng phòng phê duyệt"). */
   approverCandidates?: DeptHeadCandidate[]
   data: PurchaseRequestDetail
   editing: boolean
-  /** Đang LẬP phiếu mới: ô Phòng xử lý mặc định «Phòng thu mua mặc định» (chưa nhờ phòng nào). */
+  /** Đang LẬP phiếu mới: ô Phòng xử lý mặc định "Phòng thu mua mặc định" (chưa nhờ phòng nào). */
   isNew?: boolean
   /** Sau khi phiếu duyệt, quản lý vẫn được đổi cờ Gấp và backend đồng bộ sang ĐMH. */
   urgentEditable?: boolean
   onUrgentChange?: (checked: boolean) => void
   companies?: Company[]
   employees?: Employee[]
-  /** bao-CR-414 — danh mục phòng ban cho ô «Nhờ phòng xử lý»; rỗng thì ô chỉ hiện chữ. */
+  /** bao-CR-414 — danh mục phòng ban cho ô "Nhờ phòng xử lý"; rỗng thì ô chỉ hiện chữ. */
   departments?: Department[]
   /** CR-071 — ứng viên đứng tên TBP trên phiếu; rỗng thì ô về dạng chữ như cũ. */
   deptHeadCandidates?: DeptHeadCandidate[]
@@ -83,7 +83,7 @@ export function PurchaseRequestInfoCard({
     editing,
     defaultDeptHead,
   )
-  // bao-CR-480: một ô «Phòng xử lý» cho cả ba chứng từ — luật nhãn/mục chọn ở util dùng chung.
+  // bao-CR-480: một ô "Phòng xử lý" cho cả ba chứng từ — luật nhãn/mục chọn ở util dùng chung.
   const handlingDeptOptionList = handlingDeptOptions(departments, data.handler_dept_id)
   const handlingDeptCreateOptionList = handlingDeptCreateOptions(departments, data.handler_dept_id)
   const handlingDeptText = handlingDeptLabel(data.handler_dept_id, data.handler_dept_name, departments)
@@ -226,15 +226,15 @@ export function PurchaseRequestInfoCard({
         </Field>
 
         {/*
-          bao-CR-414 / bao-CR-480 — «Phòng xử lý»: phòng nào sẽ đi mua cho phiếu này; nhà máy
+          bao-CR-414 / bao-CR-480 — "Phòng xử lý": phòng nào sẽ đi mua cho phiếu này; nhà máy
           tự mua thì backend tự điền phòng nhà máy lúc lập phiếu. Chọn phòng thì quản lý thu
-          mua của phòng đó thấy + điều phối được phiếu, còn bộ thu mua chung «trừ nhà máy» thì
-          KHÔNG thấy (loại trừ so đúng ô này). bao-CR-524: KHÔNG còn mục «Thu mua chung» (0) —
-          phòng thu mua mặc định là phòng thật «Sản xuất -Thu mua» có sẵn trong danh mục.
+          mua của phòng đó thấy + điều phối được phiếu, còn bộ thu mua chung "trừ nhà máy" thì
+          KHÔNG thấy (loại trừ so đúng ô này). bao-CR-524: KHÔNG còn mục "Thu mua chung" (0) —
+          phòng thu mua mặc định là phòng thật "Sản xuất -Thu mua" có sẵn trong danh mục.
         */}
         {editing && isNew && departments.length ? (
-          /* 03/10/2026 — bỏ ô tick «Nhờ phòng khác xử lý» (bao-CR-488): MỘT ô chọn, mặc định hiện
-             «Phòng thu mua mặc định», bấm vào mới xổ danh mục phòng ban. Mục mặc định = CHƯA nhờ
+          /* 03/10/2026 — bỏ ô tick "Nhờ phòng khác xử lý" (bao-CR-488): MỘT ô chọn, mặc định hiện
+             "Phòng thu mua mặc định", bấm vào mới xổ danh mục phòng ban. Mục mặc định = CHƯA nhờ
              phòng nào → không gửi, backend tự chọn (nhà máy → chính phòng mình, còn lại → phòng
              thu mua mặc định) — xem `HANDLING_DEPT_DEFAULT_OPTION`. */
           <div className="space-y-1.5">
@@ -303,9 +303,9 @@ export function PurchaseRequestInfoCard({
             //  Người đang hiện KHÔNG nằm trong danh sách ứng viên thì để ô rỗng và bày tên đó ở
             //  placeholder (chữ mờ) — y như bản Radix cũ. Đưa id vào `value` thì SearchSelect
             //  hiện nguyên văn con số id, vì nó không tìm thấy nhãn trong `options`.
-            //  Phòng chưa gán trưởng ở danh mục Phòng ban thì không có «mặc định» nào để
+            //  Phòng chưa gán trưởng ở danh mục Phòng ban thì không có "mặc định" nào để
             //  hiện — nói rõ lý do và mời chọn, KHÔNG tự đoán một người: đoán mà không lưu
-            //  xuống thì lúc gửi duyệt vẫn bị chặn «thiếu Trưởng bộ phận» (CR-466).
+            //  xuống thì lúc gửi duyệt vẫn bị chặn "thiếu Trưởng bộ phận" (CR-466).
             <SearchSelect
               id="pr-dept-head"
               searchInTrigger

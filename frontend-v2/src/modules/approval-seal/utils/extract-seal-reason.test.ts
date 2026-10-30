@@ -30,7 +30,7 @@ describe('extractSealStopReason', () => {
   })
 
   it('ignores an ordinary edit logged under the same action', () => {
-    //  Backend ghi «Yêu cầu chỉnh sửa» dưới action `update` — đúng action mà mọi
+    //  Backend ghi "Yêu cầu chỉnh sửa" dưới action `update` — đúng action mà mọi
     //  lần sửa phiếu bình thường cũng dùng. Soi theo action là bắt nhầm ngay.
     expect(
       extractSealStopReason([entry({ action: 'update', message: 'Cập nhật yêu cầu DD008' })]),

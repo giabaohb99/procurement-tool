@@ -1,5 +1,6 @@
 import { Download, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { appConfig } from '@/core/config/app-config'
 import { usePermission } from '@/core/authorization/use-permission'
@@ -21,6 +22,7 @@ import { CALL_STATUS } from '../config/ai-skill-constants'
 import { CallStatusBadge } from '../config/ai-skill-meta'
 import { useMcpCalls } from '../hooks/use-ai-usage'
 import type { McpCall, McpCallFilters } from '../types/ai-skill'
+import { readCallDocument } from '../utils/ai-row-mappers'
 import { formatResultChars } from '../utils/call-log-format'
 import { buildCsv, downloadCsv, type CsvColumn } from '../utils/csv-export'
 
@@ -37,6 +39,7 @@ const CSV_COLUMNS: CsvColumn<McpCall>[] = [
   { header: 'Ứng dụng AI', value: (c) => c.client_name },
   { header: 'Lệnh', value: (c) => c.method },
   { header: 'Công cụ', value: (c) => c.tool },
+  { header: 'Chứng từ', value: (c) => readCallDocument(c)?.code ?? '' },
   { header: 'Trạng thái', value: (c) => c.status_label },
   { header: 'Lý do từ chối', value: (c) => c.deny_reason },
   { header: 'Thời gian chạy (ms)', value: (c) => c.duration_ms },
@@ -50,11 +53,14 @@ const CSV_COLUMNS: CsvColumn<McpCall>[] = [
  * G6 — nhật ký lượt gọi từ AI riêng của nhân sự vào ERP (doc 21 §6.2, K3 ai-CR-209). Máy chủ tự giới hạn: người
  * thường chỉ thấy lượt của chính mình; xem cả công ty cần quyền quản lý bot AI (`agent_group.read`, tạm thời — Agent 4
  * sẽ đổi sang khóa riêng). Xuất CSV lấy đúng TRANG ĐANG XEM, nói rõ trên nút.
+ *
+ * bao-CR-696: ô tìm nhanh theo người HOẶC công cụ (tham số `q`, khớp một phần — thay `tool` khớp đúng tên) và cột
+ * Chứng từ — mã phiếu của lượt GHI thật, đọc qua `readCallDocument`; lượt nháp / đề xuất / chỉ đọc thì gạch ngang.
  */
 export function CallLogPage() {
   const { can } = usePermission()
   const canViewAll = can('agent_group', 'read')
-  const { value: toolKeyword, setValue: setToolKeyword, debouncedValue: tool } = useUrlSearchParam('tool')
+  const { value: keyword, setValue: setKeyword, debouncedValue: q } = useUrlSearchParam('q')
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [dateFrom, setDateFrom] = useUrlParamState('from', '')
   const [dateTo, setDateTo] = useUrlParamState('to', '')
@@ -62,12 +68,12 @@ export function CallLogPage() {
   //  gì về việc tra cứu (Agent 2 soi dev 19/10). Bỏ tick để xem đủ.
   const [allMethods, setAllMethods] = useUrlParamState('all', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const [page, setPage] = usePageResetOnFilterChange([tool, status, dateFrom, dateTo, allMethods])
+  const [page, setPage] = usePageResetOnFilterChange([q, status, dateFrom, dateTo, allMethods])
 
   const filters: McpCallFilters = {
     page,
     size: pageSize,
-    tool: tool.trim() || undefined,
+    q: q.trim() || undefined,
     status: status === ALL ? undefined : Number(status),
     date_from: dateFrom || undefined,
     date_to: dateTo || undefined,
@@ -85,7 +91,7 @@ export function CallLogPage() {
         hideable: false,
         cell: (c) => <span className="whitespace-nowrap">{formatDateTime(c.created_at)}</span>,
       },
-      //  Lượt khóa sai không có người (user_id = 0) — máy chủ mới trả «(khóa sai)», bản cũ trả rỗng thì in gạch.
+      //  Lượt khóa sai không có người (user_id = 0) — máy chủ mới trả "(khóa sai)", bản cũ trả rỗng thì in gạch.
       { key: 'user', header: 'Người', width: 180, cell: (c) => c.user_label || (c.user_id ? `#${c.user_id}` : '—') },
       { key: 'client', header: 'Ứng dụng AI', width: 160, cell: (c) => c.client_name || '—' },
       {
@@ -93,6 +99,22 @@ export function CallLogPage() {
         header: 'Công cụ',
         width: 200,
         cell: (c) => <span className="font-mono text-xs">{c.tool || c.method}</span>,
+      },
+      {
+        key: 'document',
+        header: 'Chứng từ',
+        width: 140,
+        cell: (c) => {
+          const doc = readCallDocument(c)
+          //  Gạch thật bằng <span>: DataTable nuốt ô trả đúng chuỗi '—' (docs/ui/table.md §1).
+          if (!doc) return <span className="text-muted-foreground">—</span>
+          if (!doc.href) return <span className="font-medium">{doc.code}</span>
+          return (
+            <Link to={doc.href} className="font-medium text-primary hover:underline">
+              {doc.code}
+            </Link>
+          )
+        },
       },
       {
         key: 'status',
@@ -126,7 +148,7 @@ export function CallLogPage() {
     downloadCsv(`nhat-ky-ai-trang-${page}.csv`, buildCsv(rows, CSV_COLUMNS))
   }
 
-  const filtering = tool.trim() !== '' || status !== ALL || dateFrom !== '' || dateTo !== ''
+  const filtering = q.trim() !== '' || status !== ALL || dateFrom !== '' || dateTo !== ''
 
   return (
     <PageContainer fill>
@@ -157,7 +179,7 @@ export function CallLogPage() {
               ? 'Không có lượt nào khớp bộ lọc.'
               : allMethods
                 ? 'Chưa có lượt gọi nào.'
-                : 'Chưa có lượt gọi công cụ nào — bỏ tick «Chỉ lượt gọi công cụ» để xem cả lượt khởi tạo kết nối.'
+                : 'Chưa có lượt gọi công cụ nào — bỏ tick "Chỉ lượt gọi công cụ" để xem cả lượt khởi tạo kết nối.'
           }
           storageKey="ai-skill.calls"
           pagination={{
@@ -174,10 +196,11 @@ export function CallLogPage() {
                 <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-9"
-                  placeholder="Tìm công cụ, vd purchase_report"
-                  value={toolKeyword}
+                  placeholder="Tìm người hoặc công cụ"
+                  aria-label="Tìm theo người hoặc công cụ"
+                  value={keyword}
                   maxLength={80}
-                  onChange={(e) => setToolKeyword(e.target.value)}
+                  onChange={(e) => setKeyword(e.target.value)}
                 />
               </div>
               <DateRangePicker

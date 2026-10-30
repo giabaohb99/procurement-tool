@@ -1,10 +1,10 @@
-// duoc-CR-490 — thẻ «Thuốc BVTV» của Tra cứu thị trường (bản cũ, bê từ bản v2 + thêm form
+// duoc-CR-490 — thẻ "Thuốc BVTV" của Tra cứu thị trường (bản cũ, bê từ bản v2 + thêm form
 // thêm/sửa/xóa — v2 chưa có form này). Nguồn: bản cào danhmuc.thuocbvtv.com, nạp lại bằng nút
-// «Nạp danh mục».
+// "Nạp danh mục".
 //
 // duoc-CR-493: bộ lọc nằm trên URL với tên RIÊNG (`pq`, `pstatus`, `pgroup`, `pbanned`) — bấm một
 // dòng là sang TRANG chi tiết, bấm lùi phải về đúng bộ lọc đang xem. Không dùng bộ lọc dòng hàng
-// của trang (nó là state khác, cho các mục khác). Mặc định lọc «Còn hiệu lực» — thuốc hết hiệu lực
+// của trang (nó là state khác, cho các mục khác). Mặc định lọc "Còn hiệu lực" — thuốc hết hiệu lực
 // vẫn có, bỏ lọc là thấy. Số trang không lên URL: quay lại thì về trang 1.
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
@@ -33,7 +33,7 @@ export default function CustomsPesticideTab() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
-  //  `pstatus=all` = mọi tình trạng; KHÔNG có param = mặc định «Còn hiệu lực».
+  //  `pstatus=all` = mọi tình trạng; KHÔNG có param = mặc định "Còn hiệu lực".
   const applied: PesticideFilters = {
     q: searchParams.get('pq') ?? '',
     status: searchParams.get('pstatus') === 'all' ? '' : searchParams.get('pstatus') ?? DEFAULT_PESTICIDE_FILTERS.status,

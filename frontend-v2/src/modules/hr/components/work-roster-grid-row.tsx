@@ -30,7 +30,7 @@ export function WorkRosterRow({ item, days, compact, todayISO, stickyStyle }: Wo
       className={cn(ROSTER_ROW_GRID, 'border-b border-border/40', compact ? 'h-8' : 'h-10', sticky && 'sticky z-15 bg-card')}
     >
       <div role="rowheader" className={cn(STICKY_NAME_CELL, 'flex items-center px-3')}>
-        {/* Mã NV xuống dòng dưới: đứng cùng dòng thì mã ăn chỗ, tên dài bị cắt («Nguyễn Hoàng …»). */}
+        {/* Mã NV xuống dòng dưới: đứng cùng dòng thì mã ăn chỗ, tên dài bị cắt ("Nguyễn Hoàng …"). */}
         <div className="flex min-w-0 flex-col leading-tight">
           <span className="truncate text-sm font-medium" title={`${item.full_name} · ${item.code}`}>
             {item.full_name}

@@ -1,6 +1,6 @@
 """Phân hệ Công việc — API nhóm · danh sách · cấu hình list. Prefix `/api/work`.
 
-`/api/work` chứ không phải `/api/tasks`: đường đó đã bị tab «Việc cần làm»
+`/api/work` chứ không phải `/api/tasks`: đường đó đã bị tab "Việc cần làm"
 chiếm (`/api/dashboard/tasks`, CR-215).
 
 **Hai tầng quyền, cả hai đều bắt buộc:**
@@ -183,7 +183,7 @@ def get_activities(list_id: int, kind: int | None = None, by: int | None = None,
 @router.get("/lists/{list_id}/activity-actors")
 def get_activity_actors(list_id: int, db: Session = Depends(get_db),
                         user=Depends(require("work_task", "read"))):
-    """Những người từng thao tác trên dự án — nguồn cho ô lọc «theo người»."""
+    """Những người từng thao tác trên dự án — nguồn cho ô lọc "theo người"."""
     return success(activities.list_actors(db, _actor(db, user), list_id))
 
 

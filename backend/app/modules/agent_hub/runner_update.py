@@ -1,5 +1,5 @@
-"""Máy sửa mã TỰ CẬP NHẬT cho khớp bản mã của bot (ai-CR-124) — đại ca 08/10/2026: «tự khắc phục lỗi này đi, khỏi cần
-thông báo nữa» (thẻ «MÁY SỬA MÃ VÀ BOT LỆCH BẢN» báo hoài sau mỗi lần deploy dev).
+"""Máy sửa mã TỰ CẬP NHẬT cho khớp bản mã của bot (ai-CR-124) — đại ca 08/10/2026: "tự khắc phục lỗi này đi, khỏi cần
+thông báo nữa" (thẻ "MÁY SỬA MÃ VÀ BOT LỆCH BẢN" báo hoài sau mỗi lần deploy dev).
 
 Máy sửa mã dựng ảnh từ mã lúc build nên không tự đổi theo dev. Cách tự khắc phục:
 

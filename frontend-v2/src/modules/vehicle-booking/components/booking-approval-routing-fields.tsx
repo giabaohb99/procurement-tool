@@ -14,18 +14,18 @@ interface BookingApprovalRoutingFieldsProps {
   savedApproverName?: string
   /** Tài khoản đang lập phiếu — bị bỏ khỏi danh sách người duyệt. */
   selfUserId?: number
-  /** Tải danh sách lỗi — nói thẳng ra, đừng để ô trống đọc như «chưa ai có quyền». */
+  /** Tải danh sách lỗi — nói thẳng ra, đừng để ô trống đọc như "chưa ai có quyền". */
   isError?: boolean
   onCompanyChange: (id: number) => void
   onApproverChange: (userId: number) => void
 }
 
 /**
- * Khối «Người phê duyệt + Công ty» của phiếu đặt xe (duoc-CR-681) — người phê duyệt đứng TRƯỚC (anh Được
+ * Khối "Người phê duyệt + Công ty" của phiếu đặt xe (duoc-CR-681) — người phê duyệt đứng TRƯỚC (anh Được
  * chốt 24/10/2026). Hai ô độc lập.
  *
  * Người duyệt = người có quyền Duyệt đặt xe ở màn Phân quyền (không tính Quản trị, chỉ phạm vi Phòng
- * ban / Công ty / Tất cả). Gửi duyệt xong, thư «Gửi duyệt» đi tới đúng người này.
+ * ban / Công ty / Tất cả). Gửi duyệt xong, thư "Gửi duyệt" đi tới đúng người này.
  */
 export function BookingApprovalRoutingFields({
   data,

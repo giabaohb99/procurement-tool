@@ -7,7 +7,7 @@ interface LeaveBalanceBreakdownCardProps {
 }
 
 /**
- * PHÂN RÃ quỹ phép: con số «còn lại» được cấu thành từ đâu.
+ * PHÂN RÃ quỹ phép: con số "còn lại" được cấu thành từ đâu.
  *
  * ⚠️ Bày ra thành phép tính chứ không chỉ liệt kê. Người xem đến đây với đúng
  * một câu hỏi — *"vì sao còn từng ấy ngày"* — và bảng danh sách chỉ trả lời
@@ -60,7 +60,7 @@ export function LeaveBalanceBreakdownCard({ balance }: LeaveBalanceBreakdownCard
               value={balance.pending_days}
               valueClassName="text-amber-600 dark:text-amber-400"
             />
-            {/*  Chỉ mọc khi ĐÃ kết sổ. Bày ô «Đã chuyển đi: 0» quanh năm cho mọi
+            {/*  Chỉ mọc khi ĐÃ kết sổ. Bày ô "Đã chuyển đi: 0" quanh năm cho mọi
                  dòng quỹ là thêm một con số không nói gì vào đúng chỗ người ta
                  đang lần theo phép tính. */}
             {balance.carried_out_days > 0 && (
@@ -73,7 +73,7 @@ export function LeaveBalanceBreakdownCard({ balance }: LeaveBalanceBreakdownCard
                  một số hạng nữa. Để nó nằm cùng cỡ cùng hàng với các số hạng thì
                  con số người ta mở màn này ra để xem lại là con số khó nhận ra
                  nhất. Trải hết hàng thì nó đứng riêng một dòng dưới cùng, đúng
-                 chỗ dấu «=» của phép tính. */}
+                 chỗ dấu "=" của phép tính. */}
             <Stat
               label="Còn lại"
               value={balance.remaining_days}
@@ -86,7 +86,7 @@ export function LeaveBalanceBreakdownCard({ balance }: LeaveBalanceBreakdownCard
           </dl>
 
           {/*  Phần HẾT HẠN đứng ngoài phép tính, và phải nói thành câu: nó không
-               nằm trong công thức còn lại (đã bị trừ khỏi «Chuyển năm trước»),
+               nằm trong công thức còn lại (đã bị trừ khỏi "Chuyển năm trước"),
                nên đặt nó thành một ô số nữa là mời người đọc cộng nhầm. */}
           {balance.carried_expired_days > 0 && (
             <p className="mt-3 text-sm text-muted-foreground">
@@ -139,7 +139,7 @@ function Stat({
   return (
     <div className={cn('min-w-0 rounded-md border bg-muted/20 px-3 py-2', cellClassName)}>
       {/*  Nhãn ngắt dòng được: ở hai cột trên màn 390px mỗi ô còn ~160px, mà
-           «Chờ duyệt (đang giữ chỗ)» dài hơn thế. */}
+           "Chờ duyệt (đang giữ chỗ)" dài hơn thế. */}
       <dt className="text-xs break-words text-muted-foreground">{label}</dt>
       <dd
         className={cn(

@@ -1,4 +1,4 @@
-"""Bộ skill «Cẩm nang hệ thống» — HẠT GIỐNG từ mã (ai-CR-220, K7 doc/erp/21 §7.2).
+"""Bộ skill "Cẩm nang hệ thống" — HẠT GIỐNG từ mã (ai-CR-220, K7 doc/erp/21 §7.2).
 
 Trước K7 trợ lý web / bot nhồi 7 gói `assistant/packs/*.md` vào lời nhắc, còn 11 tệp gốc nhà máy nằm ở
 `assistant/knowledge-source/`. Nay kho skill là nơi DUY NHẤT trợ lý đọc cẩm nang (gỡ chồng chéo C1 của doc 21 §2.1): các
@@ -8,7 +8,7 @@ tệp đó dời về `seed_handbook/` và chỉ dùng làm hạt giống.
   - chưa có bộ mã `SYS-HANDBOOK` → tạo bộ (Đang dùng, mức Mở), 7 skill, xuất bản phiên bản 1, gắn 11 tệp gốc nhà máy làm
     tệp đính kèm của skill nhà máy, gán quyền đọc cho TỪNG pháp nhân đang có;
   - có rồi (kể cả quản trị đã xóa mềm / lưu trữ / sửa nội dung) → KHÔNG đụng gì. Đúng luật seed prod không ghi đè.
-Pháp nhân tạo SAU lần gieo phải gán tay ở màn Bộ skill (checklist «thêm pháp nhân», doc/agent-hub/06 §2.5).
+Pháp nhân tạo SAU lần gieo phải gán tay ở màn Bộ skill (checklist "thêm pháp nhân", doc/agent-hub/06 §2.5).
 """
 from __future__ import annotations
 
@@ -79,7 +79,7 @@ def factory_reference_files() -> list[tuple[str, str]]:
 
 
 def ensure_system_handbook(db: Session) -> int:
-    """Gieo bộ «Cẩm nang hệ thống» nếu CHƯA từng có (kể cả bản đã xóa mềm). Trả số skill vừa tạo (0 = không đụng)."""
+    """Gieo bộ "Cẩm nang hệ thống" nếu CHƯA từng có (kể cả bản đã xóa mềm). Trả số skill vừa tạo (0 = không đụng)."""
     from app.modules.company.model import Company
 
     if db.query(AiSkillSet.id).filter(AiSkillSet.code == SET_CODE).first() is not None:

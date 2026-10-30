@@ -61,7 +61,7 @@ def get_profile(db: Session, user_id: int, weeks: int) -> dict:
 
     S = UserUsageSnapshot
     today = vn_today()
-    #  «N tuần gần nhất CÓ DỮ LIỆU» (sắp giảm dần + LIMIT) chứ không tính ngược từ hôm nay: job tuần trễ vài ngày thì
+    #  "N tuần gần nhất CÓ DỮ LIỆU" (sắp giảm dần + LIMIT) chứ không tính ngược từ hôm nay: job tuần trễ vài ngày thì
     #  hồ sơ vẫn thấy snapshot mới nhất, không rỗng.
     snaps = list(reversed(db.execute(
         select(S.id, S.period_start, S.cohort_kind, S.cohort_key, S.cohort_size, S.metrics, S.schema_version,

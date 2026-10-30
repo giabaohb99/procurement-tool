@@ -21,9 +21,9 @@ interface FolderSharePeopleListProps {
 }
 
 /**
- * Danh sách «Người có quyền» của hộp «Chia sẻ» kiểu Drive (đặc tả §C, chốt
+ * Danh sách "Người có quyền" của hộp "Chia sẻ" kiểu Drive (đặc tả §C, chốt
  * lead 23/09/2026) — mỗi dòng đổi mức NGAY TẠI CHỖ qua `PATCH .../access/{id}`
- * (không thu hồi rồi cấp lại), và «Gỡ quyền» nằm NGAY TRONG cùng ô thả xuống
+ * (không thu hồi rồi cấp lại), và "Gỡ quyền" nằm NGAY TRONG cùng ô thả xuống
  * đó (mục cuối, tô đỏ) thay vì một nút riêng — đúng khuôn hộp Chia sẻ của
  * Drive.
  *
@@ -94,10 +94,10 @@ export function FolderSharePeopleList({ folderId, rows, canManage, onNavigateToF
                         className="underline underline-offset-2 hover:text-foreground"
                         onClick={() => onNavigateToFolder(row.folder_id)}
                       >
-                        «{row.folder_name}»
+                        <strong>{row.folder_name}</strong>
                       </button>
                     ) : (
-                      `«${row.folder_name}»`
+                      `"${row.folder_name}"`
                     )}
                   </>
                 ) : row.valid_to ? (

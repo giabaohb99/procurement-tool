@@ -1,4 +1,4 @@
-import { BookOpen, KeyRound, Link2, Plus, ShieldOff } from 'lucide-react'
+import { BookOpen, Link2, Plus, Search, ShieldOff } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -8,39 +8,51 @@ import { DataTable, createSelectionColumn, type DataTableColumn } from '@/shared
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useRowSelection } from '@/shared/hooks/use-row-selection'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { ErrorState } from '@/shared/ui/error-state'
+import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { SectionHeading } from '@/shared/ui/section-heading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
-import { KEY_KIND, LIVE_KEY_STATES, upperFirst } from '../config/ai-skill-constants'
+import { LIVE_KEY_STATES, upperFirst } from '../config/ai-skill-constants'
 import { KeyStateBadge } from '../config/ai-skill-meta'
 import { ConnectGuide } from '../components/connect-guide'
 import { KeyIssueDialog } from '../components/key-issue-dialog'
 import { useKeyAdminKeys, useKeyAdminMeta, useRevokeKeys } from '../hooks/use-ai-usage'
-import type { AdminMcpKey } from '../types/ai-skill'
+import {
+  CONNECTION_TYPE_LABEL,
+  redirectHost,
+  toConnectionRow,
+  type ConnectionRow,
+} from '../utils/ai-row-mappers'
 
 const ALL = 'all'
 
 /**
- * G5 — khóa kết nối AI của nhân sự (doc 21 §6.2, K4 ai-CR-212). Bảng mọi khóa trong phạm vi người xem; phát hộ khóa
- * chỉ đọc cho người / cả phòng; tick chọn để thu hồi hàng loạt. Người phát không bao giờ thấy chuỗi khóa — chỉ 4 ký
- * tự cuối để đối chiếu.
+ * G5 — Kết nối (tên cũ: Khóa nhân sự; doc 21 §6.2, K4 ai-CR-212, nâng cấp bao-CR-696). Mỗi dòng là một kết nối AI
+ * riêng của nhân sự: ai · nối bằng khóa riêng hay OAuth · ứng dụng nào (tên + nơi quay về) · dùng lần cuối · trạng
+ * thái. Phát hộ khóa chỉ đọc cho người / cả phòng; tick chọn để thu hồi hàng loạt. Người phát không bao giờ thấy chuỗi
+ * khóa — chỉ 4 ký tự cuối để đối chiếu.
+ *
+ * Trường mới đọc qua `toConnectionRow` (một chỗ, hợp đồng Agent 4 chốt 30/10); máy chủ cũ thì lùi về trường sẵn có.
  */
 export function KeyAdminPage() {
   const meta = useKeyAdminMeta()
   const { data: departments } = useDepartments({ page_size: 500 })
   const [departmentId, setDepartmentId] = useUrlParamState('department', ALL)
   const [state, setState] = useUrlParamState('state', ALL)
+  //  Tìm theo tên / email / mã NV — máy chủ lọc (`q`). Đặt lại trang theo giá trị ĐÃ HOÃN, không theo từng ký tự gõ.
+  const { value: keyword, setValue: setKeyword, debouncedValue: q } = useUrlSearchParam('q')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const [page, setPage] = usePageResetOnFilterChange([departmentId, state])
+  const [page, setPage] = usePageResetOnFilterChange([departmentId, state, q])
   const [issueOpen, setIssueOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
   const selection = useRowSelection()
@@ -53,11 +65,12 @@ export function KeyAdminPage() {
   const params = {
     department_id: departmentId === ALL ? undefined : Number(departmentId),
     state: state === ALL ? undefined : Number(state),
+    q: q.trim() || undefined,
     page,
     size: pageSize,
   }
   const { data, isLoading, isError } = useKeyAdminKeys(params, canRead)
-  const rows = data?.items
+  const rows = useMemo(() => data?.items.map(toConnectionRow), [data])
   const idsOnPage = useMemo(() => (rows ?? []).map((k) => k.id), [rows])
   //  Khóa đã thu hồi / hết hạn không còn gì để thu hồi — đếm riêng số khóa CÒN HIỆU LỰC trong lượt chọn để hộp xác nhận
   //  nói đúng số sẽ đổi.
@@ -66,54 +79,105 @@ export function KeyAdminPage() {
   )
 
   const { selectedIds, toggleRow, toggleAllOnPage } = selection
-  const columns = useMemo<DataTableColumn<AdminMcpKey>[]>(() => {
+  const columns = useMemo<DataTableColumn<ConnectionRow>[]>(() => {
     const allOnPage = idsOnPage.length > 0 && idsOnPage.every((id) => selectedIds.has(id))
     const someOnPage = idsOnPage.some((id) => selectedIds.has(id))
-    const base: DataTableColumn<AdminMcpKey>[] = [
+    const base: DataTableColumn<ConnectionRow>[] = [
       {
-        key: 'owner',
+        key: 'person',
         header: 'Người',
-        width: 200,
+        width: 220,
         hideable: false,
-        cell: (k) => <span className="font-medium text-navy dark:text-foreground">{k.owner_label || `#${k.user_id}`}</span>,
+        wrap: true,
+        cell: (k) => {
+          const sub = [k.employeeCode, k.email].filter(Boolean).join(' · ')
+          return (
+            <div className="min-w-0">
+              <div className="font-medium text-navy dark:text-foreground">{k.person || '(không rõ)'}</div>
+              {sub && (
+                <div className="truncate text-xs text-muted-foreground" title={sub}>
+                  {sub}
+                </div>
+              )}
+            </div>
+          )
+        },
       },
-      { key: 'department', header: 'Phòng', width: 180, cell: (k) => <span className="text-muted-foreground">{k.department || '—'}</span> },
+      {
+        key: 'department',
+        header: 'Phòng',
+        width: 160,
+        cell: (k) => (k.department ? <span className="text-muted-foreground">{k.department}</span> : <span>—</span>),
+      },
+      {
+        key: 'connection_type',
+        header: 'Cách nối',
+        width: 110,
+        cell: (k) => (
+          <Badge variant={k.connectionType === 'oauth' ? 'secondary' : 'outline'}>{CONNECTION_TYPE_LABEL[k.connectionType]}</Badge>
+        ),
+      },
+      {
+        key: 'app',
+        header: 'Ứng dụng',
+        width: 220,
+        wrap: true,
+        cell: (k) => {
+          const host = redirectHost(k.appRedirectUri)
+          //  Gạch thật bằng <span>: DataTable nuốt ô trả đúng chuỗi '—' (docs/ui/table.md §1).
+          if (!k.appName && !host) return <span className="text-muted-foreground">—</span>
+          return (
+            <div className="min-w-0">
+              <div>{k.appName || '(không tên)'}</div>
+              {host && (
+                <div className="truncate text-xs text-muted-foreground" title={k.appRedirectUri}>
+                  {host}
+                </div>
+              )}
+            </div>
+          )
+        },
+      },
       {
         key: 'name',
         header: 'Tên khóa',
-        width: 200,
+        width: 180,
         cell: (k) => (
           <span>
-            {k.name || '(không tên)'}{' '}
-            <span className={cn('text-xs text-muted-foreground', k.kind !== KEY_KIND.oauth && 'font-mono')}>
-              {k.kind === KEY_KIND.oauth ? k.kind_label || 'Kết nối OAuth' : k.hint}
-            </span>
+            {k.keyName || '(không tên)'}{' '}
+            {k.connectionType === 'key' && <span className="font-mono text-xs text-muted-foreground">{k.hint}</span>}
           </span>
         ),
       },
-      { key: 'scope', header: 'Mức', width: 100, cell: (k) => upperFirst(k.scope_label) },
-      { key: 'expires_at', header: 'Hết hạn', width: 150, cell: (k) => <span className="whitespace-nowrap">{formatDateTime(k.expires_at)}</span> },
+      { key: 'scope', header: 'Mức', width: 100, defaultHidden: true, cell: (k) => upperFirst(k.source.scope_label) },
+      {
+        key: 'expires_at',
+        header: 'Hết hạn',
+        width: 150,
+        defaultHidden: true,
+        cell: (k) => <span className="whitespace-nowrap">{formatDateTime(k.source.expires_at)}</span>,
+      },
       {
         key: 'last_used_at',
         header: 'Dùng lần cuối',
         width: 150,
         cell: (k) => (
-          <span className="whitespace-nowrap text-muted-foreground">{k.last_used_at ? formatDateTime(k.last_used_at) : 'Chưa dùng'}</span>
+          <span className="whitespace-nowrap text-muted-foreground">{k.lastUsedAt ? formatDateTime(k.lastUsedAt) : 'Chưa dùng'}</span>
         ),
       },
-      { key: 'state', header: 'Trạng thái', width: 120, cell: (k) => <KeyStateBadge state={k.state} label={k.state_label} /> },
-      { key: 'issued_by', header: 'Người phát', width: 160, defaultHidden: true, cell: (k) => k.issued_by_label || 'Tự tạo' },
+      { key: 'state', header: 'Trạng thái', width: 120, cell: (k) => <KeyStateBadge state={k.state} label={k.stateLabel} /> },
+      { key: 'issued_by', header: 'Người phát', width: 160, defaultHidden: true, cell: (k) => k.source.issued_by_label || 'Tự tạo' },
     ]
     if (!canDelete) return base
     return [
-      createSelectionColumn<AdminMcpKey>({
+      createSelectionColumn<ConnectionRow>({
         getRowId: (k) => k.id,
         selectedIds,
         onToggleRow: toggleRow,
         onToggleAllOnPage: () => toggleAllOnPage(idsOnPage),
         allOnPageSelected: allOnPage,
         someOnPageSelected: someOnPage && !allOnPage,
-        getRowLabel: (k) => `khóa ${k.name || k.hint} của ${k.owner_label}`,
+        getRowLabel: (k) => `khóa ${k.keyName || k.hint} của ${k.person}`,
       }),
       ...base,
     ]
@@ -143,13 +207,13 @@ export function KeyAdminPage() {
     )
   }
 
-  const filtering = departmentId !== ALL || state !== ALL
+  const filtering = departmentId !== ALL || state !== ALL || q.trim() !== ''
 
   return (
     <PageContainer fill>
       <PageHeader
-        title="Khóa nhân sự"
-        description="Khóa để AI riêng của nhân viên (Claude, ChatGPT…) tra cứu ERP đúng quyền của họ. Phát hộ cho cả phòng, thu hồi khi nghỉ việc."
+        title="Kết nối"
+        description="AI riêng của nhân viên (Claude, ChatGPT…) đang nối vào ERP: bằng khóa riêng hay OAuth, ứng dụng nào, dùng lần cuối khi nào. Phát khóa hộ cả phòng, thu hồi khi nghỉ việc."
         actions={
           <>
             {canDelete && selectedLive.length > 0 && (
@@ -181,20 +245,32 @@ export function KeyAdminPage() {
             isLoading={isLoading || meta.isLoading}
             isError={isError}
             emptyMessage={
-              filtering ? 'Không có khóa nào khớp bộ lọc.' : 'Chưa có khóa nào. Bấm Phát khóa để cấp cho một phòng.'
+              filtering ? 'Không có kết nối nào khớp bộ lọc.' : 'Chưa có kết nối nào. Bấm Phát khóa để cấp cho một phòng.'
             }
-            storageKey="ai-skill.keys"
+            //  Khóa lưu bố cục MỚI (bao-CR-696): bộ cột đổi hẳn, giữ khóa cũ thì bố cục đã lưu của màn Khóa nhân sự thắng
+            //  và cột Cách nối / Ứng dụng không hiện cho người từng chỉnh cột (docs/ui/table.md §4).
+            storageKey="ai.connections"
             pagination={{
               page,
               pageSize,
               total: data?.total ?? 0,
               onPageChange: setPage,
               onPageSizeChange: setPageSize,
-              unitLabel: 'khóa',
+              unitLabel: 'kết nối',
             }}
             toolbar={
               <>
-                <KeyRound className="hidden size-4 text-muted-foreground md:block" />
+                <div className="relative min-w-48 flex-1 md:max-w-xs">
+                  <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    placeholder="Tìm tên, email, mã NV"
+                    aria-label="Tìm theo tên, email, mã nhân viên"
+                    value={keyword}
+                    maxLength={80}
+                    onChange={(e) => setKeyword(e.target.value)}
+                  />
+                </div>
                 <Select value={departmentId} onValueChange={setDepartmentId}>
                   <SelectTrigger className="w-48" aria-label="Lọc phòng ban">
                     <SelectValue />

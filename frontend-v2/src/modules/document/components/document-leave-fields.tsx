@@ -39,8 +39,8 @@ interface DocumentLeaveFieldsProps {
  *     mấy ngày ─┐ ai gánh việc ────┐ gọi số nào ─┐
  *     vì sao ──────────────────────────────────┘
  *
- * Bản đầu xếp hai cột đều nhau nên «Số liên lạc» đứng trơ một mình chiếm nửa
- * hàng, còn «Từ ngày» và «Đến ngày» nằm hai hàng khác nhau — mắt phải nhảy qua
+ * Bản đầu xếp hai cột đều nhau nên "Số liên lạc" đứng trơ một mình chiếm nửa
+ * hàng, còn "Từ ngày" và "Đến ngày" nằm hai hàng khác nhau — mắt phải nhảy qua
  * lại mới ghép được thành một khoảng.
  *
  * Danh sách *loại nghỉ* và *buổi* lấy từ `@/shared/constants/statuses` — tệp
@@ -56,10 +56,10 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
   const suggestion = suggestedDayCount(fromDate, toDate, form.watch('leave.from_session'),
                           form.watch('leave.to_session'))
 
-  //  NGHỈ TRONG MỘT NGÀY là ca hay gặp nhất — «chiều thứ Sáu», «sáng mai».
+  //  NGHỈ TRONG MỘT NGÀY là ca hay gặp nhất — "chiều thứ Sáu", "sáng mai".
   //
   //  Bắt khai đủ bốn ô (từ ngày · buổi · đến ngày · buổi) cho một buổi nghỉ là
-  //  bốn thao tác cho việc nhỏ nhất, và hai ô «Buổi» lúc đó nói về CÙNG một
+  //  bốn thao tác cho việc nhỏ nhất, và hai ô "Buổi" lúc đó nói về CÙNG một
   //  buổi nên đặt lệch nhau là ra dữ liệu vô nghĩa. Nên: chọn ngày bắt đầu thì
   //  ngày kết thúc bám theo, và khi hai ngày trùng nhau thì gộp còn MỘT ô buổi.
   if (useHasChanged(fromDate) && fromDate && (!toDate || toDate < fromDate)) {
@@ -69,7 +69,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
 
   //  ĐƠN NGHỈ NHIỀU KHOẢNG NGÀY (duoc-CR-683): giấy hệ sinh mang bản kê `leave_periods`. Hai ô
   //  Từ/Đến ngày lúc đó chỉ là BAO NGOÀI, nuốt cả những ngày đi làm ở giữa — người đọc giấy
-  //  phải thấy từng khoảng, không thì «27/10 → 07/11, 5.5 ngày» đọc thành 12 ngày nghỉ liền.
+  //  phải thấy từng khoảng, không thì "27/10 → 07/11, 5.5 ngày" đọc thành 12 ngày nghỉ liền.
   const periods = gnpLeavePeriodsOf(form.watch('leave.extra'))
   const periodsLabelId = useId()
 
@@ -99,7 +99,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
               field.onChange(value)
               //  Giữ hai đầu bằng nhau: backend tính ngày công theo buổi ĐI khi
               //  cùng ngày, nhưng để lệch thì metadata lưu ra một khoảng vô
-              //  nghĩa («sáng → chiều» của cùng một ngày).
+              //  nghĩa ("sáng → chiều" của cùng một ngày).
               if (gopCaHai) form.setValue('leave.to_session', value)
             }}
           >
@@ -203,7 +203,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
             <FormControl>
               {/*  `DatePicker` chứ không phải `<input type="date">`: ô nguyên bản
                    hiện theo locale của MÁY, nên máy đặt tiếng Anh ra
-                   «mm/dd/yyyy» — lệch hẳn với các ô ngày khác của chính form
+                   "mm/dd/yyyy" — lệch hẳn với các ô ngày khác của chính form
                    này (Ngày hiệu lực, Ngày hết hiệu lực). */}
               <DatePicker value={field.value ?? ''} onChange={field.onChange} />
             </FormControl>
@@ -246,7 +246,7 @@ export function DocumentLeaveFields({ form }: DocumentLeaveFieldsProps) {
             </ul>
           </ReadOnlyValue>
           <p className="text-xs text-muted-foreground">
-            {`Đơn nghỉ gồm ${periods.length} khoảng ngày; «Từ ngày» – «Đến ngày» ở trên là ngày đầu và ngày cuối.`}
+            {`Đơn nghỉ gồm ${periods.length} khoảng ngày; "Từ ngày" – "Đến ngày" ở trên là ngày đầu và ngày cuối.`}
           </p>
         </div>
       )}

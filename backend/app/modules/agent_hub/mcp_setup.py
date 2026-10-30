@@ -1,4 +1,4 @@
-"""Đoạn cấu hình nối ứng dụng AI với cổng MCP của ERP — cho màn «AI của tôi» (ai-CR-213, K6 doc/erp/21 §6.2 G8).
+"""Đoạn cấu hình nối ứng dụng AI với cổng MCP của ERP — cho màn "AI của tôi" (ai-CR-213, K6 doc/erp/21 §6.2 G8).
 
 Mỗi ứng dụng một khuôn riêng, viết ĐÚNG cách ứng dụng đó nhận:
 - Claude Desktop KHÔNG nhận `url` + `headers` trong `claude_desktop_config.json` (chỉ chạy lệnh cục bộ) → dùng cầu
@@ -7,7 +7,7 @@ Mỗi ứng dụng một khuôn riêng, viết ĐÚNG cách ứng dụng đó nh
 - Claude Code: lệnh `claude mcp add --transport http … --header`.
 - Cursor: `~/.cursor/mcp.json` với `url` + `headers`. Gemini CLI: `~/.gemini/settings.json` với `httpUrl` + `headers`.
 - claude.ai (web) và ChatGPT: kết nối tùy chỉnh đăng nhập bằng OAuth → từ ai-CR-218 ERP là máy chủ cấp quyền, nên
-  `auth = "oauth"`, đoạn «cấu hình» chỉ là địa chỉ cổng; người dùng đăng nhập ERP và bấm Cho phép. Các ứng dụng còn lại
+  `auth = "oauth"`, đoạn "cấu hình" chỉ là địa chỉ cổng; người dùng đăng nhập ERP và bấm Cho phép. Các ứng dụng còn lại
   `auth = "key"` (dán khóa).
 
 Khóa thật không bao giờ nằm ở đây: đoạn cấu hình mang chỗ giữ `KEY_PLACEHOLDER`, màn hình tự thay bằng khóa vừa hiện.
@@ -85,12 +85,12 @@ def build(client: str) -> dict | None:
                           "Bấm Connect: trang ERP mở ra — đăng nhập ERP nếu chưa, chọn mức Chỉ đọc hoặc Được ghi, bấm "
                           "Cho phép.",
                           "Quay lại claude.ai, trong ô chat bật DEGO ERP ở nút công cụ là dùng được."],
-                #  Câu «Không cần khóa · 90 ngày · gỡ ở đâu» giao diện tự in (OAuthGuide) — note chỉ giữ ý riêng của ứng dụng.
+                #  Câu "Không cần khóa · 90 ngày · gỡ ở đâu" giao diện tự in (OAuthGuide) — note chỉ giữ ý riêng của ứng dụng.
                 "note": "Gói Team / Enterprise thì chủ tổ chức thêm kết nối trong Organization settings trước."}
     if client == "chatgpt":
         return {"client": client, "label": "ChatGPT", "supported": True, "auth": "oauth", "format": "url", "snippet": url,
-                #  bao-CR-639 (19/10, theo ảnh đại ca chụp): ChatGPT nối ở Settings → Connectors → hộp «New Connector (BETA)»:
-                #  Name · Description · MCP Server URL · Authentication = OAuth · tick «I trust this application» → Create.
+                #  bao-CR-639 (19/10, theo ảnh đại ca chụp): ChatGPT nối ở Settings → Connectors → hộp "New Connector (BETA)":
+                #  Name · Description · MCP Server URL · Authentication = OAuth · tick "I trust this application" → Create.
                 #  Nút tạo chỉ hiện khi đã bật Developer mode. Gói Free có thể không có mục này.
                 "requires": ["Tài khoản ChatGPT trả phí (Plus / Pro / Business); gói Free có thể không có mục Connectors"],
                 "steps": ["Mở ChatGPT → Settings (Cài đặt) → Connectors (địa chỉ thẳng: chatgpt.com/#settings/Connectors). "

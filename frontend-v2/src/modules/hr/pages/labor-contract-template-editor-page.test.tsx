@@ -65,7 +65,7 @@ vi.mock('@/core/api', async (importOriginal) => ({
   },
 }))
 
-/** Nút «Lưu» khóa tới khi nội dung tải xong — đợi trình soạn hiện rồi mới bấm. */
+/** Nút "Lưu" khóa tới khi nội dung tải xong — đợi trình soạn hiện rồi mới bấm. */
 async function clickSaveWhenReady() {
   await screen.findByLabelText('Nội dung mẫu')
   fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
@@ -89,8 +89,8 @@ beforeEach(() => {
   putCalls.length = 0
   putError = null
   insertContent.mockReset()
-  //  `mockReset` chứ không `mockClear`: giá trị «Hủy» xếp hàng bằng `mockResolvedValueOnce` mà không
-  //  dùng tới sẽ dồn sang bài sau và làm bài đó «bấm Hủy» ngầm.
+  //  `mockReset` chứ không `mockClear`: giá trị "Hủy" xếp hàng bằng `mockResolvedValueOnce` mà không
+  //  dùng tới sẽ dồn sang bài sau và làm bài đó "bấm Hủy" ngầm.
   confirmMock.mockReset()
   confirmMock.mockImplementation(async (_options: unknown) => true)
   editorProps.current = null
@@ -99,7 +99,7 @@ beforeEach(() => {
 describe('LaborContractTemplateEditorPage', () => {
   it('opens the template content with its own page margins converted to pixels', async () => {
     build()
-    expect(await screen.findByRole('heading', { name: 'Soạn mẫu «Mẫu 12 tháng»' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Soạn mẫu "Mẫu 12 tháng"' })).toBeInTheDocument()
     expect(await screen.findByLabelText('Nội dung mẫu')).toHaveValue('<p>Bên B: {{ ho_ten }}</p>')
     const { mmToPx } = await import('@/shared/ui/rich-text-editor')
     expect(editorProps.current?.defaultMargins).toEqual({ left: mmToPx(25), right: mmToPx(15) })

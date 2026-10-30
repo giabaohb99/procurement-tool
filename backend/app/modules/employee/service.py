@@ -1,7 +1,9 @@
+import re
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import func, or_
+from sqlalchemy import String, cast, func, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.core import reference_guard
@@ -10,10 +12,11 @@ from app.core.utils import generate_code
 
 from app.modules.department.model import Department
 
-from . import position_role_service, position_service
+from . import phone_rules, position_role_service, position_service
 from . import references  # noqa: F401  — ai-CR-190: đăng ký chỗ tham chiếu lúc khởi động
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
+from .sensitive import SALARY_FIELDS
 
 # "status" trước đây thiếu trong whitelist nên ô lọc Trạng thái trên UI không ăn — bổ sung vào
 # đây để cả lọc cơ bản lẫn lọc điều kiện đều chạy.
@@ -43,7 +46,13 @@ def apply_keyword_search(query, keyword: str | None):
     if not kw:
         return query
     like = f"%{kw}%"
-    return query.filter(or_(*[getattr(Employee, f).like(like) for f in SEARCH_FIELDS]))
+    conds = [getattr(Employee, f).like(like) for f in SEARCH_FIELDS]
+    #  duoc-CR-694: từ khóa trông như SỐ ĐIỆN THOẠI thì tìm cả số phụ. Ép JSON về chữ rồi LIKE (chạy được
+    #  cả MySQL lẫn SQLite); chỉ làm khi từ khóa toàn chữ số/ký tự phân cách, kẻo "number" "label"
+    #  trong chính JSON khớp với từ khóa chữ bất kỳ.
+    if re.fullmatch(r"[0-9\s+.\-()]+", kw) and sum(c.isdigit() for c in kw) >= 3:
+        conds.append(cast(Employee.extra_phones, String).like(like))
+    return query.filter(or_(*conds))
 
 
 # ── CR-087: neo nhân sự trên chứng từ bằng ID ────────────────────────────────────
@@ -107,7 +116,7 @@ def list_employees(db: Session, base_query, pg: dict):
             selectinload(Employee.user),
             selectinload(Employee.company),
             selectinload(Employee.department).selectinload(Department.manager),
-            #  Cột «Quản lý trực tiếp» của màn danh sách (C1). Cùng bài học với
+            #  Cột "Quản lý trực tiếp" của màn danh sách (C1). Cùng bài học với
             #  `company` ở trên: thiếu dòng này là mỗi dòng một truy vấn, và
             #  `test_nhan_su_hien_cong_ty.py` đếm truy vấn nên nó đỏ ngay.
             selectinload(Employee.direct_manager),
@@ -134,7 +143,7 @@ _MAX_MANAGER_DEPTH = 50
 
 
 def block_manager_cycle(db: Session, employee_id: int, manager_id: int) -> None:
-    """Chuỗi «người quản lý trực tiếp» KHÔNG được tạo thành vòng.
+    """Chuỗi "người quản lý trực tiếp" KHÔNG được tạo thành vòng.
 
     ⚠️ Đây không phải một chốt cho gọn gàng dữ liệu. `manager_id` là thứ mà vai
     tương đối `APPROVER_DIRECT_MANAGER` của bộ máy duyệt đọc để tìm người ký.
@@ -184,7 +193,7 @@ def block_manager_cycle(db: Session, employee_id: int, manager_id: int) -> None:
     #  dùng đọc câu này và đi kiểm, hơn là để hệ thống treo về sau.
     raise HTTPException(
         400, f"Chuỗi quản lý vượt quá {_MAX_MANAGER_DEPTH} cấp — nhiều khả năng dữ liệu "
-             "đang có vòng. Kiểm tra lại ô «Người quản lý trực tiếp» của những người trên "
+             "đang có vòng. Kiểm tra lại ô \"Người quản lý trực tiếp\" của những người trên "
              "cấp trước khi gán.")
 
 
@@ -224,6 +233,7 @@ def create_employee_core(db: Session, data: EmployeeCreate, user_id: int) -> Emp
     #  người quản lý có thật.
     block_manager_cycle(db, 0, data.manager_id)
     data.email = ensure_email_unique(db, data.email)
+    phone_rules.ensure_distinct_from_main(data.phone, data.model_dump()["extra_phones"])
     obj = Employee(**data.model_dump(), created_by=user_id, updated_by=user_id)
     #  Nhãn chức vụ chép từ danh mục — xem `position_service`.
     #
@@ -296,7 +306,7 @@ def clear_perm_cache_of(db: Session, employee_id: int) -> None:
 #  xem `core/status_codes.EMPLOYEE_STATUS`). Chuyển SANG mã này, hoặc tắt
 #  `is_active`, là hai cách HR nói "người này không còn làm ở đây".
 STATUS_RESIGNED = "resigned"
-#  bao-CR-527: mã «Chính thức» — chỉ nhân sự mang mã này (và đang hoạt động) mới được phân công
+#  bao-CR-527: mã "Chính thức" — chỉ nhân sự mang mã này (và đang hoạt động) mới được phân công
 #  làm NSTM chính / dự phòng (`category_assignee.service.is_official_employee`).
 STATUS_OFFICIAL = "official"
 
@@ -347,11 +357,24 @@ def _revoke_bot_access(db: Session, user_id: int) -> None:
     revoke_user(db, user_id)
 
 
+def set_salary(obj: Employee, salary: int, allowance: int) -> bool:
+    """Ghi ô lương + phụ cấp của hồ sơ và đóng dấu `salary_updated_at`. Trả `True` nếu có đổi giá trị.
+
+    MỘT đường ghi cho cả sửa tay (`update_employee_core`) lẫn ký HĐLĐ (`labor_contract.salary_sync`). Chỉ
+    `setattr`, bên gọi lo flush/commit. Không ghi nhật ký giá trị — lương không được lọt vào audit/change log.
+    """
+    if (obj.salary_monthly or 0, obj.allowance_monthly or 0) == (salary, allowance):
+        return False
+    obj.salary_monthly, obj.allowance_monthly = salary, allowance
+    obj.salary_updated_at = datetime.utcnow()
+    return True
+
+
 @dataclass
 class WriteOutcome:
     """Kết quả lõi sửa hồ sơ — bên gọi tự quyết commit / audit / xóa cache (duoc-CR-628)."""
     obj: Employee
-    notes: list[str] = field(default_factory=list)   # «Đổi pháp nhân — gỡ…», «Nghỉ việc — khóa N TK…»
+    notes: list[str] = field(default_factory=list)   # "Đổi pháp nhân — gỡ…", "Nghỉ việc — khóa N TK…"
     left_company: bool = False                         # lần ghi này vừa đưa hồ sơ sang NGHỈ VIỆC
     scope_changed: bool = False                        # (company_id, department_id) đổi → cần xóa cache quyền
     locked_users: list = field(default_factory=list)
@@ -376,14 +399,27 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
     #  lại y nguyên", xem ghi chú ở đó. Phải chụp TRƯỚC vòng `setattr`.
     old_position_id = obj.position_id or 0
     fields = data.model_dump(exclude_unset=True)
+    #  duoc-CR-693: lương gửi `null` = GIỮ NGUYÊN (cột NOT NULL; muốn xóa gửi 0). Lương đi đường `set_salary`
+    #  (đóng dấu thời điểm), không qua vòng `setattr` chung.
+    #  duoc-CR-694: `extra_phones` gửi null = GIỮ NGUYÊN (cột NOT NULL); muốn xóa hết gửi [].
+    if "extra_phones" in fields and fields["extra_phones"] is None:
+        del fields["extra_phones"]
+    salary_in = {k: fields.pop(k) for k in SALARY_FIELDS if k in fields}
+    new_salary = salary_in.get("salary_monthly")
+    new_allowance = salary_in.get("allowance_monthly")
     if "manager_id" in fields:
         block_manager_cycle(db, obj.id, fields["manager_id"])
     if "email" in fields:
         fields["email"] = ensure_email_unique(db, fields["email"] or "", exclude_id=obj.id)
     for key, value in fields.items():
         setattr(obj, key, value)
+    if "phone" in fields or "extra_phones" in fields:
+        phone_rules.ensure_distinct_from_main(obj.phone, obj.extra_phones)
     position_service.sync_label(db, obj, fields, old_position_id)
     obj.updated_by = user_id
+    salary_changed = (new_salary is not None or new_allowance is not None) and set_salary(
+        obj, (obj.salary_monthly or 0) if new_salary is None else new_salary,
+        (obj.allowance_monthly or 0) if new_allowance is None else new_allowance)
     if "position_id" in fields and (obj.position_id or 0) != old_position_id:
         #  duoc-CR-653: đổi chức vụ → đổi phần vai trò HỆ THỐNG đã tự cấp (cùng giao dịch, chỉ flush).
         #  Đường nhập Excel, áp quá trình công tác, lưu hồ sơ đều đi qua lõi này.
@@ -422,6 +458,8 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
     #  Nói ra phòng nào bị gỡ. Gỡ âm thầm thì tháng sau không ai tra được vì sao
     #  một người mất phòng ban.
     notes = []
+    if salary_changed:
+        notes.append("Cập nhật lương")      # KHÔNG kèm số — lương không vào nhật ký
     if dropped_departments:
         notes.append("Đổi pháp nhân — gỡ khỏi phòng ban của pháp nhân cũ: "
                      + ", ".join(dropped_departments))
@@ -519,7 +557,7 @@ def delete_employee_core(db: Session, eid: int, user_id: int) -> int:
     #  khóa tài khoản rồi mới báo lỗi). HĐ Nháp / Đã hủy thì dọn kèm tệp ở dưới.
     labor_contract_service.ensure_employee_deletable(db, eid)
     #  ai-CR-190: còn phiếu / phân công / thành viên / đang là quản lý của ai / trưởng bộ phận… thì CHẶN 400,
-    #  chỉ cho «ngưng dùng» (bỏ tick Đang dùng hoặc chuyển nghỉ việc). Danh sách chỗ đếm ở `references.py`;
+    #  chỉ cho "ngưng dùng" (bỏ tick Đang dùng hoặc chuyển nghỉ việc). Danh sách chỗ đếm ở `references.py`;
     #  tài khoản gắn hồ sơ KHÔNG tính (xem lý do ở đó) — vẫn tự khóa + gỡ ở `detach_users` bên dưới.
     reference_guard.ensure_deletable(db, ENTITY, obj)
     locked = detach_users(db, eid, user_id)

@@ -20,7 +20,7 @@ import {
  *
  * ⚠️ **`line-clamp-2` cho nội dung chính**: ô này là câu mô tả tự do, có phiếu
  * dài vài dòng. Để xuống dòng tự do thì một thẻ cao gấp ba thẻ bên cạnh và cả
- * danh sách mất nhịp; cắt còn một dòng thì mọi phiếu mở đầu bằng «Khảo sát…»
+ * danh sách mất nhịp; cắt còn một dòng thì mọi phiếu mở đầu bằng "Khảo sát…"
  * giống hệt nhau.
  *
  * ⚠️ **Không nút nào trong thẻ**: bảng khai `onRowClick` (mở chi tiết phiếu) nên

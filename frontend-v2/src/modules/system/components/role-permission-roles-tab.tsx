@@ -36,7 +36,7 @@ interface RolePermissionRolesTabProps {
 }
 
 /**
- * Tab «Vai trò & quyền»: cột trái chọn vai trò (`RoleSidePanel`), cột phải ma
+ * Tab "Vai trò & quyền": cột trái chọn vai trò (`RoleSidePanel`), cột phải ma
  * trận (đối tượng × hành động) của vai trò đang chọn. Tách khỏi
  * `role-permission-page.tsx` (giữ trang < 200 dòng, bao-CR-5xx finding Low #4
  * của đợt rà soát tính năng phân quyền tung báo cáo) — HÀNH VI giữ nguyên
@@ -62,7 +62,7 @@ export function RolePermissionRolesTab({
   //  `?role=7` nằm trên URL, nên vào lại trang bằng link đó (hoặc quay ra rồi
   //  bấm back) là `savedRows` có sẵn trong bộ đệm NGAY ở lượt render đầu — mà ở
   //  lượt đầu `useHasChanged` luôn trả `false`, nên nhịp dưới không chạy và ma
-  //  trận hiện ra TRẮNG. Bấm «Lưu quyền» lúc đó là gửi danh sách rỗng, mà
+  //  trận hiện ra TRẮNG. Bấm "Lưu quyền" lúc đó là gửi danh sách rỗng, mà
   //  `role/service.set_permissions` xóa hết rồi ghi lại: mất sạch quyền của vai
   //  trò, kéo theo mọi tài khoản đang giữ nó (bao-CR-492).
   const [matrix, setMatrix] = useState<Record<string, RolePermissionRow>>(() =>
@@ -162,7 +162,7 @@ export function RolePermissionRolesTab({
                     title="Xóa vai trò"
                     destructive
                     disabled={deleteRole.isPending}
-                    confirmTitle={`Xóa vai trò «${selectedRole.name}»?`}
+                    confirmTitle={`Xóa vai trò "${selectedRole.name}"?`}
                     confirmDescription="Ma trận quyền của vai trò này sẽ mất theo. Vai trò đang gán cho tài khoản nào thì phải gỡ hết mới xóa được."
                     confirmLabel="Xóa vai trò"
                     onConfirm={handleDelete}

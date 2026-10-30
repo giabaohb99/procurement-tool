@@ -156,7 +156,7 @@ function DocumentTypeCatalogContent() {
       searchPlaceholderShort="Tìm mã, tên loại…"
       detailPath={appRoutes.document.typeDetail}
       //  Dòng phụ lấy MẪU SỐ HIỆU thật (`documentCodeSample`) chứ không lấy chữ
-      //  «mã bất biến / theo sổ» trơ trọi — cùng lý do với cột «Số hiệu» của
+      //  "mã bất biến / theo sổ" trơ trọi — cùng lý do với cột "Số hiệu" của
       //  bảng: nhìn một mẫu số là hiểu ngay, đọc tên cách đánh số thì không.
       mobileCard={(row) => (
         <CatalogCard
@@ -180,7 +180,7 @@ function DocumentTypeCatalogContent() {
       //  lọc chung với ô Trạng thái — xem `CatalogTableProps.advancedFilter`.
       //  Trước đây truyền thẳng `<ConditionalFilter />` qua `extraToolbar`, nên ở
       //  điện thoại thanh công cụ có TỚI HAI cửa lọc đứng cạnh nhau (cái phễu và
-      //  nút «Bộ lọc»), mà cái popover thì bung ra che gần hết màn.
+      //  nút "Bộ lọc"), mà cái popover thì bung ra che gần hết màn.
       advancedFilter
     />
   )

@@ -96,7 +96,7 @@ describe('buildChangeRequestPayload', () => {
   })
 
   it('treats null/undefined profile values as their empty form so an untouched legacy record is not a change', () => {
-    //  Hồ sơ cũ thiếu hẳn các cột mở rộng (API trước duoc-CR-314) — không được thành «đổi».
+    //  Hồ sơ cũ thiếu hẳn các cột mở rộng (API trước duoc-CR-314) — không được thành "đổi".
     const legacy = { id: 9, code: 'X', full_name: 'Cũ' } as Employee
     expect(build({}, { base: legacy })).toBeNull()
   })

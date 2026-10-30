@@ -14,16 +14,16 @@ interface WorkRosterCellViewProps {
 }
 
 /**
- * Một ô của lưới «Xem lịch». Nguyên tắc: NGOẠI LỆ NỔI, NGÀY THƯỜNG LÙI.
+ * Một ô của lưới "Xem lịch". Nguyên tắc: NGOẠI LỆ NỔI, NGÀY THƯỜNG LÙI.
  *
  * · Đi làm bình thường: không nền, không khung (tuần: giờ làm chữ mờ nhỏ).
- * · Nghỉ theo lịch: nền sọc mờ; Lễ: nền đỏ nhạt (chữ «Lễ» chỉ ở ô tuần).
+ * · Nghỉ theo lịch: nền sọc mờ; Lễ: nền đỏ nhạt (chữ "Lễ" chỉ ở ô tuần).
  * · Nghỉ phép ĐÃ DUYỆT: thẻ đặc màu info lọt trong ô; CHỜ DUYỆT: thẻ viền nét đứt, nền nhạt.
  * · Nghỉ nửa buổi: thẻ chỉ phủ nửa ô — TRÁI = buổi sáng, PHẢI = buổi chiều.
  * · Ô có đơn nghỉ là link sang `/hr/leave-requests/:id`.
  *
  * ⚠️ Chữ nhìn thấy được ẩn khỏi trình đọc màn hình (`aria-hidden`) và thay bằng
- * một câu đầy đủ `sr-only` — «P» hay «S» đọc ra chẳng nói được gì.
+ * một câu đầy đủ `sr-only` — "P" hay "S" đọc ra chẳng nói được gì.
  */
 export function WorkRosterCellView({ cell, compact = false, label }: WorkRosterCellViewProps) {
   const view = describeRosterCell(cell)
