@@ -220,9 +220,9 @@ cột tiến độ hiện sẵn và mười sáu cột ẩn bật ở menu Cột
 theo bộ lọc, trần 5.000 dòng; hạn chế ghép đơn theo mã phiếu và mã hàng. Đổi tên Tiến độ mua hàng thành Tiến độ đơn mua hàng
 ở hai bài có sẵn của Trung tâm trợ giúp (bài riêng và câu nhắc trong bài nhóm) bằng script sửa thẳng vì hai bài đó không có
 tệp seed. Tài liệu chức năng: thêm mục Màn Chi tiết YC mua hàng ở tài liệu Hệ thống và Báo cáo (API, xuất Excel, giao diện,
-hạn chế), đổi nhãn ở tài liệu Đơn mua hàng và Yêu cầu khảo sát. Đã nạp bài mới lên dev kèm kho vector; prod chờ người chủ gật.
+hạn chế), đổi nhãn ở tài liệu Đơn mua hàng và Yêu cầu khảo sát. Đã nạp bài mới lên dev kèm kho vector; prod nạp 30/10 sau khi người chủ gật (bài số 211, kho vector 5 đoạn).
 Mã nguồn: backend/scripts/seed_help_chi_tiet_yc_mua_hang.py (mới), doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md, 04-don-mua-hang.md, 02-yeu-cau-khao-sat.md
-Deploy: dev 29/10 (bài mới + đổi tên hai bài, kho vector nạp lại)
+Deploy: dev 29/10 (bài mới + đổi tên hai bài, kho vector nạp lại); prod 30/10 (bài mới)
 
 ## bao-CR-693 | Mở chi tiết chứng từ ở tab mới từ trang danh sách đang lọc
 - status: xong
