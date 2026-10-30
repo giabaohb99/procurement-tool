@@ -103,7 +103,7 @@ def _book_ids(profile: dict, action: str):
 
 
 def _personal_type_ids(db_or_none=None):
-    """Id của những LOẠI văn bản bật cờ «văn bản cá nhân».
+    """Id của những LOẠI văn bản bật cờ "văn bản cá nhân".
 
     Trả về một `select(...)` để nhét thẳng vào `IN (...)` — không truy vấn ở đây,
     vì `visible_condition` cố ý không nhận `Session` (nó chỉ dựng điều kiện).
@@ -155,7 +155,7 @@ def personal_document_condition(user, profile: dict):
 
 
 def _is_personal_document(db: Session, doc: Document) -> bool:
-    """Loại của văn bản này có bật cờ «văn bản cá nhân» không."""
+    """Loại của văn bản này có bật cờ "văn bản cá nhân" không."""
     from app.modules.doc_catalog.model import DocType
 
     if not doc.doc_type_id:
@@ -217,7 +217,7 @@ def visible_condition(user, profile: dict, action: str = "read"):
 
     Bỏ vế đó thì mỗi bên thấy đúng phần của mình: mẹ vẫn có cây bung như cũ, con
     thấy thẳng bản riêng của con. Muốn đối chiếu thì trang chi tiết đã có sẵn nút
-    **«Xem bản gốc»** (`document-needs-review-banner.tsx`).
+    **"Xem bản gốc"** (`document-needs-review-banner.tsx`).
     """
     scope = scope_condition(Document, "document", user, profile, action)
     allow = _document_ids(profile, action, EFFECT_ALLOW)
@@ -234,7 +234,7 @@ def visible_condition(user, profile: dict, action: str = "read"):
 
     #  ĐANG / ĐÃ DUYỆT — `can()` vẫn luôn mở quyền đọc cho người có việc ở phiếu
     #  (xem `dang_duyet_van_ban_nay`), nhưng danh sách trước đây KHÔNG biết tới
-    #  nguồn này. Hệ quả: trưởng bộ phận mở được văn bản từ «Chờ tôi duyệt» mà gõ
+    #  nguồn này. Hệ quả: trưởng bộ phận mở được văn bản từ "Chờ tôi duyệt" mà gõ
     #  đúng tiêu đề đó vào ô tìm kiếm lại không ra gì — hai tầng nói hai câu khác
     #  nhau về cùng một văn bản, đúng cái bẫy `van-thu/06` §4.6 cảnh báo.
     #
@@ -254,7 +254,7 @@ def visible_condition(user, profile: dict, action: str = "read"):
     #
     #  Đặt ở đây chứ không sớm hơn là có lý do: nó phải chặn được cả hai nguồn
     #  cộng thêm bên trên. Chia đích danh thì vẫn cho qua (đó là một trong bốn
-    #  nguồn hợp lệ), nhưng «thành viên sổ» thì KHÔNG — quẳng đơn nghỉ phép vào
+    #  nguồn hợp lệ), nhưng "thành viên sổ" thì KHÔNG — quẳng đơn nghỉ phép vào
     #  một quyển sổ chung là cả phòng Hành chính đọc được, đúng thứ đang chặn.
     #
     #  `scope is None` = vai trò phạm vi *tất cả* (HR, quản trị) → không siết.
@@ -375,8 +375,8 @@ def can(db: Session, doc: Document, user, profile: dict, action: str = "read", *
 
     #  ĐỌC ĐƯỢC THỨ MÌNH PHẢI KÝ. Người duyệt trong luồng thường không có vai
     #  trò nào trên phân hệ Văn bản — bộ máy duyệt chỉ hỏi "anh có việc ở phiếu
-    #  này không", không hỏi phân quyền. Thiếu ngoại lệ này thì họ bấm từ «Việc
-    #  của tôi» sang văn bản là gặp 404 và phải ký mù, chỉ nhìn được mỗi cái
+    #  này không", không hỏi phân quyền. Thiếu ngoại lệ này thì họ bấm từ "Việc
+    #  của tôi" sang văn bản là gặp 404 và phải ký mù, chỉ nhìn được mỗi cái
     #  tiêu đề trên dòng việc.
     #
     #  CHỈ mở quyền ĐỌC. Sửa, xóa, ban hành vẫn đi theo phân quyền như cũ — việc
@@ -479,8 +479,8 @@ def block_self_ban(db: Session, data, actor: int) -> None:
     mình có quyền sửa — và vì không mở được nữa nên cũng không còn đường vào để
     gỡ dòng cấm đó. Chỉ người khác cứu được.
 
-    Lỗi người dùng đã dính thật (24/08/2026): tự chặn xong, danh sách hiện «Tổng
-    0 văn bản» kèm ba toast đỏ liên tiếp. Giao diện nay đã bỏ tên mình khỏi ô
+    Lỗi người dùng đã dính thật (24/08/2026): tự chặn xong, danh sách hiện "Tổng
+    0 văn bản" kèm ba toast đỏ liên tiếp. Giao diện nay đã bỏ tên mình khỏi ô
     chọn, nhưng ẩn nút không phải là chốt chặn — gọi thẳng API vẫn tự chặn được
     (dựng lại được trước khi có hàm này).
 

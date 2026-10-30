@@ -15,7 +15,7 @@ from .work_history_model import EmployeeWorkHistory
 def employee_in_scope(db: Session, eid: int, user, profile: dict, action: str = "read") -> Employee:
     """Hồ sơ nằm trong phạm vi — khuôn `employee.controller._employee_in_scope`,
     tách riêng ở đây vì phase này không sửa `employee/controller.py` (ngoài
-    phạm vi «File Ownership»)."""
+    phạm vi "File Ownership")."""
     obj = get_scoped(db, Employee, "employee", eid, user, profile, action)
     if obj is None:
         raise HTTPException(404, "Không tìm thấy nhân viên")

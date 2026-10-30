@@ -25,8 +25,8 @@ DateOnly = ProfileDate
 class EmployeeBase(BaseModel):
     #  ⚠️ Bí danh `Str<n>` = `max_length=n` khớp ĐÚNG `String(n)` ở `model.py`.
     #  Thiếu nó thì chuỗi dài đi thẳng xuống cột và MySQL là chỗ đầu tiên phản
-    #  đối — người dùng nhận 500 «lỗi không lường trước» thay vì câu «tối đa n
-    #  ký tự». Lỗ hổng này có ở CẢ trường cũ (từ trước duoc-CR-314), vá luôn.
+    #  đối — người dùng nhận 500 "lỗi không lường trước" thay vì câu "tối đa n
+    #  ký tự". Lỗ hổng này có ở CẢ trường cũ (từ trước duoc-CR-314), vá luôn.
     code: Str25 = ""
     full_name: Str255
     email: Str255 = ""
@@ -69,7 +69,7 @@ class EmployeeBase(BaseModel):
         Cột khai `default=0` nhưng đó là mặc định lúc INSERT: bản ghi dựng trong
         bộ nhớ mà chưa flush vẫn mang `None`, và dòng cũ có trước cột này cũng
         có thể `NULL`. Ném ở đây thì **cả màn danh sách nhân sự** trả 500 vì một
-        ô chưa ai nhập — đắt hơn nhiều so với việc đọc nó thành «chưa khai».
+        ô chưa ai nhập — đắt hơn nhiều so với việc đọc nó thành "chưa khai".
         """
         return 0 if v is None else v
 
@@ -150,7 +150,7 @@ class EmployeeBase(BaseModel):
     #
     #  Thiếu hai hàm này thì `EmployeeOut.model_validate(...)` ném 26 lỗi cùng
     #  lúc, và triệu chứng ở chạy thật là **cả màn danh sách nhân sự trả 500**
-    #  vì một ô chưa ai nhập. Đọc `None` thành «chưa khai» rẻ hơn nhiều.
+    #  vì một ô chưa ai nhập. Đọc `None` thành "chưa khai" rẻ hơn nhiều.
     _NONE_TO_BLANK_TEXT = (
         "place_of_birth", "ethnicity", "religion", "personal_email", "tax_code", "major",
         "work_location", "permanent_address", "current_address",
@@ -198,7 +198,7 @@ def _check_gender_value(v: int) -> int:
     """Giới tính chỉ nhận `GENDER_VALUES` — một hàm cho cả ba schema.
 
     Ba bản chép rời trước đây (Create · Update · thành viên hộ gia đình) là ba
-    chỗ phải nhớ sửa mỗi lần bộ mã đổi; thêm mã `3` («Khác») lộ ra ngay điều đó.
+    chỗ phải nhớ sửa mỗi lần bộ mã đổi; thêm mã `3` ("Khác") lộ ra ngay điều đó.
     """
     if int(v) not in GENDER_VALUES:
         raise ValueError(
@@ -512,7 +512,7 @@ class EmployeeFamilyOut(EmployeeFamilyIn):
 
 
 #  ⚠️ TRẦN SỐ DÒNG. Không có nó thì `PUT` 5000 dòng lọt thẳng — đã thử được
-#  trên MySQL thật ngày 08/09/2026. Đây là bảng «cha, mẹ, vợ/chồng» nằm trong
+#  trên MySQL thật ngày 08/09/2026. Đây là bảng "cha, mẹ, vợ/chồng" nằm trong
 #  một tab, vài chục dòng đã vô lý; và `sort_order` là `SMALLINT` nên dòng thứ
 #  32768 còn tràn kiểu. Trần đặt ở SCHEMA chứ không ở service: chặn trước khi
 #  xóa sạch bảng cũ, kẻo một lần gửi hỏng là mất luôn dữ liệu đang có.

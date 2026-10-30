@@ -74,7 +74,7 @@ def resolve_requester(db: Session, user, employee_id: int) -> Employee:
 
 def check_time_range(start_at: datetime, end_at: datetime) -> None:
     if end_at <= start_at:
-        raise HTTPException(400, "«Giờ kết thúc» phải sau «Giờ bắt đầu»")
+        raise HTTPException(400, "\"Giờ kết thúc\" phải sau \"Giờ bắt đầu\"")
     if end_at - start_at > timedelta(hours=MAX_HOURS_PER_BOOKING):
         raise HTTPException(
             400, f"Một lượt đặt tối đa {MAX_HOURS_PER_BOOKING} giờ. "
@@ -85,7 +85,7 @@ def check_capacity(room: MeetingRoom, attendee_count: int) -> None:
     """Sức chứa `0` = CHƯA KHAI, không phải "không chứa được ai" nên bỏ qua."""
     if room.capacity and attendee_count and attendee_count > room.capacity:
         raise HTTPException(
-            400, f"«{room.name}» chứa được {room.capacity} người, phiếu này ghi "
+            400, f"\"{room.name}\" chứa được {room.capacity} người, phiếu này ghi "
                  f"{attendee_count} người. Chọn phòng lớn hơn hoặc sửa lại số người.")
 
 
@@ -134,7 +134,7 @@ def check_conflict(db: Session, room: MeetingRoom, start_at: datetime,
     if other is None:
         return
     raise HTTPException(
-        400, f"«{room.name}» đã có phiếu {other.code} giữ từ "
+        400, f"\"{room.name}\" đã có phiếu {other.code} giữ từ "
              f"{other.start_at:%H:%M %d/%m} đến {other.end_at:%H:%M %d/%m} "
              f"({'đã duyệt' if other.status == RB_APPROVED else 'đang chờ duyệt'}). "
              "Chọn phòng khác hoặc dời giờ.")
@@ -147,7 +147,7 @@ def _replace_attendees(db: Session, booking_id: int, items, actor: int) -> None:
     từng dòng để sửa tại chỗ chỉ tổ phức tạp mà không nhanh hơn.
 
     ⚠️ **Chỉ nhận nhân sự CÓ THẬT.** Id bịa lọt vào thì danh sách người dự hiện
-    một dòng «#999999» không tên, không ai gỡ được vì không biết nó là ai, và
+    một dòng "#999999" không tên, không ai gỡ được vì không biết nó là ai, và
     thư mời thì lặng lẽ bỏ qua nó (nhân sự không tồn tại → không có tài khoản).
     Đo được ngày 04/09/2026 bằng một lệnh gọi API thẳng.
     """
@@ -317,7 +317,7 @@ def check_ready_to_submit(obj: RoomBooking) -> None:
     Người duyệt mở phiếu ra mà không có tiêu đề cuộc họp thì họ duyệt cái gì.
     """
     if not (obj.title or "").strip():
-        raise HTTPException(400, "Thiếu «Nội dung cuộc họp» — nhập đủ trước khi gửi duyệt.")
+        raise HTTPException(400, "Thiếu \"Nội dung cuộc họp\" — nhập đủ trước khi gửi duyệt.")
 
 
 def prepare_submit(db: Session, obj: RoomBooking, user) -> MeetingRoom:

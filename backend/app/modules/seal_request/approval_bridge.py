@@ -27,12 +27,12 @@ ENTITY = "seal_request"
 
 
 def entity_context(req: SealRequest) -> dict:
-    """Bối cảnh phiếu cho điều kiện rẽ nhánh + chọn người duyệt «lấy từ ô».
+    """Bối cảnh phiếu cho điều kiện rẽ nhánh + chọn người duyệt "lấy từ ô".
 
     bao-CR-579: thêm loại con dấu và hai ô NHÂN SỰ. `requester_id` và
     `first_approver_id` trên phiếu là id TÀI KHOẢN, còn bộ máy duyệt và bộ chọn
     điều kiện nói bằng id NHÂN SỰ — đưa thẳng id tài khoản sang là điều kiện
-    «người tạo thuộc danh sách» không bao giờ khớp và bước «lấy từ ô» giao nhầm người.
+    "người tạo thuộc danh sách" không bao giờ khớp và bước "lấy từ ô" giao nhầm người.
     Phải khớp `CONDITION_FIELDS_BY_ENTITY` + `APPROVER_FIELDS_BY_ENTITY` bên frontend-v2.
     """
     db = object_session(req)
@@ -67,7 +67,7 @@ def block_legacy_path(db: Session, req: SealRequest) -> None:
         raise HTTPException(
             400,
             "Phiếu này đang chạy trong luồng duyệt nhiều bước — xử lý ở màn "
-            "«Việc của tôi», không duyệt thẳng ở đây.",
+            "\"Việc của tôi\", không duyệt thẳng ở đây.",
         )
 
 

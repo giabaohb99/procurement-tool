@@ -1,4 +1,4 @@
-"""Phân hệ Công việc — việc ĐƯỢC GIAO cho tôi, đổ vào tab «Việc cần làm» (F-02).
+"""Phân hệ Công việc — việc ĐƯỢC GIAO cho tôi, đổ vào tab "Việc cần làm" (F-02).
 
 `dashboard/controller.build_my_tasks` gọi `build_job_tasks` để thêm loại `job`
 vào cùng danh sách với YCMH/ĐMH/công nợ… Khóa việc là `job:{task_id}` — không kèm

@@ -1,4 +1,4 @@
-"""Báo cáo F1 «Sử dụng phòng họp» (khóa 28) — duoc-CR-689.
+"""Báo cáo F1 "Sử dụng phòng họp" (khóa 28) — duoc-CR-689.
 
 Router riêng chỉ chứa `/summary` + `/summary/export` + `/summary/rows` (khung báo cáo kiểu Haravan).
 Đường gốc `/api/room-usage` cố ý không nằm dưới router chính có `/{id}`.

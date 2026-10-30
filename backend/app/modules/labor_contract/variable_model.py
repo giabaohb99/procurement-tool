@@ -34,7 +34,7 @@ class LaborContractVariable(Base, AuditMixin):
     example: Mapped[str] = mapped_column(String(EXAMPLE_LEN), default="")
     #  Dạng CHUẨN của kiểu. Chỉ biến tùy chỉnh. Được SAO vào hợp đồng lúc lập (không áp lúc sinh tệp).
     default_value: Mapped[str] = mapped_column(String(DEFAULT_LEN), default="")
-    #  «Bắt buộc»: chặn Sinh tệp và chuyển sang Đã ký khi hợp đồng thiếu giá trị. Chỉ biến tùy chỉnh.
+    #  "Bắt buộc": chặn Sinh tệp và chuyển sang Đã ký khi hợp đồng thiếu giá trị. Chỉ biến tùy chỉnh.
     is_required: Mapped[bool] = mapped_column(Boolean, default=False)
     #  Ngừng dùng (chỉ biến tùy chỉnh; biến hệ thống luôn True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

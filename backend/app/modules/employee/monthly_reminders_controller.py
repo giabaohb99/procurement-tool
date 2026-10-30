@@ -1,4 +1,4 @@
-"""`GET /api/employees/monthly-reminders?month=YYYY-MM` — dữ liệu ô «Lịch nhắc trong tháng» (E3, duoc-CR-689).
+"""`GET /api/employees/monthly-reminders?month=YYYY-MM` — dữ liệu ô "Lịch nhắc trong tháng" (E3, duoc-CR-689).
 
 ⚠️ Chung tiền tố `/api/employees` với `controller.py` nên router này PHẢI được include TRƯỚC `employee_router`
 trong `main.py` — nếu không `monthly-reminders` rơi vào `/{eid}` (422).

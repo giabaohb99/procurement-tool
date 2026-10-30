@@ -30,7 +30,7 @@ class _GroupBase(BaseModel):
         sent = self.model_dump(exclude_unset=True)
         for key, value in sent.items():
             if value is None and key not in _NULLABLE_FIELDS:
-                raise ValueError(f"Ô «{key}» không nhận null — muốn xóa thì gửi chuỗi rỗng")
+                raise ValueError(f"Ô \"{key}\" không nhận null — muốn xóa thì gửi chuỗi rỗng")
         #  Chạy lại bộ luật giá trị của hồ sơ (mã hôn nhân, trình độ, giới tính, số con…).
         try:
             EmployeeUpdate.model_validate({k: v for k, v in sent.items() if v is not None})

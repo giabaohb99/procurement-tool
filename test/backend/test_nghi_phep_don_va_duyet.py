@@ -222,7 +222,7 @@ def test_gio_nguoc_bi_chan(db):
     emp = _employee(db)
     with pytest.raises(HTTPException) as e:
         _create_hourly(db, _user(emp.id), _leave_type(db), tu="15:00", den="09:00")
-    assert "sau «Từ giờ»" in e.value.detail
+    assert "sau \"Từ giờ\"" in e.value.detail
 
 
 def test_khai_gio_ma_buoi_khong_phai_theo_gio_bi_chan(db):
@@ -231,7 +231,7 @@ def test_khai_gio_ma_buoi_khong_phai_theo_gio_bi_chan(db):
     with pytest.raises(HTTPException) as e:
         _create(db, _user(emp.id), _leave_type(db), from_time=time(9, 0),
                 to_time=time(11, 0))
-    assert "không phải «Theo giờ»" in e.value.detail
+    assert "không phải \"Theo giờ\"" in e.value.detail
 
 
 def test_doi_tu_theo_gio_sang_ca_ngay_thi_XOA_gio_cu(db):

@@ -56,7 +56,7 @@ def test_thieu_tep_bi_tu_choi_va_cau_neu_ten_loai(db, world):
     with pytest.raises(HTTPException) as exc:
         request_service.prepare_submit(db, obj, world.user)
     assert exc.value.status_code == 400
-    assert "«Nghỉ ốm»" in exc.value.detail and "đính kèm" in exc.value.detail
+    assert "\"Nghỉ ốm\"" in exc.value.detail and "đính kèm" in exc.value.detail
 
 
 def test_co_tep_thi_qua(db, world):
@@ -74,7 +74,7 @@ def test_don_nhieu_loai_co_mot_loai_bat_co_thi_bi_chan(db, world):
     obj = _draft(db, world, [(world.annual, 2), (world.sick, 1)])
     with pytest.raises(HTTPException) as exc:
         request_service.prepare_submit(db, obj, world.user)
-    assert "«Nghỉ ốm»" in exc.value.detail
+    assert "\"Nghỉ ốm\"" in exc.value.detail
     assert "«Phép năm»" not in exc.value.detail
 
 

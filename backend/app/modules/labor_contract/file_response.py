@@ -25,7 +25,7 @@ def safe_filename(name: str, default: str = "tai-lieu", max_len: int = 150) -> s
     """Tên tệp an toàn: bỏ ký tự điều khiển / đường dẫn (chặn header injection + path traversal)."""
     cleaned = _BAD_NAME_CHARS.sub("-", name or "").strip(" .-")
     if len(cleaned) > max_len:
-        #  Cắt phần tên, GIỮ đuôi tệp (mất đuôi thì guard_upload báo «định dạng .? không được phép» khó hiểu).
+        #  Cắt phần tên, GIỮ đuôi tệp (mất đuôi thì guard_upload báo "định dạng .? không được phép" khó hiểu).
         stem, dot, ext = cleaned.rpartition(".")
         ext = ext if dot and 0 < len(ext) <= 10 else ""
         keep = max_len - (len(ext) + 1 if ext else 0)

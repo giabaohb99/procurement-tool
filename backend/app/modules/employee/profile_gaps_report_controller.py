@@ -1,4 +1,4 @@
-"""Báo cáo «Hồ sơ & tài khoản còn thiếu» — router RIÊNG (duoc-CR-686, khóa 18).
+"""Báo cáo "Hồ sơ & tài khoản còn thiếu" — router RIÊNG (duoc-CR-686, khóa 18).
 
 Ba đường: `/profile-gaps/summary`, `/profile-gaps/summary/export`, `/profile-gaps/summary/rows`.
 Đăng ký trong `main.py` TRƯỚC `employee_router` (`/{eid}` nuốt `profile-gaps`). Gác KÉP:

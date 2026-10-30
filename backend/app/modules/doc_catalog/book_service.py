@@ -205,7 +205,7 @@ def book_view_condition(user, profile: dict):
     """Điều kiện lọc DANH SÁCH SỔ = phạm vi vai trò **HỢP** các sổ chia đích danh.
 
     ⚠️ Đây là lỗi khách báo 24/08/2026: thêm người vào ô *Người xem sổ*, lưu xong,
-    người đó mở trang **Sổ văn bản** vẫn thấy «Chưa có sổ văn bản đến nào khớp».
+    người đó mở trang **Sổ văn bản** vẫn thấy "Chưa có sổ văn bản đến nào khớp".
     Bảng `tab_document_book_member` có dòng, nhưng câu truy vấn danh sách chỉ chạy
     `apply_scope` — mà phạm vi vai trò chỉ biết THU HẸP (pháp nhân, người tạo),
     không biết mở thêm. Nhân viên có phạm vi `own` thì chỉ thấy sổ do chính họ mở,
@@ -236,7 +236,7 @@ def book_edit_condition(user, profile: dict, action: str = "write"):
 
     Khác `dieu_kien_xem_so` ở nguồn cộng thêm: chỉ **người quản lý sổ** (vai 1),
     không phải mọi thành viên. Đúng câu chú thích ngay dưới ô *Người quản lý*
-    trên giao diện — *«Sửa, đóng và xóa được sổ»* — mà trước đây backend không
+    trên giao diện — *"Sửa, đóng và xóa được sổ"* — mà trước đây backend không
     hề đọc tới: sửa sổ chỉ xét quyền vai trò `document_book.write`, không xét
     phạm vi và cũng không xét ai quản lý sổ nào.
 

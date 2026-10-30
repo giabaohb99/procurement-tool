@@ -47,7 +47,7 @@ def get_section_tasks(list_id: int, section_id: int, offset: int = Query(0, ge=0
                       limit: int = Query(tasks.BOARD_PAGE_SIZE, ge=1, le=tasks.BOARD_PAGE_MAX),
                       light: bool = True, db: Session = Depends(get_db),
                       user=Depends(require("work_task", "read"))):
-    """Trang kế của một cột — bao-CR-483. `section_id = 0` = «Chưa phân cột»."""
+    """Trang kế của một cột — bao-CR-483. `section_id = 0` = "Chưa phân cột"."""
     return success(tasks.section_tasks(db, _actor(db, user), list_id, section_id,
                                        offset=offset, limit=limit, light=light))
 

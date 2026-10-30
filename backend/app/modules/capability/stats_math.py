@@ -5,7 +5,7 @@ MySQL 8 không có hàm phân vị nên lấy cột cần thiết rồi tính �
 """
 from typing import NamedTuple
 
-MIN_SAMPLES = 5          # dưới ngưỡng này KHÔNG hiện số (doc 22 §4): một hai phiếu không nói lên «người này làm nhanh/chậm»
+MIN_SAMPLES = 5          # dưới ngưỡng này KHÔNG hiện số (doc 22 §4): một hai phiếu không nói lên "người này làm nhanh/chậm"
 BELOW_THRESHOLD = "BELOW_THRESHOLD"
 
 

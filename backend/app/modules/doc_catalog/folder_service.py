@@ -188,7 +188,7 @@ def reorder_siblings(db: Session, items: list[dict], actor: int) -> int:
 
 
 def _guard_deletable(db: Session, folder: DocFolder) -> None:
-    #  Thư mục pháp nhân + thư mục nhóm «Công ty» KHÔNG xóa được (đại ca chốt
+    #  Thư mục pháp nhân + thư mục nhóm "Công ty" KHÔNG xóa được (đại ca chốt
     #  24/09/2026 — đảo lại quyết định cho xóa gốc pháp nhân trước đó).
     if folder.kind in (int(FolderKind.COMPANY), int(FolderKind.COMPANY_GROUP)):
         raise HTTPException(400, "Thư mục công ty do hệ thống quản lý, không xóa được")
@@ -238,7 +238,7 @@ def delete_folder(db: Session, folder: DocFolder, actor: int,
       thư mục chính của nó thì thư mục cũ nhất còn lại lên làm chính;
     - văn bản chỉ nằm ở ĐÂY (sẽ mồ côi) → chuyển sang `move_to` (người xóa
       chọn ở hộp xác nhận). Không truyền `move_to` (xóa hàng loạt) thì rơi về
-      thư mục pháp nhân qua `ensure_not_orphan` — luật «không mồ côi» có sẵn.
+      thư mục pháp nhân qua `ensure_not_orphan` — luật "không mồ côi" có sẵn.
 
     Vẫn chặn thư mục còn thư mục con: xóa nguyên nhánh là việc khác, không làm
     lén trong một lần bấm."""
@@ -278,6 +278,6 @@ def delete_folder(db: Session, folder: DocFolder, actor: int,
         for doc in db.query(Document).filter(Document.id.in_(orphans)).all() if orphans else []:
             folder_link_service.ensure_not_orphan(db, doc, actor)
 
-    moved = f", chuyển {len(orphans)} văn bản sang «{move_to.name}»" if move_to and orphans else ""
+    moved = f", chuyển {len(orphans)} văn bản sang \"{move_to.name}\"" if move_to and orphans else ""
     record(db, actor, AUDIT_ENTITY, folder_id, "delete",
            f"Xóa thư mục {name} ({len(links)} văn bản){moved}")

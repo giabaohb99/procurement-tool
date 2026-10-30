@@ -4,7 +4,7 @@
 còn `entity_id` thì khi là id task, khi là id list, khi là id nhóm. Ba thứ đó
 đánh số độc lập nên `(entity="work_task", entity_id=5)` vừa có thể là task #5,
 vừa có thể là danh sách #5 — không lọc ra được dòng hoạt động của MỘT dự án.
-Tab «Hoạt động» (D-09, §8 của `05-giao-dien.md`) sống bằng đúng phép lọc đó.
+Tab "Hoạt động" (D-09, §8 của `05-giao-dien.md`) sống bằng đúng phép lọc đó.
 
 Từ nay mỗi loại đối tượng một tên riêng, và **`entity_id` luôn là id của chính
 đối tượng nêu trong tên**:
@@ -17,7 +17,7 @@ Từ nay mỗi loại đối tượng một tên riêng, và **`entity_id` luôn
 | `work_group`        | id nhóm   | `group_service`                        |
 | `work_group_member` | id nhóm   | `group_service` (thêm/gỡ thành viên)   |
 
-⚠️ `work_task` giữ nguyên tên cũ có chủ đích: khối «Lịch sử thao tác» trong panel
+⚠️ `work_task` giữ nguyên tên cũ có chủ đích: khối "Lịch sử thao tác" trong panel
 chi tiết việc (E-04) đang gọi `/api/audit-logs?entity=work_task&entity_id=…`, đổi
 là mất trắng lịch sử của mọi việc. Các dòng CŨ mang tên sai được migration
 `work_audit_entity_split` đổi lại theo mẫu câu (xem migration đó).
@@ -37,7 +37,7 @@ AUDIT_TASK_TYPE = "work_task_type"
 
 
 class WorkActivityKind(IntEnum):
-    """Loại sự kiện trên tab «Hoạt động» — bộ lọc nhanh của §8 chạy trên nó.
+    """Loại sự kiện trên tab "Hoạt động" — bộ lọc nhanh của §8 chạy trên nó.
 
     Suy ra từ `entity` chứ KHÔNG mổ chuỗi `message`: câu ghi log là văn xuôi
     tiếng Việt, ai sửa một chữ là bộ lọc câm mà không ai biết.

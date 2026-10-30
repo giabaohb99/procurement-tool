@@ -3,7 +3,7 @@
 Màn của phòng Nhân sự: xem quỹ của mọi người, cấp phát cho một năm, chỉnh tay.
 
 ⚠️ Khóa `leave_balance` là khóa **nhạy cảm nhất** của phân hệ: ai có `write` ở
-đây thì tặng thêm ngày phép cho bất kỳ ai được, qua cột «điều chỉnh tay». Đó
+đây thì tặng thêm ngày phép cho bất kỳ ai được, qua cột "điều chỉnh tay". Đó
 chính là lý do nó tách khỏi `leave_request` chứ không đi chung một khóa.
 """
 from datetime import date
@@ -106,7 +106,7 @@ def list_balances(request: Request, pg: dict = Depends(pagination),
                   search: str | None = None,
                   db: Session = Depends(get_db),
                   user=Depends(require(ENTITY, "read"))):
-    """Quỹ trong phạm vi người xem («Quỹ của tôi» khi phạm vi = own)."""
+    """Quỹ trong phạm vi người xem ("Quỹ của tôi" khi phạm vi = own)."""
     query = apply_filters(db.query(LeaveBalance), LeaveBalance, request, FILTERABLE)
     query = apply_employee_search(db, query, search)
     query = apply_scope(query, LeaveBalance, ENTITY, user, get_perm_profile(db, user))
@@ -184,7 +184,7 @@ def allocate(data: LeaveBalanceAllocate, db: Session = Depends(get_db),
     types = types.all()
     if not types:
         raise HTTPException(400, "Không có loại nghỉ nào cần cấp quỹ "
-                                 "(loại phải bật «Trừ vào quỹ phép»).")
+                                 "(loại phải bật \"Trừ vào quỹ phép\").")
 
     #  Nhân sự được cấp phải nằm trong PHẠM VI của người bấm — không có dòng này
     #  thì Nhân sự công ty con cấp quỹ cho toàn tập đoàn.
@@ -293,7 +293,7 @@ def close_year_review_export(year: int = Query(0, ge=0, le=2100), db: Session = 
 def balance_summary(employee_id: int = 0, year: int = Query(0),
                     db: Session = Depends(get_db),
                     user=Depends(require(ENTITY, "read"))):
-    """Toàn bộ quỹ của MỘT người trong một năm — dữ liệu của thẻ «Quỹ phép của tôi».
+    """Toàn bộ quỹ của MỘT người trong một năm — dữ liệu của thẻ "Quỹ phép của tôi".
 
     Bỏ trống `employee_id` là hỏi quỹ của chính mình. Vẫn đi qua `apply_scope`:
     truyền id người khác vào mà không có phạm vi thì ra rỗng, không ra 403 —

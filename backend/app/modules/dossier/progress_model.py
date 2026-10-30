@@ -1,8 +1,8 @@
 """TIẾN ĐỘ một tờ hồ sơ TRÊN MỘT CHỨNG TỪ — `tab_dossier_progress` (21/09/2026).
 
-⚠️ **Đây là thứ tách «đã có giấy trong kho» khỏi «đã xong cho phiếu này».**
+⚠️ **Đây là thứ tách "đã có giấy trong kho" khỏi "đã xong cho phiếu này".**
 Trước bảng này, thẻ *Hồ sơ cần hoàn thành* đọc thẳng `tab_dossier.status`, nên
-tick xong ở một tờ YCBG là hai chục phiếu khác cũng hiện «đã xong» — con số
+tick xong ở một tờ YCBG là hai chục phiếu khác cũng hiện "đã xong" — con số
 tiến độ của mọi phiếu giống hệt nhau và không nói lên điều gì.
 
 Ranh giới giữa hai bảng, đọc kỹ trước khi thêm cột:
@@ -16,8 +16,8 @@ Hạn hiệu lực KHÔNG nằm ở đây dù khối *Báo cáo thực hiện* c
 chỉ có một ngày hết hạn, chép nó xuống từng phiếu là dựng ra n bản của cùng một
 sự thật rồi chờ chúng lệch nhau.
 
-⚠️ **Dòng chỉ sinh ra khi có người ĐỘNG VÀO.** Không có dòng = «Chưa bắt đầu,
-bắt buộc, chưa ai nhận» — đúng mặc định, nên không đi đẻ sẵn n×m dòng rỗng lúc
+⚠️ **Dòng chỉ sinh ra khi có người ĐỘNG VÀO.** Không có dòng = "Chưa bắt đầu,
+bắt buộc, chưa ai nhận" — đúng mặc định, nên không đi đẻ sẵn n×m dòng rỗng lúc
 mở phiếu. Xem `progress_service.merge`.
 """
 from datetime import date

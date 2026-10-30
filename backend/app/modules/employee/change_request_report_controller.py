@@ -1,4 +1,4 @@
-"""Báo cáo E2 «Yêu cầu sửa hồ sơ» (khóa 27) — duoc-CR-689.
+"""Báo cáo E2 "Yêu cầu sửa hồ sơ" (khóa 27) — duoc-CR-689.
 
 Router riêng chỉ chứa `/summary` + `/summary/export` + `/summary/rows` (khung báo cáo kiểu Haravan).
 Đường gốc `/api/profile-change-report` cố ý không nằm dưới router chính có `/{id}`.

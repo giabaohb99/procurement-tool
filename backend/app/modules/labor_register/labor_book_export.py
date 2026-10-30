@@ -34,7 +34,7 @@ NUMBER_COLS = (15, 17, 18)
 
 
 def raise_history(r: PersonRow) -> str:
-    """«dd/mm/yyyy: mức lương → …» — chỉ khi người có từ hai mức lương trở lên."""
+    """"dd/mm/yyyy: mức lương → …" — chỉ khi người có từ hai mức lương trở lên."""
     if len(r.salary_history) < 2:
         return ""
     return " → ".join(f"{d:%d/%m/%Y}: {xc.money_text(s)}" for d, s in r.salary_history)

@@ -1,4 +1,4 @@
-"""Nạp «người-ngày» cho báo cáo C3 «Có mặt theo ngày» (duoc-CR-689, khóa 26).
+"""Nạp "người-ngày" cho báo cáo C3 "Có mặt theo ngày" (duoc-CR-689, khóa 26).
 
 Mỗi nhân sự × mỗi ngày trong kỳ (chỉ ngày ≤ hôm nay giờ VN) sinh ra MỘT `DayRow` nếu hôm đó
 người ấy PHẢI LÀM (theo lịch làm việc riêng của họ, không phải ngày lễ, đang làm việc hôm đó):
@@ -31,7 +31,7 @@ from app.modules.work_schedule.day_rules import AM, PM, day_capacity, day_hours,
 from app.modules.work_schedule.resolver_many import load_day_plans_many
 
 MAX_PERIOD_DAYS = 92
-PERIOD_MSG = (f"Báo cáo «Có mặt theo ngày» chỉ xem được tối đa {MAX_PERIOD_DAYS} ngày một lần "
+PERIOD_MSG = (f"Báo cáo \"Có mặt theo ngày\" chỉ xem được tối đa {MAX_PERIOD_DAYS} ngày một lần "
               "(mỗi người × mỗi ngày là một dòng tính). Hãy chọn kỳ ngắn hơn, ví dụ một tháng hoặc một quý.")
 
 

@@ -46,17 +46,17 @@ def _block_delete_type_in_use(db: Session, obj: DossierType) -> None:
     """Chốt `before_delete`: còn hồ sơ mang loại này thì không xóa."""
     used = service.count_by_type(db, obj.id)
     if used:
-        #  ⚠️ Nói rõ «toàn công ty»: số này KHÔNG lọc theo phạm vi dữ liệu (chốt
+        #  ⚠️ Nói rõ "toàn công ty": số này KHÔNG lọc theo phạm vi dữ liệu (chốt
         #  toàn vẹn phải đếm hết), nên nó có thể LỚN HƠN con số người dùng vừa
-        #  đọc ở cột «Hồ sơ đang dùng» — thiếu chữ đó thì câu chặn đọc như lỗi.
+        #  đọc ở cột "Hồ sơ đang dùng" — thiếu chữ đó thì câu chặn đọc như lỗi.
         raise HTTPException(
-            400, f"«{obj.name}» đang có {used} hồ sơ dùng trên toàn công ty nên không "
-                 "xóa được. Bỏ tick «Còn dùng» để ẩn khỏi ô chọn thay vì xóa — hồ sơ cũ "
+            400, f"\"{obj.name}\" đang có {used} hồ sơ dùng trên toàn công ty nên không "
+                 "xóa được. Bỏ tick \"Còn dùng\" để ẩn khỏi ô chọn thay vì xóa — hồ sơ cũ "
                  "vẫn đọc được loại của chúng.")
 
 
 #  ⚠️ `/stats` phải đăng ký TRƯỚC bộ sinh CRUD, vì bộ sinh có `/{oid}`: FastAPI
-#  khớp theo thứ tự đăng ký, để sau thì «stats» rơi vào `{oid}` và trả 422 khi
+#  khớp theo thứ tự đăng ký, để sau thì "stats" rơi vào `{oid}` và trả 422 khi
 #  ép thành số. Vì thế mới có router bọc ngoài này (cùng khuôn
 #  `employee/position_controller.py`).
 router = APIRouter()
@@ -98,7 +98,7 @@ def get_type_stats(db: Session = Depends(get_db),
 #  ⚠️ Khóa quyền viết THẲNG vào lời gọi, không rút thành hằng: bài kiểm
 #  `test_dong_bo_giao_dien_v2` quét mã nguồn để chứng minh mục menu `manage:
 #  true` có backend gác thật, và nó chỉ đọc được CHUỖI nằm ngay trong lời gọi
-#  `make_crud_router(...)`. Rút thành biến là menu «Loại hồ sơ» bị coi như không
+#  `make_crud_router(...)`. Rút thành biến là menu "Loại hồ sơ" bị coi như không
 #  ai gác — đúng thứ bài kiểm đó sinh ra để bắt.
 router.include_router(make_crud_router(
     "/api/dossier-types", "dossier_type", DossierType,
@@ -107,7 +107,7 @@ router.include_router(make_crud_router(
     #  lặng** — không lỗi, chỉ là trả nguyên danh sách như chưa lọc. Bốn tên này
     #  phải khớp tham số mà `frontend-v2/.../api/dossier-type-api.ts` gửi.
     filterable=["code", "name", "description", "is_active"],
-    #  ⚠️ Trùng mã thì bộ sinh trả câu **«code đã tồn tại»** — nửa Anh nửa Việt,
+    #  ⚠️ Trùng mã thì bộ sinh trả câu **"code đã tồn tại"** — nửa Anh nửa Việt,
     #  không nói mã nào. Câu đó dựng từ tên cột trong `core/crud.py` và dùng
     #  chung cho hơn hai chục danh mục, nên KHÔNG vá riêng ở đây: thử thêm
     #  `before_create` để nói câu tử tế hơn là công cốc — chốt `unique_field`

@@ -1,8 +1,8 @@
-"""Dữ liệu hàng cho báo cáo A5 «Quỹ lương theo pháp nhân» (duoc-CR-693, khóa 21).
+"""Dữ liệu hàng cho báo cáo A5 "Quỹ lương theo pháp nhân" (duoc-CR-693, khóa 21).
 
 Nguồn số = ô lương trên HỒ SƠ nhân sự (`Employee.salary_monthly` / `allowance_monthly`), KHÔNG đọc hợp đồng
 lao động nữa (ký HĐ chỉ tự điền ô hồ sơ — xem `salary_sync.py`). Một truy vấn nhân sự duy nhất, số truy vấn
-cố định. Số liệu là ẢNH CHỤP hiện tại (ô hồ sơ không có lịch sử): chỉ người đang làm (`is_active`, chưa «Đã nghỉ»).
+cố định. Số liệu là ẢNH CHỤP hiện tại (ô hồ sơ không có lịch sử): chỉ người đang làm (`is_active`, chưa "Đã nghỉ").
 
 ⚠️ Hàng mang lương từng người chỉ sống trong bộ nhớ để cộng; không hàng nào được trả ra ngoài kèm số tiền.
 """

@@ -1,4 +1,4 @@
-"""API XEM TRƯỚC «NGƯỜI DUYỆT DỰ KIẾN» (phase 01, duoc-CR-473).
+"""API XEM TRƯỚC "NGƯỜI DUYỆT DỰ KIẾN" (phase 01, duoc-CR-473).
 
 Tệp RIÊNG, KHÔNG đụng `document/controller.py` — controller đó đang được một
 agent khác sửa song song trong cùng đợt việc này.

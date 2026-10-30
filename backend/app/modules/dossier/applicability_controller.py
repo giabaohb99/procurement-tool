@@ -1,18 +1,18 @@
-"""API «HỒ SƠ CẦN KÈM» — `/api/dossiers/applicable` (21/09/2026).
+"""API "HỒ SƠ CẦN KÈM" — `/api/dossiers/applicable` (21/09/2026).
 
-Trang chi tiết của một chứng từ hỏi: *«có tờ hồ sơ nào phải kèm theo tôi không?»*
+Trang chi tiết của một chứng từ hỏi: *"có tờ hồ sơ nào phải kèm theo tôi không?"*
 Luật khớp nằm ở `applicability.py`; tệp này chỉ lo **gác cửa** và ghép câu trả lời.
 
 ⚠️ **Tách khỏi `controller.py` và phải nạp TRƯỚC nó ở `main.py`.** Bộ sinh CRUD
 đăng ký `/api/dossiers/{id}` với `id: int`; FastAPI khớp đường dẫn theo thứ tự
 đăng ký, nên nạp sau thì `/api/dossiers/applicable` rơi vào tuyến `{id}` và
-trả **422** «không đổi được 'applicable' sang số» — một lỗi trông như lỗi máy
+trả **422** "không đổi được 'applicable' sang số" — một lỗi trông như lỗi máy
 khách gửi sai, chứ không chỉ về phía thứ tự nạp tuyến.
 
 ⚠️ **HAI cửa, không phải một.** Có `dossier.read` mới là được đọc hồ sơ; còn
 chứng từ nguồn thì phải qua `get_scoped` bằng **khóa quyền của chính nó**. Thiếu
 cửa thứ hai thì bất kỳ ai có quyền đọc hồ sơ đều dò được nội dung đơn hàng của
-phòng khác: câu lý do trả về nói thẳng *«vì dòng 3 có SP-001»*, tức là đọc ra
+phòng khác: câu lý do trả về nói thẳng *"vì dòng 3 có SP-001"*, tức là đọc ra
 được cả mã sản phẩm lẫn số dòng của một tờ đơn họ không được xem.
 """
 from datetime import date
@@ -38,7 +38,7 @@ from .progress_service import (merge as merge_progress, pending_depends,
 router = APIRouter(prefix="/api/dossiers", tags=["dossier"])
 
 #  Trần số hồ sơ trả về. Một chứng từ cần kèm ba bốn tờ giấy là cùng; con số này
-#  chỉ để chặn ca khai nhầm (bật «áp cho mọi đơn mua hàng» trên cả trăm tờ hồ sơ)
+#  chỉ để chặn ca khai nhầm (bật "áp cho mọi đơn mua hàng" trên cả trăm tờ hồ sơ)
 #  biến một thẻ thông tin thành một trang cuộn không hết.
 MAX_APPLICABLE = 20
 
@@ -104,8 +104,8 @@ def applicable_dossiers(
         "doc_kind": doc_kind,
         "doc_id": doc_id,
         "doc_kind_label": DOC_KINDS[doc_kind]["label"],
-        #  Danh sách dòng hàng của chính chứng từ này — chế độ xem «Theo dòng
-        #  hàng» dựng khung từ đây. Trả kèm thay vì bắt máy khách gọi thêm một
+        #  Danh sách dòng hàng của chính chứng từ này — chế độ xem "Theo dòng
+        #  hàng" dựng khung từ đây. Trả kèm thay vì bắt máy khách gọi thêm một
         #  lượt vào API của phân hệ Thu mua: hai lượt gọi là hai bản dữ liệu có
         #  thể lệch nhau trong cùng một màn hình, và bản lệch là bản người dùng
         #  nhìn.
@@ -142,13 +142,13 @@ def _match(db: Session, doc_kind: str, doc_id: int, lines: list, user, profile):
 
         if not conditions:
             #  Không khai điều kiện = áp cho MỌI phiếu loại này, kể cả phiếu
-            #  chưa có dòng hàng nào. `matched_lines` RỖNG nghĩa là «hồ sơ
-            #  CHUNG», khác hẳn «không khớp dòng nào» — hồ sơ không khớp thì
+            #  chưa có dòng hàng nào. `matched_lines` RỖNG nghĩa là "hồ sơ
+            #  CHUNG", khác hẳn "không khớp dòng nào" — hồ sơ không khớp thì
             #  không lọt vào danh sách này ngay từ đầu.
             out.append((dossier, reason_of(conditions, {}, doc_kind), []))
         else:
             #  ⚠️ Gom MỌI dòng khớp, không dừng ở dòng đầu tiên. Dừng sớm thì rẻ
-            #  hơn một chút nhưng chế độ xem «Theo dòng hàng» mất sạch dữ liệu:
+            #  hơn một chút nhưng chế độ xem "Theo dòng hàng" mất sạch dữ liệu:
             #  một tờ hồ sơ áp cho ba dòng sẽ chỉ hiện ở một dòng, và người dùng
             #  kết luận hai dòng kia không cần tờ giấy đó.
             hits = [line for line in lines if matches_line(conditions, line)]
@@ -199,7 +199,7 @@ def _row(
         "code": dossier.code,
         "name": dossier.name,
         #  Trả cả KHÓA lẫn NHÃN loại. Nhãn để bày, khóa để **gom nhóm** — thẻ
-        #  thử «Hồ sơ cần hoàn thành» xếp hồ sơ theo loại và lấy thứ tự từ
+        #  thử "Hồ sơ cần hoàn thành" xếp hồ sơ theo loại và lấy thứ tự từ
         #  `sort_order` của danh mục, mà gom theo chuỗi tên thì đổi tên loại một
         #  cái là nhóm vỡ làm đôi, im lặng.
         "dossier_type_id": dossier.dossier_type_id,
@@ -216,7 +216,7 @@ def _row(
         "expiry_days": dossier.expiry_days,
         "reason": reason,
         #  Số thứ tự các dòng hàng mà tờ hồ sơ này khớp. **RỖNG = hồ sơ CHUNG**
-        #  (áp cho cả phiếu), không phải «không khớp dòng nào».
+        #  (áp cho cả phiếu), không phải "không khớp dòng nào".
         "matched_lines": matched_lines,
         #  ⚠️ TIẾN ĐỘ RIÊNG CỦA PHIẾU NÀY — đừng lẫn với `status` ở trên.
         #  `status` = tờ giấy có trong kho công ty chưa; `progress_status` = việc
@@ -241,14 +241,14 @@ def _with_lock(
 
     ⚠️ **Ràng buộc đọc từ TỜ HỒ SƠ (`tab_dossier.depends`), trạng thái đọc từ
     TIẾN ĐỘ (`tab_dossier_progress.status`).** Đó là toàn bộ điểm tinh tế của
-    tính năng: chuỗi tiên quyết khai một lần cho cả kho, còn «đang khóa hay
-    chưa» thì mỗi phiếu một câu trả lời, vì «xong» là chuyện của từng phiếu.
+    tính năng: chuỗi tiên quyết khai một lần cho cả kho, còn "đang khóa hay
+    chưa" thì mỗi phiếu một câu trả lời, vì "xong" là chuyện của từng phiếu.
     Khai ở đây (trong một tờ YCBG) thì mỗi phiếu phải khai lại cả chuỗi; tính
     khóa ở tờ hồ sơ thì mở khóa cho phiếu này là mở luôn cho mọi phiếu.
 
     ⚠️ Tính Ở BACKEND, không để giao diện tự suy: luật có lọc id CHẾT, và hai
     bản luật sẽ lệch nhau đúng ở ca đó. Trả kèm TÊN của tờ đang chờ chứ không
-    chỉ id — màn hình cần câu «chờ: Hợp đồng mua bán», mà tra tên ở TS thì phải
+    chỉ id — màn hình cần câu "chờ: Hợp đồng mua bán", mà tra tên ở TS thì phải
     tự dựng lại map.
     """
     waiting = pending_depends(depends, done_ids, alive)
@@ -265,7 +265,7 @@ def _with_lock(
 class ProgressPayload(BaseModel):
     """Ô nào không gửi thì GIỮ NGUYÊN — đây là PATCH, không phải PUT.
 
-    ⚠️ `None` và «không gửi» là hai chuyện khác nhau ở `planned_date`: không gửi
+    ⚠️ `None` và "không gửi" là hai chuyện khác nhau ở `planned_date`: không gửi
     = đừng đụng vào, gửi `null` = xóa ngày đi. Phân biệt bằng `exclude_unset`
     lúc đọc, đừng thay bằng `if payload.planned_date` — bỏ trống ngày sẽ không
     bao giờ lưu được.
@@ -322,7 +322,7 @@ def set_progress(
     #  ⚠️ Cả hai chốt dưới đây cần TẬP HỒ SƠ ÁP DỤNG cho phiếu, nên phải chạy
     #  lại phép khớp. Đắt hơn một chút, nhưng đây là đường GHI (một lần mỗi cú
     #  bấm) chứ không phải đường đọc, và không có tập đó thì không phân biệt nổi
-    #  «tiên quyết hợp lệ» với «một id gõ đại vào URL».
+    #  "tiên quyết hợp lệ" với "một id gõ đại vào URL".
     lines = doc_lines(db, doc_kind, doc_id)
     matched = _match(db, doc_kind, doc_id, lines, user, profile)
     alive = {d.id for d, _, _ in matched}
@@ -349,12 +349,12 @@ def set_progress(
             raise HTTPException(400, f"Còn hồ sơ tiên quyết chưa hoàn thành: {ten}")
 
     row = upsert(db, doc_kind, doc_id, dossier_id, values)
-    #  Ghi nhật ký vào CHỨNG TỪ, không vào tờ hồ sơ: người đi tìm «ai tick cái
-    #  này» mở tờ phiếu ra xem, chứ không mở kho hồ sơ.
+    #  Ghi nhật ký vào CHỨNG TỪ, không vào tờ hồ sơ: người đi tìm "ai tick cái
+    #  này" mở tờ phiếu ra xem, chứ không mở kho hồ sơ.
     #
     #  ⚠️ Tham số thứ hai là `user_id`, KHÔNG phải object `user`. Truyền nhầm
     #  object thì SQLAlchemy nhét nguyên nó vào cột `created_by` và MySQL trả
-    #  500 «Incorrect integer value» — một lỗi chỉ nổ lúc chạy thật, vì SQLite
+    #  500 "Incorrect integer value" — một lỗi chỉ nổ lúc chạy thật, vì SQLite
     #  của bộ test không ép kiểu cột.
     record(db, user.id, entity, doc_id, "update",
            f"Tiến độ hồ sơ #{dossier_id}: {DP_STATUS_LABELS.get(row.status, '')}")

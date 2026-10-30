@@ -1,6 +1,6 @@
 """Schema cấp / thu QUYỀN TRÊN THƯ MỤC — `POST/DELETE /api/doc-folders/{id}/access`
 + cấp HÀNG LOẠT `POST .../access/bulk` + đổi mức tại chỗ `PATCH .../access/{id}`
-(phase 10B, hộp «Chia sẻ» kiểu Drive — chọn nhiều đối tượng một lượt).
+(phase 10B, hộp "Chia sẻ" kiểu Drive — chọn nhiều đối tượng một lượt).
 
 `max_length` khớp ĐÚNG `String(n)` của `folder_access_model.py` (CR-316).
 """
@@ -49,7 +49,7 @@ class FolderAccessRevokeIn(BaseModel):
 
 class FolderAccessBulkSubjectIn(BaseModel):
     """Một đối tượng trong danh sách chọn nhiều — chỉ định danh, KHÔNG mang
-    mức/chiều tác động riêng: hộp «Chia sẻ» áp CÙNG một mức + một chiều cho cả
+    mức/chiều tác động riêng: hộp "Chia sẻ" áp CÙNG một mức + một chiều cho cả
     lượt (đặc tả §C — khác `DocumentAccessDialog` vốn cho khai nhiều CỤM khác
     chiều trong một lần mở hộp)."""
 
@@ -86,8 +86,8 @@ class FolderAccessBulkGrantIn(BaseModel):
 
 
 class FolderAccessLevelPatchIn(BaseModel):
-    """`PATCH /{folder_id}/access/{access_id}` — đổi MỨC tại chỗ, dòng «Người
-    có quyền» của hộp «Chia sẻ». Chỉ đổi `level`; đổi đối tượng/chiều tác động
+    """`PATCH /{folder_id}/access/{access_id}` — đổi MỨC tại chỗ, dòng "Người
+    có quyền" của hộp "Chia sẻ". Chỉ đổi `level`; đổi đối tượng/chiều tác động
     vẫn phải thu hồi rồi cấp lại (giữ đúng luật thu hồi-là-đánh-dấu)."""
 
     level: int

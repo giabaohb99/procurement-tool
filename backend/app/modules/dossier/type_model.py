@@ -1,6 +1,6 @@
 """DANH MỤC LOẠI HỒ SƠ — `tab_dossier_type` (phân hệ Hồ sơ, 16/09/2026).
 
-Nguồn của ô chọn «Loại hồ sơ» trên màn hồ sơ, và là chỗ khai **hạn hiệu lực mặc
+Nguồn của ô chọn "Loại hồ sơ" trên màn hồ sơ, và là chỗ khai **hạn hiệu lực mặc
 định** của từng loại giấy tờ (giấy phép con 36 tháng, hồ sơ dự thầu 3 tháng…).
 
 ⚠️ **Đây là DANH MỤC, không phải bộ mã.** R2/QĐ-11 bắt cột mang nghĩa *phân loại
@@ -42,7 +42,7 @@ class DossierType(Base, AuditMixin):
     #  `0` = loại hồ sơ **vô thời hạn**; đó là một lựa chọn thật (giấy chứng nhận
     #  đăng ký doanh nghiệp, quyết định bổ nhiệm), không phải ô chưa ai nhập. Hai
     #  nghĩa đó không tách được bằng `NULL` vì cột `NOT NULL` có mặc định — nên
-    #  giao diện phải nói thành lời «Vô thời hạn» thay vì hiện số 0 trần.
+    #  giao diện phải nói thành lời "Vô thời hạn" thay vì hiện số 0 trần.
     #
     #  `SmallInteger` đủ (trần 1200 tháng = 100 năm, chặn ở schema).
     default_valid_months: Mapped[int] = mapped_column(SmallInteger, default=0)
@@ -63,7 +63,7 @@ class DossierType(Base, AuditMixin):
     field_schema: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
     #  Thứ tự bày trong ô chọn; số nhỏ lên trước, loại hay dùng để số nhỏ.
-    #  ⚠️ Cột này CỐ Ý không lên giao diện — «thứ tự» là khái niệm của người dựng
+    #  ⚠️ Cột này CỐ Ý không lên giao diện — "thứ tự" là khái niệm của người dựng
     #  hệ thống, bày ra bảng thì người dùng thấy toàn 10·20·130 không ai giải
     #  nghĩa (bài học duoc-CR-321). Ô chọn loại vì thế phải khai `sort_by`, đừng
     #  để mặc định `id desc` của bộ sinh CRUD.

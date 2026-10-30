@@ -56,7 +56,7 @@ def _block_delete_position_in_use(db: Session, obj: JobPosition) -> None:
 
     Xóa là để lại hồ sơ trỏ vào một `position_id` không còn tồn tại: ô chọn trên
     màn hồ sơ hiện trống, còn cột nhãn vẫn giữ chữ cũ — hai chỗ nói hai điều
-    khác nhau về cùng một người. Muốn dẹp một chức vụ thì bỏ tick «Đang dùng»:
+    khác nhau về cùng một người. Muốn dẹp một chức vụ thì bỏ tick "Đang dùng":
     nó biến khỏi ô chọn nhưng hồ sơ cũ vẫn đọc được.
     """
     #  duoc-CR-653 (H3): chức vụ sắp xóa thì dọn gói quyền mặc định của nó (cùng giao dịch; chặn bên dưới
@@ -64,12 +64,12 @@ def _block_delete_position_in_use(db: Session, obj: JobPosition) -> None:
     from .position_model import JobPositionRole
     used = position_service.count_employees(db, obj.id)
     if used:
-        #  ⚠️ Nói rõ «toàn công ty»: số này KHÔNG lọc theo phạm vi dữ liệu (chốt
+        #  ⚠️ Nói rõ "toàn công ty": số này KHÔNG lọc theo phạm vi dữ liệu (chốt
         #  toàn vẹn phải đếm hết), nên nó có thể LỚN HƠN số dòng người dùng vừa
-        #  đọc ở tab «Người đang giữ» — thiếu chữ đó thì câu chặn đọc như lỗi.
+        #  đọc ở tab "Người đang giữ" — thiếu chữ đó thì câu chặn đọc như lỗi.
         raise HTTPException(
-            400, f"«{obj.name}» đang có {used} hồ sơ giữ chức vụ này trên toàn công ty "
-                 "nên không xóa được. Bỏ tick «Đang dùng» để ẩn khỏi ô chọn thay vì xóa.")
+            400, f"\"{obj.name}\" đang có {used} hồ sơ giữ chức vụ này trên toàn công ty "
+                 "nên không xóa được. Bỏ tick \"Đang dùng\" để ẩn khỏi ô chọn thay vì xóa.")
     db.query(JobPositionRole).filter(JobPositionRole.job_position_id == obj.id).delete(synchronize_session=False)
 
 

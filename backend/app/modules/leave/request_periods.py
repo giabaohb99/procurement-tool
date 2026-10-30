@@ -28,7 +28,7 @@ HEADER_KEYS = ("from_date", "to_date", "from_session", "to_session")
 
 
 def label_of(index: int, p: PeriodView) -> str:
-    """«Khoảng thứ 2 (03/11 → 07/11)» — để câu báo lỗi chỉ đúng khoảng."""
+    """"Khoảng thứ 2 (03/11 → 07/11)" — để câu báo lỗi chỉ đúng khoảng."""
     return f"Khoảng thứ {index + 1} ({p.from_date:%d/%m} → {p.to_date:%d/%m})"
 
 
@@ -168,7 +168,7 @@ def raise_if_overlap(db: Session, employee_id: int, periods: list[PeriodView],
     other = find_overlap(db, employee_id, periods, exclude_id)
     if other is not None:
         raise HTTPException(
-            400, f"Đã có đơn «{other.code}» nghỉ {period_text(periods_of(db, other))} "
+            400, f"Đã có đơn \"{other.code}\" nghỉ {period_text(periods_of(db, other))} "
                  "trùng khoảng ngày này.")
 
 

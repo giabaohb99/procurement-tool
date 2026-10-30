@@ -43,7 +43,7 @@ STATUS_REVOKED = 7      # bãi bỏ
 STATUS_ARCHIVED = 8     # lưu trữ
 #  Hai nhịp KẾT THÚC PHIÊN DUYỆT, tách khỏi Nháp từ 24/08/2026.
 #
-#  Trước đó cả «trả lại», «từ chối» và «rút phiếu» đều kéo văn bản về Nháp (1).
+#  Trước đó cả "trả lại", "từ chối" và "rút phiếu" đều kéo văn bản về Nháp (1).
 #  Mở văn bản ra thì nó trông y như bản chưa từng gửi duyệt: người soạn không
 #  biết nó VỪA BỊ TRẢ, mà lý do thì nằm trong `change_reason` và dấu vết tab Phê
 #  duyệt — hai chỗ không ai mở khi chỉ liếc trạng thái.
@@ -108,9 +108,9 @@ APPLY_MODE_LABELS = {
     APPLY_MODE_CLONE: "Clone thành bản nháp riêng cho từng pháp nhân con",
 }
 
-#  CÁCH TẠO văn bản (24/09/2026) — nút bấm lúc tạo: «Tạo và soạn thảo» (1) hay
-#  «Tạo, không soạn thảo» (2, văn bản chỉ gồm tệp có sẵn). Quyết định tab
-#  «Văn bản» ở màn chi tiết là TRÌNH SOẠN THẢO hay TRÌNH XEM TỆP. Lưu thành cột
+#  CÁCH TẠO văn bản (24/09/2026) — nút bấm lúc tạo: "Tạo và soạn thảo" (1) hay
+#  "Tạo, không soạn thảo" (2, văn bản chỉ gồm tệp có sẵn). Quyết định tab
+#  "Văn bản" ở màn chi tiết là TRÌNH SOẠN THẢO hay TRÌNH XEM TỆP. Lưu thành cột
 #  chứ không đoán từ "nội dung rỗng + có tệp": văn bản soạn thảo vừa tạo, chưa
 #  gõ chữ nào mà đã đính tệp, sẽ bị đoán nhầm thành văn bản không soạn thảo.
 CONTENT_MODE_COMPOSE = 1
@@ -159,10 +159,10 @@ class Document(Base, AuditMixin, SoftDeleteMixin):
         Index("ix_document_issue_number", "issue_number"),
         Index("ix_document_legacy_code", "legacy_code"),
         Index("ix_document_clone", "source_document_id", "clone_status"),
-        #  Báo cáo Văn bản: kỳ theo ngày tạo, chỉ số «Đã ban hành» theo ngày ban hành.
+        #  Báo cáo Văn bản: kỳ theo ngày tạo, chỉ số "Đã ban hành" theo ngày ban hành.
         Index("ix_document_created_at", "created_at"),
         Index("ix_document_issued_at", "issued_at"),
-        #  duoc-CR-656 (D1c): tải «chờ ban hành» theo người soạn thảo — `(drafter_employee_id, status)`.
+        #  duoc-CR-656 (D1c): tải "chờ ban hành" theo người soạn thảo — `(drafter_employee_id, status)`.
         Index("ix_document_drafter_status", "drafter_employee_id", "status"),
     )
 

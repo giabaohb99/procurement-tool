@@ -1,4 +1,4 @@
-"""Các truy vấn «tải đang ôm» — mỗi hàm MỘT câu `GROUP BY người` có lọc `IN (nhân sự trong phạm vi)` (duoc-CR-656, D1c).
+"""Các truy vấn "tải đang ôm" — mỗi hàm MỘT câu `GROUP BY người` có lọc `IN (nhân sự trong phạm vi)` (duoc-CR-656, D1c).
 
 Không hàm nào lặp theo người. Hằng trạng thái lấy từ chính module sở hữu bảng (không gõ tay chuỗi).
 Chỉ ĐỌC; không gác quyền (xem `workload_service.current_load`).
@@ -14,9 +14,9 @@ from app.modules.document.model import STATUS_PENDING_ISSUE
 from app.modules.leave.constants import LR_APPROVED
 from app.modules.work.model import WorkAssigneeKind, WorkTaskStatus
 
-#  Trạng thái chứng từ Thu mua KHÔNG còn là «đang xử lý» (mã chuỗi, xem `core/status_codes.py` và các service).
+#  Trạng thái chứng từ Thu mua KHÔNG còn là "đang xử lý" (mã chuỗi, xem `core/status_codes.py` và các service).
 PR_NOT_HANDLING = ("draft", "submitted", "completed", "done", "cancelled", "rejected")
-#  `received` (Đã nhận đủ) = đã xong, không còn «đang xử lý» (đại ca chốt 20/10/2026).
+#  `received` (Đã nhận đủ) = đã xong, không còn "đang xử lý" (đại ca chốt 20/10/2026).
 PO_NOT_HANDLING = ("draft", "received", "completed", "cancelled", "rejected")
 SR_ACTIVE = ("submitted", "approved", "processing")
 PR_LINE_DONE = ("completed", "cancelled")
@@ -27,7 +27,7 @@ def _t(name: str):
 
 
 def employees_in_scope(db: Session, company_id, department_ids, employee_ids) -> list:
-    """Q1 — nhân sự đang làm trong phạm vi (đã loại «Nghỉ việc»). Phải có ÍT NHẤT một điều kiện lọc."""
+    """Q1 — nhân sự đang làm trong phạm vi (đã loại "Nghỉ việc"). Phải có ÍT NHẤT một điều kiện lọc."""
     e = _t("tab_employee")
     q = select(e.c.id, e.c.code, e.c.full_name, e.c.company_id, e.c.department_id).where(e.c.status != "resigned")
     if company_id:

@@ -36,7 +36,7 @@ from .version_model import DocumentVersion
 #  Áp dụng cho CẢ HAI dialect để hành vi tách từ đồng nhất.
 #
 #  ⚠️ `-` CỐ Ý không nằm trong danh sách này. Số hiệu văn bản thật luôn có dấu
-#  gạch ngang («08/2026/TB-NS-DEGO», «ABC-999-XYZ»); tước nó thành khoảng trắng
+#  gạch ngang ("08/2026/TB-NS-DEGO", "ABC-999-XYZ"); tước nó thành khoảng trắng
 #  thì câu tìm tách thành ba từ RỜI trong khi chữ đã lập chỉ mục vẫn giữ nguyên
 #  dấu gạch — hai bên không còn khớp được nhau nữa. `-` Ở ĐẦU token đã được
 #  `parse_query` đọc thành LOẠI TRỪ và cắt đi TRƯỚC khi tới đây; dấu gạch nằm
@@ -139,7 +139,7 @@ def _scope_subquery(base_query):
     tự dựng thành subquery), MySQL/SQLite chạy nó phía server — y hệt `EXISTS`
     viết dạng `IN`."""
     #  ⚠️ Bọc thêm MỘT TẦNG bảng dẫn xuất: MySQL từ chối `IN (SELECT … LIMIT n)`
-    #  (lỗi 1235 «doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'»), nhưng
+    #  (lỗi 1235 "doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'"), nhưng
     #  nhận `IN (SELECT id FROM (SELECT … LIMIT n) AS t)`. Bắt 25/09/2026 — pytest
     #  chạy SQLite (nhận cả hai dạng) nên không bao giờ thấy.
     limited = base_query.with_entities(Document.id.label("id")).limit(SCOPE_LIMIT).subquery()

@@ -59,7 +59,7 @@ def _check_code(code: str, limit: int, allow_punct: bool = False) -> str:
     if allow_punct:
         if not _VALID_NUMBER_RE.match(code):
             raise HTTPException(
-                400, "Mã sổ không được có khoảng trắng hay dấu «/», «-» — "
+                400, "Mã sổ không được có khoảng trắng hay dấu \"/\", \"-\" — "
                      "đó là dấu ngăn của số hiệu.")
         return code
     if not _VALID_CODE_RE.match(code):
@@ -248,7 +248,7 @@ def edit(db: Session, kind: str, obj_id: int, issue_code: str,
         warning = _has_book_entries(db, obj_id)
 
     else:
-        raise HTTPException(400, f"Không biết nhóm mã «{kind}»")
+        raise HTTPException(400, f"Không biết nhóm mã \"{kind}\"")
 
     db.flush()
     return {"cu": old or "", "moi": new, "da_cap_so": warning}

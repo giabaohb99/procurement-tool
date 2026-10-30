@@ -1,13 +1,13 @@
-"""«Hợp đồng của tôi» (duoc-CR-652): nhân sự TỰ XEM hợp đồng lao động của chính mình, CHỈ ĐỌC.
+""""Hợp đồng của tôi" (duoc-CR-652): nhân sự TỰ XEM hợp đồng lao động của chính mình, CHỈ ĐỌC.
 
-Không dùng khóa quyền `labor_contract` — đây là ngoại lệ «của chính mình» cho mọi tài khoản có hồ sơ nhân sự
+Không dùng khóa quyền `labor_contract` — đây là ngoại lệ "của chính mình" cho mọi tài khoản có hồ sơ nhân sự
 (cùng tinh thần `employee_sensitive` tự xem). Vì không có `apply_scope` che chắn nên BA luật sau là hàng rào duy nhất:
 
   1. Nhân sự suy ra CHỈ từ token (`user.employee_id`); không có tham số nào chọn người. `employee_id` rỗng/0 ⇒
      danh sách rỗng và KHÔNG truy vấn (tránh khớp nhầm các dòng `employee_id = 0`).
-  2. Chỉ trạng thái LƯU `SELF_VIEW_STATUSES` (Đã ký / Đã chấm dứt; «Hết hạn» là SIGNED + hết ngày) và chưa xóa mềm.
+  2. Chỉ trạng thái LƯU `SELF_VIEW_STATUSES` (Đã ký / Đã chấm dứt; "Hết hạn" là SIGNED + hết ngày) và chưa xóa mềm.
      Nháp / Đã hủy ⇒ 404 như id không tồn tại (còn soạn, lương chưa chốt).
-  3. Id của người khác ⇒ 404 (không phân biệt «không có» với «của người khác»).
+  3. Id của người khác ⇒ 404 (không phân biệt "không có" với "của người khác").
 
 Tải tệp dùng lại đúng hàm của HR (`file_response`, `generate_service.document_filename`) — logic tệp ở một chỗ.
 Không ghi nhật ký kiểm toán khi xem (xem lương của chính mình); không trả id tệp / url / file_key.

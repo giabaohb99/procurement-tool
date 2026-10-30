@@ -96,7 +96,7 @@ def create_contract(eid: int, data: LaborContractCreate, db: Session = Depends(g
 def list_expiring_contracts(db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     """HĐLĐ sắp hết / đã hết hạn trong phạm vi người xem (duoc-CR-620) — thẻ Tổng quan Nhân sự.
 
-    ⚠️ Phải khai TRƯỚC `/api/labor-contracts/{cid}`: không thì «expiring» rơi vào `{cid}` và ăn 422.
+    ⚠️ Phải khai TRƯỚC `/api/labor-contracts/{cid}`: không thì "expiring" rơi vào `{cid}` và ăn 422.
     Không trả lương — chỉ người, mã, loại, ngày kết thúc."""
     profile = get_perm_profile(db, user)
     rows = expiry_service.find_expiring(db, vn_today(), user=user, profile=profile)
@@ -126,7 +126,7 @@ def update_contract(cid: int, data: LaborContractUpdate, db: Session = Depends(g
 
 @router.get("/api/labor-contracts/{cid}/templates")
 def list_contract_templates(cid: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "write"))):
-    """Ô chọn mẫu của hộp «Sinh tệp»: mẫu theo pháp nhân + loại CỦA HĐ (không theo NV hiện tại)."""
+    """Ô chọn mẫu của hộp "Sinh tệp": mẫu theo pháp nhân + loại CỦA HĐ (không theo NV hiện tại)."""
     row = _scoped(db, cid, user, get_perm_profile(db, user), "write")
     return success([{"id": r.id, "name": r.name, "contract_type": r.contract_type}
                     for r in service.templates_for_contract(db, row)])
@@ -150,7 +150,7 @@ def generate_document(cid: int, data: GenerateIn, db: Session = Depends(get_db),
     _scoped(db, cid, user, profile, "write")
     row, template_name = generate_service.generate(db, user, cid, data.template_id)
     _archive(db, row, user)
-    _audit(db, user, row, "update", f"Sinh tệp hợp đồng từ mẫu «{template_name}»")
+    _audit(db, user, row, "update", f"Sinh tệp hợp đồng từ mẫu \"{template_name}\"")
     return success(_item(db, row, user, profile), "Đã sinh tệp hợp đồng")
 
 
@@ -190,5 +190,5 @@ def transition_contract(cid: int, data: TransitionIn, db: Session = Depends(get_
     profile = get_perm_profile(db, user)
     row = service.transition(db, user, _scoped(db, cid, user, profile, "write", lock=True), data)
     _archive(db, row, user)
-    _audit(db, user, row, "document_status", f"Chuyển trạng thái hợp đồng sang «{LABOR_CONTRACT_STATUS_LABELS[LaborContractStatus(int(row.status))]}»")
+    _audit(db, user, row, "document_status", f"Chuyển trạng thái hợp đồng sang \"{LABOR_CONTRACT_STATUS_LABELS[LaborContractStatus(int(row.status))]}\"")
     return success(_item(db, row, user, profile), "Đã chuyển trạng thái")

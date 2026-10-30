@@ -1,4 +1,4 @@
-"""«Bấm số ra danh sách NHÂN SỰ» của báo cáo Biến động nhân sự (duoc-CR-686,
+""""Bấm số ra danh sách NHÂN SỰ" của báo cáo Biến động nhân sự (duoc-CR-686,
 `GET /api/employees/summary/rows`). Hợp đồng chung ở `core/report_drilldown.py`.
 
 Dùng LẠI đúng hàm sinh sự kiện của `/summary` (`hire_events` · `resign_events` · `employees_as_of`)

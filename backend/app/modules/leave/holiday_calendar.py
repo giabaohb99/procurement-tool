@@ -24,7 +24,7 @@ def holiday_dates(db: Session, company_id: int, from_date: date, to_date: date) 
     đạt được — lý do `holiday` khai `PUBLIC` ở `SCOPE_FIELDS`.
 
     Ngày lễ LẶP hằng năm (`is_recurring`) khớp theo ngày/tháng, bất kể năm lưu
-    trong bảng — nhập «01/01» một lần là năm nào cũng nhận. Tết Âm lịch thì
+    trong bảng — nhập "01/01" một lần là năm nào cũng nhận. Tết Âm lịch thì
     không lặp được vì trôi theo lịch âm, mỗi năm phải nhập một lần.
     """
     return set(holiday_names_many(db, [company_id], from_date, to_date).get(company_id, {}))

@@ -1,4 +1,4 @@
-"""BỘ PHÂN GIẢI LỊCH — «ngày D của nhân sự X làm theo lịch nào?».
+"""BỘ PHÂN GIẢI LỊCH — "ngày D của nhân sự X làm theo lịch nào?".
 
 Thứ tự thắng: NHÂN SỰ > PHÒNG BAN > PHÁP NHÂN > HỆ THỐNG > `FALLBACK_WEEK`
 (`LEVEL_PRECEDENCE`). Phòng ban/pháp nhân là phòng CHÍNH và pháp nhân HIỆN TẠI
@@ -134,7 +134,7 @@ def spec_to_day_out(weekday: int, spec: DaySpec) -> dict:
 
 
 def effective_for_employee(db: Session, employee, on_date: date) -> dict:
-    """Lịch hiệu lực của một nhân sự vào `on_date` — cho thẻ «Lịch làm việc» ở hồ sơ."""
+    """Lịch hiệu lực của một nhân sự vào `on_date` — cho thẻ "Lịch làm việc" ở hồ sơ."""
     hit = _winner(db, employee, on_date)
     sched = db.get(WorkSchedule, hit.schedule_id) if hit else None
     if hit is None or sched is None:

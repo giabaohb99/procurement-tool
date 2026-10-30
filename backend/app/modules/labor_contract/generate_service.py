@@ -29,7 +29,7 @@ DOCX_KIND, SIGNED_KIND, CATEGORY = "labor_contract_docx", "labor_contract_signed
 def document_filename(db: Session, row: LaborContract) -> str:
     """`HDLD-{số}-{họ tên}.docx` — chỉ từ dữ liệu DB, đã làm sạch.
 
-    Số đã mở đầu bằng «HDLD» (mã hệ thống `HDLD005`, hay số tự gõ `HDLD-12`) thì không thêm tiền tố
+    Số đã mở đầu bằng "HDLD" (mã hệ thống `HDLD005`, hay số tự gõ `HDLD-12`) thì không thêm tiền tố
     nữa — trước đây ra `HDLD-HDLD005-…` (test Chrome 06/10/2026)."""
     emp = db.get(Employee, row.employee_id)
     number = row.contract_no or row.code

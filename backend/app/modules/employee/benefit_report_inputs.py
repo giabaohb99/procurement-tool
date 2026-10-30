@@ -1,4 +1,4 @@
-"""Tham số lọc của báo cáo H1 «Phúc lợi & sự kiện» (duoc-CR-688) — kiểm ở biên, sai là 422.
+"""Tham số lọc của báo cáo H1 "Phúc lợi & sự kiện" (duoc-CR-688) — kiểm ở biên, sai là 422.
 
 Bỏ người đang nghỉ phép (`include_on_leave=0`) đòi `leave_request.read`. Lọc theo ngày sinh / người thân (`age_min`, `age_max`, `birth_month`, `child_max_age`) đòi quyền
 `employee_sensitive.read`: thiếu quyền thì 403 bằng câu tiếng Việt dễ hiểu (không lộ mã quyền).

@@ -128,7 +128,7 @@ def _ensure_document(db: Session, lc: LaborContract, actor_id: int) -> doc_model
         content_mode=doc_model.CONTENT_MODE_FILES,
         keywords=marker,
     )
-    #  Tạo văn bản và ghi liên kết trong CÙNG MỘT giao dịch (review L1): không còn khe «văn bản chưa có liên kết».
+    #  Tạo văn bản và ghi liên kết trong CÙNG MỘT giao dịch (review L1): không còn khe "văn bản chưa có liên kết".
     doc = doc_service.create_document(db, payload, actor_id, commit=False)
     lc.document_id = doc.id
     db.commit()

@@ -1,8 +1,8 @@
-"""Nạp hàng cho báo cáo H1 «Phúc lợi & sự kiện» (duoc-CR-688).
+"""Nạp hàng cho báo cáo H1 "Phúc lợi & sự kiện" (duoc-CR-688).
 
 Người được tính = đang làm vào NGÀY DỊP: đã vào làm (`hire_date <= ngày`; thiếu `hire_date` thì lấy ngày TẠO
 hồ sơ theo giờ VN như A2/A3, `BenefitRow.hire_estimated`) và (chưa nghỉ hoặc `resign_date > ngày`).
-Người đã chuyển «Đã nghỉ» mà không ghi ngày nghỉ không xác định được -> không tính.
+Người đã chuyển "Đã nghỉ" mà không ghi ngày nghỉ không xác định được -> không tính.
 Số truy vấn CỐ ĐỊNH: nhân sự (2: có/không `hire_date`) · (con, khi lọc theo con) · (hợp đồng, khi có loại
 trừ) · (đơn nghỉ + khoảng, khi bỏ người đang nghỉ) — mỗi truy vấn con thêm 1 lần cho mỗi 900 mã.
 Ngày sinh chỉ được nạp khi bộ lọc cần và chỉ dùng để lọc — KHÔNG đi vào hàng trả ra.

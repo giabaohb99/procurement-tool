@@ -1,7 +1,7 @@
 """Khung `/summary` + `/summary/rows` dùng chung cho Sổ quản lý lao động và mẫu 01/PLI (duoc-CR-687).
 
 Hai báo cáo cùng tập người (`people_data.load_people`), chỉ khác bộ chỉ số (`ReportKind`). Chỉ số là
-ĐẾM CỜ của từng người nên cộng được ở cả Tổng lẫn từng nhóm «Xem theo» (công ty · phòng ban · nhóm vị
+ĐẾM CỜ của từng người nên cộng được ở cả Tổng lẫn từng nhóm "Xem theo" (công ty · phòng ban · nhóm vị
 trí việc làm); không có trục thời gian nên `trend = []`, `totals.compare` vẫn tính lại ở kỳ so sánh.
 
 `/rows` dùng đúng `load_people` + đúng `key_of` của chiều gom nên khớp con số. Danh sách KHÔNG có giá trị
@@ -43,7 +43,7 @@ def _cat(c: int) -> Callable[[PersonRow], bool]:
 
 
 _COMMON_NOTES = (
-    "Người trong báo cáo = nhân sự làm việc ở bất kỳ lúc nào trong kỳ; người có tình trạng «Đã nghỉ» mà "
+    "Người trong báo cáo = nhân sự làm việc ở bất kỳ lúc nào trong kỳ; người có tình trạng \"Đã nghỉ\" mà "
     "không ghi ngày nghỉ việc không được tính.",
     "Hợp đồng áp cho mỗi người = HĐ đã ký còn hiệu lực tại ngày cuối kỳ (hoặc hôm nay nếu kỳ chưa kết thúc), "
     "không có thì HĐ bắt đầu gần nhất trước đó.",
@@ -58,7 +58,7 @@ BOOK = ReportKind(
         "missing_required": ("Thiếu thông tin bắt buộc", "down", lambda r: bool(r.missing)),
     },
     notes=_COMMON_NOTES + (
-        "«Thiếu thông tin bắt buộc» = thiếu một trong: ngày sinh, CCCD, nơi cư trú, trình độ, ngày "
+        "\"Thiếu thông tin bắt buộc\" = thiếu một trong: ngày sinh, CCCD, nơi cư trú, trình độ, ngày "
         "vào làm (hồ sơ chưa ghi), loại HĐ.",))
 USAGE = ReportKind(
     exclude_civil=True,

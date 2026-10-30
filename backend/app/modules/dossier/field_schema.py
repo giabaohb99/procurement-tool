@@ -1,4 +1,4 @@
-"""BỘ TRƯỜNG TÙY BIẾN của một loại hồ sơ — phần «metadata» của phân hệ Hồ sơ.
+"""BỘ TRƯỜNG TÙY BIẾN của một loại hồ sơ — phần "metadata" của phân hệ Hồ sơ.
 
 Mỗi loại hồ sơ tự khai danh sách ô nhập riêng của nó (`tab_dossier_type.
 field_schema`), và màn lập hồ sơ dựng biểu mẫu **theo loại đang chọn**. Giấy
@@ -32,8 +32,8 @@ from .reference_sources import REFERENCE_LABELS, is_known
 #  vị vào nhãn.
 #  `reference` = chọn từ DANH MỤC có sẵn (nhân sự, nhà cung cấp…) và lưu **ID**,
 #  khác `select` vốn chọn từ danh sách chữ người dùng tự gõ. Giữ cả hai: danh
-#  mục thì có `reference`, còn mấy tập hai-ba giá trị đặc thù («Bắt buộc /
-#  Không bắt buộc») thì không có danh mục nào để mà trỏ tới.
+#  mục thì có `reference`, còn mấy tập hai-ba giá trị đặc thù ("Bắt buộc /
+#  Không bắt buộc") thì không có danh mục nào để mà trỏ tới.
 FIELD_TYPES = ("text", "textarea", "number", "date", "select", "reference", "switch")
 FieldType = Literal["text", "textarea", "number", "date", "select", "reference", "switch"]
 
@@ -83,10 +83,10 @@ class DossierFieldDef(BaseModel):
         if not key:
             raise ValueError("Mã trường không được để trống")
         if not key[0].isalpha():
-            raise ValueError(f"Mã trường «{key}» phải bắt đầu bằng chữ cái")
+            raise ValueError(f"Mã trường \"{key}\" phải bắt đầu bằng chữ cái")
         if not all(c.isalnum() and c.isascii() or c == "_" for c in key):
             raise ValueError(
-                f"Mã trường «{key}» chỉ gồm chữ không dấu, số và gạch dưới"
+                f"Mã trường \"{key}\" chỉ gồm chữ không dấu, số và gạch dưới"
             )
         return key
 
@@ -145,13 +145,13 @@ def validate_field_schema(value: list | None) -> list[dict]:
 
     for d in defs:
         if d.type == "select" and not d.options:
-            raise ValueError(f"Ô chọn «{d.label}» phải khai ít nhất một mục")
+            raise ValueError(f"Ô chọn \"{d.label}\" phải khai ít nhất một mục")
         if d.type == "reference":
             if not d.source:
-                raise ValueError(f"Ô «{d.label}» phải chọn một danh mục để lấy dữ liệu")
+                raise ValueError(f"Ô \"{d.label}\" phải chọn một danh mục để lấy dữ liệu")
             if not is_known(d.source):
                 raise ValueError(
-                    f"Ô «{d.label}» trỏ tới danh mục không có thật: «{d.source}». "
+                    f"Ô \"{d.label}\" trỏ tới danh mục không có thật: \"{d.source}\". "
                     f"Nhận: {', '.join(sorted(REFERENCE_LABELS))}."
                 )
 

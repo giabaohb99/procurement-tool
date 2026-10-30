@@ -3,7 +3,7 @@
 ⚠️ **Mặc định sống trong mã nguồn, không sống dưới DB.** Cặp (chứng từ × hồ sơ)
 chưa ai động tới thì KHÔNG có dòng nào — `merge` trả bộ giá trị mặc định. Đẻ sẵn
 n×m dòng rỗng lúc mở phiếu thì mỗi lượt xem một tờ đơn là một lượt GHI vào DB,
-và nhật ký thao tác ngập dòng «đã tạo» cho những thứ chưa ai đụng vào.
+và nhật ký thao tác ngập dòng "đã tạo" cho những thứ chưa ai đụng vào.
 """
 from datetime import date
 
@@ -65,7 +65,7 @@ def merge(row: DossierProgress | None) -> dict:
         "file_note": values["file_note"],
         #  Cặp chưa ai động tới thì `False`. Giao diện KHÔNG dùng cờ này để vẽ
         #  khác đi — nó chỉ để gỡ lỗi và để câu trả lời của API tự nói ra rằng
-        #  «chưa bắt đầu» ở đây là mặc định chứ không phải ai đó đặt về đó.
+        #  "chưa bắt đầu" ở đây là mặc định chứ không phải ai đó đặt về đó.
         "progress_saved": row is not None,
     }
 
@@ -115,8 +115,8 @@ def pending_depends(depends: list[int], done_ids: set[int], alive: set[int]) -> 
     """Những tờ tiên quyết CHƯA xong — rỗng nghĩa là tờ này mở khóa.
 
     ⚠️ Lọc theo `alive` (tập hồ sơ còn áp dụng cho phiếu): điều kiện áp dụng đổi
-    sau khi đã khai tiên quyết thì id cũ thành ID CHẾT, và coi id chết là «chưa
-    xong» sẽ khóa tờ kia vĩnh viễn bằng một tờ không còn hiện ra ở đâu. Cùng lối
+    sau khi đã khai tiên quyết thì id cũ thành ID CHẾT, và coi id chết là "chưa
+    xong" sẽ khóa tờ kia vĩnh viễn bằng một tờ không còn hiện ra ở đâu. Cùng lối
     xử lý với `report_service` khi lọc `depends` qua `alive_ids`.
     """
     return [i for i in depends if i in alive and i not in done_ids]

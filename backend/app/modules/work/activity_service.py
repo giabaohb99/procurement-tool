@@ -3,7 +3,7 @@
 Gộp nhật ký của cả một list: mọi việc trong list + thành viên vào ra + sửa chính
 dự án và cột. Mới nhất trên cùng, lấy thêm theo trang khi cuộn.
 
-Khác **E-04** (khối «Lịch sử thao tác» trong panel một việc): E-04 hỏi thẳng
+Khác **E-04** (khối "Lịch sử thao tác" trong panel một việc): E-04 hỏi thẳng
 `/api/audit-logs` theo đúng một `entity_id`, còn đây phải gom nhiều đối tượng
 thuộc cùng một dự án — nên có endpoint riêng chứ không nhét thêm tham số vào
 `/api/audit-logs` (endpoint đó dùng chung cho cả hệ và **không kiểm quyền theo
@@ -151,7 +151,7 @@ def _activity_out(log: AuditLog, actors: dict[int, dict], titles: dict[int, str]
 
 
 def list_actors(db: Session, actor: Actor, list_id: int) -> list[dict]:
-    """Những người TỪNG thao tác trên dự án — nguồn cho ô lọc «theo người».
+    """Những người TỪNG thao tác trên dự án — nguồn cho ô lọc "theo người".
 
     Lấy từ chính nhật ký chứ không lấy danh sách thành viên: người đã rời dự án
     vẫn còn dấu vết trong dòng hoạt động, thiếu họ trong ô lọc thì có dòng mà

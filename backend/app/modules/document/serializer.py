@@ -112,7 +112,7 @@ def serialize_many(db: Session, docs: list[Document], user=None) -> list[dict]:
             **base_fields(doc),
             "doc_type_name": name(types, doc.doc_type_id),
             "doc_type_code": name(types, doc.doc_type_id, 1),
-            #  Loại «không cần duyệt» thì màn chi tiết bày nút *Ban hành* thay
+            #  Loại "không cần duyệt" thì màn chi tiết bày nút *Ban hành* thay
             #  *Gửi duyệt* (29/09/2026). Không tra được loại → coi là CẦN duyệt:
             #  thiếu dữ liệu không được là đường tắt bỏ qua người duyệt.
             "doc_type_needs_approval": bool(types.get(doc.doc_type_id, (None, None, True))[2]),
@@ -140,7 +140,7 @@ def serialize_many(db: Session, docs: list[Document], user=None) -> list[dict]:
             #  hỏng) thì coi như không có nội dung.
             "has_content": bool((version.content_html or "").strip()) if version else False,
             #  Công tắc TẠM TẮT hạn xem tệp (duoc-CR-478) — giao diện dùng để ẩn
-            #  ô «Xem tệp đính kèm tới ngày» khi tắt. Gắn theo TỪNG văn bản (dù
+            #  ô "Xem tệp đính kèm tới ngày" khi tắt. Gắn theo TỪNG văn bản (dù
             #  giá trị toàn hệ giống nhau) để màn TẠO đọc được flag này ngay từ
             #  phản hồi của bước lưu nháp đầu tiên, không phải gọi thêm API nào.
             "attachment_view_window_enabled": attach_window_on,
@@ -195,7 +195,7 @@ def base_fields(doc: Document) -> dict:
         "source_document_id": doc.source_document_id,
         #  F13 — cơ chế áp dụng, hộp thoại ban hành chọn sẵn theo giá trị này.
         "apply_mode": doc.apply_mode,
-        #  Cách tạo (24/09/2026) — tab «Văn bản» là trình SOẠN THẢO (1) hay trình
+        #  Cách tạo (24/09/2026) — tab "Văn bản" là trình SOẠN THẢO (1) hay trình
         #  XEM TỆP (2). Xem `model.CONTENT_MODE_LABELS`.
         "content_mode": doc.content_mode,
         #  Băng "cần rà lại" trên trang chi tiết đọc thẳng hai cột này (E11 a/b).

@@ -8,7 +8,7 @@ Nguyên tắc (đại ca chốt):
 
 * Dòng do hệ thống cấp mang `tab_user_role.granted_by_position_id > 0`. Dòng quản trị gán tay là `0`
   và KHÔNG BAO GIỜ bị hàm nào ở đây gỡ.
-* Hàm lõi `sync_employee_roles` là «đối chiếu», không phải «áp độ lệch»: nó nhìn chức vụ hiện tại của hồ
+* Hàm lõi `sync_employee_roles` là "đối chiếu", không phải "áp độ lệch": nó nhìn chức vụ hiện tại của hồ
   sơ rồi làm cho phần tự cấp khớp gói — nên gọi lại bao nhiêu lần cũng ra cùng kết quả, và mọi đường đổi
   chức vụ (lưu hồ sơ, nhập Excel, áp quá trình công tác, hoàn tác lô) chỉ cần gọi nó SAU khi đổi.
 * Vai trò đã có (gán tay) cũng nằm trong gói thì không thêm dòng trùng và không đánh dấu lại → đổi chức
@@ -168,7 +168,7 @@ def _sync_user(db: Session, user, position: JobPosition | None, desired: set[int
                 row.granted_by_position_id = pos_id
                 row.updated_by = actor.id
         else:
-            db.delete(row)                             # THU HỒI luôn được phép (kể cả vai trò vừa thành «cấm»)
+            db.delete(row)                             # THU HỒI luôn được phép (kể cả vai trò vừa thành "cấm")
             res.revoked.append(row.role_id)
     missing = sorted(desired - held)
     if not missing:
@@ -197,7 +197,7 @@ def _audit(db: Session, actor_id: int, res: SyncResult, position: JobPosition | 
     from app.modules.user.service import user_label
 
     who = user_label(db, res.user_id)
-    pos = f"«{position.name}»" if position else "(chưa có chức vụ)"
+    pos = f"\"{position.name}\"" if position else "(chưa có chức vụ)"
     if res.granted:
         record(db, actor_id, "user", res.user_id, "auto_grant_position",
                f"Tự cấp vai trò theo chức vụ {pos} cho {who} ({why}): {_role_names(db, res.granted)}",
@@ -213,7 +213,7 @@ def _audit(db: Session, actor_id: int, res: SyncResult, position: JobPosition | 
     if res.skipped_self:
         record(db, actor_id, "user", res.user_id, "auto_grant_skipped_position",
                f"Bỏ qua, không tự cấp quyền theo chức vụ {pos} cho chính người thao tác ({who}, {why}) — "
-               "nhờ quản trị bấm «Áp lại»", commit=False)
+               "nhờ quản trị bấm \"Áp lại\"", commit=False)
 
 
 def sync_employee_roles(db: Session, emp: Employee, actor_id: int, why: str = "đổi chức vụ") -> list[SyncResult]:
@@ -299,7 +299,7 @@ def actor_holds_position(db: Session, actor, position_id: int) -> bool:
 
 
 def set_bundle(db: Session, position: JobPosition, role_ids: list[int], actor_id: int) -> tuple[list[int], list[int]]:
-    """Ghi đè gói. KHÔNG đụng tài khoản nào — muốn áp cho người đang giữ phải bấm «Áp lại».
+    """Ghi đè gói. KHÔNG đụng tài khoản nào — muốn áp cho người đang giữ phải bấm "Áp lại".
     Trả (vai trò thêm, vai trò bỏ). Gói + nhật ký đi CHUNG một giao dịch; ghi đồng thời bị unique chặn → 409."""
     from app.core import privilege_escalation
 
@@ -320,7 +320,7 @@ def set_bundle(db: Session, position: JobPosition, role_ids: list[int], actor_id
         parts.append("bỏ " + _role_names(db, removed))
     try:
         record(db, actor_id, "job_position", position.id, "set_position_roles",
-               f"Sửa quyền mặc định của chức vụ «{position.name}»"
+               f"Sửa quyền mặc định của chức vụ \"{position.name}\""
                + (": " + "; ".join(parts) if parts else " (không đổi)"), commit=False)
         db.commit()
     except IntegrityError:
@@ -369,7 +369,7 @@ def reapply_to_holders(db: Session, position: JobPosition, actor) -> dict:
                "revoked": sum(len(r.revoked) for r in results),
                "skipped_self": skipped_self, "skipped_no_permission": skipped_roles}
     record(db, actor.id, "job_position", position.id, "apply_position_roles",
-           f"Áp lại quyền mặc định của «{position.name}»: {summary['holders']} người giữ chức vụ, "
+           f"Áp lại quyền mặc định của \"{position.name}\": {summary['holders']} người giữ chức vụ, "
            f"{summary['changed_users']} tài khoản đổi (+{summary['granted']} / -{summary['revoked']}), "
            f"bỏ qua {skipped_roles} vai trò không đủ quyền cấp, {skipped_self} tài khoản của chính người bấm",
            commit=False)

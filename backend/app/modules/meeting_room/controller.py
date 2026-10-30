@@ -36,16 +36,16 @@ def _block_delete_room_in_use(db: Session, obj: MeetingRoom) -> None:
     """Chốt `before_delete`: phòng đang có phiếu thì không xóa.
 
     Xóa là để lại phiếu mồ côi trỏ vào một `room_id` không còn tồn tại — màn lịch
-    sẽ hiện những cuộc họp không biết ở đâu. Muốn dẹp phòng thì bỏ tick «Đang
-    dùng», phiếu cũ vẫn đọc được.
+    sẽ hiện những cuộc họp không biết ở đâu. Muốn dẹp phòng thì bỏ tick "Đang
+    dùng", phiếu cũ vẫn đọc được.
     """
     used = (db.query(RoomBooking)
             .filter(RoomBooking.room_id == obj.id,
                     RoomBooking.is_deleted.is_(False)).count())
     if used:
         raise HTTPException(
-            400, f"«{obj.name}» đang có {used} phiếu đặt nên không xóa được. "
-                 "Bỏ tick «Đang dùng» để ẩn khỏi ô chọn thay vì xóa.")
+            400, f"\"{obj.name}\" đang có {used} phiếu đặt nên không xóa được. "
+                 "Bỏ tick \"Đang dùng\" để ẩn khỏi ô chọn thay vì xóa.")
 
 
 meeting_room_router = make_crud_router(
@@ -79,7 +79,7 @@ def list_bookings(
     db: Session = Depends(get_db),
     user=Depends(require(ENTITY, "read")),
 ):
-    """Danh sách phiếu trong phạm vi người xem («Phiếu của tôi» khi phạm vi = own).
+    """Danh sách phiếu trong phạm vi người xem ("Phiếu của tôi" khi phạm vi = own).
 
     `from_time`/`to_time` lọc theo GIAO NHAU của khoảng, không phải theo cột
     `start_at` đơn lẻ — màn Lịch hỏi "hôm nay phòng nào bận", và một cuộc họp
@@ -213,7 +213,7 @@ def submit_booking(bid: int, db: Session = Depends(get_db),
     #  chỗ đi qua khoá hàng phòng và commit ngay, nên hai người bấm cùng lúc thì
     #  người thứ hai đọc được trạng thái của người thứ nhất (xem `reserve_slot`).
     #
-    #  Trình bộ máy hỏng thì phải NHẢ chỗ ra: phiếu kẹt ở «Chờ duyệt» mà không
+    #  Trình bộ máy hỏng thì phải NHẢ chỗ ra: phiếu kẹt ở "Chờ duyệt" mà không
     #  có phiên duyệt là phòng bị khóa vĩnh viễn và không ai ký được.
     obj = service.reserve_slot(db, obj, user)
     try:

@@ -2,10 +2,10 @@
 
 Một nguồn cho BA chỗ đọc: chuông cảnh báo (`alert.controller.build`), tab Việc cần làm
 (`dashboard.controller.build_my_tasks` — chỗ DUY NHẤT ẩn được dòng chuông, nên phải là tập cha
-của chuông) và thẻ «Hợp đồng sắp hết hạn» ở Tổng quan Nhân sự (`GET /api/labor-contracts/expiring`).
+của chuông) và thẻ "Hợp đồng sắp hết hạn" ở Tổng quan Nhân sự (`GET /api/labor-contracts/expiring`).
 Ba chỗ mà tự lọc riêng thì sớm muộn sẽ lệch nhau — chuông báo một số, thẻ đếm một số.
 
-Tính tại chỗ mỗi lần đọc, không có job, không ghi DB — cùng lối với trạng thái «Hết hạn»
+Tính tại chỗ mỗi lần đọc, không có job, không ghi DB — cùng lối với trạng thái "Hết hạn"
 suy ra ở `rules.effective_status`.
 
 Hợp đồng NÀO bị báo:
@@ -15,10 +15,10 @@ Hợp đồng NÀO bị báo:
 Hợp đồng KHÔNG bị báo dù sắp hết:
   - Đã có HĐ NỐI TIẾP của cùng người (bắt đầu sau HĐ này) — Nhân sự đã xử rồi, báo tiếp chỉ
     là tiếng ồn khiến người ta tắt chuông. HĐ nối tiếp ĐÃ KÝ thì luôn che; bản NHÁP chỉ che
-    khi HĐ cũ CHƯA hết hạn: nháp là «đang soạn gia hạn», nhưng hết hạn rồi mà nháp vẫn nằm
+    khi HĐ cũ CHƯA hết hạn: nháp là "đang soạn gia hạn", nhưng hết hạn rồi mà nháp vẫn nằm
     đó thì người ta đang đi làm không có HĐ nào có hiệu lực — nháp bị quên không được che;
   - Nhân sự đã nghỉ việc (`status = resigned` hoặc `is_active` tắt) — HĐ của người đã đi
-    không cần gia hạn; quên bấm «Chấm dứt» thì là việc dọn sổ, không phải việc gấp.
+    không cần gia hạn; quên bấm "Chấm dứt" thì là việc dọn sổ, không phải việc gấp.
 
 Mức: còn ≤ `DANGER_DAYS` ngày hoặc đã quá hạn → `danger`; còn lại → `warn`.
 `DANGER_DAYS = 15` vì Bộ luật Lao động 2019 Điều 45 buộc báo người lao động ít nhất 15 ngày

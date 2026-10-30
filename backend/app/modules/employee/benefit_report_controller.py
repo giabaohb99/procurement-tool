@@ -1,4 +1,4 @@
-"""Báo cáo H1 «Phúc lợi & sự kiện» (khóa 22) — duoc-CR-688.
+"""Báo cáo H1 "Phúc lợi & sự kiện" (khóa 22) — duoc-CR-688.
 
 Router riêng chỉ chứa `/summary` + `/summary/export` + `/summary/rows` (khung báo cáo kiểu Haravan).
 Đường gốc `/api/benefit-audience` cố ý KHÔNG nằm dưới `/api/employees` / `/api/labor-contracts` để khỏi bị
@@ -33,7 +33,7 @@ _GUARD = [Depends(require_report(ReportKey.BENEFIT_AUDIENCE))]
 def _inputs(request: Request, db: Session, user, action: str):
     prof = get_perm_profile(db, user)
     flt = parse_filters(request.query_params, valid_company_id, valid_department_id)
-    #  `employee_id=0` = chỉ xét khóa quyền (đây là danh sách, không có ngoại lệ «chính mình»).
+    #  `employee_id=0` = chỉ xét khóa quyền (đây là danh sách, không có ngoại lệ "chính mình").
     if flt.needs_sensitive and not can_read_sensitive(prof):
         raise HTTPException(403, SENSITIVE_MSG)
     #  Bỏ người đang nghỉ = lộ ai có đơn nghỉ phép đã duyệt -> cần quyền xem đơn nghỉ phép.

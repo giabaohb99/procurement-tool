@@ -8,8 +8,8 @@ Bốn kết cục của bộ máy đều phải có mặt ở đây — thiếu 
 
     approved  →  chuyển giữ chỗ sang đã dùng, sinh giấy GNP
     rejected  →  trả lại giữ chỗ, đơn khóa
-    returned  →  trả lại giữ chỗ, đơn về «Trả về» để sửa rồi gửi lại
-    withdrawn →  trả lại giữ chỗ, đơn về «Nháp»
+    returned  →  trả lại giữ chỗ, đơn về "Trả về" để sửa rồi gửi lại
+    withdrawn →  trả lại giữ chỗ, đơn về "Nháp"
 
 ⚠️ Ba kết cục sau đều **trả lại giữ chỗ**. Quên một cái thì số ngày đó treo vĩnh
 viễn trong `pending_days` và người ta mất phép mà không hiểu vì sao — mà lỗi này
@@ -20,8 +20,8 @@ không luồng nào áp; lúc đó đơn vẫn vào *Chờ duyệt* với `appro
 và người có quyền `leave_request.approve` bấm duyệt thẳng. Không có đường lùi này
 thì cài mới xong là không ai nộp nổi đơn cho tới khi quản trị khai xong luồng.
 
-**Và cả cái cờ nữa** (`ApprovalSwitch` cho entity `leave_request`, màn «Bật bộ máy
-duyệt»). Trước đây nghỉ phép trình thẳng vào bộ máy không hỏi cờ, nên dòng công
+**Và cả cái cờ nữa** (`ApprovalSwitch` cho entity `leave_request`, màn "Bật bộ máy
+duyệt"). Trước đây nghỉ phép trình thẳng vào bộ máy không hỏi cờ, nên dòng công
 tắc của nó bày ra cũng chỉ là nút giả. Nay `start_approval` hỏi cờ trước: TẮT thì
 đi đúng đường lùi ở đoạn trên. Đó là điểm khác biệt so với "chưa khai luồng" —
 đường lùi kia là *tình cờ chưa có luồng*, còn cái này là *cố ý tắt để quay về*.
@@ -46,8 +46,8 @@ def entity_context(obj: LeaveRequest) -> dict:
     Chỉ những ô THẬT SỰ dùng để rẽ nhánh. Đổ cả bản ghi vào đây thì người khai
     luồng thấy hai chục tên cột và không biết chọn cái nào.
 
-    `department_id` là của NGƯỜI NGHỈ (chép lúc lập đơn), nên bước «trưởng bộ
-    phận của phòng chủ trì» trỏ đúng vào sếp trực tiếp của họ chứ không phải sếp
+    `department_id` là của NGƯỜI NGHỈ (chép lúc lập đơn), nên bước "trưởng bộ
+    phận của phòng chủ trì" trỏ đúng vào sếp trực tiếp của họ chứ không phải sếp
     của người lập hộ.
 
     ⚠️ **`leave_type_id` là loại CHÍNH của đơn** (dòng chiếm nhiều ngày nhất),
@@ -68,7 +68,7 @@ def entity_context(obj: LeaveRequest) -> dict:
 
 
 def is_enabled(db: Session) -> bool:
-    """Bộ máy duyệt nhiều bước có đang bật cho nghỉ phép không (màn «Bật bộ máy duyệt»)."""
+    """Bộ máy duyệt nhiều bước có đang bật cho nghỉ phép không (màn "Bật bộ máy duyệt")."""
     return flow_service.is_enabled(db, ENTITY)
 
 
@@ -234,15 +234,15 @@ def _on_rejected(db: Session, request_id: int, instance) -> None:
 def _on_returned(db: Session, request_id: int, instance) -> None:
     """Trả về người nộp → sửa được và gửi duyệt LẠI được.
 
-    Khác «từ chối» đúng ở chỗ đó, và phải khác: người soạn mở đơn ra mà chỉ thấy
-    «Nháp» thì không biết mình vừa bị dẹp hay đang được mời sửa lại (bài học
+    Khác "từ chối" đúng ở chỗ đó, và phải khác: người soạn mở đơn ra mà chỉ thấy
+    "Nháp" thì không biết mình vừa bị dẹp hay đang được mời sửa lại (bài học
     24/08/2026 của phân hệ Văn thư).
     """
     _release_and_set(db, request_id, instance, LR_RETURNED, "Trả về chỉnh sửa")
 
 
 def _on_withdrawn(db: Session, request_id: int, instance) -> None:
-    """Người nộp tự rút → về **Nháp**, không phải «Trả về»: không ai trả gì cho họ cả."""
+    """Người nộp tự rút → về **Nháp**, không phải "Trả về": không ai trả gì cho họ cả."""
     _release_and_set(db, request_id, instance, LR_DRAFT, "")
 
 
@@ -278,9 +278,9 @@ def can_read_request(db: Session, request_id: int, user) -> bool:
     quả là bộ máy giao việc cho họ, gửi thông báo cho họ, rồi chặn họ mở tờ đơn
     ra đọc — họ phải ký một thứ không được phép nhìn.
 
-    ⚠️ Nới đúng **lúc đang có việc treo**, không nới cho người «đã từng ký».
+    ⚠️ Nới đúng **lúc đang có việc treo**, không nới cho người "đã từng ký".
     Ký xong là quyền đọc thêm đó đóng lại; xem lại phiếu mình đã ký thì vào khối
-    «Tôi đã duyệt gần đây», nơi dữ liệu vốn đã lọc theo chính họ. Nới rộng hơn
+    "Tôi đã duyệt gần đây", nơi dữ liệu vốn đã lọc theo chính họ. Nới rộng hơn
     thì mỗi lượt ký lại thêm vĩnh viễn một tờ vào tầm nhìn của một người, và
     phạm vi dữ liệu phình dần theo thời gian mà không ai rà lại được.
     """
@@ -338,7 +338,7 @@ def create_leave_document(db: Session, obj: LeaveRequest, actor: int) -> int:
         doc_type_id=doc_type.id,
         company_id=obj.company_id,
         #  Phòng chủ trì BẮT BUỘC ở `DocumentCreate` — bước đầu luồng văn bản là
-        #  «trưởng bộ phận của phòng chủ trì», thiếu là phiếu kẹt ngay khi gửi.
+        #  "trưởng bộ phận của phòng chủ trì", thiếu là phiếu kẹt ngay khi gửi.
         department_id=obj.department_id,
         owner_employee_id=obj.employee_id,
         title=f"Giấy nghỉ phép {obj.code} — {obj.total_days} ngày",

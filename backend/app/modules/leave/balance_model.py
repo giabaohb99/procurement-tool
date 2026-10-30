@@ -67,8 +67,8 @@ class LeaveBalance(Base, AuditMixin):
     #  nghỉ phép. Trả lại khi đơn bị từ chối / trả về / hủy.
     pending_days: Mapped[float] = mapped_column(Float, default=0.0)
     #  ĐÃ MANG ĐI lúc kết sổ cuối năm — sang dòng quỹ năm sau (mang sang) hoặc
-    #  sang loại nghỉ khác (quy đổi). Khác `0` cũng chính là dấu «dòng này đã kết
-    #  sổ rồi», nên bấm Kết sổ lần hai không nhân đôi số ngày.
+    #  sang loại nghỉ khác (quy đổi). Khác `0` cũng chính là dấu "dòng này đã kết
+    #  sổ rồi", nên bấm Kết sổ lần hai không nhân đôi số ngày.
     carried_out_days: Mapped[float] = mapped_column(Float, default=0.0)
 
     # --- ghi nhận, KHÔNG vào công thức ------------------------------------

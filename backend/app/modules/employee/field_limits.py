@@ -1,13 +1,13 @@
 """RÀNG BUỘC KÍCH THƯỚC của hồ sơ nhân sự — chặn ở schema, không để MySQL nổ.
 
 Vì sao có tệp này (duoc-CR-316, 08/09/2026): bắn thử vào MySQL thật thì **sáu
-nhóm ca trả 500** «Hệ thống gặp lỗi không lường trước». Không ca nào là lỗi
+nhóm ca trả 500** "Hệ thống gặp lỗi không lường trước". Không ca nào là lỗi
 logic — tất cả chỉ vì Pydantic không khai giới hạn, nên chuỗi dài / JSON khổng
 lồ / ngày năm 0001 đi thẳng xuống cột và **MySQL** là chỗ đầu tiên phản đối.
 
-Hậu quả thật: người dùng dán nhầm một đoạn văn bản vào ô «Mã số thuế» thì nhận
-được một mã sự cố, quản trị đi tra một lỗi vốn đáng ra phải là câu *«tối đa 20
-ký tự»*. Chặn ở đây thì cùng một tình huống ra 422 kèm câu tiếng Việt, và tra
+Hậu quả thật: người dùng dán nhầm một đoạn văn bản vào ô "Mã số thuế" thì nhận
+được một mã sự cố, quản trị đi tra một lỗi vốn đáng ra phải là câu *"tối đa 20
+ký tự"*. Chặn ở đây thì cùng một tình huống ra 422 kèm câu tiếng Việt, và tra
 được ngay ô nào sai.
 
 ⚠️ **Số trong tệp này phải khớp `model.py`.** Đổi độ dài cột mà quên sửa ở đây
@@ -31,7 +31,7 @@ Str30 = Annotated[str, StringConstraints(max_length=30)]
 Str50 = Annotated[str, StringConstraints(max_length=50)]
 Str100 = Annotated[str, StringConstraints(max_length=100)]
 Str255 = Annotated[str, StringConstraints(max_length=255)]
-#  bao-CR-538: các ô đoạn văn thu mua nới 255 → 355 (đại ca chốt «255 thêm 100»).
+#  bao-CR-538: các ô đoạn văn thu mua nới 255 → 355 (đại ca chốt "255 thêm 100").
 Str355 = Annotated[str, StringConstraints(max_length=355)]
 Str500 = Annotated[str, StringConstraints(max_length=500)]
 Str600 = Annotated[str, StringConstraints(max_length=600)]
@@ -77,7 +77,7 @@ _SCALAR_TYPES = (str, int, float, bool, type(None))
 
 #  Số dòng tối đa của MỘT bảng con (người báo tin / hộ gia đình).
 #
-#  Đây là bảng «cha, mẹ, vợ/chồng» nằm trong một tab — vài chục dòng đã là vô
+#  Đây là bảng "cha, mẹ, vợ/chồng" nằm trong một tab — vài chục dòng đã là vô
 #  lý. Không có trần thì `PUT` 5000 dòng lọt thẳng (đã thử được trên MySQL
 #  thật), và `sort_order` là `SMALLINT` nên dòng thứ 32768 còn tràn kiểu.
 MAX_PEOPLE_ROWS = 30
@@ -100,11 +100,11 @@ def check_extra_fields(value: dict | None, max_keys: int) -> dict:
             raise ValueError(f"Tên trường tùy biến tối đa {MAX_EXTRA_KEY_LEN} ký tự")
         if not isinstance(item, _SCALAR_TYPES):
             raise ValueError(
-                f"Trường tùy biến «{key}» phải là một giá trị đơn (chữ, số, đúng/sai). "
+                f"Trường tùy biến \"{key}\" phải là một giá trị đơn (chữ, số, đúng/sai). "
                 "Ô này dành cho nhu cầu lẻ như size áo hay số hộ chiếu, "
                 "không phải nơi chứa cấu trúc lồng nhau.")
         if isinstance(item, str) and len(item) > MAX_EXTRA_VALUE_LEN:
-            raise ValueError(f"Giá trị của «{key}» tối đa {MAX_EXTRA_VALUE_LEN} ký tự")
+            raise ValueError(f"Giá trị của \"{key}\" tối đa {MAX_EXTRA_VALUE_LEN} ký tự")
 
     #  Chốt cuối theo TỔNG kích thước — ba chốt trên vẫn để lọt 20 khóa × 500
     #  ký tự × 4 byte/ký tự tiếng Việt.

@@ -1,4 +1,4 @@
-"""Báo cáo F1 «Sử dụng phòng họp» (duoc-CR-689, khóa 28) — `GET /api/room-usage/summary`.
+"""Báo cáo F1 "Sử dụng phòng họp" (duoc-CR-689, khóa 28) — `GET /api/room-usage/summary`.
 
 Chỉ số cộng được: lượt đặt · giờ đã đặt · giờ làm việc · đặt rồi hủy/bị từ chối. Dẫn xuất: tỷ lệ lấp đầy
 (giờ đặt ÷ giờ làm việc), tỷ lệ hủy, người dự bình quân, % sức chứa. Xem theo phòng (mặc định) · pháp nhân
@@ -94,11 +94,11 @@ def build_summary(db: Session, booking_q, period: Period, group_by: str | None, 
     data["groups"] = [g for g in data.get("groups") or [] if g["key"] != NO_GROUP]
     data["meta"]["drilldown_metrics"] = list(METRICS)
     data["notes"] = [
-        "Chỉ phiếu ĐÃ DUYỆT tính vào lượt đặt, giờ đã đặt, người dự; phiếu Đã hủy / Từ chối chỉ tính vào «Đặt "
-        "rồi hủy / bị từ chối». Nháp, chờ duyệt, trả về chưa tính. Phiếu tính vào ngày BẮT ĐẦU của nó.",
+        "Chỉ phiếu ĐÃ DUYỆT tính vào lượt đặt, giờ đã đặt, người dự; phiếu Đã hủy / Từ chối chỉ tính vào \"Đặt "
+        "rồi hủy / bị từ chối\". Nháp, chờ duyệt, trả về chưa tính. Phiếu tính vào ngày BẮT ĐẦU của nó.",
         "Giờ làm việc = giờ công của lịch làm việc HỆ THỐNG mỗi ngày (trừ nghỉ trưa và ngày lễ của pháp nhân "
         "sở hữu phòng) cho mỗi phòng đang dùng. Tỷ lệ lấp đầy = giờ đã đặt ÷ giờ làm việc; họp ngoài giờ làm "
         "việc vẫn tính vào giờ đã đặt nên tỷ lệ có thể vượt 100%.",
-        "Xem theo «Phòng ban đặt» không có giờ làm việc nên tỷ lệ lấp đầy để trống; lọc theo phòng ban cũng vậy.",
+        "Xem theo \"Phòng ban đặt\" không có giờ làm việc nên tỷ lệ lấp đầy để trống; lọc theo phòng ban cũng vậy.",
         "Bạn chỉ thấy các phiếu nằm trong phạm vi xem phiếu đặt phòng của mình, còn giờ làm việc tính cho mọi phòng."]
     return data

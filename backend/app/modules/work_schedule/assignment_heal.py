@@ -1,6 +1,6 @@
 """Mở lại lịch cũ khi XÓA dòng gán đã từng tự đóng / tự nối nó (M4, chốt 05/10/2026).
 
-Tạo dòng gán mới C trên dòng «không thời hạn» P thì P bị đóng ở `from − 1` (và, nếu C có hạn,
+Tạo dòng gán mới C trên dòng "không thời hạn" P thì P bị đóng ở `from − 1` (và, nếu C có hạn,
 sinh dòng nối lại R từ `to + 1`). Cả P lẫn R mang `linked_assignment_id = C.id`. Xóa nhầm C mà
 không mở lại thì khoảng của C thành LỖ HỔNG: nhân sự tụt xuống lịch phòng ban/hệ thống và số ngày
 nghỉ đổi âm thầm. Nên khi xóa C ta gộp lại — nhưng CHỈ khi hình dạng ban đầu còn nguyên.

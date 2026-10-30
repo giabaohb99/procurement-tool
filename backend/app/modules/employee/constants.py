@@ -20,13 +20,13 @@ nghiệp vụ. Hồ sơ cũ nhập trước khi có cột đều mang `0`, nên 
 #  luật chặn loại nghỉ theo giới đọc từ đó. Ở đây nhắc lại con số để người đọc
 #  hồ sơ nhân sự không phải mở sang phân hệ Nghỉ phép.
 #
-#  ⚠️ **`3` = «Khác» chỉ tồn tại cho HỒ SƠ CON NGƯỜI** (khách chốt 08/09/2026),
+#  ⚠️ **`3` = "Khác" chỉ tồn tại cho HỒ SƠ CON NGƯỜI** (khách chốt 08/09/2026),
 #  KHÔNG phải một lựa chọn của `tab_leave_type.gender`. Loại nghỉ chỉ nhận
 #  `0` (mọi giới) · `1` · `2` — nên `leave/constants.GENDER_LABELS` cố ý KHÔNG
 #  có mục này. Thêm vào đó là bày ra loại nghỉ "chỉ dành cho giới Khác".
 #
 #  ⚠️ Hệ quả ở nghỉ phép, có chủ ý: `check_gender` so `want != got`, nên người
-#  khai «Khác» **bị chặn** khỏi loại nghỉ giới hạn nam hoặc nữ (thai sản). Đó là
+#  khai "Khác" **bị chặn** khỏi loại nghỉ giới hạn nam hoặc nữ (thai sản). Đó là
 #  khác biệt với `0` — chưa khai thì KHÔNG chặn. Ai cần ngoại lệ thì Nhân sự
 #  chỉnh lại ô giới tính, đừng nới luật ở `request_service`.
 GENDER_UNKNOWN = 0
@@ -160,8 +160,8 @@ def job_category_of(job_level: int | None, education_level: int | None) -> int:
 # --------------------------------------------------------------------------
 #  Bản đầu (duoc-CR-314) để `relation` là chữ TỰ DO với lý lẽ "quan hệ gia đình
 #  Việt Nam không đóng được thành một danh sách ngắn". Khách chốt ngược lại
-#  08/09/2026: phải là Ô CHỌN. Chữ tự do làm mỗi người gõ một kiểu — «vợ», «Vợ»,
-#  «v/c», «vo» — nên không lọc được, không đếm được, và bản in ra không đều.
+#  08/09/2026: phải là Ô CHỌN. Chữ tự do làm mỗi người gõ một kiểu — "vợ", "Vợ",
+#  "v/c", "vo" — nên không lọc được, không đếm được, và bản in ra không đều.
 #
 #  Thành danh sách cố định thì R2/QĐ-11 áp dụng: lưu SMALLINT, không lưu chữ.
 #  Đổi ngay bây giờ vì bảng con **chưa lên prod** — đây là lúc rẻ nhất; để có
@@ -185,7 +185,7 @@ RELATION_YOUNGER_SISTER = 11
 RELATION_GRANDFATHER = 12
 RELATION_GRANDMOTHER = 13
 #  `99` chứ không phải `14`: chừa chỗ cho các quan hệ thêm về sau được đánh số
-#  liền mạch, và «Khác» thì luôn đứng cuối danh sách.
+#  liền mạch, và "Khác" thì luôn đứng cuối danh sách.
 RELATION_OTHER = 99
 
 RELATION_LABELS = {

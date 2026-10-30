@@ -36,7 +36,7 @@ _OPEN_FOR_FLOW = (BK_PENDING, BK_APPROVED, BK_DISPATCHED)
 
 
 def entity_context(booking: VehicleBooking) -> dict:
-    """Bối cảnh phiếu cho điều kiện rẽ nhánh + chọn người duyệt «lấy từ ô».
+    """Bối cảnh phiếu cho điều kiện rẽ nhánh + chọn người duyệt "lấy từ ô".
 
     Chỉ những ô thật sự có nghĩa để rẽ nhánh / định tuyến người duyệt.
     """
@@ -49,13 +49,13 @@ def entity_context(booking: VehicleBooking) -> dict:
         "company_id": booking.company_id,
         "department_id": booking.department_id,
         "requester_id": booking.requester_id,
-        #  bao-CR-579: hai ô NHÂN SỰ cho điều kiện «người tạo» và bước «lấy từ ô»
+        #  bao-CR-579: hai ô NHÂN SỰ cho điều kiện "người tạo" và bước "lấy từ ô"
         #  (người tạo chọn người duyệt, như app cũ). Hai cột gốc là id TÀI KHOẢN.
         "requester_employee_id": (_employee_id_of_user(db, booking.requester_id) or 0) if db else 0,
         "first_approver_employee_id": (
             (_employee_id_of_user(db, booking.first_approver_id) or 0) if db else 0),
     }
-    #  duoc-CR-681: người duyệt chọn trên phiếu — bước «Người có quyền duyệt» chỉ giao cho đúng người này
+    #  duoc-CR-681: người duyệt chọn trên phiếu — bước "Người có quyền duyệt" chỉ giao cho đúng người này
     #  (khóa chung `picked_approver_employee_id`, xem `approval/permission_approvers.resolve`).
     context["picked_approver_employee_id"] = context["first_approver_employee_id"]
     return context
@@ -87,7 +87,7 @@ def block_legacy_path(db: Session, booking: VehicleBooking) -> None:
         raise HTTPException(
             400,
             "Phiếu này đang chạy trong luồng duyệt nhiều bước — xử lý ở màn "
-            "«Việc của tôi», không duyệt thẳng ở đây.",
+            "\"Việc của tôi\", không duyệt thẳng ở đây.",
         )
 
 
@@ -142,13 +142,13 @@ def _booking_for_outcome(db: Session, booking_id: int, what: str) -> VehicleBook
     trạng thái khác của đặt xe đều biến thành một đường làm hỏng dữ liệu:
 
     * phiếu **đã bị từ chối** (điều phối viên từ chối trong lúc luồng còn chạy)
-      SỐNG LẠI thành «Đã duyệt» khi người duyệt bấm Duyệt sau đó;
+      SỐNG LẠI thành "Đã duyệt" khi người duyệt bấm Duyệt sau đó;
     * phiếu **đã xóa** vẫn được đặt lại trạng thái, nên `is_deleted` mang một
       trạng thái mới toanh mà không màn nào bày ra để ai đó sửa;
-    * phiếu **đã chạy xong chuyến** bị đẩy lùi về «Đã duyệt».
+    * phiếu **đã chạy xong chuyến** bị đẩy lùi về "Đã duyệt".
 
     Đây là chốt cuối, không thay cho `block_legacy_path` ở controller: cửa kia
-    nói với người bấm «đi ra màn duyệt», cửa này giữ dữ liệu khi có đường nào lọt.
+    nói với người bấm "đi ra màn duyệt", cửa này giữ dữ liệu khi có đường nào lọt.
     """
     booking = db.get(VehicleBooking, booking_id)
     if booking is None or booking.is_deleted:
@@ -175,12 +175,12 @@ def _on_approved(db: Session, booking_id: int, instance) -> None:
     #  Thiếu hai cột này thì `serialize_booking` lùi về `first_approver_id` —
     #  **người mà NGƯỜI TẠO tự chọn trong biểu mẫu**, có thể chưa hề ký và có thể
     #  không nằm trong luồng — rồi trang chi tiết lẫn BẢN IN đều ghi tên người đó
-    #  ở dòng «Người phê duyệt», với ô thời gian trống
+    #  ở dòng "Người phê duyệt", với ô thời gian trống
     #  (`build-booking-stages.ts` đọc `approved_at`).
     booking.approved_by = instance.updated_by or 0
     booking.approved_at = datetime.now().isoformat(timespec="seconds")
     #  Phiếu đã được điều phối trước khi ký xong (cửa điều phối cố ý không chặn
-    #  trạng thái Chờ duyệt) thì GIỮ NGUYÊN «Đã điều phối»: đẩy lùi về «Đã duyệt»
+    #  trạng thái Chờ duyệt) thì GIỮ NGUYÊN "Đã điều phối": đẩy lùi về "Đã duyệt"
     #  là xóa mất bước đã đi, trong khi xe và tài xế vẫn đang giữ chuyến đó.
     if booking.status == BK_PENDING:
         booking.status = BK_APPROVED
@@ -295,7 +295,7 @@ def booking_for_approver(db: Session, booking_id: int, user) -> VehicleBooking |
 def is_picked_legacy_approver(db: Session, booking: VehicleBooking, user) -> bool:
     """Người này là NGƯỜI DUYỆT CHỌN TRÊN PHIẾU và phiếu đang chờ duyệt theo ĐƯỜNG CŨ (duoc-CR-681).
 
-    Đường cũ (bộ máy tắt / không luồng khớp) gửi thư «Gửi duyệt» CHỈ cho người được chọn, mà danh sách
+    Đường cũ (bộ máy tắt / không luồng khớp) gửi thư "Gửi duyệt" CHỈ cho người được chọn, mà danh sách
     chọn không soi phạm vi dữ liệu (công ty và người duyệt là hai ô độc lập) — không có cửa này thì thư
     trỏ tới trang 404 và người đó không bấm được Duyệt (review H1). Chỉ nới lúc phiếu CHỜ DUYỆT và không
     có phiên nhiều bước nào đang chạy (đang chạy thì đọc qua việc treo như mọi người duyệt khác).
@@ -317,12 +317,12 @@ def _can_read_booking(db: Session, booking_id: int, user) -> bool:
     Đặt xe không chạy được**: chặng 2 của luồng thật gần như luôn là người phòng
     khác (Hành chính · Nhân sự · Ban giám đốc), mà phạm vi dữ liệu của họ không
     với tới phiếu của phòng Kế toán. Nặng hơn Nghỉ phép một bậc vì Đặt xe **không
-    còn màn «Việc của tôi»** (xóa 21/08/2026) — chỗ duy nhất bấm Duyệt là
+    còn màn "Việc của tôi"** (xóa 21/08/2026) — chỗ duy nhất bấm Duyệt là
     `BookingApprovalPanel` NẰM TRONG trang chi tiết phiếu. Cho nên chuỗi hậu quả
     là: chi tiết phiếu 404 → `of/…` trả `null` → panel duyệt không render → thư
     báo bấm vào ra trang trống → **phiếu kẹt vĩnh viễn, không chỗ nào đỏ lên**.
 
-    ⚠️ Nới đúng **lúc đang có việc treo**, không nới cho người «đã từng ký» —
+    ⚠️ Nới đúng **lúc đang có việc treo**, không nới cho người "đã từng ký" —
     cùng lý lẽ với `can_read_request` của Nghỉ phép (CR-260): ký xong là quyền
     đọc thêm đó đóng lại, nếu không thì mỗi lượt ký lại thêm vĩnh viễn một phiếu
     vào tầm nhìn của một người và phạm vi dữ liệu phình dần, không ai rà lại được.
@@ -341,7 +341,7 @@ entity_hooks.register_reader(ENTITY, _can_read_booking)
 
 
 def _mail_new_task(db: Session, instance, task, users: list) -> None:
-    """Thư «YCĐX … chờ bạn duyệt» (mẫu `dx_submitted`) cho người vừa nhận việc ở BẤT KỲ chặng nào, kể cả
+    """Thư "YCĐX … chờ bạn duyệt" (mẫu `dx_submitted`) cho người vừa nhận việc ở BẤT KỲ chặng nào, kể cả
     người nhận ủy quyền (duoc-CR-681). Gửi sau commit qua worker — xem `notification.email_queue`."""
     from app.modules.notification.email_queue import queue_event_email
 

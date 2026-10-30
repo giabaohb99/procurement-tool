@@ -70,7 +70,7 @@ def validate_folder_for_company(db: Session, folder_id: int, company_id: int) ->
     #  người dùng tự sắp xếp, chuyển/gắn đâu tùy ý). Gắn vào thư mục không mở
     #  quyền đọc văn bản — `document/access_service` vẫn lọc như cũ.
     if folder.status != int(FolderStatus.ACTIVE):
-        raise HTTPException(400, f"Thư mục «{folder.name}» đang ngừng dùng")
+        raise HTTPException(400, f"Thư mục \"{folder.name}\" đang ngừng dùng")
     return folder
 
 
@@ -134,7 +134,7 @@ def stage_folders(db: Session, doc, folder_ids: list[int] | None, primary_id: in
                 name = folder.name if folder else f"#{fid}"
                 raise HTTPException(
                     403,
-                    f"Cần quyền Đóng góp trở lên trên thư mục «{name}» mới gỡ được "
+                    f"Cần quyền Đóng góp trở lên trên thư mục \"{name}\" mới gỡ được "
                     "văn bản khỏi đó")
 
     final_ids = list(dict.fromkeys([*ids, *(fid for fid in existing_ids if fid in hidden_keep_ids)]))
@@ -209,7 +209,7 @@ def remove(db: Session, doc, folder_id: int, actor: int) -> None:
 
 def ensure_not_orphan(db: Session, doc, actor: int = 0) -> None:
     """Gỡ thư mục cuối cùng → tự quay về thư mục PHÁP NHÂN (không phải mặc
-    định theo loại — luật «không mồ côi» chỉ hứa đúng một chỗ hạ cánh chắc
+    định theo loại — luật "không mồ côi" chỉ hứa đúng một chỗ hạ cánh chắc
     chắn luôn tồn tại).
 
     `company_id=0` → bỏ qua: không có gốc pháp nhân nào để rơi về, và mồ côi

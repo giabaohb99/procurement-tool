@@ -1,12 +1,12 @@
-"""Nạp dữ liệu báo cáo A3 «Cơ cấu quản lý» (khóa 23, duoc-CR-688): nhân sự ĐANG LÀM tại mốc
+"""Nạp dữ liệu báo cáo A3 "Cơ cấu quản lý" (khóa 23, duoc-CR-688): nhân sự ĐANG LÀM tại mốc
 `as_of` + người nghỉ việc trong kỳ, dựng thành ba loại hàng để cộng bằng khung Haravan.
 
 Ba loại hàng (`SpanRow.kind`):
-- `p` — mỗi nhân sự đang làm (đếm `staff`, cờ «chưa gán quản lý», cờ «quản lý đã nghỉ»);
+- `p` — mỗi nhân sự đang làm (đếm `staff`, cờ "chưa gán quản lý", cờ "quản lý đã nghỉ");
 - `m` — mỗi người có cấp dưới TRONG tập đang xem (đếm `managers`, `direct_reports`, cờ span);
 - `d` — mỗi người nghỉ việc trong kỳ (đếm `departures_under`, gom theo quản lý HIỆN TẠI).
 
-Phạm vi: `scoped_employee_query` (apply_scope + lọc công ty/phòng, chỉ thu hẹp). Người có `manager_id` trỏ tới nhân sự ĐÃ NGHỈ / ngừng hoạt động (`manager_gone`) KHÔNG được tính là «đã gán»:
+Phạm vi: `scoped_employee_query` (apply_scope + lọc công ty/phòng, chỉ thu hẹp). Người có `manager_id` trỏ tới nhân sự ĐÃ NGHỈ / ngừng hoạt động (`manager_gone`) KHÔNG được tính là "đã gán":
 không cộng vào số cấp dưới của ai, không vào nhóm quản lý đó, có chỉ số riêng `manager_resigned`. Quản lý nằm NGOÀI tập
 đang xem không sinh hàng `m` (không nở rộng phạm vi); chỉ tra tên/tình trạng để gán nhãn nhóm.
 Số truy vấn CỐ ĐỊNH: 2 (đang làm) + 1 (nghỉ việc) + tối đa 1 mỗi 900 mã quản lý ngoài tập.
@@ -29,7 +29,7 @@ _COLS = (Employee.id, Employee.code, Employee.full_name, Employee.company_id, Em
          Employee.position, Employee.job_level, Employee.manager_id, Employee.status,
          Employee.resign_date, Employee.is_active)
 _CHUNK = 900
-SPAN_WIDE_OVER = 10   # «Quản lý trên 10 cấp dưới»
+SPAN_WIDE_OVER = 10   # "Quản lý trên 10 cấp dưới"
 
 
 @dataclass(frozen=True)

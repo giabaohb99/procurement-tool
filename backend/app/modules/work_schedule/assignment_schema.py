@@ -20,14 +20,14 @@ def check_target(level: int, target_id: int) -> None:
     """
     if level == int(WorkScheduleLevel.SYSTEM):
         if target_id != 0:
-            raise ValueError("Cấp «Toàn hệ thống» không có đối tượng (target_id phải bằng 0)")
+            raise ValueError("Cấp \"Toàn hệ thống\" không có đối tượng (target_id phải bằng 0)")
     elif target_id <= 0:
         raise ValueError("Phải chọn đối tượng được gán lịch")
 
 
 def check_period(start: date | None, end: date | None) -> None:
     if start and end and end < start:
-        raise ValueError("«Đến ngày» không được trước «Từ ngày»")
+        raise ValueError("\"Đến ngày\" không được trước \"Từ ngày\"")
 
 
 def _year(v: date | None) -> date | None:

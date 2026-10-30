@@ -1,4 +1,4 @@
-"""Báo cáo A3 «Cơ cấu quản lý» (khóa 23, duoc-CR-688) — `GET /api/management-span/summary`.
+"""Báo cáo A3 "Cơ cấu quản lý" (khóa 23, duoc-CR-688) — `GET /api/management-span/summary`.
 
 Ảnh chụp TẠI MỘT MỐC: `as_of = min(cuối kỳ, hôm nay)`. Kỳ chỉ quyết định mốc và khoảng đếm người
 nghỉ việc; không có xu hướng (`trend = []`) và không có kỳ so sánh (`totals.compare = null`).
@@ -53,7 +53,7 @@ def _spec(company_name: dict, department_name: dict, manager_label: dict) -> tup
 
     def manager_key(r: SpanRow):
         #  Hàng "m" nằm ở dòng CỦA CHÍNH quản lý đó; người thường/người nghỉ nằm ở dòng quản lý của họ.
-        if r.kind == "p" and r.manager_gone:    # quản lý đã nghỉ = không còn người quản lý -> «(Chưa gắn)»
+        if r.kind == "p" and r.manager_gone:    # quản lý đã nghỉ = không còn người quản lý -> "(Chưa gắn)"
             return []
         mid = r.employee_id if r.kind == "m" else r.manager_id
         return [(mid, manager_label.get(mid, ""))] if mid else []
@@ -87,12 +87,12 @@ def build_summary(db: Session, user, prof: dict, period: Period, group_by: str |
         f"Ảnh chụp tại {as_of_of(period):%d/%m/%Y} (cuối kỳ hoặc hôm nay nếu kỳ chưa kết thúc); "
         "kỳ chỉ dùng để đếm người nghỉ việc. Không có xu hướng và không so sánh kỳ trước.",
         "Quản lý lấy theo hồ sơ HIỆN TẠI. Số cấp dưới chỉ tính người nằm trong phạm vi bạn xem; "
-        "quản lý ngoài phạm vi/bộ lọc không được tính vào «Người có cấp dưới».",
-        "Xem theo «Quản lý»: mỗi quản lý một dòng — «Nhân sự đang làm» của dòng đó chính là số cấp dưới "
-        "trực tiếp; dòng «(Chưa gắn)» là người chưa gán quản lý.",
-        "«Quản lý trực tiếp đã nghỉ»: người có quản lý ghi trên hồ sơ đã nghỉ việc / ngừng hoạt động — "
+        "quản lý ngoài phạm vi/bộ lọc không được tính vào \"Người có cấp dưới\".",
+        "Xem theo \"Quản lý\": mỗi quản lý một dòng — \"Nhân sự đang làm\" của dòng đó chính là số cấp dưới "
+        "trực tiếp; dòng \"(Chưa gắn)\" là người chưa gán quản lý.",
+        "\"Quản lý trực tiếp đã nghỉ\": người có quản lý ghi trên hồ sơ đã nghỉ việc / ngừng hoạt động — "
         "không tính là đã gán quản lý (không nằm trong số cấp dưới của ai).",
-        "«Nghỉ việc trong kỳ» được tính theo quản lý hiện tại ghi trên hồ sơ người đã nghỉ.",
+        "\"Nghỉ việc trong kỳ\" được tính theo quản lý hiện tại ghi trên hồ sơ người đã nghỉ.",
     ]
     return data
 

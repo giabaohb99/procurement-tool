@@ -35,7 +35,7 @@ def allowed_template_keys(db: Session, keep: Iterable[str] = ()) -> tuple[frozen
 
     `allowed` = biến hệ thống ∪ biến tùy chỉnh ĐANG DÙNG ∪ `<mã>_bang_chu` của biến tiền đang dùng
     ∪ biến ngừng dùng mà `keep` (tập biến mẫu CŨ đã chứa) còn giữ. `inactive` = biến ngừng dùng
-    ngoài `keep` — chỉ để báo câu riêng «đã ngừng dùng» thay vì «ngoài danh mục»."""
+    ngoài `keep` — chỉ để báo câu riêng "đã ngừng dùng" thay vì "ngoài danh mục"."""
     keep_set = set(keep)
     allowed = set(KNOWN_KEYS)
     inactive: set[str] = set()
@@ -62,7 +62,7 @@ def sample_context_for(rows: Iterable[LaborContractVariable]) -> dict[str, str]:
 
 def custom_context(rows: Iterable[LaborContractVariable], values: dict | None) -> dict[str, str]:
     """Ngữ cảnh của MỌI biến tùy chỉnh (kể cả ngừng dùng — mẫu cũ còn chứa): giá trị của hợp đồng,
-    đã định dạng theo kiểu; chưa có → «». Mặc định KHÔNG áp ở đây (đã SAO vào hợp đồng lúc lập)."""
+    đã định dạng theo kiểu; chưa có → chuỗi rỗng. Mặc định KHÔNG áp ở đây (đã SAO vào hợp đồng lúc lập)."""
     values = values or {}
     ctx: dict[str, str] = {}
     for row in rows:

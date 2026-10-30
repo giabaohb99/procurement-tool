@@ -85,7 +85,7 @@ class HeadcountEvent:
     status: str
     seniority_key: str
     seniority_label: str
-    employee_id: int = 0   # để danh sách «bấm số» (duoc-CR-686) tra lại hồ sơ
+    employee_id: int = 0   # để danh sách "bấm số" (duoc-CR-686) tra lại hồ sơ
     #  Chiều cơ cấu (duoc-CR-687, `report_headcount_dims.row_dims`) — KHÔNG giữ ngày sinh.
     age_key: str = ""
     age_label: str = "(Chưa gắn)"

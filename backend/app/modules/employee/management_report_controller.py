@@ -1,4 +1,4 @@
-"""Báo cáo A3 «Cơ cấu quản lý» (khóa 23) — duoc-CR-688.
+"""Báo cáo A3 "Cơ cấu quản lý" (khóa 23) — duoc-CR-688.
 
 Router riêng chỉ chứa `/summary` + `/summary/export` + `/summary/rows` (khung báo cáo kiểu Haravan).
 Đường gốc `/api/management-span` cố ý KHÔNG nằm dưới `/api/employees` / `/api/labor-contracts` để khỏi bị

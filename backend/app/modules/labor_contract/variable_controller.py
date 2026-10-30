@@ -1,7 +1,7 @@
 """API Danh sách biến mẫu HĐLĐ — `/api/labor-contract-variables` (duoc-CR-630).
 
 Không entity quyền mới: tái dùng `labor_contract_template` (read xem · write tạo/sửa · delete xóa), và
-GHI còn đòi phạm vi «tất cả pháp nhân» (`variable_access`). Danh mục là toàn hệ thống nên KHÔNG `apply_scope`
+GHI còn đòi phạm vi "tất cả pháp nhân" (`variable_access`). Danh mục là toàn hệ thống nên KHÔNG `apply_scope`
 lên bảng biến. `/input-fields` PHẢI khai TRƯỚC `/{variable_id}`.
 """
 from fastapi import APIRouter, Depends, HTTPException
@@ -59,7 +59,7 @@ def get_variable(variable_id: int, db: Session = Depends(get_db), user=Depends(r
 def create_variable(data: VariableCreate, db: Session = Depends(get_db), user=Depends(require(ENTITY, "write"))):
     variable_access.ensure_unrestricted(user, get_perm_profile(db, user), "write")
     row = svc.create(db, user, data)
-    audit_record(db, user.id, AUDIT_ENTITY, row.id, "create", f"Thêm biến mẫu hợp đồng lao động «{row.code}»")
+    audit_record(db, user.id, AUDIT_ENTITY, row.id, "create", f"Thêm biến mẫu hợp đồng lao động \"{row.code}\"")
     return success(_one(db, row), "Đã thêm biến", 201)
 
 
@@ -68,7 +68,7 @@ def update_variable(variable_id: int, data: VariableUpdate, db: Session = Depend
                     user=Depends(require(ENTITY, "write"))):
     variable_access.ensure_unrestricted(user, get_perm_profile(db, user), "write")
     row = svc.update(db, user, svc.get_or_404(db, variable_id, lock=True), data)
-    audit_record(db, user.id, AUDIT_ENTITY, row.id, "update", f"Sửa biến mẫu hợp đồng lao động «{row.code}»")
+    audit_record(db, user.id, AUDIT_ENTITY, row.id, "update", f"Sửa biến mẫu hợp đồng lao động \"{row.code}\"")
     return success(_one(db, row), "Đã cập nhật biến")
 
 
@@ -81,5 +81,5 @@ def delete_variable(variable_id: int, db: Session = Depends(get_db), user=Depend
         code = svc.delete(db, user, profile, row)
     except svc.VariableInUse as exc:
         return error(exc.message, code="409", status_code=409, details=exc.details)
-    audit_record(db, user.id, AUDIT_ENTITY, variable_id, "delete", f"Xóa biến mẫu hợp đồng lao động «{code}»")
+    audit_record(db, user.id, AUDIT_ENTITY, variable_id, "delete", f"Xóa biến mẫu hợp đồng lao động \"{code}\"")
     return success(None, "Đã xóa biến")

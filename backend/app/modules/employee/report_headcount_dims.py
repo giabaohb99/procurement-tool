@@ -1,9 +1,9 @@
-"""Các chiều «cơ cấu» tính từ cột hồ sơ cho báo cáo Biến động nhân sự (duoc-CR-687, A2):
+"""Các chiều "cơ cấu" tính từ cột hồ sơ cho báo cáo Biến động nhân sự (duoc-CR-687, A2):
 nhóm tuổi · trình độ · địa điểm làm việc · nhóm vị trí việc làm.
 
 ⚠️ `date_of_birth` là trường NHẠY CẢM (`sensitive.py`): hàm ở đây chỉ dùng nó để chọn NHÓM TUỔI
 rồi bỏ — `HeadcountEvent` chỉ giữ khóa/nhãn nhóm, không giữ ngày sinh, nên không thể rò ra
-ngoài qua danh sách «bấm số» hay xuất tệp.
+ngoài qua danh sách "bấm số" hay xuất tệp.
 """
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from datetime import date
 
 from app.modules.employee.constants import JOB_CATEGORY_LABELS, job_category_of
 
-#  (trần tuổi — nửa mở, khóa, nhãn). Khóa cuối `None` = «trở lên».
+#  (trần tuổi — nửa mở, khóa, nhãn). Khóa cuối `None` = "trở lên".
 _AGE_BANDS = ((25, "lt25", "Dưới 25"), (35, "25-34", "25–34"), (45, "35-44", "35–44"),
               (55, "45-54", "45–54"), (None, "55+", "55 trở lên"))
 NO_AGE = ("", "(Chưa gắn)")
@@ -25,7 +25,7 @@ def age_on(dob: date | None, on: date) -> int | None:
 
 
 def age_band(dob: date | None, on: date) -> tuple[str, str]:
-    """(khóa, nhãn) nhóm tuổi tại `on`; thiếu ngày sinh → khóa rỗng («(Chưa gắn)»)."""
+    """(khóa, nhãn) nhóm tuổi tại `on`; thiếu ngày sinh → khóa rỗng ("(Chưa gắn)")."""
     age = age_on(dob, on)
     if age is None:
         return NO_AGE

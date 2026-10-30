@@ -3,7 +3,7 @@
 Một lô ≤ `BATCH` id. Mỗi lô tốn: 1 (dòng phiếu) + 0–1 (người xử lý) + 1 (nhật ký thay đổi) + 0–1 (audit)
 + 2–3 (bảng tra nhân sự). Dùng Core + `Base.metadata.tables` thay vì lớp ORM để một bảng đổi tên lớp không làm gãy đây.
 
-Chọn tập phiếu «chạm tới»: `updated_at >= since` (cột này được cập nhật cả ở UPDATE hàng loạt) cộng bảng con
+Chọn tập phiếu "chạm tới": `updated_at >= since` (cột này được cập nhật cả ở UPDATE hàng loạt) cộng bảng con
 (dòng hàng YCMH, dòng YCBG, người phụ trách task) — nhờ vậy cả phiếu nhập từ hệ khác không qua nhật ký vẫn được tính.
 """
 from datetime import date, datetime, timedelta
@@ -24,7 +24,7 @@ def _t(name: str):
 
 
 def vn_midnight_utc(text: str) -> datetime | None:
-    """«YYYY-MM-DD» (ngày VN) → 00:00 giờ VN dạng UTC naive. Rỗng / sai → None."""
+    """"YYYY-MM-DD" (ngày VN) → 00:00 giờ VN dạng UTC naive. Rỗng / sai → None."""
     try:
         return datetime.combine(date.fromisoformat((text or "")[:10]), datetime.min.time()) - timedelta(hours=7)
     except ValueError:
@@ -61,7 +61,7 @@ def touched_ids(db: Session, spec: CycleSpec, since: datetime | None) -> list[in
     return sorted(ids)
 
 
-#  Bảng con quyết định «ai xử lý»: đổi dòng con không chạm `updated_at` của phiếu cha.
+#  Bảng con quyết định "ai xử lý": đổi dòng con không chạm `updated_at` của phiếu cha.
 _CHILD = {
     CycleKind.PURCHASE_REQUEST: ("tab_purchase_request_item", "pr_id"),
     CycleKind.SURVEY_REQUEST: ("tab_survey_request_line", "survey_request_id"),

@@ -1,4 +1,4 @@
-"""Giá trị biến TÙY CHỈNH theo từng hợp đồng (duoc-CR-630): gộp + kiểm, và chốt «bắt buộc».
+"""Giá trị biến TÙY CHỈNH theo từng hợp đồng (duoc-CR-630): gộp + kiểm, và chốt "bắt buộc".
 
 Lưu ở cột JSON `tab_labor_contract.custom_values` = `{mã biến: chuỗi CHUẨN của kiểu}`. Mọi hàm trả dict MỚI
 (không sửa tại chỗ) — SQLAlchemy không theo dõi sửa tại chỗ cột JSON. Thông báo lỗi chỉ nêu MÃ / NHÃN biến,
@@ -33,10 +33,10 @@ def merge_custom_values(db: Session, old: dict | None, incoming: dict | None, *,
         try:
             value = rules.normalize_value(row.value_type, raw)
         except ValueError as exc:
-            raise HTTPException(422, f"Biến «{row.label}»: {exc}") from None
+            raise HTTPException(422, f"Biến \"{row.label}\": {exc}") from None
         if not row.is_active:
             if value != result.get(code, ""):
-                raise HTTPException(422, f"Biến «{row.label}» đã ngừng dùng — không nhập giá trị mới được")
+                raise HTTPException(422, f"Biến \"{row.label}\" đã ngừng dùng — không nhập giá trị mới được")
             continue
         if value:
             result[code] = value
@@ -55,12 +55,12 @@ def ensure_required_filled(db: Session, values: dict | None, template_placeholde
     """Biến BẮT BUỘC (đang dùng) còn trống → 422 nêu NHÃN. `template_placeholders=None` = chưa biết mẫu."""
     missing = reg.missing_required(reg.custom_rows(db), values, template_placeholders)
     if missing:
-        raise HTTPException(422, f"Hợp đồng còn thiếu: {', '.join(missing)} — mở «Sửa hợp đồng» để nhập "
+        raise HTTPException(422, f"Hợp đồng còn thiếu: {', '.join(missing)} — mở \"Sửa hợp đồng\" để nhập "
                                  f"trước khi {action}")
 
 
 def placeholders_for_signing(db: Session, row) -> list[str]:
-    """Biến mà hợp đồng này SẼ dùng khi ký — để chốt «bắt buộc» ở bước chuyển sang Đã ký.
+    """Biến mà hợp đồng này SẼ dùng khi ký — để chốt "bắt buộc" ở bước chuyển sang Đã ký.
 
     Hợp đồng đã sinh tệp (còn `template_id`) → biến của đúng mẫu đó. Chưa có mẫu (chưa sinh, sinh xong bị
     sửa nên `template_id` về 0, hoặc ký bằng bản scan) → hợp các biến của MẪU ĐANG DÙNG của CHÍNH pháp

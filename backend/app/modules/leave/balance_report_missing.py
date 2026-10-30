@@ -1,4 +1,4 @@
-"""«Chưa được cấp quỹ» (duoc-CR-686): nhân sự ĐANG LÀM, trong phạm vi + lọc, không có dòng quỹ
+""""Chưa được cấp quỹ" (duoc-CR-686): nhân sự ĐANG LÀM, trong phạm vi + lọc, không có dòng quỹ
 phép năm đó cho BẤT KỲ loại nghỉ nào tính quỹ (`LeaveType.counts_balance = True`).
 
 Phạm vi lấy theo `apply_scope(Employee, "employee")` — người xem báo cáo quỹ phép mà không có

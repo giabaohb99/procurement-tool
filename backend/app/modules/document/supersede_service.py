@@ -34,7 +34,7 @@ from .model import (ALIVE_STATUSES, STATUS_REPLACED, STATUS_REVOKED,
                     STATUS_LABELS, Document)
 
 #  Quan hệ nào làm văn bản cũ đổi trạng thái, và đổi sang cái gì.
-#  «Sửa đổi» và «bổ sung» CỐ Ý không có mặt: chúng chỉ đụng một phần nội dung,
+#  "Sửa đổi" và "bổ sung" CỐ Ý không có mặt: chúng chỉ đụng một phần nội dung,
 #  phần còn lại vẫn có hiệu lực.
 SUPERSEDE_EFFECT = {
     RELATION_REPLACE: STATUS_REPLACED,
@@ -133,7 +133,7 @@ def amended_by(db: Session, document_id: int) -> list[dict]:
             continue
         if db.query(Document.id).filter(Document.id == new.id,
                                         Document.id.in_(archive_doc_set())).first():
-            continue   # duoc-CR-629: bản lưu trữ HĐLĐ không là «văn bản sửa đổi» của ai
+            continue   # duoc-CR-629: bản lưu trữ HĐLĐ không là "văn bản sửa đổi" của ai
         result.append({
             "document_id": new.id,
             "title": new.title,

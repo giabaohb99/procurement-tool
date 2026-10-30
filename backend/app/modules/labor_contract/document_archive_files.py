@@ -4,7 +4,7 @@ Phiên bản hiện hành của văn bản lưu trữ luôn giữ đúng {bản 
 của HĐ — nhiều hơn / ít hơn thì chỉnh lại. So bằng `sha256` nên chạy lại bao nhiêu lần cũng không
 sinh bản trùng.
 
-duoc-CR-640: văn bản lưu trữ SỬA ĐƯỢC (kể cả tải thêm «file mềm»), nên đồng bộ chỉ quản lý các bản sao do
+duoc-CR-640: văn bản lưu trữ SỬA ĐƯỢC (kể cả tải thêm "file mềm"), nên đồng bộ chỉ quản lý các bản sao do
 CHÍNH NÓ tạo — đánh dấu bằng `FileLink.doc_type = SYNC_MARK` (bản sao tạo trước CR-640 chưa có dấu thì nhận ra
 qua thư mục lưu `labor-contract-archive`). Tệp người dùng tải lên KHÔNG bao giờ bị đụng. Người dùng tạo phiên
 bản mới ⇒ phiên bản mới chép liên kết (dùng chung tệp), bản cũ giữ nguyên bộ tệp; đồng bộ chỉ chỉnh phiên bản hiện
@@ -31,7 +31,7 @@ from .model import LaborContract
 log = logging.getLogger("app.labor_contract")
 
 ARCHIVE_CATEGORY = "labor-contract-archive"
-#  Dấu «bản sao do đồng bộ tạo» trên `tab_file_link.doc_type` (cột chữ 50 ký tự, văn bản không dùng cho việc khác).
+#  Dấu "bản sao do đồng bộ tạo" trên `tab_file_link.doc_type` (cột chữ 50 ký tự, văn bản không dùng cho việc khác).
 SYNC_MARK = "hdld_sync"
 #  (cột file_id của HĐ, sort_order hiển thị): tệp sinh trước, bản ký sau.
 _SOURCES = (("generated_file_id", 0), ("signed_file_id", 1))
@@ -91,7 +91,7 @@ def mirror(db: Session, contract: LaborContract, doc: Document, actor_id: int) -
             db.delete(link)
     db.flush()
     #  Chỉ xóa tệp khi KHÔNG còn liên kết nào (phiên bản cũ có thể còn dùng chung).
-    #  Đọc KHÓA (FOR UPDATE) để hai lượt đồng bộ song song không cùng thấy «hết liên kết» rồi cùng xóa tệp.
+    #  Đọc KHÓA (FOR UPDATE) để hai lượt đồng bộ song song không cùng thấy "hết liên kết" rồi cùng xóa tệp.
     stale_file_ids = [fid for fid in dict.fromkeys(removed_file_ids)
                       if db.query(FileLink.id).filter(FileLink.file_id == fid).with_for_update().first() is None]
 

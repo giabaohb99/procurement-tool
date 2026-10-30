@@ -23,7 +23,7 @@ ENTITY = "document"
 
 
 def entity_context(doc: Document) -> dict:
-    """Bối cảnh phiếu cho điều kiện rẽ nhánh và cách chọn người duyệt «lấy từ ô».
+    """Bối cảnh phiếu cho điều kiện rẽ nhánh và cách chọn người duyệt "lấy từ ô".
 
     Chỉ đưa ra những ô thật sự có nghĩa để rẽ nhánh. Đổ cả bản ghi vào đây thì
     người khai luồng thấy sáu chục tên cột và không biết chọn cái nào.
@@ -84,17 +84,17 @@ def block_legacy_path(db: Session, doc: Document) -> None:
         raise HTTPException(
             400,
             "Văn bản này đang chạy trong luồng duyệt nhiều bước — xử lý ở màn "
-            "«Việc của tôi» chứ không ban hành thẳng ở đây.",
+            "\"Việc của tôi\" chứ không ban hành thẳng ở đây.",
         )
     _clarify_instance_finished(db, doc)
 
 
 def _clarify_instance_finished(db: Session, doc: Document) -> None:
-    """Nói RÕ vì sao không ban hành được, thay câu «Không có bản nào đang chờ duyệt».
+    """Nói RÕ vì sao không ban hành được, thay câu "Không có bản nào đang chờ duyệt".
 
     Ca người dùng gặp (24/08/2026): người duyệt bấm *Trả lại*, rồi ai đó bấm
-    *Duyệt và ban hành* và nhận đúng một dòng đỏ **«Không có bản nào đang chờ
-    duyệt»** — câu này đọc như hệ hỏng, trong khi sự thật là phiên duyệt vừa kết
+    *Duyệt và ban hành* và nhận đúng một dòng đỏ **"Không có bản nào đang chờ
+    duyệt"** — câu này đọc như hệ hỏng, trong khi sự thật là phiên duyệt vừa kết
     thúc bằng *Trả lại* nên chẳng còn gì để ban hành.
 
     ⚠️ **Không chặn thêm bất cứ đường nào.** Chỉ nói lại cho tử tế đúng cái lỗi
@@ -117,7 +117,7 @@ def _clarify_instance_finished(db: Session, doc: Document) -> None:
                                                      INSTANCE_WITHDRAWN)
 
     instance = latest_instance(db, doc.id)
-    #  CHỈ ba kết cục «không đi tiếp được» mới cần giải thích. Phiên **đã duyệt**
+    #  CHỈ ba kết cục "không đi tiếp được" mới cần giải thích. Phiên **đã duyệt**
     #  thì im lặng: văn bản đã ban hành rồi, và chốt cũ có một bài kiểm giữ đúng
     #  điều đó — hết phiên là đường một bước dùng lại được bình thường
     #  (`test_van_ban_dang_duyet_khong_di_tat.py`).
@@ -131,7 +131,7 @@ def _clarify_instance_finished(db: Session, doc: Document) -> None:
     raise HTTPException(
         400,
         f"Không ban hành được: phiên duyệt của văn bản này đã kết thúc ở trạng thái "
-        f"«{label}»{f' lúc {days}' if days else ''}{reason}. "
+        f"\"{label}\"{f' lúc {days}' if days else ''}{reason}. "
         "Người soạn sửa lại rồi gửi duyệt lần nữa thì mới có bản để ban hành.",
     )
 
@@ -187,7 +187,7 @@ def ensure_dedicated_flow(db: Session, doc: Document) -> None:
     """Bản clone phải có luồng khớp ĐÚNG pháp nhân trước khi đổi trạng thái.
 
     Gọi trước `service.submit()` commit. Chặn sau commit thì API báo lỗi nhưng
-    văn bản đã thành «Đang duyệt» mà không có phiên nào — tình trạng không màn
+    văn bản đã thành "Đang duyệt" mà không có phiên nào — tình trạng không màn
     hình nào sửa được.
     """
     if not doc.source_document_id:
@@ -202,8 +202,8 @@ def ensure_dedicated_flow(db: Session, doc: Document) -> None:
     name = company.name if company else f"#{doc.company_id}"
     raise HTTPException(
         400,
-        f"Pháp nhân «{name}» chưa có luồng duyệt Văn bản riêng. "
-        "Hãy tạo luồng và chọn đúng «Pháp nhân áp dụng» trước khi gửi duyệt.",
+        f"Pháp nhân \"{name}\" chưa có luồng duyệt Văn bản riêng. "
+        "Hãy tạo luồng và chọn đúng \"Pháp nhân áp dụng\" trước khi gửi duyệt.",
     )
 
 
@@ -213,7 +213,7 @@ def _write_log(db: Session, document_id: int, instance, action: str, message: st
     """Ghi kết cục vào NHẬT KÝ THAO TÁC của chính văn bản.
 
     ⚠️ Thiếu nhịp này thì thẻ *Lịch sử thao tác* của văn bản dừng lại ở dòng
-    «Gửi duyệt»: người soạn mở ra thấy trạng thái đã thành «Trả về» mà không có
+    "Gửi duyệt": người soạn mở ra thấy trạng thái đã thành "Trả về" mà không có
     một dòng nào nói ai trả, lúc nào, vì sao (lỗi khách báo 24/08/2026). Dấu vết
     phiên duyệt có ghi, nhưng đó là thẻ khác — và nó biến mất khỏi tầm mắt ngay
     khi người ta gửi duyệt lại lần sau.
@@ -268,7 +268,7 @@ def _auto_issue(db: Session, doc: Document) -> bool:
     """Loại của văn bản này có cho duyệt xong ban hành luôn không.
 
     Loại đã bị xóa khỏi danh mục thì trả `True` — giữ đúng hành vi cũ. Dừng một
-    văn bản ở «Chờ ban hành» vì lý do không đọc được cấu hình là để nó kẹt mà
+    văn bản ở "Chờ ban hành" vì lý do không đọc được cấu hình là để nó kẹt mà
     không ai hiểu vì sao.
     """
     from app.modules.doc_catalog.model import DocType
@@ -280,8 +280,8 @@ def _auto_issue(db: Session, doc: Document) -> bool:
 def _on_rejected(db: Session, document_id: int, instance) -> None:
     """Từ chối → văn bản **Đã từ chối**: khóa sửa, làm lại thì sao chép.
 
-    Từ 24/08/2026 đây KHÔNG còn cùng đường với «trả lại». Trước đó cả hai đều đổ
-    về Nháp, nên người soạn mở văn bản ra chỉ thấy «Nháp» và không cách nào biết
+    Từ 24/08/2026 đây KHÔNG còn cùng đường với "trả lại". Trước đó cả hai đều đổ
+    về Nháp, nên người soạn mở văn bản ra chỉ thấy "Nháp" và không cách nào biết
     nó vừa bị dẹp hay đang được mời sửa lại.
     """
     from . import service
@@ -298,7 +298,7 @@ def _on_returned(db: Session, document_id: int, instance) -> None:
 
     Chỉ chạy khi phiếu trả về TẬN người nộp (`INSTANCE_RETURNED`). Trả về một
     bước phía trước thì phiên vẫn chạy, bộ máy không gọi hook nào — đúng vậy, văn
-    bản phải giữ nguyên «Đang duyệt» vì nó vẫn đang trong luồng.
+    bản phải giữ nguyên "Đang duyệt" vì nó vẫn đang trong luồng.
     """
     from . import service
 
@@ -319,7 +319,7 @@ def _on_withdrawn(db: Session, document_id: int, instance) -> None:
     thái: luật "bản đầu đổi trạng thái, bản thứ hai giữ nguyên vì bản trước còn
     hiệu lực" nằm ở đó, chép ra đây là sớm muộn hai bên lệch nhau.
 
-    Về **Nháp** chứ không phải «Trả về»: chính người nộp rút, không ai trả gì cho
+    Về **Nháp** chứ không phải "Trả về": chính người nộp rút, không ai trả gì cho
     họ cả.
     """
     from . import service

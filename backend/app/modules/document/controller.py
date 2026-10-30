@@ -68,7 +68,7 @@ FILTERABLE = ["doc_type_id", "company_id", "department_id", "book_id", "status",
               #  Hỏi thẳng các BẢN RIÊNG của một bản gốc — đường mà bảng danh
               #  sách dùng khi người dùng bung một dòng ra.
               "source_document_id",
-              #  Lọc theo NĂM VÀO SỔ (khác `issue_year`) — tab «Văn bản trong sổ»
+              #  Lọc theo NĂM VÀO SỔ (khác `issue_year`) — tab "Văn bản trong sổ"
               #  dùng cùng năm với bộ đếm của sổ (duoc-CR-474, 23/09/2026).
               "book_year"]
 
@@ -115,8 +115,8 @@ def doc_reader(user=Depends(get_current_user)):
     trong luồng thường **không có vai trò nào** ở phân hệ này — bộ máy duyệt
     chỉ hỏi "anh có việc ở phiếu này không".
 
-    Hệ quả của việc hỏi sai câu, đã bắt được thật: người duyệt bấm từ «Việc của
-    tôi» sang văn bản thì nhận 404, đành ký mù theo mỗi cái tiêu đề trên dòng
+    Hệ quả của việc hỏi sai câu, đã bắt được thật: người duyệt bấm từ "Việc của
+    tôi" sang văn bản thì nhận 404, đành ký mù theo mỗi cái tiêu đề trên dòng
     việc. `access_service.can()` nay mở đúng khe đó và CHỈ mở quyền đọc.
 
     Không nới thêm endpoint nào khác: danh sách, tìm kiếm, sửa, xóa, ban hành
@@ -479,7 +479,7 @@ def discard_draft(
     db: Session = Depends(get_db),
     user=Depends(require("document", "create")),
 ):
-    """Nút «Hủy» ở màn Tạo văn bản — dọn bản nháp mà chính mình vừa mở.
+    """Nút "Hủy" ở màn Tạo văn bản — dọn bản nháp mà chính mình vừa mở.
 
     Đi cùng `create` chứ không phải `delete`: xem `service.bo_ban_nhap_cua_minh`.
     """
@@ -530,7 +530,7 @@ def approve_document(
     #  riêng trùng (code-review 29/09/2026, I5). Cú thứ hai chờ khóa rồi thấy bản
     #  đã ban hành và nhận 400.
     db.refresh(doc, with_for_update=True)
-    #  «Chờ ban hành» (cả bản 2+) là nhịp của NGƯỜI SOẠN — người có quyền Duyệt
+    #  "Chờ ban hành" (cả bản 2+) là nhịp của NGƯỜI SOẠN — người có quyền Duyệt
     #  không bấm thay được.
     if service.is_pending_issue(db, doc):
         service.ensure_can_issue(db, doc, user)
@@ -551,13 +551,13 @@ def issue_document(
     db: Session = Depends(get_db),
     user=Depends(require("document", "write")),
 ):
-    """NÚT «BAN HÀNH» CỦA NGƯỜI SOẠN — gác bằng quyền SỬA, không phải quyền Duyệt.
+    """NÚT "BAN HÀNH" CỦA NGƯỜI SOẠN — gác bằng quyền SỬA, không phải quyền Duyệt.
 
     Hai ca (29/09/2026):
     - **Chờ ban hành** — ký đủ rồi, chờ người soạn thảo / người chịu trách nhiệm
       phát hành. Trước đây nút này gọi `/approve`, mà đường đó đòi quyền Duyệt:
-      vai trò «Văn bản — soạn & sửa» (không có Duyệt) bấm vào chỉ nhận 403.
-    - **Loại «không cần duyệt»** — ban hành thẳng từ bản nháp
+      vai trò "Văn bản — soạn & sửa" (không có Duyệt) bấm vào chỉ nhận 403.
+    - **Loại "không cần duyệt"** — ban hành thẳng từ bản nháp
       (`service.issue_without_approval`). Người bấm: người soạn / người chịu
       trách nhiệm, hoặc người có quyền Duyệt văn bản.
     """
@@ -585,7 +585,7 @@ def _can_approve_doc(db: Session, doc, user) -> bool:
     người được Duyệt ở Cty A nhưng Sửa được văn bản Cty B sẽ ban hành thay được
     văn bản của Cty B (code-review 29/09/2026, I3).
     """
-    #  `access_service.can` không có cột «approve» — hỏi thẳng PHẠM VI của quyền
+    #  `access_service.can` không có cột "approve" — hỏi thẳng PHẠM VI của quyền
     #  Duyệt: văn bản này có nằm trong phạm vi Duyệt của người đó không.
     from app.core.scoping import apply_scope
     query = db.query(Document.id).filter(Document.id == doc.id)
@@ -595,7 +595,7 @@ def _can_approve_doc(db: Session, doc, user) -> bool:
 
 def _finish_issue(db: Session, doc, data, user, mailbox, message: str):
     """Phần chung sau khi ban hành xong — dùng cho cả `/approve` lẫn `/issue`."""
-    #  CR-200 (F12) — người ban hành tích «Đăng thông báo lên diễn đàn» thì clone
+    #  CR-200 (F12) — người ban hành tích "Đăng thông báo lên diễn đàn" thì clone
     #  thành một bài diễn đàn đã ghim. Chạy SAU khi ban hành xong và nuốt lỗi
     #  cùng luật với kênh chuông/email: diễn đàn hỏng không được biến một văn bản
     #  đã cấp số thành thao tác thất bại.
@@ -691,10 +691,10 @@ def confirm_reviewed(
     db: Session = Depends(get_db),
     user=Depends(require("document", "write")),
 ):
-    """Xác nhận ĐÃ RÀ SOÁT xong — tắt cờ «cần rà lại».
+    """Xác nhận ĐÃ RÀ SOÁT xong — tắt cờ "cần rà lại".
 
     Kết luận vào NHẬT KÝ THAO TÁC, không thêm cột: người sau mở nhật ký phải đọc
-    được «đã đối chiếu, vẫn đúng» hay «đã sửa theo Chương II» — hai câu đó dẫn
+    được "đã đối chiếu, vẫn đúng" hay "đã sửa theo Chương II" — hai câu đó dẫn
     tới hai hành động khác hẳn nhau nếu về sau có tranh chấp.
     """
     doc = _load(db, document_id, user, "write", derived=True)
@@ -895,7 +895,7 @@ def my_permissions(
     } | {
         #  duoc-CR-640: bản lưu trữ HĐLĐ — giao diện ẩn các nút chia sẻ / quan hệ / duyệt / ký / sao chép.
         "is_archive": contract_id > 0,
-        #  duoc-CR-659: nút «Ban hành» duy nhất của bản lưu trữ = ký HĐ gốc (Nháp → Đã ký).
+        #  duoc-CR-659: nút "Ban hành" duy nhất của bản lưu trữ = ký HĐ gốc (Nháp → Đã ký).
         "archive_contract_id": contract_id,
         "can_issue_archive": can_issue,
     })

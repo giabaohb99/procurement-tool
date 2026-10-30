@@ -77,7 +77,7 @@ def edit_comment(db: Session, actor: Actor, user, task_id: int, comment_id: int,
 
 def _notify_new_mentions(db: Session, actor: Actor, user, task: WorkTask, c: Comment, user_ids,
                          background_tasks) -> None:
-    """Chuông «được nhắc tên» cho người MỚI được @ — chỉ người còn xem được việc.
+    """Chuông "được nhắc tên" cho người MỚI được @ — chỉ người còn xem được việc.
     Bình luận đã lưu xong: lỗi ở đây nuốt + ghi log, không thành 500."""
     from app.modules.notification.service import get_user_display_name
 
@@ -90,7 +90,7 @@ def _notify_new_mentions(db: Session, actor: Actor, user, task: WorkTask, c: Com
         excerpt = excerpt if len(excerpt) <= 140 else excerpt[:140].rstrip() + "…"
         notify.send_bell_users(
             db, targets, f"{task.title} — Bạn được nhắc tên",
-            f"{get_user_display_name(db, user)} đã nhắc bạn trong việc «{task.title}»: {excerpt}",
+            f"{get_user_display_name(db, user)} đã nhắc bạn trong việc \"{task.title}\": {excerpt}",
             notify.task_link(task.id), actor, background_tasks)
     except Exception:
         db.rollback()
