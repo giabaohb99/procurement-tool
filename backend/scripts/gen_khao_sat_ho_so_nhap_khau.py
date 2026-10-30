@@ -87,7 +87,7 @@ def write_block(ws, r, stt, phase, title, desc, required, dep_text, dv_doc, dv_f
     put(ws, r, 5, "" if blank else ("Hồ sơ bắt buộc" if required else "Hồ sơ không bắt buộc"),
         fill=fill_doc)
     put(ws, r, 6, "Sửa" if example else ("Thêm mới" if blank else ""), fill=ASK_FILL, align=CENTER)
-    put(ws, r, 7, "Đổi tên thành «Giấy phép tiền chất — Bộ Công An», chỉ áp cho KNO₃"
+    put(ws, r, 7, "Đổi tên thành 'Giấy phép tiền chất — Bộ Công An', chỉ áp cho KNO₃"
         if example else "", fill=ASK_FILL)
     dv_doc.add(ws.cell(r, 6).coordinate)
     ws.row_dimensions[r].height = 44 if desc else 22
@@ -149,7 +149,7 @@ def main():
     c = ws.cell(2, 1, "CÁCH ĐIỀN: cột xám là hiện trạng phần mềm, không sửa. Chỉ điền hai cột vàng — "
                       "dòng hồ sơ (xanh đậm) chọn Giữ / Sửa / Bỏ; dòng trường bên dưới chọn Bắt buộc điền / "
                       "Để rỗng được / Không cần; thiếu trường thì ghi vào dòng trống xanh lá cuối khối; "
-                      "thiếu hồ sơ thì dùng các khối «Hồ sơ mới» ở cuối. Để trống = đồng ý giữ nguyên. "
+                      "thiếu hồ sơ thì dùng các khối 'Hồ sơ mới' ở cuối. Để trống = đồng ý giữ nguyên. "
                       "Khối VÍ DỤ màu cam ở ngay dưới là mẫu điền, bỏ qua khi tổng hợp.")
     c.font = NOTE_FONT
     c.alignment = WRAP

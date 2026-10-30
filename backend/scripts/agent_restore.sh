@@ -20,7 +20,7 @@
 #   COMPOSE_ARGS     ""                         thêm cờ cho `docker compose` (vd -f docker-compose.agent.yml)
 #   SERVICES         "agent-api agent-worker agent-beat agent-poller zalo-listener"
 #   HEALTH_URL       ""                         để trống thì bỏ bước kiểm health
-#   SAFETY_DIR       $STACK_DIR/restore-safety  nơi cất bản dump «trước khi quay lại»
+#   SAFETY_DIR       $STACK_DIR/restore-safety  nơi cất bản dump "trước khi quay lại"
 set -euo pipefail
 
 usage() {
@@ -81,7 +81,7 @@ fi
 echo "================================================="
 
 if [ "$YES" -ne 1 ]; then
-  printf 'Gõ đúng «%s» để chạy: ' "$PHRASE"
+  printf 'Gõ đúng "%s" để chạy: ' "$PHRASE"
   ANSWER=""
   read -r ANSWER || true
   if [ "$ANSWER" != "$PHRASE" ]; then

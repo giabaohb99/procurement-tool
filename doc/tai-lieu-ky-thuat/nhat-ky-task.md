@@ -111,6 +111,19 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-695-hdsd | Bỏ dấu ngoặc kép góc trong bài hướng dẫn và các script máy chủ
+- status: xong
+- date: 2026-10-30
+Toàn bộ thư mục backend/scripts không còn dấu ngoặc kép góc: 650 chỗ trong 53 tệp. Luật áp dụng theo chốt ngày 30/10: trong nội
+dung bài hướng dẫn (HTML), tên nút, màn, ô, trạng thái thành chữ in đậm, lời trích và ví dụ thành chữ in nghiêng, chỗ đã nằm sẵn
+trong thẻ in đậm hay in nghiêng thì chỉ bỏ dấu; câu in ra màn hình dòng lệnh, chú thích và docstring dùng nháy kép thẳng (chuỗi
+một dòng bọc bằng nháy kép thì dùng nháy đơn để không vỡ chuỗi). Làm bằng một script phân loại theo từng loại chuỗi của Python
+rồi soát tay 173 chỗ phải chọn in đậm hay in nghiêng, sửa 23 chỗ máy chọn sai; hai tệp JSON (bài Văn bản, cấu hình tra cứu thị
+trường) đối chiếu lại từng khóa để chắc chỉ đổi dấu. Chạy lại 22 script seed_help trên dev và nạp lại kho vector. Prod gom vào
+đợt sau. Cẩm nang trợ lý (seed_handbook) và các bài chỉ nằm trong DB prod không nằm trong phạm vi này, đã liệt kê cho điều phối.
+Mã nguồn: backend/scripts/*.py, backend/scripts/help_van_ban/bai-viet.json, backend/scripts/data/cau-hinh-tra-cuu-thi-truong-cr684.json, backend/scripts/deploy/deploy.sh, backend/scripts/agent_restore.sh
+Deploy: dev 30/10 (chạy lại 22 seed_help + reindex_help_rag)
+
 ## bao-CR-691-hdsd | Bài hướng dẫn và tài liệu cho màn Chi tiết YC mua hàng mở rộng, đổi tên Tiến độ đơn mua hàng
 - status: xong
 - date: 2026-10-29

@@ -39,9 +39,9 @@ ARTICLES = [
 <li>Phiếu có nằm trong phạm vi dữ liệu của người duyệt không: thử mở phiếu bằng tài khoản đó, mở được thì mới nhận được chuông.</li>
 <li>Phiếu đã thật sự ở trạng thái chờ duyệt chưa (lưu nháp thì chưa báo).</li>
 </ol>"""),
-    (STAFF_ROOT, "Ô «Tên trên hóa đơn» tự điền từ danh mục Sản phẩm",
+    (STAFF_ROOT, "Ô 'Tên trên hóa đơn' tự điền từ danh mục Sản phẩm",
      "Khi nào ô Tên trên hóa đơn của dòng Đơn mua hàng tự điền, và muốn có tên sẵn thì khai ở đâu.",
-     """<h2>Ô «Tên trên hóa đơn» tự điền từ danh mục Sản phẩm</h2>
+     """<h2>Ô <strong>Tên trên hóa đơn</strong> tự điền từ danh mục Sản phẩm</h2>
 <p>Trên dòng hàng của <strong>Đơn mua hàng</strong>, ô <strong>Tên trên hóa đơn</strong> để trống sẽ được hệ thống tự điền theo tên trên hóa đơn đã khai ở danh mục <strong>Sản phẩm</strong> của đúng mã hàng đó.</p>
 <h3>1. Khi nào tự điền</h3>
 <ul>

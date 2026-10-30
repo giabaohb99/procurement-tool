@@ -102,8 +102,8 @@ TREE = {
 <h3>Tab Bảng tin</h3>
 <ul>
 <li>Dòng thời gian kiểu mạng xã hội: bài mới nhất trên cùng, cuộn xuống tự tải tiếp.</li>
-<li>Đang đọc mà có bài mới, đầu trang hiện nút <strong>«Có bài viết mới»</strong> — bấm để cập nhật.</li>
-<li>Bài dài được thu gọn, bấm <strong>«Xem thêm»</strong> để đọc trọn.</li>
+<li>Đang đọc mà có bài mới, đầu trang hiện nút <strong>Có bài viết mới</strong> — bấm để cập nhật.</li>
+<li>Bài dài được thu gọn, bấm <strong>Xem thêm</strong> để đọc trọn.</li>
 </ul>
 <h3>Đọc một bài viết</h3>
 <ul>
@@ -120,7 +120,7 @@ TREE = {
             "content": f"""<h2>Đăng bài viết mới</h2>
 <h3>Mở khung đăng bài</h3>
 <ul>
-<li><strong>Đăng lên Bảng tin:</strong> vào tab Bảng tin, bấm ô <strong>«Bạn đang nghĩ gì?»</strong> trên đầu trang.</li>
+<li><strong>Đăng lên Bảng tin:</strong> vào tab Bảng tin, bấm ô <strong>Bạn đang nghĩ gì?</strong> trên đầu trang.</li>
 <li><strong>Đăng vào chuyên mục:</strong> mở chuyên mục muốn đăng rồi bấm nút tạo chủ đề — bài sẽ nằm trong chuyên mục đó và vẫn xuất hiện trên Bảng tin.</li>
 </ul>
 <h3>Soạn nội dung</h3>
@@ -194,12 +194,12 @@ TREE = {
 <li>Bình luận có <strong>hai tầng</strong>: bình luận và phản hồi bên dưới, hiển thị dạng bong bóng.</li>
 <li>Đính kèm được <strong>ảnh</strong> vào bình luận; bấm ảnh trong bình luận cũng phóng to được.</li>
 <li>Gõ <strong>@</strong> rồi chọn tên để <strong>nhắc đồng nghiệp</strong> — người được nhắc nhận thông báo riêng.</li>
-<li>Bài nhiều bình luận có nút «Xem các bình luận trước» để tải dần.</li>
+<li>Bài nhiều bình luận có nút <strong>Xem các bình luận trước</strong> để tải dần.</li>
 </ul>
 <h3>Thông báo chuông</h3>
 <ul>
 <li>Bài của bạn có bình luận mới: bạn nhận <strong>một chuông</strong>; người từng bình luận trong bài cũng được báo.</li>
-<li>Bạn <strong>được nhắc tên</strong>: nhận chuông «Bạn được nhắc tên» riêng.</li>
+<li>Bạn <strong>được nhắc tên</strong>: nhận chuông <em>Bạn được nhắc tên</em> riêng.</li>
 <li>Thả cảm xúc <strong>không</strong> sinh chuông — thoải mái thả không sợ làm phiền.</li>
 <li>Bấm chuông là nhảy thẳng tới đúng bài viết.</li>
 </ul>""",
@@ -216,8 +216,8 @@ TREE = {
 </ul>
 <h3>Trang tìm kiếm đầy đủ</h3>
 <ul>
-<li>Bấm <strong>«Xem tất cả N kết quả»</strong> dưới khay gợi ý, hoặc nhấn Enter khi chưa trỏ vào gợi ý nào, để mở trang tìm kiếm với toàn bộ kết quả.</li>
-<li>Bấm <strong>«Bộ lọc nâng cao»</strong> để lọc thêm theo <strong>người đăng, công ty, phòng ban</strong>.</li>
+<li>Bấm <strong>Xem tất cả N kết quả</strong> dưới khay gợi ý, hoặc nhấn Enter khi chưa trỏ vào gợi ý nào, để mở trang tìm kiếm với toàn bộ kết quả.</li>
+<li>Bấm <strong>Bộ lọc nâng cao</strong> để lọc thêm theo <strong>người đăng, công ty, phòng ban</strong>.</li>
 </ul>
 <h3>Lưu ý về phạm vi</h3>
 <p>Kết quả tìm kiếm tôn trọng đối tượng xem của từng bài: bài giới hạn trong phòng ban hoặc công ty khác sẽ không hiện với bạn.</p>""",
@@ -239,7 +239,7 @@ TREE = {
 <li>Hiện chưa có chức năng sửa bài — cần chỉnh nội dung thì xóa rồi đăng lại.</li>
 </ul>
 <h3>Bài đổi ảnh đại diện</h3>
-<p>Khi bạn đổi ảnh đại diện (ở Trang cá nhân hoặc menu tài khoản), hệ thống hỏi <strong>«Đăng lên diễn đàn?»</strong> — đồng ý thì diễn đàn có một bài «đã cập nhật ảnh đại diện» để đồng nghiệp vào chúc mừng; chọn «Để sau» thì chỉ đổi ảnh, không đăng gì.</p>""",
+<p>Khi bạn đổi ảnh đại diện (ở Trang cá nhân hoặc menu tài khoản), hệ thống hỏi <strong>Đăng lên diễn đàn?</strong> — đồng ý thì diễn đàn có một bài <em>đã cập nhật ảnh đại diện</em> để đồng nghiệp vào chúc mừng; chọn <strong>Để sau</strong> thì chỉ đổi ảnh, không đăng gì.</p>""",
         },
         {
             "title": QUAN_TRI,
@@ -251,7 +251,7 @@ TREE = {
 <ul>
 <li>Mở menu <strong>ba chấm</strong> trên bài: <strong>Ẩn bài</strong> (chỉ tác giả và quản trị viên còn thấy, khôi phục được) · <strong>Gỡ bài</strong> (khuất hẳn với mọi người) · <strong>Khôi phục</strong> bài đang ẩn.</li>
 <li>Ẩn và gỡ đều <strong>bắt buộc nhập lý do</strong>; tác giả tự động nhận thông báo kèm lý do — không có chuyện bài biến mất mà không ai hay.</li>
-<li>Bài bị ẩn hiện băng rôn «đã bị quản trị viên ẩn» kèm lý do cho tác giả.</li>
+<li>Bài bị ẩn hiện băng rôn <em>đã bị quản trị viên ẩn</em> kèm lý do cho tác giả.</li>
 </ul>
 <h3>Tab Quản trị — ba mục</h3>
 <ul>

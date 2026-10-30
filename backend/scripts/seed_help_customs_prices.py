@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Seed Trung tâm trợ giúp: TRA CỨU GIÁ HẢI QUAN (bao-CR-470, A-04 của doc/erp/hai-quan/01).
 
-Dựng MỘT bài dưới nhóm có sẵn «Dành cho Nhân viên Mua hàng» (không đẻ nhóm mới):
-«Tra cứu giá hải quan» — kể đủ: dữ liệu là gì (dòng hàng, không phải tờ khai), năm thẻ của
+Dựng MỘT bài dưới nhóm có sẵn "Dành cho Nhân viên Mua hàng" (không đẻ nhóm mới):
+"Tra cứu giá hải quan" — kể đủ: dữ liệu là gì (dòng hàng, không phải tờ khai), năm thẻ của
 màn hình, bốn luật đọc biểu đồ, cảnh báo pháp lý, nạp dữ liệu và hoàn tác, hỏi trợ lý AI.
 
 Chạy trong container api (LOCAL / dev — KHÔNG chạy ở prod khi đại ca chưa bảo):
@@ -25,7 +25,7 @@ from app.core.database import SessionLocal  # noqa: E402
 from app.modules.help_center.model import HelpArticle  # noqa: E402
 
 STAFF_PARENT_TITLE = "Dành cho Nhân viên Mua hàng"
-ARTICLE_TITLE = "Tra cứu thị trường"  # bao-CR-500: đổi từ «Tra cứu giá hải quan»
+ARTICLE_TITLE = "Tra cứu thị trường"  # bao-CR-500: đổi từ "Tra cứu giá hải quan"
 
 SUMMARY = (
     "Xem giá và lượng của thị trường theo tờ khai hải quan: lọc theo tên hàng, hoạt "
@@ -49,9 +49,9 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 <ul>
 <li><strong>Tên hàng / hoạt chất</strong>: gõ rồi Enter, ví dụ <em>ATRAZINE</em>, <em>mancozeb</em>. Khớp cả tên hàng lẫn hoạt chất đã suy ra.</li>
 <li><strong>Mã HS · Xuất xứ · Đơn vị tính · Hàm lượng / dạng · Từ tháng · Đến tháng</strong>: chọn xong bấm <em>Tìm</em>.</li>
-<li>Muốn xem riêng một doanh nghiệp: sang thẻ <em>Doanh nghiệp</em>, bấm vào dòng của doanh nghiệp đó. Thẻ nhỏ «Doanh nghiệp: ...» hiện dưới thanh lọc, bấm dấu x để bỏ.</li>
+<li>Muốn xem riêng một doanh nghiệp: sang thẻ <em>Doanh nghiệp</em>, bấm vào dòng của doanh nghiệp đó. Thẻ nhỏ <em>Doanh nghiệp: ...</em> hiện dưới thanh lọc, bấm dấu x để bỏ.</li>
 </ul>
-<p>Bảng trống có hai câu khác nhau: «Chưa có dữ liệu hải quan» nghĩa là chưa ai nạp gì; «Không có dòng hàng nào khớp bộ lọc» nghĩa là bộ lọc quá hẹp hoặc gõ sai chữ.</p>
+<p>Bảng trống có hai câu khác nhau: <em>Chưa có dữ liệu hải quan</em> nghĩa là chưa ai nạp gì; <em>Không có dòng hàng nào khớp bộ lọc</em> nghĩa là bộ lọc quá hẹp hoặc gõ sai chữ.</p>
 
 <h2>V. Năm thẻ</h2>
 <table>
@@ -69,7 +69,7 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 <ol>
 <li><strong>Mỗi lần chỉ vẽ một đơn vị tính.</strong> Cùng một hoạt chất có dòng tính bằng kg, có dòng tính bằng lít — cộng chung là ra con số vô nghĩa. Hàng nút đơn vị phía trên biểu đồ cho chọn đơn vị, mặc định là đơn vị nhiều dòng nhất.</li>
 <li><strong>Kỳ không có dòng nào thì để trống</strong>, đường giá đứt ở đó. Trống không có nghĩa là giá bằng 0.</li>
-<li><strong>Kỳ có dưới 5 dòng vẽ điểm rỗng</strong> và không bao giờ được chọn làm «kỳ giá tốt nhất» (điểm xanh lá). Một tháng trông rẻ nhất mà chỉ dựa trên 3 dòng thì chưa đủ để tin.</li>
+<li><strong>Kỳ có dưới 5 dòng vẽ điểm rỗng</strong> và không bao giờ được chọn làm <em>kỳ giá tốt nhất</em> (điểm xanh lá). Một tháng trông rẻ nhất mà chỉ dựa trên 3 dòng thì chưa đủ để tin.</li>
 <li><strong>Dải tô nhạt là khoảng thấp – cao.</strong> Dải rộng thường do cùng một từ khóa đang trộn thuốc kỹ thuật với thành phẩm. Lọc thêm <em>Hàm lượng / dạng</em> (ví dụ 97%) để tách ra.</li>
 </ol>
 <p>Dòng chữ vàng trên biểu đồ nói biểu đồ đang dựa trên bao nhiêu dòng, bao nhiêu tháng, bao nhiêu năm. Khi mới có <strong>một năm</strong> dữ liệu, biểu đồ chỉ cho thấy xu hướng trong năm đó, <strong>chưa đủ để kết luận theo mùa vụ</strong>.</p>
@@ -86,7 +86,7 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 </ol>
 <ul>
 <li>Hệ thống tự so trùng: dòng giống hệt một dòng đã có trong bảng giá, hoặc lặp lại một dòng phía trên trong cùng tệp, sẽ <strong>được bỏ qua</strong> — nạp lại một tệp hay nạp các tệp chồng ngày nhau không làm nhân đôi dữ liệu. Không dòng cũ nào bị xóa hay ghi đè.</li>
-<li>Dòng mới trùng ngày, doanh nghiệp, đối tác, mã HS, số thứ tự và tên hàng với một dòng đã có nhưng <strong>khác giá hoặc số lượng</strong> vẫn được thêm (thường là một lô hàng khác), kèm ghi chú «nghi sửa giá» trong nhật ký lô để người nạp rà. Nếu đúng là nguồn sửa số liệu thì hoàn tác lần nạp cũ rồi nạp lại tệp đúng.</li>
+<li>Dòng mới trùng ngày, doanh nghiệp, đối tác, mã HS, số thứ tự và tên hàng với một dòng đã có nhưng <strong>khác giá hoặc số lượng</strong> vẫn được thêm (thường là một lô hàng khác), kèm ghi chú <em>nghi sửa giá</em> trong nhật ký lô để người nạp rà. Nếu đúng là nguồn sửa số liệu thì hoàn tác lần nạp cũ rồi nạp lại tệp đúng.</li>
 <li>Cột ngày đăng ký trong tệp xuất đôi khi bị Excel đảo ngày và tháng; hệ thống tự nhận ra và đọc lại. Ô ngày có dấu lịch màu cam là dòng đã được sửa.</li>
 <li><strong>Lịch sử nạp</strong> liệt kê mọi lần nạp, ai nạp, lúc nào, số dòng bỏ qua vì trùng, kèm nhật ký từng dòng. Hoàn tác một lần nạp chỉ xóa đúng các dòng lần đó đã thêm. Riêng các lần nạp cũ (trước khi có so trùng) đã thay dòng cũ thì không hoàn tác được.</li>
 </ul>
@@ -94,10 +94,10 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 <h2>IX. Hỏi trợ lý AI</h2>
 <p>Trợ lý AI (cả trên web lẫn bot Telegram) đọc được cùng dữ liệu này nếu người hỏi có quyền xem. Các kiểu câu hỏi:</p>
 <ul>
-<li><strong>Giá theo kỳ, so sánh:</strong> <em>«Giá atrazine nhập về theo tháng bao nhiêu?»</em>, <em>«So giá atrazine với mesotrione»</em> — so tối đa 5 mặt hàng, cùng một đơn vị tính.</li>
-<li><strong>Thời điểm mua:</strong> <em>«Nên mua mancozeb vào tháng nào?»</em>, <em>«Có nên mua atrazine lúc này không?»</em> — trợ lý nói giá tháng gần nhất đang thấp, trung bình hay cao so với các tháng khác, xu hướng mấy tháng gần đây, và dữ liệu mới tới ngày nào. Tháng gần nhất quá ít lô thì trợ lý nói rõ và lấy tháng đủ dữ liệu gần nhất làm mốc.</li>
-<li><strong>Thị trường:</strong> <em>«Ai đang nhập atrazine nhiều nhất?»</em>, <em>«Mua atrazine của ai, từ nước nào?»</em>, <em>«Lô atrazine gần nhất giá bao nhiêu?»</em></li>
-<li><strong>Pháp lý và thuế:</strong> <em>«H2SO4 có phải khai báo không?»</em>, <em>«Carbosulfan có bị cấm không?»</em>, <em>«Thuế nhập mã 38089199 bao nhiêu?»</em> — trợ lý chỉ nói đúng danh mục đã nạp, không nêu mức phạt (dữ liệu không có), và không có trong danh mục thì KHÔNG có nghĩa là được phép.</li>
+<li><strong>Giá theo kỳ, so sánh:</strong> <em>Giá atrazine nhập về theo tháng bao nhiêu?</em>, <em>So giá atrazine với mesotrione</em> — so tối đa 5 mặt hàng, cùng một đơn vị tính.</li>
+<li><strong>Thời điểm mua:</strong> <em>Nên mua mancozeb vào tháng nào?</em>, <em>Có nên mua atrazine lúc này không?</em> — trợ lý nói giá tháng gần nhất đang thấp, trung bình hay cao so với các tháng khác, xu hướng mấy tháng gần đây, và dữ liệu mới tới ngày nào. Tháng gần nhất quá ít lô thì trợ lý nói rõ và lấy tháng đủ dữ liệu gần nhất làm mốc.</li>
+<li><strong>Thị trường:</strong> <em>Ai đang nhập atrazine nhiều nhất?</em>, <em>Mua atrazine của ai, từ nước nào?</em>, <em>Lô atrazine gần nhất giá bao nhiêu?</em></li>
+<li><strong>Pháp lý và thuế:</strong> <em>H2SO4 có phải khai báo không?</em>, <em>Carbosulfan có bị cấm không?</em>, <em>Thuế nhập mã 38089199 bao nhiêu?</em> — trợ lý chỉ nói đúng danh mục đã nạp, không nêu mức phạt (dữ liệu không có), và không có trong danh mục thì KHÔNG có nghĩa là được phép.</li>
 </ul>
 <p>Trợ lý luôn nói kèm <strong>độ tin cậy</strong> và số dòng dữ liệu, chỉ gợi ý tháng có đủ dữ liệu, và nhắc cảnh báo pháp lý nếu có. Trợ lý chỉ biết <strong>giá thị trường</strong> — không biết tồn kho, nhu cầu sản xuất, hạn dùng hay dòng tiền của công ty — nên câu trả lời để tham khảo, không thay cho quyết định mua.</p>
 
@@ -155,7 +155,7 @@ def seed_one(db, parent, title: str, summary: str, content: str, default_order: 
     if old is not None:
         order = old.sort_order
         removed = delete_subtree(db, old.id)
-        print(f"  Đã xóa bài cũ «{title}»: {removed} bài (id={old.id}).")
+        print(f"  Đã xóa bài cũ '{title}': {removed} bài (id={old.id}).")
     if order is None:
         order = default_order
 
@@ -168,7 +168,7 @@ def seed_one(db, parent, title: str, summary: str, content: str, default_order: 
     )
     db.add(art)
     db.flush()
-    print(f"  Đã dựng «{title}» (id={art.id}) dưới «{parent.title}» "
+    print(f"  Đã dựng '{title}' (id={art.id}) dưới '{parent.title}' "
           f"(id={parent.id}, sort_order={order}).")
 
 
@@ -179,7 +179,7 @@ def main():
         for parent_title, *_ in ARTICLES:
             group = find_group(db, parent_title)
             if group is None:
-                print(f"Không thấy nhóm «{parent_title}» — dừng, không tạo bài gốc mới.")
+                print(f"Không thấy nhóm '{parent_title}' — dừng, không tạo bài gốc mới.")
                 sys.exit(1)
             groups[parent_title] = group
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Sắp lại cây HDSD «Hướng dẫn sử dụng Kết nối AI riêng và Kho skill AI»: nối bằng đăng nhập ERP (OAuth) là CÁCH 1, ưu tiên;
+"""Sắp lại cây HDSD "Hướng dẫn sử dụng Kết nối AI riêng và Kho skill AI": nối bằng đăng nhập ERP (OAuth) là CÁCH 1, ưu tiên;
 khóa dán tay là CÁCH 2 (nâng cao). Đại ca chốt 26/10/2026 (kh-AI-ket-noi-hdsd); màn /connect-ai của giao diện v2 dùng cùng
 câu chữ Cách 1 / Cách 2.
 
@@ -137,7 +137,7 @@ TAO_KHOA_CONTENT = f"""<h2>Cách 2 (nâng cao): sửa tệp cấu hình bằng k
 <h2>Bước 2 — Khóa của bạn</h2>
 <h3>Tạo khóa mới</h3>
 <ol>
-<li>Ô <strong>Tên khóa</strong>: đặt tên theo máy / ứng dụng, ví dụ <em>«Claude máy công ty»</em>, để sau này biết khóa nào ở đâu mà gỡ.</li>
+<li>Ô <strong>Tên khóa</strong>: đặt tên theo máy / ứng dụng, ví dụ <em>Claude máy công ty</em>, để sau này biết khóa nào ở đâu mà gỡ.</li>
 <li>Ô <strong>Mức</strong>: chọn <strong>Chỉ đọc</strong> hay <strong>Được ghi</strong> (bảng dưới).</li>
 <li>Bấm <strong>Tạo khóa</strong>. Khóa <code>dego_mcp_…</code> hiện ra kèm nút chép; đoạn cấu hình ở bước 1 cũng đã điền sẵn khóa này.</li>
 </ol>
@@ -161,7 +161,7 @@ TAO_KHOA_CONTENT = f"""<h2>Cách 2 (nâng cao): sửa tệp cấu hình bằng k
 <p>Mỗi khóa và mỗi kết nối qua đăng nhập có công tắc <strong>tạm tắt</strong>: trạng thái chuyển sang <em>Đang tắt</em>, AI gọi bằng nó bị từ chối ngay (nhật ký ghi <em>Khóa đang tắt</em>), nhưng khóa không mất — <strong>bật lại là chạy tiếp</strong>, không phải dán lại gì. Dùng khi đi công tác, cho mượn máy, hay muốn tạm dừng AI mà chưa muốn gỡ. Khác với <strong>Gỡ khóa</strong>: gỡ là thu hồi hẳn, muốn dùng lại phải tạo khóa mới.</p>
 
 <h3>Nhận khóa quản trị phát hộ</h3>
-<p>Người quản lý khóa có thể phát hộ khóa cho bạn (hoặc cả phòng). Bạn nhận <strong>thông báo chuông</strong> <em>«Bạn có khóa kết nối AI chờ nhận»</em>; trong màn này khối <strong>Khóa quản trị phát cho bạn, chờ nhận</strong> có nút <strong>Nhận khóa</strong>. Bấm là khóa hiện đúng một lần, y như tự tạo. ⚠️ <strong>Chưa bấm Nhận khóa thì khóa đó chưa dùng được</strong> — AI gọi bằng nó bị từ chối. Khóa phát hộ luôn ở mức <em>Chỉ đọc</em>.</p>
+<p>Người quản lý khóa có thể phát hộ khóa cho bạn (hoặc cả phòng). Bạn nhận <strong>thông báo chuông</strong> <em>Bạn có khóa kết nối AI chờ nhận</em>; trong màn này khối <strong>Khóa quản trị phát cho bạn, chờ nhận</strong> có nút <strong>Nhận khóa</strong>. Bấm là khóa hiện đúng một lần, y như tự tạo. ⚠️ <strong>Chưa bấm Nhận khóa thì khóa đó chưa dùng được</strong> — AI gọi bằng nó bị từ chối. Khóa phát hộ luôn ở mức <em>Chỉ đọc</em>.</p>
 
 <h3>Gỡ khóa</h3>
 <p>Mỗi khóa đang dùng có nút <strong>Gỡ khóa</strong>. Gỡ có hiệu lực <strong>tức thì</strong>: ứng dụng AI còn giữ khóa cũ sẽ bị từ chối ở lượt gọi kế tiếp. Dùng khi đổi máy, nghi lộ khóa, hoặc thôi dùng.</p>
@@ -198,9 +198,9 @@ def _apply(dry_run: bool) -> list[int]:
     try:
         root = db.query(HelpArticle).filter(HelpArticle.parent_id.is_(None), HelpArticle.title == ROOT_TITLE).first()
         if root is None:
-            print(f"Không có cây «{ROOT_TITLE}» trên hệ này — chạy seed_help_ket_noi_ai_mcp.py để dựng cả cây.")
+            print(f"Không có cây '{ROOT_TITLE}' trên hệ này — chạy seed_help_ket_noi_ai_mcp.py để dựng cả cây.")
             return []
-        print(f"  cập nhật bài gốc «{ROOT_TITLE}» (id={root.id})")
+        print(f"  cập nhật bài gốc '{ROOT_TITLE}' (id={root.id})")
         if not dry_run:
             root.summary, root.content = ROOT_SUMMARY, ROOT_CONTENT
             touched.append(root.id)
@@ -210,7 +210,7 @@ def _apply(dry_run: bool) -> list[int]:
         for new_title, summary, content in ((OAUTH, OAUTH_SUMMARY, OAUTH_CONTENT),
                                             (TAO_KHOA, TAO_KHOA_SUMMARY, TAO_KHOA_CONTENT)):
             row = next((c for c in children if c.title in (new_title, OLD_TITLES[new_title])), None)
-            print(f"  {'đổi tên + ghi đè' if row else 'thêm'}: «{row.title if row else ''}» → «{new_title}»")
+            print(f"  {'đổi tên + ghi đè' if row else 'thêm'}: '{row.title if row else ''}' → '{new_title}'")
             if dry_run:
                 continue
             if row is None:
@@ -231,7 +231,7 @@ def _apply(dry_run: bool) -> list[int]:
                 for art in db.query(HelpArticle).filter(HelpArticle.content.like(f"%{old_href}%")).all():
                     art.content = art.content.replace(old_href, new_href)
                     touched.append(art.id)
-                    print(f"  sửa liên kết trong «{art.title}»")
+                    print(f"  sửa liên kết trong '{art.title}'")
             db.commit()
         return sorted(set(touched))
     finally:

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Seed bài Trung tâm trợ giúp: LẬP BỘ TÀI KHOẢN PHÒNG TỰ MUA HÀNG (bao-CR-444).
 
-Bài này là BÀI CON của bài «Trợ lý AI» (nằm trong nhóm «Các chức năng khác»), đứng cạnh bài
-«Lập bộ tài khoản thu mua bằng Trợ lý AI» (bao-CR-441). Bài kia nói cách nhờ trợ lý làm hai
+Bài này là BÀI CON của bài "Trợ lý AI" (nằm trong nhóm "Các chức năng khác"), đứng cạnh bài
+"Lập bộ tài khoản thu mua bằng Trợ lý AI" (bao-CR-441). Bài kia nói cách nhờ trợ lý làm hai
 bước cuối; bài này nói đủ BỐN BƯỚC LÀM TAY cho hai bộ tài khoản (phòng tự mua + Sản xuất -Thu mua
 trừ phòng đó) và cách kiểm tra sau khi làm. Không dựng thẻ phân hệ mới ngoài trang chủ,
 không đụng nội dung bài cha.
@@ -11,7 +11,7 @@ Chạy trong container api:
     docker compose exec -T api python scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py
 
 Idempotent: đã có bài cùng tiêu đề dưới cùng bài cha thì xóa bài đó (kèm con, nếu có)
-rồi chèn lại. Không thấy bài cha «Trợ lý AI» thì DỪNG, không tự tạo bài gốc.
+rồi chèn lại. Không thấy bài cha "Trợ lý AI" thì DỪNG, không tự tạo bài gốc.
 
 ⚠️ Nội dung ở đây phải KHỚP với `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`
 (mục 1 → 8) và với hành vi thật của màn Nhân sự / Phân quyền tài khoản / hộp Phạm vi.
@@ -208,7 +208,7 @@ docker compose exec -T api python scripts/backfill_handling_dept.py</pre>
 
 
 def find_parent(db):
-    """Bài «Trợ lý AI»; nếu trùng tiêu đề thì ưu tiên bài nằm dưới «Các chức năng khác»."""
+    """Bài "Trợ lý AI"; nếu trùng tiêu đề thì ưu tiên bài nằm dưới "Các chức năng khác"."""
     candidates = db.query(HelpArticle).filter(HelpArticle.title == PARENT_TITLE).all()
     if not candidates:
         return None
@@ -247,7 +247,7 @@ def main():
     try:
         parent = find_parent(db)
         if parent is None:
-            print(f"Không thấy bài cha «{PARENT_TITLE}» — dừng, không tạo bài gốc mới.")
+            print(f"Không thấy bài cha '{PARENT_TITLE}' — dừng, không tạo bài gốc mới.")
             sys.exit(1)
 
         old = (
@@ -278,7 +278,7 @@ def main():
         )
         db.add(art)
         db.commit()
-        print(f"Đã dựng bài «{ARTICLE_TITLE}» (id={art.id}) dưới «{parent.title}» "
+        print(f"Đã dựng bài '{ARTICLE_TITLE}' (id={art.id}) dưới '{parent.title}' "
               f"(id={parent.id}, sort_order={order}).")
     except Exception:
         db.rollback()

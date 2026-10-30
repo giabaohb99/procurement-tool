@@ -5,7 +5,7 @@ Các script seed cũ (nghỉ phép, diễn đàn, văn bản…) mỗi cái ché
 cho khỏi chép lần thứ N. Chạy dạng `python scripts/<tên>.py` nên thư mục scripts đã nằm trong sys.path.
 
 Khuôn: xóa nguyên cây con của thẻ gốc cùng tiêu đề (con trước, cha sau — FK tự tham chiếu không cascade)
-rồi dựng lại ở ĐÚNG vị trí cũ; gắn thẻ gốc vào khung «Các Phân hệ» ở trang chủ nếu chưa có.
+rồi dựng lại ở ĐÚNG vị trí cũ; gắn thẻ gốc vào khung "Các Phân hệ" ở trang chủ nếu chưa có.
 """
 import re
 import sys
@@ -84,7 +84,7 @@ def rebuild_tree(tree: dict) -> None:
         order = None
         if old is not None:
             order = old.sort_order
-            print(f"Đã xóa cây cũ «{tree['title']}»: {_delete_subtree(db, old.id)} bài (gốc id={old.id}).")
+            print(f"Đã xóa cây cũ '{tree['title']}': {_delete_subtree(db, old.id)} bài (gốc id={old.id}).")
         if order is None:
             last = (db.query(HelpArticle.sort_order).filter(HelpArticle.parent_id.is_(None))
                     .order_by(HelpArticle.sort_order.desc()).first())
@@ -92,7 +92,7 @@ def rebuild_tree(tree: dict) -> None:
         total, root_id = _insert_node(db, tree, None, order)
         _attach_home_card(db, root_id)
         db.commit()
-        print(f"Đã dựng cây «{tree['title']}»: {total} bài (gốc id={root_id}, sort_order={order}).")
+        print(f"Đã dựng cây '{tree['title']}': {total} bài (gốc id={root_id}, sort_order={order}).")
         print("Tiếp theo: docker compose exec -T api python scripts/reindex_help_rag.py")
     except Exception:
         db.rollback()
@@ -118,11 +118,11 @@ def upsert_articles(articles, dry_run: bool) -> list[int]:
         for parent_title, title, summary, content in articles:
             parent = _root(db, parent_title)
             if parent is None:
-                print(f"  BỎ QUA «{title}»: không có thẻ cha «{parent_title}» trên hệ này")
+                print(f"  BỎ QUA '{title}': không có thẻ cha '{parent_title}' trên hệ này")
                 continue
             row = (db.query(HelpArticle)
                    .filter(HelpArticle.parent_id == parent.id, HelpArticle.title == title).first())
-            print(f"  {'cập nhật' if row else 'thêm'}: «{title}» (dưới «{parent_title}»)")
+            print(f"  {'cập nhật' if row else 'thêm'}: '{title}' (dưới '{parent_title}')")
             if dry_run:
                 continue
             if row is None:

@@ -143,7 +143,7 @@ TASK_STATUS_FROM_LEGACY = {
     "approved": TASK_APPROVED,
     "rejected": TASK_REJECTED,
     #  Trả về người nộp: bộ máy ERP hủy việc của chặng đó, và `steps_service`
-    #  đọc «việc đã hủy + phiên đang ở trạng thái trả về» thành chấm "trả về".
+    #  đọc "việc đã hủy + phiên đang ở trạng thái trả về" thành chấm "trả về".
     "needs_correction": TASK_CANCELLED,
 }
 
@@ -269,7 +269,7 @@ def build_tasks(instance_id: int, hist: list[dict], names: dict[int, str],
 
     MỘT CHẶNG MỘT DÒNG, lấy theo lượt xử lý CUỐI CÙNG của chặng đó. Phiếu bị
     trả về ở chặng 3 rồi duyệt lại chính chặng 3 thì kết cục là "đã duyệt" —
-    ghi cả hai dòng việc thì `_one_step` thấy lẫn «đã hủy» trong nhóm và vẽ
+    ghi cả hai dòng việc thì `_one_step` thấy lẫn "đã hủy" trong nhóm và vẽ
     chặng đó thành "trả về" trên một phiếu đã duyệt xong. Đường đi đầy đủ vẫn
     còn nguyên trong `tab_approval_action`, đó mới là sổ dấu vết.
 

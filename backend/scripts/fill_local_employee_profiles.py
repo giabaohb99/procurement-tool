@@ -1,4 +1,4 @@
-"""Điền cho ĐỦ hồ sơ nhân sự + quyền văn bản trên DB LOCAL — để bấm «Tạo văn bản»
+"""Điền cho ĐỦ hồ sơ nhân sự + quyền văn bản trên DB LOCAL — để bấm "Tạo văn bản"
 không vấp lỗi thiếu thông tin người dùng (đại ca yêu cầu 25/09/2026).
 
 Chạy:  docker compose exec -T api python -m scripts.fill_local_employee_profiles           # chạy thử, chỉ in
@@ -81,7 +81,7 @@ def _job_level(position: str) -> int:
 
 
 def _gender(full_name: str) -> int:
-    #  Tên đệm «Thị» gần như chắc là nữ; còn lại để Nam — dữ liệu mẫu, sửa tay được.
+    #  Tên đệm "Thị" gần như chắc là nữ; còn lại để Nam — dữ liệu mẫu, sửa tay được.
     return K.GENDER_FEMALE if " thị " in f" {(full_name or '').lower()} " else K.GENDER_MALE
 
 

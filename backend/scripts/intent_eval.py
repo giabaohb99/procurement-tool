@@ -3,7 +3,7 @@
     python scripts/intent_eval.py fixed                       # bộ câu mẫu cố định qua bộ phân loại thật (cần khóa AI)
     python scripts/intent_eval.py export --out /tmp/y.csv     # ~200 câu thật để gắn nhãn tay — CHỈ trên dev, không commit
     python scripts/intent_eval.py score --file /tmp/y.csv     # chấm tệp đã điền true_intent / true_sub / entities_ok
-    python scripts/intent_eval.py clarify --pivot 2026-10-10  # tỷ lệ «phải hỏi lại» 14 ngày trước / sau mốc
+    python scripts/intent_eval.py clarify --pivot 2026-10-10  # tỷ lệ "phải hỏi lại" 14 ngày trước / sau mốc
 
 Lõi tính toán ở `app/modules/agent_hub/intent_eval.py`.
 """
@@ -37,7 +37,7 @@ def _fixed(db) -> int:
         res = intent_eval.run_fixed(classify)
     print(f"Đúng {res['correct']}/{res['total']} = {res['accuracy']:.1%} (ngưỡng {res['min_accuracy']:.0%})")
     for text, want, got in res["misses"]:
-        print(f"  SAI  «{text}»  mong {want}, ra {got}")
+        print(f"  SAI  '{text}'  mong {want}, ra {got}")
     return 0 if res["accuracy"] >= res["min_accuracy"] else 1
 
 

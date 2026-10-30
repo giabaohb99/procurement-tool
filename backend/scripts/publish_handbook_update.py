@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Đưa nội dung MỚI của cẩm nang trợ lý (tệp .md hạt giống) lên hệ đang chạy — duoc-CR-670.
 
-Vì sao cần. `ai_skill/handbook_seed.py::ensure_system_handbook` chỉ gieo khi bộ «Cẩm nang hệ thống»
+Vì sao cần. `ai_skill/handbook_seed.py::ensure_system_handbook` chỉ gieo khi bộ "Cẩm nang hệ thống"
 (SYS-HANDBOOK) CHƯA có — có rồi thì KHÔNG đụng gì, đúng luật seed prod không ghi đè. Hệ quả: sửa
 `app/modules/ai_skill/seed_handbook/*.md` không bao giờ tới được trợ lý trên DB đang chạy. Script này
 là đường chính thống để ra PHIÊN BẢN MỚI: làm đúng việc `service.publish_skill` (chỉ thêm bản mới, đặt làm
@@ -18,7 +18,7 @@ Chạy trong container api:
 Quy tắc cho từng skill (idempotent — chạy lại lần hai là "đã mới nhất", không sinh phiên bản):
   - nội dung xuất bản hiện hành == tệp                         → bỏ qua (đã mới nhất);
   - khác, và CHƯA ai sửa tay (mọi phiên bản đều do hạt giống `published_by = 0`, nháp == bản xuất bản,
-    skill đang «Đang dùng», chưa xóa mềm)                      → tạo phiên bản mới;
+    skill đang "Đang dùng", chưa xóa mềm)                      → tạo phiên bản mới;
   - khác, mà quản trị ĐÃ sửa tay (có phiên bản do người xuất bản, hoặc nháp lệch bản xuất bản, hoặc skill
     đã lưu trữ / xóa)                                          → KHÔNG đè, chỉ báo để người có quyền tự hợp nhất;
   - `--force`: đè cả ca vừa nói (phiên bản cũ vẫn còn trong lịch sử, lùi lại được ở màn Bộ skill).
@@ -50,7 +50,7 @@ def why_hand_edited(skill: AiSkill, versions: list[AiSkillVersion], current_body
     if skill.deleted_at is not None:
         return "skill đã bị xóa mềm"
     if skill.status != int(SkillStatus.ACTIVE):
-        return "skill không ở trạng thái «Đang dùng»"
+        return "skill không ở trạng thái 'Đang dùng'"
     if any(v.published_by != SEED_USER_ID for v in versions):
         return "có phiên bản do quản trị xuất bản"
     if (skill.draft_body_md or "").strip() != current_body:
