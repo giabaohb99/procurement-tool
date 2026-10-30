@@ -133,7 +133,9 @@ phần trăm: nửa trước luồng (yêu cầu mua, hỏi giá, đơn mua và 
 Xếp mười chỗ hở theo giá trị cho phòng thu mua: số lượng từ chối và kiểm chất lượng chặn nhập, trả hàng nhà cung cấp, phiếu nhập
 do thủ kho lập, xuất và chuyển kho, hóa đơn nhà cung cấp đối chiếu ba chiều, mức tồn tối thiểu tự đề nghị mua, chi phí nhập khẩu
 vào giá vốn, sổ kho có ngày ghi sổ và khóa kỳ, hợp đồng khung có số lượng và giá, chấm điểm nhà cung cấp định kỳ. Có mục riêng
-liệt kê chỗ ERP DEGO đi xa hơn ERPNext để nhìn công bằng. Chọn việc nào làm trước chờ người chủ quyết.
+liệt kê chỗ ERP DEGO đi xa hơn ERPNext để nhìn công bằng. Người chủ chốt 30/10: chưa làm, chỉ ghi nhận; bốn việc
+đầu (số lượng từ chối và QC chặn nhập, trả hàng NCC, phiếu nhập do thủ kho lập, xuất và chuyển kho) đã ghi vào kế hoạch theo
+module mục Thu mua với trạng thái đã ghi nhận, chưa lên lịch; sáu việc còn lại ghi một dòng dẫn về tài liệu 11.
 Mã nguồn: doc/erp/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md
 
 ## bao-CR-696-hdsd | Sửa bài hướng dẫn cụm AI theo màn mới: một phân hệ AI, Kết nối, Nâng cao, Nhật ký
