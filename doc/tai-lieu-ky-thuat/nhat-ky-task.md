@@ -111,6 +111,19 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-695-giao-dien | Bỏ dấu ngoặc kép góc trên giao diện ERP v2 và giao diện thu mua cũ
+- status: xong
+- date: 2026-10-30
+Giao diện ERP v2 và giao diện thu mua cũ không còn dấu ngoặc kép góc: 4.968 cặp trong 1.429 tệp ở bản v2, 364 cặp trong 58 tệp
+ở bản cũ. Luật áp dụng theo chốt ngày 30/10: chữ hiện trên màn mà định dạng được thì tên nút, tên màn, tên ô thành chữ in đậm,
+lời trích và ví dụ thành chữ in nghiêng; chuỗi thuần như thông báo nổi, chữ gợi ý trong ô, chú giải khi rê chuột, nhãn lựa chọn
+và chú thích trong mã dùng nháy kép thẳng. Làm bằng một script đọc cây cú pháp TypeScript để biết từng dấu nằm trong chú thích,
+chuỗi hay chữ hiển thị, rồi soát tay các chỗ đổi sang in đậm, in nghiêng (giữ khoảng trắng khi câu xuống dòng, một chỗ ô chỉ nhận
+chuỗi nên giữ nháy thẳng). Sửa theo 11 khẳng định ở 7 tệp trong bài kiểm vốn khớp nguyên câu có dấu. Dữ liệu giả lập câu máy chủ trong bài
+kiểm đổi sang nháy thẳng cho khớp phần máy chủ cùng đợt.
+Kiểm: typecheck 0 lỗi; lint 0 lỗi, 30 cảnh báo như bản gốc; bài kiểm v2 chạy theo từng thư mục đều xanh, riêng bài nạp danh mục báo cáo hết giờ 5 giây giống hệt trên bản gốc; tsc bản cũ giữ đúng 4 lỗi cũ.
+Mã nguồn: frontend-v2/src/**, frontend/src/**
+
 ## bao-CR-695-hdsd | Bỏ dấu ngoặc kép góc trong bài hướng dẫn và các script máy chủ
 - status: xong
 - date: 2026-10-30
