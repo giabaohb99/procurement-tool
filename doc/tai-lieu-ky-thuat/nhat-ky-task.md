@@ -17859,3 +17859,21 @@ Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
 **Kết quả:** tài liệu 09 bản 2.0 trên nhánh erp-v2, bản PDF 29 trang.
 
 Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
+
+## nc-10b-giao-trinh-kho | Dựng lại tài liệu nghiệp vụ Kho dạng giáo trình
+- status: xong
+- date: 2026-10-30
+- tag: Nghiên cứu, Kho
+
+**Bối cảnh:** Tài liệu Kho cần đọc được từ trên xuống như tài liệu Mua hàng bản 2.0, cho người chưa biết kế toán.
+
+**Đã làm**
+- Sắp lại tài liệu 10 thành sáu phần kèm phụ lục, có cách đọc và mục lục liên kết.
+- Viết mới: kế toán kho căn bản (hàng tồn là tài sản, khi nào thành chi phí, ghi sổ liên tục), tài khoản dùng trong kho, kho đặc biệt, ba con số tồn có ví dụ, ai duyệt phiếu nào kèm hạn mức duyệt hủy và điều chỉnh.
+- Luồng nhập, xuất, chuyển kho, kiểm kê viết thành bảng ba cột: người làm, thao tác trên phần mềm, hệ thống và bút toán.
+- Thêm so sánh bình quân di động với nhập trước xuất trước trên cùng số liệu, điều chỉnh giá trị tồn (chi phí về muộn, giá thành tạm, dự phòng giảm giá), ví dụ một tháng của một kho có đối chiếu sổ cái.
+- Thêm 17 trường hợp thường gặp chia năm nhóm, việc cuối tháng, tóm tắt một trang, thuật ngữ và bảng tra phiếu kho với bút toán.
+
+**Kết quả:** tài liệu 10 bản 2.0 trên nhánh erp-v2, bản PDF 25 trang.
+
+Tham chiếu: doc/erp/nghien-cuu/10-nghiep-vu-kho.md
