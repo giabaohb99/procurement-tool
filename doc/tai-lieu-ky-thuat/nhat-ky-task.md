@@ -17746,3 +17746,19 @@ Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
 **Kết quả:** tài liệu 09 bản 1.2 trên nhánh erp-v2, kèm bản PDF xuất lại.
 
 Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
+
+## nc-09d-giao-trinh | Dựng lại tài liệu nghiệp vụ Mua hàng dạng giáo trình
+- status: xong
+- date: 2026-10-30
+- tag: Nghiên cứu, Mua hàng
+
+**Bối cảnh:** Người đọc chưa biết kế toán cần một tài liệu đọc từ trên xuống là hiểu, có mục lục, danh sách tài khoản và luồng duyệt theo loại mặt hàng.
+
+**Đã làm**
+- Sắp lại tài liệu 09 thành sáu phần kèm phụ lục: Nền tảng, Tổ chức, Luồng chuẩn, Tiền, Trường hợp thường gặp, Tổng kết. Thêm phần cách đọc và mục lục có liên kết.
+- Viết mới: kế toán căn bản cho người không chuyên (Nợ, Có, chín nhóm tài khoản), danh sách tài khoản dùng trong mua hàng và ý nghĩa, năm loại mặt hàng, luồng duyệt riêng cho từng loại kèm bảng tổng hợp và hạn mức duyệt.
+- Đánh số lại các mục cũ, sửa các tham chiếu chéo; thêm tóm tắt một trang, thuật ngữ và bảng tra nhanh khoản nào ghi vào đâu.
+
+**Kết quả:** tài liệu 09 bản 2.0 trên nhánh erp-v2, bản PDF 29 trang.
+
+Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
