@@ -396,7 +396,7 @@ def _create_work_task(db: Session, user, draft: dict) -> tuple[str, int]:
     due = f" · hạn {draft['due_date']}" if draft.get("due_date") else ""
     for u in db.query(User).filter(User.employee_id.in_([p for p in pics if p != me] or [-1])):
         db.add(Notification(user_id=u.id, title=f"Việc mới: {data.title}"[:255],
-                            body=f"Bạn được giao việc **{data.title}** ở dự án {draft.get('list_name', '')}{due}.",
+                            body=f"Bạn được giao việc \"{data.title}\" ở dự án {draft.get('list_name', '')}{due}.",
                             link=f"/project/tasks/{tid}", is_read=False))
     db.commit()
     return f"việc #{tid}", tid
