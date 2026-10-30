@@ -26,7 +26,8 @@ def people_in_scope(db: Session, admin, action: str, *, user_ids: list[int] | No
 
     if not user_has_permission(db, admin, ENTITY, action):
         return None
-    q = (db.query(User.id, Employee.id, Employee.code, Employee.full_name, Employee.department_id, Employee.company_id)
+    q = (db.query(User.id, Employee.id, Employee.code, Employee.full_name, Employee.department_id, Employee.company_id,
+                  User.email)
          .join(Employee, Employee.id == User.employee_id).filter(User.is_active.is_(True), User.employee_id != 0))
     q = apply_scope(q, Employee, ENTITY, admin, get_perm_profile(db, admin), action=action)
     if user_ids is not None:
@@ -45,9 +46,11 @@ def people_in_scope(db: Session, admin, action: str, *, user_ids: list[int] | No
     dept_ids = {r[4] for r in rows if r[4]}
     names = {d.id: d.name for d in db.query(Department.id, Department.name).filter(Department.id.in_(dept_ids))} \
         if dept_ids else {}
+    #  bao-CR-696: thêm họ tên / mã nhân sự / email riêng — màn Kết nối hiện cột và tìm theo ba thứ này.
     return [{"user_id": int(uid), "employee_id": int(eid), "label": f"{name} ({code})" if code else (name or f"#{uid}"),
-             "department_id": int(dept or 0), "department": names.get(dept, ""), "company_id": int(comp or 0)}
-            for uid, eid, code, name, dept, comp in rows]
+             "department_id": int(dept or 0), "department": names.get(dept, ""), "company_id": int(comp or 0),
+             "full_name": name or "", "employee_code": code or "", "email": email or ""}
+            for uid, eid, code, name, dept, comp, email in rows]
 
 
 def employee_accounts(db: Session, admin, action: str, employee_ids: list[int]) -> dict | None:

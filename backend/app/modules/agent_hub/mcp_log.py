@@ -19,7 +19,7 @@ import time
 from datetime import date, datetime, timedelta
 from enum import IntEnum
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -173,9 +173,10 @@ def who(db: Session, user) -> dict:
 
 def new_row(*, key_id: int = 0, person: dict | None = None, client_name: str = "", method: str = "", tool: str = "",
             status: int = CallStatus.OK, reason: str = "", duration_ms: int = 0, ip: str = "",
-            skill_id: int = 0, result_chars: int = 0) -> AgentMcpCall:
+            skill_id: int = 0, result_chars: int = 0, doc_code: str = "", doc_url: str = "") -> AgentMcpCall:
     return AgentMcpCall(key_id=int(key_id or 0), **(person or who(None, None)), client_name=(client_name or "")[:100],
                         skill_id=int(skill_id or 0), result_chars=max(0, int(result_chars or 0)),
+                        doc_code=(doc_code or "")[:40], doc_url=(doc_url or "")[:200],
                         method=(method or "")[:40], tool=(tool or "")[:80], status=int(status),
                         deny_reason=(reason or "")[:200], duration_ms=max(0, int(duration_ms or 0)), ip=(ip or "")[:45],
                         created_at=datetime.now())
@@ -238,8 +239,12 @@ def purge(db: Session, now: datetime | None = None) -> dict:
 
 # --- đọc (màn G1 / G6) ---------------------------------------------------------------------------------------------
 def _filtered(stmt, *, user_id: int | None, key_id: int | None = None, tool: str = "", status: int | None = None,
-              d_from: date | None = None, d_to: date | None = None, model=AgentMcpCall, method: str = ""):
+              d_from: date | None = None, d_to: date | None = None, model=AgentMcpCall, method: str = "",
+              q: str = "", q_user_ids: set[int] | None = None):
     col_day = model.created_at if model is AgentMcpCall else model.day
+    if q:                            # bao-CR-696: một ô tìm cả người (id đã tra sẵn theo tên / mã / email) lẫn tên công cụ
+        hit = model.tool.like(f"%{q}%")
+        stmt = stmt.where(or_(hit, model.user_id.in_(q_user_ids)) if q_user_ids else hit)
     if method:                       # ai-CR-219: "tools/call" = chỉ lượt gọi công cụ, bỏ bắt tay / liệt kê / thông báo
         stmt = stmt.where(model.method == method)
     if user_id is not None:
@@ -272,7 +277,8 @@ def serialize(row: AgentMcpCall) -> dict:
             "department_id": row.department_id, "company_id": row.company_id, "client_name": row.client_name,
             "method": row.method, "tool": row.tool, "skill_id": row.skill_id, "status": status,
             "status_label": CALL_STATUS_LABELS.get(status, "?"), "deny_reason": row.deny_reason,
-            "duration_ms": row.duration_ms, "ip": row.ip, "result_chars": int(row.result_chars or 0)}
+            "duration_ms": row.duration_ms, "ip": row.ip, "result_chars": int(row.result_chars or 0),
+            "doc_code": row.doc_code or None, "doc_url": row.doc_url or None}
 
 
 def daily_totals(db: Session, *, days: int = 14, today: date | None = None, user_id: int | None = None) -> list[dict]:

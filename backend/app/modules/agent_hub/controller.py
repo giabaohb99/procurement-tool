@@ -449,7 +449,8 @@ def ai_overview(user=Depends(get_current_user), db: Session = Depends(get_db)):
 
 
 @router.get("/oauth-clients")
-def list_oauth_clients(user=Depends(get_current_user), db: Session = Depends(get_db)):
+def list_oauth_clients(q: str = "", has_live: bool | None = None, used: bool | None = None,
+                       user=Depends(get_current_user), db: Session = Depends(get_db)):
     """ai-CR-225 (Agent 1 rà 19/10, mục 3): quản trị xem các ứng dụng AI đã tự đăng ký OAuth — tên tự khai, nơi quay về
     (hostname), có thuộc ứng dụng quen không, số kết nối còn sống. Cùng cổng quyền màn cấu hình cổng MCP (G7)."""
     from app.core.auth import user_has_permission
@@ -458,8 +459,23 @@ def list_oauth_clients(user=Depends(get_current_user), db: Session = Depends(get
 
     if not user_has_permission(db, user, MCP_LOG_VIEW_ALL_ENTITY, "read"):
         raise HTTPException(403, f"Không có quyền: read {MCP_LOG_VIEW_ALL_ENTITY}")
-    return success({"items": oauth.list_clients(db),
-                    "can_delete": user_has_permission(db, user, MCP_LOG_VIEW_ALL_ENTITY, "write")})
+    from app.core.text_fold import fold
+
+    #  bao-CR-696: lọc theo tên ứng dụng / client_id, có kết nối sống hay không, đã dùng hay chưa; kèm tối đa 5 tên người.
+    items, needle = oauth.list_clients(db), fold(q.strip()[:100])
+    if needle:
+        items = [c for c in items if needle in fold(f"{c['client_name']} {c['client_id']}")]
+    if has_live is not None:
+        items = [c for c in items if (c["live_grants"] > 0) == has_live]
+    if used is not None:
+        items = [c for c in items if bool(c["last_used_at"]) == used]
+    names = _user_labels(db, [uid for c in items for uid in c["live_user_ids"][:OAUTH_NAMES_SHOWN]])
+    for c in items:
+        c["live_user_names"] = [names.get(uid, f"#{uid}") for uid in c.pop("live_user_ids")[:OAUTH_NAMES_SHOWN]]
+    return success({"items": items, "can_delete": user_has_permission(db, user, MCP_LOG_VIEW_ALL_ENTITY, "write")})
+
+
+OAUTH_NAMES_SHOWN = 5
 
 
 @router.delete("/oauth-clients/{client_pk}")
@@ -551,12 +567,22 @@ def key_admin_meta(user=Depends(get_current_user), db: Session = Depends(get_db)
 def key_admin_list(department_id: int = Query(0, ge=0), state: int | None = Query(None, ge=1, le=5),
                    user_id: int | None = Query(None, ge=1), batch_id: str = Query("", max_length=32),
                    page: int = Query(1, ge=1, le=10_000), size: int = Query(50, ge=1, le=200),
-                   user=Depends(get_current_user), db: Session = Depends(get_db)):
+                   q: str = "", user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.core.text_fold import fold
+
+    from . import oauth
+
     owners = mcp_keys.owner_ids(db)
     if user_id is not None:
         owners &= {int(user_id)}
     people = {p["user_id"]: p for p in _key_admin_people(db, user, "read", user_ids=sorted(owners),
                                                          department_id=department_id)} if owners else {}
+    #  bao-CR-696: tìm theo họ tên / mã nhân sự / email (không dấu, không phân biệt hoa thường) — lọc TRÊN người đã nằm
+    #  trong phạm vi xem, nên phạm vi không đổi.
+    needle = fold(q.strip()[:100])     # tham số trơn (không Query) để gọi thẳng hàm trong bài kiểm khỏi truyền
+    if needle:
+        people = {uid: p for uid, p in people.items()
+                  if needle in fold(" ".join((p.get("label", ""), p.get("employee_code", ""), p.get("email", ""))))}
     rows = mcp_keys.keys_of_users(db, set(people))
     if batch_id:
         rows = [r for r in rows if r.batch_id == batch_id]
@@ -565,11 +591,17 @@ def key_admin_list(department_id: int = Query(0, ge=0), state: int | None = Quer
     total = len(rows)
     page_rows = rows[(page - 1) * size: page * size]
     issuers = _user_labels(db, [r.issued_by for r in page_rows if r.issued_by])
+    apps = oauth.clients_by_pk(db, [r.oauth_client_id for r in page_rows if int(r.kind or 0) == mcp_keys.KIND_OAUTH])
     items = []
     for r in page_rows:
         p = people[int(r.user_id)]
+        app = apps.get(int(r.oauth_client_id or 0)) if int(r.kind or 0) == mcp_keys.KIND_OAUTH else None
         items.append({**mcp_keys.serialize(r), "owner_label": p["label"], "department_id": p["department_id"],
-                      "department": p["department"], "issued_by_label": issuers.get(r.issued_by, "")})
+                      "department": p["department"], "issued_by_label": issuers.get(r.issued_by, ""),
+                      "employee_code": p.get("employee_code", ""), "email": p.get("email", ""),
+                      "connection_type": "oauth" if int(r.kind or 0) == mcp_keys.KIND_OAUTH else "key",
+                      "app_name": (app.client_name or None) if app is not None else None,
+                      "app_redirect_uri": ((app.redirect_uris or [None])[0] or None) if app is not None else None})
     return success({"total": total, "page": page, "size": size, "has_more": page * size < total, "items": items})
 
 
@@ -642,14 +674,18 @@ def list_mcp_calls(date_from: date | None = None, date_to: date | None = None, u
                    key_id: int | None = Query(None, ge=0), tool: str = Query("", max_length=80),
                    status: int | None = Query(None, ge=1, le=3), page: int = Query(1, ge=1, le=10_000),
                    size: int = Query(50, ge=1, le=200), kind: str = Query("", pattern="^(|tools)$"),
-                   user=Depends(get_current_user), db: Session = Depends(get_db)):
-    from . import mcp_log
+                   q: str = "", user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from . import erp, mcp_log
 
     subject = _mcp_log_subject(db, user, user_id)
+    #  bao-CR-696: `q` tìm cả người (họ tên / mã / email) lẫn tên công cụ; vẫn AND với `subject` nên ai chỉ xem được của
+    #  mình thì vẫn chỉ ra dòng của mình. `tool` cũ (khớp đúng tên) giữ nguyên.
+    needle = q.strip()[:100]
+    q_users = {int(u.id) for u in erp.search_users(db, needle)} if needle else None
     #  ai-CR-219: `kind=tools` = chỉ lượt gọi công cụ (tools/call) — màn Nhật ký ẩn initialize / tools/list / thông báo.
     total, rows = mcp_log.list_calls(db, page=page, size=size, user_id=subject, key_id=key_id, tool=tool.strip(),
                                      status=status, d_from=date_from, d_to=date_to,
-                                     method="tools/call" if kind == "tools" else "")
+                                     method="tools/call" if kind == "tools" else "", q=needle, q_user_ids=q_users)
     names = _user_labels(db, [r.user_id for r in rows if r.user_id])
     #  Lượt khóa sai không có chủ (user_id = 0) — nhãn nói thẳng thay vì "#0".
     items = [{**mcp_log.serialize(r), "user_label": names.get(r.user_id, "") if r.user_id else "(khóa sai)"}

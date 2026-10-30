@@ -334,10 +334,12 @@ def list_clients(db: Session, now: datetime | None = None) -> list[dict]:
     """Màn quản trị ứng dụng OAuth: mọi ứng dụng đã đăng ký + số kết nối còn sống."""
     now = now or datetime.now()
     counts: dict[int, int] = {}
-    for (cid,) in db.query(AgentMcpKey.oauth_client_id).filter(
+    users: dict[int, set[int]] = {}
+    for cid, uid in db.query(AgentMcpKey.oauth_client_id, AgentMcpKey.user_id).filter(
             AgentMcpKey.kind == mcp_keys.KIND_OAUTH, AgentMcpKey.revoked_at.is_(None),
             (AgentMcpKey.expires_at.is_(None)) | (AgentMcpKey.expires_at > now)):
         counts[int(cid)] = counts.get(int(cid), 0) + 1
+        users.setdefault(int(cid), set()).add(int(uid or 0))
     iso = lambda d: d.isoformat(timespec="seconds") if d else None  # noqa: E731
     out = []
     for c in db.query(AgentOAuthClient).order_by(AgentOAuthClient.id.desc()).limit(500):
@@ -345,8 +347,18 @@ def list_clients(db: Session, now: datetime | None = None) -> list[dict]:
         out.append({"id": c.id, "client_id": c.client_id, "client_name": c.client_name,
                     "redirect_hosts": sorted({h for h, _t in hosts}), "trusted": bool(hosts) and all(t for _h, t in hosts),
                     "auth_method": c.token_endpoint_auth_method, "ip": c.ip, "created_at": iso(c.created_at),
-                    "last_used_at": iso(c.last_used_at), "live_grants": counts.get(int(c.id), 0)})
+                    "last_used_at": iso(c.last_used_at), "live_grants": counts.get(int(c.id), 0),
+                    #  bao-CR-696: số NGƯỜI đang có kết nối sống (một người có thể nối nhiều lần) + id để màn hiện vài tên.
+                    "live_users": len(users.get(int(c.id), ())), "live_user_ids": sorted(users.get(int(c.id), ()))})
     return out
+
+
+def clients_by_pk(db: Session, ids) -> dict[int, AgentOAuthClient]:
+    """bao-CR-696: ứng dụng OAuth theo khóa chính — màn Kết nối hiện tên ứng dụng + nơi quay về cho dòng OAuth."""
+    ids = {int(i) for i in ids if i}
+    if not ids:
+        return {}
+    return {int(c.id): c for c in db.query(AgentOAuthClient).filter(AgentOAuthClient.id.in_(ids))}
 
 
 def delete_client(db: Session, client_pk: int, by_user_id: int = 0) -> int | None:

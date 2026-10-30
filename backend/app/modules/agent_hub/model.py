@@ -621,6 +621,10 @@ class AgentMcpCall(Base):
     deny_reason: Mapped[str] = mapped_column(String(200), default="")
     duration_ms: Mapped[int] = mapped_column(Integer, default=0)
     ip: Mapped[str] = mapped_column(String(45), default="")
+    #  bao-CR-696: lượt GHI (tạo / sửa / xóa / duyệt qua MCP) ghi mã chứng từ + đường màn nội bộ ("/…") lấy từ kết quả
+    #  công cụ. Không ghi nội dung câu hỏi. Rỗng = lượt đọc / lượt hỏng.
+    doc_code: Mapped[str] = mapped_column(String(40), default="")
+    doc_url: Mapped[str] = mapped_column(String(200), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)
 
 

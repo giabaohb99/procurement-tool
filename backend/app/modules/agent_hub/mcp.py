@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, Header, Request, Response
 from sqlalchemy.orm import Session
@@ -482,6 +483,8 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
             trace.update(status=mcp_log.CallStatus.DENIED, reason=str(result.get("error") or result.get("reason") or ""))
         elif isinstance(result, dict) and result.get("error"):
             trace.update(status=mcp_log.CallStatus.ERROR, reason=str(result["error"]))
+        elif is_write_tool(name) and not name.startswith(("draft_", "propose_")):   # bản nháp / đề xuất chưa ghi gì
+            trace.update(doc_ref(result))
         text = json.dumps(result, ensure_ascii=False, default=str)
         trace["result_chars"] = len(text)        # ai-CR-228: kết quả quá dài thì ứng dụng AI có thể bỏ qua — nhật ký ghi lại
         out = {"content": [{"type": "text", "text": text}], "isError": bool(isinstance(result, dict) and result.get("error"))}
@@ -490,6 +493,21 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
         return _ok(rid, out)
     trace.update(status=mcp_log.CallStatus.ERROR, reason=f"Không có phương thức '{method}'")
     return _err(rid, -32601, f"Không có phương thức '{method}'")
+
+
+def doc_ref(result) -> dict:
+    """bao-CR-696: chứng từ mà lượt GHI vừa tạo / sửa / xóa / duyệt — mã (`code`) + đường màn nội bộ (`url` / `link`,
+    đã nối gốc ERP thì cắt lại còn đường "/…"). Không có thì rỗng."""
+    if not isinstance(result, dict):
+        return {}
+    code = str(result.get("code") or result.get("doc_code") or "").strip()
+    url = str(result.get("url") or result.get("link") or "").strip()
+    if url and not url.startswith("/"):
+        parts = urlsplit(url)
+        url = parts.path + (f"?{parts.query}" if parts.query else "") if parts.scheme in ("http", "https") else ""
+    if not url.startswith("/") or url.startswith("//"):
+        url = ""
+    return {"doc_code": code[:40], "doc_url": url[:200]} if code or url else {}
 
 
 def _www_authenticate(request: Request, authorization: str | None) -> str:
@@ -609,7 +627,8 @@ async def mcp_endpoint(request: Request, authorization: str | None = Header(None
     mcp_log.save(db, [mcp_log.new_row(key_id=key.id, person=person, client_name=client, method=t.get("method", ""),
                                        tool=t.get("tool", ""), status=t.get("status", mcp_log.CallStatus.OK),
                                        reason=t.get("reason", ""), duration_ms=t["ms"], ip=ip,
-                                       skill_id=t.get("skill_id", 0), result_chars=t.get("result_chars", 0))
+                                       skill_id=t.get("skill_id", 0), result_chars=t.get("result_chars", 0),
+                                       doc_code=t.get("doc_code", ""), doc_url=t.get("doc_url", ""))
                        for t in traces])
     if not out:
         return Response(status_code=202)
