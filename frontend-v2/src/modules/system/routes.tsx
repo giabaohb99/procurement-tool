@@ -1,5 +1,6 @@
 import {
   AtSign,
+  CalendarClock,
   Database,
   FileDown,
   FileUp,
@@ -126,6 +127,14 @@ export const systemModule: ErpModule = {
       icon: RefreshCcwDot,
       entity: 'sync_log',
     },
+    {
+      //  bao-CR-703: việc nền theo lịch (Celery beat) — chạy lúc nào, bao lâu, thành công / lỗi, để làm gì. Chỉ đọc nên
+      //  gác `setting.read` (không `manage`): máy chủ cũng chỉ đòi `setting.read`.
+      label: 'Việc chạy ngầm',
+      path: appRoutes.system.backgroundJobs,
+      icon: CalendarClock,
+      entity: 'setting',
+    },
     //  ai-CR-039: mục "Việc của bot Telegram" (ai-CR-036) TẠM ẨN theo ý đại ca 24/09 — muốn xem gì
     //  thì hỏi thẳng bot trên Telegram. Route + trang bên dưới giữ nguyên; bật lại = thêm lại mục
     //  { label: 'Việc của bot Telegram', path: appRoutes.system.agentTasks, icon: Bot, entity: 'agent_task' }
@@ -220,6 +229,12 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.syncLogs,
       lazy: async () => ({
         Component: (await import('./pages/sync-log-list-page')).SyncLogListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.backgroundJobs,
+      lazy: async () => ({
+        Component: (await import('./pages/background-job-list-page')).BackgroundJobListPage,
       }),
     },
     {

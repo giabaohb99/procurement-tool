@@ -111,6 +111,32 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-703-giao-dien | Màn Việc chạy ngầm ở phân hệ Quản trị (giao diện)
+- status: đang làm
+- date: 2026-10-30
+- list: Kế hoạch hệ agent
+- tag: Agent 3
+**Bối cảnh:** cần biết các việc hệ thống tự chạy theo lịch (sao lưu, dọn nhật ký, gộp trùng hải quan, nhắc việc, thống
+kê…) chạy lúc nào, bao lâu, thành công hay lỗi và để làm gì. Phần máy chủ (bảng lịch sử chạy, sổ mô tả việc, API) do
+Agent 4 làm; hợp đồng API đã chốt giữa hai bên.
+
+**Đã làm**
+- Màn *Việc chạy ngầm* trong phân hệ Quản trị, chỉ người có quyền xem cấu hình hệ thống mới thấy. Bảng mỗi dòng một việc:
+  tên tiếng Việt, mục đích một câu, nhóm, lịch dạng dễ đọc, lần chạy gần nhất kèm màu trạng thái, thời lượng, lần kế
+  tiếp, thời lượng trung bình và số lần chạy / lỗi trong 7 ngày. Việc đang tắt và việc chưa chạy lần nào được ghi rõ.
+- Lọc theo nhóm, theo trạng thái lần gần nhất (có lựa chọn *chưa chạy lần nào*) và ô tìm theo tên / mã việc.
+- Bấm một dòng mở lịch sử các lần chạy: giờ bắt đầu, thời lượng, kết quả, tóm tắt, câu lỗi; phân trang và lọc theo kết
+  quả. Không có nút chạy tay. Thêm lối tắt trên trang Tổng quan Quản trị.
+
+**Kết quả:** kiểu dữ liệu 0 lỗi, lint 0 lỗi, 453 bài kiểm của phân hệ Quản trị và các khu khai báo dùng chung đều xanh,
+build qua.
+
+**Còn lại:** chờ phần máy chủ của Agent 4 lên erp-v2 rồi soát màn trên dev với dữ liệu thật; trước đó màn báo không
+tải được dữ liệu.
+
+Mã nguồn: `frontend-v2/src/modules/system/pages/background-job-list-page.tsx`,
+`frontend-v2/src/modules/system/components/job-run-history-sheet.tsx`, `frontend-v2/src/modules/system/api/job-run-api.ts`
+
 ## bao-CR-697 | App đặt xe cũ: trò chuyện chưa có tin không làm hỏng màn, gỡ listener readStatus thừa
 - status: xong
 - date: 2026-10-30
