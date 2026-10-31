@@ -17896,3 +17896,20 @@ Tham chiếu: doc/erp/nghien-cuu/10-nghiep-vu-kho.md
 **Kết quả:** thư mục doc/erp/nghien-cuu/erpnext/ trên nhánh erp-v2.
 
 Tham chiếu: doc/erp/nghien-cuu/erpnext/README.md
+
+## bao-CR-705 | Danh sách đơn mua hàng: cột Phòng xử lý, Trưởng phòng phê duyệt và các cột phụ ẩn sẵn
+- status: xong
+- date: 2026-10-31
+- tag: Thu mua, Giao diện
+
+**Bối cảnh:** Sau khi nhà máy Dego Organic tách khỏi phòng Sản xuất - Thu mua, nhìn danh sách đơn mua hàng không biết đơn nào nhà máy tự mua, đơn nào nhờ thu mua chung, cũng không thấy ai là người duyệt.
+
+**Đã làm**
+- Máy chủ gắn thêm tên phòng xử lý, trưởng phòng phê duyệt, công ty nhận hóa đơn, người tạo và tỷ giá cho mọi dòng của trang danh sách trong một lượt tra mỗi danh mục; đơn cũ còn phòng xử lý trống hiện đúng phòng thu mua mặc định.
+- Danh sách đơn mua hàng ở cả bản thumua và bản ERP mới thêm hai cột hiện sẵn Phòng xử lý và Trưởng phòng phê duyệt, cùng chín cột phụ ẩn sẵn để người dùng tự bật trong menu Cột; tệp Excel xuất đúng các cột đang bật.
+- Bảng ở hai bản giao diện nay nhớ danh sách cột đã biết, nên cột ẩn sẵn thêm về sau không tự bật trước mặt người đã tùy chỉnh cột; nút Mặc định đưa về đúng bộ cột hiện sẵn.
+- Thêm bài kiểm máy chủ cho phần gắn tên và tệp Excel không trùng cột, bài kiểm giao diện cho cột mới và cho luật cột mới ẩn sẵn.
+
+**Kết quả:** đã lên nhánh erp-v2 và dựng dev.
+
+Mã nguồn: backend/app/modules/purchase_order (service.list_display_names, controller, export), frontend-v2 purchase-order-list-page + shared/data-table/use-table-layout, frontend config/cruds + hooks/useTableColumns
