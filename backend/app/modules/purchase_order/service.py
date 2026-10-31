@@ -171,6 +171,50 @@ def list_po(db: Session, base_query, pg: dict):
     return total, items
 
 
+def list_display_names(db: Session, pos) -> dict[int, dict]:
+    """bao-CR-705 — tên để HIỂN THỊ cho các cột thêm ở danh sách ĐMH (và tệp Excel cùng màn).
+
+    Mỗi loại tên tra MỘT lượt cho cả trang (không N+1): phòng xử lý (`0` cũ = phòng thu mua mặc
+    định, như màn chi tiết bao-CR-524), trưởng phòng phê duyệt, công ty nhận hóa đơn, người tạo.
+    Trả `{po_id: {...}}`; thiếu danh mục thì tên rỗng chứ không lỗi.
+    """
+    from app.core.central_purchasing import get_central_dept_id
+    from app.modules.company.model import Company
+    from app.modules.department.model import Department
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    pos = list(pos or [])
+    if not pos:
+        return {}
+    central = get_central_dept_id(db)
+    handler = {p.id: int(p.handler_dept_id or 0) or central for p in pos}
+
+    def names(model, label_col, ids):
+        ids = {i for i in ids if i}
+        return dict(db.query(model.id, label_col).filter(model.id.in_(ids)).all()) if ids else {}
+
+    dept = names(Department, Department.name, handler.values())
+    emp = names(Employee, Employee.full_name, [p.approver_employee_id for p in pos])
+    comp = names(Company, Company.name, [p.company_id for p in pos])
+    creator_ids = {p.created_by for p in pos if p.created_by}
+    creators: dict[int, str] = {}
+    if creator_ids:
+        rows = (db.query(User.id, User.email, Employee.full_name)
+                .outerjoin(Employee, Employee.id == User.employee_id)
+                .filter(User.id.in_(creator_ids)).all())
+        creators = {uid: (full or email or "") for uid, email, full in rows}
+    return {p.id: {
+        "handler_dept_id": handler[p.id],
+        "handler_dept_name": dept.get(handler[p.id], ""),
+        "approver_employee_id": int(p.approver_employee_id or 0),
+        "approver_name": emp.get(p.approver_employee_id, ""),
+        "company_name": comp.get(p.company_id, ""),
+        "created_by_name": creators.get(p.created_by, ""),
+        "exchange_rate": float(p.exchange_rate or 1),
+    } for p in pos}
+
+
 def _supplier_map(db: Session) -> dict:
     return {s.code: s for s in db.query(Supplier).all()}
 

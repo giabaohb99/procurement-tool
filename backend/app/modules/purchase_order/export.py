@@ -23,7 +23,7 @@ from app.core.status_codes import PO_DOCUMENT_STATUS, PO_ITEM_LINE_STATUS
 from app.modules.company.model import Company
 from app.modules.purchase_progress import export as progress_ex
 from .model import PODelivery, POItem, PurchaseOrder
-from .service import normalize_rate
+from .service import list_display_names, normalize_rate
 
 STATUS_LABEL = {
     "draft": "Nháp", "submitted": "Chờ duyệt", "approved": "Đã duyệt",
@@ -43,6 +43,16 @@ HEADER_COLS = [
     Col("note", "Ghi chú", width=26),
     Col("supplier_code", "Nhà cung cấp", width=26),
     Col("pr_code", "Mã PYC", width=18),
+    # bao-CR-705 — cột thêm ở danh sách ĐMH; chỉ xuất khi người dùng đang bật cột đó trên bảng.
+    # Phòng lập / NSPT / Tiền tệ / Tỷ giá KHÔNG khai ở đây: cụm dòng (màn Tiến độ) đã luôn có bốn
+    # cột đó, khai thêm là hai cột trùng khóa trong một tệp.
+    Col("handler_dept_name", "Phòng xử lý", width=22),
+    Col("approver_name", "Trưởng phòng phê duyệt", width=22),
+    Col("company_name", "Công ty nhận hóa đơn", width=30),
+    Col("created_by_name", "Người tạo", width=20),
+    Col("payment_terms", "Hình thức thanh toán", width=24),
+    Col("etd_date", "Ngày ETD", width=12),
+    Col("customs_decl_no", "Số tờ khai HQ", width=18),
     Col("amount", "Tiền hàng", "money", 16),
     Col("is_urgent", "Gấp", "bool", 8),
     Col("document_status", "Hồ sơ chứng từ", width=18),
@@ -95,6 +105,7 @@ def build_rows(db: Session, pos: list[PurchaseOrder], show_supplier: bool = True
     for it, dl in pairs:
         by_po.setdefault(it.po_id, []).append((it, dl))
     company_name = {c.id: c.name for c in db.query(Company).all()}
+    names = list_display_names(db, pos)   # bao-CR-705
 
     rows: list[dict] = []
     for po in pos:
@@ -121,6 +132,11 @@ def build_rows(db: Session, pos: list[PurchaseOrder], show_supplier: bool = True
             # Cột "Nhà cung cấp" trên bảng hiện mã, thiếu mã mới rơi về tên
             "supplier_code": po.supplier_code or po.supplier_name or "",
             "pr_code": po.pr_code,
+            **{k: names.get(po.id, {}).get(k, "") for k in
+               ("handler_dept_name", "approver_name", "company_name", "created_by_name")},
+            "payment_terms": po.payment_terms or "",
+            "etd_date": po.etd_date or "",
+            "customs_decl_no": po.customs_decl_no or "",
             "amount": round(order_amount, 2),
             "is_urgent": bool(po.is_urgent),
             "document_status": DOC_STATUS_LABEL.get(po.document_status, po.document_status or ""),
