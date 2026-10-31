@@ -17879,3 +17879,20 @@ Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
 **Kết quả:** tài liệu 10 bản 2.0 trên nhánh erp-v2, bản PDF 25 trang.
 
 Tham chiếu: doc/erp/nghien-cuu/10-nghiep-vu-kho.md
+
+## bao-CR-704 | Tài liệu học nghiệp vụ trên ERPNext: một vòng mua tới thanh toán và nghiệp vụ kho
+- status: xong
+- date: 2026-10-31
+- tag: Nghiên cứu, Thu mua, Kho
+
+**Bối cảnh:** Trang ERPNext học nghiệp vụ đã có dữ liệu thật của ERP DEGO (7 công ty, YCMH, ĐMH, nhận hàng, công nợ); người chủ cần tài liệu để tự thao tác và hiểu bút toán từng bước.
+
+**Đã làm**
+- Viết hướng dẫn một vòng mua đủ mười bước: yêu cầu vật tư, hỏi giá hai nhà cung cấp, so sánh, đơn mua, duyệt theo ngưỡng 50 triệu, nhập kho, hóa đơn, yêu cầu thanh toán, chi tiền, kiểm lại; mỗi bước có nghiệp vụ, vai thao tác, bút toán Nợ Có kèm số hiệu tài khoản theo chế độ kế toán Việt Nam.
+- Viết phần nghiệp vụ kho: xem tồn, xuất cho sản xuất, chuyển kho, kiểm kê, trả hàng kèm giấy báo nợ, nhận thiếu nhiều lần, kiểm chất lượng, tự đề nghị mua khi tồn thấp.
+- Tạo sẵn trên trang học một bộ chứng từ mẫu đúng như tài liệu, bút toán khớp từng đồng; thêm tài khoản tập vai kế toán và quyền kiểm kê cho vai thủ kho.
+- Gom hai tài liệu hướng dẫn và mục lục vào thư mục nghiên cứu ERPNext.
+
+**Kết quả:** thư mục doc/erp/nghien-cuu/erpnext/ trên nhánh erp-v2.
+
+Tham chiếu: doc/erp/nghien-cuu/erpnext/README.md
