@@ -181,6 +181,32 @@ def register_task_mailer(entity: str, fn: Callable) -> None:
     _TASK_MAILERS[entity] = fn
 
 
+#  entity → hàm `(db, instance, task) -> bool` cho biết việc MỚI MỞ này có được báo (chuông + thư) không
+#  (duoc-CR-706). Việc vẫn được giao và hiện ở "Việc chờ duyệt" — chỉ thông báo bị chặn. Phiếu đặt xe chọn
+#  sẵn người duyệt dùng nó: người cùng quyền được giao việc nhưng không bị làm phiền. Chưa khai = báo hết.
+_TASK_NOTIFY_FILTERS: dict[str, Callable] = {}
+
+
+def register_task_notify_filter(entity: str, fn: Callable) -> None:
+    """Khai hàm lọc thông báo việc mới cho loại chứng từ này. Xem `_TASK_NOTIFY_FILTERS`."""
+    _TASK_NOTIFY_FILTERS[entity] = fn
+
+
+def should_notify_task(db: Session, instance, task) -> bool:
+    """Việc mới này có được báo không. Hàm lọc lỗi thì BÁO (thà thừa một thư còn hơn mất thư)."""
+    fn = _TASK_NOTIFY_FILTERS.get(instance.entity)
+    if fn is None:
+        return True
+    try:
+        return bool(fn(db, instance, task))
+    except Exception:   # noqa: BLE001 — xem docstring
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "Hàm lọc thông báo việc duyệt %s #%s lỗi", instance.entity, instance.entity_id)
+        return True
+
+
 def mail_new_task(db: Session, instance, task, users: list) -> None:
     """Gửi thư việc mới qua hàm phân hệ đã khai. Nuốt lỗi — thư không được làm hỏng phiên duyệt."""
     fn = _TASK_MAILERS.get(instance.entity)

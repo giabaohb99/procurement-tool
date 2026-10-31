@@ -186,9 +186,23 @@ vào luồng thì khóa.
   từng nới ra «mọi phạm vi, kể cả Quản trị» cho local khỏi trống — đã bỏ.
   Chốt `check_approver`: phải trong danh sách, không phải chính người tạo — kiểm khi tạo, khi đổi ô và khi gửi.
 - **Thư «Gửi duyệt» (`dx_submitted`)**: bộ máy TẮT → chuông + thư chỉ tới người được chọn (`notify._approvers`).
-  Bộ máy BẬT → bước «Người có quyền duyệt» chỉ giao người được chọn (bối cảnh `picked_approver_employee_id`, bỏ soi
-  phạm vi vì hai ô độc lập); `_after_submit` gửi thư cho người nhận việc chặng đầu (`notify_task_assignees`, chỉ thư —
+  Bộ máy BẬT → bước «Người có quyền duyệt» giao người được chọn (bối cảnh `picked_approver_employee_id`, bỏ soi
+  phạm vi riêng cho họ vì hai ô độc lập; từ CR-706 giao thêm cả người cùng quyền — xem mục ngay dưới); `_after_submit` gửi thư cho người nhận việc chặng đầu (`notify_task_assignees`, chỉ thư —
   chuông do bộ máy ghi). Bước khai cách khác thì đi theo cấu hình luồng.
+- **Người CÙNG QUYỀN cũng duyệt được — luật mới duoc-CR-706 (31/10/2026, thay luật «chỉ đúng người được chọn» của CR-681)**:
+  - Bộ máy BẬT, bước «Người có quyền duyệt»: giao **người được chọn (đứng đầu) ∪ mọi người giữ quyền mà phạm vi phủ phiếu**
+    (đúng điều 1-3 của phiếu không chọn: ô Duyệt, phạm vi Phòng ban/Công ty/Tất cả, không `admin`). Người được chọn vẫn được giao
+    kể cả phạm vi không phủ. Chế độ nhiều người của bước giữ nguyên (thường «Một người duyệt là đủ»: một người ký thì việc của
+    người còn lại tự đóng). Người được chọn mất quyền thì bỏ lựa chọn, tính như phiếu chưa chọn.
+  - **Thông báo**: chuông + thư «chờ bạn duyệt» CHỈ tới người được chọn (`entity_hooks.register_task_notify_filter` →
+    `approval_bridge._should_notify_task`); người cùng quyền thấy việc ở «Việc chờ duyệt» và có nút Duyệt trên phiếu (nút dựa vào
+    việc của người xem / quyền `approve`, KHÔNG so `first_approver_id`). Phiếu không chọn người thì báo hết như cũ.
+  - Bộ máy TẮT: ai có `vehicle_booking.approve` với phạm vi phủ phiếu (`get_scoped`) duyệt / trả / từ chối được (đường cũ vốn không
+    chặn thêm); người được chọn có cửa riêng khi phạm vi không phủ; thư «Gửi duyệt» vẫn chỉ tới người được chọn.
+  - Quản trị (`admin`): không được giao việc trong bộ máy và bộ máy không có ngoại lệ admin (chỉ qua ủy quyền); ở đường cũ admin
+    duyệt được nhờ ô Duyệt «Tất cả» trong ma trận quyền.
+  - Phiếu ĐANG CHỜ đã giao một người trước CR-706: `python scripts/mo_rong_nguoi_duyet_dat_xe.py` (xem thử) / `--apply` (ghi) —
+    `vehicle_booking/approver_expand.py`, idempotent, thêm việc cho người còn thiếu ở chặng đang chạy, không gửi thư.
 - **Người được chọn xem + duyệt được dù ngoài phạm vi** (đường cũ): `approval_bridge.is_picked_legacy_approver` — phiếu
   Chờ duyệt, đúng `first_approver_id`, không phiên nhiều bước đang chạy. Nới ĐỌC (`booking_for_approver`) và ba nút
   duyệt / trả / từ chối (`_scoped_or_404(..., "approve")`); sửa / điều phối vẫn theo phạm vi. Duyệt xong cửa đóng.

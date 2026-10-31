@@ -22,8 +22,12 @@ Một người được giao bước khi đủ bốn điều:
    `seal_request` (phạm vi Công ty chỉ phủ phiếu ĐÃ duyệt, không bao giờ khớp phiếu đang chờ — H2).
    Bối cảnh không có `id` thì trả RỖNG, không đoán (M1/M2).
 
-Ngoại lệ duoc-CR-681: bối cảnh có `picked_approver_employee_id` (phiếu đặt xe chọn sẵn người duyệt) và
-người đó thỏa điều 1-2 → chỉ giao người đó, bỏ điều 3.
+Ngoại lệ duoc-CR-681, MỞ RỘNG ở duoc-CR-706: bối cảnh có `picked_approver_employee_id` (phiếu đặt xe chọn
+sẵn người duyệt) và người đó thỏa điều 1-2 → giao **người được chọn (đứng đầu danh sách) ∪ mọi người giữ quyền
+mà phạm vi phủ phiếu** (điều 1-3 như phiếu không chọn). Người được chọn vẫn được giao kể cả phạm vi KHÔNG phủ
+phiếu (bỏ điều 3 riêng cho họ — hai ô công ty và người duyệt độc lập). Trước CR-706 chỉ giao ĐÚNG người được chọn.
+Người đã chọn mất quyền thì bỏ lựa chọn, tính như phiếu chưa chọn. Việc gửi thư / chuông chỉ tới người được chọn
+nằm ở phân hệ (`entity_hooks.register_task_notify_filter`), không ở đây.
 """
 from __future__ import annotations
 
@@ -108,12 +112,12 @@ def resolve(db: Session, raw: str, subject: dict) -> list[int]:
     users = holders(db, entity, role_ids)
     if not users:
         return []
-    #  duoc-CR-681: phiếu đã CHỌN người duyệt (đặt xe) → giao đúng người đó nếu họ còn là người giữ
-    #  quyền. Không soi phạm vi: công ty và người duyệt trên phiếu là hai ô độc lập (anh Được chốt).
-    #  Người đã chọn mất quyền thì bỏ lựa chọn, tính như phiếu chưa chọn — phiếu không kẹt.
+    #  duoc-CR-681 + 706: phiếu đã CHỌN người duyệt (đặt xe) và họ còn là người giữ quyền → họ LUÔN được giao
+    #  (không soi phạm vi: công ty và người duyệt trên phiếu là hai ô độc lập), cộng thêm những người cùng
+    #  quyền mà phạm vi phủ phiếu (soi bên dưới). Người đã chọn mất quyền thì bỏ lựa chọn — phiếu không kẹt.
     picked = int(subject.get("picked_approver_employee_id") or 0)
-    if picked and any(user.employee_id == picked for user in users):
-        return [picked]
+    if picked and not any(user.employee_id == picked for user in users):
+        picked = 0
     #  MỘT truy vấn soi phạm vi cho mọi người giữ quyền: mỗi người một cột `CASE WHEN <phạm vi của họ>`
     #  trên đúng dòng phiếu — cùng điều kiện `get_scoped` dựng, khác ở chỗ không chạy N lượt
     #  (ép tải MySQL 23/10/2026: 200 người giữ quyền = 205 truy vấn lúc bộ đệm quyền nóng → còn 6).
@@ -130,7 +134,10 @@ def resolve(db: Session, raw: str, subject: dict) -> list[int]:
     row = db.execute(query).first()
     if row is None:
         return []
-    return [user.employee_id for user, hit in zip(users, row) if hit]
+    covered = [user.employee_id for user, hit in zip(users, row) if hit]
+    if not picked:
+        return covered
+    return [picked] + [employee_id for employee_id in covered if employee_id != picked]
 
 
 def holder_profiles(db: Session, entity: str) -> list[dict]:

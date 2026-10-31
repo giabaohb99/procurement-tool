@@ -133,6 +133,9 @@ def notify_new_tasks(db: Session, instance: ApprovalInstance,
         for task in tasks:
             if task.status != TASK_PENDING or not task.assignee_employee_id:
                 continue
+            #  duoc-CR-706: phân hệ có thể chỉ báo một phần người được giao (vd đặt xe chỉ báo người được chọn).
+            if not entity_hooks.should_notify_task(db, instance, task):
+                continue
             link = ENTITY_LINKS.get(instance.entity, "").format(id=instance.entity_id)
             title = f"Chờ bạn duyệt: {instance.entity_title or instance.entity_code}"
 

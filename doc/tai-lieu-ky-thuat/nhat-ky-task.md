@@ -17939,3 +17939,23 @@ Tham chiếu: doc/erp/nghien-cuu/erpnext/README.md
 **Kết quả:** đã lên nhánh erp-v2 và dựng dev.
 
 Mã nguồn: backend/app/modules/purchase_order (service.list_display_names, controller, export), frontend-v2 purchase-order-list-page + shared/data-table/use-table-layout, frontend config/cruds + hooks/useTableColumns
+
+## duoc-CR-706 | Người cùng quyền cũng duyệt được phiếu đặt xe đã chọn sẵn người phê duyệt
+- status: xong
+- date: 2026-10-31
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** phiếu đặt xe chọn sẵn người phê duyệt chỉ giao việc duyệt cho đúng người được chọn; anh Được muốn người khác có cùng quyền duyệt đặt xe cũng duyệt được.
+
+**Đã làm**
+- Bước «Người có quyền duyệt» nay giao cho người được chọn cộng mọi người giữ quyền mà phạm vi phủ phiếu; người được chọn vẫn đứng đầu và vẫn được giao dù phạm vi không phủ.
+- Chuông và thư «chờ bạn duyệt» chỉ gửi người được chọn; người cùng quyền thấy việc ở danh sách việc chờ duyệt và có nút Duyệt trên phiếu.
+- Khi chưa bật luồng duyệt, người có quyền duyệt với phạm vi phủ phiếu vốn đã duyệt được; thư vẫn chỉ tới người được chọn.
+- Viết script cho phiếu đang chờ: xem thử mặc định, có cờ ghi thật, chạy lại không đẻ thêm và không gửi thư.
+
+**Kết quả:** mười hai bài kiểm mới xanh, sáu bài cũ của CR-681 đã sửa theo luật mới, các bài đặt xe và bộ máy duyệt liên quan xanh.
+
+**Còn lại:** sau khi lên dev/prod chạy script `mo_rong_nguoi_duyet_dat_xe.py` xem thử rồi ghi thật cho các phiếu đang chờ.
+
+Mã nguồn: backend/app/modules/approval/permission_approvers.py · entity_hooks.py · task_notification.py · backend/app/modules/vehicle_booking/approval_bridge.py · approver_expand.py
+Deploy: backend/scripts/mo_rong_nguoi_duyet_dat_xe.py

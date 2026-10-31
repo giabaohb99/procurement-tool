@@ -3,7 +3,8 @@
 - Danh sách người duyệt = người có quyền Duyệt đặt xe (Phòng ban / Công ty / Tất cả, không admin) — CR-680.
 - Công ty và Người duyệt ĐỘC LẬP: chọn điều phối phạm vi công ty 5 cho phiếu công ty 3 vẫn hợp lệ.
 - Bộ máy TẮT: thư + chuông `dx_submitted` chỉ tới người được chọn. Bộ máy BẬT, bước «Người có quyền
-  duyệt»: chỉ người được chọn nhận việc + có thư (`EmailLog`).
+  duyệt»: người được chọn nhận việc + thư (`EmailLog`); từ duoc-CR-706 người cùng quyền cũng được giao việc
+  (không có thư) — xem `test_duyet_xe_cung_quyen_cr706.py`.
 """
 from types import SimpleNamespace
 
@@ -230,7 +231,7 @@ def test_bo_may_bat_buoc_theo_quyen_chi_giao_nguoi_duoc_chon_va_gui_thu(db, org)
     booking = create_booking(db, _payload(company_id=3, first_approver_id=org.picked.id), org.creator,
                              submit=True)
     #  Người được chọn phạm vi CÔNG TY 5, phiếu công ty 3 — vẫn nhận vì hai ô độc lập.
-    assert _pending_assignees(db, booking) == [org.picked.employee_id]
+    assert _pending_assignees(db, booking)[0] == org.picked.employee_id   # CR-706: người được chọn đứng đầu, kèm người cùng quyền
     assert [e.to_email for e in db.query(EmailLog).filter_by(event="dx_submitted")] == [org.picked.email]
 
 
@@ -259,7 +260,7 @@ def test_thu_chi_gui_mot_lan_khi_ai_cung_khong_co_email(db, org):
     db.commit()
     _engine_with_permission_step(db)
     booking = create_booking(db, _payload(first_approver_id=org.picked.id), org.creator, submit=True)
-    assert _pending_assignees(db, booking) == [org.picked.employee_id]
+    assert _pending_assignees(db, booking)[0] == org.picked.employee_id   # CR-706: người được chọn đứng đầu, kèm người cùng quyền
     assert db.query(EmailLog).filter_by(event="dx_submitted").count() == 0
 
 
@@ -378,8 +379,8 @@ def test_chon_cong_ty_khac_thi_pham_vi_cong_ty_o_ca_hai_ben_deu_thay(db, org):
     assert _can_see(db, org.picked, booking.id)               # phạm vi công ty 5 = công ty chọn trên phiếu
     assert _can_see(db, in_creator_company, booking.id, "approve")
     assert not _can_see(db, in_other, booking.id)
-    #  Bước «Người có quyền duyệt» vẫn giao ĐÚNG người được chọn, có thư.
-    assert _pending_assignees(db, booking) == [org.picked.employee_id]
+    #  Bước «Người có quyền duyệt» giao người được chọn (đứng đầu, có thư) + người cùng quyền phủ phiếu (CR-706).
+    assert _pending_assignees(db, booking)[0] == org.picked.employee_id   # CR-706: người được chọn đứng đầu, kèm người cùng quyền
 
 
 def test_chua_chon_nguoi_thi_buoc_theo_quyen_giao_ca_hai_cong_ty(db, org):
@@ -483,7 +484,7 @@ def test_mau_thu_tat_thi_bo_may_khong_xep_thu(db, org, email_queue_sent):
     ets.upsert(db, "dx_submitted", enabled=False, subject="x", body_html="x", user=SimpleNamespace(id=1))
     _engine_with_permission_step(db)
     booking = create_booking(db, _payload(first_approver_id=org.picked.id), org.creator, submit=True)
-    assert _pending_assignees(db, booking) == [org.picked.employee_id]   # việc vẫn giao, chuông vẫn có
+    assert _pending_assignees(db, booking)[0] == org.picked.employee_id   # CR-706: người được chọn đứng đầu, kèm người cùng quyền   # việc vẫn giao, chuông vẫn có
     assert db.query(EmailLog).count() == 0 and email_queue_sent == []
 
 
@@ -505,7 +506,7 @@ def test_day_sang_worker_loi_khong_lam_hong_nghiep_vu(db, org, monkeypatch):
     monkeypatch.setattr(email_queue, "dispatch", boom)
     _engine_with_permission_step(db)
     booking = create_booking(db, _payload(first_approver_id=org.picked.id), org.creator, submit=True)
-    assert _pending_assignees(db, booking) == [org.picked.employee_id]
+    assert _pending_assignees(db, booking)[0] == org.picked.employee_id   # CR-706: người được chọn đứng đầu, kèm người cùng quyền
     assert db.query(EmailLog).filter_by(to_email=org.picked.email).one().status == "pending"
 
 
@@ -546,7 +547,7 @@ def test_review2_tieu_de_mau_qua_dai_khong_lam_hong_luot_duyet(db, org):
     _engine_with_permission_step(db)
     booking = create_booking(db, _payload(purpose="x" * 600, first_approver_id=org.picked.id), org.creator,
                              submit=True)
-    assert _pending_assignees(db, booking) == [org.picked.employee_id]
+    assert _pending_assignees(db, booking)[0] == org.picked.employee_id   # CR-706: người được chọn đứng đầu, kèm người cùng quyền
     assert len(db.query(EmailLog).filter_by(to_email=org.picked.email).one().subject) == 255
 
 
