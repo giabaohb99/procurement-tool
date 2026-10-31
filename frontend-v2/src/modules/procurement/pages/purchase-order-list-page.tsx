@@ -50,7 +50,7 @@ import {
 } from '@/shared/ui/select'
 import { PO_DOCUMENT_STATUS } from '@/shared/constants/statuses'
 import { formatDateTime } from '@/shared/utils/format-date'
-import { formatMoney } from '@/shared/utils/format-money'
+import { formatMoney, formatUnitPrice } from '@/shared/utils/format-money'
 import { ListQuickChips, type QuickChip } from '../components/list-quick-chips'
 import { PurchaseOrderCard } from '../components/purchase-order-card'
 import { DocumentStatusBadge, StatusBadge } from '../components/document-status-badge'
@@ -87,11 +87,53 @@ const EXPORT_COLUMN_KEYS: Record<string, string> = {
   note: 'note',
   supplier: 'supplier_code',
   pr_code: 'pr_code',
+  //  bao-CR-705 — Phòng lập / NSPT / Tiền tệ / Tỷ giá đã luôn có ở cụm dòng của tệp nên không dịch.
+  handler_dept_name: 'handler_dept_name',
+  approver_name: 'approver_name',
+  company_name: 'company_name',
+  created_by_name: 'created_by_name',
+  payment_terms: 'payment_terms',
+  etd_date: 'etd_date',
+  customs_decl_no: 'customs_decl_no',
   amount: 'amount',
   is_urgent: 'is_urgent',
   document_status: 'document_status',
   status: 'status',
 }
+
+/** Ô chữ một dòng, cắt bớt kèm chú thích khi dài; trống thì để trống (không in "undefined"). */
+function textCell(value: string | number | null | undefined) {
+  const text = value === null || value === undefined ? '' : String(value)
+  return (
+    <span className="truncate" title={text || undefined}>
+      {text}
+    </span>
+  )
+}
+
+/**
+ * bao-CR-705 — cột phụ ẨN sẵn. `hiddenForOlderLayouts`: người đã lưu bố cục trước CR này cũng thấy
+ * chúng ẩn, khỏi vỡ bảng đang quen (docs/ui/table.md §4).
+ */
+const HIDDEN_EXTRA_COLUMN_LIST: DataTableColumn<PurchaseOrder>[] = [
+  { key: 'department', header: 'Phòng lập', width: 170, cell: (po) => textCell(po.department) },
+  { key: 'company_name', header: 'Công ty nhận hóa đơn', width: 230, cell: (po) => textCell(po.company_name) },
+  { key: 'created_by_name', header: 'Người tạo', width: 170, cell: (po) => textCell(po.created_by_name) },
+  { key: 'payment_terms', header: 'Hình thức thanh toán', width: 190, cell: (po) => textCell(po.payment_terms) },
+  { key: 'currency', header: 'Tiền tệ', width: 90, cell: (po) => textCell(po.currency) },
+  {
+    key: 'exchange_rate',
+    header: 'Tỷ giá',
+    width: 110,
+    align: 'right',
+    cell: (po) => textCell(po.exchange_rate ? formatUnitPrice(po.exchange_rate) : ''),
+  },
+  { key: 'etd_date', header: 'Ngày ETD', width: 120, cell: (po) => textCell(po.etd_date) },
+  { key: 'customs_decl_no', header: 'Số tờ khai HQ', width: 150, cell: (po) => textCell(po.customs_decl_no) },
+]
+const HIDDEN_EXTRA_COLUMNS: DataTableColumn<PurchaseOrder>[] = HIDDEN_EXTRA_COLUMN_LIST.map(
+  (column) => ({ ...column, defaultHidden: true, hiddenForOlderLayouts: true }),
+)
 
 const FILTER_CONFIG = {
   fields: PURCHASE_ORDER_FILTER_FIELDS,
@@ -391,6 +433,21 @@ function PurchaseOrderListContent() {
         ),
       },
       { key: 'pr_code', header: 'Mã PYC', width: 140, cell: (po) => po.pr_code || '' },
+      //  bao-CR-705: hai cột HIỆN sẵn (phòng đang xử lý, người duyệt) + cụm cột phụ ẨN sẵn — người
+      //  dùng tick trong menu «Cột» mới hiện. Key trùng tên trường API để tệp Excel xuất đúng cột.
+      {
+        key: 'handler_dept_name',
+        header: 'Phòng xử lý',
+        width: 170,
+        cell: (po) => textCell(po.handler_dept_name),
+      },
+      {
+        key: 'approver_name',
+        header: 'Trưởng phòng phê duyệt',
+        width: 190,
+        cell: (po) => textCell(po.approver_name),
+      },
+      ...HIDDEN_EXTRA_COLUMNS,
       {
         //  Ẩn mặc định vì ghi chú thường dài, nhưng phải CÓ cột thì người dùng
         //  mới bật lên để kéo nó vào file Excel được (bản v1 vẫn có cột này).

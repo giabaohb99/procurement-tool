@@ -308,6 +308,12 @@ trong `hiddenColumns` đã lưu), còn đổi một cột đang hiện thành �
 thấy nó. Hệ quả khi kiểm thử: sửa `defaultHidden` xong mà màn hình không đổi thì
 **không phải mã sai** — xóa khóa `erp.table.<storageKey>` rồi tải lại.
 
+**Từ bao-CR-705:** bản lưu ghi thêm `knownColumns` (mọi khóa cột bảng biết lúc lưu). Cột
+`defaultHidden` không có trong `knownColumns` là cột MỚI → vào ẩn sẵn, kể cả với người đã lưu bố
+cục. Bản lưu cũ (trước CR-705, chưa có `knownColumns`) không phân biệt được cột nào mới, nên cột
+ẩn sẵn thêm vào bảng ĐÃ PHÁT HÀNH phải khai thêm `hiddenForOlderLayouts: true` — ví dụ cụm cột phụ
+của danh sách ĐMH. Đổi một cột ĐANG hiện thành ẩn sẵn thì luật cũ vẫn đúng: người đã lưu vẫn thấy nó.
+
 ⚠️ Cùng lý do: **đừng đổi ý nghĩa của một `key` đã phát hành**. Bảng nhớ độ rộng
 và trạng thái ẩn/hiện theo `storageKey` + `key`, nên một cột mới mượn lại `key`
 cũ sẽ thừa hưởng độ rộng và trạng thái ẩn của cột đã chết.

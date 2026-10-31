@@ -32,6 +32,12 @@ export interface DataTableColumn<T> {
   /** Mặc định ẩn khi mở bảng lần đầu; người dùng vẫn bật lại được. */
   defaultHidden?: boolean
   /**
+   * bao-CR-705 — cột `defaultHidden` thêm SAU khi bảng đã phát hành. Người đã lưu bố cục từ TRƯỚC
+   * khi bảng biết ghi `knownColumns` cũng thấy cột này ẩn (chứ không bật sẵn như luật cũ ở
+   * docs/ui/table.md §4). Bố cục lưu từ nay đã có `knownColumns` nên không cần cờ này nữa.
+   */
+  hiddenForOlderLayouts?: boolean
+  /**
    * Mặc định GHIM sang trái (dính khi cuộn ngang). Chỉ đặt cho cột định danh
    * của bảng nhiều cột — ghim nhiều quá thì không còn chỗ cho dữ liệu.
    */
@@ -167,6 +173,12 @@ export interface DataTableLayout {
    * Không có khóa = cột dùng nền mặc định.
    */
   columnColors: Record<string, string>
+  /**
+   * bao-CR-705 — mọi khóa cột bảng đã BIẾT lúc lưu. Cột không có ở đây là cột mới thêm sau:
+   * khai `defaultHidden` thì vào ẩn, khỏi bật sẵn trước mặt người đã tùy chỉnh bảng.
+   * Bản lưu cũ không có trường này.
+   */
+  knownColumns?: string[]
 }
 
 /** Thả cột vào TRƯỚC hay SAU cột đang trỏ tới. */
