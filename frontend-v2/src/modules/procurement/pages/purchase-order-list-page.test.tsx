@@ -11,11 +11,13 @@ import { PurchaseOrderListPage } from './purchase-order-list-page'
 //  THAM SỐ nó gửi đi, mà hai ô lọc của bao-CR-443 (`item_group`, `invoice_no`)
 //  chạy trên bảng DÒNG và bảng LẦN GIAO nên chỉ nhìn thấy ở đây.
 const listCalls: ListParams[] = []
+//  Dòng trả về cho bảng — rỗng mặc định; bài bao-CR-705 nạp dòng để soi cột Phòng xử lý.
+const listItems: Record<string, unknown>[] = []
 
 vi.mock('../hooks/use-purchase-documents', () => ({
   usePurchaseOrders: (params: ListParams) => {
     listCalls.push(params)
-    return { data: { total: 0, items: [] }, isLoading: false, isError: false }
+    return { data: { total: listItems.length, items: listItems }, isLoading: false, isError: false }
   },
 }))
 
@@ -58,6 +60,7 @@ function lastCall() {
 
 beforeEach(() => {
   listCalls.length = 0
+  listItems.length = 0
   localStorage.clear()
   sessionStorage.clear()
   useAuthStore.setState({ user: null })
@@ -214,5 +217,52 @@ describe('PurchaseOrderListPage — nút Xóa lọc và câu bảng rỗng', () 
 
     //  Không ô lọc nhanh nào đang bật → tờ lọc không có nút Xóa lọc, không có huy hiệu.
     expect(screen.queryByRole('button', { name: 'Xóa lọc' })).toBeNull()
+  })
+})
+
+describe('PurchaseOrderListPage — cột Phòng xử lý (bao-CR-705)', () => {
+  function row(id: number, handler: string | undefined) {
+    return {
+      id, code: `PO0${id}`, misa_code: '', pr_code: '', survey_code: '', company_id: 1,
+      supplier_code: 'NCC', supplier_name: 'Nhà cung cấp', department: 'Dego Organic', nspt: '',
+      order_date: '2026-10-31', is_urgent: false, order_type: 1, status: 'approved',
+      document_status: '', note: '', created_at: '2026-10-31T08:00:00', amount: 0,
+      handler_dept_id: 5, handler_dept_name: handler, approver_name: 'Đoàn Minh Khôi',
+      company_name: 'CÔNG TY TNHH DEGO HOLDING', created_by_name: 'Trần Diễm Phương',
+    }
+  }
+
+  it('shows the handling department as its own column, visible without touching the Cột menu', () => {
+    listItems.push(row(1, 'Dego Organic'), row(2, 'Sản xuất -Thu mua'))
+    build()
+    expect(screen.getByRole('columnheader', { name: /Phòng xử lý/ })).toBeInTheDocument()
+    expect(screen.getByText('Sản xuất -Thu mua')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: /Trưởng phòng phê duyệt/ })).toBeInTheDocument()
+    expect(screen.getAllByText('Đoàn Minh Khôi').length).toBeGreaterThan(0)
+  })
+
+  it('keeps the extra columns hidden until the user ticks them in the Cột menu', () => {
+    listItems.push(row(1, 'Dego Organic'))
+    build()
+    expect(screen.queryByRole('columnheader', { name: /Công ty nhận hóa đơn/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('Trần Diễm Phương')).not.toBeInTheDocument()
+  })
+
+  it('does not switch the extra columns on for someone whose layout was saved before CR-705', () => {
+    //  Bố cục lưu kiểu cũ (chưa có knownColumns): luật cũ sẽ bật sẵn mọi cột mới thêm.
+    localStorage.setItem(
+      'erp.table.procurement.purchase-orders',
+      JSON.stringify({ hiddenColumns: [], columnWidths: { code: 160 } }),
+    )
+    listItems.push(row(1, 'Dego Organic'))
+    build()
+    expect(screen.queryByRole('columnheader', { name: /Công ty nhận hóa đơn/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: /Phòng xử lý/ })).toBeInTheDocument()
+  })
+
+  it('leaves the cell blank instead of printing undefined when the server sends no name', () => {
+    listItems.push(row(3, undefined))
+    build()
+    expect(screen.queryByText('undefined')).not.toBeInTheDocument()
   })
 })

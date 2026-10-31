@@ -19,16 +19,24 @@ export function useTableLayout<T>(columns: DataTableColumn<T>[], storageKey?: st
       columnOrder: [],
       pinnedColumns: columns.filter((c) => c.defaultPinned).map((c) => c.key),
       columnColors: {},
+      knownColumns: columns.map((c) => c.key),
     }),
     [columns],
   )
 
-  const [layout, setLayout] = useState<DataTableLayout>(
-    () => readLayout(storageKey) ?? defaultLayout,
-  )
+  const [layout, setLayout] = useState<DataTableLayout>(() => {
+    const saved = readLayout(storageKey)
+    return saved ? hideNewColumns(saved, columns) : defaultLayout
+  })
 
   const persist = useCallback(
-    (next: DataTableLayout) => {
+    (changed: DataTableLayout) => {
+      //  bao-CR-705: ghi kèm mọi khóa cột đang biết (gộp với bản cũ — cột chỉ hiện theo quyền
+      //  vắng mặt một lúc không bị coi là "mới" lần sau).
+      const known = Array.from(
+        new Set([...(changed.knownColumns ?? []), ...columns.map((c) => c.key)]),
+      )
+      const next = { ...changed, knownColumns: known }
       setLayout(next)
       if (!storageKey) return
       try {
@@ -38,7 +46,7 @@ export function useTableLayout<T>(columns: DataTableColumn<T>[], storageKey?: st
         // không nhớ được sang phiên sau.
       }
     },
-    [storageKey],
+    [storageKey, columns],
   )
 
   /**
@@ -178,6 +186,34 @@ export function useTableLayout<T>(columns: DataTableColumn<T>[], storageKey?: st
   }
 }
 
+/**
+ * bao-CR-705 — cột mới thêm sau khi người dùng đã lưu bố cục: cột khai `defaultHidden` thì vào ẩn.
+ *
+ * "Mới" = không có trong `knownColumns` của bản lưu. Bản lưu cũ chưa có trường đó thì không phân
+ * biệt được cột nào mới, nên chỉ áp cho cột khai `hiddenForOlderLayouts` mà bản lưu chưa từng nhắc
+ * tới (không trong danh sách ẩn, thứ tự, độ rộng, ghim, màu). Cột người dùng đã bật thì giữ nguyên.
+ */
+export function hideNewColumns<T>(
+  saved: DataTableLayout,
+  columns: DataTableColumn<T>[],
+): DataTableLayout {
+  const known = saved.knownColumns
+  const mentioned = new Set([
+    ...saved.hiddenColumns,
+    ...saved.columnOrder,
+    ...saved.pinnedColumns,
+    ...Object.keys(saved.columnWidths),
+    ...Object.keys(saved.columnColors),
+  ])
+  const fresh = columns.filter((c) =>
+    known ? !known.includes(c.key) : c.hiddenForOlderLayouts && !mentioned.has(c.key),
+  )
+  const toHide = fresh
+    .filter((c) => c.defaultHidden && !saved.hiddenColumns.includes(c.key))
+    .map((c) => c.key)
+  return toHide.length ? { ...saved, hiddenColumns: [...saved.hiddenColumns, ...toHide] } : saved
+}
+
 function readLayout(storageKey?: string): DataTableLayout | null {
   if (!storageKey) return null
   try {
@@ -193,6 +229,8 @@ function readLayout(storageKey?: string): DataTableLayout | null {
       pinnedColumns: Array.isArray(parsed.pinnedColumns) ? parsed.pinnedColumns : [],
       columnColors:
         parsed.columnColors && typeof parsed.columnColors === 'object' ? parsed.columnColors : {},
+      //  bao-CR-705: bản lưu trước CR-705 không có -> undefined (khác mảng rỗng), xem `hideNewColumns`.
+      knownColumns: Array.isArray(parsed.knownColumns) ? parsed.knownColumns : undefined,
     }
   } catch {
     // Dữ liệu cũ hỏng định dạng -> bỏ qua, dùng mặc định.

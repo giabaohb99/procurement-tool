@@ -94,3 +94,80 @@ describe('cột mới đặt về đầu bảng', () => {
     localStorage.clear()
   })
 })
+
+// bao-CR-705: thêm cột ẩn sẵn vào bảng đã phát hành — luật cũ (docs/ui/table.md §4) bật sẵn cột đó
+// trước mặt mọi người đã từng lưu bố cục, nên danh sách ĐMH thêm chục cột phụ là vỡ bảng của họ.
+describe('cột mới ẩn sẵn trước mặt người đã lưu bố cục', () => {
+  const KEY = 'test-cr705'
+  const base: DataTableColumn<Row>[] = [
+    { key: 'code', header: 'Mã', cell: (row) => row.id },
+    { key: 'title', header: 'Tên', cell: () => null },
+  ]
+  const withNew: DataTableColumn<Row>[] = [
+    ...base,
+    { key: 'shown_new', header: 'Mới hiện', cell: () => null },
+    {
+      key: 'hidden_new',
+      header: 'Mới ẩn',
+      cell: () => null,
+      defaultHidden: true,
+      hiddenForOlderLayouts: true,
+    },
+  ]
+  const keysOf = (cols: { key: string }[]) => cols.map((c) => c.key)
+  const save = (layout: object) =>
+    localStorage.setItem(`erp.table.${KEY}`, JSON.stringify(layout))
+
+  it('hides a new defaultHidden column for a layout saved with knownColumns', () => {
+    localStorage.clear()
+    save({ hiddenColumns: [], columnWidths: {}, knownColumns: ['code', 'title'] })
+    const { result } = renderHook(() => useTableLayout(withNew, KEY))
+    expect(keysOf(result.current.visibleColumns)).toEqual(['code', 'title', 'shown_new'])
+  })
+
+  it('hides a flagged column for a legacy layout that never mentioned it', () => {
+    localStorage.clear()
+    //  Bản lưu kiểu cũ: không có knownColumns, người dùng mới kéo giãn cột "Tên".
+    save({ hiddenColumns: [], columnWidths: { title: 220 } })
+    const { result } = renderHook(() => useTableLayout(withNew, KEY))
+    expect(keysOf(result.current.visibleColumns)).toEqual(['code', 'title', 'shown_new'])
+  })
+
+  it('keeps an old unflagged defaultHidden column exactly as a legacy layout showed it', () => {
+    localStorage.clear()
+    const legacy: DataTableColumn<Row>[] = [
+      ...base,
+      { key: 'note', header: 'Ghi chú', cell: () => null, defaultHidden: true },
+    ]
+    save({ hiddenColumns: [], columnWidths: {} })
+    const { result } = renderHook(() => useTableLayout(legacy, KEY))
+    expect(keysOf(result.current.visibleColumns)).toEqual(['code', 'title', 'note'])
+  })
+
+  it('does not hide again a new column the user switched on', () => {
+    localStorage.clear()
+    save({ hiddenColumns: [], columnWidths: {}, knownColumns: ['code', 'title'] })
+    const first = renderHook(() => useTableLayout(withNew, KEY))
+    act(() => first.result.current.toggleColumn('hidden_new'))
+    first.unmount()
+    const again = renderHook(() => useTableLayout(withNew, KEY))
+    expect(keysOf(again.result.current.visibleColumns)).toContain('hidden_new')
+  })
+
+  it('reset brings back the default set and drops dragged widths', () => {
+    localStorage.clear()
+    save({ hiddenColumns: ['title'], columnWidths: { code: 300 }, knownColumns: ['code', 'title'] })
+    const { result } = renderHook(() => useTableLayout(withNew, KEY))
+    act(() => result.current.resetLayout())
+    expect(keysOf(result.current.visibleColumns)).toEqual(['code', 'title', 'shown_new'])
+    expect(result.current.layout.columnWidths).toEqual({})
+  })
+
+  it('treats a corrupt knownColumns value as a legacy layout instead of crashing', () => {
+    localStorage.clear()
+    save({ hiddenColumns: [], columnWidths: {}, knownColumns: 'code,title' })
+    const { result } = renderHook(() => useTableLayout(withNew, KEY))
+    expect(keysOf(result.current.visibleColumns)).toEqual(['code', 'title', 'shown_new'])
+    localStorage.clear()
+  })
+})

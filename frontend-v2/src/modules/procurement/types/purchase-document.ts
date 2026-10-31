@@ -62,6 +62,20 @@ export interface PurchaseOrder {
   supplier_code: string
   supplier_name: string
   department: string
+  /** bao-CR-705 — phòng ĐANG XỬ LÝ đơn (0 cũ đã đổi sẵn sang id phòng thu mua mặc định ở máy chủ). */
+  handler_dept_id?: number
+  /** bao-CR-705 — tên phòng xử lý, máy chủ gắn sẵn cho cả trang. */
+  handler_dept_name?: string
+  /** bao-CR-705 — trưởng phòng phê duyệt ĐMH (`approver_employee_id`) và các cột phụ ẩn sẵn. */
+  approver_employee_id?: number
+  approver_name?: string
+  company_name?: string
+  created_by_name?: string
+  payment_terms?: string
+  currency?: string
+  exchange_rate?: number
+  etd_date?: string
+  customs_decl_no?: string
   /** Nhân sự phụ trách. */
   nspt: string
   order_date: string
