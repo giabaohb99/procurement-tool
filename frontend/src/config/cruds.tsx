@@ -18,7 +18,7 @@ import {
   employeeStatusLabel, poDocumentStatusLabel, supplierLegalTypeLabel,
 } from '../utils/statusLabels'
 import { fmtDateStr, fmtDateTime } from '../utils/datetime'
-import { fmtVND } from '../utils/money'
+import { fmtPrice, fmtVND } from '../utils/money'
 import { initialsOf } from '../utils/name'
 import { SOURCE_TYPE_OPTIONS, sourceTypeLabel } from '../utils/payable'
 
@@ -40,10 +40,28 @@ export type FieldDef = {
                           // Dành cho ô mô tả dài (địa chỉ kho, ghi chú), nằm nửa cột thì quá chật.
 }
 // link?: trả URL → cell thành clickable, điều hướng tới URL đó (chặn click lan ra dòng)
-export type Column = { key: string; label: string; render?: (row: any) => any; link?: (row: any) => string }
+export type Column = {
+  key: string; label: string; render?: (row: any) => any; link?: (row: any) => string
+  // bao-CR-705: cột phụ ẩn sẵn (tick trong menu Cột mới hiện); `hiddenForOlderLayouts` cho cột ẩn sẵn
+  // thêm vào bảng đã dùng; `noSort` cho cột tên do máy chủ gắn thêm (không có cột DB để sắp xếp).
+  defaultHidden?: boolean; hiddenForOlderLayouts?: boolean; noSort?: boolean
+}
 
 // bao-CR-294 — cột "Ngày cập nhật" dùng chung cho mọi bảng danh sách. Bấm header để sắp xếp
 // theo lần cập nhật gần nhất (lần bấm đầu ra DESC — xem handleSort của CrudList).
+// bao-CR-705 — cột phụ của danh sách ĐMH, ẩn sẵn kể cả với người đã lưu ẩn/hiện cột từ trước.
+const PO_HIDDEN_EXTRA_COLS: Column[] = ([
+  { key: 'department', label: 'Phòng lập', render: (r: any) => r.department || '' },
+  { key: 'company_name', label: 'Công ty nhận hóa đơn', noSort: true, render: (r: any) => r.company_name || '' },
+  { key: 'nspt', label: 'NSPT', render: (r: any) => r.nspt || '' },
+  { key: 'created_by_name', label: 'Người tạo', noSort: true, render: (r: any) => r.created_by_name || '' },
+  { key: 'payment_terms', label: 'Hình thức thanh toán', render: (r: any) => r.payment_terms || '' },
+  { key: 'currency', label: 'Tiền tệ', render: (r: any) => r.currency || '' },
+  { key: 'exchange_rate', label: 'Tỷ giá', render: (r: any) => (r.exchange_rate ? fmtPrice(r.exchange_rate) : '') },
+  { key: 'etd_date', label: 'Ngày ETD', render: (r: any) => r.etd_date || '' },
+  { key: 'customs_decl_no', label: 'Số tờ khai HQ', render: (r: any) => r.customs_decl_no || '' },
+] as Column[]).map((c) => ({ ...c, defaultHidden: true, hiddenForOlderLayouts: true }))
+
 const UPDATED_AT_COL: Column = {
   key: 'updated_at', label: 'Ngày cập nhật', render: (r) => fmtDateTime(r.updated_at) || '—',
 }
@@ -763,6 +781,10 @@ export const cruds: Record<string, CrudConfig> = {
       } },
       { key: 'supplier_code', label: 'Nhà cung cấp', render: (r) => r.supplier_code || r.supplier_name || '' },
       { key: 'pr_code', label: 'Mã PYC', link: (r) => (r.pr_id ? `/purchase-requests/${r.pr_id}` : '') },
+      // bao-CR-705: hai cột HIỆN sẵn + cụm cột phụ ẨN sẵn (đồng bộ màn v2). Tên do máy chủ gắn cả trang.
+      { key: 'handler_dept_name', label: 'Phòng xử lý', noSort: true, render: (r) => r.handler_dept_name || '' },
+      { key: 'approver_name', label: 'Trưởng phòng phê duyệt', noSort: true, render: (r) => r.approver_name || '' },
+      ...PO_HIDDEN_EXTRA_COLS,
       { key: 'amount', label: 'Tiền hàng', render: (r) => (r.amount ? fmtVND(r.amount) + ' đ' : '0 đ') },
       { key: 'is_urgent', label: 'Gấp', render: (r) => (r.is_urgent ? <span className="badge warn">Gấp</span> : '') },
       { key: 'document_status', label: 'Hồ sơ chứng từ', render: (r) => docStatusBadge(r.document_status) },

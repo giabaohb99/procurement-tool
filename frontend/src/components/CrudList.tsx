@@ -104,7 +104,9 @@ export default function CrudList() {
       ...cfg.columns.map((c): TableColumn<any> => ({
         key: c.key,
         label: c.label,
-        sort: c.key,
+        sort: c.noSort ? undefined : c.key,
+        defaultHidden: c.defaultHidden,           // bao-CR-705
+        hiddenForOlderLayouts: c.hiddenForOlderLayouts,
         cell: (row) => {
           const content = c.render ? c.render(row) : (row[c.key] ?? '')
           const href = c.link?.(row)
