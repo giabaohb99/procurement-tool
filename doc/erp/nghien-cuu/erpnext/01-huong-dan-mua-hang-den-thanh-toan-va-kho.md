@@ -54,7 +54,7 @@ Mẹo: muốn xem hai vai cùng lúc thì mở thêm một **cửa sổ ẩn dan
 
 ### 0.4 Bộ chứng từ mẫu đã làm sẵn (31/10/2026)
 
-Một vòng đã làm xong đúng như Phần B và C, để mở ra xem từng bước và bút toán (bấm **Sổ cái** trên chứng từ). Ghi chú trên chứng từ có chữ *MẪU HƯỚNG DẪN*. Đại ca tự làm lại một vòng mới theo tài liệu để tập.
+Một vòng đã làm xong đúng như Phần B và C, để mở ra xem từng bước và bút toán (bấm **Sổ cái** trên chứng từ). Ghi chú trên chứng từ có chữ *MẪU HƯỚNG DẪN*. Người học tự làm lại một vòng mới theo tài liệu để tập.
 
 | Bước | Chứng từ mẫu | Bút toán thật trên máy |
 |---|---|---|
@@ -71,9 +71,20 @@ Một vòng đã làm xong đúng như Phần B và C, để mở ra xem từng 
 | C4 Kiểm kê KHO B18 thiếu 10 | **MAT-RECO-2026-00002** | Nợ Stock Adjustment 35.000 / Có Stock In Hand 35.000 |
 | C5 Trả 100 chai lỗi | **MAT-PRE-2026-00370** (biên nhận trả) | Nợ SRBNB 350.000 / Có Stock In Hand 350.000 |
 | C5 Giấy báo nợ | **ACC-PINV-2026-00571** | Nợ Creditors 385.000 / Có SRBNB 350.000, Có Thuế GTGT đầu vào 35.000 |
-| C6 Đơn nhỏ thu mua tự duyệt, nhận đợt 1 | **PUR-ORD-2026-00404** + **MAT-PRE-2026-00371** | Đơn đã nhận 60%; **còn 2.000 chai để đại ca tự nhận đợt 2** |
+| C6 Đơn nhỏ thu mua tự duyệt, nhận đợt 1 | **PUR-ORD-2026-00404** + **MAT-PRE-2026-00371** | Đơn đã nhận 60%; **còn 2.000 chai để người học tự nhận đợt 2** |
 
 Sau giấy báo nợ, vì hóa đơn đã trả đủ, Cẩm Hùng đang **nợ ngược lại** công ty 385.000 (xem Tóm tắt Phải trả).
+
+Chứng từ **thật** đồng bộ từ ERP DEGO để tra đối chiếu (ô tìm theo cột **Mã ERP** dùng được):
+
+| Loại | Mã ERPNext | Mã bên ERP DEGO |
+|---|---|---|
+| Yêu cầu vật tư | MAT-MR-2026-00322 | PYC29072701 (phiếu gõ nhầm năm 2027, ngày đã kẹp về 30/10) |
+| Đơn mua hàng | PUR-ORD-2026-00402 | PO00839 |
+| Biên nhận mua hàng | MAT-PRE-2026-00368 | PO00807, nhận 30/10 |
+| Hóa đơn mua hàng (công nợ) | ACC-PINV-2026-00536 | Công nợ SVC Chemical khoảng 108 triệu, hạn 27/10 (đã quá hạn) |
+
+Tài khoản tập kế toán `ke.toan@erpnext.local` và quyền Stock Manager của `thu.kho` được thêm ngày 31/10/2026 để đi trọn vòng.
 
 ---
 
@@ -105,7 +116,7 @@ Yêu cầu vật tư -> Yêu cầu báo giá -> Báo giá NCC -> Duyệt đơn m
 
 ### A.3 Tài khoản ERPNext dùng và tài khoản tương ứng theo chế độ kế toán Việt Nam
 
-Hệ thống tài khoản trên site là **chuẩn quốc tế của ERPNext**, chưa phải Thông tư 200. Bảng dưới để đại ca đọc bút toán theo thói quen số hiệu Việt Nam.
+Hệ thống tài khoản trên site là **chuẩn quốc tế của ERPNext**, chưa phải Thông tư 200. Bảng dưới để đọc bút toán theo thói quen số hiệu Việt Nam.
 
 | Tài khoản ERPNext (công ty DGH) | Tương ứng VAS (TT200) | Ghi chú |
 |---|---|---|
