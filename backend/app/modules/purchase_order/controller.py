@@ -407,6 +407,10 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
                       .filter(PurchaseRequest.code.in_(codes)).all()}
         for r in out:
             r["pr_id"] = id_by_code.get(r.get("pr_code"))
+    # bao-CR-705: Phòng xử lý, Trưởng phòng phê duyệt + các cột ẩn sẵn (công ty, người tạo, tỷ giá)
+    extra = service.list_display_names(db, items)
+    for r in out:
+        r.update(extra.get(r["id"], {}))
     return success({"total": total, "items": out})
 
 
