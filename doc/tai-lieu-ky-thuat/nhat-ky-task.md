@@ -18159,7 +18159,7 @@ Mã nguồn: doc/erp/nghien-cuu/erpnext/03-chuc-nang-nhan-su-erpnext-va-doi-chie
 - Ngày sinh bị che với người không có quyền xem thông tin nhạy cảm nên dòng sinh nhật không bao giờ hiện cho họ.
 - Sửa bài hướng dẫn nhập lương cho đúng chỗ mới của nhóm Lương.
 
-**Kết quả:** kiểm tra kiểu sạch, kiểm lỗi cú pháp không thêm cảnh báo; 1822 bài kiểm giao diện của phân hệ Nhân sự, Hồ sơ và lớp dùng chung đều xanh, trong đó 25 bài mới. Agent rà mã không thấy lỗi chặn, hai mục nên sửa đã sửa. Đã xem trên máy local ở khổ 1856, 1280 và 390 điểm ảnh. Chưa commit, chưa chạy lại seed bài hướng dẫn trên dev.
+**Kết quả:** kiểm tra kiểu sạch, kiểm lỗi cú pháp không thêm cảnh báo; 1822 bài kiểm giao diện của phân hệ Nhân sự, Hồ sơ và lớp dùng chung đều xanh, trong đó 25 bài mới. Agent rà mã không thấy lỗi chặn, hai mục nên sửa đã sửa. Đã xem trên máy local ở khổ 1856, 1280 và 390 điểm ảnh. Đã lên nhánh erp-v2; chưa chạy lại seed bài hướng dẫn trên dev.
 
 Mã nguồn: frontend-v2/src/modules/hr/pages/employee-detail-page.tsx · components/employee-tab-general.tsx · employee-detail-sidebar.tsx · employee-status-indicator.tsx · employee-salary-section.tsx · employee-department-card.tsx · utils/employee-milestones.ts · shared/ui/form-section.tsx · shared/ui/avatar-uploader.tsx · backend/scripts/seed_help_nhan_su.py
 
