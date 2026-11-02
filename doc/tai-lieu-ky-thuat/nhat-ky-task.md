@@ -17980,3 +17980,84 @@ Deploy: backend/scripts/mo_rong_nguoi_duyet_dat_xe.py
 
 Mã nguồn: backend/app/modules/forum/service.py · controller.py · schema.py · model.py · backend/app/core/forum_codes.py · frontend-v2/src/modules/forum/components/forum-admin-posts-tab.tsx · post-edit-dialog.tsx
 Bài kiểm: test/backend/test_forum_sua_bai_cr707.py · frontend-v2/src/modules/forum/utils/prefix-options.test.ts
+
+## tm-3110-tach-nha-may | Tách nhà máy Dego Organic khỏi thu mua chung trên prod
+- status: xong
+- date: 2026-10-31
+- list: Sản xuất - Thu mua
+- tag: Thu mua
+
+**Bối cảnh:** Việc gom nhà máy về phòng Sản xuất - Thu mua (bao-CR-591) chỉ tạm tới hết tháng 10; từ tháng 11 nhà máy tự mua lại như mô hình phòng tự mua.
+
+**Đã làm**
+- Cấp vai trò Admin thu mua phòng cho Nguyễn Thanh Phương, Nguyễn Thị Kiều Trang và Trần Diễm Phương; Quản lý thu mua phòng cho Đoàn Minh Khôi; Nhân viên thu mua nhà máy cho Kiều Trang và Trần Diễm Phương; bỏ Admin thu mua chung của Kiều Trang và Nhân viên thu mua chung của Trần Diễm Phương.
+- Loại trừ phòng nhà máy cho Châu Phúc Hậu và Phạm Khánh Ngân; Lê Thị Ngọc Mi, Phan Kiều Ngọc Duyên Sang và Trần Chí Dững vẫn thấy phiếu nhà máy theo chốt giữ hiện trạng.
+- Phiếu nhà máy lập trong tháng 10 giữ ở phòng xử lý Sản xuất - Thu mua để thu mua chung làm nốt; năm dòng chưa lên đơn của Trần Diễm Phương được gán lại tự động theo phân công của phòng Sản xuất - Thu mua.
+- Dựng bộ phân công theo nhóm hàng của phòng nhà máy (71 nhóm), người phụ trách chính là Trần Diễm Phương; đăng xuất 28 tài khoản nhà máy cùng hai tài khoản thu mua chung để nhận quyền mới.
+
+**Kết quả:** mô phỏng có hoàn tác xác nhận phiếu mới của nhà máy tự giao nhà máy xử lý, người nhà máy thấy và cầm được phiếu, thu mua chung bị loại trừ không thấy.
+
+Deploy: prod 31/10/2026, sao lưu prod_truoc_release_20261031_1155 và _1400; script D:/tmp/agc/tach_nha_may_3110.py, nha_may_trang_va_phan_cong_3110.py, tdp_ve_nha_may_3110.py.
+
+## dx-3110-bat-dong-bo-erp-app-cu | Bật chiều đồng bộ ERP sang app đặt xe cũ trên prod
+- status: xong
+- date: 2026-10-31
+- list: Duyệt dấu, Đặt xe
+
+**Bối cảnh:** Mã đồng bộ ERP sang app đặt xe cũ (bao-CR-596) đã có từ 05/10 nhưng còn khóa ở cả hai đầu.
+
+**Đã làm**
+- Sao lưu toàn bộ Firebase của app cũ trước khi bật.
+- Gộp nhánh dev vào main của Worker app cũ và bật cờ nhận đồng bộ cho môi trường production; bật công tắc gửi thay đổi sang app cũ ở Cấu hình hệ thống của ERP.
+- Kiểm phiếu thử DX444 tạo trên ERP sang app cũ sau ba giây, rồi xóa phiếu thử ở cả hai bên.
+
+**Kết quả:** mọi thay đổi trên phiếu đặt xe và phiếu đóng dấu từ lúc gửi duyệt trở đi tự sang app cũ; phiếu nháp không gửi.
+
+Deploy: Worker main 812c476; ERP sync_datxe_outbound_enabled bật 31/10/2026; sao lưu ~/proc_backups/rtdb_app_cu_20261031_0645.json.gz.
+
+## dd-0211-du-lieu-dien-dan-prod | Dựng chuyên mục và bài mở màn cho diễn đàn trên prod
+- status: xong
+- date: 2026-11-02
+- list: Diễn đàn
+
+**Bối cảnh:** Diễn đàn trên prod chưa có chuyên mục và bài viết nào.
+
+**Đã làm**
+- Dựng bốn nhóm và mười hai mục chuẩn bằng script chuyên mục.
+- Đăng bốn bài có ảnh bìa: hướng dẫn khám sức khỏe định kỳ 2026 kèm đường dẫn tệp PDF, thông báo nghỉ lễ Ngày Văn hóa Việt Nam 24/11/2026, chúc mừng sinh nhật tháng 10 và tháng 11; ghim và gắn nhãn Thông báo cho hai bài đầu.
+- Mở đủ quyền cho vai trò Quản trị Diễn đàn trên bài viết và chuyên mục.
+
+**Kết quả:** diễn đàn prod có dữ liệu để nhân viên bắt đầu dùng; bài sinh nhật đang chúc chung vì hồ sơ nhân sự trên prod chưa có ngày sinh.
+
+Deploy: prod 02/11/2026; script D:/tmp/agc/dien_dan/dang_bai_dien_dan_prod.py, luong_nghi_phep_va_nhan_tb.py.
+
+## hrm-0211-nghi-phep-prod | Nạp danh mục nghỉ phép, lịch nghỉ lễ 2026 và quỹ phép năm 2026 trên prod
+- status: xong
+- date: 2026-11-02
+- list: HRM
+- tag: Nhân sự
+
+**Bối cảnh:** Phân hệ Nghỉ phép trên prod chưa có loại nghỉ, ngày lễ hay quỹ phép nào.
+
+**Đã làm**
+- Nạp tám loại nghỉ theo Bộ luật Lao động, bậc phép thâm niên năm năm cộng một ngày và mười một ngày lễ năm 2026, thêm ngày 24/11 Ngày Văn hóa Việt Nam lặp hằng năm.
+- Cấp quỹ phép năm 2026 mười hai ngày cho 264 nhân sự đang làm; chưa ai được cộng thâm niên vì hồ sơ chưa có ngày vào làm.
+- Khai luồng duyệt dùng chung NP-CHUNG cho mọi công ty chưa có luồng riêng: chặng một quản lý trực tiếp (chưa gán thì trưởng bộ phận, không có thì Trưởng phòng Nhân sự Trần Thị Ánh Hường); chặng hai đơn trên ba ngày do Trưởng phòng Nhân sự duyệt, từ ba ngày trở xuống Nhân sự chỉ nhận thông báo. Luồng riêng của AGC giữ nguyên.
+
+**Kết quả:** xem trước luồng cho nhân sự mẫu ra đúng người duyệt; công ty AGC vẫn đi luồng riêng.
+
+Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, luong_nghi_phep_va_nhan_tb.py.
+
+## hrm-0211-viec-tiep-nghi-phep | Bổ sung dữ liệu hồ sơ để nghỉ phép và luồng duyệt chạy đủ
+- status: dang-lam
+- date: 2026-11-02
+- list: HRM
+- tag: Nhân sự
+
+**Bối cảnh:** Sau khi nạp nghỉ phép trên prod còn thiếu dữ liệu hồ sơ nên một số luật chưa chạy đủ.
+
+**Việc cần làm**
+- Nhập ngày vào làm cho nhân sự rồi chạy lại cấp phép thâm niên.
+- Gán quản lý trực tiếp trên hồ sơ nhân viên; gán trưởng phòng cho tám phòng còn trống (N2AGRO, Dego Holding, Agricare, N2AGRO-KT, Mua Hàng, Dego Agrochem, Pháp Lý, R&D).
+- Chốt người duyệt chặng một khi chính Trưởng phòng Nhân sự xin nghỉ.
+- Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
