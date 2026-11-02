@@ -18104,3 +18104,20 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 
 Mã nguồn: backend/app/core/leave_codes.py · backend/app/seed_nghi_phep.py · frontend-v2/src/shared/constants/statuses.ts · frontend-v2/src/modules/hr/utils/leave-print-category.ts
 Commit: cde5c5ca · 9c04f723 · b089386d
+
+## nc-12-module-kho-mat-hang | Nghiên cứu năm module mặt hàng, kho, nhận hàng, lô, xuất hàng so với ERPNext và kế hoạch triển khai
+- status: xong
+- date: 2026-11-02
+- list: Sản xuất - Thu mua
+- tag: Nghiên cứu, Kho
+
+**Bối cảnh:** Trước khi làm kho cần biết ERP DEGO đang ở ngưỡng nào so với ERPNext ở từng module quanh kho, và làm theo thứ tự nào.
+
+**Đã làm**
+- Năm nhóm nghiên cứu song song, mỗi nhóm một tài liệu: mặt hàng, kho lõi, nhận hàng và chất lượng, lô serial hạn dùng, xuất kho và giao hàng; đọc trực tiếp cấu hình và mã nguồn ERPNext 16.53 trên trang học cùng mã nguồn ERP DEGO.
+- Báo cáo tổng chấm năm module được khoảng hai mươi lăm phần trăm, xếp ngưỡng từ không tới bốn, gộp kế hoạch thành sáu giai đoạn với đường găng là sổ kho mới, gộp mười ba câu cần chốt và sáu rủi ro.
+- Sửa ghi chú hướng dẫn ERPNext mục kiểm chất lượng cho khớp cài đặt tính tiền số lượng từ chối đang bật trên trang học.
+
+**Kết quả:** tài liệu nằm ở thư mục item, inventory, receiving, batch-serial, delivery và báo cáo tổng số 12 trong thư mục nghiên cứu.
+
+Tham chiếu: doc/erp/nghien-cuu/12-muc-do-module-kho-mat-hang-va-ke-hoach.md

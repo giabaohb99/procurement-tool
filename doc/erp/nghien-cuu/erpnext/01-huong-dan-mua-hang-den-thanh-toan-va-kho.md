@@ -380,7 +380,7 @@ Nhận **dư** hơn số đặt bị chặn, trừ khi mặt hàng có **Dung sa
 2. Phiếu Kiểm tra: kết quả **Chấp nhận** (Accepted) hoặc **Từ chối** (Rejected) → Gửi.
 3. Quay lại biên nhận: nhập **Số lượng chấp nhận** và **Số lượng từ chối**, chọn **Kho từ chối** (Rejected Warehouse). Biên nhận chỉ gửi được khi đã có phiếu kiểm tra.
 
-**Bút toán:** chỉ phần **chấp nhận** vào *Stock In Hand*. Phần từ chối nằm ở kho từ chối với giá trị 0 và không tính vào công nợ; sau đó trả NCC theo mục C.5.
+**Bút toán:** chỉ phần **chấp nhận** vào *Stock In Hand*; phần từ chối nằm ở kho từ chối với giá trị 0. **Lưu ý cấu hình trang học:** cài đặt *Tính tiền cả số lượng từ chối trên hóa đơn mua* (`bill_for_rejected_quantity_in_purchase_invoice`) đang **bật**, nên hóa đơn lập từ biên nhận vẫn kéo cả số từ chối vào công nợ. Muốn phần lỗi không thành nợ thì tắt cài đặt này ở **Cài đặt mua hàng** (Buying Settings) hoặc sửa số lượng trên hóa đơn trước khi gửi; sau đó trả NCC theo mục C.5.
 
 ### C.8 Tự đề nghị mua khi tồn thấp
 
