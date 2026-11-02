@@ -3,7 +3,7 @@
     docker compose exec api python -m app.seed_nghi_phep
 
 Nạp bốn thứ, mỗi thứ chỉ khi nó chưa có:
-  1. 7 loại nghỉ, ĐÚNG bộ mã chuỗi mà giấy GNP đang dùng (`core/leave_codes.py`);
+  1. các loại nghỉ (13 từ bao-CR-708), ĐÚNG bộ mã chuỗi mà giấy GNP đang dùng (`core/leave_codes.py`);
   2. bậc thâm niên của Phép năm — luật *5 năm +1 ngày*, khai bằng DỮ LIỆU;
   3. lịch ngày lễ 2026 theo Bộ luật Lao động;
   4. luồng duyệt cho `leave_request` + bật bộ máy duyệt cho nó.
@@ -61,7 +61,38 @@ LEAVE_TYPES = [
     #  Cần đính kèm: giấy chứng sinh.
     ("paternity", "Nghỉ vợ sinh con",   True,  False,  0.0, 14.0,
      GENDER_MALE, True,  True,  45),
+    #  bao-CR-708 (02/11/2026) — các chế độ BHXH tách riêng. "Có lương" ở đây nghĩa là
+    #  người nghỉ VẪN được trả thay lương, nhưng do BHXH chi chứ không phải công ty (ghi rõ ở
+    #  ghi chú). Không trừ quỹ phép năm. Cột "trừ lễ + cuối tuần": luật tính theo NGÀY LÀM VIỆC
+    #  thì True; luật tính "kể cả ngày nghỉ lễ, Tết, nghỉ hằng tuần" thì False.
+    ("child_sick",    "Nghỉ chăm con ốm",                    True, False, 0.0, 20.0, 0,
+     True,  True,  35),
+    ("recuperation",  "Nghỉ dưỡng sức phục hồi sức khỏe",    True, False, 0.0, 10.0, 0,
+     False, False, 36),
+    ("prenatal",      "Nghỉ khám thai",                      True, False, 0.0, 2.0,
+     GENDER_FEMALE, True, True,  41),
+    ("miscarriage",   "Nghỉ sảy thai, phá thai",             True, False, 0.0, 50.0,
+     GENDER_FEMALE, True, False, 42),
+    ("contraception", "Nghỉ thực hiện biện pháp tránh thai", True, False, 0.0, 15.0, 0,
+     True,  False, 43),
 ]
+
+#  Ghi chú hiện ở màn danh mục loại nghỉ — con số và căn cứ để người duyệt đối chiếu, vì máy
+#  chỉ chặn TRẦN (không biết tuổi thai, tuổi con hay ca phẫu thuật). Chỉ ghi lúc TẠO loại mới.
+BHXH_NOTE = "BHXH chi trả, không phải công ty trả lương. "
+LEAVE_TYPE_NOTES = {
+    "child_sick": BHXH_NOTE + "Con dưới 7 tuổi bị ốm: tối đa 20 ngày làm việc/năm nếu con dưới 3 tuổi, "
+                  "15 ngày nếu con từ đủ 3 đến dưới 7 tuổi (chế độ ốm đau, Luật BHXH 2024). Cần giấy của cơ sở y tế.",
+    "recuperation": BHXH_NOTE + "Dưỡng sức sau ốm đau / thai sản / sảy thai: 5 đến 10 ngày tùy trường hợp, "
+                    "tính cả ngày lễ và nghỉ hằng tuần; công ty cùng công đoàn quyết định số ngày (Luật BHXH 2024).",
+    "prenatal": BHXH_NOTE + "Tối đa 5 lần trong thai kỳ, mỗi lần không quá 2 ngày (Điều 51 Luật BHXH 2024). "
+                "Cần giấy khám thai.",
+    "miscarriage": BHXH_NOTE + "Sảy thai, phá thai, thai chết lưu, thai ngoài tử cung: tối đa 10 ngày nếu thai dưới "
+                   "5 tuần; 20 ngày nếu từ 5 đến dưới 13 tuần; 40 ngày nếu từ 13 đến dưới 22 tuần; 50 ngày nếu từ "
+                   "22 tuần trở lên, kể cả ngày lễ và nghỉ hằng tuần (Điều 52 Luật BHXH 2024). Cần giấy ra viện / chứng nhận.",
+    "contraception": BHXH_NOTE + "Đặt dụng cụ tránh thai trong tử cung: không quá 7 ngày; triệt sản (nam hoặc nữ): "
+                     "không quá 15 ngày (Điều 57 Luật BHXH 2024). Cần giấy của cơ sở y tế.",
+}
 
 #  Luật *cứ 5 năm thâm niên thì thêm 1 ngày phép*. Khai bằng DỮ LIỆU chứ không
 #  bằng `years // 5` trong mã — công ty đổi thành bậc không đều là sửa bảng,
@@ -102,6 +133,7 @@ def seed_leave_types(db) -> int:
             annual_quota_days=quota, max_days_per_request=cap, gender=gender,
             require_attachment=attach,
             exclude_holiday=exclude, sort_order=order,
+            note=LEAVE_TYPE_NOTES.get(code, ""),
             created_by=ACTOR, updated_by=ACTOR,
         ))
         added += 1
