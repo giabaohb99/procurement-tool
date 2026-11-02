@@ -54,6 +54,7 @@ READ_TOOLS = frozenset({
     "supplier_scorecard", "supplier_search", "suppliers_for_product",
     "plan_context", "task_type_stats", "team_capacity",   # kh-AI1-2/3
     "office_read",   # kh-AI2-3: chỉ đọc; quyền gác trong tool (khóa báo cáo 16 / trưởng phòng)
+    "background_jobs",   # bao-CR-703: sổ việc chạy ngầm, gác setting.read trong tool
 })
 #  ai-CR-216 (Agent 1 chuyển 17/10): ba tool báo cáo mua hàng cũ GỠ khỏi cổng MCP (vẫn giữ cho Trợ lý web / bot) — đã có
 #  đường chuẩn §5.6 phủ đủ: report_summary (purchase_report) và dataset_query dataset=purchase (analytics_query,

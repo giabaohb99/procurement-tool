@@ -107,6 +107,8 @@ TOOL_DANH_MUC = {
     #  trưởng phòng được THỨ TỰ gợi ý trong phòng mình + phòng con (ca thật ở test_assistant_nang_luc_doi_kh_ai1_2.py).
     "team_capacity": "gợi ý người giao việc — khóa báo cáo 16 hoặc trưởng phòng (phòng mình + phòng con)",
     "task_type_stats": "thống kê tốc độ theo loại việc — chỉ khóa báo cáo 16",
+    #  bao-CR-703 — sổ việc chạy ngầm của HỆ THỐNG (không phải dữ liệu người dùng), gác setting.read (quản trị).
+    "background_jobs": "sổ việc chạy ngầm — chỉ người có setting.read",
     #  kh-AI1-3 — gói team_capacity + task_type_stats (giữ nguyên cửa gác của hai tool đó) + danh mục loại việc + đề xuất
     #  kế hoạch CỦA CHÍNH người hỏi (lọc cứng owner_user_id).
     "plan_context": "bối cảnh lập kế hoạch — work_task.create + cửa gác của team_capacity / task_type_stats",
@@ -178,8 +180,8 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     #  (ai-CR-178, phase 23.1) + `draft_work_plan` (bao-CR-616, phase 24.1 — doc/agent-hub/18).
     #  74 = 73 + `report_summary` (ai-CR-208, K11 doc/erp/21); 75 = + `dataset_query` (ai-CR-210, K12); 76 = + `erp_read` (ai-CR-211, K13).
     #  79 = 76 + `list_skills` / `read_skill` / `read_skill_file` (ai-CR-220, K7 — đọc Kho skill thay gói tri thức).
-    #  81 = 79 + `team_capacity` / `task_type_stats` (kh-AI1-2, doc/erp/tai-lieu-ai/22 §4); 82 = + `plan_context` (kh-AI1-3); 83 = + `office_read` (kh-AI2-3); 85 = + `draft_vehicle_booking` / `draft_seal_request` (kh-AI2-6); 86 = + `propose_approval` (kh-AI2-7).
-    assert len(thuc_te) == 86, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    #  81 = 79 + `team_capacity` / `task_type_stats` (kh-AI1-2, doc/erp/tai-lieu-ai/22 §4); 82 = + `plan_context` (kh-AI1-3); 83 = + `office_read` (kh-AI2-3); 85 = + `draft_vehicle_booking` / `draft_seal_request` (kh-AI2-6); 86 = + `propose_approval` (kh-AI2-7); 87 = + `background_jobs` (bao-CR-703).
+    assert len(thuc_te) == 87, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

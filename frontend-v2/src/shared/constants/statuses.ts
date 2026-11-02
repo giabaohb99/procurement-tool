@@ -144,6 +144,25 @@ export const FORUM_PREFIX: readonly StatusOption[] = [
   {"value": "6", "label": "Thông báo", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Nhóm việc chạy ngầm */
+export const JOB_GROUP: readonly StatusOption[] = [
+  {"value": "cleanup", "label": "Dọn dữ liệu", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "backup", "label": "Sao lưu / lưu trữ", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "sync", "label": "Đồng bộ hệ thống khác", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "reminder", "label": "Nhắc việc / thông báo", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "stats", "label": "Thống kê / gom số", "sort_order": 4, "is_terminal": false, "is_exception": false},
+  {"value": "monitor", "label": "Giám sát / cảnh báo", "sort_order": 5, "is_terminal": false, "is_exception": false},
+  {"value": "bot", "label": "Bot / trợ lý AI", "sort_order": 6, "is_terminal": false, "is_exception": false},
+]
+
+/** Trạng thái việc chạy ngầm */
+export const JOB_RUN_STATUS: readonly StatusOption[] = [
+  {"value": "1", "label": "Đang chạy", "sort_order": 1, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Thành công", "sort_order": 2, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Lỗi", "sort_order": 3, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Bỏ qua", "sort_order": 4, "is_terminal": false, "is_exception": false},
+]
+
 /** Trạng thái hợp đồng lao động */
 export const LABOR_CONTRACT_STATUS: readonly StatusOption[] = [
   {"value": "1", "label": "Nháp", "sort_order": 1, "is_terminal": false, "is_exception": false},
@@ -430,6 +449,14 @@ export const FEATURE_KIND_CODE = {
   CLIENT_ERROR: 5,
 } as const
 
+/** Trạng thái việc chạy ngầm — khóa → mã gửi lên backend. */
+export const JOB_RUN_STATUS_CODE = {
+  RUNNING: 1,
+  SUCCESS: 2,
+  FAILED: 3,
+  SKIPPED: 4,
+} as const
+
 /** Chức năng được bấm — khóa → mã gửi lên backend. */
 export const UI_ACTION_CODE = {
   COLUMN_TOGGLE: 1,
@@ -513,6 +540,8 @@ export const STATUS_SETS = {
   employee_status: EMPLOYEE_STATUS,
   feature_kind: FEATURE_KIND,
   forum_prefix: FORUM_PREFIX,
+  job_group: JOB_GROUP,
+  job_run_status: JOB_RUN_STATUS,
   labor_contract_status: LABOR_CONTRACT_STATUS,
   labor_contract_type: LABOR_CONTRACT_TYPE,
   labor_contract_variable_source: LABOR_CONTRACT_VARIABLE_SOURCE,

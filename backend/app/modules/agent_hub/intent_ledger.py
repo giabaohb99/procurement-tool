@@ -187,6 +187,7 @@ TOOL_SUB: dict[str, Sub] = {
     #  ai-CR-220 (K7): đọc cẩm nang trong Kho skill — cùng loại "hỏi cách làm" với tra HDSD.
     "list_skills": Sub.LOOKUP_GUIDE, "read_skill": Sub.LOOKUP_GUIDE, "read_skill_file": Sub.LOOKUP_GUIDE,
     "analytics_query": Sub.LOOKUP_ANALYTICS,
+    "background_jobs": Sub.LOOKUP_OTHER,   # bao-CR-703: sổ việc chạy ngầm
     #  ai-CR-208 / 210 / 211: ba tool dữ liệu cho AI (báo cáo gom sẵn, bảng số tổng hợp, đọc danh sách / chi tiết phiếu).
     "report_summary": Sub.LOOKUP_ANALYTICS, "dataset_query": Sub.LOOKUP_ANALYTICS,
     "erp_read": Sub.LOOKUP_PURCHASE,

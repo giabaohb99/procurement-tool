@@ -111,6 +111,31 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-703-may-chu | Sổ việc chạy ngầm (máy chủ) + công cụ hỏi bằng lời
+- status: xong
+- date: 2026-11-02
+- list: Kế hoạch hệ agent
+- tag: Agent 4
+**Bối cảnh:** hệ thống có gần 50 việc tự chạy theo lịch (sao lưu, dọn nhật ký, đồng bộ, nhắc việc, gom số…) nhưng không
+có chỗ nào cho biết việc nào đã chạy, chạy bao lâu, thành công hay lỗi.
+
+**Đã làm**
+- Bảng `tab_job_run` (migration `jobrun01`): mỗi lần một việc nền của ERP chạy là một dòng — giờ bắt đầu, giờ xong,
+  thời lượng, kết quả (Đang chạy / Thành công / Lỗi / Bỏ qua), tóm tắt kết quả, câu lỗi. Ghi tự động bằng tín hiệu của
+  Celery, không sửa từng việc; ghi sổ hỏng không làm hỏng việc.
+- Sổ mô tả tiếng Việt cho mọi việc trong lịch (tên, mục đích một câu, nhóm, công tắc nếu có); bài kiểm báo đỏ khi thêm
+  việc mới vào lịch mà quên mô tả.
+- API cho màn *Việc chạy ngầm*: danh sách việc kèm lịch dạng dễ đọc, lần chạy kế, lần chạy gần nhất, số lần chạy / lỗi
+  và thời lượng trung bình 7 ngày; lịch sử một việc có phân trang và lọc. Chỉ người xem được cấu hình hệ thống.
+- Dọn sổ hằng đêm, giữ 90 ngày (sửa được trên màn Cấu hình hệ thống, 0 = giữ mãi).
+- Công cụ chỉ đọc `background_jobs` cho Trợ lý web và cổng MCP để hỏi kiểu "đêm qua việc nền nào lỗi".
+
+**Kết quả:** bài kiểm riêng 10 bài + các bài canh phạm vi / công cụ / cấu hình MCP / bộ mã trạng thái đều xanh.
+
+**Còn lại:** dựng dev, soát màn cùng phần giao diện.
+
+---
+
 ## bao-CR-703-giao-dien | Màn Việc chạy ngầm ở phân hệ Quản trị (giao diện)
 - status: dang-lam
 - date: 2026-10-30

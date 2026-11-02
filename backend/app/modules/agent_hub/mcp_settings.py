@@ -79,8 +79,10 @@ GROUPS: tuple[ToolGroup, ...] = (
     ToolGroup("research", "Nghiên cứu sâu nhiều nguồn (tốn phí công ty)", False, frozenset({"deep_research"})),
     ToolGroup("export", "Xuất tệp Excel / Word mẫu công ty", False, frozenset({"export_report_file", "export_excel_file"})),
     #  bao-CR-634 (K9): quản trị bằng lời — bật sẵn vì đã gác kép (khóa được ghi + quyền ai_skill / ai_mcp_key_admin).
-    ToolGroup("admin", "Quản trị Kho skill và khóa AI bằng lời (khóa được ghi, đúng quyền)", True, frozenset({
-        "draft_skill", "draft_skill_publish", "draft_skill_access", "draft_key_issue", "draft_key_revoke"})),
+    #  bao-CR-703: thêm background_jobs (CHỈ ĐỌC sổ việc chạy ngầm, gác setting.read trong tool).
+    ToolGroup("admin", "Quản trị bằng lời: Kho skill, khóa AI, sổ việc chạy ngầm (đúng quyền)", True, frozenset({
+        "draft_skill", "draft_skill_publish", "draft_skill_access", "draft_key_issue", "draft_key_revoke",
+        "background_jobs"})),
 )
 GROUP_OF = {tool: g for g in GROUPS for tool in g.tools}
 #  Bộ dữ liệu của dataset_query thuộc nhóm Công nợ — nhóm đó tắt thì hai bộ này cũng tắt dù nhóm Báo cáo đang bật.
