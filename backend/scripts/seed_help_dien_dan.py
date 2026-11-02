@@ -225,7 +225,7 @@ TREE = {
         {
             "title": TRANG_TOI,
             "icon": "clipboard-list",
-            "summary": "Xem bài của mình, xóa bài, bài đổi ảnh đại diện",
+            "summary": "Xem bài của mình, sửa và xóa bài, bài đổi ảnh đại diện",
             "content": """<h2>Trang của tôi và quản lý bài đã đăng</h2>
 <h3>Trang của tôi</h3>
 <ul>
@@ -236,7 +236,12 @@ TREE = {
 <ul>
 <li>Mở menu <strong>ba chấm</strong> góc phải bài viết, chọn <strong>Xóa bài</strong> và xác nhận.</li>
 <li>Xóa bài sẽ xóa kèm toàn bộ bình luận, cảm xúc và tệp đính kèm — <strong>không hoàn tác được</strong>.</li>
-<li>Hiện chưa có chức năng sửa bài — cần chỉnh nội dung thì xóa rồi đăng lại.</li>
+</ul>
+<h3>Sửa bài của mình</h3>
+<ul>
+<li>Mở menu <strong>ba chấm</strong> góc phải bài viết, chọn <strong>Sửa bài</strong>.</li>
+<li>Sửa được <strong>tiêu đề</strong>, <strong>nhãn</strong> (Thảo luận, Thắc mắc, Kiến thức...) và <strong>nội dung</strong>. Ảnh và video đã đăng giữ nguyên, chưa đổi được.</li>
+<li>Nhãn <strong>Thông báo</strong> chỉ quản trị diễn đàn gắn được.</li>
 </ul>
 <h3>Bài đổi ảnh đại diện</h3>
 <p>Khi bạn đổi ảnh đại diện (ở Trang cá nhân hoặc menu tài khoản), hệ thống hỏi <strong>Đăng lên diễn đàn?</strong> — đồng ý thì diễn đàn có một bài <em>đã cập nhật ảnh đại diện</em> để đồng nghiệp vào chúc mừng; chọn <strong>Để sau</strong> thì chỉ đổi ảnh, không đăng gì.</p>""",
@@ -244,7 +249,7 @@ TREE = {
         {
             "title": QUAN_TRI,
             "icon": "shield-check",
-            "summary": "Kiểm duyệt bài viết, quản lý chuyên mục, bài ghim và nhật ký",
+            "summary": "Quản lý bài viết, nhãn Thông báo, kiểm duyệt, chuyên mục, bài ghim và nhật ký",
             "content": """<h2>Dành cho Quản trị viên diễn đàn</h2>
 <p>Người được gán vai trò <strong>quản trị diễn đàn</strong> thấy thêm tab <strong>Quản trị</strong> và các nút kiểm duyệt trên từng bài. Quản trị viên xem được mọi bài bất kể đối tượng xem.</p>
 <h3>Kiểm duyệt bài viết</h3>
@@ -253,11 +258,17 @@ TREE = {
 <li>Ẩn và gỡ đều <strong>bắt buộc nhập lý do</strong>; tác giả tự động nhận thông báo kèm lý do — không có chuyện bài biến mất mà không ai hay.</li>
 <li>Bài bị ẩn hiện băng rôn <em>đã bị quản trị viên ẩn</em> kèm lý do cho tác giả.</li>
 </ul>
-<h3>Tab Quản trị — ba mục</h3>
+<h3>Tab Quản trị — bốn mục</h3>
 <ul>
+<li><strong>Bài viết:</strong> danh sách mọi bài (kể cả bài đang ẩn), lọc theo chuyên mục, nhãn, trạng thái, ghim và ô tìm theo tiêu đề / nội dung. Mỗi dòng có nút <strong>Sửa</strong> (đổi tiêu đề, nhãn, <strong>chuyển sang chuyên mục khác</strong>), <strong>Ghim / Bỏ ghim</strong>, <strong>Ẩn / Khôi phục</strong>, <strong>Gỡ</strong> và mở bài.</li>
 <li><strong>Chuyên mục:</strong> thêm/sửa nhóm và chuyên mục, đặt mô tả, chọn biểu tượng, đổi thứ tự, ẩn chuyên mục không dùng nữa (bài cũ vẫn giữ). Có ô lọc nhanh theo tên.</li>
 <li><strong>Bài ghim:</strong> danh sách bài đang ghim — bài ghim xuất hiện ở tab <strong>Thông báo</strong> và khung <strong>Nổi bật</strong>; bỏ ghim ngay tại đây. Ghim bài mới bằng menu ba chấm trên bài.</li>
-<li><strong>Nhật ký kiểm duyệt:</strong> ai ẩn/gỡ/khôi phục bài nào, lúc nào, lý do gì — lọc được theo hành động và từ khóa.</li>
+<li><strong>Nhật ký kiểm duyệt:</strong> ai ẩn/gỡ/khôi phục/sửa bài nào, lúc nào, lý do gì — lọc được theo hành động và từ khóa. Quản trị sửa bài của người khác thì nhật ký ghi rõ đã đổi gì (tiêu đề, nhãn, chuyển box, nội dung).</li>
+</ul>
+<h3>Nhãn Thông báo</h3>
+<ul>
+<li>Nhãn <strong>Thông báo</strong> (màu đỏ, đứng đầu tiêu đề) dành cho thông báo chính thức. <strong>Chỉ quản trị diễn đàn</strong> gắn được, lúc đăng bài hoặc khi sửa bài; nhân viên thường không thấy lựa chọn này.</li>
+<li>Muốn thông báo nổi lên đầu Bảng tin và vào tab <strong>Thông báo</strong>, hãy <strong>ghim</strong> bài đó.</li>
 </ul>
 <h3>Cấp quyền quản trị</h3>
 <p>Vai trò quản trị diễn đàn do quản trị hệ thống gán trong màn Phân quyền của ERP — liên hệ bộ phận IT khi cần thêm hoặc thu hồi.</p>""",
