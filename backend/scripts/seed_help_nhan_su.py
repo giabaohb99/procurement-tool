@@ -19,6 +19,9 @@ CHỈ viết bài cho tính năng MỚI, KHÔNG viết lại toàn bộ phân h�
     xuất Excel (đường `/api/employees/export/*` có, bản cũ dùng) nên bài chỉ nói "tệp xuất danh sách nhân sự".
   * duoc-CR-708 (02/11): màn chi tiết nhân sự đổi khung theo ERPNext — tab Chung không còn thẻ, các nhóm Thông tin cá
     nhân · Công việc · Vào làm & nghỉ việc ngăn bằng đường kẻ, Lương và Kiêm nhiệm gập / mở được; nút In / Lưu / Xóa vẫn ở góc phải hàng tiêu đề.
+  * duoc-CR-711 (02/11): Sơ đồ tổ chức làm lại theo ERPNext — khung vẽ kéo thả, thẻ người nối theo quản lý trực tiếp,
+    nút mở nhóm, khung thông tin, tìm người, Tìm tôi, Mở hết, hai kiểu vẽ, lọc pháp nhân / phòng ban. Nhãn đối chiếu
+    bằng đọc `hr/pages/org-chart-page.tsx`, `hr/components/org-chart-{board,canvas,person-popover}.tsx`.
 (Nghỉ phép đã có bộ riêng: `seed_help_nghi_phep.py`.)
 
 ⚠️ Bố cục Phiếu thông tin nhân viên dựng theo bảng trường của tài liệu HRM vì tệp mẫu gốc BM00 chưa có
@@ -328,25 +331,39 @@ TREE = {
         {
             "title": SO_DO,
             "icon": "building",
-            "summary": "Menu Nhân sự > Danh mục > Sơ đồ tổ chức: cây pháp nhân, phòng ban, người; chỉ hiện người trong phạm vi bạn được xem",
+            "summary": "Menu Nhân sự > Danh mục > Sơ đồ tổ chức: khung vẽ kéo thả, thẻ người nối theo quản lý trực tiếp, tìm người, lọc pháp nhân / phòng ban; chỉ hiện người trong phạm vi bạn được xem",
             "content": f"""<h2>Sơ đồ tổ chức</h2>
-<p>Vào <strong>Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức</strong>. Màn này <strong>không phải bản vẽ nhập tay</strong>: mỗi lần mở, hệ thống tự dựng từ dữ liệu phòng ban, trưởng phòng và ô <strong>Người quản lý trực tiếp</strong> trên hồ sơ. Đổi phòng cho một người hay đổi người quản lý xong, sơ đồ tự đúng ở lần mở sau — không có gì phải vẽ lại.</p>
+<p>Vào <strong>Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức</strong>. Màn này <strong>không phải bản vẽ nhập tay</strong>: mỗi lần mở, hệ thống tự dựng từ ô <strong>Người quản lý trực tiếp</strong> trên hồ sơ. Đổi người quản lý hay đổi phòng cho một người xong, sơ đồ tự đúng ở lần mở sau — không có gì phải vẽ lại.</p>
 
 <h2>Đọc sơ đồ</h2>
 <ul>
-<li>Cấp trên cùng là <strong>pháp nhân</strong> (tên công ty, kèm tổng số người). Người chưa gán pháp nhân nằm trong nhóm <em>Chưa gán pháp nhân</em>.</li>
-<li>Dưới pháp nhân là các <strong>phòng ban</strong>, phòng con thụt vào dưới phòng cha. Mỗi phòng là một thẻ: tên phòng, <strong>Trưởng phòng: …</strong> và số người ở góc phải (đã gồm cả các phòng con).</li>
-<li>Bấm vào thẻ phòng để <strong>mở hoặc thu gọn</strong>. Hai tầng đầu mở sẵn, các tầng sâu hơn thu lại cho gọn.</li>
-<li>Bên trong phòng là <strong>cây quản lý trực tiếp</strong>: cấp dưới thụt vào dưới người quản lý của họ (cùng phòng). Mỗi người hiện tên, nhãn <strong>Trưởng phòng</strong> nếu là trưởng phòng, chức vụ và mã nhân sự.</li>
-<li>Bấm vào <strong>tên một người</strong> để mở hồ sơ của họ.</li>
+<li>Mỗi người là một <strong>thẻ</strong>: vòng chữ viết tắt, họ tên và chức vụ. Thẻ của chính bạn có chữ <strong>Bạn</strong>.</li>
+<li>Cây đi theo <strong>quản lý trực tiếp</strong>: cấp dưới treo dưới người quản lý của họ, nối bằng đường kẻ. Người không có quản lý (hoặc quản lý nằm ngoài phần đang xem) đứng ở hàng trên cùng; người có nhiều cấp dưới nhất đứng trước.</li>
+<li>Dưới thẻ người có cấp dưới là nút nhỏ có <strong>ba vòng chữ viết tắt và con số</strong> (số cấp dưới trực tiếp). Bấm nút để <strong>mở / thu nhóm</strong>; sơ đồ tự dời và thu nhỏ cho cả nhóm vừa khung.</li>
+<li>Bấm vào <strong>thẻ</strong> để mở khung thông tin: mã nhân sự, phòng ban, số cấp dưới, người quản lý (bấm tên để nhảy tới thẻ của họ) và nút <strong>Mở hồ sơ</strong>. Bấm ra nền hoặc nhấn Esc để đóng.</li>
+</ul>
+
+<h2>Di chuyển và phóng to</h2>
+<ul>
+<li><strong>Kéo chuột</strong> trên nền để dời sơ đồ; cuộn chuột / bàn di cũng dời được.</li>
+<li><strong>Ctrl (hoặc ⌘) + cuộn</strong>, chụm hai ngón trên bàn di hay màn cảm ứng để phóng to / thu nhỏ; hoặc dùng nút <strong>−</strong> / <strong>+</strong> ở thanh dưới góc trái. Bấm con số phần trăm để về 100%, nút <strong>Vừa khung</strong> (hoặc phím 0) để thấy cả sơ đồ.</li>
+<li>Nút <strong>Tìm tôi</strong> (hình tâm ngắm) mở đường tới thẻ của bạn. Nút <strong>Mở hết</strong> mở mọi nhóm cùng lúc, bấm lại (<strong>Thu gọn</strong>) để về như lúc đầu.</li>
+<li>Hai nút cuối chọn kiểu vẽ: <strong>Trên xuống dưới</strong> hoặc <strong>Trái sang phải</strong> — hệ thống nhớ lựa chọn cho lần sau. Trên điện thoại sơ đồ luôn xếp dọc.</li>
+</ul>
+
+<h2>Tìm người, lọc theo pháp nhân và phòng ban</h2>
+<ul>
+<li>Ô <strong>Tìm một người</strong> ở góc trên trái: gõ tên, mã hoặc chức vụ (không dấu cũng được), chọn người là sơ đồ mở đường và đưa thẻ đó ra giữa.</li>
+<li>Ô <strong>pháp nhân</strong> (chỉ hiện khi bạn xem được từ hai pháp nhân trở lên) mặc định là pháp nhân của bạn; chọn <em>Tất cả pháp nhân</em> để xem hết.</li>
+<li>Ô <strong>phòng ban</strong> chỉ vẽ người của phòng đó và các phòng con. Quản lý ở phòng khác thì người đó lên hàng trên cùng. <em>Chưa gắn phòng ban</em> lọc ra những người chưa có phòng.</li>
 </ul>
 
 <h2>Ai xem được, thấy những gì</h2>
 <ul>
 <li>Cần quyền <strong>xem hồ sơ nhân sự</strong>. Không có thì màn báo <em>Không có quyền xem sơ đồ tổ chức</em>; liên hệ quản trị để được cấp.</li>
-<li>⚠️ Sơ đồ <strong>chỉ hiện những người trong phạm vi dữ liệu của bạn</strong> (xem cùng một sơ đồ, người thấy nhiều người thấy ít là bình thường). Một trưởng phòng hay quản lý <em>nằm ngoài phạm vi</em> của bạn thì tên họ <strong>không hiện</strong>, kể cả khi họ là cấp trên của người bạn xem được. Tên phòng ban thì vẫn hiện để cây liền mạch, nhưng không lộ người.</li>
+<li>⚠️ Sơ đồ <strong>chỉ hiện những người trong phạm vi dữ liệu của bạn</strong> (xem cùng một sơ đồ, người thấy nhiều người thấy ít là bình thường). Một trưởng phòng hay quản lý <em>nằm ngoài phạm vi</em> của bạn thì tên họ <strong>không hiện</strong>, kể cả khi họ là cấp trên của người bạn xem được. Khi đó người đó đứng ở hàng trên cùng như không có quản lý.</li>
 <li>Người đã <strong>nghỉ việc</strong> hoặc đã ngưng hoạt động thì không có trên sơ đồ.</li>
-<li>Con số <em>N người</em> cũng chỉ đếm người bạn được thấy, nên đừng dùng nó làm quân số chính thức của phòng.</li>
+<li>Con số trên nút mở nhóm cũng chỉ đếm cấp dưới bạn được thấy, nên đừng dùng nó làm quân số chính thức.</li>
 </ul>
 
 <h2>Thấy sơ đồ sai thì sửa ở đâu</h2>
@@ -355,9 +372,8 @@ TREE = {
 <tbody>
 <tr><td>Người nằm nhầm phòng</td><td>Hồ sơ nhân sự ▸ ô <strong>Phòng ban</strong></td></tr>
 <tr><td>Người báo cáo nhầm sếp</td><td>Hồ sơ nhân sự ▸ ô <strong>Người quản lý trực tiếp</strong></td></tr>
-<tr><td>Sai trưởng phòng</td><td>Nhân sự ▸ Danh mục ▸ <strong>Phòng ban</strong> ▸ chọn lại trưởng phòng</td></tr>
-<tr><td>Phòng con nằm nhầm phòng cha</td><td>Nhân sự ▸ Danh mục ▸ <strong>Phòng ban</strong> ▸ ô phòng cha</td></tr>
-<tr><td>Màn trống</td><td>Chưa có phòng ban hay nhân sự nào trong phạm vi của bạn — màn ghi đúng câu này</td></tr>
+<tr><td>Lọc một phòng mà thiếu (hoặc thừa) người của phòng con</td><td>Nhân sự ▸ Danh mục ▸ <strong>Phòng ban</strong> ▸ ô phòng cha</td></tr>
+<tr><td>Màn trống</td><td>Chưa có nhân sự nào trong phạm vi của bạn — màn ghi đúng câu này. Trống sau khi chọn phòng ban thì phòng đó chưa có ai: bỏ bớt bộ lọc</td></tr>
 </tbody>
 </table>
 <p>Hệ chặn người dùng gán vòng lặp (A quản lý B, B quản lý A) ngay lúc lưu hồ sơ; nếu dữ liệu cũ vẫn còn vòng lặp thì sơ đồ vẫn hiển thị được, không bị treo.</p>

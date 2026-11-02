@@ -18203,3 +18203,25 @@ Mã nguồn: doc/erp/nghien-cuu/erpnext/04-hrms-chuc-nang-va-lien-ket.md · doc/
 **Còn lại:** nhật ký hiện chỉ lưu tên trường đã đổi cho dòng thời gian, nên câu chưa có dạng «từ X sang Y» như nexterp; muốn có thì cần thêm phần máy chủ đọc giá trị trước và sau (đã có sẵn trong sổ thay đổi) và che trường nhạy cảm, lương.
 
 Mã nguồn: frontend-v2/src/shared/audit/audit-activity-feed.tsx · describe-audit-entry.ts · frontend-v2/src/modules/hr/utils/employee-field-labels.ts · frontend-v2/src/modules/hr/pages/employee-detail-page.tsx
+
+## duoc-CR-711 | Sơ đồ tổ chức làm lại theo giao diện nexterp
+- status: xong
+- date: 2026-11-02
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được thấy màn Sơ đồ tổ chức (một danh sách chữ dài theo phòng ban) xấu, muốn làm giống sơ đồ tổ chức của nexterp. Bản hai khung (cây phòng ban bên trái, lưới thẻ bên phải) làm trước trong cùng lượt đã bỏ, vì anh chốt theo đúng nexterp.
+
+**Đã làm**
+- Đọc mã sơ đồ tổ chức của nexterp rồi dựng lại bằng React: khung vẽ kéo thả có nền chấm, kéo chuột để dời, Ctrl hoặc ⌘ cộng cuộn chuột để phóng to thu nhỏ, có phím tắt và thanh công cụ ở góc dưới trái.
+- Mỗi người là một thẻ có vòng chữ viết tắt tô màu, tên, chức vụ, chữ «Bạn» trên thẻ của mình; cây nối theo người quản lý trực tiếp bằng đường kẻ bo góc, nhóm đông người mà không ai có cấp dưới thì xếp dọc cho gọn.
+- Dưới thẻ người quản lý có nút ghi số cấp dưới kèm ba vòng xem trước; bấm là mở nhóm, sơ đồ giữ thẻ đứng yên rồi tự dời và thu nhỏ cho cả nhóm vừa khung.
+- Bấm thẻ ra khung thông tin: mã, phòng ban, số cấp dưới, người quản lý (bấm để nhảy tới), nút mở hồ sơ.
+- Có ô tìm người, nút tìm chính mình, nút mở hết hoặc thu gọn, hai kiểu vẽ trên xuống dưới và trái sang phải (nhớ lựa chọn), điện thoại thì xếp dọc; lọc theo pháp nhân (mặc định pháp nhân của mình) và theo phòng ban có cả phòng con.
+- Gỡ phần dựng cây phòng ban cũ không còn dùng, viết bài kiểm mới cho phần dựng cây người kể cả vòng quản lý và chuỗi 2000 cấp; viết lại bài hướng dẫn «Xem Sơ đồ tổ chức».
+- Vá thêm cho duoc-CR-708: khối «Ảnh CCCD» ở tab Giấy tờ & BHXH của hồ sơ nhân sự bị lệch lề, nay thành một nhóm gập mở như các nhóm khác.
+
+**Kết quả:** kiểm tra kiểu và kiểm lỗi cú pháp sạch; 1410 bài kiểm của phân hệ Nhân sự đều xanh. Đã xem trên máy local ở khổ màn rộng và điện thoại: mở nhóm, khung thông tin, tìm chính mình, mở hết ở kiểu trái sang phải đều chạy. Đã lên nhánh erp-v2.
+
+**Còn lại:** chưa làm phần Danh bạ, xuất sơ đồ ra ảnh, dấu «Đang nghỉ» và sinh nhật trên thẻ như nexterp; thẻ chưa có ảnh đại diện thật (đường API sơ đồ chưa trả ảnh); bài hướng dẫn mới nạp ở local, lên dev cần chạy lại seed và nạp lại kho tìm kiếm của trợ lý.
+
+Mã nguồn: frontend-v2/src/modules/hr/pages/org-chart-page.tsx · components/org-chart-board.tsx · org-chart-canvas.tsx · org-chart-tree-node.tsx · org-chart-person-card.tsx · org-chart-team-toggle.tsx · org-chart-person-popover.tsx · utils/org-chart-forest.ts · backend/scripts/seed_help_nhan_su.py

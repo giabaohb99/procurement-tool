@@ -63,16 +63,21 @@ export function EmployeeTabDocuments({
           </FormSection>
 
           {canReadSensitive && (
-            <div className="flex flex-col gap-3 border-t pt-4">
-              <SectionHeading>Ảnh CCCD</SectionHeading>
-              <EmployeeIdCardUploader
-                frontUrl={employee.id_front_image}
-                backUrl={employee.id_back_image}
-                canWrite={canWrite}
-                isUploading={uploadIdImage.isPending}
-                onUpload={(side, file) => uploadIdImage.mutate({ side, file })}
-              />
-            </div>
+            //  Bọc thành nhóm riêng: ở màn hồ sơ kiểu ERPNext (duoc-CR-708) khối ảnh từng nằm NGOÀI
+            //  mọi nhóm phẳng nên dính sát mép trái và còn tiêu đề in hoa kiểu cũ (anh Được báo
+            //  02/11/2026). Ngoài màn đó `EmployeeDetailBlock` không bọc gì, khối hiện như cũ.
+            <EmployeeDetailBlock title="Ảnh CCCD">
+              <div className={cn('flex flex-col gap-3', !flat && 'border-t pt-4')}>
+                <SectionHeading>Ảnh CCCD</SectionHeading>
+                <EmployeeIdCardUploader
+                  frontUrl={employee.id_front_image}
+                  backUrl={employee.id_back_image}
+                  canWrite={canWrite}
+                  isUploading={uploadIdImage.isPending}
+                  onUpload={(side, file) => uploadIdImage.mutate({ side, file })}
+                />
+              </div>
+            </EmployeeDetailBlock>
           )}
         </Card>
 
