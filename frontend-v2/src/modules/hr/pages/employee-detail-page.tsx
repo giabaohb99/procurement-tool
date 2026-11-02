@@ -331,15 +331,18 @@ export function EmployeeDetailPage() {
                  điện thoại đây là nút lùi DUY NHẤT trong tầm mắt.
                  Nhãn đổi theo đích — "Danh sách nhân sự" mà bấm ra chức vụ thì
                  nút nói dối. Xem `use-back-target.ts`. */}
-                    <Link
-                      to={backTarget.url}
-                      className="text-lg text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {backTarget.fromElsewhere ? 'Quay lại' : 'Nhân sự'}
-                    </Link>
-                    <span aria-hidden className="text-lg text-muted-foreground">
-                      /
-                    </span>
+                    {/*  Nút lùi dạng MŨI TÊN, không ghi chữ «Nhân sự /»: thanh trên cùng đã có cấp «Nhân sự»
+                         (bấm được về danh sách), ghi thêm ở đây là lặp lần nữa (anh Được báo 02/11/2026).
+                         Nhãn đọc cho trình đọc màn hình vẫn đổi theo đích như cũ. */}
+                    <Button variant="ghost" size="icon" className="-ml-2 size-8" asChild>
+                      <Link
+                        to={backTarget.url}
+                        aria-label={backTarget.fromElsewhere ? 'Quay lại' : 'Về danh sách nhân sự'}
+                        title={backTarget.fromElsewhere ? 'Quay lại' : 'Về danh sách nhân sự'}
+                      >
+                        <ArrowLeft />
+                      </Link>
+                    </Button>
                     {/*  `line-clamp-2` chứ không `truncate` — cùng lý do ở `RecordIdentityCard`:
                      tên dài trên màn 390px không được mất đuôi. */}
                     <h1 className="line-clamp-2 text-lg font-semibold text-foreground">

@@ -56,6 +56,11 @@ const testModule: ErpModule = {
       ],
     },
     {
+      //  Mục trùng tên phân hệ — khuôn của «Nhân sự» › «Nhân sự».
+      label: 'Thu mua',
+      path: '/test/dup',
+    },
+    {
       label: 'Trùng tên',
       path: '/test/same',
       children: [{ label: 'Trùng tên', path: '/test/same' }],
@@ -126,6 +131,28 @@ describe('ModuleTopbar breadcrumb', () => {
   it('matches on a path boundary, not a bare prefix', () => {
     const nav = renderAt('/test/report/purchase-progress')
     expect(crumbTexts(nav)).toEqual(['Thu mua', 'Tiến độ đơn mua hàng'])
+  })
+
+  //  Anh Được báo 02/11/2026: phân hệ «Nhân sự» › mục «Nhân sự» hiện hai lần cùng một chữ.
+  it('hides the module level when the menu item has the same label as the module', () => {
+    const nav = renderAt('/test/dup')
+    expect(crumbTexts(nav)).toEqual(['Thu mua'])
+    expect(nav.querySelectorAll('[aria-current="page"]')).toHaveLength(1)
+  })
+
+  it('turns the menu level into a link back to the list on a detail page below it', () => {
+    const nav = renderAt('/test/dup/304')
+    expect(crumbTexts(nav)).toEqual(['Thu mua'])
+    expect(within(nav).getByRole('link', { name: 'Thu mua' })).toHaveAttribute('href', '/test/dup')
+  })
+
+  it('keeps the menu level as the current page on the list itself', () => {
+    const nav = renderAt('/test/report/purchase')
+    //  `BreadcrumbPage` của shadcn mang `role="link"` + `aria-disabled` — kiểm bằng
+    //  `aria-current` và việc KHÔNG có `href`, không bằng vai trò.
+    const crumb = within(nav).getByText('Báo cáo mua hàng')
+    expect(crumb).toHaveAttribute('aria-current', 'page')
+    expect(crumb).not.toHaveAttribute('href')
   })
 
   it('keeps a single level at the module root', () => {

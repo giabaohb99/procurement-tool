@@ -65,6 +65,13 @@ export function ModuleTopbar({ module }: { module: ErpModule }) {
   //  Cấp thứ ba — mục con trùng tên mục cha thì thôi, khỏi lặp chữ.
   const activeChild = hasCurrent && current ? findActiveChild(current, pathname) : undefined
   const hasChild = Boolean(activeChild && activeChild.label !== current?.label)
+  //  Mục menu trùng tên phân hệ (vd phân hệ «Nhân sự» › mục «Nhân sự») — giấu cấp phân hệ,
+  //  không thì thanh ghi «Nhân sự › Nhân sự» (anh Được báo 02/11/2026). Cùng tinh thần luật
+  //  «mục con trùng tên mục cha thì khỏi lặp» ngay trên. Trang tổng quan vẫn có ở menu trái.
+  const hideModuleLevel = hasCurrent && current?.label === module.title
+  //  Đang ở trang CON của mục menu (vd chi tiết một nhân sự dưới «Nhân sự») — cấp mục menu
+  //  thành LINK về danh sách: tên bản ghi đã nằm ở tiêu đề trang, thanh này chỉ cần lối về.
+  const isBelowCurrent = hasCurrent && !hasChild && Boolean(current) && pathname !== current?.path
 
   return (
     <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background px-4">
@@ -91,40 +98,37 @@ export function ModuleTopbar({ module }: { module: ErpModule }) {
            hiện, và khi hụt thì vẫn là tên phân hệ nhường trước. */}
       <Breadcrumb className="min-w-0 flex-1">
         <BreadcrumbList className="flex-nowrap">
-          <BreadcrumbItem
-            className={cn('min-w-0 shrink-[3]', hasCurrent && 'max-sm:hidden')}
-          >
-            {isModuleRoot ? (
-              <BreadcrumbPage className="truncate font-medium text-navy" title={module.title}>
-                {module.title}
-              </BreadcrumbPage>
-            ) : (
-              <BreadcrumbLink asChild>
-                <Link to={module.path} className="truncate" title={module.title}>
+          {!hideModuleLevel && (
+            <BreadcrumbItem className={cn('min-w-0 shrink-[3]', hasCurrent && 'max-sm:hidden')}>
+              {isModuleRoot ? (
+                <BreadcrumbPage className="truncate font-medium text-navy" title={module.title}>
                   {module.title}
-                </Link>
-              </BreadcrumbLink>
-            )}
-          </BreadcrumbItem>
+                </BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink asChild>
+                  <Link to={module.path} className="truncate" title={module.title}>
+                    {module.title}
+                  </Link>
+                </BreadcrumbLink>
+              )}
+            </BreadcrumbItem>
+          )}
 
           {hasCurrent && current && (
             <>
-              <BreadcrumbSeparator className="shrink-0 max-sm:hidden" />
+              {!hideModuleLevel && <BreadcrumbSeparator className="shrink-0 max-sm:hidden" />}
               {/*  Có cấp ba thì cấp hai là LINK về mục cha (chỉ cấp cuối mới là
                    `aria-current="page"`), và ở khổ hẹp giấu luôn cấp hai — cùng lý do
                    giấu cấp phân hệ ở trên: dành trọn chỗ cho tên màn đang đứng. */}
               <BreadcrumbItem className={cn('min-w-0', hasChild && 'shrink-[2] max-sm:hidden')}>
-                {hasChild ? (
+                {hasChild || isBelowCurrent ? (
                   <BreadcrumbLink asChild>
                     <Link to={current.path} className="truncate" title={current.label}>
                       {current.label}
                     </Link>
                   </BreadcrumbLink>
                 ) : (
-                  <BreadcrumbPage
-                    className="truncate font-medium text-navy"
-                    title={current.label}
-                  >
+                  <BreadcrumbPage className="truncate font-medium text-navy" title={current.label}>
                     {current.label}
                   </BreadcrumbPage>
                 )}

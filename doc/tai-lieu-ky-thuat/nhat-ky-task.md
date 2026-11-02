@@ -18158,6 +18158,7 @@ Mã nguồn: doc/erp/nghien-cuu/erpnext/03-chuc-nang-nhan-su-erpnext-va-doi-chie
 - Thẻ của các tab khác được làm phẳng ngay trong trang để cả màn đồng một kiểu.
 - Ngày sinh bị che với người không có quyền xem thông tin nhạy cảm nên dòng sinh nhật không bao giờ hiện cho họ.
 - Sửa bài hướng dẫn nhập lương cho đúng chỗ mới của nhóm Lương.
+- Sửa đường dẫn bị lặp «Nhân sự › Nhân sự» rồi «Nhân sự /» trên màn hồ sơ: thanh trên cùng (dùng chung mọi phân hệ) không lặp khi mục menu trùng tên phân hệ và cho bấm về danh sách khi đang ở trang chi tiết; tiêu đề trang thay chữ bằng nút mũi tên quay lại.
 
 **Kết quả:** kiểm tra kiểu sạch, kiểm lỗi cú pháp không thêm cảnh báo; 1822 bài kiểm giao diện của phân hệ Nhân sự, Hồ sơ và lớp dùng chung đều xanh, trong đó 25 bài mới. Agent rà mã không thấy lỗi chặn, hai mục nên sửa đã sửa. Đã xem trên máy local ở khổ 1856, 1280 và 390 điểm ảnh. Đã lên nhánh erp-v2; chưa chạy lại seed bài hướng dẫn trên dev.
 
