@@ -112,7 +112,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-703-giao-dien | Màn Việc chạy ngầm ở phân hệ Quản trị (giao diện)
-- status: đang làm
+- status: dang-lam
 - date: 2026-10-30
 - list: Kế hoạch hệ agent
 - tag: Agent 3
