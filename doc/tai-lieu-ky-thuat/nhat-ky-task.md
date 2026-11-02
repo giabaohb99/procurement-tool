@@ -17980,3 +17980,21 @@ Deploy: backend/scripts/mo_rong_nguoi_duyet_dat_xe.py
 
 Mã nguồn: backend/app/modules/forum/service.py · controller.py · schema.py · model.py · backend/app/core/forum_codes.py · frontend-v2/src/modules/forum/components/forum-admin-posts-tab.tsx · post-edit-dialog.tsx
 Bài kiểm: test/backend/test_forum_sua_bai_cr707.py · frontend-v2/src/modules/forum/utils/prefix-options.test.ts
+
+## bao-CR-708 | Tách riêng các loại nghỉ chế độ BHXH
+- status: xong
+- date: 2026-11-02
+- tag: Nhân sự, Nghỉ phép
+
+**Bối cảnh:** Danh mục nghỉ phép chỉ có Nghỉ ốm đau và Nghỉ thai sản cho mọi chế độ bảo hiểm, nên đơn khám thai, sảy thai, chăm con ốm hay dưỡng sức phải khai lẫn vào hai loại đó và không chặn được đúng trần ngày theo luật.
+
+**Đã làm**
+- Thêm năm loại nghỉ chế độ BHXH vào bộ mã loại nghỉ dùng chung với giấy nghỉ phép: khám thai, sảy thai và phá thai, thực hiện biện pháp tránh thai, chăm con ốm, dưỡng sức phục hồi sức khỏe.
+- Mỗi loại khai đúng giới tính, trần ngày mỗi lần, có tính ngày lễ hay không, có bắt buộc giấy tờ hay không theo Luật Bảo hiểm xã hội 2024; không trừ quỹ phép năm; ghi chú ghi rõ do BHXH chi trả kèm mức luật để người duyệt đối chiếu.
+- Bản in đơn nghỉ đánh ô chế độ bảo hiểm cho cả loại tránh thai; bài hướng dẫn, cẩm nang trợ lý và tài liệu nghỉ phép thêm bảng năm loại mới.
+- Bài kiểm mới khóa ba điều: mã nào trong seed cũng có trong bộ mã giấy nghỉ phép, thuộc tính luật của năm loại, và seed chạy lại không ghi đè loại đã sửa tay.
+
+**Kết quả:** đã lên nhánh erp-v2 và dev; prod cần chạy lại seed loại nghỉ (chỉ thêm) cùng seed bài hướng dẫn và xuất bản lại cẩm nang.
+
+Mã nguồn: backend/app/core/leave_codes.py · backend/app/seed_nghi_phep.py · frontend-v2/src/shared/constants/statuses.ts · frontend-v2/src/modules/hr/utils/leave-print-category.ts
+Commit: cde5c5ca · 9c04f723 · b089386d
