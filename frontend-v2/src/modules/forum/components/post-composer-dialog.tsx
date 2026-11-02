@@ -22,6 +22,7 @@ import {
 import { RichTextField } from '@/shared/ui/rich-text-editor/rich-text-field'
 import type { RichTextFieldHandle } from '@/shared/ui/rich-text-editor/rich-text-field'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { FORUM_PREFIX, labelOf } from '@/shared/constants/statuses'
 import { Input } from '@/shared/ui/input'
 
@@ -31,6 +32,7 @@ import { FORUM_AUDIENCE_META, FORUM_BODY_FORMAT } from '../types/forum-post'
 import type { ForumAudience, ForumUploadedFile } from '../types/forum-post'
 import { readLastAudience, saveLastAudience } from '../utils/last-audience'
 import { isVideoMedia, pickMediaFiles } from '../utils/pick-media-files'
+import { listPrefixOptions } from '../utils/prefix-options'
 import { isBlankRichBody } from '../utils/rich-body'
 import { EmojiPickerButton } from './emoji-picker-button'
 import { ThreadPrefixChip } from './thread-prefix-chip'
@@ -64,6 +66,9 @@ interface PostComposerDialogProps {
  */
 export function PostComposerDialog({ open, onOpenChange, board }: PostComposerDialogProps) {
   const create = useCreateForumPost()
+  // bao-CR-707: nhãn Thông báo chỉ quản trị diễn đàn gắn được — cùng cổng backend.
+  const { can } = usePermission()
+  const canAnnounce = can('forum_post', 'write')
   //  `body` giữ HTML của RichTextField. Nháp sống ở đây: DialogContent unmount
   //  khi đóng, mở lại thì editor dựng mới với `defaultValue={body}`.
   const [body, setBody] = useState('')
@@ -152,7 +157,7 @@ export function PostComposerDialog({ open, onOpenChange, board }: PostComposerDi
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {FORUM_PREFIX.map((option) => (
+                  {listPrefixOptions(canAnnounce, prefix).map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {Number(option.value) > 0 ? (
                         <ThreadPrefixChip prefix={Number(option.value)} />

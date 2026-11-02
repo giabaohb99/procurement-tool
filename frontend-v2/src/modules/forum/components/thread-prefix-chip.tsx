@@ -10,6 +10,8 @@ const PREFIX_CHIP_CLASSES: Record<string, string> = {
   '3': 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400', // Kiến thức
   '4': 'bg-pink-500/15 text-pink-700 dark:text-pink-400', // Khoe
   '5': 'bg-violet-500/15 text-violet-700 dark:text-violet-400', // Đánh giá
+  // bao-CR-707: Thông báo — nền đặc cho nổi hơn mọi nhãn khác, chỉ quản trị gắn được.
+  '6': 'bg-red-600 text-white dark:bg-red-500',
 }
 
 interface ThreadPrefixChipProps {

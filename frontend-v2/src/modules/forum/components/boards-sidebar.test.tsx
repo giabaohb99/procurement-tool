@@ -19,7 +19,7 @@ function post(over: Partial<ForumPost>): ForumPost {
     dept_id: 0, company_id: 0,
     author_id: 9, author_name: 'A', author_code: '', author_avatar: '',
     created_at: '2026-09-01T08:00:00', pinned_at: '2026-09-02T08:00:00',
-    can_delete: false, can_moderate: false,
+    can_delete: false, can_edit: false, can_moderate: false,
     like_count: 0, liked: false, my_reaction: 0, reactions: {},
     comment_count: 0, images: [], hidden_reason: '',
     ...over,
