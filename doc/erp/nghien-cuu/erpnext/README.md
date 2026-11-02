@@ -8,6 +8,7 @@ Trang học **https://erpnext.degoholding.vn** (ERPNext v16 + HRMS, dựng 30/10
 | [02-bai-tap-vai-tro-luong-duyet-va-bat-tat.md](02-bai-tap-vai-tro-luong-duyet-va-bat-tat.md) | Tài khoản tập theo vai, luồng duyệt đơn mua hàng trên 50 triệu, mức tồn tối thiểu tự sinh yêu cầu vật tư, cách bật / tắt từng cấu hình | Muốn đổi cấu hình hoặc thử phân quyền |
 | [03-chuc-nang-nhan-su-erpnext-va-doi-chieu.md](03-chuc-nang-nhan-su-erpnext-va-doi-chieu.md) | Phần nhân sự của ERPNext (lõi; app `hrms` không có trong repo), hồ sơ Employee, luật khi lưu, đối chiếu khối chức năng / từng trường / luật / bố cục với phân hệ Nhân sự DEGO, đề xuất nên học | Muốn biết ERPNext có gì về nhân sự và DEGO còn thiếu gì |
 | [04-hrms-chuc-nang-va-lien-ket.md](04-hrms-chuc-nang-va-lien-ket.md) | App nhân sự `hrms` của nexterp: 9 workspace, tab Kết nối của hồ sơ nhân viên, vòng đời (tiếp nhận, điều chuyển, thăng chức, nghỉ việc), nghỉ phép, tuyển dụng, đánh giá, chi phí — cách các chứng từ liên kết, đề xuất nên học cho DEGO | Muốn biết chức năng nhân sự đầy đủ của nexterp và chọn cái để làm tiếp |
+| [ban-nhap-hrms/](ban-nhap-hrms/) | Ba bản nháp nghiên cứu `hrms` (vòng đời, nghỉ phép, tuyển dụng – hiệu suất – chi phí) do agent viết; có chỗ sai, đã sửa trong bản 04 | Muốn xem chi tiết thô trước khi kiểm |
 | [../11-do-phu-thu-mua-kho-so-voi-erpnext.md](../11-do-phu-thu-mua-kho-so-voi-erpnext.md) | Chấm điểm độ phủ thu mua - kho của ERP DEGO so với ERPNext (khoảng 59 %) và 10 chỗ hở | Muốn biết bên mình còn thiếu gì |
 
 Ghi chú vận hành:

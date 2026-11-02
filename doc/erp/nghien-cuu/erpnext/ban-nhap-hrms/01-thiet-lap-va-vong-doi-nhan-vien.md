@@ -1,3 +1,6 @@
+> **BẢN NHÁP — chỉ để tham khảo.** Agent nghiên cứu viết ngày 02/11/2026 (duoc-CR-709). Một số chỗ thiếu trích dẫn hoặc sai so với mã;
+> bản đã kiểm lại với mã là [`../04-hrms-chuc-nang-va-lien-ket.md`](../04-hrms-chuc-nang-va-lien-ket.md) — khi hai bên khác nhau thì tin bản 04.
+
 ### Hệ thống Nhân sự Frappe HRMS: HR Setup & Tenure/Vòng đời
 
 Tài liệu mô tả kiến trúc quản lý hồ sơ nhân sự (Employee Lifecycle) trong Frappe HRMS từ tuyển dụng → tiếp nhận → điều chuyển/thăng chức → nghỉ việc → quyết toán.

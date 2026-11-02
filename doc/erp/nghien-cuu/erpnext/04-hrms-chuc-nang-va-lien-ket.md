@@ -300,7 +300,7 @@ theo vai trò thay vì quyền theo từng bản ghi; trường nhạy cảm che
 2. Checklist tiếp nhận / nghỉ việc có chặn cứng (chưa xong việc bắt buộc thì không khóa tài khoản) hay chỉ nhắc?
 3. Có giữ bản clone `nexterp/hrms` để tra cứu tiếp không (chỉ đọc, không chạy)?
 
-> Ghi chú nguồn: ba bản nghiên cứu nháp ở `plans/reports/researcher-261102-1013-hrms-*.md`. Mọi trích dẫn trong tài liệu
+> Ghi chú nguồn: ba bản nghiên cứu nháp ở thư mục [`ban-nhap-hrms/`](ban-nhap-hrms/). Mọi trích dẫn trong tài liệu
 > này đã được kiểm lại trực tiếp với mã; chỗ nháp ghi sai đã sửa (vd «điều chuyển tạo mã mới thì hồ sơ **cũ** chuyển
 > Left», «đơn nghỉ đã duyệt có tự tạo chấm công»).
 

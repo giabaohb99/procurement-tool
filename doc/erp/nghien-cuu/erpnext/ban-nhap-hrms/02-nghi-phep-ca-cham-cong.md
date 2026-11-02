@@ -1,3 +1,6 @@
+> **BẢN NHÁP — chỉ để tham khảo.** Agent nghiên cứu viết ngày 02/11/2026 (duoc-CR-709). Một số chỗ thiếu trích dẫn hoặc sai so với mã;
+> bản đã kiểm lại với mã là [`../04-hrms-chuc-nang-va-lien-ket.md`](../04-hrms-chuc-nang-va-lien-ket.md) — khi hai bên khác nhau thì tin bản 04.
+
 # Nghiên cứu Frappe HRMS — Nghỉ phép & Chấm công
 
 **Ngày:** 02/11/2026 | **Phạm vi:** Mã nguồn HRMS develop (ffadbbf 01/11/2026) | **Mục đích:** So sánh với hệ nghỉ phép DEGO hiện tại
