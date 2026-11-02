@@ -196,6 +196,11 @@ export const LEAVE_TYPE: readonly StatusOption[] = [
   {"value": "funeral", "label": "Nghỉ tang chế", "sort_order": 0, "is_terminal": false, "is_exception": false},
   {"value": "comp_off", "label": "Nghỉ bù", "sort_order": 0, "is_terminal": false, "is_exception": false},
   {"value": "paternity", "label": "Nghỉ vợ sinh con", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "prenatal", "label": "Nghỉ khám thai", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "miscarriage", "label": "Nghỉ sảy thai, phá thai", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "contraception", "label": "Nghỉ thực hiện biện pháp tránh thai", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "child_sick", "label": "Nghỉ chăm con ốm", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "recuperation", "label": "Nghỉ dưỡng sức phục hồi sức khỏe", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
 /** Trạng thái công nợ */

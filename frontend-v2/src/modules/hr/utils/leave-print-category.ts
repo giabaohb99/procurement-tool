@@ -20,6 +20,7 @@ const INSURANCE_KEYWORDS = [
   'khám thai',
   'sảy thai',
   'dưỡng sức',
+  'tránh thai',
   'bảo hiểm',
   'chế độ',
 ]

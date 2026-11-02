@@ -25,6 +25,18 @@ describe('classifyLeaveForPrint', () => {
     }
   })
 
+  //  bao-CR-708: các chế độ BHXH tách riêng đều rơi vào ô "chế độ bảo hiểm".
+  it('puts the separated social-insurance leave types under the insurance box', () => {
+    for (const name of [
+      'Nghỉ chăm con ốm',
+      'Nghỉ dưỡng sức phục hồi sức khỏe',
+      'Nghỉ sảy thai, phá thai',
+      'Nghỉ thực hiện biện pháp tránh thai',
+    ]) {
+      expect(classifyLeaveForPrint([name], 1)).toEqual({ paid: false, unpaid: false, insurance: true })
+    }
+  })
+
   //  "ốm … không lương" chứa cả hai từ khóa — không lương thắng, vì BHXH không chi.
   it('lets "không lương" win over a sickness keyword in the same name', () => {
     expect(classifyLeaveForPrint(['Nghỉ ốm không lương'], 1)).toEqual({ paid: false, unpaid: true, insurance: false })
