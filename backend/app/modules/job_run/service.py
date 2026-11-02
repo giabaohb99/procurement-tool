@@ -7,6 +7,7 @@ from sqlalchemy import case, delete, func, select
 from sqlalchemy.orm import Session
 
 from app.core import app_settings
+from app.core.export_xlsx import VN_OFFSET
 from app.core.job_run_codes import JOB_GROUP_LABELS, JOB_RUN_STATUS_LABELS, JobRunStatus
 from app.core.logging_policy import CLEANUP_BATCH_SIZE, CLEANUP_MAX_BATCHES
 from app.core.text_fold import fold
@@ -83,10 +84,16 @@ def _iso(d: datetime | None) -> str | None:
     return d.isoformat(timespec="seconds") if d else None
 
 
+def _iso_vn(d: datetime | None) -> str | None:
+    """Cột giờ trong DB là giờ UTC của container (datetime.now()) → trả giờ VN cho màn / công cụ (hợp đồng A3)."""
+    return _iso(d + VN_OFFSET) if d else None
+
+
 def serialize_run(r: JobRun, summary_chars: int = 0) -> dict:
     status = int(r.status or 0)
     summary = r.result_summary or ""
-    return {"id": r.id, "job_code": r.task_name, "started_at": _iso(r.started_at), "finished_at": _iso(r.finished_at),
+    return {"id": r.id, "job_code": r.task_name, "started_at": _iso_vn(r.started_at),
+            "finished_at": _iso_vn(r.finished_at),
             "duration_ms": r.duration_ms, "status": status,
             "status_label": JOB_RUN_STATUS_LABELS.get(JobRunStatus(status), "") if status in (1, 2, 3, 4) else "",
             "summary": summary[:summary_chars] if summary_chars else summary, "error": r.error or ""}

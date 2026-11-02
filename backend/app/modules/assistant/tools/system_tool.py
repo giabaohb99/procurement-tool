@@ -4,6 +4,7 @@ Cùng dữ liệu màn Hệ thống > Việc chạy ngầm (`job_run.service`), 
 """
 from datetime import datetime
 
+from app.core.export_xlsx import VN_OFFSET
 from app.core.job_run_codes import JobRunStatus
 
 from .base import ToolContext, ToolSpec, denied
@@ -41,7 +42,7 @@ def _background_jobs(ctx: ToolContext, args: dict) -> dict:
                                                              "error")} if j["last_run"] else None)}
              for j in data["items"][:MAX_JOBS]]
     return {"items": items, "total": len(data["items"]), "has_more": len(data["items"]) > MAX_JOBS,
-            "now": datetime.now().isoformat(timespec="minutes"), "url": "/system/background-jobs",
+            "now": (datetime.utcnow() + VN_OFFSET).isoformat(timespec="minutes"), "url": "/system/background-jobs",
             "groups": data["groups"],
             "note": "Giờ là giờ Việt Nam. Muốn xem các lần chạy của một việc thì gọi lại với job = code."}
 
