@@ -30,6 +30,7 @@ import { formatDateTime } from '@/shared/utils/format-date'
 import { cn } from '@/shared/utils/cn'
 
 import { BoardFormDialog } from '../components/board-form-dialog'
+import { ForumAdminPostsTab } from '../components/forum-admin-posts-tab'
 import { BoardIcon } from '../components/board-icon'
 import { useDeleteForumBoard } from '../hooks/use-delete-forum-board'
 import { useForumBoards } from '../hooks/use-forum-boards'
@@ -44,7 +45,8 @@ import type { ForumPost } from '../types/forum-post'
 import { stripRichBodyText } from '../utils/rich-body'
 
 /**
- * Tab "Quản trị" diễn đàn (CR-263): Chuyên mục (dựng cây nhóm-box) · Bài ghim
+ * Tab "Quản trị" diễn đàn (CR-263): Chuyên mục (dựng cây nhóm-box) · Bài viết
+ * (bao-CR-707: lọc mọi bài, sửa tiêu đề / nhãn / box, ghim, ẩn, gỡ) · Bài ghim
  * (bỏ ghim tại chỗ) · Nhật ký kiểm duyệt (bảng ghi từ F5, giờ mới có chỗ đọc).
  * `can()` chỉ để ẩn/hiện — chốt chặn thật là `require()` trên từng API.
  */
@@ -64,6 +66,7 @@ export function ForumAdminPage() {
           {canBoard ? <TabsTrigger value="boards">Chuyên mục</TabsTrigger> : null}
           {canModerate ? (
             <>
+              <TabsTrigger value="posts">Bài viết</TabsTrigger>
               <TabsTrigger value="pinned">Bài ghim</TabsTrigger>
               <TabsTrigger value="logs">Nhật ký kiểm duyệt</TabsTrigger>
             </>
@@ -77,6 +80,9 @@ export function ForumAdminPage() {
         ) : null}
         {canModerate ? (
           <>
+            <TabsContent value="posts">
+              <ForumAdminPostsTab />
+            </TabsContent>
             <TabsContent value="pinned">
               <PinnedTab />
             </TabsContent>
@@ -387,6 +393,11 @@ const ACTION_META: Record<number, { label: string; className: string }> = {
     label: 'Khôi phục',
     className: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
   },
+  // bao-CR-707: quản trị sửa bài người khác — lý do ghi rõ đã đổi gì.
+  [FORUM_MODERATION_ACTION.edit]: {
+    label: 'Sửa',
+    className: 'bg-blue-500/15 text-blue-700 dark:text-blue-400',
+  },
 }
 
 function ModerationLogsTab() {
@@ -436,6 +447,7 @@ function ModerationLogsTab() {
             <SelectItem value={String(FORUM_MODERATION_ACTION.restore)}>
               Khôi phục
             </SelectItem>
+            <SelectItem value={String(FORUM_MODERATION_ACTION.edit)}>Sửa bài</SelectItem>
           </SelectContent>
         </Select>
         <Button type="submit" variant="outline" disabled={logs.isFetching}>
@@ -490,7 +502,11 @@ function ModerationLogsTab() {
               </div>
               <p className="text-sm text-muted-foreground">
                 {entry.actor_name || `Tài khoản #${entry.actor_id}`}
-                {entry.reason ? ` — lý do: ${entry.reason}` : ''}
+                {entry.reason
+                ? entry.action === FORUM_MODERATION_ACTION.edit
+                  ? ` — đã đổi: ${entry.reason}`
+                  : ` — lý do: ${entry.reason}`
+                : ''}
               </p>
             </li>
           )

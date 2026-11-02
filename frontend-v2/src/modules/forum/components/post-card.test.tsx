@@ -36,7 +36,7 @@ function makePost(overrides: Partial<ForumPost> = {}): ForumPost {
     prefix: 0,
     board_name: '',
     pinned_at: null,
-    can_delete: false,
+    can_delete: false, can_edit: false,
     can_moderate: false,
     hidden_reason: '',
     like_count: 0,

@@ -137,7 +137,7 @@ export function PostCard({ post, detail = false, flat = false }: PostCardProps) 
             )}
           </div>
         </div>
-        {(post.can_delete || post.can_moderate) && (
+        {(post.can_edit || post.can_delete || post.can_moderate) && (
           // Trong popup (flat) xóa/gỡ xong KHÔNG điều hướng — bài biến khỏi
           // cache là thẻ ngoài feed unmount, popup tự đóng theo.
           <PostActionsMenu post={post} detail={detail && !flat} />

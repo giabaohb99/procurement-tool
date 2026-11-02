@@ -19,6 +19,11 @@ export function useForumSearch(params: ForumSearchParams, enabled: boolean) {
     company_id: params.company_id || 0,
     dept_id: params.dept_id || 0,
     status: params.status || 0,
+    // bao-CR-707 — màn quản trị bài viết lọc thêm box / nhãn / ghim / cỡ trang.
+    board_id: params.board_id || 0,
+    prefix: params.prefix ?? -1,
+    pinned: params.pinned || 0,
+    per_page: params.per_page || 0,
     page: params.page || 1,
   }
   return useQuery({

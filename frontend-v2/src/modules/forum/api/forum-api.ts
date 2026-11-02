@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost, apiPut } from '@/core/api'
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '@/core/api'
 
 import type { ForumBoardInput, ForumModerationLogPage } from '../types/forum-admin'
 import type {
@@ -10,6 +10,7 @@ import type {
   ForumFeedPage,
   ForumPost,
   ForumPostLiker,
+  ForumPostPatch,
   ForumSearchFilters,
   ForumSearchPage,
   ForumSearchParams,
@@ -98,6 +99,11 @@ export function createForumPost(input: NewForumPost): Promise<ForumPost> {
 }
 
 /** Xóa bài của CHÍNH MÌNH (admin ẩn/xóa là F5, đi đường khác). */
+/** Sửa bài (bao-CR-707) — tác giả sửa bài mình; quản trị sửa mọi bài, chuyển box, gắn nhãn Thông báo. */
+export function updateForumPost(id: number, patch: ForumPostPatch): Promise<ForumPost> {
+  return apiPatch<ForumPost>(`${FORUM_URL}/posts/${id}`, patch)
+}
+
 export function deleteForumPost(id: number): Promise<null> {
   return apiDelete<null>(`${FORUM_URL}/posts/${id}`)
 }
@@ -162,6 +168,9 @@ export function searchForumPosts(params: ForumSearchParams): Promise<ForumSearch
   if (params.company_id) query.company_id = params.company_id
   if (params.dept_id) query.dept_id = params.dept_id
   if (params.status) query.status = params.status
+  if (params.board_id) query.board_id = params.board_id
+  if (params.prefix !== undefined && params.prefix >= 0) query.prefix = params.prefix
+  if (params.pinned) query.pinned = params.pinned
   if (params.per_page) query.per_page = params.per_page
   query.page = params.page || 1
   return apiGet<ForumSearchPage>(`${FORUM_URL}/posts/search`, { params: query })
