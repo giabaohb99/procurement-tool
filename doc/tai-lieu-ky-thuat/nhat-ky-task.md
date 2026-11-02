@@ -18121,3 +18121,64 @@ Commit: cde5c5ca · 9c04f723 · b089386d
 **Kết quả:** tài liệu nằm ở thư mục item, inventory, receiving, batch-serial, delivery và báo cáo tổng số 12 trong thư mục nghiên cứu.
 
 Tham chiếu: doc/erp/nghien-cuu/12-muc-do-module-kho-mat-hang-va-ke-hoach.md
+
+## duoc-CR-707 | Tài liệu chức năng nhân sự của ERPNext và đối chiếu với phân hệ Nhân sự
+- status: xong
+- date: 2026-11-02
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được cần một bản mô tả phần nhân sự của ERPNext (repo nexterp) đặt cạnh phân hệ Nhân sự hiện tại để biết chỗ giống, chỗ khác và chỗ nên học.
+
+**Đã làm**
+- Đọc mã hồ sơ nhân sự của ERPNext (khai báo trường, luật khi lưu, hành vi trên form, phân quyền) và các danh mục đi kèm: phòng ban, chức danh, chi nhánh, nhóm nhân sự, lịch nghỉ lễ.
+- Ghi rõ repo chỉ có lõi ERPNext: nghỉ phép, chấm công, lương, tuyển dụng nằm ở app hrms không có trong repo, nên phần đó chỉ là kiến thức chung.
+- Đối chiếu bốn mặt với phân hệ Nhân sự: theo khối chức năng, từng trường hồ sơ, từng luật (có trích tệp và dòng cả hai bên), và bố cục màn chi tiết.
+- Đề xuất nên học xếp theo ưu tiên, loại trừ chấm công và lương theo quyết định ngày 16/10/2026.
+
+**Kết quả:** tài liệu nằm trong kho mã, nhánh erp-v2. Hai đề xuất ưu tiên cao là chặn hoặc cảnh báo khi cho nghỉ việc người còn đang là quản lý trực tiếp của người khác, và bắt nhập ngày nghỉ việc.
+
+**Còn lại:** chờ quyết có làm hai đề xuất ưu tiên cao không, và chặn cứng hay chỉ cảnh báo.
+
+Mã nguồn: doc/erp/nghien-cuu/erpnext/03-chuc-nang-nhan-su-erpnext-va-doi-chieu.md · doc/erp/nghien-cuu/erpnext/README.md
+
+## duoc-CR-708 | Màn chi tiết nhân sự đổi khung theo bố cục ERPNext
+- status: xong
+- date: 2026-11-02
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được muốn màn chi tiết một nhân sự có bố cục giống ERPNext; đã chốt giữ nguyên tám tab và mọi luật lưu, chỉ đổi khung. Bản đầu còn dùng thẻ và thanh bên trái nên bị trả lại kèm ảnh chụp ERPNext; bản cuối làm theo đúng ảnh đó.
+
+**Đã làm**
+- Trang tràn sát khung, là một mặt phẳng duy nhất, không còn thẻ lồng bên trong; các nhóm nằm liền nhau và ngăn bằng đường kẻ ngang, tiêu đề nhóm viết chữ thường, ô nhập nền xám không viền, xếp ba cột khi đủ rộng.
+- Hàng tiêu đề kiểu *Nhân sự / Tên nhân sự* kèm nhãn tình trạng tô màu (thêm nhãn đỏ *Ngừng dùng* khi hồ sơ tắt) và các nút *In phiếu thông tin*, *Lưu*, *Xóa* bên phải; tab dạng gạch chân, thiếu chỗ thì cuộn ngang và có mũi tên ở mép để bấm, không xuống hàng.
+- Thanh bên phải ngăn bằng đường kẻ dọc: ảnh vuông bo góc, tên, mã nhân viên, chức vụ, phòng ban, quản lý trực tiếp (ghi *Chưa gán* nếu trống), công ty, ngày vào làm kèm thâm niên, dòng *Sinh nhật hôm nay* và *Tròn N năm làm việc* khi trùng ngày, lần cập nhật cuối. Dưới khổ 1280 điểm ảnh thanh bên thu thành dải ngang phía trên tab.
+- Hàng tiêu đề và dải tab **dính cố định** khi cuộn trang (từ khổ máy tính bảng trở lên), nút *Lưu* luôn trong tầm tay; thanh bên phải cũng dính ngay bên dưới (khoảng dính đo theo chiều cao thật của cụm tiêu đề, vì dải tab có lúc xuống hai hàng).
+- **Mọi nhóm ở cả tám tab** đóng mở được kiểu accordion và nhớ trạng thái cho lần sau (gồm cả quá trình công tác, hợp đồng, quỹ phép, tài khoản, chữ ký, phiên đăng nhập, người báo tin, hộ gia đình, lịch sử thao tác); các dòng chú thích dài dưới ô thu vào biểu tượng (i), rê chuột hoặc chạm mới hiện, trình đọc màn hình vẫn đọc được.
+- Tab *Chung* tách thêm nhóm **Vào làm và nghỉ việc**; nhóm *Lương* (gập sẵn) và *Kiêm nhiệm* (gập khi chưa kiêm phòng nào) đóng mở được kiểu accordion. Thân nhóm gập vẫn được dựng nên luật kiểm ô không mất, có ô sai thì nhóm tự mở.
+- Thẻ của các tab khác được làm phẳng ngay trong trang để cả màn đồng một kiểu.
+- Ngày sinh bị che với người không có quyền xem thông tin nhạy cảm nên dòng sinh nhật không bao giờ hiện cho họ.
+- Sửa bài hướng dẫn nhập lương cho đúng chỗ mới của nhóm Lương.
+
+**Kết quả:** kiểm tra kiểu sạch, kiểm lỗi cú pháp không thêm cảnh báo; 1822 bài kiểm giao diện của phân hệ Nhân sự, Hồ sơ và lớp dùng chung đều xanh, trong đó 25 bài mới. Agent rà mã không thấy lỗi chặn, hai mục nên sửa đã sửa. Đã xem trên máy local ở khổ 1856, 1280 và 390 điểm ảnh. Chưa commit, chưa chạy lại seed bài hướng dẫn trên dev.
+
+Mã nguồn: frontend-v2/src/modules/hr/pages/employee-detail-page.tsx · components/employee-tab-general.tsx · employee-detail-sidebar.tsx · employee-status-indicator.tsx · employee-salary-section.tsx · employee-department-card.tsx · utils/employee-milestones.ts · shared/ui/form-section.tsx · shared/ui/avatar-uploader.tsx · backend/scripts/seed_help_nhan_su.py
+
+## duoc-CR-709 | Tài liệu đi sâu app nhân sự hrms của nexterp và cách các chứng từ liên kết
+- status: xong
+- date: 2026-11-02
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được muốn đi sâu các chức năng nhân sự của nexterp, nhất là các chức năng con liên kết với nhau.
+
+**Đã làm**
+- Phát hiện các màn nhân sự của nexterp (HR Setup, cấp bậc, nghỉ phép, tuyển dụng…) thuộc app riêng hrms, không có trong repo; đã lấy mã hrms nhánh develop khớp phiên bản ERPNext 17-dev về thư mục nexterp/hrms để đọc.
+- Mô tả 9 workspace, tab Kết nối 11 nhóm của hồ sơ nhân viên, các việc chạy ngầm theo lịch, ba cơ chế liên kết dùng chung (ghi thay đổi vào hồ sơ và quá trình công tác; phiếu checklist sinh dự án và việc; tab Kết nối có nút tạo nhanh).
+- Đi sâu vòng đời nhân viên, nghỉ phép, tuyển dụng, đánh giá, chi phí; mỗi chứng từ ghi luồng, nút tạo, cái gì tự cập nhật ngược lại, luật chặn, kèm tệp và dòng mã.
+- Ba agent nghiên cứu song song viết nháp; hai bản thiếu trích dẫn và có chỗ sai nên đã kiểm lại toàn bộ với mã và viết lại.
+- Thêm hai phụ lục: danh sách đủ 104 chức năng con theo 9 mục của module nhân sự, mỗi mục ghi DEGO đã có hay chưa; và các tiện ích dùng chung trên mọi chứng từ của nexterp (chỉ định người, tệp đính kèm, thẻ, chia sẻ, dòng hoạt động, bình luận, email và sự kiện) kèm đề xuất cho hồ sơ nhân sự.
+
+**Kết quả:** tài liệu nằm trong kho mã, nhánh erp-v2. Ba đề xuất ưu tiên cao: checklist tiếp nhận và nghỉ việc sinh việc vào phân hệ Dự án, điều chuyển và bổ nhiệm thành chứng từ có duyệt tự ghi vào hồ sơ, tab Kết nối trên hồ sơ nhân sự.
+
+**Còn lại:** chờ chọn đề xuất làm trước và quyết checklist chặn cứng hay chỉ nhắc.
+
+Mã nguồn: doc/erp/nghien-cuu/erpnext/04-hrms-chuc-nang-va-lien-ket.md · doc/erp/nghien-cuu/erpnext/README.md
