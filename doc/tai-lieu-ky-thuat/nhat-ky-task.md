@@ -18183,3 +18183,23 @@ Mã nguồn: frontend-v2/src/modules/hr/pages/employee-detail-page.tsx · compon
 **Còn lại:** chờ chọn đề xuất làm trước và quyết checklist chặn cứng hay chỉ nhắc.
 
 Mã nguồn: doc/erp/nghien-cuu/erpnext/04-hrms-chuc-nang-va-lien-ket.md · doc/erp/nghien-cuu/erpnext/README.md
+
+## duoc-CR-710 | Khối Hoạt động trên hồ sơ nhân sự làm lại theo kiểu nexterp
+- status: xong
+- date: 2026-11-02
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được muốn phần lịch sử thao tác trên hồ sơ nhân sự có giao diện giống khối Hoạt động của nexterp; đã chốt chỉ làm giao diện, không đổi máy chủ.
+
+**Đã làm**
+- Thay khối lịch sử dạng thẻ bằng khối *Hoạt động*: đường dọc có chấm, mỗi dòng là một câu như «Dego Admin đã cập nhật Phòng ban · 3 ngày trước», dòng tạo mới ghi «đã tạo hồ sơ này»; rê chuột vào thời gian thấy ngày giờ đầy đủ.
+- Tên cột trong nhật ký được dịch ra đúng chữ trên form (Phòng ban, Công ty, Nơi làm việc…); cột kỹ thuật bị bỏ khỏi câu.
+- Gộp các dòng nhật ký cùng một lượt lưu làm một — trước đây một lần lưu có thể hiện ba dòng giống hệt nhau.
+- Quản trị có thêm liên kết *Chi tiết* sang màn nhật ký hệ thống để xem giá trị trước và sau.
+- Khối lịch sử dạng thẻ ở khoảng 37 màn khác giữ nguyên.
+
+**Kết quả:** kiểm tra kiểu và kiểm lỗi cú pháp sạch; 1417 bài kiểm của phân hệ Nhân sự và khối nhật ký đều xanh, trong đó 8 bài mới cho phần dựng câu và gộp dòng. Đã xem trên máy local. Đã lên nhánh erp-v2.
+
+**Còn lại:** nhật ký hiện chỉ lưu tên trường đã đổi cho dòng thời gian, nên câu chưa có dạng «từ X sang Y» như nexterp; muốn có thì cần thêm phần máy chủ đọc giá trị trước và sau (đã có sẵn trong sổ thay đổi) và che trường nhạy cảm, lương.
+
+Mã nguồn: frontend-v2/src/shared/audit/audit-activity-feed.tsx · describe-audit-entry.ts · frontend-v2/src/modules/hr/utils/employee-field-labels.ts · frontend-v2/src/modules/hr/pages/employee-detail-page.tsx

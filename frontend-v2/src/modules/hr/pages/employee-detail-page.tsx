@@ -20,7 +20,7 @@ import { toast } from 'sonner'
 import { useAuth } from '@/core/auth/use-auth'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
-import { AuditTimeline } from '@/shared/audit'
+import { AuditActivityFeed } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useBackTarget } from '@/shared/hooks/use-back-target'
 import { useHeightCssVar } from '@/shared/hooks/use-height-css-var'
@@ -71,6 +71,7 @@ import {
   type EmployeeProfileFormValues,
 } from '../schemas/employee-schema'
 import { employeeInitials } from '../types/employee'
+import { EMPLOYEE_FIELD_LABELS } from '../utils/employee-field-labels'
 import { firstInvalidTab } from '../utils/profile-field-tab'
 
 /** Tab không tự đệm: mọi khối là một nhóm phẳng (`FormSection` / `EmployeeDetailBlock`) tự đệm và kẻ sát mép như ERPNext. */
@@ -555,8 +556,15 @@ export function EmployeeDetailPage() {
                     </TabsContent>
 
                     {/* Ngoài mọi TabsContent — lịch sử thao tác đúng ở mọi tab (như «Hoạt động» của ERPNext). */}
-                    <EmployeeDetailBlock title="Lịch sử thao tác">
-                      <AuditTimeline entity="employee" entityId={employeeId} />
+                    {/*  duoc-CR-710: khối «Hoạt động» kiểu ERPNext — đường dọc có chấm, câu «A đã cập nhật Phòng ban ·
+                         3 ngày trước». `AuditTimeline` (khối thẻ) vẫn dùng ở các màn khác. */}
+                    <EmployeeDetailBlock title="Hoạt động">
+                      <AuditActivityFeed
+                        entity="employee"
+                        entityId={employeeId}
+                        fieldLabels={EMPLOYEE_FIELD_LABELS}
+                        createdNoun="hồ sơ này"
+                      />
                     </EmployeeDetailBlock>
                   </div>
                 </FormSectionProvider>
