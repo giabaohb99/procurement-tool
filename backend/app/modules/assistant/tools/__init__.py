@@ -52,6 +52,7 @@ from .capability_tool import CAPABILITY_SPECS
 
 log = logging.getLogger("app.assistant.tools")
 
+from .system_tool import BACKGROUND_JOBS_SPEC  # noqa: E402  bao-CR-703
 
 def _active_specs() -> list:
     """Tool đang bật: loại A + soạn nháp YCBG + xuất báo cáo luôn có; `search_docs` (loại B)
@@ -96,7 +97,8 @@ def _active_specs() -> list:
                            *OFFICE_DRAFT_SPECS,   # kh-AI2-6: soạn nháp phiếu đặt xe / duyệt dấu
                            PROPOSE_APPROVAL_SPEC, # kh-AI2-7: đề xuất duyệt / từ chối một phiếu (đặt xe, phòng họp, nghỉ phép)
                            *SKILL_SPECS,          # ai-CR-220: đọc Kho skill (cẩm nang công ty) thay gói tri thức (K7)
-                           *CAPABILITY_SPECS]     # kh-AI1-2: năng lực đội + thống kê loại việc (doc/erp/tai-lieu-ai/22 §4)
+                           *CAPABILITY_SPECS,     # kh-AI1-2: năng lực đội + thống kê loại việc (doc/erp/tai-lieu-ai/22 §4)
+                           BACKGROUND_JOBS_SPEC]  # bao-CR-703: sổ việc chạy ngầm (chỉ quản trị)
     if settings.AI_RAG_ENABLED:
         specs.append(SEARCH_DOCS_SPEC)
     return specs

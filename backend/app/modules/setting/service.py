@@ -161,6 +161,11 @@ FIELDS = [
      "label": "Tự gộp dòng hàng hải quan trùng (ngày 1 và 16)",
      "hint": "Dòng cùng tờ khai, giá, lượng mà không khác ô nào (hoặc chỉ một bên trống) được gộp về dòng nạp sớm "
              "nhất, ô trống điền bù. Nhóm khác ô hoặc từng sửa tay thì để nguyên. Tắt để dừng việc gộp định kỳ."},
+    #  bao-CR-703 — sổ việc chạy ngầm.
+    {"key": "job_run_keep_days", "group": "system", "type": "int",
+     "label": "Số ngày giữ lịch sử việc chạy ngầm",
+     "hint": "Lịch sử mỗi lần việc nền chạy (màn Hệ thống > Việc chạy ngầm) cũ hơn số ngày này bị dọn hằng đêm. "
+             "Đặt 0 để giữ mãi."},
     {"key": "backup_keep", "group": "system", "type": "int",
      "label": "Số bản sao lưu cơ sở dữ liệu giữ lại",
      "hint": "Giữ bấy nhiêu bản mới nhất, cũ hơn thì xóa cả tệp lẫn dòng ghi. Chạy hai lần mỗi "

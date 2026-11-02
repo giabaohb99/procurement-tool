@@ -61,6 +61,10 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("office", frozenset({"office_read", "draft_vehicle_booking", "draft_seal_request"}),
      r"dat xe|xe di|chuyen xe|tai xe|xe (cong ty|dua don)|duyet dau|dong dau|con dau|ton kho|kho hang|het hang"
      r"|con hang|dien dan|bai viet|bai dang"),
+    #  bao-CR-703: sổ việc chạy ngầm — chỉ quản trị dùng được (tool tự gác).
+    ("jobs", frozenset({"background_jobs"}),
+     r"viec (nen|chay ngam)|chay ngam|tac vu nen|\bcelery\b|\bbeat\b|sao luu|backup|dong bo .{0,20}(loi|chay)"
+     r"|don (du lieu|nhat ky)|job"),
     ("ticket", frozenset({"my_tickets", "ticket_create"}),
      r"ho tro|ticket|bao loi|su co|\bit\b|may in|phieu ho tro"),
     ("edit", frozenset({"propose_document_update", "propose_document_delete", "procurement_doc_read"}),

@@ -69,6 +69,7 @@ celery_app.conf.update(
         "app.modules.capability.tasks",              # Năng lực theo loại việc (duoc-CR-656): dựng vòng đời phiếu 05:00
         "app.modules.sync_log.tasks",       # Chuông 08:00 cho dòng sổ đồng bộ lỗi quá 24h (bao-CR-449)
         "app.modules.customs.tasks",        # Dọn nhật ký từng dòng lô hải quan 02:45 (bao-CR-698)
+        "app.modules.job_run.tasks",        # Dọn sổ việc chạy ngầm 04:55 (bao-CR-703)
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
     ],
@@ -126,6 +127,11 @@ celery_app.conf.update(
         "merge-customs-duplicate-lines": {
             "task": "customs.merge_duplicate_lines",
             "schedule": crontab(day_of_month="1,16", hour=3, minute=30),
+        },
+        #  bao-CR-703: dọn sổ việc chạy ngầm quá job_run_keep_days (mặc định 90) — 04:55, sau các việc gom số.
+        "cleanup-job-runs": {
+            "task": "job_run.cleanup",
+            "schedule": crontab(hour=4, minute=55),
         },
         "cleanup-get-logs": {
             "task": "request_log.cleanup",
@@ -399,3 +405,8 @@ if not settings.POS365_HARD_OFF and not settings.agent_is_service:
         },
     })
 
+
+#  bao-CR-703: sổ việc chạy ngầm — ghi mỗi lần task chạy qua tín hiệu Celery. KHÔNG nối ở tiến trình dịch vụ AI tách
+#  riêng: DB của nó không có tab_job_run.
+if not settings.agent_is_service:
+    from app.modules.job_run import signals as _job_run_signals  # noqa: E402,F401

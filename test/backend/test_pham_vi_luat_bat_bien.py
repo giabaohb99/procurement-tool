@@ -324,6 +324,8 @@ BB4_CONTROLLER_MIEN_TRU = {
     "work/controller.py": "work_task PUBLIC + NGHĨA VỤ tự lọc `visible_list_ids` — cụm 07 D1",
     "work/task_controller.py": "cùng `visible_list_ids` — cụm 07 D1",
     "forum/controller.py": "luật audience riêng trong WHERE của feed — cụm 07 D4",
+    "job_run/controller.py": "bao-CR-703: sổ việc chạy ngầm của HỆ THỐNG (không có dòng của người dùng nào), "
+                             "gác require('setting', 'read') — chỉ quản trị cấu hình",
     "system_log/controller.py": "gác bằng `_guard` → `_can_read_logs` / `_can_read_changes` "
                                "(hai mức nhạy cảm tách riêng); `audit`+`change_log` khai "
                                "PUBLIC vì lọc nhật ký theo phạm vi người tra là giấu đúng "

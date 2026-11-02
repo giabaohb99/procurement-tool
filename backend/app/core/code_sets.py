@@ -22,5 +22,6 @@ from app.core import usage_codes  # noqa: F401
 from app.core import ui_action_codes  # noqa: F401
 from app.core import ai_usage_codes  # noqa: F401
 from app.core import ai_plan_codes  # noqa: F401  kh-AI1-3
+from app.core import job_run_codes  # noqa: F401  bao-CR-703
 
 __all__: list[str] = []

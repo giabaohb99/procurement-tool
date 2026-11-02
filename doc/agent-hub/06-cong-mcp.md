@@ -192,6 +192,7 @@ server dặn AI gọi `list_skills` trước việc nghiệp vụ, áp dụng n�
 | Năng lực đội (kh-AI1-2) | `team_capacity(department?, kind?, task_type?, limit?)` · `task_type_stats(kind?, task_type?, department?, person?, by_person?)` | Khóa báo cáo 16 → đủ số mọi phòng; trưởng phòng không khóa → `team_capacity` chỉ thứ tự phòng mình + phòng con; còn lại từ chối | Số do `capability/ai_contract` + `stats_service` tính; dưới 5 mẫu trả `None`; tối đa 20 người / 30 dòng + `has_more` |
 | Lời nhắc sẵn (kh-AI2-4) | `prompts/list` · `prompts/get(name, arguments.yeu_cau?)` — `bat-dau-viec` + mỗi skill được đọc một lời nhắc | Cùng quyền Kho skill (`list_for_ai`); nhóm Kho skill tắt ở G7 thì rỗng; không được giao = không có (-32602) | Chỉ dặn gọi `read_skill`, không nhét nội dung skill; yêu cầu cắt 1500 ký tự |
 | Phiếu văn phòng (kh-AI2-3) | `office_read(resource, id?, filters?, page?, page_size?, pages?)` — `vehicle_booking`, `seal_request`, `inventory`, `forum_post` | Cùng bộ đọc `erp_read`: route danh sách / chi tiết của màn web (require + apply_scope); diễn đàn theo luật đối tượng xem bài | Nhóm G7 `office` tắt mặc định; diễn đàn tối đa 50 dòng / trang, nội dung cắt 2000 ký tự |
+| Việc chạy ngầm (bao-CR-703) | `background_jobs(status?, group?, q?, job?, runs?)` — danh sách việc nền (tên, mục đích, lịch, lần chạy gần nhất, số 7 ngày, lần chạy kế); `job` = mã việc → N lần chạy gần nhất | `setting.read` (quản trị) — thiếu thì từ chối | Chỉ đọc; nhóm G7 `admin`; tối đa 60 việc / 20 lần chạy, giờ VN |
 
 ### 3.4 Tool tra cứu cũ và chuẩn §5.6 (ai-CR-216)
 
