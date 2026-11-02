@@ -20,7 +20,7 @@ Phân hệ để nhân viên **nộp đơn nghỉ phép**, quản lý duyệt, v
 |---|---|
 | **Đơn nghỉ phép** | Chứng từ nghiệp vụ. Nguồn sự thật, có số `NP-xxx`. |
 | **Giấy nghỉ phép (GNP)** | **Văn bản** trong phân hệ Văn thư, tự sinh **sau khi đơn đã duyệt**. Là hồ sơ lưu sổ, không phải thứ để nộp. |
-| **Loại nghỉ** | Danh mục cấu hình (Phép năm, Nghỉ ốm, Thai sản…). Sửa được luật mà không cần lập trình. |
+| **Loại nghỉ** | Danh mục cấu hình (Phép năm, Nghỉ ốm, Thai sản…). Sửa được luật mà không cần lập trình. Có sẵn năm loại chế độ BHXH riêng (BHXH chi trả, không trừ quỹ phép): Nghỉ khám thai, Nghỉ sảy thai/phá thai, Nghỉ thực hiện biện pháp tránh thai, Nghỉ chăm con ốm, Nghỉ dưỡng sức phục hồi sức khỏe — mức luật ghi ở ghi chú từng loại. |
 | **Quỹ phép** | Số ngày của **một người × một năm × một loại nghỉ**. |
 
 Người dùng hỏi "làm giấy nghỉ phép" thì họ muốn **nộp đơn** ở

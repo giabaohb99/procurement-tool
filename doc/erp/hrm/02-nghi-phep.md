@@ -649,7 +649,7 @@ vẫn gửi lên. Luật thật nằm ở backend.
 | `carry_over` (bool) | **Di tích.** Công tắc hai nước, đã thay bằng `year_end_mode` (07/09/2026) vì nó không nói được nước thứ ba — *quy đổi*. Đừng đọc, đừng ghi |
 | `min_notice_days` | **Di tích.** Luật "phải nộp trước N ngày" đã bỏ 05/09/2026, không còn trong schema lẫn form |
 
-### 11.3. Tám loại nghỉ seed sẵn
+### 11.3. Mười ba loại nghỉ seed sẵn
 
 `app/seed_nghi_phep.py` — chỉ **THÊM** loại còn thiếu, loại đã có thì không đụng
 vào (người ta đã sửa). Chạy tay: `docker compose exec api python -m app.seed_nghi_phep`.
@@ -664,10 +664,23 @@ vào (người ta đã sửa). Chạy tay: `docker compose exec api python -m ap
 | `wedding` | Nghỉ cưới hỏi | ✔ | — | — | 3 | mọi | — | ✔ |
 | `funeral` | Nghỉ tang chế | ✔ | — | — | 3 | mọi | — | ✔ |
 | `comp_off` | Nghỉ bù | ✔ | — | — | — | mọi | — | ✔ |
+| `child_sick` | Nghỉ chăm con ốm | ✔ (BHXH) | — | — | **20** | mọi | ✔ | ✔ |
+| `recuperation` | Nghỉ dưỡng sức phục hồi sức khỏe | ✔ (BHXH) | — | — | **10** | mọi | — | **—** |
+| `prenatal` | Nghỉ khám thai | ✔ (BHXH) | — | — | **2** | **nữ** | ✔ | ✔ |
+| `miscarriage` | Nghỉ sảy thai, phá thai | ✔ (BHXH) | — | — | **50** | **nữ** | ✔ | **—** |
+| `contraception` | Nghỉ thực hiện biện pháp tránh thai | ✔ (BHXH) | — | — | **15** | mọi | ✔ | **—** |
 
 ⚠️ **Nghỉ vợ sinh con** (07/09/2026): trần **14** là mức **cao nhất** của luật
 (sinh đôi trở lên, mổ); mức thường là 5, mổ là 7. Máy không biết ca nào nên chỉ
 chặn trần — **người duyệt canh phần còn lại**.
+
+⚠️ **Năm loại chế độ BHXH** (bao-CR-708, 02/11/2026): tách khỏi `sick` / `maternity` vì khác nhau ở giới
+tính, trần ngày và cách tính ngày lễ. "Lương ✔ (BHXH)" nghĩa là người nghỉ có tiền thay lương nhưng **BHXH
+chi trả, không phải công ty**. Mức luật (Luật BHXH 2024, hiệu lực 01/07/2025) ghi ở cột `note` của từng loại:
+khám thai 5 lần × tối đa 2 ngày (Đ.51); sảy thai 10/20/40/50 ngày theo tuổi thai, tính cả lễ (Đ.52); tránh thai
+7 ngày đặt vòng / 15 ngày triệt sản (Đ.57); chăm con ốm 20 ngày làm việc/năm con dưới 3 tuổi, 15 ngày con 3–7
+tuổi; dưỡng sức 5–10 ngày, tính cả lễ. Máy chỉ chặn trần mỗi lần — người duyệt đối chiếu giấy tờ. Bản in đơn
+đánh ô *Nghỉ chế độ bảo hiểm* theo tên loại (`leave-print-category.ts`, thêm từ khóa *tránh thai*).
 
 ### 11.4. Bậc thâm niên (tab riêng)
 

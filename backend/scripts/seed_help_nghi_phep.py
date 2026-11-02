@@ -14,6 +14,9 @@ Lý do tách: bài gộp cũ dài mà vẫn hụt, người đọc phải tự s
 Bản 3 (22/10/2026, duoc-CR-670): thêm "loại nghỉ bắt buộc đính kèm" (CR-661) vào bài Nộp đơn / Câu báo lỗi /
 Loại nghỉ, và mục "Kết sổ cuối năm và bảng Đối chiếu" (CR-664) vào bài Quỹ phép của phòng Nhân sự.
 
+Bản 4 (02/11/2026, bao-CR-708): bài Loại nghỉ thêm mục "Các loại nghỉ chế độ BHXH" — năm loại tách riêng
+(khám thai, sảy thai, tránh thai, chăm con ốm, dưỡng sức) kèm mức luật và trần trên hệ.
+
 Chạy trong container api:
     docker compose exec -T api python scripts/seed_help_nghi_phep.py
     # rồi nạp bài mới vào kho tìm kiếm của trợ lý AI (seed ghi thẳng ORM nên hook không bắn):
@@ -654,6 +657,20 @@ Nháp  ─────────────────────►  Chờ
 </tbody>
 </table>
 <p>⚠️ <strong>Đừng xóa một loại nghỉ đang có đơn.</strong> Ngừng dùng nó thì bỏ tick <em>đang dùng</em> — đơn cũ vẫn đọc được, còn người mới thì không chọn được nữa.</p>
+
+<h2>Các loại nghỉ chế độ BHXH</h2>
+<p>Ngoài các loại nghỉ công ty trả lương, hệ có sẵn <strong>năm loại nghỉ chế độ bảo hiểm xã hội</strong> tách riêng. Ở các loại này người lao động vẫn có tiền thay lương nhưng do <strong>BHXH chi trả, không phải công ty</strong>; chúng <strong>không trừ quỹ phép năm</strong> và bản in đơn đánh vào ô <em>Nghỉ chế độ bảo hiểm</em>.</p>
+<table>
+<thead><tr><th>Loại nghỉ</th><th>Mức theo Luật BHXH 2024</th><th>Trần trên hệ</th><th>Tính ngày lễ, cuối tuần?</th></tr></thead>
+<tbody>
+<tr><td><strong>Nghỉ khám thai</strong> (nữ)</td><td>Tối đa 5 lần trong thai kỳ, mỗi lần không quá 2 ngày (Điều 51)</td><td>2 ngày/lần</td><td>Không tính (trừ ra)</td></tr>
+<tr><td><strong>Nghỉ sảy thai, phá thai</strong> (nữ)</td><td>10 ngày nếu thai dưới 5 tuần; 20 ngày nếu 5 đến dưới 13 tuần; 40 ngày nếu 13 đến dưới 22 tuần; 50 ngày nếu từ 22 tuần (Điều 52)</td><td>50 ngày/lần</td><td>Có tính</td></tr>
+<tr><td><strong>Nghỉ thực hiện biện pháp tránh thai</strong></td><td>Đặt dụng cụ tử cung: không quá 7 ngày; triệt sản (nam hoặc nữ): không quá 15 ngày (Điều 57)</td><td>15 ngày/lần</td><td>Có tính</td></tr>
+<tr><td><strong>Nghỉ chăm con ốm</strong></td><td>Con dưới 7 tuổi: 20 ngày làm việc/năm nếu con dưới 3 tuổi, 15 ngày nếu con từ 3 đến dưới 7 tuổi (chế độ ốm đau)</td><td>20 ngày/lần</td><td>Không tính (trừ ra)</td></tr>
+<tr><td><strong>Nghỉ dưỡng sức phục hồi sức khỏe</strong></td><td>Sau ốm đau, thai sản, sảy thai: 5 đến 10 ngày; công ty cùng công đoàn quyết định số ngày</td><td>10 ngày/lần</td><td>Có tính</td></tr>
+</tbody>
+</table>
+<p>⚠️ Hệ chỉ chặn <strong>trần mỗi lần</strong>: máy không biết tuổi thai, tuổi con hay ca phẫu thuật, nên người duyệt đối chiếu giấy tờ đính kèm với mức luật ở cột ghi chú của từng loại nghỉ. Bốn loại đầu <strong>bắt buộc đính kèm</strong> giấy của cơ sở y tế.</p>
 
 <h2>Tab Bậc thâm niên</h2>
 <p>Nằm ngay trong màn Loại nghỉ. Mỗi dòng là <em>làm đủ N năm thì cộng thêm M ngày</em>. Bộ mặc định: <strong>5→+1 · 10→+2 · 15→+3 · 20→+4</strong>.</p>
