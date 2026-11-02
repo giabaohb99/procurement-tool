@@ -71,6 +71,7 @@ class ForumModerationAction(IntEnum):
     HIDE = 1      # ẩn bài
     REMOVE = 2    # xóa bài
     RESTORE = 3   # khôi phục bài đã ẩn
+    EDIT = 4      # bao-CR-707: quản trị sửa bài của người khác (tiêu đề/nội dung/nhãn/box)
 
 
 class ForumReactionKind(IntEnum):
@@ -110,6 +111,7 @@ class ForumPrefix(IntEnum):
     KNOWLEDGE = 3   # kiến thức
     SHOWCASE = 4    # khoe
     REVIEW = 5      # đánh giá
+    ANNOUNCEMENT = 6  # bao-CR-707: thông báo — chỉ quản trị diễn đàn gắn được
 
 
 class ForumBoard(Base, AuditMixin):
