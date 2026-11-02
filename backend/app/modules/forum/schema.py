@@ -49,6 +49,21 @@ class BoardIn(BaseModel):
     status: int = int(ForumBoardStatus.ACTIVE)
 
 
+class PostPatch(BaseModel):
+    """Sửa bài (bao-CR-707) — chỉ gửi trường muốn đổi, `None` = giữ nguyên.
+
+    Tác giả sửa được tiêu đề / nội dung / nhãn (trừ nhãn Thông báo) của bài mình;
+    quản trị diễn đàn sửa mọi bài, đổi được `board_id` (chuyển box) và gắn nhãn
+    Thông báo. Luật nằm ở `service.update_post`. Ảnh/video đợt này chưa sửa.
+    """
+
+    title: Str255 | None = None
+    body: str | None = None
+    body_format: int | None = None
+    prefix: int | None = None
+    board_id: int | None = None
+
+
 class ReactionIn(BaseModel):
     """Bấm cảm xúc (CR-206) — `kind` theo `ForumReactionKind`; client cũ gửi
     `{}` thì rơi về LIKE nên không gãy."""

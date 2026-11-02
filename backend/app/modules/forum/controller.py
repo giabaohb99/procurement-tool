@@ -44,7 +44,7 @@ def _authors(db: Session, ids: list[int]) -> dict:
 
 def _out(p: ForumPost, authors: dict, user_id: int, likes: dict,
          comments: dict, images: dict, moderator: bool, hidden_reasons: dict,
-         board_names: dict | None = None) -> dict:
+         board_names: dict | None = None, manager: bool = False) -> dict:
     a = authors.get(p.created_by) or {}
     lk = likes.get(p.id) or {}
     return {
@@ -67,6 +67,8 @@ def _out(p: ForumPost, authors: dict, user_id: int, likes: dict,
         "created_at": p.created_at,
         "pinned_at": p.pinned_at,   # F9a: khác None = đang ghim, FE vẽ nhãn ghim
         "can_delete": p.created_by == user_id,   # tác giả xóa bài mình; admin đi đường F5
+        # bao-CR-707: tác giả sửa bài mình; quản trị (forum_post.write) sửa mọi bài.
+        "can_edit": p.created_by == user_id or manager,
         "can_moderate": moderator,               # F5: FE mở menu ẩn/xóa/khôi phục
         "like_count": lk.get("count", 0),
         "liked": lk.get("liked", False),
@@ -94,8 +96,9 @@ def _pack(db: Session, rows: list[ForumPost], user) -> list[dict]:
     hidden_ids = [p.id for p in rows if int(p.status) == int(ForumPostStatus.HIDDEN)]
     hidden_reasons = service.hidden_reason_map(db, hidden_ids)
     board_names = _board_names(db, [p.board_id for p in rows if p.board_id])
+    manager = service.can_manage_posts(db, user) if rows else False
     return [_out(p, authors, user.id, likes, comments, images, moderator, hidden_reasons,
-                 board_names)
+                 board_names, manager)
             for p in rows]
 
 
@@ -149,8 +152,11 @@ def search_posts(q: str = Query("", max_length=255),
                  dept_id: int = Query(0, ge=0),
                  board_id: int = Query(0, ge=0),
                  status: int = Query(0, ge=0),
+                 prefix: int = Query(-1, ge=-1, le=99),
+                 pinned: int = Query(0, ge=0, le=2),
                  page: int = Query(1, ge=1),
-                 per_page: int = Query(service.PAGE_SIZE, ge=1, le=50),
+                 # bao-CR-707: màn quản trị bài viết dùng chân bảng chung (10/20/50/100 dòng).
+                 per_page: int = Query(service.PAGE_SIZE, ge=1, le=100),
                  db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Tìm bài viết (CR-263) — mở cho MỌI người đăng nhập, kết quả tự lọc qua
     luật audience trong SQL nên người thường tìm gì cũng chỉ ra bài mình vốn
@@ -160,7 +166,8 @@ def search_posts(q: str = Query("", max_length=255),
     rows, total = service.search_posts(db, user, profile, q=q, author_q=author_q,
                                        company_id=company_id, dept_id=dept_id,
                                        board_id=board_id, status=status,
-                                       page=page, per_page=per_page)
+                                       page=page, per_page=per_page,
+                                       prefix=prefix, pinned=pinned)
     return success({"items": _pack(db, rows, user),
                     "total": total, "page": page, "per_page": per_page,
                     "has_more": page * per_page < total})
@@ -202,6 +209,18 @@ def create_post(data: schema.PostIn, db: Session = Depends(get_db),
                                board_id=data.board_id, title=data.title,
                                prefix=data.prefix, body_format=data.body_format)
     return success(_pack(db, [post], user)[0], "Đã đăng bài", 201)
+
+
+@router.patch("/posts/{pid}")
+def update_post(pid: int, data: schema.PostPatch, db: Session = Depends(get_db),
+                user=Depends(get_current_user)):
+    """Sửa bài (bao-CR-707) — tác giả sửa bài mình; quản trị diễn đàn sửa mọi bài,
+    chuyển box, gắn nhãn Thông báo. Luật ở `service.update_post`."""
+    post = _get_post_or_404(db, pid)
+    post = service.update_post(db, user, post, title=data.title, body=data.body,
+                               body_format=data.body_format, prefix=data.prefix,
+                               board_id=data.board_id)
+    return success(_pack(db, [post], user)[0], "Đã lưu bài viết")
 
 
 @router.delete("/posts/{pid}")
@@ -327,7 +346,7 @@ def remove_post(pid: int, data: schema.ModerationIn, background_tasks: Backgroun
 @router.get("/moderation-logs")
 def list_moderation_logs(page: int = Query(1, ge=1),
                          per_page: int = Query(service.PAGE_SIZE, ge=1, le=50),
-                         action: int = Query(0, ge=0, le=3),
+                         action: int = Query(0, ge=0, le=4),
                          q: str = Query("", max_length=255),
                          db: Session = Depends(get_db),
                          user=Depends(require("forum_post", "read"))):

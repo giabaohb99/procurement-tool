@@ -128,6 +128,8 @@ export interface ForumPost {
   /** Mốc ghim (F9a/CR-199) — khác null = bài đang trên dải Thông báo. */
   pinned_at: string | null
   can_delete: boolean
+  /** bao-CR-707: tác giả (bài mình) hoặc quản trị diễn đàn — FE mở nút Sửa bài. */
+  can_edit: boolean
   /** Người xem là quản trị viên diễn đàn (F5) — FE mở menu ẩn/khôi phục/xóa. */
   can_moderate: boolean
   /** Lý do lần ẩn gần nhất — chỉ khác rỗng khi `status === hidden`. */
@@ -161,6 +163,10 @@ export interface ForumSearchParams {
   dept_id?: number
   /** Chỉ quản trị dùng được (1 = đang hiện, 2 = đang ẩn) — người thường bị bỏ qua. */
   status?: number
+  /** bao-CR-707 — màn quản trị: lọc theo box, nhãn (-1/bỏ trống = mọi nhãn), ghim (1 = đang ghim, 2 = không). */
+  board_id?: number
+  prefix?: number
+  pinned?: number
   page?: number
   /** Ô gợi ý trên header (bao-CR-273.1) chỉ lấy top 5 — bỏ trống là cỡ trang mặc định. */
   per_page?: number
@@ -198,6 +204,16 @@ export interface ForumUploadedFile {
   thumb_url: string
   content_type: string
   size: number
+}
+
+/** Sửa bài `PATCH /api/forum/posts/:id` (bao-CR-707) — chỉ gửi trường muốn đổi.
+ * `board_id` (chuyển box) và nhãn Thông báo chỉ quản trị diễn đàn gửi được. */
+export interface ForumPostPatch {
+  title?: string
+  body?: string
+  body_format?: number
+  prefix?: number
+  board_id?: number
 }
 
 /** Thân bài đăng lên `POST /api/forum/posts` (hợp đồng API F1). */

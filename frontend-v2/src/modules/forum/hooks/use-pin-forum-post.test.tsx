@@ -43,7 +43,7 @@ function makePost(over: Partial<ForumPost> & { id: number }): ForumPost {
     prefix: 0,
     board_name: 'Thông báo công ty',
     pinned_at: '2026-09-03 10:05:00',
-    can_delete: false,
+    can_delete: false, can_edit: false,
     can_moderate: true,
     hidden_reason: '',
     like_count: 0,

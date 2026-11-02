@@ -17959,3 +17959,24 @@ Mã nguồn: backend/app/modules/purchase_order (service.list_display_names, con
 
 Mã nguồn: backend/app/modules/approval/permission_approvers.py · entity_hooks.py · task_notification.py · backend/app/modules/vehicle_booking/approval_bridge.py · approver_expand.py
 Deploy: backend/scripts/mo_rong_nguoi_duyet_dat_xe.py
+
+## bao-CR-707 | Quản trị danh sách bài viết diễn đàn và nhãn Thông báo
+- status: xong
+- date: 2026-11-02
+- tag: Diễn đàn, Quản trị
+
+**Bối cảnh:** Diễn đàn trên prod vừa có bài thông báo đầu tiên; quản trị cần chuyển bài sang chuyên mục khác, đổi nhãn, sửa bài và có nhãn riêng để đánh dấu thông báo chính thức. Trước đây không có đường sửa bài, nhãn chỉ có Thảo luận, Thắc mắc, Kiến thức, Khoe, Đánh giá.
+
+**Đã làm**
+- Thêm đường API sửa bài: tác giả sửa tiêu đề, nội dung, nhãn bài của mình; quản trị diễn đàn sửa mọi bài, chuyển bài sang chuyên mục khác (phạm vi xem đổi theo chuyên mục mới).
+- Thêm nhãn Thông báo, chỉ quản trị diễn đàn gắn được cả lúc đăng lẫn lúc sửa; người thường gửi nhãn này bị chặn.
+- Quản trị sửa bài của người khác thì nhật ký kiểm duyệt ghi một dòng kể rõ đã đổi gì; không gửi chuông cho tác giả.
+- Tìm kiếm bài viết lọc thêm được theo nhãn và theo trạng thái ghim.
+- Thêm tab Bài viết trong màn Quản trị diễn đàn: bảng lọc theo chuyên mục, nhãn, trạng thái, ghim và ô tìm; mỗi dòng có Sửa, Ghim, Ẩn hoặc Khôi phục, Gỡ, mở bài.
+- Thêm nút Sửa bài trong menu ba chấm của bài cho tác giả và quản trị; nhãn Thông báo hiện nền đỏ.
+- Cập nhật bài hướng dẫn sử dụng diễn đàn: sửa bài, tab Bài viết, nhãn Thông báo.
+
+**Chưa làm:** sửa ảnh và video của bài đã đăng.
+
+Mã nguồn: backend/app/modules/forum/service.py · controller.py · schema.py · model.py · backend/app/core/forum_codes.py · frontend-v2/src/modules/forum/components/forum-admin-posts-tab.tsx · post-edit-dialog.tsx
+Bài kiểm: test/backend/test_forum_sua_bai_cr707.py · frontend-v2/src/modules/forum/utils/prefix-options.test.ts

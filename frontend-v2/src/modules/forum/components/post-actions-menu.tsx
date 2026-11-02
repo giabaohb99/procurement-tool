@@ -1,4 +1,4 @@
-import { Eye, EyeOff, MoreHorizontal, Pin, PinOff, ShieldX, Trash2 } from 'lucide-react'
+import { Eye, EyeOff, MoreHorizontal, Pencil, Pin, PinOff, ShieldX, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -30,6 +30,7 @@ import { usePinForumPost } from '../hooks/use-pin-forum-post'
 import { FORUM_POST_STATUS } from '../types/forum-post'
 import type { ForumPost } from '../types/forum-post'
 import { ModeratePostDialog } from './moderate-post-dialog'
+import { PostEditDialog } from './post-edit-dialog'
 
 interface PostActionsMenuProps {
   post: ForumPost
@@ -43,7 +44,8 @@ function afterLeaveTarget(post: ForumPost): string {
 }
 
 /**
- * Nút "..." góc bài viết. Tác giả có "Xóa bài" (F3); quản trị viên (F5,
+ * Nút "..." góc bài viết. "Sửa bài" cho tác giả và quản trị (bao-CR-707);
+ * tác giả có "Xóa bài" (F3); quản trị viên (F5,
  * `post.can_moderate`) có Ẩn / Khôi phục / Gỡ theo trạng thái bài — hai đường
  * ẩn/gỡ bắt buộc lý do và báo chuông cho tác giả (QĐ-D1).
  */
@@ -54,6 +56,7 @@ export function PostActionsMenu({ post, detail }: PostActionsMenuProps) {
   const pin = usePinForumPost()
   const [confirming, setConfirming] = useState(false)
   const [moderating, setModerating] = useState<'hide' | 'remove' | null>(null)
+  const [editing, setEditing] = useState(false)
 
   const hidden = post.status === FORUM_POST_STATUS.hidden
   const pinned = post.pinned_at != null
@@ -96,6 +99,13 @@ export function PostActionsMenu({ post, detail }: PostActionsMenuProps) {
           <MoreHorizontal className="size-5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {post.can_edit && (
+            // bao-CR-707: tác giả sửa bài mình; quản trị sửa mọi bài, chuyển box, gắn nhãn Thông báo.
+            <DropdownMenuItem onSelect={() => setEditing(true)}>
+              <Pencil className="size-4" />
+              Sửa bài
+            </DropdownMenuItem>
+          )}
           {post.can_delete && (
             <DropdownMenuItem variant="destructive" onSelect={() => setConfirming(true)}>
               <Trash2 className="size-4" />
@@ -158,6 +168,8 @@ export function PostActionsMenu({ post, detail }: PostActionsMenuProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {editing && <PostEditDialog post={post} open onOpenChange={setEditing} />}
 
       {moderating && (
         <ModeratePostDialog

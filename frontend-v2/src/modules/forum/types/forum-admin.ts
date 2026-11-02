@@ -22,6 +22,8 @@ export const FORUM_MODERATION_ACTION = {
   hide: 1,
   remove: 2,
   restore: 3,
+  // bao-CR-707: quản trị sửa bài người khác (tiêu đề, nội dung, nhãn, box)
+  edit: 4,
 } as const
 
 /** Một dòng `GET /api/forum/moderation-logs` — bảng ghi từ F5, đọc từ CR-263. */

@@ -141,6 +141,7 @@ export const FORUM_PREFIX: readonly StatusOption[] = [
   {"value": "3", "label": "Kiến thức", "sort_order": 0, "is_terminal": false, "is_exception": false},
   {"value": "4", "label": "Khoe", "sort_order": 0, "is_terminal": false, "is_exception": false},
   {"value": "5", "label": "Đánh giá", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "6", "label": "Thông báo", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
 /** Trạng thái hợp đồng lao động */

@@ -203,7 +203,8 @@ def _author_ids_subquery(db: Session, author_q: str):
 def search_posts(db: Session, user, profile: dict, q: str = "",
                  author_q: str = "", company_id: int = 0, dept_id: int = 0,
                  board_id: int = 0, status: int = 0,
-                 page: int = 1, per_page: int = PAGE_SIZE):
+                 page: int = 1, per_page: int = PAGE_SIZE,
+                 prefix: int = -1, pinned: int = 0):
     """Một trang kết quả tìm kiếm, mới → cũ, phân trang số trang (người ta đảo
     trang kết quả như đảo trang thread — con trỏ id không cần thiết ở đây).
 
@@ -238,6 +239,14 @@ def search_posts(db: Session, user, profile: dict, q: str = "",
         qy = qy.filter(ForumPost.dept_id == int(dept_id))
     if board_id:
         qy = qy.filter(ForumPost.board_id == int(board_id))
+    # bao-CR-707 — màn quản trị bài viết: lọc theo nhãn (-1 = mọi nhãn) và ghim
+    # (0 = tất cả, 1 = đang ghim, 2 = không ghim).
+    if int(prefix) >= 0:
+        qy = qy.filter(ForumPost.prefix == int(prefix))
+    if int(pinned) == 1:
+        qy = qy.filter(ForumPost.pinned_at.isnot(None))
+    elif int(pinned) == 2:
+        qy = qy.filter(ForumPost.pinned_at.is_(None))
     total = qy.count()
     page = max(1, page)
     rows = (qy.order_by(ForumPost.id.desc())
@@ -652,6 +661,45 @@ def strip_html_text(html: str) -> str:
     return text.replace("&nbsp;", " ").strip()
 
 
+def can_manage_posts(db: Session, user) -> bool:
+    """Quản trị bài viết (bao-CR-707) — cùng cổng `forum_post.write` với ẩn/ghim:
+    sửa bài người khác, chuyển box, gắn nhãn Thông báo."""
+    return user_has_permission(db, user, "forum_post", "write")
+
+
+def parse_prefix(db: Session, user, prefix) -> ForumPrefix:
+    """Kiểm giá trị nhãn đầu tiêu đề. Nhãn THÔNG BÁO chỉ quản trị diễn đàn gắn
+    được (bao-CR-707) — người thường tự gắn là thông báo giả, 403."""
+    try:
+        value = ForumPrefix(int(prefix))
+    except (TypeError, ValueError):
+        raise HTTPException(400, f"Prefix không hợp lệ: {prefix}")
+    if value == ForumPrefix.ANNOUNCEMENT and not can_manage_posts(db, user):
+        raise HTTPException(403, "Chỉ quản trị diễn đàn mới gắn được nhãn Thông báo")
+    return value
+
+
+def normalize_body(body: str, body_format) -> tuple[str, ForumBodyFormat]:
+    """Lọc + đo trần nội dung bài — MỘT chỗ cho cả đăng lẫn sửa (CR-261, bao-CR-707).
+
+    RICH_HTML: trần đo trên markup TRƯỚC khi lọc (chặn cục 10MB ngay cửa), qua
+    `sanitize_html`, toàn thẻ rỗng quy về chuỗi rỗng. PLAIN: trần chữ trơn."""
+    body = (body or "").strip()
+    try:
+        fmt = ForumBodyFormat(int(body_format))
+    except (TypeError, ValueError):
+        raise HTTPException(400, f"Định dạng nội dung không hợp lệ: {body_format}")
+    if fmt == ForumBodyFormat.RICH_HTML:
+        if len(body) > MAX_BODY_HTML:
+            raise HTTPException(400, f"Bài viết tối đa {MAX_BODY_HTML} ký tự (tính cả định dạng)")
+        body = sanitize_html(body)
+        if not strip_html_text(body):
+            body = ""
+    elif len(body) > MAX_BODY:
+        raise HTTPException(400, f"Bài viết tối đa {MAX_BODY} ký tự")
+    return body, fmt
+
+
 def create_post(db: Session, user, profile: dict, body: str, audience: int,
                 file_ids: list[int] | None = None, kind: int = 0,
                 board_id: int = 0, title: str = "", prefix: int = 0,
@@ -679,10 +727,7 @@ def create_post(db: Session, user, profile: dict, body: str, audience: int,
             raise HTTPException(400, "Chủ đề trong box phải có tiêu đề")
         if len(title) > MAX_TITLE:
             raise HTTPException(400, f"Tiêu đề tối đa {MAX_TITLE} ký tự")
-        try:
-            post_prefix = ForumPrefix(int(prefix))
-        except ValueError:
-            raise HTTPException(400, f"Prefix không hợp lệ: {prefix}")
+        post_prefix = parse_prefix(db, user, prefix)
         audience = int(board.audience)   # ép theo box — client gửi gì cũng kệ
     else:
         title, post_prefix = "", ForumPrefix.NONE
@@ -694,22 +739,7 @@ def create_post(db: Session, user, profile: dict, body: str, audience: int,
     # mới), caption có hay không tùy; thiếu ảnh thì dòng hệ thống thành nói suông.
     if post_kind == ForumPostKind.AVATAR_UPDATE and len(file_ids) != 1:
         raise HTTPException(400, "Bài đổi ảnh đại diện phải kèm đúng 1 ảnh")
-    try:
-        fmt = ForumBodyFormat(int(body_format))
-    except ValueError:
-        raise HTTPException(400, f"Định dạng nội dung không hợp lệ: {body_format}")
-    if fmt == ForumBodyFormat.RICH_HTML:
-        # Trần đo TRƯỚC khi lọc — chặn markup khổng lồ ngay cửa, khỏi tốn
-        # công sanitize một cục 10MB rồi mới chê dài.
-        if len(body) > MAX_BODY_HTML:
-            raise HTTPException(400, f"Bài viết tối đa {MAX_BODY_HTML} ký tự (tính cả định dạng)")
-        body = sanitize_html(body)
-        # Toàn thẻ rỗng (`<p></p>`) quy về chuỗi rỗng — bài chỉ có ảnh không
-        # lưu xác HTML vào cột, FE khỏi vẽ một đoạn trống trên thẻ bài.
-        if not strip_html_text(body):
-            body = ""
-    elif len(body) > MAX_BODY:
-        raise HTTPException(400, f"Bài viết tối đa {MAX_BODY} ký tự")
+    body, fmt = normalize_body(body, body_format)
     if not body and not file_ids:
         raise HTTPException(400, "Bài viết không được để trống")
     if len(file_ids) > MAX_FILES:
@@ -761,6 +791,76 @@ def attach_images(db: Session, post: ForumPost, file_ids: list[int], user_id: in
     if n:
         db.commit()
     return n
+
+
+def update_post(db: Session, user, post: ForumPost, title: str | None = None,
+                body: str | None = None, body_format: int | None = None,
+                prefix: int | None = None, board_id: int | None = None) -> ForumPost:
+    """Sửa bài (bao-CR-707) — `None` = giữ nguyên trường đó.
+
+    Ai sửa được: TÁC GIẢ (bài của mình) hoặc QUẢN TRỊ diễn đàn (`forum_post.write`).
+    Chỉ quản trị: chuyển box (`board_id`, audience ép lại theo box mới) và gắn nhãn
+    Thông báo. Bài đã bị gỡ (REMOVED) coi như không tồn tại. Cùng luật nội dung với
+    `create_post` (`normalize_body`). Quản trị sửa bài NGƯỜI KHÁC thì ghi một dòng
+    nhật ký kiểm duyệt EDIT nói rõ đổi gì — không chuông (chỉnh nhãn/chuyển box là
+    việc dọn dẹp, không phải chế tài). Ảnh/video giữ nguyên, đợt này chưa sửa.
+    """
+    if int(post.status) == int(ForumPostStatus.REMOVED):
+        raise HTTPException(404, "Bài viết không tồn tại")
+    is_author = post.created_by == user.id
+    is_manager = can_manage_posts(db, user)
+    if not is_author and not is_manager:
+        raise HTTPException(403, "Chỉ tác giả hoặc quản trị diễn đàn mới sửa được bài viết này")
+
+    changes: list[str] = []
+    if board_id is not None and int(board_id or 0) != int(post.board_id or 0):
+        if not is_manager:
+            raise HTTPException(403, "Chỉ quản trị diễn đàn mới chuyển bài sang box khác")
+        if not board_id:
+            raise HTTPException(400, "Không chuyển được bài ra khỏi box — chọn một box khác")
+        board = get_postable_board(db, int(board_id))
+        old_name = db.get(ForumBoard, post.board_id).name if post.board_id else "Bảng tin"
+        post.board_id = board.id
+        post.audience = int(board.audience)
+        changes.append(f"chuyển box: {old_name} -> {board.name}")
+
+    in_box = bool(post.board_id)
+    if title is not None:
+        new_title = (title or "").strip()
+        if in_box and not new_title:
+            raise HTTPException(400, "Chủ đề trong box phải có tiêu đề")
+        if len(new_title) > MAX_TITLE:
+            raise HTTPException(400, f"Tiêu đề tối đa {MAX_TITLE} ký tự")
+        if in_box and new_title != (post.title or ""):
+            changes.append("sửa tiêu đề")
+            post.title = new_title
+    elif in_box and not (post.title or "").strip():
+        raise HTTPException(400, "Chủ đề trong box phải có tiêu đề")
+
+    if prefix is not None and in_box:
+        new_prefix = parse_prefix(db, user, prefix)
+        if int(new_prefix) != int(post.prefix or 0):
+            changes.append(f"đổi nhãn {int(post.prefix or 0)} -> {int(new_prefix)}")
+            post.prefix = int(new_prefix)
+
+    if body is not None or body_format is not None:
+        fmt_in = body_format if body_format is not None else int(post.body_format or 0)
+        new_body, fmt = normalize_body(body if body is not None else post.body, fmt_in)
+        if not new_body and not image_map(db, [post.id]).get(post.id):
+            raise HTTPException(400, "Bài viết không được để trống")
+        if new_body != (post.body or "") or int(fmt) != int(post.body_format or 0):
+            changes.append("sửa nội dung")
+            post.body, post.body_format = new_body, int(fmt)
+
+    if not changes:
+        return post
+    post.updated_by = user.id
+    if not is_author:
+        db.add(ForumModerationLog(post_id=post.id, action=int(ForumModerationAction.EDIT),
+                                  reason="; ".join(changes), created_by=user.id, updated_by=user.id))
+    db.commit()
+    db.refresh(post)
+    return post
 
 
 def delete_post(db: Session, post: ForumPost) -> None:
