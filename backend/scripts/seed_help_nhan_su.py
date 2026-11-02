@@ -372,7 +372,7 @@ TREE = {
 <tbody>
 <tr><td>Người nằm nhầm phòng</td><td>Hồ sơ nhân sự ▸ ô <strong>Phòng ban</strong></td></tr>
 <tr><td>Người báo cáo nhầm sếp</td><td>Hồ sơ nhân sự ▸ ô <strong>Người quản lý trực tiếp</strong></td></tr>
-<tr><td>Lọc một phòng mà thiếu (hoặc thừa) người của phòng con</td><td>Nhân sự ▸ Danh mục ▸ <strong>Phòng ban</strong> ▸ ô phòng cha</td></tr>
+<tr><td>Lọc một phòng mà thiếu (hoặc thừa) người của phòng con</td><td>Nhân sự ▸ Danh mục ▸ Master ▸ <strong>Phòng ban</strong> ▸ ô phòng cha</td></tr>
 <tr><td>Màn trống</td><td>Chưa có nhân sự nào trong phạm vi của bạn — màn ghi đúng câu này. Trống sau khi chọn phòng ban thì phòng đó chưa có ai: bỏ bớt bộ lọc</td></tr>
 </tbody>
 </table>

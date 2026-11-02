@@ -18225,3 +18225,21 @@ Mã nguồn: frontend-v2/src/shared/audit/audit-activity-feed.tsx · describe-au
 **Còn lại:** chưa làm phần Danh bạ, xuất sơ đồ ra ảnh, dấu «Đang nghỉ» và sinh nhật trên thẻ như nexterp; thẻ chưa có ảnh đại diện thật (đường API sơ đồ chưa trả ảnh); bài hướng dẫn mới nạp ở local, lên dev cần chạy lại seed và nạp lại kho tìm kiếm của trợ lý.
 
 Mã nguồn: frontend-v2/src/modules/hr/pages/org-chart-page.tsx · components/org-chart-board.tsx · org-chart-canvas.tsx · org-chart-tree-node.tsx · org-chart-person-card.tsx · org-chart-team-toggle.tsx · org-chart-person-popover.tsx · utils/org-chart-forest.ts · backend/scripts/seed_help_nhan_su.py
+
+## duoc-CR-712 | Gom các danh mục nhỏ của Nhân sự vào cụm menu Master
+- status: xong
+- date: 2026-11-02
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được muốn menu phân hệ Nhân sự gọn hơn: các chức năng nhỏ như phòng ban, công ty gom vào một cụm tên Master, bên trong chia mục con.
+
+**Đã làm**
+- Tạo cụm Master sổ xuống trong nhóm Danh mục, bên trong có Phòng ban, Công ty, Chức vụ và Mẫu hợp đồng; Nhân sự, Duyệt sửa hồ sơ và Sơ đồ tổ chức vẫn ở ngoài như cũ.
+- Giữ nguyên quyền của từng mục con, nên ai trước đây vào được màn nào thì nay vẫn vào được đúng màn đó; người không có quyền mục nào thì không thấy cả cụm.
+- Sửa đường menu ghi trong ba bài hướng dẫn sử dụng có nhắc tới màn Phòng ban.
+
+**Kết quả:** kiểm tra kiểu và kiểm lỗi cú pháp sạch, bài kiểm của khung menu và phân hệ Nhân sự đều xanh. Đã xem trên máy local: cụm tự mở và tô sáng mục đang đứng, thanh đường dẫn ghi Nhân sự › Master › Chức vụ. Đã lên nhánh erp-v2.
+
+**Còn lại:** không có.
+
+Mã nguồn: frontend-v2/src/modules/hr/routes.tsx · backend/scripts/seed_help_nhan_su.py · seed_help_tro_ly_ai_lap_bo_tai_khoan.py · seed_help_lap_bo_tai_khoan_phong_tu_mua.py

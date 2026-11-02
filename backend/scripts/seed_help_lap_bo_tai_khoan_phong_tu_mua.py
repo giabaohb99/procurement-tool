@@ -82,7 +82,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <h2>III. Chuẩn bị</h2>
 <table><thead><tr><th>Cần</th><th>Kiểm ở đâu</th></tr></thead><tbody>
 <tr><td>Tài khoản quản trị (vai trò <em>Quản trị hệ thống</em>, hoặc vai trò có quyền quản lý Vai trò, sửa Người dùng và tạo Nhân sự)</td><td>Menu <strong>Quản trị › Phân quyền tài khoản</strong> mở được là đủ</td></tr>
-<tr><td>Phòng tự mua và phòng Sản xuất -Thu mua đã có trong danh mục</td><td><strong>Nhân sự › Phòng ban</strong> — xem bài {ref("Phòng ban", "Phòng ban")}</td></tr>
+<tr><td>Phòng tự mua và phòng Sản xuất -Thu mua đã có trong danh mục</td><td><strong>Nhân sự › Master › Phòng ban</strong> — xem bài {ref("Phòng ban", "Phòng ban")}</td></tr>
 <tr><td>Vai trò <em>Quản lý thu mua phòng</em> có trong danh sách vai trò</td><td><strong>Quản trị › Phân quyền tài khoản › Vai trò &amp; quyền</strong> — xem bài {ref("Vai trò", "Vai trò")}. Thiếu thì báo kỹ thuật</td></tr>
 <tr><td>Không tự sửa quyền của chính mình</td><td>Màn hồ sơ và màn phân quyền <strong>khóa</strong> khi mở đúng tài khoản đang đăng nhập; nhờ một quản trị khác</td></tr>
 </tbody></table>

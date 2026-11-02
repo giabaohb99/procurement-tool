@@ -8,6 +8,7 @@ import {
   FileSignature,
   CalendarOff,
   CalendarRange,
+  Database,
   IdCard,
   LayoutDashboard,
   Network,
@@ -72,45 +73,56 @@ export const hrModule: ErpModule = {
       entity: 'employee',
       group: 'Danh mục',
     },
+    //  ── Master (duoc-CR-712) ──────────────────────────────────────────────
+    //  Gom các danh mục nền (phòng ban, công ty, chức vụ, mẫu HĐLĐ) vào một cụm sổ xuống cho menu gọn.
+    //  ⚠️ Mỗi mục con GIỮ NGUYÊN `entity` / `manage` của mình: bộ gác route (`canAccessRoute`) duyệt cả
+    //  mục con và khớp theo đường dẫn dài nhất, mục con xét trước mục cha — nên dời vào cụm không đổi
+    //  quyền của màn nào. Mục cha hiện khi có ít nhất một mục con được phép.
     {
-      label: 'Phòng ban',
+      label: 'Master',
       path: appRoutes.hr.departments,
-      icon: Building,
-      entity: 'department',
+      icon: Database,
+      entities: ['department', 'company', 'job_position', 'labor_contract_template'],
       group: 'Danh mục',
-    },
-    {
-      label: 'Công ty',
-      path: appRoutes.hr.companies,
-      icon: Building2,
-      entity: 'company',
-      group: 'Danh mục',
-    },
-    {
-      //  Danh mục CHỨC VỤ (duoc-CR-320) — nguồn của ô chọn "Vị trí / Chức vụ".
-      //  `manage: true`: mọi vai trò đều ĐỌC được danh mục (ô chọn cần thế),
-      //  nhưng vào màn quản lý thì chỉ người SỬA được — cùng luật với "Danh mục
-      //  phòng họp". Không có nó thì cả công ty thấy một mục menu mở ra chỉ để
-      //  nhìn, mọi nút đều xám.
-      label: 'Chức vụ',
-      path: appRoutes.hr.jobPositions,
-      icon: BriefcaseBusiness,
-      entity: 'job_position',
-      manage: true,
-      group: 'Danh mục',
-    },
-    {
-      //  Mẫu HĐLĐ (.docx) theo pháp nhân. ⚠️ Mục menu khai `entity` LÀ hàng rào
-      //  của route (gác điều hướng mặc định MỞ): thiếu mục này thì ai đăng nhập
-      //  cũng gõ URL vào được. Trang còn tự kiểm `can(..., 'read')` một lần nữa.
-      label: 'Mẫu hợp đồng',
-      //  duoc-CR-643: mở trang mẫu NGAY TRONG Nhân sự (CR-629b từng nhảy sang Thiết lập văn bản của
-      //  phân hệ Văn bản — người dùng bị đẩy khỏi Nhân sự). Mục này cũng là hàng rào cho cả
-      //  `/hr/labor-contract-templates/*` (trình soạn, danh sách biến) vì gác khớp theo ranh giới `/`.
-      path: appRoutes.hr.laborContractTemplates,
-      icon: FileSignature,
-      entity: 'labor_contract_template',
-      group: 'Danh mục',
+      matchPaths: [appRoutes.hr.companies, appRoutes.hr.jobPositions, appRoutes.hr.laborContractTemplates],
+      children: [
+        {
+          label: 'Phòng ban',
+          path: appRoutes.hr.departments,
+          icon: Building,
+          entity: 'department',
+        },
+        {
+          label: 'Công ty',
+          path: appRoutes.hr.companies,
+          icon: Building2,
+          entity: 'company',
+        },
+        {
+          //  Danh mục CHỨC VỤ (duoc-CR-320) — nguồn của ô chọn "Vị trí / Chức vụ".
+          //  `manage: true`: mọi vai trò đều ĐỌC được danh mục (ô chọn cần thế),
+          //  nhưng vào màn quản lý thì chỉ người SỬA được — cùng luật với "Danh mục
+          //  phòng họp". Không có nó thì cả công ty thấy một mục menu mở ra chỉ để
+          //  nhìn, mọi nút đều xám.
+          label: 'Chức vụ',
+          path: appRoutes.hr.jobPositions,
+          icon: BriefcaseBusiness,
+          entity: 'job_position',
+          manage: true,
+        },
+        {
+          //  Mẫu HĐLĐ (.docx) theo pháp nhân. ⚠️ Mục menu khai `entity` LÀ hàng rào
+          //  của route (gác điều hướng mặc định MỞ): thiếu mục này thì ai đăng nhập
+          //  cũng gõ URL vào được. Trang còn tự kiểm `can(..., 'read')` một lần nữa.
+          label: 'Mẫu hợp đồng',
+          //  duoc-CR-643: mở trang mẫu NGAY TRONG Nhân sự (CR-629b từng nhảy sang Thiết lập văn bản của
+          //  phân hệ Văn bản — người dùng bị đẩy khỏi Nhân sự). Mục này cũng là hàng rào cho cả
+          //  `/hr/labor-contract-templates/*` (trình soạn, danh sách biến) vì gác khớp theo ranh giới `/`.
+          path: appRoutes.hr.laborContractTemplates,
+          icon: FileSignature,
+          entity: 'labor_contract_template',
+        },
+      ],
     },
     //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
     //  Submenu gồm 4 mục con trên sidebar bên trái:
