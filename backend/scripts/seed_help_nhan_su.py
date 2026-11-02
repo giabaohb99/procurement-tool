@@ -6,7 +6,7 @@ CHỈ viết bài cho tính năng MỚI, KHÔNG viết lại toàn bộ phân h�
     cho nghỉ việc (CR-665);
   * duoc-CR-676 (23/10, HR2-2): in Phiếu thông tin nhân viên BM00../QT01/NS, nhân viên tự đề nghị sửa hồ sơ ở
     Trang cá nhân, phòng Nhân sự duyệt ở menu "Duyệt sửa hồ sơ";
-  * duoc-CR-693 (29/10): nhập Lương / Phụ cấp ở hồ sơ (tab Chung ▸ Công việc ▸ nhóm Lương), chỉ chính chủ xem số ở
+  * duoc-CR-693 (29/10): nhập Lương / Phụ cấp ở hồ sơ (tab Chung ▸ nhóm Lương), chỉ chính chủ xem số ở
     Trang cá nhân ▸ thẻ "Lương của tôi", ký HĐLĐ tự cập nhật. Nhãn đối chiếu bằng đọc
     `hr/components/employee-salary-section.tsx`, `app/components/profile/profile-salary-card.tsx`,
     `labor_contract/salary_sync.py` và ảnh `plans/reports/screenshots-cr693/0[1-6,9]-*.png`;
@@ -17,6 +17,8 @@ CHỈ viết bài cho tính năng MỚI, KHÔNG viết lại toàn bộ phân h�
     `plans/reports/screenshots-cr694/1,4,5-*.png` (ảnh 4 chụp trước khi ô nhãn số chính được thêm — theo mã hiện tại
     dòng đầu có ô nhãn, huy hiệu "Số chính" nằm cuối dòng như ảnh 1). Màn danh sách Nhân sự ở ERP v2 chưa có nút
     xuất Excel (đường `/api/employees/export/*` có, bản cũ dùng) nên bài chỉ nói "tệp xuất danh sách nhân sự".
+  * duoc-CR-708 (02/11): màn chi tiết nhân sự đổi khung theo ERPNext — tab Chung không còn thẻ, các nhóm Thông tin cá
+    nhân · Công việc · Vào làm & nghỉ việc ngăn bằng đường kẻ, Lương và Kiêm nhiệm gập / mở được; nút In / Lưu / Xóa vẫn ở góc phải hàng tiêu đề.
 (Nghỉ phép đã có bộ riêng: `seed_help_nghi_phep.py`.)
 
 ⚠️ Bố cục Phiếu thông tin nhân viên dựng theo bảng trường của tài liệu HRM vì tệp mẫu gốc BM00 chưa có
@@ -195,7 +197,7 @@ TREE = {
         {
             "title": SALARY,
             "icon": "wallet",
-            "summary": "Nhập Lương và Phụ cấp ở hồ sơ nhân sự (tab Chung ▸ Công việc ▸ Lương): chỉ chính người đó xem được số ở Trang cá nhân ▸ thẻ 'Lương của tôi', người khác chỉ thấy 'Đã nhập (ẩn)'; ký HĐLĐ tự cập nhật",
+            "summary": "Nhập Lương và Phụ cấp ở hồ sơ nhân sự (tab Chung ▸ nhóm Lương): chỉ chính người đó xem được số ở Trang cá nhân ▸ thẻ 'Lương của tôi', người khác chỉ thấy 'Đã nhập (ẩn)'; ký HĐLĐ tự cập nhật",
             "content": f"""<h2>Lương ở hồ sơ dùng để làm gì</h2>
 <p>Mỗi hồ sơ nhân sự có hai ô <strong>Lương (đ/tháng)</strong> và <strong>Phụ cấp (đ/tháng)</strong>. Đây là <strong>chỗ duy nhất</strong> giữ lương của một người trên ERP: báo cáo <strong>Quỹ lương theo pháp nhân</strong> cộng hai ô này lại (xem {ref(PAYROLL, "Đọc báo cáo Quỹ lương theo pháp nhân")}).</p>
 <p>⚠️ <strong>Chỉ chính nhân sự đó xem được số lương của mình.</strong> Người khác, kể cả người vừa nhập, trưởng phòng Nhân sự hay quản trị hệ thống, chỉ biết được ô đã nhập hay chưa. Trợ lý AI cũng không đọc được lương, và nhật ký thay đổi của hồ sơ chỉ ghi là có cập nhật lương, không ghi số.</p>
@@ -204,7 +206,7 @@ TREE = {
 <p>Người làm được việc này là người <strong>sửa được hồ sơ nhân sự</strong> của người đó (thường là phòng Nhân sự), trong phạm vi hồ sơ mình được sửa.</p>
 <ol>
 <li>Vào <strong>Nhân sự</strong> ▸ <strong>Nhân sự</strong>, bấm vào người cần nhập để mở hồ sơ.</li>
-<li>Ở tab <strong>Chung</strong>, tìm khung <strong>Công việc</strong>, cuối khung có nhóm <strong>Lương</strong> với hai ô <strong>Lương (đ/tháng)</strong> và <strong>Phụ cấp (đ/tháng)</strong>.</li>
+<li>Ở tab <strong>Chung</strong>, kéo xuống dưới nhóm <strong>Vào làm &amp; nghỉ việc</strong>, bấm vào dòng <strong>Lương</strong> (nhóm này gập sẵn) để mở ra hai ô <strong>Lương (đ/tháng)</strong> và <strong>Phụ cấp (đ/tháng)</strong>.</li>
 <li>Gõ số tiền một tháng, tính bằng đồng, vào từng ô. Người không có phụ cấp thì để trống ô Phụ cấp.</li>
 <li>Bấm <strong>Lưu</strong> ở đầu trang.</li>
 </ol>
