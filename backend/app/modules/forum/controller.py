@@ -155,7 +155,8 @@ def search_posts(q: str = Query("", max_length=255),
                  prefix: int = Query(-1, ge=-1, le=99),
                  pinned: int = Query(0, ge=0, le=2),
                  page: int = Query(1, ge=1),
-                 per_page: int = Query(service.PAGE_SIZE, ge=1, le=50),
+                 # bao-CR-707: màn quản trị bài viết dùng chân bảng chung (10/20/50/100 dòng).
+                 per_page: int = Query(service.PAGE_SIZE, ge=1, le=100),
                  db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Tìm bài viết (CR-263) — mở cho MỌI người đăng nhập, kết quả tự lọc qua
     luật audience trong SQL nên người thường tìm gì cũng chỉ ra bài mình vốn
