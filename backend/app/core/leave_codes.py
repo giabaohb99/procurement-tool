@@ -27,6 +27,14 @@ LEAVE_TYPE_SET = register(CodeSet("leave_type", "Loại nghỉ phép", [
     #  số ngày, và thai sản nghỉ liên tục nên không trừ ngày lễ còn nghỉ vợ sinh
     #  thì có. Nhét chung một mã là ô "Áp dụng cho giới tính" không còn dùng được.
     Code("paternity", "Nghỉ vợ sinh con"),
+    #  bao-CR-708 (02/11/2026): tách các chế độ BHXH còn lại thành loại riêng thay vì dồn
+    #  vào `sick` / `maternity` — mỗi chế độ khác nhau ở giới tính, trần ngày, có tính ngày
+    #  lễ hay không, và cách lập hồ sơ BHXH. Con số + căn cứ nằm ở cột ghi chú loại nghỉ.
+    Code("prenatal",      "Nghỉ khám thai"),
+    Code("miscarriage",   "Nghỉ sảy thai, phá thai"),
+    Code("contraception", "Nghỉ thực hiện biện pháp tránh thai"),
+    Code("child_sick",    "Nghỉ chăm con ốm"),
+    Code("recuperation",  "Nghỉ dưỡng sức phục hồi sức khỏe"),
 ]))
 
 #  Nửa ngày phép là chuyện thường. Bỏ bộ này đi thì người ta khai một ngày cho
