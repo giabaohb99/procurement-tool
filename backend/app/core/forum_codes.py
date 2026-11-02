@@ -18,4 +18,6 @@ FORUM_PREFIX_SET = register(CodeSet("forum_prefix", "Prefix chủ đề diễn �
     Code("3", "Kiến thức"),
     Code("4", "Khoe"),
     Code("5", "Đánh giá"),
+    # bao-CR-707: chỉ quản trị diễn đàn (forum_post.write) gắn được — service chặn người thường.
+    Code("6", "Thông báo"),
 ]))
