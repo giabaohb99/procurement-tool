@@ -64,7 +64,7 @@ db-export/*
 *.timestamp-*.mjs
 
 # Tài khoản chạy sync_task_journal.py (bao-CR-399) — mỗi máy tự điền, cấm commit.
-backend/scripts/.task_sync.env
+backend/scripts/.task_sync*.env
 
 # Đầu ra của graphify (`/graphify .`). Giữ lại bản đọc được — báo cáo + đồ thị HTML
 # — vì cả nhóm dùng chung mà không cần cài graphify. Chặn phần còn lại: `graph.json`
