@@ -1,6 +1,6 @@
-import * as React from "react"
-import type { Label as LabelPrimitive } from "radix-ui"
-import { Slot } from "radix-ui"
+import * as React from 'react'
+import type { Label as LabelPrimitive } from 'radix-ui'
+import { Slot } from 'radix-ui'
 import {
   Controller,
   FormProvider,
@@ -9,10 +9,12 @@ import {
   type ControllerProps,
   type FieldPath,
   type FieldValues,
-} from "react-hook-form"
+} from 'react-hook-form'
 
-import { cn } from "@/shared/utils/cn"
-import { Label } from "@/shared/ui/label"
+import { cn } from '@/shared/utils/cn'
+import { Label } from '@/shared/ui/label'
+import { FormDescriptionHint } from '@/shared/ui/form-description-hint'
+import { useFormSectionContext } from '@/shared/ui/form-section'
 
 const Form = FormProvider
 
@@ -23,9 +25,7 @@ type FormFieldContextValue<
   name: TName
 }
 
-const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue
-)
+const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue)
 
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
@@ -48,7 +48,7 @@ const useFormField = () => {
   const fieldState = getFieldState(fieldContext.name, formState)
 
   if (!fieldContext) {
-    throw new Error("useFormField should be used within <FormField>")
+    throw new Error('useFormField should be used within <FormField>')
   }
 
   const { id } = itemContext
@@ -67,35 +67,31 @@ type FormItemContextValue = {
   id: string
 }
 
-const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
-)
+const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue)
 
-function FormItem({ className, ...props }: React.ComponentProps<"div">) {
+function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
   const id = React.useId()
 
   return (
     <FormItemContext.Provider value={{ id }}>
       <div
         data-slot="form-item"
-        className={cn("grid gap-2", className)}
+        //  `relative`: neo biểu tượng (i) của `FormDescriptionHint` vào góc ô.
+        className={cn('relative grid gap-2', className)}
         {...props}
       />
     </FormItemContext.Provider>
   )
 }
 
-function FormLabel({
-  className,
-  ...props
-}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+function FormLabel({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>) {
   const { error, formItemId } = useFormField()
 
   return (
     <Label
       data-slot="form-label"
       data-error={!!error}
-      className={cn("data-[error=true]:text-destructive", className)}
+      className={cn('data-[error=true]:text-destructive', className)}
       htmlFor={formItemId}
       {...props}
     />
@@ -109,33 +105,39 @@ function FormControl({ ...props }: React.ComponentProps<typeof Slot.Root>) {
     <Slot.Root
       data-slot="form-control"
       id={formItemId}
-      aria-describedby={
-        !error
-          ? `${formDescriptionId}`
-          : `${formDescriptionId} ${formMessageId}`
-      }
+      aria-describedby={!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
       aria-invalid={!!error}
       {...props}
     />
   )
 }
 
-function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
+function FormDescription({ className, ...props }: React.ComponentProps<'p'>) {
   const { formDescriptionId } = useFormField()
+  //  duoc-CR-708: trong `FormSectionProvider` có `hints: "icon"` (màn hồ sơ nhân sự kiểu
+  //  ERPNext) thì chú thích thu vào biểu tượng (i) thay vì chiếm một dòng dưới ô.
+  const { hints } = useFormSectionContext()
+  if (hints === 'icon') {
+    return (
+      <FormDescriptionHint id={formDescriptionId} className={className}>
+        {props.children}
+      </FormDescriptionHint>
+    )
+  }
 
   return (
     <p
       data-slot="form-description"
       id={formDescriptionId}
-      className={cn("text-sm text-muted-foreground", className)}
+      className={cn('text-sm text-muted-foreground', className)}
       {...props}
     />
   )
 }
 
-function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
+function FormMessage({ className, ...props }: React.ComponentProps<'p'>) {
   const { error, formMessageId } = useFormField()
-  const body = error ? String(error?.message ?? "") : props.children
+  const body = error ? String(error?.message ?? '') : props.children
 
   if (!body) {
     return null
@@ -145,7 +147,7 @@ function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
     <p
       data-slot="form-message"
       id={formMessageId}
-      className={cn("text-sm text-destructive", className)}
+      className={cn('text-sm text-destructive', className)}
       {...props}
     >
       {body}

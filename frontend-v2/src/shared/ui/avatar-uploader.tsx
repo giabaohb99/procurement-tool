@@ -15,6 +15,8 @@ interface AvatarUploaderProps {
   disabledHint?: string
   /** Logo công ty nền trắng + `contain`; ảnh người thì `cover`. */
   fit?: 'cover' | 'contain'
+  /** Đổi cỡ khung tròn (mặc định `size-16`), vd thanh bên hồ sơ nhân sự dùng ảnh lớn hơn. */
+  className?: string
 }
 
 /**
@@ -29,6 +31,7 @@ export function AvatarUploader({
   onUpload,
   disabledHint,
   fit = 'cover',
+  className,
 }: AvatarUploaderProps) {
   const [busy, setBusy] = useState(false)
 
@@ -55,8 +58,10 @@ export function AvatarUploader({
     <span className="text-xl font-semibold text-primary">{fallback}</span>
   )
 
-  const shell =
-    'relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border bg-accent'
+  const shell = cn(
+    'relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border bg-accent',
+    className,
+  )
 
   if (!onUpload) {
     return (

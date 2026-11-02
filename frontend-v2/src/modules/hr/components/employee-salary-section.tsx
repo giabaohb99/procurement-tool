@@ -15,6 +15,11 @@ interface EmployeeSalarySectionProps {
   /** Người đang xem là CHÍNH nhân sự này — chỉ họ nhận được số. */
   isSelf: boolean
   canWrite: boolean
+  /**
+   * Gập / mở được (duoc-CR-708, màn hồ sơ kiểu ERPNext). Mặc định GẬP: người khác
+   * chính chủ chỉ thấy «Đã nhập (ẩn)», mở sẵn chỉ tốn chỗ. Có ô sai thì tự mở.
+   */
+  collapsible?: boolean
 }
 
 const FIELDS = [
@@ -40,17 +45,31 @@ function isSalarySet(employee: EmployeeDetail): boolean {
  *
  * Chính chủ chỉ XEM: tự sửa lương mình thì backend trả 403, nên không bày ô nhập.
  */
-export function EmployeeSalarySection({ employee, isSelf, canWrite }: EmployeeSalarySectionProps) {
+export function EmployeeSalarySection({
+  employee,
+  isSelf,
+  canWrite,
+  collapsible = false,
+}: EmployeeSalarySectionProps) {
   const form = useFormContext<EmployeeProfileFormValues>()
   const salarySet = isSalarySet(employee)
   const salary = form.watch('salary_monthly')
   const allowance = form.watch('allowance_monthly')
   const clearing = salary === 0 && allowance === 0
   const unsetLabel = salarySet ? 'Đã nhập (ẩn)' : 'Chưa nhập'
+  //  Ô lương sai (vượt trần) mà nhóm đang gập thì bấm Lưu không thấy gì — ép mở.
+  const { errors } = form.formState
+  const sectionProps = {
+    title: 'Lương',
+    collapsible,
+    defaultOpen: !collapsible,
+    forceOpen: !!(errors.salary_monthly || errors.allowance_monthly),
+    summary: isSelf ? 'Bấm để xem' : unsetLabel,
+  }
 
   if (isSelf || !canWrite) {
     return (
-      <FormSection title="Lương">
+      <FormSection {...sectionProps}>
         {FIELDS.map((f) => {
           const amount = employee[f.name] ?? 0
           return (
@@ -76,7 +95,7 @@ export function EmployeeSalarySection({ employee, isSelf, canWrite }: EmployeeSa
   }
 
   return (
-    <FormSection title="Lương">
+    <FormSection {...sectionProps}>
       {FIELDS.map((f) => (
         <FormField
           key={f.name}
@@ -92,7 +111,9 @@ export function EmployeeSalarySection({ employee, isSelf, canWrite }: EmployeeSa
                   value={field.value ?? 0}
                   //  Ô trống (0) giữ nguyên trạng thái đang có: "không đụng" vẫn là `null`,
                   //  "sẽ xóa" vẫn là 0. Chỉ số > 0 mới là thay số.
-                  onChange={(next) => field.onChange(next > 0 ? next : field.value === 0 ? 0 : null)}
+                  onChange={(next) =>
+                    field.onChange(next > 0 ? next : field.value === 0 ? 0 : null)
+                  }
                   placeholder={field.value === 0 ? 'Sẽ xóa khi Lưu' : unsetLabel}
                 />
               </FormControl>
@@ -109,12 +130,24 @@ export function EmployeeSalarySection({ employee, isSelf, canWrite }: EmployeeSa
         </span>
         {/*  `type="button"`: nút nằm trong form hồ sơ, thiếu là bấm vào form LƯU luôn. */}
         {salarySet && !clearing && (
-          <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setBoth(0)}>
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs"
+            onClick={() => setBoth(0)}
+          >
             Xóa số đã nhập
           </Button>
         )}
         {clearing && (
-          <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setBoth(null)}>
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-xs"
+            onClick={() => setBoth(null)}
+          >
             Không xóa nữa
           </Button>
         )}

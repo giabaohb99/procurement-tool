@@ -1,8 +1,10 @@
 import { Card } from '@/shared/ui/card'
-import { FormSection } from '@/shared/ui/form-section'
+import { FormSection, useFormSectionContext } from '@/shared/ui/form-section'
+import { cn } from '@/shared/utils/cn'
 import { SectionHeading } from '@/shared/ui/section-heading'
 import { EmployeeDateField, EmployeeTextField, SensitiveFieldsNotice } from './employee-form-fields'
 import { EmployeeIdCardUploader } from './employee-id-card-uploader'
+import { EmployeeDetailBlock } from './employee-detail-block'
 import { EmployeePeopleEditor } from './employee-people-editor'
 import {
   FAMILY_COLUMNS,
@@ -39,11 +41,19 @@ export function EmployeeTabDocuments({
   const uploadIdImage = useUploadIdImage(employee.id)
   const lockedField = !canWrite || !canReadSensitive
 
+  const flat = useFormSectionContext().variant === 'flat'
   return (
-    <div className="flex flex-col gap-5">
-      {!canReadSensitive && <SensitiveFieldsNotice />}
+    <div className={cn('flex flex-col', !flat && 'gap-5')}>
+      {!canReadSensitive && (
+        //  Kiểu phẳng không có đệm khung — tự đệm để cảnh báo không dính sát mép.
+        <div className={cn(flat && 'px-4 pt-4 sm:px-6')}>
+          <SensitiveFieldsNotice />
+        </div>
+      )}
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      {/*  Kiểu phẳng (màn hồ sơ kiểu ERPNext, duoc-CR-708): các nhóm XẾP CHỒNG sát nhau để
+           đường kẻ ngăn nhóm chạy liền một mạch; lưới hai cột + khoảng hở là của bản thẻ. */}
+      <div className={cn(!flat && 'grid gap-5 lg:grid-cols-2')}>
         <Card className="gap-4 p-5">
           <FormSection title="Căn cước công dân">
             <EmployeeTextField name="id_number" label="Số CCCD" disabled={lockedField} />
@@ -94,17 +104,19 @@ export function EmployeeTabDocuments({
       </div>
 
       {canReadSensitive && (
-        <EmployeePeopleEditor<EmployeeFamily>
-          title="Thành viên hộ gia đình"
-          description="Dùng cho hồ sơ bảo hiểm xã hội. Quan hệ ghi theo chủ hộ."
-          columns={FAMILY_COLUMNS}
-          rows={families.data}
-          isLoading={families.isLoading}
-          emptyRow={createEmptyFamilyRow}
-          canWrite={canWrite}
-          isSaving={saveFamilies.isPending}
-          onSave={(rows) => saveFamilies.mutate(toFamilyPayload(rows))}
-        />
+        <EmployeeDetailBlock title="Thành viên hộ gia đình">
+          <EmployeePeopleEditor<EmployeeFamily>
+            title="Thành viên hộ gia đình"
+            description="Dùng cho hồ sơ bảo hiểm xã hội. Quan hệ ghi theo chủ hộ."
+            columns={FAMILY_COLUMNS}
+            rows={families.data}
+            isLoading={families.isLoading}
+            emptyRow={createEmptyFamilyRow}
+            canWrite={canWrite}
+            isSaving={saveFamilies.isPending}
+            onSave={(rows) => saveFamilies.mutate(toFamilyPayload(rows))}
+          />
+        </EmployeeDetailBlock>
       )}
     </div>
   )
