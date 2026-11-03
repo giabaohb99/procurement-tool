@@ -21,7 +21,7 @@ Người chủ nói "tuần này", "từ thứ Hai", "3 ngày qua" thì tự quy
 
 - Commit có tiêu đề mơ hồ (`fix`, `wip`, `merge`): `git show --stat <sha>` rồi đọc diff phần chính.
 - Tài liệu mới hoặc sửa nhiều (mục *TÀI LIỆU / HDSD / KẾ HOẠCH*): đọc phần đầu + mục lục để tóm tắt **nội dung**, không chỉ tên tệp.
-- Kế hoạch mới trong `plans/` = việc **sắp làm** của người đó — đọc `plan.md` để nói họ định làm gì tiếp.
+- Kế hoạch mới trong `doc/erp/<phan-he>/plans/` hoặc `doc/plans/` (chỗ cũ `plans/` gốc, `frontend-v2/plans/` tới khi dời xong — bao-CR-712) = việc **sắp làm** của người đó — đọc `plan.md` để nói họ định làm gì tiếp.
 - Tệp bị **xóa (D)** ở `backend/app/modules/` hoặc `frontend-v2/src/modules/*/pages/`: xem commit xóa để biết **chức năng nào bị bỏ** — đây là thứ người chủ cần biết nhất, đừng bỏ sót.
 
 ## 3. Viết bản recap
@@ -36,7 +36,7 @@ Ngắn, tiếng Việt, không emoji, không « » (dùng in đậm / in nghiên
 - Sửa: <chức năng đổi cách chạy / giao diện>
 - Bỏ: <chức năng hoặc màn bị gỡ>
 - Tài liệu: <tài liệu / HDSD / nghiên cứu mới, một câu nội dung mỗi cái>
-- Đang dở / sắp làm: <mục sổ task `dang-lam`, kế hoạch mới trong plans/>
+- Đang dở / sắp làm: <mục sổ task `dang-lam`, kế hoạch mới trong doc/**/plans/>
 
 **<Tên người 2>** ...
 
