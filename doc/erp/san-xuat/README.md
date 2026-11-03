@@ -34,7 +34,7 @@ Bộ tài liệu chuẩn bị cho phân hệ **Quản lý sản xuất** của E
 |---|---|
 | [`erp/README.md`](../README.md) | Bộ tài liệu nền ERP |
 | `doc/erp/mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md` | Luật của bảng sản phẩm. BOM phải tuân theo |
-| [`nhap-khau/`](../nhap-khau/01-danh-sach-tinh-nang.md) | Nguyên liệu nhập khẩu cho nhà máy |
+| [`nhap-khau/`](../nhap-khau/chuc-nang/10-danh-sach-tinh-nang.md) | Nguyên liệu nhập khẩu cho nhà máy |
 
 ---
 

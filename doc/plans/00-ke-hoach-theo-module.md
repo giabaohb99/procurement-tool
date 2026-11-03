@@ -160,7 +160,7 @@ Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/thu-mua/n
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| NK3-1 | Phân hệ Hồ sơ và tiến độ nhập khẩu Đ1–Đ7 (đang PENDING); mở lại thì chạy checklist §14 | Đại ca mở lại | `doc/erp/nhap-khau/01-danh-sach-tinh-nang.md` §14 |
+| NK3-1 | Phân hệ Hồ sơ và tiến độ nhập khẩu Đ1–Đ7 (đang PENDING); mở lại thì chạy checklist §14 | Đại ca mở lại | `doc/erp/nhap-khau/chuc-nang/10-danh-sach-tinh-nang.md` §14 |
 
 **Câu chờ quyết:**
 - Q2 nạp bao lâu một lần, mỗi lần phủ khoảng nào — phòng Thu mua.

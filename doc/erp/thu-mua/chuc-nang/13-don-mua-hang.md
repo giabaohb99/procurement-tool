@@ -1157,7 +1157,7 @@ thì tạo một **vai trò riêng** chỉ tick ô "Xuất" của màn tương �
 chỉ đơn `order_type = 2`). **bao-CR-453 (22/09/2026)** mở cho **mọi loại đơn**, đổi tên bảng thành
 `tab_po_cost`, thay cờ *Dự kiến / Thực tế* bằng **ba giai đoạn Dự toán → Tạm tính → Quyết toán** và đưa
 bộ loại chi phí vào **danh mục người dùng quản** (K.6). Thiết kế đầy đủ, bảy điểm khách đã chốt và lý do
-từng lựa chọn: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`. Ba tên mã lịch sử **cố ý giữ nguyên** vì đã nằm
+từng lựa chọn: `doc/erp/nhap-khau/chuc-nang/11-chi-phi-thu-mua.md`. Ba tên mã lịch sử **cố ý giữ nguyên** vì đã nằm
 trong dữ liệu và trong hai giao diện: `source_type = import_cost` trên `tab_payable`, khóa
 `import_costs` / `import_cost_summary` / `import_cost_allocation` của API chi tiết ĐMH; chỉ nhãn người
 dùng thấy đổi thành *Chi phí thu mua*.

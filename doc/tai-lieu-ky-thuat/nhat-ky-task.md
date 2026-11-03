@@ -10081,8 +10081,8 @@ Máy chủ chính đang tạm dừng cập nhật nên đợt này chỉ lên m�
 cho khách nằm ở tài liệu thiết kế; giá hàng ba giai đoạn trên đơn nhập khẩu tách thành yêu cầu
 riêng sau.
 
-Tài liệu: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`, `doc/erp/thu-mua/chuc-nang/13-don-mua-hang.md` mục K,
-`08-he-thong-bao-cao.md`, `doc/tai-lieu-ky-thuat/kien-truc/05a-du-lieu-thu-mua.md`, `doc/erp/nhap-khau/01-danh-sach-tinh-nang.md`,
+Tài liệu: `doc/erp/nhap-khau/chuc-nang/11-chi-phi-thu-mua.md`, `doc/erp/thu-mua/chuc-nang/13-don-mua-hang.md` mục K,
+`08-he-thong-bao-cao.md`, `doc/tai-lieu-ky-thuat/kien-truc/05a-du-lieu-thu-mua.md`, `doc/erp/nhap-khau/chuc-nang/10-danh-sach-tinh-nang.md`,
 `doc/erp/19-viec-con-lai-tong-hop.md` §5, `doc/tai-lieu-ky-thuat/change-log-bao.md` (dòng bao-CR-453).
 Mã nguồn: `backend/app/modules/purchase_order/` (model, schema, service, controller, cost_type.py),
 `backend/migrations/versions/05a62d38a47a_*.py`, `backend/scripts/seed_help_chi_phi_thu_mua.py`,

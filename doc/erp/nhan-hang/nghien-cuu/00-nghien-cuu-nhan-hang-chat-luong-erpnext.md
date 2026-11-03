@@ -7,7 +7,7 @@
 | Mốc so sánh | ERPNext 16.53.0, Frappe 16.54.0 trên site học `erpnext.degoholding.vn` (site `frontend`, container `erpnext-hoc-backend-1` ở VPS 2), mã nguồn `frappe/erpnext` nhánh `version-16`, tài liệu `docs.erpnext.com` |
 | Mã soát | nhánh `erp-v2`, commit `601ec718`, ngày 02/11/2026 (`backend/app/modules`, `frontend-v2/src/modules`) |
 | Cách soát | Chỉ đọc. Trên site học chỉ chạy câu `select` và `grep` mã nguồn; không ghi dữ liệu, không sửa mã DEGO |
-| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) (mục 3.6 tới 3.12, mục 7 điểm a tới h, mục 8 ba nấc) · [11 Độ phủ thu mua, kho](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) (mục E, F3) · [09 Nghiệp vụ mua hàng](../../thu-mua/nghien-cuu/09-nghiep-vu-mua-hang.md) (mục 11, nhóm A mục 13) · [10 Nghiệp vụ kho](../../kho/nghien-cuu/10-nghiep-vu-kho.md) (mục 6, 9.4, 13.1) · [ERPNext 01 Hướng dẫn mua hàng tới thanh toán](../../thu-mua/nghien-cuu/erpnext-01-huong-dan-mua-hang-den-thanh-toan-va-kho.md) (mục 0.4, Phần C) · [Chi phí thu mua bao-CR-453](../../nhap-khau/02-chi-phi-thu-mua.md) |
+| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) (mục 3.6 tới 3.12, mục 7 điểm a tới h, mục 8 ba nấc) · [11 Độ phủ thu mua, kho](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) (mục E, F3) · [09 Nghiệp vụ mua hàng](../../thu-mua/nghien-cuu/09-nghiep-vu-mua-hang.md) (mục 11, nhóm A mục 13) · [10 Nghiệp vụ kho](../../kho/nghien-cuu/10-nghiep-vu-kho.md) (mục 6, 9.4, 13.1) · [ERPNext 01 Hướng dẫn mua hàng tới thanh toán](../../thu-mua/nghien-cuu/erpnext-01-huong-dan-mua-hang-den-thanh-toan-va-kho.md) (mục 0.4, Phần C) · [Chi phí thu mua bao-CR-453](../../nhap-khau/chuc-nang/11-chi-phi-thu-mua.md) |
 
 ## Mục lục
 
@@ -310,7 +310,7 @@ Trạng thái lần giao (`status`, mã B-06): `pending`, `short`, `defect`, `re
 | Hàng lỗi không sinh công nợ | **Chưa** | `recompute_effects` | Công nợ luôn = số nhận × giá |
 | Trả hàng NCC | **Chưa** | `tab_inventory_move.ref_type` chỉ `gr`, `adjust` | Doc 01 điểm f |
 | Khoản giảm nợ (giấy báo nợ) | **Chưa** | `tab_payable` chỉ có `goods`, `shipping`, `import_cost` | Có cơ chế **tiền treo cấp NCC** ở `payment_request/service.py` (`get_hanging_lines`, `offset_supplier_hanging`) dùng lại được cho khoản NCC nợ ngược |
-| Chi phí thu mua ba giai đoạn, năm cách chia | **Có** | `tab_po_cost`, `allocate_import_costs`, `AllocationMethod` (theo giá trị, khối lượng, số lượng, chỉ định mã, nhập tay); thiết kế ở `doc/erp/nhap-khau/02-chi-phi-thu-mua.md` | Công nợ chi phí chỉ sinh từ cột Quyết toán |
+| Chi phí thu mua ba giai đoạn, năm cách chia | **Có** | `tab_po_cost`, `allocate_import_costs`, `AllocationMethod` (theo giá trị, khối lượng, số lượng, chỉ định mã, nhập tay); thiết kế ở `doc/erp/nhap-khau/chuc-nang/11-chi-phi-thu-mua.md` | Công nợ chi phí chỉ sinh từ cột Quyết toán |
 | Báo cáo giá vốn lô nhập khẩu | **Có** (để xem) | `backend/app/modules/report/import_landed_cost.py` (bao-CR-347) | Tính lúc xem, chú thích ghi rõ *không ghi vào kho* |
 | Chi phí thu mua vào giá kho | **Chưa** | Chú thích `AllocationMethod`: *không đẩy vào giá tồn kho* | Doc 01 điểm e |
 | Công nợ cước vận chuyển theo lần giao | **Có** | `source_type = shipping` | ERPNext làm qua hóa đơn dịch vụ và phiếu chi phí về hàng |
@@ -580,4 +580,4 @@ Nấc 1 làm được ngay, khoảng **2 tuần công**. Nấc 2 phần nhận h
 
 **ERP DEGO** (`erp-v2` `601ec718`): `backend/app/modules/purchase_order/model.py` (`PODelivery`, `POCost`, `AllocationMethod`, `CostStage`), `purchase_order/service.py` (`recompute_effects`, `allocate_import_costs`), `goods_receipt/model.py`, `goods_receipt/service.py`, `inventory/model.py`, `payable/model.py`, `payable/service.py` (`recalc_status`, `payment_block_reason`, `remove`), `payment_request/service.py` (tiền treo, `apply_prepay_offsets`), `report/import_landed_cost.py`, `catalog/model.py` (`Warehouse`, `ItemGroup`); `frontend-v2/src/modules/procurement/components/purchase-order-deliveries-table.tsx`, `purchase-order-line-dialog.tsx`; `frontend/src/pages/PurchaseOrderDetail.tsx`.
 
-**Tài liệu nội bộ:** doc 01, 09, 10, 11 ở `doc/erp/nghien-cuu/`, `doc/erp/nghien-cuu/erpnext/01-...md`, `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`.
+**Tài liệu nội bộ:** doc 01, 09, 10, 11 ở `doc/erp/nghien-cuu/`, `doc/erp/nghien-cuu/erpnext/01-...md`, `doc/erp/nhap-khau/chuc-nang/11-chi-phi-thu-mua.md`.
