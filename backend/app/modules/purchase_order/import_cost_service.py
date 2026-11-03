@@ -127,6 +127,39 @@ def import_cost_payables_of(db: Session, po_id: int) -> dict[int, Payable]:
     return {int(p.ref_id or 0): p for p in rows}
 
 
+def _wants_cost_payable(row, po, active: bool, base_total: float, types) -> bool:
+    """Dòng chi phí có thành khoản nợ không: đơn đã duyệt, số Quyết toán > 0, có NCC (mã hoặc tên), dòng đang ở
+    Quyết toán và loại chi phí có sinh công nợ."""
+    has_supplier = bool((row.supplier_code or "").strip() or (row.supplier_name or "").strip())
+    return not (not active or base_total <= 0 or not has_supplier or not is_final_cost(row, po)
+                or not cost_type_creates_payable(row.cost_type, types))
+
+
+def _drop_unpaid_cost_payable(db: Session, old: Payable | None) -> None:
+    """Gỡ khoản nợ của dòng không còn sinh nợ — khoản đã chi một đồng nào thì GIỮ (mất dấu vết là mất đối chiếu)."""
+    if old and float(old.paid_amount or 0) <= 0:
+        db.delete(old)
+        db.flush()
+
+
+def _upsert_cost_payable(db: Session, po: PurchaseOrder, row, base_total: float, suppliers: dict,
+                         user_id: int) -> None:
+    """Có rồi thì cập nhật, chưa có thì tạo khoản nợ của một dòng chi phí đã quyết toán."""
+    # Cùng quy ước với nợ hàng: `amount` là gốc trước VAT đã quy đổi, `vat` là tiền thuế.
+    base_before_vat = round(float(row.final_amount or 0) * cost_rate_of(row, CostStage.FINAL), 2)
+    sup = suppliers.get((row.supplier_code or "").strip())
+    pay_service.upsert(
+        db, source_type=IMPORT_COST_SOURCE, ref_type=IMPORT_COST_SOURCE, ref_id=row.id,
+        company_id=po.company_id, department_id=pay_service.debt_dept_of(po, db),
+        supplier_code=(row.supplier_code or "").strip(),
+        supplier_name=(row.supplier_name or "").strip() or (sup.name if sup else ""),
+        po_id=po.id, po_code=po.code, invoice_no=(row.invoice_no or "").strip(),
+        incur_date=(row.invoice_date or "").strip() or po.order_date or "",
+        amount=base_before_vat, vat=round(base_total - base_before_vat, 2),
+        due_days=pay_service.debt_days(sup.payment_terms if sup else ""),
+        due_date=(row.payment_due_date or "").strip(), user_id=user_id)
+
+
 def sync_import_cost_payables(db: Session, po: PurchaseOrder, user_id: int,
                               suppliers: dict | None = None) -> None:
     """Đồng bộ công nợ cho TOÀN BỘ dòng chi phí của đơn — idempotent, gọi sau mỗi lần lưu
@@ -140,6 +173,8 @@ def sync_import_cost_payables(db: Session, po: PurchaseOrder, user_id: int,
     chưa có hóa đơn nên chưa nợ ai cả. Đơn (hoặc riêng dòng) lên Quyết toán là nợ hiện ra
     ngay; mở lại thì nợ chưa chi bị gỡ, y như lúc bỏ NCC. Loại chi phí khai "không sinh
     công nợ" trong danh mục thì bỏ qua dù đã quyết toán.
+
+    bao-CR-719: tách bước kiểm (`_wants_cost_payable`) → ghi (`_upsert_cost_payable` / `_drop_unpaid_cost_payable`).
     """
     rows = import_costs_of(db, po.id)
     if not rows:
@@ -150,27 +185,10 @@ def sync_import_cost_payables(db: Session, po: PurchaseOrder, user_id: int,
     types = cost_type_map(db)
     for row in rows:
         base_total = float(cost_base_of(row, CostStage.FINAL) or 0)
-        has_supplier = bool((row.supplier_code or "").strip() or (row.supplier_name or "").strip())
-        if (not active or base_total <= 0 or not has_supplier or not is_final_cost(row, po)
-                or not cost_type_creates_payable(row.cost_type, types)):
-            old = existing.get(row.id)
-            if old and float(old.paid_amount or 0) <= 0:
-                db.delete(old)
-                db.flush()
-            continue
-        # Cùng quy ước với nợ hàng: `amount` là gốc trước VAT đã quy đổi, `vat` là tiền thuế.
-        base_before_vat = round(float(row.final_amount or 0) * cost_rate_of(row, CostStage.FINAL), 2)
-        sup = suppliers.get((row.supplier_code or "").strip())
-        pay_service.upsert(
-            db, source_type=IMPORT_COST_SOURCE, ref_type=IMPORT_COST_SOURCE, ref_id=row.id,
-            company_id=po.company_id, department_id=pay_service.debt_dept_of(po, db),
-            supplier_code=(row.supplier_code or "").strip(),
-            supplier_name=(row.supplier_name or "").strip() or (sup.name if sup else ""),
-            po_id=po.id, po_code=po.code, invoice_no=(row.invoice_no or "").strip(),
-            incur_date=(row.invoice_date or "").strip() or po.order_date or "",
-            amount=base_before_vat, vat=round(base_total - base_before_vat, 2),
-            due_days=pay_service.debt_days(sup.payment_terms if sup else ""),
-            due_date=(row.payment_due_date or "").strip(), user_id=user_id)
+        if _wants_cost_payable(row, po, active, base_total, types):
+            _upsert_cost_payable(db, po, row, base_total, suppliers, user_id)
+        else:
+            _drop_unpaid_cost_payable(db, existing.get(row.id))
 
 
 def block_complete_unpaid_import_costs(db: Session, po: PurchaseOrder) -> None:
@@ -381,6 +399,51 @@ def count_costs_missing_estimate(db: Session, po: PurchaseOrder, cost_ids: list[
                if (want is None or r.id in want) and not is_final_cost(r, po) and not has_estimate(r))
 
 
+def _pick_cost_rows(rows: list[POCost], cost_ids: list[int] | None) -> list[POCost]:
+    """Dòng được yêu cầu chốt: `cost_ids` rỗng = cả đơn; có id không thuộc đơn thì 404."""
+    if not cost_ids:
+        return rows
+    want = {int(cid) for cid in cost_ids}
+    chosen = [r for r in rows if r.id in want]
+    missing = want - {r.id for r in chosen}
+    if missing:
+        raise HTTPException(404, "Không tìm thấy dòng chi phí trên đơn này")
+    return chosen
+
+
+def _raise_nothing_to_finalize(db: Session, no_estimate: list[POCost]) -> None:
+    """Không còn dòng nào chốt được: nói rõ vì thiếu Dự toán (kể tên) hay vì đã chốt hết."""
+    if no_estimate:
+        types = cost_type_map(db)
+        names = ", ".join(f"\"{_cost_label(r, types)}\"" for r in no_estimate[:COST_FINAL_NAMES_IN_LOG])
+        raise HTTPException(400, f"Dòng chưa có Dự toán thì không quyết toán được: {names}. "
+                                 f"Nhập số Dự toán trước rồi mới chốt.")
+    raise HTTPException(400, "Không còn dòng chi phí nào để quyết toán")
+
+
+def _finalize_row(row: POCost, po: PurchaseOrder, user_id: int) -> None:
+    """Đưa một dòng lên Quyết toán riêng dòng, chép số còn trống từ giai đoạn dưới rồi tính lại số quy đổi."""
+    # bao-CR-478 — chưa có Tạm tính LẪN Quyết toán thì chép Dự toán sang CẢ HAI cột; đã có
+    # Tạm tính thì Quyết toán chép từ Tạm tính (`_fill_stage_from_previous` lấy giai đoạn đã
+    # điền cao nhất bên dưới). Không bịa Tạm tính khi Quyết toán đã có số thật.
+    if not cost_amount_of(row, CostStage.FINAL):
+        _fill_stage_from_previous(row, CostStage.PROVISIONAL, po)
+    _fill_stage_from_previous(row, CostStage.FINAL, po)
+    row.line_stage = int(CostStage.FINAL)
+    compute_cost_bases(row)
+    row.updated_by = user_id
+
+
+def _finalize_log_note(todo: list[POCost], types: dict) -> str:
+    """Câu dấu vết của cả lượt chốt — kể tên tối đa `COST_FINAL_NAMES_IN_LOG` khoản."""
+    names = [f"\"{_cost_label(r, types)}\"" for r in todo[:COST_FINAL_NAMES_IN_LOG]]
+    them = len(todo) - len(names)
+    note = f"Quyết toán {len(todo)} dòng chi phí: {', '.join(names)}"
+    if them > 0:
+        note += f" và {them} khoản nữa"
+    return note
+
+
 def finalize_cost_lines(db: Session, po: PurchaseOrder, cost_ids: list[int] | None,
                         user_id: int) -> list[POCost]:
     """bao-CR-469 — Quyết toán NHIỀU dòng chi phí một lượt.
@@ -391,16 +454,12 @@ def finalize_cost_lines(db: Session, po: PurchaseOrder, cost_ids: list[int] | No
 
     Đồng bộ công nợ MỘT lần ở cuối và ghi MỘT dòng dấu vết cho cả lượt — chốt hai chục dòng
     mà đẻ hai chục dòng nhật ký thì sổ đọc không ra việc gì đã xảy ra.
+
+    bao-CR-719: tách bước kiểm (`_pick_cost_rows`, `_raise_nothing_to_finalize`) → ghi từng dòng (`_finalize_row`)
+    → dấu vết (`_finalize_log_note`) + đồng bộ công nợ.
     """
     rows = import_costs_of(db, po.id)
-    if cost_ids:
-        want = {int(cid) for cid in cost_ids}
-        chosen = [r for r in rows if r.id in want]
-        missing = want - {r.id for r in chosen}
-        if missing:
-            raise HTTPException(404, "Không tìm thấy dòng chi phí trên đơn này")
-    else:
-        chosen = rows
+    chosen = _pick_cost_rows(rows, cost_ids)
     todo = [r for r in chosen if not is_final_cost(r, po)]
     # bao-CR-478 — dòng KHÔNG có Dự toán thì không được quyết toán (đại ca chốt 24/09/2026).
     # BỎ QUA dòng đó và chốt phần còn lại, KHÔNG ném lỗi cả lượt: nút "Quyết toán tất cả" của v2
@@ -409,30 +468,13 @@ def finalize_cost_lines(db: Session, po: PurchaseOrder, cost_ids: list[int] | No
     no_estimate = [r for r in todo if not has_estimate(r)]
     todo = [r for r in todo if has_estimate(r)]
     if not todo:
-        if no_estimate:
-            types = cost_type_map(db)
-            names = ", ".join(f"\"{_cost_label(r, types)}\"" for r in no_estimate[:COST_FINAL_NAMES_IN_LOG])
-            raise HTTPException(400, f"Dòng chưa có Dự toán thì không quyết toán được: {names}. "
-                                     f"Nhập số Dự toán trước rồi mới chốt.")
-        raise HTTPException(400, "Không còn dòng chi phí nào để quyết toán")
+        _raise_nothing_to_finalize(db, no_estimate)
     for row in todo:
-        # bao-CR-478 — chưa có Tạm tính LẪN Quyết toán thì chép Dự toán sang CẢ HAI cột; đã có
-        # Tạm tính thì Quyết toán chép từ Tạm tính (`_fill_stage_from_previous` lấy giai đoạn đã
-        # điền cao nhất bên dưới). Không bịa Tạm tính khi Quyết toán đã có số thật.
-        if not cost_amount_of(row, CostStage.FINAL):
-            _fill_stage_from_previous(row, CostStage.PROVISIONAL, po)
-        _fill_stage_from_previous(row, CostStage.FINAL, po)
-        row.line_stage = int(CostStage.FINAL)
-        compute_cost_bases(row)
-        row.updated_by = user_id
+        _finalize_row(row, po, user_id)
     db.flush()
     types = cost_type_map(db)
-    names = [f"\"{_cost_label(r, types)}\"" for r in todo[:COST_FINAL_NAMES_IN_LOG]]
-    them = len(todo) - len(names)
-    note = f"Quyết toán {len(todo)} dòng chi phí: {', '.join(names)}"
-    if them > 0:
-        note += f" và {them} khoản nữa"
-    record(db, user_id, "purchase_order", po.id, "cost_line_final", note, doc_code=po.code or "")
+    record(db, user_id, "purchase_order", po.id, "cost_line_final", _finalize_log_note(todo, types),
+           doc_code=po.code or "")
     sync_import_cost_payables(db, po, user_id)
     db.commit()
     return todo

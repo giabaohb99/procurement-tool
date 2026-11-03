@@ -14,12 +14,16 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(os.environ.get("KIEM_TAI_LIEU_ROOT") or Path(__file__).resolve().parents[2])
-SCRIPT = ROOT / "backend" / "scripts" / "kiem_tai_lieu.py"
+#  Chạy ĐÚNG bản script nằm cạnh mã đang kiểm: container api có nó ở /app/scripts (gốc repo /repo có thể là checkout
+#  khác, cũ hơn); máy thật thì ở <gốc>/backend/scripts.
+_HERE = Path(__file__).resolve().parents[2]
+SCRIPT = next((p for p in (_HERE / "scripts" / "kiem_tai_lieu.py", _HERE / "backend" / "scripts" / "kiem_tai_lieu.py")
+               if p.is_file()), ROOT / "backend" / "scripts" / "kiem_tai_lieu.py")
 
 
 @pytest.mark.skipif(not ((ROOT / "doc").is_dir() and (ROOT / "CLAUDE.md").is_file() and SCRIPT.is_file()),
                     reason="không thấy gốc repo (doc/ + CLAUDE.md) — container api chưa có mount /repo")
 def test_tai_lieu_khong_co_loi_moi():
     run = subprocess.run([sys.executable, str(SCRIPT)], cwd=ROOT, capture_output=True, text=True,
-                         encoding="utf-8", errors="replace", timeout=300)
+                         encoding="utf-8", errors="replace", timeout=120)
     assert run.returncode == 0, "Bài kiểm tài liệu có lỗi MỚI (dòng đánh dấu MỚI):\n" + run.stdout[-4000:] + run.stderr[-2000:]

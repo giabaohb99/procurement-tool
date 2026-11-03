@@ -128,11 +128,12 @@ TARGETS.update({
     **_same("customs", "CustomsRegulation", "RegulationCreate", "RegulationUpdate"),
     **_same("customs", "CustomsSavedFilter", "SavedFilterCreate", "SavedFilterUpdate"),
     **_same("customs", "CustomsSearchSynonym", "SearchSynonymCreate", "SearchSynonymUpdate"),
+    **_same("customs", "CustomsFormulationCode", "FormulationCodeCreate", "FormulationCodeUpdate"),   # duoc-CR-684
     **_same("department", "DepartmentCompany", "DepartmentCompanyReplace"),
     "inventory.AdjustIn": ["Inventory", "InventoryMove"],
     "attachment.RegisterIn": ["StoredFile", "FileLink"],
     **_same("forum", "ForumBoard", "BoardIn"),
-    **_same("forum", "ForumPost", "PostIn", "ModerationIn"),
+    **_same("forum", "ForumPost", "PostIn", "ModerationIn", "PostPatch"),   # PostPatch: bao-CR-707
     **_same("assistant", "AssistantMessage", "AskIn", "HistoryItem"),
     **_same("dossier", "DossierProgress", "ProgressPayload"),
     **_same("role", "Permission", "PermissionItem"),

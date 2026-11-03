@@ -9,7 +9,8 @@ Mã nghiệp vụ đã chẻ theo bước, mỗi bước một tệp:
 - `item_service`            lưu dòng hàng (điền sẵn thông số, tên trên hóa đơn, tiền tệ, ngày dự kiến), ô bắt buộc
 - `delivery_service`        lưu các lần giao, gỡ side-effect, tính lại phiếu nhập kho / tồn kho / công nợ
 - `import_cost_service`     chi phí thu mua: tra cứu, ba giai đoạn, chốt, công nợ chi phí
-- `cost_allocation_service` phân bổ chi phí vào dòng hàng, lưu bảng chi phí
+- `cost_allocation_service` phân bổ chi phí vào dòng hàng (chỉ tính, không đọc / ghi DB)
+- `cost_save_service`       lưu bảng chi phí thu mua từ màn hình (bao-CR-719 tách khỏi `cost_allocation_service`)
 - `progress_service`        tiến độ dòng: thứ tự bước, tự nhảy bước, đặt tiến độ tay
 - `edit_service`            tạo / sửa / sao chép / xóa đơn, khóa sửa sau duyệt, đổi trạng thái, mở lại
 - `query_service`           truy vấn đọc cho controller / serializer, điều khoản in
@@ -38,9 +39,9 @@ from .import_cost_service import (import_costs_of, cost_type_map, cost_type_name
                                   count_costs_missing_estimate, finalize_cost_lines, reopen_cost_line,
                                   block_complete_not_final_costs)
 from .cost_allocation_service import (EQUAL_SHARE_LABEL, MANUAL_ALLOCATION_TOLERANCE, parse_manual_allocation,
-                                      _line_goods_base, _basis_goods_base, _allocation_basis, allocation_base_of,
-                                      allocate_import_costs, _COST_TEXT_FIELDS, _COST_NUMBER_FIELDS,
-                                      is_cost_row_changed, _save_import_costs)
+                                      _line_goods_base, _basis_goods_base, allocation_method_of, _allocation_basis,
+                                      allocation_base_of, allocate_import_costs)
+from .cost_save_service import (_COST_TEXT_FIELDS, _COST_NUMBER_FIELDS, is_cost_row_changed, _save_import_costs)
 from .progress_service import (PROGRESS_ORDER, PROGRESS_EXCEPTIONS, is_line_paid, _STEP_MISSING, _step_ok,
                                validate_progress, highest_satisfied_step, auto_advance_line, apply_auto_progress,
                                set_item_progress)

@@ -22,20 +22,21 @@ Năm nhóm:
 """
 import argparse
 import os
+import posixpath
 import re
+import subprocess
 import sys
 from pathlib import Path
 from urllib.parse import unquote
 
+
 def find_root() -> Path:
-    """Gốc repo: biến `KIEM_TAI_LIEU_ROOT` (container api mount repo chỉ-đọc ở /repo), không có thì dò thư mục cha có
-    cả `doc/` và `CLAUDE.md`."""
+    """Gốc repo: biến `KIEM_TAI_LIEU_ROOT` (container api mount repo chỉ-đọc ở /repo), không có thì thư mục cách script
+    hai cấp (`backend/scripts/` → gốc). KHÔNG dò ngược "thư mục cha có doc/ + CLAUDE.md": `backend/` cũng có
+    `CLAUDE.md`, và checkout nào lỡ có `backend/doc/` thì gốc thành `backend/` — mọi tệp báo thiếu (lỗi 03/11/2026)."""
     env = os.environ.get("KIEM_TAI_LIEU_ROOT")
     if env and (Path(env) / "doc").is_dir():
         return Path(env)
-    for cand in Path(__file__).resolve().parents:
-        if (cand / "doc").is_dir() and (cand / "CLAUDE.md").is_file():
-            return cand
     return Path(__file__).resolve().parents[2]
 
 
@@ -43,64 +44,115 @@ ROOT = find_root()
 BASELINE = Path(__file__).with_name("kiem_tai_lieu_nen.txt")
 #  Sổ không sửa lùi: liên kết trong các dòng lịch sử miễn kiểm.
 LEDGERS = {"change-log.md", "change-log-bao.md", "change-log-ai.md", "nhat-ky-task.md"}
-DOC = ROOT / "doc"
-INDEX = DOC / "tai-lieu-ky-thuat" / "quy-dinh" / "README.md"
+INDEX_REL = "doc/tai-lieu-ky-thuat/quy-dinh/README.md"
 #  Sổ giữ nguyên tên (luật 7) và tệp quy ước công cụ.
 NAME_EXEMPT = {"README.md", "CLAUDE.md", "AGENTS.md", "SKILL.md"}
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9.\-]*$")
 LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 TICK_RE = re.compile(r"`((?:doc|plans|frontend-v2/plans)/[^`\s*<>{}]+)`")
-SKIP_DIRS = {"node_modules", ".git", "__pycache__"}
+#  Khi KHÔNG có git (container api): đi cây thư mục, bỏ các thư mục này. `.claude/worktrees/` = worktree của agent nằm
+#  TRONG repo — mỗi cái là một bản sao nguyên repo, quét vào là hàng chục lỗi giả và chậm gấp nhiều lần (03/11/2026).
+SKIP_DIRS = {"node_modules", ".git", "__pycache__", ".venv", "venv", ".pytest_cache", ".ruff_cache", ".mypy_cache",
+             "dist", "build", "uploads", "graphify-out"}
+SKIP_PREFIXES = (".claude/worktrees",)
 
 
-def md_files(base: Path):
-    for p in base.rglob("*.md"):
-        if not SKIP_DIRS.intersection(p.parts):
-            yield p
+def _git_files() -> list[str] | None:
+    """Tệp git theo dõi (đường dẫn tương đối, dấu /); None khi không có git / không phải repo."""
+    try:
+        run = subprocess.run(["git", "-C", str(ROOT), "-c", "core.quotepath=off", "ls-files", "-z"],
+                             capture_output=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if run.returncode != 0:
+        return None
+    return [x for x in run.stdout.decode("utf-8", "replace").split("\0") if x]
 
 
-def rel(p: Path) -> str:
-    return p.relative_to(ROOT).as_posix()
+def _walk_files() -> list[str]:
+    out = []
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        base = Path(dirpath).relative_to(ROOT).as_posix()
+        base = "" if base == "." else base + "/"
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not (base + d).startswith(SKIP_PREFIXES)]
+        out += [base + name for name in filenames]
+    return out
+
+
+def _load_paths() -> tuple[list[str], set[str]]:
+    """Mọi tệp của repo nạp MỘT lần: có git thì chỉ tệp git theo dõi, không thì đi cây (bỏ `SKIP_DIRS`). Tra tồn tại
+    trong bộ nhớ thay vì gọi ổ cho từng liên kết — trong container ổ là thư mục gắn từ Windows, mỗi lần hỏi rất chậm."""
+    files = _git_files()
+    if files is None:
+        files = _walk_files()
+    files = [p for p in files if not p.startswith(SKIP_PREFIXES)]
+    known = set(files)
+    for p in files:
+        parent = posixpath.dirname(p)
+        while parent and parent not in known:
+            known.add(parent)
+            parent = posixpath.dirname(parent)
+    return sorted(files), known
+
+
+FILES, KNOWN = _load_paths()
+FILES_SET = set(FILES)
+
+
+def exists(rel_path: str) -> bool:
+    """Có trong tập đã nạp thì có; trượt mới hỏi ổ (liên kết tới tệp chưa theo dõi / nằm ngoài repo)."""
+    p = posixpath.normpath(rel_path).rstrip("/")
+    if p in KNOWN or p in ("", "."):
+        return True
+    return (ROOT / p).exists()
+
+
+def read(rel_path: str) -> str:
+    return (ROOT / rel_path).read_text(encoding="utf-8", errors="replace")
+
+
+def md_files(prefix: str) -> list[str]:
+    return [p for p in FILES if p.startswith(prefix) and p.endswith(".md")]
 
 
 def check_links(files) -> list[str]:
     out = []
     for f in files:
-        if f.name in LEDGERS:
+        if posixpath.basename(f) in LEDGERS:
             continue
-        text = f.read_text(encoding="utf-8", errors="replace")
-        text = re.sub(r"```.*?```", "", text, flags=re.S)       # bỏ khối mã
+        text = re.sub(r"```.*?```", "", read(f), flags=re.S)       # bỏ khối mã
         for target in LINK_RE.findall(text):
             if re.match(r"^[a-z]+:", target) or target.startswith("#"):
                 continue
             path = unquote(target.split("#", 1)[0])
             if not path:
                 continue
-            dest = (ROOT / path.lstrip("/")) if path.startswith("/") else (f.parent / path)
-            if not dest.exists():
-                out.append(f"{rel(f)} → {target}")
+            dest = path.lstrip("/") if path.startswith("/") else posixpath.join(posixpath.dirname(f), path)
+            if not exists(dest):
+                out.append(f"{f} → {target}")
     return out
 
 
 def check_backtick_paths(files) -> list[str]:
     out = []
     for f in files:
-        for target in TICK_RE.findall(f.read_text(encoding="utf-8", errors="replace")):
+        for target in TICK_RE.findall(read(f)):
             path = target.rstrip(".,;:)")
             if any(ch in path for ch in "?|") or "<" in path or "..." in path or "…" in path:   # mẫu, không phải tệp
                 continue
-            if not (ROOT / path).exists() and not (ROOT / path.rstrip("/")).exists():
-                out.append(f"{rel(f)} → `{path}`")
+            if not exists(path):
+                out.append(f"{f} → `{path}`")
     return out
 
 
 def check_names() -> list[str]:
     out = []
-    for p in DOC.rglob("*"):
-        if SKIP_DIRS.intersection(p.parts) or p.name in NAME_EXEMPT or rel(p).startswith("doc/v1/"):
+    for p in sorted(k for k in KNOWN if k.startswith("doc/") and not k.startswith("doc/v1/")):
+        name = posixpath.basename(p)
+        if name in NAME_EXEMPT or set(p.split("/")) & SKIP_DIRS:
             continue
-        if not NAME_RE.match(p.name):
-            out.append(rel(p) + ("/" if p.is_dir() else ""))
+        if not NAME_RE.match(name):
+            out.append(p + ("" if p in FILES_SET else "/"))
     return out
 
 
@@ -110,37 +162,43 @@ REQUIRED = ("chuc-nang/01-yeu-cau-chuc-nang.md", "chuc-nang/02-yeu-cau-phi-chuc-
 NOT_MODULES = {"nghien-cuu", "tham-khao-hrm"}
 
 
-def erp_modules() -> list[Path]:
-    erp = DOC / "erp"
-    return [d for d in sorted(erp.iterdir()) if d.is_dir() and d.name not in NOT_MODULES] if erp.exists() else []
+def _children(prefix: str, dirs: bool) -> list[str]:
+    """Con trực tiếp của `prefix/` — thư mục (`dirs=True`) hoặc tệp."""
+    head = prefix + "/"
+    return sorted(k for k in KNOWN
+                  if k.startswith(head) and "/" not in k[len(head):] and (k not in FILES_SET) == dirs)
+
+
+def erp_modules() -> list[str]:
+    return [d for d in _children("doc/erp", dirs=True) if posixpath.basename(d) not in NOT_MODULES]
 
 
 def check_readmes() -> list[str]:
-    return [rel(d) + "/" for d in erp_modules() if not (d / "README.md").exists()]
+    return [d + "/" for d in erp_modules() if f"{d}/README.md" not in FILES_SET]
 
 
 def check_required() -> list[str]:
     out = []
     for d in erp_modules():
-        missing = [f for f in REQUIRED if not (d / f).exists()]
+        missing = [f for f in REQUIRED if f"{d}/{f}" not in FILES_SET]
         if missing:
-            out.append(f"{rel(d)}/: thiếu {', '.join(missing)}")
+            out.append(f"{d}/: thiếu {', '.join(missing)}")
     return out
 
 
 def check_stray() -> list[str]:
-    return [rel(p) for p in sorted(DOC.iterdir()) if p.is_file() and p.name != "README.md"]
+    return [p for p in _children("doc", dirs=False) if posixpath.basename(p) != "README.md"]
 
 
 def check_index() -> list[str]:
-    if not INDEX.exists():
-        return [f"thiếu {rel(INDEX)}"]
-    text = INDEX.read_text(encoding="utf-8")
-    items = []
-    items += [(p.name, f".claude/skills/{p.name}") for p in (ROOT / ".claude" / "skills").iterdir() if p.is_dir()]
-    items += [(p.stem, rel(p)) for p in (ROOT / ".claude" / "agents").glob("*.md")]
-    items += [(p.name, rel(p)) for p in (ROOT / ".claude" / "rules").glob("*.md")]
-    items += [(f"frontend-v2/.claude/rules/{p.name}", rel(p)) for p in (ROOT / "frontend-v2" / ".claude" / "rules").glob("*.md")]
+    if INDEX_REL not in FILES_SET:
+        return [f"thiếu {INDEX_REL}"]
+    text = read(INDEX_REL)
+    items = [(posixpath.basename(d), d) for d in _children(".claude/skills", dirs=True)]
+    items += [(posixpath.basename(p)[:-3], p) for p in _children(".claude/agents", dirs=False) if p.endswith(".md")]
+    items += [(posixpath.basename(p), p) for p in _children(".claude/rules", dirs=False) if p.endswith(".md")]
+    items += [(f"frontend-v2/.claude/rules/{posixpath.basename(p)}", p)
+              for p in _children("frontend-v2/.claude/rules", dirs=False) if p.endswith(".md")]
     return [where for name, where in sorted(items) if name not in text]
 
 
@@ -160,10 +218,9 @@ TITLES = {"lien-ket": "Liên kết hỏng", "duong-dan": "Đường dẫn trong 
 
 
 def collect(only: list[str]) -> dict[str, list[str]]:
-    top = [ROOT / "CLAUDE.md", ROOT / "AGENTS.md", *md_files(ROOT / ".claude"),
-           *md_files(ROOT / "frontend-v2" / ".claude"), DOC / "README.md"]
-    top = [p for p in top if p.exists()]
-    files = [*md_files(DOC), *top]
+    top = [p for p in ("CLAUDE.md", "AGENTS.md", *md_files(".claude/"), *md_files("frontend-v2/.claude/"),
+                       "doc/README.md") if p in FILES_SET]
+    files = [*md_files("doc/"), *[p for p in top if not p.startswith("doc/")]]
     return {key: CHECKS[key](files, top) for key in only}
 
 
