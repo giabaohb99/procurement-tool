@@ -13,7 +13,9 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { ForbiddenPage } from '@/shared/ui/forbidden-page'
 import { SidebarInset, SidebarProvider } from '@/shared/ui/sidebar'
 import { ModuleSidebar } from './module-sidebar'
+import { BreadcrumbPageLabelContext } from '@/shared/ui/breadcrumb-page-label'
 import { ModuleTopbar } from './module-topbar'
+import { resolveModuleBreadcrumb } from './resolve-module-breadcrumb'
 import { useSidebarWidth } from './use-sidebar-width'
 
 /**
@@ -87,7 +89,12 @@ export function ModuleLayout() {
           `fill`, nội dung dài hơn màn hình thì vẫn phải cuộn được.
         */}
         <main className="min-h-0 min-w-0 flex-1 overflow-auto bg-canvas">
-          {allowed ? <Outlet /> : <ForbiddenPage />}
+          {/*  duoc-CR-714: tiêu đề trang (`PageHeader`) đọc chữ cuối breadcrumb để tự ẩn khi trùng. */}
+          <BreadcrumbPageLabelContext.Provider
+            value={resolveModuleBreadcrumb(activeModule, pathname).pageLabel}
+          >
+            {allowed ? <Outlet /> : <ForbiddenPage />}
+          </BreadcrumbPageLabelContext.Provider>
         </main>
       </SidebarInset>
 
