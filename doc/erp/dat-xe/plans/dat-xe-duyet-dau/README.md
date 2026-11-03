@@ -24,8 +24,8 @@ Nhánh làm việc: **`pltgiang`** (frontend-v2 + backend). Phân hệ chạy �
 | [../tai-lieu-chuc-nang/16-dat-xe.md](../../chuc-nang/10-dat-xe.md) | **Tài liệu chức năng** (đặc tả trường, vòng đời trạng thái, phân quyền) cho người dùng/BA |
 | [../dong-bo-dat-xe-duyet-dau/](../../tai-lieu-ky-thuat/dong-bo-app-cu/README.md) | **Kế hoạch nối với app đặt xe cũ** (Firebase) — đồng bộ hai chiều, sổ đồng bộ, đối chiếu trường, 9 pha. Bộ tài liệu riêng, chưa viết mã |
 
-> Mỗi phase một file chi tiết theo khung 7 mục — giống bộ [ke-hoach-celery](../../../../ke-hoach-celery/) /
-> [ke-hoach-import](../../../../ke-hoach-import/). PHA 0→5 là **hồi cứu** (đã xong, ghi lại thiết kế + cái đã
+> Mỗi phase một file chi tiết theo khung 7 mục — giống bộ *ke-hoach-celery* /
+> *ke-hoach-import* (hai thư mục này không còn trong kho). PHA 0→5 là **hồi cứu** (đã xong, ghi lại thiết kế + cái đã
 > kiểm); PHA 6 là **kế hoạch phía trước**. §2–§4 dưới đây là bản tóm gọn xuyên suốt các phase.
 
 ## Quy ước chung (mọi phase tuân theo)
