@@ -1,4 +1,8 @@
-# Tài liệu chức năng — Mini Tool Quản lý Thu Mua
+# Tài liệu chức năng — ĐÃ CHUYỂN VỀ TỪNG PHÂN HỆ
+
+> **03/11/2026 (bao-CR-712):** tài liệu chức năng nay nằm trong `doc/erp/<phan-he>/chuc-nang/` của từng phân hệ (bản đồ ở
+> [`doc/README.md`](../README.md)). Thư mục này chỉ còn phần Nhân sự (`17-nghi-phep.md`, `18-dat-phong-hop.md`,
+> `21-lich-lam-viec.md`) chờ người phụ trách HRM dời về `doc/erp/hrm/chuc-nang/`; các liên kết trong bảng dưới đã trỏ chỗ mới.
 
 Mỗi chức năng một file riêng. Khi có thay đổi (thêm/bớt trường, đổi quyền, đổi luồng),
 cập nhật trực tiếp vào file tương ứng.

@@ -1,5 +1,9 @@
 # Mục lục chức năng — Mini Tool Quản lý Thu Mua
 
+> **03/11/2026 (bao-CR-712):** tài liệu chức năng đã chuyển về `doc/erp/<phan-he>/chuc-nang/`; liên kết dưới đây đã trỏ chỗ
+> mới. Danh sách chức năng chuẩn của từng phân hệ nay ở `chuc-nang/01-yeu-cau-chuc-nang.md` của phân hệ đó — mục lục này
+> giữ làm bản tra theo menu V1, không thêm dòng mới.
+
 Danh sách toàn bộ tính năng trong hệ thống, lấy từ menu chính (`frontend/src/layouts/AppLayout.tsx`).
 Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứng trong thư mục `tai-lieu-chuc-nang/`.
 
