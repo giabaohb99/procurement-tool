@@ -151,7 +151,7 @@ vòng đời phiếu cr656), không do đợt này. Sáu commit theo cụm phân
 Mã nguồn: backend/app (96 tệp), backend/ruff.toml, CLAUDE.md
 
 ## bao-CR-711 | Làm gọn phần nhận yêu cầu (controller) của ba phân hệ thu mua
-- status: dang-lam
+- status: xong
 - date: 2026-11-03
 - list: Sản xuất - Thu mua
 **Bối cảnh:** bản đánh giá chất lượng backend ghi nhận phần nhận yêu cầu của Yêu cầu mua hàng, Yêu cầu báo giá và Đơn mua
@@ -159,10 +159,24 @@ hàng ôm khoảng 71 câu truy vấn cơ sở dữ liệu và hàm dựng kết
 logic thì phải chép. Đây là đợt R2 của lộ trình dọn, được giao ngày 03/11.
 
 **Đã làm**
-- Đặt chỗ việc; đang dời truy vấn xuống lớp nghiệp vụ và dời hàm dựng kết quả sang tệp riêng, lần lượt từng phân hệ, không
-  đổi hành vi.
+- Mỗi phân hệ nay chia ba lớp rõ: phần nhận yêu cầu chỉ còn gác quyền và phạm vi dữ liệu rồi gọi xuống; mọi câu truy vấn
+  dời xuống lớp nghiệp vụ (service); hàm dựng kết quả trả về màn hình dời sang tệp riêng (serializer).
+- Làm lần lượt **Yêu cầu mua hàng → Yêu cầu báo giá → Đơn mua hàng**; xong phân hệ nào thì chạy bài kiểm của phân hệ đó,
+  xanh mới đẩy rồi sang phân hệ kế.
+- **Không đổi hành vi:** đường API, tham số, câu báo lỗi, thứ tự trường trong kết quả và số câu truy vấn giữ nguyên; các
+  chốt phạm vi dữ liệu vẫn nằm ở phần nhận yêu cầu, mọi chú thích cảnh báo đi theo mã.
+- Dọn luôn các cảnh báo của công cụ soát mã (ruff) trong ba thư mục: 15 cảnh báo về 0.
+- Sửa chỗ nạp hàm trong 18 tệp bài kiểm cho đúng tệp mới; bảng đếm lần tra theo id trong phần nhận yêu cầu giảm từ 105 xuống 95.
 
-Tham chiếu: `doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md` mục 2.4 và 5.
+**Kết quả:** đã nằm trên dev (nhánh erp-v2). Ba phần nhận yêu cầu từ 3.438 dòng còn 2.001 dòng, 71 câu truy vấn viết thẳng
+còn 0, độ phức tạp trung bình từ hạng B xuống hạng A. Ba lượt bài kiểm theo phân hệ (khoảng 2.300 đến 3.100 bài mỗi lượt)
+chỉ còn các bài đỏ sẵn có trên erp-v2 từ trước, không bài nào đỏ do đợt này.
+
+**Còn lại:** tệp nghiệp vụ (service) của ba phân hệ dày thêm (Đơn mua hàng 2.210 dòng), nên chẻ khi làm đợt R3.
+
+Mã nguồn: `backend/app/modules/{purchase_request,survey_request,purchase_order}/` (controller.py, service.py, serializer.py mới, purchase_request/access.py mới)
+Commit: f13af8a2 (YCMH), c238d53a (YCBG), aff188b5 (ĐMH)
+Tham chiếu: `doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md` mục 6.1.
 
 ## bao-CR-703-may-chu | Sổ việc chạy ngầm (máy chủ) + công cụ hỏi bằng lời
 - status: xong
