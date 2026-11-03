@@ -115,7 +115,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-718-tra-cuu-thi-truong-nhanh-xuat-lo | Tra cứu thị trường: tìm nhanh hơn và xuất toàn bộ chạy nền chia nhiều tệp
-- status: dang-lam
+- status: xong
 - date: 2026-11-03
 - list: Sản xuất - Thu mua
 - tag: Agent 4
@@ -127,10 +127,14 @@ ngày, ô tìm dò toàn bộ tên hàng hai lần mỗi trang, ô chọn đếm
 tạm số đếm và ô chọn, bỏ một phép đổi chữ thường thừa. Mở màn từ 0,4 giây còn 0,04 giây; tìm từ khóa từ 1,5 giây còn 0,5
 giây lần đầu và 0,03 giây khi lật trang; ô chọn từ 1,1 giây còn tức thì.
 
-**Còn lại:** xuất toàn bộ hoặc theo bộ lọc chạy nền, chia tệp 50.000 dòng, báo số tệp dự kiến và tiến độ, chuông khi
-xong, màn tải từng tệp, tự dọn tệp sau số ngày giữ. Có thay đổi cơ sở dữ liệu nên chỉ lên dev, prod chờ duyệt.
+**Đã làm (phần xuất):** nút xuất trên màn danh sách có thêm lựa chọn xuất toàn bộ theo bộ lọc chạy nền. Bấm là biết ngay
+bao nhiêu dòng, bao nhiêu tệp (50.000 dòng một tệp); hệ ghi từng tệp một, nghỉ giữa các khối để không làm chậm việc khác;
+xong thì chuông báo, bấm vào ra màn Lô xuất của tôi để tải từng tệp. Mỗi người một lô đang chạy, dừng được giữa chừng,
+tệp giữ 7 ngày rồi tự dọn. Thử trên bản sao cỡ prod: 7 tệp, khoảng hai phút rưỡi. Chỉ làm ở giao diện mới.
 
-Mã nguồn: `backend/app/modules/customs/` (`service.py`, `search_service.py`, `read_cache.py`), migration `hqx718`, `doc/erp/hai-quan/plans/261103-tim-nhanh-xuat-lo-bao-cr-718/`.
+**Còn lại:** soát trên dev; có thay đổi cơ sở dữ liệu nên lên prod chờ duyệt.
+
+Mã nguồn: `backend/app/modules/customs/` (`service.py`, `search_service.py`, `read_cache.py`, `line_export.py`), migration `hqx718` + `hqx718b`, `frontend-v2/src/modules/procurement/` (customs-export-*), `doc/erp/hai-quan/plans/261103-tim-nhanh-xuat-lo-bao-cr-718/`.
 
 ---
 ## bao-CR-717-chan-trung-dong-ton-kho | Chặn trùng dòng tồn kho khi hai lượt ghi cùng lúc

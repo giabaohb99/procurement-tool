@@ -260,20 +260,27 @@ describe('CustomsPricePage', () => {
   })
 
   //  06/10/2026 — "Xuất Excel" trong thanh công cụ của bảng → "Xuất dữ liệu" ở đầu trang, kế
-  //  "Nạp dữ liệu"; vẫn khóa khi bảng rỗng (không xuất tệp trắng).
-  it('puts Xuất dữ liệu in the page header and disables it while the list is empty', async () => {
+  //  "Nạp dữ liệu"; vẫn khóa xuất khi bảng rỗng (không xuất tệp trắng).
+  //  bao-CR-718 — nút thành MENU: bảng rỗng thì hai mục xuất khóa, nhưng nút vẫn bấm được để vào
+  //  "Lô xuất của tôi" (lô cũ vẫn phải tải được dù bộ lọc hiện tại không ra dòng nào).
+  it('puts Xuất dữ liệu in the page header and disables both export items while the list is empty', async () => {
     build('/procurement/customs-prices')
     const exportButton = await screen.findByRole('button', { name: /Xuất dữ liệu/ })
-    expect(exportButton).toBeDisabled()
     expect(screen.queryByRole('button', { name: /Xuất Excel/ })).not.toBeInTheDocument()
+    await userEvent.click(exportButton)
+    expect(await screen.findByRole('menuitem', { name: /Xuất ngay/ })).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('menuitem', { name: /Xuất toàn bộ/ })).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('menuitem', { name: /Lô xuất của tôi/ })).not.toHaveAttribute('aria-disabled')
   })
 
-  it('enables Xuất dữ liệu once the filtered list has rows', async () => {
+  it('enables both export items once the filtered list has rows', async () => {
     lineItems = [{ id: 1 }]
     build('/procurement/customs-prices')
+    await userEvent.click(await screen.findByRole('button', { name: /Xuất dữ liệu/ }))
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Xuất dữ liệu/ })).toBeEnabled(),
+      expect(screen.getByRole('menuitem', { name: /Xuất ngay/ })).not.toHaveAttribute('aria-disabled'),
     )
+    expect(screen.getByRole('menuitem', { name: /Xuất toàn bộ/ })).not.toHaveAttribute('aria-disabled')
   })
 
   //  bao-CR-608 — cột ID đầu bảng (khớp cột "ID" đầu Excel xuất ra) và nút Sửa / Xóa trong hộp

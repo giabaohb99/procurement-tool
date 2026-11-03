@@ -16,7 +16,6 @@
 import {
   ChevronDown,
   ChevronUp,
-  Download,
   FilterX,
   History,
   TriangleAlert,
@@ -25,13 +24,9 @@ import {
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { toast } from 'sonner'
 
-import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
-import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
-import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
@@ -50,7 +45,6 @@ import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
 import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
 import { Tabs, TabsTrigger } from '@/shared/ui/tabs'
 
-import { exportCustomsLines } from '../api/customs-api'
 import { CustomsSearchHint } from '../components/customs/customs-search-hint'
 import { CustomsCompareTab } from '../components/customs/customs-compare-tab'
 import { CustomsNeedFilterState, CustomsNotice } from '../components/customs/customs-controls'
@@ -63,6 +57,7 @@ import { CustomsPesticideTab } from '../components/customs/customs-pesticide-tab
 import { CustomsRegulationTab } from '../components/customs/customs-regulation-tab'
 import { CustomsTariffTab } from '../components/customs/customs-tariff-tab'
 import { CustomsLineDetailDialog } from '../components/customs/customs-line-detail-dialog'
+import { CustomsLineExportMenu } from '../components/customs/customs-line-export-menu'
 import { CustomsPriceChart } from '../components/customs/customs-price-chart'
 import { CustomsSavedFilterBar } from '../components/customs/customs-saved-filter-bar'
 import { CUSTOMS_LINE_COLUMNS } from '../config/customs-line-columns'
@@ -84,6 +79,7 @@ import {
 } from '../hooks/use-customs'
 import { CUSTOMS_PARTY_TYPE, type CustomsFilters, type CustomsOptionItem } from '../types/customs'
 import { collectFilterParams } from '../utils/customs-saved-filter'
+import { describeCustomsFilters } from '../utils/customs-export'
 import {
   addNamedId,
   buildCustomsParams,
@@ -202,11 +198,9 @@ export function CustomsPricePage() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [detailId, setDetailId] = useState<number | null>(null)
   const [importOpen, setImportOpen] = useState(false)
-  const [exporting, setExporting] = useState(false)
   const [extraOpen, setExtraOpen] = useState(() =>
     EXTRA_FILTER_PARAMS.some((name) => Boolean(searchParams.get(name))),
   )
-  const singleFlight = useSingleFlight()
 
   //  Từ khóa lấy bản ĐÃ HOÃN — mỗi phím gõ không bắn một lượt gọi API.
   const filters = useMemo<CustomsFilters>(
@@ -274,6 +268,15 @@ export function CustomsPricePage() {
   //  bao-CR-493: nhiều doanh nghiệp / đối tác — mỗi người một chip, gỡ từng chip được.
   const importerChips = useMemo(() => splitNamedIds(importerId, importerName), [importerId, importerName])
   const partnerChips = useMemo(() => splitNamedIds(partnerId, partnerName), [partnerId, partnerName])
+  //  bao-CR-718 — câu bộ lọc cho hộp xác nhận "Xuất toàn bộ": doanh nghiệp / đối tác in TÊN chip, không in dãy id.
+  const exportFilterSummary = useMemo(
+    () =>
+      describeCustomsFilters(filterParams, {
+        importer: importerChips.map((chip) => chip.name || `#${chip.id}`).join(', '),
+        partner: partnerChips.map((chip) => chip.name || `#${chip.id}`).join(', '),
+      }),
+    [filterParams, importerChips, partnerChips],
+  )
 
   function clearFilters() {
     setKeyword('')
@@ -334,20 +337,6 @@ export function CustomsPricePage() {
     setUrlParams({ partner_id: next.ids || null, partner_name: next.names || null })
   }
 
-  function exportExcel() {
-    trackUiAction(UI_ACTION_CODE.EXPORT_EXCEL)
-    void singleFlight(async () => {
-      setExporting(true)
-      try {
-        await exportCustomsLines(filterParams)
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Không xuất được tệp Excel')
-      } finally {
-        setExporting(false)
-      }
-    })
-  }
-
   //  Link cũ `?tab=` hoặc mục không được xem (gõ tay `/config` khi thiếu quyền) → về đúng đường
   //  của mục đang hiện, giữ nguyên bộ lọc. `replace` để nút Back không quay lại link hỏng.
   //  `/list` cũng về đường gốc — "Danh sách" chỉ có MỘT đường, không thì mục menu không sáng.
@@ -376,17 +365,13 @@ export function CustomsPricePage() {
               Lịch sử nạp
             </Button>
             {/*  06/10/2026 — nút xuất dời từ thanh công cụ của bảng lên đây, đứng kế "Nạp dữ liệu". */}
+            {/*  bao-CR-718 — thành menu: Xuất ngay (≤ 50.000 dòng) · Xuất toàn bộ chạy nền · Lô xuất của tôi. */}
             {tab === 'list' && canExport && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={exporting || !lines.data?.total}
-                onClick={exportExcel}
-                title="Xuất đúng các dòng đang lọc (tối đa 50.000 dòng)"
-              >
-                <Download className="size-4" />
-                {exporting ? 'Đang xuất…' : 'Xuất dữ liệu'}
-              </Button>
+              <CustomsLineExportMenu
+                filterParams={filterParams}
+                filterSummary={exportFilterSummary}
+                totalRows={lines.data?.total}
+              />
             )}
             {canImport && (
               <Button type="button" onClick={() => setImportOpen(true)}>

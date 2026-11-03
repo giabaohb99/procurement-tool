@@ -5,7 +5,7 @@
 | Bản | 1.0 |
 | Ngày | 03/11/2026 |
 | Người phụ trách | Agent 4 (A1 Điều phối giao, người chủ chốt) |
-| Trạng thái | Đang làm — tìm nhanh xong (dev); xuất lô: backend xong, giao diện v2 đang làm |
+| Trạng thái | Xong trên erp-v2 / dev — chờ soát trên dev và người chủ gật lên prod |
 | CR liên quan | bao-CR-718 |
 
 ## 1. Việc
@@ -105,6 +105,15 @@ lô (các thao tác bớt dòng mà `MAX(id)` không đổi). Chỉ bật trên 
 Chạy thử trên bảng 328.374 dòng (`bench_export`): tạo lô 0,2 giây (đếm đã đệm); 7 tệp, mỗi tệp 50.000 dòng ~22 giây
 (gồm 7,5 giây nghỉ giữa khối), ~12,8 MB; bộ nhớ tiến trình đứng ~300 MB suốt lô; cả lô ~2,5 phút (+5 giây nghỉ giữa tệp
 khi chạy qua Celery). Lọc *abamectin* 5.724 dòng: 1 tệp, 2,8 giây.
+
+## 6b. Giao diện v2
+
+- Nút *Xuất dữ liệu* thẻ Danh sách thành menu: *Xuất ngay (tối đa 50.000 dòng)* (cũ; tắt khi bộ lọc quá trần) · *Xuất toàn
+  bộ theo bộ lọc (chạy nền)* (hộp xác nhận nêu bộ lọc, số dòng, số tệp dự kiến, giữ 7 ngày → tạo lô → sang màn lô; 409 thì
+  chỉ đường sang *Lô xuất của tôi*) · *Lô xuất của tôi*.
+- Màn `/procurement/customs-prices/exports` (lô của mình) và `/exports/:id` (tiến độ, tải từng tệp, dừng lô; hỏi lại 3 giây
+  khi lô còn chạy). Gác `customs_price.export`; menu trái không thêm mục (mục ẩn, sáng *Giá thị trường*).
+- v1 (`frontend/`) không đổi — A1 chốt 03/11: xuất lô chỉ ở v2; phần tìm nhanh có hiệu lực cả v1 vì chung backend.
 
 ## 7. Lên môi trường
 

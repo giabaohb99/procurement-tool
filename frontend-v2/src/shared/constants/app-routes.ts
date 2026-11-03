@@ -112,6 +112,13 @@ export const appRoutes = {
     customsPriceSection: (section: string) => `/procurement/customs-prices/${section}`,
     /** duoc-CR-492 — trang chi tiết một thuốc BVTV (nằm dưới mục "Thuốc BVTV" nên cùng khóa gác). */
     customsPesticideDetail: (id: number | string) => `/procurement/customs-prices/pesticides/${id}`,
+    /**
+     * bao-CR-718 — lô xuất toàn bộ chạy nền của chính người dùng. ⚠️ `exports` KHÔNG được thành khóa
+     * trong `CUSTOMS_SECTIONS`: route tĩnh này đứng cạnh `customsPriceSection(':section')`.
+     * Chuông "xuất xong" của backend trỏ đúng `customsExportDetail(id)`.
+     */
+    customsExports: '/procurement/customs-prices/exports',
+    customsExportDetail: (id: number | string) => `/procurement/customs-prices/exports/${id}`,
   },
   /**
    * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì "Việc của tôi"
