@@ -114,6 +114,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-719-tach-ham-tien-dmh | Tách các hàm tính tiền chi phí thu mua và công nợ của đơn mua hàng, đợt R3b
+- status: dang-lam
+- date: 2026-11-03
+- list: Sản xuất - Thu mua
+- tag: Nền tảng
+**Bối cảnh:** sau đợt R3 (bao-CR-715), đơn mua hàng còn bốn hàm rất rối đụng tới tiền: lưu bảng chi phí thu mua, tính
+lại phiếu nhập kho ngầm cùng tồn kho và công nợ, chọn cơ sở phân bổ chi phí, và phân bổ chi phí về dòng hàng. Đây là đợt
+cuối của lộ trình dọn trước lần đẩy prod chung, được giao ngày 03/11.
+
+**Việc:** viết bài kiểm chụp kết quả có số tiền từng dòng, công nợ sinh ra, dòng nhật ký và số câu truy vấn, cho chạy xanh
+trên mã cũ; sau đó tách các hàm theo ba bước kiểm, tính, ghi mà không đổi một đồng nào. Chỉ đổi mã phía máy chủ, không đổi
+màn hình hay đường API.
+
+---
+
 ## bao-CR-718-tra-cuu-thi-truong-nhanh-xuat-lo | Tra cứu thị trường: tìm nhanh hơn và xuất toàn bộ chạy nền chia nhiều tệp
 - status: xong
 - date: 2026-11-03
