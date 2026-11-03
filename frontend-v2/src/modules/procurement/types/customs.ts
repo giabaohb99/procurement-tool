@@ -2,7 +2,7 @@
 //
 // Khớp đúng hình dạng trả về của `backend/app/modules/customs/service.py` +
 // `controller.py`. Một "dòng hàng" là MỘT dòng của tệp GTT02, không phải cả tờ khai:
-// tệp không có số tờ khai (xem doc/erp/hai-quan/02-thiet-ke-ky-thuat.md §2.2).
+// tệp không có số tờ khai (xem doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md §2.2).
 
 /** Bộ lọc dùng chung cho mọi thẻ của màn — nằm trên URL, rỗng = không lọc. */
 export interface CustomsFilters {

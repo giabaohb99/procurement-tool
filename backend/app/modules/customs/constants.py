@@ -1,6 +1,6 @@
 """Bộ mã và danh sách cột của phân hệ Tra cứu giá hải quan (bao-CR-470).
 
-Thiết kế: `doc/erp/hai-quan/02-thiet-ke-ky-thuat.md`.
+Thiết kế: `doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md`.
 """
 from enum import IntEnum
 

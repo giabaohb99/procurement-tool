@@ -1,7 +1,7 @@
 """Đọc tệp kết xuất GTT02 thành dòng hàng đã chuẩn hóa — KHÔNG đụng DB (bao-CR-470).
 
 Tách khỏi phần ghi để kiểm được bằng dữ liệu giả, không cần cơ sở dữ liệu. Mọi
-luật đọc nằm ở đây; thiết kế ở `doc/erp/hai-quan/02-thiet-ke-ky-thuat.md` §4.
+luật đọc nằm ở đây; thiết kế ở `doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md` §4.
 
 Ba cái bẫy đo được trên 5 tệp thật, cả ba im lặng nếu bỏ qua:
 

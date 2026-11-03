@@ -1,8 +1,8 @@
 # Giao việc bao-CR-496 — Lưu bộ lọc riêng từng người + log từng dòng khi nạp (Tra cứu giá hải quan)
 
 > Bản giao việc cho phiên **Erp Agent 3** (đại ca chốt 25/09/2026: «chia cho agent 3 nó làm phần lưu lọc»).
-> Bối cảnh đầy đủ: [`01-danh-sach-tinh-nang.md`](./01-danh-sach-tinh-nang.md) §11 (nhóm Y, dòng Y-12 · Y-13),
-> [`02-thiet-ke-ky-thuat.md`](./02-thiet-ke-ky-thuat.md), tệp yêu cầu gốc của phòng Thu mua
+> Bối cảnh đầy đủ: [`01-danh-sach-tinh-nang.md`](../chuc-nang/10-danh-sach-tinh-nang.md) §11 (nhóm Y, dòng Y-12 · Y-13),
+> [`02-thiet-ke-ky-thuat.md`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md), tệp yêu cầu gốc của phòng Thu mua
 > `C:\Users\Dego Admin\Downloads\YÊU CẦU TÍNH NĂNG TRA CỨU GIÁ HS CODE-NOTE 250926.xlsx` (sheet 2 dòng F07, F01 ghi chú 25/09).
 > Số CR **đã đặt chỗ**: `bao-CR-496-hai-quan-luu-bo-loc-log-dong` (dòng có sẵn trong `change-log-bao.md`). Số kế tiếp cho việc khác: 497.
 

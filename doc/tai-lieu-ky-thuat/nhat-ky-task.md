@@ -3243,7 +3243,7 @@ Mã nguồn: `customs/dedupe.py` (mới) · `customs/importer.py` · `customs/ro
 `scripts/customs_row_hash.py` (mới) · `scripts/seed_help_customs_prices.py` · v2 `customs-import-dialog.tsx`,
 `customs-history-panel.tsx`, `customs-batch-rows-panel.tsx`, `types/customs.ts`, `types/customs-saved-filter.ts`,
 `utils/customs.ts` + bài kiểm · v1 `CustomsImportDialog.tsx`, `CustomsHistoryPanel.tsx` ·
-`doc/erp/hai-quan/02-thiet-ke-ky-thuat.md` · `test/backend/test_hai_quan_chong_trung_cr541.py` (mới),
+`doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md` · `test/backend/test_hai_quan_chong_trung_cr541.py` (mới),
 `test_hai_quan_hq1_cr470.py`, `test_hai_quan_luu_bo_loc_log_dong_cr496.py`
 
 ---
@@ -10658,8 +10658,8 @@ PHÁT HIỆN QUYẾT ĐỊNH:
   phần từ điển. Số đúng là khoảng một phẩy hai lần. Đòn bẩy thật là nén trang:
   đo trên dữ liệu thật gọn khoảng ba lần, tính thận trọng trên đĩa khoảng hai lần.
 
-Mã nguồn: doc/erp/hai-quan/02-thiet-ke-ky-thuat.md ·
-doc/erp/hai-quan/01-danh-sach-tinh-nang.md
+Mã nguồn: doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md ·
+doc/erp/hai-quan/chuc-nang/10-danh-sach-tinh-nang.md
 
 ## hai-quan-lo-trinh-giao-dien | Lộ trình phase và đề xuất màn hình cho phân hệ Tra cứu giá hải quan
 - status: xong
@@ -10691,8 +10691,8 @@ SỐ LIỆU THẬT CỦA MỘT HOẠT CHẤT LÀM VÍ DỤ, LỘ RA BỐN ĐIỀ
 - Cùng một từ khóa trộn thuốc kỹ thuật với thành phẩm, giá trần gấp đôi giá sàn.
   Đây là lý do tra theo hoạt chất và hàm lượng ở đợt hai đáng làm.
 
-Mã nguồn: doc/erp/hai-quan/03-lo-trinh-phase.md · doc/erp/hai-quan/04-giao-dien.md ·
-doc/erp/hai-quan/02-thiet-ke-ky-thuat.md · doc/erp/hai-quan/01-danh-sach-tinh-nang.md
+Mã nguồn: doc/erp/hai-quan/plans/03-lo-trinh-phase.md · doc/erp/hai-quan/chuc-nang/11-giao-dien.md ·
+doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md · doc/erp/hai-quan/chuc-nang/10-danh-sach-tinh-nang.md
 
 ## hai-quan-dinh-nghia-to-khai | Làm rõ tờ khai và dòng hàng trong tài liệu hải quan
 - status: xong
@@ -10717,9 +10717,9 @@ lỏng chỗ này.
 - Thêm câu hỏi thứ sáu: nguồn kết xuất có xuất kèm số tờ khai được không. Nếu
   được thì có khóa duy nhất tự nhiên, bỏ được cách nạp xóa theo khoảng ngày.
 
-Mã nguồn: doc/erp/hai-quan/01-danh-sach-tinh-nang.md ·
-doc/erp/hai-quan/02-thiet-ke-ky-thuat.md · doc/erp/hai-quan/03-lo-trinh-phase.md ·
-doc/erp/hai-quan/04-giao-dien.md
+Mã nguồn: doc/erp/hai-quan/chuc-nang/10-danh-sach-tinh-nang.md ·
+doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md · doc/erp/hai-quan/plans/03-lo-trinh-phase.md ·
+doc/erp/hai-quan/chuc-nang/11-giao-dien.md
 
 ## kiem-bat-bien-pham-vi-2309 | Vá bốn bài kiểm bất biến phạm vi đang đỏ trên erp-v2 (nợ trước bao-CR-470)
 - status: xong
@@ -12578,7 +12578,7 @@ giá của chị Mi, còn lại là vài chỗ nhỏ trên thanh lọc và khố
 Soát mã bắt được một rủi ro cần hỏi chị Mi: nạp tệp đang thay dữ liệu theo khoảng ngày, nên nếu hai
 tệp cùng khoảng ngày nhưng khác nhóm mã hàng thì tệp nạp sau xóa dòng của tệp trước.
 
-Tài liệu: doc/erp/hai-quan/06-doi-chieu-yeu-cau-fr-proc-2026-001.md · cập nhật §11 của 01-danh-sach-tinh-nang.md
+Tài liệu: doc/erp/hai-quan/nghien-cuu/06-doi-chieu-yeu-cau-fr-proc-2026-001.md · cập nhật §11 của 01-danh-sach-tinh-nang.md
 
 ## bao-CR-502 | Bản cũ của Tra cứu thị trường theo kịp bản mới: thẻ Cấu hình, lọc theo ngày, và lỗi không lưu được hóa chất
 - status: xong

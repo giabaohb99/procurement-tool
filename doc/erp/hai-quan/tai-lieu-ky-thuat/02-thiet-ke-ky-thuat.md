@@ -1,7 +1,7 @@
 # PHÂN HỆ TRA CỨU GIÁ HẢI QUAN — THIẾT KẾ KỸ THUẬT
 
 > **Mã tài liệu:** ERP-HQ-02 · **Bản:** 1.5 — 23/09/2026 · **Đã cài đặt HQ1…HQ6:** bao-CR-470, ở LOCAL (cây `erp-v2`), chưa commit, chưa deploy · **Loại:** THIẾT KẾ + ĐÃ DỰNG
-> **Đi kèm:** [`01-danh-sach-tinh-nang.md`](./01-danh-sach-tinh-nang.md) — tài liệu này trả lời *làm thế nào* cho các tính năng nhóm N, T, B ở đó.
+> **Đi kèm:** [`01-danh-sach-tinh-nang.md`](../chuc-nang/10-danh-sach-tinh-nang.md) — tài liệu này trả lời *làm thế nào* cho các tính năng nhóm N, T, B ở đó.
 > **Yêu cầu của đại ca (23/09/2026):** hiển thị **đủ mọi cột như trong Excel**, nhưng **lưu dưới DB phải gọn nhất, tối ưu nhất**, vì dữ liệu thật có thể nhiều hơn rất nhiều và tăng theo thời gian.
 
 Mọi con số trong tài liệu này **đo trên 5 tệp thật** trong thư mục `thongtinhaiquan/data/` (18.243 dòng, kết xuất GTT02 ngày 18/09/2026), không phải ước đoán.
@@ -88,7 +88,7 @@ Hệ quả cho thiết kế:
 1. **Gọi đúng tên.** Bảng lớn là **`tab_customs_line`** — mỗi dòng là một dòng hàng. Gọi nó là "tờ khai" thì sớm muộn có người đếm số dòng rồi báo cáo "18.243 tờ khai", sai gần gấp đôi.
 2. **Đếm "số lần nhập" bằng số dòng là sai.** Màn hình ghi **"số dòng hàng"**. Muốn đếm số tờ khai thì chỉ **ước lượng** được (đếm dòng số thứ tự 1), không đếm chính xác được.
 3. **Không dựng màn "xem cả một tờ khai".** Dữ liệu không đủ để dựng đúng, và dù dựng được cũng chỉ thấy phần hàng 3808 của tờ khai đó.
-4. **Nếu GTT02 xuất được kèm số tờ khai** (câu Q6 ở [`01`](./01-danh-sach-tinh-nang.md) §9) thì mọi thứ đổi hẳn: *số tờ khai + số thứ tự hàng* là **khóa duy nhất tự nhiên** — giải luôn bẫy "không có khóa duy nhất" ở N-04 (nạp lại không cần xóa theo khoảng ngày nữa), và đếm được số tờ khai chính xác. Thêm một cột `VARCHAR(12)` là đủ.
+4. **Nếu GTT02 xuất được kèm số tờ khai** (câu Q6 ở [`01`](../chuc-nang/10-danh-sach-tinh-nang.md) §9) thì mọi thứ đổi hẳn: *số tờ khai + số thứ tự hàng* là **khóa duy nhất tự nhiên** — giải luôn bẫy "không có khóa duy nhất" ở N-04 (nạp lại không cần xóa theo khoảng ngày nữa), và đếm được số tờ khai chính xác. Thêm một cột `VARCHAR(12)` là đủ.
 
 ---
 
@@ -109,7 +109,7 @@ Mô-đun `import_tool` đã có sẵn bảng lô nạp **dùng chung cho mọi p
 | Hoàn tác một lô nạp nhầm | Trạng thái `REVERTED` — với hải quan là xóa mọi dòng mang `batch_id` đó |
 | Số liệu lô | `total_rows` · `created_count` · `deleted_count` (= số dòng cũ bị thay trong khoảng ngày) · `warning_count` · `error_count` · `error_summary` · `started_at` · `finished_at` |
 | Cảnh báo từng dòng | `tab_import_log` (`row_no` · `level` · `message`) |
-| Màn danh sách + chi tiết lô | **`/system/imports`** của bản mới (CR-186) — lô hải quan tự hiện ra, lọc theo phân hệ. ⚠️ **Bản cũ không có màn này**, xem [`04`](./04-giao-dien.md) |
+| Màn danh sách + chi tiết lô | **`/system/imports`** của bản mới (CR-186) — lô hải quan tự hiện ra, lọc theo phân hệ. ⚠️ **Bản cũ không có màn này**, xem [`04`](../chuc-nang/11-giao-dien.md) |
 
 Ba thứ bản 1.1 định lưu riêng thì **suy ra được**, không cần cột mới:
 
@@ -127,7 +127,7 @@ Ghi chú 25/09 của chị Mi (F01): sau khi nạp phải xem được **đủ m
 
 Ba kết cục, **cố ý không có «Cập nhật»** (đại ca chốt: nguồn không có số tờ khai, không biết dòng nào là dòng cũ): **1 Thêm mới** · **2 Lỗi** (bộ đọc bỏ dòng, hiện chỉ có «không đọc được Ngày đăng ký») · **3 Trùng trong lô** = giống hệt 32 cột *sau chuẩn hóa của bộ đọc* với một dòng đứng trước trong cùng tệp. Dòng trùng **chỉ đánh dấu, vẫn ghi** vào `tab_customs_line` — hai dòng giống hệt có thể là hai lô hàng thật (`01` N-04: tệp mẫu có 806 cặp); luật đếm `created_count` / `skipped_count` của lô giữ nguyên, số dòng trùng ghi thêm vào `sheet_info.duplicate_rows`. Đường đọc: `GET /api/customs/imports/{id}/rows?row_status=` + `/rows/summary` (`saved_filter_controller.py`). Lô nạp **trước** CR-496 không có nhật ký từng dòng — màn hình nói rõ thay vì hiện bảng trống.
 
-**Một lô = một tệp** (`file_id` chỉ trỏ được một tệp). Chọn cả bộ 5 tệp một lần thì sinh 5 lô liền nhau — không sao, vì đo được 5 tệp phủ 5 khoảng ngày **không chồng nhau** (§4.4). Nguy cơ quên một tệp thì xử bằng **dải tháng đã phủ** trên màn hình ([`04`](./04-giao-dien.md)), tháng trống hiện rõ.
+**Một lô = một tệp** (`file_id` chỉ trỏ được một tệp). Chọn cả bộ 5 tệp một lần thì sinh 5 lô liền nhau — không sao, vì đo được 5 tệp phủ 5 khoảng ngày **không chồng nhau** (§4.4). Nguy cơ quên một tệp thì xử bằng **dải tháng đã phủ** trên màn hình ([`04`](../chuc-nang/11-giao-dien.md)), tháng trống hiện rõ.
 
 ### 3.2 `tab_customs_party` — bảng đối tượng (doanh nghiệp trong nước + đối tác nước ngoài)
 
@@ -229,7 +229,7 @@ Vì sao như vậy lại đúng:
 
 ### 3.6 Không tính sẵn gì — bỏ `tab_report_snapshot` (bản 1.4)
 
-Bản 1.1–1.3 định dùng lại `tab_report_snapshot` của phân hệ Báo cáo cho **trang tổng quan** (top mã HS, top doanh nghiệp…). Đại ca chốt bố cục **hai thẻ Danh sách / Biểu đồ, biểu đồ chỉ hiện khi đã lọc** ([`04`](./04-giao-dien.md) §2) — trang tổng quan bỏ, nên **không còn gì cần tính sẵn**:
+Bản 1.1–1.3 định dùng lại `tab_report_snapshot` của phân hệ Báo cáo cho **trang tổng quan** (top mã HS, top doanh nghiệp…). Đại ca chốt bố cục **hai thẻ Danh sách / Biểu đồ, biểu đồ chỉ hiện khi đã lọc** ([`04`](../chuc-nang/11-giao-dien.md) §2) — trang tổng quan bỏ, nên **không còn gì cần tính sẵn**:
 
 | Con số | Tính lúc nào |
 |---|---|

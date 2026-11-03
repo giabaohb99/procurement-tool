@@ -1,7 +1,7 @@
 # PHÂN HỆ TRA CỨU GIÁ HẢI QUAN — GIAO DIỆN
 
 > **Mã tài liệu:** ERP-HQ-04 · **Bản:** 1.2 — 23/09/2026 · **Loại:** THIẾT KẾ + ĐÃ DỰNG (bao-CR-470, local, chưa commit) — chỗ nào bản dựng khác đề xuất thì ghi ở §7
-> Màn hình cho **cả bản cũ (`frontend/`, thumua) lẫn bản mới (`frontend-v2/`, erp)** — theo quy trình đại ca chốt 08/09/2026: bản cũ làm và chạy ổn trên prod trước, rồi mới port sang bản mới. Thứ tự làm ở [`03-lo-trinh-phase.md`](./03-lo-trinh-phase.md).
+> Màn hình cho **cả bản cũ (`frontend/`, thumua) lẫn bản mới (`frontend-v2/`, erp)** — theo quy trình đại ca chốt 08/09/2026: bản cũ làm và chạy ổn trên prod trước, rồi mới port sang bản mới. Thứ tự làm ở [`03-lo-trinh-phase.md`](../plans/03-lo-trinh-phase.md).
 
 Hai bản dùng **chung một bộ API và chung một bố cục**. Khác nhau chỉ ở cách dựng (§5).
 
@@ -91,7 +91,7 @@ Bảng theo kỳ nằm **dưới biểu đồ trong cùng thẻ** — biểu đ�
 
 ### 2.3 Không còn gì phải tính sẵn
 
-Bỏ trang tổng quan thì **mọi con số trên màn hình đều tính lúc mở**: danh sách đọc thẳng bảng, biểu đồ gom theo kỳ bằng SQL trên tập đã lọc, dải tháng đã phủ đếm thẳng. **Không có bảng tổng hợp, không có bản tính sẵn trong `tab_report_snapshot`, không có task định kỳ.** Chỉ xét lưu sẵn khi dữ liệu lên cỡ triệu dòng và đo được chậm thật ([`02`](./02-thiet-ke-ky-thuat.md) §3.7).
+Bỏ trang tổng quan thì **mọi con số trên màn hình đều tính lúc mở**: danh sách đọc thẳng bảng, biểu đồ gom theo kỳ bằng SQL trên tập đã lọc, dải tháng đã phủ đếm thẳng. **Không có bảng tổng hợp, không có bản tính sẵn trong `tab_report_snapshot`, không có task định kỳ.** Chỉ xét lưu sẵn khi dữ liệu lên cỡ triệu dòng và đo được chậm thật ([`02`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §3.7).
 
 ### 2.4 Trạng thái rỗng — phải nói đúng lý do
 
@@ -109,7 +109,7 @@ Một câu chung cho cả ba là người gõ nhầm một chữ đọc ra "chư
 
 ### M2 — Chi tiết một dòng hàng
 
-Một dòng Excel là **một dòng hàng** của một tờ khai, không phải cả tờ khai — định nghĩa ở [`02`](./02-thiet-ke-ky-thuat.md) §2.2. Ngăn này hiện đủ 32 trường của dòng đó; phần đầu tờ khai (ngày, chi cục, doanh nghiệp, hợp đồng…) là thông tin lặp lại ở mọi dòng của cùng tờ khai. **Không có màn "xem cả tờ khai"** vì dữ liệu không có số tờ khai và đã bị lọc bớt dòng.
+Một dòng Excel là **một dòng hàng** của một tờ khai, không phải cả tờ khai — định nghĩa ở [`02`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §2.2. Ngăn này hiện đủ 32 trường của dòng đó; phần đầu tờ khai (ngày, chi cục, doanh nghiệp, hợp đồng…) là thông tin lặp lại ở mọi dòng của cùng tờ khai. **Không có màn "xem cả tờ khai"** vì dữ liệu không có số tờ khai và đã bị lọc bớt dòng.
 
 32 trường chia **6 nhóm**, mỗi giá trị bôi đen và sao chép được (không dùng ô nhập bị khóa):
 
@@ -168,7 +168,7 @@ Gõ *ATRAZINE* vào 5 tệp mẫu ra **92 dòng**: KGM 60 · LTR 30 · TNE 2. Ri
 *(USD/kg. Đây là số đo thật, dùng làm số đối chiếu tính tay ở nghiệm thu HQ2.)*
 
 > **Đính chính sau HQ4 (23/09/2026).** Bảng trên đo bằng **khớp tên hàng**. Bản dựng khớp **tên hàng HOẶC hoạt chất đã nhận ra**, nên cùng từ khóa ATRAZINE nay ra **96 dòng**: KGM **64** · LTR 30 · TNE 2 (thêm 4 dòng thành phẩm hỗn hợp có ATRAZINE mà tên hàng chỉ ghi tên thương mại). Số tháng đổi theo: 01/2026 10 dòng · 02/2026 4 · 03/2026 11 · 04/2026 12 · **05/2026 16 dòng, 3,053** · 07/2026 trống · 08/2026 3 dòng, 2,817 · 09/2026 1. Bốn kết luận bên dưới **giữ nguyên** — tháng 8 vẫn rẻ nhất mà chỉ có 3 dòng, tháng 5 vẫn là kỳ tốt nhất đủ dữ liệu.
-> Có một lượt trung gian ra **78 dòng KGM** — đó là số SAI: 14 dòng thuốc kỹ thuật MESOTRIONE bị gắn nhầm ATRAZINE vì tên hàng nhắc tới thành phẩm hỗn hợp mà nó dùng để pha. Đã sửa ở bộ nhận hoạt chất (xem [`03`](./03-lo-trinh-phase.md) HQ4). Lọc thêm *Hàm lượng / dạng = 97%* thì còn 39 dòng thuốc kỹ thuật, bình quân **2,91**, trần **4,00** thay vì 6,00 — đúng như điều 4 dự đoán.
+> Có một lượt trung gian ra **78 dòng KGM** — đó là số SAI: 14 dòng thuốc kỹ thuật MESOTRIONE bị gắn nhầm ATRAZINE vì tên hàng nhắc tới thành phẩm hỗn hợp mà nó dùng để pha. Đã sửa ở bộ nhận hoạt chất (xem [`03`](../plans/03-lo-trinh-phase.md) HQ4). Lọc thêm *Hàm lượng / dạng = 97%* thì còn 39 dòng thuốc kỹ thuật, bình quân **2,91**, trần **4,00** thay vì 6,00 — đúng như điều 4 dự đoán.
 
 **1. Phải tách theo đơn vị.** Một phần ba số dòng ATRAZINE tính bằng **lít**. Cộng chung với kg là ra một con số vô nghĩa. → Hàng nút chọn đơn vị trên biểu đồ, mặc định đơn vị nhiều dòng nhất.
 
@@ -217,6 +217,6 @@ Gõ *ATRAZINE* vào 5 tệp mẫu ra **92 dòng**: KGM 60 · LTR 30 · TNE 2. Ri
 | M4 bản mới | Dẫn sang `/system/imports` | **Hộp thoại riêng như bản cũ** | `/system/imports` gác bằng khóa `import` (quản trị); người thu mua được tick `customs_price` thường không có khóa đó. Lô hải quan vẫn nằm trong bảng lô chung nên quản trị vẫn thấy ở `/system/imports` |
 | Lọc doanh nghiệp | Ô chọn *Doanh nghiệp* trên thanh lọc | **Bấm một dòng ở thẻ Nhà nhập khẩu** → lọc cả trang, hiện thẻ nhỏ kèm nút bỏ | 3.503 doanh nghiệp — ô chọn thả xuống vô dụng; xếp hạng theo lượng đã là cách tìm doanh nghiệp tự nhiên |
 | Cảnh báo pháp lý | Chỉ trong M9 | Thêm **dải cảnh báo ngay dưới thanh lọc** khi từ khóa trùng hóa chất cấm / có ngưỡng / phải công bố | Thay tạm cho P-02 (so tồn kho) chưa làm được; cảnh báo đúng lúc người ta đang tính mua |
-| M8 | "Ngưỡng khai tay" | **Danh mục hóa chất theo văn bản** (`/customs-regulations`, khóa `customs_regulation`) nạp sẵn từ phần mềm ngoài, sửa tay khi văn bản đổi | Ngưỡng có sẵn trong NĐ 24/2026 Phụ lục IV — xem đính chính P-01 ở [`01`](./01-danh-sach-tinh-nang.md) |
+| M8 | "Ngưỡng khai tay" | **Danh mục hóa chất theo văn bản** (`/customs-regulations`, khóa `customs_regulation`) nạp sẵn từ phần mềm ngoài, sửa tay khi văn bản đổi | Ngưỡng có sẵn trong NĐ 24/2026 Phụ lục IV — xem đính chính P-01 ở [`01`](10-danh-sach-tinh-nang.md) |
 | Dải tô nhạt trên biểu đồ giá | Thấp – cao | **Khoảng giá phổ biến = phân vị 25–75%** (nửa số dòng ở giữa); thấp / cao / số dòng / lượng hiện ở **ô rê chuột** và bảng; đếm và nói ra số «dòng giá bất thường» (luật hộp râu 1,5 × IQR) | Đại ca bắt lỗi 23/09: vài dòng 250 USD/lít (gói nhỏ, khai khác đơn vị) giữa đám 2–4 USD/lít kéo trục lên trần, đường bình quân dẹp sát đáy, không đọc được. Thêm: SVG vẽ đúng bề rộng đo được (không co giãn chữ), hai biểu đồ giá / lượng chung trục ngang, trục chia số tròn, trục lượng viết gọn «2 tr» |
 | Cột mặc định bảng dòng hàng | 10 cột, 22 cột ẩn trong nút **Cột** | **Hiện HẾT 32 cột đúng thứ tự và tiêu đề Excel**, rồi hai cột suy ra *Hoạt chất* · *Hàm lượng / dạng* ở cuối; không có cột giá gộp riêng | Đại ca chốt 23/09/2026: *"về thứ tự và số lượng cột thì mặc định là show full cột"*. Muốn gọn thì người dùng tự ẩn ở nút **Cột** |

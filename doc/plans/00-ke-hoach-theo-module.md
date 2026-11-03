@@ -148,13 +148,13 @@ Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/thu-mua/n
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| NK1-1 | HQ5: chạy lại seed bài HDSD mục IX (`backend/scripts/seed_help_customs_prices.py`, bài đã viết lại theo A-05…A-08) rồi nạp lại chỉ mục RAG (cần kiểm lại trên dev/prod) | Bài mục IX trên Trung tâm trợ giúp khớp tool hiện tại | `doc/erp/hai-quan/03-lo-trinh-phase.md` HQ5 |
+| NK1-1 | HQ5: chạy lại seed bài HDSD mục IX (`backend/scripts/seed_help_customs_prices.py`, bài đã viết lại theo A-05…A-08) rồi nạp lại chỉ mục RAG (cần kiểm lại trên dev/prod) | Bài mục IX trên Trung tâm trợ giúp khớp tool hiện tại | `doc/erp/hai-quan/plans/03-lo-trinh-phase.md` HQ5 |
 
 **Phase 2**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| NK2-1 | HQ6 P-02 cảnh báo tồn kho chạm ngưỡng: dựng cầu nối vật tư (VTBB) với hoạt chất, mở lại ranh giới *không nối tồn kho* | Tồn kho chạm ngưỡng thì có cảnh báo kèm căn cứ pháp lý | `doc/erp/hai-quan/03-lo-trinh-phase.md` HQ6 |
+| NK2-1 | HQ6 P-02 cảnh báo tồn kho chạm ngưỡng: dựng cầu nối vật tư (VTBB) với hoạt chất, mở lại ranh giới *không nối tồn kho* | Tồn kho chạm ngưỡng thì có cảnh báo kèm căn cứ pháp lý | `doc/erp/hai-quan/plans/03-lo-trinh-phase.md` HQ6 |
 
 **Phase 3 — khi cần**
 

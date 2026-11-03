@@ -1,4 +1,4 @@
-// bao-CR-470 — Tra cứu giá hải quan (bản v2). Thiết kế: doc/erp/hai-quan/04-giao-dien.md.
+// bao-CR-470 — Tra cứu giá hải quan (bản v2). Thiết kế: doc/erp/hai-quan/chuc-nang/11-giao-dien.md.
 //
 // MỘT trang, nhiều mục: Danh sách · Biểu đồ · Nhà nhập khẩu · So sánh · Pháp lý · Thuế · Thuốc BVTV · Lịch sử
 // nạp · Cấu hình. Ngày 29/09/2026 các thẻ này thành SUBMENU con trên menu trái — mỗi mục một đường
