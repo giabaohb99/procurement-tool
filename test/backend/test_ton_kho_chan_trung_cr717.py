@@ -74,7 +74,7 @@ def test_migration_kiem_trung_truoc_khi_them_rang_buoc(db):
     spec = importlib.util.spec_from_file_location("invuq717", path)
     mig = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mig)
-    assert mig.down_revision == "lvcmp716" and mig.CONSTRAINT == INVENTORY_KEY_CONSTRAINT
+    assert mig.down_revision == "hqx718"  # nối sau chỉ mục tra cứu thị trường (một đầu alembic) and mig.CONSTRAINT == INVENTORY_KEY_CONSTRAINT
     conn = db.connection()
     assert mig.duplicate_groups(conn) == []
     #  Bảng test đã mang ràng buộc (create_all từ model) nên không chèn trùng được vào nó; kiểm câu đếm trùng của migration
