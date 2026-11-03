@@ -18120,6 +18120,31 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 - Chốt người duyệt chặng một khi chính Trưởng phòng Nhân sự xin nghỉ.
 - Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
 
+## bao-CR-713 | Tắt trang tài liệu API trên prod, chỉ mở ở dev
+- status: xong
+- date: 2026-11-03
+- list: Nền tảng
+- tag: Hạ tầng
+
+**Đã làm:** Trang tài liệu API do hệ thống tự sinh dời về đường /api/docs và chỉ mở khi bật cờ cấu hình; prod mặc định tắt, máy dev và máy local bật. Luật viết tài liệu sửa theo.
+
+Mã nguồn: backend/app/main.py build_docs_urls, core/config.py API_DOCS_ENABLED. Deploy: dev cần thêm API_DOCS_ENABLED=true vào .env.dev; prod đi theo đợt phát hành kế.
+
+## td-0311-tai-lieu-api-chuc-nang-hdsd | Chờ lúc rảnh: tài liệu chức năng, phi chức năng, API, hướng dẫn sử dụng và đồng bộ cho trợ lý đọc
+- status: dang-lam
+- date: 2026-11-03
+- list: Nền tảng
+- tag: Tài liệu
+
+**Bối cảnh:** Người chủ chốt làm khi trống việc. Hiện trang tài liệu API có 1.203 thao tác nhưng chỉ khoảng 38% có mô tả và không thao tác nào khai dữ liệu trả về; nhiều phân hệ chưa có tài liệu chức năng theo khuôn mới.
+
+**Việc cần làm (theo từng phân hệ, khuôn ở doc/tai-lieu-ky-thuat/quy-dinh/mau/)**
+- Viết yêu cầu chức năng và yêu cầu phi chức năng cho từng phân hệ.
+- Viết tài liệu API của phân hệ, bổ sung mô tả tiếng Việt và nhóm cho các đường API còn thiếu, khai kiểu dữ liệu trả về khi rõ.
+- Viết hoặc cập nhật bài hướng dẫn sử dụng trên Trung tâm trợ giúp cho khớp màn hình.
+- Đồng bộ cho trợ lý AI và bot đọc được: chạy lại nạp bài hướng dẫn, cập nhật cẩm nang trợ lý và nạp lại chỉ mục tìm kiếm trên dev rồi prod.
+- Ưu tiên cụm thu mua và các đường mà công cụ MCP đang dùng, làm sau khi đợt làm gọn controller thu mua xong.
+
 ## bao-CR-709 | Hỏi giữ phòng cũ làm kiêm nhiệm khi đổi phòng chính
 - status: xong
 - date: 2026-11-03

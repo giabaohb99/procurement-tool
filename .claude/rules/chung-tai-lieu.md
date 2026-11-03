@@ -42,9 +42,10 @@ Mỗi `doc/erp/<phan-he>/` (kể cả `agent-hub/`) phải có đủ bốn tệp
 | `chuc-nang/02-yeu-cau-phi-chuc-nang.md` | Chạy tốt cỡ nào: hiệu năng, phân quyền và dữ liệu nhạy cảm, lưu trữ và sao lưu, nhật ký, giới hạn đầu vào, đồng thời, tích hợp, pháp lý (mã `PCN-<phân hệ>-NN`) | `mau/mau-yeu-cau-phi-chuc-nang.md` |
 | `tai-lieu-ky-thuat/api.md` | Gọi gì: mỗi đường API một dòng — phương thức, đường, mục đích, quyền (`entity.action`), phạm vi, dữ liệu vào / ra chính, lỗi riêng, ai gọi (màn nào, công cụ MCP nào) | `mau/mau-tai-lieu-api.md` |
 
-- Trang **`/docs`** (Swagger do FastAPI tự sinh) **giữ mở** trên dev và prod (người chủ chốt 03/11/2026) — đó là bản tra
+- Trang **`/api/docs`** (Swagger do FastAPI tự sinh) **chỉ mở trên dev** `https://deverp.degoholding.vn/api/docs` và
+  local `http://localhost:8000/api/docs`; **prod tắt** (cờ `API_DOCS_ENABLED`, người chủ chốt 03/11/2026) — đó là bản tra
   cứu đầy đủ, sinh từ mã. `api.md` không chép lại toàn bộ tham số: nó giữ phần Swagger không nói được (quyền, phạm vi,
-  luật nghiệp vụ, ai gọi) và trỏ sang nhóm (tag) tương ứng trên `/docs`.
+  luật nghiệp vụ, ai gọi) và trỏ sang nhóm (tag) tương ứng trên `/api/docs`.
 - Thêm / đổi / bỏ chức năng hay đường API thì sửa `01`, `02`, `api.md` **trong cùng commit** với mã.
 
 ## Mười luật

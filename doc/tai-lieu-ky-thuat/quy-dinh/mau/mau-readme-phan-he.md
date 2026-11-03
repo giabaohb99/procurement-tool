@@ -26,7 +26,7 @@ Hai đến ba câu: phục vụ ai, giải quyết việc gì, nằm ở đâu t
 |---|---|
 | Làm được gì | `chuc-nang/01-yeu-cau-chuc-nang.md` |
 | Chạy tốt cỡ nào, ai được xem gì | `chuc-nang/02-yeu-cau-phi-chuc-nang.md` |
-| Gọi API nào | `tai-lieu-ky-thuat/api.md` · nhóm `<tag>` trên `/docs` |
+| Gọi API nào | `tai-lieu-ky-thuat/api.md` · nhóm `<tag>` trên `/api/docs` (dev) |
 | Thiết kế, bảng dữ liệu, bẫy | `tai-lieu-ky-thuat/` |
 | So sánh, khảo sát, câu hỏi chờ chốt | `nghien-cuu/` |
 | Kế hoạch đang làm / đã xong | `plans/` |

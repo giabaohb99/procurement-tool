@@ -158,7 +158,7 @@ Ba thứ này **công cụ (Claude Code, Codex) đọc thẳng theo đường d�
 5. Luật chung gom về **một tệp** `.claude/rules/chung-dat-ten-va-quy-uoc.md` + mục lục `doc/tai-lieu-ky-thuat/quy-dinh/README.md` (mục 2.2).
 
 6. **Mỗi phân hệ bắt buộc 4 tài liệu:** `README.md`, `chuc-nang/01-yeu-cau-chuc-nang.md`, `chuc-nang/02-yeu-cau-phi-chuc-nang.md`, `tai-lieu-ky-thuat/api.md` — khuôn ở `doc/tai-lieu-ky-thuat/quy-dinh/mau/`, luật ở `.claude/rules/chung-tai-lieu.md`.
-7. **Trang `/docs` (Swagger) giữ mở** trên dev và prod; đường API mới / vừa sửa phải có docstring tiếng Việt + `tags` (luật ở `.claude/rules/chung-dat-ten-va-quy-uoc.md` mục 3).
+7. **Trang tài liệu API (Swagger) dời về `/api/docs`, chỉ mở ở local + dev, prod tắt** (cờ `API_DOCS_ENABLED`, chốt lại 03/11/2026); đường API mới / vừa sửa phải có docstring tiếng Việt + `tags` (luật ở `.claude/rules/chung-dat-ten-va-quy-uoc.md` mục 3).
 
 ### Câu hỏi gốc (để tra)
 

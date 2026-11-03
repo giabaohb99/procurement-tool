@@ -80,7 +80,7 @@ docker compose up --build           # start db + api + web + erp + help + admine
 # Web (frontend/, đóng băng) http://localhost:8080
 # ERP v2 (frontend-v2/, đang phát triển) http://localhost:8083
 # Help Center http://localhost:8082
-# API http://localhost:8000/docs · Adminer http://localhost:8081
+# API http://localhost:8000/api/docs (dev: https://deverp.degoholding.vn/api/docs, prod tắt) · Adminer http://localhost:8081
 ```
 
 On `api` startup, `backend/start.sh` runs automatically: wait for DB → `alembic upgrade head` → `python -m app.seed` (idempotent) → uvicorn with `--reload`. Code is bind-mounted, so backend and frontend hot-reload without rebuilds.
