@@ -9,7 +9,7 @@ Tệp này gom **mọi thứ lấy được** bằng tài khoản quản trị, 
 - **Phần C:** nội dung bot trích từ 3 tệp phòng đính kèm.
 - **Phần D:** những câu chưa lấy được.
 
-Tóm tắt và đối chiếu với các câu còn treo: xem tệp [`07`](./07-san-xuat-khao-sat-tra-loi-chung-2610.md) và [`05`](./05-san-xuat-van-ban-thong-nhat.md).
+Tóm tắt và đối chiếu với các câu còn treo: xem tệp [`07`](07-san-xuat-khao-sat-tra-loi-chung-2610.md) và [`05`](05-san-xuat-van-ban-thong-nhat.md).
 
 ---
 

@@ -7,7 +7,7 @@
 | Trạng thái | **Tài liệu nghiên cứu**, chưa phải tài liệu yêu cầu. Không đổi mã nguồn |
 | Đối chiếu mã | Nhánh `erp-v2` tại `767ffab9` (23/10/2026) |
 | Căn cứ | Cách SAP S/4HANA, Oracle Fusion, Odoo, Microsoft Dynamics 365 làm · Chuẩn mực kế toán số 02 *Hàng tồn kho* · IAS 2 *Inventories* · Thông tư 99/2025/TT-BTC |
-| Đọc kèm | [`san-xuat/00-tong-quan-nghiep-vu.md`](../erp/san-xuat/00-tong-quan-nghiep-vu.md) — hạch toán giá thành, dở dang, phân bổ chi phí chung, hàng lỗi trong sản xuất. Tài liệu này **không viết lại** các phần đó, chỉ nối vào |
+| Đọc kèm | [`san-xuat/00-tong-quan-nghiep-vu.md`](../erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md) — hạch toán giá thành, dở dang, phân bổ chi phí chung, hàng lỗi trong sản xuất. Tài liệu này **không viết lại** các phần đó, chỉ nối vào |
 
 ---
 
@@ -72,7 +72,7 @@
 | **SoD** | Segregation of Duties | Tách người làm, để một người không tự tạo và tự duyệt được cả chuỗi |
 | **ROP** | Reorder Point | Điểm đặt hàng lại |
 
-Thuật ngữ sản xuất (BOM, Routing, MRP, MO, WIP) đã có ở [`san-xuat/00` mục 2](../erp/san-xuat/00-tong-quan-nghiep-vu.md#2-thuật-ngữ).
+Thuật ngữ sản xuất (BOM, Routing, MRP, MO, WIP) đã có ở [`san-xuat/00` mục 2](../erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md#2-thuật-ngữ).
 
 ---
 
@@ -206,7 +206,7 @@ Lý do:
 | **Nhập trước xuất trước** (FIFO) | Xuất theo giá của lô nhập sớm nhất còn lại | Hàng có hạn dùng, giá biến động mạnh |
 | **Thực tế đích danh** | Xuất đúng giá của lô cụ thể | Hàng giá trị lớn, theo dõi từng lô hoặc từng chiếc |
 
-**Giá chuẩn** (*standard cost*, SAP gọi là *price control S*) là kỹ thuật quản trị: nhập kho theo giá định sẵn, chênh lệch ghi riêng. Báo cáo tài chính vẫn phải quy về giá gốc. Xem [`san-xuat/00` mục 8](../erp/san-xuat/00-tong-quan-nghiep-vu.md#8-giá-thành-chuẩn-giá-thành-thực-tế-và-cách-tính-giá-xuất-kho).
+**Giá chuẩn** (*standard cost*, SAP gọi là *price control S*) là kỹ thuật quản trị: nhập kho theo giá định sẵn, chênh lệch ghi riêng. Báo cáo tài chính vẫn phải quy về giá gốc. Xem [`san-xuat/00` mục 8](../erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md#8-giá-thành-chuẩn-giá-thành-thực-tế-và-cách-tính-giá-xuất-kho).
 
 **Ví dụ bình quân di động:**
 
@@ -439,7 +439,7 @@ flowchart LR
 
 **Lô và hạn dùng:**
 
-- Số lô **phải có từ lúc nhận hàng**. Thêm sau là phải sửa cả phân hệ nhận hàng ([`san-xuat/00` câu A3](../erp/san-xuat/00-tong-quan-nghiep-vu.md#nhóm-a--sản-xuất-cái-gì)).
+- Số lô **phải có từ lúc nhận hàng**. Thêm sau là phải sửa cả phân hệ nhận hàng ([`san-xuat/00` câu A3](../erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md#nhóm-a--sản-xuất-cái-gì)).
 - Mỗi phiếu xuất ghi rõ xuất **lô nào**. Nhờ vậy truy được: thành phẩm lô X dùng nguyên liệu lô nào, của nhà cung cấp nào, nhập ngày nào.
 - **FEFO** (hết hạn trước xuất trước): hệ thống gợi ý lô gần hết hạn nhất.
 - Báo cáo **hàng sắp hết hạn** trước 30, 60, 90 ngày.
@@ -463,7 +463,7 @@ Lưu ý: so sánh với **tồn dự báo** = tồn khả dụng + hàng đang v
 
 ## 5. Liên kết sang Sản xuất
 
-Phần hạch toán giá thành, đánh giá dở dang, phân bổ chi phí chung, hàng lỗi trong sản xuất đã viết đủ ở [`san-xuat/00`](../erp/san-xuat/00-tong-quan-nghiep-vu.md). Mục này chỉ nói **chỗ nối** giữa Sản xuất với Kho, Mua hàng và Kế toán.
+Phần hạch toán giá thành, đánh giá dở dang, phân bổ chi phí chung, hàng lỗi trong sản xuất đã viết đủ ở [`san-xuat/00`](../erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md). Mục này chỉ nói **chỗ nối** giữa Sản xuất với Kho, Mua hàng và Kế toán.
 
 ### 5.1. Dữ liệu gốc cần chung
 
@@ -493,7 +493,7 @@ Ngày đặt hàng = Ngày cần − Thời gian chờ hàng của NCC
 | Tồn an toàn | +5,0 |
 | **Nhu cầu ròng** | **17,6** |
 
-MRP ra **đề xuất mua 17,6 tấn**, cần có hàng ngày 01/11, NCC giao sau 20 ngày → **đặt trước 12/10**. Người mua duyệt đề xuất rồi mới thành YCMH. Không để MRP tự lập PO ([`san-xuat/00` mục 3.2](../erp/san-xuat/00-tong-quan-nghiep-vu.md#32-sản-xuất-và-mua-hàng)).
+MRP ra **đề xuất mua 17,6 tấn**, cần có hàng ngày 01/11, NCC giao sau 20 ngày → **đặt trước 12/10**. Người mua duyệt đề xuất rồi mới thành YCMH. Không để MRP tự lập PO ([`san-xuat/00` mục 3.2](../erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md#32-sản-xuất-và-mua-hàng)).
 
 ### 5.3. Lệnh sản xuất và giữ chỗ vật tư
 
@@ -521,7 +521,7 @@ Lệnh 100 tấn → báo hoàn thành 98 tấn đạt, 1,5 tấn lỗi, 0,5 t�
 
 Odoo ghi phế phẩm bằng phiếu *scrap* riêng, chuyển hàng sang **vị trí phế phẩm ảo**. Tồn giảm, giá trị tách ra để báo cáo.
 
-Cách tách hỏng trong và ngoài định mức, cách hạch toán từng loại: [`san-xuat/00` mục 9](../erp/san-xuat/00-tong-quan-nghiep-vu.md#9-hàng-lỗi-quy-trình-và-hạch-toán).
+Cách tách hỏng trong và ngoài định mức, cách hạch toán từng loại: [`san-xuat/00` mục 9](../erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md#9-hàng-lỗi-quy-trình-và-hạch-toán).
 
 ### 5.6. Giá thành
 
@@ -529,7 +529,7 @@ Ba khoản mục: **nguyên vật liệu** (lấy từ phiếu xuất cho lệnh
 
 Điểm nối quan trọng với tài liệu này: **giá nguyên vật liệu xuất cho sản xuất lấy từ giá vốn kho**. Giá vốn kho sai (thiếu chi phí về hàng, mục 3.8) thì giá thành sai theo. Kho phải đúng trước khi làm giá thành.
 
-Giá thành chuẩn hay thực tế, kỳ tính giá: xem [`san-xuat/00` mục 5 đến 8](../erp/san-xuat/00-tong-quan-nghiep-vu.md#5-hạch-toán-chi-phí-và-giá-thành).
+Giá thành chuẩn hay thực tế, kỳ tính giá: xem [`san-xuat/00` mục 5 đến 8](../erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md#5-hạch-toán-chi-phí-và-giá-thành).
 
 ### 5.7. Vòng khép kín
 
@@ -644,7 +644,7 @@ flowchart LR
 
 Đọc theo chiều mũi tên: tiền đi ra trả nhà cung cấp, hàng đi vào kho, kho đi vào sản xuất, sản xuất ra thành phẩm, thành phẩm bán đi thành giá vốn.
 
-Bút toán chi tiết của khâu sản xuất (lương, chi phí chung, kết chuyển, vượt định mức): [`san-xuat/00` mục 5.2](../erp/san-xuat/00-tong-quan-nghiep-vu.md#52-bút-toán-theo-từng-nghiệp-vụ).
+Bút toán chi tiết của khâu sản xuất (lương, chi phí chung, kết chuyển, vượt định mức): [`san-xuat/00` mục 5.2](../erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md#52-bút-toán-theo-từng-nghiệp-vụ).
 
 ---
 
@@ -801,7 +801,7 @@ Phần tốt: dữ liệu để làm đúng **đã có gần đủ**. Chỉ thi�
 | h | Không có dung sai nhận vượt | SL nhận vượt SL đặt không bị chặn ở máy chủ |
 | i | Sửa ĐMH đã duyệt chỉ có cách *Hủy duyệt* về Nháp | Không có phiên bản. Mất dấu bản đã duyệt. Đã nhận hàng thì không hủy duyệt được, nên không có cách hợp lệ để sửa giá sau khi nhận |
 | j | Kho trên tồn và phiếu là chuỗi `warehouse_code` | Danh mục `tab_warehouse` đã có nhưng không có vị trí, không có loại kho (chờ kiểm, cách ly) |
-| k | Không có lô, hạn dùng | Như [`san-xuat/00` mục 13.2](../erp/san-xuat/00-tong-quan-nghiep-vu.md#132-chưa-có) |
+| k | Không có lô, hạn dùng | Như [`san-xuat/00` mục 13.2](../erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md#132-chưa-có) |
 | l | Tính toán bằng `float` | Số lượng, đơn giá cộng dồn bằng số thực rồi làm tròn. Với sổ kho chỉ ghi thêm, nên dùng `Decimal` |
 
 ---
@@ -908,7 +908,7 @@ Nấc 1 không phụ thuộc câu trả lời nào, làm được ngay.
 | K6 | Chi phí thu mua giai đoạn nào thì được vào giá kho: tạm tính hay chỉ quyết toán? Chi phí về sau khi hàng đã xuất hết thì ghi vào đâu? | Nấc 2.9 |
 | K7 | Đề nghị thanh toán khoản nợ chưa có số hóa đơn: cảnh báo hay chặn? | Nấc 1.7 |
 
-### Nhóm S — Sản xuất (nối với [`san-xuat/00` mục 14](../erp/san-xuat/00-tong-quan-nghiep-vu.md#14-câu-hỏi-phải-chốt-trước-khi-viết-yêu-cầu))
+### Nhóm S — Sản xuất (nối với [`san-xuat/00` mục 14](../erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md#14-câu-hỏi-phải-chốt-trước-khi-viết-yêu-cầu))
 
 | # | Câu hỏi | Vì sao chặn |
 |---|---|---|
@@ -952,7 +952,7 @@ Nấc 1 không phụ thuộc câu trả lời nào, làm được ngay.
 - KPMG — *Inventory accounting: IFRS vs US GAAP* (2026), phần chi phí vận chuyển và bốc xếp: https://kpmg.com/us/en/articles/2026/inventory-accounting-ifrs-accounting-standards-vs-us-gaap.html
 - Chuẩn mực kế toán Việt Nam số 02 *Hàng tồn kho* (Quyết định 149/2001/QĐ-BTC).
 - Thông tư 99/2025/TT-BTC, hướng dẫn TK 151: https://thuvienphapluat.vn/phap-luat/ket-cau-tai-khoan-151-theo-thong-tu-99-ra-sao-hach-toan-tai-khoan-151-theo-thong-tu-992025ttbtc-278568.html
-- Căn cứ Thông tư 99 cho phần sản xuất: xem [`san-xuat/00` mục 1](../erp/san-xuat/00-tong-quan-nghiep-vu.md#1-phạm-vi-và-căn-cứ).
+- Căn cứ Thông tư 99 cho phần sản xuất: xem [`san-xuat/00` mục 1](../erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md#1-phạm-vi-và-căn-cứ).
 
 **Mã nguồn DEGO đã soát** (nhánh `erp-v2`, `767ffab9`)
 

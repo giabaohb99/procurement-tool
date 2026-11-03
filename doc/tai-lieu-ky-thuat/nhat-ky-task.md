@@ -16250,7 +16250,7 @@ vì Thông tư 200 đã hết hiệu lực từ đầu năm, sửa tám chỗ sa
 đồng sản phẩm. Tài liệu đối chiếu thêm với mã nguồn đang chạy để chỉ ra phần dùng lại được và phần còn thiếu, kèm mười lăm câu hỏi phải
 chốt trước khi viết yêu cầu. Chưa có dòng mã nào.
 
-Mã nguồn: doc/erp/san-xuat/README.md · doc/erp/san-xuat/00-tong-quan-nghiep-vu.md · doc/erp/README.md
+Mã nguồn: doc/erp/san-xuat/README.md · doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md · doc/erp/README.md
 
 ## duoc-CR-658 | Gom tài liệu chức năng Nhân sự về một thư mục để người mới đọc vào là phụ được
 - status: xong
@@ -17445,7 +17445,7 @@ Mã nguồn: plans/261023-1330-ep-tai-cr680/scripts/load-permission-approvers-cr
 
 **Còn lại:** khảo sát vẫn đang mở, còn 8 vòng chưa nộp. Bảng phân vai ở mục 3.1 chờ Trưởng phòng và Giám đốc chốt.
 
-Tham chiếu: doc/erp/nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md · doc/plans/01-luong-chuan-mua-hang-kho-san-xuat.md
+Tham chiếu: doc/erp/san-xuat/nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md · doc/plans/01-luong-chuan-mua-hang-kho-san-xuat.md
 
 ## nc-03-phong-van-san-xuat | Tách bộ câu hỏi và mâu thuẫn khảo sát Sản xuất để gửi Phòng Sản xuất chốt
 - status: xong
@@ -17464,7 +17464,7 @@ Tham chiếu: doc/erp/nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md ·
 
 **Còn lại:** chờ Phòng Sản xuất điền cột trả lời. Khảo sát vẫn đang mở, còn 9 vòng chưa nộp.
 
-Tham chiếu: doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md · doc/erp/nghien-cuu/03-mau-thuan-san-xuat.xlsx
+Tham chiếu: doc/erp/san-xuat/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md · doc/erp/san-xuat/du-lieu/03-mau-thuan-san-xuat.xlsx
 
 ## nc-03b-phieu-mau-thuan-san-xuat | Chép đúng nguyên văn màn Mâu thuẫn của khảo sát Sản xuất và làm phiếu Word gửi Phòng Sản xuất
 - status: xong
@@ -17481,7 +17481,7 @@ Tham chiếu: doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md �
 
 **Kết quả:** đã kiểm phiếu Word đủ 13 mục chính và 12 mục phụ lục, 26 trang. Đã so ba mục chọn ngẫu nhiên (M02, M09, M11) với web, khớp cả sáu trường. Dữ liệu 13 mục cũng khớp từng ký tự với dữ liệu web qua so mã băm.
 
-Tham chiếu: doc/erp/nghien-cuu/03-mau-thuan-san-xuat-gui-phong-sx.docx · doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md · doc/erp/nghien-cuu/03-mau-thuan-san-xuat.xlsx
+Tham chiếu: doc/erp/san-xuat/du-lieu/03-mau-thuan-san-xuat-gui-phong-sx.docx · doc/erp/san-xuat/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md · doc/erp/san-xuat/du-lieu/03-mau-thuan-san-xuat.xlsx
 
 ## nc-03c-tra-loi-truong-phong-sx | Ghi ba câu trả lời của Trưởng phòng Sản xuất vào phiếu mâu thuẫn khảo sát
 - status: xong
@@ -17498,7 +17498,7 @@ Tham chiếu: doc/erp/nghien-cuu/03-mau-thuan-san-xuat-gui-phong-sx.docx · doc/
 
 **Kết quả:** tài liệu 03 và phiếu Word trên nhánh erp-v2. Bản Excel không đổi.
 
-Tham chiếu: doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md · doc/erp/nghien-cuu/03-mau-thuan-san-xuat-gui-phong-sx.docx
+Tham chiếu: doc/erp/san-xuat/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md · doc/erp/san-xuat/du-lieu/03-mau-thuan-san-xuat-gui-phong-sx.docx
 
 ## nc-05b-van-ban-thong-nhat-san-xuat | Viết lại văn bản thống nhất Sản xuất để đọc được mà không cần tài liệu gốc
 - status: xong
@@ -17514,7 +17514,7 @@ Tham chiếu: doc/erp/nghien-cuu/03-phong-van-san-xuat-cau-hoi-va-mau-thuan.md �
 
 **Kết quả:** văn bản số 05 trên nhánh erp-v2, đủ 108 câu (B1 đến B108).
 
-Tham chiếu: doc/erp/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
+Tham chiếu: doc/erp/san-xuat/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
 
 ## duoc-CR-681 | Phiếu đặt xe chọn công ty và người duyệt, thư báo tới đúng người được chọn
 - status: xong
@@ -17688,7 +17688,7 @@ Mã nguồn: doc/tai-lieu-ky-thuat/van-hanh/vps-dev-tai-khoan-ida.md
 
 **Còn lại:** trang quản trị không hiện nguyên văn 113 câu trả lời, nên ý nào ứng dụng khảo sát chưa rút ra thì chưa có trong văn bản.
 
-Tham chiếu: doc/erp/nghien-cuu/07-san-xuat-khao-sat-tra-loi-chung-2610.md
+Tham chiếu: doc/erp/san-xuat/nghien-cuu/07-san-xuat-khao-sat-tra-loi-chung-2610.md
 
 ## nc-05c-cap-nhat-theo-khao-sat-2610 | Cập nhật văn bản thống nhất Sản xuất theo khảo sát trả lời chung ngày 26/10
 - status: xong
@@ -17705,7 +17705,7 @@ Tham chiếu: doc/erp/nghien-cuu/07-san-xuat-khao-sat-tra-loi-chung-2610.md
 
 **Kết quả:** văn bản số 05 trên nhánh erp-v2, nay có 8 câu đã thống nhất và 9 câu chưa.
 
-Tham chiếu: doc/erp/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
+Tham chiếu: doc/erp/san-xuat/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
 
 ## nc-08-cau-tra-loi-trich-duoc | Gom các câu trả lời lấy được của khảo sát Sản xuất trả lời chung
 - status: xong
@@ -17723,7 +17723,7 @@ Tham chiếu: doc/erp/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
 
 **Còn lại:** còn khoảng 81 câu chưa lấy được vì trang quản trị chỉ hiện các câu ứng dụng khảo sát đã dùng để tổng hợp.
 
-Tham chiếu: doc/erp/nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md
+Tham chiếu: doc/erp/san-xuat/nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md
 
 ## duoc-CR-683 | Đơn nghỉ phép khai được nhiều khoảng ngày không liền kề
 - status: xong

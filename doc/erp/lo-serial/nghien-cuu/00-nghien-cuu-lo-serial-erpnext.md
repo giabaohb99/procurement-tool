@@ -7,7 +7,7 @@
 | Mốc so sánh | ERPNext **v16.53.0** trên site học (VPS 2, container `erpnext-hoc-backend-1`, site `frontend`), mã nguồn `apps/erpnext/erpnext/stock/doctype/batch`, `serial_no`, `serial_and_batch_bundle`, `serial_and_batch_entry`, `pick_list`, `manufacturing/doctype/work_order`; tài liệu chính thức ở `docs.frappe.io/erpnext` (trước đây `docs.erpnext.com`) |
 | Mã soát | nhánh `erp-v2` ngày 02/11/2026, `backend/app/modules/inventory`, `goods_receipt`, `product`, `purchase_order`, `dossier` |
 | Tính chất | Tài liệu nghiên cứu. Không sửa mã, không đổi dữ liệu |
-| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 4.6 và 8.2 việc 2.10 · [10 Nghiệp vụ kho](../../kho/nghien-cuu/10-nghiep-vu-kho.md) tình huống A4, B3 · [11 Độ phủ thu mua, kho](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) dòng A3 · [san-xuat/00](../../san-xuat/00-tong-quan-nghiep-vu.md) câu A3 · [Mô hình dữ liệu sản phẩm](../../mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) |
+| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 4.6 và 8.2 việc 2.10 · [10 Nghiệp vụ kho](../../kho/nghien-cuu/10-nghiep-vu-kho.md) tình huống A4, B3 · [11 Độ phủ thu mua, kho](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) dòng A3 · [san-xuat/00](../../san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md) câu A3 · [Mô hình dữ liệu sản phẩm](../../mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) |
 
 ## Mục lục
 
@@ -221,9 +221,9 @@ Tìm các tên `lot_no`, `lot_code`, `batch_no`, `expiry_date`, `mfg_date`, `she
 
 ### 4.3. Thứ làm ngoài ERP
 
-- Sheet **Kết quả KCS Kho Dr Xanh**: mỗi lần nhận thành phẩm, kho ghi ngày nhận, mã và tên hàng, số yêu cầu và số thực nhận, **ngày sản xuất, số lô, hạn dùng**, phụ kiện, ngoại dạng, chứng từ NCC, số đạt và không đạt ([08 câu C54](../../nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md)).
-- **Sự cố sau sản xuất**: Kinh doanh gửi ảnh, mã, **ngày sản xuất**, số lượng; người xử lý sự cố đưa phương án; Kinh doanh **thu hồi hàng** ([07 mục 6](../../nghien-cuu/07-san-xuat-khao-sat-tra-loi-chung-2610.md)). Không có lô trên hệ thống thì không trả lời được câu *lô đó đã bán cho ai*.
-- **Xuất kho mẫu cho Lab** đi qua MISA, do Kinh doanh xuất ([08 câu C63](../../nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md)).
+- Sheet **Kết quả KCS Kho Dr Xanh**: mỗi lần nhận thành phẩm, kho ghi ngày nhận, mã và tên hàng, số yêu cầu và số thực nhận, **ngày sản xuất, số lô, hạn dùng**, phụ kiện, ngoại dạng, chứng từ NCC, số đạt và không đạt ([08 câu C54](../../san-xuat/nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md)).
+- **Sự cố sau sản xuất**: Kinh doanh gửi ảnh, mã, **ngày sản xuất**, số lượng; người xử lý sự cố đưa phương án; Kinh doanh **thu hồi hàng** ([07 mục 6](../../san-xuat/nghien-cuu/07-san-xuat-khao-sat-tra-loi-chung-2610.md)). Không có lô trên hệ thống thì không trả lời được câu *lô đó đã bán cho ai*.
+- **Xuất kho mẫu cho Lab** đi qua MISA, do Kinh doanh xuất ([08 câu C63](../../san-xuat/nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md)).
 
 ---
 
@@ -231,7 +231,7 @@ Tìm các tên `lot_no`, `lot_code`, `batch_no`, `expiry_date`, `mfg_date`, `she
 
 ### 5.1. Câu A3 đang ở đâu
 
-Câu A3 (*có theo dõi lô và hạn dùng không, khách có đòi truy xuất ngược không*) có ở [san-xuat/00 mục 14](../../san-xuat/00-tong-quan-nghiep-vu.md), là câu S2 ở doc 01 và câu C5 ở [kế hoạch theo module](../../../plans/00-ke-hoach-theo-module.md). Doc 01 việc 2.10 chỉ làm lô *nếu* A3 là có. Khảo sát 24/10 ([02 mục 7](../../nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md)) ghi *chưa ai nói*, đã đặt câu hỏi lại H-J cho CV Điều phối NL/BTP và Kế toán. Khảo sát 26/10 cũng chưa trả lời thẳng câu này.
+Câu A3 (*có theo dõi lô và hạn dùng không, khách có đòi truy xuất ngược không*) có ở [san-xuat/00 mục 14](../../san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md), là câu S2 ở doc 01 và câu C5 ở [kế hoạch theo module](../../../plans/00-ke-hoach-theo-module.md). Doc 01 việc 2.10 chỉ làm lô *nếu* A3 là có. Khảo sát 24/10 ([02 mục 7](../../san-xuat/nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md)) ghi *chưa ai nói*, đã đặt câu hỏi lại H-J cho CV Điều phối NL/BTP và Kế toán. Khảo sát 26/10 cũng chưa trả lời thẳng câu này.
 
 **Nhưng câu trả lời gián tiếp đã có:** kho đang ghi số lô, ngày sản xuất, hạn dùng cho từng lần nhận thành phẩm (mục 4.3), và luật bắt buộc in chúng trên nhãn (mục 5.2). Câu còn phải hỏi không phải là *có cần không* mà là **áp tới đâu** (mục 9).
 

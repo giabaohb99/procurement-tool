@@ -6,7 +6,7 @@
 | Người viết | A5 Nghiên cứu nghiệp vụ |
 | Trạng thái | Tài liệu nghiên cứu nghiệp vụ chuẩn, chưa phải tài liệu yêu cầu |
 | Căn cứ | Cách SAP, Oracle, Odoo, Microsoft Dynamics dựng phân hệ Kho · Chuẩn mực kế toán số 02 *Hàng tồn kho* · Thông tư 99/2025 (số hiệu tài khoản giữ như Thông tư 200) |
-| Cùng cụm | [`09` Nghiệp vụ Mua hàng](../../thu-mua/nghien-cuu/09-nghiep-vu-mua-hang.md) · [`san-xuat/00` Nghiệp vụ Sản xuất](../../san-xuat/00-tong-quan-nghiep-vu.md) · [`01` Luồng nối Mua hàng, Kho, Sản xuất](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) |
+| Cùng cụm | [`09` Nghiệp vụ Mua hàng](../../thu-mua/nghien-cuu/09-nghiep-vu-mua-hang.md) · [`san-xuat/00` Nghiệp vụ Sản xuất](../../san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md) · [`01` Luồng nối Mua hàng, Kho, Sản xuất](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) |
 
 Số tiền trong ví dụ là giả định. Chỗ dính quy định thuế, kế toán cần kế toán xác nhận.
 
@@ -787,7 +787,7 @@ Mức đặt hàng lại = Dùng mỗi ngày × Số ngày NCC giao + Tồn an t
 
 - **Kho** sở hữu: phiếu kho, kết quả kiểm, tồn, giá vốn tồn, kiểm kê.
 - **Mua hàng** sở hữu đơn mua. Kho chỉ đọc đơn mua để nhận hàng. Xem [`09`](../../thu-mua/nghien-cuu/09-nghiep-vu-mua-hang.md).
-- **Sản xuất** sở hữu lệnh sản xuất, định mức. Kho cấp và nhận theo lệnh. Xem [`san-xuat/00`](../../san-xuat/00-tong-quan-nghiep-vu.md).
+- **Sản xuất** sở hữu lệnh sản xuất, định mức. Kho cấp và nhận theo lệnh. Xem [`san-xuat/00`](../../san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md).
 - **Bán hàng** sở hữu đơn bán, doanh thu. Kho xuất theo đơn.
 - **Kế toán** sở hữu sổ cái. Phiếu kho tự sinh bút toán, kế toán không gõ tay lại.
 

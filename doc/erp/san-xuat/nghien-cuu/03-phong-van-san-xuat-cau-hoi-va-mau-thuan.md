@@ -7,8 +7,8 @@
 | Nguồn | Dự án *Khảo sát hiện trạng Quản lý sản xuất (19/10/2026)* trên ứng dụng khảo sát Make It Clear (MIC), Phòng Sản xuất |
 | Ảnh chụp dữ liệu | 24/10/2026 08:59 giờ Việt Nam. Khảo sát còn mở, còn 9 vòng chưa nộp |
 | Dùng để | Gửi Phòng Sản xuất đọc lại, chốt các chỗ mâu thuẫn ở Phần A, sửa câu trả lời nào ghi chưa đúng |
-| Bản Excel | [`03-mau-thuan-san-xuat.xlsx`](./03-mau-thuan-san-xuat.xlsx): sheet *Mâu thuẫn* để điền trả lời, sheet *Câu hỏi* cùng dữ liệu Phần C |
-| Đọc kèm | [`02-phan-tich-khao-sat-hien-trang-san-xuat.md`](./02-phan-tich-khao-sat-hien-trang-san-xuat.md) |
+| Bản Excel | [`03-mau-thuan-san-xuat.xlsx`](../du-lieu/03-mau-thuan-san-xuat.xlsx): sheet *Mâu thuẫn* để điền trả lời, sheet *Câu hỏi* cùng dữ liệu Phần C |
+| Đọc kèm | [`02-phan-tich-khao-sat-hien-trang-san-xuat.md`](02-phan-tich-khao-sat-hien-trang-san-xuat.md) |
 
 > Có 3 điểm nhạy cảm về chứng từ và thuế với NCC gia công. Không ghi trong tài liệu này, trao đổi riêng.
 

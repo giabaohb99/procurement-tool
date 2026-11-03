@@ -528,4 +528,4 @@ flowchart LR
 
 ---
 
-*Hết tài liệu. Mọi lần sửa ghi vào phần lịch sử ở [README](./README.md).*
+*Hết tài liệu. Mọi lần sửa ghi vào phần lịch sử ở [README](../README.md).*

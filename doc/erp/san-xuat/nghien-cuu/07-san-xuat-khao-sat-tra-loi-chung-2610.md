@@ -4,7 +4,7 @@ Khảo sát *Hiện trạng Phòng Sản xuất - trả lời chung (24/10/2026)
 
 **Giới hạn nguồn:** trang quản trị MIC không hiện nguyên văn 113 câu trả lời. Tài liệu này dựa trên khoảng 37 ý MIC đã rút ra và 30 mẩu trích từ 3 tệp. Câu nào MIC chưa rút ra thì không có ở đây.
 
-Đọc kèm: [`05-san-xuat-van-ban-thong-nhat.md`](./05-san-xuat-van-ban-thong-nhat.md) (16 câu hôm trước).
+Đọc kèm: [`05-san-xuat-van-ban-thong-nhat.md`](05-san-xuat-van-ban-thong-nhat.md) (16 câu hôm trước).
 
 ---
 

@@ -437,30 +437,30 @@ Ghi chú mã phase: Phase 1 dưới đây là CP4 cũ (thí điểm), Phase 2 l�
 
 ## 12. Sản xuất (SX)
 
-**Đã có:** Mới có tài liệu nghiên cứu nghiệp vụ `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` (21/10, căn cứ Thông tư 99/2025). Chưa có mã, bảng hay entity quyền nào. Dùng lại được `tab_product`, `tab_inventory` (bình quân di động), `tab_inventory_move`, Thu mua và công nợ phải trả.
+**Đã có:** Mới có tài liệu nghiên cứu nghiệp vụ `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` (21/10, căn cứ Thông tư 99/2025). Chưa có mã, bảng hay entity quyền nào. Dùng lại được `tab_product`, `tab_inventory` (bình quân di động), `tab_inventory_move`, Thu mua và công nợ phải trả.
 
 **Phase 1 — làm tiếp**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| SX1-1 | Trả lời 15 câu ở §14 (A1–A5, B1–B4, C1–C6). Ưu tiên B1 và C2 (giá chuẩn hay giá thực tế, kỳ tính giá) | Có biên bản khảo sát nghiệp vụ được xác nhận. B1 và C2 có đáp án | `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §14; `doc/erp/san-xuat/README.md` |
-| SX1-2 | Rà sổ kho: chặn âm kho, giá vốn, chốt kỳ | Có biên bản rà và danh sách việc sửa | `doc/erp/02-dai-han.md` §4 (bản cũ); `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §13 |
-| SX1-3 | DB6 bảng sản phẩm cha, nền cho BOM. Không thêm bảng biến thể dưới `tab_product`, không đổi `product_code`, không đặt cột giá lên sản phẩm | Bảng mới đã dùng thật. `tab_product` không đổi dòng nào | `doc/erp/01-ngan-han-2026.md` DB6 (bản cũ); `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §13.3 |
+| SX1-1 | Trả lời 15 câu ở §14 (A1–A5, B1–B4, C1–C6). Ưu tiên B1 và C2 (giá chuẩn hay giá thực tế, kỳ tính giá) | Có biên bản khảo sát nghiệp vụ được xác nhận. B1 và C2 có đáp án | `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §14; `doc/erp/san-xuat/README.md` |
+| SX1-2 | Rà sổ kho: chặn âm kho, giá vốn, chốt kỳ | Có biên bản rà và danh sách việc sửa | `doc/erp/02-dai-han.md` §4 (bản cũ); `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §13 |
+| SX1-3 | DB6 bảng sản phẩm cha, nền cho BOM. Không thêm bảng biến thể dưới `tab_product`, không đổi `product_code`, không đặt cột giá lên sản phẩm | Bảng mới đã dùng thật. `tab_product` không đổi dòng nào | `doc/erp/01-ngan-han-2026.md` DB6 (bản cũ); `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §13.3 |
 
 **Phase 2** (SX2-x)
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| SX2-1 | Viết tài liệu yêu cầu, rồi làm BOM (nhiều cấp, phiên bản, hiệu lực theo ngày) và lệnh sản xuất; thêm loại phiếu kho: xuất sản xuất, nhập thành phẩm, trả vật tư, xuất hủy; entity `production` | Trạng thái lưu `SMALLINT` có `IntEnum`. Entity khai đủ phạm vi. Bài kiểm canh xanh | `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §4, §13 |
-| SX2-2 | Danh mục kho thật (thay chuỗi `warehouse_code`), giữ chỗ tồn kho; lô và hạn dùng nếu C5 chốt có | Có kho cách ly, kho gia công, kho dở dang. Số khả dụng đúng | `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §13.2 |
+| SX2-1 | Viết tài liệu yêu cầu, rồi làm BOM (nhiều cấp, phiên bản, hiệu lực theo ngày) và lệnh sản xuất; thêm loại phiếu kho: xuất sản xuất, nhập thành phẩm, trả vật tư, xuất hủy; entity `production` | Trạng thái lưu `SMALLINT` có `IntEnum`. Entity khai đủ phạm vi. Bài kiểm canh xanh | `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §4, §13 |
+| SX2-2 | Danh mục kho thật (thay chuỗi `warehouse_code`), giữ chỗ tồn kho; lô và hạn dùng nếu C5 chốt có | Có kho cách ly, kho gia công, kho dở dang. Số khả dụng đúng | `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §13.2 |
 | SX2-3 | NF-23 dashboard Sản xuất có biểu đồ thật | Làm sau khi có module. Có số lệnh, sản lượng, hàng lỗi | `doc/erp/13-ke-hoach-man-con-lai-v2.md` NF-23 (bản cũ) |
 
 **Phase 3 — khi cần** (SX3-x)
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| SX3-1 | Giá thành nếu B1 chọn làm: đánh giá dở dang, phân bổ chi phí chung theo công suất bình thường, hàng lỗi, gia công ngoài | Phần vượt mức bình thường vào thẳng giá vốn, không nằm trong tồn kho | `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §5–§10 |
-| SX3-2 | MRP tự động, Routing và công đoạn, chất lượng, bảo trì máy | Theo đáp án B2, B3 và khảo sát | `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §14 nhóm B; `doc/erp/02-dai-han.md` §3.3 (bản cũ) |
+| SX3-1 | Giá thành nếu B1 chọn làm: đánh giá dở dang, phân bổ chi phí chung theo công suất bình thường, hàng lỗi, gia công ngoài | Phần vượt mức bình thường vào thẳng giá vốn, không nằm trong tồn kho | `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §5–§10 |
+| SX3-2 | MRP tự động, Routing và công đoạn, chất lượng, bảo trì máy | Theo đáp án B2, B3 và khảo sát | `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §14 nhóm B; `doc/erp/02-dai-han.md` §3.3 (bản cũ) |
 
 **Câu chờ quyết:**
 - §14 B1: bản đầu chỉ quản lý số lượng hay làm cả giá thành. Đại ca quyết.
@@ -477,7 +477,7 @@ Ghi chú mã phase: Phase 1 dưới đây là CP4 cũ (thí điểm), Phase 2 l�
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| KT1-1 | Hỏi kế toán đang dùng phần mềm nào và soát tên tài khoản sản xuất theo Thông tư 99 (chỉ khảo sát, chưa viết mã) | Có tên phần mềm và bảng tên tài khoản đã soát | `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §14 C1, C3; `doc/erp/san-xuat/README.md` |
+| KT1-1 | Hỏi kế toán đang dùng phần mềm nào và soát tên tài khoản sản xuất theo Thông tư 99 (chỉ khảo sát, chưa viết mã) | Có tên phần mềm và bảng tên tài khoản đã soát | `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §14 C1, C3; `doc/erp/san-xuat/README.md` |
 
 **Phase 2** (KT2-x)
 

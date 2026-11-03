@@ -7,7 +7,7 @@
 | Nguồn | Dự án *Khảo sát hiện trạng Quản lý sản xuất (19/10/2026)* trên ứng dụng khảo sát Make It Clear (mic.degolab.com.vn), Phòng Sản xuất, người khởi tạo là Trưởng phòng |
 | Ảnh chụp dữ liệu | 24/10/2026 08:32 giờ Việt Nam. Dự án vẫn đang mở, còn 8 vòng trả lời chưa nộp, nên số liệu có thể đổi |
 | Phạm vi | Chỉ đọc. Không ghi, không phân xử gì trên ứng dụng khảo sát. Không dùng tệp âm thanh |
-| Đọc kèm | [`01-luong-chuan-mua-hang-kho-san-xuat.md`](../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) · [`san-xuat/00-tong-quan-nghiep-vu.md`](../san-xuat/00-tong-quan-nghiep-vu.md) |
+| Đọc kèm | [`01-luong-chuan-mua-hang-kho-san-xuat.md`](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) · [`san-xuat/00-tong-quan-nghiep-vu.md`](../chuc-nang/10-tong-quan-nghiep-vu.md) |
 
 ---
 
@@ -28,7 +28,7 @@ Viết tắt dùng trong tài liệu: **NCC GC** nhà cung cấp gia công · **
 
 ## 1. Đọc nhanh
 
-**Phát hiện lớn nhất về nghiệp vụ:** DEGO **không tự sản xuất**. Toàn bộ sản xuất là **gia công tại nhà cung cấp**. DEGO cấp nguyên liệu, bán thành phẩm, vật tư bao bì cho NCC GC, NCC đóng gói, DEGO nhận thành phẩm về kho. Câu A5 ở [`san-xuat/00`](../san-xuat/00-tong-quan-nghiep-vu.md#nhóm-a--sản-xuất-cái-gì) (*có thuê gia công ngoài không*) đã có câu trả lời: **có, và đó là hình thức chính**.
+**Phát hiện lớn nhất về nghiệp vụ:** DEGO **không tự sản xuất**. Toàn bộ sản xuất là **gia công tại nhà cung cấp**. DEGO cấp nguyên liệu, bán thành phẩm, vật tư bao bì cho NCC GC, NCC đóng gói, DEGO nhận thành phẩm về kho. Câu A5 ở [`san-xuat/00`](../chuc-nang/10-tong-quan-nghiep-vu.md#nhóm-a--sản-xuất-cái-gì) (*có thuê gia công ngoài không*) đã có câu trả lời: **có, và đó là hình thức chính**.
 
 **Mâu thuẫn:** hệ thống khảo sát đánh dấu 14 chỗ. 1 chỗ đã chốt, 1 chỗ đang hỏi lại, **12 chỗ đang mở**. Gần như tất cả xoay quanh **một câu hỏi**:
 
@@ -293,11 +293,11 @@ Nhóm thứ ba phần lớn là do hệ thống bóc chữ từ câu trả lời
 
 ## 7. Ý nghĩa cho ERP
 
-Nối với tài liệu [01](../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) và [`san-xuat/00`](../san-xuat/00-tong-quan-nghiep-vu.md).
+Nối với tài liệu [01](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) và [`san-xuat/00`](../chuc-nang/10-tong-quan-nghiep-vu.md).
 
 | # | Phát hiện từ khảo sát | Ý nghĩa cho thiết kế |
 |---|---|---|
-| 1 | Sản xuất = **gia công tại NCC** | Trọng tâm không phải lệnh sản xuất trong xưởng mình mà là **đơn gia công** ([`san-xuat/00` mục 10.1](../san-xuat/00-tong-quan-nghiep-vu.md#101-gia-công-ngoài)). ERP cần: đơn mua dịch vụ gia công, **kho tại NCC GC** để biết NL, VTBB của mình đang nằm ở đâu, phiếu xuất vật tư gửi gia công, đối chiếu định mức tiêu hao với NCC khi nhận thành phẩm |
+| 1 | Sản xuất = **gia công tại NCC** | Trọng tâm không phải lệnh sản xuất trong xưởng mình mà là **đơn gia công** ([`san-xuat/00` mục 10.1](../chuc-nang/10-tong-quan-nghiep-vu.md#101-gia-công-ngoài)). ERP cần: đơn mua dịch vụ gia công, **kho tại NCC GC** để biết NL, VTBB của mình đang nằm ở đâu, phiếu xuất vật tư gửi gia công, đối chiếu định mức tiêu hao với NCC khi nhận thành phẩm |
 | 2 | Đang có **đối chiếu xuất nhập tồn VTBB với NCC** trên bảng tính, tự tính chênh lệch và kết luận khớp hay lệch | Đây chính là đối chiếu kho tại đơn vị gia công. Làm được ngay khi có kho chuẩn (tài liệu 01, nấc 2) |
 | 3 | **Giấy đề nghị nhập kho thành phẩm** do Điều phối lập, có chữ ký NL, VTBB, Kế toán, Trưởng bộ phận | Đã có thói quen **phiếu nhập có người xác nhận**. Khớp với yêu cầu của tài liệu 01, điểm (d) |
 | 4 | Đã có **mức an toàn tối thiểu** và **lượng đặt tối thiểu** cho VTBB trên bảng tính | Dữ liệu sẵn cho tồn tối thiểu và điểm đặt hàng lại (tài liệu 01, mục 4.7) |

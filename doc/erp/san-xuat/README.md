@@ -8,7 +8,7 @@ Bộ tài liệu chuẩn bị cho phân hệ **Quản lý sản xuất** của E
 
 | Tệp | Nội dung | Đọc khi nào |
 |---|---|---|
-| [`00` Tổng quan nghiệp vụ](./00-tong-quan-nghiep-vu.md) | Thuật ngữ, quan hệ với Tồn kho, Mua hàng, Bán hàng, Kế toán. Quy trình sản xuất chuẩn. **Hạch toán giá thành theo Thông tư 99/2025** kèm bảng bút toán. **Đánh giá dở dang**, **phân bổ chi phí chung theo công suất bình thường**, **giá chuẩn và giá thực tế**, hàng lỗi, gia công ngoài, đồng sản phẩm. **Đối chiếu với mã nguồn ERP đang chạy** và **15 câu hỏi phải chốt** | Đọc đầu tiên |
+| [`00` Tổng quan nghiệp vụ](chuc-nang/10-tong-quan-nghiep-vu.md) | Thuật ngữ, quan hệ với Tồn kho, Mua hàng, Bán hàng, Kế toán. Quy trình sản xuất chuẩn. **Hạch toán giá thành theo Thông tư 99/2025** kèm bảng bút toán. **Đánh giá dở dang**, **phân bổ chi phí chung theo công suất bình thường**, **giá chuẩn và giá thực tế**, hàng lỗi, gia công ngoài, đồng sản phẩm. **Đối chiếu với mã nguồn ERP đang chạy** và **15 câu hỏi phải chốt** | Đọc đầu tiên |
 
 ---
 
