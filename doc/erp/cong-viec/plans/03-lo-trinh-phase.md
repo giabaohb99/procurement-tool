@@ -4,9 +4,9 @@
 F lịch làm việc + cụm Gantt mở rộng vào W5) · KHÔNG đặt mốc thời gian (theo lệ chung của
 bộ tài liệu ERP). Mỗi phase nghiệm thu riêng được; dừng giữa chừng không để hệ nửa vời.
 
-Mã tính năng (A-xx, B-xx…) tra ở [`01-danh-sach-tinh-nang.md`](./01-danh-sach-tinh-nang.md);
-bảng dữ liệu ở [`02-bang-du-lieu.md`](./02-bang-du-lieu.md); phân quyền ở
-[`04-phan-quyen.md`](./04-phan-quyen.md).
+Mã tính năng (A-xx, B-xx…) tra ở [`01-danh-sach-tinh-nang.md`](../chuc-nang/11-danh-sach-tinh-nang.md);
+bảng dữ liệu ở [`02-bang-du-lieu.md`](../tai-lieu-ky-thuat/02-bang-du-lieu.md); phân quyền ở
+[`04-phan-quyen.md`](../tai-lieu-ky-thuat/04-phan-quyen.md).
 
 ---
 

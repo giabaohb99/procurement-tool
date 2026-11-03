@@ -78,7 +78,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 |---|-----------|-----------|-------------------|
 | 28 | **Văn thư — Quản lý văn bản** (soạn thảo · phiên bản · phê duyệt · ban hành · đánh số · phạm vi · quan hệ · bản trích · clone · chữ ký) | `/document` | [14-van-thu-van-ban.md](../erp/van-thu/chuc-nang/10-van-thu-van-ban.md) — đã có tài liệu |
 | 28b | ↳ **Các ca đã kiểm** (phê duyệt · phân quyền · bảo mật · ban hành · stress test) | — | [15-van-thu-cac-ca-da-kiem.md](../erp/van-thu/chuc-nang/11-van-thu-cac-ca-da-kiem.md) — đã có tài liệu |
-| 29 | **Dự án — quản lý công việc** (kanban · danh sách · Gantt · hoạt động · việc con · cột mốc · bình luận · đính kèm) | `/project` | [16-du-an-cong-viec.md](16-du-an-cong-viec.md) — đã có tài liệu |
+| 29 | **Dự án — quản lý công việc** (kanban · danh sách · Gantt · hoạt động · việc con · cột mốc · bình luận · đính kèm) | `/project` | [16-du-an-cong-viec.md](../erp/cong-viec/chuc-nang/10-du-an-cong-viec.md) — đã có tài liệu |
 | 30 | **Nghỉ phép** (đơn nghỉ · lịch nghỉ · quỹ phép năm · loại nghỉ · lịch ngày lễ) | `/hr/leave-requests` | [../erp/hrm/02-nghi-phep.md](../erp/hrm/02-nghi-phep.md) — đã có tài liệu |
 | 30b | ↳ **Lịch làm việc** (mẫu lịch tuần · gán theo hệ thống/pháp nhân/phòng ban/nhân sự · xem lịch ai làm ai nghỉ · nối tính ngày phép) | `/hr/work-roster` · `/hr/work-schedules` · `/hr/work-schedule-assignments` | [../erp/hrm/03-lich-lam-viec.md](../erp/hrm/03-lich-lam-viec.md) — đã có tài liệu (duoc-CR-589) |
 | 31 | **Đặt phòng họp** (lịch phòng · phiếu đặt · danh mục phòng) | `/hr/room-calendar` | [18-dat-phong-hop.md](18-dat-phong-hop.md) — đã có tài liệu |

@@ -1,7 +1,7 @@
 # PHÂN HỆ CÔNG VIỆC — PHÂN QUYỀN
 
 **Bản:** 1.0 — 28/08/2026 · **CR:** CR-216 · Bản chi tiết của §5 trong
-[`01-danh-sach-tinh-nang.md`](./01-danh-sach-tinh-nang.md). Các quyết định Q1/Q4/Q9 đã
+[`01-danh-sach-tinh-nang.md`](../chuc-nang/11-danh-sach-tinh-nang.md). Các quyết định Q1/Q4/Q9 đã
 chốt 28/08/2026.
 
 Nguyên tắc gốc: **hai tầng, tầng nào việc nấy.**

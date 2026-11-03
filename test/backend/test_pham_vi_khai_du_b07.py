@@ -85,7 +85,7 @@ def test_du_55_entity():
     PUBLIC là CỐ Ý và có điều kiện kèm: phạm vi thật của phân hệ là "theo tư cách
     THÀNH VIÊN của list", không diễn đạt được bằng cột của `apply_scope` — đổi
     lại mọi query trong `app/modules/work/` phải tự lọc qua `visible_list_ids`
-    (`doc/erp/cong-viec/04-phan-quyen.md` §2).
+    (`doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md` §2).
     46 → 47 ngày 03/09/2026: thêm `forum_board` (chuyên mục kiểu VOZ, F13a) —
     PUBLIC cùng lý do với `forum_post`: entity chỉ gác CRUD cấu trúc nhóm/box
     của `forum_admin`, ai thấy gì do luật audience của API diễn đàn.

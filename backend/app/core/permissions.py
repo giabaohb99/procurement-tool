@@ -46,7 +46,7 @@ ENTITIES = [
     # `tab_work_list_member`), tách hai khóa chỉ đẻ thêm ô ma trận không ai hiểu.
     # Tên có tiền tố `work_` vì chữ "task" trần đã bị chiếm hai chỗ: task của bộ
     # máy duyệt và `/api/dashboard/tasks` (Việc cần làm). Xem
-    # `doc/erp/cong-viec/04-phan-quyen.md` §1.
+    # `doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md` §1.
     "work_task",
     # Phân hệ Nghỉ phép (CR-259). Bốn khóa vì bốn màn hình do BA nhóm người
     # khác nhau dùng, và gộp lại thì không tách được:

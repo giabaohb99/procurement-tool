@@ -2,10 +2,10 @@
 
 **Bản:** 1.4 — 28/08/2026 · **Trạng thái:** danh sách ĐÃ DUYỆT (chốt hướng **CLONE LARK TASKS**), CHƯA viết code · **CR:** CR-216 (bản 1.4: CR-217)
 
-Bộ tài liệu phân hệ (đọc theo thứ tự): **[`01`](./01-danh-sach-tinh-nang.md) danh sách
-tính năng** (tệp này) · **[`02`](./02-bang-du-lieu.md) bảng dữ liệu** ·
-**[`03`](./03-lo-trinh-phase.md) lộ trình phase** · **[`04`](./04-phan-quyen.md) phân
-quyền** · **[`05`](./05-giao-dien.md) đặc tả giao diện** (bản 1.3 thêm — clone thanh công
+Bộ tài liệu phân hệ (đọc theo thứ tự): **[`01`](11-danh-sach-tinh-nang.md) danh sách
+tính năng** (tệp này) · **[`02`](../tai-lieu-ky-thuat/02-bang-du-lieu.md) bảng dữ liệu** ·
+**[`03`](../plans/03-lo-trinh-phase.md) lộ trình phase** · **[`04`](../tai-lieu-ky-thuat/04-phan-quyen.md) phân
+quyền** · **[`05`](12-giao-dien.md) đặc tả giao diện** (bản 1.3 thêm — clone thanh công
 cụ Lark: All Tasks / Filter / Sort / Group by / Customize, giải phẫu kanban, panel chi
 tiết, dashboard, activities, tham khảo DHTMLX Gantt).
 
@@ -241,7 +241,7 @@ nhãn có khuôn — B-08); tên bảng `tab_task` trần đụng vùng approval
 ## 5. Phân quyền — hai tầng
 
 > Bản tóm tắt. Chi tiết đầy đủ (seed, SCOPE_FIELDS, kiểm thử bắt buộc) ở
-> [`04-phan-quyen.md`](./04-phan-quyen.md).
+> [`04-phan-quyen.md`](../tai-lieu-ky-thuat/04-phan-quyen.md).
 
 ### 5.1 Tầng hệ thống (RBAC hai trục sẵn có)
 
@@ -317,7 +317,7 @@ Người dùng chốt hướng "clone từ Lark, mọi thứ theo đề xuất c
 ## 8. Phác lộ trình (không đặt mốc thời gian)
 
 > Bản tóm tắt. Phạm vi từng phase theo mã tính năng + điều kiện cần/đủ ở
-> [`03-lo-trinh-phase.md`](./03-lo-trinh-phase.md).
+> [`03-lo-trinh-phase.md`](../plans/03-lo-trinh-phase.md).
 
 | Phase | Nội dung | Điều kiện đủ |
 |---|---|---|

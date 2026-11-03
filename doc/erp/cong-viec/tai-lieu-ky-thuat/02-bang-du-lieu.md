@@ -1,6 +1,6 @@
 # PHÂN HỆ CÔNG VIỆC — BẢNG DỮ LIỆU VÀ API
 
-**Bản:** 1.1 — 28/08/2026 · **CR:** CR-216 (bản 1.1: CR-217 — ghi chú mở rộng A-10 lên `tab_work_list`) · Đọc sau [`01-danh-sach-tinh-nang.md`](./01-danh-sach-tinh-nang.md)
+**Bản:** 1.1 — 28/08/2026 · **CR:** CR-216 (bản 1.1: CR-217 — ghi chú mở rộng A-10 lên `tab_work_list`) · Đọc sau [`01-danh-sach-tinh-nang.md`](../chuc-nang/11-danh-sach-tinh-nang.md)
 
 14 bảng mới, tiền tố `tab_work_*`, module backend `app/modules/work/`. CHƯA viết code —
 đây là bản thiết kế để soát trước khi sinh migration.

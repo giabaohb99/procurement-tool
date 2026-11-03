@@ -16593,7 +16593,7 @@ Mã nguồn: kế hoạch mục VT1-1 · `doc/erp/van-thu/plans/02-lo-trinh-phat
 
 **Kết quả:** Đã làm xong (duoc-CR-666). Được giao việc có chuông; đổi trạng thái và bình luận mới báo người phụ trách và người theo dõi, không báo chính người thao tác và chỉ báo người còn là thành viên dự án có quyền xem việc. Việc dự án mình phụ trách hiện trong tab Việc cần làm, bất biến tập cha CR-215 giữ nguyên. Mười hai bài kiểm mới chạy đường thật; đã qua rà mã.
 
-Mã nguồn: kế hoạch mục CV1-1 · `doc/erp/cong-viec/03-lo-trinh-phase.md` W3 · duoc-CR-666 · backend/app/modules/work/notify_service.py · test/backend/test_cong_viec_chuong_cr666.py
+Mã nguồn: kế hoạch mục CV1-1 · `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W3 · duoc-CR-666 · backend/app/modules/work/notify_service.py · test/backend/test_cong_viec_chuong_cr666.py
 
 ## kh-CV1-2 | Nợ nhỏ Công việc: sửa bình luận, màn thùng rác, ghim danh sách
 - status: xong
@@ -17034,7 +17034,7 @@ Mã nguồn: kế hoạch DX2-1
 
 **Còn:** nạp bài hướng dẫn lên devhelp (lệnh chạy seed trên VPS dev đang chờ duyệt); đi lại hai kịch bản trên dev để chốt nhãn nút khi người dùng đăng nhập khung trình duyệt; commit tệp seed chờ gật vì là tệp chạy được.
 
-Mã nguồn: `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md` · `doc/erp/hrm/02-nghi-phep.md` · `doc/erp/van-thu/chuc-nang/10-van-thu-van-ban.md` · `doc/erp/cong-viec/06-kich-ban-dung-thu.md` · `doc/erp/dien-dan/04-kich-ban-dung-thu.md` · `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py`
+Mã nguồn: `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md` · `doc/erp/hrm/02-nghi-phep.md` · `doc/erp/van-thu/chuc-nang/10-van-thu-van-ban.md` · `doc/erp/cong-viec/kiem-thu/06-kich-ban-dung-thu.md` · `doc/erp/dien-dan/04-kich-ban-dung-thu.md` · `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py`
 
 **Việc cần làm**
 - Ghi vào tài liệu chức năng và bài hướng dẫn liên quan (lập bộ tài khoản theo công ty, khai luồng duyệt riêng một công ty).

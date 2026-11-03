@@ -9,15 +9,15 @@ lập với Project-M.** Hướng đã chốt: **clone Lark Tasks**, các câu Q
 
 | Tệp | Nội dung | Bản |
 |---|---|---|
-| [`01` Danh sách tính năng](./01-danh-sach-tinh-nang.md) | 8 nhóm A–H chấm P0/P1/P2, khái niệm dữ liệu, đối chiếu ảnh Lark, **§4b đối chiếu tài liệu QLDA của DMS** (QĐ-T2 list kiểu dự án A-10, B-14/B-15, nhóm F dời W5), đáp án Q1–Q10 | 1.4 |
-| [`02` Bảng dữ liệu](./02-bang-du-lieu.md) | 14 bảng `tab_work_*`, 4 IntEnum, phác API `/api/work`, 4 quyết định xuyên suốt (employee_id, ngày chuỗi, SMALLINT, company_id); mở rộng A-10 lên `tab_work_list` (kind + ngày + `WorkProjectStatus`) | 1.1 |
-| [`03` Lộ trình phase](./03-lo-trinh-phase.md) | W0–W5 điều kiện cần/đủ, không mốc thời gian; W2 là mốc nghiệm thu MVP; W4 thêm A-10, W5 thêm cụm Gantt B-14/B-15 + lịch làm việc | 1.1 |
-| [`04` Phân quyền](./04-phan-quyen.md) | Hai tầng: entity `work_task` (SCOPE_FIELDS = PUBLIC + lọc thành viên bắt buộc ở service), ma trận OWNER/ADMIN/MEMBER/VIEWER, kế thừa từ nhóm, cửa quản trị có audit, 7 bài test khóa | 1.0 |
-| [`05` Đặc tả giao diện](./05-giao-dien.md) | Clone giao diện Lark: bố cục, tab khung nhìn (List/Kanban P0 · **Gantt xong sớm, CR-219** · Dashboard/Activities P1), thanh công cụ (Việc mới, Tất cả, Lọc, Sắp xếp, Gom nhóm, Tùy chỉnh), giải phẫu thẻ kanban, panel chi tiết, dashboard 4 khối, tham khảo DHTMLX Gantt cho D-05 | 1.0 |
-| [`06` Kịch bản dùng thử](./06-kich-ban-dung-thu.md) | Kịch bản một đội đi trọn vòng trên dev (17 bước) + 5 ngày dùng thật + mẫu biên bản — để đóng mốc MVP (CV1-3) | 0.1 |
+| [`01` Danh sách tính năng](chuc-nang/11-danh-sach-tinh-nang.md) | 8 nhóm A–H chấm P0/P1/P2, khái niệm dữ liệu, đối chiếu ảnh Lark, **§4b đối chiếu tài liệu QLDA của DMS** (QĐ-T2 list kiểu dự án A-10, B-14/B-15, nhóm F dời W5), đáp án Q1–Q10 | 1.4 |
+| [`02` Bảng dữ liệu](tai-lieu-ky-thuat/02-bang-du-lieu.md) | 14 bảng `tab_work_*`, 4 IntEnum, phác API `/api/work`, 4 quyết định xuyên suốt (employee_id, ngày chuỗi, SMALLINT, company_id); mở rộng A-10 lên `tab_work_list` (kind + ngày + `WorkProjectStatus`) | 1.1 |
+| [`03` Lộ trình phase](plans/03-lo-trinh-phase.md) | W0–W5 điều kiện cần/đủ, không mốc thời gian; W2 là mốc nghiệm thu MVP; W4 thêm A-10, W5 thêm cụm Gantt B-14/B-15 + lịch làm việc | 1.1 |
+| [`04` Phân quyền](tai-lieu-ky-thuat/04-phan-quyen.md) | Hai tầng: entity `work_task` (SCOPE_FIELDS = PUBLIC + lọc thành viên bắt buộc ở service), ma trận OWNER/ADMIN/MEMBER/VIEWER, kế thừa từ nhóm, cửa quản trị có audit, 7 bài test khóa | 1.0 |
+| [`05` Đặc tả giao diện](chuc-nang/12-giao-dien.md) | Clone giao diện Lark: bố cục, tab khung nhìn (List/Kanban P0 · **Gantt xong sớm, CR-219** · Dashboard/Activities P1), thanh công cụ (Việc mới, Tất cả, Lọc, Sắp xếp, Gom nhóm, Tùy chỉnh), giải phẫu thẻ kanban, panel chi tiết, dashboard 4 khối, tham khảo DHTMLX Gantt cho D-05 | 1.0 |
+| [`06` Kịch bản dùng thử](kiem-thu/06-kich-ban-dung-thu.md) | Kịch bản một đội đi trọn vòng trên dev (17 bước) + 5 ngày dùng thật + mẫu biên bản — để đóng mốc MVP (CV1-3) | 0.1 |
 
 Trạng thái (28/08/2026): **W0 xong** (CR-217) · **W1 xong** và **W2 phần lớn xong**
-(CR-218) — chi tiết từng phase ở [`03`](./03-lo-trinh-phase.md).
+(CR-218) — chi tiết từng phase ở [`03`](plans/03-lo-trinh-phase.md).
 
 - Backend: 12 bảng `tab_work_*` + migration `631070f1b801`, 4 IntEnum, entity `work_task`,
   25 endpoint `/api/work/...`, 31 test khóa tầng thành viên.

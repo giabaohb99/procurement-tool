@@ -178,7 +178,7 @@ SCOPE_FIELDS = {
     #
     #   ⚠️ MỌI query của `app/modules/work/` PHẢI tự lọc qua `visible_list_ids(...)`.
     #   Khai PUBLIC mà quên lọc là lộ sạch việc của cả công ty — đọc
-    #   `doc/erp/cong-viec/04-phan-quyen.md` §2 trước khi viết endpoint đầu tiên.
+    #   `doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md` §2 trước khi viết endpoint đầu tiên.
     "work_task":        PUBLIC,
 
     # --- Nghỉ phép (CR-259) ---

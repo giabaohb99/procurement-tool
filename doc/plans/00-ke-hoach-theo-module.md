@@ -304,25 +304,25 @@ Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/thu-mua/n
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| CV1-1 | W3 nối chuông: giao việc → chuông (F-01); việc Dự án vào tab *Việc cần làm*, giữ bất biến tập cha CR-215 (F-02); đổi trạng thái / bình luận báo người theo dõi (F-04). Kiểm mã: `modules/work` chưa gọi thông báo nào | Giao việc là chuông kêu; bài kiểm tập cha mở rộng xanh | `doc/erp/cong-viec/03-lo-trinh-phase.md` W3 |
-| CV1-2 | Nợ nhỏ: sửa bình luận của mình (E-05, mới có xóa); thùng rác có màn và nút khôi phục (B-09, mới có `deleted_at`); ghim list hay dùng trên sidebar (A-05) | Ba thao tác chạy trên dev, có bài kiểm phần sửa | `doc/erp/cong-viec/03-lo-trinh-phase.md` W2, W3, W4 |
-| CV1-3 | Đóng mốc MVP: một đội dùng thử trọn vòng trên dev (tạo nhóm → list → mời → giao nhiều PIC → nhãn → kéo cột → việc con → hoàn thành) | Có biên bản đội dùng thử | `doc/erp/cong-viec/03-lo-trinh-phase.md` W2 |
+| CV1-1 | W3 nối chuông: giao việc → chuông (F-01); việc Dự án vào tab *Việc cần làm*, giữ bất biến tập cha CR-215 (F-02); đổi trạng thái / bình luận báo người theo dõi (F-04). Kiểm mã: `modules/work` chưa gọi thông báo nào | Giao việc là chuông kêu; bài kiểm tập cha mở rộng xanh | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W3 |
+| CV1-2 | Nợ nhỏ: sửa bình luận của mình (E-05, mới có xóa); thùng rác có màn và nút khôi phục (B-09, mới có `deleted_at`); ghim list hay dùng trên sidebar (A-05) | Ba thao tác chạy trên dev, có bài kiểm phần sửa | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W2, W3, W4 |
+| CV1-3 | Đóng mốc MVP: một đội dùng thử trọn vòng trên dev (tạo nhóm → list → mời → giao nhiều PIC → nhãn → kéo cột → việc con → hoàn thành) | Có biên bản đội dùng thử | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W2 |
 
 **Phase 2**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| CV2-1 | Nhắc hạn bằng chuông ERP (F-03). Hiện chỉ có nhắc qua bot Telegram (`agent.work_due`, ai-CR-175), bot đã đóng băng và chỉ tới người có liên kết | Mỗi ngưỡng hạn bắn đúng một chuông, không lặp mỗi lượt beat | `doc/erp/cong-viec/03-lo-trinh-phase.md` W4 |
-| CV2-2 | Màn *Việc của tôi* gom việc Dự án mọi list (G-03) *(cần kiểm lại: Trang cá nhân có tab Việc cần làm, chưa thấy gom việc Dự án)* | Một màn ra mọi việc mình là PIC, lọc theo hạn | `doc/erp/cong-viec/03-lo-trinh-phase.md` W4 |
-| CV2-3 | Chuyển việc sang list khác (B-10) *(cần kiểm lại: `/tasks/{id}/move` mới đổi cột)*; mời thành viên theo phòng ban (A-06) | Chuyển được việc giữa hai list giữ bình luận, tệp; mời cả phòng một lần | `doc/erp/cong-viec/03-lo-trinh-phase.md` W4 |
-| CV2-4 | Dashboard cấp list (D-06, mới có Tổng quan cấp phân hệ); gom nhóm kanban theo PIC / ưu tiên / hạn (D-08); list kiểu dự án (A-10) *(cần kiểm lại: phân hệ đã đổi tên Dự án)* | Tab Dashboard hiện trong list; đổi được tiêu chí gom nhóm | `doc/erp/cong-viec/03-lo-trinh-phase.md` W4 |
+| CV2-1 | Nhắc hạn bằng chuông ERP (F-03). Hiện chỉ có nhắc qua bot Telegram (`agent.work_due`, ai-CR-175), bot đã đóng băng và chỉ tới người có liên kết | Mỗi ngưỡng hạn bắn đúng một chuông, không lặp mỗi lượt beat | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W4 |
+| CV2-2 | Màn *Việc của tôi* gom việc Dự án mọi list (G-03) *(cần kiểm lại: Trang cá nhân có tab Việc cần làm, chưa thấy gom việc Dự án)* | Một màn ra mọi việc mình là PIC, lọc theo hạn | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W4 |
+| CV2-3 | Chuyển việc sang list khác (B-10) *(cần kiểm lại: `/tasks/{id}/move` mới đổi cột)*; mời thành viên theo phòng ban (A-06) | Chuyển được việc giữa hai list giữ bình luận, tệp; mời cả phòng một lần | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W4 |
+| CV2-4 | Dashboard cấp list (D-06, mới có Tổng quan cấp phân hệ); gom nhóm kanban theo PIC / ưu tiên / hạn (D-08); list kiểu dự án (A-10) *(cần kiểm lại: phân hệ đã đổi tên Dự án)* | Tab Dashboard hiện trong list; đổi được tiêu chí gom nhóm | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W4 |
 
 **Phase 3 — khi cần**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| CV3-1 | Việc lặp (B-11), gắn chứng từ ERP (B-12) | Có người dùng thật yêu cầu và CR riêng | `doc/erp/cong-viec/03-lo-trinh-phase.md` W5 |
-| CV3-2 | Gantt nâng cao: dời lịch dây chuyền theo `lag_days`, đường găng, baseline; trừ ngày nghỉ bằng lịch làm việc HRM (nền `work_schedule` đã có, gọi sang, không dựng bảng riêng) | Có người dùng thật yêu cầu | `doc/erp/cong-viec/03-lo-trinh-phase.md` W5 |
+| CV3-1 | Việc lặp (B-11), gắn chứng từ ERP (B-12) | Có người dùng thật yêu cầu và CR riêng | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W5 |
+| CV3-2 | Gantt nâng cao: dời lịch dây chuyền theo `lag_days`, đường găng, baseline; trừ ngày nghỉ bằng lịch làm việc HRM (nền `work_schedule` đã có, gọi sang, không dựng bảng riêng) | Có người dùng thật yêu cầu | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W5 |
 
 **Câu chờ quyết:**
 - Đội nào dùng thử MVP (CV1-3) — đại ca.

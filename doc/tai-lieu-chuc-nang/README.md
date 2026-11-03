@@ -10,7 +10,7 @@ Mục lục toàn bộ tính năng: [00-muc-luc.md](00-muc-luc.md)
 | File | Chức năng |
 |------|-----------|
 | [01-phieu-khao-sat.md](../erp/thu-mua/chuc-nang/10-phieu-khao-sat.md) | Phiếu khảo sát (NCC + Sản phẩm) |
-| [16-du-an-cong-viec.md](16-du-an-cong-viec.md) | Dự án — quản lý công việc (ERP v2) |
+| [16-du-an-cong-viec.md](../erp/cong-viec/chuc-nang/10-du-an-cong-viec.md) | Dự án — quản lý công việc (ERP v2) |
 | [../erp/hrm/02-nghi-phep.md](../erp/hrm/02-nghi-phep.md) | Nghỉ phép — đơn nghỉ · quỹ phép năm · lịch nghỉ (ERP v2, trong phân hệ Nhân sự) — **đã dời sang `doc/erp/hrm/`** (22/10/2026) |
 | [18-dat-phong-hop.md](18-dat-phong-hop.md) | Đặt phòng họp — lịch phòng · phiếu đặt chạy qua bộ máy duyệt · danh mục phòng (ERP v2, trong phân hệ Nhân sự) |
 | [19-bao-cao-thuc-hien-ycbg.md](../erp/thu-mua/chuc-nang/19-bao-cao-thuc-hien-ycbg.md) | Báo cáo thực hiện — khối theo dõi tiến trình thương vụ trên chi tiết Yêu cầu báo giá (ERP v2). Xem thêm TDD kỹ thuật [`tdd-bao-cao-thuc-hien-ycbg.md`](../erp/thu-mua/tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md) |
