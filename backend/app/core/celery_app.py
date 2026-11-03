@@ -124,6 +124,11 @@ celery_app.conf.update(
         },
         #  bao-CR-699: gộp dòng hàng hải quan trùng nửa tháng một lần — ngày 1 và 16 lúc 03:30 (sau đóng gói tháng 03:00
         #  ngày 1, trước dọn GET 03:40). Có công tắc customs_line_merge_enabled.
+        #  bao-CR-718: dọn tệp lô xuất toàn bộ tra cứu thị trường quá hạn + lô kẹt — 02:50, ngay sau dọn nhật ký dòng.
+        "cleanup-customs-export-batches": {
+            "task": "customs.cleanup_export_batches",
+            "schedule": crontab(hour=2, minute=50),
+        },
         "merge-customs-duplicate-lines": {
             "task": "customs.merge_duplicate_lines",
             "schedule": crontab(day_of_month="1,16", hour=3, minute=30),

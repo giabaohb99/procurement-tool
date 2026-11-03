@@ -114,8 +114,64 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
-## bao-CR-717-chan-trung-dong-ton-kho | Chặn trùng dòng tồn kho khi hai lượt ghi cùng lúc
+## bao-CR-719-tach-ham-tien-dmh | Tách các hàm tính tiền chi phí thu mua và công nợ của đơn mua hàng, đợt R3b
 - status: dang-lam
+- date: 2026-11-03
+- list: Sản xuất - Thu mua
+- tag: Nền tảng
+**Bối cảnh:** sau đợt R3 (bao-CR-715), đơn mua hàng còn bốn hàm rất rối đụng tới tiền: lưu bảng chi phí thu mua, tính
+lại phiếu nhập kho ngầm cùng tồn kho và công nợ, chọn cơ sở phân bổ chi phí, và phân bổ chi phí về dòng hàng. Đây là đợt
+cuối của lộ trình dọn trước lần đẩy prod chung, được giao ngày 03/11.
+
+**Việc:** viết bài kiểm chụp kết quả có số tiền từng dòng, công nợ sinh ra, dòng nhật ký và số câu truy vấn, cho chạy xanh
+trên mã cũ; sau đó tách các hàm theo ba bước kiểm, tính, ghi mà không đổi một đồng nào. Chỉ đổi mã phía máy chủ, không đổi
+màn hình hay đường API.
+
+---
+## bao-CR-720-canh-bao-quyen-nhay-cam-vai-tro-nguoi-yeu-cau | Cảnh báo vàng khi vai trò người yêu cầu có quyền xem dữ liệu nhạy cảm thu mua
+- status: xong
+- date: 2026-11-03
+- tag: Nền tảng
+**Bối cảnh:** tiếp bao-CR-716. Vai trò Nhân sự là vai trò mọi tài khoản mới tự nhận, có hàng trăm người giữ. Nếu vai trò này
+được tick Xem hay Xuất ở danh mục nhạy cảm của thu mua (nhà cung cấp, hợp đồng, giá hải quan, công nợ, yêu cầu thanh toán)
+thì toàn bộ người giữ thấy dữ liệu đó, mà màn Phân quyền không nhắc gì.
+**Việc:** backend khai một chỗ danh sách thực thể nhạy cảm và mã vai trò người yêu cầu, trả qua API meta của màn Phân quyền;
+màn Vai trò và quyền hiện một dòng vàng dưới ma trận nêu tên quyền và số người đang giữ sẽ thấy toàn bộ dữ liệu, không chặn
+lưu; bài kiểm backend và vitest; HDSD Phân quyền thêm một câu.
+**Kết quả:** danh sách thực thể nhạy cảm (nhà cung cấp, hợp đồng, đơn mua hàng, công nợ, yêu cầu thanh toán, tra cứu thị
+trường) và hai hành động cần nhắc (xem, xuất) khai một chỗ trong bảng quyền dùng chung; API meta trả thêm ba trường gồm cả
+mã vai trò người yêu cầu lấy từ hằng của phân hệ tài khoản. Màn Vai trò và quyền có dòng vàng dưới ma trận: tên vai trò, số
+người đang giữ lấy từ danh sách vai trò, từng thực thể kèm hành động đã tick, gợi ý tách sang vai trò riêng. Không chặn lưu.
+Máy chủ cũ chưa trả trường mới thì không hiện. Bài kiểm: backend 3 bài, cụm 53 đạt; vitest 3 bài, cụm system 341 đạt;
+typecheck, eslint, ruff sạch. Bài hướng dẫn lập bộ tài khoản thêm một đoạn, đã seed dev.
+Mã nguồn: backend/app/core/permissions.py, backend/app/modules/role/controller.py, test/backend/test_canh_bao_quyen_nhay_cam_cr720.py, frontend-v2/src/modules/system/components/sensitive-permission-warning.tsx (+ .test.tsx), role-permission-roles-tab.tsx, frontend-v2/src/modules/hr/types/role.ts, backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py
+Commit: cc94e399 (đặt chỗ), 5b64e06b
+
+## bao-CR-718-tra-cuu-thi-truong-nhanh-xuat-lo | Tra cứu thị trường: tìm nhanh hơn và xuất toàn bộ chạy nền chia nhiều tệp
+- status: xong
+- date: 2026-11-03
+- list: Sản xuất - Thu mua
+- tag: Agent 4
+**Bối cảnh:** bảng dòng hàng hải quan trên prod đã 328 nghìn dòng, người dùng báo tìm rất chậm; nút xuất Excel cũ chặn ở
+50.000 dòng nên không xuất được toàn bộ.
+
+**Đã làm (phần tìm nhanh):** đo trên bản sao cỡ prod dựng riêng. Ba chỗ chậm: danh sách sắp theo ngày mà không có chỉ mục
+ngày, ô tìm dò toàn bộ tên hàng hai lần mỗi trang, ô chọn đếm lại cả bảng mỗi lần mở màn. Đã thêm chỉ mục theo ngày, nhớ
+tạm số đếm và ô chọn, bỏ một phép đổi chữ thường thừa. Mở màn từ 0,4 giây còn 0,04 giây; tìm từ khóa từ 1,5 giây còn 0,5
+giây lần đầu và 0,03 giây khi lật trang; ô chọn từ 1,1 giây còn tức thì.
+
+**Đã làm (phần xuất):** nút xuất trên màn danh sách có thêm lựa chọn xuất toàn bộ theo bộ lọc chạy nền. Bấm là biết ngay
+bao nhiêu dòng, bao nhiêu tệp (50.000 dòng một tệp); hệ ghi từng tệp một, nghỉ giữa các khối để không làm chậm việc khác;
+xong thì chuông báo, bấm vào ra màn Lô xuất của tôi để tải từng tệp. Mỗi người một lô đang chạy, dừng được giữa chừng,
+tệp giữ 7 ngày rồi tự dọn. Thử trên bản sao cỡ prod: 7 tệp, khoảng hai phút rưỡi. Chỉ làm ở giao diện mới.
+
+**Còn lại:** soát trên dev; có thay đổi cơ sở dữ liệu nên lên prod chờ duyệt.
+
+Mã nguồn: `backend/app/modules/customs/` (`service.py`, `search_service.py`, `read_cache.py`, `line_export.py`), migration `hqx718` + `hqx718b`, `frontend-v2/src/modules/procurement/` (customs-export-*), `doc/erp/hai-quan/plans/261103-tim-nhanh-xuat-lo-bao-cr-718/`.
+
+---
+## bao-CR-717-chan-trung-dong-ton-kho | Chặn trùng dòng tồn kho khi hai lượt ghi cùng lúc
+- status: xong
 - date: 2026-11-03
 - tag: Nền tảng
 **Bối cảnh:** tài liệu phi chức năng của Kho ghi bảng tồn kho chưa có ràng buộc duy nhất theo công ty, kho, mã hàng, nên hai lượt
@@ -124,10 +180,20 @@ nhóm trùng, nên thêm được ràng buộc.
 **Việc:** migration thêm ràng buộc duy nhất (kiểm trùng trước, có trùng thì dừng kèm câu báo rõ, không tự gộp); chỗ ghi tồn xử lý
 đụng ràng buộc khi chạy đồng thời; bài kiểm mô phỏng hai lượt cùng mã; cập nhật tài liệu phi chức năng của Kho. Có migration nên chỉ
 lên dev, prod chờ xác nhận.
-Mã nguồn: backend/app/modules/inventory, backend/alembic, doc/erp/kho/chuc-nang/02-yeu-cau-phi-chuc-nang.md
+**Kết quả:** bảng tồn kho có ràng buộc duy nhất theo công ty, kho, mã hàng (khai ở model và migration invuq717, nối sau
+lvcmp716). Migration đếm nhóm trùng trước; có trùng thì dừng và in danh sách tối đa 20 nhóm kèm cách gộp tay, không tự gộp.
+Hàm tính lại tồn: giữ dòng tồn bằng khóa đọc để hai lượt cùng khóa nối đuôi nhau; chưa có dòng thì chèn trong savepoint,
+đụng ràng buộc thì lùi về savepoint, đọc lại dòng lượt trước vừa chèn rồi ghi tổng; sổ phát sinh đọc sau khi giữ dòng nên
+tổng không thiếu. Chỗ ghi tồn chỉ có một hàm này (gộp công ty cũng gọi nó), không đụng ba phân hệ thu mua. Bài kiểm 4 bài
+mới (ràng buộc ở model, hai lần giao một dòng, mô phỏng lượt sau đụng ràng buộc, câu đếm trùng của migration); cùng cụm
+tồn kho và phạm vi 670 đạt; alembic một đầu; ruff sạch. Tài liệu phi chức năng Kho: PCN-KHO-08 sang Đạt trên dev.
+**Còn lại:** lên prod theo đợt phát hành, có migration nên cần xác nhận; nếu prod lúc đó có nhóm trùng thì migration tự dừng
+và báo danh sách.
+Mã nguồn: backend/app/modules/inventory/model.py, backend/app/modules/inventory/service.py, backend/migrations/versions/invuq717_bao_cr717_ton_kho_khoa_duy_nhat.py, test/backend/test_ton_kho_chan_trung_cr717.py, doc/erp/kho/chuc-nang/02-yeu-cau-phi-chuc-nang.md
+Commit: a0f5b768 (đặt chỗ), 13a46e1a
 
 ## bao-CR-716-khoa-pham-vi-danh-muc-dung-chung | Khóa ô phạm vi cho danh mục dùng chung ở màn Phân quyền
-- status: dang-lam
+- status: xong
 - date: 2026-11-03
 - tag: Nền tảng
 **Bối cảnh:** vai trò Nhân sự được tick Xem nhà cung cấp với phạm vi Của mình nhưng nhà cung cấp là danh mục dùng chung (khai
@@ -136,22 +202,50 @@ thể có tác dụng, gây hiểu nhầm.
 **Việc:** backend trả danh sách thực thể công khai trong API có sẵn của màn Phân quyền; màn Vai trò và quyền khóa ô phạm vi của
 những dòng đó, hiện Toàn bộ (danh mục dùng chung) kèm giải thích, khi lưu vẫn gửi phạm vi như cũ; bài kiểm backend và vitest;
 HDSD Phân quyền thêm một câu.
-Mã nguồn: backend/app/modules/role/controller.py, frontend-v2/src/modules/system/components/role-permission-matrix.tsx
+**Kết quả:** API meta của màn Phân quyền trả thêm danh sách thực thể công khai (lấy thẳng từ bảng phạm vi, không thêm thực thể,
+không đổi dữ liệu quyền). Màn Vai trò và quyền: dòng công khai thay ô chọn phạm vi bằng ô khóa ghi Toàn bộ (danh mục dùng
+chung) kèm chú giải khi rê chuột; giá trị phạm vi trong bộ nhớ giữ nguyên nên lưu không đổi gì. Máy chủ cũ chưa trả trường
+mới thì màn chạy như trước. Bài kiểm: backend 2 bài (danh sách đúng và bằng chứng phạm vi Của mình vẫn thấy hết nhà cung cấp),
+vitest 2 bài; cả cụm 33 + 151 đạt, typecheck và eslint sạch. Bài hướng dẫn lập bộ tài khoản thêm một đoạn về ô phạm vi khóa.
+Chưa làm cảnh báo riêng khi vai trò Nhân sự được tick đọc nhà cung cấp hay hợp đồng (A1 để tùy chọn); đề nghị làm ở CR khác
+nếu cần.
+Mã nguồn: backend/app/modules/role/controller.py, test/backend/test_pham_vi_danh_muc_dung_chung_cr716.py, frontend-v2/src/modules/hr/types/role.ts, frontend-v2/src/modules/system/components/role-permission-matrix.tsx (+ .test.tsx), backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py
+Commit: a0f5b768 (đặt chỗ), 9010473f
 
 ## bao-CR-715-che-service-thu-mua | Chẻ tệp nghiệp vụ và tách hàm rối của ba phân hệ thu mua, đợt R3
-- status: dang-lam
+- status: xong
 - date: 2026-11-03
 - list: Sản xuất - Thu mua
 - tag: Nền tảng
-**Bối cảnh:** sau đợt R2 (bao-CR-711), tệp nghiệp vụ (service) của Yêu cầu mua hàng, Yêu cầu báo giá và Đơn mua hàng dày
-từ 1.364 đến 2.210 dòng, và còn nhiều hàm rất rối như hàm lưu dòng đơn mua hàng hay hàm sinh đơn mua hàng từ phương án.
-Đây là đợt R3 của lộ trình dọn, được giao ngày 03/11.
+**Bối cảnh:** sau đợt R2 (bao-CR-711), tệp nghiệp vụ (service) của Yêu cầu mua hàng, Yêu cầu báo giá và Đơn mua
+hàng dày từ 1.364 đến 2.210 dòng, và còn nhiều hàm rất rối như hàm lưu dòng đơn mua hàng hay hàm sinh đơn mua hàng từ
+phương án. Đây là đợt R3 của lộ trình dọn, được giao ngày 03/11.
 
-**Đang làm:** chẻ mỗi tệp nghiệp vụ theo bước của vòng đời chứng từ (tạo và sửa, duyệt, phân công, phương án, giao hàng...)
-để không tệp nào quá 1.000 dòng, rồi tách các hàm rối theo ba bước kiểm, tính, ghi. Hàm nào chưa có bài kiểm đủ thì viết bài
-kiểm chụp kết quả cũ trước khi tách. Không đổi hành vi: đường API, dữ liệu trả, câu báo lỗi và số câu truy vấn giữ nguyên.
+**Đã làm**
+- Chẻ tệp nghiệp vụ của mỗi phân hệ theo bước của vòng đời chứng từ: phần nền dùng chung, tạo và sửa, duyệt và điều
+  phối, đổi trạng thái và chuyển phòng, trạng thái dòng, phương án, lần giao hàng, chi phí thu mua, tiến độ, truy vấn
+  đọc. Yêu cầu mua hàng và Yêu cầu báo giá mỗi bên bảy tệp, Đơn mua hàng tám tệp.
+- Tệp cũ giữ lại làm **cửa** gọi sang các tệp mới, nên mọi nơi đang dùng (màn hình, trợ lý AI, cổng MCP, nhập Excel,
+  bài kiểm) không phải sửa gì.
+- Tách bốn hàm rối nhất theo ba bước kiểm, tính, ghi: lưu dòng đơn mua hàng, sinh đơn mua hàng theo phương án, dựng
+  dữ liệu chi tiết phiếu yêu cầu mua hàng, dựng dữ liệu một dòng đơn mua hàng.
+- Trước khi tách, viết **bài kiểm chụp kết quả** cho cả bốn hàm và cho chạy xanh trên mã cũ: so nguyên khối dữ liệu ghi
+  xuống, câu báo lỗi, thứ tự khóa và cả số câu truy vấn, nên tách sai một chỗ là bài kiểm đỏ.
+- **Không đổi hành vi:** đường API, dữ liệu trả, câu báo lỗi, thứ tự ghi và số câu truy vấn giữ nguyên.
 
-Tham chiếu: doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md mục 5 và 6
+**Kết quả:** đã nằm trên dev (nhánh erp-v2). Tệp lớn nhất của ba thư mục từ 2.210 dòng còn 973 dòng; bốn hàm từ hạng F
+hoặc E xuống hạng A hoặc B; số hàm rối (hạng D đến F) của ba phân hệ từ 32 còn 28. Hai lượt bài kiểm theo phân hệ
+(4.040 bài, rồi 3.855 bài sau khi tách hàm dựng dữ liệu) chỉ còn một bài đỏ sẵn có trên erp-v2 từ trước
+(bài canh độ dài ô chữ thiếu khai ba khuôn dữ liệu của hải quan và diễn đàn), không bài nào đỏ do đợt này.
+
+**Còn lại:** 28 hàm rối chưa tách, nặng nhất là phần chi phí thu mua, phân bổ chi phí và tính lại phiếu nhập kho, công
+nợ của Đơn mua hàng. Phần này đụng tiền nên đề xuất làm đợt riêng, mỗi hàm một bài kiểm chụp kết quả có số tiền.
+
+Mã nguồn: backend/app/modules/purchase_request, survey_request, purchase_order (các tệp *_service.py mới, service.py,
+option_service.py, serializer.py); test/backend/test_chup_ket_qua_luu_dong_sinh_don_cr715.py,
+test_chup_ket_qua_serializer_thu_mua_cr715.py
+Commit: a060cf09, 6de61ca1, 5f3bd03c, a0d86f18, fb9eb30c, 1a13c151
+Tham chiếu: doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md mục 6.2
 
 ## bao-CR-714-sua-bai-kiem-do-san-co | Sửa sáu bài kiểm đỏ sẵn có lộ ra khi chạy đủ bộ backend
 - status: xong

@@ -18,7 +18,8 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, Up
 from sqlalchemy.orm import Session
 
 from app.core.audit import resolve_actor
-from app.core.auth import require
+from app.core.auth import get_perm_profile, require
+from app.core.scoping import has_global_scope
 from app.core.storage import download_bytes
 from app.modules.attachment.model import StoredFile
 from app.core.base_controller import pagination
@@ -26,13 +27,15 @@ from app.core.crud import make_crud_router
 from app.core.database import get_db
 from app.core.response import success
 
-from . import line_change, line_edit_service, service
-from .model import CustomsRegulation
+from . import line_change, line_edit_service, line_export, read_cache, service
+from .model import CustomsExportBatch, CustomsRegulation
 from .schema import CustomsLineUpdate, RegulationCreate, RegulationOut, RegulationUpdate
 from app.modules.import_tool import service as import_service
 from app.modules.import_tool.model import (ImportBatch, ImportMode, ImportModule,
                                            ImportStatus)
 from app.modules.import_tool.tasks import run_import
+
+from .tasks import export_batch_part_task
 
 from . import reader, regulation_browse_service
 from .constants import COLUMNS
@@ -135,6 +138,69 @@ def export_lines(f: dict = Depends(line_filters), db: Session = Depends(get_db),
                     headers={"Content-Disposition": 'attachment; filename="tra-cuu-gia-hai-quan.xlsx"'})
 
 
+# ── bao-CR-718: lô xuất toàn bộ chạy nền, chia nhiều tệp ───────────────────────
+def _own_batch(db: Session, bid: int, user) -> CustomsExportBatch:
+    """Lô của chính người gọi; người có `customs_price.export` phạm vi "tất cả" xem / tải được lô của người khác."""
+    b = db.get(CustomsExportBatch, bid)
+    if not b:
+        raise HTTPException(404, "Không tìm thấy lô xuất")
+    if b.created_by != user.id and not has_global_scope(get_perm_profile(db, user), ENTITY, "export"):
+        raise HTTPException(403, "Chỉ người đã xuất được xem lô này")
+    return b
+
+
+@router.post("/export-batches")
+def create_export_batch(f: dict = Depends(line_filters), db: Session = Depends(get_db),
+                        user=Depends(require(ENTITY, "export"))):
+    """Xuất TOÀN BỘ dòng khớp bộ lọc đang chọn (bỏ trống = cả bảng): tạo lô chạy nền, trả ngay tổng dòng + số tệp dự
+    kiến. Xong thì chuông báo, tải từng tệp ở `/export-batches/{id}`. Mỗi người một lô đang chạy (409)."""
+    b = line_export.create_batch(db, f, user.id)
+    export_batch_part_task.delay(b.id)
+    return success(line_export.batch_out(b),
+                   f"Đã tạo lô xuất #{b.id}: {b.total_rows:,} dòng, dự kiến {b.file_count} tệp — sẽ báo chuông khi xong"
+                   .replace(",", "."), 201)
+
+
+@router.get("/export-batches")
+def list_export_batches(pg: dict = Depends(pagination), db: Session = Depends(get_db),
+                        user=Depends(require(ENTITY, "export"))):
+    """Lô xuất của chính mình, mới nhất trước."""
+    q = db.query(CustomsExportBatch).filter(CustomsExportBatch.created_by == user.id)
+    total = q.count()
+    items = q.order_by(CustomsExportBatch.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
+    return success({"total": total, "items": [line_export.batch_out(b) for b in items]})
+
+
+@router.get("/export-batches/{bid}")
+def get_export_batch(bid: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "export"))):
+    return success(line_export.batch_out(_own_batch(db, bid, user)))
+
+
+@router.post("/export-batches/{bid}/cancel")
+def cancel_export_batch(bid: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "export"))):
+    b = _own_batch(db, bid, user)
+    if b.created_by != user.id:
+        raise HTTPException(403, "Chỉ người đã xuất được dừng lô này")
+    return success(line_export.batch_out(line_export.cancel(db, b, user.id)), "Đã dừng lô xuất")
+
+
+@router.get("/export-batches/{bid}/files/{part}")
+def download_export_batch_file(bid: int, part: int, db: Session = Depends(get_db),
+                               user=Depends(require(ENTITY, "export"))):
+    x = line_export.file_of(_own_batch(db, bid, user), part)
+    sf = db.get(StoredFile, x.get("file_id") or 0)
+    if not sf:
+        raise HTTPException(404, "Tệp đã quá hạn giữ và bị dọn — tạo lô xuất mới")
+    try:
+        data = download_bytes(sf.file_key)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(404, "Không đọc được tệp từ kho lưu trữ") from None
+    return Response(content=data, media_type=sf.content_type or line_export.XLSX_MEDIA,
+                    headers={"Content-Disposition": f'attachment; filename="{sf.filename}"'})
+
+
 @router.get("/lines/{line_id}")
 def get_line(line_id: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
     return success(service.get_line(db, line_id))
@@ -145,6 +211,7 @@ def update_line(line_id: int, body: CustomsLineUpdate, db: Session = Depends(get
                 user=Depends(require(ENTITY, "write"))):
     """bao-CR-608 — sửa tay một dòng; chụp bản trước khi sửa vào `tab_customs_line_change`."""
     line = line_edit_service.update_line(db, line_id, body, user.id)
+    read_cache.clear()   # bao-CR-718: số đếm / ô chọn đã đệm có thể đổi
     return success(service.serialize_lines(db, [line])[0], "Đã lưu dòng hàng")
 
 
@@ -152,6 +219,7 @@ def update_line(line_id: int, body: CustomsLineUpdate, db: Session = Depends(get
 def delete_line(line_id: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "delete"))):
     """bao-CR-608 — xóa tay một dòng; chụp bản trước khi xóa vào `tab_customs_line_change`."""
     line_edit_service.delete_line(db, line_id, user.id)
+    read_cache.clear()
     return success(None, "Đã xóa dòng hàng")
 
 
@@ -272,6 +340,7 @@ def commit_batch(bid: int, db: Session = Depends(get_db), user=Depends(require(E
 def revert_batch(bid: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "delete"))):
     b = _get_batch(db, bid)
     res = import_service.revert_batch(db, b, user.id)
+    read_cache.clear()
     if not res.get("ok"):
         raise HTTPException(400, res.get("message", "Không hoàn tác được"))
     return success(_batch_out(db, b), res["message"])

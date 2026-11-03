@@ -11,6 +11,7 @@ import {
   visibleNavItems,
 } from './module-visibility'
 import { allModules, moduleRegistry } from './module-registry'
+import { resolveModuleBreadcrumb } from '@/app/layouts/resolve-module-breadcrumb'
 
 function module(nav: ErpModule['nav'], entity?: string): ErpModule {
   return { id: 'x', title: 'X', path: '/x', enabled: true, entity, nav } as ErpModule
@@ -591,6 +592,24 @@ describe('Tra cứu thị trường — submenu thật (procurementModule)', () 
       expect(canAccessRoute(procurement as ErpModule, path, grants())).toBe(false)
       expect(canAccessRoute(procurement as ErpModule, path, grants('customs_price.read'))).toBe(true)
     }
+  })
+
+  //  bao-CR-718 — "Lô xuất của tôi" + chi tiết lô (đích chuông "xuất xong"): đòi `customs_price.export`, KHÔNG ăn
+  //  theo quyền đọc của mục cha; và không mọc mục mới trên menu trái.
+  it('the export batch routes require customs_price.export and stay off the left menu', () => {
+    for (const path of ['/procurement/customs-prices/exports', '/procurement/customs-prices/exports/12']) {
+      expect(canAccessRoute(procurement as ErpModule, path, grants('customs_price.read'))).toBe(false)
+      expect(
+        canAccessRoute(procurement as ErpModule, path, grants('customs_price.read', 'customs_price.export')),
+      ).toBe(true)
+    }
+    expect(customsChildren(grants('customs_price.read', 'customs_price.export'))).not.toContain(
+      '/procurement/customs-prices/exports',
+    )
+    //  Breadcrumb + mục sáng: "Thu mua › Tra cứu thị trường › Giá thị trường" — lô sinh từ thẻ Danh sách.
+    const crumb = resolveModuleBreadcrumb(procurement as ErpModule, '/procurement/customs-prices/exports/12')
+    expect(crumb.current?.label).toBe('Tra cứu thị trường')
+    expect(crumb.activeChild?.label).toBe('Giá thị trường')
   })
 
   //  "Cấu hình" có hai mức quyền trên hai khóa: QUẢN LÝ `customs_price` (từ khóa + đồng

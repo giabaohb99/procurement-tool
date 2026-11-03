@@ -43,7 +43,7 @@ HQ1..HQ5 và cụm yêu cầu chị Mi lên prod 01/10/2026, có bộ lọc đã
 | CN-HQ-10 | So sánh 2–5 mặt hàng trên cùng biểu đồ — [`10`](10-danh-sach-tinh-nang.md) B-05 | Người xem | Thẻ So sánh | Có | bao-CR-470 |
 | CN-HQ-11 | Tra theo hoạt chất và nhãn tự động Thành phẩm / Nguyên liệu — [`10`](10-danh-sach-tinh-nang.md) T-04, Y-08; [`02`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §10.1 | Người xem | Thẻ Danh sách | Có | bao-CR-470 · bao-CR-494 |
 | CN-HQ-12 | Bảng xếp hạng nhà nhập khẩu — [`10`](10-danh-sach-tinh-nang.md) T-05 | Người xem | Thẻ Nhà nhập khẩu | Có | bao-CR-470 |
-| CN-HQ-13 | Xuất Excel kết quả tra cứu — [`10`](10-danh-sach-tinh-nang.md) T-06 | Người có `customs_price.export` | Thẻ Danh sách | Có | bao-CR-470 |
+| CN-HQ-13 | Xuất Excel kết quả tra cứu: **xuất ngay** tới 50.000 dòng, hoặc **xuất toàn bộ chạy nền** (theo bộ lọc đang chọn, bỏ trống = cả bảng) chia tệp 50.000 dòng, chuông khi xong, màn tải từng tệp — [`10`](10-danh-sach-tinh-nang.md) T-06 | Người có `customs_price.export` | Thẻ Danh sách; màn Lô xuất | Có | bao-CR-470 · bao-CR-718 |
 | CN-HQ-14 | Lưu bộ lọc riêng từng người (có sẵn cột dùng chung, mặc định tắt) — [`10`](10-danh-sach-tinh-nang.md) Y-12; [`05`](../plans/05-giao-viec-cr496-luu-bo-loc-log-dong.md) | Người xem | Thanh lọc | Có | bao-CR-496 |
 | CN-HQ-15 | Danh mục hóa chất theo văn bản có ngưỡng (NĐ 24/2026 phụ lục I–IV, TT 75/2025, TT 01/2026), màn duyệt cả danh mục — [`10`](10-danh-sach-tinh-nang.md) P-01; [`02`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §10.2 | Người xem; người giữ `customs_regulation` | Thẻ Pháp lý | chưa ghi | bao-CR-470 |
 | CN-HQ-16 | Tra nghĩa vụ theo hoạt chất / CAS / công thức — [`10`](10-danh-sach-tinh-nang.md) P-03 | Người xem | Thẻ Pháp lý | chưa ghi | bao-CR-470 |
@@ -97,6 +97,19 @@ HQ1..HQ5 và cụm yêu cầu chị Mi lên prod 01/10/2026, có bộ lọc đã
 - **Luật nghiệp vụ:** hoạt chất suy ra từ tên hàng (nhận ra khoảng 51% số dòng mẫu); giá trị lấy từ tệp nạp mang cờ
   `*_from_file` thì nút *Gắn lại hoạt chất* không ghi đè; nhãn theo từ khóa (TC, TECH, TG, *kỹ thuật*, *nguyên liệu*),
   không khớp thì là Thành phẩm. Chi tiết: [`10`](10-danh-sach-tinh-nang.md) §0, N-09, Y-08.
+
+### CN-HQ-13 — Xuất toàn bộ chạy nền (bao-CR-718)
+
+- **Mục đích:** lấy được TOÀN BỘ dữ liệu (prod 328 nghìn dòng) hoặc toàn bộ dòng khớp bộ lọc ra Excel mà không treo màn
+  và không làm chậm hệ thống; nút xuất ngay cũ chặn ở 50.000 dòng.
+- **Luồng:** bấm *Xuất toàn bộ (chạy nền)* → hệ báo ngay tổng dòng + số tệp dự kiến (50.000 dòng / tệp) → chạy nền, màn lô
+  hiện tiến độ *tệp xong / tổng* → xong thì chuông *Xuất tra cứu thị trường xong — N tệp*; bấm chuông mở màn lô, tải từng tệp.
+- **Luật nghiệp vụ:** mỗi người một lô đang chạy (lô thứ hai báo 409 tới khi lô trước xong / dừng); dòng nạp SAU lúc bấm
+  không lọt vào; tệp cùng cột với nút xuất ngay (có cột ID + Thao tác) nên sửa xong nạp lại được; dòng trong tệp xếp
+  theo thứ tự nạp. Người xuất dừng được lô giữa chừng (tệp đã xong vẫn tải được). Tệp giữ `customs_export_keep_days`
+  ngày (mặc định 7) rồi tự dọn; mỗi tệp ghi một dòng nhật ký xuất (`tab_export_log`, màn Hệ thống › Xuất dữ liệu).
+- **Quyền:** `customs_price.export`. Xem / tải lô: chính người xuất, hoặc người có `customs_price.export` phạm vi tất cả.
+- **Thiết kế:** [kế hoạch CR-718](../plans/261103-tim-nhanh-xuat-lo-bao-cr-718/ke-hoach.md) §6; [`02-thiet-ke-ky-thuat.md`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §12.
 
 ### CN-HQ-15 — Danh mục hóa chất theo văn bản
 

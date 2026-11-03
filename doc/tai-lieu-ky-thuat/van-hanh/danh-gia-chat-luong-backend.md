@@ -185,3 +185,49 @@ thứ tự trường và số truy vấn giữ nguyên; chỉ dời mã.
   ghi / chuông) khi làm R3.
 - Ba hàm có cờ quyền dùng chung giữa route và kết quả (`_can_dispatch`, `_in_approve_scope`, `_can_return_requester`
   của YCMH) nằm ở `purchase_request/access.py` để serializer không phải import ngược controller.
+
+### 6.2. Đo sau đợt R3 — chẻ service + tách hàm rối cụm thu mua (bao-CR-715, 03/11/2026)
+
+Đo trên nhánh `erp-v2`, trước = `6a3ef106` (sau R2), sau = `1a13c151` (sáu commit a060cf09, 6de61ca1, 5f3bd03c,
+a0d86f18, fb9eb30c, 1a13c151). Không đổi hành vi: đường API, dữ liệu trả (cả thứ tự khóa), câu lỗi, thứ tự ghi và số
+truy vấn giữ nguyên; mọi chú thích ⚠️ đi theo mã.
+
+**Chẻ `service.py` theo bước nghiệp vụ.** `service.py` cũ của mỗi phân hệ nay là **cửa nhập lại** (re-export) mọi tên cũ,
+nên mọi nơi gọi `service.<tên>` (controller, serializer, trợ lý AI, cổng MCP, bài kiểm) không đổi một dòng.
+
+| Phân hệ | `service.py` trước → sau | Tệp con (dòng) |
+|---|---|---|
+| purchase_request | 1.901 → 42 | `base_service` 66 · `department_service` 362 · `edit_service` 466 · `dispatch_service` 175 · `lifecycle_service` 176 · `line_status_service` 405 · `query_service` 322 |
+| survey_request | 1.364 → 32 | `base_service` 82 · `edit_service` 247 · `line_service` 255 · `option_service` 205 · `lifecycle_service` 172 · `pr_link_service` 253 · `query_service` 217 |
+| purchase_order | 2.210 → 57 | `base_service` 117 · `item_service` 260 · `delivery_service` 187 · `import_cost_service` 474 · `cost_allocation_service` 342 · `progress_service` 162 · `edit_service` 473 · `query_service` 324 |
+
+- Tệp lớn nhất của ba thư mục nay là `purchase_request/option_service.py` **973** dòng (trước: `purchase_order/service.py`
+  2.210) — đạt mục tiêu không tệp nào quá 1.000 dòng.
+- `base_service` mỗi phân hệ giữ hằng dùng chung và hàm đọc nền, KHÔNG import tệp anh em; các tệp con import nhau theo
+  một chiều (không vòng). Tên tệp, vai trò từng tệp ghi ở docstring đầu `service.py`.
+- **Bẫy monkeypatch đã xử lý:** bài kiểm patch `service.dispatch_enabled` (YCMH) — hai chỗ gọi bên trong
+  (`recompute_status`, `skip_dispatch_for`) nay gọi QUA cửa `service` nên patch vẫn ăn. Bài kiểm patch
+  `highest_satisfied_step` (ĐMH) đổi sang patch `progress_service` (nơi `auto_advance_line` gọi). Sổ chỗ truyền mã động
+  của `test_bo_ma_hanh_dong_cr358.py` đổi khóa sang tệp con. Thêm hàm mới thì đặt vào tệp con đúng bước, rồi thêm tên vào
+  cửa; muốn monkeypatch thì patch ở tệp con định nghĩa hàm.
+
+**Tách hàm rối** (radon cc, trước → sau; hàm con mới ghi hạng cao nhất):
+
+| Hàm | Trước | Sau | Hàm con |
+|---|---|---|---|
+| ĐMH `item_service._save_items` | F 53 | B 10 | `_load_item_defaults` (4 truy vấn nạp một lần), `_fill_spec_and_invoice_name`, `_fill_money_defaults`, `_fill_expected_date` (C 13), `_block_identity_change_after_receipt`, `_delete_dropped_items` |
+| YCMH `option_service.generate_purchase_orders` | F 52 | A 4 | `_group_chosen_lines` (C 15), `_raise_if_nothing_to_order`, `_po_line_from_option` (C 14), `_option_delivery_note`, `_create_po_for_group` |
+| YCMH `serializer._out` | F 53 | B 6 | `_out_department_fields`, `_out_supplier_clusters`, `_out_action_flags` (C 11), `_out_people_and_signatures`, `_out_company_and_print_cells`, `_out_items`, `_out_item` (C 12) |
+| ĐMH `serializer._item` | E 36 | B 10 | `_item_identity`, `_item_quantities` (C 13), `_item_status` |
+
+- Số hàm hạng D–F của ba phân hệ: **32 → 28** (YCMH 13 → 11, YCBG 5 → 5, ĐMH 14 → 12). Độ phức tạp trung bình ba thư mục:
+  **B (5,59) → B (5,43)**, 599 → 621 khối.
+- **Bài kiểm chụp kết quả** (viết và chạy xanh trên mã cũ TRƯỚC khi tách, so nguyên khối gồm cả số câu truy vấn):
+  `test_chup_ket_qua_luu_dong_sinh_don_cr715.py` (7 ca: lưu dòng mới / sửa-khóa-xóa / đơn nhập khẩu độc lập / dòng đã
+  nhận hàng / sinh đơn theo phương án đủ bốn lý do bỏ qua / hai câu lỗi) và
+  `test_chup_ket_qua_serializer_thu_mua_cr715.py` (4 ca: `_out` YCMH có người xem đủ quyền, không người xem, thiếu
+  quyền NCC; `_item` ĐMH).
+- **Còn lại 28 hàm D–F chưa tách**, nặng nhất: ĐMH `_save_import_costs` F 45, `recompute_effects` F 43,
+  `_allocation_basis` E 35, `allocate_import_costs` E 34 (chi phí thu mua, phân bổ, công nợ, phiếu nhập kho ngầm); YCMH
+  `sync_from_purchase_orders` E 40; YCBG `create_prs` E 35, `create_option` E 32. Phần ĐMH đụng tiền và công nợ nên để
+  đợt riêng, mỗi hàm một bài kiểm chụp kết quả có số tiền.

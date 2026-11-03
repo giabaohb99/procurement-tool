@@ -43,11 +43,8 @@ def _delivery(d, pay=None) -> dict:
             "remaining": float(pay.remaining or 0) if pay else 0.0}
 
 
-def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None,
-          pr_expected: dict | None = None) -> dict:
-    dels = service.deliveries_of(db, it.id)
-    qty_order = float(it.qty_order or 0)
-    del_out = [_delivery(d, pay_by_del.get(d.id)) for d in dels]
+def _item_identity(it, inv_by_code: dict | None, pr_expected: dict | None) -> dict:
+    """Khối nhận diện + ngày của dòng ĐMH (phần đầu của `_item`, giữ thứ tự khóa)."""
     # Tên trên hóa đơn: ưu tiên giá trị lưu trên DÒNG; nếu dòng trống (phiếu tạo trước khi có
     # field / copy từ YCMH) thì suy từ SẢN PHẨM master theo product_code để modal + phiếu in
     # hiện đúng "tên trên hóa đơn" thay vì rơi về tên hàng hóa.
@@ -61,25 +58,47 @@ def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None,
             "expected_date": it.expected_date or "",
             # Ngày dự kiến ĐANG ghi trên dòng YCMH nguồn — CHỈ ĐỂ ĐỌC. FE so với ô bên trên để
             # bật popup cảnh báo lệch ngày; hệ thống không tự ghi ngược lên YCMH (CR-062).
-            "pr_expected_date": (pr_expected or {}).get((it.product_code or "").strip(), ""),
-            "unit": it.unit, "qty_request": float(it.qty_request or 0), "qty_order": qty_order,
+            "pr_expected_date": (pr_expected or {}).get((it.product_code or "").strip(), "")}
+
+
+def _item_quantities(it, qty_order: float) -> dict:
+    """Khối số lượng / tiền / tiền tệ / kích thước của dòng ĐMH."""
+    return {"unit": it.unit, "qty_request": float(it.qty_request or 0), "qty_order": qty_order,
             "price": float(it.price or 0), "vat": float(it.vat or 0), "amount": float(it.amount or 0),
             # bao-CR-319: `price` / `amount` / `order_total` là NGUYÊN TỆ theo `currency` của dòng;
             # `base_amount` và các số công nợ bên dưới (goods/paid/remaining) là bản QUY ĐỔI.
             "currency": it.currency or "", "exchange_rate": service.rate_of(it),
             "base_amount": float(it.base_amount or 0) or float(it.amount or 0),
             "weight_kg": float(it.weight_kg or 0), "dimension": it.dimension or "",
-            "qty_received": float(it.qty_received or 0), "qty_remaining": float(it.qty_remaining or 0),
-            # `line_status` / `progress_status` là MÃ (B-06); `*_label` là chữ để hiện.
-            # Giao diện đừng tự dịch mã sang tiếng Việt — dùng nhãn gửi kèm.
-            "line_status": it.line_status,
+            "qty_received": float(it.qty_received or 0), "qty_remaining": float(it.qty_remaining or 0)}
+
+
+def _item_status(it) -> dict:
+    """Khối trạng thái giao hàng + tiến độ của dòng ĐMH — trả MÃ kèm nhãn."""
+    # `line_status` / `progress_status` là MÃ (B-06); `*_label` là chữ để hiện.
+    # Giao diện đừng tự dịch mã sang tiếng Việt — dùng nhãn gửi kèm.
+    progress = it.progress_status or service.PROG_NOT_ORDERED
+    return {"line_status": it.line_status,
             "line_status_label": PO_ITEM_LINE_STATUS.label_of(it.line_status),
             "warehouse_code": it.warehouse_code, "note": it.note,
-            "progress_status": it.progress_status or service.PROG_NOT_ORDERED,
-            "progress_status_label": PO_PROGRESS_STATUS.label_of(
-                it.progress_status or service.PROG_NOT_ORDERED),
+            "progress_status": progress,
+            "progress_status_label": PO_PROGRESS_STATUS.label_of(progress),
             "pause_reason": it.pause_reason or "", "status_before_pause": it.status_before_pause or "",
-            "status_before_pause_label": PO_PROGRESS_STATUS.label_of(it.status_before_pause or ""),
+            "status_before_pause_label": PO_PROGRESS_STATUS.label_of(it.status_before_pause or "")}
+
+
+def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None,
+          pr_expected: dict | None = None) -> dict:
+    """Một dòng ĐMH kèm các lần giao và tiền theo dòng.
+
+    bao-CR-715: tách ba khối (`_item_identity`, `_item_quantities`, `_item_status`) ghép đúng thứ tự khóa cũ —
+    có bài kiểm chụp kết quả `test_chup_ket_qua_serializer_thu_mua_cr715.py`."""
+    dels = service.deliveries_of(db, it.id)
+    qty_order = float(it.qty_order or 0)
+    del_out = [_delivery(d, pay_by_del.get(d.id)) for d in dels]
+    return {**_item_identity(it, inv_by_code, pr_expected),
+            **_item_quantities(it, qty_order),
+            **_item_status(it),
             # Giao thiếu: tổng SL đã nhận < SL đặt (dùng cho badge cảnh báo ở FE)
             "is_short_delivery": bool(qty_order > 0 and float(it.qty_received or 0) + 0.001 < qty_order),
             # Tiền theo DÒNG: đặt hàng (SL đặt) · tiền hàng đã nhận (có công nợ) · đã trả · còn lại

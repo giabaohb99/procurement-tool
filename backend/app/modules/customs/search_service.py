@@ -130,13 +130,20 @@ def expand_term(term: str, groups: list[list[str]]) -> list[str]:
     return seen
 
 
-def _like_any(variants: list[str], include_ingredient: bool):
+def ci_like(col, pattern: str, mysql: bool):
+    """LIKE không phân biệt hoa thường. bao-CR-718: trên MySQL cột đã mang collation `_ci` nên LIKE thường đã không
+    phân biệt hoa / thường (và dấu) — `ilike` bọc thêm LOWER() hai vế làm dò 328 nghìn dòng chậm thêm ~20%. SQLite (bộ
+    test) giữ `ilike`."""
+    return col.like(pattern) if mysql else col.ilike(pattern)
+
+
+def _like_any(variants: list[str], include_ingredient: bool, mysql: bool = False):
     conds = []
     for v in variants:
         like = f"%{v}%"
-        conds.append(CustomsLine.product_name.ilike(like))
+        conds.append(ci_like(CustomsLine.product_name, like, mysql))
         if include_ingredient:
-            conds.append(CustomsLine.active_ingredient.ilike(like))
+            conds.append(ci_like(CustomsLine.active_ingredient, like, mysql))
     return or_(*conds)
 
 
@@ -150,8 +157,9 @@ def build_keyword_condition(db: Session, raw: str):
     if parsed.empty:
         return None
     groups = load_synonym_groups(db) if parsed.include or parsed.exclude else []
-    conds = [_like_any(expand_term(t, groups), include_ingredient=True) for t in parsed.include]
-    conds += [not_(_like_any(expand_term(t, groups), include_ingredient=False)) for t in parsed.exclude]
+    mysql = db.get_bind().dialect.name == "mysql"
+    conds = [_like_any(expand_term(t, groups), include_ingredient=True, mysql=mysql) for t in parsed.include]
+    conds += [not_(_like_any(expand_term(t, groups), include_ingredient=False, mysql=mysql)) for t in parsed.exclude]
     return and_(*conds)
 
 

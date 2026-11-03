@@ -384,3 +384,58 @@ export interface CustomsParty {
   /** Rỗng với đối tác nước ngoài (không có mã). */
   tax_code: string
 }
+
+// ── bao-CR-718: lô XUẤT TOÀN BỘ chạy nền, chia nhiều tệp ───────────────────────────────────
+/**
+ * Trạng thái lô xuất — khớp `CustomsExportStatus` ở `backend/app/modules/customs/constants.py`.
+ * Bộ mã này KHÔNG nằm trong sổ sinh tự động `shared/constants/statuses.ts`, nên nhãn hiển thị lấy
+ * thẳng `status_label` của backend; ở đây chỉ giữ mã để chọn màu huy hiệu và nhánh hành vi.
+ */
+export const CUSTOMS_EXPORT_STATUS = {
+  queued: 1,
+  running: 2,
+  done: 3,
+  failed: 4,
+  cancelled: 5,
+  expired: 6,
+} as const
+
+/** Một tệp đã ghi xong của lô. `available = false` khi tệp đã quá hạn giữ và bị dọn. */
+export interface CustomsExportFile {
+  part: number
+  filename: string
+  rows: number
+  /** Byte. */
+  size: number
+  available: boolean
+}
+
+export interface CustomsExportBatch {
+  id: number
+  status: number
+  status_label: string
+  /** Câu tiếng Việt do backend dựng, vd "Tên hàng: abamectin · Mã HS: 3808" hoặc "Toàn bộ dữ liệu". */
+  filter_summary: string
+  filters: Record<string, unknown>
+  total_rows: number
+  rows_per_file: number
+  /** Số tệp dự kiến; lúc xong là số tệp thật. */
+  file_count: number
+  files_done: number
+  rows_done: number
+  error: string | null
+  files: CustomsExportFile[]
+  created_at: string | null
+  created_by: number | null
+  started_at: string | null
+  finished_at: string | null
+  /** `null` = giữ mãi (cấu hình số ngày giữ = 0). */
+  expires_at: string | null
+  /** Đang chờ hoặc đang xuất — còn phải hỏi lại tiến độ. */
+  active: boolean
+}
+
+export interface CustomsExportBatchList {
+  total: number
+  items: CustomsExportBatch[]
+}

@@ -3,6 +3,7 @@ import {
   ChartColumnBig,
   ClipboardCheck,
   ClipboardList,
+  FileStack,
   FileText,
   Landmark,
   LayoutDashboard,
@@ -131,9 +132,13 @@ export const procurementModule: ErpModule = {
           //  Mục ở đường gốc — không `end` thì nó sáng lây ở mọi mục con; bốn thẻ còn lại
           //  có đường riêng nên khai `matchPaths` để mục vẫn sáng khi đang đứng ở thẻ đó.
           end: true,
-          matchPaths: CUSTOMS_TAB_SECTIONS.filter((section) => section.key !== 'list').map(
-            (section) => buildCustomsSectionPath(section.key),
-          ),
+          //  bao-CR-718: thêm "Lô xuất của tôi" (+ chi tiết lô) — lô sinh từ thẻ Danh sách nên mục này sáng.
+          matchPaths: [
+            ...CUSTOMS_TAB_SECTIONS.filter((section) => section.key !== 'list').map((section) =>
+              buildCustomsSectionPath(section.key),
+            ),
+            appRoutes.procurement.customsExports,
+          ],
         },
         //  Bốn thẻ còn lại: mục ẨN — không vẽ trên menu, nhưng giữ khóa quyền của chính nó
         //  cho `canAccessRoute` và là đích của `matchPaths` phía trên (luật `hidden`).
@@ -156,6 +161,17 @@ export const procurementModule: ErpModule = {
             alsoReadable: ['customs_regulation' as const],
           }),
         })),
+        //  bao-CR-718 — "Lô xuất của tôi" + chi tiết lô: mục ẨN (vào từ menu nút Xuất dữ liệu / chuông),
+        //  khai riêng để `canAccessRoute` đòi `customs_price.export` thay vì quyền đọc của mục cha. Mục
+        //  "Giá thị trường" trỏ tới nó qua `matchPaths` (luật mục ẩn) — breadcrumb: Tra cứu thị trường › Giá thị trường.
+        {
+          label: 'Lô xuất của tôi',
+          path: appRoutes.procurement.customsExports,
+          icon: FileStack,
+          entity: 'customs_price' as const,
+          action: 'export' as const,
+          hidden: true,
+        },
       ],
     },
     {
@@ -390,6 +406,21 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.customsPesticideDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/customs-pesticide-detail-page')).CustomsPesticideDetailPage,
+      }),
+    },
+    //  bao-CR-718 — lô xuất toàn bộ chạy nền. Đường TĨNH `exports` khai TRƯỚC `:section` (router v7 vẫn xếp
+    //  đường tĩnh thắng, khai trước cho người đọc khỏi nghi); `exports` không phải khóa của `CUSTOMS_SECTIONS`
+    //  nên trang Tra cứu không bao giờ tự chuyển hướng nó.
+    {
+      path: appRoutes.procurement.customsExports,
+      lazy: async () => ({
+        Component: (await import('./pages/customs-export-list-page')).CustomsExportListPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.customsExportDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/customs-export-detail-page')).CustomsExportDetailPage,
       }),
     },
     {

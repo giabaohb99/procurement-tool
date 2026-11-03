@@ -6,7 +6,7 @@
 | Ngày | 03/11/2026 |
 | Người phụ trách | chưa giao (bản dựng tự động từ mã) |
 | Trạng thái | Nháp |
-| CR liên quan | bao-CR-712 |
+| CR liên quan | bao-CR-712 · bao-CR-718 |
 
 **Tra tham số đầy đủ:** trang `/docs` (Swagger do FastAPI sinh từ mã — dev `https://deverp.degoholding.vn/docs`, prod `https://erp.degoholding.vn/docs`), nhóm (tag) `customs`, `customs_price`, `customs_regulation`.
 Tệp này giữ phần Swagger không nói được: **quyền, phạm vi, luật nghiệp vụ, ai gọi**.
@@ -37,7 +37,12 @@ Mã backend: `customs`; danh mục dựng bằng `make_crud_router`: `/api/custo
 | GET | `/api/customs/imports/{bid}/rows/summary` | batch row summary | `customs_price.read` |  | |
 | POST | `/api/customs/kinds/retag` | Gắn lại hoạt chất + hàm lượng + nhãn Thành phẩm/Nguyên liệu cho MỌI dòng. | `customs_price.write` |  | |
 | GET | `/api/customs/lines` | get lines | `customs_price.read` |  | |
-| GET | `/api/customs/lines/export` | export lines | `customs_price.export` |  | |
+| GET | `/api/customs/lines/export` | export lines (xuất ngay, tối đa 50.000 dòng) | `customs_price.export` |  | màn Danh sách |
+| POST | `/api/customs/export-batches` | Tạo lô xuất toàn bộ theo bộ lọc (cùng tham số `/lines`), trả tổng dòng + số tệp dự kiến | `customs_price.export` | lô của mình | màn Danh sách |
+| GET | `/api/customs/export-batches` | Lô xuất của chính mình, mới nhất trước | `customs_price.export` | của mình | màn Lô xuất |
+| GET | `/api/customs/export-batches/{bid}` | Chi tiết lô: trạng thái, tiến độ, danh sách tệp | `customs_price.export` | người xuất hoặc phạm vi tất cả | màn Lô xuất (hỏi lại 3 giây khi đang chạy) |
+| POST | `/api/customs/export-batches/{bid}/cancel` | Dừng lô đang chờ / chạy | `customs_price.export` | chỉ người xuất | màn Lô xuất |
+| GET | `/api/customs/export-batches/{bid}/files/{part}` | Tải một tệp của lô | `customs_price.export` | người xuất hoặc phạm vi tất cả | màn Lô xuất |
 | DELETE | `/api/customs/lines/{line_id}` | bao-CR-608 — xóa tay một dòng; chụp bản trước khi xóa vào `tab_customs_line_change`. | `customs_price.delete` |  | |
 | GET | `/api/customs/lines/{line_id}` | get line | `customs_price.read` |  | |
 | PATCH | `/api/customs/lines/{line_id}` | bao-CR-608 — sửa tay một dòng; chụp bản trước khi sửa vào `tab_customs_line_change`. | `customs_price.write` |  | |
@@ -97,7 +102,13 @@ Chưa có — người phụ trách điền các trường mang luật nghiệp 
 
 ## 3. Lỗi riêng của phân hệ
 
-Chưa có.
+| Đường | Mã | Khi nào |
+|---|---|---|
+| `POST /export-batches` | 409 | Người gọi đang có một lô chờ / chạy (khóa UNIQUE `active_user_id`) |
+| `POST /export-batches` | 400 | Bộ lọc không có dòng nào |
+| `GET /export-batches/{bid}`, `/files/{part}` | 403 | Không phải người xuất và không có `customs_price.export` phạm vi tất cả |
+| `GET /export-batches/{bid}/files/{part}` | 404 | Tệp đã quá hạn giữ và bị dọn, hoặc không có tệp số đó |
+| `POST /export-batches/{bid}/cancel` | 400 | Lô đã kết thúc |
 
 ## 4. Bộ lọc danh sách
 
@@ -107,4 +118,5 @@ Chưa có.
 
 | Ngày | CR | Đổi gì (thêm / sửa / bỏ đường) |
 |---|---|---|
+| 03/11/2026 | bao-CR-718 | Thêm năm đường `/export-batches` (xuất toàn bộ chạy nền); `/lines` đếm qua đệm, `/options` qua đệm |
 | 03/11/2026 | bao-CR-712 | Dựng bản đầu từ mã |

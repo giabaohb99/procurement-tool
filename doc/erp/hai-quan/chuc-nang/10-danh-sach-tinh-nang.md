@@ -65,7 +65,7 @@ Tổng: **24 tính năng**, trong đó **13 thuộc đợt đầu**.
 | T-03 | Chi tiết một dòng hàng | Mở ra thấy đủ 32 trường của dòng hàng, đối tác nước ngoài, nước xuất xứ, điều kiện giao hàng, thuế suất | 1 | [ ] |
 | T-04 | Tra theo hoạt chất | Nối tên thương mại với **hoạt chất** — phần mềm ngoài có sẵn danh mục 6.900+ thuốc BVTV kèm hoạt chất. **Đây là thứ thu mua thật sự cần**: họ mua theo hoạt chất chứ không theo tên thương mại. Cần nạp danh mục đó thành một bảng riêng | 2 | [ ] |
 | T-05 | Bảng xếp hạng nhà nhập khẩu | Ai đang nhập mặt hàng này, lượng bao nhiêu — biết được thị trường ai đang gom | 2 | [ ] |
-| T-06 | Xuất Excel kết quả tra cứu | Theo khuôn xuất sẵn có của hệ | 2 | [~] |
+| T-06 | Xuất Excel kết quả tra cứu | Xuất ngay tới 50.000 dòng; xuất toàn bộ theo bộ lọc chạy nền chia tệp 50.000 dòng, chuông + màn *Lô xuất của tôi* (v2, bao-CR-718; v1 chỉ có xuất ngay) | 2 | [~] |
 
 ## 5. Nhóm B — Biểu đồ và bảng điều khiển
 

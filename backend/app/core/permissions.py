@@ -286,6 +286,13 @@ ACTION_LABELS = {
 # "dept_proc" (bao-CR-414, phòng ban tự mua hàng) = `proc` NHƯNG chỉ trong phòng mình: phiếu đã
 # duyệt mà phòng lập phiếu HOẶC phòng được nhờ xử lý (`handler_dept_id`) là một trong các phòng
 # của người xem. Dùng cho người quản lý thu mua của một phòng tự mua (nhà máy).
+#  bao-CR-720: entity NHẠY CẢM của thu mua. Vai trò người yêu cầu (`user.service.DEFAULT_ROLE_CODE`, mọi tài khoản mới
+#  tự nhận, hàng trăm người giữ) mà được tick Xem / Xuất ở đây thì màn Phân quyền hiện một dòng vàng nhắc (KHÔNG chặn lưu).
+#  Khai MỘT chỗ, giao diện chỉ đọc qua /api/roles/meta. Thêm entity thì thêm vào đây, không gõ ở frontend.
+SENSITIVE_PROCUREMENT_ENTITIES = ["supplier", "contract", "purchase_order", "payable", "payment_request",
+                                  "customs_price"]
+SENSITIVE_WARN_ACTIONS = ["read", "export"]
+
 SCOPES = ["own", "assigned", "proc", "dept_proc", "dept", "company", "all"]
 SCOPE_LABELS = {
     #  bao-CR-428: nhãn hai bậc `proc`/`dept_proc` viết TỔNG QUÁT (không gắn chữ "Thu mua"),
