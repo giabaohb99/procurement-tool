@@ -46,7 +46,7 @@ ENTITIES = [
     # `tab_work_list_member`), tách hai khóa chỉ đẻ thêm ô ma trận không ai hiểu.
     # Tên có tiền tố `work_` vì chữ "task" trần đã bị chiếm hai chỗ: task của bộ
     # máy duyệt và `/api/dashboard/tasks` (Việc cần làm). Xem
-    # `doc/erp/cong-viec/04-phan-quyen.md` §1.
+    # `doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md` §1.
     "work_task",
     # Phân hệ Nghỉ phép (CR-259). Bốn khóa vì bốn màn hình do BA nhóm người
     # khác nhau dùng, và gộp lại thì không tách được:
@@ -116,7 +116,7 @@ ENTITIES = [
     # ⚠️ Khai CỘT THẬT ở `SCOPE_FIELDS`, không PUBLIC: hồ sơ thuộc về một phòng
     # và một người, khác hẳn danh mục loại.
     "dossier",
-    # Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md). Bốn
+    # Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/tai-lieu-ky-thuat/04-phan-quyen.md). Bốn
     # khóa vì ba quyền của PS12 phải TÁCH được: xem sổ người khác
     # (`coffee_ledger.read` + scope rộng) · điều chỉnh tay (`coffee_ledger.write`)
     # · chạy đồng bộ (`pos_order.write`). Ví của tôi KHÔNG cần grant — đi endpoint

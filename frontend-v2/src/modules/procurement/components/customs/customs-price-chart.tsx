@@ -1,6 +1,6 @@
 // bao-CR-470 — thẻ "Biểu đồ" của màn Tra cứu giá hải quan (bản v2, recharts).
 //
-// Bốn luật lấy từ số liệu thật của ATRAZINE (doc/erp/hai-quan/04-giao-dien.md §4) —
+// Bốn luật lấy từ số liệu thật của ATRAZINE (doc/erp/hai-quan/chuc-nang/11-giao-dien.md §4) —
 // đừng "làm cho đẹp" mà bỏ:
 //   1. Tách theo đơn vị — kg và lít không vẽ chung (hàng chip đơn vị).
 //   2. Kỳ không có dòng nào để TRỐNG: không vẽ 0, không nối đường qua

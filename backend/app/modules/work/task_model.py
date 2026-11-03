@@ -1,7 +1,7 @@
 """Phân hệ Công việc — cụm việc: cột kanban · task · người phụ trách.
 
 Quy ước chung của phân hệ (employee_id, ngày dạng chuỗi, IntEnum) nằm ở đầu
-`model.py` — đọc trước. Thiết kế: `doc/erp/cong-viec/02-bang-du-lieu.md` §3.
+`model.py` — đọc trước. Thiết kế: `doc/erp/cong-viec/tai-lieu-ky-thuat/02-bang-du-lieu.md` §3.
 """
 from datetime import datetime
 

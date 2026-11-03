@@ -9,7 +9,7 @@ Luật bất biến — đọc trước khi sửa:
   - Số đã cấp cho một báo cáo thì GIỮ NGUYÊN mãi mãi, không gán lại cho báo cáo
     khác (một dòng `tab_report_access` cũ sẽ áp NHẦM báo cáo nếu số bị tái dùng).
   - Báo cáo bị bỏ thì để TRỐNG số đó (không dồn số xuống) — cùng luật với
-    `product_code` (xem `doc/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`).
+    `product_code` (xem `doc/erp/mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`).
   - Báo cáo mới → cấp số TIẾP THEO sau số lớn nhất đang có, không chèn vào giữa.
 
 Thuần stdlib (không import SQLAlchemy) vì `code_sets.py` phải nạp được ở máy

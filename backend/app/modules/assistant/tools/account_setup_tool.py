@@ -1,6 +1,6 @@
 """Tool lập BỘ TÀI KHOẢN thu mua qua Trợ lý AI (bao-CR-435) — tầng GHI có xác nhận.
 
-Ra đời từ hướng dẫn `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`:
+Ra đời từ hướng dẫn `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`:
 mỗi tài khoản đi qua bốn bước bấm tay, bộ B còn phải mở hộp Phạm vi tìm đúng ô "Loại trừ
 phòng ban". Tool này gom Bước 3 (gán vai trò) + Bước 4 (phạm vi) thành MỘT đề xuất:
 

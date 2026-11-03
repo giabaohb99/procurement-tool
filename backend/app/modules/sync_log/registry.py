@@ -142,7 +142,7 @@ def warning_labels(code: str = "") -> dict[str, str]:
 # --- Các nguồn đã khai -----------------------------------------------------
 
 #: App đặt xe / duyệt dấu cũ (Cloudflare Worker + Firebase Realtime Database).
-#: Xem doc/dong-bo-dat-xe-duyet-dau/.
+#: Xem doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/.
 SOURCE_DATXE = "datxe"
 
 register_source(

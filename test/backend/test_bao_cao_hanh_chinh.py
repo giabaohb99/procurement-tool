@@ -1,6 +1,6 @@
 """Báo cáo Hành chính (phase 05, 5.1 + 5.2) — Đặt xe & Duyệt đóng dấu.
 
-Test matrix của `plans/260928-0841-bao-cao-kieu-haravan-da-phan-he/phase-05-admin-reports.md`:
+Test matrix của `doc/plans/260928-0841-bao-cao-kieu-haravan-da-phan-he/phase-05-admin-reports.md`:
 
 - Đặt xe: kỳ lọc theo NGÀY ĐI (`start_time`), bỏ `BK_DRAFT`, scope phòng ban (`apply_scope`
   thật — không mock) + nhánh TÀI XẾ chỉ thấy chuyến được phân.

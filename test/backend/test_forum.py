@@ -1,4 +1,4 @@
-"""F0 Diễn đàn — điều kiện đủ của phase (doc/erp/dien-dan/02-lo-trinh-phase.md):
+"""F0 Diễn đàn — điều kiện đủ của phase (doc/erp/dien-dan/plans/02-lo-trinh-phase.md):
 enum trạng thái chừa pending_review (QĐ-D2) + ràng buộc unique like + FILE_POLICY chỉ ảnh.
 
 Chưa có API nào để gọi — F0 chỉ chốt NỀN dữ liệu và các dây đăng ký, nên test

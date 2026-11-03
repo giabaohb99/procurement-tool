@@ -12,7 +12,7 @@ Chạy trong container api:
 Idempotent: xóa nguyên cây cùng tiêu đề gốc rồi dựng lại ở đúng vị trí cũ (xem `help_seed_common.py`).
 
 ⚠️ Phải KHỚP với cẩm nang trợ lý `app/modules/ai_skill/seed_handbook/30-du-an-cong-viec.md` (đẩy lên hệ đang chạy
-bằng `scripts/publish_handbook_update.py`) và `doc/erp/cong-viec/01-danh-sach-tinh-nang.md`.
+bằng `scripts/publish_handbook_update.py`) và `doc/erp/cong-viec/chuc-nang/11-danh-sach-tinh-nang.md`.
 """
 from help_seed_common import rebuild_tree, ref
 

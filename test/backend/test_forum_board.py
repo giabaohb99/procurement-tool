@@ -1,5 +1,5 @@
 """F13a Diễn đàn — chuyên mục kiểu VOZ. Điều kiện đủ của phase
-(doc/erp/dien-dan/02-lo-trinh-phase.md):
+(doc/erp/dien-dan/plans/02-lo-trinh-phase.md):
 
   1. box ẩn (hoặc không tồn tại, hoặc là nhóm tiêu đề) không nhận bài;
   2. có `board_id` mà thiếu tiêu đề bị 400;

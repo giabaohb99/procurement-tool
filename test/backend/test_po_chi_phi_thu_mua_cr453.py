@@ -1,5 +1,5 @@
 """bao-CR-453 — chi phí thu mua BA GIAI ĐOẠN (Dự toán → Tạm tính → Quyết toán) + danh mục
-loại chi phí. Thiết kế: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`.
+loại chi phí. Thiết kế: `doc/erp/nhap-khau/chuc-nang/11-chi-phi-thu-mua.md`.
 
 Luật phải giữ:
 1. Đơn mới ở Dự toán. Chốt lên giai đoạn trên thì cột trống được CHÉP số từ giai đoạn dưới,
@@ -21,7 +21,7 @@ from fastapi import HTTPException
 from app.modules.payable.model import Payable
 from app.modules.purchase_order import cost_type as ct
 from app.modules.purchase_order import service
-from app.modules.purchase_order.controller import _out
+from app.modules.purchase_order.serializer import _out
 from app.modules.purchase_order.model import (CostStage, ImportCostType, OrderType, POCost,
                                               POCostType, PurchaseOrder)
 from app.modules.purchase_order.schema import POImportCostIn, POItemIn

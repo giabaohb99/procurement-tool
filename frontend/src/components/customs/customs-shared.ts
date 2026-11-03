@@ -1,5 +1,5 @@
 // bao-CR-470 — phần dùng chung của màn Tra cứu giá hải quan (bản cũ).
-// Thiết kế: doc/erp/hai-quan/04-giao-dien.md.
+// Thiết kế: doc/erp/hai-quan/chuc-nang/11-giao-dien.md.
 import { useLayoutEffect, useRef, useState } from 'react'
 import { fmtPrice, fmtVND } from '../../utils/money'
 

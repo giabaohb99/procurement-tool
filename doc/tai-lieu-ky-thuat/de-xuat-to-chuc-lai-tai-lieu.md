@@ -117,8 +117,8 @@ Ba thứ này **công cụ (Claude Code, Codex) đọc thẳng theo đường d�
 | `doc/tai-lieu-chuc-nang/14, 15` | `doc/erp/van-thu/chuc-nang/` |
 | `doc/tai-lieu-chuc-nang/16-du-an-cong-viec` | `doc/erp/cong-viec/chuc-nang/` |
 | `doc/tai-lieu-chuc-nang/17-nghi-phep`, `18-dat-phong-hop` | `doc/erp/hrm/chuc-nang/` |
-| `doc/tai-lieu-chuc-nang/16-dat-xe`, `doc/dat-xe-duyet-dau/`, `doc/dong-bo-dat-xe-duyet-dau/` | `doc/erp/dat-xe/` (`chuc-nang/`, `plans/`, `tai-lieu-ky-thuat/dong-bo-app-cu/`) |
-| `doc/tai-lieu-chuc-nang/17-duyet-dau`, `doc/duyet-dau/` | `doc/erp/duyet-dau/` |
+| `doc/tai-lieu-chuc-nang/16-dat-xe`, `doc/erp/dat-xe/plans/dat-xe-duyet-dau/`, `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/` | `doc/erp/dat-xe/` (`chuc-nang/`, `plans/`, `tai-lieu-ky-thuat/dong-bo-app-cu/`) |
+| `doc/tai-lieu-chuc-nang/17-duyet-dau`, `doc/erp/duyet-dau/plans/duyet-dau-phase/` | `doc/erp/duyet-dau/` |
 | `doc/tai-lieu-chuc-nang/09, 10, 11, 13` | `doc/erp/nen-tang/chuc-nang/` |
 | `doc/erp/hrm/*.md` hiện có | `doc/erp/hrm/chuc-nang/` (bản chức năng) hoặc `tai-lieu-ky-thuat/`; `doc/erp/tham-khao-hrm/` → `doc/erp/hrm/nghien-cuu/` |
 | `doc/erp/item, inventory, receiving, delivery, batch-serial` | `mat-hang, kho, nhan-hang, xuat-hang, lo-serial` (`00-nghien-cuu-*` → `nghien-cuu/`) |
@@ -127,7 +127,7 @@ Ba thứ này **công cụ (Claude Code, Codex) đọc thẳng theo đường d�
 | `plans/<kế hoạch>` ở gốc repo, `frontend-v2/plans/*` | `doc/erp/<phan-he>/plans/<kế hoạch>` theo phân hệ chính của kế hoạch; kế hoạch nhiều phân hệ → `doc/plans/`; `plans/reports/` lẻ → theo phân hệ |
 | `doc/huong-dan-su-dung/van-ban/*.pdf` | `doc/erp/van-thu/du-lieu/` (đổi tên tệp có dấu và khoảng trắng) |
 | `doc/v1/yeu-cau/`, `doc/v1/kiem-thu/`, `doc/v1/thiet-ke/`, `doc/v1/chung/`, `doc/v1/du-lieu/sheet/`, `doc/v1/du-lieu/datamau/`, `doc/v1/tasks.md`, `doc/v1/task-process.md` | `doc/v1/…` (`datamau` có 2 chỗ trong mã trỏ tới — sửa cùng commit) |
-| `doc/testcase-bao/` | `doc/erp/thu-mua/kiem-thu/` (vẫn dùng cho V2) |
+| `doc/erp/thu-mua/kiem-thu/` | `doc/erp/thu-mua/kiem-thu/` (vẫn dùng cho V2) |
 | `doc/v1/du-lieu/danh-sach-tinh-nang.xlsx` | `doc/v1/du-lieu/` |
 
 ---

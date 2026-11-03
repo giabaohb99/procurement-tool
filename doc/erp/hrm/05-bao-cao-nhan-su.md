@@ -7,7 +7,7 @@
 | Giao diện | `frontend-v2/` (cổng 8083), menu *Báo cáo* ▸ nhóm «Nhân sự» |
 | Mã nguồn backend | `modules/employee/report_*.py` · `modules/leave/report_*.py` · `modules/leave/balance_report_*.py` · khóa ở `core/report_keys.py` |
 | Mã nguồn frontend | `modules/report/config/report-catalog-hr.ts` · `modules/report/pages/*-report-page.tsx` |
-| Tài liệu khung báo cáo | `doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md` |
+| Tài liệu khung báo cáo | `doc/erp/thu-mua/chuc-nang/17-he-thong-bao-cao.md` |
 
 **Cách đọc:** mỗi **nhóm** (A–F) gom các mẫu báo cáo cùng đề tài. Mỗi **mẫu** có một câu «trả lời câu hỏi gì», sau đó chia thành **ý chính**, dưới mỗi ý chính là các **ý nhỏ** (chỉ số hoặc danh sách cụ thể).
 

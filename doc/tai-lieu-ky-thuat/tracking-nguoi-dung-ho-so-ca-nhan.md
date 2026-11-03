@@ -259,9 +259,9 @@ Không có phần này thì mục 3.2 chỉ dừng ở mức phân hệ. Đề x
 | Giữ số gom «lâu dài» | 3 năm | chủ sản phẩm chốt |
 | Thu thập mặc định TẮT | mặc định **BẬT** (có công tắc) | chủ sản phẩm chốt |
 | Đường đi A→B→C trên toàn cửa sổ | chỉ **tuần cuối** của cửa sổ, từ sự kiện thô (còn trong 90 ngày) | giới hạn bộ nhớ job (~30k dòng/tuần) |
-| Chỉ số HOÃN / BỎ | xem `plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md` và `metric_catalog.DEFERRED_METRICS`: duyệt YCMH/ĐMH ngoài bộ máy duyệt · tách bình luận mình/người khác · lỗi 422 theo trường · quyền 90 ngày không dùng · chủ đề hay hỏi trợ lý AI | thiếu nguồn tin cậy hoặc trái nguyên tắc §7.4 |
+| Chỉ số HOÃN / BỎ | xem `doc/erp/nen-tang/plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md` và `metric_catalog.DEFERRED_METRICS`: duyệt YCMH/ĐMH ngoài bộ máy duyệt · tách bình luận mình/người khác · lỗi 422 theo trường · quyền 90 ngày không dùng · chủ đề hay hỏi trợ lý AI | thiếu nguồn tin cậy hoặc trái nguyên tắc §7.4 |
 
-Công thức và nguồn từng chỉ số: bảng ở `plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md`; mã: `backend/app/modules/usage_profile/` (`metric_catalog.py` là danh mục khóa cố định).
+Công thức và nguồn từng chỉ số: bảng ở `doc/erp/nen-tang/plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md`; mã: `backend/app/modules/usage_profile/` (`metric_catalog.py` là danh mục khóa cố định).
 
 ---
 

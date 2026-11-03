@@ -183,7 +183,7 @@ def test_ma_cach_chia_la_thi_coi_nhu_theo_gia_tri():
 
 # ── Đi qua controller: khóa `import_cost_allocation` có trong payload chi tiết/in ──
 def test_out_tra_phan_bo_tinh_tu_du_lieu_da_luu(db, seed):
-    from app.modules.purchase_order.controller import _out
+    from app.modules.purchase_order.serializer import _out
 
     po = PurchaseOrder(code="PO-NK-P4", company_id=seed.company_id, supplier_code="NX",
                        supplier_name=seed.sup_name, order_date="2026-09-08", status="draft",

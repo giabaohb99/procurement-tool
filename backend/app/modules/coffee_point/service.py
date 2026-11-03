@@ -1,6 +1,6 @@
 """Nghiệp vụ Điểm cà phê — sổ cái, reset kỳ, xử lý đơn POS365.
 
-Hai luật cứng của tệp này (xem `doc/erp/diem-ca-phe/02-bang-du-lieu.md`):
+Hai luật cứng của tệp này (xem `doc/erp/diem-ca-phe/tai-lieu-ky-thuat/02-bang-du-lieu.md`):
 
 1. **`append_ledger` là ĐƯỜNG GHI SỔ DUY NHẤT.** Controller và task đều gọi nó; chỉ
    nó biết luật `uniq_key` và `reason` bắt buộc. Không chỗ nào `db.add(CoffeeLedger)`.

@@ -11,7 +11,7 @@ Chạy trong container api (LOCAL / dev — KHÔNG chạy ở prod khi đại ca
 Idempotent: đã có bài cùng tiêu đề dưới đúng nhóm thì xóa bài đó (kèm bài con, nếu có) rồi
 chèn lại ở nguyên chỗ cũ. Thiếu nhóm cha thì DỪNG, không tự tạo bài gốc.
 
-Nội dung phải KHỚP với doc/erp/hai-quan/04-giao-dien.md và màn /customs-prices. Không nêu
+Nội dung phải KHỚP với doc/erp/hai-quan/chuc-nang/11-giao-dien.md và màn /customs-prices. Không nêu
 tên doanh nghiệp có trong dữ liệu.
 """
 import sys

@@ -1,6 +1,6 @@
 """Đọc tệp danh mục thuốc BVTV — mục "Thuốc BVTV" của Tra cứu thị trường (29/09/2026).
 
-Nhận ĐÚNG hai tệp mà bản cào danhmuc.thuocbvtv.com xuất ra (`plans/260928-1553-thuoc-bvtv-danh-muc/`):
+Nhận ĐÚNG hai tệp mà bản cào danhmuc.thuocbvtv.com xuất ra (`doc/erp/hai-quan/plans/260928-1553-thuoc-bvtv-danh-muc/`):
   · `thuoc-bvtv.json`  — mảng lồng nhau, mỗi thuốc mang sẵn `pham_vi_su_dung`;
   · `thuoc-bvtv.xlsx`  — sheet "Danh sach thuoc" + sheet "Pham vi su dung" (dòng phẳng, nối bằng `id`).
 

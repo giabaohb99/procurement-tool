@@ -7,7 +7,7 @@
 | Mốc so sánh | ERPNext **v16.53.0** trên site học (VPS 2, container `erpnext-hoc-backend-1`, site `frontend`), mã nguồn `apps/erpnext/erpnext/stock/doctype/batch`, `serial_no`, `serial_and_batch_bundle`, `serial_and_batch_entry`, `pick_list`, `manufacturing/doctype/work_order`; tài liệu chính thức ở `docs.frappe.io/erpnext` (trước đây `docs.erpnext.com`) |
 | Mã soát | nhánh `erp-v2` ngày 02/11/2026, `backend/app/modules/inventory`, `goods_receipt`, `product`, `purchase_order`, `dossier` |
 | Tính chất | Tài liệu nghiên cứu. Không sửa mã, không đổi dữ liệu |
-| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 4.6 và 8.2 việc 2.10 · [10 Nghiệp vụ kho](../../nghien-cuu/10-nghiep-vu-kho.md) tình huống A4, B3 · [11 Độ phủ thu mua, kho](../../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) dòng A3 · [san-xuat/00](../../san-xuat/00-tong-quan-nghiep-vu.md) câu A3 · [Mô hình dữ liệu sản phẩm](../../../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) |
+| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 4.6 và 8.2 việc 2.10 · [10 Nghiệp vụ kho](../../kho/nghien-cuu/10-nghiep-vu-kho.md) tình huống A4, B3 · [11 Độ phủ thu mua, kho](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) dòng A3 · [san-xuat/00](../../san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md) câu A3 · [Mô hình dữ liệu sản phẩm](../../mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) |
 
 ## Mục lục
 
@@ -221,9 +221,9 @@ Tìm các tên `lot_no`, `lot_code`, `batch_no`, `expiry_date`, `mfg_date`, `she
 
 ### 4.3. Thứ làm ngoài ERP
 
-- Sheet **Kết quả KCS Kho Dr Xanh**: mỗi lần nhận thành phẩm, kho ghi ngày nhận, mã và tên hàng, số yêu cầu và số thực nhận, **ngày sản xuất, số lô, hạn dùng**, phụ kiện, ngoại dạng, chứng từ NCC, số đạt và không đạt ([08 câu C54](../../nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md)).
-- **Sự cố sau sản xuất**: Kinh doanh gửi ảnh, mã, **ngày sản xuất**, số lượng; người xử lý sự cố đưa phương án; Kinh doanh **thu hồi hàng** ([07 mục 6](../../nghien-cuu/07-san-xuat-khao-sat-tra-loi-chung-2610.md)). Không có lô trên hệ thống thì không trả lời được câu *lô đó đã bán cho ai*.
-- **Xuất kho mẫu cho Lab** đi qua MISA, do Kinh doanh xuất ([08 câu C63](../../nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md)).
+- Sheet **Kết quả KCS Kho Dr Xanh**: mỗi lần nhận thành phẩm, kho ghi ngày nhận, mã và tên hàng, số yêu cầu và số thực nhận, **ngày sản xuất, số lô, hạn dùng**, phụ kiện, ngoại dạng, chứng từ NCC, số đạt và không đạt ([08 câu C54](../../san-xuat/nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md)).
+- **Sự cố sau sản xuất**: Kinh doanh gửi ảnh, mã, **ngày sản xuất**, số lượng; người xử lý sự cố đưa phương án; Kinh doanh **thu hồi hàng** ([07 mục 6](../../san-xuat/nghien-cuu/07-san-xuat-khao-sat-tra-loi-chung-2610.md)). Không có lô trên hệ thống thì không trả lời được câu *lô đó đã bán cho ai*.
+- **Xuất kho mẫu cho Lab** đi qua MISA, do Kinh doanh xuất ([08 câu C63](../../san-xuat/nghien-cuu/08-san-xuat-cau-tra-loi-trich-duoc-2610.md)).
 
 ---
 
@@ -231,7 +231,7 @@ Tìm các tên `lot_no`, `lot_code`, `batch_no`, `expiry_date`, `mfg_date`, `she
 
 ### 5.1. Câu A3 đang ở đâu
 
-Câu A3 (*có theo dõi lô và hạn dùng không, khách có đòi truy xuất ngược không*) có ở [san-xuat/00 mục 14](../../san-xuat/00-tong-quan-nghiep-vu.md), là câu S2 ở doc 01 và câu C5 ở [kế hoạch theo module](../../../plans/00-ke-hoach-theo-module.md). Doc 01 việc 2.10 chỉ làm lô *nếu* A3 là có. Khảo sát 24/10 ([02 mục 7](../../nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md)) ghi *chưa ai nói*, đã đặt câu hỏi lại H-J cho CV Điều phối NL/BTP và Kế toán. Khảo sát 26/10 cũng chưa trả lời thẳng câu này.
+Câu A3 (*có theo dõi lô và hạn dùng không, khách có đòi truy xuất ngược không*) có ở [san-xuat/00 mục 14](../../san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md), là câu S2 ở doc 01 và câu C5 ở [kế hoạch theo module](../../../plans/00-ke-hoach-theo-module.md). Doc 01 việc 2.10 chỉ làm lô *nếu* A3 là có. Khảo sát 24/10 ([02 mục 7](../../san-xuat/nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md)) ghi *chưa ai nói*, đã đặt câu hỏi lại H-J cho CV Điều phối NL/BTP và Kế toán. Khảo sát 26/10 cũng chưa trả lời thẳng câu này.
 
 **Nhưng câu trả lời gián tiếp đã có:** kho đang ghi số lô, ngày sản xuất, hạn dùng cho từng lần nhận thành phẩm (mục 4.3), và luật bắt buộc in chúng trên nhãn (mục 5.2). Câu còn phải hỏi không phải là *có cần không* mà là **áp tới đâu** (mục 9).
 
@@ -257,7 +257,7 @@ Câu A3 (*có theo dõi lô và hạn dùng không, khách có đòi truy xuất
 
 ## 6. Bảng fit-gap và tỷ lệ phủ
 
-Cách chấm theo [doc 11 mục 2](../../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md#2-cách-chấm): **Có** = 1, **Một phần** = 0,5, **Chưa** = 0. Cột *DEGO cần* là đề xuất của mục 7.
+Cách chấm theo [doc 11 mục 2](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md#2-cách-chấm): **Có** = 1, **Một phần** = 0,5, **Chưa** = 0. Cột *DEGO cần* là đề xuất của mục 7.
 
 | # | Chức năng | ERPNext v16 | ERP DEGO | Điểm | DEGO cần |
 |---|---|---|---|---|---|
@@ -332,7 +332,7 @@ Cờ đặt **theo từng mã** nhưng nên có **mặc định theo phân loạ
 
 **Năm quyết định thiết kế:**
 
-1. **Lô là chiều của tồn kho, không phải biến thể sản phẩm.** `tab_product` vẫn là SKU, `product_code` vẫn là hạt của bảy bảng. Lô thêm một chiều cho **sổ kho và tồn kho** như kho đang là một chiều. Không thêm bảng nào **dưới** `tab_product` theo nghĩa biến thể, đúng [mục 11 của mô hình dữ liệu sản phẩm](../../../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md#11-cấm-làm). ERPNext cũng làm vậy: `Batch` trỏ tới `Item`, không thay `Item`.
+1. **Lô là chiều của tồn kho, không phải biến thể sản phẩm.** `tab_product` vẫn là SKU, `product_code` vẫn là hạt của bảy bảng. Lô thêm một chiều cho **sổ kho và tồn kho** như kho đang là một chiều. Không thêm bảng nào **dưới** `tab_product` theo nghĩa biến thể, đúng [mục 11 của mô hình dữ liệu sản phẩm](../../mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md#11-cấm-làm). ERPNext cũng làm vậy: `Batch` trỏ tới `Item`, không thay `Item`.
 2. **Một dòng chứng từ một lô.** Một lần giao có hai lô thì tách hai dòng. Không dựng *Serial and Batch Bundle*: ERPNext cần nó chủ yếu vì serial; với lô thuần, tách dòng là đủ và báo cáo không phải nối thêm hai bảng.
 3. **Không tính giá theo lô.** Giá vẫn bình quân theo (công ty, kho, mã hàng) như `tab_inventory` hiện tại, cho tới khi kế toán chốt câu K3 ở doc 01. Lô chỉ theo dõi **số lượng, ngày, nguồn gốc**. Đây chính là cấu hình `do_not_use_batchwise_valuation` của ERPNext.
 4. **Hết hạn suy ra từ ngày, không lưu cột.** Đi đúng khuôn `dossier/expiry.py`. Trạng thái do người đặt (dùng được, tạm giữ chờ kiểm, khóa) lưu `SMALLINT` + `IntEnum`.
@@ -363,7 +363,7 @@ Cờ đặt **theo từng mã** nhưng nên có **mặc định theo phân loạ
 
 ## 8. Kế hoạch theo nấc
 
-Đặt **sau kho lõi**, cụ thể là gắn vào nấc 2 *Kho đúng chuẩn* của [doc 01 mục 8.2](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md#82-nấc-2--kho-đúng-chuẩn). Độ lớn ước theo ngày làm của một người, chưa tính viết tài liệu yêu cầu và HDSD.
+Đặt **sau kho lõi**, cụ thể là gắn vào nấc 2 *Kho đúng chuẩn* của [doc 01 mục 8.2](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md#82-nấc-2--kho-đúng-chuẩn). Độ lớn ước theo ngày làm của một người, chưa tính viết tài liệu yêu cầu và HDSD.
 
 | Nấc | Nội dung | Phụ thuộc | Độ lớn | Phủ sau nấc |
 |---|---|---|---|---|
