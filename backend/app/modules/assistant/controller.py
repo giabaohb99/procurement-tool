@@ -176,7 +176,7 @@ def usage_summary(days: int = 30, user=Depends(require("assistant", "export")),
     `_PUR_MANAGER_PERMS` quét cả `ENTITIES` trừ tập đó rồi cấp đủ 8 action. Nghĩa
     là vai trò ấy mở được bảng chi phí của MỌI người. Muốn đóng thì thêm
     "assistant" vào `_SYS_ENTITIES` rồi cấp lại tường minh cho đúng vai trò —
-    xem `doc/erp/tai-lieu-ai/01-kien-truc-tro-ly-ai.md` §6.2.
+    xem `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/01-kien-truc-tro-ly-ai.md` §6.2.
     """
     _guard()
     return success(usage_layer.summary(db, days=days))

@@ -459,5 +459,5 @@ nhóm đó qua cổng MCP** (AI bên ngoài) hay chỉ cho bot / Trợ lý nội
 - `doc/agent-hub/06-cong-mcp.md` — cổng MCP bản 2.0 (ai-CR-063 + 207…216): một chỗ đọc đủ hợp đồng API cho giao diện và việc lên prod.
 - `doc/agent-hub/14-cong-erp-api.md` — cổng B, nơi thêm 3 đường đọc skill.
 - `doc/agent-hub/20-loi-hoi-thoai-moi.md` — lõi bot, chi phí trạm.
-- `doc/erp/tai-lieu-ai/04-bao-mat-va-van-hanh.md` — bảng quyền từng tool; cập nhật khi mở tool qua MCP.
+- `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/04-bao-mat-va-van-hanh.md` — bảng quyền từng tool; cập nhật khi mở tool qua MCP.
 - `backend/app/core/subject_match.py`, `backend/app/modules/report_access/` — khuôn bảng quyền chủ thể.

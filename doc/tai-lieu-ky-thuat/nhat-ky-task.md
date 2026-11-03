@@ -233,7 +233,7 @@ thêm cột người đang dùng, ô tìm và lọc trạng thái; Cấu hình �
 đường mới qua nhóm Giám sát, thêm ô tìm theo người hoặc công cụ và cột Chứng từ. Bài AI riêng làm được gì, hai bài Trợ lý AI và
 bài Cách 2 đổi câu chỉ đường. Tài liệu chức năng 22 lên bản 1.4. Viết theo luật bao-CR-695, không dấu ngoặc kép góc. Đã chạy
 seed và nạp lại kho vector trên dev, soát trên devhelp thấy bảng menu mới hiện đúng; prod gom đợt sau.
-Mã nguồn: backend/scripts/seed_help_ket_noi_ai_mcp.py, seed_help_ket_noi_ai_cach_1.py, seed_help_ai_rieng_lam_duoc_gi.py, seed_help_tro_ly_ai.py, seed_help_tro_ly_ai_lap_bo_tai_khoan.py, doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md
+Mã nguồn: backend/scripts/seed_help_ket_noi_ai_mcp.py, seed_help_ket_noi_ai_cach_1.py, seed_help_ai_rieng_lam_duoc_gi.py, seed_help_tro_ly_ai.py, seed_help_tro_ly_ai_lap_bo_tai_khoan.py, doc/erp/tro-ly-ai/chuc-nang/10-ket-noi-ai-rieng-va-kho-skill.md
 Deploy: dev 30/10
 
 ## bao-CR-695-giao-dien-dau-sao | Không để lộ dấu sao in đậm ở màn chi tiết việc của bot
@@ -602,7 +602,7 @@ muốn soạn phiếu hoặc xuất tệp Excel / Word thì chọn mức Đượ
 và mục hỏi thử với câu mẫu về giao hàng, tồn kho, dữ liệu hải quan so với giá trên web, xuất Excel. Ghi rõ dữ liệu hải quan
 chỉ tra qua AI, không nạp qua AI (người chủ chốt 27/10). Tài liệu chức năng 22 lên bản 1.3 với ghi chú lần chạy thật. Đã nạp
 bài mới lên dev và prod kèm kho vector (prod người chủ gật 27/10).
-Mã nguồn: backend/scripts/seed_help_ket_noi_ai_cach_1.py, backend/scripts/seed_help_ket_noi_ai_mcp.py, doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md
+Mã nguồn: backend/scripts/seed_help_ket_noi_ai_cach_1.py, backend/scripts/seed_help_ket_noi_ai_mcp.py, doc/erp/tro-ly-ai/chuc-nang/10-ket-noi-ai-rieng-va-kho-skill.md
 Deploy: dev 27/10 (seed_help_ket_noi_ai_cach_1.py, 7 bài nạp lại kho vector); prod 27/10 (3 bài: gốc, Cách 1, Cách 2)
 
 ## bao-CR-661 | Gộp phiếu đặt xe trùng mã app cũ trên prod và cho hàm tra chịu được trùng
@@ -1021,7 +1021,7 @@ ba nơi và bài kiểm theo đúng hộp đó, ghi chú bước Plugins lúc đ
 Kiểm trên máy local: 7 bài kiểm màn AI của tôi xanh; seed chạy lại ra 8 bài.
 
 Mã nguồn: `backend/app/modules/agent_hub/mcp_setup.py` (khối chatgpt), `test/backend/test_agent_hub_ai_cua_toi_cr213.py`,
-`backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md` (bản 1.2).
+`backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/erp/tro-ly-ai/chuc-nang/10-ket-noi-ai-rieng-va-kho-skill.md` (bản 1.2).
 Commit: af4493e9 + đính chính 00418304 trên erp-v2 (đã gật 19/10). Deploy: dev seed + ERP api dựng 19/10; PROD 81632cd6 (đợt hai 17:25) + seed bài 17:4x.
 
 ---
@@ -1077,7 +1077,7 @@ Nhãn nút xem lại và tạm tắt ở màn Khóa của bạn viết theo hợ
 dev; lên xong phải đối chiếu lại nhãn. Seed chạy lại trên máy local ra 8 bài, không có khóa thật; đã chép vào container
 api dev, chạy seed và nạp lại chỉ mục Trợ lý AI.
 
-Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md`.
+Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_mcp.py`, `doc/erp/tro-ly-ai/chuc-nang/10-ket-noi-ai-rieng-va-kho-skill.md`.
 Commit: 4ae01899 trên erp-v2 (đã gật 19/10). Deploy: đã seed dev 19/10 chiều; PROD seed 19/10 17:4x cùng 631/639.
 
 ---
@@ -1171,7 +1171,7 @@ Viết song song tài liệu chức năng số 22 cùng nội dung, thêm dòng 
 Chạy seed trên máy local hai lần để kiểm chạy lại được, rồi chép script vào container api dev, chạy seed và nạp lại chỉ
 mục tìm kiếm của Trợ lý AI (7 bài, 37 đoạn); mở devhelp.degoholding.vn thấy thẻ và sáu bài hiện đúng.
 
-Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_mcp.py` (mới), `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md`
+Mã nguồn: `backend/scripts/seed_help_ket_noi_ai_mcp.py` (mới), `doc/erp/tro-ly-ai/chuc-nang/10-ket-noi-ai-rieng-va-kho-skill.md`
 (mới), `doc/tai-lieu-chuc-nang/00-muc-luc.md`, `doc/tai-lieu-chuc-nang/README.md`.
 Commit: 6c79b7c3 trên erp-v2 (đã gật 19/10). Deploy: đã seed dev 19/10; PROD seed + nạp lại chỉ mục 19/10 17:4x (đã gật, sau đợt prod hai 81632cd6).
 
@@ -9232,8 +9232,8 @@ tạo đơn mua hàng từ phương án, gắn sửa xóa phương án, và bấ
 
 Mã nguồn: script seed hai bài ở `backend/scripts/seed_help_xu_ly_phuong_an.py` (mới). Tài liệu
 nghiệp vụ `doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md` mục H đóng khoản nợ N-20. Danh sách công
-cụ trợ lý `doc/erp/tai-lieu-ai/02-danh-sach-api-tool.md` thêm Nhóm 20 và ghi chú mở rộng ở T27;
-`doc/erp/tai-lieu-ai/04-bao-mat-va-van-hanh.md` mục 5 cập nhật số công cụ còn nợ và hai chỗ phải
+cụ trợ lý `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/02-danh-sach-api-tool.md` thêm Nhóm 20 và ghi chú mở rộng ở T27;
+`doc/erp/tro-ly-ai/tai-lieu-ky-thuat/04-bao-mat-va-van-hanh.md` mục 5 cập nhật số công cụ còn nợ và hai chỗ phải
 soi khi code.
 
 Lúc đẩy lên máy chủ thử nghiệm thì lòi ra một chuyện đáng ghi lại. Phần tra cứu hướng dẫn bằng

@@ -400,27 +400,27 @@ Ghi chú mã phase: Phase 1 dưới đây là CP4 cũ (thí điểm), Phase 2 l�
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| AI1-1 | Đưa D1 lên prod: duoc-CR-655..657 (báo cáo mức dùng chức năng, chỉ số Dùng AI, năng lực theo loại việc, hàm gợi ý người nhận việc) | Chạy trên prod. Quản trị mở được báo cáo theo chức năng và nhóm 3.7, 3.8 | `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §7 |
-| AI1-2 | A1: gắn công cụ `team_capacity` và `task_type_stats`. Hàm `suggest_assignees`, `get_capability` đã có ở `capability/ai_contract.py` nhưng chưa công cụ nào gọi | Có ở Trợ lý web và MCP. Gác quyền theo §6 (chỉ quản trị xem bảng số). Có nhật ký. Theo chuẩn §5.6 doc 21. Bài kiểm canh cửa xanh | `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §4, §7 |
-| AI1-3 | A2: `plan_context`; `draft_work_plan` thêm `estimate_hours`, `task_type`, `assignee_reason`; bảng `tab_ai_plan_proposal` ghi đề xuất và phần người sửa (máy chủ XONG 445d2296); màn duyệt kế hoạch **XONG — kh-AI1-3-giao-dien, 23/10, đã lên erp-v2** | Lập được kế hoạch có ước lượng và lý do giao. Bản đề xuất và bản sau sửa đều lưu | `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §4, §5, §7 |
-| AI1-4 | Vận hành sau đợt prod: khóa model riêng cho prod (đang dùng chung khóa dev); hỏi trạm modelapi.vn về khoảng 40k token dư mỗi lượt; thử claude.ai web và Claude Desktop với prod | Prod có khóa riêng. Có câu trả lời của trạm. Hai ứng dụng nối prod chạy được một lượt đọc và một lượt soạn nháp | `doc/agent-hub/20-loi-hoi-thoai-moi.md`; `doc/erp/tai-lieu-ai/21-kho-skill-ai-mcp.md` §7.2 P6 |
+| AI1-1 | Đưa D1 lên prod: duoc-CR-655..657 (báo cáo mức dùng chức năng, chỉ số Dùng AI, năng lực theo loại việc, hàm gợi ý người nhận việc) | Chạy trên prod. Quản trị mở được báo cáo theo chức năng và nhóm 3.7, 3.8 | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §7 |
+| AI1-2 | A1: gắn công cụ `team_capacity` và `task_type_stats`. Hàm `suggest_assignees`, `get_capability` đã có ở `capability/ai_contract.py` nhưng chưa công cụ nào gọi | Có ở Trợ lý web và MCP. Gác quyền theo §6 (chỉ quản trị xem bảng số). Có nhật ký. Theo chuẩn §5.6 doc 21. Bài kiểm canh cửa xanh | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §4, §7 |
+| AI1-3 | A2: `plan_context`; `draft_work_plan` thêm `estimate_hours`, `task_type`, `assignee_reason`; bảng `tab_ai_plan_proposal` ghi đề xuất và phần người sửa (máy chủ XONG 445d2296); màn duyệt kế hoạch **XONG — kh-AI1-3-giao-dien, 23/10, đã lên erp-v2** | Lập được kế hoạch có ước lượng và lý do giao. Bản đề xuất và bản sau sửa đều lưu | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §4, §5, §7 |
+| AI1-4 | Vận hành sau đợt prod: khóa model riêng cho prod (đang dùng chung khóa dev); hỏi trạm modelapi.vn về khoảng 40k token dư mỗi lượt; thử claude.ai web và Claude Desktop với prod | Prod có khóa riêng. Có câu trả lời của trạm. Hai ứng dụng nối prod chạy được một lượt đọc và một lượt soạn nháp | `doc/agent-hub/20-loi-hoi-thoai-moi.md`; `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/21-kho-skill-ai-mcp.md` §7.2 P6 |
 
 **Phase 2** (AI2-x)
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| AI2-1 | A3 vòng học: đóng task thì so ước lượng với thực tế, hiệu chỉnh `task_type_stats`; tra kế hoạch tương tự | Sau mỗi task xong có dòng so sánh. Số thống kê tự cập nhật | `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §7 |
-| AI2-2 | T1 thử với một phòng: soạn bộ skill phòng, trưởng phòng dùng 2–4 tuần, đo đề xuất đúng sai | Có số đo sau thời gian thử. Có danh sách sửa trước khi mở cả công ty | `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §7, §8 câu 2 |
-| AI2-3 | P5 phủ công cụ cho Đặt xe, Duyệt dấu, Diễn đàn, Kho và giao nhận. Làm một phần: `erp_read` mới có phiếu nhận hàng | Mỗi phân hệ có ít nhất một công cụ đọc đúng quyền. Có skill hướng dẫn khi nào gọi | `doc/erp/tai-lieu-ai/03-lo-trinh-phase.md` Phase 5 |
-| AI2-4 | Mở MCP `prompts` để ứng dụng ngoài tự xem cẩm nang trước khi trả lời (chưa có trong `agent_hub/mcp.py`) | Claude Desktop thấy danh sách prompt của công ty | `doc/erp/tai-lieu-ai/21-kho-skill-ai-mcp.md` §8 |
+| AI2-1 | A3 vòng học: đóng task thì so ước lượng với thực tế, hiệu chỉnh `task_type_stats`; tra kế hoạch tương tự | Sau mỗi task xong có dòng so sánh. Số thống kê tự cập nhật | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §7 |
+| AI2-2 | T1 thử với một phòng: soạn bộ skill phòng, trưởng phòng dùng 2–4 tuần, đo đề xuất đúng sai | Có số đo sau thời gian thử. Có danh sách sửa trước khi mở cả công ty | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §7, §8 câu 2 |
+| AI2-3 | P5 phủ công cụ cho Đặt xe, Duyệt dấu, Diễn đàn, Kho và giao nhận. Làm một phần: `erp_read` mới có phiếu nhận hàng | Mỗi phân hệ có ít nhất một công cụ đọc đúng quyền. Có skill hướng dẫn khi nào gọi | `doc/erp/tro-ly-ai/plans/03-lo-trinh-phase.md` Phase 5 |
+| AI2-4 | Mở MCP `prompts` để ứng dụng ngoài tự xem cẩm nang trước khi trả lời (chưa có trong `agent_hub/mcp.py`) | Claude Desktop thấy danh sách prompt của công ty | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/21-kho-skill-ai-mcp.md` §8 |
 | AI2-5 | O-01: đếm lỗi 5xx và độ dài hàng đợi cho dịch vụ AI (cần kiểm lại) | Có số đếm theo giờ. Vượt ngưỡng thì báo | `doc/agent-hub/13-lo-trinh.md` §0 phase 7 |
 
 **Phase 3 — khi cần** (AI3-x)
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| AI3-1 | A4 hỏi chéo phòng: AI phòng A hỏi năng lực phòng B | Chỉ làm nếu T1 cần. Gác quyền hai phòng | `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §7 |
-| AI3-2 | AI-2 RAG toàn hệ, lọc quyền từng bản ghi. Khoảng hở đã biết: RAG loại B chưa lọc quyền, an toàn vì corpus chỉ có HDSD công khai | Đóng khoảng hở trước khi nạp bất kỳ tài liệu không công khai nào | `doc/erp/tai-lieu-ai/03-lo-trinh-phase.md` mục Để sau |
+| AI3-1 | A4 hỏi chéo phòng: AI phòng A hỏi năng lực phòng B | Chỉ làm nếu T1 cần. Gác quyền hai phòng | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §7 |
+| AI3-2 | AI-2 RAG toàn hệ, lọc quyền từng bản ghi. Khoảng hở đã biết: RAG loại B chưa lọc quyền, an toàn vì corpus chỉ có HDSD công khai | Đóng khoảng hở trước khi nạp bất kỳ tài liệu không công khai nào | `doc/erp/tro-ly-ai/plans/03-lo-trinh-phase.md` mục Để sau |
 | AI3-3 | Phase 8 lõi mở (M-09, N-06..N-08: MCP ngoài, A2A, ngân sách, sổ sự kiện) và dời dịch vụ AI sang VPS riêng (S-5, S-6) | Có VPS AI. Chạy runbook doc 14 §6 không mất dữ liệu | `doc/agent-hub/13-lo-trinh.md` §0, §3.3 |
 | AI3-4 | N-01, N-05 bot riêng từng người: bảng `tab_agent_bot`, webhook, khóa mã hóa riêng | Một người tự dán token và có bot riêng chạy | `doc/agent-hub/13-lo-trinh.md` §7 |
 | AI3-5 | Việc gắn bot đang đóng băng: G-2 tin cần để ý trong nhóm, G-3 tìm tin nhóm, G-4 đồng hồ chờ, bản tin cuối ngày (phần còn lại của T-14), M-07 khóa AI cá nhân cho Trợ lý web (web vẫn dùng khóa công ty) | Chỉ mở lại khi đại ca bỏ đóng băng bot | `doc/agent-hub/13-lo-trinh.md` §5; `doc/agent-hub/04-danh-sach-tinh-nang.md` M-07 |

@@ -21,7 +21,7 @@ Hướng: **giữ code Thu mua, gia cố, chia thành ERP nhiều phân hệ.** 
 | [`cong-viec/`](./cong-viec/README.md) | Quản lý công việc (Dự án, clone Lark Tasks) |
 | [`dien-dan/`](dien-dan/plans/00-pham-vi-va-ke-hoach.md) | Diễn đàn nội bộ |
 | [`diem-ca-phe/`](./diem-ca-phe/README.md) | Điểm cà phê và POS365, chính sách phúc lợi điểm (`09`, `17`) |
-| [`tai-lieu-ai/`](./tai-lieu-ai/01-kien-truc-tro-ly-ai.md) | AI: trợ lý, danh sách tool, bảo mật; kho skill AI qua MCP (`21`, `21a`); AI kế hoạch và phân việc (`22`) |
+| [`tai-lieu-ai/`](tro-ly-ai/tai-lieu-ky-thuat/01-kien-truc-tro-ly-ai.md) | AI: trợ lý, danh sách tool, bảo mật; kho skill AI qua MCP (`21`, `21a`); AI kế hoạch và phân việc (`22`) |
 | [`san-xuat/`](./san-xuat/README.md) | Quản lý sản xuất — giai đoạn nghiên cứu nghiệp vụ |
 
 Duyệt dấu, đặt xe và đồng bộ app đặt xe cũ nằm ở `doc/duyet-dau/`, `doc/dat-xe-duyet-dau/`, `doc/dong-bo-dat-xe-duyet-dau/`; dịch vụ AI và bot ở `doc/agent-hub/`.
