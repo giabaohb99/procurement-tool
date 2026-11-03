@@ -1,6 +1,6 @@
 # PHA 0 — Nền & mô hình dữ liệu ✅
 
-> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](TIEN-DO.md). Trạng thái: **ĐÃ XONG**.
+> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](tien-do.md). Trạng thái: **ĐÃ XONG**.
 > File này ghi hồi cứu (đã làm) theo khung 7 mục của bộ; phần "Kiểm thử" là cái đã được xác minh.
 
 ## Mục tiêu

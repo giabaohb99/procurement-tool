@@ -23,7 +23,7 @@ Nhánh làm việc: **`pltgiang`** (frontend-v2 + backend). Phân hệ chạy �
 | [phase-5-runtime-duyet-va-test.md](phase-5-runtime-duyet-va-test.md) | Nối runtime luồng duyệt (bridge) + test tổng thể + kịch bản phân quyền |
 | [../tai-lieu-chuc-nang/17-duyet-dau.md](../tai-lieu-chuc-nang/17-duyet-dau.md) | **Tài liệu chức năng** (đặc tả trường, vòng đời trạng thái, phân quyền) cho người dùng/BA |
 
-> Mỗi phase một file chi tiết theo khung 7 mục — giống bộ [dat-xe-duyet-dau](../dat-xe-duyet-dau/) /
+> Mỗi phase một file chi tiết theo khung 7 mục — giống bộ [dat-xe-duyet-dau](../erp/dat-xe/plans/dat-xe-duyet-dau/) /
 > [ke-hoach-celery](../ke-hoach-celery/). Tất cả PHA đều là **kế hoạch phía trước** (chưa làm) — dùng
 > `[ ]` trong TIEN-DO. §2–§4 dưới đây là bản tóm gọn xuyên suốt các phase.
 

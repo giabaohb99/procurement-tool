@@ -324,5 +324,5 @@ Chi tiết thiết kế phân quyền hai trục: `doc/tai-lieu-ky-thuat/phan-qu
 
 ## Liên quan
 
-- Kế hoạch & tiến độ theo phase: `doc/dat-xe-duyet-dau/` (`README.md` + `TIEN-DO.md` + `phase-6-con-lai.md`).
+- Kế hoạch & tiến độ theo phase: `doc/erp/dat-xe/plans/dat-xe-duyet-dau/` (`README.md` + `TIEN-DO.md` + `phase-6-con-lai.md`).
 - Case thiết kế giao diện đã chốt: skill `ui` (C-01 popup, **C-02** trang cho Đặt xe).

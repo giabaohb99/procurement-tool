@@ -12,7 +12,7 @@ lệch nhau (POS365 đánh RUNNING=1, bản kia đánh PENDING=1), và từ mộ
 không bấm sang được những bản ghi nó vừa ghi. Một bảng thì `run_id` nối cha-con,
 mã trạng thái chỉ còn một bộ, và thêm hệ nguồn mới không đẻ thêm bảng nào.
 
-Ba luật bắt buộc của quyển sổ (doc/dong-bo-dat-xe-duyet-dau/mo-ta-ky-thuat.md §3.2),
+Ba luật bắt buộc của quyển sổ (doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/mo-ta-ky-thuat.md §3.2),
 vi phạm một điều là sổ mất tác dụng:
 
 1. **Ghi trước khi làm, không phải ghi sau.** Nhận tín hiệu thì chèn ngay một dòng

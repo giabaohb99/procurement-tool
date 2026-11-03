@@ -1,10 +1,10 @@
 # PHA 6 — Còn lại (nâng cấp Đặt xe)
 
-> Tổng quan & PHA 0→5: [README.md](README.md) · Log tick từng việc: [TIEN-DO.md](TIEN-DO.md).
+> Tổng quan & PHA 0→5: [README.md](README.md) · Log tick từng việc: [TIEN-DO.md](tien-do.md).
 > Nhánh: **`pltgiang`**. Mọi việc dưới đây **KHÔNG chặn dùng hằng ngày** — 3 màn + luồng thao tác
 > theo vai trò đã chạy. Đây là phần tự động hóa duyệt, thông báo và ràng buộc lịch.
 
-Mỗi mục theo **khung phase chuẩn** của bộ này (xem [../ke-hoach-celery/README.md](../ke-hoach-celery/README.md)):
+Mỗi mục theo **khung phase chuẩn** của bộ này (xem [../ke-hoach-celery/README.md](../../../../ke-hoach-celery/README.md)):
 *Mục tiêu · Phạm vi & việc cụ thể · Thiết kế kỹ thuật · Cấu hình · Chống trùng · Kiểm thử · Rủi ro*.
 
 Thứ tự làm đề nghị: **6.1 (lõi) → 6.2 → 6.3 → 6.4 → 6.5**; 6.6–6.8 là phụ, làm khi có nhu cầu thật.
@@ -288,7 +288,7 @@ cột **Tên bước · Tiêu đề · Người nhận · Email** (`recipient` t
 - Không thêm ENV mới. Dùng công tắc chung `email_enabled` + SMTP trong `app_settings` (đã có màn cấu hình).
 - Seed sẵn một dòng `tab_email_template` cho mỗi event `dx_*` (enabled mặc định + subject/body từ code)
   để trang cài đặt có nội dung sửa ngay; seed idempotent.
-- (Nếu có Celery — [../ke-hoach-celery](../ke-hoach-celery/README.md)) email đẩy qua worker; chưa có thì
+- (Nếu có Celery — [../ke-hoach-celery](../../../../ke-hoach-celery/README.md)) email đẩy qua worker; chưa có thì
   `background_tasks` đồng bộ (fallback), **không bắt buộc Redis**.
 
 ### Chống trùng / Idempotent

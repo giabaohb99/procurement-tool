@@ -462,7 +462,7 @@ Bảng ở trên là công cụ **đối chiếu một lần bằng mắt**, kh�
 2. **Mã số thuế cũng không dùng làm khóa được**, vì nó nằm *trong* chuỗi tên (`"CÔNG TY TNHH DƯỢC PHẨM ICARE - 0315593265"`) chứ không có ô riêng — phải cắt chuỗi mới lấy ra, mà quy ước viết dấu gạch đó không có gì bảo đảm.
 3. ERP có **hai dòng cùng mã số thuế `1801722464`** (`id 1` và `id 16`, xem H-08) — tra bằng mã số thuế ra hai kết quả.
 
-Nên bảng tra chốt là **`brandId` (chuỗi khóa Firebase) → `tab_company.id`**, khai thành một bảng cố định trong mã nguồn (hoặc `tab_company.legacy_brand_id`), lập một lần rồi không đổi theo tên. **Thiếu đúng thứ này:** ba ảnh màn quản trị đại ca gửi chỉ có **tên**, không có `id` — phải kết xuất nhánh `brands` từ Firebase mới lập được bảng. Đó là việc chặn P0, ghi ở [TIEN-DO.md](TIEN-DO.md).
+Nên bảng tra chốt là **`brandId` (chuỗi khóa Firebase) → `tab_company.id`**, khai thành một bảng cố định trong mã nguồn (hoặc `tab_company.legacy_brand_id`), lập một lần rồi không đổi theo tên. **Thiếu đúng thứ này:** ba ảnh màn quản trị đại ca gửi chỉ có **tên**, không có `id` — phải kết xuất nhánh `brands` từ Firebase mới lập được bảng. Đó là việc chặn P0, ghi ở [TIEN-DO.md](tien-do.md).
 
 ERP có dư ba dòng: **AGRIPLANT (`id 12`)** và **SAM GROUP (`id 13`)** không có mặt trong app cũ (hai pháp nhân này không dùng app đặt xe — bình thường), cùng dòng **DEGO HOLDING trùng (`id 16`)**.
 

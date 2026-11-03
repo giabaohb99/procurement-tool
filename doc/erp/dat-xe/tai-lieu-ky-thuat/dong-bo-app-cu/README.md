@@ -119,7 +119,7 @@ Vì sao chọn cách chia này: app cũ là chỗ người dùng quen tay nên �
 | [mo-ta-ky-thuat.md](mo-ta-ky-thuat.md) | Mô tả kỹ thuật: sổ đồng bộ, hợp đồng webhook, chống lặp, khớp người, tệp, đối soát, cấu hình |
 | [doi-chieu-truong.md](doi-chieu-truong.md) | Dò từng ô một: trường nào bên cũ sang trường nào bên ERP, trạng thái ánh xạ ra sao, chỗ nào mất dữ liệu |
 | [danh-sach-phase.md](danh-sach-phase.md) | Chín pha, mỗi pha có mục tiêu, việc từng bên, tiêu chí xong, rủi ro |
-| [TIEN-DO.md](TIEN-DO.md) | Bảng tick tiến độ, cập nhật trong lúc làm |
+| [TIEN-DO.md](tien-do.md) | Bảng tick tiến độ, cập nhật trong lúc làm |
 | [van-hanh.md](van-hanh.md) | **Sổ tay vận hành** (23/10): bản đồ dev / prod, công tắc hai chiều, cấu hình ERP, tra phiếu không sang, thao tác Firebase, đẩy mã và kiểm Worker / Pages trên Cloudflare |
 
 Thứ tự đọc cho người mới: README → danh sách phase → mô tả kỹ thuật → đối chiếu trường.

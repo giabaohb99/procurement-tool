@@ -1,6 +1,6 @@
 # PHA 1 — MVP phiếu (tạo & theo dõi) ✅
 
-> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](TIEN-DO.md). Trạng thái: **ĐÃ XONG** (hồi cứu).
+> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](tien-do.md). Trạng thái: **ĐÃ XONG** (hồi cứu).
 
 ## Mục tiêu
 Người dùng tạo được **yêu cầu đặt xe** 2 loại (công tác chở người / giao hàng chở hàng), có **lộ trình +

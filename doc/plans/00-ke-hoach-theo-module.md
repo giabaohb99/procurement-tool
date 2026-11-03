@@ -273,23 +273,23 @@ Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/thu-mua/n
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| DX1-1 | P1 nạp lịch sử lên dev rồi prod: xuất CSV chỗ vướng, kiểm pháp nhân tra ra có tồn tại thật (có nhân sự mang `company_id = 15` không tồn tại), chạy thử / thật dev soi 20 phiếu, sao lưu DB prod, chạy prod. Phần suy phòng ban cho 367 phiếu xe + giao hàng đã chạy ở local *(cần kiểm lại trên dev)* | Dev và prod có đủ 1 313 phiếu, 0 phiếu mang pháp nhân / phòng ban chết | `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` P1, mục chặn đường |
-| DX1-2 | Nợ nhỏ: đại ca mở Luật Firebase cho nhánh `sync_logs` (mã xong 21/09, chưa mở thì sổ rỗng); bài kiểm trần độ dài ở tầng schema của P2 | Tab *Đồng bộ ERP* bên app cũ có dòng khi ERP sập thử; bài kiểm độ dài xanh | `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` P0, P2 |
+| DX1-1 | P1 nạp lịch sử lên dev rồi prod: xuất CSV chỗ vướng, kiểm pháp nhân tra ra có tồn tại thật (có nhân sự mang `company_id = 15` không tồn tại), chạy thử / thật dev soi 20 phiếu, sao lưu DB prod, chạy prod. Phần suy phòng ban cho 367 phiếu xe + giao hàng đã chạy ở local *(cần kiểm lại trên dev)* | Dev và prod có đủ 1 313 phiếu, 0 phiếu mang pháp nhân / phòng ban chết | `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md` P1, mục chặn đường |
+| DX1-2 | Nợ nhỏ: đại ca mở Luật Firebase cho nhánh `sync_logs` (mã xong 21/09, chưa mở thì sổ rỗng); bài kiểm trần độ dài ở tầng schema của P2 | Tab *Đồng bộ ERP* bên app cũ có dòng khi ERP sập thử; bài kiểm độ dài xanh | `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md` P0, P2 |
 
 **Phase 2**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| DX2-1 | E2E Playwright: luồng 2 cổng duyệt dấu + 6 bước đặt xe (kiểm mã: repo chưa có `playwright.config`) | Hai kịch bản chạy trên host với tài khoản demo 3 vai trò, xanh | `doc/duyet-dau/TIEN-DO.md` PHA 5 · `doc/dat-xe-duyet-dau/TIEN-DO.md` |
-| DX2-2 | Điều kiện chuyển giai đoạn 2: rà ERP làm được mọi thao tác người dùng đang làm trên app cũ; rà hai danh sách người duyệt trùng | Có bảng đối chiếu thao tác, 0 dòng thiếu; danh sách người duyệt khớp | `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` mục chặn đường |
-| DX2-3 | Bật P3 ERP → app cũ: làm Bước 0 (chặn chiều nhận ghi đè kết quả ERP) trước, bật công tắc ở dev | Duyệt / điều phối trên ERP hiện bên app cũ, không bị ghi đè ngược | `doc/dong-bo-dat-xe-duyet-dau/p3-erp-sang-app-cu.md` |
-| DX2-4 | P5 đối soát đêm: đếm hai bên theo tháng và trạng thái | Mỗi sáng có số lệch, lệch 0 trên dev một tuần | `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` P5 |
+| DX2-1 | E2E Playwright: luồng 2 cổng duyệt dấu + 6 bước đặt xe (kiểm mã: repo chưa có `playwright.config`) | Hai kịch bản chạy trên host với tài khoản demo 3 vai trò, xanh | `doc/duyet-dau/TIEN-DO.md` PHA 5 · `doc/erp/dat-xe/plans/dat-xe-duyet-dau/tien-do.md` |
+| DX2-2 | Điều kiện chuyển giai đoạn 2: rà ERP làm được mọi thao tác người dùng đang làm trên app cũ; rà hai danh sách người duyệt trùng | Có bảng đối chiếu thao tác, 0 dòng thiếu; danh sách người duyệt khớp | `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md` mục chặn đường |
+| DX2-3 | Bật P3 ERP → app cũ: làm Bước 0 (chặn chiều nhận ghi đè kết quả ERP) trước, bật công tắc ở dev | Duyệt / điều phối trên ERP hiện bên app cũ, không bị ghi đè ngược | `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/p3-erp-sang-app-cu.md` |
+| DX2-4 | P5 đối soát đêm: đếm hai bên theo tháng và trạng thái | Mỗi sáng có số lệch, lệch 0 trên dev một tuần | `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md` P5 |
 
 **Phase 3 — khi cần**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| DX3-1 | P7 phiếu dấu chiều ERP → app cũ; P8 tắt app cũ | Có ngày tắt được chốt; app cũ chỉ còn đọc rồi tắt | `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` P7, P8 |
+| DX3-1 | P7 phiếu dấu chiều ERP → app cũ; P8 tắt app cũ | Có ngày tắt được chốt; app cũ chỉ còn đọc rồi tắt | `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md` P7, P8 |
 | DX3-2 | Duyệt dấu P4: tách khối *chứng từ chữ ký sống* với *ảnh ghi chú* (đang hoãn) | Khách xác nhận cần làm | `doc/duyet-dau/TIEN-DO.md` PHA 4 |
 
 **Câu chờ quyết:**

@@ -1,6 +1,6 @@
 # PHA 3 — Điều phối & luồng nghiệp vụ theo vai trò ✅
 
-> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](TIEN-DO.md). Trạng thái: **ĐÃ XONG** (hồi cứu).
+> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](tien-do.md). Trạng thái: **ĐÃ XONG** (hồi cứu).
 > ⚠️ Đây là luồng **chuyển trạng thái trực tiếp theo quyền** — bản nối engine đa-bước ở
 > [phase-6-con-lai.md](phase-6-con-lai.md) §6.1.
 

@@ -3,7 +3,7 @@
 > **Trạng thái tổng quát (03/09/2026):** MVP + danh mục + luồng nghiệp vụ theo vai trò + đồng bộ
 > UI/UX + đưa Thêm/Sửa lên trang — **ĐÃ XONG (PHA 0→5)**. Còn lại: **nối runtime luồng duyệt**,
 > **"Chuyến của tôi"**, **chống trùng giờ**, **thông báo**, và vài việc phụ (PHA 6). Xem log ở
-> [TIEN-DO.md](TIEN-DO.md).
+> [TIEN-DO.md](tien-do.md).
 
 Nhánh làm việc: **`pltgiang`** (frontend-v2 + backend). Phân hệ chạy ở menu **Đặt xe**
 (`/vehicle-booking`), gồm 3 màn chính: **Yêu cầu đặt xe · Quản lý xe · Quản lý tài xế**.
@@ -13,19 +13,19 @@ Nhánh làm việc: **`pltgiang`** (frontend-v2 + backend). Phân hệ chạy �
 | Tài liệu | Nội dung |
 |---|---|
 | **README.md** *(file này)* | Tổng quan · mô hình dữ liệu · chi tiết chức năng · quyết định đã chốt |
-| [TIEN-DO.md](TIEN-DO.md) | Log tick từng đầu việc theo PHA 0→6 + lệnh chạy local |
+| [TIEN-DO.md](tien-do.md) | Log tick từng đầu việc theo PHA 0→6 + lệnh chạy local |
 | [phase-0-nen-mo-hinh.md](phase-0-nen-mo-hinh.md) | ✅ Nền: model R2, phạm vi quyền, vai trò, đăng ký entity duyệt |
 | [phase-1-mvp-phieu.md](phase-1-mvp-phieu.md) | ✅ MVP phiếu: 2 loại, điểm dừng, danh sách/chi tiết/sửa |
 | [phase-2-danh-muc-xe-tai-xe.md](phase-2-danh-muc-xe-tai-xe.md) | ✅ Danh mục Xe & Tài xế: nguồn/NCC, tìm tài khoản, migration, seed |
 | [phase-3-dieu-phoi-luong-nghiep-vu.md](phase-3-dieu-phoi-luong-nghiep-vu.md) | ✅ Điều phối + luồng nghiệp vụ theo vai trò (duyệt/trả/từ chối · tài xế) |
 | [phase-4-5-dong-bo-ui-va-len-trang.md](phase-4-5-dong-bo-ui-va-len-trang.md) | ✅ Đồng bộ UI/UX + đưa Thêm/Sửa lên TRANG (C-02) |
 | [phase-6-con-lai.md](phase-6-con-lai.md) | ✅ **Nâng cấp — đã làm & kiểm** (runtime duyệt + panel duyệt · Chuyến của tôi · chống trùng giờ · lọc tài xế · thông báo & email + trang cài đặt/template HTML · bản in · test 6 bước); còn E2E trình duyệt (host-run) |
-| [test-phan-quyen.md](test-phan-quyen.md) | **Kịch bản kiểm tra phân quyền tay** — 7 tài khoản test (NS/TP/ĐPV/Tài xế) + các ca xem/quyền, dùng nút Đổi tài khoản nhanh |
-| [../tai-lieu-chuc-nang/16-dat-xe.md](../tai-lieu-chuc-nang/16-dat-xe.md) | **Tài liệu chức năng** (đặc tả trường, vòng đời trạng thái, phân quyền) cho người dùng/BA |
-| [../dong-bo-dat-xe-duyet-dau/](../dong-bo-dat-xe-duyet-dau/README.md) | **Kế hoạch nối với app đặt xe cũ** (Firebase) — đồng bộ hai chiều, sổ đồng bộ, đối chiếu trường, 9 pha. Bộ tài liệu riêng, chưa viết mã |
+| [test-phan-quyen.md](../../kiem-thu/test-phan-quyen.md) | **Kịch bản kiểm tra phân quyền tay** — 7 tài khoản test (NS/TP/ĐPV/Tài xế) + các ca xem/quyền, dùng nút Đổi tài khoản nhanh |
+| [../tai-lieu-chuc-nang/16-dat-xe.md](../../chuc-nang/10-dat-xe.md) | **Tài liệu chức năng** (đặc tả trường, vòng đời trạng thái, phân quyền) cho người dùng/BA |
+| [../dong-bo-dat-xe-duyet-dau/](../../tai-lieu-ky-thuat/dong-bo-app-cu/README.md) | **Kế hoạch nối với app đặt xe cũ** (Firebase) — đồng bộ hai chiều, sổ đồng bộ, đối chiếu trường, 9 pha. Bộ tài liệu riêng, chưa viết mã |
 
-> Mỗi phase một file chi tiết theo khung 7 mục — giống bộ [ke-hoach-celery](../ke-hoach-celery/) /
-> [ke-hoach-import](../ke-hoach-import/). PHA 0→5 là **hồi cứu** (đã xong, ghi lại thiết kế + cái đã
+> Mỗi phase một file chi tiết theo khung 7 mục — giống bộ [ke-hoach-celery](../../../../ke-hoach-celery/) /
+> [ke-hoach-import](../../../../ke-hoach-import/). PHA 0→5 là **hồi cứu** (đã xong, ghi lại thiết kế + cái đã
 > kiểm); PHA 6 là **kế hoạch phía trước**. §2–§4 dưới đây là bản tóm gọn xuyên suốt các phase.
 
 ## Quy ước chung (mọi phase tuân theo)
@@ -174,5 +174,5 @@ Migrations liên quan: `62540f5e1a14` (driver email + index), `vcap2float01` (ca
 | **PHA 4–5** | Đồng bộ UI/UX (badge/confirm/sort/icon) + đưa Thêm/Sửa lên TRANG | ✅ Xong — [phase-4-5](phase-4-5-dong-bo-ui-va-len-trang.md) |
 | **PHA 6** | Nâng cấp — runtime duyệt, "Chuyến của tôi", chống trùng giờ, lọc tài xế, thông báo/email, bản in | ✅ Xong (trừ E2E trình duyệt) — [phase-6](phase-6-con-lai.md) |
 
-Chi tiết từng đầu việc + log: **[TIEN-DO.md](TIEN-DO.md)** · Kế hoạch phần còn lại:
-**[phase-6-con-lai.md](phase-6-con-lai.md)** · Tài liệu chức năng: **[../tai-lieu-chuc-nang/16-dat-xe.md](../tai-lieu-chuc-nang/16-dat-xe.md)**.
+Chi tiết từng đầu việc + log: **[TIEN-DO.md](tien-do.md)** · Kế hoạch phần còn lại:
+**[phase-6-con-lai.md](phase-6-con-lai.md)** · Tài liệu chức năng: **[../tai-lieu-chuc-nang/16-dat-xe.md](../../chuc-nang/10-dat-xe.md)**.

@@ -1,6 +1,6 @@
 # PHA 2 — Danh mục Xe & Tài xế ✅
 
-> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](TIEN-DO.md). Trạng thái: **ĐÃ XONG** (hồi cứu).
+> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](tien-do.md). Trạng thái: **ĐÃ XONG** (hồi cứu).
 
 ## Mục tiêu
 Hai danh mục nền để điều phối chọn được: **Xe** và **Tài xế**, mỗi cái phân **Nội bộ / Thuê ngoài**;

@@ -1,6 +1,6 @@
 # PHA 4–5 — Đồng bộ UI/UX & đưa Thêm/Sửa lên TRANG ✅
 
-> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](TIEN-DO.md). Trạng thái: **ĐÃ XONG** (hồi cứu).
+> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](tien-do.md). Trạng thái: **ĐÃ XONG** (hồi cứu).
 > Gộp 2 phase (như bộ ke-hoach-celery gộp "Phase 4–5") vì cùng là lớp **hoàn thiện giao diện**.
 
 ## Mục tiêu

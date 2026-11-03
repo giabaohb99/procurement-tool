@@ -7,7 +7,7 @@ Gộp hai phần trong một file để có bức tranh đầy đủ:
    nhận → bắt đầu → hoàn tất, khẳng định về đúng trạng thái cuối COMPLETED.
 
 2. `test_permission_matrix_dx006` — ma trận PHÂN QUYỀN 7 tài khoản theo kịch bản
-   `doc/dat-xe-duyet-dau/test-phan-quyen.md` (T1–T8): NS chỉ thấy phiếu của mình,
+   `doc/erp/dat-xe/kiem-thu/test-phan-quyen.md` (T1–T8): NS chỉ thấy phiếu của mình,
    TP thấy phiếu cùng phòng, ĐPV thấy tất cả, tài xế chỉ thấy chuyến được phân —
    và TX1 KHÔNG thấy chuyến của TX2. Đây là chốt chặn `apply_scope` thật, không
    phải ẩn nút, nên phải có test tự động chứ không kiểm bằng tay mãi.

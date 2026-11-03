@@ -621,7 +621,7 @@ thay vì ném lỗi; thêm bài kiểm dựng hai phiếu cùng mã, kiểm tra 
 thừa. Còn nợ: chặn từ gốc việc hai lượt gọi song song đẻ phiếu trùng. Sổ tay vận hành cập nhật mục việc treo.
 
 Mã nguồn: `backend/app/modules/legacy_datxe/service.py` (`find_by_legacy_id`), `test/backend/test_dong_bo_datxe_nhan_phieu.py`,
-`doc/dong-bo-dat-xe-duyet-dau/van-hanh.md`.
+`doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/van-hanh.md`.
 Commit: trên erp-v2 23/10; lên prod theo đợt phát hành kế. Deploy: dữ liệu prod đã xử 23/10.
 
 ---
@@ -645,7 +645,7 @@ README của thư mục.
 Phát hiện trong lúc đo: 48 dòng lỗi chiều nhận trên prod đều cùng câu MultipleResultsFound, tức một mã app cũ khớp hơn một
 bản ghi bên ERP; là lỗi mã tra cứu, ghi vào mục việc còn treo, chưa sửa.
 
-Mã nguồn: `doc/dong-bo-dat-xe-duyet-dau/van-hanh.md` (mới), `doc/dong-bo-dat-xe-duyet-dau/README.md`.
+Mã nguồn: `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/van-hanh.md` (mới), `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/README.md`.
 Commit: trên erp-v2 theo luật đẩy mã 23/10. Deploy: không cần (tài liệu).
 
 ---
@@ -1750,7 +1750,7 @@ không có tệp khóa, npm phải tự giải gói từ đầu. Đã sửa: đ�
 Đã chốt ngày 05/10: làm đủ chiều ERP → app cũ, gồm kết cục duyệt, điều phối, trạng thái tài xế, km/chi phí và đóng
 dấu; phiếu tạo trên ERP cũng phải hiện bên app cũ; không gửi thông báo từ phía ERP cho người dùng app cũ; mã viết xong
 nhưng khóa bằng công tắc, chưa triển khai; phần chặn chiều nhận ghi đè kết quả ERP để sau. Bản dựng ghi ở
-`doc/dong-bo-dat-xe-duyet-dau/p3-erp-sang-app-cu.md`.
+`doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/p3-erp-sang-app-cu.md`.
 
 Phía ERP: một bộ nghe ở tầng ORM gom mọi phiếu đặt xe và phiếu dấu vừa đổi (bỏ qua khi đang xử tín hiệu nhận về và khi
 chỉ đổi cột dấu sửa cuối), chỉ giao việc cho Celery sau khi giao dịch commit thật. Việc gửi dựng ẢNH CHỤP phiếu hiện
@@ -5446,7 +5446,7 @@ CÁCH LÀM (để lần sau lặp lại được):
    một bên có mà bên kia không có thì đó là quyết định, không phải chi tiết.
 4. Mỗi thứ không suy ra được từ mã nguồn thì ghi thành câu hỏi H-xx chờ Ban điều hành, chứ
    không tự đoán rồi viết tiếp.
-5. Kết quả vào bộ 5 tệp `doc/dong-bo-dat-xe-duyet-dau/`: README (tóm yêu cầu + quyết
+5. Kết quả vào bộ 5 tệp `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/`: README (tóm yêu cầu + quyết
    định) · mo-ta-ky-thuat.md (14 mục) · doi-chieu-truong.md (bảng trường + trạng thái) ·
    danh-sach-phase.md (P0–P8) · TIEN-DO.md (bảng tick + nhật ký).
 
@@ -6933,7 +6933,7 @@ mục H.11, H.11.1 (quyết định bỏ nút) và H.12 của `doc/erp/thu-mua/c
 - status: xong
 - date: 2026-09-17
 - list: Duyệt dấu, Đặt xe
-Tham chiếu: đây là các chặng P2 và P5 của bộ tài liệu `doc/dong-bo-dat-xe-duyet-dau/`; bốn chỗ
+Tham chiếu: đây là các chặng P2 và P5 của bộ tài liệu `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/`; bốn chỗ
 bản đã dựng khác bản vẽ ban đầu ghi ở mục 11.1 của `mo-ta-ky-thuat.md`.
 
 Phiên này nối xong nửa phía ERP của đường đồng bộ một chiều từ app đặt xe cũ về ERP. Trước
@@ -9595,7 +9595,7 @@ hàm nhận kết cục, ghi người ký và mốc giờ trong `_on_approved`, 
 duyệt khi xóa phiếu); `service.py` (`_block_self_approval`). Bài kiểm mới:
 `test/backend/test_dat_xe_stress_luong_duyet.py`. Báo cáo ép tải đầy đủ:
 `frontend-v2/plans/reports/tester-260921-1529-dat-xe-stress-luong-duyet.md`.
-Tham chiếu: tài liệu chức năng `doc/tai-lieu-chuc-nang/16-dat-xe.md` mục «Luồng duyệt nhiều bước».
+Tham chiếu: tài liệu chức năng `doc/erp/dat-xe/chuc-nang/10-dat-xe.md` mục «Luồng duyệt nhiều bước».
 
 ## duoc-CR-438 | Tạm ẩn phân hệ Hồ sơ khỏi giao diện, kể cả bốn thẻ cắm trong Thu mua
 - status: xong
@@ -9721,7 +9721,7 @@ Mã nguồn (kho app cũ, không phải kho này): `my-firebase-api/src/db/sync-
 `test/endpoints/sync-logs.db.test.ts` (mới), `erp-sync-writeback.test.ts`;
 `degoholding-app-frontend/src/components/features/admin/SyncLogManagement.tsx` (mới),
 `src/pages/AdminPage.tsx`, `src/types/common.types.ts`.
-Tài liệu: `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md`.
+Tài liệu: `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md`.
 
 Ngày 22/09 gỡ bỏ phần quyển sổ của đợt này, xem mục bao-CR-456. Ba thứ còn giữ lại từ
 đợt này là cách đọc kết quả một lượt bắn, cách gộp hai ô vào đúng một lượt ghi, và dấu
@@ -9761,8 +9761,8 @@ nhánh người dùng theo mã tài khoản và có trường vai trò, ghi cùn
 dùng chứ không phải thẻ quản trị, nên đoạn luật đó thật sự gánh việc. Vai trò được giữ ở hai nơi
 nên nếu có ai sửa tay lệch một bên thì người đó qua được cửa API nhưng bị nền tảng chặn, và màn
 hình sẽ báo lỗi đỏ chứ không phải bảng rỗng — đúng kiểu hỏng cần có, nó kêu chứ không im.
-Tài liệu: `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` (§P1, quyết định N),
-`doc/dong-bo-dat-xe-duyet-dau/README.md` (bảng quyết định).
+Tài liệu: `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md` (§P1, quyết định N),
+`doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/README.md` (bảng quyết định).
 
 
 ## bao-CR-455 | Dọn ba hành động ma: bài kiểm cổng quyền v2 xanh trở lại
@@ -17559,7 +17559,7 @@ Mã nguồn: backend/app/modules/vehicle_booking/service.py · backend/app/modul
 ### duoc-CR-681-5 | Rà mã, ép tải và tài liệu
 - status: xong
 Rà mã tìm ra người được chọn mở phiếu ra trang trống, hồ sơ nghỉ việc vẫn chọn được, tự chọn mình qua tài khoản thứ hai và lưu nháp bị chặn nhầm; đã sửa và có bài kiểm nhắc lại. Ép tải trên MySQL thật đạt ở cả hai đường. Viết bài hướng dẫn sử dụng và cập nhật tài liệu chức năng Đặt xe.
-Mã nguồn: test/backend/test_dat_xe_chon_nguoi_duyet_cr681.py · plans/261023-1352-dat-xe-chon-nguoi-duyet-cr681/scripts/stress-booking-picked-approver-cr681.py · doc/tai-lieu-chuc-nang/16-dat-xe.md
+Mã nguồn: test/backend/test_dat_xe_chon_nguoi_duyet_cr681.py · plans/261023-1352-dat-xe-chon-nguoi-duyet-cr681/scripts/stress-booking-picked-approver-cr681.py · doc/erp/dat-xe/chuc-nang/10-dat-xe.md
 
 ### duoc-CR-681-6 | Chọn công ty khác thì cả hai bên đều thấy phiếu
 - status: xong
@@ -17620,7 +17620,7 @@ Mã nguồn: backend/scripts/seed_help_dat_xe_chon_nguoi_duyet.py · backend/scr
 
 **Còn lại:** chưa bật hai chiều; cần thống nhất phiếu gốc app cũ đã sửa trên ERP thì làm tiếp trên ERP vì tiến độ bên app cũ không sang nữa.
 
-Mã nguồn: backend/app/modules/legacy_datxe/erp_ownership.py · service.py · builder.py · migration cr682erpact01 · doc/dong-bo-dat-xe-duyet-dau/van-hanh.md §8
+Mã nguồn: backend/app/modules/legacy_datxe/erp_ownership.py · service.py · builder.py · migration cr682erpact01 · doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/van-hanh.md §8
 Deploy: alembic upgrade head (cr682erpact01)
 
 ### duoc-CR-682-1 | Dấu «ERP đã đụng vào phiếu» và luật không chép đè
@@ -17636,7 +17636,7 @@ Mã nguồn: migration cr682erpact01 · backend/scripts/legacy_sync/import_appro
 ### duoc-CR-682-3 | Bài kiểm, rà mã và tài liệu vận hành
 - status: xong
 Mười sáu bài kiểm bằng phiếu giả, có đúng ca lượt quét đêm kéo phiếu đã điều phối về đã duyệt và phiếu dấu đã đóng dấu. Rà mã xác nhận không có đường nào ghi sang app cũ. Sổ tay vận hành đồng bộ thêm mục Bước 0.
-Mã nguồn: test/backend/test_dong_bo_datxe_buoc_0_cr682.py · doc/dong-bo-dat-xe-duyet-dau/van-hanh.md
+Mã nguồn: test/backend/test_dong_bo_datxe_buoc_0_cr682.py · doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/van-hanh.md
 
 ## bao-CR-662 | Nạp được tệp GTT02 hải quan xuất dạng HTML hoặc XML nhưng đặt đuôi .xls
 - status: xong

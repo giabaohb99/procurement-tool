@@ -1,7 +1,7 @@
 # DANH SÁCH PHA — Đồng bộ app đặt xe cũ ↔ ERP
 
 > Đi kèm [README.md](README.md), [mo-ta-ky-thuat.md](mo-ta-ky-thuat.md), [doi-chieu-truong.md](doi-chieu-truong.md).
-> Bản 1.0 — 15/09/2026. Tick tiến độ ở [TIEN-DO.md](TIEN-DO.md).
+> Bản 1.0 — 15/09/2026. Tick tiến độ ở [TIEN-DO.md](tien-do.md).
 
 ---
 
