@@ -2750,7 +2750,7 @@ def build_scan_brief(task: AgentTask, docs: list[dict], head: str, main_head: st
             f"`{local}` là thư mục `doc/` trên máy đại ca, GỒM CẢ PHẦN CHƯA COMMIT. Tra ở đó trước "
             "khi kết luận, nhất là sổ thay đổi và nhật ký: "
             f"`{local}/tai-lieu-ky-thuat/change-log-bao.md`, `{local}/tai-lieu-ky-thuat/change-log.md`, "
-            f"`{local}/tai-lieu-ky-thuat/nhat-ky-task.md`, `{local}/tai-lieu-chuc-nang/`. Tài liệu "
+            f"`{local}/tai-lieu-ky-thuat/nhat-ky-task.md`, `{local}/erp/<phan-he>/chuc-nang/`. Tài liệu "
             "trong worktree có thể cũ hơn; mã thì tin worktree.", "",
         ]
     if docs:
