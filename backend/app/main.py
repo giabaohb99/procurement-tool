@@ -129,6 +129,7 @@ from app.modules.notification.controller import router as notification_router
 from app.modules.notification.email_template_controller import router as email_template_router
 from app.modules.notification.email_exclusion_controller import router as email_exclusion_router
 from app.modules.notification.mailbox_controller import router as mailbox_router
+from app.modules.notification.email_log_controller import router as email_log_router
 from app.modules.push.controller import router as push_router
 from app.modules.category_assignee.controller import router as category_assignee_router
 from app.modules.survey_request.controller import router as survey_request_router
@@ -422,6 +423,7 @@ app.include_router(alert_router)
 app.include_router(setting_router)
 app.include_router(user_preference_router)
 app.include_router(notification_router)
+app.include_router(email_log_router)   # bao-CR-721: màn Nhật ký email (chỉ đọc)
 app.include_router(email_template_router)
 app.include_router(email_exclusion_router)
 app.include_router(mailbox_router)

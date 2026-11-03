@@ -560,6 +560,11 @@ export const queryKeys = {
     ragIndexStatus: () => ['system', 'rag-index-status'] as const,
     backups: (params?: Record<string, unknown>) => ['system', 'backups', params ?? {}] as const,
     auditLogs: (params?: Record<string, unknown>) => ['system', 'audit-logs', params ?? {}] as const,
+    /** Nhật ký email (bao-CR-721) — đọc `tab_email_log`, KHÁC `auditLogs`. */
+    emailLogs: (params?: Record<string, unknown>) => ['system', 'email-logs', params ?? {}] as const,
+    emailLogMeta: () => ['system', 'email-logs', 'meta'] as const,
+    emailLogStats: (days: number) => ['system', 'email-logs', 'stats', days] as const,
+    emailLogDetail: (id: number) => ['system', 'email-logs', 'detail', id] as const,
     /**
      * Nhật ký của chính màn *Cấu hình hệ thống* (bao-CR-462) — đọc `entity=setting`
      * dạng mảng đơn. Nằm CÙNG nhánh `audit-logs` để lưu cấu hình xong chỉ cần bỏ

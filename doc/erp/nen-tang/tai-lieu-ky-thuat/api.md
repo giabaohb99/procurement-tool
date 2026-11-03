@@ -61,6 +61,10 @@ Mã backend: `approval`, `notification`, `comment`, `ticket`, `attachment`, `imp
 | PUT | `/api/email-templates/{event}` | update template | `setting.write` |  | |
 | POST | `/api/email-templates/{event}/preview` | Render thử bản ĐANG SOẠN (nếu client gửi kèm) hoặc bản đã lưu, với dữ liệu mẫu. | `setting.read` |  | |
 | POST | `/api/email-templates/{event}/reset` | reset template | `setting.write` |  | |
+| GET | `/api/email-logs` | Nhật ký email (bao-CR-721): danh sách thư đã ghi, mới nhất trước, phân trang; lọc `q` (người nhận chứa), `event` (lặp nhiều lần), `status`, `from_date`, `to_date`. Chỉ đọc. | `audit.read` | Không ghi request log (`SKIP_PATH_PREFIXES`) | Màn `/system/email-logs` |
+| GET | `/api/email-logs/meta` | Bộ chọn ô lọc: sự kiện (danh mục mẫu email + sự kiện lạ đã ghi) và trạng thái, kèm nhãn. | `audit.read` |  | |
+| GET | `/api/email-logs/stats` | Số thư theo trạng thái trong `days` ngày (mặc định 7) — thẻ đầu màn. | `audit.read` |  | |
+| GET | `/api/email-logs/{log_id}` | Một thư đầy đủ, câu lỗi nguyên văn. | `audit.read` |  | |
 | POST | `/api/email-templates/{event}/test-send` | Gửi thử email của bước này về đúng địa chỉ của người đang bấm. | `setting.write` |  | |
 | GET | `/api/mailboxes` | Danh sách hộp thư. **Trả thẳng một mảng, KHÔNG phân trang.** | `mailbox.read` | `apply_scope` | |
 | POST | `/api/mailboxes` | create mailbox | `mailbox.create` |  | |

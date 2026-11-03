@@ -6,6 +6,7 @@ import {
   FileUp,
   History,
   MailCheck,
+  MailSearch,
   MonitorSmartphone,
   RefreshCcwDot,
   ScrollText,
@@ -96,6 +97,14 @@ export const SYSTEM_DASHBOARD_SHORTCUTS: SystemShortcut[] = [
     icon: History,
     entity: 'setting',
     manage: true,
+  },
+  {
+    //  bao-CR-721 — cùng khóa với mục menu: `audit.read`, không `manage` (màn chỉ đọc).
+    label: 'Nhật ký email',
+    description: 'Thư hệ thống đã gửi cho ai, lỗi gì — đọc nguyên văn câu lỗi của máy chủ thư.',
+    path: appRoutes.system.emailLogs,
+    icon: MailSearch,
+    entity: 'audit',
   },
   {
     //  bao-CR-407 (CR-312 P5) — gộp ba bảng nhật ký theo `request_id`.

@@ -281,6 +281,8 @@ có thể nhận hơn hai chục thư một ngày.
 **Người tắt thì bỏ qua hẳn, không ghi `EmailLog`.** Có dòng log "đã gửi" cho một người không nhận
 được thư là mồi cho một cuộc đi tra vô ích.
 
+**Đọc nhật ký email (bao-CR-721).** Mọi thư đi qua `_send_workflow_emails` / `send_event_email` đều ghi `tab_email_log` (sự kiện, người nhận, tiêu đề, `status` chuỗi `pending` / `sent` / `failed` / `disabled`, câu lỗi nguyên văn, hộp thư gửi danh nghĩa). Màn **Quản trị ▸ Nhật ký email** (`/system/email-logs`, quyền `audit.read`, chỉ đọc) đọc bảng này qua `/api/email-logs`: lọc người nhận, nhiều sự kiện, trạng thái, khoảng ngày; bấm dòng mở ngăn chi tiết đọc đủ câu lỗi; ba thẻ đếm 7 ngày. Nhãn sự kiện lấy từ `email_template_service.event_display`. Không có đường gửi lại — sửa nguyên nhân rồi để bước nghiệp vụ gửi lại. Người tắt email không có dòng nào ở đây (xem đoạn trên).
+
 **Tắt email KHÔNG phải tắt thông báo.** Chuông trong app (`tab_notification`) và thông báo đẩy chạy
 trước, độc lập với công tắc này — người tắt email vẫn thấy đủ việc cần duyệt khi mở app. Vì thế
 người **giữ vai trò duyệt** nên bật Web Push trước khi tắt email, kẻo không còn kênh nào chủ động

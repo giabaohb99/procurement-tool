@@ -417,6 +417,8 @@ export const appRoutes = {
     emailTemplates: '/system/email-templates',
     /** Trang con sửa nội dung một mẫu email theo bước. */
     emailTemplate: (event: string) => `/system/email-templates/${event}`,
+    /** Nhật ký email (bao-CR-721): thư hệ đã gửi / lỗi, chỉ đọc. `?status=` và `?id=` đi qua URL. */
+    emailLogs: '/system/email-logs',
     /** Quản lý sao lưu CSDL hệ thống. */
     backups: '/system/backups',
     /**
