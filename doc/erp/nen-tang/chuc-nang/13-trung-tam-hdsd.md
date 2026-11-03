@@ -2,7 +2,7 @@
 
 Tài liệu chức năng — cập nhật 2026-08-11.
 
-Tài liệu **kỹ thuật** chi tiết (stack, bố cục CSS, trình soạn thảo Quill, kéo-thả, token màu) nằm ở [`help-center/README.md`](../../help-center/README.md). File này mô tả **nghiệp vụ**: ai dùng, làm được gì, dữ liệu gồm những trường nào, và các quyết định đã chốt.
+Tài liệu **kỹ thuật** chi tiết (stack, bố cục CSS, trình soạn thảo Quill, kéo-thả, token màu) nằm ở [`help-center/README.md`](../../../../help-center/README.md). File này mô tả **nghiệp vụ**: ai dùng, làm được gì, dữ liệu gồm những trường nào, và các quyết định đã chốt.
 
 ---
 

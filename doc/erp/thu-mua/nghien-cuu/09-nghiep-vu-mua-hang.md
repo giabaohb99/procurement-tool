@@ -6,7 +6,7 @@
 | Người viết | A5 Nghiên cứu nghiệp vụ |
 | Trạng thái | Tài liệu nghiên cứu nghiệp vụ chuẩn, chưa phải tài liệu yêu cầu |
 | Căn cứ | Cách SAP, Oracle, Odoo, Microsoft Dynamics dựng phân hệ Mua hàng · Chuẩn mực kế toán số 02 · Thông tư 99/2025 (số hiệu tài khoản giữ như Thông tư 200) |
-| Cùng cụm | [`10` Nghiệp vụ Kho](../../kho/nghien-cuu/10-nghiep-vu-kho.md) · [`san-xuat/00` Nghiệp vụ Sản xuất](../../san-xuat/00-tong-quan-nghiep-vu.md) · [`01` Luồng nối Mua hàng, Kho, Sản xuất](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) |
+| Cùng cụm | [`10` Nghiệp vụ Kho](../../kho/nghien-cuu/10-nghiep-vu-kho.md) · [`san-xuat/00` Nghiệp vụ Sản xuất](../../san-xuat/00-tong-quan-nghiep-vu.md) · [`01` Luồng nối Mua hàng, Kho, Sản xuất](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) |
 
 Số tiền trong ví dụ là giả định. Thuế suất GTGT lấy 10% cho dễ tính. Chỗ dính quy định thuế cần kế toán xác nhận.
 

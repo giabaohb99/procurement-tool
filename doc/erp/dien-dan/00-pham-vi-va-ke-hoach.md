@@ -34,7 +34,7 @@ Bộ tài liệu ba tệp: **`00`** (tệp này) — phạm vi, quyết định,
 |---|---|---|
 | Đăng nhập, phân quyền | Auth + RBAC hai trục | Nguyên vẹn |
 | Hồ sơ người đăng, avatar | Hồ sơ nhân sự + `tab_user.avatar_file_id` | Nguyên vẹn |
-| Comment 2 cấp | CR-033 (`doc/tai-lieu-chuc-nang/11-binh-luan-tren-chung-tu.md`) | Mô hình + mã bê sang, thêm entity bài viết |
+| Comment 2 cấp | CR-033 (`doc/erp/nen-tang/chuc-nang/12-binh-luan-tren-chung-tu.md`) | Mô hình + mã bê sang, thêm entity bài viết |
 | Up ảnh | `file_registry` + R2, trần dung lượng theo entity | Thêm entity `forum_post` vào FILE_POLICY |
 | Thông báo like/comment/bị ẩn bài | 3 kênh: chuông trong app, email, web push | Thêm loại sự kiện mới |
 | Lọc ai xem được bài | `apply_scope` + dữ liệu phòng ban/pháp nhân | Dùng dữ liệu tổ chức, logic lọc feed viết mới |

@@ -63,7 +63,7 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| NT1-1 | Đ-13c: thêm action `import`, đổi quyền xuất `read` sang `export`, áp `apply_scope` cho 3 export CSV viết tay (product, supplier, department; hiện `/export/csv` vẫn gác `read`) | Ma trận quyền có cột Nhập/Xuất; ai chỉ có `read` mất nút xuất; CSV chỉ ra dòng trong phạm vi | `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9 |
+| NT1-1 | Đ-13c: thêm action `import`, đổi quyền xuất `read` sang `export`, áp `apply_scope` cho 3 export CSV viết tay (product, supplier, department; hiện `/export/csv` vẫn gác `read`) | Ma trận quyền có cột Nhập/Xuất; ai chỉ có `read` mất nút xuất; CSV chỉ ra dòng trong phạm vi | `doc/erp/nen-tang/tai-lieu-ky-thuat/16-quan-ly-import-export-v2.md` §9 |
 | NT1-2 | CI tối thiểu: DB trống chạy đủ migration + chạy test mỗi lần đẩy (repo chưa có `.github/workflows`) | Mỗi lần đẩy `erp-v2` có kết quả xanh/đỏ | doc cũ 19 §6 |
 | NT1-3 | Gắn công ty cho nhân sự (hầu hết `company_id=0`) để lọc công nợ, nhập kho theo công ty chạy đúng — việc vận hành | Lọc theo công ty ra đúng số trên dev và prod | doc cũ 13 |
 | NT1-4 | Nợ nhỏ Thu mua phía backend: ghi *Tên trên hóa đơn* ĐMH lúc lưu; N-008 báo cáo mua hàng gom theo id phòng thay vì TÊN phòng | Đổi tên phòng không làm vỡ báo cáo; ĐMH lưu xong có sẵn tên hóa đơn | doc cũ 13 |
@@ -74,12 +74,12 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| NT2-1 | Đ-13d/13e còn lại: adapter nhập hợp đồng, tồn/công nợ đầu kỳ; thêm hợp đồng, thương hiệu vào registry xuất; nút Nhập/Xuất trên `CrudListPage` theo `can('import'/'export')` (chưa có) | Màn danh mục hiện nút đúng quyền, dẫn về batch | `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9.1, §9.2 |
-| NT2-2 | **XONG mã, chờ rà — kh-NT2-2, 22/10** (nhánh agent3/kh-NT2-2, chưa lên erp-v2). Chip nhanh trên 4 màn Thu mua theo doc 14, A2 rà đạt | Bấm một chip ra đúng danh sách | `doc/erp/nen-tang/14-filter-sort-man-danh-sach-v2.md` |
+| NT2-1 | Đ-13d/13e còn lại: adapter nhập hợp đồng, tồn/công nợ đầu kỳ; thêm hợp đồng, thương hiệu vào registry xuất; nút Nhập/Xuất trên `CrudListPage` theo `can('import'/'export')` (chưa có) | Màn danh mục hiện nút đúng quyền, dẫn về batch | `doc/erp/nen-tang/tai-lieu-ky-thuat/16-quan-ly-import-export-v2.md` §9.1, §9.2 |
+| NT2-2 | **XONG mã, chờ rà — kh-NT2-2, 22/10** (nhánh agent3/kh-NT2-2, chưa lên erp-v2). Chip nhanh trên 4 màn Thu mua theo doc 14, A2 rà đạt | Bấm một chip ra đúng danh sách | `doc/erp/nen-tang/tai-lieu-ky-thuat/14-filter-sort-man-danh-sach-v2.md` |
 | NT2-3 | Nhóm UI dùng chung: NF-01 thùng rác (màn khôi phục trên nền xóa mềm); NF-02 bộ lọc đã lưu (mới có ở Tra cứu thị trường, nhân rộng qua `user_preference`); NF-09 thao tác hàng loạt (xóa hàng loạt `core/bulk_delete.py` đã có ở 5 module, còn duyệt/gán/xuất hàng loạt — cần kiểm lại phạm vi); NF-03 tìm toàn cục | Mỗi NF có màn chạy trên dev, dùng chung cho mọi danh sách | doc cũ 13 §NF |
 | NT2-4 | NF-07 khóa chứng từ Thu mua sau duyệt; NF-06 cấp số cấu hình được + DB9 gom đánh số (mã đang sinh rải ở `core/utils.py`, `survey_request`, `ticket`...) | Một bộ sinh số chung, cấu hình được tiền tố; phiếu đã duyệt không sửa được trừ khi mở lại có dấu vết | doc cũ 13 §NF, doc cũ 06 DB9 |
 | NT2-5 | Celery phần còn lại: đẩy chuông/web push qua worker, cảnh báo nghiệp vụ theo lịch, NF-18 thư tổng hợp định kỳ, xuất nền (đã có: sao lưu, dọn dẹp, gửi thư, nhập nền) | Các việc trên chạy bằng beat, có nhật ký lỗi | doc cũ 11 |
-| NT2-6 | Phạm vi đợt sau: `purchase_history` chưa `apply_scope` (đang cố ý: ai có `supplier.read` thấy hết), `report.compute` chưa nhận user, survey chỉ có chiều owner, contract thiếu chiều phòng; báo cáo tổng + hoàn thiện quyền P9 | Mỗi bảng có SCOPE_FIELDS đủ chiều; bài kiểm phạm vi xanh | `doc/erp/nen-tang/12-ke-hoach-erp-v2-da-phap-nhan.md` §3 |
+| NT2-6 | Phạm vi đợt sau: `purchase_history` chưa `apply_scope` (đang cố ý: ai có `supplier.read` thấy hết), `report.compute` chưa nhận user, survey chỉ có chiều owner, contract thiếu chiều phòng; báo cáo tổng + hoàn thiện quyền P9 | Mỗi bảng có SCOPE_FIELDS đủ chiều; bài kiểm phạm vi xanh | `doc/plans/12-ke-hoach-erp-v2-da-phap-nhan.md` §3 |
 | NT2-7 | Hạ tầng: giám sát + cảnh báo; deploy một lệnh (cần kiểm lại — script đang nằm ngoài repo ở `D:/vps_deploy`); đưa script đồng bộ môi trường vào repo | Máy chủ chết có cảnh báo; deploy dev/prod bằng một lệnh trong repo | doc cũ 19 §6 |
 | NT2-8 | NF-17 màn lỗi/tác vụ nền; NF-22 biểu đồ cho dashboard Tồn kho | Quản trị thấy tác vụ hỏng; dashboard Tồn kho có biểu đồ | doc cũ 13 §NF |
 

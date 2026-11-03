@@ -174,4 +174,4 @@ Viết bài kiểm theo **kiểu**, không theo từng thuộc tính: mỗi ki�
 
 ## 6. Vị trí trong kế hoạch
 
-Thuộc việc **MH-2.1 → MH-2.3** của [nghiên cứu mặt hàng](../nghien-cuu/00-nghien-cuu-mat-hang-erpnext.md) mục 6 (M2, M3, M4 của tài liệu mô hình dữ liệu), sau MH-1.2 (`item_group_id`). Không chặn sổ kho; làm song song với giai đoạn 2–3 của [báo cáo 12](../../nghien-cuu/12-muc-do-module-kho-mat-hang-va-ke-hoach.md).
+Thuộc việc **MH-2.1 → MH-2.3** của [nghiên cứu mặt hàng](../nghien-cuu/00-nghien-cuu-mat-hang-erpnext.md) mục 6 (M2, M3, M4 của tài liệu mô hình dữ liệu), sau MH-1.2 (`item_group_id`). Không chặn sổ kho; làm song song với giai đoạn 2–3 của [báo cáo 12](../../../plans/12-muc-do-module-kho-mat-hang-va-ke-hoach.md).

@@ -7,7 +7,7 @@
 | Nguồn | Dự án *Khảo sát hiện trạng Quản lý sản xuất (19/10/2026)* trên ứng dụng khảo sát Make It Clear (mic.degolab.com.vn), Phòng Sản xuất, người khởi tạo là Trưởng phòng |
 | Ảnh chụp dữ liệu | 24/10/2026 08:32 giờ Việt Nam. Dự án vẫn đang mở, còn 8 vòng trả lời chưa nộp, nên số liệu có thể đổi |
 | Phạm vi | Chỉ đọc. Không ghi, không phân xử gì trên ứng dụng khảo sát. Không dùng tệp âm thanh |
-| Đọc kèm | [`01-luong-chuan-mua-hang-kho-san-xuat.md`](./01-luong-chuan-mua-hang-kho-san-xuat.md) · [`san-xuat/00-tong-quan-nghiep-vu.md`](../san-xuat/00-tong-quan-nghiep-vu.md) |
+| Đọc kèm | [`01-luong-chuan-mua-hang-kho-san-xuat.md`](../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) · [`san-xuat/00-tong-quan-nghiep-vu.md`](../san-xuat/00-tong-quan-nghiep-vu.md) |
 
 ---
 
@@ -293,7 +293,7 @@ Nhóm thứ ba phần lớn là do hệ thống bóc chữ từ câu trả lời
 
 ## 7. Ý nghĩa cho ERP
 
-Nối với tài liệu [01](./01-luong-chuan-mua-hang-kho-san-xuat.md) và [`san-xuat/00`](../san-xuat/00-tong-quan-nghiep-vu.md).
+Nối với tài liệu [01](../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) và [`san-xuat/00`](../san-xuat/00-tong-quan-nghiep-vu.md).
 
 | # | Phát hiện từ khảo sát | Ý nghĩa cho thiết kế |
 |---|---|---|

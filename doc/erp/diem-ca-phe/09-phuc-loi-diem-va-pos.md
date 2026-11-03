@@ -6,7 +6,7 @@
 | Đối tượng đọc | Ban lãnh đạo · Người chủ trì · Đội phần mềm · Phòng Nhân sự · Kế toán |
 | Trả lời câu hỏi | Mỗi tháng cấp cho nhân sự một số điểm theo chức danh, tiêu ở quán cafe của công ty, làm bằng cách nào; và nối với POS365 đang dùng tới đâu |
 | Chưa có trong bản này | Số người-ngày, ngày giao cam kết, mức điểm cụ thể của từng chức danh (nghiệp vụ quyết, không phải đội phần mềm) |
-| Liên quan | [`01` Ngắn hạn](../../plans/00-ke-hoach-theo-module.md) bước 4 và bước 5 · [`02` Dài hạn](../../plans/00-ke-hoach-theo-module.md) · [`04` Danh mục chờ quyết](../../plans/00-ke-hoach-theo-module.md) C4 · [`07` Kiến trúc vỏ ERP](../nen-tang/07-kien-truc-vo-erp.md) mục 5 |
+| Liên quan | [`01` Ngắn hạn](../../plans/00-ke-hoach-theo-module.md) bước 4 và bước 5 · [`02` Dài hạn](../../plans/00-ke-hoach-theo-module.md) · [`04` Danh mục chờ quyết](../../plans/00-ke-hoach-theo-module.md) C4 · [`07` Kiến trúc vỏ ERP](../nen-tang/tai-lieu-ky-thuat/07-kien-truc-vo-erp.md) mục 5 |
 
 **Ba câu tóm tắt.** Việc này gồm **hai phần tách rời nhau**: một là **chính sách điểm** nằm trong HRM (ai được bao nhiêu điểm mỗi tháng, ai duyệt, tiêu tới đâu, nghỉ việc thì sao) — phần này tự chủ hoàn toàn; hai là **đầu nối POS365** để nhân viên quẹt điểm ngay tại quầy — phần này phụ thuộc vào việc POS365 có cho ghi điểm qua API hay không, mà **hôm nay chưa ai kiểm chứng**. Vì vậy việc đầu tiên không phải viết code, mà là **hai ngày gọi thử API POS365** để biết mình đang đứng ở ngã rẽ nào.
 
@@ -103,7 +103,7 @@ Kèm một câu về an toàn, phát hiện khi đọc ảnh chụp: **phản h�
 
 ## 4. Dữ liệu: bảng mới và chỗ đứng trong ERP
 
-Theo [`07` mục 5](../nen-tang/07-kien-truc-vo-erp.md), **mọi entity phải thuộc đúng một phân hệ, thiếu thì ứng dụng không khởi động được.** Việc này thêm bảy entity và một phân hệ.
+Theo [`07` mục 5](../nen-tang/tai-lieu-ky-thuat/07-kien-truc-vo-erp.md), **mọi entity phải thuộc đúng một phân hệ, thiếu thì ứng dụng không khởi động được.** Việc này thêm bảy entity và một phân hệ.
 
 | Entity | Phân hệ | Nội dung |
 |---|---|---|
@@ -115,7 +115,7 @@ Theo [`07` mục 5](../nen-tang/07-kien-truc-vo-erp.md), **mọi entity phải t
 | `pos_product` | `ban_le` | Bản sao menu quán kéo về, chỉ đọc |
 | `pos_sync_run` | `ban_le` | Mỗi lần chạy đồng bộ: chạy lúc nào, đẩy/kéo bao nhiêu dòng, lỗi gì, ai bấm |
 
-**Phân hệ mới `ban_le` — "Bán lẻ và quán".** Ô thứ chín trên lưới biểu tượng, chỉ hiện với người có quyền. Bảng chia entity ở [`07` mục 5](../nen-tang/07-kien-truc-vo-erp.md) phải thêm một dòng, và tổng số entity đi từ 28 lên 35.
+**Phân hệ mới `ban_le` — "Bán lẻ và quán".** Ô thứ chín trên lưới biểu tượng, chỉ hiện với người có quyền. Bảng chia entity ở [`07` mục 5](../nen-tang/tai-lieu-ky-thuat/07-kien-truc-vo-erp.md) phải thêm một dòng, và tổng số entity đi từ 28 lên 35.
 
 Năm ràng buộc bắt buộc, tất cả đều là quy tắc đã có sẵn của bộ tài liệu chứ không phải quy tắc mới:
 
@@ -314,7 +314,7 @@ Ghi ra để nếu kế hoạch được duyệt thì biết phải sửa nhữn
 
 | Tài liệu | Sửa gì |
 |---|---|
-| [`07` mục 5](../nen-tang/07-kien-truc-vo-erp.md) | Thêm phân hệ **`ban_le`** và bảy entity mới vào bảng chia entity. Tổng entity **28 → 35**, tổng phân hệ **8 → 9** |
+| [`07` mục 5](../nen-tang/tai-lieu-ky-thuat/07-kien-truc-vo-erp.md) | Thêm phân hệ **`ban_le`** và bảy entity mới vào bảng chia entity. Tổng entity **28 → 35**, tổng phân hệ **8 → 9** |
 | [`01`](../../plans/00-ke-hoach-theo-module.md) | Thêm nhóm **PL** vào bước 4 (HRM) và nhóm **PS** thành một nhánh của bước 5. Cập nhật lịch mục 10 theo mục 10 của tài liệu này |
 | [`02`](../../plans/00-ke-hoach-theo-module.md) | Mục 3: thêm phân hệ Bán lẻ ở mức đọc. Mục 9 "cái gì không nằm trong lộ trình": ghi rõ POS tự viết vẫn nằm ngoài, kèm điều kiện mở cổng ở mục 12 |
 | [`04`](../../plans/00-ke-hoach-theo-module.md) | Thêm **C16** — mười câu nghiệp vụ ở mục 7. Và ghi nhận **C4 có ứng viên mới**: POS365 |

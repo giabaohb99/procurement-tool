@@ -96,7 +96,7 @@ Index tối thiểu trên bảng bài: `(status, id)` và `(created_by, id)` (tr
 
 Hệ bình luận đang chạy trên chứng từ đã giải trọn bài "comment số lượng lớn", dùng chung bảng `tab_comment` theo cặp `(entity, entity_id)`. Mở cho diễn đàn = thêm entity `forum_post` vào `comment_registry` + nhúng khối comment vào thẻ bài viết. **Không bảng mới, không migration cho phần comment.**
 
-Cơ chế chịu tải đã có sẵn, đối chiếu `doc/tai-lieu-chuc-nang/11-binh-luan-tren-chung-tu.md`:
+Cơ chế chịu tải đã có sẵn, đối chiếu `doc/erp/nen-tang/chuc-nang/12-binh-luan-tren-chung-tu.md`:
 
 | Bài toán | CR-033 đã giải |
 |---|---|

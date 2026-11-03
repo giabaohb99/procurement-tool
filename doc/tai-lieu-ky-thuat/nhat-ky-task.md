@@ -16506,7 +16506,7 @@ Hồ sơ tạo trước 07/09/2026 phần lớn trống ngày vào làm vì lúc
 
 **Kết quả:** Mã đã xong và đã qua rà mã (duoc-CR-660), đã commit lên erp-v2 ngày 23/10/2026 (đã được duyệt); migration nối lại sau `aiplan01` để không thành hai nhánh. Xuất tệp sản phẩm, nhà cung cấp, phòng ban và mọi danh mục dùng khung chung đòi quyền xuất và chỉ ra dòng trong phạm vi; thêm quyền nhập riêng có cột Nhập ở ma trận phân quyền, cổng nhập tệp danh mục đòi quyền này. Lên prod cần cấp lại quyền nhập cho vai trò cũ vì mặc định là không có.
 
-Mã nguồn: kế hoạch mục NT1-1 · `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9 · duoc-CR-660 · backend/app/core/permissions.py · backend/app/core/crud.py · migration cr660imp01
+Mã nguồn: kế hoạch mục NT1-1 · `doc/erp/nen-tang/tai-lieu-ky-thuat/16-quan-ly-import-export-v2.md` §9 · duoc-CR-660 · backend/app/core/permissions.py · backend/app/core/crud.py · migration cr660imp01
 
 ### kh-NT1-1-1 | Thêm quyền Nhập riêng vào bộ quyền
 - status: xong
@@ -17445,7 +17445,7 @@ Mã nguồn: plans/261023-1330-ep-tai-cr680/scripts/load-permission-approvers-cr
 
 **Còn lại:** khảo sát vẫn đang mở, còn 8 vòng chưa nộp. Bảng phân vai ở mục 3.1 chờ Trưởng phòng và Giám đốc chốt.
 
-Tham chiếu: doc/erp/nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md · doc/erp/nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md
+Tham chiếu: doc/erp/nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md · doc/plans/01-luong-chuan-mua-hang-kho-san-xuat.md
 
 ## nc-03-phong-van-san-xuat | Tách bộ câu hỏi và mâu thuẫn khảo sát Sản xuất để gửi Phòng Sản xuất chốt
 - status: xong
@@ -18169,7 +18169,7 @@ Commit: cde5c5ca · 9c04f723 · b089386d
 
 **Kết quả:** tài liệu nằm ở thư mục item, inventory, receiving, batch-serial, delivery và báo cáo tổng số 12 trong thư mục nghiên cứu.
 
-Tham chiếu: doc/erp/nghien-cuu/12-muc-do-module-kho-mat-hang-va-ke-hoach.md
+Tham chiếu: doc/plans/12-muc-do-module-kho-mat-hang-va-ke-hoach.md
 
 ## duoc-CR-707 | Tài liệu chức năng nhân sự của ERPNext và đối chiếu với phân hệ Nhân sự
 - status: xong

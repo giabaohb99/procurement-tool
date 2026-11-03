@@ -10,7 +10,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
 | 1 | Trang chủ (Dashboard) | `/` | chưa có tài liệu |
-| 2 | Hỗ trợ (Phiếu hỗ trợ / Ticket) | `/tickets` | [10-ho-tro-ticket.md](10-ho-tro-ticket.md) — đã có tài liệu |
+| 2 | Hỗ trợ (Phiếu hỗ trợ / Ticket) | `/tickets` | [10-ho-tro-ticket.md](../erp/nen-tang/chuc-nang/11-ho-tro-ticket.md) — đã có tài liệu |
 | 3 | Báo cáo mua hàng | `/reports` | [08-he-thong-bao-cao.md](../erp/thu-mua/chuc-nang/17-he-thong-bao-cao.md) — đã có tài liệu |
 
 ## Nhóm: Mua hàng
@@ -62,14 +62,14 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
-| 23 | Thông báo (chuông + trang) | `/notifications` | [09-thong-bao-va-trang-ca-nhan.md](09-thong-bao-va-trang-ca-nhan.md) — đã có tài liệu |
-| 24 | Trang cá nhân (thông tin + việc cần làm) | `/me` | [09-thong-bao-va-trang-ca-nhan.md](09-thong-bao-va-trang-ca-nhan.md) — đã có tài liệu |
+| 23 | Thông báo (chuông + trang) | `/notifications` | [09-thong-bao-va-trang-ca-nhan.md](../erp/nen-tang/chuc-nang/10-thong-bao-va-trang-ca-nhan.md) — đã có tài liệu |
+| 24 | Trang cá nhân (thông tin + việc cần làm) | `/me` | [09-thong-bao-va-trang-ca-nhan.md](../erp/nen-tang/chuc-nang/10-thong-bao-va-trang-ca-nhan.md) — đã có tài liệu |
 
 ## Nhóm: Khối dùng chung (không có mục menu riêng)
 
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
-| 25 | Bình luận / Trao đổi trên chứng từ (2 cấp · @nhắc tên · lượt thích) | cuối trang chi tiết YCMH · YCBG · Phiếu khảo sát · ĐMH | [11-binh-luan-tren-chung-tu.md](11-binh-luan-tren-chung-tu.md) — đã có tài liệu |
+| 25 | Bình luận / Trao đổi trên chứng từ (2 cấp · @nhắc tên · lượt thích) | cuối trang chi tiết YCMH · YCBG · Phiếu khảo sát · ĐMH | [11-binh-luan-tren-chung-tu.md](../erp/nen-tang/chuc-nang/12-binh-luan-tren-chung-tu.md) — đã có tài liệu |
 | 26 | Lịch sử mua hàng (từng lần mua của mã hàng · tham chiếu giá khi lập đơn) | tab ở chi tiết Sản phẩm · chi tiết NCC · popup trong ô Mã hàng của YCMH/ĐMH | [12-lich-su-mua-hang.md](../erp/thu-mua/chuc-nang/18-lich-su-mua-hang.md) — đã có tài liệu |
 
 ## Nhóm: ERP v2 — phân hệ chỉ có trên giao diện mới (cổng 8083)
@@ -92,7 +92,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
-| 27 | Trung tâm Hướng dẫn sử dụng (bài viết · FAQ · khu quản trị) | tên miền riêng (`VITE_HELP_URL`) — vào từ nút `?` trên thanh trên cùng | [13-trung-tam-hdsd.md](13-trung-tam-hdsd.md) — đã có tài liệu |
+| 27 | Trung tâm Hướng dẫn sử dụng (bài viết · FAQ · khu quản trị) | tên miền riêng (`VITE_HELP_URL`) — vào từ nút `?` trên thanh trên cùng | [13-trung-tam-hdsd.md](../erp/nen-tang/chuc-nang/13-trung-tam-hdsd.md) — đã có tài liệu |
 
 ---
 

@@ -7,7 +7,7 @@
 | Mốc so sánh | ERPNext **v16.53.0** trên site học (VPS 2, container `erpnext-hoc-backend-1`, site `frontend`), mã nguồn `apps/erpnext/erpnext/stock/doctype/batch`, `serial_no`, `serial_and_batch_bundle`, `serial_and_batch_entry`, `pick_list`, `manufacturing/doctype/work_order`; tài liệu chính thức ở `docs.frappe.io/erpnext` (trước đây `docs.erpnext.com`) |
 | Mã soát | nhánh `erp-v2` ngày 02/11/2026, `backend/app/modules/inventory`, `goods_receipt`, `product`, `purchase_order`, `dossier` |
 | Tính chất | Tài liệu nghiên cứu. Không sửa mã, không đổi dữ liệu |
-| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 4.6 và 8.2 việc 2.10 · [10 Nghiệp vụ kho](../../kho/nghien-cuu/10-nghiep-vu-kho.md) tình huống A4, B3 · [11 Độ phủ thu mua, kho](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) dòng A3 · [san-xuat/00](../../san-xuat/00-tong-quan-nghiep-vu.md) câu A3 · [Mô hình dữ liệu sản phẩm](../../mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) |
+| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 4.6 và 8.2 việc 2.10 · [10 Nghiệp vụ kho](../../kho/nghien-cuu/10-nghiep-vu-kho.md) tình huống A4, B3 · [11 Độ phủ thu mua, kho](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) dòng A3 · [san-xuat/00](../../san-xuat/00-tong-quan-nghiep-vu.md) câu A3 · [Mô hình dữ liệu sản phẩm](../../mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) |
 
 ## Mục lục
 
@@ -363,7 +363,7 @@ Cờ đặt **theo từng mã** nhưng nên có **mặc định theo phân loạ
 
 ## 8. Kế hoạch theo nấc
 
-Đặt **sau kho lõi**, cụ thể là gắn vào nấc 2 *Kho đúng chuẩn* của [doc 01 mục 8.2](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md#82-nấc-2--kho-đúng-chuẩn). Độ lớn ước theo ngày làm của một người, chưa tính viết tài liệu yêu cầu và HDSD.
+Đặt **sau kho lõi**, cụ thể là gắn vào nấc 2 *Kho đúng chuẩn* của [doc 01 mục 8.2](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md#82-nấc-2--kho-đúng-chuẩn). Độ lớn ước theo ngày làm của một người, chưa tính viết tài liệu yêu cầu và HDSD.
 
 | Nấc | Nội dung | Phụ thuộc | Độ lớn | Phủ sau nấc |
 |---|---|---|---|---|
