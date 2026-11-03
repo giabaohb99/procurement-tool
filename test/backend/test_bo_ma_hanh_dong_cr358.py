@@ -88,7 +88,7 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
         "submitted", "approved", "cancelled", "paid"),
     #  ĐMH có nhiều mã nhất: bốn mã do người bấm, ba mã do `_recalc_status` tự
     #  đặt lại theo số lượng đã nhận, cộng `draft` của đường hủy duyệt.
-    "modules/purchase_order/service.py::set_status": (
+    "modules/purchase_order/edit_service.py::set_status": (
         "submitted", "approved", "cancelled", "rejected", "completed",
         "draft", "received", "partial"),
     "modules/purchase_request/option_service.py::choose_option": (
@@ -102,7 +102,7 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
     "modules/purchase_request/lifecycle_service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
     "modules/survey_request/lifecycle_service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
     #  bao-CR-453: chốt lên giai đoạn nào thì ghi mã của giai đoạn đó.
-    "modules/purchase_order/service.py::advance_cost_stage": ("cost_stage_prov", "cost_stage_final"),
+    "modules/purchase_order/import_cost_service.py::advance_cost_stage": ("cost_stage_prov", "cost_stage_final"),
     #  bao-CR-448: việc nền báo bất thường, `action` là hằng của module.
     "modules/system_log/anomaly.py::raise_alert": ("anomaly_alert",),
     "modules/seal_request/approval_bridge.py::_write_log": ("approve", "cancel", "update"),
