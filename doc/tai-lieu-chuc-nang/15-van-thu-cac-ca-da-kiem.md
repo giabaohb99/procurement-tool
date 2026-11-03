@@ -431,5 +431,5 @@ docker compose exec erp npm run check      # typecheck + lint + test
 ## Liên quan
 
 - [14-van-thu-van-ban.md](14-van-thu-van-ban.md) — tài liệu chức năng phân hệ Văn thư
-- [`doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`](../phan-quyen/Thiet_Ke_Phan_Quyen.md) — thiết kế hai trục phân quyền
+- [`doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`](../tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md) — thiết kế hai trục phân quyền
 - [`doc/tai-lieu-ky-thuat/change-log.md`](../tai-lieu-ky-thuat/change-log.md) — CR-182…CR-188 là các đợt gần nhất chạm vào phân hệ này

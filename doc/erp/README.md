@@ -11,7 +11,7 @@ Hướng: **giữ code Thu mua, gia cố, chia thành ERP nhiều phân hệ.** 
 | Thư mục | Nội dung |
 |---|---|
 | [`nen-tang/`](./nen-tang/) | Nền ERP v2: kiến trúc vỏ (`07`), phạm vi theo phòng ban (`12`), bộ lọc và sắp xếp (`14`), đổ bê tông nền (`15`), quản lý import/export (`16`), rà soát xóa cứng (`20`) |
-| [`tai-lieu-ky-thuat/`](./tai-lieu-ky-thuat/README.md) | Hiện trạng kỹ thuật ERP v2: kiến trúc, danh mục module, phân quyền, từ điển dữ liệu, danh sách màn |
+| [`tai-lieu-ky-thuat/`](../tai-lieu-ky-thuat/kien-truc/README.md) | Hiện trạng kỹ thuật ERP v2: kiến trúc, danh mục module, phân quyền, từ điển dữ liệu, danh sách màn |
 | [`thu-mua/`](./thu-mua/) | Thu mua: khối Báo cáo thực hiện trên YCBG (`18`) |
 | [`nhap-khau/`](./nhap-khau/01-danh-sach-tinh-nang.md) | Hồ sơ và tiến độ nhập khẩu, chi phí thu mua |
 | [`hai-quan/`](./hai-quan/) | Tra cứu thị trường (giá hải quan) |

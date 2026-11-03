@@ -2,7 +2,7 @@
 
 Bản 1.0 — 28/08/2026. Xem trực tiếp trên GitHub/VS Code (Mermaid). Sơ đồ vẽ mức khối,
 tên container/domain lấy theo thực tế VPS; lệnh deploy chính xác đọc
-[`quy-trinh-nhanh-va-deploy.md`](../../tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md).
+[`quy-trinh-nhanh-va-deploy.md`](../van-hanh/quy-trinh-nhanh-va-deploy.md).
 
 ## 1. Triển khai — ba môi trường
 

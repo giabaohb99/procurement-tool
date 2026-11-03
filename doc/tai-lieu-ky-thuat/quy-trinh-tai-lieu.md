@@ -70,7 +70,7 @@ Mỗi tài liệu trả lời **một câu hỏi khác nhau**. Đi từ *nghiệ
 
 **③ TDD — Technical Design Document**
 - Kiến trúc, stack, mô hình dữ liệu, API, phân quyền, quyết định kỹ thuật
-- → Đã có: [technical-design.md](technical-design.md)
+- → Đã có: [technical-design.md](kien-truc/technical-design.md)
 
 **④ Test cases / QA plan**
 - Bảng: mã · nội dung · bước · kết quả mong đợi · trạng thái
@@ -178,4 +178,4 @@ Team nhỏ không cần đủ 6 loại nặng nề. Gộp lại còn **3 tài li
 
 ---
 
-*Hết. Tài liệu kỹ thuật hệ thống xem [technical-design.md](technical-design.md).*
+*Hết. Tài liệu kỹ thuật hệ thống xem [technical-design.md](kien-truc/technical-design.md).*

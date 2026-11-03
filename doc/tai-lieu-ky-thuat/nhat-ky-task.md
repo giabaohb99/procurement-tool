@@ -142,7 +142,7 @@ logic thì phải chép. Đây là đợt R2 của lộ trình dọn, được g
 - Đặt chỗ việc; đang dời truy vấn xuống lớp nghiệp vụ và dời hàm dựng kết quả sang tệp riêng, lần lượt từng phân hệ, không
   đổi hành vi.
 
-Tham chiếu: `doc/tai-lieu-ky-thuat/danh-gia-chat-luong-backend.md` mục 2.4 và 5.
+Tham chiếu: `doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md` mục 2.4 và 5.
 
 ## bao-CR-703-may-chu | Sổ việc chạy ngầm (máy chủ) + công cụ hỏi bằng lời
 - status: xong
@@ -6207,7 +6207,7 @@ Mã nguồn: hàm `attachment/controller.py::_store_one`; tệp nền mới `cor
 `test/backend/test_bao_mat_tai_tep.py`; ba máy ảo `api`, `celery-worker`, `celery-beat`.
 Commit: erp-v2 7086a4d0.
 Deploy: đã lên máy chủ thử 16/09/2026; máy chủ thật chờ chỉ đạo.
-Tham chiếu: bảy lỗ là BM-025 đến BM-031 trong `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md`;
+Tham chiếu: bảy lỗ là BM-025 đến BM-031 trong `doc/tai-lieu-ky-thuat/van-hanh/so-ghi-nhan-loi-bao-mat.md`;
 lỗ còn mở một phần là BM-030.
 
 ### bao-CR-408-tai-lieu | Cập nhật sổ ghi nhận lỗi bảo mật sau khi vá
@@ -6218,7 +6218,7 @@ làm bản ghi hiện trường; chỉ thêm một băng cảnh báo lên đầu
 để người đọc sau không tưởng lời cũ là sự thật hôm nay.
 Việc thứ sáu ghi rõ ba chỗ mã nguồn cố ý làm khác bản vẽ trong sổ, kẻo có người đi sửa mã cho
 khớp tài liệu.
-Tham chiếu: `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md` mục 2 và 2b; lỗ vá hai trong ba
+Tham chiếu: `doc/tai-lieu-ky-thuat/van-hanh/so-ghi-nhan-loi-bao-mat.md` mục 2 và 2b; lỗ vá hai trong ba
 vế là BM-030.
 
 ## bao-CR-409 | Màn Tiến độ mua hàng: thêm hai cột ngày chứng từ
@@ -7850,7 +7850,7 @@ Mã nguồn: backend/app/core/permissions.py · backend/app/seed.py ·
 backend/app/modules/role/service.py · frontend-v2/src/modules/system/utils/role-module-summary.ts ·
 components/role-list-item.tsx · components/role-name-inline-edit.tsx ·
 components/role-permission-matrix.tsx · pages/role-permission-page.tsx ·
-doc/phan-quyen/Thiet_Ke_Phan_Quyen.md mục 8.
+doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md mục 8.
 Commit: 277b0cd2 (gom chung CR-427/428/430) + 6b68a676 (vá ký tự rỗng).
 Deploy: dev chiều 19/09/2026 (8d2c52a2), không có migration.
 
@@ -10082,7 +10082,7 @@ cho khách nằm ở tài liệu thiết kế; giá hàng ba giai đoạn trên 
 riêng sau.
 
 Tài liệu: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`, `doc/tai-lieu-chuc-nang/04-don-mua-hang.md` mục K,
-`08-he-thong-bao-cao.md`, `doc/erp/tai-lieu-ky-thuat/05a-du-lieu-thu-mua.md`, `doc/erp/nhap-khau/01-danh-sach-tinh-nang.md`,
+`08-he-thong-bao-cao.md`, `doc/tai-lieu-ky-thuat/kien-truc/05a-du-lieu-thu-mua.md`, `doc/erp/nhap-khau/01-danh-sach-tinh-nang.md`,
 `doc/erp/19-viec-con-lai-tong-hop.md` §5, `doc/tai-lieu-ky-thuat/change-log-bao.md` (dòng bao-CR-453).
 Mã nguồn: `backend/app/modules/purchase_order/` (model, schema, service, controller, cost_type.py),
 `backend/migrations/versions/05a62d38a47a_*.py`, `backend/scripts/seed_help_chi_phi_thu_mua.py`,
@@ -17190,7 +17190,7 @@ Mã nguồn: backend/app/core/request_middleware.py · backend/app/core/concurre
 
 **Kết quả:** trên bản local hai bài đã vào Trung tâm trợ giúp và kho tìm kiếm của trợ lý; hỏi thử «bấm lưu báo hệ thống đang bận có mất dữ liệu không» thì trợ lý tìm đúng bài mới đứng đầu. Khi deploy prod chạy script nạp bài hệ thống một lệnh rồi chạy lệnh dọn kho tìm kiếm theo mục B.6.
 
-Mã nguồn: backend/scripts/seed_help_he_thong_cap_nhat.py · backend/scripts/help_seed_common.py · backend/scripts/seed_help_thu_mua_cap_nhat.py · doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md · .env.example
+Mã nguồn: backend/scripts/seed_help_he_thong_cap_nhat.py · backend/scripts/help_seed_common.py · backend/scripts/seed_help_thu_mua_cap_nhat.py · doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md · .env.example
 
 ## duoc-CR-672 | Giữ khung biểu đồ ở báo cáo Năng lực theo loại việc khi chưa đủ dữ liệu
 - status: xong
@@ -17262,7 +17262,7 @@ Mã nguồn: doc/tai-lieu-ky-thuat/nhat-ky-task.md
 - status: xong
 - date: 2026-10-23
 - tag: Thu mua
-**Bối cảnh:** lỗi ô lọc tự dính giá trị lặp lại nhiều lần (bao-CR-388 tháng 9, bao-CR-657 sáng 23/10) vì ô chọn dùng chung của giao diện thumua mặc định tự chọn khi danh sách chỉ còn một lựa chọn, mà danh mục công ty, phòng ban, nhân sự lại bị lọc theo quyền. Rà soát đầy đủ ở `doc/tai-lieu-ky-thuat/ra-soat-o-loc-tu-gan.md`.
+**Bối cảnh:** lỗi ô lọc tự dính giá trị lặp lại nhiều lần (bao-CR-388 tháng 9, bao-CR-657 sáng 23/10) vì ô chọn dùng chung của giao diện thumua mặc định tự chọn khi danh sách chỉ còn một lựa chọn, mà danh mục công ty, phòng ban, nhân sự lại bị lọc theo quyền. Rà soát đầy đủ ở `doc/tai-lieu-ky-thuat/van-hanh/ra-soat-o-loc-tu-gan.md`.
 
 **Đã làm:** đổi mặc định sang không tự gán. Biểu mẫu chỉ còn tự điền ở ô lấy từ danh sách cố định hoặc danh mục mở (nhà cung cấp, sản phẩm, kho, đơn vị tính, phân loại); ô công ty, bộ phận, nhân sự, người duyệt, NSTM, NSPT không tự điền nữa, nên ô Bộ phận của YCBG hết bị điền sẵn phòng Kinh doanh AGC. Thêm bài quét `npm run check:filters`: ô lọc nào bật tự gán là báo đỏ.
 
@@ -17426,7 +17426,7 @@ Mã nguồn: test/backend/test_duyet_theo_quyen_cr680.py · plans/reports/code-r
 ### duoc-CR-680-4 | Ép tải và tài liệu
 - status: xong
 Đo trên MySQL thật với mười, sáu mươi và hai trăm người giữ quyền: đúng người ở cả ba mức, sáu truy vấn cố định khi bộ đệm quyền đã nóng. Viết bài hướng dẫn sử dụng, bổ sung tài liệu dữ liệu bộ máy duyệt, nâng cẩm nang trợ lý phần Nghỉ phép. Tiện tay sửa một lỗi kiểm mã còn sót của CR-676.
-Mã nguồn: plans/261023-1330-ep-tai-cr680/scripts/load-permission-approvers-cr680.py · backend/scripts/seed_help_phe_duyet_theo_quyen.py · doc/erp/tai-lieu-ky-thuat/05d-du-lieu-van-thu-duyet.md
+Mã nguồn: plans/261023-1330-ep-tai-cr680/scripts/load-permission-approvers-cr680.py · backend/scripts/seed_help_phe_duyet_theo_quyen.py · doc/tai-lieu-ky-thuat/kien-truc/05d-du-lieu-van-thu-duyet.md
 
 ## nc-02-khao-sat-san-xuat | Phân tích khảo sát hiện trạng Quản lý sản xuất ngày 19/10
 - status: xong
@@ -17671,7 +17671,7 @@ Commit: 51c9a2b6 (main = erp-v2) · Deploy: prod toàn bộ dịch vụ ERP và 
 
 **Đã làm:** tạo người dùng Linux ida, thư mục riêng, đăng nhập bằng chìa khóa, không sudo, không thuộc nhóm docker; cài Docker rootless chạy dưới quyền ida, đã thử container chạy được và chỉ thấy container của chính mình. Chìa khóa riêng giao cho người dùng; bản trên máy chủ đã xóa. Viết hướng dẫn dùng cơ bản.
 
-Mã nguồn: doc/tai-lieu-ky-thuat/vps-dev-tai-khoan-ida.md
+Mã nguồn: doc/tai-lieu-ky-thuat/van-hanh/vps-dev-tai-khoan-ida.md
 
 ## nc-07-khao-sat-sx-tra-loi-chung | Tổng hợp khảo sát Sản xuất trả lời chung ngày 26/10
 - status: xong

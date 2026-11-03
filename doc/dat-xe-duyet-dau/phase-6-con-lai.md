@@ -333,10 +333,10 @@ duyệt (Playwright) cần cả stack + tài khoản demo cho 3 vai trò Đặt 
 ---
 
 ## Việc "quét dọn" tài liệu đi kèm CR này
-- [ ] `doc/erp/tai-lieu-ky-thuat/05e-du-lieu-cong-tac-ho-tro.md` **Cụm H** đang tả **schema chuỗi cũ**
+- [ ] `doc/tai-lieu-ky-thuat/kien-truc/05e-du-lieu-cong-tac-ho-tro.md` **Cụm H** đang tả **schema chuỗi cũ**
   (status VARCHAR) — **đã lệch** so với module đã ship (SMALLINT R2 + ~20 cột mới: `stops` JSON, khối
   giao hàng, `supplier_type`/`tax_*`, `license_class`, `capacity` Float). Cập nhật 3 bảng
   `tab_vehicle · tab_driver · tab_vehicle_booking` theo `model.py` **trong cùng đợt CR** (nguồn sự
   thật là `model.py`; mã đúng, từ điển sai).
-- [ ] `doc/erp/tai-lieu-ky-thuat/02-danh-muc-module.md`: dòng frontend `vehicle-booking` đang ghi
+- [ ] `doc/tai-lieu-ky-thuat/kien-truc/02-danh-muc-module.md`: dòng frontend `vehicle-booking` đang ghi
   *"Sắp có"* — đổi thành **Đang chạy** (đã bật ở `module-registry.ts`).

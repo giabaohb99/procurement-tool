@@ -587,6 +587,6 @@ Khi ghi `received_date` cho 1 `po_delivery`, gọi **`po_service.recompute_effec
 | v1.0 | 2026-07-08 | Bản LLD đầu tiên (39 bảng + RBAC) | ☐ chờ ký |
 | v1.1 | 2026-07-15 | Thêm `tab_push_subscription` (40 bảng); cập nhật RBAC `pur_manager`/`pur_admin` (resync); thêm `tab_setting` ghi chú mã hóa Fernet | ☐ chờ ký |
 
-> Mọi thay đổi cấu trúc bảng/quyền → ghi **Change Request** ở [change-log.md](change-log.md) + cập nhật tài liệu này.
+> Mọi thay đổi cấu trúc bảng/quyền → ghi **Change Request** ở [change-log.md](../change-log.md) + cập nhật tài liệu này.
 
 *Hết. Tổng quan xem [technical-design.md](technical-design.md); sơ đồ xem [so-do-ky-thuat.md](so-do-ky-thuat.md).*

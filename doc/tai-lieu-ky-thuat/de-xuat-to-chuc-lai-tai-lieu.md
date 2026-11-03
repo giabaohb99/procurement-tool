@@ -13,7 +13,7 @@
 | Vấn đề | Số đo / ví dụ |
 |---|---|
 | Quá nhiều cửa vào | `doc/` có **19 thư mục cấp 1**, cộng `plans/` (169 tệp), `frontend-v2/plans/` (56 tệp), 3 tệp lẻ ở gốc repo (`TASKS.md`, `task-process.md`, `AGENTS.md`) |
-| Hai chỗ cùng tên | `doc/tai-lieu-ky-thuat/` và `doc/erp/tai-lieu-ky-thuat/` |
+| Hai chỗ cùng tên | `doc/tai-lieu-ky-thuat/` và `doc/tai-lieu-ky-thuat/kien-truc/` |
 | Tài liệu một phân hệ nằm rải 3–4 nơi | Văn thư: `doc/erp/van-thu/` + `doc/tai-lieu-chuc-nang/14,15` + `plans/260814-…-van-thu-p0-p3`. Đặt xe / duyệt dấu: 3 thư mục ngoài `doc/erp/` |
 | Tài liệu chức năng tách khỏi phân hệ | `doc/tai-lieu-chuc-nang/` 27 tệp đánh số chung `01…19` (có số trùng: hai tệp `16-`, hai tệp `17-`) |
 | Đặt tên lẫn kiểu | `Requirement_PO_Detail.md`, `TIEN-DO.md`, `Thiet_Ke_Phan_Quyen.md` cạnh `02-nghi-phep.md`; thư mục tiếng Anh `item/ inventory/ …` cạnh `van-thu/ hai-quan/` |
@@ -107,8 +107,8 @@ Ba thứ này **công cụ (Claude Code, Codex) đọc thẳng theo đường d�
 | Hiện tại | Tới |
 |---|---|
 | `doc/erp/00-ke-hoach-theo-module.md` | `doc/plans/00-ke-hoach-theo-module.md` |
-| `doc/erp/tai-lieu-ky-thuat/*` (kiến trúc v2, từ điển dữ liệu, danh sách màn), `technical-design.md`, `thiet-ke-ky-thuat-chi-tiet.md`, `so-do-ky-thuat.md` | `doc/tai-lieu-ky-thuat/kien-truc/` |
-| `doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`, `Requirement_VaiTro.md` | `doc/tai-lieu-ky-thuat/phan-quyen/` (đổi tên kebab); `Plan_*`, `Test_*` → `doc/v1/` |
+| `doc/tai-lieu-ky-thuat/kien-truc/*` (kiến trúc v2, từ điển dữ liệu, danh sách màn), `technical-design.md`, `thiet-ke-ky-thuat-chi-tiet.md`, `so-do-ky-thuat.md` | `doc/tai-lieu-ky-thuat/kien-truc/` |
+| `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`, `Requirement_VaiTro.md` | `doc/tai-lieu-ky-thuat/phan-quyen/` (đổi tên kebab); `Plan_*`, `Test_*` → `doc/v1/` |
 | `quy-trinh-nhanh-va-deploy.md`, `gioi-han-tai-nguyen-docker.md`, `so-ghi-nhan-loi-bao-mat.md`, `ra-soat-*`, `danh-gia-chat-luong-backend.md`, `vps-dev-tai-khoan-ida.md` | `doc/tai-lieu-ky-thuat/van-hanh/` |
 | `mo-hinh-du-lieu-san-pham.md` | `doc/erp/mat-hang/tai-lieu-ky-thuat/` (CLAUDE.md trỏ tới — sửa cùng commit) |
 | `tdd-redesign-kho.md` | `doc/erp/kho/tai-lieu-ky-thuat/` |

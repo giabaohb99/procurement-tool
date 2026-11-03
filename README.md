@@ -133,7 +133,7 @@ Hai trục độc lập:
 - **Frontend:** `AuthContext.can(entity, action)` để ẩn menu và nút hành động; field bị khóa khi không có quyền ghi.
 - **Vai trò chuẩn** (seed): Nhân sự cơ bản · Trưởng phòng · Quản lý công ty · NV thu mua · Quản lý thu mua · Admin thu mua · Quản trị Hướng dẫn sử dụng · Admin hệ thống.
 
-Chi tiết thiết kế: [`doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`](doc/phan-quyen/Thiet_Ke_Phan_Quyen.md).
+Chi tiết thiết kế: [`doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`](doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md).
 
 ---
 
@@ -176,7 +176,7 @@ Toàn bộ tài liệu nằm trong `doc/` — mục lục: [`doc/README.md`](doc
 |---|---|
 | Yêu cầu tổng thể | [`doc/yeu-cau/Requirement_Mini_Tool_Thu_Mua.md`](doc/yeu-cau/Requirement_Mini_Tool_Thu_Mua.md) |
 | Yêu cầu Yêu cầu mua (chi tiết) | [`doc/yeu-cau/Requirement_YeuCauMua_ChiTiet.md`](doc/yeu-cau/Requirement_YeuCauMua_ChiTiet.md) |
-| Thiết kế phân quyền | [`doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`](doc/phan-quyen/Thiet_Ke_Phan_Quyen.md) |
+| Thiết kế phân quyền | [`doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`](doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md) |
 | Quy ước đặt tên | [`doc/chung/NAMING_CONVENTIONS.md`](doc/chung/NAMING_CONVENTIONS.md) |
 | Thiết kế giao diện / Dashboard | [`doc/thiet-ke/`](doc/thiet-ke/) |
 

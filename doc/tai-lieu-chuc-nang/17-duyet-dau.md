@@ -200,7 +200,7 @@ sống** (`doc_type="signed_doc"`) để Văn thư không nhầm hai loại.
 | Trưởng bộ phận (vai trò sẵn có) | `seal_request` read/approve | `dept` |
 | Nhân viên (vai trò sẵn có) | `seal_request` read/create/write | `own` |
 
-Chi tiết thiết kế phân quyền hai trục: `doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`.
+Chi tiết thiết kế phân quyền hai trục: `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`.
 
 ## Liên quan
 

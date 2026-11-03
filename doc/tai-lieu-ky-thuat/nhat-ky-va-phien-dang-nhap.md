@@ -903,7 +903,7 @@ Ngoài năm chỗ đó, hai thứ **không** có trong bản vẽ nhưng cần b
 Bảng §8.5 nói tab Nhân sự có nút *"Khóa tài khoản + đăng xuất mọi thiết bị — nút của quy trình
 nghỉ việc"*. P3b làm nút đó, nhưng HR **không bấm nó** khi cho nghỉ việc: họ đổi ô *Trạng
 thái* của hồ sơ sang *Nghỉ việc* và tin là xong. Hai công tắc không nối nhau → **BM-015**
-trong [`so-ghi-nhan-loi-bao-mat.md`](so-ghi-nhan-loi-bao-mat.md). Bao-CR-400 nối lại:
+trong [`so-ghi-nhan-loi-bao-mat.md`](van-hanh/so-ghi-nhan-loi-bao-mat.md). Bao-CR-400 nối lại:
 
 - **Hồ sơ chuyển `resigned` hoặc tắt `is_active`** (`employee/service.py::has_left_company`,
   chỉ bắt lúc *chuyển*) → `lock_linked_users` khóa mọi tài khoản gắn hồ sơ + `force_relogin`

@@ -10,7 +10,7 @@
 | **Khách hàng / nghiệp vụ** | Phòng Thu mua |
 | **Sản phẩm** | Web app nội bộ quản lý quy trình thu mua (khảo sát → mua → nhận → công nợ → thanh toán) |
 
-> Đây là **"bản vẽ"** đã chốt của hệ thống. Mọi thay đổi so với bản này phải đi qua **Change Request (phụ lục)** — xem [quy-trinh-tai-lieu.md](quy-trinh-tai-lieu.md) và mục 12.
+> Đây là **"bản vẽ"** đã chốt của hệ thống. Mọi thay đổi so với bản này phải đi qua **Change Request (phụ lục)** — xem [quy-trinh-tai-lieu.md](../quy-trinh-tai-lieu.md) và mục 12.
 
 ---
 
@@ -245,15 +245,15 @@ Idempotent: bỏ qua nếu không còn vai trò `STAFF`.
 
 ## 12. Nhật ký thay đổi & phiên bản
 
-> Baseline = v1.0. Mỗi thay đổi so với baseline → 1 dòng ở **[change-log.md](change-log.md)** với ước lượng ảnh hưởng + người duyệt, rồi tăng version.
+> Baseline = v1.0. Mỗi thay đổi so với baseline → 1 dòng ở **[change-log.md](../change-log.md)** với ước lượng ảnh hưởng + người duyệt, rồi tăng version.
 
 | Version | Ngày | Nội dung | Người duyệt |
 |---|---|---|---|
 | v1.0 | 2026-07-08 | Baseline đầu tiên | ☐ chờ ký |
 | v1.1 | 2026-07-15 | CR-002→006: PWA + Web Push; phân quyền pur_manager/pur_admin; tạo tài khoản từ nhân sự; thông báo tái cơ cấu; email force flag; Google OAuth | ☐ chờ ký |
 
-**Change Request đã xảy ra — xem chi tiết tại [change-log.md](change-log.md).**
+**Change Request đã xảy ra — xem chi tiết tại [change-log.md](../change-log.md).**
 
 ---
 
-*Hết tài liệu v1.0. Xem quy trình vận hành tài liệu tại [quy-trinh-tai-lieu.md](quy-trinh-tai-lieu.md).*
+*Hết tài liệu v1.0. Xem quy trình vận hành tài liệu tại [quy-trinh-tai-lieu.md](../quy-trinh-tai-lieu.md).*

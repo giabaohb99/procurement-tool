@@ -9,7 +9,7 @@ vào web thấy màn chọn phân hệ dạng lưới thẻ, ai có quyền tớ
 thật: **Thu mua · Sản xuất (danh mục) · Kho · Tài chính · Nhân sự · Văn thư · Phê duyệt ·
 Diễn đàn · Hỗ trợ · Trợ lý AI · Quản trị**, cộng Trung tâm HDSD chạy app riêng.
 
-Ba nguyên tắc từ [`doc/erp/README.md`](../README.md) vẫn là luật gốc:
+Ba nguyên tắc từ [`doc/erp/README.md`](../../erp/README.md) vẫn là luật gốc:
 
 1. Cơ sở dữ liệu cũ **chỉ thêm, không sửa** — Thu mua đang chạy thật, không có cửa sổ dừng hệ.
 2. Thu mua **không được gián đoạn** — mọi thay đổi giao diện có đường lui.
@@ -23,7 +23,7 @@ Ba nguyên tắc từ [`doc/erp/README.md`](../README.md) vẫn là luật gốc
 | Backend | dùng chung `backend/` — v2 gọi đúng `/api/...` cũ, đúng phong bì `{success, message, data}` | như prod, cộng các migration/module mới chưa lên prod |
 | Merge | **một chiều `main` → `erp-v2`** — đưa ngược là kéo migration chưa duyệt vào DB thật | |
 
-Chi tiết luật nhánh + lệnh deploy: [`quy-trinh-nhanh-va-deploy.md`](../../tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md) — đọc bản đó, đừng làm theo trí nhớ.
+Chi tiết luật nhánh + lệnh deploy: [`quy-trinh-nhanh-va-deploy.md`](../van-hanh/quy-trinh-nhanh-va-deploy.md) — đọc bản đó, đừng làm theo trí nhớ.
 
 ## 3. Các service Docker (local)
 
@@ -89,7 +89,7 @@ Mỗi mảng có tài liệu quyết định riêng trong `doc/erp/` hoặc dòn
 ## 7. Cái gì KHÔNG đổi so với v1
 
 - Luồng nghiệp vụ Thu mua lõi (YCBG → khảo sát → YCMH → ĐMH → nhận hàng → công nợ → YCTT) —
-  TDD v1 ([`technical-design.md`](../../tai-lieu-ky-thuat/technical-design.md)) vẫn là bản mô tả đúng.
+  TDD v1 ([`technical-design.md`](technical-design.md)) vẫn là bản mô tả đúng.
 - `tab_product` là bảng VARIANT (SKU), 7 bảng nối bằng chuỗi `product_code` — luật D-025,
-  đọc [`mo-hinh-du-lieu-san-pham.md`](../../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) trước khi đụng.
+  đọc [`mo-hinh-du-lieu-san-pham.md`](../mo-hinh-du-lieu-san-pham.md) trước khi đụng.
 - Hai trục phân quyền backend (`require` + `apply_scope`) — v2 chỉ thêm tầng hiển thị phía trên, xem `03`.

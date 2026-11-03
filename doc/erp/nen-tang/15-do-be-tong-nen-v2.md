@@ -925,5 +925,5 @@ nợ sẵn. Bước 5 *(bỏ cột cũ)* **không** chạy ở prod trong lần 
 | [`06` §1 R2 · §4 H1](../00-ke-hoach-theo-module.md) | Quy định gốc và sáu bước migration. **R2 phải sửa theo QĐ-9 — việc của B-01**, xem §2.4.1 |
 | [`13` §1.8 · §6.5 · §6.7](../00-ke-hoach-theo-module.md) | Màn còn khuyết, nợ lớp CRUD, nợ N-13…N-16 |
 | [`08`](../00-ke-hoach-theo-module.md) | 30 task CC — B-07 và B-08 trùng với nhóm task phạm vi ở đó |
-| [`quy-trinh-nhanh-va-deploy.md`](../../tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md) | Luật nhánh, cách build và deploy, danh sách container cấm đụng |
+| [`quy-trinh-nhanh-va-deploy.md`](../../tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md) | Luật nhánh, cách build và deploy, danh sách container cấm đụng |
 | [`core/contract_types.py`](../../../backend/app/core/contract_types.py) | Khuôn mẫu để chép — đọc chú thích đầu tệp trước khi làm B-01 |

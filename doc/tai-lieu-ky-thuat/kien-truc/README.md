@@ -2,7 +2,7 @@
 
 Bộ này mô tả **hệ thống SAU khi update** — nền ERP nhiều phân hệ chạy trên nhánh `erp-v2`
 (giao diện `frontend-v2/`, backend dùng chung với bản cũ). Nó là bản song hành của
-[`doc/tai-lieu-ky-thuat/`](../../tai-lieu-ky-thuat/README.md) — bộ đó mô tả **Mini Tool Thu mua v1**
+[`doc/tai-lieu-ky-thuat/`](../README.md) — bộ đó mô tả **Mini Tool Thu mua v1**
 (giao diện `frontend/`, 39 bảng thời điểm viết) và vẫn đúng cho phần lõi chưa đổi.
 
 ## Nội dung
@@ -19,20 +19,20 @@ Bộ này mô tả **hệ thống SAU khi update** — nền ERP nhiều phân h
 
 ## Quan hệ với các tài liệu khác — đọc cái nào khi nào
 
-- **Nhật ký thay đổi (change-log / CR) DÙNG CHUNG một sổ:** [`doc/tai-lieu-ky-thuat/change-log.md`](../../tai-lieu-ky-thuat/change-log.md)
-  **+** [`change-log-bao.md`](../../tai-lieu-ky-thuat/change-log-bao.md) — **đọc cả hai**.
+- **Nhật ký thay đổi (change-log / CR) DÙNG CHUNG một sổ:** [`doc/tai-lieu-ky-thuat/change-log.md`](../change-log.md)
+  **+** [`change-log-bao.md`](../change-log-bao.md) — **đọc cả hai**.
   Bộ này KHÔNG có change-log riêng — một change-log **theo phân hệ** là hai nguồn sự thật cho
   một kho mã, sớm muộn lệch nhau. Việc tách tệp ngày 07/09/2026 khác hẳn: vẫn **một sổ, một
   dải số**, chỉ chia chỗ ghi **theo người** để hai người thôi chèn vào cùng một dòng đầu bảng
   rồi xung đột mỗi lần merge. Chia theo phân hệ thì vẫn cấm.
-- **Quy trình nhánh + deploy:** [`doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md`](../../tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md) — bắt buộc đọc trước khi đụng `main` hoặc VPS. Không chép lại ở đây.
+- **Quy trình nhánh + deploy:** [`doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md`](../van-hanh/quy-trinh-nhanh-va-deploy.md) — bắt buộc đọc trước khi đụng `main` hoặc VPS. Không chép lại ở đây.
 - **Kế hoạch và quyết định** (vì sao làm, làm theo thứ tự nào) nằm ở các tệp đánh số của
-  [`doc/erp/`](../README.md) (`07` vỏ ERP, `11`–`13` đa pháp nhân + màn còn lại, `15` đổ bê tông nền).
+  [`doc/erp/`](../../erp/README.md) (`07` vỏ ERP, `11`–`13` đa pháp nhân + màn còn lại, `15` đổ bê tông nền).
   Bộ này chỉ mô tả **hiện trạng kỹ thuật** — cái ĐÃ chạy, không phải cái SẼ làm.
 - **Chi tiết từng bảng dữ liệu:** ở [`05-tu-dien-du-lieu.md`](05-tu-dien-du-lieu.md) (chỉ mục) +
   5 tệp `05a`–`05e` — 101 bảng sau 151 migration, đủ cột + ý nghĩa + logic. Khi từ điển lệch với
   `model.py` thì **mã đúng, từ điển sai**. Bản LLD 39 bảng của v1
-  ([`thiet-ke-ky-thuat-chi-tiet.md`](../../tai-lieu-ky-thuat/thiet-ke-ky-thuat-chi-tiet.md)) giữ làm tham chiếu lịch sử.
+  ([`thiet-ke-ky-thuat-chi-tiet.md`](thiet-ke-ky-thuat-chi-tiet.md)) giữ làm tham chiếu lịch sử.
 
 ## Nguyên tắc viết của bộ này
 

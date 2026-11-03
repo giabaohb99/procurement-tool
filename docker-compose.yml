@@ -11,7 +11,7 @@
 #
 # Trần trong tệp này chỉ chặn được TỪNG container. Muốn chặn cả máy ảo Docker thì phải đặt
 # thêm `%USERPROFILE%\.wslconfig` (Windows) — mẫu ở `docker/wslconfig.example`.
-# Giải thích đầy đủ: doc/tai-lieu-ky-thuat/gioi-han-tai-nguyen-docker.md
+# Giải thích đầy đủ: doc/tai-lieu-ky-thuat/van-hanh/gioi-han-tai-nguyen-docker.md
 #
 # Máy yếu hơn thì ĐỪNG sửa tệp này (nó dùng chung cả đội) — tạo `docker-compose.override.yml`
 # riêng, compose tự gộp, và tệp đó đã được .gitignore bỏ qua.

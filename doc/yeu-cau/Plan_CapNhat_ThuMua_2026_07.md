@@ -269,4 +269,4 @@ Backend test tại `test/backend/` (SQLite in-memory); luồng E2E tại `test/e
 
 2. Cập nhật `TASKS.md` (gốc) — thêm nhóm "Cập nhật Thu mua đợt 2026-07" với 9 dòng `- [ ]` (task 1-8, 10).
 
-3. Task 4: sửa dòng `TASKS.md:32` (đảo quyết định "bỏ VAT") + cập nhật `technical-design.md` mục data model. Task 5: cập nhật `doc/phan-quyen/Thiet_Ke_Phan_Quyen.md` (role cơ bản không còn `supplier.read`).
+3. Task 4: sửa dòng `TASKS.md:32` (đảo quyết định "bỏ VAT") + cập nhật `technical-design.md` mục data model. Task 5: cập nhật `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md` (role cơ bản không còn `supplier.read`).

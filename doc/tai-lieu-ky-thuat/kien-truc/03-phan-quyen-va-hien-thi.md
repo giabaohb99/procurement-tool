@@ -2,7 +2,7 @@
 
 Bản 1.0 — 28/08/2026. Phần 1–2 là lõi backend (không đổi so với v1, tóm để đứng một mình được);
 phần 3–5 là tầng v2 xây thêm phía trên. Thiết kế gốc đầy đủ:
-[`doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`](../../phan-quyen/Thiet_Ke_Phan_Quyen.md).
+[`doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`](../phan-quyen/thiet-ke-phan-quyen.md).
 
 ## 1. Hai trục — luật gốc của cả hệ
 

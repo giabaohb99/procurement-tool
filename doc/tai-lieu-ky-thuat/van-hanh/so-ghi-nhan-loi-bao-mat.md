@@ -332,7 +332,7 @@ Hệ quả, theo thứ tự nặng dần:
   nối được với thao tác nào sau đó.
 
 **Hướng vá:** bảng `tab_login_session` + `jti` trong token — đã thiết kế ở
-[`nhat-ky-va-phien-dang-nhap.md`](nhat-ky-va-phien-dang-nhap.md) §3.1 (bao-CR-312, đợt P1).
+[`nhat-ky-va-phien-dang-nhap.md`](../nhat-ky-va-phien-dang-nhap.md) §3.1 (bao-CR-312, đợt P1).
 Nhưng CR đó là một công trình 6 đợt; **phần khóa phiên nên tách ra làm trước**, xem mục 3.
 
 ---
@@ -442,7 +442,7 @@ là văn xuôi do người viết mã tự đặt. Không có chỗ nào lưu **
 nên câu "dòng này trước đó ghi gì" không trả lời được — kể cả khi có dòng nhật ký.
 
 Đây là gốc rễ khiến ticket 07/09 phải mở database. Thiết kế vá: `tab_change_log` sinh tự động
-bằng sự kiện SQLAlchemy — [`nhat-ky-va-phien-dang-nhap.md`](nhat-ky-va-phien-dang-nhap.md) §3.2.
+bằng sự kiện SQLAlchemy — [`nhat-ky-va-phien-dang-nhap.md`](../nhat-ky-va-phien-dang-nhap.md) §3.2.
 
 **Bản vá (bao-CR-402).** Bảng `tab_change_log` (migration `d5f7a9c1b3e2`) + `core/change_tracker.py`
 bám ba sự kiện của `Session`: `before_flush` đọc `history` từng cột và **gom vào bộ đệm trong bộ
@@ -500,7 +500,7 @@ văn** `message`, nên lọc theo IP là đi so chuỗi. Mọi dòng nhật ký 
 trình duyệt, không có mã lượt gọi để gom các thay đổi của cùng một lần bấm nút.
 
 Vá: ba cột `session_id` / `request_id` / `ip` trên `tab_audit_log` —
-[`nhat-ky-va-phien-dang-nhap.md`](nhat-ky-va-phien-dang-nhap.md) §3.3. **Dòng cũ để NULL, không
+[`nhat-ky-va-phien-dang-nhap.md`](../nhat-ky-va-phien-dang-nhap.md) §3.3. **Dòng cũ để NULL, không
 đắp lại được.**
 
 ---
@@ -555,7 +555,7 @@ lớp nhật ký không ghi lại chính nó). **QĐ-A bị đảo cùng lúc**:
 lại, vì đó đúng là chỗ token bị cắp lộ ra (BM-003).
 
 Ba cái giá phải trả và cách trả: dung lượng → dọn dòng GET quá **90 ngày** (§4.1.1 của
-[`nhat-ky-va-phien-dang-nhap.md`](nhat-ky-va-phien-dang-nhap.md)); nhật ký loãng → GET
+[`nhat-ky-va-phien-dang-nhap.md`](../nhat-ky-va-phien-dang-nhap.md)); nhật ký loãng → GET
 **không chép thân trả về**, chỉ giữ mã trạng thái + tuyến gọi; ghi chậm → GET bỏ hẳn nhịp
 `await request.body()`.
 
@@ -705,7 +705,7 @@ người nghỉ việc — phải giữ để tính lương, bảo hiểm.
 
 Vì sao xếp **Cao**: đây đúng là kịch bản mà cả bộ máy phiên (P3a/P3b) được dựng để trả lời —
 *"nghỉ việc rồi mà còn phiên nào sống không"* (§8.5 của
-[`nhat-ky-va-phien-dang-nhap.md`](nhat-ky-va-phien-dang-nhap.md)) — và câu trả lời đang là
+[`nhat-ky-va-phien-dang-nhap.md`](../nhat-ky-va-phien-dang-nhap.md)) — và câu trả lời đang là
 *"còn, và HR không biết"*. Không cần kỹ năng gì để khai thác: người nghỉ việc mở lại tab đã
 đăng nhập trên máy nhà.
 
@@ -1326,7 +1326,7 @@ trong tiến trình, đúng kiểu `_PERM_CACHE` đang dùng cho hồ sơ quyề
 ### Việc 3 — bao-CR-312 đầy đủ
 
 Giữ nguyên như đã thiết kế: BM-005 và BM-007. Vẫn đang chờ chốt 6 câu hỏi ở §6 của
-[`nhat-ky-va-phien-dang-nhap.md`](nhat-ky-va-phien-dang-nhap.md).
+[`nhat-ky-va-phien-dang-nhap.md`](../nhat-ky-va-phien-dang-nhap.md).
 
 ### Việc 4 — đưa việc soát vào nếp
 

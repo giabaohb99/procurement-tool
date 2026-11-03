@@ -38,7 +38,7 @@ kết luận ứng dụng "không phản hồi" và tắt đi.
 
 Tệp này nằm ở thư mục người dùng của Windows, **không nằm trong repo** và **không commit
 được** — vì con số phụ thuộc cấu hình từng máy. Mẫu kèm hướng dẫn ở
-[`docker/wslconfig.example`](../../docker/wslconfig.example).
+[`docker/wslconfig.example`](../../../docker/wslconfig.example).
 
 ```bash
 # 1) Chép mẫu về thư mục người dùng (chạy trong Git Bash)
@@ -74,7 +74,7 @@ mất luôn `localhost:8000` / `:8080` / `:8083`, mà không giúp gì cho việ
 
 ### 2.2 Tầng container — `docker-compose.yml`
 
-Trần từng service đã nằm sẵn trong [`docker-compose.yml`](../../docker-compose.yml), commit
+Trần từng service đã nằm sẵn trong [`docker-compose.yml`](../../../docker-compose.yml), commit
 theo repo nên cả đội dùng chung. Không phải làm gì thêm.
 
 | Service | RAM | CPU | Ghi chú |
@@ -147,7 +147,7 @@ docker stats --no-stream --format "{{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"
 
 Bind-mount trên Windows **không phát sự kiện hệ tệp** sang container Linux, nên Vite buộc
 phải dò lại cây mã theo chu kỳ. Cấu hình hiện tại ở
-[`frontend-v2/vite.config.ts`](../../frontend-v2/vite.config.ts):
+[`frontend-v2/vite.config.ts`](../../../frontend-v2/vite.config.ts):
 
 ```ts
 watch: { usePolling: true, interval: 1000, binaryInterval: 2000 }

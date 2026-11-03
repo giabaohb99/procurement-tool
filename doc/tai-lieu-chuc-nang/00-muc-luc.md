@@ -103,7 +103,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 - Danh mục (mục 11–18) và một phần Hệ thống là màn hình CRUD chuẩn, render tự động qua `CrudList` / `CrudDetail` theo cấu hình trong `frontend/src/config/cruds.tsx`.
 - Mục 25–26 không có mục menu riêng: là khối dùng chung nhúng vào nhiều màn hình khác nhau.
 - Mục 27 là **ứng dụng web riêng** (`help-center/`), chạy trên tên miền riêng nhưng dùng chung backend và tài khoản.
-- Tài liệu phân quyền chi tiết xem tại `doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`.
+- Tài liệu phân quyền chi tiết xem tại `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`.
 - Mục 28 (**Văn thư**) chỉ có trên `frontend-v2/` — `frontend/` đóng băng nên không có bản tương ứng; menu lấy từ `frontend-v2/src/modules/document/routes.tsx`.
 - Mục 29 (**Dự án**) cũng chỉ có trên `frontend-v2/`; menu lấy từ `frontend-v2/src/modules/work/routes.tsx`. ⚠️ Thư mục mã nguồn vẫn là `work/`, API vẫn `/api/work/...`, entity phân quyền vẫn `work_task` — chỉ tên hiển thị cho người dùng là «Dự án». Thiết kế chi tiết ở `doc/erp/cong-viec/`.
 - Phân quyền của **Dự án** KHÔNG dùng phạm vi dữ liệu như các phân hệ chứng từ: quyết định thật nằm ở **tư cách thành viên dự án**. Xem §7 của `16-du-an-cong-viec.md`.

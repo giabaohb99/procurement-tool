@@ -20,7 +20,7 @@ Fixed code sets of either shape are declared in `backend/app/core/status_catalog
 
 Stack: FastAPI 0.115 · SQLAlchemy 2.0 · Pydantic v2 · MySQL 8 · Alembic · React 18 + Vite + TS. Runs entirely via Docker Compose.
 
-⚠️ **Trước khi đụng vào nhánh `main` hoặc vào VPS, đọc `doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md`.**
+⚠️ **Trước khi đụng vào nhánh `main` hoặc vào VPS, đọc `doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md`.**
 Repo có **hai nhánh chạy song song**: `main` = prod (backend + `frontend/` + `help-center/`),
 `erp-v2` = dev (`frontend-v2/`). Deploy prod **bắt buộc** có `-f docker-compose.production.yml`.
 
@@ -65,7 +65,7 @@ với đúng thư mục đó (CLAUDE.md giữ phần cốt lõi). Thêm luật c
 
 Everything runs in Docker; there is no local venv/npm workflow.
 
-⚠️ **Máy đơ / tự thoát app khi chạy test hay build? Đọc `doc/tai-lieu-ky-thuat/gioi-han-tai-nguyen-docker.md`.**
+⚠️ **Máy đơ / tự thoát app khi chạy test hay build? Đọc `doc/tai-lieu-ky-thuat/van-hanh/gioi-han-tai-nguyen-docker.md`.**
 Stack local có **11 container**; `docker-compose.yml` đã đặt `mem_limit` + `cpus` cho từng cái —
 **không tự ý gỡ**. Trần đó chỉ chặn từng container; chặn cả máy ảo Docker phải đặt thêm
 `%USERPROFILE%\.wslconfig` (mẫu ở `docker/wslconfig.example`, mỗi máy tự chép, không commit).
@@ -196,7 +196,7 @@ Docker; code bind-mount nên HMR chạy. Gọi API bằng đường **tương đ
 
 ## Docs
 
-Requirements, permission design, and naming conventions live in `doc/` (Vietnamese) — index at `doc/README.md`. Permission design detail: `doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`. Progress checklist: `TASKS.md`.
+Requirements, permission design, and naming conventions live in `doc/` (Vietnamese) — index at `doc/README.md`. Permission design detail: `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`. Progress checklist: `TASKS.md`.
 
 ### Nhật ký task — `doc/tai-lieu-ky-thuat/nhat-ky-task.md`
 
