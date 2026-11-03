@@ -111,6 +111,17 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-712-to-chuc-lai-tai-lieu | Tổ chức lại tài liệu dự án theo khuôn phân hệ
+- status: dang-lam
+- date: 2026-11-03
+- list: Kế hoạch hệ agent
+- tag: Agent 4
+**Bối cảnh:** tài liệu nằm rải ở 19 thư mục cấp `doc/`, kế hoạch ở `plans/` gốc, tài liệu V1 đứng lẫn V2. Đề xuất 1.2 (`de-xuat-to-chuc-lai-tai-lieu.md`) đã chốt: mỗi phân hệ một thư mục chứa đủ chức năng / kỹ thuật / nghiên cứu / kế hoạch / kiểm thử / dữ liệu, phần chung ở cấp `doc/`, V1 vào `doc/v1/`.
+
+**Đang làm:** P1 — luật đặt tên và quy ước chung một tệp, luật viết tài liệu, mục lục quy định, đổi chỗ ghi kế hoạch, bài kiểm tài liệu chế độ chỉ báo. Sau đó P2–P4 dời tệp theo bảng (HRM để người phụ trách HRM tự chuẩn hóa).
+
+---
+
 ## bao-CR-710-ruff-don-tu-dong | Dọn mã backend tự động bằng ruff, đợt R1
 - status: đang làm
 - date: 2026-11-03
