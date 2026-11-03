@@ -111,6 +111,15 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-710-ruff-don-tu-dong | Dọn mã backend tự động bằng ruff, đợt R1
+- status: đang làm
+- date: 2026-11-03
+- tag: Nền tảng
+Đợt R1 trong lộ trình dọn backend: dọn import thừa, thêm nguồn lỗi gốc khi ném lại lỗi, gọn vòng lặp và điều kiện an toàn, xem tay
+biến gán không dùng; thêm cấu hình ruff và lệnh kiểm vào cổng kiểm backend. Không đổi hành vi, không đụng ba phân hệ thu mua
+đang dọn ở đợt R2 và cụm nhân sự đang có người đẩy.
+Mã nguồn: backend/app (trừ purchase_request, survey_request, purchase_order, employee, leave, hr*)
+
 ## bao-CR-703-may-chu | Sổ việc chạy ngầm (máy chủ) + công cụ hỏi bằng lời
 - status: xong
 - date: 2026-11-02
