@@ -37,7 +37,13 @@ from .constants import (
     ACT_HEARTBEAT,
     ACT_OPS,
     ACT_ASKED,
+    #  ACT_BELL / ACT_BRIEF / ACT_MEETING / ACT_REMINDER: tệp này không dùng, nhưng bài kiểm test_agent_hub.py đọc qua
+    #  `service.ACT_*` — giữ làm mối nối, đừng gỡ (bao-CR-710)
+    ACT_BELL,  # noqa: F401
+    ACT_BRIEF,  # noqa: F401
+    ACT_MEETING,  # noqa: F401
     ACT_REMIND_WAIT,
+    ACT_REMINDER,  # noqa: F401
     ACT_VOICE,
     ACT_COMMAND,
     ACT_DEPLOY_TIME,
