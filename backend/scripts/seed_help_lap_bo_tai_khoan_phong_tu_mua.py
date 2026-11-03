@@ -125,6 +125,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <li>Bộ B: mở mục gập <strong>Ngoại lệ</strong>, xuống ô <strong>Loại trừ phòng ban</strong> (khung đỏ), chọn phòng tự mua. Các ô còn lại <strong>để trống</strong>, nhất là <em>Chỉ trong công ty</em>: khai vào là bộ B mất phiếu đứng tên các pháp nhân khác.</li>
 <li>Bấm <strong>Lưu phạm vi</strong>.</li>
 </ul>
+<p>Lưu ý ở tab <strong>Vai trò &amp; quyền</strong>: dòng danh mục dùng chung (Nhà cung cấp, Sản phẩm, Kho, Đơn vị tính...) có ô <strong>Phạm vi</strong> bị khóa và ghi <em>Toàn bộ (danh mục dùng chung)</em>. Phạm vi không lọc được các danh mục này, ai được tick <strong>Xem</strong> là thấy toàn bộ; muốn một vai trò không thấy nhà cung cấp thì bỏ tick quyền Xem, không chọn phạm vi.</p>
 <p>💡 Bước 3 và 4 làm cho nhiều người thì nhờ trợ lý cho nhanh: gõ một câu như <em>"lập bộ tài khoản nhân viên thu mua cho Nguyễn Văn A, loại trừ phòng Dego Organic"</em>, đọc thẻ đề xuất rồi bấm Xác nhận. Cách hỏi và các giới hạn ở bài {ref(AI_ARTICLE_TITLE, "Lập bộ tài khoản thu mua bằng Trợ lý AI")}.</p>
 
 <h2>V. Bộ A — Phòng tự mua hàng</h2>

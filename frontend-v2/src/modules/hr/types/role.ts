@@ -34,6 +34,13 @@ export interface PermissionMeta {
   entities: PermissionOption[]
   actions: PermissionOption[]
   scopes: PermissionOption[]
+  /**
+   * bao-CR-716: entity là danh mục dùng chung mọi pháp nhân (khai `PUBLIC` ở
+   * `SCOPE_FIELDS` backend) — ô Phạm vi không có tác dụng, ai được tick quyền là
+   * thấy toàn bộ. Màn Phân quyền khóa ô Phạm vi của những dòng này. Tùy chọn để
+   * backend cũ chưa trả vẫn chạy.
+   */
+  public_entities?: string[]
 }
 
 /**
