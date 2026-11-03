@@ -111,6 +111,15 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-714-sua-bai-kiem-do-san-co | Sửa sáu bài kiểm đỏ sẵn có lộ ra khi chạy đủ bộ backend
+- status: đang làm
+- date: 2026-11-03
+- tag: Nền tảng
+Chạy đủ bộ backend ở đợt dọn mã bao-CR-710 lộ ra chín bài đỏ có từ trước. Ba bài phần nhân sự người khác sửa; sáu bài còn lại
+làm ở đây: với mỗi bài tìm commit làm đỏ, phân biệt mã sai (sửa mã) hay bài kiểm lỗi thời (cập nhật bài kiểm, ghi rõ CR đổi hành
+vi), không nới luật canh cho xanh.
+Mã nguồn: test/backend/test_agent_hub.py, test_agent_hub_cong_mcp_cr207.py, test_assistant_ai_duyet_phieu_kh_ai2_7.py, test_bo_ma_hanh_dong_cr358.py, test_vong_doi_phieu_cr656_dung_bang.py
+
 ## bao-CR-712-to-chuc-lai-tai-lieu | Tổ chức lại tài liệu dự án theo khuôn phân hệ
 - status: dang-lam
 - date: 2026-11-03
