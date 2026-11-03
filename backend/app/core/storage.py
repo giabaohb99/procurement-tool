@@ -11,6 +11,7 @@ import shutil
 from datetime import datetime
 
 from fastapi import HTTPException
+import contextlib
 
 def _eff(key: str):
     from app.core import app_settings
@@ -135,17 +136,13 @@ def presigned_url(key: str, expires: int = 600, download_name: str = "") -> str:
 def delete_key(key: str):
     s3 = _client()
     if s3:
-        try:
+        with contextlib.suppress(Exception):
             s3.delete_object(Bucket=_eff("r2_bucket"), Key=key)
-        except Exception:
-            pass
     else:
         local_path = os.path.join("uploads", key)
         if os.path.exists(local_path):
-            try:
+            with contextlib.suppress(Exception):
                 os.remove(local_path)
-            except Exception:
-                pass
 
 
 # ---------------------------------------------------------------------------

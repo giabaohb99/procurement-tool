@@ -214,7 +214,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                             duration_ms=int((time.perf_counter() - started) * 1000))
             await run_in_threadpool(self._touch, ctx)
             reset_context(token)
-            raise exc
+            raise exc from exc
 
         #  ⚠️ NGOÀI `if wants_log`: một lượt gọi không ghi `tab_request_log` vẫn
         #  có thể đổi dữ liệu, và bộ đệm bỏ lại trong ngữ cảnh thì không ai dọn.

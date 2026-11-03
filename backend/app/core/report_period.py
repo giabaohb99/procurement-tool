@@ -165,7 +165,7 @@ def _parse_date_param(value, name: str) -> date:
     try:
         d = date.fromisoformat(str(value)[:10])
     except ValueError:
-        raise HTTPException(422, f"{name} sai định dạng, cần YYYY-MM-DD")
+        raise HTTPException(422, f"{name} sai định dạng, cần YYYY-MM-DD") from None
     if not (MIN_REPORT_YEAR <= d.year <= MAX_REPORT_YEAR):
         raise HTTPException(422, f"{name} phải trong khoảng năm {MIN_REPORT_YEAR}-{MAX_REPORT_YEAR}")
     return d
