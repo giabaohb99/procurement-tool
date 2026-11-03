@@ -1,9 +1,9 @@
 # THỨ TỰ THỰC HIỆN
 
-> [← plan.md](./plan.md) · Chốt 14/08/2026, sửa lại cùng ngày khi chốt làm **hai nhánh song song**
+> [← plan.md](plan.md) · Chốt 14/08/2026, sửa lại cùng ngày khi chốt làm **hai nhánh song song**
 > **Nhánh A viết lại toàn bộ 14/08/2026** — `phase-03` từ 18 task thành 36, thêm nhóm nền tổ chức chặn đầu, bỏ văn thư khỏi phạm vi. Phần nhánh B bên dưới giữ nguyên.
-> **Sửa 17/08/2026 (quyết định 10) — đảo người dùng đầu tiên:** bộ máy chạy vòng đầu với **văn thư**, **Thu mua giữ nguyên không đụng**. Nhịp A5 (gom cổng, chuyển 5 luồng Thu mua) **tách ra làm sau**, thay bằng nhịp **A5' đấu nối văn thư**. `phase-03` thành **37 task**, trong đó 33 nằm trong phase và 4 tách ra. Món nợ để lại ghi ở [`no-can-don.md`](./no-can-don.md).
-> Thứ tự phía văn thư lấy theo mục **"Thứ tự làm phía FE"** của [`plans/reports/planner-260814-1027-van-thu-fe-giai-doan-dau.md`](../reports/planner-260814-1027-van-thu-fe-giai-doan-dau.md).
+> **Sửa 17/08/2026 (quyết định 10) — đảo người dùng đầu tiên:** bộ máy chạy vòng đầu với **văn thư**, **Thu mua giữ nguyên không đụng**. Nhịp A5 (gom cổng, chuyển 5 luồng Thu mua) **tách ra làm sau**, thay bằng nhịp **A5' đấu nối văn thư**. `phase-03` thành **37 task**, trong đó 33 nằm trong phase và 4 tách ra. Món nợ để lại ghi ở [`no-can-don.md`](no-can-don.md).
+> Thứ tự phía văn thư lấy theo mục **"Thứ tự làm phía FE"** của [`plans/reports/planner-260814-1027-van-thu-fe-giai-doan-dau.md`](../../../../../plans/reports/planner-260814-1027-van-thu-fe-giai-doan-dau.md).
 > Report đó là **FE-only** (64 mã `F-`); tệp này ghép mỗi mã `F-` với task backend tương ứng trong 4 tệp phase.
 
 ## Hai nhánh
@@ -12,7 +12,7 @@ Trước đây tệp này xếp bộ máy phê duyệt vào bước 4 và ghi **
 
 | | Nhánh | Người | Task | Nội dung |
 |---|---|---|---|---|
-| **A** | Nền tổ chức + bộ máy phê duyệt | chủ dự án | 33 *(+4 tách ra)* | Toàn bộ [`phase-03`](./phase-03-bo-may-phe-duyet.md) **trừ nhóm D và T36**. **11 task nhóm A (nền tổ chức) chặn cứng phần còn lại**, và **4 quyết định của P3-T01 chặn nhóm A** — hỏi ngay hôm nay |
+| **A** | Nền tổ chức + bộ máy phê duyệt | chủ dự án | 33 *(+4 tách ra)* | Toàn bộ [`phase-03`](phase-03-bo-may-phe-duyet.md) **trừ nhóm D và T36**. **11 task nhóm A (nền tổ chức) chặn cứng phần còn lại**, và **4 quyết định của P3-T01 chặn nhóm A** — hỏi ngay hôm nay |
 | **B** | Văn thư | người thứ hai | 35 | Bước 1 → 2 → 3 bên dưới: nắn nền module đang có → danh mục → soạn thảo và phiên bản |
 
 Cộng **2 task nền chung** làm trước khi tách nhánh và **6 task P0 còn lại** chặn việc lên prod → **80 việc thật** (đã trừ 2 task trùng).
@@ -28,7 +28,7 @@ Hệ quả cho hai nhánh:
 
 **Vì sao vẫn tách song song được:** bộ máy chạy phiên — chọn luồng, snapshot, chọn người duyệt, rẽ nhánh, ủy quyền — tự kiểm hoàn toàn bằng pytest, không cần văn bản thật. `<ApprovalPanel>` nay dựng và nghiệm thu trên **trang chi tiết văn bản** (đổi từ YCMH), nên nó là phần cuối cùng của nhánh A chứ không phải phần đầu.
 
-Luật chống giẫm chân nhau (Alembic, `core/permissions.py`, …) nằm ở mục **"Luật khi hai người chạy song song"** trong [`plan.md`](./plan.md). Đọc trước khi gõ dòng đầu tiên.
+Luật chống giẫm chân nhau (Alembic, `core/permissions.py`, …) nằm ở mục **"Luật khi hai người chạy song song"** trong [`plan.md`](plan.md). Đọc trước khi gõ dòng đầu tiên.
 
 ---
 
@@ -47,11 +47,11 @@ Hai task này cả hai nhánh đều cần. Làm một lần, một người là
 
 # NHÁNH A · NỀN TỔ CHỨC + BỘ MÁY PHÊ DUYỆT
 
-Chi tiết đầy đủ ở [`phase-03-bo-may-phe-duyet.md`](./phase-03-bo-may-phe-duyet.md) — **37 task, viết lại 14/08/2026, đảo người dùng đầu tiên 17/08/2026**. Người dùng đầu tiên của bộ máy là **văn thư**; **Thu mua giữ nguyên, không đụng**. Sáu nhịp:
+Chi tiết đầy đủ ở [`phase-03-bo-may-phe-duyet.md`](phase-03-bo-may-phe-duyet.md) — **37 task, viết lại 14/08/2026, đảo người dùng đầu tiên 17/08/2026**. Người dùng đầu tiên của bộ máy là **văn thư**; **Thu mua giữ nguyên, không đụng**. Sáu nhịp:
 
 | Nhịp | Nhóm | Task | Ra được gì |
 |---|---|---|---|
-| **A0** | F · sổ nợ | T35 | **Mở [`no-can-don.md`](./no-can-don.md) ngay, trước dòng mã đầu tiên.** Dòng đầu: 5 luồng Thu mua chưa chuyển |
+| **A0** | F · sổ nợ | T35 | **Mở [`no-can-don.md`](no-can-don.md) ngay, trước dòng mã đầu tiên.** Dòng đầu: 5 luồng Thu mua chưa chuyển |
 | **A1** | A · nền tổ chức | T01 → T11 | Chức vụ thành danh mục có cấp bậc · 244 nhân sự và 18 phòng ban gắn pháp nhân · trưởng phòng đã khai · cây tổ chức · **5 kiểm thử Thu mua xanh** (làm bằng chứng, không để sửa). **Chặn cứng mọi nhịp sau** |
 | **A2** | B · mô hình | T12 → T13 | **6** luồng thật khai được ra giấy (5 Thu mua + 1 văn thư) · 6 bảng phê duyệt + chỉ mục · có `company_id`, không có `tenant_id` |
 | **A3** | C · bộ máy | T14 → T27 | Chạy phiên duyệt đầy đủ, tự kiểm bằng pytest. Người dùng đầu tiên là **bộ test** |
@@ -120,7 +120,7 @@ Ba chỗ dễ sai:
 
 ### ~~A5 · Gom cổng Thu mua~~ · ~~A6 · Dọn~~ — **tách ra làm sau**
 
-Nội dung giữ nguyên trong `phase-03` (T28 · T29 · T31 · T36), điều kiện mở lại và cách làm ghi ở **N-01** trong [`no-can-don.md`](./no-can-don.md). Tóm tắt điều kiện: bộ máy chạy thật ổn với văn thư **ở prod** · người nghiệp vụ tự khai được luồng không cần lập trình viên · 5 luồng Thu mua khai được hết trên mô hình mà không phải `ALTER`.
+Nội dung giữ nguyên trong `phase-03` (T28 · T29 · T31 · T36), điều kiện mở lại và cách làm ghi ở **N-01** trong [`no-can-don.md`](no-can-don.md). Tóm tắt điều kiện: bộ máy chạy thật ổn với văn thư **ở prod** · người nghiệp vụ tự khai được luồng không cần lập trình viên · 5 luồng Thu mua khai được hết trên mô hình mà không phải `ALTER`.
 
 ---
 
@@ -205,7 +205,7 @@ Report là FE-only nên không liệt kê phần này, nhưng nó **chặn 3b**:
 >
 > Hệ quả cho nhánh B: **luồng tạm chỉ sống tới lúc T37 chạy.** Dựng đủ để test được là đủ, đừng đầu tư vào nó. Vẫn phải có (xem cảnh báo ngay trên), nhưng không cần chắc như một luồng chạy thật lâu dài.
 >
-> **Khi nào đấu: ngay sau khi P2 xong**, không phải chờ Thu mua gì cả. Cách đấu: bật `doc_type.needs_approval` + trỏ `doc_type.default_flow_id`; tắt cờ là về đường một bước cũ, không cần deploy. Chi tiết ở [`phase-03`](./phase-03-bo-may-phe-duyet.md) nhóm G.
+> **Khi nào đấu: ngay sau khi P2 xong**, không phải chờ Thu mua gì cả. Cách đấu: bật `doc_type.needs_approval` + trỏ `doc_type.default_flow_id`; tắt cờ là về đường một bước cũ, không cần deploy. Chi tiết ở [`phase-03`](phase-03-bo-may-phe-duyet.md) nhóm G.
 
 **Xong là:** tạo → chọn loại → gõ nội dung → đính tệp → lưu → tìm lại được. **Cho 3 người ngoài đội bấm thử ở đây**, đừng đợi hết bước 3.
 

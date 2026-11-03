@@ -1,6 +1,6 @@
 # PHASE 1 · DANH MỤC VÀ SỐ HIỆU
 
-> [← plan.md](./plan.md) · Nguồn: `01` nhóm A + D, `02` mục 5, `04` mục 3.1–3.2 + 4
+> [← plan.md](plan.md) · Nguồn: `01` nhóm A + D, `02` mục 5, `04` mục 3.1–3.2 + 4
 > Ra được: khai được 32 loại văn bản, **cấp được số không trùng**.
 
 ## Tổng quan
@@ -12,7 +12,7 @@
 | Mã `01` | A01–A07, D01–D08, C20 (chờ B12) |
 | Migration | M2, M3, M4, M5 · **nhánh B giữ chuỗi Alembic**, nhánh A muốn sinh M8 phải báo trước |
 
-> **P1-T01 không còn là nền chung (sửa 14/08/2026).** Nhánh A viết lại đã đưa việc gắn phòng ban vào pháp nhân thành **[`P3-T04`](./phase-03-bo-may-phe-duyet.md)** và làm ngay đầu nhánh A — vì rà DB thấy **18/18 phòng ban đang `company_id = 0`**, không có dữ liệu này thì 5 trong 7 cách chọn người duyệt không chạy được. Hình dạng bảng (một cột `company_id` hay bảng nối `tab_department_company`) do **quyết định (a) của P3-T01** chốt, nhánh B **làm theo**, không tự quyết.
+> **P1-T01 không còn là nền chung (sửa 14/08/2026).** Nhánh A viết lại đã đưa việc gắn phòng ban vào pháp nhân thành **[`P3-T04`](phase-03-bo-may-phe-duyet.md)** và làm ngay đầu nhánh A — vì rà DB thấy **18/18 phòng ban đang `company_id = 0`**, không có dữ liệu này thì 5 trong 7 cách chọn người duyệt không chạy được. Hình dạng bảng (một cột `company_id` hay bảng nối `tab_department_company`) do **quyết định (a) của P3-T01** chốt, nhánh B **làm theo**, không tự quyết.
 >
 > Phần còn lại của P1-T01 — `issue_code` cho pháp nhân/phòng ban, `short_name`, `level`, `kind` — **vẫn là việc của nhánh B**, phục vụ cấp số văn bản.
 
@@ -96,4 +96,4 @@
 
 ## Tiếp theo
 
-[Phase 2 · Soạn thảo và phiên bản](./phase-02-soan-thao-va-phien-ban.md) — chỉ bắt đầu khi bài kiểm 100 kết nối đạt.
+[Phase 2 · Soạn thảo và phiên bản](phase-02-soan-thao-va-phien-ban.md) — chỉ bắt đầu khi bài kiểm 100 kết nối đạt.

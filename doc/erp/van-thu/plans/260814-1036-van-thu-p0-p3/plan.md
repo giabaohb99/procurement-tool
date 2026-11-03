@@ -6,7 +6,7 @@
 
 ## 👉 Bắt đầu từ đâu
 
-**[`thu-tu-thuc-hien.md`](./thu-tu-thuc-hien.md) — đọc tệp này trước khi làm.** Bốn tệp phase bên dưới nói *cái gì phải làm*; tệp thứ tự nói *ai làm gì, theo thứ tự nào*.
+**[`thu-tu-thuc-hien.md`](thu-tu-thuc-hien.md) — đọc tệp này trước khi làm.** Bốn tệp phase bên dưới nói *cái gì phải làm*; tệp thứ tự nói *ai làm gì, theo thứ tự nào*.
 
 Chốt 14/08/2026: **hai người làm song song trên hai nhánh việc.**
 
@@ -21,11 +21,11 @@ Nền chung còn **P0-T10** và **P0-T11**. Nhánh A **không chờ nhánh B ở
 
 | Phase | Tệp | Task | Trạng thái |
 |---|---|---|---|
-| 0 · Vá nền | [phase-00-va-nen.md](./phase-00-va-nen.md) | 13 | ☐ 3 task ở nền chung (T01, T10, T11) · 4 task vào nhánh B khi làm đính kèm (T02–T04, T12) · 6 task còn lại chạy bất kỳ lúc nào, **chặn việc lên prod** |
-| 1 · Danh mục và số hiệu | [phase-01-danh-muc-va-so-hieu.md](./phase-01-danh-muc-va-so-hieu.md) | 14 | ☐ nhánh B (P1-T01 ở nền chung) |
-| 2 · Soạn thảo và phiên bản | [phase-02-soan-thao-va-phien-ban.md](./phase-02-soan-thao-va-phien-ban.md) | 18 | ☐ nhánh B |
-| 3 · Bộ máy phê duyệt dùng chung | [phase-03-bo-may-phe-duyet.md](./phase-03-bo-may-phe-duyet.md) | **37** | ☐ nhánh A — viết lại 14/08/2026, **đảo người dùng đầu tiên 17/08/2026**. Người dùng đầu tiên là **văn thư**; Thu mua giữ nguyên, vào sổ nợ. Nhóm A (nền tổ chức) vẫn chặn tất cả |
-| — · Sổ nợ kỹ thuật | [no-can-don.md](./no-can-don.md) | — | ● Mở 17/08/2026 · 7 món nợ (N-01…N-07). **Không phải danh sách việc** — là chỗ ghi những gì đang cố tình nợ và điều kiện trả |
+| 0 · Vá nền | [phase-00-va-nen.md](phase-00-va-nen.md) | 13 | ☐ 3 task ở nền chung (T01, T10, T11) · 4 task vào nhánh B khi làm đính kèm (T02–T04, T12) · 6 task còn lại chạy bất kỳ lúc nào, **chặn việc lên prod** |
+| 1 · Danh mục và số hiệu | [phase-01-danh-muc-va-so-hieu.md](phase-01-danh-muc-va-so-hieu.md) | 14 | ☐ nhánh B (P1-T01 ở nền chung) |
+| 2 · Soạn thảo và phiên bản | [phase-02-soan-thao-va-phien-ban.md](phase-02-soan-thao-va-phien-ban.md) | 18 | ☐ nhánh B |
+| 3 · Bộ máy phê duyệt dùng chung | [phase-03-bo-may-phe-duyet.md](phase-03-bo-may-phe-duyet.md) | **37** | ☐ nhánh A — viết lại 14/08/2026, **đảo người dùng đầu tiên 17/08/2026**. Người dùng đầu tiên là **văn thư**; Thu mua giữ nguyên, vào sổ nợ. Nhóm A (nền tổ chức) vẫn chặn tất cả |
+| — · Sổ nợ kỹ thuật | [no-can-don.md](no-can-don.md) | — | ● Mở 17/08/2026 · 7 món nợ (N-01…N-07). **Không phải danh sách việc** — là chỗ ghi những gì đang cố tình nợ và điều kiện trả |
 
 **82 task** (45 của văn thư + P0, 37 của P3) — **trừ 2 task trùng còn 80 việc thật**: `P0-T01` nay làm ở `P3-T11`, phần `tab_department_company` của `P1-T01` nay làm ở `P3-T04`. Hai dòng cũ giữ nguyên trong tệp phase để không đứt tham chiếu, nhưng **đừng làm hai lần**. Mã task: `P{phase}-T{nn}`. Cột **L** trong từng phase: `BE` backend · `FE` frontend-v2 · `DB` migration · `DATA` nạp/làm sạch dữ liệu · `∞` nhiều tầng.
 
@@ -45,7 +45,7 @@ NHÓM D (chuyển 5 luồng Thu mua) ── TÁCH RA, làm sau, ghi sổ nợ tr
 (P5 quyền+tra cứu: song song được với nhánh A, chưa có plan)
 ```
 
-- Sơ đồ **cũ** `P0 ▶ P1 ▶ P2 ▶ P3 ▶ P4` là **phụ thuộc của tính năng người dùng thấy**, không phải phụ thuộc của mã và cũng không phải thứ tự chạy. Thứ tự chạy ở [`thu-tu-thuc-hien.md`](./thu-tu-thuc-hien.md).
+- Sơ đồ **cũ** `P0 ▶ P1 ▶ P2 ▶ P3 ▶ P4` là **phụ thuộc của tính năng người dùng thấy**, không phải phụ thuộc của mã và cũng không phải thứ tự chạy. Thứ tự chạy ở [`thu-tu-thuc-hien.md`](thu-tu-thuc-hien.md).
 - **P3 phụ thuộc P2 ở đúng một chỗ: `P3-T37` đấu nối văn thư.** Người dùng đầu tiên của bộ máy là **văn thư** (quyết định 10) — bước duyệt văn bản hiện là **một bước cứng** (`require("document","approve")` → `service.approve`), thay bằng bộ máy là việc sạch, không kéo theo nghiệp vụ phụ. Nhóm A → B → C của P3 **vẫn không chờ P2**; chỉ riêng T37 chờ P2 xong.
 - **P1-T01 không còn là nền chung.** Việc gắn phòng ban vào pháp nhân đã thành **P3-T04** trong nhóm A, vì nhánh A cần nó gấp hơn nhánh B nhiều. Nền chung rút còn **P0-T10** và **P0-T11**.
 - **Nhóm A của P3 chặn cứng phần còn lại của P3.** Không có chức vụ, pháp nhân, trưởng phòng thì 5 trong 7 cách chọn người duyệt **không có dữ liệu để chạy**. Số đo ở Phần 1 của `phase-03`.
@@ -79,7 +79,7 @@ Hai nhánh chạy song song nên không còn một dãy cổng nối đuôi nhau
 | A | nhóm C+E | P3-T37 | Khai được một luồng 4 bước bằng giao diện, phiếu chạy đúng, không sửa mã · việc chạy kèm cùng transaction (T26) đã có |
 | A | P3-T37 | xong | Một văn bản đi hết đường tạo → gửi duyệt → duyệt **qua bộ máy** trên dev · loại có `needs_approval = false` vẫn chạy đường một bước cũ · **5 kiểm thử Thu mua vẫn xanh y nguyên** |
 | A | — | nhóm D (làm sau) | Chỉ mở khi bộ máy đã chạy thật ổn với văn thư ở prod. Điều kiện cũ của T28/T29/T31 giữ nguyên trong `phase-03` |
-| cả hai | dev | **prod** | 6 task P0 còn lại đã xong và chạy prod ổn định. Xem ràng buộc ở [`thu-tu-thuc-hien.md`](./thu-tu-thuc-hien.md) |
+| cả hai | dev | **prod** | 6 task P0 còn lại đã xong và chạy prod ổn định. Xem ràng buộc ở [`thu-tu-thuc-hien.md`](thu-tu-thuc-hien.md) |
 
 ## Quyết định đã chốt trong plan này
 
@@ -105,7 +105,7 @@ Hai nhánh chạy song song nên không còn một dãy cổng nối đuôi nhau
 | **Hoãn Thu mua rồi quên luôn, bộ máy chỉ vừa văn thư** | T12 **bắt buộc khai thử cả 5 luồng Thu mua ra giấy** dù chưa chuyển — chỗ nào khai không nổi là mô hình còn thiếu. Sổ nợ `no-can-don.md` mở **ngay từ đầu phase**, không chờ T28, và ghi rõ điều kiện dọn |
 | **Lộ dữ liệu xuyên pháp nhân** — phòng ban và người phụ trách đang khớp bằng **chuỗi tên** | P0-T06 + P0-T07 + P3-T09. Quyết định 11(b): bảng mới **cấm** lưu khóa tổ chức bằng tên |
 | **Nền tổ chức rỗng, làm bộ máy xong không chạy được** | P3 nhóm A (11 task) **chặn cứng** phần còn lại của P3. Số đo hiện trạng ở Phần 1 của `phase-03` để không ai nghĩ "chắc dữ liệu ổn" |
-| Chèn `if` đổi đường khắp nơi rồi quên, thành mã hai đường vĩnh viễn | [`no-can-don.md`](./no-can-don.md) mở **ngay từ đầu P3** (sửa 17/08/2026 — bản cũ ghi "cùng lúc với P3-T28", mà T28 đã hoãn thì chờ nó là chờ vô hạn), ghi **ngay lúc chèn**. P3-T36 là task bắt buộc |
+| Chèn `if` đổi đường khắp nơi rồi quên, thành mã hai đường vĩnh viễn | [`no-can-don.md`](no-can-don.md) mở **ngay từ đầu P3** (sửa 17/08/2026 — bản cũ ghi "cùng lúc với P3-T28", mà T28 đã hoãn thì chờ nó là chờ vô hạn), ghi **ngay lúc chèn**. P3-T36 là task bắt buộc |
 | Cấp số trùng | 3 lớp: khóa dòng · UNIQUE tầng DB · cùng transaction. Bài kiểm 100 kết nối là điều kiện chuyển phase |
 | Quên lọc `origin = 1` | Bộ lọc nằm ở hàm dựng truy vấn dùng chung + bài kiểm tự động (P2-T04) |
 | Quên khai `SCOPE_FIELDS` cho bảng mới | Guard lúc khởi động (P0-T13): bảng có `company_id` mà chưa khai → chết ngay lúc chạy |

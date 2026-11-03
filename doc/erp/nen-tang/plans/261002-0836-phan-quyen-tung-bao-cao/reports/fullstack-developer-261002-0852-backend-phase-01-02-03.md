@@ -1,6 +1,6 @@
 # Backend phase 01-03 — phân quyền xem từng báo cáo
 
-Plan: `frontend-v2/plans/261002-0836-phan-quyen-tung-bao-cao/`. Phạm vi: phase 01 (khóa/bảng/migration/seed),
+Plan: `doc/erp/nen-tang/plans/261002-0836-phan-quyen-tung-bao-cao/`. Phạm vi: phase 01 (khóa/bảng/migration/seed),
 phase 02 (gác 26 đường + `/auth/me` + API cấu hình), phase 03 (test). Không commit.
 
 ## Hợp đồng API cho FE (đọc trước khi làm phase 04-06)

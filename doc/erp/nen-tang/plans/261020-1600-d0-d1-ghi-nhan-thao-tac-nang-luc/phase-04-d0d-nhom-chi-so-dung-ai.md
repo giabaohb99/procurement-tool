@@ -51,7 +51,7 @@ Bảng A0 chưa tồn tại → `inspect(...).has_table` một lần/lượt d�
 ## Related code files
 Tạo BE: `backend/app/modules/usage_profile/snapshot_sources_ai.py` · `snapshot_metrics_ai.py`.
 Sửa BE (sau CR-651): `usage_profile/metric_catalog.py` (8 khóa) · `snapshot_builder.py` (gọi nguồn + merge) · `snapshot_sources.py` (chỉ gọi hàm mới) ·
-`plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md` (thêm mục 3.8).
+`doc/erp/nen-tang/plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md` (thêm mục 3.8).
 Không tạo: model/migration `tab_ai_usage_daily` (A0). Nếu A0 trễ: D0d vẫn giao 2 khóa pha 1.
 Sửa FE (sau CR-651): `modules/report/config/usage-metric-labels.ts`, `usage-metric-definitions.ts` (test sẵn có so khớp với `metric_catalog.py`) ·
 tạo `modules/report/components/usage-profile/usage-ai-section.tsx` · gắn vào `usage-profile-detail-page.tsx`.

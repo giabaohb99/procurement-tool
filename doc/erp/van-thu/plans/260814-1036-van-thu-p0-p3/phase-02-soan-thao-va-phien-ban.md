@@ -1,9 +1,9 @@
 # PHASE 2 · SOẠN THẢO VÀ PHIÊN BẢN
 
-> [← plan.md](./plan.md) · Nguồn: `01` nhóm C + E + L, `02` mục 6, `04` mục 5, **`05` toàn bộ**
+> [← plan.md](plan.md) · Nguồn: `01` nhóm C + E + L, `02` mục 6, `04` mục 5, **`05` toàn bộ**
 > Ra được: một người soạn được văn bản từ đầu tới cuối, lên được phiên bản 2 mà bản 1 vẫn còn nguyên.
 
-⚠️ **Không có bước xin phép.** Chốt 14/08/2026: bỏ hẳn nhóm B *Yêu cầu văn bản* khỏi bản 1 — ai có quyền `document.create` thì **tạo văn bản trực tiếp**. Xem quyết định 7 ở [`plan.md`](./plan.md) để biết cái gì mất đi và cái gì giữ lại để sau thêm được.
+⚠️ **Không có bước xin phép.** Chốt 14/08/2026: bỏ hẳn nhóm B *Yêu cầu văn bản* khỏi bản 1 — ai có quyền `document.create` thì **tạo văn bản trực tiếp**. Xem quyết định 7 ở [`plan.md`](plan.md) để biết cái gì mất đi và cái gì giữ lại để sau thêm được.
 
 ## Tổng quan
 
@@ -143,6 +143,6 @@ Duyệt **nội dung văn bản** ở phase này dùng **luồng một bước v
 
 ## Tiếp theo
 
-[Phase 3 · Bộ máy phê duyệt dùng chung](./phase-03-bo-may-phe-duyet.md) — **không còn xếp sau phase này.** Từ 14/08/2026 phase 3 là **nhánh A chạy song song** ngay từ đầu; 16/18 task của nó không cần văn bản có thật.
+[Phase 3 · Bộ máy phê duyệt dùng chung](phase-03-bo-may-phe-duyet.md) — **không còn xếp sau phase này.** Từ 14/08/2026 phase 3 là **nhánh A chạy song song** ngay từ đầu; 16/18 task của nó không cần văn bản có thật.
 
-Điều phase này **không còn nợ** nhánh A: sau khi viết lại 14/08/2026, nhánh A không có task nào chờ văn thư và cũng không có task nào thay luồng duyệt tạm của văn thư. Hai nhánh chạy độc lập. Việc đấu văn thư vào bộ máy phê duyệt chung phải **mở task mới** — làm theo đúng thủ tục của P3-T31 (khai luồng → kiểm thử hai chế độ cờ → bật dev → bật prod). Xem [`thu-tu-thuc-hien.md`](./thu-tu-thuc-hien.md).
+Điều phase này **không còn nợ** nhánh A: sau khi viết lại 14/08/2026, nhánh A không có task nào chờ văn thư và cũng không có task nào thay luồng duyệt tạm của văn thư. Hai nhánh chạy độc lập. Việc đấu văn thư vào bộ máy phê duyệt chung phải **mở task mới** — làm theo đúng thủ tục của P3-T31 (khai luồng → kiểm thử hai chế độ cờ → bật dev → bật prod). Xem [`thu-tu-thuc-hien.md`](thu-tu-thuc-hien.md).

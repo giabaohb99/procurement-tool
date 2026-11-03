@@ -9628,7 +9628,7 @@ hàm nhận kết cục, ghi người ký và mốc giờ trong `_on_approved`, 
 `controller.py` (nới cửa đọc chi tiết phiếu, thêm chốt khóa vào hai cửa điều phối, dọn phiên
 duyệt khi xóa phiếu); `service.py` (`_block_self_approval`). Bài kiểm mới:
 `test/backend/test_dat_xe_stress_luong_duyet.py`. Báo cáo ép tải đầy đủ:
-`frontend-v2/plans/reports/tester-260921-1529-dat-xe-stress-luong-duyet.md`.
+`doc/erp/dat-xe/plans/reports/tester-260921-1529-dat-xe-stress-luong-duyet.md`.
 Tham chiếu: tài liệu chức năng `doc/erp/dat-xe/chuc-nang/10-dat-xe.md` mục «Luồng duyệt nhiều bước».
 
 ## duoc-CR-438 | Tạm ẩn phân hệ Hồ sơ khỏi giao diện, kể cả bốn thẻ cắm trong Thu mua
@@ -13092,7 +13092,7 @@ purchase_progress/summary_service.py · survey_progress/summary_service.py ·
 survey/{report_summary_service, report_grouped_fetch}.py · frontend-v2/src/modules/report/** ·
 shared/ui/{toggle, toggle-group, horizontal-bar-chart, date-range-picker}.tsx ·
 test/backend/test_bao_cao_{khung_ky_so_sanh, khung_gom_nhom_va_xuat, thu_mua_theo_ky}.py
-Kế hoạch: plans/260928-0841-bao-cao-kieu-haravan-da-phan-he/
+Kế hoạch: doc/plans/260928-0841-bao-cao-kieu-haravan-da-phan-he/
 
 ## duoc-CR-483 | Tăng tốc năm đường tổng hợp báo cáo và chịu được dữ liệu gấp năm mươi lần
 - status: xong
@@ -13262,7 +13262,7 @@ pesticide_service.py, pesticide_controller.py} · backend/app/core/action_catalo
 backend/scripts/load_customs_catalogs.py · frontend-v2/src/modules/procurement/components/customs/
 customs-pesticide-*.tsx
 Tham chiếu: migration a7c3e91d5b20 · test/backend/test_hai_quan_thuoc_bvtv.py · tệp nguồn
-plans/260928-1553-thuoc-bvtv-danh-muc/
+doc/erp/hai-quan/plans/260928-1553-thuoc-bvtv-danh-muc/
 
 ## duoc-CR-488 | Tra cứu thị trường: tách «Pháp lý & thuế» thành hai mục, mục «Pháp lý» có bảng xem cả danh mục hóa chất
 - status: xong
@@ -17593,7 +17593,7 @@ Mã nguồn: backend/app/modules/vehicle_booking/service.py · backend/app/modul
 ### duoc-CR-681-5 | Rà mã, ép tải và tài liệu
 - status: xong
 Rà mã tìm ra người được chọn mở phiếu ra trang trống, hồ sơ nghỉ việc vẫn chọn được, tự chọn mình qua tài khoản thứ hai và lưu nháp bị chặn nhầm; đã sửa và có bài kiểm nhắc lại. Ép tải trên MySQL thật đạt ở cả hai đường. Viết bài hướng dẫn sử dụng và cập nhật tài liệu chức năng Đặt xe.
-Mã nguồn: test/backend/test_dat_xe_chon_nguoi_duyet_cr681.py · plans/261023-1352-dat-xe-chon-nguoi-duyet-cr681/scripts/stress-booking-picked-approver-cr681.py · doc/erp/dat-xe/chuc-nang/10-dat-xe.md
+Mã nguồn: test/backend/test_dat_xe_chon_nguoi_duyet_cr681.py · doc/erp/dat-xe/plans/261023-1352-dat-xe-chon-nguoi-duyet-cr681/scripts/stress-booking-picked-approver-cr681.py · doc/erp/dat-xe/chuc-nang/10-dat-xe.md
 
 ### duoc-CR-681-6 | Chọn công ty khác thì cả hai bên đều thấy phiếu
 - status: xong

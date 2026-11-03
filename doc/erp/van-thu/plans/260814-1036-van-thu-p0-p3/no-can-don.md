@@ -7,7 +7,7 @@
 >
 > Món nợ nào không viết nổi cột (4) thì **không phải nợ, mà là thiết kế** — đừng ghi vào đây, hãy sửa thiết kế.
 >
-> Liên quan: [`plan.md`](./plan.md) quyết định 10 · [`phase-03-bo-may-phe-duyet.md`](./phase-03-bo-may-phe-duyet.md) T35, T36.
+> Liên quan: [`plan.md`](plan.md) quyết định 10 · [`phase-03-bo-may-phe-duyet.md`](phase-03-bo-may-phe-duyet.md) T35, T36.
 
 ## Bảng tổng
 

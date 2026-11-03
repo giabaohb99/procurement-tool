@@ -4,7 +4,7 @@
 - `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §5 (UI_ACTION, mã cố định, không chữ gõ)
 - Nền: `backend/app/modules/usage_profile/telemetry_{schema,service,controller}.py`, `model.py` (`UiEvent`)
 - FE: `frontend-v2/src/core/telemetry/telemetry-queue.ts`, `ui-event-codes.ts`
-- Review cũ: `plans/reports/code-reviewer-261019-cr641-review.md` (scrub, 30 lô/phút, 64 KB)
+- Review cũ: `doc/erp/nen-tang/plans/reports/code-reviewer-261019-cr641-review.md` (scrub, 30 lô/phút, 64 KB)
 
 ## Overview
 - Ưu tiên P1 · Ước **1,5 ngày** (BE 0,5 · FE 1) · Status: implemented (duoc-CR-654); gate xanh (vitest 418 tệp)

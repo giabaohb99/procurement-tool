@@ -1,7 +1,7 @@
 # Gantt kiểu Lark — cụm B-14 (cột mốc) + B-15 (phụ thuộc)
 
 **Bắt đầu 29/08/2026 · nhánh `erp-v2` · ĐÃ COMMIT ngày 31/08/2026.**
-Ghi ở [`change-log.md`](../../doc/tai-lieu-ky-thuat/change-log.md) là **CR-226**.
+Ghi ở [`change-log.md`](../../../../tai-lieu-ky-thuat/change-log.md) là **CR-226**.
 
 ---
 

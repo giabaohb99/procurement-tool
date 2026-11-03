@@ -1,6 +1,6 @@
 """Ép tải duoc-CR-681 trên MySQL THẬT qua HTTP (uvicorn trong container api).
 
-    docker compose cp plans/261023-1352-dat-xe-chon-nguoi-duyet-cr681/scripts/stress-booking-picked-approver-cr681.py api:/tmp/s.py
+    docker compose cp doc/erp/dat-xe/plans/261023-1352-dat-xe-chon-nguoi-duyet-cr681/scripts/stress-booking-picked-approver-cr681.py api:/tmp/s.py
     docker compose exec -T api env PYTHONPATH=/app python /tmp/s.py
 
 Dựng 60 người tạo phiếu + 6 điều phối (phạm vi công ty, rải 3 pháp nhân) tên `ST681-*`, một luồng thử

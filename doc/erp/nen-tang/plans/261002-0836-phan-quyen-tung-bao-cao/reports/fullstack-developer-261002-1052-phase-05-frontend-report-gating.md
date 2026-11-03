@@ -1,6 +1,6 @@
 # Phase 05 — FE: gác menu/route/Tổng quan theo `report_keys`
 
-Plan: `frontend-v2/plans/261002-0836-phan-quyen-tung-bao-cao/phase-05-frontend-report-gating.md`.
+Plan: `doc/erp/nen-tang/plans/261002-0836-phan-quyen-tung-bao-cao/phase-05-frontend-report-gating.md`.
 Không commit.
 
 ## Thiết kế đã làm

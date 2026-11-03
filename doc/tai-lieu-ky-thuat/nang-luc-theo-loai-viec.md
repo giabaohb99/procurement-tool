@@ -2,7 +2,7 @@
 
 Nguồn số liệu để AI chia việc và để quản trị trả lời: «chị A làm một YCMH trung bình mấy ngày, chậm nhất mấy ngày»,
 «loại việc X phải làm lại bao nhiêu lần». **Máy tính số, AI viết chữ**: tài liệu này là hợp đồng của các con số.
-Kế hoạch: `plans/261020-1600-d0-d1-ghi-nhan-thao-tac-nang-luc/` (phase 05–07). Đại ca đã chốt các mặc định ở `open-questions.md`.
+Kế hoạch: `doc/erp/nen-tang/plans/261020-1600-d0-d1-ghi-nhan-thao-tac-nang-luc/` (phase 05–07). Đại ca đã chốt các mặc định ở `open-questions.md`.
 
 ## 1. Task Dự án có loại việc, giờ, kết quả (phase 05)
 
