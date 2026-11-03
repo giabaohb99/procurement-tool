@@ -17,6 +17,7 @@ Mọi con số trong tài liệu này **đo trên 5 tệp thật** trong thư m�
 | **1.4** | 23/09/2026 | **Bỏ lớp đệm `tab_report_snapshot`.** Không còn gì tính sẵn: mọi con số tính lúc mở | Đại ca chốt màn tra cứu **hai thẻ Danh sách / Biểu đồ, biểu đồ chỉ hiện khi đã lọc** — trang tổng quan (thứ duy nhất dùng snapshot) bỏ. Không có task định kỳ nào |
 | **1.5** | 23/09/2026 | Thêm §10: bốn bảng danh mục của HQ4/HQ6 (`tab_customs_ingredient_alias` · `tab_customs_pesticide` · `tab_customs_regulation` · `tab_customs_tariff`), hai cột suy ra trên `tab_customs_line` (`active_ingredient` · `formulation`), script nạp danh mục, bộ nhận hoạt chất ba nguồn, khóa thứ hai `customs_regulation` | Đại ca bảo làm đủ mọi phase một lượt |
 | **1.6** | 25/09/2026 | **bao-CR-496.** (1) Nhật ký **từng dòng** của lô: thêm cột `row_status` (SMALLINT, `ImportRowStatus`: 0 dòng nhật ký thường · 1 Thêm mới · 2 Lỗi · 3 Trùng trong lô) vào **`tab_import_log` có sẵn**, KHÔNG tạo bảng mới — xem §3.1b. (2) Bảng mới `tab_customs_saved_filter` (bộ lọc người dùng đặt tên, riêng từng tài khoản, `is_shared` chừa sẵn) | Chị Mi (F01 ghi chú 25/09, F07); đại ca chốt: không có kết cục «Cập nhật», dòng trùng chỉ đánh dấu không xóa, bộ lọc lưu riêng từng người |
+| **1.8** | 03/11/2026 | **bao-CR-718 — tìm nhanh.** Chỉ mục `ix_customs_line_date`, đệm Redis số đếm + ô chọn, bỏ `LOWER()` trên MySQL. Xem §12 | Người dùng báo tìm rất chậm trên prod 328 nghìn dòng |
 | **1.7** | 01/10/2026 | **bao-CR-541 — chống trùng bằng mã băm, bỏ «thay theo khoảng ngày».** Cột mới `tab_customs_line.row_hash` (SHA-1 đủ các cột dữ liệu sau chuẩn hóa, chỉ mục `(row_hash, reg_date)`). Nạp tệp: dòng giống hệt dòng đã lưu → **4 Đã có**, lặp trong tệp → **3 Trùng trong tệp**, cả hai **bỏ qua**; không xóa, không ghi đè. Dòng mới trùng cột nhận diện mà khác giá vẫn thêm, kèm ghi chú «nghi sửa giá». Lô mới luôn hoàn tác được. Xem §4.5 | Đại ca chốt 01/10: nguồn «xuất ra rồi bỏ vào luôn», người nạp không biết tệp chồng nhau; luật cũ xóa mất dữ liệu đúng khi tệp mới xuất thiếu (R1) và để lọt 806 dòng trùng trong lô |
 
 ---
@@ -485,3 +486,19 @@ docker compose -f docker-compose.yml -f docker-compose.production.yml exec -T ap
 ```
 
 Nếu dùng `--no-retag` (hoặc không có từ khóa mới) thì bấm **«Gắn lại nhãn»** ở khối Từ khóa. Không dán dữ liệu tiếng Việt qua `mysql -e` (hỏng dấu).
+
+## 12. Tìm nhanh trên bảng lớn — bao-CR-718 (03/11/2026)
+
+Đo trên bảng thử 328.374 dòng (cỡ prod 03/11), số đầy đủ và cách đo ở [kế hoạch CR-718](../plans/261103-tim-nhanh-xuat-lo-bao-cr-718/ke-hoach.md).
+
+- **Chỉ mục `ix_customs_line_date (reg_date)`** (migration `hqx718`): danh sách sắp `reg_date DESC, id DESC` đi ngược
+  chỉ mục và dừng khi đủ trang. Trang 1 không lọc 352 → 4 ms; có từ khóa 856 → 15 ms.
+- **Từ khóa**: trên MySQL dùng `LIKE` thường (`search_service.ci_like`) — collation `utf8mb4_unicode_ci` đã không phân
+  biệt hoa thường (và dấu), `ilike` bọc thêm `LOWER()` chậm ~20%. SQLite (bộ test) giữ `ilike`.
+- **Đệm Redis** (`customs/read_cache.py`): số đếm theo bộ lọc + `/options`. Khóa = `MAX(id)` + bộ lọc, hạn 5 phút; xóa
+  hẳn (`read_cache.clear`) sau gộp dòng trùng, sửa / xóa tay, hoàn tác lô. Chỉ bật trên MySQL, Redis chết thì tính thẳng.
+  Không có phạm vi theo người (khóa `customs_price` là `PUBLIC`) nên đệm dùng chung.
+- `list_lines` không dò trang khi tổng = 0 hoặc trang quá tổng (đi ngược chỉ mục mà không gặp dòng khớp là đọc hết bảng).
+- **Không dùng FULLTEXT**: bảng chia phân vùng theo năm nên MySQL không cho đặt. Lượng chữ phải dò (~61 MB tên hàng)
+  mới là chỗ chậm — so nhị phân vẫn 330 ms. Khi dữ liệu tăng vài lần nữa mới xét bảng tìm kiếm phụ (đồng bộ ở mọi đường
+  ghi) hoặc bỏ phân vùng.

@@ -7,7 +7,7 @@ from app.core.database import SessionLocal
 
 from app.core import app_settings
 
-from . import line_merge
+from . import line_merge, read_cache
 from .row_log_cleanup import cleanup
 
 log = logging.getLogger("app.customs.tasks")
@@ -34,7 +34,10 @@ def merge_duplicate_lines_task(dry_run: bool = False) -> dict:
         return {"status": "disabled"}
     db = SessionLocal()
     try:
-        return line_merge.run(db, dry_run=dry_run)
+        result = line_merge.run(db, dry_run=dry_run)
+        if not dry_run:
+            read_cache.clear()   # bao-CR-718: gộp xóa dòng mà MAX(id) không đổi — số đếm đã đệm phải tính lại
+        return result
     except Exception as e:  # noqa: BLE001
         db.rollback()
         log.exception("Gộp dòng hải quan trùng hỏng")

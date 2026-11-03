@@ -111,6 +111,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-718-tra-cuu-thi-truong-nhanh-xuat-lo | Tra cứu thị trường: tìm nhanh hơn và xuất toàn bộ chạy nền chia nhiều tệp
+- status: dang-lam
+- date: 2026-11-03
+- list: Sản xuất - Thu mua
+- tag: Agent 4
+**Bối cảnh:** bảng dòng hàng hải quan trên prod đã 328 nghìn dòng, người dùng báo tìm rất chậm; nút xuất Excel cũ chặn ở
+50.000 dòng nên không xuất được toàn bộ.
+
+**Đã làm (phần tìm nhanh):** đo trên bản sao cỡ prod dựng riêng. Ba chỗ chậm: danh sách sắp theo ngày mà không có chỉ mục
+ngày, ô tìm dò toàn bộ tên hàng hai lần mỗi trang, ô chọn đếm lại cả bảng mỗi lần mở màn. Đã thêm chỉ mục theo ngày, nhớ
+tạm số đếm và ô chọn, bỏ một phép đổi chữ thường thừa. Mở màn từ 0,4 giây còn 0,04 giây; tìm từ khóa từ 1,5 giây còn 0,5
+giây lần đầu và 0,03 giây khi lật trang; ô chọn từ 1,1 giây còn tức thì.
+
+**Còn lại:** xuất toàn bộ hoặc theo bộ lọc chạy nền, chia tệp 50.000 dòng, báo số tệp dự kiến và tiến độ, chuông khi
+xong, màn tải từng tệp, tự dọn tệp sau số ngày giữ. Có thay đổi cơ sở dữ liệu nên chỉ lên dev, prod chờ duyệt.
+
+Mã nguồn: `backend/app/modules/customs/` (`service.py`, `search_service.py`, `read_cache.py`), migration `hqx718`, `doc/erp/hai-quan/plans/261103-tim-nhanh-xuat-lo-bao-cr-718/`.
+
+---
+
 ## bao-CR-715-che-service-thu-mua | Chẻ tệp nghiệp vụ và tách hàm rối của ba phân hệ thu mua, đợt R3
 - status: dang-lam
 - date: 2026-11-03
