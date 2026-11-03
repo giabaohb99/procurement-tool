@@ -6,7 +6,9 @@ from app.core.base_controller import apply_filters
 from app.core.database import get_db
 from app.core import privilege_escalation
 from app.core.permissions import (ACTION_LABELS, ACTIONS, ENTITIES,
-                                  ENTITY_LABELS, SCOPE_LABELS, SCOPES)
+                                  ENTITY_LABELS, SCOPE_LABELS, SCOPES,
+                                  SENSITIVE_PROCUREMENT_ENTITIES,
+                                  SENSITIVE_WARN_ACTIONS)
 from app.core.response import success
 from app.core.scoping import PUBLIC, SCOPE_FIELDS
 
@@ -25,12 +27,21 @@ def permission_meta(db: Session = Depends(get_db), user=Depends(require("role", 
     (nhà cung cấp, sản phẩm, kho...) hoặc quyền hành động không có bảng để lọc. Với chúng ô Phạm vi của vai trò KHÔNG
     có tác dụng: ai được tick quyền là thấy toàn bộ, muốn giấu thì tắt quyền. Màn Phân quyền khóa ô Phạm vi của những
     dòng này để khỏi hiểu nhầm (sự cố: vai trò Nhân sự tick Xem NCC phạm vi Của mình vẫn thấy toàn bộ NCC).
+
+    `sensitive_entities` / `sensitive_actions` / `requester_role_codes` (bao-CR-720): vai trò người yêu cầu (mọi tài
+    khoản mới tự nhận) được tick Xem / Xuất ở entity nhạy cảm thu mua thì màn hiện dòng vàng nhắc số người sẽ thấy toàn
+    bộ dữ liệu; không chặn lưu. Danh sách khai ở `core/permissions.py`, giao diện chỉ đọc.
     """
+    from app.modules.user.service import DEFAULT_ROLE_CODE
+
     return success({
         "entities": [{"key": e, "label": ENTITY_LABELS.get(e, e)} for e in ENTITIES],
         "actions": [{"key": a, "label": ACTION_LABELS.get(a, a)} for a in ACTIONS],
         "scopes": [{"key": s, "label": SCOPE_LABELS.get(s, s)} for s in SCOPES],
         "public_entities": [e for e in ENTITIES if SCOPE_FIELDS.get(e) is PUBLIC],
+        "sensitive_entities": list(SENSITIVE_PROCUREMENT_ENTITIES),
+        "sensitive_actions": list(SENSITIVE_WARN_ACTIONS),
+        "requester_role_codes": [DEFAULT_ROLE_CODE],
     })
 
 

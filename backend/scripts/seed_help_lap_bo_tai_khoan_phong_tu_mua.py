@@ -126,6 +126,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <li>Bấm <strong>Lưu phạm vi</strong>.</li>
 </ul>
 <p>Lưu ý ở tab <strong>Vai trò &amp; quyền</strong>: dòng danh mục dùng chung (Nhà cung cấp, Sản phẩm, Kho, Đơn vị tính...) có ô <strong>Phạm vi</strong> bị khóa và ghi <em>Toàn bộ (danh mục dùng chung)</em>. Phạm vi không lọc được các danh mục này, ai được tick <strong>Xem</strong> là thấy toàn bộ; muốn một vai trò không thấy nhà cung cấp thì bỏ tick quyền Xem, không chọn phạm vi.</p>
+<p>Vai trò <em>Nhân sự</em> là vai trò mọi tài khoản mới tự nhận. Nếu vai trò này được tick <strong>Xem</strong> hay <strong>Xuất</strong> ở Nhà cung cấp, Hợp đồng, Đơn mua hàng, Công nợ, Yêu cầu thanh toán hay Tra cứu thị trường, dưới ma trận hiện một dòng vàng nêu tên quyền và số người đang giữ vai trò sẽ thấy toàn bộ dữ liệu đó. Dòng này chỉ nhắc, không chặn lưu; muốn chỉ một nhóm thấy thì bỏ tick ở vai trò Nhân sự và tick cho vai trò riêng của nhóm đó.</p>
 <p>💡 Bước 3 và 4 làm cho nhiều người thì nhờ trợ lý cho nhanh: gõ một câu như <em>"lập bộ tài khoản nhân viên thu mua cho Nguyễn Văn A, loại trừ phòng Dego Organic"</em>, đọc thẻ đề xuất rồi bấm Xác nhận. Cách hỏi và các giới hạn ở bài {ref(AI_ARTICLE_TITLE, "Lập bộ tài khoản thu mua bằng Trợ lý AI")}.</p>
 
 <h2>V. Bộ A — Phòng tự mua hàng</h2>

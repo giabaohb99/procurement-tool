@@ -41,6 +41,14 @@ export interface PermissionMeta {
    * backend cũ chưa trả vẫn chạy.
    */
   public_entities?: string[]
+  /**
+   * bao-CR-720: entity nhạy cảm của thu mua + hành động cần nhắc (Xem / Xuất) + mã
+   * vai trò người yêu cầu (mọi tài khoản mới tự nhận). Vai trò đó được tick ở đây
+   * thì màn hiện dòng vàng, không chặn lưu. Khai ở backend, giao diện chỉ đọc.
+   */
+  sensitive_entities?: string[]
+  sensitive_actions?: string[]
+  requester_role_codes?: string[]
 }
 
 /**
