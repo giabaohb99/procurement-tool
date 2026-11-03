@@ -123,13 +123,24 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-710-ruff-don-tu-dong | Dọn mã backend tự động bằng ruff, đợt R1
-- status: đang làm
+- status: xong
 - date: 2026-11-03
 - tag: Nền tảng
-Đợt R1 trong lộ trình dọn backend: dọn import thừa, thêm nguồn lỗi gốc khi ném lại lỗi, gọn vòng lặp và điều kiện an toàn, xem tay
-biến gán không dùng; thêm cấu hình ruff và lệnh kiểm vào cổng kiểm backend. Không đổi hành vi, không đụng ba phân hệ thu mua
-đang dọn ở đợt R2 và cụm nhân sự đang có người đẩy.
-Mã nguồn: backend/app (trừ purchase_request, survey_request, purchase_order, employee, leave, hr*)
+Đợt R1 trong lộ trình dọn backend. Phạm vi là toàn bộ app trừ ba phân hệ thu mua đang dọn ở đợt R2, cụm nhân sự đang có người
+đẩy liên tục, ba script gieo dữ liệu, và mọi tệp có người khác sửa trong 24 giờ gần nhất (73 tệp, kiểm bằng git log). Trong
+phạm vi đó: cảnh báo từ 262 xuống 61, phần còn lại là vòng lặp viết tay và if lồng chưa đưa vào cổng. Tính cả app: 345 xuống
+158. Đã làm: gỡ import thừa, thêm nguồn lỗi gốc cho 68 chỗ ném lại lỗi trong except, bỏ dict() và list() thừa, gọn comprehension,
+contextlib.suppress thay try-except-pass. Sáu chỗ xem tay: bỏ cờ pushed không ai đọc ở coder, giữ lời gọi kiểm phạm vi ở cập
+nhật logo công ty, bỏ nhãn tính thừa ở thông báo, ràng biến vòng lặp cho lambda đọc tờ khai hải quan, nhập CompanyRef cho chú
+thích kiểu ở duyệt dấu, gỡ import trùng ở đăng nhập. Không đổi hành vi.
+Hai mối nối phát hiện nhờ bài kiểm và phải giữ lại kèm ghi chú: delete_key ở attachment (cr640, cr659 monkeypatch) và bốn hằng
+ACT_* ở agent_hub.service (test_agent_hub đọc qua module). Cổng kiểm mới: backend/ruff.toml (F, B904, B023, C4, SIM114, SIM118,
+bỏ B008 báo nhầm của FastAPI; khu chưa dọn tạm loại, năm tệp 24 giờ tạm bỏ qua từng mã) và lệnh trong CLAUDE.md; chạy sạch.
+Bài kiểm: chạy đủ bộ backend hai lần (11.196 đạt); sau khi giữ mối nối, chỉ còn 9 bài đỏ sẵn có trên nền gốc (agent_hub MCP
+liệt kê tool, AI duyệt phiếu, bộ mã hành động cr358, canh độ dài ô chữ cr538, hồ sơ trường riêng, nhập Excel nhân sự cr628,
+vòng đời phiếu cr656), không do đợt này. Sáu commit theo cụm phân hệ cộng hai commit giữ mối nối.
+Mã nguồn: backend/app (96 tệp), backend/ruff.toml, CLAUDE.md
+
 ## bao-CR-711 | Làm gọn phần nhận yêu cầu (controller) của ba phân hệ thu mua
 - status: dang-lam
 - date: 2026-11-03
