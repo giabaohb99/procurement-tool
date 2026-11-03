@@ -91,7 +91,7 @@ là cách đúng. Vùng *tải tệp lên* ở §4 nay **đã có người nhìn
 - **Cửa gắn tệp thứ HAI** — `ticket/service._register_files` gắn `file_id` vào `FileLink` mà
   không hỏi chủ sở hữu, y hệt BM-025 nhưng ở một module khác. `comment` và `forum` thì có kiểm
   nhưng mỗi nơi chép một bản; cả ba nay dùng chung `attachment/service.select_attachable_ids`.
-**Bản 2.4 — 22/10/2026.** bao-CR-655 (kế hoạch `doc/erp/00-ke-hoach-theo-module.md` AN1-1…AN1-4): **BM-019, BM-021, BM-023 đã vá — chờ deploy**; **BM-013 chuyển CHẤP NHẬN** (đại ca gật); đính chính bảy dòng BM-025 … BM-031: đã lên prod từ lâu (`7086a4d0` trên `main`), sổ ghi sót *chưa commit*.
+**Bản 2.4 — 22/10/2026.** bao-CR-655 (kế hoạch `doc/plans/00-ke-hoach-theo-module.md` AN1-1…AN1-4): **BM-019, BM-021, BM-023 đã vá — chờ deploy**; **BM-013 chuyển CHẤP NHẬN** (đại ca gật); đính chính bảy dòng BM-025 … BM-031: đã lên prod từ lâu (`7086a4d0` trên `main`), sổ ghi sót *chưa commit*.
 
 **Bản 2.3 — 21/09/2026.** Không thêm dòng BM; ghi nhận **một cửa GHI mới vào phân quyền**
 mở có chủ ý (`bao-CR-435`, `assistant/tools/account_setup_tool.py` + endpoint

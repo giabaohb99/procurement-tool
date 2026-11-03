@@ -231,7 +231,7 @@ Tìm các tên `lot_no`, `lot_code`, `batch_no`, `expiry_date`, `mfg_date`, `she
 
 ### 5.1. Câu A3 đang ở đâu
 
-Câu A3 (*có theo dõi lô và hạn dùng không, khách có đòi truy xuất ngược không*) có ở [san-xuat/00 mục 14](../san-xuat/00-tong-quan-nghiep-vu.md), là câu S2 ở doc 01 và câu C5 ở [kế hoạch theo module](../00-ke-hoach-theo-module.md). Doc 01 việc 2.10 chỉ làm lô *nếu* A3 là có. Khảo sát 24/10 ([02 mục 7](../nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md)) ghi *chưa ai nói*, đã đặt câu hỏi lại H-J cho CV Điều phối NL/BTP và Kế toán. Khảo sát 26/10 cũng chưa trả lời thẳng câu này.
+Câu A3 (*có theo dõi lô và hạn dùng không, khách có đòi truy xuất ngược không*) có ở [san-xuat/00 mục 14](../san-xuat/00-tong-quan-nghiep-vu.md), là câu S2 ở doc 01 và câu C5 ở [kế hoạch theo module](../../plans/00-ke-hoach-theo-module.md). Doc 01 việc 2.10 chỉ làm lô *nếu* A3 là có. Khảo sát 24/10 ([02 mục 7](../nghien-cuu/02-phan-tich-khao-sat-hien-trang-san-xuat.md)) ghi *chưa ai nói*, đã đặt câu hỏi lại H-J cho CV Điều phối NL/BTP và Kế toán. Khảo sát 26/10 cũng chưa trả lời thẳng câu này.
 
 **Nhưng câu trả lời gián tiếp đã có:** kho đang ghi số lô, ngày sản xuất, hạn dùng cho từng lần nhận thành phẩm (mục 4.3), và luật bắt buộc in chúng trên nhãn (mục 5.2). Câu còn phải hỏi không phải là *có cần không* mà là **áp tới đâu** (mục 9).
 

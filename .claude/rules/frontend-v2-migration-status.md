@@ -2,7 +2,7 @@
 paths:
   - "frontend/**"
   - "frontend-v2/**"
-  - "doc/erp/00-ke-hoach-theo-module.md"
+  - "doc/plans/00-ke-hoach-theo-module.md"
 ---
 # Tiến độ dời màn từ `frontend/` sang `frontend-v2/` (Đ-01…Đ-15)
 
@@ -10,7 +10,7 @@ paths:
 
 Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật → `frontend/`; **tính năng mới**
 → `frontend-v2/`, màn đó chưa có ở v2 thì dựng màn đó trước. `frontend/` chưa được tắt vì v2
-còn thiếu màn. **Số đo đầy đủ và kế hoạch dời nằm ở `doc/erp/00-ke-hoach-theo-module.md`**
+còn thiếu màn. **Số đo đầy đủ và kế hoạch dời nằm ở `doc/plans/00-ke-hoach-theo-module.md`**
 (bản 2.0, xem **CR-097**): bản cũ có **48 màn** — _(rà lại từng dòng 03/09/2026)_ bảng §1 nay
 **50 dòng** *(48 màn cũ + `/system/exports` + 44b)*: **50 xong** · **0 khuyết** · **0 thiếu** ·
 **0 chờ quyết**. Chia **15 đợt Đ-01 … Đ-15**: đã xong **Đ-01…Đ-14**; còn mỗi **Đ-15**

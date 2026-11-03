@@ -6,7 +6,7 @@
 | Mục đích | Mô tả chiều **ra** của kho theo chuẩn ERPNext v16 (xuất dùng nội bộ, xuất cho sản xuất ở mức chứng từ kho, giao hàng bán), đối chiếu với ERP DEGO bằng bảng fit-gap có chấm điểm, rồi đề xuất thứ tự làm theo nấc |
 | Mốc so sánh | ERPNext **v16.53.0** trên site học (`erpnext-hoc-backend-1`, site `frontend`, chỉ đọc), tài liệu `docs.frappe.io/erpnext`, mã `frappe/erpnext` nhánh `version-16` |
 | Mã soát | nhánh `erp-v2` ngày 02/11/2026 (`backend/app/modules`, `frontend-v2/src/modules`) |
-| Đọc kèm | [`../nghien-cuu/01`](../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 4.3, 5.3–5.4, 7, 8 · [`../nghien-cuu/10`](../nghien-cuu/10-nghiep-vu-kho.md) mục 7, 9, 10, 15 nhóm B · [`../nghien-cuu/11`](../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) dòng F4, F5 · [`../00-ke-hoach-theo-module.md`](../00-ke-hoach-theo-module.md) TM-GN-4, SX2-1, KH3-1 · `ke-hoach/02-danh-sach-cong-viec.md` mục 30.4 (ngoài repo, thư mục cha) |
+| Đọc kèm | [`../nghien-cuu/01`](../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 4.3, 5.3–5.4, 7, 8 · [`../nghien-cuu/10`](../nghien-cuu/10-nghiep-vu-kho.md) mục 7, 9, 10, 15 nhóm B · [`../nghien-cuu/11`](../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) dòng F4, F5 · [`../00-ke-hoach-theo-module.md`](../../plans/00-ke-hoach-theo-module.md) TM-GN-4, SX2-1, KH3-1 · `ke-hoach/02-danh-sach-cong-viec.md` mục 30.4 (ngoài repo, thư mục cha) |
 | Trạng thái | Chỉ nghiên cứu. Không sửa mã, không ghi dữ liệu |
 
 ## Mục lục
@@ -389,4 +389,4 @@ Theo luật hỏi việc: câu cách làm (thiết kế phiếu kho chung, cách
 - ERPNext v16.53.0 trên site học: định nghĩa doctype đọc trực tiếp từ `apps/erpnext/erpnext/stock/doctype/{delivery_note, delivery_note_item, pick_list, pick_list_item, packing_slip, shipment, delivery_trip, delivery_stop, stock_entry, stock_entry_detail, material_request, stock_reservation_entry, stock_settings, delivery_settings}`, `selling/doctype/{sales_order, sales_order_item, selling_settings}`, danh sách báo cáo ở `accounts/report`, `stock/report`, `selling/report`. Số bản ghi đọc bằng `frappe.db.count` ngày 02/11/2026.
 - Tài liệu chính thức: https://docs.frappe.io/erpnext/delivery-note · https://docs.frappe.io/erpnext/pick-list · https://docs.frappe.io/erpnext/packing-slip · https://docs.frappe.io/erpnext/delivery-trip · https://docs.frappe.io/erpnext/stock-entry · https://docs.frappe.io/erpnext/stock-reservation · https://docs.frappe.io/erpnext/sales-order · https://docs.frappe.io/erpnext/stock-transactions
 - Mã nguồn: https://github.com/frappe/erpnext/tree/version-16
-- ERP DEGO: các tệp nêu ở mục 4; kế hoạch `doc/erp/00-ke-hoach-theo-module.md` (TM-GN-4, SX2-1, KH3-1, DX); `ke-hoach/02-danh-sach-cong-viec.md` mục 21 (Đ2) và 30.4; `ke-hoach/erp/02-dai-han.md` mục 3.5.
+- ERP DEGO: các tệp nêu ở mục 4; kế hoạch `doc/plans/00-ke-hoach-theo-module.md` (TM-GN-4, SX2-1, KH3-1, DX); `ke-hoach/02-danh-sach-cong-viec.md` mục 21 (Đ2) và 30.4; `ke-hoach/erp/02-dai-han.md` mục 3.5.

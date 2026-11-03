@@ -9,7 +9,7 @@
 | Thời lượng | Buổi đầu 30 phút; sau đó dùng thật 5 ngày làm việc |
 | Kết quả | Biên bản theo mẫu ở mục 5, gửi Agent 1 để đóng F6 |
 
-*Cần kiểm lại:* kế hoạch `doc/erp/00-ke-hoach-theo-module.md` ghi chưa rõ diễn đàn đã thông báo toàn công ty
+*Cần kiểm lại:* kế hoạch `doc/plans/00-ke-hoach-theo-module.md` ghi chưa rõ diễn đàn đã thông báo toàn công ty
 hay chưa. Trước khi mở buổi thử, hỏi đại ca: nếu đã thông báo rồi thì kịch bản này dùng để **nghiệm thu
 lại**, không phải thử trước khi mở.
 

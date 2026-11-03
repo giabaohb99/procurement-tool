@@ -18,7 +18,7 @@ Mục tiêu một câu: **agent tự biết đang làm gì và tới đâu, tự
 | 2 | Sổ quyết định | Mỗi lần hỏi ghi lại: câu hỏi, đề nghị, người chủ chọn gì, lý do. Đọc sổ trước mỗi lần định hỏi |
 | 3 | Hạn mức nới dần | Loại việc được gật nhiều lần liền không sửa → đề xuất chuyển sang *tự làm rồi báo*; người chủ gật một lần cho cả loại |
 | 4 | Báo cáo khi xong việc | Xong một nghiệp vụ: báo 3–4 dòng (*đã xong · kiểm ra sao · còn gì · cần quyết gì*) + cập nhật nơi theo dõi |
-| 5 | Một nơi theo dõi | Danh sách *Kế hoạch hệ agent* trên phân hệ Dự án ERP + tệp `doc/erp/00-ke-hoach-theo-module.md` |
+| 5 | Một nơi theo dõi | Danh sách *Kế hoạch hệ agent* trên phân hệ Dự án ERP + tệp `doc/plans/00-ke-hoach-theo-module.md` |
 | 6 | Rà mã độc lập | Mọi thay đổi được một agent **khác người viết** rà trước khi gộp |
 | 7 | Chia khu người viết | Mỗi agent viết một khu riêng, không hai agent cùng sửa một khối mã |
 | 8 | Việc chen ngang | Ba mức *khẩn / gấp / thường*; việc dở được cất và ghi chỗ dừng |

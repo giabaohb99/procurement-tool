@@ -14,7 +14,7 @@ Câu *làm tới đâu rồi* phải trả lời từ **dữ liệu**, không t�
 | Git | `git fetch`; `git log --oneline origin/main..origin/erp-v2`; `git log --since=<lần trước>` | Commit mới; cái gì chưa lên prod; ai đẩy |
 | Sổ task | `doc/tai-lieu-ky-thuat/nhat-ky-task.md` | Mục `dang-lam`: của ai, từ ngày nào, ghi chỗ dừng |
 | Dự án ERP | danh sách theo dõi của người chủ (đồng bộ từ sổ) | Việc đã đặt chỗ, đứng yên bao lâu |
-| Kế hoạch | `doc/erp/00-ke-hoach-theo-module.md` | Phase 1 còn gì |
+| Kế hoạch | `doc/plans/00-ke-hoach-theo-module.md` | Phase 1 còn gì |
 | Kiểm | kết quả CI / lần chạy kiểm gần nhất | Đỏ ở đâu |
 | Môi trường | dev và prod: bản đang chạy, migration head | Dev / prod có khớp nhánh không |
 

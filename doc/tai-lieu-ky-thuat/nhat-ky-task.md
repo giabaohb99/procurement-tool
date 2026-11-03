@@ -16345,7 +16345,7 @@ Commit: đẩy thẳng lên erp-v2 (xem lịch sử git, thông điệp có mã 
 
 **Điều kiện xong:** có xác nhận đạt; Agent 1 chốt giờ cắt đợt prod năm với Ban điều hành.
 
-Mã nguồn: kế hoạch `doc/erp/00-ke-hoach-theo-module.md` mục AI1-1
+Mã nguồn: kế hoạch `doc/plans/00-ke-hoach-theo-module.md` mục AI1-1
 
 ## kh-HR1-1 | Chặn xuất CSV nhân sự chỉ cần quyền xem, che cột nhạy cảm khi xuất
 - status: xong
@@ -16483,7 +16483,7 @@ Commit: 5d0bcb60
 ### kh-HR1-5-5 | Cập nhật kế hoạch theo phân hệ, mục Nhân sự
 - status: xong
 Kế hoạch viết ngày 22/10 vẫn ghi nhiều việc là chưa làm. Chuyển các việc đã xong (bắt buộc đính kèm, kiểm việc treo trước khi khóa tài khoản, đối chiếu kết sổ phép, sơ đồ tổ chức) lên dòng «Đã có», ghi rõ tình trạng việc chặn xuất tệp nhân sự, và thu gọn việc này về phần dữ liệu còn lại.
-Mã nguồn: `doc/erp/00-ke-hoach-theo-module.md` mục 5.
+Mã nguồn: `doc/plans/00-ke-hoach-theo-module.md` mục 5.
 Commit: 5d0bcb60
 
 ### kh-HR1-5-6 | Nhập bù ngày vào làm cho hồ sơ cũ

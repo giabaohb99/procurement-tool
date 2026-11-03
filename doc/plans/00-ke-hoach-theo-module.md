@@ -126,7 +126,7 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 
 **Đã ghi nhận, chưa lên lịch — chỗ hở kho và nhận hàng so với chuẩn (bao-CR-702, 30/10/2026; đại ca chốt chỉ ghi, chưa làm)**
 
-Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) mục 6 (top 10 chỗ hở, đã xếp theo giá trị cho phòng thu mua). Nửa sau luồng (nhận hàng, kho, công nợ) mới đạt 43 % so với ERPNext v16.
+Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) mục 6 (top 10 chỗ hở, đã xếp theo giá trị cho phòng thu mua). Nửa sau luồng (nhận hàng, kho, công nợ) mới đạt 43 % so với ERPNext v16.
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|

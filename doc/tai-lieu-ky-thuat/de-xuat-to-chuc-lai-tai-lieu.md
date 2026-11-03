@@ -106,7 +106,7 @@ Ba thứ này **công cụ (Claude Code, Codex) đọc thẳng theo đường d�
 
 | Hiện tại | Tới |
 |---|---|
-| `doc/erp/00-ke-hoach-theo-module.md` | `doc/plans/00-ke-hoach-theo-module.md` |
+| `doc/plans/00-ke-hoach-theo-module.md` | `doc/plans/00-ke-hoach-theo-module.md` |
 | `doc/tai-lieu-ky-thuat/kien-truc/*` (kiến trúc v2, từ điển dữ liệu, danh sách màn), `technical-design.md`, `thiet-ke-ky-thuat-chi-tiet.md`, `so-do-ky-thuat.md` | `doc/tai-lieu-ky-thuat/kien-truc/` |
 | `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`, `Requirement_VaiTro.md` | `doc/tai-lieu-ky-thuat/phan-quyen/` (đổi tên kebab); `Plan_*`, `Test_*` → `doc/v1/` |
 | `quy-trinh-nhanh-va-deploy.md`, `gioi-han-tai-nguyen-docker.md`, `so-ghi-nhan-loi-bao-mat.md`, `ra-soat-*`, `danh-gia-chat-luong-backend.md`, `vps-dev-tai-khoan-ida.md` | `doc/tai-lieu-ky-thuat/van-hanh/` |
