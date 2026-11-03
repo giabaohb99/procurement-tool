@@ -3,7 +3,7 @@
 > [← plan.md](plan.md) · Chốt 14/08/2026, sửa lại cùng ngày khi chốt làm **hai nhánh song song**
 > **Nhánh A viết lại toàn bộ 14/08/2026** — `phase-03` từ 18 task thành 36, thêm nhóm nền tổ chức chặn đầu, bỏ văn thư khỏi phạm vi. Phần nhánh B bên dưới giữ nguyên.
 > **Sửa 17/08/2026 (quyết định 10) — đảo người dùng đầu tiên:** bộ máy chạy vòng đầu với **văn thư**, **Thu mua giữ nguyên không đụng**. Nhịp A5 (gom cổng, chuyển 5 luồng Thu mua) **tách ra làm sau**, thay bằng nhịp **A5' đấu nối văn thư**. `phase-03` thành **37 task**, trong đó 33 nằm trong phase và 4 tách ra. Món nợ để lại ghi ở [`no-can-don.md`](no-can-don.md).
-> Thứ tự phía văn thư lấy theo mục **"Thứ tự làm phía FE"** của [`plans/reports/planner-260814-1027-van-thu-fe-giai-doan-dau.md`](../../../../../plans/reports/planner-260814-1027-van-thu-fe-giai-doan-dau.md).
+> Thứ tự phía văn thư lấy theo mục **"Thứ tự làm phía FE"** của [`doc/erp/van-thu/plans/reports/planner-260814-1027-van-thu-fe-giai-doan-dau.md`](../reports/planner-260814-1027-van-thu-fe-giai-doan-dau.md).
 > Report đó là **FE-only** (64 mã `F-`); tệp này ghép mỗi mã `F-` với task backend tương ứng trong 4 tệp phase.
 
 ## Hai nhánh

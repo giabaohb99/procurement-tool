@@ -1,6 +1,6 @@
 # VĂN THƯ — VĂN BẢN, PHIÊN BẢN VÀ PHÂN QUYỀN THEO TỪNG VĂN BẢN
 
-> Ngày 14/08/2026 · nhánh `frontend-v2` · theo [plan P0–P3](../../doc/erp/van-thu/plans/260814-1036-van-thu-p0-p3/plan.md) bước 3b + 3c
+> Ngày 14/08/2026 · nhánh `frontend-v2` · theo [plan P0–P3](../260814-1036-van-thu-p0-p3/plan.md) bước 3b + 3c
 > Trạng thái: **chạy được đầu–cuối trên dev.** 484/484 test backend xanh · typecheck + build frontend sạch.
 
 ## 1. Làm được gì
