@@ -6,7 +6,7 @@
 | Mục đích | Trả lời câu hỏi "luồng thu mua, kho hiện tại nằm được bao nhiêu phần trăm so với chuẩn" bằng một bảng fit-gap có chấm điểm |
 | Mốc so sánh | ERPNext v16 (site học `erpnext.degoholding.vn`, bài tập ở `ERPNext/erpnext-bai-tap-thu-mua-nhap-kho.md`) |
 | Mã soát | nhánh `erp-v2` ngày 30/10/2026 (`backend/app/modules`, `frontend-v2/src/modules`) |
-| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) (mục 7 hiện trạng, mục 8 lộ trình ba nấc) · [09 Nghiệp vụ mua hàng](09-nghiep-vu-mua-hang.md) · [10 Nghiệp vụ kho](../../nghien-cuu/10-nghiep-vu-kho.md) |
+| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) (mục 7 hiện trạng, mục 8 lộ trình ba nấc) · [09 Nghiệp vụ mua hàng](09-nghiep-vu-mua-hang.md) · [10 Nghiệp vụ kho](../../kho/nghien-cuu/10-nghiep-vu-kho.md) |
 
 ## Mục lục
 

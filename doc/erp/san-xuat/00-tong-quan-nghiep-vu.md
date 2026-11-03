@@ -487,7 +487,7 @@ flowchart LR
 
 ### 13.3. Ràng buộc phải giữ khi thiết kế
 
-- **Không thêm bảng biến thể dưới `tab_product`**, không đổi hoặc tái dùng `product_code`, **không đặt cột giá lên sản phẩm**. Giá chuẩn, nếu dùng, nằm ở bảng riêng theo kỳ. Xem `doc/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`.
+- **Không thêm bảng biến thể dưới `tab_product`**, không đổi hoặc tái dùng `product_code`, **không đặt cột giá lên sản phẩm**. Giá chuẩn, nếu dùng, nằm ở bảng riêng theo kỳ. Xem `doc/erp/mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`.
 - Trạng thái lệnh, công đoạn, NCR lưu **`SMALLINT` có `IntEnum`**, không lưu chữ.
 - Đơn giá bình quân di động hiện tính lại mỗi lần nhận hàng. Thêm nhập thành phẩm với giá tạm thì phải quyết **có tính lại bình quân khi chốt giá thật hay không** (mục 8.2).
 - Mỗi entity quyền mới phải khai đủ phạm vi dữ liệu, nếu không bài kiểm canh sẽ đỏ.

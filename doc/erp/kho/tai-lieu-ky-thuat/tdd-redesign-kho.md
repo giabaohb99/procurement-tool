@@ -7,17 +7,17 @@
 | **Loại** | Technical Design Document (TDD) — thiết kế 1 phân hệ |
 | **Phiên bản** | v0.1 (DRAFT — chờ duyệt nội bộ kỹ thuật) |
 | **Ngày** | 2026-07-13 |
-| **Liên quan** | [technical-design.md](kien-truc/technical-design.md) · [thiet-ke-ky-thuat-chi-tiet.md](kien-truc/thiet-ke-ky-thuat-chi-tiet.md) · [change-log.md](change-log.md) (CR-001) |
+| **Liên quan** | [technical-design.md](../../../tai-lieu-ky-thuat/kien-truc/technical-design.md) · [thiet-ke-ky-thuat-chi-tiet.md](../../../tai-lieu-ky-thuat/kien-truc/thiet-ke-ky-thuat-chi-tiet.md) · [change-log.md](../../../tai-lieu-ky-thuat/change-log.md) (CR-001) |
 | **Trạng thái quyết định** | ✅ Giữ nguyên mã kho cũ · ✅ Kho nội bộ→`company_id`, kho đối tác→`supplier_code` |
 
-> Tài liệu này mô tả **XÂY BẰNG CÁCH NÀO** cho việc quy hoạch lại danh mục Kho. **Chưa code** cho tới khi được duyệt (theo [quy-trinh-tai-lieu.md](quy-trinh-tai-lieu.md)).
+> Tài liệu này mô tả **XÂY BẰNG CÁCH NÀO** cho việc quy hoạch lại danh mục Kho. **Chưa code** cho tới khi được duyệt (theo [quy-trinh-tai-lieu.md](../../../tai-lieu-ky-thuat/quy-trinh-tai-lieu.md)).
 
 ---
 
 ## 1. Vấn đề & mục tiêu
 
 ### 1.1 Hiện trạng (đã đối chiếu code + seed)
-`tab_warehouse` ([catalog/model.py](../../backend/app/modules/catalog/model.py)) hiện chỉ có `code / name / address / is_active`, dùng `make_crud_router` generic.
+`tab_warehouse` ([catalog/model.py](../../../../backend/app/modules/catalog/model.py)) hiện chỉ có `code / name / address / is_active`, dùng `make_crud_router` generic.
 
 | Vấn đề | Bằng chứng |
 |---|---|
@@ -73,14 +73,14 @@ Cột giữ nguyên: `code` (VARCHAR(25) UNIQUE, **không đổi giá trị cũ*
 - `code` vẫn UNIQUE.
 
 ### 3.3 Cập nhật LLD
-Bổ sung mục `tab_warehouse` vào [thiet-ke-ky-thuat-chi-tiet.md](kien-truc/thiet-ke-ky-thuat-chi-tiet.md) §3.1 (thay dòng "danh mục khác — cấu trúc đơn giản").
+Bổ sung mục `tab_warehouse` vào [thiet-ke-ky-thuat-chi-tiet.md](../../../tai-lieu-ky-thuat/kien-truc/thiet-ke-ky-thuat-chi-tiet.md) §3.1 (thay dòng "danh mục khác — cấu trúc đơn giản").
 
 ---
 
 ## 4. Migration (Alembic) — **an toàn, không đụng bảng khác**
 
 1. `alembic revision --autogenerate -m "warehouse_add_type_owner"` → thêm 3 cột (default sẵn nên rows cũ không lỗi).
-2. **Data migration phân loại** (viết bằng Python/SQLAlchemy trong migration — **KHÔNG** dùng SQL literal tiếng Việt, tránh mojibake theo [CLAUDE.md](../../CLAUDE.md)):
+2. **Data migration phân loại** (viết bằng Python/SQLAlchemy trong migration — **KHÔNG** dùng SQL literal tiếng Việt, tránh mojibake theo [CLAUDE.md](../../../../CLAUDE.md)):
    - Danh sách **internal** (theo mã hiện có): `Dego Cần Thơ`, `Kho B18`, `Kho C1-2`, `Kho F49 - Icare`, `Kho Lab Dego`, `Kho Dr. Xanh` → `type=internal`, `company_id = <id DEGO>`.
    - Còn lại (Agama, Hà Long, Âu Việt, Basel, Niềm Tin Việt, Đại Tâm, Pesticidex, Yamato, ATC, Agrifuture, Thu Loan, Thái Nông, An Nông, ADU) → `type=partner`, `supplier_code = ` khớp theo tên với `tab_supplier` (fallback: để trống + đánh dấu để gán tay).
 3. Không có bước nào chạm `tab_goods_receipt/po_item/purchase_request_item/inventory_*` → **0 rủi ro đứt liên kết**.

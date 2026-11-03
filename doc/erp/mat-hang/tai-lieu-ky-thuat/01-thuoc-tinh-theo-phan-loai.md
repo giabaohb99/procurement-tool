@@ -4,7 +4,7 @@
 |---|---|
 | Bản | 1.1 — 02/11/2026 (phân tích + kiến trúc, **chưa làm**) |
 | Câu hỏi | Mỗi phân loại mặt hàng có bộ thuộc tính khác nhau (chai có dung tích, cổ chai; thùng có kích thước thùng, số lớp carton…). Thiết kế theo dạng đó được không? |
-| Nguồn | Sheet danh mục VTBB đang dùng (tab DM CHAI, DM THÙNG, DM TÚI/NHÃN, QUY TẮC ĐẶT MÃ…), [mô hình dữ liệu sản phẩm](../../../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) mục 5–8, [nghiên cứu mặt hàng](../nghien-cuu/00-nghien-cuu-mat-hang-erpnext.md) |
+| Nguồn | Sheet danh mục VTBB đang dùng (tab DM CHAI, DM THÙNG, DM TÚI/NHÃN, QUY TẮC ĐẶT MÃ…), [mô hình dữ liệu sản phẩm](mo-hinh-du-lieu-san-pham.md) mục 5–8, [nghiên cứu mặt hàng](../nghien-cuu/00-nghien-cuu-mat-hang-erpnext.md) |
 
 ---
 

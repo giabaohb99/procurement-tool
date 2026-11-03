@@ -7,7 +7,7 @@
 | Mốc so sánh | ERPNext trên site học `erpnext.degoholding.vn` (container `erpnext-hoc-backend-1`, `__version__` = `16.53.0`, site `frontend`); DocType JSON và `item.py` đọc thẳng trong container; docs.erpnext.com mục Stock (Item, Item Variants, Item Price, UOM) |
 | Mã soát | nhánh `erp-v2` ngày 02/11/2026 (commit `601ec718`): `backend/app/modules/product`, `catalog`, `supplier`, `survey`, `purchase_history`, `inventory`, `category_assignee`; v2 `frontend-v2/src/modules/production`, `inventory` |
 | Số đo dữ liệu | DB local (bản sao gần prod, 6.803 mã) và site học (7.004 mã đồng bộ từ ERP DEGO); chỉ chạy câu đọc |
-| Đọc kèm | [`mo-hinh-du-lieu-san-pham.md`](../../../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) (luật bất biến, BẮT BUỘC) · [11 Độ phủ thu mua, kho](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) · [10 Nghiệp vụ kho](../../nghien-cuu/10-nghiep-vu-kho.md) · [00 Kế hoạch theo module](../../../plans/00-ke-hoach-theo-module.md) |
+| Đọc kèm | [`mo-hinh-du-lieu-san-pham.md`](../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) (luật bất biến, BẮT BUỘC) · [11 Độ phủ thu mua, kho](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) · [10 Nghiệp vụ kho](../../kho/nghien-cuu/10-nghiep-vu-kho.md) · [00 Kế hoạch theo module](../../../plans/00-ke-hoach-theo-module.md) |
 
 ## Mục lục
 
@@ -164,7 +164,7 @@ v16 gom lô và serial của một dòng chứng từ vào **Serial and Batch Bu
 
 ### 3.1. Luật nền phải giữ
 
-Tóm từ [`mo-hinh-du-lieu-san-pham.md`](../../../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md):
+Tóm từ [`mo-hinh-du-lieu-san-pham.md`](../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md):
 
 - **`tab_product` là bảng VARIANT (SKU).** Mỗi dòng là một quy cách cụ thể, đặt mua được, nhập kho được.
 - **`product_code` là hạt nối 7 bảng** bằng chuỗi, không có khóa ngoại: dòng YCMH, dòng ĐMH, nhận hàng, tồn kho, phát sinh kho, lịch sử mua hàng, phương án khảo sát.
