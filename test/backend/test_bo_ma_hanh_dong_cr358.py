@@ -93,12 +93,13 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
         "draft", "received", "partial"),
     "modules/purchase_request/option_service.py::choose_option": (
         "option_choose", "option_unchoose"),
-    "modules/purchase_request/service.py::set_status": ("submitted", "approved", "rejected"),
+    "modules/purchase_request/lifecycle_service.py::set_status": ("submitted", "approved", "rejected"),
     #  bao-CR-485/497: bấm Điều phối ghi `dispatched`; duyệt xong tự điều phối (bỏ qua bước
     #  Điều phối) thì ghi dưới `approved` — controller truyền `audit_action="approved"`.
-    "modules/purchase_request/service.py::dispatch_pr": ("dispatched", "approved"),
+    "modules/purchase_request/dispatch_service.py::dispatch_pr": ("dispatched", "approved"),
     #  bao-CR-414: về 0 là trả về thu mua, khác 0 là chuyển sang phòng khác.
-    "modules/purchase_request/service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
+    #  bao-CR-715: ba phân hệ thu mua chẻ `service.py` theo bước nghiệp vụ — khóa trỏ tệp con định nghĩa hàm.
+    "modules/purchase_request/lifecycle_service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
     "modules/survey_request/service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
     #  bao-CR-453: chốt lên giai đoạn nào thì ghi mã của giai đoạn đó.
     "modules/purchase_order/service.py::advance_cost_stage": ("cost_stage_prov", "cost_stage_final"),
