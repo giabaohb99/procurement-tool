@@ -1,7 +1,7 @@
 """LÊN BẢN MỚI KHI SỬA LUỒNG — không được đâm vào luồng cùng mã.
 
-Lỗi khách báo 25/08/2026: mở luồng duyệt, bấm **Thêm bước** → toast đỏ «Request
-failed with status code 500», bước vừa khai biến mất.
+Lỗi khách báo 25/08/2026: mở luồng duyệt, bấm **Thêm bước** → toast đỏ "Request
+failed with status code 500", bước vừa khai biến mất.
 
 Nguyên nhân: `tab_approval_flow` có `UNIQUE(entity, code, version_no)` mà `code`
 **được phép bỏ trống**, nên hai luồng khác nhau cùng mã rỗng là chuyện thường

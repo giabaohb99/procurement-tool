@@ -23,10 +23,10 @@ CHỈ viết bài cho tính năng MỚI, KHÔNG viết lại toàn bộ phân h�
     mọi nhân viên, mốc kỷ niệm), Nghỉ phép (chặn đơn lùi ngày + vai trò miễn, chặn tự duyệt, lối tắt danh mục), Hợp đồng
     lao động (ngày báo hết hạn, mức gấp). Nhãn đối chiếu bằng đọc `hr/components/hr-settings-form.tsx` và `FIELDS` nhóm `hr` ở
     `setting/service.py` (lời giải thích trên màn lấy nguyên từ đó).
-  * 03/11 (đối chiếu duoc-CR-713/714/715): đường menu bỏ chữ «Danh mục» cho khớp thanh đường dẫn (Nhân sự › Master ›
+  * 03/11 (đối chiếu duoc-CR-713/714/715): đường menu bỏ chữ "Danh mục" cho khớp thanh đường dẫn (Nhân sự › Master ›
     Cài đặt nhân sự, trang không lặp tiêu đề — CR-714); nhãn ô viết đúng chữ của `FIELDS`; nút duyệt thẳng tên thật
-    là «Duyệt đơn»; thêm ý phiếu nghỉ bù luôn chặn tự duyệt; bài Sơ đồ tổ chức thêm công tắc «Sơ đồ tổ chức cho mọi
-    nhân viên».
+    là "Duyệt đơn"; thêm ý phiếu nghỉ bù luôn chặn tự duyệt; bài Sơ đồ tổ chức thêm công tắc "Sơ đồ tổ chức cho mọi
+    nhân viên".
   * duoc-CR-711 (02/11): Sơ đồ tổ chức làm lại theo ERPNext — khung vẽ kéo thả, thẻ người nối theo quản lý trực tiếp,
     nút mở nhóm, khung thông tin, tìm người, Tìm tôi, Mở hết, hai kiểu vẽ, lọc pháp nhân / phòng ban. Nhãn đối chiếu
     bằng đọc `hr/pages/org-chart-page.tsx`, `hr/components/org-chart-{board,canvas,person-popover}.tsx`.

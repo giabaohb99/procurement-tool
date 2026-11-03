@@ -160,7 +160,7 @@ def test_go_mot_trong_hai_thu_muc_thi_khong_ve_goc(db, world):
 
 
 def test_gan_vao_thu_muc_phap_nhan_khac_duoc(db, world):
-    #  Luật cũ «bị chặn» BỎ ngày 24/09/2026 (đại ca chốt: thư mục là chỗ người
+    #  Luật cũ "bị chặn" BỎ ngày 24/09/2026 (đại ca chốt: thư mục là chỗ người
     #  dùng tự sắp xếp, không buộc theo pháp nhân) — bài kiểm lật lại theo luật mới.
     folder_root_service.ensure_company_roots(db)
     root_b = _company_root(db, world.co["B"])
@@ -260,8 +260,8 @@ def test_move_documents_lo_co_dong_bi_tu_choi(db, world):
 
 # ── H3 (rà soát 23/09/2026) — kiểm thư mục TRƯỚC khi ghi văn bản ────────────
 def test_tao_van_ban_vao_thu_muc_phap_nhan_khac_duoc(db, seed, world):
-    """Luật cũ chặn thư mục khác pháp nhân — BỎ 24/09/2026. Luật «chặn TRƯỚC
-    khi ghi» vẫn được canh ở bài thư mục NGỪNG DÙNG ngay dưới."""
+    """Luật cũ chặn thư mục khác pháp nhân — BỎ 24/09/2026. Luật "chặn TRƯỚC
+    khi ghi" vẫn được canh ở bài thư mục NGỪNG DÙNG ngay dưới."""
     folder_root_service.ensure_company_roots(db)
     root_b = _company_root(db, world.co["B"])
     doc_type = DocType(code="H3A", name="Loại thử H3", id_scheme=1, number_when=2)

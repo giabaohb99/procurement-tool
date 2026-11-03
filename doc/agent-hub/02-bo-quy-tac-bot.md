@@ -59,9 +59,9 @@ Lệch quá **30%** số tệp, hoặc quá `AGENT_MAX_FILES_TOUCHED` tệp, th�
 leo thang**.
 
 **C1b. Việc lớn làm theo từng phần** (ai-CR-082, 05/10/2026). Việc chạm từ hai lớp trở lên (cấu trúc dữ liệu · nghiệp vụ
-backend · giao diện) và từ 8 tệp, hoặc đại ca dặn «làm theo từng phần», được chia theo lớp; mỗi phần một lượt Claude
+backend · giao diện) và từ 8 tệp, hoặc đại ca dặn **làm theo từng phần**, được chia theo lớp; mỗi phần một lượt Claude
 nối tiếp cùng phiên, kiểm + commit riêng, trần tệp của C1 tính THEO TỪNG PHẦN. Vướng ở phần nào dừng ở phần đó;
-«làm tiếp» chạy nốt phần còn lại.
+**làm tiếp** chạy nốt phần còn lại.
 
 **C2. Một task một nhánh.** `bot/ai-CR-<số>-<slug>`, cắt từ `erp-v2`. Không làm hai task trên
 một nhánh, không cắt nhánh từ nhánh của task khác.
@@ -70,7 +70,7 @@ một nhánh, không cắt nhánh từ nhánh của task khác.
 thì buộc nhiều khi cũng phải thêm xóa sửa cấu trúc db, thì nó trình bày, a duyệt thì lên thôi"*). Bản cũ
 cấm hẳn và bắt leo thang. Nay bot ĐƯỢC viết migration, kèm năm chốt thi hành trong mã (`schema_change.py`):
 `down_revision` nối đúng đầu hiện tại (ghi sẵn trong đề bài) · cổng kiểm đỏ nếu tệp lỗi cú pháp hay kho
-thành hai đầu · thẻ kết quả có mục «CÓ ĐỔI CẤU TRÚC DB», thay đổi mất dữ liệu (xóa / đổi kiểu / đổi tên /
+thành hai đầu · thẻ kết quả có mục **CÓ ĐỔI CẤU TRÚC DB**, thay đổi mất dữ liệu (xóa / đổi kiểu / đổi tên /
 SQL tay) in đậm · lúc gộp kiểm lại một đầu, hai đầu thì không đẩy · trước khi deploy dev sao lưu CẢ DB dev,
 sao lưu hỏng thì không deploy. Lý do giữ chặt: migration hỏng trên 141 bảng đang chạy không cứu bằng revert;
 vụ dev sập 25/09 là do hai nhánh cùng đẻ migration.
@@ -103,9 +103,9 @@ thì nói bỏ. Cấm báo "xong" khi chưa chạy cổng kiểm. Một con bot 
 nguy hiểm hơn một con bot dở.
 
 **C10. Không tự merge, không `--force` lên nhánh nền, không `git push` lên `main`.** Gộp vào
-`erp-v2` chỉ xảy ra sau khi đại ca bấm «Đồng ý» (hoặc hẹn giờ) trên thẻ hỏi ở Telegram
+`erp-v2` chỉ xảy ra sau khi đại ca bấm **Đồng ý** (hoặc hẹn giờ) trên thẻ hỏi ở Telegram
 (ai-CR-014), do mã của hub làm chứ không phải lượt `claude`; và đã gộp thì phải có đường
-«Thu hồi» (`git revert -m 1`), không xóa lịch sử. Từ ai-CR-154 (dây chuyền gọn,
+**Thu hồi** (`git revert -m 1`), không xóa lịch sử. Từ ai-CR-154 (dây chuyền gọn,
 `AGENT_AUTO_DEPLOY_AFTER_OK`), chữ *ok* trên thẻ xác nhận là đồng ý luôn bước gộp + deploy dev:
 thẻ nói trước rủi ro và việc sẽ tự đẩy; sửa xong mà cổng kiểm không đỏ thì hub tự gộp, đỏ thì
 dừng ở thẻ kết quả như cũ. Prod vẫn không bao giờ tự đẩy.
@@ -144,7 +144,7 @@ cũ**. Bot không đủ tư cách phân xử, người mới đủ.
 
 **Không còn là lý do dừng (ai-CR-015, 23/09/2026):** không tái hiện được lỗi, và thiếu dữ liệu
 để quyết. Gặp hai ca này bot tra [sổ quyết định](03-so-quyet-dinh.md): có mục khớp thì làm theo
-và ghi «Theo QĐ-xx: …»; không có thì chọn cách an toàn nhất, dễ đảo lại, và ghi «Em giả định: …»
+và ghi **Theo QĐ-xx: …**; không có thì chọn cách an toàn nhất, dễ đảo lại, và ghi **Em giả định: …**
 trong tổng kết. Ngoại lệ: việc rủi ro cao (tiền, công nợ, phân quyền, cấu trúc DB, prod, `main`,
 gộp mã) vẫn dừng và hỏi như cũ — ở việc đó sổ không được nạp.
 
@@ -167,7 +167,7 @@ mọi thứ ngoài git worktree của task đang làm
 ```
 
 **Cấm ghi, được đọc:** `CLAUDE.md`, thư mục `.claude/`, bộ quy tắc này, và sổ quyết định
-`doc/agent-hub/03-so-quyet-dinh.md` (ai-CR-015). Sổ chỉ thêm mục qua nút «Ghi vào sổ» đại ca
+`doc/agent-hub/03-so-quyet-dinh.md` (ai-CR-015). Sổ chỉ thêm mục qua nút **Ghi vào sổ** đại ca
 bấm trên Telegram; bot sửa mã không được tự viết luật cho mình.
 
 ### Cấm chạy
@@ -183,7 +183,7 @@ mọi lệnh xóa ngoài worktree
 
 Danh sách này áp cho **tiến trình `claude`** (lượt sửa mã, lượt hỏi thêm). Bước gộp + deploy
 dev của ai-CR-014 (`git merge` · `git push` lên `erp-v2` · `ssh` lên VPS · `docker compose up`
-trên VPS) là **mã của hub trong `agent-runner`**, chạy sau nút «Đồng ý» của đại ca, ngoài
+trên VPS) là **mã của hub trong `agent-runner`**, chạy sau nút **Đồng ý** của đại ca, ngoài
 lượt `claude`; khóa SSH và khóa GitHub không bao giờ vào môi trường của `claude`.
 
 ### Biên container

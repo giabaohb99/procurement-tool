@@ -2,14 +2,14 @@
 
 | | |
 |---|---|
-| Bản | 2.9 — 28/10/2026 (đợt 4 duoc-CR-689: A4, B4, C3, E2, F1 đã có — khóa 25–29; bảng Kế hoạch nhân sự; ô Lịch nhắc E3; cột kế hoạch ở A5) · 2.8 — 27/10/2026 (đợt 3 duoc-CR-688: A3, A5, D1, H1 đã có — khóa 21–24; biểu đồ linh hoạt phần một) · 2.7 — 27/10/2026 (đợt 2 duoc-CR-687: B2, B3 đã có — khóa 19, 20; A2 đã có trong Biến động nhân sự) · 2.6 — 27/10/2026 (đính chính B3: mẫu 01/PLI là danh sách từng người 27 cột, nộp Sở Nội vụ; B2 liệt kê đủ thông tin bắt buộc của sổ) · 2.5 — 27/10/2026 (đợt 1 duoc-CR-686 lên mã: B1, E1 đã có; A1/C1/C2 bù các chỗ thiếu; lọc phòng ban + danh sách người cho 5 báo cáo) · 2.4 — 27/10/2026 (thêm §3.4 «Biểu đồ linh hoạt» dùng chung cho mọi mẫu, kèm biểu đồ gợi ý từng mẫu) · 2.3 — 27/10/2026 (thêm nhóm H «Phúc lợi & sự kiện», mẫu H1: lọc đối tượng theo dịp như 8/3 và dự trù kinh phí) · 2.2 — 27/10/2026 (thêm mẫu A5 «Quỹ lương theo pháp nhân» để chọn công ty tuyển người) · 2.1 — 27/10/2026 (thêm ý «Tuyển dụng» vào A1; thêm nhóm G «Tài sản cấp phát» với mẫu G1) · 2.0 — 27/10/2026 (viết lại thành kho mẫu: 6 nhóm, 16 mẫu, mỗi mẫu chia ý nhỏ; gộp các mục lẻ vào mẫu lớn; bỏ danh sách mẫu chưa có phân hệ; soát mã 3 báo cáo đang chạy, ghi «Còn thiếu so với bản đang chạy» ở A1, C1, C2) · 1.1 — 27/10/2026 (thêm góc nhìn trưởng phòng Nhân sự) · 1.0 — 27/10/2026 (3 báo cáo đã có + 6 đề xuất) |
+| Bản | 2.9 — 28/10/2026 (đợt 4 duoc-CR-689: A4, B4, C3, E2, F1 đã có — khóa 25–29; bảng Kế hoạch nhân sự; ô Lịch nhắc E3; cột kế hoạch ở A5) · 2.8 — 27/10/2026 (đợt 3 duoc-CR-688: A3, A5, D1, H1 đã có — khóa 21–24; biểu đồ linh hoạt phần một) · 2.7 — 27/10/2026 (đợt 2 duoc-CR-687: B2, B3 đã có — khóa 19, 20; A2 đã có trong Biến động nhân sự) · 2.6 — 27/10/2026 (đính chính B3: mẫu 01/PLI là danh sách từng người 27 cột, nộp Sở Nội vụ; B2 liệt kê đủ thông tin bắt buộc của sổ) · 2.5 — 27/10/2026 (đợt 1 duoc-CR-686 lên mã: B1, E1 đã có; A1/C1/C2 bù các chỗ thiếu; lọc phòng ban + danh sách người cho 5 báo cáo) · 2.4 — 27/10/2026 (thêm §3.4 **Biểu đồ linh hoạt** dùng chung cho mọi mẫu, kèm biểu đồ gợi ý từng mẫu) · 2.3 — 27/10/2026 (thêm nhóm H **Phúc lợi & sự kiện**, mẫu H1: lọc đối tượng theo dịp như 8/3 và dự trù kinh phí) · 2.2 — 27/10/2026 (thêm mẫu A5 **Quỹ lương theo pháp nhân** để chọn công ty tuyển người) · 2.1 — 27/10/2026 (thêm ý **Tuyển dụng** vào A1; thêm nhóm G **Tài sản cấp phát** với mẫu G1) · 2.0 — 27/10/2026 (viết lại thành kho mẫu: 6 nhóm, 16 mẫu, mỗi mẫu chia ý nhỏ; gộp các mục lẻ vào mẫu lớn; bỏ danh sách mẫu chưa có phân hệ; soát mã 3 báo cáo đang chạy, ghi **Còn thiếu so với bản đang chạy** ở A1, C1, C2) · 1.1 — 27/10/2026 (thêm góc nhìn trưởng phòng Nhân sự) · 1.0 — 27/10/2026 (3 báo cáo đã có + 6 đề xuất) |
 | Tình trạng | 17 mẫu + ô Lịch nhắc **đã có** trên ERP (A1, C1, C2 từ trước; B1, E1 từ duoc-CR-686; A2, B2, B3 từ duoc-CR-687; A3, A5, D1, H1 từ duoc-CR-688; A4, B4, C3, E2, F1, E3 từ duoc-CR-689); còn lại chỉ tuyển dụng (phần của A1) và G1 Tài sản cấp phát — chờ phân hệ; các mẫu còn lại là **đề xuất**. Lộ trình các đợt: `plans/261027-1045-kho-mau-bao-cao-nhan-su/plan.md` |
-| Giao diện | `frontend-v2/` (cổng 8083), menu *Báo cáo* ▸ nhóm «Nhân sự» |
+| Giao diện | `frontend-v2/` (cổng 8083), menu *Báo cáo* ▸ nhóm **Nhân sự** |
 | Mã nguồn backend | `modules/employee/report_*.py` · `modules/leave/report_*.py` · `modules/leave/balance_report_*.py` · khóa ở `core/report_keys.py` |
 | Mã nguồn frontend | `modules/report/config/report-catalog-hr.ts` · `modules/report/pages/*-report-page.tsx` |
 | Tài liệu khung báo cáo | `doc/erp/thu-mua/chuc-nang/17-he-thong-bao-cao.md` |
 
-**Cách đọc:** mỗi **nhóm** (A–F) gom các mẫu báo cáo cùng đề tài. Mỗi **mẫu** có một câu «trả lời câu hỏi gì», sau đó chia thành **ý chính**, dưới mỗi ý chính là các **ý nhỏ** (chỉ số hoặc danh sách cụ thể).
+**Cách đọc:** mỗi **nhóm** (A–F) gom các mẫu báo cáo cùng đề tài. Mỗi **mẫu** có một câu **trả lời câu hỏi gì**, sau đó chia thành **ý chính**, dưới mỗi ý chính là các **ý nhỏ** (chỉ số hoặc danh sách cụ thể).
 
 **Ký hiệu tình trạng dữ liệu:**
 ✅ đủ dữ liệu, làm được ngay · 🟡 thiếu một chút (thêm một cột hoặc một danh mục là đủ) · 🔴 chưa có dữ liệu, phải làm phân hệ trước
@@ -55,12 +55,12 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 Đối chiếu mã ngày 27/10/2026: `employee/report_*.py`, `leave/report_*.py`, `leave/balance_report_service.py`, `report/pages/*-report-page.tsx`. Chỗ thiếu riêng của từng báo cáo ghi ở A1, C1, C2.
 
 - **Lọc**
-  - ✔ Thanh lọc chỉ có **kỳ** và **pháp nhân**, chưa lọc được theo **phòng ban**. Muốn xem một phòng thì phải chọn «Xem theo phòng ban» rồi dò dòng
+  - ✔ Thanh lọc chỉ có **kỳ** và **pháp nhân**, chưa lọc được theo **phòng ban**. Muốn xem một phòng thì phải chọn **Xem theo phòng ban** rồi dò dòng
   - Chưa lọc được theo trạng thái nhân sự (đang làm / thử việc / đã nghỉ)
 - **Xem chi tiết**
   - ✔ Không bấm được vào con số để ra danh sách tên người (§3.3 việc 1)
 - **Dữ liệu theo thời điểm**
-  - Cả 3 báo cáo lấy phòng ban, chức vụ theo hồ sơ **hiện tại**. Ghi chú trên màn còn viết «hệ thống chưa lưu lịch sử điều chuyển», nhưng bảng Quá trình công tác **đã có** từ 03/10/2026 (duoc-CR-585). Có thể dùng bảng này để tính đúng phòng ban tại thời điểm, và sửa lại câu ghi chú cho khỏi sai
+  - Cả 3 báo cáo lấy phòng ban, chức vụ theo hồ sơ **hiện tại**. Ghi chú trên màn còn viết **hệ thống chưa lưu lịch sử điều chuyển**, nhưng bảng Quá trình công tác **đã có** từ 03/10/2026 (duoc-CR-585). Có thể dùng bảng này để tính đúng phòng ban tại thời điểm, và sửa lại câu ghi chú cho khỏi sai
 
 ### A. Quy mô & cơ cấu nhân sự
 
@@ -71,12 +71,12 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 - **Đang có trên màn**
   - Thẻ KPI: Định biên cuối kỳ · Vào mới · Nghỉ việc · Tỷ lệ nghỉ việc
   - Thêm trong bảng: Định biên đầu kỳ, Thay đổi ròng
-  - Biểu đồ xu hướng chỉ vẽ Vào mới / Nghỉ việc; khối phụ «Theo trạng thái»
+  - Biểu đồ xu hướng chỉ vẽ Vào mới / Nghỉ việc; khối phụ **Theo trạng thái**
   - Xem theo: Công ty · Phòng ban (mặc định) · Cấp bậc · Loại hình · Giới tính · Chức vụ · Thâm niên (dưới 1 / 1–3 / 3–5 / trên 5 năm)
   - Ghi chú tự động: số hồ sơ đã nghỉ mà thiếu ngày nghỉ việc
 - **Còn thiếu so với bản đang chạy**
-  - Không có đường **định biên theo từng tháng**. Ban Giám đốc hay hỏi «12 tháng qua quân số lên xuống thế nào» nhưng biểu đồ chỉ có vào/nghỉ ✅
-  - ✔ Không xem được **ai** vào, **ai** nghỉ: không có chiều «Nhân sự», cũng không bấm ra danh sách ✅
+  - Không có đường **định biên theo từng tháng**. Ban Giám đốc hay hỏi **12 tháng qua quân số lên xuống thế nào** nhưng biểu đồ chỉ có vào/nghỉ ✅
+  - ✔ Không xem được **ai** vào, **ai** nghỉ: không có chiều **Nhân sự**, cũng không bấm ra danh sách ✅
   - **Tỷ lệ nghỉ việc** chỉ tính trong kỳ đang chọn (nghỉ ÷ định biên bình quân). Chưa có tỷ lệ quy ra năm để so giữa các tháng, và chưa tách nghỉ tự nguyện / bị cho nghỉ 🟡
   - ✔ **Hồ sơ thiếu ngày vào làm** bị lấy ngày tạo hồ sơ thay vào, nhưng màn **không báo** có bao nhiêu hồ sơ như vậy (chỉ báo phần thiếu ngày nghỉ việc) ✅
   - **Kiêm nhiệm** không được tính: người kiêm nhiệm chỉ được đếm ở phòng chính ✅
@@ -88,7 +88,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
   - Lý do nghỉ việc 🟡 (đang ghi chữ tự do, cần danh mục lý do lưu bằng số)
 - **Tuyển dụng** (mở rộng; phần lớn 🔴 chờ phân hệ Tuyển dụng)
   - Phần có sẵn số liệu
-    - Số người vào mới theo phòng, theo tháng (lấy từ «Vào mới» đang có) ✅
+    - Số người vào mới theo phòng, theo tháng (lấy từ **Vào mới** đang có) ✅
     - Tỷ lệ qua thử việc (lấy chung số với B1) ✅
   - Nhu cầu tuyển
     - Số vị trí đang cần tuyển theo phòng, theo đề xuất tuyển dụng đã duyệt 🔴
@@ -127,7 +127,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
   - Theo loại hình lao động, theo pháp nhân ✅
   - Theo thâm niên ✅
 
-*Đã làm (duoc-CR-687):* «Xem theo» của Biến động nhân sự có thêm Nhóm tuổi (dưới 25 · 25–34 · 35–44 · 45–54 · 55 trở lên), Trình độ, Địa điểm làm việc, Nhóm vị trí việc làm. Tuổi tính tại ngày của mốc. Người không có quyền xem dữ liệu nhạy cảm: nhóm tuổi có số nhỏ (1–2 người, ở kỳ này hoặc kỳ so sánh) bị che, kèm che thêm một nhóm để không lấy Tổng trừ ra được; không mở được danh sách theo nhóm tuổi. Tỷ lệ nữ theo cấp bậc, tuổi trung bình theo phòng ⏳ chưa làm (đi cùng biểu đồ linh hoạt).
+*Đã làm (duoc-CR-687):* **Xem theo** của Biến động nhân sự có thêm Nhóm tuổi (dưới 25 · 25–34 · 35–44 · 45–54 · 55 trở lên), Trình độ, Địa điểm làm việc, Nhóm vị trí việc làm. Tuổi tính tại ngày của mốc. Người không có quyền xem dữ liệu nhạy cảm: nhóm tuổi có số nhỏ (1–2 người, ở kỳ này hoặc kỳ so sánh) bị che, kèm che thêm một nhóm để không lấy Tổng trừ ra được; không mở được danh sách theo nhóm tuổi. Tỷ lệ nữ theo cấp bậc, tuổi trung bình theo phòng ⏳ chưa làm (đi cùng biểu đồ linh hoạt).
 *Nguồn:* `tab_employee` (`date_of_birth`, `gender`, `education_level`, `major`, `job_level`, `work_location`, `employment_type`)
 
 #### A3. Cơ cấu quản lý — đã có (khóa 23, duoc-CR-688)
@@ -145,7 +145,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 #### A4. Định biên kế hoạch so với thực tế — ⛔ ĐÃ BỎ 29/10/2026 (duoc-CR-692; khóa 25 ngừng dùng, không tái cấp)
 
-> **Trả lời:** «Phòng Kinh doanh được duyệt 20 người, đang có 17.» Đây là câu Ban Giám đốc hay hỏi nhất.
+> **Trả lời:** **Phòng Kinh doanh được duyệt 20 người, đang có 17.** Đây là câu Ban Giám đốc hay hỏi nhất.
 
 - **Kế hoạch**
   - Định biên được duyệt theo phòng ban × năm 🟡 (chưa có bảng)
@@ -153,14 +153,14 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
   - Thiếu / thừa so với kế hoạch, theo phòng ✅ khi đã có kế hoạch
   - Vị trí đang trống ✅ khi đã có kế hoạch
 
-*Đã chốt 28/10/2026:* bảng **Kế hoạch nhân sự** (Nhân sự ▸ Danh mục) theo năm × pháp nhân × phòng ban (hoặc «Toàn pháp nhân»): định biên + quỹ lương kế hoạch / tháng (tiền chỉ hiện với người được xem HĐLĐ của pháp nhân đó), nhập tay hoặc CSV; khóa quyền `headcount_plan` (trưởng phòng Nhân sự / admin). Phòng ban dùng chung cho mọi pháp nhân nên chọn phòng nào cũng được; số thực tế đếm người có đúng cặp pháp nhân × phòng. A5 Quỹ lương có thêm Quỹ lương kế hoạch / Còn dư / % dùng.
+*Đã chốt 28/10/2026:* bảng **Kế hoạch nhân sự** (Nhân sự ▸ Danh mục) theo năm × pháp nhân × phòng ban (hoặc **Toàn pháp nhân**): định biên + quỹ lương kế hoạch / tháng (tiền chỉ hiện với người được xem HĐLĐ của pháp nhân đó), nhập tay hoặc CSV; khóa quyền `headcount_plan` (trưởng phòng Nhân sự / admin). Phòng ban dùng chung cho mọi pháp nhân nên chọn phòng nào cũng được; số thực tế đếm người có đúng cặp pháp nhân × phòng. A5 Quỹ lương có thêm Quỹ lương kế hoạch / Còn dư / % dùng.
 
-*Thiết kế lại 28/10/2026:* bảng kế hoạch trên chưa đủ (không có vị trí, chỉ một số «quỹ lương / tháng», thiếu các khoản chi phí, không có căn cứ). Thiết kế thay thế (loại kỳ Năm / Bán niên / Quý / Tháng, định biên theo vị trí và kỳ con, khoản chi phí do người dùng tự định nghĩa theo mẫu, căn cứ duyệt) ở [`06-ke-hoach-nhan-su.md`](06-ke-hoach-nhan-su.md); **đã làm ở duoc-CR-690**: A4 đọc kế hoạch có hiệu lực ở tháng cuối kỳ và có thêm «Xem theo» Vị trí.
+*Thiết kế lại 28/10/2026:* bảng kế hoạch trên chưa đủ (không có vị trí, chỉ một số **quỹ lương / tháng**, thiếu các khoản chi phí, không có căn cứ). Thiết kế thay thế (loại kỳ Năm / Bán niên / Quý / Tháng, định biên theo vị trí và kỳ con, khoản chi phí do người dùng tự định nghĩa theo mẫu, căn cứ duyệt) ở [`06-ke-hoach-nhan-su.md`](06-ke-hoach-nhan-su.md); **đã làm ở duoc-CR-690**: A4 đọc kế hoạch có hiệu lực ở tháng cuối kỳ và có thêm **Xem theo** Vị trí.
 
 #### A5. Quỹ lương theo pháp nhân — đã có phần thực tế (khóa 21, duoc-CR-688); kế hoạch và thử tính chưa làm
 
 > **29/10/2026 (duoc-CR-693):** nguồn quỹ lương đổi sang **ô Lương + Phụ cấp trên hồ sơ** (không còn đọc HĐLĐ): ảnh chụp hiện tại (không xu hướng / kỳ so sánh), chỉ số Quỹ lương · Lương · Phụ cấp · Số người có lương · Bình quân; chỉ TỔNG, nhóm/Tổng dưới 3 người bị che, `/rows` không có tiền; ghi chú số người đang làm chưa nhập lương; gác `employee.read` + khóa 21. Lương từng người chỉ chính chủ xem được (`01-ho-so-nhan-su.md` §7.15).
-> **29/10/2026 (duoc-CR-692):** bỏ phần kế hoạch (bảng Kế hoạch nhân sự đã gỡ). Quỹ lương chỉ tính từ lương cơ bản + phụ cấp trên HĐLĐ đang hiệu lực của từng người (nhập ở tab Hợp đồng lao động của chi tiết nhân sự), xem theo phòng ban · pháp nhân, dòng Tổng = toàn công ty. Các ý «so với kế hoạch», «còn dư», «thử tính» bên dưới không làm.
+> **29/10/2026 (duoc-CR-692):** bỏ phần kế hoạch (bảng Kế hoạch nhân sự đã gỡ). Quỹ lương chỉ tính từ lương cơ bản + phụ cấp trên HĐLĐ đang hiệu lực của từng người (nhập ở tab Hợp đồng lao động của chi tiết nhân sự), xem theo phòng ban · pháp nhân, dòng Tổng = toàn công ty. Các ý **so với kế hoạch**, **còn dư**, **thử tính** bên dưới không làm.
 
 > **Trả lời:** mỗi pháp nhân đang gánh quỹ lương bao nhiêu, còn dư bao nhiêu so với kế hoạch, tuyển người mới vào công ty nào thì các công ty cân bằng nhất.
 
@@ -176,17 +176,17 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
   - Quỹ lương từng tháng trong 12 tháng gần nhất ✅ (tính theo ngày bắt đầu / kết thúc của HĐ)
   - Tăng do tuyển mới, giảm do nghỉ việc, đổi do ký lại HĐ với mức lương mới ✅
 - **Hỗ trợ quyết định tuyển**
-  - Bảng so các pháp nhân cạnh nhau: số người, quỹ lương, còn dư, lương bình quân ✅ (cột «còn dư» cần kế hoạch 🟡)
+  - Bảng so các pháp nhân cạnh nhau: số người, quỹ lương, còn dư, lương bình quân ✅ (cột **còn dư** cần kế hoạch 🟡)
   - Lương của cùng một chức vụ ở các pháp nhân (thấp nhất / trung bình / cao nhất), để chào lương người mới không lệch giữa các công ty ✅
   - Thử tính: nhập chức vụ và mức lương dự kiến → quỹ lương từng pháp nhân sau khi tuyển, pháp nhân nào còn dư nhiều nhất 🟡 (cần kế hoạch)
 
-*Lưu ý 28/10/2026:* «quỹ lương» ở bản đang chạy chỉ là lương + phụ cấp ghi trên HĐ, chưa phải chi phí nhân sự. Chi phí theo kỳ và các khoản do người dùng định nghĩa xem [`06-ke-hoach-nhan-su.md`](06-ke-hoach-nhan-su.md) §4, §6. **Đã làm ở duoc-CR-690:** cột kế hoạch của A5 thay bằng Chi phí nhân sự kế hoạch · Kế hoạch phần so được · Thực tế phần so được · Còn dư · % dùng (§10 của tài liệu 06).
+*Lưu ý 28/10/2026:* **quỹ lương** ở bản đang chạy chỉ là lương + phụ cấp ghi trên HĐ, chưa phải chi phí nhân sự. Chi phí theo kỳ và các khoản do người dùng định nghĩa xem [`06-ke-hoach-nhan-su.md`](06-ke-hoach-nhan-su.md) §4, §6. **Đã làm ở duoc-CR-690:** cột kế hoạch của A5 thay bằng Chi phí nhân sự kế hoạch · Kế hoạch phần so được · Thực tế phần so được · Còn dư · % dùng (§10 của tài liệu 06).
 *Xem theo:* Pháp nhân (mặc định) · Phòng ban · Chức vụ · Loại HĐ
 *Nguồn:* `tab_labor_contract` (`base_salary`, `allowance`, `insurance_salary`, `start_date`, `end_date`, `status`, `company_id`). Đây là **lương thỏa thuận ghi trên HĐ**, không phải lương thực trả, vì ERP không có chấm công và bảng lương.
 *Không trái quyết định bỏ lương ngày 16/10/2026:* mẫu này chỉ cộng số lương đã ghi trên HĐ; không tính lương, không làm phiếu lương.
 *Bảo mật (phải chốt trước khi làm):*
 - Lương là số nhạy cảm. Hiện màn HĐLĐ trả lương cho bất kỳ ai có `labor_contract.read`, không che
-- Báo cáo này nên mặc định **chỉ admin và Ban Giám đốc**, giống khóa 14 và 16; ai khác muốn xem thì admin giao ở tab «Báo cáo»
+- Báo cáo này nên mặc định **chỉ admin và Ban Giám đốc**, giống khóa 14 và 16; ai khác muốn xem thì admin giao ở tab **Báo cáo**
 - Chỉ hiện số tổng và số bình quân. Nhóm dưới 3 người thì ẩn bình quân, vì nhìn bình quân của nhóm 1–2 người là đoán ra lương từng người
 - *Đã làm (duoc-CR-688):* che cả nhóm (mọi người xem, kể cả admin) + che phụ chống lấy Tổng trừ, xét riêng kỳ này và kỳ so sánh. Dòng Tổng và danh sách không che: người mở được báo cáo là người được xem lương (báo cáo mặc định chỉ admin; lọc hẹp còn 1–2 người thì Tổng = lương của họ — chấp nhận). Lớp chặn chính là quyền xem báo cáo 21, không phải việc che nhóm. Trợ lý AI không đọc báo cáo này.
 - Danh sách lương từng người (khi bấm vào con số) chỉ mở cho người được giao riêng
@@ -203,7 +203,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
   - HĐ sắp hết hạn trong 30 / 60 / 90 ngày ✅
   - Thử việc sắp hết hạn ✅
   - HĐ đã quá hạn mà người vẫn đang đi làm ✅
-  - Tô đỏ khi còn ≤ 15 ngày, vì Điều 45 Bộ luật Lao động 2019 buộc báo người lao động trước ít nhất 15 ngày ⏳ chưa làm (đi cùng việc «ngưỡng cảnh báo» ở §3.3)
+  - Tô đỏ khi còn ≤ 15 ngày, vì Điều 45 Bộ luật Lao động 2019 buộc báo người lao động trước ít nhất 15 ngày ⏳ chưa làm (đi cùng việc **ngưỡng cảnh báo** ở §3.3)
 - **Tuân thủ**
   - Người đang làm mà chưa có HĐ hiệu lực ✅
   - Người đã ký 2 HĐ có thời hạn: lần ký sau phải là HĐ không xác định thời hạn ✅
@@ -211,7 +211,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 - **Tổng hợp trong kỳ**
   - HĐ ký mới, chấm dứt ✔ · đếm riêng số HĐ **gia hạn** ⏳ chưa làm
   - Tỷ lệ qua thử việc (thử việc → ký HĐ chính thức) ⏳ chưa làm
-  - Người đã nghỉ mà HĐ chưa bấm «Chấm dứt» ✔ (thêm khi làm, để Nhân sự dọn sổ)
+  - Người đã nghỉ mà HĐ chưa bấm **Chấm dứt** ✔ (thêm khi làm, để Nhân sự dọn sổ)
   - Cơ cấu theo loại HĐ ✅
 
 *Xem theo:* Pháp nhân · Phòng ban · Loại HĐ (Thử việc / Xác định thời hạn / Không xác định thời hạn / Khoán việc / Cộng tác viên / Khác)
@@ -244,14 +244,14 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 - **Nội dung mẫu — danh sách TỪNG NGƯỜI, 27 cột** (đính chính: không phải bảng số tổng như bản 2.x của tài liệu này ghi)
   - Phần đầu: tên, địa chỉ, mã số doanh nghiệp, ngành nghề chính của pháp nhân ✅
   - Cột 2–7: họ tên · mã số BHXH · ngày sinh · giới tính · số CCCD · cấp bậc, chức vụ, nơi làm việc ✅
-  - Cột 8–11 «Vị trí việc làm»: Nhà quản lý / Chuyên môn kỹ thuật bậc cao (đại học trở lên) / bậc trung (cao đẳng, trung cấp) / Khác 🟡 (chưa có cột phân nhóm — xem câu hỏi mở)
-  - Cột 12–17 «Tiền lương»: mức lương ✅ · phụ cấp chức vụ, thâm niên vượt khung, thâm niên nghề, phụ cấp lương, các khoản bổ sung 🟡 (ERP chỉ có MỘT ô phụ cấp tổng trên HĐ → ghi vào «Phụ cấp lương»)
-  - Cột 18–19 «Ngành nghề nặng nhọc, độc hại» từ / đến 🟡 (không có dữ liệu → để trống)
-  - Cột 20–24 «Loại và hiệu lực HĐLĐ»: không xác định thời hạn (ngày bắt đầu) · xác định thời hạn (bắt đầu / kết thúc) · khác — dưới 1 tháng, thử việc (bắt đầu / kết thúc) ✅
+  - Cột 8–11 **Vị trí việc làm**: Nhà quản lý / Chuyên môn kỹ thuật bậc cao (đại học trở lên) / bậc trung (cao đẳng, trung cấp) / Khác 🟡 (chưa có cột phân nhóm — xem câu hỏi mở)
+  - Cột 12–17 **Tiền lương**: mức lương ✅ · phụ cấp chức vụ, thâm niên vượt khung, thâm niên nghề, phụ cấp lương, các khoản bổ sung 🟡 (ERP chỉ có MỘT ô phụ cấp tổng trên HĐ → ghi vào **Phụ cấp lương**)
+  - Cột 18–19 **Ngành nghề nặng nhọc, độc hại** từ / đến 🟡 (không có dữ liệu → để trống)
+  - Cột 20–24 **Loại và hiệu lực HĐLĐ**: không xác định thời hạn (ngày bắt đầu) · xác định thời hạn (bắt đầu / kết thúc) · khác — dưới 1 tháng, thử việc (bắt đầu / kết thúc) ✅
   - Cột 25–26 thời điểm bắt đầu / kết thúc đóng BHXH 🟡 (chưa có cột) · cột 27 ghi chú
 - **Xuất tệp**
-  - Một tệp Excel, **mỗi pháp nhân một sheet**: bố cục 27 cột, dòng Tổng, chỗ ký «Đại diện doanh nghiệp, cơ quan, tổ chức»
-  - Danh sách gồm **mọi người làm việc ở bất kỳ lúc nào trong kỳ** (người nghỉ giữa kỳ có ghi chú «Nghỉ việc ngày …»). Báo cáo năm: chọn «Năm nay» lúc lập (đầu tháng 12); báo cáo 6 tháng: chọn khoảng 01/01–30/06
+  - Một tệp Excel, **mỗi pháp nhân một sheet**: bố cục 27 cột, dòng Tổng, chỗ ký **Đại diện doanh nghiệp, cơ quan, tổ chức**
+  - Danh sách gồm **mọi người làm việc ở bất kỳ lúc nào trong kỳ** (người nghỉ giữa kỳ có ghi chú **Nghỉ việc ngày …**). Báo cáo năm: chọn **Năm nay** lúc lập (đầu tháng 12); báo cáo 6 tháng: chọn khoảng 01/01–30/06
 
 *Quyền:* như B2 — có CCCD, mã số BHXH, ngày sinh, lương.
 *Đã chốt 27/10/2026:* nhóm vị trí việc làm tự suy (Phó phòng trở lên = Nhà quản lý; Đại học+ = bậc cao; Trung cấp / Cao đẳng = bậc trung; còn lại = Khác); cột ERP chưa có dữ liệu để trống; người ký hợp đồng khoán việc / cộng tác viên **không** đưa vào 01/PLI (không phải HĐLĐ), báo cáo ghi số người bị loại. Nhãn 27 cột đã đối chiếu bản PDF mẫu gốc.
@@ -281,10 +281,10 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 - **Đang có trên màn**
   - Thẻ KPI: Số đơn · Ngày nghỉ đã duyệt · Số người nghỉ · Tỷ lệ từ chối/trả về · Thời gian duyệt trung bình (giờ)
   - Thêm trong bảng: Ngày đang chờ duyệt
-  - Biểu đồ xu hướng theo ngày / tuần / tháng; khối phụ «Top loại nghỉ» (theo ngày đã duyệt) và «Theo trạng thái»
+  - Biểu đồ xu hướng theo ngày / tuần / tháng; khối phụ **Top loại nghỉ** (theo ngày đã duyệt) và **Theo trạng thái**
   - Xem theo: Loại nghỉ (mặc định) · Phòng ban · Công ty · Nhân sự · Trạng thái
 - **Còn thiếu so với bản đang chạy**
-  - ✔ **Đơn vắt qua hai kỳ bị tính trọn vào kỳ có ngày bắt đầu.** Ví dụ đơn nghỉ 28/10–05/11 dồn cả vào tháng 10, nên «ngày nghỉ trong tháng» bị lệch. Cần chia số ngày theo từng ngày thật rơi vào kỳ ✅
+  - ✔ **Đơn vắt qua hai kỳ bị tính trọn vào kỳ có ngày bắt đầu.** Ví dụ đơn nghỉ 28/10–05/11 dồn cả vào tháng 10, nên **ngày nghỉ trong tháng** bị lệch. Cần chia số ngày theo từng ngày thật rơi vào kỳ ✅
   - ✔ **Đơn nhiều khoảng ngày** (mới có từ duoc-CR-683, 26/10/2026) cũng chỉ được xếp theo ngày bắt đầu của cả đơn, không theo từng khoảng ✅
   - ✔ Chưa tách **nghỉ có lương / không lương**, dù loại nghỉ đã có cờ `is_paid` ✅
   - Chưa có **tỷ lệ vắng mặt** (ngày nghỉ ÷ ngày công chuẩn theo lịch làm việc) và **ngày nghỉ bình quân mỗi người**, hai chỉ số nhân sự hay dùng nhất để so giữa các phòng ✅
@@ -304,12 +304,12 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 
 - **Đang có trên màn**
   - Thẻ KPI: Được cấp · Đã dùng · Đang giữ chỗ · Còn lại · Tỷ lệ sử dụng
-  - Kỳ là **năm**, mở lần đầu ở «Năm nay», so với năm trước. Không có biểu đồ xu hướng
-  - Xem theo: Loại nghỉ (mặc định) · Công ty · Phòng ban · Nhân sự; khối phụ «Top loại nghỉ»
+  - Kỳ là **năm**, mở lần đầu ở **Năm nay**, so với năm trước. Không có biểu đồ xu hướng
+  - Xem theo: Loại nghỉ (mặc định) · Công ty · Phòng ban · Nhân sự; khối phụ **Top loại nghỉ**
 - **Còn thiếu so với bản đang chạy**
   - ✔ **Người đang làm mà chưa được cấp quỹ năm nay** không hiện ở đâu. Báo cáo chỉ đọc những dòng quỹ đã có, nên người bị sót cấp quỹ là im lặng ✅
-  - ✔ **Vẫn tính cả người đã nghỉ việc**: không lọc trạng thái nhân sự, nên «Còn lại» bị thổi lên bởi phép của người đã đi ✅
-  - ✔ «Được cấp» là một số gộp. Chưa tách **phép năm cơ bản · phép thâm niên · phép chuyển từ năm trước · điều chỉnh tay**, nên khó giải thích khi nhân viên thắc mắc ✅
+  - ✔ **Vẫn tính cả người đã nghỉ việc**: không lọc trạng thái nhân sự, nên **Còn lại** bị thổi lên bởi phép của người đã đi ✅
+  - ✔ **Được cấp** là một số gộp. Chưa tách **phép năm cơ bản · phép thâm niên · phép chuyển từ năm trước · điều chỉnh tay**, nên khó giải thích khi nhân viên thắc mắc ✅
   - ✔ Phép chuyển sang **đã hết hạn** (`carried_expired_days`) có lưu trong dữ liệu nhưng báo cáo không hiện ✅
   - ✔ Chưa nêu **người dùng vượt quỹ** (còn lại âm) và **người cả năm chưa nghỉ ngày nào** (để nhắc nghỉ trước khi mất phép) ✅
   - Không có biểu đồ: có thể vẽ **số ngày phép dùng theo từng tháng** từ đơn nghỉ đã duyệt ✅
@@ -318,7 +318,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 - **Phép tồn khi nghỉ việc** (mở rộng)
   - Số ngày phép chưa nghỉ của người sắp nghỉ hoặc vừa nghỉ việc. Theo Điều 113 Bộ luật Lao động, số ngày này phải được trả tiền; báo cáo chỉ ra số ngày, kế toán tự tính tiền ✅
 - **Kết sổ cuối năm** (đã có)
-  - Đối chiếu trước và sau kết sổ, nằm trong hộp «Đối chiếu kết sổ phép năm» (duoc-CR-664)
+  - Đối chiếu trước và sau kết sổ, nằm trong hộp **Đối chiếu kết sổ phép năm** (duoc-CR-664)
 
 *Nguồn:* `GET /api/leave-balances/summary` (+ export), quyền `leave_balance.read` / `export`; mã `leave/balance_report_service.py`
 
@@ -373,12 +373,12 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
   - CCCD sắp hết hạn (`id_expiry_date`) ✅
 - **Gán thiếu**
   - Chưa có chức vụ, chưa có quản lý trực tiếp, chưa có phòng ban ✔
-  - Chưa được gán lịch làm việc ⏳ chưa làm (hệ có lịch mặc định toàn công ty nên ai cũng «có lịch»; cần chốt «chưa gán» nghĩa là gì)
+  - Chưa được gán lịch làm việc ⏳ chưa làm (hệ có lịch mặc định toàn công ty nên ai cũng **có lịch**; cần chốt **chưa gán** nghĩa là gì)
 - **Tài khoản ERP**
   - Người đã nghỉ việc mà tài khoản vẫn còn mở ✅ (lỗ hổng bảo mật)
   - Nhân viên mới chưa có tài khoản, hoặc có tài khoản nhưng chưa có vai trò ✅
 
-*Xem theo:* Phòng ban · Pháp nhân. «Loại thông tin còn thiếu» là khối biểu đồ phụ, chưa phải chiều xem của bảng.
+*Xem theo:* Phòng ban · Pháp nhân. **Loại thông tin còn thiếu** là khối biểu đồ phụ, chưa phải chiều xem của bảng.
 *Nguồn:* `tab_employee`, `tab_user` / `tab_user_role`
 *Quyền:* nhóm trường nhạy cảm chỉ hiện với người có quyền xem dữ liệu nhạy cảm; nhóm tài khoản chỉ hiện với người có quyền xem tài khoản.
 *Bảo mật:* chỉ trả số đếm và tên người, không trả giá trị nhạy cảm (số CCCD, số tài khoản); dùng lại `export_mask.py`
@@ -448,7 +448,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
   - Người mới vào chưa được cấp đủ theo định mức của chức vụ 🔴
   - Biên bản bàn giao đã ký / chưa ký 🔴
 - **Rủi ro**
-  - **Người đã nghỉ hoặc sắp nghỉ mà chưa trả tài sản.** Nối vào hộp «việc đang giữ» khi khóa tài khoản / cho nghỉ việc (duoc-CR-665) 🔴
+  - **Người đã nghỉ hoặc sắp nghỉ mà chưa trả tài sản.** Nối vào hộp **việc đang giữ** khi khóa tài khoản / cho nghỉ việc (duoc-CR-665) 🔴
   - Tài sản báo mất, hỏng; tài sản quá lâu không kiểm kê 🔴
 - **Bảo hành và bảo trì**
   - Tài sản sắp hết bảo hành, đến hạn bảo dưỡng 🔴
@@ -503,7 +503,7 @@ Mẫu nào làm thật mới được cấp số khóa trong `ReportKey`, nối 
 - Người xem chỉ thấy nhân sự trong phạm vi của mình, như mọi báo cáo khác
 
 
-*Đã chốt mặc định 27/10/2026 (duoc-CR-688):* mức quà nhập tay trên màn mỗi lần, **không lưu** đợt phát; người ký hợp đồng khoán việc / cộng tác viên mặc định không tính; «Kỷ niệm năm làm việc» = cùng tháng vào làm và tròn 1 / 3 / 5 / 10 năm; ngày dịp 8/3, 20/10, 1/6 tự nhảy tới lần gần nhất sắp tới; Trung thu / Tết chọn ngày tay. Lập Yêu cầu thanh toán từ tổng dự trù, hiếu hỉ theo đơn nghỉ, du lịch kèm người thân ⏳ chưa làm.
+*Đã chốt mặc định 27/10/2026 (duoc-CR-688):* mức quà nhập tay trên màn mỗi lần, **không lưu** đợt phát; người ký hợp đồng khoán việc / cộng tác viên mặc định không tính; **Kỷ niệm năm làm việc** = cùng tháng vào làm và tròn 1 / 3 / 5 / 10 năm; ngày dịp 8/3, 20/10, 1/6 tự nhảy tới lần gần nhất sắp tới; Trung thu / Tết chọn ngày tay. Lập Yêu cầu thanh toán từ tổng dự trù, hiếu hỉ theo đơn nghỉ, du lịch kèm người thân ⏳ chưa làm.
 
 ---
 
@@ -520,7 +520,7 @@ Mục này viết từ vai **trưởng phòng Nhân sự**, là người dùng c
 | **Hằng quý** | Xem cơ cấu, tìm phòng có vấn đề | A2 · A3 · A1 (nghỉ việc sớm, giữ chân) · D1 |
 | **6 tháng và cả năm** | Nộp mẫu 01/PLI; chốt phép cuối năm; lên kế hoạch HĐ năm sau | B3 · B2 · C2 · B1 (nhìn tới 12 tháng) |
 | **Theo dịp** (8/3, 20/10, 1/6, Trung thu, Tết…) | Lên danh sách người được tặng, dự trù tiền theo từng pháp nhân, xin duyệt chi | H1 |
-| **Khi được hỏi** | Trả lời ngay câu kiểu «phòng X bao nhiêu người, ai sắp hết HĐ» | Mọi mẫu phải **bấm được vào con số để ra danh sách tên người** |
+| **Khi được hỏi** | Trả lời ngay câu kiểu **phòng X bao nhiêu người, ai sắp hết HĐ** | Mọi mẫu phải **bấm được vào con số để ra danh sách tên người** |
 
 ### 3.2. Phiếu khai một mẫu báo cáo
 
@@ -528,11 +528,11 @@ Mục này viết từ vai **trưởng phòng Nhân sự**, là người dùng c
 
 | # | Ô cần khai | Ví dụ (B1. Hợp đồng lao động) | Khai ở đâu trong mã |
 |---|---|---|---|
-| 1 | **Câu hỏi chính** mà báo cáo trả lời (một câu) | «Tuần này tôi phải xử lý những HĐ nào?» | `description` ở `report-catalog-hr.ts` |
+| 1 | **Câu hỏi chính** mà báo cáo trả lời (một câu) | **Tuần này tôi phải xử lý những HĐ nào?** | `description` ở `report-catalog-hr.ts` |
 | 2 | **Ai xem, ai nhận** | Trưởng phòng Nhân sự, chuyên viên Nhân sự; trưởng phòng ban chỉ thấy phòng mình | `tab_report_access` + `require(entity)` + `apply_scope` |
 | 3 | **Nhịp xem** | Hằng tuần | Quyết định `defaultPreset` |
 | 4 | **Kiểu thời gian**: *theo kỳ* (sự kiện xảy ra trong kỳ) · *tại thời điểm* (số chốt tới một ngày) · *nhìn tới* (sẽ xảy ra trong N ngày tới) | Nhìn tới 30 / 60 / 90 ngày, kèm HĐ đã quá hạn | Theo kỳ và tại thời điểm: `MetricSpec(snapshot=…)` · nhìn tới: **chưa có** (§3.3) |
-| 5 | **Chỉ số**: tên · cách tính · đơn vị · tăng là tốt hay xấu | «Sắp hết hạn = HĐ đã ký, `end_date` ≤ hôm nay + 30, chưa có HĐ nối tiếp»; đơn vị: HĐ; tăng là xấu | `MetricSpec(key, label, kind, good=…)` |
+| 5 | **Chỉ số**: tên · cách tính · đơn vị · tăng là tốt hay xấu | "Sắp hết hạn = HĐ đã ký, `end_date` ≤ hôm nay + 30, chưa có HĐ nối tiếp"; đơn vị: HĐ; tăng là xấu | `MetricSpec(key, label, kind, good=…)` |
 | 6 | **Thẻ KPI ở đầu trang** (tối đa 4, đúng thứ tự) | Đang hiệu lực · Sắp hết hạn 30 ngày · Đã quá hạn · Chưa có HĐ | `kpis` |
 | 7 | **Xem theo** (chiều gom) và chiều mặc định | Phòng ban (mặc định) · Pháp nhân · Loại HĐ · Trạng thái | `DimensionSpec` · `defaultGroupBy` |
 | 8 | **Bộ lọc** | Pháp nhân · phòng ban · loại HĐ · số ngày nhìn tới | Ô lọc chung + `extraFilters` |
@@ -548,19 +548,19 @@ Thiếu ô 4, 5 hoặc 11 thì chưa sinh được mẫu; các ô còn lại đ�
 
 ### 3.3. Khung báo cáo hiện tại đáp ứng gì, thiếu gì
 
-**Đã có** (`ReportAnalyticsPage`, `ReportPageConfig`, `MetricSpec`, `DimensionSpec`): chọn kỳ có sẵn · so với kỳ trước hoặc cùng kỳ năm trước · xem theo ngày/tuần/tháng · thẻ KPI · biểu đồ xu hướng · gom theo một chiều · khối «Top» · lọc pháp nhân và lọc riêng từng trang · xuất Excel · nút mở bảng gốc · gác quyền từng báo cáo.
+**Đã có** (`ReportAnalyticsPage`, `ReportPageConfig`, `MetricSpec`, `DimensionSpec`): chọn kỳ có sẵn · so với kỳ trước hoặc cùng kỳ năm trước · xem theo ngày/tuần/tháng · thẻ KPI · biểu đồ xu hướng · gom theo một chiều · khối **Top** · lọc pháp nhân và lọc riêng từng trang · xuất Excel · nút mở bảng gốc · gác quyền từng báo cáo.
 
 **Trưởng phòng còn cần**, xếp theo mức cần:
 
 | # | Thiếu | Vì sao cần | Mẫu cần tới | Gợi ý cách làm |
 |---|---|---|---|---|
-| 1 | **Bấm vào con số ra danh sách tên người** | «12 HĐ sắp hết hạn» mà không thấy là ai thì phải mở bảng gốc lọc lại tay | Hầu hết | Đường `/summary/rows` dùng chung bộ lọc, trả danh sách đã che dữ liệu nhạy cảm; hiện trong ngăn kéo bên phải |
-| 1b | **Lọc theo phòng ban** | Trưởng phòng ban chỉ muốn xem phòng mình mà không phải chọn «Xem theo» rồi dò dòng | Mọi báo cáo | Thêm ô Phòng ban vào `report-filters-bar.tsx`, lọc sau `apply_scope` giống ô pháp nhân |
-| 2 | **Kiểu «nhìn tới»** (trong N ngày tới) | Khung hiện chỉ tính theo kỳ đã qua | B1 · B4 · C2 · E1 | Thêm preset «30 / 60 / 90 ngày tới» vào `report-period-presets.ts` |
+| 1 | **Bấm vào con số ra danh sách tên người** | **12 HĐ sắp hết hạn** mà không thấy là ai thì phải mở bảng gốc lọc lại tay | Hầu hết | Đường `/summary/rows` dùng chung bộ lọc, trả danh sách đã che dữ liệu nhạy cảm; hiện trong ngăn kéo bên phải |
+| 1b | **Lọc theo phòng ban** | Trưởng phòng ban chỉ muốn xem phòng mình mà không phải chọn **Xem theo** rồi dò dòng | Mọi báo cáo | Thêm ô Phòng ban vào `report-filters-bar.tsx`, lọc sau `apply_scope` giống ô pháp nhân |
+| 2 | **Kiểu "nhìn tới"** (trong N ngày tới) | Khung hiện chỉ tính theo kỳ đã qua | B1 · B4 · C2 · E1 | Thêm preset **30 / 60 / 90 ngày tới** vào `report-period-presets.ts` |
 | 3 | **Chốt số theo tháng** | Báo cáo gửi Ban Giám đốc tháng 9 không được tự đổi khi tháng 10 có người sửa hồ sơ. Hiện mọi số đều tính lại lúc xem | A1 · A2 · B3 | Bảng chụp số cuối tháng, chạy bằng Celery; xem tháng cũ thì đọc bảng chụp |
 | 4 | **Bảng chéo hai chiều** | Phòng ban × loại HĐ; phòng đi × phòng đến; độ tuổi × giới tính | B1 · D1 · B3 | Tham số `group_by_2`, hiện dạng ma trận |
 | 5 | **Xuất theo mẫu cố định** | Có tên pháp nhân, kỳ, người lập, chỗ ký | B2 · B3 | Khuôn Excel/Word riêng; dùng lại cách sinh tệp của HĐLĐ (`docx_engine.py`) |
-| 6 | **Gộp nhiều báo cáo thành một tệp tháng** | Mỗi tháng gửi một tệp, không phải 4 tệp rời | A1 · C1 · E1 | Nút «Xuất gói báo cáo tháng», mỗi báo cáo một sheet |
+| 6 | **Gộp nhiều báo cáo thành một tệp tháng** | Mỗi tháng gửi một tệp, không phải 4 tệp rời | A1 · C1 · E1 | Nút **Xuất gói báo cáo tháng**, mỗi báo cáo một sheet |
 | 7 | **Ngưỡng cảnh báo và tô màu** | Tỷ lệ nghỉ việc > 5%/tháng, HĐ còn ≤ 15 ngày… phải nổi lên ngay | A1 · B1 | Khai `threshold` trong `MetricSpec`, giao diện tô đỏ/vàng |
 | 7b | **Biểu đồ linh hoạt** | Mỗi người hỏi một kiểu: Ban Giám đốc muốn so pháp nhân, trưởng phòng muốn xem phòng mình theo tháng. Biểu đồ cố định thì phải xuất Excel tự vẽ lại | Mọi mẫu | Xem §3.4 |
 | 8 | **Gửi tự động định kỳ** | Sáng thứ Hai có ngay danh sách việc tuần | B1 · E2 | Celery gửi qua thông báo ERP hoặc email; người nhận lấy từ `tab_report_access` |
@@ -569,18 +569,18 @@ Việc 1 và 2 nhỏ, nên làm cùng B1. Việc 3, 4, 5 nên làm cùng B3 vì 
 
 ### 3.4. Biểu đồ linh hoạt
 
-> **duoc-CR-688 đã làm phần một** (mọi báo cáo): vẽ theo thời gian hoặc theo chiều «Xem theo» đang chọn; kiểu đường / cột / cột ngang / vành khuyên (≤ 6 nhóm); Top 5 / 10 / 20 / tất cả, phần dư gộp «Khác» chỉ khi chỉ số cộng được (cờ `additive` của `meta`); bỏ nhóm bị che, nhóm 0; bấm cột / lát mở danh sách người; tải ảnh PNG; lựa chọn nằm trên đường dẫn. **Chưa làm** (cần máy chủ xem theo hai chiều): tách màu theo chiều thứ hai, bảng nhiệt, tháp tuổi, lưu và ghim góc nhìn, Excel kèm biểu đồ.
+> **duoc-CR-688 đã làm phần một** (mọi báo cáo): vẽ theo thời gian hoặc theo chiều **Xem theo** đang chọn; kiểu đường / cột / cột ngang / vành khuyên (≤ 6 nhóm); Top 5 / 10 / 20 / tất cả, phần dư gộp **Khác** chỉ khi chỉ số cộng được (cờ `additive` của `meta`); bỏ nhóm bị che, nhóm 0; bấm cột / lát mở danh sách người; tải ảnh PNG; lựa chọn nằm trên đường dẫn. **Chưa làm** (cần máy chủ xem theo hai chiều): tách màu theo chiều thứ hai, bảng nhiệt, tháp tuổi, lưu và ghim góc nhìn, Excel kèm biểu đồ.
 
 Áp cho **mọi mẫu** trong tài liệu này. Một khung biểu đồ dùng chung; mẫu nào cũng chỉ khai biểu đồ mặc định, còn người xem tự đổi.
 
-**Đang có** (`period-comparison-chart.tsx`, `report-breakdown-charts.tsx`, `kpi-trend-card.tsx`): một đường xu hướng so với kỳ trước (bấm thẻ KPI để đổi chỉ số) · các khối cột ngang «Top» cố định theo cấu hình trang · đường nhỏ trong thẻ KPI. Không đổi được kiểu biểu đồ, không chọn được chiều để vẽ.
+**Đang có** (`period-comparison-chart.tsx`, `report-breakdown-charts.tsx`, `kpi-trend-card.tsx`): một đường xu hướng so với kỳ trước (bấm thẻ KPI để đổi chỉ số) · các khối cột ngang **Top** cố định theo cấu hình trang · đường nhỏ trong thẻ KPI. Không đổi được kiểu biểu đồ, không chọn được chiều để vẽ.
 
 - **Người xem tự chọn**
   - **Chỉ số** để vẽ: đã có một phần (bấm thẻ KPI)
-  - **Vẽ theo**: thời gian (ngày / tuần / tháng) hoặc một chiều bất kỳ trong «Xem theo» (pháp nhân, phòng ban, chức vụ, nhóm tuổi…)
+  - **Vẽ theo**: thời gian (ngày / tuần / tháng) hoặc một chiều bất kỳ trong **Xem theo** (pháp nhân, phòng ban, chức vụ, nhóm tuổi…)
   - **Tách màu theo** một chiều thứ hai. Ví dụ: số người theo phòng ban, tách màu nam / nữ; quỹ lương theo pháp nhân, tách màu theo loại HĐ
   - **Kiểu biểu đồ**: đường · cột · cột chồng · cột chồng 100% · cột ngang · tròn / vành khuyên · bảng nhiệt · tháp tuổi
-  - **Top N**: chỉ hiện N nhóm lớn nhất, phần còn lại gộp thành «Khác»
+  - **Top N**: chỉ hiện N nhóm lớn nhất, phần còn lại gộp thành **Khác**
 - **Hệ thống tự gợi ý kiểu hợp lý** (người xem vẫn đổi được)
   - Theo thời gian → đường hoặc cột
   - So các nhóm với nhau → cột ngang, xếp từ lớn tới nhỏ
@@ -592,7 +592,7 @@ Việc 1 và 2 nhỏ, nên làm cùng B1. Việc 3, 4, 5 nên làm cùng B3 vì 
   - Bấm vào một cột hoặc một ô → lọc cả trang theo nhóm đó, hoặc mở danh sách người (§3.3 việc 1)
   - Bấm vào chú thích để ẩn / hiện một dòng màu
 - **Lưu và chia sẻ**
-  - Lưu «góc nhìn» (bộ lọc + chỉ số + chiều + kiểu biểu đồ) đặt tên riêng để mở lại, ví dụ «Nữ theo phòng ban – 8/3»
+  - Lưu **góc nhìn** (bộ lọc + chỉ số + chiều + kiểu biểu đồ) đặt tên riêng để mở lại, ví dụ **Nữ theo phòng ban – 8/3**
   - Ghim một biểu đồ lên Trang chủ Nhân sự
   - Gửi đường dẫn mở đúng góc nhìn đó; bộ lọc đã nằm trên URL nên phần này gần như có sẵn
 - **Xuất**
@@ -620,7 +620,7 @@ Việc 1 và 2 nhỏ, nên làm cùng B1. Việc 3, 4, 5 nên làm cùng B3 vì 
 | G1 Tài sản cấp phát | Cột chồng theo loại tài sản, tách màu theo tình trạng | Cột ngang theo phòng ban |
 | H1 Phúc lợi & sự kiện | Cột chồng số người theo pháp nhân, tách màu theo phòng ban | Cột tổng tiền theo pháp nhân; vành khuyên theo chức vụ |
 
-*Cách làm:* dựng một khung biểu đồ chung trong `modules/report/components/` (đã dùng Recharts); backend chỉ cần cho phép `group_by` thứ hai (cùng việc «bảng chéo hai chiều» ở §3.3). Không viết biểu đồ riêng cho từng mẫu.
+*Cách làm:* dựng một khung biểu đồ chung trong `modules/report/components/` (đã dùng Recharts); backend chỉ cần cho phép `group_by` thứ hai (cùng việc **bảng chéo hai chiều** ở §3.3). Không viết biểu đồ riêng cho từng mẫu.
 
 ---
 

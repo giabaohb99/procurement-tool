@@ -67,7 +67,7 @@ leave_request, vehicle_booking, seal_request, labor_contract. Động từ từ 
 | Chỉ số | Khóa | Nguồn → công thức | Pha | Trạng thái |
 |---|---|---|---|---|
 | Lưu bộ lọc, tùy chỉnh cột | `saved_prefs` | `tab_user_preference` đếm theo user (pref_key nhóm lọc/cột) | P1 | GIỮ |
-| Lỗi 422 / 100 lần lưu | `http_422_per_100_writes` | Daily `http_422` / `api_writes` × 100 | P1 | GIỮ mức route; mức TRƯỜNG («Ngày giao») **HOÃN** (phải bóc `response_body.details`) |
+| Lỗi 422 / 100 lần lưu | `http_422_per_100_writes` | Daily `http_422` / `api_writes` × 100 | P1 | GIỮ mức route; mức TRƯỜNG (**Ngày giao**) **HOÃN** (phải bóc `response_body.details`) |
 | Tìm không ra kết quả | `search_empty_rate` | SEARCH result_count=0 / SEARCH — KHÔNG từ khóa | P2 | GIỮ |
 | Xem hướng dẫn / FAQ, yêu cầu hỗ trợ | `help_views`, `tickets` | PAGE_VIEW pattern `/help%` + `tab_ticket.requester_id` | P2 + P1 | GIỮ |
 | Xuất Excel so với xem màn | `exports`, `export_per_list_view` | `tab_export_log` theo created_by; chia PAGE_VIEW màn danh sách | P1 + P2 | GIỮ |

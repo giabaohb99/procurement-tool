@@ -52,7 +52,7 @@ def _visible_ancestors(wanted: set[int], parent_of: dict[int, int]) -> set[int]:
 @router.get("")
 def get_org_chart(db: Session = Depends(get_db), user=Depends(require("employee", "read"))):
     prof = get_perm_profile(db, user)
-    #  duoc-CR-713: Cài đặt nhân sự «Sơ đồ tổ chức cho mọi nhân viên» TẮT → chỉ người xem được TOÀN BỘ hồ sơ (không giới
+    #  duoc-CR-713: Cài đặt nhân sự "Sơ đồ tổ chức cho mọi nhân viên" TẮT → chỉ người xem được TOÀN BỘ hồ sơ (không giới
     #  hạn công ty / phòng / người — cùng tiêu chí `scope_condition(...) is None` của biến mẫu HĐLĐ) mới mở được.
     if not app_settings.get("org_chart_visible_to_all") and \
             scope_condition(Employee, "employee", user, prof) is not None:

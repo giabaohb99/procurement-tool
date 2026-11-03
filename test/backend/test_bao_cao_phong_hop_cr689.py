@@ -1,4 +1,4 @@
-"""duoc-CR-689 — báo cáo F1 «Sử dụng phòng họp» (khóa 28): `/api/room-usage/summary` (+ export, rows).
+"""duoc-CR-689 — báo cáo F1 "Sử dụng phòng họp" (khóa 28): `/api/room-usage/summary` (+ export, rows).
 
 Canh: định nghĩa chỉ số (phiếu đã duyệt tính giờ, hủy / từ chối chỉ vào tỷ lệ hủy, giờ làm việc theo lịch hệ
 thống trừ lễ), các chiều xem (phòng, pháp nhân, phòng ban, khung giờ, thứ), phạm vi, danh sách `/rows`,

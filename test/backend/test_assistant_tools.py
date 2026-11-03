@@ -225,7 +225,7 @@ def test_recent_purchase_orders_gac_scope(db, seed, cap_quyen):
 
 
 def test_recent_purchase_orders_loc_phong_ban_phap_nhan_va_link_ncc(db, seed, cap_quyen):
-    """ai-CR-077: «đơn của nhà máy» — lọc theo phòng yêu cầu HOẶC phòng xử lý, khớp một phần tên; link NCC thật."""
+    """ai-CR-077: "đơn của nhà máy" — lọc theo phòng yêu cầu HOẶC phòng xử lý, khớp một phần tên; link NCC thật."""
     from app.modules.department.model import Department
     from app.modules.supplier.model import Supplier
     from app.modules.user.model import User
@@ -263,7 +263,7 @@ def test_recent_purchase_orders_loc_phong_ban_phap_nhan_va_link_ncc(db, seed, ca
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-080 — «lên task» ở phân hệ Dự án từ câu nói: soạn nháp → «tạo» → báo chuông người được giao
+# ai-CR-080 — "lên task" ở phân hệ Dự án từ câu nói: soạn nháp → "tạo" → báo chuông người được giao
 # ---------------------------------------------------------------------------
 def _work_setup(db, seed, cap_quyen):
     from app.modules.employee.model import Employee

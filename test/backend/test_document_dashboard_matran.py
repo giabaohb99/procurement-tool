@@ -40,7 +40,7 @@ def catalog(db, seed):
     #  Quy chế phải qua duyệt → QUAN TRỌNG. Giấy mời thì không cờ nào → thường.
     regulation = DocType(code="QC", name="Quy chế", id_scheme=1, number_when=2,
                       needs_approval=True)
-    #  Khai RÕ «không cần duyệt»: từ 29/09/2026 cột này mặc định BẬT.
+    #  Khai RÕ "không cần duyệt": từ 29/09/2026 cột này mặc định BẬT.
     giay_moi = DocType(code="GM", name="Giấy mời", id_scheme=2, number_when=2,
                        needs_approval=False)
     #  Cờ "cần QĐ ban hành" cũng đủ để tính là quan trọng, không cần duyệt.
@@ -85,7 +85,7 @@ def test_bon_o_chia_dung_theo_co_cua_loai_va_do_khan(db, catalog):
 
 
 def test_co_can_qd_ban_hanh_cung_tinh_la_quan_trong(db, catalog):
-    """Hai cờ, chỉ cần MỘT là đủ — loại Quyết định không có cờ «cần duyệt»."""
+    """Hai cờ, chỉ cần MỘT là đủ — loại Quyết định không có cờ "cần duyệt"."""
     seed = catalog["seed"]
     doc = service.create_document(db, DocumentCreate(
         doc_type_id=catalog["QD"].id, company_id=seed.company_id,
@@ -93,7 +93,7 @@ def test_co_can_qd_ban_hanh_cung_tinh_la_quan_trong(db, catalog):
         title="Quyết định bổ nhiệm", content_html="<p>x</p>", urgency=1,
     ), ACTOR)
     #  Đặt trạng thái thẳng tay: loại có cờ `needs_decision` không ban hành được
-    #  nếu chưa khai quan hệ «Kèm theo» tới một Quyết định (chốt ở
+    #  nếu chưa khai quan hệ "Kèm theo" tới một Quyết định (chốt ở
     #  `issue_service`). Bài này kiểm việc CHIA Ô, không kiểm cổng ban hành —
     #  dựng thêm cả một Quyết định nữa chỉ để đi qua cổng là làm bài kiểm đỏ
     #  mỗi khi cổng đó đổi.
@@ -105,7 +105,7 @@ def test_co_can_qd_ban_hanh_cung_tinh_la_quan_trong(db, catalog):
 
 
 def test_muc_khan_1_khong_tinh_la_khan_cap(db, catalog):
-    """Ranh giới đúng ở mức 2: «Thường» không phải việc gấp."""
+    """Ranh giới đúng ở mức 2: "Thường" không phải việc gấp."""
     _tao_hieu_luc(db, catalog, "QC", "Quy chế mức 1", urgency=1)
     _tao_hieu_luc(db, catalog, "QC", "Quy chế mức 2", urgency=2)
 

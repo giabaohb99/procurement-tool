@@ -1,4 +1,4 @@
-"""duoc-CR-689 — dữ liệu ô E3 «Lịch nhắc trong tháng»: `GET /api/employees/monthly-reminders?month=YYYY-MM`.
+"""duoc-CR-689 — dữ liệu ô E3 "Lịch nhắc trong tháng": `GET /api/employees/monthly-reminders?month=YYYY-MM`.
 
 Route chung tiền tố `/api/employees` nên phải include TRƯỚC `employee_router` trong `main.py`. Bài kiểm này dựng
 một app riêng chỉ gắn router của nó, nên chạy được dù điều phối chưa nối vào `main.py`.

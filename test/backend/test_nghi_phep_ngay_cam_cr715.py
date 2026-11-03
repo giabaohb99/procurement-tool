@@ -1,11 +1,11 @@
 """duoc-CR-715 giai đoạn B — NGÀY CẤM NGHỈ (tab_leave_block_period).
 
-Chốt: khớp pháp nhân / phòng / «mọi» · giao một phần · đơn nhiều khoảng có KHE không dính · cảnh báo không chặn lưu ·
+Chốt: khớp pháp nhân / phòng / "mọi" · giao một phần · đơn nhiều khoảng có KHE không dính · cảnh báo không chặn lưu ·
 duyệt chặng cuối bị chặn (cả bộ máy lẫn duyệt thẳng) · giao dịch cuộn lại sạch · vai trò miễn / quản trị qua · tắt dòng
 cấm thì hết chặn · cửa lưu cài đặt · kẹp ngày ở cửa CRUD.
 
 ⚠️ Bài quan trọng nhất là `test_engine_final_approval_is_vetoed_and_rolled_back`: `entity_hooks.fire` NUỐT lỗi hook,
-nên nếu chốt chặn chỉ ném HTTPException thường thì phiếu vẫn thành «Đã duyệt» còn đơn kẹt Chờ duyệt.
+nên nếu chốt chặn chỉ ném HTTPException thường thì phiếu vẫn thành "Đã duyệt" còn đơn kẹt Chờ duyệt.
 """
 import time
 from datetime import date, timedelta

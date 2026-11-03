@@ -1,9 +1,9 @@
-"""Mục «Thuốc BVTV» của Tra cứu thị trường (29/09/2026).
+"""Mục "Thuốc BVTV" của Tra cứu thị trường (29/09/2026).
 
 Danh mục nạp từ bản cào danhmuc.thuocbvtv.com — tệp `thuoc-bvtv.json` HOẶC `thuoc-bvtv.xlsx`.
 Canh ba thứ dễ lủng nhất:
   · hai đường đọc (JSON lồng / Excel phẳng) phải ra CÙNG dữ liệu — lần chạy đầu trên tệp thật
-    đã lệch ở thuốc id 3670 (tên hoạt chất dính URL `https://…`, tách ở «:» là cắt giữa URL);
+    đã lệch ở thuốc id 3670 (tên hoạt chất dính URL `https://…`, tách ở ":" là cắt giữa URL);
   · nạp lại là THAY TOÀN BỘ, kể cả bảng con phạm vi sử dụng, rồi gắn lại hoạt chất dòng hàng;
   · chuỗi dài hơn cột → MySQL trả 500. SQLite của pytest KHÔNG ép độ dài, nên canh bằng cách
     so trần ở tầng đọc với `String(n)` của model thay vì ghi xuống rồi đọc lên (xanh giả).
@@ -86,7 +86,7 @@ def test_json_record_is_normalized():
     assert rec["trade_key"] == "BIPYRHONE"
     assert rec["registered_on"] == date(2023, 9, 25) and rec["expires_on"] == date(2028, 9, 25)
     assert rec["toxicity"] == "GHS 5 (GHS - Nhóm 5: Rất ít độc); WHO 4 (WHO - Nhóm 4: Ít độc)"
-    #  Hoạt chất chưa xếp nhóm kháng (Chitosan) bỏ hẳn — không bày «Chitosan: » trống trơn.
+    #  Hoạt chất chưa xếp nhóm kháng (Chitosan) bỏ hẳn — không bày "Chitosan: " trống trơn.
     assert rec["resistance"] == ("Polyoxin B (Nereistoxihttps://113.190.254.147/x.png): FRAC 19 | "
                                  "Peptidyl | Tổng hợp chitin")
     assert [u["crop"] for u in rec["uses"]] == ["cà rốt", "lúa"]
@@ -103,7 +103,7 @@ def test_json_and_xlsx_read_the_same_catalog():
     ("Đang sử dụng", PesticideStatus.IN_USE), ("Tạm đình chỉ", PesticideStatus.UNKNOWN),
     ("", PesticideStatus.UNKNOWN), (None, PesticideStatus.UNKNOWN)])
 def test_unknown_status_is_not_guessed(label, code):
-    """Tình trạng lạ phải ra UNKNOWN — đoán thành «Còn hiệu lực» là lọt vào bộ lọc mặc định."""
+    """Tình trạng lạ phải ra UNKNOWN — đoán thành "Còn hiệu lực" là lọt vào bộ lọc mặc định."""
     assert R.read_json(_json(_raw(tinh_trang=label)))[0]["status"] == code
 
 
@@ -276,11 +276,11 @@ def test_every_route_is_guarded():
     assert guards == {
         ("/api/customs/pesticides", "GET"): ("customs_price", "read"),
         ("/api/customs/pesticides/options", "GET"): ("customs_price", "read"),
-        #  02/10/2026 — xuất Excel (round-trip với «Nạp danh mục»): khóa `export`, không phải
+        #  02/10/2026 — xuất Excel (round-trip với "Nạp danh mục"): khóa `export`, không phải
         #  `read` (QĐ-I4, `doc/erp/16-...md`) — ai chỉ xem được không có nút xuất.
         ("/api/customs/pesticides/export", "GET"): ("customs_price", "export"),
         ("/api/customs/pesticides/{pesticide_id}", "GET"): ("customs_price", "read"),
-        #  01/10/2026 — «cùng công ty» / «cùng hoạt chất» của trang chi tiết: cùng quyền đọc.
+        #  01/10/2026 — "cùng công ty" / "cùng hoạt chất" của trang chi tiết: cùng quyền đọc.
         ("/api/customs/pesticides/{pesticide_id}/related", "GET"): ("customs_price", "read"),
         ("/api/customs/pesticides", "POST"): ("customs_pesticide", "create"),
         ("/api/customs/pesticides/{pesticide_id}", "PATCH"): ("customs_pesticide", "write"),

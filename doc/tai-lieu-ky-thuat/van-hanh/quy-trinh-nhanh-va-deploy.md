@@ -359,7 +359,7 @@ Celery ở prod **đang chạy thật** (sao lưu R2 hai lần mỗi ngày). Dep
 
 ---
 
-### D.5. Người dùng báo «Hệ thống đang bận»
+### D.5. Người dùng báo "Hệ thống đang bận"
 
 Đó là câu 503 `server_busy` của cổng giới hạn lượt gọi (`core/concurrency_gate.py`, duoc-CR-671):
 mỗi tiến trình chỉ cho `MAX_CONCURRENT_REQUESTS` lượt `/api` chạy cùng lúc (mặc định

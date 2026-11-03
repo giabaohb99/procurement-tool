@@ -430,7 +430,7 @@ def test_leave_hourly_requires_both_times(db, seed, monkeypatch):
     out = _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2026-09-01",
                            "from_session": "hourly", "to_session": "full",
                            "from_time": "08:00", "to_time": "10:00", "reason": "Khám bệnh"})
-    #  Khai theo giờ thì CẢ HAI ô buổi phải là «Theo giờ», nếu không backend chặn lúc lưu.
+    #  Khai theo giờ thì CẢ HAI ô buổi phải là "Theo giờ", nếu không backend chặn lúc lưu.
     assert out["draft"]["from_session"] == SESSION_HOURLY
     assert out["draft"]["to_session"] == SESSION_HOURLY
     assert out["draft"]["from_time"] == "08:00" and out["draft"]["to_time"] == "10:00"

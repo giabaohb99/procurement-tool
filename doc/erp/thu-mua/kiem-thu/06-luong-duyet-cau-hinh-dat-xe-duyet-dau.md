@@ -3,7 +3,7 @@
 > **bao-CR-577.** Thử trên **máy dưới** (local) trước khi tính chuyện bật ở dev/prod.
 > Đặt xe và Duyệt dấu đã nối sẵn với bộ máy duyệt dùng chung. Chỉ cần khai luồng và bật
 > công tắc là phiếu đi theo luồng, không sửa mã. Lượt thử 03/10/2026 lòi ra một lỗi có sẵn
-> của bộ máy: bước khai người duyệt «theo vai trò» nổ lỗi 500. Đã vá ở
+> của bộ máy: bước khai người duyệt **theo vai trò** nổ lỗi 500. Đã vá ở
 > `approval/approver_resolver.py`, bản vá phải có trong mã thì bộ kịch bản này mới chạy được.
 
 ## Môi trường
@@ -19,9 +19,9 @@ docker compose exec -T api python scripts/local_test/setup_flow_test_booking_sea
 
 | Luồng | Bước 1 | Bước 2 | Sau luồng |
 |---|---|---|---|
-| `THU-DX-2B` Đặt xe | Trưởng bộ phận của người tạo | Vai trò «Quản lý điều phối» | Điều phối viên gán xe, tài xế nhận chuyến |
-| `THU-DX-3B` Đặt xe **giao hàng** (luồng có điều kiện, xét trước) | Trưởng bộ phận | Giám đốc (`DEMOTP3` đóng vai), rồi bước 3 «Quản lý điều phối» | Như trên |
-| `THU-DD-2B` Duyệt dấu | Trưởng bộ phận của người tạo | Vai trò «Giám đốc duyệt dấu» | Văn thư công ty đóng dấu |
+| `THU-DX-2B` Đặt xe | Trưởng bộ phận của người tạo | Vai trò **Quản lý điều phối** | Điều phối viên gán xe, tài xế nhận chuyến |
+| `THU-DX-3B` Đặt xe **giao hàng** (luồng có điều kiện, xét trước) | Trưởng bộ phận | Giám đốc (`DEMOTP3` đóng vai), rồi bước 3 **Quản lý điều phối** | Như trên |
+| `THU-DD-2B` Duyệt dấu | Trưởng bộ phận của người tạo | Vai trò **Giám đốc duyệt dấu** | Văn thư công ty đóng dấu |
 
 Công tắc ở màn **Phê duyệt › Bật bộ máy duyệt** đang BẬT cho cả hai.
 
@@ -47,9 +47,9 @@ Mật khẩu = mã đăng nhập.
 
 | Luồng | Áp cho | Bước 1 | Bước 2 |
 |---|---|---|---|
-| #4 `DATXE` Đặt xe công tác | mặc định, mọi phiếu đặt xe không khớp luồng khác | Trưởng bộ phận người nộp | Vai trò «Quản lý điều phối» |
-| #5 `DX-GIAO-HANG` Giao hàng | Loại phiếu là Giao hàng, ưu tiên 10 | Trưởng bộ phận người nộp | Vai trò «Quản lý điều phối» |
-| #6 `DD-MAC-DINH` Duyệt dấu (bản 2, giống app cũ) | mặc định | Trưởng bộ phận người tạo chọn trên phiếu | Vai trò «Pháp lý kiểm tra dấu» (`NSU206`, `DEMOTP3`) |
+| #4 `DATXE` Đặt xe công tác | mặc định, mọi phiếu đặt xe không khớp luồng khác | Trưởng bộ phận người nộp | Vai trò **Quản lý điều phối** |
+| #5 `DX-GIAO-HANG` Giao hàng | Loại phiếu là Giao hàng, ưu tiên 10 | Trưởng bộ phận người nộp | Vai trò **Quản lý điều phối** |
+| #6 `DD-MAC-DINH` Duyệt dấu (bản 2, giống app cũ) | mặc định | Trưởng bộ phận người tạo chọn trên phiếu | Vai trò **Pháp lý kiểm tra dấu** (`NSU206`, `DEMOTP3`) |
 
 Công tắc Đặt xe và Duyệt dấu đã bật. Vai trò thử đã gán: `DEMONV` người tạo phiếu (phòng Demo Thu Mua,
 trưởng phòng là `DEMOTP`), `DEMOTP` trưởng bộ phận, `DEMOQL` quản lý điều phối + giám đốc duyệt dấu, `DEMOAD`
@@ -70,10 +70,10 @@ Phiếu thử trên dev (tạo 03/10, người tạo `DEMONV`):
 | DD867 | Duyệt dấu | — | nháp có tệp, để tự gửi duyệt |
 | DD868 | Duyệt dấu | #6 bản 2 (Pháp lý) | chặng 1/2, `DEMOTP2`; chặng 2 Pháp lý `NSU206` / `DEMOTP3` |
 
-DD866 gửi trước khi đổi luồng nên vẫn giữ bước 2 cũ «Giám đốc duyệt dấu» — đúng luật «phiếu đang chạy giữ luồng lúc bắt đầu».
+DD866 gửi trước khi đổi luồng nên vẫn giữ bước 2 cũ **Giám đốc duyệt dấu** — đúng luật **phiếu đang chạy giữ luồng lúc bắt đầu**.
 Người được giao duyệt mở được phiếu, tệp chứng từ và ô Trao đổi dù ngoài phạm vi dữ liệu, chỉ trong lúc đang chờ họ (bao-CR-584).
 
-Đặt xe chỉ khai được bước «trưởng bộ phận người nộp», chưa khai được «người tạo chọn người duyệt»: form đặt xe chưa
+Đặt xe chỉ khai được bước **trưởng bộ phận người nộp**, chưa khai được **người tạo chọn người duyệt**: form đặt xe chưa
 có ô chọn người duyệt.
 
 ## Phiếu mẫu có sẵn
@@ -88,7 +88,7 @@ có ô chọn người duyệt.
 | DD1619 | Duyệt dấu | Chờ duyệt, chặng 1/2 | C3, C4 |
 | DD1620 | Duyệt dấu | Nháp, đã có tệp | C5 |
 
-Bảy phiếu này tạo bằng script nên thẻ «Lịch sử thao tác» trống. Phiếu đại ca tự tạo trên
+Bảy phiếu này tạo bằng script nên thẻ **Lịch sử thao tác** trống. Phiếu đại ca tự tạo trên
 màn hình thì thẻ đó có đủ.
 
 ---
@@ -102,7 +102,7 @@ màn hình thì thẻ đó có đủ.
 
 **TC-577-A2 — Công tắc bộ máy đang bật**
 1. `admin` vào `/approval/engine`.
-- Mong đợi: dòng «Đặt xe» và «Duyệt dấu» đang bật, có ghi số luồng đang hoạt động.
+- Mong đợi: dòng **Đặt xe** và **Duyệt dấu** đang bật, có ghi số luồng đang hoạt động.
 - Kết quả:
 
 **TC-577-A3 — Đổi cách duyệt bằng màn hình, không sửa mã**
@@ -110,14 +110,14 @@ màn hình thì thẻ đó có đủ.
 2. `TESTREQ` tạo một phiếu đặt xe mới và gửi duyệt. `DEMOTP` duyệt bước 1.
 - Mong đợi: bước 2 giao cho `DEMOAD`, không phải `DEMOQL`. Phiếu đang chạy từ trước (DX1218)
   vẫn giữ bước 2 cũ là `DEMOQL`.
-3. Trả bước 2 về vai trò «Quản lý điều phối» sau khi chấm.
+3. Trả bước 2 về vai trò **Quản lý điều phối** sau khi chấm.
 - Kết quả:
 
 **TC-577-A4 — Tắt công tắc thì quay về duyệt một bước**
-1. `admin` tắt công tắc «Đặt xe» ở `/approval/engine`.
+1. `admin` tắt công tắc **Đặt xe** ở `/approval/engine`.
 2. `TESTREQ` tạo phiếu mới, chọn người duyệt là `DEMOTP`, gửi duyệt.
-- Mong đợi: phiếu KHÔNG có dòng «Đang ở chặng n/n». `DEMOTP` nhận chuông «có phiếu cần
-  duyệt» và duyệt thẳng trên phiếu. Lưu ý: `DEMOTP` hiện chưa có quyền duyệt thẳng đặt xe
+- Mong đợi: phiếu KHÔNG có dòng **Đang ở chặng n/n**. `DEMOTP` nhận chuông **có phiếu cần
+  duyệt** và duyệt thẳng trên phiếu. Lưu ý: `DEMOTP` hiện chưa có quyền duyệt thẳng đặt xe
   nên sẽ báo thiếu quyền, đúng như phân quyền đang có.
 3. Bật lại công tắc sau khi chấm.
 - Kết quả:
@@ -127,40 +127,40 @@ màn hình thì thẻ đó có đủ.
 ## B. Đặt xe
 
 **TC-577-B1 — Trưởng bộ phận duyệt bước 1**
-1. `DEMOTP` bấm chuông, mở thông báo «Chờ bạn duyệt» của DX1218.
+1. `DEMOTP` bấm chuông, mở thông báo **Chờ bạn duyệt** của DX1218.
 2. Bấm **Duyệt**, ghi ý kiến.
-- Mong đợi: phiếu chuyển sang «Đang ở chặng 2/2 · Lê Quản Lý TM». `DEMOQL` nhận chuông.
+- Mong đợi: phiếu chuyển sang **Đang ở chặng 2/2 · Lê Quản Lý TM**. `DEMOQL` nhận chuông.
   `DEMOTP` không còn nút Duyệt trên phiếu này.
 - Kết quả:
 
 **TC-577-B2 — Quản lý điều phối duyệt bước 2**
 1. `DEMOQL` mở DX1218 từ chuông, bấm **Duyệt**.
-- Mong đợi: phiếu sang «Đã duyệt». `DEMOAD` nhận chuông «có chuyến xe cần điều phối».
-  `TESTREQ` nhận chuông «đã được duyệt». Khối tiến trình ghi tên người ký ở cả hai bước.
+- Mong đợi: phiếu sang **Đã duyệt**. `DEMOAD` nhận chuông **có chuyến xe cần điều phối**.
+  `TESTREQ` nhận chuông **đã được duyệt**. Khối tiến trình ghi tên người ký ở cả hai bước.
 - Kết quả:
 
 **TC-577-B3 — Điều phối và chạy chuyến**
 1. `DEMOAD` mở DX1218, bấm **Điều phối**, chọn một xe và một tài xế.
 2. Cũng `DEMOAD` bấm thay tài xế: **Nhận chuyến**, **Bắt đầu**, **Hoàn tất** (nhập km, chi phí).
-- Mong đợi: lần lượt «Đã điều phối» → «Hoàn thành». `TESTREQ` nhận chuông «đã hoàn tất».
+- Mong đợi: lần lượt **Đã điều phối** → **Hoàn thành**. `TESTREQ` nhận chuông **đã hoàn tất**.
 - Kết quả:
 
 **TC-577-B4 — Trả về cho người tạo sửa**
 1. `DEMOTP` mở DX1219, bấm **Trả về**, ghi lý do.
 2. `TESTREQ` mở DX1219.
-- Mong đợi: trạng thái «Yêu cầu chỉnh sửa», thấy lý do. Sửa một ô (ví dụ giờ đi) rồi
+- Mong đợi: trạng thái **Yêu cầu chỉnh sửa**, thấy lý do. Sửa một ô (ví dụ giờ đi) rồi
   **Gửi duyệt** lại thì luồng chạy lại từ chặng 1/2, `DEMOTP` nhận việc mới.
 - Kết quả:
 
 **TC-577-B5 — Từ chối ở bước 2**
 1. `DEMOTP` duyệt DX1220. `DEMOQL` mở DX1220, bấm **Từ chối**, ghi lý do.
-- Mong đợi: phiếu «Từ chối», khóa, không sửa không gửi lại được. `TESTREQ` nhận chuông kèm lý do.
+- Mong đợi: phiếu **Từ chối**, khóa, không sửa không gửi lại được. `TESTREQ` nhận chuông kèm lý do.
 - Kết quả:
 
 **TC-577-B6 — Người tạo rút lại phiếu**
 1. `TESTREQ` mở DX1221 (nháp), bấm **Gửi duyệt**.
 2. Trước khi ai duyệt, `TESTREQ` bấm **Rút lại**, ghi lý do.
-- Mong đợi: phiếu về «Nháp», sửa và gửi lại được. Làm lại lần nữa nhưng để `DEMOTP` duyệt
+- Mong đợi: phiếu về **Nháp**, sửa và gửi lại được. Làm lại lần nữa nhưng để `DEMOTP` duyệt
   bước 1 trước: lúc đó **Rút lại** bị chặn, câu báo nói đã có người duyệt.
 - Kết quả:
 
@@ -172,20 +172,20 @@ màn hình thì thẻ đó có đủ.
 
 **TC-577-B8 — Ca lớn thêm lớp Giám đốc**
 1. `TESTREQ` tạo một phiếu **giao hàng** mới và gửi duyệt.
-- Mong đợi: phiếu ghi «Đang ở chặng 1/3». Thứ tự ký: `DEMOTP` → `DEMOTP3` → `DEMOQL`, xong
-  là «Đã duyệt đủ 3/3 chặng» rồi sang điều phối. Phiếu **đặt xe công tác** gửi cùng lúc
+- Mong đợi: phiếu ghi **Đang ở chặng 1/3**. Thứ tự ký: `DEMOTP` → `DEMOTP3` → `DEMOQL`, xong
+  là **Đã duyệt đủ 3/3 chặng** rồi sang điều phối. Phiếu **đặt xe công tác** gửi cùng lúc
   vẫn chỉ 2/2 chặng.
-- Ghi chú: phiếu đặt xe chưa có ô «giá trị tài sản», nên lượt thử mượn loại «giao hàng» làm
+- Ghi chú: phiếu đặt xe chưa có ô **giá trị tài sản**, nên lượt thử mượn loại **giao hàng** làm
   điều kiện. Điều kiện này em khai thẳng dưới máy; màn cấu hình hiện chưa cho khai điều
   kiện với đặt xe (xem mục D).
 - Kết quả:
 
 **TC-577-B9 — Sửa luồng thì phiếu gửi sau đi theo luồng mới**
 1. Gửi một phiếu đặt xe công tác (phiếu X).
-2. `admin` sửa bước 2 của `THU-DX-2B` sang vai trò «Điều phối viên», lưu.
+2. `admin` sửa bước 2 của `THU-DX-2B` sang vai trò **Điều phối viên**, lưu.
 3. Gửi thêm một phiếu đặt xe công tác (phiếu Y). `DEMOTP` duyệt cả hai.
 - Mong đợi: bước 2 của X vẫn ở `DEMOQL`, bước 2 của Y sang `DEMOAD`.
-4. Trả bước 2 về «Quản lý điều phối».
+4. Trả bước 2 về **Quản lý điều phối**.
 - Kết quả:
 
 ---
@@ -195,13 +195,13 @@ màn hình thì thẻ đó có đủ.
 **TC-577-C1 — Hai bước phê duyệt**
 1. `DEMOTP` mở DD1618, bấm **Duyệt**.
 2. `DEMOQL` mở DD1618 từ chuông, bấm **Duyệt**.
-- Mong đợi: sau bước 1 phiếu ở «chặng 2/2», sau bước 2 phiếu «Đã duyệt».
+- Mong đợi: sau bước 1 phiếu ở **chặng 2/2**, sau bước 2 phiếu **Đã duyệt**.
   `TESTMEDEGO` nhận chuông.
 - Kết quả:
 
 **TC-577-C2 — Văn thư đóng dấu**
 1. `TESTMEDEGO` mở DD1618, bấm **Hoàn thành đóng dấu**, ghi chú số bản đã đóng.
-- Mong đợi: phiếu «Hoàn thành». `TESTREQ` nhận chuông «đã đóng dấu xong».
+- Mong đợi: phiếu **Hoàn thành**. `TESTREQ` nhận chuông **đã đóng dấu xong**.
 - Kết quả:
 
 **TC-577-C3 — Văn thư không đóng dấu khi phiếu chưa duyệt xong**
@@ -211,18 +211,18 @@ màn hình thì thẻ đó có đủ.
 
 **TC-577-C4 — Trả về ở bước 2**
 1. `DEMOTP` duyệt DD1619. `DEMOQL` bấm **Trả về**, ghi lý do.
-- Mong đợi: phiếu «Yêu cầu chỉnh sửa». `TESTREQ` sửa rồi gửi lại thì chạy lại từ chặng 1/2.
+- Mong đợi: phiếu **Yêu cầu chỉnh sửa**. `TESTREQ` sửa rồi gửi lại thì chạy lại từ chặng 1/2.
 - Kết quả:
 
 **TC-577-C5 — Gửi phiếu nháp có tệp, và chặn khi thiếu tệp**
 1. `TESTREQ` mở DD1620, bấm **Gửi duyệt**.
 - Mong đợi: phiếu vào chặng 1/2, `DEMOTP` nhận chuông.
 2. Tạo một phiếu dấu mới, KHÔNG đính kèm tệp, bấm Gửi duyệt.
-- Mong đợi: bị chặn với câu «Cần đính kèm ít nhất 1 chứng từ có chữ ký sống».
+- Mong đợi: bị chặn với câu **Cần đính kèm ít nhất 1 chứng từ có chữ ký sống**.
 - Kết quả:
 
 **TC-577-C6 — Văn thư trả về hoặc từ chối ở bước đóng dấu**
-1. Đưa một phiếu tới «Đã duyệt» như C1. `TESTMEDEGO` bấm **Trả về** (hoặc **Từ chối**).
+1. Đưa một phiếu tới **Đã duyệt** như C1. `TESTMEDEGO` bấm **Trả về** (hoặc **Từ chối**).
 - Mong đợi: trả về thì người tạo sửa và gửi lại được; từ chối thì phiếu khóa.
 - Kết quả:
 
@@ -231,14 +231,14 @@ màn hình thì thẻ đó có đủ.
 ## D. Điều đã biết, không tính là lỗi của lượt này
 
 - **Màn cấu hình chưa cho khai điều kiện** với Đặt xe và Duyệt dấu, ở cả mức luồng lẫn mức
-  bước. Bộ máy thì đã chạy được điều kiện (TC-577-B8). Muốn hành chính tự khai «ca nào thêm
-  Giám đốc» thì phải mở bộ chọn điều kiện cho hai loại phiếu này.
+  bước. Bộ máy thì đã chạy được điều kiện (TC-577-B8). Muốn hành chính tự khai **ca nào thêm
+  Giám đốc** thì phải mở bộ chọn điều kiện cho hai loại phiếu này.
 
 - Phiếu đến từ app cũ (mang mã app cũ) vẫn duyệt bên app cũ. Bật công tắc không đổi gì với chúng.
-- `DEMOTP` mở phiếu đặt xe thấy ô «Trao đổi» báo không tải được. Em đã thấy, chưa tra
+- `DEMOTP` mở phiếu đặt xe thấy ô **Trao đổi** báo không tải được. Em đã thấy, chưa tra
   nguyên nhân; nhiều khả năng do phiếu nằm ngoài phạm vi dữ liệu của `DEMOTP`, chỉ được
   nới quyền đọc vì đang có việc duyệt.
-- Giờ «Tạo lúc» trên phiếu mẫu lệch 7 tiếng so với giờ máy, cần đối chiếu với phiếu tạo trên màn hình.
+- Giờ **Tạo lúc** trên phiếu mẫu lệch 7 tiếng so với giờ máy, cần đối chiếu với phiếu tạo trên màn hình.
 
 ## Đã chạy máy thay (03/10/2026)
 

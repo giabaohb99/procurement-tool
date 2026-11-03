@@ -1,4 +1,4 @@
-"""BỘ TRƯỜNG TÙY BIẾN của loại hồ sơ — phần «metadata» của phân hệ Hồ sơ.
+"""BỘ TRƯỜNG TÙY BIẾN của loại hồ sơ — phần "metadata" của phân hệ Hồ sơ.
 
 Đây là chỗ mềm dẻo nhất của cả phân hệ, nên cũng là chỗ dễ thủng nhất: người
 dùng tự khai ô nhập, và giá trị họ điền nằm trong một cột JSON mà không ràng
@@ -162,7 +162,7 @@ def test_o_bat_buoc_bo_trong_bi_chan():
 def test_cong_tac_tat_van_la_mot_cau_tra_loi():
     """`False` KHÁC ô bỏ trống.
 
-    Chốt «bắt buộc» mà viết `if not value` thì một ô công tắc bắt buộc không
+    Chốt "bắt buộc" mà viết `if not value` thì một ô công tắc bắt buộc không
     bao giờ tắt được — người dùng bấm tắt, bấm Lưu, và bị đòi điền một ô đang
     hiện rõ câu trả lời.
     """
@@ -178,7 +178,7 @@ def test_chuoi_false_khong_bien_thanh_true(raw, expected):
     """`bool("false")` trong Python ra `True` — bẫy kinh điển của đường JSON.
 
     Biểu mẫu luôn gửi bool thật, nhưng đường nhập CSV và người gọi thẳng API thì
-    không, và một ô «Đã thông quan» lật ngược thì không ai đọc ra là sai.
+    không, và một ô "Đã thông quan" lật ngược thì không ai đọc ra là sai.
     """
     defs = _defs({"key": "c", "label": "c", "type": "switch"})
     assert validate_extra_values(defs, {"c": raw}) == {"c": expected}
@@ -192,7 +192,7 @@ def test_o_so_nhan_rac_thi_422(raw):
 
 
 def test_so_tron_tra_ve_so_nguyen():
-    """«2026.0» ở chỗ đáng lẽ là một năm thì đọc ra như dữ liệu hỏng."""
+    """"2026.0" ở chỗ đáng lẽ là một năm thì đọc ra như dữ liệu hỏng."""
     defs = _defs({"key": "nam", "label": "Năm", "type": "number"})
     assert validate_extra_values(defs, {"nam": "2026"}) == {"nam": 2026}
     assert validate_extra_values(defs, {"nam": 2026.5}) == {"nam": 2026.5}

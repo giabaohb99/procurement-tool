@@ -13,7 +13,9 @@ import {
   IdCard,
   LayoutDashboard,
   Network,
+  ScrollText,
   Settings2,
+  UserCheck,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -162,6 +164,8 @@ export const hrModule: ErpModule = {
         appRoutes.hr.leaveTypes,
         appRoutes.hr.holidays,
         appRoutes.hr.leaveBlocks,
+        appRoutes.hr.leavePolicies,
+        appRoutes.hr.leavePolicyAssignments,
       ],
       children: [
         {
@@ -191,12 +195,24 @@ export const hrModule: ErpModule = {
           entity: 'leave_balance',
         },
         {
+          //  duoc-CR-717. ⚠️ `entity` + `action` ở đây LÀ hàng rào của route (gác điều hướng mặc định MỞ).
+          //  Gác `leave_balance.WRITE` chứ không `read`: seed cấp `leave_balance.read` phạm vi "của tôi" cho
+          //  MỌI nhân viên, gác `read` là ai cũng thấy mục này — màn này là việc của nhân sự (đại ca chốt
+          //  03/11/2026). Trang hàng loạt có mục ẩn riêng, cùng gác `write`.
+          label: 'Phân bổ chính sách',
+          path: appRoutes.hr.leavePolicyAssignments,
+          icon: UserCheck,
+          entity: 'leave_balance',
+          action: 'write',
+          matchPaths: [appRoutes.hr.leavePolicyBulkAssign],
+        },
+        {
           label: 'Thiết lập',
           path: appRoutes.hr.leaveTypes,
           icon: CalendarDays,
           entities: ['leave_type', 'holiday'],
           manage: true,
-          matchPaths: [appRoutes.hr.holidays, appRoutes.hr.leaveBlocks],
+          matchPaths: [appRoutes.hr.holidays, appRoutes.hr.leaveBlocks, appRoutes.hr.leavePolicies],
         },
       ],
     },
@@ -209,13 +225,32 @@ export const hrModule: ErpModule = {
       hidden: true,
     },
     //  duoc-CR-715: mục ẩn để ĐƯỜNG DẪN có gác quyền (route thiếu mục menu gác = ai đăng nhập cũng vào).
-    //  Khóa `leave_type` — cùng «Thiết lập» nghỉ phép.
+    //  Khóa `leave_type` — cùng "Thiết lập" nghỉ phép.
     {
       label: 'Ngày cấm nghỉ',
       path: appRoutes.hr.leaveBlocks,
       icon: CalendarOff,
       entity: 'leave_type',
       manage: true,
+      hidden: true,
+    },
+    //  duoc-CR-717: hai mục ẩn làm hàng rào route. Chính sách nghỉ phép gác `leave_type` (cùng Thiết lập);
+    //  trang Phân bổ hàng loạt nằm DƯỚI `/hr/leave-policy-assignments` nhưng cần quyền GHI — mục ẩn dài hơn
+    //  thắng (gác khớp đường dài nhất), nên người chỉ có `leave_balance.read` không mở được trang đó.
+    {
+      label: 'Chính sách nghỉ phép',
+      path: appRoutes.hr.leavePolicies,
+      icon: ScrollText,
+      entity: 'leave_type',
+      manage: true,
+      hidden: true,
+    },
+    {
+      label: 'Phân bổ hàng loạt',
+      path: appRoutes.hr.leavePolicyBulkAssign,
+      icon: UserCheck,
+      entity: 'leave_balance',
+      action: 'write',
       hidden: true,
     },
     //  ── Lịch làm việc (mẫu lịch tuần + gán lịch) — xem `work-schedule-module-entries.tsx`.
@@ -446,6 +481,41 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.leaveBlockNew,
       lazy: async () => ({
         Component: (await import('./pages/leave-block-detail-page')).LeaveBlockDetailPage,
+      }),
+    },
+    //  ── Chính sách nghỉ phép + Phân bổ chính sách (duoc-CR-717) ──────────────
+    //  Hàng rào: mục ẩn "Chính sách nghỉ phép" (`leave_type`), mục "Phân bổ chính sách" và mục ẩn
+    //  "Phân bổ hàng loạt" (cả hai `leave_balance` + write).
+    {
+      path: appRoutes.hr.leavePolicies,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-policy-list-page')).LeavePolicyListPage,
+      }),
+    },
+    {
+      //  ⚠️ Phải đứng TRƯỚC `:id` — `CrudDetailPage` tự nhận ra chế độ thêm mới.
+      path: appRoutes.hr.leavePolicyNew,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-policy-detail-page')).LeavePolicyDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leavePolicyDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/leave-policy-detail-page')).LeavePolicyDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leavePolicyAssignments,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-policy-assignment-list-page'))
+          .LeavePolicyAssignmentListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leavePolicyBulkAssign,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-policy-bulk-assign-page')).LeavePolicyBulkAssignPage,
       }),
     },
     //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────

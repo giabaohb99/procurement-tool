@@ -1,4 +1,4 @@
-"""duoc-CR-630 phase 02 — API Danh sách biến mẫu HĐLĐ: quyền (ghi đòi phạm vi «tất cả»), tạo/sửa/xóa,
+"""duoc-CR-630 phase 02 — API Danh sách biến mẫu HĐLĐ: quyền (ghi đòi phạm vi "tất cả"), tạo/sửa/xóa,
 khóa mã khi đã dùng, chặn xóa kèm danh sách mẫu trong phạm vi, `/placeholders` và `/input-fields`."""
 from datetime import date
 
@@ -226,7 +226,7 @@ def test_khong_ai_dung_thi_xoa_va_doi_ma_duoc(setup, db):
 def test_doi_kieu_chuan_hoa_lai_mac_dinh(setup):
     _, admin, _ = setup
     vid = admin.post(URL, json=body(value_type=1, default_value="abc")).json()["data"]["id"]
-    assert admin.patch(f"{URL}/{vid}", json={"value_type": 3}).status_code == 422       # «abc» không phải số
+    assert admin.patch(f"{URL}/{vid}", json={"value_type": 3}).status_code == 422       # "abc" không phải số
     assert admin.patch(f"{URL}/{vid}", json={"value_type": 3, "default_value": "2,5"}).json()["data"][
         "default_value"] == "2.5"
 

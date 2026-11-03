@@ -36,7 +36,7 @@ def work_list(db, owner):
 
 @pytest.fixture()
 def sections(db, owner, work_list):
-    """Ba cột mặc định: «Cần làm» · «Đang làm» · «Hoàn thành»."""
+    """Ba cột mặc định: "Cần làm" · "Đang làm" · "Hoàn thành"."""
     return [c["id"] for c in cfg.get_sections(db, owner, work_list["id"])]
 
 
@@ -166,7 +166,7 @@ def test_cot_mot_the_va_cot_hai_the_khong_lam_hong_phep_dem(db, owner, work_list
 # ── Kéo SANG CỘT KHÁC ──────────────────────────────────────────────────────────
 
 def test_keo_sang_cot_rong(db, owner, work_list, sections):
-    """Cột «Hoàn thành» rỗng — đúng cái cột trong ảnh báo lỗi, thả vào không ăn."""
+    """Cột "Hoàn thành" rỗng — đúng cái cột trong ảnh báo lỗi, thả vào không ăn."""
     a = _create_task(db, owner, work_list["id"], "A", sections[0])["id"]
     b = _create_task(db, owner, work_list["id"], "B", sections[0])["id"]
 

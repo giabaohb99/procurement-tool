@@ -64,7 +64,7 @@ def _approver(uid: int = 900):
     """NGƯỜI DUYỆT — phải khác người lập phiếu.
 
     Từ 21/09/2026 `service._block_self_approval` chặn người lập tự ký phiếu của
-    mình ở cả đường duyệt một bước (trừ người có phạm vi «tất cả»). Mấy bài dưới
+    mình ở cả đường duyệt một bước (trừ người có phạm vi "tất cả"). Mấy bài dưới
     đây trước đó dùng CHUNG một actor cho cả lập lẫn duyệt cho gọn — gọn nhưng
     dựng sai cảnh thật, và chính chỗ đó che mất lỗ suốt thời gian qua.
     """

@@ -12,8 +12,8 @@
 ## Key insights
 - Không có khung form dùng chung giữa 7 màn → gắn từng màn, mỗi chỗ ~5 dòng (hook + `markSubmitted()` sau khi lưu thành công).
 - **Nhận hàng không có form riêng**: số lượng/ngày nhận sửa trong `purchase-order-line-dialog.tsx` (phần deliveries). Đề xuất đo
-  dialog dòng ĐMH như form «Nhận hàng / dòng ĐMH» (câu hỏi mở Q4).
-- **Việc dự án** sửa trực tiếp (tự lưu) trong `task-detail-sheet.tsx` → không có «gửi». Chỉ đo **tạo nhanh** (`task-draft-row.tsx`): mở dòng nháp → tạo = SUBMIT, hủy/rời = ABANDON.
+  dialog dòng ĐMH như form **Nhận hàng / dòng ĐMH** (câu hỏi mở Q4).
+- **Việc dự án** sửa trực tiếp (tự lưu) trong `task-detail-sheet.tsx` → không có **gửi**. Chỉ đo **tạo nhanh** (`task-draft-row.tsx`): mở dòng nháp → tạo = SUBMIT, hủy/rời = ABANDON.
 - Gom ngày (`daily_ui`) và snapshot cộng `forms` theo khóa số bất kỳ → **không cần sửa backend gom**; nhãn mới tự có ở FE qua `UI_FORM` sinh.
 
 ## Requirements
@@ -21,8 +21,8 @@
 - Không đọc giá trị ô nhập (hook hiện tại đã đảm bảo).
 
 ## Architecture
-Mã mới (tiếp số, không chèn giữa): 7 PAYMENT_REQUEST «Yêu cầu thanh toán» · 8 GOODS_RECEIPT «Nhận hàng (dòng ĐMH)» · 9 DOCUMENT «Văn bản» ·
-10 VEHICLE_BOOKING «Đặt xe» · 11 SEAL_REQUEST «Duyệt dấu» · 12 ROOM_BOOKING «Đặt phòng họp» · 13 WORK_TASK «Việc dự án (tạo nhanh)».
+Mã mới (tiếp số, không chèn giữa): 7 PAYMENT_REQUEST **Yêu cầu thanh toán** · 8 GOODS_RECEIPT **Nhận hàng (dòng ĐMH)** · 9 DOCUMENT **Văn bản** ·
+10 VEHICLE_BOOKING **Đặt xe** · 11 SEAL_REQUEST **Duyệt dấu** · 12 ROOM_BOOKING **Đặt phòng họp** · 13 WORK_TASK **Việc dự án (tạo nhanh)**.
 
 | Form | Tệp | `active` | `markSubmitted()` |
 |---|---|---|---|
@@ -63,7 +63,7 @@ Sửa FE: 7 tệp ở bảng trên. Không tạo tệp mới. `work/` là vùng 
 |---|---|---|
 | Đặt `markSubmitted` sai chỗ → tỷ lệ bỏ dở sai | TB × TB | Test thành công/thất bại mỗi màn |
 | Màn có cả xem lẫn sửa (YCTT, phòng họp) bắn OPEN khi chỉ xem | TB × TB | `active` chỉ true khi ở chế độ sửa/tạo |
-| Dialog dòng ĐMH không chỉ nhận hàng | Cao × Thấp | Nhãn ghi rõ «Nhận hàng (dòng ĐMH)»; Q4 |
+| Dialog dòng ĐMH không chỉ nhận hàng | Cao × Thấp | Nhãn ghi rõ **Nhận hàng (dòng ĐMH)**; Q4 |
 
 ## Security
 Không đổi bề mặt API. Hook không đọc giá trị ô nhập.
@@ -72,4 +72,4 @@ Không đổi bề mặt API. Hook không đọc giá trị ô nhập.
 Gỡ hook từng màn độc lập; mã `UiForm` đã cấp giữ nguyên (không tái dùng).
 
 ## Next steps
-Phase 03 dùng `forms` (mở/gửi/bỏ) cho cột «bỏ dở».
+Phase 03 dùng `forms` (mở/gửi/bỏ) cho cột **bỏ dở**.

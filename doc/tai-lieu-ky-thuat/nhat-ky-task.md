@@ -19,7 +19,7 @@ khớp theo `key` ở đầu tiêu đề).
                               nhiều người thì cách nhau bằng dấu phẩy.
                               Bỏ trống = lấy người mặc định trong cấu hình
                               WORK_SYNC_PIC; việc con đi theo cha)
-- tag: <A, B>                (tùy chọn — trường «Tag», chỉ cộng thêm)
+- tag: <A, B>                (tùy chọn — trường "Tag", chỉ cộng thêm)
 - loai: <mã loại việc>       (tùy chọn, duoc-CR-674 — mã hoặc tên ở danh
                               mục Loại việc ĐANG DÙNG; sai mã là script
                               dừng, nên chạy --dry-run trước)
@@ -45,7 +45,7 @@ người phụ trách và dự án đi theo cha.
 - Sửa mô tả trong sổ rồi chạy lại script là task trên ERP được cập nhật theo —
   phần mô tả của task do sổ này SỞ HỮU, đừng sửa tay trên ERP.
 - **Loại việc, hạn và giờ** (duoc-CR-674) là số liệu của báo cáo *Năng lực
-  theo loại việc*: task không có loại thì báo cáo xếp vào «chưa chọn loại».
+  theo loại việc*: task không có loại thì báo cáo xếp vào **chưa chọn loại**.
   Sổ chỉ sở hữu trường nó KHAI — không khai thì giá trị người dùng nhập trên
   ERP được giữ nguyên. Đừng đoán giờ: không đo thì đừng khai `gio-thuc`.
 - Người phụ trách cũng do sổ sở hữu: mục nào có khai người thì script gán lại
@@ -108,6 +108,9 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 8. **Mô tả task không dùng chữ *đại ca* / *em*, chỉ mô tả việc** (đã chốt 23/10/2026): sổ được đồng bộ lên Dự án
    và ai trong công ty cũng đọc. Viết *đã chốt*, *được giao*, *phát hiện*, *xin duyệt*; chỗ thật sự cần nêu người
    quyết thì ghi *Ban điều hành*.
+9. **Không dùng ngoặc kép góc** (đã chốt 03/11/2026, duoc-CR-718, cùng luật `.claude/rules/chung-dat-ten-va-quy-uoc.md`
+   §4): chữ cần nhấn, tên màn, tên nút, câu trích trong mô tả thì **in đậm**; riêng dòng tiêu đề `## key | …` (thành tên
+   task, chữ trơn) và chữ nằm trong `mã` thì dùng nháy thẳng `"…"`.
 
 ---
 
@@ -1415,7 +1418,7 @@ cho người, phòng ban (tick kèm phòng con), pháp nhân, vai trò, thêm ch
 dòng quyền riêng thì quyền riêng thay quyền của bộ; có hạn và thu hồi là đánh dấu. Một hàm duy nhất trả danh sách skill
 một người được đọc, chỉ lấy phiên bản đã xuất bản, đổi phòng là đổi skill ngay mà không phải phát khóa mới.
 
-Quản trị đi qua khóa quyền mới «Kho skill AI» với phạm vi theo pháp nhân và phòng chủ quản của bộ: trưởng phòng chỉ soạn
+Quản trị đi qua khóa quyền mới **Kho skill AI** với phạm vi theo pháp nhân và phòng chủ quản của bộ: trưởng phòng chỉ soạn
 được bộ của phòng mình, tạo hay đổi bộ sang phòng khác thì bị chặn. Xuất bản cần quyền duyệt và bắt buộc có tóm tắt cho
 AI. Nhập gói .zip hoặc .skill tìm tệp SKILL.md nông nhất, đọc tên và mô tả ở phần đầu tệp; tải lại gói cùng tên là thay
 toàn bộ tệp đính kèm. Đường dẫn tệp chặn leo thư mục, tệp ẩn và tệp không phải chữ. Thêm hai vai trò mẫu: Quản trị kho
@@ -1574,7 +1577,7 @@ Mã nguồn: `doc/agent-hub/18-dieu-phoi-viec-theo-ke-hoach.md`, `doc/agent-hub/
 ## duoc-CR-589 | Nhân sự: Lịch làm việc (mẫu lịch tuần, gán 4 cấp, tính ngày nghỉ theo lịch, màn xem lịch)
 - status: xong
 - date: 2026-10-05
-Chốt sổ 07/10/2026: việc này đã xong (DEV 05/10 (wsched01)); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (DEV 05/10 (wsched01)); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Yêu cầu làm chức năng lịch làm việc cho nhân sự trong phân hệ Nhân sự. Trước đây hệ thống coi mọi người
 đều làm thứ Hai đến thứ Bảy, 08:00–17:00, nên người làm thứ Bảy nửa buổi hay làm ca khác vẫn bị trừ phép như
 người làm cả ngày. Nay nhân sự khai được lịch làm việc theo tuần, gán cho từng người hay cả nhóm, và số ngày
@@ -1584,12 +1587,12 @@ lên nhánh erp-v2, chưa deploy.
 ### duoc-CR-589a | Mẫu lịch tuần và gán lịch theo bốn cấp
 - status: xong
 Nhân sự tạo mẫu lịch tuần: mỗi thứ chọn làm cả ngày, chỉ buổi sáng, chỉ buổi chiều hay nghỉ, kèm giờ vào, giờ ra
-và giờ nghỉ trưa. Hệ thống tạo sẵn mẫu «Hành chính T2–T7» giống hệt luật cũ nhưng không gán cho ai. Mẫu được gán
+và giờ nghỉ trưa. Hệ thống tạo sẵn mẫu **Hành chính T2–T7** giống hệt luật cũ nhưng không gán cho ai. Mẫu được gán
 cho toàn hệ thống, một pháp nhân, một phòng ban hoặc một nhân sự, có ngày hiệu lực; cấp hẹp thắng cấp rộng, chưa
 gán gì thì giữ luật cũ. Gán lịch mới thì lịch cũ tự kết thúc ngày hôm trước; lịch mới có ngày kết thúc (lịch tạm)
 thì hết hạn tự quay về lịch cũ; xóa nhầm dòng vừa gán thì lịch cũ tự mở lại. Quyền sửa giao cho vai trò Nhân sự —
 Nghỉ phép và Nhân sự — Hồ sơ, mọi vai trò khác chỉ xem; quyền cấp sẵn bằng migration nên lên prod không phải
-tick tay. Hồ sơ nhân sự có thêm thẻ «Lịch làm việc» cho biết người đó đang theo lịch nào.
+tick tay. Hồ sơ nhân sự có thêm thẻ **Lịch làm việc** cho biết người đó đang theo lịch nào.
 
 ### duoc-CR-589b | Số ngày nghỉ phép tính theo lịch của chính người nghỉ
 - status: xong
@@ -1598,17 +1601,17 @@ thứ Bảy chỉ làm sáng thì nghỉ ngày đó tính 0,5; nghỉ theo giờ
 được gán lịch ra đúng từng con số như trước — có bài kiểm so mọi tổ hợp buổi với bảy thứ trong tuần để chốt điều
 này. Đơn đã lưu không bị tính lại khi đổi lịch.
 
-### duoc-CR-589c | Màn «Xem lịch»: ngày nào ai đi làm, ai nghỉ
+### duoc-CR-589c | Màn "Xem lịch": ngày nào ai đi làm, ai nghỉ
 - status: xong
 Màn mới dạng lưới nhân sự theo ngày, mặc định xem tuần, chuyển được sang tháng; ngày đi làm bình thường để trống
-hoặc ghi giờ chữ nhạt «08:00 – 17:00», chỉ ngày nghỉ phép (đã duyệt tô đặc chữ trắng, chờ duyệt viền nét đứt, nghỉ
+hoặc ghi giờ chữ nhạt **08:00 – 17:00**, chỉ ngày nghỉ phép (đã duyệt tô đặc chữ trắng, chờ duyệt viền nét đứt, nghỉ
 nửa buổi tô nửa ô), ngày lễ và ngày nghỉ theo lịch mới nổi màu. Mỗi người chỉ thấy nhân sự trong phạm vi quyền của
 mình, và chỉ thấy ô nghỉ phép nếu được xem đơn đó. Khi cuộn, người có nghỉ phép dính dưới đầu bảng theo từng đợt
 ba người: đợt sau tới thì đẩy cả đợt trước lên một lượt, làm hoàn toàn bằng CSS nên cuộn mượt (các bản dùng JS
-theo dõi cuộn bị giật trên máy Mac nên đã bỏ). Trên điện thoại màn hình đổi thành danh sách «Đi làm» / «Nghỉ» của
+theo dõi cuộn bị giật trên máy Mac nên đã bỏ). Trên điện thoại màn hình đổi thành danh sách **Đi làm** / **Nghỉ** của
 một ngày. Một lượt xem tối đa 42 ngày, 50 người mỗi trang, số truy vấn cố định khoảng 8 câu dù xem bao nhiêu
 người. Form mẫu lịch tuần cũng làm lại: ô giờ luôn 24 giờ (không còn SA/CH theo máy), mỗi ngày gọn một dòng, có
-nút điền nhanh «T2–T6 hành chính», «T2–T7», «T7 nửa buổi sáng».
+nút điền nhanh **T2–T6 hành chính**, **T2–T7**, **T7 nửa buổi sáng**.
 
 Bài kiểm: hơn 1.100 bài kiểm backend của nghỉ phép và lịch làm việc xanh; 1.078 bài kiểm giao diện của phân hệ
 Nhân sự xanh (đo 05/10/2026, 15:00).
@@ -1623,26 +1626,26 @@ Deploy: chưa deploy.
 ## bao-CR-608 | Giá thị trường: cột ID, nạp tệp ghi đè và xóa theo ID, sửa và xóa từng dòng trên màn, hoàn tác lô trả lại đủ dòng cũ
 - status: xong
 - date: 2026-10-07
-Yêu cầu màn «Tra cứu thị trường → Giá thị trường» có cột ID của từng dòng, Excel xuất ra cũng có cột ID; tệp nạp
-có cột ID thì ghi đè đúng dòng đó, có cột «Thao tác» ghi «xóa» thì xóa dòng đó; và trên màn sửa, xóa được từng dòng.
-Bảng dòng hàng ở cả bản cũ và bản mới nay có cột ID đứng đầu. Excel xuất ra có cột «ID» ở đầu và một cột «Thao tác» để
-trống ở cuối, nên người dùng xuất ra, sửa ô, gõ «xóa» vào dòng muốn bỏ rồi nạp lại là xong.
+Yêu cầu màn **Tra cứu thị trường → Giá thị trường** có cột ID của từng dòng, Excel xuất ra cũng có cột ID; tệp nạp
+có cột ID thì ghi đè đúng dòng đó, có cột **Thao tác** ghi **xóa** thì xóa dòng đó; và trên màn sửa, xóa được từng dòng.
+Bảng dòng hàng ở cả bản cũ và bản mới nay có cột ID đứng đầu. Excel xuất ra có cột **ID** ở đầu và một cột **Thao tác** để
+trống ở cuối, nên người dùng xuất ra, sửa ô, gõ **xóa** vào dòng muốn bỏ rồi nạp lại là xong.
 Luật nạp mới: ô ID trỏ đúng một dòng đang có thì dòng đó bị ghi đè toàn bộ bằng dữ liệu trong tệp, giữ nguyên id và lô
 gốc, mã băm chống trùng được tính lại; dòng ghi đè không qua bộ lọc trùng. Dòng có ID mà dữ liệu y hệt dòng đang lưu thì
-ghi «dữ liệu không đổi» và bỏ qua, để xuất cả nghìn dòng sửa vài dòng nạp lại chỉ đụng đúng mấy dòng đã sửa. Ô ID có số mà
-không có dòng đó thì thêm mới như dòng thường kèm cảnh báo «ID n không có — thêm mới». Ô «Thao tác» nhận «xóa», «xoa»,
-«delete», «del» (tiêu đề nhận cả «Action», «Hành động»); dòng xóa chỉ cần ô ID; xóa mà ID trống hoặc không có thì bỏ qua
+ghi **dữ liệu không đổi** và bỏ qua, để xuất cả nghìn dòng sửa vài dòng nạp lại chỉ đụng đúng mấy dòng đã sửa. Ô ID có số mà
+không có dòng đó thì thêm mới như dòng thường kèm cảnh báo **ID n không có — thêm mới**. Ô **Thao tác** nhận **xóa**, **xoa**,
+**delete**, **del** (tiêu đề nhận cả **Action**, **Hành động**); dòng xóa chỉ cần ô ID; xóa mà ID trống hoặc không có thì bỏ qua
 kèm cảnh báo; một ID gặp nhiều lần thì dòng đầu thắng. Ô suy ra hoặc tự tính trong Excel xuất ra (hoạt chất, hàm lượng,
 hai giá VND) mà trùng giá trị hệ thống tự làm thì vẫn coi là suy ra, không bị đóng băng thành số người nhập.
 Trước khi ghi đè hoặc xóa, hệ thống chụp đủ mọi cột của dòng vào bảng mới `tab_customs_line_change`. Hoàn tác một lô nay
 xóa dòng lô thêm mới, dựng lại dòng lô đã xóa đúng id cũ, trả dòng lô đã ghi đè về bản chụp; dòng bị sửa tiếp sau lô đó
 vẫn trả về bản trước lô kèm cảnh báo. Lô cũ nạp trước bao-CR-541 đã thay dòng mà không có bản chụp thì vẫn chặn như cũ.
-Chạy thử báo đủ số thêm mới, ghi đè, xóa, bỏ qua mà không ghi gì. Nhật ký từng dòng có thêm ba kết cục «Ghi đè», «Xóa»,
-«Bỏ qua» (mã 5, 6, 7, mã cũ giữ nguyên); Lịch sử nạp và bảng chạy thử có thêm cột Ghi đè và Xóa.
-Hộp chi tiết dòng ở cả hai bản có nút «Sửa» (quyền sửa của Tra cứu thị trường) chuyển sang biểu mẫu sửa tại chỗ, chỉ gửi ô
-đã đổi, và nút «Xóa» (quyền xóa) có hỏi xác nhận. Doanh nghiệp nhập khẩu sửa qua mã số thuế cộng tên, đối tác qua tên, đều
-tra hoặc tạo đối tượng như bộ nạp. Hoạt chất hoặc hàm lượng gõ tay được đánh dấu là giá trị do người nhập để «Gắn lại
-nhãn» không ghi đè; xóa trắng ô thì trả về cho hệ thống suy ra. Sửa và xóa tay cũng chụp bản trước vào bảng mới và ghi
+Chạy thử báo đủ số thêm mới, ghi đè, xóa, bỏ qua mà không ghi gì. Nhật ký từng dòng có thêm ba kết cục **Ghi đè**, **Xóa**,
+**Bỏ qua** (mã 5, 6, 7, mã cũ giữ nguyên); Lịch sử nạp và bảng chạy thử có thêm cột Ghi đè và Xóa.
+Hộp chi tiết dòng ở cả hai bản có nút **Sửa** (quyền sửa của Tra cứu thị trường) chuyển sang biểu mẫu sửa tại chỗ, chỉ gửi ô
+đã đổi, và nút **Xóa** (quyền xóa) có hỏi xác nhận. Doanh nghiệp nhập khẩu sửa qua mã số thuế cộng tên, đối tác qua tên, đều
+tra hoặc tạo đối tượng như bộ nạp. Hoạt chất hoặc hàm lượng gõ tay được đánh dấu là giá trị do người nhập để **Gắn lại
+nhãn** không ghi đè; xóa trắng ô thì trả về cho hệ thống suy ra. Sửa và xóa tay cũng chụp bản trước vào bảng mới và ghi
 nhật ký thao tác. Trần độ dài, trần số và dải ngày khai đủ ở biểu mẫu sửa phía máy chủ.
 Kiểm: bài kiểm backend khu hải quan cùng bài canh phạm vi và bài canh độ dài ô chữ 364 bài xanh (một bài đỏ có sẵn của
 phân hệ hợp đồng lao động duoc-CR-606, không thuộc việc này), trong đó 35 bài mới; bản mới kiểm kiểu 0 lỗi, lint 0 lỗi,
@@ -1660,13 +1663,13 @@ Deploy: DEV 07/10/2026 10:55 (migration hq608, có sao lưu trước); prod ch�
 
 ---
 
-## bao-CR-605 | Tra cứu thị trường: bỏ dải «Dữ liệu · lần nạp gần nhất · T1…T12» ở mọi mục, cả hai bản giao diện
+## bao-CR-605 | Tra cứu thị trường: bỏ dải "Dữ liệu · lần nạp gần nhất · T1…T12" ở mọi mục, cả hai bản giao diện
 - status: xong
 - date: 2026-10-07
 Người dùng khoanh đỏ dải tóm tắt phủ dữ liệu hải quan ở đầu các mục Tra cứu thị trường (khoảng ngày, số dòng hàng, lần nạp
 gần nhất, tỷ lệ nhận ra hoạt chất, dải tháng T1…T12) và chốt bỏ vì dư, không mang nhiều giá trị. Đã gỡ ở cả bản cũ và bản
 mới, mọi mục của cụm (trước đó chỉ mục Tra cứu hóa chất là ẩn). Số đếm dữ liệu vẫn giữ để bảng dòng hàng nói đúng câu
-«chưa có dữ liệu». Bài kiểm trang đổi từ «vẫn hiện dải phủ ở thẻ giá» thành «không còn dải phủ».
+**chưa có dữ liệu**. Bài kiểm trang đổi từ **vẫn hiện dải phủ ở thẻ giá** thành **không còn dải phủ**.
 Kèm theo: người dùng hỏi dữ liệu Tra cứu hóa chất Được cập nhật (duoc-CR-598) đã có chưa. Kiểm ra mã và migration
 `nd24reg01` đã lên dev từ 06/10 nhưng script nạp dữ liệu NĐ 24/2026 chưa ai chạy, nên dev và máy local vẫn là bộ cũ ngày
 23/09 (1.019 dòng phụ lục I–IV, chưa có STT và công thức). Đã sao lưu bảng `tab_customs_regulation` trên dev rồi chạy
@@ -1682,23 +1685,23 @@ Deploy: DEV 07/10/2026; prod chờ Ban điều hành.
 ## bao-CR-604 | Sổ việc trên phân hệ Dự án: chia theo dự án, nhãn và người phụ trách theo tiền tố CR, ảnh đại diện trên thẻ việc và nhật ký, dọn mục còn treo
 - status: xong
 - date: 2026-10-07
-Người dùng xem bảng «ERP v2» trên dev (483 việc dồn một dự án, 20 việc «Đang làm» đã xong từ lâu, mọi việc đều mang tên
-Bảo, ô ảnh đại diện hiện «BẢ») và dặn: viết cập nhật sổ, chuẩn bị đồng bộ lên prod, chia nhóm hoặc gắn nhãn hoặc chia
+Người dùng xem bảng **ERP v2** trên dev (483 việc dồn một dự án, 20 việc **Đang làm** đã xong từ lâu, mọi việc đều mang tên
+Bảo, ô ảnh đại diện hiện **BẢ**) và dặn: viết cập nhật sổ, chuẩn bị đồng bộ lên prod, chia nhóm hoặc gắn nhãn hoặc chia
 đúng dự án, việc của Được thì để Được phụ trách, và sửa ảnh đại diện trên bảng và nhật ký hoạt động cho ổn.
 
 Đã làm:
-1. Sổ: chốt 18 mục còn để «đang làm» dù việc đã xong (bao-CR-504/505/508/509 lên prod 28/09, 485..490 dev 25/09, duoc-CR-473..478
+1. Sổ: chốt 18 mục còn để **đang làm** dù việc đã xong (bao-CR-504/505/508/509 lên prod 28/09, 485..490 dev 25/09, duoc-CR-473..478
    dev 24/09, duoc-CR-589, bao-CR-560, ai-CR-002, ai-CR-056, lark-import, hai mục đặt xe), mỗi mục thêm một câu chốt sổ.
    bao-CR-412 (Danh mục Kho ba trường) vẫn để đó vì đã chốt ghi sổ, chưa làm.
 2. Script đồng bộ: người phụ trách mặc định theo TIỀN TỐ mã CR (duoc → Trần Minh Được NSU231, giang → NSU199, bao và ai → NSU209);
-   nhãn «Tag» theo tiền tố (Bảo / Được / Giang / Bot AI), trường Tag thiếu thì tạo, giá trị gán cộng thêm chứ không gỡ nhãn
-   người dùng tự gán, mục khai `- tag:` thì thêm nhãn đó; chia dự án theo từ khóa trong mã + tiêu đề (văn thư → «Công cụ văn
-   thư», đặt xe và duyệt dấu → «Duyệt dấu, Đặt xe», bot và Agent Hub → «Công cụ Ai», nhật ký hệ thống → «Nhật ký hệ thống»,
-   còn lại «ERP v2»), mục khai `- list:` thì theo mục. Việc đã có ở dự án khác thì giữ và báo; chạy `--move` mới bỏ chỗ cũ (vào
+   nhãn **Tag** theo tiền tố (Bảo / Được / Giang / Bot AI), trường Tag thiếu thì tạo, giá trị gán cộng thêm chứ không gỡ nhãn
+   người dùng tự gán, mục khai `- tag:` thì thêm nhãn đó; chia dự án theo từ khóa trong mã + tiêu đề (văn thư → **Công cụ văn
+   thư**, đặt xe và duyệt dấu → **Duyệt dấu, Đặt xe**, bot và Agent Hub → **Công cụ Ai**, nhật ký hệ thống → **Nhật ký hệ thống**,
+   còn lại **ERP v2**), mục khai `- list:` thì theo mục. Việc đã có ở dự án khác thì giữ và báo; chạy `--move` mới bỏ chỗ cũ (vào
    thùng rác) rồi tạo lại ở dự án đúng, vì API chưa có đường chuyển việc giữa hai dự án. Trùng tên dự án thì ưu tiên bản nằm
-   trong nhóm; nhóm «DX» chưa có (prod) thì script tự tạo.
+   trong nhóm; nhóm **DX** chưa có (prod) thì script tự tạo.
 3. Giao diện Dự án: thẻ việc và dòng nhật ký hoạt động hiện ảnh thật khi hồ sơ có ảnh, không có thì chữ tắt theo luật chung
-   «chữ đầu của hai từ cuối» («Huỳnh Gia Bảo» → GB) thay cho hai chữ đầu của từ cuối («BẢ»). Máy chủ trả thêm ảnh người thao
+   **chữ đầu của hai từ cuối** (**Huỳnh Gia Bảo** → GB) thay cho hai chữ đầu của từ cuối (**BẢ**). Máy chủ trả thêm ảnh người thao
    tác ở nhật ký hoạt động.
 4. Chạy thật trên dev với `--move`: sổ 363 mục chia về 5 dự án (ERP v2 220, Công cụ Ai 95, Duyệt dấu Đặt xe 31, Công cụ văn
    thư 13, Nhật ký hệ thống 4).
@@ -1717,36 +1720,36 @@ Deploy: DEV 07/10/2026; prod chờ Ban điều hành.
 ## bao-CR-603 | Tra cứu thị trường: tệp nạp nhận thêm năm cột tùy chọn (Nước nhận hàng, Hoạt chất, Hàm lượng / dạng, hai cột Đơn giá quy đổi VND)
 - status: xong
 - date: 2026-10-06
-Đề xuất mở thêm năm cột tùy chọn trên tệp Excel nạp vào màn «Tra cứu thị trường»: Nước nhận hàng, Hoạt chất,
+Đề xuất mở thêm năm cột tùy chọn trên tệp Excel nạp vào màn **Tra cứu thị trường**: Nước nhận hàng, Hoạt chất,
 Hàm lượng / dạng, Đơn giá quy đổi VND (thuế NK 7%) và Đơn giá quy đổi VND (theo thuế suất XNK). Không cột nào bắt
 buộc; tệp thiếu cột thì nạp y như cũ. Hoạt chất và hàm lượng trước nay hệ thống suy ra từ tên hàng; nay tệp có cột và ô
 có chữ thì lấy giá trị trong tệp, ô trống mới suy ra. Hai cột giá VND trước nay chỉ tính lúc đọc (giá hiệu lực × tỷ giá
 USD, bao-CR-493); nay tệp có thì lưu số của tệp, không có thì vẫn tính như cũ.
 
 Cách làm:
-1. Bộ đọc tệp nhận diện cột theo tiêu đề đã chuẩn hóa như trước, mỗi cột tùy chọn chấp nhận nhiều cách ghi («Hoạt chất»
-   hoặc «Hoạt chất (suy ra)»; «Hàm lượng / dạng», «Hàm lượng / dạng (suy ra)», «Hàm lượng/dạng», «Hàm lượng»; «Đơn giá
-   quy đổi VND (thuế NK 7%)», «Giá VND (thuế NK 7%)», «Đơn giá VND (thuế NK 7%)»; «Đơn giá quy đổi VND (theo thuế suất
-   XNK)», «Giá VND (thuế suất dòng)», «Đơn giá VND (theo thuế suất XNK)», «Đơn giá quy đổi VND (thuế suất XNK)»). «Nước
-   nhận hàng» vẫn là cột thứ 32 của GTT02 nhưng thiếu không còn bị từ chối lô. Chữ hoạt chất cắt ở 255 ký tự, hàm lượng
+1. Bộ đọc tệp nhận diện cột theo tiêu đề đã chuẩn hóa như trước, mỗi cột tùy chọn chấp nhận nhiều cách ghi (**Hoạt chất**
+   hoặc **Hoạt chất (suy ra)**; **Hàm lượng / dạng**, **Hàm lượng / dạng (suy ra)**, **Hàm lượng/dạng**, **Hàm lượng**; **Đơn giá
+   quy đổi VND (thuế NK 7%)**, **Giá VND (thuế NK 7%)**, **Đơn giá VND (thuế NK 7%)**; **Đơn giá quy đổi VND (theo thuế suất
+   XNK)**, **Giá VND (thuế suất dòng)**, **Đơn giá VND (theo thuế suất XNK)**, **Đơn giá quy đổi VND (thuế suất XNK)**). **Nước
+   nhận hàng** vẫn là cột thứ 32 của GTT02 nhưng thiếu không còn bị từ chối lô. Chữ hoạt chất cắt ở 255 ký tự, hàm lượng
    cắt ở 40 và viết hoa cho khớp ô lọc; ô giá VND không phải số thì cảnh báo và tính như cũ. Nhật ký lô ghi một dòng
-   «Tệp có cột tùy chọn: …» khi tệp có cột thêm.
-2. Bảng dòng hàng thêm bốn cột: hai cờ «lấy từ tệp» cho hoạt chất và hàm lượng (để nút «Gắn lại hoạt chất» không ghi đè
+   **Tệp có cột tùy chọn: …** khi tệp có cột thêm.
+2. Bảng dòng hàng thêm bốn cột: hai cờ **lấy từ tệp** cho hoạt chất và hàm lượng (để nút **Gắn lại hoạt chất** không ghi đè
    giá trị của tệp) và hai cột giá VND DECIMAL(18,2) (trống = tính lúc đọc). Bốn cột này cố ý KHÔNG vào mã băm chống
    trùng của bao-CR-541: dòng cũ không đổi mã, và cùng một dòng hàng dù có hay không có giá VND vẫn là một dòng.
-3. Máy chủ trả thêm cờ nguồn cho từng ô; hai bản giao diện bỏ chữ «(suy ra)» khỏi tiêu đề cột «Hoạt chất» và «Hàm
-   lượng / dạng», rê chuột lên ô thấy «Lấy từ cột trong tệp nạp» hay «Suy ra từ tên hàng» / «Tính từ giá hiệu lực × tỷ
-   giá USD»; hộp chi tiết dòng ghi «(từ tệp)» / «(suy ra)» / «(tính)»; hộp Nạp dữ liệu nói rõ năm cột tùy chọn. Excel
-   xuất ra dùng đúng bốn tiêu đề bộ đọc nhận, và bộ đọc nhận thêm ngày dạng «YYYY-MM-DD» cùng phương tiện vận chuyển
+3. Máy chủ trả thêm cờ nguồn cho từng ô; hai bản giao diện bỏ chữ **(suy ra)** khỏi tiêu đề cột **Hoạt chất** và **Hàm
+   lượng / dạng**, rê chuột lên ô thấy **Lấy từ cột trong tệp nạp** hay **Suy ra từ tên hàng** / **Tính từ giá hiệu lực × tỷ
+   giá USD**; hộp chi tiết dòng ghi **(từ tệp)** / **(suy ra)** / **(tính)**; hộp Nạp dữ liệu nói rõ năm cột tùy chọn. Excel
+   xuất ra dùng đúng bốn tiêu đề bộ đọc nhận, và bộ đọc nhận thêm ngày dạng **YYYY-MM-DD** cùng phương tiện vận chuyển
    dạng nhãn chữ, nên tệp xuất từ màn này sửa tay rồi nạp lại được (dòng đã có thì bỏ qua như cũ).
 
 Kiểm: máy chủ 171 bài hải quan xanh (11 bài mới `test_hai_quan_cot_tuy_chon_tep_nap_cr603.py` canh đủ: thiếu cột nạp như
 cũ, tệp có cột thì ưu tiên, ô trống mới suy ra, gắn lại không ghi đè, mã băm không đổi, Excel xuất ra nạp lại được); bản
 mới kiểm kiểu 0 lỗi, ESLint 0 lỗi, 93 bài khu hải quan xanh; bản cũ giữ đúng 4 lỗi nền. Chưa chạy trên dữ liệu thật.
-Đã chốt 07/10/2026: (1) thuế suất XNK để tính cột VND thứ hai lấy từ cột «Thuế suất XNK» của chính dòng (tệp
-không có thì cột trống), KHÔNG tra biểu thuế theo mã HS; (2) «Nước nhận hàng» giữ nghĩa «cột thứ 32 của GTT02 thành
-không bắt buộc» (đã xác nhận lại 07/10: chỉ cần vậy, không phải cột tên khác); (3) nhãn cột bỏ chữ «(suy
-ra)», nguồn xem khi rê chuột. Ba điểm này giữ đúng như đã làm, không sửa thêm.
+Đã chốt 07/10/2026: (1) thuế suất XNK để tính cột VND thứ hai lấy từ cột **Thuế suất XNK** của chính dòng (tệp
+không có thì cột trống), KHÔNG tra biểu thuế theo mã HS; (2) **Nước nhận hàng** giữ nghĩa **cột thứ 32 của GTT02 thành
+không bắt buộc** (đã xác nhận lại 07/10: chỉ cần vậy, không phải cột tên khác); (3) nhãn cột bỏ chữ **(suy
+ra)**, nguồn xem khi rê chuột. Ba điểm này giữ đúng như đã làm, không sửa thêm.
 Mã nguồn: `backend/app/modules/customs/{constants,reader,importer,ingredient,service,model}.py`,
 `migrations/versions/hq603_hai_quan_cot_tuy_chon_tep_nap.py`, `frontend-v2/.../config/customs-line-columns.tsx`,
 `customs-line-detail-dialog.tsx`, `customs-import-dialog.tsx`, `types/customs.ts`, `frontend/src/pages/CustomsPrices.tsx`,
@@ -1755,13 +1758,13 @@ Deploy: DEV 06/10/2026 17:40 (migration hq603 đã áp); prod chờ Ban điều 
 
 ---
 
-## bao-CR-602 | Báo cáo thực hiện trên Đơn mua hàng: khối dùng chung YCBG + ĐMH, nút bám dòng đơn, cột «Hồ sơ» trên bảng dòng hàng
+## bao-CR-602 | Báo cáo thực hiện trên Đơn mua hàng: khối dùng chung YCBG + ĐMH, nút bám dòng đơn, cột "Hồ sơ" trên bảng dòng hàng
 - status: xong
 - date: 2026-10-06
 Người dùng quay lại việc báo cáo tiến độ: trước mắt cần ở đơn mua hàng, hai cách xem (theo dòng hàng và chung), không cần
-mẫu tự định nghĩa mà tái sử dụng khối «Báo cáo thực hiện» của YCBG; mỗi đơn là một báo cáo riêng, không nối YCBG; trên
+mẫu tự định nghĩa mà tái sử dụng khối **Báo cáo thực hiện** của YCBG; mỗi đơn là một báo cáo riêng, không nối YCBG; trên
 dòng hàng hiện phần trăm tiến độ và một nút bấm là dời màn hình xuống khối báo cáo rồi sổ đúng dòng đó ra. Kèm bảng kế
-hoạch Excel «2870 — Kế hoạch Abamectin 3.6» để thử trên một đơn và rà lại logic các cột.
+hoạch Excel **2870 — Kế hoạch Abamectin 3.6** để thử trên một đơn và rà lại logic các cột.
 
 Cách làm:
 1. Máy chủ: thêm bảng đầu `tab_exec_report(owner_entity, owner_id)`; bốn bảng con của khối đổi tên thành
@@ -1772,13 +1775,13 @@ Cách làm:
    máy chủ tự đồng bộ — dòng mới thêm nút, đổi tên hàng đổi tên nút, xóa dòng thì xóa nút và hồ sơ của nó về Chung;
    thêm/đổi tên/xóa nút tay trên ĐMH bị chặn 400.
 2. Hai bản giao diện: thẻ Báo cáo thực hiện nhận `entity` + `ownerId`, đặt dưới bảng dòng hàng của chi tiết ĐMH;
-   bảng dòng hàng thêm cột «Hồ sơ» hiện phần trăm (hồ sơ của dòng + hồ sơ Chung), bấm là cuộn xuống thẻ, chuyển sang
+   bảng dòng hàng thêm cột **Hồ sơ** hiện phần trăm (hồ sơ của dòng + hồ sơ Chung), bấm là cuộn xuống thẻ, chuyển sang
    dạng xem theo dòng hàng và sổ đúng dòng. Bản mới dùng chung cache nên bảng không gọi thêm API; bản cũ thẻ báo khối
    lên trang.
 3. Rà cột bảng Excel: Hạng mục = tiêu đề, Công việc chi tiết = mô tả, Người phụ trách = nhân sự thực hiện, Ngày thực
    hiện = ngày bắt đầu, Ngày dự kiến hoàn thành = dự định hoàn tất, Trạng thái = mã trạng thái. Hai cột chưa có chỗ:
-   «Time xử lý (ngày)» → hộp sửa hồ sơ thêm ô «Số ngày xử lý» (không lưu, gõ số ngày thì tự đặt dự định hoàn tất =
-   ngày bắt đầu + n); «Kết quả» → thêm cột `result` cho hồ sơ, hiện trên dòng và trong hộp sửa. Bảng Excel không có
+   **Time xử lý (ngày)** → hộp sửa hồ sơ thêm ô **Số ngày xử lý** (không lưu, gõ số ngày thì tự đặt dự định hoàn tất =
+   ngày bắt đầu + n); **Kết quả** → thêm cột `result` cho hồ sơ, hiện trên dòng và trong hộp sửa. Bảng Excel không có
    giai đoạn và chạy tuần tự nên script nạp xếp vào 5 giai đoạn mẫu và nối mỗi dòng là tiên quyết của dòng kế.
    Script `backend/scripts/seed_bao_cao_abamectin.py <id ĐMH> [--ghi-de]` nạp 21 dòng vào một đơn trên dev
    (dev: PO00376).
@@ -1798,21 +1801,21 @@ Deploy: DEV 06/10/2026; prod chờ Ban điều hành.
 ## bao-CR-601 | YCMH: tên NSTM phụ trách trả sẵn theo dòng; nút Tạo ĐMH ở bản cũ xét theo quyền thay vì tên phòng
 - status: xong
 - date: 2026-10-06
-Người dùng báo trên phiếu PYC02102602 (prod, bản cũ): cột «NSTM phụ trách» hiện mã «NSU012» thay vì tên, và tài khoản chị
-Trần Diễm Phương (NSU012) không thấy nút «Tạo đơn mua hàng»; đổi phòng ban của chị sang Sản xuất - Thu mua thì nút hiện.
+Người dùng báo trên phiếu PYC02102602 (prod, bản cũ): cột **NSTM phụ trách** hiện mã **NSU012** thay vì tên, và tài khoản chị
+Trần Diễm Phương (NSU012) không thấy nút **Tạo đơn mua hàng**; đổi phòng ban của chị sang Sản xuất - Thu mua thì nút hiện.
 
 Tra ra hai nguyên nhân riêng:
 1. Tên NSTM: cả hai bản giao diện tra tên từ danh sách nhân sự tải về (`/api/employees`), mà danh sách này lọc theo phạm vi
-   dữ liệu của người xem. Sáng 06/10 tài khoản NSU012 được thêm «Pháp nhân được xem» (14 công ty) cho vai trò Nhân viên thu
+   dữ liệu của người xem. Sáng 06/10 tài khoản NSU012 được thêm **Pháp nhân được xem** (14 công ty) cho vai trò Nhân viên thu
    mua; trong khi 259 hồ sơ nhân sự trên prod đang để pháp nhân = 0 nên bị loại hết, danh sách gần trống, tra trượt và lòi
    mã. Sửa gốc: máy chủ trả sẵn `assignee_name` cho từng dòng YCMH (tra một lượt theo mã, mã chết ra rỗng); v1 và v2 ưu
    tiên tên đó, chỉ lùi về danh sách khi không có.
-2. Nút Tạo ĐMH: bản cũ chỉ hiện khi TÊN phòng ban người dùng chứa chữ «thu mua». Sau bao-CR-591, nhân sự nhà máy vẫn thuộc
+2. Nút Tạo ĐMH: bản cũ chỉ hiện khi TÊN phòng ban người dùng chứa chữ **thu mua**. Sau bao-CR-591, nhân sự nhà máy vẫn thuộc
    phòng Dego Organic nên mất nút dù giữ vai trò Nhân viên thu mua. Đã chốt: miễn CÓ QUYỀN tạo ĐMH là hiện nút,
    giống bản mới — bỏ hẳn điều kiện phụ (phiếu còn ở trạng thái làm được và còn dòng chưa đặt vẫn xét như cũ).
 
 Kiểm: máy chủ 109 bài (có bài mới), bản mới kiểm kiểu 0 lỗi + 8 bài bảng dòng YCMH, bản cũ giữ đúng 4 lỗi nền.
-Ghi nhận cho Ban điều hành: dòng «Pháp nhân được xem» thêm cho NSU012 sáng 06/10 vẫn khiến chị không xem được danh sách nhân sự
+Ghi nhận cho Ban điều hành: dòng **Pháp nhân được xem** thêm cho NSU012 sáng 06/10 vẫn khiến chị không xem được danh sách nhân sự
 (vì hồ sơ nhân sự chưa khai pháp nhân) — cần quyết: bỏ các dòng đó, hay khai pháp nhân cho hồ sơ nhân sự.
 Mã nguồn: `purchase_request/controller.py` (`_out`), `frontend/src/pages/PurchaseRequestDetail.tsx`,
 `frontend-v2/.../purchase-request-items-table.tsx`, `types/purchase-request-detail.ts`.
@@ -1823,18 +1826,18 @@ Deploy: DEV 06/10/2026; prod chờ Ban điều hành.
 ## bao-CR-597 | App cũ: Quản trị viên hệ thống cũng điều phối được; thông báo lỗi điều phối hiện đúng lý do
 - status: xong
 - date: 2026-10-06
-Người dùng báo trên app cũ (prod) mở phiếu đặt xe «Đã duyệt» thì không còn nút «Xác nhận điều phối», tưởng tài khoản quản trị
-bị mất tính năng; trên dev thì phải vào tài khoản admin mới thấy, và dev còn báo «Không thể tải dữ liệu điều phối».
+Người dùng báo trên app cũ (prod) mở phiếu đặt xe **Đã duyệt** thì không còn nút **Xác nhận điều phối**, tưởng tài khoản quản trị
+bị mất tính năng; trên dev thì phải vào tài khoản admin mới thấy, và dev còn báo **Không thể tải dữ liệu điều phối**.
 
-Tra ra: phiếu «Lấy nước thải» trên prod sạch (đã duyệt, chưa có khối điều phối). Khối «Điều phối chuyến đi» từ ngày đầu
-của app (tháng 3/2026) chỉ hiện cho vai trò Admin («Điều phối viên»); máy chủ cũng chỉ cho Admin bấm điều phối. Tài khoản
-quản trị (Dego IT / marketing.degoholding@gmail.com) là Administrator («Quản trị viên hệ thống») ở cả dev lẫn prod, nên
+Tra ra: phiếu **Lấy nước thải** trên prod sạch (đã duyệt, chưa có khối điều phối). Khối **Điều phối chuyến đi** từ ngày đầu
+của app (tháng 3/2026) chỉ hiện cho vai trò Admin (**Điều phối viên**); máy chủ cũng chỉ cho Admin bấm điều phối. Tài khoản
+quản trị (Dego IT / marketing.degoholding@gmail.com) là Administrator (**Quản trị viên hệ thống**) ở cả dev lẫn prod, nên
 không thấy; lúc thử trên dev người dùng vào bằng tài khoản vai trò Admin. Hai bên hành xử giống nhau, khác là tài khoản.
-Lỗi thứ hai: máy chủ từ chối tải danh sách xe / tài xế vì «Không thể điều phối do quá hạn thời gian đặt xe» (phiếu dev
+Lỗi thứ hai: máy chủ từ chối tải danh sách xe / tài xế vì **Không thể điều phối do quá hạn thời gian đặt xe** (phiếu dev
 tạo 19/9, giờ đi đã qua), giao diện nuốt lý do thành câu chung chung.
 
-Đã chốt 06/10: Quản trị viên hệ thống cũng điều phối được; hiện đúng lý do máy chủ; luật «quá giờ đi thì không cho
-điều phối» GIỮ. Đã sửa: giao diện cho Administrator thấy khối điều phối, menu «Điều phối», điều phối lại, và tải danh sách
+Đã chốt 06/10: Quản trị viên hệ thống cũng điều phối được; hiện đúng lý do máy chủ; luật **quá giờ đi thì không cho
+điều phối** GIỮ. Đã sửa: giao diện cho Administrator thấy khối điều phối, menu **Điều phối**, điều phối lại, và tải danh sách
 xe / tài xế; Worker mở các đường điều phối, điều phối lại, hủy điều phối, danh sách xe / tài xế cho Administrator (hằng
 `DISPATCH_ROLES`); thông báo lỗi lấy nguyên câu máy chủ, chỉ dùng câu chung khi máy chủ không nói gì.
 
@@ -1847,8 +1850,8 @@ PROD 06/10/2026 sau khi quản trị thử dev ổn — chỉ cherry-pick đúng
 `87f83d7`), KHÔNG gộp cả nhánh dev vì dev còn mã P3 chưa được duyệt lên prod.
 
 Phát hiện kèm (06/10): giao diện app cũ KHÔNG lên được vì Cloudflare Pages dựng thất bại từ 14/07 — mọi lượt dev lẫn
-main đều «Failure», dev.app vẫn phát bản tháng 7, prod vẫn bản tháng trước. Log: `npm install` chết với «Cannot read
-properties of null (reading 'edgesOut')» (lỗi npm 10). Gốc: `package-lock.json` bị `.gitignore` chặn nên kho trên Pages
+main đều **Failure**, dev.app vẫn phát bản tháng 7, prod vẫn bản tháng trước. Log: `npm install` chết với **Cannot read
+properties of null (reading 'edgesOut')** (lỗi npm 10). Gốc: `package-lock.json` bị `.gitignore` chặn nên kho trên Pages
 không có tệp khóa, npm phải tự giải gói từ đầu. Đã sửa: đưa `package-lock.json` vào git (dev `be5f072`, main `8886a36`),
 đổi lệnh dựng Pages thành `npm ci --no-audit --no-fund && npm run build` và đặt `SKIP_DEPENDENCY_INSTALL=true` (Production
 + Preview, qua wrangler). Sau đó cả hai lượt dựng xanh, app.degoholding.vn phát gói mới (`index-CWMlaaID.js`).
@@ -1874,11 +1877,11 @@ ERP được app cũ tạo thì ghi ngược khóa mà không đẻ thêm lượ
 
 Phía app cũ (`my-firebase-api`, nhánh `feat/nhan-dong-bo-tu-erp`, chưa đẩy vì đẩy nhánh dev/main là tự deploy): đường
 `POST /v1/sync/erp-events` đứng trước lớp App Check, kiểm chữ ký, ghi Firebase bằng tài khoản dịch vụ sẵn có (hoặc khóa
-DB riêng nếu khai). Phiếu có sẵn thì chỉ đụng phần ERP làm chủ, thêm đúng một mục lịch sử «Xử lý trên ERP» cho kết cục,
+DB riêng nếu khai). Phiếu có sẵn thì chỉ đụng phần ERP làm chủ, thêm đúng một mục lịch sử **Xử lý trên ERP** cho kết cục,
 mục điều phối và tài xế; phiếu ERP tạo thì dựng bản ghi mới dưới khóa cố định `erp_vb_<id>` / `erp_sr_<id>` nên gửi lại
 không đẻ phiếu thứ hai. Không gửi thông báo, không gửi ngược sang ERP, không đóng dấu `updatedAt`.
 
-Hai công tắc đều mặc định TẮT: «Gửi thay đổi từ ERP sang app đặt xe cũ» (`sync_datxe_outbound_enabled`, màn Cấu hình hệ
+Hai công tắc đều mặc định TẮT: **Gửi thay đổi từ ERP sang app đặt xe cũ** (`sync_datxe_outbound_enabled`, màn Cấu hình hệ
 thống) và `ERP_INBOUND_ENABLED` trong `wrangler.jsonc`. Phát hiện kèm: Worker phục vụ đường ở gốc tên miền nên đường
 đúng là `/v1/...`, không phải `/api/v1/...` như bản vẽ cũ (đường xem tệp `/api/v1/sync/files/...` bên ERP cũng sai tiền tố).
 
@@ -1891,29 +1894,29 @@ Mã nguồn: ERP `legacy_datxe/outbound.py`, `outbound_listener.py`, `outbound_t
 Chạy thử đầu-cuối trên DEV ngày 05/10 (Ban điều hành cho phép): đẩy app cũ lên nhánh dev (Worker dev tự deploy), bật tạm hai công
 tắc, chạy 6 tình huống rồi đọc thẳng Firebase dev để so. Phiếu xe đến từ app cũ: duyệt → điều phối → tài xế nhận → hoàn
 thành kèm km/chi phí — bên app cũ ra đúng trạng thái, khóa xe và khóa tài xế, chữ biển số và tên tài xế, km, chi phí, mỗi
-bước đúng một dòng lịch sử «Xử lý trên ERP», nội dung người tạo gõ giữ nguyên. Phiếu xe và phiếu dấu tạo trên ERP: app
+bước đúng một dòng lịch sử **Xử lý trên ERP**, nội dung người tạo gõ giữ nguyên. Phiếu xe và phiếu dấu tạo trên ERP: app
 cũ tạo đúng `erp_vb_936` / `erp_sr_869`, ERP ghi ngược khóa. Phiếu dấu đến từ app cũ: duyệt → đóng dấu sang đúng. Trả
 về sửa và từ chối sang đúng. 17 lượt gửi đều thành công, mỗi phiếu tối đa 4 lượt (đúng số bước), chiều nhận không kéo
-ngược phiếu vừa gửi (2 dòng «bỏ qua»), không có vòng lặp. Bắt được và đã vá một lỗi: «đã điều phối» sang «hoàn thành»
-từng ghi thêm một dòng «approved» thừa — nay chỉ ghi khi kết cục thật sự đổi. Thử xong đã TẮT lại cả hai công tắc (Worker
+ngược phiếu vừa gửi (2 dòng **bỏ qua**), không có vòng lặp. Bắt được và đã vá một lỗi: **đã điều phối** sang **hoàn thành**
+từng ghi thêm một dòng **approved** thừa — nay chỉ ghi khi kết cục thật sự đổi. Thử xong đã TẮT lại cả hai công tắc (Worker
 dev trả 503). Phiếu thử còn trên dev: ERP DX000802, DX000799, DX000798, DX000796, DD000865 (dữ liệu thử của app cũ dev),
 P3THU-X083005 (id 936), P3THU-D083005 (id 869).
 Commit: erp-v2 `4f84c041`; app cũ nhánh `dev` `e5c7cd7` + `fb8100a` (vá) + hai commit bật/tắt tạm, Worker dev `ae999a0`.
 Deploy: DEV 05/10/2026 cả hai bên, công tắc TẮT; prod chưa.
 ---
 
-## bao-CR-595 | Gộp tài khoản «Đào Trúc Nhi (Đặt xe)» vào chị Đào Trúc Nhi NSU206, gán chị làm Văn thư và Quản lý điều phối
+## bao-CR-595 | Gộp tài khoản "Đào Trúc Nhi (Đặt xe)" vào chị Đào Trúc Nhi NSU206, gán chị làm Văn thư và Quản lý điều phối
 - status: xong
 - date: 2026-10-05
 Đã chốt: chưa ai làm văn thư thì để quản trị viên tự phân sau, nhưng trước mắt giao cho chị Đào Trúc Nhi (NSU206)
-để chị duyệt dấu và đặt xe luôn; hồ sơ NSU262 «Đào Trúc Nhi (Đặt xe)» chính là chị, gộp về NSU206.
+để chị duyệt dấu và đặt xe luôn; hồ sơ NSU262 **Đào Trúc Nhi (Đặt xe)** chính là chị, gộp về NSU206.
 
 Khảo sát prod (chỉ đọc): NSU262 là hồ sơ do bộ đồng bộ tạo cho tài khoản thứ hai của chị bên app cũ (email
 trucnhi.work@gmail.com, vai trò Admin của app đặt xe); tài khoản chính NSU206 mang vai trò Legal. NSU262 không dính phiếu
-hay lịch sử duyệt nào, chỉ có hồ sơ, tài khoản 275 và vai trò «Nhân sự».
+hay lịch sử duyệt nào, chỉ có hồ sơ, tài khoản 275 và vai trò **Nhân sự**.
 
 Bộ đồng bộ nhận người qua `legacy_id` trên hồ sơ (mỗi hồ sơ một UID) và bảng gán tay `USER_MANUAL_MAP`, tra bảng gán
-tay trước. Nên đã thêm UID của tài khoản «Đặt xe» vào bảng gán tay trỏ về hồ sơ NSU206, để phiếu chị tạo bằng tài
+tay trước. Nên đã thêm UID của tài khoản **Đặt xe** vào bảng gán tay trỏ về hồ sơ NSU206, để phiếu chị tạo bằng tài
 khoản đó sau này về đúng NSU206 (không thì lần đồng bộ sau lại tra email về NSU262). Deploy prod api + celery.
 
 Dữ liệu prod (sao lưu trước `~/proc_backups/procurement_truoc_cr595_20261005_1419.sql.gz`): NSU262 gỡ `legacy_id`, chuyển
@@ -1933,21 +1936,21 @@ Commit: erp-v2 `3f5090f6`, main `76f9a0bf`. Deploy: PROD 05/10/2026.
 - date: 2026-10-05
 Yêu cầu xem trên dev ai là người thật để gán vai trò Đặt xe / Duyệt dấu trên prod. Trên dev, người thật giữ vai trò
 chỉ có anh Trần Chí Dững (NSU001, quản lý điều phối và giám đốc duyệt dấu) và chị Đào Trúc Nhi (NSU206, pháp lý), còn
-lại là tài khoản DEMO; phần dữ liệu app cũ trên dev lại là dữ liệu THỬ của chính app cũ (người thao tác «Pháp lý - Legal
-Role Demo», «Tài Xế - An»…), nên không dùng để chọn người được. Đọc (chỉ đọc) bản đồng bộ thật trên prod: 395 phiếu
+lại là tài khoản DEMO; phần dữ liệu app cũ trên dev lại là dữ liệu THỬ của chính app cũ (người thao tác **Pháp lý - Legal
+Role Demo**, **Tài Xế - An**…), nên không dùng để chọn người được. Đọc (chỉ đọc) bản đồng bộ thật trên prod: 395 phiếu
 đặt xe, 1.019 phiếu dấu.
 
 Kết quả và việc đã làm trên prod (sao lưu trước `~/proc_backups/procurement_truoc_gan_vai_tro_datxe_20261005_1358.sql.gz`):
 - Điều phối viên: anh Bùi Huỳnh Trường Thành (NSU056) điều phối 339/340 phiếu, chị Trần Thị Hương Tuyền (NSU055) 1
-  phiếu, cả hai thuộc phòng Điều phối → gán vai trò «Điều phối viên (Đặt xe)» cho cả hai.
+  phiếu, cả hai thuộc phòng Điều phối → gán vai trò **Điều phối viên (Đặt xe)** cho cả hai.
 - Tài xế: 11 tài xế nội bộ trong danh mục tài xế khớp đúng hồ sơ nhân sự (NSU057–NSU066, NSU254), ai cũng có tài
-  khoản → gán vai trò «Tài xế (Đặt xe)» và nối từng dòng tài xế với tài khoản (`user_id`), thiếu bước nối thì tài xế
-  không thấy chuyến được phân. «Tài xế thuê ngoài» và «Tự lái» không phải người nên không gán. Tác vụ đồng bộ app cũ
+  khoản → gán vai trò **Tài xế (Đặt xe)** và nối từng dòng tài xế với tài khoản (`user_id`), thiếu bước nối thì tài xế
+  không thấy chuyến được phân. **Tài xế thuê ngoài** và **Tự lái** không phải người nên không gán. Tác vụ đồng bộ app cũ
   chỉ tìm tài xế theo số điện thoại hoặc tên, không ghi đè cột nối.
 - Đã có sẵn từ trước: quản lý điều phối NSU001, pháp lý NSU206. Văn thư (Duyệt dấu) chưa có người thật nên để trống.
 - Chạy lại kiểm: 13/13 người đã có vai trò, 11/11 dòng tài xế đã nối.
 
-Ghi nhận chưa làm: vai trò «Nhân sự» trên prod chưa có quyền tạo phiếu đặt xe hay xin dấu (seed chuẩn có cấp xin dấu cho
+Ghi nhận chưa làm: vai trò **Nhân sự** trên prod chưa có quyền tạo phiếu đặt xe hay xin dấu (seed chuẩn có cấp xin dấu cho
 mọi vai trò nhưng prod không tự ghi đè), và chiều ERP → app cũ chưa có, nên mở cho toàn nhân viên tạo phiếu trên ERP lúc này
 sẽ sinh phiếu app cũ không thấy. Chờ Ban điều hành chọn thời điểm.
 Mã nguồn: script chạy một lần qua `user.service.assign_roles` (người thao tác 0), không đổi mã nguồn.
@@ -1973,7 +1976,7 @@ thật, bài nào là bài cũ. Rà từng bài: không bài nào chỉ ra lỗi
 - Bài canh độ dài ô chữ: ba khuôn ghi mới (phương án YCMH của bao-CR-583, quá trình công tác của duoc-CR-585) chưa khai
   bảng đích. Khai xong thì bài kiểm độ dài chạy qua cả ba và xanh, tức không có lỗi 500 tiềm ẩn.
 - Bài công cụ ghi của Trợ lý AI: `create_calendar_event` ghi vào lịch Google của CHÍNH người hỏi, không ghi dữ liệu ERP,
-  nên không có quyền ERP để chặn. Đã khai vào nhóm «ghi ra ngoài ERP» kèm lý do và thêm bài canh: chưa nối Google thì
+  nên không có quyền ERP để chặn. Đã khai vào nhóm **ghi ra ngoài ERP** kèm lý do và thêm bài canh: chưa nối Google thì
   trả lỗi và không gọi API Google nào.
 - Hai bài canh giao diện (`test_dong_bo_giao_dien_v2`, `test_ho_so_truong_rieng`) chỉ đỏ khi chạy bằng `docker run` mà
   thiếu gắn `frontend-v2/src` vào `/app/fe-src`; gắn đủ thì xanh, không sửa.
@@ -1987,7 +1990,7 @@ Mã nguồn: `test_agent_hub.py` (`_fake_bot_env`), `test_phong_ban_theo_id_cr08
 ## bao-CR-592 | Gom toàn bộ erp-v2 lên prod ngày 05/10, main bằng erp-v2 trở lại
 - status: xong
 - date: 2026-10-05
-Đã chốt «gom hết đẩy lên prod». Từ 03/10 main chỉ nhận cherry-pick phần của việc này và để lại các CR của anh Được và
+Đã chốt **gom hết đẩy lên prod**. Từ 03/10 main chỉ nhận cherry-pick phần của việc này và để lại các CR của anh Được và
 Giang; đợt này gom hết: bao-CR-580 và bao-CR-589 (Agent 2), duoc-CR-572, duoc-CR-554, duoc-CR-585 (có migration
 `wkhist01` thêm bảng quá trình công tác) và giang-CR-587. Gộp erp-v2 vào main chỉ vướng sáu tệp đã nhận qua cherry-pick
 rồi được sửa tiếp trên erp-v2; lấy bản erp-v2 cho cả sáu, nên cây mã của main nay trùng hệt erp-v2.
@@ -1997,7 +2000,7 @@ dùng chung bị đụng 1.890 bài xanh, kiểm kiểu bản cũ giữ đúng 4
 chính bản prod đang chạy (`a4a4a024`): 44 bài đã đỏ sẵn trên prod từ trước (agent hub, trợ lý AI, vài bài canh khác),
 đợt gộp làm đỏ thêm 3 bài. Một bài là báo sai do lúc chạy chưa gắn thư mục giao diện (gắn vào thì 4/4 xanh). Hai bài còn
 lại là bài canh luật bắt duoc-CR-585 quên khai: controller quá trình công tác lọc phạm vi qua `work_history_access`
-(gọi `get_scoped`) nên không phải lỗ thật, chỉ thiếu dòng miễn trừ có lý do; hàm ghi nhật ký sinh mã «create»/«update»
+(gọi `get_scoped`) nên không phải lỗ thật, chỉ thiếu dòng miễn trừ có lý do; hàm ghi nhật ký sinh mã **create**/**update**
 chưa khai trong sổ mã động. Khai đủ hai dòng, hai tệp kiểm 67 bài xanh.
 
 Deploy 05/10 khoảng 10:32: sao lưu `~/proc_backups/procurement_truoc_cr592_20261005_1030.sql.gz` (16 MB, kiểm giải nén
@@ -2012,17 +2015,17 @@ Commit: erp-v2 `44776e83` (khai bài canh); main `4070a939` + `7c1d5a60` (gộp 
 ## bao-CR-590 | Gửi duyệt khi đang sửa phải lưu phần đang sửa trước; YCMH bắt buộc Trưởng phòng phê duyệt
 - status: xong
 - date: 2026-10-05
-Người dùng báo: sửa phiếu rồi bấm «Gửi duyệt» mà chưa bấm Lưu thì phiếu gửi đi không mang phần vừa sửa, lỗi có trên nhiều phiếu;
-và trên YCMH ô «Trưởng phòng phê duyệt» phải luôn có khi tạo, gửi duyệt thì bắt buộc.
+Người dùng báo: sửa phiếu rồi bấm **Gửi duyệt** mà chưa bấm Lưu thì phiếu gửi đi không mang phần vừa sửa, lỗi có trên nhiều phiếu;
+và trên YCMH ô **Trưởng phòng phê duyệt** phải luôn có khi tạo, gửi duyệt thì bắt buộc.
 
 Rà đủ mười màn có nút Gửi duyệt sửa ngay trên trang (YCMH, YCBG, phiếu khảo sát, đơn mua hàng, yêu cầu thanh toán, mỗi loại hai
 bản). Sáu màn đã đúng (lưu rồi mới gửi). Bốn màn lỗi là đơn mua hàng và yêu cầu thanh toán ở cả bản mới lẫn bản cũ: nút chỉ gọi
 lệnh gửi duyệt nên máy chủ gửi bản cũ, rồi trang nạp lại bản cũ đè lên các ô đang sửa. Đã sửa cả bốn: phiếu còn sửa được thì
 lưu phần đang sửa trước, lưu hỏng thì không gửi, và chặn bấm đúp. Ở bản cũ, nút Lưu từng truyền thẳng sự kiện bấm vào hàm lưu;
-đã đổi để cờ «lưu xong thì gửi» không bị bật nhầm. Tiện vá phiếu khảo sát bản cũ: gửi duyệt thẳng nay tải lên luôn tệp đính kèm
+đã đổi để cờ **lưu xong thì gửi** không bị bật nhầm. Tiện vá phiếu khảo sát bản cũ: gửi duyệt thẳng nay tải lên luôn tệp đính kèm
 đang chờ của dòng mới, giống nút Lưu.
 
-YCMH: màn hình vốn đã hiện sẵn trưởng bộ phận mặc định ở ô «Trưởng phòng phê duyệt», nhưng giá trị lưu xuống vẫn trống tới khi
+YCMH: màn hình vốn đã hiện sẵn trưởng bộ phận mặc định ở ô **Trưởng phòng phê duyệt**, nhưng giá trị lưu xuống vẫn trống tới khi
 người dùng tự chọn. Nay người đang hiện được ghi thật xuống phiếu, ô có dấu sao bắt buộc, và gửi duyệt bị chặn khi không còn ai
 (không người duyệt và không trưởng bộ phận). Máy chủ thêm chốt cuối ở bước gửi duyệt: phiếu không có người duyệt thì không lên
 Chờ duyệt.
@@ -2044,10 +2047,10 @@ Commit: erp-v2 `53ee8f92`. Deploy: DEV + PROD 05/10/2026, main `a4a4a024` (cherr
 - date: 2026-10-05
 Cấp trên chốt nhà máy chưa tách riêng nữa: mọi yêu cầu của nhà máy quay về phòng Sản xuất - Thu mua (PBA017) xử lý như
 trước. Việc làm trên prod, chỉ đổi vai trò, phạm vi và dữ liệu, không đổi mã nguồn. Cơ chế: phòng tự mua được nhận ra
-nhờ có người giữ phạm vi «phòng tự mua» trên YCMH; gỡ hết vai trò cấp phòng thì phiếu mới của nhà máy tự về thu mua chung.
+nhờ có người giữ phạm vi **phòng tự mua** trên YCMH; gỡ hết vai trò cấp phòng thì phiếu mới của nhà máy tự về thu mua chung.
 
 Khảo sát prod ngày 05/10 (chỉ đọc): ba người giữ vai trò cấp phòng là Nguyễn Thanh Phương (Admin thu mua phòng, kèm
-«Nhân viên thu mua nhà máy»), Đoàn Minh Khôi và Nguyễn Thị Kiều Trang (Quản lý thu mua phòng); Lê Phú Ngoan chỉ còn vai
+**Nhân viên thu mua nhà máy**), Đoàn Minh Khôi và Nguyễn Thị Kiều Trang (Quản lý thu mua phòng); Lê Phú Ngoan chỉ còn vai
 trò nhân viên. Châu Phúc Hậu (Admin thu mua) và một tài khoản quản lý thu mua đang bị loại trừ phòng Dego Organic nên
 không thấy phiếu nhà máy. Phiếu đang mở của nhà máy: 3 YCMH (PYC01102601, PYC01102604, PYC02102602) và 2 đơn mua hàng
 chờ duyệt (PO00349 người duyệt là anh Khôi, PO00358 người duyệt đã là chị Lê Thị Ngọc Mi); không có YCBG, công nợ, YCTT
@@ -2068,10 +2071,10 @@ Việc gom này chỉ TẠM tới hết tháng 10/2026, đầu tháng 11 tách l
 dưới đây là TRẠNG THÁI CŨ trên prod, chụp lúc khảo sát sáng 05/10 trước mọi thay đổi, để khôi phục:
 
 Vai trò và phạm vi (user id · mã · tên: vai trò; dòng phạm vi theo vai trò):
-- 45 · NSU014 · Nguyễn Thanh Phương: employee, pur_dept_admin «Admin thu mua phòng», pur_staff_degooranic «Nhân viên
-  thu mua nhà máy»; phạm vi: vai trò 15 (pur_admin) chỉ thấy phòng 5, vai trò 81 (pur_staff_degooranic) chỉ thấy phòng 5.
-  Quản trị đã tự đổi còn mỗi «Nhân sự» trong ngày 05/10.
-- 36 · NSU005 · Đoàn Minh Khôi: dept_head, pur_dept_manager «Quản lý thu mua phòng».
+- 45 · NSU014 · Nguyễn Thanh Phương: employee, pur_dept_admin **Admin thu mua phòng**, pur_staff_degooranic **Nhân viên
+  thu mua nhà máy**; phạm vi: vai trò 15 (pur_admin) chỉ thấy phòng 5, vai trò 81 (pur_staff_degooranic) chỉ thấy phòng 5.
+  Quản trị đã tự đổi còn mỗi **Nhân sự** trong ngày 05/10.
+- 36 · NSU005 · Đoàn Minh Khôi: dept_head, pur_dept_manager **Quản lý thu mua phòng**.
 - 47 · NSU016 · Nguyễn Thị Kiều Trang: cost_factory, employee, pur_dept_manager; phạm vi: vai trò 10 chỉ thấy phòng 5
   (dòng mồ côi của vai trò đã gỡ từ 01/10).
 - 41 · NSU010 · Lê Phú Ngoan: employee (không đổi).
@@ -2099,7 +2102,7 @@ xử lý phiếu có phòng xử lý 0, không tự kéo phiếu đã ở phòng
 
 Đã áp trên PROD 05/10 lúc 09:40-09:45: đã giao trực tiếp cho Agent 1, Agent 1 sao lưu thêm
 `~/proc_backups/procurement_truoc_cr591_ap_20261005_0940.sql.gz` rồi chạy. Phiếu: 3 YCMH và 3 ĐMH (PO00349, PO00358,
-PO00367) sang phòng xử lý 20, PO00349 người duyệt sang chị Ngọc Mi, mỗi phiếu có dòng lịch sử «Chuyển phòng xử lý».
+PO00367) sang phòng xử lý 20, PO00349 người duyệt sang chị Ngọc Mi, mỗi phiếu có dòng lịch sử **Chuyển phòng xử lý**.
 Vai trò: chị Kiều Trang thành Admin thu mua (giữ Giá vốn nhà máy, Nhân sự), anh Khôi chỉ còn Trưởng bộ phận. Phạm vi:
 bỏ ba dòng loại trừ phòng Dego Organic của Hậu và chị Ngân. Không đụng công tắc điều phối. Đọc lại prod: không còn
 phòng tự mua nào, không còn phiếu hay dòng loại trừ nào trỏ phòng 5, điều phối vẫn bật. Người được đổi quyền phải
@@ -2107,12 +2110,12 @@ phòng tự mua nào, không còn phiếu hay dòng loại trừ nào trỏ phò
 
 ---
 
-## bao-CR-589 | «Bỏ lọc» ở khối tra kho khảo sát về phân loại của dòng, gộp nút «Về phân loại dòng»
+## bao-CR-589 | "Bỏ lọc" ở khối tra kho khảo sát về phân loại của dòng, gộp nút "Về phân loại dòng"
 - status: xong
 - date: 2026-10-05
-Đã chốt: bấm «Bỏ lọc» ở màn xử lý phương án thì về phân loại của dòng để vẫn thấy kết quả, không về câu gợi ý trống
+Đã chốt: bấm **Bỏ lọc** ở màn xử lý phương án thì về phân loại của dòng để vẫn thấy kết quả, không về câu gợi ý trống
 như bản bao-CR-586. Nay nút đưa ba ô về mặc định: tất cả nhà cung cấp, phân loại của dòng, bỏ từ khóa, và về trang 1;
-nút chỉ hiện khi bộ lọc lệch mặc định. Nút «Về phân loại dòng» trước đây làm một phần việc đó nên gộp vào luôn, thanh
+nút chỉ hiện khi bộ lọc lệch mặc định. Nút **Về phân loại dòng** trước đây làm một phần việc đó nên gộp vào luôn, thanh
 lọc còn một nút. Dòng không có phân loại thì mặc định là không điều kiện, màn vẫn hiện câu gợi ý như cũ vì hệ thống không
 liệt kê cả kho khảo sát. Chỉ đổi giao diện ERP v2.
 
@@ -2127,15 +2130,15 @@ Deploy: DEV 05/10 (erp); PROD 05/10 trong đợt bao-CR-592 của Agent 1, main 
 - status: xong
 - date: 2026-10-05
 Người dùng báo trên YCBG, YCMH tạo ra rồi xóa đi vẫn còn hiện. Nguyên nhân: xóa YCMH chỉ đánh dấu phiếu là đã xóa, còn dây
-nối giữa YCBG và YCMH cùng dấu trên dòng YCBG giữ nguyên, nên YCBG vẫn bày mã YCMH đó ở phương án, vẫn đứng ở «Đã tạo
-YCMH», cờ đã sinh YCMH trên dòng vẫn khóa chuyển phòng và trả về, và việc tự hoàn thành YCBG vẫn chờ cả phiếu đã xóa.
-Ngày 05/10 đã chốt sửa phần này; phần nới «Trả về» cho YCBG đã duyệt thì không làm, vì trả về ở YCMH là đủ.
+nối giữa YCBG và YCMH cùng dấu trên dòng YCBG giữ nguyên, nên YCBG vẫn bày mã YCMH đó ở phương án, vẫn đứng ở **Đã tạo
+YCMH**, cờ đã sinh YCMH trên dòng vẫn khóa chuyển phòng và trả về, và việc tự hoàn thành YCBG vẫn chờ cả phiếu đã xóa.
+Ngày 05/10 đã chốt sửa phần này; phần nới **Trả về** cho YCBG đã duyệt thì không làm, vì trả về ở YCMH là đủ.
 
 Nay xóa YCMH (xóa một phiếu hay xóa nhiều phiếu nháp) thì YCBG tự gỡ liên kết: bỏ dây nối của YCMH đó; dòng YCBG đang
 trỏ tới nó thì trỏ về YCMH gần nhất còn lại của dòng (trường hợp mua lại nhiều lần), không còn thì xóa dấu và gỡ cờ đã
-sinh YCMH, trừ dòng người yêu cầu đã chốt Hoàn thành bằng tay. YCBG «Đã tạo YCMH» không còn YCMH nào thì về «Đã khảo
-sát»; còn YCMH thì xét lại việc tự hoàn thành như luật cũ; YCBG đã «Hoàn thành» giữ nguyên. YCBG có dòng lịch sử
-«Gỡ liên kết YCMH đã xóa» ghi rõ mã phiếu. Phương án đã chọn lúc tạo YCMH vốn đã tự bỏ chọn, muốn mua lại thì chọn lại
+sinh YCMH, trừ dòng người yêu cầu đã chốt Hoàn thành bằng tay. YCBG **Đã tạo YCMH** không còn YCMH nào thì về **Đã khảo
+sát**; còn YCMH thì xét lại việc tự hoàn thành như luật cũ; YCBG đã **Hoàn thành** giữ nguyên. YCBG có dòng lịch sử
+**Gỡ liên kết YCMH đã xóa** ghi rõ mã phiếu. Phương án đã chọn lúc tạo YCMH vốn đã tự bỏ chọn, muốn mua lại thì chọn lại
 như thường. Dữ liệu cũ (YCMH xóa trước bản vá) dọn bằng script, chạy thử trước được; trên máy local có 2 phiếu như vậy.
 
 Cùng đợt: khai nhãn tiếng Việt cho ba mã hành động còn thiếu trong bộ mã nhật ký (đổi mã VTBB của bao-CR-568, sửa
@@ -2149,7 +2152,7 @@ Kiểm: 10 bài mới `test_xoa_ycmh_go_lien_ket_ycbg_cr580.py` xanh, 216 bài c
 động còn đỏ một chỗ không phải của việc này: `employee/work_history_controller.py::_audit` (duoc-CR-585).
 Commit: 32dcd96d trên erp-v2.
 Deploy: DEV 05/10 (api, celery-worker, celery-beat, erp; không có migration); đã chạy script dọn trên dev, gỡ 2 YCMH cũ
-PYC08072601 và PYC08072602, hai YCBG YCKS08072601 và YCKS08072603 về «Đã khảo sát». PROD 05/10 trong đợt bao-CR-592 của
+PYC08072601 và PYC08072602, hai YCBG YCKS08072601 và YCKS08072603 về **Đã khảo sát**. PROD 05/10 trong đợt bao-CR-592 của
 Agent 1, main 7c1d5a60 (sổ 30821ca5); kiểm prod: có hàm gỡ liên kết, bốn nhãn lịch sử ra tiếng Việt, 0 dữ liệu cũ cần dọn.
 
 ---
@@ -2164,7 +2167,7 @@ lỗi gì không.
 Đã làm trên prod (sao lưu DB trước): khai ba luồng giống dev. Đặt xe công tác là luồng mặc định: Trưởng bộ phận người nộp,
 phòng chưa có trưởng phòng thì chuyển người dự phòng là anh Trần Chí Dững (NSU001, đang giữ Quản lý điều phối), rồi Quản lý
 điều phối. Giao hàng là luồng riêng có điều kiện, cùng hai bước, sửa riêng được. Duyệt dấu giống app cũ: Trưởng bộ phận do
-người tạo chọn trên phiếu, rồi Pháp lý kiểm tra. Bật công tắc hai loại phiếu, gán vai trò «Pháp lý kiểm tra dấu» cho chị
+người tạo chọn trên phiếu, rồi Pháp lý kiểm tra. Bật công tắc hai loại phiếu, gán vai trò **Pháp lý kiểm tra dấu** cho chị
 Đào Trúc Nhi. Kiểm chỉ đọc: luồng chọn đúng theo loại phiếu, bước 2 đặt xe giao NSU001, bước Pháp lý giao chị Nhi.
 
 Chạy tay ba việc đồng bộ app cũ sau khi bật: quét toàn bộ 1.410 phiếu không lỗi, kéo phiếu đã sửa và chạy lại phiếu lỗi
@@ -2173,40 +2176,40 @@ Chạy tay ba việc đồng bộ app cũ sau khi bật: quét toàn bộ 1.410 
 
 Còn hở trên prod: 8/26 phòng chưa có trưởng phòng (2 nhân sự đang ở các phòng đó, đã có người dự phòng); chưa ai giữ vai
 trò Điều phối viên, Văn thư duyệt dấu (và chưa phân văn thư công ty nào), Tài xế; ô chọn trưởng bộ phận trên phiếu dấu
-hiện chỉ có 5 tài khoản (người có quyền duyệt dấu); chỉ admin và «Người đặt xe» (chưa ai giữ) tạo được phiếu đặt xe trên ERP.
+hiện chỉ có 5 tài khoản (người có quyền duyệt dấu); chỉ admin và **Người đặt xe** (chưa ai giữ) tạo được phiếu đặt xe trên ERP.
 
 Deploy: PROD 05/10/2026 (chỉ dữ liệu, không đổi mã). Sao lưu: procurement_truoc_bat_luong_cau_hinh_20261005_0855.
 
 ---
 
-## giang-CR-587 | Tra cứu thị trường đổi tên mục và có đường dẫn ba cấp; YCMH tạo mới bỏ ô tick «Nhờ phòng khác xử lý»
+## giang-CR-587 | Tra cứu thị trường đổi tên mục và có đường dẫn ba cấp; YCMH tạo mới bỏ ô tick "Nhờ phòng khác xử lý"
 - status: xong
 - date: 2026-10-03
 Anh Giang yêu cầu ba chỉnh sửa giao diện ERP v2, làm và kiểm trên máy của anh, chưa deploy.
 
-### giang-CR-587a | Mục «Pháp lý» của Tra cứu thị trường đổi tên thành «Tra cứu hóa chất»
+### giang-CR-587a | Mục "Pháp lý" của Tra cứu thị trường đổi tên thành "Tra cứu hóa chất"
 - status: xong
-Tên mục ở menu trái và tiêu đề trang đều đổi thành «Tra cứu hóa chất». Đường dẫn và khóa của mục giữ nguyên nên
+Tên mục ở menu trái và tiêu đề trang đều đổi thành **Tra cứu hóa chất**. Đường dẫn và khóa của mục giữ nguyên nên
 đường dẫn cũ, đường dẫn đã lưu và đường dẫn có `?tab=legal` vẫn mở đúng trang. Hai câu hướng dẫn trên màn hình
-từng bảo người dùng «xem mục Pháp lý» cũng đổi theo tên mới, để không chỉ tới một mục không còn tên đó.
+từng bảo người dùng **xem mục Pháp lý** cũng đổi theo tên mới, để không chỉ tới một mục không còn tên đó.
 
 ### giang-CR-587b | Tiêu đề trang theo đúng tên ở menu trái, đường dẫn trên thanh trên có cấp thứ ba
 - status: xong
 Ở màn Tra cứu thị trường, tiêu đề trang nay là đúng tên mục đang sáng ở menu trái: năm thẻ tra giá (Danh sách,
-Biểu đồ, Doanh nghiệp, So sánh, Thuế) đều mang tiêu đề «Giá thị trường», các mục khác mang tên của chính chúng
-(ví dụ «Lịch sử nạp» thay cho «Tra cứu thị trường — Lịch sử nạp»). Đường dẫn trên thanh trên có thêm cấp thứ ba
-cho mọi mục menu có mục con, ví dụ «Thu mua › Tra cứu thị trường › Giá thị trường» hay «Nhân sự › Nghỉ phép ›
-Lịch nghỉ». Cấp thứ ba luôn khớp mục đang sáng bên trái: đứng ở thẻ Biểu đồ vẫn ghi «Giá thị trường» chứ không
+Biểu đồ, Doanh nghiệp, So sánh, Thuế) đều mang tiêu đề **Giá thị trường**, các mục khác mang tên của chính chúng
+(ví dụ **Lịch sử nạp** thay cho **Tra cứu thị trường — Lịch sử nạp**). Đường dẫn trên thanh trên có thêm cấp thứ ba
+cho mọi mục menu có mục con, ví dụ **Thu mua › Tra cứu thị trường › Giá thị trường** hay **Nhân sự › Nghỉ phép ›
+Lịch nghỉ**. Cấp thứ ba luôn khớp mục đang sáng bên trái: đứng ở thẻ Biểu đồ vẫn ghi **Giá thị trường** chứ không
 ghi tên thẻ; cấp giữa bấm được để quay về, chỉ cấp cuối là trang hiện tại. Trên màn hình hẹp chỉ giữ cấp cuối.
 
 ### giang-CR-587c | YCMH (yêu cầu mua hàng) tạo mới: bỏ ô tick ở ô Phòng xử lý
 - status: xong
-Lúc lập YCMH, ô Phòng xử lý không còn ô tick «Nhờ phòng khác xử lý» (đặt ra ở bao-CR-488). Nay chỉ còn một ô
-chọn, hiện sẵn «Phòng thu mua mặc định», bấm vào mới xổ danh mục phòng ban. Mục mặc định nghĩa là chưa nhờ phòng
+Lúc lập YCMH, ô Phòng xử lý không còn ô tick **Nhờ phòng khác xử lý** (đặt ra ở bao-CR-488). Nay chỉ còn một ô
+chọn, hiện sẵn **Phòng thu mua mặc định**, bấm vào mới xổ danh mục phòng ban. Mục mặc định nghĩa là chưa nhờ phòng
 nào, nên giao diện vẫn không gửi phòng xử lý lên và hệ thống tự chọn như cũ: người của phòng có bộ máy mua riêng
 (nhà máy) thì ra chính phòng đó, còn lại ra phòng thu mua. Mục này cố ý không quy về phòng số 0, vì làm vậy là âm
-thầm đẩy mọi phiếu của nhà máy sang thu mua chung; muốn nhờ hẳn thu mua thì chọn phòng «Sản xuất -Thu mua» trong
-danh sách. Sửa luôn lỗi ô này hiện nguyên con số «0». Màn YCBG (yêu cầu báo giá) tạo mới vẫn còn ô tick cùng
+thầm đẩy mọi phiếu của nhà máy sang thu mua chung; muốn nhờ hẳn thu mua thì chọn phòng **Sản xuất -Thu mua** trong
+danh sách. Sửa luôn lỗi ô này hiện nguyên con số **0**. Màn YCBG (yêu cầu báo giá) tạo mới vẫn còn ô tick cùng
 kiểu, chưa đổi.
 
 Kiểm: kiểm kiểu 0 lỗi, eslint 0 lỗi, 989 bài kiểm xanh trong src/modules/procurement và src/app, đo ngày 03/10
@@ -2224,34 +2227,34 @@ Deploy: chưa — chưa lên dev lẫn prod.
 - date: 2026-10-03
 Triển khai lịch sử công tác ghi tay theo từng người, tệp quyết định đính kèm thẳng vào dòng, hỏi rồi mới áp vào hồ sơ. Bốn quyết định chốt 03/10: ngày hiệu lực gộp với dòng, dòng Thôi việc áp qua update_employee → khóa TK, chặn HR tự sửa quá trình của mình, tệp QĐ người khác cần employee_sensitive.read. Backend: 7 tệp service/schema/access dưới 200 dòng mỗi tệp, 1 migration, bộ mã WorkEventType, sửa 5 tệp nền. Frontend: 11 tệp component/hook/type/schema, 3 sửa, thêm 3 query keys. Test: 4 tệp, 142 bài xanh. Tài liệu: cập nhật bản 01-ho-so-nhan-su.md từ 1.4 → 1.5 (thêm §7.11 mới, cập nhật §4/§5.2/§7.10), cập nhật 10-de-xuat-ap-dung.md §0 (V1-8 = bản gọn xong, còn phần đầy đủ), thêm mục Quá trình công tác vào .claude/rules/hr-employee-profile.md, ghi nhật ký task. Chưa commit, chưa bấm tay qua trình duyệt.
 
-Sau khi người dùng xem bản đầu, tab đổi tên thành «Quá trình công tác & Quyết định» và chia hai khu dùng chung một nguồn dữ liệu: khu «Quyết định bổ nhiệm» ở trên chỉ gồm các dòng có số quyết định (số, ngày ký, loại, nội dung tóm tắt, ngày hiệu lực, tệp), khu «Quá trình công tác» ở dưới gồm mọi dòng. Mỗi khu có nút chuyển giữa dạng bảng và dạng dòng thời gian (mốc mới nhất ở trên, dòng đang hiệu lực có nhãn «Hiện tại»), lựa chọn giữ trên đường dẫn; trang cá nhân hiện y như vậy nhưng chỉ đọc. Bài rà soát mã tìm ra và đã sửa: nút áp vào hồ sơ trên từng dòng chạy thẳng không hỏi (kể cả dòng thôi việc), máy chủ lấy ngày hôm nay theo giờ quốc tế thay vì giờ Việt Nam, gửi ô bắt buộc rỗng làm lỗi máy chủ, xóa dòng là đường vòng qua quyền xem tệp nhạy cảm. Đã thử trên trình duyệt ở máy local cả hai dạng xem với dữ liệu mẫu; chưa thử bấm lưu và áp hồ sơ trên trình duyệt, chưa deploy.
+Sau khi người dùng xem bản đầu, tab đổi tên thành **Quá trình công tác & Quyết định** và chia hai khu dùng chung một nguồn dữ liệu: khu **Quyết định bổ nhiệm** ở trên chỉ gồm các dòng có số quyết định (số, ngày ký, loại, nội dung tóm tắt, ngày hiệu lực, tệp), khu **Quá trình công tác** ở dưới gồm mọi dòng. Mỗi khu có nút chuyển giữa dạng bảng và dạng dòng thời gian (mốc mới nhất ở trên, dòng đang hiệu lực có nhãn **Hiện tại**), lựa chọn giữ trên đường dẫn; trang cá nhân hiện y như vậy nhưng chỉ đọc. Bài rà soát mã tìm ra và đã sửa: nút áp vào hồ sơ trên từng dòng chạy thẳng không hỏi (kể cả dòng thôi việc), máy chủ lấy ngày hôm nay theo giờ quốc tế thay vì giờ Việt Nam, gửi ô bắt buộc rỗng làm lỗi máy chủ, xóa dòng là đường vòng qua quyền xem tệp nhạy cảm. Đã thử trên trình duyệt ở máy local cả hai dạng xem với dữ liệu mẫu; chưa thử bấm lưu và áp hồ sơ trên trình duyệt, chưa deploy.
 
-Người dùng xem lại thấy gom hai khu vào một tab khó nhìn, nên chốt TÁCH thành hai tab riêng đứng cạnh nhau: «Quá trình công tác» (mọi dòng, có thao tác, giữ đúng giá trị tab cũ để đường dẫn cũ không gãy) và «Quyết định bổ nhiệm» (chỉ dòng có số quyết định, chỉ xem — rỗng thì có nút nhảy sang tab «Quá trình công tác» nếu còn quyền sửa). Hai tab vẫn dùng chung một lần gọi dữ liệu nhờ bộ nhớ đệm của thư viện truy vấn, không gọi máy chủ hai lần. Mỗi tab tự giữ lựa chọn bảng/dòng thời gian trên đường dẫn như cũ. Ở trang cá nhân, hai khu nay là hai tab con bên trong thẻ, vẫn chỉ xem. Kiểm kiểu 0 lỗi, eslint 0 lỗi, 753 bài kiểm xanh trong các thư mục liên quan. Bản này đã commit trên erp-v2 ngày 03/10 (e5f3a510) và đã lên dev cùng lượt; đợt deploy prod chiều 03/10 bỏ qua vì Ban điều hành chưa duyệt.
+Người dùng xem lại thấy gom hai khu vào một tab khó nhìn, nên chốt TÁCH thành hai tab riêng đứng cạnh nhau: **Quá trình công tác** (mọi dòng, có thao tác, giữ đúng giá trị tab cũ để đường dẫn cũ không gãy) và **Quyết định bổ nhiệm** (chỉ dòng có số quyết định, chỉ xem — rỗng thì có nút nhảy sang tab **Quá trình công tác** nếu còn quyền sửa). Hai tab vẫn dùng chung một lần gọi dữ liệu nhờ bộ nhớ đệm của thư viện truy vấn, không gọi máy chủ hai lần. Mỗi tab tự giữ lựa chọn bảng/dòng thời gian trên đường dẫn như cũ. Ở trang cá nhân, hai khu nay là hai tab con bên trong thẻ, vẫn chỉ xem. Kiểm kiểu 0 lỗi, eslint 0 lỗi, 753 bài kiểm xanh trong các thư mục liên quan. Bản này đã commit trên erp-v2 ngày 03/10 (e5f3a510) và đã lên dev cùng lượt; đợt deploy prod chiều 03/10 bỏ qua vì Ban điều hành chưa duyệt.
 
-Chiều 03/10, theo góp ý tiếp: hai khu gom tiêu đề, nút chuyển bảng/dòng thời gian, Tải lại, Cột và nút thêm về chung một hàng; tab «Quyết định bổ nhiệm» có nút «+ Thêm quyết định» mở thẳng hộp thêm với loại Bổ nhiệm và Số QĐ bắt buộc, thay cho nút nhảy sang tab kia; mốc dòng thời gian của quyết định không có ngày ký thì hiện «Hiệu lực …»; hộp tệp và hộp xem trước chặn sự kiện gửi biểu mẫu lan ra biểu mẫu của trang hồ sơ.
+Chiều 03/10, theo góp ý tiếp: hai khu gom tiêu đề, nút chuyển bảng/dòng thời gian, Tải lại, Cột và nút thêm về chung một hàng; tab **Quyết định bổ nhiệm** có nút **+ Thêm quyết định** mở thẳng hộp thêm với loại Bổ nhiệm và Số QĐ bắt buộc, thay cho nút nhảy sang tab kia; mốc dòng thời gian của quyết định không có ngày ký thì hiện **Hiệu lực …**; hộp tệp và hộp xem trước chặn sự kiện gửi biểu mẫu lan ra biểu mẫu của trang hồ sơ.
 
-Sáng 05/10 bấm thử trọn luồng trên trình duyệt với nhân sự mẫu DEMOTP3 ở máy local: thêm dòng không đổi gì thì chỉ lưu, không hỏi; Điều chuyển sang phòng khác thì hỏi rồi áp vào hồ sơ, tự đóng dòng chính cũ, biểu mẫu của trang nạp lại phòng mới nên bấm «Lưu» trang sau đó không ghi đè ngược; «+ Thêm quyết định» bỏ trống Số QĐ thì báo lỗi ngay; chuỗi hộp Sửa → Tệp quyết định → Xem trước → Tải về / Mở tab mới không bắn lượt lưu hồ sơ nào; Thôi việc hỏi bằng hộp riêng, chuyển hồ sơ sang nghỉ việc và khóa tài khoản; trang cá nhân hiện hai tab chỉ xem. Lượt thử bắt được một lỗi và đã sửa: nhập bù một dòng chính cũ hơn (Bổ nhiệm 03/10 nhập sau Điều chuyển 04/10) thì cả hai dòng cùng «Đang hiệu lực», còn dòng có ngày bắt đầu ở tương lai cũng bị báo đang hiệu lực. Nay máy chủ coi dòng nhóm chính đã bị dòng nhóm chính mới hơn (đã tới ngày) thay thế là hết hiệu lực, đường trả về một dòng sau khi lưu cũng tính trên mọi dòng của nhân sự; cột «Đến ngày» của bảng đọc chung cờ đó với huy hiệu «Hiện tại» ở dòng thời gian, dòng chưa tới ngày hiện «Chưa hiệu lực». Kiểm: 11 bài kiểm máy chủ mới, cả cụm quá trình công tác 105 bài xanh; frontend kiểm kiểu 0 lỗi, eslint 0 lỗi, 793 bài kiểm nhân sự và trang cá nhân xanh. Dữ liệu thử đã dọn, DEMOTP3 về đúng trạng thái cũ. Đã commit trên erp-v2 (14172791), chưa deploy.
+Sáng 05/10 bấm thử trọn luồng trên trình duyệt với nhân sự mẫu DEMOTP3 ở máy local: thêm dòng không đổi gì thì chỉ lưu, không hỏi; Điều chuyển sang phòng khác thì hỏi rồi áp vào hồ sơ, tự đóng dòng chính cũ, biểu mẫu của trang nạp lại phòng mới nên bấm **Lưu** trang sau đó không ghi đè ngược; **+ Thêm quyết định** bỏ trống Số QĐ thì báo lỗi ngay; chuỗi hộp Sửa → Tệp quyết định → Xem trước → Tải về / Mở tab mới không bắn lượt lưu hồ sơ nào; Thôi việc hỏi bằng hộp riêng, chuyển hồ sơ sang nghỉ việc và khóa tài khoản; trang cá nhân hiện hai tab chỉ xem. Lượt thử bắt được một lỗi và đã sửa: nhập bù một dòng chính cũ hơn (Bổ nhiệm 03/10 nhập sau Điều chuyển 04/10) thì cả hai dòng cùng **Đang hiệu lực**, còn dòng có ngày bắt đầu ở tương lai cũng bị báo đang hiệu lực. Nay máy chủ coi dòng nhóm chính đã bị dòng nhóm chính mới hơn (đã tới ngày) thay thế là hết hiệu lực, đường trả về một dòng sau khi lưu cũng tính trên mọi dòng của nhân sự; cột **Đến ngày** của bảng đọc chung cờ đó với huy hiệu **Hiện tại** ở dòng thời gian, dòng chưa tới ngày hiện **Chưa hiệu lực**. Kiểm: 11 bài kiểm máy chủ mới, cả cụm quá trình công tác 105 bài xanh; frontend kiểm kiểu 0 lỗi, eslint 0 lỗi, 793 bài kiểm nhân sự và trang cá nhân xanh. Dữ liệu thử đã dọn, DEMOTP3 về đúng trạng thái cũ. Đã commit trên erp-v2 (14172791), chưa deploy.
 
 Mã nguồn:
 - Backend: `backend/app/modules/employee/work_history_{model,schema,service,apply_service,rules,serializer,access,controller}.py` · `backend/app/core/hr_work_history_codes.py` · 1 migration `wkhist01_...` · sửa `main.py`, `code_sets.py`, `all_models.py`, `file_registry.py`, `attachment_scope.py`
 - Frontend: `frontend-v2/src/modules/hr/{types/employee-work-history,api/employee-work-history-api,hooks/use-employee-work-history*,schemas/employee-work-history-schema,config/employee-work-history-columns,components/employee-{tab-work-history,work-history-form-dialog*,work-history-files-dialog,work-history-resign-confirm-dialog}}` · `frontend-v2/src/app/components/profile/profile-work-history-card.tsx` · sửa `app/pages/profile-page.tsx`, `shared/constants/query-keys.ts`
 - Test: `test/backend/test_qua_trinh_cong_tac_{quyen,ap_ho_so,kiem_du_lieu,thoi_viec,dang_hieu_luc}.py`
 - Sửa 05/10: `work_history_rules.py` (`compute_is_current`), `work_history_serializer.py`, `config/employee-work-history-columns.tsx`, `utils/employee-work-history-display.ts` (`workHistoryOpenEndLabel`)
-- Commit: erp-v2 `e5f3a510` (bản 03/10), `14172791` (thêm quyết định, gom thanh điều khiển, sửa «Đang hiệu lực» 05/10)
+- Commit: erp-v2 `e5f3a510` (bản 03/10), `14172791` (thêm quyết định, gom thanh điều khiển, sửa **Đang hiệu lực** 05/10)
 - Tài liệu: `doc/erp/hrm/01-ho-so-nhan-su.md`, `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md`, `.claude/rules/hr-employee-profile.md`, `doc/tai-lieu-ky-thuat/change-log.md`
 
 ---
 
-## bao-CR-586 | Nút «Bỏ lọc» ở khối tra kho khảo sát của màn xử lý phương án
+## bao-CR-586 | Nút "Bỏ lọc" ở khối tra kho khảo sát của màn xử lý phương án
 - status: xong
 - date: 2026-10-03
-Yêu cầu thêm nút bỏ lọc ở màn xử lý phương án. Khối «Thêm phương án từ kết quả khảo sát» có ba ô lọc là nhà
-cung cấp, phân loại và từ khóa, nhưng muốn xóa phải gỡ từng ô một; chỉ có nút «Về phân loại dòng» đưa riêng ô phân
+Yêu cầu thêm nút bỏ lọc ở màn xử lý phương án. Khối **Thêm phương án từ kết quả khảo sát** có ba ô lọc là nhà
+cung cấp, phân loại và từ khóa, nhưng muốn xóa phải gỡ từng ô một; chỉ có nút **Về phân loại dòng** đưa riêng ô phân
 loại về như dòng yêu cầu.
 
-Nay thanh lọc có thêm nút «Bỏ lọc» (biểu tượng phễu gạch chéo), hiện khi có ít nhất một ô đang lọc. Bấm một lần là bỏ
+Nay thanh lọc có thêm nút **Bỏ lọc** (biểu tượng phễu gạch chéo), hiện khi có ít nhất một ô đang lọc. Bấm một lần là bỏ
 cả ba ô và quay về trang 1. Bỏ hết điều kiện thì hệ thống không liệt kê cả kho khảo sát (giữ nguyên luật cũ), nên màn
-quay về câu gợi ý chọn nhà cung cấp, phân loại hoặc gõ từ khóa; nút «Về phân loại dòng» vẫn còn để lấy lại gợi ý theo
+quay về câu gợi ý chọn nhà cung cấp, phân loại hoặc gõ từ khóa; nút **Về phân loại dòng** vẫn còn để lấy lại gợi ý theo
 dòng. Chỉ đổi giao diện ERP v2, không đụng backend.
 
 Mã nguồn: AvailableSurveyLinesPicker trong frontend-v2/src/modules/procurement/components/purchase-request-process-card.tsx, bài kiểm thêm ở purchase-request-process-card.test.tsx.
@@ -2261,7 +2264,7 @@ Deploy: DEV + PROD 03/10, main 603ed2b4 (Agent 1 cherry-pick từ 4fd955a3).
 
 ---
 
-## bao-CR-583 | Phương án 0 và phương án nhập tay sửa được ở màn xử lý lẫn màn chọn, phương án 0 có «Khôi phục ban đầu»
+## bao-CR-583 | Phương án 0 và phương án nhập tay sửa được ở màn xử lý lẫn màn chọn, phương án 0 có "Khôi phục ban đầu"
 - status: xong
 - date: 2026-10-03
 Người dùng hỏi phương án 0 chưa có mã VTBB thì thu mua có cập nhật mã và thông tin trên đó được không, chốt cho sửa được
@@ -2269,12 +2272,12 @@ nhưng phải có nút trả về tình trạng ban đầu, rồi nói thêm: ph
 trang xử lý phương án. Trước đây màn xử lý chỉ cho sửa ghi chú và gỡ phương án (kể cả nút gỡ trên phương án 0 dù backend
 không cho gỡ); màn chọn chỉ sửa được nhà cung cấp và đơn giá; mã VTBB gắn ở dòng thì thẻ phương án 0 vẫn hiện mã trống.
 
-Nay phương án 0 và phương án nhập tay có chung một hộp «Sửa phương án», mở từ nút bút ở bảng phương án của màn xử lý
+Nay phương án 0 và phương án nhập tay có chung một hộp **Sửa phương án**, mở từ nút bút ở bảng phương án của màn xử lý
 (NSTM phụ trách dòng, khi dòng chưa chốt) và ở thẻ phương án của màn chọn (thu mua, kể cả sau khi dòng đã chốt); cần
 quyền xem nhà cung cấp. Sửa được mã VTBB (chọn từ danh mục, chọn xong tự điền tên hàng và ĐVT), tên hàng, nhà cung cấp,
 đơn giá, ĐVT báo giá, VAT, MOQ, khoảng số lượng, xuất xứ, thời gian và địa điểm giao, phí vận chuyển, có mẫu và ghi chú;
 chỉ ô đã đổi mới được gửi. Phương án nhập tay không được bỏ trống nhà cung cấp. Phương án đang được chọn mà đổi mã thì
-mã của dòng đổi theo, đúng luật bao-CR-568. Riêng phương án 0 có nút «Khôi phục ban đầu», hỏi xác nhận rồi đưa về đúng
+mã của dòng đổi theo, đúng luật bao-CR-568. Riêng phương án 0 có nút **Khôi phục ban đầu**, hỏi xác nhận rồi đưa về đúng
 như dòng yêu cầu lúc sinh: bỏ nhà cung cấp, xóa mọi ô đã sửa, giữ việc chọn và mã đã gắn cho dòng. Phương án lấy từ khảo
 sát vẫn chỉ sửa giá. Màn xử lý không còn bày nút gỡ trên phương án 0, và hai bảng con ở đó tắt cột ID tự thêm.
 
@@ -2293,16 +2296,16 @@ Deploy: DEV + PROD 03/10, main 603ed2b4 (Agent 1 cherry-pick từ 4fd955a3, khô
 - status: xong
 - date: 2026-10-03
 Đã chốt bước Pháp lý của luồng duyệt dấu khai theo vai trò, và bổ sung phần mở phiếu. Tra dữ liệu thật: bên app cũ
-vai trò «Legal» chỉ có một người giữ (chị Đào Trúc Nhi, NSU206, phòng Hành chính), bước «Pháp lý kiểm tra» chạy 971
-lần đều do chị duyệt; ERP chưa có vai trò nào tương ứng, chỉ có phòng ban «Pháp Lý» chép từ app cũ.
+vai trò **Legal** chỉ có một người giữ (chị Đào Trúc Nhi, NSU206, phòng Hành chính), bước **Pháp lý kiểm tra** chạy 971
+lần đều do chị duyệt; ERP chưa có vai trò nào tương ứng, chỉ có phòng ban **Pháp Lý** chép từ app cũ.
 
 Lỗ cần vá: luồng cấu hình giao việc cho người ngoài phạm vi dữ liệu của phiếu (Pháp lý của mọi phòng, Giám đốc duyệt dấu
 vốn chỉ thấy phiếu đã duyệt, trưởng bộ phận phòng khác), nhưng ba cửa cùng chặn họ: trang chi tiết (cổng đòi quyền đọc ở
-mức route chặn 403 trước cả đường lùi), tệp chứng từ, và ô Trao đổi (chính lỗi «không tải được nội dung trao đổi» thấy
+mức route chặn 403 trước cả đường lùi), tệp chứng từ, và ô Trao đổi (chính lỗi **không tải được nội dung trao đổi** thấy
 hôm trước).
 
-Đã làm: một luật chung «đang giữ việc duyệt treo trên đúng phiếu thì đọc được» áp cho Đặt xe và Duyệt dấu, dùng ở cả ba
-cửa, đóng lại ngay khi duyệt xong và không nới quyền ghi. Seed thêm vai trò chuẩn «Pháp lý kiểm tra dấu», nên prod sẽ tự
+Đã làm: một luật chung **đang giữ việc duyệt treo trên đúng phiếu thì đọc được** áp cho Đặt xe và Duyệt dấu, dùng ở cả ba
+cửa, đóng lại ngay khi duyệt xong và không nới quyền ghi. Seed thêm vai trò chuẩn **Pháp lý kiểm tra dấu**, nên prod sẽ tự
 có vai trò này ở lần deploy sau. Trên dev: luồng Duyệt dấu đổi thành Trưởng bộ phận (người tạo chọn trên phiếu) rồi Pháp
 lý kiểm tra, giống app cũ, bỏ bước Giám đốc quản lý thương hiệu vì app cũ chưa từng chạy; gán vai trò Pháp lý cho NSU206 và
 DEMOTP3; tạo phiếu thử DD868 đang chờ DEMOTP2 duyệt chặng 1.
@@ -2324,7 +2327,7 @@ Cần màn Nhật ký hệ thống tách phương thức gọi (GET, POST, PUT, 
 được theo một hay nhiều phương thức, ví dụ chỉ xem POST và PUT. Trước đây phương thức chỉ nằm chung dòng chữ nhỏ
 với đường dẫn và đường API không có tham số lọc theo nó.
 
-Đã làm: bảng có cột «Phương thức» riêng, nhãn có màu (GET xám, lượt ghi có màu, DELETE đỏ); thanh lọc có ô chọn
+Đã làm: bảng có cột **Phương thức** riêng, nhãn có màu (GET xám, lượt ghi có màu, DELETE đỏ); thanh lọc có ô chọn
 nhiều phương thức, chọn POST và PUT là ra mọi lượt thuộc một trong hai. Biểu đồ đi theo đúng bộ lọc của bảng.
 Gõ giá trị rác vào đường API thì bị từ chối (mã 422) chứ không lặng lẽ trả về toàn bộ.
 
@@ -2355,34 +2358,34 @@ Deploy: dữ liệu prod 03/10 11:03.
 ## bao-CR-579 | Đặt xe và Duyệt dấu khai nhiều luồng duyệt theo điều kiện, xem được phiếu đang chạy luồng nào
 - status: xong
 - date: 2026-10-03
-Đã chốt: ai có quyền thì tự cấu hình luồng duyệt, tách luồng Đặt xe với luồng Duyệt dấu và thêm «loại» cho hai
+Đã chốt: ai có quyền thì tự cấu hình luồng duyệt, tách luồng Đặt xe với luồng Duyệt dấu và thêm **loại** cho hai
 luồng này; người dùng tùy điều kiện mà khai nhiều luồng khác nhau (app cũ còn có luồng giao hàng riêng), và cần biết
 phiếu nào đang chạy luồng nào. Bộ máy duyệt đã chạy được điều kiện từ trước, nhưng màn cấu hình chỉ cho khai điều
-kiện với văn bản: với Đặt xe và Duyệt dấu nó báo «chưa có bộ chọn riêng», nên người cấu hình không tự khai nổi.
+kiện với văn bản: với Đặt xe và Duyệt dấu nó báo **chưa có bộ chọn riêng**, nên người cấu hình không tự khai nổi.
 
-Đã làm: ô «Áp cho phiếu nào» của luồng và ô điều kiện của từng bước nay dùng bộ dựng điều kiện chung cho hai loại phiếu.
+Đã làm: ô **Áp cho phiếu nào** của luồng và ô điều kiện của từng bước nay dùng bộ dựng điều kiện chung cho hai loại phiếu.
 Đặt xe chọn được loại phiếu (đặt xe công tác hay giao hàng), pháp nhân, phòng ban, người tạo; Duyệt dấu chọn được loại con
 dấu, pháp nhân, phòng ban, người tạo. Luồng có điều kiện và ưu tiên cao được xét trước, luồng không điều kiện là mặc định.
-Cách chọn «Lấy từ một ô trên phiếu» đổi từ ô gõ tay tên cột sang ô chọn, trong đó có «người duyệt do người tạo chọn trên
-phiếu» như app cũ — riêng Duyệt dấu, vì form đặt xe không có ô chọn người duyệt nên Đặt xe không bày lựa chọn
+Cách chọn **Lấy từ một ô trên phiếu** đổi từ ô gõ tay tên cột sang ô chọn, trong đó có **người duyệt do người tạo chọn trên
+phiếu** như app cũ — riêng Duyệt dấu, vì form đặt xe không có ô chọn người duyệt nên Đặt xe không bày lựa chọn
 đó (khai theo ô đó là phiếu kẹt ngay chặng 1). Máy chủ đưa thêm id nhân sự của người tạo và người được chọn duyệt sang bộ máy (cột gốc trên phiếu là
-id tài khoản, so thẳng thì không bao giờ khớp). Màn danh sách luồng có cột «Đang chạy» đếm số phiếu chưa xong theo từng
-luồng; phiếu đặt xe hiện một dòng «Theo luồng …» trong thẻ Tiến trình xử lý (phiếu dấu đã có sẵn). Tiện sửa cột «Áp khi»
-in «[]» thay vì «Mọi phiếu».
+id tài khoản, so thẳng thì không bao giờ khớp). Màn danh sách luồng có cột **Đang chạy** đếm số phiếu chưa xong theo từng
+luồng; phiếu đặt xe hiện một dòng **Theo luồng …** trong thẻ Tiến trình xử lý (phiếu dấu đã có sẵn). Tiện sửa cột **Áp khi**
+in **[]** thay vì **Mọi phiếu**.
 
 Kiểm: máy chủ 7 bài kiểm mới xanh, cùng các tệp kiểm luồng duyệt / đặt xe / duyệt dấu 558 bài xanh trên bản sạch (một bài
 đỏ có sẵn của YCTT đã được bao-CR-564 sửa, chưa commit). Bản mới kiểm kiểu 0 lỗi, eslint 0 lỗi, vitest phê duyệt + đặt
-xe 199 bài xanh. Bấm thử trên local bằng DEMONV: ô điều kiện đọc đúng «Loại phiếu là Giao hàng», ô chọn người duyệt có mục
-«người tạo chọn», cột Đang chạy ra 4 phiếu và 2 phiếu, phiếu giao hàng ghi đúng tên luồng ba lớp.
+xe 199 bài xanh. Bấm thử trên local bằng DEMONV: ô điều kiện đọc đúng **Loại phiếu là Giao hàng**, ô chọn người duyệt có mục
+**người tạo chọn**, cột Đang chạy ra 4 phiếu và 2 phiếu, phiếu giao hàng ghi đúng tên luồng ba lớp.
 
-Khai luồng trên dev theo chỉ đạo (03/10): luồng #4 DATXE đổi tên thành «Đặt xe công tác» (mặc định: Trưởng bộ
+Khai luồng trên dev theo chỉ đạo (03/10): luồng #4 DATXE đổi tên thành **Đặt xe công tác** (mặc định: Trưởng bộ
 phận rồi Quản lý điều phối), thêm #5 DX-GIAO-HANG (điều kiện loại phiếu là Giao hàng, ưu tiên 10, cùng hai bước)
 và #6 DD-MAC-DINH cho Duyệt dấu (Trưởng bộ phận người tạo chọn trên phiếu rồi Giám đốc duyệt dấu); bật công tắc
 hai loại phiếu; gán vai trò thử cho DEMONV, DEMOTP, DEMOQL, DEMOAD; phân VTDEGOHOLDING làm văn thư công ty 1.
 Kiểm chỉ đọc trên dev: đặt xe công tác ra luồng #4, giao hàng ra #5, duyệt dấu ra #6, bước 1 giao DEMOTP, bước 2
 giao NSU001 hoặc DEMOQL. Không đăng nhập thử trên dev — đó là việc làm tay của quản trị. Đã tạo 5 phiếu thử trên dev đứng tên DEMONV: DX933
 (công tác, luồng #4), DX934 (giao hàng, luồng #5), DX935 nháp, DD866 (duyệt dấu, luồng #6, trưởng bộ phận chọn DEMOTP2)
-và DD867 nháp có tệp. Đã chốt không thêm ô «Người duyệt» vào form đặt xe.
+và DD867 nháp có tệp. Đã chốt không thêm ô **Người duyệt** vào form đặt xe.
 
 Mã nguồn: `approval/serializer.py` (`count_running_instances`), `vehicle_booking/approval_bridge.py` và
 `seal_request/approval_bridge.py` (`entity_context`); frontend-v2 `approval/config/condition-fields.ts`,
@@ -2402,8 +2405,8 @@ dưới máy trước và tạo vài phiếu để tự kiểm.
 
 Đã làm dưới máy: gán vai trò cho các tài khoản DEMO, khai ba luồng (Đặt xe hai lớp; Đặt xe giao hàng ba lớp có Giám
 đốc, luồng có điều kiện; Duyệt dấu hai lớp), phân văn thư DEGO, bật công tắc, tạo 7 phiếu mẫu, thêm một vai trò thử
-«Cấu hình luồng duyệt» cho DEMONV đóng vai hành chính. Chạy thử trọn vòng qua API thì lòi ra một lỗi có sẵn của bộ máy
-duyệt: bước khai người duyệt «theo vai trò» nổ lỗi 500 vì hàm tra người duyệt nhập nhầm tệp. Lỗi có từ ngày dựng bộ
+**Cấu hình luồng duyệt** cho DEMONV đóng vai hành chính. Chạy thử trọn vòng qua API thì lòi ra một lỗi có sẵn của bộ máy
+duyệt: bước khai người duyệt **theo vai trò** nổ lỗi 500 vì hàm tra người duyệt nhập nhầm tệp. Lỗi có từ ngày dựng bộ
 máy và chưa bài kiểm nào chạm tới. Đã vá, sau đó cả hai loại phiếu chạy trọn vòng, chuông đến đúng người ở từng bước.
 
 Lượt hai, cần thấy ba chuyện chạy thật: luồng hai lớp rồi mới điều phối, ca lớn thêm lớp Giám đốc, và sửa
@@ -2412,7 +2415,7 @@ theo luồng mới còn phiếu gửi trước giữ luồng cũ. Đã chốt: d
 cấu hình luồng riêng (xem bao-CR-579).
 
 Kiểm: 2 bài kiểm mới đỏ trên mã cũ, xanh trên mã vá. Bộ kịch bản kiểm cho quản trị ở doc/erp/thu-mua/kiem-thu/06. Ghi nhận
-thêm, chưa tra: ô «Trao đổi» báo không tải được khi trưởng bộ phận mở phiếu đặt xe ngoài phạm vi của mình.
+thêm, chưa tra: ô **Trao đổi** báo không tải được khi trưởng bộ phận mở phiếu đặt xe ngoài phạm vi của mình.
 
 Mã nguồn: `backend/app/modules/approval/approver_resolver.py` (`_by_role`), script
 `backend/scripts/local_test/setup_flow_test_booking_seal.py`, bài kiểm `test/backend/test_nguoi_duyet_theo_vai_tro.py`.
@@ -2424,8 +2427,8 @@ Commit: erp-v2 `e0757bb9`. Deploy: DEV + PROD 03/10/2026, main `603ed2b4`. Dữ 
 - status: xong
 - date: 2026-10-03
 Cần các màn danh sách trên bản erp có sẵn cột ID ở bìa trái cho dễ nhìn. Thay vì sửa từng màn trong
-khoảng 91 màn, thêm ngay trong bảng danh sách dùng chung: bảng tự thêm cột «ID» ở đầu, đứng sau cột tick chọn
-nếu màn có cột đó, người dùng vẫn ẩn được trong menu «Cột». Màn đã tự có cột ID thì không thêm cột thứ hai; bảng gộp
+khoảng 91 màn, thêm ngay trong bảng danh sách dùng chung: bảng tự thêm cột **ID** ở đầu, đứng sau cột tick chọn
+nếu màn có cột đó, người dùng vẫn ẩn được trong menu **Cột**. Màn đã tự có cột ID thì không thêm cột thứ hai; bảng gộp
 mà hàng không mang ID thì không thêm cho khỏi một cột toàn gạch. Bảng vốn nhớ thứ tự cột của từng người và cột mới bị
 nối xuống cuối, nên sửa luôn chỗ đó để người đã lưu bố cục cũ vẫn thấy ID ở bìa trái. Bảng dòng trên trang chi
 tiết chứng từ không đổi.
@@ -2436,13 +2439,13 @@ Commit: erp-v2 `0667524f`. Deploy: DEV + PROD 03/10/2026, main `603ed2b4`.
 
 ---
 
-## bao-CR-576 | Khối «Áp 1 NCC cho nhiều dòng»: giá đứng sát tên hàng, dòng đổi giá nổi lên
+## bao-CR-576 | Khối "Áp 1 NCC cho nhiều dòng": giá đứng sát tên hàng, dòng đổi giá nổi lên
 - status: xong
 - date: 2026-10-03
-Phát hiện ở khối «Áp 1 NCC cho nhiều dòng» trên chi tiết YCMH, giá hiện tại và ô giá mới nằm tận mép phải
+Phát hiện ở khối **Áp 1 NCC cho nhiều dòng** trên chi tiết YCMH, giá hiện tại và ô giá mới nằm tận mép phải
 màn hình, cách tên hàng gần cả màn nên người ta dễ bỏ qua. Đưa ba phương án và Ban điều hành chọn phương án C. Khối
 không còn trải hết màn, cột giá đứng ngay sau tên hàng. Dòng nào gõ giá mới khác giá cũ thì được tô nền cảnh báo,
-giá cũ bị gạch ngang, và dưới tên hiện «Đổi giá: giá cũ → giá mới». Nhân tiện bịt một bẫy: giá mới chỉ được áp cho
+giá cũ bị gạch ngang, và dưới tên hiện **Đổi giá: giá cũ → giá mới**. Nhân tiện bịt một bẫy: giá mới chỉ được áp cho
 dòng đã tick, trước đây gõ giá mà quên tick thì giá bị bỏ qua không báo gì; nay gõ giá là tự tick dòng đó.
 
 Mã nguồn: `frontend-v2/src/modules/procurement/components/purchase-request-choose-card.tsx`,
@@ -2451,33 +2454,33 @@ Commit: erp-v2 `0667524f`. Deploy: DEV + PROD 03/10/2026, main `603ed2b4`.
 
 ---
 
-## bao-CR-575 | Hộp «Sửa giá / NCC» của YCMH không còn tràn ra ngoài khung
+## bao-CR-575 | Hộp "Sửa giá / NCC" của YCMH không còn tràn ra ngoài khung
 - status: xong
 - date: 2026-10-03
-Người dùng gửi ảnh màn chọn phương án YCMH: hộp «Sửa giá / NCC» gặp nhà cung cấp tên dài thì ô chọn, ô gõ tên, ô
+Người dùng gửi ảnh màn chọn phương án YCMH: hộp **Sửa giá / NCC** gặp nhà cung cấp tên dài thì ô chọn, ô gõ tên, ô
 đơn giá và nút Lưu vượt ra ngoài khung trắng của hộp, còn ô thông tin sản phẩm phía trên lòi một mảng xám ở mép
 phải. Nguyên nhân là khung hộp thoại xếp theo lưới, cột tự giãn theo dòng chữ dài nhất nên tên nhà cung cấp dài
-kéo cả khối rộng ra. Cho khối nội dung co theo khung để ô chọn tự cắt bớt chữ. Ở khối «Áp 1 NCC cho nhiều
-dòng», ô gõ tên nhà cung cấp được nới rộng cho đọc đủ chữ gợi ý.
+kéo cả khối rộng ra. Cho khối nội dung co theo khung để ô chọn tự cắt bớt chữ. Ở khối **Áp 1 NCC cho nhiều
+dòng**, ô gõ tên nhà cung cấp được nới rộng cho đọc đủ chữ gợi ý.
 
 Mã nguồn: `frontend-v2/src/modules/procurement/components/purchase-request-choose-card.tsx`.
 Commit: erp-v2 `0667524f`. Deploy: DEV + PROD 03/10/2026, main `603ed2b4`.
 
 ---
 
-## bao-CR-574 | In YCMH: chọn bản tách theo nhà cung cấp ngay trong ô «Mẫu in»
+## bao-CR-574 | In YCMH: chọn bản tách theo nhà cung cấp ngay trong ô "Mẫu in"
 - status: xong
 - date: 2026-10-03
 Cần bản in YCMH chia loại trong cùng ô chọn mẫu in như hiện tại, người có quyền xem nhà cung cấp
-thì có thêm dạng in tách theo nhà cung cấp. Trước đây nút «In phiếu» mở bản nào là do quyền người bấm, còn
+thì có thêm dạng in tách theo nhà cung cấp. Trước đây nút **In phiếu** mở bản nào là do quyền người bấm, còn
 chuyển bản phải bấm một nút lẻ trên thanh công cụ của trang in, khó thấy và hai người cùng bấm một nút lại
 ra hai tờ khác nhau. Đã chốt theo đề xuất, chỉ làm trên bản erp.
 
-Nay nút «In phiếu» luôn mở phiếu chung cho mọi người. Ô «Mẫu in» của cả hai trang in có thêm nhóm «Tách theo
-nhà cung cấp» với đủ ba mẫu, chỉ người có quyền xem nhà cung cấp mới thấy; phiếu chưa có dòng chốt nhà cung
+Nay nút **In phiếu** luôn mở phiếu chung cho mọi người. Ô **Mẫu in** của cả hai trang in có thêm nhóm **Tách theo
+nhà cung cấp** với đủ ba mẫu, chỉ người có quyền xem nhà cung cấp mới thấy; phiếu chưa có dòng chốt nhà cung
 cấp thì nhóm này hiện mờ kèm lý do, in từ đơn mua hàng thì không có nhóm này. Chọn mẫu ở nhóm kia là chuyển
-sang trang in tương ứng và giữ nguyên kiểu mẫu đang chọn. Hai nút lẻ «Xem bản tách theo nhà cung cấp» và
-«Xem tờ phiếu gốc» được bỏ. Bản cũ thumua không đổi.
+sang trang in tương ứng và giữ nguyên kiểu mẫu đang chọn. Hai nút lẻ **Xem bản tách theo nhà cung cấp** và
+**Xem tờ phiếu gốc** được bỏ. Bản cũ thumua không đổi.
 
 Mã nguồn: `frontend-v2/src/modules/procurement/utils/purchase-request-print-template.ts`, `pages/purchase-request-print-page.tsx`
 (`PurchaseRequestPrintOptions`), `pages/purchase-request-supplier-print-page.tsx`, `pages/purchase-request-detail-page.tsx`,
@@ -2495,8 +2498,8 @@ thấy, trong đó có phiếu DD000715 đang chờ duyệt.
 
 Nguyên nhân: mỗi phiếu này khai cùng một tệp đính kèm hai lần. Phiên làm việc với cơ sở dữ liệu tắt chế độ tự đẩy
 xuống trước khi truy vấn, nên lần gặp tệp thứ hai không thấy liên kết vừa thêm và ghi thêm một dòng. Lượt quét đầu
-hôm 02/10 vì vậy sinh 19 cặp liên kết trùng, và từ đó mỗi lần cập nhật phiếu đều nổ lỗi «nhiều dòng khi chỉ được
-một».
+hôm 02/10 vì vậy sinh 19 cặp liên kết trùng, và từ đó mỗi lần cập nhật phiếu đều nổ lỗi **nhiều dòng khi chỉ được
+một**.
 
 Đã vá: bộ đồng bộ bỏ tệp khai trùng trong cùng phiếu, tra tệp không còn nổ khi gặp dòng trùng, và gặp liên kết trùng
 do lỗi cũ để lại thì giữ dòng nhỏ nhất, xóa phần thừa. Nhờ vậy 19 phiếu tự lành ở lượt quét kế tiếp, không phải sửa
@@ -2505,7 +2508,7 @@ vá vì sau đó có lượt xử lý êm.
 
 Kiểm: 3 bài kiểm mới, đỏ trên mã cũ và xanh trên mã vá; cùng cụm đồng bộ đặt xe 86 bài xanh, chạy lại trên nền main
 cũng 86 bài xanh. Trên prod: sao lưu procurement_truoc_cr573_20261003_0857, chạy tay lượt quét toàn bộ 1.404 phiếu,
-0 lỗi, 0 cặp liên kết trùng còn lại, cả 19 phiếu ra «không có gì thay đổi» tức đã khớp app cũ.
+0 lỗi, 0 cặp liên kết trùng còn lại, cả 19 phiếu ra **không có gì thay đổi** tức đã khớp app cũ.
 Lên prod bằng cherry-pick riêng commit này; hai CR của anh Được (duoc-CR-572, duoc-CR-554) đã lên dev cùng lượt nhưng
 chưa lên prod vì Ban điều hành chưa duyệt.
 
@@ -2518,7 +2521,7 @@ Commit: erp-v2 `ba3d5709`, main `f86b0afd`. Deploy: DEV + PROD 03/10/2026.
 ## duoc-CR-572 | Xuất Excel danh mục thuốc BVTV, tệp xuất nạp lại được ngay
 - status: xong
 - date: 2026-10-02
-Bên tra cứu thị trường cần mẫu tệp để chuẩn bị dữ liệu thuốc BVTV rồi nạp vào hệ thống, nên yêu cầu thêm nút xuất ở màn Thuốc BVTV của cả bản cũ lẫn bản mới, và tệp xuất ra phải nạp lại được ngay. Nút «Xuất Excel» có hai lựa chọn: xuất trang đang xem theo đúng bộ lọc và thứ tự, hoặc xuất toàn bộ danh mục. Tệp có đúng hai sheet và đúng tên cột như bản cào, thêm một sheet ẩn đánh dấu loại tệp. Nạp lại tệp toàn bộ thì thay cả danh mục như trước; nạp lại tệp xuất theo trang thì chỉ cập nhật đúng các thuốc có trong tệp, phần còn lại giữ nguyên. Thuốc thêm tay vẫn xuất ra để xem nhưng không được nạp lại, nên luôn giữ nguyên trên hệ thống.
+Bên tra cứu thị trường cần mẫu tệp để chuẩn bị dữ liệu thuốc BVTV rồi nạp vào hệ thống, nên yêu cầu thêm nút xuất ở màn Thuốc BVTV của cả bản cũ lẫn bản mới, và tệp xuất ra phải nạp lại được ngay. Nút **Xuất Excel** có hai lựa chọn: xuất trang đang xem theo đúng bộ lọc và thứ tự, hoặc xuất toàn bộ danh mục. Tệp có đúng hai sheet và đúng tên cột như bản cào, thêm một sheet ẩn đánh dấu loại tệp. Nạp lại tệp toàn bộ thì thay cả danh mục như trước; nạp lại tệp xuất theo trang thì chỉ cập nhật đúng các thuốc có trong tệp, phần còn lại giữ nguyên. Thuốc thêm tay vẫn xuất ra để xem nhưng không được nạp lại, nên luôn giữ nguyên trên hệ thống.
 
 Để chịu được danh mục rất lớn, máy chủ đọc dữ liệu theo từng lô và ghi Excel thẳng ra tệp tạm trên đĩa nên bộ nhớ không tăng theo số dòng; xuất đủ 6.919 thuốc mất khoảng hai giây. Tệp vượt trần của bộ nạp thì báo lỗi rõ thay vì xuất ra một tệp không nạp lại được, và một người không bấm xuất toàn bộ chồng lên nhau được. Bài rà soát tìm ra năm lỗi làm mất dữ liệu khi xuất rồi nạp lại, đều đã sửa và có bài kiểm: tệp theo trang xóa gần hết danh mục, phạm vi của thuốc thêm tay dính sang thuốc khác khi trùng số, ô bắt đầu bằng dấu bằng bị Excel hiểu là công thức, ký tự điều khiển làm hỏng cả lượt xuất, và ô quản lý tính kháng gõ tay bị cắt mất một phần.
 
@@ -2531,14 +2534,14 @@ Mã nguồn: `backend/app/modules/customs/pesticide_export_service.py`, `pestici
 ## bao-CR-570 | YCMH: người yêu cầu chọn phương án ngay, không đợi NSTM chốt; làm gọn hộp sửa giá và khối áp NCC
 - status: xong
 - date: 2026-10-02
-Quản trị thử trên dev và thấy phải đợi nhân sự thu mua bấm «Chốt hoàn thành xử lý» thì người yêu cầu mới thấy chỗ chọn
+Quản trị thử trên dev và thấy phải đợi nhân sự thu mua bấm **Chốt hoàn thành xử lý** thì người yêu cầu mới thấy chỗ chọn
 phương án, khác với yêu cầu báo giá. Đã chốt bỏ bước chờ đó, vì người tạo đơn mua hàng chính là nhân sự thu mua;
-đồng thời chê hộp «Sửa giá / NCC» và khối «Áp 1 NCC cho nhiều dòng» trông rời rạc.
+đồng thời chê hộp **Sửa giá / NCC** và khối **Áp 1 NCC cho nhiều dòng** trông rời rạc.
 
-Đã làm: máy chủ không còn chặn chọn phương án khi dòng chưa chốt, và «Chốt xong lựa chọn» cũng không đòi mọi dòng
+Đã làm: máy chủ không còn chặn chọn phương án khi dòng chưa chốt, và **Chốt xong lựa chọn** cũng không đòi mọi dòng
 chốt trước. Thẻ chọn phương án hiện mọi dòng ngay khi phiếu đã điều phối; dòng nhân sự thu mua chưa chốt mang nhãn
-«NSTM đang xử lý». Hộp sửa giá nay một cột gọn, có khung tóm tắt phương án, ô chọn nhà cung cấp và ô gõ tên ngoài
-danh mục loại trừ nhau, ô đơn giá căn phải có chữ «đ». Khối áp nhà cung cấp hàng loạt thành thanh công cụ một hàng
+**NSTM đang xử lý**. Hộp sửa giá nay một cột gọn, có khung tóm tắt phương án, ô chọn nhà cung cấp và ô gõ tên ngoài
+danh mục loại trừ nhau, ô đơn giá căn phải có chữ **đ**. Khối áp nhà cung cấp hàng loạt thành thanh công cụ một hàng
 và bảng nhỏ có ô chọn tất cả, cột giá hiện tại và giá mới; nút áp ghi rõ số dòng và khóa khi chưa đủ điều kiện.
 Chỉ làm ở bản mới vì bản cũ không có cụm phương án yêu cầu mua hàng.
 
@@ -2554,7 +2557,7 @@ frontend-v2 purchase-request-choose-card.tsx và bài kiểm đi kèm.
 ## bao-CR-571 | Phiếu khảo sát: nháp tạo mới tách theo tài khoản, NSPT luôn là người tạo
 - status: xong
 - date: 2026-10-02
-Người dùng gửi ảnh: tài khoản Quyên mở «Tạo phiếu khảo sát» nhưng ô «NSPT phụ trách (người tạo)» lại ghi tên chị
+Người dùng gửi ảnh: tài khoản Quyên mở **Tạo phiếu khảo sát** nhưng ô **NSPT phụ trách (người tạo)** lại ghi tên chị
 Phương. Nguyên nhân là nháp tự lưu của màn tạo phiếu (để F5 không mất dữ liệu) dùng một khóa chung cho mọi
 tài khoản trên cùng trình duyệt và không xóa khi đăng xuất, nên người sau nạp nguyên nháp ngày 28/09 của người
 trước, kể cả tên NSPT; ô này bị khóa nên không sửa được, và backend lưu đúng cái tên giao diện gửi lên. Kiểm
@@ -2572,15 +2575,15 @@ Commit: erp-v2 `b52f5f4b`. Deploy: DEV + PROD 02/10 16:50 (main `832ca274`).
 
 ---
 
-## bao-CR-569 | Tra cứu thị trường bỏ chữ «nhập khẩu» khỏi chữ hiển thị
+## bao-CR-569 | Tra cứu thị trường bỏ chữ "nhập khẩu" khỏi chữ hiển thị
 - status: xong
 - date: 2026-10-02
-Yêu cầu trên màn Tra cứu thị trường bỏ tên «Giá nhập khẩu», chỉ để «Giá thị trường», và tìm chữ «nhập khẩu»
-bỏ đi. Đổi toàn bộ chữ hiển thị ở cả hai giao diện: nhóm thẻ «Giá nhập khẩu» thành «Giá thị trường», câu
-mô tả trang cũng nói giá thị trường; thẻ «Nhà nhập khẩu» và nhãn «Doanh nghiệp nhập khẩu» thành «Doanh
-nghiệp»; «Nước nhập khẩu» thành «Nước nhận hàng» vì nó đứng ngay cạnh «Nước xuất xứ», đổi luôn tiêu đề cột khi
-xuất Excel; «Thuế suất nhập khẩu» và «Thuế nhập khẩu» trong hộp chi tiết dòng thành «Thuế suất XNK» và «Thuế
-XNK» cho khớp cột danh sách vốn đã viết vậy; «Biểu thuế nhập khẩu theo mã HS» thành «Biểu thuế theo mã HS».
+Yêu cầu trên màn Tra cứu thị trường bỏ tên **Giá nhập khẩu**, chỉ để **Giá thị trường**, và tìm chữ **nhập khẩu**
+bỏ đi. Đổi toàn bộ chữ hiển thị ở cả hai giao diện: nhóm thẻ **Giá nhập khẩu** thành **Giá thị trường**, câu
+mô tả trang cũng nói giá thị trường; thẻ **Nhà nhập khẩu** và nhãn **Doanh nghiệp nhập khẩu** thành **Doanh
+nghiệp**; **Nước nhập khẩu** thành **Nước nhận hàng** vì nó đứng ngay cạnh **Nước xuất xứ**, đổi luôn tiêu đề cột khi
+xuất Excel; **Thuế suất nhập khẩu** và **Thuế nhập khẩu** trong hộp chi tiết dòng thành **Thuế suất XNK** và **Thuế
+XNK** cho khớp cột danh sách vốn đã viết vậy; **Biểu thuế nhập khẩu theo mã HS** thành **Biểu thuế theo mã HS**.
 Bài hướng dẫn sử dụng của màn trong tệp seed cũng đổi theo. Giữ nguyên mã, khóa, đường dẫn, chú thích trong
 mã và các chữ viết tắt XNK, NK; phân hệ Đơn hàng nhập khẩu không đụng tới.
 
@@ -2601,7 +2604,7 @@ vẫn chốt hoàn thành xử lý được; nhưng muốn tạo đơn mua hàng
 Đã làm: bước chốt xử lý vốn không bắt mã, giữ nguyên. Nhân sự thu mua phụ trách dòng hoặc quản lý nay gắn / đổi mã
 VTBB cho dòng sau điều phối qua cùng đường cập nhật tiến độ dòng; mã phải có trong danh mục và còn dùng, không trùng
 dòng khác trên phiếu, và dòng đã lên đơn mua hàng thì không đổi được nữa (đơn nối về dòng bằng chính mã này). Nút gom
-đơn từ phương án bỏ qua dòng chưa có mã và nói rõ còn mấy dòng phải gắn mã. Bản mới: ô «Mã vật tư» trong hộp Chi tiết
+đơn từ phương án bỏ qua dòng chưa có mã và nói rõ còn mấy dòng phải gắn mã. Bản mới: ô **Mã vật tư** trong hộp Chi tiết
 dòng thành ô chọn sản phẩm khi nhân sự thu mua sửa tiến độ; bản cũ: ô Mã hàng trong bảng thành ô chọn, chọn là lưu
 ngay. Tiện thể thêm phân hệ phân quyền báo cáo vào bài canh độ dài ô chữ (bài này đỏ từ khi anh Được thêm phân hệ).
 
@@ -2619,8 +2622,8 @@ Commit: erp-v2 `baec53f2`. Deploy: DEV + PROD 02/10, main `832ca274`.
 - status: xong
 - date: 2026-10-02
 Quản trị mở phiếu PYC02102601 trên dev, bấm Sửa nhưng mọi ô kể cả Mã hàng đều không đổi được, tải lại trang mới sửa được;
-phiếu PYC02102602 cùng dữ liệu thì sửa bình thường. Nguyên nhân: màn chi tiết chỉ dựng bản nháp để sửa khi thấy «dữ liệu
-server vừa đổi»; phiếu đã nằm sẵn trong bộ nhớ đệm (mở phiếu này, sang phiếu khác rồi quay lại) thì dữ liệu có ngay từ
+phiếu PYC02102602 cùng dữ liệu thì sửa bình thường. Nguyên nhân: màn chi tiết chỉ dựng bản nháp để sửa khi thấy **dữ liệu
+server vừa đổi**; phiếu đã nằm sẵn trong bộ nhớ đệm (mở phiếu này, sang phiếu khác rồi quay lại) thì dữ liệu có ngay từ
 lượt vẽ đầu nên không ai dựng bản nháp. Bấm Sửa chỉ bật cờ sửa, còn mọi thao tác gõ vào rơi vào bản nháp rỗng. Đã vá:
 có dữ liệu mà chưa có bản nháp thì dựng ngay. Không viết được bài kiểm riêng vì trang này chưa có khung kiểm.
 
@@ -2634,10 +2637,10 @@ Commit: erp-v2 `b27f5328`. Deploy: DEV + PROD 02/10, main `832ca274`.
 ## bao-CR-565 | Chốt hoàn thành khảo sát không còn bắt gắn Mã SP hệ thống
 - status: xong
 - date: 2026-10-02
-Người dùng xem phiếu YCBG01102603 ở màn Xử lý khảo sát và bảo bỏ đoạn kiểm «phải có mã sản phẩm» khi bấm Chốt hoàn thành
+Người dùng xem phiếu YCBG01102603 ở màn Xử lý khảo sát và bảo bỏ đoạn kiểm **phải có mã sản phẩm** khi bấm Chốt hoàn thành
 khảo sát, để trống vẫn chốt được. Rà: chỉ giao diện chặn (cả bản cũ lẫn bản mới), máy chủ chưa bao giờ bắt mã ở
 bước này; lúc tạo yêu cầu mua hàng vẫn chặn trùng mã như cũ. Đã bỏ chốt chặn ở hai giao diện, bỏ luôn viền đỏ đánh dấu
-ô thiếu mã ở bản cũ, sửa câu gợi ý ở bản mới thành «để trống vẫn chốt được».
+ô thiếu mã ở bản cũ, sửa câu gợi ý ở bản mới thành **để trống vẫn chốt được**.
 
 Kiểm: bản cũ giữ đúng 4 lỗi nền; bản mới kiểm kiểu 0 lỗi, eslint 0 lỗi, vitest thu mua 779 bài xanh. Đã lên dev và prod 02/10.
 
@@ -2652,14 +2655,14 @@ Commit: erp-v2 `38cd001a`. Deploy: DEV + PROD 02/10, main `832ca274`.
 Phát hiện prod còn bản cũ của Tra cứu thị trường và bảo gom hết code lại, đẩy một lần, đừng để rơi rớt. Đo thì
 erp-v2 còn hơn prod khoảng 300 tệp, gần như toàn bộ là việc của anh Được đã chạy ở dev nhưng chưa lên prod: phân hệ
 Báo cáo theo kỳ kiểu Haravan cùng tám báo cáo mới (nhân sự, nghỉ phép, quỹ phép, đặt xe, đóng dấu, văn bản, phê duyệt,
-công việc), nút «Rút về để sửa» của Văn bản, Nhóm dự án, Tra cứu thị trường dạng tab và trang chi tiết thuốc BVTV mới.
+công việc), nút **Rút về để sửa** của Văn bản, Nhóm dự án, Tra cứu thị trường dạng tab và trang chi tiết thuốc BVTV mới.
 Ban điều hành chọn gom hết.
 
 Làm theo kịch bản phát hành: nạp bản sao lưu prod vào một cơ sở dữ liệu tạm ở máy local, chạy thử hai migration (chỉ
 tạo chỉ mục) và seed prod, đều sạch. Chạy trọn bộ bài kiểm máy chủ (6.636 bài) và giao diện mới (4.930 bài): bài đỏ còn
 lại đều là bài đỏ sẵn trên prod hiện tại (bot Telegram, môi trường dev), trừ hai bài mới đỏ đã được xử lý. Bài luật
 phạm vi báo sáu báo cáo mới không lọc phạm vi ở tầng điều khiển; soi từng tệp thì cả sáu đều lọc ở tầng xử lý, nên
-chỉ khai thêm lý do miễn trừ, không có lỗ dữ liệu. Bài «bấm đúp Xuất Excel» đỏ ngẫu nhiên do giả lập tải xong tức thì,
+chỉ khai thêm lý do miễn trừ, không có lỗ dữ liệu. Bài **bấm đúp Xuất Excel** đỏ ngẫu nhiên do giả lập tải xong tức thì,
 đã sửa bài kiểm. Trần kết nối MySQL prod là 151, lúc cao nhất mới dùng 45, nên vùng kết nối mới không đáng lo.
 
 Lên prod lúc 11:10 ngày 02/10 (main 68cc5cea): build lại api, web, erp, celery; hai migration chỉ mục chạy
@@ -2672,17 +2675,17 @@ frontend-v2/src/modules/report/pages/report-analytics-page.test.tsx.
 
 ---
 
-## bao-CR-558 | Bản cũ: hộp «Thuốc BVTV chứa hoạt chất cấm» tự hiện ở màn Pháp lý và không tắt được
+## bao-CR-558 | Bản cũ: hộp "Thuốc BVTV chứa hoạt chất cấm" tự hiện ở màn Pháp lý và không tắt được
 - status: xong
 - date: 2026-10-02
-Người dùng báo: vào Tra cứu thị trường, bấm mục Pháp lý ở bản cũ thì hiện ngay hộp «Thuốc BVTV chứa hoạt chất cấm»
+Người dùng báo: vào Tra cứu thị trường, bấm mục Pháp lý ở bản cũ thì hiện ngay hộp **Thuốc BVTV chứa hoạt chất cấm**
 trống trơn, bấm Đóng hay dấu X cũng không tắt. Nguyên nhân: màn Pháp lý luôn dựng sẵn hộp này và chỉ đổi hoạt
 chất đang xem, trong khi khung hộp thoại của bản cũ không có công tắc mở/đóng, nên hộp hiện thường trực. Lỗi có
 từ lúc đưa cụm thuốc BVTV sang bản cũ (duoc-CR-490) và prod cũng đang dính. Đã sửa: chưa chọn hoạt chất nào
 thì hộp không hiện. Bản mới không dính lỗi này.
 
 Kiểm: kiểm kiểu bản cũ giữ đúng 4 lỗi nền. Bấm thử trên máy local: vào Pháp lý không còn hộp tự hiện;
-tìm Carbosulfan, bấm «13 thuốc» thì hộp mở đúng, và đóng được bằng nút Đóng, dấu X lẫn phím Esc; các mục Giá
+tìm Carbosulfan, bấm **13 thuốc** thì hộp mở đúng, và đóng được bằng nút Đóng, dấu X lẫn phím Esc; các mục Giá
 nhập khẩu, Thuốc BVTV, Lịch sử nạp, Cấu hình mở bình thường.
 
 Lên dev và prod ngày 02/10 (erp-v2 5de7fdc9, main faaeaac2), chỉ build lại giao diện bản cũ; sao lưu prod trước:
@@ -2710,11 +2713,11 @@ Mã nguồn: script tạm `clear_hh_non_label.py` (không commit) · sao lưu `~
 
 ---
 
-## bao-CR-556 | Bỏ cột «kết quả xét duyệt» (approve_status) của phiếu khảo sát
+## bao-CR-556 | Bỏ cột "kết quả xét duyệt" (approve_status) của phiếu khảo sát
 - status: xong
 - date: 2026-10-02
-Người dùng hỏi cột `approve_status` trên phiếu khảo sát là gì và có bỏ được không. Cột này là «kết quả xét
-duyệt» (chưa xét / duyệt / không duyệt) đứng cạnh trạng thái phiếu, ý ban đầu để nhớ quyết định duyệt cũ
+Người dùng hỏi cột `approve_status` trên phiếu khảo sát là gì và có bỏ được không. Cột này là **kết quả xét
+duyệt** (chưa xét / duyệt / không duyệt) đứng cạnh trạng thái phiếu, ý ban đầu để nhớ quyết định duyệt cũ
 khi phiếu bị hủy. Rà mã nguồn: chỉ máy chủ ghi lúc duyệt / trả về, không màn hình nào đọc, và sau
 bao-CR-554 nó chỉ còn là bản sao của trạng thái phiếu. Ban điều hành quyết bỏ.
 
@@ -2734,13 +2737,13 @@ c556d4a8e2b1; frontend-v2 types/survey-detail.ts, pages/survey-detail-page.tsx, 
 
 ---
 
-## bao-CR-564 | Bài kiểm luồng duyệt YCTT: đổi bài «chưa chặn ghi chi phiếu nháp» thành bài canh việc chặn
+## bao-CR-564 | Bài kiểm luồng duyệt YCTT: đổi bài "chưa chặn ghi chi phiếu nháp" thành bài canh việc chặn
 - status: xong
 - date: 2026-10-02
 Bộ lưới an toàn luồng duyệt thu mua có một bài cố ý ghi lại lỗ hổng cũ: gọi thẳng API là ghi nhận
 đã chi được cho Yêu cầu thanh toán còn nháp, tiền ra khỏi sổ mà chưa ai duyệt. Lỗ này đã được
-bao-CR-511 vá (chỉ phiếu «Đã duyệt» mới sang «Đã chi» được), nên bài cũ đỏ — đúng như chú thích của
-nó dặn: «vá thì bài này đỏ». Hành vi mới là đúng, bài kiểm đã cũ.
+bao-CR-511 vá (chỉ phiếu **Đã duyệt** mới sang **Đã chi** được), nên bài cũ đỏ — đúng như chú thích của
+nó dặn: **vá thì bài này đỏ**. Hành vi mới là đúng, bài kiểm đã cũ.
 
 Đã đổi bài thành canh điều ngược lại: phiếu nháp bấm ghi chi thì bị từ chối 400 và vẫn giữ trạng
 thái Nháp; chú thích ghi rõ trước đây bài này ghi lại lỗ hổng nào và CR nào đã vá. Không đổi mã chạy
@@ -2775,17 +2778,17 @@ Deploy: dữ liệu prod 02/10 15:13.
 ## bao-CR-563 | Trả về phiếu khảo sát gỡ phương án đã đẩy sang Yêu cầu báo giá và mở lại các dòng
 - status: xong
 - date: 2026-10-02
-Khi kiểm hai luật của bao-CR-554, thấy «Trả về» phiếu khảo sát không dọn những gì phiếu đã đẩy đi.
+Khi kiểm hai luật của bao-CR-554, thấy **Trả về** phiếu khảo sát không dọn những gì phiếu đã đẩy đi.
 Dòng được duyệt là phương án tự gắn sang Yêu cầu báo giá; trả về mà để nguyên thì phương án cũ vẫn hiện
 bên đó, nhân viên sửa phiếu thì hệ thống xóa rồi tạo lại dòng nên phương án trỏ vào dòng đã mất, duyệt
-lại thì gắn thêm phương án mới thành trùng; dòng sửa giá xong cũng vẫn «Đã duyệt» nên quản lý duyệt lại
-cả phiếu mà không phải xem lại dòng nào. Yêu cầu sửa luôn, trạng thái giữ «Bị trả lại» và vẫn sửa
+lại thì gắn thêm phương án mới thành trùng; dòng sửa giá xong cũng vẫn **Đã duyệt** nên quản lý duyệt lại
+cả phiếu mà không phải xem lại dòng nào. Yêu cầu sửa luôn, trạng thái giữ **Bị trả lại** và vẫn sửa
 được như Nháp.
 
 Nay trả về (cả phiếu chờ duyệt lẫn phiếu đã duyệt) sẽ chặn nếu phương án lấy từ phiếu đã được chọn ở
 Yêu cầu báo giá hoặc đã nằm trong phương án của Yêu cầu mua hàng. Không vướng thì hệ thống gỡ phương án
-đã gắn, đưa mọi dòng «Đã duyệt» hay «Không duyệt» về «Chờ duyệt» (dòng «Thiếu thông tin» giữ nguyên), và
-ghi kèm số phương án đã gỡ vào lý do trả về. Câu hướng dẫn trong hộp «Trả về» ở cả hai giao diện nói rõ
+đã gắn, đưa mọi dòng **Đã duyệt** hay **Không duyệt** về **Chờ duyệt** (dòng **Thiếu thông tin** giữ nguyên), và
+ghi kèm số phương án đã gỡ vào lý do trả về. Câu hướng dẫn trong hộp **Trả về** ở cả hai giao diện nói rõ
 điều này.
 
 Mã nguồn: `backend/app/modules/survey/service.py` (`clear_for_return`), `backend/app/modules/survey/controller.py`
@@ -2823,7 +2826,7 @@ ba commit phân quyền báo cáo + K3 của anh Được. Build ảnh trước 
 ## bao-CR-560 | Chép xe và tài xế từ dev lên prod để chuẩn bị đồng bộ app đặt xe cũ
 - status: xong
 - date: 2026-10-02
-Chốt sổ 07/10/2026: việc này đã xong (dữ liệu prod 02/10, đồng bộ đã bật); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (dữ liệu prod 02/10, đồng bộ đã bật); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Cần đồng bộ dữ liệu prod của app đặt xe và duyệt dấu cũ sang ERP prod, và bảo chép xe với tài
 xế từ dev lên vì dữ liệu dev là đúng. Prod trước đó chưa có xe hay tài xế nào, trong khi vòng quét đồng
 bộ không tự tạo hai danh mục này.
@@ -2856,7 +2859,7 @@ sang nhánh chính; GitHub Actions chạy bộ kiểm và deploy cả hai môi t
 bên ERP vẫn tắt nên móc của worker đang bị từ chối, người dùng app cũ không bị ảnh hưởng.
 
 Đã xong 02/10 (Agent 1 làm thay theo chỉ đạo): CR-562 lên prod 14:08; 14:17 bật công tắc đồng bộ qua cửa lưu
-của màn Cấu hình (có nhật ký), «Tự tạo xe / tài xế» vẫn tắt; chạy tay lượt quét toàn bộ 14:17-14:25: lấy 1.401 phiếu,
+của màn Cấu hình (có nhật ký), **Tự tạo xe / tài xế** vẫn tắt; chạy tay lượt quét toàn bộ 14:17-14:25: lấy 1.401 phiếu,
 ghi 1.399, bỏ qua 2 phiếu đã chốt bên ERP, lỗi 0. Soát: 1.011 đóng dấu + 390 đặt xe mang mã gốc; chỉ 3 phiếu thiếu
 người tạo (người app cũ đã khóa), không phiếu nào thiếu phòng ban hay công ty; xe 336/390, tài xế 329/390 (5 tài xế đã bị
 xóa bên app cũ); 1.602 tệp đính kèm trên 1.010 phiếu; nhật ký duyệt đủ 1.401 phiếu; người tạo khớp tên 1.398/1.398.
@@ -2869,16 +2872,16 @@ Deploy: dữ liệu prod 02/10; worker app cũ production commit `3d3a669` (repo
 
 ---
 
-## bao-CR-559 | Đổi chức vụ «Nhân sự» thành «Nhân viên» và đặt mọi hồ sơ là Toàn thời gian
+## bao-CR-559 | Đổi chức vụ "Nhân sự" thành "Nhân viên" và đặt mọi hồ sơ là Toàn thời gian
 - status: xong
 - date: 2026-10-02
-Phát hiện nhân viên bình thường đang để chức vụ là «Nhân sự» nên bảo đổi hết sang «Nhân viên», và đặt
+Phát hiện nhân viên bình thường đang để chức vụ là **Nhân sự** nên bảo đổi hết sang **Nhân viên**, và đặt
 Hình thức nhân viên của mọi người là Toàn thời gian, đổi thẳng trên prod. Đọc prod trước: 208 hồ sơ
-giữ chức vụ «Nhân sự» rải khắp các phòng, cả 236 hồ sơ đều để trống hình thức nhân viên.
+giữ chức vụ **Nhân sự** rải khắp các phòng, cả 236 hồ sơ đều để trống hình thức nhân viên.
 
-Script đổi cả mã chức vụ lẫn nhãn chữ in trên phiếu sang «Nhân viên», đặt hình thức Toàn thời gian cho
+Script đổi cả mã chức vụ lẫn nhãn chữ in trên phiếu sang **Nhân viên**, đặt hình thức Toàn thời gian cho
 mọi hồ sơ, và in giá trị cũ của từng hồ sơ ra bản sao lưu trước khi ghi. Đã chạy ở local, prod (208 hồ
-sơ đổi chức vụ, 236 hồ sơ đổi hình thức) và dev. Chức vụ «Nhân sự» trong danh mục vẫn còn nhưng không
+sơ đổi chức vụ, 236 hồ sơ đổi hình thức) và dev. Chức vụ **Nhân sự** trong danh mục vẫn còn nhưng không
 ai giữ. Không đổi mã nguồn.
 
 Mã nguồn: script tạm `cr559_position_employment.py` (không commit) · sao lưu `D:/vps_deploy/cr559_prod_output.txt`,
@@ -2896,7 +2899,7 @@ ba vai trò thu mua chung (Nhân viên, Admin, Quản lý thu mua) cùng quản 
 thành vai trò riêng, gỡ quyền khỏi cụm thu mua và chỉ gán cho Mi (NSU141), Dững (NSU001), Duyên Sang
 (NSU142) và Tiên (NSU223).
 
-Vai trò mới «Tra cứu thị trường» được xem, nạp, sửa, xóa, xuất dữ liệu giá tờ khai và sửa danh mục hóa
+Vai trò mới **Tra cứu thị trường** được xem, nạp, sửa, xóa, xuất dữ liệu giá tờ khai và sửa danh mục hóa
 chất ở tab Cấu hình. Hai khóa này bị gỡ khỏi ba vai trò thu mua chung. Script đổi dữ liệu chạy lần lượt
 ở local, dev và prod, in bản sao lưu các dòng quyền cũ trước khi xóa. Sau khi chạy, prod chỉ còn bốn
 người được gán cùng các tài khoản quản trị hệ thống xem được. Seed khai thêm vai trò này để môi
@@ -2914,7 +2917,7 @@ Deploy: dữ liệu phân quyền đã đổi trên dev + prod 02/10; mã seed C
 - date: 2026-10-02
 Người dùng nêu hai việc còn lại. Một: phiếu khảo sát chỉ được duyệt cả phiếu khi mọi dòng đã có quyết định
 (Đã duyệt hoặc Không duyệt); còn dòng Chờ duyệt hay Thiếu thông tin thì hệ thống chặn và báo còn mấy
-dòng. Hai: phiếu đã duyệt rồi thì quản lý vẫn «Trả về» được để nhân viên sửa rồi gửi duyệt lại, dùng lại
+dòng. Hai: phiếu đã duyệt rồi thì quản lý vẫn **Trả về** được để nhân viên sửa rồi gửi duyệt lại, dùng lại
 đúng nút Trả về đang có, áp cho cả cụm khảo sát, YCBG (yêu cầu báo giá), YCMH (yêu cầu mua hàng) và ĐMH
 (đơn mua hàng).
 
@@ -2922,7 +2925,7 @@ Cách làm: phiếu khảo sát cho trả về ở cả Đã duyệt. YCBG trả
 sát chưa bắt đầu (chưa dòng nào hoàn thành, chưa chọn phương án, chưa sinh YCMH), và gỡ nhân sự phụ trách
 của các dòng để duyệt lại thì tự gán lại. YCMH: người duyệt cũng trả được phiếu Đã duyệt / Đã điều phối,
 nhưng phiếu đã có dòng lên đơn mua hàng thì không ai trả về được nữa (trước đây quản lý trả được và dòng
-bị kéo về «chưa có đơn» trong khi đơn vẫn còn — một lỗ cũ). ĐMH đã có «Hủy duyệt» từ trước, giữ nguyên.
+bị kéo về **chưa có đơn** trong khi đơn vẫn còn — một lỗ cũ). ĐMH đã có **Hủy duyệt** từ trước, giữ nguyên.
 Nút Trả về của ba chứng từ nay hiện theo cờ do máy chủ tính, cả bản cũ lẫn bản mới.
 
 Kiểm: 15 bài kiểm mới; chạy cùng 50 bài luồng duyệt và chuyển phòng cũ, chỉ còn bài đỏ cũ của YCTT (đã
@@ -2936,17 +2939,17 @@ frontend/src/pages/{SurveyDetail,SurveyRequestDetail,PurchaseRequestDetail}.tsx;
 
 ---
 
-## bao-CR-553 | YCTT (yêu cầu thanh toán) thêm ô «Trưởng bộ phận» in trên phiếu
+## bao-CR-553 | YCTT (yêu cầu thanh toán) thêm ô "Trưởng bộ phận" in trên phiếu
 - status: xong
 - date: 2026-10-01
-Cần phiếu yêu cầu thanh toán in được tên người khác ở dòng «Trưởng phòng ban/bộ phận»: chị Mi
+Cần phiếu yêu cầu thanh toán in được tên người khác ở dòng **Trưởng phòng ban/bộ phận**: chị Mi
 duyệt, nhưng bản in nội bộ phải ghi anh Dững. Ô Giám đốc và ô TP duyệt trên bản in giữ nguyên như cũ. Cùng
 lúc tắt email thông báo của anh Dững trên dev và prod (chuông trong hệ thống vẫn bật).
 
-Phiếu nay có ô «Trưởng bộ phận» như yêu cầu mua hàng, ở cả bản cũ lẫn bản mới: chọn trong danh sách trưởng
+Phiếu nay có ô **Trưởng bộ phận** như yêu cầu mua hàng, ở cả bản cũ lẫn bản mới: chọn trong danh sách trưởng
 phòng các phòng (có Ban Giám đốc của anh Dững) và được in ra bản in; để trống thì bản in vẫn ghi trưởng
 phòng của người lập như trước. Ô chỉ để in, không đổi ai được duyệt hay ai được báo; chỉ sửa được khi phiếu
-còn Nháp; phiếu cũ để trống nên hành vi không đổi. Lúc đầu làm thêm ô «Người duyệt» (gửi duyệt chỉ báo
+còn Nháp; phiếu cũ để trống nên hành vi không đổi. Lúc đầu làm thêm ô **Người duyệt** (gửi duyệt chỉ báo
 người được chọn), ngày 02/10 yêu cầu một ô Trưởng bộ phận là đủ nên đã gỡ.
 
 Kiểm: 7 bài kiểm mới, cùng 4 bài xuất Excel YCTT, 11 bài xanh; màn cũ giữ đúng 4 lỗi nền; màn mới kiểm
@@ -2966,7 +2969,7 @@ frontend/src/pages/PaymentRequestDetail.tsx, frontend-v2/src/modules/finance (Ag
 - date: 2026-10-02
 Cần mỗi báo cáo trong phân hệ Báo cáo phân quyền được cho từng người. Nay mười ba báo cáo được gác hai lớp: người xem vừa phải có quyền đọc ở phân hệ gốc như trước, vừa phải được gán xem đúng báo cáo đó; được gán thêm không làm lộ thêm dữ liệu vì số liệu vẫn lọc theo phạm vi như bảng gốc. Quyền gán được cho người, phòng ban, pháp nhân hoặc vai trò, có dòng cấm để loại riêng từng người, cấm luôn thắng cho phép, và thu hồi chỉ đánh dấu chứ không xóa dòng.
 
-Báo cáo chưa gán cho ai thì không ai xem được; migration gán sẵn cho vai trò quản trị cả mười ba báo cáo, và mỗi lần khởi động máy chủ sẽ tự gán cho quản trị những báo cáo mới chưa từng có dòng phân quyền nào, không đè lên chỉnh sửa của người dùng. Giao diện chỉ hiện trên menu, trang Tổng quan và khi gõ thẳng đường dẫn những báo cáo người dùng được gán. Màn cấu hình là thẻ «Báo cáo» trong Cài đặt, Phân quyền tài khoản; ai có quyền xem vai trò thì xem được, có quyền sửa vai trò mới gán hoặc thu hồi được.
+Báo cáo chưa gán cho ai thì không ai xem được; migration gán sẵn cho vai trò quản trị cả mười ba báo cáo, và mỗi lần khởi động máy chủ sẽ tự gán cho quản trị những báo cáo mới chưa từng có dòng phân quyền nào, không đè lên chỉnh sửa của người dùng. Giao diện chỉ hiện trên menu, trang Tổng quan và khi gõ thẳng đường dẫn những báo cáo người dùng được gán. Màn cấu hình là thẻ **Báo cáo** trong Cài đặt, Phân quyền tài khoản; ai có quyền xem vai trò thì xem được, có quyền sửa vai trò mới gán hoặc thu hồi được.
 
 Trong lúc viết bài kiểm phát hiện bộ nhớ đệm của các đường tóm tắt báo cáo dùng chung một khóa giữa các bài kiểm, làm bài kiểm trả về kết quả của bài khác; đã sửa ở tầng bài kiểm. Bài kiểm máy chủ và giao diện của phần vừa sửa đều đạt; chưa kiểm bằng tay trên trình duyệt, chưa deploy. Sau deploy chỉ quản trị thấy báo cáo, người đang đăng nhập phải đăng xuất rồi đăng nhập lại, và cần gán quyền ngay.
 
@@ -2975,18 +2978,18 @@ Mã nguồn: `backend/app/core/report_keys.py` · `backend/app/modules/report_ac
 ---
 
 
-## bao-CR-552 | Ô «Trưởng phòng phê duyệt» và «Trưởng bộ phận» luôn chọn được ở YCMH, YCBG, ĐMH
+## bao-CR-552 | Ô "Trưởng phòng phê duyệt" và "Trưởng bộ phận" luôn chọn được ở YCMH, YCBG, ĐMH
 - status: xong
 - date: 2026-10-01
-Người dùng báo trên prod: lập phiếu ở phòng «Lập trình & IT nội bộ» thì không chọn được Trưởng bộ phận lẫn
+Người dùng báo trên prod: lập phiếu ở phòng **Lập trình & IT nội bộ** thì không chọn được Trưởng bộ phận lẫn
 Trưởng phòng phê duyệt, và ô phê duyệt không tự lấy theo Trưởng bộ phận. Nguyên nhân: hai ô dùng chung
 một danh sách chỉ gồm người duyệt theo phạm vi phòng; phòng nào không có ai như vậy thì danh sách rỗng
 và giao diện khóa cứng ô. Cần mỗi phòng chọn được người duyệt riêng (sản xuất – thu mua là chị
 Mi, pháp lý là anh Dững).
 
-Đã chốt: ô «Trưởng phòng phê duyệt» liệt kê mọi người duyệt được chứng từ đó (vẫn theo đúng phạm vi
+Đã chốt: ô **Trưởng phòng phê duyệt** liệt kê mọi người duyệt được chứng từ đó (vẫn theo đúng phạm vi
 duyệt để người được chọn bấm Duyệt được), bỏ hẳn tài khoản giữ vai trò Quản trị hệ thống, và luôn có
-Trưởng bộ phận của phiếu. Ô «Trưởng bộ phận» luôn có trưởng phòng của phòng lập; phòng chưa có trưởng
+Trưởng bộ phận của phiếu. Ô **Trưởng bộ phận** luôn có trưởng phòng của phòng lập; phòng chưa có trưởng
 thì đưa trưởng phòng các phòng. Ở YCBG bản cũ, ô Trưởng bộ phận trước là ô chữ khóa, nay chọn được và
 gửi kèm mã nhân sự; đổi phòng thì điền lại cả tên lẫn mã. Chọn Trưởng bộ phận mà ô phê duyệt chưa chọn
 riêng thì ô phê duyệt đi theo. Áp cho cả bản cũ lẫn bản mới.
@@ -3011,18 +3014,18 @@ YCBG `/meta/department-managers`) · v1 `SurveyRequestDetail.tsx`, `PurchaseRequ
 - status: xong
 - date: 2026-10-01
 Phân hệ Báo cáo trước đây chỉ có năm báo cáo của Thu mua. Nay có thêm tám báo cáo cùng kiểu (chọn kỳ,
-so với kỳ trước, thẻ chỉ số, biểu đồ xu hướng, bảng «Xem theo», xuất Excel): Biến động nhân sự, Tình
+so với kỳ trước, thẻ chỉ số, biểu đồ xu hướng, bảng **Xem theo**, xuất Excel): Biến động nhân sự, Tình
 hình nghỉ phép, Quỹ phép năm, Báo cáo đặt xe, Báo cáo đóng dấu, Báo cáo văn bản, Báo cáo phê duyệt và
 Công việc & dự án. Mỗi báo cáo gác quyền đúng như bảng danh sách gốc của nó (cùng khóa quyền, cùng phạm
 vi dữ liệu); báo cáo Văn bản chỉ đếm văn bản người xem được thấy, báo cáo Phê duyệt chỉ đếm phiên duyệt
 của loại chứng từ người xem có quyền đọc, báo cáo Dự án chỉ đếm việc của dự án mình là thành viên. Lọc
-theo công ty chạy thật ở mọi báo cáo có công ty. Bảng «Xem theo» của báo cáo Nhân sự có định biên đầu và
-cuối kỳ cho từng phòng ban, công ty, cấp bậc. Số «đang mở / đang chờ» ở kỳ so sánh tính đúng tại ngày
+theo công ty chạy thật ở mọi báo cáo có công ty. Bảng **Xem theo** của báo cáo Nhân sự có định biên đầu và
+cuối kỳ cho từng phòng ban, công ty, cấp bậc. Số **đang mở / đang chờ** ở kỳ so sánh tính đúng tại ngày
 cuối kỳ đó chứ không lấy trạng thái hôm nay.
 
-Giao diện báo cáo được làm lại theo góp ý: dòng Tổng không còn huy hiệu «Mới» ở từng ô, mức
-thay đổi đứng cùng hàng với con số; thẻ chỉ số nói «Kỳ trước chưa phát sinh» bằng chữ mờ thay cho khối
-xám; biểu đồ vẽ đường thẳng có chấm từng mốc, trục không còn vạch lẻ «0,3 ngày»; khối lưu ý cách tính
+Giao diện báo cáo được làm lại theo góp ý: dòng Tổng không còn huy hiệu **Mới** ở từng ô, mức
+thay đổi đứng cùng hàng với con số; thẻ chỉ số nói **Kỳ trước chưa phát sinh** bằng chữ mờ thay cho khối
+xám; biểu đồ vẽ đường thẳng có chấm từng mốc, trục không còn vạch lẻ **0,3 ngày**; khối lưu ý cách tính
 gấp thành một dòng; tên báo cáo trên menu rút gọn cho khỏi bị cắt.
 
 Kiểm: bài kiểm máy chủ của tám báo cáo xanh (gồm bài kiểm phạm vi quyền, đếm truy vấn cố định, bài so
@@ -3046,8 +3049,8 @@ cáo Phê duyệt, Nghỉ phép, Dự án, Đặt xe mất 5–24 giây mỗi l�
 
 Đã sửa: kho kết nối nâng lên 10 + 15 kết nối mỗi tiến trình (tổng lý thuyết 125, dưới trần 151 của
 MySQL); cache Redis 60 giây cho mọi lượt xem báo cáo, khóa theo phiên đăng nhập nên người này không
-thấy số của người khác, Redis hỏng thì vẫn tính bình thường; bảng «Xem theo» tối đa 300 nhóm, phần dư
-gộp vào dòng «Các nhóm khác»; bốn báo cáo nặng chuyển sang cộng bằng SQL thay vì nạp từng dòng lên
+thấy số của người khác, Redis hỏng thì vẫn tính bình thường; bảng **Xem theo** tối đa 300 nhóm, phần dư
+gộp vào dòng **Các nhóm khác**; bốn báo cáo nặng chuyển sang cộng bằng SQL thay vì nạp từng dòng lên
 Python; thêm 5 chỉ mục cột ngày (đặt xe, đóng dấu, văn bản, phê duyệt).
 
 Đo lại sau khi sửa: 3 người cùng mở Tổng quan chạy đủ 39/39 lượt gọi (trước 27/39); cache nhanh hơn
@@ -3068,7 +3071,7 @@ Mã nguồn: `core/database.py` · `core/config.py` (`DB_POOL_SIZE`, `DB_MAX_OVE
 - status: xong
 - date: 2026-10-01
 Cần năm mục Danh sách, Biểu đồ, Nhà nhập khẩu, So sánh, Thuế quay lại thành tab chuyển qua lại
-trên đầu màn như trước khi tách thành menu con. Menu trái nay chỉ còn một mục «Giá nhập khẩu» cho cả năm
+trên đầu màn như trước khi tách thành menu con. Menu trái nay chỉ còn một mục **Giá nhập khẩu** cho cả năm
 tab (đứng ở tab nào mục này cũng sáng), các mục Pháp lý, Thuốc BVTV, Lịch sử nạp, Cấu hình giữ nguyên là
 menu con. Mỗi tab vẫn có đường riêng nên link cũ không gãy, chuyển tab vẫn giữ bộ lọc, gõ thẳng đường
 của tab vẫn bị chặn khi không có quyền xem giá hải quan. Menu trái của v2 nay ẩn được mục con.
@@ -3104,15 +3107,15 @@ bài kiểm `test/backend/test_nhat_ky_che_ho_so_nhan_su.py`
 
 ---
 
-## duoc-CR-553 | Luồng duyệt: thêm cách chọn người duyệt «Quản lý trực tiếp người nộp» (K3)
+## duoc-CR-553 | Luồng duyệt: thêm cách chọn người duyệt "Quản lý trực tiếp người nộp" (K3)
 - status: xong
 - date: 2026-10-01
-Màn Luồng duyệt có thêm cách chọn người duyệt thứ tám: «Quản lý trực tiếp người nộp». Bước này đọc ô
-«Quản lý trực tiếp» trên hồ sơ nhân sự của người nộp. Ô đó chưa gán, người quản lý đã nghỉ việc, mọi tài
+Màn Luồng duyệt có thêm cách chọn người duyệt thứ tám: **Quản lý trực tiếp người nộp**. Bước này đọc ô
+**Quản lý trực tiếp** trên hồ sơ nhân sự của người nộp. Ô đó chưa gán, người quản lý đã nghỉ việc, mọi tài
 khoản của họ đều khóa, hoặc ô trỏ về chính người nộp thì bước tự chuyển cho trưởng bộ phận của người nộp
 để đơn không kẹt; màn xem trước luồng ghi rõ câu giải thích khi việc chuyển này xảy ra. Trước đây ô
-«Quản lý trực tiếp» có trên hồ sơ nhưng bộ máy duyệt không đọc, nên câu gợi ý dưới ô hứa sai. Câu gợi ý
-nay nói đúng: chỉ những luồng có bước «Quản lý trực tiếp người nộp» mới gửi đơn cho người này. Luồng duyệt
+**Quản lý trực tiếp** có trên hồ sơ nhưng bộ máy duyệt không đọc, nên câu gợi ý dưới ô hứa sai. Câu gợi ý
+nay nói đúng: chỉ những luồng có bước **Quản lý trực tiếp người nộp** mới gửi đơn cho người này. Luồng duyệt
 đang có (kể cả luồng nghỉ phép seed sẵn) không tự đổi — muốn dùng thì sửa bước trong màn Luồng duyệt.
 
 Kiểm: 10 bài kiểm máy chủ mới (chọn đúng người quản lý, sáu ca lùi về trưởng bộ phận, chạy trọn một phiếu
@@ -3131,11 +3134,11 @@ Mã nguồn: backend `approval/flow_model.py` (`APPROVER_DIRECT_MANAGER = 8`), `
 - date: 2026-10-01
 Trang chi tiết thuốc BVTV được làm lại theo trang nguồn danhmuc.thuocbvtv.com. Thẻ đầu trang gom tên,
 tình trạng, hoạt chất, công ty, số đăng ký (bấm chép được) và bốn ô thông tin: phân nhóm, lĩnh vực, ngày
-hết hạn kèm thời gian còn lại, nhóm độc tách thành thẻ theo mức độc. Phần dưới chia hai tab: «Sử dụng &
-tài liệu» (phạm vi sử dụng, tệp đính kèm, lịch sử) và «Thuốc liên quan» với hai lựa chọn «Cùng công ty»
-và «Cùng hoạt chất». Cùng hoạt chất nghĩa là cùng tập tên hoạt chất sau khi bỏ hàm lượng, không phụ thuộc
+hết hạn kèm thời gian còn lại, nhóm độc tách thành thẻ theo mức độc. Phần dưới chia hai tab: **Sử dụng &
+tài liệu** (phạm vi sử dụng, tệp đính kèm, lịch sử) và **Thuốc liên quan** với hai lựa chọn **Cùng công ty**
+và **Cùng hoạt chất**. Cùng hoạt chất nghĩa là cùng tập tên hoạt chất sau khi bỏ hàm lượng, không phụ thuộc
 thứ tự. Bên phải có cột tìm thuốc khác theo tên, phân nhóm, lĩnh vực và danh sách tra cứu nhanh theo phân
-nhóm kèm số thuốc; màn hẹp thì mở bằng nút «Tra cứu». Danh sách Thuốc BVTV có thêm ô lọc Lĩnh vực.
+nhóm kèm số thuốc; màn hẹp thì mở bằng nút **Tra cứu**. Danh sách Thuốc BVTV có thêm ô lọc Lĩnh vực.
 
 Kiểm: 89 bài kiểm máy chủ thuốc BVTV xanh (thêm bài cho luật khớp hoạt chất); bài kiểm giao diện phân hệ
 Thu mua xanh, tsc 0 lỗi; v1 tsc giữ đúng 4 lỗi cũ. Đối chiếu thuốc 2S Sea & See 12WP: 10 thuốc đầu cùng
@@ -3161,8 +3164,8 @@ trước và chỉ nhận phiếu Nháp, và yêu cầu thanh toán chỉ xóa �
 
 Ở v2, bảng dòng dùng chung có thêm cột tick đứng đầu và được ghim, không dính vào bố cục cột người
 dùng đã lưu; dòng không cho xóa (dòng đơn mua hàng đã hoàn thành hoặc đã hủy) thì ô tick vô hiệu kèm lời
-giải thích. Bốn bảng dòng nhận cờ cho tick, trang bật cờ khi phiếu mới tạo hoặc đang Nháp; nút «Xóa đã
-chọn (n)» đứng cạnh «Thêm dòng», bấm thì hỏi xác nhận, dòng bỏ khỏi phiếu ngay trên màn hình và chỉ ghi
+giải thích. Bốn bảng dòng nhận cờ cho tick, trang bật cờ khi phiếu mới tạo hoặc đang Nháp; nút **Xóa đã
+chọn (n)** đứng cạnh **Thêm dòng**, bấm thì hỏi xác nhận, dòng bỏ khỏi phiếu ngay trên màn hình và chỉ ghi
 xuống khi bấm Lưu. Yêu cầu báo giá và đơn mua hàng báo chỉ số dòng bị bỏ từ cao xuống thấp để tệp đính
 kèm và phiếu giao đang chờ lưu dời theo đúng dòng. Ở v1, bốn bảng tự dựng được thêm cột tick, nút xóa
 và hộp xác nhận; chọn theo thứ tự dòng nên đổi số dòng là bỏ hết lựa chọn, màn tạo yêu cầu thanh toán
@@ -3188,16 +3191,16 @@ v2 `shared/data-table/lines-table.tsx`, `shared/hooks/use-line-selection.ts` (m�
 ## bao-CR-546 | Bản in phiếu đề xuất mua hàng: ô chọn mẫu in và ô tick ẩn nơi giao
 - status: xong
 - date: 2026-10-01
-Người dùng xem bản in sau đợt thêm nút ẩn nơi giao (bao-CR-544) và chê hai điểm: bấm ẩn thì cột «Nơi
-giao» bị xóa mất làm lệch khuôn mẫu, và thanh nút gãy chữ thành hai dòng, chọn Mẫu thuế thì nhóm
+Người dùng xem bản in sau đợt thêm nút ẩn nơi giao (bao-CR-544) và chê hai điểm: bấm ẩn thì cột **Nơi
+giao** bị xóa mất làm lệch khuôn mẫu, và thanh nút gãy chữ thành hai dòng, chọn Mẫu thuế thì nhóm
 nút chữ ký biến mất làm cả thanh nhảy. Đã chốt thiết kế mới: nút In / Lưu PDF, nút Đóng, một ô
-chọn «Mẫu in» và một ô tick «Ẩn nơi giao».
+chọn **Mẫu in** và một ô tick **Ẩn nơi giao**.
 
 Ô chọn có ba mẫu cố định: mẫu thường có chữ ký (mặc định), mẫu thường không chữ ký và mẫu thuế; ba
-nhóm nút bật tắt cũ bỏ hẳn. Ô tick «Ẩn nơi giao» áp cho mọi mẫu, giữ nguyên cột «Nơi giao» với tiêu
+nhóm nút bật tắt cũ bỏ hẳn. Ô tick **Ẩn nơi giao** áp cho mọi mẫu, giữ nguyên cột **Nơi giao** với tiêu
 đề và độ rộng như cũ, chỉ để trống chữ trong ô. Ô chọn có bề rộng cố định nên đổi mẫu không làm thanh
 nút xê dịch, chữ không gãy dòng, màn hình hẹp thì cả cụm xuống hàng. Bản v2 có ở cả bản in gốc lẫn
-bản tách theo nhà cung cấp; bản v1 dùng ô chọn và ô tick thường, cột «Nơi giao» được giữ độ rộng tối
+bản tách theo nhà cung cấp; bản v1 dùng ô chọn và ô tick thường, cột **Nơi giao** được giữ độ rộng tối
 thiểu vì bảng v1 tự co theo chữ.
 
 Kiểm: viết lại các bài kiểm của đợt trước theo luật giữ cột, thêm bài cho ô chọn mẫu in và ô tick,
@@ -3213,13 +3216,13 @@ utils/purchase-request-print-template{,.test}.ts (mới) · frontend/src/pages/P
 
 ---
 
-## bao-CR-544 | Bản in phiếu đề xuất mua hàng có nút ẩn cột «Nơi giao»
+## bao-CR-544 | Bản in phiếu đề xuất mua hàng có nút ẩn cột "Nơi giao"
 - status: xong
 - date: 2026-10-01
 Cần bản in phiếu đề xuất mua hàng có thêm một nút để ẩn nơi giao hàng, và cả giao diện v1
-lẫn v2 đều phải có. Thanh nút trên cùng của màn in nay có thêm bộ «Hiện nơi giao | Ẩn nơi giao» cùng
-kiểu với «Có chữ ký | Không chữ ký» và «Mẫu thường | Mẫu thuế», mặc định hiện như trước. Bấm ẩn thì
-cột «Nơi giao» biến mất hẳn khỏi bảng hàng: cả tiêu đề, ô từng dòng và ô trống ở ba dòng tổng, các
+lẫn v2 đều phải có. Thanh nút trên cùng của màn in nay có thêm bộ **Hiện nơi giao | Ẩn nơi giao** cùng
+kiểu với **Có chữ ký | Không chữ ký** và **Mẫu thường | Mẫu thuế**, mặc định hiện như trước. Bấm ẩn thì
+cột **Nơi giao** biến mất hẳn khỏi bảng hàng: cả tiêu đề, ô từng dòng và ô trống ở ba dòng tổng, các
 cột còn lại tự giãn ra cho đều, không để lỗ trắng. Ở v2 nút có ở cả bản in gốc lẫn bản tách theo nhà
 cung cấp vì hai bản in dùng chung một tờ phiếu; v1 chỉ có bản in gốc. Chỉ đổi giao diện, không đụng
 máy chủ hay dữ liệu.
@@ -3237,12 +3240,12 @@ frontend/src/pages/PrintPurchaseRequest.tsx
 
 ---
 
-## bao-CR-545 | Thêm vai trò «Admin thu mua phòng» và gán bộ thu mua nhà máy
+## bao-CR-545 | Thêm vai trò "Admin thu mua phòng" và gán bộ thu mua nhà máy
 - status: xong
 - date: 2026-10-01
-Người dùng hỏi vì sao prod không có «Admin thu mua» theo phòng: bộ thu mua theo phòng (bao-CR-526) mới
+Người dùng hỏi vì sao prod không có **Admin thu mua** theo phòng: bộ thu mua theo phòng (bao-CR-526) mới
 có Nhân viên và Quản lý, trong khi bộ chung có đủ Nhân viên, Admin, Quản lý. Đã thêm vai trò
-«Admin thu mua phòng»: chép quyền Admin thu mua (quản danh mục, xem chứng từ thu mua, duyệt điều phối),
+**Admin thu mua phòng**: chép quyền Admin thu mua (quản danh mục, xem chứng từ thu mua, duyệt điều phối),
 chỉ đổi phạm vi YCMH, YCBG, ĐMH sang phiếu đã duyệt của phòng mình; công nợ, YCTT, báo cáo theo khuôn
 hai vai trò theo phòng kia. Trợ lý AI lập bộ tài khoản cũng gán được vai trò này.
 
@@ -3283,15 +3286,15 @@ Mã nguồn: `backend/requirements-test.txt` · `docker/Dockerfile.api` (`INSTAL
 ## bao-CR-542 | Gom cảnh báo công nợ quá hạn theo đơn, ghi số tiền còn nợ và số ngày trễ
 - status: xong
 - date: 2026-10-01
-Phát hiện chuông báo «Công nợ QUÁ HẠN» của đơn PO00003 lặp năm dòng giống hệt. Nguyên nhân: khoản
+Phát hiện chuông báo **Công nợ QUÁ HẠN** của đơn PO00003 lặp năm dòng giống hệt. Nguyên nhân: khoản
 công nợ sinh theo từng dòng hàng của từng lần giao, đơn năm dòng hàng nhận cùng ngày là năm khoản cùng
-nhà cung cấp, cùng hạn, và mỗi khoản một cảnh báo; muốn ẩn phải bấm «Đánh dấu làm hết» năm lần.
+nhà cung cấp, cùng hạn, và mỗi khoản một cảnh báo; muốn ẩn phải bấm **Đánh dấu làm hết** năm lần.
 
 Nay chuông và tab Việc cần làm gom cảnh báo theo đơn và theo bên được trả (nhà cung cấp bán hàng, đơn
 vị vận chuyển, bên của dòng chi phí), quá hạn và sắp đến hạn tách riêng. Mỗi dòng ghi số khoản, tổng
-tiền còn nợ, số ngày trễ tính từ hạn sớm nhất trong nhóm, ví dụ «Công nợ QUÁ HẠN: Bao bì Cẩm Hùng ·
-PO00003 — 5 khoản · còn nợ 10.000.000 đ · trễ 27 ngày (hạn 04/09/2026)». Nợ vận chuyển và nợ chi phí
-ghi kèm chữ «(vận chuyển)» / «(chi phí)» cho khỏi nhầm với nợ hàng của cùng đơn. Việc người dùng đã
+tiền còn nợ, số ngày trễ tính từ hạn sớm nhất trong nhóm, ví dụ **Công nợ QUÁ HẠN: Bao bì Cẩm Hùng ·
+PO00003 — 5 khoản · còn nợ 10.000.000 đ · trễ 27 ngày (hạn 04/09/2026)**. Nợ vận chuyển và nợ chi phí
+ghi kèm chữ **(vận chuyển)** / **(chi phí)** cho khỏi nhầm với nợ hàng của cùng đơn. Việc người dùng đã
 đánh dấu làm hết trước đây vẫn ẩn; nhóm có thêm khoản nợ mới thì cảnh báo tự nổi lại. Cảnh báo công nợ
 không lưu thành thông báo trong cơ sở dữ liệu mà tính lại mỗi lần mở, nên không phải dọn gì: lên bản
 mới là thấy ngay. Hạn trả và số liệu công nợ giữ nguyên.
@@ -3311,8 +3314,8 @@ Mã nguồn: `payable/due_alerts.py` (mới) · `alert/controller.py` · `dashbo
 - status: xong
 - date: 2026-10-01
 Đã chốt ngày 01/10: dữ liệu hải quan xuất ra là đổ vào luôn, người nạp không biết tệp nào chồng
-lên tệp nào, nên hệ thống phải tự so trùng; trùng thì bỏ qua, không ghi đè, và bỏ hẳn cách «thay toàn
-bộ khoảng ngày» vì người dùng không hiểu được. Cách cũ còn có hai lỗ: tệp mới xuất thiếu dòng thì xóa
+lên tệp nào, nên hệ thống phải tự so trùng; trùng thì bỏ qua, không ghi đè, và bỏ hẳn cách **thay toàn
+bộ khoảng ngày** vì người dùng không hiểu được. Cách cũ còn có hai lỗ: tệp mới xuất thiếu dòng thì xóa
 mất dữ liệu cũ đúng mà không ai hay, và dòng lặp trong cùng tệp vẫn được ghi (prod dồn 806 dòng thừa).
 
 Mỗi dòng hàng nay mang một mã băm gói đủ các cột dữ liệu sau khi chuẩn hóa (chữ thường bỏ dấu, gộp
@@ -3320,21 +3323,21 @@ khoảng trắng, số làm tròn đúng số chữ số lẻ của cột, doanh
 theo tên chuẩn hóa), lưu ở một cột mới có chỉ mục. Khi nạp, hệ thống đọc mã của các dòng đã có trong
 khoảng ngày của tệp (dòng cũ chưa có mã thì tính luôn), bỏ qua dòng đã có và dòng lặp trong cùng tệp,
 chỉ thêm dòng thật sự mới; các lô ghi lần lượt nhờ một khóa của MySQL để hai lô chồng nhau không cùng
-chèn. Nhật ký từng dòng có thêm kết cục «Đã có» kèm số lô chứa dòng gốc. Dòng trùng ngày, doanh nghiệp,
+chèn. Nhật ký từng dòng có thêm kết cục **Đã có** kèm số lô chứa dòng gốc. Dòng trùng ngày, doanh nghiệp,
 đối tác, mã HS, số thứ tự và tên hàng mà khác giá hoặc lượng vẫn được thêm (đo trên dữ liệu thật có 129
-nhóm như vậy, phần lớn là lô hàng khác), kèm ghi chú «nghi sửa giá» để người nạp rà. Lô nạp mới luôn
+nhóm như vậy, phần lớn là lô hàng khác), kèm ghi chú **nghi sửa giá** để người nạp rà. Lô nạp mới luôn
 hoàn tác được vì chỉ xóa dòng của chính nó.
 
 Giao diện v1 và v2: bảng chạy thử có cột Dòng mới, Đã có, Trùng trong tệp; thông báo số dòng sẽ bỏ qua,
-số dòng nghi sửa giá, và câu «mọi dòng đã có, không có gì để thêm» thay cho câu báo tệp hỏng; lịch sử
-nạp có cột «Bỏ qua (trùng)». Viết lại mục nạp dữ liệu của bài hướng dẫn «Tra cứu thị trường» và tài liệu
+số dòng nghi sửa giá, và câu **mọi dòng đã có, không có gì để thêm** thay cho câu báo tệp hỏng; lịch sử
+nạp có cột **Bỏ qua (trùng)**. Viết lại mục nạp dữ liệu của bài hướng dẫn **Tra cứu thị trường** và tài liệu
 thiết kế hải quan (bản 1.7). Có script tính mã cho toàn bảng và dọn dòng thừa, mặc định chỉ chạy thử,
 xóa thật thì chép dòng sắp xóa ra tệp trước.
 
 Kiểm: 250 bài kiểm hải quan và nạp danh mục xanh (11 bài mới); nạp chạy thử 300 dòng dựng lại từ dữ
-liệu MySQL local ra đủ 300 dòng «Đã có»; tính mã cho 18.243 dòng local ra đúng 576 nhóm, 806 dòng thừa
+liệu MySQL local ra đủ 300 dòng **Đã có**; tính mã cho 18.243 dòng local ra đúng 576 nhóm, 806 dòng thừa
 như số đếm cũ; đọc mã của 9 tháng dữ liệu mất 1,7 giây. v2 tsc 0 lỗi, eslint 0 lỗi, vitest 396 bài xanh;
-v1 tsc giữ đúng 4 lỗi cũ. Yêu cầu commit và gộp ngày 01/10, Agent 1 đẩy lên dev; 806 dòng thừa trên prod chưa xóa, chờ Ban điều hành. Số CR ban đầu đặt là 540, đổi sang 541 vì trùng số với việc «Nhóm dự án» của anh Được.
+v1 tsc giữ đúng 4 lỗi cũ. Yêu cầu commit và gộp ngày 01/10, Agent 1 đẩy lên dev; 806 dòng thừa trên prod chưa xóa, chờ Ban điều hành. Số CR ban đầu đặt là 540, đổi sang 541 vì trùng số với việc **Nhóm dự án** của anh Được.
 
 Ngày 01/10 yêu cầu xóa dòng trùng: trên dev đã sao lưu cơ sở dữ liệu rồi chạy xóa thật, chép 806
 dòng bị xóa ra tệp JSON trên VPS; đã xóa 806 dòng thừa trên dev (18.243 còn 17.437 dòng, chạy thử lại
@@ -3345,7 +3348,7 @@ bốn migration chạy êm, seed khởi động không lỗi, chống trùng ra 
 rồi xóa thật, chép dòng bị xóa ra tệp JSON trên VPS; 18.243 còn 17.437 dòng, không còn nhóm trùng. Chuỗi migration được xếp lại để
 cụm này đi trước chỉ mục báo cáo theo kỳ (5f39bbc564db) — chỉ mục đó chờ lên prod cùng báo cáo.
 
-Cùng ngày đồng bộ bài hướng dẫn «Tra cứu thị trường» lên prod: chỉ chép đúng bài này (dev id 110 sang prod id 100, giữ
+Cùng ngày đồng bộ bài hướng dẫn **Tra cứu thị trường** lên prod: chỉ chép đúng bài này (dev id 110 sang prod id 100, giữ
 nguyên id prod), không đồng bộ nguyên khối vì dev có nhiều bài chưa dùng ở prod; bản cũ của bài prod lưu ở tệp JSON trên VPS.
 Nạp lại chỉ mục Trợ lý AI cho riêng bài đó (10 đoạn); kho prod đủ 61/61 bài và 11/11 câu hỏi thường gặp.
 
@@ -3359,24 +3362,24 @@ Mã nguồn: `customs/dedupe.py` (mới) · `customs/importer.py` · `customs/ro
 
 ---
 
-## duoc-CR-540 | Dự án: nhóm đổi tên thành «Nhóm dự án», tiêu đề cột kanban đứng yên khi cuộn
+## duoc-CR-540 | Dự án: nhóm đổi tên thành "Nhóm dự án", tiêu đề cột kanban đứng yên khi cuộn
 - status: xong
 - date: 2026-10-01
 Cần cây bên trái của phân hệ Dự án có tầng cha cho các dự án. Hệ đã có sẵn tầng đó (nhóm,
-lồng tối đa hai cấp) nhưng giao diện gọi lẫn lộn «nhóm» với «danh sách» nên người dùng không nhận
-ra. Đã chốt giữ nguyên dữ liệu, chỉ đổi cách gọi thành «Nhóm dự án»; sau hai lần thử «Dự án
-cha» và «Chương trình» thì phát hiện không hợp. Các nút tạo nay ghi «Tạo nhóm dự án», «Tạo nhóm
-con», «Tạo dự án trong nhóm», cây có thêm biểu tượng thư mục cho nhóm, cột trên bảng dự án là
-«Nhóm dự án». Khoảng hai mươi câu báo và câu lỗi còn gọi dự án là «danh sách» (sót từ hồi gộp phân
-hệ Công việc vào Dự án) cũng đổi hết sang «dự án». Sửa luôn lỗi tiêu đề hộp tạo bị nháy sang chữ
+lồng tối đa hai cấp) nhưng giao diện gọi lẫn lộn **nhóm** với **danh sách** nên người dùng không nhận
+ra. Đã chốt giữ nguyên dữ liệu, chỉ đổi cách gọi thành **Nhóm dự án**; sau hai lần thử **Dự án
+cha** và **Chương trình** thì phát hiện không hợp. Các nút tạo nay ghi **Tạo nhóm dự án**, **Tạo nhóm
+con**, **Tạo dự án trong nhóm**, cây có thêm biểu tượng thư mục cho nhóm, cột trên bảng dự án là
+**Nhóm dự án**. Khoảng hai mươi câu báo và câu lỗi còn gọi dự án là **danh sách** (sót từ hồi gộp phân
+hệ Công việc vào Dự án) cũng đổi hết sang **dự án**. Sửa luôn lỗi tiêu đề hộp tạo bị nháy sang chữ
 khác trong lúc hộp đang đóng.
 
 Ở khung nhìn kanban, tiêu đề từng cột (tên cột và số đếm) nay đứng yên, chỉ phần thẻ bên dưới cuộn,
-mỗi cột cuộn riêng. Trước đây cả bảng cuộn chung nên cuộn cột «Xong» dài là mất tiêu đề.
+mỗi cột cuộn riêng. Trước đây cả bảng cuộn chung nên cuộn cột **Xong** dài là mất tiêu đề.
 
 Không đổi dữ liệu, không có migration. Kiểm: 438 bài kiểm giao diện phân hệ Dự án và 180 bài kiểm
 máy chủ phân hệ Dự án xanh; bấm thử trên trình duyệt luồng tạo nhóm, nhóm con, dự án trong nhóm,
-đổi tên nhóm, chuyển dự án sang nhóm khác; đo trên dự án ERP v2 thấy cuộn cột «Xong» 600 điểm ảnh
+đổi tên nhóm, chuyển dự án sang nhóm khác; đo trên dự án ERP v2 thấy cuộn cột **Xong** 600 điểm ảnh
 thì tiêu đề không xê dịch. Chưa thử kéo thả thẻ trong cột dài. Đã commit trên erp-v2, chưa lên dev.
 
 Mã nguồn: frontend-v2/src/modules/work/{components/work-sidebar-tree, work-create-dialog,
@@ -3390,12 +3393,12 @@ membership_service, list_config_service, task_service}.py · test_cong_viec_hoat
 ## bao-CR-538 | Nới các ô chữ đoạn văn của khảo sát, YCBG, YCMH và đơn mua hàng
 - status: xong
 - date: 2026-10-01
-Sau sự cố «Ghi chú NSPT» tràn cột ngày 30/09, Agent 3 rà toàn bộ ô chữ người dùng gõ tay ở khảo sát,
+Sau sự cố **Ghi chú NSPT** tràn cột ngày 30/09, Agent 3 rà toàn bộ ô chữ người dùng gõ tay ở khảo sát,
 YCBG, YCMH, đơn mua hàng, YCTT và nhà cung cấp trên dữ liệu thật của prod. Chỉ ô Ghi chú NSPT từng vỡ,
 nhưng nhiều ô khác đang sát trần và không bị chặn độ dài ở tầng kiểm dữ liệu.
 
 Đã chốt cách nới: không chuyển sang văn bản dài mà cộng thêm 100 ký tự vào trần hiện tại (255 lên
-355, 500 lên 600); riêng «Chính sách công nợ» là chuỗi mặc định nên 50 lên 100 là đủ. Đã nới 17 cột:
+355, 500 lên 600); riêng **Chính sách công nợ** là chuỗi mặc định nên 50 lên 100 là đủ. Đã nới 17 cột:
 chính sách công nợ hai dòng khảo sát; hoạt chất, chính sách vận chuyển của dòng sản phẩm; chính sách
 giao hàng, độ tin cậy, công nghệ sản xuất, chính sách hóa đơn, đổi trả lỗi, nguồn thông tin của dòng
 nhà cung cấp; mục đích của YCBG và YCMH; ghi chú dòng YCMH và dòng đơn mua hàng; diễn giải chi phí
@@ -3405,7 +3408,7 @@ dài, giữ nguyên bắt buộc và mặc định của từng cột như trên
 
 Kiểm: 34 bài kiểm mới xanh; 581 trên 582 bài kiểm khảo sát, YCBG, YCMH, đơn mua hàng xanh. Bài đỏ còn
 lại (`test_yctt_chua_chan_ghi_chi_phieu_chua_duyet`) đỏ sẵn trên erp-v2 vì viết trước bao-CR-511.
-Đợt hai theo chỉ đạo «phải bắt validate kỹ các phần này» (chặn ở schema là tuyến chính, lỗi
+Đợt hai theo chỉ đạo **phải bắt validate kỹ các phần này** (chặn ở schema là tuyến chính, lỗi
 MySQL chỉ là lưới cuối): khai giới hạn độ dài cho MỌI ô chữ còn thiếu ở mọi schema ghi của khảo
 sát, YCBG, YCMH, đơn mua hàng, YCTT và nhà cung cấp — 215 chỗ khai báo, số khớp đúng trần cột (thêm
 các bí danh `Str10`…`Str1000`). Thêm bài kiểm canh: mỗi schema ghi phải khai rõ ghi vào bảng nào, và
@@ -3415,13 +3418,13 @@ của sáu phân hệ xanh (bài đỏ còn lại là bài YCTT cũ đỏ sẵn)
 lỗi MySQL và kiểm độ dài ở các cửa ghi không qua schema do Agent 2 làm. Commit f6df2935 và deploy dev ngày 01/10; dev và local đã đứng sau migration nên 17 cột được nới bằng lệnh chạy tay, đã đọc lại độ dài từng cột.
 
 Phần của Agent 2 (thông báo lỗi bằng lời, lưới cuối, cửa ghi không qua schema). Lỗi kiểm dữ liệu
-nay trả một câu tiếng Việt chỉ đúng ô sai thay cho câu trơn «Dữ liệu không hợp lệ», ví dụ «Ô "Mục
-đích" tối đa 355 ký tự (đang nhập 412)»; lỗi nằm trong dòng con thì thêm «ở dòng thứ k», nhiều lỗi
-thì nêu lỗi đầu kèm «và n lỗi khác». Câu nói được các ca quá dài, quá ngắn, thiếu ô bắt buộc, sai
+nay trả một câu tiếng Việt chỉ đúng ô sai thay cho câu trơn **Dữ liệu không hợp lệ**, ví dụ **Ô "Mục
+đích" tối đa 355 ký tự (đang nhập 412)**; lỗi nằm trong dòng con thì thêm **ở dòng thứ k**, nhiều lỗi
+thì nêu lỗi đầu kèm **và n lỗi khác**. Câu nói được các ca quá dài, quá ngắn, thiếu ô bắt buộc, sai
 kiểu số, sai ngày, vượt ngưỡng số và giữ nguyên câu của các bộ kiểm tự viết; tên ô lấy từ tiêu đề
 khai trong schema, không có thì tra bảng nhãn chung, cuối cùng mới dùng tên trường. Phần chi tiết
-lỗi cho máy đọc giữ nguyên như cũ. Lưới cuối: lỗi nào vẫn lọt xuống MySQL với mã 1406 «Data too
-long» thì trả 422 «Ô X dài quá, tối đa n ký tự» (n tra từ model theo bảng và cột) thay cho lỗi
+lỗi cho máy đọc giữ nguyên như cũ. Lưới cuối: lỗi nào vẫn lọt xuống MySQL với mã 1406 **Data too
+long** thì trả 422 **Ô X dài quá, tối đa n ký tự** (n tra từ model theo bảng và cột) thay cho lỗi
 không lường trước, ghi cảnh báo kèm đường API và tên cột vào log để biết chỗ còn thiếu chặn, và
 phiên cơ sở dữ liệu được rollback ngay khi lỗi đi ra. Thêm hàm dùng chung chặn độ dài trước khi gán
 cho các cửa ghi nhận dữ liệu thô không qua schema: lý do tạm ngưng hoặc hủy dòng đơn mua hàng, mã
@@ -3432,7 +3435,7 @@ báo lỗi (chỉ ghép khi gặp câu trơn cũ), ô thuốc bảo vệ thực 
 v1 nói chung vốn đã hiện đúng câu của backend. Kiểm: 21 bài kiểm mới xanh; 177 bài kiểm liên quan
 xanh; v2 tsc 0 lỗi, eslint 0 lỗi, vitest khu api 11 bài xanh; v1 tsc giữ đúng 4 lỗi cũ.
 
-Đợt ba, yêu cầu «làm luôn 26 phân hệ kia»: bài canh mở rộng ra 34 phân hệ (mọi phân hệ có cột chữ
+Đợt ba, yêu cầu **làm luôn 26 phân hệ kia**: bài canh mở rộng ra 34 phân hệ (mọi phân hệ có cột chữ
 và schema ghi; phân hệ mới quên thêm vào danh sách là đỏ), ghép schema với bảng tự động khi chắc chắn
 và khai tay phần còn lại. Vá thêm 190 ô ở 28 phân hệ (danh mục văn bản, sản phẩm, dự án, hướng dẫn sử
 dụng, hợp đồng, công ty, phê duyệt, nghỉ phép, văn bản, ticket, phòng họp, hải quan…). Chạy hồi quy
@@ -3474,11 +3477,11 @@ purchase-request-signature-cells(.test).ts · purchase-request-print-page(.test)
 
 ---
 
-## bao-CR-537 | Hotfix: «Ghi chú NSPT» của phiếu khảo sát nhận ghi chú dài hơn 255 ký tự
+## bao-CR-537 | Hotfix: "Ghi chú NSPT" của phiếu khảo sát nhận ghi chú dài hơn 255 ký tự
 - status: xong
 - date: 2026-09-30
-Nhân sự thu mua lưu phiếu khảo sát thì gặp «Hệ thống gặp lỗi không lường trước» (mã sự cố D30D24DF)
-và phải sửa tay rất lâu. Nguyên nhân là ô «Ghi chú NSPT» của dòng nhà cung cấp và dòng sản phẩm chỉ
+Nhân sự thu mua lưu phiếu khảo sát thì gặp **Hệ thống gặp lỗi không lường trước** (mã sự cố D30D24DF)
+và phải sửa tay rất lâu. Nguyên nhân là ô **Ghi chú NSPT** của dòng nhà cung cấp và dòng sản phẩm chỉ
 chứa được 255 ký tự, trong khi ghi chú họ gõ dài 263 ký tự. Lỗi có từ trước, không do đợt đồng bộ
 code cùng ngày.
 
@@ -3556,21 +3559,21 @@ test_kiem_nhiem_phong_ban.py · test_bao_cao_thu_mua_theo_ky.py
 ## bao-CR-531 | Bản in phiếu đề xuất mua hàng: hộ kinh doanh chỉ hai ô ký, Giám đốc trùng người ký thì gộp ô
 - status: xong
 - date: 2026-09-30
-Đã chốt cách in cụm «XÉT DUYỆT» của Phiếu đề xuất mua hàng hóa/dịch vụ. Trước đây phiếu luôn in
+Đã chốt cách in cụm **XÉT DUYỆT** của Phiếu đề xuất mua hàng hóa/dịch vụ. Trước đây phiếu luôn in
 bốn ô Giám đốc, TP/BP mua hàng, TP/BP đề xuất, Người lập, trong đó ô Giám đốc luôn để trống vì không có
 bước duyệt nào tương ứng.
 
-Danh mục Công ty nay có thêm ô «Loại hình» với hai lựa chọn Công ty và Hộ kinh doanh, chọn được ở màn
+Danh mục Công ty nay có thêm ô **Loại hình** với hai lựa chọn Công ty và Hộ kinh doanh, chọn được ở màn
 cũ lẫn màn mới. Migration thêm cột, mặc định mọi pháp nhân là Công ty, và tự đổi thành Hộ kinh doanh
-những pháp nhân có tên bắt đầu bằng «HỘ KINH DOANH»; trên prod chỉ có đúng một dòng là «HỘ KINH DOANH
-DR XANH».
+những pháp nhân có tên bắt đầu bằng **HỘ KINH DOANH**; trên prod chỉ có đúng một dòng là **HỘ KINH DOANH
+DR XANH**.
 
-Pháp nhân là hộ kinh doanh thì phiếu chỉ in hai ô «Chủ hộ» và «Người lập», không in tên, không in chữ
-ký ở mọi chế độ. Pháp nhân là công ty thì ô «Giám đốc» là người đại diện pháp luật của công ty; nếu
+Pháp nhân là hộ kinh doanh thì phiếu chỉ in hai ô **Chủ hộ** và **Người lập**, không in tên, không in chữ
+ký ở mọi chế độ. Pháp nhân là công ty thì ô **Giám đốc** là người đại diện pháp luật của công ty; nếu
 người đó cũng chính là người ở ô TP/BP đề xuất hoặc ô TP/BP mua hàng (so theo hồ sơ nhân sự, không so
 theo tên) thì bỏ ô trùng đó và in tên cùng chữ ký của người đó vào ô Giám đốc. Ví dụ phiếu PYC29092604
 của ICARE do ông Lê Phước Hữu (người đại diện) duyệt sẽ in ba ô. Không trùng thì ô Giám đốc vẫn để trống
-ký tay như cũ. Chế độ «Không chữ ký» nay bỏ cả ảnh chữ ký lẫn họ tên; «Mẫu thuế» vẫn để trống toàn bộ.
+ký tay như cũ. Chế độ **Không chữ ký** nay bỏ cả ảnh chữ ký lẫn họ tên; **Mẫu thuế** vẫn để trống toàn bộ.
 
 Việc chọn ô nào in ra được làm ở một chỗ duy nhất trên máy chủ; màn cũ và màn mới chỉ vẽ lại danh sách
 ô mà máy chủ gửi về. Bản in YCBG (yêu cầu báo giá) và ĐMH (đơn mua hàng) không đổi.
@@ -3608,15 +3611,15 @@ Mã nguồn: frontend-v2/src/modules/procurement/pages/category-assignee-form-pa
 
 ---
 
-## bao-CR-529 | Ô «Phòng thu mua mặc định» chọn từ danh mục Phòng ban thay vì gõ mã
+## bao-CR-529 | Ô "Phòng thu mua mặc định" chọn từ danh mục Phòng ban thay vì gõ mã
 - status: xong
 - date: 2026-09-30
-Người dùng hỏi ở màn Cấu hình hệ thống: «sao chỗ này để mã PBA017, sao không cho chọn từ danh sách phòng
-ban». Trước đây quản trị phải tự gõ mã phòng, và gõ sai mã thì hệ thống lặng lẽ quay về «phòng xử lý
-để trống» mà không báo gì.
+Người dùng hỏi ở màn Cấu hình hệ thống: **sao chỗ này để mã PBA017, sao không cho chọn từ danh sách phòng
+ban**. Trước đây quản trị phải tự gõ mã phòng, và gõ sai mã thì hệ thống lặng lẽ quay về **phòng xử lý
+để trống** mà không báo gì.
 
-Nay ô đó là ô chọn có tìm kiếm (gõ tên hoặc mã, không cần dấu) ở cả màn cũ lẫn màn mới, hiện «Tên
-phòng · Mã», chỉ mời chọn phòng đang dùng; để trống vẫn nghĩa là PBA017 «Sản xuất -Thu mua». Dưới cơ
+Nay ô đó là ô chọn có tìm kiếm (gõ tên hoặc mã, không cần dấu) ở cả màn cũ lẫn màn mới, hiện **Tên
+phòng · Mã**, chỉ mời chọn phòng đang dùng; để trống vẫn nghĩa là PBA017 **Sản xuất -Thu mua**. Dưới cơ
 sở dữ liệu vẫn lưu mã phòng như bao-CR-524 nên không cần migration và không đổi luồng nào. Cửa lưu nay
 chặn mã không có trong danh mục và phòng đã ngừng dùng bằng câu báo tiếng Việt; mã cũ đang nằm dưới
 cơ sở dữ liệu không chặn người chỉ sửa ô khác. Người thiếu quyền đọc danh mục Phòng ban thì ô rơi về
@@ -3624,7 +3627,7 @@ cơ sở dữ liệu không chặn người chỉ sửa ô khác. Người thi�
 
 Kiểm: 6 bài kiểm mới ở máy chủ xanh, rà lại bài kiểm màn Cấu hình và phòng thu mua mặc định (99 bài
 xanh). Màn mới kiểm kiểu và eslint không lỗi, vitest phân hệ Quản trị 273 bài xanh; màn cũ giữ đúng
-4 lỗi nền. Đã mở cả hai màn trên máy local: ô hiện đúng «Sản xuất -Thu mua · PBA017», gõ «ke» lọc ra
+4 lỗi nền. Đã mở cả hai màn trên máy local: ô hiện đúng **Sản xuất -Thu mua · PBA017**, gõ **ke** lọc ra
 Kế toán, Kiểm soát kế hoạch, Thiết kế. Commit và deploy dev ngày 30/09 cùng bao-CR-529..531 (gộp chung một checkout).
 
 Lên prod ngày 30/09 cùng bao-CR-528..531: cherry-pick sang main (f7f6ba79), sao lưu DB prod trước khi
@@ -3636,26 +3639,26 @@ Mã nguồn: `setting/service.py` (`_normalize` nhận thêm `db`, kiểu `depar
 
 ---
 
-## bao-CR-528 | Ô «Điều kiện bỏ qua điều phối» chọn bằng bộ chọn điều kiện thay vì gõ JSON
+## bao-CR-528 | Ô "Điều kiện bỏ qua điều phối" chọn bằng bộ chọn điều kiện thay vì gõ JSON
 - status: xong
 - date: 2026-09-30
-Người dùng chê ô «Điều kiện bỏ qua bước thu mua duyệt lần 2» ở màn Cấu hình hệ thống: «sao không làm như
-cái filter, cấu hình là gõ code vào à». Trước đây quản trị phải tự gõ một chuỗi JSON, và gõ sai một
+Người dùng chê ô **Điều kiện bỏ qua bước thu mua duyệt lần 2** ở màn Cấu hình hệ thống: **sao không làm như
+cái filter, cấu hình là gõ code vào à**. Trước đây quản trị phải tự gõ một chuỗi JSON, và gõ sai một
 chữ thì hệ thống lặng lẽ coi như không có điều kiện nào mà không báo gì.
 
 Nay ô đó là bộ chọn điều kiện ở cả màn cũ lẫn màn mới: mỗi dòng chọn trường, phép so và giá trị,
-nhiều dòng thì phiếu phải thỏa tất cả, bên dưới có câu tiếng Việt đọc lại, ví dụ «Bỏ qua bước thu mua
-duyệt lần 2 khi: Phòng xử lý có giá trị». Trường chọn được là Phòng xử lý, Phòng lập phiếu, Công ty,
-Người yêu cầu, Đơn gấp và Số dòng hàng. Phòng thu mua mặc định (Sản xuất -Thu mua) được tính là «để
-trống» nên không có trong danh sách chọn của ô Phòng xử lý; điều kiện hay dùng nhất là «Phòng xử lý có
-giá trị», nghĩa là phiếu nhờ phòng khác xử lý. Điều kiện khai tay từ trước mà bộ chọn không đọc được
+nhiều dòng thì phiếu phải thỏa tất cả, bên dưới có câu tiếng Việt đọc lại, ví dụ **Bỏ qua bước thu mua
+duyệt lần 2 khi: Phòng xử lý có giá trị**. Trường chọn được là Phòng xử lý, Phòng lập phiếu, Công ty,
+Người yêu cầu, Đơn gấp và Số dòng hàng. Phòng thu mua mặc định (Sản xuất -Thu mua) được tính là **để
+trống** nên không có trong danh sách chọn của ô Phòng xử lý; điều kiện hay dùng nhất là **Phòng xử lý có
+giá trị**, nghĩa là phiếu nhờ phòng khác xử lý. Điều kiện khai tay từ trước mà bộ chọn không đọc được
 thì hiện nguyên văn, không bị ghi đè.
 
-Ở máy chủ, cấu hình được gắn cờ kiểu «condition» để giao diện biết vẽ bộ chọn; dưới cơ sở dữ liệu vẫn
+Ở máy chủ, cấu hình được gắn cờ kiểu **condition** để giao diện biết vẽ bộ chọn; dưới cơ sở dữ liệu vẫn
 lưu đúng chuỗi cũ nên luồng duyệt không đổi gì. Cửa lưu nay chặn điều kiện hỏng bằng câu báo tiếng Việt
 (sai cú pháp, không phải danh sách, trường lạ, phép so lạ, thiếu giá trị); để trống thì xóa điều kiện.
 Giá trị hỏng cũ đang nằm trong cơ sở dữ liệu không chặn người chỉ sửa ô khác. Lúc chạy thật hệ thống
-vẫn đọc khoan dung như cũ. Nhật ký cấu hình ghi câu «Phòng xử lý có giá trị» thay cho chuỗi JSON.
+vẫn đọc khoan dung như cũ. Nhật ký cấu hình ghi câu **Phòng xử lý có giá trị** thay cho chuỗi JSON.
 
 Ở màn mới, bộ chọn điều kiện của màn Luồng phê duyệt được nâng lên thành phần dùng chung để hai màn
 cùng dùng; màn Luồng phê duyệt giữ nguyên cách hiển thị.
@@ -3665,9 +3668,9 @@ tệp kiểm bộ máy duyệt (tổng 202 bài xanh). Màn mới kiểm kiểu 
 màn Cấu hình có 47 bài kiểm (13 bài chuyển từ màn Luồng phê duyệt sang), vitest phần hệ thống, phê
 duyệt và thành phần dùng chung xanh cả 399 bài. Màn cũ giữ đúng 4 lỗi nền.
 
-Thử thật trên dev trước khi đẩy: đặt điều kiện «Phòng xử lý có giá trị» rồi cho hai phiếu thử đi đủ
-Gửi duyệt và Duyệt. Phiếu nhờ Dego Organic xử lý đi thẳng sang «Đã điều phối» và tự giao cho nhân viên
-thu mua nhà máy; phiếu của phòng khác vẫn đứng ở «Đã duyệt» chờ thu mua điều phối. Hai phiếu thử đã xóa,
+Thử thật trên dev trước khi đẩy: đặt điều kiện **Phòng xử lý có giá trị** rồi cho hai phiếu thử đi đủ
+Gửi duyệt và Duyệt. Phiếu nhờ Dego Organic xử lý đi thẳng sang **Đã điều phối** và tự giao cho nhân viên
+thu mua nhà máy; phiếu của phòng khác vẫn đứng ở **Đã duyệt** chờ thu mua điều phối. Hai phiếu thử đã xóa,
 điều kiện để lại trên dev cho quản trị bấm thử. Đẩy lên erp-v2 và deploy dev ngày 30/09.
 
 Lên prod ngày 30/09 cùng bao-CR-528..531: cherry-pick sang main (f7f6ba79), sao lưu DB prod trước khi
@@ -3681,27 +3684,27 @@ Mã nguồn: `setting/service.py` (`_normalize`, `_get_condition_fields`, `_form
 `frontend/src/components/ConditionRuleEditor.tsx` · `frontend/src/utils/conditionRule.ts` ·
 `frontend/src/pages/Settings.tsx` · `test/backend/test_o_dieu_kien_bo_qua_dieu_phoi_cr528.py`
 
-## bao-CR-524 | Bỏ «Thu mua chung», phòng thu mua mặc định là phòng «Sản xuất -Thu mua»
+## bao-CR-524 | Bỏ "Thu mua chung", phòng thu mua mặc định là phòng "Sản xuất -Thu mua"
 - status: xong
 - date: 2026-09-30
-Khách chốt ngày 30/09 bỏ phòng ảo «Thu mua chung»: phiếu không nhờ phòng nào khác xử lý từ nay thuộc
-về phòng thật «Sản xuất -Thu mua» (mã PBA017). Trước đây số 0 ở ô phòng xử lý của yêu cầu mua hàng,
+Khách chốt ngày 30/09 bỏ phòng ảo **Thu mua chung**: phiếu không nhờ phòng nào khác xử lý từ nay thuộc
+về phòng thật **Sản xuất -Thu mua** (mã PBA017). Trước đây số 0 ở ô phòng xử lý của yêu cầu mua hàng,
 yêu cầu báo giá và đơn mua hàng, ở cột phòng của công nợ và yêu cầu thanh toán, và ở bảng phân công
-phụ trách đều mang nghĩa «Thu mua chung», một phòng không có trong danh mục. Thêm một chỗ duy nhất
+phụ trách đều mang nghĩa **Thu mua chung**, một phòng không có trong danh mục. Thêm một chỗ duy nhất
 tra mã phòng ra id (không gõ cứng id vì mỗi môi trường một khác), mã đổi được ở màn Cấu hình hệ thống.
 
-Phiếu mới, nút «Trả về thu mua», bản sao, đơn mua hàng lẻ và công nợ mới đều ghi id thật của phòng.
+Phiếu mới, nút **Trả về thu mua**, bản sao, đơn mua hàng lẻ và công nợ mới đều ghi id thật của phòng.
 Phiếu cũ còn số 0 vẫn được hiểu là phòng thu mua mặc định ở mọi chỗ, nên chạy hay chưa chạy script
-chuyển dữ liệu thì không có gì gãy. Quản lý thu mua cấp phòng của phòng «Sản xuất -Thu mua» nay thấy
-phiếu thu mua chung (đúng ý khách). Chặn thêm một chỗ: trưởng phòng «Sản xuất -Thu mua» ở cấp phòng
-không được coi phiếu thu mua chung là «phiếu được nhờ», nếu không họ sẽ thấy và duyệt bước 1 phiếu của
+chuyển dữ liệu thì không có gì gãy. Quản lý thu mua cấp phòng của phòng **Sản xuất -Thu mua** nay thấy
+phiếu thu mua chung (đúng ý khách). Chặn thêm một chỗ: trưởng phòng **Sản xuất -Thu mua** ở cấp phòng
+không được coi phiếu thu mua chung là **phiếu được nhờ**, nếu không họ sẽ thấy và duyệt bước 1 phiếu của
 mọi phòng. Điều kiện bỏ qua điều phối và báo cáo tổng hợp giữ nguyên cách đọc cũ. Màn cũ và màn mới bỏ
-mục «Thu mua chung» ở ô Phòng xử lý, màn Phân công phụ trách và bộ lọc; nút trả về đổi tên thành «Trả
-về phòng thu mua».
+mục **Thu mua chung** ở ô Phòng xử lý, màn Phân công phụ trách và bộ lọc; nút trả về đổi tên thành **Trả
+về phòng thu mua**.
 
 Script chuyển dữ liệu mặc định chỉ xem thử, thêm cờ `--apply` mới ghi, chạy lại vô hại. Nó chỉ đổi
 công nợ có đơn do phòng mặc định xử lý và yêu cầu thanh toán mà mọi khoản nợ gắn vào đều là nợ của
-phòng đó; dòng phân công trùng phân loại với dòng đã có của phòng «Sản xuất -Thu mua» thì báo xung đột
+phòng đó; dòng phân công trùng phân loại với dòng đã có của phòng **Sản xuất -Thu mua** thì báo xung đột
 và bỏ qua, không xóa dòng nào. Chưa chạy ở môi trường nào.
 
 Kiểm: 20 bài kiểm mới xanh; rà lại 57 tệp kiểm liên quan; màn mới kiểm kiểu và eslint không lỗi,
@@ -3714,20 +3717,20 @@ Mã nguồn: `core/central_purchasing.py` · `core/scoping.py` (`_dept_match`, `
 
 Deploy: dev + prod 30/09 (prod main `9a770062`) — đã chạy script chuyển dữ liệu trên prod, sửa hai bài hướng dẫn lập bộ tài khoản
 
-## bao-CR-527 | Phân công phụ trách: đúng một NSTM chính «Chính thức» và tối đa một dự phòng
+## bao-CR-527 | Phân công phụ trách: đúng một NSTM chính "Chính thức" và tối đa một dự phòng
 - status: xong
 - date: 2026-09-30
 Khách chốt ngày 30/09: mỗi phân loại hàng có đúng một nhân sự thu mua (NSTM) chính và tối đa một người
-dự phòng, và người chính phải đang ở trạng thái «Chính thức». Đặt một chốt chung cho mọi đường ghi
+dự phòng, và người chính phải đang ở trạng thái **Chính thức**. Đặt một chốt chung cho mọi đường ghi
 bảng phân công (thêm, sửa, gán hàng loạt): thiếu người chính, người chính hay người dự phòng đang nghỉ
 thai sản, nghỉ việc, là cộng tác viên hoặc hồ sơ đã tắt, hoặc dự phòng trùng người chính thì hệ thống
 từ chối và nói rõ tên người cùng tình trạng của họ.
 
-Khi duyệt hoặc điều phối phiếu, hệ thống tự gán người chính nếu người đó còn «Chính thức»; nếu không
+Khi duyệt hoặc điều phối phiếu, hệ thống tự gán người chính nếu người đó còn **Chính thức**; nếu không
 thì chuyển sang người dự phòng, và nếu cả hai đều không đạt thì để trống cho người điều phối chọn tay
 như hiện nay. Trước đây chỉ xét hồ sơ còn bật, nên việc vẫn rơi vào người đang nghỉ thai sản. Màn danh
-sách ở cả màn cũ và màn mới gắn nhãn cảnh báo «Không còn Chính thức» ở dòng có người chính nay đã nghỉ;
-ô chọn người chỉ mời nhân sự «Chính thức».
+sách ở cả màn cũ và màn mới gắn nhãn cảnh báo **Không còn Chính thức** ở dòng có người chính nay đã nghỉ;
+ô chọn người chỉ mời nhân sự **Chính thức**.
 
 Kiểm: 14 bài kiểm mới xanh cùng bài kiểm luật ở màn mới. Đang ở máy local, chưa commit.
 
@@ -3743,7 +3746,7 @@ Deploy: dev + prod 30/09 (prod main `9a770062`)
 Khách chốt ngày 30/09 rằng người giữ vai trò Quản trị hệ thống được tự sửa vai trò và phạm vi dữ
 liệu của chính mình, cũng như sửa ma trận quyền của vai trò mình đang giữ. Trước đây luật chống tự
 nâng quyền chặn cả quản trị, bắt họ đi nhờ người khác cho những việc vặt, trong khi quản trị vốn đã
-có mọi quyền. Người không phải quản trị vẫn bị chặn như cũ, và luật «không cấp thứ mình không có»
+có mọi quyền. Người không phải quản trị vẫn bị chặn như cũ, và luật **không cấp thứ mình không có**
 vẫn giữ nguyên.
 
 Để khỏi tự khóa mình ra ngoài, khi quản trị tự bỏ vai trò Quản trị của chính mình thì hệ thống hỏi
@@ -3773,8 +3776,8 @@ Deploy: dev + prod 30/09 (prod main `9a770062`)
 - date: 2026-09-30
 Cần có sẵn một bộ vai trò thu mua theo phòng để sau này, khi có danh sách nhân sự và phòng
 phụ trách, các anh chị tự gán; vai trò đang dùng thì giữ nguyên, còn bộ quản lý thu mua cũ sẽ tự tick
-loại trừ phòng nhà máy. Bộ này gồm «Quản lý thu mua phòng» đã có từ trước và vai trò mới «Nhân viên
-thu mua phòng»: làm được đúng những việc như nhân viên thu mua thường, nhưng thấy mọi phiếu đã duyệt
+loại trừ phòng nhà máy. Bộ này gồm **Quản lý thu mua phòng** đã có từ trước và vai trò mới **Nhân viên
+thu mua phòng**: làm được đúng những việc như nhân viên thu mua thường, nhưng thấy mọi phiếu đã duyệt
 của phòng mình thay vì chỉ phiếu được giao. Trợ lý AI lập bộ tài khoản cũng gán được vai trò mới này.
 Vai trò sẽ tự có trên dev và prod ở lần deploy tới, chưa ai được gán.
 
@@ -3814,7 +3817,7 @@ Deploy: prod 30/09 — chọn riêng lên main `ab42ca88`, dựng lại api, cel
 ## bao-CR-522 | Popup Lịch sử mua hàng có thêm cột Tên trên hóa đơn
 - status: xong
 - date: 2026-09-28
-Cần popup «Lịch sử mua hàng gần nhất» trên đơn mua hàng hiện thêm tên trên hóa đơn của các
+Cần popup **Lịch sử mua hàng gần nhất** trên đơn mua hàng hiện thêm tên trên hóa đơn của các
 lần mua trước. Lần mua đi qua đơn mua hàng trên hệ thống đã lưu sẵn tên này. Dữ liệu cũ nạp từ Excel
 (hơn sáu nghìn dòng trên prod) thì tệp gốc không có cột đó, nên lấy tên đang khai ở danh mục sản
 phẩm và in nghiêng mờ, kèm chú thích khi rê chuột, để người dùng biết đó là tên theo danh mục chứ
@@ -3830,7 +3833,7 @@ Mã nguồn: `purchase_history/controller.py` (`_attach_invoice_names`) · `Purc
 - status: xong
 - date: 2026-09-28
 Ticket #57 trên prod báo phiếu yêu cầu mua hàng còn nháp, chưa gửi duyệt, mà bản in đã có tên trưởng
-phòng ở ô ký «TP/BP đề xuất». Nguyên nhân là lần sửa trước sáng nay chỉ bỏ ảnh chữ ký nhưng vẫn in
+phòng ở ô ký **TP/BP đề xuất**. Nguyên nhân là lần sửa trước sáng nay chỉ bỏ ảnh chữ ký nhưng vẫn in
 tên người được chọn duyệt. Đã chốt: chưa duyệt thì ô đó để trống hẳn, duyệt rồi mới hiện. Sửa
 cho cả yêu cầu mua hàng và đơn mua hàng; người được chọn duyệt vẫn hiện ở màn chi tiết như cũ.
 
@@ -3854,9 +3857,9 @@ Deploy: prod 28/09 14:40 — sao lưu tệp cấu hình trước khi sửa
 ## bao-CR-519 | Tra cứu thị trường: bỏ tô nền cột, gom bốn cột giá bằng vạch dọc
 - status: xong
 - date: 2026-09-28
-Người dùng xem bản tô nền cả cột thì thấy hàng «Giá tốt nhất» không còn nổi, nên bảo trả bảng về như bản
+Người dùng xem bản tô nền cả cột thì thấy hàng **Giá tốt nhất** không còn nổi, nên bảo trả bảng về như bản
 đầu nhưng vẫn cần cách phân biệt các cột, và chọn kiểu gom nhóm bằng đường kẻ dọc. Bỏ nền cột,
-thân bảng để trắng. Ở màn cũ, bốn cột giá có thêm một hàng tiêu đề chung «Giá (USD/đơn vị)» và hai
+thân bảng để trắng. Ở màn cũ, bốn cột giá có thêm một hàng tiêu đề chung **Giá (USD/đơn vị)** và hai
 vạch dọc đậm hai bên nhóm. Ở màn mới, bảng dùng chung chưa có hàng tiêu đề nhóm nên thêm tùy
 chọn vạch dọc đậm cho từng cột, đặt sau cột Tổng lượng và sau cột Cao nhất.
 
@@ -3872,7 +3875,7 @@ Mã nguồn: `frontend-v2/src/shared/data-table` (`dividerAfter`) · `customs-pr
 Người dùng xem bản tô màu chữ bốn cột giá (516) thấy hơi lạ nên chọn kiểu tô nền cả cột: mỗi cột một nền
 nhạt từ tiêu đề xuống, chữ giữ màu đen, chỉ cột Bình quân in đậm. Ở màn mới, bảng dùng chung chưa có
 chỗ khai màu cột sẵn nên thêm đúng cơ chế mà bảng dòng chứng từ đang có; người dùng tự đổi màu cột
-trong menu «Cột» thì màu của họ vẫn được ưu tiên. Cũng yêu cầu ba cột Dự toán, Tạm tính, Quyết toán
+trong menu **Cột** thì màu của họ vẫn được ưu tiên. Cũng yêu cầu ba cột Dự toán, Tạm tính, Quyết toán
 ở bảng chi phí thu mua màn cũ cho căn giữa, vì tiêu đề căn phải mà ô nhập căn trái nhìn lệch.
 
 Kiểm: kiểm kiểu và lint không lỗi, 740 bài kiểm của bảng dùng chung và phần thu mua xanh (thêm 2 bài
@@ -3884,7 +3887,7 @@ Mã nguồn: `frontend-v2/src/shared/data-table` (`defaultColor`) · `customs-pr
 ## bao-CR-517 | Bảng chi phí thu mua ở màn cũ: bỏ chữ VNĐ trên ba cột giai đoạn
 - status: xong
 - date: 2026-09-28
-Trên màn đơn mua hàng nhập khẩu bản cũ, ba cột Dự toán, Tạm tính, Quyết toán ghi đuôi «(VNĐ)» trong khi
+Trên màn đơn mua hàng nhập khẩu bản cũ, ba cột Dự toán, Tạm tính, Quyết toán ghi đuôi **(VNĐ)** trong khi
 ô đang nhập nhận số theo tiền tệ của dòng, ví dụ 120 đô. Yêu cầu bỏ chữ VNĐ cho khỏi hiểu nhầm.
 Bỏ đuôi đó và để câu giải thích khi rê chuột lên tiêu đề: ô đang nhập là số trước thuế theo tiền tệ
 của dòng, dòng đã khóa hiện số quy đổi tiền Việt đã gồm thuế. Màn mới vốn không ghi đơn vị nên giữ
@@ -3897,7 +3900,7 @@ Mã nguồn: `frontend/src/pages/PurchaseOrderDetail.tsx` (`COST_STAGE_HEADER_HI
 ## bao-CR-516 | Tra cứu thị trường: ô lọc Phân loại không còn tràn dòng, bốn cột giá có màu riêng
 - status: xong
 - date: 2026-09-28
-Người dùng báo ô lọc Phân loại trên màn Tra cứu thị trường bị lỗi: chữ gợi ý «Thành phẩm + Nguyên liệu»
+Người dùng báo ô lọc Phân loại trên màn Tra cứu thị trường bị lỗi: chữ gợi ý **Thành phẩm + Nguyên liệu**
 dài hơn ô nên tràn ba dòng, làm lệch cả hàng lọc. Đổi chữ gợi ý cho ngắn, cùng kiểu các ô bên
 cạnh. Cũng cần bốn cột giá của bảng theo kỳ dễ nhìn hơn, nên tô mỗi cột một màu theo
 đúng màu trên biểu đồ: bình quân gia quyền cùng màu đường giá, khoảng phổ biến nền xanh nhạt như dải
@@ -3949,7 +3952,7 @@ nhãn thành phẩm và nguyên liệu đều khớp dev; thử 30 đường xem
 
 Sau đó theo chỉ đạo: cấp quyền cho ba vai trò thu mua (nhân viên xem và xuất Excel; admin thu
 mua và quản lý thu mua được nạp tệp, hoàn tác lô và sửa danh mục) — 21 tài khoản; chép bài hướng
-dẫn «Tra cứu thị trường» từ dev lên trang hướng dẫn prod; thử bốn công cụ trợ lý AI về thị trường
+dẫn **Tra cứu thị trường** từ dev lên trang hướng dẫn prod; thử bốn công cụ trợ lý AI về thị trường
 bằng tài khoản nhân viên thu mua đều ra dữ liệu.
 Chiều 28/09 quản trị mở thêm cho nhân viên thu mua quyền nạp tệp tờ khai (tải tệp và ghi lô); sau đó
 quản trị mở luôn quyền hoàn tác một lô đã nạp cho nhân viên thu mua.
@@ -3960,7 +3963,7 @@ Deploy: prod 28/09 13:25, sao lưu `procurement_truoc_tra_cuu_thi_truong_2026092
 - status: xong
 - date: 2026-09-28
 Bài kiểm bộ mã hành động báo đỏ từ khi thao tác điều phối yêu cầu mua hàng được ghi nhật ký dưới
-hai mã khác nhau (bấm Điều phối thì ghi «điều phối», duyệt xong tự điều phối thì ghi «duyệt»).
+hai mã khác nhau (bấm Điều phối thì ghi **điều phối**, duyệt xong tự điều phối thì ghi **duyệt**).
 Khai chỗ đó vào sổ của bài kiểm; cả hai mã đều đã có sẵn trong bộ mã nên không đổi gì ở phần
 chạy thật. Bài kiểm xanh 31/31, không cần deploy.
 
@@ -3972,7 +3975,7 @@ Mã nguồn: `test/backend/test_bo_ma_hanh_dong_cr358.py` (`DYNAMIC_ACTION_SITES
 Khi làm nút cập nhật YCTT theo công nợ, phát hiện hai lỗi có sẵn đang chạy trên prod và
 yêu cầu sửa luôn. Lỗi thứ nhất: màn thu mua cũ chưa có ô cấn trừ tiền treo, nên bấm Lưu phiếu nháp ở
 đó là xóa mất phần cấn trừ đã nhập ở màn mới, tới lúc duyệt không cấn trừ gì. Nay màn cũ gửi lại
-số đang lưu, và máy chủ hiểu dòng không kèm ô cấn trừ là «giữ nguyên» chứ không phải «về 0» —
+số đang lưu, và máy chủ hiểu dòng không kèm ô cấn trừ là **giữ nguyên** chứ không phải **về 0** —
 trình duyệt còn giữ bản màn cũ trước đó cũng không làm mất số nữa. Lỗi thứ hai: máy chủ không kiểm
 trạng thái khi đổi trạng thái phiếu, nên phiếu đã từ chối gửi duyệt lại được và phiếu đã chi có
 thể bị ghi chi lần hai. Nay chỉ đi đúng thứ tự: gửi duyệt từ Nháp, duyệt hoặc từ chối từ Chờ duyệt,
@@ -4002,18 +4005,18 @@ duyệt xem kỹ; hai lỗi có sẵn của YCTT (màn cũ lưu nháp xóa phầ
 Deploy: prod `79e7cee4`, alembic `c496a1b2d3e4`, sao lưu `~/proc_backups/procurement_truoc_full_erpv2_20260928_1142.sql.gz`
 và `~/proc_backups/orphans_truoc_don_20260928/`
 
-## bao-CR-509 | Nút «Cập nhật theo công nợ» cho YCTT khi ĐMH bị sửa sau khi lập phiếu
+## bao-CR-509 | Nút "Cập nhật theo công nợ" cho YCTT khi ĐMH bị sửa sau khi lập phiếu
 - status: xong
 - date: 2026-09-28
-Chốt sổ 07/10/2026: việc này đã xong (PROD 28/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (PROD 28/09); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 YCTT (yêu cầu thanh toán) chụp lại số đề nghị chi, mã PO và số hóa đơn ngay lúc lập. Khi
 người dùng sửa ĐMH (đơn mua hàng) sau đó thì công nợ đổi theo, nhưng YCTT vẫn đứng ở số cũ.
 Khách chốt ngày 28/09 muốn có nút nạp lại YCTT theo công nợ hiện tại, và đã làm nút
-«Cập nhật theo công nợ» ở màn chi tiết YCTT trên cả giao diện cũ lẫn giao diện ERP mới.
+**Cập nhật theo công nợ** ở màn chi tiết YCTT trên cả giao diện cũ lẫn giao diện ERP mới.
 
 Nút chỉ hiện với phiếu còn Nháp và người có quyền sửa phiếu. Bấm vào thì mở hộp xem trước
 cho thấy từng dòng số cũ đổi sang số mới, kèm lý do, cùng tổng cũ và tổng mới; người dùng
-bấm «Cập nhật» mới ghi, và máy chủ tính lại từ công nợ ngay lúc ghi chứ không tin con số
+bấm **Cập nhật** mới ghi, và máy chủ tính lại từ công nợ ngay lúc ghi chứ không tin con số
 giao diện gửi lên. Số mới bằng nợ còn lại của khoản công nợ khớp dòng, trừ phần cấn trừ tiền
 trả trước nếu có, không bao giờ âm. Dòng gõ tay không gắn công nợ thì giữ nguyên; khoản công
 nợ đã trả hết, đã bị xóa hoặc bị hai dòng cùng trỏ vào thì số về 0 và được tô đỏ để người
@@ -4021,9 +4024,9 @@ dùng tự quyết có bỏ dòng hay không, máy không tự xóa dòng. Phi�
 công nợ nên nút bị tắt kèm lời giải thích khi rê chuột.
 
 Phiếu đã gửi duyệt hoặc đã duyệt vẫn khóa như cũ, nhưng nếu số trên phiếu lệch công nợ thì
-màn chi tiết hiện dải cảnh báo đỏ cho người duyệt và kế toán thấy, kèm nút «Xem chênh lệch»
+màn chi tiết hiện dải cảnh báo đỏ cho người duyệt và kế toán thấy, kèm nút **Xem chênh lệch**
 mở cùng hộp xem trước ở chế độ chỉ xem. Cũng rà lại và xác nhận hiện chưa có đường nào đưa
-phiếu đã gửi duyệt quay về Nháp: bấm «Từ chối» là phiếu chuyển sang trạng thái đã từ chối và
+phiếu đã gửi duyệt quay về Nháp: bấm **Từ chối** là phiếu chuyển sang trạng thái đã từ chối và
 khóa hẳn, nên phiếu lệch chỉ có cách từ chối rồi lập phiếu mới. Không có migration, không
 thêm khóa quyền.
 
@@ -4043,7 +4046,7 @@ Mã nguồn: `payment_request/service.py` (`payables_of_line`, `plan_refresh`, `
 ## bao-CR-508 | Người dùng tự sửa số điện thoại, địa chỉ và người báo tin ở Trang cá nhân
 - status: xong
 - date: 2026-09-28
-Chốt sổ 07/10/2026: việc này đã xong (PROD 28/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (PROD 28/09); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Khách chốt ngày 28/09 rằng ai đã có hồ sơ nhân sự cũng phải tự sửa được thông tin liên hệ
 của chính mình, không phải nhờ phòng Nhân sự. Mở cho mọi người tự sửa đúng bốn thứ trên
 Trang cá nhân: số điện thoại, địa chỉ thường trú, địa chỉ hiện nay và danh sách người báo tin
@@ -4056,7 +4059,7 @@ nhập chứ không nhận mã hồ sơ từ người gửi, nên không ai sử
 bất kỳ ô nào ngoài bốn thứ trên (phòng ban, số tài khoản, pháp nhân…) thì bị từ chối cả lần lưu.
 Tài khoản chưa gắn hồ sơ nhân sự nhận câu báo rõ ràng. Không có migration, không thêm khóa quyền.
 
-Trên giao diện, thẻ «Địa chỉ» chỉ xem trước đây đổi thành thẻ «Liên hệ» có nút «Sửa» mở hộp
+Trên giao diện, thẻ **Địa chỉ** chỉ xem trước đây đổi thành thẻ **Liên hệ** có nút **Sửa** mở hộp
 thoại; ngay dưới là bảng người báo tin dùng lại đúng bảng của hồ sơ nhân sự. Hai nút lưu đều
 chặn bấm đúp. Lưu xong thì Trang cá nhân, màn hồ sơ bên Nhân sự và danh sách nhân sự tự nạp lại.
 
@@ -4075,8 +4078,8 @@ Mã nguồn: `employee/controller.py` (`update_my_contact`, `list_my_contacts`, 
 ## bao-CR-507 | Tự sửa hồ sơ nhân sự của chính mình không còn bị chặn vì ô phòng ban
 - status: xong
 - date: 2026-09-28
-Quản trị sửa số điện thoại trong hồ sơ nhân sự của chính mình thì bị chặn với câu «không tự đổi
-phòng ban của chính mình», dù không hề đụng tới phòng ban. Nguyên nhân: màn hồ sơ lần nào lưu
+Quản trị sửa số điện thoại trong hồ sơ nhân sự của chính mình thì bị chặn với câu **không tự đổi
+phòng ban của chính mình**, dù không hề đụng tới phòng ban. Nguyên nhân: màn hồ sơ lần nào lưu
 cũng gửi lại mọi ô, kể cả ô phòng ban, còn máy chủ thì chặn hễ thấy có ô phòng ban. Sửa để
 máy chủ chỉ chặn khi phòng ban thật sự đổi so với bản đang lưu; tự đổi phòng ban của mình vẫn
 bị chặn như cũ vì phòng ban quyết định phạm vi dữ liệu người đó nhìn thấy.
@@ -4090,9 +4093,9 @@ Mã nguồn: `employee/controller.py` (`update_employee`) · `test/backend/test_
 - status: xong
 - date: 2026-09-28
 Quản trị thử tính năng đính kèm trên dev và thấy đơn đang chờ duyệt không có nút in đơn, chỉ có
-nút «In» ở thẻ lịch sử phê duyệt, mà nút đó chỉ in lại cả màn hình. Mở nút «In đơn» cho đơn
+nút **In** ở thẻ lịch sử phê duyệt, mà nút đó chỉ in lại cả màn hình. Mở nút **In đơn** cho đơn
 đang nháp, chờ duyệt, bị trả về và đã duyệt; đơn bị từ chối hoặc đã hủy vẫn không in để tờ giấy
-đó không bị cầm đi như một đơn hợp lệ. Thẻ lịch sử phê duyệt trên màn đơn nghỉ phép bỏ nút «In»;
+đó không bị cầm đi như một đơn hợp lệ. Thẻ lịch sử phê duyệt trên màn đơn nghỉ phép bỏ nút **In**;
 các màn khác dùng chung thẻ này (văn bản, duyệt dấu) vẫn giữ nút như cũ.
 
 Kiểm: kiểm kiểu và lint không lỗi, 545 bài kiểm giao diện của Nhân sự và thẻ lịch sử duyệt xanh.
@@ -4104,15 +4107,15 @@ Mã nguồn: `hr/pages/leave-request-detail-page.tsx` · `hr/components/leave-ap
 ## bao-CR-505 | Đơn nghỉ phép: đính kèm tệp và in ảnh đính kèm sau tờ đơn
 - status: xong
 - date: 2026-09-28
-Chốt sổ 07/10/2026: việc này đã xong (PROD 28/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (PROD 28/09); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Khách muốn khi lập đơn nghỉ phép thì đính kèm được tệp, ví dụ ảnh giấy khám bệnh hoặc
 bản PDF, và khi in đơn thì mọi ảnh đính kèm được in theo ở mặt sau, mỗi ảnh một trang
 A4. Dùng lại cửa đính kèm dùng chung của hệ thống chứ không dựng cửa mới: khai loại
-đính kèm «đơn nghỉ phép», để tệp ở chế độ riêng tư vì giấy khám bệnh là thông tin sức
+đính kèm **đơn nghỉ phép**, để tệp ở chế độ riêng tư vì giấy khám bệnh là thông tin sức
 khỏe, và cho người đang phải ký tờ đơn xem được tệp dù tờ đơn nằm ngoài phạm vi dữ liệu
 của họ (cùng ngoại lệ đã có ở màn chi tiết đơn). Thêm và gỡ tệp chỉ được khi đơn còn ở
 Nháp hoặc Trả về; gửi duyệt rồi thì chỉ xem và tải về. Màn chi tiết đơn ở bản mới có
-thẻ «Tệp đính kèm» ngay dưới tờ đơn; đơn chưa lưu thì thẻ nhắc lưu nháp trước. Trang
+thẻ **Tệp đính kèm** ngay dưới tờ đơn; đơn chưa lưu thì thẻ nhắc lưu nháp trước. Trang
 in thêm mỗi ảnh một trang A4 sau tờ đơn, co vừa trang và giữ tỉ lệ; tệp không phải ảnh
 chỉ ghi tên trên mặt đơn; nút In khóa tới khi ảnh nạp xong. Không có migration, không
 thêm khóa quyền. Bài kiểm: 15 bài mới của phía máy chủ xanh, 73 bài đính kèm và nghỉ
@@ -4123,7 +4126,7 @@ Mã nguồn: `core/file_registry.py` (FILE_POLICY, PRIVATE_ENTITIES), `core/atta
 ## bao-CR-504 | Diễn tập đẩy erp-v2 lên prod trên bản sao dữ liệu thật và vá bốn lỗi phần thu mua
 - status: xong
 - date: 2026-09-28
-Chốt sổ 07/10/2026: việc này đã xong (PROD 28/09 (đợt gom erp-v2)); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (PROD 28/09 (đợt gom erp-v2)); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Đã chốt đẩy toàn bộ erp-v2 lên prod lúc 12 giờ trưa 28/09 và dặn kiểm kỹ phần thu mua vì
 đang có người dùng thật. Lấy bản sao dữ liệu prod về máy, chạy đủ 48 migration và bước seed
 như prod sẽ chạy, rồi so trước và sau cho cả 234 tài khoản: số yêu cầu mua hàng, yêu cầu báo
@@ -4561,7 +4564,7 @@ dịch vụ việc nền.
 ## lark-import | Đồng bộ task từ Lark sang phân hệ Dự án (dev)
 - status: xong
 - date: 2026-09-14
-Chốt sổ 07/10/2026: việc này đã xong (đã nhập xong, sổ .md là nguồn chính từ 14/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (đã nhập xong, sổ .md là nguồn chính từ 14/09); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Đã đánh giá là làm được: Lark có cửa cho phần mềm ngoài gọi vào, chỉ cần lập một ứng
 dụng riêng của công ty và xin quyền đọc công việc; hoặc đọc qua bảng dữ liệu của Lark.
 Đang chờ Ban điều hành trả lời hai câu mới làm tiếp được: task hiện nằm ở phần Nhiệm vụ của
@@ -5540,7 +5543,7 @@ Tham chiếu: biểu mẫu chung 003/BM/PKT.
 - status: xong
 - date: 2026-09-15
 - list: Duyệt dấu, Đặt xe
-Chốt sổ 07/10/2026: việc này đã xong (kế hoạch đã chốt, P1-P3 đã dựng (bao-CR-577/596)); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (kế hoạch đã chốt, P1-P3 đã dựng (bao-CR-577/596)); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Tham chiếu: phần nạp dữ liệu của cụm này ghi trong sổ thay đổi dưới mã bao-CR-415; khóa task
 ở sổ nhật ký giữ nguyên để không đẻ thêm task mới trên phân hệ Dự án.
 Ban điều hành: "tôi có source app đặt xe là app cũ, giờ tôi có hệ thống ERP... làm cách nào
@@ -6141,7 +6144,7 @@ quyết là `steps_service._one_step`: *chặng không có việc nào + phiên 
 nên cái người dùng nhìn thấy. Xóa 1 313 phiên + 3 745 dấu vết đã ghi rồi nạp lại.
 Vá: ghi thêm `tab_approval_task`, **chỉ trạng thái ĐÃ ĐÓNG** (không một dòng `TASK_PENDING`/
 `TASK_WAITING` nào, nên màn *Việc của tôi* không nặng thêm một dòng), **một chặng một dòng lấy
-lượt xử lý CUỐI**. Ghi cả lượt trước thì `_one_step` thấy lẫn «đã hủy» trong nhóm và vẽ một
+lượt xử lý CUỐI**. Ghi cả lượt trước thì `_one_step` thấy lẫn **đã hủy** trong nhóm và vẽ một
 phiếu đã duyệt thành "trả về"; đường đi đầy đủ vẫn nguyên trong `tab_approval_action` — đó mới
 là sổ dấu vết. Vì vậy 2 112 lượt `approved` gom còn 2 052 việc, 51 lượt `needs_correction` còn 9.
 LỖI CÓ SẴN CỦA ERP MÀ ĐỢT NẠP NÀY LÔI RA: vá xong bảng việc thì phiếu đã duyệt **vẫn còn 990
@@ -7387,7 +7390,7 @@ Mã nguồn: `backend/app/modules/agent_hub/service.py` (`cost_report`, `_cost_b
 - date: 2026-09-24
 - pic: NSU209
 
-Người dùng đăng nhập được bằng mã nhưng lệnh xem tài khoản chỉ hiện số hiệu «#238» vì tài khoản đó không có
+Người dùng đăng nhập được bằng mã nhưng lệnh xem tài khoản chỉ hiện số hiệu **#238** vì tài khoản đó không có
 email, và khi hỏi thông tin tài khoản thì bot lại giảng cách đăng nhập. Nay bot hiện họ tên, mã nhân viên,
 phòng ban và tên đăng nhập của tài khoản ở câu báo đăng nhập thành công, ở lệnh xem tài khoản và trong lời
 dặn cho Trợ lý. Trợ lý được dặn: hỏi thông tin tài khoản thì trả bằng chính thông tin đó, chỉ nói cách đăng
@@ -7501,7 +7504,7 @@ Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`timing_line`, `fmt_minut
 - status: xong
 - date: 2026-09-18
 - pic: NSU209
-Chốt sổ 07/10/2026: việc này đã xong (bậc 1 đã chạy trên dev từ 25/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (bậc 1 đã chạy trên dev từ 25/09); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Đã duyệt bản thiết kế Agent Hub rồi ra lệnh làm bậc 1. Bậc này dựng một con bot quản lý
 nhận việc qua Telegram: người dùng nhắn một câu mô tả việc cần làm, bot gom những tin cùng loại
 lại thành một đầu việc, tóm tắt, rồi tự viết ra một bản đề xuất cách sửa kèm danh sách tệp nó
@@ -7601,7 +7604,7 @@ Hỏi thử thì lòi ra lỗi thật của Trợ lý AI khi chạy bằng Gemin
 Google trả 400 và **hỏng cả lượt hỏi** chứ không riêng tool đó. Vá ở tầng adapter Gemini bằng một
 hàm dọn lược đồ đi đệ quy, giữ kiểu số cho tầng chạy tool và chuyển danh sách giá trị cho phép
 xuống phần mô tả. Ghi thành `bao-CR-462-gemini-enum-so` vì đó là lỗi của phân hệ Trợ lý AI chứ
-không phải của Agent Hub. Sau khi vá, câu «Liệt kê 3 đơn mua hàng mới nhất» gọi đúng tool
+không phải của Agent Hub. Sau khi vá, câu **Liệt kê 3 đơn mua hàng mới nhất** gọi đúng tool
 `recent_purchase_orders` và trả lời kèm đường dẫn sang từng đơn.
 
 Đã chốt thêm một hướng cho sau này: mỗi người tự đăng nhập tài khoản ERP ngay trong Telegram,
@@ -7617,7 +7620,7 @@ AI**, đừng bắt người ta học thủ tục.
 
 Chuyện thứ nhất — *"sao phân biệt bằng /hoi nhỉ, trợ lý AI đâu có mấy cái lệnh này đâu, hỏi là trả
 lời luôn mà"*. Nay mọi tin **không** mở đầu bằng `/` đều đi qua một trạm mới `STAGE_INTENT`: gọi
-Gemini Flash với `temperature=0`, trần 256 token, hỏi đúng một câu «tin này là HỎI hay GIAO VIỆC».
+Gemini Flash với `temperature=0`, trần 256 token, hỏi đúng một câu **tin này là HỎI hay GIAO VIỆC**.
 Ra `hoi` thì trả lời tại chỗ, ra `viec` thì để tin nằm lại sổ chờ vòng gom, ra `mo_ho` thì hỏi lại
 một câu kèm hai nút *Trả lời luôn* / *Ghi thành việc* — thà hỏi một câu còn hơn đoán sai rồi đẻ ra
 một đầu việc ma. Tin mở đầu bằng `/` vẫn chạy như cũ nhưng **không tốn lượt gọi model** nào.
@@ -7724,7 +7727,7 @@ ngay, không còn chờ nhịp mười giây; hỏng thì lùi phiên, nghỉ ba
 chết; bị tắt thì xong lượt đang kéo mới dừng. Cờ mới `AGENT_LONG_POLL` đặt sẵn trong tệp
 compose cho beat và worker: bật thì vòng kéo trong beat bị bỏ khỏi lịch và việc đó cũng tự
 trả rỗng nếu lịch cũ còn bắn — hai bên cùng đọc một con trỏ là xử trùng một tin. Hai, bot bật
-dòng «đang soạn tin...» ngay khi nhận tin và bật lại trước khi giao cho Trợ lý AI, chat lạ thì
+dòng **đang soạn tin...** ngay khi nhận tin và bật lại trước khi giao cho Trợ lý AI, chat lạ thì
 vẫn im hẳn. Ba, Gemini trả lỗi hết hạn mức kèm số giây phải chờ không quá mười giây thì chờ
 rồi gọi lại đúng một lần; bảo chờ lâu hơn thì báo lỗi ngay như cũ. Lớp này áp cho cả Trợ lý
 AI trên web.
@@ -7756,7 +7759,7 @@ chữ mà không bấm được gì.
 Làm ba việc, không đụng bảng. Một, sau câu trả lời bot rà các khối kết quả tool. Gặp tệp báo
 cáo thì kiểm sở hữu y hệt đường tải trên web (tệp phải do tài khoản bot tạo và nằm đúng thư
 mục báo cáo của trợ lý), rồi tải byte từ kho và gửi thành tệp đính kèm Telegram bằng đường
-multipart, trần 50 MB của Bot API, có bật dòng «đang tải tệp lên»; gửi hỏng thì đưa link tải
+multipart, trần 50 MB của Bot API, có bật dòng **đang tải tệp lên**; gửi hỏng thì đưa link tải
 web. Hai, gặp đề xuất sửa phiếu thì dựng thẻ ghi từng ô trước và sau, nói rõ phiếu chưa sửa
 và hạn mười lăm phút, kèm hai nút Xác nhận sửa và Không sửa. Dữ liệu nút của Telegram chỉ
 chịu 64 byte nên mã xác nhận để trong sổ tin nhắn (dòng chiều ra, dấu `de_xuat`, thân là JSON
@@ -7883,13 +7886,13 @@ bài kiểm `test/backend/test_dong_bo_datxe_vong_quet.py`.
 - status: xong
 - date: 2026-09-19
 - pic: NSU231
-Màn danh mục Chức vụ tại đường dẫn `/hr/job-positions` bỏ hẳn hai cột «Đang giữ» và «Phòng ban
-đang giữ». Bỏ luôn đường API đếm ngược nuôi hai cột đó ở máy chủ, kèm hai hàm đếm và mười một
+Màn danh mục Chức vụ tại đường dẫn `/hr/job-positions` bỏ hẳn hai cột **Đang giữ** và **Phòng ban
+đang giữ**. Bỏ luôn đường API đếm ngược nuôi hai cột đó ở máy chủ, kèm hai hàm đếm và mười một
 bài kiểm của chúng — giữ lại một đường API mà không màn nào đọc thì lần sau có người sửa nhầm
 cũng không ai biết. Chốt chặn xóa chức vụ đang có người giữ vẫn nguyên, nó đếm bằng hàm khác và
 đếm trên toàn công ty.
 
-Cột «Mã chức vụ» đổi thành cột ID. Mã dạng `cv-truong-phong-mua-hang` dài gần bằng cả tên chức
+Cột **Mã chức vụ** đổi thành cột ID. Mã dạng `cv-truong-phong-mua-hang` dài gần bằng cả tên chức
 vụ, luôn bị cắt đuôi trong ô bảng, và không ai gọi một chức vụ bằng nó — nó chỉ là khóa để tệp
 Excel nhập xuất trỏ vào dòng. Mã vẫn nằm trong biểu mẫu thêm sửa và vẫn lọc được ở bộ lọc nâng
 cao. Huy hiệu mã trên thẻ khổ điện thoại và trên trang chi tiết đổi theo, câu xác nhận xóa cũng
@@ -7900,9 +7903,9 @@ cục trong bộ nhớ trình duyệt, thứ tự đã lưu xếp trước còn 
 nâng khóa nhớ bố cục lên đuôi `.v2` để mọi người nhận lại thứ tự mặc định mới; khóa cũ nằm lại
 vô hại. Lần sau đổi bộ cột kiểu này cũng phải nâng số đó.
 
-Tab «Người đang giữ» ở trang chi tiết giữ nguyên, nhưng ô lọc phòng ban nay đọc danh mục phòng
+Tab **Người đang giữ** ở trang chi tiết giữ nguyên, nhưng ô lọc phòng ban nay đọc danh mục phòng
 ban thay vì bảng đếm vừa bỏ. Hệ quả phải biết: ô đó liệt kê mọi phòng ban chứ không riêng phòng
-đang có người giữ, và mục chọn không còn kèm số người. Thêm mục «(Chưa gắn phòng ban)» vì danh
+đang có người giữ, và mục chọn không còn kèm số người. Thêm mục **(Chưa gắn phòng ban)** vì danh
 mục không có dòng nào mang số không, mà đó lại đúng là nhóm người quản lý đi tìm để gắn cho đủ.
 Ô này tự tắt khi thiếu quyền đọc phòng ban.
 
@@ -7997,7 +8000,7 @@ chứ không phải khai bù ở hộp thoại này. Ba trạng thái phân bi�
 hồ sơ là sự thật đọc thẳng từ tài khoản nên cảnh báo được ngay; có hồ sơ mà chưa đọc được thì
 im lặng, chỉ ghi một dòng mờ là đang thiếu tên thật; đọc được mà thấy trống mới là chưa gắn.
 
-Năm ô tick tụt xuống một mục tên «Ngoại lệ», mặc định đóng, chỉ mở khi người này cần khác
+Năm ô tick tụt xuống một mục tên **Ngoại lệ**, mặc định đóng, chỉ mở khi người này cần khác
 mặc định. Nhãn mục đeo số mục đang khai, và mọi ngoại lệ đã khai vẫn hiện trong khối tóm tắt
 kể cả lúc mục đang gấp — gấp mà không nhắc thì khối trên nói tài khoản thấy cả công ty trong
 khi thật ra còn một phòng bị loại trừ, tức nói dối bằng cách bỏ bớt.
@@ -8008,11 +8011,11 @@ khoản, hai mươi lăm trong hai mươi bảy dòng khai công ty chỉ chép 
 hồ sơ, nhưng hai dòng khác thật và mười một tài khoản chưa gắn hồ sơ đang sống nhờ mấy dòng
 đó. Bỏ ô tick hôm nay là mười ba người mất phạm vi trong im lặng.
 
-Tên hai ô vẫn sửa như bản đầu. Ô cũ tên «Phòng ban được xem» thật ra không thu hẹp gì cả, nó
+Tên hai ô vẫn sửa như bản đầu. Ô cũ tên **Phòng ban được xem** thật ra không thu hẹp gì cả, nó
 ghép bằng phép hoặc nên CỘNG THÊM chứng từ của phòng đó vào phần vai trò đã thấy, và bị bỏ qua
-hoàn toàn khi vai trò đã ở bậc «Tất cả». Đọc tên ô thì ai cũng hiểu ngược lại. Nay đổi thành
-«Xem THÊM phòng ban», và khi vai trò đã ở bậc cao nhất thì ô tự mờ đi kèm một câu nói rõ là
-tick vào cũng không đổi được gì. Ô công ty đổi thành «Chỉ trong công ty» cho đúng việc nó làm.
+hoàn toàn khi vai trò đã ở bậc **Tất cả**. Đọc tên ô thì ai cũng hiểu ngược lại. Nay đổi thành
+**Xem THÊM phòng ban**, và khi vai trò đã ở bậc cao nhất thì ô tự mờ đi kèm một câu nói rõ là
+tick vào cũng không đổi được gì. Ô công ty đổi thành **Chỉ trong công ty** cho đúng việc nó làm.
 Mỗi ô có thêm một dòng nói nó thu hẹp hay cộng thêm. Cảnh báo khi một phòng vừa nằm ở ô xem
 thêm vừa nằm ở ô loại trừ vẫn giữ, và cố ý đặt ngoài mục gấp: loại trừ thắng nên phần xem thêm
 vô tác dụng, giấu nó đi là giấu đúng thứ đang làm hỏng phần vừa khai.
@@ -8042,7 +8045,7 @@ Deploy: dev chiều 19/09/2026 (8d2c52a2), không có migration.
 - status: xong
 - date: 2026-09-19
 - list: Duyệt dấu, Đặt xe
-Chốt sổ 07/10/2026: việc này đã xong (đã lên app cũ, bật đồng bộ prod 02/10); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (đã lên app cũ, bật đồng bộ prod 02/10); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 
 Phần việc nằm bên app cũ của chặng hai, tức chiều app cũ đẩy phiếu sang ERP. Trước đợt này ERP
 đã có sẵn cửa nhận và hai vòng quét nền, nhưng phía app cũ chưa có gì: phiếu sửa xong không ai
@@ -8376,8 +8379,8 @@ từng khối thì ra bốn chỗ hỏng chứ không phải một, và hai tron
 chuyện thẩm mỹ.
 
 Thứ nhất, hai khối việc cần xử lý dùng bảng sáu cột nhưng lại nằm trong lưới hai cột, mỗi khung
-chỉ rộng khoảng sáu trăm điểm ảnh. Hậu quả đo được trên máy: cột công ty đóng dấu cụt thành «CÔNG
-TY TNHH DE…» ở cả bốn dòng, tức bốn ô giống hệt nhau và không phân biệt được dòng nào với dòng
+chỉ rộng khoảng sáu trăm điểm ảnh. Hậu quả đo được trên máy: cột công ty đóng dấu cụt thành **CÔNG
+TY TNHH DE…** ở cả bốn dòng, tức bốn ô giống hệt nhau và không phân biệt được dòng nào với dòng
 nào; tiêu đề văn bản đứt giữa chữ; hai cột cuối là ngày tạo và trạng thái bị đẩy khuất hẳn. Đã
 thay bằng danh sách hàng đợi mới: mã phiếu và tiêu đề văn bản đầy đủ ở hàng trên, công ty và
 người tạo và ngày ở hàng dưới, cả dòng là một liên kết nên bấm chỗ nào cũng mở được chi tiết.
@@ -8390,8 +8393,8 @@ tải hỏng. Nguyên nhân là thẻ khai căn đều hai đầu trong khi nó 
 cao hơn, nên mấy con chip bị đẩy xuống đáy. Hai hàng đợi cũng cùng bệnh do khai cao bằng nhau:
 hàng đợi một dòng bị kéo cao bằng hàng đợi bốn dòng. Nay mọi thẻ cao theo nội dung của chính nó.
 
-Thứ ba là lỗi thật của biểu đồ tròn cơ cấu trạng thái: «Yêu cầu chỉnh sửa» tô trùng đúng màu của
-«Nháp», hai ô chú giải xanh y hệt nhau. Bảng màu chỉ có năm màu trong khi bộ mã có bảy trạng
+Thứ ba là lỗi thật của biểu đồ tròn cơ cấu trạng thái: **Yêu cầu chỉnh sửa** tô trùng đúng màu của
+**Nháp**, hai ô chú giải xanh y hệt nhau. Bảng màu chỉ có năm màu trong khi bộ mã có bảy trạng
 thái, lại đánh theo thứ hạng trong mảng đã lọc nên kỳ nào không phát sinh phiếu nháp là toàn bộ
 màu dịch một bậc, người đã quen xanh lá là xong sẽ đọc sai cả biểu đồ. Nay khai màu theo mã
 trạng thái, lấy tông ngữ nghĩa giống huy hiệu là cam cho chờ, xanh lá cho xong, đỏ cho từ chối.
@@ -8472,15 +8475,15 @@ lớp CSS cho từng hàng) · `column-header-cell.tsx` (vạch kéo giãn cột
 `frontend-v2/src/index.css` (biến màu nhánh cây) · `backend/app/seed_quy_phep_mau.py`.
 
 
-## duoc-CR-430 | Dải thẻ Tổng quan Nhân sự nói rõ «Không có quyền xem» thay vì để số 0
+## duoc-CR-430 | Dải thẻ Tổng quan Nhân sự nói rõ "Không có quyền xem" thay vì để số 0
 - status: xong
 - date: 2026-09-19
 - pic: NSU231
 Ba ô trên dải thẻ Tổng quan Nhân sự đọc từ hồ sơ nhân sự. Người thiếu quyền đọc hồ sơ thì truy
 vấn không chạy nên mọi con số về không — mà số không ở đây KHÔNG có nghĩa là không có ai, nó có
-nghĩa là không được xem. Không nói ra thì người dùng đọc ô «Hồ sơ cần bổ sung 0 — Đã khai đủ» và
+nghĩa là không được xem. Không nói ra thì người dùng đọc ô **Hồ sơ cần bổ sung 0 — Đã khai đủ** và
 tin rằng hồ sơ toàn công ty đã khai đủ, trong khi mấy thẻ ngay bên dưới đã báo đúng là họ không
-có quyền xem. Nay ba ô đó vẫn dựng nhưng đổi dòng chú thích thành «Không có quyền xem», và ô cảnh
+có quyền xem. Nay ba ô đó vẫn dựng nhưng đổi dòng chú thích thành **Không có quyền xem**, và ô cảnh
 báo thôi tô màu vàng vì không còn cảnh báo điều gì. Cùng lối xử lý đã dùng cho hai ô nghỉ phép.
 Kiểm tra: bài kiểm mới cho dải thẻ, ba cổng của v2 xanh.
 Mã nguồn: `frontend-v2/src/modules/hr/components/hr-overview-stats.tsx` (kèm bài kiểm).
@@ -8516,14 +8519,14 @@ Deploy: dữ liệu test trên máy chủ thử 19/09/2026, không đụng mã n
 - pic: NSU209
 Người dùng báo một phiếu đặt xe duyệt xong rồi mà trang chi tiết không còn chỗ nào bày luồng duyệt
 riêng của nó, trong khi phiếu đóng dấu chạy cùng bộ máy thì vẫn thấy lịch sử phê duyệt. Rà ra thì
-hai trang chi tiết đang gác thẻ Luồng duyệt bằng cờ «đang chạy». Cờ đó tắt ngay khi phiên duyệt
+hai trang chi tiết đang gác thẻ Luồng duyệt bằng cờ **đang chạy**. Cờ đó tắt ngay khi phiên duyệt
 đóng lại, nên dấu vết phê duyệt biến mất đúng lúc người ta cần tra lại. Riêng đặt xe còn nặng hơn:
-luồng «Duyệt tự động bởi HOD» — trưởng bộ phận duyệt — chỉ có một bước, phiên mở ra rồi đóng ngay
+luồng **Duyệt tự động bởi HOD** — trưởng bộ phận duyệt — chỉ có một bước, phiên mở ra rồi đóng ngay
 trong cùng một lần bấm, nên thẻ ấy chưa bao giờ kịp hiện lấy một lần.
 
-Nay phía máy chủ trả thêm một ô mang mã phiên duyệt gần nhất, kể cả phiên đã kết thúc; cờ «đang
-chạy» giữ nguyên nhiệm vụ cũ là ẩn ba nút duyệt một bước. Hai câu hỏi khác nhau thì phải có hai ô
-khác nhau: một ô hỏi «có đang chạy không», ô kia hỏi «đã từng vào bộ máy chưa». Cả hai ô lấy từ
+Nay phía máy chủ trả thêm một ô mang mã phiên duyệt gần nhất, kể cả phiên đã kết thúc; cờ **đang
+chạy** giữ nguyên nhiệm vụ cũ là ẩn ba nút duyệt một bước. Hai câu hỏi khác nhau thì phải có hai ô
+khác nhau: một ô hỏi **có đang chạy không**, ô kia hỏi **đã từng vào bộ máy chưa**. Cả hai ô lấy từ
 MỘT câu truy vấn vì bộ máy chỉ mở phiên mới khi không còn phiên nào đang mở — dưới bảng có ràng
 buộc duy nhất canh việc đó — nên phiên còn mở, nếu có, luôn là phiên mới nhất. Giao diện đổi sang
 gác bằng ô mới. Đường API trả chi tiết phiên vốn đã trả cả phiên đã xong, và hai thẻ con vốn đã vẽ
@@ -8552,7 +8555,7 @@ Deploy: dev 19/09/2026 (3a18ebab), không có migration.
 Người dùng xin một tệp hướng dẫn thao tác để tự tay lập hai bộ tài khoản trên giao diện mới: bộ của
 riêng nhà máy (thu mua nội bộ trong phòng) và bộ thu mua chung nhưng không thấy phiếu của nhà máy.
 Trước khi viết, rà lại bản chốt 17/09 của việc phòng tự mua hàng để khỏi viết theo bản cũ: không
-có ô «Phòng tự mua hàng» nào cả, toàn bộ bài toán gói trong ba bộ phạm vi — vai trò Quản lý thu
+có ô **Phòng tự mua hàng** nào cả, toàn bộ bài toán gói trong ba bộ phạm vi — vai trò Quản lý thu
 mua phòng cho nhà máy, và ô Loại trừ phòng ban trong hộp thoại Phạm vi cho hai tài khoản thu mua
 chung. Cũng rà lại từng nhãn nút, tên ô và tên tab của các màn Nhân sự, Phân quyền tài khoản và
 Phân công phụ trách trên giao diện mới, rồi soát ba chỗ dễ nói sai với mã nguồn: bậc phạm vi theo
@@ -8573,16 +8576,16 @@ Mã nguồn: `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-ha
 - status: xong
 - date: 2026-09-21
 - pic: NSU209
-Phát hiện phiếu đóng dấu «HĐ testa» bên app đặt xe cũ ghi là đã duyệt, còn trên ERP vẫn là Chờ
+Phát hiện phiếu đóng dấu **HĐ testa** bên app đặt xe cũ ghi là đã duyệt, còn trên ERP vẫn là Chờ
 duyệt, để từ thứ Bảy tới đầu tuần vẫn vậy. Rà tận nơi thì đồng bộ không hỏng và ERP cũng không sai:
 phiếu mới ký xong chặng một, đang nằm chờ Brand và Pháp chế ở chặng ba. Chuyện là hai bên đặt tên
 trạng thái theo hai lối khác nhau — app cũ gọi tên theo CHẶNG đang chờ nên chặng cuối nó viết luôn
-thành «Đã Duyệt», còn ERP gọi tên theo KẾT QUẢ nên ký hết mới đổi tên. Cùng một tờ phiếu, hai màn
+thành **Đã Duyệt**, còn ERP gọi tên theo KẾT QUẢ nên ký hết mới đổi tên. Cùng một tờ phiếu, hai màn
 hình kể hai câu chuyện, và người xem đọc ra là đồng bộ chết.
 
 Đã chốt chỉ sửa bên ERP, không đụng app cũ và cũng không đẻ thêm mã trạng thái mới. Nay cạnh
 huy hiệu Chờ duyệt có thêm một dòng chữ nhỏ nói đang ở chặng mấy trên mấy và tên chặng đó, ví dụ
-«Đang ở chặng 3/3 · Duyệt Brand & Pháp chế». Dòng này có ở cả màn danh sách lẫn trang chi tiết,
+**Đang ở chặng 3/3 · Duyệt Brand & Pháp chế**. Dòng này có ở cả màn danh sách lẫn trang chi tiết,
 cho cả Duyệt dấu lẫn Đặt xe. Không phải nhập thêm gì, không phải nạp lại dữ liệu cũ: số chặng đang
 chờ và tên các chặng đã nằm sẵn trong phiên duyệt từ hồi nạp dữ liệu về.
 
@@ -8591,11 +8594,11 @@ Chỗ phải sửa thật nằm trong bộ máy vẽ luồng duyệt. Nó vốn 
 có dòng nào, nên chẳng chặng nào sáng lên và câu tóm tắt rơi về mấy chữ trống rỗng. Nay phiên nào
 còn mở thì chặng mà phiên đang đứng chính là chặng đang chờ, kể cả khi bảng việc im lặng. Đem luật
 mới soi lại dữ liệu thật thì lòi thêm một ca nữa: phiếu bị Pháp chế trả về cho sửa rồi nộp lại đúng
-chặng đó, dòng việc của vòng cũ bị hủy nên màn hình vẽ chặng ấy thành «đã hủy» — đọc ra là phiếu
+chặng đó, dòng việc của vòng cũ bị hủy nên màn hình vẽ chặng ấy thành **đã hủy** — đọc ra là phiếu
 chết trong khi nó đang chờ chữ ký. Ca này cũng vào luật luôn. Chặng đã ký hay đã bị từ chối thì
 giữ nguyên, không cho nói ngược lại. Thêm nữa, khi ERP không biết tên người đang giữ việc — phiếu
 app cũ thì người ta vẫn ký bên app cũ nên ERP không giao việc cho ai — thì câu tóm tắt đọc tên
-chặng thay vì để trống, vì «Đang ở chặng 3/3» một mình thì đúng nhưng chẳng giúp được gì.
+chặng thay vì để trống, vì **Đang ở chặng 3/3** một mình thì đúng nhưng chẳng giúp được gì.
 
 Người dùng hỏi thêm câu tóm tắt này có làm chậm màn danh sách không, vì mỗi dòng đều có nó. Đã đo trên
 dữ liệu thật dưới máy local, 1148 phiếu đóng dấu: phần luồng duyệt tốn đúng BA lượt hỏi cơ sở dữ liệu
@@ -8612,8 +8615,8 @@ chặng phải chờ; bài thứ chín đếm số lượt hỏi cơ sở dữ l
 này ai đặt câu hỏi vào trong vòng lặp là đỏ ngay. 63 bài kiểm của cụm duyệt chạy lại đều xanh. Ba cổng của v2 xanh: kiểm kiểu 0 lỗi,
 soát mã 0 lỗi, 149 bài kiểm của ba phân hệ duyệt, duyệt dấu và đặt xe đều xanh. Chạy thử trên dữ
 liệu thật dưới máy local: 12 phiếu đóng dấu gần nhất nay phiếu nào chờ cũng nói rõ đang chờ ai, phiếu
-đã xong vẫn đọc «Đã duyệt đủ 3/3 chặng» như cũ. Đã deploy máy chủ thử, xem lại đúng phiếu
-người dùng gửi ảnh thì nay đọc «Chờ duyệt — Đang ở chặng 3/3 · Duyệt Brand & Pháp chế».
+đã xong vẫn đọc **Đã duyệt đủ 3/3 chặng** như cũ. Đã deploy máy chủ thử, xem lại đúng phiếu
+người dùng gửi ảnh thì nay đọc **Chờ duyệt — Đang ở chặng 3/3 · Duyệt Brand & Pháp chế**.
 Mã nguồn: `backend/app/modules/approval/steps_service.py` (luật chặng đang chờ và câu tóm tắt) ·
 `schema.py` cùng `service.py` của hai phân hệ duyệt dấu và đặt xe · thẻ dùng chung
 `frontend-v2/src/modules/approval/components/approval-stage-note.tsx` · hai màn danh sách và hai
@@ -8633,7 +8636,7 @@ dòng là hai trăm lượt.
 
 Nay hỏi một lượt cho cả trang. Thêm một hàm lấy danh sách công ty của NHIỀU phiếu, trả về theo khóa
 là số phiếu; phiếu chưa gắn công ty nào vẫn có khóa với danh sách rỗng, để chỗ gọi khỏi phải đoán
-giữa «phiếu này chưa gắn ai» và «mình quên hỏi phiếu này». Bản hỏi một phiếu vẫn giữ nguyên vì còn
+giữa **phiếu này chưa gắn ai** và **mình quên hỏi phiếu này**. Bản hỏi một phiếu vẫn giữ nguyên vì còn
 năm chỗ khác dùng, và cả năm đều hỏi cho đúng một tờ phiếu chứ không nằm trong vòng lặp; chỉ ghi
 thêm vào chú thích của nó một lời nhắc đừng đem đặt vào vòng lặp.
 
@@ -8671,25 +8674,25 @@ cách công ty vận hành. Nhà máy Dego Organic là một phòng nhưng mua h
 của kế hoạch đa pháp nhân lại quy định: hồ sơ nhân sự đã gắn pháp nhân nào thì bậc thu mua chỉ
 nhặt phiếu của pháp nhân đó. Nghĩa là gắn pháp nhân cho người nhà máy xong là họ mất phiếu của
 phòng mình đứng tên công ty khác, mà không chỗ nào báo. Trên máy chủ thử chưa ai thấy vì kịch bản
-nạp tài khoản mẫu khai sẵn ô «Chỉ trong công ty» cho mọi tài khoản và cả bốn phiếu của Dego
+nạp tài khoản mẫu khai sẵn ô **Chỉ trong công ty** cho mọi tài khoản và cả bốn phiếu của Dego
 Organic đều đứng tên cùng một công ty.
 
 Đã chốt ba điều. Một, pháp nhân trên hồ sơ nhân sự chỉ là chuyện pháp lý, không được tự thu
-hẹp gì; muốn nhốt một tài khoản vào một pháp nhân thì khai tận tay ô «Chỉ trong công ty» trong hộp
+hẹp gì; muốn nhốt một tài khoản vào một pháp nhân thì khai tận tay ô **Chỉ trong công ty** trong hộp
 Phạm vi, cơ chế có sẵn rồi. Hai, pháp nhân trên phiếu do người lập tự chọn, không cần trùng pháp
 nhân của họ. Ba, không dựng chuyện phòng ban thuộc nhiều công ty hay nhân sự thuộc nhiều công ty,
 phiền phức, tạm bỏ qua.
 
-Cách sửa gọn: hàm điều kiện «nhặt việc» của bậc thu mua bỏ hẳn tham số pháp nhân, chỉ còn lọc theo
+Cách sửa gọn: hàm điều kiện **nhặt việc** của bậc thu mua bỏ hẳn tham số pháp nhân, chỉ còn lọc theo
 trạng thái sau duyệt; hai chỗ gọi cho yêu cầu mua hàng và đơn mua hàng đổi theo; bậc thu mua theo
 phòng dùng chung nhánh nên tự hết lọc, chỉ còn nhốt theo phòng như thiết kế. Không đổi cấu trúc cơ
-sở dữ liệu, không đổi đường API, giao diện không đổi. Kịch bản nạp tài khoản mẫu bỏ dòng «Chỉ trong
-công ty». Hệ quả cần biết khi lên máy chủ: nhân sự thu mua đã gắn pháp nhân sẽ thấy thêm phiếu đã
+sở dữ liệu, không đổi đường API, giao diện không đổi. Kịch bản nạp tài khoản mẫu bỏ dòng **Chỉ trong
+công ty**. Hệ quả cần biết khi lên máy chủ: nhân sự thu mua đã gắn pháp nhân sẽ thấy thêm phiếu đã
 duyệt của pháp nhân khác; ai cần nhốt thì khai tay.
 
 Bài kiểm: tệp kiểm P1-1 cũ đổi tên và viết lại thành bảy bài theo nghĩa mới, có thêm ca Dego
 Organic với bậc theo phòng thấy phòng mình ở hai pháp nhân và không thấy phòng khác. Bài ma trận
-cấp bậc đảo khẳng định và thêm một bài chứng minh «Chỉ trong công ty» là cách nhốt duy nhất. Bốn
+cấp bậc đảo khẳng định và thêm một bài chứng minh **Chỉ trong công ty** là cách nhốt duy nhất. Bốn
 bài trong tệp phạm vi thu mua sửa theo. Năm tệp phạm vi chạy lại được 591 bài xanh. Ghi nhận ngoài
 phạm vi: 28 bài ma trận cho bậc thu mua theo phòng đỏ có sẵn từ việc phòng tự mua hàng, vì bậc mới
 vào danh sách cấp bậc mà hàm dự đoán của bài ma trận chưa có nhánh cho nó; không sửa lén. Số 433
@@ -8711,8 +8714,8 @@ Chỗ thứ nhất ở màn Đơn mua hàng. Cột Tiền hàng phải cộng c�
 sách đi hỏi dòng hàng của từng đơn một, nên một trang có bao nhiêu đơn là bấy nhiêu lượt vào cơ sở
 dữ liệu. Nay gom một lượt cho cả trang, cộng bằng đúng biểu thức cũ, số lượng đặt nhân đơn giá
 nhân thuế nhân tỷ giá, giữ nguyên từng dấu ngoặc để con số không trôi đi một cách im lặng. Đơn
-chưa có dòng hàng nào vẫn có khóa với giá trị không, để chỗ gọi khỏi phải đoán giữa «đơn rỗng» và
-«mình quên hỏi đơn này». Nhân tiện tách riêng luật đọc ô tỷ giá thành một hàm dùng chung, vì
+chưa có dòng hàng nào vẫn có khóa với giá trị không, để chỗ gọi khỏi phải đoán giữa **đơn rỗng** và
+**mình quên hỏi đơn này**. Nhân tiện tách riêng luật đọc ô tỷ giá thành một hàm dùng chung, vì
 giờ có hai nơi đọc nó, một nơi đọc qua dòng hàng và một nơi đọc thẳng cột. Luật đó là ô trống phải
 đọc thành một chứ không phải không: nhân với không thì cả đơn hàng thành không đồng mà chẳng chỗ
 nào báo lỗi, đúng chỗ từng phải vá hồi làm đơn nhập khẩu.
@@ -8931,7 +8934,7 @@ Commit: `32a0686a` trên nhánh erp-v2. Phần bản mới của việc này n�
 bao-CR-442 vì hai việc cùng sửa một vùng mã trên màn Tiến độ, tách ra không sạch.
 Deploy: máy chủ thử nghiệm, 21/09/2026, dựng lại api + celery-worker + erp + web, không migration.
 
-## bao-CR-440 | Vá 28 bài kiểm ma trận phạm vi cho bậc «Được giao + đã duyệt trong phòng»
+## bao-CR-440 | Vá 28 bài kiểm ma trận phạm vi cho bậc "Được giao + đã duyệt trong phòng"
 - status: xong
 - date: 2026-09-21
 - pic: NSU209
@@ -8940,7 +8943,7 @@ Sau bao-CR-438 kiến nghị soi 28 bài kiểm ma trận phạm vi đỏ sẵn 
 Soi ra thì đây là lỗ ở chính bài kiểm chứ không phải quyết định thiết kế còn treo: bao-CR-414 thêm
 bậc thứ bảy vào danh sách cấp phạm vi và viết nhánh xử lý trong hàm sinh điều kiện lọc, nhưng hàm
 gương trong tệp kiểm ma trận, vốn suy kết quả mong đợi từ phần khai báo cột, chưa biết bậc mới nên
-ném lỗi «cấp bậc lạ» cho cả 28 cặp entity với hồ sơ.
+ném lỗi **cấp bậc lạ** cho cả 28 cặp entity với hồ sơ.
 
 Thêm nhánh cho bậc mới vào hàm gương, phản chiếu đúng luật đang chạy: ba chứng từ thu mua lấy
 nhánh thu mua rồi khoanh thêm phiếu thuộc phòng mình (phòng lập hoặc phòng được nhờ); entity khác
@@ -8956,7 +8959,7 @@ Bài kiểm: chạy nguyên tệp ma trận phạm vi ra 481 xanh, trước đó
 
 Mã nguồn: test/backend/test_pham_vi_cap_bac_ma_tran.py, doc/tai-lieu-ky-thuat/change-log-bao.md
 
-## bao-CR-441 | Viết bài Trung tâm HDSD «Lập bộ tài khoản thu mua bằng Trợ lý AI»
+## bao-CR-441 | Viết bài Trung tâm HDSD "Lập bộ tài khoản thu mua bằng Trợ lý AI"
 - status: xong
 - date: 2026-09-21
 - pic: NSU209
@@ -8964,7 +8967,7 @@ Mã nguồn: test/backend/test_pham_vi_cap_bac_ma_tran.py, doc/tai-lieu-ky-thuat
 Sau bao-CR-440 kiến nghị viết bài hướng dẫn cho người dùng cuối về tool trợ lý AI lập bộ tài
 khoản (bao-CR-435), vì Trung tâm HDSD chưa có bài nào nói tới nó, và đã duyệt làm luôn.
 
-Bài đặt làm bài con của bài «Trợ lý AI» trong nhóm «Các chức năng khác», không dựng thẻ phân hệ
+Bài đặt làm bài con của bài **Trợ lý AI** trong nhóm **Các chức năng khác**, không dựng thẻ phân hệ
 mới ngoài trang chủ và không đụng nội dung bài cha. Nội dung gương đúng mục 3 của hướng dẫn lập
 bộ tài khoản và hành vi thật của tool: điều kiện trước khi hỏi (hồ sơ và tài khoản đăng nhập đã
 có, ba quyền người hỏi cần có, không tự lập cho chính mình), bốn bước từ mở trợ lý, gõ yêu cầu
@@ -9062,7 +9065,7 @@ Mã nguồn: frontend-v2/src/modules/procurement/config/ref-filter-options.ts, f
 Commit: `4ba93171` trên nhánh erp-v2.
 Deploy: máy chủ thử nghiệm, 21/09/2026 (bản dựng trên máy thử = 4ba93171).
 
-## bao-CR-444 | Viết bài Trung tâm HDSD «Lập bộ tài khoản phòng tự mua hàng»
+## bao-CR-444 | Viết bài Trung tâm HDSD "Lập bộ tài khoản phòng tự mua hàng"
 - status: xong
 - date: 2026-09-21
 - pic: NSU209
@@ -9071,7 +9074,7 @@ Sau bao-CR-441 kiến nghị viết thêm bài bốn bước làm tay cho quản
 nói hai bước cuối còn hướng dẫn lập bộ tài khoản đầy đủ mới nằm ở tài liệu kỹ thuật. Đã chốt
 bài đặt trong cụm Trợ lý AI, cạnh bài vừa viết, chứ không đặt dưới Quản trị hệ thống.
 
-Bài là bài con thứ hai của bài «Trợ lý AI» trong nhóm «Các chức năng khác». Nội dung gương đủ tám
+Bài là bài con thứ hai của bài **Trợ lý AI** trong nhóm **Các chức năng khác**. Nội dung gương đủ tám
 mục của hướng dẫn lập bộ tài khoản: hai bộ tài khoản (phòng tự mua và Thu mua chung trừ phòng đó)
 với bốn điều quyết định kết quả, phần chuẩn bị, bốn bước làm cho mỗi tài khoản từ tạo hồ sơ nhân
 sự, tạo tài khoản đăng nhập, gán vai trò tới khai phạm vi, phần riêng của bộ phòng tự mua kèm khai
@@ -9087,12 +9090,12 @@ Trung tâm HDSD dưới máy xem cây, đường dẫn và các bảng. Hướng
 
 Mã nguồn: `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py` (mới), `backend/scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py`, `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`, `doc/tai-lieu-ky-thuat/change-log-bao.md`.
 
-## bao-CR-445 | Script seed nhận sở hữu bài cha «Trợ lý AI» trên Trung tâm HDSD
+## bao-CR-445 | Script seed nhận sở hữu bài cha "Trợ lý AI" trên Trung tâm HDSD
 - status: xong
 - date: 2026-09-21
 - pic: NSU209
 
-Sau bao-CR-444 kiến nghị rà lại bài cha «Trợ lý AI», vì bài đó vẫn ghi ở mục Điều hướng là bài
+Sau bao-CR-444 kiến nghị rà lại bài cha **Trợ lý AI**, vì bài đó vẫn ghi ở mục Điều hướng là bài
 cuối của bộ tài liệu dù nay đã có hai bài con, và bảng nhóm câu hỏi ví dụ chưa có nhóm lập bộ tài
 khoản. Bài này vốn nạp tay từ bảng Excel, không thuộc script nào, nên đã chốt viết script
 nhận sở hữu nó để từ nay sửa qua script và chạy lặp lại được trên từng môi trường.
@@ -9112,7 +9115,7 @@ không đổi; đã mở Trung tâm HDSD dưới máy xem bảng, mục điều 
 
 Mã nguồn: `backend/scripts/seed_help_tro_ly_ai.py` (mới), `doc/tai-lieu-ky-thuat/change-log-bao.md`.
 
-## bao-CR-446 | Bậc «Được giao + đã duyệt của phòng» trên Đặt xe khoanh thêm phòng mình
+## bao-CR-446 | Bậc "Được giao + đã duyệt của phòng" trên Đặt xe khoanh thêm phòng mình
 - status: xong
 - date: 2026-09-21
 - pic: NSU209
@@ -9361,14 +9364,14 @@ Commit: `d9212b51` trên nhánh erp-v2.
 Deploy: máy chủ thử nghiệm, 21/09/2026 — dựng lại api rồi chạy script seed trên máy đó (bài id
 89 và 90), rà lại mười bốn liên kết nội bộ ngay trên dữ liệu dev, và nạp bù kho tri thức.
 
-## duoc-CR-431 | Điều kiện áp dụng của hồ sơ: chứng từ có dòng hàng khớp thì mọc ra thẻ «Hồ sơ cần kèm»
+## duoc-CR-431 | Điều kiện áp dụng của hồ sơ: chứng từ có dòng hàng khớp thì mọc ra thẻ "Hồ sơ cần kèm"
 - status: xong
 - date: 2026-09-21
 - pic: NSU231
 Trước đây hồ sơ chỉ nằm trong kho của phân hệ Hồ sơ, ai cần thì phải nhớ mà đi tìm. Nay mỗi tờ hồ
 sơ khai được hai thứ: áp cho loại chứng từ nào, và dòng hàng phải thỏa điều kiện gì. Chứng từ nào
-có ít nhất một dòng khớp thì trang chi tiết của nó mọc ra thẻ «Hồ sơ cần kèm», kèm câu nói rõ vì
-sao khớp — ví dụ «vì dòng 3 có sản phẩm VT00021». Bốn màn nhận thẻ: Yêu cầu mua hàng, Đơn mua
+có ít nhất một dòng khớp thì trang chi tiết của nó mọc ra thẻ **Hồ sơ cần kèm**, kèm câu nói rõ vì
+sao khớp — ví dụ **vì dòng 3 có sản phẩm VT00021**. Bốn màn nhận thẻ: Yêu cầu mua hàng, Đơn mua
 hàng, Yêu cầu báo giá và Phiếu khảo sát. Hai chiều khai điều kiện là Sản phẩm và Phân loại
 VTBB/NL, nối nhau bằng VÀ, với năm phép so sánh là · khác · thuộc · không thuộc · chứa.
 
@@ -9395,22 +9398,22 @@ Mã nguồn: `backend/app/modules/dossier/applicability.py`, `applicability_cont
 `components/required-dossiers-card.tsx`, `hooks/use-applicable-dossiers.ts`.
 Migration: `2ef5534e5ace` — thêm `apply_doc_kinds` và `apply_conditions` vào `tab_dossier`.
 
-## duoc-CR-432 | Thẻ «Hồ sơ cần hoàn thành» trên chi tiết YCBG nhìn y hệt thẻ «Báo cáo thực hiện»
+## duoc-CR-432 | Thẻ "Hồ sơ cần hoàn thành" trên chi tiết YCBG nhìn y hệt thẻ "Báo cáo thực hiện"
 - status: xong
 - date: 2026-09-21
 - pic: NSU231
 Hai thẻ nằm cạnh nhau trên cùng một trang mà lệch nhau vài chỗ nhỏ, nên mắt đọc ra hai khối khác
 loại chứ không phải hai cách theo dõi cùng một việc. Nay đã căn cho khớp: thanh tiến độ của nhóm
-dùng đúng lối của bản gốc (chữ đè giữa thanh, màu mềm, xanh lá khi xong hết), ô tổng «Đã có giấy»
+dùng đúng lối của bản gốc (chữ đè giữa thanh, màu mềm, xanh lá khi xong hết), ô tổng **Đã có giấy**
 dùng lại chính thanh đó thay vì tự vẽ một cái thứ hai, khung nội dung chia đúng bề ngang như bản
 gốc và cột Tiến trình ẩn ở màn hẹp. Dòng hồ sơ mọc thêm viên ngày hết hiệu lực — dữ liệu vốn đã
 có mà chưa bày ra ở đâu — tô theo mức khẩn do backend tính, không tự trừ ngày ở giao diện.
 
-Huy hiệu «BẢN THỬ» cạnh tiêu đề và khung chú thích màu hổ phách ở chân thẻ đã bỏ theo yêu cầu.
+Huy hiệu **BẢN THỬ** cạnh tiêu đề và khung chú thích màu hổ phách ở chân thẻ đã bỏ theo yêu cầu.
 Nhưng khác biệt mà khung đó nói ra thì vẫn thật và vẫn phải nói: ô tick ở thẻ này đọc
-trạng thái của tờ giấy TRONG KHO, dùng chung cho mọi phiếu, chứ không phải «đã xong cho riêng
-phiếu này». Câu đó dời xuống dòng chú thích dưới danh sách, đúng chỗ bản gốc đặt câu «hồ sơ khóa
-= chờ hồ sơ tiên quyết».
+trạng thái của tờ giấy TRONG KHO, dùng chung cho mọi phiếu, chứ không phải **đã xong cho riêng
+phiếu này**. Câu đó dời xuống dòng chú thích dưới danh sách, đúng chỗ bản gốc đặt câu **hồ sơ khóa
+= chờ hồ sơ tiên quyết**.
 
 Bài kiểm mới cho hai hàm thuần bắt được một chỗ không ổn định: hai tờ CÙNG hạn hiệu lực thì phép
 gộp đang lấy tờ đứng sau, nên ô tổng đổi màu qua lại giữa hai lần tải chỉ vì API xếp khác thứ tự.
@@ -9421,27 +9424,27 @@ Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/dossi
 `dossier-checklist-groups.tsx`; `frontend-v2/src/modules/procurement/utils/dossier-checklist-helpers.ts`
 (kèm bài kiểm).
 
-## duoc-CR-433 | Chế độ «Theo dòng hàng» của thẻ Hồ sơ thành BẢNG, và hai khối dùng chung một bộ số liệu để đối chiếu
+## duoc-CR-433 | Chế độ "Theo dòng hàng" của thẻ Hồ sơ thành BẢNG, và hai khối dùng chung một bộ số liệu để đối chiếu
 - status: xong
 - date: 2026-09-21
 - pic: NSU231
-Bấm sang «Theo dòng hàng» ở thẻ Hồ sơ cần hoàn thành thì vẫn ra danh sách gập y như «Xem tổng»,
+Bấm sang **Theo dòng hàng** ở thẻ Hồ sơ cần hoàn thành thì vẫn ra danh sách gập y như **Xem tổng**,
 trong khi bản gốc ở đó là một cái bảng: mỗi dòng hàng một dòng, các cột Hồ sơ · Đã xong · Tiến độ
 · Hạn gần nhất, bấm vào dòng thì sổ hồ sơ của riêng nó, dưới cùng có dòng Tổng cả phiếu. Nay đã
 dựng đúng cái bảng đó.
 
 Làm xong mới lộ một lỗi đếm nằm sẵn từ trước: bộ hồ sơ chung đang bị chép xuống MỌI dòng hàng,
-nên ba dòng của phiếu 2931 đều ghi y hệt nhau «6/15 · 40%» — con số của cả phiếu, không nói gì về
-dòng đó — và dòng Tổng đếm một tờ giấy tới bốn lần. Nay hồ sơ chung đứng riêng một dòng «Chung
-(cả phiếu)» như bản gốc. Hai chỗ lệch nữa cũng sửa theo: cột Tiến trình bên phải trước đây đi
-theo chế độ xem nên bấm sang «Theo dòng hàng» là nó liệt kê ba dòng hàng thay vì năm giai đoạn,
+nên ba dòng của phiếu 2931 đều ghi y hệt nhau **6/15 · 40%** — con số của cả phiếu, không nói gì về
+dòng đó — và dòng Tổng đếm một tờ giấy tới bốn lần. Nay hồ sơ chung đứng riêng một dòng **Chung
+(cả phiếu)** như bản gốc. Hai chỗ lệch nữa cũng sửa theo: cột Tiến trình bên phải trước đây đi
+theo chế độ xem nên bấm sang **Theo dòng hàng** là nó liệt kê ba dòng hàng thay vì năm giai đoạn,
 và nó tụt theo từ khóa đang gõ ở ô tìm; nay luôn đi theo giai đoạn và luôn đếm trên toàn bộ hồ
 sơ, đúng như bản gốc.
 
 Để người dùng đối chiếu hai khối bằng mắt, script nạp hồ sơ mẫu nay gán đủ ngày cấp và ngày hết hiệu
 lực, thêm hai cờ chạy: `--ghi-de` áp lại kịch bản lên hồ sơ đã có, `--ycbg <số>` ghi cùng kịch
 bản đó sang khối Báo cáo thực hiện của một phiếu. Hai mốc khẩn (quá hạn 3 ngày, còn 5 ngày) cố ý
-đặt vào đầu việc CHƯA xong, vì ô «Hết hiệu lực gần nhất» của Báo cáo thực hiện bỏ qua đầu việc đã
+đặt vào đầu việc CHƯA xong, vì ô **Hết hiệu lực gần nhất** của Báo cáo thực hiện bỏ qua đầu việc đã
 hoàn thành còn kho Hồ sơ thì tính cả — dồn mốc vào tờ đã xong thì một bên ra gạch ngang, một bên
 ra ngày đỏ, và lúc đối chiếu nó đọc ra như một bên tính sai.
 
@@ -9458,7 +9461,7 @@ Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/dossi
 `frontend-v2/src/modules/procurement/utils/dossier-checklist-helpers.ts` (kèm bài kiểm);
 `backend/app/seed_ho_so_mau_ycbg.py`.
 
-## duoc-CR-434 | Hộp sửa hồ sơ trong thẻ «Hồ sơ cần hoàn thành» bày đủ ô như hộp bên Báo cáo thực hiện
+## duoc-CR-434 | Hộp sửa hồ sơ trong thẻ "Hồ sơ cần hoàn thành" bày đủ ô như hộp bên Báo cáo thực hiện
 - status: xong
 - date: 2026-09-21
 - pic: NSU231
@@ -9493,7 +9496,7 @@ Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/dossi
 - status: xong
 - date: 2026-09-21
 - pic: NSU231
-Thẻ «Hồ sơ cần hoàn thành» vẫn đo tiến độ bằng cột tình trạng của chính tờ hồ sơ trong kho, mà
+Thẻ **Hồ sơ cần hoàn thành** vẫn đo tiến độ bằng cột tình trạng của chính tờ hồ sơ trong kho, mà
 cột đó dùng chung cho cả công ty. Hậu quả: tick xong một tờ ở yêu cầu báo giá này thì hai chục
 phiếu khác cũng hiện đã xong, nên con số tiến độ của mọi phiếu giống hệt nhau và không nói lên
 điều gì. Nay có bảng mới ghi tiến độ theo từng cặp chứng từ và hồ sơ.
@@ -9531,13 +9534,13 @@ Migration: `b92c74d55ee7` — thêm bảng `tab_dossier_progress`.
 - status: xong
 - date: 2026-09-21
 - pic: NSU231
-Nốt cuối cùng mà thẻ «Hồ sơ cần hoàn thành» còn thiếu so với khối Báo cáo thực hiện. Nay mỗi tờ hồ
+Nốt cuối cùng mà thẻ **Hồ sơ cần hoàn thành** còn thiếu so với khối Báo cáo thực hiện. Nay mỗi tờ hồ
 sơ khai được danh sách những tờ phải xong TRƯỚC nó; trên mỗi chứng từ, tờ nào còn chờ thì làm mờ,
 hiện biểu tượng khóa, ô tick bị chặn và rê chuột đọc ra đang chờ tờ nào.
 
 ⚠️ Chỗ KHAI và chỗ TÍNH nằm ở hai nơi, và đó là điểm tinh tế của cả tính năng. Ràng buộc khai
 trên chính tờ hồ sơ bên phân hệ Hồ sơ, MỘT lần cho cả kho — trình tự giấy tờ của công ty là một,
-đơn mua hàng chỉ phát hành sau khi hợp đồng ký xong, ở mọi thương vụ. Nhưng «đã xong» thì vẫn
+đơn mua hàng chỉ phát hành sau khi hợp đồng ký xong, ở mọi thương vụ. Nhưng **đã xong** thì vẫn
 tính theo từng chứng từ, nên câu hỏi tờ này có đang khóa không vẫn là câu hỏi của riêng từng
 phiếu: cùng một tờ có thể khóa ở phiếu này mà đã mở ở phiếu kia. Ràng buộc dùng chung, trạng thái
 riêng — đừng gộp lại. Bản đầu tôi làm theo hướng khai trong từng tờ phiếu, quản trị đổi lại trong
@@ -9569,7 +9572,7 @@ là một hàng đúng bằng ô ngay trên nó, chip nằm trong khung chứ kh
 — dải riêng làm ô cao hai hàng cho đúng một lựa chọn, mà hàng trên chỉ ghi số lượng nên phải nhìn
 xuống hàng dưới mới biết chọn tờ nào.
 
-Bộ chọn dùng chung có thêm một tùy chọn mới: giấu hàng «chọn tất cả». Dùng khi «chọn hết» là thao
+Bộ chọn dùng chung có thêm một tùy chọn mới: giấu hàng **chọn tất cả**. Dùng khi **chọn hết** là thao
 tác gần như luôn SAI chứ không phải khi danh sách dài — ở đây chọn mọi tờ trong kho làm tiên
 quyết cho một tờ thì tờ đó khóa gần như vĩnh viễn, mà nút lại nằm đúng chỗ dễ bấm nhầm nhất, ngay
 trên mục đầu tiên.
@@ -9577,8 +9580,8 @@ trên mục đầu tiên.
 Script nạp dữ liệu mẫu khai chuỗi tiên quyết bằng TÊN chứ không bằng số thứ tự như mẫu của bản
 gốc: chèn thêm một dòng vào giữa bảng là mọi số phía sau lệch một nấc, im lặng, và chuỗi trỏ sai
 chỗ.
-Kiểm tra: 14 bài backend mới cho phần tiên quyết cộng 4 bài giao diện cho tùy chọn giấu «chọn tất
-cả», 129 bài backend của cụm hồ sơ xanh, 787 bài giao diện xanh, typecheck và lint 0 lỗi. Đã bấm tay trên trình duyệt và gọi thẳng đường API: cả năm chốt
+Kiểm tra: 14 bài backend mới cho phần tiên quyết cộng 4 bài giao diện cho tùy chọn giấu **chọn tất
+cả**, 129 bài backend của cụm hồ sơ xanh, 787 bài giao diện xanh, typecheck và lint 0 lỗi. Đã bấm tay trên trình duyệt và gọi thẳng đường API: cả năm chốt
 trả đúng câu lỗi, tick xong tờ tiên quyết thì tờ chờ nó mở khóa ngay, chín tờ đang khóa dây
 chuyền trên phiếu 2931.
 Mã nguồn: `backend/app/modules/dossier/depends_service.py` (mới), `model.py`, `schema.py`,
@@ -9660,7 +9663,7 @@ trưởng bộ phận thì phiếu dừng lại chứ không tự đi tiếp, b�
 
 Lỗ nặng nhất làm **phiếu kẹt vĩnh viễn mà không chỗ nào báo lỗi**. Người duyệt chặng hai của
 một luồng thật gần như luôn ở phòng khác (Hành chính, Nhân sự, Ban giám đốc), mà phạm vi dữ
-liệu của họ không với tới phiếu của phòng khác. Phân hệ Đặt xe lại đã bỏ màn «Việc của tôi»
+liệu của họ không với tới phiếu của phòng khác. Phân hệ Đặt xe lại đã bỏ màn **Việc của tôi**
 từ 21/08/2026, nên chỗ duy nhất bấm được nút Duyệt là thẻ luồng duyệt nằm TRONG trang chi
 tiết phiếu. Cộng lại thành chuỗi: mở chi tiết phiếu thì báo không tìm thấy, đường API hỏi
 phiên duyệt trả về rỗng nên thẻ duyệt không hiện ra, thư báo bấm vào ra trang trống. Nới
@@ -9672,22 +9675,22 @@ Sáu lỗ còn lại. Một, hai cửa của điều phối viên (trả lại v
 gọi chốt khóa đường duyệt thẳng, nên người có quyền sửa trả phiếu về hoặc khóa phiếu ngay
 trong lúc luồng đang ở chặng một, phiên duyệt thì vẫn chạy — ba nút kia đã khóa từ đầu, hai
 cửa này bị quên. Hai, hàm nhận kết cục của luồng đặt lại trạng thái phiếu vô điều kiện, nên
-một phiếu đã bị từ chối SỐNG LẠI thành «đã duyệt» khi người duyệt ký sau đó; nay bốn hàm
+một phiếu đã bị từ chối SỐNG LẠI thành **đã duyệt** khi người duyệt ký sau đó; nay bốn hàm
 nhận kết cục đều tự kiểm trạng thái nguồn và ghi cảnh báo vào sổ khi bỏ qua. Ba, duyệt qua
 bộ máy nhiều bước không ghi người ký và mốc giờ, nên chi tiết phiếu lẫn bản in đều ghi tên
 người mà NGƯỜI TẠO tự chọn trong biểu mẫu — người có thể chưa hề ký — với ô thời gian trống;
 nay ghi đúng người vừa bấm. Bốn, xóa phiếu không dọn phiên duyệt, để lại việc mồ côi trong
 hộp người duyệt và ký được trên một phiếu đã xóa. Năm, đường duyệt một bước (đường đang chạy
 thật vì công tắc bộ máy còn tắt) cho người lập tự ký phiếu của chính mình; nay chặn, nhưng
-đã chốt miễn cho người có phạm vi «tất cả» vì điều phối viên và quản lý điều phối là
+đã chốt miễn cho người có phạm vi **tất cả** vì điều phối viên và quản lý điều phối là
 người chốt xe cho cả công ty, phiếu của chính họ cũng chỉ có họ duyệt. Sáu, phiếu bị chặn mà
 đang giữ xe và tài xế thì nay nhả ra, không thì phép chống trùng khung giờ vẫn tính xe đó
 đang bận vì một phiếu đã khóa.
 
 Một chuyện đã chốt GIỮ NGUYÊN: điều phối viên vẫn gán được xe và tài xế cho phiếu chưa
 ai ký, kể cả phiếu còn nháp, vì có chuyến gấp phải gọi xe trước chữ ký. Ghim quyết định
-đó thành bài kiểm kèm nhịp phải đúng theo sau — ký xong thì phiếu giữ nguyên «đã điều phối»
-chứ không bị đẩy lùi về «đã duyệt», vì đẩy lùi là xóa mất bước đã đi trong khi xe và tài xế
+đó thành bài kiểm kèm nhịp phải đúng theo sau — ký xong thì phiếu giữ nguyên **đã điều phối**
+chứ không bị đẩy lùi về **đã duyệt**, vì đẩy lùi là xóa mất bước đã đi trong khi xe và tài xế
 vẫn đang giữ chuyến.
 
 Sáu bài kiểm cũ của phân hệ đặt xe dùng chung một người cho cả việc lập lẫn việc duyệt cho
@@ -9706,7 +9709,7 @@ hàm nhận kết cục, ghi người ký và mốc giờ trong `_on_approved`, 
 duyệt khi xóa phiếu); `service.py` (`_block_self_approval`). Bài kiểm mới:
 `test/backend/test_dat_xe_stress_luong_duyet.py`. Báo cáo ép tải đầy đủ:
 `doc/erp/dat-xe/plans/reports/tester-260921-1529-dat-xe-stress-luong-duyet.md`.
-Tham chiếu: tài liệu chức năng `doc/erp/dat-xe/chuc-nang/10-dat-xe.md` mục «Luồng duyệt nhiều bước».
+Tham chiếu: tài liệu chức năng `doc/erp/dat-xe/chuc-nang/10-dat-xe.md` mục **Luồng duyệt nhiều bước**.
 
 ## duoc-CR-438 | Tạm ẩn phân hệ Hồ sơ khỏi giao diện, kể cả bốn thẻ cắm trong Thu mua
 - status: xong
@@ -9716,20 +9719,20 @@ công tắc duy nhất tên `DOSSIER_UI_ENABLED` và dùng nó ở cả hai ch�
 nhất là bản thân phân hệ: bảng đăng ký không nhận nó nữa nên không còn thẻ trên màn chọn phân
 hệ, không còn mục thanh bên, và gõ thẳng đường dẫn `/dossier` lên trình duyệt cũng ra trang
 không tìm thấy vì route không được đăng ký. Chỗ thứ hai là bốn tấm thẻ nằm trong phân hệ Thu
-mua: thẻ «Hồ sơ cần kèm» ở chi tiết yêu cầu mua hàng, đơn mua hàng và phiếu khảo sát, cùng thẻ
-«Hồ sơ cần hoàn thành» ở chi tiết yêu cầu báo giá.
+mua: thẻ **Hồ sơ cần kèm** ở chi tiết yêu cầu mua hàng, đơn mua hàng và phiếu khảo sát, cùng thẻ
+**Hồ sơ cần hoàn thành** ở chi tiết yêu cầu báo giá.
 
 Phải giấu cả hai chỗ cùng lúc chứ không giấu được mỗi chỗ: bỏ mỗi tấm thẻ ngoài màn chọn phân
 hệ thì bốn thẻ kia vẫn nằm giữa các trang chứng từ Thu mua, mà người dùng lại không còn màn nào
 để đi quản lý đống hồ sơ mà chúng đang đòi.
 
 Cố ý KHÔNG dùng cách tắt phân hệ có sẵn (`enabled: false`). Cách đó vẫn dựng một tấm thẻ
-«Sắp có» mờ trên màn chọn phân hệ, tức vẫn khoe ra đúng thứ đang muốn giấu; nó sinh ra cho phân
+**Sắp có** mờ trên màn chọn phân hệ, tức vẫn khoe ra đúng thứ đang muốn giấu; nó sinh ra cho phân
 hệ chưa tới lượt làm, không phải cho phân hệ đã làm xong mà tạm cất đi.
 
 Backend giữ nguyên hoàn toàn: bảng dữ liệu, các đường API và hai khóa quyền của hồ sơ vẫn còn,
 nên dữ liệu ai đã nhập vẫn nằm đó và hiện lại đầy đủ khi bật cờ. Bật lại chỉ cần đổi một chữ
-`false` thành `true`, không phải sửa chỗ nào khác. Màn Phân quyền vẫn còn nhóm «Hồ sơ» với hai
+`false` thành `true`, không phải sửa chỗ nào khác. Màn Phân quyền vẫn còn nhóm **Hồ sơ** với hai
 khóa của nó — để nguyên vì đó là bảng khóa quyền của backend, gỡ đi thì vai trò nào đang
 được cấp sẽ thành quyền ẩn không ai sửa được.
 
@@ -10030,21 +10033,21 @@ gian. Phiếu nào rồi cũng về tới nơi, chậm nhất là qua một đê
 sớm hơn lưới thứ hai khoảng ba phút, đổi lại là thêm một mặt giao diện phải nuôi, một đường
 API phải gác quyền, và một nhánh dữ liệu phải mở quyền đọc ghi.
 
-Lý do thứ ba là chỗ theo dõi đã có sẵn rồi. Màn «Sổ đồng bộ» bên mình dựng từ tuần trước đọc
+Lý do thứ ba là chỗ theo dõi đã có sẵn rồi. Màn **Sổ đồng bộ** bên mình dựng từ tuần trước đọc
 thẳng bảng nhật ký đồng bộ, lại phân biệt được phiếu về bằng móc bắn thẳng hay về bằng vòng
-quét, nên sau này muốn dựng cảnh báo «móc bắn thẳng im tiếng mấy ngày rồi» thì đủ dữ liệu để
+quét, nên sau này muốn dựng cảnh báo **móc bắn thẳng im tiếng mấy ngày rồi** thì đủ dữ liệu để
 làm, không cần quyển sổ nào bên app cũ.
 
 Gỡ sạch cả hai đầu: tệp đọc ghi sổ và bài kiểm của nó, đường API tra sổ, hai cú ghi và xóa
 sổ nằm trong luồng bắn phiếu, kiểu dữ liệu của một dòng sổ ở cả hai repo, và tab thứ năm
-«Đồng bộ ERP» trong màn Quản trị của app cũ. Giữ lại ba thứ đi nhờ cùng đợt hôm qua nhưng
+**Đồng bộ ERP** trong màn Quản trị của app cũ. Giữ lại ba thứ đi nhờ cùng đợt hôm qua nhưng
 không thuộc quyển sổ, vì chúng là sửa thật: cách đọc kết quả một lượt bắn, cách gộp số phiếu
 bên mình và dấu trạng thái vào đúng một lượt ghi thay vì hai, và chính dấu trạng thái trên
 phiếu.
 
-Bên hệ thống của mình không mất gì cả. Màn «Sổ đồng bộ» đứng nguyên, ba vòng quét đứng nguyên,
+Bên hệ thống của mình không mất gì cả. Màn **Sổ đồng bộ** đứng nguyên, ba vòng quét đứng nguyên,
 chuông cảnh báo dòng lỗi để lâu đọc cơ sở dữ liệu của mình chứ không đọc kho app cũ nên không
-hề hấn. Tab «Đồng bộ ERP» thì chưa từng hiện ra với người dùng, vì bản dựng giao diện của đợt
+hề hấn. Tab **Đồng bộ ERP** thì chưa từng hiện ra với người dùng, vì bản dựng giao diện của đợt
 hôm qua không lên được máy chủ, nên gỡ đi cũng không ai thấy khác.
 
 Bài kiểm bên app cũ chưa chạy lại được. Bộ chạy thử của repo đó đang hỏng ở tầng khởi động
@@ -10064,7 +10067,7 @@ nữa. Cả hai thứ sót lại nay là rác trơ: không ai ghi, không ai đ�
 Commit: `my-firebase-api` nhánh dev c6f2b93, `degoholding-app-frontend` nhánh dev 155c861.
 Deploy: cả hai đã lên môi trường thử của app cũ ngày 22/09; lượt triển khai máy chủ của
 my-firebase-api chạy xong không lỗi.
-Tham chiếu: bao-CR-452 là đợt dựng quyển sổ này, bao-CR-449 là màn «Sổ đồng bộ» thay thế nó.
+Tham chiếu: bao-CR-452 là đợt dựng quyển sổ này, bao-CR-449 là màn **Sổ đồng bộ** thay thế nó.
 
 
 ## bao-CR-457 | Gỡ nốt dấu trạng thái đồng bộ mà app đặt xe cũ đóng lên từng phiếu
@@ -10104,14 +10107,14 @@ thì vẫn hỏng y hệt. Nghĩa là mấy bài kiểm vừa sửa lại là ch
 đó kiểm bằng cổng kiểm kiểu dữ liệu, chạy sạch không một lỗi, cộng với một lượt rà toàn văn
 cả hai kho app cũ không còn chỗ nào nhắc tên cái dấu này.
 
-Bên hệ thống của mình không đụng một dòng nào. Chỗ tra phiếu kẹt vẫn là màn «Sổ đồng bộ»,
+Bên hệ thống của mình không đụng một dòng nào. Chỗ tra phiếu kẹt vẫn là màn **Sổ đồng bộ**,
 nơi có đủ cả lượt về bằng móc bắn thẳng lẫn lượt về bằng vòng quét.
 
 Mã nguồn (kho app cũ, không phải kho này): `my-firebase-api/src/db/requests.db.ts`,
 `my-firebase-api/src/types/db.types.ts`, `my-firebase-api/test/endpoints/erp-sync-writeback.test.ts`.
 Commit: `my-firebase-api` nhánh dev 434cb88; lượt triển khai máy chủ chạy xong không lỗi.
 Tham chiếu: bao-CR-456 là đợt gỡ quyển sổ, bao-CR-452 là đợt dựng ra cả hai thứ, bao-CR-449 là
-màn «Sổ đồng bộ» thay thế chúng.
+màn **Sổ đồng bộ** thay thế chúng.
 
 ## duoc-CR-439 | Chi tiết phiếu đặt xe: đổi chỗ Trao đổi với Lịch sử, dời Ghi chú sang cột phải, bỏ vùng cuộn riêng
 - status: xong
@@ -10123,8 +10126,8 @@ chính — ô nhập rộng 360px thì một câu ba dòng đọc như cột bá
 thường là một đoạn trích giá hoặc một dãy mốc giờ; còn Lịch sử thao tác chỉ để đọc, mỗi
 dòng một câu ngắn nên chịu được cột hẹp. Hai là khối Ghi chú dời từ cuối thân phiếu sang
 cột phải: đó là lời người lập dặn thêm, mà người đọc nó là người sắp quyết định duyệt,
-điều phối hay nhận chuyến, nên nó thuộc về cột trả lời câu «phiếu đang ở đâu, ai dặn gì»
-chứ không nằm cuối mạch «chuyến đi này là gì».
+điều phối hay nhận chuyến, nên nó thuộc về cột trả lời câu **phiếu đang ở đâu, ai dặn gì**
+chứ không nằm cuối mạch **chuyến đi này là gì**.
 
 Ba là cột phải bỏ hẳn vùng cuộn riêng, cả cột cuộn theo trang. Trước đó cột phải bị ghim
 dính dưới tiêu đề rồi tự cuộn bên trong, nên trang có hai vùng cuộn nằm cạnh nhau: bánh xe
@@ -10157,7 +10160,7 @@ Mã nguồn: `frontend-v2/src/modules/vehicle-booking/pages/vehicle-booking-deta
 Hôm qua người dùng nêu ý giữa lúc bàn việc khác: đơn mua hàng hiện chỉ có một con số chi phí,
 trong khi thực tế đi qua ba bước dự toán, tạm tính rồi quyết toán, và công nợ thật chỉ nên
 hiện ra ở bước cuối. Đặt chỗ số 453 ngay hôm đó. Sáng nay dựng bản phác, đã duyệt
-tên «Chi phí thu mua» (khớp tài khoản 1562 của Thông tư 200) và chốt bảy điểm thiết kế theo
+tên **Chi phí thu mua** (khớp tài khoản 1562 của Thông tư 200) và chốt bảy điểm thiết kế theo
 đúng phương án đề xuất; viết tài liệu thiết kế theo khuôn hồ sơ nhập khẩu. Rồi người dùng ra
 lệnh làm đủ năm đợt một lần và đẩy lên một lượt, nên làm hết trong cùng ngày.
 
@@ -10165,7 +10168,7 @@ lệnh làm đủ năm đợt một lần và đẩy lên một lượt, nên l�
 mang ba bộ số tiền, tỷ giá, quy đổi cho Dự toán, Tạm tính, Quyết toán, thêm cột giai đoạn
 riêng của dòng; đơn mua hàng thêm cột giai đoạn; bốn cột cũ (số tiền, tỷ giá, quy đổi, cờ dự
 kiến hay thực tế) bỏ, dữ liệu cũ đổ vào bộ Quyết toán và đơn cũ coi như đã chốt. Bảng danh
-mục loại chi phí mới, mười lăm loại cũ thành dòng seed, mã 99 «Chi phí khác» là chỗ rơi của
+mục loại chi phí mới, mười lăm loại cũ thành dòng seed, mã 99 **Chi phí khác** là chỗ rơi của
 mã lạ và không xóa được; loại đã dùng trên đơn thì không xóa, chỉ tắt. Khóa quyền mới cho
 danh mục. Máy chủ chỉ ghi số vào cột giai đoạn hiệu lực, cột khác gõ vào thì bỏ qua; hai
 đường API chốt và mở lại giai đoạn cho cả đơn, hai đường quyết toán và mở lại riêng một dòng;
@@ -10186,7 +10189,7 @@ chi phí thu mua; bản in nhập khẩu in số của giai đoạn hiện hành
 đoạn. Đợt bốn bê toàn bộ sang giao diện mới và gỡ tên lớp cũ ở máy chủ. Đợt năm: tài liệu
 chức năng đơn mua hàng mục K viết lại, tài liệu báo cáo, từ điển dữ liệu thêm hai bảng, danh
 sách tính năng nhập khẩu, tài liệu thiết kế đánh dấu đã code, và một bài hướng dẫn sử dụng
-mới «Chi phí thu mua trên đơn mua hàng» dưới nhóm Nhân viên Mua hàng, seed bằng script riêng.
+mới **Chi phí thu mua trên đơn mua hàng** dưới nhóm Nhân viên Mua hàng, seed bằng script riêng.
 
 Máy chủ chính đang tạm dừng cập nhật nên đợt này chỉ lên môi trường thử. Ba câu hỏi còn mở
 cho khách nằm ở tài liệu thiết kế; giá hàng ba giai đoạn trên đơn nhập khẩu tách thành yêu cầu
@@ -10419,15 +10422,15 @@ Người dùng chụp một thẻ chuyến gửi sang bảo làm lại. Soi ra h
 thẩm mỹ.
 
 Một là **nút bị xén ngay trong viền thẻ**. Lưới ba cột chừa cho mỗi thẻ 285 điểm bề ngang
-bấm được, mà hai nút cỡ thường — «Chấp nhận» và «Từ chối chuyến» — cần 286 điểm, nên nút
+bấm được, mà hai nút cỡ thường — **Chấp nhận** và **Từ chối chuyến** — cần 286 điểm, nên nút
 thứ hai mất đuôi chữ. Đã cho cụm nút dùng cỡ nhỏ và chia đều bề ngang: hai nút thì mỗi
-nút một nửa hàng, một nút đứng lẻ («Bắt đầu», «Hoàn thành») thì giãn hết hàng thành một
+nút một nửa hàng, một nút đứng lẻ (**Bắt đầu**, **Hoàn thành**) thì giãn hết hàng thành một
 vệt bấm rộng, dễ trúng hơn hẳn trên điện thoại.
 
 Hai là **địa chỉ bị cắt cụt đúng phần cần đọc**. Mỗi điểm dừng trước đây gói đúng một
-dòng, mà địa chỉ ở đây có dạng «Tên chỗ — số nhà, phường, quận, thành phố» nên phần rụng
-đi luôn là quận và thành phố: tài xế đọc «45 Đường số 8, P.Linh Trung, TP.Thủ Đức, TP.Hồ
-Chí ...» rồi vẫn phải mở phiếu ra mới biết đi hướng nào. Nay mỗi điểm được xuống dòng thứ
+dòng, mà địa chỉ ở đây có dạng **Tên chỗ — số nhà, phường, quận, thành phố** nên phần rụng
+đi luôn là quận và thành phố: tài xế đọc **45 Đường số 8, P.Linh Trung, TP.Thủ Đức, TP.Hồ
+Chí ...** rồi vẫn phải mở phiếu ra mới biết đi hướng nào. Nay mỗi điểm được xuống dòng thứ
 hai. Kéo theo phải sửa cách vẽ trục lộ trình: chấm neo theo DÒNG ĐẦU của mỗi điểm chứ
 không neo theo tâm khối chữ (điểm một dòng đứng cạnh điểm hai dòng mà neo giữa thì hai
 chấm lệch nhau, trục gãy thành hai dấu rời), còn nét nối chạy từ dưới chấm tới hết ô nên
@@ -10875,7 +10878,7 @@ dữ liệu thật vào máy local để xem lại. Chưa commit, chưa deploy.
   Excel. Màn sửa danh mục hóa chất theo văn bản.
 - Giao diện mới: màn tra cứu và màn danh mục hóa chất đã chuyển sang phân hệ Thu mua,
   cùng năm thẻ, bộ lọc nằm trên đường dẫn, chi tiết dòng hàng mở ngăn kéo bên phải.
-- Nút chọn đơn vị ghi chữ dễ đọc, ví dụ «lít (LTR)»; mã hải quan chưa rõ nghĩa thì giữ
+- Nút chọn đơn vị ghi chữ dễ đọc, ví dụ **lít (LTR)**; mã hải quan chưa rõ nghĩa thì giữ
   nguyên mã, không đoán.
 - Nhận ra hoạt chất từ tên hàng bằng ba nguồn; thêm nguồn tên hoạt chất bóc từ danh
   mục thuốc bảo vệ thực vật, nâng tỷ lệ nhận ra từ 41% lên 51%, và gỡ 14 dòng thuốc
@@ -10889,7 +10892,7 @@ dữ liệu thật vào máy local để xem lại. Chưa commit, chưa deploy.
 DỮ LIỆU LOCAL: năm tệp mẫu, 18.243 dòng hàng, 7.651 dòng vá ngày, 3.503 doanh
 nghiệp và đối tác, 9.223 dòng nhận ra hoạt chất.
 
-- Bài hướng dẫn sử dụng «Tra cứu giá hải quan» trong trung tâm trợ giúp, mới dựng ở
+- Bài hướng dẫn sử dụng **Tra cứu giá hải quan** trong trung tâm trợ giúp, mới dựng ở
   máy local.
 - Làm lại biểu đồ theo lỗi người dùng bắt: dải tô là khoảng giá phổ biến (nửa số dòng ở
   giữa) thay cho thấp nhất – cao nhất, để vài dòng giá lạ không kéo trục; rê chuột ra
@@ -11018,7 +11021,7 @@ Cùng ngày gộp nhánh chạy thật sang nhánh giao diện mới và rà mà
 - status: xong
 - date: 2026-09-23
 Cần sửa email công việc cùng chỗ với thông tin chính vì nó dính tới đăng nhập.
-Trên giao diện mới, ô «Email công việc» chuyển từ tab Liên hệ và Ngân hàng sang tab Chung,
+Trên giao diện mới, ô **Email công việc** chuyển từ tab Liên hệ và Ngân hàng sang tab Chung,
 đặt cuối mục Công việc cạnh Trạng thái hồ sơ.
 
 Sửa luôn câu mô tả sai dưới ô: câu cũ nói đổi email không làm đổi tài khoản, nhưng thật ra
@@ -11110,7 +11113,7 @@ purchase-request-api, utils/dept-head-display) · test/backend/test_tbp_nhan_chu
 ## bao-CR-475 | Ô chọn ở giao diện mới sổ ngay dưới ô, ô danh mục dài gõ để tìm
 - status: xong
 - date: 2026-09-24
-Người dùng chụp lỗi ô «Nhân sự YC»: danh sách dài bung kín cả màn hình, và muốn các ô chọn
+Người dùng chụp lỗi ô **Nhân sự YC**: danh sách dài bung kín cả màn hình, và muốn các ô chọn
 trên màn yêu cầu và đơn mua hàng gõ chữ để tìm rồi chọn.
 
 Ô chọn dùng chung nay sổ ngay dưới ô, cao tối đa khoảng mười dòng rồi cuộn trong khung,
@@ -11148,10 +11151,10 @@ Mã nguồn: `docker-compose.agent.yml` (profile `stack-goc`) · `.env` của wo
 - date: 2026-09-23
 - pic: NSU209
 
-Người dùng nhắn «gộp AI-0007» thì bot gộp vào erp-v2 và deploy dev luôn, trong khi Ban điều hành không hề bảo lên
+Người dùng nhắn **gộp AI-0007** thì bot gộp vào erp-v2 và deploy dev luôn, trong khi Ban điều hành không hề bảo lên
 dev. Lỗi nằm ở thiết kế cũ gắn cứng hai bước làm một, và câu mời gộp cũng không nói rõ sẽ lên dev. Nay
-«gộp» chỉ gộp vào nhánh nền rồi báo dev chưa deploy; muốn cả hai thì nhắn «gộp và deploy dev»; bản đã gộp
-thì nhắn «deploy dev» để lên dev sau, lúc đó nhánh nền có thêm bản của người khác cũng được miễn còn chứa
+**gộp** chỉ gộp vào nhánh nền rồi báo dev chưa deploy; muốn cả hai thì nhắn **gộp và deploy dev**; bản đã gộp
+thì nhắn **deploy dev** để lên dev sau, lúc đó nhánh nền có thêm bản của người khác cũng được miễn còn chứa
 bản gộp này. Hẹn giờ giữ đúng ý gộp hay deploy. Thu hồi một bản chưa từng lên dev thì chỉ gỡ khỏi nhánh
 nền, không deploy lại. Mọi câu mời và nhắc lệnh đều nói rõ là gộp hay deploy. AI-0007 đã lỡ lên dev và
 đang chạy bình thường nên để nguyên. Cả tệp bài kiểm 152/152 xanh.
@@ -11160,19 +11163,19 @@ Mã nguồn: `backend/app/modules/agent_hub/{coder,service,manager}.py` (`merge_
 `_require_ancestor`, `revert_and_deploy`, `_run_task_command`, `_dispatch_deploy`, `_DEPLOY_WORDS`) ·
 `test/backend/test_agent_hub.py` · `change-log-ai.md`.
 
-## ai-CR-028 | Đậu Đậu hiểu ý thao tác theo ngữ cảnh, người dùng chỉ cần nói «đồng ý»
+## ai-CR-028 | Đậu Đậu hiểu ý thao tác theo ngữ cảnh, người dùng chỉ cần nói "đồng ý"
 - status: xong
 - date: 2026-09-23
 - pic: NSU209
 
-Cần bot phân tích ý định từ câu chữ thay vì bắt gõ đúng lệnh, ví dụ chỉ nói «đồng ý» là bot biết
+Cần bot phân tích ý định từ câu chữ thay vì bắt gõ đúng lệnh, ví dụ chỉ nói **đồng ý** là bot biết
 phải làm gì. Nay bước phân loại tin nhắn sẵn có đọc thêm danh sách việc đang mở và tin bot vừa nhắn, rồi
 nhận ra thêm loại thứ tư là thao tác trên một việc: duyệt, sửa kế hoạch, gộp, thu hồi, xong, bỏ, làm tiếp,
 sửa cho xanh, xem chi tiết, mở yêu cầu gộp, hỏi tình trạng hoặc ghi sổ. Không tốn thêm lượt gọi model.
 Model chắc chắn thì bot làm ngay; riêng gộp, thu hồi và bỏ việc còn phải đúng bước của việc mới làm. Chưa
-chắc thì bot hỏi lại một câu, người dùng đáp «đúng» là bot làm đúng thao tác đã hỏi mà không hỏi model lần hai,
-đáp «không» là thôi. Lệnh gõ đúng mẫu vẫn chạy thẳng như trước. Thử thật với Gemini trên sổ việc hiện
-tại: «đồng ý» được hiểu là gộp AI-0007, câu nhờ gộp kèm giờ được hiểu là hẹn giờ, yêu cầu thêm cột vẫn
+chắc thì bot hỏi lại một câu, người dùng đáp **đúng** là bot làm đúng thao tác đã hỏi mà không hỏi model lần hai,
+đáp **không** là thôi. Lệnh gõ đúng mẫu vẫn chạy thẳng như trước. Thử thật với Gemini trên sổ việc hiện
+tại: **đồng ý** được hiểu là gộp AI-0007, câu nhờ gộp kèm giờ được hiểu là hẹn giờ, yêu cầu thêm cột vẫn
 thành việc mới, câu hỏi mơ hồ thì bot hỏi lại. Mỗi lượt tốn khoảng một nghìn sáu trăm token. Cả tệp bài
 kiểm 148/148 xanh.
 
@@ -11192,7 +11195,7 @@ tiếp; không còn danh sách tệp, tổng kết dài hay tệp bản vá đí
 Yêu cầu bằng chữ: duyệt, sửa kèm điều cần đổi, gộp (kèm giờ thì thành hẹn giờ), thu hồi, xong,
 bỏ việc, làm tiếp, sửa cho xanh, chi tiết, mở yêu cầu gộp trên GitHub, ghi sổ. Để không hiểu nhầm một
 yêu cầu mới có chữ gộp hay bỏ thành lệnh, bot chỉ coi là lệnh khi tin có mã việc, có cụm chỉ vào việc
-như «việc này», «code vừa sửa», hoặc là lệnh trơn vài chữ; câu hỏi thì chỉ trả lời tình trạng; không
+như **việc này**, **code vừa sửa**, hoặc là lệnh trơn vài chữ; câu hỏi thì chỉ trả lời tình trạng; không
 rõ việc nào thì hỏi lại bằng chữ. Nút trên các thẻ cũ vẫn bấm được. Cả tệp bài kiểm 142/142 xanh.
 
 Mã nguồn: `backend/app/modules/agent_hub/{service,coder,telegram}.py` (`route_task_command`,
@@ -11322,7 +11325,7 @@ ghi chú, nhánh và bản gộp nếu có, bảng các bước đã chạy vớ
 đoạn rà soát mã và kế hoạch cuối. Telegram không có bảng thật nên bảng dựng bằng chữ đều khổ, giữ
 hẹp cho vừa màn hình điện thoại. Bấm bỏ việc giờ có một dòng xác nhận trong khung chat. Khi làm
 tìm ra một lỗi có sẵn: máy chạy bot và cơ sở dữ liệu đều theo giờ quốc tế, chậm bảy tiếng, nên hẹn
-giờ gộp «14:30» thực ra chạy lúc 21:30, các mốc giờ bot in ra lệch bảy tiếng, và trần năm việc mỗi
+giờ gộp **14:30** thực ra chạy lúc 21:30, các mốc giờ bot in ra lệch bảy tiếng, và trần năm việc mỗi
 ngày tính lại lúc bảy giờ sáng. Đổi mọi chỗ bot đọc và in giờ sang giờ Việt Nam. Chạy thật lệnh
 xem cho AI-0006 gửi lên Telegram được. Cả tệp bài kiểm 114/114 xanh.
 
@@ -11482,8 +11485,8 @@ khi rà tệp cấu hình để xác nhận các dòng vừa thêm, giá trị k
 phiên làm việc của trợ lý; kiến nghị quản trị cấp lại khóa đó trên GitHub và tự dán vào tệp cấu hình.
 Ngày 23/09 đã chốt thêm: đường mặc định là bot gộp theo chỉ đạo, còn khi cần
 tự bấm gộp thì bot mới gửi link yêu cầu gộp. Xếp nút gộp lên đầu thẻ kết quả, đổi tên nút yêu
-cầu gộp thành «Gửi link PR để anh tự merge» và giữ tắt cờ tự mở yêu cầu gộp; bài kiểm 82/82 xanh.
-Việc chạy thử AI-0005 yêu cầu bỏ qua, đã đóng thành «Đã bỏ» trong sổ của bot.
+cầu gộp thành **Gửi link PR để anh tự merge** và giữ tắt cờ tự mở yêu cầu gộp; bài kiểm 82/82 xanh.
+Việc chạy thử AI-0005 yêu cầu bỏ qua, đã đóng thành **Đã bỏ** trong sổ của bot.
 
 Mã nguồn: `backend/app/modules/agent_hub/{constants,coder,service,tasks}.py` ·
 `backend/app/core/{config,celery_app}.py` · `docker/Dockerfile.runner` · `docker/vps_ssh_key.placeholder`
@@ -11497,7 +11500,7 @@ Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 - date: 2026-09-22
 - pic: NSU209
 
-Yêu cầu làm tiếp phần hỏi thêm. Thẻ kết quả của bot nay có nút «Hỏi thêm về bản vá»; bấm nút
+Yêu cầu làm tiếp phần hỏi thêm. Thẻ kết quả của bot nay có nút **Hỏi thêm về bản vá**; bấm nút
 xong nhắn câu hỏi là bot đưa câu hỏi vào đúng phiên Claude Code đã sửa việc đó, phiên trả lời
 xong bot gửi lại lên Telegram kèm nút hỏi tiếp, nhắn tiếp trong mười phút là hỏi tiếp về cùng bản
 vá. Lượt hỏi chỉ được đọc mã và xem khác biệt, không được sửa tệp hay chạy bài kiểm; câu hỏi thực
@@ -11538,7 +11541,7 @@ Ba quyết định thiết kế. Một, khóa GitHub đi đúng đường của 
 của tiến trình lúc cần, không khai trong đối tượng cấu hình, và chỉ đi vào tiến trình đẩy git (qua
 biến cấu hình của git, không nằm trên dòng lệnh nên không lộ qua bảng tiến trình) cùng lượt gọi
 API GitHub; tiến trình Claude Code không bao giờ thấy nó. Hai, cờ bật tự đẩy mặc định tắt; tắt
-thì thẻ kết quả có nút «Đẩy GitHub + mở PR» để đẩy tay từng việc, và nút đó cũng là đường đẩy lại
+thì thẻ kết quả có nút **Đẩy GitHub + mở PR** để đẩy tay từng việc, và nút đó cũng là đường đẩy lại
 khi lượt tự đẩy hỏng. Đẩy hỏng không làm hỏng việc, vì commit đã nằm trong container. Ba, đẩy đè
 nhánh bot: chạy lại cùng một việc là cắt lại nhánh từ đầu nên lịch sử khác hẳn, không đè thì không
 đẩy được lần hai; quản trị không sửa tay trên nhánh bot. Nhánh bot sau khi gộp KHÔNG tự xóa (Ban điều hành
@@ -11788,8 +11791,8 @@ Mã nguồn: backend/app/modules/setting/service.py · backend/app/core/action_c
 ## bao-CR-462 | Thẻ lịch sử thay đổi ở màn Cấu hình hệ thống của bản ERP
 - status: xong
 - date: 2026-09-24
-Bê phần nhật ký cấu hình của bản cũ sang bản ERP: màn Cấu hình hệ thống có thêm thẻ «Lịch sử
-thay đổi», mỗi lần lưu hiện một dòng ghi ai đổi, lúc nào, từng ô từ giá trị gì sang giá trị
+Bê phần nhật ký cấu hình của bản cũ sang bản ERP: màn Cấu hình hệ thống có thêm thẻ **Lịch sử
+thay đổi**, mỗi lần lưu hiện một dòng ghi ai đổi, lúc nào, từng ô từ giá trị gì sang giá trị
 gì. Ô bật tắt nói Bật hoặc Tắt, ô chọn nói bằng tên người dùng thấy, khóa bí mật chỉ ghi là
 đã đặt giá trị mới, không bao giờ lộ giá trị.
 
@@ -11823,7 +11826,7 @@ Deploy: chỉ ghi dữ liệu vào cơ sở dữ liệu dev, không đổi mã. 
 - status: xong
 - date: 2026-09-24
 Sau khi xem bộ đơn mẫu trên dev, đã chốt: bộ thu mua chung trừ nhà máy phải lọc theo
-phòng xử lý; ô «Nhờ phòng xử lý» với chữ «Không nhờ» khó hiểu; màn đơn mua hàng chưa hiện
+phòng xử lý; ô **Nhờ phòng xử lý** với chữ **Không nhờ** khó hiểu; màn đơn mua hàng chưa hiện
 phòng xử lý; và ô Bộ phận YC bị trống ở phiếu cũ.
 
 Đã đổi luật loại trừ phòng ban trên yêu cầu mua hàng, yêu cầu báo giá và đơn mua hàng: so
@@ -11835,13 +11838,13 @@ Phòng có bộ máy mua riêng (có người giữ bậc quản lý thu mua ph�
 người phòng đó lập phiếu mà không chọn thì hệ thống tự điền phòng của họ, đổi sang thu mua
 chung sau đó là lựa chọn có chủ ý.
 
-Giao diện hai bản: ô đổi tên thành «Phòng xử lý», mục mặc định in «Thu mua chung», có câu
+Giao diện hai bản: ô đổi tên thành **Phòng xử lý**, mục mặc định in **Thu mua chung**, có câu
 gợi ý; đơn mua hàng có thêm ô chỉ xem Phòng xử lý; API trả kèm tên phòng nên không còn cảnh
-hiện «Phòng #5». Phiếu cũ rỗng phòng ban thì màn hình hiện theo hồ sơ nhân sự, lưu hoặc gửi
+hiện **Phòng #5**. Phiếu cũ rỗng phòng ban thì màn hình hiện theo hồ sơ nhân sự, lưu hoặc gửi
 duyệt mới ghi vào phiếu.
 
 Quản trị soi lại phiếu mẫu NM03 và chỉ ra chỗ hụt: phiếu cũ của nhà máy lập theo luật cũ đang
-mang giá trị «thu mua chung» nên hiện sai và lọt ra ngoài. Thêm lệnh chuyển đổi phiếu cũ
+mang giá trị **thu mua chung** nên hiện sai và lọt ra ngoài. Thêm lệnh chuyển đổi phiếu cũ
 (có xem thử trước, chạy lại vô hại) gán phòng xử lý bằng chính phòng lập cho ba loại chứng từ
 của phòng tự mua, đã chạy ở máy; bài hướng dẫn lập bộ tài khoản phòng tự mua ghi thêm bước
 này và đổi cách gọi. Ô Bộ phận YC có mã phòng mà thiếu tên cũng hiện được tên. Chưa commit.
@@ -11857,13 +11860,13 @@ Commit: c4cda9b2, gộp origin/erp-v2 ở 10780db5 (một head alembic 0ddb3327b
 Deploy: dev 24/09, dựng lại api, celery-worker, celery-beat, erp, web. Sau deploy chạy script
 chuyển phiếu cũ của phòng tự mua: phòng 5, đổi 1 yêu cầu mua hàng, 2 yêu cầu báo giá
 (YCBG24092601 và YCBG24092602 — phiếu thứ hai lập sau lúc kiểm, cùng người lập, cùng trường
-hợp), 1 đơn mua hàng; rồi dựng lại bốn bộ đơn mẫu để TM01 về «Thu mua chung».
+hợp), 1 đơn mua hàng; rồi dựng lại bốn bộ đơn mẫu để TM01 về **Thu mua chung**.
 
-## bao-CR-481 | Trợ lý AI tra thêm thị trường, pháp lý và trả lời «có nên mua lúc này» theo giá hải quan
+## bao-CR-481 | Trợ lý AI tra thêm thị trường, pháp lý và trả lời "có nên mua lúc này" theo giá hải quan
 - status: xong
 - date: 2026-09-24
 Cần trợ lý (cả web lẫn bot Telegram) làm được hết ba việc đề xuất trên dữ liệu tờ
-khai hải quan, và hỏi thêm liệu trợ lý có tư vấn được câu «có nên mua atrazine lúc này không».
+khai hải quan, và hỏi thêm liệu trợ lý có tư vấn được câu **có nên mua atrazine lúc này không**.
 
 Đã làm bốn phần. Một, tool giá theo kỳ nay so được hai tới năm mặt hàng trên cùng một đơn vị
 tính. Hai, tool thị trường mới: doanh nghiệp nào nhập nhiều nhất, mua của đối tác nào, hàng từ
@@ -11876,9 +11879,9 @@ tháng đủ dữ liệu, xu hướng ba tháng, dữ liệu mới tới ngày n
 giá thị trường, không biết tồn kho, nhu cầu, hạn dùng, dòng tiền của công ty.
 
 Chạy thử với dữ liệu thật thì thấy tháng 09/2026 của atrazine chỉ có một dòng mà suýt thành
-«giá đang giảm», nên xu hướng và thước đo chỉ tính trên tháng đủ dữ liệu, tháng mới nhất ít
-dòng thì kèm tháng đủ dữ liệu gần nhất làm mốc. Bài hướng dẫn mục «Hỏi trợ lý AI» đã viết lại
-và chạy lại ở local. Số CR ban đầu 480 trùng việc «Phòng xử lý» của phiên khác nên đổi sang
+**giá đang giảm**, nên xu hướng và thước đo chỉ tính trên tháng đủ dữ liệu, tháng mới nhất ít
+dòng thì kèm tháng đủ dữ liệu gần nhất làm mốc. Bài hướng dẫn mục **Hỏi trợ lý AI** đã viết lại
+và chạy lại ở local. Số CR ban đầu 480 trùng việc **Phòng xử lý** của phiên khác nên đổi sang
 481.
 
 Đã commit a13e9c60, đẩy lên erp-v2 và deploy dev (dựng lại api, celery-worker, celery-beat);
@@ -11895,14 +11898,14 @@ Mã nguồn: backend/app/modules/customs/service.py (market_overview, assess_cur
 assistant/tools/customs_tool.py · assistant/tools/__init__.py · assistant/service.py ·
 scripts/seed_help_customs_prices.py · test/backend/test_tool_hai_quan_cr481.py ·
 doc/erp/hai-quan/01 · 02 · 03
-Cập nhật 25/09/2026: Ban điều hành cho chạy seed bài hướng dẫn trên dev — đã tạo bài «Tra cứu giá hải quan» (id 100) dưới nhóm Dành cho Nhân viên Mua hàng.
+Cập nhật 25/09/2026: Ban điều hành cho chạy seed bài hướng dẫn trên dev — đã tạo bài **Tra cứu giá hải quan** (id 100) dưới nhóm Dành cho Nhân viên Mua hàng.
 
 ## duoc-CR-473 | Màn tạo văn bản cho biết trước ai sẽ duyệt
 - status: xong
 - date: 2026-09-23
-Chốt sổ 07/10/2026: việc này đã xong (DEV); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (DEV); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Cần người soạn văn bản biết văn bản của mình sẽ qua tay những ai trước khi bấm gửi
-duyệt. Đã thêm thẻ «Người duyệt dự kiến» ở màn tạo văn bản và ở chi tiết văn bản khi văn
+duyệt. Đã thêm thẻ **Người duyệt dự kiến** ở màn tạo văn bản và ở chi tiết văn bản khi văn
 bản còn nháp hoặc bị trả lại. Thẻ liệt kê từng chặng duyệt và tên người duyệt, nói rõ khi
 loại văn bản không cần duyệt, khi văn bản chỉ duyệt một bước, khi một chặng còn chờ người
 soạn điền ô chọn người, khi một chặng tự qua vì trùng người đã duyệt, và khi một chặng không
@@ -11924,12 +11927,12 @@ Mã nguồn: `backend/app/modules/approval/preview_service.py` ·
 ## duoc-CR-474 | Sổ văn bản có lại bảng văn bản trong sổ
 - status: xong
 - date: 2026-09-23
-Chốt sổ 07/10/2026: việc này đã xong (DEV 24/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (DEV 24/09); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Cần bấm vào một sổ văn bản là thấy danh sách văn bản trong sổ, rồi bấm vào từng văn
 bản để xem chi tiết. Bảng này từng bị gỡ ngày 25/08/2026 theo CR-175; nay dựng lại theo yêu
-cầu mới. Chi tiết sổ có thêm tab «Văn bản trong sổ»: văn bản có số vào sổ mới nhất nằm trên
+cầu mới. Chi tiết sổ có thêm tab **Văn bản trong sổ**: văn bản có số vào sổ mới nhất nằm trên
 cùng, lọc được theo năm, tìm được theo tên. Bấm vào thẻ sổ ở danh sách sổ hoặc vào con số
-«Đã cấp trong năm» là vào thẳng tab này.
+**Đã cấp trong năm** là vào thẳng tab này.
 
 Tab chỉ hiện với người có quyền xem văn bản và chỉ liệt kê văn bản người đó được đọc, đúng
 quyết định là không mở danh sách văn bản cho thành viên sổ thiếu quyền. Phía máy chủ,
@@ -11946,7 +11949,7 @@ Mã nguồn: `backend/app/modules/document/controller.py` ·
 ## duoc-CR-475 | Nền máy chủ cho cây thư mục văn bản và quyền trên thư mục
 - status: xong
 - date: 2026-09-23
-Chốt sổ 07/10/2026: việc này đã xong (DEV 24/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (DEV 24/09); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Để xếp văn bản vào thư mục và tìm lại theo thư mục, dựng phần nền phía máy chủ: một cây
 thư mục chung cho cả tập đoàn, mỗi pháp nhân một thư mục gốc do hệ thống tự tạo, một văn bản
 nằm được ở nhiều thư mục với một thư mục chính. Văn bản không chọn thư mục thì vào thư mục
@@ -11974,20 +11977,20 @@ khóa quyền `doc_folder` · migration `e4a1c9d572b6`, `1c035ad17323` và `32b5
 ## duoc-CR-476 | Màn Thư mục văn bản kiểu Google Drive, cây kiểu VS Code, chọn thư mục khi tạo văn bản
 - status: xong
 - date: 2026-09-23
-Chốt sổ 07/10/2026: việc này đã xong (DEV); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (DEV); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Cần có trang quản lý cây thư mục văn bản làm kỹ để phục vụ tìm kiếm, lúc tạo văn
 bản thì chọn được thư mục lưu, và tối cùng ngày chốt thêm là giao diện phải giống Google
 Drive, cây giống VS Code, phân quyền thì chọn được nhiều người một lần. Đã dựng trang
-«Thư mục văn bản» trong phân hệ Văn bản: bên trái là cây thư mục, mỗi pháp nhân một gốc
+**Thư mục văn bản** trong phân hệ Văn bản: bên trái là cây thư mục, mỗi pháp nhân một gốc
 hiện bằng tên ngắn, lọc tên ngay trên cây, tạo và đổi tên thư mục ngay trong dòng, kéo thả
 để đổi thư mục cha hoặc đổi thứ tự. Bên phải là nội dung của thư mục đang chọn, xem dạng
 lưới hoặc danh sách, chọn nhiều bằng Ctrl và Shift như trên máy tính, bấm chuột phải để
 mở menu thao tác, kéo văn bản thả sang thư mục khác.
 
-Phân quyền thư mục nay mở bằng hộp «Chia sẻ»: gõ tìm và chọn một lúc nhiều người, phòng
+Phân quyền thư mục nay mở bằng hộp **Chia sẻ**: gõ tìm và chọn một lúc nhiều người, phòng
 ban, pháp nhân hoặc vai trò, chọn mức Xem, Đóng góp hay Quản lý rồi cấp một lần cho cả
 danh sách (tối đa 200 đối tượng), thay vì cấp từng người như bản đầu. Ở màn tạo văn bản có
-thêm ô «Lưu vào thư mục», loại văn bản khai được thư mục mặc định, chi tiết văn bản có thẻ
+thêm ô **Lưu vào thư mục**, loại văn bản khai được thư mục mặc định, chi tiết văn bản có thẻ
 thư mục, và màn danh sách Văn bản có thêm cột, bộ lọc theo thư mục cùng thao tác chọn
 nhiều dòng để thêm vào thư mục.
 
@@ -12004,17 +12007,17 @@ Mã nguồn: `frontend-v2/src/modules/document/pages/document-folder-page.tsx` �
 ## duoc-CR-477 | Tìm toàn văn văn bản: tìm cả trong nội dung soạn thảo và tệp đính kèm
 - status: xong
 - date: 2026-09-23
-Chốt sổ 07/10/2026: việc này đã xong (DEV); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (DEV); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Trước đây ô tìm của màn Văn bản chỉ dò trên vài cột như tên và số hiệu. Đã làm thêm
-công tắc «Tìm cả nội dung»: bật lên thì hệ thống tìm cả trong phần soạn thảo và chữ bên
+công tắc **Tìm cả nội dung**: bật lên thì hệ thống tìm cả trong phần soạn thảo và chữ bên
 trong tệp đính kèm (Word, Excel, PDF có lớp chữ, tệp chữ thường), không phân biệt hoa
 thường hay có dấu, hỗ trợ tìm cụm trong ngoặc kép và loại trừ bằng dấu trừ đứng đầu từ.
 Mỗi kết quả kèm một đoạn trích có tô đậm chỗ trúng. PDF dạng ảnh scan thì không đọc được
 chữ, đợt này chưa làm nhận dạng chữ (OCR).
 
-Lúc kiểm tay trên MySQL thật phát hiện tìm chữ «văn bản» ra rỗng: MySQL mặc định bỏ
-một số từ tiếng Anh ngắn khỏi chỉ mục, và nhiều âm tiết tiếng Việt như «văn», «bản»,
-«toàn», «là» trùng đúng các từ đó. Sửa bằng cách tắt việc bỏ từ này ngay lúc migration
+Lúc kiểm tay trên MySQL thật phát hiện tìm chữ **văn bản** ra rỗng: MySQL mặc định bỏ
+một số từ tiếng Anh ngắn khỏi chỉ mục, và nhiều âm tiết tiếng Việt như **văn**, **bản**,
+**toàn**, **là** trùng đúng các từ đó. Sửa bằng cách tắt việc bỏ từ này ngay lúc migration
 dựng lại chỉ mục, cách này chạy được cả trên prod mà không cần quyền quản trị máy chủ cơ
 sở dữ liệu. Vì chỉ mục có thể bị dựng lại âm thầm khi khôi phục bản sao lưu, thêm vào
 script dựng chỉ mục hai lựa chọn: một để kiểm chỉ mục còn đúng không, một để vá lại.
@@ -12029,18 +12032,18 @@ Mã nguồn: `backend/app/modules/document/search_service.py` ·
 `frontend-v2/src/modules/document/components/search-snippet.tsx` · migration
 `747c71718181` và `83679db84fd1`.
 
-## duoc-CR-478 | Nút «Tạo, không soạn thảo», tab Tệp của văn bản, và công tắc tạm tắt hạn xem tệp
+## duoc-CR-478 | Nút "Tạo, không soạn thảo", tab Tệp của văn bản, và công tắc tạm tắt hạn xem tệp
 - status: xong
 - date: 2026-09-23
-Chốt sổ 07/10/2026: việc này đã xong (DEV 24/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (DEV 24/09); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Nhiều văn bản chỉ là tệp có sẵn như bản scan, văn bản đến hay hợp đồng đã ký, không cần
-soạn gì. Thêm nút «Tạo, không soạn thảo» ở màn tạo văn bản: tạo xong hệ thống mở thẳng
-tab «Tệp» mới của văn bản. Tab này có một tệp thì hiện luôn tệp đó, có nhiều tệp thì hiện
+soạn gì. Thêm nút **Tạo, không soạn thảo** ở màn tạo văn bản: tạo xong hệ thống mở thẳng
+tab **Tệp** mới của văn bản. Tab này có một tệp thì hiện luôn tệp đó, có nhiều tệp thì hiện
 danh sách, bấm vào một tệp là xem kèm cây tệp theo từng phiên bản ở bên phải. Văn bản
-không có nội dung soạn thảo mà có tệp thì mở ra là vào thẳng tab «Tệp».
+không có nội dung soạn thảo mà có tệp thì mở ra là vào thẳng tab **Tệp**.
 
 Đã chốt tạm cho xem tệp thoải mái trong lúc dồn dữ liệu cũ vào hệ thống, nên thêm
-một công tắc ở màn Cấu hình hệ thống, tab «Văn bản», mặc định tắt. Khi tắt, ngày hạn xem
+một công tắc ở màn Cấu hình hệ thống, tab **Văn bản**, mặc định tắt. Khi tắt, ngày hạn xem
 tệp đã khai trên từng văn bản vẫn được giữ nguyên nhưng không chặn ai; bật lại là có hiệu
 lực ngay, không cần deploy. Cũng vá lỗi bấm đúp nút tạo ra hai văn bản.
 
@@ -12058,16 +12061,16 @@ Mã nguồn: `frontend-v2/src/modules/document/pages/document-create-page.tsx` �
 Đã chốt làm lần lượt, phase 1 trước. Phase 1 là khóa quyền sửa mã theo cách ba đã chốt:
 không có màn web, không sửa tệp cấu hình, không build hay khởi động lại, quản trị chỉ nhắn cho bot.
 
-Đã làm hai phần. Một, bảng sổ quyền của bot và cách cấp: người dùng nhắn «cho anh Được quyền gộp
-dev» hoặc «cấp quyền duyệt kế hoạch cho Bảo», bot tìm tài khoản ERP theo họ tên, mã nhân viên,
+Đã làm hai phần. Một, bảng sổ quyền của bot và cách cấp: người dùng nhắn **cho anh Được quyền gộp
+dev** hoặc **cấp quyền duyệt kế hoạch cho Bảo**, bot tìm tài khoản ERP theo họ tên, mã nhân viên,
 tên đăng nhập hoặc tên Telegram, so không dấu, trùng nhiều người thì hỏi rõ, rồi hỏi lại một
-câu và chỉ ghi sổ khi người dùng nhắn «đúng». Gỡ cũng bằng câu nhắn. Hỏi «ai đang được sửa mã» là
+câu và chỉ ghi sổ khi người dùng nhắn **đúng**. Gỡ cũng bằng câu nhắn. Hỏi **ai đang được sửa mã** là
 bot liệt kê. Quyền gắn với tài khoản ERP chứ không gắn với chat, nên người đó đăng nhập bot bằng
 máy nào cũng mang theo cấp của mình; cấp trước khi họ đăng nhập cũng được. Có hai cấp: duyệt kế
 hoạch và gộp dev; prod không cấp cho ai; chat của quản trị không cần dòng nào trong sổ.
 
 Hai, kiểm cấp: người đã đăng nhập bot mà có cấp thì ra lệnh trên việc bằng chữ như quản trị,
-nhưng bắt buộc nêu mã việc, vì họ trò chuyện với trợ lý nhiều và một câu «xong rồi» trơn không
+nhưng bắt buộc nêu mã việc, vì họ trò chuyện với trợ lý nhiều và một câu **xong rồi** trơn không
 được phép đóng việc nào. Thiếu cấp thì bot từ chối ngay tại chỗ và báo cáo một dòng kèm sẵn
 câu cấp quyền. Đủ cấp mà lệnh đổi trạng thái việc thì quản trị cũng nhận một dòng báo.
 
@@ -12112,7 +12115,7 @@ công ty trên dev chỉ dành cho trợ lý trên web, và ai cũng tự đăng
 chung.
 
 Đã làm. Một, thêm bảng lưu khóa cá nhân, mã hóa như cấu hình hệ thống, chỉ giữ bốn ký tự cuối
-để nhận ra; thêm cột chủ khóa vào sổ lượt chạy để tính tiền theo từng người. Hai, tab «Khóa AI»
+để nhận ra; thêm cột chủ khóa vào sổ lượt chạy để tính tiền theo từng người. Hai, tab **Khóa AI**
 ở Trang cá nhân trên giao diện v2: ô nhập dạng mật khẩu, lưu xong xóa trắng, hệ thống gọi thử
 Gemini một lượt không tốn token rồi mới lưu; ba đường API tự phục vụ và không đường nào trả khóa
 ra. Ba, bot mở ngữ cảnh khóa quanh mỗi tin nhắn và mỗi việc nền: lượt đọc ý định, trợ lý ERP,
@@ -12121,7 +12124,7 @@ khóa của tài khoản quản trị. Không lùi về khóa công ty: người
 nhập, xem tài khoản, xem tình trạng việc, ra lệnh trên việc, xác nhận tạo phiếu vẫn dùng được.
 Bốn, chat của quản trị ở máy bot chưa có khóa cá nhân thì vẫn dùng khóa trong tệp cấu hình như cũ, để
 bot local không gián đoạn; lên dev thì biến đó để trống. Năm, nghỉ việc thì khóa và liên kết
-Telegram đóng cùng lúc với phiên đăng nhập. Sáu, câu «tốn bao nhiêu» của người thường chỉ ra
+Telegram đóng cùng lúc với phiên đăng nhập. Sáu, câu **tốn bao nhiêu** của người thường chỉ ra
 tiền theo khóa của họ.
 
 Kiểm: sáu bài backend mới, cả tệp test bot 215 bài xanh; ba bài giao diện mới, thư mục profile
@@ -12139,10 +12142,10 @@ modules/system/api/agent-hub-api.ts · app/pages/profile-page.tsx · test/backen
 Phase 2 phần (b1). Cần thêm được vài máy nữa sửa mã như máy của anh; bot trên dev chỉ xếp
 việc, máy nào bật thì kéo việc về làm.
 
-Đã làm. Một, sổ máy: người dùng nhắn «thêm máy của anh Được», bot hỏi lại, «đúng» thì phát mã máy hiện
-đúng một lần và dặn xóa tin; chủ máy là tài khoản ERP khớp tên; gỡ máy cũng hỏi lại; hỏi «máy nào
-đang bật» là bot liệt kê kèm số việc đang chạy và cờ deploy; mở hay cấm deploy dev cho từng máy
-bằng câu nhắn; chỉ định «AI-0012 cho máy anh Được làm», đang chạy dở thì không giao lại, đổi máy
+Đã làm. Một, sổ máy: người dùng nhắn **thêm máy của anh Được**, bot hỏi lại, **đúng** thì phát mã máy hiện
+đúng một lần và dặn xóa tin; chủ máy là tài khoản ERP khớp tên; gỡ máy cũng hỏi lại; hỏi **máy nào
+đang bật** là bot liệt kê kèm số việc đang chạy và cờ deploy; mở hay cấm deploy dev cho từng máy
+bằng câu nhắn; chỉ định **AI-0012 cho máy anh Được làm**, đang chạy dở thì không giao lại, đổi máy
 thì máy mới làm lại từ kế hoạch. Hai, hàng đợi theo máy: mọi lượt giao runner đi qua một hàm chọn
 máy, mỗi máy một hàng đợi riêng, việc dính máy từ lượt đầu, việc mới về máy đang bật ít việc nhất,
 không máy nào bật thì về máy mặc định hoặc máy liên lạc gần nhất và bot báo đang chờ máy nào; vé
@@ -12183,7 +12186,7 @@ Mã nguồn: docker-compose.runner.yml · docker/Dockerfile.tunnel · docker/tun
 ## ai-CR-056 | Đưa Đậu Đậu lên dev: gộp nhánh, compose dev có profile bot, chờ duyệt đẩy và dựng
 - status: xong
 - date: 2026-09-25
-Chốt sổ 07/10/2026: việc này đã xong (Đậu Đậu đã lên dev 25/09); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (Đậu Đậu đã lên dev 25/09); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Phase 2 phần (c). Ban điều hành cho làm hết các phase không cần hỏi và cho thao tác trên máy chủ dev.
 
 Đã làm. Một, gộp nhánh dev mới nhất vào nhánh bot: mười ba commit về thư mục văn bản và phòng xử
@@ -12218,11 +12221,11 @@ doc/agent-hub/05-may-sua-ma.md
 ## bao-CR-482 | Quản lý nhóm dự án từ giao diện, ảnh đại diện đi theo người, màn liệt kê bày theo nhóm
 - status: xong
 - date: 2026-09-25
-Cần chỉnh nhóm cha «DX» và phân quyền cho người trong nhóm, kéo «Nhật ký hệ thống»
+Cần chỉnh nhóm cha **DX** và phân quyền cho người trong nhóm, kéo **Nhật ký hệ thống**
 vào DX, thấy ảnh nhân viên, và thấy nhóm ngay ở màn danh sách. Máy chủ đã có sẵn các cửa
 này từ lúc dựng phân hệ nhưng màn hình chưa mở.
 
-Đã làm: hộp «Quản lý nhóm» (đổi tên, mô tả, lưu trữ, mời và gỡ thành viên kèm vai trò, vai
+Đã làm: hộp **Quản lý nhóm** (đổi tên, mô tả, lưu trữ, mời và gỡ thành viên kèm vai trò, vai
 trò kế thừa xuống mọi dự án trong nhóm), mở từ menu ba chấm của nhóm ở cây bên trái và từ
 cụm nhóm mới trên màn liệt kê; màn liệt kê có cột Nhóm và xếp dự án theo nhóm; hộp Quản lý
 dự án có ô Nhóm để chuyển dự án vào hoặc ra khỏi nhóm; máy chủ trả kèm ảnh đại diện cho
@@ -12279,7 +12282,7 @@ Kiểm: 20 bài công nợ theo phòng xanh (3 bài mới), 67 bài chi phí và
 Mã nguồn: backend/app/modules/payable/service.py · purchase_order/service.py ·
 backend/scripts/backfill_handling_dept.py · test/backend/test_cong_no_theo_phong_xu_ly_cr484.py
 
-## duoc-CR-479 | Văn bản: tạo nhanh từ tệp, chia sẻ ngay ở thư mục, duyệt một bước vào «Chờ tôi duyệt», tìm luôn cả nội dung
+## duoc-CR-479 | Văn bản: tạo nhanh từ tệp, chia sẻ ngay ở thư mục, duyệt một bước vào "Chờ tôi duyệt", tìm luôn cả nội dung
 - status: xong
 - date: 2026-09-25
 Đợt chỉnh phân hệ Văn bản theo góp ý trong ngày 25/09/2026, làm và bấm thử
@@ -12293,43 +12296,43 @@ Commit: 6a5ba7de · 98ccab67 · 6e5b0775 (nhánh `erp-v2`).
 Deploy: sau khi lên dev chạy `docker compose restart celery-worker` rồi
 `docker compose exec -T api python scripts/reindex_documents.py`.
 
-### duoc-CR-479-1 | Nút «Tải tệp lên» ở trang Thư mục: tạo văn bản không soạn thảo trong một hộp
+### duoc-CR-479-1 | Nút "Tải tệp lên" ở trang Thư mục: tạo văn bản không soạn thảo trong một hộp
 - status: xong
 Người dùng hay có sẵn tệp scan hoặc hợp đồng đã ký, đi hết trang tạo ba bước thì mất công.
-Thêm nút «Tải tệp lên» trên thanh công cụ của trang Thư mục (và mục «Tạo nhanh từ tệp»
-trong nút «Mới»). Hộp này chỉ hỏi tệp, năm ô bắt buộc, người duyệt dự kiến và phân quyền;
+Thêm nút **Tải tệp lên** trên thanh công cụ của trang Thư mục (và mục **Tạo nhanh từ tệp**
+trong nút **Mới**). Hộp này chỉ hỏi tệp, năm ô bắt buộc, người duyệt dự kiến và phân quyền;
 bấm tạo là văn bản nằm luôn trong thư mục đang xem. Tên văn bản tự lấy theo tên tệp đầu
-tiên, vùng thả tệp ghi rõ các đuôi nhận được và giới hạn 50 MB mỗi tệp. Nút «Mở rộng»
-chuyển sang trang tạo đầy đủ. Cũng đổi nhãn «Phân quyền nâng cao» thành «Cho phép /
-chặn người cụ thể» cho dễ hiểu.
+tiên, vùng thả tệp ghi rõ các đuôi nhận được và giới hạn 50 MB mỗi tệp. Nút **Mở rộng**
+chuyển sang trang tạo đầy đủ. Cũng đổi nhãn **Phân quyền nâng cao** thành **Cho phép /
+chặn người cụ thể** cho dễ hiểu.
 Mã nguồn: `folder-quick-document-dialog.tsx` · `folder-quick-document-fields.tsx` ·
 `folder-quick-document-button.tsx` · `helpers/document-file-policy.ts`.
 
 ### duoc-CR-479-2 | Văn bản chỉ gồm tệp gửi duyệt được
 - status: xong
-Bấm thử thì văn bản tạo không soạn thảo bị chặn gửi duyệt với câu «Nội dung văn bản còn
-trống», dù đã có tệp. Máy chủ nay kiểm văn bản loại này có ít nhất một tệp đính kèm thay
+Bấm thử thì văn bản tạo không soạn thảo bị chặn gửi duyệt với câu **Nội dung văn bản còn
+trống**, dù đã có tệp. Máy chủ nay kiểm văn bản loại này có ít nhất một tệp đính kèm thay
 vì kiểm nội dung soạn thảo. Thêm 4 bài kiểm.
 Mã nguồn: `backend/app/modules/document/service.py` (`_ensure_submittable_content`).
 
-### duoc-CR-479-3 | «Chờ tôi duyệt» hiện cả văn bản duyệt một bước, tab mặc định «Cần duyệt»
+### duoc-CR-479-3 | "Chờ tôi duyệt" hiện cả văn bản duyệt một bước, tab mặc định "Cần duyệt"
 - status: xong
 Văn bản không khớp luồng duyệt nào thì đi đường duyệt một bước kiểu cũ, không sinh việc
-cho bộ máy duyệt, nên người có quyền duyệt không bao giờ thấy nó ở màn «Chờ tôi duyệt».
+cho bộ máy duyệt, nên người có quyền duyệt không bao giờ thấy nó ở màn **Chờ tôi duyệt**.
 Thêm hai đường API riêng: một liệt kê văn bản đang chờ duyệt một bước mà người đó đọc
 được, một liệt kê những lần người đó đã duyệt hoặc trả lại theo nhật ký. Số đếm ở menu và
-ở nút «Cần duyệt» cộng cả hai loại. Màn mở sẵn tab «Cần duyệt», câu khi bảng trống nói
+ở nút **Cần duyệt** cộng cả hai loại. Màn mở sẵn tab **Cần duyệt**, câu khi bảng trống nói
 đúng theo tab đang xem. Đã bấm thử cả luồng một bước lẫn luồng hai chặng bằng tài khoản
 người duyệt. Thêm 10 bài kiểm máy chủ.
 Mã nguồn: `backend/app/modules/document/legacy_pending_approval.py` ·
 `approval-inbox-table.tsx` · `approval-inbox-row.ts`.
 
-### duoc-CR-479-4 | Chia sẻ văn bản ngay ở trang Thư mục, «Xem chi tiết» vào thẳng văn bản
+### duoc-CR-479-4 | Chia sẻ văn bản ngay ở trang Thư mục, "Xem chi tiết" vào thẳng văn bản
 - status: xong
-Menu ⋯ và menu chuột phải của văn bản có thêm «Chia sẻ…», mở hộp giống hộp chia sẻ của
+Menu ⋯ và menu chuột phải của văn bản có thêm **Chia sẻ…**, mở hộp giống hộp chia sẻ của
 thư mục: ô mời người trên cùng, danh sách người được cho phép hoặc bị chặn, sửa và hủy
-từng dòng, nút «Sao chép liên kết». «Xem chi tiết» của văn bản nay mở thẳng trang văn bản
-(trước đó chỉ bật khung thông tin bên phải, tưởng hỏng), bỏ mục «Mở» vì trùng việc. Ô tìm
+từng dòng, nút **Sao chép liên kết**. **Xem chi tiết** của văn bản nay mở thẳng trang văn bản
+(trước đó chỉ bật khung thông tin bên phải, tưởng hỏng), bỏ mục **Mở** vì trùng việc. Ô tìm
 người khi chia quyền tìm được theo mã nhân sự, gõ không dấu cũng ra. Sửa luôn viền đáy
 bị đôi ở bảng thư mục.
 Mã nguồn: `document-share-dialog.tsx` · `document-share-access-list.tsx` ·
@@ -12337,13 +12340,13 @@ Mã nguồn: `document-share-dialog.tsx` · `document-share-access-list.tsx` ·
 
 ### duoc-CR-479-5 | Tìm luôn cả nội dung, bỏ công tắc; vá ba lỗi tìm toàn văn
 - status: xong
-Đã chốt tìm là tìm cả tên lẫn nội dung, nên bỏ công tắc «Tìm cả nội dung»: gõ từ
+Đã chốt tìm là tìm cả tên lẫn nội dung, nên bỏ công tắc **Tìm cả nội dung**: gõ từ
 2 ký tự là tìm trong tên, số hiệu, nội dung soạn thảo và chữ trong tệp; ô trống thì hiện
 danh sách thường. Khi bật mặc định thì lộ ra ba lỗi có sẵn: câu sắp xếp theo độ khớp viết
 sai nên tìm trả lỗi 500; MySQL từ chối truy vấn con có giới hạn số dòng nên vẫn 500;
 celery-worker ở máy local khởi động trước khi có tác vụ lập chỉ mục nên 6 văn bản mới nhất
 chưa từng được lập chỉ mục. Bộ bài kiểm máy chủ chạy SQLite nên không bắt được hai lỗi
-đầu. Cũng sắp lại thanh lọc màn Văn bản: «Gồm thư mục con» dời vào trong ô chọn thư
+đầu. Cũng sắp lại thanh lọc màn Văn bản: **Gồm thư mục con** dời vào trong ô chọn thư
 mục, các ô lọc cùng bề rộng.
 Mã nguồn: `backend/app/modules/document/search_service.py` ·
 `hooks/use-document-search.ts` (`isFullTextQuery`) · `outgoing-documents-tab.tsx`.
@@ -12356,7 +12359,7 @@ chỉ dùng cho máy local: pháp nhân suy theo tên phòng (phòng mang tên c
 công ty đó, phòng dùng chung về DEGO Holding), điền phòng cho văn thư và quản trị, chọn
 trưởng phòng rồi gán quản lý trực tiếp, điền giới tính, ngày sinh, ngày vào làm, số điện
 thoại, cấp bậc mẫu. Quyền: cấp xem cây thư mục cho 28 vai trò còn thiếu, gán vai trò nền
-«Nhân sự» cho 59 tài khoản. Không đụng email và trường nhạy cảm. Đo lại còn 0 người thiếu
+**Nhân sự** cho 59 tài khoản. Không đụng email và trường nhạy cảm. Đo lại còn 0 người thiếu
 pháp nhân, phòng ban hay quyền văn bản; bấm thử bằng một nhân viên thường tạo văn bản
 thành công. Chưa chạy trên dev hay prod.
 Mã nguồn: `backend/scripts/fill_local_employee_profiles.py`.
@@ -12369,8 +12372,8 @@ mất năm sáu phút, và thẻ kế hoạch không tới.
 Hai việc. Một, đường tắt: trạm gom chấm thêm việc có nhỏ và rõ không; nhỏ thì bỏ bước rà soát
 riêng, lập kế hoạch gọn ngay, kế hoạch tối đa ba tệp và không có câu hỏi thì bot tự duyệt và giao
 máy sửa mã luôn, chỉ báo một dòng; kế hoạch hóa ra không nhỏ thì quay về làn đầy đủ với thẻ như
-thường. Chữ người dùng gõ thắng máy: «làm kỹ» thì đi làn đầy đủ, «làm luôn» thì đi tắt; lệnh «làm kỹ
-AI-000x» đưa việc về rà soát. Thời gian gom rút từ chín mươi xuống ba mươi giây. Hai, thẻ kế
+thường. Chữ người dùng gõ thắng máy: **làm kỹ** thì đi làn đầy đủ, **làm luôn** thì đi tắt; lệnh **làm kỹ
+AI-000x** đưa việc về rà soát. Thời gian gom rút từ chín mươi xuống ba mươi giây. Hai, thẻ kế
 hoạch của AI-0001 mất vì trong câu hướng dẫn có cặp ngoặc nhọn chưa thoát, Telegram hiểu là thẻ
 HTML và từ chối; đã thoát, và thêm một lần lùi: Telegram chê HTML thì gửi lại bản chữ trơn, ở cả
 đường gửi thẳng lẫn đường gửi hộ cho máy sửa mã.
@@ -12394,7 +12397,7 @@ Người dùng hỏi bot sửa mã đang dùng model nào; trước nay Claude C
 Đã thêm hai biến cấu hình cho máy sửa mã, mọi lượt gọi Claude Code (rà soát, sửa, làm tiếp, sửa cho
 xanh, hỏi về bản vá) nhận thêm tham số model theo làn của việc đang chạy; để trống thì như cũ. Đã
 thử ba tên model trên máy local đều được nhận. Tiện thể sửa cờ deploy trong tệp cấu hình runner
-bị giữ giá trị mẫu, nguyên nhân lệnh «gộp và deploy dev» bị bỏ lần hai.
+bị giữ giá trị mẫu, nguyên nhân lệnh **gộp và deploy dev** bị bỏ lần hai.
 
 Kiểm: một bài mới, cả tệp test bot 225 bài xanh. Máy local đã dựng lại với cấu hình mới.
 
@@ -12425,10 +12428,10 @@ modules/system/api/agent-hub-api.ts
 ## ai-CR-060 | Nhắc việc bằng câu nói
 - status: xong
 - date: 2026-09-25
-Phase 3, việc T-10. Ai đã đăng nhập bot nhắn «nhắc anh 15h gọi nhà cung cấp X» hay «30 phút nữa nhắc
-nộp báo cáo» là bot ghi một lời nhắc và tới giờ nhắn lại đúng chat đó. Giờ đọc bằng bộ đọc giờ
+Phase 3, việc T-10. Ai đã đăng nhập bot nhắn **nhắc anh 15h gọi nhà cung cấp X** hay **30 phút nữa nhắc
+nộp báo cáo** là bot ghi một lời nhắc và tới giờ nhắn lại đúng chat đó. Giờ đọc bằng bộ đọc giờ
 sẵn có của hẹn gộp và deploy; thiếu giờ thì bot hỏi lại một câu và câu trả lời kế tiếp là giờ. Hỏi
-«nhắc gì» để xem, «bỏ nhắc 2» hay «bỏ hết nhắc» để bỏ. Vòng nền mỗi phút gửi lời nhắc tới giờ.
+**nhắc gì** để xem, **bỏ nhắc 2** hay **bỏ hết nhắc** để bỏ. Vòng nền mỗi phút gửi lời nhắc tới giờ.
 Không tốn lượt model.
 
 Kiểm: một bài mới, cả tệp test bot 231 bài xanh; migration đã chạy local.
@@ -12440,7 +12443,7 @@ backend/app/core/celery_app.py · backend/migrations/versions/b7e2f4c9d1a5_*
 - status: xong
 - date: 2026-09-25
 Phase 3, việc T-07. Gửi tin thoại cho bot là bot tải về, chép thành chữ bằng một lượt Gemini với khóa
-của chính người đó, nhắn lại «Nghe: …» rồi xử lý câu đó y như gõ chữ: hỏi trợ lý, giao việc, đặt
+của chính người đó, nhắn lại **Nghe: …** rồi xử lý câu đó y như gõ chữ: hỏi trợ lý, giao việc, đặt
 lời nhắc. Chat lạ không được chép để không tốn tiền; chưa gắn khóa thì bot nói rõ. Lượt chép ghi sổ
 chi phí theo người.
 
@@ -12463,7 +12466,7 @@ Mã nguồn: backend/app/core/config.py · backend/app/modules/agent_hub/service
 ## bao-CR-485..490 | Gom bảy góp ý màn YCBG/YCMH thành năm cụm, chia hai phiên
 - status: xong
 - date: 2026-09-25
-Chốt sổ 07/10/2026: việc này đã xong (DEV 25/09 (migration c490e1f2a3b4)); trước đó sổ còn để «đang làm» nên bảng dự án đếm dư.
+Chốt sổ 07/10/2026: việc này đã xong (DEV 25/09 (migration c490e1f2a3b4)); trước đó sổ còn để **đang làm** nên bảng dự án đếm dư.
 Người dùng dùng thử tài khoản nhà máy trên dev và nêu bảy điểm. Đã rà mã để đánh giá từng
 điểm, gom thành năm cụm và đặt chỗ số CR 485 đến 490 trong sổ thay đổi, ghi bảng chia
 việc ở kiểm kê việc còn lại mục 7.2. Erp Agent 1 nhận cụm A (sổ thao tác một dòng Duyệt,
@@ -12523,7 +12526,7 @@ Cập nhật 25/09/2026: đã commit 9f9934be, đẩy lên dev cùng đợt sáu
 Người dùng dùng thử dev bằng tài khoản nhà máy và góp ý: màn Xử lý khảo sát cần nút bỏ lọc, và ô
 lọc phải chọn được nhiều, ví dụ phân loại hay nhà cung cấp.
 
-Đã sửa khối «Thêm phương án từ kết quả khảo sát» của từng dòng: ô nhà cung cấp và ô phân loại
+Đã sửa khối **Thêm phương án từ kết quả khảo sát** của từng dòng: ô nhà cung cấp và ô phân loại
 chọn được nhiều (chọn nhiều trong một ô là hoặc, hai ô khác nhau là và), thêm nút Bỏ lọc xóa
 cả nhà cung cấp, phân loại và từ khóa một lần, nút Về phân loại dòng giữ nguyên. Làm ở cả hai
 bản giao diện. Backend nhận nhiều mã nhà cung cấp và nhiều phân loại lặp trên đường dẫn, gửi
@@ -12547,7 +12550,7 @@ Góp ý: phòng xử lý thì mặc định luôn, khi tạo phiếu thì ẩn c
 tick để bật lên nếu cần đưa phiếu cho phòng khác xử lý.
 
 Đã sửa màn tạo yêu cầu mua hàng và yêu cầu báo giá ở cả hai bản: ô Phòng xử lý ẩn, thay bằng ô
-tick «Nhờ phòng khác xử lý»; không tick thì không gửi ô này và hệ thống tự chọn theo luật
+tick **Nhờ phòng khác xử lý**; không tick thì không gửi ô này và hệ thống tự chọn theo luật
 bao-CR-480 (phòng tự mua lấy chính phòng mình, còn lại là Thu mua chung); tick rồi chọn phòng
 thì gửi đúng phòng đã chọn. Backend đổi một luật nhỏ: chỉ khi không gửi ô này mới tra mặc định,
 còn gửi số 0 là người lập chủ ý chọn Thu mua chung và được giữ nguyên. Trước đây gửi 0 cũng bị
@@ -12615,8 +12618,8 @@ dùng chung đúng bộ công cụ mà trợ lý web và bot Telegram đang dùn
 tính chủ khóa nên hai lớp quyền và nhật ký thao tác giữ nguyên. Hai, khóa MCP cá nhân: tạo ở Trang
 cá nhân, chỉ hiện một lần, có hạn, gỡ được, ghi lần dùng cuối, hai mức chỉ đọc và được ghi; mức
 được ghi có thêm tool tạo phiếu hai bước từ bản nháp và không mở đề nghị thanh toán. Ba, tool báo lỗi
-mở cho mọi khóa: tạo phiếu hỗ trợ gắn bộ phận của bot để bot sửa mã nhặt việc. Bốn, khối «Kết nối
-MCP» trên giao diện với đoạn cấu hình Claude Desktop hay Cursor chép sẵn; tài liệu số 06.
+mở cho mọi khóa: tạo phiếu hỗ trợ gắn bộ phận của bot để bot sửa mã nhặt việc. Bốn, khối **Kết nối
+MCP** trên giao diện với đoạn cấu hình Claude Desktop hay Cursor chép sẵn; tài liệu số 06.
 
 Gộp nhánh dev mới nhất về nhánh bot, migration khóa MCP nối sau migration gộp của Agent 1. Theo luật
 mới đã chốt: dev chỉ deploy từ erp-v2, Agent 1 gộp nhánh bot vào erp-v2 rồi deploy.
@@ -12633,7 +12636,7 @@ modules/system/api/agent-hub-api.ts · doc/agent-hub/06-cong-mcp.md
 - date: 2026-09-25
 Phase 5. Đã chốt dùng Google cá nhân của từng người.
 
-Đã làm. Một, nối Google bằng OAuth: bấm «Nối Google» ở Trang cá nhân, qua màn đồng ý của Google, ERP giữ
+Đã làm. Một, nối Google bằng OAuth: bấm **Nối Google** ở Trang cá nhân, qua màn đồng ý của Google, ERP giữ
 token làm mới mã hóa; tự làm mới token truy cập; Google thu hồi thì đóng dòng và nói rõ; gỡ là thu hồi
 phía Google. Hai, bốn công cụ mới dùng chung cho trợ lý web, bot và cổng MCP, chạy bằng token của chính
 người hỏi: xem lịch, tạo sự kiện bằng câu nói, tìm và đọc tệp trên Drive. Ba, bản tin sáng lúc bảy giờ
@@ -12710,7 +12713,7 @@ tưởng không lọc gì. Đổi bản cũ sang chọn khoảng ngày như bả
 Lúc bấm thử bằng tay bắt được thêm một lỗi có từ khi làm danh mục hóa chất: hóa chất nào
 không có năm cấm thì bấm Lưu ở bản mới luôn bị từ chối, vì lớp biểu mẫu dùng chung đổi ô
 trống thành số 0 trong khi hệ thống chỉ nhận năm từ 1900. Vá ở lớp dùng chung, chỉ cho
-những ô có khai rõ «để trống thì gửi rỗng», nên các màn khác không bị ảnh hưởng.
+những ô có khai rõ **để trống thì gửi rỗng**, nên các màn khác không bị ảnh hưởng.
 
 Cổng kiểm: bản cũ giữ đúng 4 lỗi kiểu có sẵn; bản mới kiểm kiểu sạch, lint sạch, 699 bài của
 phân hệ thu mua và lớp biểu mẫu dùng chung xanh, trong đó 8 bài mới. Bấm thử trên bản xem thử:
@@ -12754,11 +12757,11 @@ hiện đúng, sửa được, tìm được, không lỗi. Đã lên dev 26/09.
 Cần đổi tên màn tra cứu hải quan thành Tra cứu thị trường. Đổi ở mọi chỗ người
 dùng nhìn thấy, cả bản cũ lẫn bản mới: menu, tiêu đề màn, câu báo thiếu quyền, tên quyền trên
 màn phân quyền vai trò, mô tả ba danh mục cấu hình của màn, và tiêu đề bài hướng dẫn sử dụng.
-Đã chốt đổi luôn hai menu cấu hình thành «Từ khóa nhãn thị trường» và «Từ đồng nghĩa thị
-trường». Danh mục hóa chất theo văn bản giữ chữ hải quan vì nó bám văn bản pháp lý.
+Đã chốt đổi luôn hai menu cấu hình thành **Từ khóa nhãn thị trường** và **Từ đồng nghĩa thị
+trường**. Danh mục hóa chất theo văn bản giữ chữ hải quan vì nó bám văn bản pháp lý.
 
-Những câu nói về nguồn dữ liệu thì giữ, ví dụ «Nạp dữ liệu hải quan» hay «Chưa có dữ liệu
-hải quan», vì dữ liệu vẫn lấy từ tờ khai hải quan, đổi đi thì người nạp tệp dễ hiểu nhầm.
+Những câu nói về nguồn dữ liệu thì giữ, ví dụ **Nạp dữ liệu hải quan** hay **Chưa có dữ liệu
+hải quan**, vì dữ liệu vẫn lấy từ tờ khai hải quan, đổi đi thì người nạp tệp dễ hiểu nhầm.
 Mã quyền, đường dẫn và tên bảng cũng giữ nguyên nên không có migration, vai trò đang tick
 quyền này không phải tick lại.
 
@@ -12904,7 +12907,7 @@ XNK của chính dòng), tính từ giá hiệu lực nhân tỷ giá USD, có �
 bỏ hẳn nút chọn giá trên biểu đồ, luôn dùng giá điều chỉnh; gom ô Kỳ và Đơn vị vào một thẻ; nút
 tải lại tệp GTT02 gốc của lô nạp (lô nạp bằng script không có tệp thì ẩn nút); lịch sử nạp thành
 thẻ thứ sáu trên trang thay cho hộp thoại; doanh nghiệp và đối tác chọn được nhiều, mỗi người một
-chip gỡ riêng; hàng «Lọc thêm» với sáu ô: nguyên tệ, điều kiện giao hàng, tệp nguồn, khoảng đơn
+chip gỡ riêng; hàng **Lọc thêm** với sáu ô: nguyên tệ, điều kiện giao hàng, tệp nguồn, khoảng đơn
 giá, khoảng lượng, khoảng tỷ giá. Quản trị thử ở local thấy ổn, góp ý tiêu đề cột bị cắt: đã nới bề
 rộng cột và đổi khóa nhớ bố cục. Đã chốt bê luôn sang bản cũ: đã bê đủ bảy mục sang màn Tra cứu
 giá hải quan bản cũ; sáng 26/09 thêm hai nút lọc theo doanh nghiệp / đối tác vào hộp chi tiết dòng
@@ -13053,7 +13056,7 @@ Tham chiếu: bao-CR-491 là chỗ đầu tiên của họ lỗi này. Chưa dep
 - status: xong
 - date: 2026-09-26
 Viết bộ tài liệu riêng cho Thư mục văn bản theo đúng mẫu bộ tài liệu Văn bản ngày 23/09, vì phần thư mục
-trong bộ cũ chỉ có ba mục tóm tắt và đã lạc hậu sau các thay đổi ngày 24 và 25/09 (nhóm «Công ty», thư
+trong bộ cũ chỉ có ba mục tóm tắt và đã lạc hậu sau các thay đổi ngày 24 và 25/09 (nhóm **Công ty**, thư
 mục tự do, xóa thư mục còn văn bản, tạo nhanh từ tệp, chia sẻ văn bản, trần quyền theo vai trò, xem
 ngầm định khi được chia văn bản).
 
@@ -13070,7 +13073,7 @@ văn bản nay được, văn bản chuyển đi chứ không mất. Bản PDF c
 nó không có trên máy.
 
 Việc còn chờ: người dùng đọc bốn câu hỏi ở mục 25 của mô tả luồng thư mục (chặn chuyển thư mục pháp nhân,
-đổi pháp nhân khi chuyển thư mục, đổi nhãn «Xóa» trong menu chuột phải văn bản thành «Gỡ khỏi thư mục»,
+đổi pháp nhân khi chuyển thư mục, đổi nhãn **Xóa** trong menu chuột phải văn bản thành **Gỡ khỏi thư mục**,
 có cần thùng rác). Dữ liệu mẫu tạo để chụp hình chỉ nằm ở máy local.
 
 Tham chiếu: doc/huong-dan-su-dung/van-ban/huong-dan-su-dung-thu-muc-van-ban.md · .pdf ·
@@ -13080,7 +13083,7 @@ xuat-tai-lieu.py · mo-ta-luong-nghiep-vu-van-ban.md
 ## duoc-CR-481 | Mở phân hệ Báo cáo, gom các trang báo cáo của từng phân hệ về một chỗ
 - status: xong
 - date: 2026-09-26
-Bật phân hệ Báo cáo ở giao diện v2 (trước đây chỉ là thẻ «Sắp có»). Phân hệ có trang Tổng quan với
+Bật phân hệ Báo cáo ở giao diện v2 (trước đây chỉ là thẻ **Sắp có**). Phân hệ có trang Tổng quan với
 một thẻ lối tắt cho mỗi báo cáo và menu trái nhóm theo phân hệ gốc. Hiện chỉ Thu mua có trang báo cáo
 thật nên gom được năm trang: Báo cáo mua hàng, Chi tiết YC mua hàng, Tiến độ báo giá, Tiến độ mua hàng,
 Báo cáo khảo sát.
@@ -13100,7 +13103,7 @@ làm mốc. Không sửa backend: toàn bộ số liệu lấy từ đường AP
 
 Sau đó đổi cả năm trang báo cáo trong phân hệ Báo cáo sang dạng biểu đồ (Báo cáo mua hàng, Chi tiết
 YC mua hàng, Tiến độ báo giá, Tiến độ mua hàng, Báo cáo khảo sát). Mỗi trang có thẻ số, biểu đồ cột
-chồng theo tháng, biểu đồ tiến độ xếp theo quy trình và các biểu đồ Top, kèm nút «Xem bảng chi tiết»
+chồng theo tháng, biểu đồ tiến độ xếp theo quy trình và các biểu đồ Top, kèm nút **Xem bảng chi tiết**
 dẫn sang bảng gốc bên Thu mua. Bảng bên Thu mua giữ nguyên vì người mua hàng cần soi từng dòng. Bốn
 bảng gốc đều phân trang ở máy chủ nên thêm bốn đường API tổng hợp, mỗi đường dùng CHUNG bộ lọc và
 phạm vi dữ liệu với bảng của nó để số trên biểu đồ khớp số dòng của bảng: `/api/reports/pr-lines/summary`,
@@ -13129,21 +13132,21 @@ backend/app/modules/{report/service.py, report/controller.py, purchase_progress/
 survey_progress/controller.py, survey/controller.py} · test/backend/test_bao_cao_dong_ycmh_tong_hop.py ·
 test/backend/test_tong_hop_bieu_do_tien_do_khao_sat.py
 
-## duoc-CR-482 | Phân hệ Báo cáo làm lại theo kiểu Haravan: chọn kỳ, so sánh kỳ, bảng «Xem theo», xuất Excel
+## duoc-CR-482 | Phân hệ Báo cáo làm lại theo kiểu Haravan: chọn kỳ, so sánh kỳ, bảng "Xem theo", xuất Excel
 - status: xong
 - date: 2026-09-28
 Dựng một khung báo cáo dùng chung cho mọi phân hệ, rồi chuyển năm báo cáo Thu mua và trang Tổng quan
 sang khung đó. Người xem chọn kỳ bằng một nút duy nhất: bấm vào ra danh sách mốc (Hôm nay, 7 ngày,
-Tháng này, Quý này, Năm nay, Năm trước, Tùy chọn…), lịch hai tháng và ô «So sánh với» (kỳ trước, cùng
+Tháng này, Quý này, Năm nay, Năm trước, Tùy chọn…), lịch hai tháng và ô **So sánh với** (kỳ trước, cùng
 kỳ năm trước, không so sánh). Mặc định mở ra là Tháng này so với tháng trước. Kỳ theo lịch so với đúng
 khoảng ngày tương ứng của kỳ trước (1–28/9 so với 1–28/8), biểu đồ tự gom theo ngày, tuần hoặc tháng
 tùy độ dài kỳ, và kỳ so sánh được dời lên cùng trục với kỳ này.
 
 Mỗi trang báo cáo gồm thẻ số có phần trăm so kỳ trước và đường xu hướng nhỏ, biểu đồ kỳ này đặt cạnh
-kỳ so sánh, các khối Top xếp theo tiền (không theo số dòng), và bảng «Xem theo» ngay trên trang: mỗi
+kỳ so sánh, các khối Top xếp theo tiền (không theo số dòng), và bảng **Xem theo** ngay trên trang: mỗi
 chỉ số một cột, dòng Tổng nổi bật mang nhãn tăng giảm, các dòng nhóm rê chuột mới thấy số kỳ trước,
 chỉ số tỷ lệ so theo điểm phần trăm. Kỳ không phát sinh gì thì trang chỉ hiện một thông báo kèm nút
-«Xem cả năm nay». Nút Xuất Excel gác đúng quyền xuất của bảng gốc. Mỗi báo cáo mới về sau chỉ cần khai
+**Xem cả năm nay**. Nút Xuất Excel gác đúng quyền xuất của bảng gốc. Mỗi báo cáo mới về sau chỉ cần khai
 một cấu hình khoảng ba mươi dòng.
 
 Phía máy chủ, năm đường tổng hợp nhận thêm kỳ và so sánh nhưng vẫn dùng chung bộ lọc và phạm vi dữ
@@ -13226,26 +13229,26 @@ nút hơn tài liệu — đã ghi chú trong tài liệu.
 Theo góp ý, viết lại hai tài liệu mô tả luồng nghiệp vụ (Văn bản, Thư mục) bằng lời của
 người dùng cuối: bỏ ngày thay đổi và lịch sử, bỏ phần hệ thống tính bên trong (bảng 6 bước tính
 quyền và hình minh họa của nó), bỏ tên kỹ thuật; mục Câu hỏi còn mở chuyển ra ngoài tài liệu để
-Ban điều hành quyết. Sơ đồ bản đồ 9 quy trình thêm dòng «Ai làm» cho từng quy trình; sơ đồ trạng thái theo vai
+Ban điều hành quyết. Sơ đồ bản đồ 9 quy trình thêm dòng **Ai làm** cho từng quy trình; sơ đồ trạng thái theo vai
 trò vẽ lại có đường chính đánh số, nhánh đánh chữ, nhãn mũi tên ghi ai bấm.
 
 Rà lại toàn bộ năm tài liệu từng mục theo lời người dùng cuối (không chỉ sửa một chỗ): giải thích
 thuật ngữ một lần ở chỗ xuất hiện đầu, câu ngắn, bỏ lịch sử và cơ chế bên trong; tách danh sách số chú
 thích ảnh cho khớp số trên ảnh. Đối chiếu với mã nguồn thì sửa được mấy câu SAI: xóa thư mục còn văn
-bản là được (văn bản được chuyển đi); ô «Lưu vào thư mục» liệt kê mọi thư mục có quyền Đóng góp,
+bản là được (văn bản được chuyển đi); ô **Lưu vào thư mục** liệt kê mọi thư mục có quyền Đóng góp,
 không chỉ của công ty văn bản; vai trò mẫu Văn thư pháp nhân con không xem được cây thư mục. Bỏ
-«Rút phiếu» khỏi sơ đồ và tài liệu vì màn hình chưa có nút đó (backend có sẵn chức năng rút).
+**Rút phiếu** khỏi sơ đồ và tài liệu vì màn hình chưa có nút đó (backend có sẵn chức năng rút).
 
 Trung tâm hướng dẫn sử dụng: đóng gói lại HDSD Văn bản (1 bài gốc, 8 bài con, 70 ảnh), thêm bài
-«Văn bản — Thư mục văn bản theo vai trò»; bài Hỏi đáp giữ nguyên tiêu đề để đường dẫn không đổi.
+**Văn bản — Thư mục văn bản theo vai trò**; bài Hỏi đáp giữ nguyên tiêu đề để đường dẫn không đổi.
 
 Theo góp ý tiếp (tài khoản mẫu rải khắp hình nhìn rối), vẽ lại bốn sơ đồ theo vai trò
 và bản đồ quy trình: hình chỉ còn tên vai trò, bỏ tài khoản mẫu và dải quyền trên nhãn làn, nhãn
-mũi tên đổi thành «Người soạn: Gửi duyệt», «Người duyệt: Duyệt», «Quản trị: Bãi bỏ». Tài khoản mẫu
-chuyển xuống phần chữ thành câu ví dụ «tài khoản A giữ vai trò X, có quyền Y nên làm được Z»: mục 29
+mũi tên đổi thành **Người soạn: Gửi duyệt**, **Người duyệt: Duyệt**, **Quản trị: Bãi bỏ**. Tài khoản mẫu
+chuyển xuống phần chữ thành câu ví dụ **tài khoản A giữ vai trò X, có quyền Y nên làm được Z**: mục 29
 của mô tả luồng thay bảng tài khoản mẫu bằng danh sách ví dụ; mỗi mục 32.x và 36.x bỏ mã tài khoản
 khỏi tiêu đề và mở đầu bằng một tình huống ví dụ. Hướng dẫn sử dụng sửa đoạn chữ đi kèm Hình 5, 6,
-59 cho khớp hình mới, cột «Tài khoản mẫu» đổi thành «Ví dụ». Xuất lại PDF, đóng gói và nạp lại
+59 cho khớp hình mới, cột **Tài khoản mẫu** đổi thành **Ví dụ**. Xuất lại PDF, đóng gói và nạp lại
 Trung tâm hướng dẫn trên máy local.
 Đã chạy seed ở máy local; môi trường khác phải chạy lại seed_help_van_ban.py rồi reindex_help_rag.py.
 
@@ -13254,33 +13257,33 @@ huong-dan-su-dung-thu-muc-van-ban.md · so-do/vai-tro-quy-trinh.html · so-do/va
 so-do/vai-tro-thu-muc.html · chup-so-do.py (mới) · xuat-tai-lieu.py · dong-goi-hdsd-cho-seed.py ·
 backend/scripts/help_van_ban/ · hinh/*.png · các tệp .html, .pdf xuất lại
 
-## duoc-CR-485 | Văn bản: nút «Rút về để sửa», loại không cần duyệt thì ban hành thẳng, nút Ban hành của người soạn không còn đòi quyền Duyệt
+## duoc-CR-485 | Văn bản: nút "Rút về để sửa", loại không cần duyệt thì ban hành thẳng, nút Ban hành của người soạn không còn đòi quyền Duyệt
 - status: xong
 - date: 2026-09-29
 Ba lỗ tìm ra lúc rà tài liệu Văn bản với Ban điều hành, yêu cầu sửa luôn.
 
 Thứ nhất, người trình không tự rút được văn bản đang chờ duyệt: backend có sẵn chức năng rút nhưng
-màn hình chưa từng có nút. Nay dải thông báo đầu trang và mục Phê duyệt có nút «Rút về để sửa» cho
+màn hình chưa từng có nút. Nay dải thông báo đầu trang và mục Phê duyệt có nút **Rút về để sửa** cho
 đúng người trình, chỉ khi chưa ai duyệt, bắt ghi lý do; văn bản về Nháp.
 
-Thứ hai, ô «Cần duyệt» của loại văn bản chỉ để trưng: thẻ Người duyệt dự kiến báo không cần phê duyệt
+Thứ hai, ô **Cần duyệt** của loại văn bản chỉ để trưng: thẻ Người duyệt dự kiến báo không cần phê duyệt
 mà văn bản vẫn phải gửi duyệt. Theo đã chốt, loại tắt ô này (hiện chỉ có Biểu mẫu) bỏ hẳn chặng
-duyệt: màn văn bản bày nút «Ban hành» thay «Gửi duyệt», người soạn / người chịu trách nhiệm (hoặc
+duyệt: màn văn bản bày nút **Ban hành** thay **Gửi duyệt**, người soạn / người chịu trách nhiệm (hoặc
 người có quyền Duyệt) bấm là cấp số và có hiệu lực, vẫn qua đủ các chốt kiểm như khi gửi duyệt. Đường
 gửi duyệt cũ cố ý không bị chặn, vì cột này mặc định tắt, chặn thì loại nào quên tích sẽ mất luồng
 duyệt trong im lặng.
 
 Thứ ba, nút Ban hành ở trạng thái Chờ ban hành gọi đường duyệt nên đòi quyền Duyệt, người soạn thuộc
-vai trò «Văn bản — soạn & sửa» bấm vào bị từ chối. Cả hai ca nay đi qua một đường API mới chỉ đòi
+vai trò **Văn bản — soạn & sửa** bấm vào bị từ chối. Cả hai ca nay đi qua một đường API mới chỉ đòi
 quyền Sửa và đúng người.
 
-Rà mã (code-review) xong vá thêm: ô «Cần duyệt» nay mặc định BẬT cho loại mới; văn bản đã từng gửi
+Rà mã (code-review) xong vá thêm: ô **Cần duyệt** nay mặc định BẬT cho loại mới; văn bản đã từng gửi
 duyệt không ban hành thẳng được; đổi bản nháp sang loại không cần duyệt phải có quyền Duyệt; người có
 quyền Duyệt chỉ ban hành thay được văn bản nằm trong phạm vi Duyệt của mình; bản 2 trở đi chờ ban hành
 nay chỉ người soạn bấm được (trước đây ai có quyền Duyệt cũng bấm được); khóa hàng khi ban hành và chặn
-bấm đúp để khỏi cấp hai số hiệu; nút «Rút về để sửa» hiện cả khi phiếu duyệt đang kẹt.
+bấm đúp để khỏi cấp hai số hiệu; nút **Rút về để sửa** hiện cả khi phiếu duyệt đang kẹt.
 
-Kèm theo: câu giải thích «Quyền chung» trong hộp Chia sẻ thư mục viết lại bằng lời thường; tài liệu,
+Kèm theo: câu giải thích **Quyền chung** trong hộp Chia sẻ thư mục viết lại bằng lời thường; tài liệu,
 sơ đồ và Trung tâm hướng dẫn cập nhật theo.
 
 Mã nguồn: backend/app/modules/document/{service.py (_check_ready_to_send, issue_without_approval),
@@ -13293,11 +13296,11 @@ components/folder-share-dialog.tsx} · test/backend/test_ban_hanh_khong_can_duye
 - status: xong
 - date: 2026-09-29
 Yêu cầu bỏ hàng thẻ trên màn Tra cứu thị trường và đưa từng thẻ thành một mục con trong menu
-trái. Nay mục «Tra cứu thị trường» sổ xuống các mục Danh sách, Biểu đồ, Nhà nhập khẩu, So sánh, Pháp
+trái. Nay mục **Tra cứu thị trường** sổ xuống các mục Danh sách, Biểu đồ, Nhà nhập khẩu, So sánh, Pháp
 lý, Thuế, Thuốc BVTV, Lịch sử nạp và Cấu hình; mỗi mục có đường dẫn riêng nên gửi link là mở đúng mục.
 
 Bộ lọc đang áp vẫn đi theo khi bấm sang mục khác trong menu, để người dùng không phải gõ lại. Link cũ
-dạng «?tab=» tự chuyển sang đường mới và giữ nguyên bộ lọc. Mục Cấu hình vẫn gác quyền như trước (sửa
+dạng **?tab=** tự chuyển sang đường mới và giữ nguyên bộ lọc. Mục Cấu hình vẫn gác quyền như trước (sửa
 được cấu hình, hoặc chỉ xem được danh mục hóa chất); lúc viết bài kiểm tìm ra một lỗ — người chỉ có
 quyền xem danh mục hóa chất mà không xem được dữ liệu hải quan vẫn thấy mục Cấu hình — đã chặn luôn.
 
@@ -13307,7 +13310,7 @@ Mã nguồn: frontend-v2/src/modules/procurement/config/customs-sections.ts (m�
 routes.tsx · pages/customs-price-page.tsx · app/router/module-definition.ts (keepSearch, alsoReadable) ·
 module-visibility.ts · app/layouts/module-sidebar.tsx · shared/constants/app-routes.ts
 
-## duoc-CR-487 | Tra cứu thị trường: thêm mục «Thuốc BVTV» — danh mục 6.919 thuốc có phạm vi sử dụng, nạp tệp ngay trên màn
+## duoc-CR-487 | Tra cứu thị trường: thêm mục "Thuốc BVTV" — danh mục 6.919 thuốc có phạm vi sử dụng, nạp tệp ngay trên màn
 - status: xong
 - date: 2026-09-29
 Dữ liệu cào ngày 28/09 từ danhmuc.thuocbvtv.com (dữ liệu EcoFarm của Cục BVTV) trước đây mới nằm ở
@@ -13317,9 +13320,9 @@ dẫn nguồn, kèm một bảng con cho phạm vi sử dụng (cây trồng, d�
 cách dùng). Theo đã chốt, dùng lại bảng cũ chứ không dựng bảng song song, giữ cả thuốc hết hiệu
 lực và mặc định chỉ lọc thuốc còn hiệu lực.
 
-Mục mới «Thuốc BVTV» cho tra theo tên thuốc, hoạt chất, công ty hoặc số đăng ký, lọc theo tình trạng
+Mục mới **Thuốc BVTV** cho tra theo tên thuốc, hoạt chất, công ty hoặc số đăng ký, lọc theo tình trạng
 và phân nhóm; bấm một dòng mở chi tiết và bảng phạm vi sử dụng. Người được nạp dữ liệu hải quan thấy
-thêm nút «Nạp danh mục», nhận tệp JSON hoặc Excel của bản cào; nạp là thay toàn bộ danh mục trong một
+thêm nút **Nạp danh mục**, nhận tệp JSON hoặc Excel của bản cào; nạp là thay toàn bộ danh mục trong một
 lần, tệp hỏng thì danh mục cũ còn nguyên, xong thì gắn lại hoạt chất cho mọi dòng hàng hải quan.
 
 Script nạp danh mục từ phần mềm HaiQuan Manager thôi không nạp thuốc BVTV nữa, vì chạy lại nó sẽ xóa
@@ -13332,7 +13335,7 @@ có; đếm trần số dòng ngay lúc đọc tệp để tệp nhầm không l
 nhận http/https; đang nạp thì không đóng được hộp thoại.
 
 Đã nạp thử đủ 6.919 thuốc và 15.309 dòng phạm vi trên máy local, qua cả tệp JSON lẫn Excel. Đã commit trên erp-v2,
-chưa lên dev/prod — lên rồi phải chạy migration và bấm «Nạp danh mục» một lần, vì bảng ở đó đang rỗng.
+chưa lên dev/prod — lên rồi phải chạy migration và bấm **Nạp danh mục** một lần, vì bảng ở đó đang rỗng.
 
 Mã nguồn: backend/app/modules/customs/{model.py, constants.py (PesticideStatus), pesticide_reader.py,
 pesticide_service.py, pesticide_controller.py} · backend/app/core/action_catalog.py (catalog_import) ·
@@ -13341,21 +13344,21 @@ customs-pesticide-*.tsx
 Tham chiếu: migration a7c3e91d5b20 · test/backend/test_hai_quan_thuoc_bvtv.py · tệp nguồn
 doc/erp/hai-quan/plans/260928-1553-thuoc-bvtv-danh-muc/
 
-## duoc-CR-488 | Tra cứu thị trường: tách «Pháp lý & thuế» thành hai mục, mục «Pháp lý» có bảng xem cả danh mục hóa chất
+## duoc-CR-488 | Tra cứu thị trường: tách "Pháp lý & thuế" thành hai mục, mục "Pháp lý" có bảng xem cả danh mục hóa chất
 - status: xong
 - date: 2026-09-29
-Cần pháp lý thành một mục riêng trong menu Tra cứu thị trường. Trước đây mục «Pháp lý & thuế»
-chỉ cho gõ từng tên hóa chất để tra, không có chỗ nào xem được cả danh sách. Nay mục «Pháp lý» là một
+Cần pháp lý thành một mục riêng trong menu Tra cứu thị trường. Trước đây mục **Pháp lý & thuế**
+chỉ cho gõ từng tên hóa chất để tra, không có chỗ nào xem được cả danh sách. Nay mục **Pháp lý** là một
 bảng xem được toàn bộ danh mục hóa chất theo văn bản — hoạt chất thuốc BVTV bị cấm theo Thông tư
 75/2025, các phụ lục của Nghị định 24/2026 (phụ lục IV có ngưỡng khối lượng) và hóa chất phải công bố
 theo lô theo Thông tư 01/2026 — tìm được theo tên, số CAS hoặc công thức hóa học, lọc theo từng văn
 bản. Cảnh báo cho từ khóa đang tra ở màn danh sách vẫn hiện trên đầu mục này.
 
-Phần tra biểu thuế theo mã HS tách thành mục «Thuế». Link cũ trỏ vào mục pháp lý vẫn mở đúng mục
+Phần tra biểu thuế theo mã HS tách thành mục **Thuế**. Link cũ trỏ vào mục pháp lý vẫn mở đúng mục
 Pháp lý. Cùng đợt, thanh công cụ của mục Thuốc BVTV được sắp lại thành một hàng như mọi màn danh sách.
 
 Lưu ý: trên máy local danh mục hóa chất đang rỗng (dữ liệu nạp từ phần mềm HaiQuan Manager, không nằm
-trong mã nguồn), nên mục Pháp lý ở máy local hiện câu «chưa có danh mục»; trên môi trường đã nạp thì
+trong mã nguồn), nên mục Pháp lý ở máy local hiện câu **chưa có danh mục**; trên môi trường đã nạp thì
 bảng có dữ liệu. Đã commit trên erp-v2, chưa lên dev/prod.
 
 Mã nguồn: backend/app/modules/customs/regulation_browse_service.py (mới) · controller.py
@@ -13367,22 +13370,22 @@ Tham chiếu: test/backend/test_hai_quan_phap_ly_duyet.py
 ## duoc-CR-489 | Tra cứu thị trường: đối chiếu hai chiều danh mục thuốc BVTV với danh sách hoạt chất cấm TT 75/2025
 - status: xong
 - date: 2026-09-29
-Cần hai mục «Thuốc BVTV» và «Pháp lý» nói chuyện với nhau. Nay mục Thuốc BVTV có thêm cột
-«Hoạt chất cấm» và ô lọc «Có hoạt chất cấm»; thuốc nào chứa hoạt chất nằm trong danh sách cấm thì
+Cần hai mục **Thuốc BVTV** và **Pháp lý** nói chuyện với nhau. Nay mục Thuốc BVTV có thêm cột
+**Hoạt chất cấm** và ô lọc **Có hoạt chất cấm**; thuốc nào chứa hoạt chất nằm trong danh sách cấm thì
 hộp chi tiết hiện khung cảnh báo đỏ kèm số CAS, năm cấm và văn bản. Chiều ngược lại, mỗi hoạt chất
-cấm ở mục Pháp lý có cột «Thuốc BVTV chứa» đếm số thuốc trong danh mục đang chứa nó; bấm vào số mở
+cấm ở mục Pháp lý có cột **Thuốc BVTV chứa** đếm số thuốc trong danh mục đang chứa nó; bấm vào số mở
 danh sách các thuốc đó (tính cả thuốc hết hiệu lực), bấm tiếp một thuốc mở chi tiết.
 
 Trước khi làm đã báo cáo: dò khoảng 25 hoạt chất cấm quen thuộc trong bản cào 28/09 đều ra 0,
 vì nguồn đã bỏ hẳn thuốc cấm. Kết quả bình thường vì vậy là 0 — đã chốt vẫn làm, coi đây là bước
-kiểm chéo: danh mục có lọt thuốc cấm thì màn hình báo. Lọc «Có hoạt chất cấm» mà rỗng thì màn hình
+kiểm chéo: danh mục có lọt thuốc cấm thì màn hình báo. Lọc **Có hoạt chất cấm** mà rỗng thì màn hình
 nói thẳng là không thuốc nào chứa hoạt chất cấm, không bảo người dùng thử bỏ lọc.
 
 Hai danh mục không có khóa chung (danh mục thuốc không có số CAS) nên khớp bằng tên hoạt chất, và
 khớp NGUYÊN TÊN: danh mục có 10 thuốc chứa Chlorpyrifos methyl (không cấm), khớp theo từ đầu thì
 cả 10 bị gắn cờ oan vì thứ bị cấm là Chlorpyrifos ethyl. Chỉ nới cho đuôi muối / dạng chế phẩm
 (Paraquat dichloride vẫn là Paraquat). Màn hình ghi rõ kết quả chỉ để tham khảo. Chưa nạp danh sách
-cấm hoặc chưa nạp danh mục thuốc thì màn hình nói ra chứ không hiện số 0 dễ đọc thành «đã kiểm, sạch».
+cấm hoặc chưa nạp danh mục thuốc thì màn hình nói ra chứ không hiện số 0 dễ đọc thành **đã kiểm, sạch**.
 
 Không lưu thành cột: danh sách cấm sửa được ở mục Cấu hình, lưu sẵn là lệch ngay khi có người sửa.
 Mỗi lần quét cả danh mục mất 36–62 mili giây trên 6.919 thuốc. Đã chạy thử trên MySQL ở máy
@@ -13400,13 +13403,13 @@ Tham chiếu: test/backend/test_hai_quan_doi_chieu_hoat_chat_cam.py
 - status: xong
 - date: 2026-09-29
 Yêu cầu danh mục thuốc BVTV có đủ thêm, sửa, xóa kèm phân quyền, và giao diện cũ (thumua)
-cũng phải có như bản mới. Đã chốt ba điều: dùng khóa quyền mới «Danh mục thuốc BVTV (hải
-quan)» (`customs_pesticide`) chứ không dùng chung khóa tra cứu; nạp lại danh mục thì GIỮ thuốc
-người dùng tự thêm; giao diện cũ đồng bộ cả mục Thuốc BVTV lẫn việc tách «Pháp lý & thuế» thành
+cũng phải có như bản mới. Đã chốt ba điều: dùng khóa quyền mới **Danh mục thuốc BVTV (hải
+quan)** (`customs_pesticide`) chứ không dùng chung khóa tra cứu; nạp lại danh mục thì GIỮ thuốc
+người dùng tự thêm; giao diện cũ đồng bộ cả mục Thuốc BVTV lẫn việc tách **Pháp lý & thuế** thành
 hai thẻ, nhưng giữ hàng thẻ như cũ chứ không đổi sang menu con.
 
 Xem danh mục vẫn theo quyền xem Tra cứu thị trường. Khóa mới gác thêm, sửa, xóa từng thuốc và nút
-«Nạp danh mục» (trước đây nút này đi theo quyền nạp tờ khai hải quan). Khóa mới nằm trong nhóm
+**Nạp danh mục** (trước đây nút này đi theo quyền nạp tờ khai hải quan). Khóa mới nằm trong nhóm
 không tự cấp cho Quản lý thu mua, nên trên hệ đang chạy phải tick tay ở màn Phân quyền, và người
 đang đăng nhập phải đăng xuất rồi đăng nhập lại mới thấy nút.
 
@@ -13414,19 +13417,19 @@ Thuốc tự thêm được đánh dấu bằng một cột riêng chứ không 
 cũng cho 0 khi dòng nguồn thiếu mã — dựa vào đó thì dòng ấy nhân đôi sau mỗi lần nạp. Sửa một thuốc
 lấy từ nguồn thì lần nạp sau ghi đè theo nguồn; màn sửa và hộp nạp đều nói rõ điều này, hộp nạp
 còn nói số thuốc tự thêm được giữ. Sửa tên hay hoạt chất không tự gắn lại nhãn cho mọi dòng hàng
-hải quan (khoảng 18 nghìn dòng trên prod), người dùng bấm «Gắn lại nhãn» ở mục Cấu hình khi cần.
+hải quan (khoảng 18 nghìn dòng trên prod), người dùng bấm **Gắn lại nhãn** ở mục Cấu hình khi cần.
 
 Cùng đợt: vá theo code-review của CR-489 — số thuốc chứa hoạt chất cấm trên màn Pháp lý có thể
 lệch danh sách nó mở ra khi hai tên cấm chồng nhau (Paraquat và Paraquat dichloride), và ba chỗ
-bóc tên hoạt chất làm sót thuốc cấm (hàm lượng viết cách «276 g/ l», mã dạng chế phẩm «20 SL»,
+bóc tên hoạt chất làm sót thuốc cấm (hàm lượng viết cách **276 g/ l**, mã dạng chế phẩm **20 SL**,
 ngoặc chứa dấu cộng, khoảng trắng không ngắt và ký tự α/β của font Symbol). Hộp nạp ghi trần tệp
 60 MB trong khi máy chủ chỉ nhận 30 MB, đã sửa về 30 MB.
 
 Đã chạy thử trên MySQL ở máy local: thêm một thuốc tay, nạp lại đủ 6.919 thuốc (1,5 giây), thuốc tay
 còn nguyên cả phạm vi sử dụng, xóa đi thì tổng về lại 6.919. Đã bấm tay trên trình duyệt cả hai giao
 diện: thêm thuốc (Enter trong ô không lưu nhầm, bấm đúp chỉ ra một bản ghi), xem cờ hoạt chất cấm,
-bấm số thuốc ở mục Pháp lý mở đúng danh sách, xóa có hộp xác nhận. Lúc bấm thử phát hiện cột «Thuốc
-BVTV chứa» nằm ngoài khung ở màn 1440px nên đã chuyển lên trước cột «Lưu ý». Đã commit trên erp-v2. Lên dev/prod phải chạy
+bấm số thuốc ở mục Pháp lý mở đúng danh sách, xóa có hộp xác nhận. Lúc bấm thử phát hiện cột **Thuốc
+BVTV chứa** nằm ngoài khung ở màn 1440px nên đã chuyển lên trước cột **Lưu ý**. Đã commit trên erp-v2. Lên dev/prod phải chạy
 migration b4d81f2c6e37 và tick khóa mới cho vai trò cần sửa danh mục.
 
 Mã nguồn: backend/app/modules/customs/{pesticide_schema.py, pesticide_edit_service.py (mới),
@@ -13440,15 +13443,15 @@ Tham chiếu: migration b4d81f2c6e37 · test/backend/test_hai_quan_thuoc_bvtv_cr
 - status: xong
 - date: 2026-09-29
 Cần giao diện cũ (thumua) giống bản mới: bỏ hàng thẻ trên màn Tra cứu thị trường, đưa từng
-thẻ thành một mục con trong menu trái. Nay mục «Tra cứu thị trường» sổ ra chín mục Danh sách, Biểu
+thẻ thành một mục con trong menu trái. Nay mục **Tra cứu thị trường** sổ ra chín mục Danh sách, Biểu
 đồ, Nhà nhập khẩu, So sánh, Pháp lý, Thuế, Thuốc BVTV, Lịch sử nạp và Cấu hình khi đang ở trong màn
 đó; mỗi mục có đường dẫn riêng nên gửi link là mở đúng mục, đường lạ thì về Danh sách. Bộ lọc đang
 áp vẫn giữ khi bấm sang mục khác. Mục Cấu hình vẫn gác quyền như trước (quản lý dữ liệu hải quan
 hoặc xem được danh mục hóa chất), menu và trang dùng chung một hàm gác nên không lệch nhau.
 
-Đã bấm tay trên trình duyệt: menu con sáng đúng mục, gõ «atrazine» rồi sang Biểu đồ và quay lại
+Đã bấm tay trên trình duyệt: menu con sáng đúng mục, gõ **atrazine** rồi sang Biểu đồ và quay lại
 Danh sách vẫn còn từ khóa, mở thẳng đường của mục Thuốc BVTV thì vào đúng mục. Cùng đợt sửa mã CR
-«bao-CR-503» mà agent tự đặt trong chú thích các tệp của CR-490 thành duoc-CR-490. Đã commit trên erp-v2.
+**bao-CR-503** mà agent tự đặt trong chú thích các tệp của CR-490 thành duoc-CR-490. Đã commit trên erp-v2.
 
 Mã nguồn: frontend/src/config/customs-sections.ts (mới) · frontend/src/layouts/AppLayout.tsx
 (NavParent, children) · frontend/src/pages/CustomsPrices.tsx · frontend/src/App.tsx
@@ -13458,9 +13461,9 @@ Mã nguồn: frontend/src/config/customs-sections.ts (mới) · frontend/src/lay
 - status: xong
 - date: 2026-09-29
 Góp ý hộp chi tiết thuốc BVTV: nút Sửa/Xóa chen giữa tiêu đề và thông tin, bảng dưới đáy
-không rõ là bảng gì, và không cần link «Xem trên danh mục nguồn». Đã chốt chuyển thành trang
+không rõ là bảng gì, và không cần link **Xem trên danh mục nguồn**. Đã chốt chuyển thành trang
 chi tiết riêng như các màn danh mục khác của bản mới. Nay bấm một thuốc là mở trang riêng: tiêu đề
-kèm tình trạng, nút Sửa và Xóa ở góc phải; thẻ «Thông tin đăng ký»; bảng «Phạm vi sử dụng» có tiêu
+kèm tình trạng, nút Sửa và Xóa ở góc phải; thẻ **Thông tin đăng ký**; bảng **Phạm vi sử dụng** có tiêu
 đề ngay trên bảng kèm câu giải thích (cây trồng nào, dịch hại gì, liều lượng, thời gian cách ly);
 cuối trang là lịch sử thao tác. Trang nằm dưới mục menu Thuốc BVTV nên cùng quyền xem; Sửa/Xóa theo
 khóa quyền danh mục thuốc như trước.
@@ -13479,8 +13482,8 @@ customs-pesticide-detail-dialog.tsx · frontend/src/components/customs/CustomsPe
 - status: xong
 - date: 2026-09-29
 Yêu cầu giao diện cũ (thumua) đổi theo bản mới: bấm một thuốc BVTV mở trang chi tiết riêng
-thay cho hộp thoại. Trang có nút quay lại, tên thuốc kèm tình trạng và nhãn «Tự thêm», nút Sửa và
-Xóa ở góc phải; thẻ «Thông tin đăng ký»; bảng «Phạm vi sử dụng» có tiêu đề và câu giải thích; cuối
+thay cho hộp thoại. Trang có nút quay lại, tên thuốc kèm tình trạng và nhãn **Tự thêm**, nút Sửa và
+Xóa ở góc phải; thẻ **Thông tin đăng ký**; bảng **Phạm vi sử dụng** có tiêu đề và câu giải thích; cuối
 trang là lịch sử thao tác. Không còn link nguồn. Sửa vẫn mở hộp nhập như trước; thêm thuốc mới xong
 thì mở luôn trang của thuốc đó.
 
@@ -13500,10 +13503,10 @@ tệp đính kèm, dùng lại đúng thẻ đính kèm chứng từ đang có �
 hoặc chọn tệp (PDF, ảnh, Word, Excel…, tối đa 50 MB), xếp theo mục, xem trước và tải về được. Ai
 xem được Tra cứu thị trường thì xem được tệp; tải lên và xóa tệp đòi khóa sửa danh mục thuốc.
 
-Bẫy chính đã chặn: trước đây mỗi lần «Nạp danh mục» thì thuốc lấy từ nguồn bị xóa rồi chèn lại với
+Bẫy chính đã chặn: trước đây mỗi lần **Nạp danh mục** thì thuốc lấy từ nguồn bị xóa rồi chèn lại với
 số hiệu mới, nên tệp đính kèm sẽ mất chủ ngay lần nạp sau. Nay lần nạp giữ nguyên số hiệu của thuốc
 vẫn còn trong nguồn (khớp theo mã của bản cào), và số hiệu cho thuốc mới luôn lớn hơn mọi số đã có,
-để một thuốc mới không bao giờ «nhận» tệp của thuốc đã bị bỏ. Thuốc không còn trong tệp nguồn mới,
+để một thuốc mới không bao giờ **nhận** tệp của thuốc đã bị bỏ. Thuốc không còn trong tệp nguồn mới,
 hoặc bị xóa tay, thì được dọn luôn tệp đính kèm; hộp nạp nói rõ điều này và báo số thuốc bị bỏ.
 
 Module đính kèm dùng chung được mở rộng một chỗ: một loại đính kèm được khai quyền XEM khác quyền
@@ -13519,16 +13522,16 @@ customs-pesticide-import-dialog.tsx · frontend/src/pages/CustomsPesticideDetail
 frontend/src/components/customs/CustomsPesticideImportDialog.tsx
 Tham chiếu: test/backend/test_hai_quan_thuoc_bvtv_crud.py (phần tệp đính kèm)
 
-## duoc-CR-495 | Thuốc BVTV: hiện câu mô tả «tóm tắt sử dụng» như trang nguồn, cả hai giao diện
+## duoc-CR-495 | Thuốc BVTV: hiện câu mô tả "tóm tắt sử dụng" như trang nguồn, cả hai giao diện
 - status: xong
 - date: 2026-09-29
-Phát hiện trang danh mục thuốc BVTV gốc có một câu mô tả cho từng thuốc («Thuốc trừ bệnh … hoạt
-chất …, sử dụng trên …, phòng trừ …, đăng ký bởi …») mà ERP chưa có. Bản cào đã có sẵn câu này ở cả
+Phát hiện trang danh mục thuốc BVTV gốc có một câu mô tả cho từng thuốc (**Thuốc trừ bệnh … hoạt
+chất …, sử dụng trên …, phòng trừ …, đăng ký bởi …**) mà ERP chưa có. Bản cào đã có sẵn câu này ở cả
 tệp JSON lẫn tệp Excel (đủ 6.919 thuốc) nhưng bộ đọc tệp bỏ qua; nay lưu vào danh mục và hiện trong
-thẻ «Thông tin đăng ký» trên trang chi tiết, DƯỚI lưới thông tin, ngăn bằng một vạch mảnh, nhãn
-«Tóm tắt sử dụng» cùng kiểu các ô khác (đã chốt sau khi xem: không khung màu, không viền trái).
+thẻ **Thông tin đăng ký** trên trang chi tiết, DƯỚI lưới thông tin, ngăn bằng một vạch mảnh, nhãn
+**Tóm tắt sử dụng** cùng kiểu các ô khác (đã chốt sau khi xem: không khung màu, không viền trái).
 Lưới thông tin cũng làm lại: nhãn nhỏ màu nhạt, giá trị đậm, ba cột trên màn rộng. Thuốc
-tự thêm có ô «Mô tả tóm tắt» trong form để người nhập tự viết.
+tự thêm có ô **Mô tả tóm tắt** trong form để người nhập tự viết.
 
 Cột mới gộp vào migration b4d81f2c6e37 (chưa lên môi trường nào). Trên máy local đã nạp lại danh mục để
 có câu mô tả. Đã commit trên erp-v2.
@@ -13583,9 +13586,9 @@ Deploy: dữ liệu dev + prod 30/09; sao lưu prod `procurement_truoc_cr532_202
 ## bao-CR-535 | Seed văn thư không đẻ lại công ty DEGO trùng mỗi lần deploy
 - status: xong
 - date: 2026-09-30
-Deploy dev xong thì trên dev lại mọc ra một công ty «DEGO HOLDING» mới (id 17), dù bao-CR-532 vừa
+Deploy dev xong thì trên dev lại mọc ra một công ty **DEGO HOLDING** mới (id 17), dù bao-CR-532 vừa
 gộp bản trùng vào DEGO id 1 và xóa đi. Nguyên nhân là bộ seed văn thư chạy ở mọi lần khởi động và
-danh sách công ty của nó còn dòng «DEGO HOLDING»: thấy thiếu mã đó là tạo lại. Prod chưa bị chỉ vì
+danh sách công ty của nó còn dòng **DEGO HOLDING**: thấy thiếu mã đó là tạo lại. Prod chưa bị chỉ vì
 từ lúc gộp tới giờ chưa deploy lại.
 
 Đã bỏ dòng đó khỏi danh sách seed, và thêm chốt: công ty trong danh sách mà mã số thuế đã thuộc một
@@ -13683,12 +13686,12 @@ Deploy: DEV 05/10 12:34 do Erp Agent 1, health 200; 13:29 bật AGENT_OPS_ENABLE
 - status: xong
 - date: 2026-10-05
 Theo quyết định ngày 05/10, bot code được xem và sửa trên máy chủ một nhưng phải qua cổng: xem dev chạy
-luôn; xem prod và mọi thao tác sửa đều hiện nguyên văn lệnh rồi chờ Ban điều hành nhắn «đúng» (mã xác nhận cho prod
+luôn; xem prod và mọi thao tác sửa đều hiện nguyên văn lệnh rồi chờ Ban điều hành nhắn **đúng** (mã xác nhận cho prod
 tạm bỏ qua theo chỉ đạo). Câu SQL sửa dữ liệu được sao lưu đúng các bảng bị đụng trước khi chạy, sao lưu
-hỏng thì không chạy; deploy prod sao lưu cả cơ sở dữ liệu trước. Mỗi thao tác ghi một dòng nhật ký; «hoàn tác
-thao tác #n» tạo thao tác trả lại như cũ, cũng phải «đúng». Lệnh đụng bí mật, xóa hàng loạt, xóa volume, đổi cấu
+hỏng thì không chạy; deploy prod sao lưu cả cơ sở dữ liệu trước. Mỗi thao tác ghi một dòng nhật ký; **hoàn tác
+thao tác #n** tạo thao tác trả lại như cũ, cũng phải **đúng**. Lệnh đụng bí mật, xóa hàng loạt, xóa volume, đổi cấu
 trúc bảng bị từ chối thẳng; kết quả được che bí mật trước khi lên Telegram. Thêm báo tài nguyên 7 giờ 35 mỗi
-sáng và câu «tình hình máy». Đã thử thật trên dev phần chỉ đọc (trạng thái, tài nguyên, câu SQL đọc, gom dữ liệu
+sáng và câu **tình hình máy**. Đã thử thật trên dev phần chỉ đọc (trạng thái, tài nguyên, câu SQL đọc, gom dữ liệu
 chẩn đoán) và sao lưu một bảng nhỏ rồi xóa tệp thử.
 
 Mã nguồn: backend/app/modules/agent_hub/ops.py · ops_runner.py · guardrails.py · service.py · tasks.py
@@ -13701,7 +13704,7 @@ Deploy: DEV 05/10 12:34 do Erp Agent 1, health 200; 13:29 bật AGENT_OPS_ENABLE
 Mỗi phút bot gõ kiểm tra sức khỏe từng môi trường trong sổ; hỏng ba phút liền thì mở sự cố, báo cáo và giao
 máy sửa mã gom nhật ký container, commit, migration, tài nguyên để Claude chẩn đoán và chọn một thao tác an toàn
 (bật lại container, khởi động lại, quay về bản trước nếu bot vừa deploy, dọn bộ đệm build). Trên dev bot tự
-chạy, tối đa ba lần mỗi giờ, quá thì dừng và gọi người; trên prod chỉ đề xuất và chờ «đúng». Cùng một nguyên
+chạy, tối đa ba lần mỗi giờ, quá thì dừng và gọi người; trên prod chỉ đề xuất và chờ **đúng**. Cùng một nguyên
 nhân lặp ba lần trong bảy ngày thì bot mở một việc sửa gốc rễ đi đường thường. Sổ sự cố ghi lúc nào, triệu chứng,
 chẩn đoán, đã làm gì, thời gian gián đoạn. Sửa kèm giờ chạy bản tin sáng bị lệch thành nửa đêm. Hai công tắc
 thao tác và tự chữa mặc định tắt. Còn thiếu: đếm lỗi 5xx tăng đột biến và canh hàng đợi.
@@ -13738,7 +13741,7 @@ Deploy: DEV 05/10 do Erp Agent 1, health 200; prod CHƯA
 ## ai-CR-072 | Bot báo quản trị khi máy sửa mã mất liên lạc và khi nối lại
 - status: xong
 - date: 2026-10-05
-Trước đây máy sửa mã tắt thì quản trị chỉ biết khi giao việc mà bot báo «đang chờ máy». Nay mỗi phút bot xem máy nào
+Trước đây máy sửa mã tắt thì quản trị chỉ biết khi giao việc mà bot báo **đang chờ máy**. Nay mỗi phút bot xem máy nào
 quá hai phút không báo còn sống thì nhắn quản trị một lần, kèm giờ liên lạc cuối và số việc đang nằm chờ; máy bật
 lại thì nhắn đã nối lại và đang làm tiếp. Việc giao lúc máy tắt vẫn nằm chờ, không mất. Chưa làm được việc khởi
 động lại máy bằng câu nhắn, vì bot trên máy chủ dev không với tới Docker trên máy local.
@@ -13754,7 +13757,7 @@ Phát hiện bắt mình tự gõ câu SQL là nguy hiểm và chậm, bot lại
 dụ gán chức vụ Nhân viên (Demo) cho các nhân sự có chữ CR-414 trong tên. Bot nhận ra đây là việc sửa dữ liệu, giao máy
 sửa mã tự đọc cấu trúc bảng trong mã nguồn, tự tra dữ liệu thật trên dev, tự soạn lệnh. Bot kiểm lại: không đụng bảng
 tài khoản, phân quyền, nhật ký, cấu hình; đếm đúng số dòng sẽ đổi; quá năm trăm dòng thì không làm. Sau đó bot gửi
-một thẻ tiếng Việt ghi sẽ đổi gì, bao nhiêu dòng, vài dòng mẫu, chờ một chữ «đúng»; chạy xong báo đã đổi bao nhiêu
+một thẻ tiếng Việt ghi sẽ đổi gì, bao nhiêu dòng, vài dòng mẫu, chờ một chữ **đúng**; chạy xong báo đã đổi bao nhiêu
 dòng và cách hoàn tác. Câu lệnh không bày ra trên thẻ.
 
 Kèm theo là tệp quy định hỏi và làm dùng chung cho cả bot: đọc dev thì làm luôn, sửa thì hỏi đúng một lần, những
@@ -13763,7 +13766,7 @@ dùng tự gõ lệnh.
 
 Mã nguồn: backend/app/modules/agent_hub/policy.py · ops.py · ops_runner.py · manager.py · service.py · doc/agent-hub/09-quy-dinh-hoi-va-lam.md
 Commit: 69f2fef4 (erp-v2 69f2fef4)
-Deploy: DEV 05/10 do Erp Agent 1; chạy thật 14:38: người dùng nhắn bằng lời, bot soạn lệnh, «đúng» → 10 nhân sự (CR-414) mang chức vụ Nhân viên (Demo), có sao lưu op5; prod CHƯA
+Deploy: DEV 05/10 do Erp Agent 1; chạy thật 14:38: người dùng nhắn bằng lời, bot soạn lệnh, **đúng** → 10 nhân sự (CR-414) mang chức vụ Nhân viên (Demo), có sao lưu op5; prod CHƯA
 
 ## ai-CR-074 | Thẻ duyệt sửa dữ liệu gọn và dễ đọc hơn
 - status: xong
@@ -13771,7 +13774,7 @@ Deploy: DEV 05/10 do Erp Agent 1; chạy thật 14:38: người dùng nhắn b�
 Thẻ duyệt đầu tiên chạy thật còn hai chỗ chưa ổn: câu tóm tắt bị cắt cụt giữa chữ, và thẻ lộ tên bảng, tên cột,
 tên hàm khó đọc. Nay câu tóm tắt cắt ở ranh giới câu hoặc chữ; máy sửa mã được dặn viết bằng lời nghiệp vụ, đặt
 tên cột tiếng Việt cho dòng mẫu, không đưa cột id; thẻ chỉ hiện ba dòng mẫu và tối đa hai giả định quan trọng.
-Chi tiết kỹ thuật vẫn xem được bằng «thao tác #n».
+Chi tiết kỹ thuật vẫn xem được bằng **thao tác #n**.
 
 Mã nguồn: backend/app/modules/agent_hub/ops_runner.py · ops.py · test/backend/test_agent_hub.py
 Commit: 92fac56a (erp-v2 92fac56a)
@@ -13781,9 +13784,9 @@ Deploy: DEV 05/10 do Erp Agent 1, máy sửa mã đã dựng lại; prod CHƯA
 - status: xong
 - date: 2026-10-05
 Phát hiện tin nhắn của bot khó đọc. Thẻ duyệt và tin báo kết quả thao tác nay có cùng một bố cục: dòng đầu in hoa
-in đậm cho biết loại việc, môi trường và số thao tác; mỗi phần có nhãn in đậm như «Sẽ làm», «Số dòng đổi», «Ví dụ
-đang là», «An toàn», «Kết quả»; ghi chú và cách hoàn tác in nghiêng; các phần cách nhau một dòng trống; cuối thẻ là
-một dòng ngắn «Nhắn đúng để chạy, thôi để bỏ».
+in đậm cho biết loại việc, môi trường và số thao tác; mỗi phần có nhãn in đậm như **Sẽ làm**, **Số dòng đổi**, **Ví dụ
+đang là**, **An toàn**, **Kết quả**; ghi chú và cách hoàn tác in nghiêng; các phần cách nhau một dòng trống; cuối thẻ là
+một dòng ngắn **Nhắn đúng để chạy, thôi để bỏ**.
 
 Mã nguồn: backend/app/modules/agent_hub/ops.py · ops_runner.py · test/backend/test_agent_hub.py
 
@@ -13801,8 +13804,8 @@ Mã nguồn: backend/app/modules/agent_hub/schema_change.py · coder.py · guard
 ## ai-CR-077 | Sổ thuật ngữ dạy qua chat và bộ lọc phòng ban cho câu hỏi về đơn mua hàng
 - status: xong
 - date: 2026-10-05
-Trợ lý AI không biết «nhà máy» là phòng nào nên hỏi đơn của nhà máy thì trả đơn của cả công ty. Nay có sổ thuật ngữ:
-người dùng nhắn «ghi nhớ: nhà máy là phòng Dego Organic» là bot nhớ ngay, «thuật ngữ» để xem, «quên thuật ngữ …» để xóa.
+Trợ lý AI không biết **nhà máy** là phòng nào nên hỏi đơn của nhà máy thì trả đơn của cả công ty. Nay có sổ thuật ngữ:
+người dùng nhắn **ghi nhớ: nhà máy là phòng Dego Organic** là bot nhớ ngay, **thuật ngữ** để xem, **quên thuật ngữ …** để xóa.
 Mỗi câu hỏi, Trợ lý trên web lẫn Telegram chỉ đọc những từ có trong câu đó nên sổ dài vẫn nhanh; lịch sử thay đổi
 ghi vào nhật ký cấu hình. Công cụ tìm đơn mua hàng có thêm bộ lọc theo phòng ban (phòng yêu cầu hoặc phòng xử lý) và
 theo pháp nhân, trả kèm tên phòng của từng đơn và đường dẫn nhà cung cấp thật thay cho đường dẫn bot tự bịa.
@@ -13814,11 +13817,11 @@ Deploy: DEV 05/10 do Erp Agent 1; prod CHƯA
 ## ai-CR-078 | Bot tự học: nhớ từ lời sửa, tự dò nghĩa từ dữ liệu, tự đề xuất sửa chỗ còn thiếu
 - status: xong
 - date: 2026-10-05
-Ban điều hành chọn ba hướng để bot tự cải thiện. Thứ nhất, khi người dùng sửa cách bot hiểu một từ («không phải, nhà máy là
-phòng Dego Organic»), Trợ lý tự ghi lại: quản trị sửa thì ghi thẳng vào sổ thuật ngữ, người khác sửa thì thành đề xuất
+Ban điều hành chọn ba hướng để bot tự cải thiện. Thứ nhất, khi người dùng sửa cách bot hiểu một từ (**không phải, nhà máy là
+phòng Dego Organic**), Trợ lý tự ghi lại: quản trị sửa thì ghi thẳng vào sổ thuật ngữ, người khác sửa thì thành đề xuất
 chờ duyệt. Thứ hai, gặp từ nội bộ lạ, Trợ lý tự tra trong danh mục phòng ban, pháp nhân, chức vụ, nhà cung cấp
-và tên phòng ghi trên phiếu, rồi đề xuất nghĩa kèm bằng chứng; mỗi năm phút bot gửi quản trị thẻ đề xuất để nhắn «đúng»
-hoặc «thôi». Thứ ba, khi Trợ lý không làm được vì công cụ thiếu tính năng, nó ghi lại; cùng một chỗ thiếu gặp từ hai
+và tên phòng ghi trên phiếu, rồi đề xuất nghĩa kèm bằng chứng; mỗi năm phút bot gửi quản trị thẻ đề xuất để nhắn **đúng**
+hoặc **thôi**. Thứ ba, khi Trợ lý không làm được vì công cụ thiếu tính năng, nó ghi lại; cùng một chỗ thiếu gặp từ hai
 lần thì bot tự mở một việc sửa mã, đi đường duyệt thường. Phần đếm số phiếu theo tên phòng chỉ hiện khi người hỏi có
 quyền xem loại phiếu đó.
 
@@ -13830,8 +13833,8 @@ Deploy: DEV 05/10 15:43 do Erp Agent 1 (sao lưu DB dev trước); prod CHƯA
 - status: xong
 - date: 2026-10-05
 Phát hiện năm phút gửi một lần đề xuất thuật ngữ là phiền vì lâu lâu mới có thay đổi. Nay bot không tự gửi nữa:
-đề xuất nằm chờ trong sổ, chỉ hiện khi người dùng nhắn «cập nhật thuật ngữ»; một đề xuất thì nhắn «đúng» hoặc «thôi»,
-nhiều thì duyệt theo số hoặc «duyệt hết thuật ngữ». Khi đang trả lời mà gặp từ nội bộ chưa hiểu, Trợ lý tra dữ liệu
+đề xuất nằm chờ trong sổ, chỉ hiện khi người dùng nhắn **cập nhật thuật ngữ**; một đề xuất thì nhắn **đúng** hoặc **thôi**,
+nhiều thì duyệt theo số hoặc **duyệt hết thuật ngữ**. Khi đang trả lời mà gặp từ nội bộ chưa hiểu, Trợ lý tra dữ liệu
 trước: chắc thì làm luôn và nói rõ cách hiểu, không chắc thì hỏi một câu kèm vài lựa chọn đoán sẵn, người dùng chọn số là
 bot nhớ luôn và trả lời tiếp câu gốc.
 
@@ -13844,7 +13847,7 @@ Deploy: DEV 05/10 15:43 do Erp Agent 1 (sao lưu DB dev trước); prod CHƯA
 - date: 2026-10-05
 Cần thử nhờ bot lên task. Trợ lý có thêm công cụ soạn nháp một công việc ở phân hệ Dự án từ câu nói: tự tìm dự
 án theo tên trong các dự án người hỏi thấy được, tìm người phụ trách theo tên hoặc mã nhân sự, đọc hạn chót; chưa rõ
-dự án hay người thì hỏi một câu kèm lựa chọn. Trên Telegram bot gửi bản nháp, nhắn «tạo» là tạo việc đúng như màn
+dự án hay người thì hỏi một câu kèm lựa chọn. Trên Telegram bot gửi bản nháp, nhắn **tạo** là tạo việc đúng như màn
 Dự án trên web và báo chuông cho từng người được giao, chuông tự chuyển sang Telegram của ai đã nối.
 
 Mã nguồn: backend/app/modules/assistant/tools/work_tool.py · agent_hub/draft_create.py · agent_hub/service.py
@@ -13865,9 +13868,9 @@ Deploy: DEV 05/10 do Erp Agent 1 (erp-v2 83963d64); prod CHƯA
 - status: xong
 - date: 2026-10-05
 Tính năng lớn có bảng mới, API và màn hình dễ chạm trần số tệp và số lượt của một lần sửa, khiến bot dừng giữa chừng.
-Nay việc chạm từ hai lớp trở lên và từ tám tệp, hoặc lưu ý «làm theo từng phần», được chia thành tối đa ba phần:
+Nay việc chạm từ hai lớp trở lên và từ tám tệp, hoặc lưu ý **làm theo từng phần**, được chia thành tối đa ba phần:
 cấu trúc dữ liệu, nghiệp vụ phía máy chủ, giao diện. Bot làm lần lượt trong cùng một phiên nên nhớ phần trước; mỗi phần
-được kiểm và commit riêng. Vướng ở phần nào thì dừng ở đó, các phần đã xong giữ nguyên, người dùng nhắn «làm tiếp» để bot
+được kiểm và commit riêng. Vướng ở phần nào thì dừng ở đó, các phần đã xong giữ nguyên, người dùng nhắn **làm tiếp** để bot
 làm nốt. Thẻ kế hoạch nói trước việc sẽ chia mấy phần. Kèm theo là tài liệu hướng dẫn bật Google cá nhân trên dev.
 
 Mã nguồn: backend/app/modules/agent_hub/coder.py · service.py · tasks.py · doc/agent-hub/02-bo-quy-tac-bot.md · doc/agent-hub/10-huong-dan-noi-google.md
@@ -13884,7 +13887,7 @@ cặp riêng thì dùng cặp riêng, chưa có thì dùng cặp cũ như trư�
 
 Mã nguồn: backend/app/modules/agent_hub/google_link.py · backend/app/core/config.py · doc/agent-hub/10-huong-dan-noi-google.md
 Commit: 7c3dd3d2 (erp-v2 7c3dd3d2)
-Deploy: DEV 05/10 do Erp Agent 1; 05/10 quản trị tạo dự án Google «ERP Tro ly AI» + client, đưa hai khóa lên.env.dev (sao lưu trước), dựng lại api + worker + poller, đã cấu hình xong; prod CHƯA
+Deploy: DEV 05/10 do Erp Agent 1; 05/10 quản trị tạo dự án Google **ERP Tro ly AI** + client, đưa hai khóa lên.env.dev (sao lưu trước), dựng lại api + worker + poller, đã cấu hình xong; prod CHƯA
 
 ## ai-CR-084 | Dời lịch Google sửa đúng sự kiện cũ, không tạo thêm bản trùng
 - status: xong
@@ -13898,7 +13901,7 @@ Mã nguồn: backend/app/modules/assistant/tools/google_tool.py · agent_hub/goo
 Commit: 668e3477 (erp-v2 668e3477)
 Deploy: DEV 05/10 do Erp Agent 1; prod CHƯA
 
-## ai-CR-085 | Sửa báo nhầm «máy sửa mã chạy bản cũ»
+## ai-CR-085 | Sửa báo nhầm "máy sửa mã chạy bản cũ"
 - status: xong
 - date: 2026-10-05
 Chiều 05/10 bot báo hai lần liền là máy sửa mã chạy bản cũ, trong khi thật ra máy chạy bản mới hơn vì vừa được dựng
@@ -13914,8 +13917,8 @@ Deploy: DEV 05/10 do Erp Agent 1; prod CHƯA
 - status: xong
 - date: 2026-10-05
 Phát hiện bot viết dài khi nhận việc AI-0002 và muốn bot báo sơ bộ, sửa mã luôn rồi người dùng xem kết quả. Nay bot
-không gửi đoạn phân tích mã dài nữa, chi tiết xem bằng «chi tiết AI-xxxx». Việc rủi ro thấp hoặc vừa mà kế hoạch không
-còn câu hỏi thì bot tự duyệt, báo một dòng là làm luôn, xong gửi thẻ kết quả để xem và nhắn «gộp». Việc rủi ro
+không gửi đoạn phân tích mã dài nữa, chi tiết xem bằng **chi tiết AI-xxxx**. Việc rủi ro thấp hoặc vừa mà kế hoạch không
+còn câu hỏi thì bot tự duyệt, báo một dòng là làm luôn, xong gửi thẻ kết quả để xem và nhắn **gộp**. Việc rủi ro
 cao như tiền, phân quyền, đổi cấu trúc cơ sở dữ liệu vẫn chờ duyệt, với thẻ kế hoạch ngắn gọn. Bot lập kế hoạch
 tự chọn cách an toàn cho những câu nghiệp vụ phụ thay vì hỏi lại.
 
@@ -13926,8 +13929,8 @@ Deploy: DEV 05/10 do Erp Agent 1, máy sửa mã đã dựng lại; prod CHƯA
 ## ai-CR-087 | Thẻ bot dừng nói rõ lý do, tin nhắc họp không hiện mã sự kiện
 - status: xong
 - date: 2026-10-05
-Việc AI-0002 bot dừng đúng luật vì một bài kiểm an toàn cấm công cụ xóa, nhưng thẻ chỉ báo «không sửa tệp nào» nên
-người dùng tưởng lỗi. Nay thẻ dừng in luôn câu tóm tắt lý do của bot và gợi ý nhắn «sửa: …» để làm lại theo yêu cầu.
+Việc AI-0002 bot dừng đúng luật vì một bài kiểm an toàn cấm công cụ xóa, nhưng thẻ chỉ báo **không sửa tệp nào** nên
+người dùng tưởng lỗi. Nay thẻ dừng in luôn câu tóm tắt lý do của bot và gợi ý nhắn **sửa: …** để làm lại theo yêu cầu.
 Tin nhắc trước cuộc họp không còn hiện chuỗi mã sự kiện; mã đó chỉ lưu trong sổ để khỏi nhắc hai lần.
 
 Mã nguồn: backend/app/modules/agent_hub/coder.py · agent_hub/briefs.py
@@ -13937,9 +13940,9 @@ Deploy: dev 06/10 cùng đợt, erp-v2 84d259bd (Agent 1 gộp và dựng lại 
 ## ai-CR-088 | Bỏ việc thì đóng luôn lượt đang dở, báo cáo không đếm lượt kẹt của việc đã bỏ
 - status: xong
 - date: 2026-10-06
-Báo cáo tài nguyên sáng 06/10 ghi «1 lượt kẹt quá 2 giờ»: đó là lượt sửa mã của AI-0002, việc quản trị đã bỏ từ hôm
+Báo cáo tài nguyên sáng 06/10 ghi **1 lượt kẹt quá 2 giờ**: đó là lượt sửa mã của AI-0002, việc quản trị đã bỏ từ hôm
 05/10 nhưng lượt chạy vẫn nằm trạng thái đang chạy. Nay khi quản trị bỏ một việc, mọi lượt đang dở của việc đó tự đóng
-với ghi chú «việc đã bỏ», và báo cáo chỉ đếm lượt kẹt của những việc còn mở. Thêm một bài kiểm cho đúng tình huống này.
+với ghi chú **việc đã bỏ**, và báo cáo chỉ đếm lượt kẹt của những việc còn mở. Thêm một bài kiểm cho đúng tình huống này.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (cancel_task) · agent_hub/ops.py (activity_text)
 Deploy: dev 06/10 cùng đợt, erp-v2 84d259bd (Agent 1 gộp và dựng lại api, celery-worker, celery-beat, agent-poller); prod giữ lại.
@@ -13961,7 +13964,7 @@ Deploy: dev 06/10, erp-v2 e31f51db (Agent 1 gộp và dựng lại); máy sửa 
 - date: 2026-10-06
 Phát hiện bot phản hồi chậm: một câu lệnh lẻ trước phải chờ từ 30 đến 90 giây mới được đọc, vì bot đợi 30 giây
 xem có tin nhắn thêm không rồi còn chờ vòng gom chạy mỗi phút. Nay bot chỉ đợi 10 giây và tự hẹn vòng gom chạy ngay
-khi hết 10 giây; vòng chạy mỗi phút vẫn giữ làm lưới đỡ. Câu báo nhận rút còn «Nhận rồi, đang xử lý.».
+khi hết 10 giây; vòng chạy mỗi phút vẫn giữ làm lưới đỡ. Câu báo nhận rút còn **Nhận rồi, đang xử lý.**.
 
 Mã nguồn: backend/app/core/config.py (AGENT_TRIAGE_DELAY_SEC) · agent_hub/service.py (ack_task_message, _kick_triage)
 Deploy: dev 06/10, erp-v2 79654bb8 (Agent 1 gộp và dựng lại phía VPS); prod giữ lại.
@@ -13971,8 +13974,8 @@ Deploy: dev 06/10, erp-v2 79654bb8 (Agent 1 gộp và dựng lại phía VPS); p
 - date: 2026-10-06
 Việc AI-0003 sửa mã xong và kiểm xanh nhưng gộp vào erp-v2 bị dừng, vì sáng đó và bot cùng ghi thêm một mục vào
 cuối sổ thay đổi và nhật ký task. Hai sổ này chỉ ghi thêm nên nay lượt gộp của bot giữ cả hai mục thay vì dừng; đã
-thử thật trên kho nháp. Thêm nữa, khi người dùng nhắn «làm đi» lúc bot đã tự duyệt và đang sửa, bot trả lời «đang
-làm rồi» thay cho câu «không có phiên dở nào» dễ gây hiểu lầm.
+thử thật trên kho nháp. Thêm nữa, khi người dùng nhắn **làm đi** lúc bot đã tự duyệt và đang sửa, bot trả lời **đang
+làm rồi** thay cho câu **không có phiên dở nào** dễ gây hiểu lầm.
 
 Mã nguồn: backend/app/modules/agent_hub/coder.py (APPEND_ONLY_DOCS, ensure_union_docs, merge_into_base) · agent_hub/service.py (start_continue)
 Deploy: dev 06/10, erp-v2 2c896637 (Agent 1 gộp và dựng lại phía VPS); máy sửa mã đã dựng lại; prod giữ lại.
@@ -13982,7 +13985,7 @@ Deploy: dev 06/10, erp-v2 2c896637 (Agent 1 gộp và dựng lại phía VPS); m
 - date: 2026-10-06
 Người dùng hỏi bot tư vấn chỗ ăn chiều thì bot gợi ý lẫn lộn cả TP.HCM và Hà Nội, vì bot không biết người dùng đang ở đâu và
 luật cũ bảo nó hạn chế hỏi lại. Đã chốt: chưa biết thì hỏi một câu. Nay với câu hỏi cần biết nơi đang ở như quán
-ăn, cà phê, đường đi, thời tiết, bot hỏi đúng một câu «Người dùng đang ở khu nào?» rồi mới gợi ý quanh khu đó. Quy định
+ăn, cà phê, đường đi, thời tiết, bot hỏi đúng một câu **Người dùng đang ở khu nào?** rồi mới gợi ý quanh khu đó. Quy định
 được ghi thêm vào tài liệu quy định hỏi và làm của bot.
 
 Mã nguồn: backend/app/modules/agent_hub/policy.py (ASSISTANT_RULES) · doc/agent-hub/09-quy-dinh-hoi-va-lam.md
@@ -14000,7 +14003,7 @@ xác nhận trước khi hủy hay không.
 
 Mã nguồn: backend/app/modules/agent_hub/google_link.py (api_delete) · assistant/tools/google_tool.py (_delete_calendar_event, DELETE_CALENDAR_EVENT_SPEC)
 
-## duoc-CR-599 | Bản in đơn nghỉ phép đổi sang mẫu Word 2026 «Đơn xin nghỉ phép / nghỉ chế độ»
+## duoc-CR-599 | Bản in đơn nghỉ phép đổi sang mẫu Word 2026 "Đơn xin nghỉ phép / nghỉ chế độ"
 - status: xong
 - date: 2026-10-06
 Người dùng gửi mẫu đơn nghỉ phép mới của năm 2026 và yêu cầu bản in trên ERP đổi theo. Tờ đơn in ra nay mở đầu bằng
@@ -14019,11 +14022,11 @@ Deploy: chưa deploy.
 - status: xong
 - date: 2026-10-06
 Yêu cầu bot lên lịch trình ăn uống và di chuyển hợp lý, bot trả lời chưa có công cụ rồi đề nghị tạo phiếu hỗ trợ
-gửi nhóm Hành chính / Nhân sự. Nguyên nhân là luật «không có công cụ thì nói chưa làm được» bị hiểu quá rộng, trong
+gửi nhóm Hành chính / Nhân sự. Nguyên nhân là luật **không có công cụ thì nói chưa làm được** bị hiểu quá rộng, trong
 khi lên lịch trình là việc viết bằng chữ, không cần công cụ nào. Nay luật nói rõ bot là trợ lý cá nhân của người đang
 nhắn: việc bằng chữ như lịch trình, kế hoạch, gợi ý, soạn thảo, tư vấn thì làm ngay trong câu trả lời; công cụ chỉ
 dành cho dữ liệu ERP, Google và tìm trên mạng; không bao giờ gạ phiếu ERP cho nhu cầu cá nhân. Đồng thời lên kế hoạch
-nhóm C «Trợ lý cá nhân trên nền công ty, token người dùng tự trả» gồm sáu mục trong sổ tính năng, chờ chốt.
+nhóm C **Trợ lý cá nhân trên nền công ty, token người dùng tự trả** gồm sáu mục trong sổ tính năng, chờ chốt.
 
 Mã nguồn: backend/app/modules/agent_hub/policy.py (ASSISTANT_RULES) · doc/agent-hub/04-danh-sach-tinh-nang.md (nhóm C, phase 7b) · doc/agent-hub/09-quy-dinh-hoi-va-lam.md
 Deploy: dev 06/10, erp-v2 57126e11 (Agent 1 gộp và dựng lại phía VPS); prod giữ lại.
@@ -14035,8 +14038,8 @@ Deploy: dev 06/10, erp-v2 57126e11 (Agent 1 gộp và dựng lại phía VPS); p
 mỗi người một bản ghi văn bản Markdown bốn mục (bản thân, sở thích, cách làm việc, đã chốt), trần 8.000 ký tự, nạp
 nguyên văn vào mọi câu hỏi của người đó, có bộ đệm trong tiến trình 10 phút. Phần kho: ghi chú dài không trần, đánh
 chỉ mục vector trong bộ sưu tập riêng có gắn mã người, mỗi câu hỏi chỉ lấy năm đoạn liên quan của đúng người đó; chưa
-có ghi chú thì không tốn lượt nhúng. Người dùng dạy bằng «nhớ: …», bỏ bằng «quên: …», lưu dài bằng «ghi chú: …», xem
-bằng «sổ nhớ», lấy tệp bằng «xuất sổ nhớ»; bot cũng tự ghi khi nghe được điều ổn định và báo một dòng «Ghi nhớ».
+có ghi chú thì không tốn lượt nhúng. Người dùng dạy bằng **nhớ: …**, bỏ bằng **quên: …**, lưu dài bằng **ghi chú: …**, xem
+bằng **sổ nhớ**, lấy tệp bằng **xuất sổ nhớ**; bot cũng tự ghi khi nghe được điều ổn định và báo một dòng **Ghi nhớ**.
 Bot từ chối ghi mật khẩu, khóa, số thẻ, kể cả vào sổ thuật ngữ. Thêm cột đánh dấu tin nhắn là việc công ty hay việc
 cá nhân, do bộ phân loại ý định gán; việc sửa mã, sửa dữ liệu luôn là công ty. Bốn công cụ mới cho Trợ lý, mọi truy
 vấn lọc cứng theo người gọi, có bài kiểm chứng minh người này không đọc được sổ người kia.
@@ -14048,9 +14051,9 @@ Deploy: dev 06/10 ~16:45, erp-v2 21680b54 (Agent 1 gộp và dựng lại api, c
 ## duoc-CR-598 | Tra cứu thị trường: tra cứu hóa chất gọn lại, dữ liệu hóa chất NĐ 24 mới, breadcrumb và nút Xuất dữ liệu
 - status: xong
 - date: 2026-10-06
-Người dùng gửi ảnh màn «Pháp lý» và tệp khai báo hóa chất của phòng Thu mua, yêu cầu làm cho cả bản cũ lẫn bản ERP mới.
-Mục «Pháp lý» đổi tên thành «Tra cứu hóa chất», mục «Thuốc BVTV» đổi thành «Tra cứu Thuốc BVTV»; đường dẫn cũ giữ nguyên.
-Màn tra cứu hóa chất chỉ còn tiêu đề, hai nút «Lịch sử nạp» và «Nạp dữ liệu» cùng bảng hóa chất. Danh mục hóa chất của
+Người dùng gửi ảnh màn **Pháp lý** và tệp khai báo hóa chất của phòng Thu mua, yêu cầu làm cho cả bản cũ lẫn bản ERP mới.
+Mục **Pháp lý** đổi tên thành **Tra cứu hóa chất**, mục **Thuốc BVTV** đổi thành **Tra cứu Thuốc BVTV**; đường dẫn cũ giữ nguyên.
+Màn tra cứu hóa chất chỉ còn tiêu đề, hai nút **Lịch sử nạp** và **Nạp dữ liệu** cùng bảng hóa chất. Danh mục hóa chất của
 Nghị định 24/2026 được nạp lại từ tệp Excel, đủ 1.349 hóa chất của bốn phụ lục, có thêm số thứ tự trong phụ lục và công
 thức hóa học; bảng tra cứu tách riêng các cột phụ lục, số thứ tự, tên khoa học, tên chất, mã CAS và công thức, còn ô ngưỡng
 ghi đúng loại ngưỡng của từng phụ lục: phụ lục IV là ngưỡng tồn trữ tính bằng kg, phụ lục II là hỗn hợp chứa trên 5%
@@ -14059,29 +14062,29 @@ trăm lấy từ câu ghi chú của chính Nghị định vì tệp Excel khôn
 dạng (mã CAS thêm số 0, biến thành ngày tháng, ô lỗi) nên bộ đọc gỡ lại và kiểm số cuối của mã CAS trước khi tin. Lần
 nạp chỉ cập nhật hoặc thêm dòng, dòng cũ không còn trong tệp chuyển sang ngừng dùng chứ không xóa; danh sách hoạt chất cấm
 và danh sách phải công bố theo lô không bị đụng tới. Bản cũ có thêm breadcrumb cấp ba và tiêu đề trang theo đúng tên mục
-trên menu; nút «Xuất Excel» đổi thành «Xuất dữ liệu», dời lên đầu trang cạnh «Nạp dữ liệu». Đã đẩy lên erp-v2, chưa deploy.
+trên menu; nút **Xuất Excel** đổi thành **Xuất dữ liệu**, dời lên đầu trang cạnh **Nạp dữ liệu**. Đã đẩy lên erp-v2, chưa deploy.
 
 Mã nguồn: backend/app/modules/customs/nd24_regulation_loader.py · customs/data/nd24_2026_regulations.json · scripts/load_nd24_regulations.py · migration nd24reg01 · frontend/src/components/customs/CustomsRegulationBrowse.tsx · frontend-v2/src/modules/procurement/config/customs-regulation-columns.tsx
 Commit: 766b10ca trên erp-v2.
 Deploy: chưa deploy — sau khi deploy chạy tay một lần `docker compose exec -T api python -m scripts.load_nd24_regulations`
 
-## ai-CR-096 | Tin mập mờ thì bot trả lời luôn, không hỏi «làm luôn hay ghi việc»
+## ai-CR-096 | Tin mập mờ thì bot trả lời luôn, không hỏi "làm luôn hay ghi việc"
 - status: xong
 - date: 2026-10-06
-Người dùng nhắn «Giá thép Hòa Phát», bot hỏi lại «làm luôn hay ghi việc». Nguyên nhân là luật của bộ phân loại: nghi ngờ
+Người dùng nhắn **Giá thép Hòa Phát**, bot hỏi lại **làm luôn hay ghi việc**. Nguyên nhân là luật của bộ phân loại: nghi ngờ
 hay tin ngắn thì xếp mập mờ, và mập mờ thì đưa thẻ hai nút. Nay bộ phân loại hiểu cụm chủ đề ngắn là câu tra cứu hoặc
 câu hỏi dữ liệu, chỉ xếp mập mờ khi tin có thể là việc sửa phần mềm hay thao tác trên việc đang mở; và kể cả khi mập
-mờ, bot trả lời luôn rồi thêm một dòng gợi ý «nếu là việc sửa phần mềm thì nhắn ghi việc: …». Thẻ hai nút chỉ còn
+mờ, bot trả lời luôn rồi thêm một dòng gợi ý **nếu là việc sửa phần mềm thì nhắn ghi việc: …**. Thẻ hai nút chỉ còn
 dùng khi bộ phân loại hỏng.
 
 Mã nguồn: backend/app/modules/agent_hub/manager.py (INTENT_SYSTEM) · agent_hub/service.py (nhánh mo_ho, answer_question hint)
 Deploy: dev 06/10 16:55, erp-v2 24f2fae5 (Agent 1 gộp và dựng lại); prod giữ lại.
 
 
-## ai-CR-097 | Khóa Gemini hết tiền thì bot nói thẳng, không hỏi «làm luôn hay ghi việc»
+## ai-CR-097 | Khóa Gemini hết tiền thì bot nói thẳng, không hỏi "làm luôn hay ghi việc"
 - status: xong
 - date: 2026-10-07
-Chiều 06/10 người dùng nhắn «Giá thép Hòa Phát» vẫn bị bot hỏi «làm luôn hay ghi việc» dù bản sửa ai-CR-096 đã lên dev.
+Chiều 06/10 người dùng nhắn **Giá thép Hòa Phát** vẫn bị bot hỏi **làm luôn hay ghi việc** dù bản sửa ai-CR-096 đã lên dev.
 Tra sổ chạy trên dev thì lượt phân loại lỗi vì Gemini trả mã 402: khóa Gemini cá nhân của quản trị hết tiền trả trước,
 bộ phân loại hỏng nên bot rơi về thẻ hỏi lại cũ. Nay bot nhận diện lỗi do khóa (hết tiền, hết hạn mức, khóa sai) ở cả
 bộ phân loại lẫn Trợ lý AI, nói thẳng lý do và chỉ cách nạp thêm hoặc đổi khóa ở Trang cá nhân. Lỗi khác như mạng vẫn
@@ -14097,7 +14100,7 @@ Cần dùng khóa của nhiều hãng AI và để công ty cũng có nhiều kh
 chung, mỗi dòng ghi khóa đó của công ty hay của ai, thuộc hãng nào (Gemini, Claude, OpenAI, OpenRouter), model mặc
 định, thứ tự ưu tiên và trần lượt mỗi ngày; khóa cũ giữ nguyên. Bot dùng khóa theo thứ tự: khóa cá nhân trước, rồi
 khóa công ty; khóa đang dùng hết tiền, hết hạn mức hay sai thì tự chuyển sang khóa kế mà không nhắn gì, đúng yêu cầu.
-Ai hỏi «còn khóa nào» thì bot liệt kê từng khóa và số lượt đã dùng hôm nay. Thêm bộ nối cho OpenAI và OpenRouter có
+Ai hỏi **còn khóa nào** thì bot liệt kê từng khóa và số lượt đã dùng hôm nay. Thêm bộ nối cho OpenAI và OpenRouter có
 gọi được công cụ; Trợ lý trên web cũng đọc khóa công ty trong sổ này. Màn Khóa AI ở Trang cá nhân nay nhận nhiều khóa,
 đổi thứ tự, đặt model và trần; thẻ Trợ lý AI ở Cấu hình hệ thống có danh sách khóa công ty. Vá kèm lỗi lệnh sổ ghi
 nhớ trước đây chỉ chạy ở chat của quản trị.
@@ -14108,10 +14111,10 @@ Deploy: dev 07/10 khoảng 10:05, erp-v2 26222996 (Agent 1 sao lưu DB dev, dự
 ## ai-CR-099 | Bot trả lời mượt hơn khi Gemini quá tải hay hết hạn mức tìm kiếm
 - status: xong
 - date: 2026-10-07
-Sáng 07/10 người dùng nhắn «alo how are u» thì bot hỏi lại «làm luôn hay ghi việc», nhắn «giá vàng hôm nay» thì bot đổ
+Sáng 07/10 người dùng nhắn **alo how are u** thì bot hỏi lại **làm luôn hay ghi việc**, nhắn **giá vàng hôm nay** thì bot đổ
 nguyên đoạn lỗi tiếng Anh của Google ra chat. Tra sổ chạy trên dev: lần đầu Gemini đang quá tải (mã 503), lần sau khóa
 mới hỏi đáp được nhưng hết hạn mức tìm Google của dự án (mã 429). Nay khi Gemini quá tải tạm thời, bot tự thử lại một
-lần sau 2 giây; nếu vẫn không phân loại được thì trả lời luôn kèm dòng gợi ý «ghi việc: …» thay vì hỏi lại; và mọi lỗi
+lần sau 2 giây; nếu vẫn không phân loại được thì trả lời luôn kèm dòng gợi ý **ghi việc: …** thay vì hỏi lại; và mọi lỗi
 của hãng đều thành một câu tiếng Việt ngắn, riêng lỗi hết hạn mức tìm Google thì nói rõ cần bật thanh toán cho dự án.
 
 Mã nguồn: backend/app/modules/agent_hub/ai_keys.py (is_transient, short_error) · agent_hub/manager.py · agent_hub/research.py · agent_hub/service.py
@@ -14122,23 +14125,23 @@ Deploy: dev 07/10 khoảng 10:40, erp-v2 22cf18ef (Agent 1 sao lưu DB dev rồi
 - status: xong
 - date: 2026-10-05
 Phòng nhân sự cần lập hợp đồng lao động ngay trong hồ sơ nhân sự, và mỗi pháp nhân có bộ mẫu hợp đồng riêng.
-Nay có màn «Mẫu hợp đồng» ở phân hệ Nhân sự để tải lên tệp Word mẫu cho từng pháp nhân và từng loại hợp đồng;
-trong mẫu người soạn chèn các biến như họ tên, số CCCD, lương, lương bằng chữ. Hồ sơ nhân sự có thêm tab «Hợp đồng»:
+Nay có màn **Mẫu hợp đồng** ở phân hệ Nhân sự để tải lên tệp Word mẫu cho từng pháp nhân và từng loại hợp đồng;
+trong mẫu người soạn chèn các biến như họ tên, số CCCD, lương, lương bằng chữ. Hồ sơ nhân sự có thêm tab **Hợp đồng**:
 lập hợp đồng, chọn mẫu của đúng pháp nhân và đúng loại, sinh tệp Word đã điền sẵn, đánh dấu đã ký, tải lên bản scan,
-chấm dứt hoặc hủy; hợp đồng đã ký quá ngày kết thúc tự hiện «Hết hạn». Lương là thông tin nhạy cảm nên có hai khóa
+chấm dứt hoặc hủy; hợp đồng đã ký quá ngày kết thúc tự hiện **Hết hạn**. Lương là thông tin nhạy cảm nên có hai khóa
 quyền riêng (hợp đồng và mẫu hợp đồng), tách khỏi quyền xem hồ sơ; lương được che trong nhật ký thay đổi và nhật ký
 request. Tệp mẫu được kiểm kỹ khi tải lên: chỉ cho phép biến đơn, chặn biến lạ, chặn macro, chặn liên kết ngoài và
-chặn tệp phình to làm sập máy chủ. Đợt rà soát đã vá lỗi người có phạm vi «của tôi» lập được hợp đồng cho nhân sự
+chặn tệp phình to làm sập máy chủ. Đợt rà soát đã vá lỗi người có phạm vi **của tôi** lập được hợp đồng cho nhân sự
 công ty khác. Ngày 06/10 đã bấm thử trọn luồng trên trình duyệt (tải mẫu, lập, sinh tệp, sửa, ký, tải bản scan,
 chấm dứt, hủy, xóa, chặn tài khoản không có quyền) và sửa thêm bốn chỗ: ô chọn pháp nhân hiện kèm mã vì có hai
-pháp nhân trùng tên, thông báo lỗi mẫu có thẻ lệnh gọn lại, tên tệp tải về không còn lặp «HDLD-HDLD», cột trạng thái
+pháp nhân trùng tên, thông báo lỗi mẫu có thẻ lệnh gọn lại, tên tệp tải về không còn lặp **HDLD-HDLD**, cột trạng thái
 dời lên đầu bảng để không bị che ở màn laptop. Hộp lập hợp đồng có thêm hàng nút chọn nhanh thời hạn (12 · 24 · 36
-tháng; thử việc 30 · 60 ngày) tự điền ngày kết thúc theo đúng cách hệ thống tính «Thời hạn» trong tệp Word, vì trước
+tháng; thử việc 30 · 60 ngày) tự điền ngày kết thúc theo đúng cách hệ thống tính **Thời hạn** trong tệp Word, vì trước
 đó hợp đồng ba năm phải bấm qua tháng 36 lần trên lịch. Đang ở máy local, chưa commit, chưa deploy.
 
-Ngày 07/10 bổ sung theo yêu cầu: màn «Mẫu hợp đồng» có thêm nút «Sửa thông tin» để đổi tên, loại hợp đồng và
-ghi chú của mẫu mà không phải xóa đi tải lại, và trang «Soạn nội dung» để sửa chữ trong mẫu ngay trên web. Bên phải trang soạn có
-khung «Chèn biến»: đặt con trỏ rồi bấm tên biến là biến được chèn đúng chỗ, không phải tự gõ tay nên không còn gõ sai. Khi lưu,
+Ngày 07/10 bổ sung theo yêu cầu: màn **Mẫu hợp đồng** có thêm nút **Sửa thông tin** để đổi tên, loại hợp đồng và
+ghi chú của mẫu mà không phải xóa đi tải lại, và trang **Soạn nội dung** để sửa chữ trong mẫu ngay trên web. Bên phải trang soạn có
+khung **Chèn biến**: đặt con trỏ rồi bấm tên biến là biến được chèn đúng chỗ, không phải tự gõ tay nên không còn gõ sai. Khi lưu,
 hệ thống dựng lại tệp Word, kiểm biến giống hệt lúc tải tệp lên rồi thay tệp, giữ nguyên lề trang của bản gốc; trước lần lưu đầu
 có lời nhắc rằng đầu trang, chân trang và vài định dạng riêng của Word có thể mất. Trong lúc kiểm phát hiện bộ chuyển nội dung
 web sang Word dùng chung với phân hệ Văn bản dựng bảng thiếu một phần bắt buộc của định dạng Word, làm hợp đồng có bảng không
@@ -14152,7 +14155,7 @@ Deploy: DEV 07/10/2026 (erp-v2). Prod CHƯA — khi deploy prod phải dựng l�
 ## duoc-CR-607 | Báo cáo thực hiện trên YCBG và đơn mua hàng: mỗi hồ sơ hiện thành dòng hai tầng dễ đọc
 - status: xong
 - date: 2026-10-07
-Quản trị mở khối «Báo cáo thực hiện» trên đơn mua hàng ở bản cũ và yêu cầu làm lại giao diện, chọn phương án dòng hai tầng.
+Quản trị mở khối **Báo cáo thực hiện** trên đơn mua hàng ở bản cũ và yêu cầu làm lại giao diện, chọn phương án dòng hai tầng.
 Trước đây mỗi hồ sơ dồn tám đến mười thông tin trên một hàng nên ở bản cũ tên hồ sơ bị ép xuống tới sáu dòng, mô tả bị cắt,
 còn ở bản mới ô trạng thái và nút sửa, xóa tràn ra ngoài khung. Nay mỗi hồ sơ có tầng trên là tên đọc trọn, tầng dưới là
 dòng hàng, nhãn bắt buộc, ngày hạn, ngày hết hiệu lực, người làm và mô tả; trạng thái cùng nút sửa, xóa luôn nằm thẳng cột bên
@@ -14165,9 +14168,9 @@ Deploy: DEV 07/10/2026
 ## ai-CR-100 | Bot đọc tin được trích và không kéo chuyện hôm qua vào câu trả lời
 - status: xong
 - date: 2026-10-07
-Người dùng bấm «Trả lời» tin «giá vàng hôm nay» rồi nhắn «trả lời cho tao», bot lại trả lời cuộc lên lịch trình ăn uống từ
-hôm trước. Có hai lỗi. Bot không đọc câu được trích khi người dùng bấm «Trả lời» trên Telegram, nên chỉ thấy câu «trả
-lời cho tao». Và mạch hội thoại lấy mốc hai giờ tính từ tin hỏi đáp gần nhất trong sổ chứ không tính từ tin đang hỏi;
+Người dùng bấm **Trả lời** tin **giá vàng hôm nay** rồi nhắn **trả lời cho tao**, bot lại trả lời cuộc lên lịch trình ăn uống từ
+hôm trước. Có hai lỗi. Bot không đọc câu được trích khi người dùng bấm **Trả lời** trên Telegram, nên chỉ thấy câu **trả
+lời cho tao**. Và mạch hội thoại lấy mốc hai giờ tính từ tin hỏi đáp gần nhất trong sổ chứ không tính từ tin đang hỏi;
 các tin sáng hôm đó là lệnh và tra cứu, không nằm trong sổ hỏi đáp, nên mạch kéo nguyên cuộc trò chuyện hôm qua. Nay
 câu được trích được ghép lên đầu tin, mạch tính từ tin đang hỏi, và câu hỏi lẫn câu trả lời tra cứu cũng được tính là
 hội thoại.
@@ -14180,9 +14183,9 @@ Deploy: dev 07/10, erp-v2 c7d0df58 (Agent 1 gộp và dựng lại api, erp, cel
 - status: xong
 - date: 2026-10-07
 Phát hiện tab Khóa AI ở Trang cá nhân có hai thẻ dễ nhầm và muốn cấu hình dễ dùng. Thẻ Khóa AI nay nằm đầu, thẻ Google
-kế tiếp, còn Kết nối MCP thu vào mục «Nâng cao» mặc định gập vì chỉ ai dùng Claude Desktop hay Cursor mới cần. Thêm khóa
-còn ba bước: chọn hãng, bấm nút mở trang lấy khóa của hãng đó, dán rồi lưu; chọn model và đặt trần lượt gập vào «Tùy
-chọn» có gợi ý sẵn tên model. Mỗi khóa trong danh sách đọc thành một câu gồm model, trần và số lượt hôm nay, muốn đổi
+kế tiếp, còn Kết nối MCP thu vào mục **Nâng cao** mặc định gập vì chỉ ai dùng Claude Desktop hay Cursor mới cần. Thêm khóa
+còn ba bước: chọn hãng, bấm nút mở trang lấy khóa của hãng đó, dán rồi lưu; chọn model và đặt trần lượt gập vào **Tùy
+chọn** có gợi ý sẵn tên model. Mỗi khóa trong danh sách đọc thành một câu gồm model, trần và số lượt hôm nay, muốn đổi
 thì bấm nút sửa. Thẻ khóa công ty ở Cấu hình hệ thống dùng chung giao diện này.
 
 Mã nguồn: frontend-v2/src/modules/system/components/ai-key-list-card.tsx · frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx
@@ -14195,7 +14198,7 @@ Một buổi chat được coi là xong khi đã im lặng 30 phút sau tin hỏ
 đã xong của người đã đăng nhập; buổi có từ ba câu hỏi trở lên thì bot dùng khóa của chính người đó viết vài gạch đầu
 dòng tóm tắt và cất vào kho ghi chú riêng, không nhắn gì lên Telegram; buổi ngắn thì chỉ đánh dấu cho khỏi xét lại.
 Trợ lý có thêm công cụ tìm lại hội thoại cũ của chính người đó trên mọi chat họ từng đăng nhập, tối đa 180 ngày. Sổ lõi
-nhận dòng có hạn như «nhớ tuần này: anh ở Đà Nẵng» hay «nhớ đến 15/10: …»; quá hạn thì dòng tự rút khỏi câu hỏi.
+nhận dòng có hạn như **nhớ tuần này: anh ở Đà Nẵng** hay **nhớ đến 15/10: …**; quá hạn thì dòng tự rút khỏi câu hỏi.
 
 Mã nguồn: backend/app/modules/agent_hub/sessions.py (mới) · agent_hub/personal_memory.py (dòng có hạn, search_history) · assistant/tools/personal_tool.py (search_chat_history) · lịch chạy agent-session-summary
 Deploy: dev 07/10 khoảng 11:10, erp-v2 28901d52 (Agent 1 gộp, dựng lại api, celery-worker, celery-beat, agent-poller; lịch agent-session-summary đã có trên beat); prod giữ lại.
@@ -14204,7 +14207,7 @@ Deploy: dev 07/10 khoảng 11:10, erp-v2 28901d52 (Agent 1 gộp, dựng lại a
 ## duoc-CR-607-v1 | Báo cáo thực hiện ở bản cũ: làm dòng hồ sơ dễ nhìn hơn và tách khối khỏi phần Trao đổi
 - status: xong
 - date: 2026-10-07
-Ghi sổ 07/10/2026: mã sổ đổi từ «duoc-CR-607» thành «duoc-CR-607-v1» vì trùng mã với mục ngay trên (cùng CR, lượt sửa thứ hai chỉ ở bản cũ); script đồng bộ sổ dừng khi hai mục trùng mã.
+Ghi sổ 07/10/2026: mã sổ đổi từ **duoc-CR-607** thành **duoc-CR-607-v1** vì trùng mã với mục ngay trên (cùng CR, lượt sửa thứ hai chỉ ở bản cũ); script đồng bộ sổ dừng khi hai mục trùng mã.
 Người dùng xem lại khối Báo cáo thực hiện ở bản cũ và yêu cầu làm cho dễ nhìn hơn, chỉ sửa bản cũ, bản mới giữ nguyên.
 Mỗi dòng hồ sơ nay có viền trái mang màu trạng thái, trễ hạn thì đỏ, nên liếc dọc là thấy tiến độ cả giai đoạn. Hồ sơ đang
 khóa không còn bị làm mờ cả dòng mà ghi rõ đang chờ hồ sơ nào ngay cạnh tên. Nhãn Chung và nhãn dòng hàng tách màu, ô trạng
@@ -14217,10 +14220,10 @@ Mã nguồn: frontend/src/components/SurveyReportCard.tsx · frontend/src/index.
 - status: xong
 - date: 2026-10-07
 Mỗi người có thêm một thẻ dữ liệu riêng do bot ghi giúp, tách khỏi dữ liệu ERP: việc hoặc hẹn riêng kèm giờ, các khoản
-chi tiêu có số tiền và nhóm, và danh sách món cần mua. Người dùng chỉ cần nhắn tự nhiên như «trưa nay ăn 45k», «mua sữa
-với trứng», «chiều 5 giờ đón con»; hỏi «tháng này chi bao nhiêu» thì bot cộng tổng và chia theo nhóm. Món đã mua hay
+chi tiêu có số tiền và nhóm, và danh sách món cần mua. Người dùng chỉ cần nhắn tự nhiên như **trưa nay ăn 45k**, **mua sữa
+với trứng**, **chiều 5 giờ đón con**; hỏi **tháng này chi bao nhiêu** thì bot cộng tổng và chia theo nhóm. Món đã mua hay
 việc đã xong thì đánh dấu xong hoặc bỏ, không có thao tác xóa. Dữ liệu lọc cứng theo người dùng, người khác không xem
-được. Bản tin sáng có thêm mục «Việc riêng» liệt kê lịch riêng trong ngày và số món còn cần mua.
+được. Bản tin sáng có thêm mục **Việc riêng** liệt kê lịch riêng trong ngày và số món còn cần mua.
 
 Mã nguồn: backend/app/modules/agent_hub/personal_items.py (mới) · assistant/tools/personal_tool.py (ba công cụ thẻ) · agent_hub/briefs.py · migration pitem01
 Deploy: dev 07/10, erp-v2 5fb91c51 (Agent 1 sao lưu DB dev, gộp, dựng lại; migration pitem01 đã chạy); prod giữ lại.
@@ -14240,7 +14243,7 @@ Mã nguồn: frontend/src/components/customs/CustomsRegulationColumns.tsx · fro
 - status: xong
 - date: 2026-10-07
 Đã chốt cho mọi người đã đăng nhập bot dùng, video chỉ lấy phần tiếng, biên bản chỉ người gửi xem. Người dùng gửi
-tệp ghi âm hoặc video vào chat riêng với bot (tới 20 MB), hoặc gửi link Google Drive kèm chữ «họp» hay «biên bản» cho
+tệp ghi âm hoặc video vào chat riêng với bot (tới 20 MB), hoặc gửi link Google Drive kèm chữ **họp** hay **biên bản** cho
 tệp lớn; bot tải tệp bằng tài khoản Google của chính người đó. Bot tách lấy phần tiếng, cuộc họp dài trên 40 phút thì cắt
 thành đoạn 30 phút, đẩy từng đoạn lên Gemini để chép lời có mốc giờ và người nói, rồi viết biên bản theo một trong bốn
 mẫu: tóm tắt nhanh, chính thức, danh sách việc, đầy đủ theo giờ. Kết quả gửi vào chat kèm tệp Word có phụ lục bản chép,
@@ -14255,8 +14258,8 @@ Deploy: dev 07/10, erp-v2 42c5832d (Agent 1 sao lưu DB dev, dựng lại image 
 - date: 2026-10-07
 Theo định hướng trợ lý của từng người, ai thêm bot vào nhóm Telegram nào thì bot ghi lặng tin và tệp của nhóm đó, không
 nói gì trong nhóm. Chủ nhóm, tức người đã thêm bot, hoặc người đã đăng nhập ERP mà Telegram xác nhận là thành viên, nhắn
-riêng cho bot kiểu «nhóm kế toán hôm nay bàn gì» là bot tổng hợp ý chính, quyết định, việc được giao và liệt kê tệp kèm số
-thứ tự; nhờ «tóm tắt tệp số 2» thì bot đọc tệp pdf, Word, Excel; tệp ghi âm hoặc video thì chuyển sang làm biên bản họp
+riêng cho bot kiểu **nhóm kế toán hôm nay bàn gì** là bot tổng hợp ý chính, quyết định, việc được giao và liệt kê tệp kèm số
+thứ tự; nhờ **tóm tắt tệp số 2** thì bot đọc tệp pdf, Word, Excel; tệp ghi âm hoặc video thì chuyển sang làm biên bản họp
 và gửi riêng. Người dùng cũng gửi được báo cáo pdf, Word, Excel vào chat riêng để bot đọc và trả lời theo chú thích; nhờ
 viết báo cáo thì bot xuất ra Word bằng công cụ sẵn có. Tin nhóm giữ 30 ngày rồi tự dọn. Đã tra tài liệu Zalo: bot chính
 thức trong nhóm chỉ thấy tin trả lời hoặc nhắc tên bot, nên phần nhóm Zalo chờ Ban điều hành chọn hướng. Việc tay: tắt chế độ
@@ -14272,7 +14275,7 @@ Quản trị thử nhắn bot bằng tài khoản khác và thấy như không c
 lời, nhưng chậm tới hai phút, vì model Gemini dùng cho việc nền của bot đang quá tải: mỗi lượt treo đủ 60 giây rồi mới
 báo lỗi, bot thử lại thêm 60 giây mới chuyển sang Trợ lý. Bot còn dùng lối xưng hô riêng của quản trị khi trả lời người khác. Nay khi model chính quá tải
 hoặc treo, bot chuyển ngay sang model dự phòng (mặc định là model của Trợ lý trên web) thay vì chờ thử lại, mỗi lượt gọi
-chỉ chờ tối đa 25 giây, và với người không phải chủ bot thì mặc định bot gọi «anh/chị» hoặc theo tên. Mỗi người có cách xưng hô riêng: ai dặn «gọi tôi là …» thì bot ghi vào sổ ghi nhớ riêng của người đó và từ đó xưng hô theo sổ.
+chỉ chờ tối đa 25 giây, và với người không phải chủ bot thì mặc định bot gọi **anh/chị** hoặc theo tên. Mỗi người có cách xưng hô riêng: ai dặn **gọi tôi là …** thì bot ghi vào sổ ghi nhớ riêng của người đó và từ đó xưng hô theo sổ.
 
 Mã nguồn: backend/app/modules/agent_hub/manager.py (fallback_model, _send, _call) · agent_hub/research.py · agent_hub/constants.py (BOT_PERSONA_OTHER) · agent_hub/service.py (_persona) · core/config.py
 Deploy: dev 07/10, erp-v2 404cdcf7 rồi 953cc7bd (Agent 1 gộp và dựng lại hai lượt); prod giữ lại.
@@ -14293,7 +14296,7 @@ Deploy: dev 07/10, erp-v2 89f16b68 (Agent 1 gộp và dựng lại api, erp, cel
 - date: 2026-10-07
 Quản trị dán khóa vào mục DeepSeek thì bị từ chối, vì khóa đó là của trạm trung gian modelapi.vn chứ không phải của
 DeepSeek; đã thử trực tiếp, khóa chạy được với model deepseek-v4.1-flash và gọi được công cụ. Màn Khóa AI có thêm
-hãng «Tương thích OpenAI (tùy chỉnh)»: chọn hãng này thì nhập địa chỉ trạm (ví dụ https://modelapi.vn/v1) và dán khóa;
+hãng **Tương thích OpenAI (tùy chỉnh)**: chọn hãng này thì nhập địa chỉ trạm (ví dụ https://modelapi.vn/v1) và dán khóa;
 hệ thống hỏi trạm danh sách model, chưa chọn model thì lấy model đầu tiên. Vì máy chủ sẽ gửi khóa tới địa chỉ người dùng
 nhập, chỉ nhận địa chỉ https có tên miền công khai, chặn địa chỉ nội bộ. Thêm một cột địa chỉ trạm vào bảng khóa.
 
@@ -14303,9 +14306,9 @@ Deploy: dev 07/10, erp-v2 d3331f8d (Agent 1 sao lưu DB dev, gộp, dựng lại
 ## ai-CR-109 | Bot không tự sinh việc sửa mã khi đang đọc câu hỏi, việc đã bỏ thì không lập kế hoạch
 - status: xong
 - date: 2026-10-07
-Người dùng hỏi «đơn hàng gần nhất», bot vừa trả lời vừa sinh ra việc sửa mã AI-0004. Nguyên nhân là lúc đọc ý câu hỏi mất hơn
+Người dùng hỏi **đơn hàng gần nhất**, bot vừa trả lời vừa sinh ra việc sửa mã AI-0004. Nguyên nhân là lúc đọc ý câu hỏi mất hơn
 mười giây vì model chính quá tải phải chuyển sang model dự phòng, trong khi vòng gom việc chạy sau mười giây lặng đã nhặt
-tin đó như một việc mới. Nay tin được đánh dấu «đang đọc» trước khi bot đọc ý, vòng gom bỏ qua tin đang đọc, chỉ khi bot
+tin đó như một việc mới. Nay tin được đánh dấu **đang đọc** trước khi bot đọc ý, vòng gom bỏ qua tin đang đọc, chỉ khi bot
 xác định là việc sửa phần mềm mới trả tin về cho vòng gom. Ngoài ra, việc đã bỏ thì bot không lập kế hoạch và không gửi
 thông báo lỗi nữa, và máy sửa mã được dựng lại để chạy bản mới có model dự phòng.
 
@@ -14319,7 +14322,7 @@ Khóa Gemini của quản trị hết hạn mức tìm Google nên bot không tr
 Ban điều hành chọn làm đường tra mạng riêng: bot tự tìm trên DuckDuckGo, không ra thì sang Bing, đọc vài trang đầu rồi để model đang
 dùng tóm tắt kèm số thứ tự nguồn; trang không có số liệu thì bot nói chưa tìm được chứ không đoán. Bot chỉ đọc trang công
 khai, chặn mọi địa chỉ nội bộ. Nếu khóa Gemini còn hạn mức thì bot vẫn ưu tiên Google Search của Gemini trước. Đã thử thật
-câu «giá vàng hôm nay»: tìm ra tám kết quả và đọc được bảng giá SJC.
+câu **giá vàng hôm nay**: tìm ra tám kết quả và đọc được bảng giá SJC.
 
 Mã nguồn: backend/app/modules/agent_hub/web_search.py (mới) · agent_hub/research.py (run, search_web_any)
 Deploy: dev 07/10 (Agent 1 gộp và dựng lại api, celery-worker, celery-beat, agent-poller); máy sửa mã đã dựng lại; prod giữ lại.
@@ -14339,7 +14342,7 @@ Mã nguồn: frontend-v2/src/modules/procurement/config/customs-regulation-colum
 - status: xong
 - date: 2026-10-07
 Đã giao làm mục B1: tách phần nhận và gửi tin khỏi mã Telegram để bot Lạc Lạc chạy được cả trên Zalo mà vẫn dùng chung
-một lõi xử lý. Chat Zalo mang mã có tiền tố «zl:», còn chat Telegram giữ nguyên mã cũ nên dữ liệu đã có không phải đổi. Mọi
+một lõi xử lý. Chat Zalo mang mã có tiền tố **zl:**, còn chat Telegram giữ nguyên mã cũ nên dữ liệu đã có không phải đổi. Mọi
 lệnh gửi tin, báo đang soạn, gửi tệp và tải tệp tự chuyển sang Zalo khi gặp chat Zalo, nên hơn hai trăm chỗ gọi trong lõi
 không phải sửa. Bộ nối Zalo kéo tin bằng cách giữ kết nối chờ như Telegram, đổi tin Zalo về cùng dạng tin Telegram, gửi chữ
 có định dạng đậm, nghiêng mà Zalo nhận được, tự cắt tin dài thành nhiều mẩu, và gửi lại chữ trơn khi Zalo chê định dạng. Zalo
@@ -14363,7 +14366,7 @@ lời, nay bot tự bỏ phần đó cho mọi câu trả lời; và trần đ�
 lên. Phần chính của bước 10.2: ngoài bốn mẫu sẵn, mỗi người lưu được mẫu biên bản riêng bằng lời và mẫu nằm trong sổ ghi nhớ
 của chính họ, hoặc dặn cách viết ngay trong chú thích tệp. Cuộc họp đã làm xong có thể nhờ viết lại theo mẫu khác mà không phải
 chép lời lại. Tệp Word theo mẫu DEGO có đầu trang công ty, bảng thông tin, bảng việc, số trang; mẫu chính thức có thêm quốc
-hiệu và chỗ ký. Word được đẩy vào thư mục «Biên bản họp» trên Drive của người gửi. Cũng khai bổ sung lý do gác quyền cho
+hiệu và chỗ ký. Word được đẩy vào thư mục **Biên bản họp** trên Drive của người gửi. Cũng khai bổ sung lý do gác quyền cho
 hai mươi công cụ trợ lý cá nhân còn thiếu trong bài kiểm phạm vi. Bài kiểm của bot và của công cụ trợ lý chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/meetings.py · agent_hub/google_link.py (ensure_folder) · agent_hub/model.py · agent_hub/service.py · agent_hub/policy.py · assistant/tools/meeting_tool.py (mới) · assistant/provider/openai_compat.py (clean_reply) · migration meet02 · test/backend/test_agent_hub.py · test_assistant_pham_vi_doc.py · test_pham_vi_bo_may_duyet_xuyen_suot.py
@@ -14386,7 +14389,7 @@ Mã nguồn: backend/app/modules/survey_request/report_controller.py · report_s
 - status: xong
 - date: 2026-10-07
 Chạy trọn một phiên biên bản họp trên dev bằng tệp họp giả dài 88 giây, gửi vào chat Telegram của quản trị. Phiên chạy
-đúng từ đầu đến cuối: chép lời, viết biên bản chính thức, gửi tệp Word và lưu vào thư mục «Biên bản họp» trên Drive. Tuy vậy
+đúng từ đầu đến cuối: chép lời, viết biên bản chính thức, gửi tệp Word và lưu vào thư mục **Biên bản họp** trên Drive. Tuy vậy
 bước chép lời bị treo mười hai phút vì model Gemini chính đang quá tải mà thời gian chờ cũ cố định tới mười lăm phút. Nay
 thời gian chờ tính theo độ dài đoạn ghi âm (hai phút cộng một phần ba độ dài), quá hạn hoặc model báo quá tải thì bot thử lại
 một lần bằng model dự phòng, hỏng cả hai thì báo người gửi một câu để gửi lại sau. Bài kiểm phần biên bản họp chạy xanh.
@@ -14400,11 +14403,11 @@ Deploy: dev 07/10 (Agent 1 gộp 173895f6, dựng lại api, celery-worker, cele
 - date: 2026-10-07
 Đã giao làm bước 10.3 của biên bản họp. Sau khi gửi biên bản, bot đọc lại bản chép lời và biên bản để rút ra các việc cần
 làm (tên việc, người làm, hạn) và các cuộc hẹn tiếp theo (tên, giờ, nơi), rồi gửi một thẻ đánh số. Bot không tạo gì khi người
-gửi chưa duyệt. Người gửi nhắn «tạo hết», chọn từng mục như «tạo 1 3», kèm «dự án 2» khi có nhiều dự án, hoặc «bỏ» để thôi;
+gửi chưa duyệt. Người gửi nhắn **tạo hết**, chọn từng mục như **tạo 1 3**, kèm **dự án 2** khi có nhiều dự án, hoặc **bỏ** để thôi;
 nếu có nhiều dự án mà chưa chọn thì bot hỏi lại đúng một câu. Việc được tạo trong phân hệ Dự án theo đúng đường tạo việc sẵn có,
 có kiểm quyền và báo chuông cho người được giao; người làm chỉ được gán khi tên khớp đúng một nhân sự, còn không thì tên được
 ghi vào mô tả. Ai chưa tạo việc được ở phân hệ Dự án thì việc được ghi vào thẻ cá nhân. Cuộc hẹn được thêm vào lịch Google,
-chưa nối Google thì ghi vào thẻ cá nhân. Mỗi mục nhớ trạng thái nên nhắn «tạo» lần hai không tạo trùng. Bài kiểm của bot chạy xanh.
+chưa nối Google thì ghi vào thẻ cá nhân. Mỗi mục nhớ trạng thái nên nhắn **tạo** lần hai không tạo trùng. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/meeting_actions.py (mới) · agent_hub/meetings.py · agent_hub/service.py · agent_hub/model.py · migration meet03 · test/backend/test_agent_hub.py
 Deploy: dev 07/10 (Agent 1 gộp 66601fb1, sao lưu DB dev trước, migration meet03, dựng lại api, celery-worker, celery-beat, agent-poller); máy sửa mã đã dựng lại; prod giữ lại.
@@ -14413,7 +14416,7 @@ Deploy: dev 07/10 (Agent 1 gộp 66601fb1, sao lưu DB dev trước, migration m
 ## ai-CR-115 | Bot đọc báo cáo trả lời một lần, tự tính công thức Excel, không cắt cụt câu trả lời
 - status: xong
 - date: 2026-10-08
-Người dùng gửi tệp báo cáo nhân sự dạng Excel rồi nhắn «phân tích báo cáo này» và thấy bot trả lời hai lần, phân tích chưa chuẩn và
+Người dùng gửi tệp báo cáo nhân sự dạng Excel rồi nhắn **phân tích báo cáo này** và thấy bot trả lời hai lần, phân tích chưa chuẩn và
 còn thiếu chi tiết. Tìm ra bốn nguyên nhân và đã sửa. Thứ nhất, tệp gửi không kèm câu hỏi bị tóm tắt ngay rồi câu hỏi gõ sau
 lại được trả lời riêng; nay bot chờ hai mươi giây, có câu hỏi thì trả lời một lần theo câu đó, không có thì tự tóm tắt. Thứ hai,
 tệp Excel do phần mềm sinh ra không lưu sẵn kết quả công thức nên bot tưởng các chỉ số như biên lợi nhuận đều trống; nay bot tự
@@ -14427,30 +14430,30 @@ Mã nguồn: backend/app/modules/agent_hub/doc_text.py · agent_hub/service.py (
 Deploy: dev 08/10 (Agent 1 gộp 0c449f04, sao lưu DB dev trước, dựng lại image api, celery-worker, celery-beat, agent-poller — bốn image riêng); máy sửa mã đã dựng lại; prod giữ lại.
 
 
-## ai-CR-116 | Biên bản họp: nhặt tệp từ thư mục «Họp» trên Drive, report cuộc họp mới nhất, Word theo chuẩn DEGO
+## ai-CR-116 | Biên bản họp: nhặt tệp từ thư mục "Họp" trên Drive, report cuộc họp mới nhất, Word theo chuẩn DEGO
 - status: xong
 - date: 2026-10-08
-Cần họp xong chỉ cần đưa tệp ghi âm lên thư mục «Họp» trên Drive là bot tự biết và hỏi, hoặc nhắn «report cuộc họp mới
-nhất» là bot tìm và gửi lại kèm danh sách việc rút ra. Nay cứ năm phút bot xem thư mục «Họp» của từng người đã nối Google; có tệp
-mới thì bot hỏi trước chứ không tự chạy, vì chép lời tốn khóa AI của chính người đó. Người dùng nhắn «làm biên bản» để gộp mọi
-tệp mới thành một cuộc họp nối theo giờ, «làm tệp 2» để chỉ lấy một tệp, thêm tên mẫu nếu muốn, hoặc «bỏ qua». Khi được hỏi report
+Cần họp xong chỉ cần đưa tệp ghi âm lên thư mục **Họp** trên Drive là bot tự biết và hỏi, hoặc nhắn **report cuộc họp mới
+nhất** là bot tìm và gửi lại kèm danh sách việc rút ra. Nay cứ năm phút bot xem thư mục **Họp** của từng người đã nối Google; có tệp
+mới thì bot hỏi trước chứ không tự chạy, vì chép lời tốn khóa AI của chính người đó. Người dùng nhắn **làm biên bản** để gộp mọi
+tệp mới thành một cuộc họp nối theo giờ, **làm tệp 2** để chỉ lấy một tệp, thêm tên mẫu nếu muốn, hoặc **bỏ qua**. Khi được hỏi report
 cuộc họp mới nhất, bot làm luôn tệp mới chưa xử lý, còn nếu không có thì gửi lại biên bản, tệp Word và thẻ việc còn chờ của cuộc họp
 gần nhất. Tệp Word giờ theo đúng chuẩn recap của DEGO lấy từ bộ mẫu của công ty: logo, mã văn bản, bảng thông tin, hộp tóm tắt
 nhanh, các thanh mục màu xanh, ý chính và điều đã chốt, bảng việc có mức ưu tiên, khối ký với mẫu chính thức, phụ lục bản chép lời
-và số trang. Mẫu mặc định đổi sang «Recap DEGO». Đã dựng thử và xem bản in, tệp mẫu để ở thư mục mau-bien-ban. Bài kiểm của bot
+và số trang. Mẫu mặc định đổi sang **Recap DEGO**. Đã dựng thử và xem bản in, tệp mẫu để ở thư mục mau-bien-ban. Bài kiểm của bot
 chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/meeting_drive.py (mới) · agent_hub/dego_docx.py (mới) · agent_hub/assets/dego_logo.png · agent_hub/meetings.py (build_docx, word_of, resend, concat_audio) · agent_hub/meeting_actions.py · agent_hub/service.py · agent_hub/tasks.py · core/celery_app.py · assistant/tools/meeting_tool.py · test/backend/test_agent_hub.py
 Deploy: dev 08/10 (Agent 1 gộp 18140fd0, sao lưu DB dev trước, dựng lại đủ 4 image api, celery-worker, celery-beat, agent-poller); máy sửa mã đã dựng lại; prod giữ lại.
 
 
-## ai-CR-117 | Thư mục «Họp» trên Drive báo cả tài liệu, đọc đúng chữ của PDF trên Drive
+## ai-CR-117 | Thư mục "Họp" trên Drive báo cả tài liệu, đọc đúng chữ của PDF trên Drive
 - status: xong
 - date: 2026-10-08
-Người dùng thả một tệp PDF vào thư mục «Họp» trên Drive nhưng bot không nói gì. Kiểm trên dev thì bot vẫn thấy đúng thư mục và
-tệp, chỉ là vòng quét lúc đó chỉ nhận ghi âm và video. Nay bot báo cả tài liệu trong thư mục «Họp» như PDF, Word, Excel và Google
-Docs; thẻ báo chia hai nhóm ghi âm và tài liệu, đánh số chung. Người dùng nhắn «tóm tắt tệp 1» hoặc hỏi thẳng «phân tích tệp 1 …»
-để bot đọc tài liệu rồi trả lời, còn ghi âm vẫn dùng «làm biên bản». Cũng sửa lỗi đọc tệp PDF, Word, Excel trên Drive: trước
+Người dùng thả một tệp PDF vào thư mục **Họp** trên Drive nhưng bot không nói gì. Kiểm trên dev thì bot vẫn thấy đúng thư mục và
+tệp, chỉ là vòng quét lúc đó chỉ nhận ghi âm và video. Nay bot báo cả tài liệu trong thư mục **Họp** như PDF, Word, Excel và Google
+Docs; thẻ báo chia hai nhóm ghi âm và tài liệu, đánh số chung. Người dùng nhắn **tóm tắt tệp 1** hoặc hỏi thẳng **phân tích tệp 1 …**
+để bot đọc tài liệu rồi trả lời, còn ghi âm vẫn dùng **làm biên bản**. Cũng sửa lỗi đọc tệp PDF, Word, Excel trên Drive: trước
 đây bot nhận nguyên dữ liệu nhị phân thay vì chữ, nay bot tải tệp về rồi bóc chữ đúng cách, công cụ đọc tệp Drive của Trợ lý cũng
 được sửa theo. Bài kiểm của bot chạy xanh.
 
@@ -14461,9 +14464,9 @@ Deploy: dev 08/10 (Agent 1 gộp 6b1d5e6a, sao lưu DB dev trước, dựng lạ
 ## ai-CR-118 | Trả lời thẻ của bot nhận cả chữ không dấu
 - status: xong
 - date: 2026-10-08
-Đã trả lời thẻ tệp Drive bằng «Tom tắt tệp» thiếu dấu ở chữ «Tóm» nên bot không nhận ra, câu rơi sang Trợ lý AI và Trợ lý
+Đã trả lời thẻ tệp Drive bằng **Tom tắt tệp** thiếu dấu ở chữ **Tóm** nên bot không nhận ra, câu rơi sang Trợ lý AI và Trợ lý
 đoán nhầm sang tệp Excel gửi hôm trước. Nay mọi câu trả lời thẻ của bot, gồm thẻ tệp trên Drive và thẻ việc rút từ biên bản, đều
-nhận cả có dấu lẫn không dấu; chữ đệm như «tệp», «biên bản», «đi», «giúp em» được bỏ để phần còn lại đúng là tên mẫu hoặc câu
+nhận cả có dấu lẫn không dấu; chữ đệm như **tệp**, **biên bản**, **đi**, **giúp em** được bỏ để phần còn lại đúng là tên mẫu hoặc câu
 hỏi; chọn mẫu biên bản cũng nhận chữ không dấu. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/meeting_drive.py (parse_reply) · agent_hub/meeting_actions.py (parse_reply) · agent_hub/meetings.py (template_of, resolve_template) · test/backend/test_agent_hub.py
@@ -14492,11 +14495,11 @@ Deploy: dev 08/10 (Agent 1 gộp 87801692, sao lưu DB +.env.dev trước, tạo
 ## ai-CR-120 | Bot tự liệt kê hướng dẫn dùng khi người dùng hỏi
 - status: xong
 - date: 2026-10-08
-Cần khi hỏi thì bot liệt kê các câu nhắn dùng được, kiểu hướng dẫn người dùng. Nay nhắn «hướng dẫn», «bot làm được gì»,
-«có lệnh gì» hoặc gõ /huongdan, /help, /start là bot gửi danh sách đầy đủ chia mười một nhóm: tài khoản và khóa AI, hỏi số liệu
+Cần khi hỏi thì bot liệt kê các câu nhắn dùng được, kiểu hướng dẫn người dùng. Nay nhắn **hướng dẫn**, **bot làm được gì**,
+**có lệnh gì** hoặc gõ /huongdan, /help, /start là bot gửi danh sách đầy đủ chia mười một nhóm: tài khoản và khóa AI, hỏi số liệu
 ERP và tạo phiếu, sổ ghi nhớ, việc riêng và chi tiêu, lịch Google, biên bản họp, đọc tệp, nhóm Telegram, tra cứu trên mạng, chuông
-ERP và nhóm sửa phần mềm. Nhắn «hướng dẫn biên bản», «hướng dẫn sổ nhớ»… thì chỉ ra đúng nhóm đó, gõ không dấu cũng được. Nhóm sửa
-phần mềm chỉ hiện với chủ bot và người được cấp quyền. Câu hỏi dài về cách dùng ERP như «hướng dẫn tạo đơn nghỉ phép» vẫn để Trợ
+ERP và nhóm sửa phần mềm. Nhắn **hướng dẫn biên bản**, **hướng dẫn sổ nhớ**… thì chỉ ra đúng nhóm đó, gõ không dấu cũng được. Nhóm sửa
+phần mềm chỉ hiện với chủ bot và người được cấp quyền. Câu hỏi dài về cách dùng ERP như **hướng dẫn tạo đơn nghỉ phép** vẫn để Trợ
 lý trả lời theo tài liệu hướng dẫn. Danh sách câu lệnh nằm ở một tệp duy nhất để thêm tính năng mới thì thêm một dòng. Bài kiểm của
 bot chạy xanh.
 
@@ -14507,10 +14510,10 @@ Deploy: dev 08/10 (Agent 1 gộp c23d7f82, dựng lại stack agent-hub và stac
 ## ai-CR-121 | Trình bày hướng dẫn và câu trả lời tra mạng dễ đọc, có phân tích
 - status: xong
 - date: 2026-10-08
-Phát hiện danh sách hướng dẫn và câu trả lời giá vàng khó đọc vì nhiều ngoặc «» và chữ dồn một màu, muốn có chữ đậm nhạt và
+Phát hiện danh sách hướng dẫn và câu trả lời giá vàng khó đọc vì nhiều ngoặc ngoặc kép góc và chữ dồn một màu, muốn có chữ đậm nhạt và
 phân tích. Nay mỗi câu lệnh trong hướng dẫn nằm một dòng, in kiểu mã để chạm là chép được, giải thích để dòng thường, không còn
-ngoặc «»; bản hướng dẫn chung gọn trong một tin với hai câu mẫu mỗi nhóm và dòng xem thêm để mở đủ từng nhóm. Cũng sửa lỗi nhắn
-«hướng dẫn nhóm» lại ra phần sổ ghi nhớ. Câu trả lời tra cứu trên mạng giờ mở bằng một câu kết luận in đậm, có dòng nghiêng ghi mốc
+ngoặc ngoặc kép góc; bản hướng dẫn chung gọn trong một tin với hai câu mẫu mỗi nhóm và dòng xem thêm để mở đủ từng nhóm. Cũng sửa lỗi nhắn
+**hướng dẫn nhóm** lại ra phần sổ ghi nhớ. Câu trả lời tra cứu trên mạng giờ mở bằng một câu kết luận in đậm, có dòng nghiêng ghi mốc
 cập nhật, chia vài nhóm có nhãn đậm, số liệu in đậm, số nguồn chỉ ở cuối dòng, và luôn có phần nhận định về xu hướng và điều nên lưu
 ý; danh sách nguồn gọn lại một dòng theo tên trang. Bài kiểm của bot chạy xanh.
 
@@ -14532,24 +14535,24 @@ nhóm khi được gọi. Bài kiểm của bot và của tiến trình Zalo ch�
 Mã nguồn: zalo-listener/ (mới) · docker/Dockerfile.zalo-listener · docker-compose.agent-hub.yml · backend/app/modules/agent_hub/zalo_account.py (mới) · channels.py · telegram.py · tasks.py · groups.py · service.py (poll_zalo_account_once, /zalo) · poller.py (run_zalo_account) · model.py (AgentGroup.members) · user_guide.py · core/config.py · migrations grp02 + migrations_agent agent0002 · doc/agent-hub/12 §7–8, 13, 14 §7
 Deploy: dev 08/10 (Agent 1 gộp f6fc41e9, dựng zalo-listener trong stack agent-hub); ERP dev chạy grp02 ở lần dựng kế; prod giữ lại.
 
-## ai-CR-123 | Màn «Nhóm chat» trên ERP v2 để xem và quản lý những gì bot ghi ở nhóm Telegram, Zalo
+## ai-CR-123 | Màn "Nhóm chat" trên ERP v2 để xem và quản lý những gì bot ghi ở nhóm Telegram, Zalo
 - status: xong
 - date: 2026-10-08
 Cần có một chỗ trên ERP để kiểm tra bot đã ghi nhận gì trong các nhóm, chia theo loại và theo bot, và người quản
-lý AI thấy được tất cả. Làm màn «Nhóm chat» trong phân hệ Trợ lý AI của ERP v2: danh sách nhóm lọc theo kênh (Telegram,
+lý AI thấy được tất cả. Làm màn **Nhóm chat** trong phân hệ Trợ lý AI của ERP v2: danh sách nhóm lọc theo kênh (Telegram,
 Zalo tài khoản công ty, Zalo bot chính thức) và theo loại nhóm, trang chi tiết có tin nhắn, tệp tải về được, các bản tóm
 tắt và nhật ký ai đã mở xem. Mỗi lần bot hoặc Trợ lý AI trả lời câu hỏi có đọc nhóm thì câu trả lời được lưu thành bản tóm
 tắt của nhóm đó, và trên màn có nút tóm tắt nhanh từ một ngày tới ba mươi ngày. Người thường chỉ thấy nhóm mình là thành
-viên; người có quyền mới «Quản lý nhóm chat của bot» thấy mọi nhóm kể cả nội dung, mỗi lần mở nhóm mình không ở đều có
+viên; người có quyền mới **Quản lý nhóm chat của bot** thấy mọi nhóm kể cả nội dung, mỗi lần mở nhóm mình không ở đều có
 nhật ký; quyền sửa thì phân loại nhóm, ngừng ghi một nhóm và đăng nhập Zalo công ty bằng mã QR ngay trên web. Quản trị hệ
 thống tự có quyền này. Bài kiểm máy chủ và giao diện chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/groups.py · controller.py (đường /groups*, /zalo/*) · constants.py (GROUP_CAT_*) · model.py (AgentGroupSummary, AgentGroupView) · assistant/service.py · core/permissions.py + scoping.py (agent_group) · migrations grp03 + agent0003 · zalo-listener/index.mjs · frontend-v2/src/modules/assistant (chat-group-*) · test/backend/test_agent_hub_nhom_web.py
 Deploy: dev 08/10 (Agent 1 gộp 1a69ad5b, dựng lại ERP api, erp và stack agent-hub); prod giữ lại.
 
-Vá sau khi dựng dev (08/10): mở màn «Nhóm chat» thì cả ERP dev treo, mọi yêu cầu đứng chờ. Nguyên nhân là đường chuyển tiếp
+Vá sau khi dựng dev (08/10): mở màn **Nhóm chat** thì cả ERP dev treo, mọi yêu cầu đứng chờ. Nguyên nhân là đường chuyển tiếp
 của ERP sang dịch vụ AI gọi chặn ngay trong luồng chính, nên trong lúc chờ ERP không phục vụ được gì, mà dịch vụ AI lại quay
-sang hỏi quyền «Quản lý nhóm chat của bot» ở chính ERP, thế là hai bên chờ nhau tới hết hai phút. Cho lệnh gọi chạy ở luồng
+sang hỏi quyền **Quản lý nhóm chat của bot** ở chính ERP, thế là hai bên chờ nhau tới hết hai phút. Cho lệnh gọi chạy ở luồng
 phụ để ERP vẫn trả lời được trong lúc chờ, và thêm bài kiểm nhắc lại đúng lỗi này (đỏ với mã cũ, xanh với mã mới).
 Mã nguồn: backend/app/modules/agent_gateway/proxy.py (run_in_threadpool) · test/backend/test_agent_hub_tach_dich_vu.py
 
@@ -14562,7 +14565,7 @@ Mã nguồn: backend/app/agent_main.py · test/backend/test_agent_hub_tach_dich_
 ## ai-CR-124 | Máy sửa mã nhận lại việc của bot và tự cập nhật cho khớp bản mã trên dev
 - status: xong
 - date: 2026-10-08
-Phát hiện bot báo «máy sửa mã và bot lệch bản» nhiều lần và việc AI-0005 nằm chờ mãi. Tìm ra lỗi gốc: từ khi tách
+Phát hiện bot báo **máy sửa mã và bot lệch bản** nhiều lần và việc AI-0005 nằm chờ mãi. Tìm ra lỗi gốc: từ khi tách
 dịch vụ AI, việc bot giao nằm ở Redis của dịch vụ AI, còn máy sửa mã trên máy local vẫn nối vào Redis cũ của ERP nên không
 bao giờ nhận được việc, tin máy gửi về Telegram cũng thất lạc. Chuyển cổng nối của máy sửa mã sang Redis của dịch vụ AI
 (giữ nguyên số cổng để không phải đổi khóa của từng máy). Cũng làm cho máy sửa mã tự cập nhật: bot ghi lại dấu vân tay
@@ -14575,9 +14578,9 @@ Deploy: dev 08/10 (Agent 1 gộp bd9a80a2, gỡ cổng nối cũ, dựng lại s
 ## ai-CR-125 | Bot hiểu lệnh bỏ việc viết tắt và không coi lời chào là câu trả lời
 - status: xong
 - date: 2026-10-08
-Lúc bot đang hỏi lại về việc AI-0005, người dùng nhắn «lô» rồi «bỏ kế hoạch 0005 đi», nhưng bot gắn cả hai câu làm câu trả lời
-và lập lại kế hoạch, việc không bị bỏ. Nay bot nhận ra mã việc viết tắt như «việc 7», «kế hoạch 0005» hay «0005» đứng riêng
-(không nhầm với số điện thoại hay số tiền), hiểu «bỏ kế hoạch» là lệnh bỏ việc, và lời chào trơn như «lô», «alo», «chào em»
+Lúc bot đang hỏi lại về việc AI-0005, người dùng nhắn **lô** rồi **bỏ kế hoạch 0005 đi**, nhưng bot gắn cả hai câu làm câu trả lời
+và lập lại kế hoạch, việc không bị bỏ. Nay bot nhận ra mã việc viết tắt như **việc 7**, **kế hoạch 0005** hay **0005** đứng riêng
+(không nhầm với số điện thoại hay số tiền), hiểu **bỏ kế hoạch** là lệnh bỏ việc, và lời chào trơn như **lô**, **alo**, **chào em**
 không còn bị gắn vào thẻ đang hỏi lại. Cũng đã thử thật phần máy sửa mã tự cập nhật: làm máy lệch bản, khoảng năm phút
 sau máy tự kéo đúng bản của bot rồi khởi động lại. Bài kiểm của bot chạy xanh.
 
@@ -14603,7 +14606,7 @@ Deploy: dev 08/10/2026
 Đã trả lời câu hỏi của việc AI-0005 xong thì bot im luôn. Nguyên nhân là bot được dựng lại để cập nhật đúng lúc nó đang
 lập lại kế hoạch, nên lượt đó bị ngắt và không ai chạy lại. Nay mỗi phút bot tự kiểm: việc nào đã trả lời hơn ba phút
 mà chưa có lượt lập kế hoạch nào bắt đầu thì bot báo một câu rồi làm lại; lượt nào đã chạy, kể cả bị lỗi, thì không lặp lại.
-Cũng bớt tin «Zalo đã kết nối»: chỉ báo khi vừa quét mã hoặc vừa nối lại sau lúc mất kết nối, không báo mỗi lần dựng lại
+Cũng bớt tin **Zalo đã kết nối**: chỉ báo khi vừa quét mã hoặc vừa nối lại sau lúc mất kết nối, không báo mỗi lần dựng lại
 máy chủ. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (resume_lost_replans) · tasks.py (heartbeat_task) · zalo-listener/index.mjs · test/backend/test_agent_hub.py
@@ -14614,7 +14617,7 @@ Deploy: dev 08/10/2026
 - date: 2026-10-08
 Sau khi tách dịch vụ AI, vòng tự học của bot vẫn đọc sổ thuật ngữ và sổ chỗ Trợ lý thiếu chức năng thẳng từ bảng cấu hình của
 ERP, mà cơ sở dữ liệu riêng của dịch vụ AI không có bảng đó nên cứ năm phút lại báo lỗi. Nay ba sổ này đi qua cổng có chữ ký
-của ERP, cổng chỉ mở đúng ba khóa đó. Cũng chặn việc bot báo «lượt lập kế hoạch bị ngắt, làm lại» hai lần liền: đã nhặt
+của ERP, cổng chỉ mở đúng ba khóa đó. Cũng chặn việc bot báo **lượt lập kế hoạch bị ngắt, làm lại** hai lần liền: đã nhặt
 lại một lần thì mười lăm phút sau mới thử lại nếu vẫn chưa có kết quả. Một dòng sổ chạy kẹt từ ngày 05/10 của việc đã bỏ cũng
 được dọn trên dev.
 
@@ -14626,8 +14629,8 @@ Deploy: dev 08/10/2026
 - date: 2026-10-08
 Quản trị lỡ quét mã đăng nhập bằng tài khoản Zalo cá nhân nên bot đọc năm mươi mốt nhóm riêng tư. Ngắt và xóa phiên đó trên
 dev, xóa toàn bộ năm mươi mốt nhóm mà phiên đó đồng bộ về (tên nhóm và danh sách thành viên; phiên này chưa kịp ghi tin nào),
-bot trở về trạng thái chưa đăng nhập. Thêm nút «Đăng xuất / đổi tài khoản» trên thẻ Zalo ở màn Nhóm chat cho người có
-quyền quản lý, kèm hộp xác nhận, và lệnh Telegram «/zalo dangxuat» cho chủ bot: bấm là ngắt phiên, xóa phiên đã lưu, rồi quét
+bot trở về trạng thái chưa đăng nhập. Thêm nút **Đăng xuất / đổi tài khoản** trên thẻ Zalo ở màn Nhóm chat cho người có
+quyền quản lý, kèm hộp xác nhận, và lệnh Telegram **/zalo dangxuat** cho chủ bot: bấm là ngắt phiên, xóa phiên đã lưu, rồi quét
 lại bằng tài khoản công ty. Bài kiểm máy chủ, giao diện và tiến trình Zalo chạy xanh.
 
 Mã nguồn: zalo-listener/index.mjs (/logout) · backend/app/modules/agent_hub/zalo_account.py · service.py · controller.py · user_guide.py · frontend-v2/src/modules/assistant/components/zalo-account-card.tsx · api/chat-group-api.ts · hooks/use-chat-groups.ts
@@ -14638,8 +14641,8 @@ Deploy: dev 08/10 (Agent 1 gộp 612ac875, dựng lại stack agent-hub và erp)
 - date: 2026-10-08
 Người dùng hỏi giá vàng qua tài khoản Zalo công ty thấy bot trả lời lâu và câu trả lời không có chữ đậm, chữ nghiêng hay chỉ mục.
 Zalo cá nhân không đọc được định dạng kiểu web nên đổi sang kiểu chữ riêng của Zalo: chữ đậm, nghiêng, gạch chân, gạch ngang
-hiện đúng chỗ, kể cả khi tin dài bị cắt làm nhiều mẩu. Khi nhận tin, bot bật dòng «đang soạn tin» trên Zalo; quá tám giây chưa
-có câu trả lời thì bot nhắn một câu «nhận tin rồi, đang tìm câu trả lời», mỗi lượt chỉ một lần. Câu trả lời tra cứu trên mạng
+hiện đúng chỗ, kể cả khi tin dài bị cắt làm nhiều mẩu. Khi nhận tin, bot bật dòng **đang soạn tin** trên Zalo; quá tám giây chưa
+có câu trả lời thì bot nhắn một câu **nhận tin rồi, đang tìm câu trả lời**, mỗi lượt chỉ một lần. Câu trả lời tra cứu trên mạng
 nay đánh số các nhóm I, II, III và nhóm cuối là nhận định, áp cho cả Telegram. Bài kiểm của bot và của tiến trình Zalo chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/zalo_account.py (to_styled, split_styled, send_typing) · telegram.py · research.py · zalo-listener/index.mjs (/typing, styles) · test/backend/test_agent_hub.py
@@ -14649,10 +14652,10 @@ Deploy: dev 08/10 (Agent 1 gộp 27e5c492, dựng lại stack agent-hub); prod g
 - status: xong
 - date: 2026-10-08
 Đã chốt người chưa đăng nhập nhắn bot thì bot vẫn im, chỉ người có quyền mới hỏi được, và hỏi làm sao kiểm tra quyền của
-họ. Nay muốn dùng bot trên Telegram hay Zalo phải có quyền «Trợ lý AI», cấp ở màn Phân quyền tài khoản như Trợ lý AI trên web:
+họ. Nay muốn dùng bot trên Telegram hay Zalo phải có quyền **Trợ lý AI**, cấp ở màn Phân quyền tài khoản như Trợ lý AI trên web:
 thiếu quyền thì trang cá nhân không cấp mã, đăng nhập bằng mã cũ thì bot từ chối và nói lý do, đang dùng mà bị thu quyền thì
-bot không trả lời nữa. Màn mới «Người dùng bot» trong phân hệ Trợ lý AI cho người quản lý bot thấy ai đang nối kênh nào, nhắn
-lần cuối khi nào, còn quyền hay không, và gỡ được liên kết. Cũng tắt ghi nhóm lớp «KINH TẾ K52 - CTU» trên dev theo yêu cầu;
+bot không trả lời nữa. Màn mới **Người dùng bot** trong phân hệ Trợ lý AI cho người quản lý bot thấy ai đang nối kênh nào, nhắn
+lần cuối khi nào, còn quyền hay không, và gỡ được liên kết. Cũng tắt ghi nhóm lớp **KINH TẾ K52 - CTU** trên dev theo yêu cầu;
 màn Nhóm chat giữ trong phân hệ Trợ lý AI, không mở cho mọi nhân viên. Bài kiểm máy chủ và giao diện chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (may_use_bot) · controller.py (/links/all, /links/{id}/admin) · chat_link.py · frontend-v2/src/modules/assistant/pages/bot-user-list-page.tsx · test/backend/test_agent_hub.py
@@ -14662,9 +14665,9 @@ Deploy: dev 08/10 (Agent 1 gộp 0696c86a, dựng lại stack agent-hub và erp)
 - status: xong
 - date: 2026-10-09
 Trước đây mọi tin hệ thống của bot, như máy sửa mã mất liên lạc, Zalo mất kết nối, tình hình máy, sự cố và thẻ các việc sửa mã,
-chỉ gửi về đúng một chat Telegram của quản trị. Nay có quyền mới «Nhận tin vận hành của bot» ở màn Phân quyền: ai được tick thì
+chỉ gửi về đúng một chat Telegram của quản trị. Nay có quyền mới **Nhận tin vận hành của bot** ở màn Phân quyền: ai được tick thì
 nhận bản sao các tin đó qua chat Telegram đã nối của mình. Bản sao không có nút bấm, nên việc duyệt thao tác trên máy chủ và ra
-lệnh sửa mã vẫn chỉ quản trị làm. Câu trả lời người dùng riêng, tin «vẫn đang làm» và ảnh mã QR đăng nhập Zalo không bị sao.
+lệnh sửa mã vẫn chỉ quản trị làm. Câu trả lời người dùng riêng, tin **vẫn đang làm** và ảnh mã QR đăng nhập Zalo không bị sao.
 Tài khoản quản trị tự có quyền này. Bài kiểm máy chủ và giao diện chạy xanh.
 
 Mã nguồn: backend/app/core/permissions.py + scoping.py (agent_ops) · seed.py · agent_hub/service.py (ops_recipients, _copy_to_ops, reply) · poller.py · frontend-v2 permission-types.ts, permission-groups.ts · test/backend/test_agent_hub.py
@@ -14675,7 +14678,7 @@ Deploy: dev 09/10 (Agent 1 gộp 7d5ededc, dựng lại ERP api, erp và stack a
 - date: 2026-10-09
 Người dùng gửi link bài Facebook và VnExpress nhờ tóm tắt thì bot trả lời không mở được link, vì trước giờ bot chỉ biết tìm trên mạng
 theo câu hỏi chứ không đọc một trang theo địa chỉ. Nay gửi link không kèm chữ, hoặc kèm câu nhờ tóm tắt, hoặc gửi link rồi mới
-nhắn «tóm tắt bài này», bot tự tải trang công khai, đọc tựa và thân bài rồi tóm tắt theo kiểu trình bày đã chốt, có nguồn và
+nhắn **tóm tắt bài này**, bot tự tải trang công khai, đọc tựa và thân bài rồi tóm tắt theo kiểu trình bày đã chốt, có nguồn và
 xuất Word được. Bot chặn mọi đường dẫn trỏ vào mạng nội bộ, kể cả khi trang chuyển hướng. Với Facebook và các mạng xã hội cần
 đăng nhập, bot chỉ đọc được phần xem trước nên nói rõ điều đó và nhờ dán nội dung hoặc ảnh chụp. Link ERP của công ty, Google
 Drive và link nằm trong câu báo lỗi vẫn đi đường cũ. Bài kiểm của bot chạy xanh.
@@ -14691,7 +14694,7 @@ trang web. Nay link tới tệp PDF, Word, Excel hay văn bản được tải v
 được đổi sang bản PDF đầy đủ; trang bài báo khoa học có khai đường tải bản PDF thì bot tải bản đó nếu được mở công khai; tài liệu
 Google Docs, Sheets, Slides và tệp Google Drive đọc được khi đã chia sẻ cho bất kỳ ai có đường liên kết, chưa chia sẻ thì bot nói
 rõ cách bật. Câu gõ kèm link được coi là câu hỏi về tệp, không gõ gì thì bot tóm tắt. Việc tải tệp vẫn chặn mọi đường dẫn vào
-mạng nội bộ. Thử thật với bài «Attention Is All You Need» trên arXiv, bot đọc đủ cả bài. Bài kiểm của bot chạy xanh.
+mạng nội bộ. Thử thật với bài **Attention Is All You Need** trên arXiv, bot đọc đủ cả bài. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/web_search.py (fetch_resource) · service.py (_answer_document_bytes, _link_by_text) · user_guide.py · test/backend/test_agent_hub.py
 Deploy: dev 09/10 (Agent 1 gộp e7b3d71c, dựng lại stack agent-hub); prod giữ lại.
@@ -14699,9 +14702,9 @@ Deploy: dev 09/10 (Agent 1 gộp e7b3d71c, dựng lại stack agent-hub); prod g
 ## ai-CR-135 | Tin Zalo mất kết nối chỉ báo một lần
 - status: xong
 - date: 2026-10-09
-Mỗi lần máy chủ bot được dựng lại, tiến trình Zalo khởi động lại, thử phiên đăng nhập cũ đã hỏng rồi lại báo «Zalo mất kết nối»,
+Mỗi lần máy chủ bot được dựng lại, tiến trình Zalo khởi động lại, thử phiên đăng nhập cũ đã hỏng rồi lại báo **Zalo mất kết nối**,
 nên quản trị nhận cùng một tin nhiều lần. Nay bot chỉ báo mất kết nối một lần cho tới khi Zalo nối lại được; muốn biết tình trạng
-thì người dùng nhắn «/zalo» hoặc xem thẻ Zalo trên màn Nhóm chat. Bài kiểm của bot chạy xanh.
+thì người dùng nhắn **/zalo** hoặc xem thẻ Zalo trên màn Nhóm chat. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/service.py (_report_zalo_status) · test/backend/test_agent_hub.py
 Deploy: dev 09/10 (Agent 1 gộp 9578cd72, dựng lại stack agent-hub); prod giữ lại.
@@ -15799,8 +15802,8 @@ Deploy: dev 09/10 (Agent 1 gộp eddfd4b4, dựng lại stack agent-hub); prod g
 ## ai-CR-148 | Nhắn bot phát triển tính năng thì thành việc sửa phần mềm, không còn bị từ chối
 - status: xong
 - date: 2026-10-09
-Người dùng hỏi bot sửa đơn nghỉ phép được chưa, bot nói tool chưa làm được; người dùng nhắn «oke phát triển tính năng» rồi «bắt đầu
-sửa luôn chưa» thì bot lại trả lời mình không phải bên sửa phần mềm và chỉ ghi đề xuất. Nay ở chat chủ bot và chat của người được
+Người dùng hỏi bot sửa đơn nghỉ phép được chưa, bot nói tool chưa làm được; người dùng nhắn **oke phát triển tính năng** rồi **bắt đầu
+sửa luôn chưa** thì bot lại trả lời mình không phải bên sửa phần mềm và chỉ ghi đề xuất. Nay ở chat chủ bot và chat của người được
 cấp quyền sửa mã, những câu ngắn như phát triển tính năng, làm tính năng đó, bắt đầu sửa, code luôn đi được ghi thành việc sửa
 phần mềm, kèm câu hỏi và câu trả lời ngay trước đó làm mô tả để bot biết tính năng nào. Trợ lý ở các chat này được dặn không chối
 việc sửa phần mềm nữa, và bộ phân loại có thêm ví dụ cho tình huống này. Bài kiểm của bot chạy xanh.
@@ -15865,10 +15868,10 @@ Deploy: dev 09/10 (Agent 1 gộp 55c924dd, dựng lại stack agent-hub); prod g
 - date: 2026-10-09
 Đã chốt bot chỉ làm xin nghỉ phép, không làm thủ tục nghỉ việc hẳn, và lo mỗi lần nhắn tạo lại sinh thêm một đơn nháp. Nay
 khi nhắn tạo cho bản nháp đơn nghỉ phép mà đã có đơn nghỉ nháp của chính mình trùng ngày, bot sửa đè đơn nháp cũ thay vì lập đơn
-mới và báo rõ là đã cập nhật đơn nào. Nhắn «đơn nháp của tôi» để xem các phiếu nháp do mình lập gồm đơn nghỉ phép, yêu cầu mua
-hàng và yêu cầu báo giá, có đánh số; nhắn «xóa đơn nháp 2 3» hay «xóa hết đơn nháp» thì bot gửi thẻ hỏi lại, nhắn đúng mới xóa.
+mới và báo rõ là đã cập nhật đơn nào. Nhắn **đơn nháp của tôi** để xem các phiếu nháp do mình lập gồm đơn nghỉ phép, yêu cầu mua
+hàng và yêu cầu báo giá, có đánh số; nhắn **xóa đơn nháp 2 3** hay **xóa hết đơn nháp** thì bot gửi thẻ hỏi lại, nhắn đúng mới xóa.
 Bot chỉ xóa phiếu còn ở trạng thái nháp do chính người đó lập, xóa bằng đúng cách xóa trên web; phiếu khác thì bỏ qua và nói lý
-do. Câu «nghỉ việc ngày X» được hiểu là xin nghỉ phép ngày đó. Bài kiểm của bot chạy xanh.
+do. Câu **nghỉ việc ngày X** được hiểu là xin nghỉ phép ngày đó. Bài kiểm của bot chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/draft_create.py (list_mine, same_days_leave, update_leave, delete_mine) · erp.py · service.py (_my_drafts_by_text) · constants.py · user_guide.py · agent_gateway/controller.py · assistant/tools/draft_tool.py · test/backend/test_agent_hub_don_nhap.py
 Deploy: dev 09/10 (Agent 1 gộp 2b25542d, dựng ERP api trước rồi stack agent-hub); prod giữ lại.
@@ -15876,7 +15879,7 @@ Deploy: dev 09/10 (Agent 1 gộp 2b25542d, dựng ERP api trước rồi stack a
 ## ai-CR-142 | Bot hỏi lại cho đủ thông tin trước khi soạn phiếu, thẻ nháp dễ đọc và bỏ ngoặc kép góc
 - status: xong
 - date: 2026-10-09
-Người dùng nhắn «tạo đơn nghỉ việc vào ngày thứ 2 tuần sau» thì bot soạn luôn đơn loại Phép năm với lý do Việc cá nhân, dù
+Người dùng nhắn **tạo đơn nghỉ việc vào ngày thứ 2 tuần sau** thì bot soạn luôn đơn loại Phép năm với lý do Việc cá nhân, dù
 Người dùng chưa nói hai điều đó, và thẻ nháp vẫn còn ngoặc kép góc khó đọc. Nay khi soạn đơn nghỉ phép, yêu cầu mua hàng, yêu cầu báo giá
 hay việc ở phân hệ Dự án, ô nào quan trọng mà người dùng chưa nói, hoặc bot tự nghĩ ra, thì bot hỏi lại một tin gồm đủ các ý,
 có kèm danh sách để chọn như loại nghỉ hay kho nhận; ý nào người dùng bảo bỏ qua thì không hỏi lần hai. Những điều bot tự hiểu
@@ -15890,10 +15893,10 @@ Deploy: dev 09/10 (Agent 1 gộp d32ea68a, dựng lại ERP api rồi stack agen
 ## ai-CR-141 | Duyệt việc quay lại cơ sở dữ liệu của bot bằng thẻ trên Telegram
 - status: xong
 - date: 2026-10-09
-Đã chốt việc quay lại cơ sở dữ liệu của bot phải duyệt bằng thẻ trên Telegram. Nay trong chat chủ bot, nhắn «sao lưu db bot»
-để xem các bản sao lưu có đánh số; nhắn «quay lại db bot dev bản số mấy» để quay lại toàn bộ, hoặc «lấy lại bảng nào của db bot
-dev bản số mấy» kèm điều kiện để chỉ lấy lại vài dòng, ví dụ trí nhớ của một người. Bot gửi thẻ nói rõ sẽ làm gì và mất gì, người dùng
-nhắn «đúng» thì máy sửa mã mới tải bản sao lưu về máy chủ và chạy script quay lại, xong báo kết quả. Đường tải bản sao lưu
+Đã chốt việc quay lại cơ sở dữ liệu của bot phải duyệt bằng thẻ trên Telegram. Nay trong chat chủ bot, nhắn **sao lưu db bot**
+để xem các bản sao lưu có đánh số; nhắn **quay lại db bot dev bản số mấy** để quay lại toàn bộ, hoặc **lấy lại bảng nào của db bot
+dev bản số mấy** kèm điều kiện để chỉ lấy lại vài dòng, ví dụ trí nhớ của một người. Bot gửi thẻ nói rõ sẽ làm gì và mất gì, người dùng
+nhắn **đúng** thì máy sửa mã mới tải bản sao lưu về máy chủ và chạy script quay lại, xong báo kết quả. Đường tải bản sao lưu
 không hiện trên thẻ hay trong nhật ký. Điều kiện lấy lại một phần chỉ nhận phép so sánh đơn giản, chặn các ký tự có thể chèn
 lệnh. Quay lại toàn bộ thì bot ghi lại dòng nhật ký của chính lượt đó sau khi cơ sở dữ liệu được thay. Bài kiểm của bot chạy xanh.
 
@@ -15904,12 +15907,12 @@ Deploy: dev 09/10 (Agent 1 gộp 7e4ef15c, dựng lại ERP api + erp v2 rồi s
 - status: xong
 - date: 2026-10-09
 Cần nhắn ngay trong bot để bật bản tin hằng ngày hoặc danh sách việc hôm nay, và bật tắt được trong lúc chat. Nay mỗi
-người nhắn «bật bản tin» để mỗi sáng nhận bản tin gồm lịch hôm nay nếu đã nối Google, việc riêng, việc ở phân hệ Dự án tới hạn
-hoặc quá hạn và phiếu đang chờ mình duyệt; nhắn «bản tin lúc 6h45 ngày thường» để đổi giờ và thứ, «bản tin hôm nay» hay «việc
-hôm nay» để nhận ngay, «bản tin của tôi» để xem danh sách, «tắt bản tin 2» hoặc «tắt hết bản tin» để tắt. Có thêm bản tin theo
-chủ đề: nói tự nhiên như «sáng thứ hai gửi anh công nợ quá hạn của DEGO» thì bot tự hỏi hộ câu đó theo lịch bằng khóa AI của
-chính người đó. Người đã nối Google mà chưa tự đặt gì vẫn nhận bản tin 7 giờ 30 như trước. Trên ERP bản mới, tab «Bot nhớ gì về
-tôi» có thẻ bản tin để bật tắt nhanh, và các gợi ý chủ động có nút Bật. Bot có thêm công cụ xem việc Dự án tới hạn của mình, chỉ
+người nhắn **bật bản tin** để mỗi sáng nhận bản tin gồm lịch hôm nay nếu đã nối Google, việc riêng, việc ở phân hệ Dự án tới hạn
+hoặc quá hạn và phiếu đang chờ mình duyệt; nhắn **bản tin lúc 6h45 ngày thường** để đổi giờ và thứ, **bản tin hôm nay** hay **việc
+hôm nay** để nhận ngay, **bản tin của tôi** để xem danh sách, **tắt bản tin 2** hoặc **tắt hết bản tin** để tắt. Có thêm bản tin theo
+chủ đề: nói tự nhiên như **sáng thứ hai gửi anh công nợ quá hạn của DEGO** thì bot tự hỏi hộ câu đó theo lịch bằng khóa AI của
+chính người đó. Người đã nối Google mà chưa tự đặt gì vẫn nhận bản tin 7 giờ 30 như trước. Trên ERP bản mới, tab **Bot nhớ gì về
+tôi** có thẻ bản tin để bật tắt nhanh, và các gợi ý chủ động có nút Bật. Bot có thêm công cụ xem việc Dự án tới hạn của mình, chỉ
 trong các dự án mình thấy. Sổ hướng dẫn của bot có thêm nhóm Bản tin. Bài kiểm của bot, Trợ lý và giao diện chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/brief_subs.py (mới) · briefs.py · service.py (_brief_by_text) · controller.py (/me/briefs) · model.py (AgentBriefSub) · tasks.py (agent.briefs_due) · intent_ledger.py · erp.py · user_guide.py · assistant/tools/brief_tool.py (mới) · assistant/tools/work_tool.py (my_work_tasks) · core/celery_app.py · migrations grp08 + agent0008 · frontend-v2/src/app/components/profile/profile-brief-card.tsx · profile-memory-tab.tsx · modules/system/api/bot-memory-api.ts · hooks/use-bot-memory.ts · test/backend/test_agent_hub_ban_tin.py
@@ -15933,16 +15936,16 @@ ghi vào tài liệu vận hành. Bài kiểm của bot và giao diện chạy x
 Mã nguồn: backend/app/modules/agent_hub/db_backup.py (mới) · purge.py (mới) · tasks.py · controller.py · model.py (AgentDbBackup) · groups.py · intent_ledger.py · backup/service.py (dump_sql) · core/celery_app.py · migrations grp07 + agent0007 · backend/scripts/agent_restore.sh (mới) · frontend-v2/src/modules/system/pages/backup-list-page.tsx · api/backup-api.ts · hooks/use-backups.ts · types/backup.ts · test/backend/test_agent_hub_sao_luu_db_bot.py · doc/agent-hub/08-van-hanh-vps.md
 Deploy: dev 09/10 (Agent 1 gộp 32edc213, cấp quyền DB tạm, khai R2 cho stack bot, chạy thử sao lưu và khôi phục thử đều thành công); prod giữ lại.
 
-## ai-CR-138 | Màn «Bot nhớ gì về tôi», bot hiểu câu hỏi tắt theo thói quen và bộ đo độ đúng (phase 13 đợt B)
+## ai-CR-138 | Màn "Bot nhớ gì về tôi", bot hiểu câu hỏi tắt theo thói quen và bộ đo độ đúng (phase 13 đợt B)
 - status: xong
 - date: 2026-10-09
-Đây là đợt B của phase 13 Agent 1 giao, đã duyệt. Ở Trang cá nhân trên ERP bản mới có thêm tab «Bot nhớ gì về tôi»: mỗi
+Đây là đợt B của phase 13 Agent 1 giao, đã duyệt. Ở Trang cá nhân trên ERP bản mới có thêm tab **Bot nhớ gì về tôi**: mỗi
 người xem được sổ nhớ bot giữ về mình theo bốn mục, dòng nào bot tự rút thì có nhãn và hạn dùng; xem những điều bot đang để ý mà
 chưa ghi, những thói quen bot đếm được và kho ghi chú. Người dùng thêm, sửa, xóa từng dòng, bỏ một điều bot đang để ý, xóa ghi
 chú hoặc xóa toàn bộ trí nhớ. Chỉ chính người đó xem được, quản trị cũng không có đường nào xem sổ người khác; khi tài khoản bị
-thu hồi thì toàn bộ trí nhớ bot giữ về người đó bị xóa sạch. Trên chat, câu «nhớ gì về anh» nay hiện thêm những điều bot đang
+thu hồi thì toàn bộ trí nhớ bot giữ về người đó bị xóa sạch. Trên chat, câu **nhớ gì về anh** nay hiện thêm những điều bot đang
 để ý. Khi người dùng hỏi tắt mà thiếu pháp nhân hay nhà cung cấp, bot dùng cái người đó hay hỏi, chỉ khi đã hỏi từ ba lần và
-chiếm phần lớn, và nói rõ ngay câu đầu là đang hiểu như vậy. Gợi ý chủ động như «thứ hai nào cũng hỏi công nợ» chỉ hiện trên màn
+chiếm phần lớn, và nói rõ ngay câu đầu là đang hiểu như vậy. Gợi ý chủ động như **thứ hai nào cũng hỏi công nợ** chỉ hiện trên màn
 để người dùng tự bật, bot không tự gửi. Để đo độ đúng có bộ ba mươi câu mẫu cố định với ngưỡng 85%, một script xuất câu hỏi thật
 trên dev để gắn nhãn tay rồi chấm, và đếm tỷ lệ bot phải hỏi lại trước và sau một mốc ngày. Theo lời người dùng, sổ hướng dẫn của bot
 cũng được cập nhật phần trí nhớ tự rút, lệnh xem trí nhớ, tab trên ERP và cách bot hiểu câu hỏi tắt. Bài kiểm của bot, Trợ lý và
@@ -15954,16 +15957,16 @@ Deploy: dev 09/10 (Agent 1 gộp 319433f9, dựng lại ERP api + erp v2 rồi s
 ## ai-CR-137 | Bot ghi sổ ý định và tự rút ghi nhớ khi người dùng nhắc lại nhiều lần (phase 13 đợt A)
 - status: xong
 - date: 2026-10-09
-Đã duyệt phase 13 «Hiểu ý định và tự ghi nhớ», Agent 1 giao làm đợt A. Nay mỗi câu hỏi gửi bot trên Telegram, Zalo riêng hay
+Đã duyệt phase 13 **Hiểu ý định và tự ghi nhớ**, Agent 1 giao làm đợt A. Nay mỗi câu hỏi gửi bot trên Telegram, Zalo riêng hay
 Trợ lý AI trên web được ghi một dòng vào sổ ý định: ai hỏi, trên kênh nào, thuộc nhóm nghiệp vụ nào (ví dụ tra công nợ, soạn yêu
 cầu mua hàng), nhắc tới nhà cung cấp, pháp nhân, phòng ban hay mã chứng từ nào, đã dùng công cụ gì và bot trả lời được, phải hỏi
 lại hay bị lỗi. Sổ không lưu nguyên văn câu hỏi hay câu trả lời, không ghi tin trong nhóm và tự xóa sau 180 ngày. Nhóm nghiệp vụ
 suy ra cố định từ công cụ bot đã gọi chứ không nhờ model đoán; thêm công cụ mới mà quên khai nhóm thì bài kiểm báo đỏ.
 Sau mỗi buổi chat riêng đã được tóm tắt, bot đọc bản tóm tắt cùng thói quen hỏi trong sổ ý định rồi đề xuất vài điều bền về người
 đó, như vai trò, cách muốn được trả lời hay pháp nhân hay làm việc. Một điều chỉ được ghi vào sổ nhớ khi được nhắc lại từ ba lần
-trên hai ngày khác nhau, ghi kèm chữ «tự rút» và tự bỏ sau 120 ngày nếu không nhắc lại; điều nói một lần không bao giờ vào sổ.
+trên hai ngày khác nhau, ghi kèm chữ **tự rút** và tự bỏ sau 120 ngày nếu không nhắc lại; điều nói một lần không bao giờ vào sổ.
 Bot không ghi mật khẩu, số tài khoản, không ghi trùng điều người dùng đã tự ghi, không bao giờ rút từ tin nhóm. Người dùng nhắn
-«quên: …» thì dòng đó bị xóa và bot không rút lại điều đó trong 90 ngày. Lần đầu bot tự ghi cho ai, bot nhắn người đó một tin giải
+**quên: …** thì dòng đó bị xóa và bot không rút lại điều đó trong 90 ngày. Lần đầu bot tự ghi cho ai, bot nhắn người đó một tin giải
 thích. Tài liệu mới gom toàn bộ cách bot nhớ và thứ tự nạp vào mỗi lượt gọi model. Bài kiểm của bot và Trợ lý chạy xanh.
 
 Mã nguồn: backend/app/modules/agent_hub/intent_ledger.py (mới) · auto_memory.py (mới) · personal_memory.py · sessions.py · service.py (_ledger, answer_question) · model.py (AgentIntent, AgentMemoryCandidate) · tasks.py · assistant/conversation.py · assistant/tools/personal_tool.py · core/config.py + app_settings.py · migrations grp05 + agent0005 · doc/agent-hub/17-tri-nho-va-y-dinh.md · test/backend/test_agent_hub_y_dinh_tu_nho.py
@@ -16013,7 +16016,7 @@ Mã nguồn: backend/app/modules/survey_request/report_constants.py · report_mo
 Người dùng báo bảng Báo cáo thực hiện trên đơn mua hàng bị lệch: các ô không căn giữa theo chiều dọc và ô chọn bị che mất chữ, yêu cầu
 sửa ở cả bản cũ lẫn bản mới. Ở bản cũ, tên hồ sơ, số thứ tự và ô tick dính lên mép trên trong khi ô chọn nằm giữa; nay mọi ô của
 bảng căn giữa theo chiều dọc. Ô trạng thái của bản cũ chữ bị đẩy lệch lên trên, nay vẽ lại để chữ nằm giữa. Ô chọn giai đoạn ở cả
-hai bản cắt cụt tên dài như «Kế hoạch công việc nhập khẩu», nay tên dài tự xuống dòng giống ô dòng hàng bên cạnh; hàng thêm hồ sơ
+hai bản cắt cụt tên dài như **Kế hoạch công việc nhập khẩu**, nay tên dài tự xuống dòng giống ô dòng hàng bên cạnh; hàng thêm hồ sơ
 mới ở cuối bảng cũng sửa theo. Sau đó yêu cầu bỏ ô tick ở đầu mỗi hàng của dạng bảng: nay đánh dấu hoàn thành chỉ qua cột
 trạng thái, vẫn khóa lựa chọn hoàn thành khi hồ sơ còn chờ hồ sơ tiên quyết; hai dạng xem còn lại giữ nguyên ô tick. Bài kiểm giao
 diện chạy xanh, đã bấm thử cả hai bản trên máy, chưa đưa lên dev.
@@ -16040,7 +16043,7 @@ Sau buổi đối chiếu tài liệu phân hệ Nhân sự với mã nguồn, �
 đồng lao động sắp hết hạn. Nay hợp đồng đã ký nào hết hạn trong ba mươi ngày tới hoặc đã quá hạn sẽ hiện trên chuông cảnh báo
 và trong tab Việc cần làm của người có quyền xem hợp đồng lao động, chỉ trong phạm vi pháp nhân, phòng ban mà người đó được xem;
 còn từ mười lăm ngày trở xuống hoặc đã quá hạn thì hiện màu đỏ, vì luật lao động buộc báo trước cho người lao động ít nhất mười
-lăm ngày. Trang Tổng quan Nhân sự có thêm thẻ «Hợp đồng lao động sắp hết hạn» liệt kê đủ danh sách, hết hạn sớm nhất lên đầu,
+lăm ngày. Trang Tổng quan Nhân sự có thêm thẻ **Hợp đồng lao động sắp hết hạn** liệt kê đủ danh sách, hết hạn sớm nhất lên đầu,
 bấm vào là mở thẳng tab Hợp đồng của người đó. Hợp đồng của người đã nghỉ việc, hoặc người đã được lập hợp đồng nối tiếp, không
 bị báo nữa; riêng bản nháp nối tiếp chỉ tính khi hợp đồng cũ chưa hết hạn, vì hết hạn rồi mà nháp vẫn chưa ký thì người đó
 đang đi làm không có hợp đồng. Cảnh báo ẩn được bằng nút đánh dấu đã làm ở tab Việc cần làm như các cảnh báo khác. Cảnh báo tính ngay lúc mở xem, không gửi email. Tài liệu lộ trình nhân sự đã ghi mục hợp đồng
@@ -16082,11 +16085,11 @@ Mã nguồn: backend/app/modules/employee/position_service.py · labor_contract/
 - status: xong
 - date: 2026-10-19
 Đã giao làm đường nhập nhân sự bằng tệp Excel ngay ở màn Nhân sự bên giao diện mới, thay cho nút nhập CSV cũ vốn ghi thẳng vào
-bảng, bỏ qua các chốt của màn hồ sơ. Nay bấm «Nhập Excel», chọn tệp, hệ thống chạy thử trước, cho xem từng dòng báo gì, rồi mới ghi
+bảng, bỏ qua các chốt của màn hồ sơ. Nay bấm **Nhập Excel**, chọn tệp, hệ thống chạy thử trước, cho xem từng dòng báo gì, rồi mới ghi
 thật; ghi nhầm thì hoàn tác được cả lô. Tệp nhận đủ hồ sơ khoảng ba mươi tám cột, kể cả các cột nhạy cảm như ngày sinh, căn cước,
 tài khoản ngân hàng. Ô để trống nghĩa là giữ nguyên giá trị cũ, muốn xóa một ô thì ghi đúng chuỗi quy ước; hệ thống không xóa nhân
 sự qua tệp. Mỗi dòng đi qua cùng lõi ghi với màn hồ sơ nên vẫn bị chặn khi trùng email, tạo vòng quản lý, sai chức vụ, và khi chuyển
-sang nghỉ việc thì khóa luôn tài khoản đăng nhập; riêng lúc chạy thử thì chỉ báo «sẽ khóa» chứ không khóa thật. Người nhập chỉ ghi
+sang nghỉ việc thì khóa luôn tài khoản đăng nhập; riêng lúc chạy thử thì chỉ báo **sẽ khóa** chứ không khóa thật. Người nhập chỉ ghi
 được trong phạm vi dữ liệu của mình, và thiếu quyền ghi thông tin nhạy cảm thì các cột đó bị bỏ qua kèm một cảnh báo. Gác quyền ở
 trang quản lý nhập tệp nay đòi cả quyền nhập lẫn quyền nhân sự, tải lại tệp gốc cần quyền xem thông tin nhạy cảm. Hai đường nhập
 CSV cũ của nhân sự và phòng ban đã tắt, trả lời rằng đã ngừng và chỉ sang nhập Excel; nút nhập CSV bên giao diện cũ được ẩn, nút xuất
@@ -16108,12 +16111,12 @@ Mã nguồn: backend/app/modules/import_tool/employee_import.py · employee_impo
 - status: xong
 - date: 2026-10-19
 Cần mỗi hợp đồng lao động lập ở phân hệ Nhân sự có thêm một bản lưu trữ bên phân hệ Văn bản, kèm tệp hợp đồng, mà chỉ người
-đang xem được hợp đồng đó mới đọc được. Nay bấm lập hợp đồng là hệ thống tự sinh một văn bản loại «Hợp đồng lao động»; tệp .docx đã
+đang xem được hợp đồng đó mới đọc được. Nay bấm lập hợp đồng là hệ thống tự sinh một văn bản loại **Hợp đồng lao động**; tệp .docx đã
 sinh và bản scan đã ký được chép sang văn bản, trạng thái văn bản đi theo hợp đồng (nháp, có hiệu lực, hết hiệu lực, lưu trữ). Văn
 bản chỉ để xem: người lao động, văn thư và cả quản trị Văn bản không có quyền hợp đồng lao động đều không thấy ở danh sách, tìm kiếm,
 tổng quan, thư mục, trợ lý AI hay khi gõ thẳng đường dẫn, không sửa, xóa, chia sẻ, sao chép hay ký được, và tiêu đề không chứa lương.
 Việc đồng bộ chạy sau khi hợp đồng đã lưu xong nên có lỗi cũng không làm hỏng hợp đồng. Dòng hợp đồng trong hồ sơ nhân sự có nút mở
-bản lưu trữ. Vai trò Nhân sự mẫu được thêm quyền đọc Văn bản phạm vi «Của tôi»; hệ đang chạy phải tick tay quyền này hoặc bật đồng
+bản lưu trữ. Vai trò Nhân sự mẫu được thêm quyền đọc Văn bản phạm vi **Của tôi**; hệ đang chạy phải tick tay quyền này hoặc bật đồng
 bộ vai trò một lần. Hợp đồng đã có từ trước được bù bằng script chạy tay, có chế độ chạy thử và chế độ gỡ để quay đầu; chưa chạy trên
 máy chủ nào. Sau đợt rà soát có vá thêm hai chỗ lộ: người không đọc được bản lưu trữ không còn dò ra tiêu đề bằng cách khai quan hệ
 tới nó, và dòng nhật ký thao tác của bản lưu trữ (tên tệp có số hợp đồng và họ tên) chỉ hiện cho người đọc được bản lưu trữ, kể cả
@@ -16127,13 +16130,13 @@ khi quay đầu.
 
 Mã nguồn: backend/app/modules/labor_contract/document_archive_sync.py · document_archive_files.py · backend/app/modules/document/labor_contract_archive_access.py · access_service.py · backend/migrations/versions/lbrct02_hdld_van_ban_luu_tru.py · backend/scripts/backfill_hdld_van_ban_luu_tru.py · frontend-v2/src/modules/hr/components/labor-contract-row-actions.tsx · test/backend/test_hdld_van_ban_luu_tru_dong_bo_cr629.py · test/backend/test_hdld_van_ban_luu_tru_quyen_xem_cr629.py
 
-## duoc-CR-629b | Gộp màn mẫu hợp đồng lao động vào tab «Thư viện văn bản mẫu» của phân hệ Văn bản
+## duoc-CR-629b | Gộp màn mẫu hợp đồng lao động vào tab "Thư viện văn bản mẫu" của phân hệ Văn bản
 - status: xong
 - date: 2026-10-19
 Cần mẫu hợp đồng lao động nằm chung chỗ với thư viện văn bản mẫu. Bước đầu làm phần giao diện: màn quản lý mẫu hợp đồng
-chuyển sang tab «Thư viện văn bản mẫu» trong trang Thiết lập văn bản, ở địa chỉ có thêm tham số loại mẫu hợp đồng lao động. Người
+chuyển sang tab **Thư viện văn bản mẫu** trong trang Thiết lập văn bản, ở địa chỉ có thêm tham số loại mẫu hợp đồng lao động. Người
 chỉ có quyền mẫu hợp đồng lao động (Nhân sự) vào được trang và chỉ thấy mẫu hợp đồng; văn thư không có quyền này thì không thấy mẫu
-nào, dù gõ thẳng địa chỉ; ai có cả hai quyền thì chuyển qua lại bằng một công tắc. Menu «Mẫu hợp đồng» của Nhân sự, hai hộp thoại
+nào, dù gõ thẳng địa chỉ; ai có cả hai quyền thì chuyển qua lại bằng một công tắc. Menu **Mẫu hợp đồng** của Nhân sự, hai hộp thoại
 lập hợp đồng và sinh tệp đều dẫn sang chỗ mới, đường cũ tự chuyển hướng, trình soạn mẫu trên web vẫn mở được bằng đường cũ. Dữ liệu,
 API và phân quyền mẫu giữ nguyên, nên hợp đồng đã sinh không bị ảnh hưởng. Việc gộp bảng dữ liệu mẫu (bước hai) chưa làm, sẽ lên kế
 hoạch riêng.
@@ -16144,11 +16147,11 @@ Mã nguồn: frontend-v2/src/modules/document/config/document-settings-tabs.ts �
 - status: xong
 - date: 2026-10-19
 Trước đây 48 biến trong mẫu Word hợp đồng lao động bị cố định trong mã nguồn, muốn thêm một thông tin riêng như số ngày phép hay mức
-thưởng thì phải nhờ lập trình viên. Nay nút «Danh sách biến» ở màn Mẫu hợp đồng mở một trang quản lý riêng: người có phạm vi «tất cả
-pháp nhân» thêm, sửa, ngừng dùng hoặc xóa được biến tùy chỉnh và sửa tên hiển thị, mô tả, ẩn hiện của biến hệ thống; người chỉ quản lý
+thưởng thì phải nhờ lập trình viên. Nay nút **Danh sách biến** ở màn Mẫu hợp đồng mở một trang quản lý riêng: người có phạm vi **tất cả
+pháp nhân** thêm, sửa, ngừng dùng hoặc xóa được biến tùy chỉnh và sửa tên hiển thị, mô tả, ẩn hiện của biến hệ thống; người chỉ quản lý
 một pháp nhân chỉ xem và chép biến. Biến tùy chỉnh có năm kiểu là chữ, chữ nhiều dòng, số, ngày và tiền; biến tiền tự có thêm biến đọc
-số thành chữ. Khi lập hoặc sửa hợp đồng nháp, hộp thoại hiện thêm khối «Thông tin bổ sung cho mẫu» để nhập giá trị; giá trị mặc định
-được sao vào hợp đồng ngay lúc lập nên đổi mặc định sau này không làm đổi hợp đồng đã lập. Biến đặt «Bắt buộc» sẽ chặn bước sinh tệp
+số thành chữ. Khi lập hoặc sửa hợp đồng nháp, hộp thoại hiện thêm khối **Thông tin bổ sung cho mẫu** để nhập giá trị; giá trị mặc định
+được sao vào hợp đồng ngay lúc lập nên đổi mặc định sau này không làm đổi hợp đồng đã lập. Biến đặt **Bắt buộc** sẽ chặn bước sinh tệp
 và bước chuyển sang Đã ký, còn lưu nháp thì không bao giờ bị chặn. Biến đã dùng trong mẫu hoặc đã có hợp đồng nhập giá trị thì khóa mã
 và kiểu, không xóa được mà chỉ ngừng dùng; mẫu cũ chứa biến đã ngừng dùng vẫn sửa và sinh được, giá trị cũ hiện ở chế độ chỉ đọc.
 Giá trị biến được che khỏi nhật ký như lương. Hệ thống đang chạy cần chạy migration, bảng biến hệ thống tự nạp khi khởi động; chưa
@@ -16201,7 +16204,7 @@ bản và người lao động không được thêm quyền nào. Những thao 
 quan hệ, phạm vi áp dụng, gửi duyệt, ký, ban hành, bãi bỏ, đổi loại và xóa, vì sẽ làm lộ lương và căn cước. Việc đồng bộ từ hợp
 đồng không còn xóa tệp do người dùng tải lên: hệ thống đánh dấu những bản sao nó tự chép sang và chỉ thay đổi đúng các bản sao
 đó; khi có phiên bản mới thì bản cũ giữ nguyên bộ tệp. Trang chi tiết văn bản ẩn các nút bị chặn khi mở một bản lưu trữ. Vai trò
-Nhân sự mẫu được thêm quyền ghi Văn bản phạm vi «Của tôi»; hệ đang chạy phải tick tay quyền này. Sau rà soát: tên, tóm tắt, từ khóa, ngày hiệu lực và hết hạn, loại, sổ, pháp nhân, phòng ban, người chịu trách nhiệm của
+Nhân sự mẫu được thêm quyền ghi Văn bản phạm vi **Của tôi**; hệ đang chạy phải tick tay quyền này. Sau rà soát: tên, tóm tắt, từ khóa, ngày hiệu lực và hết hạn, loại, sổ, pháp nhân, phòng ban, người chịu trách nhiệm của
 bản lưu trữ do hợp đồng quyết định nên hiện mờ và không sửa được ở Văn bản; dấu nhận lại văn bản mồ côi không còn làm danh tính nên
 không ai xóa nhầm hay chiếm tệp của hợp đồng khác được; văn bản chỉ gồm tệp đã có tệp nay vẫn có nút tải thêm và gỡ tệp.
 
@@ -16216,7 +16219,7 @@ mức thành thạo và an toàn tài khoản, dựa trên danh sách chỉ số
 chuyển màn, mở và gửi hay bỏ dở biểu mẫu, số kết quả tìm kiếm và lỗi trang, nhưng không ghi từ khóa tìm kiếm, không ghi từng phím
 gõ hay từng cú bấm, và gửi gộp nửa phút một lần nên không làm chậm máy. Máy chủ gom số liệu theo ngày lúc rạng sáng, tính giờ
 ngoài giờ theo lịch làm việc của từng người và trừ ngày lễ, ngày nghỉ phép đã duyệt, rồi mỗi thứ Hai dựng hồ sơ tuần kèm nhãn
-kiểu làm việc và so sánh với nhóm cùng vai trò. Màn «Hồ sơ cách làm việc» nằm trong phân hệ Báo cáo, mặc định chỉ quản trị xem
+kiểu làm việc và so sánh với nhóm cùng vai trò. Màn **Hồ sơ cách làm việc** nằm trong phân hệ Báo cáo, mặc định chỉ quản trị xem
 được và quản trị có thể gán thêm người; chỉ số chưa đo được thì nêu lý do thay vì hiện số 0. Sự kiện thô giữ 90 ngày, số liệu
 gom theo ngày giữ ba năm. Công tắc thu thập mặc định bật theo quyết định của chủ sản phẩm; trước khi lên bản chạy thật cần bộ
 phận nhân sự duyệt thông báo cho nhân viên, trong đó nói rõ hồ sơ có thể được dùng tham khảo khi đánh giá. Đã đo trên trình
@@ -16490,7 +16493,7 @@ Commit: a18dd75f
 
 ### kh-HR1-1-3 | Tệp đã xuất chỉ người xuất hoặc người có quyền xuất toàn hệ tải lại được
 - status: xong
-Lượt rà mã phát hiện tệp xuất được lưu lại ở màn *Nhật ký xuất*, ai vào được màn đó là tải lại được tệp của người khác — kể cả tệp nhân sự do người có quyền nhạy cảm xuất (không bị che). Nay chỉ chính người xuất, hoặc người có quyền Xuất phạm vi «tất cả» trên đúng bảng đó, tải lại được; riêng tệp nhân sự còn đòi thêm quyền xem nhạy cảm phạm vi «tất cả».
+Lượt rà mã phát hiện tệp xuất được lưu lại ở màn *Nhật ký xuất*, ai vào được màn đó là tải lại được tệp của người khác — kể cả tệp nhân sự do người có quyền nhạy cảm xuất (không bị che). Nay chỉ chính người xuất, hoặc người có quyền Xuất phạm vi **tất cả** trên đúng bảng đó, tải lại được; riêng tệp nhân sự còn đòi thêm quyền xem nhạy cảm phạm vi **tất cả**.
 Mã nguồn: `backend/app/modules/export_log/service.py` (`can_download`), `export_log/controller.py`.
 Commit: a18dd75f
 
@@ -16563,7 +16566,7 @@ Mã nguồn: kế hoạch mục HR1-4 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-du
 
 **Điều kiện xong:** có tệp `04`; README Nhân sự hết dòng *chưa có tài liệu*; không còn hồ sơ đang làm thiếu ngày vào làm.
 
-**Kết quả (23/10/2026):** Phần tài liệu đã xong (duoc-CR-673). Tệp mới `04-hop-dong-lao-dong.md` gom ba chức năng trước đây chưa có tài liệu riêng: hợp đồng lao động, quyền mặc định theo chức vụ và nhập Excel nhân sự; hai mục hợp đồng ở cuối tệp hồ sơ nhân sự đã chuyển sang đó. README Nhân sự hết bảng chức năng chưa có tài liệu, kế hoạch theo phân hệ mục Nhân sự được cập nhật cho khớp các việc đã làm ngày 22/10. Còn lại việc nhập bù ngày vào làm cho hồ sơ cũ, chờ phòng Nhân sự gửi dữ liệu; cách nhanh nhất là cột «Ngày vào làm» của màn Nhập Excel.
+**Kết quả (23/10/2026):** Phần tài liệu đã xong (duoc-CR-673). Tệp mới `04-hop-dong-lao-dong.md` gom ba chức năng trước đây chưa có tài liệu riêng: hợp đồng lao động, quyền mặc định theo chức vụ và nhập Excel nhân sự; hai mục hợp đồng ở cuối tệp hồ sơ nhân sự đã chuyển sang đó. README Nhân sự hết bảng chức năng chưa có tài liệu, kế hoạch theo phân hệ mục Nhân sự được cập nhật cho khớp các việc đã làm ngày 22/10. Còn lại việc nhập bù ngày vào làm cho hồ sơ cũ, chờ phòng Nhân sự gửi dữ liệu; cách nhanh nhất là cột **Ngày vào làm** của màn Nhập Excel.
 
 Mã nguồn: kế hoạch mục HR1-5 · `doc/erp/hrm/README.md` §2, §5 · duoc-CR-673 · doc/erp/hrm/04-hop-dong-lao-dong.md
 
@@ -16587,19 +16590,19 @@ Commit: 5d0bcb60
 
 ### kh-HR1-5-4 | Sắp lại tài liệu Nhân sự cho khớp
 - status: xong
-Chuyển hai mục hợp đồng ở cuối tài liệu hồ sơ nhân sự sang tệp mới, để lại một dòng trỏ. Trang mở đầu của bộ tài liệu Nhân sự thêm dòng cho tệp mới và không còn bảng «chức năng chưa có tài liệu». Sửa một dòng cũ ở tài liệu nghỉ phép còn ghi cờ «Bắt buộc đính kèm» chưa có tác dụng, trong khi việc kh-HR1-2 đã làm nó chạy.
+Chuyển hai mục hợp đồng ở cuối tài liệu hồ sơ nhân sự sang tệp mới, để lại một dòng trỏ. Trang mở đầu của bộ tài liệu Nhân sự thêm dòng cho tệp mới và không còn bảng **chức năng chưa có tài liệu**. Sửa một dòng cũ ở tài liệu nghỉ phép còn ghi cờ **Bắt buộc đính kèm** chưa có tác dụng, trong khi việc kh-HR1-2 đã làm nó chạy.
 Mã nguồn: `doc/erp/hrm/README.md` · `01-ho-so-nhan-su.md` · `02-nghi-phep.md`.
 Commit: 5d0bcb60
 
 ### kh-HR1-5-5 | Cập nhật kế hoạch theo phân hệ, mục Nhân sự
 - status: xong
-Kế hoạch viết ngày 22/10 vẫn ghi nhiều việc là chưa làm. Chuyển các việc đã xong (bắt buộc đính kèm, kiểm việc treo trước khi khóa tài khoản, đối chiếu kết sổ phép, sơ đồ tổ chức) lên dòng «Đã có», ghi rõ tình trạng việc chặn xuất tệp nhân sự, và thu gọn việc này về phần dữ liệu còn lại.
+Kế hoạch viết ngày 22/10 vẫn ghi nhiều việc là chưa làm. Chuyển các việc đã xong (bắt buộc đính kèm, kiểm việc treo trước khi khóa tài khoản, đối chiếu kết sổ phép, sơ đồ tổ chức) lên dòng **Đã có**, ghi rõ tình trạng việc chặn xuất tệp nhân sự, và thu gọn việc này về phần dữ liệu còn lại.
 Mã nguồn: `doc/plans/00-ke-hoach-theo-module.md` mục 5.
 Commit: 5d0bcb60
 
 ### kh-HR1-5-6 | Nhập bù ngày vào làm cho hồ sơ cũ
 - status: dang-lam
-Hồ sơ tạo trước 07/09/2026 phần lớn trống ngày vào làm vì lúc đó màn hình chưa có ô nhập. Thiếu ngày này thì thâm niên phép tính bằng 0 (người làm lâu năm không được cộng phép theo bậc), và báo cáo biến động nhân sự lấy ngày tạo hồ sơ thay cho ngày vào làm. Đang chờ phòng Nhân sự gửi dữ liệu; cách nhập là cột «Ngày vào làm» ở màn *Nhập Excel* của danh sách nhân sự. Nên xong trước khi cấp quỹ phép năm 2027.
+Hồ sơ tạo trước 07/09/2026 phần lớn trống ngày vào làm vì lúc đó màn hình chưa có ô nhập. Thiếu ngày này thì thâm niên phép tính bằng 0 (người làm lâu năm không được cộng phép theo bậc), và báo cáo biến động nhân sự lấy ngày tạo hồ sơ thay cho ngày vào làm. Đang chờ phòng Nhân sự gửi dữ liệu; cách nhập là cột **Ngày vào làm** ở màn *Nhập Excel* của danh sách nhân sự. Nên xong trước khi cấp quỹ phép năm 2027.
 
 ## kh-NT1-1 | Quyền xuất và nhập riêng cho mọi màn danh mục (đi cùng HR1-1)
 - status: xong
@@ -16805,14 +16808,14 @@ Mã nguồn: kế hoạch mục HR2-3 · `doc/erp/hrm/02-nghi-phep.md` §10 · d
 
 Mã nguồn: kế hoạch mục HR2-5 · duoc-CR-669 · backend/app/modules/employee/org_chart_controller.py · frontend-v2/src/modules/hr/pages/org-chart-page.tsx · test/backend/test_so_do_to_chuc_cr669.py
 
-## duoc-CR-659 | Bản hợp đồng lao động bên Văn bản có nút «Ban hành» để ký luôn, không đứng mãi ở Nháp
+## duoc-CR-659 | Bản hợp đồng lao động bên Văn bản có nút "Ban hành" để ký luôn, không đứng mãi ở Nháp
 - status: xong
 - date: 2026-10-22
-**Bối cảnh:** từ tab Hợp đồng trên hồ sơ nhân sự bấm vào một hợp đồng thì hệ thống mở bản lưu trữ bên phân hệ Văn bản. Hợp đồng còn nháp thì văn bản cũng nằm ở «Nháp» mà không có nút nào để đi tiếp. Cần với loại hợp đồng lao động chỉ có đúng một nút «Ban hành», và chốt bấm nút đó nghĩa là ký hợp đồng.
+**Bối cảnh:** từ tab Hợp đồng trên hồ sơ nhân sự bấm vào một hợp đồng thì hệ thống mở bản lưu trữ bên phân hệ Văn bản. Hợp đồng còn nháp thì văn bản cũng nằm ở **Nháp** mà không có nút nào để đi tiếp. Cần với loại hợp đồng lao động chỉ có đúng một nút **Ban hành**, và chốt bấm nút đó nghĩa là ký hợp đồng.
 
 **Đã làm**
-- Thêm nút «Ban hành» ở trang văn bản của bản lưu trữ hợp đồng lao động. Nút chỉ hiện khi hợp đồng gốc còn nháp, chưa bị xóa, và người xem có quyền sửa hợp đồng đó trong phạm vi của mình.
-- Bấm nút thì hỏi xác nhận, rồi ký hợp đồng gốc với ngày ký là hôm nay, đúng đường ký đang dùng ở hồ sơ nhân sự. Văn bản tự chuyển sang «Có hiệu lực» và nút biến mất. Hợp đồng còn biến bắt buộc chưa điền thì vẫn bị chặn như khi ký bên Nhân sự.
+- Thêm nút **Ban hành** ở trang văn bản của bản lưu trữ hợp đồng lao động. Nút chỉ hiện khi hợp đồng gốc còn nháp, chưa bị xóa, và người xem có quyền sửa hợp đồng đó trong phạm vi của mình.
+- Bấm nút thì hỏi xác nhận, rồi ký hợp đồng gốc với ngày ký là hôm nay, đúng đường ký đang dùng ở hồ sơ nhân sự. Văn bản tự chuyển sang **Có hiệu lực** và nút biến mất. Hợp đồng còn biến bắt buộc chưa điền thì vẫn bị chặn như khi ký bên Nhân sự.
 - Đường API trả quyền của văn bản trả thêm mã hợp đồng gốc và cờ được ban hành để giao diện biết khi nào bày nút.
 
 **Kết quả:** năm bài kiểm phía máy chủ và hai bài kiểm phía giao diện mới đều qua; bài kiểm cũ của bản lưu trữ và bài BB4 vẫn xanh; typecheck và lint cả cây sạch. Đã mở màn thật trên bản local, thấy nút và hộp xác nhận, bấm Hủy thì hợp đồng vẫn nháp.
@@ -17287,11 +17290,11 @@ Mã nguồn: docker/Dockerfile.api · backend/app/modules/backup/service.py · b
 
 Mã nguồn: backend/app/core/request_middleware.py · backend/app/core/concurrency_gate.py · backend/app/core/config.py · backend/app/main.py · backend/app/modules/assistant/rag/indexer.py · backend/scripts/reindex_help_rag.py · test/backend/test_nhat_ky_khong_chan_vong_su_kien.py · test/backend/test_cong_gioi_han_luot_goi_dong_thoi.py · test/backend/test_stress_*_cr66*.py · frontend-v2/src/modules/hr/utils/org-chart-tree-stress.test.ts
 
-## duoc-CR-671-hdsd | Hướng dẫn sử dụng và dữ liệu trợ lý cho cổng «Hệ thống đang bận» và lệnh dọn kho tìm kiếm
+## duoc-CR-671-hdsd | Hướng dẫn sử dụng và dữ liệu trợ lý cho cổng "Hệ thống đang bận" và lệnh dọn kho tìm kiếm
 - status: xong
 - date: 2026-10-22
 - pic: NSU265
-**Bối cảnh:** sau lượt ép tải duoc-CR-671, người dùng có thể gặp câu «Hệ thống đang bận» vào giờ cao điểm và quản trị có thêm lệnh dọn kho tìm kiếm của trợ lý, nên anh Được dặn cập nhật hướng dẫn sử dụng và dữ liệu cho trợ lý.
+**Bối cảnh:** sau lượt ép tải duoc-CR-671, người dùng có thể gặp câu **Hệ thống đang bận** vào giờ cao điểm và quản trị có thêm lệnh dọn kho tìm kiếm của trợ lý, nên anh Được dặn cập nhật hướng dẫn sử dụng và dữ liệu cho trợ lý.
 
 **Đã làm**
 - Viết bài cho người dùng dưới thẻ Bắt đầu: vì sao gặp câu báo bận, dữ liệu không bị lưu dở, đợi vài giây rồi bấm lại, và khi nào cần báo quản trị.
@@ -17299,7 +17302,7 @@ Mã nguồn: backend/app/core/request_middleware.py · backend/app/core/concurre
 - Gom phần thêm hoặc ghi đè bài dưới thẻ dựng tay thành hàm dùng chung để script Thu mua và script hệ thống cùng dùng.
 - Bổ sung quy trình deploy hai mục: thứ tự nạp bài rồi dọn kho tìm kiếm, và cách đọc câu báo bận; khai bốn biến cấu hình mẫu.
 
-**Kết quả:** trên bản local hai bài đã vào Trung tâm trợ giúp và kho tìm kiếm của trợ lý; hỏi thử «bấm lưu báo hệ thống đang bận có mất dữ liệu không» thì trợ lý tìm đúng bài mới đứng đầu. Khi deploy prod chạy script nạp bài hệ thống một lệnh rồi chạy lệnh dọn kho tìm kiếm theo mục B.6.
+**Kết quả:** trên bản local hai bài đã vào Trung tâm trợ giúp và kho tìm kiếm của trợ lý; hỏi thử **bấm lưu báo hệ thống đang bận có mất dữ liệu không** thì trợ lý tìm đúng bài mới đứng đầu. Khi deploy prod chạy script nạp bài hệ thống một lệnh rồi chạy lệnh dọn kho tìm kiếm theo mục B.6.
 
 Mã nguồn: backend/scripts/seed_help_he_thong_cap_nhat.py · backend/scripts/help_seed_common.py · backend/scripts/seed_help_thu_mua_cap_nhat.py · doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md · .env.example
 
@@ -17335,15 +17338,15 @@ Mã nguồn: frontend/src/pages/PurchaseProgress.tsx · SurveyProgress.tsx · In
 - date: 2026-10-23
 - pic: NSU265
 - tag: Được
-**Bối cảnh:** khi rà cấu trúc phân hệ Dự án để viết sổ cho chuẩn thì phát hiện sổ chỉ đẩy lên được tiêu đề, mô tả, trạng thái, ngày bắt đầu, người phụ trách và tag. Loại việc, hạn và giờ phải vào ERP chọn tay, nên mọi task đi từ sổ đều nằm ở nhóm «chưa chọn loại» của báo cáo *Năng lực theo loại việc* — đúng phần dữ liệu để AI chia việc.
+**Bối cảnh:** khi rà cấu trúc phân hệ Dự án để viết sổ cho chuẩn thì phát hiện sổ chỉ đẩy lên được tiêu đề, mô tả, trạng thái, ngày bắt đầu, người phụ trách và tag. Loại việc, hạn và giờ phải vào ERP chọn tay, nên mọi task đi từ sổ đều nằm ở nhóm **chưa chọn loại** của báo cáo *Năng lực theo loại việc* — đúng phần dữ liệu để AI chia việc.
 
 **Đã làm**
 - Sổ nhận thêm bốn dòng khai báo cho cả mục cha lẫn việc con: *loai* (mã hoặc tên loại việc), *han* (hạn), *gio-uoc* (giờ ước lượng), *gio-thuc* (giờ thực tế).
 - Script tra mã loại việc ra số id ngay trên máy đích, giống cách đang tra mã nhân sự, vì id ở local, dev và prod khác nhau. Mã trùng ở nhiều pháp nhân thì lấy loại dùng chung, vẫn mơ hồ thì dừng và báo, không đoán.
-- Sổ chỉ gửi trường nó có khai; trường không khai thì giữ nguyên giá trị người dùng đã nhập trên ERP. Giờ thực tế gửi cùng lượt với trạng thái «xong» vì máy chủ chỉ nhận giờ thực tế của việc đã xong.
+- Sổ chỉ gửi trường nó có khai; trường không khai thì giữ nguyên giá trị người dùng đã nhập trên ERP. Giờ thực tế gửi cùng lượt với trạng thái **xong** vì máy chủ chỉ nhận giờ thực tế của việc đã xong.
 - Sổ tự chặn lỗi trước khi gọi máy chủ: ngày sai khuôn, giờ ngoài 0–999 hoặc quá 2 số lẻ, khai giờ thực tế cho việc chưa xong, hạn đứng trước ngày bắt đầu.
 
-**Kết quả:** 14 bài kiểm mới xanh (có một bài đưa đúng dữ liệu script gửi qua khuôn và tầng xử lý của máy chủ), 89 bài kiểm cũ của script và loại việc vẫn xanh. Chạy thật trên máy local bằng một sổ thử: lần một tạo task cha và việc con đủ loại việc, hạn, giờ; lần hai báo «không đổi», không gửi thừa; đã xóa dự án thử. Chạy xem trước trên cả sổ 596 mục không lỗi.
+**Kết quả:** 14 bài kiểm mới xanh (có một bài đưa đúng dữ liệu script gửi qua khuôn và tầng xử lý của máy chủ), 89 bài kiểm cũ của script và loại việc vẫn xanh. Chạy thật trên máy local bằng một sổ thử: lần một tạo task cha và việc con đủ loại việc, hạn, giờ; lần hai báo **không đổi**, không gửi thừa; đã xóa dự án thử. Chạy xem trước trên cả sổ 596 mục không lỗi.
 
 **Còn lại:** các mục cũ trong sổ chưa khai loại việc. Cần biết mã loại việc đang dùng trên prod rồi mới điền được, vì khai sai mã là script dừng.
 
@@ -17425,7 +17428,7 @@ Mã nguồn: backend/scripts/sync_task_journal.py (`parse_journal`)
 
 ### duoc-CR-675-3 | Xuất tệp nhân sự hỏi cơ sở dữ liệu một lần cho mỗi dòng
 - status: xong
-Cột «Phòng ban» và «Công ty» được đọc riêng cho từng hồ sơ, nên xuất 2000 người là hơn 2000 lượt hỏi cơ sở dữ liệu cho một lần bấm. Nay nạp trước một lượt, số lượt hỏi không đổi dù bao nhiêu dòng.
+Cột **Phòng ban** và **Công ty** được đọc riêng cho từng hồ sơ, nên xuất 2000 người là hơn 2000 lượt hỏi cơ sở dữ liệu cho một lần bấm. Nay nạp trước một lượt, số lượt hỏi không đổi dù bao nhiêu dòng.
 Mã nguồn: backend/app/modules/employee/controller.py (xuất CSV và Excel)
 
 ### duoc-CR-675-4 | Ba đường xuất Excel của đặt xe chỉ cần quyền Xem
@@ -17503,12 +17506,12 @@ Mã nguồn: test/backend/test_pham_vi_duong_vong.py · test/backend/test_canh_d
 - date: 2026-10-23
 - pic: NSU265
 - tag: Được
-**Bối cảnh:** anh Được muốn ô «Ai duyệt bước này» ở phân hệ Phê duyệt có thêm một lựa chọn lấy người duyệt thẳng từ màn Phân quyền, ví dụ ai có quyền duyệt phiếu đặt xe thì người đó duyệt.
+**Bối cảnh:** anh Được muốn ô **Ai duyệt bước này** ở phân hệ Phê duyệt có thêm một lựa chọn lấy người duyệt thẳng từ màn Phân quyền, ví dụ ai có quyền duyệt phiếu đặt xe thì người đó duyệt.
 
 **Đã làm**
-- Thêm cách chọn người duyệt thứ chín «Người có quyền duyệt (theo phân quyền)»: bước giao cho ai giữ vai trò được tick Duyệt trên chính loại chứng từ của luồng, trong phạm vi dữ liệu của họ.
+- Thêm cách chọn người duyệt thứ chín **Người có quyền duyệt (theo phân quyền)**: bước giao cho ai giữ vai trò được tick Duyệt trên chính loại chứng từ của luồng, trong phạm vi dữ liệu của họ.
 - Màn khai bước bày danh sách người đang giữ quyền kèm vai trò và phạm vi, cảnh báo khi chưa ai giữ quyền.
-- Thử trên dữ liệu thật thì thấy bảy người Quản lý thu mua có quyền duyệt đặt xe phạm vi «Của mình» do seed cấp mọi khóa, nên chỉ tính phạm vi Phòng ban, Công ty và Tất cả.
+- Thử trên dữ liệu thật thì thấy bảy người Quản lý thu mua có quyền duyệt đặt xe phạm vi **Của mình** do seed cấp mọi khóa, nên chỉ tính phạm vi Phòng ban, Công ty và Tất cả.
 - Rà mã tìm ra hai lỗi giao nhầm người và hai lỗi cao, đã sửa hết; ép tải trên MySQL thật với hai trăm người giữ quyền vẫn đúng người.
 - Viết bài hướng dẫn sử dụng mới và nâng cẩm nang trợ lý phần Nghỉ phép.
 
@@ -17531,7 +17534,7 @@ Mã nguồn: backend/app/modules/approval/flow_controller.py · frontend-v2/src/
 
 ### duoc-CR-680-3 | Sửa các lỗi rà mã tìm ra
 - status: xong
-Vai trò Quản trị hoặc phạm vi «Của mình» không còn lọt lại qua bước soi phạm vi; đổi loại chứng từ của luồng không còn làm soi nhầm bảng; Văn bản và Duyệt dấu tạm chưa mở vì quyền đọc và phạm vi ở đó hiểu khác; đường lấy danh sách chỉ nhận ba loại chứng từ được mở.
+Vai trò Quản trị hoặc phạm vi **Của mình** không còn lọt lại qua bước soi phạm vi; đổi loại chứng từ của luồng không còn làm soi nhầm bảng; Văn bản và Duyệt dấu tạm chưa mở vì quyền đọc và phạm vi ở đó hiểu khác; đường lấy danh sách chỉ nhận ba loại chứng từ được mở.
 Mã nguồn: test/backend/test_duyet_theo_quyen_cr680.py · plans/reports/code-reviewer-261023-1322-cr680-duyet-theo-quyen.md
 
 ### duoc-CR-680-4 | Ép tải và tài liệu
@@ -17635,8 +17638,8 @@ Tham chiếu: doc/erp/san-xuat/nghien-cuu/05-san-xuat-van-ban-thong-nhat.md
 **Bối cảnh:** anh Được muốn phiếu đặt xe có thêm hai ô chọn công ty và chọn người phê duyệt, hai ô độc lập; danh sách người duyệt lấy theo cấu hình ai có quyền duyệt, và thư báo đi tới đúng người được chọn.
 
 **Đã làm**
-- Thêm khối «Công ty và người duyệt» vào form đặt xe; công ty mặc định theo hồ sơ người tạo, người duyệt lấy từ những ai có quyền duyệt phiếu đặt xe ở màn Phân quyền.
-- Thư báo gửi duyệt tới đúng người được chọn ở cả hai đường: chưa bật luồng duyệt, và luồng có bước «Người có quyền duyệt»; người được chọn mở và duyệt được phiếu dù phiếu ngoài phạm vi dữ liệu của họ.
+- Thêm khối **Công ty và người duyệt** vào form đặt xe; công ty mặc định theo hồ sơ người tạo, người duyệt lấy từ những ai có quyền duyệt phiếu đặt xe ở màn Phân quyền.
+- Thư báo gửi duyệt tới đúng người được chọn ở cả hai đường: chưa bật luồng duyệt, và luồng có bước **Người có quyền duyệt**; người được chọn mở và duyệt được phiếu dù phiếu ngoài phạm vi dữ liệu của họ.
 - Ép tải tìm ra lỗi có sẵn: nhiều người tạo phiếu cùng lúc thì hầu hết bị lỗi do tranh mã phiếu; đã sửa để mã được cấp lần lượt.
 - Rà mã tìm ra một lỗi cao và bốn lỗi trung bình, đã sửa hết; viết bài hướng dẫn sử dụng mới và cập nhật tài liệu chức năng Đặt xe.
 
@@ -17654,12 +17657,12 @@ Mã nguồn: backend/app/modules/vehicle_booking/approver_picker.py · controlle
 
 ### duoc-CR-681-2 | Thư báo và quyền xem của người được chọn
 - status: xong
-Chưa bật luồng thì chuông và thư chỉ tới người được chọn, người đó xem và bấm duyệt được khi phiếu đang chờ. Có luồng với bước «Người có quyền duyệt» thì bước chỉ giao người được chọn và gửi thư cho người nhận việc.
+Chưa bật luồng thì chuông và thư chỉ tới người được chọn, người đó xem và bấm duyệt được khi phiếu đang chờ. Có luồng với bước **Người có quyền duyệt** thì bước chỉ giao người được chọn và gửi thư cho người nhận việc.
 Mã nguồn: backend/app/modules/vehicle_booking/notify.py · approval_bridge.py · backend/app/modules/approval/permission_approvers.py
 
 ### duoc-CR-681-3 | Hai ô chọn trên form đặt xe
 - status: xong
-Form có khối «Công ty và người duyệt», bỏ chính người đang lập khỏi danh sách, báo rõ người đã chọn mà mất quyền và báo lỗi khi tải danh sách hỏng; trang chi tiết phiếu hiện tên công ty.
+Form có khối **Công ty và người duyệt**, bỏ chính người đang lập khỏi danh sách, báo rõ người đã chọn mà mất quyền và báo lỗi khi tải danh sách hỏng; trang chi tiết phiếu hiện tên công ty.
 Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-form.tsx · booking-approval-routing-fields.tsx · utils/booking-pick-options.ts
 
 ### duoc-CR-681-4 | Sửa lỗi tranh mã phiếu khi nhiều người tạo cùng lúc
@@ -17675,7 +17678,7 @@ Mã nguồn: test/backend/test_dat_xe_chon_nguoi_duyet_cr681.py · doc/erp/dat-x
 ### duoc-CR-681-6 | Chọn công ty khác thì cả hai bên đều thấy phiếu
 - status: xong
 - date: 2026-10-24
-Phiếu lưu thêm công ty của người tạo, chụp lúc tạo; người có phạm vi «Công ty» ở công ty người tạo hoặc công ty đã chọn đều thấy và duyệt được phiếu, công ty thứ ba thì không. Bước «Người có quyền duyệt» chưa chọn người thì giao người giữ quyền ở cả hai công ty. Phiếu cũ được lấp công ty người tạo từ hồ sơ nhân sự.
+Phiếu lưu thêm công ty của người tạo, chụp lúc tạo; người có phạm vi **Công ty** ở công ty người tạo hoặc công ty đã chọn đều thấy và duyệt được phiếu, công ty thứ ba thì không. Bước **Người có quyền duyệt** chưa chọn người thì giao người giữ quyền ở cả hai công ty. Phiếu cũ được lấp công ty người tạo từ hồ sơ nhân sự.
 Mã nguồn: backend/app/core/scoping.py · backend/app/modules/vehicle_booking/model.py · migration cr681vbrqco01 · backend/app/modules/legacy_datxe/builder.py
 
 ### duoc-CR-681-7 | Thư báo cho mọi chặng duyệt và người nhận ủy quyền
@@ -17687,25 +17690,25 @@ Mã nguồn: backend/app/modules/notification/email_queue.py · backend/app/modu
 ### duoc-CR-681-8 | Ô chọn người duyệt hiện mọi người có quyền duyệt
 - status: xong
 - date: 2026-10-24
-Anh Được báo ô chọn người duyệt trống. Nguyên nhân là danh sách đang lọc như lúc bộ máy tự giao việc, bỏ phạm vi «Của mình» và vai trò Quản trị, mà trên hệ chỉ có đúng hai nhóm đó giữ quyền duyệt đặt xe. Nay ô chọn hiện mọi người được tick quyền duyệt ở bất kỳ phạm vi nào; người được chọn vẫn xem và duyệt được phiếu của công ty khác, bước «Người có quyền duyệt» giao đúng người đó.
+Anh Được báo ô chọn người duyệt trống. Nguyên nhân là danh sách đang lọc như lúc bộ máy tự giao việc, bỏ phạm vi **Của mình** và vai trò Quản trị, mà trên hệ chỉ có đúng hai nhóm đó giữ quyền duyệt đặt xe. Nay ô chọn hiện mọi người được tick quyền duyệt ở bất kỳ phạm vi nào; người được chọn vẫn xem và duyệt được phiếu của công ty khác, bước **Người có quyền duyệt** giao đúng người đó.
 Mã nguồn: backend/app/modules/approval/permission_approvers.py · backend/app/modules/vehicle_booking/approver_picker.py
 
 ### duoc-CR-681-9 | Ô chọn có tìm kiếm, ảnh đại diện và logo; người phê duyệt đứng trước công ty
 - status: xong
 - date: 2026-10-24
-Ô chọn dùng chung có tìm kiếm nay hiện được ảnh đầu dòng và dòng chữ phụ; ô «Người phê duyệt» hiện ảnh đại diện, «Mã - Tên» và vai trò cấp quyền duyệt kèm phạm vi, ô «Công ty» hiện logo và mã số thuế, tìm được theo cả mã nhân viên lẫn mã số thuế. Theo mẫu anh Được gửi, ô người phê duyệt đứng trước ô công ty.
+Ô chọn dùng chung có tìm kiếm nay hiện được ảnh đầu dòng và dòng chữ phụ; ô **Người phê duyệt** hiện ảnh đại diện, **Mã - Tên** và vai trò cấp quyền duyệt kèm phạm vi, ô **Công ty** hiện logo và mã số thuế, tìm được theo cả mã nhân viên lẫn mã số thuế. Theo mẫu anh Được gửi, ô người phê duyệt đứng trước ô công ty.
 Mã nguồn: frontend-v2/src/shared/ui/search-select.tsx · option-avatar.tsx · frontend-v2/src/modules/vehicle-booking/components/booking-approval-routing-fields.tsx · utils/booking-pick-options.ts
 
 ### duoc-CR-681-10 | Trang chi tiết phiếu hiện người phê duyệt và công ty
 - status: xong
 - date: 2026-10-26
-Thẻ người yêu cầu ở đầu trang chi tiết phiếu đặt xe nay có hàng «Người phê duyệt» với ảnh đại diện và «Mã - Tên», cạnh «Công ty» với logo; phiếu cũ chưa chọn thì không hiện ô đó. Máy chủ trả thêm mã, ảnh của người duyệt đã chọn và logo công ty khi xem một phiếu.
+Thẻ người yêu cầu ở đầu trang chi tiết phiếu đặt xe nay có hàng **Người phê duyệt** với ảnh đại diện và **Mã - Tên**, cạnh **Công ty** với logo; phiếu cũ chưa chọn thì không hiện ô đó. Máy chủ trả thêm mã, ảnh của người duyệt đã chọn và logo công ty khi xem một phiếu.
 Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-requester-card.tsx · backend/app/modules/vehicle_booking/service.py
 
 ### duoc-CR-681-11 | Ô chọn người phê duyệt trùng đúng danh sách ở màn khai luồng
 - status: xong
 - date: 2026-10-26
-Anh Được thử trên dev thấy bước «Người có quyền duyệt» ở màn khai luồng hiện ba người mà ô chọn trên phiếu hiện nhiều hơn, vì bản trước đã nới ô chọn ra mọi phạm vi kể cả Quản trị. Nay ô chọn, chốt kiểm khi lưu và bước duyệt dùng chung đúng một danh sách: vai trò tick Duyệt đặt xe với phạm vi Phòng ban, Công ty hoặc Tất cả, không tính Quản trị.
+Anh Được thử trên dev thấy bước **Người có quyền duyệt** ở màn khai luồng hiện ba người mà ô chọn trên phiếu hiện nhiều hơn, vì bản trước đã nới ô chọn ra mọi phạm vi kể cả Quản trị. Nay ô chọn, chốt kiểm khi lưu và bước duyệt dùng chung đúng một danh sách: vai trò tick Duyệt đặt xe với phạm vi Phòng ban, Công ty hoặc Tất cả, không tính Quản trị.
 Mã nguồn: backend/app/modules/approval/permission_approvers.py · backend/app/modules/vehicle_booking/approver_picker.py
 
 ### duoc-CR-681-12 | Cập nhật hướng dẫn sử dụng và cẩm nang trợ lý trên dev cho đợt duyệt theo quyền và đặt xe
@@ -17722,7 +17725,7 @@ Mã nguồn: backend/scripts/seed_help_dat_xe_chon_nguoi_duyet.py · backend/scr
 **Bối cảnh:** chiều app cũ sang ERP đang chạy thật còn chiều ngược lại đang tắt, nên mỗi lượt nhận và lượt quét lúc hai giờ mười lăm sáng chép đè phiếu: phiếu điều phối trên ERP lùi về đã duyệt mà còn giữ xe, phiếu hoàn tất hay đóng dấu trên ERP lùi trạng thái. Anh Được giao làm Bước 0 trước khi tính bật hai chiều và chốt không được thay đổi dữ liệu bên app cũ vì bên đó là prod.
 
 **Đã làm**
-- Thêm dấu «ERP đã đụng vào phiếu» tự đóng khi người dùng ERP thay đổi phiếu gốc app cũ; phiếu có dấu thì chiều nhận không chép đè nữa, chỉ nhận hủy hoặc từ chối từ app cũ, phiếu đã chốt thì trạng thái không lùi.
+- Thêm dấu **ERP đã đụng vào phiếu** tự đóng khi người dùng ERP thay đổi phiếu gốc app cũ; phiếu có dấu thì chiều nhận không chép đè nữa, chỉ nhận hủy hoặc từ chối từ app cũ, phiếu đã chốt thì trạng thái không lùi.
 - Lượt nhận khóa dòng phiếu trước khi phân xử để không đè cú bấm trên ERP xảy ra cùng lúc; script sửa lịch sử duyệt không còn đóng dấu nhầm.
 - Migration lấp dấu cho phiếu người dùng ERP đã thao tác trước ngày deploy, dựa vào nhật ký thao tác.
 - Rà mã tìm ra ba lỗi cao và bốn lỗi trung bình, đã sửa hết; tiện vá bài kiểm canh phạm vi bị đỏ do CR-681.
@@ -17734,7 +17737,7 @@ Mã nguồn: backend/scripts/seed_help_dat_xe_chon_nguoi_duyet.py · backend/scr
 Mã nguồn: backend/app/modules/legacy_datxe/erp_ownership.py · service.py · builder.py · migration cr682erpact01 · doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/van-hanh.md §8
 Deploy: alembic upgrade head (cr682erpact01)
 
-### duoc-CR-682-1 | Dấu «ERP đã đụng vào phiếu» và luật không chép đè
+### duoc-CR-682-1 | Dấu "ERP đã đụng vào phiếu" và luật không chép đè
 - status: xong
 Bộ nghe tự đóng dấu khi một cột nghiệp vụ của phiếu gốc app cũ đổi ngoài lượt đồng bộ; chiều nhận đọc dấu để không chép đè, chỉ nhận hủy hoặc từ chối, phiếu đã chốt không lùi trạng thái, không dựng lại phiên duyệt soi gương.
 Mã nguồn: backend/app/modules/legacy_datxe/erp_ownership.py · builder.py · service.py · backend/app/core/database.py
@@ -17872,7 +17875,7 @@ Commit: 77c7bf59 (main = erp-v2) · Deploy: prod api, celery-worker, celery-beat
 - date: 2026-10-27
 - pic: NSU231
 - tag: Được
-Anh Được báo người dùng in phiếu trên giao diện cũ thì bản in dính luôn khung thông báo «Đã có phiên bản mới» với nút Tải lại. Anh muốn bỏ khung đó khỏi bản in, và nếu có bản mới thì ứng dụng tự tải lại vào cuối ngày.
+Anh Được báo người dùng in phiếu trên giao diện cũ thì bản in dính luôn khung thông báo **Đã có phiên bản mới** với nút Tải lại. Anh muốn bỏ khung đó khỏi bản in, và nếu có bản mới thì ứng dụng tự tải lại vào cuối ngày.
 Đã làm xong: khung thông báo được ẩn khi in. Khi có bản mới mà người dùng chưa bấm Tải lại, kể cả đã bấm Để sau, ứng dụng tự tải lại lúc 0 giờ đêm đó; máy ngủ qua 0 giờ thì lúc thức dậy sẽ tải lại ngay. Ứng dụng cũng tự dò bản mới mỗi giờ, vì trước đây tab mở cả ngày không biết là đã có deploy. Khung thông báo ghi thêm một dòng báo giờ tự tải lại. Kiểm kiểu giao diện cũ vẫn đúng bốn lỗi cũ, không có lỗi mới. Phần này chỉ chạy ở bản build nên chưa thử được ở máy local.
 Lượt hai: anh Được thấy người dùng không biết bấm Tải lại nên cứ kẹt ở bản cũ, mà bản cũ không có hẹn 0 giờ. Nay bản mới tự cài ngay, không chờ ai bấm. Lúc cài, nó hỏi từng tab đang mở; tab nào không trả lời là đang chạy bản cũ và được tự tải lại ngay. Tab chạy bản mới thì vẫn hiện thông báo và hẹn tải lại lúc 0 giờ như lượt một. Tab bản cũ chỉ bị tải lại một lần, nếu đúng lúc đó đang nhập dở thì sẽ mất phần chưa lưu.
 Mã nguồn: frontend/src/components/PwaReloadPrompt.tsx · frontend/public/sw-update-old-clients.js · frontend/vite.config.ts
@@ -17928,7 +17931,7 @@ Anh chốt làm bảng kế hoạch theo năm, phòng Nhân sự nhập, chỉ t
 Rà mã xong thì sửa thêm mấy chỗ. Nhập CSV nay tìm phòng ban chỉ theo mã, vì phòng dùng chung cho mọi pháp nhân. Quỹ lương kế hoạch chỉ hiện với người được xem hợp đồng lao động của đúng pháp nhân đó, dời dòng sang pháp nhân khác cũng phải xem được lương ở cả hai bên. Danh sách đang nghỉ thai sản lọc theo phạm vi xem đơn nghỉ. Báo cáo yêu cầu sửa hồ sơ đòi quyền sửa hồ sơ. Mốc nghỉ hưu tính tới hết tháng đủ tuổi, có thêm chỉ số người đã quá tuổi vẫn đang làm. Phòng họp tính cả khung 23 giờ tới 24 giờ và chia giờ đặt theo từng khung.
 Soát trên trình duyệt với ba vai thì thấy báo cáo Quỹ lương vẫn lộ quỹ lương kế hoạch cho người chỉ được xem hợp đồng trong phạm vi phòng; đã chặn. Theo anh chốt, pháp nhân có kế hoạch mà chưa có hợp đồng ra thành dòng riêng, và đang nghỉ thai sản đếm cả đơn đã duyệt lẫn hồ sơ ở trạng thái nghỉ thai sản. Biểu mẫu kế hoạch lưu được khi ô lương trống mà không đè số lương đang bị che, lỗi nhập tệp CSV ra tiếng Việt, báo cáo yêu cầu sửa hồ sơ chỉ hiện trên menu với người có quyền sửa hồ sơ. Đã xóa dữ liệu thử ở local.
 Bài kiểm backend 716 bài xanh, giao diện 1823 bài xanh, kiểm kiểu và lint 0 lỗi. Có thêm 1 bài hướng dẫn tổng và 21 bài con cho nhóm báo cáo Nhân sự.
-Lưu ý khi deploy: vai trò Nhân sự trên hệ đang chạy không tự có khóa quyền «Nhân sự › Kế hoạch nhân sự», phải tick tay; báo cáo 25 tới 29 lúc đầu chỉ quản trị thấy, giao thêm ở tab Báo cáo; người dùng đăng nhập lại mới thấy.
+Lưu ý khi deploy: vai trò Nhân sự trên hệ đang chạy không tự có khóa quyền **Nhân sự › Kế hoạch nhân sự**, phải tick tay; báo cáo 25 tới 29 lúc đầu chỉ quản trị thấy, giao thêm ở tab Báo cáo; người dùng đăng nhập lại mới thấy.
 Mã nguồn: plans/261027-1045-kho-mau-bao-cao-nhan-su/phase-16…21, backend/app/modules/headcount_plan/, migration hcplan01
 
 ## duoc-CR-690 | Kế hoạch nhân sự theo kỳ: định biên theo vị trí, khoản chi phí tự định nghĩa, căn cứ duyệt
@@ -17941,7 +17944,7 @@ Làm lại theo thiết kế đã chốt: người dùng chọn loại kỳ năm
 Đã làm xong ba màn mới là Kế hoạch nhân sự, Mẫu khoản chi phí và Nhóm chi phí, có sẵn một mẫu gợi ý tám khoản để người dùng sửa. Kế hoạch đã lưu có thêm dòng thực tế và còn dư so với hợp đồng lao động. Báo cáo định biên lấy kế hoạch có hiệu lực ở tháng cuối kỳ và xem được theo vị trí; báo cáo quỹ lương có năm chỉ số kế hoạch mới. Kế hoạch nhập ở đợt 4 đã tự chuyển sang khuôn mới.
 Rà mã tìm ra hai chỗ lộ lương: dòng thực tế ở trang kế hoạch và gợi ý lương bình quân đọc hợp đồng không qua phạm vi người xem. Đã chặn, kèm khóa cấu trúc khoản với người không xem được lương, bắt buộc chọn tháng cho khoản tính theo lần, và che dòng tổng của báo cáo quỹ lương khi có thể suy ngược ra lương nhóm nhỏ. Soát trên trình duyệt với tài khoản không được xem lương và tài khoản bị loại trừ một phòng đều đạt; dữ liệu thử ở local đã xóa.
 Bài kiểm backend 718 bài xanh, giao diện hơn 2200 bài xanh, kiểm kiểu 0 lỗi. Bài hướng dẫn có 23 bài, thêm bài về mẫu khoản chi phí.
-Lưu ý khi deploy: khóa quyền vẫn là «Nhân sự › Kế hoạch nhân sự»; vai trò nào cần lập kế hoạch phải có thêm, sửa, xóa của khóa đó.
+Lưu ý khi deploy: khóa quyền vẫn là **Nhân sự › Kế hoạch nhân sự**; vai trò nào cần lập kế hoạch phải có thêm, sửa, xóa của khóa đó.
 Mã nguồn: doc/erp/hrm/06-ke-hoach-nhan-su.md, plans/261027-1045-kho-mau-bao-cao-nhan-su/phase-22…25, backend/app/modules/headcount_plan/, migration hcplan02, hcplan03
 
 ## duoc-CR-690-don-gian-hoa | Đơn giản hóa phần khoản chi phí của kế hoạch nhân sự
@@ -18117,8 +18120,8 @@ Mã nguồn: backend/app/modules/purchase_order (service.list_display_names, con
 **Bối cảnh:** phiếu đặt xe chọn sẵn người phê duyệt chỉ giao việc duyệt cho đúng người được chọn; anh Được muốn người khác có cùng quyền duyệt đặt xe cũng duyệt được.
 
 **Đã làm**
-- Bước «Người có quyền duyệt» nay giao cho người được chọn cộng mọi người giữ quyền mà phạm vi phủ phiếu; người được chọn vẫn đứng đầu và vẫn được giao dù phạm vi không phủ.
-- Chuông và thư «chờ bạn duyệt» chỉ gửi người được chọn; người cùng quyền thấy việc ở danh sách việc chờ duyệt và có nút Duyệt trên phiếu.
+- Bước **Người có quyền duyệt** nay giao cho người được chọn cộng mọi người giữ quyền mà phạm vi phủ phiếu; người được chọn vẫn đứng đầu và vẫn được giao dù phạm vi không phủ.
+- Chuông và thư **chờ bạn duyệt** chỉ gửi người được chọn; người cùng quyền thấy việc ở danh sách việc chờ duyệt và có nút Duyệt trên phiếu.
 - Khi chưa bật luồng duyệt, người có quyền duyệt với phạm vi phủ phiếu vốn đã duyệt được; thư vẫn chỉ tới người được chọn.
 - Viết script cho phiếu đang chờ: xem thử mặc định, có cờ ghi thật, chạy lại không đẻ thêm và không gửi thư.
 
@@ -18343,7 +18346,7 @@ Mã nguồn: doc/erp/nghien-cuu/erpnext/03-chuc-nang-nhan-su-erpnext-va-doi-chie
 - Thẻ của các tab khác được làm phẳng ngay trong trang để cả màn đồng một kiểu.
 - Ngày sinh bị che với người không có quyền xem thông tin nhạy cảm nên dòng sinh nhật không bao giờ hiện cho họ.
 - Sửa bài hướng dẫn nhập lương cho đúng chỗ mới của nhóm Lương.
-- Sửa đường dẫn bị lặp «Nhân sự › Nhân sự» rồi «Nhân sự /» trên màn hồ sơ: thanh trên cùng (dùng chung mọi phân hệ) không lặp khi mục menu trùng tên phân hệ và cho bấm về danh sách khi đang ở trang chi tiết; tiêu đề trang thay chữ bằng nút mũi tên quay lại.
+- Sửa đường dẫn bị lặp **Nhân sự › Nhân sự** rồi **Nhân sự /** trên màn hồ sơ: thanh trên cùng (dùng chung mọi phân hệ) không lặp khi mục menu trùng tên phân hệ và cho bấm về danh sách khi đang ở trang chi tiết; tiêu đề trang thay chữ bằng nút mũi tên quay lại.
 
 **Kết quả:** kiểm tra kiểu sạch, kiểm lỗi cú pháp không thêm cảnh báo; 1822 bài kiểm giao diện của phân hệ Nhân sự, Hồ sơ và lớp dùng chung đều xanh, trong đó 25 bài mới. Agent rà mã không thấy lỗi chặn, hai mục nên sửa đã sửa. Đã xem trên máy local ở khổ 1856, 1280 và 390 điểm ảnh. Đã lên nhánh erp-v2; chưa chạy lại seed bài hướng dẫn trên dev.
 
@@ -18377,7 +18380,7 @@ Mã nguồn: doc/erp/nghien-cuu/erpnext/04-hrms-chuc-nang-va-lien-ket.md · doc/
 **Bối cảnh:** anh Được muốn phần lịch sử thao tác trên hồ sơ nhân sự có giao diện giống khối Hoạt động của nexterp; đã chốt chỉ làm giao diện, không đổi máy chủ.
 
 **Đã làm**
-- Thay khối lịch sử dạng thẻ bằng khối *Hoạt động*: đường dọc có chấm, mỗi dòng là một câu như «Dego Admin đã cập nhật Phòng ban · 3 ngày trước», dòng tạo mới ghi «đã tạo hồ sơ này»; rê chuột vào thời gian thấy ngày giờ đầy đủ.
+- Thay khối lịch sử dạng thẻ bằng khối *Hoạt động*: đường dọc có chấm, mỗi dòng là một câu như **Dego Admin đã cập nhật Phòng ban · 3 ngày trước**, dòng tạo mới ghi **đã tạo hồ sơ này**; rê chuột vào thời gian thấy ngày giờ đầy đủ.
 - Tên cột trong nhật ký được dịch ra đúng chữ trên form (Phòng ban, Công ty, Nơi làm việc…); cột kỹ thuật bị bỏ khỏi câu.
 - Gộp các dòng nhật ký cùng một lượt lưu làm một — trước đây một lần lưu có thể hiện ba dòng giống hệt nhau.
 - Quản trị có thêm liên kết *Chi tiết* sang màn nhật ký hệ thống để xem giá trị trước và sau.
@@ -18385,7 +18388,7 @@ Mã nguồn: doc/erp/nghien-cuu/erpnext/04-hrms-chuc-nang-va-lien-ket.md · doc/
 
 **Kết quả:** kiểm tra kiểu và kiểm lỗi cú pháp sạch; 1417 bài kiểm của phân hệ Nhân sự và khối nhật ký đều xanh, trong đó 8 bài mới cho phần dựng câu và gộp dòng. Đã xem trên máy local. Đã lên nhánh erp-v2.
 
-**Còn lại:** nhật ký hiện chỉ lưu tên trường đã đổi cho dòng thời gian, nên câu chưa có dạng «từ X sang Y» như nexterp; muốn có thì cần thêm phần máy chủ đọc giá trị trước và sau (đã có sẵn trong sổ thay đổi) và che trường nhạy cảm, lương.
+**Còn lại:** nhật ký hiện chỉ lưu tên trường đã đổi cho dòng thời gian, nên câu chưa có dạng **từ X sang Y** như nexterp; muốn có thì cần thêm phần máy chủ đọc giá trị trước và sau (đã có sẵn trong sổ thay đổi) và che trường nhạy cảm, lương.
 
 Mã nguồn: frontend-v2/src/shared/audit/audit-activity-feed.tsx · describe-audit-entry.ts · frontend-v2/src/modules/hr/utils/employee-field-labels.ts · frontend-v2/src/modules/hr/pages/employee-detail-page.tsx
 
@@ -18398,16 +18401,16 @@ Mã nguồn: frontend-v2/src/shared/audit/audit-activity-feed.tsx · describe-au
 
 **Đã làm**
 - Đọc mã sơ đồ tổ chức của nexterp rồi dựng lại bằng React: khung vẽ kéo thả có nền chấm, kéo chuột để dời, Ctrl hoặc ⌘ cộng cuộn chuột để phóng to thu nhỏ, có phím tắt và thanh công cụ ở góc dưới trái.
-- Mỗi người là một thẻ có vòng chữ viết tắt tô màu, tên, chức vụ, chữ «Bạn» trên thẻ của mình; cây nối theo người quản lý trực tiếp bằng đường kẻ bo góc, nhóm đông người mà không ai có cấp dưới thì xếp dọc cho gọn.
+- Mỗi người là một thẻ có vòng chữ viết tắt tô màu, tên, chức vụ, chữ **Bạn** trên thẻ của mình; cây nối theo người quản lý trực tiếp bằng đường kẻ bo góc, nhóm đông người mà không ai có cấp dưới thì xếp dọc cho gọn.
 - Dưới thẻ người quản lý có nút ghi số cấp dưới kèm ba vòng xem trước; bấm là mở nhóm, sơ đồ giữ thẻ đứng yên rồi tự dời và thu nhỏ cho cả nhóm vừa khung.
 - Bấm thẻ ra khung thông tin: mã, phòng ban, số cấp dưới, người quản lý (bấm để nhảy tới), nút mở hồ sơ.
 - Có ô tìm người, nút tìm chính mình, nút mở hết hoặc thu gọn, hai kiểu vẽ trên xuống dưới và trái sang phải (nhớ lựa chọn), điện thoại thì xếp dọc; lọc theo pháp nhân (mặc định pháp nhân của mình) và theo phòng ban có cả phòng con.
-- Gỡ phần dựng cây phòng ban cũ không còn dùng, viết bài kiểm mới cho phần dựng cây người kể cả vòng quản lý và chuỗi 2000 cấp; viết lại bài hướng dẫn «Xem Sơ đồ tổ chức».
-- Vá thêm cho duoc-CR-708: khối «Ảnh CCCD» ở tab Giấy tờ & BHXH của hồ sơ nhân sự bị lệch lề, nay thành một nhóm gập mở như các nhóm khác.
+- Gỡ phần dựng cây phòng ban cũ không còn dùng, viết bài kiểm mới cho phần dựng cây người kể cả vòng quản lý và chuỗi 2000 cấp; viết lại bài hướng dẫn **Xem Sơ đồ tổ chức**.
+- Vá thêm cho duoc-CR-708: khối **Ảnh CCCD** ở tab Giấy tờ & BHXH của hồ sơ nhân sự bị lệch lề, nay thành một nhóm gập mở như các nhóm khác.
 
 **Kết quả:** kiểm tra kiểu và kiểm lỗi cú pháp sạch; 1410 bài kiểm của phân hệ Nhân sự đều xanh. Đã xem trên máy local ở khổ màn rộng và điện thoại: mở nhóm, khung thông tin, tìm chính mình, mở hết ở kiểu trái sang phải đều chạy. Đã lên nhánh erp-v2.
 
-**Còn lại:** chưa làm phần Danh bạ, xuất sơ đồ ra ảnh, dấu «Đang nghỉ» và sinh nhật trên thẻ như nexterp; thẻ chưa có ảnh đại diện thật (đường API sơ đồ chưa trả ảnh); bài hướng dẫn mới nạp ở local, lên dev cần chạy lại seed và nạp lại kho tìm kiếm của trợ lý.
+**Còn lại:** chưa làm phần Danh bạ, xuất sơ đồ ra ảnh, dấu **Đang nghỉ** và sinh nhật trên thẻ như nexterp; thẻ chưa có ảnh đại diện thật (đường API sơ đồ chưa trả ảnh); bài hướng dẫn mới nạp ở local, lên dev cần chạy lại seed và nạp lại kho tìm kiếm của trợ lý.
 
 Mã nguồn: frontend-v2/src/modules/hr/pages/org-chart-page.tsx · components/org-chart-board.tsx · org-chart-canvas.tsx · org-chart-tree-node.tsx · org-chart-person-card.tsx · org-chart-team-toggle.tsx · org-chart-person-popover.tsx · utils/org-chart-forest.ts · backend/scripts/seed_help_nhan_su.py
 
@@ -18484,7 +18487,7 @@ Mã nguồn: frontend-v2/src/app/layouts/resolve-module-breadcrumb.ts · module-
 
 **Kết quả:** bảy mươi bài kiểm máy chủ mới đều xanh; bộ kiểm nghỉ phép, bộ máy duyệt và phạm vi dữ liệu chạy lại xanh (645, 1122, 1262 bài) trừ một bài trợ lý AI về phiếu đặt xe vốn đã đỏ trên mã gốc. Giao diện: kiểm tra kiểu và kiểm lỗi cú pháp sạch, 1841 bài kiểm xanh. Đã thử trên máy local trọn vòng lập phiếu nghỉ bù, gửi duyệt, duyệt và thấy quỹ nghỉ bù tăng một ngày. Đã lên nhánh erp-v2.
 
-**Còn lại:** trên dev và prod các vai trò cũ chưa có quyền phiếu nghỉ bù, phải tick ở màn Phân quyền hoặc đồng bộ quyền một lần; muốn phiếu nghỉ bù đi theo luồng duyệt thì quản trị khai luồng và bật bộ máy cho loại phiếu này; cần bật cờ «Loại nhận ngày nghỉ bù» cho một loại nghỉ có tính quỹ.
+**Còn lại:** trên dev và prod các vai trò cũ chưa có quyền phiếu nghỉ bù, phải tick ở màn Phân quyền hoặc đồng bộ quyền một lần; muốn phiếu nghỉ bù đi theo luồng duyệt thì quản trị khai luồng và bật bộ máy cho loại phiếu này; cần bật cờ **Loại nhận ngày nghỉ bù** cho một loại nghỉ có tính quỹ.
 
 Mã nguồn: backend/app/modules/leave/accrual_service.py · block_period_service.py · comp_request_service.py · comp_approval_bridge.py · balance_service.py · backend/app/modules/approval/entity_hooks.py · migration lvacc715, lvblk715, lvcmp715 · frontend-v2/src/modules/hr (loại nghỉ, ngày cấm nghỉ, nghỉ bù)
 
@@ -18516,7 +18519,7 @@ Mã nguồn: frontend-v2/src/shared/crud/crud-detail-flat-layout.tsx · crud-det
 **Bối cảnh:** sau khi làm xong Cài đặt nhân sự, nghỉ phép kiểu nexterp và trang Loại nghỉ bố cục phẳng, anh Được dặn cập nhật hướng dẫn sử dụng, cổng MCP, bot AI và tài liệu cho khớp.
 
 **Đã làm**
-- Sửa mười hai bài hướng dẫn Nghỉ phép và các bài Nhân sự cho khớp nhãn, menu và luật trên màn hình: thêm Nghỉ bù, Ngày cấm nghỉ, cách cấp quỹ, hạn mức theo nhóm, ứng phép, ba tab Cài đặt nhân sự; bỏ những đoạn đã cũ như luật nộp trước N ngày và câu «không có ứng phép».
+- Sửa mười hai bài hướng dẫn Nghỉ phép và các bài Nhân sự cho khớp nhãn, menu và luật trên màn hình: thêm Nghỉ bù, Ngày cấm nghỉ, cách cấp quỹ, hạn mức theo nhóm, ứng phép, ba tab Cài đặt nhân sự; bỏ những đoạn đã cũ như luật nộp trước N ngày và câu **không có ứng phép**.
 - Viết thêm phần nghỉ phép kiểu nexterp vào tài liệu chức năng Nghỉ phép, tab Nhân viên vào tài liệu Hồ sơ nhân sự, số ngày báo hết hạn vào tài liệu Hợp đồng lao động; đánh dấu các mục đã có trong tài liệu nghiên cứu nexterp.
 - Thêm công cụ AI soạn phiếu xin nghỉ bù, dùng chung cho cổng MCP, Trợ lý web và bot Telegram, xác nhận bằng bước xác nhận bản nháp như các phiếu khác.
 - Công cụ xem quỹ phép đọc đúng số dùng được, có ngày nghỉ bù và phần chưa tới tháng; bản nháp đơn nghỉ báo trước đơn lùi ngày, chưa đủ ngày vào làm, ngày cấm nghỉ và ứng phép; đề xuất duyệt không bao giờ cho người tự duyệt phiếu nghỉ bù của mình.
@@ -18527,3 +18530,45 @@ Mã nguồn: frontend-v2/src/shared/crud/crud-detail-flat-layout.tsx · crud-det
 **Còn lại:** chưa nạp lại kho tìm kiếm trợ giúp vì máy local tắt cờ RAG, sẽ chạy trên dev lúc deploy cùng script xuất bản cẩm nang; Trợ lý web chưa có nút mở biểu mẫu phiếu nghỉ bù; câu tóm tắt của cẩm nang Nghỉ phép trên dev và prod phải sửa tay ở màn Bộ skill.
 
 Mã nguồn: backend/app/modules/assistant/tools/leave_comp_tool.py · leave_tool.py · draft_tool.py · approval_action_tool.py · backend/app/modules/agent_hub/draft_create.py · mcp.py · ai_skill/seed_handbook/40-nghi-phep.md · 60-nhan-su-ho-so.md · backend/scripts/seed_help_nghi_phep.py · seed_help_nhan_su.py · publish_handbook_update.py · doc/erp/hrm/01, 02, 04
+
+## duoc-CR-717 | Nghỉ phép đủ như nexterp: chính sách nghỉ phép, phân bổ chính sách, báo cáo làm việc ngày lễ
+- status: xong
+- date: 2026-11-03
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được gửi ảnh menu Nghỉ phép của nexterp và dặn **làm đủ theo như nexterp luôn nha**. Đối chiếu mười hai mục thì sau CR-715 còn thiếu gói chính sách nghỉ phép gán riêng cho từng người, màn gán hàng loạt, báo cáo người đi làm ngày lễ và bảng quỹ tổng hợp theo người. Kỳ nghỉ phép được anh bỏ, quỹ phép giữ theo năm dương lịch. Chín quyết định của kế hoạch đều theo phương án (a).
+
+**Đã làm**
+- Thêm danh mục *Chính sách nghỉ phép* (thẻ thứ tư của Nghỉ phép ▸ Thiết lập): mỗi chính sách là một gói loại nghỉ kèm số ngày mỗi năm, có ba tab *Thông tin*, *Loại nghỉ & số ngày*, *Đang phân bổ*; dùng chung khóa quyền Loại nghỉ, không thêm khóa mới.
+- Thêm mục menu *Phân bổ chính sách*: gán chính sách cho một người kèm xem trước hạn mức năm nay trước và sau, ô *Tính lại hạn mức năm nay cho quỹ đã cấp* mặc định bật, ô *Kết thúc chính sách đang hiệu lực* khi chồng ngày; trang phân bổ hàng loạt tối đa 500 người; nút *Kết thúc* và *Xóa* đều tính lại quỹ được.
+- Hạn mức nay lấy theo thứ tự chính sách của người, rồi hình thức nhân viên, cấp bậc, hạn mức của loại nghỉ; loại không có trong chính sách vẫn theo luật của loại. Đổi chính sách giữa năm thì chia theo tháng với mốc ngày 15 (12 ngày lên 15 ngày từ 01/07 thành 13,5 ngày); phân bổ bắt đầu từ ngày vào làm hoặc trong tháng vào làm thì áp cả năm theo số của chính sách. Người chưa được phân bổ nhận đúng con số như trước.
+- Sau lượt rà mã đã siết: không ai trừ quản trị được tự tạo, sửa hay xóa phân bổ của chính mình; người được phân bổ phải nằm trong phạm vi ghi quỹ phép và còn đang làm; đường ghi khóa hồ sơ rồi đọc có khóa để hai người làm cùng lúc không lọt chồng ngày; phân bổ hàng loạt lưu trọn một lần, số truy vấn cố định.
+- Thêm báo cáo khóa 30 *Làm việc vào ngày lễ, ngày nghỉ* ở Báo cáo ▸ Nhân sự, lấy nguồn từ phiếu nghỉ bù (công ty không chấm công), mặc định chỉ phiếu đã duyệt, có ô *Gồm phiếu chờ duyệt* và lọc *Loại ngày*; người được giao phải đăng nhập lại mới thấy.
+- Màn *Quỹ phép năm* có hai thẻ *Theo dòng quỹ* và *Theo nhân sự* (mỗi người một dòng, mỗi loại nghỉ một cột, xuất Excel); hộp *Cấp quỹ năm* lọc được theo loại nghỉ, pháp nhân, phòng ban, hình thức nhân viên, cấp bậc; báo cáo Quỹ phép năm thêm cột *Nghỉ bù cộng thêm*; chi tiết dòng quỹ ghi rõ chính sách đang áp.
+- Sửa hộp thoại dùng chung bị tràn ngang khi nội dung rộng (thấy ở hộp *Đối chiếu kết sổ*).
+- Viết hai bài hướng dẫn mới *Chính sách nghỉ phép* và *Phân bổ chính sách*, sửa bài quỹ phép của Nhân sự, bài hạn mức, bài loại nghỉ, bài phân quyền, thêm bài báo cáo khóa 30; viết mục 15 của tài liệu chức năng Nghỉ phép, cập nhật tài liệu nghiên cứu nexterp và luật cho trợ lý lập trình.
+- Công cụ AI xem quỹ phép trả thêm chính sách đang áp cho người hỏi; cẩm nang AI Nghỉ phép thêm phần chính sách, phân bổ và báo cáo khóa 30, đã xuất bản phiên bản 7 trên máy local.
+
+**Kết quả:** 182 bài kiểm máy chủ của CR này xanh (chính sách, hàng loạt, lượt rà mã, báo cáo khóa 30, quỹ tổng hợp, trợ lý AI); các bộ kiểm phạm vi dữ liệu, gác báo cáo và trợ lý liên quan xanh. Giao diện kiểm tra kiểu và kiểm lỗi cú pháp sạch, bộ kiểm phân hệ Nhân sự và Báo cáo xanh. Bài hướng dẫn seed lại hai lần trên máy local không lỗi (cây Nghỉ phép 14 bài, cây Báo cáo Nhân sự 21 bài, mọi liên kết chéo trỏ đúng bài). Mã đang ở nhánh erp-v2 trên máy local, chưa commit.
+
+**Còn lại:** chưa nạp lại kho tìm kiếm trợ giúp vì máy local tắt cờ RAG, sẽ chạy trên dev lúc deploy cùng script xuất bản cẩm nang; trên dev và prod phải đăng nhập lại để thấy báo cáo khóa 30 và giao báo cáo cho phòng Nhân sự ở tab Báo cáo; chờ duyệt commit.
+
+Mã nguồn: backend/app/modules/leave/policy_*.py · holiday_work_report_*.py · balance_matrix_*.py · balance_service.py · accrual_service.py · balance_report_spec.py · migration lvpol717 · core/report_keys.py · assistant/tools/leave_tool.py · report_summary_tool.py · frontend-v2/src/modules/hr (leave-policy-*, leave-balance-matrix-*, leave-balance-allocate-dialog) · modules/report (holiday-work-report-*) · shared/ui/dialog.tsx · backend/scripts/seed_help_nghi_phep.py · seed_help_bao_cao_nhan_su.py · ai_skill/seed_handbook/40-nghi-phep.md · doc/erp/hrm/02-nghi-phep.md
+
+## duoc-CR-718 | Bỏ ngoặc kép góc còn sót trong tài liệu, sổ và mã nguồn, thay bằng in đậm
+- status: xong
+- date: 2026-11-03
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** sau đợt bao-CR-695 vẫn còn ngoặc kép góc trong tài liệu, sổ nhật ký, bài kiểm và phần mã mới của các đợt nghỉ phép; luật chung mới của bao-CR-712 cấm dùng ký tự này, và yêu cầu đổi hết sang **in đậm**.
+
+**Đã làm**
+- Đổi trong 133 tệp tài liệu markdown, gồm cả sổ nhật ký và change-log: khoảng 4.900 chỗ thành **in đậm**, khoảng 600 chỗ thành nháy thẳng ở chỗ nằm trong khối mã, nằm trong chữ đã in đậm hoặc ở dòng tiêu đề mục sổ (tên task trên Dự án là chữ trơn).
+- Đổi 289 cặp trong 112 tệp giao diện: chữ hiện trên màn thành chữ in đậm thật, chú thích và chuỗi thường thành nháy thẳng.
+- Đổi khoảng 1.100 chỗ trong 419 tệp Python, phần lớn là bài kiểm: chú thích, docstring và câu báo lỗi thành nháy thẳng; mã dò ký tự này trong chữ người gõ giữ nguyên.
+- Thêm luật số 9 ở đầu sổ nhật ký: không dùng ngoặc kép góc, dùng **in đậm**.
+- Dời hai thư mục kế hoạch nghỉ phép về thư mục kế hoạch của phân hệ Nhân sự theo luật tài liệu mới.
+
+**Kết quả:** kiểm tra kiểu giao diện sạch; các bài kiểm của phần đã đổi chạy xanh, chỉ còn những bài vốn đã đỏ trên mã gốc; không đoạn tài liệu nào bị lệch dấu in đậm.
+
+Mã nguồn: doc/, .claude/, frontend-v2/src, backend/app, backend/scripts, test/backend

@@ -23,7 +23,7 @@
 - Dòng thu hồi không tính (cả cho phép lẫn cấm: thu hồi dòng cấm → thấy lại).
 - `valid_to` hôm qua / `valid_from` ngày mai → không tính.
 - Tài khoản không có `employee_id` và không vai trò → `set()`, không nổ.
-- Số truy vấn của `viewable_keys` = 1 (đếm bằng event listener, cùng khuôn test «gom SQL» sẵn có).
+- Số truy vấn của `viewable_keys` = 1 (đếm bằng event listener, cùng khuôn test **gom SQL** sẵn có).
 
 `test_phan_quyen_bao_cao_cau_hinh_api.py`
 - `GET` cần `role.read` (không có → 403); `POST/DELETE` cần `role.write`.

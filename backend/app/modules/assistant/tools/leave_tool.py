@@ -15,6 +15,9 @@ Ba ràng buộc của phân hệ Nghỉ phép mà tool này phải tuân, không
 * **Read-only tuyệt đối.** `balance_service.ensure_balance()` vừa đọc vừa CẤP
   PHÁT một dòng quỹ mới — tool không được gọi nó (luật 4 ở `base.py`). Loại nghỉ
   chưa ai cấp quỹ thì trả về với cờ `allocated=False` chứ không tự đẻ dòng.
+* **Chính sách nghỉ phép** (duoc-CR-717): `policy` + `policy_name` / `policy_annual_days` từng loại đọc qua
+  `policy_allocation.load_assignments` / `load_lines` (không khóa, không ghi) — để trả lời "vì sao hạn mức của tôi
+  khác người khác". Con số hạn mức vẫn là `allocated_days` của dòng quỹ.
 
 Gác quyền: `leave_request.read`, cùng lý lẽ với `GET /api/leave-requests/tools/my-balance`
 — đây là quỹ của CHÍNH người hỏi, ai nộp được đơn thì phải thấy được số còn lại;
@@ -30,7 +33,9 @@ vào màn Nghỉ phép.
 """
 from datetime import date
 
-from app.modules.leave import balance_service
+from app.core.vn_time import vn_today
+from app.modules.leave import balance_service, policy_allocation
+from app.modules.leave.policy_model import LeavePolicy
 from app.modules.leave.balance_model import LeaveBalance
 from app.modules.leave.catalog_model import LeaveType
 from app.modules.leave.constants import (LEAVE_ACCRUAL_MODE_LABELS, LEAVE_REQUEST_STATUS_LABELS,
@@ -77,7 +82,8 @@ _DESC = (
     "khỏi số còn lại), và kèm `url` dạng link để người dùng bấm mở đơn. Số còn nghỉ được là "
     "`remaining_days` (đã trừ phần chưa tới tháng của loại cộng dần) — đừng tự cộng trừ; "
     "`comp_days` là ngày nghỉ bù đã được duyệt cộng thêm, `max_negative_days` > 0 là được ứng "
-    "phép tới số đó. Kèm cả phiếu xin nghỉ bù của họ (`comp_requests`)."
+    "phép tới số đó. Kèm cả phiếu xin nghỉ bù của họ (`comp_requests`) và chính sách nghỉ phép đang áp "
+    "(`policy`, null = theo hạn mức của loại nghỉ)."
 )
 
 
@@ -111,7 +117,35 @@ def _rules(info: dict) -> dict:
             "is_compensatory": info.get("is_compensatory", False)}
 
 
-def _balances(db, employee_id: int, year: int, types: dict[int, dict]) -> list[dict]:
+def _active_policy(db, employee_id: int, year: int) -> dict | None:
+    """Chính sách nghỉ phép đang áp cho người hỏi (duoc-CR-717) — CHỈ ĐỌC, cố định 3 truy vấn.
+
+    Mốc xem = hôm nay kẹp vào năm hỏi (năm đã qua → 31/12, năm sau → 01/01): trả lời được "vì sao hạn mức Phép năm
+    của tôi là 15 chứ không phải 12". Không có phân bổ nào phủ mốc → `None` (hạn mức theo luật của loại nghỉ).
+    Năm đổi chính sách giữa chừng thì `allocated_days` đã là số chia theo tháng — đây chỉ nói gói ĐANG áp.
+    """
+    ref = min(max(vn_today(), date(year, 1, 1)), date(year, 12, 31))
+    spans = policy_allocation.load_assignments(db, [employee_id], year)[employee_id]
+    current = next((a for a in spans if a.effective_from <= ref and (a.effective_to is None or a.effective_to >= ref)),
+                   None)
+    if current is None:
+        return None
+    policy = db.get(LeavePolicy, current.policy_id)
+    lines = policy_allocation.load_lines(db, {current.policy_id}).get(current.policy_id, {})
+    return {"name": policy.name if policy else "", "code": policy.code if policy else "",
+            "effective_from": current.effective_from.isoformat(),
+            "effective_to": current.effective_to.isoformat() if current.effective_to else None,
+            "lines": lines}
+
+
+def _policy_fields(policy: dict | None, leave_type_id: int) -> dict:
+    """Tên gói đang áp + số ngày/năm gói khai cho loại này (`None` = gói không khai loại này → theo luật của loại)."""
+    if policy is None:
+        return {"policy_name": None, "policy_annual_days": None}
+    return {"policy_name": policy["name"], "policy_annual_days": policy["lines"].get(leave_type_id)}
+
+
+def _balances(db, employee_id: int, year: int, types: dict[int, dict], policy: dict | None = None) -> list[dict]:
     """Quỹ phép từng loại. Loại chưa được cấp quỹ vẫn liệt kê, kèm cờ `allocated`.
 
     Liệt kê cả loại chưa cấp vì im lặng bỏ qua thì người hỏi đọc ra "công ty
@@ -140,6 +174,7 @@ def _balances(db, employee_id: int, year: int, types: dict[int, dict]) -> list[d
             #  Phần hạn mức CHƯA TỚI THÁNG của loại cộng dần — có trong `total_days` nhưng chưa nghỉ được.
             "not_yet_accrued_days": round(r.remaining_days - available[r.id], 2),
             **_rules(info),
+            **_policy_fields(policy, r.leave_type_id),
             #  Nguồn DUY NHẤT của con số này là `balance_service.available_days` (property của model trừ phần chưa tới
             #  tháng của loại cộng dần — duoc-CR-715). Đọc thẳng `r.remaining_days` là trợ lý báo dư phép.
             "remaining_days": available[r.id],
@@ -161,6 +196,7 @@ def _balances(db, employee_id: int, year: int, types: dict[int, dict]) -> list[d
             "comp_days": 0.0,
             "not_yet_accrued_days": 0.0,
             **_rules(info),
+            **_policy_fields(policy, tid),
             "remaining_days": 0.0,
             "note": "Nhân sự chưa cấp quỹ phép loại này cho bạn trong năm.",
         })
@@ -247,9 +283,11 @@ def _run(ctx: ToolContext, args: dict) -> dict:
     #  Phiếu xin nghỉ bù của CHÍNH người hỏi (khóa riêng `leave_comp_request`; thiếu khóa thì bỏ qua, không chặn cả tool).
     comp = my_comp_requests(ctx.db, emp_id, limit) if ctx.can("leave_comp_request") else None
 
+    policy = _active_policy(ctx.db, emp_id, year)
     return {
         "year": year,
-        "balances": _balances(ctx.db, emp_id, year, types),
+        "balances": _balances(ctx.db, emp_id, year, types, policy),
+        "policy": None if policy is None else {k: v for k, v in policy.items() if k != "lines"},
         "requests": requests,
         "comp_requests": comp if comp is not None else [],
         "total": len(requests),
@@ -272,6 +310,10 @@ def _run(ctx: ToolContext, args: dict) -> dict:
             "accrual_mode_label": "Cách cấp quỹ: đủ hạn mức đầu năm / theo tỷ lệ tháng làm việc (người vào làm trong "
                                   "năm) / cộng dần theo tháng.",
             "comp_requests": "Phiếu xin nghỉ bù của người hỏi; Đã duyệt = số ngày đã cộng vào comp_days.",
+            "policy": "Chính sách nghỉ phép Nhân sự đang phân bổ cho người hỏi (null = không có, hạn mức theo luật "
+                      "của loại nghỉ). policy_annual_days của từng loại = số ngày/năm gói khai; null = gói không khai "
+                      "loại đó nên theo luật của loại. allocated_days mới là hạn mức thật (đổi gói giữa năm thì chia "
+                      "theo tháng) — đừng lấy policy_annual_days thay cho nó.",
         },
     }
 

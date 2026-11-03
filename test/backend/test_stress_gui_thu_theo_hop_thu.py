@@ -97,7 +97,7 @@ def bat_email(monkeypatch):
     `app_settings._load()` tự mở `SessionLocal()` — tức MySQL thật — nên mọi dòng
     cấu hình ghi vào SQLite trong bộ nhớ đều vô hình với nó. Lần đầu viết bài này
     tôi ghi vào DB test và cả 9 ca cùng xanh giả: `send_smtp_email` dừng ngay ở
-    nhánh «email đang tắt», không nối SMTP lần nào, mà khẳng định thì không có
+    nhánh "email đang tắt", không nối SMTP lần nào, mà khẳng định thì không có
     cái nào bắt được chuyện đó.
 
     Không bật thì cả tệp này thành bài kiểm rỗng — nên `bat_email` là điều kiện
@@ -196,7 +196,7 @@ def test_dang_nhap_bang_CHINH_hop_thu_chu_khong_phai_tai_khoan_he_thong(db, smtp
 
 
 def test_tieu_de_From_mang_ten_hien_thi_kem_dia_chi(db, smtp, bat_email):
-    """Người nhận phải thấy «Phòng Hành chính», không phải một địa chỉ trơ."""
+    """Người nhận phải thấy "Phòng Hành chính", không phải một địa chỉ trơ."""
     hr = _hop_thu(db)
     _gui(db, _thu(db, mailbox_id=hr.id))
 
@@ -365,7 +365,7 @@ def test_chuoi_day_du_tu_khai_hop_thu_den_thu_gui_ra(db, smtp, bat_email, align)
     ), align["hc"].id)
     doc_service.submit(db, doc, align["hc"].id)
 
-    # (c) Giám đốc ký → DỪNG ở «Chờ ban hành», chưa cấp số, chưa gửi thư nào.
+    # (c) Giám đốc ký → DỪNG ở "Chờ ban hành", chưa cấp số, chưa gửi thư nào.
     instance = instance_service.running_instance(db, ENTITY, doc.id)
     action_service.approve(db, instance, align["gd"].employee_id, align["gd"].id, {})
     db.refresh(doc)

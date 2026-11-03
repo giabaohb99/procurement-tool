@@ -1,13 +1,13 @@
-"""THƯ BÁO «có việc chờ bạn duyệt» — bộ máy duyệt phải tự gọi người.
+"""THƯ BÁO "có việc chờ bạn duyệt" — bộ máy duyệt phải tự gọi người.
 
-Trước đây bộ máy **không báo cho ai cả**: việc rơi vào hộp «Việc của tôi» và nằm
+Trước đây bộ máy **không báo cho ai cả**: việc rơi vào hộp "Việc của tôi" và nằm
 im tới khi người duyệt tự nhớ ra mà mở hộp. Với văn bản, đó là văn bản nằm chết
 giữa luồng còn người trình thì không biết phải giục ai.
 
 Bốn ca canh ở đây đều là ca im lặng gây mất phiếu:
 
   1. mở chặng → người duyệt có thư, và thư dẫn thẳng tới văn bản;
-  2. bước «lần lượt» → CHỈ người đầu có thư, người sau nhận khi tới lượt
+  2. bước "lần lượt" → CHỈ người đầu có thư, người sau nhận khi tới lượt
      (báo cả hàng là ba người lao vào bấm khi chưa tới lượt mình);
   3. người được ỦY QUYỀN cũng phải có thư — việc mang tên người đi vắng;
   4. người duyệt không có tài khoản → không được làm hỏng phiên duyệt.

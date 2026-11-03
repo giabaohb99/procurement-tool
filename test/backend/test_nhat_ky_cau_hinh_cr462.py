@@ -70,7 +70,7 @@ def test_lan_dau_ghi_de_gia_tri_env_khong_thanh_dong_587_sang_587(db):
     """Ô chưa có dòng dưới DB nhưng màn hình đang hiện giá trị của `.env`.
 
     `_upsert` thấy bảng có đổi (chưa có dòng nào → có dòng), còn người dùng thì
-    không thấy gì đổi cả. Chỉ nghe `_upsert` thì nhật ký ra dòng «587 -> 587».
+    không thấy gì đổi cả. Chỉ nghe `_upsert` thì nhật ký ra dòng "587 -> 587".
     """
     truoc = app_settings.get("smtp_port")
 

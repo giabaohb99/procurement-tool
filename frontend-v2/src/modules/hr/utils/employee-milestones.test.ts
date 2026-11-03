@@ -88,7 +88,7 @@ describe('computeEmployeeMilestones', () => {
   })
 
   it('keeps tenure and the anniversary badge in agreement for a 29 Feb hire date', () => {
-    //  Lỗi do review bắt: 28/02/2025 từng hiện «Tròn 1 năm» cạnh thâm niên «11 tháng».
+    //  Lỗi do review bắt: 28/02/2025 từng hiện "Tròn 1 năm" cạnh thâm niên "11 tháng".
     expect(computeEmployeeMilestones(null, '2024-02-29', on(2025, 2, 28))).toEqual({
       isBirthday: false,
       anniversaryYears: 1,

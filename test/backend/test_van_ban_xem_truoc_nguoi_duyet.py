@@ -1,4 +1,4 @@
-"""XEM TRƯỚC LUỒNG DUYỆT — thẻ «Người duyệt dự kiến» ở màn tạo văn bản (phase
+"""XEM TRƯỚC LUỒNG DUYỆT — thẻ "Người duyệt dự kiến" ở màn tạo văn bản (phase
 01, duoc-CR-473).
 
 Ba câu phải trả lời, đúng thứ tự ưu tiên của phase:

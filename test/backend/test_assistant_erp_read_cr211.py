@@ -2,11 +2,11 @@
 
 Canh:
   - resource ngoài danh sách bị từ chối kèm danh sách hợp lệ; thiếu quyền entity → denied nói rõ;
-  - danh sách đi qua đúng hàm route của màn web (phạm vi «của mình» chỉ ra phiếu của mình);
+  - danh sách đi qua đúng hàm route của màn web (phạm vi "của mình" chỉ ra phiếu của mình);
   - id ngoài phạm vi trả ĐÚNG câu như id không tồn tại;
   - phân trang: tối đa 5 trang × 100 dòng mỗi lượt, còn nữa thì has_more + next_page;
   - gọt trường + nhãn trạng thái + url; thiếu supplier.read thì ẩn NCC của ĐMH;
-  - đọc chi tiết YCMH KHÔNG ghi gì (route chi tiết YCMH ghi ngầm «phương án 0» — tool không được gọi nó);
+  - đọc chi tiết YCMH KHÔNG ghi gì (route chi tiết YCMH ghi ngầm "phương án 0" — tool không được gọi nó);
   - cổng MCP: khóa đọc thấy tool, url thành tuyệt đối.
 """
 from types import SimpleNamespace
@@ -155,7 +155,7 @@ def test_ncc_san_pham_nhan_hang(db, seed, cap_quyen):
     p = _read(db, user, "product", filters={"search": "carton"})
     assert [i["code"] for i in p["items"]] == ["SP-ER"]
     gr = _read(db, user, "goods_receipt")
-    assert [i["code"] for i in gr["items"]] == ["GR00001"]                             # phạm vi «của mình»
+    assert [i["code"] for i in gr["items"]] == ["GR00001"]                             # phạm vi "của mình"
     assert "Không tìm thấy" in _read(db, user, "goods_receipt", id=gr["items"][0]["id"] + 1)["error"]
 
 

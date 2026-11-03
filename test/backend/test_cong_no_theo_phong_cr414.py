@@ -2,7 +2,7 @@
 
 Luật đã chốt:
   · Khoản nợ sinh ra mang phòng ĐANG XỬ LÝ đơn. Bản GĐ4 lùi về phòng lập khi không có phòng
-    được nhờ; bao-CR-484 (25/09/2026) đổi: = ô «Phòng xử lý», 0 = thu mua chung, KHÔNG lùi —
+    được nhờ; bao-CR-484 (25/09/2026) đổi: = ô "Phòng xử lý", 0 = thu mua chung, KHÔNG lùi —
     xem `payable.service.debt_dept_of` + `test_cong_no_theo_phong_xu_ly_cr484.py`.
   · Bậc `dept_proc` / loại trừ phòng bắt được nợ của phòng nhờ khai `dept_id` ở SCOPE_FIELDS.
   · Thẻ tổng hợp trả HAI bộ số: bốn khóa gốc = "Phần của tôi", `all` = "Tổng nợ NCC", `partial`.

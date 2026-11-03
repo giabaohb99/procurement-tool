@@ -251,13 +251,13 @@ kiến đụng) · `test_plan` (bài kiểm dự kiến) · `estimated_scope` (n
 Đại ca chốt: **mọi việc đều rà soát**. Lý do là ca AI-0006: bước lập kế hoạch chỉ đọc tài liệu nên
 đề xuất sửa lại đúng chỗ màn v1 đã sửa từ bao-CR-376, và ghi tên tệp thiếu đường dẫn.
 
-Luồng mới: gom xong → `service.start_scan` đưa việc sang **«Đang rà soát mã»** (`ST_SCANNING = 13`),
-nhắn đại ca «Đậu Đậu nhận việc … đang đọc mã» (hết cảnh im lặng), giao `agent.scan_task` (hàng đợi
+Luồng mới: gom xong → `service.start_scan` đưa việc sang **Đang rà soát mã** (`ST_SCANNING = 13`),
+nhắn đại ca **Đậu Đậu nhận việc … đang đọc mã** (hết cảnh im lặng), giao `agent.scan_task` (hàng đợi
 `agent_code`) → runner cắt worktree từ nhánh nền **mới nhất trên GitHub**, chạy `claude -p` với
 công cụ CHỈ ĐỌC (`Read/Glob/Grep` + `git diff/status/log/show`, 40 lượt, trần 15 phút, phiên
 mới) → Claude trả một tin nhắn cho đại ca (mở bằng **Kết luận**, có dẫn chứng `tệp:dòng`, so cả
 `frontend/` lẫn `frontend-v2/`) + một khối JSON (`files`, `root_cause`, `already_fixed`,
-`risk_level`, `questions`) → runner nhắn đoạn phân tích (kèm «Cần đại ca quyết» nếu có) → lập kế
+`risk_level`, `questions`) → runner nhắn đoạn phân tích (kèm **Cần đại ca quyết** nếu có) → lập kế
 hoạch ngay trong runner với kết quả rà soát trong đề bài (`manager.run_plan(review=…)`).
 Lượt `STAGE_SCAN = 25` giữ tin nhắn + JSON; đề bài sửa mã sau này cũng mang đoạn rà soát.
 
@@ -265,7 +265,7 @@ Lượt `STAGE_SCAN = 25` giữ tin nhắn + JSON; đề bài sửa mã sau này
 |---|---|
 | Nhánh nền đúng | `coder.fetch_base`: có `AGENT_GITHUB_TOKEN` thì kéo thẳng `+refs/heads/<nền>` từ GitHub vào `origin/<nền>` của kho base; lỗi hoặc không khóa thì lùi về `.git` ở máy. **Vá lỗi có sẵn**: kho base nhân bản từ `.git` máy đại ca, erp-v2 ở máy chậm **7 commit** so với GitHub ngày 23/09 — bot đọc/sửa trên mã cũ, và lượt gộp sẽ bị GitHub từ chối |
 | Tệp đầy đủ | `service.resolve_plan_files`: tên tệp trơn trong kế hoạch được nối đủ đường dẫn khi khớp đúng một tệp trong kết quả rà soát. Tệp cấm lọt vào JSON bị gạt ngay ở `parse_scan` |
-| Câu của đại ca | Câu nghiệp vụ rà soát nêu mà đại ca chưa trả lời thì kế hoạch KHÔNG tự quyết: bỏ phần đó ra, ghi «Chưa làm: … — chờ đại ca quyết» |
+| Câu của đại ca | Câu nghiệp vụ rà soát nêu mà đại ca chưa trả lời thì kế hoạch KHÔNG tự quyết: bỏ phần đó ra, ghi **Chưa làm: … — chờ đại ca quyết** |
 | Không bỏ rơi việc | Rà soát hỏng (CLI lỗi, hết hạn mức, quá giờ) → nhắn một câu rồi lập kế hoạch theo tài liệu như trước. Runner tắt / broker chết lúc giao → lập kế hoạch ngay. Vòng beat `resume_stuck_plans`: việc ở rà soát mà lượt chưa bắt đầu sau 45 phút (runner `-c 1` có thể đang sửa việc khác tới 30 phút), hoặc lượt chạy quá trần + 3 phút, thì đóng lượt và lập kế hoạch theo tài liệu |
 | Trả lời câu hỏi lại | Lập lại kế hoạch (trong poller) dùng lại kết quả rà soát cũ, không rà soát lại |
 | So `main` (ai-CR-018) | `fetch_base` kéo cả `main` từ GitHub; đề bài rà soát BẮT chạy `git log origin/erp-v2..origin/main` và dò trong đó — lỗi đã sửa ở main mà chưa gộp thì ghi `already_fixed` + nói ở Kết luận. Ca AI-0006: bao-CR-465 ở main sáng 23/09, bot không thấy vì chỉ nhìn erp-v2 |
@@ -274,7 +274,7 @@ Lượt `STAGE_SCAN = 25` giữ tin nhắn + JSON; đề bài sửa mã sau này
 Đo thật trên AI-0006 (23/09): 6,6 phút, 11 lượt, ước ~1,7 USD theo giá API (gói thuê bao, không
 tính tiền theo lượt). Rà soát tìm ra gốc thật: giao diện cả hai bản chỉ gửi TÊN phòng ban, máy chủ
 dò lại theo tên và cố ý trả 0 khi hai pháp nhân có phòng trùng tên (`department/service.py`) —
-khớp chữ «thỉnh thoảng» của đại ca; lỗi gửi thông báo bị nuốt im lặng.
+khớp chữ **thỉnh thoảng** của đại ca; lỗi gửi thông báo bị nuốt im lặng.
 
 ### Sổ quyết định: tra trước khi hỏi (ai-CR-015, 23/09/2026)
 
@@ -286,19 +286,19 @@ hỏi**.
 
 | Chỗ | Làm gì |
 |---|---|
-| Lượt PLAN (`manager.run_plan`) | Đề bài mang theo sổ. Luật 2 của lời nhắc: có mục khớp → làm theo, ghi `assumptions` «Theo QĐ-xx: …»; không có mà có một đường an toàn, dễ đảo → chọn, ghi «Em giả định: …»; chỉ hỏi khi không viết nổi `plan_files`, khi dính chủ đề luôn hỏi, hoặc khi hai cách hiểu dẫn tới hai việc khác hẳn. Không hỏi đại ca đường dẫn tệp. Giả định được nối vào cuối `plan` dưới dòng «Em tự quyết, không hỏi lại» — thẻ duyệt hiện ra, runner đọc lại y nguyên |
-| Việc rủi ro cao (`risk_level` 3) | **Không nạp sổ**, lời nhắc cấm giả định; model vẫn giả định thì `plan_task` đổi mọi giả định thành câu hỏi và để việc ở «Đang hỏi lại». Thi hành trong mã |
-| Đề bài Claude Code (`coder.build_brief`) | Nạp sổ (trừ việc rủi ro cao); hai ca «không tái hiện được lỗi» và «thiếu dữ liệu để quyết» thôi là lý do dừng; phần 4 của tổng kết liệt kê từng dòng «Theo QĐ-xx» / «Em giả định» |
+| Lượt PLAN (`manager.run_plan`) | Đề bài mang theo sổ. Luật 2 của lời nhắc: có mục khớp → làm theo, ghi `assumptions` **Theo QĐ-xx: …**; không có mà có một đường an toàn, dễ đảo → chọn, ghi **Em giả định: …**; chỉ hỏi khi không viết nổi `plan_files`, khi dính chủ đề luôn hỏi, hoặc khi hai cách hiểu dẫn tới hai việc khác hẳn. Không hỏi đại ca đường dẫn tệp. Giả định được nối vào cuối `plan` dưới dòng **Em tự quyết, không hỏi lại** — thẻ duyệt hiện ra, runner đọc lại y nguyên |
+| Việc rủi ro cao (`risk_level` 3) | **Không nạp sổ**, lời nhắc cấm giả định; model vẫn giả định thì `plan_task` đổi mọi giả định thành câu hỏi và để việc ở **Đang hỏi lại**. Thi hành trong mã |
+| Đề bài Claude Code (`coder.build_brief`) | Nạp sổ (trừ việc rủi ro cao); hai ca **không tái hiện được lỗi** và **thiếu dữ liệu để quyết** thôi là lý do dừng; phần 4 của tổng kết liệt kê từng dòng **Theo QĐ-xx** / **Em giả định** |
 | Lệch kế hoạch (`coder.check_drift`) | Tệp `.md` không tính vào tỷ lệ 30 % (QĐ-02); trần 25 tệp vẫn đếm. Sổ quyết định là **tệp cấm** với `claude` — sổ chỉ ghi qua nút đại ca duyệt |
-| Trả lời câu hỏi lại | **Vá lỗ có sẵn**: trước đây câu trả lời rơi vào INBOX và đẻ thành việc MỚI, việc cũ treo ở «Đang hỏi lại». Nay thẻ hỏi lại đóng dấu `cho_tra_loi_kh`; tin kế của đại ca (trong 30 phút, không xen tin hay nút bấm khác) gắn vào việc đó (tin nối vào `tab_agent_task_item`, câu hỏi + câu trả lời nối vào `summary`) rồi lập lại kế hoạch ngay, không cần `/gom`. Trả lời trễ thì bấm «Trả lời câu hỏi» (`ans:`) mở lại cửa. Nút «Sửa lại» đi cùng đường |
-| Đề xuất ghi sổ (`service.propose_rule`) | Sau khi lập lại kế hoạch, một lượt Gemini (`manager.run_rule_draft`, trạm `STAGE_RULE = 24`) xem câu trả lời có dùng lại được không; được thì thẻ «Lần sau gặp tương tự em tự làm vậy, khỏi hỏi nhé?» với «Ghi vào sổ» (`qdok:`) · «Không, lần nào cũng hỏi» (`qdno:`). Câu hỏi/đáp chạm chủ đề luôn hỏi → không gọi model, nói một dòng «lần sau em vẫn hỏi». Bản nháp nằm trong `tab_agent_run.artifact` (`state` = `cho_duyet` · `da_ghi` · `bo` · `khong_ap` · `loi`) |
-| Ghi sổ (`playbook.append_entry`) | Soi chủ đề cấm LẦN NỮA rồi nối mục `QĐ-<số kế>` vào cuối tệp, ghi nguồn «đại ca bấm «Ghi vào sổ» trên Telegram ngày …, từ việc AI-xxxx». Tệp mount ở `/agent-docs` (poller + agent-api ghi được; celery-worker + runner chỉ đọc) |
+| Trả lời câu hỏi lại | **Vá lỗ có sẵn**: trước đây câu trả lời rơi vào INBOX và đẻ thành việc MỚI, việc cũ treo ở **Đang hỏi lại**. Nay thẻ hỏi lại đóng dấu `cho_tra_loi_kh`; tin kế của đại ca (trong 30 phút, không xen tin hay nút bấm khác) gắn vào việc đó (tin nối vào `tab_agent_task_item`, câu hỏi + câu trả lời nối vào `summary`) rồi lập lại kế hoạch ngay, không cần `/gom`. Trả lời trễ thì bấm **Trả lời câu hỏi** (`ans:`) mở lại cửa. Nút **Sửa lại** đi cùng đường |
+| Đề xuất ghi sổ (`service.propose_rule`) | Sau khi lập lại kế hoạch, một lượt Gemini (`manager.run_rule_draft`, trạm `STAGE_RULE = 24`) xem câu trả lời có dùng lại được không; được thì thẻ **Lần sau gặp tương tự em tự làm vậy, khỏi hỏi nhé?** với **Ghi vào sổ** (`qdok:`) · **Không, lần nào cũng hỏi** (`qdno:`). Câu hỏi/đáp chạm chủ đề luôn hỏi → không gọi model, nói một dòng **lần sau em vẫn hỏi**. Bản nháp nằm trong `tab_agent_run.artifact` (`state` = `cho_duyet` · `da_ghi` · `bo` · `khong_ap` · `loi`) |
+| Ghi sổ (`playbook.append_entry`) | Soi chủ đề cấm LẦN NỮA rồi nối mục `QĐ-<số kế>` vào cuối tệp, ghi nguồn "đại ca bấm **Ghi vào sổ** trên Telegram ngày …, từ việc AI-xxxx". Tệp mount ở `/agent-docs` (poller + agent-api ghi được; celery-worker + runner chỉ đọc) |
 
-Đo thật 23/09 với Gemini: việc «màn đơn hàng lọc ngày ra thiếu đơn, không kèm mã phiếu» trước
-đây hỏi lại, nay ra thẳng kế hoạch với «Theo QĐ-01: …» (hai lượt liên tiếp như nhau); bản nháp
-trùng ý QĐ-01 thì model tự bỏ; bản nháp mới «cột mới trên bảng danh sách để ẩn mặc định» ra
+Đo thật 23/09 với Gemini: việc **màn đơn hàng lọc ngày ra thiếu đơn, không kèm mã phiếu** trước
+đây hỏi lại, nay ra thẳng kế hoạch với **Theo QĐ-01: …** (hai lượt liên tiếp như nhau); bản nháp
+trùng ý QĐ-01 thì model tự bỏ; bản nháp mới **cột mới trên bảng danh sách để ẩn mặc định** ra
 đúng bốn ý. Hai lỗi tìm ra khi chạy thật: trần 4096 token cắt cụt JSON (phần suy nghĩ của Gemini
-ăn 6-7 nghìn) → nâng 16384; bộ lọc chủ đề bắt nhầm «thêm cột» của bảng giao diện là cấu trúc DB
+ăn 6-7 nghìn) → nâng 16384; bộ lọc chủ đề bắt nhầm **thêm cột** của bảng giao diện là cấu trúc DB
 → thu hẹp về câu có nhắc DB/migration.
 
 ---
@@ -314,9 +314,9 @@ trùng ý QĐ-01 thì model tự bỏ; bản nháp mới «cột mới trên b�
 | GĐ | Gồm gì | Trạng thái |
 |---|---|---|
 | **1** | Bấm **Duyệt** là runner sửa mã thật trong worktree riêng, chạy bài kiểm backend của phần vừa sửa, **commit vào nhánh nằm trong container**, gửi **thẻ kết quả + tệp `.diff`** về Telegram. Chưa đẩy GitHub. | **Xong 22/09/2026** |
-| **2a** | Đẩy nhánh `bot/*` lên GitHub + **mở PR vào `erp-v2`** (ai-CR-012). Cờ `AGENT_PR_ENABLED` bật thì runner tự đẩy ngay sau commit; tắt thì thẻ kết quả có nút **«Gửi link PR để anh tự merge»** (tên cũ «Đẩy GitHub + mở PR», đổi 23/09) đẩy tay từng việc (cũng là nút đẩy lại khi hỏng). Khóa `AGENT_GITHUB_TOKEN` (PAT chi tiết, Contents + Pull requests, một kho) đại ca tự dán vào `.env`; runner đọc thẳng `os.environ` lúc đẩy, đưa vào `git push` bằng biến `GIT_CONFIG_*` (không lên dòng lệnh) + header API, **không bao giờ vào tiến trình `claude`**. Đẩy **đè** (`--force`) vì chạy lại việc là cắt lại nhánh; PR trùng nhánh thì lấy PR đang mở. Nhánh bot KHÔNG tự xóa sau merge (mặc định giữ, đại ca chưa quyết). Đẩy hỏng không làm hỏng việc — commit vẫn trong runner. | **Xong 22/09/2026** — PR đầu tiên do bot mở: #95 (AI-0005, nợ N-009) |
-| **2b·1** | **Hỏi thêm về bản vá** ngay trên Telegram (ai-CR-013): nút «Hỏi thêm về bản vá» trên thẻ kết quả → tin chữ kế tiếp của đại ca đi vào **đúng phiên Claude Code đã sửa việc** (`claude -p --resume`, chỉ đọc) → câu trả lời về Telegram, nhắn tiếp trong 10 phút là hỏi tiếp. Phiên CLI nay cất trong volume worktree (`CLAUDE_CONFIG_DIR`) nên sống qua `up --force-recreate`. Chi tiết ở mục *Hỏi thêm về bản vá* bên dưới. | **Xong 22/09/2026** |
-| **2b·2** | **Gộp `erp-v2` + deploy dev có hỏi trước** (ai-CR-014): nút «Gộp erp-v2 + deploy dev» trên thẻ kết quả → thẻ hỏi kể ba bước + số tệp/số dòng/cổng kiểm → «Đồng ý» · «Hẹn giờ» · «Thôi». Runner `merge --no-ff`, đẩy không `--force`, SSH lên VPS reset cứng + build đúng service, chờ health. Thẻ sau deploy có «Thu hồi» (`git revert -m 1` + deploy lại) và «Xong». Mục *Luật nhánh* bên dưới. | **Xong 22/09/2026** |
+| **2a** | Đẩy nhánh `bot/*` lên GitHub + **mở PR vào `erp-v2`** (ai-CR-012). Cờ `AGENT_PR_ENABLED` bật thì runner tự đẩy ngay sau commit; tắt thì thẻ kết quả có nút **Gửi link PR để anh tự merge** (tên cũ **Đẩy GitHub + mở PR**, đổi 23/09) đẩy tay từng việc (cũng là nút đẩy lại khi hỏng). Khóa `AGENT_GITHUB_TOKEN` (PAT chi tiết, Contents + Pull requests, một kho) đại ca tự dán vào `.env`; runner đọc thẳng `os.environ` lúc đẩy, đưa vào `git push` bằng biến `GIT_CONFIG_*` (không lên dòng lệnh) + header API, **không bao giờ vào tiến trình `claude`**. Đẩy **đè** (`--force`) vì chạy lại việc là cắt lại nhánh; PR trùng nhánh thì lấy PR đang mở. Nhánh bot KHÔNG tự xóa sau merge (mặc định giữ, đại ca chưa quyết). Đẩy hỏng không làm hỏng việc — commit vẫn trong runner. | **Xong 22/09/2026** — PR đầu tiên do bot mở: #95 (AI-0005, nợ N-009) |
+| **2b·1** | **Hỏi thêm về bản vá** ngay trên Telegram (ai-CR-013): nút **Hỏi thêm về bản vá** trên thẻ kết quả → tin chữ kế tiếp của đại ca đi vào **đúng phiên Claude Code đã sửa việc** (`claude -p --resume`, chỉ đọc) → câu trả lời về Telegram, nhắn tiếp trong 10 phút là hỏi tiếp. Phiên CLI nay cất trong volume worktree (`CLAUDE_CONFIG_DIR`) nên sống qua `up --force-recreate`. Chi tiết ở mục *Hỏi thêm về bản vá* bên dưới. | **Xong 22/09/2026** |
+| **2b·2** | **Gộp `erp-v2` + deploy dev có hỏi trước** (ai-CR-014): nút **Gộp erp-v2 + deploy dev** trên thẻ kết quả → thẻ hỏi kể ba bước + số tệp/số dòng/cổng kiểm → **Đồng ý** · **Hẹn giờ** · **Thôi**. Runner `merge --no-ff`, đẩy không `--force`, SSH lên VPS reset cứng + build đúng service, chờ health. Thẻ sau deploy có **Thu hồi** (`git revert -m 1` + deploy lại) và **Xong**. Mục *Luật nhánh* bên dưới. | **Xong 22/09/2026** |
 | **3** | Cổng kiểm frontend-v2 (ai-CR-019): typecheck cả cây · eslint tệp vừa đụng · vitest thư mục vừa đụng; thư viện Node cài MỘT lần mỗi `package-lock.json` vào volume runner, worktree gắn liên kết; Claude Code tự kiểm được bằng `npm --prefix frontend-v2 run typecheck` / `run test -- src/...`. `frontend/` (bản cũ) chưa có cổng. | **Xong 23/09/2026** |
 
 ### Gọi thế nào
@@ -386,7 +386,7 @@ bài kiểm · điều chưa chắc · đề nghị cho người). `CLAUDE.md` v
 Đúng luật 17/09 — chỉ bài kiểm của phần vừa sửa. GĐ1 runner tự chạy
 `python -m pytest <các tệp test/backend bot vừa đụng> -q` ngay trong container, kết quả in lên
 thẻ là **XANH / ĐỎ** kèm đuôi log; không đụng bài kiểm backend nào thì thẻ nói thẳng là **chưa
-kiểm**. Từ ai-CR-019 (23/09) có thêm **cổng frontend-v2** khi việc đụng `frontend-v2/`: `tsc --noEmit` cả cây · `eslint` đúng tệp vừa đụng (lint cả cây thì lỗi cũ của người khác làm đỏ việc này) · `vitest run` đúng thư mục `src/modules/<phân hệ>` / `src/shared/<khu>` / `src/core/<khu>` vừa đụng — không bao giờ cả bộ ~3200 bài. Thẻ có dòng riêng «Frontend v2: XANH/ĐỎ/CHƯA kiểm được»; không cài được thư viện thì KHÔNG tính là xanh. Thư viện: `/worktrees/.deps/fe-v2-<băm lockfile>/node_modules` cài bằng `npm ci` một lần (giữ 2 bộ gần nhất), worktree gắn liên kết `frontend-v2/node_modules` + khóa ở `info/exclude`. Đo thật 23/09 trên AI-0006: cài 12 giây, cổng (typecheck + lint 1 tệp + vitest procurement) 109 giây, xanh. Bài kiểm chạy trên máy đại ca **vẫn không đủ làm bằng chứng** —
+kiểm**. Từ ai-CR-019 (23/09) có thêm **cổng frontend-v2** khi việc đụng `frontend-v2/`: `tsc --noEmit` cả cây · `eslint` đúng tệp vừa đụng (lint cả cây thì lỗi cũ của người khác làm đỏ việc này) · `vitest run` đúng thư mục `src/modules/<phân hệ>` / `src/shared/<khu>` / `src/core/<khu>` vừa đụng — không bao giờ cả bộ ~3200 bài. Thẻ có dòng riêng **Frontend v2: XANH/ĐỎ/CHƯA kiểm được**; không cài được thư viện thì KHÔNG tính là xanh. Thư viện: `/worktrees/.deps/fe-v2-<băm lockfile>/node_modules` cài bằng `npm ci` một lần (giữ 2 bộ gần nhất), worktree gắn liên kết `frontend-v2/node_modules` + khóa ở `info/exclude`. Đo thật 23/09 trên AI-0006: cài 12 giây, cổng (typecheck + lint 1 tệp + vitest procurement) 109 giây, xanh. Bài kiểm chạy trên máy đại ca **vẫn không đủ làm bằng chứng** —
 PR + CI mới là bằng chứng; PR có từ GĐ2a (ai-CR-012), CI của kho tự chạy trên nhánh `bot/*`.
 
 ### Đẩy GitHub + mở PR (GĐ2a, ai-CR-012)
@@ -396,9 +396,9 @@ HEAD:refs/heads/bot/<mã>-<slug>` rồi `POST /repos/<kho>/pulls` (head = nhánh
 `AGENT_BASE_BRANCH`). Mô tả PR dựng từ chính dữ liệu của lượt chạy: việc + tóm tắt · kế hoạch đã
 duyệt trên Telegram · từng tệp +/− (đánh dấu NGOÀI kế hoạch) · cổng kiểm XANH/ĐỎ kèm tên tệp bài
 kiểm · tổng kết của bot · phiên Claude Code. `pr_url` ghi vào `tab_agent_task`, thẻ kết quả thêm
-dòng «Đã đẩy GitHub, PR #n» và nút liên kết **«Mở PR trên GitHub»** (nút Telegram nay nhận cả
-URL). Ba nhánh của thẻ: PR ok → nút mở PR · đẩy hỏng → dòng **HỎNG + lý do** và nút «Đẩy GitHub
-lại» · cờ tắt → nút «Đẩy GitHub + mở PR». Cả hai nút sau đi `pr:<id>` → `agent.publish_task` trên
+dòng **Đã đẩy GitHub, PR #n** và nút liên kết **Mở PR trên GitHub** (nút Telegram nay nhận cả
+URL). Ba nhánh của thẻ: PR ok → nút mở PR · đẩy hỏng → dòng **HỎNG + lý do** và nút **Đẩy GitHub
+lại** · cờ tắt → nút **Đẩy GitHub + mở PR**. Cả hai nút sau đi `pr:<id>` → `agent.publish_task` trên
 hàng đợi `agent_code` (chỉ runner thấy `/worktrees`) → `coder.publish_existing`: kiểm worktree còn
 và đang ở đúng nhánh, lấy tệp/cổng kiểm/tổng kết từ `artifact` của lượt CODE gần nhất rồi đẩy y
 như lượt tự động. Runner mở PR bằng `requests` (đã có sẵn cho Telegram); container không có
@@ -406,9 +406,9 @@ như lượt tự động. Runner mở PR bằng `requests` (đã có sẵn cho 
 
 ### Hỏi thêm về bản vá (GĐ2b·1, ai-CR-013)
 
-Thẻ kết quả (cả thẻ leo thang) có nút **«Hỏi thêm về bản vá»** (`ask:<id>`). Đường đi:
+Thẻ kết quả (cả thẻ leo thang) có nút **Hỏi thêm về bản vá** (`ask:<id>`). Đường đi:
 
-1. Bấm nút → bot **không gỡ nút** của thẻ (khác mọi nút khác: «Mở PR» / «Bỏ việc này» còn phải
+1. Bấm nút → bot **không gỡ nút** của thẻ (khác mọi nút khác: **Mở PR** / **Bỏ việc này** còn phải
    dùng sau khi hỏi) → nhắn lời mời, dấu `cho_hoi_va`, gắn `task_id`. Không có phiên (việc chưa
    qua CODE) thì chỉ hiện toast.
 2. Tin chữ kế tiếp của đại ca trong `FOLLOW_UP_WINDOW` (10 phút) sau một tin có dấu `cho_hoi_va` /
@@ -423,11 +423,11 @@ Thẻ kết quả (cả thẻ leo thang) có nút **«Hỏi thêm về bản vá
    --allowedTools "Read,Glob,Grep,Bash(git diff:*),Bash(git status:*),Bash(git log:*)"
    --max-turns 15`, trần 10 phút — **chỉ đọc**, không Edit/Write, không pytest. Đề bài dặn: trả lời
    ngắn bằng Markdown đơn giản (không bảng, không tiêu đề vì hiện trên Telegram); câu hỏi thực chất
-   là đòi đổi bản vá thì nói vậy và bảo đại ca bấm «Sửa», đừng tự sửa. Hai đường **không trộn**:
+   là đòi đổi bản vá thì nói vậy và bảo đại ca bấm **Sửa**, đừng tự sửa. Hai đường **không trộn**:
    hỏi là để hiểu, đổi bản vá là lượt CODE mới theo kế hoạch mới.
-4. Trả lời: `reply(markdown=True)` (`**đậm**` → `<b>`), dấu `tra_loi_va`, nút **«Hỏi tiếp»**;
+4. Trả lời: `reply(markdown=True)` (`**đậm**` → `<b>`), dấu `tra_loi_va`, nút **Hỏi tiếp**;
    `artifact` của lượt ASK giữ phiên + câu hỏi + câu trả lời + số lượt + phút. Hỏng (phiên mất,
-   worktree mất, quá giờ) → lượt ASK ghi lỗi, Telegram nhận một câu lý do + nút **«Hỏi lại»**;
+   worktree mất, quá giờ) → lượt ASK ghi lỗi, Telegram nhận một câu lý do + nút **Hỏi lại**;
    **trạng thái việc không đổi**. Riêng lỗi `No conversation found` được dịch thành "phiên không
    còn trong runner — bấm Sửa để bot làm lại từ đầu" (đúng cảnh AI-0005 sau lần recreate 22/09).
 
@@ -438,21 +438,21 @@ Tổng kết của bot trên thẻ kết quả nay cũng đi qua `md_to_html` (t
 
 Đại ca 22/09/2026 chốt bốn câu chặn của bản đặt chỗ, gọn lại thành một luật: **muốn gộp
 vào nhánh nền là phải hỏi, đại ca đồng ý mới làm; deploy thử thì dùng ngay stack dev và
-khóa SSH có sẵn trên máy; «hỏi trước một tiếng» chỉ có nghĩa là hỏi để đại ca xác nhận,
+khóa SSH có sẵn trên máy; "hỏi trước một tiếng" chỉ có nghĩa là hỏi để đại ca xác nhận,
 đồng ý thì chạy ngay hoặc hẹn giờ.** Nguyên văn bốn câu trả lời nằm ở `change-log-ai.md`.
 
 | Câu chặn cũ | Đại ca quyết | Bot làm |
 |---|---|---|
-| Deploy thử lên đâu | Không dựng stack thứ ba. Bot đẩy nhánh riêng rồi HỎI có gộp/lên dev không; đồng ý thì gộp thẳng `erp-v2` + deploy dev; sau đó bảo bỏ/trả về thì thu hồi | Nút «Gộp erp-v2 + deploy dev» trên thẻ kết quả → thẻ hỏi → «Đồng ý» mới chạy; thẻ sau deploy có «Thu hồi» |
+| Deploy thử lên đâu | Không dựng stack thứ ba. Bot đẩy nhánh riêng rồi HỎI có gộp/lên dev không; đồng ý thì gộp thẳng `erp-v2` + deploy dev; sau đó bảo bỏ/trả về thì thu hồi | Nút **Gộp erp-v2 + deploy dev** trên thẻ kết quả → thẻ hỏi → **Đồng ý** mới chạy; thẻ sau deploy có **Thu hồi** |
 | Khóa SSH riêng cho bot | Dùng khóa đang có trên máy đại ca | `AGENT_VPS_SSH_KEY_FILE` trong `.env` chỉ là ĐƯỜNG DẪN, compose bind-mount chỉ-đọc vào `/root/vps_ssh_key` của runner; giá trị khóa không qua chat, không vào git, không vào tiến trình `claude` |
-| «Hỏi trước 1 tiếng» | = hỏi để xác nhận; OK thì đẩy luôn, hoặc đại ca hẹn giờ | Ba nút «Đồng ý: gộp + deploy ngay» · «Hẹn giờ» (nhắn `14:30` · `20h` · `45 phút nữa` · `8h sáng mai`…) · «Thôi, chưa gộp»; vòng beat mỗi phút nhặt lịch hẹn tới giờ |
-| Branch protection | Giữ như hiện tại (chưa bật); merge là phải hỏi ý | Lệnh gộp chỉ phát ra từ nút «Đồng ý» của đúng chat đại ca; không có đường tự động nào khác |
-| Gộp mặc định bằng gì (23/09) | *"em có thể merge code theo lệnh của anh rồi, còn khi anh muốn tự merge thì em mới gửi link"* | Thẻ kết quả xếp «Gộp erp-v2 + deploy dev» ĐẦU; nút PR đổi nhãn «Gửi link PR để anh tự merge», chỉ đẩy nhánh + mở PR khi bấm; `AGENT_PR_ENABLED` giữ tắt |
+| **Hỏi trước 1 tiếng** | = hỏi để xác nhận; OK thì đẩy luôn, hoặc đại ca hẹn giờ | Ba nút **Đồng ý: gộp + deploy ngay** · **Hẹn giờ** (nhắn `14:30` · `20h` · `45 phút nữa` · `8h sáng mai`…) · **Thôi, chưa gộp**; vòng beat mỗi phút nhặt lịch hẹn tới giờ |
+| Branch protection | Giữ như hiện tại (chưa bật); merge là phải hỏi ý | Lệnh gộp chỉ phát ra từ nút **Đồng ý** của đúng chat đại ca; không có đường tự động nào khác |
+| Gộp mặc định bằng gì (23/09) | *"em có thể merge code theo lệnh của anh rồi, còn khi anh muốn tự merge thì em mới gửi link"* | Thẻ kết quả xếp **Gộp erp-v2 + deploy dev** ĐẦU; nút PR đổi nhãn **Gửi link PR để anh tự merge**, chỉ đẩy nhánh + mở PR khi bấm; `AGENT_PR_ENABLED` giữ tắt |
 
 **Luồng một lượt gộp** (`coder.merge_and_deploy`, chạy trong `agent-runner`, task
 `agent.deploy_task` hàng đợi `agent_code`):
 
-1. Việc sang trạm **«Đang gộp + deploy dev»** (`ST_DEPLOYING = 12`), lượt ghi sổ
+1. Việc sang trạm **Đang gộp + deploy dev** (`ST_DEPLOYING = 12`), lượt ghi sổ
    `AgentRun` giai đoạn `STAGE_DEPLOY = 22`.
 2. Worktree `agent-merge` cắt lại từ `origin/erp-v2` mỗi lượt; `git merge --no-ff --no-edit`
    nhánh `bot/<mã>-<slug>` với danh tính *Agent Hub bot*; xung đột → `merge --abort`, việc về
@@ -467,19 +467,19 @@ khóa SSH có sẵn trên máy; «hỏi trước một tiếng» chỉ có nghĩ
    `frontend/` → web · `help-center/` → help; chỉ doc/test thì không build gì. HEAD VPS trả về
    phải khớp bản vừa gộp, không thì báo có bản đẩy khác chen vào.
 5. Chờ `/api/health` của dev trả 200 (12 lần × 10 giây), rồi việc sang **ST_PROD** +
-   `deployed_dev_at`, thẻ «Đã gộp vào erp-v2 … Thử ở deverp» với nút «Thu hồi khỏi erp-v2 +
-   dev» · «Hỏi thêm về bản vá» · «Xong, đóng việc».
+   `deployed_dev_at`, thẻ **Đã gộp vào erp-v2 … Thử ở deverp** với nút **Thu hồi khỏi erp-v2 +
+   dev** · **Hỏi thêm về bản vá** · **Xong, đóng việc**.
 
 **Hỏng ở đâu thì về đâu**: hỏng TRƯỚC khi đẩy → REVIEW như chưa có gì; hỏng SAU khi đẩy (SSH,
-build, health) → ST_PROD với `deployed_dev_at` trống + nút «Deploy dev lại» (chỉ chạy lại bước
-SSH, không gộp lần hai) và «Thu hồi». Worker chết giữa chừng thì lượt «đang chạy» quá
+build, health) → ST_PROD với `deployed_dev_at` trống + nút **Deploy dev lại** (chỉ chạy lại bước
+SSH, không gộp lần hai) và **Thu hồi**. Worker chết giữa chừng thì lượt **đang chạy** quá
 `DEPLOY_TIMEOUT_SEC + 15 phút` được tự đóng ở lần bấm sau, việc không kẹt mãi.
 
 **Thu hồi** (`coder.revert_and_deploy`, `STAGE_REVERT = 23`): thẻ hỏi lại lần nữa → `git revert
 --no-edit -m 1 <bản gộp>` trên nhánh nền (thêm bản đảo ngược, không xóa lịch sử) → đẩy không
-`--force` → deploy dev lại → việc về **«Đang hỏi lại»** kèm ghi chú; đại ca nhắn cần sửa gì rồi
-`/gom` để bot làm lại từ đầu (git không gộp lại cùng nhánh sau khi revert, nên không có nút «gộp
-lại»). `merged_sha_for` đọc sổ lượt từ mới về cũ: gặp thu hồi OK là hết, gặp lượt gộp có `merged`
+`--force` → deploy dev lại → việc về **Đang hỏi lại** kèm ghi chú; đại ca nhắn cần sửa gì rồi
+`/gom` để bot làm lại từ đầu (git không gộp lại cùng nhánh sau khi revert, nên không có nút **gộp
+lại**). `merged_sha_for` đọc sổ lượt từ mới về cũ: gặp thu hồi OK là hết, gặp lượt gộp có `merged`
 là bản đang sống — mọi cửa (nút, giờ hẹn, chạy lại) đều hỏi nó.
 
 **Biên an toàn của bước SSH**: chạy bằng tiến trình worker (root, môi trường sạch chỉ
@@ -493,7 +493,7 @@ nhớ ở `/worktrees/.known_hosts` (`StrictHostKeyChecking=accept-new`).
 **Hẹn giờ** không dùng `eta` của Celery (việc có eta nằm trong bộ nhớ worker, restart là mất):
 lịch hẹn là dòng `AgentRun` pha `hen_gio` + `scheduled_for`; beat `agent-deploy-due` mỗi phút gọi
 `service.dispatch_due_deploys` (chạy ở `celery-worker`), tới giờ thì đổi pha `dispatched` rồi mới
-giao runner, nên không giao hai lần. «Hủy hẹn» đóng dòng đó. Tới giờ mà việc không còn chờ gộp
+giao runner, nên không giao hai lần. **Hủy hẹn** đóng dòng đó. Tới giờ mà việc không còn chờ gộp
 (đã đóng, đã lên dev) thì lượt tự đóng lỗi, không chạy.
 
 ### Chống bot đi lạc — số thật
@@ -513,7 +513,7 @@ hoặc `plan_files` đã đụng tệp cấm thì bấm Duyệt cũng không gia
 ### Thẻ kết quả
 
 Một tin HTML: mã việc · nhánh · **n tệp · +a/−d dòng · số lượt · phút · ~$** · từng tệp (đánh dấu
-*NGOÀI kế hoạch*) · cổng kiểm · «Bot tổng kết» (Markdown → HTML, cắt trong trần 3 500 ký tự) · nút
+*NGOÀI kế hoạch*) · cổng kiểm · **Bot tổng kết** (Markdown → HTML, cắt trong trần 3 500 ký tự) · nút
 **Hỏi thêm về bản vá** (ai-CR-013) · nút **Bỏ việc này**.
 Kèm **tệp `<mã>.diff`** gửi bằng `sendDocument` để đọc trọn bản vá trên điện thoại. Mọi thứ ghi
 vào `tab_agent_run` (`provider = claude_code`, model, token, chi phí, `artifact` = phiên + tệp +
@@ -566,7 +566,7 @@ AGENT_PR_ENABLED=false             # true = tự đẩy + mở PR sau commit; fa
 AGENT_GITHUB_TOKEN=                # PAT chi tiết (Contents + Pull requests R/W, một kho) — đại ca TỰ dán
 AGENT_GITHUB_REPO=giabaohb99/procurement-tool
 AGENT_GITHUB_API_URL=https://api.github.com
-# ---- bậc 2 GĐ2b·2 (ai-CR-014) — gộp erp-v2 + deploy dev, CHỈ sau khi đại ca bấm «Đồng ý»
+# ---- bậc 2 GĐ2b·2 (ai-CR-014) — gộp erp-v2 + deploy dev, CHỈ sau khi đại ca bấm "Đồng ý"
 AGENT_DEPLOY_ENABLED=false         # false = thẻ kết quả không có nút gộp; hẹn giờ cũ tới giờ cũng không chạy
 AGENT_VPS_HOST=                    # VPS dev; trống = nút gộp báo chưa khai
 AGENT_VPS_PORT=22
@@ -582,7 +582,7 @@ AGENT_VPS_SSH_KEY_FILE=            # ĐƯỜNG DẪN khóa riêng trên máy đ�
 # AGENT_FILE_MAX_MB=20
 # ---- phiếu hỗ trợ ERP làm nguồn việc (ai-CR-037) — trống là tắt cửa đó
 # AGENT_TICKET_ASSIGNEE=<email tài khoản ERP của bot>     # nhóm hỗ trợ giao phiếu cho tài khoản này
-# AGENT_TICKET_DEPARTMENTS=Phần mềm,IT                    # nhãn «Bộ phận / Nhóm», chỉ phiếu MỚI
+# AGENT_TICKET_DEPARTMENTS=Phần mềm,IT                    # nhãn "Bộ phận / Nhóm", chỉ phiếu MỚI
 # ---- đăng nhập ERP trong Telegram (ai-CR-038)
 # AGENT_LINK_ENABLED=true
 # AGENT_LINK_DAYS=30
@@ -601,7 +601,7 @@ hết hạn mức thì Trợ lý AI đang phục vụ người thật chết the
 `CLAUDE_CODE_OAUTH_TOKEN` là khóa **đăng nhập của subscription**, một thứ khác: nó cố ý **không
 khai trong `Settings`** để không tiện tay đọc được từ mọi chỗ trong ứng dụng; chỉ `coder.build_env`
 lấy nó từ `os.environ` và chỉ đưa vào tiến trình `claude`. Khóa hết hạn hoặc sai thì runner báo
-`401` kèm câu «chạy lại `claude setup-token`». Không có `AGENT_MAX_CONCURRENT_RUNS`: số việc song
+`401` kèm câu "chạy lại `claude setup-token`". Không có `AGENT_MAX_CONCURRENT_RUNS`: số việc song
 song là `-c 1` của worker, đổi thì đổi lệnh chạy, không đổi cờ.
 
 ### `AGENT_ASSISTANT_USER` — biến nguy hiểm nhất trong bảng trên (QĐ-AI-10, 18/09/2026)
@@ -691,7 +691,7 @@ Nên phải chỉ đích danh một tài khoản ERP để chạy dưới quyề
 | Bậc | Gồm gì | Bot được đụng mã nguồn? |
 |---|---|---|
 | **1** | **Năm** bảng sổ · Telegram kéo tin (poller riêng giữ kết nối 25 giây từ `ai-CR-008`; stack không có poller thì beat 10 giây) + nút · Gemini TRIAGE + PLAN · Qdrant index tài liệu (kho riêng `agent_docs`) · nhánh `/hoi` gọi Trợ lý AI. **Nguồn ticket chỉ Telegram, không màn hình, xem sổ bằng Adminer.** Đầu ra chỉ là in PLAN ra Telegram và ghi vào sổ. | Không |
-| **2** | `agent-runner` + `claude -p`, nhánh riêng, **mở PR, hoặc gộp `erp-v2` chỉ khi đại ca bấm «Đồng ý» trên Telegram**. **GĐ1 xong 22/09/2026 (ai-CR-011)**: Duyệt → runner sửa mã trong worktree riêng → pytest phần vừa sửa → commit trong container → thẻ kết quả + tệp `.diff` về Telegram. **GĐ2a xong 22/09/2026 (ai-CR-012)**: đẩy nhánh lên GitHub + mở PR vào `erp-v2` (tự động theo cờ, hoặc nút trên thẻ) — PR #95 là PR đầu tiên do bot mở. **GĐ2b·1 xong 22/09/2026 (ai-CR-013)**: nút «Hỏi thêm về bản vá» → `claude -p --resume` đúng phiên, chỉ đọc, trả lời trên Telegram; phiên cất trong volume worktree. **GĐ2b·2 xong 22/09/2026 (ai-CR-014)**: nút «Gộp erp-v2 + deploy dev» → thẻ hỏi → đồng ý/hẹn giờ → runner `merge --no-ff` + đẩy + SSH deploy dev + health; «Thu hồi» = `git revert -m 1` + deploy lại. GĐ3 = cổng kiểm frontend (xem §7) | Có, trong worktree; PR trên GitHub; bản gộp trên `erp-v2` + dev VPS khi đại ca đồng ý |
+| **2** | `agent-runner` + `claude -p`, nhánh riêng, **mở PR, hoặc gộp `erp-v2` chỉ khi đại ca bấm "Đồng ý" trên Telegram**. **GĐ1 xong 22/09/2026 (ai-CR-011)**: Duyệt → runner sửa mã trong worktree riêng → pytest phần vừa sửa → commit trong container → thẻ kết quả + tệp `.diff` về Telegram. **GĐ2a xong 22/09/2026 (ai-CR-012)**: đẩy nhánh lên GitHub + mở PR vào `erp-v2` (tự động theo cờ, hoặc nút trên thẻ) — PR #95 là PR đầu tiên do bot mở. **GĐ2b·1 xong 22/09/2026 (ai-CR-013)**: nút **Hỏi thêm về bản vá** → `claude -p --resume` đúng phiên, chỉ đọc, trả lời trên Telegram; phiên cất trong volume worktree. **GĐ2b·2 xong 22/09/2026 (ai-CR-014)**: nút **Gộp erp-v2 + deploy dev** → thẻ hỏi → đồng ý/hẹn giờ → runner `merge --no-ff` + đẩy + SSH deploy dev + health; **Thu hồi** = `git revert -m 1` + deploy lại. GĐ3 = cổng kiểm frontend (xem §7) | Có, trong worktree; PR trên GitHub; bản gộp trên `erp-v2` + dev VPS khi đại ca đồng ý |
 | **3** | Tự merge vào `erp-v2` khi CI xanh + tự đưa lên **dev** | Có |
 | **4** | Cổng **prod**: đại ca ra lệnh → GitHub Environment có required reviewer → sao lưu DB → phát hành | Có |
 
@@ -714,10 +714,10 @@ nhiều công.
 | Bot tự sinh migration làm hỏng DB | **Cao** | **Cấm tuyệt đối.** Cần đổi cấu trúc DB thì dừng và leo thang cho người |
 | Runner chưa chặn được egress (compose không có allowlist tên miền) — bot lý thuyết gửi được mã đi bất kỳ đâu | **Vừa** | Ghi nhận mở từ ai-CR-011. Chặn tạm bằng: worktree không có bí mật nào (`.env` không nằm trong git), `--allowedTools` không có `curl`/`wget`/`Bash` tự do. Dứt điểm ở GĐ sau bằng proxy allowlist |
 | `CLAUDE_CODE_OAUTH_TOKEN` là khóa đăng nhập subscription của đại ca, nằm trong `.env` của stack bot | **Vừa** | Chỉ đưa vào tiến trình `claude` (môi trường sạch, `git`/`pytest` không thấy) · không khai trong `Settings` · runner không mount home · khóa xoay bằng `claude setup-token` |
-| `AGENT_GITHUB_TOKEN` ghi được vào kho (Contents R/W) — bot đẩy được lên `main`/`erp-v2` | **Vừa** | Mã runner đẩy `bot/*` (có `--force`) và `erp-v2` (KHÔNG `--force`, chỉ từ `merge_and_deploy`/`revert_and_deploy` sau nút «Đồng ý» của đúng chat đại ca — ai-CR-014); không bao giờ đẩy `main`; khóa không vào tiến trình `claude`, không lên dòng lệnh. Branch protection trên GitHub: đại ca 22/09 giữ như hiện tại (chưa bật). **22/09/2026: giá trị khóa này bị in ra bản ghi phiên làm việc của trợ lý khi rà `.env` — kiến nghị cấp lại PAT** |
+| `AGENT_GITHUB_TOKEN` ghi được vào kho (Contents R/W) — bot đẩy được lên `main`/`erp-v2` | **Vừa** | Mã runner đẩy `bot/*` (có `--force`) và `erp-v2` (KHÔNG `--force`, chỉ từ `merge_and_deploy`/`revert_and_deploy` sau nút **Đồng ý** của đúng chat đại ca — ai-CR-014); không bao giờ đẩy `main`; khóa không vào tiến trình `claude`, không lên dòng lệnh. Branch protection trên GitHub: đại ca 22/09 giữ như hiện tại (chưa bật). **22/09/2026: giá trị khóa này bị in ra bản ghi phiên làm việc của trợ lý khi rà `.env` — kiến nghị cấp lại PAT** |
 | Khóa SSH của đại ca (`~/.ssh/id_ed25519_vps`) bind-mount vào `agent-runner` để deploy dev | **Vừa** | Chỉ-đọc; tiến trình worker (root) chép ra bản 0600 tạm rồi xóa ngay sau lượt; `claude` không thấy (`build_env` sạch, không `ssh` trong allowedTools); script deploy dựng toàn bộ từ `settings`, không nhận chữ từ bản vá hay Telegram; cờ `AGENT_DEPLOY_ENABLED` tắt là không có đường nào tới SSH. Khóa riêng cho bot với `command=` khóa cứng để sau, đại ca chọn dùng khóa sẵn có |
 | Phiên Claude Code từng nằm trong lớp ghi của container (`~/.claude` của `runner`), mất mỗi lần `up --force-recreate` — nút hỏi thêm báo "phiên không còn" | Vừa | Từ ai-CR-013: `CLAUDE_CONFIG_DIR` trỏ vào volume `agent_worktrees`; kiểm chứng `--resume` sống qua recreate. Phiên của việc TRƯỚC 22/09 (AI-0005) đã mất, không cứu |
-| `--permission-mode acceptEdits` cho bot ghi mọi tệp trong worktree, danh sách cấm ghi chỉ chặn được SAU (không commit) | Vừa | Worktree là bản checkout sạch (không `.env`, không khóa); tệp cấm bị đụng thì `git reset`, không commit, leo thang. Cấm ĐỌC thì thi hành bằng «không có gì để đọc» |
+| `--permission-mode acceptEdits` cho bot ghi mọi tệp trong worktree, danh sách cấm ghi chỉ chặn được SAU (không commit) | Vừa | Worktree là bản checkout sạch (không `.env`, không khóa); tệp cấm bị đụng thì `git reset`, không commit, leo thang. Cấm ĐỌC thì thi hành bằng **không có gì để đọc** |
 | Đốt hết hạn mức subscription | Vừa | Trần task/ngày, một job một lúc, chỉ chạy bài kiểm phần vừa sửa |
 | Codebase to (141 bảng, ~3200 bài kiểm FE) nên mỗi task ăn nhiều lượt | Vừa | `plan_files` khoanh phạm vi ngay từ PLAN |
 | Máy đại ca tắt thì hệ thống đứng | Thấp | Chấp nhận. Quét theo mốc sửa nên bật lại là bắt kịp |
@@ -748,7 +748,7 @@ không thứ nào trong ba thứ đó giúp trả lời nhanh hơn.
 
 ---
 
-## 13. Hướng mở rộng đã chốt 24/09/2026 — «trợ lý mở»
+## 13. Hướng mở rộng đã chốt 24/09/2026 — "trợ lý mở"
 
 Bậc 1–2 ở trên giữ nguyên. Từ 24/09/2026 đại ca chốt thêm ba hướng, ghi chi tiết và lộ trình theo
 phase ở [`04-danh-sach-tinh-nang.md`](./04-danh-sach-tinh-nang.md) (nhóm M, K, P):
@@ -759,7 +759,7 @@ phase ở [`04-danh-sach-tinh-nang.md`](./04-danh-sach-tinh-nang.md) (nhóm M, K
    **web trước**, rồi mở rộng Telegram và Zalo dùng chung lõi. Mỗi người tự nối Google (Drive, Lịch)
    của mình bằng OAuth riêng, khóa lưu mã hóa.
 2. **Ai được ra lệnh sửa mã** không cấu hình trên web, không build, không khởi động lại: đại ca
-   **nhắn cho bot** («cho anh Được quyền gộp dev»), bot hỏi lại rồi ghi sổ (`tab_agent_grant`), mỗi lần
+   **nhắn cho bot** (**cho anh Được quyền gộp dev**), bot hỏi lại rồi ghi sổ (`tab_agent_grant`), mỗi lần
    cấp/gỡ đều báo lại và tra lại được. Chỉ chat của đại ca (`AGENT_TELEGRAM_CHAT_ID` khai cứng trong
    `.env`) cấp được. Ba cấp: báo lỗi (ai cũng được) · duyệt kế hoạch · gộp dev. **Prod không cấp cho ai.**
    Người ra lệnh KHÔNG cần SSH hay quyền GitHub — khóa nằm ở bot và bị giới hạn (§11: khóa riêng của
@@ -770,12 +770,12 @@ phase ở [`04-danh-sach-tinh-nang.md`](./04-danh-sach-tinh-nang.md) (nhóm M, K
    `04`): không có bot local và bot dev riêng, vì một token Telegram chỉ cho một tiến trình kéo tin. Bot
    trên dev là trợ lý cá nhân của mọi người đã `/dangnhap`; tài khoản đại ca là trường hợp đặc biệt
    (`AGENT_TELEGRAM_CHAT_ID`) mới có mảng mã nguồn. Phần chạy Claude Code tách thành **runner** đặt trên
-   máy đại ca và máy nào đại ca đăng ký («thêm máy của anh Được», sổ `tab_agent_runner`), nối lên dev
+   máy đại ca và máy nào đại ca đăng ký (**thêm máy của anh Được**, sổ `tab_agent_runner`), nối lên dev
    qua đường hầm SSH bằng khóa riêng của máy, kéo việc về, ghi kết quả bằng tài khoản MySQL chỉ đụng
    bảng của bot. Việc dính máy đã bắt đầu nó; máy tắt thì việc chờ và bot nói chờ máy nào. Việc mới thì
    máy rảnh nhận trước, chỉ định được bằng câu nhắn; deploy dev chỉ máy đại ca và máy được bật cờ.
 5. **Ba loại khóa Gemini, không chung**: khóa cá nhân (Telegram / Zalo của từng người, kể cả lượt gom việc
-   và lập kế hoạch của đại ca; dán ở Trang cá nhân → «Khóa AI», lưu mã hóa, không dán qua chat) · khóa
+   và lập kế hoạch của đại ca; dán ở Trang cá nhân → **Khóa AI**, lưu mã hóa, không dán qua chat) · khóa
    công ty trên dev chỉ cho Trợ lý web · không còn khóa của bot. Không lùi về khóa công ty: chưa gắn khóa
    thì bot không trả lời câu hỏi AI, các việc không cần Gemini vẫn dùng được. `AGENT_ASSISTANT_USER` để
    trống trên dev (§9: biến nguy hiểm nhất, nay bỏ khỏi dev).

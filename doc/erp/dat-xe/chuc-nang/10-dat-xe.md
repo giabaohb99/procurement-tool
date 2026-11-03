@@ -66,7 +66,7 @@ Số hóa việc đặt xe trong nội bộ DEGO: nhân sự tạo **yêu cầu 
 > **Hai đường duyệt, chọn bằng một cái cờ.** Mặc định (cờ `ApprovalSwitch` của entity
 > `vehicle_booking` TẮT, hoặc bật mà chưa khai luồng nào khớp) thì Duyệt/Trả/Từ chối là **chuyển
 > trạng thái trực tiếp theo quyền `approve`** — đúng bảng trên. Bật cờ + có luồng khớp thì gửi duyệt
-> mở một **phiên duyệt nhiều bước** của `approval_flow`; xem mục «Luồng duyệt nhiều bước» cuối tài liệu.
+> mở một **phiên duyệt nhiều bước** của `approval_flow`; xem mục **Luồng duyệt nhiều bước** cuối tài liệu.
 
 ### Luồng duyệt nhiều bước (`approval_bridge`)
 
@@ -84,14 +84,14 @@ Cái nối nằm ở `backend/app/modules/vehicle_booking/approval_bridge.py`. B
    `first_approver_id` — người mà NGƯỜI TẠO tự chọn trong biểu mẫu, có thể chưa hề ký — rồi chi
    tiết phiếu lẫn **bản in** đều ghi tên người đó với ô giờ trống.
 4. **Người ĐANG GIỮ VIỆC đọc được phiếu dù ngoài phạm vi dữ liệu** (`booking_for_approver`, nới ở
-   cả `entity_hooks` lẫn `GET /api/vehicle-bookings/{id}`). Đặt xe **không còn màn «Việc của tôi»**
+   cả `entity_hooks` lẫn `GET /api/vehicle-bookings/{id}`). Đặt xe **không còn màn "Việc của tôi"**
    (xóa 21/08/2026): nút Duyệt nằm trong `BookingApprovalPanel` NẰM TRONG trang chi tiết phiếu, nên
    404 ở cửa đọc = phiếu kẹt vĩnh viễn, không chỗ nào đỏ lên. Nới chỉ cho cửa ĐỌC và chỉ lúc việc
    còn treo — ký xong là đóng lại (cùng luật với `leave.can_read_request`, CR-260).
 5. **Xóa phiếu thì dọn luôn phiên duyệt** (`instance_service.delete_by_entity`, gọi TRƯỚC khi đặt
    `is_deleted`, cùng giao dịch). Dấu vết không mất theo: `_write_log` đã chép mọi kết cục của
    luồng vào nhật ký thao tác của chính phiếu.
-6. **Ô «Trưởng bộ phận phê duyệt» (`first_approver_id`) bộ máy KHÔNG đọc tới.** Nó không nằm trong
+6. **Ô "Trưởng bộ phận phê duyệt" (`first_approver_id`) bộ máy KHÔNG đọc tới.** Nó không nằm trong
    `entity_context`, nên bước khai *lấy người duyệt từ ô trên phiếu* (`APPROVER_FIELD`) không bao
    giờ khớp → bước rỗng → phiếu kẹt. Kể cả khai thêm cũng sai kiểu: ô đó lưu **id TÀI KHOẢN** còn
    `APPROVER_FIELD` đọc ra **id NHÂN SỰ**. Ô này hiện chỉ dùng để hiển thị.
@@ -99,7 +99,7 @@ Cái nối nằm ở `backend/app/modules/vehicle_booking/approval_bridge.py`. B
 > **QUYẾT ĐỊNH 21/09/2026 — điều phối SỚM vẫn cho.** `dispatch_booking` cố ý chỉ chặn `_CLOSED_STATUSES`
 > (hủy · từ chối · hoàn thành), nên gán được xe + tài xế cho phiếu **chưa ai ký, kể cả còn Nháp** —
 > giữ lại vì có chuyến gấp phải gọi xe trước chữ ký. Đổi lại, khi luồng ký xong thì phiếu **giữ
-> nguyên «Đã điều phối»**, không bị đẩy lùi về «Đã duyệt».
+> nguyên "Đã điều phối"**, không bị đẩy lùi về **Đã duyệt**.
 
 > **I08 cho đường duyệt MỘT BƯỚC** (`service._block_self_approval`, 21/09/2026): người lập phiếu
 > không tự bấm Duyệt phiếu của mình — **trừ người có phạm vi `all`** trên `vehicle_booking.approve`
@@ -180,27 +180,27 @@ vào luồng thì khóa.
   `GET /api/vehicle-bookings/pick-options` (gác `vehicle_booking.create` — nhân viên không cần `company.read`).
 - **Công ty**: mọi pháp nhân đang hoạt động; mặc định pháp nhân trên hồ sơ người tạo. Chốt `approver_picker.check_company`
   (tồn tại + đang dùng; phiếu cũ giữ công ty đã ngừng vẫn sửa được nếu không đổi ô này).
-- **Người duyệt**: `first_approver_id` = id TÀI KHOẢN. Danh sách = ĐÚNG danh sách bước «Người có quyền duyệt» ở màn
+- **Người duyệt**: `first_approver_id` = id TÀI KHOẢN. Danh sách = ĐÚNG danh sách bước **Người có quyền duyệt** ở màn
   khai luồng (`permission_approvers.holder_profiles`: phạm vi Phòng ban/Công ty/Tất cả, không tính vai trò `admin`, tài
   khoản mở + hồ sơ còn làm). Anh Được chốt 26/10/2026 (dev: màn khai luồng 3 người thì ô chọn cũng đúng 3). Bản 24/10
-  từng nới ra «mọi phạm vi, kể cả Quản trị» cho local khỏi trống — đã bỏ.
+  từng nới ra **mọi phạm vi, kể cả Quản trị** cho local khỏi trống — đã bỏ.
   Chốt `check_approver`: phải trong danh sách, không phải chính người tạo — kiểm khi tạo, khi đổi ô và khi gửi.
-- **Thư «Gửi duyệt» (`dx_submitted`)**: bộ máy TẮT → chuông + thư chỉ tới người được chọn (`notify._approvers`).
-  Bộ máy BẬT → bước «Người có quyền duyệt» giao người được chọn (bối cảnh `picked_approver_employee_id`, bỏ soi
+- **Thư "Gửi duyệt" (`dx_submitted`)**: bộ máy TẮT → chuông + thư chỉ tới người được chọn (`notify._approvers`).
+  Bộ máy BẬT → bước **Người có quyền duyệt** giao người được chọn (bối cảnh `picked_approver_employee_id`, bỏ soi
   phạm vi riêng cho họ vì hai ô độc lập; từ CR-706 giao thêm cả người cùng quyền — xem mục ngay dưới); `_after_submit` gửi thư cho người nhận việc chặng đầu (`notify_task_assignees`, chỉ thư —
   chuông do bộ máy ghi). Bước khai cách khác thì đi theo cấu hình luồng.
-- **Người CÙNG QUYỀN cũng duyệt được — luật mới duoc-CR-706 (31/10/2026, thay luật «chỉ đúng người được chọn» của CR-681)**:
-  - Bộ máy BẬT, bước «Người có quyền duyệt»: giao **người được chọn (đứng đầu) ∪ mọi người giữ quyền mà phạm vi phủ phiếu**
+- **Người CÙNG QUYỀN cũng duyệt được — luật mới duoc-CR-706 (31/10/2026, thay luật "chỉ đúng người được chọn" của CR-681)**:
+  - Bộ máy BẬT, bước **Người có quyền duyệt**: giao **người được chọn (đứng đầu) ∪ mọi người giữ quyền mà phạm vi phủ phiếu**
     (đúng điều 1-3 của phiếu không chọn: ô Duyệt, phạm vi Phòng ban/Công ty/Tất cả, không `admin`). Người được chọn vẫn được giao
-    kể cả phạm vi không phủ. Chế độ nhiều người của bước giữ nguyên (thường «Một người duyệt là đủ»: một người ký thì việc của
+    kể cả phạm vi không phủ. Chế độ nhiều người của bước giữ nguyên (thường **Một người duyệt là đủ**: một người ký thì việc của
     người còn lại tự đóng). Người được chọn mất quyền thì bỏ lựa chọn, tính như phiếu chưa chọn.
-  - **Thông báo**: chuông + thư «chờ bạn duyệt» CHỈ tới người được chọn (`entity_hooks.register_task_notify_filter` →
-    `approval_bridge._should_notify_task`); người cùng quyền thấy việc ở «Việc chờ duyệt» và có nút Duyệt trên phiếu (nút dựa vào
+  - **Thông báo**: chuông + thư **chờ bạn duyệt** CHỈ tới người được chọn (`entity_hooks.register_task_notify_filter` →
+    `approval_bridge._should_notify_task`); người cùng quyền thấy việc ở **Việc chờ duyệt** và có nút Duyệt trên phiếu (nút dựa vào
     việc của người xem / quyền `approve`, KHÔNG so `first_approver_id`). Phiếu không chọn người thì báo hết như cũ.
   - Bộ máy TẮT: ai có `vehicle_booking.approve` với phạm vi phủ phiếu (`get_scoped`) duyệt / trả / từ chối được (đường cũ vốn không
-    chặn thêm); người được chọn có cửa riêng khi phạm vi không phủ; thư «Gửi duyệt» vẫn chỉ tới người được chọn.
+    chặn thêm); người được chọn có cửa riêng khi phạm vi không phủ; thư **Gửi duyệt** vẫn chỉ tới người được chọn.
   - Quản trị (`admin`): không được giao việc trong bộ máy và bộ máy không có ngoại lệ admin (chỉ qua ủy quyền); ở đường cũ admin
-    duyệt được nhờ ô Duyệt «Tất cả» trong ma trận quyền.
+    duyệt được nhờ ô Duyệt **Tất cả** trong ma trận quyền.
   - Phiếu ĐANG CHỜ đã giao một người trước CR-706: `python scripts/mo_rong_nguoi_duyet_dat_xe.py` (xem thử) / `--apply` (ghi) —
     `vehicle_booking/approver_expand.py`, idempotent, thêm việc cho người còn thiếu ở chặng đang chạy, không gửi thư.
 - **Người được chọn xem + duyệt được dù ngoài phạm vi** (đường cũ): `approval_bridge.is_picked_legacy_approver` — phiếu
@@ -208,17 +208,17 @@ vào luồng thì khóa.
   duyệt / trả / từ chối (`_scoped_or_404(..., "approve")`); sửa / điều phối vẫn theo phạm vi. Duyệt xong cửa đóng.
 - **Hai bên đều thấy phiếu** (anh Được chốt 24/10/2026): cột `requester_company_id` = pháp nhân NGƯỜI TẠO, chụp lúc tạo
   (migration `cr681vbrqco01`, lấp dữ liệu cũ từ hồ sơ người tạo). `SCOPE_FIELDS["vehicle_booking"]["company_alt"]` → bậc
-  «Công ty», bậc «Phòng ban» (vế công ty) và ô «chọn công ty» của người dùng khớp `company_id` HOẶC `requester_company_id`;
-  ô «loại trừ công ty» chỉ so `company_id` (thu hẹp). Đồng bộ app cũ không ghi đè cột này (`LEGACY_READONLY_FIELDS`).
-  Báo cáo / tổng quan nhóm theo công ty vẫn dùng `company_id` (công ty chọn trên phiếu). Bước «Người có quyền duyệt» chưa chọn người thì giao người giữ quyền ở cả hai công ty.
+  **Công ty**, bậc **Phòng ban** (vế công ty) và ô **chọn công ty** của người dùng khớp `company_id` HOẶC `requester_company_id`;
+  ô **loại trừ công ty** chỉ so `company_id` (thu hẹp). Đồng bộ app cũ không ghi đè cột này (`LEGACY_READONLY_FIELDS`).
+  Báo cáo / tổng quan nhóm theo công ty vẫn dùng `company_id` (công ty chọn trên phiếu). Bước **Người có quyền duyệt** chưa chọn người thì giao người giữ quyền ở cả hai công ty.
 - **Thư mọi chặng + người nhận ủy quyền**: `entity_hooks.register_task_mailer` — bộ máy gọi ở `notify_new_tasks` mỗi lần mở
   việc đang chờ (chặng đầu, chặng sau, giao lại khi sửa luồng); Đặt xe khai `_mail_new_task` (mẫu `dx_submitted`).
   Thư đi qua `notification.email_queue`: ghi `EmailLog` trong giao dịch, đẩy task Celery `notification.send_email` SAU
   commit giao dịch NGOÀI CÙNG (bỏ qua sự kiện của savepoint — `in_nested_transaction()`; hủy giao dịch thì không thư nào);
   worker chết thì dòng nằm `pending`. Tiêu đề cắt 255 ký tự, chống trùng theo địa chỉ thư.
-- Chốt «tự chọn mình» so theo HỒ SƠ nhân sự với cả người tạo lẫn người bấm gửi; hồ sơ đã nghỉ việc không chọn được.
+- Chốt **tự chọn mình** so theo HỒ SƠ nhân sự với cả người tạo lẫn người bấm gửi; hồ sơ đã nghỉ việc không chọn được.
   Lưu nháp không đổi người duyệt thì không kiểm lại. `first_approver_name` = người được chọn (khác `approver_name`).
-- **Cấp mã DX khi nhiều người tạo cùng lúc** (sửa cùng CR): chèn mã tạm duy nhất `~<uuid>` rồi cấp mã qua «cửa xoay»
+- **Cấp mã DX khi nhiều người tạo cùng lúc** (sửa cùng CR): chèn mã tạm duy nhất `~<uuid>` rồi cấp mã qua **cửa xoay**
   (khóa ghi dòng DX id nhỏ nhất + đọc có khóa). Trước đó 60 người gửi cùng lúc → 57 lỗi 500 (deadlock + trùng DX394).
 
 ## B. Khối riêng theo loại

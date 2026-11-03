@@ -1,7 +1,7 @@
 """VĂN BẢN CÁ NHÂN — AI THẤY ĐƯỢC. Đơn nghỉ phép không được lộ ra ngoài.
 
 Phương châm của cả tệp: **người không liên quan thì không thấy nó ở BẤT KỲ đâu** —
-không trong danh sách, không trong tìm kiếm, không qua «Áp dụng cho tôi», không
+không trong danh sách, không trong tìm kiếm, không qua "Áp dụng cho tôi", không
 qua quyền theo sổ, và gõ thẳng id lên URL cũng không.
 
 Nền của vấn đề: `document.read` phạm vi *công ty* nghĩa là "đọc mọi văn bản của
@@ -150,7 +150,7 @@ def test_nguoi_khong_co_vai_tro_nao_khong_thay_gi(db, align):
 def test_tim_kiem_khong_lo_tieu_de_don_nghi_phep(db, align):
     """K03 — danh sách và tìm kiếm chạy cùng một điều kiện.
 
-    Lọc ở chi tiết mà quên lọc ở truy vấn thì gõ «nghỉ ốm» vào ô tìm kiếm là ra
+    Lọc ở chi tiết mà quên lọc ở truy vấn thì gõ "nghỉ ốm" vào ô tìm kiếm là ra
     nguyên cái tiêu đề, đủ để biết ai đang ốm dù bấm vào ăn 404.
     """
     thay = _danh_sach(db, align["tk_dong_nghiep"])
@@ -160,7 +160,7 @@ def test_tim_kiem_khong_lo_tieu_de_don_nghi_phep(db, align):
 
 
 def test_ensure_can_tra_404_chu_khong_phai_403(db, align):
-    """403 đã tự nói «có văn bản này nhưng anh không được xem» — lộ đúng thứ cần giấu."""
+    """403 đã tự nói "có văn bản này nhưng anh không được xem" — lộ đúng thứ cần giấu."""
     with pytest.raises(HTTPException) as error:
         access_service.ensure_can(db, align["don"], align["tk_dong_nghiep"],
                                   get_perm_profile(db, align["tk_dong_nghiep"]), "read")
@@ -246,7 +246,7 @@ def test_thanh_vien_SO_khong_mo_duoc_don_nghi_phep(db, align, seed):
 
 
 def test_pham_vi_ap_dung_khong_mo_duoc_don_nghi_phep(db, align, seed):
-    """«Áp dụng cho tôi» mở cho MỌI tài khoản đăng nhập — đường vòng rộng nhất.
+    """"Áp dụng cho tôi" mở cho MỌI tài khoản đăng nhập — đường vòng rộng nhất.
 
     Nó vốn để nhân viên thường đọc được quy chế áp dụng cho mình. Đơn nghỉ phép
     lọt vào đó là cả nhóm áp dụng đọc được.

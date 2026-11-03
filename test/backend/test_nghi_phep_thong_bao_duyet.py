@@ -1,7 +1,7 @@
 """CR-260 — THÔNG BÁO cho người duyệt khi gửi duyệt đơn nghỉ phép.
 
-Đường báo việc là thứ duy nhất nối «có người vừa nộp đơn» với «có người phải
-ký». Nó gãy thì không ai ăn lỗi, không có gì đỏ lên: tờ đơn nằm im trong hàng
+Đường báo việc là thứ duy nhất nối "có người vừa nộp đơn" với "có người phải
+ký". Nó gãy thì không ai ăn lỗi, không có gì đỏ lên: tờ đơn nằm im trong hàng
 đợi cho tới khi người xin nghỉ sốt ruột đi hỏi bằng miệng — đúng cuộc gọi mà cả
 phân hệ này sinh ra để chặn.
 
@@ -278,7 +278,7 @@ def test_nguoi_duyet_KHONG_co_tai_khoan_van_gui_duyet_duoc(db, leave_type, submi
     """Không gửi được thư thì thôi, tuyệt đối không được kéo cả phiếu chết theo.
 
     Đây là lý do `notify_new_tasks` nuốt lỗi. Bỏ chốt đó thì một hồ sơ nhân sự
-    thiếu tài khoản làm hỏng nút «Gửi duyệt» của cả công ty.
+    thiếu tài khoản làm hỏng nút "Gửi duyệt" của cả công ty.
     """
     khong_tai_khoan = Employee(code="NO_ACC", full_name="Không tài khoản",
                                company_id=1, department_id=7, is_active=True)

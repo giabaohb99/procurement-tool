@@ -1,9 +1,9 @@
-"""bao-CR-563 — «Trả về» phiếu khảo sát dọn những gì phiếu đã đẩy đi.
+"""bao-CR-563 — "Trả về" phiếu khảo sát dọn những gì phiếu đã đẩy đi.
 
 Lỗ có thật sau bao-CR-554 (cho trả về cả phiếu ĐÃ DUYỆT): dòng được duyệt là phương án tự gắn
 sang Yêu cầu báo giá; trả về mà để nguyên thì phương án cũ ở lại, nhân viên sửa phiếu là dòng
 bị xóa rồi tạo lại nên phương án trỏ vào dòng đã mất, duyệt lại thì gắn trùng — và dòng sửa
-giá xong vẫn «Đã duyệt». Đại ca chốt 02/10/2026: trạng thái vẫn là Bị trả lại, sửa được như Nháp.
+giá xong vẫn "Đã duyệt". Đại ca chốt 02/10/2026: trạng thái vẫn là Bị trả lại, sửa được như Nháp.
 """
 from types import SimpleNamespace
 
@@ -161,7 +161,7 @@ def test_returned_survey_is_editable_like_a_draft(db):
 
 
 def test_returned_survey_must_be_reapproved_line_by_line(db):
-    #  Dòng đã về «Chờ duyệt» nên duyệt cả phiếu ngay sau khi gửi lại phải bị chặn.
+    #  Dòng đã về "Chờ duyệt" nên duyệt cả phiếu ngay sau khi gửi lại phải bị chặn.
     s, _products = _survey(db)
     _return(db, s)
     s.status = "submitted"

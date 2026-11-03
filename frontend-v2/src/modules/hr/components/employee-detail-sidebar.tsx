@@ -11,7 +11,7 @@ interface EmployeeDetailSidebarProps {
   employee: EmployeeDetail
   /** Ảnh đại diện (đã gắn sẵn quyền đổi ảnh ở trang cha). */
   avatar: ReactNode
-  /** Mốc «hôm nay» — tiêm vào để test không phụ thuộc đồng hồ máy. */
+  /** Mốc "hôm nay" — tiêm vào để test không phụ thuộc đồng hồ máy. */
   today?: Date
   className?: string
 }
@@ -23,7 +23,7 @@ interface EmployeeDetailSidebarProps {
  * (trang cha truyền `xl:border-l`).
  *
  * Chỉ ĐỌC: mọi ô sửa vẫn nằm trong các tab. Dòng nào chưa có dữ liệu thì ẩn hẳn,
- * riêng «Quản lý trực tiếp» luôn hiện vì «Chưa gán» là thông tin bộ máy duyệt cần
+ * riêng "Quản lý trực tiếp" luôn hiện vì "Chưa gán" là thông tin bộ máy duyệt cần
  * (đơn sẽ lùi về trưởng bộ phận).
  */
 export function EmployeeDetailSidebar({
@@ -44,7 +44,7 @@ export function EmployeeDetailSidebar({
       <div
         className={cn(
           //  Dưới `xl`: dải ngang gọn phía trên tab (ảnh trái, chữ 2 cột bên phải, bỏ biểu
-          //  tượng và dòng «Cập nhật») — bản dọc đo được ~700px ở khổ 390px, đẩy dải tab
+          //  tượng và dòng "Cập nhật") — bản dọc đo được ~700px ở khổ 390px, đẩy dải tab
           //  xuống dưới nếp gấp. Từ `xl`: cột dọc bên phải như thanh bên ERPNext, DÍNH ngay
           //  dưới cụm tiêu đề + tab (trang cha ghi chiều cao cụm đó vào `--sticky-head-h`).
           'flex flex-wrap items-start gap-4 px-4 py-4 sm:px-6',

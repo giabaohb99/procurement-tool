@@ -1,4 +1,4 @@
-"""duoc-CR-655 (D0d) — nhóm chỉ số 3.8 «Dùng AI»: chưa thu → NOT_COLLECTED, đã thu → đếm đúng, số truy vấn nguồn cố định,
+"""duoc-CR-655 (D0d) — nhóm chỉ số 3.8 "Dùng AI": chưa thu → NOT_COLLECTED, đã thu → đếm đúng, số truy vấn nguồn cố định,
 không lộ chuỗi tự do. Nguồn `tab_ai_usage_daily` + `tab_audit_log.ai_channel` do ai-CR-230 dựng.
 """
 import json
@@ -66,7 +66,7 @@ def test_da_thu_dem_dung_theo_nguoi(db):
     assert m0["lists"]["ai_tool_groups"] == [["mine", 4], ["leave", 1]]
     assert m0["metrics"]["assistant_questions"]["v"] == 5
 
-    m2 = snap(db, u2).metrics        # thu rồi mà không dùng = 0 thật, không phải «chưa thu»
+    m2 = snap(db, u2).metrics        # thu rồi mà không dùng = 0 thật, không phải "chưa thu"
     assert m2["metrics"]["ai_uses"]["v"] == 0 and m2["metrics"]["ai_docs_drafted"]["v"] == 0
     assert "ai_mcp_share" in m2["unmeasured"] and m2["unmeasured"]["ai_mcp_share"] == int(Why.NOT_APPLICABLE)
     assert m2["lists"]["ai_channels"] == {}

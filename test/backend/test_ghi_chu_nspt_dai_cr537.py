@@ -1,4 +1,4 @@
-"""bao-CR-537 — «Ghi chú NSPT» dài hơn 255 ký tự không còn làm lưu phiếu khảo sát báo lỗi 500.
+"""bao-CR-537 — "Ghi chú NSPT" dài hơn 255 ký tự không còn làm lưu phiếu khảo sát báo lỗi 500.
 
 Mã sự cố D30D24DF trên prod 30/09: ghi chú 263 ký tự, cột VARCHAR(255). SQLite không ép độ dài
 VARCHAR (xem CLAUDE.md), nên kiểm ở tầng MODEL (kiểu cột) và SCHEMA (trần 5000).

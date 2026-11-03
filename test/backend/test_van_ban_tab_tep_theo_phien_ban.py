@@ -1,4 +1,4 @@
-"""Tab «Tệp» của văn bản (phase 09, duoc-CR-478) —
+"""Tab "Tệp" của văn bản (phase 09, duoc-CR-478) —
 `GET /api/documents/{id}/attachments`.
 
 Khác `GET /api/attachments?entity=document_version&entity_id=<phiên bản>`
@@ -156,7 +156,7 @@ def test_url_van_rong_vi_entity_rieng_tu(db, seed, monkeypatch):
 
 
 def test_nguoi_tai_va_ngay_tai_deu_co_mat(db, seed, monkeypatch):
-    """Cột «người tải · ngày» của bảng danh sách tệp — gộp MỘT truy vấn cho cả
+    """Cột "người tải · ngày" của bảng danh sách tệp — gộp MỘT truy vấn cho cả
     trang, không tra tên trong vòng lặp."""
     from app.modules.employee.model import Employee
     from app.modules.user.model import User

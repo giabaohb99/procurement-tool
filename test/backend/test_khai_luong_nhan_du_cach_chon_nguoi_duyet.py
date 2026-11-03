@@ -1,7 +1,7 @@
 """Ô CHỌN BÀY RA CÁI GÌ THÌ LƯU ĐƯỢC CÁI ĐÓ (lỗi 26/08/2026).
 
-Khách khai bước duyệt cho luồng Văn bản, chọn *«Trưởng bộ phận của phòng ban chỉ
-định»* rồi bấm lưu và nhận đúng một dòng đỏ:
+Khách khai bước duyệt cho luồng Văn bản, chọn *"Trưởng bộ phận của phòng ban chỉ
+định"* rồi bấm lưu và nhận đúng một dòng đỏ:
 
     Dữ liệu không hợp lệ (approver_kind: Input should be less than or equal to 6)
 
@@ -58,7 +58,7 @@ def test_cac_o_chon_khac_cung_khop_bang_nhan(o, bang):
 
 
 def test_khong_khai_moi_duoc_lua_chon_da_bo():
-    """«Đẩy lên cấp trên» (2) còn nhãn để đọc dữ liệu cũ nhưng đã bỏ từ CR-114 —
+    """"Đẩy lên cấp trên" (2) còn nhãn để đọc dữ liệu cũ nhưng đã bỏ từ CR-114 —
     nhãn còn không có nghĩa là khai mới được."""
     for code in NO_APPROVER_CHOICES:
         assert NodeIn(seq=1, on_no_approver=code).on_no_approver == code

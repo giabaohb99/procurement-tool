@@ -714,7 +714,7 @@ hotfix riêng, không gộp vào đây.
 đánh id riêng nên cùng một số có nghĩa ở cả hai — phải tra cả hai và cho qua nếu **một trong hai**
 phiếu khảo sát nằm trong phạm vi, đúng bằng thứ lối tải lên đang cho phép.
 
-**Bẫy 2 — siết thẳng là trang «Chứng từ» tự bắn vào chân mình.** Trang đó liệt kê cả chuỗi
+**Bẫy 2 — siết thẳng là trang "Chứng từ" tự bắn vào chân mình.** Trang đó liệt kê cả chuỗi
 PO → PYC → PKS → YCKS rồi cho bấm tải từng dòng; những dòng PYC/PKS/YCKS thường **ngoài** phạm vi
 vai trò của người xem đơn. Nên có `reachable_from_scoped_po`: chỉ dùng cho **lượt tải một tệp**, và
 không mở thêm gì so với hiện trạng — `/chain/zip` vốn đã cho tải **trọn** chuỗi cho bất kỳ ai mở

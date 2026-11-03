@@ -130,6 +130,6 @@ def test_tim_thu_muc_breadcrumb_du_chuoi_o_cay_sau(db, world, roots):
     results = folder_tree_service.search_folders(db, world.actor("a1").user, "dich sau")
     assert [r["id"] for r in results] == [leaf.id]
     crumb_ids = [c["id"] for c in results[0]["breadcrumb"]]
-    #  Đủ từ nhóm «Công ty» → pháp nhân → 45 cấp → chính nó, đúng thứ tự.
+    #  Đủ từ nhóm "Công ty" → pháp nhân → 45 cấp → chính nó, đúng thứ tự.
     assert crumb_ids[-47:] == [root.id, *chain, leaf.id]
     assert results[0]["path_display"].endswith("Cấp 44 / Đích sâu")

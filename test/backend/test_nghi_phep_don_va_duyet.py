@@ -107,7 +107,7 @@ def test_chep_phap_nhan_va_phong_cua_NGUOI_NGHI(db):
 def test_lap_ho_nguoi_khac(db, cap_quyen):
     """Hành chính lập hộ là việc có thật — người nghỉ khai tường minh.
 
-    Cần ĐỦ HAI quyền: tạo đơn với phạm vi rộng hơn «của mình», và đọc được hồ sơ
+    Cần ĐỦ HAI quyền: tạo đơn với phạm vi rộng hơn "của mình", và đọc được hồ sơ
     nhân sự của người đó (xem `ensure_can_create_for`).
     """
     hanh_chinh = _employee(db, code="NV009", name="Trần Hành Chính")
@@ -123,7 +123,7 @@ def test_lap_ho_nguoi_khac(db, cap_quyen):
 
 def test_nguoi_thuong_khong_lap_ho_duoc(db):
     """Chốt vá 07/09/2026 — trước đó gửi kèm `employee_id` bất kỳ là nộp được đơn
-    đứng tên người khác, ở bất kỳ pháp nhân nào. Ô «người nghỉ» chỉ có ở API nên
+    đứng tên người khác, ở bất kỳ pháp nhân nào. Ô "người nghỉ" chỉ có ở API nên
     không ai để ý; nay màn hình có ô chọn thật."""
     nhan_vien = _employee(db, code="NV010", name="Nhân viên thường")
     nguoi_khac = _employee(db, code="NV011", name="Người khác")
@@ -365,7 +365,7 @@ def test_gui_duyet_giu_cho_quy_ngay_lap_tuc(db):
 
 
 def test_gui_duyet_thieu_ly_do_bi_chan(db):
-    """Chốt «nhập đủ» đặt ở lúc GỬI, không phải lúc lưu nháp."""
+    """Chốt "nhập đủ" đặt ở lúc GỬI, không phải lúc lưu nháp."""
     emp = _employee(db)
     obj = _create(db, _user(emp.id), _leave_type(db), reason="")
     assert obj.id   # lưu nháp vẫn được
@@ -451,7 +451,7 @@ def test_ba_ket_cuc_khong_duyet_deu_tra_lai_giu_cho(db, hook, expect_status):
 
 
 def test_tra_ve_thi_sua_va_gui_lai_duoc(db):
-    """Khác «từ chối» đúng ở chỗ này — và phải khác."""
+    """Khác "từ chối" đúng ở chỗ này — và phải khác."""
     emp, lt = _employee(db), _leave_type(db)
     obj = _submit(db, _create(db, _user(emp.id), lt), _user(emp.id))
     approval_bridge._on_returned(db, obj.id, _Instance())

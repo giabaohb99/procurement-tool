@@ -111,6 +111,10 @@ REPORTS: dict[str, ReportRoute] = {
                               "/report/room-usage"),
     "legal_watch": ReportRoute(ReportKey.LEGAL_WATCH, _route("employee.legal_watch_report_controller",
                                                              "legal_watch_summary"), "/report/legal-watch"),
+    #  duoc-CR-717: nguồn phiếu nghỉ bù — `/summary` chỉ trả số đếm; route tự gác `leave_comp_request.read` + phạm vi.
+    "holiday_work": ReportRoute(ReportKey.HOLIDAY_WORK, _route("leave.holiday_work_report_controller",
+                                                               "holiday_work_summary"), "/report/holiday-work",
+                                extra=("include_pending", "day_kind", "department_id")),
 }
 _BY_NUMBER = {int(r.key): name for name, r in REPORTS.items()}
 

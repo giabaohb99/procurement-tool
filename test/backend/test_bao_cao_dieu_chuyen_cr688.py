@@ -1,8 +1,8 @@
-"""duoc-CR-688 — báo cáo D1 «Điều chuyển & bổ nhiệm» (khóa 24): `/api/work-moves/summary`.
+"""duoc-CR-688 — báo cáo D1 "Điều chuyển & bổ nhiệm" (khóa 24): `/api/work-moves/summary`.
 
 Canh: đếm theo loại sự kiện (chỉ dòng có `from_date` trong kỳ, đã áp lẫn chưa áp), số người, số tháng
 tới lần bổ nhiệm, kiêm nhiệm tại mốc, chiều `flow` (phòng đi lấy từ dòng liền trước / hồ sơ chưa áp /
-«(Chưa rõ)»), phạm vi áp lên NGƯỜI của dòng, `department_id`/`company_id` chỉ thu hẹp, gác khóa báo
+"(Chưa rõ)"), phạm vi áp lên NGƯỜI của dòng, `department_id`/`company_id` chỉ thu hẹp, gác khóa báo
 cáo + quyền xuất, danh sách KHÔNG trả tệp quyết định, số truy vấn CỐ ĐỊNH.
 """
 import uuid
@@ -316,7 +316,7 @@ def test_so_truy_van_co_dinh(db, world):
 
 
 def test_nguoi_co_bien_dong_danh_sach_mot_dong_moi_nguoi_bang_the(db, world, client_as):
-    """N2: một người có 3 sự kiện trong kỳ -> thẻ đếm 1 người, danh sách đúng 1 dòng (mới nhất) + «Số lượt» = 3."""
+    """N2: một người có 3 sự kiện trong kỳ -> thẻ đếm 1 người, danh sách đúng 1 dòng (mới nhất) + "Số lượt" = 3."""
     p = _emp(db, world, "multi")
     _line(db, p, T.APPOINT, -18, dept="B.hc", world=world)
     _line(db, p, T.CONCURRENT, -12, dept="B.hc", world=world)

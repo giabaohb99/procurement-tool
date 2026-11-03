@@ -20,7 +20,7 @@ Vai dựng bằng `scope_factory`: `a1` tạo phiếu (phạm vi `own`) · `a2` 
 ## Phần CHẠY ĐÚNG (15 bài xanh)
 
 Máy trạng thái của bộ máy duyệt đứng vững: mở phiên đúng người nộp · ký chặng 1 không đẩy
-phiếu đi · ký đủ hai chặng mới «Đã duyệt» · không ký vượt chặng · từ chối thì khóa · trả lại
+phiếu đi · ký đủ hai chặng mới **Đã duyệt** · không ký vượt chặng · từ chối thì khóa · trả lại
 thì sửa & gửi lại mở phiên MỚI · người tạo kiêm trưởng phòng thì phiếu KẸT (I08) · nhấp đúp
 Gửi duyệt / nhấp đúp Duyệt đều bị chặn · chỉ người nộp rút được · đang chạy luồng thì không
 sửa nội dung phiếu · `block_legacy_path` khóa ba nút duyệt thẳng.
@@ -29,7 +29,7 @@ sửa nội dung phiếu · `block_legacy_path` khóa ba nút duyệt thẳng.
 
 ### L1 — NGƯỜI DUYỆT CHẶNG 2 Ở PHÒNG KHÁC KHÔNG MỞ ĐƯỢC PHIẾU ⇒ phiếu chết giữa luồng
 **Nặng nhất.** `approval_bridge._can_read_booking` dùng `get_scoped` trơ, không nới cho người
-ĐANG GIỮ VIỆC. Mà phân hệ Đặt xe **không còn màn «Việc của tôi»** (xóa 21/08/2026): chỗ DUY
+ĐANG GIỮ VIỆC. Mà phân hệ Đặt xe **không còn màn "Việc của tôi"** (xóa 21/08/2026): chỗ DUY
 NHẤT bấm Duyệt là `BookingApprovalPanel` nằm trong trang chi tiết phiếu.
 
 Hệ quả chuỗi, không chỗ nào đỏ lên:
@@ -63,8 +63,8 @@ Bài: `test_rejected_booking_must_not_be_resurrected_by_a_late_signature`
 `dispatch_booking` chỉ chặn `_CLOSED_STATUSES` (hủy · từ chối · hoàn thành). `BK_DRAFT` và
 `BK_PENDING` không nằm trong đó ⇒ gán xe + tài xế cho phiếu chưa ai ký; chuyến chạy thật, phiếu
 vẫn treo ở chặng 1. Thêm nữa: lúc người duyệt ký xong, `_on_approved` đặt `status = Đã duyệt`
-trong khi `driver_status` vẫn «Chờ tài xế» → phiếu mang hai trạng thái cãi nhau, tài xế thấy
-chuyến trong «Chuyến của tôi» mà phiếu thì hiện «Đã duyệt».
+trong khi `driver_status` vẫn **Chờ tài xế** → phiếu mang hai trạng thái cãi nhau, tài xế thấy
+chuyến trong **Chuyến của tôi** mà phiếu thì hiện **Đã duyệt**.
 Bài: `test_cannot_dispatch_a_booking_that_is_still_waiting_for_approval` ·
 `test_cannot_dispatch_a_draft_booking`
 
@@ -74,7 +74,7 @@ nói sai:
 - `serialize_booking`: `approver_name = _emp_name_of_user(approved_by or first_approver_id)`
   ⇒ lùi về **người mà NGƯỜI TẠO tự chọn trong biểu mẫu** — người có thể chưa hề ký, hoặc không
   nằm trong luồng;
-- `build-booking-stages.ts`: chặng «Đã phê duyệt» có `time` TRỐNG và `actor` là tên nói trên
+- `build-booking-stages.ts`: chặng **Đã phê duyệt** có `time` TRỐNG và `actor` là tên nói trên
   (tệp đó đã có comment vá quanh chuyện `approved_at` trống — chữa ở ngọn).
 
 Phiếu và bản in là chỗ người ta tin, không phải dấu vết bộ máy.
@@ -90,15 +90,15 @@ Bài: `test_deleting_a_booking_closes_its_running_instance` ·
 `test_deleted_booking_cannot_be_approved_through_the_engine`
 
 ### L7 — Đường duyệt MỘT BƯỚC cho người tạo TỰ DUYỆT phiếu của mình
-`approve_booking` chỉ hỏi «phiếu có đang Chờ duyệt không». Không có I08. Ai giữ vai trò có
+`approve_booking` chỉ hỏi **phiếu có đang Chờ duyệt không**. Không có I08. Ai giữ vai trò có
 `vehicle_booking.approve` + `create` (quản lý điều phối, admin, người kiêm hai vai) tự ký phiếu
 xe của chính mình, nhật ký đọc xuôi. **Đây là đường ĐANG CHẠY THẬT** — cờ bộ máy mặc định tắt.
 Bài: `test_direct_path_lets_a_creator_approve_their_own_booking`
 
 ## Ghi chú thêm (không thành bài đỏ)
 
-- **Ô «Trưởng bộ phận phê duyệt» (`first_approver_id`) bộ máy KHÔNG đọc tới.**
-  `entity_context` không khai nó, nên bước khai «lấy người duyệt từ ô trên phiếu»
+- **Ô "Trưởng bộ phận phê duyệt" (`first_approver_id`) bộ máy KHÔNG đọc tới.**
+  `entity_context` không khai nó, nên bước khai **lấy người duyệt từ ô trên phiếu**
   (`APPROVER_FIELD`) không bao giờ khớp → bước rỗng → phiếu KẸT. Mà kể cả khai thêm cũng sai
   kiểu: `first_approver_id` lưu **id TÀI KHOẢN**, còn `APPROVER_FIELD` đọc ra **id NHÂN SỰ**.
   Seal_request cùng cảnh. Người tạo chọn người duyệt → bộ máy bỏ qua lựa chọn đó.
@@ -111,7 +111,7 @@ Bài: `test_direct_path_lets_a_creator_approve_their_own_booking`
 | L1 | `approval_bridge.booking_for_approver` (mới) — nới quyền ĐỌC cho người đang giữ việc, dùng ở cả `_can_read_booking` (cửa bộ máy duyệt) lẫn `controller.get_booking` (trang chi tiết). Chỉ ĐỌC, chỉ lúc việc còn treo |
 | L2 | `controller.dispatch_return_booking` + `dispatch_reject_booking` gọi `block_legacy_path` → chốt nay gác đủ **5/5** cửa |
 | L3 | `approval_bridge._booking_for_outcome` (mới) — bốn hàm nhận kết cục tự kiểm trạng thái nguồn, ghi cảnh báo vào sổ khi bỏ qua |
-| L4 | **Giữ nguyên** theo quyết định. Ghim thành bài kiểm, kèm nhịp phải đúng theo sau: ký xong thì phiếu giữ «Đã điều phối», không lùi về «Đã duyệt» |
+| L4 | **Giữ nguyên** theo quyết định. Ghim thành bài kiểm, kèm nhịp phải đúng theo sau: ký xong thì phiếu giữ **Đã điều phối**, không lùi về **Đã duyệt** |
 | L5 | `_on_approved` ghi `approved_by` + `approved_at` như đường một bước |
 | L6 | `controller.delete_booking` gọi `instance_service.delete_by_entity` TRƯỚC khi đặt `is_deleted`, cùng giao dịch |
 | L7 | `service._block_self_approval` — chặn người lập tự ký, **miễn cho phạm vi `all`** |
@@ -131,13 +131,13 @@ số liệu mong đợi.
 
 ## Câu chưa có lời
 
-1. **Ô «Trưởng bộ phận phê duyệt» để làm gì?** Người tạo chọn một người trong biểu mẫu, bộ máy
+1. **Ô "Trưởng bộ phận phê duyệt" để làm gì?** Người tạo chọn một người trong biểu mẫu, bộ máy
    duyệt bỏ qua hoàn toàn, và nó chỉ còn tác dụng làm nhãn hiển thị (nay đã hết vì L5 ghi người ký
    thật). Ba đường: bỏ ô đó · cho `entity_context` khai nó kèm đổi sang id NHÂN SỰ để khai được
    bước *lấy từ ô trên phiếu* · giữ nguyên làm ô tham khảo. Seal_request cùng cảnh, sửa thì nên
    sửa cả hai.
 2. **Người ĐÃ TỪNG ký có được xem lại phiếu không?** Hiện KHÔNG (đóng lại sau khi ký, theo đúng
-   CR-260). Với nghỉ phép thì họ còn tab «Tôi đã duyệt»; Đặt xe **không có** màn nào tương đương,
+   CR-260). Với nghỉ phép thì họ còn tab **Tôi đã duyệt**; Đặt xe **không có** màn nào tương đương,
    nên ký xong là mất dấu tờ phiếu mình vừa ký.
 3. **Xóa phiếu đang ở giữa luồng có nên chặn hẳn không?** Hiện xóa được ở MỌI trạng thái (kể cả
    *Hoàn thành*) — `delete_booking` không có chốt trạng thái nào. Văn bản thì chỉ cho xóa ở nháp /

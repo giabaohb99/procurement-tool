@@ -182,7 +182,7 @@ Loại bật `is_personal` thì **thoát khỏi phạm vi vai trò**:
 `test_nguoi_duyet_doc_duoc_van_ban.py` · 8 ca
 
 Người duyệt thường **không có vai trò nào** trên phân hệ Văn bản. Thiếu ngoại lệ này
-thì họ bấm từ «Việc của tôi» sang là gặp 404 và phải **ký mù**.
+thì họ bấm từ **Việc của tôi** sang là gặp 404 và phải **ký mù**.
 
 Ngoại lệ **chỉ mở quyền ĐỌC** — sửa, xoá, ban hành vẫn theo phân quyền như cũ.
 
@@ -315,7 +315,7 @@ bài kiểm khoá lại:
 | Nhập tệp (docx/pdf/md) + ba lớp chặn kích thước | `test_document_import.py` (6) |
 | Xuất Excel danh sách | `test_xuat_excel_van_ban.py` (9) |
 | Ma trận ưu tiên + bộ lọc trang Tổng quan | `test_document_dashboard_matran.py` (8) |
-| Thư báo «có việc chờ bạn duyệt» | `test_thu_bao_viec_can_duyet.py` (5) |
+| Thư báo **có việc chờ bạn duyệt** | `test_thu_bao_viec_can_duyet.py` (5) |
 | Email ban hành dùng đúng phạm vi, dẫn vào màn chỉ đọc | `test_email_khi_ban_hanh_van_ban.py` (6) |
 | Thứ tự đăng ký route dưới `/api/documents` | `test_thu_tu_route_van_ban.py` (2) |
 

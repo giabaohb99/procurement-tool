@@ -1,7 +1,7 @@
 """tra cuu thi truong: chi muc theo ngay cho danh sach (bao-CR-718)
 
 Revision ID: hqx718
-Revises: lvcmp716
+Revises: lvpol717
 
 ix_customs_line_date (reg_date): man danh sach sap "ngay dang ky giam dan, id giam dan" + LIMIT. Thieu chi muc nay MySQL
 quet ca bang roi sap xep (do tren bang thu 328 nghin dong: 352 ms trang 1 khong loc, 739 ms khi co tu khoa). Co chi muc
@@ -15,7 +15,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "hqx718"
-down_revision: Union[str, None] = "lvcmp716"
+down_revision: Union[str, None] = "lvpol717"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

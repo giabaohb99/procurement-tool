@@ -18,9 +18,9 @@ class LeaveCompRequest(Base, AuditMixin):
 
     __tablename__ = "tab_leave_comp_request"
     __table_args__ = (
-        #  Luật «một ngày một phiếu» và lọc theo người + ngày.
+        #  Luật "một ngày một phiếu" và lọc theo người + ngày.
         Index("ix_leave_comp_emp_date", "employee_id", "work_date"),
-        #  Chốt chặn THẬT của «một ngày một phiếu còn hiệu lực»: `active_key` UNIQUE, NULL khi phiếu hết hiệu lực
+        #  Chốt chặn THẬT của "một ngày một phiếu còn hiệu lực": `active_key` UNIQUE, NULL khi phiếu hết hiệu lực
         #  (từ chối / hủy / xóa) — nhiều NULL không đụng nhau. Câu kiểm ở service chỉ để có câu báo đẹp.
         Index("uq_leave_comp_active_key", "active_key", unique=True),
     )
@@ -38,7 +38,7 @@ class LeaveCompRequest(Base, AuditMixin):
     comp_leave_type_id: Mapped[int] = mapped_column(BigInteger, default=0)
     #  Năm quỹ được cộng, chốt lúc DUYỆT: max(năm đi làm, năm hôm nay) — năm đã kết sổ không nhận thêm ngày.
     balance_year: Mapped[int] = mapped_column(SmallInteger, default=0)
-    #  «<employee_id>:<work_date>» khi phiếu còn hiệu lực, NULL khi hết — xem `__table_args__`.
+    #  "<employee_id>:<work_date>" khi phiếu còn hiệu lực, NULL khi hết — xem `__table_args__`.
     active_key: Mapped[str | None] = mapped_column(String(40), nullable=True)
     status: Mapped[int] = mapped_column(SmallInteger, default=int(LeaveCompStatus.DRAFT))
     approval_instance_id: Mapped[int] = mapped_column(BigInteger, default=0)

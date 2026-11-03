@@ -226,7 +226,7 @@ def test_van_ban_thuong_khong_dinh_cot_clone(db, nen):
 
 # ── Lỗ 2 · rà xong thì hết lệch bản ──────────────────────────────────────────
 def test_ra_soat_xong_thi_het_lech_ban(db, nen):
-    """Nút «Đã rà xong» từng tắt băng vàng mà quên dời con trỏ phiên bản."""
+    """Nút "Đã rà xong" từng tắt băng vàng mà quên dời con trỏ phiên bản."""
     from app.modules.document import version_service
 
     origin = _tao_nhap(db, nen)

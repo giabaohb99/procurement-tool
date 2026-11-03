@@ -128,8 +128,8 @@ def test_vai_tro_moi_xuong_CUOI_danh_sach_da_xep(db):
     """Ép ra được 25/08/2026 khi ép thử CR-172.
 
     Người quản trị xếp tay 17 vai trò xong thêm một vai trò mới; nó mang
-    `sort_order = 0` mặc định nên **nhảy lên đứng đầu**, trên cả «Quản trị hệ
-    thống» — phá đúng cái thứ tự họ vừa dựng.
+    `sort_order = 0` mặc định nên **nhảy lên đứng đầu**, trên cả "Quản trị hệ
+    thống" — phá đúng cái thứ tự họ vừa dựng.
     """
     a, b = _role(db, "aaa"), _role(db, "bbb")
     db.commit()

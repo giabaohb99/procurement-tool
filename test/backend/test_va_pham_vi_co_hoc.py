@@ -59,7 +59,7 @@ def _mot_pyc_moi_cong_ty(world) -> dict[str, int]:
 def test_34_o_chon_cong_ty_toan_rac_khong_con_no_500_va_chan_lai(db, world, caplog):
     """Dòng `dim=company` giá trị KHÔNG PHẢI SỐ: không nổ nữa, và chặn chứ không nới.
 
-    Chặn chứ không bỏ qua: ô «Công ty được xem» là ô THU HẸP. Bỏ qua nó thì phạm
+    Chặn chứ không bỏ qua: ô "Công ty được xem" là ô THU HẸP. Bỏ qua nó thì phạm
     vi nở ra đúng bằng bậc vai trò — người khai quyền tick vào một công ty rồi
     nhận về nhiều hơn lúc chưa tick, đúng loại lỗ mà B-07 sinh ra để chặn.
     """
@@ -195,8 +195,8 @@ def test_21_quy_phep_own_van_cho_nguoi_da_gan_ho_so_thay_quy_cua_minh(db, world)
 # ══════════════════════════════════════════════════════════════════════════════
 #
 #  `get_perm_profile` giữ `company_id`/`dept_id` trong `_PERM_CACHE` 60 giây, mà
-#  hai giá trị đó CHÍNH là phạm vi dữ liệu. Cửa «đổi phòng ban» xóa cache từ
-#  CR-167 (`department_service.set_departments`), cửa «đổi công ty» ngay cạnh nó
+#  hai giá trị đó CHÍNH là phạm vi dữ liệu. Cửa "đổi phòng ban" xóa cache từ
+#  CR-167 (`department_service.set_departments`), cửa "đổi công ty" ngay cạnh nó
 #  trên cùng một màn thì quên — thu hồi tầm nhìn chậm trọn một phút.
 
 def _lam_nong_cache(db, actor: Actor) -> None:
@@ -279,7 +279,7 @@ def test_28_nhan_su_chua_co_tai_khoan_doi_phap_nhan_khong_no(db, world):
 #  `vehicle_booking/approval_bridge.py` đăng ký ĐỦ hook (`register_hooks` +
 #  `register_subject` + `register_reader`) nên phiếu đặt xe chạy qua bộ máy duyệt
 #  bình thường — chỉ hai bảng tra trong `task_notification.py` là quên nó. Kết
-#  quả: thư ghi «Phiếu XE009» (mất tên loại chứng từ) và `link` RỖNG (bấm vào
+#  quả: thư ghi "Phiếu XE009" (mất tên loại chứng từ) và `link` RỖNG (bấm vào
 #  không đi đâu). `notify_new_tasks` nuốt lỗi có chủ ý nên không chỗ nào đỏ lên
 #  — bài kiểm này là thứ duy nhất phát hiện ra.
 
@@ -336,7 +336,7 @@ def test_40_thu_bao_dat_xe_co_ten_loai_chung_tu_va_link_mo_duoc(db, nguoi_duyet)
     assert written == 1
     assert thu.user_id == user.id
     assert "Phiếu đặt xe" in thu.body, (
-        f"thiếu nhãn → thư mở đầu bằng «Phiếu {MA_PHIEU_XE}», người duyệt không "
+        f"thiếu nhãn → thư mở đầu bằng \"Phiếu {MA_PHIEU_XE}\", người duyệt không "
         f"biết sắp mở cái gì. Nhận: {thu.body}")
     #  `/vehicle-booking` nằm trong `V2_PREFIXES` của `notification-link.ts` nên
     #  `toAppPath()` cho đi thẳng — link này mở đúng màn chi tiết phiếu đặt xe.
@@ -348,7 +348,7 @@ def test_40_moi_entity_co_hook_duyet_deu_phai_co_nhan_va_duong_dan(db):
     """CHIỀU NGƯỢC LẠI — chốt cho mọi loại chứng từ, không riêng đặt xe.
 
     Đây mới là bài kiểm giữ được: thêm phân hệ thứ tám chạy qua bộ máy duyệt mà
-    quên hai bảng tra thì đỏ ngay, thay vì đợi người dùng báo «bấm không đi đâu».
+    quên hai bảng tra thì đỏ ngay, thay vì đợi người dùng báo "bấm không đi đâu".
     Nguồn sự thật là danh sách hook đã đăng ký, không phải một danh sách chép tay.
     """
     import app.main  # noqa: F401 — nạp mọi module để các bridge kịp đăng ký hook
@@ -363,7 +363,7 @@ def test_40_moi_entity_co_hook_duyet_deu_phai_co_nhan_va_duong_dan(db):
 
     thieu_nhan = sorted(da_dang_ky - set(ENTITY_LABELS))
     thieu_link = sorted(da_dang_ky - set(ENTITY_LINKS))
-    assert not thieu_nhan, f"thiếu nhãn ⇒ thư ghi «Phiếu <mã>»: {thieu_nhan}"
+    assert not thieu_nhan, f"thiếu nhãn ⇒ thư ghi \"Phiếu <mã>\": {thieu_nhan}"
     assert not thieu_link, f"thiếu đường dẫn ⇒ link rỗng, bấm không đi đâu: {thieu_link}"
 
     for entity, mau in ENTITY_LINKS.items():

@@ -1,9 +1,9 @@
-"""bao-CR-529 — ô «Phòng thu mua mặc định» (`central_purchasing_dept_code`) CHỌN từ danh mục Phòng ban.
+"""bao-CR-529 — ô "Phòng thu mua mặc định" (`central_purchasing_dept_code`) CHỌN từ danh mục Phòng ban.
 
-Đại ca: «sao chỗ này để mã PBA017, sao không cho chọn từ danh sách phòng ban». Giao diện nay vẽ ô
+Đại ca: "sao chỗ này để mã PBA017, sao không cho chọn từ danh sách phòng ban". Giao diện nay vẽ ô
 chọn theo cờ `type: "department"`; dưới DB vẫn lưu MÃ phòng như bao-CR-524. Điều mới ở backend là
 CỬA LƯU: mã không có trong danh mục hoặc phòng đã ngừng dùng → 400 (trước CR này gõ sai mã là
-`core/central_purchasing` lặng lẽ quay về «phòng xử lý để trống»).
+`core/central_purchasing` lặng lẽ quay về "phòng xử lý để trống").
 """
 import time
 

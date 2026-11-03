@@ -109,7 +109,7 @@ def test_self_routes_only_require_login(path, method):
 
 
 def test_self_contacts_routes_are_declared_before_the_id_routes():
-    """`/me/contacts` đứng sau `/{eid}/contacts` là «me» rơi vào `eid: int` → 422."""
+    """`/me/contacts` đứng sau `/{eid}/contacts` là "me" rơi vào `eid: int` → 422."""
     paths = [getattr(r, "path", "") for r in controller.router.routes]
     assert paths.index("/api/employees/me/contacts") < paths.index("/api/employees/{eid}/contacts")
     assert paths.index("/api/employees/me/contact") < paths.index("/api/employees/{eid}")

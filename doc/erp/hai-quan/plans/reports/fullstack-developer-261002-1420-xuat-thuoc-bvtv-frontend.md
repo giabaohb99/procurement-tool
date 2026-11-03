@@ -5,12 +5,12 @@
 ## Việc đã làm
 
 ### v1 (`frontend/`, `/customs-prices/pesticides`)
-- Mới `frontend/src/components/customs/CustomsPesticideExportMenu.tsx` — nút «Xuất Excel» +
+- Mới `frontend/src/components/customs/CustomsPesticideExportMenu.tsx` — nút **Xuất Excel** +
   dropdown 2 lựa chọn, khuôn portal bám nút bê từ `TableToolbar.tsx` (`.col-menu` CSS có sẵn,
   không sửa `index.css`). Tải bằng `downloadBlob`/`blobErrorMessage` đã có sẵn ở
   `customs-shared.ts` (dùng chung với nút Xuất Excel của thẻ Danh sách) — không viết lại.
 - Sửa `CustomsPesticideTab.tsx`: thêm `canExport = can('customs_price', 'export')`, gắn menu
-  cạnh «Nạp danh mục», `disabled` khi `catalogTotal === 0`.
+  cạnh **Nạp danh mục**, `disabled` khi `catalogTotal === 0`.
 - scope=page gửi `buildPesticideParams(applied) + page + page_size` — ĐÚNG tham số `load()` đang
   dùng gọi `GET /pesticides`; scope=all chỉ gửi `{scope:'all'}`.
 - Chặn bấm đúp bằng `useRef` (không chỉ `disabled`), theo đúng bẫy nêu trong
@@ -30,7 +30,7 @@
 - Sửa `customs-api.ts`: đổi `readBlobErrorMessage` từ private → export (dùng chung).
 - Sửa `use-customs-pesticides.ts`: `usePesticidePermissions` thêm `canExport:
   can('customs_price', 'export')`.
-- Sửa `customs-pesticide-tab.tsx`: gắn nút export cạnh «Nạp danh mục», prop `filterParams =
+- Sửa `customs-pesticide-tab.tsx`: gắn nút export cạnh **Nạp danh mục**, prop `filterParams =
   buildPesticideParams(filters)` (KHÔNG kèm page/page_size — hook export tự thêm khi scope=page),
   `pageRowCount`, `disabled={catalogTotal === 0}`.
 

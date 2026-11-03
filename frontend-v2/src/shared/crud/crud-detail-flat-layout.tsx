@@ -26,9 +26,13 @@ interface CrudDetailFlatLayoutProps {
   backLabel: string
   title: string
   chips: IdentityChip[]
-  /** Nút Lưu / Xóa — đặt bên phải hàng tiêu đề. */
+  /**
+   * Nút Lưu / Xóa — đặt bên phải hàng tiêu đề, CHỈ dựng khi tab đầu ("Thông tin") đang mở: nút Lưu là
+   * `type=submit form="crud-detail-form"` mà biểu mẫu chỉ có trong tab đó (Radix hủy mount tab ẩn), nên ở
+   * tab khác nó là nút chết. Tab con nào có dữ liệu riêng thì tự mang nút Lưu riêng.
+   */
   actions: ReactNode
-  /** Tab đầu tiên luôn là «Thông tin» (biểu mẫu); không có tab nào khác thì không vẽ dải tab. */
+  /** Tab đầu tiên luôn là "Thông tin" (biểu mẫu); không có tab nào khác thì không vẽ dải tab. */
   tabs: FlatTab[]
   activeTab: string
   onTabChange: (key: string) => void
@@ -83,7 +87,9 @@ export function CrudDetailFlatLayout({
                 {chip.text}
               </Badge>
             ))}
-            <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div>
+            {current?.key === tabs[0]?.key && (
+              <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div>
+            )}
           </div>
           {tabs.length > 1 && (
             <ScrollableTabsList

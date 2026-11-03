@@ -24,9 +24,9 @@ Bốn tầng, mỗi tầng một nghĩa riêng. Gọi sai tầng là tìm không
 | **Việc con** | Việc nhỏ bên trong một công việc | Chỉ sống trong panel chi tiết: **không** thành thẻ kanban, **không** thành dòng ở khung Danh sách |
 | **Cột mốc** | Một công việc đặc biệt, chỉ có MỘT ngày | Gantt vẽ thành hình thoi thay vì thanh |
 
-⚠️ **«Dự án» và «danh sách công việc» là MỘT thứ**, không phải hai tầng chồng nhau.
+⚠️ **"Dự án" và "danh sách công việc" là MỘT thứ**, không phải hai tầng chồng nhau.
 Thư mục mã nguồn vẫn tên `work`, API vẫn `/api/work/...`, bảng vẫn `tab_work_*` — chỉ
-tên hiển thị cho người dùng là «Dự án».
+tên hiển thị cho người dùng là **Dự án**.
 
 ---
 
@@ -41,7 +41,7 @@ tên hiển thị cho người dùng là «Dự án».
 | Đổi bằng cách | Kéo thẻ sang cột khác | Tick ô tròn, hoặc chọn ở panel |
 | Dùng để | Xếp việc theo quy trình riêng của đội | Đếm việc chưa xong, nhắc hạn, báo cáo |
 
-Hệ quả: kéo một việc vào cột tên «Xong» **không** làm nó thành «Hoàn thành». Muốn đánh
+Hệ quả: kéo một việc vào cột tên **Xong** **không** làm nó thành **Hoàn thành**. Muốn đánh
 dấu xong thì **tick ô tròn** trên thẻ / trên dòng, hoặc đổi trạng thái trong panel.
 
 ---
@@ -56,11 +56,11 @@ hiện trên thẻ và mức phóng Gantt đều **nhớ theo từng dự án** 
 Mỗi cột một dải thẻ. Kéo thả được **thẻ trong cột** (đổi thứ tự), **thẻ sang cột khác**,
 và **kéo ngang để đổi thứ tự cột**.
 
-Trên thẻ: **ô tick xong việc**, tên việc, rồi các trường bật ở nút «Tùy chỉnh»
+Trên thẻ: **ô tick xong việc**, tên việc, rồi các trường bật ở nút **Tùy chỉnh**
 (phụ trách · trạng thái · ngày bắt đầu · hạn chót · việc con `n/m` · số bình luận · nhãn
 tùy biến). Trường nào không có giá trị thì **bỏ hẳn dòng**, không vẽ gạch ngang.
 
-⚠️ Đang sắp xếp theo tiêu chí khác «Tay (kéo thả)» thì **khóa kéo** — thả xong danh sách
+⚠️ Đang sắp xếp theo tiêu chí khác **Tay (kéo thả)** thì **khóa kéo** — thả xong danh sách
 tự xếp lại chỗ cũ, nhìn như thao tác bị nuốt.
 
 ### 3.2 Danh sách
@@ -68,7 +68,7 @@ tự xếp lại chỗ cũ, nhìn như thao tác bị nuốt.
 Bảng phẳng, gom theo cột (thu/mở được). Sửa được ngay trên dòng: tên, người phụ trách,
 ngày, trạng thái, nhãn tùy biến. Bung mũi tên để xem việc con.
 
-Cột hiện những gì là do nút «Tùy chỉnh» — **cùng một bộ cột** với thẻ kanban và với lưới
+Cột hiện những gì là do nút **Tùy chỉnh** — **cùng một bộ cột** với thẻ kanban và với lưới
 trái của Gantt.
 
 ### 3.3 Gantt
@@ -116,7 +116,7 @@ Lọc nhanh theo **loại sự kiện** và theo **người**. Dòng nào gắn 
 Thanh này **không hiện ở tab Hoạt động** — không nút nào trong đó có nghĩa với một cuốn
 nhật ký.
 
-⚠️ Các «lát cắt nhanh» kiểu *Việc của tôi / Đã hoàn thành* **đã bỏ**; mọi lát cắt đó nay
+⚠️ Các **lát cắt nhanh** kiểu *Việc của tôi / Đã hoàn thành* **đã bỏ**; mọi lát cắt đó nay
 khai bằng Bộ lọc.
 
 ---
@@ -135,11 +135,11 @@ Thứ tự từ trên xuống:
 5. **Cột** — đổi cột ngay tại đây.
 6. **Các trường tùy biến** của dự án (Tag, Độ ưu tiên, Kênh…) — mỗi trường một ô chọn.
 7. **Mô tả**.
-8. **Việc con** — thanh tiến độ `n/m` + danh sách tick + «Thêm việc con».
-9. **Đính kèm** — «Thêm đính kèm», danh sách tệp có nút tải về / gỡ.
+8. **Việc con** — thanh tiến độ `n/m` + danh sách tick + **Thêm việc con**.
+9. **Đính kèm** — **Thêm đính kèm**, danh sách tệp có nút tải về / gỡ.
 10. **Bình luận** — xem §6.
 
-⚠️ Panel **không có** khối «Lịch sử thao tác». Nhật ký đọc ở tab **Hoạt động** (§3.4).
+⚠️ Panel **không có** khối **Lịch sử thao tác**. Nhật ký đọc ở tab **Hoạt động** (§3.4).
 
 ### Trường tùy biến
 
@@ -220,7 +220,7 @@ Bấm chuông của bình luận sẽ mở đúng việc đó (qua `/project/tas
 chứa việc rồi bung panel).
 
 ⚠️ **Được giao việc chưa bắn chuông** — thuộc đợt sau (F-01), cùng đợt với nhắc hạn và
-tab «Việc cần làm».
+tab **Việc cần làm**.
 
 ---
 
@@ -233,7 +233,7 @@ Ghi ra để khỏi ai đi tìm:
 | Tab **Dashboard** thống kê dự án | Cố ý chưa render — không để tab chết trên thanh |
 | **Nhắc hạn** đến hạn / quá hạn | Đợt sau (F-03) |
 | Việc của dự án trong tab **Việc cần làm** | Đợt sau (F-02) |
-| Màn **«Việc của tôi»** gom việc từ mọi dự án | Đợt sau (G-03) |
+| Màn **Việc của tôi** gom việc từ mọi dự án | Đợt sau (G-03) |
 | **Thùng rác** khôi phục việc đã xóa | Đợt sau (B-09) — xóa hiện là xóa mềm, dữ liệu còn |
 | **Chuyển việc sang dự án khác** | Đợt sau (B-10) |
 | **Sửa** bình luận đã gửi | Xóa thì được |
@@ -246,10 +246,10 @@ Ghi ra để khỏi ai đi tìm:
 
 | Câu hỏi | Trả lời |
 |---|---|
-| Kéo việc vào cột «Xong» rồi mà báo cáo vẫn tính chưa xong? | Cột kanban ≠ trạng thái. Phải **tick ô tròn** — xem §2 |
+| Kéo việc vào cột **Xong** rồi mà báo cáo vẫn tính chưa xong? | Cột kanban ≠ trạng thái. Phải **tick ô tròn** — xem §2 |
 | Không thấy dự án của đồng nghiệp? | Phải được **mời vào dự án** hoặc vào nhóm chứa nó — §7 |
-| Kéo thả không ăn? | Đang sắp xếp khác «Tay (kéo thả)» — đổi lại ở nút Sắp xếp |
+| Kéo thả không ăn? | Đang sắp xếp khác **Tay (kéo thả)** — đổi lại ở nút Sắp xếp |
 | Việc con đâu mất trên kanban? | Việc con **chỉ** sống trong panel chi tiết — §1 |
 | Xem lịch sử một việc ở đâu? | Tab **Hoạt động** của dự án. Chưa lọc được theo từng việc — §3.4 |
 | Cột mốc khác việc thường chỗ nào? | Chỉ có **một** ngày (hạn), Gantt vẽ hình thoi — §1 |
-| Bấm nút xóa dự án mà nó vẫn còn? | «Xóa» dự án/nhóm là **lưu trữ**, không xóa hẳn |
+| Bấm nút xóa dự án mà nó vẫn còn? | **Xóa** dự án/nhóm là **lưu trữ**, không xóa hẳn |

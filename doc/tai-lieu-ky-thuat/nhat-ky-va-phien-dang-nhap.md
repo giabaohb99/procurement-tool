@@ -254,7 +254,7 @@ một lần đăng nhập chỉ có một dòng.
 Đánh đổi đã biết: hai máy Windows cùng chạy Chrome ra **cùng một dấu**. Cột này để **loại
 trừ** (*"dấu vẫn thế, khỏi xét"*), không phải để định danh máy.
 
-> **Ghi chú duoc-CR-641.** Bảng `tab_ui_event` (sự kiện giao diện thô cho «hồ sơ cách làm việc») giữ **90 ngày** và **KHÔNG chờ gói R2** như dòng GET dưới đây: nó là
+> **Ghi chú duoc-CR-641.** Bảng `tab_ui_event` (sự kiện giao diện thô cho **hồ sơ cách làm việc**) giữ **90 ngày** và **KHÔNG chờ gói R2** như dòng GET dưới đây: nó là
 > dữ liệu ĐO để gom, không phải chứng cứ; bản bền của nó là `tab_usage_daily` (giữ 3 năm). Việc dọn `usage.cleanup_ui_events` 04:20, xóa theo lô 2.000 dòng. Cột
 > `tab_notification.read_at` (mốc đánh dấu đã đọc, chỉ từ ngày deploy) cũng thêm ở CR này. Chi tiết: [`tracking-nguoi-dung-ho-so-ca-nhan.md`](tracking-nguoi-dung-ho-so-ca-nhan.md).
 
@@ -604,7 +604,7 @@ tab_audit_log  (request_id=3f1c…)
   purchase_order/129  doc_code=DMH25090012  action=update  action_group=2
   created_by=24  actor_kind=1  session_id=87  ip=27.64.133.181
   changed_fields="unit_price, qty"  change_count=2
-  message="Cập nhật dòng «Thùng carton 3 lớp»"
+  message="Cập nhật dòng "Thùng carton 3 lớp""
 
 tab_change_log  (request_id=3f1c…)
   tab_purchase_order_item/4412  op=2  unit_price  12000 → 15000
@@ -669,7 +669,7 @@ trả về, gói trong một phong bì.
       "parent_id": null,
       "action": "update",
       "action_group": 2,
-      "message": "Cập nhật dòng «Thùng carton 3 lớp»",
+      "message": "Cập nhật dòng "Thùng carton 3 lớp"",
       "changed_fields": "unit_price, qty, note",
       "change_count": 3
     }
@@ -804,7 +804,7 @@ NHẬT KÝ HỆ THỐNG                                  [Theo dõi trực tiế
  Theo giờ  (cột đỏ = lỗi)                  Theo endpoint: PATCH /po/{id} 41 · POST /login 12 (3 lỗi)
 
  Lúc       Ai               Thiết bị         Lần bấm                                  Kết quả   Đổi
- 10:41:17  H.G.Bảo          Chrome·Win11     Cập nhật dòng «Thùng carton» DMH25090012  200·84ms  3 trường
+ 10:41:17  H.G.Bảo          Chrome·Win11     Cập nhật dòng "Thùng carton" DMH25090012  200·84ms  3 trường
  10:39:02  N.T.Anh          Safari·iPhone    Xóa Đơn mua hàng DMH25090012              403       -
  10:35:55  hệ thống         celery           Sao lưu R2 (2 tệp, 41 MB)                 ok·12s    -
  10:31:40  (chưa đăng nhập) 118.71.139.127   Đăng nhập thất bại dttoanh.idagroup@…     401       -
@@ -898,7 +898,7 @@ Ngoài năm chỗ đó, hai thứ **không** có trong bản vẽ nhưng cần b
   Vai trò `hr_profile` hay bất kỳ vai trò nào khác phải **tick tay ở màn Phân quyền** — không
   dùng `SEED_FORCE_SYNC`. Và người **đang đăng nhập giữ map quyền cũ** tới khi đăng nhập lại.
 
-#### 8.5.2. Nghỉ việc đá phiên + tab «Lịch sử đăng nhập» ở Trang cá nhân (bao-CR-400, 14/09/2026)
+#### 8.5.2. Nghỉ việc đá phiên + tab "Lịch sử đăng nhập" ở Trang cá nhân (bao-CR-400, 14/09/2026)
 
 Bảng §8.5 nói tab Nhân sự có nút *"Khóa tài khoản + đăng xuất mọi thiết bị — nút của quy trình
 nghỉ việc"*. P3b làm nút đó, nhưng HR **không bấm nó** khi cho nghỉ việc: họ đổi ô *Trạng

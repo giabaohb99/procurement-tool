@@ -1,7 +1,7 @@
 """bao-CR-494 (nhãn Thành phẩm / Nguyên liệu) + bao-CR-495 (tìm CÓ / KHÔNG CÓ, nồng độ, đồng nghĩa).
 
 Hai yêu cầu F04 + F02 của chị Mi (22/09, ghi chú 25/09/2026). Tiêu chí nghiệm thu chị Mi ghi:
-  · F02: tìm «Abamectin» AND «3.6» NOT «TC» ra đúng nhóm thành phẩm 3.6EC, không lẫn TC/TECH;
+  · F02: tìm "Abamectin" AND "3.6" NOT "TC" ra đúng nhóm thành phẩm 3.6EC, không lẫn TC/TECH;
   · F04: gắn nhãn đúng ≥ 95% trên mẫu 50 dòng — ở đây canh các ca biên: từ ngắn phải khớp
     NGUYÊN TỪ (`TC` không dính `ATC`), từ tiếng Việt có dấu, từ khóa loại Thành phẩm thắng ngược.
 """
@@ -39,7 +39,7 @@ def _default_keywords(db):
 def test_kind_tagger_default_rules_from_chi_mi():
     t = KindTagger([(k, 2) for k in ("TC", "TECH", "TG", "KỸ THUẬT", "NGUYÊN LIỆU")])
     assert t.tag("Thuốc kỹ thuật ATRAZINE 97% TECH -Nguyên liệu dùng SX") == ProductKind.TECHNICAL
-    assert t.tag("ATRAZINE 97%TC") == ProductKind.TECHNICAL, "«%TC» dính liền vẫn là nguyên từ"
+    assert t.tag("ATRAZINE 97%TC") == ProductKind.TECHNICAL, "\"%TC\" dính liền vẫn là nguyên từ"
     assert t.tag("Abamectin 3.6EC thuốc trừ sâu") == ProductKind.FINISHED, "không khớp gì → thành phẩm"
     assert t.tag("Hóa chất ATC-200 dùng cho sơn") == ProductKind.FINISHED, "TC nằm trong ATC không tính"
     assert t.tag("Thuốc Kỹ Thuật Mancozeb") == ProductKind.TECHNICAL, "không phân biệt hoa thường, giữ dấu"
@@ -108,7 +108,7 @@ def test_expand_term_uses_user_synonyms_and_ingredient_aliases(db):
 
 
 def test_acceptance_case_f02_abamectin_and_36_not_tc(db):
-    """Nghiệm thu F02 của chị Mi: «Abamectin» AND «3.6» NOT «TC» → chỉ nhóm thành phẩm 3.6EC."""
+    """Nghiệm thu F02 của chị Mi: "Abamectin" AND "3.6" NOT "TC" → chỉ nhóm thành phẩm 3.6EC."""
     ec = _line(db, "Thuốc trừ sâu ABAMECTIN 3.6EC")
     gl = _line(db, "Abamectin 36 g/l SC — hàng mới")
     comma = _line(db, "ABAMECTIN 3,6% W/W")

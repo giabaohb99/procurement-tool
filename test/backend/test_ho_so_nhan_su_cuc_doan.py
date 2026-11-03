@@ -6,10 +6,10 @@ tình PHÁ: chuỗi dài hơn cột, số âm, số tràn kiểu, ngày ngoài d
 khổng lồ, chuỗi quản lý sâu hơn trần dò.
 
 Vì sao cần: ngày 08/09/2026 bắn thử vào MySQL thật thì **6 nhóm ca trả 500**
-«Hệ thống gặp lỗi không lường trước» — chỉ vì Pydantic không khai `max_length`
+"Hệ thống gặp lỗi không lường trước" — chỉ vì Pydantic không khai `max_length`
 nên chuỗi dài đi thẳng xuống cột `VARCHAR` và MySQL từ chối. Người dùng dán
 nhầm một đoạn văn bản vào ô là ăn mã sự cố, còn quản trị đi tra một lỗi vốn
-đáng ra phải là câu «tối đa 20 ký tự».
+đáng ra phải là câu "tối đa 20 ký tự".
 
 ⚠️ **SQLite KHÔNG ép độ dài VARCHAR.** Nên ca tràn độ dài phải kiểm ở tầng
 SCHEMA (Pydantic 422) chứ không kiểm bằng cách ghi xuống DB — ghi xuống thì
@@ -38,7 +38,7 @@ def _emp(db, code="NS001", **kw):
 
 # ── 1. Chuỗi DÀI HƠN CỘT phải bị chặn ở schema, không để MySQL nổ ───────────
 #  (cột, độ dài cột). Gửi dài hơn là phải 422 kèm câu tiếng Việt, KHÔNG phải
-#  500 «lỗi không lường trước».
+#  500 "lỗi không lường trước".
 _TEXT_LIMITS = [
     # Trường CŨ — lỗ hổng có sẵn từ trước duoc-CR-314, vá luôn vì cùng một dòng.
     ("full_name", 255),
@@ -187,7 +187,7 @@ def test_sending_resign_date_alone_is_not_blocked(db):
 def test_child_table_row_count_cap(db, seed):
     """Không trần thì `PUT` 5000 dòng lọt thẳng — đã thử được trên MySQL thật.
 
-    Đây là bảng «cha, mẹ, vợ/chồng» trong một tab; vài chục dòng đã là vô lý.
+    Đây là bảng "cha, mẹ, vợ/chồng" trong một tab; vài chục dòng đã là vô lý.
     Kèm theo: `sort_order` là SMALLINT, dòng thứ 32768 tràn kiểu.
     """
     from app.modules.employee.schema import MAX_PEOPLE_ROWS, EmployeeContactsIn

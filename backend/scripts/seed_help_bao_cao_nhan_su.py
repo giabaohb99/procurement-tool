@@ -2,7 +2,7 @@
 """Seed Trung tâm trợ giúp cho nhóm báo cáo NHÂN SỰ của phân hệ Báo cáo — duoc-CR-686, mở rộng duoc-CR-687,
 duoc-CR-688 (27/10/2026), duoc-CR-689 (28/10/2026); duoc-CR-692 (29/10/2026) bỏ hẳn phần kế hoạch.
 
-Dựng 1 thẻ phân hệ + 19 bài theo TÁC VỤ cho mười lăm báo cáo ở menu Báo cáo ▸ nhóm "Nhân sự":
+Dựng 1 thẻ phân hệ + 20 bài theo TÁC VỤ cho mười sáu báo cáo ở menu Báo cáo ▸ nhóm "Nhân sự":
 Biến động nhân sự · Tình hình nghỉ phép · Quỹ phép năm (đã có, mở rộng) · Hợp đồng lao động ·
 Hồ sơ & tài khoản còn thiếu (CR-686) · Sổ quản lý lao động · Báo cáo sử dụng lao động (01/PLI) (CR-687) ·
 Quỹ lương theo pháp nhân · Phúc lợi & sự kiện · Cơ cấu quản lý · Điều chuyển & bổ nhiệm (CR-688) ·
@@ -44,6 +44,12 @@ Idempotent: xóa nguyên cây cùng tiêu đề gốc rồi dựng lại ở đ�
 
 ⚠️ Phải KHỚP với `doc/erp/hrm/05-bao-cao-nhan-su.md` (mục A1–A5, B1–B4, C1–C3, D1, E1–E3, F1, H1, §3.4).
 Nội dung ở đây và ở tài liệu đó phải khớp nhau.
+
+duoc-CR-717 (03/11/2026): bài mới HOLIDAY_WORK_TITLE cho báo cáo khóa 30 "Làm việc vào ngày lễ, ngày nghỉ" (nguồn phiếu
+nghỉ bù, ô "Gồm phiếu chờ duyệt", "Loại ngày"; phải đăng nhập lại mới thấy khóa mới) — khớp `doc/erp/hrm/02-nghi-phep.md`
+§15; bài Quỹ phép năm thêm cột "Nghỉ bù cộng thêm"; bài giao quyền thêm dòng khóa 30. Nhãn đối chiếu bằng đọc
+`report/pages/holiday-work-report-page.tsx`, `report/components/holiday-work-report-filters.tsx`,
+`report/config/report-catalog-hr.ts` và `leave/holiday_work_report_service.py` / `_data.py`.
 """
 from help_seed_common import SessionLocal, HelpArticle, _descendants, rebuild_tree, ref, slugify
 
@@ -70,6 +76,8 @@ PROFILE_CHANGES_TITLE = "Báo cáo Nhân sự — Theo dõi tốc độ duyệt 
 ROOM_USAGE_TITLE = "Báo cáo Nhân sự — Đo mức sử dụng phòng họp và giờ cao điểm"
 LEGAL_WATCH_TITLE = "Báo cáo Nhân sự — Rà người sắp nghỉ hưu, đang nghỉ thai sản và nuôi con nhỏ"
 REMINDERS_TITLE = "Báo cáo Nhân sự — Xem lịch nhắc sinh nhật, kỷ niệm và hợp đồng hết hạn trong tháng"
+#  duoc-CR-717 — báo cáo khóa 30.
+HOLIDAY_WORK_TITLE = "Báo cáo Nhân sự — Xem ai đi làm vào ngày lễ, ngày nghỉ và ngày nghỉ bù được duyệt"
 #  Bài của cây khác, dùng để nối chéo (tiêu đề phải khớp từng chữ).
 REVIEW_CHANGE_TITLE = "Nhân sự — Duyệt đề nghị sửa hồ sơ của nhân viên"
 ROOM_ROOT_TITLE = "Hướng dẫn sử dụng Đặt phòng họp"
@@ -77,7 +85,7 @@ ROOM_ROOT_TITLE = "Hướng dẫn sử dụng Đặt phòng họp"
 TREE = {
     "title": ROOT_TITLE,
     "icon": "bar-chart",
-    "summary": "Mười lăm báo cáo Nhân sự (biến động, nghỉ phép, hợp đồng, sổ lao động, quỹ lương, có mặt, sửa hồ sơ, phòng họp, đối tượng theo luật…) và ô Lịch nhắc trong tháng",
+    "summary": "Mười sáu báo cáo Nhân sự (biến động, nghỉ phép, hợp đồng, sổ lao động, quỹ lương, có mặt, sửa hồ sơ, phòng họp, đối tượng theo luật, làm việc ngày lễ…) và ô Lịch nhắc trong tháng",
     "content": f"""<h2>Báo cáo Nhân sự dùng để làm gì</h2>
 <p>Nhóm <strong>Nhân sự</strong> trong phân hệ <strong>Báo cáo</strong> giúp phòng Nhân sự và Ban Giám đốc trả lời nhanh những câu hỏi hằng tuần, hằng tháng mà không phải lọc tay từng danh sách:</p>
 <table>
@@ -98,12 +106,13 @@ TREE = {
 <tr><td><strong>Yêu cầu sửa hồ sơ</strong></td><td>Phòng Nhân sự duyệt đề nghị sửa hồ sơ có kịp không, trường nào hay bị xin sửa</td><td>{ref(PROFILE_CHANGES_TITLE, "Theo dõi tốc độ duyệt yêu cầu sửa hồ sơ")}</td></tr>
 <tr><td><strong>Sử dụng phòng họp</strong></td><td>Phòng họp nào quá tải, phòng nào bỏ không, giờ nào đông</td><td>{ref(ROOM_USAGE_TITLE, "Đo mức sử dụng phòng họp và giờ cao điểm")}</td></tr>
 <tr><td><strong>Đối tượng cần chú ý theo luật</strong></td><td>Ai sắp đến tuổi nghỉ hưu, ai đang nghỉ thai sản, ai đang nuôi con dưới 12 tháng</td><td>{ref(LEGAL_WATCH_TITLE, "Rà người sắp nghỉ hưu, đang nghỉ thai sản và nuôi con nhỏ")}</td></tr>
+<tr><td><strong>Làm việc vào ngày lễ, ngày nghỉ</strong></td><td>Ai đã đi làm vào ngày lễ hay ngày nghỉ theo lịch, bao nhiêu lượt, được duyệt bao nhiêu ngày nghỉ bù</td><td>{ref(HOLIDAY_WORK_TITLE, "Xem ai đi làm vào ngày lễ, ngày nghỉ")}</td></tr>
 </tbody>
 </table>
 <p>Đi cùng nhóm báo cáo này còn ô <strong>Lịch nhắc trong tháng</strong> ở trang <strong>Tổng quan</strong> của phân hệ Nhân sự: sinh nhật, kỷ niệm năm làm việc, hợp đồng và thử việc hết hạn trong tháng. Xem bài {ref(REMINDERS_TITLE, "Xem lịch nhắc sinh nhật, kỷ niệm và hợp đồng hết hạn trong tháng")}.</p>
 
 <h2>Mở báo cáo ở đâu</h2>
-<p>Vào phân hệ <strong>Báo cáo</strong>, menu bên trái có nhóm <strong>Nhân sự</strong> với mười lăm mục trên. Bạn chỉ thấy mục nào mình đã được giao quyền xem. Không thấy báo cáo cần dùng thì nhờ quản trị giao quyền theo bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</p>
+<p>Vào phân hệ <strong>Báo cáo</strong>, menu bên trái có nhóm <strong>Nhân sự</strong> với mười sáu mục trên. Bạn chỉ thấy mục nào mình đã được giao quyền xem. Không thấy báo cáo cần dùng thì nhờ quản trị giao quyền theo bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</p>
 
 <h2>Điểm chung của mọi báo cáo</h2>
 <ul>
@@ -291,13 +300,14 @@ TREE = {
         {
             "title": LEAVE_BALANCE_TITLE,
             "icon": "wallet",
-            "summary": "Lọc Trạng thái nhân sự, thẻ Chưa được cấp quỹ, tách phép cơ bản / thâm niên / chuyển năm trước / điều chỉnh, người vượt quỹ, người chưa nghỉ ngày nào",
+            "summary": "Lọc Trạng thái nhân sự, thẻ Chưa được cấp quỹ, tách phép cơ bản / thâm niên / chuyển năm trước / điều chỉnh / nghỉ bù cộng thêm, người vượt quỹ, người chưa nghỉ ngày nào",
             "content": f"""<h2>Báo cáo cho biết gì</h2>
 <p>Báo cáo <strong>Quỹ phép năm</strong> cho biết mỗi người được cấp bao nhiêu ngày phép, đã dùng bao nhiêu, còn bao nhiêu. Kỳ của báo cáo này là <strong>năm</strong>: mở lần đầu ở năm nay, chọn khoảng ngày nào trong năm cũng ra cùng một kết quả. Báo cáo không có biểu đồ theo thời gian; biểu đồ vẽ theo nhóm đang chọn ở ô <strong>Xem theo</strong>.</p>
 <table>
 <thead><tr><th>Chỉ số</th><th>Ý nghĩa</th></tr></thead>
 <tbody>
-<tr><td><strong>Được cấp</strong></td><td>Tổng số ngày phép được cấp trong năm. Bảng bên dưới tách thành <strong>Phép năm cơ bản</strong>, <strong>Phép thâm niên</strong>, <strong>Chuyển từ năm trước</strong> và <strong>Điều chỉnh</strong> (cộng trừ tay)</td></tr>
+<tr><td><strong>Được cấp</strong></td><td>Tổng số ngày phép được cấp trong năm. Bảng bên dưới tách thành <strong>Phép năm cơ bản</strong>, <strong>Phép thâm niên</strong>, <strong>Chuyển từ năm trước</strong>, <strong>Điều chỉnh</strong> (cộng trừ tay) và <strong>Nghỉ bù cộng thêm</strong></td></tr>
+<tr><td><strong>Nghỉ bù cộng thêm</strong></td><td>Ngày của các phiếu nghỉ bù đã duyệt, cộng vào loại nghỉ nhận ngày bù. Cột này hiện sẵn ở bảng <strong>Chi tiết theo …</strong> và có trong tệp Excel. Muốn biết ai đi làm ngày nào thì mở báo cáo {ref(HOLIDAY_WORK_TITLE, "Làm việc vào ngày lễ, ngày nghỉ")}</td></tr>
 <tr><td><strong>Đã dùng</strong>, <strong>Đang giữ chỗ</strong>, <strong>Còn lại</strong></td><td>Đã nghỉ, đang chờ duyệt (đã trừ tạm vào quỹ), và số còn được nghỉ</td></tr>
 <tr><td><strong>Tỷ lệ sử dụng</strong></td><td>Phần đã dùng so với số được cấp</td></tr>
 <tr><td><strong>Chưa được cấp quỹ</strong></td><td>Số người đang làm chưa có dòng quỹ năm nay cho loại nghỉ nào tính quỹ. Số này chỉ có ở thẻ trên đầu, không chia theo dòng</td></tr>
@@ -321,7 +331,7 @@ TREE = {
 <li>Trong ngăn, đổi ô <strong>Chỉ số</strong> sang <em>Số người vượt quỹ</em>, <em>Chưa nghỉ ngày nào</em> hoặc <em>Phép chuyển đã hết hạn</em> để xem các nhóm còn lại.</li>
 <li>Danh sách <em>Còn lại</em> có các cột Cơ bản, Thâm niên, Chuyển sang, Điều chỉnh, Đã dùng, Giữ chỗ và Còn lại cho từng người, từng loại nghỉ. Bấm một dòng để mở hồ sơ người đó.</li>
 </ol>
-<p>Nhân viên thắc mắc số phép của mình được tính thế nào thì gửi họ bài {ref("Hiểu số ngày phép còn lại", "Hiểu số ngày phép còn lại")}.</p>""",
+<p>Nhân viên thắc mắc số phép của mình được tính thế nào thì gửi họ bài {ref("Hiểu số ngày phép còn lại", "Hiểu số ngày phép còn lại")}. Cần bảng <em>mỗi người một dòng, mỗi loại nghỉ một cột</em> thì mở màn <strong>Nhân sự ▸ Nghỉ phép ▸ Quỹ phép năm</strong>, thẻ <strong>Theo nhân sự</strong> (bài {ref("Nhân sự — Cấp và điều chỉnh quỹ phép", "Cấp và điều chỉnh quỹ phép")}).</p>""",
         },
         {
             "title": LABOR_CONTRACT_TITLE,
@@ -895,9 +905,48 @@ TREE = {
 </ul>""",
         },
         {
+            "title": HOLIDAY_WORK_TITLE,
+            "icon": "calendar",
+            "summary": "Báo cáo mới: lượt đi làm ngày lễ và ngày nghỉ theo lịch, số người, ngày nghỉ bù được duyệt; nguồn phiếu nghỉ bù (mặc định chỉ đã duyệt, ô Gồm phiếu chờ duyệt); lọc Loại ngày; xem theo phòng, người, tên ngày lễ",
+            "content": f"""<h2>Báo cáo cho biết gì</h2>
+<p>Báo cáo <strong>Làm việc vào ngày lễ, ngày nghỉ</strong> trả lời: ai đã đi làm vào ngày lễ hoặc ngày nghỉ theo lịch làm việc của họ, bao nhiêu lượt, và đã được duyệt bao nhiêu ngày nghỉ bù. Mở ở <strong>Báo cáo</strong> ▸ nhóm <strong>Nhân sự</strong> ▸ <strong>Làm việc vào ngày lễ, ngày nghỉ</strong>.</p>
+<p>⚠️ Công ty <strong>không có chấm công</strong>, nên nguồn của báo cáo là <strong>phiếu xin nghỉ bù</strong>: mỗi phiếu là một lượt đi làm ở ngày ghi trên phiếu. Ai đi làm mà không lập phiếu thì không có trong báo cáo. Dữ liệu có từ 02/11/2026 (ngày có phiếu nghỉ bù). Cách lập phiếu xem bài {ref("Xin nghỉ bù", "Xin nghỉ bù")}.</p>
+<table>
+<thead><tr><th>Thẻ số / cột</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><strong>Lượt đi làm</strong></td><td>Số phiếu (mỗi phiếu một ngày đi làm) trong kỳ</td></tr>
+<tr><td><strong>Số người</strong></td><td>Số người khác nhau có lượt đi làm</td></tr>
+<tr><td><strong>Trong đó ngày lễ</strong></td><td>Lượt rơi đúng ngày có trong <em>Lịch ngày lễ</em></td></tr>
+<tr><td><strong>Ngày nghỉ bù được duyệt</strong></td><td>Tổng số ngày bù (0,5 hoặc 1 mỗi phiếu) của các phiếu <strong>đã duyệt</strong> — số đã cộng vào quỹ phép</td></tr>
+<tr><td>Ngày nghỉ theo lịch</td><td>Lượt rơi vào ngày nghỉ theo lịch làm việc riêng của người đó (thường là Chủ nhật), có trên bảng</td></tr>
+<tr><td>Đang chờ duyệt</td><td>Lượt của phiếu chưa duyệt xong — chỉ có khi bật ô <strong>Gồm phiếu chờ duyệt</strong></td></tr>
+</tbody>
+</table>
+
+<h2>Các ô lọc riêng</h2>
+<ul>
+<li><strong>Loại ngày</strong>: <em>Mọi loại ngày</em> (mặc định) · <em>Ngày lễ</em> · <em>Ngày nghỉ theo lịch</em>.</li>
+<li>Công tắc <strong>Gồm phiếu chờ duyệt</strong>: tắt (mặc định) thì chỉ tính phiếu <strong>Đã duyệt</strong>; bật thì tính thêm phiếu đang chờ duyệt và bảng có thêm cột <em>Đang chờ duyệt</em>. Số <em>Ngày nghỉ bù được duyệt</em> vẫn chỉ đếm phiếu đã duyệt.</li>
+<li><strong>Phòng ban</strong> ở báo cáo này là <strong>phòng ghi trên phiếu</strong> (phòng lúc đi làm), không phải phòng hiện tại của người đó.</li>
+<li>Kỳ mở sẵn là <strong>Năm nay</strong>; mỗi lần xem tối đa <strong>366 ngày</strong>, dài hơn thì trang báo <em>Kỳ báo cáo tối đa 366 ngày — hãy chọn kỳ ngắn hơn</em>.</li>
+</ul>
+<p>Ô <strong>Xem theo</strong> chia được theo <strong>Phòng ban</strong> (mặc định), <strong>Pháp nhân</strong>, <strong>Nhân sự</strong>, <strong>Loại ngày</strong> hoặc <strong>Tên ngày lễ</strong> (lượt rơi vào ngày nghỉ theo lịch gom vào dòng <em>(Chưa gắn)</em>). Biểu đồ mặc định vẽ <em>Lượt đi làm</em> theo thời gian.</p>
+
+<h2>Xem ai đi làm ngày nào</h2>
+<ol>
+<li>Bấm <strong>Xem danh sách</strong> ở thẻ <strong>Lượt đi làm</strong> (thẻ duy nhất có danh sách), hoặc <strong>Xem</strong> ở một dòng của bảng.</li>
+<li>Ngăn danh sách có các cột Mã NV · Họ tên · Phòng ban · Ngày · Thứ · Loại ngày · Tên ngày lễ · Số ngày bù · Trạng thái phiếu · Mã phiếu, xếp theo ngày.</li>
+<li>Bấm một dòng để mở hồ sơ người đó.</li>
+</ol>
+<p>Loại ngày tính theo <em>Lịch ngày lễ</em> <strong>hiện hành</strong>: trùng ngày lễ thì là <em>Ngày lễ</em>, còn lại là <em>Ngày nghỉ theo lịch</em>. Sửa lịch lễ sau này thì phân loại của lượt cũ đổi theo. Đọc thêm ở nút <strong>Cách tính số liệu</strong>.</p>
+
+<h2>Quyền cần có</h2>
+<p>Cần được giao báo cáo này ở tab <strong>Báo cáo</strong> của Phân quyền tài khoản, <strong>và</strong> có quyền xem <em>Phiếu nghỉ bù</em> (<code>leave_comp_request</code>); số liệu chỉ gồm phiếu trong phạm vi bạn được xem. Nút <strong>Xuất Excel</strong> cần thêm quyền xuất Phiếu nghỉ bù. ⚠️ Người vừa được giao phải <strong>đăng xuất rồi đăng nhập lại</strong> thì menu mới hiện báo cáo này. Xem bài {ref(ADMIN_ACCESS_TITLE, "Dành cho quản trị: giao quyền xem báo cáo")}.</p>""",
+        },
+        {
             "title": ADMIN_ACCESS_TITLE,
             "icon": "shield-check",
-            "summary": "Mười hai báo cáo mới lúc đầu chỉ admin thấy; giao ở Phân quyền tài khoản ▸ tab Báo cáo; vẫn cần quyền ở phân hệ gốc; báo cáo quỹ lương chỉ giao đúng từng người",
+            "summary": "Mười ba báo cáo mới lúc đầu chỉ admin thấy; giao ở Phân quyền tài khoản ▸ tab Báo cáo; vẫn cần quyền ở phân hệ gốc; báo cáo quỹ lương chỉ giao đúng từng người",
             "content": f"""<h2>Ai xem được báo cáo nào</h2>
 <p>Muốn mở một báo cáo Nhân sự, người dùng cần đủ <strong>hai lớp quyền</strong>:</p>
 <ol>
@@ -919,12 +968,13 @@ TREE = {
 <tr><td>Yêu cầu sửa hồ sơ</td><td><strong>Sửa</strong> hồ sơ nhân sự (cùng quyền của màn Duyệt sửa hồ sơ); xuất Excel cần thêm quyền xuất hồ sơ nhân sự</td></tr>
 <tr><td>Sử dụng phòng họp</td><td>Xem phiếu đặt phòng họp</td></tr>
 <tr><td>Đối tượng cần chú ý theo luật</td><td>Xem hồ sơ nhân sự, <strong>và thêm</strong> xem thông tin nhạy cảm của nhân sự (ngày sinh, người thân). Thiếu thì trang báo không tải được kèm lý do</td></tr>
+<tr><td>Làm việc vào ngày lễ, ngày nghỉ</td><td>Xem phiếu nghỉ bù; xuất Excel cần quyền xuất phiếu nghỉ bù</td></tr>
 </tbody>
 </table>
 <p>Nút <strong>Xuất Excel</strong> trên báo cáo cần thêm quyền xuất của phân hệ gốc. Hai nút <strong>Xuất sổ (Excel)</strong> và <strong>Xuất mẫu 01/PLI</strong> cần quyền xuất hồ sơ nhân sự và quyền xuất hợp đồng lao động. Nút <strong>Xuất danh sách ký nhận</strong> của báo cáo Phúc lợi &amp; sự kiện và nút <strong>Xuất Excel</strong> của báo cáo Quỹ lương theo pháp nhân cần quyền xuất hồ sơ nhân sự. Báo cáo <em>Hồ sơ &amp; tài khoản còn thiếu</em> hiện thêm nhóm giấy tờ cá nhân với người có quyền xem thông tin nhạy cảm, và nhóm tài khoản với người có quyền xem tài khoản. Ở báo cáo <em>Biến động nhân sự</em>, người không có quyền xem thông tin nhạy cảm thấy nhóm tuổi dưới 3 người bị che số và không mở được danh sách theo nhóm tuổi.</p>
 
 <h2>Giao các báo cáo mới cho trưởng phòng Nhân sự và Ban Giám đốc</h2>
-<p>Mười hai báo cáo mới lúc mới lên <strong>chỉ quản trị hệ thống thấy</strong>:</p>
+<p>Mười ba báo cáo mới lúc mới lên <strong>chỉ quản trị hệ thống thấy</strong>:</p>
 <table>
 <thead><tr><th>Báo cáo</th><th>Nên giao cho</th></tr></thead>
 <tbody>
@@ -940,6 +990,7 @@ TREE = {
 <tr><td>Yêu cầu sửa hồ sơ</td><td>Trưởng phòng Nhân sự</td></tr>
 <tr><td>Sử dụng phòng họp</td><td>Hành chính, người quản lý phòng họp</td></tr>
 <tr><td>Đối tượng cần chú ý theo luật</td><td>Chỉ trưởng phòng Nhân sự, Ban Giám đốc (báo cáo dựa trên ngày sinh và thông tin con nhỏ)</td></tr>
+<tr><td>Làm việc vào ngày lễ, ngày nghỉ</td><td>Phòng Nhân sự, trưởng các phòng (mỗi người chỉ thấy phiếu trong phạm vi của mình)</td></tr>
 </tbody>
 </table>
 <p>Quản trị giao cho người cần dùng như sau:</p>
@@ -950,7 +1001,7 @@ TREE = {
 <li>Để <strong>Chiều tác động</strong> là <strong>Cho phép</strong>. Ghi <strong>Lý do</strong> nếu muốn (không bắt buộc).</li>
 <li>Bấm <strong>Thêm</strong>, rồi <strong>Đóng</strong>. Làm lại cho từng dòng báo cáo còn lại trong bảng trên.</li>
 </ol>
-<p>Muốn chặn riêng một người dù vai trò của họ được xem, thêm người đó với chiều <strong>Cấm</strong>: cấm luôn thắng cho phép. Người được giao tải lại trang (hoặc đăng nhập lại) thì menu hiện báo cáo mới.</p>
+<p>Muốn chặn riêng một người dù vai trò của họ được xem, thêm người đó với chiều <strong>Cấm</strong>: cấm luôn thắng cho phép. Người được giao tải lại trang (hoặc đăng nhập lại) thì menu hiện báo cáo mới. Riêng báo cáo vừa lên bản mới (ví dụ <em>Làm việc vào ngày lễ, ngày nghỉ</em>, 03/11/2026), cả quản trị cũng phải <strong>đăng xuất rồi đăng nhập lại</strong> một lần mới thấy — phiên cũ còn giữ danh sách báo cáo của lúc đăng nhập.</p>
 <p>⚠️ Báo cáo Hợp đồng lao động có cột lương. Chỉ giao cho người được phép xem lương.</p>
 <p>⚠️ <strong>Sổ quản lý lao động</strong> và <strong>Báo cáo sử dụng lao động (01/PLI)</strong> xuất ra tệp có <strong>số CCCD, mã số BHXH, ngày sinh, địa chỉ và lương</strong> của từng người. Chỉ giao hai báo cáo này cho <strong>trưởng phòng Nhân sự</strong> và <strong>Ban Giám đốc</strong>, không giao theo cả phòng ban hay pháp nhân. Người được giao cũng phải có sẵn quyền xem thông tin nhạy cảm và quyền xem hợp đồng lao động thì mới mở được (xem bảng ở trên).</p>
 <p>⚠️ <strong>Quỹ lương theo pháp nhân là số tiền lương.</strong> Báo cáo chỉ có tổng theo nhóm và không bao giờ hiện lương từng người: nhóm dưới 3 người bị che với mọi người xem, danh sách bấm số không có cột tiền. Dù vậy, tổng lương của một pháp nhân hay một phòng vẫn là số nhạy cảm, nên chỉ giao từng người cụ thể, không giao theo phòng ban, pháp nhân hay vai trò đông người. Số lương của từng người chỉ chính người đó xem được ở Trang cá nhân (bài {ref(SALARY_TITLE, "Nhập lương ở hồ sơ và xem lương của mình")}). Trợ lý AI không đọc số lương, và báo cáo không lên trang Tổng quan.</p>
@@ -959,7 +1010,7 @@ TREE = {
     ],
 }
 
-EXPECTED_ARTICLES = 20
+EXPECTED_ARTICLES = 21
 
 
 def check_unique_titles() -> None:

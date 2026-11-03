@@ -138,7 +138,7 @@ def service_expiry(expiry):
 
 
 def test_vo_thoi_han_tra_none_chu_khong_tra_0():
-    """`0` ngày còn lại đọc ra «hết hạn hôm nay» — đúng ngược với sự thật."""
+    """`0` ngày còn lại đọc ra "hết hạn hôm nay" — đúng ngược với sự thật."""
     assert service_expiry(None)[1] is None
 
 
@@ -154,11 +154,11 @@ def _days(n):
 
 
 def test_khong_co_ma_trang_thai_het_han(db):
-    """«Hết hạn» KHÔNG được là một mã lưu trong cột `status`.
+    """"Hết hạn" KHÔNG được là một mã lưu trong cột `status`.
 
     Lưu nó thành cột là tự dựng một sự thật thứ hai: tới nửa đêm nó sai, và phải
     có tác vụ chạy nền đi lật từng dòng. Bỏ quên tác vụ ấy một tuần thì màn hình
-    báo «Đang lưu» cho giấy phép đã hết hạn.
+    báo "Đang lưu" cho giấy phép đã hết hạn.
     """
     from app.modules.dossier.constants import DOSSIER_STATUS_LABELS
     assert "Hết hạn" not in DOSSIER_STATUS_LABELS.values()
@@ -235,7 +235,7 @@ def test_o_tuy_bien_kiem_theo_KHAI_BAO_cua_ho_so_chu_khong_theo_loai(db, loai):
 
     Trước đó `apply_extra_fields` gộp `field_schema` của loại vào phép kiểm, nên
     đổi sang một loại có ô bắt buộc là hồ sơ bị đòi điền ô đó. Nay màn lập hồ sơ
-    ĐỔ khuôn vào bảng «Trường riêng» rồi người lập chốt lấy, nên nguồn khai duy
+    ĐỔ khuôn vào bảng "Trường riêng" rồi người lập chốt lấy, nên nguồn khai duy
     nhất là `tab_dossier.custom_fields`.
 
     Giữ cả hai nguồn thì mọi dòng vừa đổ từ khuôn ra đều trùng khóa với chính
@@ -312,7 +312,7 @@ def test_patch_khong_gui_o_tuy_bien_thi_khong_kiem(db, loai):
     """Thêm một ô bắt buộc vào loại KHÔNG được chặn mọi lần sửa ô khác qua API.
 
     Màn hình thì luôn gửi cả cụm nên người dùng vẫn bị đòi điền (đúng ý của
-    «bắt buộc»); nhưng một `PATCH` chỉ đổi ghi chú thì không có lý do gì để nổ.
+    "bắt buộc"); nhưng một `PATCH` chỉ đổi ghi chú thì không có lý do gì để nổ.
     """
     loai.field_schema = [{"key": "so_gp", "label": "Số GP", "required": True}]
     db.flush()
@@ -330,7 +330,7 @@ def test_dem_ho_so_theo_loai_khong_loc_pham_vi(db, loai):
     """Chốt toàn vẹn phải đếm TOÀN CÔNG TY.
 
     Lọc theo phạm vi người bấm nút Xóa thì người chỉ thấy phòng mình đọc được
-    «0 hồ sơ» và xóa mất loại mà phòng khác đang dùng.
+    "0 hồ sơ" và xóa mất loại mà phòng khác đang dùng.
     """
     db.add_all([
         Dossier(code="HS1", name="a", dossier_type_id=loai.id, department_id=1),
@@ -391,7 +391,7 @@ def test_quan_ly_thu_mua_khong_tu_nhien_co_khoa_ho_so():
 def test_ho_so_CHI_XUAT_csv_khong_mo_cua_NHAP():
     """⚠️ Bài này chốt một lỗi ĐÃ XẢY RA — nhập CSV hồ sơ từng trả 500.
 
-    `csv_headers` là bảng «cột nào bày ra tệp Excel», nên quá nửa là trường SUY
+    `csv_headers` là bảng "cột nào bày ra tệp Excel", nên quá nửa là trường SUY
     RA (`status_label`, `owner_name`, `department_name`, `company_name` —
     `@property`, không phải cột). Nhưng bộ sinh CRUD bật CẢ HAI cửa từ một tham
     số ấy, và đường NHẬP thì `setattr` thẳng từng khóa lên bản ghi → gặp
@@ -485,7 +485,7 @@ def test_ba_cai_ten_doc_qua_quan_he_phai_ra_ten_that(db, world, loai):
     `Dossier.owner_name` từng viết `self.owner.name`, mà `tab_employee` KHÔNG có
     cột `name` (nó là `full_name`). Hỏng theo kiểu tệ nhất: `AttributeError` bị
     Pydantic NUỐT — `DossierResponse.owner_name` có giá trị mặc định nên phong bì
-    trả về chuỗi rỗng — và cột «Người phụ trách» rỗng vĩnh viễn, không lỗi, không
+    trả về chuỗi rỗng — và cột "Người phụ trách" rỗng vĩnh viễn, không lỗi, không
     cảnh báo, không dòng log nào. Tệp Excel xuất ra cũng rỗng theo.
 
     ⚠️ Bài `test_phong_bi_tra_ve_khong_co_o_nao_ra_none` KHÔNG bắt được nó: ở đó
@@ -518,7 +518,7 @@ def test_nhan_doc_duoc_tren_CHINH_doi_tuong_orm(db, loai):
     """⚠️ Xuất CSV lấy giá trị bằng `getattr(item, field)` trên đối tượng ORM.
 
     Khai mấy nhãn này thành `computed_field` của Pydantic thì tệp Excel xuất ra
-    có cột «Tình trạng» rỗng trơn ở mọi dòng — không lỗi, không cảnh báo. Bài
+    có cột "Tình trạng" rỗng trơn ở mọi dòng — không lỗi, không cảnh báo. Bài
     kiểm này là thứ duy nhất bắt được.
     """
     from app.modules.dossier.controller import router  # noqa: F401 — nạp cấu hình

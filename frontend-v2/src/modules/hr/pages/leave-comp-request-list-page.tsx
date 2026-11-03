@@ -37,7 +37,7 @@ const SCOPE_LABELS: Record<Scope, string> = {
 }
 
 /**
- * PHIẾU XIN NGHỈ BÙ — danh sách. Cùng cách chia phạm vi với màn Đơn nghỉ phép: ô «Phạm vi» chọn
+ * PHIẾU XIN NGHỈ BÙ — danh sách. Cùng cách chia phạm vi với màn Đơn nghỉ phép: ô "Phạm vi" chọn
  * *Của tôi* (GET list, lọc theo nhân sự đăng nhập) · *Cần tôi duyệt* (GET /to-approve, hàng đợi việc
  * của tôi, không phân trang) · *Tất cả trong phạm vi* (GET list theo phạm vi dữ liệu của vai trò).
  */
@@ -64,7 +64,7 @@ export function LeaveCompRequestListPage() {
     return p
   }, [page, pageSize, debouncedValue, status, scope, employeeId])
 
-  //  «Của tôi» mà tài khoản chưa gắn hồ sơ nhân sự thì không có gì để lọc — khỏi gọi (gọi không lọc là
+  //  "Của tôi" mà tài khoản chưa gắn hồ sơ nhân sự thì không có gì để lọc — khỏi gọi (gọi không lọc là
   //  trả cả phạm vi, đánh lừa người xem).
   const listQuery = useLeaveCompRequests(listParams, {
     enabled: scope === SCOPE.ALL || (scope === SCOPE.MINE && Boolean(employeeId)),

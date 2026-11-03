@@ -14,7 +14,7 @@
 
 Quản lý lịch làm việc hàng tuần: một mẫu lịch 7 ngày với loại từng ngày (cả ngày / nửa ngày sáng / nửa ngày chiều / nghỉ) và giờ làm. Mẫu được gán theo **bốn cấp độ** (từ hẹp đến rộng): nhân sự riêng → phòng ban → pháp nhân → hệ thống, **người duyệt đơn nghỉ phép dùng lịch của chính người** để tính ngày công thay cho cứng `WEEKEND_DAYS = (6,)` cũ.
 
-**Vì sao không màn riêng « Lịch làm việc» dạng lưới xem-ai-làm-ai-nghỉ ở đây.** Đó là màn [«Xem lịch»](#9-xem-lịch--màn-lịch-làm-việc-dạng-lịch) (§9 dưới), màn hiển thị dữ liệu từ bốn nguồn:
+**Vì sao không màn riêng " Lịch làm việc" dạng lưới xem-ai-làm-ai-nghỉ ở đây.** Đó là màn [**Xem lịch**](#9-xem-lịch--màn-lịch-làm-việc-dạng-lịch) (§9 dưới), màn hiển thị dữ liệu từ bốn nguồn:
 - Mẫu lịch của mỗi người.
 - Đơn nghỉ phép của mỗi người (đã duyệt + chờ duyệt).
 - Lịch ngày lễ (chung công ty + riêng pháp nhân).
@@ -85,7 +85,7 @@ Hàng M–C–T mặc định 08:00–17:00. Hàng T–S bất kỳ (thường 0
 
 **Cùng đối tượng không được có hai gán bắt đầu cùng một ngày** — được kiểm bằng **UNIQUE constraint** ở DB. **Ngoài lệ tự động** (ngày 05/10/2026 chốt):
 
-Nếu **tạo gán mới** và **đối tượng đã có dòng « không thời hạn»** (xảy ra ngày T, nhỏ hơn ngày gán mới):
+Nếu **tạo gán mới** và **đối tượng đã có dòng " không thời hạn"** (xảy ra ngày T, nhỏ hơn ngày gán mới):
 - Backend tự **đóng dòng cũ** ở ngày `from_mới − 1`, tự ghi audit, tất cả trong **một transaction**.
 - Nếu gán mới **có thời hạn** (đến ngày D ≠ NULL):
   - Gán cũ được **nối lại** (mở thêm dòng) từ `D + 1`, ngầm hiểu đó là lịch tạm (ngoài gán chính).
@@ -96,7 +96,7 @@ Nếu **tạo gán mới** và **đối tượng đã có dòng « không thời
 
 ### 5.2. Đổi mục đích gán giữa nhập liệu (ô cấp độ / gán cho)
 
-Nếu người dùng chọn «Phòng ban» rồi xổ danh sách phòng, sau đó **đổi lại thành «Nhân sự»**, ô **Gán cho** tự xóa (giữ nguyên dòng, chỉ trả ô về trống). Backend kiểm toàn bộ ở `assignment_controller` khi nhận **POST / PATCH** — nếu cấp độ và đối tượng **không khớp** (ví dụ: cấp EMPLOYEE nhưng `target_id` là id của phòng), trả lỗi 400.
+Nếu người dùng chọn **Phòng ban** rồi xổ danh sách phòng, sau đó **đổi lại thành "Nhân sự"**, ô **Gán cho** tự xóa (giữ nguyên dòng, chỉ trả ô về trống). Backend kiểm toàn bộ ở `assignment_controller` khi nhận **POST / PATCH** — nếu cấp độ và đối tượng **không khớp** (ví dụ: cấp EMPLOYEE nhưng `target_id` là id của phòng), trả lỗi 400.
 
 ---
 
@@ -140,7 +140,7 @@ Nếu người dùng chọn «Phòng ban» rồi xổ danh sách phòng, sau đ�
 - Đơn **chưa gửi duyệt** (nháp) — **mở lại được gợi ý theo lịch mới**, người dùng thấy số ngày khác và có cơ hội sửa. Máy chủ vẫn chấp nhận nếu cập nhật dòng loại nghỉ kèm số ngày mới (`tab_leave_request_line`).
 - Đơn **đã gửi duyệt / đã duyệt** → lịch, số ngày, loại nghỉ ghi vào `tab_document.metadata` ở **hình chụp lúc duyệt** (không bao giờ đổi). Báo cáo / tính quỹ phép / màn xem lịch dùng `metadata` đó.
 
-Khi sửa mẫu, **hộp thoại cảnh báo** (chỉ frontend): *«Mẫu này đang được sử dụng bởi X người. Sửa số giờ có thể tính lại số ngày của những đơn nháp của họ.»*
+Khi sửa mẫu, **hộp thoại cảnh báo** (chỉ frontend): *Mẫu này đang được sử dụng bởi X người. Sửa số giờ có thể tính lại số ngày của những đơn nháp của họ.*
 
 ### Ảnh hưởng lên **mẫu seed sẵn**
 
@@ -216,10 +216,10 @@ Chuyển tuần/tháng bằng nút trên thanh công cụ; ở khổ hẹp chế
 
 ## 10. Thẻ lịch trên hồ sơ nhân sự
 
-Tab **«Lịch làm việc»** ở `/hr/employees/:id` — **chỉ xem**, hiện **mẫu và ngày hiệu lực** của người đó.
+Tab **Lịch làm việc** ở `/hr/employees/:id` — **chỉ xem**, hiện **mẫu và ngày hiệu lực** của người đó.
 
 Gác `employee.read` (xem nhân sự) — **không đòi** `work_schedule.read` (xem cấu hình lịch). Luật:
-- Sửa hồ sơ (quyền `hr_profile` / `hr_leave`) → mở `CrudDetailPage` của hồ sơ → tab «Lịch làm việc» có nút **[Sửa lịch]** dẫn tới `/hr/work-schedule-assignments?employee_id=X`, đơn giản hóa tìm kiếm (lọc sẵn người).
+- Sửa hồ sơ (quyền `hr_profile` / `hr_leave`) → mở `CrudDetailPage` của hồ sơ → tab **Lịch làm việc** có nút **[Sửa lịch]** dẫn tới `/hr/work-schedule-assignments?employee_id=X`, đơn giản hóa tìm kiếm (lọc sẵn người).
 - Chỉ xem (quyền `employee.read` không quản lý lịch) → tab chỉ thấy dòng hiện tại.
 
 ---

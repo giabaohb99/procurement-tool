@@ -1,4 +1,4 @@
-# Văn bản — tách trạng thái «Trả về» và «Đã từ chối»
+# Văn bản — tách trạng thái "Trả về" và "Đã từ chối"
 
 Trạng thái: XONG (CR-143, CR-144) · Nhánh `erp-v2` · CR mới (đánh số khi ghi change-log)
 
@@ -7,10 +7,10 @@ Trạng thái: XONG (CR-143, CR-144) · Nhánh `erp-v2` · CR mới (đánh số
 Hôm nay cả ba nhịp kết thúc phiên duyệt (**từ chối · trả lại · rút phiếu**) đều gọi
 `service.reject()` → văn bản về **Nháp (1)**. Hệ quả:
 
-- Mở văn bản ra thấy «Nháp» y như bản chưa từng gửi duyệt — không biết nó **vừa bị trả**.
+- Mở văn bản ra thấy **Nháp** y như bản chưa từng gửi duyệt — không biết nó **vừa bị trả**.
 - Lý do trả nằm trong `version.change_reason` (`[Trả lại] …`) và dấu vết tab *Phê duyệt*;
   băng `DocumentApprovalBanner` **trả `null`** khi phiên không còn chạy nên **không hiện gì**.
-- «Từ chối» và «trả lại» không phân biệt được, dù một cái là *sửa đi gửi lại*, cái kia là *dẹp*.
+- **Từ chối** và **trả lại** không phân biệt được, dù một cái là *sửa đi gửi lại*, cái kia là *dẹp*.
 
 ## Quyết định (đã chốt với người dùng 24/08/2026)
 
@@ -18,7 +18,7 @@ Hôm nay cả ba nhịp kết thúc phiên duyệt (**từ chối · trả lại
 | --- | --- |
 | Từ chối có trạng thái riêng? | **Có** — `9 = Trả về`, `10 = Đã từ chối` |
 | Bản 2.0+ bị trả (văn bản vẫn Có hiệu lực)? | Thêm trạng thái cho **PHIÊN BẢN**: `5 = Trả về`, `6 = Đã từ chối` |
-| Văn bản ở «Trả về» xóa được? | **Được**, y như Nháp (chưa cấp số thì không thủng sổ) |
+| Văn bản ở **Trả về** xóa được? | **Được**, y như Nháp (chưa cấp số thì không thủng sổ) |
 
 Rút phiếu (người nộp tự rút) **vẫn về Nháp** — không phải bị trả.
 
@@ -49,7 +49,7 @@ Frontend (`frontend-v2`)
 - `modules/document/types/document-record.ts` — 4 mã mới + nhãn + `variant`
 - `modules/document/pages/document-detail-page.tsx` — `isDraft`/`isRemovable` nhận `Trả về`
 - `modules/document/components/document-approval-banner.tsx` — hiện băng **Bị trả về / Đã từ chối** kèm lý do
-- `modules/document/components/document-version-row.tsx` — sửa câu chú thích «về Nháp»
+- `modules/document/components/document-version-row.tsx` — sửa câu chú thích **về Nháp**
 
 Kiểm
 - `test/backend/test_van_ban_tra_ve_trang_thai.py` (mới)

@@ -1,4 +1,4 @@
-"""ai-CR-162 — dev 10/10: video quay màn hình KHÔNG có lời nói mà bot «chép» ra 12.800 ký tự hội thoại bịa và viết thành
+"""ai-CR-162 — dev 10/10: video quay màn hình KHÔNG có lời nói mà bot "chép" ra 12.800 ký tự hội thoại bịa và viết thành
 biên bản 45 phút. Chặn bằng mã (ffprobe / silencedetect) trước khi gọi model + rào sau chép lời; báo lỗi nói rõ đã xong gì,
 chưa xong gì, vì sao; lỗi tạm ở bước gửi tự thử lại; lỗi lạ có tin vận hành."""
 import subprocess
@@ -146,7 +146,7 @@ def test_loi_la_co_tin_van_hanh_va_lenh_thu_lai(db, env, monkeypatch):
     assert mt.process(db, row.id)["status"] == "error"
     assert ops and "Biên bản họp #" in ops[-1] and "SEND_WORD" in ops[-1] and "KeyError" in ops[-1]
     assert "lỗi hệ thống chưa rõ" in sent[-1]
-    #  «thử lại biên bản»: làm tiếp từ bước hỏng.
+    #  "thử lại biên bản": làm tiếp từ bước hỏng.
     dispatched: list = []
     monkeypatch.setattr(mt, "dispatch", lambda mid: dispatched.append(mid))
     monkeypatch.setattr(chat_link, "get_active_link", lambda db, chat_id: type("L", (), {"user_id": 7})())

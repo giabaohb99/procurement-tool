@@ -1,7 +1,7 @@
 """ĐIỀU KIỆN ÁP DỤNG CỦA HỒ SƠ — `apply_doc_kinds` + `apply_conditions` (21/09/2026).
 
-Hồ sơ khai *«giấy này phải kèm theo chứng từ nào»*; trang chi tiết chứng từ mọc
-ra thẻ «Hồ sơ cần kèm». Luật ở `app/modules/dossier/applicability.py`.
+Hồ sơ khai *"giấy này phải kèm theo chứng từ nào"*; trang chi tiết chứng từ mọc
+ra thẻ "Hồ sơ cần kèm". Luật ở `app/modules/dossier/applicability.py`.
 
 Soi đúng mấy chỗ hỏng trong im lặng:
 
@@ -34,7 +34,7 @@ def test_bon_loai_chung_tu_va_hai_chieu_dieu_kien():
     assert set(DOC_KINDS) == {"purchase_request", "purchase_order",
                               "survey_request", "survey"}
     assert set(FIELDS) == {"product_code", "item_group"}
-    #  Không có gt/lt: so mã sản phẩm «lớn hơn» thì ra câu không ai đọc được nghĩa.
+    #  Không có gt/lt: so mã sản phẩm "lớn hơn" thì ra câu không ai đọc được nghĩa.
     assert set(OPS) == {"eq", "ne", "in", "not_in", "contains"}
 
 
@@ -113,7 +113,7 @@ def test_cac_dong_dieu_kien_noi_nhau_bang_VA():
 
 
 def test_khop_bo_qua_hoa_thuong_va_khoang_trang():
-    """Mã SP gõ tay ở bốn màn — «sp-001 » và «SP-001» là cùng một thứ với người dùng."""
+    """Mã SP gõ tay ở bốn màn — "sp-001 " và "SP-001" là cùng một thứ với người dùng."""
     conds = validate_conditions([_cond(value="SP-001")])
     assert matches_line(conds, {"product_code": " sp-001 "})
     conds_in = validate_conditions([_cond(op="in", value=["sp-001", "SP-002"])])

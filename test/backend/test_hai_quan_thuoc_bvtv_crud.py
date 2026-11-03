@@ -137,7 +137,7 @@ def test_reimport_keeps_manual_rows_and_replaces_sourced_ones(db):
 
 
 def test_source_row_without_id_is_not_mistaken_for_manual(db):
-    """Bộ đọc cho `source_id = 0` khi dòng nguồn thiếu mã — nếu lấy đó làm dấu «tự thêm» thì
+    """Bộ đọc cho `source_id = 0` khi dòng nguồn thiếu mã — nếu lấy đó làm dấu "tự thêm" thì
     dòng ấy sống sót qua mỗi lần nạp và nhân đôi."""
     records = _file(5)
     records[0]["source_id"] = 0
@@ -184,7 +184,7 @@ def test_dropped_drug_id_is_never_reused_and_its_files_are_cleaned(db):
     result = S.replace_catalog(db, _file(1, 9), user_id=1, filename="b.json")
     assert result["dropped"] == 1
     new_id = db.query(CustomsPesticide).filter_by(source_id=9).one().id
-    #  Tái dùng id của thuốc 2 thì thuốc 9 «nhận» luôn tệp nhãn của thuốc 2.
+    #  Tái dùng id của thuốc 2 thì thuốc 9 "nhận" luôn tệp nhãn của thuốc 2.
     assert new_id > max(ids.values())
     assert _links(db, ids[2]) == 0 and db.get(StoredFile, fid) is None
 

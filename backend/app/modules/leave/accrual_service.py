@@ -87,9 +87,8 @@ def accrual_holdback(allocated: float, mode: int, hire_date: date | None, year: 
     return round(max(0.0, allocated - accrued), 2)
 
 
-def resolve_quota(db: Session, leave_type: LeaveType, employee) -> float:
-    """Hạn mức năm của người này: hình thức nhân viên thắng cấp bậc, cấp bậc thắng `annual_quota_days`."""
-    rules = db.query(LeaveTypeQuota).filter(LeaveTypeQuota.leave_type_id == leave_type.id).all()
+def pick_quota(rules: list[LeaveTypeQuota], leave_type: LeaveType, employee) -> float:
+    """Phần THUẦN của `resolve_quota`: chọn hạn mức từ danh sách luật đã nạp sẵn (nạp một lượt cho nhiều người)."""
     if rules:
         wanted = ((QUOTA_BASIS_EMPLOYMENT_TYPE, getattr(employee, "employment_type", 0) or 0),
                   (QUOTA_BASIS_JOB_LEVEL, getattr(employee, "job_level", 0) or 0))
@@ -98,6 +97,12 @@ def resolve_quota(db: Session, leave_type: LeaveType, employee) -> float:
                 if rule.basis == basis and rule.basis_value == value and value:
                     return float(rule.quota_days or 0.0)
     return float(leave_type.annual_quota_days or 0.0)
+
+
+def resolve_quota(db: Session, leave_type: LeaveType, employee) -> float:
+    """Hạn mức năm của người này: hình thức nhân viên thắng cấp bậc, cấp bậc thắng `annual_quota_days`."""
+    rules = db.query(LeaveTypeQuota).filter(LeaveTypeQuota.leave_type_id == leave_type.id).all()
+    return pick_quota(rules, leave_type, employee)
 
 
 def ensure_applicable(leave_type: LeaveType, hire_date: date | None, starts_on: date) -> None:

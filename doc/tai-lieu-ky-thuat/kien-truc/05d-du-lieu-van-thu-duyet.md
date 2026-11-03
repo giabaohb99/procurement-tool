@@ -86,7 +86,7 @@ Bảng xương sống của phân hệ Văn thư. Mỗi dòng là một tài li�
 **Cách 9 — người có quyền duyệt** (`approval/permission_approvers.py`): grant đủ điều kiện = vai trò có `can_approve`
 trên khóa `approver_ref`, phạm vi `dept`/`company`/`all`, KHÔNG phải vai trò `admin`; tài khoản mở + `employee_id > 0`; rồi
 lọc từng người bằng `get_scoped(Model, entity, subject["id"], user, <hồ sơ quyền ĐÃ LỌC chỉ còn grant đủ điều kiện>,
-"approve")` — lọc hồ sơ là bắt buộc, không thì grant admin «Tất cả» lọt lại (review C1). Chỉ mở cho `_MODELS` = đặt xe ·
+"approve")` — lọc hồ sơ là bắt buộc, không thì grant admin "Tất cả" lọt lại (review C1). Chỉ mở cho `_MODELS` = đặt xe ·
 nghỉ phép · đặt phòng họp; văn bản (ACL thư mục + luật CẤM) và duyệt dấu (phạm vi Công ty chỉ phủ phiếu đã duyệt) cố ý
 CHƯA mở — lưu bước ở luồng đó trả 422, đổi loại chứng từ của luồng thì ghi lại `approver_ref` hoặc 422. Bối cảnh không có
 `id` → rỗng. Màn khai luồng đọc `GET /api/approval-flows/permission-approvers?entity=` (gác `approval_flow.read`, chỉ nhận
@@ -433,7 +433,7 @@ Bảng gốc của cả phân hệ; dự kiến 32 dòng. Mỗi văn bản khi t
 | `default_secrecy` | int | Mức mật mặc định khi tạo văn bản: 1 Công khai · 2 Nội bộ · 3 Mật · 4 Tuyệt mật |
 | `is_confidential_type` | bool | Toàn bộ loại mặc định mức mật cao; CHỈ đặt mức mặc định, không gác quyền đọc |
 | `is_personal` | bool | Văn bản cá nhân (đơn nghỉ phép, phiếu lương…) — không đi theo phạm vi vai trò |
-| `auto_issue_after_approval` | bool | Duyệt xong tự ban hành (True mặc định) hay dừng ở «Chờ ban hành» để người soạn bấm |
+| `auto_issue_after_approval` | bool | Duyệt xong tự ban hành (True mặc định) hay dừng ở **Chờ ban hành** để người soạn bấm |
 | `needs_approval` | bool | Loại này có phải duyệt không |
 | `needs_signature` | bool | Loại này có phải ký không |
 | `needs_decision` | bool | Ban hành phải kèm Quyết định riêng (kiểm theo phiên bản) |

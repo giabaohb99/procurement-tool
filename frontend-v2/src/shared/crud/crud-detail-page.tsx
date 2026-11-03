@@ -23,6 +23,7 @@ import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { cn } from '@/shared/utils/cn'
 import { CrudDetailFlatLayout } from './crud-detail-flat-layout'
+import { CrudTabDraftProvider } from './crud-tab-draft-provider'
 import { CrudFormFields } from './crud-form-fields'
 import { buildFormDefaults, toApiPayload } from './field-values'
 import { resolveFormFields } from './resolve-form-fields'
@@ -47,6 +48,17 @@ interface CrudDetailPageProps<T> {
  * nhập, và lưu xong thì nhảy thẳng sang trang chi tiết của bản ghi vừa tạo.
  */
 export function CrudDetailPage<T extends CrudRecord>({ config }: CrudDetailPageProps<T>) {
+  //  Bản nháp của tab con sống qua lượt đổi tab, nhưng KHÔNG qua lượt đổi bản ghi (`key` theo `:id`) —
+  //  xem `use-crud-tab-draft.ts`.
+  const { id } = useParams()
+  return (
+    <CrudTabDraftProvider key={id ?? 'new'}>
+      <CrudDetailPageBody config={config} />
+    </CrudTabDraftProvider>
+  )
+}
+
+function CrudDetailPageBody<T extends CrudRecord>({ config }: CrudDetailPageProps<T>) {
   const { id } = useParams()
   const navigate = useNavigate()
   const { can } = usePermission()
@@ -262,7 +274,7 @@ export function CrudDetailPage<T extends CrudRecord>({ config }: CrudDetailPageP
   )
 
   if (config.detailLayout === 'flat') {
-    //  Nhãn cột cho khối «Hoạt động» lấy thẳng từ cấu hình ô — không khai lại một bảng thứ hai.
+    //  Nhãn cột cho khối "Hoạt động" lấy thẳng từ cấu hình ô — không khai lại một bảng thứ hai.
     const fieldLabels = Object.fromEntries(
       resolveFormFields(config.formFields, item ?? {}).map((field) => [field.name, field.label]),
     )

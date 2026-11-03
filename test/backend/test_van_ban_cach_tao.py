@@ -1,6 +1,6 @@
 """CÁCH TẠO văn bản — cột `content_mode` (24/09/2026).
 
-Màn chi tiết bỏ tab «Tệp»: tab «Văn bản» là trình SOẠN THẢO (1) hay trình XEM
+Màn chi tiết bỏ tab "Tệp": tab "Văn bản" là trình SOẠN THẢO (1) hay trình XEM
 TỆP (2) tùy cột này. Trước đó giao diện đoán bằng "nội dung rỗng + có tệp" và
 đoán nhầm văn bản soạn thảo vừa tạo, chưa gõ chữ nào mà đã đính tệp.
 """
@@ -53,15 +53,15 @@ def test_schema_rejects_unknown_modes(bad):
 
 
 def test_duplicate_keeps_the_source_mode(db, seed):
-    """«Sao chép» văn bản chỉ gồm tệp mà ra bản soạn thảo là mở ra trang giấy trắng."""
+    """"Sao chép" văn bản chỉ gồm tệp mà ra bản soạn thảo là mở ra trang giấy trắng."""
     source = _create(db, seed, "CT4", content_mode=CONTENT_MODE_FILES)
     copied = duplicate_service.duplicate(db, source, ACTOR)
     assert copied.content_mode == CONTENT_MODE_FILES
 
 
 def test_mode_can_be_set_on_update_because_create_page_saves_a_draft_first(db, seed):
-    """Màn tạo sinh bản nháp ở bước 1 (mặc định soạn thảo); nút «Tạo, không soạn
-    thảo» ở cuối là lượt SỬA. Thiếu trường này ở lượt sửa là văn bản chỉ gồm
+    """Màn tạo sinh bản nháp ở bước 1 (mặc định soạn thảo); nút "Tạo, không soạn
+    thảo" ở cuối là lượt SỬA. Thiếu trường này ở lượt sửa là văn bản chỉ gồm
     tệp vẫn mở ra trình soạn thảo trắng."""
     from app.modules.document.schema import DocumentUpdate
 
@@ -82,8 +82,8 @@ def test_update_without_the_field_leaves_mode_untouched(db, seed):
 
 
 # ── Gửi duyệt văn bản CHỈ GỒM TỆP (lỗi bắt khi test UI 25/09/2026) ─────────────
-#  `submit` từng chỉ hỏi `content_html`, nên mọi văn bản «Tạo, không soạn thảo»
-#  kẹt ở «Nội dung văn bản còn trống» — không gửi duyệt được bằng đường nào.
+#  `submit` từng chỉ hỏi `content_html`, nên mọi văn bản "Tạo, không soạn thảo"
+#  kẹt ở "Nội dung văn bản còn trống" — không gửi duyệt được bằng đường nào.
 
 def _attach(db, entity, entity_id):
     from app.modules.attachment.model import FileLink

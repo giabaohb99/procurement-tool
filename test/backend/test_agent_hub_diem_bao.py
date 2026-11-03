@@ -58,7 +58,7 @@ def sent(db, monkeypatch):
 
 
 def _fake_search(calls: list[str], day: str = "12/10/2026"):
-    """Máy tìm giả: «giá thép» ra 8 tin (1 trùng URL khác utm, 1 trùng tiêu đề, 1 tin cũ 5 ngày), «phân bón» ra 1 tin."""
+    """Máy tìm giả: "giá thép" ra 8 tin (1 trùng URL khác utm, 1 trùng tiêu đề, 1 tin cũ 5 ngày), "phân bón" ra 1 tin."""
     def search(q, limit=8, **kw):
         calls.append(q)
         if q.startswith("giá thép"):

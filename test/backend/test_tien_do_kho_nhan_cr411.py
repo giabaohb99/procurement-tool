@@ -2,10 +2,10 @@
 
 Cảnh cũ: ô Kho chỉ lấy kho của LẦN GIAO, mà lần giao chỉ sinh ra lúc đi nhận hàng. Đơn chưa
 nhận thì ô trống trơn — đúng lúc người theo đơn cần biết hàng sẽ về đâu để đi kiểm thì không
-có gì để đọc. Đo trên dữ liệu thật: 240/240 dòng hàng đều đã khai «Kho nhận mặc định»
+có gì để đọc. Đo trên dữ liệu thật: 240/240 dòng hàng đều đã khai "Kho nhận mặc định"
 (`POItem.warehouse_code`), nhưng 78 hàng chưa có lần giao nào.
 
-Chốt của đại ca: GỘP CHUNG vào cột «Kho» sẵn có, giữ nguyên MÃ kho (không đổi sang tên).
+Chốt của đại ca: GỘP CHUNG vào cột "Kho" sẵn có, giữ nguyên MÃ kho (không đổi sang tên).
 
 Bốn chốt ở đây:
 

@@ -22,12 +22,12 @@ Phòng Nhân sự lập hợp đồng lao động ngay trong hồ sơ của từ
 
 | Màn | Đường dẫn | Ghi chú |
 |---|---|---|
-| Tab «Hợp đồng» trong hồ sơ nhân sự | `/hr/employees/:id?tab=labor-contracts` | Lập / sửa / sinh tệp / tải bản ký / đổi trạng thái. Cột Thao tác là một nút «⋯» mở menu chia nhóm Xem · Soạn · Trạng thái · Xóa (duoc-CR-633) |
+| Tab **Hợp đồng** trong hồ sơ nhân sự | `/hr/employees/:id?tab=labor-contracts` | Lập / sửa / sinh tệp / tải bản ký / đổi trạng thái. Cột Thao tác là một nút **⋯** mở menu chia nhóm Xem · Soạn · Trạng thái · Xóa (duoc-CR-633) |
 | Mẫu hợp đồng | `/hr/labor-contract-templates` | Mở ngay trong Nhân sự (duoc-CR-643). Cùng bảng cũng hiện ở *Văn bản ▸ Thiết lập ▸ Thư viện văn bản mẫu* (`/document/settings?tab=templates&kind=labor-contract`) |
-| Soạn nội dung mẫu trên web | `/hr/labor-contract-templates/:id/edit` | Trình soạn của phân hệ Văn bản, có khung «Chèn biến» |
+| Soạn nội dung mẫu trên web | `/hr/labor-contract-templates/:id/edit` | Trình soạn của phân hệ Văn bản, có khung **Chèn biến** |
 | Danh sách biến | `/hr/labor-contract-templates/variables` | Biến hệ thống + biến tùy chỉnh (§A.6) |
-| Thẻ «Hợp đồng lao động sắp hết hạn» | Tổng quan Nhân sự | Chỉ dựng khi có `labor_contract.read` |
-| «Hợp đồng của tôi» | `/me`, nhóm Hồ sơ | Chỉ hiện khi tài khoản gắn với một hồ sơ nhân sự (§A.8) |
+| Thẻ **Hợp đồng lao động sắp hết hạn** | Tổng quan Nhân sự | Chỉ dựng khi có `labor_contract.read` |
+| **Hợp đồng của tôi** | `/me`, nhóm Hồ sơ | Chỉ hiện khi tài khoản gắn với một hồ sơ nhân sự (§A.8) |
 
 ### A.3. Loại hợp đồng và trạng thái
 
@@ -51,7 +51,7 @@ Nút chọn nhanh thời hạn: 12 · 24 · 36 tháng, thử việc 30 · 60 ng�
 | Đã ký → Đã chấm dứt / thanh lý | Ngày chấm dứt ≥ ngày bắt đầu, bắt buộc lý do |
 | Còn lại | 409 |
 
-**«Hết hạn» (mã 3) không ghi vào DB.** Đó là trạng thái suy ra = Đã ký + ngày kết thúc < hôm nay (giờ Việt Nam). Luật chuyển trạng thái nằm ở `labor_contract/rules.py`; giao diện chỉ hiển thị `effective_status` / `transitions` do backend trả.
+**"Hết hạn" (mã 3) không ghi vào DB.** Đó là trạng thái suy ra = Đã ký + ngày kết thúc < hôm nay (giờ Việt Nam). Luật chuyển trạng thái nằm ở `labor_contract/rules.py`; giao diện chỉ hiển thị `effective_status` / `transitions` do backend trả.
 
 ### A.4. Lập hợp đồng và sinh tệp
 
@@ -73,13 +73,13 @@ Nút chọn nhanh thời hạn: 12 · 24 · 36 tháng, thử việc 30 · 60 ng�
 
 API `/api/labor-contract-variables`, bảng `tab_labor_contract_variable`, migration `lbvar01`. Biến dùng chung **toàn hệ thống**, mọi pháp nhân.
 
-- **Hai loại biến.** *Hệ thống* (48 biến mã cứng ở `placeholder_catalog.py`): giá trị lấy từ hồ sơ; chỉ sửa được tên hiển thị, mô tả và «Ẩn khỏi danh sách hướng dẫn» (biến ẩn vẫn dùng được trong mẫu); mã bất biến, không xóa. *Tùy chỉnh*: HR tự thêm, **nhập tay theo từng hợp đồng** ở ô «Thông tin bổ sung cho mẫu» trong hộp Lập / Sửa.
+- **Hai loại biến.** *Hệ thống* (48 biến mã cứng ở `placeholder_catalog.py`): giá trị lấy từ hồ sơ; chỉ sửa được tên hiển thị, mô tả và **Ẩn khỏi danh sách hướng dẫn** (biến ẩn vẫn dùng được trong mẫu); mã bất biến, không xóa. *Tùy chỉnh*: HR tự thêm, **nhập tay theo từng hợp đồng** ở ô **Thông tin bổ sung cho mẫu** trong hộp Lập / Sửa.
 - **Kiểu giá trị** của biến tùy chỉnh: Chữ · Chữ nhiều dòng (xuống dòng thành ngắt dòng Word) · Số (không âm, tối đa 2 số lẻ, in `1.234,5`) · Ngày (in `dd/mm/yyyy`) · Tiền (đồng nguyên 0..10^12, in `15.000.000`; tự có thêm biến `{{ <mã>_bang_chu }}` đọc số thành chữ).
 - **Mã biến** `^[a-z][a-z0-9_]{1,39}$`, không `__`, không đuôi `_` hoặc `_bang_chu`, không trùng từ khóa bộ máy mẫu hay biến hệ thống. Tối đa 100 biến tùy chỉnh; mỗi hợp đồng tối đa 100 khóa / 20 000 ký tự giá trị.
 - **Mặc định được SAO vào hợp đồng lúc lập** (hộp Lập điền sẵn). Đổi mặc định sau đó KHÔNG đổi hợp đồng đã lập.
-- **Bắt buộc** chặn *Sinh tệp* (chỉ biến mà mẫu thật sự dùng) và việc chuyển sang *Đã ký* (422 nêu NHÃN còn thiếu); lưu nháp không bao giờ bị chặn. Khi ký, hợp đồng còn mẫu thì xét biến của mẫu đó; không còn mẫu (chưa sinh, sửa sau khi sinh, ký bằng bản scan) thì xét biến của các mẫu đang dùng của CHÍNH pháp nhân hợp đồng (ưu tiên cùng loại hợp đồng, không có thì mọi loại; không mẫu nào thì không ép). Số 0 là giá trị thật cho kiểu Số / Tiền; chỉ ô để trống mới là «chưa nhập».
-- **Ngừng dùng** ≠ xóa. Ngừng dùng: biến mất ở ô nhập và khung «Chèn biến», mẫu mới không nhận được; mẫu cũ đã chứa nó vẫn sửa / sinh được, giá trị đã lưu vẫn in và hiện CHỈ ĐỌC ở hộp Sửa hợp đồng. **Xóa** chỉ được khi không mẫu nào chứa và không hợp đồng nào (kể cả xóa mềm) giữ giá trị → 409 nêu số mẫu / hợp đồng (chỉ liệt kê tên mẫu người xem thấy theo phạm vi + số mẫu còn lại). Biến đang dùng cũng bị khóa mã và kiểu.
-- **Quyền.** Xem = `labor_contract_template.read` (ô nhập trong hộp hợp đồng còn mở cho `labor_contract.create/write`). Thêm / sửa (cả nhãn biến hệ thống) = `write`, xóa = `delete`, **và phải có phạm vi «tất cả pháp nhân»** (`variable_access.is_unrestricted`); HR một pháp nhân chỉ xem và dùng.
+- **Bắt buộc** chặn *Sinh tệp* (chỉ biến mà mẫu thật sự dùng) và việc chuyển sang *Đã ký* (422 nêu NHÃN còn thiếu); lưu nháp không bao giờ bị chặn. Khi ký, hợp đồng còn mẫu thì xét biến của mẫu đó; không còn mẫu (chưa sinh, sửa sau khi sinh, ký bằng bản scan) thì xét biến của các mẫu đang dùng của CHÍNH pháp nhân hợp đồng (ưu tiên cùng loại hợp đồng, không có thì mọi loại; không mẫu nào thì không ép). Số 0 là giá trị thật cho kiểu Số / Tiền; chỉ ô để trống mới là **chưa nhập**.
+- **Ngừng dùng** ≠ xóa. Ngừng dùng: biến mất ở ô nhập và khung **Chèn biến**, mẫu mới không nhận được; mẫu cũ đã chứa nó vẫn sửa / sinh được, giá trị đã lưu vẫn in và hiện CHỈ ĐỌC ở hộp Sửa hợp đồng. **Xóa** chỉ được khi không mẫu nào chứa và không hợp đồng nào (kể cả xóa mềm) giữ giá trị → 409 nêu số mẫu / hợp đồng (chỉ liệt kê tên mẫu người xem thấy theo phạm vi + số mẫu còn lại). Biến đang dùng cũng bị khóa mã và kiểu.
+- **Quyền.** Xem = `labor_contract_template.read` (ô nhập trong hộp hợp đồng còn mở cho `labor_contract.create/write`). Thêm / sửa (cả nhãn biến hệ thống) = `write`, xóa = `delete`, **và phải có phạm vi "tất cả pháp nhân"** (`variable_access.is_unrestricted`); HR một pháp nhân chỉ xem và dùng.
 - **Dữ liệu nhạy cảm.** `custom_values` che khỏi nhật ký request và nhật ký thay đổi như lương; tiêu đề / tóm tắt bản lưu trữ ở Văn bản không chứa giá trị biến.
 
 ### A.7. Bản lưu trữ ở phân hệ Văn bản (duoc-CR-629, 640, 659)
@@ -89,9 +89,9 @@ Mỗi hợp đồng (`tab_labor_contract`) có cột `document_id` trỏ tới m
 - **Trạng thái:** Nháp → Nháp · Đã ký → Có hiệu lực · Đã chấm dứt → Hết hiệu lực (ngày hết = ngày chấm dứt) · Đã hủy / HĐ xóa mềm → Lưu trữ · hồ sơ nhân sự xóa cứng → văn bản xóa mềm.
 - **Tệp:** văn bản giữ BẢN SAO (chép byte sang `tab_file` riêng, so `sha256`) của .docx đã sinh và bản đã ký; sinh lại / thay bản ký thì bản sao cũ bị gỡ. Văn bản là **gương** của hợp đồng, không lưu lịch sử mọi bản ký. Bản sao do đồng bộ tạo mang dấu `tab_file_link.doc_type='hdld_sync'`; đồng bộ **chỉ** đụng các bản sao đó, tệp người dùng tự tải thêm không bị xóa (duoc-CR-640).
 - **Tiêu đề / tóm tắt** chỉ có số hợp đồng + tên người + loại + ngày + trạng thái — KHÔNG lương, phụ cấp, CCCD, tài khoản.
-- **Quyền đọc** chỉ theo `labor_contract.read` trong phạm vi (xem `.claude/rules/document-folders-search.md`). Vai trò `hr_profile` được seed thêm `document.read` + `document.write` phạm vi «Của tôi» để mở danh sách / tải tệp (hệ đang chạy phải tick tay hoặc `SEED_FORCE_SYNC` một lần).
+- **Quyền đọc** chỉ theo `labor_contract.read` trong phạm vi (xem `.claude/rules/document-folders-search.md`). Vai trò `hr_profile` được seed thêm `document.read` + `document.write` phạm vi **Của tôi** để mở danh sách / tải tệp (hệ đang chạy phải tick tay hoặc `SEED_FORCE_SYNC` một lần).
 - **Sửa được** (duoc-CR-640) với người có `labor_contract.write` phủ hợp đồng: thông tin chung, nội dung bản nháp, phiên bản, tệp mềm, thư mục. Trường do đồng bộ sở hữu (tên, tóm tắt, ngày hiệu lực, loại, sổ, pháp nhân, phòng, chủ) → 409. Vẫn chặn 409 mọi thao tác đẩy văn bản tới người khác: chia sẻ, sao chép, trích, quan hệ, gửi duyệt, ban hành, cấp số, ký, vào sổ.
-- **«Ban hành» (duoc-CR-659):** khi hợp đồng còn Nháp, trang văn bản lưu trữ chỉ có MỘT nút «Ban hành» = **ký hợp đồng gốc** (qua `/api/labor-contracts/{id}/transition`, Nháp → Đã ký, ngày ký = hôm nay); đồng bộ sau đó đưa văn bản sang «Có hiệu lực». Nút hiện khi `/permissions` trả `can_issue_archive` (HĐ chưa xóa, đang Nháp, người xem ghi được HĐ). Văn bản vẫn không có trạng thái riêng.
+- **"Ban hành" (duoc-CR-659):** khi hợp đồng còn Nháp, trang văn bản lưu trữ chỉ có MỘT nút **Ban hành** = **ký hợp đồng gốc** (qua `/api/labor-contracts/{id}/transition`, Nháp → Đã ký, ngày ký = hôm nay); đồng bộ sau đó đưa văn bản sang **Có hiệu lực**. Nút hiện khi `/permissions` trả `can_issue_archive` (HĐ chưa xóa, đang Nháp, người xem ghi được HĐ). Văn bản vẫn không có trạng thái riêng.
 - **Bù dữ liệu cũ:** `docker compose exec -T api python scripts/backfill_hdld_van_ban_luu_tru.py --dry-run` rồi chạy thật (idempotent); rollback: `--soft-delete-all`.
 
 ### A.8. Cảnh báo sắp hết hạn (duoc-CR-620)
@@ -116,8 +116,8 @@ Một nguồn `labor_contract/expiry_service.find_expiring` cho ba chỗ: **chu�
 
 | Khóa | Dùng cho | Phạm vi lọc theo |
 |---|---|---|
-| `labor_contract` | Hợp đồng: `read` xem / tải bản ký · `create` lập · `write` sửa, sinh tệp, tải bản ký, chuyển trạng thái · `delete` xóa mềm · `print` tải bản sinh .docx | pháp nhân · phòng ban · chính mình (`SCOPE_FIELDS`). Cố ý **không** có `owner`: có nó thì phạm vi «own» lập được HĐ cho nhân sự công ty khác rồi tải CCCD + số tài khoản |
-| `labor_contract_template` | Mẫu hợp đồng và danh sách biến | pháp nhân. Ghi danh sách biến đòi thêm phạm vi «tất cả pháp nhân» |
+| `labor_contract` | Hợp đồng: `read` xem / tải bản ký · `create` lập · `write` sửa, sinh tệp, tải bản ký, chuyển trạng thái · `delete` xóa mềm · `print` tải bản sinh .docx | pháp nhân · phòng ban · chính mình (`SCOPE_FIELDS`). Cố ý **không** có `owner`: có nó thì phạm vi **own** lập được HĐ cho nhân sự công ty khác rồi tải CCCD + số tài khoản |
+| `labor_contract_template` | Mẫu hợp đồng và danh sách biến | pháp nhân. Ghi danh sách biến đòi thêm phạm vi **tất cả pháp nhân** |
 
 Cả hai khóa nằm trong `_SYS_ENTITIES` và được seed cho vai trò `hr_profile`. Lương và `custom_values` bị che ở nhật ký thay đổi và nhật ký request.
 
@@ -131,30 +131,30 @@ Người mới vào công ty có tài khoản là **làm việc được ngay**,
 
 ### B.2. Cách dùng
 
-- Màn: *Nhân sự ▸ Danh mục ▸ Chức vụ* → mở một chức vụ → tab **«Quyền mặc định»** (`/hr/job-positions/:id`). Chọn các vai trò của gói rồi lưu.
-- **Lưu gói không đổi quyền của ai.** Muốn áp cho những người đang giữ chức vụ thì bấm **«Áp lại cho người đang giữ chức vụ»** (có hộp xác nhận kèm số người).
+- Màn: *Nhân sự ▸ Danh mục ▸ Chức vụ* → mở một chức vụ → tab **Quyền mặc định** (`/hr/job-positions/:id`). Chọn các vai trò của gói rồi lưu.
+- **Lưu gói không đổi quyền của ai.** Muốn áp cho những người đang giữ chức vụ thì bấm **Áp lại cho người đang giữ chức vụ** (có hộp xác nhận kèm số người).
 - Từ lúc đó, hệ thống tự cấp gói khi: cấp tài khoản cho nhân sự, đổi chức vụ ở hồ sơ, nhập Excel, hoàn tác lô nhập, áp quá trình công tác, mở khóa tài khoản. Tài khoản bị khóa hoặc hồ sơ nghỉ việc thì bỏ qua.
-- Ở *Quản trị ▸ Phân quyền tài khoản*, vai trò được cấp theo gói hiện nhãn **«Theo chức vụ: …»**.
+- Ở *Quản trị ▸ Phân quyền tài khoản*, vai trò được cấp theo gói hiện nhãn **Theo chức vụ: …**.
 
 ### B.3. Luật đã chốt
 
-- **Gói chỉ là danh sách vai trò, không có bậc phạm vi.** Bậc own / dept / company / all nằm ở cấu hình của từng vai trò. Muốn «Trưởng phòng xem cả phòng» thì chọn vai trò đã cấu hình bậc đó.
+- **Gói chỉ là danh sách vai trò, không có bậc phạm vi.** Bậc own / dept / company / all nằm ở cấu hình của từng vai trò. Muốn **Trưởng phòng xem cả phòng** thì chọn vai trò đã cấu hình bậc đó.
 - **Đổi chức vụ X → Y chỉ gỡ những vai trò hệ thống cấp theo X.** Vai trò quản trị gán tay giữ nguyên. Dấu nằm ở `tab_user_role.granted_by_position_id` (0 = gán tay, > 0 = cấp theo chức vụ đó).
-- **Cấm tự cấp cho chính mình.** Người không phải quản trị đổi chức vụ của chính mình thì không được nhận gói (chặn đường «HR tự nâng quyền»). Thu hồi vẫn chạy.
+- **Cấm tự cấp cho chính mình.** Người không phải quản trị đổi chức vụ của chính mình thì không được nhận gói (chặn đường **HR tự nâng quyền**). Thu hồi vẫn chạy.
 - **Không leo thang.** Người không phải quản trị chỉ cấp được vai trò mà mình có đủ quyền; vai trò còn lại bị bỏ qua và ghi nhật ký.
 - **Vai trò cấm vào gói:** quản trị (`admin`) và vai trò có quyền ghi / tạo / xóa Vai trò hoặc Tài khoản. Người đang giữ một chức vụ không được thêm vai trò vào gói của chính chức vụ đó.
 - Sửa gói cần `role.write` (không phải `job_position.write`). Xóa một vai trò đang nằm trong gói bị chặn.
 
 ### B.4. Hạn chế đã biết
 
-- **Bỏ một vai trò của gói cho riêng một người** thì phải sửa gói hoặc đổi chức vụ của họ. Bỏ tick ở Phân quyền tài khoản sẽ bị «Áp lại» hoặc lần đổi chức vụ sau cấp lại.
+- **Bỏ một vai trò của gói cho riêng một người** thì phải sửa gói hoặc đổi chức vụ của họ. Bỏ tick ở Phân quyền tài khoản sẽ bị **Áp lại** hoặc lần đổi chức vụ sau cấp lại.
 - **Cache quyền 60 giây theo từng tiến trình.** Vai trò vừa thu hồi có thể còn tác dụng tối đa một phút ở worker khác.
 
 ### B.5. Đưa lên hệ đang chạy
 
 1. Kiểm dòng trùng `tab_user_role` trước khi chạy migration `jobposrole01` (migration dọn trùng, giữ dòng gán tay).
 2. Chạy script đề xuất gói từ dữ liệu hiện có: `backend/scripts/de_xuat_quyen_theo_chuc_vu.py` (mặc định chỉ xem; chức vụ ≥ 3 người giữ, ngưỡng 60%). Duyệt kết quả, rồi `--apply --yes` — script chỉ **thêm gói**, không cấp cho ai.
-3. Vào từng chức vụ bấm «Áp lại».
+3. Vào từng chức vụ bấm **Áp lại**.
 
 ---
 
@@ -166,7 +166,7 @@ Phòng Nhân sự tạo mới hoặc cập nhật hàng loạt hồ sơ bằng m
 
 ### C.2. Cách dùng
 
-1. Ở *Nhân sự ▸ Danh sách* (`/hr/employees`) bấm **«Nhập Excel»**, tải tệp mẫu (có ghi chú từng cột).
+1. Ở *Nhân sự ▸ Danh sách* (`/hr/employees`) bấm **Nhập Excel**, tải tệp mẫu (có ghi chú từng cột).
 2. Điền tệp, tải lên → **chạy thử**: hệ thống báo từng dòng sẽ tạo / sửa / lỗi, chưa ghi gì.
 3. Bấm **ghi thật**. Mỗi bản chạy thử chỉ ghi thật được **một lần** (409 nếu đã có lô ghi thật cùng tệp).
 4. Sai thì mở chi tiết lô → **hoàn tác**.
@@ -180,7 +180,7 @@ Phòng Nhân sự tạo mới hoặc cập nhật hàng loạt hồ sơ bằng m
 - Giá trị lạ ở ô mã số / trạng thái / ngày là **lỗi dòng**, hệ thống không đoán.
 - Thiếu Mã NV thì hệ thống tự sinh. Một Mã NV chỉ được xuất hiện **một lần** trong tệp (không phân biệt hoa / thường).
 - Tối đa **2000 dòng**. **Không xóa** nhân sự qua tệp.
-- Cột «Ngày vào làm» (`hire_date`) có trong tệp — đây là cách nhanh nhất để nhập bù ngày vào làm cho hồ sơ cũ (xem `02-nghi-phep.md` §10: thiếu ngày này thì thâm niên phép tính bằng 0).
+- Cột **Ngày vào làm** (`hire_date`) có trong tệp — đây là cách nhanh nhất để nhập bù ngày vào làm cho hồ sơ cũ (xem `02-nghi-phep.md` §10: thiếu ngày này thì thâm niên phép tính bằng 0).
 
 ### C.4. Quyền và dữ liệu nhạy cảm
 
@@ -195,7 +195,7 @@ Phòng Nhân sự tạo mới hoặc cập nhật hàng loạt hồ sơ bằng m
 - Bản chụp chỉ giữ các cột đã đổi `[cũ, mới]` (kèm tập phòng ban trước / sau). Cột nào đã bị sửa tiếp sau lô thì **từ chối cả lượt hoàn tác**, nêu mã + tên cột.
 - Ai đủ quyền trong phạm vi cũng hoàn tác được, không riêng người tạo lô.
 - Hồ sơ **mới** của lô chỉ bị xóa khi chưa có dữ liệu con (liên hệ, người thân, quá trình công tác, HĐLĐ, kiêm nhiệm) và chưa bị sửa sau lô.
-- Hoàn tác về trạng thái «nghỉ việc» thì khóa lại tài khoản; hoàn tác **không** mở lại tài khoản đã khóa vì nghỉ việc.
+- Hoàn tác về trạng thái **nghỉ việc** thì khóa lại tài khoản; hoàn tác **không** mở lại tài khoản đã khóa vì nghỉ việc.
 
 ### C.6. Hạn chế đã biết
 

@@ -1,6 +1,6 @@
-"""Mục «Pháp lý» của Tra cứu thị trường (29/09/2026) — duyệt cả danh mục hóa chất theo văn bản.
+"""Mục "Pháp lý" của Tra cứu thị trường (29/09/2026) — duyệt cả danh mục hóa chất theo văn bản.
 
-Canh: dòng ngừng dùng không lọt ra (sửa ở «Cấu hình» là tắt ngay trên màn đọc), tìm được bằng
+Canh: dòng ngừng dùng không lọt ra (sửa ở "Cấu hình" là tắt ngay trên màn đọc), tìm được bằng
 công thức hóa học như ô tra cũ, và đường API chỉ đòi `customs_price.read` như ô tra.
 """
 from app.modules.customs import regulation_browse_service as B

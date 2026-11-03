@@ -1,4 +1,4 @@
-"""duoc-CR-688 / CR-693 — báo cáo A5 «Quỹ lương theo pháp nhân» (khóa 21): `/api/payroll-fund/summary` (+ export, rows).
+"""duoc-CR-688 / CR-693 — báo cáo A5 "Quỹ lương theo pháp nhân" (khóa 21): `/api/payroll-fund/summary` (+ export, rows).
 
 Từ duoc-CR-693 nguồn số là Ô LƯƠNG TRÊN HỒ SƠ nhân sự (không đọc hợp đồng nữa). Canh: chọn người (đang làm, có lương),
 chỉ số, phạm vi theo `employee`, che nhóm < 3 người (kể cả với người xem mọi phạm vi) + che phụ + che Tổng 1–2 người,
@@ -70,7 +70,7 @@ def _get(client, path=BASE, **extra):
 def test_chon_nguoi_va_chi_so(db, world, client_as):
     _people(db, world, 3, "ok")                                           # 3 người đủ điều kiện
     _emp(db, world, "over", salary=20_000_000, allow=0)
-    _emp(db, world, "onlyallow", salary=0, allow=2_000_000)               # chỉ có phụ cấp vẫn là «có lương»
+    _emp(db, world, "onlyallow", salary=0, allow=2_000_000)               # chỉ có phụ cấp vẫn là "có lương"
     # loại khỏi quỹ: người nghỉ việc · ngừng hoạt động
     _emp(db, world, "res", status="resigned")
     _emp(db, world, "off", is_active=False)
@@ -118,7 +118,7 @@ def test_nhom_theo_chieu(db, world, client_as):
         assert r.status_code == 200, (gb, r.text)
         assert sum(g["current"]["people_paid"] or 0 for g in r.json()["data"]["groups"]) == 7
     assert _get(client, group_by="bogus").status_code == 422
-    assert _get(client, group_by="contract_type").status_code == 422      # chiều «Loại HĐ» đã bỏ
+    assert _get(client, group_by="contract_type").status_code == 422      # chiều "Loại HĐ" đã bỏ
     groups = {g["key"]: g for g in _get(client, group_by="company").json()["data"]["groups"]}
     assert groups[str(world.co["B"])]["current"]["payroll_total"] == 3 * 11_000_000
 

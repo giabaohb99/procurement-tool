@@ -1,6 +1,6 @@
 # Giao việc bao-CR-496 — Lưu bộ lọc riêng từng người + log từng dòng khi nạp (Tra cứu giá hải quan)
 
-> Bản giao việc cho phiên **Erp Agent 3** (đại ca chốt 25/09/2026: «chia cho agent 3 nó làm phần lưu lọc»).
+> Bản giao việc cho phiên **Erp Agent 3** (đại ca chốt 25/09/2026: **chia cho agent 3 nó làm phần lưu lọc**).
 > Bối cảnh đầy đủ: [`01-danh-sach-tinh-nang.md`](../chuc-nang/10-danh-sach-tinh-nang.md) §11 (nhóm Y, dòng Y-12 · Y-13),
 > [`02-thiet-ke-ky-thuat.md`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md), tệp yêu cầu gốc của phòng Thu mua
 > `C:\Users\Dego Admin\Downloads\YÊU CẦU TÍNH NĂNG TRA CỨU GIÁ HS CODE-NOTE 250926.xlsx` (sheet 2 dòng F07, F01 ghi chú 25/09).
@@ -17,23 +17,23 @@
 
 ## Việc 1 — Lưu bộ lọc riêng từng người (F07)
 
-**Đại ca chốt:** lưu RIÊNG từng người; bảng có sẵn cột «dùng chung» mặc định tắt để sau này mở thành bộ lọc chung mà không làm lại. Người dùng đặt tên một tổ hợp điều kiện đang áp (ví dụ «Abamectin 3.6 EC»), lần sau chọn lại một phát là màn hình về đúng trạng thái đó.
+**Đại ca chốt:** lưu RIÊNG từng người; bảng có sẵn cột **dùng chung** mặc định tắt để sau này mở thành bộ lọc chung mà không làm lại. Người dùng đặt tên một tổ hợp điều kiện đang áp (ví dụ **Abamectin 3.6 EC**), lần sau chọn lại một phát là màn hình về đúng trạng thái đó.
 
 - Bảng mới `tab_customs_saved_filter`: `id`, `user_id` (tài khoản, KHÔNG phải employee_id), `name` (String 120, schema phải khai `max_length` — luật duoc-CR-316), `params` (JSON: đúng bộ tham số của `CustomsFilters` ở `frontend-v2/src/modules/procurement/types/customs.ts` — sau bao-CR-493 gồm q, hs_code, origin, unit, formulation, importer_id, importer_name, partner_id, partner_name, date_from, date_to, currency, incoterm, batch_id, price_min/max, qty_min/max, rate_min/max, tab; sau bao-CR-494/495 thêm product_kind và từ khóa AND/NOT — lưu NGUYÊN chuỗi tham số URL là gọn nhất), `is_shared` (Boolean, mặc định False, chưa dùng), `created_at`/`updated_at`. Trần 50 bộ lọc / người, trần kích thước JSON.
 - API dưới `/api/customs/saved-filters`: list (chỉ của tôi, sau này + `is_shared`), create, rename, delete — quyền `customs_price.read` là đủ (đọc được màn thì lưu được bộ lọc của mình); người khác không xóa được của tôi (`user_id` phải khớp, 404 nếu không).
-- Giao diện v2: ở thanh lọc của `customs-price-page.tsx` thêm ô «Bộ lọc đã lưu» (chọn → nạp tham số lên URL bằng `setUrlParams`) + nút «Lưu bộ lọc này» (hộp thoại đặt tên; đang chọn một bộ lọc thì có «Cập nhật» / «Xóa»). Đừng lưu vào localStorage: đổi máy là mất (đại ca chốt).
+- Giao diện v2: ở thanh lọc của `customs-price-page.tsx` thêm ô **Bộ lọc đã lưu** (chọn → nạp tham số lên URL bằng `setUrlParams`) + nút **Lưu bộ lọc này** (hộp thoại đặt tên; đang chọn một bộ lọc thì có **Cập nhật** / **Xóa**). Đừng lưu vào localStorage: đổi máy là mất (đại ca chốt).
 - v1 (`frontend/src/pages/CustomsPrices.tsx`): đại ca 25/09 bảo hải quan bê sang v1 luôn — ERP Agent 2 đang bê đợt 1; việc lưu bộ lọc làm v2 trước, v1 theo sau nếu kịp, ghi rõ trong sổ.
 - Bài kiểm backend: người A không thấy/không xóa được của B; trần 50; tên quá dài → 422 ở schema (không phải 500). v2: util dựng/đọc tham số + test.
 
 ## Việc 2 — Log từng dòng khi nạp (F01 ghi chú 25/09)
 
-**Đại ca chốt:** dữ liệu GTT02 KHÔNG có số tờ khai, nên không có trạng thái «Cập nhật». Log từng dòng chỉ có ba trạng thái: **Thêm mới · Lỗi · Bỏ qua (trùng trong cùng lô)**.
+**Đại ca chốt:** dữ liệu GTT02 KHÔNG có số tờ khai, nên không có trạng thái **Cập nhật**. Log từng dòng chỉ có ba trạng thái: **Thêm mới · Lỗi · Bỏ qua (trùng trong cùng lô)**.
 
 - Đường nạp ở `backend/app/modules/customs/reader.py` + `importer.py`; nhật ký hiện chỉ ghi dòng cảnh báo/lỗi qua `add_log` của `import_tool` (mức `LogLevel`). Yêu cầu: sau khi nạp, xem được **danh sách đủ mọi dòng** kèm cột trạng thái. Cách gọn: thêm cột `row_status` (SMALLINT + IntEnum `ImportRowStatus`: 1 Thêm mới · 2 Lỗi · 3 Bỏ qua) vào bảng nhật ký dòng hiện có, hoặc bảng mới nếu bảng nhật ký chung của `import_tool` không nên đổi — đọc `import_tool/model.py` rồi tự chọn, ghi lý do vào sổ quyết định `doc/erp/hai-quan/02`.
-- «Trùng trong cùng lô» = hai dòng trong CÙNG một tệp giống hệt nhau 32 cột (tệp mẫu có 806 cặp như vậy, xem `01` N-04) — chỉ đánh dấu, KHÔNG được xóa dòng vì đó có thể là hai lô hàng thật; lấy chốt hiện tại của `reader.py` làm chuẩn, đừng đổi luật đếm.
-- Giao diện: thẻ «Lịch sử nạp» (v2 sau bao-CR-493 là `customs-history-panel.tsx`) → hộp «Nhật ký lô» thêm ô lọc theo trạng thái và cột trạng thái; tổng số theo từng trạng thái hiện ở đầu hộp.
+- **Trùng trong cùng lô** = hai dòng trong CÙNG một tệp giống hệt nhau 32 cột (tệp mẫu có 806 cặp như vậy, xem `01` N-04) — chỉ đánh dấu, KHÔNG được xóa dòng vì đó có thể là hai lô hàng thật; lấy chốt hiện tại của `reader.py` làm chuẩn, đừng đổi luật đếm.
+- Giao diện: thẻ **Lịch sử nạp** (v2 sau bao-CR-493 là `customs-history-panel.tsx`) → hộp **Nhật ký lô** thêm ô lọc theo trạng thái và cột trạng thái; tổng số theo từng trạng thái hiện ở đầu hộp.
 - Hiệu năng: tệp ~18.000 dòng → ghi log theo lô (bulk insert), không ghi từng dòng một.
 
 ## Bàn giao
 
-Xong thì nhắn ERP Agent 2 (phiên «ERP Agent 2 (backup)») và Erp Agent 1 qua SendMessage: mã commit (nếu đại ca cho commit), tệp đã đụng, kết quả cổng kiểm, chỗ nào cần cắm vào trang chính.
+Xong thì nhắn ERP Agent 2 (phiên **ERP Agent 2 (backup)**) và Erp Agent 1 qua SendMessage: mã commit (nếu đại ca cho commit), tệp đã đụng, kết quả cổng kiểm, chỗ nào cần cắm vào trang chính.

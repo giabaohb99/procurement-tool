@@ -40,7 +40,7 @@ def test_khop_ban_ts(amount, expected):
 
 @pytest.mark.parametrize("bad", [0, -5_000, float("nan"), None, "", "abc", 0.4, [], float("-inf")])
 def test_khong_am_hong_ra_khong_dong(bad):
-    """0, âm, NaN, None, chuỗi rác, dưới nửa đồng → «Không đồng», không ném lỗi."""
+    """0, âm, NaN, None, chuỗi rác, dưới nửa đồng → "Không đồng", không ném lỗi."""
     assert read_amount_vi(bad) == "Không đồng"
 
 
@@ -50,7 +50,7 @@ def test_so_nguyen_chuoi_va_decimal_nhu_nhau():
 
 
 def test_muoi_mu_12_doc_dung_bac():
-    """10^12 = «một nghìn tỷ» — không được rơi mất bậc."""
+    """10^12 = "một nghìn tỷ" — không được rơi mất bậc."""
     assert read_amount_vi(10**12) == "Một nghìn tỷ đồng chẵn"
 
 

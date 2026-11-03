@@ -1,7 +1,7 @@
-"""bao-CR-583 — thu mua cập nhật thông tin PHƯƠNG ÁN 0 trên màn chọn, kèm «Khôi phục ban đầu».
+"""bao-CR-583 — thu mua cập nhật thông tin PHƯƠNG ÁN 0 trên màn chọn, kèm "Khôi phục ban đầu".
 
-Đại ca chốt 03/10/2026: «cho nhân sự thu mua có thể cập nhật thông tin trên phương án 0, nhưng
-phải có nút trả về tình trạng đầu tiên của nó». Phương án 0 sinh từ dòng yêu cầu nên thường
+Đại ca chốt 03/10/2026: "cho nhân sự thu mua có thể cập nhật thông tin trên phương án 0, nhưng
+phải có nút trả về tình trạng đầu tiên của nó". Phương án 0 sinh từ dòng yêu cầu nên thường
 thiếu mã VTBB / NCC / giá thật; mà lập đơn đọc mã ở DÒNG (bao-CR-568), nên phương án 0 đang
 được chọn đổi mã thì dòng đổi theo.
 """
@@ -155,7 +155,7 @@ def _extra_option(db, it, source, label="Phương án 1"):
 
 
 def test_manual_option_is_edited_like_option_zero(db, seed, cap_quyen):
-    #  Đại ca: «phương án 0 xem như phương án nhập tay và chỉnh sửa lại được».
+    #  Đại ca: "phương án 0 xem như phương án nhập tay và chỉnh sửa lại được".
     pr, it, _zero = _pr(db, seed)
     manual = _extra_option(db, it, PR_OPT_MANUAL)
     _update(db, pr, it, manual, _nstm(db, seed, cap_quyen), snap_product_name="Nhãn khác",

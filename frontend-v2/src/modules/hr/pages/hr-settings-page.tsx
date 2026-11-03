@@ -7,7 +7,7 @@ import { useHrSettings } from '../hooks/use-hr-settings'
 
 /**
  * CÀI ĐẶT NHÂN SỰ (duoc-CR-713) — bố cục theo trang HR Settings của ERPNext: tiêu đề, dải tab gạch chân, các nhóm
- * cài đặt bên dưới. Mới có tab «Nghỉ phép» (chặn đơn lùi ngày · chặn tự duyệt); các tab còn lại của ERPNext (Chi phí,
+ * cài đặt bên dưới. Mới có tab "Nghỉ phép" (chặn đơn lùi ngày · chặn tự duyệt); các tab còn lại của ERPNext (Chi phí,
  * Chấm công, Thâm niên, Tuyển dụng) thuộc phần DEGO đã chốt không làm nên không dựng tab rỗng.
  *
  * Gác `setting.read` (mục menu + trang); sửa cần `setting.write` — cùng khóa với Cấu hình hệ thống.

@@ -1,6 +1,6 @@
 """ai-CR-184 (13/10/2026) — phase 15.2: sổ thay đổi do bot ghi + hoàn tác 24 giờ, phía Telegram.
-«bot vừa làm gì» → thẻ ≤ 10 dòng đánh số · «hoàn tác» / «hoàn tác n» → thẻ xác nhận → «đúng» gọi `erp.undo_change` đúng
-một lần · «thôi» không gọi · lỗi 409 ra chữ rõ · chat chưa đăng nhập → câu hướng dẫn đăng nhập. Lõi ERP (ai-CR-182) được
+"bot vừa làm gì" → thẻ ≤ 10 dòng đánh số · "hoàn tác" / "hoàn tác n" → thẻ xác nhận → "đúng" gọi `erp.undo_change` đúng
+một lần · "thôi" không gọi · lỗi 409 ra chữ rõ · chat chưa đăng nhập → câu hướng dẫn đăng nhập. Lõi ERP (ai-CR-182) được
 giả lập qua `erp.my_changes` / `erp.undo_change`, như test_agent_hub_don_nhap.py."""
 import json
 from types import SimpleNamespace
@@ -136,7 +136,7 @@ def test_hoan_tac_khong_so_chon_dong_moi_nhat_va_dung_mot_lan(db, chat):
     ok, _ = _say(db, service, "hoàn tác")
     assert ok and "<b>Rút lại:</b> Tạo yêu cầu mua hàng (YCMH) YCMH00123" in sent[-1]
     assert "<code>đúng</code>" in sent[-1] and "<code>thôi</code>" in sent[-1] and "«" not in sent[-1]
-    assert undone == []                                          # chưa «đúng» thì chưa làm gì
+    assert undone == []                                          # chưa "đúng" thì chưa làm gì
     wait = _rows(db, ACT_UNDO_WAIT)
     assert len(wait) == 1 and json.loads(wait[0].body)["change_id"] == 31
     ok, row = _say(db, service, "đúng")
@@ -175,7 +175,7 @@ def test_dong_khong_hoan_tac_duoc_thi_noi_ly_do(db, chat):
     ok, _ = _say(db, service, "hoàn tác 3")
     assert ok and "Dòng 3 (<b>YCMH00120</b>) không hoàn tác được: Gửi duyệt không hoàn tác được — rút / trả về bằng tay." in sent[-1]
     assert _rows(db, ACT_UNDO_WAIT) == []
-    #  Dòng mới nhất là gửi duyệt → «hoàn tác» trơn nói lý do + liệt kê lại cho chọn số, không mở thẻ.
+    #  Dòng mới nhất là gửi duyệt → "hoàn tác" trơn nói lý do + liệt kê lại cho chọn số, không mở thẻ.
     state["items"] = [ITEMS[2], ITEMS[0], ITEMS[1]]
     ok, _ = _say(db, service, "hoàn tác")
     assert ok and "Dòng mới nhất (<b>YCMH00120</b> · Gửi duyệt) không hoàn tác được: Gửi duyệt không hoàn tác được" in sent[-1]
@@ -242,7 +242,7 @@ def test_the_khac_moi_hon_thi_dung_khong_phai_cua_minh(db, chat):
     assert _say(db, service, "hoàn tác")[0]
     service.log_message(db, DIR_OUT, "12345", 0, json.dumps({"user_id": 7, "items": []}), action=ACT_DRAFT_DEL_WAIT)
     db.commit()
-    assert not _say(db, service, "đúng")[0] and undone == []     # «đúng» thuộc thẻ xóa nháp mới hơn
+    assert not _say(db, service, "đúng")[0] and undone == []     # "đúng" thuộc thẻ xóa nháp mới hơn
 
 
 # ---------------------------------------------------------------------------

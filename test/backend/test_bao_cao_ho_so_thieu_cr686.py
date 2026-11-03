@@ -1,4 +1,4 @@
-"""duoc-CR-686 — báo cáo «Hồ sơ & tài khoản còn thiếu» (khóa 18): `/api/employees/profile-gaps/summary`.
+"""duoc-CR-686 — báo cáo "Hồ sơ & tài khoản còn thiếu" (khóa 18): `/api/employees/profile-gaps/summary`.
 
 Canh: định nghĩa từng chỉ số, nhóm nhạy cảm / tài khoản CHỈ hiện khi có quyền (vắng khỏi `meta`,
 không rò giá trị), phạm vi dữ liệu, `department_id` chỉ thu hẹp, gác khóa báo cáo ở CẢ ba đường,
@@ -184,7 +184,7 @@ def test_rows_khop_va_cot_cmnd_chi_voi_quyen(db, world, client_as):
     assert body["total"] == 8
     body = _get(client, SUM + "/rows", metric="missing_department", group_by="department",
                 group_key="").json()["data"]
-    assert "Gnodept" in {r["employee_code"] for r in body["rows"]}              # nhóm «(Chưa gắn)»
+    assert "Gnodept" in {r["employee_code"] for r in body["rows"]}              # nhóm "(Chưa gắn)"
 
 
 @pytest.mark.parametrize("metric", ["missing_dob", "no_account", "complete", "complete_rate", "salary", ""])

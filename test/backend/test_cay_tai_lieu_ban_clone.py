@@ -99,7 +99,7 @@ def test_ban_rieng_can_ra_lai_duoc_danh_dau_tren_cay(db, align):
 
 def test_ban_rieng_co_kem_quan_he_van_hien_la_ban_rieng(db, align):
     """Ca THẬT: `clone_service.create_clones` vừa tạo bản riêng vừa ghi một quan
-    hệ «căn cứ theo» trỏ về gốc. Nhánh quan hệ nhặt trước thì bản riêng tụt
+    hệ "căn cứ theo" trỏ về gốc. Nhánh quan hệ nhặt trước thì bản riêng tụt
     xuống thành một dòng quan hệ thường — mất nhãn, mất tên pháp nhân, mất
     trạng thái xử lý. Đúng lỗi đã thấy trên dữ liệu chạy thật."""
     from app.modules.doc_catalog.link_rule_model import RELATION_BASED_ON

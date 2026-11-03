@@ -3,13 +3,13 @@
 Hai lỗi thật, bắt được khi chạy thử trên dữ liệu mẫu ngày 18/08/2026:
 
 1. **Đi tắt.** Văn bản đang ở chặng 1 chờ trưởng bộ phận ký, một người có quyền
-   `document.approve` bấm nút «Duyệt và ban hành» của luồng một bước cũ: văn bản
+   `document.approve` bấm nút "Duyệt và ban hành" của luồng một bước cũ: văn bản
    được cấp số và chuyển hiệu lực ngay, còn phiên duyệt thì vẫn thản nhiên chạy
    tiếp trên một văn bản đã ban hành. Ba chữ ký còn lại trở thành vô nghĩa.
-   Nút «Trả lại» cũ cũng vậy — kéo văn bản về nháp giữa lúc phiên đang chạy.
+   Nút "Trả lại" cũ cũng vậy — kéo văn bản về nháp giữa lúc phiên đang chạy.
 
 2. **Hỏng trong im lặng.** `entity_hooks.fire` nuốt lỗi có chủ ý để không làm
-   mất chữ ký vừa đặt. Nhưng nuốt lỗi thành ra giấu lỗi: phiên ghi «Đã duyệt»,
+   mất chữ ký vừa đặt. Nhưng nuốt lỗi thành ra giấu lỗi: phiên ghi "Đã duyệt",
    văn bản nằm lại ở *chờ duyệt* không số, và lý do chỉ nằm trong log container.
 """
 import pytest
@@ -155,9 +155,9 @@ def test_rut_phieu_thi_van_ban_ve_nhap_va_khong_con_duong_tat(db, align):
 # ── 2 · hỏng thì phải nói ra ────────────────────────────────────────────────
 
 def test_duyet_xong_ma_khong_ban_hanh_duoc_thi_ghi_ly_do_vao_phien(db, align):
-    """Ca thật: loại «phải kèm Quyết định» mà thiếu Quyết định.
+    """Ca thật: loại "phải kèm Quyết định" mà thiếu Quyết định.
 
-    Phiên vẫn ghi «Đã duyệt» — chữ ký là chữ ký, không xóa đi được. Nhưng lý do
+    Phiên vẫn ghi "Đã duyệt" — chữ ký là chữ ký, không xóa đi được. Nhưng lý do
     văn bản chưa ban hành phải nằm ở chỗ người dùng đọc được, không phải chỉ ở
     log container.
     """
@@ -189,7 +189,7 @@ def test_moi_loai_can_quyet_dinh_deu_khai_duoc_quan_he_kem_theo():
     """Bảng quy tắc quan hệ phải theo kịp cờ `needs_decision` của danh mục loại.
 
     Lỗi đã xảy ra: Chính sách · Quy định · Quy trình đều bật `needs_decision`
-    nhưng không có dòng quy tắc «Kèm theo» tới Quyết định. Hệ quả là khóa chết —
+    nhưng không có dòng quy tắc "Kèm theo" tới Quyết định. Hệ quả là khóa chết —
     `ensure_can_issue` đòi Quyết định, còn bảng quy tắc thì cấm khai quan hệ đó,
     nên ba loại này không còn đường nào ban hành được.
     """
@@ -202,6 +202,6 @@ def test_moi_loai_can_quyet_dinh_deu_khai_duoc_quan_he_kem_theo():
 
     assert needs_decision, "Bộ danh mục mẫu phải còn ít nhất một loại cần Quyết định"
     assert not (needs_decision - khai_duoc), (
-        "Loại cần Quyết định mà không khai được quan hệ «Kèm theo» tới Quyết định: "
+        "Loại cần Quyết định mà không khai được quan hệ \"Kèm theo\" tới Quyết định: "
         f"{sorted(needs_decision - khai_duoc)}"
     )

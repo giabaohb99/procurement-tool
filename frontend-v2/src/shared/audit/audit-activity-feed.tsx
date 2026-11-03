@@ -10,7 +10,7 @@ import { formatDateTime, formatRelativeTime } from '@/shared/utils/format-date'
 import { collapseSameRequest, describeAuditEntry } from './describe-audit-entry'
 import { useAuditLogs } from './use-audit-logs'
 
-/** Số dòng hiện thêm mỗi lần bấm «Xem thêm». */
+/** Số dòng hiện thêm mỗi lần bấm "Xem thêm". */
 const PAGE_STEP = 10
 
 interface AuditActivityFeedProps {
@@ -19,13 +19,13 @@ interface AuditActivityFeedProps {
   entityId: number
   /** Tên cột → nhãn người dùng thấy ở form; cột không có trong bảng bị bỏ khỏi câu. */
   fieldLabels?: Record<string, string>
-  /** Danh từ cho dòng tạo mới: «đã tạo ‹hồ sơ này›». */
+  /** Danh từ cho dòng tạo mới: "đã tạo ‹hồ sơ này›". */
   createdNoun?: string
 }
 
 /**
- * Khối «Hoạt động» kiểu ERPNext (duoc-CR-710): đường dọc có chấm, mỗi dòng một câu
- * «**Dego Admin** đã cập nhật **Phòng ban**, **Công ty** · 3 ngày trước».
+ * Khối "Hoạt động" kiểu ERPNext (duoc-CR-710): đường dọc có chấm, mỗi dòng một câu
+ * "**Dego Admin** đã cập nhật **Phòng ban**, **Công ty** · 3 ngày trước".
  *
  * Khác `AuditTimeline` (khối thẻ dùng ở ~37 màn, giữ nguyên): không có thẻ / tiêu đề riêng — khung bọc
  * ngoài lo tiêu đề; thời gian TƯƠNG ĐỐI (rê chuột ra ngày giờ đầy đủ); các dòng cùng một lượt lưu được

@@ -1,6 +1,6 @@
-"""ai-CR-180 (13/10) — đại ca nhắn «vậy tao task đó igups anh đi nhé.» (gõ thiếu dấu «tạo», sai chính tả «giúp») khi đang có
+"""ai-CR-180 (13/10) — đại ca nhắn "vậy tao task đó igups anh đi nhé." (gõ thiếu dấu "tạo", sai chính tả "giúp") khi đang có
 bản nháp công việc chờ: bot không nhận ra là xác nhận, đem đi phân loại và ghi thành việc sửa mã AI-0007. Nay xác nhận nháp
-chịu được chữ không dấu, và trạm phân loại được báo «đang có nháp chờ tạo»."""
+chịu được chữ không dấu, và trạm phân loại được báo "đang có nháp chờ tạo"."""
 import json
 from types import SimpleNamespace
 
@@ -12,7 +12,7 @@ from app.modules.agent_hub import service
 def test_loose_confirm_chiu_khong_dau_nhung_khong_an_cau_khac():
     assert service._loose_confirm("vậy tao task đó igups anh đi nhé.")
     assert service._loose_confirm("tao di em") and service._loose_confirm("ok tạo luôn")
-    assert not service._loose_confirm("trả lời cho tao")                  # «tao» = tôi, không phải «tạo»
+    assert not service._loose_confirm("trả lời cho tao")                  # "tao" = tôi, không phải "tạo"
     assert not service._loose_confirm("tao task khác giúp anh")           # có ý đổi → soạn lại
     assert not service._loose_confirm("tạo task hạn 15/10 cho anh Được")   # có số → nhờ soạn lại
     assert not service._loose_confirm("hiện trên nhóm task đó có bao nhiêu cột trạng thái vậy em để a biết a tạo nè")

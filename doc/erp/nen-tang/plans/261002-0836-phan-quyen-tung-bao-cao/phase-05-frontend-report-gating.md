@@ -6,7 +6,7 @@
 - `src/modules/report/config/report-catalog*.ts`, `routes.tsx`, `hooks/use-report-overview.ts`, `pages/report-overview-page.tsx:68`
 - `src/app/router/module-definition.ts` (`ModuleNavItem`), `module-visibility.ts` (`NavContext`, `itemAllowed`, `canAccessRoute`)
 - `src/core/authorization/use-permission.ts::useNavContext`, `src/core/auth/auth-types.ts::AuthUser`
-- Bẫy «điều hướng mặc định MỞ»: `canAccessRoute` trả true khi không mục nào khớp — mọi route báo cáo ĐÃ có mục menu cùng path (test hiện có canh) nên gác qua mục menu là đủ.
+- Bẫy **điều hướng mặc định MỞ**: `canAccessRoute` trả true khi không mục nào khớp — mọi route báo cáo ĐÃ có mục menu cùng path (test hiện có canh) nên gác qua mục menu là đủ.
 
 ## Luồng dữ liệu
 `/auth/me.report_keys` → `authStore.user.report_keys` → `useNavContext().reportKeys` → `itemAllowed` (menu · launcher · `canAccessRoute` · `firstAccessibleNavPath`) + `filterVisibleReports` (Tổng quan, Danh sách báo cáo, dải KPI).
@@ -14,9 +14,9 @@
 ## Thiết kế
 - `AuthUser.report_keys?: number[]`.
 - `useNavContext()` trả thêm `reportKeys` (đọc thẳng mảng từ store, tham chiếu ổn định).
-- `NavContext.reportKeys?: readonly number[]`; `ModuleNavItem.reportKeys?: readonly number[]` — «chỉ hiện khi ctx chứa ÍT NHẤT MỘT khóa; xét SAU luật entity (gác kép)». Trong `itemAllowed`: sau `if (!baseOk) return false` thêm
+- `NavContext.reportKeys?: readonly number[]`; `ModuleNavItem.reportKeys?: readonly number[]` — **chỉ hiện khi ctx chứa ÍT NHẤT MỘT khóa; xét SAU luật entity (gác kép)**. Trong `itemAllowed`: sau `if (!baseOk) return false` thêm
   `if (item.reportKeys && !item.reportKeys.some((k) => ctx.reportKeys?.includes(k))) return false` — thiếu ctx ⇒ ĐÓNG (fail-closed, ngược với mặc định mở của mục không khai).
-- `ReportCatalogEntry.key: number` + chú thích «= `ReportKey` backend, không đổi/không tái dùng»; khai `key` cho 13 mục ở 5 tệp nhóm.
+- `ReportCatalogEntry.key: number` + chú thích "= `ReportKey` backend, không đổi/không tái dùng"; khai `key` cho 13 mục ở 5 tệp nhóm.
 - `routes.tsx`: mục báo cáo `reportKeys: [r.key]`; mục Tổng quan `reportKeys: REPORT_CATALOG.map((r) => r.key)` (giữ `entities`).
 - `src/modules/report/utils/filter-visible-reports.ts`: `filterVisibleReports(catalog, can, reportKeys)` = `can(r.entity,'read') && reportKeys.includes(r.key)`; dùng ở `use-report-overview.ts` và `report-overview-page.tsx:68` (thay 2 chỗ lọc `can` hiện có — DRY).
 - Ca lệch cặp (có entity A + được gán báo cáo B, không ai đủ cả hai) → mục Tổng quan vẫn hiện nhưng trang rỗng → dùng trạng thái rỗng sẵn có. Chấp nhận, ghi chú trong code.
@@ -46,6 +46,6 @@ Local: tài khoản không gán → không thấy thẻ Báo cáo ở launcher, 
 ## Rủi ro
 | Rủi ro | K×T | Giảm thiểu |
 |---|---|---|
-| User lưu trong localStorage (trước deploy) thiếu `report_keys` → mất báo cáo tới khi đăng nhập lại/làm mới phiên | Cao×Thấp | Fail-closed là đúng chiều an toàn; ghi trong thông báo deploy «đăng xuất/đăng nhập lại» |
+| User lưu trong localStorage (trước deploy) thiếu `report_keys` → mất báo cáo tới khi đăng nhập lại/làm mới phiên | Cao×Thấp | Fail-closed là đúng chiều an toàn; ghi trong thông báo deploy **đăng xuất/đăng nhập lại** |
 | Gán xong người được gán chưa thấy ngay | Cao×Thấp | Cùng hành vi với ma trận quyền hiện nay; ghi trong hướng dẫn |
 | Thêm báo cáo mới quên `key` | Thấp×TB | TS bắt buộc trường + test khớp tập khóa |

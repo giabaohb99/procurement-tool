@@ -9,13 +9,13 @@ Ba đường vào, cùng một họ lỗi: bộ máy hỏi *"anh có quyền vai
 KHÔNG hỏi *"anh có tư cách gì với CON NGƯỜI này"*.
 
     1. Ủy quyền  — lập tờ ủy quyền TỪ giám đốc SANG mình. Nhật ký ghi
-       «B duyệt thay A theo ủy quyền số 12», nhìn hoàn toàn hợp lệ.
+       "B duyệt thay A theo ủy quyền số 12", nhìn hoàn toàn hợp lệ.
     2. Chuyển việc — đổi tên người xử lý một việc sang chính mình rồi tự ký.
     3. Bàn giao hàng loạt — một cú gọi chuyển SẠCH việc đang chờ của giám đốc
-       sang mình, nhật ký ghi «Bàn giao 30 việc duyệt» như một thao tác nghỉ việc
+       sang mình, nhật ký ghi "Bàn giao 30 việc duyệt" như một thao tác nghỉ việc
        bình thường.
 
-Đường 3 nặng nhất: ủy quyền còn để lại chữ «ký thay», còn bàn giao thì việc đổi
+Đường 3 nặng nhất: ủy quyền còn để lại chữ "ký thay", còn bàn giao thì việc đổi
 hẳn chủ — bản in dấu vết không còn chỗ nào nói người ký không phải người được
 giao ban đầu.
 
@@ -90,7 +90,7 @@ def test_khong_tu_lap_uy_quyen_TU_nguoi_khac_SANG_minh(db, vai):
     Kẻ gian có `approval_flow.create` (quyền khai luồng — hay cấp cho trợ lý và
     admin phân hệ) lập một dòng ủy quyền `from = giám đốc, to = chính mình`. Giám
     đốc không hề bấm gì, không nhận thông báo nào. Từ giây đó kẻ gian ký được MỌI
-    phiếu đang chờ giám đốc, và dấu vết ghi «ký thay theo ủy quyền» — đúng thứ
+    phiếu đang chờ giám đốc, và dấu vết ghi "ký thay theo ủy quyền" — đúng thứ
     một người soát sổ sẽ lướt qua.
 
     Luật đúng: **chỉ chính người ủy quyền mới lập được tờ ủy quyền của mình.**
@@ -200,10 +200,10 @@ def test_van_chan_chuyen_viec_sang_chinh_nguoi_trinh_phieu(db, vai):
 def test_khong_ban_giao_HANG_LOAT_ve_tay_minh(db, vai):
     """Nặng nhất trong ba đường.
 
-    Ủy quyền còn để lại chữ «ký thay A»; bàn giao thì việc ĐỔI HẲN CHỦ — bản in
+    Ủy quyền còn để lại chữ "ký thay A"; bàn giao thì việc ĐỔI HẲN CHỦ — bản in
     dấu vết không còn chỗ nào nói người ký không phải người được giao ban đầu.
     Một cú gọi quét sạch hộp việc của giám đốc sang tên kẻ gian, nhật ký ghi
-    «Bàn giao 30 việc duyệt», nhìn y như thao tác nghỉ việc bình thường.
+    "Bàn giao 30 việc duyệt", nhìn y như thao tác nghỉ việc bình thường.
     """
     _luong_mot_buoc(db, vai["giam_doc"], code="CQ-05")
     for i in range(3):
@@ -270,7 +270,7 @@ def test_pham_vi_hep_khong_khai_duoc_luong_cho_MOI_phap_nhan(db, seed, vai, cap_
     """Không giả chữ ký của ai — chỉ đổi chỗ cần chữ ký.
 
     Khai một luồng `company_id = None` (áp cho MỌI pháp nhân) với `priority` cao
-    nhất và đúng một bước «người duyệt = tôi»: mọi văn bản mới của cả tập đoàn
+    nhất và đúng một bước "người duyệt = tôi": mọi văn bản mới của cả tập đoàn
     chạy về tay người khai, hoàn toàn đúng quy trình trên giấy tờ.
 
     Sửa luồng thì `_load` đã gác bằng `get_scoped` từ B-07, nhưng TẠO MỚI thì
@@ -321,7 +321,7 @@ def test_cong_tac_TOAN_HE_doi_pham_vi_toan_he(db, vai, cap_quyen):
 
     Nó không có `flow_id` nên `get_scoped` không với tới; chỉ `require(...)` thôi
     thì một văn thư pháp nhân con phạm vi *công ty* tắt được đường duyệt của toàn
-    hệ, nhật ký chỉ ghi một dòng «Tắt bộ máy duyệt mới cho document».
+    hệ, nhật ký chỉ ghi một dòng "Tắt bộ máy duyệt mới cho document".
     """
     from app.core.auth import get_perm_profile
     from app.core.scoping import has_global_scope

@@ -157,7 +157,7 @@ def test_tim_kiem_theo_so_phu(db, world, client_as):
         return [x["id"] for x in (data["items"] if isinstance(data, dict) else data)]
 
     assert eid in ids_of("0977665544")
-    # từ khóa chữ không khớp nhầm «number»/«label» trong JSON
+    # từ khóa chữ không khớp nhầm "number"/"label" trong JSON
     assert eid not in ids_of("Zalo")
     assert eid not in ids_of("number")
 

@@ -1,5 +1,5 @@
-"""ai-CR-137 — phase 13 đợt A «Hiểu ý định + tự ghi nhớ»: sổ ý định (không nguyên văn câu hỏi), nhãn con tất định theo
-công cụ, tự rút ghi nhớ chỉ khi nhắc lại ≥ 3 lần trên ≥ 2 ngày, không đọc nhóm, không ghi bí mật, «quên» thành bia mộ."""
+"""ai-CR-137 — phase 13 đợt A "Hiểu ý định + tự ghi nhớ": sổ ý định (không nguyên văn câu hỏi), nhãn con tất định theo
+công cụ, tự rút ghi nhớ chỉ khi nhắc lại ≥ 3 lần trên ≥ 2 ngày, không đọc nhóm, không ghi bí mật, "quên" thành bia mộ."""
 import json
 from datetime import datetime, timedelta
 
@@ -61,7 +61,7 @@ def test_so_y_dinh_bo_qua_nhom_va_nguoi_chua_dang_nhap(db):
 
 def test_ket_cuc_hoi_lai_va_loi(db):
     assert il.outcome_of("Anh muốn xem công nợ của pháp nhân nào?") == il.Outcome.CLARIFY
-    #  Có gọi công cụ thì câu kết bằng dấu hỏi là lời mời («cần em xuất Excel không?»), không phải hỏi lại.
+    #  Có gọi công cụ thì câu kết bằng dấu hỏi là lời mời ("cần em xuất Excel không?"), không phải hỏi lại.
     assert il.outcome_of("Còn nợ 12 triệu. Anh cần xuất Excel không?", tools=["payable_lookup"]) == il.Outcome.OK
     assert il.outcome_of("", error=True) == il.Outcome.ERROR
     assert il.outcome_of("Dạ được ạ.") == il.Outcome.OK
@@ -140,7 +140,7 @@ def test_nhan_con_suy_tu_cong_cu(intent, tools, mode, expected):
 
 
 def test_moi_cong_cu_deu_co_nhan_con():
-    """Thêm công cụ mới cho Trợ lý mà quên khai nhãn con thì sổ ý định gom nó vào «tra_cuu.khac» — chặn ở đây."""
+    """Thêm công cụ mới cho Trợ lý mà quên khai nhãn con thì sổ ý định gom nó vào "tra_cuu.khac" — chặn ở đây."""
     from app.modules.assistant.tools import _active_specs
     from app.modules.assistant.tools.rag_tool import SEARCH_DOCS_SPEC
 

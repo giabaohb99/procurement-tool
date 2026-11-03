@@ -138,7 +138,7 @@ def test_luot_mot_bo_du_lieu_bon_bang_nhat_ky(dump):
     for table in backup_service.LOG_TABLES:
         assert f"--ignore-table={settings.DB_NAME}.{table}" in data_pass
     #  Không được để tên bảng đứng trần ở lượt này: mysqldump hiểu đối số sau tên
-    #  CSDL là «chỉ dump mấy bảng đó», tức lượt 1 sẽ dump ĐÚNG thứ vừa loại ra.
+    #  CSDL là "chỉ dump mấy bảng đó", tức lượt 1 sẽ dump ĐÚNG thứ vừa loại ra.
     assert [arg for arg in data_pass if arg in backup_service.LOG_TABLES] == []
     assert "--no-data" not in data_pass
     assert data_pass[-1] == settings.DB_NAME
@@ -170,7 +170,7 @@ def test_dump_hong_mot_luot_thi_bao_ro_luot_nao(monkeypatch):
 
 
 def test_dump_rong_thi_ne_m_loi_thay_vi_day_len_r2(monkeypatch):
-    """Dump rỗng mà cứ nén và đẩy lên là một bản sao lưu «thành công» không phục hồi được."""
+    """Dump rỗng mà cứ nén và đẩy lên là một bản sao lưu "thành công" không phục hồi được."""
     def _empty(cmd, **kwargs):
         if "--version" in cmd:
             return _FakeProcess(b"mysqldump Ver 8.4")

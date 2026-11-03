@@ -1,8 +1,8 @@
-"""duoc-CR-659 — nút «Ban hành» của bản lưu trữ HĐLĐ ở phân hệ Văn bản = KÝ hợp đồng gốc.
+"""duoc-CR-659 — nút "Ban hành" của bản lưu trữ HĐLĐ ở phân hệ Văn bản = KÝ hợp đồng gốc.
 
 `/api/documents/{id}/permissions` trả thêm `archive_contract_id` + `can_issue_archive`. Cờ chỉ bật khi HĐ chưa xóa, đang
 Nháp và người xem ghi được HĐ trong phạm vi `labor_contract`. Bấm nút = gọi `/api/labor-contracts/{id}/transition`
-(→ Đã ký); đồng bộ đưa văn bản sang «Có hiệu lực» và cờ tắt.
+(→ Đã ký); đồng bộ đưa văn bản sang "Có hiệu lực" và cờ tắt.
 """
 from app.core.labor_contract_codes import LaborContractStatus
 from app.modules.document import model as doc_model

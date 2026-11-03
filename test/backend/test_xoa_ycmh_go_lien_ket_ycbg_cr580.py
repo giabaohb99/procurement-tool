@@ -1,9 +1,9 @@
 """bao-CR-580 — xóa YCMH sinh từ YCBG thì YCBG gỡ liên kết tới nó.
 
-Đại ca báo 03/10/2026: «trên yêu cầu báo giá, tôi tạo ra YCMH, nhưng YCMH này tôi xóa đi
-rồi mà vẫn còn hiển thị ra». Nguyên nhân: `delete_pr` chỉ đặt `is_deleted`, còn dây nối
+Đại ca báo 03/10/2026: "trên yêu cầu báo giá, tôi tạo ra YCMH, nhưng YCMH này tôi xóa đi
+rồi mà vẫn còn hiển thị ra". Nguyên nhân: `delete_pr` chỉ đặt `is_deleted`, còn dây nối
 `tab_survey_request_pr` cùng dấu trên dòng YCBG (`pr_id` / `pr_code` / `is_completed`) giữ
-nguyên — YCBG vẫn bày YCMH đã xóa, vẫn đứng ở «Đã tạo YCMH», vẫn khóa chuyển phòng / trả
+nguyên — YCBG vẫn bày YCMH đã xóa, vẫn đứng ở "Đã tạo YCMH", vẫn khóa chuyển phòng / trả
 về, và việc tự hoàn thành YCBG vẫn chờ cả phiếu đã xóa.
 """
 from app.modules.audit.model import AuditLog
@@ -82,7 +82,7 @@ def test_deleting_the_only_pr_unlinks_it_and_rolls_the_ycbg_back(db, seed):
 
 
 def test_processing_ycbg_can_be_transferred_again_once_its_pr_is_deleted(db, seed):
-    # Phiếu còn «Đang xử lý» mà đã mua trước vài dòng: dòng mang cờ đã sinh YCMH nên chuyển
+    # Phiếu còn "Đang xử lý" mà đã mua trước vài dòng: dòng mang cờ đã sinh YCMH nên chuyển
     # phòng / trả về bị khóa. YCMH đó xóa đi thì khóa phải mở lại.
     s, (ln,) = _ycbg(db, seed, status="processing")
     pr = _make_pr(db, seed, s, ln)

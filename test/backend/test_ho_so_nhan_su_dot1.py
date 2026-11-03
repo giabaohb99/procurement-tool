@@ -7,8 +7,8 @@ xếp theo mức thiệt hại nếu vỡ:
   1. **Che nhóm nhạy cảm ở tầng SERIALIZER.** Ẩn ô trên giao diện thì API, tệp
      xuất và trợ lý AI vẫn trả nguyên số tài khoản ngân hàng của cả công ty.
   2. **Ngoại lệ `self`** — ai cũng đọc được hồ sơ của chính mình, và nhánh này
-     phải chặn `employee_id = 0` (tài khoản chưa gắn nhân sự), nếu không «chưa
-     gắn ai» hóa ra khớp mọi hồ sơ.
+     phải chặn `employee_id = 0` (tài khoản chưa gắn nhân sự), nếu không "chưa
+     gắn ai" hóa ra khớp mọi hồ sơ.
   3. **Vòng quản lý.** `manager_id` là thứ bộ máy duyệt đọc để tìm người ký; A
      quản lý B, B quản lý A thì mọi vòng dò cấp trên chạy mãi không dừng — và
      nó nổ lúc ai đó nộp đơn nghỉ phép, không phải lúc lưu hồ sơ.
@@ -96,7 +96,7 @@ def test_cannot_read_someone_elses_profile(db):
 
 
 def test_account_without_employee_link_unlocks_nothing(db):
-    """`employee_id = 0` (admin, tài khoản hệ thống) KHÔNG được coi là «chính mình».
+    """`employee_id = 0` (admin, tài khoản hệ thống) KHÔNG được coi là "chính mình".
 
     Hồ sơ chưa lưu cũng mang id 0 trong bộ nhớ, nên so bằng mà không chặn `0`
     thì ngoại lệ self mở cho tất cả — đúng cái bẫy `leave_request` đã dính.
@@ -163,7 +163,7 @@ def test_nonexistent_manager_is_blocked(db):
 def test_deleting_a_manager_is_blocked_until_reports_are_reassigned(db):
     """Xóa hồ sơ đang là quản lý của ai đó → ai-CR-190: CHẶN 400 (chỉ ngưng dùng), ô `manager_id` bên kia giữ nguyên.
 
-    Trước ai-CR-190 hệ gỡ ô đó về `0` hộ người dùng; nay coi «đang là quản lý của X» là một tham chiếu như mọi
+    Trước ai-CR-190 hệ gỡ ô đó về `0` hộ người dùng; nay coi "đang là quản lý của X" là một tham chiếu như mọi
     danh mục khác — gỡ xong (đổi quản lý cho cấp dưới) thì xóa như cũ.
     """
     sep, nv = _emp(db, "NS001"), _emp(db, "NS002")

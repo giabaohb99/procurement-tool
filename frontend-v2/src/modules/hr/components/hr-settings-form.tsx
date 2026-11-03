@@ -42,7 +42,7 @@ export function HrSettingsForm({ fields, canWrite, canReadRoles }: HrSettingsFor
   //  `disabled={isPending}` chỉ đúng ở lượt render sau — bấm đúp liền tay vẫn ra hai lần lưu. Chặn bằng ref.
   const savingRef = useRef(false)
   const { data: roles } = useRoles({ enabled: canReadRoles })
-  //  Breadcrumb đã ghi «Cài đặt nhân sự» thì không lặp lại ở hàng tiêu đề (duoc-CR-714).
+  //  Breadcrumb đã ghi "Cài đặt nhân sự" thì không lặp lại ở hàng tiêu đề (duoc-CR-714).
   const titleHidden = useIsBreadcrumbDuplicate('Cài đặt nhân sự')
 
   const dirty = JSON.stringify(values) !== JSON.stringify(saved)

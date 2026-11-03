@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Plus, Save, Trash2 } from 'lucide-react'
+import { CircleAlert, Plus, Save, Trash2 } from 'lucide-react'
 
 import { usePermission } from '@/core/authorization/use-permission'
+import { useCrudTabDraft } from '@/shared/crud'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
@@ -23,8 +24,10 @@ interface LeaveTypeQuotaCardProps {
 /**
  * HẠN MỨC THEO NHÓM của một loại nghỉ (duoc-CR-715) — chép ý Leave Policy của ERPNext.
  *
- * Thứ tự áp lúc CẤP quỹ: hình thức nhân viên → cấp bậc → «Hạn mức mỗi năm» của loại nghỉ.
+ * Thứ tự áp lúc CẤP quỹ: hình thức nhân viên → cấp bậc → "Hạn mức mỗi năm" của loại nghỉ.
  * Danh sách sửa trên bản nháp rồi bấm Lưu một lần (backend thay cả danh sách). Quỹ đã cấp không đổi.
+ * Bản nháp giữ bằng `useCrudTabDraft` để sống qua lượt đổi tab của trang chi tiết loại nghỉ (review M4
+ * của duoc-CR-717 — Radix hủy mount tab ẩn).
  */
 export function LeaveTypeQuotaCard({ leaveTypeId }: LeaveTypeQuotaCardProps) {
   const { can } = usePermission()
@@ -33,7 +36,7 @@ export function LeaveTypeQuotaCard({ leaveTypeId }: LeaveTypeQuotaCardProps) {
   const save = useReplaceLeaveTypeQuotas(leaveTypeId)
 
   //  `draft` = bản đang sửa dở; null = chưa đụng gì, hiện thẳng bản từ máy chủ.
-  const [draft, setDraft] = useState<LeaveTypeQuotaRule[] | null>(null)
+  const [draft, setDraft] = useCrudTabDraft<LeaveTypeQuotaRule[]>(`leave-type-quotas:${leaveTypeId}`)
   const rules = draft ?? data?.items ?? []
   const dirty = draft !== null
   const [basis, setBasis] = useState<number>(LEAVE_QUOTA_BASIS.EMPLOYMENT_TYPE)
@@ -66,7 +69,7 @@ export function LeaveTypeQuotaCard({ leaveTypeId }: LeaveTypeQuotaCardProps) {
         <CardTitle className="text-base">Hạn mức theo nhóm</CardTitle>
         <p className="text-sm text-muted-foreground">
           Khi cấp quỹ năm, hệ thống tìm dòng khớp <strong>hình thức nhân viên</strong> trước, không có
-          thì tìm theo <strong>cấp bậc</strong>, không có nữa thì dùng «Hạn mức mỗi năm» của loại nghỉ.
+          thì tìm theo <strong>cấp bậc</strong>, không có nữa thì dùng <strong>Hạn mức mỗi năm</strong> của loại nghỉ.
           Quỹ đã cấp cho người nào thì giữ nguyên, chỉ áp cho lần cấp sau.
         </p>
       </CardHeader>
@@ -166,10 +169,18 @@ export function LeaveTypeQuotaCard({ leaveTypeId }: LeaveTypeQuotaCardProps) {
               <p className="text-xs text-muted-foreground">
                 Thêm trùng nhóm thì ghi đè dòng cũ. Bấm <strong>Lưu hạn mức</strong> để áp dụng.
               </p>
-              <Button onClick={saveAll} disabled={!dirty || save.isPending}>
-                <Save className="mr-1 size-4" />
-                Lưu hạn mức
-              </Button>
+              <div className="flex flex-wrap items-center gap-3">
+                {dirty && (
+                  <span role="status" className="flex items-center gap-1 text-xs font-medium text-warning">
+                    <CircleAlert className="size-3.5" />
+                    Có thay đổi chưa lưu
+                  </span>
+                )}
+                <Button type="button" onClick={saveAll} disabled={!dirty || save.isPending}>
+                  <Save className="mr-1 size-4" />
+                  Lưu hạn mức
+                </Button>
+              </div>
             </div>
           </div>
         )}

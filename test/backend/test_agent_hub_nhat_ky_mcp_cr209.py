@@ -5,7 +5,7 @@ Canh:
     tên ứng dụng lấy từ initialize rồi gắn cho các lượt sau của cùng khóa;
   - trạng thái đúng: thành công / bị từ chối (khóa đọc gọi tool ghi, tool trả denied) / lỗi (tool lỗi, method lạ);
   - khóa sai / thu hồi / hết hạn: 401 + dòng `deny_reason`, có trần ghi; dội khóa sai theo IP → 429;
-  - quá tần suất theo khóa / theo IP → 429 + lỗi JSON-RPC nói rõ trần + Retry-After, ghi «quá tần suất»;
+  - quá tần suất theo khóa / theo IP → 429 + lỗi JSON-RPC nói rõ trần + Retry-After, ghi "quá tần suất";
   - dọn: quá hạn gom vào bảng đếm theo ngày rồi xóa, chạy lại không đếm trùng; tổng theo ngày / top cộng cả hai bảng;
   - đường đọc: người thường chỉ xem của mình (xem người khác → 403), người có quyền quản lý bot xem hết.
 """

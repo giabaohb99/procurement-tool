@@ -71,7 +71,7 @@ def fire(db: Session, instance, outcome: str) -> None:
     except HookVeto:
         #  ⚠️ CUỘN LẠI NGAY tại nguồn, không đợi người gọi. Tới đây `approve` / `send_back`… đã `flush` việc
         #  APPROVED, phiên APPROVED và dòng nhật ký; người gọi nào bắt lỗi rồi vẫn `commit` (cổng MCP ghi nhật ký
-        #  cuộc gọi, bot Telegram…) sẽ ghi luôn nửa chừng đó: phiên «Đã duyệt» mà đơn nghỉ vẫn Chờ duyệt, quỹ kẹt.
+        #  cuộc gọi, bot Telegram…) sẽ ghi luôn nửa chừng đó: phiên "Đã duyệt" mà đơn nghỉ vẫn Chờ duyệt, quỹ kẹt.
         db.rollback()
         raise
     except Exception as error:   # noqa: BLE001 — xem ghi chú trên

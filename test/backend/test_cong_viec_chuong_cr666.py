@@ -9,7 +9,7 @@ Ba mệnh đề:
 
 1. F-01 giao việc -> chuông CHỈ người MỚI được giao, không bao giờ chính người giao.
 2. F-04 đổi trạng thái / bình luận -> chuông PIC + người theo dõi.
-3. F-02 việc Dự án vào tab «Việc cần làm», và tab vẫn là TẬP CHA của chuông cảnh báo
+3. F-02 việc Dự án vào tab "Việc cần làm", và tab vẫn là TẬP CHA của chuông cảnh báo
    (bất biến CR-215) — kèm điều kiện: chỉ PIC, chỉ việc mở, còn là thành viên.
 """
 from types import SimpleNamespace

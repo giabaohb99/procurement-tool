@@ -80,7 +80,7 @@ class _FakeInstance:
 def _declare_flow(db, env, *, switch_on: bool):
     """Khai một luồng MỘT bước cho đặt phòng, kèm/không kèm bật cờ.
 
-    Khai luồng và bật cờ là HAI việc tách nhau ở màn «Bật bộ máy duyệt», nên
+    Khai luồng và bật cờ là HAI việc tách nhau ở màn "Bật bộ máy duyệt", nên
     tham số hoá đúng chỗ đó chứ không dựng hai hàm chép nhau.
     """
     flow = ApprovalFlow(entity=approval_bridge.ENTITY, code="PH-TEST",
@@ -98,7 +98,7 @@ def _declare_flow(db, env, *, switch_on: bool):
     return flow
 
 
-# ── Công tắc «Bật bộ máy duyệt» ────────────────────────────────────────────────
+# ── Công tắc "Bật bộ máy duyệt" ────────────────────────────────────────────────
 
 def test_co_luong_nhung_co_TAT_thi_phieu_di_duong_duyet_THANG(db, env):
     """Công tắc phải THẬT SỰ cắt được, không phải nút giả.
@@ -173,7 +173,7 @@ def test_tu_choi_thi_NHA_phong(db, env):
 
 
 def test_tra_ve_thi_nha_phong_va_SUA_LAI_DUOC(db, env):
-    """Khác «từ chối» đúng ở chỗ sửa lại và gửi lại được."""
+    """Khác "từ chối" đúng ở chỗ sửa lại và gửi lại được."""
     obj = _pending_booking(db, env)
     approval_bridge._on_returned(db, obj.id, _FakeInstance())
     db.commit()
@@ -185,7 +185,7 @@ def test_tra_ve_thi_nha_phong_va_SUA_LAI_DUOC(db, env):
 
 
 def test_nguoi_dat_tu_rut_thi_ve_NHAP(db, env):
-    """Về «Nháp», không phải «Trả về»: không ai trả gì cho họ cả."""
+    """Về "Nháp", không phải "Trả về": không ai trả gì cho họ cả."""
     obj = _pending_booking(db, env)
     approval_bridge._on_withdrawn(db, obj.id, _FakeInstance())
     db.commit()

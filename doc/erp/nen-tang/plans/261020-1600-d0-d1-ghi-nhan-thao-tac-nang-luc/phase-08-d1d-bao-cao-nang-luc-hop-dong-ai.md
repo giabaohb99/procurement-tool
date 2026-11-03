@@ -1,7 +1,7 @@
-# Phase 08 — D1d: Báo cáo «Năng lực theo loại việc» (ReportKey 16) + hợp đồng dữ liệu cho AI chia việc
+# Phase 08 — D1d: Báo cáo "Năng lực theo loại việc" (ReportKey 16) + hợp đồng dữ liệu cho AI chia việc
 
 ## Context links
-- Đích của đại ca: «phần dữ liệu để AI chia việc đúng người»
+- Đích của đại ca: **phần dữ liệu để AI chia việc đúng người**
 - `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §2.1 (máy tính số, AI viết chữ), §4 (`task_type_stats`, `team_capacity`), §6 (năng lực + tải: quản trị xem; người khác chỉ thấy kết quả đề xuất), §7 A1 (Agent 4, song song D1)
 - Cổng B: `backend/app/modules/agent_gateway/controller.py` (`/api/agent-gw/*`, vùng Agent 4)
 - Mẫu gác kép: `usage_profile/controller.py`; lớp gác báo cáo: `report_access/guard.py`
@@ -16,7 +16,7 @@
 - Ngưỡng **≥ 5 mẫu** cho số theo người (doc 22 §4) — dưới ngưỡng trả `null` + lý do `BELOW_THRESHOLD` (dùng lại `UnmeasuredReason`).
 
 ### Vì sao ReportKey 16 riêng
-Năng lực + tải là «dữ liệu năng lực tổng hợp» — doc 22 §6 tách hẳn với «hồ sơ hành vi chi tiết» (khóa 14). Khóa riêng để sau T1 đại ca có thể mở cho trưởng phòng
+Năng lực + tải là **dữ liệu năng lực tổng hợp** — doc 22 §6 tách hẳn với **hồ sơ hành vi chi tiết** (khóa 14). Khóa riêng để sau T1 đại ca có thể mở cho trưởng phòng
 (phòng mình) mà không mở hồ sơ hành vi. Mặc định chỉ admin.
 
 ## Requirements
@@ -33,9 +33,9 @@ Truy vấn: Q1 dòng `tab_work_cycle` theo `(done_at, kind)` + phạm vi; Q2 tê
 **Hợp đồng cho A1 (Agent 4)** — tệp `capability/README.md` hoặc mục trong `doc/tai-lieu-ky-thuat/nang-luc-theo-loai-viec.md`: chữ ký 2 hàm, đơn vị (ngày, giờ), ngưỡng mẫu,
 và **luật phạm vi**: người gọi tự tính `department_ids` được phép (trưởng phòng: phòng mình + phòng con; quản trị: tất cả) — hàm không tự mở rộng phạm vi.
 *Tùy chọn (nếu A1 cần HTTP mà Agent 4 muốn ERP làm sẵn):* `GET /api/agent-gw/capability/stats|load` trong `agent_gateway/controller.py` — chỉ làm khi Agent 4 đồng ý, vì tệp đó thuộc vùng Agent 4.
-**Mã** `ReportKey.WORK_CAPABILITY = 16` «Năng lực theo loại việc», nhóm «Quản trị». FE: `report-catalog-system.ts` (key 16, entity `setting`, `sourcePath: appRoutes.system.logs`).
+**Mã** `ReportKey.WORK_CAPABILITY = 16` **Năng lực theo loại việc**, nhóm **Quản trị**. FE: `report-catalog-system.ts` (key 16, entity `setting`, `sourcePath: appRoutes.system.logs`).
 **Tùy chọn mục 3.7 trong hồ sơ** (doc 22 §5): 3 khóa phẳng `cycle_done_count` (count, 0), `rework_per_item` (ratio, −1), `load_open_items` (count, 0) — đọc `tab_work_cycle` + `current_load` lúc dựng snapshot.
-Chỉ làm nếu lead muốn trọn «nhóm 3.7» (≈ 0,5 ngày thêm, sửa `usage_profile/metric_catalog.py` sau CR-651).
+Chỉ làm nếu lead muốn trọn **nhóm 3.7** (≈ 0,5 ngày thêm, sửa `usage_profile/metric_catalog.py` sau CR-651).
 
 ## Related code files
 Tạo BE: `backend/app/modules/capability/{stats_service,stats_export,controller,schema}.py`.
@@ -50,7 +50,7 @@ Sửa FE: `report-catalog-system.ts` · `modules/report/routes.tsx` + nav (`repo
 2. `stats_service` thuần phần tính (hàm nhận list dòng) + phần truy vấn; test ngưỡng mẫu.
 3. Controller 3 đường + xuất Excel; khai `/summary` trước đường tham số.
 4. Tài liệu hợp đồng A1; gửi lead chuyển Agent 4.
-5. FE trang + bảng `DataTable` + panel tải tức thì + bộ lọc; hiển thị «chưa đủ mẫu» thay số.
+5. FE trang + bảng `DataTable` + panel tải tức thì + bộ lọc; hiển thị **chưa đủ mẫu** thay số.
 6. Gate FE: typecheck, lint, vitest `src/modules/report`.
 
 ## Todo
@@ -72,16 +72,16 @@ Sửa FE: `report-catalog-system.ts` · `modules/report/routes.tsx` + nav (`repo
 Backend `test/backend/test_bao_cao_nang_luc_d1.py`: trung vị/p90/max đúng trên mẫu biết trước; nhóm < 5 mẫu ⇒ `null` + `below_threshold`;
 lọc vai/loại/phòng ban; **đếm truy vấn** `/summary` ≤ 3, `/load` ≤ 10; gác: thiếu khóa 16 → 403, admin → 200, `/summary/export` cần `setting.export`;
 hàm gọi không phạm vi → `[]`.
-Vitest: `report-catalog.test.ts` (đã có, tự bắt key 16), `work-capability-report-page.test.tsx` (ô dưới ngưỡng hiện «chưa đủ mẫu», panel tải gọi `/load`).
+Vitest: `report-catalog.test.ts` (đã có, tự bắt key 16), `work-capability-report-page.test.tsx` (ô dưới ngưỡng hiện **chưa đủ mẫu**, panel tải gọi `/load`).
 
 ## Success criteria
-- Đại ca mở «Năng lực theo loại việc», lọc YCMH vai «Người xử lý» → thấy «chị A: 12 phiếu, trung vị 3,5 ngày, chậm nhất 9 ngày, làm lại 8%, đang ôm 7 việc».
+- Đại ca mở **Năng lực theo loại việc**, lọc YCMH vai **Người xử lý** → thấy **chị A: 12 phiếu, trung vị 3,5 ngày, chậm nhất 9 ngày, làm lại 8%, đang ôm 7 việc**.
 - Agent 4 nhận hợp đồng và gọi được hai hàm trong A1 mà không cần sửa ERP thêm.
 
 ## Risk assessment
 | Rủi ro | K×A | Giảm thiểu |
 |---|---|---|
-| Diễn giải sai «chậm» (việc khó ≠ người chậm) | TB × Cao | Hiện số mẫu, p90, theo loại task; ghi chú mục đích (cải tiến, không chấm điểm — doc 22 §6) |
+| Diễn giải sai **chậm** (việc khó ≠ người chậm) | TB × Cao | Hiện số mẫu, p90, theo loại task; ghi chú mục đích (cải tiến, không chấm điểm — doc 22 §6) |
 | Tranh số ReportKey với phase 03 | TB × Thấp | Thứ tự cố định 15 (D0c) → 16 (D1d); test catalog bắt lệch |
 | A1 tự viết lại công thức | TB × TB | Hợp đồng rõ; lead nhắc DRY |
 

@@ -347,7 +347,7 @@ def test_ma_hoan_tac_ve_phong_ngoai_tam_la_l2(db, seed, hr, cap_quyen):
 def test_mb_dau_thoi_gian_khong_co_do_tre(db, seed, hr):
     b = run_import(db, [{"Mã NV *": "MOI01", "Họ tên *": "Mới"}], hr)
     n = emp(db, "MOI01")
-    n.updated_at = n.updated_at + timedelta(seconds=1)       # 1 giây vẫn là «bị sửa sau» (không còn 60s lỏng)
+    n.updated_at = n.updated_at + timedelta(seconds=1)       # 1 giây vẫn là "bị sửa sau" (không còn 60s lỏng)
     db.commit()
     res = revert(db, b, hr)
     assert not res["ok"] and "chỉnh sửa" in res["message"]

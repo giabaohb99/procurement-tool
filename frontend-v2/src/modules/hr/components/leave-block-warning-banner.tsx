@@ -8,7 +8,7 @@ interface LeaveBlockWarningBannerProps {
 }
 
 /**
- * Khung VÀNG «ngày cấm nghỉ» (duoc-CR-715) — hiện trên form lập đơn ngay khi chọn ngày và trên trang chi tiết đơn.
+ * Khung VÀNG "ngày cấm nghỉ" (duoc-CR-715) — hiện trên form lập đơn ngay khi chọn ngày và trên trang chi tiết đơn.
  *
  * Chỉ CẢNH BÁO: đơn vẫn lưu và gửi duyệt được; lượt duyệt cuối mới bị chặn (trừ vai trò được miễn). Không có
  * xung đột thì không dựng gì — không chiếm chỗ.

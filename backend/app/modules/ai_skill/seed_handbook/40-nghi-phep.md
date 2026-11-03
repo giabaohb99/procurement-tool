@@ -74,10 +74,51 @@ Nhân sự khai ở *Thiết lập ▸ Loại nghỉ* (tab *Thông tin* / *Bậc
 | **Cộng dần theo tháng** | Quỹ ghi đủ cả năm nhưng **phần chưa tới tháng chưa dùng được**: 12 ngày, đang tháng 5 → dùng được 5 (làm tròn xuống nửa ngày). Tool trả phần này ở `not_yet_accrued_days`. Thâm niên, phép chuyển sang, điều chỉnh tay, nghỉ bù không bị cộng dần. |
 
 - **Hạn mức theo nhóm**: một loại nghỉ có thể khai hạn mức riêng theo **hình thức nhân viên** (chính thức, thử việc…)
-  hoặc **cấp bậc**; ưu tiên hình thức → cấp bậc → hạn mức chung. Quỹ đã cấp **không tự tính lại** khi Nhân sự đổi luật —
+  hoặc **cấp bậc**; ưu tiên **chính sách nghỉ phép được phân bổ cho người đó** (mục dưới) → hình thức → cấp bậc → hạn mức chung. Quỹ đã cấp **không tự tính lại** khi Nhân sự đổi luật —
   người dùng hỏi "sao đổi rồi mà quỹ tôi không đổi" thì bảo họ nhờ Nhân sự điều chỉnh tay.
 - **Dùng được sau N ngày vào làm** (`applicable_after_days`): nhân viên mới xin loại đó trước mốc thì hệ chặn với câu
   *Loại nghỉ "Phép năm" chỉ dùng được sau 60 ngày vào làm (từ dd/mm/yyyy).* — chọn ngày từ mốc đó hoặc loại khác.
+
+## Chính sách nghỉ phép và phân bổ (từ 03/11/2026)
+
+**Chính sách nghỉ phép** = gói *loại nghỉ → số ngày/năm* (ví dụ *Chính sách cấp quản lý*: Phép năm 15). Nhân sự khai ở
+*Nghỉ phép ▸ Thiết lập ▸ thẻ Chính sách nghỉ phép* (tab *Thông tin* · *Loại nghỉ & số ngày* · *Đang phân bổ*), rồi gán
+cho người ở menu ***Nghỉ phép ▸ Phân bổ chính sách*** (nút ***Phân bổ*** cho một người, ***Phân bổ hàng loạt*** tối đa 500
+người; dòng phân bổ có ***Kết thúc*** / ***Xóa***).
+
+- **Thứ tự hạn mức**: phân bổ chính sách của người > hình thức nhân viên > cấp bậc > hạn mức của loại. Loại **không có
+  trong gói** thì vẫn theo luật của loại — đừng nói là 0 ngày.
+- **Đổi chính sách giữa năm chia theo tháng, mốc ngày 15**: luật loại 12, gói 15 từ 01/07 → hạn mức **13,5**. Phân bổ bắt
+  đầu từ (hoặc trước, hoặc trong tháng) ngày vào làm thì áp **cả năm** theo số của gói (vào làm 01/10, gói 15 → 15).
+- Ô ***Tính lại hạn mức năm nay cho quỹ đã cấp*** (mặc định bật) chỉ sửa cột *Hạn mức* của quỹ **năm nay**; tắt thì
+  áp từ lần cấp quỹ sau. Năm đã qua không bao giờ đổi. Sửa số ngày trong gói **không** tự tính lại quỹ đã cấp.
+- **Không ai (trừ quản trị) tự tạo / sửa / xóa phân bổ của chính mình** — người hỏi muốn tự gán thì bảo nhờ người khác
+  trong phòng Nhân sự. Người được phân bổ phải trong **phạm vi ghi quỹ phép** của người làm; người đã nghỉ việc không
+  phân bổ được. Một người tại một ngày chỉ có **một** chính sách — chồng ngày thì tick ***Kết thúc chính sách đang hiệu
+  lực***.
+- Không có khóa quyền mới: chính sách theo `leave_type`, phân bổ theo `leave_balance`.
+- Người dùng hỏi **sao hạn mức phép năm của tôi khác đồng nghiệp**: gọi `my_leave_summary`, đọc `policy` và
+  `policy_annual_days` của đúng loại (xem mục tool). Chi tiết dòng quỹ trên màn có dòng ***Chính sách đang áp***.
+- Kỳ nghỉ phép (Leave Period) **không có** — quỹ theo năm dương lịch; đừng hướng dẫn tạo kỳ phép.
+
+## Xem quỹ của cả phòng và cấp quỹ có lọc (Nhân sự, từ 03/11/2026)
+
+- Màn *Quỹ phép năm* có hai thẻ ***Theo dòng quỹ*** · ***Theo nhân sự*** (mỗi người một dòng, mỗi loại nghỉ một cột, ô là
+  số dùng được hôm nay, ***Tổng còn lại***, ***Xuất Excel***). Ô **—** = chưa có dòng quỹ loại đó, khác **0** = đã dùng hết.
+- Nút ***Cấp quỹ năm …*** mở hộp lọc: loại nghỉ (nhiều), pháp nhân, phòng ban, hình thức nhân viên, cấp bậc — ô trống là
+  không lọc. Vẫn chỉ tạo dòng còn thiếu.
+
+## Báo cáo "Làm việc vào ngày lễ, ngày nghỉ" (khóa báo cáo 30, từ 03/11/2026)
+
+*Báo cáo ▸ Nhân sự ▸ Làm việc vào ngày lễ, ngày nghỉ*: ai đi làm ngày lễ / ngày nghỉ theo lịch, bao nhiêu lượt, bao nhiêu
+ngày nghỉ bù được duyệt. Tool `report_summary` với `report_key = holiday_work` (thêm `include_pending`, `day_kind` 0 tất cả · 1
+ngày lễ · 2 ngày nghỉ theo lịch, `department_id`).
+
+- ⚠️ **Nguồn là phiếu xin nghỉ bù, KHÔNG phải chấm công** (công ty không chấm công): ai đi làm mà không lập phiếu thì không
+  có trong báo cáo. Mặc định chỉ phiếu **Đã duyệt**; ô ***Gồm phiếu chờ duyệt*** thêm phiếu đang chờ. Dữ liệu từ 02/11/2026.
+- Phòng ban là **phòng ghi trên phiếu**. Kỳ tối đa 366 ngày.
+- Không thấy báo cáo: cần được giao ở *Phân quyền tài khoản ▸ tab Báo cáo* **và** có quyền xem *Phiếu nghỉ bù*; vừa được
+  giao thì phải **đăng xuất rồi đăng nhập lại**. Báo cáo Quỹ phép năm có thêm cột ***Nghỉ bù cộng thêm***.
 
 ## Ngày cấm nghỉ (từ 02/11/2026)
 
@@ -252,6 +293,9 @@ soạn xong mới biết không đủ phép là bắt người ta làm lại.
 - Đơn khai **nhiều loại nghỉ** thì đọc theo `lines`; `total_days` đầu đơn là tổng
   chung, gán cả tổng đó cho một loại là nói sai.
 - Đơn **nhiều khoảng ngày** thì đọc ngày nghỉ theo `periods`, không theo `from_date`/`to_date` đầu đơn (bao ngoài, có khe).
+- `policy` là chính sách nghỉ phép **đang áp** cho người hỏi (`null` = không có, hạn mức theo luật của loại). Ở từng dòng
+  `balances`: `policy_name` + `policy_annual_days` (`null` = gói không khai loại đó → theo luật của loại). Hạn mức thật
+  vẫn là `allocated_days` (đổi gói giữa năm thì đã chia theo tháng) — **đừng lấy `policy_annual_days` thay cho nó**.
 
 Hai điều tool này **không** làm: không nộp đơn (đó là `draft_leave_request`, đừng
 lẫn hai cái), và không xem được phép của người khác.
@@ -295,8 +339,8 @@ và không tự bấm Lưu thay người dùng.
 |---|---|
 | `leave_request` | Đơn nghỉ phép · Lịch nghỉ |
 | `leave_comp_request` | Nghỉ bù (phiếu xin nghỉ bù) |
-| `leave_balance` | Quỹ phép năm (cấp phát, **điều chỉnh tay**) |
-| `leave_type` | Thiết lập ▸ Loại nghỉ (kèm bậc thâm niên, hạn mức theo nhóm) |
+| `leave_balance` | Quỹ phép năm (cấp phát, **điều chỉnh tay**) · Phân bổ chính sách |
+| `leave_type` | Thiết lập ▸ Loại nghỉ (kèm bậc thâm niên, hạn mức theo nhóm), Ngày cấm nghỉ, Chính sách nghỉ phép |
 | `holiday` | Thiết lập ▸ Lịch ngày lễ |
 
 Tách như vậy vì **`leave_balance` ghi được nghĩa là tặng thêm ngày phép cho bất kỳ ai**.
@@ -326,3 +370,4 @@ phạm vi phủ phòng / công ty của người nộp — đừng đoán tên n
 | Lịch ngày lễ | ngày nghỉ lễ (đó là danh mục, tên đúng là **Lịch ngày lễ**) |
 | Kết sổ cuối năm | chốt sổ, khóa sổ, chuyển phép tự động |
 | Mang sang năm sau | bảo lưu phép, cộng dồn phép |
+| Chính sách nghỉ phép · Phân bổ chính sách | gói phép, chế độ phép, gán quỹ |

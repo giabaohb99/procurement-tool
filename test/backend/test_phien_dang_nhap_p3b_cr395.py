@@ -15,8 +15,8 @@ phiên của người khác. Tệp này chốt:
    `tài khoản '<email>'` — dòng thất bại có `entity_id = 0`).
 6. Khóa tài khoản (`user/service.set_active`) tự thu hồi phiên với lý do
    `ACCOUNT_LOCKED`.
-7. Ba endpoint «Thiết bị của tôi» KHÔNG cần grant nào; không đá được phiên của
-   người khác qua đường đó (404); «đăng xuất mọi thiết bị khác» chừa phiên đang bấm.
+7. Ba endpoint "Thiết bị của tôi" KHÔNG cần grant nào; không đá được phiên của
+   người khác qua đường đó (404); "đăng xuất mọi thiết bị khác" chừa phiên đang bấm.
 """
 import json
 

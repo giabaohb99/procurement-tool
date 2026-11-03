@@ -1,12 +1,12 @@
 # Đối chiếu yêu cầu FR-PROC-2026-001 — Tra cứu thị trường
 
-> Nguồn: tệp «YÊU CẦU TÍNH NĂNG TRA CỨU GIÁ HS CODE-NOTE 250926.xlsx» (chị Mi, Trưởng phòng Thu mua,
+> Nguồn: tệp **YÊU CẦU TÍNH NĂNG TRA CỨU GIÁ HS CODE-NOTE 250926.xlsx** (chị Mi, Trưởng phòng Thu mua,
 > lập 22/09/2026, ghi chú 25/09/2026). Đối chiếu với bản đang chạy trên **dev** ngày 28/09/2026
-> (`erp-v2` từ bdf164a3 trở đi). Màn hình đã đổi tên từ «Tra cứu giá hải quan» thành **«Tra cứu
-> thị trường»** (bao-CR-500). Mọi mục dưới đây có ở **cả bản cũ (v1) lẫn bản mới (v2)**, trừ khi ghi
+> (`erp-v2` từ bdf164a3 trở đi). Màn hình đã đổi tên từ **Tra cứu giá hải quan** thành **Tra cứu
+> thị trường** (bao-CR-500). Mọi mục dưới đây có ở **cả bản cũ (v1) lẫn bản mới (v2)**, trừ khi ghi
 > rõ khác. Prod chưa có cụm này.
 >
-> Ký hiệu cột «Kết quả»: **[x] Đạt** · **[~] Một phần** · **[ ] Chưa**.
+> Ký hiệu cột **Kết quả**: **[x] Đạt** · **[~] Một phần** · **[ ] Chưa**.
 
 ## 1. Tóm tắt
 
@@ -26,17 +26,17 @@ PDF). Ba chỗ còn thiếu trên thanh lọc đã bù ở bao-CR-503 (28/09). D
 
 | Mã | Tên | Chị Mi ghi 25/09 | Bản hiện tại | Kết quả |
 |---|---|---|---|---|
-| F01 | Tải tệp dữ liệu | Log từng dòng (Thêm mới / update / lỗi…); thêm tải về tệp đã nạp | Nạp nhiều tệp .xls/.xlsx một lần, kiểm đủ 32 cột và báo lỗi cụ thể, chạy thử trước khi ghi. Thẻ **Lịch sử nạp**: từng lô có ai nạp, lúc nào, số dòng; mở lô xem **kết quả từng dòng** (Thêm mới / Lỗi / Trùng trong lô); **tải lại tệp gốc**; hoàn tác lô. Không có trạng thái «Cập nhật» vì tệp không có số tờ khai (đại ca chốt 25/09). Loại trùng làm theo cách khác yêu cầu, xem rủi ro R1 ở mục 6 | [x] |
+| F01 | Tải tệp dữ liệu | Log từng dòng (Thêm mới / update / lỗi…); thêm tải về tệp đã nạp | Nạp nhiều tệp .xls/.xlsx một lần, kiểm đủ 32 cột và báo lỗi cụ thể, chạy thử trước khi ghi. Thẻ **Lịch sử nạp**: từng lô có ai nạp, lúc nào, số dòng; mở lô xem **kết quả từng dòng** (Thêm mới / Lỗi / Trùng trong lô); **tải lại tệp gốc**; hoàn tác lô. Không có trạng thái **Cập nhật** vì tệp không có số tờ khai (đại ca chốt 25/09). Loại trùng làm theo cách khác yêu cầu, xem rủi ro R1 ở mục 6 | [x] |
 | F02 | Tìm theo tên hàng | Thêm từ đồng nghĩa, người dùng tự khai từ gốc + từ gần giống | Không phân biệt hoa/thường; gõ nhiều từ = phải có ĐỦ (AND); `-từ` = loại trừ (NOT); tự quy đổi nồng độ (3,6% ≡ 3.6EC ≡ 36 G/L ≡ 3.6% W/W); dòng gợi ý dưới ô tìm cho biết đang khớp những gì. Danh mục **Từ đồng nghĩa** ở thẻ Cấu hình | [x] |
 | F03 | Lọc theo trường | Done | Lọc kết hợp nhiều trường, hiện tổng số dòng khớp. Chi tiết từng trường ở mục 3 — đủ cả 13 trường từ bao-CR-503 | [x] |
-| F04 | Phân loại Thành phẩm / Nguyên liệu | Nút lọc theo nhóm, sửa được nhóm từ khóa | Tự gắn nhãn khi nạp; cột + ô lọc «Phân loại»; danh mục **Từ khóa** ở thẻ Cấu hình, sửa xong bấm «Gắn lại nhãn». Dev: 13.425 thành phẩm / 4.818 nguyên liệu trên 18.243 dòng | [x] |
-| F05 | Tỷ giá theo dòng | Done | Cột «Tỷ giá USD» lấy thẳng từ tệp gốc, thêm hai cột **Giá VND**: × 1,07 (thuế NK 7% tạm tính) và × (1 + thuế suất XNK của dòng) | [x] |
+| F04 | Phân loại Thành phẩm / Nguyên liệu | Nút lọc theo nhóm, sửa được nhóm từ khóa | Tự gắn nhãn khi nạp; cột + ô lọc **Phân loại**; danh mục **Từ khóa** ở thẻ Cấu hình, sửa xong bấm **Gắn lại nhãn**. Dev: 13.425 thành phẩm / 4.818 nguyên liệu trên 18.243 dòng | [x] |
+| F05 | Tỷ giá theo dòng | Done | Cột **Tỷ giá USD** lấy thẳng từ tệp gốc, thêm hai cột **Giá VND**: × 1,07 (thuế NK 7% tạm tính) và × (1 + thuế suất XNK của dòng) | [x] |
 | F06 | Xuất Excel theo mẫu | Done (cần xác nhận lại mẫu form) | Xuất đúng các dòng đang lọc (tối đa 50.000), 36 cột. **Chưa** có định dạng mẫu công ty: dòng tiêu đề + số dòng, header tô màu, wrap tên hàng, ngày dd/mm/yyyy, phân cách hàng nghìn, tách sheet theo nhóm hàng — **chờ tệp mẫu chị Mi** | [~] |
 | F07 | Lưu bộ lọc | Gợi ý từ khóa đã nhập; hoặc chế độ xem dùng chung, tìm được | Lưu / chọn lại / cập nhật / xóa bộ lọc **riêng từng người** (tối đa 50), v1 và v2 dùng chung kho. **Chưa** có bộ lọc dùng chung (bảng đã có sẵn cờ, chưa có giao diện) và **chưa** có gợi ý từ khóa | [~] |
-| F08 | Biểu đồ xu hướng giá | Done | Giá trung bình gia quyền / thấp nhất / cao nhất / khoảng phổ biến theo **tháng, quý, năm**; so sánh nhiều mặt hàng. **Chưa** có kỳ **tuần** (yêu cầu ghi «theo tuần hoặc theo tháng») | [~] |
+| F08 | Biểu đồ xu hướng giá | Done | Giá trung bình gia quyền / thấp nhất / cao nhất / khoảng phổ biến theo **tháng, quý, năm**; so sánh nhiều mặt hàng. **Chưa** có kỳ **tuần** (yêu cầu ghi **theo tuần hoặc theo tháng**) | [~] |
 | F09 | Trang tra cứu giá | Pending (cần xác nhận lại mẫu) | Bảng đủ 32 cột như tệp GTT02, ẩn/hiện cột, lọc như F02–F04, xuất Excel. **Chưa** có in báo giá và xuất PDF — **chờ mẫu in chị Mi** | [~] |
-| F10 | Phân quyền | Done | Quyền riêng «Tra cứu thị trường» (xem / nạp / hoàn tác / xuất Excel) và «Danh mục hóa chất»; thiếu quyền thì không vào được màn, không xuất được | [x] |
-| F11 | Lịch sử tải tệp & nhật ký | Thêm block lịch sử thao tác cho trang | Lịch sử **nạp tệp** đầy đủ (xem F01). **Chưa** có khối «lịch sử thao tác» trên trang cho các việc khác: xuất Excel, sửa từ khóa / từ đồng nghĩa / hóa chất, gắn lại nhãn. Hệ thống có ghi nhật ký sửa danh mục ở tầng dưới nhưng trang chưa bày ra | [~] |
+| F10 | Phân quyền | Done | Quyền riêng **Tra cứu thị trường** (xem / nạp / hoàn tác / xuất Excel) và **Danh mục hóa chất**; thiếu quyền thì không vào được màn, không xuất được | [x] |
+| F11 | Lịch sử tải tệp & nhật ký | Thêm block lịch sử thao tác cho trang | Lịch sử **nạp tệp** đầy đủ (xem F01). **Chưa** có khối **lịch sử thao tác** trên trang cho các việc khác: xuất Excel, sửa từ khóa / từ đồng nghĩa / hóa chất, gắn lại nhãn. Hệ thống có ghi nhật ký sửa danh mục ở tầng dưới nhưng trang chưa bày ra | [~] |
 
 ## 3. Trường lọc (sheet 4)
 
@@ -45,8 +45,8 @@ PDF). Ba chỗ còn thiếu trên thanh lọc đã bù ở bao-CR-503 (28/09). D
 | 1 | Tên hàng | Từ khóa AND / NOT, quy đổi nồng độ | Như F02 | [x] |
 | 2 | Phân loại | Chọn 1 hoặc nhiều | Ô chọn Thành phẩm / Nguyên liệu (bỏ trống = cả hai) | [x] |
 | 3 | Ngày đăng ký | Khoảng ngày | Ô chọn khoảng ngày, có nút nhanh (v1 đổi từ tháng sang ngày ở bao-CR-502) | [x] |
-| 4 | Tên doanh nghiệp XNK | Chọn nhiều, **gõ có gợi ý** | Ô «Thêm doanh nghiệp nhập khẩu…» trong hàng Lọc thêm: gõ tên hoặc mã số thuế, chọn là thêm một chip (chọn nhiều bằng cộng dồn); vẫn thêm được từ thẻ «Nhà nhập khẩu» / chi tiết dòng (bao-CR-503) | [x] |
-| 5 | Đơn vị đối tác | Chọn nhiều, **gõ có gợi ý** | Ô «Thêm đối tác nước ngoài…», cùng cách như mục 4 (bao-CR-503) | [x] |
+| 4 | Tên doanh nghiệp XNK | Chọn nhiều, **gõ có gợi ý** | Ô **Thêm doanh nghiệp nhập khẩu…** trong hàng Lọc thêm: gõ tên hoặc mã số thuế, chọn là thêm một chip (chọn nhiều bằng cộng dồn); vẫn thêm được từ thẻ **Nhà nhập khẩu** / chi tiết dòng (bao-CR-503) | [x] |
+| 5 | Đơn vị đối tác | Chọn nhiều, **gõ có gợi ý** | Ô **Thêm đối tác nước ngoài…**, cùng cách như mục 4 (bao-CR-503) | [x] |
 | 6 | Đơn giá khai báo (USD) | Khoảng số | Khoảng số, so trên giá hiệu lực (điều chỉnh nếu có) | [x] |
 | 7 | Nguyên tệ | Dropdown | Có | [x] |
 | 8 | Lượng | Khoảng số | Có | [x] |
@@ -61,9 +61,9 @@ PDF). Ba chỗ còn thiếu trên thanh lọc đã bù ở bao-CR-503 (28/09). D
 | Mã | Tiêu chí | Chị Mi đánh giá | Hiện trạng | Kết quả |
 |---|---|---|---|---|
 | F01 | Nạp ≥ 2 tệp mẫu, gộp đúng số dòng, không trùng, báo lỗi thiếu cột | Đạt | Giữ nguyên | [x] |
-| F02 | «Abamectin» AND «3.6» NOT «TC» ra đúng nhóm 3.6EC, không lẫn TC/TECH | (trống) | Có bài kiểm tự động cho đúng câu này; cần chị Mi thử lại trên dev: gõ `abamectin 3.6 -TC` | [x] |
+| F02 | **Abamectin** AND **3.6** NOT **TC** ra đúng nhóm 3.6EC, không lẫn TC/TECH | (trống) | Có bài kiểm tự động cho đúng câu này; cần chị Mi thử lại trên dev: gõ `abamectin 3.6 -TC` | [x] |
 | F03 | ≥ 3 điều kiện lọc cùng lúc cho kết quả đúng AND | Đạt | Giữ nguyên | [x] |
-| F04 | Gắn nhãn đúng ≥ 95% (đối chiếu tay 50 dòng) | (trống) | **Chưa đo.** Cần chị Mi lấy 50 dòng đối chiếu tay; sai chỗ nào thì thêm từ khóa ở thẻ Cấu hình rồi «Gắn lại nhãn» | [ ] |
+| F04 | Gắn nhãn đúng ≥ 95% (đối chiếu tay 50 dòng) | (trống) | **Chưa đo.** Cần chị Mi lấy 50 dòng đối chiếu tay; sai chỗ nào thì thêm từ khóa ở thẻ Cấu hình rồi **Gắn lại nhãn** | [ ] |
 | F05 | 100% dòng xuất ra có Tỷ giá USD khớp tệp gốc | Đạt | Giữ nguyên | [x] |
 | F06 | Excel đúng mẫu (header màu, dd/mm/yyyy, phân cách nghìn) | (trống) | **Chưa** — chờ tệp mẫu (xem F06) | [ ] |
 | F10 | Không có quyền thì không vào được, không tải được | Đạt | Giữ nguyên | [x] |
@@ -86,10 +86,10 @@ nằm trong khoảng ngày của lô đó bị xóa rồi mới ghi dòng mới.
 đủ 32 cột vẫn còn 806 dòng trùng khít, nên không dựng được khóa duy nhất.
 
 - **Đúng** khi mỗi tệp là trọn một khoảng thời gian (tệp tháng 1, tệp tháng 2…) — đó là cách chị Mi
-  nạp khi nghiệm thu F01 (đã «Đạt»).
+  nạp khi nghiệm thu F01 (đã **Đạt**).
 - **Mất dữ liệu** nếu hai tệp **cùng khoảng ngày nhưng khác nhóm hàng** (ví dụ tệp tháng 3 mã HS 3808
-  và tệp tháng 3 mã HS 2903): nạp tệp sau sẽ xóa dòng của tệp trước. Lượt chạy thử có báo trước «sẽ
-  thay n dòng cũ», nhưng dễ bị bỏ qua.
+  và tệp tháng 3 mã HS 2903): nạp tệp sau sẽ xóa dòng của tệp trước. Lượt chạy thử có báo trước **sẽ
+  thay n dòng cũ**, nhưng dễ bị bỏ qua.
 - **Cần hỏi chị Mi:** phòng Thu mua kết xuất GTT02 theo thời gian hay theo nhóm mã HS?
 
 ## 7. Việc còn lại
@@ -100,7 +100,7 @@ nằm trong khoảng ngày của lô đó bị xóa rồi mới ghi dòng mới.
 | N2 | In báo giá + xuất PDF | F09 | Mẫu in của chị Mi | Vừa |
 | N3 | ~~Ô gõ có gợi ý, chọn nhiều doanh nghiệp / đối tác ngay trên thanh lọc~~ — **xong bao-CR-503** | Sheet 4 #4–5 | — | — |
 | N4 | ~~Tệp nguồn chọn nhiều~~ — **xong bao-CR-503** | Sheet 4 #13 | — | — |
-| N5 | Khối «lịch sử thao tác» trên trang (xuất Excel, sửa cấu hình, gắn lại nhãn) | F11 | Không | Vừa |
+| N5 | Khối **lịch sử thao tác** trên trang (xuất Excel, sửa cấu hình, gắn lại nhãn) | F11 | Không | Vừa |
 | N6 | Biểu đồ kỳ tuần | F08 | Đại ca chốt có cần không | Nhỏ |
 | N7 | Bộ lọc dùng chung + gợi ý từ khóa đã nhập | F07 | Đại ca chốt (26/09 chốt làm riêng từng người trước) | Vừa |
 | N8 | Quy tắc quy đổi nồng độ cho admin sửa | Phi chức năng | Chị Mi có ngoại lệ cần thêm không | Vừa |
@@ -112,9 +112,9 @@ nằm trong khoảng ngày của lô đó bị xóa rồi mới ghi dòng mới.
 | Đề xuất | CR | Kết quả |
 |---|---|---|
 | Tải lại tệp đã nạp | bao-CR-493 | [x] |
-| Bỏ hẳn nút «Giá ưu tiên» trên biểu đồ (luôn vẽ giá điều chỉnh) | bao-CR-493 | [x] |
+| Bỏ hẳn nút **Giá ưu tiên** trên biểu đồ (luôn vẽ giá điều chỉnh) | bao-CR-493 | [x] |
 | Gom Kỳ (tháng / quý / năm) và Đơn vị vào một thẻ | bao-CR-493 | [x] |
-| Đổi tên thành «Tra cứu thị trường» | bao-CR-500 | [x] |
+| Đổi tên thành **Tra cứu thị trường** | bao-CR-500 | [x] |
 | Cấu hình nằm trong một thẻ, không đẻ màn riêng (từ khóa, từ đồng nghĩa, hóa chất) | bao-CR-501 | [x] |
 | v1 và v2 cùng chức năng | bao-CR-502 | [x] |
 

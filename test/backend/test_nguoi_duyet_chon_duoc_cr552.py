@@ -1,6 +1,6 @@
-"""bao-CR-552 — ô «Trưởng phòng phê duyệt» và «Trưởng bộ phận» luôn chọn được (YCMH · YCBG · ĐMH).
+"""bao-CR-552 — ô "Trưởng phòng phê duyệt" và "Trưởng bộ phận" luôn chọn được (YCMH · YCBG · ĐMH).
 
-Đại ca báo 01/10/2026: phòng «Lập trình & IT nội bộ» không có trưởng phòng duyệt theo phòng nên
+Đại ca báo 01/10/2026: phòng "Lập trình & IT nội bộ" không có trưởng phòng duyệt theo phòng nên
 cả hai ô khóa cứng. Chốt: ô phê duyệt liệt kê MỌI người duyệt được chứng từ đó, BỎ tài khoản giữ
 vai trò Quản trị hệ thống, và LUÔN có Trưởng bộ phận; ô TBP luôn có trưởng phòng của phòng lập.
 """

@@ -222,7 +222,7 @@ sai lên màn hình**. Nên bộ nạp ghi thêm bảng việc, theo hai luật:
   **0** ở mã 1 và 2.
 * **Một chặng một dòng, lấy lượt xử lý CUỐI CÙNG của chặng đó.** Phiếu bị trả về
   ở chặng 3 rồi duyệt lại chính chặng 3 mà ghi cả hai dòng thì `_one_step` thấy
-  lẫn «đã hủy» trong nhóm và vẽ chặng đó thành "trả về" trên một phiếu đã duyệt
+  lẫn **đã hủy** trong nhóm và vẽ chặng đó thành "trả về" trên một phiếu đã duyệt
   xong. Đường đi đầy đủ vẫn còn nguyên trong `tab_approval_action` — đó mới là
   sổ dấu vết. Vì vậy 2 112 lượt `approved` gom lại còn **2 052** dòng việc, và
   51 lượt `needs_correction` còn **9**.

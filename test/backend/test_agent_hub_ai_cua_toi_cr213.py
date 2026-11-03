@@ -1,9 +1,9 @@
-"""ai-CR-213 — giảm tải erp_read (mặc định 1 trang × 50 dòng + ngân sách dòng / phút / khóa) và backend màn «AI của tôi» +
+"""ai-CR-213 — giảm tải erp_read (mặc định 1 trang × 50 dòng + ngân sách dòng / phút / khóa) và backend màn "AI của tôi" +
 Tổng quan (K6 doc/erp/21 §6.2 G1 / G8).
 
 Canh:
-  - erp_read mặc định page_size 50; quá ngân sách dòng trong phút → denied + lời dặn lọc hẹp, nhật ký «Quá ngân sách dữ
-    liệu», tool KHÔNG chạy; phút sau mở lại;
+  - erp_read mặc định page_size 50; quá ngân sách dòng trong phút → denied + lời dặn lọc hẹp, nhật ký "Quá ngân sách dữ
+    liệu", tool KHÔNG chạy; phút sau mở lại;
   - mcp-setup: Claude Desktop đi cầu `npx -y mcp-remote … --header Authorization:${DEGO_MCP_KEY}` (không url / headers
     thẳng), Claude Code là lệnh `claude mcp add --transport http … --header`, Cursor / Gemini CLI đúng khóa tệp; claude.ai /
     ChatGPT nói rõ chưa nhận khóa; ứng dụng lạ → 404;
@@ -109,8 +109,8 @@ def test_doan_cau_hinh_dung_tung_ung_dung(monkeypatch):
     assert gpt["format"] == "url" and "OAuth" in " ".join(gpt["steps"])
     assert "«" not in gpt["note"] and "Connectors" in desk["note"]
     #  bao-CR-639 (ảnh đại ca chụp 19/10): ChatGPT nối ở Settings → Connectors → hộp New Connector (MCP Server URL,
-    #  Authentication OAuth, tick I trust this application); Developer mode phải bật trước. Bước «Apps & Connectors» và
-    #  «Plugins → Create MCP App» (đoán sai lúc đầu) không được quay lại; bước Cho phép phải nhắc kiểm tên miền quay về.
+    #  Authentication OAuth, tick I trust this application); Developer mode phải bật trước. Bước "Apps & Connectors" và
+    #  "Plugins → Create MCP App" (đoán sai lúc đầu) không được quay lại; bước Cho phép phải nhắc kiểm tên miền quay về.
     steps = " ".join(gpt["steps"])
     assert "Connectors" in steps and "New Connector" in steps and "Developer mode" in steps
     assert "MCP Server URL" in steps and "I trust this application" in steps and "OAuth" in steps

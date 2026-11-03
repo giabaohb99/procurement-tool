@@ -39,12 +39,12 @@ const DAY_LABELS: Record<number, string> = { 0.5: 'Nửa ngày (0,5)', 1: 'Cả 
 
 /**
  * FORM PHIẾU XIN NGHỈ BÙ — bốn ô: người nghỉ · ngày đã đi làm · số ngày · lý do, kèm hai nút
- * «Lưu nháp» / «Gửi duyệt» ngay dưới thẻ (form quá ngắn để cần nhóm nút dính đầu trang).
+ * "Lưu nháp" / "Gửi duyệt" ngay dưới thẻ (form quá ngắn để cần nhóm nút dính đầu trang).
  *
  * ⚠️ Ba bẫy biểu mẫu của repo (xem `.claude/rules/frontend-v2-ui-conventions.md`):
  *  · hai nút khai `type="button"` — không đứng trong `<form>` nhưng nếu ai bọc lại thì không bị submit ngầm;
  *  · chặn bấm đúp bằng `useRef` (đổi ngay trong tick), `disabled={...isPending}` chỉ để báo hiệu;
- *  · «Gửi duyệt» = LƯU rồi mới gửi, vì backend kiểm lý do trên bản đã lưu. Nếu lưu xong mà gửi
+ *  · "Gửi duyệt" = LƯU rồi mới gửi, vì backend kiểm lý do trên bản đã lưu. Nếu lưu xong mà gửi
  *    hỏng (vd 422) thì vẫn báo `onSaved` để trang chuyển sang phiếu nháp vừa tạo — ở lại form mới
  *    thì bấm lần nữa sẽ tạo phiếu thứ hai và ăn 409 trùng ngày.
  * Lỗi 4xx của backend (422 ngày tương lai / ngày làm việc thường, 409 trùng) do http client bật toast.

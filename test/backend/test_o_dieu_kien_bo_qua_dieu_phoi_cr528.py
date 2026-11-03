@@ -1,12 +1,12 @@
-"""bao-CR-528 — ô «Điều kiện bỏ qua điều phối» (`pr_dispatch_skip_rules`) dùng BỘ CHỌN, không gõ JSON.
+"""bao-CR-528 — ô "Điều kiện bỏ qua điều phối" (`pr_dispatch_skip_rules`) dùng BỘ CHỌN, không gõ JSON.
 
-Đại ca chê ô cũ: «cấu hình là gõ code vào à». Giao diện nay vẽ bộ chọn điều kiện theo cờ
+Đại ca chê ô cũ: "cấu hình là gõ code vào à". Giao diện nay vẽ bộ chọn điều kiện theo cờ
 `type: "condition"` + `condition_entity: "pr_dispatch"` của backend. Dưới DB vẫn là chuỗi JSON
 cú pháp bộ máy duyệt (bao-CR-497 đọc y như cũ). Điều mới ở backend là CỬA LƯU:
 
   · điều kiện hợp lệ → lưu nguyên văn;
   · JSON hỏng / không phải danh sách / trường lạ / phép lạ / thiếu giá trị → 400 bằng câu tiếng Việt
-    (trước CR này gõ sai là lặng lẽ thành «không bỏ qua phiếu nào»);
+    (trước CR này gõ sai là lặng lẽ thành "không bỏ qua phiếu nào");
   · để trống hoặc `[]` → xóa điều kiện;
   · giá trị hỏng CŨ đang nằm dưới DB không được chặn lần lưu của người chỉ sửa ô khác;
   · lúc CHẠY vẫn khoan dung như cũ — đã có bài kiểm của bao-CR-497 canh.

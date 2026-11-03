@@ -1,7 +1,7 @@
 """CHIA SỔ VĂN BẢN — người được cho xem phải THẤY quyển sổ đó.
 
 Lỗi khách báo 24/08/2026: mở sổ, thêm người vào ô *Người xem sổ*, lưu xong —
-người đó vào trang **Sổ văn bản** vẫn thấy «Chưa có sổ văn bản đến nào khớp».
+người đó vào trang **Sổ văn bản** vẫn thấy "Chưa có sổ văn bản đến nào khớp".
 Bảng `tab_document_book_member` có dòng, nhưng câu truy vấn danh sách chỉ chạy
 `apply_scope`, mà phạm vi vai trò chỉ biết THU HẸP (pháp nhân, người tạo) chứ
 không biết mở thêm. Kết quả: ô *Người xem sổ* không có tác dụng nào.
@@ -147,7 +147,7 @@ def test_co_quyen_ghi_nhung_so_cua_phap_nhan_KHAC_thi_khong_sua_duoc(db, align, 
 
 
 def test_NGUOI_QUAN_LY_so_thi_sua_duoc_du_o_phap_nhan_khac(db, align, cap_quyen):
-    """Đúng câu chú thích dưới ô *Người quản lý*: «Sửa, đóng và xóa được sổ».
+    """Đúng câu chú thích dưới ô *Người quản lý*: "Sửa, đóng và xóa được sổ".
 
     Trước đây câu đó là chữ suông — backend không đọc tới bảng thành viên khi
     xét quyền sửa.
@@ -236,10 +236,10 @@ def test_ba_cua_DOC_mo_cho_nguoi_dang_nhap_con_GHI_thi_khong(db):
 
     Ba endpoint đọc sổ từng gác bằng `require("document_book", "read")`, một câu
     hỏi thuần vai trò. Nhưng quyền xem sổ còn tới từ **chính bảng thành viên**:
-    văn thư thêm ai đó vào ô «Người xem sổ» là đã quyết định cho người ấy xem.
+    văn thư thêm ai đó vào ô "Người xem sổ" là đã quyết định cho người ấy xem.
     Người được chia không có vai trò nào trên danh mục Sổ nên ăn **403 ngay ở
-    cửa**, trước khi bộ lọc kịp chạy — và kết luận là «chia sổ không có tác
-    dụng». Cùng cái bẫy, cùng cách chữa với `document/controller.doc_reader`.
+    cửa**, trước khi bộ lọc kịp chạy — và kết luận là "chia sổ không có tác
+    dụng". Cùng cái bẫy, cùng cách chữa với `document/controller.doc_reader`.
 
     Kiểm bằng cách ĐỌC MÃ chứ không gọi route: `httpx` không có trong container
     nên chưa dựng được `TestClient`. Đây là bài duy nhất trong tệp chạm tới lớp
