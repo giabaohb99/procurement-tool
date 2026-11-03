@@ -11,6 +11,7 @@ Năm nhóm:
   duong-dan      đường dẫn trong backtick (`doc/...`, `plans/...`) ở CLAUDE.md / AGENTS.md / .claude/ không tồn tại;
   ten            tệp / thư mục trong doc/ sai luật đặt tên (chữ thường, không dấu, gạch ngang);
   readme         thư mục phân hệ `doc/erp/<phan-he>/` thiếu README.md;
+  bat-buoc       phân hệ thiếu chuc-nang/01-yeu-cau-chuc-nang.md, 02-yeu-cau-phi-chuc-nang.md, tai-lieu-ky-thuat/api.md;
   tep-le         tệp lẻ ở cấp `doc/` (chỉ README.md được đứng đó);
   muc-luc        skill / agent / luật chưa có dòng trong `doc/tai-lieu-ky-thuat/quy-dinh/README.md`.
 """
@@ -80,10 +81,28 @@ def check_names() -> list[str]:
     return out
 
 
-def check_readmes() -> list[str]:
+#  Bốn tài liệu BẮT BUỘC của mỗi phân hệ (người chủ chốt 03/11/2026, `.claude/rules/chung-tai-lieu.md`).
+REQUIRED = ("chuc-nang/01-yeu-cau-chuc-nang.md", "chuc-nang/02-yeu-cau-phi-chuc-nang.md", "tai-lieu-ky-thuat/api.md")
+#  Thư mục cấp `doc/erp/` không phải phân hệ (dùng chung / đang chờ tách ở P3).
+NOT_MODULES = {"nghien-cuu", "tham-khao-hrm"}
+
+
+def erp_modules() -> list[Path]:
     erp = DOC / "erp"
-    return [rel(d) + "/" for d in sorted(erp.iterdir()) if d.is_dir() and not (d / "README.md").exists()] \
-        if erp.exists() else []
+    return [d for d in sorted(erp.iterdir()) if d.is_dir() and d.name not in NOT_MODULES] if erp.exists() else []
+
+
+def check_readmes() -> list[str]:
+    return [rel(d) + "/" for d in erp_modules() if not (d / "README.md").exists()]
+
+
+def check_required() -> list[str]:
+    out = []
+    for d in erp_modules():
+        missing = [f for f in REQUIRED if not (d / f).exists()]
+        if missing:
+            out.append(f"{rel(d)}/: thiếu {', '.join(missing)}")
+    return out
 
 
 def check_stray() -> list[str]:
@@ -107,11 +126,13 @@ CHECKS = {
     "duong-dan": lambda files, top: check_backtick_paths(top),
     "ten": lambda files, top: check_names(),
     "readme": lambda files, top: check_readmes(),
+    "bat-buoc": lambda files, top: check_required(),
     "tep-le": lambda files, top: check_stray(),
     "muc-luc": lambda files, top: check_index(),
 }
 TITLES = {"lien-ket": "Liên kết hỏng", "duong-dan": "Đường dẫn trong backtick không tồn tại",
           "ten": "Tên sai luật (chữ thường, không dấu, gạch ngang)", "readme": "Phân hệ thiếu README.md",
+          "bat-buoc": "Phân hệ thiếu tài liệu bắt buộc (01 / 02 / api.md)",
           "tep-le": "Tệp lẻ ở cấp doc/", "muc-luc": "Skill / agent / luật chưa có trong mục lục quy định"}
 
 
