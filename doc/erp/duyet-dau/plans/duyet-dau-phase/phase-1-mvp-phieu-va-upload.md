@@ -1,6 +1,6 @@
 # PHA 1 — MVP phiếu + Upload chứng từ chữ ký sống + Danh mục Loại con dấu
 
-> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](TIEN-DO.md). Trạng thái: **CHƯA LÀM**.
+> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](tien-do.md). Trạng thái: **CHƯA LÀM**.
 > Khuôn 1-1: `vehicle_booking` (backend) + `vehicle-booking` (frontend-v2).
 
 ## Mục tiêu

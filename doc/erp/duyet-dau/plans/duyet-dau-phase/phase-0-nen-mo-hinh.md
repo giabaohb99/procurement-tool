@@ -1,6 +1,6 @@
 # PHA 0 — Nền & mô hình dữ liệu
 
-> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](TIEN-DO.md). Trạng thái: **CHƯA LÀM**.
+> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](tien-do.md). Trạng thái: **CHƯA LÀM**.
 > Nền cho mọi phase sau: chuẩn hóa bảng theo R2, mở chính sách tệp, seed vai trò.
 
 ## Mục tiêu

@@ -118,7 +118,7 @@ Ba thứ này **công cụ (Claude Code, Codex) đọc thẳng theo đường d�
 | `doc/tai-lieu-chuc-nang/16-du-an-cong-viec` | `doc/erp/cong-viec/chuc-nang/` |
 | `doc/tai-lieu-chuc-nang/17-nghi-phep`, `18-dat-phong-hop` | `doc/erp/hrm/chuc-nang/` |
 | `doc/tai-lieu-chuc-nang/16-dat-xe`, `doc/erp/dat-xe/plans/dat-xe-duyet-dau/`, `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/` | `doc/erp/dat-xe/` (`chuc-nang/`, `plans/`, `tai-lieu-ky-thuat/dong-bo-app-cu/`) |
-| `doc/tai-lieu-chuc-nang/17-duyet-dau`, `doc/duyet-dau/` | `doc/erp/duyet-dau/` |
+| `doc/tai-lieu-chuc-nang/17-duyet-dau`, `doc/erp/duyet-dau/plans/duyet-dau-phase/` | `doc/erp/duyet-dau/` |
 | `doc/tai-lieu-chuc-nang/09, 10, 11, 13` | `doc/erp/nen-tang/chuc-nang/` |
 | `doc/erp/hrm/*.md` hiện có | `doc/erp/hrm/chuc-nang/` (bản chức năng) hoặc `tai-lieu-ky-thuat/`; `doc/erp/tham-khao-hrm/` → `doc/erp/hrm/nghien-cuu/` |
 | `doc/erp/item, inventory, receiving, delivery, batch-serial` | `mat-hang, kho, nhan-hang, xuat-hang, lo-serial` (`00-nghien-cuu-*` → `nghien-cuu/`) |

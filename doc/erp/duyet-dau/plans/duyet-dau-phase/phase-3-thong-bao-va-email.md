@@ -1,6 +1,6 @@
 # PHA 3 — Thông báo & Email theo bước
 
-> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](TIEN-DO.md). Trạng thái: **CHƯA LÀM**.
+> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](tien-do.md). Trạng thái: **CHƯA LÀM**.
 > Khuôn 1-1: `backend/app/modules/vehicle_booking/notify.py` + `notification/email_template_*`.
 
 ## Mục tiêu

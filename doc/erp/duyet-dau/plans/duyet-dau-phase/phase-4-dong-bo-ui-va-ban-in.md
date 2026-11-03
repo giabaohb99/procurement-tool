@@ -1,6 +1,6 @@
 # PHA 4 — Đồng bộ UI/UX + Bản in + Nhân bản + Ghi chú đính kèm ảnh
 
-> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](TIEN-DO.md). Trạng thái: **CHƯA LÀM**.
+> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](tien-do.md). Trạng thái: **CHƯA LÀM**.
 > Khuôn 1-1: các component dùng chung của `vehicle-booking` (`booking-page-header`, `status-pill`, `confirm-dialog`, print page).
 
 ## Mục tiêu

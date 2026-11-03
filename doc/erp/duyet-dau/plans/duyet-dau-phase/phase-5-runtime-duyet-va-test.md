@@ -1,6 +1,6 @@
 # PHA 5 — Runtime luồng duyệt (bridge) + Test tổng thể + Phân quyền
 
-> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](TIEN-DO.md). Trạng thái: **CHƯA LÀM**.
+> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](tien-do.md). Trạng thái: **CHƯA LÀM**.
 > Khuôn 1-1: `vehicle_booking/approval_bridge.py` + `test_dat_xe_luong_duyet_runtime.py` + `test_dat_xe_tong_the.py`.
 
 ## Mục tiêu

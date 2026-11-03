@@ -4,7 +4,7 @@
 > `schema.py` cho `seal_request` / `seal_type`, bảng đã migrate, entity + phạm vi quyền đã đăng ký,
 > **NHƯNG chưa có `service.py` / `controller.py` / router**, chưa nối thông báo, chưa có giao diện
 > (frontend-v2 chỉ là trang "Sắp có", `enabled: false`). Kế hoạch này là **làm mới toàn bộ nghiệp vụ
-> trên nền stub sẵn có**, bám đúng khuôn phân hệ **Đặt xe** (`vehicle_booking`). Log ở [TIEN-DO.md](TIEN-DO.md).
+> trên nền stub sẵn có**, bám đúng khuôn phân hệ **Đặt xe** (`vehicle_booking`). Log ở [TIEN-DO.md](tien-do.md).
 
 Nhánh làm việc: **`pltgiang`** (frontend-v2 + backend). Phân hệ chạy ở menu **Duyệt dấu**
 (`/approval-seal`), gồm 2 màn chính: **Yêu cầu đóng dấu · Danh mục Loại con dấu**.
@@ -14,17 +14,17 @@ Nhánh làm việc: **`pltgiang`** (frontend-v2 + backend). Phân hệ chạy �
 | Tài liệu | Nội dung |
 |---|---|
 | **README.md** *(file này)* | Tổng quan · mô hình dữ liệu · chi tiết chức năng · quyết định đã chốt |
-| [TIEN-DO.md](TIEN-DO.md) | Log tick từng đầu việc theo PHA 0→5 + lệnh chạy local |
+| [TIEN-DO.md](tien-do.md) | Log tick từng đầu việc theo PHA 0→5 + lệnh chạy local |
 | [phase-0-nen-mo-hinh.md](phase-0-nen-mo-hinh.md) | Nền: `status` String→SMALLINT (R2), FILE_POLICY, vai trò seed, đăng ký luồng duyệt |
 | [phase-1-mvp-phieu-va-upload.md](phase-1-mvp-phieu-va-upload.md) | MVP phiếu + **upload chứng từ chữ ký sống** + Danh mục Loại con dấu |
 | [phase-2-luong-duyet-2-cong.md](phase-2-luong-duyet-2-cong.md) | Luồng duyệt 2 cổng: TBP duyệt · Văn thư đóng dấu (hoàn thành/trả/từ chối) |
 | [phase-3-thong-bao-va-email.md](phase-3-thong-bao-va-email.md) | Thông báo & email theo bước (NSYC · Văn thư · Giám đốc công ty) |
 | [phase-4-dong-bo-ui-va-ban-in.md](phase-4-dong-bo-ui-va-ban-in.md) | Đồng bộ UI/UX + bản in + nhân bản + ghi chú đính kèm ảnh |
 | [phase-5-runtime-duyet-va-test.md](phase-5-runtime-duyet-va-test.md) | Nối runtime luồng duyệt (bridge) + test tổng thể + kịch bản phân quyền |
-| [../tai-lieu-chuc-nang/17-duyet-dau.md](../tai-lieu-chuc-nang/17-duyet-dau.md) | **Tài liệu chức năng** (đặc tả trường, vòng đời trạng thái, phân quyền) cho người dùng/BA |
+| [../tai-lieu-chuc-nang/17-duyet-dau.md](../../chuc-nang/10-duyet-dau.md) | **Tài liệu chức năng** (đặc tả trường, vòng đời trạng thái, phân quyền) cho người dùng/BA |
 
-> Mỗi phase một file chi tiết theo khung 7 mục — giống bộ [dat-xe-duyet-dau](../erp/dat-xe/plans/dat-xe-duyet-dau/) /
-> [ke-hoach-celery](../ke-hoach-celery/). Tất cả PHA đều là **kế hoạch phía trước** (chưa làm) — dùng
+> Mỗi phase một file chi tiết theo khung 7 mục — giống bộ [dat-xe-duyet-dau](../../../dat-xe/plans/dat-xe-duyet-dau/) /
+> [ke-hoach-celery](../../../../ke-hoach-celery/). Tất cả PHA đều là **kế hoạch phía trước** (chưa làm) — dùng
 > `[ ]` trong TIEN-DO. §2–§4 dưới đây là bản tóm gọn xuyên suốt các phase.
 
 ## Quy ước chung (mọi phase tuân theo)
@@ -184,5 +184,5 @@ Migration liên quan (mới): `seal1status01` (status→SMALLINT + `copies`). B�
 | **PHA 4** | Đồng bộ UI/UX + bản in + nhân bản + ghi chú đính kèm ảnh | [ ] Chưa — [phase-4](phase-4-dong-bo-ui-va-ban-in.md) |
 | **PHA 5** | Runtime luồng duyệt (bridge) + test tổng thể + phân quyền | [ ] Chưa — [phase-5](phase-5-runtime-duyet-va-test.md) |
 
-Chi tiết từng đầu việc + log: **[TIEN-DO.md](TIEN-DO.md)** · Tài liệu chức năng:
-**[../tai-lieu-chuc-nang/17-duyet-dau.md](../tai-lieu-chuc-nang/17-duyet-dau.md)**.
+Chi tiết từng đầu việc + log: **[TIEN-DO.md](tien-do.md)** · Tài liệu chức năng:
+**[../tai-lieu-chuc-nang/17-duyet-dau.md](../../chuc-nang/10-duyet-dau.md)**.

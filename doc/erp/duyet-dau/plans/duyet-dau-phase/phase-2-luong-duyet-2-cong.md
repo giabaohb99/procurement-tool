@@ -1,6 +1,6 @@
 # PHA 2 — Luồng duyệt 2 cổng (TBP + Văn thư)
 
-> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](TIEN-DO.md). Trạng thái: **CHƯA LÀM**.
+> Tổng quan: [README.md](README.md) · Log: [TIEN-DO.md](tien-do.md). Trạng thái: **CHƯA LÀM**.
 > ⚠️ Đây là luồng **chuyển trạng thái trực tiếp theo quyền** (như Đặt xe PHA 3). Bản nối engine
 > đa-bước ở [phase-5-runtime-duyet-va-test.md](phase-5-runtime-duyet-va-test.md).
 

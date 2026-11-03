@@ -24,7 +24,7 @@ Hướng: **giữ code Thu mua, gia cố, chia thành ERP nhiều phân hệ.** 
 | [`tai-lieu-ai/`](tro-ly-ai/tai-lieu-ky-thuat/01-kien-truc-tro-ly-ai.md) | AI: trợ lý, danh sách tool, bảo mật; kho skill AI qua MCP (`21`, `21a`); AI kế hoạch và phân việc (`22`) |
 | [`san-xuat/`](./san-xuat/README.md) | Quản lý sản xuất — giai đoạn nghiên cứu nghiệp vụ |
 
-Duyệt dấu, đặt xe và đồng bộ app đặt xe cũ nằm ở `doc/duyet-dau/`, `doc/erp/dat-xe/plans/dat-xe-duyet-dau/`, `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/`; dịch vụ AI và bot ở `doc/agent-hub/`.
+Duyệt dấu, đặt xe và đồng bộ app đặt xe cũ nằm ở `doc/erp/duyet-dau/plans/duyet-dau-phase/`, `doc/erp/dat-xe/plans/dat-xe-duyet-dau/`, `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/`; dịch vụ AI và bot ở `doc/agent-hub/`.
 
 ## Ba quy tắc xuyên suốt
 

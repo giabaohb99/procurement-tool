@@ -27,7 +27,7 @@ ngoài thực tế** rồi bấm **Hoàn thành**. **Giám đốc** công ty c�
   sống** trước khi đóng.
 - **Giám đốc công ty** (`seal_request:read` phạm vi `company`): **được thông báo** khi phiếu của công
   ty mình được duyệt (bên liên quan). *(Có thêm cổng phê duyệt cho Giám đốc hay không — xem quyết định
-  còn mở A trong `doc/duyet-dau/README.md`.)*
+  còn mở A trong `doc/erp/duyet-dau/plans/duyet-dau-phase/README.md`.)*
 - **Quản trị con dấu** (`seal_admin`): quản **Danh mục Loại con dấu** (`seal_type` create/write/delete)
   + xem mọi phiếu.
 
@@ -67,7 +67,7 @@ vào luồng thì khóa.
 
 > **Lưu ý — luồng duyệt.** Ban đầu các bước Duyệt/Trả/Từ chối là **chuyển trạng thái trực tiếp theo
 > quyền `approve`** (như Đặt xe PHA 3); bản **nối runtime engine đa-bước** (`approval_flow` +
-> `entity_hooks` + `ApprovalSwitch`) là PHA 5 — xem `doc/duyet-dau/phase-5-runtime-duyet-va-test.md`.
+> `entity_hooks` + `ApprovalSwitch`) là PHA 5 — xem `doc/erp/duyet-dau/plans/duyet-dau-phase/phase-5-runtime-duyet-va-test.md`.
 
 ---
 
@@ -204,6 +204,6 @@ Chi tiết thiết kế phân quyền hai trục: `doc/tai-lieu-ky-thuat/phan-qu
 
 ## Liên quan
 
-- Kế hoạch & tiến độ theo phase: `doc/duyet-dau/` (`README.md` + `TIEN-DO.md` + `phase-0…5`).
+- Kế hoạch & tiến độ theo phase: `doc/erp/duyet-dau/plans/duyet-dau-phase/` (`README.md` + `TIEN-DO.md` + `phase-0…5`).
 - Khuôn tham chiếu: phân hệ **Đặt xe** (`doc/erp/dat-xe/chuc-nang/10-dat-xe.md`, `doc/erp/dat-xe/plans/dat-xe-duyet-dau/`).
 - Case thiết kế giao diện đã chốt: skill `ui` (C-01 popup thao tác nhanh, **C-02** trang Thêm/Sửa).
