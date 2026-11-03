@@ -301,7 +301,8 @@ def test_hb_hoan_tac_khoi_phuc_dung_tap_phong_kiem_nhiem(db, seed, hr):
     db.commit()
     b = run_import(db, [{"Mã NV *": "DEMONV", "Phòng ban (mã)": "DEPT03"}], hr)
     assert b.error_count == 0
-    assert set(departments_of(db, seed.emp_nstm_id)) == {d3, seed.dept_id, d4}     # phòng cũ bị hạ xuống kiêm nhiệm
+    #  bao-CR-709: đổi phòng chính mặc định GỠ phòng cũ (trước đây hạ xuống kiêm nhiệm); kiêm nhiệm khác giữ nguyên.
+    assert set(departments_of(db, seed.emp_nstm_id)) == {d3, d4}
     assert revert(db, b, hr)["ok"]
     db.expire_all()
     rows = {(r.department_id, bool(r.is_primary)) for r in
