@@ -11,7 +11,7 @@ from app.core.status_codes import (PO_DELIVERY_STATUS, PO_DOCUMENT_STATUS,
 from app.modules.payable.model import Payable
 
 from . import service
-from .model import (ALLOCATION_METHOD_LABELS, AllocationMethod, COST_STAGE_LABELS,
+from .model import (ALLOCATION_METHOD_LABELS, COST_STAGE_LABELS,
                     COST_STAGE_PREFIX, CostStage, DEFAULT_CURRENCY, ORDER_TYPE_LABELS, OrderType,
                     POItem, PurchaseOrder)
 
@@ -113,6 +113,32 @@ def _stage_label(stage) -> str:
     return COST_STAGE_LABELS.get(service.stage_of(stage), "")
 
 
+def _import_cost_payment(pay: Payable | None, effective_base: float) -> dict:
+    """Khối công nợ của một dòng chi phí (bao-CR-319 P5): chưa có khoản nợ thì đã chi 0, còn lại = số hiệu lực."""
+    paid = float(pay.paid_amount or 0) if pay else 0.0
+    return {"payable_id": pay.id if pay else 0,
+            "paid_amount": round(paid, 2),
+            "remaining": round(float(pay.remaining or 0), 2) if pay else round(effective_base, 2),
+            "payable_status": (pay.status or "") if pay else ""}
+
+
+def _import_cost_stages(c, effective_stage) -> dict:
+    """Ba giai đoạn × (số nguyên tệ, tỷ giá, số quy đổi) rồi chênh lệch Quyết toán − Dự toán."""
+    d = {}
+    for stage, prefix in COST_STAGE_PREFIX.items():
+        d[f"{prefix}_amount"] = service.cost_amount_of(c, stage)
+        d[f"{prefix}_rate"] = service.cost_rate_of(c, stage)
+        d[f"{prefix}_base"] = service.cost_base_of(c, stage)
+    est, fin = d["estimate_base"], d["final_base"]
+    if effective_stage == CostStage.FINAL and est is not None and fin is not None:
+        d["variance_base"] = round(fin - est, 2)
+        d["variance_pct"] = round((fin - est) / est * 100, 2) if est else None
+    else:
+        d["variance_base"] = None
+        d["variance_pct"] = None
+    return d
+
+
 def _import_cost(c, pay: Payable | None, po: PurchaseOrder, types: dict | None = None) -> dict:
     """Một dòng CHI PHÍ THU MUA — trả cả SỐ lẫn NHÃN (R2/QĐ-11), ba giai đoạn (bao-CR-453).
 
@@ -124,24 +150,20 @@ def _import_cost(c, pay: Payable | None, po: PurchaseOrder, types: dict | None =
 
     `pay` là khoản nợ của dòng (bao-CR-319 P5), None khi dòng chưa Quyết toán / đơn chưa duyệt:
     khi đó `payable_id = 0`, đã chi 0 và còn lại = số hiệu lực để giao diện vẫn cộng được.
+
+    bao-CR-719: tách khối công nợ (`_import_cost_payment`) và khối ba giai đoạn (`_import_cost_stages`), ghép đúng
+    thứ tự khóa cũ — có bài kiểm chụp kết quả `test_chup_ket_qua_tien_dmh_cr719.py`.
     """
-    try:
-        alloc = AllocationMethod(int(c.allocation_method or 0))
-    except ValueError:
-        alloc = AllocationMethod.BY_VALUE
+    alloc = service.allocation_method_of(c.allocation_method)
     effective_stage = service.effective_stage_of(c, po)
     effective_base = service.effective_base_of(c, po)
-    paid = float(pay.paid_amount or 0) if pay else 0.0
     d = {"id": c.id, "cost_type": int(c.cost_type or 0),
          "cost_type_name": service.cost_type_name(c.cost_type, types),
          "creates_payable": service.cost_type_creates_payable(c.cost_type, types),
          "line_stage": int(service.stage_of(c.line_stage)),
          "effective_stage": int(effective_stage),
          "effective_stage_label": COST_STAGE_LABELS.get(effective_stage, ""),
-         "payable_id": pay.id if pay else 0,
-         "paid_amount": round(paid, 2),
-         "remaining": round(float(pay.remaining or 0), 2) if pay else round(effective_base, 2),
-         "payable_status": (pay.status or "") if pay else "",
+         **_import_cost_payment(pay, effective_base),
          "description": c.description or "",
          "supplier_code": c.supplier_code or "", "supplier_name": c.supplier_name or "",
          "currency": c.currency or DEFAULT_CURRENCY, "vat": float(c.vat or 0),
@@ -157,49 +179,26 @@ def _import_cost(c, pay: Payable | None, po: PurchaseOrder, types: dict | None =
          "payment_due_date": c.payment_due_date or "", "note": c.note or ""}
     # Nhãn cũ giữ cho màn v1/v2 chưa port đọc được: `cost_type_label` = tên trong danh mục.
     d["cost_type_label"] = d["cost_type_name"]
-    for stage, prefix in COST_STAGE_PREFIX.items():
-        d[f"{prefix}_amount"] = service.cost_amount_of(c, stage)
-        d[f"{prefix}_rate"] = service.cost_rate_of(c, stage)
-        d[f"{prefix}_base"] = service.cost_base_of(c, stage)
-    est, fin = d["estimate_base"], d["final_base"]
-    if effective_stage == CostStage.FINAL and est is not None and fin is not None:
-        d["variance_base"] = round(fin - est, 2)
-        d["variance_pct"] = round((fin - est) / est * 100, 2) if est else None
-    else:
-        d["variance_base"] = None
-        d["variance_pct"] = None
+    d.update(_import_cost_stages(c, effective_stage))
     return d
 
 
-def _import_cost_summary(rows: list[dict], goods_base: float, shipping_total: float,
-                         po_stage) -> dict:
-    """Cụm tổng CHI PHÍ THU MUA của đơn — gom theo LOẠI và theo NHÀ CUNG CẤP.
-
-    Gom sẵn ở backend vì P5 tạo Yêu cầu thanh toán gom theo NCC từ đúng con số này;
-    để giao diện tự cộng thì hai nơi dễ lệch nhau. Mọi số ở đây đã quy đổi về VNĐ.
-
-    bao-CR-453: `cost_total` = tổng số HIỆU LỰC của mọi dòng (mỗi dòng theo giai đoạn cao nhất
-    đã điền); ba tổng theo giai đoạn chỉ cộng dòng CÓ số ở giai đoạn đó. Đã chi / còn lại
-    chỉ đếm dòng đã Quyết toán vì chỉ dòng đó mới có công nợ.
-    """
-    cost_total = round(sum(r["effective_base"] for r in rows), 2)
-    final_rows = service.final_costs(rows)
-    paid_total = round(sum(r["paid_amount"] for r in final_rows), 2)
-    final_remaining = round(sum(r["remaining"] for r in final_rows), 2)
-    stage_totals = {prefix: round(sum(r[f"{prefix}_base"] for r in rows
-                                      if r.get(f"{prefix}_base") is not None), 2)
-                    for prefix in COST_STAGE_PREFIX.values()}
-    compared = [r for r in rows if r.get("variance_base") is not None]
-    variance_total = round(sum(r["variance_base"] for r in compared), 2)
-    compared_estimate = round(sum(r["estimate_base"] for r in compared), 2)
+def _costs_by_type(rows: list[dict]) -> list[dict]:
+    """Gom chi phí theo LOẠI (số hiệu lực), lớn trước."""
     by_type: dict[int, dict] = {}
-    by_supplier: dict[str, dict] = {}
     for r in rows:
         g = by_type.setdefault(r["cost_type"], {"cost_type": r["cost_type"],
                                                 "cost_type_label": r["cost_type_label"],
                                                 "base_amount": 0.0, "count": 0})
         g["base_amount"] = round(g["base_amount"] + r["effective_base"], 2)
         g["count"] += 1
+    return sorted(by_type.values(), key=lambda x: -x["base_amount"])
+
+
+def _costs_by_supplier(rows: list[dict]) -> list[dict]:
+    """Gom chi phí theo NHÀ CUNG CẤP, lớn trước; đã chi / còn lại chỉ đếm dòng đã Quyết toán."""
+    by_supplier: dict[str, dict] = {}
+    for r in rows:
         code = r["supplier_code"] or ""
         # P5: mỗi NCC một dòng tổng · đã chi · còn lại + danh sách id khoản nợ CÒN NỢ để nút
         # "Tạo yêu cầu thanh toán" của NCC đó đưa thẳng sang màn lập phiếu (mỗi phiếu một NCC).
@@ -215,6 +214,32 @@ def _import_cost_summary(rows: list[dict], goods_base: float, shipping_total: fl
             n["remaining"] = round(n["remaining"] + r["remaining"], 2)
             if r["payable_id"] and r["remaining"] > 0.01:
                 n["unpaid_payable_ids"].append(r["payable_id"])
+    return sorted(by_supplier.values(), key=lambda x: -x["base_amount"])
+
+
+def _import_cost_summary(rows: list[dict], goods_base: float, shipping_total: float,
+                         po_stage) -> dict:
+    """Cụm tổng CHI PHÍ THU MUA của đơn — gom theo LOẠI và theo NHÀ CUNG CẤP.
+
+    Gom sẵn ở backend vì P5 tạo Yêu cầu thanh toán gom theo NCC từ đúng con số này;
+    để giao diện tự cộng thì hai nơi dễ lệch nhau. Mọi số ở đây đã quy đổi về VNĐ.
+
+    bao-CR-453: `cost_total` = tổng số HIỆU LỰC của mọi dòng (mỗi dòng theo giai đoạn cao nhất
+    đã điền); ba tổng theo giai đoạn chỉ cộng dòng CÓ số ở giai đoạn đó. Đã chi / còn lại
+    chỉ đếm dòng đã Quyết toán vì chỉ dòng đó mới có công nợ.
+
+    bao-CR-719: hai phép gom tách thành `_costs_by_type` / `_costs_by_supplier`.
+    """
+    cost_total = round(sum(r["effective_base"] for r in rows), 2)
+    final_rows = service.final_costs(rows)
+    paid_total = round(sum(r["paid_amount"] for r in final_rows), 2)
+    final_remaining = round(sum(r["remaining"] for r in final_rows), 2)
+    stage_totals = {prefix: round(sum(r[f"{prefix}_base"] for r in rows
+                                      if r.get(f"{prefix}_base") is not None), 2)
+                    for prefix in COST_STAGE_PREFIX.values()}
+    compared = [r for r in rows if r.get("variance_base") is not None]
+    variance_total = round(sum(r["variance_base"] for r in compared), 2)
+    compared_estimate = round(sum(r["estimate_base"] for r in compared), 2)
     stage = service.stage_of(po_stage)
     return {
         "goods_base_total": round(goods_base, 2),          # tiền HÀNG đã quy đổi (theo SL đặt)
@@ -234,8 +259,8 @@ def _import_cost_summary(rows: list[dict], goods_base: float, shipping_total: fl
         "stage_label": COST_STAGE_LABELS.get(stage, ""),
         "lines_not_final": len(rows) - len(final_rows),
         "lines_without_supplier": sum(1 for r in rows if r["creates_payable"] and not r["supplier_code"]),
-        "by_type": sorted(by_type.values(), key=lambda x: -x["base_amount"]),
-        "by_supplier": sorted(by_supplier.values(), key=lambda x: -x["base_amount"]),
+        "by_type": _costs_by_type(rows),
+        "by_supplier": _costs_by_supplier(rows),
     }
 
 

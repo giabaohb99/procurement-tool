@@ -231,3 +231,57 @@ nên mọi nơi gọi `service.<tên>` (controller, serializer, trợ lý AI, c�
   `_allocation_basis` E 35, `allocate_import_costs` E 34 (chi phí thu mua, phân bổ, công nợ, phiếu nhập kho ngầm); YCMH
   `sync_from_purchase_orders` E 40; YCBG `create_prs` E 35, `create_option` E 32. Phần ĐMH đụng tiền và công nợ nên để
   đợt riêng, mỗi hàm một bài kiểm chụp kết quả có số tiền.
+
+### 6.3. Đo sau đợt R3b — tách hàm tiền ĐMH (bao-CR-719, 03/11/2026)
+
+Đo trên nhánh `erp-v2`, trước = `e9faa545` (đã có bài kiểm chụp kết quả, mã chưa tách), sau = commit tách của
+bao-CR-719. Không đổi hành vi: không đổi một đồng nào (giá vốn / chi phí phân bổ từng dòng, giá nhập tồn kho, công nợ),
+thứ tự ghi, dòng nhật ký, câu lỗi, thứ tự khóa dữ liệu trả và số câu truy vấn giữ nguyên; mọi chú thích ⚠️ / luật CR đi
+theo mã. Chỉ đổi mã phía máy chủ, không đổi đường API.
+
+**Bài kiểm chụp kết quả** (viết và chạy xanh trên mã cũ TRƯỚC khi tách, commit riêng `e9faa545`):
+`test_chup_ket_qua_tien_dmh_cr719.py` + số liệu chụp ở `du_lieu_chup_tien_dmh_cr719.py`, 5 ca:
+
+| Ca | Phủ |
+|---|---|
+| Ba giai đoạn | Dự toán → chốt Tạm tính → gõ số Tạm tính riêng → chốt Quyết toán; tám khoản đủ năm cách chia (theo giá trị, số lượng, khối lượng, chỉ định mã có / không có / trống mã, nhập tay có khóa lạ), bốn loại tiền (USD theo tỷ giá đơn, USD tỷ giá riêng, EUR, VNĐ, ô tiền trống); gửi lại cả bảng y nguyên sau Quyết toán; sửa / xóa dòng đã quyết toán bị chặn |
+| Chốt từng dòng | Chốt dòng thiếu Dự toán (bỏ qua, nói tên), id lạ (404), chốt lại dòng đã chốt; dòng đã chi không mở lại được, lý do ngắn; mở lại dòng; chốt cả đơn; chặn Hoàn thành khi còn nợ chi phí; mở lại cả đơn (dòng đã chi giữ Quyết toán); chặn Hoàn thành khi chưa Quyết toán; xóa dòng đã chi; chốt hết, hết dòng để chốt |
+| Sinh / không sinh công nợ | Danh mục loại có loại không sinh nợ, loại ngừng dùng (dòng mới bị chặn, dòng cũ vẫn lưu), mã lạ; đơn nháp không sinh nợ, duyệt thì sinh; số 0, thiếu NCC; nhập tay trống / lệch; đơn hủy giữ khoản đã chi |
+| Phân bổ thuần | Mọi cách chia và mọi lối lùi (về giá trị, về chia đều), mã lạ của cách chia, làm tròn 100 / 3 dòng, đơn không dòng hàng, chia theo từng giai đoạn + số hiệu lực |
+| Tính lại nhận hàng | Ba dòng (USD, VNĐ, chưa giao), ba lần giao (đủ có cước, thiếu + lỗi kho khác, chưa nhận), số ngày QĐ gõ tay; chạy ba lượt (bỏ nhận, nhận thêm, bỏ đơn vị vận chuyển, SL đặt 0) — so phiếu nhập kho ngầm, tồn kho, sổ phát sinh, công nợ hàng + vận chuyển, trạng thái lần giao / dòng / đơn |
+
+So nguyên khối từng bước (số tiền từng dòng, công nợ, nhật ký, câu lỗi, số câu truy vấn) và cả bản JSON để bắt thứ tự
+khóa. Thử hỏng có chủ đích (bỏ dồn số lẻ vào dòng cuối; thêm một câu truy vấn trong `recompute_effects`) thì bài đỏ.
+
+**Tách hàm** (radon cc, trước → sau; hàm con ghi hạng):
+
+| Hàm | Trước | Sau | Hàm con |
+|---|---|---|---|
+| `_save_import_costs` (dời sang tệp mới `cost_save_service.py`) | F 45 | B 7 | `_save_cost_row` B 6 · kiểm `_check_cost_type` B 9 · tính `_normalize_cost_data` B 8 · `_block_edit_final_cost` A 2 · ghi `_write_cost_row` B 9, `_write_manual_allocation` B 7, `_delete_dropped_costs` A 4 |
+| `delivery_service.recompute_effects` | F 43 | A 4 | `_recompute_item` A 5 · `_recompute_delivery` A 3 · ghi `_post_received_delivery` A 5, `_post_shipping_payable` B 8 · tính `_fill_delivery_schedule` C 11, `_delivery_status` B 6, `_fill_item_totals` A 4, `_set_po_status_by_receipt` A 5 |
+| `cost_allocation_service._allocation_basis` | E 35 | A 3 | `_manual_basis` B 10 · `_product_basis` C 12 · `_measured_basis` A 4 · `_value_or_equal_basis` A 5 · `_fallback_to_value` A 1 |
+| `cost_allocation_service.allocate_import_costs` | E 34 | C 13 | `_allocation_lines` B 7 · `_spread_cost` A 5 · `_cost_share` B 7 · `_allocation_result` A 4 · `allocation_method_of` A 3 (dùng chung với serializer) |
+| `import_cost_service.sync_import_cost_payables` | D 28 | B 6 | kiểm `_wants_cost_payable` B 8 · ghi `_upsert_cost_payable` C 13, `_drop_unpaid_cost_payable` A 4 |
+| `import_cost_service.finalize_cost_lines` | D 21 | B 10 | `_pick_cost_rows` B 7 · `_raise_nothing_to_finalize` A 3 · `_finalize_row` A 2 · `_finalize_log_note` A 3 |
+| `serializer._import_cost` | D 26 | C 12 | `_import_cost_payment` B 8 · `_import_cost_stages` B 6 |
+| `serializer._import_cost_summary` | D 22 | C 15 | `_costs_by_type` A 2 · `_costs_by_supplier` B 8 |
+
+- `cost_allocation_service.py` nay chỉ còn phép TÍNH (dict vào, dict ra, không đọc / ghi DB); phần lưu bảng chi phí
+  (`_save_import_costs`, `is_cost_row_changed`, `_COST_TEXT_FIELDS`, `_COST_NUMBER_FIELDS`) sang `cost_save_service.py`.
+  `recompute_effects` cố ý tách TẠI CHỖ trong `delivery_service.py` (không dời tệp) để đỡ đụng việc đang làm song song
+  ở cùng tệp. Cửa `service.py` thêm `allocation_method_of` và dòng nhập từ `cost_save_service`; nơi gọi
+  `service.<tên>` không đổi. Không bài kiểm nào phải đổi chỗ monkeypatch (không bài nào patch các hàm đã tách).
+- Lời gọi `record(...)` giữ ở hàm cha với mã hành động viết thẳng (bài canh `test_bo_ma_hanh_dong_cr358.py` đọc mã ở
+  đó); nạp danh mục / NCC / số ngày QĐ vẫn MỘT lần mỗi lượt, truyền xuống hàm con qua `_CostSaveContext` /
+  `_EffectsContext`.
+
+| Số đo | Trước | Sau |
+|---|---|---|
+| Hàm D–F của `purchase_order` | 12 | 4 (`_out` D 27, `block_edit_approved_order` D 24, `_default_nspt` D 23, `export.build_rows` D 22 — không đụng tiền / công nợ) |
+| Hàm D–F ba phân hệ thu mua | 28 | 20 |
+| radon trung bình `purchase_order` | B 6,02 (188 khối) | B 5,15 (226 khối) |
+| radon trung bình ba thư mục | B 5,43 (621 khối) | B 5,16 (659 khối) |
+| Dòng `purchase_order` | 4.222 | 4.473 |
+
+Dòng từng tệp đổi: `cost_allocation_service` 342 → 260, `cost_save_service` mới 210, `delivery_service` 187 → 242,
+`import_cost_service` 474 → 516, `serializer` 431 → 456, `service` 57 → 58; tệp khác giữ nguyên.

@@ -21,7 +21,7 @@ from .base_service import (ENTITY, PROG_CANCELLED, PROG_COMPLETED, _sync_pr, get
 from .item_service import _save_items, fill_blank_invoice_name
 from .delivery_service import recompute_effects
 from .import_cost_service import block_delete_paid_import_cost, import_costs_of, sync_import_cost_payables
-from .cost_allocation_service import _save_import_costs
+from .cost_save_service import _save_import_costs
 from .progress_service import PROGRESS_ORDER, apply_auto_progress
 
 
