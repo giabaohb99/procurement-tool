@@ -94,11 +94,15 @@ export function CrudFormFields({
     //  phối nó, và thứ tự khai trong config đã nói đúng điều đó rồi.
     const switchesFirst = group[0]?.type === 'switch'
 
+    //  Bố cục phẳng lên 3 cột chỉ khi nhóm có từ 3 ô nửa dòng trở lên: nhóm chỉ 2 ô (Mã + Tên) mà chia 3 cột thì
+    //  chừa một cột trống bên phải, mép phải so le với ô Ghi chú tràn dòng ngay dưới (báo 03/11/2026, Thêm chính sách).
+    const halfWidthCount = inputs.filter((field) => !field.fullWidth && field.type !== 'textarea').length
     const inputGrid = inputs.length > 0 && (
       <div
         className={cn(
           'grid grid-cols-1 gap-4 @md:grid-cols-2',
-          flat && 'gap-x-6 gap-y-3 @4xl:grid-cols-3',
+          flat && 'gap-x-6 gap-y-3',
+          flat && halfWidthCount >= 3 && '@4xl:grid-cols-3',
         )}
       >
         {inputs.map((field) => (

@@ -20,6 +20,8 @@ from .policy_schema import (PolicyCreate, PolicyLineResponse, PolicyLinesReplace
                             PolicyUpdate)
 
 ENTITY = "leave_type"
+#  Nhật ký ghi dưới tên riêng (quyền vẫn là `leave_type`) — xem `make_crud_router(audit_entity=)`.
+AUDIT_ENTITY = "leave_policy"
 
 
 def _block_delete_assigned(db: Session, obj: LeavePolicy) -> None:
@@ -41,6 +43,7 @@ policy_router = make_crud_router(
     filterable=["code", "name", "is_active"],
     unique_field="code",
     before_delete=_block_delete_assigned,
+    audit_entity=AUDIT_ENTITY,
 )
 
 lines_router = APIRouter(prefix="/api/leave-policies", tags=["leave"])
@@ -99,7 +102,7 @@ def replace_lines(policy_id: int, data: PolicyLinesReplace, db: Session = Depend
                                    annual_days=item.annual_days, created_by=user.id, updated_by=user.id))
         #  `query.delete()` đi vòng nhật ký thay đổi nên số CŨ chỉ còn trong câu audit này (cùng giao dịch với ghi).
         names = {t.id: t.name for t in db.query(LeaveType).filter(LeaveType.id.in_(set(old) | set(ids) or {0})).all()}
-        audit_record(db, user.id, ENTITY, policy_id, "update",
+        audit_record(db, user.id, AUDIT_ENTITY, policy_id, "update",
                      f"Cập nhật dòng của chính sách \"{policy.name}\": trước [{_fmt_lines(old, names)}] → "
                      f"sau [{_fmt_lines({i.leave_type_id: i.annual_days for i in data.items}, names)}]",
                      commit=False)

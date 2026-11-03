@@ -267,7 +267,7 @@ function CrudDetailPageBody<T extends CrudRecord>({ config }: CrudDetailPageProp
 
       {Boolean(item?.[idKey]) && item && (
         <div>
-          <AuditTimeline entity={config.entity} entityId={Number(item[idKey])} />
+          <AuditTimeline entity={config.auditEntity ?? config.entity} entityId={Number(item[idKey])} />
         </div>
       )}
     </div>
@@ -306,7 +306,7 @@ function CrudDetailPageBody<T extends CrudRecord>({ config }: CrudDetailPageProp
           <FormSection title="Hoạt động">
             <div className="col-span-full">
               <AuditActivityFeed
-                entity={config.entity}
+                entity={config.auditEntity ?? config.entity}
                 entityId={Number(item[idKey])}
                 fieldLabels={fieldLabels}
                 createdNoun={config.unitLabel}

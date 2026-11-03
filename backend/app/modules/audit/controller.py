@@ -27,7 +27,8 @@ router = APIRouter(prefix="/api/audit-logs", tags=["audit"])
 #  FAQ của Help Center ghi dấu vết dưới entity `faq` nhưng mọi route của nó gác bằng
 #  `help_article` (không có khóa `faq` trong ENTITIES). Thiếu dòng này thì màn
 #  "Lịch sử" của Help Center mất sạch phần FAQ sau khi gác.
-PERMISSION_KEY_ALIAS = {"faq": "help_article"}
+#  duoc-CR-717: Chính sách nghỉ phép và Ngày cấm nghỉ ghi nhật ký dưới tên riêng nhưng gác bằng `leave_type`.
+PERMISSION_KEY_ALIAS = {"faq": "help_article", "leave_policy": "leave_type", "leave_block_period": "leave_type"}
 
 #  ⚠️ BẢNG NHÃN TỪNG NẰM Ở ĐÂY (khoảng 50 dòng) — đã dời sang
 #  `core/action_catalog.py` (bao-CR-358 / NT-4). Ở đó mỗi mã khai một dòng gồm

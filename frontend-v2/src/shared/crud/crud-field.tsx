@@ -72,7 +72,9 @@ export function CrudField({ field, register, control, errors, isReadonly }: Crud
     //  ngưỡng khác hệ quy chiếu, nên mở hộp thoại hẹp trên màn 24" là ô ghi chú
     //  đòi 2 cột trong một lưới chỉ có 1.
     <div className={cn('space-y-1.5', isFullWidth && 'col-span-full')}>
-      <div className="flex items-center gap-1">
+      {/*  Hàng nhãn cao TỐI THIỂU `min-h-5` (= nút (i) 20px): ô có (i) và ô không có nằm cạnh nhau trong lưới thì hàng nhãn
+          cao lệch 6px, ô nhập bên dưới so le nhau (báo 03/11/2026, trang Loại nghỉ). */}
+      <div className="flex min-h-5 items-center gap-1">
         <Label htmlFor={field.name} className="flex items-center gap-1">
           {field.label}
           {field.required && !isReadonly && <span className="text-destructive">*</span>}

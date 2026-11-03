@@ -156,6 +156,7 @@ block_period_router = make_crud_router(
     filterable=["company_id", "department_id", "is_active"],
     unique_field=None,
     before_update=_check_block_update,
+    audit_entity="leave_block_period",
 )
 
 

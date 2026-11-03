@@ -24,6 +24,7 @@ const blockChips = (b: LeaveBlockPeriod) => [
 
 export const LEAVE_BLOCK_CRUD_CONFIG: CrudConfig<LeaveBlockPeriod> = {
   entity: 'leave_type',
+  auditEntity: 'leave_block_period',
   title: 'Ngày cấm nghỉ',
   unitLabel: 'khoảng cấm nghỉ',
   apiPath: '/api/leave-block-periods',

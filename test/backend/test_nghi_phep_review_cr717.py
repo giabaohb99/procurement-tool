@@ -374,8 +374,19 @@ def test_l2_thay_dong_audit_giu_so_cu_va_moi(db, world, hr, http):
     r = http(hr.user, "PUT", f"{POLICIES}/{policy.id}/lines",
              json={"items": [{"leave_type_id": lt.id, "annual_days": 15}]})
     assert r.status_code == 200, r.text
-    msg = db.query(AuditLog).filter_by(entity="leave_type", entity_id=policy.id).order_by(AuditLog.id.desc()).first().message
+    msg = db.query(AuditLog).filter_by(entity="leave_policy", entity_id=policy.id).order_by(AuditLog.id.desc()).first().message
     assert "trước" in msg and f"{lt.name}: 12" in msg and f"{lt.name}: 15" in msg
+
+
+def test_nhat_ky_chinh_sach_khong_lan_sang_loai_nghi_cung_id(db, world, hr, http):
+    """E2E 03/11/2026: tạo/xóa chính sách #N từng ghi nhật ký dưới `leave_type` nên trang Loại nghỉ #N hiện lẫn
+    dòng "đã tạo" / "Xóa" của chính sách. Nay ghi dưới `leave_policy` (quyền vẫn là `leave_type`)."""
+    from app.modules.audit.model import AuditLog
+    r = http(hr.user, "POST", POLICIES, json={"code": "CS-AUDIT", "name": "Chinh sach audit"})
+    assert r.status_code == 201, r.text
+    pid = r.json()["data"]["id"]
+    assert db.query(AuditLog).filter_by(entity="leave_policy", entity_id=pid, action="create").count() == 1
+    assert db.query(AuditLog).filter_by(entity="leave_type", entity_id=pid).count() == 0
 
 
 def test_l2_put_dong_dong_thoi_vo_unique_tra_409(db, world, hr, http, monkeypatch):

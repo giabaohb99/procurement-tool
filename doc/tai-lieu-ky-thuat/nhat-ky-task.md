@@ -18647,3 +18647,21 @@ Mã nguồn: backend/app/modules/leave/policy_*.py · holiday_work_report_*.py �
 **Kết quả:** kiểm tra kiểu giao diện sạch; các bài kiểm của phần đã đổi chạy xanh, chỉ còn những bài vốn đã đỏ trên mã gốc; không đoạn tài liệu nào bị lệch dấu in đậm.
 
 Mã nguồn: doc/, .claude/, frontend-v2/src, backend/app, backend/scripts, test/backend
+
+## duoc-CR-717-b | Sửa sau lượt test lại: ô nhập so le, nhóm hai ô chừa cột trống, nhật ký chính sách lẫn sang loại nghỉ
+- status: xong
+- date: 2026-11-03
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** sau khi khởi động lại Docker, anh Được báo hai chỗ lệch giao diện trên trang Loại nghỉ và trang **Thêm chính sách**; lượt test lại trên trình duyệt tìm thêm lỗi nhật ký lẫn giữa chính sách và loại nghỉ.
+
+**Đã làm**
+- Hàng nhãn của mọi ô trong khung danh mục cao tối thiểu bằng nút giải thích, nên ô có nút và ô không có nút nằm thẳng hàng.
+- Bố cục phẳng chỉ chia ba cột khi nhóm có từ ba ô trở lên; nhóm hai ô chia hai cột tràn hết bề ngang, mép phải thẳng với ô ghi chú bên dưới.
+- Chính sách nghỉ phép và ngày cấm nghỉ ghi nhật ký dưới tên riêng thay vì mượn tên loại nghỉ, nên trang loại nghỉ không còn hiện dòng tạo hay xóa của chính sách cùng số.
+
+**Kết quả:** lượt test lại trên trình duyệt đạt cả chín mục của các đợt nghỉ phép; 36 bài kiểm máy chủ của đợt chính sách và bài kiểm nhật ký thao tác xanh, kiểm tra kiểu và kiểm lỗi cú pháp sạch, 82 bài kiểm khung danh mục xanh.
+
+**Còn lại:** dòng nhật ký cũ đã ghi trước khi sửa vẫn nằm dưới tên loại nghỉ (chỉ có ở máy local và dev); ba điểm nhỏ ghi trong báo cáo test chưa sửa.
+
+Mã nguồn: frontend-v2/src/shared/crud/crud-field.tsx · crud-form-fields.tsx · crud-detail-page.tsx · types.ts · backend/app/core/crud.py · backend/app/modules/leave/policy_controller.py · catalog_controller.py · backend/app/modules/audit/controller.py

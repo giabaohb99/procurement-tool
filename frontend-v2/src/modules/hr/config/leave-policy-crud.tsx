@@ -33,6 +33,7 @@ const policyChips = (p: LeavePolicy) => [
 
 export const LEAVE_POLICY_CRUD_CONFIG: CrudConfig<LeavePolicy> = {
   entity: 'leave_type',
+  auditEntity: 'leave_policy',
   title: 'Chính sách nghỉ phép',
   description: 'Gói số ngày phép mỗi năm theo loại nghỉ, gán cho từng nhân sự ở màn Phân bổ chính sách.',
   unitLabel: 'chính sách',

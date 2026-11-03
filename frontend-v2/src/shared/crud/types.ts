@@ -153,6 +153,11 @@ export interface QuickFilterConfig {
 export interface CrudConfig<T> {
   /** Khóa phân quyền — khớp ENTITIES trong backend (vd 'warehouse', 'unit'). */
   entity: PermissionEntity
+  /**
+   * Tên ghi NHẬT KÝ khi khác khóa phân quyền (duoc-CR-717): danh mục mượn quyền của danh mục khác — Chính sách nghỉ phép,
+   * Ngày cấm nghỉ gác bằng `leave_type` — ghi nhật ký dưới tên riêng, khớp `audit_entity` của `make_crud_router`.
+   */
+  auditEntity?: string
   /** Tiêu đề danh mục tiếng Việt (vd 'Kho', 'Đơn vị tính'). */
   title: string
   /**
