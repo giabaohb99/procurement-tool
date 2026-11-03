@@ -114,6 +114,18 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-721-man-nhat-ky-email | Màn Nhật ký email trong phân hệ Quản trị
+- status: dang-lam
+- date: 2026-11-03
+- list: Nền tảng
+- tag: Nền tảng
+**Bối cảnh:** bảng nhật ký email trên prod có hơn 6.000 dòng (sự kiện, người nhận, tiêu đề, trạng thái, lỗi, hộp thư gửi)
+nhưng chưa có API hay màn nào đọc, nên không tra được đã gửi thư cho ai, lỗi gì. Cần kịp đợt prod sáng 04/11.
+**Việc:** API danh sách và chi tiết nhật ký email (phân trang, lọc người nhận, sự kiện, trạng thái, khoảng ngày, mới nhất
+trước), quyền dùng khóa Nhật ký hệ thống có sẵn, chỉ đọc; màn Nhật ký email trong Quản trị với bảng, bộ lọc, ngăn chi tiết
+lỗi, thẻ số thư lỗi 7 ngày; bài kiểm backend và vitest; bài HDSD ngắn; cập nhật tài liệu phân hệ.
+Mã nguồn: backend/app/modules/notification, frontend-v2/src/modules/system
+
 ## bao-CR-719-tach-ham-tien-dmh | Tách các hàm tính tiền chi phí thu mua và công nợ của đơn mua hàng, đợt R3b
 - status: xong
 - date: 2026-11-03
