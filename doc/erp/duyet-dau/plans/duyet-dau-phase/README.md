@@ -24,7 +24,7 @@ Nhánh làm việc: **`pltgiang`** (frontend-v2 + backend). Phân hệ chạy �
 | [../tai-lieu-chuc-nang/17-duyet-dau.md](../../chuc-nang/10-duyet-dau.md) | **Tài liệu chức năng** (đặc tả trường, vòng đời trạng thái, phân quyền) cho người dùng/BA |
 
 > Mỗi phase một file chi tiết theo khung 7 mục — giống bộ [dat-xe-duyet-dau](../../../dat-xe/plans/dat-xe-duyet-dau/) /
-> [ke-hoach-celery](../../../../ke-hoach-celery/). Tất cả PHA đều là **kế hoạch phía trước** (chưa làm) — dùng
+> bộ kế hoạch *ke-hoach-celery* (thư mục không còn trong kho). Tất cả PHA đều là **kế hoạch phía trước** (chưa làm) — dùng
 > `[ ]` trong TIEN-DO. §2–§4 dưới đây là bản tóm gọn xuyên suốt các phase.
 
 ## Quy ước chung (mọi phase tuân theo)
