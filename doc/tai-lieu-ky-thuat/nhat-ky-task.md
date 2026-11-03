@@ -115,7 +115,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-721-man-nhat-ky-email | Màn Nhật ký email trong phân hệ Quản trị
-- status: dang-lam
+- status: xong
 - date: 2026-11-03
 - list: Nền tảng
 - tag: Nền tảng
@@ -124,7 +124,18 @@ nhưng chưa có API hay màn nào đọc, nên không tra được đã gửi t
 **Việc:** API danh sách và chi tiết nhật ký email (phân trang, lọc người nhận, sự kiện, trạng thái, khoảng ngày, mới nhất
 trước), quyền dùng khóa Nhật ký hệ thống có sẵn, chỉ đọc; màn Nhật ký email trong Quản trị với bảng, bộ lọc, ngăn chi tiết
 lỗi, thẻ số thư lỗi 7 ngày; bài kiểm backend và vitest; bài HDSD ngắn; cập nhật tài liệu phân hệ.
-Mã nguồn: backend/app/modules/notification, frontend-v2/src/modules/system
+**Kết quả:** API nhật ký email gồm danh sách (phân trang, mới nhất trước, lọc người nhận không phân biệt hoa thường, nhiều
+sự kiện, trạng thái, khoảng ngày trọn ngày cuối), bộ chọn ô lọc (sự kiện lấy nhãn từ danh mục mẫu email, sự kiện lạ vẫn
+trả), thẻ đếm theo ngày, chi tiết một thư đủ câu lỗi; quyền dùng khóa Nhật ký hệ thống, chỉ đọc; đường đọc không ghi nhật
+ký lượt gọi. Chưa cần chỉ mục mới vì bảng còn nhỏ và sắp theo khóa chính, nên không có migration. Màn Nhật ký email trong
+Quản trị: bảng tám cột, ba thẻ bảy ngày bấm là lọc, bộ lọc gồm người nhận, trạng thái, nhiều loại thư dạng nhãn bỏ được,
+từ ngày đến ngày; bấm dòng mở ngăn đọc nguyên văn câu lỗi kèm nút chép; câu bảng rỗng phân biệt do lọc; thêm lối tắt ở
+Tổng quan Quản trị. Bài kiểm: backend 6 bài, cùng bài màn nhật ký hệ thống 36 đạt, ruff sạch; vitest 5 bài màn mới, cụm
+định tuyến và hằng 127 đạt, cụm Quản trị 345 đạt; typecheck, eslint sạch. Bài HDSD mới dưới thẻ Quản trị Hệ thống đã
+seed dev và nạp lại chỉ mục. Tài liệu nền tảng: thêm dòng chức năng CN-NT-18, bốn đường trong api.md, đoạn ở tài liệu
+thông báo mục G, README.
+Mã nguồn: backend/app/modules/notification/email_log_controller.py, backend/app/core/logging_policy.py, backend/app/main.py, test/backend/test_man_nhat_ky_email_cr721.py, backend/scripts/seed_help_nhat_ky_email.py, frontend-v2/src/modules/system (api/email-log-api.ts, hooks/use-email-logs.ts, utils/email-log-format.ts, components/email-log-detail-sheet.tsx, pages/email-log-list-page.tsx + .test.tsx, routes.tsx, config/dashboard-shortcuts.ts), frontend-v2/src/shared/constants (app-routes.ts, query-keys.ts), doc/erp/nen-tang
+Commit: e7c29248 (đặt chỗ), 8772acb9
 
 ## bao-CR-719-tach-ham-tien-dmh | Tách các hàm tính tiền chi phí thu mua và công nợ của đơn mua hàng, đợt R3b
 - status: xong
