@@ -52,7 +52,7 @@ def same_periods(old: Iterable[PeriodView], new: Iterable[PeriodView]) -> bool:
 def ensure_not_backdated(db: Session, user, periods: Iterable[PeriodView], creator_id: int = 0) -> None:
     """Chặn (422) khi công tắc BẬT, đơn có khoảng bắt đầu trước hôm nay và không ai được miễn.
 
-    «Được miễn» = người đang thao tác HOẶC người đã lập đơn (`creator_id`) có vai trò miễn: Nhân sự lập hộ một đơn
+    "Được miễn" = người đang thao tác HOẶC người đã lập đơn (`creator_id`) có vai trò miễn: Nhân sự lập hộ một đơn
     lùi ngày cho nhân viên thì nhân viên đó vẫn gửi duyệt được tờ đơn ấy (rà mã CR-713).
     """
     if not app_settings.get("leave_restrict_backdated"):

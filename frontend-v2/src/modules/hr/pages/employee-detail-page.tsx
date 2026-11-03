@@ -306,7 +306,7 @@ export function EmployeeDetailPage() {
                một lời gọi API nào — nút Lưu đọc ra như bị hỏng. Dựng lại được
                trên trình duyệt thật 08/09/2026. */}
           {/*  duoc-CR-708 — khung form ERPNext: MỘT mặt phẳng, không thẻ con. Hàng tiêu đề
-               «Nhân sự / Tên» + nhãn tình trạng + nút bên phải; dưới là cột nội dung (tab
+               "Nhân sự / Tên" + nhãn tình trạng + nút bên phải; dưới là cột nội dung (tab
                gạch chân, các nhóm ngăn bằng đường kẻ) và THANH BÊN PHẢI ngăn bằng kẻ dọc. */}
           <div className="flex flex-1 flex-col bg-card">
             {/*  ⚠️ Năm tab nhãn tiếng Việt dài KHÔNG vừa một hàng 390px — đo được
@@ -330,7 +330,7 @@ export function EmployeeDetailPage() {
                  điện thoại đây là nút lùi DUY NHẤT trong tầm mắt.
                  Nhãn đổi theo đích — "Danh sách nhân sự" mà bấm ra chức vụ thì
                  nút nói dối. Xem `use-back-target.ts`. */}
-                    {/*  Nút lùi dạng MŨI TÊN, không ghi chữ «Nhân sự /»: thanh trên cùng đã có cấp «Nhân sự»
+                    {/*  Nút lùi dạng MŨI TÊN, không ghi chữ "Nhân sự /": thanh trên cùng đã có cấp "Nhân sự"
                          (bấm được về danh sách), ghi thêm ở đây là lặp lần nữa (anh Được báo 02/11/2026).
                          Nhãn đọc cho trình đọc màn hình vẫn đổi theo đích như cũ. */}
                     <Button variant="ghost" size="icon" className="-ml-2 size-8" asChild>
@@ -541,7 +541,7 @@ export function EmployeeDetailPage() {
                       </EmployeeDetailBlock>
                       {/*  bao-CR-395: phiên đang mở + lịch sử đăng nhập 90 ngày. Thẻ tự ẩn khi thiếu
                          `login_session.read` hoặc nhân sự chưa có tài khoản — cùng điều kiện đó
-                         gác cả NHÓM, không thì còn trơ một tiêu đề «Phiên đăng nhập» rỗng. */}
+                         gác cả NHÓM, không thì còn trơ một tiêu đề "Phiên đăng nhập" rỗng. */}
                       {canSeeLoginSessions && (
                         <EmployeeDetailBlock title="Phiên đăng nhập">
                           <LoginSessionUserCard
@@ -553,9 +553,9 @@ export function EmployeeDetailPage() {
                       )}
                     </TabsContent>
 
-                    {/* Ngoài mọi TabsContent — lịch sử thao tác đúng ở mọi tab (như «Hoạt động» của ERPNext). */}
-                    {/*  duoc-CR-710: khối «Hoạt động» kiểu ERPNext — đường dọc có chấm, câu «A đã cập nhật Phòng ban ·
-                         3 ngày trước». `AuditTimeline` (khối thẻ) vẫn dùng ở các màn khác. */}
+                    {/* Ngoài mọi TabsContent — lịch sử thao tác đúng ở mọi tab (như "Hoạt động" của ERPNext). */}
+                    {/*  duoc-CR-710: khối "Hoạt động" kiểu ERPNext — đường dọc có chấm, câu "A đã cập nhật Phòng ban ·
+                         3 ngày trước". `AuditTimeline` (khối thẻ) vẫn dùng ở các màn khác. */}
                     <EmployeeDetailBlock title="Hoạt động">
                       <AuditActivityFeed
                         entity="employee"

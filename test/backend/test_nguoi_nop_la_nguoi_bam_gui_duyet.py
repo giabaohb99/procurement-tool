@@ -1,8 +1,8 @@
 """NGƯỜI NỘP = NGƯỜI BẤM GỬI DUYỆT, không phải người ghi trên phiếu (20/08/2026).
 
 Lỗi dựng lại được trên Chrome với tài khoản `VTSAM`: văn thư SAM mở bản clone
-của SAM, sửa xong bấm Gửi duyệt → phiếu **KẸT** ngay, «Bước Trưởng bộ phận duyệt
-không tìm được người duyệt», và pháp nhân con **không ban hành được văn bản của
+của SAM, sửa xong bấm Gửi duyệt → phiếu **KẸT** ngay, "Bước Trưởng bộ phận duyệt
+không tìm được người duyệt", và pháp nhân con **không ban hành được văn bản của
 mình**.
 
 Nguyên nhân: `trinh_duyet` lấy `drafter_employee_id or owner_employee_id` làm

@@ -97,7 +97,7 @@ def test_tra_so_phu_kem_nhan_va_tim_theo_so_phu(db, seed, cap_quyen):
     assert row["phone"] == "0900000001" and row["phone_label"] == "Cá nhân"
     assert row["extra_phones"] == [{"number": "0912 345 678", "label": "Zalo"}]
 
-    #  Từ khóa chữ không quét JSON số phụ (chữ «label» / «Zalo» nằm trong chính JSON).
+    #  Từ khóa chữ không quét JSON số phụ (chữ "label" / "Zalo" nằm trong chính JSON).
     assert T.run_tool(db, user, "employee_lookup", {"query": "Zalo"})["total"] == 0
 
 

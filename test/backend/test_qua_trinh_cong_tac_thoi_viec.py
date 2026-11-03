@@ -1,9 +1,9 @@
-"""Quá trình công tác — ÁP «THÔI VIỆC» qua ĐƯỜNG NGHỈ VIỆC SẴN CÓ (Q2, phase 03).
+"""Quá trình công tác — ÁP "THÔI VIỆC" qua ĐƯỜNG NGHỈ VIỆC SẴN CÓ (Q2, phase 03).
 
 Chốt cốt lõi: áp dòng Thôi việc phải đi ĐÚNG đường `update_employee` mà tab
-«Chung» đã dùng từ lâu (bao-CR-400) — khóa tài khoản, đá phiên, audit trên
+"Chung" đã dùng từ lâu (bao-CR-400) — khóa tài khoản, đá phiên, audit trên
 entity `user`. Bài đầu tiên dưới đây chạy CẢ HAI đường trên hai hồ sơ khác
-nhau rồi so kết quả, để chốt chắc «đi đúng đường sẵn có» chứ không phải một
+nhau rồi so kết quả, để chốt chắc "đi đúng đường sẵn có" chứ không phải một
 đường ghi riêng trông giống.
 """
 from datetime import date, timedelta
@@ -220,7 +220,7 @@ def test_da_nghi_viec_roi_ap_dong_khop_het_thi_khong_doi_gi(db, hr):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  Thôi việc là loại nhóm chính — bị chốt «dòng chính mới nhất»
+#  Thôi việc là loại nhóm chính — bị chốt "dòng chính mới nhất"
 # ══════════════════════════════════════════════════════════════════════════════
 
 def test_thoi_viec_cu_hon_mot_dong_chinh_khac_400(db, hr):

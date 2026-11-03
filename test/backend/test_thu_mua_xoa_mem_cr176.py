@@ -101,7 +101,7 @@ def _make_survey(db, *, code, created_by, status="draft", survey_request_id=0, s
 
 @pytest.fixture
 def actor(world):
-    """`a1` thấy TẤT (scope `all`) với đủ hành động trên cả ba entity — mọi khẳng định «không thấy»
+    """`a1` thấy TẤT (scope `all`) với đủ hành động trên cả ba entity — mọi khẳng định "không thấy"
     ở dưới chỉ có thể do cờ xóa mềm, không phải do phạm vi vai trò."""
     a1 = world.actor("a1")
     for entity in ("purchase_order", "payment_request", "survey"):
@@ -335,7 +335,7 @@ def test_trang_chu_bo_qua_phieu_da_xoa(world, actor, phieu):
     sv_service.delete_survey(db, phieu["sv"]["xoa"], user.id)
     for key, model in (("po", PurchaseOrder), ("sv", Survey)):
         for sid in phieu[key].values():
-            db.get(model, sid).status = "submitted"          # cả hai «chờ duyệt», một đã xóa
+            db.get(model, sid).status = "submitted"          # cả hai "chờ duyệt", một đã xóa
     db.commit()
 
     data = _body(overview(db, user))["data"]
@@ -369,7 +369,7 @@ def test_tool_tro_ly_khong_thay_phieu_da_xoa(world, actor, phieu):
     assert _fetch_by_code(db, "payment_request", "YCTT_XOA", user, actor.profile(), action="read") is None
     assert _fetch_by_code(db, "payment_request", "YCTT_GIU", user, actor.profile(), action="read") is not None
 
-    #  Phiếu chờ duyệt: ba loại cùng «submitted», mỗi loại một phiếu đã xóa → chỉ còn phiếu sống.
+    #  Phiếu chờ duyệt: ba loại cùng "submitted", mỗi loại một phiếu đã xóa → chỉ còn phiếu sống.
     for key, model in (("po", PurchaseOrder), ("prq", PaymentRequest), ("sv", Survey)):
         for sid in phieu[key].values():
             db.get(model, sid).status = "submitted"
@@ -404,7 +404,7 @@ def test_apply_scope_va_get_scoped_tu_loc_ca_ba_model(world, actor, phieu):
 # ═══════════════════════════════ 6: liên kết chéo ═════════════════════════════════════════
 
 def test_ycmh_coi_dmh_da_xoa_nhu_khong_co(world, actor):
-    """`sync_from_purchase_orders`: đơn đã xóa mềm không tính → dòng YCMH quay về «Chưa tạo đơn»;
+    """`sync_from_purchase_orders`: đơn đã xóa mềm không tính → dòng YCMH quay về "Chưa tạo đơn";
     đơn Nháp vẫn đứng (luật CR-074) thì không về."""
     from app.modules.purchase_request.service import LINE_STATUS_NO_PO, sync_from_purchase_orders
     from test_pr_line_no_po_cr074 import _pr
@@ -415,7 +415,7 @@ def test_ycmh_coi_dmh_da_xoa_nhu_khong_co(world, actor):
                   created_by=user.id, pr_code="PYC_XM")
     sync_from_purchase_orders(db, "PYC_XM")
     db.refresh(rows[0])
-    assert rows[0].line_status != LINE_STATUS_NO_PO, "đơn Nháp còn sống thì dòng YCMH không phải «chưa tạo đơn»"
+    assert rows[0].line_status != LINE_STATUS_NO_PO, "đơn Nháp còn sống thì dòng YCMH không phải \"chưa tạo đơn\""
 
     po_service.delete_po(db, po.id, user.id)      # tự gọi `_sync_pr`
     db.refresh(rows[0])
@@ -488,7 +488,7 @@ def test_bao_cao_dmh_bo_qua_don_da_xoa(world, actor, phieu):
         po.status, po.department = "approved", "Phòng KT"
     db.commit()
     assert real_po_ids(db, set(phieu["po"].values())) == set(phieu["po"].values())
-    #  duoc-CR-663: báo cáo gom theo id phòng, nhãn = TÊN HIỆN HÀNH (không còn là bản chụp «Phòng KT»).
+    #  duoc-CR-663: báo cáo gom theo id phòng, nhãn = TÊN HIỆN HÀNH (không còn là bản chụp "Phòng KT").
     from app.modules.department.model import Department
     ten = db.get(Department, db.get(PurchaseOrder, phieu["po"]["giu"]).department_id).name
     rows = report_service.compute_dept_range(db, "2026-10-01", "2026-10-31", None)

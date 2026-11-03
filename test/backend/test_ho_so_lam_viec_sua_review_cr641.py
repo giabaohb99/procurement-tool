@@ -132,7 +132,7 @@ def test_m1_server_che_email_so_dai_va_query_string_roi_cat_do_dai():
 # ── M3 ────────────────────────────────────────────────────────────────────────
 
 def test_m3_hoat_dong_truoc_ngay_nghi_khong_bi_co_sau_nghi_viec(db, hom_nay_gan):
-    """Bug M3: dùng status HIỆN TẠI nên gom lại ngày trước khi nghỉ vẫn báo «hoạt động sau nghỉ việc»."""
+    """Bug M3: dùng status HIỆN TẠI nên gom lại ngày trước khi nghỉ vẫn báo "hoạt động sau nghỉ việc"."""
     user, _ = make_person(db, "M3A", status="resigned", resign=TUE)
     add_request(db, user, vn(MON, "10:00"), "GET", "/api/x")
     add_request(db, user, vn(TUE + timedelta(days=1), "10:00"), "GET", "/api/x")
@@ -154,7 +154,7 @@ def test_m3_thieu_ngay_nghi_thi_dung_trang_thai_du_phong(db, hom_nay_gan):
 # ── M4 ────────────────────────────────────────────────────────────────────────
 
 def test_m4_post_khong_phai_nghiep_vu_khong_tinh_la_luot_ghi(db, hom_nay_gan):
-    """Bug M4: đánh dấu đã đọc thông báo / lưu tùy chỉnh / chat trợ lý bị tính là «ghi», làm nhiễu ngoài giờ/mobile/422."""
+    """Bug M4: đánh dấu đã đọc thông báo / lưu tùy chỉnh / chat trợ lý bị tính là "ghi", làm nhiễu ngoài giờ/mobile/422."""
     user, _ = make_person(db, "M4A")
     for method, route, status in (("POST", "/api/notifications/{nid}/read", 200), ("POST", "/api/notifications/read-all", 200),
                                   ("PUT", "/api/me/preferences/theme", 200), ("POST", "/api/assistant/chat", 422)):

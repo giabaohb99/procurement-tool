@@ -1,4 +1,4 @@
-"""Hai khối «Sản phẩm khác cùng công ty» / «Thuốc cùng hoạt chất» của trang chi tiết thuốc BVTV
+"""Hai khối "Sản phẩm khác cùng công ty" / "Thuốc cùng hoạt chất" của trang chi tiết thuốc BVTV
 (01/10/2026, bê theo danhmuc.thuocbvtv.com). Canh luật khớp hoạt chất — thứ dễ lệch nhất: phải
 bỏ hàm lượng + ngoặc, không phụ thuộc thứ tự, và KHÔNG khớp tập con (một hoạt chất ≠ hỗn hợp).
 """

@@ -1,7 +1,7 @@
 """Chia văn bản cho người ngoài phạm vi thư mục → thư mục chứa nó tự hiện mức XEM
 (đại ca chốt 25/09/2026).
 
-Trước đó Văn thư SAM được chia một văn bản nằm ở thư mục «Nhân sự» của DEGO:
+Trước đó Văn thư SAM được chia một văn bản nằm ở thư mục "Nhân sự" của DEGO:
 đọc được văn bản ở màn Văn bản, nhưng mở trang Thư mục thì không có đường nào
 tới nó. Luật mới: thư mục chứa văn bản được chia đích danh (và tổ tiên của nó)
 hiện ra ở mức Xem; trong đó người này vẫn chỉ thấy đúng văn bản được chia.
@@ -24,7 +24,7 @@ VIEW = int(FolderAccessLevel.VIEW)
 @pytest.fixture()
 def setup(db, world):
     """a1 ở pháp nhân A (đọc văn bản trong công ty mình). Nhánh của pháp nhân B:
-    gốc B › «Nhân sự» (có văn bản) + «Kế toán» (anh em, không liên quan)."""
+    gốc B › "Nhân sự" (có văn bản) + "Kế toán" (anh em, không liên quan)."""
     roots = {f.company_id: f for f in folder_root_service.ensure_company_roots(db)}
     actor = world.grant("a1", "document", scope="company", actions=("read",))
     root_b = roots[world.co["B"]]

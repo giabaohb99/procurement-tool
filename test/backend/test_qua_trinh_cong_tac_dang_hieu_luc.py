@@ -1,9 +1,9 @@
-"""Cờ `is_current` («Đang hiệu lực» ở bảng, «Hiện tại» ở dòng thời gian) — 05/10/2026.
+"""Cờ `is_current` ("Đang hiệu lực" ở bảng, "Hiện tại" ở dòng thời gian) — 05/10/2026.
 
 Lỗi bắt được khi bấm thử trên trình duyệt: nhập BÙ dòng Bổ nhiệm 03/10 SAU khi đã
-có dòng Điều chuyển 04/10 → cả hai dòng nhóm chính cùng «Đang hiệu lực», vì
+có dòng Điều chuyển 04/10 → cả hai dòng nhóm chính cùng "Đang hiệu lực", vì
 `is_current` cũ chỉ xét `to_date` rỗng. Dòng có `from_date` ở tương lai cũng bị
-báo «Đang hiệu lực». Đừng xóa các bài dưới — chúng giữ hai lỗi đó không quay lại.
+báo "Đang hiệu lực". Đừng xóa các bài dưới — chúng giữ hai lỗi đó không quay lại.
 """
 from datetime import date, timedelta
 

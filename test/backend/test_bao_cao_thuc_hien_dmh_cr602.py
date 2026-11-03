@@ -5,10 +5,10 @@ Bốn thứ khóa bằng test:
 1. ĐẦU báo cáo tạo lười, mỗi chứng từ một đầu, hai loại chứng từ cùng id KHÔNG đụng nhau.
 2. ĐMH: nút dòng hàng bám dòng đơn — thêm dòng thì thêm nút, đổi tên hàng thì đổi tên
    nút, xóa dòng thì xóa nút mà hồ sơ về Chung; khối CHƯA khởi tạo thì đồng bộ không
-   đẻ gì (người chỉ xem không thấy một khối «có nội dung» chỉ vì đơn có dòng).
+   đẻ gì (người chỉ xem không thấy một khối "có nội dung" chỉ vì đơn có dòng).
 3. Luật theo loại chứng từ ở controller: ĐMH cấm sửa nút tay (400), khóa khi đơn
    Hoàn thành/Hủy, cửa ghi là `purchase_order.write`.
-4. Cột «Kết quả» (`result`) có trần độ dài ở schema (SQLite không ép VARCHAR).
+4. Cột "Kết quả" (`result`) có trần độ dài ở schema (SQLite không ép VARCHAR).
 """
 import pytest
 from fastapi import HTTPException

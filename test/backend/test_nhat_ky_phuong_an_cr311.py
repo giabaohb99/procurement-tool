@@ -112,7 +112,7 @@ def test_dong_bo_tu_dong_khong_ghi_dau_vet_tung_phuong_an(db, seed):
 
 def test_moi_hanh_dong_deu_co_nhan_tieng_viet(db, seed):
     """Thiếu nhãn thì dòng nhật ký hiện mã Anh trần cho người đọc
-    («Huỳnh Gia Bảo — add_option: ...»), đúng lỗi đã phải đi vá 971 dòng ngày 05/09."""
+    ("Huỳnh Gia Bảo — add_option: ..."), đúng lỗi đã phải đi vá 971 dòng ngày 05/09."""
     from app.modules.audit.controller import ACTION_LABEL
     for act in ("add_option", "del_option", "choose_option", "unchoose_option"):
         assert ACTION_LABEL.get(act), f"thiếu nhãn tiếng Việt cho hành động {act}"

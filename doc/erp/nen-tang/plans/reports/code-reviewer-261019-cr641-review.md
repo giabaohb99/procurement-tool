@@ -1,4 +1,4 @@
-# Review duoc-CR-641 «Hồ sơ cách làm việc» (uncommitted, erp-v2) — 19/10/2026
+# Review duoc-CR-641 "Hồ sơ cách làm việc" (uncommitted, erp-v2) — 19/10/2026
 
 ## Scope
 - BE: `backend/app/modules/usage_profile/**` (37 tệp ~3.3k LOC), `core/usage_codes.py`, migration `usgprof01`, sửa ở core/*, auth, notification, approval/audit/export_log model, setting.
@@ -21,15 +21,15 @@ Không có lỗ hổng bảo mật / auth bypass. (Gác `require("setting",…)`
 
 ## High
 
-### H1. Phiếu đóng dấu luôn bị đếm là «bấm hộ», và có thể ghi «được bấm hộ» nhầm người
+### H1. Phiếu đóng dấu luôn bị đếm là "bấm hộ", và có thể ghi "được bấm hộ" nhầm người
 - `backend/app/modules/usage_profile/daily_sources.py:131` lấy `(SealRequest.created_by, SealRequest.requester_id)`, nhưng `seal_request/service.py:254` ghi `requester_id = user.id` (ID TÀI KHOẢN), không phải id nhân sự như `PurchaseRequest.requester_id`.
 - `daily_docs.py:64` so sánh `requester_emp (thật ra là user id) != creator_emp (employee id)` → gần như luôn khác.
-- Đã chạy lại bằng `proxy_columns([(5,5)], …, user_emp={5:12})` → `done {5: 1}`: người tự lập phiếu đóng dấu của chính mình bị tính 1 lượt «đã bấm hộ».
+- Đã chạy lại bằng `proxy_columns([(5,5)], …, user_emp={5:12})` → `done {5: 1}`: người tự lập phiếu đóng dấu của chính mình bị tính 1 lượt **đã bấm hộ**.
   Nếu có nhân sự mang id = user id đó, người dùng của nhân sự ấy còn bị cộng `on_behalf_received`.
-- Ảnh hưởng: sai `on_behalf_done/received` → sai `proxy_share`, `proxied_days_ratio`, nhãn PROXY_DEPENDENT, cột «bấm hộ» trong context snapshot. Không test nào phủ proxy.
+- Ảnh hưởng: sai `on_behalf_done/received` → sai `proxy_share`, `proxied_days_ratio`, nhãn PROXY_DEPENDENT, cột **bấm hộ** trong context snapshot. Không test nào phủ proxy.
 - Sửa: với seal, quy `requester_id` ra employee (join `User.employee_id`) hoặc bỏ hẳn (seal luôn `created_by == requester_id`, không có lập hộ). Thêm test proxy cho cả ba nguồn.
 
-### H2. Lọc «Kiểu làm việc» nhiều giá trị: FE gửi mảng, BE chỉ nhận một số, nên lọc sai mà không báo lỗi
+### H2. Lọc "Kiểu làm việc" nhiều giá trị: FE gửi mảng, BE chỉ nhận một số, nên lọc sai mà không báo lỗi
 - FE `pages/usage-profile-list-page.tsx:46` gửi `label=['2','5']` → `label=2&label=5` (test FE còn khẳng định hành vi này).
 - BE `controller.py:39,50` khai `label: int | None = Query(None)`. Starlette trả GIÁ TRỊ CUỐI, nên chỉ lọc theo 5 và bỏ qua 2, không 422.
 - Ảnh hưởng: chọn ≥ 2 kiểu thì danh sách và file Excel ra sai.
@@ -47,8 +47,8 @@ Không có lỗ hổng bảo mật / auth bypass. (Gác `require("setting",…)`
 
 ### H4. Riêng tư: công tắc mặc định BẬT, nên deploy là thu thập ngay, trong khi pháp chế chưa duyệt
 - `core/config.py:149` `USAGE_TRACKING_ENABLED: bool = True`.
-- Plan phase-01 ghi mặc định `False`; phase-08 §28 ghi «để TẮT, chỉ bật SAU KHI HR đã gửi thông báo»; hint ở Cấu hình (`setting/service.py`) cũng ghi «Phải thông báo nhân viên trước khi bật».
-- Tài liệu `tracking-nguoi-dung-ho-so-ca-nhan.md` mục 4 vẫn «CÒN MỞ — cần pháp chế / nhân sự duyệt», mục 13 tự nêu rủi ro.
+- Plan phase-01 ghi mặc định `False`; phase-08 §28 ghi **để TẮT, chỉ bật SAU KHI HR đã gửi thông báo**; hint ở Cấu hình (`setting/service.py`) cũng ghi **Phải thông báo nhân viên trước khi bật**.
+- Tài liệu `tracking-nguoi-dung-ho-so-ca-nhan.md` mục 4 vẫn **CÒN MỞ — cần pháp chế / nhân sự duyệt**, mục 13 tự nêu rủi ro.
 - Ngoài ra, gom ngày từ request_log/audit/login **chạy bất kể công tắc**: hồ sơ hành vi từng người vẫn được dựng kể cả khi tắt.
 - Sửa (chặn deploy):
   - đặt `USAGE_TRACKING_ENABLED=false` trong `.env` prod TRƯỚC khi deploy, hoặc đổi mặc định về `False` theo plan;
@@ -72,11 +72,11 @@ Không có lỗ hổng bảo mật / auth bypass. (Gác `require("setting",…)`
 
 ### M3. `active_after_resign` báo động giả khi gom lại ngày cũ
 - `daily_builder.py:76`: `(resign_date and resign_date < day) or emp_status == RESIGNED`. `status` là trạng thái HIỆN TẠI.
-- Backfill hoặc tự lành một ngày TRƯỚC khi nghỉ của người đã nghỉ, có hoạt động, sẽ bị cờ «hoạt động sau nghỉ việc». Đây là chỉ số an ninh, báo sai gây hiểu lầm.
+- Backfill hoặc tự lành một ngày TRƯỚC khi nghỉ của người đã nghỉ, có hoạt động, sẽ bị cờ **hoạt động sau nghỉ việc**. Đây là chỉ số an ninh, báo sai gây hiểu lầm.
 - Sửa: có `resign_date` thì chỉ dùng ngày; `status` chỉ là phương án dự phòng khi không có ngày. Dùng `EMPLOYEE_STATUS` thay hằng `RESIGNED` chép tay.
 
-### M4. «Lượt ghi» gồm cả POST không phải nghiệp vụ
-- `daily_activity.py:14,68`: mọi POST/PUT/PATCH/DELETE trừ `/api/auth/*` đều là «ghi», gồm đánh dấu đã đọc thông báo, lưu tùy chỉnh, chat trợ lý AI…
+### M4. "Lượt ghi" gồm cả POST không phải nghiệp vụ
+- `daily_activity.py:14,68`: mọi POST/PUT/PATCH/DELETE trừ `/api/auth/*` đều là **ghi**, gồm đánh dấu đã đọc thông báo, lưu tùy chỉnh, chat trợ lý AI…
 - Hệ quả: `offhours_write_share`, `mobile_write_share`, `http_422_per_100_writes` và nhãn MOBILE_FIRST bị nhiễu, ví dụ đọc thông báo trên điện thoại buổi tối.
 - Sửa: danh sách loại trừ (`/api/notifications`, `/api/user-preferences`, `/api/assistant`…) hoặc chỉ đếm route có audit nghiệp vụ.
 
@@ -88,14 +88,14 @@ Không có lỗ hổng bảo mật / auth bypass. (Gác `require("setting",…)`
 
 ### M6. Mã UI viết tay ở TS (R2)
 - `core/telemetry/ui-event-codes.ts:7-26` chép tay `UI_EVENT`/`UI_FORM`, trùng tên `UI_FORM` với bản sinh trong `shared/constants/statuses.ts` (khác kiểu: object số vs `StatusOption[]`). Tên khóa cũng lệch: `SURVEY_REQUEST`/`EMPLOYEE` vs backend `QUOTE_REQUEST`/`EMPLOYEE_PROFILE`.
-- Có test canh khớp số, nhưng trái luật «không viết tay bộ mã ở TS», và trùng tên dễ import nhầm.
+- Có test canh khớp số, nhưng trái luật **không viết tay bộ mã ở TS**, và trùng tên dễ import nhầm.
 - Sửa: cho `gen_status_ts.py` sinh thêm hằng số kiểu `UI_EVENT_TYPE_CODE`, hoặc đổi tên bản local (`UI_EVENT_CODE`, `UI_FORM_CODE`) và dẫn từ bản sinh.
 
 ## Low
-- **L1** `snapshot_metrics_flow.py:162`: `completed.date()` là ngày UTC so với `due` (ngày VN). Việc xong 00:00–06:59 VN ngày D+1 bị tính «đúng hạn». Dùng `vn_date(completed)`. `work_overdue_open` (dòng 169) dùng `today` thật thay vì cuối cửa sổ, nên dựng lại tuần cũ ra số khác.
+- **L1** `snapshot_metrics_flow.py:162`: `completed.date()` là ngày UTC so với `due` (ngày VN). Việc xong 00:00–06:59 VN ngày D+1 bị tính **đúng hạn**. Dùng `vn_date(completed)`. `work_overdue_open` (dòng 169) dùng `today` thật thay vì cuối cửa sổ, nên dựng lại tuần cũ ra số khác.
 - **L2** Một sự kiện sai mẫu route → cả lô 100 sự kiện bị 422 và FE bỏ lô. Có thể cân nhắc bỏ từng sự kiện lỗi ở server thay vì từ chối cả lô.
 - **L3** `model.py:23` `ix_ui_event_user_occurred` chưa có truy vấn nào dùng (gom ngày và snapshot lọc theo `occurred_at` / `event_type`), chỉ tốn ghi. `latest_label_week_and_since` và `min(day) where page_views>0` quét toàn bảng (nhỏ, ~100k dòng/3 năm — chấp nhận được).
-- **L4** `report_route_keys()` dùng `lru_cache`. Lần đầu worker không import được `app.main` thì `{}` bị nhớ cho cả vòng đời worker, chỉ số «báo cáo hay mở» âm thầm rỗng. Đề xuất không cache khi rỗng và `log.warning`.
+- **L4** `report_route_keys()` dùng `lru_cache`. Lần đầu worker không import được `app.main` thì `{}` bị nhớ cho cả vòng đời worker, chỉ số **báo cáo hay mở** âm thầm rỗng. Đề xuất không cache khi rỗng và `log.warning`.
 - **L5** `chain_audits` (`snapshot_sources.py`) lọc `entity_id IN (…)` không kèm entity, cũng không chặn `created_at`, nên nạp thừa audit của entity khác trùng id và quét mọi phân vùng năm. Kết quả vẫn đúng nhờ kiểm submit-trong-W; chỉ tốn I/O.
 - **L6** `approvals` đếm cả `line_approve` theo dòng: duyệt 1 YCBG 30 dòng = 30 lượt duyệt, nên `batch_approval_share` / BATCH_WORKER bị đẩy lên.
 - **L7** Sự kiện giữ lại do 401 qua đêm sẽ mang `occurred_at = now − 10′` khi gửi lại, rơi nhầm ngày. Đây là đánh đổi có chủ đích; nên ghi rõ trong tài liệu.
@@ -122,7 +122,7 @@ Không có lỗ hổng bảo mật / auth bypass. (Gác `require("setting",…)`
   - tìm kiếm theo `debouncedValue` + chờ `isFetching`, nên không bắn theo từng phím;
   - hook dọn listener;
   - đăng xuất → `setEnabled(false)` xóa bộ đệm, không lẫn sang người sau;
-  - chỉ số `unmeasured` hiện «Chưa đo được — lý do», không hiện 0.
+  - chỉ số `unmeasured` hiện **Chưa đo được — lý do**, không hiện 0.
 - R2: các cột mới là SMALLINT + IntEnum, đăng ký `code_sets`, TS sinh khớp. Không entity mới nên không cần SCOPE_FIELDS. ReportKey 14 đi đủ chuỗi: `report_keys.py` → gen TS → catalog `key: 14` → `require_report` trên `/summary` + `/summary/export`.
 
 ## Recommended actions (thứ tự)
@@ -141,6 +141,6 @@ Không có lỗ hổng bảo mật / auth bypass. (Gác `require("setting",…)`
 **Summary:** Gác quyền và ống thu sự kiện chắc chắn. Có 3 lỗi đúng/sai dữ liệu cần sửa trước commit: seal bị tính bấm hộ, lọc nhiều nhãn chỉ áp nhãn cuối, gom lại ngày cũ ghi đè mất số. Thêm 1 rủi ro riêng tư khi deploy: công tắc mặc định BẬT.
 
 ## Unresolved questions
-1. Chủ sản phẩm chốt «mặc định BẬT» có biết là deploy prod sẽ thu thập ngay khi pháp chế chưa duyệt không? Công tắc có nên gác luôn cả phần gom từ nhật ký sẵn có không?
-2. Viết trong giờ nghỉ phép đã duyệt có tính «ngoài giờ» không? (Hiện: không, vì chỉ theo DaySpec.)
-3. `tab_request_log.query_string` vẫn lưu `?q=` từ khóa tìm kiếm của mọi màn danh sách (có sẵn từ trước). Tiêu chí 6 «không bảng nào chứa từ khóa tìm kiếm» có tính bảng này không?
+1. Chủ sản phẩm chốt **mặc định BẬT** có biết là deploy prod sẽ thu thập ngay khi pháp chế chưa duyệt không? Công tắc có nên gác luôn cả phần gom từ nhật ký sẵn có không?
+2. Viết trong giờ nghỉ phép đã duyệt có tính **ngoài giờ** không? (Hiện: không, vì chỉ theo DaySpec.)
+3. `tab_request_log.query_string` vẫn lưu `?q=` từ khóa tìm kiếm của mọi màn danh sách (có sẵn từ trước). Tiêu chí 6 **không bảng nào chứa từ khóa tìm kiếm** có tính bảng này không?

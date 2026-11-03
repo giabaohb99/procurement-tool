@@ -53,7 +53,7 @@ def _rewrap(data: bytes, extra: dict[str, bytes]) -> bytes:
     return out.getvalue()
 
 
-# ── H1: phạm vi own không được mở rộng thành «lập cho bất kỳ ai» ───────────────────────
+# ── H1: phạm vi own không được mở rộng thành "lập cho bất kỳ ai" ───────────────────────
 @pytest.fixture
 def own_user(db, world, storage, client_as):  # noqa: F811
     """a3 (pháp nhân A) chỉ có phạm vi `own` trên cả hai khóa."""
@@ -308,7 +308,7 @@ def test_duong_ghi_tren_hd_vua_bi_xoa_van_404(setup):
     assert a1.post(f"{CT_URL}/{cid}/transition", json={"to_status": 5, "reason": "x"}).status_code == 404
 
 
-# ── L3: ngoài phạm vi thì 403, không lộ «pháp nhân không tồn tại» / «trùng tên» ────────
+# ── L3: ngoài phạm vi thì 403, không lộ "pháp nhân không tồn tại" / "trùng tên" ────────
 def test_tai_mau_ngoai_pham_vi_403_ke_ca_khi_ten_trung_hoac_phap_nhan_khong_ton_tai(setup):
     world, a1, make_client, _ = setup
     assert upload_template(make_client(world.actor("b1")), company_id=world.co["B"], name="Tên B").status_code == 201

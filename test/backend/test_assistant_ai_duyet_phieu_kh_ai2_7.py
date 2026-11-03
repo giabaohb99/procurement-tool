@@ -1,6 +1,6 @@
 """kh-AI2-7 — AI duyệt phiếu đợt 1 (đặt xe, đặt phòng họp, nghỉ phép): propose_approval chỉ đề xuất + token; xác nhận mới ghi,
 kiểm lại từ đầu bằng đúng đường duyệt của web. Năm ca A1 yêu cầu: không phải người duyệt bị chặn, loại phiếu ngoài danh sách
-bị chặn, đổi trạng thái giữa hai bước bị chặn, từ chối phải có lý do, nhóm G7 «approve» tắt bị chặn."""
+bị chặn, đổi trạng thái giữa hai bước bị chặn, từ chối phải có lý do, nhóm G7 "approve" tắt bị chặn."""
 import json
 
 import pytest
@@ -43,7 +43,7 @@ def test_nguoi_duoc_giao_duyet_qua_hai_buoc(db, org):  # noqa: F811
 
 def test_khong_phai_nguoi_duyet_bi_chan(db, org):  # noqa: F811
     bk = _pending(db, org)
-    for who in (org.creator, org.own_only):                                           # người đặt; phạm vi «của mình»
+    for who in (org.creator, org.own_only):                                           # người đặt; phạm vi "của mình"
         out = _propose(db, who, id=bk.id)
         assert out.get("denied") is True and "đang chờ bạn duyệt" in out["reason"]
     ghost = _propose(db, org.other, code="DX99999")

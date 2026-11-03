@@ -6,6 +6,7 @@ import { queryKeys } from '@/shared/constants/query-keys'
 import type { ListParams } from '@/shared/types/api'
 import {
   leaveApi,
+  type LeaveBalanceAllocatePayload,
   type LeavePeriodPayload,
   type LeavePeriodsEstimate,
   type LeaveRequestPayload,
@@ -220,8 +221,7 @@ export function useAdjustLeaveBalance() {
 export function useAllocateLeaveBalance() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (values: { year: number; leave_type_ids?: number[]; employee_ids?: number[] }) =>
-      leaveApi.allocate(values),
+    mutationFn: (values: LeaveBalanceAllocatePayload) => leaveApi.allocate(values),
     onSuccess: (data) => {
       toast.success(`Đã cấp quỹ phép năm ${data.year} — thêm ${data.created} dòng`)
       //  Q4 — nói thẳng ra ai chưa có ngày vào làm. Những người này được cấp quỹ

@@ -1,6 +1,6 @@
 """CHÈN BƯỚC vào luồng duyệt — chỗ `UNIQUE(flow_id, seq, branch_key)` bắt gặp.
 
-Lỗi thật đã xảy ra: luồng đang có bước ở chặng 1, người dùng bấm dấu «+» phía
+Lỗi thật đã xảy ra: luồng đang có bước ở chặng 1, người dùng bấm dấu "+" phía
 TRÊN bước đó để chèn một chặng mới, giao diện gửi `seq = 1` và cả request nổ
 500 — `Duplicate entry '4-1-' for key 'uq_approval_node_seq'`. Bước mới không
 được lưu, người dùng chỉ thấy một dòng đỏ không nói được phải làm gì.

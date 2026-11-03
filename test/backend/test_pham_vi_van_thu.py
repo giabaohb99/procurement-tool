@@ -11,7 +11,7 @@ Chính vì tầng 2 phải cộng thêm mà `scope_condition` mới được tá
 gặp nhau**, không nằm trong từng tầng.
 
 ──────────────────────────────────────────────────────────────────────────────
-CÂU TRẢ LỜI VIẾT RA ĐƯỢC — «văn bản X, người Y: ai quyết định, theo thứ tự nào»
+CÂU TRẢ LỜI VIẾT RA ĐƯỢC — "văn bản X, người Y: ai quyết định, theo thứ tự nào"
 ──────────────────────────────────────────────────────────────────────────────
 
 Đọc MỘT văn bản (`access_service.can(..., "read")`, `access_service.py:356-450`).
@@ -284,7 +284,7 @@ def test_a3_ngoai_ca_hai_tang_thi_404_chu_khong_phai_403(vt):
 def test_a4_o_loai_tru_phong_ban_khong_de_duoc_len_chia_se_dich_danh(vt):
     """🔶 A4 — ghim hành vi hiện tại, **KHÔNG kết luận đúng/sai**.
 
-    Ô số 4 của hộp thoại «Phạm vi — <vai trò>» (*Loại trừ phòng ban*) là thứ
+    Ô số 4 của hộp thoại "Phạm vi — <vai trò>" (*Loại trừ phòng ban*) là thứ
     người khai quyền dùng để giấu phòng Nhân sự / Kế toán. Nó đi qua
     `_explicit_cond` nên chỉ thu hẹp phần `scope`; còn dòng CHO PHÉP đích danh
     thì `visible_condition:272` OR **ra ngoài** `scope`, và `can():402` trả
@@ -295,7 +295,7 @@ def test_a4_o_loai_tru_phong_ban_khong_de_duoc_len_chia_se_dich_danh(vt):
     chia sẻ đích danh** — nhóm đông nhất của phân hệ này, và họ mất quyền lặng
     lẽ. Để nguyên thì ô loại trừ không phải hàng rào kín.
 
-    # QUYẾT ĐỊNH CHỜ: ô «Loại trừ phòng ban» có được đè lên dòng CHO PHÉP đích
+    # QUYẾT ĐỊNH CHỜ: ô "Loại trừ phòng ban" có được đè lên dòng CHO PHÉP đích
     # danh không? (Nếu có thì phải kèm cảnh báo trên màn Chia sẻ: "phòng này
     # đang bị loại trừ ở vai trò X, chia xong người đó vẫn không thấy".)
     """
@@ -365,7 +365,7 @@ def test_a6_thanh_vien_so_mo_duoc_so_va_van_ban_trong_so_ngoai_phap_nhan(vt):
 def test_a6b_nguoi_xem_so_khong_sua_duoc_van_ban_trong_so(vt):
     """Vế thứ hai của A6: `_book_ids` phân vai — quản lý sổ (1) mới có `write`.
 
-    `access_service.py:108-125`. Gộp hai vai làm một là ô «Người xem sổ» hóa
+    `access_service.py:108-125`. Gộp hai vai làm một là ô "Người xem sổ" hóa
     thành quyền sửa: văn thư thêm một người vào cho họ tra cứu, người đó sửa
     được số hiệu của mọi văn bản trong quyển.
     """
@@ -559,7 +559,7 @@ ROUTE_GUARD = {
     ("DELETE", "/api/documents/{document_id}"): GUARD_LOAD,
     ("POST", "/api/documents/{document_id}/submit"): GUARD_LOAD,
     ("POST", "/api/documents/{document_id}/approve"): GUARD_LOAD,
-    #  29/09/2026 — nút «Ban hành» của người soạn (chờ ban hành / loại không cần duyệt).
+    #  29/09/2026 — nút "Ban hành" của người soạn (chờ ban hành / loại không cần duyệt).
     ("POST", "/api/documents/{document_id}/issue"): GUARD_LOAD,
     ("GET", "/api/documents/{document_id}/mailboxes"): GUARD_LOAD,
     ("POST", "/api/documents/{document_id}/reject"): GUARD_LOAD,
@@ -649,7 +649,7 @@ def test_b4_goi_y_van_ban_khong_lo_tieu_de_ra_ngoai_pham_vi(vt):
 
     Ai có `document.read` (kể cả phạm vi `own`) đều gọi được, và `company_id` là
     tham số tự do nên duyệt sạch 13 pháp nhân bằng 13 lượt gọi. Nặng nhất là loại
-    bật `is_personal`: truyền id loại «Đơn nghỉ phép» ra thẳng tiêu đề đơn của
+    bật `is_personal`: truyền id loại "Đơn nghỉ phép" ra thẳng tiêu đề đơn của
     từng người.
 
     Vá bằng cách bắt `suggestions` nhận `user`/`profile` (keyword **bắt buộc**,
@@ -1033,7 +1033,7 @@ def test_d2_bon_o_pham_vi_tren_sau_khoa_danh_muc_deu_vo_hieu(vt):
     """D2 — cả sáu khóa khai `PUBLIC`, nên năm ô phạm vi là trang trí.
 
     Nối với nghi ngờ 2 của cụm 01 (`test_b4_...`): người khai quyền tick đủ bốn
-    ô, bấm Lưu, nhận «Đã lưu phạm vi» — và không có gì thay đổi. Đây KHÔNG phải
+    ô, bấm Lưu, nhận "Đã lưu phạm vi" — và không có gì thay đổi. Đây KHÔNG phải
     lỗi của `scoping.py` (danh mục Văn thư dùng chung mọi pháp nhân, cố ý), mà là
     lỗ hổng của MÀN HÌNH: nó không nói ra.
 
@@ -1041,7 +1041,7 @@ def test_d2_bon_o_pham_vi_tren_sau_khoa_danh_muc_deu_vo_hieu(vt):
     chỉ đọc `SCOPE_FIELDS` — bảng khai đúng mà `_role_scope_cond` xử sai thì đọc
     bảng không bắt được.
 
-    # QUYẾT ĐỊNH CHỜ: hộp thoại «Phạm vi — <vai trò>» có nên tắt/ẩn năm ô kèm
+    # QUYẾT ĐỊNH CHỜ: hộp thoại "Phạm vi — <vai trò>" có nên tắt/ẩn năm ô kèm
     # câu "Danh mục này dùng chung mọi pháp nhân" cho entity PUBLIC?
     """
     from app.core.scoping import PUBLIC, SCOPE_FIELDS

@@ -49,7 +49,7 @@ Rủi ro nằm ở **dữ liệu và phân quyền**, không nằm ở mã ngu�
 
 ## 2. Rủi ro đã xác định
 
-### R-1. Phạm vi «Công ty» sẽ trả RỖNG cho 18 Nhân viên thu mua — NẶNG NHẤT
+### R-1. Phạm vi "Công ty" sẽ trả RỖNG cho 18 Nhân viên thu mua — NẶNG NHẤT
 
 Nền v2 áp luật B-07: phạm vi hẹp mà **không dựng nổi điều kiện** thì **chặn** (`false()`) chứ không
 im lặng trả `None` (= thấy tất) như bản v1. Nhánh `company` với `company_id = 0` rơi đúng vào đó.
@@ -140,7 +140,7 @@ không cấp quyền, bật dần sau khi nghiệm thu từng cái.
 
 ### R-6. Đảo luật nhánh một chiều
 
-`quy-trinh-nhanh-va-deploy.md` ghi «merge chỉ một chiều `main` → `erp-v2`». Đợt này đi ngược. Vì là
+`quy-trinh-nhanh-va-deploy.md` ghi "merge chỉ một chiều `main` → `erp-v2`". Đợt này đi ngược. Vì là
 fast-forward nên về kỹ thuật sạch, nhưng **sau đợt này hai nhánh bằng nhau**, và luật trong tài liệu
 đó phải viết lại (bước 7). Không sửa tài liệu thì lần sau có người merge ngược không ai chặn.
 
@@ -169,7 +169,7 @@ trước 16:00 hôm nay thì khung chiều nay cũng dùng được.
 
 ### 4.1. Chạy thử trên BẢN SAO dữ liệu prod (bắt buộc, làm trước ngày chạy)
 
-Đây là bước tách bạch «migration có chạy nổi trên dữ liệu prod không» khỏi giờ phát hành thật.
+Đây là bước tách bạch **migration có chạy nổi trên dữ liệu prod không** khỏi giờ phát hành thật.
 
 ```bash
 # trên VPS

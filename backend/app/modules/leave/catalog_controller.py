@@ -149,7 +149,7 @@ def _check_block_update(db: Session, obj: LeaveBlockPeriod, values: dict) -> Non
         raise HTTPException(422, message)
 
 
-#  Ngày cấm nghỉ (duoc-CR-715): khóa quyền `leave_type` — cùng «Thiết lập» nghỉ phép, không thêm entity.
+#  Ngày cấm nghỉ (duoc-CR-715): khóa quyền `leave_type` — cùng "Thiết lập" nghỉ phép, không thêm entity.
 block_period_router = make_crud_router(
     "/api/leave-block-periods", "leave_type", LeaveBlockPeriod,
     LeaveBlockPeriodCreate, LeaveBlockPeriodUpdate, LeaveBlockPeriodResponse,

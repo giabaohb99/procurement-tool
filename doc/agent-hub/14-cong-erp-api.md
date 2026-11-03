@@ -32,19 +32,19 @@ Mọi deploy hiện tại (dev, prod) vẫn là `embedded` cho tới khi làm b�
 | `GET /ping` | — | `{ok}` | kiểm nối |
 | `GET /me` | có | `ErpUser` {id, email, employee_id, is_active, label, detail, context, names} | tài khoản của chat, chân dung cho prompt |
 | `POST /users/lookup {ids, emails}` | — | [ErpUser] | tài khoản bot (`AGENT_ASSISTANT_USER`, `AGENT_TICKET_ASSIGNEE`) |
-| `GET /users/search?q` | — | [ErpUser] | «cho anh Được quyền gộp», tìm chủ máy |
+| `GET /users/search?q` | — | [ErpUser] | **cho anh Được quyền gộp**, tìm chủ máy |
 | `POST /can {entity, action}` | có | `{ok}` | `require` ở dịch vụ AI; quyền tạo việc Dự án |
 | `GET /settings` | — | tab_setting {key: value} | `app_settings` của dịch vụ AI (bộ đệm 30 s, hỏng → .env) |
 | `POST /glossary/block {texts}` | — | `{block}` | thuật ngữ nội bộ chèn vào prompt |
 | `GET /tools` | có | [{name, description, parameters}] | danh sách công cụ ERP cho model (bộ đệm 10 phút) |
 | `POST /tools/run {name, args}` | có | kết quả công cụ (dict) | mọi công cụ KHÔNG thuộc nhóm cá nhân |
-| `POST /draft/create {kind, draft}` · `POST /draft/submit {kind, id}` · `GET /draft/details?kind&id` | có | {code, id} / {ok} / [chi tiết] | «tạo» / «gửi duyệt» phiếu từ chat, việc từ biên bản |
+| `POST /draft/create {kind, draft}` · `POST /draft/submit {kind, id}` · `GET /draft/details?kind&id` | có | {code, id} / {ok} / [chi tiết] | **tạo** / **gửi duyệt** phiếu từ chat, việc từ biên bản |
 | `POST /tickets/open {statuses, exclude_ids}` · `GET /tickets/max-id` · `POST /tickets/by-ids` · `POST /tickets/{id}/note` · `POST /tickets` | —/có | phiếu dạng dict | phiếu hỗ trợ → việc sửa mã, báo lại, MCP report_issue |
 | `GET /notifications?after_id&limit` · `GET /notifications/max-id` | — | chuông | chuyển chuông ERP sang chat |
 | `POST /attachments/blocks {ids}` | có | {blocks, meta} | tệp đính kèm của Trợ lý web |
 | `GET /files/{id}` | có | byte + `X-Filename` | gửi tệp báo cáo công cụ xuất |
 | `GET /employees/match?name` · `GET /projects` | —/có | nhân sự khớp / dự án tạo việc được | thẻ việc từ biên bản |
-| `GET /plan/overview?list_id` · `POST /plan/reply {task_id, action, text, pct, score}` | có | cây việc của kế hoạch (chỉ thành viên bảng) / kết quả ghi câu trả lời | bot điều phối việc theo kế hoạch (bao-CR-616, phase 24.1): hỏi nhận việc, nút Nhận / Giờ khác / Từ chối, «xong việc N», tiến độ |
+| `GET /plan/overview?list_id` · `POST /plan/reply {task_id, action, text, pct, score}` | có | cây việc của kế hoạch (chỉ thành viên bảng) / kết quả ghi câu trả lời | bot điều phối việc theo kế hoạch (bao-CR-616, phase 24.1): hỏi nhận việc, nút Nhận / Giờ khác / Từ chối, **xong việc N**, tiến độ |
 
 Công cụ chạy **tại dịch vụ AI** (không qua cổng): `personal_tool`, `group_tool`, `meeting_tool`, `google_tool` — sổ nhớ,
 thẻ cá nhân, nhóm, biên bản, Lịch / Drive Google. Mọi tên khác chạy ở ERP. Danh sách công cụ model thấy = cá nhân + ERP, bằng
@@ -56,7 +56,7 @@ thẻ cá nhân, nhóm, biên bản, Lịch / Drive Google. Mọi tên khác ch�
 # 0. MySQL: database + tài khoản riêng (THAY mật khẩu trong tệp trước khi chạy)
 docker exec -i procurement-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql' < backend/scripts/agent_split/create_agent_db.sql
 
-# 1. Checkout riêng cho dịch vụ AI (cùng kho, nhánh erp-v2) — deploy.sh đích «agent» dùng thư mục này
+# 1. Checkout riêng cho dịch vụ AI (cùng kho, nhánh erp-v2) — deploy.sh đích "agent" dùng thư mục này
 git clone -b erp-v2 <repo> ~/agent-hub && cd ~/agent-hub
 cp .env.agent.example .env.agent      # điền: DB_PASSWORD, JWT_SECRET (TRÙNG .env.dev), AGENT_* tokens chép từ .env.dev,
                                        # AGENT_SERVICE_SECRET=$(openssl rand -hex 32), AGENT_GATEWAY_URL=http://procurement-tool-dev-api-1:8000
@@ -86,8 +86,8 @@ còn nguyên (dữ liệu mới phát sinh ở DB `agent_hub` trong lúc tách t
 ## 5. Deploy dịch vụ AI sau này (S-4)
 
 `deploy.sh agent <commit>` (đích mới, mặc định `~/agent-hub`, compose agent-hub, health `127.0.0.1:8020`). Thêm môi trường vào
-sổ của bot: «thêm môi trường agent: dir=~/agent-hub compose="--env-file .env.agent -p agent-hub -f docker-compose.agent-hub.yml"
-branch=erp-v2 health=http://127.0.0.1:8020/api/health kind=dev» — từ đó bot code tự deploy chính nó và O-01 theo dõi health.
+sổ của bot: **thêm môi trường agent: dir=~/agent-hub compose="--env-file .env.agent -p agent-hub -f docker-compose.agent-hub.yml"
+branch=erp-v2 health=http://127.0.0.1:8020/api/health kind=dev** — từ đó bot code tự deploy chính nó và O-01 theo dõi health.
 
 ## 6. S-5 (sang VPS riêng) và S-6 (tách kho tin nhắn) — runbook, chưa cần mã
 
@@ -95,7 +95,7 @@ branch=erp-v2 health=http://127.0.0.1:8020/api/health kind=dev» — từ đó b
   `.env.agent` (đổi `DB_HOST`, `AGENT_GATEWAY_URL=https://deverp.degoholding.vn` — cổng B qua tên miền, có chữ ký nên an toàn,
   thêm chặn IP ở Cloudflare nếu muốn); volume `agent_files`, `agent_qdrant` chép bằng `docker cp`; ERP đổi
   `AGENT_SERVICE_URL=https://<tên miền dịch vụ AI>`; bật lại poller ở máy mới (tắt máy cũ trước — một token Telegram một poller).
-- **S-6:** nhóm bảng `tab_agent_group*` + tệp nhóm tách thành DB / stack «kho tin nhắn» khi chạm ngưỡng §4 doc 13; giao diện
+- **S-6:** nhóm bảng `tab_agent_group*` + tệp nhóm tách thành DB / stack **kho tin nhắn** khi chạm ngưỡng §4 doc 13; giao diện
   nội bộ: `tin của nhóm X từ giờ Y`, `tìm toàn văn`, `tệp theo ref` — chính là 3 hàm `groups.read / find / file_by_ref` hiện nay.
 
 ## 7. Zalo hướng B — dựng `zalo-listener` trên dev (ai-CR-122, Agent 1)
@@ -114,15 +114,15 @@ chạy khi api ERP khởi động lại sau đợt gộp kế.
 3. `docker compose --env-file .env.agent -p agent-hub -f docker-compose.agent-hub.yml up -d --build` — dựng thêm image
    `dego-zalo-listener`, `agent-api` tự chạy `alembic -c alembic_agent.ini upgrade head` (lên `agent0002`).
 4. Kiểm:
-   - `docker logs agent-hub-zalo-listener-1 --tail 5` có «zalo-listener nghe cổng 3100» và «chưa có phiên»;
-   - `docker logs agent-hub-agent-poller-1 --tail 20` có «Zalo tài khoản công ty BẬT»;
+   - `docker logs agent-hub-zalo-listener-1 --tail 5` có **zalo-listener nghe cổng 3100** và **chưa có phiên**;
+   - `docker logs agent-hub-agent-poller-1 --tail 20` có **Zalo tài khoản công ty BẬT**;
    - `docker exec agent-hub-agent-api-1 alembic -c alembic_agent.ini current` ra `agent0002 (head)`.
-5. Báo em; đại ca nhắn bot Telegram `/zalo` (phải ra «chưa đăng nhập») rồi `/zalo dangnhap` để nhận ảnh QR.
+5. Báo em; đại ca nhắn bot Telegram `/zalo` (phải ra **chưa đăng nhập**) rồi `/zalo dangnhap` để nhận ảnh QR.
 
 Quay lui: xóa dòng `AGENT_ZALO_LISTENER_URL` khỏi `.env.agent`, `docker compose ... stop zalo-listener`, `up -d
 agent-poller` — bot về như trước (cột `members` để nguyên, vô hại).
 
-## 8. Màn «Nhóm chat» (ai-CR-123) — dựng trên dev
+## 8. Màn "Nhóm chat" (ai-CR-123) — dựng trên dev
 
 Đợt này đụng **cả ba**: ERP api (khóa quyền mới `agent_group` — dịch vụ AI hỏi quyền qua cổng B nên ERP phải biết khóa
 này), giao diện ERP v2 (màn mới) và stack agent-hub (bảng mới + zalo-listener trả ảnh QR).
@@ -132,8 +132,8 @@ này), giao diện ERP v2 (màn mới) và stack agent-hub (bảng mới + zalo-
    diện v2) theo quy trình deploy dev thường lệ.
 3. Stack agent-hub: `cd ~/agent-hub && git pull && docker compose --env-file .env.agent -p agent-hub -f
    docker-compose.agent-hub.yml up -d --build` — `agent-api` lên `agent0003`, `zalo-listener` dựng lại.
-4. Kiểm: đăng nhập web dev bằng tài khoản quản trị → Trợ lý AI → **Nhóm chat** có tab «Tất cả nhóm» và thẻ «Zalo tài
-   khoản công ty»; `alembic -c alembic_agent.ini current` = `agent0003 (head)`.
+4. Kiểm: đăng nhập web dev bằng tài khoản quản trị → Trợ lý AI → **Nhóm chat** có tab **Tất cả nhóm** và thẻ **Zalo tài
+   khoản công ty**; `alembic -c alembic_agent.ini current` = `agent0003 (head)`.
 
 ## 9. Máy sửa mã nối đúng Redis của dịch vụ AI (ai-CR-124) — dựng trên dev
 

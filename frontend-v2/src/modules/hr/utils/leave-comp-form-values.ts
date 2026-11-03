@@ -35,7 +35,7 @@ export type LeaveCompFormErrors = Partial<Record<'work_date' | 'days' | 'reason'
  * (ngày tương lai, ngày làm việc thường, trùng phiếu đều do backend phán).
  *
  * `today` truyền vào (`yyyy-mm-dd`) thay vì đọc đồng hồ: hàm thuần, test không phụ thuộc hôm nay.
- * `requireReason` bật ở «Gửi duyệt» — lưu nháp cho để trống lý do.
+ * `requireReason` bật ở "Gửi duyệt" — lưu nháp cho để trống lý do.
  */
 export function validateLeaveCompForm(
   values: LeaveCompFormValues,

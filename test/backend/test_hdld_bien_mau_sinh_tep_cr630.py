@@ -1,5 +1,5 @@
 """duoc-CR-630 phase 03 — tích hợp: tải/thay/soạn mẫu theo danh mục động, giá trị biến theo hợp đồng,
-sinh tệp (định dạng, bắt buộc, lưới an toàn), chặn «Đã ký» khi thiếu biến bắt buộc, che nhật ký."""
+sinh tệp (định dạng, bắt buộc, lưới an toàn), chặn "Đã ký" khi thiếu biến bắt buộc, che nhật ký."""
 import json
 import zipfile
 from io import BytesIO
@@ -271,7 +271,7 @@ def test_ban_luu_tru_khong_chua_gia_tri_bien_o_tieu_de_hay_tom_tat(setup, db):
     assert "88888888" not in blob and "88.888.888" not in blob
 
 
-# ── Lượt 2 (review): M1 chốt «bắt buộc» khi ký chỉ xét biến mà mẫu CỦA PHÁP NHÂN HĐ dùng ─────────
+# ── Lượt 2 (review): M1 chốt "bắt buộc" khi ký chỉ xét biến mà mẫu CỦA PHÁP NHÂN HĐ dùng ─────────
 def _sign(client, cid):
     return client.post(f"{CT}/{cid}/transition", json={"to_status": int(S.SIGNED), "date": "2026-01-02"})
 

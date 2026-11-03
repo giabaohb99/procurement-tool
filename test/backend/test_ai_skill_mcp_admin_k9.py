@@ -132,7 +132,7 @@ def test_draft_with_no_change_and_bad_slug_say_so(org, admin):
     assert "không có gì để sửa" in same["error"]
     bad, _ = _call(db, admin, "draft_skill", {"skill_set": skill_set.code, "name": "có dấu và cách"})
     assert "chưa hợp lệ" in bad["error"] and "chữ không dấu" in bad["error"]
-    climb, _ = _call(db, admin, "draft_skill", {"name": "../etc"})          # «..» bị coi là mã bộ, không ra bộ nào
+    climb, _ = _call(db, admin, "draft_skill", {"name": "../etc"})          # ".." bị coi là mã bộ, không ra bộ nào
     assert "error" in climb and _skill(db, "etc") is None
     missing, _ = _call(db, admin, "draft_skill", {"skill_set": "khong-co-bo-nay", "name": "abc"})
     assert skill_set.code in missing["error"]                              # gợi ý bộ mình được quản lý

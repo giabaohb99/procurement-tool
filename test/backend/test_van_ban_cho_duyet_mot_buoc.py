@@ -1,10 +1,10 @@
-"""VĂN BẢN DUYỆT MỘT BƯỚC phải hiện ở «Chờ tôi duyệt» (25/09/2026).
+"""VĂN BẢN DUYỆT MỘT BƯỚC phải hiện ở "Chờ tôi duyệt" (25/09/2026).
 
 Lỗi bắt khi test UI: văn bản không khớp luồng nào thì duyệt một bước kiểu cũ —
 không sinh việc trong bộ máy duyệt — nên người có quyền duyệt không thấy nó ở
-màn «Chờ tôi duyệt», phải tự lần trong danh sách Văn bản.
+màn "Chờ tôi duyệt", phải tự lần trong danh sách Văn bản.
 
-Danh sách phải khớp ĐÚNG luật của nút «Duyệt và ban hành»: thừa một dòng là
+Danh sách phải khớp ĐÚNG luật của nút "Duyệt và ban hành": thừa một dòng là
 hứa một nút bấm bị chặn; thiếu một dòng là việc treo không ai thấy.
 """
 from app.core.auth import get_perm_profile
@@ -85,8 +85,8 @@ def test_approver_outside_the_role_scope_does_not_see_it(db, seed, cap_quyen):
 
 
 # ── ĐÃ DUYỆT (25/09/2026) ────────────────────────────────────────────────────
-#  Duyệt một bước xong thì văn bản BIẾN khỏi màn «Chờ tôi duyệt» vì sổ của bộ
-#  máy duyệt không có dòng nào. Nhóm «Đã duyệt» đọc nhật ký văn bản thay vào.
+#  Duyệt một bước xong thì văn bản BIẾN khỏi màn "Chờ tôi duyệt" vì sổ của bộ
+#  máy duyệt không có dòng nào. Nhóm "Đã duyệt" đọc nhật ký văn bản thay vào.
 
 from datetime import datetime, timedelta  # noqa: E402
 
@@ -125,7 +125,7 @@ def test_ordinary_edits_and_other_peoples_approvals_are_not_mine(db, seed, cap_q
 
 
 def test_issuing_after_a_multi_step_flow_is_not_counted_twice(db, seed, cap_quyen):
-    """Người soạn bấm ban hành sau luồng nhiều bước cũng ghi «approve» — các
+    """Người soạn bấm ban hành sau luồng nhiều bước cũng ghi "approve" — các
     chặng đã nằm trong sổ bộ máy, liệt kê thêm ở đây là một văn bản hai dòng."""
     user = _approver(db, seed, cap_quyen)
     doc = _doc(db, seed, "LD4")

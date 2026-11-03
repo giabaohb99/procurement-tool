@@ -100,7 +100,7 @@ def _luong_mot_buoc(db, code, name, company_id, employee_id):
 # ── 1 · cờ tắt thì không có gì đổi ─────────────────────────────────────────
 
 def test_co_tat_thi_gui_duyet_chay_y_nhu_cu(db, align):
-    """Điều kiện số một của cam kết «không ảnh hưởng thứ đang chạy»."""
+    """Điều kiện số một của cam kết "không ảnh hưởng thứ đang chạy"."""
     doc = service.submit(db, align["doc"], ACTOR)
 
     assert doc.status == STATUS_SUBMITTED
@@ -140,7 +140,7 @@ def test_bat_co_va_co_luong_thi_mo_phien_nhieu_buoc(db, align):
     instance = instance_service.running_instance(db, ENTITY, doc.id)
     assert instance is not None
     assert instance.status == INSTANCE_RUNNING
-    #  Nhãn phải sẵn trên phiên để màn «Việc của tôi» khỏi nạp bảng văn bản.
+    #  Nhãn phải sẵn trên phiên để màn "Việc của tôi" khỏi nạp bảng văn bản.
     assert instance.entity_title == "Quy chế bảo mật"
 
     waiting = [row for row in instance_service.tasks_of_instance(db, instance.id)
@@ -254,7 +254,7 @@ def test_duyet_het_cac_buoc_thi_van_ban_duoc_BAN_HANH_that(db, align):
 
 
 def test_tu_choi_thi_van_ban_bi_khoa_o_da_tu_choi(db, align):
-    """Từ chối = HẾT ĐƯỜNG: văn bản sang «Đã từ chối», bản đó nhả chỗ đang mở.
+    """Từ chối = HẾT ĐƯỜNG: văn bản sang "Đã từ chối", bản đó nhả chỗ đang mở.
 
     Trước 24/08/2026 nó về Nháp y như trả về, nên mở văn bản ra không ai biết nó
     vừa bị dẹp hay đang được mời sửa lại. Lý do vẫn phải ghi lại được.
@@ -275,7 +275,7 @@ def test_tu_choi_thi_van_ban_bi_khoa_o_da_tu_choi(db, align):
 
 
 def test_tra_lai_thi_van_ban_sang_tra_ve_va_gui_duyet_lai_duoc(db, align):
-    """Trả lại = CÒN ĐƯỜNG: «Trả về», sửa được, và gửi duyệt lại được ngay.
+    """Trả lại = CÒN ĐƯỜNG: "Trả về", sửa được, và gửi duyệt lại được ngay.
 
     Đây là ca người dùng gặp nhiều nhất, và cũng là chỗ dễ hỏng nhất: nếu bản bị
     trả nhả `open_slot` thì `submit()` không tìm thấy bản nào để gửi, văn bản nằm
@@ -295,7 +295,7 @@ def test_tra_lai_thi_van_ban_sang_tra_ve_va_gui_duyet_lai_duoc(db, align):
     assert ban.status == VERSION_RETURNED
     assert "Sửa lại mục 2" in ban.change_reason
 
-    #  Gửi lại: mở đúng một phiên MỚI, và văn bản trở lại «Đang duyệt».
+    #  Gửi lại: mở đúng một phiên MỚI, và văn bản trở lại "Đang duyệt".
     service.submit(db, doc, ACTOR)
     db.refresh(doc)
     assert doc.status == STATUS_SUBMITTED
@@ -304,7 +304,7 @@ def test_tra_lai_thi_van_ban_sang_tra_ve_va_gui_duyet_lai_duoc(db, align):
 
 
 def _nhat_ky(db, document_id: int) -> list:
-    """Nhật ký thao tác CỦA VĂN BẢN (thẻ «Lịch sử thao tác»), mới nhất trước."""
+    """Nhật ký thao tác CỦA VĂN BẢN (thẻ "Lịch sử thao tác"), mới nhất trước."""
     from app.modules.audit.model import AuditLog
 
     return (db.query(AuditLog)
@@ -314,10 +314,10 @@ def _nhat_ky(db, document_id: int) -> list:
 
 
 def test_tra_lai_qua_bo_may_co_ghi_NHAT_KY_va_ghi_dung_nguoi(db, align):
-    """Khách báo 24/08/2026: trả về xong «không log».
+    """Khách báo 24/08/2026: trả về xong "không log".
 
-    Thẻ *Lịch sử thao tác* của văn bản dừng ở dòng «Gửi duyệt» — người soạn mở
-    ra thấy trạng thái đã thành «Trả về» mà không dòng nào nói ai trả, lúc nào,
+    Thẻ *Lịch sử thao tác* của văn bản dừng ở dòng "Gửi duyệt" — người soạn mở
+    ra thấy trạng thái đã thành "Trả về" mà không dòng nào nói ai trả, lúc nào,
     vì sao. Dấu vết nằm bên phiên duyệt, nhưng đó là thẻ khác, và nó biến mất
     khỏi tầm mắt ngay lần gửi duyệt kế tiếp.
 
@@ -356,8 +356,8 @@ def test_duyet_het_cac_buoc_cung_ghi_nhat_ky_dung_nguoi_ky_cuoi(db, align):
 
 
 def test_ban_hanh_sau_khi_bi_tra_lai_bao_dung_ly_do_chu_khong_phai_cau_mu_mo(db, align):
-    """Khách báo 24/08/2026: trả lại xong bấm «Duyệt và ban hành» chỉ nhận
-    «Không có bản nào đang chờ duyệt» — đọc như hệ hỏng.
+    """Khách báo 24/08/2026: trả lại xong bấm "Duyệt và ban hành" chỉ nhận
+    "Không có bản nào đang chờ duyệt" — đọc như hệ hỏng.
 
     Câu mới phải nói ra phiên duyệt đã kết thúc thế nào và phải làm gì tiếp.
     """

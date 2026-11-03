@@ -33,7 +33,7 @@ def _erp_dispatch(db, booking, vehicle, driver):
     db.commit()
 
 
-# ─────────────────────────── Dấu «ERP đã thao tác» ───────────────────────────
+# ─────────────────────────── Dấu "ERP đã thao tác" ───────────────────────────
 
 def test_luot_dong_bo_khong_tu_dong_dau_erp_da_thao_tac(db):
     _sync(db, booking_node(status="pending_approval"))
@@ -98,7 +98,7 @@ def test_dieu_phoi_qua_ham_nghiep_vu_that_cung_dong_dau(db):
 # ─────────────────────────── App cũ không đè thao tác ERP ───────────────────────────
 
 def test_luot_quet_dem_khong_keo_phieu_erp_da_dieu_phoi_ve_da_duyet(db):
-    """Lỗi thật trước Bước 0: phiếu điều phối trên ERP bị lượt 02:15 kéo về «Đã duyệt» mà vẫn giữ xe."""
+    """Lỗi thật trước Bước 0: phiếu điều phối trên ERP bị lượt 02:15 kéo về "Đã duyệt" mà vẫn giữ xe."""
     xe, xe_erp, tx, tx_erp = _fleet(db)
     _sync(db, booking_node(status="fully_approved"))
     booking = db.query(VehicleBooking).one()
@@ -198,7 +198,7 @@ def test_phieu_dau_dong_dau_tren_erp_khong_bi_lui_ve_da_duyet(db):
 
 def test_review_m3_phieu_erp_lam_chu_khong_dung_lai_phien_soi_guong(db):
     """Review M3: mỗi lượt nhận xóa + dựng lại phiên duyệt soi gương (`flow_id=0`) — phiếu ERP đã làm chủ mà vẫn dựng
-    là trang chi tiết hiện dấu vết cũ của app cũ, và phiên «đang chạy» chặn nút trả / từ chối của ERP."""
+    là trang chi tiết hiện dấu vết cũ của app cũ, và phiên "đang chạy" chặn nút trả / từ chối của ERP."""
     from app.modules.approval.instance_model import ApprovalInstance
 
     _sync(db, booking_node(status="fully_approved"))

@@ -1,7 +1,7 @@
 # Phase 07 — D1c: Tải đang ôm, tính ngay lúc hỏi
 
 ## Context links
-- Lời đại ca: «Tải đang ôm tính ngay lúc hỏi, không chỉ theo tuần»
+- Lời đại ca: **Tải đang ôm tính ngay lúc hỏi, không chỉ theo tuần**
 - `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §4 `team_capacity` (số việc đang mở, quá hạn, nghỉ phép trong khoảng, giờ theo lịch)
 - Nguồn: `approval/task_service.my_tasks` / `count_my_tasks` (có cả việc được ủy quyền), `tab_approval_task` (index `(assignee_employee_id, status)`),
   `tab_delegation` (`ix_delegation_to/_from`), `tab_work_task(+_assignee)`, `tab_purchase_request.assignee_id/head_of_dept_id`, `tab_purchase_order.nspt_id`,
@@ -36,7 +36,7 @@ Mỗi truy vấn là một `GROUP BY employee` có lọc `IN (employee_ids)`:
 | Q8 | `survey_lines_handling` | dòng YCBG `assignee` (mã NV) chưa xong ⨝ `tab_employee.code` |
 | Q9 | `docs_pending_issue` | văn bản status=11 theo `clone_assignee_employee_id` |
 | Q10 | `on_leave_today`, `leave_days_ahead` | nghỉ phép đã duyệt giao `[hôm nay, hôm nay + horizon]` |
-Trả thêm `computed_at` và `open_items_total` (Σ các số «đang xử lý» + duyệt chờ; không trọng số — AI tự cân, Q11).
+Trả thêm `computed_at` và `open_items_total` (Σ các số **đang xử lý** + duyệt chờ; không trọng số — AI tự cân, Q11).
 Không ghi gì; không phụ thuộc `tab_work_cycle`.
 
 ## Related code files
@@ -54,10 +54,10 @@ Không sửa model/tệp nghiệp vụ. Index cần đã nằm ở migration pha
 - [x] 10 truy vấn + gộp (`capability/workload_sources.py` · `workload_service.py`)
 - [x] EXPLAIN + đo: 143 người local = 10 truy vấn, 69 ms; optimizer chọn index mới cho PO/YCMH-duyệt/văn bản; YCMH-dòng và dòng YCBG quét bảng nhỏ (chưa đủ lớn để chọn index)
 - [x] test (`test_tai_dang_om_cr656.py`, 10 bài) + API quản trị `GET /api/work-capability/load` (`setting.read`, 422 nếu không chọn phạm vi)
-- [x] đối chiếu «Việc của tôi»: `approvals_pending`/`delegated_in` khớp `approval.task_service.my_tasks` cho 60/60 người local; đối chiếu bảng Dự án/Thu mua bằng tay: chưa (local gần như không có dữ liệu)
+- [x] đối chiếu **Việc của tôi**: `approvals_pending`/`delegated_in` khớp `approval.task_service.my_tasks` cho 60/60 người local; đối chiếu bảng Dự án/Thu mua bằng tay: chưa (local gần như không có dữ liệu)
 
 ### Hằng trạng thái đã xác minh — chỗ lệch kế hoạch
-- **Văn bản «chờ ban hành» (status 11) tính theo `drafter_employee_id`** (người soạn — `document.service.can_issue`), không phải `clone_assignee_employee_id` như bảng kế hoạch. Chỉ mục: `ix_document_drafter_status`.
+- **Văn bản "chờ ban hành" (status 11) tính theo `drafter_employee_id`** (người soạn — `document.service.can_issue`), không phải `clone_assignee_employee_id` như bảng kế hoạch. Chỉ mục: `ix_document_drafter_status`.
 - **`pr_handling` theo `tab_purchase_request_item.assignee` (mã NV)**, không theo `assignee_id` (luôn 0 — xem phase 06). Đếm số YCMH (distinct), dòng đã xong/hủy và phiếu draft/submitted/completed/done/cancelled/rejected bị loại.
 - Dòng YCBG đang giữ = `line_status != completed` và `pr_code == ''` và phiếu cha ∈ `submitted/approved/processing`.
 - Mọi bảng `SoftDeleteMixin` (YCMH, YCBG, ĐMH, văn bản, nghỉ phép) lọc `is_deleted`.
@@ -68,18 +68,18 @@ Backend `test/backend/test_tai_dang_om_cr656.py`: dữ liệu mẫu đủ 10 ngu
 ủy quyền hết hạn không tính `delegated_in`; nghỉ ngoài `horizon` không tính; lọc phòng ban; **đếm truy vấn ≤ 10** với 5 và 200 nhân sự; `now` tiêm được (không phụ thuộc giờ máy).
 
 ## Success criteria
-- `current_load` cho 100 người < 300 ms trên bản sao dev; số khớp với màn «Việc của tôi» (duyệt) và bảng Dự án của 5 người đối chiếu tay.
+- `current_load` cho 100 người < 300 ms trên bản sao dev; số khớp với màn **Việc của tôi** (duyệt) và bảng Dự án của 5 người đối chiếu tay.
 
 ## Risk assessment
 | Rủi ro | K×A | Giảm thiểu |
 |---|---|---|
-| Tải Thu mua thiếu người duyệt thật | Chắc × TB | Ghi rõ «đại diện theo trưởng phòng»; Q6 |
+| Tải Thu mua thiếu người duyệt thật | Chắc × TB | Ghi rõ **đại diện theo trưởng phòng**; Q6 |
 | Hằng trạng thái lệch thực tế | TB × TB | Lấy từ `status_codes`/hằng module, không gõ tay chuỗi |
 | Mã NV ở dòng YCBG không khớp | TB × Thấp | Join theo `code`, mã lạ bỏ qua + đếm vào log cảnh báo |
 
 ## Security
 Hàm không tự gác quyền — người gọi (controller D1d gác khóa 16; A1 gác theo doc 22 §4) phải truyền phạm vi phòng ban đã kiểm.
-Ghi điều này ở docstring + test «không truyền phạm vi thì không trả gì» (mặc định an toàn: không truyền `company_id`, `department_ids` lẫn `employee_ids` → `[]`; muốn cả công ty phải truyền rõ).
+Ghi điều này ở docstring + test **không truyền phạm vi thì không trả gì** (mặc định an toàn: không truyền `company_id`, `department_ids` lẫn `employee_ids` → `[]`; muốn cả công ty phải truyền rõ).
 
 ## Rollback
 Không có thay đổi dữ liệu; gỡ tệp là xong.

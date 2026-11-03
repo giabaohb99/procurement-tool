@@ -237,7 +237,7 @@ def test_sua_khong_dung_toi_folder_ids_khong_bi_kiem(db, world, roots, doc_type)
 # ── C1 (rà soát 23/09/2026) — `set_folders` xóa mất liên kết ẨN với người sửa ──
 def test_thay_mot_phan_luu_link_an_con_nguyen(db, world, roots, doc_type):
     """Văn bản nằm ở HAI thư mục: A (a1 thấy, Đóng góp) + B (a1 KHÔNG thấy —
-    riêng tư, không ACL). a1 mở «Sửa thư mục», chỉ thấy A, gửi lại
+    riêng tư, không ACL). a1 mở "Sửa thư mục", chỉ thấy A, gửi lại
     `folder_ids=[A]` → B phải CÒN NGUYÊN, không bị xóa âm thầm (C1)."""
     world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]
@@ -458,7 +458,7 @@ def test_duong_dan_hien_ten_to_tien_du_to_tien_khong_tu_thay_rieng(db, world, ro
     path = paths.get(doc.id, "")
     assert "Tổ Riêng" in path
     assert "Lá Chia Riêng" in path
-    assert path.count(" / ") == 3   # Công ty / gốc / Tổ Riêng / Lá Chia Riêng (nhóm «Công ty», 24/09/2026)
+    assert path.count(" / ") == 3   # Công ty / gốc / Tổ Riêng / Lá Chia Riêng (nhóm "Công ty", 24/09/2026)
 
 
 def test_duong_dan_khong_truyen_user_thi_rong_het(db, world, roots):

@@ -3,7 +3,7 @@
 Kiểm:
 - cổng xuất CSV/XLSX đòi `export` (chỉ có `read` -> 403), dòng xuất bó theo phạm vi của quyền XUẤT;
 - cổng nhập CSV của từng danh mục đòi `import` (chỉ có `write`/`create` -> 403);
-- `import` nằm trong ACTIONS, ma trận quyền trả cột «Nhập», admin được seed đủ quyền mới;
+- `import` nằm trong ACTIONS, ma trận quyền trả cột "Nhập", admin được seed đủ quyền mới;
 - cột nhạy cảm của nhân sự bị che (ô rỗng) với người thiếu `employee_sensitive.read`, ở cả CSV, XLSX
   lẫn xuất tập trung; ngoại lệ `self`.
 """
@@ -259,7 +259,7 @@ def test_xuat_tap_trung_pham_vi_theo_quyen_xuat(db, world, monkeypatch):
 
 def test_tai_lai_tep_da_xuat_chi_nguoi_xuat_hoac_quyen_xuat_toan_he(db, world):
     """Review H1: tệp lưu là ảnh chụp theo quyền NGƯỜI XUẤT. Trước đây ai có `export` trên BẤT KỲ bảng nào cũng tải lại được
-    tệp nhân sự HR xuất phạm vi «tất cả». Nay: người xuất, hoặc `export` toàn hệ trên đúng bảng (+ nhạy cảm toàn hệ với nhân sự)."""
+    tệp nhân sự HR xuất phạm vi "tất cả". Nay: người xuất, hoặc `export` toàn hệ trên đúng bảng (+ nhạy cảm toàn hệ với nhân sự)."""
     from types import SimpleNamespace
 
     from app.core.auth import perm_cache_clear

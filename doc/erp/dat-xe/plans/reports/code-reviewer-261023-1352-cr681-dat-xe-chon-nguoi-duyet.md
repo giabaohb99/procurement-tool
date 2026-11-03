@@ -21,10 +21,10 @@ Câu hỏi còn treo: bộ máy duyệt Đặt xe trên prod đang bật hay t�
 | Mã | Phát hiện | Xử lý |
 |---|---|---|
 | H1 | `email_queue` nghe `after_commit`/`after_rollback` — SQLAlchemy 2.0.35 phát cả khi nhả / hủy SAVEPOINT → đẩy thư trước commit ngoài, hoặc xóa nhầm cả hàng | Dò thật: trong sự kiện `in_transaction()` luôn True, `in_nested_transaction()` True = savepoint → bỏ qua sự kiện savepoint. Có 2 bài kiểm savepoint |
-| M2 | Bậc «Phòng ban» chỉ so `company_id` | OR thêm `company_alt` ở nhánh `dept`, có bài kiểm |
+| M2 | Bậc **Phòng ban** chỉ so `company_id` | OR thêm `company_alt` ở nhánh `dept`, có bài kiểm |
 | M3 | Tiêu đề thư > 255 (mẫu sửa thêm `{{ purpose }}`) → flush hỏng → cả lượt duyệt 500 | Cắt tiêu đề / địa chỉ về 255, có bài kiểm phiếu mục đích 600 ký tự |
 | M4 | Đồng bộ app cũ ghi đè `requester_company_id` | Thêm vào `LEGACY_READONLY_FIELDS` |
-| L6 | «Loại trừ công ty» chỉ so cột chính | GIỮ — ghi chú lý do ở `_explicit_cond` |
+| L6 | **Loại trừ công ty** chỉ so cột chính | GIỮ — ghi chú lý do ở `_explicit_cond` |
 | L7 | Bộ lọc báo cáo / nhóm theo công ty ở tổng quan chỉ dùng `company_id` | GIỮ — báo cáo đếm theo công ty CHỌN trên phiếu; ghi vào câu hỏi treo |
 | L8 | Trùng thư khi hai tài khoản chung hộp thư | Chống trùng theo địa chỉ |
 | L11 | Docstring seed HDSD nhắc hàm đã bỏ | Sửa |

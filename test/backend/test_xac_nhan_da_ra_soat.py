@@ -1,4 +1,4 @@
-"""XÁC NHẬN ĐÃ RÀ SOÁT — tắt cờ «cần rà lại» (19/08/2026).
+"""XÁC NHẬN ĐÃ RÀ SOÁT — tắt cờ "cần rà lại" (19/08/2026).
 
 Lỗ hổng bắt được khi người dùng hỏi "rà thì vào đâu": trong mã có **năm chỗ bật
 cờ** (bản gốc lên phiên bản mới · cha bị bãi bỏ · cha lên bản mới · hai luật của

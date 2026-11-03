@@ -1,6 +1,6 @@
-"""ai-CR-143 — đại ca 09/10/2026: «tạo nhiều như vậy thì ra nhiều đơn nháp lắm đúng không, có thể tận dụng nó, hoặc anh nhắn
-là xóa bớt đơn nháp đi». Đơn nghỉ nháp trùng ngày → sửa đè đơn cũ; «đơn nháp của tôi» / «xóa đơn nháp 2» / «xóa hết đơn
-nháp» → thẻ xác nhận → «đúng». Chỉ phiếu NHÁP do chính mình lập."""
+"""ai-CR-143 — đại ca 09/10/2026: "tạo nhiều như vậy thì ra nhiều đơn nháp lắm đúng không, có thể tận dụng nó, hoặc anh nhắn
+là xóa bớt đơn nháp đi". Đơn nghỉ nháp trùng ngày → sửa đè đơn cũ; "đơn nháp của tôi" / "xóa đơn nháp 2" / "xóa hết đơn
+nháp" → thẻ xác nhận → "đúng". Chỉ phiếu NHÁP do chính mình lập."""
 from datetime import date
 
 import pytest
@@ -110,7 +110,7 @@ def test_xem_va_xoa_don_nhap_qua_the_xac_nhan(db, chat):
     assert "«" not in sent[-1]
     assert _say(db, service, "xóa bớt đơn nháp đi") and "PHIẾU NHÁP CỦA ANH/CHỊ" in sent[-1] and deleted == []
     assert _say(db, service, "xóa đơn nháp 2") and "XÓA 1 PHIẾU NHÁP?" in sent[-1] and "YCMH001" in sent[-1]
-    assert deleted == []                                                     # chưa «đúng» thì chưa xóa
+    assert deleted == []                                                     # chưa "đúng" thì chưa xóa
     assert _say(db, service, "đúng")
     assert deleted == [[{"kind": "purchase", "id": 21}]] and "Đã xóa 1 phiếu nháp: YCMH001" in sent[-1]
     assert _say(db, service, "xóa hết đơn nháp") and "XÓA 2 PHIẾU NHÁP?" in sent[-1]
@@ -121,7 +121,7 @@ def test_xem_va_xoa_don_nhap_qua_the_xac_nhan(db, chat):
 
 
 def test_tao_lai_don_nghi_trung_ngay_thi_sua_don_nhap_cu(db, monkeypatch):
-    """Bấm «tạo» cho bản nháp đơn nghỉ trùng ngày với đơn nháp sẵn có → sửa đè, không lập đơn thứ hai."""
+    """Bấm "tạo" cho bản nháp đơn nghỉ trùng ngày với đơn nháp sẵn có → sửa đè, không lập đơn thứ hai."""
     from types import SimpleNamespace
 
     from app.core.config import settings

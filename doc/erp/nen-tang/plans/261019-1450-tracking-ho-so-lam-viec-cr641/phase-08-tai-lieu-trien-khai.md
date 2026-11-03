@@ -5,7 +5,7 @@
 ## Tài liệu phải sửa
 | Tệp | Sửa gì |
 |---|---|
-| `doc/tai-lieu-ky-thuat/tracking-nguoi-dung-ho-so-ca-nhan.md` | bản 1.1: trạng thái "pha 1–3 đã làm (duoc-CR-641)"; §8 thay bằng chốt CHỈ ADMIN; §10 gạch các câu đã chốt (Q1, Q2, Q5, Q7, Q8); thêm mục "Lệch thiết kế": fetch keepalive thay sendBeacon, định nghĩa phiên làm việc, nguồn bấm hộ, chỉ số hoãn/bỏ (trỏ `metric-definitions.md` của plan); thêm mục **«Văn bản thông báo cho nhân viên»** (mẫu dưới) |
+| `doc/tai-lieu-ky-thuat/tracking-nguoi-dung-ho-so-ca-nhan.md` | bản 1.1: trạng thái "pha 1–3 đã làm (duoc-CR-641)"; §8 thay bằng chốt CHỈ ADMIN; §10 gạch các câu đã chốt (Q1, Q2, Q5, Q7, Q8); thêm mục "Lệch thiết kế": fetch keepalive thay sendBeacon, định nghĩa phiên làm việc, nguồn bấm hộ, chỉ số hoãn/bỏ (trỏ `metric-definitions.md` của plan); thêm mục **Văn bản thông báo cho nhân viên** (mẫu dưới) |
 | `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` | §4.1 luật lọc: thêm nhóm `/api/telemetry` vào bảng bỏ ghi; §4.1.1: thêm `tab_ui_event` 90 ngày, không chờ R2 + lý do; nhắc `read_at` |
 | `CLAUDE.md` | đoạn "Lớp gác thứ ba": 13 → 14 báo cáo, khóa 14 gác `setting.read` + chỉ admin |
 | `doc/tai-lieu-ky-thuat/change-log.md` | 1 dòng `duoc-CR-641-tracking-ho-so-lam-viec` — ĐẶT CHỖ ngay khi bắt tay làm (luật memory "ghi cả change-log lẫn sổ nhật ký"); plan này KHÔNG sửa |

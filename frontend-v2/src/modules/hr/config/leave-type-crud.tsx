@@ -110,7 +110,7 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
   detailRoute: (id) => appRoutes.hr.leaveTypeDetail(id),
   //  Form 10 ô + bậc thâm niên — quá dài cho một hộp thoại, xem `createRoute`.
   createRoute: appRoutes.hr.leaveTypeNew,
-  //  duoc-CR-716: trang chi tiết bố cục phẳng kiểu ERPNext (anh Được: «làm UI card xấu quá, theo style như nexterp»).
+  //  duoc-CR-716: trang chi tiết bố cục phẳng kiểu ERPNext (anh Được: "làm UI card xấu quá, theo style như nexterp").
   detailLayout: 'flat',
   searchParam: 'name',
   searchPlaceholder: 'Tìm theo tên hoặc mã loại nghỉ…',
@@ -282,7 +282,7 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       type: 'switch',
       defaultValue: false,
       section: 'Quỹ phép và lương',
-      hint: 'Bật thì nộp đơn bị chặn khi hết phép — trừ phần «Cho ứng phép tối đa» khai bên dưới.',
+      hint: 'Bật thì nộp đơn bị chặn khi hết phép — trừ phần "Cho ứng phép tối đa" khai bên dưới.',
     },
     {
       name: 'is_paid',
@@ -311,11 +311,11 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       defaultValue: LEAVE_ACCRUAL_MODE.FULL_YEAR,
       section: 'Quỹ phép và lương',
       showWhen: (values) => Boolean(values.counts_balance),
-      //  Nói thẳng điều dễ hiểu nhầm: quỹ ĐÃ cấp không đổi theo ô này, trừ «cộng dần».
+      //  Nói thẳng điều dễ hiểu nhầm: quỹ ĐÃ cấp không đổi theo ô này, trừ "cộng dần".
       hint:
         'Chỉ áp cho quỹ cấp SAU khi lưu — quỹ đã cấp cho từng người không tính lại. ' +
-        'Ngoại lệ là «Cộng dần theo tháng»: phần chưa tới tháng được trừ ngay lúc xem số còn lại. ' +
-        '«Theo tỷ lệ tháng» và «Cộng dần» tính tháng vào làm từ ngày 1–15 là cả tháng, từ ngày 16 là tháng sau.',
+        'Ngoại lệ là "Cộng dần theo tháng": phần chưa tới tháng được trừ ngay lúc xem số còn lại. ' +
+        '"Theo tỷ lệ tháng" và "Cộng dần" tính tháng vào làm từ ngày 1–15 là cả tháng, từ ngày 16 là tháng sau.',
     },
     {
       name: 'max_negative_days',
@@ -335,7 +335,7 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       defaultValue: false,
       section: 'Quỹ phép và lương',
       showWhen: (values) => Boolean(values.counts_balance),
-      hint: 'Bật cho loại (thường là «Phép năm») sẽ được cộng thêm ngày khi phiếu nghỉ bù được duyệt. Cần có đúng một loại bật; nếu bật nhiều loại, hệ thống lấy loại có thứ tự nhỏ nhất.',
+      hint: 'Bật cho loại (thường là "Phép năm") sẽ được cộng thêm ngày khi phiếu nghỉ bù được duyệt. Cần có đúng một loại bật; nếu bật nhiều loại, hệ thống lấy loại có thứ tự nhỏ nhất.',
     },
 
     // ── Ai được nghỉ, tính ngày thế nào ──────────────────────────────────────

@@ -158,13 +158,13 @@ BB3_PUBLIC_CO_LY_DO = {
                     "job_position.write",
     "dossier_type": "danh mục loại hồ sơ dùng chung — một loại giấy tờ là một loại "
                     "giấy tờ với cả công ty, bảng không có cột pháp nhân hay phòng "
-                    "ban nào để lọc. MỌI vai trò cần đọc để đổ ô chọn «Loại hồ sơ»; "
+                    "ban nào để lọc. MỌI vai trò cần đọc để đổ ô chọn \"Loại hồ sơ\"; "
                     "ai SỬA gác bằng dossier_type.write",
     "audit": "nhật ký hệ thống — cắt theo phạm vi của NGƯỜI TRA thì đúng lượt gọi "
              "cần soi nhất biến mất (403 của người ngoài phạm vi, script chạy dưới "
              "user_id = 0). Chốt nằm ở việc CẤP khóa, không ở việc lọc dòng",
     "change_log": "cùng lý do `audit`; tách khóa vì đọc GIÁ TRỊ TRƯỚC/SAU của từng "
-                  "ô là mức nhạy cảm khác hẳn việc tra «ai làm gì»",
+                  "ô là mức nhạy cảm khác hẳn việc tra \"ai làm gì\"",
     "sync_log": "sổ đồng bộ với hệ ngoài — một dòng sổ nói về BẢN GHI CỦA BÊN KIA "
                 "(`legacy_id`), lúc nó hỏng thì phía ERP thường CHƯA có bản ghi nào "
                 "để xét công ty/phòng ban; lọc ở đây là giấu đúng dòng lỗi nặng nhất. "
@@ -234,7 +234,7 @@ BB4_CONTROLLER_MIEN_TRU = {
                                "và các đường CỦA CHÍNH NGƯỜI GỌI — mã nối chat, khóa Gemini, khóa MCP, "
                                "kết nối Google — đều lọc bằng `user.id` (chat_link.list_user_links, "
                                "user_keys, mcp_keys.list_for_user, google_link.get_link); quyền SỞ HỮU, "
-                               "không phải phạm vi. ai-CR-123 thêm nhóm thứ ba: màn «Nhóm chat» — nhóm chat "
+                               "không phải phạm vi. ai-CR-123 thêm nhóm thứ ba: màn \"Nhóm chat\" — nhóm chat "
                                "không thuộc pháp nhân/phòng nào (`agent_group` PUBLIC); người thường lọc theo "
                                "thành viên (`groups.can_read`), quản lý bot AI có `agent_group.read`",
     #  duoc-CR-641 (khai ở bao-CR-650): thu sự kiện giao diện — đường duy nhất là POST lô sự kiện của CHÍNH người gọi
@@ -368,6 +368,7 @@ BB4_CONTROLLER_MIEN_TRU = {
     "doc_catalog/link_rule_controller.py": "doc_link_rule — PUBLIC (CR-157)",
     "doc_catalog/numbering_rule_controller.py": "doc_numbering_rule — PUBLIC (CR-157)",
     "leave/catalog_controller.py": "leave_type + holiday — PUBLIC, xem lý do ở scoping.py",
+    "leave/policy_controller.py": "duoc-CR-717: gói chính sách nghỉ phép gác bằng `leave_type` (PUBLIC) qua make_crud_router; dòng của gói chỉ đọc / ghi theo require(leave_type) — phân bổ cho TỪNG NGƯỜI nằm ở policy_assignment_controller (có apply_scope)",
     "vehicle_booking/catalog_controller.py": "vehicle + driver — PUBLIC",
     "seal_request/catalog_controller.py": "seal_type — PUBLIC (danh mục loại con dấu dùng chung)",
     "help_center/controller.py": "help_article — PUBLIC, bài hướng dẫn ai cũng đọc",

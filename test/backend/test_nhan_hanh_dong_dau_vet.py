@@ -1,7 +1,7 @@
 """NHÃN HÀNH ĐỘNG CỦA DẤU VẾT phải phủ CẢ HAI dạng chữ.
 
 ⚠️ LỖI ĐÃ XẢY RA (04/09/2026, phiếu đặt phòng PH004): dòng dấu vết hiện
-*«Dego Admin — approve: Duyệt phiếu đặt phòng PH004»* — mã tiếng Anh trần nằm
+*"Dego Admin — approve: Duyệt phiếu đặt phòng PH004"* — mã tiếng Anh trần nằm
 giữa một câu tiếng Việt.
 
 Gốc: bảng nhãn chỉ khai dạng QUÁ KHỨ (`approved`, `cancelled`) vì phân hệ Văn
@@ -31,7 +31,7 @@ def test_moi_hanh_dong_dang_ghi_deu_co_nhan_tieng_viet():
 
 
 def test_hai_dang_cua_cung_mot_viec_noi_giong_nhau():
-    """«approve» và «approved» là một việc — hai nhãn khác nhau thì cùng một
+    """"approve" và "approved" là một việc — hai nhãn khác nhau thì cùng một
     hành động đọc ra hai kiểu trên cùng một dòng thời gian."""
     for nguyen_the, qua_khu in [("approve", "approved"), ("reject", "rejected"),
                                 ("return", "returned"), ("withdraw", "withdrawn"),
@@ -40,7 +40,7 @@ def test_hai_dang_cua_cung_mot_viec_noi_giong_nhau():
 
 
 def test_nhan_khong_bao_gio_la_chuoi_rong():
-    """Nhãn rỗng còn tệ hơn mã trần: dòng dấu vết mất luôn phần «làm gì»."""
+    """Nhãn rỗng còn tệ hơn mã trần: dòng dấu vết mất luôn phần "làm gì"."""
     assert all((label or "").strip() for label in ACTION_LABEL.values())
 
 

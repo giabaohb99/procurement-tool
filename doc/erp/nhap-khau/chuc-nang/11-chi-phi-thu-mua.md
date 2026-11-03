@@ -17,9 +17,9 @@
 
 | # | Câu hỏi | Đáp án đã chốt | Hệ quả thiết kế |
 |---|---|---|---|
-| 1 | Tên + nhãn cột + bố cục | **«Chi phí thu mua»** (khớp TK 1562 *Chi phí thu mua hàng hóa*, Thông tư 200). Ba cột **Dự toán / Tạm tính / Quyết toán**. Khối nằm trong chi tiết ĐMH, cho **mọi loại đơn** | Mục 4, 5 |
+| 1 | Tên + nhãn cột + bố cục | **Chi phí thu mua** (khớp TK 1562 *Chi phí thu mua hàng hóa*, Thông tư 200). Ba cột **Dự toán / Tạm tính / Quyết toán**. Khối nằm trong chi tiết ĐMH, cho **mọi loại đơn** | Mục 4, 5 |
 | 2 | Nới bảng cũ hay bảng mới; gom phí vận chuyển không | **Nới tại chỗ, đổi tên bảng** `tab_po_import_cost` thành `tab_po_cost`. Phí vận chuyển **giữ nguyên chỗ** trên lần giao, khối mới chỉ **hiện thêm như một dòng chỉ xem** | Mục 6.1, 6.4 |
-| 3 | Ai quản danh mục loại chi phí, loại nào sinh công nợ | 15 mã sẵn có thành **dòng seed** của bảng danh mục mới; **quản trị thêm bớt**; **mọi loại đều sinh công nợ trừ loại đánh dấu «không sinh»** | Mục 6.2, 7 |
+| 3 | Ai quản danh mục loại chi phí, loại nào sinh công nợ | 15 mã sẵn có thành **dòng seed** của bảng danh mục mới; **quản trị thêm bớt**; **mọi loại đều sinh công nợ trừ loại đánh dấu "không sinh"** | Mục 6.2, 7 |
 | 4 | Công nợ sinh ở giai đoạn nào | **Chỉ ở Quyết toán** | Mục 5.4 |
 | 5 | Ai bấm Chốt, có mở lại được không | `purchase_order.write` **chốt**; **mở lại** chỉ vai trò có `purchase_order.approve`, **bắt ghi lý do** | Mục 5.3, 7 |
 | 6 | Giá hàng ba giai đoạn làm chung hay tách | **Tách CR sau.** bao-CR-453 chỉ làm chi phí, không đụng đơn giá dòng hàng | Mục 3 (KHÔNG làm) |
@@ -94,7 +94,7 @@ Chi phí thu mua **chỉ ảnh hưởng giá vốn sản phẩm, không đổi g
 
 Mã chức năng: **A** khối trên chi tiết ĐMH · **B** giai đoạn · **C** công nợ và hoàn thành · **D** phân bổ, bản in, báo cáo · **E** danh mục · **F** dữ liệu cũ.
 
-### 5.1 A — Khối «Chi phí thu mua» trên chi tiết ĐMH
+### 5.1 A — Khối "Chi phí thu mua" trên chi tiết ĐMH
 
 | Mã | Chức năng | Luật |
 |---|---|---|
@@ -326,11 +326,11 @@ Bốn tệp `test_po_*_cr319.py` và `test_po_gia_von_cr347.py` sửa tên cột
 | **GĐ2** | Giao diện v1: khối ĐMH, popup, ô tổng, bản in, nhãn công nợ / YCTT, hộp Hoàn thành; vá nhỏ v2 để đọc `import_cost_allocation` dạng mới | typecheck + lint 0 lỗi; thử tay trên dev với đơn demo `seed_demo_import_po.py` | dev |
 | **GĐ3** | Màn danh mục v1, báo cáo giá vốn (ô lọc giai đoạn, đơn trong nước, tab so sánh, Excel) | như GĐ2 | dev |
 | **GĐ4** | Port v2 (17 tệp + danh mục + báo cáo), gỡ alias `POImportCost` | vitest `src/modules/procurement`; typecheck | dev |
-| **GĐ5** | Bài HDSD «Chi phí thu mua» (seed dev), cập nhật `04-don-mua-hang.md` mục K thành mục mới, `08-he-thong-bao-cao.md` mục 10, data dictionary, nhật ký task | | dev |
+| **GĐ5** | Bài HDSD **Chi phí thu mua** (seed dev), cập nhật `04-don-mua-hang.md` mục K thành mục mới, `08-he-thong-bao-cao.md` mục 10, data dictionary, nhật ký task | | dev |
 
 Kế hoạch ban đầu là mỗi đợt một commit; khách đổi ý 22/09/2026 (*"làm đủ giai đoạn rồi đẩy lên 1 lượt"*) nên **cả năm đợt gộp một commit**, lên dev cùng lúc. Prod: **không** đụng cho tới khi có lệnh mở lại (19/09).
 
-**Tình trạng 22/09/2026:** GĐ1 backend (migration `05a62d38a47a`, 127 bài kiểm xanh) · GĐ2+GĐ3 giao diện v1 · GĐ4 port v2 + gỡ alias · GĐ5 tài liệu (mục K của `04-don-mua-hang.md`, tab Giá vốn của `08-he-thong-bao-cao.md`, từ điển dữ liệu `05a`, bài HDSD «Chi phí thu mua» seed dev bằng `backend/scripts/seed_help_chi_phi_thu_mua.py`) — **xong hết, đã deploy dev**.
+**Tình trạng 22/09/2026:** GĐ1 backend (migration `05a62d38a47a`, 127 bài kiểm xanh) · GĐ2+GĐ3 giao diện v1 · GĐ4 port v2 + gỡ alias · GĐ5 tài liệu (mục K của `04-don-mua-hang.md`, tab Giá vốn của `08-he-thong-bao-cao.md`, từ điển dữ liệu `05a`, bài HDSD **Chi phí thu mua** seed dev bằng `backend/scripts/seed_help_chi_phi_thu_mua.py`) — **xong hết, đã deploy dev**.
 
 ---
 

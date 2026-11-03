@@ -4,7 +4,7 @@
 |---|---|
 | Bản | 1.0 — 12/09/2026 (dựng khối + nút thao tác trên chi tiết YCBG) |
 | Giao diện | **cả hai bản**: `frontend-v2/` (cổng 8083) tại `/procurement/survey-requests/:id`, và từ bao-CR-390 (12/09/2026) cả màn cũ `frontend/` (cổng 8080) tại `/survey-requests/:id` — cùng API, cùng hành vi; bản v1 là `components/SurveyReportCard.tsx` + `utils/surveyReportHelpers.ts` |
-| Khóa quyền | dùng lại **`survey_request`** — không thêm entity mới (luật «một khóa = một màn hình», CR-157) |
+| Khóa quyền | dùng lại **`survey_request`** — không thêm entity mới (luật **một khóa = một màn hình**, CR-157) |
 | Brief nghiệp vụ | [`doc/erp/thu-mua/nghien-cuu/01-brief-bao-cao-thuc-hien-ycbg.md`](../nghien-cuu/01-brief-bao-cao-thuc-hien-ycbg.md) |
 | Thiết kế kỹ thuật | [`doc/erp/thu-mua/tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md`](../tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md) |
 | Tài liệu YCBG gốc | [`02-yeu-cau-khao-sat.md`](11-yeu-cau-khao-sat.md) |
@@ -17,7 +17,7 @@ Một phiếu YCBG được duyệt xong **không có nghĩa là thương vụ x
 một chuỗi việc kéo dài hàng tuần tới hàng tháng — xin giấy phép, ký hợp đồng, sản
 xuất, vận chuyển, kiểm tra chất lượng, thông quan, về kho. Trước đây chuỗi này nằm
 trong file Excel / tin nhắn của từng nhân sự thu mua (NSTM); người yêu cầu muốn biết
-«hàng của tôi tới đâu rồi» thì phải đi hỏi.
+**hàng của tôi tới đâu rồi** thì phải đi hỏi.
 
 Khối **Báo cáo thực hiện** đưa chuỗi việc đó **lên ngay trang chi tiết YCBG**: NSTM
 khai và cập nhật, mọi người liên quan tới phiếu mở ra là thấy — cùng một nguồn sự
@@ -41,31 +41,31 @@ Sản phẩm cần Khảo sát* và trên khối *Trao đổi*.
 
 | Thứ | Bảng | Là gì |
 |---|---|---|
-| **Nút dòng hàng** (item) | `tab_survey_request_report_item` | Nhãn lọc theo mặt hàng của phiếu (vd «K₂SO₄», «KNO₃»). Thêm/đổi tên/xóa tự do |
-| **Giai đoạn** (phase) | `tab_survey_request_report_phase` | Một chặng của tiến trình (vd «Pháp lý & Giấy phép»), có tên + diễn giải/nơi thực hiện |
-| **Hồ sơ** (doc) | `tab_survey_request_report_doc` | Một đầu việc/chứng từ cần hoàn thành. Đơn vị nhỏ nhất; thuộc đúng 1 giai đoạn, gắn 1 nút dòng hàng hoặc «Chung» |
+| **Nút dòng hàng** (item) | `tab_survey_request_report_item` | Nhãn lọc theo mặt hàng của phiếu (vd **K₂SO₄**, **KNO₃**). Thêm/đổi tên/xóa tự do |
+| **Giai đoạn** (phase) | `tab_survey_request_report_phase` | Một chặng của tiến trình (vd **Pháp lý & Giấy phép**), có tên + diễn giải/nơi thực hiện |
+| **Hồ sơ** (doc) | `tab_survey_request_report_doc` | Một đầu việc/chứng từ cần hoàn thành. Đơn vị nhỏ nhất; thuộc đúng 1 giai đoạn, gắn 1 nút dòng hàng hoặc **Chung** |
 
 **Vì sao nút dòng hàng là BẢNG chứ không suy từ dòng của phiếu:** người dùng được
 thêm/sửa/xóa nút và đặt tên tùy ý — một nút có thể gom nhiều dòng, hoặc chẳng ứng
 với dòng nào. Hồ sơ không gắn nút nào (`item_id = 0`) là hồ sơ **Chung** — hiện ở
 mọi nút.
 
-## Nút «Báo cáo thực hiện» xuất hiện thế nào
+## Nút "Báo cáo thực hiện" xuất hiện thế nào
 
 Khối luôn nằm ở chi tiết YCBG (với người có quyền xem). Trạng thái đầu tiên phụ
 thuộc phiếu đã có báo cáo hay chưa:
 
 | Trạng thái khối | Người yêu cầu thấy | NS Thu mua thấy |
 |---|---|---|
-| **Chưa có báo cáo** (phiếu mới) | *Khối ẩn hẳn* | Lời mời + **hai nút**: «Khởi tạo báo cáo mẫu» và «Thêm giai đoạn» |
+| **Chưa có báo cáo** (phiếu mới) | *Khối ẩn hẳn* | Lời mời + **hai nút**: **Khởi tạo báo cáo mẫu** và **Thêm giai đoạn** |
 | **Đã có báo cáo** | Danh sách hồ sơ theo giai đoạn (chỉ xem) | Đầy đủ thanh công cụ thao tác |
 
 - **Khởi tạo báo cáo mẫu** — dựng theo **MẪU CHUNG** (bao-CR-388): **5 giai đoạn
   nhập khẩu** (Pháp lý & Giấy phép · Đặt hàng & Hợp đồng · Sản xuất & Vận chuyển ·
   Kiểm tra & Thông quan · Nhận hàng & Về kho) + **bộ hồ sơ chung của mẫu** (**19 hồ sơ**
-  rút từ mẫu «Nhập khẩu K₂SO₄ & KNO₃» của Phòng Thu mua — bao-CR-391 rồi gom về bản
+  rút từ mẫu **Nhập khẩu K₂SO₄ & KNO₃** của Phòng Thu mua — bao-CR-391 rồi gom về bản
   chung ở bao-CR-393 — xếp đúng giai đoạn, có cờ bắt buộc và tiên quyết nối sẵn, gắn
-  «Chung» nên hiện ở mọi nút; **mỗi việc đúng một dòng, không tách theo mặt hàng** —
+  **Chung** nên hiện ở mọi nút; **mỗi việc đúng một dòng, không tách theo mặt hàng** —
   hồ sơ chỉ một mặt hàng mới cần (giấy phép tiền chất, sổ theo dõi tiền chất…) người
   dùng thêm tay vào nút dòng hàng đó) + **một nút dòng hàng cho mỗi dòng của phiếu**
   (tên lấy từ mô tả dòng).
@@ -74,14 +74,14 @@ thuộc phiếu đã có báo cáo hay chưa:
 - **Thêm giai đoạn** — dựng tay từ đầu, không dùng khung mẫu.
 - **Tạo mẫu** (bao-CR-388) — sau khi đã có báo cáo, đổ **thêm** mẫu chung vào đúng
   chỗ đang đứng, không phải làm lại từ đầu:
-  - dạng xem **Theo dòng hàng**: dải sổ của mỗi dòng có nút «Tạo mẫu cho "‹tên
-    dòng›"» (dòng Chung là «Tạo mẫu vào hồ sơ chung») → đổ **cả bộ mẫu** vào nút đó;
+  - dạng xem **Theo dòng hàng**: dải sổ của mỗi dòng có nút **Tạo mẫu cho "‹tên
+    dòng›"** (dòng Chung là **Tạo mẫu vào hồ sơ chung**) → đổ **cả bộ mẫu** vào nút đó;
     giai đoạn nào của mẫu chưa có trên phiếu thì tự dựng thêm;
-  - dạng xem **Xem tổng**: biểu tượng tia sáng ở đầu mỗi giai đoạn (và nút «Tạo theo
-    mẫu» khi giai đoạn rỗng) → đổ **riêng phần của giai đoạn đó** vào hồ sơ Chung.
+  - dạng xem **Xem tổng**: biểu tượng tia sáng ở đầu mỗi giai đoạn (và nút **Tạo theo
+    mẫu** khi giai đoạn rỗng) → đổ **riêng phần của giai đoạn đó** vào hồ sơ Chung.
     Giai đoạn tự đặt tên (không có trong mẫu) thì báo lỗi kèm danh sách tên hợp lệ.
   - Luôn **cộng thêm, bỏ qua hồ sơ trùng tiêu đề** trong cùng nút + giai đoạn, nên bấm
-    hai lần không nhân đôi; toast nói rõ «Đã tạo n hồ sơ» hay «Mẫu chung đã có đủ».
+    hai lần không nhân đôi; toast nói rõ **Đã tạo n hồ sơ** hay **Mẫu chung đã có đủ**.
   - Mẫu hiện **nằm trong mã nguồn** (`report_constants.py`), chưa có màn quản lý — xem
     [Những thứ CHƯA có](#những-thứ-chưa-có-ngoài-phạm-vi-bản-10).
 
@@ -91,12 +91,12 @@ thuộc phiếu đã có báo cáo hay chưa:
 
 Ai **mở được phiếu YCBG** thì xem được khối. Ba câu hỏi họ cần trả lời trong 10 giây:
 
-- **«Tới đâu rồi?»** — thanh tóm tắt `x/y hồ sơ · z%` trên đầu khối; khung **Tiến
+- **Tới đâu rồi?** — thanh tóm tắt `x/y hồ sơ · z%` trên đầu khối; khung **Tiến
   trình** bên phải cho biết mỗi mặt hàng đang đứng ở giai đoạn nào (điểm nhấp nháy,
-  đánh số theo nút dòng hàng, trùng chặng thì gộp «+n»).
-- **«Đang tắc ở đâu, vì sao?»** — hồ sơ bị **khóa** mờ đi kèm biểu tượng 🔒, rê chuột
+  đánh số theo nút dòng hàng, trùng chặng thì gộp **+n**).
+- **Đang tắc ở đâu, vì sao?** — hồ sơ bị **khóa** mờ đi kèm biểu tượng 🔒, rê chuột
   đọc danh sách những hồ sơ tiên quyết chưa xong.
-- **«Cái gì bắt buộc mà chưa làm?»** — tag «Bắt buộc» + pill trạng thái từng dòng;
+- **Cái gì bắt buộc mà chưa làm?** — tag **Bắt buộc** + pill trạng thái từng dòng;
   lọc nhanh theo nút dòng hàng / trạng thái, tìm theo mọi ô chữ.
 
 Người xem **không thấy**: nút Khởi tạo, mọi nút thêm/sửa/xóa, bút chì; nút ✓ (đánh
@@ -108,10 +108,10 @@ dấu hoàn thành) bị vô hiệu. Phiếu **chưa có báo cáo thì khối t
 Toàn quyền dựng và cập nhật báo cáo ngay trên trang chi tiết phiếu:
 
 1. **Quản lý nút dòng hàng** — dấu `+` để thêm; **bút chì nằm chung khung** với tên
-   nút để đổi tên/xóa. Xóa nút thì hồ sơ gắn nó **chuyển về «Chung», không bị xóa**.
-2. **Quản lý giai đoạn** — «Thêm giai đoạn» / bút chì để sửa tên + diễn giải; giai
+   nút để đổi tên/xóa. Xóa nút thì hồ sơ gắn nó **chuyển về "Chung", không bị xóa**.
+2. **Quản lý giai đoạn** — **Thêm giai đoạn** / bút chì để sửa tên + diễn giải; giai
    đoạn **còn hồ sơ thì bị chặn xóa** (câu chặn nói rõ còn bao nhiêu hồ sơ).
-3. **Quản lý hồ sơ** — «Thêm hồ sơ» / bút chì từng dòng mở **hộp thoại** (theo case
+3. **Quản lý hồ sơ** — **Thêm hồ sơ** / bút chì từng dòng mở **hộp thoại** (theo case
    C-01: chỉ đóng bằng Hủy/X, form dở thì hỏi xác nhận). Nội dung hộp thoại: xem
    [Trường của Hồ sơ](#c-trường-của-hồ-sơ). **Thùng rác cạnh bút chì** xóa thẳng
    hồ sơ đó sau một hộp xác nhận (bao-CR-388) — mẫu chung đổ ra hàng chục dòng, dọn
@@ -119,23 +119,23 @@ Toàn quyền dựng và cập nhật báo cáo ngay trên trang chi tiết phi�
 4. **Cập nhật nhanh** — nút ✓ đầu dòng gạt **Hoàn thành ↔ Đang làm** không cần mở
    hộp thoại; biểu tượng 📎 mở thẳng hộp sửa khi hồ sơ chưa có tệp. Hồ sơ đang **khóa**
    thì ✓ bị vô hiệu — phải xong tiên quyết trước (hoặc gỡ tiên quyết trong hộp sửa).
-5. **Mọi thao tác ghi đều vào Lịch sử thao tác** của phiếu («Báo cáo: thêm hồ sơ…»,
-   «Báo cáo: xóa nút…») — ai làm gì lúc nào đều tra được.
+5. **Mọi thao tác ghi đều vào Lịch sử thao tác** của phiếu (**Báo cáo: thêm hồ sơ…**,
+   **Báo cáo: xóa nút…**) — ai làm gì lúc nào đều tra được.
 
 ### C. Hành vi dùng chung cho cả hai khung nhìn
 
 - **Lọc & tìm** (thanh công cụ trên đầu khối):
-  - **Dãy nút dòng hàng**: «Tất cả» + từng nút. Hồ sơ «Chung» hiện ở mọi nút.
+  - **Dãy nút dòng hàng**: **Tất cả** + từng nút. Hồ sơ **Chung** hiện ở mọi nút.
   - **Ô tìm kiếm**: khớp **theo từng từ**, **bỏ dấu** tiếng Việt, soi tiêu đề + mô tả
-    + tệp + nhãn trạng thái + tên nút (gõ `kno3` khớp «KNO₃»; «giay phep cong an»
-    khớp «Giấy phép… Bộ Công An»).
+    + tệp + nhãn trạng thái + tên nút (gõ `kno3` khớp **KNO₃**; **giay phep cong an**
+    khớp **Giấy phép… Bộ Công An**).
   - **Lọc trạng thái**: Mọi trạng thái / Chưa bắt đầu / Đang làm / Chờ duyệt / Hoàn thành.
-  - Rỗng-vì-bộ-lọc có **câu riêng** («Không có hồ sơ nào khớp…»), không lẫn với «Chưa
-    có hồ sơ».
+  - Rỗng-vì-bộ-lọc có **câu riêng** (**Không có hồ sơ nào khớp…**), không lẫn với **Chưa
+    có hồ sơ**.
 - **Thu gọn / mở**: nút gấp-mở **tất cả** trên header + chevron **từng giai đoạn**;
   giai đoạn gấp hiện tóm tắt `n hồ sơ · %`. Đang tìm kiếm / lọc trạng thái thì tự
   mở hết để kết quả không bị giấu.
-- **Mỗi hồ sơ MỘT dòng**: ✓ · tiêu đề · tag dòng hàng · «Bắt buộc» · mô tả (cắt bớt,
+- **Mỗi hồ sơ MỘT dòng**: ✓ · tiêu đề · tag dòng hàng · **Bắt buộc** · mô tả (cắt bớt,
   rê chuột đọc đủ) · 🔒 · 📎 · pill trạng thái · ✎ · thùng rác (hai nút chỉ có icon,
   chỉ người thực hiện thấy).
 - **Khung Tiến trình** (bên phải, ẩn dưới khổ `lg`): mỗi giai đoạn một điểm từ trên
@@ -155,7 +155,7 @@ Mỗi hồ sơ có **4 trạng thái** (mã số theo R2/QĐ-11):
 
 **Tiên quyết & khóa:** một hồ sơ có thể khai danh sách hồ sơ khác (cùng phiếu) là
 **tiên quyết**. Hồ sơ còn tiên quyết **chưa Hoàn thành** thì bị **khóa** — không tick
-✓ được, hiện mờ + 🔒 + «Chờ: …». Ngoại lệ: hồ sơ **đã Hoàn thành** thì không bao giờ
+✓ được, hiện mờ + 🔒 + **Chờ: …**. Ngoại lệ: hồ sơ **đã Hoàn thành** thì không bao giờ
 khóa ngược lại (dữ liệu cũ đánh dấu xong trước khi khai tiên quyết vẫn gạt lại được).
 
 ## Trường trên hộp thoại
@@ -164,14 +164,14 @@ khóa ngược lại (dữ liệu cũ đánh dấu xong trước khi khai tiên 
 
 | Trường | Kiểu nhập | Bắt buộc | Ghi chú |
 |---|---|---|---|
-| Tên nút (`name`) | Nhập tay | Có | Tối đa 100 ký tự. VD «K₂SO₄», «KNO₃» |
+| Tên nút (`name`) | Nhập tay | Có | Tối đa 100 ký tự. VD **K₂SO₄**, **KNO₃** |
 
 ### B. Trường của Giai đoạn
 
 | Trường | Kiểu nhập | Bắt buộc | Ghi chú |
 |---|---|---|---|
 | Tên giai đoạn (`name`) | Nhập tay | Có | Tối đa 255 ký tự |
-| Diễn giải / nơi thực hiện (`location`) | Nhập tay | Không | Tối đa 255 ký tự. VD «Việt Nam — trước khi đặt hàng» |
+| Diễn giải / nơi thực hiện (`location`) | Nhập tay | Không | Tối đa 255 ký tự. VD **Việt Nam — trước khi đặt hàng** |
 
 ### C. Trường của Hồ sơ
 
@@ -179,16 +179,16 @@ khóa ngược lại (dữ liệu cũ đánh dấu xong trước khi khai tiên 
 |---|---|---|---|---|
 | Tiêu đề hồ sơ (`title`) | Nhập tay | **Có** | — | Tối đa 255 ký tự |
 | Mô tả chi tiết (`description`) | Nhập nhiều dòng | Không | — | Tối đa 4000 ký tự |
-| Dòng hàng (`item_id`) | Chọn | Không | Danh sách nút của phiếu + «Chung» | Mặc định = nút đang lọc, hoặc «Chung» khi đang ở «Tất cả» |
+| Dòng hàng (`item_id`) | Chọn | Không | Danh sách nút của phiếu + **Chung** | Mặc định = nút đang lọc, hoặc **Chung** khi đang ở **Tất cả** |
 | Trạng thái (`status`) | Chọn | Không | 0..3 (bảng trên) | Mặc định *Chưa bắt đầu* |
 | Giai đoạn (`phase_id`) | Chọn | **Có** | Các giai đoạn của phiếu | — |
 | Bắt buộc? (`required`) | Chọn | Không | Bắt buộc / Không bắt buộc | Mặc định *Bắt buộc*. Chỉ là NHÃN, backend không ép hồ sơ bắt buộc phải xong |
 | Tệp đính kèm (`file_note`) | Nhập tay | Không | — | Tên tệp **hoặc** link (VD link Drive). Là chuỗi tự do — chưa nối kho đính kèm thật. Tối đa 500 ký tự. Nếu là `http(s)://…` thì biểu tượng 📎 thành link mở tab mới |
 | Tiên quyết (`depends`) | Checkbox nhiều dòng | Không | Các hồ sơ khác của phiếu | Tối đa 30 hồ sơ. Chọn thành **vòng lặp** (A chờ B, B chờ A) bị **chặn ngay lúc lưu** |
 | Ngày bắt đầu (`start_date`) | Chọn ngày | Không | — | Ngày bắt đầu thực hiện. Để trống = chưa đặt |
-| Dự định hoàn tất (`planned_date`) | Chọn ngày | Không | — | Kế hoạch ban đầu (bao-CR-392). Hồ sơ **chưa Hoàn thành** mà qua ngày này thì dòng hiện «Trễ n ngày» (đỏ); đã xong thì thôi tính trễ. Khác «hết hiệu lực»: đây là hạn *làm xong*, kia là hạn *giấy tờ còn giá trị*. Để trống = không theo dõi |
+| Dự định hoàn tất (`planned_date`) | Chọn ngày | Không | — | Kế hoạch ban đầu (bao-CR-392). Hồ sơ **chưa Hoàn thành** mà qua ngày này thì dòng hiện **Trễ n ngày** (đỏ); đã xong thì thôi tính trễ. Khác **hết hiệu lực**: đây là hạn *làm xong*, kia là hạn *giấy tờ còn giá trị*. Để trống = không theo dõi |
 | Ngày hết hiệu lực / hạn (`expires_at`) | Chọn ngày | Không | — | Dùng để cảnh báo hồ sơ **quá hạn** (hồ sơ chưa xong có hạn sớm nhất nổi lên đầu). Để trống = chưa đặt |
-| Nhân sự thực hiện (`assignee_id`) | Chọn | Không | Bảng Nhân viên (`tab_employee`) | Người phụ trách hồ sơ. Để trống = «Chưa cử». Xóa nhân sự không xóa hồ sơ |
+| Nhân sự thực hiện (`assignee_id`) | Chọn | Không | Bảng Nhân viên (`tab_employee`) | Người phụ trách hồ sơ. Để trống = **Chưa cử**. Xóa nhân sự không xóa hồ sơ |
 
 > Bốn trường **Ngày bắt đầu · Dự định hoàn tất · Ngày hết hiệu lực · Nhân sự thực
 > hiện** là phần mở rộng 12/09/2026, đã đủ ô nhập trên hộp thoại và chip trên dòng ở
@@ -196,9 +196,9 @@ khóa ngược lại (dữ liệu cũ đánh dấu xong trước khi khai tiên 
 
 **Thanh tóm tắt** trên đầu khối có **4 ô**: *Tổng hồ sơ* · *Đã hoàn thành* · *Hết hiệu
 lực gần nhất* · **Dự định hoàn tất** (bao-CR-392). Ô cuối lấy ngày dự định **xa nhất**
-trong phạm vi đang xem (kể cả hồ sơ đã xong — đó là mốc của cả khối): đỏ + «Trễ n
-ngày» khi đã qua mốc mà còn hồ sơ chưa xong; «Đã hoàn thành» khi xong hết; «Đến hạn hôm
-nay» khi bằng hôm nay; không hồ sơ nào có ngày dự định thì hiện «—».
+trong phạm vi đang xem (kể cả hồ sơ đã xong — đó là mốc của cả khối): đỏ + **Trễ n
+ngày** khi đã qua mốc mà còn hồ sơ chưa xong; **Đã hoàn thành** khi xong hết; **Đến hạn hôm
+nay** khi bằng hôm nay; không hồ sơ nào có ngày dự định thì hiện **—**.
 
 ## Quyền thao tác (RBAC)
 
@@ -210,11 +210,11 @@ tiết YCBG.
 | Xem khối báo cáo | `survey_request:read` | Phạm vi qua `_in_scope` của phiếu cha — ngoài phạm vi là **404**, kể cả gõ thẳng id vào URL/API |
 | Khởi tạo báo cáo mẫu | `survey_request:process` | Idempotent — bấm lặp không nhân đôi; dựng cả hồ sơ của mẫu chung |
 | Tạo mẫu vào nút / giai đoạn | `survey_request:process` | Cộng thêm, bỏ qua trùng; không thêm gì thì **không ghi** Lịch sử thao tác |
-| Thêm/sửa/xóa nút dòng hàng | `survey_request:process` | Xóa nút → hồ sơ về «Chung» |
+| Thêm/sửa/xóa nút dòng hàng | `survey_request:process` | Xóa nút → hồ sơ về **Chung** |
 | Thêm/sửa/xóa giai đoạn | `survey_request:process` | Giai đoạn còn hồ sơ thì **chặn xóa** |
 | Thêm/sửa/xóa hồ sơ, đổi trạng thái ✓ | `survey_request:process` | — |
 
-> `process` là **cờ suy ra** «là NS Thu mua» (không phải action có trong grant), nên
+> `process` là **cờ suy ra** **là NS Thu mua** (không phải action có trong grant), nên
 > **phạm vi luôn hỏi theo `read`** qua `_in_scope`. Chi tiết: TDD §Phân quyền.
 
 ## Quy tắc nghiệp vụ
@@ -230,7 +230,7 @@ tiết YCBG.
 5. **Trần dữ liệu** — mỗi phiếu tối đa 50 nút · 50 giai đoạn · 500 hồ sơ; mỗi hồ sơ
    tối đa 30 tiên quyết (chống tràn số thứ tự và payload rác).
 6. **Mọi thao tác ghi vào Lịch sử thao tác** của phiếu (`survey_request`), nội dung
-   dạng «Báo cáo: …».
+   dạng **Báo cáo: …**.
 
 ## Những thứ CHƯA có (ngoài phạm vi bản 1.0)
 

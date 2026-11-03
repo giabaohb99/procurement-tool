@@ -9,6 +9,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { LeaveBalanceAdjustCard } from '../components/leave-balance-adjust-card'
 import { LeaveBalanceBreakdownCard } from '../components/leave-balance-breakdown-card'
+import { LeaveBalancePolicyNote } from '../components/leave-balance-policy-note'
 import { LeaveBalanceRequestsCard } from '../components/leave-balance-requests-card'
 import { useLeaveBalance } from '../hooks/use-leave'
 import { useLeaveBalanceAdjustForm } from '../hooks/use-leave-balance-adjust-form'
@@ -131,6 +132,12 @@ export function LeaveBalanceDetailPage() {
       />
 
       <div className="space-y-4">
+        {/*  duoc-CR-717: hạn mức đến từ chính sách nào — đứng TRÊN thẻ cấu thành vì nó giải thích con số "Cấp". */}
+        <LeaveBalancePolicyNote
+          employeeId={balance.employee_id}
+          leaveTypeId={balance.leave_type_id}
+          year={balance.year}
+        />
         <LeaveBalanceBreakdownCard balance={balance} />
         <LeaveBalanceRequestsCard balance={balance} />
         {/*  Chỉ dựng thẻ sửa khi có quyền: hiện form rồi chặn lúc bấm Lưu là

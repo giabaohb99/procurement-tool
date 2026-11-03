@@ -66,7 +66,7 @@ const columns = useMemo<DataTableColumn<Employee>[]>(() => [
 | `onRefresh` | Việc chạy khi bấm **Tải lại**. Bỏ trống = tự `invalidateQueries({ type: 'active' })` |
 | `sortBy` / `sortDir` / `onSortChange` | Sắp xếp phía server. ⚠️ Tiêu đề cột chạy **BA NHỊP**: tăng → giảm → **thôi sắp xếp**, và nhịp thứ ba gọi `onSortChange('', 'asc')` — khóa cột **RỖNG**. Chỗ nhận phải **xóa** `sort_by`/`sort_dir` khỏi URL (đừng ghi chuỗi rỗng, đường dẫn gửi cho nhau sẽ dính `?sort_by=&sort_dir=asc` đọc như đang xếp theo một cột không tên) và **không** gắn hai tham số này vào lời gọi API, để backend xếp theo mặc định của nó. Bỏ nhịp thứ ba là người dùng bấm nhầm một phát thì kẹt luôn, muốn về thứ tự gốc chỉ còn cách tải lại trang |
 | `toolbar` | Nội dung chèn bên TRÁI cụm nút phải (xem mục 3) |
-| `toolbarEnd` | Nội dung chèn SAU CÙNG của cụm nút phải, sau menu «Cột» — dùng cho nút hành động chính (vd «Thêm dòng») khi màn muốn gộp tiêu đề + nút chuyển chế độ xem + Tải lại + Cột + nút đó vào một hàng |
+| `toolbarEnd` | Nội dung chèn SAU CÙNG của cụm nút phải, sau menu **Cột** — dùng cho nút hành động chính (vd **Thêm dòng**) khi màn muốn gộp tiêu đề + nút chuyển chế độ xem + Tải lại + Cột + nút đó vào một hàng |
 | `storageKey` | Có thì nhớ bố cục vào localStorage |
 | `pagination` | Phân trang server-side |
 | `fillHeight` | Bảng cao bằng khung chứa, chỉ vùng dòng cuộn |
@@ -300,7 +300,7 @@ Người dùng tự chỉnh, bảng nhớ vào localStorage theo `storageKey`:
 | Tô màu cột | Bảng màu trong menu | `columnColors` |
 | Vừa nội dung tất cả | Mục cuối menu | `columnWidths` |
 
-⚠️ **`defaultHidden` chỉ áp cho người CHƯA từng đụng menu «Cột» của bảng đó.**
+⚠️ **`defaultHidden` chỉ áp cho người CHƯA từng đụng menu "Cột" của bảng đó.**
 `useTableLayout` đọc `readLayout(storageKey) ?? defaultLayout` — có bản lưu trong
 localStorage là bản đó thắng, **toàn bộ**, không trộn. Nên thêm một cột mới với
 `defaultHidden: true` thì người dùng cũ vẫn thấy nó hiện (khóa của nó không có

@@ -153,7 +153,7 @@ def leave_ids(world) -> dict[str, int]:
 
     `khuyet_nhan_su` (employee_id = 0) là dòng canh nhánh `rid` của
     `_role_scope_cond`: thiếu chốt đó thì `employee_id == 0` trúng nó và phạm
-    vi «của mình» hóa ra RỘNG hơn ý định.
+    vi "của mình" hóa ra RỘNG hơn ý định.
     """
     db = world.db
     uid = {k: world.actor(k).user.id for k in ("a1", "a2", "a3", "b1")}
@@ -209,11 +209,11 @@ def test_a1_nguoi_dang_phai_ky_doc_duoc_don_ngoai_pham_vi_du_lieu(world, leave_i
 
 
 def test_a2_ky_xong_thi_quyen_doc_them_do_dong_lai(world, leave_ids):
-    """Nới đúng LÚC TREO, không nới cho «đã từng ký».
+    """Nới đúng LÚC TREO, không nới cho "đã từng ký".
 
     Nới rộng hơn thì mỗi lượt ký lại thêm VĨNH VIỄN một tờ đơn vào tầm nhìn của
     một người, và phạm vi dữ liệu phình dần theo thời gian mà không ai rà lại
-    được. Xem lại phiếu mình đã ký thì vào tab «Tôi đã duyệt», nơi dữ liệu vốn
+    được. Xem lại phiếu mình đã ký thì vào tab "Tôi đã duyệt", nơi dữ liệu vốn
     đã lọc theo chính họ.
     """
     from app.modules.approval.instance_model import TASK_APPROVED
@@ -236,8 +236,8 @@ def test_a2_ky_xong_thi_quyen_doc_them_do_dong_lai(world, leave_ids):
 def test_a3_nguoi_cung_phong_nhung_khong_duoc_giao_viec_van_bi_chan(world, leave_ids):
     """Nới theo VIỆC ĐƯỢC GIAO, không nới theo chỗ ngồi.
 
-    a2 ngồi cùng phòng A.kt với a1 nhưng phạm vi của a2 là «của mình». Cho a2
-    đọc vì «cùng phòng» thì lý do nghỉ ốm thành thứ cả phòng đọc được — mà
+    a2 ngồi cùng phòng A.kt với a1 nhưng phạm vi của a2 là "của mình". Cho a2
+    đọc vì "cùng phòng" thì lý do nghỉ ốm thành thứ cả phòng đọc được — mà
     người khai quyền tưởng mình đã bó bằng phạm vi `own`.
     """
     a2 = world.grant("a2", "leave_request", scope="own")
@@ -254,7 +254,7 @@ def test_a4_noi_dung_mot_to_don_khong_noi_ca_danh_sach(world, leave_ids):
 
     Đây là ranh giới quan trọng nhất của cả cơ chế: nới ở tầng danh sách thì
     người duyệt một tờ đơn bỗng nhìn thấy mọi đơn của phòng đó trong màn danh
-    sách, tab «Đơn của tôi» lẫn sang đơn người khác, và bản xuất CSV kéo theo.
+    sách, tab "Đơn của tôi" lẫn sang đơn người khác, và bản xuất CSV kéo theo.
     """
     from app.modules.leave.request_model import LeaveRequest
 
@@ -284,7 +284,7 @@ def test_a4b_duoc_giao_ky_khong_keo_theo_quyen_sua_xoa_huy(world, leave_ids):
     for action in ("write", "delete", "cancel"):
         with pytest.raises(HTTPException) as err:
             get_leave_or_404(world.db, rid, b1.user, action)
-        assert err.value.status_code == 404, f"đường ghi «{action}» không được nới"
+        assert err.value.status_code == 404, f"đường ghi \"{action}\" không được nới"
 
 
 def test_a5_pham_vi_cua_minh_gom_ca_nguoi_lap_ho_lan_nguoi_nghi(world, leave_ids):
@@ -295,7 +295,7 @@ def test_a5_pham_vi_cua_minh_gom_ca_nguoi_lap_ho_lan_nguoi_nghi(world, leave_ids
     thì người lập hộ nộp xong là mất dấu tờ đơn.
 
     Dòng `khuyet_nhan_su` (employee_id = 0) canh chốt `rid`: `employee_id == 0`
-    mà không chặn thì nó trúng mọi dòng chưa gắn nhân sự — phạm vi «của mình»
+    mà không chặn thì nó trúng mọi dòng chưa gắn nhân sự — phạm vi "của mình"
     hóa ra RỘNG hơn, đúng chiều nguy hiểm.
     """
     from app.modules.leave.request_model import LeaveRequest
@@ -320,7 +320,7 @@ def test_a5b_tai_khoan_chua_gan_nhan_su_khong_vo_don_khuyet_nhan_su(world, leave
 
 def test_a6_quyen_ghi_don_nghi_khong_keo_theo_quyen_cham_quy_phep(world):
     """🔒 Ranh giới tồn tại của khóa `leave_balance`: ghi được = **tặng thêm
-    ngày phép cho bất kỳ ai** qua cột «điều chỉnh tay».
+    ngày phép cho bất kỳ ai** qua cột "điều chỉnh tay".
 
     Đó là lý do nó tách khỏi `leave_request` chứ không đi chung một khóa. Ca
     này ghim rằng hai khóa thật sự tách: `leave_request.write` phạm vi *tất cả*
@@ -343,7 +343,7 @@ def test_a6b_quy_phep_pham_vi_cong_ty_khong_cham_quy_phap_nhan_khac(world):
     """Cấp `leave_balance.write` phạm vi *pháp nhân* rồi thì phải dừng đúng ở đó.
 
     `SCOPE_FIELDS["leave_balance"]` khai `company` + `self`, KHÔNG khai `owner`
-    (`created_by` là người Nhân sự bấm nút cấp phát — lấy đó làm «của mình» thì
+    (`created_by` là người Nhân sự bấm nút cấp phát — lấy đó làm "của mình" thì
     nhân viên xem quỹ của chính họ lại không ra dòng nào).
     """
     from app.modules.leave.balance_model import LeaveBalance
@@ -360,11 +360,11 @@ def test_a6b_quy_phep_pham_vi_cong_ty_khong_cham_quy_phap_nhan_khac(world):
 
 
 def test_a6c_quy_phep_pham_vi_cua_minh_la_quy_CUA_TOI_khong_phai_quy_toi_cap(world):
-    """`own` trên quỹ phép nghĩa là «quỹ của tôi», neo bằng `self`.
+    """`own` trên quỹ phép nghĩa là "quỹ của tôi", neo bằng `self`.
 
-    Nếu ai đó thêm `owner: created_by` vào khai báo cho «nhất quán» thì người
+    Nếu ai đó thêm `owner: created_by` vào khai báo cho "nhất quán" thì người
     Nhân sự bấm nút cấp phát bỗng thành chủ sở hữu quỹ của cả công ty, còn nhân
-    viên mở màn «Quỹ phép của tôi» thì trắng bóc. Ca này ghim cả hai chiều.
+    viên mở màn "Quỹ phép của tôi" thì trắng bóc. Ca này ghim cả hai chiều.
     """
     from app.modules.leave.balance_model import LeaveBalance
 
@@ -474,7 +474,7 @@ def test_a7_don_nghi_pham_vi_phong_ban_dung_hai_chieu_phap_nhan_va_phong(world, 
     """Bậc `dept` của đơn nghỉ = pháp nhân AND phòng — hai chiều, không phải một.
 
     Bỏ vế pháp nhân thì phòng trùng tên ở pháp nhân khác lọt vào (thế giới mẫu
-    cố ý có `A.kt` và `B.kt` cùng tên «Phòng Kế toán»); bỏ vế phòng thì trưởng
+    cố ý có `A.kt` và `B.kt` cùng tên "Phòng Kế toán"); bỏ vế phòng thì trưởng
     phòng đọc trọn đơn nghỉ của cả công ty.
     """
     from app.modules.leave.request_model import LeaveRequest
@@ -488,12 +488,12 @@ def test_a8_o_loai_tru_nhan_su_tren_don_nghi_cat_theo_NGUOI_LAP(world, leave_ids
     """Chiều `employee` của năm ô khớp `SCOPE_FIELDS[...]["owner"]` = `created_by`.
 
     Trên đơn nghỉ phép chuyện đó dễ hiểu nhầm nhất trong cả hệ: người dùng tick
-    tên ông X ở ô «Loại trừ nhân sự» và tưởng mình vừa giấu ĐƠN NGHỈ CỦA ông X,
+    tên ông X ở ô "Loại trừ nhân sự" và tưởng mình vừa giấu ĐƠN NGHỈ CỦA ông X,
     trong khi hệ giấu ĐƠN DO ông X LẬP. Với một phòng hành chính lập hộ cả công
     ty thì hai tập đó gần như rời nhau.
 
-    # QUYẾT ĐỊNH CHỜ: entity khai cả `owner` lẫn `self` thì ô «Loại trừ nhân
-    # sự» nên cắt theo cột nào — người lập (nay), người nghỉ, hay cả hai? Hộp
+    # QUYẾT ĐỊNH CHỜ: entity khai cả `owner` lẫn `self` thì ô "Loại trừ nhân
+    # sự" nên cắt theo cột nào — người lập (nay), người nghỉ, hay cả hai? Hộp
     # thoại hiện không nói ra nó đang cắt theo cột nào.
     """
     from app.modules.leave.request_model import LeaveRequest
@@ -590,13 +590,13 @@ def test_b3_danh_muc_phong_hop_la_public_nen_nam_o_pham_vi_khong_co_tac_dung(wor
     dùng chung mọi pháp nhân* (toà nhà chung), mà lọc `company_id == <của tôi>`
     thì cắt mất đúng những phòng dùng chung ấy.
 
-    Hệ quả là năm ô trong hộp thoại «Phạm vi» thành trang trí trên màn Danh mục
-    phòng họp — người khai quyền tick, bấm Lưu, nhận «Đã lưu phạm vi», và không
+    Hệ quả là năm ô trong hộp thoại "Phạm vi" thành trang trí trên màn Danh mục
+    phòng họp — người khai quyền tick, bấm Lưu, nhận "Đã lưu phạm vi", và không
     có gì thay đổi. Đây không phải lỗi của `scoping.py`; đó là lỗ hổng của
     MÀN HÌNH: nó không nói ra.
 
-    # QUYẾT ĐỊNH CHỜ: hộp thoại có nên tắt năm ô kèm câu «Danh mục này dùng
-    # chung mọi pháp nhân — phạm vi dữ liệu không áp dụng» cho entity PUBLIC?
+    # QUYẾT ĐỊNH CHỜ: hộp thoại có nên tắt năm ô kèm câu "Danh mục này dùng
+    # chung mọi pháp nhân — phạm vi dữ liệu không áp dụng" cho entity PUBLIC?
     # (Cùng câu hỏi với B4 cụm 01 — nên trả lời một lần cho mọi entity PUBLIC.)
     """
     from app.modules.meeting_room.model import MeetingRoom
@@ -617,7 +617,7 @@ def test_b3b_lich_phong_gop_phong_dung_chung_voi_phong_cua_phap_nhan_minh(world)
     """Lọc đúng nằm ở `service.list_availability`, KHÔNG ở `apply_scope`.
 
     Đây là lý do `meeting_room` được khai `PUBLIC` chứ không khai `company`:
-    câu hỏi thật là *«phòng của pháp nhân tôi HỢP phòng dùng chung»*, không
+    câu hỏi thật là *"phòng của pháp nhân tôi HỢP phòng dùng chung"*, không
     diễn đạt được bằng khuôn một-cột. Ca này ghim rằng câu HỢP đó có thật —
     thiếu nó thì toà nhà chung không đặt được phòng nào.
     """
@@ -642,14 +642,14 @@ def test_b3c_lich_phong_khong_truyen_phap_nhan_thi_bay_ca_hai_ben(world, booking
     của phiếu đang giữ phòng.
 
     Ghim HÀNH VI HIỆN TẠI, không kết luận là lỗ: màn hình gọi kèm pháp nhân, và
-    ô `bookings` cố ý trả cả phiếu bận để người đặt biết «P301 bận vì PH012 tới
-    10:30» mà đi xin hoặc dời giờ. Nhưng đường này gọi tay được, và tiêu đề
+    ô `bookings` cố ý trả cả phiếu bận để người đặt biết "P301 bận vì PH012 tới
+    10:30" mà đi xin hoặc dời giờ. Nhưng đường này gọi tay được, và tiêu đề
     cuộc họp thì `apply_scope` không hề chạm tới.
 
     # QUYẾT ĐỊNH CHỜ: lịch phòng là thứ CỐ Ý công khai xuyên pháp nhân hay
     # không? Nếu có thì ô `bookings` nên bỏ `title` khi phiếu nằm ngoài phạm vi
-    # người xem (giữ khung giờ, bỏ nội dung) — «bận» là thông tin cần, «họp về
-    # việc gì» thì không.
+    # người xem (giữ khung giờ, bỏ nội dung) — "bận" là thông tin cần, "họp về
+    # việc gì" thì không.
     """
     from app.modules.meeting_room import service as room_service
     from app.modules.meeting_room.constants import RB_APPROVED
@@ -739,7 +739,7 @@ def test_b6_phieu_ho_tro_khong_co_chieu_phong_ban_nen_hai_o_do_cam(world):
     """`ticket` khai `company` + `owner`, KHÔNG có `dept_id`/`dept_name`.
 
     `_explicit_cond` gặp cột `None` thì `continue` — bỏ qua, không log, không
-    lỗi. Nghĩa là ô «Loại trừ phòng ban» trên màn Phiếu hỗ trợ là một ô câm, và
+    lỗi. Nghĩa là ô "Loại trừ phòng ban" trên màn Phiếu hỗ trợ là một ô câm, và
     người khai quyền không có cách nào biết.
 
     Vế đối chứng bên dưới cho thấy sự vô hiệu ấy RIÊNG của chiều phòng ban:
@@ -770,8 +770,8 @@ def test_b6_phieu_ho_tro_khong_co_chieu_phong_ban_nen_hai_o_do_cam(world):
 def test_b7_duyet_dau_khai_du_pham_vi_du_chua_co_controller_nao(world):
     """`seal_request` — Duyệt dấu — NAY ĐÃ CÓ module thật (controller + service).
 
-    Trước đây đây chỉ là dòng khai chờ sẵn trong `SCOPE_FIELDS` (đợi «ngày ai đó
-    dựng controller»). Ngày đó tới rồi: phân hệ Duyệt dấu đã chạy, và phạm vi của
+    Trước đây đây chỉ là dòng khai chờ sẵn trong `SCOPE_FIELDS` (đợi "ngày ai đó
+    dựng controller"). Ngày đó tới rồi: phân hệ Duyệt dấu đã chạy, và phạm vi của
     nó KHÔNG phải phạm vi chung. Hai điểm khác:
     · `dept` (Trưởng bộ phận): phiếu cùng phòng người tạo, MỌI trạng thái — nhánh
       chung, đúng như mọi entity có `dept_id`.
@@ -796,7 +796,7 @@ def test_b7_duyet_dau_khai_du_pham_vi_du_chua_co_controller_nao(world):
                       created_by=world.actor("b1").user.id)
     db.add_all([s_akt, s_amua, s_b])
     db.flush()
-    #  Bảng nối «công ty cần đóng dấu» — nguồn LỌC của bậc `company`.
+    #  Bảng nối "công ty cần đóng dấu" — nguồn LỌC của bậc `company`.
     db.add_all([SealRequestCompany(seal_request_id=s_akt.id, company_id=world.co["A"]),
                 SealRequestCompany(seal_request_id=s_amua.id, company_id=world.co["A"]),
                 SealRequestCompany(seal_request_id=s_b.id, company_id=world.co["B"])])
@@ -823,7 +823,7 @@ def test_c1_tai_khoan_chi_khai_self_nen_bac_phong_ban_va_phap_nhan_chan_sach(wor
     xem hẹp không duyệt danh sách tài khoản toàn hệ.
 
     ⚠️ Hệ quả vận hành phải nhớ: cấp `user` phạm vi *phòng ban* cho một vai trò
-    là màn Tài khoản của họ TRẮNG BÓC chứ không phải «hẹp lại». Kiểm seed trước
+    là màn Tài khoản của họ TRẮNG BÓC chứ không phải "hẹp lại". Kiểm seed trước
     khi khai, đừng để người dùng đi báo lỗi hộ.
     """
     from app.modules.user.model import User
@@ -845,9 +845,9 @@ def test_c1_tai_khoan_chi_khai_self_nen_bac_phong_ban_va_phap_nhan_chan_sach(wor
 def test_c2_ho_so_nhan_su_co_self_khong_co_owner_nen_hai_o_nhan_su_cam(world):
     """`SCOPE_FIELDS["employee"]` khai `company` + `dept_id` + `self`, không `owner`.
 
-    Nên `own` nghĩa là «hồ sơ của chính tôi» (đúng), còn hai ô nhân sự trong
-    hộp thoại «Phạm vi» thì không có cột nào để so và bị `continue` im lặng.
-    Người khai quyền tick «Loại trừ nhân sự: ông X» trên màn Nhân sự và tưởng
+    Nên `own` nghĩa là "hồ sơ của chính tôi" (đúng), còn hai ô nhân sự trong
+    hộp thoại "Phạm vi" thì không có cột nào để so và bị `continue` im lặng.
+    Người khai quyền tick "Loại trừ nhân sự: ông X" trên màn Nhân sự và tưởng
     mình vừa giấu hồ sơ ông X.
     """
     from app.modules.employee.model import Employee
@@ -867,7 +867,7 @@ def test_c3_phap_nhan_loc_theo_cot_id_chu_khong_phai_company_id(world):
     """Chiều pháp nhân của chính bảng pháp nhân là `id`.
 
     Khai nhầm thành `company_id` thì `Company` không có cột đó và cả màn Công ty
-    nổ 500 — hoặc tệ hơn, ai đó thêm cột cho «hết lỗi» và bộ lọc im lặng trượt.
+    nổ 500 — hoặc tệ hơn, ai đó thêm cột cho "hết lỗi" và bộ lọc im lặng trượt.
     """
     from app.modules.company.model import Company
 
@@ -900,8 +900,8 @@ def test_c4_phong_ban_neo_theo_phap_nhan_chinh_khong_theo_bang_phuc_vu(world):
 
 
 def test_c4b_hai_o_phong_ban_cam_han_tren_chinh_danh_muc_phong_ban(world):
-    """🟡 Ghi chú của `SCOPE_FIELDS` bảo *«ai cần thấy phòng của mọi pháp nhân
-    mình phục vụ thì dùng phần chọn đích danh (`_dept_include_cond`)»* — nhưng
+    """🟡 Ghi chú của `SCOPE_FIELDS` bảo *"ai cần thấy phòng của mọi pháp nhân
+    mình phục vụ thì dùng phần chọn đích danh (`_dept_include_cond`)"* — nhưng
     đường đó KHÔNG chạy trên chính entity `department`.
 
     ```python
@@ -909,8 +909,8 @@ def test_c4b_hai_o_phong_ban_cam_han_tren_chinh_danh_muc_phong_ban(world):
     ```
 
     Không có `dept_id` lẫn `dept_name`, mà `_dept_include_cond` và
-    `_dept_match` đều đọc đúng hai khóa ấy. Nên cả ô «Phòng ban được xem» (cộng
-    thêm) lẫn ô «Loại trừ phòng ban» (thu hẹp) đều **câm** trên màn Danh mục
+    `_dept_match` đều đọc đúng hai khóa ấy. Nên cả ô "Phòng ban được xem" (cộng
+    thêm) lẫn ô "Loại trừ phòng ban" (thu hẹp) đều **câm** trên màn Danh mục
     phòng ban — người khai quyền tick, bấm Lưu, và không có gì đổi.
 
     Ghim HÀNH VI HIỆN TẠI, và ghi lại rằng lời khuyên trong ghi chú của
@@ -925,11 +925,11 @@ def test_c4b_hai_o_phong_ban_cam_han_tren_chinh_danh_muc_phong_ban(world):
 
     a1 = world.grant("a1", "department", scope="company", inc_dept=["B.hc"])
     assert a1.sees(Department, "department") == {world.dept["A.kt"], world.dept["A.mua"]}, (
-        "ô «Phòng ban được xem» không cộng thêm được gì")
+        "ô \"Phòng ban được xem\" không cộng thêm được gì")
 
     a2 = world.grant("a2", "department", scope="company", exc_dept=["A.kt"])
     assert a2.sees(Department, "department") == {world.dept["A.kt"], world.dept["A.mua"]}, (
-        "ô «Loại trừ phòng ban» cũng không cắt được gì")
+        "ô \"Loại trừ phòng ban\" cũng không cắt được gì")
 
 
 def test_c5_sua_ho_so_nhan_su_ngoai_pham_vi_qua_cua_phong_ban_bi_chan(world):
@@ -971,7 +971,7 @@ def test_c6_sua_ho_so_nhan_su_ngoai_pham_vi_qua_cua_PATCH_bi_chan(world):
     gọi `_employee_in_scope` trước. Hai cửa cùng một màn hình, hai luật khác nhau.
 
     Ca này từng ghim hành vi lỗ để bản vá làm nó đỏ lên có chủ đích, kèm câu hỏi chờ:
-    «`PATCH /employees/{eid}` có nên gọi `_employee_in_scope(..., "write")` ở đầu hàm?».
+    "`PATCH /employees/{eid}` có nên gọi `_employee_in_scope(..., "write")` ở đầu hàm?".
     bao-CR-533 trả lời CÓ: cửa nạp hồ sơ qua `_employee_in_scope` rồi mới làm gì khác
     (cùng lượt vá ảnh đại diện, chữ ký, xóa hồ sơ — xem A2b ở `test_pham_vi_duong_vong.py`).
     Nay ca này canh ngược lại: ngoài phạm vi → 404, hồ sơ không bị đụng.
@@ -1017,8 +1017,8 @@ def test_c7_doi_phap_nhan_cua_CHINH_MINH_khong_qua_chot_nao(world, leave_ids):
 
     Ghim HÀNH VI HIỆN TẠI.
 
-    # QUYẾT ĐỊNH CHỜ: `block_edit_own_department` nên đổi thành «không tự sửa
-    # PHẠM VI của chính mình» và chạy khi lần lưu đụng `department_id` HOẶC
+    # QUYẾT ĐỊNH CHỜ: `block_edit_own_department` nên đổi thành "không tự sửa
+    # PHẠM VI của chính mình" và chạy khi lần lưu đụng `department_id` HOẶC
     # `company_id`? Kèm `perm_cache_clear` cho hồ sơ vừa đổi pháp nhân.
     """
     from app.core.auth import perm_cache_clear
@@ -1132,7 +1132,7 @@ def test_c9_xem_ho_so_nhan_su_theo_id_bo_qua_pham_vi(world):
     # QUYẾT ĐỊNH CHỜ: `GET /api/employees/{eid}` có nên đi qua
     # `_employee_in_scope(..., "read")`? Rủi ro cần đo trước: nhiều màn đang gọi
     # nó để hiện TÊN người trên chứng từ ngoài phạm vi — bịt thô là các màn đó
-    # hiện «Không tìm thấy nhân viên» thay cho một cái tên.
+    # hiện "Không tìm thấy nhân viên" thay cho một cái tên.
     """
     from app.modules.employee import controller as employee_controller
     import json
@@ -1149,7 +1149,7 @@ def test_c10_doi_phong_ban_thi_pham_vi_doi_theo_NGAY_khong_doi_60_giay(world, le
     """`set_departments` gọi `perm_cache_clear` cho mọi tài khoản của nhân sự đó.
 
     Thiếu dòng đó thì Nhân sự chuyển người sang phòng khác, người đó F5 vẫn
-    nhìn bằng tầm cũ suốt một phút — và cách «sửa» tự nhiên nhất lúc ấy là đi
+    nhìn bằng tầm cũ suốt một phút — và cách "sửa" tự nhiên nhất lúc ấy là đi
     cấp thêm quyền cho rộng ra.
 
     Ca này hâm nóng cache TRƯỚC khi đổi, nếu không thì cache rỗng và bài kiểm
@@ -1263,7 +1263,7 @@ def test_d2b_L2_van_gan_duoc_dung_phong_cua_chinh_minh(world):
 
 
 def test_d2c_L2_tinh_ca_phong_duoc_cap_them_dich_danh_o_man_phan_quyen(world):
-    """Ô «Phòng ban được xem» cấp thêm phòng cho một tài khoản — phải tính vào tầm.
+    """Ô "Phòng ban được xem" cấp thêm phòng cho một tài khoản — phải tính vào tầm.
 
     Bỏ sót thì quản trị cấp thêm phòng cho một người, người đó vẫn không gán
     được ai vào phòng ấy, và không có câu lỗi nào giải thích vì sao.
@@ -1319,11 +1319,11 @@ def test_d3b_L3_chan_TRUOC_khi_ghi_khong_de_lai_nua_vien(world):
 
 
 def test_d4_khong_tu_noi_pham_vi_du_lieu_cua_chinh_minh(world, leave_ids):
-    """Kế hoạch cụm 06 đánh dấu ca này 🔴 «chưa có chốt» — ĐỌC MÃ THÌ ĐÃ CÓ.
+    """Kế hoạch cụm 06 đánh dấu ca này 🔴 "chưa có chốt" — ĐỌC MÃ THÌ ĐÃ CÓ.
 
     `user/controller.py:140-147` gọi `privilege_escalation.block_edit_own_permissions(
-    user_id, user)` ngay sau `_block_out_of_scope`, kèm ghi chú «Phạm vi dữ
-    liệu cũng là quyền: tự đặt cho mình `all` là thấy toàn bộ hệ». Ca này chốt
+    user_id, user)` ngay sau `_block_out_of_scope`, kèm ghi chú "Phạm vi dữ
+    liệu cũng là quyền: tự đặt cho mình `all` là thấy toàn bộ hệ". Ca này chốt
     lại để không ai gỡ nhầm dòng đó khi dọn mã.
     """
     from app.modules.user import controller as user_controller
@@ -1344,7 +1344,7 @@ def test_d5_khong_tu_gan_them_vai_tro_cho_chinh_minh_qua_man_nhan_su(world):
     """Cửa vòng: màn Nhân sự tự tạo tài khoản khi nhân sự chưa có
     (`set_password` → `provision_user`), nên phải kiểm nó KHÔNG cấp quyền gì thêm.
 
-    `provision_user(role_ids=[])` chỉ gán vai trò mặc định «Nhân sự». Nếu ngày
+    `provision_user(role_ids=[])` chỉ gán vai trò mặc định "Nhân sự". Nếu ngày
     nào đó ai đó truyền `role_ids` từ hồ sơ nhân sự vào đây thì đó là một cửa
     gán vai trò KHÔNG đi qua `block_role_escalation` — ca này canh chỗ đó.
     """

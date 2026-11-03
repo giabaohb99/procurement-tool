@@ -31,7 +31,7 @@ def require_report(key: ReportKey):
     return dep
 ```
 - Gắn bằng `dependencies=[Depends(require_report(ReportKey.X))]` trên decorator của CẢ `/summary` lẫn `/summary/export` — **không sửa tham số `user=Depends(require(...))`** (giữ nguyên gác phân hệ + phạm vi). Test gọi thẳng hàm controller (không qua HTTP) vì thế không bị ảnh hưởng.
-- Không cache riêng: 1 truy vấn có chỉ mục/lượt, số truy vấn CỐ ĐỊNH (đúng luật «API báo cáo nhanh nhất»).
+- Không cache riêng: 1 truy vấn có chỉ mục/lượt, số truy vấn CỐ ĐỊNH (đúng luật **API báo cáo nhanh nhất**).
 
 Bảng 26 đường (khóa ↔ tệp):
 | Khóa | Tệp:dòng (hiện tại) | Entity giữ nguyên |
@@ -64,10 +64,10 @@ API cấu hình `report_access/controller.py` (`/api/report-access`, đăng ký 
 | `POST /api/report-access/{key}/grants` | `require("role","write")` | body `{subjects[1..200], effect, reason≤500}`; trùng (key,kind,id,effect) còn sống → cập nhật; chủ thể không tồn tại → skip; trả `{created,updated,skipped}`; `key` ngoài `ReportKey` → 404 |
 | `DELETE /api/report-access/grants/{id}` | `require("role","write")` | body `{reason≤500}`; đã thu hồi → 400; đánh dấu `revoked_*` |
 - `schema.py`: `ReportAccessGrantIn`, `ReportAccessRevokeIn`; `max_length=500` khớp `String(500)`; kiểm `subject_kind ∈ SUBJECT_LABELS`, `effect ∈ {1,2}`, `subject_id > 0`.
-- Audit: `record(db, actor, "report_access", int(key), "update", "Cho phép|Cấm xem «<nhãn>» cho N đối tượng" / "Thu hồi …")`.
+- Audit: `record(db, actor, "report_access", int(key), "update", "Cho phép|Cấm xem "<nhãn>" cho N đối tượng" / "Thu hồi …")`.
 - DRY tên chủ thể: nâng `_subject_names` từ `doc_catalog/folder_access_view_service.py` thành `subject_names(db, rows)` ở `core/subject_match.py`; tệp thư mục gọi lại hàm chung (hành vi giữ nguyên).
 - Không chặn tự gán cho chính mình/vai trò mình: gán không mở rộng dữ liệu (vẫn qua `require` + `apply_scope`) — ghi lý do trong docstring.
-- Không entity mới → không đụng `ENTITIES`/`SCOPE_FIELDS`. Controller mới phải thêm vào `BB4_CONTROLLER_MIEN_TRU` của `test_pham_vi_luat_bat_bien.py` (phase 03) kèm lý do: «cấu hình quyền, gác role.read/write, không phải dữ liệu nghiệp vụ».
+- Không entity mới → không đụng `ENTITIES`/`SCOPE_FIELDS`. Controller mới phải thêm vào `BB4_CONTROLLER_MIEN_TRU` của `test_pham_vi_luat_bat_bien.py` (phase 03) kèm lý do: **cấu hình quyền, gác role.read/write, không phải dữ liệu nghiệp vụ**.
 
 ## Sở hữu tệp
 Tạo: `report_access/{service,guard,schema,grant_service,controller}.py` (mỗi tệp <200 dòng). Sửa: 13 controller ở bảng trên (chỉ decorator), `auth/controller.py`, `main.py`, `core/subject_match.py`, `doc_catalog/folder_access_view_service.py`.

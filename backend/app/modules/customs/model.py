@@ -58,6 +58,9 @@ class CustomsLine(Base):
         #  bao-CR-541: tra mã băm chống trùng. Kèm `reg_date` vì bảng chia phân vùng theo năm
         #  của nó — sau này nâng thành UNIQUE thì MySQL buộc khóa phải chứa cột phân vùng.
         Index("ix_customs_line_hash_date", "row_hash", "reg_date"),
+        #  bao-CR-718: màn danh sách sắp "ngày đăng ký giảm dần" + LIMIT — có chỉ mục này MySQL đi ngược chỉ mục và
+        #  dừng khi đủ một trang thay vì quét cả bảng rồi sắp (đo 328 nghìn dòng: 352 ms → 0,1 ms; có từ khóa 739 → 9 ms).
+        Index("ix_customs_line_date", "reg_date"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)

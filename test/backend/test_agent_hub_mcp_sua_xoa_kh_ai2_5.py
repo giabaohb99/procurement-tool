@@ -1,6 +1,6 @@
 """kh-AI2-5 — sửa / xóa phiếu qua cổng MCP: propose_document_update / propose_document_delete trả đề xuất kèm token,
 confirm_draft(kind="update" / "delete") mới ghi, ERP kiểm lại từ đầu như nút Xác nhận của Trợ lý web. Chỉ khóa được ghi,
-chỉ khi nhóm G7 «edit» bật; giữ luật cũ: chỉ xóa phiếu của chính mình, còn Nháp / Bị trả lại; YCTT không xóa qua AI."""
+chỉ khi nhóm G7 "edit" bật; giữ luật cũ: chỉ xóa phiếu của chính mình, còn Nháp / Bị trả lại; YCTT không xóa qua AI."""
 import json
 
 import pytest
@@ -84,7 +84,7 @@ def test_khoa_chi_doc_va_nhom_tat_khong_dung_duoc(db, seed, cap_quyen):
     _tao_ycmh(db, seed, created_by=seed.u_req_id)
     args = {"entity": "purchase_request", "code": "YCMH-TEST-1", "changes": {"purpose": "X"}}
     assert _call(db, user, "propose_document_update", args, scope=mcp_keys.SCOPE_READ).get("denied") is True
-    #  Nhóm «edit» tắt mặc định: khóa được ghi cũng bị chặn, kể cả đường xác nhận.
+    #  Nhóm "edit" tắt mặc định: khóa được ghi cũng bị chặn, kể cả đường xác nhận.
     assert _call(db, user, "propose_document_update", args).get("denied") is True
     assert _call(db, user, "confirm_draft", {"kind": "update", "draft": {"confirm_token": "x"}}).get("denied") is True
     assert db.query(PurchaseRequest).one().purpose == "Mua giấy A4"

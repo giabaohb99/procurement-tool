@@ -95,7 +95,7 @@ def test_model_nhin_thay_ngay_nguoi_va_dang_do_lich_su_du(db, chat, monkeypatch)
     assert contents[:2] == ["nháp hồi nãy đâu", "Em còn giữ, anh muốn đổi gì?"] and len(contents) == 3
     assert last.endswith(core_v2.CONTEXT_TAIL + "\n\ntạo cho anh task nghiên cứu luồng agent")
     assert set(prov.seen["tools"]) >= {"update_draft", "commit_draft", "drop_draft"}
-    #  Tin vào đóng dấu «hỏi» (không thành vé sửa mã), trả lời ghi «tra_loi», sổ chạy đóng OK và đánh dấu lõi v2.
+    #  Tin vào đóng dấu "hỏi" (không thành vé sửa mã), trả lời ghi "tra_loi", sổ chạy đóng OK và đánh dấu lõi v2.
     assert row.action == ACT_ASKED
     answer = db.query(AgentMessage).filter(AgentMessage.action == ACT_ANSWER).order_by(AgentMessage.id.desc()).first()
     assert answer is not None and "dự án nào" in answer.body
@@ -115,7 +115,7 @@ def test_nhap_dang_cho_xuat_hien_trong_dang_do_va_commit_qua_duong_cu(db, chat, 
 
     def fake_draft_by_text(db_, chat_id, row_, phrase):
         called["phrase"] = phrase
-        row_.action = "lenh"                                   # đường cũ đổi dấu tin; lõi phải trả lại «hỏi»
+        row_.action = "lenh"                                   # đường cũ đổi dấu tin; lõi phải trả lại "hỏi"
         p = db_.get(AgentMessage, pending.id)
         p.action = "da_tao"
         p.body = json.dumps({**json.loads(p.body), "created": {"id": 9, "code": "WT-9"}}, ensure_ascii=False)
@@ -184,7 +184,7 @@ def test_khong_khoa_thi_huong_dan_khong_goi_model(db, chat, monkeypatch):
 
 
 def test_tram_tra_500_hai_lan_thi_nhay_sang_khoa_ke(monkeypatch):
-    """ai-CR-198 (14/10 15:36): khóa Gemini-trạm ở ưu tiên 1 trả 500 «upstream error» hai lần → bot báo lỗi dù đại ca còn
+    """ai-CR-198 (14/10 15:36): khóa Gemini-trạm ở ưu tiên 1 trả 500 "upstream error" hai lần → bot báo lỗi dù đại ca còn
     Kimi / Claude / DeepSeek phía sau. Quá tải SAU khi đã thử lại thì phải nhảy khóa kế."""
     from app.modules.agent_hub import manager, user_keys
     from app.modules.agent_hub.ai_keys import KeyRef
@@ -212,7 +212,7 @@ def test_tram_tra_500_hai_lan_thi_nhay_sang_khoa_ke(monkeypatch):
 
 
 def test_claude_the_he_5_qua_tram_khong_gui_temperature():
-    """ai-CR-198 lượt #205: trạm trả 400 «claude-sonnet-5-5 does not support non-default temperature»."""
+    """ai-CR-198 lượt #205: trạm trả 400 "claude-sonnet-5-5 does not support non-default temperature"."""
     from app.modules.assistant.provider.openai_compat import _no_temperature
 
     assert _no_temperature("claude-sonnet-5-5") and _no_temperature("claude-opus-5-5") and _no_temperature("gpt-5-mini")
@@ -220,7 +220,7 @@ def test_claude_the_he_5_qua_tram_khong_gui_temperature():
 
 
 def test_hello_em_la_xa_giao_khong_nap_cong_cu_erp():
-    """«hello em» lượt #205 vẫn nạp 76 công cụ."""
+    """"hello em" lượt #205 vẫn nạp 76 công cụ."""
     from app.modules.assistant import tool_router
 
     for t in ("hello em", "hi em", "chào em", "alo em", "em ơi", "cảm ơn em nhé"):
@@ -228,7 +228,7 @@ def test_hello_em_la_xa_giao_khong_nap_cong_cu_erp():
 
 
 def test_lich_su_cat_tin_dai_va_xa_giao_chi_6_luot(db):
-    """Lượt #206: «hello em» nạp 39k token vì lịch sử chứa nguyên các bản tra giá dài."""
+    """Lượt #206: "hello em" nạp 39k token vì lịch sử chứa nguyên các bản tra giá dài."""
     for i in range(10):
         service.log_message(db, DIR_IN, CHAT, 0, f"hỏi {i}", action=ACT_ASKED)
         service.log_message(db, DIR_OUT, CHAT, 0, "báo cáo dài " + "x" * 5000, action=ACT_ANSWER)
@@ -248,7 +248,7 @@ def test_phan_luong_model_bang_luat():
     assert core_v2.lane_of("tạo cho anh task nghiên cứu luồng agent") == core_v2.LANE_NORMAL
     assert core_v2.lane_of("lập kế hoạch thử bot, hạn 15/10") == core_v2.LANE_HEAVY
     assert core_v2.lane_of("viết báo cáo tổng kết tuần") == core_v2.LANE_HEAVY
-    #  14/10: nhóm công cụ «work» luôn kèm draft_work_plan — không được đẩy câu tạo task thường sang Claude.
+    #  14/10: nhóm công cụ "work" luôn kèm draft_work_plan — không được đẩy câu tạo task thường sang Claude.
     assert core_v2.lane_of("tạo cho anh task nghiên cứu luồng agent", {"draft_work_plan", "draft_work_task"}) == core_v2.LANE_NORMAL
     assert core_v2.lane_of("x " * 400) == core_v2.LANE_HEAVY
     assert core_v2.route_providers(core_v2.LANE_SMALLTALK)[0] == "claude"            # đợt nén 15/10: Haiku rẻ hơn DeepSeek
@@ -267,7 +267,7 @@ def test_prefer_tach_kimi_deepseek_claude_cung_mot_tram():
              KeyRef(provider="openai_compat", key="k-kimi-0002", model="kimi-k3", base_url=tram, row_id=2),
              KeyRef(provider="openai_compat", key="k-claude-0003", model="claude-sonnet-5-5", base_url=tram, row_id=3)]
     with user_keys.use_chain(chain, 238):
-        #  Đại ca 15/10: «Haiku thường, Sonnet việc nặng» — cùng một khóa Claude, model đổi theo luồng.
+        #  Đại ca 15/10: "Haiku thường, Sonnet việc nặng" — cùng một khóa Claude, model đổi theo luồng.
         for lane, first in ((core_v2.LANE_SMALLTALK, "claude-haiku-5-5"), (core_v2.LANE_NORMAL, "claude-haiku-5-5"),
                             (core_v2.LANE_HEAVY, "claude-sonnet-5-5")):
             with user_keys.prefer(core_v2.route_providers(lane), model=core_v2.lane_model(lane)):
@@ -285,7 +285,7 @@ def test_tra_nhanh_di_duong_tra_mang_tren_model_nhanh(db, chat, monkeypatch):
 
 
 def test_tram_bao_khong_co_kenh_cho_model_thi_nhay_khoa_ke(monkeypatch):
-    """Lượt #209 (14/10 16:34): khóa DeepSeek trạm trả 400 «unknown provider for model deepseek-v4.1-flash» → bot báo lỗi
+    """Lượt #209 (14/10 16:34): khóa DeepSeek trạm trả 400 "unknown provider for model deepseek-v4.1-flash" → bot báo lỗi
     dù Kimi / Claude phía sau vẫn chạy."""
     from app.modules.agent_hub import manager, user_keys
     from app.modules.agent_hub.ai_keys import KeyRef
@@ -308,7 +308,7 @@ def test_tram_bao_khong_co_kenh_cho_model_thi_nhay_khoa_ke(monkeypatch):
 
 
 def test_noi_toi_the_ma_khong_co_nhap_thi_viet_lai(db, chat, monkeypatch):
-    """Lượt #211/#212 (14/10 16:41): Kimi viết «em đang hỏi lại ở thẻ dưới» mà không gọi công cụ → không có thẻ nào."""
+    """Lượt #211/#212 (14/10 16:41): Kimi viết "em đang hỏi lại ở thẻ dưới" mà không gọi công cụ → không có thẻ nào."""
     row = _incoming(db, "tạo cho anh task nghiên cứu luồng agent")
     calls = []
 
@@ -332,7 +332,7 @@ def test_co_nhap_that_thi_noi_toi_the_khong_bi_viet_lai():
 
 
 def test_lich_su_bo_tin_cu_noi_toi_the(db):
-    """Đường cũ ghi «(đã soạn bản nháp, xem thẻ bên dưới)» thay cho thẻ; Kimi chép lại câu đó thay vì gọi công cụ."""
+    """Đường cũ ghi "(đã soạn bản nháp, xem thẻ bên dưới)" thay cho thẻ; Kimi chép lại câu đó thay vì gọi công cụ."""
     service.log_message(db, DIR_IN, CHAT, 0, "tạo task A", action=ACT_ASKED)
     service.log_message(db, DIR_OUT, CHAT, 0, "(đã soạn bản nháp, xem thẻ bên dưới)", action=ACT_ANSWER)
     service.log_message(db, DIR_OUT, CHAT, 0, "Em đã soạn nháp công việc này rồi.", action=ACT_ANSWER)
@@ -343,7 +343,7 @@ def test_lich_su_bo_tin_cu_noi_toi_the(db):
 
 
 def test_nhap_moi_trinh_bay_trong_chat_khong_gui_the(db, chat, monkeypatch):
-    """Đại ca 14/10 16:58: «sao có 2 dòng chat… cho nó vào chat thôi» — một tin duy nhất, dòng chờ «tạo» ghi im lặng."""
+    """Đại ca 14/10 16:58: "sao có 2 dòng chat… cho nó vào chat thôi" — một tin duy nhất, dòng chờ "tạo" ghi im lặng."""
     row = _incoming(db, "tạo task A, ERP v2, giao Được, hạn thứ sáu")
     monkeypatch.setattr(core_v2.erp, "run_tool", lambda db_, u, name, args: {
         "draft": {"title": "A", "due_date": "2026-10-16"}})
@@ -374,7 +374,7 @@ def test_lich_15_ngay_dung_thu():
 
 
 def test_doc_bao_va_tim_web_la_cong_cu_cua_loi(db, chat, monkeypatch):
-    """Đại ca 14/10: «giờ bot đọc báo được chưa, hoặc tổng hợp thông tin» — lõi mới phải có công cụ đọc tin / tìm web."""
+    """Đại ca 14/10: "giờ bot đọc báo được chưa, hoặc tổng hợp thông tin" — lõi mới phải có công cụ đọc tin / tìm web."""
     from app.modules.agent_hub import news_digest, web_search
 
     monkeypatch.setattr(news_digest, "_search", lambda q: [
@@ -401,14 +401,14 @@ def test_doc_bao_va_tim_web_la_cong_cu_cua_loi(db, chat, monkeypatch):
 
 
 def test_doc_bao_di_luong_viec_nang_va_noi_da_lam_ma_khong_co_cong_cu_thi_viet_lai():
-    """14/10 17:16: tin tổng hợp hời hợt; 17:17 Gemini lite «em đã bỏ task đó rồi» mà không gọi drop_draft."""
+    """14/10 17:16: tin tổng hợp hời hợt; 17:17 Gemini lite "em đã bỏ task đó rồi" mà không gọi drop_draft."""
     assert core_v2.lane_of("tổng hợp tin về thị trường phân bón tuần này") == core_v2.LANE_HEAVY
     assert core_v2._phantom_card(_result("Dạ, em đã bỏ task nghiên cứu đó rồi đại ca."))
     assert not core_v2._phantom_card(_result("Dạ, em đã bỏ rồi.", [{"name": "drop_draft", "result": {"ok": True}}]))
 
 
 def test_cong_cu_ke_hoach_chi_khi_cau_noi_ke_hoach(db, monkeypatch):
-    """Soi 88k token 15/10: draft_work_plan (3,5k ký tự) đi kèm mọi câu «tạo task» vì cùng nhóm work."""
+    """Soi 88k token 15/10: draft_work_plan (3,5k ký tự) đi kèm mọi câu "tạo task" vì cùng nhóm work."""
     from types import SimpleNamespace as NS
 
     from app.modules.assistant.provider.base import ToolDef
@@ -533,7 +533,7 @@ def test_cong_cu_dat_loi_nhac(db, chat, monkeypatch):
 
 
 def test_nhac_chieu_nay_khong_thanh_mai_va_bot_tu_bao_gio(db, chat, monkeypatch):
-    """Bộ mẫu lần 3 (mẫu 14): 11 giờ sáng nói «3 giờ chiều nay nhắc anh…» → bot báo «15:00 mai»."""
+    """Bộ mẫu lần 3 (mẫu 14): 11 giờ sáng nói "3 giờ chiều nay nhắc anh…" → bot báo "15:00 mai"."""
     monkeypatch.setattr(core_v2, "now_local", lambda: datetime(2026, 10, 15, 11, 0))
     res = core_v2._set_reminder(db, CHAT, "15h mai", "gọi NCC giấy", said="3 giờ chiều nay nhắc anh gọi NCC giấy nhé")
     assert res["ngay"] == "hôm nay (15/10)" and res["gio"] == "15:00"
@@ -562,7 +562,7 @@ def test_cong_cu_ve_sua_ma_chi_cho_chat_duoc_giao(db, chat, monkeypatch):
     row = _incoming(db, "màn đơn mua hàng thêm ô lọc ngày giao giúp anh, sửa mã luôn")
     core_v2.handle(db, CHAT, row, row.body)
     assert "create_code_task" in out["tools"] and "CHƯA ghi vé" in out["res"]["error"]
-    #  Bot đã trả lời (nhắc lại cách hiểu) → «đúng rồi em» mới ghi một tin INBOX (dấu rỗng) cho vòng gom tạo vé.
+    #  Bot đã trả lời (nhắc lại cách hiểu) → "đúng rồi em" mới ghi một tin INBOX (dấu rỗng) cho vòng gom tạo vé.
     row = _incoming(db, "đúng rồi em")
     core_v2.handle(db, CHAT, row, row.body)
     assert out["res"]["ok"]
@@ -660,7 +660,7 @@ def test_ghi_nhap_khong_gui_them_cau_model(db, chat, monkeypatch):
 
     core_v2.handle(db, CHAT, row, "ok tạo đi")
 
-    assert prov.rounds == 1 and chat.sent == []                     # đường cũ (giả) tự báo «Đã tạo»; lõi không nói thêm
+    assert prov.rounds == 1 and chat.sent == []                     # đường cũ (giả) tự báo "Đã tạo"; lõi không nói thêm
     note = db.query(AgentMessage).filter(AgentMessage.action == ACT_ANSWER).one()
     assert "tạo xong" in note.body
 
@@ -674,7 +674,7 @@ def test_cong_cu_hoi_them_thi_khong_dung_vong():
 
 
 def test_cau_lap_ycmh_chi_nap_cong_cu_nhap(db, monkeypatch):
-    """Run #223 (15/10): «tạo YCMH … phòng IT» nạp 37 công cụ → 83k token một lần gọi. Câu lập phiếu thuần chỉ giữ nháp."""
+    """Run #223 (15/10): "tạo YCMH … phòng IT" nạp 37 công cụ → 83k token một lần gọi. Câu lập phiếu thuần chỉ giữ nháp."""
     from app.modules.assistant import tool_router
     from app.modules.assistant.provider.base import ToolDef
 
@@ -755,7 +755,7 @@ def test_commit_chi_khi_la_loi_dong_y_ngan(db, chat, monkeypatch, again, ok):
 
 
 @pytest.mark.parametrize("text, want", [
-    ("hạn thứ sáu", "16/10/2026"),                  # Agent 1 15/10: thứ Năm nói «thứ sáu» → model ghi 23/10
+    ("hạn thứ sáu", "16/10/2026"),                  # Agent 1 15/10: thứ Năm nói "thứ sáu" → model ghi 23/10
     ("hạn thứ 6", "16/10/2026"),
     ("họp thứ năm", "22/10/2026"),                  # nói đúng thứ hôm nay → tuần sau
     ("thứ sáu tuần sau", "23/10/2026"),
@@ -777,7 +777,7 @@ def test_ngay_da_tinh_nam_trong_boi_canh(db, chat, monkeypatch):
 
 
 def test_khong_khop_nhom_thi_chi_nap_cong_cu_loi(db, monkeypatch):
-    """Run #232: «thôi bỏ nháp đó đi em» không khớp nhóm → nạp đủ 73 công cụ (230k token). Nay chỉ CORE + lõi + more_tools."""
+    """Run #232: "thôi bỏ nháp đó đi em" không khớp nhóm → nạp đủ 73 công cụ (230k token). Nay chỉ CORE + lõi + more_tools."""
     from app.modules.assistant import tool_router
     from app.modules.assistant.provider.base import ToolDef
 
@@ -835,7 +835,7 @@ def test_lich_su_luoc_tin_nhap_cu_con_dong_dau(db):
 
 
 def test_tra_ten_bo_xung_ho(db, chat, monkeypatch):
-    """Run #242: model truyền «chị Mi» → employee_lookup không tìm thấy; lần trước «Mi» thì ra Lê Thị Ngọc Mi."""
+    """Run #242: model truyền "chị Mi" → employee_lookup không tìm thấy; lần trước "Mi" thì ra Lê Thị Ngọc Mi."""
     seen: list = []
     monkeypatch.setattr(core_v2.erp, "run_tool", lambda db_, u, name, args: seen.append(args) or {"rows": []})
 
@@ -854,12 +854,12 @@ def test_xin_nhom_da_nap_thi_khong_chay_lai():
     assert "error" in have and "employee_lookup" in have["error"] and not core_v2._stop_after(core_v2.MORE_TOOLS, have)
     mixed = core_v2._more_tools_result({"nhom": ["employee", "leave"]}, {"employee_lookup"})
     assert mixed == {"ok": True, "nhom": ["leave"]} and core_v2._stop_after(core_v2.MORE_TOOLS, mixed)
-    #  Nhóm work thiếu draft_work_plan (chỉ nạp khi nói «kế hoạch») vẫn tính là đã có.
+    #  Nhóm work thiếu draft_work_plan (chỉ nạp khi nói "kế hoạch") vẫn tính là đã có.
     assert "error" in core_v2._more_tools_result({"nhom": ["work"]}, {"my_work_tasks", "draft_work_task"})
 
 
 def test_tin_nhap_bo_y_tam_hieu_trung_o_da_hien():
-    """Bộ mẫu ai-CR-203: «Em tạm hiểu: vào cột Cần làm (… các cột …)» lặp ô «Cột: Cần làm», còn cụt thành «…."."""
+    """Bộ mẫu ai-CR-203: "Em tạm hiểu: vào cột Cần làm (… các cột …)" lặp ô "Cột: Cần làm", còn cụt thành "…."."""
     res = {"tool": "draft_work_task", "tom_tat_se_luu": ["Việc: A", "Cột: Cần làm"],
            "draft": {"assumptions": ["vào cột Cần làm (cột đầu của dự án; các cột: Cần làm, Đang làm, Xong)",
                                      "giao cho người hỏi vì chưa nói người nhận, cứ đổi nếu cần giao người khác nhé đại ca"]}}
@@ -868,7 +868,7 @@ def test_tin_nhap_bo_y_tam_hieu_trung_o_da_hien():
 
 
 def test_tin_nhap_ycmh_dong_hang_thut_vao_va_co_ngay_kho():
-    """Bộ mẫu mẫu 12: «• 1 dòng:» rồi «• - Thùng giấy A4» (hai dấu đầu dòng), không thấy ngày cần hàng / kho."""
+    """Bộ mẫu mẫu 12: "• 1 dòng:" rồi "• - Thùng giấy A4" (hai dấu đầu dòng), không thấy ngày cần hàng / kho."""
     from app.modules.agent_hub import draft_create
 
     lines = draft_create.summarize("purchase", {"purpose": "Giấy in", "need_date": "2026-10-16", "lines": [
@@ -897,7 +897,7 @@ def test_soan_lai_y_het_nhap_dang_cho_thi_noi_nhap_cu_van_cho(db, chat, monkeypa
 
 
 def test_tin_nhap_ke_hoach_viec_con_thut_vao_khong_chong_dau():
-    """Bộ mẫu lần 2 (mẫu 15): «• + Test …» và «• <b>    Tiêu chí:</b>» — việc con / tiêu chí bị gắn thêm dấu đầu dòng."""
+    """Bộ mẫu lần 2 (mẫu 15): "• + Test …" và "• <b>    Tiêu chí:</b>" — việc con / tiêu chí bị gắn thêm dấu đầu dòng."""
     out = core_v2._bullets(["Kế hoạch: Thử bot", "Thực hiện:", "- Việc 1 (Được, Ưu tiên)", "    + Việc con · 17/10",
                             "    Tiêu chí: Đã test 5 chức năng"])
     assert out == ["- **Kế hoạch:** Thử bot", "- **Thực hiện:**", "    – Việc 1 (Được, Ưu tiên)", "        · Việc con · 17/10",
@@ -905,7 +905,7 @@ def test_tin_nhap_ke_hoach_viec_con_thut_vao_khong_chong_dau():
 
 
 def test_yeu_cau_sua_phan_mem_chi_nap_cong_cu_loi(db, monkeypatch):
-    """Bộ mẫu (mẫu 19, 244k token): «sửa màn YCMH thêm cột …» kéo cả nhóm thu mua + sửa phiếu."""
+    """Bộ mẫu (mẫu 19, 244k token): "sửa màn YCMH thêm cột …" kéo cả nhóm thu mua + sửa phiếu."""
     from app.modules.assistant import tool_router
     from app.modules.assistant.provider.base import ToolDef
 
@@ -1006,7 +1006,7 @@ def test_boi_canh_luot_co_tran_tung_khoi(db, chat, monkeypatch):
 # ai-CR-206 — bỏ đường cũ: mọi chat đi lõi mới; các phần đường cũ còn đáng giữ đã dời vào lõi
 # ---------------------------------------------------------------------------
 def test_moi_chat_deu_di_loi_moi(db, monkeypatch):
-    """Đại ca 15/10: «bỏ cái cũ luôn, sử dụng luồng mới». Không còn cờ / danh sách chat; tin chữ nào cũng tới core_v2."""
+    """Đại ca 15/10: "bỏ cái cũ luôn, sử dụng luồng mới". Không còn cờ / danh sách chat; tin chữ nào cũng tới core_v2."""
     from app.modules.agent_hub import chat_link
 
     monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
@@ -1024,7 +1024,7 @@ def test_moi_chat_deu_di_loi_moi(db, monkeypatch):
 
 
 def test_loi_khoa_noi_thang_kem_ma_luot(db, chat, monkeypatch):
-    """Dời từ đường cũ (ai-CR-097): khóa hết tiền / hạn mức thì nói thẳng chuyện khóa, không «gọi AI bị lỗi» chung chung."""
+    """Dời từ đường cũ (ai-CR-097): khóa hết tiền / hạn mức thì nói thẳng chuyện khóa, không "gọi AI bị lỗi" chung chung."""
     from app.modules.assistant.provider.base import ProviderError
 
     def boom(msgs, tools, execute):
@@ -1035,7 +1035,7 @@ def test_loi_khoa_noi_thang_kem_ma_luot(db, chat, monkeypatch):
 
 
 def test_sua_du_lieu_bang_loi_chi_chu_bot_khi_bat_thao_tac(db, chat, monkeypatch):
-    """Dời từ đường cũ (ý định «du_lieu», ai-CR-073): công cụ request_data_change chỉ cho chat chủ bot khi bật ops."""
+    """Dời từ đường cũ (ý định "du_lieu", ai-CR-073): công cụ request_data_change chỉ cho chat chủ bot khi bật ops."""
     from app.modules.agent_hub import ops
 
     monkeypatch.setattr(ops, "start_data_change", lambda db_, chat_id, text, env="": f"<b>Thẻ sửa dữ liệu</b> {env}: {text}")
@@ -1065,7 +1065,7 @@ def test_nhan_cau_vua_nhac_vua_hoi(text, mixed):
 
 
 def test_vua_nho_nhac_vua_hoi_thi_dat_nhac_va_tra_loi(db, chat, monkeypatch):
-    """Đại ca 15/10: «nhắc anh 5h30 chiều đi tập gym em nhé, a nên tập gì em nhỉ» → bot chỉ đặt nhắc (nuốt cả câu hỏi vào nội
+    """Đại ca 15/10: "nhắc anh 5h30 chiều đi tập gym em nhé, a nên tập gì em nhỉ" → bot chỉ đặt nhắc (nuốt cả câu hỏi vào nội
     dung nhắc), không trả lời. Nay: lối tắt nhường model; model đặt nhắc gọn + trả lời; dòng giờ nhắc do bot dựng."""
     from app.modules.agent_hub import chat_link, service as s
     from app.modules.agent_hub.model import AgentReminder
@@ -1093,8 +1093,8 @@ def test_vua_nho_nhac_vua_hoi_thi_dat_nhac_va_tra_loi(db, chat, monkeypatch):
 
 
 def test_nhac_cuoc_hen_thi_hoi_tao_lich_ok_la_tao(db, chat, monkeypatch):
-    """Đại ca 16/10: «hẹn 6h chiều nay đi cafe em nhé» chỉ được đặt nhắc — «sao không tạo lịch luôn… hoặc hỏi lại để a xác
-    nhận». Nay: đặt nhắc + hỏi tạo lịch (đã nối Google); «ok» → tạo lịch Google, không gọi model."""
+    """Đại ca 16/10: "hẹn 6h chiều nay đi cafe em nhé" chỉ được đặt nhắc — "sao không tạo lịch luôn… hoặc hỏi lại để a xác
+    nhận". Nay: đặt nhắc + hỏi tạo lịch (đã nối Google); "ok" → tạo lịch Google, không gọi model."""
     from app.modules.agent_hub import chat_link, google_link
 
     monkeypatch.setattr(chat_link, "get_active_link", lambda db_, chat_id: SimpleNamespace(user_id=275))
@@ -1131,8 +1131,8 @@ def test_hoi_tao_lich_tra_loi_thoi_thi_chi_nhac(db, chat, monkeypatch):
 
 
 def test_tao_lich_phai_trinh_ban_du_kien_va_cho_xac_nhan(db, chat, monkeypatch):
-    """Đại ca 16/10 9:44: «hẹn 7h tối nay ăn tối với khách» → model TỰ tạo lịch Google 1,5 tiếng. «1,5 tiếng ở đâu ra… hỏi
-    xác nhận lại rồi có kế hoạch chi tiết chứ». Lượt đầu bị chặn (model trình bản lịch); «ok» lượt sau mới tạo."""
+    """Đại ca 16/10 9:44: "hẹn 7h tối nay ăn tối với khách" → model TỰ tạo lịch Google 1,5 tiếng. "1,5 tiếng ở đâu ra… hỏi
+    xác nhận lại rồi có kế hoạch chi tiết chứ". Lượt đầu bị chặn (model trình bản lịch); "ok" lượt sau mới tạo."""
     from app.modules.assistant.provider.base import ToolDef
 
     monkeypatch.setattr(core_v2.erp, "tool_defs", lambda db_, u=None: [
@@ -1157,4 +1157,4 @@ def test_tao_lich_phai_trinh_ban_du_kien_va_cho_xac_nhan(db, chat, monkeypatch):
     _install(monkeypatch, second)
     core_v2.handle(db, CHAT, _incoming(db, "ok em"), "ok em")
     assert seen["second"] == {"ok": True} and created == ["create_calendar_event"]
-    assert "create_calendar_event" in seen["tools"]                        # «ok» vẫn có công cụ lịch, khỏi more_tools
+    assert "create_calendar_event" in seen["tools"]                        # "ok" vẫn có công cụ lịch, khỏi more_tools

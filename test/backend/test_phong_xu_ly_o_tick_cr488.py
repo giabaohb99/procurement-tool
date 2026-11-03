@@ -1,4 +1,4 @@
-"""bao-CR-488 — ô «Phòng xử lý» ẩn sau ô tick «Nhờ phòng khác xử lý» khi LẬP phiếu.
+"""bao-CR-488 — ô "Phòng xử lý" ẩn sau ô tick "Nhờ phòng khác xử lý" khi LẬP phiếu.
 
 Giao diện không tick thì KHÔNG gửi ô này (`None`) → backend tra mặc định của bao-CR-480
 (phòng tự mua → chính phòng lập, còn lại → 0 Thu mua chung). Tick và chọn thì gửi số, và
@@ -22,7 +22,7 @@ def test_factory_leaving_the_box_untouched_gets_its_own_department(db, seed, two
 
 
 def test_factory_explicitly_choosing_shared_purchasing_is_kept(db, seed, two_departments):
-    """Ca TM01: nhà máy xin, THU MUA CHUNG mua — tick rồi chọn «Thu mua chung» (0)."""
+    """Ca TM01: nhà máy xin, THU MUA CHUNG mua — tick rồi chọn "Thu mua chung" (0)."""
     factory_id, _ = two_departments
     _, emp = _person(db, seed, factory_id, scope="dept_proc")
     pr = pr_service.create_pr(db, PRCreate(company_id=seed.company_id, requester_id=emp.id,
@@ -44,7 +44,7 @@ def test_ordinary_department_sending_zero_or_nothing_both_land_on_shared_purchas
 
 def test_survey_request_follows_the_same_rule(db, seed, two_departments):
     factory_id, purchasing_id = two_departments
-    # «Phòng tự mua» nhận diện qua quyền YCMH bậc dept_proc (bao-CR-480), kể cả khi lập YCBG.
+    # "Phòng tự mua" nhận diện qua quyền YCMH bậc dept_proc (bao-CR-480), kể cả khi lập YCBG.
     _, emp = _person(db, seed, factory_id, scope="dept_proc")
     base = dict(company_id=seed.company_id, requester=emp.full_name, requester_id=emp.id,
                 department_id=factory_id, purpose="YCBG nhà máy")
@@ -58,6 +58,6 @@ def test_survey_request_follows_the_same_rule(db, seed, two_departments):
 
 
 def test_schema_default_is_none_not_zero():
-    """Mặc định của schema phải là «chưa chọn» — đổi về 0 là tắt lại cả ca TM01."""
+    """Mặc định của schema phải là "chưa chọn" — đổi về 0 là tắt lại cả ca TM01."""
     assert PRCreate(company_id=1, purpose="x").handler_dept_id is None
     assert SurveyRequestCreate(company_id=1, purpose="x").handler_dept_id is None

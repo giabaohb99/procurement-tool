@@ -11,7 +11,7 @@
 | 2 | Phiếu **tạo trên ERP cũng phải hiện bên app cũ** — lệch bản vẽ gốc (gốc: "phiếu ERP tự tạo không bắn sang") |
 | 3 | Mã viết xong nhưng **khóa bằng công tắc**, mặc định tắt. Chưa triển khai, không có hạn |
 | 4 | **Không** gửi thông báo từ phía ERP cho người dùng app cũ — họ nhận thông báo của app cũ như cũ |
-| 5 | Chưa làm «Bước 0» (chặn chiều nhận ghi đè kết quả ERP) — làm sau khi mã đồng bộ xong |
+| 5 | Chưa làm **Bước 0** (chặn chiều nhận ghi đè kết quả ERP) — làm sau khi mã đồng bộ xong |
 | 6 | Tài xế dùng app cũ lâu dài; khi chuyển hẳn thì vẫn hai chiều, quy định thao tác ở app nào |
 
 ## 2. Hình dạng
@@ -24,7 +24,7 @@ Celery: đọc phiếu HIỆN TẠI → dựng ẢNH CHỤP → băm → trùng 
   │  ghi sổ (OUTBOUND, chờ) → ký HMAC → POST {base}/v1/sync/erp-events
   ▼  2xx: phiếu mới thì ghi `legacy_id` app cũ trả về (trong suppress_outbound) → sổ thành công
 Worker app cũ: kiểm chữ ký + công tắc nhận → ghi Firebase bằng quyền tài khoản dịch vụ
-     • phiếu đã có: đặt trạng thái, một mục lịch sử «Xử lý trên ERP», điều phối, km/chi phí
+     • phiếu đã có: đặt trạng thái, một mục lịch sử "Xử lý trên ERP", điều phối, km/chi phí
      • phiếu chưa có: tạo bản ghi mới (chống trùng qua nhánh `erpRefs`), trả khóa mới
      • KHÔNG bắn chuông/email, KHÔNG gọi ngược sang ERP, KHÔNG đóng dấu `updatedAt`
 ```
@@ -100,9 +100,9 @@ Trả về phong bì `{success, data: {legacy_id, status}}`. ERP chỉ ghi `lega
 
 ## 7. Còn để sau (ghi nhận)
 
-- «Bước 0»: chiều nhận đang ghi đè hết (`builder.copy_legacy_fields`, `full_sweep` chạy `force`).
+- **Bước 0**: chiều nhận đang ghi đè hết (`builder.copy_legacy_fields`, `full_sweep` chạy `force`).
   Trước khi cho ai thao tác thật trên ERP với phiếu đồng bộ phải làm.
-- Tệp đính kèm của phiếu dấu tạo trên ERP chưa sang app cũ (app cũ chỉ thấy ghi chú «xem tệp trên ERP»).
+- Tệp đính kèm của phiếu dấu tạo trên ERP chưa sang app cũ (app cũ chỉ thấy ghi chú **xem tệp trên ERP**).
 - `SEAL_DELIVERED` (QĐ-H) chưa làm — luồng thật của app cũ không dùng tới.
 - Hiển thị km/chi phí trên giao diện app cũ (`degoholding-app-frontend`): dữ liệu đã nằm trong
   `details.dispatch`, màn hình chưa vẽ.
@@ -120,7 +120,7 @@ Trả về phong bì `{success, data: {legacy_id, status}}`. ERP chỉ ghi `lega
 | 5 | Trả về sửa | `needs_correction` + một dòng lịch sử |
 | 6 | Từ chối | `rejected` + một dòng lịch sử |
 
-17 lượt gửi đều thành công, mỗi phiếu tối đa 4 lượt, chiều nhận không kéo ngược (2 dòng «bỏ qua»), không vòng lặp.
-Lỗi bắt được và đã vá: «đã điều phối» → «hoàn thành» từng ghi thêm dòng «approved» thừa (đường nhận nay chỉ ghi khi
+17 lượt gửi đều thành công, mỗi phiếu tối đa 4 lượt, chiều nhận không kéo ngược (2 dòng **bỏ qua**), không vòng lặp.
+Lỗi bắt được và đã vá: **đã điều phối** → **hoàn thành** từng ghi thêm dòng **approved** thừa (đường nhận nay chỉ ghi khi
 kết cục đổi). Thử xong đã TẮT cả hai công tắc. Kho Firebase dev khác prod nên khóa tài xế trên dev (tra theo bảng gán
 tay của prod) có thể không trỏ vào tài xế có thật bên dev — đường ống đúng, dữ liệu danh mục thì prod mới chứng minh được.

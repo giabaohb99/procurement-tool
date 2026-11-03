@@ -34,12 +34,12 @@ export interface ModuleBreadcrumb {
   hasCurrent: boolean
   /** Có cấp thứ ba (mục con khác tên mục cha) không. */
   hasChild: boolean
-  /** Mục menu trùng tên phân hệ (vd «Nhân sự › Nhân sự») — giấu cấp phân hệ. */
+  /** Mục menu trùng tên phân hệ (vd "Nhân sự › Nhân sự") — giấu cấp phân hệ. */
   hideModuleLevel: boolean
   /** Đang ở trang CON của mục menu (chi tiết bản ghi) — cấp mục menu thành link về danh sách. */
   isBelowCurrent: boolean
   /**
-   * Chữ của cấp CUỐI khi cấp đó là «trang đang đứng» (`aria-current="page"`); `null` khi cấp cuối là LINK
+   * Chữ của cấp CUỐI khi cấp đó là "trang đang đứng" (`aria-current="page"`); `null` khi cấp cuối là LINK
    * (trang chi tiết — tên bản ghi nằm ở tiêu đề trang, không trùng gì).
    */
   pageLabel: string | null
@@ -61,8 +61,8 @@ export function resolveModuleBreadcrumb(module: ErpModule, pathname: string): Mo
   //  Cấp thứ ba — mục con trùng tên mục cha thì thôi, khỏi lặp chữ.
   const activeChild = hasCurrent && current ? findActiveChild(current, pathname) : undefined
   const hasChild = Boolean(activeChild && activeChild.label !== current?.label)
-  //  Mục menu trùng tên phân hệ (vd phân hệ «Nhân sự» › mục «Nhân sự») — giấu cấp phân hệ,
-  //  không thì thanh ghi «Nhân sự › Nhân sự» (anh Được báo 02/11/2026).
+  //  Mục menu trùng tên phân hệ (vd phân hệ "Nhân sự" › mục "Nhân sự") — giấu cấp phân hệ,
+  //  không thì thanh ghi "Nhân sự › Nhân sự" (anh Được báo 02/11/2026).
   const hideModuleLevel = hasCurrent && current?.label === module.title
   const isBelowCurrent = hasCurrent && !hasChild && Boolean(current) && pathname !== current?.path
 

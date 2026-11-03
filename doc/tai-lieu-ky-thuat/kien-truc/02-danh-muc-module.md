@@ -74,7 +74,7 @@ Trạng thái lấy từ `module-registry.ts` + cờ `enabled`; "Sắp có" = c�
 | `production` | Sản xuất | Đang chạy | Danh mục: NCC (kèm 5 tab), sản phẩm, ĐVT, phân loại, hợp đồng |
 | `inventory` | Kho | Đang chạy | Tồn kho, danh mục kho |
 | `finance` | Tài chính | Đang chạy | Công nợ, Yêu cầu thanh toán (QĐ-5) |
-| `document` | Văn bản | Đang chạy | Văn thư đầy đủ + «Chờ tôi duyệt» mở cho người duyệt ngoài phân hệ |
+| `document` | Văn bản | Đang chạy | Văn thư đầy đủ + **Chờ tôi duyệt** mở cho người duyệt ngoài phân hệ |
 | `approval` | Phê duyệt | Đang chạy | Khai luồng duyệt dùng chung |
 | `forum` | Diễn đàn | Đang chạy | Khung riêng (`customLayout`), kiểu bảng tin |
 | `support` | Hỗ trợ | Đang chạy | Phiếu hỗ trợ |

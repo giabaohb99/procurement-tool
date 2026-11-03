@@ -1,4 +1,4 @@
-"""Lịch làm việc phase 07 — API «Ai làm / ai nghỉ» `/api/work-schedules/tools/roster`.
+"""Lịch làm việc phase 07 — API "Ai làm / ai nghỉ" `/api/work-schedules/tools/roster`.
 
 Mốc ngày cố định: 05/01/2026 là thứ Hai (không phụ thuộc "hôm nay"). Chạy qua HTTP thật
 (TestClient + SQLite) để phạm vi, validate tham số và đếm truy vấn đều là hành vi thấy được.
@@ -275,7 +275,7 @@ def test_loc_phong_ban_cong_ty_tim_kiem_va_ky_tu_dac_biet(api, db):
     assert len(_get(api, company_id=company.id + 99).json()["data"]["items"]) == 0
     assert [i["code"] for i in _get(api, q="anna").json()["data"]["items"]] == ["ZZ1"]
     #  hacker gõ ký tự đại diện: `%` / `_` phải là chữ thường, không khớp mọi dòng
-    assert _get(api, q="%").json()["data"]["total"] == 1                # chỉ «Bob 100% đúng»
+    assert _get(api, q="%").json()["data"]["total"] == 1                # chỉ "Bob 100% đúng"
     assert _get(api, q="_").json()["data"]["total"] == 0
 
 

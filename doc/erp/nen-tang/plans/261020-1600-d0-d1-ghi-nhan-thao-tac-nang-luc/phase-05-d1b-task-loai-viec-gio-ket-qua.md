@@ -1,8 +1,8 @@
 # Phase 05 — D1b: Task Dự án có loại việc, giờ ước lượng, giờ thực tế, kết quả
 
 ## Context links
-- Lời đại ca: «Task Dự án có thêm loại việc, giờ ước lượng, giờ thực tế, kết quả đạt hay làm lại»
-- `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §5 «Phần Dự án», §8 câu 3 (ai khai danh mục loại việc)
+- Lời đại ca: **Task Dự án có thêm loại việc, giờ ước lượng, giờ thực tế, kết quả đạt hay làm lại**
+- `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §5 **Phần Dự án**, §8 câu 3 (ai khai danh mục loại việc)
 - BE: `backend/app/modules/work/task_model.py` (`tab_work_task`), `model.py` (`WorkTaskStatus` OPEN 1/DONE 2/CANCELLED 3), `task_service.py` (`_apply_status` l.~367: mở lại XÓA `completed_at`), `schema.py` (`TaskCreate`/`TaskUpdate`)
 - FE: `frontend-v2/src/modules/work/types/work.ts`, `components/task-detail-sheet.tsx`, `task-draft-row.tsx`, `utils/list-columns.ts`, `config/task-filter-fields.ts`
 - `backend/scripts/sync_task_journal.py` (chỉ đi qua API, không cần đổi)
@@ -14,28 +14,28 @@
 
 ## Key insights
 - Hiện chỉ có `kind` TASK/MILESTONE — không phải loại nghiệp vụ. Trường tùy biến (`tab_work_label_field`) theo **từng dự án** → không đồng nhất toàn công ty, AI không gom được → cần **cột thật**.
-- Không có bảng giờ công/timesheet. YAGNI: giờ thực tế **nhập tay một số** khi xong (không làm chấm giờ — khớp memory «Không làm chấm công»).
-- «Làm lại» suy được từ lịch sử: `tab_change_log` ghi `status` 2→1 (mở lại sau xong). Không cần cột đếm riêng (D1a đếm). Cột `outcome` là **đánh giá của người giao**.
+- Không có bảng giờ công/timesheet. YAGNI: giờ thực tế **nhập tay một số** khi xong (không làm chấm giờ — khớp memory **Không làm chấm công**).
+- **Làm lại** suy được từ lịch sử: `tab_change_log` ghi `status` 2→1 (mở lại sau xong). Không cần cột đếm riêng (D1a đếm). Cột `outcome` là **đánh giá của người giao**.
 - Một task có thể nhiều PIC → giờ thực tế là **tổng của task**; D1a chia theo PIC khi tính năng lực (Q10).
 
 ## Requirements
 - Danh mục loại việc theo pháp nhân, tùy chọn gắn phòng ban; quản trị khai (Q3).
 - Task: chọn loại việc, nhập giờ ước lượng (lúc giao), giờ thực tế (lúc xong, không bắt buộc), kết quả.
-- Kết quả: người giao (người tạo task) hoặc quản trị dự án chọn «Đạt» / «Phải làm lại» sau khi task DONE; «Phải làm lại» tự mở lại task.
+- Kết quả: người giao (người tạo task) hoặc quản trị dự án chọn **Đạt** / **Phải làm lại** sau khi task DONE; **Phải làm lại** tự mở lại task.
 - Bot/AI (`plan_service`, A2) đặt được `task_type_id`, `estimate_hours` qua cùng schema.
 
 ## Architecture
-**Mã** `backend/app/modules/work/model.py` (cạnh `WorkTaskStatus`): `WorkTaskOutcome(IntEnum)` 1 PASSED «Đạt» · 2 REWORK «Phải làm lại»; đăng ký code set `work_task_outcome`.
+**Mã** `backend/app/modules/work/model.py` (cạnh `WorkTaskStatus`): `WorkTaskOutcome(IntEnum)` 1 PASSED **Đạt** · 2 REWORK **Phải làm lại**; đăng ký code set `work_task_outcome`.
 **Bảng mới `tab_work_task_type`** (`work/task_type_model.py`, AuditMixin): `id · company_id BIGINT · department_id BIGINT DEFAULT 0 (0 = cả pháp nhân) · code VARCHAR(30) · name VARCHAR(120) ·
 default_estimate_hours DECIMAL(6,2) NULL · is_active BOOL · sort_order INT` UNIQUE `(company_id, code)`.
 **Cột mới `tab_work_task`**: `task_type_id BIGINT DEFAULT 0` · `estimate_hours DECIMAL(6,2) NULL` · `actual_hours DECIMAL(6,2) NULL` · `outcome SMALLINT DEFAULT 0` (0 = chưa đánh giá) ·
 INDEX `ix_work_task_type_status (task_type_id, status)` · INDEX `ix_work_task_completed_at (completed_at)` (cho D1a).
-Ràng: `0 < hours ≤ 999` (schema `Field(ge=0, le=999)`); `actual_hours`, `outcome` chỉ đặt khi DONE; đặt `outcome=REWORK` → `_apply_status(OPEN)` + audit «Đánh giá phải làm lại».
+Ràng: `0 < hours ≤ 999` (schema `Field(ge=0, le=999)`); `actual_hours`, `outcome` chỉ đặt khi DONE; đặt `outcome=REWORK` → `_apply_status(OPEN)` + audit **Đánh giá phải làm lại**.
 **API**
 - `GET /api/work/task-types?company_id` — `require("work_task","read")` (ai dùng Dự án cũng chọn được).
 - `POST/PATCH/DELETE /api/work/task-types[/{id}]` — `require("setting","write")` (mặc định quản trị; Q3). Xóa = `is_active=false` nếu đã có task dùng.
 - `PATCH /api/work/tasks/{id}` nhận thêm `task_type_id, estimate_hours, actual_hours`; `POST /api/work/tasks/{id}/outcome {outcome}` (quyền: người tạo task hoặc CAN_MANAGE của list).
-**FE**: ô «Loại việc» (select), «Ước lượng (giờ)», «Thực tế (giờ)» trong `task-detail-sheet.tsx`; hộp «Đánh giá kết quả» hiện khi DONE; cột tùy chọn trong list view + bộ lọc theo loại việc;
+**FE**: ô **Loại việc** (select), **Ước lượng (giờ)**, **Thực tế (giờ)** trong `task-detail-sheet.tsx`; hộp **Đánh giá kết quả** hiện khi DONE; cột tùy chọn trong list view + bộ lọc theo loại việc;
 màn quản trị danh mục: `CrudListPage` trong `modules/system` hoặc `modules/work/pages/task-type-catalog-page.tsx`.
 
 ## Related code files
@@ -60,7 +60,7 @@ Sửa FE (vùng Agent 3 — phối hợp): `modules/work/types/work.ts` · `comp
 - [x] cập nhật task + outcome (`task_outcome_service`; mở lại khi REWORK)
 - [x] serializer + plan_service (`_effort_kwargs`: rác thì bỏ qua)
 - [x] FE sheet (`task-effort-fields`, `task-outcome-box`) + danh mục (`task-type-crud`, route `/project/task-types`) + bộ lọc theo loại việc
-- [ ] **Hoãn:** cột «Loại việc» trong khung nhìn Danh sách — cần thêm khóa dựng sẵn vào `BUILTIN_CARD_FIELDS` và 3 nơi vẽ (thẻ, dòng danh sách, Gantt), đổi bố cục đã nhớ của mọi người dùng; để dành khi đại ca duyệt
+- [ ] **Hoãn:** cột **Loại việc** trong khung nhìn Danh sách — cần thêm khóa dựng sẵn vào `BUILTIN_CARD_FIELDS` và 3 nơi vẽ (thẻ, dòng danh sách, Gantt), đổi bố cục đã nhớ của mọi người dùng; để dành khi đại ca duyệt
 - [x] seed local (`seed.py::seed_work_task_types`, 4 loại; không có trong `seed_prod.py`)
 
 **Lệch so với kế hoạch (có chủ ý):** tên migration/tệp test; `GET /task-types` trả `{total, items}` có phân trang (thay vì mảng) cho khớp `CrudListPage`;
@@ -73,7 +73,7 @@ người không phải người tạo/quản lý list đặt outcome → 403; da
 Vitest `src/modules/work`: `task-effort-fields.test.tsx` (9 bài), `task-outcome-box.test.tsx` (6 bài), thêm 1 bài lọc loại việc ở `task-conditions.test.ts`.
 
 ## Success criteria
-- Tạo task chọn loại «Báo giá NCC», ước 4 giờ → xong nhập thực tế 6 giờ → đánh giá «Đạt»; dữ liệu đọc được ở D1a.
+- Tạo task chọn loại **Báo giá NCC**, ước 4 giờ → xong nhập thực tế 6 giờ → đánh giá **Đạt**; dữ liệu đọc được ở D1a.
 - Task cũ không đổi hành vi (cột mới mặc định 0/NULL); `sync_task_journal.py` chạy như cũ.
 
 ## Risk assessment

@@ -42,7 +42,7 @@ SEARCH_FIELDS = ("code", "full_name", "email", "phone")
 
 
 def employee_code_prefix() -> str:
-    """Tiền tố mã hồ sơ mới — Cài đặt nhân sự (duoc-CR-713), mặc định «NSU». Cửa lưu đã kiểm 2–10 chữ in hoa; ở đây
+    """Tiền tố mã hồ sơ mới — Cài đặt nhân sự (duoc-CR-713), mặc định "NSU". Cửa lưu đã kiểm 2–10 chữ in hoa; ở đây
     chỉ phòng giá trị hỏng nằm sẵn dưới DB / `.env` (rơi về NSU chứ không sinh mã lạ)."""
     raw = str(app_settings.get("employee_code_prefix") or "").strip().upper()
     return raw if re.fullmatch(r"[A-Z]{2,10}", raw) else "NSU"

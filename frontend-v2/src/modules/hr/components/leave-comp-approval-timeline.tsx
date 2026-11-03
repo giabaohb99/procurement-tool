@@ -34,7 +34,7 @@ function createdEvent(request: LeaveCompRequest): TrailExtraEvent {
 /**
  * Luồng duyệt của phiếu nghỉ bù.
  *  · Có phiên duyệt (`approval_instance_id > 0`) → `ApprovalTrailCard` của phân hệ Phê duyệt (dấu vết thật),
- *    chèn thêm mốc «lập phiếu» ở đáy và — riêng phiếu HỦY — mốc kết cục ở đầu, vì bộ máy chỉ biết «đã rút».
+ *    chèn thêm mốc "lập phiếu" ở đáy và — riêng phiếu HỦY — mốc kết cục ở đầu, vì bộ máy chỉ biết "đã rút".
  *  · Duyệt thẳng → ba mốc dựng từ chính phiếu: lập · chờ/kết quả (kèm ghi chú của người chốt).
  */
 export function LeaveCompApprovalTimeline({ request }: LeaveCompApprovalTimelineProps) {
@@ -95,7 +95,7 @@ export function LeaveCompApprovalTimeline({ request }: LeaveCompApprovalTimeline
           detail:
             request.status === LEAVE_COMP_STATUS.PENDING
               ? undefined
-              : 'Bấm «Gửi duyệt» khi đã nhập đủ.',
+              : 'Bấm "Gửi duyệt" khi đã nhập đủ.',
           tone:
             request.status === LEAVE_COMP_STATUS.PENDING
               ? 'border-sky-200 bg-sky-50 text-sky-700 dark:bg-sky-950/40'

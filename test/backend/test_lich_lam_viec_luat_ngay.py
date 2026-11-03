@@ -23,7 +23,7 @@ def test_cong_toi_da_cua_ngay():
 def test_fallback_la_t2_t7_08_17_cn_nghi():
     assert [s.kind for s in FALLBACK_WEEK] == [WorkDayKind.FULL] * 6 + [WorkDayKind.OFF]
     assert weekly_workdays(FALLBACK_WEEK) == 6.0
-    assert day_hours(FALLBACK_WEEK[0]) == 8.0   # 9h trừ 1h trưa — nguồn của «giờ/8» cũ
+    assert day_hours(FALLBACK_WEEK[0]) == 8.0   # 9h trừ 1h trưa — nguồn của "giờ/8" cũ
 
 
 def test_tuan_t2_t6_va_sang_t7_la_5_ruoi_con_toan_nghi_la_0():

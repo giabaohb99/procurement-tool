@@ -1,4 +1,4 @@
-"""duoc-CR-692 — migration `hcplan05` (bỏ «Kế hoạch nhân sự»): hàm thuần chọn xử lý loại văn bản CCKHNS + thứ tự DROP."""
+"""duoc-CR-692 — migration `hcplan05` (bỏ "Kế hoạch nhân sự"): hàm thuần chọn xử lý loại văn bản CCKHNS + thứ tự DROP."""
 import importlib.util
 from pathlib import Path
 
@@ -43,4 +43,4 @@ def test_drop_du_bay_bang_va_khong_tai_cap_khoa_bao_cao_25(mig):
     from app.core.report_keys import RETIRED_REPORT_KEYS
     assert RETIRED_REPORT_KEYS == frozenset({25})
     assert 25 not in {int(k) for k in ReportKey} and 25 not in {int(k) for k in REPORT_META}
-    assert len(ReportKey) == 28 and max(int(k) for k in ReportKey) == 29     # không khóa nào khác bị đổi số
+    assert len(ReportKey) == 29 and max(int(k) for k in ReportKey) == 30     # không khóa nào khác bị đổi số

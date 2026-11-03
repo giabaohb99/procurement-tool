@@ -484,7 +484,7 @@ def lines_of(db: Session, request_id: int) -> list[LeaveRequestLine]:
 
 def check_applicable_after(employee: Employee, leave_types: list[LeaveType],
                            periods: list[PeriodView]) -> None:
-    """duoc-CR-715: mỗi loại nghỉ có «dùng được sau N ngày vào làm» — kiểm theo ngày bắt đầu SỚM NHẤT của đơn."""
+    """duoc-CR-715: mỗi loại nghỉ có "dùng được sau N ngày vào làm" — kiểm theo ngày bắt đầu SỚM NHẤT của đơn."""
     starts = [p.from_date for p in periods if p.from_date]
     if not starts:
         return
@@ -765,7 +765,7 @@ def prepare_submit(db: Session, obj: LeaveRequest, user) -> Employee:
     employee = get_employee(db, obj.employee_id)
     periods = request_periods.periods_of(db, obj)
     #  duoc-CR-713: nháp lập hôm qua cho hôm nay mà để tới mai mới gửi thì lúc gửi đã là đơn lùi ngày. Đơn BỊ TRẢ VỀ
-    #  thì đã gửi duyệt một lần (lúc đó hợp lệ) — gửi lại không chặn, như lời hứa «đơn đã gửi không bị ảnh hưởng».
+    #  thì đã gửi duyệt một lần (lúc đó hợp lệ) — gửi lại không chặn, như lời hứa "đơn đã gửi không bị ảnh hưởng".
     if obj.status != LR_RETURNED:
         leave_policy.ensure_not_backdated(db, user, periods, creator_id=obj.created_by)
     request_periods.raise_if_overlap(db, obj.employee_id, periods, exclude_id=obj.id)

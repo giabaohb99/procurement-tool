@@ -19,8 +19,8 @@ interface EmployeeDetailBlockProps {
  * accordion của ERPNext (duoc-CR-708, màn chi tiết nhân sự).
  *
  * Tiêu đề cũ của khối bên trong (`SectionHeading` hoặc `CardTitle`) bị ẩn bằng lớp phạm vi
- * để không ra hai tiêu đề chồng nhau; phần còn lại của hàng tiêu đề cũ (nút «Lưu danh sách»,
- * «Bắt đăng nhập lại»…) vẫn giữ nguyên.
+ * để không ra hai tiêu đề chồng nhau; phần còn lại của hàng tiêu đề cũ (nút "Lưu danh sách",
+ * "Bắt đăng nhập lại"…) vẫn giữ nguyên.
  *
  * Ngoài màn dùng kiểu `flat` (vd Trang cá nhân dùng lại cùng component con) thì KHÔNG bọc
  * gì cả — khối hiện y như cũ.

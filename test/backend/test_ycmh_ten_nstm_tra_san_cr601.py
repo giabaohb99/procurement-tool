@@ -2,7 +2,7 @@
 
 Vì sao cần: hai bản giao diện từng tra tên từ danh sách nhân sự tải về, mà danh sách đó
 lọc theo PHẠM VI người xem. Người bị giới hạn pháp nhân (trong khi 259 hồ sơ nhân sự để
-pháp nhân 0) chỉ thấy mã «NSU012» ở cột NSTM phụ trách. Máy chủ trả tên là hết phụ thuộc.
+pháp nhân 0) chỉ thấy mã "NSU012" ở cột NSTM phụ trách. Máy chủ trả tên là hết phụ thuộc.
 """
 from types import SimpleNamespace
 

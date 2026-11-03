@@ -1,4 +1,4 @@
-"""Xuất Excel mục «Thuốc BVTV» — round-trip với nút «Nạp danh mục» (02/10/2026).
+"""Xuất Excel mục "Thuốc BVTV" — round-trip với nút "Nạp danh mục" (02/10/2026).
 
 Ba điều canh chặt nhất:
   · `scope=all` xuất RA SAO thì `pesticide_reader` phải NẠP LẠI ĐƯỢC đúng như vậy — so trực tiếp
@@ -154,7 +154,7 @@ def test_export_logs_one_row_per_call(db):
 
 def test_export_page_matches_list_filter_sort_and_page(db):
     #  `replace_catalog` thay TOÀN BỘ thuốc từ nguồn — phải nạp chung MỘT lượt, nạp hai lượt sẽ
-    #  xóa mất lượt trước (đúng như hành vi thật của «Nạp danh mục»).
+    #  xóa mất lượt trước (đúng như hành vi thật của "Nạp danh mục").
     omega = [_raw(300 + i, name) for i, name in
             enumerate(["Omega 1", "Omega 2", "Omega 3", "Omega 4", "Omega 5"])]
     _load_json(db, *omega, _raw(999, "Khác hẳn"))   # "Khác hẳn" không khớp bộ lọc "Omega"

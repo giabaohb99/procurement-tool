@@ -139,7 +139,7 @@ class TestCreate:
             _book(db, env)
 
     def test_moi_nhan_su_KHONG_TON_TAI_thi_bo_qua(self, db, env):
-        #  Id bịa lọt vào thì danh sách hiện dòng «#999999» không tên, không ai
+        #  Id bịa lọt vào thì danh sách hiện dòng "#999999" không tên, không ai
         #  gỡ được vì không biết nó là ai — dựng lại được bằng một lệnh gọi API
         #  thẳng ngày 04/09/2026.
         obj = _book(db, env, attendees=[AttendeeItem(employee_id=999999),

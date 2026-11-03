@@ -397,7 +397,7 @@ def test_serialize_luot_chay_pos365_giu_nguyen_hinh_dang_cu(db):
                          "started_at", "finished_at", "cursor_from", "cursor_to",
                          "fetched", "written", "skipped", "error", "detail",
                          "created_by"}
-    #  `kind` là SỐ cũ mà giao diện gửi lên khi bấm «Chạy ngay» (RECONCILE = 4),
+    #  `kind` là SỐ cũ mà giao diện gửi lên khi bấm "Chạy ngay" (RECONCILE = 4),
     #  dù dưới sổ nay lưu mã chữ.
     assert data["kind"] == 4
     assert data["kind_label"] == "Đối chiếu"

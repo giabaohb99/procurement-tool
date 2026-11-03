@@ -1,6 +1,6 @@
 """HỒ SƠ TIÊN QUYẾT — `tab_dossier.depends` (đại ca chốt 21/09/2026).
 
-*«Tờ giấy này chỉ làm được sau khi mấy tờ kia xong.»* Ràng buộc khai **một lần
+*"Tờ giấy này chỉ làm được sau khi mấy tờ kia xong."* Ràng buộc khai **một lần
 cho cả kho**, ở chính tờ hồ sơ — không khai lại trong từng tờ phiếu.
 
 ⚠️ Vòng tiên quyết ở đây NGUY HƠN bản theo-phiếu từng làm trước đó: một vòng

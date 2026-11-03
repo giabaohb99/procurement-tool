@@ -39,7 +39,7 @@ mình không phải thành viên.
 - ⚠️ **`company_id` KHÔNG lọc — bỏ ngày 15/09/2026.** Các bảng vẫn có cột đó và vẫn ghi
   (báo cáo, đối soát), nhưng nó **không còn là điều kiện đọc**. Lý do: chốt cũ
   `WorkList.company_id == <pháp nhân người xem>` chặn nhầm người thật và chặn **im
-  lặng** — dự án «ERP v2» trên dev do người chưa gắn pháp nhân (`company_id = 0`) tạo,
+  lặng** — dự án **ERP v2** trên dev do người chưa gắn pháp nhân (`company_id = 0`) tạo,
   mời một người ở pháp nhân `16`; dòng thành viên có thật, vai trò đúng, danh sách trả
   về rỗng, không chỗ nào báo lỗi. Cột đó không phân định nổi pháp nhân thật: **237/253
   nhân sự để `0`** và `tab_company` có **hai dòng trùng tên** (id `1` mã `DEGO` · id `16`

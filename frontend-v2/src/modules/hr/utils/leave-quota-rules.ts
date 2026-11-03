@@ -9,14 +9,14 @@ export const QUOTA_BASIS_LABELS: Record<number, string> = {
   [LEAVE_QUOTA_BASIS.JOB_LEVEL]: 'Cấp bậc',
 }
 
-/** Các mã chọn được của một cơ sở (bỏ mã 0 «chưa khai»). */
+/** Các mã chọn được của một cơ sở (bỏ mã 0 "chưa khai"). */
 export function quotaValueOptions(basis: number): { value: number; label: string }[] {
   const source =
     basis === LEAVE_QUOTA_BASIS.EMPLOYMENT_TYPE ? EMPLOYMENT_TYPE_OPTIONS : JOB_LEVEL_OPTIONS
   return source.filter((option) => option.value > 0)
 }
 
-/** Tên nhóm của một dòng, VD «Hình thức nhân viên: Bán thời gian». */
+/** Tên nhóm của một dòng, VD "Hình thức nhân viên: Bán thời gian". */
 export function describeQuotaRule(rule: Pick<LeaveTypeQuotaRule, 'basis' | 'basis_value'>): string {
   const label = quotaValueOptions(rule.basis).find((o) => o.value === rule.basis_value)?.label
   return `${QUOTA_BASIS_LABELS[rule.basis] ?? 'Nhóm'}: ${label ?? `#${rule.basis_value}`}`

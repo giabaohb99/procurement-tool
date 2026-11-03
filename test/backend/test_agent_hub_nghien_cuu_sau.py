@@ -142,7 +142,7 @@ def test_lenh_chat_di_dung_duong(db, env, monkeypatch):
     assert service._deep_research_by_text(db, CHAT, row("nghiên cứu sâu: giá thép"), "nghiên cứu sâu: giá thép")
     assert started[-1][:2] == (dr.KIND_WEB, "giá thép")
     assert not service._deep_research_by_text(db, CHAT, row("nghiên cứu thị trường là gì"), "nghiên cứu thị trường là gì")
-    #  «tổng hợp các tài liệu này» mà không có tệp / link nào → không phải lệnh (để Trợ lý ERP trả lời).
+    #  "tổng hợp các tài liệu này" mà không có tệp / link nào → không phải lệnh (để Trợ lý ERP trả lời).
     assert not service._deep_research_by_text(db, CHAT, row("tổng hợp các tài liệu này"), "tổng hợp các tài liệu này")
     #  Có hai tệp gửi trước (một đang chờ câu hỏi) + một link → gom cả ba; tệp đang chờ bị giành (không trả lời hai lần).
     f1 = row("[tệp a.pdf]", action=ACT_DOC_WAIT)
@@ -207,11 +207,11 @@ def test_re_thi_chay_luon_dat_thi_hoi_ok_roi_moi_chay(db, env, monkeypatch):
     assert dr.cost_ok_by_text(db, CHAT, msg, "ok") and env["dispatched"][-1] == out["job_id"]
     job = dr._load(db.get(dr.AgentMessage, out["job_id"]))
     assert job["status"] == dr.ST_QUEUED and job["ok"] is True and "làm luôn" in env["sent"][-1]
-    #  «ok» lần nữa khi không còn thẻ chờ → không nhận (để các đường khác xử).
+    #  "ok" lần nữa khi không còn thẻ chờ → không nhận (để các đường khác xử).
     msg2 = service.log_message(db, DIR_IN, CHAT, 6, "ok")
     db.commit()
     assert not dr.cost_ok_by_text(db, CHAT, msg2, "ok")
-    #  «thôi» trên thẻ khác → bỏ việc, không chạy.
+    #  "thôi" trên thẻ khác → bỏ việc, không chạy.
     out2 = dr.start(db, CHAT, 7, dr.KIND_WEB, "giá nhôm")
     msg3 = service.log_message(db, DIR_IN, CHAT, 7, "thôi")
     db.commit()
@@ -234,7 +234,7 @@ def test_gom_nguon_bo_trung_chi_public(monkeypatch):
 
 def test_bao_cao_du_5_muc_trich_nguon_tin_chat_va_word(db, env, monkeypatch):
     _web(monkeypatch)
-    #  Model bỏ mục «mâu thuẫn» → được chèn; báo cáo vẫn đủ các mục cố định.
+    #  Model bỏ mục "mâu thuẫn" → được chèn; báo cáo vẫn đủ các mục cố định.
     fake = _use(monkeypatch, FakeProvider(REPORT_WEB.replace("## CHỖ MÂU THUẪN / CHƯA CHẮC\n- [1] nói tăng 5%, [3] nói tăng 3%\n", "")))
     row = dr.create_job(db, CHAT, 7, dr.KIND_WEB, "giá thép xây dựng quý 4", queries=["giá thép quý 4", "dự báo thép 2027"])
     out = dr.run_job(db, row.id)
@@ -254,7 +254,7 @@ def test_bao_cao_du_5_muc_trich_nguon_tin_chat_va_word(db, env, monkeypatch):
     xml = _docx_xml(data)
     assert "DANH MỤC NGUỒN" in xml and "Tiêu đề https://bao.vn/giá" in xml and "BÁO CÁO NGHIÊN CỨU" in xml
     assert "KẾT LUẬN VÀ KHUYẾN NGHỊ" in xml
-    #  Sổ chi phí: lượt viết gắn job_id, bước «report».
+    #  Sổ chi phí: lượt viết gắn job_id, bước "report".
     steps = [r.artifact["step"] for r in dr.job_runs(db, row.id)]
     assert "report" in steps and job["steps"][-1] == "gửi Word" and "cost_usd" in job
 

@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.core.vn_time import vn_today
 from app.modules.employee.model import Employee
 
-from . import accrual_service
+from . import accrual_service, policy_allocation
 from .balance_model import LeaveBalance
 from .catalog_model import LeaveType, LeaveTypeSeniority
 from .constants import LeaveAccrualMode
@@ -122,12 +122,11 @@ def ensure_balance(db: Session, employee, year: int, leave_type: LeaveType,
     years = seniority_years(hire_date, date(year, 1, 1))
     #  duoc-CR-715: hạn mức theo nhóm (hình thức > cấp bậc > mặc định), rồi tỷ lệ theo tháng làm việc
     #  với hai chế độ không phải FULL_YEAR. Thâm niên KHÔNG tỷ lệ.
-    quota = accrual_service.resolve_quota(db, leave_type, employee)
+    #  duoc-CR-717: phân bổ chính sách (nếu có) đổi hạn mức theo tháng; không có thì ra đúng số cũ.
     row = LeaveBalance(
         employee_id=employee.id, year=year, leave_type_id=leave_type.id,
         company_id=getattr(employee, "company_id", 0) or 0,
-        allocated_days=accrual_service.prorate_allocation(
-            quota, int(leave_type.accrual_mode or 1), hire_date, year),
+        allocated_days=policy_allocation.allocated_days(db, leave_type, employee, year),
         seniority_days=seniority_days(db, leave_type.id, years),
         created_by=actor, updated_by=actor,
     )

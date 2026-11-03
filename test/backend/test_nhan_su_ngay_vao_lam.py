@@ -50,12 +50,12 @@ def test_gui_null_TUONG_MINH_la_lenh_XOA_ngay_vao_lam():
 
 @pytest.mark.parametrize("value", [0, 1, 2, 3])
 def test_gioi_tinh_nhan_du_bon_gia_tri(value):
-    """`3` = «Khác», thêm 08/09/2026 — xem `employee/constants.GENDER_OTHER`."""
+    """`3` = "Khác", thêm 08/09/2026 — xem `employee/constants.GENDER_OTHER`."""
     assert EmployeeCreate(full_name="A", gender=value).gender == value
 
 
 def test_bo_loc_cua_LOAI_NGHI_khong_co_muc_Khac():
-    """«Khác» mô tả một CON NGƯỜI, không mô tả một loại nghỉ áp cho ai.
+    """"Khác" mô tả một CON NGƯỜI, không mô tả một loại nghỉ áp cho ai.
 
     Lọt mã `3` vào bảng nhãn của nghỉ phép là màn Loại nghỉ bày ra lựa chọn
     "chỉ dành cho giới Khác" — không ai định nghĩa nổi nó nghĩa gì.

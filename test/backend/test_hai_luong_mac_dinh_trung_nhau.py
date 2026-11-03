@@ -1,8 +1,8 @@
 """CẢNH BÁO KHI HAI LUỒNG MẶC ĐỊNH CÙNG BẬT (19/08/2026).
 
 Ca thật bắt được lúc chạy thử luồng văn thư: hai luồng `document` cùng đang bật
-và cùng KHÔNG khai điều kiện — «Ban hành văn bản hành chính» (bước 1 có người dự
-phòng) và «Ban hành văn bản (mặc định)» (bước 1 chặn cứng). `chon_luong` lấy
+và cùng KHÔNG khai điều kiện — "Ban hành văn bản hành chính" (bước 1 có người dự
+phòng) và "Ban hành văn bản (mặc định)" (bước 1 chặn cứng). `chon_luong` lấy
 đúng một cái, cái còn lại nằm im vĩnh viễn mà không có gì báo. Hệ quả: văn bản
 thiếu người duyệt thì phiếu KẸT, trong khi người khai đinh ninh nó rơi về người
 dự phòng như luồng kia khai.

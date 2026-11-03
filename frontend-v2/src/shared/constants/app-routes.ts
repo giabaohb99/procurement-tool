@@ -375,6 +375,8 @@ export const appRoutes = {
     roomUsage: '/report/room-usage',
     /** Đối tượng cần chú ý theo luật (duoc-CR-689, khóa 29). */
     legalWatch: '/report/legal-watch',
+    /** Làm việc vào ngày lễ, ngày nghỉ — nguồn phiếu nghỉ bù (duoc-CR-717, khóa 30). */
+    holidayWork: '/report/holiday-work',
     vehicleBooking: '/report/vehicle-booking',
     sealRequest: '/report/seal-request',
     document: '/report/document',
@@ -564,6 +566,13 @@ export const appRoutes = {
     leaveBlocks: '/hr/leave-blocks',
     leaveBlockNew: '/hr/leave-blocks/new',
     leaveBlockDetail: (id: number | string) => `/hr/leave-blocks/${id}`,
+    /** Chính sách nghỉ phép (duoc-CR-717): gói "loại nghỉ → số ngày/năm", thẻ thứ 4 của Thiết lập. */
+    leavePolicies: '/hr/leave-policies',
+    leavePolicyNew: '/hr/leave-policies/new',
+    leavePolicyDetail: (id: number | string) => `/hr/leave-policies/${id}`,
+    /** Phân bổ chính sách cho nhân sự (duoc-CR-717) — mục con của Nghỉ phép; trang hàng loạt nằm DƯỚI nó. */
+    leavePolicyAssignments: '/hr/leave-policy-assignments',
+    leavePolicyBulkAssign: '/hr/leave-policy-assignments/bulk',
     /** Lịch làm việc: mẫu lịch tuần (trang riêng vì form dài) và việc gán lịch theo cấp. */
     workSchedules: '/hr/work-schedules',
     workScheduleNew: '/hr/work-schedules/new',

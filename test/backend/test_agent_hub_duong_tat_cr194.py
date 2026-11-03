@@ -1,4 +1,4 @@
-"""ai-CR-194 (13/10, đại ca: «hồi trước trả lời gần như tức thì»; Agent 1 đo: 06/10 trung bình 5,8 s, 13/10 23,8 s; lời nhắc
+"""ai-CR-194 (13/10, đại ca: "hồi trước trả lời gần như tức thì"; Agent 1 đo: 06/10 trung bình 5,8 s, 13/10 23,8 s; lời nhắc
 phân loại phình 1,5k → 3,6k token). Nay: tra nhanh / xã giao đi thẳng (bỏ bước đọc ý định); lời nhắc phân loại rút gọn;
 ngữ cảnh việc tối đa 5 dòng."""
 from types import SimpleNamespace

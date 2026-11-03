@@ -13,10 +13,10 @@
 ## Quyết định gác quyền
 - Gác KÉP như 13 báo cáo cũ: `user=Depends(require("setting", "read"))` + `dependencies=[Depends(require_report(ReportKey.USAGE_PROFILE))]`.
   Chọn `setting` (không phải `audit`) vì mục danh mục FE phải có `sourcePath` khớp mục menu gốc cùng khóa — mục gốc là
-  «Nhật ký hệ thống» `/system/logs`, khóa gác thực tế của nó trong test là `setting` (khóa phân hệ Quản trị). Không thêm entity mới
+  **Nhật ký hệ thống** `/system/logs`, khóa gác thực tế của nó trong test là `setting` (khóa phân hệ Quản trị). Không thêm entity mới
   (khỏi đụng `ENTITIES`, `SCOPE_FIELDS`, bài 44/44).
 - Admin xem TẤT CẢ người, không `apply_scope` (khóa `setting` không có bảng để lọc). KHÔNG có đường "hồ sơ của tôi", không mở cho quản lý.
-- Gán khóa 14 cho người khác ở tab «Báo cáo» của Phân quyền là hành động chủ ý của admin — xem câu hỏi mở Q1.
+- Gán khóa 14 cho người khác ở tab **Báo cáo** của Phân quyền là hành động chủ ý của admin — xem câu hỏi mở Q1.
 
 ## Đường API (`usage_profile/controller.py`, prefix `/api/usage-profiles`)
 | Đường | Trả | Truy vấn (trần) |

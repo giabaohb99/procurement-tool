@@ -1,13 +1,13 @@
 """ai-CR-227 — lô vá hẹp Lạc Lạc tạo lịch (đại ca gật 19/10/2026, Agent 1 soi run #365–369, tin #969–#973 trên dev).
 
 Lỗi thật → bài kiểm:
-  1. tạo lịch KHÔNG theo tệp (01:30 «Dừng Long Thành», 04:00 «Ăn sáng Phan Thiết» trong khi tệp ghi 01:30 ngủ khách sạn
+  1. tạo lịch KHÔNG theo tệp (01:30 "Dừng Long Thành", 04:00 "Ăn sáng Phan Thiết" trong khi tệp ghi 01:30 ngủ khách sạn
      Ruby Trảng Bom, 05:15 xăng, 09:00 ăn sáng Tazon) → máy tách bảng giờ (`plan_extract`), tạo đúng theo số thứ tự;
   2. bịa link `maps.app.goo.gl/HangRai` → URL không có nguyên văn trong tin người dùng / tệp / kết quả công cụ bị bỏ (cả
      trong câu trả lời lẫn mô tả sự kiện);
-  3. «21/11/2026 Thứ Sáu» → thứ tính bằng lịch;
+  3. "21/11/2026 Thứ Sáu" → thứ tính bằng lịch;
   4. tạo lịch chồng giờ → chặn trước khi tạo;
-  5. «✅» trong tin bot → lọc.
+  5. "✅" trong tin bot → lọc.
 """
 import json
 from datetime import date, datetime, timedelta
@@ -57,9 +57,9 @@ def test_tach_dung_gio_ten_diem_qua_nua_dem_va_thu():
     ev = {e["stt"]: e for e in out["su_kien"]}
     assert len(ev) == 7 and any("Giờ lạ" in w for w in out["canh_bao"])
     assert ev[3]["bat_dau"] == "2026-11-20T01:30" and ev[3]["tieu_de"].startswith("Khách sạn Ruby Trảng Bom")
-    assert ev[3]["ket_thuc"] == "2026-11-20T05:00"                          # «Ngủ ~3,5 tiếng»
+    assert ev[3]["ket_thuc"] == "2026-11-20T05:00"                          # "Ngủ ~3,5 tiếng"
     assert ev[4]["bat_dau"] == "2026-11-20T05:15" and ev[5]["tieu_de"].startswith("Quán Cơm Tazon")
-    assert ev[5]["ket_thuc"] == "2026-11-20T09:45"                          # «nghỉ ~45 phút»
+    assert ev[5]["ket_thuc"] == "2026-11-20T09:45"                          # "nghỉ ~45 phút"
     assert (ev[1]["thu"], ev[3]["thu"], ev[6]["thu"]) == ("Thứ Năm", "Thứ Sáu", "Thứ Bảy")
     assert "Long Thành" not in json.dumps(out, ensure_ascii=False)
     assert MAP_1A in ev[1]["mo_ta"] and MAP_2A in ev[6]["mo_ta"] and "http" not in ev[2]["mo_ta"]

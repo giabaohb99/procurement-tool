@@ -76,15 +76,15 @@ GRANT SELECT ON `procurement_dev`.`tab_setting` TO 'agent_runner'@'%';
 GRANT SELECT ON `procurement_dev`.`alembic_version` TO 'agent_runner'@'%';
 FLUSH PRIVILEGES;
 SQL
-# (4b) nhắn Lạc Lạc: «thêm máy may-dai-ca» → «đúng» → chép AGENT_RUNNER_TOKEN; rồi «cho máy may-dai-ca được deploy»
+# (4b) nhắn Lạc Lạc: "thêm máy may-dai-ca" → "đúng" → chép AGENT_RUNNER_TOKEN; rồi "cho máy may-dai-ca được deploy"
 # (4c) máy đại ca: điền 3 dòng còn trống trong procurement-agent-hub/.env.runner
 #      (AGENT_RUNNER_TOKEN, DB_PASSWORD = <mật khẩu> ở trên, JWT_SECRET = giá trị trong .env.dev trên VPS),
 #      kiểm REDIS_URL cùng số ngăn với REDIS_URL trong .env.dev, rồi:
 docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.yml up -d --build
 ```
 
-Sau đó: đại ca mở deverp → Trang cá nhân → «Telegram» lấy mã, nhắn `/dangnhap <mã>` cho bot dev; vào
-«Khóa AI» dán khóa Gemini; nhắn «thêm máy của anh» → lấy `AGENT_RUNNER_TOKEN` dán vào `.env.runner`
+Sau đó: đại ca mở deverp → Trang cá nhân → **Telegram** lấy mã, nhắn `/dangnhap <mã>` cho bot dev; vào
+**Khóa AI** dán khóa Gemini; nhắn **thêm máy của anh** → lấy `AGENT_RUNNER_TOKEN` dán vào `.env.runner`
 trên máy (đã điền sẵn phần còn lại), điền `DB_NAME` + `DB_PASSWORD` của `agent_runner`, rồi
 `docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.yml up -d --build`. Stack `agenthub` cũ trên
 máy đại ca tắt đi (`docker compose down`) để không có hai bot.
@@ -143,7 +143,7 @@ restrict,port-forwarding,permitopen="127.0.0.1:13306",permitopen="127.0.0.1:1637
 ```
 
 `restrict` tắt hết (pty, X11, agent, lệnh); `port-forwarding` + hai `permitopen` mở lại đúng hai cổng.
-Gỡ máy = xóa dòng này (và «tắt máy …» với bot, mục 4).
+Gỡ máy = xóa dòng này (và **tắt máy …** với bot, mục 4).
 
 ## 2. Cài trên máy sửa mã (chủ máy tự làm)
 
@@ -151,7 +151,7 @@ Cần: Docker Desktop, Git, một tài khoản GitHub có quyền đẩy vào kh
 
 ### 2.1 Lấy mã máy từ bot
 
-Đại ca nhắn cho bot **«thêm máy của anh Được»** → bot hỏi lại → **«đúng»** → bot trả hai dòng
+Đại ca nhắn cho bot **thêm máy của anh Được** → bot hỏi lại → **đúng** → bot trả hai dòng
 `AGENT_RUNNER_NAME=…` và `AGENT_RUNNER_TOKEN=…` **đúng một lần**; chép xong xóa tin đó trong Telegram.
 
 ### 2.2 Khóa SSH đường hầm của máy
@@ -179,8 +179,8 @@ docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.ym
 docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.yml logs -f
 ```
 
-Nhật ký `tunnel` phải thấy dòng `nối …` rồi im (không lặp «đứt»); nhật ký `agent-runner` phải thấy
-`celery@may-duoc ready`. Sau 30 giây đại ca hỏi bot **«máy nào đang bật»** phải thấy máy này *đang bật*.
+Nhật ký `tunnel` phải thấy dòng `nối …` rồi im (không lặp **đứt**); nhật ký `agent-runner` phải thấy
+`celery@may-duoc ready`. Sau 30 giây đại ca hỏi bot **máy nào đang bật** phải thấy máy này *đang bật*.
 
 Các giá trị KHÔNG được có trên máy này: token Telegram của bot, khóa Gemini, PAT GitHub của đại ca,
 khóa SSH VPS của đại ca. Tệp `.env.runner` nằm trong `.gitignore`.
@@ -190,22 +190,22 @@ khóa SSH VPS của đại ca. Tệp `.env.runner` nằm trong `.gitignore`.
 | Tình huống | Bot làm |
 |---|---|
 | Việc mới, có máy đang bật | Giao máy đang bật ít việc nhất; ghi máy vào việc (dính từ đây) |
-| Việc mới, không máy nào bật | Giao `AGENT_DEFAULT_RUNNER` (thường là máy đại ca), không khai thì máy liên lạc gần nhất; nhắn «đang chờ máy X bật»; vé nằm trong Redis tới khi máy nối vào |
+| Việc mới, không máy nào bật | Giao `AGENT_DEFAULT_RUNNER` (thường là máy đại ca), không khai thì máy liên lạc gần nhất; nhắn **đang chờ máy X bật**; vé nằm trong Redis tới khi máy nối vào |
 | Làm tiếp · hỏi thêm · sửa cho xanh · gộp · deploy của việc đã có máy | Luôn về đúng máy đó (worktree + phiên Claude Code chỉ có ở đó) |
-| Máy tắt giữa lượt `claude` | Vòng nhặt việc kẹt (ai-CR-016) báo sau 15 phút; máy bật lại thì «làm tiếp» nối phiên |
-| Đại ca «AI-0012 cho máy anh Được làm» | Đổi máy nếu việc không đang chạy dở; máy mới làm lại từ kế hoạch (bản vá dở không mang theo) |
-| Máy bị «tắt máy …» | Nhịp tim và mọi vé kế bị từ chối; việc đang dính máy đó chờ tới khi đại ca giao máy khác |
-| Deploy dev | Chỉ máy có cờ deploy («cho máy X được deploy»); máy mới mặc định KHÔNG |
+| Máy tắt giữa lượt `claude` | Vòng nhặt việc kẹt (ai-CR-016) báo sau 15 phút; máy bật lại thì **làm tiếp** nối phiên |
+| Đại ca **AI-0012 cho máy anh Được làm** | Đổi máy nếu việc không đang chạy dở; máy mới làm lại từ kế hoạch (bản vá dở không mang theo) |
+| Máy bị **tắt máy …** | Nhịp tim và mọi vé kế bị từ chối; việc đang dính máy đó chờ tới khi đại ca giao máy khác |
+| Deploy dev | Chỉ máy có cờ deploy (**cho máy X được deploy**); máy mới mặc định KHÔNG |
 | Chưa đăng ký máy nào | Y như phase 0/1: hàng đợi `agent_code`, bot và runner cùng máy |
 
 ## 4. Câu nhắn của đại ca
 
-- «thêm máy của anh Được» · «đăng ký máy cho Bảo» — hỏi lại, «đúng» → phát mã máy
-- «tắt máy của anh Được» · «gỡ máy may-duoc» — hỏi lại, «đúng» → gỡ
-- «máy nào đang bật» · «danh sách máy sửa mã»
-- «AI-0012 cho máy anh Được làm»
-- «cho máy may-duoc được deploy dev» · «cấm máy may-duoc deploy»
-- «AI-0012 xong chưa» — dòng tình trạng ghi thêm «Máy X (đang bật/tắt)»
+- **thêm máy của anh Được** · **đăng ký máy cho Bảo** — hỏi lại, **đúng** → phát mã máy
+- **tắt máy của anh Được** · **gỡ máy may-duoc** — hỏi lại, **đúng** → gỡ
+- **máy nào đang bật** · **danh sách máy sửa mã**
+- **AI-0012 cho máy anh Được làm**
+- **cho máy may-duoc được deploy dev** · **cấm máy may-duoc deploy**
+- **AI-0012 xong chưa** — dòng tình trạng ghi thêm **Máy X (đang bật/tắt)**
 
 ## 6. Máy sửa mã chạy NGAY TRÊN VPS 2 (V-08, ai-CR-186 — đại ca chốt 13/10/2026, tắt hẳn máy đại ca)
 
@@ -227,11 +227,11 @@ qdrant / mysql.
    KHÔNG chép khóa riêng của đại ca lên; thêm phần công khai vào `authorized_keys` của `degosysadmin` với
    `restrict,command="<script chỉ cho phép chạy deploy_erp_api.sh / deploy_agent_hub.sh / deploy.sh>"`.
 3. `docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.vps.yml up -d --build` (ảnh ~1,4 GB,
-   ~5 phút). Nhật ký phải thấy `celery@<tên máy> ready`; đại ca hỏi bot «máy nào đang bật» thấy máy *đang bật*.
+   ~5 phút). Nhật ký phải thấy `celery@<tên máy> ready`; đại ca hỏi bot **máy nào đang bật** thấy máy *đang bật*.
 4. Recreate `procurement-mysql` với `mem_limit` và áp override trần RAM cho dev ở lần deploy kế.
 5. Máy đại ca: `docker compose -p agentrunner down` (xong bước 3 mới tắt); xóa dòng `authorized_keys` của khóa đường hầm
-   máy đại ca (§1.3). Muốn đổi tên hiển thị: «thêm máy vps-2» → điền tên / token mới vào `.env.runner` → dựng lại →
-   «cho máy vps-2 được deploy» → `AGENT_DEFAULT_RUNNER=vps-2` → «tắt máy may-dai-ca».
+   máy đại ca (§1.3). Muốn đổi tên hiển thị: **thêm máy vps-2** → điền tên / token mới vào `.env.runner` → dựng lại →
+   **cho máy vps-2 được deploy** → `AGENT_DEFAULT_RUNNER=vps-2` → **tắt máy may-dai-ca**.
 6. Từ đây đổi `coder.py` không cần dựng lại runner bằng tay: máy tự cập nhật (`runner_update.py`, ai-CR-124); chỉ dựng
    lại khi đổi `Dockerfile.runner`.
 
@@ -247,7 +247,7 @@ qdrant / mysql.
 
 - **Máy tự nối LÊN, dev không gọi xuống**: máy ở nhà/công ty nằm sau NAT, không có địa chỉ công khai.
 - **Hàng đợi theo máy thay vì một hàng đợi chung**: worktree và phiên Claude Code là trạng thái cục
-  bộ; một vé rơi nhầm máy là mất mạch «làm tiếp». Vé nằm trong Redis nên máy tắt không mất việc.
+  bộ; một vé rơi nhầm máy là mất mạch **làm tiếp**. Vé nằm trong Redis nên máy tắt không mất việc.
 - **Tin Telegram gửi hộ**: máy không giữ token bot (ai-CR-054); mất máy không mất bot.
 - **Tài khoản MySQL theo bảng + `authorized_keys` chỉ mở cổng**: mỗi máy chỉ với tới đúng thứ nó cần.
 - **Việc dính máy**: đơn giản hơn di chuyển worktree giữa máy; đổi máy thì làm lại từ kế hoạch, bot nói rõ.

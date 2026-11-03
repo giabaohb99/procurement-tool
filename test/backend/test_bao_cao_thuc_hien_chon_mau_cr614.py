@@ -1,8 +1,8 @@
 """duoc-CR-614 — chọn MẪU khi khởi tạo khối Báo cáo thực hiện.
 
-Mẫu 2 «Tiến độ kế hoạch công việc nhập khẩu» chép file Excel của Phòng Thu mua: 21 việc,
+Mẫu 2 "Tiến độ kế hoạch công việc nhập khẩu" chép file Excel của Phòng Thu mua: 21 việc,
 MỘT giai đoạn, mô tả ghi số ngày xử lý, không đặt ngày. Mẫu đã chọn LƯU ở đầu khối: nút
-«Tạo mẫu» về sau phải đổ đúng mẫu đó — đổ nhầm mẫu chung vào khối kế hoạch là bày thêm 19
+"Tạo mẫu" về sau phải đổ đúng mẫu đó — đổ nhầm mẫu chung vào khối kế hoạch là bày thêm 19
 hồ sơ lạ mà người dùng phải xóa tay từng cái.
 """
 import pytest
@@ -64,8 +64,8 @@ def test_mau_ke_hoach_nhap_khau_dung_mot_giai_doan_21_viec_dung_thu_tu_excel(db)
 
 
 def test_mau_excel_khong_lot_khoang_trang_thua_cua_file_goc():
-    #  File Excel có tên kèm dấu cách cuối («Lấy mẫu ») và cách đôi giữa chữ — lọt vào là
-    #  ô tìm kiếm / so trùng tên của «Tạo mẫu» lệch.
+    #  File Excel có tên kèm dấu cách cuối ("Lấy mẫu ") và cách đôi giữa chữ — lọt vào là
+    #  ô tìm kiếm / so trùng tên của "Tạo mẫu" lệch.
     for title, days, _ in IMPORT_PLAN_TASKS:
         assert title == " ".join(title.split())
         assert days >= 0
@@ -123,7 +123,7 @@ def test_hoan_tac_tra_ca_mau_cua_khoi(db):
     _init(db, s, RT_IMPORT_PLAN)
     svc.delete_all(db, s.rid, user_id=1)
     db.commit()
-    #  Xen giữa: «Thêm hồ sơ đầu tiên» dựng khung mẫu chung rồi lại xóa đi.
+    #  Xen giữa: "Thêm hồ sơ đầu tiên" dựng khung mẫu chung rồi lại xóa đi.
     svc.create_first_doc(db, s.rid, [], ReportFirstDocIn(title="X", line_id=0, phase_order=0),
                          user_id=1)
     db.commit()
@@ -149,8 +149,8 @@ def test_hoan_tac_khoi_ke_hoach_tra_lai_ma_mau_ke_hoach(db):
 
 
 def test_ho_so_dau_tien_ghi_mau_chung_len_dau_khoi(db):
-    #  Đầu khối còn mã mẫu kế hoạch của lần khởi tạo đã xóa; «Thêm hồ sơ đầu tiên» dựng khung
-    #  5 giai đoạn của MẪU CHUNG → mã phải theo, không thì «Tạo mẫu» đổ nhầm 21 việc.
+    #  Đầu khối còn mã mẫu kế hoạch của lần khởi tạo đã xóa; "Thêm hồ sơ đầu tiên" dựng khung
+    #  5 giai đoạn của MẪU CHUNG → mã phải theo, không thì "Tạo mẫu" đổ nhầm 21 việc.
     s = _sr(db)
     _init(db, s, RT_IMPORT_PLAN)
     svc.delete_all(db, s.rid, user_id=1)

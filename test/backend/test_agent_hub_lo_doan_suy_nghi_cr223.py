@@ -1,11 +1,11 @@
-"""ai-CR-223 — vá 19/10/2026: đại ca gửi Lạc Lạc tệp kế hoạch (.md) kèm câu hỏi, bot trả nguyên đoạn «suy nghĩ» tiếng Anh
-(«The user wants me to review the plan…», lượt #358 trên dev: deepseek-v4.1-flash, ra đủ 8192 token, chưa có câu trả lời).
+"""ai-CR-223 — vá 19/10/2026: đại ca gửi Lạc Lạc tệp kế hoạch (.md) kèm câu hỏi, bot trả nguyên đoạn "suy nghĩ" tiếng Anh
+("The user wants me to review the plan…", lượt #358 trên dev: deepseek-v4.1-flash, ra đủ 8192 token, chưa có câu trả lời).
 
 Gốc: đường hỏi về TỆP (`service.answer_question(kind="document")`) không đi core_v2 nên không có phân luồng model — chuỗi
 khóa rơi vào khóa trạm đầu tiên. Canh:
   - đường này nay chọn hãng / model theo ĐÚNG luật luồng của core_v2 (Claude đứng đầu, Haiku luồng thường), tính trên
     câu NGƯỜI DÙNG hỏi chứ không trên nội dung tệp (tệp dài không được tự đẩy sang luồng nặng);
-  - lớp chặn thứ hai: câu trả về là đoạn suy nghĩ (mở bằng «The user / Let me / Okay,…», phần đầu không có chữ tiếng Việt
+  - lớp chặn thứ hai: câu trả về là đoạn suy nghĩ (mở bằng "The user / Let me / Okay,…", phần đầu không có chữ tiếng Việt
     có dấu) thì KHÔNG gửi, thay bằng câu xin lỗi kèm mã lượt; câu tiếng Việt bình thường không bao giờ bị chặn.
 """
 from contextlib import contextmanager

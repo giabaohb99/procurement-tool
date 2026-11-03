@@ -1,6 +1,6 @@
 """bao-CR-542 — cảnh báo công nợ gom theo đơn + bên được trả, ghi tiền còn nợ và số ngày trễ.
 
-Đại ca xem chuông: «Công nợ QUÁ HẠN: … PO00003 (hạn 2026-09-04)» lặp 5 dòng y hệt — khoản nợ
+Đại ca xem chuông: "Công nợ QUÁ HẠN: … PO00003 (hạn 2026-09-04)" lặp 5 dòng y hệt — khoản nợ
 sinh theo TỪNG DÒNG HÀNG của lần giao, đơn 5 dòng là 5 khoản cùng hạn. Nay mỗi đơn + bên được
 trả + mức một dòng; khóa nhóm = `payable:{id lớn nhất}:{mức}` (nhóm một khoản giữ đúng khóa cũ).
 """
@@ -31,7 +31,7 @@ def test_five_lines_of_one_order_become_one_alert_with_total_and_days_late():
 
 
 def test_single_debt_keeps_the_old_key_and_omits_the_count():
-    """Nhóm một khoản ra đúng khóa cũ → việc đã «Đánh dấu làm hết» trước CR vẫn ẩn."""
+    """Nhóm một khoản ra đúng khóa cũ → việc đã "Đánh dấu làm hết" trước CR vẫn ẩn."""
     [g] = group_due_payables([_p(7, "2026-09-06", 500_000, po_code="PO00010")], TODAY)
     assert g.key == "payable:7:danger"
     assert g.detail() == "còn nợ 500.000 đ · trễ 25 ngày (hạn 06/09/2026)"

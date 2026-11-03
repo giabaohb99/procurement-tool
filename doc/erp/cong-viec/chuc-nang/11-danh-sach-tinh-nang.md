@@ -155,7 +155,7 @@ chưa xong" / nhắc hạn vẫn có một nguồn sự thật bằng số, khô
 | E-02 | Nhắc tên @ trong bình luận — người được nhắc nhận thông báo | P1 | **XONG** cùng CR-253 — đi kèm hạ tầng chung, không phải làm thêm |
 | E-03 | Đính kèm tệp / ảnh vào task và bình luận (lưu R2) | P1 | **XONG** 03/09/2026 (CR-253) — `tab_file_link` chung; đo được 401 khi tải thiếu token (PQ13) |
 | E-04 | Nhật ký hoạt động của task: ai tạo, ai đổi cột, ai đổi PIC, lúc nào | P0 | **XONG**, nhưng KHÔNG còn ở panel chi tiết: bỏ khỏi panel 03/09/2026 (CR-254) vì trùng với tab **Hoạt động** cấp dự án (D-09). Dữ liệu vẫn ghi đủ qua `core/audit.py` |
-| E-05 | Sửa / xóa bình luận của mình | P1 | **XÓA đã có** (CR-253, backend chung lo); **SỬA xong (duoc-CR-667)**: `PATCH /api/work/tasks/{id}/comments/{cid}`, chỉ người viết, hiện «(đã sửa)» |
+| E-05 | Sửa / xóa bình luận của mình | P1 | **XÓA đã có** (CR-253, backend chung lo); **SỬA xong (duoc-CR-667)**: `PATCH /api/work/tasks/{id}/comments/{cid}`, chỉ người viết, hiện **(đã sửa)** |
 
 ### Nhóm F — Thông báo và tích hợp nền ERP
 

@@ -1,6 +1,6 @@
-"""Đại ca 09/10/2026: «có những trường cần thiết nhưng nó không hỏi lại, xác nhận lại để đủ thông tin hơn … bỏ kí tự «
-này rồi mà». Ca thật: «tạo đơn nghỉ việc vào ngày thứ 2 tuần sau cho anh nhé» → bot soạn luôn loại Phép năm (mặc định
-ngầm) + lý do «Việc cá nhân» (model tự nghĩ)."""
+"""Đại ca 09/10/2026: "có những trường cần thiết nhưng nó không hỏi lại, xác nhận lại để đủ thông tin hơn … bỏ kí tự "
+này rồi mà". Ca thật: "tạo đơn nghỉ việc vào ngày thứ 2 tuần sau cho anh nhé" → bot soạn luôn loại Phép năm (mặc định
+ngầm) + lý do "Việc cá nhân" (model tự nghĩ)."""
 import pytest
 
 from app.modules.assistant.tools import confirm_fields as cf
@@ -28,7 +28,7 @@ def _loai_nghi(db):
 
 def test_gia_tri_nguoi_dung_chua_noi_thi_khong_tinh():
     text = cf._fold(CA_THAT)
-    assert not cf.stated(text, "Việc cá nhân")            # «việc» có trong câu nhưng cụm «việc cá nhân» thì không
+    assert not cf.stated(text, "Việc cá nhân")            # "việc" có trong câu nhưng cụm "việc cá nhân" thì không
     assert cf.stated(cf._fold("nghỉ thứ 2 vì đi khám bệnh"), "Khám bệnh")
     assert cf.stated("", "bất kỳ")                         # không có lời người dùng (gọi thẳng) → tin model
     assert not cf.stated(text, "")
@@ -47,13 +47,13 @@ def test_don_nghi_ca_that_hoi_lai_ly_do_va_loai_nghi(db, seed, monkeypatch):
     fields = {x["field"]: x for x in out["need_info"]}
     assert set(fields) == {"reason", "leave_type"}
     assert fields["leave_type"]["options"] == ["Phép năm", "Nghỉ không lương"]
-    #  Người dùng trả lời: lần gọi sau đủ thông tin → soạn, «nghỉ cả ngày» là điều em TỰ HIỂU, ghi ra để xác nhận.
+    #  Người dùng trả lời: lần gọi sau đủ thông tin → soạn, "nghỉ cả ngày" là điều em TỰ HIỂU, ghi ra để xác nhận.
     out = _run_leave(ctx, {"from_date": "2026-10-12", "to_date": "2026-10-12", "reason": "đưa con đi khám",
                            "leave_type": "ANNUAL",
                            cf.USER_TEXT_ARG: CA_THAT + "\nphép năm, đưa con đi khám"})
     assert out["status"] == "ready" and out["draft"]["reason"] == "đưa con đi khám"
     assert out["draft"]["assumptions"] == ["nghỉ cả ngày"]
-    #  Người dùng bảo «không cần lý do» → Trợ lý gọi lại với asked_fields, tool không hỏi lần hai.
+    #  Người dùng bảo "không cần lý do" → Trợ lý gọi lại với asked_fields, tool không hỏi lần hai.
     out = _run_leave(ctx, {"from_date": "2026-10-12", "to_date": "2026-10-12", "leave_type": "ANNUAL",
                            "asked_fields": ["reason"], cf.USER_TEXT_ARG: CA_THAT + "\nkhông cần lý do"})
     assert out["status"] == "ready" and any("lý do" in a for a in out["draft"]["assumptions"])
@@ -110,7 +110,7 @@ def test_the_nhap_khong_con_ngoac_va_hien_dieu_tu_hieu():
     assert "<b>Loại nghỉ:</b> Phép năm · 1 ngày" in card
     assert "Em đang hiểu là" in card and "• nghỉ cả ngày" in card
     assert "<code>tạo và gửi duyệt</code>" in card
-    #  Doc 20 §10 việc 4: dòng cuối là câu tự nhiên, không còn khối «Trả lời: • tạo — …».
+    #  Doc 20 §10 việc 4: dòng cuối là câu tự nhiên, không còn khối "Trả lời: • tạo — …".
     assert "Trả lời:" not in card and card.rstrip().endswith("hoặc <code>thôi</code> để bỏ bản nháp.")
     assert "Muốn đổi gì thì cứ nhắn em; ưng thì nhắn <code>tạo</code> để lưu nháp," in card
 

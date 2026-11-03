@@ -37,4 +37,4 @@ def test_crud_chung_tu_goi_chot(db, seed, monkeypatch):
     from app.core import crud
 
     src = inspect.getsource(crud)
-    assert src.count("reference_guard.ensure_deletable(db, entity,") == 2       # nút xóa + dòng CSV «xóa»
+    assert src.count("reference_guard.ensure_deletable(db, entity,") == 2       # nút xóa + dòng CSV "xóa"

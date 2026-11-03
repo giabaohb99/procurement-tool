@@ -3,7 +3,7 @@
 Đại ca chốt 25/09/2026 (đường A): giữ công tắc chung `pr_dispatch_enabled`, thêm ô điều kiện JSON
 `pr_dispatch_skip_rules` cú pháp của bộ máy duyệt chung. Ba điều phải đúng:
   · ô điều kiện RỖNG → mọi thứ y như cũ (công tắc bật = hai bước, tắt = một bước);
-  · có điều kiện «phiếu có phòng xử lý riêng» → phiếu nhà máy tự mua đi thẳng, nhân sự lấy theo bộ
+  · có điều kiện "phiếu có phòng xử lý riêng" → phiếu nhà máy tự mua đi thẳng, nhân sự lấy theo bộ
     phân công RIÊNG của phòng (không rơi về Thu mua chung); phiếu thu mua chung vẫn chờ bước 2;
   · JSON gõ sai không được đổi luồng của cả công ty.
 """
@@ -44,7 +44,7 @@ def settings(monkeypatch):
 
 @pytest.fixture
 def factory(db, seed):
-    """Nhà máy có bộ phân công riêng: phân loại «Nhãn» → nhân sự F1 của nhà máy."""
+    """Nhà máy có bộ phân công riêng: phân loại "Nhãn" → nhân sự F1 của nhà máy."""
     dept = Department(code="NM497", name="Nhà máy", company_id=seed.company_id, is_active=True)
     db.add(dept)
     db.flush()
@@ -112,7 +112,7 @@ def test_factory_without_own_assignment_does_not_fall_back_to_central(db, seed, 
     pr = _approve(db, _pr(db, seed, dept.id, "PYC-497-E"))
     assert pr.status == "dispatched"
     assert all(not it.assignee for it in S.items_of(db, pr.id)), \
-        "bộ chung (seed gán DEMONV cho «Nhãn») KHÔNG được dùng cho phiếu nhà máy"
+        "bộ chung (seed gán DEMONV cho \"Nhãn\") KHÔNG được dùng cho phiếu nhà máy"
 
 
 def test_bad_json_or_non_list_is_treated_as_empty(db, seed, factory, settings):

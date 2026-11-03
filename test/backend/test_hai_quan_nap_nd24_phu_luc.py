@@ -1,7 +1,7 @@
-"""duoc-CR-598 mục 3 — nạp danh mục hóa chất NĐ 24/2026 phụ lục I–IV từ tệp «03. KHAI BÁO HOÁ CHẤT.xlsx».
+"""duoc-CR-598 mục 3 — nạp danh mục hóa chất NĐ 24/2026 phụ lục I–IV từ tệp "03. KHAI BÁO HOÁ CHẤT.xlsx".
 
 Canh các bẫy của tệp thật (đọc tay 06/10/2026): Excel tự sửa số CAS (thêm số 0, đổi thành NGÀY,
-`#VALUE!`), cột «Phụ lục» thiếu ở dòng có số thứ tự, «Bảng B» cuối phụ lục IV là NHÓM nguy hại chứ
+`#VALUE!`), cột "Phụ lục" thiếu ở dòng có số thứ tự, "Bảng B" cuối phụ lục IV là NHÓM nguy hại chứ
 không phải hóa chất, số CAS phụ nằm ở dòng kế tiếp. Và luật đồng bộ: cập nhật / thêm / NGỪNG DÙNG,
 không đụng TT 75 + TT 01, chạy lại lần hai không đẻ thêm dòng.
 """
@@ -125,7 +125,7 @@ def test_parse_sheet_cleans_bad_cells_and_keeps_extra_cas_numbers_in_the_note():
     assert items["Acrolein (2-Propenal)"]["cas_no"] == "107-02-8"
     arsenic = items["Arsenic and arsenic compounds"]
     assert (arsenic["cas_no"], arsenic["formula"]) == ("", "")
-    #  Cột G rác ở phụ lục I («Barbasco powder») không thành ngưỡng.
+    #  Cột G rác ở phụ lục I ("Barbasco powder") không thành ngưỡng.
     assert items["Argon"]["threshold_kg"] is None
 
 
@@ -200,7 +200,7 @@ def test_obligation_mentions_the_mixture_threshold(db):
 
 def test_parse_sheet_on_empty_or_headless_input():
     assert L.parse_sheet([]) == []
-    #  Chưa gặp tiêu đề «PHỤ LỤC …» thì không biết dòng thuộc phụ lục nào → bỏ, không đoán.
+    #  Chưa gặp tiêu đề "PHỤ LỤC …" thì không biết dòng thuộc phụ lục nào → bỏ, không đoán.
     assert L.parse_sheet([("1.", "Argon", "Argon", "7440-37-1", "Ar", "Phụ lục I", None)]) == []
 
 

@@ -1,5 +1,5 @@
 """ai-CR-164 — đại ca 10/10 xem biên bản họp 102 phút: lọt câu tiếng Anh của model vào Word; Người 1…4 chưa ra tên; họp dài
-mà sơ sài; phụ lục bản chép lời làm Word nặng; tin chat bị cắt mà nói «xem trong sổ»."""
+mà sơ sài; phụ lục bản chép lời làm Word nặng; tin chat bị cắt mà nói "xem trong sổ"."""
 from app.modules.agent_hub import meetings as mt
 
 PREAMBLE = ("Below is a Vietnamese meeting recap in Markdown, following the requested DEGO structure and only using "
@@ -113,7 +113,7 @@ def test_tra_loi_ai_la_ai_thay_ten_roi_viet_lai(db, monkeypatch):
 
 def test_bo_doan_nghi_tieng_anh_xen_giua_va_dau_cat(db):
     """ai-CR-166 — dev 10/10, tóm tắt video YouTube: model suy luận in cả đoạn nghĩ tiếng Anh xen giữa các mục, và trạm
-    gắn dấu «chạm trần độ dài»; tất cả lọt vào Word."""
+    gắn dấu "chạm trần độ dài"; tất cả lọt vào Word."""
     raw = "\n".join([
         "Need maybe 7 chapters. Since no timestamps, I can use [00:00] for all? Let's decide.",
         "## TÓM TẮT NHANH",

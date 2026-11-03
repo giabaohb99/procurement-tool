@@ -58,7 +58,7 @@ def test_tach_ten_hoat_chat_tu_danh_muc_bvtv():
     assert got["KANAMYCIN SULFATE"] == "KANAMYCIN SULFATE"
     assert got["KANAMYCIN"] == "KANAMYCIN SULFATE"              # từ đầu đủ dài → trỏ về tên đầy đủ
     assert got["GLUFOSINATE AMMONIUM"] == "GLUFOSINATE AMMONIUM"
-    assert "FENCLORIM" in got                                   # bỏ tiền tố «chất an toàn»
+    assert "FENCLORIM" in got                                   # bỏ tiền tố "chất an toàn"
     assert not any("D U" in k or "SHANDONG" in k for k in got)   # tên tiếng Việt / tên công ty bị bỏ
     assert "POTASSIUM" not in got                               # từ đầu chung chung không đứng một mình
 
@@ -213,7 +213,7 @@ def test_xuat_excel_du_cot(db):
     _line(db, date(2026, 1, 5))
     db.commit()
     ws = openpyxl.load_workbook(io.BytesIO(S.export_lines_xlsx(db, {}))).active
-    #  32 nguồn + 2 suy ra + 2 VND (bao-CR-493) + «ID» đầu và «Thao tác» cuối (bao-CR-608)
+    #  32 nguồn + 2 suy ra + 2 VND (bao-CR-493) + "ID" đầu và "Thao tác" cuối (bao-CR-608)
     assert ws.max_column == 38 and ws.max_row == 2
     assert ws.cell(1, 1).value == "ID" and ws.cell(1, 2).value == "Ngày đăng ký"
 

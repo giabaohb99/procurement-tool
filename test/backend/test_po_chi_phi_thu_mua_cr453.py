@@ -9,7 +9,7 @@ Luật phải giữ:
    xóa, phải mở lại trước; payload trùng khít giá trị cũ vẫn đi qua êm.
 2. Mở lại (lùi) phải có lý do từ 10 ký tự; dòng ĐÃ CHI giữ Quyết toán riêng dòng, nợ chưa chi
    của các dòng còn lại bị gỡ.
-3. Chỉ dòng ở QUYẾT TOÁN (theo đơn hoặc riêng dòng) và loại chi phí có «sinh công nợ» mới
+3. Chỉ dòng ở QUYẾT TOÁN (theo đơn hoặc riêng dòng) và loại chi phí có "sinh công nợ" mới
    thành khoản nợ. Số giai đoạn thấp hơn vẫn lên báo cáo (giai đoạn hiệu lực).
 4. Đơn còn dòng chưa quyết toán thì không Hoàn thành được; đơn không có dòng nào tự chốt.
 5. Danh mục: mã tự cấp từ 15, không cấp 99; mã 99 không đổi tên / ngừng dùng / xóa; loại
@@ -216,7 +216,7 @@ def test_chot_het_khi_khong_tick_dong_nao(db, seed):
 
 
 def test_chot_kem_bang_dang_go_thi_chot_dung_so_vua_go(db, seed, cap_quyen):
-    # bao-CR-476: người dùng gõ số Quyết toán rồi bấm «Quyết toán» ngay, chưa bấm Lưu. Trước
+    # bao-CR-476: người dùng gõ số Quyết toán rồi bấm "Quyết toán" ngay, chưa bấm Lưu. Trước
     # đây đường chốt đọc số ĐÃ LƯU nên chốt theo số cũ — sinh công nợ sai số, còn số vừa gõ bị
     # lượt tải lại đè mất. Nay màn hình gửi kèm bảng đang gõ: lưu trước, chốt sau.
     from app.modules.purchase_order import controller as ctl
@@ -328,7 +328,7 @@ def test_giai_doan_hieu_luc_va_so_quy_doi(db, seed):
     assert service.effective_base_of(empty, po) == 0.0
 
 
-# ── 5. Công nợ chỉ sinh ở Quyết toán và theo «sinh công nợ» của loại ─────────────
+# ── 5. Công nợ chỉ sinh ở Quyết toán và theo "sinh công nợ" của loại ─────────────
 def test_loai_khong_sinh_cong_no_thi_khong_thanh_no(db, seed):
     db.add(POCostType(code=int(ImportCostType.OCEAN_FREIGHT), name="Cước biển", creates_payable=True))
     db.add(POCostType(code=int(ImportCostType.OTHER), name="Chi phí khác", creates_payable=False))

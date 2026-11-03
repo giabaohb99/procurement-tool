@@ -1,7 +1,7 @@
-"""duoc-CR-689 — báo cáo E2 «Yêu cầu sửa hồ sơ» (khóa 27): `/api/profile-change-report/summary`.
+"""duoc-CR-689 — báo cáo E2 "Yêu cầu sửa hồ sơ" (khóa 27): `/api/profile-change-report/summary`.
 
 Canh: định nghĩa từng chỉ số (yêu cầu · chờ · chờ quá 2 ngày · duyệt · từ chối · tỷ lệ từ chối · giờ xử lý),
-chiều «Trường bị xin sửa» (một yêu cầu nhiều trường), KHÔNG lộ giá trị cũ / mới ở cả summary lẫn rows,
+chiều "Trường bị xin sửa" (một yêu cầu nhiều trường), KHÔNG lộ giá trị cũ / mới ở cả summary lẫn rows,
 phạm vi dữ liệu, gác khóa báo cáo ở CẢ ba đường, 422, xlsx và số truy vấn CỐ ĐỊNH.
 """
 import uuid

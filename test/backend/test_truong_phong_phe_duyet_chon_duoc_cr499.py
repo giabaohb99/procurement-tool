@@ -1,9 +1,9 @@
-"""bao-CR-499 — ô «Trưởng phòng phê duyệt» CHỌN được, báo người được chọn, bản in in người thực duyệt.
+"""bao-CR-499 — ô "Trưởng phòng phê duyệt" CHỌN được, báo người được chọn, bản in in người thực duyệt.
 
 Đại ca chốt 26/09/2026 (qua ERP Agent 2, xác nhận lại ở phiên Erp Agent 1): giữ HAI ô tách
-(«Trưởng bộ phận» CR-474 và ô này); ô này chọn được để hệ gửi mail/chuông cho người đó; bấm Duyệt
+("Trưởng bộ phận" CR-474 và ô này); ô này chọn được để hệ gửi mail/chuông cho người đó; bấm Duyệt
 xong cột đổi thành người THỰC duyệt; bản in in tên trong cột (chưa ai duyệt thì in người được chọn);
-bỏ công tắc «người ký» của bao-CR-490.
+bỏ công tắc "người ký" của bao-CR-490.
 """
 from types import SimpleNamespace
 
@@ -76,7 +76,7 @@ def test_pr_chosen_approver_is_notified_on_submit_and_not_printed_before_approva
     db.commit()
     assert pr.approver_employee_id == seed.emp_nstm_id
 
-    #  Chưa ai duyệt: ô «TP/BP đề xuất» trên bản in để TRỐNG (bao-CR-521, ticket prod #57 — trước đó
+    #  Chưa ai duyệt: ô "TP/BP đề xuất" trên bản in để TRỐNG (bao-CR-521, ticket prod #57 — trước đó
     #  in sẵn tên người được chọn, người đọc hiểu là đã ký).
     signers = pr_ser._approval_signers(db, pr)
     assert signers["approver_name"] == "" and signers["approver_signature"] == ""
@@ -204,7 +204,7 @@ def test_system_admin_role_is_not_offered(db, seed, cap_quyen):
     pr = pr_service.create_pr(db, PRCreate(company_id=seed.company_id, requester="Người YC",
                                            requester_id=seed.emp_req_id, department=dept.name), seed.u_req_id)
     ids = {c["employee_id"] for c in candidates_for_row(db, PurchaseRequest, "purchase_request", pr.id)}
-    assert boss.id not in ids, "quản trị hệ thống không phải «trưởng phòng» — không đưa vào ô chọn"
+    assert boss.id not in ids, "quản trị hệ thống không phải \"trưởng phòng\" — không đưa vào ô chọn"
 
 
 def test_endpoints_exist_for_all_three_documents():
@@ -266,7 +266,7 @@ def test_pr_candidate_list_covers_every_approver_not_only_the_head_box(db, seed,
 # ── Rà trước prod 28/09/2026 ─────────────────────────────────────────────────────────────
 
 def test_unapproved_print_leaves_approver_slot_blank(db, seed, monkeypatch):
-    """bao-CR-521 (ticket prod #57): phiếu Nháp in ra đã có tên trưởng phòng ở ô «TP/BP đề xuất»,
+    """bao-CR-521 (ticket prod #57): phiếu Nháp in ra đã có tên trưởng phòng ở ô "TP/BP đề xuất",
     người đọc hiểu là đã ký. Chưa duyệt thì cả TÊN lẫn CHỮ KÝ đều trống."""
     from app.core import print_signers
     monkeypatch.setattr(print_signers, "person_block",

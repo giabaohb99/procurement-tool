@@ -17,7 +17,7 @@ cứng. Bản rà đọc mã `backend/app/modules/` + `core/` trên nhánh `agen
 
 ## 2. Rủi ro cao — vá trước (đợt 1)
 
-**Tiến độ:** cả 7 mục đã vá ở ai-CR-169 (10/10). Hợp đồng «nháp» = chưa ký và chưa tới ngày bắt đầu, hoặc đã hủy (model không có trạng thái nháp riêng — muốn chặt hơn sửa `delete_block_reason`). Phiếu nhập / phát sinh kho chưa chặn vì không có cột cho biết đã có giao dịch kế tiếp.
+**Tiến độ:** cả 7 mục đã vá ở ai-CR-169 (10/10). Hợp đồng **nháp** = chưa ký và chưa tới ngày bắt đầu, hoặc đã hủy (model không có trạng thái nháp riêng — muốn chặt hơn sửa `delete_block_reason`). Phiếu nhập / phát sinh kho chưa chặn vì không có cột cho biết đã có giao dịch kế tiếp.
 
 | # | Chỗ | Vấn đề |
 |---|---|---|
@@ -53,21 +53,21 @@ loại văn bản, đối tác ngoài, ngày lễ, loại dấu, xe, tài xế�
 Khai ở `<module>/references.py`, import từ `service.py` của chính module lúc khởi động (không qua `core/all_models.py`).
 Năm module này đều có controller viết tay nên gọi `reference_guard.ensure_deletable` tường minh ở đường xóa một, xóa nhiều
 (`bulk_delete_companies`: kiểm cả lô trước, một dòng vướng là không xóa dòng nào, câu báo liệt kê mã + lý do) và dòng CSV
-«xóa» (phòng ban, nhân sự). Chốt cũ GIỮ và chạy TRƯỚC: HĐLĐ đã ký (409) của nhân sự; «tài khoản còn hồ sơ» + «đã tạo dữ
-liệu» (`user_data_refs`) + «quản trị cuối» của tài khoản; vai trò admin. `created_by` / `updated_by` / lịch sử duyệt /
+**xóa** (phòng ban, nhân sự). Chốt cũ GIỮ và chạy TRƯỚC: HĐLĐ đã ký (409) của nhân sự; **tài khoản còn hồ sơ** + **đã tạo dữ
+liệu** (`user_data_refs`) + **quản trị cuối** của tài khoản; vai trò admin. `created_by` / `updated_by` / lịch sử duyệt /
 bình luận / thông báo / nhật ký: KHÔNG tính. Bài kiểm: `test/backend/test_chot_xoa_to_chuc_cr190.py`.
 
-| Danh mục (entity) | Chỗ tham chiếu đã khai (nhãn trong câu 400) | «Ngưng dùng» |
+| Danh mục (entity) | Chỗ tham chiếu đã khai (nhãn trong câu 400) | **Ngưng dùng** |
 |---|---|---|
 | Công ty `company` (47 chỗ) | công ty con (`parent`); phòng ban + phòng hiện diện tại pháp nhân; nhân sự; quá trình công tác; HĐLĐ + mẫu HĐLĐ; luồng duyệt; YCMH · YCBG · ĐMH · phiếu nhập kho · công nợ · YCTT · lịch sử mua · hợp đồng NCC · tồn kho · phiếu kho; văn bản · yêu cầu văn bản · phạm vi áp dụng · nơi nhận (kind pháp nhân) · kế hoạch sao chép · sổ văn bản đến · sổ văn bản · thư mục · quyền xem văn bản / thư mục / báo cáo (subject pháp nhân); hồ sơ; phiếu đóng dấu (+ pháp nhân trên phiếu) · văn thư giữ dấu; đơn nghỉ phép · quỹ phép · ngày lễ · phòng họp · lịch đặt phòng · phiếu đặt xe · phiếu hỗ trợ · hộp thư · bài diễn đàn · chính sách / thành viên điểm cà phê; nhóm · bảng · thẻ công việc | `is_active` có ở model + `CompanyUpdate` + màn v2 (`company-form-dialog.tsx`) |
 | Phòng ban `department` (30 chỗ) | phòng ban con (`parent`); nhân sự (`department_id`) · kiêm nhiệm · chức vụ · quá trình công tác · HĐLĐ · phân công nhóm hàng; YCMH / YCBG / ĐMH (`department_id` và `handler_dept_id` khai riêng) · công nợ · YCTT; văn bản · yêu cầu văn bản · phạm vi · nơi nhận (kind phòng) · quyền xem văn bản / thư mục / báo cáo (subject phòng) · hồ sơ · phiếu đóng dấu; đơn nghỉ phép · lịch đặt phòng · phiếu đặt xe · bài diễn đàn (`dept_id`); thành viên nhóm / bảng công việc | `is_active` có ở model + `DepartmentUpdate` + màn v2 (`department-form-dialog.tsx`) |
-| Nhân sự `employee` (53 chỗ) | nhân sự do người này quản lý (`manager_id`) · phòng ban làm trưởng bộ phận (+ tại pháp nhân) · công ty làm người đại diện pháp luật · phân công nhóm hàng (chính / dự phòng) · thương hiệu phụ trách; chặng duyệt đích danh (`approver_ref` chuỗi, kind 1) · chặng duyệt người dự phòng · phiếu duyệt đã trình · việc duyệt được giao · ủy quyền duyệt (hai chiều); YCMH (người yêu cầu / trưởng bộ phận / người duyệt / người phụ trách) · YCBG (3 cột) · báo cáo thực hiện (người phụ trách) · ĐMH (người duyệt) · YCTT (trưởng bộ phận); văn bản (chủ trì / soạn / ký) · yêu cầu văn bản · phạm vi · nơi nhận (kind nhân sự) · chữ ký · văn bản đến được giao · thành viên sổ · quyền xem văn bản / thư mục / báo cáo (subject nhân sự) · hồ sơ + tiến độ hồ sơ · phiếu đóng dấu (yêu cầu / duyệt) · văn thư giữ dấu; đơn nghỉ · bàn giao · quỹ phép · lịch đặt phòng · người tham dự · phiếu đặt xe (yêu cầu / duyệt) · phiếu hỗ trợ · thành viên hộp thư · thành viên điểm cà phê; thẻ công việc được giao · thành viên nhóm / bảng | `is_active` có ở model + `EmployeeUpdate` + màn v2 (`employee-form-dialog.tsx`); ngoài ra «nghỉ việc» (`status`) |
+| Nhân sự `employee` (53 chỗ) | nhân sự do người này quản lý (`manager_id`) · phòng ban làm trưởng bộ phận (+ tại pháp nhân) · công ty làm người đại diện pháp luật · phân công nhóm hàng (chính / dự phòng) · thương hiệu phụ trách; chặng duyệt đích danh (`approver_ref` chuỗi, kind 1) · chặng duyệt người dự phòng · phiếu duyệt đã trình · việc duyệt được giao · ủy quyền duyệt (hai chiều); YCMH (người yêu cầu / trưởng bộ phận / người duyệt / người phụ trách) · YCBG (3 cột) · báo cáo thực hiện (người phụ trách) · ĐMH (người duyệt) · YCTT (trưởng bộ phận); văn bản (chủ trì / soạn / ký) · yêu cầu văn bản · phạm vi · nơi nhận (kind nhân sự) · chữ ký · văn bản đến được giao · thành viên sổ · quyền xem văn bản / thư mục / báo cáo (subject nhân sự) · hồ sơ + tiến độ hồ sơ · phiếu đóng dấu (yêu cầu / duyệt) · văn thư giữ dấu; đơn nghỉ · bàn giao · quỹ phép · lịch đặt phòng · người tham dự · phiếu đặt xe (yêu cầu / duyệt) · phiếu hỗ trợ · thành viên hộp thư · thành viên điểm cà phê; thẻ công việc được giao · thành viên nhóm / bảng | `is_active` có ở model + `EmployeeUpdate` + màn v2 (`employee-form-dialog.tsx`); ngoài ra **nghỉ việc** (`status`) |
 | Tài khoản `user` (2 chỗ) | phiếu hỗ trợ đang xử lý (`tab_ticket.assignee_id`), tài xế liên kết (`tab_driver.user_id`) | `is_active` = khóa / mở khóa (`set_active`, màn v2 `user-account-table.tsx`) |
 | Vai trò `role` (5 chỗ) | tài khoản đang giữ (`tab_user_role`); chặng duyệt theo vai trò (`approver_ref` = mã, kind 2); quyền xem văn bản / thư mục / báo cáo (subject vai trò) | KHÔNG có `is_active` (cố ý không thêm cột — tránh migration): còn người giữ thì chặn, hết thì xóa; `tab_permission` + `tab_user_scope` dọn kèm |
 
 Giả định đã chốt khi làm (đổi thì sửa `references.py` tương ứng):
 
-- **`tab_user.employee_id` KHÔNG tính là tham chiếu của nhân sự.** `delete_user` đã chặn «tài khoản còn hồ sơ thì không xóa»;
+- **`tab_user.employee_id` KHÔNG tính là tham chiếu của nhân sự.** `delete_user` đã chặn **tài khoản còn hồ sơ thì không xóa**;
   nếu chiều ngược cũng chặn thì không xóa được cả hai (bế tắc, không có đường gỡ liên kết). Giữ lối CR-023: xóa hồ sơ → tự
   khóa + gỡ tài khoản (`detach_users`), chạy SAU chốt tham chiếu nên không khóa oan khi bị chặn.
 - **Bảng con của chính dòng được dọn kèm, không đếm:** liên hệ / gia đình / kiêm nhiệm (`tab_employee_department`, mới thêm
@@ -79,16 +79,16 @@ Giả định đã chốt khi làm (đổi thì sửa `references.py` tương �
   bình luận / cảm xúc / tùy chọn cá nhân / bộ lọc đã lưu / nhật ký yêu cầu (nhật ký, bộ đệm).
 - **Hành vi đổi so với trước:** xóa nhân sự đang là quản lý trực tiếp của người khác nay CHẶN (trước: tự gỡ `manager_id`
   cấp dưới về 0 — dòng gỡ giữ lại làm lưới cho dữ liệu cũ); câu chặn vai trò còn người giữ đổi sang câu chung của sổ (vẫn
-  chứa «n tài khoản»).
+  chứa **n tài khoản**).
 
 ### 4.b Danh mục chung + cấu hình (ai-CR-191, 13/10/2026)
 
 Khai ở `<module>/references.py` (import từ `controller.py` của module lúc khởi động); danh mục đi qua
-`make_crud_router` được `core/crud` tự chốt ở nút xóa và dòng CSV «xóa». Chốt `before_delete` cũ của từng
+`make_crud_router` được `core/crud` tự chốt ở nút xóa và dòng CSV **xóa**. Chốt `before_delete` cũ của từng
 danh mục GIỮ nguyên (câu riêng), sổ chung chạy sau. Đếm không lọc phạm vi, bản ghi xóa mềm vẫn tính.
 Bài kiểm: `test/backend/test_chot_xoa_danh_muc_chung_cr191.py`.
 
-| Danh mục (entity) | Chỗ tham chiếu đã khai | Khóa | «Ngưng dùng» |
+| Danh mục (entity) | Chỗ tham chiếu đã khai | Khóa | **Ngưng dùng** |
 |---|---|---|---|
 | Kho `warehouse` | dòng ĐMH, dòng giao hàng, phiếu nhập kho, tồn kho, phát sinh kho (`warehouse_code`); dòng YCMH (`warehouse` = TÊN kho) | mã / tên | `is_active` |
 | Đơn vị tính `unit` | sản phẩm, dòng YCMH, dòng ĐMH, phiếu nhập kho, tồn kho, lịch sử mua hàng (`unit` = TÊN) | tên | `is_active` |
@@ -111,10 +111,10 @@ Cấu hình có đường xóa riêng — gọi `reference_guard.ensure_deletabl
 
 | Cấu hình (entity) | Chỗ tham chiếu đã khai | Ghi chú |
 |---|---|---|
-| Luồng duyệt `approval_flow` (`flow_controller.delete_flow`) | phiếu duyệt kể cả đã xong (`tab_approval_instance.flow_id`); loại văn bản lấy làm luồng mặc định (`default_flow_id`) | chốt cũ «phiếu đang chạy» đứng trước, giữ câu riêng. Ủy quyền: nút xóa = tắt từ trước, không đổi |
+| Luồng duyệt `approval_flow` (`flow_controller.delete_flow`) | phiếu duyệt kể cả đã xong (`tab_approval_instance.flow_id`); loại văn bản lấy làm luồng mặc định (`default_flow_id`) | chốt cũ **phiếu đang chạy** đứng trước, giữ câu riêng. Ủy quyền: nút xóa = tắt từ trước, không đổi |
 | Thư mục văn bản `doc_folder` (`folder_service._guard_deletable`) | loại văn bản lấy làm thư mục mặc định (`default_folder_id`) | văn bản TRONG thư mục KHÔNG chặn — giữ quyết định 25/09/2026 (xóa là gỡ / chuyển văn bản); hộp xem trước báo cùng lý do |
-| Sổ văn bản `document_book` (`book_service.delete_book`) | văn bản (`book_id`), quy tắc đánh số (`tab_document_numbering_rule_book`) | chốt «đã cấp số» cũ giữ |
-| Quy tắc đánh số `doc_numbering_rule` | văn bản (`numbering_rule_id`) | chốt «đã cấp số» cũ giữ |
+| Sổ văn bản `document_book` (`book_service.delete_book`) | văn bản (`book_id`), quy tắc đánh số (`tab_document_numbering_rule_book`) | chốt **đã cấp số** cũ giữ |
+| Quy tắc đánh số `doc_numbering_rule` | văn bản (`numbering_rule_id`) | chốt **đã cấp số** cũ giữ |
 | Quy tắc quan hệ `doc_link_rule` | liên kết văn bản (`tab_document_link.rule_id`) | TRƯỚC CR này cho xóa và để `rule_id` trỏ vào khoảng không — nay chặn |
 | Quyền thư mục, mẫu văn bản / mẫu HĐLĐ | không đổi: dòng quyền không ai trỏ tới; mẫu HĐLĐ đã có chốt đếm hợp đồng | — |
 

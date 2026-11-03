@@ -1,7 +1,7 @@
 """bao-CR-603 — Tra cứu thị trường: năm cột TÙY CHỌN trên tệp nạp.
 
 ```
-thiếu cột                 -> nạp như cũ: «Nước nhận hàng» trống, hoạt chất / hàm lượng suy ra, giá VND tính
+thiếu cột                 -> nạp như cũ: "Nước nhận hàng" trống, hoạt chất / hàm lượng suy ra, giá VND tính
 tệp có cột, ô có chữ      -> lấy của tệp, cờ _from_file = 1, retag_all KHÔNG ghi đè
 tệp có cột, ô trống       -> suy ra / tính như cũ (cờ = 0)
 mã băm chống trùng        -> KHÔNG đổi theo cột tùy chọn: cùng 32 cột là cùng một dòng
@@ -73,7 +73,7 @@ def test_missing_import_country_is_accepted_and_left_blank():
     res = reader.parse(_xlsx([ROW], headers), today=date(2026, 9, 23))
     assert res.rows[0]["import_country"] == ""
     assert res.optional_columns == []
-    #  Tệp GTT02 chuẩn (có «Nước nhận hàng») cũng không bị kể là «có cột tùy chọn»
+    #  Tệp GTT02 chuẩn (có "Nước nhận hàng") cũng không bị kể là "có cột tùy chọn"
     assert reader.parse(_xlsx([ROW], FULL), today=date(2026, 9, 23)).optional_columns == []
 
 
@@ -94,7 +94,7 @@ def test_file_without_optional_columns_derives_and_computes_as_before(db, alias)
     assert row["price_vnd_flat"] == round(3 * 26130 * 1.07)
     assert row["price_vnd_line_tax"] == round(3 * 26130 * 1.05)
     assert row["price_vnd_flat_from_file"] is False and row["active_ingredient_from_file"] is False
-    #  Không có dòng nhật ký «cột tùy chọn» khi tệp không có cột nào
+    #  Không có dòng nhật ký "cột tùy chọn" khi tệp không có cột nào
     assert not db.query(ImportLog).filter(ImportLog.batch_id == b.id, ImportLog.message.like("Tệp có cột%")).count()
 
 
@@ -151,7 +151,7 @@ def test_long_ingredient_text_is_cut_to_column_limit():
 
 
 def test_header_aliases_are_recognized():
-    """Tiêu đề cũ «(suy ra)» của Excel xuất trước CR-603 và tiêu đề ngắn của màn hình đều khớp."""
+    """Tiêu đề cũ "(suy ra)" của Excel xuất trước CR-603 và tiêu đề ngắn của màn hình đều khớp."""
     headers = FULL + [("active_ingredient", "Hoạt chất (suy ra)"), ("formulation", "Hàm lượng / dạng (suy ra)"),
                       ("price_vnd_flat", "Giá VND (thuế NK 7%)"), ("price_vnd_line_tax", "Giá VND (thuế suất dòng)")]
     res = reader.parse(_xlsx([{**ROW, "active_ingredient": "X", "formulation": "20EC",
@@ -184,7 +184,7 @@ def test_optional_columns_do_not_change_row_hash(db, alias):
     second = _batch(db)
     importer.run(db, second, _xlsx([{**ROW, "active_ingredient": "KHÁC", "price_vnd_flat": 1}], WITH_OPTIONAL),
                  apply=True)
-    assert db.query(CustomsLine).count() == 1                   # dòng thứ hai là «Đã có», bỏ qua
+    assert db.query(CustomsLine).count() == 1                   # dòng thứ hai là "Đã có", bỏ qua
     assert second.created_count == 0
 
 
@@ -194,7 +194,7 @@ def test_exported_excel_round_trips_through_the_reader(db, alias):
     importer.run(db, b, _xlsx([{**ROW, "active_ingredient": "ABC", "price_vnd_flat": 5000}], WITH_OPTIONAL), apply=True)
     raw = S.export_lines_xlsx(db, {})
     ws = openpyxl.load_workbook(io.BytesIO(raw)).active
-    assert ws.max_column == 38                  # bao-CR-608: + «ID» đầu, «Thao tác» cuối
+    assert ws.max_column == 38                  # bao-CR-608: + "ID" đầu, "Thao tác" cuối
     assert [ws.cell(1, 34 + i).value for i in range(4)] == [OPTIONAL_LABELS[k] for k, _ in OPTIONAL_COLUMNS]
     res = reader.parse(raw, today=date(2026, 9, 23))
     assert res.optional_columns == ["active_ingredient", "formulation", "price_vnd_flat", "price_vnd_line_tax"]
@@ -204,7 +204,7 @@ def test_exported_excel_round_trips_through_the_reader(db, alias):
     assert res.rows[0]["active_ingredient"] == "ABC" and res.rows[0]["price_vnd_flat"] == Decimal("5000")
     assert res.rows[0]["price_vnd_line_tax"] == Decimal(str(round(3 * 26130 * 1.05)))
     #  Nạp lại tệp xuất ra: dòng đã có → bỏ qua, không nhân đôi (cột tùy chọn không vào mã băm).
-    #  bao-CR-608: tệp xuất có cột «ID» — dòng trỏ đúng dòng đã lưu mà dữ liệu y hệt → «Đã có».
+    #  bao-CR-608: tệp xuất có cột "ID" — dòng trỏ đúng dòng đã lưu mà dữ liệu y hệt → "Đã có".
     again = _batch(db)
     importer.run(db, again, raw, apply=True)
     assert db.query(CustomsLine).count() == 1 and again.created_count == 0

@@ -2,7 +2,7 @@
 
 Ở dev và prod, bot (`modules/agent_hub/`) chạy TÁCH khỏi ERP (`AGENT_MODE=service`, DB riêng, không có bảng phiếu). Mã
 phía bot muốn đụng dữ liệu ERP phải đi qua `agent_hub/erp.py` (bản `_Local` + `_Remote`) và một đường cổng B
-(`agent_gateway/controller.py`). ai-CR-152: nút «Xác nhận sửa / xóa» trên Telegram import thẳng `confirm_update` rồi
+(`agent_gateway/controller.py`). ai-CR-152: nút "Xác nhận sửa / xóa" trên Telegram import thẳng `confirm_update` rồi
 chạy trên DB của bot — mọi bài kiểm khác vẫn xanh vì chúng chạy bot và ERP chung một DB. Bài này đọc mã (không chạy),
 nên bắt được loại lỗi đó ngay lúc viết.
 

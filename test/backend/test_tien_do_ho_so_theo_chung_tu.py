@@ -1,7 +1,7 @@
 """TIẾN ĐỘ HỒ SƠ THEO TỪNG CHỨNG TỪ — `tab_dossier_progress` (21/09/2026).
 
-Trước bảng này, thẻ «Hồ sơ cần hoàn thành» đo tiến độ bằng `tab_dossier.status`,
-nên tick xong ở một tờ YCBG là hai chục phiếu khác cũng hiện «đã xong». Bộ kiểm
+Trước bảng này, thẻ "Hồ sơ cần hoàn thành" đo tiến độ bằng `tab_dossier.status`,
+nên tick xong ở một tờ YCBG là hai chục phiếu khác cũng hiện "đã xong". Bộ kiểm
 này canh đúng chỗ đó và mấy chỗ hỏng trong im lặng quanh nó:
 
 * **Hai thang trạng thái không được lẫn nhau.** `DOSSIER_*` (tờ giấy có trong
@@ -51,7 +51,7 @@ def test_hai_thang_trang_thai_trung_dai_so_nen_phai_tach_bach():
 
 # ── Mặc định khi chưa có dòng ───────────────────────────────────────────────
 def test_chua_ai_dong_toi_thi_ra_mac_dinh_chua_bat_dau():
-    """Không có dòng dưới DB = «chưa bắt đầu · bắt buộc · chưa ai nhận».
+    """Không có dòng dưới DB = "chưa bắt đầu · bắt buộc · chưa ai nhận".
 
     Đây là lý do không đi đẻ sẵn n×m dòng rỗng lúc mở phiếu.
     """
@@ -62,7 +62,7 @@ def test_chua_ai_dong_toi_thi_ra_mac_dinh_chua_bat_dau():
     assert out["assignee_id"] == 0
     assert out["planned_date"] is None
     assert out["progress_note"] == ""
-    #  Cờ này nói rõ «chưa bắt đầu» ở đây là MẶC ĐỊNH chứ không phải ai đó đặt.
+    #  Cờ này nói rõ "chưa bắt đầu" ở đây là MẶC ĐỊNH chứ không phải ai đó đặt.
     assert out["progress_saved"] is False
 
 
@@ -76,7 +76,7 @@ def test_merge_khong_bao_gio_tra_thieu_khoa(db):
     """Dòng thật và dòng mặc định phải trả CÙNG bộ khóa.
 
     Lệch một khóa thì TypeScript bên kia khai `progress_note: string` mà nhận
-    `undefined` — màn hình ra chữ «undefined» chứ không ra ô trống.
+    `undefined` — màn hình ra chữ "undefined" chứ không ra ô trống.
     """
     row = upsert(db, KIND, 1, 1, {"status": DP_DOING})
     assert set(merge(row)) == set(merge(None))
@@ -156,10 +156,10 @@ def test_dong_moi_nhan_gia_tri_nguoi_dung_gui_chu_khong_nhan_mac_dinh_cot(db):
 
 
 def test_ghi_gia_tri_zero_va_chuoi_rong_van_an(db):
-    """`0` / `""` / `None` là GIÁ TRỊ THẬT, không phải «không gửi».
+    """`0` / `""` / `None` là GIÁ TRỊ THẬT, không phải "không gửi".
 
     Kiểm bằng `if values[key]` thay vì `if key in values` thì bỏ gán người thực
-    hiện về «chưa ai nhận» (`0`) và xóa ngày hẹn (`None`) đều không bao giờ lưu
+    hiện về "chưa ai nhận" (`0`) và xóa ngày hẹn (`None`) đều không bao giờ lưu
     được — đúng bẫy `id = 0` của duoc-CR-322.
     """
     upsert(db, KIND, 2931, 28, {
@@ -203,7 +203,7 @@ def test_moi_muc_deu_luu_va_doc_lai_dung(db, status):
 # ── Tính khóa ───────────────────────────────────────────────────────────────
 #  Tập hồ sơ CÒN áp dụng cho phiếu. Ràng buộc tiên quyết nay khai trên chính tờ
 #  hồ sơ (`tab_dossier.depends`, xem `depends_service.py`); phần dưới đây chỉ
-#  kiểm việc TÍNH KHÓA, thứ vẫn thuộc về từng phiếu vì «xong» là của từng phiếu.
+#  kiểm việc TÍNH KHÓA, thứ vẫn thuộc về từng phiếu vì "xong" là của từng phiếu.
 ALLOWED = {28, 29, 30, 31}
 
 
@@ -218,7 +218,7 @@ def test_con_mot_to_chua_xong_thi_van_khoa():
 def test_id_chet_khong_duoc_khoa_vinh_vien():
     """Điều kiện áp dụng đổi sau khi đã khai tiên quyết thì id cũ thành ID CHẾT.
 
-    Coi nó là «chưa xong» thì tờ kia khóa vĩnh viễn bằng một tờ không còn hiện
+    Coi nó là "chưa xong" thì tờ kia khóa vĩnh viễn bằng một tờ không còn hiện
     ra ở đâu — người dùng không có cách nào gỡ ngoài sửa thẳng DB.
     """
     assert pending_depends([999], set(), ALLOWED) == []

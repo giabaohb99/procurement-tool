@@ -1,4 +1,4 @@
-"""duoc-CR-661 (kh-HR1-2) — cờ «Bắt buộc đính kèm» của loại nghỉ phải được ép LÚC GỬI DUYỆT.
+"""duoc-CR-661 (kh-HR1-2) — cờ "Bắt buộc đính kèm" của loại nghỉ phải được ép LÚC GỬI DUYỆT.
 
 Trước CR này cờ `require_attachment` hiện trên form danh mục nhưng `request_service`
 không đọc: Nghỉ ốm không kèm giấy vẫn gửi duyệt được. Chốt đặt ở `prepare_submit`
@@ -75,7 +75,7 @@ def test_don_nhieu_loai_co_mot_loai_bat_co_thi_bi_chan(db, world):
     with pytest.raises(HTTPException) as exc:
         request_service.prepare_submit(db, obj, world.user)
     assert "\"Nghỉ ốm\"" in exc.value.detail
-    assert "«Phép năm»" not in exc.value.detail
+    assert "\"Phép năm\"" not in exc.value.detail
 
 
 def test_luu_nhap_khong_bi_chan(db, world):

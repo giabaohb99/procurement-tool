@@ -62,7 +62,7 @@ Form có **9 tab**. Trong tab có nhiều **nhóm** (Section), mỗi nhóm chia 
 | Tab | Nhóm → trường |
 |---|---|
 | **Overview** | *(không tên)*: `first_name`*, `middle_name`, `last_name`, `employee_name` (tự ghép), `gender`*, `date_of_birth`*, `salutation`, `date_of_joining`*, `image`, `status`* · **User Details**: `user_id`, `create_user_permission`, `create_user_automatically` · **Company Details**: `company`*, `department`, `employee_number`, `designation`, `reports_to`, `branch` |
-| **Address & Contacts** | `cell_number`, `company_email`, `personal_email`, `prefered_contact_email`, `prefered_email` (tự tính), `unsubscribed` · **Address**: địa chỉ hiện tại + thường trú, mỗi cái kèm «thuê / sở hữu» · **Emergency Contact**: tên, số điện thoại, quan hệ |
+| **Address & Contacts** | `cell_number`, `company_email`, `personal_email`, `prefered_contact_email`, `prefered_email` (tự tính), `unsubscribed` · **Address**: địa chỉ hiện tại + thường trú, mỗi cái kèm **thuê / sở hữu** · **Emergency Contact**: tên, số điện thoại, quan hệ |
 | **Attendance & Leaves** | `attendance_device_id` (không trùng), `holiday_list` |
 | **Salary** | `ctc`, `salary_currency`, `salary_mode` (Bank / Cash / Cheque) · **Bank Details**: `bank_name`, `bank_ac_no`, `iban` (chỉ hiện khi trả qua ngân hàng) |
 | **Personal Details** | `marital_status`, `family_background`, `blood_group`, `health_details` · **Passport Details**: số, ngày cấp, hạn, nơi cấp |
@@ -73,7 +73,7 @@ Form có **9 tab**. Trong tab có nhiều **nhóm** (Section), mỗi nhóm chia 
 
 Ngoài form, khung trang của Frappe có **thanh bên phải** (ảnh, tên, mã, người được giao, tệp đính kèm, thẻ, chia
 sẻ, người tạo / sửa) và **bình luận + dòng hoạt động** ở cuối trang. Các nhóm nằm liền nhau trên một mặt phẳng,
-ngăn bằng đường kẻ; nhóm phụ như «Chi tiết người dùng» gập / mở được.
+ngăn bằng đường kẻ; nhóm phụ như **Chi tiết người dùng** gập / mở được.
 
 ### 2.2 Đặt tên, trạng thái, cây
 
@@ -94,7 +94,7 @@ ngăn bằng đường kẻ; nhóm phụ như «Chi tiết người dùng» gậ
 | **Chuyển sang Left bị chặn nếu còn người Active đang báo cáo cho mình**, màn liệt kê từng người; và bắt nhập ngày nghỉ việc | `validate_status`, 285-305 |
 | Một tài khoản chỉ gắn với một hồ sơ Active | `validate_duplicate_user_id`, 354-369 |
 | **Chống leo quyền**: chỉ System Manager được gắn / gỡ / sửa tài khoản đang giữ vai trò quản trị | `validate_user_access`, 170-181 |
-| Bật «tạo tài khoản tự động» thì phải có ít nhất một email | `validate_auto_user_creation`, 183-191 |
+| Bật **tạo tài khoản tự động** thì phải có ít nhất một email | `validate_auto_user_creation`, 183-191 |
 
 ### 2.4 Đồng bộ hồ sơ ↔ tài khoản
 
@@ -138,7 +138,7 @@ ngăn bằng đường kẻ; nhóm phụ như «Chi tiết người dùng» gậ
 | Quản lý trực tiếp | `manager_id`, chặn tự trỏ mình, chặn vòng dài, chặn trỏ hồ sơ không tồn tại | `employee/service.py:145-195` (`block_manager_cycle`) |
 | Kiêm nhiệm | `tab_employee_department` (phòng chính + phòng kiêm), mở rộng phạm vi dữ liệu | `employee/department_model.py` |
 | Chức vụ | Danh mục `tab_job_position`; mỗi chức vụ có gói vai trò tự cấp | duoc-CR-320, duoc-CR-653 |
-| Quá trình công tác | Một bảng sự kiện (vào làm, điều chuyển, bổ nhiệm, kiêm nhiệm, miễn nhiệm, nghỉ việc, khác) kèm tệp quyết định; «Áp» vào hồ sơ | duoc-CR-585, `employee/work_history_*.py` |
+| Quá trình công tác | Một bảng sự kiện (vào làm, điều chuyển, bổ nhiệm, kiêm nhiệm, miễn nhiệm, nghỉ việc, khác) kèm tệp quyết định; **Áp** vào hồ sơ | duoc-CR-585, `employee/work_history_*.py` |
 | Nghỉ việc | Chuyển sang nghỉ việc / ngừng dùng thì **khóa tài khoản + đá phiên** trong cùng giao dịch; trước đó có màn kiểm việc duyệt đang treo | `employee/service.py:314-335`, duoc-CR-665 |
 | Duyệt sửa hồ sơ | Nhân viên tự đề nghị sửa, nhân sự duyệt | `employee/change_request_*.py` |
 | Sơ đồ tổ chức | Đọc thẳng phòng ban (có cha) + `manager_id` | duoc-CR-669, `employee/org_chart_controller.py` |
@@ -168,7 +168,7 @@ Giấy tờ & BHXH · Hợp đồng · Quỹ phép · Tài khoản.
 | Chức danh | Designation (tên + mô tả) | — | Chức vụ + gói quyền | DEGO thêm tự cấp quyền theo chức vụ |
 | Chi nhánh | Branch | — | Không (có `work_location` dạng chữ) | |
 | Nhóm nhân sự | Employee Group | — | Không | |
-| Quá trình | 3 bảng con nhập tay | Employee Transfer / Promotion | 1 bảng sự kiện + tệp QĐ + «Áp» vào hồ sơ | DEGO chặt hơn (áp có kiểm tra, khóa tài khoản khi nghỉ) |
+| Quá trình | 3 bảng con nhập tay | Employee Transfer / Promotion | 1 bảng sự kiện + tệp QĐ + **Áp** vào hồ sơ | DEGO chặt hơn (áp có kiểm tra, khóa tài khoản khi nghỉ) |
 | Học vấn | Bảng con | — | Hai ô `education_level` + `major` | ERPNext chi tiết hơn |
 | Lịch nghỉ | Holiday List gán theo người / công ty | — | Ngày lễ + lịch làm việc 4 cấp | Tương đương; DEGO linh hoạt hơn về ca tuần |
 | Nghỉ phép | — | Có | Có | DEGO tự làm |
@@ -178,7 +178,7 @@ Giấy tờ & BHXH · Hợp đồng · Quỹ phép · Tài khoản.
 
 ### 4.2 Từng trường của hồ sơ
 
-**Có ở cả hai:** họ tên (ERPNext tách 3 ô, DEGO một ô `full_name`) · giới tính (DEGO thêm «Khác») · ngày sinh ·
+**Có ở cả hai:** họ tên (ERPNext tách 3 ô, DEGO một ô `full_name`) · giới tính (DEGO thêm **Khác**) · ngày sinh ·
 ngày vào làm (ERPNext bắt buộc, DEGO để trống được) · trạng thái · ảnh (DEGO lấy từ tài khoản) · tài khoản
 (ERPNext `user_id` trên hồ sơ, DEGO `tab_user.employee_id` trỏ ngược) · công ty · phòng ban · chức danh / chức vụ ·
 quản lý trực tiếp · số điện thoại · email công ty · email cá nhân · địa chỉ hiện tại · địa chỉ thường trú ·
@@ -197,7 +197,7 @@ quá trình trong công ty · ngày nghỉ việc (`relieving_date` ↔ `resign_
 **Chỉ DEGO:** nơi sinh · dân tộc · tôn giáo · số con · MST cá nhân · trình độ học vấn · chuyên ngành · hình thức
 nhân viên · cấp bậc · nơi làm việc · nhãn số chính + số điện thoại khác · chủ tài khoản · chi nhánh ngân hàng ·
 CCCD (số, ngày cấp, nơi cấp, ngày hết hạn, 2 ảnh) · số BHXH · nơi / mã KCB BHYT · hộ gia đình (bảng) · phụ cấp ·
-chữ ký (trên tài khoản) · `extra_fields` · cờ «Đang dùng» (`is_active`, tách khỏi tình trạng làm việc).
+chữ ký (trên tài khoản) · `extra_fields` · cờ **Đang dùng** (`is_active`, tách khỏi tình trạng làm việc).
 
 ### 4.3 Luật
 
@@ -206,7 +206,7 @@ chữ ký (trên tài khoản) · `extra_fields` · cờ «Đang dùng» (`is_ac
 | Tự làm quản lý / báo cáo cho chính mình | Chặn (`employee.py:371-373`) | Chặn (`employee/service.py:162-163`) |
 | Vòng quản lý A→B→A | Không thấy kiểm trong `employee.py`; có thể do NestedSet của Frappe (thư viện ngoài repo, **chưa kiểm**) | Chặn cả vòng dài, chạm trần 50 cấp cũng chặn (`service.py:167-195`) |
 | Nghỉ việc khi còn cấp dưới trỏ vào mình | **Chặn**, liệt kê từng người (`employee.py:285-303`) | **Không chặn**. Chỉ khi xóa hồ sơ mới gỡ `manager_id` của cấp dưới về 0 (`service.py:578`). Đơn của cấp dưới sẽ lùi về trưởng bộ phận |
-| Nghỉ việc phải có ngày nghỉ | Bắt buộc (`employee.py:304-305`) | Không bắt buộc; màn chỉ nhắc «nhớ đổi cả ô Tình trạng». Báo cáo sổ lao động bỏ qua người nghỉ mà thiếu ngày (`labor_register/people_data.py:6`) |
+| Nghỉ việc phải có ngày nghỉ | Bắt buộc (`employee.py:304-305`) | Không bắt buộc; màn chỉ nhắc **nhớ đổi cả ô Tình trạng**. Báo cáo sổ lao động bỏ qua người nghỉ mà thiếu ngày (`labor_register/people_data.py:6`) |
 | Thứ tự ngày (sinh < vào làm < nghỉ) | Chặn (`employee.py:266-273`) | Chưa kiểm |
 | Khóa tài khoản khi nghỉ | Tắt tài khoản khi không còn Active | Khóa + đá phiên mọi thiết bị trong cùng giao dịch, có màn kiểm việc duyệt treo trước (duoc-CR-665) |
 | Mở lại tài khoản | Có luật ai được bật lại (`can_reenable_user`) | Mở khóa ở tab Tài khoản (gói quyền theo chức vụ được cấp lại) |
@@ -220,12 +220,12 @@ chữ ký (trên tài khoản) · `extra_fields` · cờ «Đang dùng» (`is_ac
 |---|---|
 | Một mặt phẳng, nhóm ngăn bằng đường kẻ, ô nền xám, nhóm phụ gập / mở | **Đã có**: không thẻ con, tiêu đề nhóm chữ thường, ô nền xám, Lương và Kiêm nhiệm gập / mở |
 | Thanh bên phải: ảnh, tên + mã, người được giao, thẻ, tệp, người tạo / sửa, Sinh nhật / Kỷ niệm | **Đã có**: thanh bên phải với ảnh, tên + mã, chức vụ, phòng ban, quản lý trực tiếp, công ty, ngày vào làm + thâm niên, Sinh nhật / Tròn N năm làm việc, lần cập nhật cuối (không có giao việc / thẻ / chia sẻ) |
-| Tiêu đề + nhãn trạng thái tô màu + nút bên phải | **Đã có**: tên + nhãn tình trạng (xanh lá / xanh dương / hổ phách / xám, thêm nhãn đỏ «Ngừng dùng») + In / Lưu / Xóa |
+| Tiêu đề + nhãn trạng thái tô màu + nút bên phải | **Đã có**: tên + nhãn tình trạng (xanh lá / xanh dương / hổ phách / xám, thêm nhãn đỏ **Ngừng dùng**) + In / Lưu / Xóa |
 | Tab Overview (cơ bản + tài khoản + công ty) | Tab **Chung**: nhóm Thông tin cá nhân · Công việc · **Vào làm & nghỉ việc** (tách theo tab Joining / Exit) · Lương · Kiêm nhiệm. Nhóm xếp 3 cột khi đủ rộng |
 | Address & Contacts | Liên hệ & Ngân hàng |
 | Personal Details + Passport | Giấy tờ & BHXH (CCCD thay hộ chiếu) |
 | Profile (học vấn, kinh nghiệm, quá trình) | Quá trình công tác + Quyết định bổ nhiệm |
-| Joining, Exit | Gộp vào nhóm «Vào làm & nghỉ việc» của tab Chung; HĐ ở tab Hợp đồng |
+| Joining, Exit | Gộp vào nhóm **Vào làm & nghỉ việc** của tab Chung; HĐ ở tab Hợp đồng |
 | Attendance & Leaves, Salary | Quỹ phép (+ lịch làm việc); không có chấm công / tính lương |
 | Connections | Không có tab riêng |
 | Dòng hoạt động cuối trang | Lịch sử thao tác cuối trang |
@@ -238,8 +238,8 @@ chữ ký (trên tài khoản) · `extra_fields` · cờ «Đang dùng» (`is_ac
 
 | Ưu tiên | Đề xuất | Lý do |
 |---|---|---|
-| **Cao** | Chặn (hoặc ít nhất cảnh báo trong hộp xác nhận nghỉ việc) khi còn người đang có `manager_id` trỏ vào hồ sơ sắp nghỉ, liệt kê từng người như ERPNext | Hiện người nghỉ vẫn là «quản lý trực tiếp» của cấp dưới; đơn của họ âm thầm lùi về trưởng bộ phận, không ai biết phải gán lại. Có sẵn hộp kiểm việc treo (duoc-CR-665) để gắn thêm mục này |
-| **Cao** | Bắt nhập Ngày nghỉ việc khi chuyển sang «Nghỉ việc» (hoặc tự điền hôm nay) | Thiếu ngày thì sổ quản lý lao động và báo cáo biến động bỏ sót người đó |
+| **Cao** | Chặn (hoặc ít nhất cảnh báo trong hộp xác nhận nghỉ việc) khi còn người đang có `manager_id` trỏ vào hồ sơ sắp nghỉ, liệt kê từng người như ERPNext | Hiện người nghỉ vẫn là **quản lý trực tiếp** của cấp dưới; đơn của họ âm thầm lùi về trưởng bộ phận, không ai biết phải gán lại. Có sẵn hộp kiểm việc treo (duoc-CR-665) để gắn thêm mục này |
+| **Cao** | Bắt nhập Ngày nghỉ việc khi chuyển sang **Nghỉ việc** (hoặc tự điền hôm nay) | Thiếu ngày thì sổ quản lý lao động và báo cáo biến động bỏ sót người đó |
 | **Trung bình** | Kiểm thứ tự ngày: ngày sinh < ngày vào làm ≤ ngày nghỉ việc | Rẻ, chặn được lỗi gõ năm |
 | **Trung bình** | Ghi thông tin nghỉ việc: ngày nộp đơn, lý do nghỉ (mã số theo luật R2) | Phục vụ báo cáo nghỉ việc và giữ chân; ERPNext có cả tab Exit |
 | **Trung bình** | Ngày chính thức (hết thử việc) trên hồ sơ, hoặc lấy từ HĐ thử việc | Báo cáo thâm niên, phép năm đầu |

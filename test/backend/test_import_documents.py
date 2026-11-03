@@ -157,7 +157,7 @@ def test_import_dmh_mau_chuan(db):
 
 
 def test_chon_nham_bang_chung_tu_thi_chan(db):
-    # File không có cột bắt buộc của YCMH («Mã phiếu», «Tên sản phẩm») -> chặn ngay.
+    # File không có cột bắt buộc của YCMH ("Mã phiếu", "Tên sản phẩm") -> chặn ngay.
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.append(["Cột lạ 1", "Cột lạ 2"])

@@ -5,8 +5,8 @@ Nguyên tắc phải giữ, giống tầng sửa phiếu (CR-218): token chỉ l
 Bộ test ép đủ các cửa: thiếu `user.write` / tự gán cho mình / gán vai trò cấp quyền mình không
 có (L2) / hồ sơ không có, nhiều hồ sơ khớp, chưa có tài khoản / token của người khác / token hết
 hạn / mất quyền giữa hai bước — và happy path phải ghi qua ĐÚNG hai service của màn Phân quyền
-(`assign_roles` + `set_user_scope`), chạy lại thì mọi dòng «không đổi», không được ghi thêm dòng
-«Chỉ trong công ty» nào (bao-CR-434).
+(`assign_roles` + `set_user_scope`), chạy lại thì mọi dòng "không đổi", không được ghi thêm dòng
+"Chỉ trong công ty" nào (bao-CR-434).
 """
 import json
 import time
@@ -108,7 +108,7 @@ def test_employee_not_found_is_blocked_not_created(db, world):
 
 
 def test_ambiguous_name_returns_candidates_without_token(db, world):
-    """«NSTM» khớp cả NSTM Chính lẫn NSTM Dự Phòng — không được đoán, trả danh sách để hỏi lại."""
+    """"NSTM" khớp cả NSTM Chính lẫn NSTM Dự Phòng — không được đoán, trả danh sách để hỏi lại."""
     out = _propose(db, world["actor"], {"employee": "NSTM", "role_codes": ["pur_staff"]})
     assert out["status"] == "ambiguous"
     assert {c["code"] for c in out["candidates"]} == {"DEMONV", "BACKUP01"}
@@ -168,7 +168,7 @@ def test_propose_then_confirm_writes_roles_and_scope_via_services(db, world):
     assert proposal["kind"] == PROPOSAL_KIND
     assert proposal["target_label"] == "Người YC (TESTREQ)"
     assert proposal["employee"]["department"] == "Phòng Test"
-    #  Hai vai trò + hai dòng loại trừ (mỗi vai trò một dòng) — tất cả «thêm», chưa ghi gì.
+    #  Hai vai trò + hai dòng loại trừ (mỗi vai trò một dòng) — tất cả "thêm", chưa ghi gì.
     assert _status_of(proposal["lines"], "role") == ["thêm", "thêm"]
     assert _status_of(proposal["lines"], "scope") == ["thêm", "thêm"]
     assert proposal["changed"] == 4
@@ -185,12 +185,12 @@ def test_propose_then_confirm_writes_roles_and_scope_via_services(db, world):
     for code in ("employee", "pur_staff"):
         scope = user_service.get_user_scope(db, target.id, roles[code].id)
         assert scope["exclude_departments"] == ["Dego Organic"]
-        #  bao-CR-434: tool không được tự khai «Chỉ trong công ty».
+        #  bao-CR-434: tool không được tự khai "Chỉ trong công ty".
         assert scope["companies"] == []
 
 
 def test_rerun_after_confirm_reports_everything_unchanged(db, world):
-    """Chạy lại y nguyên: mọi dòng «không đổi», changed = 0, xác nhận lần nữa không ghi gì."""
+    """Chạy lại y nguyên: mọi dòng "không đổi", changed = 0, xác nhận lần nữa không ghi gì."""
     actor, target = world["actor"], world["target"]
     first = _propose(db, actor, _setup_args())
     confirm_account_setup(db, actor, first["proposal"]["confirm_token"])
@@ -210,8 +210,8 @@ def test_rerun_after_confirm_reports_everything_unchanged(db, world):
 
 
 def test_add_role_keeps_existing_roles_unless_replace(db, world):
-    """Mặc định là CỘNG THÊM: vai trò đang có giữ nguyên («không đổi»); replace_roles=true thì
-    vai trò ngoài danh sách bị đề xuất «bỏ»."""
+    """Mặc định là CỘNG THÊM: vai trò đang có giữ nguyên ("không đổi"); replace_roles=true thì
+    vai trò ngoài danh sách bị đề xuất "bỏ"."""
     actor, target, roles = world["actor"], world["target"], world["roles"]
     db.add(UserRole(user_id=target.id, role_id=roles["employee"].id))
     db.commit()
@@ -228,8 +228,8 @@ def test_add_role_keeps_existing_roles_unless_replace(db, world):
 
 
 def test_company_include_is_warned_and_only_removed_on_request(db, world, seed):
-    """Vai trò thu mua đang có «Chỉ trong công ty»: mặc định chỉ CẢNH BÁO (không tự gỡ),
-    remove_company_include=true thì đề xuất «bỏ» và xác nhận xong ô công ty trống."""
+    """Vai trò thu mua đang có "Chỉ trong công ty": mặc định chỉ CẢNH BÁO (không tự gỡ),
+    remove_company_include=true thì đề xuất "bỏ" và xác nhận xong ô công ty trống."""
     actor, target, roles = world["actor"], world["target"], world["roles"]
     db.add(UserRole(user_id=target.id, role_id=roles["pur_staff"].id))
     db.commit()

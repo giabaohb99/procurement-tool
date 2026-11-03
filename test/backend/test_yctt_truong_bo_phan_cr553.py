@@ -1,7 +1,7 @@
-"""bao-CR-553 — YCTT thêm ô «Trưởng bộ phận» (in ở dòng «Trưởng phòng ban/bộ phận» của bản in).
+"""bao-CR-553 — YCTT thêm ô "Trưởng bộ phận" (in ở dòng "Trưởng phòng ban/bộ phận" của bản in).
 
 Đại ca chốt 01/10/2026: chị Mi duyệt nhưng bản in nội bộ phải ghi anh Dững ở dòng đó; ô Giám đốc
-và ô TP duyệt giữ nguyên. 02/10: bỏ ô «Người duyệt», chỉ giữ ô này; gửi duyệt báo như cũ.
+và ô TP duyệt giữ nguyên. 02/10: bỏ ô "Người duyệt", chỉ giữ ô này; gửi duyệt báo như cũ.
 """
 import json
 

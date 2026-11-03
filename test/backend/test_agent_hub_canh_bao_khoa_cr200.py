@@ -1,6 +1,6 @@
 """ai-CR-200 — cảnh báo khóa AI hết tiền / hỏng: nhắn chủ khóa, gom theo trạm, 3 giờ một lần.
 
-14/10/2026 17:16: ví trạm modelapi.vn âm tiền («用户额度不足, 剩余额度: $-0.035204», mã 403) → 3 khóa trạm hỏng cùng
+14/10/2026 17:16: ví trạm modelapi.vn âm tiền ("用户额度不足, 剩余额度: $-0.035204", mã 403) → 3 khóa trạm hỏng cùng
 lúc, bot rơi xuống Gemini lite, không ai được báo.
 """
 from types import SimpleNamespace

@@ -47,6 +47,8 @@ REPORT_SUMMARY_PATHS = frozenset({
     #  duoc-CR-689: có mặt, sửa hồ sơ, phòng họp.
     "/api/attendance-report/summary", "/api/profile-change-report/summary",
     "/api/room-usage/summary",
+    #  duoc-CR-717: làm việc vào ngày lễ, ngày nghỉ — chỉ mã/tên/phòng/ngày, không trường nhạy cảm.
+    "/api/holiday-work-report/summary",
     #  CỐ Ý KHÔNG đưa `/api/legal-watch/summary` vào: dữ liệu ngày sinh / thai sản / con nhỏ — thu hồi quyền
     #  `employee_sensitive` hay bỏ giao báo cáo phải có hiệu lực NGAY, không đợi hết hạn bộ nhớ đệm.
 })

@@ -40,7 +40,7 @@ def test_quet_duoc_du_so_duong_khong_rong():
 
 @pytest.fixture
 def full_but_export(db, world):
-    """a1 có MỌI hành động trừ Xuất / Nhập, phạm vi «tất cả», trên MỌI bảng — một vai trò duy nhất."""
+    """a1 có MỌI hành động trừ Xuất / Nhập, phạm vi "tất cả", trên MỌI bảng — một vai trò duy nhất."""
     from app.core.auth import perm_cache_clear
     from app.modules.role.model import Permission, Role
     from app.modules.user.model import UserRole
@@ -106,7 +106,7 @@ def _csv(res) -> list[list[str]]:
 @pytest.mark.parametrize("path", ["/api/employees/export/csv", "/api/employees/export/xlsx",
                                   "/api/exports/run?entity=employee&format=csv"])
 def test_xuat_nhan_su_so_truy_van_co_dinh_khi_tang_dong(db, world, client_as, monkeypatch, path):  # noqa: F811
-    """Cột «Phòng ban» / «Công ty» đọc qua quan hệ: không nạp trước thì MỖI dòng một truy vấn (2000 dòng = 2000 lượt
+    """Cột "Phòng ban" / "Công ty" đọc qua quan hệ: không nạp trước thì MỖI dòng một truy vấn (2000 dòng = 2000 lượt
     hỏi DB cho một lần bấm Xuất). Số truy vấn phải bằng nhau dù 50 hay 2000 dòng."""
     from app.modules.export_log import service
     monkeypatch.setattr(service, "_store_file", lambda *a, **k: 0)
@@ -158,7 +158,7 @@ def test_xuat_tap_trung_2000_dong_che_dung_tung_dong_va_trong_tran_thoi_gian(db,
 
 
 def test_xuat_excel_dat_xe_pham_vi_theo_quyen_xuat(db, world, client_as):  # noqa: F811
-    """Xem «tất cả» nhưng Xuất chỉ «của tôi» → tệp chỉ có phiếu của mình, không phình theo quyền Xem."""
+    """Xem "tất cả" nhưng Xuất chỉ "của tôi" → tệp chỉ có phiếu của mình, không phình theo quyền Xem."""
     import io
 
     import openpyxl

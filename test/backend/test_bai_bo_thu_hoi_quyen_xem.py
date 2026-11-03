@@ -99,7 +99,7 @@ def test_nguoi_thuong_thi_co_dieu_kien_loc():
     assert revoke_access.filter_condition(_user(NGUOI_NGOAI, 999), _profile("dept")) is not None
 
 
-#  ── Đường bãi bỏ THỨ HAI: ban hành văn bản mang quan hệ «bãi bỏ» ──────────────
+#  ── Đường bãi bỏ THỨ HAI: ban hành văn bản mang quan hệ "bãi bỏ" ──────────────
 #
 #  LỖI THẬT bắt được lúc kiểm trên dữ liệu đang chạy (24/08/2026): `apply_supersede`
 #  đổi `status` sang bãi bỏ nhưng KHÔNG ghi `updated_by`. Mà luật quyền xem coi
@@ -143,8 +143,8 @@ def test_bai_bo_theo_quan_he_ghi_dung_nguoi_bai_bo(db, seed):
 
     assert [d.id for d in revoked_docs] == [old.id], "phải trả về văn bản bị bãi bỏ để chỗ gọi đi báo"
     assert old.status == STATUS_REVOKED
-    assert old.expire_date is not None, "bãi bỏ phải đóng ngày hết hiệu lực, y như nút «Bãi bỏ»"
-    assert old.updated_by == NGUOI_BAN_HANH, "cột «người bãi bỏ» phải là người ban hành văn bản mới"
+    assert old.expire_date is not None, "bãi bỏ phải đóng ngày hết hiệu lực, y như nút \"Bãi bỏ\""
+    assert old.updated_by == NGUOI_BAN_HANH, "cột \"người bãi bỏ\" phải là người ban hành văn bản mới"
 
     #  Và hệ quả của nó: người sửa cuối cùng trước đó KHÔNG còn xem được.
     ho_so = _profile("own")

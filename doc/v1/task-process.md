@@ -32,7 +32,7 @@ Phase 3 (phase nặng nhất, 20 tính năng bản 1) đã có nền, máy chạ
 > công khai và có mã băm toàn vẹn. Phase 2 từ ~45% lên **~52%**, tổng lên **~33%**.
 >
 > *Đợt 4 (Phase 2 · nhóm E + C19).* Quan hệ cha–con trọn bộ E01–E06, bản trích nội bộ C19 và quan hệ
-> «trích từ» E11 với ba ràng buộc khóa cứng. Phase 2 từ ~52% lên **~75%**, tổng lên **~40%**.
+> **trích từ** E11 với ba ràng buộc khóa cứng. Phase 2 từ ~52% lên **~75%**, tổng lên **~40%**.
 >
 > *Đợt 5 (Phase 4 · phạm vi + tác động cha).* Phạm vi áp dụng F01–F05 và tác động khi văn bản cha đổi
 > E07/E08. **Bỏ qua phần phụ thuộc Phase 3** theo yêu cầu. Phase 4 từ ~6% lên **~35%**, tổng lên **~46%**.
@@ -243,7 +243,7 @@ Ba lỗi thật bắt được trong lúc làm:
 | Màn chọn cơ chế lúc ban hành | F13 | ✅ | `document-issue-dialog.tsx` — bảng so sánh hai cơ chế lấy thẳng từ `00` mục 2.2; cảnh báo khi gắn phạm vi mà chưa khai dòng nào |
 | Cảnh báo tác động sửa cha, xử lý bãi bỏ cha | E07, E08 | ✅ | `parent_change_service.py`; hai cột `on_parent_*` giờ mới thật sự điều khiển hành vi |
 | Nhãn "đã bị sửa đổi" | J10 | ✅ | `supersede_service.py` + `document-amended-banner.tsx`; ba tác động tự động của quan hệ thay thế/sửa đổi/bãi bỏ |
-| Quyết định ban hành kiểm ở mức phiên bản | J11 | 🟡 ~60% | Loại khai `needs_decision` mà thiếu quan hệ «Kèm theo» → **chặn ban hành**. Phần *mỗi lần sửa lớn phải kèm Quyết định MỚI* chưa làm — xem câu hỏi 8 |
+| Quyết định ban hành kiểm ở mức phiên bản | J11 | 🟡 ~60% | Loại khai `needs_decision` mà thiếu quan hệ **Kèm theo** → **chặn ban hành**. Phần *mỗi lần sửa lớn phải kèm Quyết định MỚI* chưa làm — xem câu hỏi 8 |
 
 Sáu bài kiểm chuyển phase 4: chưa chạy chính thức, nhưng phần clone đã có 15 test tự động phủ cả bốn điều kiện bắt buộc.
 
@@ -448,7 +448,7 @@ loại chứng từ bằng cờ, không thay chỗ.
 
 - [x] [P3][I17] **Việc của tôi** — một chỗ gom mọi thứ đang chờ tôi, của cả văn thư lẫn thu mua — **L** — màn được mở nhiều nhất của cả hệ
 - [x] [P3][I15] Người nhận bản sao — chỉ nhận thông báo, không duyệt (`node_kind = 2`) — **S**
-- [x] [P3][I20] Bản in dấu vết duyệt: ai duyệt lúc nào, ý kiến gì — **M** — *"khi kiểm toán hoặc thanh tra hỏi «ai duyệt cái này», câu trả lời phải là một tờ giấy in ra được, không phải một ảnh chụp màn hình"*
+- [x] [P3][I20] Bản in dấu vết duyệt: ai duyệt lúc nào, ý kiến gì — **M** — *"khi kiểm toán hoặc thanh tra hỏi **ai duyệt cái này**, câu trả lời phải là một tờ giấy in ra được, không phải một ảnh chụp màn hình"*
 
 ### 3.6 · Chuyển đổi (2 việc, làm cuối)
 
@@ -529,10 +529,10 @@ loại chứng từ bằng cờ, không thay chỗ.
    gọi bước thay thế. Nay gom thành `_apply_effective_side_effects()` chạy ở cả hai đường (ban hành
    ngay và tới ngày). Vẫn cần gắn cron gọi `POST /api/documents/maintenance/activate-due` mỗi ngày —
    không gắn thì hệ vẫn đúng, chỉ chậm một nhịp cho tới khi có người mở văn bản ra xem.
-8. **J11 mới làm được nửa.** Đã chặn: loại khai `needs_decision` mà không có quan hệ «Kèm theo» thì không
+8. **J11 mới làm được nửa.** Đã chặn: loại khai `needs_decision` mà không có quan hệ **Kèm theo** thì không
    ban hành được. Chưa làm: *"mỗi lần sửa lớn phải kèm một Quyết định MỚI, không dùng lại Quyết định ban
    hành lần đầu"* — `tab_document_link` không có chiều phiên bản nên hiện không biết Quyết định nào đã
-   dùng cho bản nào. Cần chốt cách buộc: thêm `version_id` vào dòng quan hệ «Kèm theo», hay so ngày ban
+   dùng cho bản nào. Cần chốt cách buộc: thêm `version_id` vào dòng quan hệ **Kèm theo**, hay so ngày ban
    hành của Quyết định với ngày duyệt bản trước?
 9. **`tab_company` chưa có cột cha.** Cờ "gồm đơn vị con" (F04) hiện hiểu là *mọi pháp nhân có `level`
    lớn hơn* — đúng với cây một tầng đang có, sai ngay khi xuất hiện tầng ba thuộc hai nhánh khác nhau.

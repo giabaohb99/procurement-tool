@@ -1,8 +1,8 @@
 """bao-CR-486 — NSTM phụ trách đi theo PHÒNG XỬ LÝ của phiếu.
 
-Đại ca soi dev 25/09/2026: YCBG của nhà máy (phòng xử lý = Dego Organic) mà ô «NSTM phụ trách»
+Đại ca soi dev 25/09/2026: YCBG của nhà máy (phòng xử lý = Dego Organic) mà ô "NSTM phụ trách"
 liệt kê cả người thu mua chung. Giao diện đang lọc danh mục nhân sự theo TÊN phòng có chữ
-«thu mua» — vừa lọt người ngoài, vừa lọt cả phòng «Sản xuất -Thu mua» vào mọi phiếu. Nay:
+"thu mua" — vừa lọt người ngoài, vừa lọt cả phòng "Sản xuất -Thu mua" vào mọi phiếu. Nay:
   · `assignable_staff(ticket)`: phòng xử lý ≠ 0 → người thu mua THUỘC phòng đó; = 0 → người
     bậc proc/all KHÔNG thuộc phòng tự mua nào. Hai đường API `/assignable-staff` cho YCMH · YCBG.
   · cửa ghi (`assign` YCMH, `set_line_assignee_` YCBG) chặn mã ngoài phòng xử lý; bỏ gán vẫn được.

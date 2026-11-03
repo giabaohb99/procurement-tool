@@ -1,6 +1,6 @@
-"""ai-CR-149 — đại ca 09/10/2026: «kế hoạch code thì thằng Claude CLI ở local mới biết … chắc cũng không cần lên plan đâu,
-làm gọn phần code này lại đi, hỏi xác nhận vài câu okee thì làm thôi». Rà soát (Claude Code) → thẻ xác nhận / câu hỏi →
-«ok» → Claude Code làm; không còn lượt model quản lý viết kế hoạch."""
+"""ai-CR-149 — đại ca 09/10/2026: "kế hoạch code thì thằng Claude CLI ở local mới biết … chắc cũng không cần lên plan đâu,
+làm gọn phần code này lại đi, hỏi xác nhận vài câu okee thì làm thôi". Rà soát (Claude Code) → thẻ xác nhận / câu hỏi →
+"ok" → Claude Code làm; không còn lượt model quản lý viết kế hoạch."""
 import pytest
 
 from app.core.config import settings
@@ -52,7 +52,7 @@ def test_khong_cau_hoi_thi_the_xac_nhan_roi_ok_la_lam(db, flow):
     db.commit()
     assert service._ok_by_text(db, "12345", row, "oke làm đi")
     assert dispatched == [task.id]
-    #  «ok» khi tin bot gần nhất KHÔNG phải thẻ xác nhận → không đụng việc nào.
+    #  "ok" khi tin bot gần nhất KHÔNG phải thẻ xác nhận → không đụng việc nào.
     service.reply(db, "12345", "Câu trả lời thường của Trợ lý")
     row = service.log_message(db, DIR_IN, "12345", 78, "ok")
     db.commit()
@@ -85,7 +85,7 @@ def test_chua_chot_tep_van_giao_duoc_va_khong_tinh_lech_pham_vi(flow):
 
 
 def test_o_model_cu_khong_con_o_tram_thi_tu_doi_model_cung_ho(monkeypatch):
-    """Đại ca đổi nhóm trên modelapi.vn → ô Model cũ «model_not_found» → bot lấy model trạm đang có thay vì chết."""
+    """Đại ca đổi nhóm trên modelapi.vn → ô Model cũ "model_not_found" → bot lấy model trạm đang có thay vì chết."""
     from app.modules.agent_hub import ai_keys, manager, user_keys
     from app.modules.agent_hub.ai_keys import KeyRef
     from app.modules.assistant.provider.base import ChatResult, ProviderError
@@ -140,8 +140,8 @@ def test_haiku_chua_co_o_tram_chi_doi_rieng_haiku_va_het_han(monkeypatch):
 
 
 def test_giuc_sua_no_di_sau_chi_tiet_viec_la_lam_luon(db, flow):
-    """ai-CR-150: «chi tiết AI-0006» rồi «sửa nó đi em» → bot từng trả «em không sửa được». Nay là giao việc đó luôn,
-    kể cả khi việc đang ở «đang hỏi lại» (các câu còn mở để Claude tự quyết theo mạch đã bàn)."""
+    """ai-CR-150: "chi tiết AI-0006" rồi "sửa nó đi em" → bot từng trả "em không sửa được". Nay là giao việc đó luôn,
+    kể cả khi việc đang ở "đang hỏi lại" (các câu còn mở để Claude tự quyết theo mạch đã bàn)."""
     from app.modules.agent_hub.constants import DIR_IN, ST_NEEDS_INPUT
 
     service, coder, task, sent, dispatched = flow
@@ -218,7 +218,7 @@ def test_doc_dieu_kien_xong_tu_ket_qua_ra_soat():
 
 
 def test_ok_tren_the_la_dong_y_luon_buoc_gop_va_dua_len_dev(db, flow, monkeypatch):
-    """ai-CR-154 — đại ca 09/10: «em cảnh báo trước mà anh vẫn chấp nhận làm thì có thể đẩy code luôn». Thẻ xác nhận nói
+    """ai-CR-154 — đại ca 09/10: "em cảnh báo trước mà anh vẫn chấp nhận làm thì có thể đẩy code luôn". Thẻ xác nhận nói
     trước; sửa xong mà bài kiểm không đỏ thì tự gộp + deploy dev, đỏ thì dừng ở thẻ kết quả như cũ."""
     from app.modules.agent_hub.constants import ST_REVIEW
 

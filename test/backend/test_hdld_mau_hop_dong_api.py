@@ -155,7 +155,7 @@ def test_docx_co_macro_bi_tu_choi(setup):
 @pytest.mark.parametrize("override,status", [
     ({"contract_type": 0}, 422), ({"contract_type": 7}, 422), ({"contract_type": -1}, 422),
     ({"name": "   "}, 422), ({"name": "n" * 201}, 422), ({"note": "n" * 501}, 422),
-    ({"company_id": 0}, 422), ({"company_id": -5}, 422), ({"company_id": 999_999}, 403),   # ngoài phạm vi → 403 trước kiểm «không tồn tại» (L3)
+    ({"company_id": 0}, 422), ({"company_id": -5}, 422), ({"company_id": 999_999}, 403),   # ngoài phạm vi → 403 trước kiểm "không tồn tại" (L3)
 ])
 def test_truong_form_sai_bi_chan_o_tang_schema_hoac_service(setup, override, status):
     world, a1, _, _ = setup
@@ -273,8 +273,8 @@ def test_danh_sach_dem_hop_dong_bang_mot_truy_van_khong_n_cong_1(setup, db):
 
 
 def test_thong_bao_the_lenh_noi_dung_the_va_khong_kem_meo_go_lai_bien(setup):
-    """Lỗi cũ (test Chrome 06/10): thông báo ra «'If' … điều kiện.. Gõ lại biến một lượt…» — hai dấu chấm,
-    tên nút Jinja thay vì thẻ người dùng gõ, và mẹo «gõ lại biến» không liên quan tới `{% if %}`."""
+    """Lỗi cũ (test Chrome 06/10): thông báo ra "'If' … điều kiện.. Gõ lại biến một lượt…" — hai dấu chấm,
+    tên nút Jinja thay vì thẻ người dùng gõ, và mẹo "gõ lại biến" không liên quan tới `{% if %}`."""
     world, a1, _, _ = setup
     res = upload_template(a1, company_id=world.co["A"], data=make_docx("{% if ho_ten %}x{% endif %}"))
     msg = res.json()["error"]["message"]

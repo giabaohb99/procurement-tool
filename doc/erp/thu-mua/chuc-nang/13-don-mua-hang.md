@@ -1368,7 +1368,7 @@ vai trò cũ không tự có khóa (D-018) — tick ở màn Phân quyền.
 | `default_supplier_code` · `default_allocation_method` · `default_vat` | Giá trị điền sẵn khi chọn loại trên bảng chi phí, chỉ điền vào ô trống. Seed `NSNN` cho nhóm thuế. |
 | `sort_order` · `is_active` · `note` | Thứ tự ô chọn; **tắt** thay vì xóa khi loại đã dùng. |
 
-Ba chốt: mã **99 «Chi phí khác»** không đổi tên, không tắt, không xóa (chỗ rơi của mã lạ); loại còn dòng
+Ba chốt: mã **99 "Chi phí khác"** không đổi tên, không tắt, không xóa (chỗ rơi của mã lạ); loại còn dòng
 chi phí trỏ tới thì **không xóa** (400 kèm số dòng, gợi bỏ tick *Đang dùng*); CSV chỉ xuất, không nhập
 (đường nhập đi vòng qua ba chốt).
 

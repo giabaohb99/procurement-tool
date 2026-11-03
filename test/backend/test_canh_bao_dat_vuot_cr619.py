@@ -1,7 +1,7 @@
 """bao-CR-619 — cảnh báo đặt vượt khi tạo thêm ĐMH từ YCMH.
 
 `order_progress` trả thêm `pending` (đơn nháp / chờ duyệt / bị trả lại) và `orders` (từng đơn theo mã
-hàng). `ordered` phải giữ NGUYÊN nghĩa cũ: chỉ đơn đã duyệt trở đi, bỏ dòng «Chưa đặt hàng» / «Hủy đơn».
+hàng). `ordered` phải giữ NGUYÊN nghĩa cũ: chỉ đơn đã duyệt trở đi, bỏ dòng "Chưa đặt hàng" / "Hủy đơn".
 """
 from app.modules.purchase_order import service as po_service
 from app.modules.purchase_order.model import POItem, PurchaseOrder
@@ -34,7 +34,7 @@ def test_ordered_giu_nghia_cu_pending_tach_rieng(db):
 
     out = service.order_progress(db, PR)
 
-    assert out["ordered"] == {"KCL": 80.0}                  # 50 + 30; dòng «Chưa đặt hàng» UREA không tính
+    assert out["ordered"] == {"KCL": 80.0}                  # 50 + 30; dòng "Chưa đặt hàng" UREA không tính
     assert out["pending"] == {"KCL": 107.0}                 # nháp 100 + chờ duyệt 5 + bị trả lại 2
     codes = [(o["code"], o["status"], o["pending"], o["qty"], o["received"]) for o in out["orders"]["KCL"]]
     assert codes == [("PO-A", "approved", False, 50.0, 10.0), ("PO-B", "received", False, 30.0, 30.0),

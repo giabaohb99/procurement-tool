@@ -1,5 +1,5 @@
 """duoc-CR-686 — Báo cáo Biến động nhân sự (A1): lọc phòng ban, ghi chú thiếu ngày vào làm,
-danh sách «bấm số» `/api/employees/summary/rows`."""
+danh sách "bấm số" `/api/employees/summary/rows`."""
 import uuid
 from datetime import date
 

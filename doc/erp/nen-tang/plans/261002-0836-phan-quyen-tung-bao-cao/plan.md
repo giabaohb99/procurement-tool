@@ -31,7 +31,7 @@ created: 2026-10-02
 | 03 | [Backend test mới + sửa test HTTP cũ](phase-03-backend-tests.md) | 3h | 02 | done |
 | 04 | [FE nâng ô chọn chủ thể lên `src/shared/`](phase-04-frontend-lift-subject-picker-to-shared.md) | 2h | — (song song 01-03) | done |
 | 05 | [FE gác menu/route/Tổng quan theo `report_keys`](phase-05-frontend-report-gating.md) | 2.5h | 01 (statuses.ts), hợp đồng 02 | pending |
-| 06 | [FE tab «Báo cáo» ở Phân quyền tài khoản](phase-06-frontend-report-access-tab.md) | 3h | 02, 04 | done |
+| 06 | [FE tab **Báo cáo** ở Phân quyền tài khoản](phase-06-frontend-report-access-tab.md) | 3h | 02, 04 | done |
 | 07 | [Tài liệu, nhật ký task, deploy](phase-07-docs-journal-deploy.md) | 1.5h | 01-06 | done |
 
 ## Đồ thị phụ thuộc
@@ -49,7 +49,7 @@ Song song được: {04} với {01→02→03}; {05} sau 01. Sở hữu tệp: m�
 - Thủ công: đăng nhập admin / tài khoản thường trên local (:8083) — menu, gõ URL, Tổng quan, xuất Excel, cấp/cấm/thu hồi.
 
 ## Rủi ro hàng đầu
-- **Prod sau deploy chỉ admin thấy báo cáo** (đúng chốt «chưa gán = đóng») → đại ca chuẩn bị danh sách gán TRƯỚC, gán ngay sau deploy (phase 07).
+- **Prod sau deploy chỉ admin thấy báo cáo** (đúng chốt **chưa gán = đóng**) → đại ca chuẩn bị danh sách gán TRƯỚC, gán ngay sau deploy (phase 07).
 - Test HTTP cũ của 26 đường sẽ ăn 403 → phase 03 thêm fixture gán.
 - `auth/me` lưu cũ ở trình duyệt thiếu `report_keys` → đóng (an toàn) tới khi nạp lại.
 

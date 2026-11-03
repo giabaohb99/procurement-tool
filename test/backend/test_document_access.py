@@ -308,7 +308,7 @@ def test_doc_duoc_ban_clone_thi_xem_lai_duoc_ban_goc(db, doc, seed):
 
     assert access_service.can(db, clone, user, profile, "read") is True
     #  Mở thêm đúng quyền ĐỌC bản gốc để đối chiếu, không cho sửa bản của mẹ.
-    #  Đây là đường mà nút «Xem bản gốc» ở trang chi tiết đi qua — `can()` có
+    #  Đây là đường mà nút "Xem bản gốc" ở trang chi tiết đi qua — `can()` có
     #  nhánh riêng (`co_ban_clone_xem_duoc`), không phụ thuộc danh sách.
     assert access_service.can(db, doc, user, profile, "read") is True
     assert access_service.can(db, doc, user, profile, "write") is False

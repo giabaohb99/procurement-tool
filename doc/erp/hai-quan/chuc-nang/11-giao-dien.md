@@ -9,7 +9,7 @@ Hai bản dùng **chung một bộ API và chung một bố cục**. Khác nhau 
 > bỏ — mỗi thẻ thành **một mục con trong menu trái**, có đường riêng `/procurement/customs-prices/<mục>`
 > (Danh sách ở đường gốc; link cũ `?tab=` tự chuyển). Thứ tự: Danh sách · Biểu đồ · Nhà nhập khẩu ·
 > So sánh · **Pháp lý** (bảng duyệt cả danh mục hóa chất theo văn bản, `GET /api/customs/regulations`)
-> · **Thuế** (tra biểu thuế theo mã HS — phần còn lại của thẻ «Pháp lý & thuế» cũ) · **Thuốc BVTV**
+> · **Thuế** (tra biểu thuế theo mã HS — phần còn lại của thẻ **Pháp lý & thuế** cũ) · **Thuốc BVTV**
 > (danh mục 6.919 thuốc + phạm vi sử dụng, nạp tệp ngay trên màn) · Lịch sử nạp · Cấu hình. Khai một
 > chỗ ở `frontend-v2/src/modules/procurement/config/customs-sections.ts`. Bản cũ `frontend/` giữ nguyên.
 
@@ -98,7 +98,7 @@ Bỏ trang tổng quan thì **mọi con số trên màn hình đều tính lúc 
 | Tình huống | Câu hiện ra |
 |---|---|
 | Chưa nạp lô nào | "Chưa có dữ liệu hải quan." + nút **Nạp dữ liệu** (nếu có quyền), hoặc "Liên hệ người phụ trách nạp dữ liệu" (nếu không) |
-| Có dữ liệu nhưng từ khóa không khớp | "Không có dòng nào khớp «…»." + gợi ý bỏ bớt ô lọc |
+| Có dữ liệu nhưng từ khóa không khớp | "Không có dòng nào khớp **…**." + gợi ý bỏ bớt ô lọc |
 | Khớp nhưng bộ lọc loại hết | "Có N dòng khớp từ khóa nhưng bộ lọc hiện tại loại hết." + nút **Bỏ lọc** |
 
 Một câu chung cho cả ba là người gõ nhầm một chữ đọc ra "chưa có dữ liệu" và tin là vậy (luật chung của các màn danh sách).
@@ -218,5 +218,5 @@ Gõ *ATRAZINE* vào 5 tệp mẫu ra **92 dòng**: KGM 60 · LTR 30 · TNE 2. Ri
 | Lọc doanh nghiệp | Ô chọn *Doanh nghiệp* trên thanh lọc | **Bấm một dòng ở thẻ Nhà nhập khẩu** → lọc cả trang, hiện thẻ nhỏ kèm nút bỏ | 3.503 doanh nghiệp — ô chọn thả xuống vô dụng; xếp hạng theo lượng đã là cách tìm doanh nghiệp tự nhiên |
 | Cảnh báo pháp lý | Chỉ trong M9 | Thêm **dải cảnh báo ngay dưới thanh lọc** khi từ khóa trùng hóa chất cấm / có ngưỡng / phải công bố | Thay tạm cho P-02 (so tồn kho) chưa làm được; cảnh báo đúng lúc người ta đang tính mua |
 | M8 | "Ngưỡng khai tay" | **Danh mục hóa chất theo văn bản** (`/customs-regulations`, khóa `customs_regulation`) nạp sẵn từ phần mềm ngoài, sửa tay khi văn bản đổi | Ngưỡng có sẵn trong NĐ 24/2026 Phụ lục IV — xem đính chính P-01 ở [`01`](10-danh-sach-tinh-nang.md) |
-| Dải tô nhạt trên biểu đồ giá | Thấp – cao | **Khoảng giá phổ biến = phân vị 25–75%** (nửa số dòng ở giữa); thấp / cao / số dòng / lượng hiện ở **ô rê chuột** và bảng; đếm và nói ra số «dòng giá bất thường» (luật hộp râu 1,5 × IQR) | Đại ca bắt lỗi 23/09: vài dòng 250 USD/lít (gói nhỏ, khai khác đơn vị) giữa đám 2–4 USD/lít kéo trục lên trần, đường bình quân dẹp sát đáy, không đọc được. Thêm: SVG vẽ đúng bề rộng đo được (không co giãn chữ), hai biểu đồ giá / lượng chung trục ngang, trục chia số tròn, trục lượng viết gọn «2 tr» |
+| Dải tô nhạt trên biểu đồ giá | Thấp – cao | **Khoảng giá phổ biến = phân vị 25–75%** (nửa số dòng ở giữa); thấp / cao / số dòng / lượng hiện ở **ô rê chuột** và bảng; đếm và nói ra số **dòng giá bất thường** (luật hộp râu 1,5 × IQR) | Đại ca bắt lỗi 23/09: vài dòng 250 USD/lít (gói nhỏ, khai khác đơn vị) giữa đám 2–4 USD/lít kéo trục lên trần, đường bình quân dẹp sát đáy, không đọc được. Thêm: SVG vẽ đúng bề rộng đo được (không co giãn chữ), hai biểu đồ giá / lượng chung trục ngang, trục chia số tròn, trục lượng viết gọn **2 tr** |
 | Cột mặc định bảng dòng hàng | 10 cột, 22 cột ẩn trong nút **Cột** | **Hiện HẾT 32 cột đúng thứ tự và tiêu đề Excel**, rồi hai cột suy ra *Hoạt chất* · *Hàm lượng / dạng* ở cuối; không có cột giá gộp riêng | Đại ca chốt 23/09/2026: *"về thứ tự và số lượng cột thì mặc định là show full cột"*. Muốn gọn thì người dùng tự ẩn ở nút **Cột** |

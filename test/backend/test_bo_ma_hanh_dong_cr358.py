@@ -72,7 +72,7 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
     "modules/ai_skill/service.py::import_package": ("create", "update"),
     #  ai-CR-207: tải tệp báo cáo qua đường dùng một lần — `download_tokens.AUDIT_ACTION` = "export".
     "modules/assistant/controller.py::download_report_file_once": ("export",),
-    #  duoc-CR-585: quá trình công tác ghi «Thêm» hay «Sửa» theo đường gọi.
+    #  duoc-CR-585: quá trình công tác ghi "Thêm" hay "Sửa" theo đường gọi.
     "modules/employee/work_history_controller.py::_audit": ("create", "update"),
     #  duoc-CR-628 (khai ở bao-CR-647): nhập Excel nhân sự — mỗi dòng ghi `create` (hồ sơ mới) hay `update`
     #  (hồ sơ có sẵn) theo `ctx.after`; hoàn tác lô thì `delete` (hồ sơ do lô tạo) hay `update` (trả giá trị cũ).
@@ -88,29 +88,30 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
         "submitted", "approved", "cancelled", "paid"),
     #  ĐMH có nhiều mã nhất: bốn mã do người bấm, ba mã do `_recalc_status` tự
     #  đặt lại theo số lượng đã nhận, cộng `draft` của đường hủy duyệt.
-    "modules/purchase_order/service.py::set_status": (
+    "modules/purchase_order/edit_service.py::set_status": (
         "submitted", "approved", "cancelled", "rejected", "completed",
         "draft", "received", "partial"),
     "modules/purchase_request/option_service.py::choose_option": (
         "option_choose", "option_unchoose"),
-    "modules/purchase_request/service.py::set_status": ("submitted", "approved", "rejected"),
+    "modules/purchase_request/lifecycle_service.py::set_status": ("submitted", "approved", "rejected"),
     #  bao-CR-485/497: bấm Điều phối ghi `dispatched`; duyệt xong tự điều phối (bỏ qua bước
     #  Điều phối) thì ghi dưới `approved` — controller truyền `audit_action="approved"`.
-    "modules/purchase_request/service.py::dispatch_pr": ("dispatched", "approved"),
+    "modules/purchase_request/dispatch_service.py::dispatch_pr": ("dispatched", "approved"),
     #  bao-CR-414: về 0 là trả về thu mua, khác 0 là chuyển sang phòng khác.
-    "modules/purchase_request/service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
-    "modules/survey_request/service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
+    #  bao-CR-715: ba phân hệ thu mua chẻ `service.py` theo bước nghiệp vụ — khóa trỏ tệp con định nghĩa hàm.
+    "modules/purchase_request/lifecycle_service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
+    "modules/survey_request/lifecycle_service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
     #  bao-CR-453: chốt lên giai đoạn nào thì ghi mã của giai đoạn đó.
-    "modules/purchase_order/service.py::advance_cost_stage": ("cost_stage_prov", "cost_stage_final"),
+    "modules/purchase_order/import_cost_service.py::advance_cost_stage": ("cost_stage_prov", "cost_stage_final"),
     #  bao-CR-448: việc nền báo bất thường, `action` là hằng của module.
     "modules/system_log/anomaly.py::raise_alert": ("anomaly_alert",),
     "modules/seal_request/approval_bridge.py::_write_log": ("approve", "cancel", "update"),
     "modules/survey/service.py::set_status": (
         "submitted", "approved", "rejected", "cancelled"),
-    "modules/survey_request/service.py::set_status": (
+    "modules/survey_request/lifecycle_service.py::set_status": (
         "submitted", "approved", "processing", "rejected", "cancelled",
         "done", "survey_done"),
-    "modules/survey_request/service.py::choose_option": ("choose_option", "unchoose_option"),
+    "modules/survey_request/option_service.py::choose_option": ("choose_option", "unchoose_option"),
     #  HĐLĐ: `_audit(db, user, row, action, message)` nhận mã qua tham số — ba mã đọc từ các lời gọi tới nó.
     "modules/labor_contract/controller.py::_audit": ("create", "update", "document_status"),
     "modules/ticket/service.py::assign": ("assign", "unassign"),
@@ -147,7 +148,7 @@ def _called_name(call: ast.Call) -> str:
         return func.id
     if isinstance(func, ast.Attribute):
         #  ai-CR-137/160: `intent_ledger.record(...)` là SỔ Ý ĐỊNH của bot (tham số `intent`, không có mã hành động) —
-        #  không phải dòng dấu vết; bỏ qua để khỏi bị đếm là «chỗ truyền mã động».
+        #  không phải dòng dấu vết; bỏ qua để khỏi bị đếm là "chỗ truyền mã động".
         if isinstance(func.value, ast.Name) and func.value.id == "intent_ledger":
             return ""
         return func.attr
@@ -207,18 +208,18 @@ def _scan_relay_calls() -> set[str]:
 # ===========================================================================
 
 def test_moi_ma_deu_co_nhan_tieng_viet_va_nhom_hop_le():
-    """Nhãn rỗng còn tệ hơn mã trần: dòng dấu vết mất luôn phần «làm gì»."""
+    """Nhãn rỗng còn tệ hơn mã trần: dòng dấu vết mất luôn phần "làm gì"."""
     for value, code in ACTION_CATALOG.items():
         assert code.value == value, f"khóa và mã lệch nhau: {value} / {code.value}"
-        assert (code.label or "").strip(), f"mã «{value}» thiếu nhãn tiếng Việt"
-        assert code.group in ACTION_GROUP_LABELS, f"mã «{value}» khai nhóm lạ: {code.group}"
+        assert (code.label or "").strip(), f"mã \"{value}\" thiếu nhãn tiếng Việt"
+        assert code.group in ACTION_GROUP_LABELS, f"mã \"{value}\" khai nhóm lạ: {code.group}"
         assert code.group != ACTION_GROUP_UNKNOWN, (
-            f"mã «{value}» khai nhóm «Không rõ» — nhóm 0 là chỗ dành cho mã CHƯA "
+            f"mã \"{value}\" khai nhóm \"Không rõ\" — nhóm 0 là chỗ dành cho mã CHƯA "
             "khai, khai thẳng vào đó thì mất luôn ý nghĩa của nó")
 
 
 def test_hai_dang_cua_cung_mot_viec_noi_giong_nhau():
-    """«approve» và «approved» là một việc — hai nhãn khác nhau thì cùng một
+    """"approve" và "approved" là một việc — hai nhãn khác nhau thì cùng một
     hành động đọc ra hai kiểu trên cùng một dòng thời gian."""
     for infinitive, past in [("approve", "approved"), ("reject", "rejected"),
                              ("return", "returned"), ("withdraw", "withdrawn"),
@@ -246,7 +247,7 @@ def test_moi_ma_hang_trong_record_deu_da_khai():
     assert missing == [], (
         f"{len(missing)} mã hành động được ghi vào nhật ký mà chưa khai: {missing}. "
         "Thêm một dòng ở `app/core/action_catalog.py` — thiếu thì dòng dấu vết "
-        "hiện mã Anh trần và rơi vào nhóm «Không rõ».")
+        "hiện mã Anh trần và rơi vào nhóm \"Không rõ\".")
 
 
 # ===========================================================================
@@ -297,7 +298,7 @@ def test_moi_ma_khai_o_cho_dong_deu_co_trong_bo_ma(site, actions):
 
 def test_ma_la_khong_lam_sap_gi_ca():
     """NT-5: lớp nhật ký không bao giờ là thứ làm hỏng lớp nghiệp vụ. Mã lạ ra
-    nhóm «Không rõ» và nhãn là chính nó — không ném, không đoán bừa."""
+    nhóm "Không rõ" và nhãn là chính nó — không ném, không đoán bừa."""
     assert group_of_action("khong_he_ton_tai") == ACTION_GROUP_UNKNOWN
     assert label_of_action("khong_he_ton_tai") == "khong_he_ton_tai"
     assert is_known_action("khong_he_ton_tai") is False

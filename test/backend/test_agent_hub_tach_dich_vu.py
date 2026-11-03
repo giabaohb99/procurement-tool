@@ -111,7 +111,7 @@ def test_cong_cu_erp_chay_o_erp_cong_cu_ca_nhan_chay_tai_cho(db, seed, monkeypat
     assert out.get("ok") and calls[n:] == [("POST", "/api/agent-gw/audit")]
     n = len(calls)
     out = erp.run_tool(db, u, "my_approval_tasks", {"limit": 3})
-    #  Bài kiểm chạy «ERP» và «dịch vụ AI» trong CÙNG một tiến trình (AGENT_MODE=service cho cả hai) nên phía ERP cũng đẩy
+    #  Bài kiểm chạy "ERP" và "dịch vụ AI" trong CÙNG một tiến trình (AGENT_MODE=service cho cả hai) nên phía ERP cũng đẩy
     #  dòng nhật ký qua cổng — máy thật phía ERP chạy AGENT_MODE=erp, ghi thẳng. Chỉ cần lượt đi /tools/run.
     assert isinstance(out, dict) and "error" not in out and ("POST", "/api/agent-gw/tools/run") in calls[n:]
     assert "Không có công cụ" in erp.run_tool(db, u, "cong_cu_bia", {}).get("error", "")
@@ -333,8 +333,8 @@ def test_nhan_su_nghi_erp_da_tach_bao_sang_dich_vu_ai(db, seed, monkeypatch):
 
 
 def test_so_thuat_ngu_va_cho_thieu_chuc_nang_di_qua_cong_o_dich_vu_ai(db, gateway):
-    """ai-CR-128: dịch vụ AI không có `tab_setting` — 08/10 vòng tự học đổ lỗi «Table 'agent_hub.tab_setting' doesn't
-    exist» mỗi 5 phút. Ba sổ JSON (thuật ngữ, đề xuất thuật ngữ, chỗ Trợ lý thiếu chức năng) đi qua cổng B."""
+    """ai-CR-128: dịch vụ AI không có `tab_setting` — 08/10 vòng tự học đổ lỗi "Table 'agent_hub.tab_setting' doesn't
+    exist" mỗi 5 phút. Ba sổ JSON (thuật ngữ, đề xuất thuật ngữ, chỗ Trợ lý thiếu chức năng) đi qua cổng B."""
     from app.modules.agent_hub import erp, learning
     from app.modules.assistant import feedback, glossary
 
@@ -353,7 +353,7 @@ def test_so_thuat_ngu_va_cho_thieu_chuc_nang_di_qua_cong_o_dich_vu_ai(db, gatewa
 
 
 def test_nut_xac_nhan_sua_phieu_di_qua_cong_b(db, seed, gateway, cap_quyen):
-    """ai-CR-151 — chế độ service: nút «Xác nhận sửa / xóa» trên Telegram phải nhờ ERP ghi phiếu qua cổng B. Trước đây
+    """ai-CR-151 — chế độ service: nút "Xác nhận sửa / xóa" trên Telegram phải nhờ ERP ghi phiếu qua cổng B. Trước đây
     `_resolve_proposal` gọi thẳng `confirm_update` trên DB của bot (không có bảng phiếu) nên bấm là báo lỗi."""
     from datetime import date
 

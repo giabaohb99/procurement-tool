@@ -48,7 +48,7 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("approval", frozenset({"my_approval_tasks", "my_requests_status", "approval_flow_lookup", "propose_approval",
                             "pending_procurement_approvals"}),
      r"duyet|phe duyet|trinh ky|luong duyet|cho ky"),
-    #  duoc-CR-715 C: «nghỉ bù / đi làm ngày lễ, Chủ nhật / làm bù» kéo theo phiếu xin nghỉ bù; «ứng phép» về quỹ phép.
+    #  duoc-CR-715 C: "nghỉ bù / đi làm ngày lễ, Chủ nhật / làm bù" kéo theo phiếu xin nghỉ bù; "ứng phép" về quỹ phép.
     ("leave", frozenset({"my_leave_summary", "draft_leave_request", "draft_leave_comp_request"}),
      r"nghi phep|\bphep\b|xin nghi|don nghi|nghi (thu|ngay|sang|chieu|ca)|\bnp\d+|\bnb\d+|quy phep|ngay nghi|nghi bu"
      r"|lam bu|(di )?lam (ngay )?(le|chu nhat|cn|thu bay|t7)\b|truc (le|tet|chu nhat)|ung phep|ngay cam nghi"),

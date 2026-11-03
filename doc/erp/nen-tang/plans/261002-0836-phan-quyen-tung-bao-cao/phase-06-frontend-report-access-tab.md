@@ -1,4 +1,4 @@
-# Phase 06 — FE: tab «Báo cáo» trong Phân quyền tài khoản
+# Phase 06 — FE: tab "Báo cáo" trong Phân quyền tài khoản
 
 **Ưu tiên:** P2 · **Effort:** 3h · **Trạng thái:** done · **Phụ thuộc:** 02 (API), 04 (picker ở shared)
 
@@ -15,15 +15,15 @@
 - `types/report-access.ts` — kiểu theo hợp đồng.
 - `api/report-access-api.ts` — `apiGet/apiPost/apiDelete` từ `@/core/api`.
 - `hooks/use-report-access.ts` — `useReportAccessList()` (key `queryKeys.system.reportAccess()` — thêm vào `query-keys.ts`), `useGrantReportAccess()`, `useRevokeReportAccess()`; thành công → invalidate `system.reportAccess` + `auth.me` (phòng admin vừa gán/cấm chính mình) + toast `sonner`.
-- `components/report-access-tab.tsx` — `DataTable`, dòng sắp theo nhóm (cột «Phân hệ» đầu, hoặc tiêu đề nhóm nếu DataTable hỗ trợ — đọc `docs/ui/table.md`); cột: Báo cáo · Được xem (chip chủ thể CHO PHÉP) · Bị cấm (chip màu `destructive`) · nút «Sửa» (icon `Pencil`, chỉ khi `can('role','write')`). Báo cáo 0 dòng CHO PHÉP → nhãn «Chưa ai xem được».
-- `components/report-access-dialog.tsx` — tiêu đề tên báo cáo; khối 1: danh sách dòng còn sống (avatar + tên + loại + Cho phép/Cấm + nút thu hồi có ô lý do, dùng `ConfirmIconButton`/hộp xác nhận sẵn có); khối 2: `AccessSubjectPicker` + chọn Cho phép/Cấm (RadioGroup/ToggleGroup shadcn) + lý do (≤500, đếm ký tự) + nút «Thêm». Chú thích ngay trong hộp: «Được gán chỉ mở báo cáo; số liệu vẫn theo quyền phân hệ gốc. Cấm thắng cho phép.»
+- `components/report-access-tab.tsx` — `DataTable`, dòng sắp theo nhóm (cột **Phân hệ** đầu, hoặc tiêu đề nhóm nếu DataTable hỗ trợ — đọc `docs/ui/table.md`); cột: Báo cáo · Được xem (chip chủ thể CHO PHÉP) · Bị cấm (chip màu `destructive`) · nút **Sửa** (icon `Pencil`, chỉ khi `can('role','write')`). Báo cáo 0 dòng CHO PHÉP → nhãn **Chưa ai xem được**.
+- `components/report-access-dialog.tsx` — tiêu đề tên báo cáo; khối 1: danh sách dòng còn sống (avatar + tên + loại + Cho phép/Cấm + nút thu hồi có ô lý do, dùng `ConfirmIconButton`/hộp xác nhận sẵn có); khối 2: `AccessSubjectPicker` + chọn Cho phép/Cấm (RadioGroup/ToggleGroup shadcn) + lý do (≤500, đếm ký tự) + nút **Thêm**. Chú thích ngay trong hộp: **Được gán chỉ mở báo cáo; số liệu vẫn theo quyền phân hệ gốc. Cấm thắng cho phép.**
 - `role-permission-page.tsx`: thêm `<TabsTrigger value="reports">Báo cáo</TabsTrigger>` + `<TabsContent value="reports"><ReportAccessTab /></TabsContent>`, chỉ dựng khi `can('role','read')`. Trang đã >200 dòng: chỉ thêm ~8 dòng, KHÔNG tách lại tab vai trò trong phạm vi này (rủi ro CR-492).
 - Không import `modules/report` (nhãn/nhóm lấy từ API) → system không dính ruột report.
 
 ## Test (cạnh tệp, mock ở `@/core/api`)
-- `report-access-tab.test.tsx`: hiện đủ 13 dòng theo nhóm; dòng 0 cho phép → «Chưa ai xem được»; không `role.write` → không có nút Sửa; danh sách rỗng/API lỗi → trạng thái lỗi, không trắng trang.
+- `report-access-tab.test.tsx`: hiện đủ 13 dòng theo nhóm; dòng 0 cho phép → **Chưa ai xem được**; không `role.write` → không có nút Sửa; danh sách rỗng/API lỗi → trạng thái lỗi, không trắng trang.
 - `report-access-dialog.test.tsx`: chọn 2 chủ thể + Cấm + lý do → gọi POST đúng `{subjects:[…2], effect:2, reason}`; nút Thêm vô hiệu khi chưa chọn ai; lý do 501 ký tự bị chặn; thu hồi gọi DELETE đúng id; dòng cấm hiển thị khác dòng cho phép (theo text/role, không theo class).
-- `role-permission-page` (nếu đã có test): tab «Báo cáo» hiện khi có `role.read`.
+- `role-permission-page` (nếu đã có test): tab **Báo cáo** hiện khi có `role.read`.
 
 ## Lệnh
 `typecheck` + `lint`; `npx vitest run src/modules/system src/shared/access-subject`.

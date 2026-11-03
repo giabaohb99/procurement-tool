@@ -1,7 +1,7 @@
 # Điều kiện áp dụng của hồ sơ
 
 Khai trên từng tờ hồ sơ: *giấy này phải kèm theo chứng từ nào*. Chứng từ nào có
-dòng hàng khớp điều kiện thì trang chi tiết của nó mọc ra thẻ **«Hồ sơ cần kèm»**.
+dòng hàng khớp điều kiện thì trang chi tiết của nó mọc ra thẻ **Hồ sơ cần kèm**.
 
 ## Chốt (đại ca, 21/09/2026)
 
@@ -9,7 +9,7 @@ dòng hàng khớp điều kiện thì trang chi tiết của nó mọc ra thẻ
 |---|---|
 | Màn áp dụng | YCMH · ĐMH · YCBG · Phiếu khảo sát |
 | Chiều điều kiện | `product_code` (Sản phẩm) · `item_group` (Phân loại VTBB/NL) |
-| Cách hiện | Thẻ «Hồ sơ cần kèm» cuối trang chi tiết, kèm **lý do khớp** |
+| Cách hiện | Thẻ **Hồ sơ cần kèm** cuối trang chi tiết, kèm **lý do khớp** |
 | Khai ở đâu | Trên **từng hồ sơ** (không phải trên Loại hồ sơ) |
 
 ## Va chạm dữ liệu đã biết
@@ -36,7 +36,7 @@ lý lẽ**, không import chéo (bộ máy duyệt đọc bối cảnh PHIẾU, 
 |---|---|---|
 | 01 | Backend: 2 cột + `applicability.py` + API `/api/dossiers/applicable` + migration | ☐ |
 | 02 | Giao diện khai điều kiện trong form hồ sơ | ☐ |
-| 03 | Thẻ «Hồ sơ cần kèm» + gắn vào 4 trang chi tiết | ☐ |
+| 03 | Thẻ **Hồ sơ cần kèm** + gắn vào 4 trang chi tiết | ☐ |
 | 04 | Bài kiểm + tài liệu | ☐ |
 
 ## Luật phải giữ
@@ -48,6 +48,6 @@ lý lẽ**, không import chéo (bộ máy duyệt đọc bối cảnh PHIẾU, 
   diện phải nói thành câu, đừng để suy ra từ một bảng trống.
 - **Gác HAI cửa ở API.** `dossier.read` + `apply_scope` cho hồ sơ, **và**
   `get_scoped` trên chính chứng từ nguồn. Thiếu cửa thứ hai thì câu lý do
-  («vì dòng 3 có SP-001») thành cửa dò nội dung đơn hàng của phòng khác.
+  (**vì dòng 3 có SP-001**) thành cửa dò nội dung đơn hàng của phòng khác.
 - **Câu lý do dựng ở BACKEND** — cùng lối `approval/steps_service._summary`, vì
   sau này bản in cần đúng câu đó.

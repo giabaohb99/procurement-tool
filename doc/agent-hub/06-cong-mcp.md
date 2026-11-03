@@ -12,7 +12,7 @@ Telegram (`assistant.tools`) — không viết lại tool, không mở đường
 
 1. **Lấy khóa** — một trong hai đường:
    - Tự tạo: Trang cá nhân → tab **Khóa AI** → đặt tên, chọn mức, **Tạo khóa**. Khóa (`dego_mcp_…`) hiện **đúng một lần**.
-   - Quản trị phát hộ (§2.2): nhận **chuông** «Bạn có khóa kết nối AI chờ nhận» → Trang cá nhân (`/me?tab=ai-key`) → **Nhận
+   - Quản trị phát hộ (§2.2): nhận **chuông** **Bạn có khóa kết nối AI chờ nhận** → Trang cá nhân (`/me?tab=ai-key`) → **Nhận
      khóa** → khóa hiện đúng một lần. Khóa phát hộ **chưa nhận thì chưa dùng được**.
 2. **Nối ứng dụng** — màn *AI của tôi* lấy đoạn cấu hình đúng từng ứng dụng ở `GET /api/agent-hub/mcp-setup?client=…`
    (§7.1). Tóm tắt:
@@ -32,11 +32,11 @@ Telegram (`assistant.tools`) — không viết lại tool, không mở đường
    - **claude.ai (trình duyệt), ChatGPT** (ai-CR-218): thêm kết nối tùy chỉnh, dán địa chỉ `<gốc ERP>/api/mcp`, chọn OAuth →
      trang ERP mở ra, đăng nhập, chọn mức, bấm **Cho phép** (§2.3). Không cần khóa. Claude Desktop cũng nối được kiểu này
      qua Settings → Connectors (không cần Node.js).
-3. **Kiểm tra** — màn báo «đã nối» khi khóa có lượt gọi thành công (`mcp-keys/{id}/last-call`).
-4. **Hỏi** như hỏi Trợ lý: «quy trình mua gấp làm sao», «đơn PO00358 tới đâu», «nghỉ phép còn bao nhiêu ngày».
+3. **Kiểm tra** — màn báo **đã nối** khi khóa có lượt gọi thành công (`mcp-keys/{id}/last-call`).
+4. **Hỏi** như hỏi Trợ lý: **quy trình mua gấp làm sao**, **đơn PO00358 tới đâu**, **nghỉ phép còn bao nhiêu ngày**.
 
-Khóa hết hạn sau 90 ngày (tự tạo: 1–365; phát hộ: 7 / 30 / 90 / 180 / 365), gỡ được bất cứ lúc nào, mỗi lượt gọi ghi «dùng
-lần cuối». Tối đa **5 khóa còn hiệu lực** mỗi tài khoản. Nghỉ việc thì khóa đóng cùng phiên đăng nhập.
+Khóa hết hạn sau 90 ngày (tự tạo: 1–365; phát hộ: 7 / 30 / 90 / 180 / 365), gỡ được bất cứ lúc nào, mỗi lượt gọi ghi **dùng
+lần cuối**. Tối đa **5 khóa còn hiệu lực** mỗi tài khoản. Nghỉ việc thì khóa đóng cùng phiên đăng nhập.
 
 ## 2. Khóa
 
@@ -44,7 +44,7 @@ lần cuối». Tối đa **5 khóa còn hiệu lực** mỗi tài khoản. Ngh�
 
 | Mức | Thấy tool nào | Ghi chú |
 |---|---|---|
-| **Chỉ đọc** (mặc định, khóa phát hộ luôn là mức này) | Tool trong danh sách trắng `READ_TOOLS` (`agent_hub/mcp.py`) + 3 tool skill + `report_issue` | Không soạn nháp, không tạo / ghi gì; tool mới mặc định coi là «ghi» cho tới khi khai vào `READ_TOOLS` |
+| **Chỉ đọc** (mặc định, khóa phát hộ luôn là mức này) | Tool trong danh sách trắng `READ_TOOLS` (`agent_hub/mcp.py`) + 3 tool skill + `report_issue` | Không soạn nháp, không tạo / ghi gì; tool mới mặc định coi là **ghi** cho tới khi khai vào `READ_TOOLS` |
 | **Được ghi** (chỉ người dùng tự tạo — Q5) | Thêm `draft_*`, `ticket_create`, lịch / sổ nhớ / ghi chú, xuất tệp, `confirm_draft` | Tạo phiếu luôn **hai bước**: nháp → người dùng xem → `confirm_draft` |
 
 Không bao giờ mở qua MCP: `propose_*` (xác nhận bằng nút trên web / Telegram), `report_missing_feature`, `propose_glossary_term`
@@ -59,9 +59,9 @@ Không bao giờ mở qua MCP: `propose_*` (xác nhận bằng nút trên web / 
 - Phát cho một / nhiều người (`user_ids` hoặc `employee_ids`) hoặc cả phòng — **≤ 50 người một lượt**; có người ngoài phạm vi →
   từ chối cả lượt, không phát khóa nào; người đủ 5 khóa, nhân sự chưa có tài khoản / tài khoản đã khóa → bỏ qua kèm lý do.
 - Khóa phát hộ: trạng thái **Chờ nhận**, khóa thô niêm phong Fernet (`raw_sealed`) chỉ tới khi nhận; nhận xong / thu hồi xóa
-  trắng. Chưa nhận thì cổng từ chối (nhật ký ghi «Khóa phát hộ chưa được chủ khóa nhận»).
+  trắng. Chưa nhận thì cổng từ chối (nhật ký ghi **Khóa phát hộ chưa được chủ khóa nhận**).
 - Thu hồi một khóa, mọi khóa của một người, hoặc cả một lượt phát (`batch_id`); chủ khóa ngoài phạm vi → từ chối cả lệnh.
-  Dòng thu hồi giữ lại («Đã thu hồi») để đối soát. Chỉ báo bằng **chuông ERP** — không email, không Telegram (doc 21 §7.1).
+  Dòng thu hồi giữ lại (**Đã thu hồi**) để đối soát. Chỉ báo bằng **chuông ERP** — không email, không Telegram (doc 21 §7.1).
 
 ### 2.3 Kết nối OAuth (ai-CR-218, K14 — ChatGPT, claude.ai, Claude Desktop Connectors)
 
@@ -124,20 +124,20 @@ công cụ chạy trên trình duyệt (vd MCP Inspector) — ChatGPT / claude.a
   không có kết nối sống và 7 ngày không dùng. Trần đăng ký 30 → **5 / phút / IP** + **200 / 24 giờ toàn hệ** (429).
 
 **Checklist lên môi trường mới / thêm pháp nhân:** khai `AGENT_ERP_URL` = gốc công khai (cả ERP lẫn dịch vụ AI); chạy
-migration `mcpoauth01` + `mcpkey03` (ERP) và `agent0013` + `agent0014` (agent_hub); pháp nhân tạo sau lần gieo bộ «Cẩm nang
-hệ thống» phải gán quyền đọc tay ở màn Bộ skill.
+migration `mcpoauth01` + `mcpkey03` (ERP) và `agent0013` + `agent0014` (agent_hub); pháp nhân tạo sau lần gieo bộ **Cẩm nang
+hệ thống** phải gán quyền đọc tay ở màn Bộ skill.
 
 ### 2.4 Xem lại khóa + bật / tắt (ai-CR-221 — đại ca chốt 19/10)
 
 - **Xem lại**: khóa dán tay giữ thêm bản MÃ HÓA HAI CHIỀU `raw_view` (Fernet suy từ `JWT_SECRET`, đúng cách `app_settings.encrypt`
   đang dùng cho khóa phát hộ và khóa model AI — không thêm biến môi trường). Cột băm vẫn là thứ gác. Chỉ CHỦ KHÓA, đăng nhập
   web, xem được (`GET mcp-keys/{id}/reveal`); quản trị ở Khóa nhân sự KHÔNG xem được (chỉ đuôi 4 ký tự như cũ); qua MCP không có
-  đường nào. Mỗi lần xem ghi một dòng nhật ký cổng (`method = key/reveal`, ứng dụng «ERP web»). Câu trả có `Cache-Control: no-store`.
+  đường nào. Mỗi lần xem ghi một dòng nhật ký cổng (`method = key/reveal`, ứng dụng **ERP web**). Câu trả có `Cache-Control: no-store`.
 - Không xem được (409, kèm câu): khóa tạo trước ai-CR-221 (không có `raw_view`) → *tạo lại để xem*; kết nối OAuth (ứng dụng tự
   giữ mã); khóa phát hộ chưa nhận (bấm Nhận); khóa hết hạn. Khóa người khác / đã thu hồi → 404. Khóa phát hộ nhận xong thì xem
   lại được; thu hồi là xóa trắng `raw_view`. **Đổi `JWT_SECRET` thì mọi bản xem lại hỏng** (khóa vẫn chạy, chỉ phải tạo lại).
 - **Bật / tắt** (`PATCH mcp-keys/{id}` `{enabled}`, cả kết nối OAuth): tắt = `disabled_at`, trạng thái mới **5 Đang tắt** — khác
-  thu hồi, bật lại là chạy ngay. Khóa tắt: `/api/mcp` 401, nhật ký ghi «Khóa đang tắt»; kết nối OAuth tắt thì cũng KHÔNG làm mới
+  thu hồi, bật lại là chạy ngay. Khóa tắt: `/api/mcp` 401, nhật ký ghi **Khóa đang tắt**; kết nối OAuth tắt thì cũng KHÔNG làm mới
   được (`invalid_grant`, khỏi vòng 401 → làm mới → 401). Khóa tắt vẫn tính trần 5 khóa. Bấm tắt hai lần chỉ ghi một dòng
   (`key/disable` / `key/enable`). Khóa chờ nhận / hết hạn → 409.
 - **Hướng dẫn nối công khai** `GET /api/agent-hub/mcp-setup/public[?client=]` (cho màn /connect-ai, bao-CR-633): cùng nội dung
@@ -146,12 +146,12 @@ hệ thống» phải gán quyền đọc tay ở màn Bộ skill.
 
 ### 2.4b Đọc skill dài theo trang (ai-CR-228)
 
-ChatGPT (dev 19/10) đọc skill dài nhất kho (~35k ký tự) rồi báo «không trả về nội dung». `read_skill` / `read_skill_file`
+ChatGPT (dev 19/10) đọc skill dài nhất kho (~35k ký tự) rồi báo **không trả về nội dung**. `read_skill` / `read_skill_file`
 (cổng MCP lẫn công cụ nội bộ) nhận `offset` (mặc định 0) và trả `{content, offset, next_offset, total_chars, page_note?}` —
 mỗi trang ≤ 10.000 ký tự, cắt ở tiêu đề `#` > dòng trống > xuống dòng trong nửa sau trang (không có thì cắt cứng); ghép các
 trang = nguyên văn; `next_offset = null` là hết; offset quá cuối → nội dung rỗng + câu nhắc đọc lại từ 0. Câu dặn đổi thành
-«Dùng nội dung này để trả lời và làm việc cho người dùng (tóm tắt, trích ý, áp dụng); chỉ không chép nguyên văn cả bài ra
-ngoài» + nhắc đọc tệp đính kèm bằng `read_skill_file`. Nhật ký cổng có cột `result_chars` (số ký tự kết quả mỗi lượt
+**Dùng nội dung này để trả lời và làm việc cho người dùng (tóm tắt, trích ý, áp dụng); chỉ không chép nguyên văn cả bài ra
+ngoài** + nhắc đọc tệp đính kèm bằng `read_skill_file`. Nhật ký cổng có cột `result_chars` (số ký tự kết quả mỗi lượt
 `tools/call`; migration `mcplog02` ERP sau `lbrct03` + `agent0015`), `CallRow` thêm `result_chars`.
 
 ### 2.5 Trợ lý nội bộ đọc chung Kho skill (ai-CR-220, K7)
@@ -163,7 +163,7 @@ ngoài» + nhắc đọc tệp đính kèm bằng `read_skill_file`. Nhật ký 
 - Ba tool nội bộ cùng tên với cổng (`assistant/tools/skill_tool.py`: `list_skills`, `read_skill`, `read_skill_file`) ở nhóm
   LÕI của bộ lọc công cụ; chạy `mcp_read.*(internal=True)` — vẫn đúng `visible_skills` của người hỏi, nhưng mức bảo mật chỉ
   chặn AI bên ngoài (nội bộ đọc cả bộ Khóa / tệp bộ Bảo vệ). Cổng MCP bỏ bản nội bộ khỏi danh sách, giữ bản riêng của nó.
-- Bộ «Cẩm nang hệ thống» (mã `SYS-HANDBOOK`, mức Mở, Đang dùng): `ai_skill/handbook_seed.ensure_system_handbook` chạy ở
+- Bộ **Cẩm nang hệ thống** (mã `SYS-HANDBOOK`, mức Mở, Đang dùng): `ai_skill/handbook_seed.ensure_system_handbook` chạy ở
   `seed.py` + `seed_prod.py` — chưa có bộ mã đó (kể cả bản xóa mềm) thì gieo 7 skill xuất bản v1 từ `ai_skill/seed_handbook/`
   (+ 11 tệp gốc nhà máy làm `references/` của skill `nha-may-he-thong-cong-viec`) và mỗi pháp nhân một dòng cho phép; có
   rồi thì KHÔNG đụng. Sửa cẩm nang = sửa skill trên màn Bộ skill, lượt sau trợ lý đã đọc bản mới.
@@ -188,7 +188,7 @@ server dặn AI gọi `list_skills` trước việc nghiệp vụ, áp dụng n�
 |---|---|---|---|
 | T1 báo cáo gom sẵn (ai-CR-208) | `report_summary(report_key, filters)` — 24 báo cáo (khóa 1–13, 17–20, 22–24, 26–29). ĐÓNG với AI: 14, 15, 16 (dữ liệu hành vi / đã có tool riêng), 21 Quỹ lương (số lương — trợ lý không đọc lương); khóa 25 đã bỏ (duoc-CR-692). Gọi khóa đóng / đã bỏ trả `denied` kèm lý do (`CLOSED_FOR_AI`) | `can_view_report` + dependency quyền vai trò của route + `apply_scope` trong route | Gọi thẳng hàm route `/summary`, số khớp màn web; nhóm trên trần 50 + `has_more` |
 | T2 bảng số tổng hợp (ai-CR-210) | `dataset_query(dataset, measures, dimensions, filters)` — bộ `purchase`, `payable`, `payment_request` | `ctx.can(entity)` + `apply_scope` (purchase: `product.read` + `supplier.read` cho chiều NCC + quyền Báo cáo mua hàng) | Khai ở `assistant/datasets/catalog.py`, không sinh SQL; ≤ 4 chỉ số × 2 chiều × 500 nhóm |
-| T3 đọc danh sách / chi tiết (ai-CR-211) | `erp_read(resource, id?, filters?, page?, page_size?, pages?)` — YCMH, YCBG, ĐMH, nhận hàng, NCC, sản phẩm, hợp đồng | Hàm route danh sách của màn web (require + apply_scope); chi tiết qua bộ đọc đã lọc phạm vi | Mặc định 1 trang × 50 dòng, tối đa 5 × 100 khi AI xin rõ; ngoài phạm vi = không tồn tại; chi tiết YCMH KHÔNG gọi route web (route đó ghi ngầm «phương án 0») |
+| T3 đọc danh sách / chi tiết (ai-CR-211) | `erp_read(resource, id?, filters?, page?, page_size?, pages?)` — YCMH, YCBG, ĐMH, nhận hàng, NCC, sản phẩm, hợp đồng | Hàm route danh sách của màn web (require + apply_scope); chi tiết qua bộ đọc đã lọc phạm vi | Mặc định 1 trang × 50 dòng, tối đa 5 × 100 khi AI xin rõ; ngoài phạm vi = không tồn tại; chi tiết YCMH KHÔNG gọi route web (route đó ghi ngầm **phương án 0**) |
 | Năng lực đội (kh-AI1-2) | `team_capacity(department?, kind?, task_type?, limit?)` · `task_type_stats(kind?, task_type?, department?, person?, by_person?)` | Khóa báo cáo 16 → đủ số mọi phòng; trưởng phòng không khóa → `team_capacity` chỉ thứ tự phòng mình + phòng con; còn lại từ chối | Số do `capability/ai_contract` + `stats_service` tính; dưới 5 mẫu trả `None`; tối đa 20 người / 30 dòng + `has_more` |
 | Lời nhắc sẵn (kh-AI2-4) | `prompts/list` · `prompts/get(name, arguments.yeu_cau?)` — `bat-dau-viec` + mỗi skill được đọc một lời nhắc | Cùng quyền Kho skill (`list_for_ai`); nhóm Kho skill tắt ở G7 thì rỗng; không được giao = không có (-32602) | Chỉ dặn gọi `read_skill`, không nhét nội dung skill; yêu cầu cắt 1500 ký tự |
 | Phiếu văn phòng (kh-AI2-3) | `office_read(resource, id?, filters?, page?, page_size?, pages?)` — `vehicle_booking`, `seal_request`, `inventory`, `forum_post` | Cùng bộ đọc `erp_read`: route danh sách / chi tiết của màn web (require + apply_scope); diễn đàn theo luật đối tượng xem bài | Nhóm G7 `office` tắt mặc định; diễn đàn tối đa 50 dòng / trang, nội dung cắt 2000 ký tự |
@@ -275,7 +275,7 @@ vụ — khóa này phải có trong `erp.SETTING_RAW_KEYS`), đệm 60 giây. T
 | `GET /api/agent-gw/skills`, `/skills/read`, `/skills/file` | 3 tool skill (bao-CR-622) |
 | `POST /api/agent-gw/key-admin/people` | Người trong phạm vi `ai_mcp_key_admin.<action>` (phát / liệt kê / thu hồi hộ) |
 | `POST /api/agent-gw/key-admin/employees` | Hồ sơ nhân sự → tài khoản (`people` / `no_account` / `outside`) |
-| `POST /api/agent-gw/key-admin/notify` | Chuông «có khóa chờ nhận» |
+| `POST /api/agent-gw/key-admin/notify` | Chuông **có khóa chờ nhận** |
 | `GET /api/agent-gw/ai-skill/stats` | Số bộ / skill đang dùng cho Tổng quan |
 | `GET`/`PUT /api/agent-gw/settings/raw` | Cấu hình G7 (`agent_mcp_settings` nằm trong `SETTING_RAW_KEYS`) |
 | `POST /api/agent-gw/ai-usage` | ai-CR-230: số dùng AI theo người × ngày × kênh → `tab_ai_usage_daily` (hợp đồng ở doc/erp/22 §5.1). Chỉ chữ ký máy, không người; tối đa 500 dòng mỗi lượt; trường lạ → 422 |
@@ -313,7 +313,7 @@ Ngày giờ ISO `YYYY-MM-DDTHH:MM:SS` giờ VN. Mã trạng thái là SỐ kèm 
 | `GET mcp-calls/daily?days=14` | `days≤90` | `{days, items: [{day, total, ok, denied, error}]}` — đủ từng ngày |
 
 `Key` = `{id, name, hint: "…abcd", scope, scope_label, expires_at, last_used_at, created_at, state, state_label, issued_by,
-claimed_at, batch_id, user_id, kind: 1\|2, kind_label, enabled, disabled_at, revealable}` — `kind = 2` «Kết nối OAuth» (tên
+claimed_at, batch_id, user_id, kind: 1\|2, kind_label, enabled, disabled_at, revealable}` — `kind = 2` **Kết nối OAuth** (tên
 `Qua ChatGPT`…, ai-CR-218); `revealable = false` thì màn hiện *tạo lại để xem* (ai-CR-221). Danh sách KHÔNG bao giờ có khóa thô.
 `Call` = `{created_at, client_name, method, tool, status, status_label, deny_reason}`.
 `CallRow` = `{id, created_at, key_id, user_id, user_label, employee_id, department_id, company_id, client_name, method, tool,

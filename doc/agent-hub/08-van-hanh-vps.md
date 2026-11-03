@@ -3,15 +3,15 @@
 **Bản 1.0 · 05/10/2026** · ai-CR-067 · ai-CR-068 · ai-CR-069 · Phase 6 (nhóm V) + phase 7 (nhóm O) của
 [`04-danh-sach-tinh-nang.md`](./04-danh-sach-tinh-nang.md). Luồng tổng xem [`07-quy-trinh-va-so-do.md`](./07-quy-trinh-va-so-do.md) §4.4.
 
-Đại ca chốt 05/10/2026: bot code được vào VPS 1 xem và sửa, **qua cổng**. Xem dev tự do. Xem prod cần «đúng».
-Sửa dev cần «đúng», sao lưu trước, ghi nhật ký, có lệnh hoàn tác. Sửa prod cần «đúng» cộng OTP; **OTP tạm bỏ qua**
+Đại ca chốt 05/10/2026: bot code được vào VPS 1 xem và sửa, **qua cổng**. Xem dev tự do. Xem prod cần **đúng**.
+Sửa dev cần **đúng**, sao lưu trước, ghi nhật ký, có lệnh hoàn tác. Sửa prod cần **đúng** cộng OTP; **OTP tạm bỏ qua**
 theo lệnh đại ca, làm sau (V-04).
 
 ## 1. Ai làm phần nào
 
 | Phần | Chạy ở đâu | Tệp |
 |---|---|---|
-| Nhận câu lệnh, kiểm lan can, ghi sổ, hỏi «đúng», giao vé | Bot trên dev (poller + worker) | `agent_hub/ops.py` |
+| Nhận câu lệnh, kiểm lan can, ghi sổ, hỏi **đúng**, giao vé | Bot trên dev (poller + worker) | `agent_hub/ops.py` |
 | Gõ health mỗi phút, mở sự cố, giao chẩn đoán | Worker + beat của bot trên dev | `ops.check_health` |
 | Chạy lệnh trên VPS qua SSH, sao lưu, hoàn tác, chẩn đoán, tự chữa, báo tài nguyên | Máy sửa mã có **cờ deploy** (có khóa SSH) | `agent_hub/ops_runner.py` |
 | Lan can: lệnh đọc/sửa/cấm, SQL đọc/sửa/cấm, che bí mật, danh sách tệp cấm | Cả hai | `agent_hub/guardrails.py` |
@@ -24,32 +24,32 @@ Ba bảng mới: `tab_agent_env` (sổ môi trường, nạp sẵn `dev` + `prod
 
 | Câu nhắn | Làm gì | Duyệt |
 |---|---|---|
-| «môi trường» | Liệt kê sổ môi trường, health gần nhất | — |
-| «thêm môi trường staging: dir=~/stg compose="-f s.yml" branch=erp-v2 health=https://… db=stg kind=preview» | Thêm một dòng (khóa thêm: `host`, `port`, `user`, `heal`, `note`) | — |
-| «gỡ môi trường staging» | Đóng dòng (dev, prod không gỡ bằng câu nhắn) | — |
-| «trạng thái dev» · «log api dev 200» | `docker compose ps` · đuôi log một service | dev: không · prod: «đúng» |
-| «chẩn đoán dev: sao api chậm?» | Gom container, log, commit, migration, tài nguyên → Claude chẩn đoán | dev: không · prod: «đúng» |
-| «sql dev: SELECT …» | Chạy câu đọc (phiên MySQL chỉ đọc), in tối đa 50 dòng | dev: không · prod: «đúng» |
-| «gán chức vụ Nhân viên (Demo) cho nhân sự có (CR-414) trong tên» (nói thường, ai-CR-073) | Máy sửa mã tự tra + soạn lệnh, thẻ tiếng Việt ghi số dòng + mẫu; xem [`09`](./09-quy-dinh-hoi-va-lam.md) §4 | «đúng» |
-| «sql dev: UPDATE … WHERE …» (cho người biết SQL) | Sao lưu đúng các bảng bị đụng → chạy → ghi lệnh hoàn tác | «đúng» |
-| «chạy dev: docker compose ps \| grep api» | Lệnh shell; nằm trong danh sách chỉ đọc thì là xem | đọc: như xem · sửa: «đúng» |
-| «khởi động lại api celery-worker dev» · «dựng lại erp dev» · «dọn bộ đệm dev» | Thao tác có sẵn | «đúng» |
-| «deploy prod a1b2c3d» · «deploy dev mới nhất api» | `deploy.sh`; prod sao lưu CẢ DB trước | «đúng» |
-| «quay về bản trước dev» | Deploy lại commit trước lần deploy gần nhất của bot | «đúng» |
-| «lịch sử thao tác [dev]» · «lịch sử deploy [prod]» · «thao tác #12» | Nhật ký, chi tiết một dòng | — |
-| «hoàn tác thao tác #12» | Đẻ một thao tác MỚI theo cách hoàn tác đã ghi, cũng qua «đúng» | «đúng» |
-| «chạy thao tác #12» · «bỏ thao tác #12» | Duyệt / bỏ một thẻ cũ (quá 15 phút không «đúng» suông được) | — |
-| «tình hình máy» | RAM / CPU / đĩa từng máy, container ăn nhiều nhất, việc của bot 24 giờ | — |
-| «sự cố [dev]» | Sổ sự cố | — |
-| «bật tự chữa dev» · «tắt tự chữa dev» | Cờ tự chữa của một môi trường (prod không bao giờ bật được) | — |
+| **môi trường** | Liệt kê sổ môi trường, health gần nhất | — |
+| **thêm môi trường staging: dir=~/stg compose="-f s.yml" branch=erp-v2 health=https://… db=stg kind=preview** | Thêm một dòng (khóa thêm: `host`, `port`, `user`, `heal`, `note`) | — |
+| **gỡ môi trường staging** | Đóng dòng (dev, prod không gỡ bằng câu nhắn) | — |
+| **trạng thái dev** · **log api dev 200** | `docker compose ps` · đuôi log một service | dev: không · prod: **đúng** |
+| **chẩn đoán dev: sao api chậm?** | Gom container, log, commit, migration, tài nguyên → Claude chẩn đoán | dev: không · prod: **đúng** |
+| **sql dev: SELECT …** | Chạy câu đọc (phiên MySQL chỉ đọc), in tối đa 50 dòng | dev: không · prod: **đúng** |
+| **gán chức vụ Nhân viên (Demo) cho nhân sự có (CR-414) trong tên** (nói thường, ai-CR-073) | Máy sửa mã tự tra + soạn lệnh, thẻ tiếng Việt ghi số dòng + mẫu; xem [`09`](./09-quy-dinh-hoi-va-lam.md) §4 | **đúng** |
+| **sql dev: UPDATE … WHERE …** (cho người biết SQL) | Sao lưu đúng các bảng bị đụng → chạy → ghi lệnh hoàn tác | **đúng** |
+| **chạy dev: docker compose ps \| grep api** | Lệnh shell; nằm trong danh sách chỉ đọc thì là xem | đọc: như xem · sửa: **đúng** |
+| **khởi động lại api celery-worker dev** · **dựng lại erp dev** · **dọn bộ đệm dev** | Thao tác có sẵn | **đúng** |
+| **deploy prod a1b2c3d** · **deploy dev mới nhất api** | `deploy.sh`; prod sao lưu CẢ DB trước | **đúng** |
+| **quay về bản trước dev** | Deploy lại commit trước lần deploy gần nhất của bot | **đúng** |
+| **lịch sử thao tác [dev]** · **lịch sử deploy [prod]** · **thao tác #12** | Nhật ký, chi tiết một dòng | — |
+| **hoàn tác thao tác #12** | Đẻ một thao tác MỚI theo cách hoàn tác đã ghi, cũng qua **đúng** | **đúng** |
+| **chạy thao tác #12** · **bỏ thao tác #12** | Duyệt / bỏ một thẻ cũ (quá 15 phút không **đúng** suông được) | — |
+| **tình hình máy** | RAM / CPU / đĩa từng máy, container ăn nhiều nhất, việc của bot 24 giờ | — |
+| **sự cố [dev]** | Sổ sự cố | — |
+| **bật tự chữa dev** · **tắt tự chữa dev** | Cờ tự chữa của một môi trường (prod không bao giờ bật được) | — |
 
-«deploy dev AI-0007» vẫn là lệnh trên một VIỆC (đường gộp cũ), không đi vào sổ thao tác.
-Thẻ «đúng» luôn hiện **nguyên văn** lệnh / câu SQL sẽ chạy, kèm cách sao lưu và cách hoàn tác.
+**deploy dev AI-0007** vẫn là lệnh trên một VIỆC (đường gộp cũ), không đi vào sổ thao tác.
+Thẻ **đúng** luôn hiện **nguyên văn** lệnh / câu SQL sẽ chạy, kèm cách sao lưu và cách hoàn tác.
 
 ## 3. Lan can
 
 - **Lệnh shell.** Chỉ đọc khi MỌI đoạn (tách theo `|`, `&&`, `;`) bắt đầu bằng lệnh trong danh sách đọc (`docker compose ps/logs`,
-  `df`, `free`, `cat`, `grep`, `git log`…) và không có `>`, `$(`, dấu huyền, `tee`, `sudo`. Từ chối thẳng, kể cả khi «đúng»:
+  `df`, `free`, `cat`, `grep`, `git log`…) và không có `>`, `$(`, dấu huyền, `tee`, `sudo`. Từ chối thẳng, kể cả khi **đúng**:
   đụng `.env` / khóa / token / mật khẩu (kết quả sẽ lên Telegram), `rm -rf /`, `down -v`, `docker volume rm`, `mkfs`, tắt máy.
 - **SQL.** Mỗi lần một câu, không chú thích. Đọc: `SELECT / SHOW / EXPLAIN / WITH`, cấm đọc cột mật khẩu / token / khóa và
   `SELECT *` trên bảng tài khoản. Sửa: `UPDATE / DELETE` phải có `WHERE` (muốn cả bảng thì ghi `WHERE 1=1`), `INSERT / REPLACE`.
@@ -68,7 +68,7 @@ Thẻ «đúng» luôn hiện **nguyên văn** lệnh / câu SQL sẽ chạy, k�
 | Deploy prod | `mysqldump` cả DB prod | Deploy lại commit trước (`PREV`). DB không tự nạp lại — tệp sao lưu ghi trong thẻ |
 | Deploy dev | — | Deploy lại commit trước |
 | Khởi động lại / dựng lại / dọn bộ đệm | — | Không cần |
-| Lệnh shell sửa | — | Không có cách tự động; thẻ nói rõ trước khi «đúng» |
+| Lệnh shell sửa | — | Không có cách tự động; thẻ nói rõ trước khi **đúng** |
 
 `mysqldump` chạy TRONG container `procurement-mysql`; mật khẩu root nở ra bên trong container, không qua dòng lệnh VPS,
 không lên output. Tệp sao lưu quá 14 ngày tự dọn (`AGENT_OPS_BACKUP_KEEP_DAYS`).
@@ -87,12 +87,12 @@ ERP KHÔNG gồm bảng bot. Trước 09/10/2026 DB này không có bản nào: 
 | Chủ nhật 04:30 | `agent.db_restore_test` | Nạp bản mới nhất vào DB tạm `agent_hub_restore_test`, kiểm `alembic_version` + số bảng (≥ 90% DB đang chạy) + đếm dòng `tab_agent_message` / `tab_agent_task` / `tab_agent_chat_link` / `tab_agent_memory`, rồi XÓA DB tạm (kể cả khi hỏng). Hỏng thì báo |
 
 Trên dev (09/10) stack bot đặt `STORAGE_PREFIX=agent` nên tệp nằm ở `agent/backup/agent_hub-*.sql.gz`. Sao lưu lỗi cũng báo ngay. Thiếu R2 thì KHÔNG lùi về thư mục `uploads/` (thư mục đó phục vụ công khai) — ghi lỗi và báo.
-Theo dõi: ERP v2 › Quản trị › Sao lưu CSDL › chọn **DB bot (agent_hub)** — danh sách bản, «Sao lưu ngay», «Khôi phục thử»,
-«Tải về». KHÔNG có nút khôi phục trên web.
+Theo dõi: ERP v2 › Quản trị › Sao lưu CSDL › chọn **DB bot (agent_hub)** — danh sách bản, **Sao lưu ngay**, **Khôi phục thử**,
+**Tải về**. KHÔNG có nút khôi phục trên web.
 
 ⚠️ **Một lần khi dựng:** tài khoản MySQL của stack bot cần quyền trên DB tạm của khôi phục thử, chạy trong
 `procurement-mysql` bằng root: `GRANT ALL PRIVILEGES ON agent_hub_restore_test.* TO '<DB_USER của stack bot>'@'%';`.
-Thiếu quyền thì lượt khôi phục thử đầu tiên báo lỗi «Access denied … CREATE».
+Thiếu quyền thì lượt khôi phục thử đầu tiên báo lỗi **Access denied … CREATE**.
 
 **Quay lại DB — `backend/scripts/agent_restore.sh`** (chạy trên VPS, ngoài container; bản sao lưu tải từ màn Sao lưu hoặc
 từ R2 về máy trước). Script in kế hoạch rồi bắt gõ đúng một cụm xác nhận; gõ sai / không gõ thì thoát mã 3 TRƯỚC khi đụng
@@ -101,8 +101,8 @@ docker hay DB. `--yes` bỏ bước gõ — chỉ dùng khi đã được duyệ
 **Qua thẻ duyệt trên Telegram (ai-CR-141, đại ca chốt 09/10)** — chat chủ bot, cần `AGENT_OPS_ENABLED`:
 `sao lưu db bot` (liệt kê bản thành công, có số) → `quay lại db bot dev bản #12` (toàn bộ) hoặc
 `lấy lại tab_agent_memory của db bot dev bản #12: user_id = 7` (một phần; điều kiện chỉ là phép so sánh đơn giản, chặn
-`;`, `--`, `/*`) → thẻ «đúng / thôi» như mọi thao tác VPS (loại `OP_BOT_DB_RESTORE`). Khi tạo thẻ, bot ký sẵn link tải
-bản sao lưu trên R2 (26 giờ) cất trong `params` của dòng sổ — KHÔNG in lên thẻ / nhật ký; «đúng» thì máy sửa mã ssh vào
+`;`, `--`, `/*`) → thẻ **đúng / thôi** như mọi thao tác VPS (loại `OP_BOT_DB_RESTORE`). Khi tạo thẻ, bot ký sẵn link tải
+bản sao lưu trên R2 (26 giờ) cất trong `params` của dòng sổ — KHÔNG in lên thẻ / nhật ký; **đúng** thì máy sửa mã ssh vào
 VPS: tải về tệp tạm → `agent_restore.sh … --yes </dev/null` → xóa tệp tạm; xong một phần thì xóa link khỏi sổ. Quay lại
 TOÀN BỘ làm mất chính dòng sổ của lượt đó (bản sao lưu có trước nó) — máy sửa mã bỏ kết nối cũ, ghi LẠI một dòng sổ
 mới rồi báo. Đường dẫn trên VPS: `AGENT_RESTORE_SCRIPT` (mặc định `~/agent-hub/backend/scripts/agent_restore.sh`),
@@ -165,17 +165,17 @@ beat mỗi phút ── gõ health từng môi trường ── 200 ──> (có
                                → Claude chẩn đoán: nguyên nhân + MỘT thao tác an toàn
                                │
                                ├─ không có thao tác an toàn ─────────────> chờ người
-                               ├─ prod, hoặc tự chữa tắt ────────────────> thẻ «đúng» (O-04)
+                               ├─ prod, hoặc tự chữa tắt ────────────────> thẻ "đúng" (O-04)
                                ├─ dev, đã tự chữa 3 lần trong giờ ───────> DỪNG, chờ người
                                └─ dev ──> chạy thao tác (ghi sổ, tự chạy) → gõ health 2 phút → hết / chờ người
-                        cùng nguyên nhân 3 lần / 7 ngày ──> mở việc «Sự cố lặp lại: …» đi đường thường (O-06)
+                        cùng nguyên nhân 3 lần / 7 ngày ──> mở việc "Sự cố lặp lại: …" đi đường thường (O-06)
 ```
 
 Thao tác an toàn duy nhất bot được chọn: `up_services` · `restart_services` · `rollback_last_deploy` (chỉ khi bot deploy
 trong 2 giờ qua) · `prune_build_cache` (bộ đệm build + ảnh treo quá 24 giờ; không volume) · `none`. Claude không trả lời được
 thì dùng luật dự phòng: container dừng → bật lại; đĩa ≥ 92% → dọn bộ đệm; còn lại → chờ người.
 
-Báo tài nguyên 07:35 mỗi sáng (cùng nội dung «tình hình máy»). Bản tin sáng Google (ai-CR-064) sửa giờ chạy về đúng 07:30.
+Báo tài nguyên 07:35 mỗi sáng (cùng nội dung **tình hình máy**). Bản tin sáng Google (ai-CR-064) sửa giờ chạy về đúng 07:30.
 
 ## 7. Bật lên
 
@@ -192,8 +192,8 @@ Báo tài nguyên 07:35 mỗi sáng (cùng nội dung «tình hình máy»). B�
    GRANT SELECT, UPDATE ON procurement_dev.tab_agent_incident TO agent_runner@'%';
    ```
    **Luật:** thêm bảng Agent Hub mới mà máy sửa mã đọc/ghi thì phải cấp thêm cho `agent_runner` cùng đợt deploy.
-   Thao tác nằm «chờ máy» quá 5 phút thì bot tự báo một lần (`ops.remind_stuck_ops`).
-5. Thử: «môi trường» → «trạng thái dev» → «tình hình máy» → «sql dev: SELECT COUNT(*) FROM tab_agent_task».
+   Thao tác nằm **chờ máy** quá 5 phút thì bot tự báo một lần (`ops.remind_stuck_ops`).
+5. Thử: **môi trường** → **trạng thái dev** → **tình hình máy** → "sql dev: SELECT COUNT(*) FROM tab_agent_task".
 
 ## 8. Chưa làm, nói thẳng
 
@@ -201,7 +201,7 @@ Báo tài nguyên 07:35 mỗi sáng (cùng nội dung «tình hình máy»). B�
   gốc muốn phát từ VPS 1) — đổi khi có VPS 2 thật (V-08).
 - **O-01 phần còn thiếu:** mỗi phút mới gõ health; container / đĩa / RAM chỉ xem lúc chẩn đoán và trong báo sáng; chưa đếm lỗi
   5xx tăng đột biến, chưa canh hàng đợi Celery.
-- **O-03 «chạy lại migration dở»** không có thao tác riêng: khởi động lại `api` đã chạy lại `alembic upgrade head` trong
+- **O-03 "chạy lại migration dở"** không có thao tác riêng: khởi động lại `api` đã chạy lại `alembic upgrade head` trong
   `start.prod.sh`.
 - Dev và prod chung một VPS: VPS chết hẳn thì bot (cũng ở trên đó) không báo được gì.
 - Qdrant không sao lưu (dựng lại được từ DB + HDSD). Quay lại DB bot qua thẻ duyệt đã có từ ai-CR-141.

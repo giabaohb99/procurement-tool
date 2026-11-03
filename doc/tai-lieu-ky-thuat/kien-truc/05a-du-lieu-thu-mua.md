@@ -639,7 +639,7 @@ Bảng danh mục người dùng tự thêm bớt (bao-CR-453), thay bộ mã c�
 
 **Logic chính:**
 
-- Mã **99 «Chi phí khác»** không đổi tên, không tắt, không xóa — chỗ rơi của mã lạ.
+- Mã **99 "Chi phí khác"** không đổi tên, không tắt, không xóa — chỗ rơi của mã lạ.
 - Loại còn dòng `tab_po_cost` trỏ tới thì không xóa được (400 kèm số dòng).
 - CSV chỉ xuất, không nhập (đường nhập đi vòng qua ba chốt trên).
 

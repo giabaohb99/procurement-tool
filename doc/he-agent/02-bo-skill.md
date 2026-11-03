@@ -17,7 +17,7 @@
 - **Không ghi cứng** tên người, mã nhân sự, tên danh sách: đọc từ tệp cấu hình của người chủ.
 - Ghi rõ **vùng cấm** và **sàn luôn hỏi** ở mọi skill có thể dẫn tới hành động ra ngoài.
 - Skill viết từ chỗ đã vấp: mỗi bẫy có ví dụ thật (ngày, mã CR) để người đọc hiểu vì sao.
-- Tiếng Việt, câu ngắn, không emoji, không « ».
+- Tiếng Việt, câu ngắn, không emoji, không ngoặc kép góc.
 
 ## Skill nghề (đưa vào kho mã 22/10/2026, commit e09e7650)
 
