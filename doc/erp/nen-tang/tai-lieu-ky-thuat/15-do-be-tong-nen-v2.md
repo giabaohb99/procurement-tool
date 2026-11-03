@@ -146,7 +146,7 @@ không phải số dòng logic phải sửa)*.
 | | | **130** | **125** | **96** | **≈ 351** |
 
 **Bẫy lớn nhất nằm ở cụm đắt nhất.** `progress_status` không phải một danh sách giá trị, nó là
-**máy trạng thái có THỨ TỰ**: [`purchase_order/service.py:726`](../../../../backend/app/modules/purchase_order/service.py:726)
+**máy trạng thái có THỨ TỰ**: [`purchase_order/service.py:726`](../../../../backend/app/modules/purchase_order/service.py)
 khai `PROGRESS_ORDER` là một *list*, rồi bước tiến được tính bằng `PROGRESS_ORDER.index(...)`.
 Nghĩa là **vị trí trong list chính là logic**, không chỉ là nhãn. Bộ mã mới bắt buộc phải mang theo
 thứ tự đó (xem QĐ-9 dưới đây), và `PROGRESS_EXCEPTIONS` (*Tạm ngưng*, *Hủy đơn*) phải giữ nguyên
