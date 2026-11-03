@@ -37,11 +37,7 @@ from .constants import (
     ACT_HEARTBEAT,
     ACT_OPS,
     ACT_ASKED,
-    ACT_BELL,
-    ACT_BRIEF,
-    ACT_MEETING,
     ACT_REMIND_WAIT,
-    ACT_REMINDER,
     ACT_VOICE,
     ACT_COMMAND,
     ACT_DEPLOY_TIME,
@@ -88,7 +84,6 @@ from .constants import (
     CLOSED_STATUSES,
     DIR_IN,
     LANE_FULL,
-    NOTIFY_LABELS,
     LANE_QUICK,
     QUICK_MAX_FILES,
     DIR_OUT,
@@ -1844,7 +1839,7 @@ def task_status_line(db: Session, task: AgentTask) -> str:
     if gate:
         parts.append(f"Cổng kiểm: {esc(coder._gate_brief(gate))}.")
     nxt = {
-        ST_PLAN: f"Nhắn **duyệt** để em sửa mã hoặc **sửa: …**.",
+        ST_PLAN: "Nhắn **duyệt** để em sửa mã hoặc **sửa: …**.",
         ST_REVIEW: (f"Nhắn **sửa cho xanh {code}**." if _red_gate(db, task)
                     else f"Gộp được: nhắn **gộp {code}** (chỉ gộp, chưa lên dev) hoặc **gộp và deploy dev "
                          f"{code}**; thêm **lúc 20h** để hẹn giờ."),
@@ -2977,9 +2972,7 @@ def parse_schedule_time(text: str, now: datetime) -> datetime | None:
         return None
     target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
     words = t.split()
-    if "mai" in words:
-        target += timedelta(days=1)
-    elif target <= now:
+    if "mai" in words or target <= now:
         target += timedelta(days=1)
     return target
 
@@ -5328,7 +5321,7 @@ def send_plan_card(db: Session, task: AgentTask) -> None:
         lines += [f"• {telegram.esc(q)}" for q in task.questions]
         minutes = int(PLAN_ANSWER_WINDOW.total_seconds() // 60)
         lines += ["", f"Đại ca nhắn trả lời ngay bên dưới (trong {minutes} phút), em lập lại kế "
-                      "hoạch luôn. " + (f"Trả lời trễ hơn thì nhắn **sửa: …**." if settings.AGENT_TG_COMPACT
+                      "hoạch luôn. " + ("Trả lời trễ hơn thì nhắn **sửa: …**." if settings.AGENT_TG_COMPACT
                                         else "Trả lời trễ hơn thì bấm **Trả lời câu hỏi** trước.")]
         reply(db, settings.AGENT_TELEGRAM_CHAT_ID, "\n".join(lines), task_id=task.id,
               action=ACT_WAIT_PLAN_ANSWER,

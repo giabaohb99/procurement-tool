@@ -35,6 +35,7 @@ from app.core.config import settings
 
 from . import channels
 from .telegram import TelegramError
+import contextlib
 
 log = logging.getLogger("app.agent_hub.zalo_account")
 
@@ -474,10 +475,8 @@ def send_typing(chat_id: str) -> None:
     if not str(chat_id).startswith(channels.ZALO_USER_PREFIX):
         return
     tid, kind = _target(chat_id)
-    try:
+    with contextlib.suppress(ZaloAccountError):
         _request("POST", "/typing", body={"thread_id": tid, "thread_type": kind}, timeout=5)
-    except ZaloAccountError:
-        pass
     with _ACK_LOCK:
         if chat_id in _ACK_TIMERS:
             return

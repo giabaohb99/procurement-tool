@@ -16,6 +16,7 @@ import requests
 from app.core.config import settings
 
 from . import channels
+import contextlib
 
 BASE_URL = "https://api.telegram.org/bot{token}/{method}"
 
@@ -303,13 +304,11 @@ def send_chat_action(chat_id: str = "", action: str = "typing") -> None:
 
         zalo.send_chat_action(chat_id, action)
         return
-    try:
+    with contextlib.suppress(TelegramError):
         _call("sendChatAction", {
             "chat_id": chat_id or settings.AGENT_TELEGRAM_CHAT_ID,
             "action": action,
         }, timeout=5)
-    except TelegramError:
-        pass
 
 
 def _button(label: str, data: str) -> dict:
@@ -464,10 +463,8 @@ def answer_callback(callback_id: str, text: str = "") -> None:
     """
     if not callback_id:
         return          # lệnh gõ bằng chữ (ai-CR-027) đi chung đường với nút nhưng không có nút nào
-    try:
+    with contextlib.suppress(TelegramError):
         _call("answerCallbackQuery", {"callback_query_id": callback_id, "text": text[:200]})
-    except TelegramError:
-        pass
 
 
 def edit_text(chat_id: str, message_id: int, text: str) -> bool:
@@ -505,11 +502,9 @@ def clear_buttons(chat_id: str, message_id: int) -> None:
     """
     if not message_id or not channels.is_telegram(chat_id):
         return
-    try:
+    with contextlib.suppress(TelegramError):
         _call("editMessageReplyMarkup", {
             "chat_id": chat_id,
             "message_id": message_id,
             "reply_markup": {"inline_keyboard": []},
         })
-    except TelegramError:
-        pass

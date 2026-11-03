@@ -15,10 +15,9 @@ import re
 from types import SimpleNamespace
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.modules.notification.model import Notification
 
 from . import erp, telegram

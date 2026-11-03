@@ -24,6 +24,7 @@ from app.core.config import settings
 
 from . import channels
 from .telegram import TelegramError
+import contextlib
 
 log = logging.getLogger("app.agent_hub.zalo")
 
@@ -262,10 +263,8 @@ def send(chat_id: str, text: str, *, buttons: list[tuple[str, str]] | None = Non
 
 
 def send_chat_action(chat_id: str, action: str = "typing") -> None:
-    try:
+    with contextlib.suppress(ZaloError):
         _call("sendChatAction", {"chat_id": channels.raw_id(chat_id), "action": "typing"}, timeout=5)
-    except ZaloError:
-        pass
 
 
 def send_document(chat_id: str, filename: str, data: bytes, *, caption: str = "") -> int:

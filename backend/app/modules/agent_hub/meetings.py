@@ -1002,7 +1002,7 @@ def retry(db: Session, row: AgentMeeting) -> str:
 
 
 def _process(db: Session, row: AgentMeeting, workdir: Path) -> dict:
-    from . import ai_keys, manager, service
+    from . import manager, service
     from .constants import STAGE_MEETING
 
     key = user_keys.gemini_key()

@@ -20,6 +20,7 @@ from app.core import app_settings
 from app.core.ai_plan_codes import AI_PLAN_STATUS_LABELS, AiPlanStatus
 from app.core.logging_codes import AI_CHANNEL_LABELS
 from app.modules.ai_plan.model import AiPlanProposal
+import contextlib
 
 log = logging.getLogger("app.ai_plan")
 
@@ -105,16 +106,12 @@ def _collect_ids(phases_raw: list) -> tuple[set[int], set[int]]:
                 continue
             for item in [t] + [s for s in (t.get("subtasks") or [])[:MAX_SUBS] if isinstance(s, dict)]:
                 for a in (item.get("assignees") or [])[:MAX_ASSIGNEES]:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         people.add(int(a.get("employee_id") if isinstance(a, dict) else 0))
-                    except (TypeError, ValueError):
-                        pass
                 tt = item.get("task_type")
                 if isinstance(tt, dict):
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         types.add(int(tt.get("id") or 0))
-                    except (TypeError, ValueError):
-                        pass
     return people - {0}, types - {0}
 
 
