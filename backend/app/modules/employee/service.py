@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core import reference_guard
 from app.core.audit import record
+from app.core import app_settings
 from app.core.utils import generate_code
 
 from app.modules.department.model import Department
@@ -38,6 +39,13 @@ ENTITY = "employee"
 # điện thoại. Khác apply_filters (mỗi tham số lọc riêng một cột rồi ghép AND) — ở đây
 # nhập "0912" hay "an@" hay "NV001" đều ra, khỏi cần biết dữ liệu nằm ở cột nào.
 SEARCH_FIELDS = ("code", "full_name", "email", "phone")
+
+
+def employee_code_prefix() -> str:
+    """Tiền tố mã hồ sơ mới — Cài đặt nhân sự (duoc-CR-713), mặc định «NSU». Cửa lưu đã kiểm 2–10 chữ in hoa; ở đây
+    chỉ phòng giá trị hỏng nằm sẵn dưới DB / `.env` (rơi về NSU chứ không sinh mã lạ)."""
+    raw = str(app_settings.get("employee_code_prefix") or "").strip().upper()
+    return raw if re.fullmatch(r"[A-Z]{2,10}", raw) else "NSU"
 
 
 def apply_keyword_search(query, keyword: str | None):
@@ -226,7 +234,7 @@ def create_employee_core(db: Session, data: EmployeeCreate, user_id: int) -> Emp
     BM-013) — bên gọi tự quyết giao dịch. duoc-CR-628: nhập Excel gọi lõi này trong SAVEPOINT từng dòng
     để dry-run rollback được; `create_employee` là vỏ commit + audit của màn hồ sơ."""
     if not data.code:
-        data.code = generate_code(db, Employee, "NSU")
+        data.code = generate_code(db, Employee, employee_code_prefix())
     elif db.query(Employee).filter(Employee.code == data.code).first():
         raise HTTPException(400, "Mã nhân viên đã tồn tại")
     #  Hồ sơ chưa có id nên không thể tự trỏ vào chính mình; chỉ còn phải kiểm

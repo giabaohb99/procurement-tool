@@ -204,6 +204,10 @@ NO_TARGET = {
     #  ghi vào bảng không có cột chữ, hoặc vào cột JSON của bảng cha
     "doc_catalog.DocTypeLinkRuleBase", "doc_catalog.DocTypeLinkRuleCreate", "doc_catalog.DocTypeLinkRuleUpdate",
     "leave.LeaveLineItem", "dossier.DossierFieldDef",
+    #  duoc-CR-715: hạn mức theo nhóm chỉ mang mã nhóm + số ngày (bảng không có cột chữ)
+    "leave.QuotaRuleItem", "leave.QuotaRuleReplace",
+    #  duoc-CR-683: ước lượng số ngày theo nhiều khoảng — chỉ đọc, không ghi bảng nào
+    "leave.LeaveEstimateIn", "leave.LeavePeriodItem",
     #  ghi `issue_code` của Công ty / Phòng ban (phân hệ khác) — xem bài kiểm riêng của văn thư
     "doc_catalog.IssueCodeUpdate",
 }

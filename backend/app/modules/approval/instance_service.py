@@ -20,6 +20,7 @@ from .instance_model import (ACTION_APPROVE, ACTION_FINISH,
                              TASK_APPROVED, TASK_CANCELLED, TASK_PENDING,
                              TASK_SKIPPED_DUPLICATE, TASK_WAITING,
                              ApprovalAction, ApprovalInstance, ApprovalTask)
+from .self_approval_policy import strict_self_exclusion
 
 
 # ── Tra cứu ─────────────────────────────────────────────────────────────────
@@ -154,7 +155,8 @@ def open_stage(db: Session, instance: ApprovalInstance, subject: dict, seq: int)
         return
 
     approvers = approver_resolver.resolve(db, node, subject, instance.started_by_employee_id)
-    approvers = exclude_submitter_ids(node.approver_kind, instance.started_by_employee_id, approvers)
+    approvers = exclude_submitter_ids(node.approver_kind, instance.started_by_employee_id, approvers,
+                                      strict=strict_self_exclusion(instance.entity))
     approvers, any_skipped = _split_duplicate_approvers(db, instance, node, approvers)
 
     if not approvers:
@@ -188,7 +190,7 @@ def open_stage(db: Session, instance: ApprovalInstance, subject: dict, seq: int)
 
 
 def exclude_submitter_ids(approver_kind: int | None, submitter_employee_id: int | None,
-                            ids: list[int]) -> list[int]:
+                            ids: list[int], strict: bool = False) -> list[int]:
     """I08 — người nộp không duyệt phiếu của chính mình.
 
     HÀM THUẦN — tách ra 23/09/2026 để `preview_service.preview_flow` (xem trước
@@ -220,7 +222,9 @@ def exclude_submitter_ids(approver_kind: int | None, submitter_employee_id: int 
     """
     if not submitter_employee_id:
         return ids
-    if approver_kind == APPROVER_EMPLOYEE:
+    #  duoc-CR-713: `strict` (Cài đặt nhân sự «Chặn tự duyệt đơn nghỉ», xem `self_approval_policy`) gạt người nộp
+    #  KỂ CẢ ở bước khai đích danh — chủ ý của cấu hình nhân sự thắng chủ ý của người khai luồng.
+    if approver_kind == APPROVER_EMPLOYEE and not strict:
         return ids
     return [employee_id for employee_id in ids if employee_id != submitter_employee_id]
 
@@ -304,7 +308,10 @@ def _handle_no_approver(db: Session, instance: ApprovalInstance, node, subject: 
     trị đó thì nay rơi thẳng xuống *dừng phiếu*: hiện ra để người ta sửa luồng,
     chứ không lặng lẽ giao cho một người lạ.
     """
-    if node.on_no_approver == NO_APPROVER_FALLBACK and node.fallback_employee_id:
+    #  duoc-CR-713: người dự phòng lại chính là người nghỉ thì coi như không có ai (đơn kẹt, quản trị sửa luồng).
+    fallback_is_submitter = (node.fallback_employee_id == instance.started_by_employee_id
+                             and strict_self_exclusion(instance.entity))
+    if node.on_no_approver == NO_APPROVER_FALLBACK and node.fallback_employee_id and not fallback_is_submitter:
         task = ApprovalTask(
             instance_id=instance.id, node_seq=node.seq, node_name=node.name or "",
             order_no=1, assignee_employee_id=node.fallback_employee_id,

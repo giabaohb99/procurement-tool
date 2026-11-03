@@ -32,7 +32,7 @@ interface SectionTab {
   visible: (can: ReturnType<typeof usePermission>['can']) => boolean
 }
 
-/** Hai màn con của tab "Thiết lập" trên sidebar. */
+/** Các màn con của tab "Thiết lập" trên sidebar. */
 const SETTING_TABS: SectionTab[] = [
   {
     label: 'Loại nghỉ',
@@ -43,6 +43,12 @@ const SETTING_TABS: SectionTab[] = [
     label: 'Lịch ngày lễ',
     path: appRoutes.hr.holidays,
     visible: (can) => can('holiday', 'write'),
+  },
+  {
+    // duoc-CR-715: dùng chung khóa `leave_type` (cùng «Thiết lập» nghỉ phép, không thêm khóa).
+    label: 'Ngày cấm nghỉ',
+    path: appRoutes.hr.leaveBlocks,
+    visible: (can) => can('leave_type', 'write'),
   },
 ]
 

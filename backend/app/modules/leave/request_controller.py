@@ -16,15 +16,17 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 
+from app.modules.approval.self_approval_policy import ensure_not_self_approval
 from app.modules.company.model import Company
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 
-from . import (approval_bridge, balance_service, request_periods, request_serializer,
-               request_service, workday_service)
+from . import (approval_bridge, balance_service, block_period_service, request_periods,
+               request_serializer, request_service, workday_service)
 from .balance_model import LeaveBalance
 from .catalog_model import LeaveType
 from .constants import LR_APPROVED, LR_CANCELLED, LR_PENDING, LR_REJECTED
+from .period_spans import PeriodView
 from .request_model import LeaveRequest
 from .schema import LeaveEstimateIn, LeaveRequestCreate, LeaveRequestUpdate
 
@@ -49,9 +51,14 @@ def _dump(db: Session, obj: LeaveRequest, names: dict[int, str],
     Đường MỘT đơn nên tra dòng tại chỗ là đúng một lượt truy vấn. Đường danh
     sách KHÔNG đi qua đây — nó gom trước bằng `lines_by_request`.
     """
-    return request_serializer.dump_request(
-        obj, names, types, request_serializer.lines_by_request(db, {obj.id}),
-        request_serializer.periods_for(db, {obj.id}))
+    periods = request_serializer.periods_for(db, {obj.id})
+    data = request_serializer.dump_request(
+        obj, names, types, request_serializer.lines_by_request(db, {obj.id}), periods)
+    #  duoc-CR-715: cảnh báo ngày cấm nghỉ (không chặn). Đơn đã từ chối / hủy thì khỏi cảnh báo.
+    data["block_conflicts"] = ([] if obj.status in (LR_REJECTED, LR_CANCELLED) else
+                               block_period_service.dump_conflicts(block_period_service.find_conflicts(
+                                   db, db.get(Employee, obj.employee_id), periods.get(obj.id) or [])))
+    return data
 
 
 def _type_names(db: Session) -> dict[int, str]:
@@ -240,6 +247,8 @@ def approve_request(rid: int, db: Session = Depends(get_db),
     if obj.status != LR_PENDING:
         raise HTTPException(400, "Chỉ duyệt được đơn đang ở trạng thái Chờ duyệt")
     approval_bridge.block_legacy_path(db, obj)
+    #  duoc-CR-713: có quyền duyệt thẳng cũng không duyệt được đơn của chính mình khi Cài đặt nhân sự bật chặn.
+    ensure_not_self_approval(ENTITY, getattr(user, "employee_id", 0), obj.employee_id)
 
     #  Dùng lại đúng hook của bộ máy duyệt, không chép luật trừ quỹ ra đây —
     #  chép là hai đường duyệt và một trong hai sẽ quên sinh giấy GNP.
@@ -341,19 +350,22 @@ def estimate_days(from_date: str, to_date: str,
     d_from, d_to = _date.fromisoformat(from_date), _date.fromisoformat(to_date)
     exclude_holiday = bool(leave_type.exclude_holiday) if leave_type else True
     schedule_name = _visible_schedule_name(db, user, employee, exclude_holiday, d_from)
+    #  duoc-CR-715: form một khoảng đi đường này nên khung vàng «ngày cấm nghỉ» cũng phải trả ở đây.
+    block_conflicts = block_period_service.dump_conflicts(
+        block_period_service.find_conflicts(db, employee, [PeriodView(from_date=d_from, to_date=d_to)]))
     if request_service.is_hourly(from_session, to_session):
         return success({"total_days": request_service.hourly_days(
             db, d_from, d_to,
             _time.fromisoformat(from_time) if from_time else None,
             _time.fromisoformat(to_time) if to_time else None,
             company_id=employee.company_id or 0, exclude_holiday=exclude_holiday,
-            employee=employee), "schedule_name": schedule_name})
+            employee=employee), "schedule_name": schedule_name, "block_conflicts": block_conflicts})
 
     days = workday_service.count_leave_days(
         db, d_from, d_to, from_session, to_session,
         company_id=employee.company_id or 0, exclude_holiday=exclude_holiday,
         employee=employee)
-    return success({"total_days": days, "schedule_name": schedule_name})
+    return success({"total_days": days, "schedule_name": schedule_name, "block_conflicts": block_conflicts})
 
 
 @router.post("/tools/estimate-periods")
@@ -385,7 +397,10 @@ def estimate_periods(body: LeaveEstimateIn, db: Session = Depends(get_db),
         "periods": [{"from_date": p.from_date, "to_date": p.to_date, "days": d}
                     for p, d in zip(periods, per_days)],
         "total_days": round(sum(per_days), 2),
-        "schedule_name": schedule_name})
+        "schedule_name": schedule_name,
+        #  duoc-CR-715: khung vàng «ngày cấm nghỉ» hiện ngay khi chọn ngày, chưa cần lưu đơn.
+        "block_conflicts": block_period_service.dump_conflicts(
+            block_period_service.find_conflicts(db, employee, periods))})
 
 
 def _ensure_balance_in_scope(db: Session, user, employee, row) -> None:
@@ -447,7 +462,9 @@ def my_balance(leave_type_id: int, year: int = 0, employee_id: int = 0,
         "total_days": row.total_days,
         "used_days": row.used_days,
         "pending_days": row.pending_days,
-        "remaining_days": row.remaining_days,
+        "remaining_days": balance_service.available_days(db, row, leave_type=leave_type, hire_date=employee.hire_date),
+        #  Hạn «ứng phép» của loại này: còn lại được xuống tới -N — ô gợi ý trên form chỉ cảnh báo khi vượt cả N.
+        "max_negative_days": float(leave_type.max_negative_days or 0.0),
         #  Q4 — hồ sơ chưa nhập ngày vào làm thì thâm niên tính bằng 0 và con số
         #  trên có thể thiếu. Trả cờ ra để màn hình nói thẳng, đừng để im lặng.
         "missing_hire_date": getattr(employee, "hire_date", None) is None,

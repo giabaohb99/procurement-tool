@@ -137,6 +137,9 @@ const TABS: {
   },
 ]
 
+/** Nhóm ô nhập màn này vẽ (và chỉ những nhóm này được gửi khi Lưu). */
+const RENDERED_GROUPS = new Set<string>(TABS.map((tab) => tab.group).filter((group) => group !== undefined))
+
 /**
  * CẤU HÌNH HỆ THỐNG — chỉnh nóng, không cần sửa `.env` hay dựng lại Docker.
  *
@@ -177,7 +180,14 @@ export function SettingPage() {
 
   async function save() {
     try {
-      await saveSettings.mutateAsync(buildSettingValues(draft, secretInputs))
+      //  Chỉ gửi ô của các nhóm màn này VẼ: nhóm khác (vd `hr` của trang Cài đặt nhân sự, duoc-CR-713) do trang khác sở
+      //  hữu — gửi bản đệm cũ của chúng là đè mất thay đổi vừa lưu ở trang kia.
+      await saveSettings.mutateAsync(
+        buildSettingValues(
+          draft.filter((field) => RENDERED_GROUPS.has(field.group)),
+          secretInputs,
+        ),
+      )
       // Xóa ô bí mật sau khi lưu: giữ lại là để mật khẩu nằm trong DOM suốt
       // phiên làm việc mà chẳng để làm gì. Xóa luôn bản nháp để màn hình quay
       // về đúng thứ server vừa xác nhận.

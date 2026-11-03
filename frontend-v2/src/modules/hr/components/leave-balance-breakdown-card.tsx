@@ -15,6 +15,7 @@ interface LeaveBalanceBreakdownCardProps {
  * nào. Ai không nhớ công thức thì tự cộng, và tự cộng thì cộng sai.
  */
 export function LeaveBalanceBreakdownCard({ balance }: LeaveBalanceBreakdownCardProps) {
+  const hasComp = (balance.comp_days ?? 0) !== 0
   return (
     <Card>
       <CardHeader>
@@ -38,11 +39,18 @@ export function LeaveBalanceBreakdownCard({ balance }: LeaveBalanceBreakdownCard
         {/*  Vế CỘNG — những gì được cấp. */}
         <div>
           <p className="mb-2 text-xs font-medium text-muted-foreground">Được cấp</p>
-          <dl className="grid max-w-4xl grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+          <dl
+            className={cn(
+              'grid max-w-4xl grid-cols-2 gap-2.5 sm:gap-3',
+              hasComp ? 'sm:grid-cols-5' : 'sm:grid-cols-4',
+            )}
+          >
             <Stat label="Hạn mức" value={balance.allocated_days} />
             <Stat label="Thâm niên" value={balance.seniority_days} signed />
             <Stat label="Chuyển năm trước" value={balance.carried_days} signed />
             <Stat label="Điều chỉnh tay" value={balance.adjusted_days} signed />
+            {/*  Chỉ hiện khi có: phần lớn loại nghỉ không nhận ngày nghỉ bù. */}
+            {hasComp && <Stat label="Nghỉ bù cộng thêm" value={balance.comp_days ?? 0} signed />}
           </dl>
           <p className="mt-2 text-sm text-muted-foreground">
             Tổng được nghỉ:{' '}

@@ -5,11 +5,17 @@ import { queryKeys } from '@/shared/constants/query-keys'
 import { roleApi } from '../api/role-api'
 import type { RolePermissionRow } from '../types/role'
 
-/** Danh sách vai trò — backend trả mảng thô, không phân trang. */
-export function useRoles() {
+/**
+ * Danh sách vai trò — backend trả mảng thô, không phân trang.
+ *
+ * `enabled`: backend gác `role.read`; trang mượn danh sách chỉ để chọn (vd Cài đặt nhân sự) phải tự tắt khi thiếu
+ * quyền, kẻo người dùng ăn toast 403 ngay lúc mở trang.
+ */
+export function useRoles(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.hr.roles(),
     queryFn: () => roleApi.list(),
+    enabled: options.enabled ?? true,
   })
 }
 

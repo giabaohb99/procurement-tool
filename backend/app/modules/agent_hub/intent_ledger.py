@@ -200,6 +200,7 @@ TOOL_SUB: dict[str, Sub] = {
     "manage_briefs": Sub.WRITE_BRIEF,
     "draft_purchase_request": Sub.MAKE_PURCHASE_REQUEST, "draft_survey_request": Sub.MAKE_SURVEY_REQUEST,
     "draft_payment_request": Sub.MAKE_PAYMENT_REQUEST, "draft_leave_request": Sub.MAKE_LEAVE,
+    "draft_leave_comp_request": Sub.MAKE_LEAVE,   # duoc-CR-715 C: phiếu xin nghỉ bù — cùng nhóm ý định nghỉ phép
     "draft_work_task": Sub.MAKE_WORK_TASK, "draft_work_plan": Sub.MAKE_WORK_TASK, "ticket_create": Sub.MAKE_TICKET,
     "create_calendar_event": Sub.WRITE_CALENDAR, "update_calendar_event": Sub.WRITE_CALENDAR,
     "delete_calendar_event": Sub.WRITE_CALENDAR,

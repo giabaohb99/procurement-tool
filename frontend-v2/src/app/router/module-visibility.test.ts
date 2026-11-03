@@ -463,6 +463,15 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       expect(canAccessRoute(hr, '/hr/holidays', makeCan({ leave_request: ['read'] }))).toBe(false)
       expect(canAccessRoute(hr, '/hr/holidays', makeCan({}))).toBe(false)
     })
+
+    it('/hr/leave-blocks (duoc-CR-715): đòi hỏi quyền quản lý trên leave_type, không mở cho ai chỉ đọc', () => {
+      for (const path of ['/hr/leave-blocks', '/hr/leave-blocks/new', '/hr/leave-blocks/7']) {
+        expect(canAccessRoute(hr, path, makeCan({ leave_type: ['write'] }))).toBe(true)
+        expect(canAccessRoute(hr, path, makeCan({ leave_type: ['read'] }))).toBe(false)
+        expect(canAccessRoute(hr, path, makeCan({ leave_request: ['read', 'create'] }))).toBe(false)
+        expect(canAccessRoute(hr, path, makeCan({}))).toBe(false)
+      }
+    })
   })
 
   describe('Hiển thị trên Sidebar (visibleNavItems)', () => {

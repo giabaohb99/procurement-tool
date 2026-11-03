@@ -44,6 +44,7 @@ ENTITY_LABELS = {
     "purchase_request": "Yêu cầu mua hàng (YCMH)",
     "survey_request": "Yêu cầu báo giá (YCBG)",
     "leave_request": "Đơn nghỉ phép",
+    "leave_comp_request": "Phiếu xin nghỉ bù",   # duoc-CR-715 C: chỉ ghi sổ, không hoàn tác tự động
     "payment_request": "Yêu cầu thanh toán (YCTT)",
     "work_task": "Công việc (Dự án)",
     "ticket": "Phiếu hỗ trợ",

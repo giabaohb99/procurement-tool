@@ -33,6 +33,7 @@ KIND_BY_TOOL = {
     "draft_work_plan": "work_plan",      # bao-CR-616 (phase 24.1): cả cây kế hoạch → một bảng Dự án
     "draft_vehicle_booking": "vehicle_booking",   # kh-AI2-6
     "draft_seal_request": "seal_request",         # kh-AI2-6
+    "draft_leave_comp_request": "leave_comp",     # duoc-CR-715 C: phiếu xin nghỉ bù
 }
 LABELS = {
     "leave": "đơn nghỉ phép",
@@ -44,6 +45,7 @@ LABELS = {
     "work_plan": "kế hoạch việc (Dự án)",
     "vehicle_booking": "phiếu đặt xe",
     "seal_request": "phiếu duyệt dấu",
+    "leave_comp": "phiếu xin nghỉ bù",
 }
 #  Khóa QUYỀN để tạo từng loại (kế hoạch = quyền tạo việc Dự án).
 PERM_ENTITIES = {"work_plan": "work_task"}
@@ -59,6 +61,7 @@ ENTITIES = {
     "work_plan": "work_list",
     "vehicle_booking": "vehicle_booking",
     "seal_request": "seal_request",
+    "leave_comp": "leave_comp_request",
 }
 DETAIL_PATHS = {
     "leave": "/hr/leave-requests/{id}",
@@ -69,6 +72,7 @@ DETAIL_PATHS = {
     "work_plan": "/project/lists/{id}",
     "vehicle_booking": "/vehicle-booking/{id}",
     "seal_request": "/approval-seal/{id}",
+    "leave_comp": "/hr/leave-comp-requests/{id}",
 }
 SESSION_LABELS = {1: "cả ngày", 2: "buổi sáng", 3: "buổi chiều", 4: "theo giờ"}
 
@@ -161,6 +165,12 @@ def summarize(kind: str, draft: dict) -> list[str]:
                 f"Thời gian: {draft.get('start_time', '')} → {draft.get('end_time', '')}",
                 f"Công ty: {draft.get('company_name') or '(công ty của bạn)'}",
                 f"Người phê duyệt: {draft.get('approver_name') or '(chưa chọn)'}"]
+    if kind == "leave_comp":
+        out = [f"Ngày đi làm: {_vn_date(draft.get('work_date', ''))}", f"Xin nghỉ bù: {_days(draft.get('days'))}",
+               f"Lý do: {draft.get('reason') or '(trống)'}"]
+        if int(draft.get("employee_id") or 0):
+            out.insert(0, f"Người đi làm: {draft.get('employee_name') or '#' + str(draft.get('employee_id'))} (lập hộ)")
+        return out
     if kind == "seal_request":
         return [f"Mục đích: {draft.get('purpose', '')}", f"Chứng từ: {draft.get('title') or '(chưa ghi)'}",
                 f"Số bản: {draft.get('copies', 1)}", f"Công ty: {', '.join(draft.get('company_names') or []) or '(trống)'}",
@@ -235,6 +245,8 @@ def _doc_of(db: Session, kind: str, oid: int):
         from app.modules.vehicle_booking.model import VehicleBooking as model
     elif kind == "seal_request":
         from app.modules.seal_request.model import SealRequest as model
+    elif kind == "leave_comp":
+        from app.modules.leave.comp_request_model import LeaveCompRequest as model
     else:
         return None
     return db.get(model, int(oid or 0)) if oid else None
@@ -289,6 +301,8 @@ def create(db: Session, user, kind: str, draft: dict, source: int = 0) -> tuple[
             code, oid = _create_vehicle_booking(db, user, draft)
         elif kind == "seal_request":
             code, oid = _create_seal_request(db, user, draft)
+        elif kind == "leave_comp":
+            code, oid = _create_leave_comp(db, user, draft)
         else:
             code, oid = _create_purchase(db, user, draft)
     except HTTPException as e:
@@ -340,6 +354,21 @@ def _create_seal_request(db: Session, user, draft: dict) -> tuple[str, int]:
     fields = set(SealRequestCreate.model_fields) - {"department_id"}
     obj = service.create_seal_request(db, SealRequestCreate(**{k: v for k, v in draft.items() if k in fields}), user, False)
     audit_record(db, user.id, "seal_request", obj.id, "create", f"Tạo yêu cầu đóng dấu {obj.code} (qua AI)")
+    return obj.code, obj.id
+
+
+def _create_leave_comp(db: Session, user, draft: dict) -> tuple[str, int]:
+    """duoc-CR-715 C: phiếu xin nghỉ bù bằng ĐÚNG `comp_request_service.create` của màn web — lưu Nháp; service kiểm lại
+    quyền lập hộ (`ensure_can_create_for`), loại nhận ngày bù, ngày đi làm, một ngày một phiếu."""
+    from app.core.audit import record as audit_record
+    from app.modules.leave import comp_request_service
+    from app.modules.leave.comp_request_schema import LeaveCompRequestCreate
+
+    data = LeaveCompRequestCreate(employee_id=int(draft.get("employee_id") or 0),
+                                  work_date=date.fromisoformat(str(draft.get("work_date"))),
+                                  days=float(draft.get("days") or 1), reason=str(draft.get("reason") or "")[:1000])
+    obj = comp_request_service.create(db, data, user)
+    audit_record(db, user.id, "leave_comp_request", obj.id, "create", f"Lập phiếu nghỉ bù {obj.code} (qua AI)")
     return obj.code, obj.id
 
 
@@ -467,9 +496,9 @@ def _create_purchase(db: Session, user, draft: dict) -> tuple[str, int]:
 # Gửi duyệt ngay sau khi tạo — "tạo và gửi duyệt" (ai-CR-047)
 # ---------------------------------------------------------------------------
 #  Phiếu hỗ trợ không có bước duyệt (tạo là tới nhóm hỗ trợ) nên không nằm đây.
-SUBMITTABLE = ("leave", "survey", "purchase", "vehicle_booking")   # duyệt dấu cần tệp đính kèm → gửi trên web
+SUBMITTABLE = ("leave", "survey", "purchase", "vehicle_booking", "leave_comp")   # duyệt dấu cần tệp đính kèm → gửi trên web
 #  Quyền mà đường API gửi duyệt của web đòi (`require(...)` ở controller).
-_SUBMIT_ACTION = {"leave": "write", "survey": "read", "purchase": "read", "vehicle_booking": "write"}
+_SUBMIT_ACTION = {"leave": "write", "survey": "read", "purchase": "read", "vehicle_booking": "write", "leave_comp": "write"}
 
 
 def missing_for_submit(kind: str, draft: dict) -> str:
@@ -527,6 +556,9 @@ def submit(db: Session, user, kind: str, obj_id: int, source: int = 0) -> None:
         elif kind == "survey":
             from app.modules.survey_request import controller as sr_controller
             sr_controller.submit_(obj_id, tasks, db=db, user=user)
+        elif kind == "leave_comp":
+            from app.modules.leave import comp_request_controller
+            comp_request_controller.submit_request(obj_id, db=db, user=user)
         elif kind == "vehicle_booking":
             from app.modules.vehicle_booking import controller as vb_controller
             from app.modules.vehicle_booking.schema import VehicleBookingUpdate
@@ -608,6 +640,18 @@ def created_details(db: Session, kind: str, oid: int) -> list[str]:
                 f"Người nghỉ: {names_of(db, {obj.employee_id}).get(obj.employee_id, '')}",
                 f"Ngày nghỉ: {when} · {_vn_num(obj.total_days)} ngày",
                 "Loại: " + (", ".join(f"{types.get(ln.leave_type_id, '?')} {_vn_num(ln.days)} ngày" for ln in lines) or "?"),
+                f"Lý do: {obj.reason or '(trống)'}"]
+    if kind == "leave_comp":
+        from app.modules.leave.comp_request_model import LeaveCompRequest
+        from app.modules.leave.constants import LEAVE_COMP_STATUS_LABELS
+        from app.modules.leave.request_serializer import names_of
+
+        obj = db.get(LeaveCompRequest, oid)
+        if obj is None:
+            return []
+        return [f"Mã: {obj.code} · Trạng thái: {LEAVE_COMP_STATUS_LABELS.get(obj.status, '?')}",
+                f"Người đi làm: {names_of(db, {obj.employee_id}).get(obj.employee_id, '')}",
+                f"Ngày đi làm: {obj.work_date:%d/%m/%Y} · xin nghỉ bù {_vn_num(obj.days)} ngày",
                 f"Lý do: {obj.reason or '(trống)'}"]
     if kind in ("purchase", "survey"):
         if kind == "purchase":

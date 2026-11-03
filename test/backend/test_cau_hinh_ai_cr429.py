@@ -60,8 +60,8 @@ def test_kieu_khai_tren_man_hinh_khop_kieu_o_lop_cau_hinh():
         thuc = app_settings.REGISTRY[f["key"]][0]
         #  `select`, `condition` (bao-CR-528, bộ chọn điều kiện) và `department` (bao-CR-529, ô
         #  chọn phòng ban) là chuyện của giao diện, dưới DB vẫn là chuỗi.
-        assert (khai if khai not in ("select", "condition", "department") else "str") == thuc
-        assert khai in ("str", "int", "bool", "select", "condition", "department")
+        assert (khai if khai not in ("select", "condition", "department", "roles", "code_prefix", "int_list") else "str") == thuc
+        assert khai in ("str", "int", "bool", "select", "condition", "department", "roles", "code_prefix", "int_list")
 
 
 def test_bon_khoa_rag_co_y_o_lai_env():

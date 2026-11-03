@@ -78,12 +78,26 @@ describe('LeaveSectionTabs', () => {
 
   it('chỉ sửa được MỘT danh mục thì không dựng hàng tab một mục', () => {
     // Một tab thì không phải là tab — người dùng không chuyển đi đâu được.
-    grants = [...NHAN_VIEN, 'leave_type.write']
+    // (`leave_type.write` mở cả «Loại nghỉ» lẫn «Ngày cấm nghỉ» từ CR-715 nên dùng `holiday.write`.)
+    grants = [...NHAN_VIEN, 'holiday.write']
     const { container } = render(
       <MemoryRouter initialEntries={[appRoutes.hr.leaveTypes]}>
         <LeaveSectionTabs />
       </MemoryRouter>,
     )
     expect(container).toBeEmptyDOMElement()
+  })
+
+  it('duoc-CR-715: có quyền sửa loại nghỉ thì thấy tab «Ngày cấm nghỉ» và nó SÁNG ở màn của nó', () => {
+    grants = NHAN_SU
+    build(appRoutes.hr.leaveBlocks)
+    expect(screen.getByRole('link', { name: 'Ngày cấm nghỉ' })).toBeInTheDocument()
+    expect(activeLabels()).toEqual(['Ngày cấm nghỉ'])
+  })
+
+  it('duoc-CR-715: màn con (thêm mới / chi tiết) của Ngày cấm nghỉ vẫn sáng tab đó', () => {
+    grants = NHAN_SU
+    build(appRoutes.hr.leaveBlockDetail(5))
+    expect(activeLabels()).toEqual(['Ngày cấm nghỉ'])
   })
 })

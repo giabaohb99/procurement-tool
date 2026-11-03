@@ -159,6 +159,31 @@ YEAR_END_MODE_LABELS = {
 YEAR_END_MOVING_MODES = (YEAR_END_CARRY, YEAR_END_CONVERT)
 
 # --------------------------------------------------------------------------
+# Cách CẤP QUỸ của một loại nghỉ (duoc-CR-715)
+# --------------------------------------------------------------------------
+from enum import IntEnum
+
+
+class LeaveAccrualMode(IntEnum):
+    """Cách cấp `allocated_days`. Mặc định FULL_YEAR = hành vi cũ (đủ quota đầu năm)."""
+
+    FULL_YEAR = 1      # Đủ quota cả năm cho mọi người
+    PRORATA_HIRE = 2   # Người vào làm trong năm: quota × số tháng làm / 12 (Điều 113 BLLĐ)
+    MONTHLY = 3        # Cộng dần theo tháng: phần chưa tới tháng bị trừ ở `remaining()`
+
+
+LEAVE_ACCRUAL_MODE_LABELS = {
+    LeaveAccrualMode.FULL_YEAR: "Đủ hạn mức đầu năm",
+    LeaveAccrualMode.PRORATA_HIRE: "Theo tỷ lệ tháng làm việc (người vào làm trong năm)",
+    LeaveAccrualMode.MONTHLY: "Cộng dần theo tháng",
+}
+
+#  Cơ sở của bảng hạn mức theo nhóm `tab_leave_type_quota`.
+QUOTA_BASIS_EMPLOYMENT_TYPE = 1  # khớp `Employee.employment_type`
+QUOTA_BASIS_JOB_LEVEL = 2        # khớp `Employee.job_level`
+QUOTA_BASIS_VALUES = (QUOTA_BASIS_EMPLOYMENT_TYPE, QUOTA_BASIS_JOB_LEVEL)
+
+# --------------------------------------------------------------------------
 # Giới tính — dùng cho `tab_employee.gender` và bộ lọc loại nghỉ
 # --------------------------------------------------------------------------
 #  `0` là **chưa khai**, không phải "khác". Hồ sơ cũ nhập trước đợt này đều rơi
@@ -178,3 +203,32 @@ GENDER_LABELS = {
 def label(labels: dict, value: int | None, default: str = "") -> str:
     """Nhãn của một mã. Mã lạ (dữ liệu cũ, nhập tay) trả `default` chứ không nổ."""
     return labels.get(int(value), default) if value is not None else default
+
+
+# --------------------------------------------------------------------------
+# Trạng thái PHIẾU XIN NGHỈ BÙ (duoc-CR-715 giai đoạn C)
+# --------------------------------------------------------------------------
+class LeaveCompStatus(IntEnum):
+    """Bộ mã riêng của phiếu nghỉ bù — cùng số với trạng thái đơn nghỉ để người dùng không học lại."""
+
+    DRAFT = 1       # Nháp
+    PENDING = 2     # Chờ duyệt
+    APPROVED = 3    # Đã duyệt — quỹ nghỉ bù đã cộng
+    REJECTED = 4    # Từ chối
+    RETURNED = 5    # Trả về chỉnh sửa
+    CANCELLED = 6   # Đã hủy
+
+
+LEAVE_COMP_STATUS_LABELS = {
+    LeaveCompStatus.DRAFT: "Nháp",
+    LeaveCompStatus.PENDING: "Chờ duyệt",
+    LeaveCompStatus.APPROVED: "Đã duyệt",
+    LeaveCompStatus.REJECTED: "Từ chối",
+    LeaveCompStatus.RETURNED: "Trả về chỉnh sửa",
+    LeaveCompStatus.CANCELLED: "Đã hủy",
+}
+COMP_EDITABLE_STATUSES = (LeaveCompStatus.DRAFT, LeaveCompStatus.RETURNED)
+#  Phiếu còn hiệu lực — tính vào luật «một ngày một phiếu».
+COMP_ACTIVE_STATUSES = (LeaveCompStatus.DRAFT, LeaveCompStatus.PENDING,
+                        LeaveCompStatus.APPROVED, LeaveCompStatus.RETURNED)
+COMP_DAYS_ALLOWED = (0.5, 1.0)

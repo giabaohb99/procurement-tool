@@ -347,3 +347,22 @@ describe('rowTotals · rowHasRealQuota', () => {
     expect(rowHasRealQuota(freeChild)).toBe(false)
   })
 })
+
+describe('groupLeaveBalances — nghỉ bù cộng thêm (duoc-CR-715)', () => {
+  it('sums comp_days across leave types and treats a missing field (older backend) as 0', () => {
+    const [group] = groupLeaveBalances([
+      makeBalance({ comp_days: 1.5 }),
+      makeBalance({ comp_days: 0.5 }),
+      makeBalance({}),
+    ])
+    expect(group.totals.comp_days).toBe(2)
+  })
+
+  it('does not drift on half-day floats', () => {
+    const [group] = groupLeaveBalances([
+      makeBalance({ comp_days: 0.1 }),
+      makeBalance({ comp_days: 0.2 }),
+    ])
+    expect(group.totals.comp_days).toBe(0.3)
+  })
+})

@@ -566,7 +566,7 @@ _LEAVE_DESC = (
     "Đủ thông tin thì PHẢI gọi ngay trong lượt trả lời — nút "
     "'Tạo đơn nghỉ phép' chỉ xuất hiện khi tool được gọi. Sau khi gọi: tóm tắt bản đề xuất, "
     "nói rõ đơn CHƯA được tạo và CHƯA gửi duyệt, và đọc nguyên các cảnh báo trong `warnings` "
-    "nếu có (trùng đơn cũ, không đủ quỹ phép). ĐỪNG dùng tool này để tạo văn bản **Giấy nghỉ "
+    "nếu có (trùng đơn cũ, không đủ quỹ phép, ứng phép, đơn lùi ngày, chưa đủ ngày vào làm, ngày cấm nghỉ). ĐỪNG dùng tool này để tạo văn bản **Giấy nghỉ "
     "phép** ở Văn thư: giấy đó hệ TỰ SINH sau khi đơn được duyệt."
 )
 
@@ -795,18 +795,30 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
     remaining = None
     if leave_type.counts_balance:
         #  `remaining()` chỉ ĐỌC (`ensure_balance` mới là hàm cấp phát) — tool read-only
-        #  không được gọi nhầm sang hàm kia.
+        #  không được gọi nhầm sang hàm kia. Nó đã trừ phần chưa tới tháng (`available_days`, duoc-CR-715).
         remaining = balance_service.remaining(
             ctx.db, emp_id, date.fromisoformat(from_date).year, leave_type.id)
-        if days > remaining:
+        #  duoc-CR-715: ứng phép — loại khai `max_negative_days` cho còn lại xuống tới -N (cùng luật `check_enough`).
+        floor_days = float(leave_type.max_negative_days or 0.0)
+        not_allocated = (" (Còn 0 ngày cũng có thể do quỹ phép năm nay CHƯA được cấp — hỏi lại "
+                         "phòng Nhân sự.)" if remaining == 0 else "")
+        if days > remaining + floor_days:
             #  `remaining()` trả 0.0 cho CẢ hai cảnh: hết phép, và chưa ai cấp quỹ năm nay.
             #  Nói cả hai — bảo người dùng "anh hết phép" khi thật ra Nhân sự chưa cấp quỹ
             #  là sai sự thật ở đúng chỗ họ không kiểm chứng được.
             warnings.append(
                 f"Quỹ **{leave_type.name}** chỉ còn {remaining} ngày mà đơn xin {days} ngày — "
-                "hệ không cho ứng phép, phần vượt phải chuyển sang loại nghỉ không lương."
-                + (" (Còn 0 ngày cũng có thể do quỹ phép năm nay CHƯA được cấp — hỏi lại "
-                   "phòng Nhân sự.)" if remaining == 0 else ""))
+                + (f"loại này cho ứng tối đa {floor_days:g} ngày, vẫn không đủ; " if floor_days else
+                   "hệ không cho ứng phép, ")
+                + "phần vượt phải chuyển sang loại nghỉ không lương — hệ sẽ chặn lúc gửi duyệt."
+                + not_allocated)
+        elif days > remaining:
+            warnings.append(f"Quỹ **{leave_type.name}** còn {remaining} ngày, đơn xin {days} ngày — loại này cho "
+                            f"ỨNG PHÉP tối đa {floor_days:g} ngày nên vẫn gửi được; số còn lại sẽ thành "
+                            f"{round(remaining - days, 2):g} ngày (trừ vào phép về sau).")
+
+    #  duoc-CR-715 / CR-713: ba luật mới mà backend chặn hoặc cảnh báo — nói trước, không tự sửa.
+    block_conflicts = _leave_rule_warnings(ctx, emp, leave_type, views, warnings)
 
     return {
         "status": "ready",
@@ -838,6 +850,8 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
         "total_days": days,
         "remaining_days": remaining,
         "warnings": warnings,
+        #  duoc-CR-715 B: ngày cấm nghỉ đụng phải — KHÔNG chặn lập / gửi, chỉ chặn lượt duyệt cuối.
+        "block_conflicts": block_conflicts,
         "periods_text": period_text(views),
         "note": f"Số ngày {days} là GỢI Ý theo lịch làm việc (đã trừ Chủ nhật và ngày lễ) — "
                 "người dùng sửa được trên form. Đơn này chỉ khai MỘT loại nghỉ; cần nhiều "
@@ -847,6 +861,36 @@ def _run_leave(ctx: ToolContext, args: dict) -> dict:
                     "dưới câu trả lời để mở form đã điền sẵn — họ rà lại, bấm Lưu nháp rồi "
                     "Gửi duyệt.",
     }
+
+
+def _leave_rule_warnings(ctx: ToolContext, emp, leave_type, views, warnings: list[str]) -> list[dict]:
+    """Ba luật CR-713 / CR-715 của đơn nghỉ, chạy trước đúng hàm backend dùng lúc lưu (chỉ ĐỌC):
+
+    * chặn đơn lùi ngày (`leave_policy.ensure_not_backdated`, công tắc ở Cài đặt nhân sự) → backend chặn lúc lưu;
+    * loại nghỉ chỉ dùng sau N ngày vào làm (`accrual_service.ensure_applicable`) → backend chặn lúc lưu;
+    * ngày cấm nghỉ (`block_period_service.find_conflicts`) → lưu / gửi được, lượt DUYỆT CUỐI bị chặn trừ người miễn.
+
+    Câu chặn của backend đi nguyên văn vào `warnings` — một luật, một câu báo. Trả các khoảng cấm đụng phải."""
+    from fastapi import HTTPException
+
+    from app.modules.leave import accrual_service, block_period_service, leave_policy
+
+    for check in (lambda: leave_policy.ensure_not_backdated(ctx.db, ctx.user, views, creator_id=ctx.user.id),
+                  lambda: accrual_service.ensure_applicable(leave_type, getattr(emp, "hire_date", None),
+                                                            min(v.from_date for v in views))):
+        try:
+            check()
+        except HTTPException as exc:
+            warnings.append(f"{exc.detail} — hệ sẽ chặn lúc lưu.")
+    conflicts = block_period_service.find_conflicts(ctx.db, emp, views)
+    if conflicts:
+        spans = "; ".join((f"{r.from_date:%d/%m/%Y}" if r.from_date == r.to_date
+                           else f"{r.from_date:%d/%m/%Y} – {r.to_date:%d/%m/%Y}") + (f" ({r.reason})" if r.reason else "")
+                          for r in conflicts)
+        warnings.append(f"Đơn rơi vào **ngày cấm nghỉ**: {spans}. Vẫn lưu và gửi duyệt được, nhưng lượt duyệt cuối sẽ "
+                        "bị chặn trừ khi người duyệt có vai trò được miễn — nên đổi ngày hoặc báo trước người duyệt.")
+    return [{**c, "from_date": c["from_date"].isoformat(), "to_date": c["to_date"].isoformat()}
+            for c in block_period_service.dump_conflicts(conflicts)]
 
 
 DRAFT_LEAVE_REQUEST_SPEC = ToolSpec(

@@ -57,6 +57,8 @@ ENTITIES = [
     #  · `holiday`       — lịch ngày lễ, cũng của quản trị nhưng đổi theo năm
     #    nên thường giao cho hành chính, tách khỏi `leave_type`.
     "leave_request", "leave_balance", "leave_type", "holiday",
+    #  Phiếu xin nghỉ bù (duoc-CR-715 giai đoạn C) — khóa riêng, cùng khuôn `leave_request`.
+    "leave_comp_request",
     # Lịch làm việc (05/10/2026) — mẫu lịch tuần + gán theo hệ thống / pháp nhân /
     # phòng ban / nhân sự; `workday_service` đọc lịch này để tính ngày nghỉ phép.
     # Khóa riêng: sửa lịch đổi cách tính ngày phép của cả công ty.
@@ -246,6 +248,7 @@ ENTITY_LABELS = {
     "forum_board": "Diễn đàn › Quản trị chuyên mục (box)",
     "work_task": "Công việc (task list, kanban)",
     "leave_request": "Nghỉ phép › Đơn nghỉ phép",
+    "leave_comp_request": "Nghỉ phép › Phiếu nghỉ bù",
     "leave_balance": "Nghỉ phép › Quỹ phép năm",
     "leave_type": "Nghỉ phép › Thiết lập › Loại nghỉ",
     "holiday": "Nghỉ phép › Thiết lập › Lịch ngày lễ",

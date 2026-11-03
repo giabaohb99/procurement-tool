@@ -36,6 +36,8 @@ _DETAIL_URLS = {
     "survey": "/procurement/surveys/{id}",
     "survey_request": "/procurement/survey-requests/{id}",
     "payment_request": "/finance/payment-requests/{id}",
+    "leave_request": "/hr/leave-requests/{id}",
+    "leave_comp_request": "/hr/leave-comp-requests/{id}",   # duoc-CR-715 C
 }
 
 #  Màn "Chờ tôi duyệt" — hiện chỉ Văn bản chạy bộ máy duyệt nên đích này phủ đủ (cùng

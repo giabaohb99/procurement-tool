@@ -17,13 +17,14 @@ PHẠM VI NGƯỜI XEM (không lộ người ngoài phạm vi):
 Chỉ lấy cột công việc (mã, họ tên, chức vụ, phòng, quản lý) — không đụng nhóm
 nhạy cảm của `employee.sensitive`.
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core import app_settings
 from app.core.auth import get_perm_profile, require
 from app.core.database import get_db
 from app.core.response import success
-from app.core.scoping import apply_scope, exclude_deleted
+from app.core.scoping import apply_scope, exclude_deleted, scope_condition
 from app.modules.company.model import Company
 from app.modules.department.model import Department
 
@@ -51,6 +52,12 @@ def _visible_ancestors(wanted: set[int], parent_of: dict[int, int]) -> set[int]:
 @router.get("")
 def get_org_chart(db: Session = Depends(get_db), user=Depends(require("employee", "read"))):
     prof = get_perm_profile(db, user)
+    #  duoc-CR-713: Cài đặt nhân sự «Sơ đồ tổ chức cho mọi nhân viên» TẮT → chỉ người xem được TOÀN BỘ hồ sơ (không giới
+    #  hạn công ty / phòng / người — cùng tiêu chí `scope_condition(...) is None` của biến mẫu HĐLĐ) mới mở được.
+    if not app_settings.get("org_chart_visible_to_all") and \
+            scope_condition(Employee, "employee", user, prof) is not None:
+        raise HTTPException(403, "Sơ đồ tổ chức đang chỉ mở cho người xem được toàn bộ hồ sơ nhân sự "
+                                 "(Cài đặt nhân sự). Liên hệ phòng Nhân sự nếu bạn cần xem.")
 
     # 1) Nhân sự trong phạm vi.
     emp_rows = (

@@ -49,6 +49,7 @@ ROW_SCOPES = ("dept", "company", "all")
 _MODELS = {
     "vehicle_booking": ("app.modules.vehicle_booking.model", "VehicleBooking"),
     "leave_request": ("app.modules.leave.request_model", "LeaveRequest"),
+    "leave_comp_request": ("app.modules.leave.comp_request_model", "LeaveCompRequest"),
     "room_booking": ("app.modules.meeting_room.model", "RoomBooking"),
 }
 SUPPORTED_ENTITIES = tuple(_MODELS)

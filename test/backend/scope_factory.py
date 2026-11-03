@@ -81,6 +81,7 @@ ENTITY_MODEL_PATHS = {
     "seal_request": ("app.modules.seal_request.model", "SealRequest"),
     "vehicle_booking": ("app.modules.vehicle_booking.model", "VehicleBooking"),
     "leave_request": ("app.modules.leave.request_model", "LeaveRequest"),
+    "leave_comp_request": ("app.modules.leave.comp_request_model", "LeaveCompRequest"),   # duoc-CR-715 C
     "leave_balance": ("app.modules.leave.balance_model", "LeaveBalance"),
     "room_booking": ("app.modules.meeting_room.model", "RoomBooking"),
     "coffee_policy": ("app.modules.coffee_point.model", "CoffeePolicy"),

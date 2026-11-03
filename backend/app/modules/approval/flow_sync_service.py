@@ -37,6 +37,7 @@ from .instance_model import (ACTION_REASSIGN, INSTANCE_BLOCKED,
                              TASK_APPROVED, TASK_CANCELLED, TASK_PENDING,
                              TASK_SKIPPED_DUPLICATE, TASK_WAITING,
                              ApprovalInstance, ApprovalTask)
+from .self_approval_policy import strict_self_exclusion
 
 #  Trạng thái của việc CÒN TREO — chỉ những việc này mới dựng lại được.
 PENDING_STATUSES = (TASK_WAITING, TASK_PENDING)
@@ -85,7 +86,8 @@ def _rebuild_tasks(db: Session, instance: ApprovalInstance, node: ApprovalNode,
     approvers = approver_resolver.resolve(db, node, subject,
                                             instance.started_by_employee_id)
     approvers = instance_service.exclude_submitter_ids(
-        node.approver_kind, instance.started_by_employee_id, approvers)
+        node.approver_kind, instance.started_by_employee_id, approvers,
+        strict=strict_self_exclusion(instance.entity))
     #  KHÔNG chạy lại `_tach_nguoi_trung` ở đây: nó ghi thêm việc "tự qua" và
     #  thêm dấu vết, mà bước này vốn đã được xét trùng người lúc mở chặng. Chạy
     #  lại là nhân đôi dòng nhật ký cho cùng một sự việc.

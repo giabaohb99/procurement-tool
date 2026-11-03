@@ -282,6 +282,12 @@ export const queryKeys = {
     leaveRequests: (params?: Record<string, unknown>) =>
       ['hr', 'leave-requests', params ?? {}] as const,
     leaveRequest: (id: number) => ['hr', 'leave-requests', 'detail', id] as const,
+    //  ── Phiếu nghỉ bù (duoc-CR-715 phase C) ───────────────────────────────
+    //  Nằm dưới `hr` để duyệt/hủy phiếu dọn luôn nhánh quỹ phép (`leave-balances`) qua `hr.all`.
+    leaveCompRequests: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-comp-requests', params ?? {}] as const,
+    leaveCompRequest: (id: number) => ['hr', 'leave-comp-requests', 'detail', id] as const,
+    leaveCompToApprove: () => ['hr', 'leave-comp-requests', 'to-approve'] as const,
     /** Tệp đính kèm của MỘT tờ đơn (bao-CR-505) — màn chi tiết và trang in dùng chung. */
     leaveAttachments: (id: number) =>
       ['hr', 'leave-requests', 'detail', id, 'attachments'] as const,
@@ -310,6 +316,9 @@ export const queryKeys = {
     /** Bậc thâm niên của MỘT loại nghỉ. `0` = mọi loại. */
     seniorityTiers: (leaveTypeId: number) =>
       ['hr', 'leave-seniority-tiers', leaveTypeId] as const,
+    /** Hạn mức theo nhóm của MỘT loại nghỉ (duoc-CR-715). */
+    leaveTypeQuotas: (leaveTypeId: number) =>
+      ['hr', 'leave-type-quotas', leaveTypeId] as const,
     holidays: (params?: Record<string, unknown>) => ['hr', 'holidays', params ?? {}] as const,
 
     //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────

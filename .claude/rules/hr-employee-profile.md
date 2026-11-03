@@ -318,3 +318,13 @@ không trùng số chính). Không thuộc nhóm nhạy cảm (như `phone`).
   «Sửa thông tin liên hệ» ở Trang cá nhân; `pickWritableProfile(values, canRead, savedExtraPhones)` chỉ gửi `extra_phones` khi KHÁC bản đã lưu.
   «Đặt làm chính» hoán đổi trên form, nhãn đi theo số.
 - Test: `test_nhieu_so_dien_thoai_cr694.py`; vitest `extra-phones-schema.test.ts`, `phone-list-editor.test.tsx`, `profile-contact-card.test.tsx`.
+
+
+### CÀI ĐẶT NHÂN SỰ — tab Nhân viên / Hợp đồng (duoc-CR-713, 02/11/2026)
+
+- ⚠️ Tiền tố mã hồ sơ mới đọc qua `employee/service.employee_code_prefix()` (Cài đặt nhân sự, mặc định NSU) — đừng gõ lại
+  chuỗi "NSU" ở đường tạo hồ sơ mới. Mã đã cấp không đổi; bài kiểm cũ có chữ "NSU" vẫn đúng vì mặc định không đổi.
+- Số ngày báo HĐLĐ hết hạn đọc qua `labor_contract/expiry_service.warn_days()` / `danger_days()` (không đọc thẳng hằng
+  `WARN_DAYS` / `DANGER_DAYS` — chúng chỉ còn là mặc định). Mốc kỷ niệm: `monthly_reminders_service.anniversary_years()`.
+- Sơ đồ tổ chức: khóa `org_chart_visible_to_all` TẮT → `/api/org-chart` 403 trừ người có `scope_condition(Employee,
+  "employee", ...) is None` (không giới hạn công ty / phòng / người).

@@ -105,7 +105,7 @@ def list_expiring_contracts(db: Session = Depends(get_db), user=Depends(require(
               "employee_name": c.employee_name, "end_date": c.end_date.isoformat(),
               "days_left": c.days_left, "level": c.level} for c in rows]
     return success({"items": items, "danger": sum(1 for c in rows if c.level == "danger"),
-                    "warn_days": expiry_service.WARN_DAYS, "danger_days": expiry_service.DANGER_DAYS})
+                    "warn_days": expiry_service.warn_days(), "danger_days": expiry_service.danger_days()})
 
 
 @router.get("/api/labor-contracts/{cid}")

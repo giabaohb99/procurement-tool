@@ -101,6 +101,29 @@ export const YEAR_END_MODE_LABELS: Record<number, string> = {
   [YEAR_END_MODE.CONVERT]: 'Quy đổi sang loại nghỉ khác',
 }
 
+// ── Cách cấp quỹ (duoc-CR-715) ─────────────────────────────────────────────────
+
+//  Khớp `constants.LeaveAccrualMode` ở backend. Quỹ ĐÃ cấp không tính lại khi đổi chế độ,
+//  trừ CỘNG DẦN (phần chưa tới tháng tính động).
+export const LEAVE_ACCRUAL_MODE = { FULL_YEAR: 1, PRORATA_HIRE: 2, MONTHLY: 3 } as const
+
+export const LEAVE_ACCRUAL_MODE_LABELS: Record<number, string> = {
+  [LEAVE_ACCRUAL_MODE.FULL_YEAR]: 'Đủ hạn mức đầu năm',
+  [LEAVE_ACCRUAL_MODE.PRORATA_HIRE]: 'Theo tỷ lệ tháng làm việc (người vào làm trong năm)',
+  [LEAVE_ACCRUAL_MODE.MONTHLY]: 'Cộng dần theo tháng',
+}
+
+//  Cơ sở của bảng hạn mức theo nhóm — khớp `QUOTA_BASIS_*` ở backend.
+export const LEAVE_QUOTA_BASIS = { EMPLOYMENT_TYPE: 1, JOB_LEVEL: 2 } as const
+
+export type LeaveQuotaBasis = (typeof LEAVE_QUOTA_BASIS)[keyof typeof LEAVE_QUOTA_BASIS]
+
+export interface LeaveTypeQuotaRule {
+  basis: number
+  basis_value: number
+  quota_days: number
+}
+
 // ── Bản ghi ────────────────────────────────────────────────────────────────────
 
 /**
@@ -133,8 +156,16 @@ export type LeaveType = {
   /** `0` = mọi giới. */
   gender: number
   require_attachment: boolean
+  /** Loại nhận ngày nghỉ bù (duoc-CR-715 phase C): phiếu nghỉ bù được duyệt sẽ cộng vào quỹ của loại này. */
+  is_compensatory?: boolean
   /** Tính số ngày có trừ T7/CN và ngày lễ không. */
   exclude_holiday: boolean
+  /** Cách cấp quỹ — xem `LEAVE_ACCRUAL_MODE`. */
+  accrual_mode: number
+  /** Chỉ dùng được loại này sau N ngày kể từ ngày vào làm. `0` = không chặn. */
+  applicable_after_days: number
+  /** Cho ứng phép: còn lại được xuống tới `-N` ngày. `0` = không ứng. */
+  max_negative_days: number
   sort_order: number
   is_active: boolean
   note: string
@@ -162,6 +193,20 @@ export type Holiday = {
   is_active: boolean
 }
 
+/** Ngày cấm nghỉ (duoc-CR-715) — `0` ở hai ô đầu = áp cho mọi pháp nhân / mọi phòng ban. */
+export type LeaveBlockPeriod = {
+  id: number
+  company_id: number
+  department_id: number
+  from_date: string
+  to_date: string
+  reason: string
+  is_active: boolean
+}
+
+/** Một khoảng cấm mà đơn nghỉ đụng phải — backend trả ở `block_conflicts` (đơn + ước lượng ngày). */
+export type LeaveBlockConflict = Pick<LeaveBlockPeriod, 'id' | 'from_date' | 'to_date' | 'reason'>
+
 export interface LeaveBalance {
   id: number
   employee_id: number
@@ -174,6 +219,8 @@ export interface LeaveBalance {
   seniority_days: number
   carried_days: number
   adjusted_days: number
+  /** Ngày nghỉ bù đã được duyệt cộng thêm vào quỹ (duoc-CR-715 phase C); đã nằm trong `total_days`. */
+  comp_days?: number
   used_days: number
   /** Đang giữ chỗ cho đơn chờ duyệt — đã trừ khỏi `remaining_days`. */
   pending_days: number
@@ -273,6 +320,8 @@ export interface LeaveRequest {
   from_session_label?: string
   to_session_label?: string
   unit_label?: string
+  /** duoc-CR-715: khoảng «ngày cấm nghỉ» đơn đang đụng (chỉ ở đường lấy MỘT đơn / lập / sửa; vắng = không). */
+  block_conflicts?: LeaveBlockConflict[]
   /** `0` = chưa gửi duyệt hoặc môi trường chưa khai luồng nhiều bước. */
   approval_instance_id: number
   /** Giấy GNP sinh ra sau khi duyệt. `0` = chưa sinh. */
@@ -302,6 +351,8 @@ export interface LeaveBalanceHint {
   used_days: number
   pending_days: number
   remaining_days: number
+  /** Hạn «ứng phép» của loại nghỉ (CR-715): còn lại được xuống tới -N. Bản cũ không gửi → coi là 0. */
+  max_negative_days?: number
   /** Hồ sơ chưa nhập ngày vào làm → thâm niên tính bằng 0, con số có thể thiếu. */
   missing_hire_date: boolean
 }

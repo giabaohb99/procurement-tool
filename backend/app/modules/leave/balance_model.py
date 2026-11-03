@@ -7,7 +7,7 @@ Muốn hiện được thì phải có chỗ để hỏi, và chỗ đó là đ�
 
 **Số còn lại KHÔNG lưu thành cột.** Nó là hiệu:
 
-    còn lại = allocated + seniority + carried + adjusted − used − pending − carried_out
+    còn lại = allocated + seniority + carried + adjusted + comp − used − pending − carried_out
 
 Lưu thêm một cột `remaining` thì có hai nguồn sự thật, và cái thứ hai sẽ lệch —
 sớm hay muộn. `balance_service.remaining_days()` là nơi duy nhất tính.
@@ -58,6 +58,9 @@ class LeaveBalance(Base, AuditMixin):
     #  Nhân sự chỉnh tay, cộng hoặc TRỪ. Cột duy nhất mang được số âm — mọi cột
     #  khác là số ngày nên không âm bao giờ.
     adjusted_days: Mapped[float] = mapped_column(Float, default=0.0)
+    #  Ngày nghỉ BÙ nhận được từ phiếu nghỉ bù đã duyệt (duoc-CR-715 giai đoạn C). Tách khỏi
+    #  `adjusted_days` để Nhân sự ghi đè tay không xóa mất ngày bù đã duyệt.
+    comp_days: Mapped[float] = mapped_column(Float, default=0.0)
 
     # --- các khoản TRỪ ----------------------------------------------------
     #  Đã nghỉ thật — cộng vào khi đơn được DUYỆT.
@@ -84,7 +87,7 @@ class LeaveBalance(Base, AuditMixin):
     def total_days(self) -> float:
         """Tổng quỹ được hưởng, chưa trừ gì."""
         return round(self.allocated_days + self.seniority_days
-                     + self.carried_days + self.adjusted_days, 2)
+                     + self.carried_days + self.adjusted_days + (self.comp_days or 0.0), 2)
 
     @property
     def remaining_days(self) -> float:

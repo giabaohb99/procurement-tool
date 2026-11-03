@@ -151,4 +151,16 @@ describe('LeaveBalanceHintBox', () => {
     render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={0.5} />)
     expect(screen.queryByText(/vượt quỹ/)).not.toBeInTheDocument()
   })
+
+  it('loại cho ứng phép: vượt quỹ nhưng trong max_negative_days thì KHÔNG báo "sẽ bị chặn"', () => {
+    setHint(hint({ remaining_days: 1, max_negative_days: 2 }))
+    render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={3} />)
+    expect(screen.queryByText(/vượt quỹ/)).not.toBeInTheDocument()
+  })
+
+  it('loại cho ứng phép: vượt cả max_negative_days thì vẫn báo chặn', () => {
+    setHint(hint({ remaining_days: 1, max_negative_days: 2 }))
+    render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={3.5} />)
+    expect(screen.getByText(/vượt quỹ/)).toBeInTheDocument()
+  })
 })

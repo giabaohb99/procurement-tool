@@ -11,7 +11,16 @@ từ lại phải sửa lõi, và lõi dần biến thành nơi chứa luật c�
 """
 from typing import Callable
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
+
+
+class HookVeto(HTTPException):
+    """Hàm hook của chứng từ MUỐN CHẶN kết cục (vd đơn nghỉ rơi vào ngày cấm nghỉ, duoc-CR-715).
+
+    Khác mọi lỗi hook khác: `fire` KHÔNG nuốt nó mà ném tiếp, để giao dịch của lượt duyệt bị cuộn lại (phiếu vẫn
+    đang chạy, chữ ký vừa đặt không được ghi). Hook ném nó phải ném TRƯỚC khi đổi bất cứ gì của chứng từ.
+    """
 
 #  entity → {"approved": fn, "rejected": fn, "returned": fn, "withdrawn": fn}
 _HOOKS: dict[str, dict[str, Callable]] = {}
@@ -59,6 +68,12 @@ def fire(db: Session, instance, outcome: str) -> None:
         return
     try:
         hook_fn(db, instance.entity_id, instance)
+    except HookVeto:
+        #  ⚠️ CUỘN LẠI NGAY tại nguồn, không đợi người gọi. Tới đây `approve` / `send_back`… đã `flush` việc
+        #  APPROVED, phiên APPROVED và dòng nhật ký; người gọi nào bắt lỗi rồi vẫn `commit` (cổng MCP ghi nhật ký
+        #  cuộc gọi, bot Telegram…) sẽ ghi luôn nửa chừng đó: phiên «Đã duyệt» mà đơn nghỉ vẫn Chờ duyệt, quỹ kẹt.
+        db.rollback()
+        raise
     except Exception as error:   # noqa: BLE001 — xem ghi chú trên
         import logging
 
