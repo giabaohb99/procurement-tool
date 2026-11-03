@@ -3,107 +3,25 @@ from sqlalchemy.orm import Session
 
 from app.core.bulk_delete import ensure_all_draft
 from app.core.auth import get_perm_profile, require, user_has_permission
-from app.core.central_purchasing import get_central_dept_id, is_central_dept, normalize_handler_dept_id
+from app.core.central_purchasing import get_central_dept_id, is_central_dept
 from app.core.scoping import apply_scope, approves_only_in_dept_proc, holds_handling_dept
-from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
-from app.core.ref_filter import apply_ref_filters
+from app.core.base_controller import apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
-from app.core.status_codes import PR_LINE_STATUS
 from app.modules.notification.service import trigger_notification
 
-from sqlalchemy import and_ as sa_and, func, or_ as sa_or, select
 from . import option_service, service
-from .constants import PR_OPTION_SOURCE_LABELS
-from .model import (STATUS_AFTER_APPROVE, STATUS_AFTER_DISPATCH,
-                    PurchaseRequest, PurchaseRequestItem)
+#  bao-CR-711: chốt quyền dùng chung với serializer nằm ở `access.py`, dựng kết quả ở
+#  `serializer.py`, truy vấn ở `service.py`. Controller chỉ còn nhận · gác · gọi · trả.
+from .access import _can_dispatch, _can_return_requester, _in_approve_scope, _scope_ok
+from .model import PurchaseRequest
 from .schema import (ApproveIn, AssignIn, ItemStatusIn, PRAssignSupplierIn, PRCreate,
                      PROptionCompleteIn, PROptionManualIn, PROptionDetailsIn, PROptionSupplierIn,
                      PROptionSurveyIn, PROptionUpdateIn, PRUpdate,
                      ReasonIn, RejectIn, TransferDeptIn, UrgentIn)
+from .serializer import _out, _out_list, _out_option, _out_survey_lines
 
 router = APIRouter(prefix="/api/purchase-requests", tags=["purchase_request"])
-
-HEADER_COLS = ["id", "code", "company_id", "requester", "requester_id", "requester_position",
-               "department_id", "handler_dept_id", "department", "head_of_dept", "head_of_dept_id",
-               # bao-CR-316: `received_date` CHỈ có ở đây (đọc ra), cố ý KHÔNG nằm trong
-               # PRCreate/PRUpdate — Ngày tiếp nhận do `dispatch_pr` điền, không ai sửa tay.
-               "purpose", "request_date", "received_date", "need_date",
-               "status", "is_urgent", "vat_rate", "assignee_id", "note",
-               "show_code_on_print", "suggested_supplier", "suggested_supplier_tax_code",
-               "suggested_supplier_contact", "quote_filename", "quote_file_url"]
-
-
-_SUPPLIER_FIELDS = ("suggested_supplier", "suggested_supplier_tax_code", "suggested_supplier_contact")
-
-
-def _blank_supplier(d: dict) -> None:
-    """Task 5: che NCC đề xuất khi user không có quyền supplier.read."""
-    for k in _SUPPLIER_FIELDS:
-        d[k] = ""
-
-
-def _out_option(db: Session, o, can_sup_read: bool) -> dict:
-    """Một phương án ra API (bao-CR-310).
-
-    Cụm NCC (`supplier_*`, `snap_internal_code`, `supplier_survey_id`) chỉ trả cho người
-    có `supplier.read` — đúng luật cụm `pur` của Task 4. Phần thông số + GIÁ thì người
-    yêu cầu ĐƯỢC thấy, giống hệt thẻ phương án bên Yêu cầu báo giá: họ cần so giá để
-    chốt, chỉ không được biết giá đó của ai.
-    """
-    d = {
-        "id": o.id, "pr_item_id": o.pr_item_id,
-        "source": int(o.source or 0),
-        "source_label": PR_OPTION_SOURCE_LABELS.get(int(o.source or 0), ""),
-        "product_survey_line_id": o.product_survey_line_id,
-        "public_id": o.public_id, "display_label": o.display_label,
-        "is_chosen": bool(o.is_chosen),
-        "snap_product_name": o.snap_product_name, "snap_spec": o.snap_spec,
-        "snap_origin": o.snap_origin, "snap_quote_unit": o.snap_quote_unit,
-        "snap_moq": float(o.snap_moq or 0),
-        "snap_price_by_volume": float(o.snap_price_by_volume or 0),
-        "snap_volume_range": o.snap_volume_range,
-        "snap_vat": float(o.snap_vat or 0),
-        "snap_delivery_time": o.snap_delivery_time,
-        "snap_delivery_place": o.snap_delivery_place,
-        "snap_shipping_cost": float(o.snap_shipping_cost or 0),
-        "snap_sample_ready": bool(o.snap_sample_ready),
-        "snap_lab_result": o.snap_lab_result,
-        "nstm_note": o.nstm_note,
-        "created_at": o.created_at,
-    }
-    if can_sup_read:
-        d.update({"supplier_code": o.supplier_code, "supplier_name": o.supplier_name,
-                  "supplier_survey_id": o.supplier_survey_id,
-                  "snap_internal_code": o.snap_internal_code})
-    else:
-        d.update({"supplier_code": "", "supplier_name": "", "supplier_survey_id": 0,
-                  "snap_internal_code": ""})
-    return d
-
-
-def _can_dispatch(profile: dict) -> bool:
-    """CR-034 — ai được ĐIỀU PHỐI (duyệt lần 2). Điều kiện: có quyền `approve` trên YCMH VỚI
-    phạm vi thu mua/toàn bộ ('proc'/'all'). Trưởng phòng có approve nhưng phạm vi 'dept' →
-    chỉ duyệt lần 1, không điều phối. Cùng lối đọc grant với `_see_all_items`."""
-    # bao-CR-414: quản lý thu mua CỦA PHÒNG (bậc `dept_proc`) cũng điều phối được — phạm vi
-    # đã khoanh phiếu về đúng phòng mình ở `_in_scope`.
-    for g in profile.get("grants", []):
-        p = g["perms"].get("purchase_request")
-        if p and p.get("approve") and p.get("scope") in ("proc", "dept_proc", "all"):
-            return True
-    return False
-
-
-def _scope_ok(db: Session, user, pid: int, action: str) -> bool:
-    """Phiếu này có nằm trong phạm vi `action` của người gọi không (chỉ hỏi, không nạp).
-
-    Tách khỏi `_in_scope` cho những chỗ đã cầm sẵn bản ghi hoặc cần trả True/False
-    (cờ `can_approve` trên phiếu, cổng trả về/từ chối).
-    """
-    return apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id == pid),
-                       PurchaseRequest, "purchase_request", user,
-                       get_perm_profile(db, user), action).first() is not None
 
 
 def _in_scope(db: Session, pid: int, user, action: str) -> PurchaseRequest:
@@ -122,8 +40,7 @@ def _in_scope(db: Session, pid: int, user, action: str) -> PurchaseRequest:
     hay không. Đây cũng đúng mã lỗi mà `service.get_pr` vẫn trả cho id không tồn tại, nên
     các nhánh GHI không đổi hình dạng lỗi.
     """
-    pr = apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id == pid,
-                                                      PurchaseRequest.is_deleted == False),
+    pr = apply_scope(service.query_live_by_id(db, pid),
                      PurchaseRequest, "purchase_request", user,
                      get_perm_profile(db, user), action).first()
     if not pr:
@@ -131,432 +48,29 @@ def _in_scope(db: Session, pid: int, user, action: str) -> PurchaseRequest:
     return pr
 
 
-def _in_approve_scope(db: Session, user, pid: int) -> bool:
-    """Phiếu có nằm trong phạm vi DUYỆT của người này không.
-    CR-034: Admin thu mua có `approve` phạm vi 'proc' (để duyệt điều phối) — phạm vi đó không
-    thấy phiếu 'submitted' nên họ tự động bị loại khỏi bước duyệt 1, không cần luật riêng.
-
-    ⚠️ Trước bản vá này hàm KHÔNG truyền `action`, tức mượn phạm vi `read`. Sai cả hai
-    chiều trên cùng một dòng: cấu hình "xem toàn công ty, duyệt phòng mình" làm cổng duyệt
-    rộng bằng cổng xem; còn người chỉ được tick ô "Duyệt" mà không tick ô "Xem" thì
-    `scope_condition` bỏ qua mọi grant (không grant nào có `read`) và trả `false()` — cổng
-    đóng với MỌI phiếu, kể cả phòng mình. Truyền đúng `action="approve"` bịt cả hai vế.
-    """
-    return _scope_ok(db, user, pid, "approve")
+def _read_scoped_or_403(db: Session, pid: int, user, profile: dict) -> PurchaseRequest:
+    """Cổng ĐỌC cũ của `GET /{pid}` và hai đường đọc anh em: phạm vi `read`, KHÔNG bỏ phiếu xóa
+    mềm, trượt thì 403 "Ngoài phạm vi được phép xem" — giữ nguyên mã lỗi lẫn câu chữ."""
+    pr = apply_scope(service.query_by_id(db, pid),
+                     PurchaseRequest, "purchase_request", user, profile).first()
+    if not pr:
+        raise HTTPException(403, "Ngoài phạm vi được phép xem")
+    return pr
 
 
 def _notify_assigned(db: Session, pr, user, background_tasks: BackgroundTasks) -> None:
     """Báo "được phân công phụ trách" cho NSTM vừa được gán tự động.
     Gọi ở bước điều phối (công tắc BẬT) hoặc ngay khi duyệt (công tắc TẮT) — nội dung y như nhau."""
-    from app.modules.employee.model import Employee
-    from app.modules.user.model import User as _User
-    emp_ids = set()
-    if pr.assignee_id:
-        emp_ids.add(pr.assignee_id)
-    codes = [it.assignee for it in service.items_of(db, pr.id) if it.assignee]
-    if codes:
-        emp_ids.update(e.id for e in db.query(Employee).filter(Employee.code.in_(codes)).all())
-    if not emp_ids:
-        return
-    uids = [u.id for u in db.query(_User).filter(_User.employee_id.in_(emp_ids), _User.is_active == True).all()]
+    uids = service.assigned_user_ids(db, pr)
     if uids:
         trigger_notification(db=db, event="pr_assigned", doc_type="purchase_request", doc_code=pr.code,
                              creator_id=user.id, background_tasks=background_tasks,
                              link=f"/purchase-requests/{pr.id}", recipient_ids=uids)
 
 
-# Chữ ký 2 bước duyệt trên phiếu in chỉ có hiệu lực từ mốc trạng thái tương ứng trở đi.
-# Phiếu bị TRẢ VỀ (Nháp / Chờ duyệt) sẽ KHÔNG in lại chữ ký duyệt của lần trước.
-_AFTER_APPROVE = STATUS_AFTER_APPROVE
-_AFTER_DISPATCH = STATUS_AFTER_DISPATCH
-
-
-def _purchasing_head(db: Session, dispatcher_uid: int) -> tuple[str, str, int]:
-    """bao-CR-397 — TRƯỞNG PHÒNG của phòng ban mà người bấm Điều phối đang thuộc.
-
-    Ô "TP/BP mua hàng" trên bản in là chữ ký của trưởng phòng thu mua, không phải của
-    người bấm nút: trên prod người điều phối thường là ADMIN thu mua (Châu Phúc Hậu) nên
-    tên admin in vào ô trưởng phòng. Hệ không có cờ "phòng thu mua", nên lấy phòng của
-    chính người điều phối (tài khoản -> nhân sự -> `department_id`) rồi đọc
-    `Department.manager_id` — cột trưởng bộ phận chọn cứng ở danh mục Phòng ban.
-
-    Phần tử thứ ba là id NHÂN SỰ trưởng phòng — bao-CR-531 so nó với người đại diện pháp luật
-    để gộp ô "Giám đốc".
-
-    Trả `("", "", 0)` khi không suy ra được (tài khoản chưa gắn nhân sự, nhân sự chưa có
-    phòng, phòng chưa gán trưởng) — chỗ gọi tự lùi về người điều phối như trước CR này.
-    Chữ ký tra theo NHÂN SỰ trưởng phòng (`resolve_signature_by_employee`) để ảnh khớp
-    đúng tên đang in.
-    """
-    from app.core.audit import resolve_signature_by_employee
-    from app.modules.department.model import Department
-    from app.modules.employee.model import Employee
-    from app.modules.user.model import User
-
-    user = db.get(User, dispatcher_uid) if dispatcher_uid else None
-    emp = db.get(Employee, user.employee_id) if (user and user.employee_id) else None
-    dept = db.get(Department, emp.department_id) if (emp and emp.department_id) else None
-    head = db.get(Employee, dept.manager_id) if (dept and dept.manager_id) else None
-    if not head or not (head.full_name or "").strip():
-        return "", "", 0
-    return head.full_name, resolve_signature_by_employee(db, head.id), int(head.id)
-
-
-def _approval_signers(db: Session, pr) -> dict:
-    """Người ký 2 bước duyệt của phiếu — tra từ nhật ký thao tác (audit log).
-
-    Bước 1 `approved`  (trưởng phòng duyệt)  -> ô "TP/BP đề xuất" trên phiếu in.
-    Bước 2 `dispatched` (thu mua điều phối)  -> `dispatcher_*` (người bấm nút, giữ cho
-    tương thích) và `purchasing_head_*` = TRƯỞNG PHÒNG của người đó (bao-CR-397) -> ô
-    "TP/BP mua hàng". Phòng chưa gán trưởng thì `purchasing_head_*` lùi về người điều phối.
-    Công tắc `pr_dispatch_enabled` TẮT: từ bao-CR-485 sổ chỉ còn MỘT dòng `approved` (không
-    còn dòng `dispatched` dưới tên người duyệt), nên ở đây lùi: người điều phối = người duyệt
-    → ô "TP/BP mua hàng" ra trưởng phòng của NGƯỜI DUYỆT — chấp nhận như trước, vì luồng đó
-    không có thu mua nào chạm vào phiếu. Phiếu cũ (trước CR-485) vẫn có dòng `dispatched` nên
-    đi đường thường.
-
-    bao-CR-531: kèm hai id NHÂN SỰ để `print_signature_cells` gộp ô "Giám đốc":
-    `proposer_employee_id` = người của ô "TP/BP đề xuất" — cột `approver_employee_id` (người được
-    chọn / người thực duyệt, có cả khi phiếu CHƯA duyệt: tên để trống nhưng bộ ô đã biết), phiếu cũ
-    cột rỗng thì nhân sự của tài khoản bấm Duyệt trong nhật ký; `purchasing_head_employee_id` =
-    người đang in ở ô "TP/BP mua hàng" (trưởng phòng, hoặc người điều phối khi lùi). 0 = chưa biết.
-    """
-    from app.core.audit import resolve_actor, resolve_signature
-    from app.core.print_signers import employee_id_of_user
-    from app.modules.audit.model import AuditLog
-
-    out = {"approver_name": "", "approver_signature": "",
-           "dispatcher_name": "", "dispatcher_signature": "",
-           "purchasing_head_name": "", "purchasing_head_signature": "",
-           "proposer_employee_id": 0, "purchasing_head_employee_id": 0}
-    #  bao-CR-499: cột "Trưởng phòng phê duyệt" giữ người ĐƯỢC CHỌN khi chưa duyệt, người THỰC duyệt
-    #  sau khi duyệt.
-    #  bao-CR-521 (ticket prod #57, 28/09/2026): phiếu CHƯA duyệt thì ô "TP/BP đề xuất" để TRỐNG
-    #  HẲN — cả tên lẫn chữ ký. Bản 504 còn in tên người được chọn, người đọc hiểu là trưởng phòng
-    #  đã ký. Người được chọn vẫn hiện ở màn chi tiết (ô "Trưởng phòng phê duyệt").
-    from app.core.print_signers import person_block
-    stored_id = int(getattr(pr, "approver_employee_id", 0) or 0)
-    stored = person_block(db, stored_id)
-    if stored["name"]:
-        out["proposer_employee_id"] = stored_id
-    if stored["name"] and pr.status in _AFTER_APPROVE:
-        out["approver_name"] = stored["name"]
-        out["approver_signature"] = stored["signature"]
-    want = ([("approved", "approver")] if pr.status in _AFTER_APPROVE else []) + \
-           ([("dispatched", "dispatcher")] if pr.status in _AFTER_DISPATCH else [])
-    if not want:
-        return out
-    actions = [a for a, _ in want]
-    rows = (db.query(AuditLog.action, AuditLog.created_by)
-            .filter(AuditLog.entity == service.ENTITY, AuditLog.entity_id == pr.id,
-                    AuditLog.action.in_(actions))
-            .order_by(AuditLog.id.desc()).all())
-    latest: dict[str, int] = {}
-    for action, uid in rows:
-        latest.setdefault(action, uid)        # dòng đầu = lần duyệt GẦN NHẤT
-    if ("dispatched" in actions and "dispatched" not in latest and latest.get("approved")
-            and not service.dispatch_enabled()):
-        latest["dispatched"] = latest["approved"]     # bao-CR-485, xem docstring
-    for action, key in want:
-        uid = latest.get(action)
-        if uid:
-            out[f"{key}_name"] = resolve_actor(db, uid)
-            out[f"{key}_signature"] = resolve_signature(db, uid)
-    if stored["name"]:      # cột thắng nhật ký (bao-CR-490/499)
-        out["approver_name"], out["approver_signature"] = stored["name"], stored["signature"]
-    elif out["approver_name"] and latest.get("approved"):
-        out["proposer_employee_id"] = employee_id_of_user(db, latest["approved"])
-    dispatcher_uid = latest.get("dispatched")
-    if dispatcher_uid:
-        head_name, head_sign, head_id = _purchasing_head(db, dispatcher_uid)
-        out["purchasing_head_name"] = head_name or out["dispatcher_name"]
-        out["purchasing_head_signature"] = head_sign if head_name else out["dispatcher_signature"]
-        if out["purchasing_head_name"]:
-            out["purchasing_head_employee_id"] = head_id if head_name else employee_id_of_user(db, dispatcher_uid)
-    return out
-
-
-def _has_quote_file(db: Session, pr) -> bool:
-    """bao-CR-317 — phiếu này có BÁO GIÁ đính kèm hay không (ô tick trên bản in).
-
-    Trước CR này bản in chỉ soi cột `quote_file_url` — ô tải đúng 1 file từ thời đầu, nay
-    không màn nào ghi vào nữa (prod: 0/116 phiếu có giá trị). Chứng từ đã dời hết sang khối
-    "Chứng từ & Tài liệu đính kèm" (`tab_file_link`, loại `quotation`), nên bản in luôn tick
-    "Không" kể cả khi phiếu có báo giá thật. Đếm lại theo cả ba nguồn:
-      1. cột cũ `quote_file_url` — phiếu đời đầu, giữ để không mất dữ liệu;
-      2. file loại "Báo giá" trong khối đính kèm — đường đi hiện tại;
-      3. entity cũ `purchase_request_quote` — khối tải báo giá riêng, loại chứng từ để rỗng.
-    """
-    from app.modules.attachment.model import FileLink
-
-    if (pr.quote_file_url or "").strip():
-        return True
-    q = (db.query(FileLink.id)
-         .filter(FileLink.entity_id == pr.id,
-                 sa_or(sa_and(FileLink.entity == "purchase_request", FileLink.doc_type == "quotation"),
-                       FileLink.entity == "purchase_request_quote")))
-    return db.query(q.exists()).scalar() is True
-
-
-def _linked_survey_requests(db: Session, pr) -> list[dict]:
-    """bao-CR-318 (mở rộng bao-CR-422) — MỌI YÊU CẦU BÁO GIÁ (YCBG) đã sinh ra phiếu này.
-
-    Đơn mua hàng có `pr_code` trỏ ngược về YCMH, nhưng chiều YCMH -> YCBG thì chỉ nằm trong
-    câu chữ ở ô Nội dung, bấm không ra. Liên kết thật vốn đã có sẵn trong CSDL:
-      - `tab_survey_request_pr`: mỗi lần chốt phương án tạo YCMH ghi 1 dòng (nguồn chuẩn);
-      - `tab_survey_request_line.pr_id`: đường cũ, dùng cho phiếu tạo trước khi có bảng trên.
-
-    Bản đầu (bao-CR-318) chỉ lấy MỘT phiếu bằng `limit(1)`, và điều đó giấu bớt sự thật: một
-    YCMH gom được nhiều dòng đã chốt phương án, mà các dòng ấy có thể nằm ở những YCBG khác
-    nhau. Người xem thấy đúng một mã liền tưởng phiếu chỉ có một nguồn. Nay trả cả danh sách,
-    xếp theo thứ tự liên kết được ghi (nguồn đầu tiên đứng đầu).
-
-    Không tra ra thì trả danh sách rỗng — phiếu lập tay là chuyện bình thường, không phải lỗi.
-    """
-    from app.modules.survey_request.model import (SurveyRequest, SurveyRequestLine,
-                                                  SurveyRequestPr)
-
-    # Gom id theo ĐÚNG thứ tự gặp và khử trùng: một YCBG có nhiều dòng cùng đổ vào một YCMH
-    # thì vẫn chỉ là một nguồn, bày hai lần là người đọc tưởng có hai phiếu.
-    sr_ids: list[int] = []
-    for (sr_id,) in (db.query(SurveyRequestPr.survey_request_id)
-                     .filter(SurveyRequestPr.pr_id == pr.id)
-                     .order_by(SurveyRequestPr.id.asc()).all()):
-        if sr_id and sr_id not in sr_ids:
-            sr_ids.append(int(sr_id))
-    if not sr_ids:
-        for (sr_id,) in (db.query(SurveyRequestLine.survey_request_id)
-                         .filter(SurveyRequestLine.pr_id == pr.id)
-                         .order_by(SurveyRequestLine.id.asc()).all()):
-            if sr_id and sr_id not in sr_ids:
-                sr_ids.append(int(sr_id))
-    if not sr_ids:
-        return []
-
-    rows = (db.query(SurveyRequest.id, SurveyRequest.code, SurveyRequest.status,
-                     SurveyRequest.request_date, SurveyRequest.requester)
-            .filter(SurveyRequest.id.in_(sr_ids),
-                    SurveyRequest.is_deleted == False).all())   # noqa: E712 — ai-CR-170: YCBG xóa mềm = không có
-    by_id = {int(r[0]): r for r in rows}
-    out: list[dict] = []
-    for sid in sr_ids:
-        r = by_id.get(sid)
-        # Phiếu nguồn đã bị xóa thì bỏ qua: liên kết còn nhưng không có gì để bấm vào.
-        if not r or not r[1]:
-            continue
-        out.append({"id": sid, "code": r[1], "status": r[2] or "",
-                    "request_date": r[3] or "", "requester": r[4] or ""})
-    return out
-
-
-def _out(db: Session, pr, user=None) -> dict:
-    from app.core.audit import (resolve_actor, resolve_signature,
-                                resolve_signature_by_employee)
-    d = {c: getattr(pr, c) for c in HEADER_COLS}
-    d["vat_rate"] = float(pr.vat_rate or 0)
-    # Trưởng bộ phận: phiếu lập lúc phòng chưa gán trưởng sẽ lưu rỗng và ở rỗng vĩnh viễn.
-    # Rỗng thì lấy theo Department.manager_id hiện tại để HIỂN THỊ (không ghi đè dữ liệu đã lưu).
-    if not d.get("head_of_dept") and (pr.department_id or pr.department):
-        d["head_of_dept"] = service.find_dept_head(db, pr.department, pr.department_id)
-    # bao-CR-480: ô Phòng ban rỗng thì HIỂN THỊ cho ra tên — có id phòng mà thiếu tên (phiếu
-    # dựng bằng script) thì tra danh mục; không có cả id (lập trước bao-CR-465) thì theo hồ sơ
-    # nhân sự của người yêu cầu. Không ghi đè dữ liệu: lưu / gửi duyệt mới ghi.
-    if not (d.get("department") or "").strip():
-        if d.get("department_id"):
-            d["department"] = service.handler_dept_name_of(db, d["department_id"])
-        else:
-            d["department_id"], d["department"] = service.resolve_employee_department(db, pr.requester_id)
-    # bao-CR-480: tên phòng xử lý đi kèm phiếu — màn hình không cần quyền đọc danh mục phòng
-    # ban mới hiện được tên (trước đây người thiếu quyền chỉ thấy "Phòng #5").
-    d["handler_dept_name"] = service.handler_dept_name_of(db, pr.handler_dept_id)
-    # bao-CR-524: phiếu cũ còn `0` hiện đúng id phòng thu mua mặc định — ô chọn không còn mục
-    # "Thu mua chung" mang số 0 để khớp.
-    d["handler_dept_id"] = normalize_handler_dept_id(db, pr.handler_dept_id)
-    # bao-CR-490: trưởng phòng phê duyệt (người thực bấm Duyệt) + trưởng phòng theo hồ sơ.
-    from app.core.print_signers import approver_fields
-    d.update(approver_fields(db, pr))
-    # Task 4: NCC 2 cụm. Cụm 'req' (bộ phận đề xuất) MỌI người xem/sửa được — sửa bug người
-    # yêu cầu không nhập nổi NCC của chính mình. Cụm 'pur' (khảo sát/thu mua) cần supplier.read
-    # để xem, supplier.write để sửa.
-    can_sup_read = user is None or user_has_permission(db, user, "supplier", "read")
-    cl = service.clusters_of(pr)
-    d["supplier_req"] = cl["req"]
-    d["supplier_pur"] = cl["pur"] if can_sup_read else service._empty_cluster()
-    d["supplier_from_survey"] = cl["from_survey"]
-    d["can_edit_supplier_pur"] = user is not None and user_has_permission(db, user, "supplier", "write")
-    # CR-034: nút duyệt lần 2 (điều phối) — quyền tính ở server (phạm vi grant không có ở map
-    # quyền phía FE). Công tắc tắt thì không ai thấy nút, vì phiếu không dừng ở 'approved' nữa.
-    d["dispatch_enabled"] = service.dispatch_enabled()
-    # bao-CR-468: công tắc cụm phương án. Đi kèm phiếu chứ không phải một đường API riêng —
-    # người dùng thường KHÔNG có quyền `setting.read`, mà hai chỗ phải ẩn (nút Xử lý phương án,
-    # thẻ Chọn phương án) đều đã cầm sẵn dữ liệu phiếu này.
-    d["options_enabled"] = option_service.options_enabled()
-    d["can_dispatch"] = bool(user is not None and pr.status == "approved" and d["dispatch_enabled"]
-                             and _can_dispatch(get_perm_profile(db, user)))
-    # bao-CR-414 GĐ5: nút "Chuyển phòng xử lý" / "Trả về phòng lập" — chỉ quản lý thu mua của
-    # phòng ĐANG CẦM phiếu (hoặc toàn hệ) và khi việc mua chưa thật sự bắt đầu.
-    d["can_transfer_dept"] = bool(user is not None and service.can_transfer_dept(db, pr)
-                                  and holds_handling_dept(get_perm_profile(db, user), "purchase_request", pr,
-                                                          get_central_dept_id(db)))
-    # bao-CR-524: "Trả về thu mua" chỉ có nghĩa khi phiếu đang ở phòng KHÁC phòng thu mua mặc định.
-    d["can_return_dept"] = bool(d["can_transfer_dept"] and not is_central_dept(db, pr.handler_dept_id))
-    # Duyệt bước 1: cũng phải tính ở server vì có quyền `approve` chưa chắc đúng PHẠM VI —
-    # Admin thu mua (phạm vi 'proc') có approve để duyệt điều phối nhưng không duyệt bước 1.
-    # CR-071: ô TBP (`head_of_dept_id`) CHỈ để lưu + in, KHÔNG khóa quyền duyệt — chọn ai
-    # thì ai có quyền trong phạm vi vẫn duyệt được như trước.
-    d["can_approve"] = bool(user is not None and pr.status == "submitted"
-                            and user_has_permission(db, user, "purchase_request", "approve")
-                            and _in_approve_scope(db, user, pr.id))
-    # bao-CR-554: nút "Trả về" cho người yêu cầu — server tính vì phải hỏi cả phạm vi lẫn dòng ĐMH.
-    d["can_return"] = bool(user is not None and _can_return_requester(db, user, pr))
-    # NCC "hiệu lực" ở cột cũ (suggested_supplier*) — che nếu không có supplier.read (giữ Task 5).
-    if not can_sup_read:
-        _blank_supplier(d)
-    d["created_at"] = pr.created_at
-    d["created_by_name"] = resolve_actor(db, pr.created_by)
-    # bao-CR-419: mốc người yêu cầu chốt xong lựa chọn phương án (None = vòng này chưa xong).
-    d["options_chosen_at"] = pr.options_chosen_at
-    d["options_chosen_by_name"] = resolve_actor(db, pr.options_chosen_by) if pr.options_chosen_by else ""
-    # bao-CR-317: ô "Báo giá đính kèm" trên bản in — xem `_has_quote_file`.
-    d["has_quote_file"] = _has_quote_file(db, pr)
-    # bao-CR-318 + bao-CR-422: đường quay về YCBG nguồn — xem `_linked_survey_requests`.
-    # Danh sách rỗng = phiếu lập tay. Hai khóa vô hướng bên dưới là phiếu nguồn ĐẦU TIÊN, giữ
-    # nguyên tên cũ vì giao diện cũ (`frontend/`) và bản in đang đọc thẳng chúng — thêm khóa
-    # mới thì bên đó không phải sửa gì.
-    srs = _linked_survey_requests(db, pr)
-    d["survey_requests"] = srs
-    d["survey_request_id"] = srs[0]["id"] if srs else 0
-    d["survey_request_code"] = srs[0]["code"] if srs else ""
-    # Chữ ký ô "Người lập" trên phiếu in. Tra theo NHÂN SỰ người yêu cầu (đúng cái TÊN đang in);
-    # phiếu cũ chưa có requester_id thì mới lấy chữ ký người tạo, và chỉ khi tên trùng nhau —
-    # tránh in chữ ký người A dưới tên người B khi thu mua lập phiếu hộ bộ phận khác.
-    d["requester_signature"] = resolve_signature_by_employee(db, pr.requester_id)
-    if not d["requester_signature"] and not pr.requester_id:
-        if (d["created_by_name"] or "").strip() == (pr.requester or "").strip():
-            d["requester_signature"] = resolve_signature(db, pr.created_by)
-    # Chữ ký + họ tên 2 ô duyệt trên phiếu in (TP/BP đề xuất · TP/BP mua hàng)
-    d.update(_approval_signers(db, pr))
-
-    # Fetch company name safely to avoid permission issues on the frontend
-    d["company_name"] = ""
-    comp = None
-    if pr.company_id:
-        from app.modules.company.model import Company
-        comp = db.query(Company).filter(Company.id == pr.company_id).first()
-        if comp:
-            d["company_name"] = comp.name
-    # bao-CR-531: bộ ô ký cụm "XÉT DUYỆT" đã rút gọn (hộ kinh doanh · gộp ô Giám đốc) — hai giao
-    # diện chỉ vẽ lại. Các khóa cũ (approver_name…) giữ nguyên cho giao diện chưa cập nhật.
-    from .print_signature_cells import build_print_signature_cells
-    d["print_signature_cells"] = build_print_signature_cells(
-        comp, d, pr.requester or "", d["requester_signature"])
-
-    items = service.items_of(db, pr.id)
-    # Batch resolve ảnh gốc theo product_code (2 query/phiếu, tránh N+1).
-    from app.modules.product.model import Product
-    from app.modules.attachment.model import FileLink, StoredFile
-    codes = {i.product_code for i in items if i.product_code}
-    prod_by_code: dict[str, int] = {}
-    if codes:
-        for pid_, code_ in db.query(Product.id, Product.code).filter(Product.code.in_(codes)):
-            prod_by_code.setdefault(code_, pid_)   # code catalog duy nhất
-    thumb_by_pid: dict[int, str] = {}
-    if prod_by_code:
-        q = (db.query(FileLink.entity_id, StoredFile.url)
-             .join(StoredFile, StoredFile.id == FileLink.file_id)
-             .filter(FileLink.entity == "product", FileLink.entity_id.in_(prod_by_code.values()))
-             .order_by(FileLink.entity_id, FileLink.sort_order.asc(), FileLink.id.desc()))
-        for eid, url in q:
-            thumb_by_pid.setdefault(eid, url)      # ảnh sort_order nhỏ nhất mỗi SP
-    # H.10.1 — SINH BÙ phương án 0 cho phiếu điều phối từ trước khi có tính năng
-    # (idempotent; phiếu ngoài giai đoạn mở thì hàm tự bỏ qua). Đặt TRƯỚC hai truy
-    # vấn tóm tắt để option_count/chosen_option của lần đọc này đã thấy nó.
-    option_service.ensure_option_zero(db, pr, items)
-    # bao-CR-310: tóm tắt phương án cho từng dòng — 2 truy vấn cho cả phiếu, không N+1.
-    item_ids = [i.id for i in items]
-    opt_counts = option_service.count_map(db, item_ids)
-    chosen_by_item = option_service.chosen_map(db, item_ids)
-    #  bao-CR-601: tên NSTM phụ trách trả sẵn theo dòng. Trước đây hai bản giao diện tự tra
-    #  tên từ danh sách nhân sự tải về — danh sách đó lọc theo PHẠM VI người xem, nên ai bị
-    #  giới hạn pháp nhân (mà 259 hồ sơ nhân sự đang để pháp nhân 0) chỉ thấy mã "NSU012".
-    assignee_codes = {i.assignee for i in items if i.assignee}
-    assignee_names: dict[str, str] = {}
-    if assignee_codes:
-        from app.modules.employee.model import Employee
-        assignee_names = {code_: name_ for code_, name_ in
-                          db.query(Employee.code, Employee.full_name)
-                          .filter(Employee.code.in_(assignee_codes)).all()}
-    d["items"] = []
-    for i in items:
-        pid_ = prod_by_code.get(i.product_code or "")
-        chosen = chosen_by_item.get(i.id)
-        d["items"].append(
-            {"id": i.id, "product_code": i.product_code, "product_name": i.product_name,
-             "item_group": i.item_group, "group_desc": i.group_desc, "qty": float(i.qty or 0),
-             "unit": i.unit, "price": float(i.price or 0), "vat_pct": float(i.vat_pct or 0),
-             "amount": float(i.amount or 0),
-             "warehouse": i.warehouse, "required_date": i.required_date, "assignee": i.assignee,
-             "assignee_name": assignee_names.get(i.assignee or "", ""),
-             "expected_date": i.expected_date,
-             "line_status": i.line_status,
-             # B-06: cột lưu MÃ, giao diện dùng mã để tô màu/lọc nên phải trả kèm nhãn
-             "line_status_label": PR_LINE_STATUS.label_of(i.line_status),
-             "progress_note": i.progress_note, "note": i.note,
-             "qty_ordered": float(i.qty_ordered or 0), "qty_received": float(i.qty_received or 0),
-             "product_id": pid_ or 0,                          # 0 = code không khớp catalog
-             "product_thumbnail_url": thumb_by_pid.get(pid_, "") if pid_ else "",
-             # bao-CR-310 — "đã chốt phương án chưa" SUY từ bảng phương án, dòng YCMH
-             # không có cột nào lưu việc đó (một nguồn sự thật).
-             "option_count": opt_counts.get(i.id, 0),
-             "chosen_option": _out_option(db, chosen, can_sup_read) if chosen else None,
-             # Đợt 3b — cờ "NSTM đã chốt hoàn thành xử lý" + chốt rỗng của dòng
-             "options_done": bool(i.options_done), "no_option": bool(i.no_option)}
-        )
-    # Task 4: PYC tính VAT lại theo dòng — tiền hàng (chưa VAT) · VAT · tổng cộng (gồm VAT)
-    subtotal = round(sum(x["qty"] * x["price"] for x in d["items"]), 2)   # chưa VAT
-    total = round(sum(x["amount"] for x in d["items"]), 2)                # gồm VAT
-    d["subtotal"] = subtotal
-    d["vat"] = round(total - subtotal, 2)
-    d["total"] = total
-    return d
-
-
 def _list_query(request: Request, db: Session, user):
     """Câu truy vấn danh sách (lọc + phạm vi + sắp xếp) — dùng chung cho màn danh sách và xuất Excel."""
-    from sqlalchemy import or_
-    # `code` bị loại khỏi lọc TRẦN vì param `code=` dưới đây là ô tìm kiếm đa trường; nhưng bộ
-    # lọc điều kiện (`code__contains=...`) vẫn phải lọc được nên giữ nguyên FILTERABLE đầy đủ.
-    filterable = [f for f in service.FILTERABLE if f != "code"]
-    query = apply_filters(db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False), PurchaseRequest, request, filterable, operator_filterable=service.FILTERABLE)
-    query = apply_ref_filters(query, PurchaseRequest, request, db)   # CR-088
-    query = apply_range_filters(query, PurchaseRequest, request,
-                                ["request_date", "received_date", "need_date"])
-    query = apply_equals(query, PurchaseRequest, request, ["company_id"])
-    item_group = (request.query_params.get("item_group") or "").strip()
-    if item_group:
-        sub = select(PurchaseRequestItem.pr_id).where(PurchaseRequestItem.item_group.like(f"%{item_group}%"))
-        query = query.filter(PurchaseRequest.id.in_(sub))
-    assignee = (request.query_params.get("assignee") or "").strip()
-    if assignee:
-        sub2 = select(PurchaseRequestItem.pr_id).where(PurchaseRequestItem.assignee == assignee)
-        query = query.filter(PurchaseRequest.id.in_(sub2))
-    # Ô tìm kiếm nhanh: Tìm theo Mã PYC, Người yêu cầu, Mục đích, Mã sản phẩm hoặc Tên sản phẩm ở dòng hàng
-    search = (request.query_params.get("code") or request.query_params.get("q") or request.query_params.get("search") or request.query_params.get("product") or "").strip()
-    if search:
-        like = f"%{search}%"
-        matching_ids = [
-            r[0] for r in db.query(PurchaseRequestItem.pr_id)
-            .filter(or_(PurchaseRequestItem.product_code.like(like), PurchaseRequestItem.product_name.like(like))).all()
-            if r[0]
-        ]
-        conds = [
-            PurchaseRequest.code.like(like),
-            PurchaseRequest.requester.like(like),
-            PurchaseRequest.purpose.like(like),
-        ]
-        if matching_ids:
-            conds.append(PurchaseRequest.id.in_(matching_ids))
-        query = query.filter(or_(*conds))
+    query = service.build_list_query(db, request)
     query = apply_scope(query, PurchaseRequest, "purchase_request", user, get_perm_profile(db, user))
     return apply_sort_from_request(query, PurchaseRequest, request)
 
@@ -568,48 +82,7 @@ def list_pr(
 ):
     query = _list_query(request, db, user)
     total, items = service.list_pr(db, query, pg)
-    
-    pr_ids = [p.id for p in items]
-    subtotals = {}
-    need_dates = {}
-    if pr_ids:
-        subtotals = {
-            pr_id: float(amount or 0) for pr_id, amount in db.query(
-                PurchaseRequestItem.pr_id,
-                func.sum(PurchaseRequestItem.amount)
-            ).filter(PurchaseRequestItem.pr_id.in_(pr_ids)).group_by(PurchaseRequestItem.pr_id).all()
-        }
-        need_rows = db.query(
-            PurchaseRequestItem.pr_id,
-            func.min(PurchaseRequestItem.required_date)
-        ).filter(
-            PurchaseRequestItem.pr_id.in_(pr_ids),
-            PurchaseRequestItem.required_date != "",
-            PurchaseRequestItem.required_date.isnot(None),
-            PurchaseRequestItem.line_status != service.LINE_STATUS_CANCELLED
-        ).group_by(PurchaseRequestItem.pr_id).all()
-        need_dates = {r[0]: r[1] for r in need_rows if r[1]}
-
-    cancelled_ids = set()
-    if pr_ids:
-        cancelled_ids = {r[0] for r in db.query(PurchaseRequestItem.pr_id).filter(
-            PurchaseRequestItem.pr_id.in_(pr_ids),
-            PurchaseRequestItem.line_status == service.LINE_STATUS_CANCELLED).distinct().all()}
-
-    can_see_supplier = user_has_permission(db, user, "supplier", "read")   # Task 5
-    out_items = []
-    for p in items:
-        d = {c: getattr(p, c) for c in HEADER_COLS}
-        d["created_at"] = p.created_at   # thời điểm tạo (có giờ) — hiển thị giờ VN ở list
-        d["updated_at"] = p.updated_at   # bao-CR-294 — cột "Ngày cập nhật" + sort ở màn danh sách
-        d["need_date"] = need_dates.get(p.id) or p.need_date or ""
-        d["total"] = round(subtotals.get(p.id, 0.0), 2)   # gồm VAT (tính từ amount dòng)
-        d["has_cancelled_line"] = p.id in cancelled_ids
-        if not can_see_supplier:
-            _blank_supplier(d)   # ẩn NCC đề xuất
-        out_items.append(d)
-
-    return success({"total": total, "items": out_items})
+    return success({"total": total, "items": _out_list(db, items, user)})
 
 
 @router.get("/export/xlsx")
@@ -669,7 +142,6 @@ def approver_candidates_meta(department: str = "", department_id: int = 0, compa
     #  bao-CR-552: mọi người duyệt được (trừ Quản trị hệ thống) + Trưởng bộ phận — thôi dùng chung
     #  bộ với ô TBP (bản đó chỉ có trưởng phòng theo phòng, phòng IT không ai duyệt là ô khóa cứng).
     from app.core.approver_candidates import draft_fields, list_candidates_for_draft
-    from .model import PurchaseRequest
     fields = draft_fields(db, user, department, department_id, company_id, handler_dept_id)
     return success({"items": list_candidates_for_draft(db, PurchaseRequest, "purchase_request", fields,
                                                        head_of_dept_id)})
@@ -680,7 +152,6 @@ def approver_candidates_(pid: int, db: Session = Depends(get_db),
                          user=Depends(require("purchase_request", "read"))):
     """bao-CR-499 — người duyệt được ĐÚNG chứng từ này (hỏi apply_scope hành động approve)."""
     from app.core.approver_candidates import list_candidates_for_row
-    from .model import PurchaseRequest
     row = _in_scope(db, pid, user, "read")
     return success({"items": list_candidates_for_row(db, PurchaseRequest, "purchase_request", row)})   # bao-CR-552
 
@@ -727,21 +198,14 @@ def dept_head_candidates(pid: int, db: Session = Depends(get_db),
     Ô này CHỈ để lưu + in (xem ghi chú ở `service.py`), không khóa quyền duyệt của ai.
     Danh sách rỗng = chưa ai đủ điều kiện; lúc đó FE để ô ở dạng chữ như cũ.
     """
-    profile = get_perm_profile(db, user)
-    pr = apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id == pid),
-                     PurchaseRequest, "purchase_request", user, profile).first()
-    if not pr:
-        raise HTTPException(403, "Ngoài phạm vi được phép xem")
+    pr = _read_scoped_or_403(db, pid, user, get_perm_profile(db, user))
     return success({"items": service.dept_head_candidates(db, pr)})
 
 
 @router.get("/{pid}")
 def get_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
     profile = get_perm_profile(db, user)
-    pr = apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id == pid),
-                     PurchaseRequest, "purchase_request", user, profile).first()
-    if not pr:
-        raise HTTPException(403, "Ngoài phạm vi được phép xem")
+    pr = _read_scoped_or_403(db, pid, user, profile)
     data = _out(db, pr, user)
     if not _see_all_items(profile, pr, user):
         code = profile.get("emp_code") or ""
@@ -755,11 +219,7 @@ def order_progress(pid: int, db: Session = Depends(get_db), user=Depends(require
     CHỈ tính ĐMH đã duyệt trở đi (bỏ nháp/chờ duyệt/hủy/từ chối) — phiếu nháp KHÔNG tính là đã đặt,
     khớp với logic đồng bộ trạng thái dòng (sync_from_purchase_orders).
     Dùng để prefill 'số lượng còn thiếu' khi tạo ĐMH mới + cảnh báo đặt vượt."""
-    profile = get_perm_profile(db, user)
-    pr = apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id == pid),
-                     PurchaseRequest, "purchase_request", user, profile).first()
-    if not pr:
-        raise HTTPException(403, "Ngoài phạm vi được phép xem")
+    pr = _read_scoped_or_403(db, pid, user, get_perm_profile(db, user))
     # bao-CR-619: thêm `pending` (đơn nháp / chờ duyệt / bị trả lại) + `orders` (từng đơn theo mã) cho
     # cảnh báo đặt vượt; `ordered` giữ nguyên nghĩa cũ.
     return success(service.order_progress(db, pr.code))
@@ -788,21 +248,11 @@ def assign_pr(pid: int, data: AssignIn, background_tasks: BackgroundTasks, db: S
     _in_scope(db, pid, user, "approve")
     pr = service.assign(db, pid, data, user.id)
     # Thông báo "được phân công phụ trách" cho NSTM (NSTM header + NSTM từng dòng)
-    from app.modules.employee.model import Employee
-    from app.modules.user.model import User as _User
-    emp_ids = set()
-    if pr.assignee_id:
-        emp_ids.add(pr.assignee_id)
-    codes = [it.assignee for it in service.items_of(db, pid) if it.assignee]
-    if codes:
-        emp_ids.update(e.id for e in db.query(Employee).filter(Employee.code.in_(codes)).all())
-    if emp_ids:
-        uids = [u.id for u in db.query(_User).filter(_User.employee_id.in_(emp_ids), _User.is_active == True).all()
-                if u.id != user.id]   # không tự báo mình
-        if uids:
-            trigger_notification(db=db, event="pr_assigned", doc_type="purchase_request", doc_code=pr.code,
-                                 creator_id=user.id, background_tasks=background_tasks,
-                                 link=f"/purchase-requests/{pr.id}", recipient_ids=uids)
+    uids = [uid for uid in service.assigned_user_ids(db, pr) if uid != user.id]   # không tự báo mình
+    if uids:
+        trigger_notification(db=db, event="pr_assigned", doc_type="purchase_request", doc_code=pr.code,
+                             creator_id=user.id, background_tasks=background_tasks,
+                             link=f"/purchase-requests/{pr.id}", recipient_ids=uids)
     return success(_out(db, pr, user), "Đã lưu phân bổ NSTM")
 
 
@@ -841,18 +291,6 @@ def _ensure_can_return_or_reject(db: Session, user, pr: PurchaseRequest):
     raise HTTPException(403, "Bạn không có quyền trả về / từ chối phiếu này")
 
 
-def _can_return_requester(db: Session, user, pr: PurchaseRequest) -> bool:
-    """bao-CR-554 — cờ "Trả về" cho người yêu cầu (đại ca chốt 02/10/2026): quản lý (quyền Hủy)
-    hoặc người duyệt (quyền Duyệt, trong phạm vi) — cả hai ở Chờ duyệt lẫn Đã duyệt / Đã điều
-    phối, miễn chưa dòng nào lên ĐMH (`service.can_return_requester`). Người duyệt trước đây chỉ
-    trả được ở Chờ duyệt."""
-    if not service.can_return_requester(db, pr):
-        return False
-    if user_has_permission(db, user, "purchase_request", "cancel") and _scope_ok(db, user, pr.id, "cancel"):
-        return True
-    return bool(user_has_permission(db, user, "purchase_request", "approve") and _in_approve_scope(db, user, pr.id))
-
-
 @router.post("/{pid}/cancel")
 def cancel_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
     _ensure_can_return_or_reject(db, user, service.get_pr(db, pid))
@@ -884,38 +322,6 @@ def _ensure_holds_handling_dept(db: Session, user, pr) -> None:
         raise HTTPException(403, "Chỉ quản lý thu mua của phòng đang xử lý mới chuyển được phiếu này")
 
 
-def _notify_users(db: Session, user_ids: list[int], title: str, body: str, link: str,
-                  creator_id: int, background_tasks: BackgroundTasks | None) -> None:
-    """Chuông trong app + Web Push (best-effort) cho một nhóm tài khoản — dùng cho sự kiện
-    chuyển phòng (bao-CR-414 GĐ5), thứ chưa có mẫu câu trong `trigger_notification`."""
-    from app.modules.notification.model import Notification
-    uids = sorted({int(u) for u in user_ids if u})
-    if not uids:
-        return
-    for uid in uids:
-        db.add(Notification(user_id=uid, title=title, body=body, link=link, created_by=creator_id))
-    db.commit()
-    try:
-        from app.modules.push import service as push_service
-        from app.core.database import SessionLocal
-        if background_tasks is not None:
-            background_tasks.add_task(push_service.send_to_users, SessionLocal, uids, title, body, link)
-        else:
-            push_service.send_to_users(SessionLocal, uids, title, body, link)
-    except Exception:
-        pass
-
-
-def _user_ids_of_employee_codes(db: Session, codes: list[str]) -> list[int]:
-    from app.modules.employee.model import Employee
-    from app.modules.user.model import User
-    codes = [c for c in codes if c]
-    if not codes:
-        return []
-    emp_ids = [e.id for e in db.query(Employee).filter(Employee.code.in_(codes)).all()]
-    return [u.id for u in db.query(User).filter(User.employee_id.in_(emp_ids)).all()] if emp_ids else []
-
-
 def _transfer_dept(db: Session, pid: int, data: TransferDeptIn, background_tasks: BackgroundTasks,
                    user, *, target: int, message: str):
     pr = _in_scope(db, pid, user, "approve")
@@ -925,14 +331,14 @@ def _transfer_dept(db: Session, pid: int, data: TransferDeptIn, background_tasks
     where = "phòng thu mua" if not int(target or 0) else "phòng xử lý khác"   # bao-CR-524
     link = f"/purchase-requests/{pr.id}"
     reason = data.reason.strip()
-    _notify_users(db, [pr.created_by or user.id], f"{pr.code} — Chuyển {where}",
-                  f"Yêu cầu mua hàng {pr.code} được chuyển sang {where}. Lý do: {reason}",
-                  link, user.id, background_tasks)
+    service.notify_users(db, [pr.created_by or user.id], f"{pr.code} — Chuyển {where}",
+                         f"Yêu cầu mua hàng {pr.code} được chuyển sang {where}. Lý do: {reason}",
+                         link, user.id, background_tasks)
     if old_assignees:                                  # NSTM bị gỡ khỏi dòng cũng cần biết
-        _notify_users(db, _user_ids_of_employee_codes(db, old_assignees),
-                      f"{pr.code} — Gỡ phân công mua hàng",
-                      f"Phiếu {pr.code} đã chuyển {where}, phần phụ trách của bạn được gỡ. Lý do: {reason}",
-                      link, user.id, background_tasks)
+        service.notify_users(db, service.user_ids_of_employee_codes(db, old_assignees),
+                             f"{pr.code} — Gỡ phân công mua hàng",
+                             f"Phiếu {pr.code} đã chuyển {where}, phần phụ trách của bạn được gỡ. Lý do: {reason}",
+                             link, user.id, background_tasks)
     return success(_out(db, pr, user), message)
 
 
@@ -995,8 +401,7 @@ def bulk_delete_prs(ids: str, db: Session = Depends(get_db), user=Depends(requir
         raise HTTPException(400, "Không có ID hợp lệ")
     # Lọc phạm vi TRƯỚC vòng lặp (khuôn của `contract/controller.py`): xóa hàng loạt mà chỉ
     # lặp theo id thì gửi đại một dãy số là dọn sạch phiếu Nháp của mọi pháp nhân.
-    rows = apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.id.in_(id_list),
-                                                        PurchaseRequest.is_deleted == False),
+    rows = apply_scope(service.query_live_by_ids(db, id_list),
                        PurchaseRequest, "purchase_request", user,
                        get_perm_profile(db, user), "delete").all()
     if not rows:
@@ -1007,7 +412,7 @@ def bulk_delete_prs(ids: str, db: Session = Depends(get_db), user=Depends(requir
         try:
             service.delete_pr(db, pid, user.id)
         except Exception as e:
-            raise HTTPException(400, f"Lỗi khi xóa phiếu ID {pid}: {str(e)}")
+            raise HTTPException(400, f"Lỗi khi xóa phiếu ID {pid}: {str(e)}") from e
     # Báo đúng số ĐÃ xóa, không báo số đã gửi lên — lệch nhau là có id ngoài phạm vi.
     return success(None, f"Đã xóa {len(rows)} bản ghi")
 
@@ -1208,7 +613,6 @@ def available_survey_lines(pid: int, item_id: int, supplier_code: str = "", item
     dính gì tới YCBG, nên chép sang đây là đẻ ra hai bản luật lọc phải giữ đồng bộ.
     Đòi `supplier.read` vì kết quả là danh sách NCC kèm giá.
     """
-    from app.modules.survey.model import Survey
     from app.modules.survey_request import service as sr_service
 
     if not user_has_permission(db, user, "supplier", "read"):
@@ -1220,27 +624,7 @@ def available_survey_lines(pid: int, item_id: int, supplier_code: str = "", item
     rows, total = sr_service.available_survey_lines(
         db, supplier_code=supplier_code, item_group=item_group, search=search,
         page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir)
-    sv_cache: dict = {}
-    out = []
-    for r in rows:
-        sv = sv_cache.get(r.survey_id)
-        if r.survey_id not in sv_cache:
-            sv = sv_cache[r.survey_id] = db.get(Survey, r.survey_id)
-        out.append({
-            "id": r.id, "supplier_code": r.supplier_code,
-            "supplier_name": sr_service.resolve_supplier_name(db, r.supplier_code or ""),
-            "internal_code": r.internal_code, "product_name": r.product_name,
-            "spec": r.spec, "origin": r.origin, "quote_unit": r.quote_unit,
-            "moq": float(r.moq or 0), "price_by_volume": float(r.price_by_volume or 0),
-            "volume_range": r.volume_range, "vat": float(r.vat or 0),
-            "delivery_time": r.delivery_time, "delivery_place": r.delivery_place,
-            "shipping_cost": float(r.shipping_cost or 0), "lab_result": r.lab_result,
-            "result_date": r.result_date,
-            "survey_code": sv.code if sv else "",
-            "survey_item_code": sv.item_code if sv else "",
-            "survey_item_group": sv.item_group if sv else "",   # để FE cảnh báo lệch phân loại
-        })
-    return success({"items": out, "total": total})
+    return success({"items": _out_survey_lines(db, rows), "total": total})
 
 
 @router.post("/{pid}/items/{item_id}/options")

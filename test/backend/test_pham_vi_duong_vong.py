@@ -378,16 +378,6 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_KHONG_CAN, "L351 `Company` — tra tên; lỗ của `GET /{pid}/print` nằm ở L349 "
                        "`service.get_po` (= D3 cụm 03)"),
     ],
-    "purchase_request/controller.py": [
-        (OK_KHONG_CAN, "L191 `User` — `_purchasing_head`: id người điều phối lấy từ chính "
-                       "phiếu đã qua cổng phạm vi, chỉ để in tên trưởng phòng thu mua"),
-        (OK_KHONG_CAN, "L192 `Employee` — hồ sơ của người điều phối đó, cùng lý do L191"),
-        (OK_KHONG_CAN, "L193 `Department` — phòng của người điều phối, danh mục PUBLIC"),
-        (OK_KHONG_CAN, "L194 `Employee` — trưởng phòng đó, lấy tên + chữ ký in lên phiếu"),
-        (OK_KHONG_CAN, "L1063 `db.get(Survey)` — tra tên/thông tin phiếu khảo sát cho ô chọn "
-                       "kho khảo sát; phạm vi đã hỏi ở `_open_line(..., \"write\")` trên PR nền, "
-                       "khảo sát là dữ liệu tham chiếu (cùng khuôn survey_request L539)."),
-    ],
     # ── Thu mua ──────────────────────────────────────────────────────────────
     "survey_request/controller.py": [
         (OK_KHONG_CAN, "L109 `Employee` — của CHÍNH người đang gọi, để so phòng ban"),
@@ -522,7 +512,11 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #    loại nghỉ (danh mục PUBLIC) để biết có trừ ngày lễ không; người nghỉ đi qua `resolve_leave_taker`.
     #  100 → 105 (duoc-CR-715): `leave/catalog_controller.py` +2, `leave/request_controller.py` +1 (dò ngày cấm nghỉ)
     #    và `leave/comp_request_controller.py` +2 (phiếu nghỉ bù).
-    assert sum(that.values()) == 105, f"tổng phải là 105, đang là {sum(that.values())}"
+    #  105 → 100 (bao-CR-711, làm gọn controller YCMH): năm lần tra tên để in / hiển thị rời
+    #    `purchase_request/controller.py` cùng hàm chứa chúng — bốn lần của `_purchasing_head` sang
+    #    `service.purchasing_head`, `db.get(Survey)` của kho khảo sát sang `survey_request.service.survey_header`.
+    #    Cổng phạm vi giữ nguyên ở route (`_in_scope` / `_open_line`), bảng này chỉ canh tệp controller.
+    assert sum(that.values()) == 100, f"tổng phải là 100, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():

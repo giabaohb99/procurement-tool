@@ -12,7 +12,7 @@ người bấm nút — ảnh phải khớp đúng tên đang in.
 from app.core.audit import record
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
-from app.modules.purchase_request.controller import _approval_signers
+from app.modules.purchase_request.serializer import _approval_signers
 from app.modules.purchase_request.model import PurchaseRequest
 from app.modules.user.model import User
 

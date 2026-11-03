@@ -265,7 +265,7 @@ def test_get_scoped_pham_vi_hep_van_loc_co_xoa(world, phieu):
 
 def test_lien_ket_tu_ycmh_va_chuoi_dinh_kem_bo_phieu_da_xoa(world, actor, phieu):
     from app.core import attachment_scope
-    from app.modules.purchase_request.controller import _linked_survey_requests
+    from app.modules.purchase_request.service import linked_survey_requests as _linked_survey_requests
     from app.modules.purchase_request.model import PurchaseRequest
     from app.modules.survey_request.model import SurveyRequestPr
 

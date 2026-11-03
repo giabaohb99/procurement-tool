@@ -87,3 +87,14 @@ Cài máy mới thì chép đủ bộ này (bản tham khảo ở `~/.claude/ref
 | [`dieu-phoi`](../../../.claude/agents/dieu-phoi.md) | Chia việc, gộp nhánh, dựng dev, phát hành prod, cấp số CR | A1 Điều phối |
 | [`giao-dien-v2`](../../../.claude/agents/giao-dien-v2.md) | Màn, phân hệ, hộp thoại, bảng ở frontend-v2 | A3 Giao diện |
 | [`tai-lieu-kiem-thu`](../../../.claude/agents/tai-lieu-kiem-thu.md) | Bài HDSD, tài liệu chức năng, soát màn dev | Agent tài liệu - kiểm thử |
+
+## 4. Khuôn mẫu tài liệu phân hệ
+
+Bốn tệp bắt buộc của mỗi `doc/erp/<phan-he>/` (luật ở `chung-tai-lieu.md`, người chủ chốt 03/11/2026). Chép khuôn rồi điền.
+
+| Khuôn | Tạo thành | Nội dung |
+|---|---|---|
+| [`mau-readme-phan-he.md`](mau/mau-readme-phan-he.md) | `README.md` | Phân hệ là gì, tới đâu, đọc gì trước, mục lục, mã nguồn |
+| [`mau-yeu-cau-chuc-nang.md`](mau/mau-yeu-cau-chuc-nang.md) | `chuc-nang/01-yeu-cau-chuc-nang.md` | Vai trò, danh sách chức năng mã `CN-*`, chi tiết từng chức năng, luồng trạng thái, câu hỏi mở |
+| [`mau-yeu-cau-phi-chuc-nang.md`](mau/mau-yeu-cau-phi-chuc-nang.md) | `chuc-nang/02-yeu-cau-phi-chuc-nang.md` | 12 nhóm yêu cầu mã `PCN-*`: hiệu năng, phân quyền, dữ liệu nhạy cảm, giới hạn đầu vào, nhật ký, lưu trữ, sao lưu, đồng thời, tích hợp, thiết bị, pháp lý, vận hành — mỗi dòng có mức đo và cách kiểm |
+| [`mau-tai-lieu-api.md`](mau/mau-tai-lieu-api.md) | `tai-lieu-ky-thuat/api.md` | Bảng đường API: quyền, phạm vi, ai gọi; trường mang luật; lỗi riêng; bộ lọc. Tham số đầy đủ tra trang `/docs` (giữ mở trên dev và prod) |

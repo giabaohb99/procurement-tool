@@ -15,6 +15,7 @@ from app.modules.purchase_order import controller as po_ctl
 from app.modules.purchase_order.model import PurchaseOrder
 from app.modules.purchase_order.schema import POCreate, POUpdate, RejectIn
 from app.modules.purchase_request import controller as pr_ctl
+from app.modules.purchase_request import serializer as pr_ser
 from app.modules.purchase_request import service as pr_service
 from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
 from app.modules.purchase_request.schema import ApproveIn, PRCreate, PRUpdate
@@ -76,7 +77,7 @@ def test_pr_chosen_approver_is_notified_on_submit_and_not_printed_before_approva
 
     #  Chưa ai duyệt: ô «TP/BP đề xuất» trên bản in để TRỐNG (bao-CR-521, ticket prod #57 — trước đó
     #  in sẵn tên người được chọn, người đọc hiểu là đã ký).
-    signers = pr_ctl._approval_signers(db, pr)
+    signers = pr_ser._approval_signers(db, pr)
     assert signers["approver_name"] == "" and signers["approver_signature"] == ""
 
     pr_ctl.submit_pr(pr.id, BackgroundTasks(), db=db, user=SimpleNamespace(id=seed.u_req_id))
@@ -88,7 +89,7 @@ def test_pr_chosen_approver_is_notified_on_submit_and_not_printed_before_approva
     pr_ctl.approve_pr(pr.id, ApproveIn(), BackgroundTasks(), db=db, user=USER)
     db.refresh(pr)
     assert pr.approver_employee_id == db.get(User, USER.id).employee_id
-    assert pr_ctl._approval_signers(db, pr)["approver_name"] == "Người YC"
+    assert pr_ser._approval_signers(db, pr)["approver_name"] == "Người YC"
 
 
 def test_pr_update_can_change_the_chosen_approver_while_draft(db, seed):
@@ -275,6 +276,6 @@ def test_unapproved_print_leaves_approver_slot_blank(db, seed, monkeypatch):
     pr = pr_service.create_pr(db, PRCreate(company_id=seed.company_id, requester="Người YC",
                                            requester_id=seed.emp_req_id, department=dept.name,
                                            head_of_dept_id=seed.emp_tp_id), seed.u_req_id)
-    out = pr_ctl._approval_signers(db, pr)
+    out = pr_ser._approval_signers(db, pr)
     assert out["approver_name"] == "", "chưa duyệt thì không in tên người được chọn"
     assert out["approver_signature"] == "", "chưa duyệt thì không in ảnh chữ ký"

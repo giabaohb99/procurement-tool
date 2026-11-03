@@ -460,6 +460,14 @@ def resolve_supplier_name(db: Session, code: str) -> str:
     return sup.name if sup else code
 
 
+def survey_header(db: Session, survey_id: int):
+    """Đầu phiếu khảo sát của một dòng khảo sát SP — chỉ tra mã / phân loại / mã VTBB để
+    hiển thị ở ô chọn kho khảo sát (YCMH lẫn YCBG). Khảo sát là dữ liệu tham chiếu, tìm MỞ
+    theo thiết kế; phạm vi đã hỏi trên phiếu nền ở route gọi (bao-CR-711 dời từ controller)."""
+    from app.modules.survey.model import Survey
+    return db.get(Survey, survey_id)
+
+
 def is_purchaser(profile: dict) -> bool:
     """NSTM/Quản lý/Admin TM = có grant survey_request read với scope proc|dept_proc|all.
     Người YC (own) & trưởng BP (dept) KHÔNG phải purchaser → không xem được màn xử lý (ẩn NCC).
