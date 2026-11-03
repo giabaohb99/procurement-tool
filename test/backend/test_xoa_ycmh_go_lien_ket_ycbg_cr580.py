@@ -10,7 +10,7 @@ from app.modules.audit.model import AuditLog
 from app.modules.purchase_request import service as pr_service
 from app.modules.purchase_request.model import PurchaseRequest
 from app.modules.survey_request import service as sr_service
-from app.modules.survey_request.controller import _out_result
+from app.modules.survey_request.serializer import _out_result
 from app.modules.survey_request.model import (LS_COMPLETED, SurveyRequest, SurveyRequestLine,
                                               SurveyRequestOption, SurveyRequestPr)
 

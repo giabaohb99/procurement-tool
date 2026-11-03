@@ -22,8 +22,8 @@ def _validate_iso_date(v: str | None) -> str | None:
         return v
     try:
         date.fromisoformat(v)
-    except ValueError:
-        raise ValueError("Ngày phải theo định dạng yyyy-mm-dd")
+    except ValueError as err:
+        raise ValueError("Ngày phải theo định dạng yyyy-mm-dd") from err
     return v
 
 
