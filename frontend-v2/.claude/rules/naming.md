@@ -5,7 +5,7 @@ metadata:
   tags: naming, files, conventions
 ---
 
-# Naming
+# Naming (riêng frontend-v2)
 
 Goal: a name should tell you what's inside before you open the file. Long-but-descriptive beats short-but-cryptic.
 
@@ -52,13 +52,8 @@ say why in a comment.
 (`@/modules/hr/components/employee-form-dialog`). Only self-contained shared kits
 expose an `index.ts` (`@/shared/conditional-filter`, `@/core/api`); don't add more.
 
-## Language
+## Luật chung
 
-Code identifiers are English. **User-facing text, comments and documentation are
-Vietnamese** — this is an internal tool for a Vietnamese company and the domain
-vocabulary (YCMH, YCBG, ĐMH, NCC, YCTT…) is part of the spec. Do not "translate"
-existing Vietnamese strings or comments to English.
-
-## Function names / constants
-
-Function name should be verbs, not nouns. A function is an action, not a thing. Dont use **Vietnamese** in function names or constants.
+Định danh tiếng Anh, hàm là động từ, chuỗi / chú thích tiếng Việt, không emoji, commit, bài kiểm: xem
+`.claude/rules/chung-dat-ten-va-quy-uoc.md` ở gốc repo (luôn nạp, gom 03/11/2026 — bao-CR-712). Tệp này chỉ giữ phần
+RIÊNG của frontend-v2.

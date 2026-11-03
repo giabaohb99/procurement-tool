@@ -1,21 +1,9 @@
 ---
 name: naming
-description: File and symbol naming conventions optimized for fast discovery.
+description: Trỏ sang luật chung đặt tên và quy ước (gom 03/11/2026, bao-CR-712).
 metadata:
-  tags: naming, files, conventions
+  tags: naming, conventions
 ---
 
-## Function names / constants
-
-Function name should be verbs, not nouns. A function is an action, not a thing. Dont use **Vietnamese** in function names or constants.
-
-```python
-  //bad
-  def lay_danh_sach_nhan_vien():
-      pass
-
-  // good
-  def get_employee_list():
-      pass
-
-```
+Luật đặt tên hàm / biến / hằng / tệp và quy ước viết mã dùng chung đã gom về MỘT chỗ:
+`.claude/rules/chung-dat-ten-va-quy-uoc.md` (ở gốc repo, luôn nạp). Đừng thêm luật vào tệp này.
