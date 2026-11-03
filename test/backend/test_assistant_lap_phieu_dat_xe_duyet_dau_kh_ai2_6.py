@@ -1,6 +1,6 @@
 """kh-AI2-6 — AI LẬP phiếu đặt xe / duyệt dấu theo khuôn draft_* + confirm_draft. Tool chỉ soạn nháp; tạo thật bằng ĐÚNG
 service của màn web, kiểm lại quyền create, công ty, người duyệt (luật duoc-CR-681). Phiếu duyệt dấu chỉ lưu Nháp (gửi duyệt
-cần tệp đính kèm). Qua cổng MCP: nhóm «office_write» tắt mặc định chặn cả bước tạo."""
+cần tệp đính kèm). Qua cổng MCP: nhóm "office_write" tắt mặc định chặn cả bước tạo."""
 import json
 
 import pytest

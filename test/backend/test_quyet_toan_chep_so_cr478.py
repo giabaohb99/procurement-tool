@@ -1,12 +1,12 @@
 """bao-CR-478 — QUYẾT TOÁN DÒNG CHI PHÍ: CHÉP SỐ TỪ GIAI ĐOẠN TRƯỚC, KHÔNG CÓ DỰ TOÁN THÌ KHÔNG CHỐT.
 
-Luật đại ca chốt 24/09/2026 khi bỏ dải giai đoạn + nút «Chốt Tạm tính» ở bản cũ:
+Luật đại ca chốt 24/09/2026 khi bỏ dải giai đoạn + nút "Chốt Tạm tính" ở bản cũ:
 
 - Dòng chưa có Tạm tính LẪN Quyết toán mà tick quyết toán → chép Dự toán sang CẢ HAI cột.
 - Dòng có Tạm tính, chưa có Quyết toán → chép Tạm tính sang Quyết toán.
 - Dòng KHÔNG có Dự toán → không cho quyết toán: lượt chốt BỎ QUA dòng đó, chốt phần còn lại
   và nói ra số dòng bị bỏ qua; không còn dòng nào chốt được thì chặn và kể tên. Không ném lỗi
-  cả lượt vì nút «Quyết toán tất cả» của v2 gửi đích danh mọi id chưa chốt.
+  cả lượt vì nút "Quyết toán tất cả" của v2 gửi đích danh mọi id chưa chốt.
 
 Trước CR này quyết toán chỉ điền cột Quyết toán, cột Tạm tính để trống — bảng ba cột
 nhìn như một khoản chưa từng qua bước tạm tính.
@@ -84,7 +84,7 @@ def test_da_go_quyet_toan_thi_giu_nguyen_khong_bia_tam_tinh(db, seed):
 
 
 def test_tick_ca_dong_khong_co_du_toan_thi_bo_qua_dong_do_chot_phan_con_lai(db, seed):
-    # Nút «Quyết toán tất cả» của v2 gửi ĐÍCH DANH mọi id chưa chốt — ném lỗi cả lượt thì chỉ một
+    # Nút "Quyết toán tất cả" của v2 gửi ĐÍCH DANH mọi id chưa chốt — ném lỗi cả lượt thì chỉ một
     # dòng trống Dự toán là cả nút chết. Nên bỏ qua dòng đó và nói ra số dòng bị bỏ qua.
     po = _make_po(db, seed)
     rows = _rows(db, po, [_cost(estimate_amount=1_000_000),

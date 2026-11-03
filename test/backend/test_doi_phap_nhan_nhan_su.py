@@ -1,16 +1,16 @@
 """ĐỔI PHÁP NHÂN của một hồ sơ nhân sự (duoc-CR-342).
 
-Ô «Công ty» ở màn chi tiết nhân sự trước đây KHÓA. Mở nó ra thì lộ một cái bẫy
+Ô "Công ty" ở màn chi tiết nhân sự trước đây KHÓA. Mở nó ra thì lộ một cái bẫy
 do hai luật cũ ghép lại, và bẫy đó làm việc đổi pháp nhân **không làm được** chứ
 không phải chỉ bất tiện:
 
 1. `_sync_primary_department` đổi phòng chính thì **hạ phòng cũ xuống kiêm
    nhiệm** chứ không xóa — kể cả khi phòng chính mới là "không có". Nên xóa ô
-   «Phòng ban» ở giao diện KHÔNG gỡ người đó khỏi phòng cũ.
+   "Phòng ban" ở giao diện KHÔNG gỡ người đó khỏi phòng cũ.
 2. Chốt L3 (`_check_departments_exist`) chặn mọi phòng khác pháp nhân.
 
 Ghép lại: đổi pháp nhân xong là ăn 400 trỏ vào chính cái phòng vừa bỏ. Mà giao
-diện cũng không cứu được — thẻ «Kiêm nhiệm» chỉ quản lý phòng PHỤ, còn phòng
+diện cũng không cứu được — thẻ "Kiêm nhiệm" chỉ quản lý phòng PHỤ, còn phòng
 đang vướng lại là phòng CHÍNH vừa bị hạ xuống.
 
 `detach_other_company_departments` là chốt gỡ bẫy đó. Bài kiểm ở đây canh cả hai
@@ -66,7 +66,7 @@ def san(db, seed):
 def test_doi_phap_nhan_va_bo_phong_ban_thi_luu_duoc(db, san):
     """Đúng thao tác giao diện làm: đổi công ty + xóa ô phòng ban.
 
-    Trước khi có chốt, chính ca này ném 400 «Phòng ban thuộc pháp nhân khác»
+    Trước khi có chốt, chính ca này ném 400 "Phòng ban thuộc pháp nhân khác"
     trỏ vào cái phòng người dùng vừa xóa.
     """
     person = san["nguoi"]
@@ -80,7 +80,7 @@ def test_doi_phap_nhan_va_bo_phong_ban_thi_luu_duoc(db, san):
     assert san["phong"]["A_CHINH"] not in dv.departments_of(db, person.id)
     assert san["phong"]["A_KIEM"] not in dv.departments_of(db, person.id)
 
-    #  ⚠️ `department_id` KHÔNG về 0 dù người dùng xóa ô «Phòng ban»: phòng dùng
+    #  ⚠️ `department_id` KHÔNG về 0 dù người dùng xóa ô "Phòng ban": phòng dùng
     #  chung sống sót, và một bản ghi có phòng thì phải có phòng CHÍNH —
     #  `set_departments` luôn cử phần tử đầu làm phòng chính. Đây đúng là luật
     #  sẵn có của `_sync_primary_department` (xóa phòng chính trong khi còn kiêm

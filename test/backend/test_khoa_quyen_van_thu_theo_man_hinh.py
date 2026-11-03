@@ -63,7 +63,7 @@ def test_danh_muc_nen_khong_loc_theo_phap_nhan(key):
 def test_nhan_doc_theo_duong_menu_khong_theo_ten_bang():
     """Người khai quyền tìm theo thứ họ BẤM trên màn hình.
 
-    Nhãn cũ («Loại văn bản (Văn thư)») bắt họ tự biết ba dòng nào gộp lại thành
+    Nhãn cũ ("Loại văn bản (Văn thư)") bắt họ tự biết ba dòng nào gộp lại thành
     một mục menu, còn dòng nào trải ra ba mục — đó chính là chỗ khách kêu.
     """
     van_thu = ("doc_type", *KHOA_MOI, "external_party", "security_level",
@@ -92,7 +92,7 @@ def test_loai_van_ban_van_giu_doc_type():
 # ── Không ai mất quyền ──────────────────────────────────────────────────────
 
 def test_nguoi_soan_van_ban_van_doc_duoc_thu_vien_mau():
-    """Ô «Dùng mẫu» ở bước 1 màn Tạo văn bản gọi `/api/document-templates`.
+    """Ô "Dùng mẫu" ở bước 1 màn Tạo văn bản gọi `/api/document-templates`.
 
     Khóa của nó vừa tách khỏi `doc_type`, nên vai trò soạn thảo phải được khai
     lại tường minh — thiếu là người soạn ăn toast 403 ngay lúc mở màn, ở một ô

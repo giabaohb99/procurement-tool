@@ -2,7 +2,7 @@
 """LỊCH SỬ PHÊ DUYỆT PHẢI CÒN SAU KHI LUỒNG DUYỆT XONG (19/09/2026).
 
 Lỗi đã bắt được trên dev: phiếu đặt xe DX000932 duyệt xong, trang chi tiết
-KHÔNG còn thẻ «Luồng duyệt nhiều bước» lẫn «Lịch sử phê duyệt» — trong khi phiếu
+KHÔNG còn thẻ "Luồng duyệt nhiều bước" lẫn "Lịch sử phê duyệt" — trong khi phiếu
 đóng dấu DD000864 thì có. Nhìn qua tưởng đặt xe không được ghi nhận luồng duyệt;
 thật ra phiên duyệt + dấu vết nằm đủ dưới DB, chỉ là không ai vẽ ra.
 

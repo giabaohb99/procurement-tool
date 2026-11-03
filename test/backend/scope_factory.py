@@ -122,12 +122,12 @@ class Actor:
               inc_employee=(), exc_employee=(), role_code: str | None = None):
         """Thêm MỘT vai trò (= một grant) cho tài khoản này.
 
-        `inc_*`/`exc_*` chính là năm ô của hộp thoại «Phạm vi — <vai trò>»:
+        `inc_*`/`exc_*` chính là năm ô của hộp thoại "Phạm vi — <vai trò>":
         công ty nhận khóa của `world.co`, phòng ban nhận khóa của `world.dept`
         (lưu ID theo CR-086), nhân sự nhận khóa của `world.emp`.
 
         Gọi nhiều lần = nhiều vai trò. Phạm vi luôn gắn vào ĐÚNG vai trò vừa tạo,
-        đúng như câu «Chỉ áp dụng cho vai trò này» trên màn hình.
+        đúng như câu "Chỉ áp dụng cho vai trò này" trên màn hình.
         """
         from app.modules.role.model import Permission, Role
         from app.modules.user.model import UserRole

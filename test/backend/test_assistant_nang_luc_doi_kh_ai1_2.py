@@ -1,7 +1,7 @@
 """kh-AI1-2 (doc/erp/tai-lieu-ai/22 §4, §6) — hai công cụ AI `team_capacity` và `task_type_stats` bọc `capability/ai_contract`.
 
 Luật quyền (A1 chốt 22/10, phương án A — đúng doc 22 §6 *AI chỉ đề xuất, người quyết*):
-  · có khóa báo cáo 16 «Năng lực theo loại việc» → thấy đủ số, phòng nào cũng được;
+  · có khóa báo cáo 16 "Năng lực theo loại việc" → thấy đủ số, phòng nào cũng được;
   · trưởng phòng (`Department.manager_id`) không có khóa 16 → chỉ THỨ TỰ gợi ý người trong phòng mình + phòng con, không số;
   · nhân viên thường → từ chối, câu giải thích nói rõ cần khóa 16 và ai giao được;
   · `task_type_stats` chỉ người có khóa 16.

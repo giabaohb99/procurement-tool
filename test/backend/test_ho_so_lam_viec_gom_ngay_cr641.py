@@ -27,7 +27,7 @@ CUSTOM = DaySpec(WorkDayKind.FULL, time(7, 30), time(16, 30), time(12, 0), time(
 
 @pytest.fixture(autouse=True)
 def dong_ho_gan_ngay_kiem(monkeypatch):
-    """H3: gom lại ngày cũ hơn ~89 ngày bị từ chối — đặt «hôm nay» sát các ngày mốc (tháng 1/2026) của bài kiểm này."""
+    """H3: gom lại ngày cũ hơn ~89 ngày bị từ chối — đặt "hôm nay" sát các ngày mốc (tháng 1/2026) của bài kiểm này."""
     monkeypatch.setattr("app.modules.usage_profile.daily_builder.vn_today", lambda: date(2026, 1, 20))
 
 

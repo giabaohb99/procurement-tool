@@ -51,7 +51,7 @@ def test_han_hieu_luc_ngoai_dai_bi_chan(months):
     """`SMALLINT` tràn ở 32768; trần 1200 tháng (100 năm) chặn sớm hơn nhiều.
 
     Không có trần thì một lần gõ nhầm `99999` đi thẳng xuống cột và MySQL là chỗ
-    đầu tiên phản đối — người dùng nhận «mã sự cố» cho một ô nhập số.
+    đầu tiên phản đối — người dùng nhận "mã sự cố" cho một ô nhập số.
     """
     with pytest.raises(ValidationError):
         DossierTypeCreate(code="HD", name="Hợp đồng", default_valid_months=months)

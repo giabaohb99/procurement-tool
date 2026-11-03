@@ -54,7 +54,7 @@ def test_mat_khau_ngan_hon_muc_toi_thieu_bi_tu_choi():
 
 
 def test_mat_khau_chi_chu_hoac_chi_so_duoc_nhan_cr653():
-    #  bao-CR-653: bỏ luật «phải có cả chữ và số» — mật khẩu toàn số (vd số điện thoại) qua được.
+    #  bao-CR-653: bỏ luật "phải có cả chữ và số" — mật khẩu toàn số (vd số điện thoại) qua được.
     for raw in ("matkhaudai", "0945691104"):
         assert validate_password(raw) == raw
     #  Các luật còn lại vẫn đứng: toàn số mà nằm trong danh sách phổ biến thì vẫn bị chặn.

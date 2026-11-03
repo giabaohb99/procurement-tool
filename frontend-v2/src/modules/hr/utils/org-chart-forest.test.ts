@@ -86,7 +86,7 @@ describe('buildOrgChartForest', () => {
     expect(forest.roots).toHaveLength(3)
   })
 
-  it('company filter: unknown / zero company_id falls into group 0 «Chưa gán pháp nhân»', () => {
+  it('company filter: unknown / zero company_id falls into group 0 "Chưa gán pháp nhân"', () => {
     const data = payload({ employees: [emp(1, { company_id: 2 }), emp(2, { company_id: 0 }), emp(3, { company_id: 77 })] })
     expect([...buildOrgChartForest(data, { companyId: 0, departmentIds: null }).visibleIds].sort()).toEqual([2, 3])
     expect([...buildOrgChartForest(data, { companyId: 2, departmentIds: null }).visibleIds]).toEqual([1])

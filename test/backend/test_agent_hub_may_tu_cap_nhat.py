@@ -1,5 +1,5 @@
-"""ai-CR-124: máy sửa mã tự cập nhật cho khớp bản mã của bot — đại ca 08/10: «tự khắc phục lỗi này đi, khỏi cần thông
-báo nữa» (thẻ «MÁY SỬA MÃ VÀ BOT LỆCH BẢN» báo sau mỗi lần deploy dev).
+"""ai-CR-124: máy sửa mã tự cập nhật cho khớp bản mã của bot — đại ca 08/10: "tự khắc phục lỗi này đi, khỏi cần thông
+báo nữa" (thẻ "MÁY SỬA MÃ VÀ BOT LỆCH BẢN" báo sau mỗi lần deploy dev).
 
 Container kiểm không có git: bước kéo / xuất mã thay bằng chép một thư mục mẫu, phần còn lại (vân tay, chờ, bận, chọn
 nhánh khớp, ghi `current`, khởi động lại) chạy thật.
@@ -32,7 +32,7 @@ def runner_env(db, tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "AGENT_RUNNER_UPDATE_BRANCHES", "erp-v2,agent-hub-bac-1")
     monkeypatch.setattr(ru, "BUSY_FILE", tmp_path / "busy")
     ru._state.update({"skew_since": None, "next_try": 0.0, "last_bad": ""})
-    #  Hai «nhánh» trên GitHub: erp-v2 còn mã cũ, agent-hub-bac-1 đúng bản bot đang chạy.
+    #  Hai "nhánh" trên GitHub: erp-v2 còn mã cũ, agent-hub-bac-1 đúng bản bot đang chạy.
     src = {"erp-v2": _tree(tmp_path / "src-old", "A = 'cũ'\n").parents[2],
            "agent-hub-bac-1": _tree(tmp_path / "src-new", "A = 'mới'\n").parents[2]}
     shas = {"erp-v2": "a" * 40, "agent-hub-bac-1": "b" * 40}

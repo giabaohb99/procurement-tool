@@ -100,7 +100,7 @@ def test_nghi_viec_van_bi_loai_nhu_cu(db):
 
 
 def test_giu_nguyen_thu_tu_khai_va_bo_trung(db):
-    """Thứ tự có nghĩa với bước «lần lượt» — lọc thêm điều kiện không được xáo nó."""
+    """Thứ tự có nghĩa với bước "lần lượt" — lọc thêm điều kiện không được xáo nó."""
     a = _nhan_su(db, "TT_A")
     b = _nhan_su(db, "TT_B")
     c = _nhan_su(db, "TT_C")

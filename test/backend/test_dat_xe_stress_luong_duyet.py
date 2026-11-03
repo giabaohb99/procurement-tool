@@ -159,7 +159,7 @@ def call_dispatch_reject(db, booking_id, reason, actor):
 
 
 def sign(db, instance, actor, comment=""):
-    """Người duyệt bấm DUYỆT trên hộp «Việc của tôi»."""
+    """Người duyệt bấm DUYỆT trên hộp "Việc của tôi"."""
     return action_service.approve(db, instance, actor.employee.id, actor.user.id,
                                   bridge._context_by_id(db, instance.entity_id), comment)
 
@@ -175,13 +175,13 @@ def test_submit_opens_instance_and_assigns_first_step(db, flow, cast):
     assert booking.status == m.BK_PENDING
     assert instance is not None and instance.status == INSTANCE_RUNNING
     #  Người NỘP phải là người BẤM GỬI DUYỆT, không phải một hằng số nào khác —
-    #  mọi luật I08 («không tự duyệt phiếu của mình») bám vào cột này.
+    #  mọi luật I08 ("không tự duyệt phiếu của mình") bám vào cột này.
     assert instance.started_by_employee_id == cast.creator.employee.id
     assert list_states(db, instance) == [(cast.approver.employee.id, TASK_PENDING)]
 
 
 def test_signing_first_of_two_steps_does_not_move_booking(db, flow, cast):
-    """Ký nửa chừng mà phiếu đã «Đã duyệt» thì điều phối viên gọi xe cho một
+    """Ký nửa chừng mà phiếu đã "Đã duyệt" thì điều phối viên gọi xe cho một
     chuyến chưa ai duyệt xong."""
     make_node(db, flow, 1, "Trưởng bộ phận", employee_ids=[cast.approver.employee.id])
     make_node(db, flow, 2, "Hành chính", employee_ids=[cast.outsider_approver.employee.id])
@@ -261,7 +261,7 @@ def test_sending_back_lets_the_creator_fix_and_resubmit(db, flow, cast):
 
 
 def test_creator_who_is_also_department_head_cannot_self_approve(db, flow, cast, world):
-    """I08 — bước «Trưởng bộ phận» tính ra đúng người vừa nộp thì phiếu KẸT.
+    """I08 — bước "Trưởng bộ phận" tính ra đúng người vừa nộp thì phiếu KẸT.
 
     Không được tự đi tiếp: chuyến xe có hiệu lực mà không ai ngoài người xin
     chịu trách nhiệm.
@@ -353,7 +353,7 @@ def test_booking_detail_stays_404_for_an_approver_with_no_pending_task(db, flow,
 def test_approver_without_pending_task_still_cannot_read_other_dept_booking(db, flow, cast):
     """Chốt ngược của bài trên: nới phải nới ĐÚNG LÚC ĐANG TREO VIỆC.
 
-    Nới theo kiểu «ai có quyền approve cũng đọc được tất» là mở toang phạm vi
+    Nới theo kiểu "ai có quyền approve cũng đọc được tất" là mở toang phạm vi
     dữ liệu của cả phân hệ.
     """
     make_node(db, flow, 1, "Trưởng bộ phận", employee_ids=[cast.approver.employee.id])
@@ -412,7 +412,7 @@ def test_rejected_booking_must_not_be_resurrected_by_a_late_signature(db, flow, 
 
     Cảnh gốc: điều phối viên từ chối phiếu lúc nó còn Chờ duyệt (cửa
     `dispatch/reject` khi đó chưa khóa) → phiếu Từ chối nhưng phiên duyệt vẫn
-    chạy → người duyệt bấm Duyệt → `_on_approved` đặt «Đã duyệt» VÔ ĐIỀU KIỆN,
+    chạy → người duyệt bấm Duyệt → `_on_approved` đặt "Đã duyệt" VÔ ĐIỀU KIỆN,
     phiếu đã từ chối SỐNG LẠI. Cửa kia nay đã khóa, nhưng chốt phải nằm cả ở
     đây: hook là đường vào cuối cùng và nó không biết ai vừa đổi trạng thái
     bằng đường nào.
@@ -438,11 +438,11 @@ def test_dispatching_before_approval_is_allowed_and_survives_the_signature(db, f
     nên điều phối viên gán được xe + tài xế cho phiếu **chưa ai ký** — giữ lại vì
     có chuyến gấp phải gọi xe trước chữ ký.
 
-    Cái PHẢI đúng là nhịp sau đó: người duyệt ký xong thì phiếu **giữ nguyên «Đã
-    điều phối»**, không bị đẩy lùi về «Đã duyệt». Đẩy lùi là xóa mất bước đã đi
-    trong khi xe và tài xế vẫn đang giữ chuyến, và `driver_status` («Chờ tài xế»)
-    thì cãi nhau với `status` — tài xế thấy chuyến trong «Chuyến của tôi» còn
-    phiếu thì hiện «Đã duyệt».
+    Cái PHẢI đúng là nhịp sau đó: người duyệt ký xong thì phiếu **giữ nguyên "Đã
+    điều phối"**, không bị đẩy lùi về "Đã duyệt". Đẩy lùi là xóa mất bước đã đi
+    trong khi xe và tài xế vẫn đang giữ chuyến, và `driver_status` ("Chờ tài xế")
+    thì cãi nhau với `status` — tài xế thấy chuyến trong "Chuyến của tôi" còn
+    phiếu thì hiện "Đã duyệt".
     """
     make_node(db, flow, 1, "Trưởng bộ phận", employee_ids=[cast.approver.employee.id])
     booking, instance = submit_booking(db, cast.creator)
@@ -523,7 +523,7 @@ def test_engine_approval_records_the_real_signer_and_timestamp(db, flow, cast):
     * `serialize_booking` → `approver_name = _emp_name_of_user(approved_by or
       first_approver_id)` ⇒ lùi về **người mà NGƯỜI TẠO tự chọn trong biểu mẫu**
       — người có thể chưa hề ký, hoặc không nằm trong luồng;
-    * `build-booking-stages.ts` vẽ chặng «Đã phê duyệt» với `time =
+    * `build-booking-stages.ts` vẽ chặng "Đã phê duyệt" với `time =
       approved_at` ⇒ ô thời gian TRỐNG, và `actor` là tên người nói trên.
 
     Chính phiếu là chỗ người ta tin, không phải dấu vết bộ máy.
@@ -560,7 +560,7 @@ def test_deleting_a_booking_closes_its_running_instance(db, flow, cast):
     """⚠️ Xóa mềm phiếu KHÔNG dọn phiên duyệt (`instance_service.delete_by_entity`
     có sẵn, module đặt xe không gọi).
 
-    Việc vẫn nằm trong hộp «Việc của tôi» của người duyệt — `my_tasks` chỉ lọc
+    Việc vẫn nằm trong hộp "Việc của tôi" của người duyệt — `my_tasks` chỉ lọc
     phiên ĐÃ ĐÓNG, còn phiên này vẫn mở. Bấm vào thì `_can_read_booking` trả
     False (phiếu `is_deleted`) ⇒ 404, mà bấm **Duyệt** thì đường duyệt KHÔNG
     kiểm quyền đọc: `_on_approved` đặt lại `status` cho một phiếu đã xóa.
@@ -657,7 +657,7 @@ def test_only_the_submitter_can_withdraw(db, flow, cast):
 def test_direct_path_blocks_a_normal_user_approving_their_own_booking(db, cast):
     """I08 cho đường duyệt MỘT BƯỚC — đường ĐANG CHẠY THẬT (cờ bộ máy mặc định tắt).
 
-    `approve_booking` trước 21/09/2026 chỉ hỏi «phiếu có đang Chờ duyệt không».
+    `approve_booking` trước 21/09/2026 chỉ hỏi "phiếu có đang Chờ duyệt không".
     Người kiêm một vai có `vehicle_booking.approve` tự ký phiếu xe của chính mình
     và nhật ký đọc xuôi tới mức không ai soi.
     """

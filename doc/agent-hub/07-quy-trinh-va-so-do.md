@@ -81,7 +81,7 @@ flowchart TB
 | Ai | Làm được | Không làm được |
 |---|---|---|
 | **Nhân viên** đã `/dangnhap` | Hỏi Trợ lý dưới đúng quyền ERP của mình; tạo / gửi duyệt phiếu từ chat; nghiên cứu; nhắc việc; tin thoại; chuông; Lịch/Drive của mình; khóa MCP của mình; báo lỗi | Giao việc sửa mã; thấy dữ liệu ngoài quyền |
-| **Người được cấp quyền** (đại ca nhắn «cho anh X quyền …») | Thêm: lệnh trên việc sửa mã theo cấp — *duyệt kế hoạch* (duyệt, sửa kế hoạch, làm tiếp, đóng) hoặc *gộp dev* (thêm gộp, deploy dev, thu hồi). Phải nêu mã việc | Lên prod; cấp quyền cho người khác |
+| **Người được cấp quyền** (đại ca nhắn **cho anh X quyền …**) | Thêm: lệnh trên việc sửa mã theo cấp — *duyệt kế hoạch* (duyệt, sửa kế hoạch, làm tiếp, đóng) hoặc *gộp dev* (thêm gộp, deploy dev, thu hồi). Phải nêu mã việc | Lên prod; cấp quyền cho người khác |
 | **Đại ca** | Mọi thứ; cấp/gỡ quyền; thêm/gỡ máy; thêm môi trường; duyệt thao tác trên VPS 1; lên prod (kèm OTP) | — |
 | **Bot tổng** | Gọi công cụ ERP dưới quyền người hỏi; xếp việc; gửi tin | Sửa mã; chạy lệnh trên máy |
 | **Bot code** | Sửa mã trong worktree; chạy kiểm; dựng preview; xin deploy | Tự sửa phần quyền / OTP / danh sách tệp cấm của chính nó; lên prod khi chưa duyệt |
@@ -103,7 +103,7 @@ flowchart LR
     E -- tra cứu --> G["Nghiên cứu web / kiểm chứng"]
     E -- giao việc sửa mã --> H["Luồng 4.2 (chỉ đại ca + người có quyền)"]
     F --> F1{"Tool trả bản nháp phiếu?"}
-    F1 -- có --> F2["Thẻ nháp → «tạo» / «tạo và gửi duyệt» → link phiếu"]
+    F1 -- có --> F2["Thẻ nháp → "tạo" / "tạo và gửi duyệt" → link phiếu"]
 ```
 
 Chạy nền theo lịch (không cần ai nhắn): **chuông ERP** → Telegram mỗi phút; **lời nhắc** tới giờ; **bản tin sáng**
@@ -120,14 +120,14 @@ sequenceDiagram
     participant GH as GitHub
     participant ENV as Dev / Prod
 
-    DC->>B1: «màn công nợ lọc sai ngày» (chữ, ảnh, thoại hoặc phiếu hỗ trợ)
+    DC->>B1: "màn công nợ lọc sai ngày" (chữ, ảnh, thoại hoặc phiếu hỗ trợ)
     B1->>B1: Gom tin 30 giây, chấm việc NHỎ hay ĐẦY ĐỦ
     alt Việc đầy đủ
         B1->>B2: Rà soát mã thật (Opus)
         B2-->>B1: Phân tích
         B1->>B1: Lập kế hoạch (Gemini)
         B1->>DC: Thẻ kế hoạch
-        DC->>B1: «duyệt»
+        DC->>B1: "duyệt"
     else Việc nhỏ (đường tắt)
         B1->>B1: Kế hoạch gọn, ≤3 tệp → tự duyệt
     end
@@ -136,17 +136,17 @@ sequenceDiagram
     B2->>GH: Đẩy nhánh bot/AI-xxxx
     B2->>B2: Dựng preview riêng của việc [làm]
     B2-->>B1: Thẻ kết quả + link preview
-    B1->>DC: «AI-xxxx xong, xem thử: ai-xxxx.preview…»
-    DC->>B1: «gộp và deploy dev AI-xxxx»
+    B1->>DC: "AI-xxxx xong, xem thử: ai-xxxx.preview…"
+    DC->>B1: "gộp và deploy dev AI-xxxx"
     B1->>B2: Xin gộp + deploy
     B2->>GH: Gộp vào erp-v2
     B2->>ENV: deploy.sh dev <commit> (khóa SSH khóa cứng) [làm]
     B2-->>B1: Ghi nhật ký deploy
-    DC->>B1: «lên prod AI-xxxx» + OTP [làm]
+    DC->>B1: "lên prod AI-xxxx" + OTP [làm]
     B1->>ENV: deploy.sh prod <commit> (từ VPS 1, không từ VPS 2)
 ```
 
-Máy sửa mã tắt thì việc nằm chờ trong hàng đợi, bot báo «đang chờ máy X». Việc **dính máy** đã bắt đầu nó.
+Máy sửa mã tắt thì việc nằm chờ trong hàng đợi, bot báo **đang chờ máy X**. Việc **dính máy** đã bắt đầu nó.
 Model: việc nhỏ `claude-opus-5`, việc đầy đủ `claude-opus-5-5` (đặt trong `.env.runner`).
 
 ### 4.3 Bản xem thử (preview) — [làm]
@@ -161,24 +161,24 @@ Model: việc nhỏ `claude-opus-5`, việc đầy đủ `claude-opus-5-5` (đ�
 | Thao tác | Duyệt | Bảo vệ |
 |---|---|---|
 | Xem dữ liệu / log dev | Không | MySQL chỉ đọc, ghi nhật ký |
-| Xem dữ liệu prod | «đúng» | Ghi nhật ký |
-| Sửa dữ liệu / chạy lệnh dev | «đúng» | Thẻ hiện nguyên văn lệnh → **sao lưu trước** → chạy → nhật ký + **lệnh hoàn tác** |
-| Mọi thay đổi prod | «đúng» (+ **OTP** — tạm bỏ qua, đại ca 05/10) | Như trên; deploy prod sao lưu cả DB trước |
+| Xem dữ liệu prod | **đúng** | Ghi nhật ký |
+| Sửa dữ liệu / chạy lệnh dev | **đúng** | Thẻ hiện nguyên văn lệnh → **sao lưu trước** → chạy → nhật ký + **lệnh hoàn tác** |
+| Mọi thay đổi prod | **đúng** (+ **OTP** — tạm bỏ qua, đại ca 05/10) | Như trên; deploy prod sao lưu cả DB trước |
 
-«hoàn tác thao tác #12» → bot đẻ thao tác hoàn tác (cũng qua «đúng»). «lịch sử thao tác prod» → liệt kê. Sự cố: health hỏng 3 phút liền → máy sửa mã chẩn đoán → dev tự chữa (trần 3 lần/giờ), prod thẻ «đúng»; lặp 3 lần/7 ngày → việc sửa gốc rễ (ai-CR-069).
+**hoàn tác thao tác #12** → bot đẻ thao tác hoàn tác (cũng qua **đúng**). **lịch sử thao tác prod** → liệt kê. Sự cố: health hỏng 3 phút liền → máy sửa mã chẩn đoán → dev tự chữa (trần 3 lần/giờ), prod thẻ **đúng**; lặp 3 lần/7 ngày → việc sửa gốc rễ (ai-CR-069).
 
 ### 4.5 Bot tự cải thiện — [chạy] (ba luật thi hành từ ai-CR-067)
 
-Mã của bot nằm cùng kho, nên «sửa bot» là một việc sửa mã như mọi việc khác (AI-0001 chính là bot sửa giao diện
+Mã của bot nằm cùng kho, nên **sửa bot** là một việc sửa mã như mọi việc khác (AI-0001 chính là bot sửa giao diện
 của bot). Ba luật cứng thi hành trong mã: bot code **không** được sửa sổ quyền, phần OTP / lệnh lên prod, và danh sách
 tệp cấm sửa; mọi thay đổi qua cổng kiểm + đại ca duyệt; lên prod luôn cần OTP.
 
 ### 4.6 Mở rộng — sổ môi trường và sổ máy
 
-- **Sổ máy** [chạy]: «thêm máy của anh Được» · «máy nào đang bật» · «AI-0012 cho máy X làm» · «cho máy X được deploy».
-- **Sổ môi trường** [chạy, ai-CR-067]: «thêm môi trường staging: vps …, nhánh …, lệnh deploy …» → bot tổng ghi, truyền cho bot code
+- **Sổ máy** [chạy]: **thêm máy của anh Được** · **máy nào đang bật** · **AI-0012 cho máy X làm** · **cho máy X được deploy**.
+- **Sổ môi trường** [chạy, ai-CR-067]: **thêm môi trường staging: vps …, nhánh …, lệnh deploy …** → bot tổng ghi, truyền cho bot code
   mỗi lần giao việc. Thêm VPS thứ 3, 4 = thêm dòng.
-- **Báo tài nguyên** [chạy, ai-CR-068]: mỗi ngày RAM/CPU/đĩa từng máy, số việc, lượt Claude/Gemini, việc kẹt; hỏi «tình hình máy».
+- **Báo tài nguyên** [chạy, ai-CR-068]: mỗi ngày RAM/CPU/đĩa từng máy, số việc, lượt Claude/Gemini, việc kẹt; hỏi **tình hình máy**.
 
 ## 5. Trạng thái tổng (05/10/2026)
 
@@ -187,7 +187,7 @@ tệp cấm sửa; mọi thay đổi qua cổng kiểm + đại ca duyệt; lên
 | 0–2 | Bot sửa mã, đăng nhập, khóa cá nhân, bot lên dev, máy sửa mã tách rời, đường tắt | [chạy] |
 | 3 | Chuông, nhắc việc, tin thoại, trần lượt | [chạy] |
 | 4 | Cổng MCP | [chạy], chưa ai thử bằng ứng dụng thật |
-| 5 | Google cá nhân: Lịch, Drive, bản tin sáng, nhắc họp | Mã đã lên dev; chờ đại ca: redirect URI, «In production», `GOOGLE_CLIENT_SECRET` |
+| 5 | Google cá nhân: Lịch, Drive, bản tin sáng, nhắc họp | Mã đã lên dev; chờ đại ca: redirect URI, **In production**, `GOOGLE_CLIENT_SECRET` |
 | **6** | Quy trình code hai máy chủ (nhóm V): sổ môi trường, `deploy.sh` + nhật ký, thao tác VPS 1 có duyệt/sao lưu/hoàn tác, OTP, 3 luật, báo tài nguyên, preview | [chạy] trừ OTP (tạm bỏ), preview V-07 (chờ tên miền + token), VPS 2 thật (V-08) |
 | **7** | Tự vận hành (nhóm O): theo dõi sức khỏe, tự chẩn đoán, tự khôi phục dev, prod chỉ đề xuất, sổ sự cố | [chạy] — O-01 còn thiếu đếm 5xx + hàng đợi |
 | **8** | Lõi mở: gọi MCP bên ngoài, A2A giữa các bot, giao việc tính ngân sách, sổ sự kiện chung | [sau] |
@@ -196,7 +196,7 @@ tệp cấm sửa; mọi thay đổi qua cổng kiểm + đại ca duyệt; lên
 
 ## 6. Đối chiếu với các mô hình bên ngoài (05/10/2026)
 
-Mô hình của hệ là **orchestrator – worker** (điều phối – thực thi), một trong các mẫu trong bài «Building Effective Agents»
+Mô hình của hệ là **orchestrator – worker** (điều phối – thực thi), một trong các mẫu trong bài **Building Effective Agents**
 của Anthropic, đi cùng **tool calling / MCP** (agent dùng công cụ) và sắp tới **A2A** (agent nói chuyện với agent). Hệ là
 **agentic**: tự lên kế hoạch, gọi công cụ, làm nhiều bước. Nguyên tắc: **chỉ học ý tưởng, không clone thay lõi** — phần
 khó nhất (quyền ERP từng người, phạm vi dữ liệu, khóa cá nhân, sổ việc, chi phí) các khung chung không có.

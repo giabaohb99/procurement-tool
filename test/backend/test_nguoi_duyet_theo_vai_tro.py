@@ -2,7 +2,7 @@
 
 Lỗi có từ ngày dựng bộ máy duyệt (fda76b43): `approver_resolver._by_role` nhập
 `UserRole` từ `app.modules.role.model`, trong khi lớp đó nằm ở
-`app.modules.user.model`. Mọi bước khai «theo vai trò» nổ ImportError đúng lúc
+`app.modules.user.model`. Mọi bước khai "theo vai trò" nổ ImportError đúng lúc
 luồng mở bước đó, nên người bấm duyệt bước trước nhận lỗi 500. Bắt được khi thử
 luồng Đặt xe hai bước trên local ngày 03/10/2026.
 """

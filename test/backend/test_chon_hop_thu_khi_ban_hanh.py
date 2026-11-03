@@ -167,7 +167,7 @@ def test_loai_cu_trong_DB_van_tu_ban_hanh(db, align):
     assert _auto_issue(db, doc) is True
 
 
-# ── 2 · Loại bật cờ thì DỪNG ở «Chờ ban hành» ────────────────────────────────
+# ── 2 · Loại bật cờ thì DỪNG ở "Chờ ban hành" ────────────────────────────────
 
 def test_ky_het_cac_buoc_thi_dung_o_cho_ban_hanh_chua_cap_so(db, align):
     _bat_luong(db, align)
@@ -177,7 +177,7 @@ def test_ky_het_cac_buoc_thi_dung_o_cho_ban_hanh_chua_cap_so(db, align):
     assert not (doc.doc_code or doc.issue_number), "Chưa bấm ban hành thì chưa cấp số"
     ban = service.open_version(db, doc)
     assert ban is not None and ban.status == VERSION_SUBMITTED, \
-        "Bản phải giữ tư thế «chờ duyệt» để `approve()` chạy được lần sau"
+        "Bản phải giữ tư thế \"chờ duyệt\" để `approve()` chạy được lần sau"
     #  Phiên duyệt đã đóng — không còn ai phải ký nữa.
     assert instance_service.running_instance(db, ENTITY, doc.id) is None
 

@@ -16,8 +16,8 @@ Mọi con số trong tài liệu này **đo trên 5 tệp thật** trong thư m�
 | **1.3** | 23/09/2026 | Thêm §2.2 định nghĩa **tờ khai** và **dòng hàng**; đổi tên bảng lớn `tab_customs_declaration` → **`tab_customs_line`**; đổi "dòng tờ khai" thành "dòng hàng" trong mọi tài liệu | Đại ca hỏi *"định nghĩa một tờ khai là như thế nào"* — đo lại thì mỗi dòng Excel là **một dòng hàng**, không phải một tờ khai, và dữ liệu **không gom lại thành tờ khai được** |
 | **1.4** | 23/09/2026 | **Bỏ lớp đệm `tab_report_snapshot`.** Không còn gì tính sẵn: mọi con số tính lúc mở | Đại ca chốt màn tra cứu **hai thẻ Danh sách / Biểu đồ, biểu đồ chỉ hiện khi đã lọc** — trang tổng quan (thứ duy nhất dùng snapshot) bỏ. Không có task định kỳ nào |
 | **1.5** | 23/09/2026 | Thêm §10: bốn bảng danh mục của HQ4/HQ6 (`tab_customs_ingredient_alias` · `tab_customs_pesticide` · `tab_customs_regulation` · `tab_customs_tariff`), hai cột suy ra trên `tab_customs_line` (`active_ingredient` · `formulation`), script nạp danh mục, bộ nhận hoạt chất ba nguồn, khóa thứ hai `customs_regulation` | Đại ca bảo làm đủ mọi phase một lượt |
-| **1.6** | 25/09/2026 | **bao-CR-496.** (1) Nhật ký **từng dòng** của lô: thêm cột `row_status` (SMALLINT, `ImportRowStatus`: 0 dòng nhật ký thường · 1 Thêm mới · 2 Lỗi · 3 Trùng trong lô) vào **`tab_import_log` có sẵn**, KHÔNG tạo bảng mới — xem §3.1b. (2) Bảng mới `tab_customs_saved_filter` (bộ lọc người dùng đặt tên, riêng từng tài khoản, `is_shared` chừa sẵn) | Chị Mi (F01 ghi chú 25/09, F07); đại ca chốt: không có kết cục «Cập nhật», dòng trùng chỉ đánh dấu không xóa, bộ lọc lưu riêng từng người |
-| **1.7** | 01/10/2026 | **bao-CR-541 — chống trùng bằng mã băm, bỏ «thay theo khoảng ngày».** Cột mới `tab_customs_line.row_hash` (SHA-1 đủ các cột dữ liệu sau chuẩn hóa, chỉ mục `(row_hash, reg_date)`). Nạp tệp: dòng giống hệt dòng đã lưu → **4 Đã có**, lặp trong tệp → **3 Trùng trong tệp**, cả hai **bỏ qua**; không xóa, không ghi đè. Dòng mới trùng cột nhận diện mà khác giá vẫn thêm, kèm ghi chú «nghi sửa giá». Lô mới luôn hoàn tác được. Xem §4.5 | Đại ca chốt 01/10: nguồn «xuất ra rồi bỏ vào luôn», người nạp không biết tệp chồng nhau; luật cũ xóa mất dữ liệu đúng khi tệp mới xuất thiếu (R1) và để lọt 806 dòng trùng trong lô |
+| **1.6** | 25/09/2026 | **bao-CR-496.** (1) Nhật ký **từng dòng** của lô: thêm cột `row_status` (SMALLINT, `ImportRowStatus`: 0 dòng nhật ký thường · 1 Thêm mới · 2 Lỗi · 3 Trùng trong lô) vào **`tab_import_log` có sẵn**, KHÔNG tạo bảng mới — xem §3.1b. (2) Bảng mới `tab_customs_saved_filter` (bộ lọc người dùng đặt tên, riêng từng tài khoản, `is_shared` chừa sẵn) | Chị Mi (F01 ghi chú 25/09, F07); đại ca chốt: không có kết cục **Cập nhật**, dòng trùng chỉ đánh dấu không xóa, bộ lọc lưu riêng từng người |
+| **1.7** | 01/10/2026 | **bao-CR-541 — chống trùng bằng mã băm, bỏ "thay theo khoảng ngày".** Cột mới `tab_customs_line.row_hash` (SHA-1 đủ các cột dữ liệu sau chuẩn hóa, chỉ mục `(row_hash, reg_date)`). Nạp tệp: dòng giống hệt dòng đã lưu → **4 Đã có**, lặp trong tệp → **3 Trùng trong tệp**, cả hai **bỏ qua**; không xóa, không ghi đè. Dòng mới trùng cột nhận diện mà khác giá vẫn thêm, kèm ghi chú **nghi sửa giá**. Lô mới luôn hoàn tác được. Xem §4.5 | Đại ca chốt 01/10: nguồn **xuất ra rồi bỏ vào luôn**, người nạp không biết tệp chồng nhau; luật cũ xóa mất dữ liệu đúng khi tệp mới xuất thiếu (R1) và để lọt 806 dòng trùng trong lô |
 
 ---
 
@@ -125,7 +125,7 @@ Ghi chú 25/09 của chị Mi (F01): sau khi nạp phải xem được **đủ m
 - cột mặc định `0` = *dòng nhật ký thường*, các phân hệ khác dùng `import_tool` **không thấy gì đổi**; chỉ mục `(batch_id, row_status)` để đếm / lọc theo lô;
 - mỗi dòng dữ liệu một dòng nhật ký, ghi bằng **chèn hàng loạt** (`customs/row_log.py`), ở **cả chạy thử lẫn ghi thật** để người nạp soi trước khi bấm ghi.
 
-Ba kết cục, **cố ý không có «Cập nhật»** (đại ca chốt: nguồn không có số tờ khai, không biết dòng nào là dòng cũ): **1 Thêm mới** · **2 Lỗi** (bộ đọc bỏ dòng, hiện chỉ có «không đọc được Ngày đăng ký») · **3 Trùng trong lô** = giống hệt 32 cột *sau chuẩn hóa của bộ đọc* với một dòng đứng trước trong cùng tệp. Dòng trùng **chỉ đánh dấu, vẫn ghi** vào `tab_customs_line` — hai dòng giống hệt có thể là hai lô hàng thật (`01` N-04: tệp mẫu có 806 cặp); luật đếm `created_count` / `skipped_count` của lô giữ nguyên, số dòng trùng ghi thêm vào `sheet_info.duplicate_rows`. Đường đọc: `GET /api/customs/imports/{id}/rows?row_status=` + `/rows/summary` (`saved_filter_controller.py`). Lô nạp **trước** CR-496 không có nhật ký từng dòng — màn hình nói rõ thay vì hiện bảng trống.
+Ba kết cục, **cố ý không có "Cập nhật"** (đại ca chốt: nguồn không có số tờ khai, không biết dòng nào là dòng cũ): **1 Thêm mới** · **2 Lỗi** (bộ đọc bỏ dòng, hiện chỉ có **không đọc được Ngày đăng ký**) · **3 Trùng trong lô** = giống hệt 32 cột *sau chuẩn hóa của bộ đọc* với một dòng đứng trước trong cùng tệp. Dòng trùng **chỉ đánh dấu, vẫn ghi** vào `tab_customs_line` — hai dòng giống hệt có thể là hai lô hàng thật (`01` N-04: tệp mẫu có 806 cặp); luật đếm `created_count` / `skipped_count` của lô giữ nguyên, số dòng trùng ghi thêm vào `sheet_info.duplicate_rows`. Đường đọc: `GET /api/customs/imports/{id}/rows?row_status=` + `/rows/summary` (`saved_filter_controller.py`). Lô nạp **trước** CR-496 không có nhật ký từng dòng — màn hình nói rõ thay vì hiện bảng trống.
 
 **Một lô = một tệp** (`file_id` chỉ trỏ được một tệp). Chọn cả bộ 5 tệp một lần thì sinh 5 lô liền nhau — không sao, vì đo được 5 tệp phủ 5 khoảng ngày **không chồng nhau** (§4.4). Nguy cơ quên một tệp thì xử bằng **dải tháng đã phủ** trên màn hình ([`04`](./04-giao-dien.md)), tháng trống hiện rõ.
 
@@ -257,7 +257,7 @@ Lúc đó: khóa `(khóa gom, tháng, đơn vị)`, **lưu TỔNG** (`Σ lượn
 Chạy ở **tác vụ nền Celery**, không trong lượt gọi API.
 
 1. Người dùng tải lên **một hoặc nhiều tệp** của cùng một lần kết xuất → mỗi tệp lưu nguyên văn vào kho tệp (tầng 1) và sinh **một lô `tab_import_batch`** (`module = CUSTOMS_DECLARATION`, `mode = DRY_RUN`).
-   **Lượt chạy thử** đi hết bước 2–4 nhưng **không ghi dòng hàng**, rồi trả về: số dòng mới · số dòng đã có · số dòng trùng trong tệp · khoảng ngày · số dòng sẽ vá ngày · cảnh báo (bao-CR-541; trước đó là «số dòng cũ sẽ bị thay»). Người nạp xem xong bấm Áp dụng → chạy lại với `mode = APPLY` đi đủ bước 2–6.
+   **Lượt chạy thử** đi hết bước 2–4 nhưng **không ghi dòng hàng**, rồi trả về: số dòng mới · số dòng đã có · số dòng trùng trong tệp · khoảng ngày · số dòng sẽ vá ngày · cảnh báo (bao-CR-541; trước đó là **số dòng cũ sẽ bị thay**). Người nạp xem xong bấm Áp dụng → chạy lại với `mode = APPLY` đi đủ bước 2–6.
 2. **Kiểm tiêu đề** — khớp đủ 32 cột theo **chữ đã chuẩn hóa** (thường, bỏ dấu, gộp khoảng trắng) chứ không theo vị trí. Tiêu đề gốc có lỗi chính tả (`Tên nuớc xuất xứ` — "nuớc" chứ không phải "nước"); khớp nguyên văn thì một lần GTT02 sửa chính tả là hỏng hết. **Thiếu cột nào là từ chối cả lô**, báo đúng tên cột thiếu.
 3. Đọc từng dòng, chuẩn hóa (§4.2, §4.3).
 4. Tra hoặc tạo bảng đối tượng (§3.2) theo `(party_type, dedupe_key)` — **một lượt truy vấn cho cả khối**, không truy vấn từng dòng.
@@ -304,7 +304,7 @@ GTT02 cắt một lần kết xuất thành từng khối hai tháng. **Một l�
 - **Mã băm** `row_hash` = SHA-1 của đủ các cột dữ liệu của tệp sau chuẩn hóa: chữ thường, bỏ dấu, gộp khoảng trắng; số làm tròn đúng số chữ số lẻ của cột; ngày dạng `YYYY-MM-DD`; ô trống khác số 0 và khác chuỗi rỗng. Doanh nghiệp nhập khẩu đi vào khóa bằng **mã số thuế**, đối tác bằng **khóa tên chuẩn hóa** — đúng dạng đã lưu, vì DB chỉ giữ một tên cho mỗi mã số thuế. Không đưa cột dẫn xuất (hoạt chất, hàm lượng, loại hàng) và vị trí dòng trong tệp vào khóa. Mã: `app/modules/customs/dedupe.py`.
 - **Vì sao băm, không so thẳng các cột trong SQL:** MySQL không dựng chỉ mục quá 16 cột, và `NULL = NULL` không bao giờ đúng — hai dòng giống hệt cùng trống một ô bị coi là khác.
 - **Kết cục từng dòng:** **1 Thêm mới** · **2 Lỗi** · **3 Trùng trong tệp** (bỏ qua) · **4 Đã có** (bỏ qua, ghi số lô chứa dòng gốc). Lô ghi `sheet_info.duplicate_rows` · `existing_rows` · `suspect_rows`.
-- **Không ghi đè.** Không có số tờ khai nên không biết chắc «dòng này là dòng kia đã sửa giá». Đo 01/10 trên 18.243 dòng: **129 nhóm / 327 dòng** trùng ngày · nơi mở tờ khai · doanh nghiệp · đối tác · mã HS · số thứ tự · tên hàng mà khác giá/lượng — đa số là lô thật. Dòng như vậy vẫn **thêm**, ghi chú «nghi sửa giá … lô #n» để người nạp rà; nguồn sửa thật thì hoàn tác lô cũ rồi nạp lại.
+- **Không ghi đè.** Không có số tờ khai nên không biết chắc **dòng này là dòng kia đã sửa giá**. Đo 01/10 trên 18.243 dòng: **129 nhóm / 327 dòng** trùng ngày · nơi mở tờ khai · doanh nghiệp · đối tác · mã HS · số thứ tự · tên hàng mà khác giá/lượng — đa số là lô thật. Dòng như vậy vẫn **thêm**, ghi chú **nghi sửa giá … lô #n** để người nạp rà; nguồn sửa thật thì hoàn tác lô cũ rồi nạp lại.
 - **Dòng cũ chưa có mã** (nạp trước CR) tự được tính khi lần nạp sau chạm khoảng ngày của nó; tính một lần cho cả bảng + dọn dòng thừa bằng `python -m scripts.customs_row_hash --backfill --dedupe [--apply]`. Đo trên bản sao prod: 576 nhóm / 806 dòng thừa — khớp số đếm theo 32 cột trước đó.
 - **Tốc độ:** đọc mã của 9 tháng dữ liệu (~18.000 dòng) mất ~1,7 giây trên máy dev — không chậm hơn bước xóa theo khoảng ngày cũ.
 - **Sau khi dọn sạch** có thể nâng chỉ mục thành UNIQUE `(row_hash, reg_date)` (bảng chia phân vùng theo năm của `reg_date` nên khóa duy nhất phải chứa cột đó).
@@ -373,7 +373,7 @@ GTT02 cắt một lần kết xuất thành từng khối hai tháng. **Một l�
 | Bảng đối tượng — **cùng tên, khác loại** | Một đối tác nước ngoài trùng tên một doanh nghiệp trong nước → **hai dòng**, không gộp nhầm |
 | Kỳ gom tháng / quý / năm | Cùng một tập dòng, tổng lượng ba kỳ khớp nhau; giá bình quân là **gia quyền theo lượng**, khớp tính tay |
 | Tách theo đơn vị | kg và lít không cộng lẫn |
-| Nạp lại cùng tệp / tệp chồng ngày (bao-CR-541) | Không nhân đôi dòng; dòng đã có → «Đã có», không xóa dòng nào của lô trước; tệp mới xuất thiếu không làm mất dữ liệu cũ |
+| Nạp lại cùng tệp / tệp chồng ngày (bao-CR-541) | Không nhân đôi dòng; dòng đã có → **Đã có**, không xóa dòng nào của lô trước; tệp mới xuất thiếu không làm mất dữ liệu cũ |
 | Chạy thử `DRY_RUN` | Không ghi dòng hàng nào, nhưng trả đúng số dòng mới · đã có · trùng trong tệp · khoảng ngày |
 | Hoàn tác lô | `REVERTED` xóa hết dòng mang `batch_id` đó, không đụng lô khác |
 | Tiêu đề thiếu cột | Từ chối cả lô, báo đúng tên cột |
@@ -451,26 +451,26 @@ Vẫn không có gì tính sẵn (§3.6). `service.compute_stats` / `compare_ter
 
 - `customs_price_stats` + `compare_keywords` → `service.compare_terms` (bắt buộc có `keyword`; mã HS chỉ là bộ lọc chung).
 - `customs_market` → `service.market_overview`: `rank_importers` + gom đối tác (`partner_id`) và nước xuất xứ trong ĐÚNG một đơn vị, cộng 5 dòng mới nhất từ `list_lines`. Tool bỏ `importer_id` nội bộ khỏi kết quả.
-- `customs_legal_check` → `lookup_regulations` (xếp cấm · PL III · PL IV · TT 01 · PL I · PL II) + `lookup_tariff`; luôn kèm câu nhắc «không có mức phạt».
-- `customs_buy_timing` + `now` = `service.assess_current_price(stats, today)`: tứ phân vị + xu hướng chỉ trên tháng có ≥ `MIN_LINES_FOR_BEST` dòng (không tháng nào đủ thì dùng tất cả nhưng `reliable=False`); tháng gần nhất ít dòng → `reference_month`; `STALE_DATA_DAYS = 45`. Lý do chỉ dùng tháng đủ dữ liệu: dữ liệu thật 24/09 ATRAZINE 09/2026 chỉ có 1 dòng, tính cả vào thì ra «đang giảm» từ đúng một lô.
+- `customs_legal_check` → `lookup_regulations` (xếp cấm · PL III · PL IV · TT 01 · PL I · PL II) + `lookup_tariff`; luôn kèm câu nhắc **không có mức phạt**.
+- `customs_buy_timing` + `now` = `service.assess_current_price(stats, today)`: tứ phân vị + xu hướng chỉ trên tháng có ≥ `MIN_LINES_FOR_BEST` dòng (không tháng nào đủ thì dùng tất cả nhưng `reliable=False`); tháng gần nhất ít dòng → `reference_month`; `STALE_DATA_DAYS = 45`. Lý do chỉ dùng tháng đủ dữ liệu: dữ liệu thật 24/09 ATRAZINE 09/2026 chỉ có 1 dòng, tính cả vào thì ra **đang giảm** từ đúng một lô.
 
 ## 11. Nạp cấu hình Tra cứu thị trường — duoc-CR-684 (26/10/2026)
 
-Thẻ «Cấu hình» của màn Tra cứu thị trường (v2 `/procurement/customs-prices/config`; bản cũ `frontend/` cùng thẻ) giờ có **bốn** khối: từ khóa Thành phẩm / Nguyên liệu · từ đồng nghĩa tìm kiếm · **mã dạng chế phẩm (mới)** · danh mục hóa chất. Cả ba khối đầu cùng khóa quyền `customs_price` (xem = đọc, thêm/sửa/xóa = `write`), không mở khóa mới.
+Thẻ **Cấu hình** của màn Tra cứu thị trường (v2 `/procurement/customs-prices/config`; bản cũ `frontend/` cùng thẻ) giờ có **bốn** khối: từ khóa Thành phẩm / Nguyên liệu · từ đồng nghĩa tìm kiếm · **mã dạng chế phẩm (mới)** · danh mục hóa chất. Cả ba khối đầu cùng khóa quyền `customs_price` (xem = đọc, thêm/sửa/xóa = `write`), không mở khóa mới.
 
 **Mã dạng chế phẩm** — trước CR này chưa có danh mục nào (cột `formulation` của dòng hàng chỉ suy ra bằng regex, `ingredient.extract_formulation`). Thêm bảng `tab_customs_formulation_code` (`code` duy nhất ≤ 20 · `name_en` · `name_vi` · `description` · `is_active`), đường `/api/customs-formulation-codes` (khung CRUD chung), migration `cr684fmcode01`. Chỉ để tra cứu, không điều khiển gắn nhãn hay tìm kiếm.
 
-**Nguồn dữ liệu duy nhất:** `backend/scripts/data/cau-hinh-tra-cuu-thi-truong-cr684.json` (chuyển từ tệp Excel `CauHinh_TraCuuThiTruong_20261026.xlsx`; mã ghép «WG / WDG» tách thành hai dòng). Đổi nội dung thì sửa JSON rồi chạy lại bộ nạp — không giữ bản xlsx thứ hai.
+**Nguồn dữ liệu duy nhất:** `backend/scripts/data/cau-hinh-tra-cuu-thi-truong-cr684.json` (chuyển từ tệp Excel `CauHinh_TraCuuThiTruong_20261026.xlsx`; mã ghép **WG / WDG** tách thành hai dòng). Đổi nội dung thì sửa JSON rồi chạy lại bộ nạp — không giữ bản xlsx thứ hai.
 
 **Bộ nạp** `backend/scripts/load_customs_lookup_config_cr684.py` (qua ORM, chạy lại nhiều lần không trùng, không đè chỗ người dùng đã sửa):
 
 | Nhóm | Luật |
 |---|---|
-| Từ khóa nhãn (10 dòng) | Chỉ THÊM dòng chưa có (so không phân biệt hoa/thường). Đã có nhưng khác loại hoặc đang tắt → giữ nguyên, ghi vào mục «bỏ qua». |
+| Từ khóa nhãn (10 dòng) | Chỉ THÊM dòng chưa có (so không phân biệt hoa/thường). Đã có nhưng khác loại hoặc đang tắt → giữ nguyên, ghi vào mục **bỏ qua**. |
 | Nhóm đồng nghĩa (10 nhóm) | Chưa có từ gốc → tạo. Có rồi → GỘP thêm cách viết mới (không lặp, giữ thứ tự cũ), không đổi ghi chú / trạng thái. |
 | Mã dạng chế phẩm (18 mã) | Chưa có → tạo. Có rồi → chỉ điền ô còn trống. |
 
-Tệp nguồn dặn **không** thêm EC/SC/WP… làm từ khóa Thành phẩm (hệ đã mặc định không khớp từ khóa nguyên liệu = thành phẩm) — JSON không có các từ đó. Từ khóa `TK` là đề xuất «thử trước»: nếu gắn nhầm do chữ «TK» mang nghĩa khác thì vào Cấu hình → Từ khóa → chuyển «Ngừng dùng» rồi bấm «Gắn lại nhãn».
+Tệp nguồn dặn **không** thêm EC/SC/WP… làm từ khóa Thành phẩm (hệ đã mặc định không khớp từ khóa nguyên liệu = thành phẩm) — JSON không có các từ đó. Từ khóa `TK` là đề xuất **thử trước**: nếu gắn nhầm do chữ **TK** mang nghĩa khác thì vào Cấu hình → Từ khóa → chuyển **Ngừng dùng** rồi bấm **Gắn lại nhãn**.
 
 ### Chạy lên PROD (chỉ làm khi đã deploy bản có migration `cr684fmcode01`)
 
@@ -481,7 +481,7 @@ docker compose -f docker-compose.yml -f docker-compose.production.yml exec -T ap
 docker compose -f docker-compose.yml -f docker-compose.production.yml exec -T api python scripts/load_customs_lookup_config_cr684.py --dry-run
 # 3. Chạy thật (tự gắn lại nhãn cho MỌI dòng hàng nếu có từ khóa mới; thêm --no-retag để tự bấm tay)
 docker compose -f docker-compose.yml -f docker-compose.production.yml exec -T api python scripts/load_customs_lookup_config_cr684.py
-# 4. Kiểm: mở Tra cứu thị trường → Cấu hình → 4 khối có dữ liệu; chạy lại lệnh 3 phải ra «mới 0» ở cả ba nhóm.
+# 4. Kiểm: mở Tra cứu thị trường → Cấu hình → 4 khối có dữ liệu; chạy lại lệnh 3 phải ra "mới 0" ở cả ba nhóm.
 ```
 
-Nếu dùng `--no-retag` (hoặc không có từ khóa mới) thì bấm **«Gắn lại nhãn»** ở khối Từ khóa. Không dán dữ liệu tiếng Việt qua `mysql -e` (hỏng dấu).
+Nếu dùng `--no-retag` (hoặc không có từ khóa mới) thì bấm **Gắn lại nhãn** ở khối Từ khóa. Không dán dữ liệu tiếng Việt qua `mysql -e` (hỏng dấu).

@@ -114,7 +114,7 @@ Hai nguồn anh Dược đọc, đều ở **DB ERP**, đều chỉ có số đ�
 | `user_id` | BIGINT | Tài khoản ERP |
 | `employee_id` | BIGINT | ERP điền lúc nhận từ `tab_user.employee_id` (0 = tài khoản chưa gắn hồ sơ) |
 | `channel` | SMALLINT | `logging_codes.AI_CHANNEL_*`: 1 Trợ lý web · 2 Telegram · 3 Ứng dụng AI (MCP) · 4 Zalo |
-| `turns` | INT | Web / Telegram / Zalo: số câu hỏi. MCP: số lượt gọi công cụ (`tools/call`) — ứng dụng ngoài không báo «câu hỏi» |
+| `turns` | INT | Web / Telegram / Zalo: số câu hỏi. MCP: số lượt gọi công cụ (`tools/call`) — ứng dụng ngoài không báo **câu hỏi** |
 | `tool_calls` | INT | Số lượt gọi công cụ (kể cả gọi lặp một công cụ) |
 | `denied` | INT | Số lượt công cụ bị từ chối vì thiếu quyền / ngoài phạm vi — gợi ý cấp thêm quyền |
 | `errors` | INT | Web / bot: số câu trả lời hỏng. MCP: số lượt công cụ lỗi |
@@ -146,11 +146,11 @@ liệu đã đưa model, kế hoạch đề xuất, bản sau khi người sửa
 
 ### 5.2 Hợp đồng đợt A2: đề xuất kế hoạch chờ duyệt (kh-AI1-3, Agent 4 — 22/10/2026, A1 chốt cùng ngày)
 
-**Luồng.** AI soạn kế hoạch bằng `draft_work_plan` → người hỏi xác nhận (Telegram nhắn «tạo», MCP `confirm_draft`) →
+**Luồng.** AI soạn kế hoạch bằng `draft_work_plan` → người hỏi xác nhận (Telegram nhắn **tạo**, MCP `confirm_draft`) →
 máy chủ **lưu một đề xuất trạng thái Chờ duyệt**, chưa tạo việc → người duyệt mở màn *Duyệt kế hoạch AI* (Agent 3), sửa
 người / giờ / dòng, bấm **Duyệt** thì máy chủ mới dựng bảng Dự án bằng đúng `work/plan_service.build` hiện có. Bản AI soạn
 giữ nguyên để học; bản người sửa lưu riêng. Có công tắc `ai_plan_review_enabled` (mặc định TẮT tới khi màn của Agent 3
-lên dev): tắt thì «tạo» vẫn dựng bảng ngay như bao-CR-616 nhưng ghi một đề xuất trạng thái riêng *Tạo thẳng* — không
+lên dev): tắt thì **tạo** vẫn dựng bảng ngay như bao-CR-616 nhưng ghi một đề xuất trạng thái riêng *Tạo thẳng* — không
 lẫn với lần người thật duyệt. Người duyệt là **chính người hỏi AI** (A1 chốt; hướng trưởng phòng duyệt chờ đại ca).
 
 **Bảng `tab_ai_plan_proposal`** (DB ERP, AuditMixin):

@@ -222,7 +222,7 @@ def exclude_submitter_ids(approver_kind: int | None, submitter_employee_id: int 
     """
     if not submitter_employee_id:
         return ids
-    #  duoc-CR-713: `strict` (Cài đặt nhân sự «Chặn tự duyệt đơn nghỉ», xem `self_approval_policy`) gạt người nộp
+    #  duoc-CR-713: `strict` (Cài đặt nhân sự "Chặn tự duyệt đơn nghỉ", xem `self_approval_policy`) gạt người nộp
     #  KỂ CẢ ở bước khai đích danh — chủ ý của cấu hình nhân sự thắng chủ ý của người khai luồng.
     if approver_kind == APPROVER_EMPLOYEE and not strict:
         return ids

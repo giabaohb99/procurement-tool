@@ -1,7 +1,7 @@
 """ai-CR-197 — một trạm (hãng tùy chỉnh) bán nhiều gói: khóa Kimi thêm sau KHÔNG được thay khóa Claude.
 
 Lỗi 14/10/2026: đại ca thêm khóa thứ hai cùng trạm modelapi.vn (Claude) thì màn Khóa AI đóng luôn khóa DeepSeek cũ —
-`add_key` coi «cùng hãng» = cùng `provider`, mà mọi gói của trạm đều là `openai_compat`. Nay cùng hãng với trạm tùy
+`add_key` coi "cùng hãng" = cùng `provider`, mà mọi gói của trạm đều là `openai_compat`. Nay cùng hãng với trạm tùy
 chỉnh nghĩa là cùng trạm + cùng model; hãng thường (gemini, claude…) vẫn thay khóa như cũ.
 """
 from app.modules.agent_hub import ai_keys

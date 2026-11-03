@@ -350,7 +350,7 @@ def estimate_days(from_date: str, to_date: str,
     d_from, d_to = _date.fromisoformat(from_date), _date.fromisoformat(to_date)
     exclude_holiday = bool(leave_type.exclude_holiday) if leave_type else True
     schedule_name = _visible_schedule_name(db, user, employee, exclude_holiday, d_from)
-    #  duoc-CR-715: form một khoảng đi đường này nên khung vàng «ngày cấm nghỉ» cũng phải trả ở đây.
+    #  duoc-CR-715: form một khoảng đi đường này nên khung vàng "ngày cấm nghỉ" cũng phải trả ở đây.
     block_conflicts = block_period_service.dump_conflicts(
         block_period_service.find_conflicts(db, employee, [PeriodView(from_date=d_from, to_date=d_to)]))
     if request_service.is_hourly(from_session, to_session):
@@ -398,7 +398,7 @@ def estimate_periods(body: LeaveEstimateIn, db: Session = Depends(get_db),
                     for p, d in zip(periods, per_days)],
         "total_days": round(sum(per_days), 2),
         "schedule_name": schedule_name,
-        #  duoc-CR-715: khung vàng «ngày cấm nghỉ» hiện ngay khi chọn ngày, chưa cần lưu đơn.
+        #  duoc-CR-715: khung vàng "ngày cấm nghỉ" hiện ngay khi chọn ngày, chưa cần lưu đơn.
         "block_conflicts": block_period_service.dump_conflicts(
             block_period_service.find_conflicts(db, employee, periods))})
 
@@ -463,7 +463,7 @@ def my_balance(leave_type_id: int, year: int = 0, employee_id: int = 0,
         "used_days": row.used_days,
         "pending_days": row.pending_days,
         "remaining_days": balance_service.available_days(db, row, leave_type=leave_type, hire_date=employee.hire_date),
-        #  Hạn «ứng phép» của loại này: còn lại được xuống tới -N — ô gợi ý trên form chỉ cảnh báo khi vượt cả N.
+        #  Hạn "ứng phép" của loại này: còn lại được xuống tới -N — ô gợi ý trên form chỉ cảnh báo khi vượt cả N.
         "max_negative_days": float(leave_type.max_negative_days or 0.0),
         #  Q4 — hồ sơ chưa nhập ngày vào làm thì thâm niên tính bằng 0 và con số
         #  trên có thể thiếu. Trả cờ ra để màn hình nói thẳng, đừng để im lặng.

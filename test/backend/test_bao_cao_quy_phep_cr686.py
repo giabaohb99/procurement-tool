@@ -1,5 +1,5 @@
 """duoc-CR-686 — Báo cáo Quỹ phép năm (C2): `employee_status`, lọc phòng ban, chỉ số mới,
-«Chưa được cấp quỹ» và danh sách «bấm số» `/api/leave-balances/summary/rows`."""
+"Chưa được cấp quỹ" và danh sách "bấm số" `/api/leave-balances/summary/rows`."""
 import uuid
 from datetime import date
 
@@ -47,7 +47,7 @@ def setup(db, world):
     """4 nhân sự: VUOT (còn -1), CHUA (cấp 12, chưa dùng), HET (đã nghỉ việc), THIEU (không quỹ)."""
     world.grant("a1", "leave_balance", scope="all", actions=("read",))
     world.grant("a1", "employee", scope="all", actions=("read",))
-    #  Nhân sự của thế giới mẫu không có quỹ nào — cho nghỉ việc để không lẫn vào số «chưa được cấp».
+    #  Nhân sự của thế giới mẫu không có quỹ nào — cho nghỉ việc để không lẫn vào số "chưa được cấp".
     db.query(Employee).update({Employee.status: "resigned"})
     lt = _type(db, "PN")
     vuot, chua = _emp(db, world, "VUOT"), _emp(db, world, "CHUA", dept="A.mua")

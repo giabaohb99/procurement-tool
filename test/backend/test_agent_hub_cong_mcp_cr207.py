@@ -1,4 +1,4 @@
-"""ai-CR-207 — bốn lỗi cổng MCP Agent 1 tìm khi giả lập trên dev (đại ca 16/10: «vá 4 lỗi đó luôn»)."""
+"""ai-CR-207 — bốn lỗi cổng MCP Agent 1 tìm khi giả lập trên dev (đại ca 16/10: "vá 4 lỗi đó luôn")."""
 from types import SimpleNamespace
 
 import pytest

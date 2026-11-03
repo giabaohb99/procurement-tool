@@ -2,7 +2,7 @@
 
 1. `draft_leave_comp_request` (mới): soạn nháp phiếu xin nghỉ bù chạy trước đúng các chốt của service, lập hộ theo
    luật `ensure_can_create_for` (mã lạ và mã ngoài phạm vi cùng một câu), xác nhận tạo / gửi duyệt qua `draft_create`
-   và cổng MCP (`confirm_draft` kind=leave_comp, nhóm G7 «leave» tắt thì chặn).
+   và cổng MCP (`confirm_draft` kind=leave_comp, nhóm G7 "leave" tắt thì chặn).
 2. `propose_approval` duyệt được phiếu nghỉ bù, và KHÔNG BAO GIỜ đề xuất cho chính người đi làm.
 3. `my_leave_summary`: số còn lại = `available_days` (trừ phần chưa tới tháng), kèm `comp_days`, luật ứng phép, phiếu nghỉ bù.
 4. `draft_leave_request`: cảnh báo ngày cấm nghỉ, đơn lùi ngày, chưa đủ ngày vào làm, ứng phép.
@@ -121,7 +121,7 @@ def test_lap_ho_theo_luat_ensure_can_create_for(db, seed, cap_quyen, comp_type):
     out = _comp(db, hr, employee="testreq")                                          # mã không phân biệt hoa thường
     assert out["draft"]["employee_id"] == seed.emp_req_id and out["draft"]["employee_name"] == "Người YC"
 
-    #  Có quyền lập hộ nhưng hồ sơ nhân sự chỉ phạm vi «của mình»: mã có thật ngoài phạm vi == mã không có.
+    #  Có quyền lập hộ nhưng hồ sơ nhân sự chỉ phạm vi "của mình": mã có thật ngoài phạm vi == mã không có.
     narrow = db.get(User, seed.u_nstm_id)
     cap_quyen(narrow.id, ENTITY, scope="all", read=True, create=True)
     cap_quyen(narrow.id, "employee", scope="own", read=True)
@@ -150,7 +150,7 @@ def test_xac_nhan_tao_gui_duyet_va_ai_duyet_khong_tu_duyet(db, seed, cap_quyen, 
     assert obj.status == int(LeaveCompStatus.PENDING)
     assert any("Chờ duyệt" in line for line in draft_create.created_details(db, "leave_comp", oid))
 
-    #  Người đi làm có cả quyền duyệt phạm vi «tất cả» vẫn KHÔNG được đề xuất duyệt phiếu của chính mình.
+    #  Người đi làm có cả quyền duyệt phạm vi "tất cả" vẫn KHÔNG được đề xuất duyệt phiếu của chính mình.
     cap_quyen(user.id, ENTITY, scope="all", read=True, approve=True)
     self_try = T.run_tool(db, user, "propose_approval", {"entity": ENTITY, "id": oid, "action": "approve"})
     assert self_try.get("denied") is True and "proposal" not in self_try

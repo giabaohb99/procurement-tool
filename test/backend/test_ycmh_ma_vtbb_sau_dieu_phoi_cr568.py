@@ -1,8 +1,8 @@
 """bao-CR-568 — YCMH sinh từ YCBG có thể chưa có mã VTBB: chốt xử lý vẫn được, nhưng tạo đơn thì
 dòng phải có mã, và nhân sự thu mua (hoặc quản lý) gắn / đổi mã được SAU điều phối.
 
-Đại ca chốt 02/10/2026: «làm logic như ở YCBG, chốt được không có mã VTBB luôn, nhưng muốn mua
-hàng thì trên option đó phải có mã … nhân sự thu mua có thể đổi mã trên đó».
+Đại ca chốt 02/10/2026: "làm logic như ở YCBG, chốt được không có mã VTBB luôn, nhưng muốn mua
+hàng thì trên option đó phải có mã … nhân sự thu mua có thể đổi mã trên đó".
 """
 import pytest
 from fastapi import HTTPException

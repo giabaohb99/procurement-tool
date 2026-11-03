@@ -1,4 +1,4 @@
-"""duoc-CR-688 — báo cáo A3 «Cơ cấu quản lý» (khóa 23): `/api/management-span/summary`.
+"""duoc-CR-688 — báo cáo A3 "Cơ cấu quản lý" (khóa 23): `/api/management-span/summary`.
 
 Canh: định nghĩa từng chỉ số (staff · managers · direct_reports · avg_span · unassigned · span_one ·
 span_wide · departures_under), chiều `manager`, phạm vi dữ liệu, `department_id` chỉ thu hẹp, gác khóa
@@ -106,7 +106,7 @@ def test_dinh_nghia_chi_so(db, world, client_as):
 
 
 def test_mot_cap_duoi_va_tren_muoi_la_ranh_gioi(db, world, client_as):
-    _dataset(db, world, wide=10)                    # đúng 10 KHÔNG phải «trên 10»
+    _dataset(db, world, wide=10)                    # đúng 10 KHÔNG phải "trên 10"
     _, client = _actor(db, world, client_as)
     cur = _get(client, department_id=world.dept["B.hc"]).json()["data"]["totals"]["current"]
     assert cur["span_wide"] == 0 and cur["span_one"] == 1
@@ -177,12 +177,12 @@ def test_quan_ly_da_nghi_khong_tinh_la_da_gan(db, world, client_as):
     data = _get(client, department_id=dept).json()["data"]
     cur = data["totals"]["current"]
     assert cur["manager_resigned"] == 2 and "manager_resigned" in data["meta"]["drilldown_metrics"]
-    assert cur["managers"] == 4 and cur["direct_reports"] == 17      # quản lý nghỉ không có hàng «m», không cộng cấp dưới
+    assert cur["managers"] == 4 and cur["direct_reports"] == 17      # quản lý nghỉ không có hàng "m", không cộng cấp dưới
     assert cur["unassigned_manager"] == 1                           # chỉ boss: người có quản lý đã nghỉ KHÔNG tính chưa gán
     body = _get(client, SUM + "/rows", department_id=dept, metric="manager_resigned").json()["data"]
     assert {r["code"]: r["manager"] for r in body["rows"]} == {"orphan": "Người ex", "orphan2": "Người ex"}
     g = {x["key"]: x for x in _get(client, department_id=dept, group_by="manager").json()["data"]["groups"]}
-    assert str(ex.id) not in g and g[""]["current"]["staff"] == 3   # boss + 2 mồ côi nằm ở «(Chưa gắn)»
+    assert str(ex.id) not in g and g[""]["current"]["staff"] == 3   # boss + 2 mồ côi nằm ở "(Chưa gắn)"
     assert orphan.id  # đã ghi
 
 
@@ -194,7 +194,7 @@ def test_nhan_quan_ly_ngoai_pham_vi_chi_co_ten(db, world, client_as):
     db.commit()
     _, client = _actor(db, world, client_as)
     body = _get(client, SUM + "/rows", department_id=world.dept["B.hc"], metric="departures_under").json()["data"]
-    assert {r["code"]: r["manager"] for r in body["rows"]}["d4"] == "Người ex"     # chỉ tên, không «(đã nghỉ)»
+    assert {r["code"]: r["manager"] for r in body["rows"]}["d4"] == "Người ex"     # chỉ tên, không "(đã nghỉ)"
 
 
 def test_rows(db, world, client_as):

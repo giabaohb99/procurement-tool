@@ -1,7 +1,7 @@
-"""duoc-CR-706 — phiếu đặt xe chọn sẵn «Người phê duyệt»: người CÙNG QUYỀN duyệt đặt xe cũng duyệt được.
+"""duoc-CR-706 — phiếu đặt xe chọn sẵn "Người phê duyệt": người CÙNG QUYỀN duyệt đặt xe cũng duyệt được.
 
-- Bộ máy BẬT, bước «Người có quyền duyệt»: giao người được chọn (đứng đầu) ∪ mọi người giữ quyền mà phạm vi phủ phiếu.
-- Chuông + thư «chờ bạn duyệt» chỉ gửi người được chọn.
+- Bộ máy BẬT, bước "Người có quyền duyệt": giao người được chọn (đứng đầu) ∪ mọi người giữ quyền mà phạm vi phủ phiếu.
+- Chuông + thư "chờ bạn duyệt" chỉ gửi người được chọn.
 - Bộ máy TẮT: người có quyền duyệt với phạm vi phủ phiếu duyệt được; thư vẫn chỉ tới người được chọn.
 - Phiếu đang chờ đã giao trước CR-706: `approver_expand.expand_pending_approvers` (idempotent, không gửi thư).
 """
@@ -202,7 +202,7 @@ def test_may_tat_nguoi_cung_quyen_phu_pham_vi_duyet_duoc_va_thu_chi_toi_nguoi_ch
     assert {n.user_id for n in _booking_links(db)} == {org.picked.id}
     for user in (org.same_all, org.same_co3):
         assert _scoped_or_404(db, booking.id, user, "approve").id == booking.id
-    #  Người được chọn qua cửa riêng; khác phạm vi / chỉ «Của mình» → 404.
+    #  Người được chọn qua cửa riêng; khác phạm vi / chỉ "Của mình" → 404.
     assert _scoped_or_404(db, booking.id, org.picked, "approve").id == booking.id
     for user in (org.other_co7, org.own_only):
         with pytest.raises(HTTPException) as err:
@@ -219,7 +219,7 @@ def test_may_tat_nguoi_cung_quyen_bam_duyet_that(db, org):
 
 
 def test_may_tat_admin_duyet_duoc_theo_pham_vi_tat_ca_cua_ma_tran(db, org):
-    """Đường cũ không có chốt admin riêng: ma trận cho admin ô Duyệt «Tất cả» nên `get_scoped` cho qua."""
+    """Đường cũ không có chốt admin riêng: ma trận cho admin ô Duyệt "Tất cả" nên `get_scoped` cho qua."""
     booking = create_booking(db, _payload(first_approver_id=org.picked.id), org.creator, submit=True)
     assert _scoped_or_404(db, booking.id, org.admin, "approve").id == booking.id
 

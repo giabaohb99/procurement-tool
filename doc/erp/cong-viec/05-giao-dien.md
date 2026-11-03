@@ -39,7 +39,7 @@ conditional-filter, token màu Tailwind) — không chế khung mới khi đã c
 |---|---|---|---|---|
 | List | Bảng phẳng | `DataTable` dùng chung, gom theo cột (section) thu/mở được | P0 | D-02 |
 | Kanban | Bảng cột kéo thả | Khung nhìn chính | P0 | D-01 |
-| Gantt | Thanh thời gian | **XONG** — bản đầu 28/08/2026 (CR-219), dựng lại theo Lark 31/08/2026 (**CR-226** rồi **CR-230**): lưới trái CHÍNH LÀ khung nhìn Danh sách (ba cột cố định, ô sửa tại chỗ, kéo thả việc/việc con/cột, dòng «Việc mới») · thang Ngày/Tuần/Tháng + cụm _Hôm nay_ ‹ › · hàng NHÓM có thanh tổng · cột mốc hình thoi · **mũi tên phụ thuộc** (vẽ + kéo tạo + đổi kiểu + xóa). Tự dựng, không cài thư viện (GPLv2) | P2 → làm sớm theo yêu cầu | D-05 · B-14 · B-15 |
+| Gantt | Thanh thời gian | **XONG** — bản đầu 28/08/2026 (CR-219), dựng lại theo Lark 31/08/2026 (**CR-226** rồi **CR-230**): lưới trái CHÍNH LÀ khung nhìn Danh sách (ba cột cố định, ô sửa tại chỗ, kéo thả việc/việc con/cột, dòng **Việc mới**) · thang Ngày/Tuần/Tháng + cụm _Hôm nay_ ‹ › · hàng NHÓM có thanh tổng · cột mốc hình thoi · **mũi tên phụ thuộc** (vẽ + kéo tạo + đổi kiểu + xóa). Tự dựng, không cài thư viện (GPLv2) | P2 → làm sớm theo yêu cầu | D-05 · B-14 · B-15 |
 | Dashboard | Thống kê list | 4 khối recharts (§7) | P1 | D-06 |
 | Activities | Dòng hoạt động cấp list | **XONG** 31/08/2026 (**CR-249**) — nhật ký gộp của cả list, cột ngày dính bên trái, lọc theo loại sự kiện + theo người, cuộn lấy thêm (§8) | P1 | D-09 |
 
@@ -137,12 +137,12 @@ cụ khung nhìn: All/Lọc/Sắp xếp/Gom nhóm/Tùy chỉnh).
   thiếu `pointerdown` thì tick xong thẻ lết theo chuột, thiếu `click` thì mỗi lần tick
   panel chi tiết lại bung ra chắn hết bảng. Và nhớ đặt `aria-label` cho vỏ thẻ —
   `role="button"` gộp toàn bộ chữ bên trong làm tên, nên trình đọc màn hình sẽ đọc cả
-  thẻ thành «Đánh dấu hoàn thành: …».
+  thẻ thành **Đánh dấu hoàn thành: …**.
 - ⚠️ **Tiêu đề thẻ phải có `break-words`.** Tiêu đề là chữ người dùng dán vào, rất hay là
   một đường link hay một mã lỗi DÀI KHÔNG CÓ DẤU CÁCH; không cho bẻ giữa từ thì
   `line-clamp-2` chẳng có chỗ nào xuống dòng, chuỗi nằm lì một dòng rồi bị cắt cụt ở mép
-  thẻ — mất luôn dòng thứ hai đáng ra được dùng, mà cũng không có dấu «…» nào báo còn nữa
-  (CR-250). Việc **không tên** hiện «(Chưa đặt tên)»; gốc của nó — API nhận tên toàn dấu
+  thẻ — mất luôn dòng thứ hai đáng ra được dùng, mà cũng không có dấu **…** nào báo còn nữa
+  (CR-250). Việc **không tên** hiện **(Chưa đặt tên)**; gốc của nó — API nhận tên toàn dấu
   cách — đã chặn ở `task_service`.
 
 ## 5. List view
@@ -183,8 +183,8 @@ khối việc con: thanh tiến độ `n/m` + danh sách tick + ô "Thêm việc
 đủ mọi việc trong dự án và mỗi dòng bấm được sang đúng việc, nên giữ thêm một bản rút
 gọn trong panel là hai chỗ nói cùng một chuyện — mà panel thì đã dài. Đừng gắn lại.
 
-**Hàng «Người phụ trách»** là CỤM AVATAR chồng nhau + chữ `N người phụ trách` (một người
-thì hiện thẳng tên), cả cụm là MỘT nút mở danh sách — không có nút «+» riêng, không có ✕
+**Hàng "Người phụ trách"** là CỤM AVATAR chồng nhau + chữ `N người phụ trách` (một người
+thì hiện thẳng tên), cả cụm là MỘT nút mở danh sách — không có nút **+** riêng, không có ✕
 trên từng người (gỡ ai thì bỏ tick trong danh sách). Dải chip mang họ tên đầy đủ của bản
 cũ tràn sang hàng thứ hai ngay từ người thứ ba (CR-256).
 
@@ -209,7 +209,7 @@ loại chứng từ, đang lưu chữ thuần + thẻ `@[id]`; đổi sang HTML 
 và Thu mua vẽ bình luận, cách `strip_mentions` dựng chữ cho chuông, và cần thêm một lớp
 lọc HTML. Muốn làm thì mở CR riêng.
 
-⚠️ **«Thêm việc con» và «Thêm đính kèm» mỗi dòng đúng MỘT biểu tượng**, đặt ở máng trái
+⚠️ **"Thêm việc con" và "Thêm đính kèm" mỗi dòng đúng MỘT biểu tượng**, đặt ở máng trái
 của hàng (`TaskDetailRow`), chữ hai dòng bắt đầu cùng một mốc — đúng khuôn *Add Sub-task
 / Add Attachment* của Lark. Đừng thêm `+` hay kẹp giấy ngay trước chữ: thành hai biểu
 tượng cạnh nhau và hai dòng so le (khách đối chiếu 03/09/2026).
@@ -295,11 +295,11 @@ thì cũng lấy `bg-canvas` chứ không lấy trắng.
 
 - Lưới trái dùng **chính `TaskGroupsBoard`** của khung nhìn Danh sách — nên có đủ: ô sửa
   tại chỗ, ô tick, bung việc con, **ba tầng kéo thả** (việc · việc con · cột), và dòng
-  **«Việc mới»** cuối mỗi nhóm. Chép sang bản thứ hai thì hai bên lệch nhau ngay ở lần sửa
+  **Việc mới** cuối mỗi nhóm. Chép sang bản thứ hai thì hai bên lệch nhau ngay ở lần sửa
   kế tiếp, mà lệch ở đây là *kéo thả sai chỗ* chứ không phải sai màu.
-- Lưới vẽ **ĐỦ cột** của bộ «Tùy chỉnh» y như Danh sách, nhưng ô chứa nó hẹp (mặc định vừa
+- Lưới vẽ **ĐỦ cột** của bộ **Tùy chỉnh** y như Danh sách, nhưng ô chứa nó hẹp (mặc định vừa
   khoảng **ba cột**) nên nó **tự cuộn ngang**, và **ô TÊN ghim lại** ở mép trái
-  (`stickyTitle` — cũng ghim cả tiêu đề nhóm và chữ «Việc mới»). Bề rộng cột nhớ RIÊNG cho
+  (`stickyTitle` — cũng ghim cả tiêu đề nhóm và chữ **Việc mới**). Bề rộng cột nhớ RIÊNG cho
   Gantt (`erp.work.ganttcols.{listId}`), bề rộng ô lưới ở `erp.work.ganttpane.{listId}`.
 - ⚠️ **Hai bên là HAI khung cuộn riêng** (Lark cũng vậy), không phải một khung chung: lưới
   phải tự cuộn ngang để xem hết cột, mà khung chung thì cuộn ngang là kéo luôn cả trục
@@ -313,7 +313,7 @@ thì cũng lấy `bg-canvas` chứ không lấy trắng.
   `left-0` của chính lưới — không cần tính bù trừ bề rộng nào.
 - ⚠️ **Hai bên phải sinh ra ĐÚNG cùng một dãy hàng**: `TaskGroupsBoard` vẽ bên trái,
   `buildGanttRows` dựng lại y hệt cho bên phải (nhóm · việc · việc con đang bung · dòng
-  «Việc mới»), và MỌI dòng cao đúng `ROW_HEIGHT`. Vì vậy state đổi số dòng (thu/mở nhóm ·
+  **Việc mới**), và MỌI dòng cao đúng `ROW_HEIGHT`. Vì vậy state đổi số dòng (thu/mở nhóm ·
   bung việc con · **cột đang bị kéo** — lúc ấy nhóm thu lại còn mỗi tiêu đề) đều nằm ở
   chính `GanttView`, không giấu bên trong cụm nhóm. Sửa cấu trúc dòng ở
   `task-list-group.tsx` thì PHẢI sửa kèm `gantt-rows.ts` — có test ghim từng trường hợp.
@@ -335,7 +335,7 @@ thì cũng lấy `bg-canvas` chứ không lấy trắng.
   biến thể nên `pb-0` trần thua `lg:p-6`.
 - ⚠️ **Mọi thứ đặt ĐÈ lên dải tiêu đề phải có nền `bg-muted`** (đúng màu dải nên nhìn như
   không nền) và cao đúng một hàng tiêu đề. Nhãn tháng `sticky left-0` sẽ trượt vào ĐÚNG chỗ
-  chúng khi cuộn ngang; để trong suốt là chữ chồng lên nhau («áng[icon]1/2026»). Đã vấp hai
+  chúng khi cuộn ngang; để trong suốt là chữ chồng lên nhau (**áng[icon]1/2026**). Đã vấp hai
   lần ở hai chỗ khác nhau — cụm điều khiển mép phải, rồi nút ẩn/hiện lưới (CR-252).
 - **Cụm điều khiển trục** (mức phóng · _Hôm nay_ · ‹ ›) nằm ĐÈ lên góc phải dải tiêu đề,
   đúng chỗ Lark đặt. Đè bằng `absolute` ở NGOÀI khung cuộn chứ không nhét vào hàng tiêu
@@ -373,8 +373,8 @@ một tuần/tháng cụt, nhìn như lưới vỡ. Toàn bộ hàm THUẦN và 
 ### 10.4 Cột mốc (B-14) và mũi tên phụ thuộc (B-15)
 
 - **Cột mốc** vẽ hình thoi tại `due_date`, kéo dời được; bật/tắt bằng nút cạnh viên trạng
-  thái trong panel chi tiết, hoặc tạo thẳng bằng mục **«Cột mốc mới»** trong mũi tên cạnh
-  nút «Việc mới». Mốc tạo từ đó **có ngày ngay** (hôm nay) — mốc không ngày thì không có
+  thái trong panel chi tiết, hoặc tạo thẳng bằng mục **Cột mốc mới** trong mũi tên cạnh
+  nút **Việc mới**. Mốc tạo từ đó **có ngày ngay** (hôm nay) — mốc không ngày thì không có
   hình thoi nào trên biểu đồ, bấm xong tưởng hụt. Đổi việc → mốc thì service gộp ngày về
   một mốc.
 - **Kiểu mũi tên suy ra từ hai đầu người dùng chạm vào**, đúng lối DHTMLX: rời ở cuối →
@@ -390,7 +390,7 @@ một tuần/tháng cụt, nhìn như lưới vỡ. Toàn bộ hàm THUẦN và 
 - Rê vào đường thì giữa thân mũi tên hiện **viên mã kiểu** (`FS`/`SS`/`FF`/`SF`) — vừa là
   nhãn vừa là nút: bấm ra menu **đổi kiểu** và **xóa**. Gộp hai việc vào một viên chứ
   không bày hai nút tròn: chỗ trống trên một đường gấp khúc chỉ đủ cho một thứ, mà hai nút
-  18px sát nhau thì bấm nhầm «xóa» khi định «đổi kiểu» là chuyện sớm muộn. Đổi kiểu KHÔNG
+  18px sát nhau thì bấm nhầm **xóa** khi định **đổi kiểu** là chuyện sớm muộn. Đổi kiểu KHÔNG
   cần dò lại vòng lặp (chiều mũi tên giữ nguyên); đổi **hai đầu** thì máy chủ từ chối —
   xóa rồi nối lại để đi qua đúng bộ kiểm của `create_link`.
 - **Luật chặn vòng lặp nằm ở backend**, không ở giao diện — xem `02-bang-du-lieu.md`

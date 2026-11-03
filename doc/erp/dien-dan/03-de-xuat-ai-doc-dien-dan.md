@@ -44,9 +44,9 @@ không migration, không quyền mới (tool chạy dưới quyền người h�
 
 ## 3. Tầng 2 — chưng cất tri thức (để sau, chỉ ghi hướng)
 
-Thread giá trị (prefix «kiến thức», hỏi-đáp có câu trả lời được xác nhận) → forum_admin /
+Thread giá trị (prefix **kiến thức**, hỏi-đáp có câu trả lời được xác nhận) → forum_admin /
 người phụ trách HDSD thăng cấp thành bài HDSD hoặc văn bản Văn thư — đó mới là nguồn vào
-gói tri thức AI-1 [[ai-rag-tro-ly-tai-lieu]]. Có thể thêm nút «Đề xuất đưa vào HDSD» trên
+gói tri thức AI-1 [[ai-rag-tro-ly-tai-lieu]]. Có thể thêm nút **Đề xuất đưa vào HDSD** trên
 thread về sau, nhưng khâu duyệt luôn là người. Không làm gì ở đợt này.
 
 ## 4. Điều kiện đủ khi làm tầng 1

@@ -1,7 +1,7 @@
 """duoc-CR-620 — cảnh báo HĐLĐ sắp hết hạn / đã hết hạn (chuông `/api/alerts` + thẻ Tổng quan Nhân sự).
 
 Góc nhìn kẻ phá: HĐ đúng mốc 30/31/15/16 ngày, HĐ đã quá hạn, HĐ nháp / đã chấm dứt / không thời
-hạn / đã xóa mềm, HĐ nối tiếp bị hủy hay bị xóa (không được tính là «đã xử»), HĐ CŨ hơn (không
+hạn / đã xóa mềm, HĐ nối tiếp bị hủy hay bị xóa (không được tính là "đã xử"), HĐ CŨ hơn (không
 được che HĐ mới), người đã nghỉ, pháp nhân khác, người không có quyền HĐLĐ, cửa sổ âm / quá lớn.
 """
 from datetime import date, timedelta
@@ -108,7 +108,7 @@ def test_hop_dong_noi_tiep_bi_huy_hoac_bi_xoa_khong_tinh_la_da_xu(db, world):
 
 
 def test_hop_dong_cu_hon_khong_che_hop_dong_moi(db, world):
-    #  HĐ thử việc cũ đã ký (bắt đầu TRƯỚC) không phải «HĐ nối tiếp» của HĐ chính thức.
+    #  HĐ thử việc cũ đã ký (bắt đầu TRƯỚC) không phải "HĐ nối tiếp" của HĐ chính thức.
     add_contract(db, world, end_in=-300, start_ago=400, contract_type=1)
     current = add_contract(db, world, end_in=10, start_ago=290)
     hits = found(db)
@@ -179,14 +179,14 @@ def test_api_khong_co_quyen_hdld_bi_chan(world, api):
 
 
 def test_duong_expiring_khong_bi_nuot_boi_duong_theo_id(world, api):
-    #  Khai sau `/{cid}` thì «expiring» bị đọc thành id và ăn 422.
+    #  Khai sau `/{cid}` thì "expiring" bị đọc thành id và ăn 422.
     _, client_as = api
     res = client_as(world.actor("a1")).get("/api/labor-contracts/expiring")
     assert res.status_code == 200, res.text
 
 
 def test_co_nguoi_xem_ma_thieu_profile_van_loc_pham_vi(db, world, api):
-    #  Rà soát L1: nơi gọi quên truyền `profile` không được thành «trả hết».
+    #  Rà soát L1: nơi gọi quên truyền `profile` không được thành "trả hết".
     row, _ = api
     assert row.id not in {c.id for c in expiry_service.find_expiring(db, vn_today(), user=world.actor("b1").user)}
     assert row.id in {c.id for c in expiry_service.find_expiring(db, vn_today(), user=world.actor("a1").user)}

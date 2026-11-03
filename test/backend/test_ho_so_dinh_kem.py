@@ -39,7 +39,7 @@ def ho_so(db, world):
 
 
 def test_dinh_kem_ho_so_khai_du_o_file_policy():
-    """Thiếu dòng này thì cửa đính kèm trả 400 «chưa khai chính sách tệp»."""
+    """Thiếu dòng này thì cửa đính kèm trả 400 "chưa khai chính sách tệp"."""
     parent, exts, max_mb = FILE_POLICY["dossier"]
     assert parent == "dossier", "quyền phải kiểm trên chính entity hồ sơ"
     assert "pdf" in exts and "jpg" in exts, "bản scan chủ yếu là PDF và ảnh"
@@ -130,7 +130,7 @@ def test_ho_so_khong_ton_tai_thi_CHAN(db, world, ho_so):
     ⚠️ Ở đây chặn bằng **403**, không phải 404, và đó là hệ quả của hình dạng
     đính kèm chứ không phải một lựa chọn: bản scan treo THẲNG vào hồ sơ nên
     `parent_records` trả `[entity_id]` mà không tra bảng — danh sách không bao
-    giờ rỗng, nên nhánh «chứng từ không còn tồn tại» (404) chỉ chạy cho mấy loại
+    giờ rỗng, nên nhánh "chứng từ không còn tồn tại" (404) chỉ chạy cho mấy loại
     treo vào DÒNG (`survey_line`, `delivery`…) vốn phải tra ngược khóa ngoại.
     Id lạ vì thế rơi vào nhánh `apply_scope` không khớp dòng nào.
 

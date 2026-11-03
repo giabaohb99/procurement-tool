@@ -7,7 +7,7 @@ cột đó vào `tab_change_log`. Ai có quyền xem nhật ký là đọc đư�
 
 Ngược lại, cùng tên ô ở NHÀ CUNG CẤP (`tax_code`, `bank_account_no`) PHẢI giữ giá trị:
 đổi tài khoản nhận tiền của nhà cung cấp là thao tác cần dấu vết nhất. Bài nào ở đây
-canh chiều đó thì đừng «sửa cho xanh» bằng cách che toàn hệ.
+canh chiều đó thì đừng "sửa cho xanh" bằng cách che toàn hệ.
 """
 import json
 import uuid
@@ -125,7 +125,7 @@ def test_employee_patch_body_is_masked_in_request_log(client, db):
     #  Đọc cả dòng chứ không soi từng khóa: lọt ở đâu cũng là lọt.
     raw = json.dumps([dong.request_body, dong.response_body], ensure_ascii=False)
     assert SECRET_BANK not in raw and SECRET_ID not in raw and "1990-01-01" not in raw
-    #  Ô thường vẫn giữ — nhật ký phải trả lời được «ai đổi phòng ban / tên của ai».
+    #  Ô thường vẫn giữ — nhật ký phải trả lời được "ai đổi phòng ban / tên của ai".
     assert dong.request_body["full_name"] == "Nguyễn A"
     assert dong.request_body["department_id"] == 3
     assert dong.request_body["bank_account_no"] == MASKED
@@ -211,7 +211,7 @@ def test_updating_sensitive_column_records_field_name_but_no_value(db, seed, ctx
 
     fields = {e.field: e for e in ctx.changes if e.table_name == "tab_employee"}
     bank = fields["bank_account_no"]
-    #  Vẫn biết «ai đổi số tài khoản của ai, lúc nào» — chỉ không biết số.
+    #  Vẫn biết "ai đổi số tài khoản của ai, lúc nào" — chỉ không biết số.
     assert bank.is_masked and bank.before_value is None and bank.after_value is None
     assert fields["full_name"].before_value == "Nguyễn A"
     assert fields["full_name"].after_value == "Nguyễn B"

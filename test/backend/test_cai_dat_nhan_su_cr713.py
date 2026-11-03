@@ -1,7 +1,7 @@
 """duoc-CR-713 — Cài đặt nhân sự, tab Nghỉ phép: chặn đơn lùi ngày · chặn tự duyệt đơn nghỉ.
 
 Bật công tắc bằng ĐÚNG đường lưu thật (`setting.service.save`) để chốt luôn cửa lưu (kiểm mã vai trò).
-Ngày «hôm nay» ghim bằng cách thay `leave_policy.vn_today` — không viết khẳng định phụ thuộc ngày chạy.
+Ngày "hôm nay" ghim bằng cách thay `leave_policy.vn_today` — không viết khẳng định phụ thuộc ngày chạy.
 
 ⚠️ Bài quan trọng nhất là nhóm tự duyệt ở bước KHAI ĐÍCH DANH: luật I08 cũ CỐ Ý bỏ qua bước đó (CR-113, NP022),
 nên công tắc mới phải gạt được người nghỉ ở đó — và KHÔNG được làm đổi hành vi khi công tắc tắt.
@@ -129,7 +129,7 @@ def test_whitelisted_role_and_admin_may_backdate(db, leave_type):
     db.commit()
     setting_service.save(db, {"leave_restrict_backdated": True, "leave_backdated_roles": "hr_profile"},
                          user_id=ACTOR)
-    #  Mỗi người tự lập đơn của mình — chốt «lập hộ» (phạm vi) là chuyện khác, không trộn vào bài này.
+    #  Mỗi người tự lập đơn của mình — chốt "lập hộ" (phạm vi) là chuyện khác, không trộn vào bài này.
     hr = _employee(db, "HR1")
     _grant_role(db, 21, "hr_profile")
     assert _create(db, leave_type, _user(hr, 21), hr, TODAY - timedelta(days=10)).id
@@ -209,7 +209,7 @@ def test_taker_may_submit_a_backdated_leave_that_exempt_hr_created(db, leave_typ
     hr = _employee(db, "HR2")
     _grant_role(db, 41, "hr_profile")
     obj = _create(db, leave_type, _user(hr, 41), hr, TODAY - timedelta(days=4))
-    #  Giả lập «lập hộ»: người nghỉ là nhân viên khác, người lập là HR được miễn.
+    #  Giả lập "lập hộ": người nghỉ là nhân viên khác, người lập là HR được miễn.
     taker = _employee(db, "A8")
     obj.employee_id = taker.id
     db.commit()

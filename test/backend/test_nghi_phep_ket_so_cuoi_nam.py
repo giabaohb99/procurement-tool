@@ -1,6 +1,6 @@
 """KẾT SỔ CUỐI NĂM (07/09/2026) — số dư đi đâu, và bao giờ thì nó mất.
 
-Ba ô «Cho chuyển phép sang năm sau · Chuyển tối đa · Hết hạn cuối tháng» trước
+Ba ô "Cho chuyển phép sang năm sau · Chuyển tối đa · Hết hạn cuối tháng" trước
 đợt này là **cột chết**: lưu được, hiện được, không chỗ nào đọc. Bộ bài này là
 thứ chặn chúng chết lại lần nữa — bỏ một bài ở đây là ba ô kia lại thành lời hứa
 suông trên giao diện.
@@ -89,7 +89,7 @@ def test_so_du_nam_cu_TUT_dung_phan_da_mang_di(db):
 
 
 def test_khong_khai_luat_thi_KHONG_dung_toi(db):
-    """Mặc định «Hết năm là mất» — kết sổ không được tự ý mang phép của loại đó."""
+    """Mặc định "Hết năm là mất" — kết sổ không được tự ý mang phép của loại đó."""
     lt = _leave_type(db)  # YEAR_END_DROP
     nv = _employee(db)
     row = _balance(db, nv, lt, used_days=4.0)

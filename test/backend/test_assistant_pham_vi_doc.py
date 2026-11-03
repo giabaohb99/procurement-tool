@@ -155,7 +155,7 @@ TOOL_KHONG_PHAM_VI = {
     "list_my_meetings": "cuộc họp người hỏi đã gửi làm biên bản",
     "rewrite_meeting_minutes": "viết lại biên bản cuộc họp của chính người hỏi",
     "save_meeting_template": "lưu mẫu biên bản riêng vào sổ ghi nhớ của chính người hỏi",
-    "latest_meeting_report": "cuộc họp mới nhất của chính người hỏi + thư mục «Họp» trên Drive của chính họ",
+    "latest_meeting_report": "cuộc họp mới nhất của chính người hỏi + thư mục \"Họp\" trên Drive của chính họ",
     #  ai-CR-140: đăng ký bản tin — tab_agent_brief_sub lọc cứng theo ctx.user.id, không đọc bản ghi nghiệp vụ.
     "manage_briefs": "bật / tắt / hẹn bản tin của chính người hỏi",
     #  ai-CR-178 (phase 23.1): nguồn là web CÔNG KHAI (không của ai), kết quả về chat riêng của chính người hỏi

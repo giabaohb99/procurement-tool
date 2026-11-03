@@ -439,8 +439,8 @@ xanh (620 test).
 **Còn giữ từ CR-171** *(không thuộc màn per-screen)*: `employee/controller.py` thêm
 `GET /export/xlsx` và **vá `apply_scope` cho export CSV** — lỗ rò phạm vi ở export Nhân sự đã chốt.
 
-**Đồng nhất giao diện (CR-173, 26/08/2026).** Nav đổi tên **«Nhập dữ liệu» / «Xuất dữ liệu»** (bỏ
-«Quản lý Import/Export»); hai hộp thoại dùng chung `module-table-picker.tsx` — chọn **Phân hệ** (ô bấm
+**Đồng nhất giao diện (CR-173, 26/08/2026).** Nav đổi tên **"Nhập dữ liệu" / "Xuất dữ liệu"** (bỏ
+**Quản lý Import/Export**); hai hộp thoại dùng chung `module-table-picker.tsx` — chọn **Phân hệ** (ô bấm
 icon + tên) → **Bảng dữ liệu** (Select trong phân hệ). Phân hệ khai ở `config/data-modules.ts`; import
 gắn `moduleId` trong `import-meta`, export lấy `module` từ backend registry (`/entities`).
 
@@ -465,7 +465,7 @@ thì đã áp scope).
 
 ### 9.3 duoc-CR-628 — Nhập Excel Nhân sự (19/10/2026)
 
-Nút «Nhập Excel» ở `/hr/employees` (frontend-v2) mở `ImportUploadDialog` khóa đối tượng Nhân sự →
+Nút **Nhập Excel** ở `/hr/employees` (frontend-v2) mở `ImportUploadDialog` khóa đối tượng Nhân sự →
 chạy thử → ghi thật → hoàn tác trên khung `import_tool`. Chi tiết kế hoạch:
 `plans/261019-0935-nhap-excel-nhan-su-cr628/`.
 
@@ -475,7 +475,7 @@ chạy thử → ghi thật → hoàn tác trên khung `import_tool`. Chi tiết
   `import_tool/employee_import.py` (hook) + `employee_import_fields.py` (cột, parse ô).
 - **Ghi qua lõi dịch vụ:** mỗi dòng gọi `employee.service.create_employee_core` / `update_employee_core`
   (flush, KHÔNG commit/audit) trong SAVEPOINT; audit + xóa cache quyền chạy ở `finalize` sau commit.
-  Dry-run không khóa tài khoản (`lock_users=False`) nhưng báo WARNING «sẽ khóa».
+  Dry-run không khóa tài khoản (`lock_users=False`) nhưng báo WARNING **sẽ khóa**.
 - **Gác kép** (`import_tool/controller.py::_MODULE_GUARDS`): `import.*` VÀ quyền `employee`
   (tạo lô/ghi thật: `create` hoặc `write`; hoàn tác: `write`; tải tệp gốc: `employee_sensitive.read`).
   Worker chạy dưới quyền + phạm vi của người tạo lô (`get_scoped` trước và SAU khi ghi).

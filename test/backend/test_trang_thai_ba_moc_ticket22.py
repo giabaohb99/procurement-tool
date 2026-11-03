@@ -1,9 +1,9 @@
-"""bao-CR-292 (ticket 22) — tách «Đang xử lý» của YCMH thành BA mốc theo MISA + độ phủ mã hàng.
+"""bao-CR-292 (ticket 22) — tách "Đang xử lý" của YCMH thành BA mốc theo MISA + độ phủ mã hàng.
 
 Luật chốt với khách 05/09/2026 (khớp nhãn tiến độ dòng của luồng gộp — doc/erp/12 P6-13):
-  processing «Đang xử lý»   — NSTM đã tạo ĐMH (kể cả Nháp) nhưng CHƯA đơn nào nhập mã MISA
-  purchasing «Đang mua hàng» — có ĐMH nhập MISA nhưng mới phủ MỘT PHẦN mã hàng
-  purchased  «Đã mua hàng»  — MỌI mã hàng (trừ dòng Hủy) đều có ĐMH đã nhập MISA
+  processing "Đang xử lý"   — NSTM đã tạo ĐMH (kể cả Nháp) nhưng CHƯA đơn nào nhập mã MISA
+  purchasing "Đang mua hàng" — có ĐMH nhập MISA nhưng mới phủ MỘT PHẦN mã hàng
+  purchased  "Đã mua hàng"  — MỌI mã hàng (trừ dòng Hủy) đều có ĐMH đã nhập MISA
 Mốc rời 'dispatched' cũng đổi: chỉ cần có ĐMH là rời, không cần chờ bấm đặt hàng.
 """
 import pytest

@@ -233,7 +233,7 @@ system prompt), hỗ trợ mua cho pháp nhân khác qua tham số `company`.
 ### T22. draft_leave_request - Soạn nháp đơn nghỉ phép [SỬA 12/09/2026, bao-CR-387]
 - Quyền: `leave_request` + `create`.
 - ⚠️ **Trỏ vào phân hệ Nhân sự ▸ Nghỉ phép, KHÔNG phải Văn thư.** Bản đầu (CR-159) ra đời
-  trước phân hệ Nghỉ phép nên soạn một **văn bản «Giấy nghỉ phép»** ở Văn thư, gác bằng
+  trước phân hệ Nghỉ phép nên soạn một **văn bản "Giấy nghỉ phép"** ở Văn thư, gác bằng
   `document.create` và dẫn người dùng sang form tạo văn bản. Từ CR-259 giấy GNP do
   `leave/approval_bridge.py` **tự sinh sau khi đơn được duyệt** (QĐ-NP5), nên đường cũ tạo
   ra một tờ giấy không gắn với quỹ phép nào. Đừng nối lại.
@@ -741,7 +741,7 @@ tool liền mạch. Việc backend mới duy nhất: mở rộng search sang **n
 
 Ngoại lệ HẸP của luật "Quản trị cố ý không mở" ở mục dưới. Lý do mở: hướng dẫn 20 (bộ tài
 khoản phòng tự mua hàng) có bốn bước bấm tay, hai bước sau (gán vai trò + khai ô loại trừ
-phòng ban) lặp lại y hệt cho từng người và dễ quên ô «Chỉ trong công ty». Tool chỉ làm đúng
+phòng ban) lặp lại y hệt cho từng người và dễ quên ô **Chỉ trong công ty**. Tool chỉ làm đúng
 hai bước đó, theo khuôn **đề xuất rồi xác nhận** của T31/T32 — model không có nút để bấm.
 
 ### T49. propose_account_setup - Đề xuất lập / chỉnh bộ tài khoản thu mua
@@ -755,9 +755,9 @@ hai bước đó, theo khuôn **đề xuất rồi xác nhận** của T31/T32 �
   ứng viên thì hỏi lại), kiểm đã có tài khoản chưa, đọc vai trò và phạm vi đang có, rồi so
   từng dòng.
 - Đầu ra: `proposal` gồm hồ sơ tóm tắt, danh sách dòng vai trò / phạm vi với kết cục
-  «thêm» · «bỏ» · «không đổi», cảnh báo (tài khoản đang khóa, còn dòng «Chỉ trong công ty»
+  **thêm** · **bỏ** · **không đổi**, cảnh báo (tài khoản đang khóa, còn dòng **Chỉ trong công ty**
   trên vai trò thu mua — bao-CR-434), số dòng đổi và `confirm_token` 15 phút. Mọi dòng
-  «không đổi» thì thẻ không có nút Xác nhận. Chạy lại lần hai là mọi dòng «không đổi».
+  **không đổi** thì thẻ không có nút Xác nhận. Chạy lại lần hai là mọi dòng **không đổi**.
 - KHÔNG làm: tạo tài khoản đăng nhập, đặt / đổi mật khẩu, tạo vai trò mới, tick quyền trong
   vai trò. Nhân sự chưa có tài khoản → chặn kèm đường dẫn màn Người dùng để lập tay.
 - Quyền: `user.write` + `role.read` + `employee.read`, cộng `apply_scope(User, write)` (ngoài
@@ -781,7 +781,7 @@ trên yêu cầu mua hàng* cho người yêu cầu).
 **Đừng lẫn với phương án của YCKS.** T27 đã có câu "riêng YCKS chỉ ĐẾM số phương án mỗi dòng"
 — đó là **phương án khảo sát** (bảng option của Phiếu khảo sát, mỗi dòng nhiều báo giá NCC).
 Nhóm 20 nói về **phương án trên dòng YCMH** (tối đa 5 phương án gắn vào một dòng hàng, cộng
-«phương án 0 — Yêu cầu gốc» nằm ngoài trần), là bảng khác, luồng khác, người chọn khác.
+**phương án 0 — Yêu cầu gốc** nằm ngoài trần), là bảng khác, luồng khác, người chọn khác.
 
 **Vì sao đề xuất:** hôm nay trợ lý **mù hoàn toàn** cả chặng này — T27 trả đầu phiếu + dòng
 hàng và **không có một trường nào** của phương án, nên hỏi "phiếu này chọn phương án nào rồi"
@@ -803,8 +803,8 @@ mà không cần viết dòng mã tool nào. Bật thì phải chạy `rebuild_a
 - Tham số: `include_options` (mặc định **false** để câu trả lời cũ không phình ra), chỉ có
   nghĩa với `entity = purchase_request`.
 - Đầu ra thêm cho mỗi dòng: số phương án đang gắn, phương án **đang được chọn** (nhãn, nguồn
-  khảo sát / nhập tay / yêu cầu gốc, đơn giá + ĐVT báo giá, khoảng SL áp giá), cờ «dòng chưa
-  có phương án nào ngoài phương án 0», cờ «chốt rỗng», và ở đầu phiếu: chặng đang mở hay
+  khảo sát / nhập tay / yêu cầu gốc, đơn giá + ĐVT báo giá, khoảng SL áp giá), cờ **dòng chưa
+  có phương án nào ngoài phương án 0**, cờ **chốt rỗng**, và ở đầu phiếu: chặng đang mở hay
   đã *Chốt hoàn thành xử lý* (`options_chosen_at` / `options_chosen_by`).
 - Quyền: y như T27 hiện thời, **cộng** luật che NCC của H.3.8 — thiếu `supplier.read` thì tên
   và mã NCC trong phương án trả chuỗi rỗng kèm ghi chú, y hệt backend đang làm cho giao diện.

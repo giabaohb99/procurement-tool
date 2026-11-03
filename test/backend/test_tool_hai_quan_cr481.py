@@ -1,4 +1,4 @@
-"""bao-CR-481 — bốn tool hải quan của trợ lý AI: so sánh · thị trường · pháp lý · «có nên mua lúc này».
+"""bao-CR-481 — bốn tool hải quan của trợ lý AI: so sánh · thị trường · pháp lý · "có nên mua lúc này".
 
 Canh những chỗ mà sai là trợ lý nói sai với người sắp đặt hàng thật:
 
@@ -7,7 +7,7 @@ giá tháng gần nhất thấp/cao so với cả năm   -> chấm theo tứ ph�
 tháng gần nhất ít dòng                      -> vẫn trả nhưng reliable=False
 dữ liệu cũ quá 45 ngày                      -> stale=True, trợ lý phải nói giá hôm nay có thể đã khác
 thị phần / đối tác / xuất xứ                -> CHỈ trong một đơn vị tính, không cộng kg với lít
-pháp lý                                      -> nặng nhất lên đầu, có câu «không có mức phạt»
+pháp lý                                      -> nặng nhất lên đầu, có câu "không có mức phạt"
 ```
 """
 from datetime import date
@@ -58,7 +58,7 @@ def test_gia_thang_gan_nhat_dat_nhat_la_cao_va_dang_tang():
 
 
 def test_thang_gan_nhat_it_dong_khong_lat_duoc_xu_huong():
-    """Dữ liệu thật 24/09: ATRAZINE 09/2026 chỉ 1 dòng giá rẻ mà suýt thành «đang giảm».
+    """Dữ liệu thật 24/09: ATRAZINE 09/2026 chỉ 1 dòng giá rẻ mà suýt thành "đang giảm".
     Tháng ít dòng vẫn được chấm (reliable=False) nhưng thước đo + xu hướng chỉ lấy tháng đủ
     dữ liệu, và có `reference_month` để trợ lý nói bằng mốc đáng tin."""
     now = S.assess_current_price(_stats([(3.0, 6), (3.2, 6), (3.4, 6), (1.0, MIN_LINES_FOR_BEST - 1)]),
@@ -195,7 +195,7 @@ def test_tool_gia_so_sanh_hai_mat_hang_cung_don_vi(db, monkeypatch):
     assert [t["keyword"] for t in res["compare"]["terms"]] == ["atrazine", "mesotrione"]
     assert res["compare"]["unit"] == "KGM"
     assert res["compare"]["terms"][1]["series"][0]["wavg"] == 9.0
-    #  Chỉ có mã HS thì không có «mặt hàng chính» để so — báo rõ, không đem mã HS đi khớp tên hàng.
+    #  Chỉ có mã HS thì không có "mặt hàng chính" để so — báo rõ, không đem mã HS đi khớp tên hàng.
     assert "error" in CUSTOMS_PRICE_STATS_SPEC.handler(ctx, {"hs_code": "380893", "compare_keywords": ["x"]})
     assert "compare" not in CUSTOMS_PRICE_STATS_SPEC.handler(ctx, {"keyword": "atrazine"})
 

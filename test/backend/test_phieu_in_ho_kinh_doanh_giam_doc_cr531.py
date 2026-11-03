@@ -1,13 +1,13 @@
-"""bao-CR-531 — bộ ô ký cụm «XÉT DUYỆT» trên bản in Phiếu đề xuất mua hàng.
+"""bao-CR-531 — bộ ô ký cụm "XÉT DUYỆT" trên bản in Phiếu đề xuất mua hàng.
 
 Đại ca chốt 30/09/2026:
-  · danh mục Công ty có ô «Loại hình» (1 Công ty · 2 Hộ kinh doanh);
-  · hộ kinh doanh: chỉ «Chủ hộ» + «Người lập», KHÔNG tên, KHÔNG chữ ký;
-  · công ty: «Giám đốc» = người đại diện pháp luật; trùng NHÂN SỰ với ô «TP/BP đề xuất» và/hoặc
-    «TP/BP mua hàng» thì bỏ ô trùng, tên + chữ ký dời sang ô «Giám đốc». Ca thật trên prod:
+  · danh mục Công ty có ô "Loại hình" (1 Công ty · 2 Hộ kinh doanh);
+  · hộ kinh doanh: chỉ "Chủ hộ" + "Người lập", KHÔNG tên, KHÔNG chữ ký;
+  · công ty: "Giám đốc" = người đại diện pháp luật; trùng NHÂN SỰ với ô "TP/BP đề xuất" và/hoặc
+    "TP/BP mua hàng" thì bỏ ô trùng, tên + chữ ký dời sang ô "Giám đốc". Ca thật trên prod:
     ICARE (đại diện Lê Phước Hữu) — PYC29092604 do chính ông duyệt → phiếu in ba ô.
   · id chưa biết (0) thì KHÔNG gộp — `0 == 0` mà gộp là mọi pháp nhân chưa khai đại diện đều
-    mất ô «TP/BP đề xuất».
+    mất ô "TP/BP đề xuất".
 
 `purchase_request/print_signature_cells.py` là chỗ DUY NHẤT quyết định; hai giao diện chỉ vẽ.
 """
@@ -108,9 +108,9 @@ def _cell(cells, role):
 
 
 def test_household_owner_is_proposer_prints_in_owner_cell(db, world):
-    """bao-CR-539: hộ kinh doanh 4 ô y như công ty, chỉ khác nhãn «Chủ hộ» (PYC29092604 DR.XANH —
-    bản 536 ra 3 ô, đại ca: «còn thiếu phần TP bên thu mua»). IN TÊN. Chủ hộ trùng TP/BP đề xuất →
-    tên + chữ ký ở «Chủ hộ», ô đề xuất GIỮ nhưng trống."""
+    """bao-CR-539: hộ kinh doanh 4 ô y như công ty, chỉ khác nhãn "Chủ hộ" (PYC29092604 DR.XANH —
+    bản 536 ra 3 ô, đại ca: "còn thiếu phần TP bên thu mua"). IN TÊN. Chủ hộ trùng TP/BP đề xuất →
+    tên + chữ ký ở "Chủ hộ", ô đề xuất GIỮ nhưng trống."""
     comp = _company(db, "HKD", world.proposer.id, int(CompanyType.HOUSEHOLD))
     cells = pr_out(db, _pr(db, world, comp))["print_signature_cells"]
     assert _roles(cells) == ["Chủ hộ", "TP/BP mua hàng", "TP/BP đề xuất", "Người lập"]
@@ -130,7 +130,7 @@ def test_household_owner_not_proposer_keeps_owner_blank_and_prints_proposer(db, 
 
 
 def test_household_owner_is_purchasing_head_merges_like_company(db, world):
-    """bao-CR-539: luật gộp y như công ty — Chủ hộ trùng TP/BP mua hàng thì tên lên «Chủ hộ», ô mua
+    """bao-CR-539: luật gộp y như công ty — Chủ hộ trùng TP/BP mua hàng thì tên lên "Chủ hộ", ô mua
     hàng giữ nhưng trống (bản 536 cấm gộp ở đây vì khi đó hộ không in ô mua hàng)."""
     comp = _company(db, "HKD3", world.head.id, int(CompanyType.HOUSEHOLD))
     cells = pr_out(db, _pr(db, world, comp))["print_signature_cells"]
@@ -145,7 +145,7 @@ def test_household_owner_is_purchasing_head_merges_like_company(db, world):
 
 def test_director_is_proposer_merges_into_director_cell(db, world):
     """Ca ICARE / PYC29092603: đại diện pháp luật chính là TP/BP đề xuất → vẫn ĐỦ 4 ô (bao-CR-536),
-    tên + chữ ký ở «Giám đốc», ô «TP/BP đề xuất» giữ chỗ nhưng trống."""
+    tên + chữ ký ở "Giám đốc", ô "TP/BP đề xuất" giữ chỗ nhưng trống."""
     comp = _company(db, "ICARE", world.proposer.id)
     d = pr_out(db, _pr(db, world, comp))
     cells = d["print_signature_cells"]
@@ -259,7 +259,7 @@ def test_same_name_different_employee_does_not_merge(db, world):
     assert len(cells) == 4
 
 
-# ─── Danh mục Công ty: ô «Loại hình» ─────────────────────────────────────────────
+# ─── Danh mục Công ty: ô "Loại hình" ─────────────────────────────────────────────
 
 
 def test_company_type_defaults_to_company_and_accepts_household():

@@ -144,7 +144,7 @@ def test_09_stats_tai_khoan_khong_quyen_khong_nhan_duoc_khoa_nao(world, stats_da
 
     for khoa in ("pr_total", "pr_pending", "pr_processing", "employees",
                  "suppliers", "products", "survey_pending", "po_ordered"):
-        assert khoa not in data, f"khóa «{khoa}» lọt ra cho tài khoản không có quyền nào"
+        assert khoa not in data, f"khóa \"{khoa}\" lọt ra cho tài khoản không có quyền nào"
     assert data["can"] == {"supplier": False, "product": False, "employee": False,
                            "purchase_request": False, "survey": False,
                            "purchase_order": False}

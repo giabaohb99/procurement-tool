@@ -1,7 +1,7 @@
-"""bao-CR-474 — NGƯỜI ĐƯỢC CHỌN Ở Ô «TRƯỞNG BỘ PHẬN» CŨNG NHẬN CHUÔNG BÁO DUYỆT.
+"""bao-CR-474 — NGƯỜI ĐƯỢC CHỌN Ở Ô "TRƯỞNG BỘ PHẬN" CŨNG NHẬN CHUÔNG BÁO DUYỆT.
 
 Ô TBP của YCMH cho chọn một người trong số những người duyệt được phiếu (CR-071). Trước
-CR này, chọn ai thì chuông «cần bạn phê duyệt» VẪN chỉ đi theo phòng ban — trưởng phòng
+CR này, chọn ai thì chuông "cần bạn phê duyệt" VẪN chỉ đi theo phòng ban — trưởng phòng
 gán cứng (`Department.manager_id`) + tài khoản vai trò `dept_head` của phòng — nên người
 được chọn nếu khác trưởng phòng mặc định thì không hề biết có phiếu chờ mình.
 

@@ -320,7 +320,7 @@ export interface LeaveRequest {
   from_session_label?: string
   to_session_label?: string
   unit_label?: string
-  /** duoc-CR-715: khoảng «ngày cấm nghỉ» đơn đang đụng (chỉ ở đường lấy MỘT đơn / lập / sửa; vắng = không). */
+  /** duoc-CR-715: khoảng "ngày cấm nghỉ" đơn đang đụng (chỉ ở đường lấy MỘT đơn / lập / sửa; vắng = không). */
   block_conflicts?: LeaveBlockConflict[]
   /** `0` = chưa gửi duyệt hoặc môi trường chưa khai luồng nhiều bước. */
   approval_instance_id: number
@@ -351,7 +351,7 @@ export interface LeaveBalanceHint {
   used_days: number
   pending_days: number
   remaining_days: number
-  /** Hạn «ứng phép» của loại nghỉ (CR-715): còn lại được xuống tới -N. Bản cũ không gửi → coi là 0. */
+  /** Hạn "ứng phép" của loại nghỉ (CR-715): còn lại được xuống tới -N. Bản cũ không gửi → coi là 0. */
   max_negative_days?: number
   /** Hồ sơ chưa nhập ngày vào làm → thâm niên tính bằng 0, con số có thể thiếu. */
   missing_hire_date: boolean

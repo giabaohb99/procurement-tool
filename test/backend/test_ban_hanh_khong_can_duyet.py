@@ -2,11 +2,11 @@
 
 Hai lỗi cùng một chỗ:
 
-1. Ô «Cần duyệt» của loại văn bản chỉ để trưng: thẻ *Người duyệt dự kiến* báo
-   «KHÔNG cần phê duyệt» mà văn bản vẫn phải gửi duyệt. Đại ca chốt: loại đó bỏ
+1. Ô "Cần duyệt" của loại văn bản chỉ để trưng: thẻ *Người duyệt dự kiến* báo
+   "KHÔNG cần phê duyệt" mà văn bản vẫn phải gửi duyệt. Đại ca chốt: loại đó bỏ
    hẳn chặng duyệt — người soạn bấm *Ban hành* là có hiệu lực.
 2. Nút *Ban hành* ở trạng thái *Chờ ban hành* gọi `/approve`, đường đó đòi quyền
-   Duyệt — vai trò «Văn bản — soạn & sửa» (không có Duyệt) bấm vào chỉ ăn 403.
+   Duyệt — vai trò "Văn bản — soạn & sửa" (không có Duyệt) bấm vào chỉ ăn 403.
    Nay cả hai ca đi qua `/issue`, gác bằng quyền SỬA + đúng người.
 """
 from types import SimpleNamespace
@@ -100,11 +100,11 @@ def test_serializer_bao_loai_co_can_duyet_khong(db, seed, kinds):
     assert out[qc.id]["doc_type_needs_approval"] is True
 
 
-# ── Tầng API: ai được bấm «Ban hành» ─────────────────────────────────────────
+# ── Tầng API: ai được bấm "Ban hành" ─────────────────────────────────────────
 
 @pytest.fixture()
 def api(monkeypatch):
-    """Gỡ `_load` (quyền phạm vi đọc/sửa) để kiểm RIÊNG luật «ai được bấm» của
+    """Gỡ `_load` (quyền phạm vi đọc/sửa) để kiểm RIÊNG luật "ai được bấm" của
     `/issue`; và tắt kênh ghi nhật ký cho gọn."""
     state = {"approve": False}
     #  bao-CR-650: duoc-CR-640 gọi `_load(..., derived=True)` — bản giả nhận cả tham số tên, không thì TypeError.
@@ -145,7 +145,7 @@ def test_nguoi_co_quyen_duyet_ban_hanh_thay_duoc(db, seed, kinds, api):
 
 def test_cho_ban_hanh_nguoi_soan_bam_duoc_khong_can_quyen_duyet(db, seed, kinds, api):
     """LỖI ĐÃ XẢY RA: nút *Ban hành* ở *Chờ ban hành* gọi `/approve` đòi quyền
-    Duyệt, nên người soạn thuộc vai trò «soạn & sửa» không phát hành được văn
+    Duyệt, nên người soạn thuộc vai trò "soạn & sửa" không phát hành được văn
     bản của chính mình."""
     doc = _draft(db, seed, kinds["qc"])
     version = service.open_version(db, doc)
@@ -175,7 +175,7 @@ def test_cho_ban_hanh_nguoi_khac_khong_bam_thay_duoc(db, seed, kinds, api):
 # ── Các lỗ code-review 29/09/2026 ────────────────────────────────────────────
 
 def test_mac_dinh_loai_moi_la_can_duyet():
-    """I1 — quên tích ô «Cần duyệt» phải ra «cần duyệt», không phải «tự ban hành»."""
+    """I1 — quên tích ô "Cần duyệt" phải ra "cần duyệt", không phải "tự ban hành"."""
     from app.modules.doc_catalog.schema import DocTypeCreate
     assert DocTypeCreate.model_fields["needs_approval"].default is True
     assert DocType(code="X", name="X").needs_approval in (True, None)
@@ -197,7 +197,7 @@ def test_van_ban_da_tung_gui_duyet_khong_ban_hanh_thang_duoc(db, seed, kinds):
 
 
 def test_doi_sang_loai_khong_can_duyet_phai_co_quyen_duyet(db, seed, kinds, monkeypatch):
-    """I2 — đổi bản nháp «Quy chế» sang «Biểu mẫu» rồi bấm Ban hành là lối tắt."""
+    """I2 — đổi bản nháp "Quy chế" sang "Biểu mẫu" rồi bấm Ban hành là lối tắt."""
     from app.modules.document.schema import DocumentUpdate
     monkeypatch.setattr(service, "user_has_permission", lambda db, user, e, a: False)
     doc = _draft(db, seed, kinds["qc"])
@@ -216,7 +216,7 @@ def test_doi_sang_loai_khong_can_duyet_phai_co_quyen_duyet(db, seed, kinds, monk
 
 
 def test_ban_2_cho_ban_hanh_duoc_nhan_ra(db, seed, kinds):
-    """I4 — bản 2 chờ ban hành: văn bản vẫn «Có hiệu lực», nhận ra bằng phiên đã duyệt."""
+    """I4 — bản 2 chờ ban hành: văn bản vẫn "Có hiệu lực", nhận ra bằng phiên đã duyệt."""
     from app.modules.approval.instance_model import INSTANCE_APPROVED, ApprovalInstance
     from app.modules.document.version_model import DocumentVersion
     doc = _draft(db, seed, kinds["bm"])

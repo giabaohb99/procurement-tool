@@ -97,7 +97,7 @@ def test_cua_chan_cho_qua_va_dien_session_id_vao_ngu_canh(db, seed):
 
 
 def test_ve_khong_co_jti_bi_chan(db, seed):
-    """Vé phát trước bao-CR-360 — ca «mọi người bị đăng xuất một lần» lúc deploy."""
+    """Vé phát trước bao-CR-360 — ca "mọi người bị đăng xuất một lần" lúc deploy."""
     user = db.get(User, seed.u_req_id)
     with pytest.raises(HTTPException) as exc:
         get_current_user(f"Bearer {create_access_token(user.id)}", db)
@@ -189,7 +189,7 @@ def test_bat_dang_nhap_lai_co_hieu_luc_ngay_khong_doi_dem(db, seed):
 
     Cố ý hâm nóng đệm trước (một lượt gọi hợp lệ) rồi mới `force_relogin`: nếu ai
     đó dời chốt này xuống dưới đệm tra phiên thì bài kiểm đỏ, còn ở chạy thật thì
-    «đăng xuất mọi thiết bị» im lặng trễ tới một phút.
+    "đăng xuất mọi thiết bị" im lặng trễ tới một phút.
     """
     user = db.get(User, seed.u_req_id)
     session, token = _login(db, user)

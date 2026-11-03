@@ -101,7 +101,7 @@ Chín tài khoản, **mật khẩu bằng chính mã**, đều thuộc pháp nh�
 | Phòng Kinh doanh | `TVB_KD1` · `TVB_KD2` · `TVB_KD3` |
 
 **Chín người này cố ý KHÔNG có quyền `document: read`.** Họ không vào được màn
-*Văn bản*; họ chỉ thấy văn bản qua **«Áp dụng cho tôi»** và qua đường dẫn trực
+*Văn bản*; họ chỉ thấy văn bản qua **Áp dụng cho tôi** và qua đường dẫn trực
 tiếp. Cấp quyền đọc cho họ là kịch bản mất ý nghĩa — ai cũng thấy mọi thứ và
 không còn phân biệt được phạm vi có chạy hay không.
 
@@ -194,12 +194,12 @@ Bốn quy tắc (F01–F05, `scope_service.py`):
 
 Mỗi ca dưới đây: soạn bằng `admin` (pháp nhân **DEGO**), **loại Thông báo (TB)**
 cho luồng duyệt ngắn 2 chặng, ban hành, rồi đăng nhập từng người đọc mở
-**«Áp dụng cho tôi»**.
+**Áp dụng cho tôi**.
 
 Cách nhanh: làm **một** văn bản rồi sửa lại thẻ *Phạm vi áp dụng* cho từng ca,
 không phải tạo lại từ đầu mỗi lần.
 
-> ⚠️ **«Áp dụng cho tôi» của mấy tài khoản `TVB_*` KHÔNG rỗng lúc bắt đầu** — có
+> ⚠️ **"Áp dụng cho tôi" của mấy tài khoản `TVB_*` KHÔNG rỗng lúc bắt đầu** — có
 > sẵn 11 văn bản DEGO từ dữ liệu nền (chúng không khai phạm vi nên áp cho cả
 > pháp nhân). Nên mỗi ca phải **tìm đúng văn bản mình vừa tạo** theo số hiệu,
 > đừng đọc theo kiểu "danh sách có/không có gì".
@@ -259,7 +259,7 @@ nên tập bao gồm rỗng. Backend **cố ý không chặn** — giao diện c
 
 Với **cùng một văn bản**, bốn chỗ sau phải cho **cùng một danh sách người**:
 
-1. **«Áp dụng cho tôi»** của từng người;
+1. **Áp dụng cho tôi** của từng người;
 2. mở **chi tiết văn bản** bằng đường dẫn trực tiếp (`/document/documents/<id>`);
 3. thẻ **Phạm vi áp dụng** trên trang chi tiết (danh sách nó liệt kê);
 4. ai **nhận chuông / email** lúc ban hành.
@@ -321,7 +321,7 @@ Lệch một trong bốn là lỗi thật. Hay gặp nhất: nhận được th�
 | 8.2 | **Thêm mới**, bậc **7**, mã `TOIMAT` | Tạo được. Ô chọn Mức mật lúc tạo văn bản có thêm mục này ngay |
 | 8.3 | Mở dòng vừa tạo để sửa | Ô **Thang** và **Bậc** ở dạng chỉ xem, kèm câu giải thích vì sao khóa |
 | 8.4 | Đổi **tên** một bậc rồi xuất Excel danh sách văn bản | Cột *Mức mật* in **tên mới** |
-| 8.5 | Xóa bậc **Mật** | **Bị chặn**, nêu đích danh: *"3 văn bản đang ở bậc này; 1 loại văn bản đang lấy làm mức mật mặc định; điều kiện phê duyệt đang trỏ tới «Tổng Giám đốc ký ban hành»"* |
+| 8.5 | Xóa bậc **Mật** | **Bị chặn**, nêu đích danh: *"3 văn bản đang ở bậc này; 1 loại văn bản đang lấy làm mức mật mặc định; điều kiện phê duyệt đang trỏ tới **Tổng Giám đốc ký ban hành**"* |
 | 8.6 | Xóa bậc vừa tạo ở 8.2 (chưa ai dùng) | Xóa được |
 | 8.7 | Bỏ tick **Đang dùng** của một bậc | Không còn chọn được cho văn bản mới; văn bản cũ mang bậc đó **vẫn hiện đúng tên** |
 

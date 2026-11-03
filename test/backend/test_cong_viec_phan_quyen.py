@@ -73,7 +73,7 @@ def test_nguoi_ngoai_khong_thay_list_va_khong_doc_duoc_task_theo_id(db, chu, ngu
 
 
 def test_moi_cheo_phap_nhan_van_thay_du_an_vi_ranh_gioi_la_tu_cach_thanh_vien(db):
-    """Dựng lại đúng lỗi gặp trên dev 15/09/2026 — dự án «ERP v2».
+    """Dựng lại đúng lỗi gặp trên dev 15/09/2026 — dự án "ERP v2".
 
     Chủ dự án CHƯA GẮN pháp nhân (`company_id = 0`), người được mời thuộc pháp
     nhân `16`. Bản cũ chốt thêm `WorkList.company_id == <pháp nhân người xem>`,

@@ -5,8 +5,8 @@ chỗ luật KHÔNG khai — nơi hai tính năng đúng riêng lẻ ghép lại
 đi sai.
 
 Nhóm ca:
-  · ủy quyền + «người nộp không tự duyệt» (I08 × I12);
-  · chuyển người xử lý + «người nộp không tự duyệt» (I08 × I23);
+  · ủy quyền + "người nộp không tự duyệt" (I08 × I12);
+  · chuyển người xử lý + "người nộp không tự duyệt" (I08 × I23);
   · trả về một bước + biểu quyết theo tỷ lệ (I09 × I05) — mẫu số phình ra;
   · bối cảnh phiếu do NGƯỜI DÙNG gửi lên → tự chọn nhánh, tự chọn người duyệt kế;
   · rút lại khi phiếu không ghi nhận người trình.
@@ -79,10 +79,10 @@ def _viec(db, instance, **loc):
 def test_nguoi_nop_khong_duyet_ho_duoc_phieu_cua_chinh_minh(db, person):
     """Người duyệt đi vắng, ủy quyền cho ĐÚNG người vừa trình phiếu.
 
-    Luật I08 «người nộp không duyệt phiếu của chính mình» đang cắt ở chỗ DỰNG
+    Luật I08 "người nộp không duyệt phiếu của chính mình" đang cắt ở chỗ DỰNG
     VIỆC (`_bo_nguoi_nop`). Nhưng ủy quyền không đi qua chỗ đó: nó xét lúc BẤM,
-    và chỉ hỏi «có tờ ủy quyền còn hạn không». Ghép hai cái lại thì người nộp
-    ký được chính phiếu mình vừa trình — dấu vết ghi «B duyệt thay A», nhìn qua
+    và chỉ hỏi "có tờ ủy quyền còn hạn không". Ghép hai cái lại thì người nộp
+    ký được chính phiếu mình vừa trình — dấu vết ghi "B duyệt thay A", nhìn qua
     không thấy gì bất thường, trong khi B chính là người trình.
 
     Đây không phải ca giả định: ủy quyền cho cấp dưới lúc đi công tác là việc
@@ -122,8 +122,8 @@ def test_uy_quyen_van_chay_binh_thuong_voi_nguoi_khac(db, person):
 def test_khong_chuyen_viec_duyet_sang_chinh_nguoi_trinh_phieu(db, person):
     """Quản trị bàn giao việc, vô tình (hoặc cố ý) giao vào tay người trình.
 
-    `chuyen_nguoi_xu_ly` chỉ kiểm «việc còn treo không» và «có trùng người đang
-    giữ không». Không kiểm người nhận là ai — nên nó là cửa sau đi vòng qua I08,
+    `chuyen_nguoi_xu_ly` chỉ kiểm "việc còn treo không" và "có trùng người đang
+    giữ không". Không kiểm người nhận là ai — nên nó là cửa sau đi vòng qua I08,
     và cửa này còn tiện hơn ủy quyền vì chỉ cần quyền `approval_flow.write`.
     """
     _luong(db, [dict(seq=1, name="Trưởng phòng duyệt", approver_ref=str(person["a"]))])
@@ -209,7 +209,7 @@ def test_nguoi_duyet_khong_tu_dat_boi_canh_de_chon_nguoi_duyet_ke_tiep(db, perso
     """Người bấm Duyệt gửi kèm `subject` — và bộ máy tin nó.
 
     `subject` là bối cảnh phiếu: nó quyết định bước kế chạy NHÁNH nào và, với
-    cách chọn «lấy từ ô trên phiếu», quyết định luôn AI duyệt bước kế. Nhưng
+    cách chọn "lấy từ ô trên phiếu", quyết định luôn AI duyệt bước kế. Nhưng
     dict đó đi thẳng từ thân request của người bấm Duyệt xuống bộ máy.
 
     Nên người duyệt bước 1 chỉ cần gửi `{"nguoi_ky": <id người quen>}` là tự chỉ
@@ -244,10 +244,10 @@ def test_buoc_sau_van_tim_ra_nguoi_duyet_khi_giao_dien_khong_gui_boi_canh(db, pe
     trở đi bộ máy tính người duyệt trên một dict rỗng.
 
     Hậu quả không phải chuyện an toàn nữa mà là phiếu chết: bước 2 chọn người
-    duyệt kiểu «đại diện pháp nhân» hay «lấy từ ô trên phiếu» thì tra ra RỖNG →
+    duyệt kiểu "đại diện pháp nhân" hay "lấy từ ô trên phiếu" thì tra ra RỖNG →
     `on_no_approver` → **KẸT**. Bước có nhánh thì không nhánh nào khớp, rơi hết
-    về nhánh mặc định — không khai mặc định là kẹt luôn. Đúng dạng «duyệt xong
-    bước 1 rồi phiếu biến mất» mà không ai lần ra vì luồng khai hoàn toàn đúng.
+    về nhánh mặc định — không khai mặc định là kẹt luôn. Đúng dạng "duyệt xong
+    bước 1 rồi phiếu biến mất" mà không ai lần ra vì luồng khai hoàn toàn đúng.
     """
     from app.modules.approval.instance_controller import _context
 
@@ -290,7 +290,7 @@ def test_phieu_khong_ghi_nguoi_trinh_thi_khong_ai_rut_duoc(db, person):
     Câu kiểm hiện tại là `if instance.started_by_employee_id and ... != actor`,
     tức là để trống thì **bỏ qua luôn cả câu kiểm** — ai đăng nhập cũng rút được
     phiếu của người khác, và rút thì chứng từ quay về nháp. Ba đường duyệt / trả
-    lại / từ chối tự gác bằng «có việc đang chờ mình không», riêng đường rút thì
+    lại / từ chối tự gác bằng "có việc đang chờ mình không", riêng đường rút thì
     không còn gì gác.
     """
     _luong(db, [dict(seq=1, name="Duyệt", approver_ref=str(person["a"]))])
@@ -330,7 +330,7 @@ def test_tra_ve_buoc_khong_hop_le_khong_de_lai_viec_da_huy(db, person):
 
 
 def test_tra_ve_chinh_buoc_dang_dung_bi_chan(db, person):
-    """«Trả về bước 2» khi đang đứng ở bước 2 là quay vòng tại chỗ."""
+    """"Trả về bước 2" khi đang đứng ở bước 2 là quay vòng tại chỗ."""
     _luong(db, [
         dict(seq=1, name="Mở màn", approver_ref=str(person["a"])),
         dict(seq=2, name="Duyệt", approver_ref=str(person["b"])),
@@ -348,7 +348,7 @@ def test_tra_ve_chinh_buoc_dang_dung_bi_chan(db, person):
 def test_mot_nguoi_giu_hai_viec_trong_cung_mot_buoc_phai_bam_du_hai_lan(db, person):
     """Chuyển người xử lý dồn hai việc của một chặng vào một người.
 
-    Chặng «tất cả phải duyệt» còn 2 việc, quản trị chuyển việc của B sang A —
+    Chặng "tất cả phải duyệt" còn 2 việc, quản trị chuyển việc của B sang A —
     A đang giữ việc của chính mình. Nếu `viec_dang_cho_cua` chỉ lấy việc đầu
     tiên thì A bấm một lần, việc thứ hai nằm lại và chặng không bao giờ đủ.
     """

@@ -24,7 +24,7 @@ interface EmployeeStatusIndicatorProps {
   className?: string
 }
 
-/** Nhãn tình trạng dạng «chấm + chữ» đặt cạnh tiêu đề hồ sơ (duoc-CR-708). */
+/** Nhãn tình trạng dạng "chấm + chữ" đặt cạnh tiêu đề hồ sơ (duoc-CR-708). */
 export function EmployeeStatusIndicator({
   status,
   statusLabel,

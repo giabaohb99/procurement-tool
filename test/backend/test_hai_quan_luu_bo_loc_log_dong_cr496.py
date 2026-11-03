@@ -4,9 +4,9 @@
   · bộ lọc lưu RIÊNG từng tài khoản, cột dùng chung có sẵn nhưng tắt; người A không thấy /
     không xóa được của B (404 như không có); trần 50 bộ / người; tên dài → 422 ở SCHEMA
     (SQLite không ép độ dài VARCHAR nên kiểm ở DB là xanh giả — duoc-CR-316);
-  · log từng dòng — KHÔNG có «Cập nhật» (nguồn không có số tờ khai).
+  · log từng dòng — KHÔNG có "Cập nhật" (nguồn không có số tờ khai).
 bao-CR-541 (đại ca chốt 01/10/2026) đổi luật trùng: dòng trùng trong tệp và dòng đã có trong
-bảng giá đều BỎ QUA (thêm kết cục «Đã có»); bản 496 chỉ đánh dấu rồi vẫn ghi.
+bảng giá đều BỎ QUA (thêm kết cục "Đã có"); bản 496 chỉ đánh dấu rồi vẫn ghi.
 """
 import io
 from datetime import datetime
@@ -203,10 +203,10 @@ def test_batch_notes_stay_readable_and_do_not_drown_in_row_statuses(db):
     """Chiều ngược của bài trên — và là chỗ bài trên không canh.
 
     Mỗi dòng dữ liệu đẻ một dòng kết cục trong CÙNG bảng `tab_import_log` (tệp GTT02 thật cỡ
-    18.000 dòng). Đường nhật ký cũ (`import_service.get_logs`) phục vụ HAI màn — hộp «Nhật ký
-    lô» của hải quan và màn Quản lý Import chung — và trước khi vá nó không lọc `row_status`:
-    lô sạch vẫn trả về hàng nghìn dòng, câu «Không có ghi chú nào» không bao giờ hiện nữa, và
-    ghi chú lỗi thật nằm giữa hàng trăm trang «Thêm mới».
+    18.000 dòng). Đường nhật ký cũ (`import_service.get_logs`) phục vụ HAI màn — hộp "Nhật ký
+    lô" của hải quan và màn Quản lý Import chung — và trước khi vá nó không lọc `row_status`:
+    lô sạch vẫn trả về hàng nghìn dòng, câu "Không có ghi chú nào" không bao giờ hiện nữa, và
+    ghi chú lỗi thật nằm giữa hàng trăm trang "Thêm mới".
     """
     b = _batch(db)
     importer.run(db, b, _xlsx([_row(), _row(line_no=2), _row(line_no=3)]), apply=True)
@@ -226,8 +226,8 @@ def test_batch_notes_stay_readable_and_do_not_drown_in_row_statuses(db):
 
 
 def test_row_status_enum_has_no_update_state():
-    """GTT02 không có số tờ khai → KHÔNG tự đoán «Cập nhật» (đại ca chốt 25/09/2026). bao-CR-608
-    (07/10/2026) thêm «Ghi đè» / «Xóa» / «Bỏ qua» — chỉ khi NGƯỜI NẠP chỉ ra dòng bằng cột «ID»; mã
+    """GTT02 không có số tờ khai → KHÔNG tự đoán "Cập nhật" (đại ca chốt 25/09/2026). bao-CR-608
+    (07/10/2026) thêm "Ghi đè" / "Xóa" / "Bỏ qua" — chỉ khi NGƯỜI NẠP chỉ ra dòng bằng cột "ID"; mã
     cũ giữ nguyên số."""
     assert {s.name: int(s) for s in ImportRowStatus} == {
         "NONE": 0, "NEW": 1, "ERROR": 2, "DUPLICATE": 3, "EXISTING": 4, "UPDATED": 5, "DELETED": 6, "IGNORED": 7}

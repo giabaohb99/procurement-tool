@@ -285,7 +285,7 @@ def test_hai_cot_moi_van_nam_trong_whitelist_bo_loc_dieu_kien(db, seed):
 #
 #  `DepartmentOut.manager_name` đọc qua quan hệ `Department.manager`, nên thiếu
 #  `selectinload` là mỗi dòng một truy vấn thêm — đúng lúc ô chọn phòng ban ở tab
-#  «Người đang giữ» (màn Chức vụ) hỏi 200 dòng một lượt.
+#  "Người đang giữ" (màn Chức vụ) hỏi 200 dòng một lượt.
 
 def _count_queries_reading_manager_name(db, line_count: int) -> tuple[int, list]:
     """Số câu SQL phát ra khi lấy `line_count` dòng RỒI đọc `manager_name` từng dòng.

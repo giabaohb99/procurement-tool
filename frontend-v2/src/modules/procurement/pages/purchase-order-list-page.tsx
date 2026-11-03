@@ -434,7 +434,7 @@ function PurchaseOrderListContent() {
       },
       { key: 'pr_code', header: 'Mã PYC', width: 140, cell: (po) => po.pr_code || '' },
       //  bao-CR-705: hai cột HIỆN sẵn (phòng đang xử lý, người duyệt) + cụm cột phụ ẨN sẵn — người
-      //  dùng tick trong menu «Cột» mới hiện. Key trùng tên trường API để tệp Excel xuất đúng cột.
+      //  dùng tick trong menu "Cột" mới hiện. Key trùng tên trường API để tệp Excel xuất đúng cột.
       {
         key: 'handler_dept_name',
         header: 'Phòng xử lý',

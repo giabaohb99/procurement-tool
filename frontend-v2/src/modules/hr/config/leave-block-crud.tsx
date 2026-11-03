@@ -10,8 +10,8 @@ import { formatBlockRange } from '../utils/leave-block-conflicts'
  * NGÀY CẤM NGHỈ (duoc-CR-715) — khoảng ngày công ty không muốn ai nghỉ (chốt sổ, kiểm kê, mùa cao điểm).
  *
  * Chỉ CẢNH BÁO lúc lập đơn; đơn đụng khoảng cấm bị chặn ở lượt duyệt cuối, trừ vai trò được miễn khai ở
- * «Cài đặt nhân sự › Nghỉ phép». Pháp nhân / phòng ban bỏ trống = áp cho tất cả.
- * Khóa quyền dùng chung `leave_type` — cùng «Thiết lập» nghỉ phép.
+ * "Cài đặt nhân sự › Nghỉ phép". Pháp nhân / phòng ban bỏ trống = áp cho tất cả.
+ * Khóa quyền dùng chung `leave_type` — cùng "Thiết lập" nghỉ phép.
  */
 const blockChips = (b: LeaveBlockPeriod) => [
   { icon: CalendarOff, text: formatBlockRange(b), tone: 'code' as const },
@@ -113,7 +113,7 @@ export const LEAVE_BLOCK_CRUD_CONFIG: CrudConfig<LeaveBlockPeriod> = {
       label: 'Đến ngày',
       type: 'date',
       required: true,
-      hint: 'Một khoảng dài tối đa 366 ngày. Cấm một ngày thì chọn cùng ngày với «Từ ngày».',
+      hint: 'Một khoảng dài tối đa 366 ngày. Cấm một ngày thì chọn cùng ngày với "Từ ngày".',
     },
     {
       name: 'reason',

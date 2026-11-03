@@ -33,7 +33,7 @@ const TODAY = new Date(2026, 10, 2)
 
 describe('EmployeeDetailSidebar', () => {
   it('says the direct manager is unassigned instead of hiding the row', () => {
-    //  «Chưa gán» là thông tin: bộ máy duyệt lùi về trưởng bộ phận.
+    //  "Chưa gán" là thông tin: bộ máy duyệt lùi về trưởng bộ phận.
     render(<EmployeeDetailSidebar employee={makeEmployee()} avatar={null} today={TODAY} />)
     expect(screen.getByText('Quản lý trực tiếp')).toBeInTheDocument()
     expect(screen.getByText('Chưa gán')).toBeInTheDocument()
@@ -93,7 +93,7 @@ describe('EmployeeDetailSidebar', () => {
 })
 
 describe('EmployeeStatusIndicator', () => {
-  it('adds a «Ngừng dùng» badge only when the profile is inactive', () => {
+  it('adds a "Ngừng dùng" badge only when the profile is inactive', () => {
     const { rerender } = render(
       <EmployeeStatusIndicator status="resigned" statusLabel="Nghỉ việc" isActive={false} />,
     )

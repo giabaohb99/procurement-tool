@@ -2,7 +2,7 @@
 
 Canh:
   3. Consent-phishing: tên ứng dụng là TỰ KHAI nên màn đồng ý phải dựa vào nơi quay về — tính theo HOSTNAME (bỏ userinfo,
-     cổng), `https://chatgpt.com@evil.example/cb` không được hiện thành «chatgpt.com…»; host ngoài danh sách ứng dụng quen
+     cổng), `https://chatgpt.com@evil.example/cb` không được hiện thành "chatgpt.com…"; host ngoài danh sách ứng dụng quen
      → `redirect_trusted = false`; đăng ký mới với userinfo trong redirect_uri bị từ chối. Màn quản trị xem / xóa ứng
      dụng (cổng quyền agent_group), xóa là thu hồi mọi kết nối của nó.
   4. Bảng không phình: mã cấp quyền hết hạn quá 1 ngày bị xóa; ứng dụng 7 ngày không có kết nối sống bị xóa (ứng dụng còn

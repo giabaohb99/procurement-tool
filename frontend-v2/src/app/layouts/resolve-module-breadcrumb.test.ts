@@ -28,7 +28,7 @@ const hr = {
   routes: [],
 } as unknown as ErpModule
 
-describe('resolveModuleBreadcrumb — pageLabel (chữ cuối khi nó là «trang đang đứng»)', () => {
+describe('resolveModuleBreadcrumb — pageLabel (chữ cuối khi nó là "trang đang đứng")', () => {
   it('is the child label on a child page under a group', () => {
     expect(resolveModuleBreadcrumb(hr, '/hr/settings').pageLabel).toBe('Cài đặt nhân sự')
   })

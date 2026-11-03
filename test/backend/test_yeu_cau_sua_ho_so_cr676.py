@@ -376,7 +376,7 @@ def test_request_log_masks_nested_sensitive_values(log_client, db):
         assert secret not in raw
     assert row.request_body["bank"]["bank_account_no"] == MASKED
     assert row.request_body["families"] == MASKED
-    #  Ô thường vẫn giữ để tra «ai đổi gì».
+    #  Ô thường vẫn giữ để tra "ai đổi gì".
     assert row.request_body["personal"]["ethnicity"] == "Tày"
 
 

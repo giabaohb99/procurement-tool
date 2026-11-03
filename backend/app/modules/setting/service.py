@@ -183,7 +183,7 @@ FIELDS = [
      "hint": "Chỉ có tác dụng khi công tắc ở trên đang BẬT. Để trống = chỉ quản trị được lập đơn lùi ngày."},
     {"key": "leave_block_exempt_roles", "group": "hr", "tab": "leave", "type": "roles",
      "label": "Vai trò được duyệt đơn nghỉ rơi vào ngày cấm nghỉ",
-     "hint": "Đơn nghỉ trùng một khoảng trong danh mục «Ngày cấm nghỉ» (Nghỉ phép › Thiết lập) vẫn lập và gửi duyệt "
+     "hint": "Đơn nghỉ trùng một khoảng trong danh mục \"Ngày cấm nghỉ\" (Nghỉ phép › Thiết lập) vẫn lập và gửi duyệt "
              "được nhưng bị chặn ở lượt duyệt cuối. Người có vai trò khai ở đây (và quản trị) duyệt qua được. "
              "Để trống = chỉ quản trị."},
     {"key": "leave_prevent_self_approval", "group": "hr", "tab": "leave", "type": "bool",
@@ -203,7 +203,7 @@ FIELDS = [
              "TẮT: chỉ người xem được TOÀN BỘ hồ sơ nhân sự (thường là phòng Nhân sự, quản trị) mới mở được."},
     {"key": "employee_anniversary_years", "group": "hr", "tab": "employee", "type": "int_list",
      "label": "Mốc kỷ niệm vào làm (năm)",
-     "hint": "Ô «Lịch nhắc trong tháng» ở Tổng quan Nhân sự liệt kê người tròn đúng các mốc này. Nhập các số năm cách nhau "
+     "hint": "Ô \"Lịch nhắc trong tháng\" ở Tổng quan Nhân sự liệt kê người tròn đúng các mốc này. Nhập các số năm cách nhau "
              "bằng dấu phẩy, vd 1, 3, 5, 10 (mỗi số 1–60, tối đa 10 mốc). Để trống = 1, 3, 5, 10."},
     #  duoc-CR-713 — tab HỢP ĐỒNG LAO ĐỘNG.
     {"key": "labor_contract_warn_days", "group": "hr", "tab": "contract", "type": "int", "min": 15, "max": 180,
@@ -307,13 +307,13 @@ def _normalize(field: dict, val, db: Session | None = None) -> str:
             raise HTTPException(400, f"\"{nhan}\" phải trong khoảng {low}–{high}")
         return str(number)
     if kind == "code_prefix":
-        #  duoc-CR-713: tiền tố mã nhân sự. Chỉ CHỮ: có số thì «NSU1» + «001» đọc ra NSU1001 — lẫn với số thứ tự.
+        #  duoc-CR-713: tiền tố mã nhân sự. Chỉ CHỮ: có số thì "NSU1" + "001" đọc ra NSU1001 — lẫn với số thứ tự.
         raw = str(val or "").strip().upper()
         if raw and not re.fullmatch(r"[A-Z]{2,10}", raw):
             raise HTTPException(400, f"\"{nhan}\" chỉ gồm 2–10 chữ cái in hoa không dấu (vd NSU)")
         return raw
     if kind == "int_list":
-        #  duoc-CR-713: «1, 3,5 ,10» → «1,3,5,10» (bỏ trùng, sắp tăng). Trống = dùng mặc định `.env`.
+        #  duoc-CR-713: "1, 3,5 ,10" → "1,3,5,10" (bỏ trùng, sắp tăng). Trống = dùng mặc định `.env`.
         parts = [p.strip() for p in str(val or "").replace(";", ",").split(",") if p.strip()]
         try:
             numbers = sorted({int(p) for p in parts})

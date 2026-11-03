@@ -17,7 +17,7 @@ interface EmployeeSalarySectionProps {
   canWrite: boolean
   /**
    * Gập / mở được (duoc-CR-708, màn hồ sơ kiểu ERPNext). Mặc định GẬP: người khác
-   * chính chủ chỉ thấy «Đã nhập (ẩn)», mở sẵn chỉ tốn chỗ. Có ô sai thì tự mở.
+   * chính chủ chỉ thấy "Đã nhập (ẩn)", mở sẵn chỉ tốn chỗ. Có ô sai thì tự mở.
    */
   collapsible?: boolean
 }

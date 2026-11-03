@@ -29,8 +29,8 @@ const ENTITY = 'leave_comp_request'
  * CHI TIẾT / LẬP MỚI phiếu xin nghỉ bù — một trang cho cả hai, phân biệt bằng `:id` (khuôn đơn nghỉ phép).
  *
  * Còn sửa được (Nháp / Trả về) thì dựng `LeaveCompRequestForm`; đã gửi duyệt thì dựng bản chỉ xem.
- * Nút hiện theo `getLeaveCompActions` (hàm thuần, có test) — gồm luật «đang có phiên duyệt chạy thì
- * ẩn Duyệt thẳng».
+ * Nút hiện theo `getLeaveCompActions` (hàm thuần, có test) — gồm luật "đang có phiên duyệt chạy thì
+ * ẩn Duyệt thẳng".
  */
 export function LeaveCompRequestDetailPage() {
   const { id } = useParams<{ id: string }>()

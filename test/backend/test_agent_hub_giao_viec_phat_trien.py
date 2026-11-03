@@ -1,5 +1,5 @@
-"""ai-CR-148 — đại ca 09/10/2026 (ảnh chat): bot nói tool chưa sửa được dòng hàng / đơn nghỉ; đại ca nhắn «oke phát triển
-tính năng», rồi «em bắt đầu sửa luôn chưa» → bot trả «em không phải bên sửa phần mềm, chỉ ghi đề xuất». Ở chat GIAO ĐƯỢC việc
+"""ai-CR-148 — đại ca 09/10/2026 (ảnh chat): bot nói tool chưa sửa được dòng hàng / đơn nghỉ; đại ca nhắn "oke phát triển
+tính năng", rồi "em bắt đầu sửa luôn chưa" → bot trả "em không phải bên sửa phần mềm, chỉ ghi đề xuất". Ở chat GIAO ĐƯỢC việc
 sửa mã thì câu đó phải thành VIỆC sửa phần mềm, mô tả lấy từ mạch trước."""
 import pytest
 

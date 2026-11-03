@@ -3,8 +3,8 @@
 Canh mấy chỗ dễ lủng nhất:
   · dương tính giả Chlorpyrifos METHYL (không cấm) dính Chlorpyrifos ETHYL (cấm) — bản cào 28/09
     có đúng 10 thuốc methyl, khớp theo từ đầu là gắn cờ oan cả 10;
-  · «2,4-D» không được bị bóc mất «2,4» như một con số hàm lượng;
-  · danh mục thuốc CHƯA nạp thì màn Pháp lý không được nói «0 thuốc» (chưa đối chiếu gì cả);
+  · "2,4-D" không được bị bóc mất "2,4" như một con số hàm lượng;
+  · danh mục thuốc CHƯA nạp thì màn Pháp lý không được nói "0 thuốc" (chưa đối chiếu gì cả);
   · chỉ danh sách TT 75 đang dùng mới được đem ra đối chiếu.
 """
 import pytest
@@ -76,7 +76,7 @@ def test_salt_and_formulation_suffixes_still_match(db):
 
 
 def test_overlapping_banned_names_both_count_the_salt_form(db):
-    """Review 29/09: bộ khớp dừng ở tầng trúng đầu tiên thì «Paraquat dichloride» chỉ đếm cho một
+    """Review 29/09: bộ khớp dừng ở tầng trúng đầu tiên thì "Paraquat dichloride" chỉ đếm cho một
     dòng, và dòng nào thắng tùy bộ khớp dựng từ những dòng nào — số trên màn Pháp lý lệch danh
     sách nó mở ra."""
     salt, base = _reg(db, "Paraquat dichloride"), _reg(db, "Paraquat")
@@ -145,7 +145,7 @@ def test_pesticide_list_flags_and_filters_banned(db):
                      "Ccc 30EC": [], "Ddd 5WG": []}
 
     assert S.list_pesticides(db, "", None, "", "", 0, 50, banned_only=True)[0] == 2
-    #  Lọc «có hoạt chất cấm» vẫn cộng dồn với lọc tình trạng — mặc định màn là «Còn hiệu lực».
+    #  Lọc "có hoạt chất cấm" vẫn cộng dồn với lọc tình trạng — mặc định màn là "Còn hiệu lực".
     only_active = S.list_pesticides(db, "", int(PesticideStatus.ACTIVE), "", "", 0, 50, banned_only=True)
     assert [i["id"] for i in only_active[1]] == [a.id]
     by_reg = S.list_pesticides(db, "", None, "", "", 0, 50, banned_regulation_id=paraquat.id)
@@ -188,7 +188,7 @@ def test_regulation_counts_are_empty_when_catalog_not_loaded(db):
     _reg(db, "Paraquat")
     db.commit()
     _, items = B.list_regulations(db, "", None, 0, 50)
-    assert items[0]["pesticide_count"] is None, "chưa nạp danh mục thuốc thì không được nói «0 thuốc»"
+    assert items[0]["pesticide_count"] is None, "chưa nạp danh mục thuốc thì không được nói \"0 thuốc\""
 
 
 def test_regulation_count_matches_the_list_it_opens(db):

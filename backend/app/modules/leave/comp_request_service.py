@@ -19,7 +19,7 @@ from .comp_request_model import LeaveCompRequest
 from .constants import (COMP_ACTIVE_STATUSES, COMP_DAYS_ALLOWED, COMP_EDITABLE_STATUSES,
                         LeaveCompStatus)
 
-#  Hai trạng thái HẾT hiệu lực: phiếu ở đó không giữ «ngày đã có phiếu» (`active_key` = NULL).
+#  Hai trạng thái HẾT hiệu lực: phiếu ở đó không giữ "ngày đã có phiếu" (`active_key` = NULL).
 INACTIVE_STATUSES = (LeaveCompStatus.REJECTED, LeaveCompStatus.CANCELLED)
 CONFLICT_MESSAGE = "Phiếu vừa được xử lý bởi lượt khác — tải lại trang"
 
@@ -36,8 +36,8 @@ def get_comp_type(db: Session) -> LeaveType:
           .order_by(LeaveType.sort_order, LeaveType.id).first())
     if lt is None:
         raise HTTPException(
-            422, "Chưa có loại nghỉ nào bật «Loại nhận ngày nghỉ bù». Nhân sự vào Thiết lập nghỉ phép ▸ Loại nghỉ, "
-                 "bật «Loại nhận ngày nghỉ bù» (kèm «Trừ vào quỹ phép») cho một loại rồi lập lại phiếu.")
+            422, "Chưa có loại nghỉ nào bật \"Loại nhận ngày nghỉ bù\". Nhân sự vào Thiết lập nghỉ phép ▸ Loại nghỉ, "
+                 "bật \"Loại nhận ngày nghỉ bù\" (kèm \"Trừ vào quỹ phép\") cho một loại rồi lập lại phiếu.")
     return lt
 
 
@@ -49,7 +49,7 @@ def resolve_credit_type(db: Session, obj: LeaveCompRequest) -> LeaveType:
         raise HTTPException(422, "Phiếu chưa chốt loại nghỉ nhận ngày bù. Gửi duyệt lại phiếu để chốt loại.")
     if not (leave_type.is_active and leave_type.is_compensatory and leave_type.counts_balance):
         raise HTTPException(
-            422, f"Loại nghỉ «{leave_type.name}» chốt trên phiếu không còn là «Loại nhận ngày nghỉ bù» đang dùng. "
+            422, f"Loại nghỉ \"{leave_type.name}\" chốt trên phiếu không còn là \"Loại nhận ngày nghỉ bù\" đang dùng. "
                  "Nhân sự bật lại loại đó (Thiết lập nghỉ phép ▸ Loại nghỉ) rồi duyệt lại.")
     return leave_type
 
@@ -66,7 +66,7 @@ def try_claim(db: Session, obj: LeaveCompRequest, expected, new: LeaveCompStatus
     """CHIẾM phiếu nguyên tử: `UPDATE … SET status=new WHERE id AND status IN (expected)`. `True` = thắng.
 
     Mọi bước đổi trạng thái (gửi · duyệt · từ chối · hủy · rút · sửa · xóa) phải đi qua đây: hai lượt bấm cùng lúc
-    mà cùng đọc «Chờ duyệt» rồi cùng cộng ngày bù thì phiếu một ngày thành hai ngày nghỉ. Giá trị đi kèm ghi trong
+    mà cùng đọc "Chờ duyệt" rồi cùng cộng ngày bù thì phiếu một ngày thành hai ngày nghỉ. Giá trị đi kèm ghi trong
     CHÍNH câu UPDATE (không gán lên đối tượng rồi commit — gán sau khi thua sẽ ghi đè kết quả của người thắng).
     Phiếu về trạng thái hết hiệu lực thì `active_key` về NULL để ngày đó được lập phiếu khác. Không commit.
     """
@@ -88,7 +88,7 @@ def try_claim(db: Session, obj: LeaveCompRequest, expected, new: LeaveCompStatus
 
 
 def claim(db: Session, obj: LeaveCompRequest, expected, new: LeaveCompStatus, **values) -> None:
-    """Như `try_claim` nhưng thua thì 409 «Phiếu vừa được xử lý bởi lượt khác»."""
+    """Như `try_claim` nhưng thua thì 409 "Phiếu vừa được xử lý bởi lượt khác"."""
     if not try_claim(db, obj, expected, new, **values):
         raise HTTPException(409, CONFLICT_MESSAGE)
 
@@ -242,7 +242,7 @@ def cancel(db: Session, obj: LeaveCompRequest, reason: str, actor: int) -> Leave
         try:
             revoke_days(db, obj, actor)
         except HTTPException:
-            db.rollback()    # trả phiếu về «Đã duyệt» — không để nửa chừng
+            db.rollback()    # trả phiếu về "Đã duyệt" — không để nửa chừng
             raise
     db.commit()
     db.refresh(obj)

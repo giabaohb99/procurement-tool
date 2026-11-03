@@ -317,8 +317,8 @@ def test_trung_nguoi_nhung_khai_KHONG_BO_QUA_thi_van_phai_ky(db, flow, leave_typ
 def test_NGUOI_NOP_la_nguoi_duyet_thi_bi_loai_khoi_chang(db, flow, leave_type, sep):
     """I08 — không ai tự duyệt đơn của chính mình.
 
-    Người nộp ở đây CHÍNH là trưởng phòng, và bước khai «trưởng phòng người
-    nộp» nên máy tính ra đúng tên họ. Bước rỗng người → phiếu KẸT, chứ tuyệt
+    Người nộp ở đây CHÍNH là trưởng phòng, và bước khai "trưởng phòng người
+    nộp" nên máy tính ra đúng tên họ. Bước rỗng người → phiếu KẸT, chứ tuyệt
     đối không tự đi tiếp.
     """
     truong_phong = _employee(db, "NV_TP", "Trưởng phòng")
@@ -329,8 +329,8 @@ def test_NGUOI_NOP_la_nguoi_duyet_thi_bi_loai_khoi_chang(db, flow, leave_type, s
     _node(db, flow, 1, "Trưởng bộ phận duyệt", kind=APPROVER_DEPT_HEAD)
 
     #  ĐỐI CHỨNG trước: nhân viên thường nộp thì bước tính ra đúng trưởng phòng
-    #  và phiếu chạy. Không có vế này thì bài dưới xanh cả khi cơ chế «trưởng
-    #  phòng người nộp» hỏng hoàn toàn — kẹt vì lý do khác mà vẫn kẹt.
+    #  và phiếu chạy. Không có vế này thì bài dưới xanh cả khi cơ chế "trưởng
+    #  phòng người nộp" hỏng hoàn toàn — kẹt vì lý do khác mà vẫn kẹt.
     nhan_vien = _employee(db, "NV_TX", "Nhân viên")
     _, chay = _submit(db, leave_type, nhan_vien)
     assert chay.status == INSTANCE_RUNNING
@@ -402,7 +402,7 @@ def test_doi_nguoi_khi_chang_SONG_SONG_da_ky_MOT_NUA(db, flow, leave_type,
                                                        submitter, sep):
     """⚠️ LỖI THẬT, bắt được bằng chính bộ ép tải này (07/09/2026).
 
-    Chặng «cả hai phải duyệt» của A và B. A ký xong, B chưa. Quản trị đổi
+    Chặng "cả hai phải duyệt" của A và B. A ký xong, B chưa. Quản trị đổi
     B → C. Bản cũ tính lại danh sách người duyệt ra `[A, C]` rồi mở việc mới
     cho **cả hai** — tức A bị đòi ký lần thứ hai cho đúng cái chặng vừa ký, và
     chặng đứng im chờ chữ ký đó. Một lượt sửa luồng nhằm GỠ tắc lại đẻ ra tắc
@@ -584,7 +584,7 @@ def test_khai_lai_nguoi_duyet_thi_phieu_ket_HOI_SINH(db, flow, leave_type,
 
 
 def test_nguoi_du_phong_do_phieu_khi_khong_tim_duoc_ai(db, flow, leave_type, sep):
-    """Nhánh «chuyển cho người dự phòng» — lối thoát khai sẵn trong luồng."""
+    """Nhánh "chuyển cho người dự phòng" — lối thoát khai sẵn trong luồng."""
     truong_phong = _employee(db, "NV_TP", "Trưởng phòng")
     from app.modules.department.model import Department
     db.add(Department(id=7, code="P7", name="Phòng 7", manager_id=truong_phong.id))
@@ -695,7 +695,7 @@ def test_khai_DICH_DANH_nguoi_nop_lam_nguoi_duyet_thi_HO_TU_DUYET_DUOC(db, flow,
                                                                         submitter):
     """GHIM một quyết định CỐ Ý, không phải mô tả một lỗi.
 
-    I08 («không ai duyệt đơn của chính mình») chỉ cắt ở chỗ người duyệt được
+    I08 ("không ai duyệt đơn của chính mình") chỉ cắt ở chỗ người duyệt được
     SUY RA — trưởng bộ phận, vai trò, lên N cấp… Khi quản trị gõ thẳng TÊN một
     người vào bước thì bộ máy tôn trọng khai báo (`_exclude_submitter`, sửa
     05/09/2026): gạt đi thì bước rỗng và phiếu chết giữa đường, đã trả giá hai

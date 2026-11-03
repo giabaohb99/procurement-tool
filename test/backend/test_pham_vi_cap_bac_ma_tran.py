@@ -148,7 +148,7 @@ def expect_outcome(entity: str, scope: str, profile: dict, model):
             #  DUYỆT DẤU — nhánh riêng: Văn thư lọc theo BẢNG NỐI đa công ty
             #  (`tab_seal_request_company`) + trạng thái ĐÃ QUA TBP, KHÔNG theo cột
             #  `company_id` của bảng chính. Điều kiện đụng `tab_seal_request.status`
-            #  (cổng «đã duyệt») và `tab_seal_request.id` (vế trái subquery bảng nối);
+            #  (cổng "đã duyệt") và `tab_seal_request.id` (vế trái subquery bảng nối);
             #  chiều đa-công-ty được kiểm bằng dữ liệu thật ở `test_duyet_dau_phan_quyen`.
             if not company_id:
                 return BLOCK, (), True
@@ -219,8 +219,8 @@ def test_ma_tran_moi_entity_nhan_du_sau_cap_pham_vi(db, world, caplog, entity, s
 
         kind, cols, wants_log = expect_outcome(entity, scope, profile, model)
         assert classify_condition(cond) == kind, (
-            f"{entity} × {scope} (hồ sơ {actor_key}): chờ «{kind}», nhận "
-            f"«{classify_condition(cond)}» — {cond}"
+            f"{entity} × {scope} (hồ sơ {actor_key}): chờ \"{kind}\", nhận "
+            f"\"{classify_condition(cond)}\" — {cond}"
         )
         if kind is COND:
             sql = str(cond)
@@ -265,16 +265,16 @@ def test_dept_chan_nguoi_chua_gan_phong_ma_khong_ghi_log(db, world, caplog):
 
 
 def test_dept_bang_company_voi_entity_khong_co_chieu_phong_ban(db, world):
-    """Ba entity mà bậc «Phòng ban» rộng ĐÚNG BẰNG bậc «Công ty» — ghim lại.
+    """Ba entity mà bậc "Phòng ban" rộng ĐÚNG BẰNG bậc "Công ty" — ghim lại.
 
     `inventory` · `leave_balance` · `company` chỉ khai chiều pháp nhân. Nhánh
     `dept` (`scoping.py:365-378`) gom được mỗi điều kiện pháp nhân rồi trả về —
-    không chặn, không log. Người khai quyền đặt «Phòng ban» tưởng đã thu hẹp,
-    thực tế cấp đúng bằng «Công ty»: toàn bộ tồn kho, toàn bộ quỹ phép của pháp
+    không chặn, không log. Người khai quyền đặt "Phòng ban" tưởng đã thu hẹp,
+    thực tế cấp đúng bằng "Công ty": toàn bộ tồn kho, toàn bộ quỹ phép của pháp
     nhân.
 
     # QUYẾT ĐỊNH CHỜ: bậc `dept` trên entity không có chiều phòng ban nên chặn
-    # (đúng tinh thần B-07 «hẹp mà không dựng nổi thì chặn»), hay giữ nguyên?
+    # (đúng tinh thần B-07 "hẹp mà không dựng nổi thì chặn"), hay giữ nguyên?
     """
     from app.modules.inventory.model import Inventory
 
@@ -301,7 +301,7 @@ def test_own_tren_entity_chi_khai_self_chan_nguoi_chua_gan_nhan_su(db, world, ca
     Trước bản vá, nhánh `self` **đơn độc** dựng thẳng
     `User.employee_id == (employee_id or 0)`. Với tài khoản chưa gắn hồ sơ nhân
     sự thì đó là `== 0` — đúng giá trị của MỌI tài khoản chưa gắn nhân sự, nên
-    phạm vi «của mình» hóa ra là «mọi tài khoản hệ thống». Chốt `rid` đã có ở
+    phạm vi "của mình" hóa ra là "mọi tài khoản hệ thống". Chốt `rid` đã có ở
     nhánh CÓ `owner` từ CR-259 (`scoping.py:358`), nhánh này thì không: cùng một
     lỗi, chỉ khác chỗ đứng.
 
@@ -372,10 +372,10 @@ def make_purchase_requests(world) -> dict[str, int]:
 def test_b1_thu_mua_gan_phap_nhan_van_nhat_duoc_phieu_da_duyet_cua_phap_nhan_khac(db, world):
     """B1 — bao-CR-434 ĐẢO P1-1: `proc` KHÔNG còn AND pháp nhân của người xem.
 
-    P1-1 (CR-164) từng siết nhánh «nhặt việc» theo `company_id` trên hồ sơ. Đại ca
+    P1-1 (CR-164) từng siết nhánh "nhặt việc" theo `company_id` trên hồ sơ. Đại ca
     chốt 21/09/2026: pháp nhân trên hồ sơ chỉ là chuyện pháp lý, một phòng có thể
     mua cho nhiều pháp nhân — nên a3 (hồ sơ pháp nhân A) phải nhặt được cả
-    `B_duyet`. Muốn nhốt vào một pháp nhân thì khai tay ở «Chỉ trong công ty»
+    `B_duyet`. Muốn nhốt vào một pháp nhân thì khai tay ở "Chỉ trong công ty"
     (xem B1b). Phiếu nháp (`A_nhap`, `B_nhap`) vẫn không lọt: trạng thái là tiêu
     chí duy nhất của nhánh này.
     """
@@ -388,9 +388,9 @@ def test_b1_thu_mua_gan_phap_nhan_van_nhat_duoc_phieu_da_duyet_cua_phap_nhan_kha
 
 
 def test_b1b_chi_trong_cong_ty_moi_la_cach_nhot_thu_mua_vao_mot_phap_nhan(db, world):
-    """B1b — cách DUY NHẤT thu hẹp theo pháp nhân sau CR-434: ô «Chỉ trong công ty»
+    """B1b — cách DUY NHẤT thu hẹp theo pháp nhân sau CR-434: ô "Chỉ trong công ty"
     (`_explicit_cond`, chiều `company`, include). Khai tay thì AND vào mọi nhánh của
-    grant, kể cả nhánh «dòng gán mã mình» — `A_giao_dong` thuộc A nên vẫn còn.
+    grant, kể cả nhánh "dòng gán mã mình" — `A_giao_dong` thuộc A nên vẫn còn.
     """
     from app.modules.purchase_request.model import PurchaseRequest
 
@@ -403,7 +403,7 @@ def test_b1b_chi_trong_cong_ty_moi_la_cach_nhot_thu_mua_vao_mot_phap_nhan(db, wo
 def test_b2_thu_mua_chua_gan_phap_nhan_van_nhat_duoc_het(db, world):
     """B2 — `company_id = 0` thì `proc` nhặt hết; sau CR-434 đây không còn là ngoại
     lệ mà là hành vi chung (B1 với hồ sơ đã gắn pháp nhân cho cùng kết quả).
-    Giữ bài để canh riêng đường «chưa gắn nhân sự / chưa gắn pháp nhân».
+    Giữ bài để canh riêng đường "chưa gắn nhân sự / chưa gắn pháp nhân".
     """
     from app.modules.purchase_request.model import PurchaseRequest
 
@@ -417,7 +417,7 @@ def test_b3_duoc_giao_khong_keo_theo_phieu_da_duyet_cua_nguoi_khac(db, world):
     """B3 — `assigned` KHÔNG có nhánh trạng thái; chỉ `proc` mới có (`:298-300`).
 
     Hai cấp bậc này ngồi cạnh nhau trong cùng một `if`, rất dễ nới nhầm sang cả
-    hai. Nới nhầm nghĩa là mọi người đặt «Được giao» đọc được toàn bộ phiếu đã
+    hai. Nới nhầm nghĩa là mọi người đặt "Được giao" đọc được toàn bộ phiếu đã
     duyệt của công ty.
     """
     from app.modules.purchase_request.model import PurchaseRequest
@@ -611,8 +611,8 @@ def make_vehicle_bookings(world, driver_id: int) -> dict[str, int]:
 def test_b10_khong_co_dong_tai_xe_thi_khong_thay_them_phieu_nao(db, world):
     """B10 — nhánh tài xế nối qua `Driver.user_id` (`:337-340`).
 
-    Người không phải tài xế đặt phạm vi «Được giao» chỉ còn đúng phiếu mình tạo.
-    Subquery rỗng không được biến thành «thấy tất».
+    Người không phải tài xế đặt phạm vi "Được giao" chỉ còn đúng phiếu mình tạo.
+    Subquery rỗng không được biến thành "thấy tất".
     """
     from app.modules.vehicle_booking.model import Driver, VehicleBooking
 
@@ -675,11 +675,11 @@ def make_vehicle_bookings_by_dept(world, driver_id: int) -> dict[str, int]:
 
 
 def test_b11b_dept_proc_dat_xe_khoanh_them_phong_minh(db, world):
-    """B11b — bao-CR-446: `dept_proc` trên đặt xe = nhánh `assigned` AND «phiếu thuộc phòng mình».
+    """B11b — bao-CR-446: `dept_proc` trên đặt xe = nhánh `assigned` AND "phiếu thuộc phòng mình".
 
     Trước CR này nhánh đặt xe `return` trước `_narrow_to_dept` nên `dept_proc` mở
     y hệt `assigned`: phiếu phân cho mình ở phòng khác, phiếu mình tạo ở phòng khác
-    đều lọt. Nay chỉ còn phiếu vừa «của mình / phân cho mình» vừa thuộc phòng mình.
+    đều lọt. Nay chỉ còn phiếu vừa "của mình / phân cho mình" vừa thuộc phòng mình.
     Phiếu cùng phòng nhưng chưa phân vẫn không lọt — AND phòng là thu hẹp, không nới.
     """
     from app.modules.vehicle_booking.model import Driver, VehicleBooking
@@ -775,7 +775,7 @@ def make_room_bookings(world) -> dict[str, int]:
 def test_b12_don_nghi_phep_cap_duoc_giao_hanh_xu_dung_nhu_cua_minh(db, world):
     """B12 — `leave_request` không có nhánh riêng nên `assigned` rơi về `own` (`:342`).
 
-    Rơi về `own` chứ không phải rơi về «thấy tất»: khác biệt giữa hai thứ đó là
+    Rơi về `own` chứ không phải rơi về "thấy tất": khác biệt giữa hai thứ đó là
     toàn bộ đơn nghỉ của công ty.
     """
     from app.modules.leave.request_model import LeaveRequest
@@ -800,9 +800,9 @@ def test_b14_chon_nham_duoc_giao_thi_am_tham_thanh_cua_minh(db, world, caplog):
     """B14 — màn Phân quyền bày `assigned`/`proc` cho MỌI entity, kể cả entity
     không có nhánh nào cho chúng.
 
-    Người khai quyền chọn «Được giao» cho Nghỉ phép sẽ nhận đúng phạm vi «Của
-    mình» mà không có một dấu hiệu nào: không lỗi, không log, nhãn trên màn hình
-    vẫn ghi «Được giao». Ghim hành vi hiện tại.
+    Người khai quyền chọn "Được giao" cho Nghỉ phép sẽ nhận đúng phạm vi "Của
+    mình" mà không có một dấu hiệu nào: không lỗi, không log, nhãn trên màn hình
+    vẫn ghi "Được giao". Ghim hành vi hiện tại.
 
     # QUYẾT ĐỊNH CHỜ: màn Phân quyền có nên chỉ bày `assigned`/`proc` cho bốn
     # entity thật sự có nhánh, hay `_role_scope_cond` nên ghi một dòng log khi
@@ -883,8 +883,8 @@ def test_c3_nguoi_chua_gan_nhan_su_khong_trung_moi_don_chua_gan(db, world):
 def test_c4_nguoi_cap_phat_quy_phep_khong_vi_the_ma_so_huu_quy(db, world):
     """C4 — `leave_balance` cố ý KHÔNG khai `owner` (`scoping.py:163-166`).
 
-    `created_by` của quỹ phép là người Nhân sự bấm nút cấp phát. Lấy đó làm «của
-    mình» thì một người Nhân sự đặt phạm vi `own` sở hữu quỹ của cả công ty,
+    `created_by` của quỹ phép là người Nhân sự bấm nút cấp phát. Lấy đó làm "của
+    mình" thì một người Nhân sự đặt phạm vi `own` sở hữu quỹ của cả công ty,
     trong khi `leave_balance.write` chính là quyền TẶNG THÊM NGÀY PHÉP.
     """
     from app.modules.leave.balance_model import LeaveBalance
@@ -908,7 +908,7 @@ def test_c4_nguoi_cap_phat_quy_phep_khong_vi_the_ma_so_huu_quy(db, world):
 def test_c5_nguoi_thu_ba_cung_phong_khong_thay_don_o_pham_vi_cua_minh(db, world):
     """C5 — `own` phải hẹp hơn `dept`. Hai người cùng phòng KHÔNG kéo theo nhau.
 
-    Đơn nghỉ mang lý do sức khỏe, chuyện gia đình. Nới `own` thành «cùng phòng»
+    Đơn nghỉ mang lý do sức khỏe, chuyện gia đình. Nới `own` thành "cùng phòng"
     là lộ đúng nhóm dữ liệu nhạy nhất cho đúng nhóm người hay tò mò nhất.
     """
     from app.modules.leave.request_model import LeaveRequest

@@ -1,5 +1,5 @@
 """ai-CR-226 — Agent 1 đọc log dev 19/10/2026: ở CHẾ ĐỘ TÁCH, nhật ký công cụ của Trợ lý / bot ghi vào DB agent_hub (không có
-`tab_audit_log`) → «Table 'agent_hub.tab_audit_log' doesn't exist», mọi dấu vết «ai nhờ bot làm gì» mất trắng (8 lượt / giờ,
+`tab_audit_log`) → "Table 'agent_hub.tab_audit_log' doesn't exist", mọi dấu vết "ai nhờ bot làm gì" mất trắng (8 lượt / giờ,
 4 lần tạo lịch Google). Gộp mục 7 của bài rà: xem lại / bật / tắt khóa MCP có thêm dòng nhật ký ERP lâu dài.
 
 Canh:

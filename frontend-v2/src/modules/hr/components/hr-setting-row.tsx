@@ -13,7 +13,7 @@ interface HrSettingRowProps {
   onChange: (value: HrSettingValue) => void
   /** Không có quyền sửa, hoặc công tắc mà ô này phụ thuộc đang TẮT. */
   disabled: boolean
-  /** Làm mờ (công tắc cha TẮT) — vẫn đọc được giá trị, chỉ báo «chưa có tác dụng». */
+  /** Làm mờ (công tắc cha TẮT) — vẫn đọc được giá trị, chỉ báo "chưa có tác dụng". */
   muted?: boolean
   /** Danh sách vai trò cho ô `roles`; `null` = không có `role.read` → hiện mã trơn. */
   roleOptions: { id: string; label: string; hint: string }[] | null

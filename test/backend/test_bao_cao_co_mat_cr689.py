@@ -1,4 +1,4 @@
-"""duoc-CR-689 — báo cáo C3 «Có mặt theo ngày» (khóa 26): `/api/attendance-report/summary` (+ export, rows).
+"""duoc-CR-689 — báo cáo C3 "Có mặt theo ngày" (khóa 26): `/api/attendance-report/summary` (+ export, rows).
 
 Canh: định nghĩa người-ngày (lịch riêng, ngày lễ, ngày vào làm, nghỉ cả ngày / nửa buổi / theo giờ, đơn chờ
 duyệt không tính), nhóm theo phòng ban, phạm vi, thiếu quyền xem đơn nghỉ, trần kỳ 92 ngày, danh sách `/rows`,

@@ -26,7 +26,7 @@ export function useSaveHrSettings() {
     mutationFn: (values: Record<string, unknown>) => hrSettingApi.save(values),
     onSuccess: (payload) => {
       queryClient.setQueryData(queryKeys.system.settings(), payload)
-      //  Lần lưu đẻ một dòng nhật ký ở thẻ «Lịch sử thay đổi» của màn Cấu hình hệ thống.
+      //  Lần lưu đẻ một dòng nhật ký ở thẻ "Lịch sử thay đổi" của màn Cấu hình hệ thống.
       void queryClient.invalidateQueries({ queryKey: queryKeys.system.settingHistory() })
     },
   })

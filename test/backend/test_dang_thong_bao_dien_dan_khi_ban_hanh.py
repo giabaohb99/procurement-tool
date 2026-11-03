@@ -1,6 +1,6 @@
-"""CR-200 (F12) — ô «Đăng thông báo lên diễn đàn» trong hộp thoại Ban hành.
+"""CR-200 (F12) — ô "Đăng thông báo lên diễn đàn" trong hộp thoại Ban hành.
 
-Chốt với sếp 27/08/2026: «clone thành 1 bài viết bên này là đúng logic hơn» —
+Chốt với sếp 27/08/2026: "clone thành 1 bài viết bên này là đúng logic hơn" —
 diễn đàn chỉ giữ MỘT BẢN SAO thông báo đã ghim (tiêu đề + số hiệu + link),
 văn bản gốc vẫn nằm ở Văn thư. Ba thứ phải giữ:
 

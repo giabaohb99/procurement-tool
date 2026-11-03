@@ -105,16 +105,16 @@ def test_khong_ton_tai_tool_nao_xoa_du_lieu(db):
     assert all(TOOL_GHI[n][1] == "delete" for n in TOOL_XOA_ERP_CO_XAC_NHAN)
 
 
-#  Giải trình cho bài trên (AI-0003, đại ca giao «công cụ hủy sự kiện»): xóa sự kiện trên lịch Google của CHÍNH
+#  Giải trình cho bài trên (AI-0003, đại ca giao "công cụ hủy sự kiện"): xóa sự kiện trên lịch Google của CHÍNH
 #  người hỏi, bằng token của họ — không đụng một bản ghi ERP nào. Mơ hồ thì tool trả lựa chọn chứ không tự chọn
 #  (canh ở `test_huy_lich_xoa_dung_su_kien_va_hoi_lai_khi_mo_ho` trong test_agent_hub).
 TOOL_XOA_NGOAI_ERP = {
     "delete_calendar_event": "hủy sự kiện trên lịch Google của chính người hỏi",
 }
 
-#  Giải trình (AI-0006, đại ca chốt 09/10/2026 «có thể bỏ luật xóa dữ liệu đi»): tool XÓA dữ liệu
+#  Giải trình (AI-0006, đại ca chốt 09/10/2026 "có thể bỏ luật xóa dữ liệu đi"): tool XÓA dữ liệu
 #  ERP đầu tiên. Vẫn giữ tinh thần luật cũ ở chỗ quan trọng: tool CHỈ trả đề xuất, NGƯỜI bấm
-#  «Xác nhận xóa» mới xóa (confirm-update kiểm lại từ đầu), và chỉ xóa phiếu CHÍNH người hỏi lập,
+#  "Xác nhận xóa" mới xóa (confirm-update kiểm lại từ đầu), và chỉ xóa phiếu CHÍNH người hỏi lập,
 #  còn Nháp / Bị trả lại, đủ quyền `delete` + phạm vi xóa. Đề nghị thanh toán và phiếu hỗ trợ
 #  không xóa. Canh ở `test_assistant_update_tool.py` (nhóm propose_document_delete).
 TOOL_XOA_ERP_CO_XAC_NHAN = {
@@ -182,7 +182,7 @@ TOOL_GHI = {
     "propose_document_update": ("purchase_request", "write",
                                 {"entity": "purchase_request", "code": "YCMH-BAT-KY",
                                  "changes": {"purpose": "Đổi mục đích"}}),
-    #  AI-0006 — chỉ đề xuất xóa; xóa thật khi người dùng bấm «Xác nhận xóa».
+    #  AI-0006 — chỉ đề xuất xóa; xóa thật khi người dùng bấm "Xác nhận xóa".
     "propose_document_delete": ("purchase_request", "delete",
                                 {"entity": "purchase_request", "code": "YCMH-BAT-KY"}),
     #  bao-CR-435 — chỉ đề xuất, nhưng dẫn tới gán vai trò + phạm vi khi bấm Xác nhận.
@@ -190,9 +190,9 @@ TOOL_GHI = {
     #  get_scoped('user', 'write'), canh ở test_assistant_account_setup_tool.
     "propose_account_setup": ("user", "write", {"employee": "NV-BAT-KY",
                                                 "role_codes": ["employee"]}),
-    #  ai-CR-080 — chỉ soạn nháp; tạo thật khi người dùng nhắn «tạo» (draft_create kiểm lại quyền + thành viên dự án).
+    #  ai-CR-080 — chỉ soạn nháp; tạo thật khi người dùng nhắn "tạo" (draft_create kiểm lại quyền + thành viên dự án).
     "draft_work_task": ("work_task", "create", {"title": "Gọi NCC"}),
-    #  bao-CR-616 — cả cây kế hoạch cũng chỉ soạn nháp; «tạo» đi qua draft_create (quyền + thành viên dự án như web).
+    #  bao-CR-616 — cả cây kế hoạch cũng chỉ soạn nháp; "tạo" đi qua draft_create (quyền + thành viên dự án như web).
     "draft_work_plan": ("work_task", "create", {"title": "Kế hoạch X", "phases": [{"name": "GĐ1", "tasks": [{"title": "Việc 1"}]}]}),
     #  kh-AI2-6 — chỉ soạn nháp; tạo thật qua draft_create bằng service tạo phiếu của web (kiểm lại quyền + người duyệt).
     "draft_vehicle_booking": ("vehicle_booking", "create", {"purpose": "Đi Cần Thơ"}),
@@ -205,7 +205,7 @@ TOOL_GHI = {
 
 #  Tool GHI ra NGOÀI ERP (ai-CR-064): ghi vào tài khoản Google của CHÍNH người hỏi qua
 #  liên kết Google cá nhân, không đụng dữ liệu ERP — nên không có cặp (entity, action) để
-#  chặn như bảng trên. Chốt thật là «phải có liên kết Google của chính người đó», canh ở
+#  chặn như bảng trên. Chốt thật là "phải có liên kết Google của chính người đó", canh ở
 #  `test_tool_ghi_ngoai_erp_tu_choi_khi_chua_noi_google` bên dưới.
 TOOL_GHI_NGOAI_ERP = {
     "create_calendar_event": {"title": "Họp NCC", "start": "2026-09-26T14:00:00"},

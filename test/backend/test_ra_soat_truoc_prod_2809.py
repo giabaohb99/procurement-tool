@@ -1,9 +1,9 @@
 """Hai lỗi bắt được khi diễn tập erp-v2 trên bản sao DB prod ngày 28/09/2026.
 
 1. Bản v1 gửi 0 cho ô Dự toán / Tạm tính chưa gõ, còn dòng chi phí chuyển từ khuôn cũ để TRỐNG
-   hai cột đó — phép so «dòng đã quyết toán có bị sửa không» coi None ≠ 0 nên mọi lần lưu ĐMH
+   hai cột đó — phép so "dòng đã quyết toán có bị sửa không" coi None ≠ 0 nên mọi lần lưu ĐMH
    trên v1 ăn 400 (PO00122 trên prod).
-2. Ô chọn NSTM bỏ sót người giữ vai trò phạm vi «được giao» (`pur_staff`) — 3/4 người đang nhận
+2. Ô chọn NSTM bỏ sót người giữ vai trò phạm vi "được giao" (`pur_staff`) — 3/4 người đang nhận
    việc trên prod biến mất khỏi ô chọn.
 """
 from types import SimpleNamespace

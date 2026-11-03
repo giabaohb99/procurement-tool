@@ -11,8 +11,8 @@ nào như vậy bot mới hỏi.
 ## Ba luật của chính cuốn sổ (đại ca chốt 23/09/2026)
 
 1. **Bot chỉ đề xuất ghi, đại ca bấm đồng ý mới thành luật.** Sau khi đại ca trả lời một câu
-   bot hỏi lại, bot gửi thẻ «Lần sau gặp tương tự em tự làm vậy nhé?» kèm bản nháp mục mới.
-   Bấm «Ghi vào sổ» thì mục đó được nối vào cuối tệp này; bấm «Không, lần nào cũng hỏi» thì thôi.
+   bot hỏi lại, bot gửi thẻ **Lần sau gặp tương tự em tự làm vậy nhé?** kèm bản nháp mục mới.
+   Bấm **Ghi vào sổ** thì mục đó được nối vào cuối tệp này; bấm **Không, lần nào cũng hỏi** thì thôi.
 2. **Sổ nằm trong kho mã**, sửa tay được, có commit và lịch sử. Muốn gỡ hay sửa một mục: sửa
    thẳng tệp này. Không ghi bí mật nào vào đây.
 3. **Việc dính tiền, công nợ, thanh toán, phân quyền, cấu trúc cơ sở dữ liệu, prod, nhánh
@@ -76,9 +76,9 @@ xuống, phần trên đây chỉ để người đọc.
 - Không áp khi: màn ở `frontend/` cũ chưa có thành phần tương đương.
 - Nguồn: CR-105, ghi trong `CLAUDE.md`.
 
-## QĐ-09 | Bộ lọc có mốc «tất cả»
+## QĐ-09 | Bộ lọc có mốc "tất cả"
 - Tình huống: thêm ô lọc theo một cột tham chiếu (phòng ban, công ty, người…).
-- Bot làm: dùng `-1` làm mốc «tất cả», vì `0` là nhóm «chưa gắn» thật; khai tham số mới vào danh sách cho phép của `apply_filters`; đổi bộ lọc thì kéo về trang 1.
+- Bot làm: dùng `-1` làm mốc **tất cả**, vì `0` là nhóm **chưa gắn** thật; khai tham số mới vào danh sách cho phép của `apply_filters`; đổi bộ lọc thì kéo về trang 1.
 - Không áp khi: cột đó không bao giờ bỏ trống.
 - Nguồn: duoc-CR-322; bao-CR-447 (tham số ngoài danh sách cho phép bị bỏ im lặng).
 
@@ -94,8 +94,8 @@ xuống, phần trên đây chỉ để người đọc.
 - Không áp khi: đại ca bảo rõ muốn một tệp riêng.
 - Nguồn: đại ca 13/08/2026 ("cập nhật đó vào danh sách tính năng là được rồi").
 
-## QĐ-12 | Không coi «alo» là việc cần làm
-- Tình huống: Khi người dùng mở đầu tin nhắn bằng lời chào kiểu «alo».
-- Bot làm: Không định nghĩa «alo» là việc cần làm hay việc sửa phần mềm.
-- Không áp khi: Khi «alo» không phải lời chào, hoặc tin nhắn còn kèm yêu cầu công việc cụ thể.
-- Nguồn: đại ca bấm «Ghi vào sổ» trên Telegram 07/10/2026, từ việc AI-0004
+## QĐ-12 | Không coi "alo" là việc cần làm
+- Tình huống: Khi người dùng mở đầu tin nhắn bằng lời chào kiểu **alo**.
+- Bot làm: Không định nghĩa **alo** là việc cần làm hay việc sửa phần mềm.
+- Không áp khi: Khi **alo** không phải lời chào, hoặc tin nhắn còn kèm yêu cầu công việc cụ thể.
+- Nguồn: đại ca bấm **Ghi vào sổ** trên Telegram 07/10/2026, từ việc AI-0004

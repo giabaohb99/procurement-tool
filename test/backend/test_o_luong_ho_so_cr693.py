@@ -146,7 +146,7 @@ def test_nguoi_co_quyen_ghi_duoc_luong_nguoi_khac_cau_tra_loi_van_che(db, world,
     db.expire_all()
     t = db.get(Employee, victim.id)
     assert (t.salary_monthly, t.allowance_monthly) == (SAL, ALW) and t.salary_updated_at is not None
-    # nhật ký: ghi «Cập nhật lương», KHÔNG kèm số
+    # nhật ký: ghi "Cập nhật lương", KHÔNG kèm số
     msgs = [a.message for a in db.query(AuditLog).filter(AuditLog.entity == "employee", AuditLog.entity_id == victim.id)]
     assert any("Cập nhật lương" in m for m in msgs)
     assert not any(str(SAL) in m or str(ALW) in m for m in msgs)

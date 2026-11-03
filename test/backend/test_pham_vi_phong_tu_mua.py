@@ -4,7 +4,7 @@ Ba bộ phạm vi đã chốt với khách:
   · THU MUA TOÀN QUYỀN — `pur_manager` bậc `all`, không đổi gì.
   · NHÀ MÁY — quản lý thu mua CỦA PHÒNG (bậc `dept_proc`): đúng nhánh `proc` NHƯNG chỉ trong
     phòng mình (phòng lập phiếu HOẶC phòng được nhờ). Phòng khác không thấy.
-  · THU MUA TRỪ NHÀ MÁY — bậc `proc` + ô «Loại trừ phòng ban» = nhà máy. bao-CR-480 (đại
+  · THU MUA TRỪ NHÀ MÁY — bậc `proc` + ô "Loại trừ phòng ban" = nhà máy. bao-CR-480 (đại
     ca chốt 24/09/2026) đổi cột so sánh sang PHÒNG XỬ LÝ: không thấy phiếu nhà máy ĐANG MUA
     (kể cả phiếu phòng khác nhờ nhà máy), nhưng thấy phiếu nhà máy xin mà thu mua chung mua.
 

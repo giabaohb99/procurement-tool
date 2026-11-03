@@ -1,5 +1,5 @@
 """
-test_yctt_cap_nhat_theo_cong_no.py — bao-CR-509: nút «Cập nhật theo công nợ» của YCTT.
+test_yctt_cap_nhat_theo_cong_no.py — bao-CR-509: nút "Cập nhật theo công nợ" của YCTT.
 
 Luật nghiệp vụ (khách chốt 28/09/2026):
 1. Dòng phiếu lưu BẢN CHỤP số đề nghị chi. Sửa ĐMH làm công nợ đổi thì phiếu NHÁP nạp lại

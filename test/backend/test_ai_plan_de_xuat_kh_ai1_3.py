@@ -1,7 +1,7 @@
 """kh-AI1-3 (doc/erp/tai-lieu-ai/22 §5.2) — đề xuất kế hoạch AI chờ duyệt: AI chỉ đề xuất, người quyết.
 
 A1 chốt 22/10: người duyệt là chính người hỏi AI; công tắc `ai_plan_review_enabled` mặc định TẮT (tạo thẳng như
-bao-CR-616 nhưng ghi đề xuất trạng thái riêng «Tạo thẳng», không lẫn với lần người thật duyệt); chỉ đổi nhánh
+bao-CR-616 nhưng ghi đề xuất trạng thái riêng "Tạo thẳng", không lẫn với lần người thật duyệt); chỉ đổi nhánh
 `work_plan` của lớp nháp dùng chung, các loại phiếu khác giữ nguyên hành vi.
 """
 import pytest

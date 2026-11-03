@@ -1,4 +1,4 @@
-"""duoc-CR-653 — API gói quyền chức vụ: ai được sửa, chống nâng quyền, vai trò admin, «Áp lại», nhật ký."""
+"""duoc-CR-653 — API gói quyền chức vụ: ai được sửa, chống nâng quyền, vai trò admin, "Áp lại", nhật ký."""
 import uuid
 
 import pytest
@@ -142,9 +142,9 @@ def test_ap_lai_bo_qua_nguoi_nghi_viec_va_chinh_nguoi_bam(db, seed, cap_quyen, c
     cap_quyen(u.id, "document", scope="all", read=True)
     for eid in (seed.emp_tp_id, seed.emp_req_id):           # người bấm (emp_tp) + một người sẽ nghỉ việc
         emp_service.update_employee(db, eid, EmployeeUpdate(position_id=pos.id), 1)
-    db.query(UserRole).filter(UserRole.role_id == ra.id).delete()   # xóa cái vừa tự cấp để thử «Áp lại»
+    db.query(UserRole).filter(UserRole.role_id == ra.id).delete()   # xóa cái vừa tự cấp để thử "Áp lại"
     db.get(Employee, seed.emp_req_id).status = "resigned"
     db.commit()
     s = client_as(u).post(f"/api/job-positions/{pos.id}/roles/apply").json()["data"]
-    # Review L4: người bấm KHÔNG tính vào «holders», báo riêng ở skipped_self.
+    # Review L4: người bấm KHÔNG tính vào "holders", báo riêng ở skipped_self.
     assert s["holders"] == 0 and s["skipped_self"] == 1 and s["changed_users"] == 0

@@ -12,10 +12,10 @@
 | Ghi tin nhóm | Bot ở trong nhóm ghi lặng mọi tin + siêu dữ liệu tệp (chưa tải). **Không nói gì trong nhóm** |
 | Chủ nhóm | Người thêm bot vào nhóm (update `my_chat_member`) = chủ, nếu chat riêng của họ đã đăng nhập ERP |
 | Ai đọc được | Chủ nhóm, hoặc người đã đăng nhập ERP mà Telegram xác nhận đang là thành viên nhóm (`getChatMember`) |
-| Hỏi | Nhắn riêng: «nhóm Kế toán hôm nay bàn gì», «tổng hợp nhóm X tuần này», «bot đang ở nhóm nào» |
-| Tệp trong nhóm | Bản tóm tắt liệt kê tệp kèm số thứ tự; «tóm tắt tệp số 2» → đọc pdf / Word / Excel / văn bản; ghi âm / video → biên bản họp gửi riêng |
+| Hỏi | Nhắn riêng: **nhóm Kế toán hôm nay bàn gì**, **tổng hợp nhóm X tuần này**, **bot đang ở nhóm nào** |
+| Tệp trong nhóm | Bản tóm tắt liệt kê tệp kèm số thứ tự; **tóm tắt tệp số 2** → đọc pdf / Word / Excel / văn bản; ghi âm / video → biên bản họp gửi riêng |
 | Đọc báo cáo gửi riêng | Gửi tệp pdf / Word / Excel / txt vào chat riêng, chú thích là câu hỏi (trống = tóm tắt) |
-| Viết báo cáo | «viết báo cáo tuần từ nhóm X ra Word» → công cụ xuất Word sẵn có |
+| Viết báo cáo | **viết báo cáo tuần từ nhóm X ra Word** → công cụ xuất Word sẵn có |
 | Tin gửi riêng | Đã có: tóm tắt cuối buổi vào kho (ai-CR-102), tìm lại hội thoại cũ, sổ ghi nhớ |
 | Giữ tin nhóm | **90 ngày** từ ai-CR-122 (đại ca chốt 08/10; trước đó 30), `AGENT_GROUP_RETENTION_DAYS`, dọn lúc 03:20 mỗi đêm |
 
@@ -29,7 +29,7 @@ Còn lại (đợt 2): bản tổng hợp tự động mỗi ngày gửi riêng 
 
 Đã tra tài liệu chính thức Zalo Bot Platform (`docs.zaloplatforms.com`, 07/10/2026):
 
-- Bot Zalo chính thức **vào được nhóm** nhưng tính năng đang **«thử nghiệm nội bộ, sẽ ra mắt»**.
+- Bot Zalo chính thức **vào được nhóm** nhưng tính năng đang **thử nghiệm nội bộ, sẽ ra mắt**.
 - Trong nhóm, bot chính thức **chỉ nhận tin trả lời bot hoặc tin @nhắc tên bot** — **không đọc được toàn bộ tin nhóm**.
   Tức là **không tóm tắt nhóm được** bằng đường chính thức.
 - Zalo OA (tài khoản doanh nghiệp) không vào được nhóm.
@@ -52,26 +52,26 @@ khóa tài khoản và dùng một số Zalo riêng cho bot.
 - **Zalo làm cả A và B**:
   - **A — bot Zalo chính thức** (Zalo Bot Platform): trợ lý chat riêng y như Telegram — hỏi đáp ERP, sổ nhớ, thẻ cá
     nhân, đọc tệp, biên bản họp. Nhận tin bằng polling (`getUpdates`) như Telegram nên không cần mở webhook. Cần: đại
-    ca tạo bot trong mini app «Zalo Bot Creator» và đưa token qua tệp (không dán vào chat).
-  - **B — một tài khoản Zalo riêng làm «bot» đọc nhóm** (thư viện không chính thức, dựng phía mình, KHÔNG dùng mã IDA):
+    ca tạo bot trong mini app **Zalo Bot Creator** và đưa token qua tệp (không dán vào chat).
+  - **B — một tài khoản Zalo riêng làm "bot" đọc nhóm** (thư viện không chính thức, dựng phía mình, KHÔNG dùng mã IDA):
     chỉ để GHI LẶNG tin + tệp các nhóm Zalo mà tài khoản đó được thêm vào, đổ vào cùng bảng nhóm như Telegram; người
     dùng hỏi qua bot A hoặc Telegram. Cần: một số điện thoại / tài khoản Zalo riêng (không phải số cá nhân của ai), đại
     ca quét QR đăng nhập một lần; chấp nhận rủi ro bị khóa tài khoản.
-- **Xưng hô**: mỗi người theo sổ ghi nhớ riêng; mặc định «anh/chị» (ai-CR-106).
+- **Xưng hô**: mỗi người theo sổ ghi nhớ riêng; mặc định **anh/chị** (ai-CR-106).
 
 - **08/10 (bổ sung):** bot cá nhân **đọc nhóm, ghi nhận tóm tắt và tệp, nhưng CHỈ trả lời riêng** (Telegram + Zalo). Sau
   này nếu cho trả lời khi được gọi trong nhóm thì **số liệu ERP luôn nhắn riêng** cho người gọi (biết ai hỏi, kiểm được
   quyền). Trợ lý AI trên web **không cần** tự nạp sổ ghi nhớ cá nhân.
 
 - **08/10 (tối):** người chưa đăng nhập nhắn bot thì bot **vẫn im** (không gửi câu hướng dẫn); dùng bot cần quyền
-  **«Trợ lý AI»** (`assistant.read`, cấp ở màn Phân quyền) — người quản lý xem ở màn **Người dùng bot**; nhóm
-  «KINH TẾ K52 - CTU» **tắt ghi**; màn **Nhóm chat KHÔNG mở** cho mọi nhân viên (giữ trong phân hệ Trợ lý AI).
+  **Trợ lý AI** (`assistant.read`, cấp ở màn Phân quyền) — người quản lý xem ở màn **Người dùng bot**; nhóm
+  **KINH TẾ K52 - CTU** **tắt ghi**; màn **Nhóm chat KHÔNG mở** cho mọi nhân viên (giữ trong phân hệ Trợ lý AI).
 
 ## 4. Lộ trình Zalo
 
 | Bước | Việc | Cỡ |
 |---|---|---|
-| Z-1 | Tách lớp «kênh» khỏi mã Telegram: gửi / nhận / tải tệp / mã chat có tiền tố kênh (Telegram giữ số cũ, Zalo `zl:`), đăng nhập bằng mã dùng chung | **Xong mã — ai-CR-111** |
+| Z-1 | Tách lớp **kênh** khỏi mã Telegram: gửi / nhận / tải tệp / mã chat có tiền tố kênh (Telegram giữ số cũ, Zalo `zl:`), đăng nhập bằng mã dùng chung | **Xong mã — ai-CR-111** |
 | Z-2 | Kênh A: bộ nối Zalo Bot API (polling, gửi tin, tải tệp), luồng nhận tin Zalo trong `agent-poller` | **Xong mã — ai-CR-111**, chờ token để bật |
 | Z-3 | Kênh B: tiến trình phụ `zalo-listener` (Node, zca-js) ghi lặng tin nhóm + chat riêng với tài khoản công ty; tự báo khi bị đá phiên | **Xong mã — ai-CR-122** (08/10) |
 | Z-4 | Đọc nhóm Zalo qua cùng 3 công cụ nhóm, quyền đọc = tài khoản Zalo đã đăng nhập ERP có tên trong danh sách thành viên | **Xong mã — ai-CR-122** (08/10) |
@@ -97,7 +97,7 @@ khóa tài khoản và dùng một số Zalo riêng cho bot.
 
 ## 7. Kênh Zalo B đã dựng (ai-CR-122, 08/10/2026)
 
-Đại ca chốt 08/10: **một tài khoản Zalo riêng của công ty làm «bot»** · **chỉ trả lời riêng** như hiện tại · **giữ tin 3
+Đại ca chốt 08/10: **một tài khoản Zalo riêng của công ty làm "bot"** · **chỉ trả lời riêng** như hiện tại · **giữ tin 3
 tháng**.
 
 | Việc | Cách chạy |
@@ -113,7 +113,7 @@ tháng**.
 | Lệnh chủ bot | `/zalo` tình trạng · `/zalo dangnhap` lấy QR · `/zalo nhom` đồng bộ lại nhóm |
 
 **Luật vận hành:** không mở Zalo Web / Zalo PC bằng tài khoản công ty trên máy nào khác (sẽ đá phiên của bot); điện
-thoại giữ số vẫn dùng bình thường. **Số Zalo công ty phải KHÁC mọi số đang chạy bot IDA** (IDA đang giữ phiên số «thaotho»): mỗi
+thoại giữ số vẫn dùng bình thường. **Số Zalo công ty phải KHÁC mọi số đang chạy bot IDA** (IDA đang giữ phiên số **thaotho**): mỗi
 tài khoản chỉ giữ được một phiên web, quét trùng thì hai bot đá nhau. Người muốn bot đọc nhóm Zalo nào thì **thêm tài khoản công ty vào nhóm đó**; bot chỉ
 thấy tin **từ lúc vào**.
 
@@ -140,29 +140,29 @@ chỉ mở QR cá nhân cho **vài người tự nguyện** (quản lý), mỗi 
 
 | Việc | Ghi chú |
 |---|---|
-| Nhận ra «được gọi» | Telegram: tin có `@tên_bot` hoặc trả lời tin của bot. Zalo B: danh sách `mentions` có id tài khoản công ty, hoặc trích tin của nó. Zalo A: bot chính thức vốn chỉ nhận tin kiểu này |
+| Nhận ra **được gọi** | Telegram: tin có `@tên_bot` hoặc trả lời tin của bot. Zalo B: danh sách `mentions` có id tài khoản công ty, hoặc trích tin của nó. Zalo A: bot chính thức vốn chỉ nhận tin kiểu này |
 | Trả lời dưới quyền ai | Người gọi phải đã đăng nhập ERP (nhắn riêng `/dangnhap` trước); dùng khóa AI của người gọi. Người chưa đăng nhập → im hoặc một câu nhắc ngắn |
-| **Chống lộ số liệu ERP** — chỗ quan trọng nhất | Câu trả lời trong nhóm ai cũng thấy. Đề xuất: trong nhóm chỉ trả lời câu chung (tóm tắt nhóm, tra mạng, giải thích); câu đụng số liệu ERP thì nhắn kết quả **riêng** cho người gọi và trong nhóm chỉ báo «em đã nhắn riêng». Chủ nhóm có thể bật «nhóm nội bộ, được trả lời số liệu» |
-| Ngữ cảnh | Dùng luôn kho tin nhóm: «@bot tóm tắt từ sáng tới giờ», «@bot ai hứa gửi báo giá» |
+| **Chống lộ số liệu ERP** — chỗ quan trọng nhất | Câu trả lời trong nhóm ai cũng thấy. Đề xuất: trong nhóm chỉ trả lời câu chung (tóm tắt nhóm, tra mạng, giải thích); câu đụng số liệu ERP thì nhắn kết quả **riêng** cho người gọi và trong nhóm chỉ báo **em đã nhắn riêng**. Chủ nhóm có thể bật **nhóm nội bộ, được trả lời số liệu** |
+| Ngữ cảnh | Dùng luôn kho tin nhóm: **@bot tóm tắt từ sáng tới giờ**, **@bot ai hứa gửi báo giá** |
 | Chống loạn | Trần ~10 câu trả lời / giờ / nhóm, bỏ qua tin của bot khác, câu trả lời ngắn, không nút bấm (Telegram: nút trong nhóm ai cũng bấm được → nút phải kiểm người bấm = người gọi) |
 | Gỡ chốt chặn | Hàm gửi Zalo B đang chặn cứng tin vào nhóm; đổi thành theo cờ cấu hình từng nhóm |
 
 **Hạ tầng: không cần đánh giá lại** ở quy mô hiện tại. Kho tin không đổi (đằng nào cũng đã ghi hết tin nhóm). Số lượt gọi
 AI tăng ít vì chỉ trả lời khi được gọi. Một việc nên làm cùng lúc: **đẩy phần trả lời sang hàng đợi worker** (hiện trả lời
 chạy ngay trong `agent-poller` — một câu dài 30 giây làm tin nhóm khác ghi chậm theo; tin không mất vì có hàng đợi, nhưng
-nhóm đông sẽ dồn) — đúng hàng «chat / heavy» đã ghi ở doc 13 §7. Thêm bộ đếm trần theo nhóm trong Redis sẵn có.
+nhóm đông sẽ dồn) — đúng hàng **chat / heavy** đã ghi ở doc 13 §7. Thêm bộ đếm trần theo nhóm trong Redis sẵn có.
 
 **Rủi ro riêng Zalo B:** tài khoản cá nhân **nói** trong nhóm (nhất là nhóm đông, nhiều người lạ) dễ bị Zalo đánh dấu
 hơn chỉ đọc. Nếu bật, em đề xuất Telegram trước, Zalo B sau một hai tuần chạy ổn, và giới hạn nhóm được phép nói.
 
-## 9. Màn «Nhóm chat» trên ERP v2 (ai-CR-123, 08/10/2026)
+## 9. Màn "Nhóm chat" trên ERP v2 (ai-CR-123, 08/10/2026)
 
-Đại ca: «phải có chỗ nào để check» — chỉ làm trên ERP v2. Trợ lý AI → **Nhóm chat** (`/assistant/groups`).
+Đại ca: **phải có chỗ nào để check** — chỉ làm trên ERP v2. Trợ lý AI → **Nhóm chat** (`/assistant/groups`).
 
 | Phần | Nội dung |
 |---|---|
 | Danh sách | Mọi nhóm bot đang ở; lọc theo **kênh / bot** (Telegram · Zalo tài khoản công ty · Zalo bot chính thức) và **loại** (chưa phân loại, nội bộ phòng ban, dự án, khách hàng, nhà cung cấp, điều hành, khác); số tin, số tệp, tin mới nhất, người thêm bot, tình trạng (đang ghi / ngừng ghi / bot đã rời) |
 | Chi tiết nhóm | Tab Tin nhắn (tìm, xem tin cũ hơn) · Tệp (tải về, bot tải hộ từ Telegram / Zalo) · **Bản tóm tắt** · Nhật ký xem |
-| Bản tóm tắt | Mọi câu trả lời của bot / Trợ lý web có đọc nhóm **tự lưu** vào nhóm đó; thêm nút «Tóm tắt» 24 giờ / 3 / 7 / 30 ngày |
-| Ai thấy gì | Người thường: nhóm mình là thành viên (cùng luật bot). Khóa **«Trợ lý AI › Quản lý nhóm chat của bot»** (`agent_group`): `read` = thấy **mọi** nhóm kể cả nội dung, mở nhóm mình không ở thì có **nhật ký xem**; `write` = phân loại mọi nhóm, **ngừng ghi** một nhóm, đăng nhập Zalo công ty bằng **QR ngay trên web**. Quản trị hệ thống tự có; ai khác thì tick ở Phân quyền |
+| Bản tóm tắt | Mọi câu trả lời của bot / Trợ lý web có đọc nhóm **tự lưu** vào nhóm đó; thêm nút **Tóm tắt** 24 giờ / 3 / 7 / 30 ngày |
+| Ai thấy gì | Người thường: nhóm mình là thành viên (cùng luật bot). Khóa **Trợ lý AI › Quản lý nhóm chat của bot** (`agent_group`): `read` = thấy **mọi** nhóm kể cả nội dung, mở nhóm mình không ở thì có **nhật ký xem**; `write` = phân loại mọi nhóm, **ngừng ghi** một nhóm, đăng nhập Zalo công ty bằng **QR ngay trên web**. Quản trị hệ thống tự có; ai khác thì tick ở Phân quyền |
 | Phân loại | Chủ nhóm (người thêm bot) tự gán loại cho nhóm của mình; người quản lý gán cho mọi nhóm |

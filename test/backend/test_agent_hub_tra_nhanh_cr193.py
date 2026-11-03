@@ -1,4 +1,4 @@
-"""ai-CR-193 (13/10) — «giá bitcoin hôm nay» mất 31 s vì bot viết nguyên báo cáo; Google Search Gemini 429 nhưng mỗi lượt vẫn
+"""ai-CR-193 (13/10) — "giá bitcoin hôm nay" mất 31 s vì bot viết nguyên báo cáo; Google Search Gemini 429 nhưng mỗi lượt vẫn
 thử. Nay: câu tra nhanh → bản ngắn (≤ 600 token ra, không nhóm La Mã), 429 → bỏ qua Google Search 10 phút."""
 import time
 

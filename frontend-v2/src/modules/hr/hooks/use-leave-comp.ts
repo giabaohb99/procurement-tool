@@ -11,7 +11,7 @@ import type { LeaveCompAction, LeaveCompPayload } from '../types/leave-comp'
  * Hook của Phiếu xin nghỉ bù (duoc-CR-715 phase C).
  *
  * ⚠️ Mọi mutation dọn `queryKeys.hr.all`: duyệt / hủy phiếu đổi `comp_days` của quỹ phép nên
- * danh sách quỹ, thẻ «Quỹ phép của tôi» và ô gợi ý trên form đơn nghỉ đều phải nạp lại.
+ * danh sách quỹ, thẻ "Quỹ phép của tôi" và ô gợi ý trên form đơn nghỉ đều phải nạp lại.
  * Cũng dọn `approval.all` — gửi duyệt mở phiên, hủy thì rút phiên.
  */
 

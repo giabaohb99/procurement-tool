@@ -251,7 +251,7 @@ def test_o_khong_co_chung_tu_cha_thi_khong_soi_pham_vi(data, nguoi_dung):
 
 # ── Đường lùi theo chuỗi chứng từ ───────────────────────────────────────────────
 def test_tep_pyc_ngoai_pham_vi_nhung_thuoc_don_minh_xem_duoc_thi_tai_duoc(data, nguoi_dung):
-    """Trang «Chứng từ» liệt kê cả chuỗi rồi cho tải từng dòng.
+    """Trang "Chứng từ" liệt kê cả chuỗi rồi cho tải từng dòng.
 
     `chain/zip` đã cho tải TRỌN chuỗi cho bất kỳ ai mở được đơn, nên đường lùi này
     không nới thêm gì — chỉ thay 'tải cả gói' bằng 'tải lẻ'.

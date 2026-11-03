@@ -72,7 +72,7 @@ describe('LeaveCompRequestForm', () => {
     expect(apiPatch).not.toHaveBeenCalled()
   })
 
-  it('double-clicking «Gửi duyệt» saves once and submits once (ref guard, not just isPending)', async () => {
+  it('double-clicking "Gửi duyệt" saves once and submits once (ref guard, not just isPending)', async () => {
     const user = userEvent.setup()
     const onSaved = vi.fn()
     let release: () => void = () => {}
@@ -108,7 +108,7 @@ describe('LeaveCompRequestForm', () => {
     expect(screen.getByRole('button', { name: /Gửi duyệt/ })).toBeEnabled()
   })
 
-  it('«Lưu nháp» only saves — it never calls submit', async () => {
+  it('"Lưu nháp" only saves — it never calls submit', async () => {
     const user = userEvent.setup()
     apiPatch.mockResolvedValue({ ...draft })
     renderForm({ request: draft })

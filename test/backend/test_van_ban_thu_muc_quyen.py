@@ -61,7 +61,7 @@ def _levels(db, actor_key, world):
     return folder_access_service.effective_levels(db, a.user, a.profile())
 
 
-# ── Thư mục nhóm «Công ty» (24/09/2026) ────────────────────────────────────
+# ── Thư mục nhóm "Công ty" (24/09/2026) ────────────────────────────────────
 def test_nhom_cong_ty_hien_khi_thay_it_nhat_mot_phap_nhan(db, world, roots):
     world.grant("a1", "document", scope="company", actions=("read",))
     group = folder_root_service.get_or_create_company_group(db)
@@ -69,7 +69,7 @@ def test_nhom_cong_ty_hien_khi_thay_it_nhat_mot_phap_nhan(db, world, roots):
 
 
 def test_nhom_cong_ty_an_khi_khong_thay_phap_nhan_nao(db, world, roots):
-    """Không bày ra một thư mục «Công ty» rỗng cho người không thấy gì bên trong."""
+    """Không bày ra một thư mục "Công ty" rỗng cho người không thấy gì bên trong."""
     group = folder_root_service.get_or_create_company_group(db)
     assert group.id not in _levels(db, "a1", world)
 
@@ -153,7 +153,7 @@ def test_acl_cho_dich_danh_mo_duoc_nhanh_du_khong_voi_toi_phap_nhan(db, world, r
     folder = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Chia riêng"), 0)
     _grant_folder(db, folder, subject_kind=SUBJECT_EMPLOYEE, subject_id=world.emp["a1"],
                  level=CONTRIBUTE)
-    #  `doc_folder` không mở pháp nhân nào (chỉ `document.read` mới «với tới»),
+    #  `doc_folder` không mở pháp nhân nào (chỉ `document.read` mới "với tới"),
     #  nhưng là quyền GHI — không có nó thì trần vai trò hạ dòng ACL về Xem.
     world.grant("a1", "doc_folder", scope="own", actions=("read", "create"))
 
@@ -294,7 +294,7 @@ def test_ensure_level_thay_nhung_thieu_muc_ra_403(db, world, roots):
     assert exc.value.status_code == 403
 
 
-# ── «Thấy một phần» — 5 văn bản, người dùng chỉ thấy 2 ──────────────────────
+# ── "Thấy một phần" — 5 văn bản, người dùng chỉ thấy 2 ──────────────────────
 def test_5_van_ban_nguoi_dung_chi_thay_2(db, world, roots):
     """1 mật (loại `is_personal`, không dính người xem) · 1 bị cấm đích danh ·
     1 của phòng khác · 2 thấy được — số đếm cây + lọc `folder_id` phải khớp
@@ -498,8 +498,8 @@ def test_search_folders_tra_my_level(db, world, roots):
 
 # ── Trần theo vai trò (lỗi test UI 24/09/2026) ──────────────────────────────
 def test_chi_quyen_doc_thi_toi_da_xem_du_thu_muc_mac_dinh_dong_gop(db, world, roots):
-    """Gốc pháp nhân mặc định «Đóng góp» cho cả pháp nhân. Người CHỈ ĐỌC từng
-    nhận `my_level = 2` → giao diện vẽ «Quyền: Đóng góp» + nút «+ Mới» rồi bấm
+    """Gốc pháp nhân mặc định "Đóng góp" cho cả pháp nhân. Người CHỈ ĐỌC từng
+    nhận `my_level = 2` → giao diện vẽ "Quyền: Đóng góp" + nút "+ Mới" rồi bấm
     vào ăn 403. Phải hạ về Xem — nhưng vẫn THẤY thư mục."""
     world.grant("a1", "document", scope="company", actions=("read",))
     world.grant("a1", "doc_folder", scope="company", actions=("read",))

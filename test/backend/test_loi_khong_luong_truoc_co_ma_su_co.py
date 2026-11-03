@@ -2,8 +2,8 @@
 
 Trước 25/08/2026 `main.py` không có cửa cho lỗi ngoài dự tính, nên chúng rơi ra
 ngoài thành `500 Internal Server Error` **thân rỗng, không phải JSON**. Giao diện
-không bóc được phong bì `{success, error}` nên chỉ hiện đúng một dòng «Request
-failed with status code 500» — người dùng không biết chuyện gì, người sửa cũng
+không bóc được phong bì `{success, error}` nên chỉ hiện đúng một dòng "Request
+failed with status code 500" — người dùng không biết chuyện gì, người sửa cũng
 không có gì để lần (đúng ảnh khách gửi khi bấm *Thêm bước duyệt*).
 
 Gọi thẳng hàm xử lý thay vì dựng `TestClient`: bộ kiểm chạy trong container

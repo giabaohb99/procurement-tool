@@ -1,4 +1,4 @@
-"""duoc-CR-689 — báo cáo B4 «Đối tượng cần chú ý theo luật» (khóa 29): `/api/legal-watch/summary`.
+"""duoc-CR-689 — báo cáo B4 "Đối tượng cần chú ý theo luật" (khóa 29): `/api/legal-watch/summary`.
 
 Canh: hàm tuổi nghỉ hưu thuần theo lộ trình Nghị định 135/2020 (từng năm 2021→2035, hai giới, sinh nhật biên),
 ba loại đối tượng (nghỉ hưu 12 tháng · đang nghỉ thai sản · nữ nuôi con dưới 12 tháng), đòi quyền nhạy cảm

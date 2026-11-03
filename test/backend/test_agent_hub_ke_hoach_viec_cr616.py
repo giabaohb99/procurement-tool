@@ -1,7 +1,7 @@
 """bao-CR-616 (phase 24.1, doc/agent-hub/18) — bot điều phối việc theo kế hoạch, ĐỢT 1 chỉ ghi nhận việc:
-tool `draft_work_plan` chuẩn hóa theo bộ luật → «tạo» dựng cả cây trong Dự án (bảng · cột = giai đoạn · việc cha / con,
+tool `draft_work_plan` chuẩn hóa theo bộ luật → "tạo" dựng cả cây trong Dự án (bảng · cột = giai đoạn · việc cha / con,
 trường tùy biến Tiêu chí / Nhận việc / Tiến độ / Tự chấm / Ghi nhận, mời người làm vào bảng) → nhắn hỏi từng người nhận
-việc (nhân danh chủ kế hoạch) → nút / câu trả lời ghi vào việc và báo chủ → «xong việc N 8 điểm» ghi xong + giờ."""
+việc (nhân danh chủ kế hoạch) → nút / câu trả lời ghi vào việc và báo chủ → "xong việc N 8 điểm" ghi xong + giờ."""
 import json
 from datetime import datetime, timedelta
 
@@ -234,7 +234,7 @@ def test_nguoi_lam_bam_nut_va_nhan_xong_viec(db, world):
     con = db.query(WorkTask).filter(WorkTask.list_id == list_id, WorkTask.title == "Chuyển tiền").one()
     fields = {f.name: f for f in db.query(WorkLabelField).filter(WorkLabelField.list_id == list_id)}
     world["sent"].clear()
-    #  Nhận → ghi «Nhận», báo chủ kế hoạch (chat-boss), trả lời An.
+    #  Nhận → ghi "Nhận", báo chủ kế hoạch (chat-boss), trả lời An.
     work_plan.handle_callback(db, "chat-an", "cb1", work_plan.CB_YES, tam_ung.id)
     assert plan_service._label_text(db, fields[plan_service.FIELD_ACCEPT], tam_ung.id) == plan_service.ACCEPT_YES
     assert [s[0] for s in world["sent"]] == ["chat-an", "chat-boss"] and "đã <b>nhận</b>" in world["sent"][1][1]
@@ -250,7 +250,7 @@ def test_nguoi_lam_bam_nut_va_nhan_xong_viec(db, world):
     world["sent"].clear()
     work_plan.handle_callback(db, "chat-boss", "cb3", work_plan.CB_YES, con.id)
     assert plan_service._label_text(db, fields[plan_service.FIELD_ACCEPT], con.id) == plan_service.ACCEPT_NO and not world["sent"]
-    #  «xong việc N 8 điểm» → trạng thái xong, tiến độ 100, tự chấm 8, có giờ; báo chủ.
+    #  "xong việc N 8 điểm" → trạng thái xong, tiến độ 100, tự chấm 8, có giờ; báo chủ.
     row = _incoming(db, "chat-an", f"xong việc {tam_ung.id} 8 điểm, tiền đã chuyển")
     assert work_plan.handle_text(db, "chat-an", row, row.body) is True
     db.refresh(tam_ung)
@@ -258,7 +258,7 @@ def test_nguoi_lam_bam_nut_va_nhan_xong_viec(db, world):
     assert plan_service._label_text(db, fields[plan_service.FIELD_PROGRESS], tam_ung.id) == "100"
     assert plan_service._label_text(db, fields[plan_service.FIELD_SCORE], tam_ung.id) == "8"
     assert any(s[0] == "chat-boss" and "<b>xong</b>" in s[1] for s in world["sent"])
-    #  Tiến độ giữa chừng: «việc N 60% 7 điểm».
+    #  Tiến độ giữa chừng: "việc N 60% 7 điểm".
     row = _incoming(db, "chat-an", f"việc {con.id} 60% 7 điểm còn chờ kế toán")
     assert work_plan.handle_text(db, "chat-an", row, row.body) is True
     assert plan_service._label_text(db, fields[plan_service.FIELD_PROGRESS], con.id) == "60"
@@ -322,7 +322,7 @@ def test_che_do_dich_vu_tach_moi_luot_di_qua_cong_b(db, world, gateway):
     from app.modules.work.model import WorkTaskStatus
     from app.modules.work.task_model import WorkTask
 
-    #  Dựng kế hoạch ở phía ERP (như cổng /draft/create làm), rồi mọi việc còn lại chạy ở «dịch vụ AI».
+    #  Dựng kế hoạch ở phía ERP (như cổng /draft/create làm), rồi mọi việc còn lại chạy ở "dịch vụ AI".
     d = _draft(db, world["boss"], _args())["draft"]
     _, list_id = draft_create.create(db, world["boss"], "work_plan", d)
     boss = erp.user_by_id(db, world["boss"].id)          # ErpUser qua cổng, không phải ORM
@@ -335,7 +335,7 @@ def test_che_do_dich_vu_tach_moi_luot_di_qua_cong_b(db, world, gateway):
     xe = db.query(WorkTask).filter(WorkTask.list_id == list_id, WorkTask.title == "Xe đưa đón").one()
     assert plan_service._label_text(db, fields[plan_service.FIELD_ACCEPT], xe.id) == plan_service.ACCEPT_UNREACHABLE
     an = erp.user_by_id(db, world["u_an"].id)
-    #  Nút Nhận + «xong việc» của An đi qua POST /plan/reply, ghi đúng vào việc, báo chủ.
+    #  Nút Nhận + "xong việc" của An đi qua POST /plan/reply, ghi đúng vào việc, báo chủ.
     tam_ung = db.query(WorkTask).filter(WorkTask.list_id == list_id, WorkTask.title == "Tạm ứng chi phí").one()
     world["sent"].clear()
     work_plan.handle_callback(db, "chat-an", "cb1", work_plan.CB_YES, tam_ung.id)
@@ -347,5 +347,5 @@ def test_che_do_dich_vu_tach_moi_luot_di_qua_cong_b(db, world, gateway):
     assert db.get(WorkTask, tam_ung.id).status == int(WorkTaskStatus.DONE)
     assert plan_service._label_text(db, fields[plan_service.FIELD_SCORE], tam_ung.id) == "9"
     assert sum(1 for m, p in gateway if p == "/api/agent-gw/plan/reply") == 3
-    #  Không phải chủ bảng thì không đánh dấu «Nhắn không được» được qua cổng.
+    #  Không phải chủ bảng thì không đánh dấu "Nhắn không được" được qua cổng.
     assert erp.plan_reply(db, an, xe.id, A_UNREACHABLE).get("error")

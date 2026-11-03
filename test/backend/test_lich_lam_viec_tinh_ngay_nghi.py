@@ -1,6 +1,6 @@
 """Lịch làm việc phase 03 — nối lịch vào tính ngày nghỉ phép (`workday_service`).
 
-⚠️ Bài QUAN TRỌNG NHẤT là nhóm «tương đương»: khi KHÔNG gán lịch nào, mọi con số phải ra
+⚠️ Bài QUAN TRỌNG NHẤT là nhóm "tương đương": khi KHÔNG gán lịch nào, mọi con số phải ra
 ĐÚNG như luật cứng cũ (T2–T7 làm, CN nghỉ, 08–17 trừ trưa 12–13). Công thức cũ được CHÉP
 đóng băng vào đây (`_old_*`) — đừng sửa nó theo mã mới, nó là bản tham chiếu.
 """

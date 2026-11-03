@@ -162,7 +162,7 @@ def two_company_data(world):
         db, code="PO_B", company_id=co_b, department_id=world.dept["B.hc"],
         department="Phòng Hành chính", supplier_code="NCCB", supplier_name="NCC B",
         #  bao-CR-480: ô loại trừ phòng ban so PHÒNG XỬ LÝ — B5 cần đơn này do chính
-        #  phòng Hành chính mua thì ô loại trừ «B.hc» mới cắt được nó.
+        #  phòng Hành chính mua thì ô loại trừ "B.hc" mới cắt được nó.
         handler_dept_id=world.dept["B.hc"],
         nspt="NSPT B", order_date=f"{YEAR}-03-11", created_by=world.actor("b1").user.id)
     po_b_kt = create_purchase_order(
@@ -259,7 +259,7 @@ def test_a2_bao_cao_ma_tran_hien_du_phong_ban_cua_hai_phap_nhan(world, two_compa
 
     `report_dept_scope` (`service.py:340-362`) trả `None` ngay khi phạm vi vai trò
     là `company` hoặc `all`, và `None` ở đây nghĩa là *thấy mọi phòng ban*. Người
-    khai quyền đặt phạm vi «công ty» tưởng là đã bó vào pháp nhân mình; thực ra
+    khai quyền đặt phạm vi "công ty" tưởng là đã bó vào pháp nhân mình; thực ra
     nhánh đó là nhánh **bỏ lọc**.
 
     Vế `supplier` rỗng không phải nhờ phạm vi mà nhờ `_can_see_ncc` — một cổng
@@ -486,7 +486,7 @@ def test_a12_xuat_excel_ghi_ra_tep_dung_pham_vi_da_lo_tren_man_hinh(world, two_c
 
 
 def test_a13_o_loai_tru_phong_ban_khong_an_vao_bao_cao(world, two_company_data):
-    """🔴 Ô «Loại trừ phòng ban» của hộp thoại phạm vi là ô CÂM trên Báo cáo.
+    """🔴 Ô "Loại trừ phòng ban" của hộp thoại phạm vi là ô CÂM trên Báo cáo.
 
     `report_dept_scope` chỉ đọc `scope["inc"]["department_name"]`
     (`service.py:360`); nhánh `exc` không được nhắc tới một lần nào. Ô loại trừ
@@ -1016,7 +1016,7 @@ def test_c9_can_tru_tien_treo_di_theo_pham_vi_GHI(world, two_company_data):
     """`POST /payables/{pid}/offset-prepay` là thao tác **đổi tiền**, phải soi phạm vi
     `write` — vá 05/09/2026 (trước đó `apply_scope` bỏ trống `action` nên mượn `read`).
 
-    Cấu hình dựng ở đây là cấu hình hộp thoại «Phạm vi» cho phép và người khai quyền đọc
+    Cấu hình dựng ở đây là cấu hình hộp thoại "Phạm vi" cho phép và người khai quyền đọc
     là "xem cả tập đoàn, sửa trong công ty mình": vai trò 1 = XEM toàn hệ, vai trò 2 =
     SỬA trong pháp nhân A.
     """
@@ -1076,7 +1076,7 @@ def test_c8_hai_o_phong_ban_vo_hieu_tren_cong_no_va_yctt(world, two_company_data
     """`payable` và `payment_request` khai mỗi `company` + `owner`
     (`scoping.py:45,51`) — **không có chiều phòng ban**.
 
-    Nên hai ô phòng ban của hộp thoại «Phạm vi» là ô câm trên hai màn này:
+    Nên hai ô phòng ban của hộp thoại "Phạm vi" là ô câm trên hai màn này:
     `_explicit_cond` gọi `_dept_match` với `f` không có `dept_id`/`dept_name` nên
     nhận `None` rồi bỏ qua, không log, không lỗi. Người khai quyền tick, bấm Lưu,
     nhận thông báo "Đã lưu phạm vi" — và không có gì đổi (nối tiếp nghi ngờ 3 của

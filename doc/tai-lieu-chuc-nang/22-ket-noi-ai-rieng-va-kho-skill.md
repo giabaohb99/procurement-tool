@@ -25,7 +25,7 @@ Hai thứ người dùng gặp:
 | **Khóa kết nối** | Chuỗi `dego_mcp_…` thay mật khẩu khi AI gọi vào ERP. Hai kiểu: **dán tay** (Claude Desktop qua tệp, Claude Code, Cursor, Gemini CLI) hoặc **kết nối qua đăng nhập ERP** (OAuth — ChatGPT, claude.ai, Claude Desktop Connectors). Gỡ / tạm tắt tức thì | Trang cá nhân ▸ *Kết nối AI riêng* |
 | **Kho skill AI** | Cẩm nang công ty viết cho AI đọc (quy trình, quy định, mẫu báo cáo). Soạn một lần, gán theo sơ đồ tổ chức | Phân hệ *Kho skill AI* (quản trị) · thẻ *Skill bạn được đọc* ở màn AI của tôi |
 
-Luật dùng chữ trên màn hình: lớp nhân sự **không** dùng «MCP», «JSON-RPC» — gọi là *Kết nối AI riêng*, *khóa kết nối*,
+Luật dùng chữ trên màn hình: lớp nhân sự **không** dùng **MCP**, **JSON-RPC** — gọi là *Kết nối AI riêng*, *khóa kết nối*,
 *công cụ*, *skill*.
 
 ## 2. Tạo khóa kết nối ở Trang cá nhân (bài a)
@@ -36,16 +36,16 @@ Màn **AI của tôi** (`profile-ai-connect-section.tsx`) đi theo ba bước đ
 Gemini CLI · claude.ai (trình duyệt) · ChatGPT. Chọn một mục → hiện bước cài, tệp cần sửa, điều kiện, đoạn cấu hình
 (`GET /api/agent-hub/mcp-setup?client=…`, trường `auth: "key" | "oauth"`). Ứng dụng `auth = key`: đoạn mẫu mang chỗ giữ
 `<KHÓA_CỦA_BẠN>`, tạo khóa xong màn tự thay bằng khóa vừa hiện. Ứng dụng `auth = oauth` (claude.ai, ChatGPT; Claude
-Desktop qua Connectors): `format = url`, «đoạn cấu hình» chỉ là địa chỉ cổng — không cần khóa, xem §4b.
+Desktop qua Connectors): `format = url`, **đoạn cấu hình** chỉ là địa chỉ cổng — không cần khóa, xem §4b.
 
 **Bước 2 — Khóa của bạn**
 
 | Việc | Cách | Luật |
 |---|---|---|
-| Tạo khóa | *Tên khóa* (vd «Claude máy công ty») · *Mức* · **Tạo khóa** → khóa hiện kèm nút chép, đoạn cấu hình bước 1 tự điền | Hạn 90 ngày (tự tạo); tối đa **5 khóa dán tay còn hiệu lực** / tài khoản (kể cả đang tắt; kết nối OAuth không tính); mỗi lượt gọi ghi *dùng lần cuối*; nghỉ việc đóng cùng tài khoản |
-| Xem lại khóa (ai-CR-221) | `GET mcp-keys/{id}/reveal` — chỉ CHỦ KHÓA, đăng nhập web; quản trị ở Khóa nhân sự chỉ thấy 4 ký tự cuối; qua MCP không có đường | Bản mã hóa hai chiều `raw_view` (Fernet từ `JWT_SECRET`); mỗi lần xem ghi nhật ký `key/reveal` (ứng dụng «ERP web»), `Cache-Control: no-store`. Không xem được (409): khóa tạo trước ai-CR-221 → *tạo lại để xem*; kết nối OAuth; phát hộ chưa nhận; hết hạn. Đổi `JWT_SECRET` thì mọi bản xem lại hỏng |
-| Tạm tắt / bật lại (ai-CR-221) | `PATCH mcp-keys/{id} {enabled}` — cả kết nối OAuth | Trạng thái **5 Đang tắt**; `/api/mcp` 401, nhật ký «Khóa đang tắt»; OAuth tắt thì không làm mới được (`invalid_grant`); vẫn tính trần 5 khóa; chờ nhận / hết hạn → 409. Khác thu hồi: bật lại là chạy ngay |
-| Nhận khóa phát hộ | Chuông *«Bạn có khóa kết nối AI chờ nhận»* → khối *Khóa quản trị phát cho bạn, chờ nhận* → **Nhận khóa** (hiện một lần) | Chưa nhận thì cổng từ chối; khóa phát hộ luôn mức Chỉ đọc |
+| Tạo khóa | *Tên khóa* (vd **Claude máy công ty**) · *Mức* · **Tạo khóa** → khóa hiện kèm nút chép, đoạn cấu hình bước 1 tự điền | Hạn 90 ngày (tự tạo); tối đa **5 khóa dán tay còn hiệu lực** / tài khoản (kể cả đang tắt; kết nối OAuth không tính); mỗi lượt gọi ghi *dùng lần cuối*; nghỉ việc đóng cùng tài khoản |
+| Xem lại khóa (ai-CR-221) | `GET mcp-keys/{id}/reveal` — chỉ CHỦ KHÓA, đăng nhập web; quản trị ở Khóa nhân sự chỉ thấy 4 ký tự cuối; qua MCP không có đường | Bản mã hóa hai chiều `raw_view` (Fernet từ `JWT_SECRET`); mỗi lần xem ghi nhật ký `key/reveal` (ứng dụng **ERP web**), `Cache-Control: no-store`. Không xem được (409): khóa tạo trước ai-CR-221 → *tạo lại để xem*; kết nối OAuth; phát hộ chưa nhận; hết hạn. Đổi `JWT_SECRET` thì mọi bản xem lại hỏng |
+| Tạm tắt / bật lại (ai-CR-221) | `PATCH mcp-keys/{id} {enabled}` — cả kết nối OAuth | Trạng thái **5 Đang tắt**; `/api/mcp` 401, nhật ký **Khóa đang tắt**; OAuth tắt thì không làm mới được (`invalid_grant`); vẫn tính trần 5 khóa; chờ nhận / hết hạn → 409. Khác thu hồi: bật lại là chạy ngay |
+| Nhận khóa phát hộ | Chuông *Bạn có khóa kết nối AI chờ nhận* → khối *Khóa quản trị phát cho bạn, chờ nhận* → **Nhận khóa** (hiện một lần) | Chưa nhận thì cổng từ chối; khóa phát hộ luôn mức Chỉ đọc |
 | Gỡ khóa | Nút **Gỡ khóa** trên từng khóa | Hiệu lực tức thì; dùng khi đổi máy, nghi lộ |
 | Kết nối OAuth | Mỗi lần **Cho phép** = một dòng khóa `kind = 2` tên *Qua ChatGPT* / *Qua Claude* trong cùng khối | Cùng mức, nhật ký, nút gỡ, công tắc tạm tắt; gỡ = chặn cả mã làm mới; sống 90 ngày cố định |
 
@@ -147,7 +147,7 @@ Bước người dùng (từ `mcp_setup.py`):
   Connectors ▸ Advanced settings) ▸ **Create** → hộp **New Connector (Beta)**: Name, Description (tùy chọn), **MCP Server
   URL** = `<gốc>/api/mcp`, **Authentication = OAuth**, tick **I trust this application** ▸ Create → trang ERP: kiểm tên
   miền chatgpt.com / openai.com, Chỉ đọc, Cho phép → nút + / Apps trong ô chat bật DEGO ERP. Bản cũ gọi là *Apps &
-  Connectors*; bước «Plugins ▸ Create MCP App» ghi lúc đầu là đoán sai, đã bỏ.
+  Connectors*; bước **Plugins ▸ Create MCP App** ghi lúc đầu là đoán sai, đã bỏ.
 
 Màn Cho phép (`oauth-consent-page.tsx`, API `GET /api/agent-hub/oauth/request/{req}`, `POST …/approve | deny`): tiêu đề
 *Cho phép ứng dụng AI dùng ERP thay bạn*; ghi tên ứng dụng (TỰ KHAI) + **`redirect_host`** (hostname nơi quay về; máy cục bộ
@@ -182,7 +182,7 @@ Mọi tool chạy **dưới quyền chủ khóa** (`require` + `apply_scope` + `
 Skill: cổng dặn AI *gọi `list_skills` trước việc nghiệp vụ, `read_skill` đúng cái cần, áp dụng vào việc chứ không đọc lại
 nguyên văn*. AI chỉ đọc skill **đã xuất bản** và **được gán** (`visible_skills`, tính lúc gọi — đổi phòng là đổi skill, khóa
 giữ nguyên). Skill không được gán trả cùng câu với skill không tồn tại. Mức *Bảo vệ* không trả tệp; *Khóa* chỉ tên + tóm tắt.
-AI không tự mở skill thì nhắc *«Hãy xem cẩm nang công ty trước khi trả lời»*.
+AI không tự mở skill thì nhắc *Hãy xem cẩm nang công ty trước khi trả lời*.
 
 Câu mẫu: *Liệt kê các skill công ty mà bạn đọc được* · *Tôi còn bao nhiêu ngày phép?* · *Yêu cầu mua hàng tôi lập tuần
 trước đang ở bước nào?* · *Lập báo cáo mua hàng tháng 9 theo nhà cung cấp, xuất Excel* · khóa được ghi: *Soạn đơn nghỉ
@@ -269,11 +269,11 @@ gom vào `tab_agent_mcp_call_daily`. Người thường xem 20 lượt của mì
 | *Khóa phát hộ chưa được chủ khóa nhận* | chưa bấm Nhận khóa / dán khóa của người khác | Trang cá nhân → Nhận khóa |
 | *Khóa đang tắt* | đã tạm tắt khóa / kết nối (ai-CR-221) | bật lại ở Khóa của bạn |
 | `invalid_grant` / mất kết nối OAuth | hết 90 ngày, gỡ, tạm tắt, hoặc quản trị xóa ứng dụng | Connect lại (§4b) |
-| dòng `key/reveal` ứng dụng «ERP web» | chính chủ vừa xem lại khóa | không phải rò rỉ |
+| dòng `key/reveal` ứng dụng **ERP web** | chính chủ vừa xem lại khóa | không phải rò rỉ |
 | *Quá tần suất (khóa)* (429, JSON-RPC -32000, `Retry-After`) | > 120 lượt / phút / khóa | đợi một phút; mỗi máy một khóa |
 | *Quá tần suất (IP)* · *(khóa sai liên tục)* | > 600 lượt / phút / IP · > 30 khóa sai / phút / IP | đợi; báo quản trị nếu lặp |
 | `denied` kèm tên nhóm | nhóm tool bị tắt ở Cấu hình | xin bật nhóm |
-| *Khóa này chỉ đọc; tạo phiếu cần khóa «được ghi»* | nhờ tạo phiếu bằng khóa Chỉ đọc | tạo khóa Được ghi |
+| *Khóa này chỉ đọc; tạo phiếu cần khóa **được ghi*** | nhờ tạo phiếu bằng khóa Chỉ đọc | tạo khóa Được ghi |
 | `denied` thiếu quyền / chưa được giao báo cáo | phạm vi dữ liệu như trên web | xin quyền / giao báo cáo |
 | *không có skill đó* | chưa xuất bản hoặc không gán — cùng câu với không tồn tại | hỏi người soạn |
 | bộ mức Bảo vệ không mở tệp | đúng thiết kế | — |

@@ -155,7 +155,7 @@ def test_effort_patch_chi_gui_truong_co_khai_va_dang_khac(mod):
     assert mod.effort_patch(e, task, d) == {"task_type_id": 7, "due_date": "2026-10-25", "estimate_hours": "2.50"}, \
         "giờ thực tế sổ không khai thì giữ giá trị người dùng đã nhập"
     same = {"task_type_id": 7, "due_date": "2026-10-25", "estimate_hours": "2.5", "actual_hours": None}
-    assert mod.effort_patch(e, same, d) == {}, "so giờ bằng số, «2.5» = «2.50»"
+    assert mod.effort_patch(e, same, d) == {}, "so giờ bằng số, \"2.5\" = \"2.50\""
     assert mod.effort_patch(_entry(mod), task, d) == {}, "không khai gì thì không đụng gì"
 
 

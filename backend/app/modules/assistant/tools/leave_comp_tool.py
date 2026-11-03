@@ -42,7 +42,7 @@ def _days(value) -> float | None:
 
 
 def _can_create_for_others(ctx: ToolContext) -> bool:
-    """Có vai trò `leave_comp_request.create` phạm vi rộng hơn «của mình» (đúng điều kiện 1 của `ensure_can_create_for`)."""
+    """Có vai trò `leave_comp_request.create` phạm vi rộng hơn "của mình" (đúng điều kiện 1 của `ensure_can_create_for`)."""
     return any(g.get("perms", {}).get(ENTITY, {}).get("create")
                and g.get("perms", {}).get(ENTITY, {}).get("scope") != "own"
                for g in ctx.profile.get("grants", []))

@@ -130,7 +130,7 @@ def test_phuong_tien_van_chuyen_ra_ma_so():
 
 
 def test_ma_phuong_tien_la_tu_choi_ca_lo():
-    """Mã lạ = nguồn đổi khuôn — không lưu bừa thành 9 «Khác»."""
+    """Mã lạ = nguồn đổi khuôn — không lưu bừa thành 9 "Khác"."""
     with pytest.raises(reader.CustomsFileError, match="lạ"):
         reader.parse(_xlsx([_row(transport_mode="7-Tàu vũ trụ")]), today=date(2026, 9, 23))
 
@@ -144,7 +144,7 @@ def test_thieu_cot_thi_tu_choi_va_noi_ten_cot():
 
 
 def test_nguon_sua_chinh_ta_tieu_de_van_khop():
-    """Nguồn ghi «Tên nuớc xuất xứ» (sai chính tả); sửa thành «nước» vẫn phải khớp."""
+    """Nguồn ghi "Tên nuớc xuất xứ" (sai chính tả); sửa thành "nước" vẫn phải khớp."""
     headers = [label for _, label in COLUMNS]
     headers[headers.index("Tên nuớc xuất xứ")] = "Tên nước xuất xứ"
     reader.check_headers(_xlsx([_row()], headers=headers))

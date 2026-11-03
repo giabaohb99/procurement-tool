@@ -24,7 +24,7 @@ Trạng thái (28/08/2026): **W0 xong** (CR-217) · **W1 xong** và **W2 phần 
 - Frontend: phân hệ `frontend-v2/src/modules/work/` ở `/work` — cây nhóm→list, **ba khung
   nhìn như Lark (Bảng · Danh sách · Gantt)**, panel chi tiết, hộp thoại thành viên/thiết lập.
   Gantt (D-05) vốn xếp P2/W5, làm sớm 28/08/2026 theo yêu cầu — CR-219.
-- **Chưa có:** «Lọc» điều kiện (§3.3) · kéo đổi thứ tự cột · ghim list → ba mục này còn
+- **Chưa có:** **Lọc** điều kiện (§3.3) · kéo đổi thứ tự cột · ghim list → ba mục này còn
   thuộc W2. Bình luận + thông báo giao việc là **W3**; Dashboard/Activities và các mục
   P1/P2 khác theo `03`. Gantt chưa có mũi tên phụ thuộc việc trước–sau (thiếu bảng
   `tab_work_task_link`).

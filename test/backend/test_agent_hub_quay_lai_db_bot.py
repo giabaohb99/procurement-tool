@@ -1,5 +1,5 @@
-"""ai-CR-141 — quay lại DB bot (agent_hub) qua thẻ «đúng» trên Telegram: liệt kê bản sao lưu, thẻ duyệt không lộ link tải,
-chưa «đúng» thì không chạy, điều kiện lấy lại một phần bị chặn khi có «;» / chú thích, script sinh ra đúng cú pháp bash,
+"""ai-CR-141 — quay lại DB bot (agent_hub) qua thẻ "đúng" trên Telegram: liệt kê bản sao lưu, thẻ duyệt không lộ link tải,
+chưa "đúng" thì không chạy, điều kiện lấy lại một phần bị chặn khi có ";" / chú thích, script sinh ra đúng cú pháp bash,
 quay lại toàn bộ ghi lại sổ thao tác sau khi DB bị thay."""
 import subprocess
 from datetime import datetime
@@ -52,7 +52,7 @@ def test_liet_ke_va_the_duyet_khong_lo_link_chua_dung_thi_khong_chay(db, owner):
     assert _say(db, "sao lưu db bot") and f"#{bid}" in sent[-1]
     assert _say(db, f"quay lại db bot dev bản #{bid}")
     op = db.query(AgentOp).one()
-    assert op.kind == OP_BOT_DB_RESTORE and op.status == OPS_WAITING and tasks == []      # chưa «đúng» → không chạy
+    assert op.kind == OP_BOT_DB_RESTORE and op.status == OPS_WAITING and tasks == []      # chưa "đúng" → không chạy
     assert op.params["url"] == URL and op.params["mode"] == "full"
     assert "BIMAT123" not in op.command and "BIMAT123" not in sent[-1]                     # link ký sẵn không lên thẻ
     assert "MẤT mọi tin nhắn" in sent[-1] and "restore-safety" in sent[-1]

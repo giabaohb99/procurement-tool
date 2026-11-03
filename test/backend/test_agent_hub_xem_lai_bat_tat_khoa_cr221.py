@@ -5,7 +5,7 @@ Canh (đủ nhánh Agent 1 đặt + chỗ dễ lủng):
   - mỗi lần xem ghi một dòng nhật ký cổng MCP (`key/reveal`); câu trả có `Cache-Control: no-store`;
   - khóa cũ (trước ai-CR-221, không có `raw_view`), kết nối OAuth, khóa chờ nhận, hết hạn → 409 kèm câu, không lộ gì;
   - khóa phát hộ: nhận xong xem lại được; thu hồi xong bản xem lại bị xóa trắng;
-  - tắt → /api/mcp 401 và nhật ký ghi «Khóa đang tắt»; bật lại chạy ngay; tắt vẫn tính trần 5 khóa;
+  - tắt → /api/mcp 401 và nhật ký ghi "Khóa đang tắt"; bật lại chạy ngay; tắt vẫn tính trần 5 khóa;
   - tắt kết nối OAuth: mã truy cập bị chặn và KHÔNG làm mới được (khỏi vòng 401 → làm mới → 401);
   - bấm tắt hai lần chỉ ghi một dòng nhật ký.
 """

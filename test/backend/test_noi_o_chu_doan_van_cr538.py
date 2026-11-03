@@ -1,4 +1,4 @@
-"""bao-CR-538 — nới các ô chữ đoạn văn thu mua theo luật đại ca chốt: «255 thêm 100», công nợ 50 → 100.
+"""bao-CR-538 — nới các ô chữ đoạn văn thu mua theo luật đại ca chốt: "255 thêm 100", công nợ 50 → 100.
 
 Sinh ra sau sự cố D30D24DF (nspt_note tràn VARCHAR(255) → lỗi 500). SQLite KHÔNG ép độ dài
 VARCHAR, nên kiểm ở tầng MODEL (trần cột) và SCHEMA (max_length khớp trần): thiếu max_length là

@@ -1,6 +1,6 @@
 """bao-CR-662 — tệp GTT02 hải quan xuất dạng HTML hoặc XML (SpreadsheetML) nhưng đặt đuôi .xls.
 
-Sự cố 26/10/2026 trên prod: nạp 7 tệp .xls, bị từ chối «không phải Excel» vì chữ ký đầu tệp không
+Sự cố 26/10/2026 trên prod: nạp 7 tệp .xls, bị từ chối "không phải Excel" vì chữ ký đầu tệp không
 phải OLE2 hay ZIP. Excel vẫn mở được các tệp đó. Bộ đọc nay nhận thêm hai dạng này, mọi ô đọc thành
 chữ; luật từng ô đã biết đọc ngày và số từ chữ nên kết quả phải trùng với tệp .xlsx thật.
 """

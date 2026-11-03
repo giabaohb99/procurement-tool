@@ -1,4 +1,4 @@
-# TDD — Khối «Báo cáo thực hiện» trên chi tiết YCBG
+# TDD — Khối "Báo cáo thực hiện" trên chi tiết YCBG
 
 | | |
 |---|---|
@@ -23,12 +23,12 @@
 
 ### 1.2 Ngoài phạm vi
 
-- **Không thêm khóa quyền mới** — tái dùng entity `survey_request` (luật «một khóa =
-  một màn hình», CR-157). Ba bảng con cố ý **không có khóa phân quyền riêng**.
+- **Không thêm khóa quyền mới** — tái dùng entity `survey_request` (luật **một khóa =
+  một màn hình**, CR-157). Ba bảng con cố ý **không có khóa phân quyền riêng**.
 - Không nối kho `attachment` thật (ô tệp là chuỗi tự do).
 - Không có bộ máy duyệt.
 
-> **Phần mở rộng «hạn hồ sơ + nhân sự thực hiện» (12/09/2026):** hồ sơ có thêm
+> **Phần mở rộng "hạn hồ sơ + nhân sự thực hiện" (12/09/2026):** hồ sơ có thêm
 > `start_date`, `expires_at`, `assignee_id`. Backend **đã trọn** (model · schema ·
 > service · migration `a1c2e3d4f5b6`) và FE `types/…` + tầng API đã khai; phần còn
 > lại đang hoàn thiện là **ô nhập trên hộp thoại hồ sơ** (chọn ngày + chọn nhân sự)
@@ -70,7 +70,7 @@ Cả ba bảng kế thừa `AuditMixin` (id, created_at/by, updated_at/by). Đ�
 | Cột | Kiểu | Mô tả |
 |---|---|---|
 | survey_request_id | BIGINT INDEX | Thuộc phiếu YCBG |
-| name | VARCHAR(100) | Tên nút (vd «K₂SO₄») |
+| name | VARCHAR(100) | Tên nút (vd **K₂SO₄**) |
 | sort_order | SMALLINT | Thứ tự hiển thị |
 
 ### `tab_survey_request_report_phase` — Giai đoạn
@@ -89,7 +89,7 @@ Cả ba bảng kế thừa `AuditMixin` (id, created_at/by, updated_at/by). Đ�
 | item_id | BIGINT INDEX | Gắn nút dòng hàng; **`0` = Chung** | Cố ý không FK: xóa nút → service đặt về 0 |
 | title | VARCHAR(255) | Tiêu đề | |
 | description | TEXT | Mô tả | |
-| required | BOOLEAN | Cờ «Bắt buộc» (chỉ nhãn) | |
+| required | BOOLEAN | Cờ **Bắt buộc** (chỉ nhãn) | |
 | status | SMALLINT INDEX | Mã trạng thái 0..3 | R2/QĐ-11 |
 | file_note | VARCHAR(500) | Tên tệp / link | Chuỗi tự do |
 | depends | JSON | Danh sách id hồ sơ tiên quyết | Trần 30 phần tử; service lọc id chết khi trả ra |
@@ -116,7 +116,7 @@ Phần mở rộng của hồ sơ (migration `a1c2e3d4f5b6`, revises `7816572fed
 |---|---|---|
 | `start_date` | DATE NULL | Ngày bắt đầu thực hiện. `NULL`/`''` = chưa đặt |
 | `expires_at` | DATE NULL | Ngày hết hiệu lực / hạn. Dùng để cảnh báo hồ sơ quá hạn |
-| `planned_date` | DATE NULL | Dự định hoàn tất — kế hoạch ban đầu (bao-CR-392, migration `c3e5a7b9d1f2` revises `b2d4f6a8c0e1`). FE suy «Trễ n ngày» = hôm nay − planned khi hồ sơ chưa Hoàn thành; **không lưu cờ trễ**. Thẻ tóm tắt lấy `max(planned_date)` của phạm vi đang xem |
+| `planned_date` | DATE NULL | Dự định hoàn tất — kế hoạch ban đầu (bao-CR-392, migration `c3e5a7b9d1f2` revises `b2d4f6a8c0e1`). FE suy **Trễ n ngày** = hôm nay − planned khi hồ sơ chưa Hoàn thành; **không lưu cờ trễ**. Thẻ tóm tắt lấy `max(planned_date)` của phạm vi đang xem |
 | `assignee_id` | BIGINT NOT NULL, server_default `0` | Nhân sự thực hiện (`tab_employee.id`); `0` = chưa cử |
 
 Quy ước & bẫy:
@@ -129,7 +129,7 @@ Quy ước & bẫy:
   được** — hai ô ngày phải xử lý **tách riêng** trước vòng đó (`changes.pop`).
 - **`assignee_id` không FK, không xóa lây:** xóa nhân sự không xóa hồ sơ; `get_report_payload`
   **resolve tên một lượt** (`assignee_name`, tránh N+1), id chết (nhân sự đã xóa) ra
-  chuỗi rỗng → FE hiện «Chưa cử».
+  chuỗi rỗng → FE hiện **Chưa cử**.
 - FE: `nearestExpiry` (helpers) lấy **ngày hết hiệu lực sớm nhất trong nhóm hồ sơ
   CHƯA xong** — hồ sơ quá hạn nổi lên đầu; hạn của hồ sơ đã xong không tính. So sánh
   chuỗi `yyyy-mm-dd` trực tiếp (thứ tự bảng chữ cái trùng thứ tự thời gian).
@@ -145,7 +145,7 @@ cáo mới** (`{items, phases, docs}`) để FE thay cache một lượt.
 |---|---|---|---|
 | GET | `` | `read` | Toàn khối của phiếu |
 | POST | `/init` | `process` | Khởi tạo theo mẫu chung: 5 giai đoạn + nút theo dòng + hồ sơ Chung của mẫu (idempotent) |
-| POST | `/apply-template` | `process` | «Tạo mẫu»: body `{item_id (0 = Chung), phase_id?}` — đổ mẫu chung vào một nút, hoặc chỉ phần của một giai đoạn; cộng thêm, bỏ qua trùng (bao-CR-388) |
+| POST | `/apply-template` | `process` | **Tạo mẫu**: body `{item_id (0 = Chung), phase_id?}` — đổ mẫu chung vào một nút, hoặc chỉ phần của một giai đoạn; cộng thêm, bỏ qua trùng (bao-CR-388) |
 | POST | `/items` | `process` | Thêm nút dòng hàng |
 | PATCH | `/items/{item_id}` | `process` | Đổi tên nút |
 | DELETE | `/items/{item_id}` | `process` | Xóa nút (hồ sơ về Chung) |
@@ -172,8 +172,8 @@ Hai lớp, tái dùng khóa `survey_request`:
 
 - **ĐỌC**: `require(survey_request, read)` + `_in_scope(db, sid, user, "read")` (nạp
   phiếu cha theo phạm vi; ngoài phạm vi → 404, kể cả gõ id vào API).
-- **GHI**: `require(survey_request, process)`. `process` là **cờ suy ra** «là NS Thu
-  mua», **không** phải action có trong grant → phạm vi vẫn phải hỏi theo `read` bằng
+- **GHI**: `require(survey_request, process)`. `process` là **cờ suy ra** **là NS Thu
+  mua**, **không** phải action có trong grant → phạm vi vẫn phải hỏi theo `read` bằng
   `_in_scope(..., "read")` (`_writable_sr`). Hỏi `scope_condition("process")` thì
   không grant nào có và cổng đóng sạch.
 
@@ -190,9 +190,9 @@ Mọi hàm ghi **không commit** (controller commit một lượt qua `record`).
 
 - `get_report_payload` — trả `{items, phases, docs}`; `depends` **lọc id chết** trước
   khi ra FE (id hồ sơ tiên quyết đã bị xóa mà lọt ra thì tầng hiển thị đếm nó là
-  «chưa xong» → hồ sơ khóa vĩnh viễn); resolve `assignee_name` một lượt (xem §3a).
+  **chưa xong** → hồ sơ khóa vĩnh viễn); resolve `assignee_name` một lượt (xem §3a).
 - `create_doc` / `update_doc` — lưu cả `start_date`/`expires_at`/`planned_date`/
-  `assignee_id`; ba ô ngày xử lý tách để phân biệt «xóa» (`''`) với «bỏ qua» (`None`)
+  `assignee_id`; ba ô ngày xử lý tách để phân biệt **xóa** (`''`) với **bỏ qua** (`None`)
   — xem §3a.
 - `init_report` — idempotent: đã có giai đoạn hoặc nút thì trả `-1`, không đụng; còn
   lại dựng 5 giai đoạn + nút rồi gọi `apply_template(item_id=0, phase_id=None)` và trả
@@ -212,7 +212,7 @@ Mọi hàm ghi **không commit** (controller commit một lượt qua `record`).
 - `delete_doc` — gỡ `doc_id` khỏi `depends` của mọi hồ sơ khác.
 - `check_depends` — khử trùng, chặn tự trỏ mình, chặn tiên quyết chéo phiếu, **dò
   vòng lặp** (DFS trên đồ thị sau khi lưu). Vòng dò có **trần độ sâu**; **chạm trần
-  là raise**, không trả về im lặng («dò không thấy» ≠ «không có» — bài học
+  là raise**, không trả về im lặng (**dò không thấy** ≠ **không có** — bài học
   `block_manager_cycle`).
 - `_next_order` — kèm **trần số dòng** mỗi bảng (item 50 · phase 50 · doc 500) chống
   tràn `sort_order` SMALLINT (duoc-CR-316).
@@ -225,10 +225,10 @@ Mọi hàm ghi **không commit** (controller commit một lượt qua `record`).
   mọi mutation `onSuccess` gọi `setQueryData` với khối trả về (thay cache, **không**
   invalidate → đỡ một lượt GET, màn đổi ngay khi bấm ✓).
 - **Logic thuần** (`utils/survey-report-helpers.ts`, có test kề bên):
-  - `filterReportDocs` — sentinel «Tất cả» là **`-1`** (0 là id thật của «Chung»).
+  - `filterReportDocs` — sentinel **Tất cả** là **`-1`** (0 là id thật của **Chung**).
   - `isReportDocLocked` / `pendingDepends` — tính khóa; hồ sơ đã xong không khóa ngược.
   - `matchReportDoc` — khớp **theo từng từ**, chuẩn hóa **NFKD** (không NFD — NFD
-    không tách được ký tự ₃ của «KNO₃»).
+    không tách được ký tự ₃ của **KNO₃**).
   - `currentReportPhaseId` / `trackingMarkers` — điểm nháy khung Tiến trình.
   - `nearestExpiry` — ngày hết hiệu lực sớm nhất trong nhóm hồ sơ chưa xong (§3a).
 - **UI**: `SurveyReportCard` giữ state lọc/tìm/thu-gọn; hộp thoại theo **case C-01**
@@ -266,7 +266,7 @@ Mọi hàm ghi **không commit** (controller commit một lượt qua `record`).
 ## 10. Việc còn lại
 
 1. ~~Hoàn thiện ô nhập ngày + chọn nhân sự trên hộp thoại hồ sơ~~ — xong 12/09/2026
-   ở cả v2 lẫn v1 (bao-CR-390), thêm ô «Dự định hoàn tất» ở bao-CR-392.
+   ở cả v2 lẫn v1 (bao-CR-390), thêm ô **Dự định hoàn tất** ở bao-CR-392.
 2. **Nhắc hạn** chủ động (thông báo) dựa trên `expires_at` / `planned_date` — hiện
    chỉ có cảnh báo bị động qua `nearestExpiry` / `reportPlanLateDays`.
 3. Nối kho `attachment` thật cho ô tệp (thay chuỗi tự do bằng upload).

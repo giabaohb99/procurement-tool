@@ -1,11 +1,11 @@
 """Luật CHẶN TỰ DUYỆT của trang Cài đặt nhân sự (duoc-CR-713, chép ý `prevent_self_leave_approval` của ERPNext).
 
-Bộ máy duyệt đã có luật I08 «người nộp không duyệt phiếu của chính mình» (`instance_service.exclude_submitter_ids`)
+Bộ máy duyệt đã có luật I08 "người nộp không duyệt phiếu của chính mình" (`instance_service.exclude_submitter_ids`)
 nhưng CỐ Ý không áp cho bước khai ĐÍCH DANH người duyệt và cho người dự phòng — xem lý do ở hàm đó (CR-113, NP022).
 Công tắc `leave_prevent_self_approval` siết thêm, CHỈ cho đơn nghỉ phép: người nghỉ không bao giờ là người duyệt,
 kể cả ở hai chỗ đó. Bước rỗng thì rơi về `_handle_no_approver` như mọi bước rỗng khác (người dự phòng → kẹt).
 
-Với đơn nghỉ, «người nộp» của phiên duyệt là NGƯỜI NGHỈ (`leave/approval_bridge` trình với
+Với đơn nghỉ, "người nộp" của phiên duyệt là NGƯỜI NGHỈ (`leave/approval_bridge` trình với
 `submitter_employee_id=obj.employee_id`), không phải người lập hộ.
 """
 from __future__ import annotations

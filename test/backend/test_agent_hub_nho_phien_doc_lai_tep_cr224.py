@@ -1,9 +1,9 @@
-"""ai-CR-224 — đại ca 19/10/2026: 12:09 gửi tệp kế hoạch, 12:31 bàn «tạo 26 sự kiện», 13:34 nhắn «oke tạo đi em» → Lạc Lạc
-đáp «không thấy nháp nào đang chờ» (log: lịch sử 0 lượt). Ba lỗi, ba bản vá:
+"""ai-CR-224 — đại ca 19/10/2026: 12:09 gửi tệp kế hoạch, 12:31 bàn "tạo 26 sự kiện", 13:34 nhắn "oke tạo đi em" → Lạc Lạc
+đáp "không thấy nháp nào đang chờ" (log: lịch sử 0 lượt). Ba lỗi, ba bản vá:
   1. phiên ngắt ở 60 phút → nay 6 giờ (lịch sử vẫn chịu trần ký tự nên không đắt thêm);
   2. nội dung tệp chỉ lượt gửi tệp thấy → công cụ read_chat_file tải lại theo file_id (24 giờ), tệp KÈM câu hỏi nay
-     cũng giữ file_id, dòng «[tệp …]» trong lịch sử nhắc model đọc lại được;
-  3. «… sự kiện …» không nạp nhóm công cụ lịch Google → bot nói sai «em không xóa được sự kiện».
+     cũng giữ file_id, dòng "[tệp …]" trong lịch sử nhắc model đọc lại được;
+  3. "… sự kiện …" không nạp nhóm công cụ lịch Google → bot nói sai "em không xóa được sự kiện".
 """
 from datetime import datetime, timedelta
 from types import SimpleNamespace
@@ -114,7 +114,7 @@ def test_tep_kem_cau_hoi_cung_giu_file_id(db, monkeypatch):
     assert row.files and row.files[0]["file_id"] == "f-plan"
 
 
-# ── 3. «sự kiện» nạp nhóm lịch ────────────────────────────────────────────────
+# ── 3. "sự kiện" nạp nhóm lịch ────────────────────────────────────────────────
 
 def test_cau_su_kien_nap_nhom_lich_google():
     for text in ("tạo 26 sự kiện chưa em", "em tạo rồi thì em xóa sự kiện được ko"):

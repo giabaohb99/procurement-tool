@@ -119,7 +119,7 @@ def _chan_mang_that(monkeypatch):
             return real(self, method, url, *args, **kwargs)
         if host == "api.telegram.org":
             #  Telegram miễn phí nhưng vẫn là gọi thật bằng token thật (đo 24/09: 125 lượt mỗi lần chạy
-            #  tệp, chậm gần 3 lần). Trả «ok» tại chỗ; bài nào cần xem tin gửi đi thì đã tự giả `send`.
+            #  tệp, chậm gần 3 lần). Trả "ok" tại chỗ; bài nào cần xem tin gửi đi thì đã tự giả `send`.
             fake = requests.models.Response()
             fake.status_code = 200
             fake._content = b'{"ok": true, "result": {"message_id": 1}}'
@@ -136,7 +136,7 @@ def _chan_mang_that(monkeypatch):
 def _fake_bot_env(monkeypatch):
     """Bài kiểm vốn viết để chạy TRONG container bot, nơi `.env` có sẵn khóa Gemini, token
     Telegram và cờ bật bot. Chạy ở container `api` thường (không có ba biến đó) thì 39 bài
-    đỏ: bot đòi «dán khóa» rồi dừng, hoặc `_off()` bỏ qua mọi việc (bao-CR-593). Đặt giá
+    đỏ: bot đòi "dán khóa" rồi dừng, hoặc `_off()` bỏ qua mọi việc (bao-CR-593). Đặt giá
     trị GIẢ cho cả ba để kết quả không phụ thuộc chỗ chạy; mạng thật đã bị
     `_chan_mang_that` chặn nên khóa giả không bao giờ đi ra ngoài, còn khóa thật trong
     container bot cũng không bị dùng tới nữa. Bài nào cần trạng thái khác thì tự đè lại."""
@@ -185,7 +185,7 @@ def bot(monkeypatch):
     monkeypatch.setattr(service, "_kick_doc_wait", lambda rid: doc_waits.append(rid))   # ai-CR-115
     service._doc_wait_log = doc_waits
     service._kick_log = kicks
-    #  ai-CR-131: dùng bot cần quyền «Trợ lý AI». Bài cũ dựng tài khoản không vai trò — mặc định cho qua; luật thật kiểm ở
+    #  ai-CR-131: dùng bot cần quyền "Trợ lý AI". Bài cũ dựng tài khoản không vai trò — mặc định cho qua; luật thật kiểm ở
     #  `test_dung_bot_can_quyen_tro_ly_ai`.
     monkeypatch.setattr(service, "_may_use_bot_real", service.may_use_bot, raising=False)
     service._OPS_CACHE.clear()          # ai-CR-132: danh sách người nhận tin vận hành nhớ 2 phút — không mang sang bài khác
@@ -199,9 +199,9 @@ def bot(monkeypatch):
     monkeypatch.setattr(service, "answer_question",
                         lambda db, chat_id, q, **kw: asked.append(q))
     #  ai-CR-206: đường cũ (đọc ý định → Trợ lý) đã xóa, mọi tin chữ đi lõi mới (`core_v2.handle`: lối tắt chữ → chưa liên
-    #  kết / chưa khóa → tra nhanh → model). Bài ở tệp này thay RIÊNG phần model (`core_v2._answer`) bằng «model giả»:
+    #  kết / chưa khóa → tra nhanh → model). Bài ở tệp này thay RIÊNG phần model (`core_v2._answer`) bằng "model giả":
     #  nhắn tạo / thôi / gửi duyệt với nháp đang chờ (hay phiếu vừa tạo) → như model gọi commit_draft / drop_draft; còn lại =
-    #  «tới tay Trợ lý» → answer_question (giả ở trên, ghi vào `asked`).
+    #  "tới tay Trợ lý" → answer_question (giả ở trên, ghi vào `asked`).
     from app.modules.agent_hub import core_v2
 
     def _model(db, chat_id, row, text, user):
@@ -247,7 +247,7 @@ def test_hoi_khong_can_go_tien_to(db, bot, monkeypatch):
 
 
 def test_map_mo_thi_tra_loi_luon_kem_goi_y_ghi_viec(db, bot, monkeypatch):
-    """ai-CR-096: «Giá thép Hòa Phát» từng bị hỏi «làm luôn hay ghi việc» — mập mờ thì trả lời luôn, không hỏi."""
+    """ai-CR-096: "Giá thép Hòa Phát" từng bị hỏi "làm luôn hay ghi việc" — mập mờ thì trả lời luôn, không hỏi."""
     service, sent, asked = bot
     _fake_intent(monkeypatch, service, "mo_ho")
 
@@ -260,8 +260,8 @@ def test_map_mo_thi_tra_loi_luon_kem_goi_y_ghi_viec(db, bot, monkeypatch):
 def test_phan_loai_hong_thi_tra_loi_luon_chu_khong_thanh_viec(db, bot, monkeypatch):
     """Phân loại chết (mạng, 503) thì TRẢ LỜI luôn — tin không bốc hơi, cũng không tự thành việc.
 
-    Bản đầu rơi về giao việc (một nửa nguyên nhân AI-0004); bản sau hỏi «làm luôn hay ghi việc» — 07/10 «alo how are u»
-    gặp Gemini 503 và nhận đúng câu hỏi vô duyên đó (ai-CR-099). Nay trả lời kèm dòng gợi ý «ghi việc: …».
+    Bản đầu rơi về giao việc (một nửa nguyên nhân AI-0004); bản sau hỏi "làm luôn hay ghi việc" — 07/10 "alo how are u"
+    gặp Gemini 503 và nhận đúng câu hỏi vô duyên đó (ai-CR-099). Nay trả lời kèm dòng gợi ý "ghi việc: …".
     """
     service, sent, asked = bot
 
@@ -558,7 +558,7 @@ def _report_file(db, owner_id: int):
 
 
 def test_tool_xuat_tep_thi_bot_gui_tep_dinh_kem(db, monkeypatch):
-    """Web có nút «Tải báo cáo» cần Bearer; Telegram không đăng nhập được nên phải đẩy tệp."""
+    """Web có nút "Tải báo cáo" cần Bearer; Telegram không đăng nhập được nên phải đẩy tệp."""
     import app.core.storage as storage
     from app.modules.agent_hub import service
 
@@ -633,7 +633,7 @@ def test_de_xuat_sua_phieu_thanh_the_hai_nut_va_so_giu_token(db, monkeypatch):
 
 def test_de_xuat_xoa_phieu_thanh_the_nut_xoa_va_bam_thi_bao_da_xoa(db, bot, monkeypatch):
     """AI-0006: đề xuất XÓA đi chung thẻ + nút với đề xuất sửa, nhưng chữ phải nói XÓA —
-    nút «Xác nhận sửa» trên thẻ xóa là người dùng tưởng chỉ đổi một trường."""
+    nút "Xác nhận sửa" trên thẻ xóa là người dùng tưởng chỉ đổi một trường."""
     import json
 
     from app.modules.agent_hub import service as svc
@@ -1356,7 +1356,7 @@ def test_nut_hoi_them_giu_nguyen_nut_the_va_moi_hoi(db, bot, monkeypatch):
     task = _task_with_session(db, service, coder)
 
     service.handle_callback(db, _callback(f"ask:{task.id}"))
-    assert cleared == []  # «Mở PR» / «Bỏ việc này» vẫn còn trên thẻ
+    assert cleared == []  # "Mở PR" / "Bỏ việc này" vẫn còn trên thẻ
     assert "Nhắn câu hỏi" in toasts[-1]
     assert "hỏi gì về bản vá" in sent[-1] and task.code in sent[-1]
     last = db.query(AgentMessage).order_by(AgentMessage.id.desc()).first()
@@ -1595,7 +1595,7 @@ def test_the_ket_qua_co_nut_gop_chi_khi_bat_co(db, bot, monkeypatch):
 
 
 def test_nut_gop_chi_mo_the_hoi_khong_gop_gi(db, bot, monkeypatch):
-    """Điều đại ca chốt: muốn gộp là phải hỏi. Nút «Gộp» chỉ kể ba bước + hỏi, không giao runner."""
+    """Điều đại ca chốt: muốn gộp là phải hỏi. Nút "Gộp" chỉ kể ba bước + hỏi, không giao runner."""
     from app.modules.agent_hub import coder
 
     service, _, _ = bot
@@ -1708,7 +1708,7 @@ def test_huy_hen_dong_luot_va_cho_bam_lai(db, bot, monkeypatch):
     task = _task_with_session(db, service, coder)
     #  Sổ giữ giờ UTC (13:00), thẻ nói giờ Việt Nam (20:00) — ai-CR-020.
     service._new_deploy_run(db, task, STAGE_DEPLOY, "hen_gio", scheduled_for="2026-09-22T13:00")
-    #  Có lịch rồi thì bấm «Gộp» chỉ nhắc lịch + nút hủy, không mở thẻ hỏi mới.
+    #  Có lịch rồi thì bấm "Gộp" chỉ nhắc lịch + nút hủy, không mở thẻ hỏi mới.
     service.handle_callback(db, _callback(f"mg:{task.id}"))
     assert "lịch hẹn lúc 20:00" in sent[-1][0] and ("Hủy hẹn", f"mgno:{task.id}") in sent[-1][1]
     service.handle_callback(db, _callback(f"mgno:{task.id}"))
@@ -1764,7 +1764,7 @@ def test_gop_va_deploy_tron_ven(db, bot, monkeypatch):
     text, buttons = sent[-1]
     assert "Đã gộp vào" in text and "200 OK" in text and "deverp.test" in text
     assert [b[1] for b in buttons] == [f"rv:{task.id}", f"ask:{task.id}", f"done:{task.id}"]
-    #  «Xong»: đóng việc.
+    #  "Xong": đóng việc.
     service.handle_callback(db, _callback(f"done:{task.id}"))
     assert task.status == service.ST_DONE and task.closed_at is not None
 
@@ -1857,7 +1857,7 @@ def test_thu_hoi_revert_m1_va_viec_ve_dang_hoi_lai(db, bot, monkeypatch):
     assert "Đã thu hồi" in task.note
     assert coder.merged_sha_for(db, task) == ""
     assert "THU HỒI" in sent[-1][0] and "Đang hỏi lại" in sent[-1][0]
-    #  Sau thu hồi, đã lên dev không còn đúng nữa -> «Thu hồi» lần hai bị chặn.
+    #  Sau thu hồi, đã lên dev không còn đúng nữa -> "Thu hồi" lần hai bị chặn.
     service.handle_callback(db, _callback(f"rv:{task.id}"))
     assert "không có gì để thu hồi" in sent[-1][0]
 
@@ -1953,7 +1953,7 @@ def test_deploy_task_bo_qua_luot_da_huy_va_do_loi_bat_ngo(db, bot, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-015: sổ quyết định + trả lời hỏi lại gắn vào việc cũ + nút «lần sau tự làm»
+# ai-CR-015: sổ quyết định + trả lời hỏi lại gắn vào việc cũ + nút "lần sau tự làm"
 # ---------------------------------------------------------------------------
 from app.modules.agent_hub.constants import (  # noqa: E402
     ACT_PLAN_ANSWER, ACT_WAIT_PLAN_ANSWER, RISK_HIGH, ST_NEEDS_INPUT as _ST_NI, STAGE_RULE,
@@ -2114,7 +2114,7 @@ def test_viec_rui_ro_cao_khong_nap_so_va_moi_gia_dinh_thanh_cau_hoi(db, bot, mon
 
 
 def test_tra_loi_hoi_lai_gan_vao_viec_cu_lap_lai_ke_hoach_va_de_xuat_ghi_so(db, bot, monkeypatch, tmp_path):
-    """Lỗ cũ: câu trả lời rơi vào INBOX và đẻ việc MỚI, việc cũ treo mãi ở «Đang hỏi lại»."""
+    """Lỗ cũ: câu trả lời rơi vào INBOX và đẻ việc MỚI, việc cũ treo mãi ở "Đang hỏi lại"."""
     from app.modules.agent_hub.model import AgentMessage, AgentRun, AgentTask, AgentTaskItem
 
     service, _, _ = bot
@@ -2181,7 +2181,7 @@ def test_bam_khong_thi_khong_ghi_va_cau_dinh_tien_thi_khong_de_xuat(db, bot, mon
     task2 = _task_hoi_lai(db, service)
     service.send_plan_card(db, task2)
     service.handle_message(db, _msg("công nợ để âm cũng được"))
-    #  ai-CR-021: im lặng, không nhắn «dính tiền nên em vẫn hỏi» mỗi lần nữa.
+    #  ai-CR-021: im lặng, không nhắn "dính tiền nên em vẫn hỏi" mỗi lần nữa.
     assert not any("lần sau gặp em vẫn hỏi" in s for s, _b in sent)
     #  Model nói không dùng lại được: im lặng, không thẻ.
     _fake_rule(monkeypatch, service, generalizable=False)
@@ -2206,7 +2206,7 @@ def test_tin_xen_giua_thi_khong_gan_va_nut_tra_loi_mo_lai_cua(db, bot, monkeypat
     db.commit()
     service.handle_message(db, _msg("màn đơn hàng"))
     assert asked == ["màn đơn hàng"] and task.status == _ST_NI
-    #  Bấm «Trả lời câu hỏi»: cửa mở lại, tin kế gắn vào việc.
+    #  Bấm "Trả lời câu hỏi": cửa mở lại, tin kế gắn vào việc.
     service.handle_callback(db, _callback(f"ans:{task.id}"))
     service.handle_message(db, _msg("màn đơn hàng"))
     assert task.status == service.ST_PLAN and "Đại ca trả lời: màn đơn hàng" in task.summary
@@ -2439,7 +2439,7 @@ def test_ra_soat_nhan_phan_tich_roi_lap_ke_hoach_tren_ma_that(db, bot, monkeypat
     run = db.query(AgentRun).filter_by(task_id=task.id, stage=STAGE_SCAN).one()
     assert run.status == service.RUN_OK and run.artifact["info"]["already_fixed"].startswith("v1")
     texts = [t for t, _b in sent]
-    #  ai-CR-086: không gửi đoạn rà soát dài nữa — nằm trong sổ, xem bằng «chi tiết».
+    #  ai-CR-086: không gửi đoạn rà soát dài nữa — nằm trong sổ, xem bằng "chi tiết".
     assert not any("em đã đọc mã" in t for t in texts)
     assert "Kết luận:" in run.artifact["message"] and "```" not in run.artifact["message"]
     #  Kế hoạch đọc kết quả rà soát, và tên tệp trơn được nối đủ đường dẫn từ rà soát.
@@ -2512,7 +2512,7 @@ def test_viec_ket_o_ra_soat_duoc_lap_ke_hoach_theo_tai_lieu(db, bot, monkeypatch
 
 
 def test_ra_soat_cat_cau_dan_va_hien_cau_can_dai_ca_quyet(db, bot, monkeypatch, tmp_path):
-    """Lượt thật AI-0006: mở bằng «Giờ trả lời», và câu nghiệp vụ chỉ nằm trong JSON."""
+    """Lượt thật AI-0006: mở bằng "Giờ trả lời", và câu nghiệp vụ chỉ nằm trong JSON."""
     from app.modules.agent_hub import coder
 
     out = ("Đã xác minh đủ chắc chắn để báo cáo. Giờ trả lời.\n\n**Kết luận:** gửi thiếu mã phòng.\n"
@@ -2763,7 +2763,7 @@ def test_gio_viet_nam_cho_nhung_gi_bot_noi():
 
 
 def test_hen_14h30_la_gio_viet_nam_khong_phai_utc(db, bot, monkeypatch):
-    """Lỗi có sẵn từ ai-CR-014: container chạy UTC nên «14:30» thành 21:30 giờ Việt Nam."""
+    """Lỗi có sẵn từ ai-CR-014: container chạy UTC nên "14:30" thành 21:30 giờ Việt Nam."""
     from app.modules.agent_hub import coder
 
     service, _, _ = bot
@@ -3008,7 +3008,7 @@ def test_the_ke_hoach_gon_khong_liet_ke_tai_lieu(db, bot, monkeypatch):
 
 
 def test_cau_ra_soat_da_tra_loi_thi_khong_hoi_lai(db, bot, monkeypatch, tmp_path):
-    """AI-0007: đại ca đáp «oke theo ý của em», thẻ kế hoạch mới vẫn «Còn chờ đại ca quyết» hai câu cũ."""
+    """AI-0007: đại ca đáp "oke theo ý của em", thẻ kế hoạch mới vẫn "Còn chờ đại ca quyết" hai câu cũ."""
     from app.modules.agent_hub import coder
     from app.modules.agent_hub.model import AgentRun
 
@@ -3084,10 +3084,10 @@ def test_nap_kho_tai_lieu_chi_nhung_tep_co_doi(monkeypatch, tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-023: hết lượt thì giữ phần dở + nút «Làm tiếp» nối đúng phiên
+# ai-CR-023: hết lượt thì giữ phần dở + nút "Làm tiếp" nối đúng phiên
 # ---------------------------------------------------------------------------
 def test_het_luot_khong_con_la_that_bai_ma_co_nut_lam_tiep(db, bot, monkeypatch):
-    """AI-0007 (23/09): hết 80 lượt khi mới sửa xong nửa việc, bot đóng «Thất bại», bỏ phần đã làm."""
+    """AI-0007 (23/09): hết 80 lượt khi mới sửa xong nửa việc, bot đóng "Thất bại", bỏ phần đã làm."""
     from app.modules.agent_hub import coder
     from app.modules.agent_hub.model import AgentRun
 
@@ -3142,7 +3142,7 @@ def test_lam_tiep_noi_dung_phien_tren_dung_worktree(db, bot, monkeypatch, tmp_pa
     coder.run_code_task(db, task, resume=True)
     assert resumed == [(str(tmp_path / task.code), "sid-1")]
     assert task.status == service.ST_REVIEW
-    #  Không còn phiên dở: nút «Làm tiếp» không giao gì.
+    #  Không còn phiên dở: nút "Làm tiếp" không giao gì.
     service.handle_callback(db, _callback(f"cont:{task.id}"))
     assert dispatched == [task.id]
 
@@ -3238,7 +3238,7 @@ def test_phien_ra_soat_mat_thi_lui_ve_phien_moi(db, bot, monkeypatch, tmp_path):
 
 def test_keo_tin_dong_giao_dich_truoc_khi_cho_telegram(db, bot, monkeypatch):
     """ai-CR-025: giữ giao dịch mở suốt 25 giây long-poll thì MySQL (REPEATABLE READ) cho bot xử
-    nút bấm trên ảnh chụp CŨ — «Làm tiếp» AI-0007 bị bỏ qua im lặng."""
+    nút bấm trên ảnh chụp CŨ — "Làm tiếp" AI-0007 bị bỏ qua im lặng."""
     service, _, _ = bot
     open_while_waiting: list[bool] = []
 
@@ -3255,7 +3255,7 @@ def test_keo_tin_dong_giao_dich_truoc_khi_cho_telegram(db, bot, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-026: quyền chạy vitest theo từng thư mục + nút «Sửa cho xanh»
+# ai-CR-026: quyền chạy vitest theo từng thư mục + nút "Sửa cho xanh"
 # ---------------------------------------------------------------------------
 def test_quyen_vitest_khai_theo_tung_thu_muc_co_that(tmp_path):
     """AI-0007: mẫu `… -- src/:*` không khớp `… -- src/modules/finance` (so theo nguyên từ)."""
@@ -3387,7 +3387,7 @@ def _review_task(db, service, coder, **kw):
 
 
 def test_nhan_chu_gop_viec_vua_sua_thi_gop_ngay(db, bot, monkeypatch):
-    """Đại ca 23/09: «ví dụ anh muốn bot tự merge code từ commit sửa mới này qua erp thì sao»."""
+    """Đại ca 23/09: "ví dụ anh muốn bot tự merge code từ commit sửa mới này qua erp thì sao"."""
     from app.modules.agent_hub import coder
     from app.modules.agent_hub.model import AgentMessage
 
@@ -3460,7 +3460,7 @@ def test_duyet_xong_bo_sua_chi_tiet_bang_chu(db, bot, monkeypatch, tmp_path):
     plan = _task_with_plan(db, service, ["backend/app/x.py"])
     service.handle_message(db, _msg("duyệt"))
     assert approved == [plan.code] and plan.approved_at is not None
-    #  «sửa: …» lập lại kế hoạch với ý của đại ca.
+    #  "sửa: …" lập lại kế hoạch với ý của đại ca.
     seen: list[dict] = []
     _fake_plan(monkeypatch, service, seen=seen)
     _fake_rule(monkeypatch, service, generalizable=False)
@@ -3490,7 +3490,7 @@ def test_chon_lam_luon_hay_ghi_viec_bang_chu(db, bot, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-028: hiểu ý thao tác theo ngữ cảnh («đồng ý» thay cho lệnh)
+# ai-CR-028: hiểu ý thao tác theo ngữ cảnh ("đồng ý" thay cho lệnh)
 # ---------------------------------------------------------------------------
 def _fake_act(monkeypatch, service, seen=None, **data):
     from app.modules.assistant.provider.base import ChatResult
@@ -3507,7 +3507,7 @@ def _fake_act(monkeypatch, service, seen=None, **data):
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-029: «gộp» chỉ gộp vào nhánh nền, lên dev phải nói ra
+# ai-CR-029: "gộp" chỉ gộp vào nhánh nền, lên dev phải nói ra
 # ---------------------------------------------------------------------------
 def test_lenh_gop_chi_gop_con_deploy_phai_noi_ra(db, bot, monkeypatch):
     from app.modules.agent_hub import coder
@@ -3540,11 +3540,11 @@ def test_chi_gop_thi_khong_ssh_va_viec_cho_deploy(db, bot, monkeypatch):
     assert any(c[1] == "merge" for c in git_calls) and any(c[1] == "push" for c in git_calls)
     assert task.status == service.ST_PROD and task.deployed_dev_at is None
     assert "Dev CHƯA deploy" in sent[-1][0] and f"**deploy dev {task.code}**" in sent[-1][0]
-    #  «gộp» lần nữa không gộp lại, chỉ nhắc cách lên dev.
+    #  "gộp" lần nữa không gộp lại, chỉ nhắc cách lên dev.
     monkeypatch.setattr(coder, "dispatch_deploy", lambda *a: pytest.fail("đã gộp rồi"))
     service.handle_message(db, _msg(f"gộp {task.code}"))
     assert "dev chưa lên" in sent[-1][0]
-    #  «deploy dev» (không cần mã: chỉ một việc đang chờ lên dev) -> lượt deploy, bỏ qua bước gộp.
+    #  "deploy dev" (không cần mã: chỉ một việc đang chờ lên dev) -> lượt deploy, bỏ qua bước gộp.
     dispatched: list[int] = []
     monkeypatch.setattr(coder, "dispatch_deploy", lambda tid, rid: dispatched.append(rid))
     service.handle_message(db, _msg("deploy dev đi"))
@@ -3885,7 +3885,7 @@ def test_phieu_giao_cho_bot_thanh_viec_va_bao_lai_tren_phieu(db, bot, monkeypatc
     assert task.code in note.body and old.status == "in_progress" and other.status == "open"
     #  Chạy lại không tạo trùng.
     assert service.pull_tickets(db) == 0
-    #  Đóng «xong» -> phiếu «Đã trả lời» + dòng báo.
+    #  Đóng "xong" -> phiếu "Đã trả lời" + dòng báo.
     task.status = service.ST_PROD
     db.commit()
     service.handle_message(db, _msg(f"xong {task.code}"))
@@ -4053,7 +4053,7 @@ def test_api_lay_ma_va_go_lien_ket_cua_chinh_minh(db, bot, cap_quyen):
     service, _, _ = bot
     lan = _erp_user(db)
     other = _erp_user(db, "khac@dego.vn")
-    cap_quyen(lan.id, "assistant", read=True)                          # ai-CR-131: lấy mã cần quyền «Trợ lý AI»
+    cap_quyen(lan.id, "assistant", read=True)                          # ai-CR-131: lấy mã cần quyền "Trợ lý AI"
     me = SimpleNamespace(id=lan.id)
     data = _json(controller.create_link_code(user=me, db=db))
     assert len(data["code"]) == 6 and data["code"].isdigit()
@@ -4106,7 +4106,7 @@ def test_tro_ly_duoc_dan_dung_co_che_dang_nhap_va_tai_khoan_hien_tai(db, monkeyp
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-042: thông tin tài khoản đọc được (họ tên, mã NV, phòng), không chỉ «#238»
+# ai-CR-042: thông tin tài khoản đọc được (họ tên, mã NV, phòng), không chỉ "#238"
 # ---------------------------------------------------------------------------
 def test_taikhoan_hien_ho_ten_ma_nhan_vien_va_phong(db, bot):
     from app.modules.agent_hub import chat_link
@@ -4174,7 +4174,7 @@ def test_hoi_chi_phi_bang_chu_tach_tien_that_va_goi_thue_bao(db, bot, monkeypatc
     task = _task_with_plan(db, service, ["backend/app/x.py"])
     _cost_runs(db, service, coder, task)
     service.handle_message(db, _msg(f"{task.code} tốn bao nhiêu vậy em"))
-    #  ai-CR-147: ghi tên model đã chạy thay vì cứng «Gemini».
+    #  ai-CR-147: ghi tên model đã chạy thay vì cứng "Gemini".
     assert "AI theo khóa (m, tiền thật): $0.02 (≈ 1.000 đ)" in sent[-1] and "Gemini" not in sent[-1]
     assert "Claude Code (gói thuê bao, ước để so): $3.00 (≈ 78.000 đ)" in sent[-1]
     service.handle_message(db, _msg("tháng này bot tốn bao nhiêu"))
@@ -4311,7 +4311,7 @@ def test_xuat_word_bang_chu_sau_khi_vua_tra(db, bot, monkeypatch):
     monkeypatch.setattr(service.telegram, "send_document", lambda chat_id, name, data, **kw: docs.append(name) or 9)
     monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("xuất Word không đi phân loại"))
     service.handle_message(db, _msg("/tim giá thép tháng 9"))
-    assert "<code>xuất Word</code>" in sent[-1]                       # ai-CR-121: câu lệnh in kiểu mã, không «»
+    assert "<code>xuất Word</code>" in sent[-1]                       # ai-CR-121: câu lệnh in kiểu mã, không ""
     service.handle_message(db, _msg("xuất word giúp anh"))
     assert docs == ["nghien-cuu.docx"]
 
@@ -4328,7 +4328,7 @@ def test_cau_co_chu_word_cua_nghiep_vu_erp_khong_bi_bat_nham(db, bot, monkeypatc
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-046: bản nháp của Trợ lý -> nhắn «tạo» là tạo thật
+# ai-CR-046: bản nháp của Trợ lý -> nhắn "tạo" là tạo thật
 # ---------------------------------------------------------------------------
 _LEAVE_DRAFT = {"kind": "leave_request", "lines": [{"leave_type_id": 1, "leave_type": "Phép năm", "days": 0.5}],
                 "from_date": "2026-09-25", "to_date": "2026-09-25", "from_session": 3, "to_session": 3,
@@ -4350,7 +4350,7 @@ def test_nhan_tao_thi_tao_that_dung_mot_lan(db, bot, monkeypatch):
     service, sent, asked = bot
     me, created = _draft_setup(db, monkeypatch, service)
     service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
-    #  09/10/2026: thẻ nháp bỏ ngoặc «», câu trả lời dạng mã mỗi dòng một câu.
+    #  09/10/2026: thẻ nháp bỏ ngoặc "", câu trả lời dạng mã mỗi dòng một câu.
     assert "BẢN NHÁP ĐƠN NGHỈ PHÉP" in sent[-1] and "buổi chiều" in sent[-1] and "<code>tạo</code>" in sent[-1]
     assert "«" not in sent[-1]
     service.handle_message(db, _msg("tạo đi em"))
@@ -4449,7 +4449,7 @@ def test_ban_nhap_dung_dau_vao_service_that_va_tu_dien_dau_phieu(db, monkeypatch
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-047: «tạo và gửi duyệt» một câu
+# ai-CR-047: "tạo và gửi duyệt" một câu
 # ---------------------------------------------------------------------------
 def _submit_setup(monkeypatch, service, *, fail: str = ""):
     submitted: list[tuple] = []
@@ -4481,7 +4481,7 @@ def test_tao_truoc_roi_gui_duyet_luon_chi_mot_lan(db, bot, monkeypatch):
     submitted = _submit_setup(monkeypatch, service)
     service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
     service.handle_message(db, _msg("tạo"))
-    assert "Nhắn <code>gửi duyệt</code>" in sent[-1] and submitted == []     # ai-CR-184: bỏ « », in kiểu mã
+    assert "Nhắn <code>gửi duyệt</code>" in sent[-1] and submitted == []     # ai-CR-184: bỏ " ", in kiểu mã
     service.handle_message(db, _msg("gửi duyệt luôn"))
     assert submitted == [("leave", 42)]
     _fake_intent(monkeypatch, service, "hoi")
@@ -4536,7 +4536,7 @@ def test_submit_goi_dung_ham_web_va_chay_tac_vu_nen(db, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# ai-CR-048: bản nháp chỉ một thẻ, không lời «bấm nút», xác nhận nói tự nhiên
+# ai-CR-048: bản nháp chỉ một thẻ, không lời "bấm nút", xác nhận nói tự nhiên
 # ---------------------------------------------------------------------------
 def test_co_ban_nhap_thi_khong_gui_cau_bam_nut_cua_tro_ly(db, monkeypatch):
     from app.modules.agent_hub import service
@@ -4659,7 +4659,7 @@ def test_cu_phap_cau_cap_go_liet_ke_quyen():
     assert grants.parse("thu hồi quyền sửa mã Bảo nhé") == {"op": "revoke", "name": "bảo"}
     assert grants.parse("ai đang được sửa mã") == {"op": "list"}
     assert grants.parse("danh sách quyền sửa mã") == {"op": "list"}
-    #  Không phải câu cấp quyền: lệnh trên việc, câu hỏi thường, «anh» trơn không có tên.
+    #  Không phải câu cấp quyền: lệnh trên việc, câu hỏi thường, "anh" trơn không có tên.
     assert grants.parse("gộp AI-0007") is None and grants.parse("thu hồi AI-0007") is None
     assert grants.parse("cho anh xem chi tiết AI-0007") is None
     assert grants.parse("cho anh quyền gộp") is None
@@ -4677,12 +4677,12 @@ def test_dai_ca_cap_quyen_co_hoi_lai_roi_ghi_so_va_liet_ke(db, bot, monkeypatch)
     duoc = _staff(db)
     service.handle_message(db, _msg("cho anh Được quyền gộp dev"))
     assert "Cấp cho <b>Trần Văn Được (DEGO0009)</b> cấp <b>gộp dev</b>" in sent[-1] and "CHƯA đăng nhập bot" in sent[-1]
-    assert grants.level_for(db, duoc.id) == grants.LEVEL_NONE                      # chưa «đúng» thì chưa ghi
+    assert grants.level_for(db, duoc.id) == grants.LEVEL_NONE                      # chưa "đúng" thì chưa ghi
     service.handle_message(db, _msg("đúng"))
     assert "Đã cấp cho <b>Trần Văn Được (DEGO0009)</b> cấp <b>gộp dev</b>" in sent[-1]
     assert grants.level_for(db, duoc.id) == grants.LEVEL_MERGE
     _fake_intent(monkeypatch, service, "hoi")
-    service.handle_message(db, _msg("đúng"))                                        # «đúng» lần hai: chuyện thường, không cấp lại
+    service.handle_message(db, _msg("đúng"))                                        # "đúng" lần hai: chuyện thường, không cấp lại
     assert db.query(AgentMessage).filter_by(action=service.ACT_GRANT_DONE).count() == 1 and asked == ["đúng"]
     monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("câu cấp quyền không đi phân loại"))
     service.handle_message(db, _msg("ai đang được sửa mã"))
@@ -4693,7 +4693,7 @@ def test_dai_ca_cap_quyen_co_hoi_lai_roi_ghi_so_va_liet_ke(db, bot, monkeypatch)
     assert grants.level_for(db, duoc.id) == grants.LEVEL_PLAN and len(grants.list_active(db)) == 1
     service.handle_message(db, _msg("cho anh Được quyền duyệt"))
     assert "đã ở cấp <b>duyệt kế hoạch</b> rồi" in sent[-1]
-    #  «thôi» là không làm; tên không có thì hỏi lại chứ không đoán.
+    #  "thôi" là không làm; tên không có thì hỏi lại chứ không đoán.
     service.handle_message(db, _msg("gỡ quyền của anh Được"))
     service.handle_message(db, _msg("thôi"))
     assert "không đổi quyền gì" in sent[-1] and grants.level_for(db, duoc.id) == grants.LEVEL_PLAN
@@ -4750,7 +4750,7 @@ def test_nguoi_cap_duyet_ke_hoach_bi_chan_gop_va_dai_ca_duoc_bao(db, bot, monkey
     #  Đủ cấp cho lệnh hỏi tình trạng thì trả lời tại chỗ, không báo đại ca.
     service.handle_message(db, _other_msg(f"{task.code} xong chưa"))
     assert sent[-1][0] == "777" and task.code in sent[-1][1]
-    #  Không nêu mã việc thì là câu chuyện với Trợ lý, không phải lệnh — kể cả «xong rồi».
+    #  Không nêu mã việc thì là câu chuyện với Trợ lý, không phải lệnh — kể cả "xong rồi".
     _fake_intent(monkeypatch, service, "hoi")
     service.handle_message(db, _other_msg("xong rồi"))
     assert asked[-1] == "xong rồi" and task.status == service.ST_REVIEW
@@ -4918,7 +4918,7 @@ def test_tro_ly_trong_chat_di_bang_provider_cua_bot_tuc_khoa_ca_nhan(db, monkeyp
     with user_keys.for_chat(db, "777"):
         service.answer_question(db, "777", "3 đơn mua hàng gần nhất")
     assert seen == {"provider": "agent_gemini", "key": "AIzaSy-khoa-cua-lan-abcdefgh-5555", "configured": True}
-    #  Registry của Trợ lý web biết tên «agent_gemini» (để `ask(provider=...)` tìm được).
+    #  Registry của Trợ lý web biết tên "agent_gemini" (để `ask(provider=...)` tìm được).
     from app.modules.assistant.provider import get_provider
     assert get_provider("agent_gemini").name == "agent_gemini"
 
@@ -5025,7 +5025,7 @@ def test_dai_ca_them_may_bang_cau_nhan_ma_may_hien_mot_lan_roi_chi_dinh_viec(db,
     assert task.runner_id == rn.id
     service.handle_message(db, _msg(f"{task.code} xong chưa"))
     assert "Máy <b>may-duoc</b> (đang tắt)" in sent[-1]
-    #  Gỡ máy có hỏi lại; «thôi» giữ nguyên.
+    #  Gỡ máy có hỏi lại; "thôi" giữ nguyên.
     service.handle_message(db, _msg("tắt máy của anh Được"))
     service.handle_message(db, _msg("thôi"))
     assert "không đổi gì ở sổ máy" in sent[-1] and runners.by_name(db, "may-duoc") is not None
@@ -5143,7 +5143,7 @@ def test_duong_tat_lui_ve_lan_day_du_khi_ke_hoach_khong_nho_hoac_dai_ca_dan_lam_
     service.triage_inbox(db, force=True)
     t1 = db.query(service.AgentTask).order_by(service.AgentTask.id.desc()).first()
     assert t1.lane == service.LANE_FULL and t1.status == service.ST_NEEDS_INPUT and "đang hỏi lại" in sent[-1]
-    #  (2) «làm kỹ» trong câu → làn đầy đủ ngay từ gom (đi rà soát).
+    #  (2) "làm kỹ" trong câu → làn đầy đủ ngay từ gom (đi rà soát).
     _triage_one(db, service, monkeypatch, "ở tab Khóa AI đổi chữ Gemini thành AI, làm kỹ nhé")
     service.triage_inbox(db, force=True)
     t2 = db.query(service.AgentTask).order_by(service.AgentTask.id.desc()).first()
@@ -5153,7 +5153,7 @@ def test_duong_tat_lui_ve_lan_day_du_khi_ke_hoach_khong_nho_hoac_dai_ca_dan_lam_
     service.triage_inbox(db, force=True)
     t3 = db.query(service.AgentTask).order_by(service.AgentTask.id.desc()).first()
     assert t3.lane == service.LANE_FULL
-    #  (4) «làm kỹ AI-000x» khi việc còn ở đầu luồng → rà soát.
+    #  (4) "làm kỹ AI-000x" khi việc còn ở đầu luồng → rà soát.
     t4 = _task_with_plan(db, service, ["backend/app/x.py"], status=service.ST_PLAN, lane=service.LANE_QUICK)
     service.handle_message(db, _msg(f"làm kỹ {t4.code}"))
     assert t4.lane == service.LANE_FULL and scanned[-1] == t4.id
@@ -5223,7 +5223,7 @@ def test_chuong_cua_toi_nhan_dien_dung_va_lan_dau_khong_do_lich_su(db, bot, monk
     service.handle_message(db, _other_msg(f"/dangnhap {code}"))
     assert "Chuông ERP của anh/chị" in sent[-1][1]
     _bell(db, lan.id, "PR0013 — Chờ bạn duyệt", "Yêu cầu mua hàng PR0013 đang chờ bạn duyệt.", "/purchase-requests/13")
-    _bell(db, lan.id, "PR0014 đã được duyệt", "Thông tin chung.")           # không phải «của tôi» → mặc định bỏ
+    _bell(db, lan.id, "PR0014 đã được duyệt", "Thông tin chung.")           # không phải "của tôi" → mặc định bỏ
     _bell(db, 99999, "Của người khác — chờ bạn duyệt")                    # người không liên kết
     assert bells.forward_bells(db) == 1
     assert sent[-1][0] == "777" and "<b>PR0013 — Chờ bạn duyệt</b>" in sent[-1][1] and "Mở trên ERP" in sent[-1][1]
@@ -5307,7 +5307,7 @@ def test_nhac_viec_bang_cau_noi_hoi_lai_khi_thieu_gio_va_gui_khi_toi_gio(db, bot
     service.handle_message(db, _other_msg("bỏ nhắc 2"))
     assert "Đã bỏ lời nhắc" in sent[-1][1] and len(reminders.open_for_chat(db, "777")) == 1
     #  Tới giờ thì vòng beat gửi đúng chat, một lần.
-    left = reminders.open_for_chat(db, "777")[0]                           # «bỏ nhắc 2» bỏ lời xa nhất (sắp theo giờ)
+    left = reminders.open_for_chat(db, "777")[0]                           # "bỏ nhắc 2" bỏ lời xa nhất (sắp theo giờ)
     left.due_at = _dt.utcnow() - _td(minutes=1)
     db.commit()
     assert reminders.fire_due(db) == 1 and sent[-1][0] == "777" and f"<b>Nhắc:</b> {left.text}" in sent[-1][1]
@@ -5922,7 +5922,7 @@ def test_thao_tac_delete_da_duyet_van_khong_chay(db, bot, monkeypatch):
 
 
 def test_soan_lenh_ra_delete_thi_tra_loi_xoa_mem(db, bot, monkeypatch):
-    """ai-CR-169: máy soạn ra DELETE -> không tạo thao tác chờ duyệt, trả lời rõ «xóa mềm trên màn hình»."""
+    """ai-CR-169: máy soạn ra DELETE -> không tạo thao tác chờ duyệt, trả lời rõ "xóa mềm trên màn hình"."""
     from app.modules.agent_hub import ops, ops_runner
     from app.modules.agent_hub.constants import OP_DATA_PLAN, OP_SQL_WRITE, OPS_OK
     from app.modules.agent_hub.model import AgentOp
@@ -5987,7 +5987,7 @@ def test_theo_doi_suc_khoe_mo_va_dong_su_co(db, bot, monkeypatch):
     assert inc.status == INC_RESOLVED and dev.fail_streak == 0 and "đã hết" in sent[-1]
 
 
-# ai-CR-231 — sự cố #4 22/10: DNS vùng .vn (DNSSEC VNNIC) hỏng, bot báo prod «không kết nối được» trong khi prod vẫn sống.
+# ai-CR-231 — sự cố #4 22/10: DNS vùng .vn (DNSSEC VNNIC) hỏng, bot báo prod "không kết nối được" trong khi prod vẫn sống.
 def _dns_world(db, monkeypatch, *, streak=3):
     _envs(db)
     tasks = _ops_on(monkeypatch)
@@ -6093,7 +6093,7 @@ def test_khong_kiem_chung_duoc_thi_chua_ket_luan_sap(db, bot, monkeypatch, probe
 
 def test_health_http_hoac_ip_sap_la_sap_that_khong_di_thang(db, bot, monkeypatch):
     """A2 rà 22/10 (lỗi chặn vòng 2): health http thường / địa chỉ IP (vd http://127.0.0.1:8020/api/health ở doc
-    agent-hub/08) không có DNS để vòng qua — sập là sập thật, phải chẩn đoán, không được thành «không kiểm chứng được»."""
+    agent-hub/08) không có DNS để vòng qua — sập là sập thật, phải chẩn đoán, không được thành "không kiểm chứng được"."""
     from app.modules.agent_hub import ops
     from app.modules.agent_hub.constants import ENV_DEV, INC_DIAGNOSING
     from app.modules.agent_hub.model import AgentEnv, AgentIncident
@@ -6113,7 +6113,7 @@ def test_health_http_hoac_ip_sap_la_sap_that_khong_di_thang(db, bot, monkeypatch
 
 
 def test_sap_that_ma_doh_chap_chon_van_leo_thang(db, bot, monkeypatch):
-    """A2 rà 22/10: sập xen kẽ «không kiểm chứng được» trước đây làm bộ đếm không bao giờ quá 1. «Không rõ» giữ kiểu của
+    """A2 rà 22/10: sập xen kẽ "không kiểm chứng được" trước đây làm bộ đếm không bao giờ quá 1. "Không rõ" giữ kiểu của
     vòng trước, không đặt lại bộ đếm."""
     from app.modules.agent_hub import ops
     from app.modules.agent_hub.constants import INC_DIAGNOSING
@@ -6214,7 +6214,7 @@ def test_di_thang_dia_chi_giu_ten_mien_khi_bat_tay(monkeypatch):
     assert p["assert_hostname"] == "thumua.degoholding.vn" and p["cert_reqs"] == "CERT_REQUIRED"
     assert p["path"] == "/api/health?x=1" and p["headers"]["Host"] == "thumua.degoholding.vn" and p["closed"]
     assert p["timeout"].connect_timeout <= 3.0 and p["timeout"].read_timeout <= 5.0
-    #  Chứng chỉ sai khi đi thẳng = không tới được (0), không phải «không kiểm được».
+    #  Chứng chỉ sai khi đi thẳng = không tới được (0), không phải "không kiểm được".
     monkeypatch.setattr(_Pool, "request", lambda self, m, path, headers=None: (_ for _ in ()).throw(
         urllib3.exceptions.SSLError("cert")))
     assert ops._probe_bypass_dns("https://thumua.degoholding.vn/api/health") == 0 and pools[-1]["closed"]
@@ -6532,7 +6532,7 @@ def test_format_rows_doc_ket_qua_sql():
 
 
 def test_cat_tom_tat_khong_cut_giua_chu():
-    """Thẻ đầu tiên 05/10 cắt cụt «…như «Trưởng phòng», «Qu»."""
+    """Thẻ đầu tiên 05/10 cắt cụt "…như "Trưởng phòng", "Qu"."""
     from app.modules.agent_hub.ops_runner import short_text
 
     assert short_text("ngắn", 50) == "ngắn"
@@ -6667,7 +6667,7 @@ def test_so_thuat_ngu_them_sua_xoa_va_chi_chen_tu_co_trong_cau(db):
     block = g.prompt_block(db, "đơn hàng gần nhất của NHA MAY")
     assert "**nhà máy**: phòng Dego Organic (mã NM)" in block and "PBA017" not in block
     assert g.prompt_block(db, "đơn hàng gần nhất") is None
-    #  Khớp nguyên cụm, không khớp nửa chữ («máy» trong «máy tính» không kéo «nhà máy» vào).
+    #  Khớp nguyên cụm, không khớp nửa chữ ("máy" trong "máy tính" không kéo "nhà máy" vào).
     assert g.prompt_block(db, "máy tính hỏng") is None
     assert g.remove(db, "NHÀ MÁY") and not g.remove(db, "nhà máy")
     with pytest.raises(ValueError):
@@ -6697,7 +6697,7 @@ def test_day_thuat_ngu_qua_chat_dai_ca(db, bot):
     service.handle_message(db, {**_msg("quên thuật ngữ nhà máy"), "message_id": 10})
     assert g.load(db) == [] and "Đã quên" in sent[-1]
     assert asked == []
-    #  Câu hỏi có chữ «là» mà kết thúc bằng dấu hỏi thì KHÔNG phải dạy.
+    #  Câu hỏi có chữ "là" mà kết thúc bằng dấu hỏi thì KHÔNG phải dạy.
     from app.modules.agent_hub import service as s
 
     class Row:
@@ -6744,7 +6744,7 @@ def test_loi_sua_cua_dai_ca_ghi_thang_nguoi_khac_cho_duyet(db, bot, seed):
 
 
 def test_de_xuat_thuat_ngu_chi_hien_khi_dai_ca_hoi(db, bot):
-    """ai-CR-079 (đại ca 05/10): KHÔNG gửi đề xuất theo lịch; chỉ hiện khi nhắn «cập nhật thuật ngữ»."""
+    """ai-CR-079 (đại ca 05/10): KHÔNG gửi đề xuất theo lịch; chỉ hiện khi nhắn "cập nhật thuật ngữ"."""
     from app.modules.agent_hub import learning
     from app.modules.assistant import glossary
 
@@ -6759,7 +6759,7 @@ def test_de_xuat_thuat_ngu_chi_hien_khi_dai_ca_hoi(db, bot):
     service.handle_message(db, {**_msg("đúng"), "message_id": 8})
     assert glossary.find(glossary.load(db), "kho 2")["meaning"] == "kho Bình Dương" and "ĐÃ NHỚ" in sent[-1]
     assert asked == []
-    #  Nhiều đề xuất → danh sách duyệt bằng số; «duyệt hết thuật ngữ».
+    #  Nhiều đề xuất → danh sách duyệt bằng số; "duyệt hết thuật ngữ".
     a = glossary.propose(db, "bên Organic", "phòng Dego Organic")
     glossary.propose(db, "xưởng", "nhà máy Dego Organic")
     service.handle_message(db, {**_msg("đề xuất thuật ngữ"), "message_id": 9})
@@ -6770,7 +6770,7 @@ def test_de_xuat_thuat_ngu_chi_hien_khi_dai_ca_hoi(db, bot):
     assert glossary.find(glossary.load(db), "xưởng") is not None and glossary.load_pending(db) == []
     service.handle_message(db, {**_msg("cập nhật thuật ngữ"), "message_id": 12})
     assert "Không có đề xuất" in sent[-1]
-    #  «cập nhật thuật ngữ: X là Y» là dạy luôn.
+    #  "cập nhật thuật ngữ: X là Y" là dạy luôn.
     service.handle_message(db, {**_msg("cập nhật thuật ngữ: kho 3 là kho Long An"), "message_id": 13})
     assert glossary.find(glossary.load(db), "kho 3")["meaning"] == "kho Long An"
 
@@ -6957,7 +6957,7 @@ def test_phan_do_thi_dung_lam_tiep_chay_phan_con_lai(db, bot, monkeypatch, tmp_p
     assert coder.phases_left(db, task)[0]["label"] == "Giao diện"
     assert "còn phần 3: Giao diện" in sent[-1].lower() or "Còn phần 3: Giao diện" in sent[-1]
     assert "Sửa cho xanh trước" in sent[-1]
-    #  «làm tiếp» được ở trạng thái REVIEW khi còn phần, chạy đúng phần còn lại trên cùng phiên.
+    #  "làm tiếp" được ở trạng thái REVIEW khi còn phần, chạy đúng phần còn lại trên cùng phiên.
     dispatched: list = []
     monkeypatch.setattr(coder, "dispatch_continue", lambda tid: dispatched.append(tid))
     service.handle_message(db, _msg(f"làm tiếp {task.code}"))
@@ -6995,7 +6995,7 @@ def test_noi_google_dung_client_rieng_khi_co(monkeypatch):
 
 
 def test_doi_lich_sua_dung_su_kien_cu_khong_tao_them(db, monkeypatch):
-    """ai-CR-084: 05/10 Trợ lý «dời» lịch mua thuốc bằng cách TẠO thêm một sự kiện → lịch bị trùng."""
+    """ai-CR-084: 05/10 Trợ lý "dời" lịch mua thuốc bằng cách TẠO thêm một sự kiện → lịch bị trùng."""
     from app.modules.assistant.tools import google_tool as g
 
     ev = {"id": "ev1", "summary": "Đi mua thuốc xổ giun",
@@ -7040,7 +7040,7 @@ def test_huy_lich_xoa_dung_su_kien_va_hoi_lai_khi_mo_ho(db, monkeypatch):
         pass
     ctx = Ctx()
     ctx.db = db
-    #  «họp ncc» khớp HAI sự kiện → hỏi lại, không xóa
+    #  "họp ncc" khớp HAI sự kiện → hỏi lại, không xóa
     out = g._delete_calendar_event(ctx, {"title": "hop ncc", "date": "2026-10-06"})
     assert out["need_choice"] == "event" and len(out["candidates"]) == 2 and calls == []
     #  không khớp gì → cũng không xóa
@@ -7059,7 +7059,7 @@ def test_huy_lich_xoa_dung_su_kien_va_hoi_lai_khi_mo_ho(db, monkeypatch):
     out = g._delete_calendar_event(ctx, {"event_id": "ev2"})
     assert out["ok"] is True and calls[0][1] == {"sendUpdates": "none"} and "khách mời" in out["note"]
 
-    #  Google báo lỗi → không báo «đã hủy»
+    #  Google báo lỗi → không báo "đã hủy"
     def _boom(*a, **kw):
         raise g.gl.GoogleError("Không tìm thấy sự kiện.")
     monkeypatch.setattr(g.gl, "api_delete", _boom)
@@ -7088,8 +7088,8 @@ def test_lech_ban_doi_ban_thi_dem_lai_tu_dau(db, monkeypatch):
 
 
 def test_viec_rui_ro_vua_tu_duyet_lam_luon_rui_ro_cao_van_cho_duyet(db, bot, monkeypatch):
-    """ai-CR-086 (đại ca 05/10): «gọn gàng rồi sửa code luôn, xong a review lại» — việc rủi ro thấp/vừa không chờ
-    «duyệt» nữa, báo một dòng; việc rủi ro cao vẫn ra thẻ kế hoạch."""
+    """ai-CR-086 (đại ca 05/10): "gọn gàng rồi sửa code luôn, xong a review lại" — việc rủi ro thấp/vừa không chờ
+    "duyệt" nữa, báo một dòng; việc rủi ro cao vẫn ra thẻ kế hoạch."""
     from app.modules.agent_hub import coder
 
     service, _, _ = bot
@@ -7107,11 +7107,11 @@ def test_viec_rui_ro_vua_tu_duyet_lam_luon_rui_ro_cao_van_cho_duyet(db, bot, mon
     _fake_plan(monkeypatch, service, plan_files=["backend/app/modules/payment/service.py"], risk_level=3)
     task2 = _task_with_plan(db, service, [], status=service.ST_TRIAGE)
     service.plan_task(db, task2)
-    assert dispatched == [task.id] and task2.status == service.ST_PLAN       # rủi ro cao: chờ «duyệt»
+    assert dispatched == [task.id] and task2.status == service.ST_PLAN       # rủi ro cao: chờ "duyệt"
 
 
 def test_bo_viec_dong_luot_dang_do_va_bao_cao_khong_dem_kep(db, bot):
-    """ai-CR-088: sáng 06/10 báo «1 lượt kẹt quá 2 giờ» — lượt sửa mã của AI-0002 đã bị đại ca bỏ."""
+    """ai-CR-088: sáng 06/10 báo "1 lượt kẹt quá 2 giờ" — lượt sửa mã của AI-0002 đã bị đại ca bỏ."""
     from datetime import datetime, timedelta
 
     from app.modules.agent_hub import ops
@@ -7170,7 +7170,7 @@ def test_gop_so_chi_ghi_them_kieu_union(tmp_path, monkeypatch):
 
 
 def test_lam_di_khi_bot_dang_sua_thi_bao_dang_lam(db, bot):
-    """ai-CR-092: 8:44 đại ca nhắn «oke làm đi» lúc bot đã tự duyệt và đang sửa — bot trả lời «không có phiên dở»."""
+    """ai-CR-092: 8:44 đại ca nhắn "oke làm đi" lúc bot đã tự duyệt và đang sửa — bot trả lời "không có phiên dở"."""
     service, sent, _ = bot
     task = _task_with_plan(db, service, ["backend/app/x.py"], status=service.ST_CODE)
     service.start_continue(db, "12345", "", task)
@@ -7311,7 +7311,7 @@ def test_lenh_nho_quen_so_nho_tren_telegram(db, bot, seed):
     assert sent[-1].startswith("Đã quên")
     service.handle_message(db, _msg("quên: không có"))
     assert "không có dòng nào" in sent[-1]
-    #  «nhớ X là Y» (không dấu hai chấm) vẫn là dạy thuật ngữ công ty, không phải sổ riêng.
+    #  "nhớ X là Y" (không dấu hai chấm) vẫn là dạy thuật ngữ công ty, không phải sổ riêng.
     assert pm.load_core(db, seed.u_req_id) == ""
 
 
@@ -7452,7 +7452,7 @@ def test_tran_rieng_tung_khoa_va_lenh_khoa_ai(db, bot, monkeypatch):
     db.commit()
     #  Khóa Gemini đã chạm trần 2 lượt hôm nay → chuỗi bỏ qua, OpenAI lên đầu.
     assert [r.provider for r in ai_keys.chain_for_user(db, lan.id)] == ["openai"]
-    #  «còn khóa nào»: liệt kê chuỗi đang dùng được + lượt hôm nay, không lộ khóa.
+    #  "còn khóa nào": liệt kê chuỗi đang dùng được + lượt hôm nay, không lộ khóa.
     code, _ = chat_link.issue_code(db, lan.id)
     service.handle_message(db, _other_msg(f"/dangnhap {code}"))
     service.handle_message(db, _other_msg("còn khóa nào"))
@@ -7499,7 +7499,7 @@ def test_adapter_openai_va_openrouter_goi_cong_cu(monkeypatch):
                       execute=lambda name, args: {"count": args["n"]}, system="sys")
     assert out.text == "Có 3 đơn." and out.input_tokens == 30 and out.tool_calls[0]["name"] == "count_po"
     assert posts[0]["url"].endswith("/chat/completions") and posts[0]["auth"] == "Bearer sk-test"
-    #  ai-CR-115: trần đầu ra có sàn MIN_OUTPUT_TOKENS (model suy luận tính cả phần «nghĩ»).
+    #  ai-CR-115: trần đầu ra có sàn MIN_OUTPUT_TOKENS (model suy luận tính cả phần "nghĩ").
     assert "temperature" not in posts[0]["json"] and posts[0]["json"]["max_completion_tokens"] == 8000
     assert posts[0]["json"]["messages"][0] == {"role": "system", "content": "sys"}
     assert _json.loads(posts[1]["json"]["messages"][-1]["content"]) == {"count": 3}
@@ -7542,7 +7542,7 @@ def test_api_khoa_ai_nhieu_hang_va_khoa_cong_ty(db, monkeypatch):
 
 
 def test_gemini_qua_tai_thi_thu_lai_mot_lan_va_tra_cuu_khong_do_json(db, bot, monkeypatch):
-    """ai-CR-099: 07/10 «alo how are u» chết vì 503 «high demand»; «giá vàng hôm nay» nhận nguyên cục JSON 429."""
+    """ai-CR-099: 07/10 "alo how are u" chết vì 503 "high demand"; "giá vàng hôm nay" nhận nguyên cục JSON 429."""
     from app.modules.agent_hub import manager, research, user_keys
     from app.modules.agent_hub.ai_keys import KeyRef
     from app.modules.assistant.provider.base import ChatMessage, ProviderError
@@ -7868,7 +7868,7 @@ def test_bien_ban_hop_tu_tep_telegram_chay_tron(db, bot, seed, monkeypatch):
 
 
 def test_hoi_chi_phi_token_cua_bien_ban_vua_lam(db, bot, seed, monkeypatch):
-    """ai-CR-158 — đại ca 10/10 hỏi «chi phí token cho cái recap này là bao nhiêu» thì bot trả chi phí CHUNG của bot.
+    """ai-CR-158 — đại ca 10/10 hỏi "chi phí token cho cái recap này là bao nhiêu" thì bot trả chi phí CHUNG của bot.
     Nay mỗi lượt model của phiên họp (chép lời, viết biên bản, rút việc) gắn vào phiên; câu hỏi trả đúng biên bản mới nhất."""
     from app.modules.agent_hub import meetings as mt, personal_memory as pm
     from app.modules.agent_hub.constants import DIR_IN
@@ -8095,8 +8095,8 @@ def test_don_tin_nhom_qua_han(db):
 
 
 def test_gemini_qua_tai_doi_sang_model_du_phong_va_xung_ho_nguoi_khac(db, monkeypatch):
-    """ai-CR-106: 07/10 tài khoản Được nhắn «ê cu» — model chính quá tải treo 60 s × 2, 2 phút mới trả lời, lại gọi
-    «đại ca». Nay quá tải thì đổi ngay sang model dự phòng; người khác được gọi «anh/chị»."""
+    """ai-CR-106: 07/10 tài khoản Được nhắn "ê cu" — model chính quá tải treo 60 s × 2, 2 phút mới trả lời, lại gọi
+    "đại ca". Nay quá tải thì đổi ngay sang model dự phòng; người khác được gọi "anh/chị"."""
     from app.modules.agent_hub import manager, service, user_keys
     from app.modules.agent_hub.ai_keys import KeyRef
     from app.modules.assistant.provider.base import ChatMessage, ProviderError
@@ -8124,7 +8124,7 @@ def test_gemini_qua_tai_doi_sang_model_du_phong_va_xung_ho_nguoi_khac(db, monkey
 
 
 def test_them_hang_deepseek_va_grok(db, monkeypatch):
-    """ai-CR-107: đại ca «cho thêm model của deepseek… và grok nữa»."""
+    """ai-CR-107: đại ca "cho thêm model của deepseek… và grok nữa"."""
     from app.modules.agent_hub import ai_keys, manager, user_keys
     from app.modules.agent_hub.ai_keys import KeyRef
     from app.modules.assistant.provider import get_provider
@@ -8163,7 +8163,7 @@ def test_them_hang_deepseek_va_grok(db, monkeypatch):
 
 
 def test_khoa_tram_tuy_chinh_kieu_openai(db, monkeypatch):
-    """ai-CR-108: đại ca có khóa modelapi.vn (trạm kiểu OpenAI) — chọn «DeepSeek» thì máy chủ DeepSeek từ chối."""
+    """ai-CR-108: đại ca có khóa modelapi.vn (trạm kiểu OpenAI) — chọn "DeepSeek" thì máy chủ DeepSeek từ chối."""
     from app.modules.agent_hub import ai_keys, manager, user_keys
     from app.modules.assistant.provider import openai_compat as oc
     from app.modules.assistant.provider.base import ChatMessage
@@ -8492,7 +8492,7 @@ def test_viet_lai_bien_ban_theo_mau_khac_khong_chep_loi_lai(db, bot, seed, monke
     assert row.status == mt.MeetingStatus.DONE and row.template == "chinh_thuc" and "BIÊN BẢN" in sent[-1]
     word = Document(io.BytesIO(docs[-1]))
     text = "\n".join(p.text for p in word.paragraphs) + "\n".join(c.text for t in word.tables for r in t.rows for c in r.cells)
-    #  ai-CR-116: Word theo chuẩn DEGO — đầu trang «BIÊN BẢN HỌP» + mã văn bản, khối XÉT DUYỆT ký.
+    #  ai-CR-116: Word theo chuẩn DEGO — đầu trang "BIÊN BẢN HỌP" + mã văn bản, khối XÉT DUYỆT ký.
     assert "BIÊN BẢN HỌP" in text and f"RECAP-" in text and "THƯ KÝ" in text and "21 phút" in text
     #  ai-CR-164: bản chép lời không còn là phụ lục trong Word, gửi riêng tệp .txt.
     assert "PHỤ LỤC — BẢN CHÉP LỜI" not in text and "**" not in text and "DEGO HOLDING" in word.sections[0].footer.paragraphs[0].text
@@ -8518,7 +8518,7 @@ def test_bo_phan_nghi_ma_model_suy_luan_tra_lan_vao_cau_tra_loi():
     assert clean_reply(leaked) == "**Biên bản họp giao ban**\n\n- Mục đích: họp tuần"
     assert clean_reply("<think>nghĩ lung tung</think>\nGiá vàng hôm nay 120 triệu") == "Giá vàng hôm nay 120 triệu"
     normal = "Kết luận cuối cùng: chốt mua.\nfinal của giải bóng đá là thứ bảy"
-    assert clean_reply(normal) == normal                     # chữ «final» giữa câu không phải dấu chuyển
+    assert clean_reply(normal) == normal                     # chữ "final" giữa câu không phải dấu chuyển
     assert clean_reply("Final answer:") == "Final answer:"     # sau dấu không còn gì thì giữ nguyên
     assert clean_reply("") == ""
 
@@ -8610,7 +8610,7 @@ def test_rut_viec_lich_chuan_hoa_va_doc_cau_tra_loi_the():
     assert ma.parse_reply("Tạo 1, 3 dự án 2", 3) == ("yes", [1, 3], "2")
     assert ma.parse_reply("tạo hết dự án Thu mua", 3) == ("yes", [1, 2, 3], "Thu mua")
     assert ma.parse_reply("tạo 7 9", 3) is None                              # số ngoài thẻ: không đoán
-    assert ma.parse_reply("tạo phiếu mua hàng 5 tấn thép", 3) is None        # câu khác có chữ «tạo»
+    assert ma.parse_reply("tạo phiếu mua hàng 5 tấn thép", 3) is None        # câu khác có chữ "tạo"
     assert ma.parse_reply("bỏ", 3) == ("no", [], "") and ma.parse_reply("không tạo", 3)[0] == "no"
     assert ma.parse_reply("giá vàng hôm nay", 3) is None
 
@@ -8665,12 +8665,12 @@ def test_the_viec_lich_tu_bien_ban_duyet_roi_moi_tao(db, bot, seed, monkeypatch)
     assert "Việc vào dự án nào?" in sent[-1] and created == []
     service.handle_message(db, _msg("tạo 1 3 dự án 2"))
     assert [d["list_id"] for d in created] == [12] and created[0]["due_date"] == "2026-10-10"
-    assert "Người làm nêu trong họp: Mai" in created[0]["description"]     # «Mai» không khớp đúng một nhân sự
+    assert "Người làm nêu trong họp: Mai" in created[0]["description"]     # "Mai" không khớp đúng một nhân sự
     assert events[0]["start"]["dateTime"] == "2026-10-14T09:00:00" and events[0]["location"] == "tầng 3"
     assert "1. Đã tạo việc #1" in sent[-1] and "3. Đã thêm vào lịch Google" in sent[-1]
     db.refresh(row)
     assert [it["state"] for it in row.actions] == [ma.ActionState.CREATED, ma.ActionState.PENDING, ma.ActionState.CREATED]
-    #  Thẻ đã dùng: «tạo hết» lần nữa không tạo lại (không còn thẻ chờ → đi đường khác, không tạo trùng).
+    #  Thẻ đã dùng: "tạo hết" lần nữa không tạo lại (không còn thẻ chờ → đi đường khác, không tạo trùng).
     service.handle_message(db, _msg("tạo hết dự án 2"))
     assert len(created) == 1 and len(events) == 1
 
@@ -8692,7 +8692,7 @@ def test_the_bien_ban_khong_co_du_an_thi_ghi_the_ca_nhan_va_bo_duoc(db, bot, see
     titles = sorted(i["title"] for i in items)
     assert titles == ["Gặp Hòa Phát", "Gọi lại NCC — Tuấn"]
     assert "Đã ghi thẻ cá nhân" in sent[-1]
-    #  Biên bản khác → thẻ mới; «bỏ» thì không tạo gì.
+    #  Biên bản khác → thẻ mới; "bỏ" thì không tạo gì.
     row2 = mt.create(db, user_id=seed.u_req_id, chat_id="12345", kind=mt.SourceKind.TELEGRAM, ref="G", title="Họp 2")
     row2.transcript = "[00:01] A: x"
     db.commit()
@@ -8714,7 +8714,7 @@ def test_rut_viec_hong_thi_khong_gui_the_va_bien_ban_van_xong(db, bot, seed, mon
     assert not db.query(AgentMessage).filter_by(action="bb_cho_tao").count()
 
 
-# --- ai-CR-115: đọc báo cáo — một câu trả lời cho «tệp + câu hỏi», Excel tự tính công thức, không cắt cụt ---------------
+# --- ai-CR-115: đọc báo cáo — một câu trả lời cho "tệp + câu hỏi", Excel tự tính công thức, không cắt cụt ---------------
 def _xlsx_report_bytes(sheets: int = 8) -> bytes:
     import io
 
@@ -8740,7 +8740,7 @@ def test_excel_khong_luu_ket_qua_cong_thuc_thi_tu_tinh_va_doc_het_trang():
     from app.modules.agent_hub import doc_text
 
     text = doc_text.extract("bc.xlsx", "", _xlsx_report_bytes())
-    #  Trước ai-CR-115: openpyxl đọc ô công thức ra rỗng → bot kết luận «tệp chưa có số».
+    #  Trước ai-CR-115: openpyxl đọc ô công thức ra rỗng → bot kết luận "tệp chưa có số".
     assert "4: Biên gộp | 0.1733 | 0.22" in text
     assert "5: Tăng trưởng |  | 0.1247" in text
     assert "=KHONGCOHAMNAY(1)" in text                          # tính không được thì in công thức gốc
@@ -8831,7 +8831,7 @@ def test_model_kieu_openai_khong_bi_tran_1536_cat_cut(monkeypatch):
     assert out.text.startswith("Phân tích: doanh thu tăng") and "viết tiếp" in out.text
 
 
-# --- ai-CR-116: Word chuẩn DEGO (STD-RECAP-DEGO) + thư mục «Họp» trên Drive (bước 10.4) ------------------------------
+# --- ai-CR-116: Word chuẩn DEGO (STD-RECAP-DEGO) + thư mục "Họp" trên Drive (bước 10.4) ------------------------------
 _RECAP_DEGO = """## TÓM TẮT NHANH
 - Chốt so sánh báo giá thép **trước 10/10**
 - Phạt NCC xi măng giao trễ
@@ -8881,7 +8881,7 @@ def test_word_bien_ban_theo_chuan_dego():
     assert "PHỤ LỤC — BẢN CHÉP LỜI" not in cells and "**" not in alltext       # ai-CR-164: chép lời gửi tệp .txt riêng
     assert doc.inline_shapes and "DEGO HOLDING" in doc.sections[0].footer.paragraphs[0].text   # logo + chân trang
     assert "PAGE" in doc.sections[0].footer.paragraphs[0]._p.xml                               # số trang
-    #  Mẫu chính thức: «BIÊN BẢN HỌP» + khối XÉT DUYỆT.
+    #  Mẫu chính thức: "BIÊN BẢN HỌP" + khối XÉT DUYỆT.
     formal = Document(io.BytesIO(mt.build_docx("X", None, "- a", "", label="Biên bản chính thức", formal=True)))
     ftext = "\n".join(c.text for t in formal.tables for r in t.rows for c in r.cells)
     assert "BIÊN BẢN HỌP" in ftext and "XÉT DUYỆT" in ftext and "CHỦ TRÌ" in ftext
@@ -8935,14 +8935,14 @@ def test_thu_muc_hop_tren_drive_co_tep_moi_thi_hoi_roi_moi_lam(db, bot, seed, mo
     assert "2) hop-giao-ban-phan-2.m4a (20 phút" in card                # xếp theo giờ tạo
     assert any("'FOLDER1' in parents" in q for q in queries)
     assert md.scan(db, now=t0) == 0                                      # quét lại: không hỏi lại tệp đã báo
-    #  Câu thường có chữ «làm» không bị thẻ nuốt.
+    #  Câu thường có chữ "làm" không bị thẻ nuốt.
     assert md.parse_reply("làm sao để xuất báo cáo", 2) is None
     service.handle_message(db, _msg("làm biên bản chính thức"))
     row = db.query(AgentMeeting).one()
     assert row.source_kind == mt.SourceKind.DRIVE and row.source_ref == "F1,F2"   # gộp, nối theo giờ tạo
     assert row.template == "chinh_thuc" and row.title == "hop-giao-ban-phan-1" and dispatched == [row.id]
     assert "gộp 2 tệp" in sent[-1]
-    #  Tệp mới tiếp theo: chọn một tệp; «bỏ qua» thì thôi.
+    #  Tệp mới tiếp theo: chọn một tệp; "bỏ qua" thì thôi.
     files.append({"id": "F3", "name": "hop-chieu.mp3", "mimeType": "audio/mpeg", "createdTime": "2026-10-08T07:00:00Z"})
     files.append({"id": "F4", "name": "hop-chieu-may-2.mp3", "mimeType": "audio/mpeg",
                   "createdTime": "2026-10-08T07:01:00Z"})
@@ -9009,7 +9009,7 @@ def test_report_cuoc_hop_moi_nhat_gui_lai_hoac_lam_tep_moi(db, bot, seed, monkey
     out = T.run_tool(db, owner, "latest_meeting_report", {})
     assert out["sent"] and "BIÊN BẢN — Giao ban" in sent[-2] and docs[-1].endswith(".docx")
     assert "Việc và lịch rút từ biên bản <i>Giao ban</i>" in sent[-1]                   # thẻ việc còn chờ gửi kèm
-    #  Thư mục «Họp» có tệp MỚI hơn cuộc họp đã làm → làm tệp đó.
+    #  Thư mục "Họp" có tệp MỚI hơn cuộc họp đã làm → làm tệp đó.
     files = [{"id": "NEW", "name": "hop-chieu.m4a", "mimeType": "audio/mp4",
               "createdTime": (datetime.utcnow()).strftime("%Y-%m-%dT%H:%M:%SZ")}]
     _fake_drive(monkeypatch, files)
@@ -9020,7 +9020,7 @@ def test_report_cuoc_hop_moi_nhat_gui_lai_hoac_lam_tep_moi(db, bot, seed, monkey
 
 
 def test_tai_lieu_trong_thu_muc_hop_cung_duoc_bao_va_tom_tat(db, bot, seed, monkeypatch):
-    """ai-CR-116: đại ca 08/10 thả một tệp PDF vào «Họp» rồi chờ — bot chỉ nhìn ghi âm nên im lặng."""
+    """ai-CR-116: đại ca 08/10 thả một tệp PDF vào "Họp" rồi chờ — bot chỉ nhìn ghi âm nên im lặng."""
     from datetime import datetime
 
     from app.modules.agent_hub import google_link, meeting_drive as md
@@ -9038,7 +9038,7 @@ def test_tai_lieu_trong_thu_muc_hop_cung_duoc_bao_va_tom_tat(db, bot, seed, monk
     assert md.scan(db, now=datetime(2026, 10, 8, 1, 0)) == 1
     assert "mimeType = 'application/pdf'" in queries[-1]
     assert "Tài liệu: nhắn **tóm tắt tệp 1**" in sent[-1] and "1) 03-KIEN-TRUC-KY-THUAT.pdf" in sent[-1]
-    #  Chỉ có tài liệu mà nhắn «làm biên bản»: nói rõ, không tạo phiên họp.
+    #  Chỉ có tài liệu mà nhắn "làm biên bản": nói rõ, không tạo phiên họp.
     service.handle_message(db, _msg("làm biên bản"))
     assert "Không có tệp ghi âm / video" in sent[-1] and db.query(AgentMeeting).count() == 0
     read: list[tuple] = []
@@ -9080,7 +9080,7 @@ def test_doc_tep_pdf_word_tren_drive_ra_chu_khong_ra_byte(db, monkeypatch):
 
 
 def test_tra_loi_the_khong_dau_van_nhan(db):
-    """ai-CR-118: đại ca gõ «Tom tắt tệp» (thiếu dấu) — thẻ không nhận, câu rơi sang Trợ lý rồi đoán nhầm tệp khác."""
+    """ai-CR-118: đại ca gõ "Tom tắt tệp" (thiếu dấu) — thẻ không nhận, câu rơi sang Trợ lý rồi đoán nhầm tệp khác."""
     from app.modules.agent_hub import meeting_actions as ma, meeting_drive as md
 
     assert md.parse_reply("Tom tắt tệp", 1) == ("doc", [], "")
@@ -9135,11 +9135,11 @@ def test_bot_che_do_dich_vu_dang_nhap_va_hoi_qua_cong(db, bot, seed, monkeypatch
     assert "Đã đăng nhập tài khoản ERP" in sent[-1] and db.query(AgentChatLink).filter_by(chat_id="777").count() == 1
     service.handle_message(db, _other_msg("công nợ còn bao nhiêu"))
     assert seen and seen[-1][1] == "ErpUser"                     # tài khoản là bản chụp từ cổng, không phải ORM
-    #  «/taikhoan» và nhãn người dùng vẫn ra đúng tên qua cổng.
+    #  "/taikhoan" và nhãn người dùng vẫn ra đúng tên qua cổng.
     service.handle_message(db, _other_msg("/taikhoan"))
     assert "đang dùng tài khoản ERP" in sent[-1] and erp.describe(db, erp.user_by_id(db, seed.u_req_id))[0] in sent[-1]
 
-# --- ai-CR-120: «hướng dẫn» — bot liệt kê câu lệnh dùng được ------------------------------------------------------------
+# --- ai-CR-120: "hướng dẫn" — bot liệt kê câu lệnh dùng được ------------------------------------------------------------
 def test_huong_dan_nhan_dien_cau_hoi_va_chu_de():
     from app.modules.agent_hub import user_guide as ug
 
@@ -9154,9 +9154,9 @@ def test_huong_dan_nhan_dien_cau_hoi_va_chu_de():
     assert ug.match("công nợ tháng này")[0] is False and ug.match("")[0] is False
     full = ug.render(admin=False)
     assert "Biên bản họp" in full and "<code>nhớ: anh ở Cần Thơ</code>" in full and "/dangnhap" in full
-    assert "Sửa phần mềm" not in full and "«" not in full.split("\n", 2)[2]       # ai-CR-121: không ngoặc «» trong danh sách
+    assert "Sửa phần mềm" not in full and "«" not in full.split("\n", 2)[2]       # ai-CR-121: không ngoặc "" trong danh sách
     assert len(full) < 3900                                                        # bản tóm tắt gọn trong MỘT tin
-    for key, ask in ug.ASK.items():                                                # mọi «Xem thêm» dẫn đúng nhóm
+    for key, ask in ug.ASK.items():                                                # mọi "Xem thêm" dẫn đúng nhóm
         hit, topic = ug.match(ask)
         assert hit and ug._section_for(topic).key == key, ask
     assert "Sửa phần mềm" in ug.render(admin=True)
@@ -9254,7 +9254,7 @@ def test_zalo_tk_cong_ty_gui_qua_listener_co_chu_ky_va_chan_tin_vao_nhom(monkeyp
     assert telegram.send("xin chào cả nhóm", chat_id="zg:g5") == 0 and len(calls) == n
     assert telegram.edit_text("zu:u77", 5, "x") is False
     telegram.send_chat_action("zu:u77")
-    #  ai-CR-130: chat riêng Zalo có «đang soạn» (đường /typing, không phải tin) + hẹn tin báo nhận — hủy ngay ở đây.
+    #  ai-CR-130: chat riêng Zalo có "đang soạn" (đường /typing, không phải tin) + hẹn tin báo nhận — hủy ngay ở đây.
     assert len(calls) == n + 1 and calls[-1][:2] == ("POST", "/typing")
     za._settle_ack("zu:u77")
     n += 1
@@ -9405,10 +9405,10 @@ def test_giu_tin_nhom_mac_dinh_ba_thang_va_gui_ho_tin_zalo_tk_cong_ty(monkeypatc
     assert out == {"status": "success", "message_id": 7} and got == [("zu:u77", "xong", None)]
 
 
-# --- ai-CR-125: «bỏ kế hoạch 0005» là lệnh bỏ việc; «lô» không phải câu trả lời thẻ hỏi lại ------------------------
+# --- ai-CR-125: "bỏ kế hoạch 0005" là lệnh bỏ việc; "lô" không phải câu trả lời thẻ hỏi lại ------------------------
 def test_ma_viec_viet_tat_va_loi_chao_khong_gan_vao_the_hoi_lai(db, bot, monkeypatch, tmp_path):
-    """08/10 đại ca nhắn «lô» rồi «bỏ kế hoạch 0005 đi» lúc AI-0005 đang hỏi lại: bot gắn cả hai làm câu trả lời kế
-    hoạch và hỏi «lô là gì», việc không bị bỏ."""
+    """08/10 đại ca nhắn "lô" rồi "bỏ kế hoạch 0005 đi" lúc AI-0005 đang hỏi lại: bot gắn cả hai làm câu trả lời kế
+    hoạch và hỏi "lô là gì", việc không bị bỏ."""
     from app.modules.agent_hub.model import AgentMessage
 
     service, _, _ = bot
@@ -9441,7 +9441,7 @@ def test_ma_viec_viet_tat_va_loi_chao_khong_gan_vao_the_hoi_lai(db, bot, monkeyp
 # --- ai-CR-127: lượt lập lại kế hoạch bị ngắt vì bot khởi động lại thì vòng beat nhặt lại ----------------------------
 def test_tra_loi_xong_ma_luot_lap_ke_hoach_bi_ngat_thi_vong_beat_lam_lai(db, bot, monkeypatch):
     """08/10: đại ca trả lời AI-0005 lúc 16:45, Agent 1 dựng lại bot lúc 16:47 — lượt lập kế hoạch chạy trong tiến
-    trình nhận tin mất hẳn, việc nằm im ở «Đang hỏi lại» với `questions` rỗng."""
+    trình nhận tin mất hẳn, việc nằm im ở "Đang hỏi lại" với `questions` rỗng."""
     from datetime import datetime, timedelta
 
     from app.modules.agent_hub.model import AgentMessage, AgentRun
@@ -9478,15 +9478,15 @@ def test_tra_loi_xong_ma_luot_lap_ke_hoach_bi_ngat_thi_vong_beat_lam_lai(db, bot
     assert service.resume_lost_replans(db, now=datetime.now() + timedelta(hours=1)) == 0
 
 
-# --- ai-CR-130: chữ đậm / nghiêng trên Zalo cá nhân + «đang soạn» / «em nhận tin rồi» -----------------------------
+# --- ai-CR-130: chữ đậm / nghiêng trên Zalo cá nhân + "đang soạn" / "em nhận tin rồi" -----------------------------
 def test_zalo_tk_cong_ty_giu_chu_dam_nghieng_theo_vi_tri_utf16():
-    """08/10: câu trả lời giá vàng trên Zalo «không có in đậm nhạt» — tin cá nhân không nhận HTML, phải gửi kiểu chữ."""
+    """08/10: câu trả lời giá vàng trên Zalo "không có in đậm nhạt" — tin cá nhân không nhận HTML, phải gửi kiểu chữ."""
     from app.modules.agent_hub import zalo_account as za
 
     plain, spans = za.to_styled("<b>Giá</b> vàng <i>mới</i> &lt;5\n\n\n\n<b>I. Trong nước</b>\n• <b>140</b> triệu")
     assert plain == "Giá vàng mới <5\n\nI. Trong nước\n• 140 triệu"
     assert [(plain[a:b], st) for a, b, st in spans] == [("Giá", "b"), ("mới", "i"), ("I. Trong nước", "b"), ("140", "b")]
-    #  Liên kết thành «chữ (địa chỉ)», thẻ lạ bỏ, thẻ không đóng không làm hỏng.
+    #  Liên kết thành "chữ (địa chỉ)", thẻ lạ bỏ, thẻ không đóng không làm hỏng.
     plain, spans = za.to_styled('<a href="https://erp.x/po/1">ĐMH <b>1</b></a> <code>AI-7</code> <b>mở')
     assert plain == "ĐMH 1 (https://erp.x/po/1) AI-7 mở" and [(plain[a:b], st) for a, b, st in spans] == [("1", "b")]
     #  Vị trí theo UTF-16 (như JavaScript): biểu tượng ngoài BMP chiếm 2 đơn vị.
@@ -9533,12 +9533,12 @@ def test_zalo_tk_cong_ty_gui_kieu_chu_va_bao_nhan_tin_khi_tra_loi_lau(monkeypatc
     za._ACKED_AT.clear()
     telegram.send("<b>Kết luận</b>: giá đứng", chat_id="zu:u77")
     assert calls[-1][0] == "/send" and calls[-1][1]["styles"] == [{"start": 0, "len": 8, "st": "b"}]
-    #  Nhận tin: «đang soạn» ngay, hẹn tin báo nhận; trả lời kịp thì hủy hẹn.
+    #  Nhận tin: "đang soạn" ngay, hẹn tin báo nhận; trả lời kịp thì hủy hẹn.
     telegram.send_chat_action("zu:u77")
     assert calls[-1] == ("/typing", {"thread_id": "u77", "thread_type": "user"}) and len(timers) == 1
     telegram.send("xong", chat_id="zu:u77")
     assert timers[0].cancelled
-    #  Lượt sau trả lời lâu: tới hạn thì gửi «em nhận tin rồi» MỘT lần, gọi «đang soạn» lần nữa không hẹn thêm.
+    #  Lượt sau trả lời lâu: tới hạn thì gửi "em nhận tin rồi" MỘT lần, gọi "đang soạn" lần nữa không hẹn thêm.
     telegram.send_chat_action("zu:u77")
     timers[-1].fn(*timers[-1].args)
     assert calls[-1][0] == "/send" and "Em nhận tin rồi" in calls[-1][1]["text"]
@@ -9550,9 +9550,9 @@ def test_zalo_tk_cong_ty_gui_kieu_chu_va_bao_nhan_tin_khi_tra_loi_lau(monkeypatc
     assert len(timers) == n and calls[-1][0] != "/typing" or calls[-1][1].get("thread_type") != "group"
 
 
-# --- ai-CR-131: dùng bot cần quyền «Trợ lý AI»; người quản lý xem ai đang nối bot -------------------------------------
+# --- ai-CR-131: dùng bot cần quyền "Trợ lý AI"; người quản lý xem ai đang nối bot -------------------------------------
 def test_dung_bot_can_quyen_tro_ly_ai(db, bot, seed, monkeypatch, cap_quyen):
-    """Đại ca 08/10: «họ có quyền thì mới hỏi được» — khóa `assistant.read` ở màn Phân quyền, như Trợ lý AI trên web."""
+    """Đại ca 08/10: "họ có quyền thì mới hỏi được" — khóa `assistant.read` ở màn Phân quyền, như Trợ lý AI trên web."""
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
 
@@ -9601,7 +9601,7 @@ def test_dung_bot_can_quyen_tro_ly_ai(db, bot, seed, monkeypatch, cap_quyen):
 
 # --- ai-CR-132 → ai-CR-167: tin vận hành CHỈ chat chủ bot; tin về một việc sửa mã sao thêm cho chat đã yêu cầu việc đó ----
 def test_tin_van_hanh_chi_chu_bot_va_tin_viec_sao_cho_nguoi_yeu_cau(db, bot, seed, monkeypatch, cap_quyen):
-    """Đại ca 10/10: «chỉ anh nhận thôi, của người nào yêu cầu sửa thì nhận tin của người đó» — trước đó mọi admin nối
+    """Đại ca 10/10: "chỉ anh nhận thôi, của người nào yêu cầu sửa thì nhận tin của người đó" — trước đó mọi admin nối
     Telegram đều nhận bản sao thẻ việc sửa mã vì vai trò admin tự có quyền agent_ops."""
     from datetime import datetime, timedelta
 
@@ -9637,7 +9637,7 @@ def test_tin_van_hanh_chi_chu_bot_va_tin_viec_sao_cho_nguoi_yeu_cau(db, bot, see
     assert db.query(AgentMessage).filter_by(chat_id="666", action=service.ACT_OPS_COPY).count() == 1
     assert db.query(AgentMessage).filter_by(chat_id="555", action=service.ACT_OPS_COPY).count() == 0
     calls.clear()
-    #  Không sao: câu trả lời riêng, tin «em vẫn đang làm», tin gửi chat khác.
+    #  Không sao: câu trả lời riêng, tin "em vẫn đang làm", tin gửi chat khác.
     service.reply(db, "12345", "Giá vàng hôm nay …")
     service.reply(db, "12345", "AI-0001: em vẫn đang làm", task_id=task.id, action=service.ACT_HEARTBEAT)
     service.reply(db, "555", "trả lời riêng", task_id=task.id)
@@ -9646,7 +9646,7 @@ def test_tin_van_hanh_chi_chu_bot_va_tin_viec_sao_cho_nguoi_yeu_cau(db, bot, see
 
 # --- ai-CR-133: đọc + tóm tắt bài viết theo đường link ------------------------------------------------------------
 def test_doc_bai_viet_theo_link_lay_noi_dung_va_chan_dia_chi_noi_bo(monkeypatch):
-    """09/10 đại ca gửi link VnExpress / Facebook nhờ tóm tắt, bot trả lời «không có công cụ mở link»."""
+    """09/10 đại ca gửi link VnExpress / Facebook nhờ tóm tắt, bot trả lời "không có công cụ mở link"."""
     from app.modules.agent_hub import web_search as ws
 
     assert ws.find_urls("tóm tắt https://vnexpress.net/a-1.html, và (https://x.com/p/1).") == [
@@ -9715,7 +9715,7 @@ def test_tin_co_link_nho_tom_tat_thi_doc_bai_khong_thi_di_duong_cu(db, bot, monk
 
 
 def test_nho_tom_tat_ngay_sau_tin_chi_co_link(db, bot, monkeypatch):
-    """Đại ca gửi link (Telegram hiện xem trước) rồi mới nhắn «Tóm tắt link bài viết này giúp anh nhé»."""
+    """Đại ca gửi link (Telegram hiện xem trước) rồi mới nhắn "Tóm tắt link bài viết này giúp anh nhé"."""
     from app.modules.agent_hub.model import AgentMessage
 
     service, sent, asked = bot
@@ -9743,7 +9743,7 @@ def test_nho_tom_tat_ngay_sau_tin_chi_co_link(db, bot, monkeypatch):
 
 # --- ai-CR-134: TỆP qua link — PDF / Word / Excel, Google Drive / Docs, bài báo khoa học -----------------------------
 def test_link_toi_tep_tai_ve_va_doc_nhu_tep_gui_thang(monkeypatch):
-    """Đại ca 09/10: «đưa một file tài liệu qua link, hoặc bài báo khoa học, nhờ bot tổng hợp / nghiên cứu»."""
+    """Đại ca 09/10: "đưa một file tài liệu qua link, hoặc bài báo khoa học, nhờ bot tổng hợp / nghiên cứu"."""
     from app.modules.agent_hub import web_search as ws
 
     calls: list[str] = []
@@ -9801,10 +9801,10 @@ def test_tin_co_link_tep_thi_doc_ca_tep_theo_cau_hoi(db, bot, monkeypatch):
     assert "chưa chia sẻ công khai" in sent[-1]
 
 
-# --- ai-CR-135: «Zalo mất kết nối» chỉ báo một lần cho tới khi nối lại -------------------------------------------------
+# --- ai-CR-135: "Zalo mất kết nối" chỉ báo một lần cho tới khi nối lại -------------------------------------------------
 def test_zalo_mat_ket_noi_chi_bao_mot_lan_toi_khi_noi_lai(db, bot, monkeypatch):
-    """09/10: mỗi lần dựng lại stack, listener thử phiên cũ hỏng rồi lại báo «MẤT KẾT NỐI» (9:21, 9:31) — đại ca: «nhắc
-    một lần thôi, khi nào anh hỏi thì nhắc tiếp»."""
+    """09/10: mỗi lần dựng lại stack, listener thử phiên cũ hỏng rồi lại báo "MẤT KẾT NỐI" (9:21, 9:31) — đại ca: "nhắc
+    một lần thôi, khi nào anh hỏi thì nhắc tiếp"."""
     service, sent, _ = bot
     down = {"kind": "status", "state": "down", "reason": "phiên cũ không dùng được"}
     service._report_zalo_status(db, down)

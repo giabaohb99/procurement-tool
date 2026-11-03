@@ -11,7 +11,7 @@ Ghi chú cũ trong `version_model` nói cố ý cho sửa ("trả lại thì gõ
 đó chết từ D-029: phải TRẢ VỀ / RÚT PHIẾU rồi mới gõ tiếp.
 
 Cập nhật 24/08/2026 — ba nhịp kết thúc phiên duyệt nay đi ba đường khác nhau:
-trả về → «Trả về (9)» *sửa được*, từ chối → «Đã từ chối (10)» *khóa*, rút phiếu
+trả về → "Trả về (9)" *sửa được*, từ chối → "Đã từ chối (10)" *khóa*, rút phiếu
 → Nháp. Bài kiểm dưới đây canh đúng ranh giới đó.
 
 Bài kiểm gọi thẳng tầng dịch vụ, đúng như một người gọi thẳng API sẽ làm — ẩn
@@ -101,7 +101,7 @@ def test_gui_duyet_roi_thi_khong_doi_duoc_tieu_de_va_muc_mat(db, doc):
 def test_bi_tra_lai_thi_sua_tiep_duoc(db, doc):
     """Đường ra phải còn: trả về → gõ tiếp được. Không ai bị kẹt.
 
-    Từ 24/08/2026 nó về «Trả về (9)» chứ không về Nháp — nhưng CÁI PHẢI GIỮ là
+    Từ 24/08/2026 nó về "Trả về (9)" chứ không về Nháp — nhưng CÁI PHẢI GIỮ là
     ghi được nội dung và sửa được trường chung, đúng như hồi còn về Nháp.
     """
     service.submit(db, doc, ACTOR)
@@ -138,7 +138,7 @@ def test_bi_tu_choi_thi_khoa_han(db, doc):
 
 
 def test_da_duyet_van_bao_dung_cau_cu(db, doc):
-    """Bản đã duyệt vẫn phải nhận câu «mở phiên bản mới», không phải câu rút phiếu."""
+    """Bản đã duyệt vẫn phải nhận câu "mở phiên bản mới", không phải câu rút phiếu."""
     service.submit(db, doc, ACTOR)
     service.approve(db, doc, ACTOR)
 

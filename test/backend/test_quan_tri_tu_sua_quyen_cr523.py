@@ -98,7 +98,7 @@ def test_admin_may_edit_own_roles_and_scope(db, world):
 
 
 def test_admin_may_edit_matrix_of_a_role_they_hold(db, world):
-    """A giữ vai trò `employee` — trước CR-523 là 403 «Bạn đang giữ vai trò này»."""
+    """A giữ vai trò `employee` — trước CR-523 là 403 "Bạn đang giữ vai trò này"."""
     matrix = PermissionUpdate(permissions=[PermissionItem(entity="purchase_request",
                                                           can_read=True, can_write=True)])
     role_controller.set_permissions(world.employee_role.id, matrix, db=db, user=world.a)
@@ -124,7 +124,7 @@ def test_non_admin_still_cannot_edit_matrix_of_role_they_hold(db, world):
 
 def test_legacy_administrator_role_is_not_exempt(db, world):
     """Chỉ đúng mã `admin` được miễn. Vai trò đời cũ `ADMINISTRATOR` — hay một vai trò ai đó
-    đặt tên «Quản trị» — không được mở cửa L1."""
+    đặt tên "Quản trị" — không được mở cửa L1."""
     legacy = Role(code="ADMINISTRATOR", name="Quản trị hệ thống")
     db.add(legacy)
     db.flush()
@@ -182,7 +182,7 @@ def test_last_active_admin_cannot_drop_own_admin_even_with_flag(db, world):
 
 
 def test_last_admin_guard_fires_before_the_confirm_question(db, world):
-    """Đừng hỏi «Tiếp tục?» cho một việc đằng nào cũng bị từ chối."""
+    """Đừng hỏi "Tiếp tục?" cho một việc đằng nào cũng bị từ chối."""
     world.b.is_active = False
     db.commit()
     with pytest.raises(HTTPException) as err:
@@ -248,7 +248,7 @@ def test_admin_role_cannot_be_reduced(db, world, how):
 
 
 def test_non_admin_cannot_write_admin_role_even_full(db, world):
-    """Bản FULL thì qua chốt «không làm hụt», nhưng L2 chặn: N không có đủ quyền để cấp."""
+    """Bản FULL thì qua chốt "không làm hụt", nhưng L2 chặn: N không có đủ quyền để cấp."""
     with pytest.raises(HTTPException) as err:
         role_controller.set_permissions(world.admin_role.id,
                                         PermissionUpdate(permissions=_full_matrix()),

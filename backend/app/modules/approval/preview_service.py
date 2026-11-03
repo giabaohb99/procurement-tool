@@ -123,7 +123,7 @@ def _stage_step(db: Session, node, subject: dict, submitter_employee_id: int | N
                  strict: bool = False) -> dict:
     """Một chặng DUYỆT (đã loại CC) — áp đủ ba luật của `open_stage`.
 
-    `strict` = Cài đặt nhân sự «Chặn tự duyệt đơn nghỉ» (duoc-CR-713), cùng cờ `open_stage` dùng.
+    `strict` = Cài đặt nhân sự "Chặn tự duyệt đơn nghỉ" (duoc-CR-713), cùng cờ `open_stage` dùng.
     """
     step = {
         "seq": node.seq, "name": node.name or "", "rule_label": _rule_label(db, node),
@@ -260,7 +260,7 @@ def describe_step(db: Session, node, subject: dict, submitter_employee_id: int |
     approvers = approver_resolver.resolve(db, node, subject, submitter_employee_id)
     approvers = instance_service.exclude_submitter_ids(
         node.approver_kind, submitter_employee_id, approvers,
-        strict=strict_self_exclusion(entity))   # duoc-CR-713: trợ lý không nói «bạn tự duyệt bước X»
+        strict=strict_self_exclusion(entity))   # duoc-CR-713: trợ lý không nói "bạn tự duyệt bước X"
 
     rule = _rule_label(db, node)
     step = {

@@ -5,9 +5,9 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 
 /**
- * Lối tắt tới các danh mục của Nghỉ phép (duoc-CR-713) — chúng đã có màn quản lý riêng ở «Nghỉ phép ▸ Thiết lập», trang
- * Cài đặt chỉ dẫn đường cho người tìm «cấu hình nghỉ phép» ở một chỗ. Mỗi lối tắt chỉ hiện khi có quyền SỬA danh mục
- * đó (cùng luật `manage: true` của mục menu «Thiết lập»), kẻo bấm vào là màn 403.
+ * Lối tắt tới các danh mục của Nghỉ phép (duoc-CR-713) — chúng đã có màn quản lý riêng ở "Nghỉ phép ▸ Thiết lập", trang
+ * Cài đặt chỉ dẫn đường cho người tìm "cấu hình nghỉ phép" ở một chỗ. Mỗi lối tắt chỉ hiện khi có quyền SỬA danh mục
+ * đó (cùng luật `manage: true` của mục menu "Thiết lập"), kẻo bấm vào là màn 403.
  */
 export function HrSettingsLeaveShortcuts() {
   const { can } = usePermission()

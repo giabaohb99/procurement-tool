@@ -278,7 +278,7 @@ def test_p1_thu_mua_pham_vi_proc_nhat_moi_phieu_da_duyet_khong_ke_phap_nhan(worl
 
     Ca này chứng minh: a3 (hồ sơ pháp nhân A) nhặt được HAI phiếu đã duyệt của A (một do
     mình lập, một của người khác) VÀ phiếu đã duyệt của B. Muốn nhốt vào A thì khai
-    «Chỉ trong công ty» — xem `test_b1b_...` ở `test_pham_vi_cap_bac_ma_tran.py`.
+    "Chỉ trong công ty" — xem `test_b1b_...` ở `test_pham_vi_cap_bac_ma_tran.py`.
     """
     a3 = world.grant("a3", "purchase_request", scope="proc")
     seen = a3.sees(model_of("purchase_request"))
@@ -314,7 +314,7 @@ def test_p3_go_id_ycmh_ngoai_pham_vi_va_id_khong_ton_tai_cho_cung_mot_ket_qua(wo
     from app.modules.purchase_request import controller as pr_ctl
 
     #  Sau bao-CR-434 bậc `proc` trần nhặt cả phiếu của B, nên phải nhốt a3 vào A bằng
-    #  «Chỉ trong công ty» thì `pr_b_duyet` mới thật sự nằm NGOÀI phạm vi.
+    #  "Chỉ trong công ty" thì `pr_b_duyet` mới thật sự nằm NGOÀI phạm vi.
     a3 = world.grant("a3", "purchase_request", scope="proc", inc_company=["A"])
     assert docs["pr_a_duyet"] in a3.sees(model_of("purchase_request"))
     assert docs["pr_b_duyet"] not in a3.sees(model_of("purchase_request"))
@@ -433,8 +433,8 @@ def test_p7_cong_duyet_ycmh_di_dung_pham_vi_duyet(world, docs):
 def test_p7b_nguoi_chi_co_quyen_duyet_ma_khong_co_quyen_doc_van_duyet_duoc_phong_minh(world, docs):
     """Mặt kia của cùng một dòng mã — trước bản vá nó đóng chặt QUÁ.
 
-    `_in_approve_scope` cũ lọc theo `action="read"`; ai chỉ được tick ô «Duyệt» mà không
-    tick ô «Xem» thì `scope_condition` bỏ qua mọi grant (không grant nào có `read`) và trả
+    `_in_approve_scope` cũ lọc theo `action="read"`; ai chỉ được tick ô "Duyệt" mà không
+    tick ô "Xem" thì `scope_condition` bỏ qua mọi grant (không grant nào có `read`) và trả
     `false()` — cổng đóng với MỌI phiếu, kể cả phiếu phòng mình. Seed luôn cấp read kèm
     approve nên chuyện này không nổ ở chạy thật, nhưng màn Phân quyền cho tick riêng từng ô.
 
@@ -481,7 +481,7 @@ def test_p8_tu_choi_ycmh_kiem_pham_vi_duyet(world, docs):
 def test_p9_huy_ycmh_hoi_ca_quyen_lan_pham_vi(world, docs):
     """`POST /{pid}/cancel` — đã VÁ ngay trong `_ensure_can_return_or_reject`.
 
-    Nhánh «Quản lý» (quyền `cancel`) ĐI TẮT trước khi tới `_in_approve_scope`, nên trước
+    Nhánh "Quản lý" (quyền `cancel`) ĐI TẮT trước khi tới `_in_approve_scope`, nên trước
     bản vá cả hàm chỉ hỏi QUYỀN chứ không hỏi PHẠM VI — đọc lướt rất dễ tưởng ngược lại.
     Nay mỗi nhánh kiểm phạm vi của ĐÚNG hành động đã cho nó đi qua (`cancel` / `approve`),
     nên hàm vẫn trả **403** ("không có quyền trên phiếu này") chứ không phải 404.
@@ -877,7 +877,7 @@ def test_k3_pham_vi_own_cua_phieu_khao_sat_khong_co_chieu_phap_nhan(world, docs)
     """Ghim một GIỚI HẠN CỦA MÔ HÌNH DỮ LIỆU, không phải lỗ của `scoping.py`.
 
     `tab_survey` không có `company_id`, nên "người tạo" là chiều duy nhất còn lại. Hệ quả
-    dây chuyền: ô «Công ty được xem» trên màn Phân quyền không cắt được gì ở entity này
+    dây chuyền: ô "Công ty được xem" trên màn Phân quyền không cắt được gì ở entity này
     (cụm 01 B7), và bậc `company` thì chặn sạch (K1) — tức là phân hệ Khảo sát KHÔNG
     tách được theo pháp nhân bằng bất kỳ cách nào.
 
@@ -1096,7 +1096,7 @@ def test_d6_pham_vi_proc_cua_dmh_nhat_don_da_duyet_khong_ke_phap_nhan(world, doc
     """Nhánh `proc` của ĐMH khác YCMH: chỉ mở trạng thái `approved` (không có `dispatched`)
     và ghép thêm `_emp_match` theo `nspt_id` (CR-087 — khớp id, tên chỉ là đường lùi).
     Sau bao-CR-434 nhánh trạng thái không lọc pháp nhân: `po_b` vừa duyệt là a3 thấy ngay;
-    `po_b_nhap`/đơn chưa duyệt vẫn không lọt, và nhốt vào A thì phải khai «Chỉ trong công ty».
+    `po_b_nhap`/đơn chưa duyệt vẫn không lọt, và nhốt vào A thì phải khai "Chỉ trong công ty".
     """
     from app.modules.purchase_order.model import PurchaseOrder
 
@@ -1111,7 +1111,7 @@ def test_d6_pham_vi_proc_cua_dmh_nhat_don_da_duyet_khong_ke_phap_nhan(world, doc
     #  Gọi `grant` lần hai là THÊM vai trò (hợp OR), nên ca nhốt dùng người khác: a2 —
     #  cũng hồ sơ pháp nhân A, và `po_a_duyet` là đơn a2 lập nên vẫn thấy qua nhánh chủ.
     a2_only_a = world.grant("a2", "purchase_order", scope="proc", inc_company=["A"])
-    assert a2_only_a.sees(PurchaseOrder) == {docs["po_a_duyet"]}, "«Chỉ trong công ty» mới nhốt"
+    assert a2_only_a.sees(PurchaseOrder) == {docs["po_a_duyet"]}, "\"Chỉ trong công ty\" mới nhốt"
 
     world.db.get(PurchaseOrder, docs["po_b"]).nspt_id = world.emp["a2"]
     world.db.commit()
@@ -1278,7 +1278,7 @@ def test_c1_lich_su_mua_hang_che_ncc_o_backend_khi_thieu_quyen_supplier_read(wor
 # ══════════════════════════════════════════════════════════════════════════════
 #  R. BẢNG ROUTE — mỗi route GHI được vá đều có ca kiểm HAI CHIỀU
 #
-#  Vế «chặn người ngoài phạm vi» và vế «KHÔNG chặn nhầm người trong phạm vi»
+#  Vế "chặn người ngoài phạm vi" và vế "KHÔNG chặn nhầm người trong phạm vi"
 #  quan trọng ngang nhau: bản vá này làm HẸP tầm nhìn của người dùng thật, mà
 #  hẹp nhầm thì gãy nghiệp vụ Thu mua — phân hệ đông người dùng nhất. Viết thành
 #  bảng thay vì 45 hàm rời để thêm một route mới là thêm MỘT dòng, và để không
@@ -1355,7 +1355,7 @@ def test_p13_moi_route_ghi_ycmh_kiem_pham_vi_hai_chieu(world, docs, ten, scope, 
     from app.modules.purchase_request import controller as pr_ctl
 
     #  Bậc `proc` trần nhặt mọi phiếu đã duyệt kể cả của B (bao-CR-434), nên ca `dispatch`
-    #  phải nhốt a3 vào A bằng «Chỉ trong công ty» để YC_NGOAI thật sự ngoài phạm vi.
+    #  phải nhốt a3 vào A bằng "Chỉ trong công ty" để YC_NGOAI thật sự ngoài phạm vi.
     narrow = {"inc_company": ["A"]} if scope == "proc" else {}
     a3 = world.grant("a3", "purchase_request", scope=scope, actions=("read", action), **narrow)
     trong = create_request(world.db, code="YC_TRONG", company_id=world.co["A"],

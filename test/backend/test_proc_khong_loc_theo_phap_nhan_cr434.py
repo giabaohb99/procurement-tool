@@ -12,7 +12,7 @@ Luật mới (xem `_proc_status_cond` trong `app/core/scoping.py`):
 
   1. Hồ sơ đã gắn pháp nhân hay chưa đều KHÔNG ảnh hưởng — `proc` nhặt mọi phiếu ở trạng
      thái sau duyệt, bất kể pháp nhân trên phiếu.
-  2. Muốn nhốt một tài khoản vào một pháp nhân thì khai TẬN TAY ở ô «Chỉ trong công ty»
+  2. Muốn nhốt một tài khoản vào một pháp nhân thì khai TẬN TAY ở ô "Chỉ trong công ty"
      của hộp thoại Phạm vi (`_explicit_cond`, chiều `company`) — ca đó nằm ở
      `test_pham_vi_cap_bac_ma_tran.py::test_b1b_...`, vì cần dựng cả bảng `tab_user_scope`.
   3. Bậc `dept_proc` (bao-CR-414) cũng vậy: nhốt theo PHÒNG, không nhốt theo pháp nhân —

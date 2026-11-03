@@ -45,7 +45,7 @@
 
 **Trường chính:** `title` (tên gói) · Bảng `leave_policy_details` (loại nghỉ + số ngày)
 
-**Ví dụ:** Gói «Standard 2026» có: Phép năm 12 ngày + Ốm 5 ngày + Cưới 3 ngày.
+**Ví dụ:** Gói **Standard 2026** có: Phép năm 12 ngày + Ốm 5 ngày + Cưới 3 ngày.
 
 **Luộ:** Chỉ tạo/sửa bởi HR Manager. Nút _Create Leave Allocations_ ở form tạo Allocation cho tất cả nhân viên theo gói này.
 
@@ -59,7 +59,7 @@
 
 **Luồng:** Nháp → Submit → hệ thống tự tạo dòng Allocation cho từng loại có trong gói.
 
-**Liên kết:** `on_submit` → `leave_policy_assignment_tool.create_leave_allocations()`; xem `assignment.py`. Hoàn tác (amend): không xóa Allocation đã tạo (phân quyền người dùng). Nút «Create Allocations» tay ở màn danh sách để tạo lại nếu cần.
+**Liên kết:** `on_submit` → `leave_policy_assignment_tool.create_leave_allocations()`; xem `assignment.py`. Hoàn tác (amend): không xóa Allocation đã tạo (phân quyền người dùng). Nút **Create Allocations** tay ở màn danh sách để tạo lại nếu cần.
 
 ### Leave Allocation — Cấp quỹ phép
 
@@ -191,7 +191,7 @@ Nghỉ phép được tính toán dựa trên **công làm việc thật**, khô
 
 **Dùng để:** Định ca làm (sáng 8:00–12:00, chiều 13:00–17:00, hay ca đêm, ca 24h). Gán ca cho nhân viên.
 
-**Kết nối với Leave:** Lịch ca quy định «buổi nào là sáng» để hệ tính:
+**Kết nối với Leave:** Lịch ca quy định **buổi nào là sáng** để hệ tính:
 - Nghỉ buổi sáng = 0.5 ngày (không phải 1.0 ngày)
 - Có lịch ca đặc biệt (ca đêm) thì tính công khác biệt
 
@@ -276,14 +276,14 @@ DEGO đã chốt không làm chấm công/ca, nên **mục này chỉ để bi�
 |-----------|------------|-----------------|--------|
 | **Cấp phép năm** | Leave Allocation submit → tạo LLE | `leave_balance` (nhưng chưa LLE) | DEGO: số dư tính động, không lưu cột |
 | **Giữ chỗ (reserve)** | Không: chỉ kiểm balance khi submit | `pending_days` (bắt buộc) | DEGO: trừ ngay lúc gửi duyệt |
-| **Xin phép** | Leave Application → status Approved/Rejected | `tab_leave_request` (6 trạng thái) | DEGO: thêm «Trả về chỉnh sửa» |
+| **Xin phép** | Leave Application → status Approved/Rejected | `tab_leave_request` (6 trạng thái) | DEGO: thêm **Trả về chỉnh sửa** |
 | **Sổ cái** | Leave Ledger Entry (bảng tự động) | (không có, tính qua `remaining_days()`) | DEGO: tính thời gian thực từ app+pending+balance |
 | **Số dơi** | LLE.leaves = +Alloc, -App, -Expiry | app.used + pending + balance logic | DEGO: cộng 4 nhịp (reserve/consume/release/refund) |
 | **Duyệt nhiều tầng** | Workflow (approve flow không bắt buộc) | approval_instance + approval_switch | DEGO: bộ máy duyệt dùng chung + luồng riêng per công ty |
 | **Một đơn nhiều loại** | Không (một app = một loại) | `tab_leave_request_line` | DEGO: CR-683 thêm khả năng này |
 | **Nhiều khoảng ngày** | Không (một app = một khoảng [from, to]) | `tab_leave_request_period` | DEGO: CR-683 cho phép 1–20 khoảng |
 | **Tính ngày theo lịch làm việc** | `get_holiday_dates_for_employee()` + Holiday List | `workday_service.count_leave_days()` + lịch làm việc 4 cấp | DEGO: tính theo ca làm + T7/CN + lễ |
-| **Kết sổ năm** | Scheduler không, chặn vượt `maximum_carry_forwarded_leaves` | Nút «Kết sổ năm» tay ở màn Quỹ phép | DEGO: chạy lại được, vét lọt được, hỗ trợ 3 nước (mất/mang sang/quy đổi) |
+| **Kết sổ năm** | Scheduler không, chặn vượt `maximum_carry_forwarded_leaves` | Nút **Kết sổ năm** tay ở màn Quỹ phép | DEGO: chạy lại được, vét lọt được, hỗ trợ 3 nước (mất/mang sang/quy đổi) |
 | **Ứng phép** | `allow_negative` = cho phép (khác ứng thực sự) | Chặn hẳn khi gửi duyệt (QĐ-NP2) | DEGO: khác HRMS, không có nợ dài hạn |
 | **Đơn bắt buộc đính kèm** | Không có cơ chế | `tab_leave_request.require_attachment` + kiểm ở submit | DEGO: CR-661 thêm cơ chế gọng này |
 | **Hạn chế đã biết** | Chưa xử lý nhiều loại + khoảng đơn như DEGO | (Không có giới hạn, nhưng Frappe chưa làm) | DEGO: phải đi vào các chi tiết cụ thể |
@@ -294,7 +294,7 @@ DEGO đã chốt không làm chấm công/ca, nên **mục này chỉ để bi�
 
 1. **Khoảng ngày khe (CR-683 DEGO):** Frappe HRMS chưa có. DEGO dùng `tab_leave_request_period` với OUTER JOIN để tìm ngày thật nghỉ (bỏ ngày khe). Frappe chỉ theo [from_date, to_date] = cả khoảng.
 
-2. **Earning Leave Scheduler:** Frappe chạy hàng tháng/quý để tự cộng, DEGO không làm vì «hệ không có bộ chạy nền, mà nó hỏng thì tháng Ba mới phát hiện» (QĐ-NP4).
+2. **Earning Leave Scheduler:** Frappe chạy hàng tháng/quý để tự cộng, DEGO không làm vì **hệ không có bộ chạy nền, mà nó hỏng thì tháng Ba mới phát hiện** (QĐ-NP4).
 
 3. **Luồng duyệt:** Frappe có Workflow tùy chọn (không bắt buộc), DEGO có bộ máy duyệt bắt buộc + luồng + approval_switch.
 
@@ -308,5 +308,5 @@ DEGO đã chốt không làm chấm công/ca, nên **mục này chỉ để bi�
 
 - **Paid Leave Components:** Frappe `earning_component` trỏ tới Salary Component (lương), nhưng DEGO không liên kết với lương (bao-CR-688 là báo cáo quỹ lương, không ghi trữ). Chưa rõ Frappe triển khai Encashment như thế nào khi có bảng công + Salary Slip.
 - **Leave vs Attendance Sync:** Khi Leave Application approved ở Frappe, hệ có tạo Attendance nào không? Code `update_attendance()` chỉ là stub (empty). DEGO tạo tài liệu GNP, không biết có tạo Attendance hay không.
-- **Scope Mapping:** Bộ máy duyệt DEGO dùng `entity_context` và luật tìm người duyệt («Trưởng phòng nhân sự»), Frappe chỉ có `leave_approver` từ hồ sơ người. Chưa biết cách Frappe cấu hình luồng duyệt dành cho một company cụ thể (CA AGC case) như DEGO.
+- **Scope Mapping:** Bộ máy duyệt DEGO dùng `entity_context` và luật tìm người duyệt (**Trưởng phòng nhân sự**), Frappe chỉ có `leave_approver` từ hồ sơ người. Chưa biết cách Frappe cấu hình luồng duyệt dành cho một company cụ thể (CA AGC case) như DEGO.
 

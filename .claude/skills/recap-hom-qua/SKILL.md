@@ -26,7 +26,7 @@ Người chủ nói "tuần này", "từ thứ Hai", "3 ngày qua" thì tự quy
 
 ## 3. Viết bản recap
 
-Ngắn, tiếng Việt, không emoji, không « » (dùng in đậm / in nghiêng). Xưng hô theo phiên đang chạy (với người chủ: gọi "đại ca", xưng "em"). Bố cục:
+Ngắn, tiếng Việt, không emoji, không ngoặc kép góc (dùng in đậm / in nghiêng). Xưng hô theo phiên đang chạy (với người chủ: gọi "đại ca", xưng "em"). Bố cục:
 
 ```
 **Recap <từ ngày> → <tới ngày>** — <N> commit, <số người> người.

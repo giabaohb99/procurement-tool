@@ -207,7 +207,7 @@ def test_import_ncc_vat_kieu_float(db):
 
 # ── nhập bằng CSV (không chỉ xlsx) ────────────────────────────────────────────────
 def _csv_bytes(module: int, rows_by_attr: list[dict], sep: str = ";") -> bytes:
-    """Nội dung CSV đúng bộ cột adapter, kèm BOM — giống hệt Excel VN «Lưu thành CSV»."""
+    """Nội dung CSV đúng bộ cột adapter, kèm BOM — giống hệt Excel VN "Lưu thành CSV"."""
     fields = catalog_import.ADAPTERS[module]["fields"]
     lines = [sep.join(str(f["header"]) for f in fields)]
     for row in rows_by_attr:
@@ -229,7 +229,7 @@ def test_nhap_tu_file_csv_semicolon_va_bom(db):
 
 
 def test_csv_dau_phay_thap_phan_giu_nguyen_khi_phan_cach_bang_cham_phay(db):
-    # Excel VN xuất CSV bằng `;` chính vì `,` là dấu thập phân — VAT «0,1» phải
+    # Excel VN xuất CSV bằng `;` chính vì `,` là dấu thập phân — VAT "0,1" phải
     # nằm nguyên một ô rồi `_to_float` đổi thành 0.1, không bị cắt làm hai cột.
     from app.modules.import_tool import tasks
     wb = tasks._csv_to_workbook(
@@ -244,7 +244,7 @@ def test_csv_dau_phay_thap_phan_giu_nguyen_khi_phan_cach_bang_cham_phay(db):
 # ── kiểm tra file có đúng bảng không ──────────────────────────────────────────────
 def test_chon_nham_bang_thi_chan_va_khong_ghi_gi(db):
     # File mang tiêu đề của Công ty nhưng lại chọn nhập vào Danh mục kho.
-    # Thiếu cột bắt buộc «Tên kho» -> chặn ngay, không tạo bản ghi nào.
+    # Thiếu cột bắt buộc "Tên kho" -> chặn ngay, không tạo bản ghi nào.
     wb = _wb(ImportModule.COMPANY, [{"code": "C1", "name": "Cty 1"}])
     b = _batch(db, ImportModule.WAREHOUSE, ImportMode.APPLY)
     with pytest.raises(catalog_import.ImportValidationError):
@@ -268,7 +268,7 @@ def test_file_khuyet_cot_tuy_chon_van_nhap_binh_thuong(db):
 
 # ── ghi thật từ bản chạy thử ──────────────────────────────────────────────────────
 def test_ghi_that_tu_ban_chay_thu_dung_lai_dung_file(db):
-    # «Ghi thật» tạo batch APPLY MỚI trỏ về đúng file của bản chạy thử (không upload lại).
+    # "Ghi thật" tạo batch APPLY MỚI trỏ về đúng file của bản chạy thử (không upload lại).
     from app.modules.attachment.model import StoredFile
     sf = StoredFile(filename="x.xlsx", file_key="k", url="", content_type="", size=10,
                     created_by=1, updated_by=1)
@@ -330,7 +330,7 @@ def test_xoa_dong_bang_cot_hanh_dong_va_revert_tao_lai(db):
 
 
 def test_alias_nhan_cot_ngan_cua_file_export(db):
-    # File EXPORT dùng nhãn ngắn «Ngày QĐ (có sẵn)» / «Hoạt động» — vẫn khớp nhờ
+    # File EXPORT dùng nhãn ngắn "Ngày QĐ (có sẵn)" / "Hoạt động" — vẫn khớp nhờ
     # alias, không rơi mất std_days/std_days_unavail như lỗi round-trip đã gặp.
     wb = openpyxl.Workbook()
     ws = wb.active
