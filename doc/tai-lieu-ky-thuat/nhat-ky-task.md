@@ -119,6 +119,19 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 biến gán không dùng; thêm cấu hình ruff và lệnh kiểm vào cổng kiểm backend. Không đổi hành vi, không đụng ba phân hệ thu mua
 đang dọn ở đợt R2 và cụm nhân sự đang có người đẩy.
 Mã nguồn: backend/app (trừ purchase_request, survey_request, purchase_order, employee, leave, hr*)
+## bao-CR-711 | Làm gọn phần nhận yêu cầu (controller) của ba phân hệ thu mua
+- status: dang-lam
+- date: 2026-11-03
+- list: Sản xuất - Thu mua
+**Bối cảnh:** bản đánh giá chất lượng backend ghi nhận phần nhận yêu cầu của Yêu cầu mua hàng, Yêu cầu báo giá và Đơn mua
+hàng ôm khoảng 71 câu truy vấn cơ sở dữ liệu và hàm dựng kết quả dài, nên trợ lý AI, cổng MCP hay nhập Excel muốn dùng lại
+logic thì phải chép. Đây là đợt R2 của lộ trình dọn, được giao ngày 03/11.
+
+**Đã làm**
+- Đặt chỗ việc; đang dời truy vấn xuống lớp nghiệp vụ và dời hàm dựng kết quả sang tệp riêng, lần lượt từng phân hệ, không
+  đổi hành vi.
+
+Tham chiếu: `doc/tai-lieu-ky-thuat/danh-gia-chat-luong-backend.md` mục 2.4 và 5.
 
 ## bao-CR-703-may-chu | Sổ việc chạy ngầm (máy chủ) + công cụ hỏi bằng lời
 - status: xong
