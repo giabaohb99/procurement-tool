@@ -95,6 +95,9 @@ docker compose exec -T api pip install pytest
 docker compose exec -T api python -m pytest test/backend -q
 docker compose exec -T api python -m pytest test/backend/test_process.py -q   # single file
 
+# Cổng kiểm backend bằng ruff (bao-CR-710): phải 0 lỗi trước khi đẩy. Bộ luật + khu tạm loại ở backend/ruff.toml
+docker compose exec -T api sh -c "pip install -q ruff && python -m ruff check app"
+
 # E2E (Playwright, run on host; requires stack up + demo accounts)
 pytest test/e2e --headed -v
 
