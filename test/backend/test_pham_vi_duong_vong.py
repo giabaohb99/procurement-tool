@@ -345,6 +345,8 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_KHONG_CAN, "L172 `Department` — tên phòng, danh mục PUBLIC"),
         (OK_KHONG_CAN, "L175 `Company` — tên pháp nhân, danh mục PUBLIC"),
         (OK_KHONG_CAN, "L316 `LeaveType` — PUBLIC, dùng để ước tính số ngày"),
+        (OK_KHONG_CAN, "L368 `LeaveType` của `estimate_periods` (duoc-CR-683, ước tính số ngày từng "
+                       "khoảng) — cùng lý do dòng trên, danh mục PUBLIC"),
         (OK_KHONG_CAN, "L341 — dòng DOCSTRING của `_ensure_balance_in_scope` kể lại "
                        "rằng `resolve_leave_taker` là `db.get(Employee, ...)` trần; "
                        "chốt thật là `get_scoped(..., \"leave_balance\")` ngay dưới "
@@ -508,7 +510,9 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #  và `_scoped_request` (đi tiếp `get_scoped(Employee, "write")`).
     #  98 → 99 (duoc-CR-681): `vehicle_booking/controller.py` +1 — `_scoped_or_404` cho người duyệt CHỌN trên phiếu
     #    (cửa duyệt, chỉ khi `is_picked_legacy_approver` đúng).
-    assert sum(that.values()) == 99, f"tổng phải là 99, đang là {sum(that.values())}"
+    #  99 → 100 (duoc-CR-683, khai muộn ở bao-CR-709): `leave/request_controller.py` +1 — `estimate_periods` tra
+    #    loại nghỉ (danh mục PUBLIC) để biết có trừ ngày lễ không; người nghỉ đi qua `resolve_leave_taker`.
+    assert sum(that.values()) == 100, f"tổng phải là 100, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():
