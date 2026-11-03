@@ -30,7 +30,7 @@ from app.modules.company.model import Company
 from app.modules.employee.model import Employee
 
 from .model import ALIVE_STATUSES, Document
-from .scope_model import (DIM_COMPANY, DIM_DEPARTMENT, DIM_EMPLOYEE,
+from .scope_model import (DIM_DEPARTMENT, DIM_EMPLOYEE,
                           MODE_EXCLUDE, MODE_INCLUDE, DocumentScope)
 
 

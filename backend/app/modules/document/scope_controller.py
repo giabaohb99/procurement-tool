@@ -132,7 +132,7 @@ def add_scope(
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(400, "Dòng phạm vi này đã khai rồi")
+        raise HTTPException(400, "Dòng phạm vi này đã khai rồi") from None
     db.refresh(row)
     record(db, user.id, "document", doc.id, "update")
     return success(scope_service.serialize(db, row), "Đã thêm phạm vi áp dụng", 201)
