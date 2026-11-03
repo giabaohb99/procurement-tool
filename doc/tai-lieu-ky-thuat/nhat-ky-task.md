@@ -136,19 +136,39 @@ HDSD Phân quyền thêm một câu.
 Mã nguồn: backend/app/modules/role/controller.py, frontend-v2/src/modules/system/components/role-permission-matrix.tsx
 
 ## bao-CR-715-che-service-thu-mua | Chẻ tệp nghiệp vụ và tách hàm rối của ba phân hệ thu mua, đợt R3
-- status: dang-lam
+- status: xong
 - date: 2026-11-03
 - list: Sản xuất - Thu mua
 - tag: Nền tảng
-**Bối cảnh:** sau đợt R2 (bao-CR-711), tệp nghiệp vụ (service) của Yêu cầu mua hàng, Yêu cầu báo giá và Đơn mua hàng dày
-từ 1.364 đến 2.210 dòng, và còn nhiều hàm rất rối như hàm lưu dòng đơn mua hàng hay hàm sinh đơn mua hàng từ phương án.
-Đây là đợt R3 của lộ trình dọn, được giao ngày 03/11.
+**Bối cảnh:** sau đợt R2 (bao-CR-711), tệp nghiệp vụ (service) của Yêu cầu mua hàng, Yêu cầu báo giá và Đơn mua
+hàng dày từ 1.364 đến 2.210 dòng, và còn nhiều hàm rất rối như hàm lưu dòng đơn mua hàng hay hàm sinh đơn mua hàng từ
+phương án. Đây là đợt R3 của lộ trình dọn, được giao ngày 03/11.
 
-**Đang làm:** chẻ mỗi tệp nghiệp vụ theo bước của vòng đời chứng từ (tạo và sửa, duyệt, phân công, phương án, giao hàng...)
-để không tệp nào quá 1.000 dòng, rồi tách các hàm rối theo ba bước kiểm, tính, ghi. Hàm nào chưa có bài kiểm đủ thì viết bài
-kiểm chụp kết quả cũ trước khi tách. Không đổi hành vi: đường API, dữ liệu trả, câu báo lỗi và số câu truy vấn giữ nguyên.
+**Đã làm**
+- Chẻ tệp nghiệp vụ của mỗi phân hệ theo bước của vòng đời chứng từ: phần nền dùng chung, tạo và sửa, duyệt và điều
+  phối, đổi trạng thái và chuyển phòng, trạng thái dòng, phương án, lần giao hàng, chi phí thu mua, tiến độ, truy vấn
+  đọc. Yêu cầu mua hàng và Yêu cầu báo giá mỗi bên bảy tệp, Đơn mua hàng tám tệp.
+- Tệp cũ giữ lại làm **cửa** gọi sang các tệp mới, nên mọi nơi đang dùng (màn hình, trợ lý AI, cổng MCP, nhập Excel,
+  bài kiểm) không phải sửa gì.
+- Tách bốn hàm rối nhất theo ba bước kiểm, tính, ghi: lưu dòng đơn mua hàng, sinh đơn mua hàng theo phương án, dựng
+  dữ liệu chi tiết phiếu yêu cầu mua hàng, dựng dữ liệu một dòng đơn mua hàng.
+- Trước khi tách, viết **bài kiểm chụp kết quả** cho cả bốn hàm và cho chạy xanh trên mã cũ: so nguyên khối dữ liệu ghi
+  xuống, câu báo lỗi, thứ tự khóa và cả số câu truy vấn, nên tách sai một chỗ là bài kiểm đỏ.
+- **Không đổi hành vi:** đường API, dữ liệu trả, câu báo lỗi, thứ tự ghi và số câu truy vấn giữ nguyên.
 
-Tham chiếu: doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md mục 5 và 6
+**Kết quả:** đã nằm trên dev (nhánh erp-v2). Tệp lớn nhất của ba thư mục từ 2.210 dòng còn 973 dòng; bốn hàm từ hạng F
+hoặc E xuống hạng A hoặc B; số hàm rối (hạng D đến F) của ba phân hệ từ 32 còn 28. Hai lượt bài kiểm theo phân hệ
+(4.040 bài, rồi 3.855 bài sau khi tách hàm dựng dữ liệu) chỉ còn một bài đỏ sẵn có trên erp-v2 từ trước
+(bài canh độ dài ô chữ thiếu khai ba khuôn dữ liệu của hải quan và diễn đàn), không bài nào đỏ do đợt này.
+
+**Còn lại:** 28 hàm rối chưa tách, nặng nhất là phần chi phí thu mua, phân bổ chi phí và tính lại phiếu nhập kho, công
+nợ của Đơn mua hàng. Phần này đụng tiền nên đề xuất làm đợt riêng, mỗi hàm một bài kiểm chụp kết quả có số tiền.
+
+Mã nguồn: backend/app/modules/purchase_request, survey_request, purchase_order (các tệp *_service.py mới, service.py,
+option_service.py, serializer.py); test/backend/test_chup_ket_qua_luu_dong_sinh_don_cr715.py,
+test_chup_ket_qua_serializer_thu_mua_cr715.py
+Commit: a060cf09, 6de61ca1, 5f3bd03c, a0d86f18, fb9eb30c, 1a13c151
+Tham chiếu: doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md mục 6.2
 
 ## bao-CR-714-sua-bai-kiem-do-san-co | Sửa sáu bài kiểm đỏ sẵn có lộ ra khi chạy đủ bộ backend
 - status: xong
