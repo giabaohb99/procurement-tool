@@ -809,37 +809,13 @@ def notify_options_chosen(db: Session, pr: PurchaseRequest, actor_id: int) -> No
         recipient_ids=uids)
 
 
-def generate_purchase_orders(db: Session, pr: PurchaseRequest, user_id: int) -> dict:
-    """H.10.6 — "Tạo đơn mua hàng theo phương án": gom PHƯƠNG ÁN ĐANG CHỌN của từng
-    dòng theo NCC -> mỗi NCC một đơn NHÁP; các dòng mà phương án chọn CHƯA có NCC
-    gom thành MỘT đơn nháp không NCC (cổng CR-095 chỉ chặn lúc GỬI DUYỆT đơn,
-    lập nháp không cần NCC — đơn đó là danh sách việc "đi tìm NCC" của thu mua).
+def _group_chosen_lines(items: list[PurchaseRequestItem], chosen: dict) -> tuple[dict[str, dict], dict]:
+    """Bước KIỂM + GOM của `generate_purchase_orders`: lọc dòng tạo được đơn, gom theo NCC.
 
-    Nhân khuôn `survey_request.create_prs` nhưng KHÔNG tự dựng bản ghi: đi qua
-    `purchase_order.create_po` để thừa kế trọn side-effect của đường lập đơn tay
-    (sinh mã PO, NSPT mặc định theo NSTM của dòng, chép ngày dự kiến từ dòng YCMH,
-    đồng bộ tiến độ dòng CR-074, nhật ký). `create_po` commit theo TỪNG đơn —
-    cùng khuôn YCBG; payload tự dựng từ dữ liệu đã kiểm nên không có nhánh lỗi
-    giữa chừng nào được trông đợi.
-
-    Chống bấm hai lần KHÔNG bỏ chốt phương án (khác YCBG: bên đó option là công cụ
-    của thu mua, bên này là QUYẾT ĐỊNH của người yêu cầu — bỏ chốt là xóa quyết
-    định đó): dựa vào `line_status` — dòng đã nằm trên một ĐMH (kể cả Nháp, CR-074
-    đổi trạng thái ngay lúc lập) thì bỏ qua, bấm lại chỉ tạo cho phần dòng còn lại.
-
-    Giá dòng = `snap_price_by_volume`; VAT = `snap_vat`, trống rơi về `vat_pct`
-    của dòng (CR-058). Cam kết giao hàng của phương án chép vào ghi chú dòng đơn.
-    """
-    from datetime import datetime
-
-    from app.modules.purchase_order import service as po_service
-    from app.modules.purchase_order.schema import POCreate, POItemIn
+    Trả `(groups, skipped)`: `groups` khóa theo mã NCC (NCC ngoài danh mục: `name:<tên>`, chưa có NCC:
+    khóa rỗng), mỗi nhóm `{"code", "name", "rows": [(dòng, phương án)]}`; `skipped` đếm dòng bỏ qua theo
+    lý do. Không truy vấn gì — chỉ đọc dữ liệu đã nạp."""
     from app.modules.purchase_request import service as pr_service
-    from app.modules.supplier.model import Supplier
-
-    items = items_of(db, pr)
-    ensure_option_zero(db, pr, items)   # sinh bù cho phiếu điều phối trước tính năng
-    chosen = chosen_map(db, [i.id for i in items])
 
     skipped = {"no_chosen": 0, "already_ordered": 0, "cancelled": 0, "no_code": 0}
     groups: dict[str, dict] = {}
@@ -871,64 +847,122 @@ def generate_purchase_orders(db: Session, pr: PurchaseRequest, user_id: int) -> 
         if not group["name"] and name:
             group["name"] = name
         group["rows"].append((i, opt))
+    return groups, skipped
 
-    if not groups:
-        if skipped["no_code"]:
-            raise HTTPException(400, f"Còn {skipped['no_code']} dòng đã chốt phương án nhưng chưa có "
-                                     "mã VTBB — nhân sự thu mua gắn mã ở chi tiết dòng rồi mới tạo đơn.")
-        raise HTTPException(400, "Không còn dòng nào tạo được đơn: các dòng hoặc chưa "
-                                 "chốt phương án, hoặc đã nằm trên đơn mua hàng rồi.")
+
+def _raise_if_nothing_to_order(groups: dict, skipped: dict) -> None:
+    """Không còn nhóm nào thì báo lỗi — dòng thiếu mã VTBB được nói riêng để NSTM biết việc phải làm."""
+    if groups:
+        return
+    if skipped["no_code"]:
+        raise HTTPException(400, f"Còn {skipped['no_code']} dòng đã chốt phương án nhưng chưa có "
+                                 "mã VTBB — nhân sự thu mua gắn mã ở chi tiết dòng rồi mới tạo đơn.")
+    raise HTTPException(400, "Không còn dòng nào tạo được đơn: các dòng hoặc chưa "
+                             "chốt phương án, hoặc đã nằm trên đơn mua hàng rồi.")
+
+
+def _option_delivery_note(opt: PurchaseRequestItemOption) -> str:
+    """Cam kết giao hàng của phương án, chép vào ghi chú dòng đơn ("Cam kết giao: ...; Nơi giao: ...")."""
+    note_parts = [p for p in [
+        f"Cam kết giao: {(opt.snap_delivery_time or '').strip()}"
+        if (opt.snap_delivery_time or "").strip() else "",
+        f"Nơi giao: {(opt.snap_delivery_place or '').strip()}"
+        if (opt.snap_delivery_place or "").strip() else "",
+    ] if p]
+    return "; ".join(note_parts)
+
+
+def _po_line_from_option(i: PurchaseRequestItem, opt: PurchaseRequestItemOption):
+    """Bước TÍNH: một dòng đơn (`POItemIn`) từ dòng YCMH + phương án đã chốt của nó."""
+    from app.modules.purchase_order.schema import POItemIn
+
+    # CR-058: VAT của phương án theo sang đơn; phương án không khai thì
+    # rơi về VAT của dòng yêu cầu, đừng để 0% âm thầm.
+    vat = float(opt.snap_vat or 0) or float(i.vat_pct or 0)
+    return POItemIn(
+        product_code=(i.product_code or "").strip(),
+        product_name=i.product_name or "",
+        item_group=i.item_group or "",
+        unit=(opt.snap_quote_unit or i.unit or ""),
+        qty_request=float(i.qty or 0),
+        qty_order=float(i.qty or 0),
+        price=float(opt.snap_price_by_volume or 0),
+        vat=vat,
+        required_date=i.required_date or "",
+        expected_date=i.expected_date or "",
+        note=_option_delivery_note(opt),
+    )
+
+
+def _create_po_for_group(db: Session, pr: PurchaseRequest, group: dict, order_date: str, user_id: int) -> dict:
+    """Bước GHI: lập MỘT đơn nháp cho một nhóm NCC qua `purchase_order.create_po` (commit theo từng đơn).
+
+    Tra NCC trong danh mục để lấy tên chuẩn (một truy vấn mỗi nhóm, như cũ); NCC ngoài danh mục giữ tên
+    gõ trên phương án. Trả bản tóm tắt đơn cho kết quả API."""
+    from app.modules.purchase_order import service as po_service
+    from app.modules.purchase_order.schema import POCreate
+    from app.modules.supplier.model import Supplier
+
+    sup = (db.query(Supplier).filter(Supplier.code == group["code"]).first()
+           if group["code"] else None)
+    sup_name = (sup.name if sup else "") or group["name"]
+    note = f"Sinh tự động từ Yêu cầu mua hàng {pr.code} theo phương án đã chốt."
+    if not group["code"] and not sup_name:
+        note += " Chưa có nhà cung cấp — bổ sung trước khi gửi duyệt."
+    po_items = [_po_line_from_option(i, opt) for i, opt in group["rows"]]
+    po = po_service.create_po(db, POCreate(
+        pr_code=pr.code,
+        company_id=pr.company_id or 0,
+        supplier_code=group["code"],
+        supplier_name=sup_name,
+        department=pr.department or "",
+        department_id=pr.department_id or 0,
+        order_date=order_date,
+        vat_rate=float(pr.vat_rate or 0) or 0.08,
+        is_urgent=bool(pr.is_urgent),
+        note=note,
+        items=po_items,
+    ), user_id)
+    return {"id": po.id, "code": po.code, "supplier_code": po.supplier_code,
+            "supplier_name": po.supplier_name, "line_count": len(po_items)}
+
+
+def generate_purchase_orders(db: Session, pr: PurchaseRequest, user_id: int) -> dict:
+    """H.10.6 — "Tạo đơn mua hàng theo phương án": gom PHƯƠNG ÁN ĐANG CHỌN của từng
+    dòng theo NCC -> mỗi NCC một đơn NHÁP; các dòng mà phương án chọn CHƯA có NCC
+    gom thành MỘT đơn nháp không NCC (cổng CR-095 chỉ chặn lúc GỬI DUYỆT đơn,
+    lập nháp không cần NCC — đơn đó là danh sách việc "đi tìm NCC" của thu mua).
+
+    Nhân khuôn `survey_request.create_prs` nhưng KHÔNG tự dựng bản ghi: đi qua
+    `purchase_order.create_po` để thừa kế trọn side-effect của đường lập đơn tay
+    (sinh mã PO, NSPT mặc định theo NSTM của dòng, chép ngày dự kiến từ dòng YCMH,
+    đồng bộ tiến độ dòng CR-074, nhật ký). `create_po` commit theo TỪNG đơn —
+    cùng khuôn YCBG; payload tự dựng từ dữ liệu đã kiểm nên không có nhánh lỗi
+    giữa chừng nào được trông đợi.
+
+    Chống bấm hai lần KHÔNG bỏ chốt phương án (khác YCBG: bên đó option là công cụ
+    của thu mua, bên này là QUYẾT ĐỊNH của người yêu cầu — bỏ chốt là xóa quyết
+    định đó): dựa vào `line_status` — dòng đã nằm trên một ĐMH (kể cả Nháp, CR-074
+    đổi trạng thái ngay lúc lập) thì bỏ qua, bấm lại chỉ tạo cho phần dòng còn lại.
+
+    Giá dòng = `snap_price_by_volume`; VAT = `snap_vat`, trống rơi về `vat_pct`
+    của dòng (CR-058). Cam kết giao hàng của phương án chép vào ghi chú dòng đơn.
+    """
+    # bao-CR-715: tách theo bước kiểm + gom (`_group_chosen_lines`) -> tính dòng đơn (`_po_line_from_option`)
+    # -> ghi từng đơn (`_create_po_for_group`). Thứ tự truy vấn và câu lỗi giữ nguyên.
+    from datetime import datetime
+
+    items = items_of(db, pr)
+    ensure_option_zero(db, pr, items)   # sinh bù cho phiếu điều phối trước tính năng
+    chosen = chosen_map(db, [i.id for i in items])
+
+    groups, skipped = _group_chosen_lines(items, chosen)
+    _raise_if_nothing_to_order(groups, skipped)
 
     today = datetime.now().strftime("%Y-%m-%d")
-    created = []
     # Nhóm không NCC xếp CUỐI: đơn "đi tìm NCC" đứng sau các đơn đã đủ thông tin.
-    for key in sorted(groups, key=lambda k: (k == "", k)):
-        group = groups[key]
-        sup = (db.query(Supplier).filter(Supplier.code == group["code"]).first()
-               if group["code"] else None)
-        sup_name = (sup.name if sup else "") or group["name"]
-        note = f"Sinh tự động từ Yêu cầu mua hàng {pr.code} theo phương án đã chốt."
-        if not group["code"] and not sup_name:
-            note += " Chưa có nhà cung cấp — bổ sung trước khi gửi duyệt."
-        po_items = []
-        for i, opt in group["rows"]:
-            # CR-058: VAT của phương án theo sang đơn; phương án không khai thì
-            # rơi về VAT của dòng yêu cầu, đừng để 0% âm thầm.
-            vat = float(opt.snap_vat or 0) or float(i.vat_pct or 0)
-            note_parts = [p for p in [
-                f"Cam kết giao: {(opt.snap_delivery_time or '').strip()}"
-                if (opt.snap_delivery_time or "").strip() else "",
-                f"Nơi giao: {(opt.snap_delivery_place or '').strip()}"
-                if (opt.snap_delivery_place or "").strip() else "",
-            ] if p]
-            po_items.append(POItemIn(
-                product_code=(i.product_code or "").strip(),
-                product_name=i.product_name or "",
-                item_group=i.item_group or "",
-                unit=(opt.snap_quote_unit or i.unit or ""),
-                qty_request=float(i.qty or 0),
-                qty_order=float(i.qty or 0),
-                price=float(opt.snap_price_by_volume or 0),
-                vat=vat,
-                required_date=i.required_date or "",
-                expected_date=i.expected_date or "",
-                note="; ".join(note_parts),
-            ))
-        po = po_service.create_po(db, POCreate(
-            pr_code=pr.code,
-            company_id=pr.company_id or 0,
-            supplier_code=group["code"],
-            supplier_name=sup_name,
-            department=pr.department or "",
-            department_id=pr.department_id or 0,
-            order_date=today,
-            vat_rate=float(pr.vat_rate or 0) or 0.08,
-            is_urgent=bool(pr.is_urgent),
-            note=note,
-            items=po_items,
-        ), user_id)
-        created.append({"id": po.id, "code": po.code, "supplier_code": po.supplier_code,
-                        "supplier_name": po.supplier_name, "line_count": len(po_items)})
+    created = [_create_po_for_group(db, pr, groups[key], today, user_id)
+               for key in sorted(groups, key=lambda k: (k == "", k))]
 
     #  "options_gen_orders" chứ không phải "options_generate_orders": cột
     #  tab_audit_log.action là String(20), tên đầy đủ 23 ký tự làm MySQL nổ 1406

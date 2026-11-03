@@ -130,6 +130,29 @@ xong, màn tải từng tệp, tự dọn tệp sau số ngày giữ. Có thay �
 Mã nguồn: `backend/app/modules/customs/` (`service.py`, `search_service.py`, `read_cache.py`), migration `hqx718`, `doc/erp/hai-quan/plans/261103-tim-nhanh-xuat-lo-bao-cr-718/`.
 
 ---
+## bao-CR-717-chan-trung-dong-ton-kho | Chặn trùng dòng tồn kho khi hai lượt ghi cùng lúc
+- status: dang-lam
+- date: 2026-11-03
+- tag: Nền tảng
+**Bối cảnh:** tài liệu phi chức năng của Kho ghi bảng tồn kho chưa có ràng buộc duy nhất theo công ty, kho, mã hàng, nên hai lượt
+lưu đơn mua hàng hay nhận hàng cùng lúc có thể sinh hai dòng tồn cho cùng một mặt hàng. Soát prod ngày 03/11: 381 dòng, không có
+nhóm trùng, nên thêm được ràng buộc.
+**Việc:** migration thêm ràng buộc duy nhất (kiểm trùng trước, có trùng thì dừng kèm câu báo rõ, không tự gộp); chỗ ghi tồn xử lý
+đụng ràng buộc khi chạy đồng thời; bài kiểm mô phỏng hai lượt cùng mã; cập nhật tài liệu phi chức năng của Kho. Có migration nên chỉ
+lên dev, prod chờ xác nhận.
+Mã nguồn: backend/app/modules/inventory, backend/alembic, doc/erp/kho/chuc-nang/02-yeu-cau-phi-chuc-nang.md
+
+## bao-CR-716-khoa-pham-vi-danh-muc-dung-chung | Khóa ô phạm vi cho danh mục dùng chung ở màn Phân quyền
+- status: dang-lam
+- date: 2026-11-03
+- tag: Nền tảng
+**Bối cảnh:** vai trò Nhân sự được tick Xem nhà cung cấp với phạm vi Của mình nhưng nhà cung cấp là danh mục dùng chung (khai
+công khai trong bảng phạm vi), nên người giữ vai trò thấy toàn bộ nhà cung cấp. Màn Phân quyền cho chọn phạm vi ở đó như
+thể có tác dụng, gây hiểu nhầm.
+**Việc:** backend trả danh sách thực thể công khai trong API có sẵn của màn Phân quyền; màn Vai trò và quyền khóa ô phạm vi của
+những dòng đó, hiện Toàn bộ (danh mục dùng chung) kèm giải thích, khi lưu vẫn gửi phạm vi như cũ; bài kiểm backend và vitest;
+HDSD Phân quyền thêm một câu.
+Mã nguồn: backend/app/modules/role/controller.py, frontend-v2/src/modules/system/components/role-permission-matrix.tsx
 
 ## bao-CR-715-che-service-thu-mua | Chẻ tệp nghiệp vụ và tách hàm rối của ba phân hệ thu mua, đợt R3
 - status: dang-lam

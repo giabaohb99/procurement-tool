@@ -88,29 +88,30 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
         "submitted", "approved", "cancelled", "paid"),
     #  ĐMH có nhiều mã nhất: bốn mã do người bấm, ba mã do `_recalc_status` tự
     #  đặt lại theo số lượng đã nhận, cộng `draft` của đường hủy duyệt.
-    "modules/purchase_order/service.py::set_status": (
+    "modules/purchase_order/edit_service.py::set_status": (
         "submitted", "approved", "cancelled", "rejected", "completed",
         "draft", "received", "partial"),
     "modules/purchase_request/option_service.py::choose_option": (
         "option_choose", "option_unchoose"),
-    "modules/purchase_request/service.py::set_status": ("submitted", "approved", "rejected"),
+    "modules/purchase_request/lifecycle_service.py::set_status": ("submitted", "approved", "rejected"),
     #  bao-CR-485/497: bấm Điều phối ghi `dispatched`; duyệt xong tự điều phối (bỏ qua bước
     #  Điều phối) thì ghi dưới `approved` — controller truyền `audit_action="approved"`.
-    "modules/purchase_request/service.py::dispatch_pr": ("dispatched", "approved"),
+    "modules/purchase_request/dispatch_service.py::dispatch_pr": ("dispatched", "approved"),
     #  bao-CR-414: về 0 là trả về thu mua, khác 0 là chuyển sang phòng khác.
-    "modules/purchase_request/service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
-    "modules/survey_request/service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
+    #  bao-CR-715: ba phân hệ thu mua chẻ `service.py` theo bước nghiệp vụ — khóa trỏ tệp con định nghĩa hàm.
+    "modules/purchase_request/lifecycle_service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
+    "modules/survey_request/lifecycle_service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
     #  bao-CR-453: chốt lên giai đoạn nào thì ghi mã của giai đoạn đó.
-    "modules/purchase_order/service.py::advance_cost_stage": ("cost_stage_prov", "cost_stage_final"),
+    "modules/purchase_order/import_cost_service.py::advance_cost_stage": ("cost_stage_prov", "cost_stage_final"),
     #  bao-CR-448: việc nền báo bất thường, `action` là hằng của module.
     "modules/system_log/anomaly.py::raise_alert": ("anomaly_alert",),
     "modules/seal_request/approval_bridge.py::_write_log": ("approve", "cancel", "update"),
     "modules/survey/service.py::set_status": (
         "submitted", "approved", "rejected", "cancelled"),
-    "modules/survey_request/service.py::set_status": (
+    "modules/survey_request/lifecycle_service.py::set_status": (
         "submitted", "approved", "processing", "rejected", "cancelled",
         "done", "survey_done"),
-    "modules/survey_request/service.py::choose_option": ("choose_option", "unchoose_option"),
+    "modules/survey_request/option_service.py::choose_option": ("choose_option", "unchoose_option"),
     #  HĐLĐ: `_audit(db, user, row, action, message)` nhận mã qua tham số — ba mã đọc từ các lời gọi tới nó.
     "modules/labor_contract/controller.py::_audit": ("create", "update", "document_status"),
     "modules/ticket/service.py::assign": ("assign", "unassign"),
