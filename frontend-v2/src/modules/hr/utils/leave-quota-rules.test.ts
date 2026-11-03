@@ -13,7 +13,7 @@ const ET = LEAVE_QUOTA_BASIS.EMPLOYMENT_TYPE
 const JL = LEAVE_QUOTA_BASIS.JOB_LEVEL
 
 describe('leave-quota-rules', () => {
-  it('bỏ mã 0 «chưa khai» khỏi ô chọn', () => {
+  it('bỏ mã 0 "chưa khai" khỏi ô chọn', () => {
     expect(quotaValueOptions(ET).every((o) => o.value > 0)).toBe(true)
     expect(quotaValueOptions(JL).map((o) => o.label)).toContain('Trưởng phòng')
   })

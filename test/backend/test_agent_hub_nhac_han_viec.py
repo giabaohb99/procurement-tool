@@ -164,7 +164,7 @@ def test_tat_doi_gio_va_nhac_ngay_bang_cau_nhan(db, seed, env, monkeypatch):
     assert say("nhắc hạn việc lúc 7h15") and wd.state(db, uid)["enabled"] is True
     assert wd.state(db, uid)["hour"] == 7 and wd.state(db, uid)["minute"] == 15 and "07:15" in replies[-1]
     assert say("nhắc hạn việc") and "đang bật" in replies[-1]
-    #  «nhắc hạn việc hôm nay»: gửi ngay, bỏ qua dấu đã nhắc, không ghi dấu mới.
+    #  "nhắc hạn việc hôm nay": gửi ngay, bỏ qua dấu đã nhắc, không ghi dấu mới.
     assert say("nhắc hạn việc hôm nay") and len(sent) == 1 and "Việc Dự án" in sent[0][1]
     from app.modules.agent_hub.constants import ACT_WORK_DUE
     from app.modules.agent_hub.model import AgentMessage

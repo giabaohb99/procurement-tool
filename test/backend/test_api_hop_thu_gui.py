@@ -160,7 +160,7 @@ def test_dia_chi_luon_ve_chu_thuong(db, align):
 # ── 3 · Ngừng dùng, và lọc ─────────────────────────────────────────────────
 
 def test_ngung_dung_chu_KHONG_xoa_han(db, align):
-    """Nhật ký thư cũ còn trỏ vào đây — câu «thư đó gửi danh nghĩa ai» phải trả
+    """Nhật ký thư cũ còn trỏ vào đây — câu "thư đó gửi danh nghĩa ai" phải trả
     lời được mãi về sau."""
     create = _doc(mb_ctl.create_mailbox(_payload(), db=db, user=align["user"]))
 

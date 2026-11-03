@@ -1,4 +1,4 @@
-"""bao-CR-490 — «Trưởng phòng phê duyệt» + hai người ký chọn được trên bản in nội bộ.
+"""bao-CR-490 — "Trưởng phòng phê duyệt" + hai người ký chọn được trên bản in nội bộ.
 
 Đại ca chốt 25/09/2026: ba chứng từ YCMH · YCBG · ĐMH có cột `approver_employee_id` = NHÂN SỰ
 thực bấm Duyệt ở chặng trưởng phòng; bản in nội bộ cho chọn ô ký hiện người duyệt hay trưởng
@@ -138,5 +138,5 @@ def test_po_approve_stamps_and_unapprove_clears(db, seed, dept_with_head):
 
     po_ctl.unapprove_po(po.id, RejectIn(reason="sai giá"), db=db, user=USER)
     db.refresh(po)
-    #  bao-CR-499: hủy duyệt KHÔNG xóa cột nữa — nó đồng thời là «người được chọn» cho lần gửi sau.
+    #  bao-CR-499: hủy duyệt KHÔNG xóa cột nữa — nó đồng thời là "người được chọn" cho lần gửi sau.
     assert po.approver_employee_id == db.get(User, USER.id).employee_id

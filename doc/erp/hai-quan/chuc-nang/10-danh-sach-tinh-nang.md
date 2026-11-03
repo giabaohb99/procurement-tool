@@ -12,7 +12,7 @@
 | N — nền + nạp | N-01…N-08 đủ. 5 tệp mẫu đã nạp: **18.243 dòng**, 7.651 dòng vá ngày, 3.503 đối tượng (nhà nhập khẩu + đối tác) | Q2, Q6 vẫn mở |
 | T — tra cứu | T-01…T-06 đủ, cả bản cũ lẫn bản mới | — |
 | B — biểu đồ | B-01…B-05 đủ | Q4 (dữ liệu các năm trước) vẫn mở — B-03 vẫn phải cảnh báo "một năm" |
-| A — trợ lý AI | A-01…A-03: hai tool `customs_price_stats` + `customs_buy_timing` (ToolSpec, gác `customs_price.read`); **A-05…A-08 (bao-CR-481):** so sánh, `customs_market`, `customs_legal_check`, đánh giá «có nên mua lúc này» | A-04: bài «Tra cứu giá hải quan» dưới nhóm *Dành cho Nhân viên Mua hàng*, dựng bằng `scripts/seed_help_customs_prices.py` — **mới chạy ở local**, CẤM tự chạy ở prod |
+| A — trợ lý AI | A-01…A-03: hai tool `customs_price_stats` + `customs_buy_timing` (ToolSpec, gác `customs_price.read`); **A-05…A-08 (bao-CR-481):** so sánh, `customs_market`, `customs_legal_check`, đánh giá **có nên mua lúc này** | A-04: bài **Tra cứu giá hải quan** dưới nhóm *Dành cho Nhân viên Mua hàng*, dựng bằng `scripts/seed_help_customs_prices.py` — **mới chạy ở local**, CẤM tự chạy ở prod |
 | P — pháp lý | P-01 (dạng danh mục có sẵn ngưỡng — xem đính chính ở §7), P-03, P-04, cảnh báo theo từ khóa đang tra | **P-02 (so tồn kho với ngưỡng) chưa làm** — cần cầu nối vật tư ↔ hoạt chất, đại ca để sau |
 
 Nhận ra hoạt chất: **9.223 / 18.243 dòng (51%)**, hàm lượng / dạng **93%**. Phần không nhận ra phần lớn là hóa chất khử trùng / tẩy rửa, không có hoạt chất BVTV để nối.
@@ -49,12 +49,12 @@ Tổng: **24 tính năng**, trong đó **13 thuộc đợt đầu**.
 | N-01 | Bảng tờ khai | Một dòng = một dòng hàng trên tờ khai. 32 cột nguồn, giữ **cả giá khai báo lẫn giá điều chỉnh**, cả nguyên tệ lẫn tỷ giá. Khối lượng dự kiến ~18.000 dòng mỗi lần kết xuất, nạp định kỳ → phải có chỉ mục theo **mã HS · tháng · tên hàng** ngay từ đầu | 1 | [ ] |
 | N-02 | Nạp bằng Excel | Màn nạp đọc đúng khuôn tệp GTT02 trong `thongtinhaiquan/data/`. **Đọc được `.xls` đời cũ (OLE2/BIFF)** — 5 tệp mẫu đều là định dạng này, `openpyxl` KHÔNG đọc được, phải thêm `xlrd` vào `requirements.txt` | 1 | [~] khuôn `import_tool` |
 | N-03 | **Vá ngày tháng bị đảo** | ⚠️ Cột *Ngày đăng ký* trong tệp mẫu **lẫn hai kiểu và 42% số dòng SAI**: 10.592 dòng là chữ `DD-MM-YYYY` (đúng), 7.651 dòng là số ngày Excel với **ngày và tháng bị hoán đổi**. Bằng chứng khớp tuyệt đối: ô kiểu chữ chỉ chứa ngày 13–31, ô kiểu số suy ra "ngày" chỉ 1–9 — hễ ngày ≤ 12 thì Excel đọc nhầm thành tháng. Hệ quả nhìn thấy được: tệp kết xuất ngày 18/09/2026 mà dữ liệu thô hiện tới **09/12/2026**, ba tháng trong tương lai. **Luật nạp: ô kiểu số thì phải đảo lại ngày/tháng; ô kiểu chữ thì đọc thẳng `DD-MM-YYYY`.** Không vá thì biểu đồ giá theo tháng sai 42% mà không một dòng lỗi nào hiện ra. ⚠️ **Chỉ vá cột Ngày đăng ký** — cột *Ngày hợp đồng* là ô ngày thật, KHÔNG bị đảo (10.855 ô có ngày > 12); vá nhầm cột đó là làm hỏng 39% số ngày hợp đồng đang đúng. Chi tiết ở [`02`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §4.2 | 1 | [ ] |
-| N-04 | **Không có khóa duy nhất — nạp theo LÔ** | ⚠️ Dữ liệu **không có số tờ khai**, nên không dựng được khóa duy nhất: so đủ cả 32 cột vẫn còn **806 dòng trùng khít**, và khóa tốt nhất thử được (`ngày + mã DN + tên hàng + số thứ tự + lượng + giá`) vẫn còn 1.297 dòng đụng nhau. Nghĩa là **không dùng được kiểu «có rồi thì cập nhật, chưa có thì tạo»** — nạp chồng hai tệp giao nhau là nhân đôi dữ liệu. Chốt: mỗi lần nạp là **một LÔ** có mã riêng, ghi rõ khoảng ngày lô đó phủ; nạp lô mới trùng khoảng ngày thì **xóa sạch khoảng đó rồi nạp lại**, không trộn. **Một lô = một tệp**, chọn được cả bộ tệp một lần — GTT02 cắt mỗi lần xuất thành từng khối hai tháng (bộ mẫu: 5 tệp nối khít nhau, không chồng ngày). Nguy cơ sót một tệp thì xử bằng **dải tháng đã phủ** trên màn hình, tháng trống hiện rõ ([`04`](11-giao-dien.md)) | 1 | [ ] |
+| N-04 | **Không có khóa duy nhất — nạp theo LÔ** | ⚠️ Dữ liệu **không có số tờ khai**, nên không dựng được khóa duy nhất: so đủ cả 32 cột vẫn còn **806 dòng trùng khít**, và khóa tốt nhất thử được (`ngày + mã DN + tên hàng + số thứ tự + lượng + giá`) vẫn còn 1.297 dòng đụng nhau. Nghĩa là **không dùng được kiểu "có rồi thì cập nhật, chưa có thì tạo"** — nạp chồng hai tệp giao nhau là nhân đôi dữ liệu. Chốt: mỗi lần nạp là **một LÔ** có mã riêng, ghi rõ khoảng ngày lô đó phủ; nạp lô mới trùng khoảng ngày thì **xóa sạch khoảng đó rồi nạp lại**, không trộn. **Một lô = một tệp**, chọn được cả bộ tệp một lần — GTT02 cắt mỗi lần xuất thành từng khối hai tháng (bộ mẫu: 5 tệp nối khít nhau, không chồng ngày). Nguy cơ sót một tệp thì xử bằng **dải tháng đã phủ** trên màn hình, tháng trống hiện rõ ([`04`](11-giao-dien.md)) | 1 | [ ] |
 | N-05 | **Quy về một đơn vị và một đồng tiền** | ⚠️ 29 loại đơn vị tính (KGM 10.962 · LTR 2.891 · PCE 1.616 · UNK 909 · …) và 5 đồng tiền (USD 85% · VND · EUR · JPY · GBP). So giá giữa các dòng mà không quy đổi là so táo với cam. **Tiền: dùng thẳng cột giá USD có sẵn** — hải quan đã quy đổi hộ theo tỷ giá tại ngày khai, không phải tự nhân lại. **Đơn vị: KHÔNG quy đổi**, tách riêng theo từng đơn vị (kg và lít chiếm 76%); chỉ `TNE → KGM` là đổi chắc chắn, còn cái/bộ/đơn vị thì không đổi sang kg được | 1 | [ ] |
 | N-06 | Chọn giá nào là "giá" | **58% số dòng có đơn giá ĐIỀU CHỈNH** khác giá khai báo — đó là giá hải quan áp lại. Bản đầu: **ưu tiên giá điều chỉnh, không có thì lấy giá khai báo**, và màn hình nói rõ đang xem giá nào | 1 | [ ] |
 | N-07 | Khóa phân quyền `customs_price` | Một khóa mới (kèm `customs_regulation` cho danh mục pháp lý ở P-01 — tổng **hai khóa**, `test_pham_vi_khai_du_b07.py` 66 → 68), khai `PUBLIC` trong `SCOPE_FIELDS` — đây là dữ liệu thị trường bên ngoài, **không thuộc phòng ban hay pháp nhân nào** nên không lọc phạm vi. **Thiếu khai scope là suite đỏ** (`test_pham_vi_khai_du_b07.py`). Quyền `write` chỉ cho người được nạp dữ liệu | 1 | [~] |
 | N-08 | Nhật ký lô đã nạp | Ai nạp · lúc nào · tệp gì · bao nhiêu dòng · bao nhiêu dòng bị vá ngày · khoảng ngày phủ. **Dùng lại nguyên `tab_import_batch` + `tab_import_log` + chế độ chạy thử `DRY_RUN`** của mô-đun `import_tool` (thêm `ImportModule.CUSTOMS_DECLARATION = 3`), bản mới hiện luôn ở màn `/system/imports` sẵn có. Xem [`02`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §3.1 | 1 | [x] `import_tool` |
-| N-09 | Cột tùy chọn trên tệp nạp | **bao-CR-603 (06/10/2026).** Ngoài 32 cột GTT02, tệp nạp được thêm bốn cột tùy chọn **Hoạt chất · Hàm lượng / dạng · Đơn giá quy đổi VND (thuế NK 7%) · Đơn giá quy đổi VND (theo thuế suất XNK)**, và cột **Nước nhận hàng** không còn bắt buộc. Luật: **ô có giá trị thì lấy của tệp; ô trống hoặc thiếu cột thì hoạt chất / hàm lượng suy ra từ tên hàng (HQ4) và giá VND tính như Y-01** — nạp như cũ. Giá trị lấy từ tệp mang cờ `*_from_file` nên nút «Gắn lại hoạt chất» không ghi đè; bốn cột **không vào mã băm chống trùng** (N-04 / bao-CR-541). Tiêu đề nhận nhiều cách ghi (kể cả «Hoạt chất (suy ra)» của Excel xuất trước đó), và Excel xuất từ màn này nạp lại được (bộ đọc nhận ngày `YYYY-MM-DD`, phương tiện vận chuyển dạng nhãn) | 2 | [x] |
+| N-09 | Cột tùy chọn trên tệp nạp | **bao-CR-603 (06/10/2026).** Ngoài 32 cột GTT02, tệp nạp được thêm bốn cột tùy chọn **Hoạt chất · Hàm lượng / dạng · Đơn giá quy đổi VND (thuế NK 7%) · Đơn giá quy đổi VND (theo thuế suất XNK)**, và cột **Nước nhận hàng** không còn bắt buộc. Luật: **ô có giá trị thì lấy của tệp; ô trống hoặc thiếu cột thì hoạt chất / hàm lượng suy ra từ tên hàng (HQ4) và giá VND tính như Y-01** — nạp như cũ. Giá trị lấy từ tệp mang cờ `*_from_file` nên nút **Gắn lại hoạt chất** không ghi đè; bốn cột **không vào mã băm chống trùng** (N-04 / bao-CR-541). Tiêu đề nhận nhiều cách ghi (kể cả **Hoạt chất (suy ra)** của Excel xuất trước đó), và Excel xuất từ màn này nạp lại được (bộ đọc nhận ngày `YYYY-MM-DD`, phương tiện vận chuyển dạng nhãn) | 2 | [x] |
 
 ## 4. Nhóm T — Tra cứu
 
@@ -92,7 +92,7 @@ Tổng: **24 tính năng**, trong đó **13 thuộc đợt đầu**.
 | A-05 | So sánh qua trợ lý | `customs_price_stats` nhận thêm `compare_keywords` (1–4 mặt hàng) → so trên CÙNG một đơn vị với mặt hàng chính (bao-CR-481) | 2 | [x] |
 | A-06 | Tool thị trường `customs_market` | Ai nhập (gộp theo MST, thị phần), mua của đối tác nào, từ nước nào, 5 lô gần nhất — chỉ trong một đơn vị tính (bao-CR-481) | 2 | [x] |
 | A-07 | Tool pháp lý `customs_legal_check` | Tra danh mục hóa chất theo tên / CAS / công thức (nặng nhất lên đầu) + biểu thuế theo mã HS. **Không có mức phạt trong dữ liệu — trợ lý cấm tự nêu**; không thấy trong danh mục thì không được kết luận là được phép (bao-CR-481) | 2 | [x] |
-| A-08 | ⚠️ «Có nên mua lúc này không» | `customs_buy_timing` trả thêm phần `now`: giá tháng gần nhất thấp / trung bình / cao so với tứ phân vị các tháng ĐỦ dữ liệu, xu hướng 3 tháng (chỉ tháng đủ dữ liệu), dữ liệu cũ quá 45 ngày thì gắn cờ; tháng gần nhất ít lô thì kèm `reference_month`. Trợ lý kết luận dạng «dữ liệu giá nghiêng về …» và **bắt buộc** nói không biết tồn kho / nhu cầu / hạn dùng / dòng tiền (bao-CR-481) | 2 | [x] |
+| A-08 | ⚠️ **Có nên mua lúc này không** | `customs_buy_timing` trả thêm phần `now`: giá tháng gần nhất thấp / trung bình / cao so với tứ phân vị các tháng ĐỦ dữ liệu, xu hướng 3 tháng (chỉ tháng đủ dữ liệu), dữ liệu cũ quá 45 ngày thì gắn cờ; tháng gần nhất ít lô thì kèm `reference_month`. Trợ lý kết luận dạng **dữ liệu giá nghiêng về …** và **bắt buộc** nói không biết tồn kho / nhu cầu / hạn dùng / dòng tiền (bao-CR-481) | 2 | [x] |
 
 ## 7. Nhóm P — Pháp lý và ngưỡng theo nghị định (đợt cuối)
 
@@ -139,7 +139,7 @@ Tổng: **24 tính năng**, trong đó **13 thuộc đợt đầu**.
 
 ## 11. Nhóm Y — Yêu cầu phòng Thu mua 25/09/2026 (FR-PROC-2026-001, chị Mi)
 
-> Tệp «YÊU CẦU TÍNH NĂNG TRA CỨU GIÁ HS CODE-NOTE 250926.xlsx» (22/09, ghi chú 25/09) đối chiếu với bản
+> Tệp **YÊU CẦU TÍNH NĂNG TRA CỨU GIÁ HS CODE-NOTE 250926.xlsx** (22/09, ghi chú 25/09) đối chiếu với bản
 > đang chạy trên dev 25/09/2026. Đại ca chốt cùng ngày: hai cột VND (7% tạm tính + theo thuế suất dòng);
 > bỏ hẳn nút Giá trên biểu đồ; không cần số tờ khai (log từng dòng có Thêm mới / Lỗi / Bỏ qua); lưu bộ lọc
 > riêng từng người nhưng có sẵn cờ dùng chung; Excel định dạng và in báo giá chờ mẫu chị Mi.
@@ -147,23 +147,23 @@ Tổng: **24 tính năng**, trong đó **13 thuộc đợt đầu**.
 
 | Mã | Yêu cầu gốc | Nội dung làm | CR | Ai làm | Có sẵn |
 |---|---|---|---|---|---|
-| Y-01 | Sheet 3 cột 15 | Hai cột «Đơn giá quy đổi VND»: giá hiệu lực × tỷ giá USD × 1,07 (thuế NK 7% tạm tính) và × (1 + thuế suất XNK của dòng); có ở bảng, chi tiết dòng, Excel | bao-CR-493 | ERP Agent 2 | [x] |
-| Y-02 | Đề xuất đại ca 2.1 | Bỏ hẳn nút «Giá: điều chỉnh / khai báo» trên biểu đồ — luôn vẽ giá điều chỉnh | bao-CR-493 | ERP Agent 2 | [x] |
+| Y-01 | Sheet 3 cột 15 | Hai cột **Đơn giá quy đổi VND**: giá hiệu lực × tỷ giá USD × 1,07 (thuế NK 7% tạm tính) và × (1 + thuế suất XNK của dòng); có ở bảng, chi tiết dòng, Excel | bao-CR-493 | ERP Agent 2 | [x] |
+| Y-02 | Đề xuất đại ca 2.1 | Bỏ hẳn nút **Giá: điều chỉnh / khai báo** trên biểu đồ — luôn vẽ giá điều chỉnh | bao-CR-493 | ERP Agent 2 | [x] |
 | Y-03 | Đề xuất đại ca 2.2 | Kỳ (tháng / quý / năm) và Đơn vị gom vào MỘT thẻ | bao-CR-493 | ERP Agent 2 | [x] |
 | Y-04 | Đề xuất đại ca 1 | Tải lại tệp GTT02 đã nạp (chỉ lô nạp qua màn hình có tệp gốc; lô nạp bằng script không có) | bao-CR-493 | ERP Agent 2 | [x] |
 | Y-05 | F11 | Lịch sử nạp thành THẺ trên trang thay hộp thoại | bao-CR-493 | ERP Agent 2 | [x] |
 | Y-06 | Sheet 4 mục 4–5 | Doanh nghiệp nhập / đối tác chọn NHIỀU (chip cộng dồn, id nối dấu phẩy) | bao-CR-493 | ERP Agent 2 | [x] |
-| Y-07 | Sheet 4 mục 6–13 | Hàng «Lọc thêm»: nguyên tệ, điều kiện giao hàng, tệp nguồn (lô nạp), khoảng đơn giá (giá hiệu lực), khoảng lượng, khoảng tỷ giá USD | bao-CR-493 | ERP Agent 2 | [x] |
-| Y-08 | F04 | Nhãn tự động Thành phẩm / Nguyên liệu (TC, TECH, TG, «kỹ thuật», «nguyên liệu»; không khớp = Thành phẩm), cột + lọc theo nhãn, bảng từ khóa admin sửa được | bao-CR-494 | Erp Agent 1 | [x] |
-| Y-09 | F02 | Tìm «Có các từ» / «Không có từ» (AND / NOT) trên tên hàng | bao-CR-495 | Erp Agent 1 | [x] |
+| Y-07 | Sheet 4 mục 6–13 | Hàng **Lọc thêm**: nguyên tệ, điều kiện giao hàng, tệp nguồn (lô nạp), khoảng đơn giá (giá hiệu lực), khoảng lượng, khoảng tỷ giá USD | bao-CR-493 | ERP Agent 2 | [x] |
+| Y-08 | F04 | Nhãn tự động Thành phẩm / Nguyên liệu (TC, TECH, TG, **kỹ thuật**, **nguyên liệu**; không khớp = Thành phẩm), cột + lọc theo nhãn, bảng từ khóa admin sửa được | bao-CR-494 | Erp Agent 1 | [x] |
+| Y-09 | F02 | Tìm **Có các từ** / **Không có từ** (AND / NOT) trên tên hàng | bao-CR-495 | Erp Agent 1 | [x] |
 | Y-10 | F02 | Quy đổi cách viết nồng độ theo luật mặc định (3,6% ≡ 3.6EC ≡ 36 G/L); ngoại lệ chị Mi bổ sung sau | bao-CR-495 | Erp Agent 1 | [x] |
 | Y-11 | F02 ghi chú 25/09 | Màn từ đồng nghĩa người dùng tự thêm cặp, nạp mồi từ bảng bí danh sẵn có | bao-CR-495 | Erp Agent 1 | [x] |
 | Y-12 | F07 | Lưu bộ lọc RIÊNG từng người (đặt tên, chọn lại một phát); bảng có sẵn cột dùng chung, mặc định tắt | bao-CR-496 | ERP Agent 2 | [x] |
-| Y-13 | F01 ghi chú 25/09 | Log từng dòng khi nạp: Thêm mới / Lỗi / Bỏ qua vì trùng trong lô (không có «Cập nhật» vì dữ liệu không có số tờ khai) | bao-CR-496 | ERP Agent 2 | [x] |
+| Y-13 | F01 ghi chú 25/09 | Log từng dòng khi nạp: Thêm mới / Lỗi / Bỏ qua vì trùng trong lô (không có **Cập nhật** vì dữ liệu không có số tờ khai) | bao-CR-496 | ERP Agent 2 | [x] |
 | Y-14 | F06 | Excel theo mẫu công ty: tiêu đề, header màu, wrap, dd/mm/yyyy, phân cách hàng nghìn, tách sheet theo nhóm | NỢ — chờ tệp mẫu chị Mi | — | [ ] |
 | Y-15 | F09 | Trang tra cứu giá: in báo giá, xuất PDF | NỢ — chờ mẫu in chị Mi | — | [ ] |
-| Y-16 | F08 | Biểu đồ theo TUẦN (yêu cầu ghi «tuần hoặc tháng») | chưa cấp số — hỏi lại có cần không | — | [ ] |
-| Y-17 | Đại ca 07/10/2026 | Cột ID trên bảng Giá thị trường + Excel xuất (cột đầu); tệp nạp có cột «ID» thì ghi đè đúng dòng, cột «Thao tác» = xóa thì xóa dòng; sửa / xóa từng dòng trên màn (v1 + v2); hoàn tác lô trả lại dòng đã ghi đè / xóa từ bản chụp | bao-CR-608 | Trợ lý AI (Bảo) | [x] |
+| Y-16 | F08 | Biểu đồ theo TUẦN (yêu cầu ghi **tuần hoặc tháng**) | chưa cấp số — hỏi lại có cần không | — | [ ] |
+| Y-17 | Đại ca 07/10/2026 | Cột ID trên bảng Giá thị trường + Excel xuất (cột đầu); tệp nạp có cột **ID** thì ghi đè đúng dòng, cột **Thao tác** = xóa thì xóa dòng; sửa / xóa từng dòng trên màn (v1 + v2); hoàn tác lô trả lại dòng đã ghi đè / xóa từ bản chụp | bao-CR-608 | Trợ lý AI (Bảo) | [x] |
 
 > Cập nhật 28/09/2026: Y-08…Y-13 đã lên dev ở cả v1 lẫn v2. Bảng đối chiếu đầy đủ với tệp yêu cầu nằm ở
 > [`06-doi-chieu-yeu-cau-fr-proc-2026-001.md`](../nghien-cuu/06-doi-chieu-yeu-cau-fr-proc-2026-001.md).

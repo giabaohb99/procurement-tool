@@ -1,6 +1,6 @@
 """duoc-CR-640 — bản lưu trữ HĐLĐ SỬA ĐƯỢC bởi người có `labor_contract.write` phủ HĐ (không ai khác).
 
-Cho phép: sửa thông tin, nội dung/phiên bản, tải/gỡ tệp «mềm», thư mục. Vẫn chặn (409): chia sẻ, sao chép, clone, trích,
+Cho phép: sửa thông tin, nội dung/phiên bản, tải/gỡ tệp "mềm", thư mục. Vẫn chặn (409): chia sẻ, sao chép, clone, trích,
 quan hệ, phạm vi áp dụng, gửi duyệt / duyệt / ký / ban hành / cấp số, bãi bỏ, đổi loại, vào sổ. Đồng bộ KHÔNG đụng tệp người
 dùng tải lên; bản sao do đồng bộ tạo thì theo phiên bản hiện hành.
 """
@@ -223,7 +223,7 @@ def test_nguoi_dung_xoa_ban_sao_dong_bo_thi_lan_sau_them_lai(ctx):
 
 
 def test_ban_sao_cu_chua_co_dau_van_nhan_ra_nho_thu_muc_luu(ctx):
-    """Bản sao tạo trước CR-640 (doc_type rỗng) vẫn là bản sao đồng bộ — gỡ khi HĐ đổi, không thành «tệp người dùng»."""
+    """Bản sao tạo trước CR-640 (doc_type rỗng) vẫn là bản sao đồng bộ — gỡ khi HĐ đổi, không thành "tệp người dùng"."""
     d, db, cid = ctx["doc"], ctx["db"], ctx["cid"]
     link = db.query(FileLink).filter(FileLink.entity == ATTACH_ENTITY, FileLink.doc_type == SYNC_MARK).one()
     link.doc_type = ""
@@ -245,7 +245,7 @@ def test_van_khong_vao_chi_muc_va_tim_kiem(ctx):
 
 
 def test_nguoi_ghi_chuyen_ban_luu_tru_sang_soan_thao(ctx):
-    """Nút «Chuyển sang soạn thảo» gọi PATCH content_mode — phải chạy được với người ghi HĐLĐ."""
+    """Nút "Chuyển sang soạn thảo" gọi PATCH content_mode — phải chạy được với người ghi HĐLĐ."""
     hr, d, db = ctx["c"]["a1"], ctx["doc"], ctx["db"]
     assert hr.patch(f"/api/documents/{d.id}", json={"content_mode": 1}).status_code == 200
     db.expire_all()

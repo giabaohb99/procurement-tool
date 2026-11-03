@@ -26,7 +26,7 @@ export interface OrgChartForest {
 }
 
 export interface OrgChartForestFilter {
-  /** `null` = mọi pháp nhân; `0` = nhóm «Chưa gán pháp nhân». */
+  /** `null` = mọi pháp nhân; `0` = nhóm "Chưa gán pháp nhân". */
   companyId: number | null
   /** Phòng đã chọn CỘNG mọi phòng con; `null` = mọi phòng. */
   departmentIds: ReadonlySet<number> | null
@@ -65,9 +65,9 @@ export function buildOrgChartForest(
     })
   }
 
-  //  Pháp nhân không có trong danh sách trả về (0 / ngoài tầm nhìn) gom vào nhóm «Chưa gán» = 0.
+  //  Pháp nhân không có trong danh sách trả về (0 / ngoài tầm nhìn) gom vào nhóm "Chưa gán" = 0.
   const companyOf = (companyId: number) => (knownCompanies.has(companyId) ? companyId : 0)
-  //  Phòng không có trong danh sách (0 / đã xóa / ngoài tầm nhìn) lọc chung dưới khóa 0 «Chưa gắn phòng ban».
+  //  Phòng không có trong danh sách (0 / đã xóa / ngoài tầm nhìn) lọc chung dưới khóa 0 "Chưa gắn phòng ban".
   const departmentOf = (departmentId: number) => (deptName.has(departmentId) ? departmentId : 0)
   const visible = payload.employees.filter(
     (employee) =>
@@ -117,7 +117,7 @@ export function getOrgChartManagerPath(forest: OrgChartForest, id: number): numb
 }
 
 /**
- * Phòng `rootId` cộng mọi phòng con cháu (theo `parent`). `0` = nhóm «Chưa gắn phòng ban», không có con.
+ * Phòng `rootId` cộng mọi phòng con cháu (theo `parent`). `0` = nhóm "Chưa gắn phòng ban", không có con.
  * Có tập `seen` nên vòng `parent` trong dữ liệu không làm treo.
  */
 export function collectOrgDepartmentIds(
@@ -139,7 +139,7 @@ export function collectOrgDepartmentIds(
   return result
 }
 
-/** Mọi người có cấp dưới trong phần đang vẽ — cho nút «Mở hết». */
+/** Mọi người có cấp dưới trong phần đang vẽ — cho nút "Mở hết". */
 export function listOrgChartManagers(forest: OrgChartForest): number[] {
   return [...forest.visibleIds].filter((id) => (forest.people.get(id)?.reportIds.length ?? 0) > 0)
 }

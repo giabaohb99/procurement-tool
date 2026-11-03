@@ -113,7 +113,7 @@ export function EmployeeTabGeneral({
       <FormSection title="Thông tin cá nhân" columns={3}>
         {/* Ngày sinh nằm trong nhóm nhạy cảm → cảnh báo ngay đầu khối. */}
         {/*  `col-span-full`: thiếu nó thì dải cảnh báo chiếm MỘT ô lưới, đẩy lệch mọi ô phía sau
-             (lưới 3 cột thủng một lỗ sau Ngày sinh, ô giữ chỗ «Số con» mất tác dụng). */}
+             (lưới 3 cột thủng một lỗ sau Ngày sinh, ô giữ chỗ "Số con" mất tác dụng). */}
         {!canReadSensitive && (
           <div className="col-span-full">
             <SensitiveFieldsNotice />
@@ -380,7 +380,7 @@ export function EmployeeTabGeneral({
         />
       </FormSection>
 
-      {/*  Nhóm «Vào làm & nghỉ việc» tách khỏi «Công việc» theo ERPNext (tab Joining /
+      {/*  Nhóm "Vào làm & nghỉ việc" tách khỏi "Công việc" theo ERPNext (tab Joining /
              Exit): bốn ô này quyết định thâm niên, phép cộng thêm và việc KHÓA tài khoản. */}
       <FormSection title="Vào làm & nghỉ việc" columns={3}>
         <FormField

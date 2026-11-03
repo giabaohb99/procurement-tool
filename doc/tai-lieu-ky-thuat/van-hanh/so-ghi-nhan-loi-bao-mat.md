@@ -1546,7 +1546,7 @@ chứ không riêng `IMAGE_EXTS` — hằng số đó đã bị xóa, luật nay
 | **BM-029** | `test_zip_khong_co_duong_dan_di_len` | Dựng `StoredFile.filename = "../../evil.pdf"`, gọi `/chain/zip`, đọc `namelist()` của tệp nén → **không mục nào** chứa `..` |
 | **BM-030** | `test_ten_tep_qua_dai_tra_422` | Tên **300 ký tự** → **422**, không phải 500. ⚠️ Kiểm ở **tầng chặn**, đừng ghi xuống DB rồi khẳng định — SQLite không ép `VARCHAR`, xem bẫy ngay dưới |
 | **BM-031** | `test_upload_file_doi_quyen_voi_comment` | Tài khoản không quyền gì gọi `/upload-file` với `entity=comment` → phải bị chặn |
-| **bao-CR-435** (cửa ghi mới, không phải BM) | `test_assistant_account_setup_tool.py` (22 ca) | Thiếu một trong ba khóa → `denied`; tự sửa mình → L1; vai trò mang quyền người hỏi không có → L2 (cả lúc đề xuất lẫn lúc xác nhận, kể cả khi vai trò được tick thêm quyền SAU lúc đề xuất); tài khoản ngoài phạm vi → "không tìm thấy"; token người khác / token loại `confirm-update` → 403; hết hạn / rác → 400; chạy lại → mọi dòng «không đổi», không ghi gì |
+| **bao-CR-435** (cửa ghi mới, không phải BM) | `test_assistant_account_setup_tool.py` (22 ca) | Thiếu một trong ba khóa → `denied`; tự sửa mình → L1; vai trò mang quyền người hỏi không có → L2 (cả lúc đề xuất lẫn lúc xác nhận, kể cả khi vai trò được tick thêm quyền SAU lúc đề xuất); tài khoản ngoài phạm vi → "không tìm thấy"; token người khác / token loại `confirm-update` → 403; hết hạn / rác → 400; chạy lại → mọi dòng **không đổi**, không ghi gì |
 
 ⚠️ **Bẫy đã biết, đừng dẫm lại:** `test/backend` chạy **SQLite**, mà SQLite **không** ép độ dài
 `VARCHAR` và không có nhiều ràng buộc của MySQL — bài kiểm nào ghi xuống DB rồi khẳng định là

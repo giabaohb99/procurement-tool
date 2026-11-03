@@ -1,4 +1,4 @@
-# Phase 01 — D0a: Sự kiện «Bấm chức năng» (`UI_ACTION`)
+# Phase 01 — D0a: Sự kiện "Bấm chức năng" (`UI_ACTION`)
 
 ## Context links
 - `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §5 (UI_ACTION, mã cố định, không chữ gõ)
@@ -14,7 +14,7 @@
 - Wire hiện tại không có chỗ cho mã nút; `meta` JSON chỉ dành CLIENT_ERROR → thêm **trường số** `action` (không dùng meta: R2 + truy vấn được).
 - `DataTable` không có sẵn xuất/in/sao chép; các nút đó nằm ở trang. Chỗ gắn chung được: menu cột, sắp xếp, phân trang,
   làm mới, nút xóa lọc (`data-table/`), áp/xóa bộ lọc (`conditional-filter/`), `ReportExportButton`, `BulkDeleteButton`, nút tạo mới `CrudListPage`.
-- **Không có duyệt hàng loạt** trong code hiện nay → KHÔNG cấp mã trước (mã có trong danh mục mà không gắn sẽ hiện «không ai dùng» sai ở báo cáo D0c). Cấp khi tính năng ra đời.
+- **Không có duyệt hàng loạt** trong code hiện nay → KHÔNG cấp mã trước (mã có trong danh mục mà không gắn sẽ hiện **không ai dùng** sai ở báo cáo D0c). Cấp khi tính năng ra đời.
 - `daily_ui.ui_columns` bỏ qua loại lạ (chuỗi `elif`) → thêm loại 8 không làm hỏng gom ngày hiện tại.
 - Công tắc `usage_tracking_enabled` đang TẮT trên prod từ 20/10 (doc 22 §6) → dữ liệu chỉ có khi đại ca bật sau khi thông báo nhân viên.
 
@@ -28,18 +28,18 @@
 
 | Khối | Mã (tên IntEnum = nhãn) |
 |---|---|
-| 1–19 Bảng | 1 COLUMN_TOGGLE «Ẩn/hiện cột» · 2 COLUMN_PIN «Ghim cột» · 3 COLUMN_COLOR «Tô màu cột» · 4 LAYOUT_RESET «Khôi phục bố cục» · 5 SORT_CHANGE «Sắp xếp» · 6 PAGE_CHANGE «Chuyển trang» · 7 PAGE_SIZE_CHANGE «Đổi số dòng/trang» · 8 REFRESH «Làm mới» · 9 SELECT_ALL_PAGE «Chọn cả trang» |
-| 20–39 Lọc | 20 FILTER_APPLY «Áp bộ lọc» · 21 FILTER_RESET «Xóa bộ lọc» · 22 FILTER_ROW_ADD «Thêm điều kiện lọc» · 23 QUICK_FILTER «Lọc nhanh» |
-| 100–119 Xuất/In | 100 EXPORT_EXCEL «Xuất Excel» · 101 PRINT «In» · 102 REPORT_EXPORT «Xuất báo cáo» |
-| 200–219 Phiếu/dòng | 200 COPY_DOCUMENT «Nhân bản phiếu» · 201 COPY_LINE «Sao chép dòng» · 202 BULK_DELETE_LINES «Xóa nhiều dòng» · 203 CREATE_NEW «Tạo mới từ danh sách» |
+| 1–19 Bảng | 1 COLUMN_TOGGLE **Ẩn/hiện cột** · 2 COLUMN_PIN **Ghim cột** · 3 COLUMN_COLOR **Tô màu cột** · 4 LAYOUT_RESET **Khôi phục bố cục** · 5 SORT_CHANGE **Sắp xếp** · 6 PAGE_CHANGE **Chuyển trang** · 7 PAGE_SIZE_CHANGE **Đổi số dòng/trang** · 8 REFRESH **Làm mới** · 9 SELECT_ALL_PAGE **Chọn cả trang** |
+| 20–39 Lọc | 20 FILTER_APPLY **Áp bộ lọc** · 21 FILTER_RESET **Xóa bộ lọc** · 22 FILTER_ROW_ADD **Thêm điều kiện lọc** · 23 QUICK_FILTER **Lọc nhanh** |
+| 100–119 Xuất/In | 100 EXPORT_EXCEL **Xuất Excel** · 101 PRINT **In** · 102 REPORT_EXPORT **Xuất báo cáo** |
+| 200–219 Phiếu/dòng | 200 COPY_DOCUMENT **Nhân bản phiếu** · 201 COPY_LINE **Sao chép dòng** · 202 BULK_DELETE_LINES **Xóa nhiều dòng** · 203 CREATE_NEW **Tạo mới từ danh sách** |
 | 300–319 Duyệt | (để trống — cấp khi có duyệt hàng loạt) |
-| 400–419 Dự án | 400 KANBAN_DRAG «Kéo thẻ kanban» (gắn ở phase 05 nếu Agent 3 đồng ý; không thì để trống) |
+| 400–419 Dự án | 400 KANBAN_DRAG **Kéo thẻ kanban** (gắn ở phase 05 nếu Agent 3 đồng ý; không thì để trống) |
 
 **Wire** — `UiEventIn.action: int = 0`; validator: `type == UI_ACTION` ⇔ `action ∈ UiAction`; loại khác buộc `action == 0`.
 **DB** — `tab_ui_event.action_key SMALLINT NOT NULL DEFAULT 0` (không index: gom ngày quét theo `occurred_at`).
 **Chống spam (FE)** — hàm `trackUiAction(code)` trong `core/telemetry/track-ui-action.ts`:
 1. bỏ trùng: cùng `(code, route)` trong **2 giây** → bỏ (bấm đúp);
-2. mã «lắm lời» (`SORT_CHANGE, PAGE_CHANGE, PAGE_SIZE_CHANGE, COLUMN_TOGGLE, COLUMN_COLOR`) gộp cửa sổ **10 giây** theo `(code, route)`;
+2. mã **lắm lời** (`SORT_CHANGE, PAGE_CHANGE, PAGE_SIZE_CHANGE, COLUMN_TOGGLE, COLUMN_COLOR`) gộp cửa sổ **10 giây** theo `(code, route)`;
 3. trần **30 UI_ACTION/phút/tab** (cửa sổ trượt), vượt thì bỏ im lặng.
 Với nhịp gửi 30 s, ≤ 100 sự kiện/lô → ~2 lô/phút, xa trần 30 lô/phút. **Chống spam (BE)** — trong `build_rows`, mỗi lô giữ tối đa
 **60** sự kiện UI_ACTION, phần thừa bỏ (không từ chối cả lô, không 422).
@@ -62,7 +62,7 @@ Tạo (FE): `core/telemetry/track-ui-action.ts` (+ `.test.ts`).
 ⚠️ Gắn In ở **nút bấm** (không ở `useEffect` trang in) — mở lại trang in không tính lần in thứ hai.
 
 ## Implementation steps
-1. BE: tạo `ui_action_codes.py` (IntEnum + `UI_ACTION_LABELS` + `register(... keyed=True)`); import ở `code_sets.py`; thêm `UI_ACTION=8` vào `UiEventType` + nhãn «Bấm chức năng».
+1. BE: tạo `ui_action_codes.py` (IntEnum + `UI_ACTION_LABELS` + `register(... keyed=True)`); import ở `code_sets.py`; thêm `UI_ACTION=8` vào `UiEventType` + nhãn **Bấm chức năng**.
 2. BE: cột `action_key` ở model + migration viết tay (inspect-guard như `usgprof01`, nối head hiện hành; downgrade drop cột).
 3. BE: schema `action` + validator chéo; service ghi `action_key`, cắt 60 UI_ACTION/lô.
 4. Chạy `gen_status_ts.py`, kiểm `statuses.ts` có `UI_ACTION_CODE`, `UI_EVENT_TYPE_CODE.UI_ACTION`.
@@ -87,7 +87,7 @@ Tạo (FE): `core/telemetry/track-ui-action.ts` (+ `.test.ts`).
 - Vitest `shared/data-table/data-table-ui-action.test.tsx`: ẩn cột / sắp xếp / chuyển trang gọi `trackUiAction` đúng mã; `conditional-filter` áp/xóa.
 
 ## Success criteria
-- Bấm «Ẩn cột» trên 1 màn danh sách bất kỳ dùng `DataTable` → 1 dòng `tab_ui_event(event_type=8, action_key=1, route_pattern=/...)` sau ≤ 30 s.
+- Bấm **Ẩn cột** trên 1 màn danh sách bất kỳ dùng `DataTable` → 1 dòng `tab_ui_event(event_type=8, action_key=1, route_pattern=/...)` sau ≤ 30 s.
 - Bấm đúp nhanh → vẫn 1 dòng. Không có trường chuỗi tự do nào trong body (test khẳng định keys của `toWire`).
 - typecheck + lint 0 lỗi; test BE/FE xanh.
 

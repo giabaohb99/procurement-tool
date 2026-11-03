@@ -43,15 +43,15 @@ const FACES: Record<
 /**
  * Ba nút duyệt qua BỘ MÁY (Duyệt · Trả về · Từ chối) trên trang chi tiết phiếu nghỉ bù.
  *
- * ⚠️ Điều kiện hiện nút là «có việc treo của TÔI trên phiếu này» (đọc từ `/to-approve`), không phải
- * «có quyền approve» — cùng luật với `LeaveDetailDecisionActions`. Dùng chung hook ký theo PHIÊN
+ * ⚠️ Điều kiện hiện nút là "có việc treo của TÔI trên phiếu này" (đọc từ `/to-approve`), không phải
+ * "có quyền approve" — cùng luật với `LeaveDetailDecisionActions`. Dùng chung hook ký theo PHIÊN
  * (`useLeaveApprovalDecision`): nó chỉ gọi `/api/approvals/{instance}/...` nên không gắn với nghỉ phép.
  */
 export function LeaveCompDecisionActions({ requestId }: LeaveCompDecisionActionsProps) {
   const { data } = useLeaveCompToApprove(requestId > 0)
   const decide = useLeaveApprovalDecision()
   const [decision, setDecision] = useState<ApprovalDecision | null>(null)
-  const runOnce = useSingleFlight()     // chặn bấm đúp «Xác nhận» (isPending đổi chậm một nhịp)
+  const runOnce = useSingleFlight()     // chặn bấm đúp "Xác nhận" (isPending đổi chậm một nhịp)
 
   const row = data?.items.find((item) => item.id === requestId)
   if (!row) return null

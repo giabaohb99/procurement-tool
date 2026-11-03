@@ -18,7 +18,7 @@ interface OrgChartTeamToggleProps {
   className?: string
 }
 
-/** Nút «N cấp dưới» treo ở mép thẻ (`TeamToggle.vue`): thu thì hiện ba vòng xem trước + số người. */
+/** Nút "N cấp dưới" treo ở mép thẻ (`TeamToggle.vue`): thu thì hiện ba vòng xem trước + số người. */
 export function OrgChartTeamToggle({ person, open, direction = 'down', className }: OrgChartTeamToggleProps) {
   const { forest, toggle } = useOrgChartContext()
   const preview = person.reportIds

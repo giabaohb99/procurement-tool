@@ -1,4 +1,4 @@
-"""duoc-CR-687 — Báo cáo Biến động nhân sự mở rộng «Cơ cấu» (A2): chiều Nhóm tuổi · Trình độ ·
+"""duoc-CR-687 — Báo cáo Biến động nhân sự mở rộng "Cơ cấu" (A2): chiều Nhóm tuổi · Trình độ ·
 Địa điểm làm việc · Nhóm vị trí việc làm, che nhóm tuổi nhỏ, chặn danh sách theo nhóm tuổi."""
 import uuid
 from datetime import date
@@ -105,7 +105,7 @@ class TestNhomTuoi:
         assert data["totals"]["current"]["headcount_end"] == 6
 
     def test_tuoi_tai_ngay_su_kien_nghi_viec(self, db, world, hr):
-        #  Sinh 01/10/2001: lúc nghỉ 20/09/2026 mới 24 tuổi → «Dưới 25», dù nay đã 25.
+        #  Sinh 01/10/2001: lúc nghỉ 20/09/2026 mới 24 tuổi → "Dưới 25", dù nay đã 25.
         _emp(db, world, "R1", date_of_birth=date(2001, 10, 1), status="resigned",
              resign_date=date(2026, 9, 20))
         db.commit()

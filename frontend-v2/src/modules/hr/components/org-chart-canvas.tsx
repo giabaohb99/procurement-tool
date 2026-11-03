@@ -23,7 +23,7 @@ const GRID_SIZE = 20
 //  Khoảng cách thẻ ↔ khung thông tin, và khoảng tối thiểu tới mép khung vẽ.
 const POPOVER_GAP = 12
 const EDGE_GAP = 16
-//  Nút «N cấp dưới» thò xuống dưới thẻ chừng này.
+//  Nút "N cấp dưới" thò xuống dưới thẻ chừng này.
 const TEAM_PILL_DROP = 18
 //  Nhấn rồi thả mà dịch ít hơn chừng này là BẤM, không phải kéo.
 const CLICK_DISTANCE = 4
@@ -191,7 +191,7 @@ export function OrgChartCanvas({
       const left = Math.min(...boxes.map((box) => box.left)) - rect.left
       const top = Math.min(...boxes.map((box) => box.top)) - rect.top
       let right = Math.max(...boxes.map((box) => box.right)) - rect.left
-      //  Hàng thẻ cuối còn nút «N cấp dưới» thò xuống.
+      //  Hàng thẻ cuối còn nút "N cấp dưới" thò xuống.
       let bottom = Math.max(...boxes.map((box) => box.bottom)) - rect.top + TEAM_PILL_DROP
       if (left >= area.left && right <= area.right && top >= area.top && bottom <= area.bottom) return
 
@@ -361,7 +361,7 @@ export function OrgChartCanvas({
     event.preventDefault()
   }
 
-  //  Thu nhỏ sâu (sơ đồ lớn «Mở hết» ~10%) thì ô lưới 2px làm chấm dồn thành mảng xám: giãn gấp đôi
+  //  Thu nhỏ sâu (sơ đồ lớn "Mở hết" ~10%) thì ô lưới 2px làm chấm dồn thành mảng xám: giãn gấp đôi
   //  cho tới khi ô còn ≥ 10px.
   let gridSize = GRID_SIZE * view.scale
   while (gridSize < 10) gridSize *= 2

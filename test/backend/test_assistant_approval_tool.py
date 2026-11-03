@@ -1,7 +1,7 @@
 """Tool hộp việc phê duyệt của Trợ lý AI: `my_approval_tasks` + `my_requests_status`.
 
 Chốt các điều: (1) tài khoản chưa gắn hồ sơ nhân sự trả rỗng kèm lời giải thích chứ
-không lỗi, (2) việc chờ duyệt đi đúng hàm của màn «Chờ tôi duyệt» và kèm đường dẫn mở
+không lỗi, (2) việc chờ duyệt đi đúng hàm của màn "Chờ tôi duyệt" và kèm đường dẫn mở
 thẳng phiếu, (3) trạng thái phiếu đã trình chỉ thấy phiếu CỦA CHÍNH người hỏi — phiếu
 đang chạy nói rõ đang chờ ai ở bước nào, phiếu bị trả lại nói rõ lý do, (4) loại chứng
 từ chưa có màn bên v2 thì `url` rỗng chứ không bịa đường dẫn.

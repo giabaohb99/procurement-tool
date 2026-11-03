@@ -1,7 +1,7 @@
 """ai-CR-220 — K7 doc/erp/21 §7.2: Trợ lý web + bot core_v2 đọc cẩm nang từ KHO SKILL thay 7 gói `assistant/packs`.
 
 Canh (chỗ dễ lủng):
-  - hạt giống «Cẩm nang hệ thống» gieo đủ (7 skill xuất bản, 11 tệp gốc nhà máy, mỗi pháp nhân một dòng cho phép) và
+  - hạt giống "Cẩm nang hệ thống" gieo đủ (7 skill xuất bản, 11 tệp gốc nhà máy, mỗi pháp nhân một dòng cho phép) và
     CHẠY LẠI KHÔNG ĐÈ: quản trị sửa / lưu trữ / xóa mềm bộ thì seed không gieo lại, không sửa nội dung;
   - trợ lý nội bộ đọc được bộ mức Khóa (nội dung + tệp), cổng MCP thì KHÔNG (bản riêng của cổng giữ nguyên gác);
   - cổng MCP không liệt kê trùng `list_skills` (sổ tool Trợ lý nay cũng có ba tool cùng tên);

@@ -3,7 +3,7 @@
     approved  →  cộng `days` vào `comp_days` (loại đã chốt lúc gửi, năm = max(năm đi làm, năm nay)), phiếu Đã duyệt
     rejected / returned / withdrawn  →  chỉ đổi trạng thái (phiếu không giữ chỗ gì)
 
-Cờ «Bật bộ máy duyệt» của entity TẮT, hoặc chưa khai luồng → phiếu vẫn vào *Chờ duyệt* với `approval_instance_id = 0`
+Cờ "Bật bộ máy duyệt" của entity TẮT, hoặc chưa khai luồng → phiếu vẫn vào *Chờ duyệt* với `approval_instance_id = 0`
 và người có quyền `leave_comp_request.approve` duyệt thẳng (`/approve`) — cùng đường lùi với đơn nghỉ.
 """
 from datetime import datetime
@@ -45,7 +45,7 @@ def block_legacy_path(db: Session, obj: LeaveCompRequest) -> None:
 
 
 def withdraw_running_approval(db: Session, obj: LeaveCompRequest, user, reason: str = "") -> None:
-    """RÚT phiên duyệt đang chạy để phiếu hủy được (luật «đã có người ký thì không rút» nằm ở `action_service`)."""
+    """RÚT phiên duyệt đang chạy để phiếu hủy được (luật "đã có người ký thì không rút" nằm ở `action_service`)."""
     instance = running_instance(db, obj.id)
     if instance is None:
         return
@@ -81,7 +81,7 @@ def _get(db: Session, request_id: int) -> LeaveCompRequest | None:
 def approve_now(db: Session, obj: LeaveCompRequest, actor: int, error_cls=HTTPException) -> None:
     """DUYỆT thật: chiếm phiếu (Chờ duyệt → Đã duyệt, chốt `balance_year`) rồi cộng `comp_days` vào loại + năm đã chốt.
 
-    `error_cls` = `HookVeto` khi gọi từ bộ máy duyệt (lỗi thường bị `fire` NUỐT → phiên «Đã duyệt» mà phiếu vẫn
+    `error_cls` = `HookVeto` khi gọi từ bộ máy duyệt (lỗi thường bị `fire` NUỐT → phiên "Đã duyệt" mà phiếu vẫn
     Chờ duyệt), `HTTPException` khi duyệt thẳng. Kiểm loại nhận ngày bù TRƯỚC khi chiếm.
     """
     try:

@@ -60,7 +60,7 @@ Sửa bảng cũ: `tab_notification.read_at DATETIME NULL` + `ix_tab_notificatio
 
 ## Công tắc
 `core/app_settings.py` REGISTRY: `"usage_tracking_enabled": ("bool", "USAGE_TRACKING_ENABLED")`; `core/config.py` mặc định `False`;
-`setting/service.py` FIELDS thêm mục nhóm hệ thống, nhãn «Thu thập cách dùng giao diện (hồ sơ cách làm việc)», hint ghi rõ phải
+`setting/service.py` FIELDS thêm mục nhóm hệ thống, nhãn **Thu thập cách dùng giao diện (hồ sơ cách làm việc)**, hint ghi rõ phải
 thông báo nhân viên trước khi bật.
 
 ## Tệp

@@ -1,7 +1,7 @@
 import { cn } from '@/shared/utils/cn'
 
 /**
- * Bộ lớp «mặt phẳng kiểu ERPNext» dùng chung (duoc-CR-708, gom về đây ở duoc-CR-716): đặt lên KHỐI CHA của một vùng
+ * Bộ lớp "mặt phẳng kiểu ERPNext" dùng chung (duoc-CR-708, gom về đây ở duoc-CR-716): đặt lên KHỐI CHA của một vùng
  * nội dung để mọi thẻ con mất viền / bóng / nền và mọi ô nhập thành ô nền xám không viền — đúng form ERPNext.
  * Dùng ở màn hồ sơ nhân sự và trang chi tiết CRUD bố cục `flat`. Không đặt vào primitive (`card.tsx`, `input.tsx`)
  * vì các màn khác vẫn dùng kiểu thẻ.

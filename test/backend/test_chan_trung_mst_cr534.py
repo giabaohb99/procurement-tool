@@ -1,6 +1,6 @@
 """bao-CR-534 — chặn tạo/sửa công ty trùng mã số thuế (đại ca chốt 30/09/2026: chặn hẳn).
 
-Sinh ra sau bao-CR-532: hai dòng «DEGO Holding» cùng MST, ~1.340 dòng chứng từ prod chia đôi giữa
+Sinh ra sau bao-CR-532: hai dòng "DEGO Holding" cùng MST, ~1.340 dòng chứng từ prod chia đôi giữa
 hai dòng, phải viết script gộp. Hệ chỉ chặn trùng ``code`` — mà ``code`` ai cũng tự đặt được.
 """
 import pytest

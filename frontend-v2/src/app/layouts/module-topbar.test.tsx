@@ -56,7 +56,7 @@ const testModule: ErpModule = {
       ],
     },
     {
-      //  Mục trùng tên phân hệ — khuôn của «Nhân sự» › «Nhân sự».
+      //  Mục trùng tên phân hệ — khuôn của "Nhân sự" › "Nhân sự".
       label: 'Thu mua',
       path: '/test/dup',
     },
@@ -133,7 +133,7 @@ describe('ModuleTopbar breadcrumb', () => {
     expect(crumbTexts(nav)).toEqual(['Thu mua', 'Tiến độ đơn mua hàng'])
   })
 
-  //  Anh Được báo 02/11/2026: phân hệ «Nhân sự» › mục «Nhân sự» hiện hai lần cùng một chữ.
+  //  Anh Được báo 02/11/2026: phân hệ "Nhân sự" › mục "Nhân sự" hiện hai lần cùng một chữ.
   it('hides the module level when the menu item has the same label as the module', () => {
     const nav = renderAt('/test/dup')
     expect(crumbTexts(nav)).toEqual(['Thu mua'])

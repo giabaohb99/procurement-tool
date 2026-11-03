@@ -26,7 +26,7 @@ kiểm canh cửa đỏ — hoặc tệ hơn, tool chạy được nhưng lọt 
 5. **Nhóm cấu hình G7** (`agent_hub/mcp_settings.py` → `GROUPS`): tool phải thuộc ĐÚNG MỘT nhóm, nhóm nhạy cảm để tắt
    mặc định (đại ca chốt Q4).
 6. **Bộ lọc công cụ** (`assistant/tool_router.py`): thêm vào nhóm có regex chữ đã bỏ dấu, hoặc `CORE` nếu cần mọi câu.
-   Câu thật của người dùng phải khớp nhóm (ai-CR-224: «sự kiện» không nạp nhóm lịch → bot nói sai «không xóa được»).
+   Câu thật của người dùng phải khớp nhóm (ai-CR-224: **sự kiện** không nạp nhóm lịch → bot nói sai **không xóa được**).
 7. **Nhãn ý định** `agent_hub/intent_ledger.py` → `TOOL_SUB`.
 8. **Chạy ở đâu**: tool đọc ERP chạy phía ERP qua cổng B `/tools/run` — không phải làm gì. Tool chạy NGAY trong dịch vụ
    AI (Google, sổ nhớ, nhóm chat…) → module phải nằm trong `erp.LOCAL_TOOL_MODULES`. Cần dữ liệu ERP mới thì thêm cặp
@@ -52,7 +52,7 @@ kiểm canh cửa đỏ — hoặc tệ hơn, tool chạy được nhưng lọt 
 - 17/10 ai-CR-216: khóa cấu hình mới chưa vào `SETTING_RAW_KEYS` → lưu G7 hỏng ở chế độ service.
 - 19/10 ai-CR-220: thêm tool trùng tên vào sổ Trợ lý → MCP liệt kê hai lần; phải lọc ở `list_tools`.
 - 19/10 ai-CR-226: tool chạy tại chỗ ghi audit vào DB `agent_hub` (không có bảng) → mất trắng dấu vết.
-- 19/10 ai-CR-228: kết quả ~35k ký tự → ChatGPT bảo «không trả về nội dung»; câu dặn «đừng đọc lại nguyên văn» làm AI
+- 19/10 ai-CR-228: kết quả ~35k ký tự → ChatGPT bảo **không trả về nội dung**; câu dặn **đừng đọc lại nguyên văn** làm AI
   tưởng không được dùng — chia trang + viết câu dặn cho phép dùng.
 - 19/10 ai-CR-227: model bịa link / sai thứ / tự soạn lại dữ liệu từ trí nhớ → để MÁY làm (tách dữ liệu, `reply_guard`),
   không trông vào lời dặn.

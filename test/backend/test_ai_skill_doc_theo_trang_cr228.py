@@ -1,9 +1,9 @@
-"""ai-CR-228 — đại ca nối ChatGPT vào dev 19/10/2026: hỏi «đọc chi tiết skill nha-may-he-thong-cong-viec + tệp đính kèm» thì
-ChatGPT bảo «lần gọi công cụ không trả về nội dung», chỉ nhắc lại phần tóm tắt, không gọi read_skill_file (Claude gọi cùng
+"""ai-CR-228 — đại ca nối ChatGPT vào dev 19/10/2026: hỏi "đọc chi tiết skill nha-may-he-thong-cong-viec + tệp đính kèm" thì
+ChatGPT bảo "lần gọi công cụ không trả về nội dung", chỉ nhắc lại phần tóm tắt, không gọi read_skill_file (Claude gọi cùng
 skill ra đủ ~35k ký tự). Hai nghi phạm, vá cả hai:
   - kết quả quá dài → read_skill / read_skill_file chia TRANG ~10k ký tự, cắt ở ranh giới tiêu đề / đoạn / dòng, có
     next_offset + total_chars; ghép các trang lại = NGUYÊN VĂN; offset vượt / âm / sai kiểu không vỡ;
-  - câu dặn «đừng đọc lại nguyên văn… tài sản công ty» làm AI tưởng không được dùng → câu mới nói rõ ĐƯỢC dùng.
+  - câu dặn "đừng đọc lại nguyên văn… tài sản công ty" làm AI tưởng không được dùng → câu mới nói rõ ĐƯỢC dùng.
 Kèm: nhật ký cổng ghi số ký tự kết quả mỗi lượt tools/call.
 """
 import json

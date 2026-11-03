@@ -1,5 +1,5 @@
 """duoc-CR-715 giai đoạn A — luật loại nghỉ kiểu ERPNext: tỷ lệ tháng, cộng dần, hạn mức theo nhóm,
-«dùng được sau N ngày», ứng phép. Mặc định của ba cột mới phải giữ NGUYÊN hành vi cũ.
+"dùng được sau N ngày", ứng phép. Mặc định của ba cột mới phải giữ NGUYÊN hành vi cũ.
 """
 from datetime import date, timedelta
 from types import SimpleNamespace
@@ -209,7 +209,7 @@ def test_xoa_loai_nghi_don_dep_quota(db):
     assert db.query(LeaveTypeQuota).filter_by(leave_type_id=lt.id).count() == 0
 
 
-# ── 5. «Dùng được sau N ngày» ───────────────────────────────────────────────────
+# ── 5. "Dùng được sau N ngày" ───────────────────────────────────────────────────
 
 def test_ap_dung_sau_n_ngay_dung_bien(db):
     lt = _type(db, name="Phép năm", applicable_after_days=30)
@@ -298,7 +298,7 @@ def test_hire_date_in_a_later_year_gets_no_prorated_quota_for_this_year():
     assert accrual_service.months_in_period(hire, 2026) == 0
     assert accrual_service.prorate_allocation(12, LeaveAccrualMode.PRORATA_HIRE, hire, 2026) == 0
     assert accrual_service.prorate_allocation(12, LeaveAccrualMode.MONTHLY, hire, 2026) == 0
-    #  Chế độ «đủ đầu năm» giữ đúng hành vi cũ (không xét ngày vào làm).
+    #  Chế độ "đủ đầu năm" giữ đúng hành vi cũ (không xét ngày vào làm).
     assert accrual_service.prorate_allocation(12, LeaveAccrualMode.FULL_YEAR, hire, 2026) == 12
     #  Năm vào làm thì tính bình thường (05/01 → đủ 12 tháng).
     assert accrual_service.prorate_allocation(12, LeaveAccrualMode.PRORATA_HIRE, hire, 2027) == 12

@@ -252,8 +252,8 @@ def test_bai3b_khai_dich_danh_nguoi_nop_thi_ho_van_ky_duoc(db, seed, person):
     """Sửa 05/09/2026 — khai ĐÍCH DANH là một quyết định có chủ ý, bộ máy nghe theo.
 
     Bản cũ gạt luôn cả trường hợp này, và phiếu chết giữa đường: CR-113 (văn bản
-    #212) phải gỡ bằng script chạy tay, NP022 thì dòng thời gian ghi «đang chờ
-    phản hồi» trong khi không ai có nút duyệt.
+    #212) phải gỡ bằng script chạy tay, NP022 thì dòng thời gian ghi "đang chờ
+    phản hồi" trong khi không ai có nút duyệt.
     """
     flow = _luong(db)
     _buoc(db, flow, 1, person["nop"])
@@ -414,8 +414,8 @@ def test_duong_dan_tinh_dang_ky_truoc_route_dong():
 def test_cau_truy_van_viec_cua_toi_khong_dung_NULLS_LAST(db, seed):
     """Lỗi 17/08: `.nulls_last()` chạy ngon trên SQLite nhưng MySQL 8 KHÔNG hiểu.
 
-    Cả bộ kiểm này chạy SQLite nên không có bài nào bắt được — màn «Việc của
-    tôi» trả 500 ngay lần gọi thật đầu tiên. Nên canh bằng cách soi thẳng câu
+    Cả bộ kiểm này chạy SQLite nên không có bài nào bắt được — màn "Việc của
+    tôi" trả 500 ngay lần gọi thật đầu tiên. Nên canh bằng cách soi thẳng câu
     SQL sinh ra, thứ duy nhất kiểm được mà không cần MySQL.
     """
     from sqlalchemy.dialects import mysql

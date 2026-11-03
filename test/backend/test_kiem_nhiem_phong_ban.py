@@ -107,7 +107,7 @@ def test_go_khoi_moi_phong_van_hop_le(db, san):
 def test_nhan_su_cua_phong_tinh_ca_nguoi_KIEM_NHIEM(db, san):
     """Truy vấn cũ lọc `Employee.department_id == X` nên bỏ sót người kiêm nhiệm.
 
-    Hệ quả: thông báo gửi cho «trưởng phòng CNTT» không tới người kiêm nhiệm
+    Hệ quả: thông báo gửi cho "trưởng phòng CNTT" không tới người kiêm nhiệm
     phòng đó, và quân số phòng đếm thiếu.
     """
     dv.set_departments(db, san["nguoi"], [san["phong"]["P_KT"], san["phong"]["P_IT"]], ACTOR)
@@ -150,9 +150,9 @@ def test_khong_tu_doi_phong_ban_cua_chinh_minh(db, san):
 def test_self_edit_profile_keeping_same_department_is_allowed(db, san):
     """bao-CR-507 — màn hồ sơ gửi lại MỌI ô mỗi lần lưu, kể cả ô phòng ban.
 
-    Trước đây cửa PATCH chặn theo «có gửi department_id» nên người có
-    `employee.write` sửa số điện thoại của CHÍNH MÌNH ăn câu «không tự đổi phòng
-    ban» dù không đổi gì ở đó (đại ca báo 28/09/2026). Giữ nguyên phòng = cho qua;
+    Trước đây cửa PATCH chặn theo "có gửi department_id" nên người có
+    `employee.write` sửa số điện thoại của CHÍNH MÌNH ăn câu "không tự đổi phòng
+    ban" dù không đổi gì ở đó (đại ca báo 28/09/2026). Giữ nguyên phòng = cho qua;
     đổi phòng thật = vẫn chặn.
     """
     from app.core.auth import perm_cache_clear
@@ -292,7 +292,7 @@ def test_doi_phong_ban_thi_XOA_CACHE_quyen(db, san):
 
 
 def test_chia_van_ban_theo_phong_tinh_ca_phong_kiem_nhiem(db, san):
-    """Chia văn bản cho «phòng Kế toán» thì người kiêm nhiệm phòng đó phải nhận,
+    """Chia văn bản cho "phòng Kế toán" thì người kiêm nhiệm phòng đó phải nhận,
     dù phòng CHÍNH của họ là phòng khác."""
     from app.modules.document.access_model import SUBJECT_DEPARTMENT
     from app.modules.document.access_service import subject_pairs
@@ -414,8 +414,8 @@ def test_tao_moi_nhan_su_co_luon_dong_kiem_nhiem(db, seed, san):
 # ── Kiêm nhiệm là thứ RIÊNG, không gộp với phòng chính ───────────────────────
 
 def test_kiem_nhiem_KHONG_gom_phong_chinh(db, san):
-    """Phòng chính là ô «Phòng ban» của hồ sơ, kiêm nhiệm là các phòng phụ trách
-    THÊM. Gộp hai cái vào một danh sách rồi quy ước «phần tử đầu là phòng chính»
+    """Phòng chính là ô "Phòng ban" của hồ sơ, kiêm nhiệm là các phòng phụ trách
+    THÊM. Gộp hai cái vào một danh sách rồi quy ước "phần tử đầu là phòng chính"
     là dựng ra một luật ngầm mà người dùng không có cách nào biết."""
     dv.set_extra_departments(db, san["nguoi"],
                       [san["phong"]["P_IT"], san["phong"]["P_NS"]], ACTOR)

@@ -4,22 +4,22 @@
 
 ## Context
 - `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`, `doc/tai-lieu-ky-thuat/change-log.md`, `doc/tai-lieu-ky-thuat/nhat-ky-task.md` (đọc luật viết mô tả ở đầu tệp), `doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md`
-- `CLAUDE.md` mục «Two-axis permission system»
+- `CLAUDE.md` mục **Two-axis permission system**
 
 ## Việc
-1. `Thiet_Ke_Phan_Quyen.md`: mục mới «Lớp gác thứ ba: quyền xem từng báo cáo» — gác kép, chưa gán = đóng, 4 chủ thể, cấm thắng, thu hồi đánh dấu, mặc định admin + luật seed không ghi đè, khóa số bất biến.
+1. `Thiet_Ke_Phan_Quyen.md`: mục mới **Lớp gác thứ ba: quyền xem từng báo cáo** — gác kép, chưa gán = đóng, 4 chủ thể, cấm thắng, thu hồi đánh dấu, mặc định admin + luật seed không ghi đè, khóa số bất biến.
 2. `change-log.md`: một dòng quyết định (D-xxx) — khóa `SMALLINT` theo R2, `report_keys` đi qua `/auth/me`, báo cáo mới phải thêm `ReportKey` + `key` catalog + `require_report` ở 2 đường.
-3. `CLAUDE.md`: 1–2 câu dưới mục phân quyền trỏ tới tài liệu trên (luật «thêm báo cáo mới» — để người sau không quên gác).
+3. `CLAUDE.md`: 1–2 câu dưới mục phân quyền trỏ tới tài liệu trên (luật **thêm báo cáo mới** — để người sau không quên gác).
 4. `nhat-ky-task.md`: một mục, câu tiếng Việt trọn vẹn, việc trước tên tệp sau; dòng cuối `Mã nguồn:` / `Commit:`; `- pic: NSU209`.
 5. Commit tách theo phase (conventional, không nhắc AI): `feat(bao-cao): …` BE nền / BE gác / FE picker (refactor) / FE gác / FE tab; `docs: …`.
 
 ## Kế hoạch deploy
-- Trước deploy: chạy `npm run check` (full — đúng luật «chỉ trước deploy») + bộ backend của phase 03; `gen_status_ts --check`.
+- Trước deploy: chạy `npm run check` (full — đúng luật **chỉ trước deploy**) + bộ backend của phase 03; `gen_status_ts --check`.
 - Đại ca chốt **danh sách gán** (báo cáo → phòng/vai trò) TRƯỚC giờ deploy.
 - Dev/UAT trước, rồi prod (`-f docker-compose.production.yml`, theo `quy-trinh-nhanh-va-deploy.md`); merge `erp-v2` → `main` theo §A.2 nếu đi chiều ngược.
 - Sau deploy, kiểm: `SELECT COUNT(*) FROM tab_report_access` = 13 (dòng admin); `alembic_version` lên head mới; admin đăng nhập lại thấy 13 báo cáo.
-- **Thông báo nội bộ:** «Từ hôm nay báo cáo phải được giao mới xem được; chỉ Quản trị hệ thống thấy sẵn. Ai cần, báo admin gán. Đăng xuất/đăng nhập lại nếu chưa thấy.»
-- Đại ca gán ngay trên tab «Báo cáo» (prod) theo danh sách đã chốt.
+- **Thông báo nội bộ:** **Từ hôm nay báo cáo phải được giao mới xem được; chỉ Quản trị hệ thống thấy sẵn. Ai cần, báo admin gán. Đăng xuất/đăng nhập lại nếu chưa thấy.**
+- Đại ca gán ngay trên tab **Báo cáo** (prod) theo danh sách đã chốt.
 - `thumua.degoholding.vn` (v1) không gọi 26 đường này → không ảnh hưởng (đã grep).
 
 ## Rollback
@@ -42,7 +42,7 @@ Phase 04 (nâng picker) revert độc lập được.
 - **`alembic_version` lên migration mới** (`rptacc01_phan_quyen_tung_bao_cao`). Kiểm `HEAD` đúng không trước deploy prod.
 
 ## Tiêu chí xong
-Tài liệu có luật «thêm báo cáo mới»; nhật ký đồng bộ được lên phân hệ Dự án; prod: admin thấy 13, người được gán thấy đúng phần mình.
+Tài liệu có luật **thêm báo cáo mới**; nhật ký đồng bộ được lên phân hệ Dự án; prod: admin thấy 13, người được gán thấy đúng phần mình.
 
 ## Câu hỏi còn treo
 1. Đồng ý thay `GET /api/report-access/me` bằng trường `report_keys` trong `/api/auth/me` không (lý do ở phase 02)? Nếu vẫn cần đường riêng thì thêm 5 dòng, gọi lại `viewable_keys`.

@@ -145,11 +145,11 @@ def test_ky_xong_chang_1_thi_cham_do_tat_va_chang_2_sang_len(db, flow_2_buoc, le
 
 def test_cau_tom_tat_chi_ke_nguoi_CON_GIU_viec(db, flow_2_buoc, leave_type,
                                                submitter, approver1, approver2):
-    """Việc đã HỦY không được kể tên trong câu «đang chờ ai» (lỗi 07/09/2026).
+    """Việc đã HỦY không được kể tên trong câu "đang chờ ai" (lỗi 07/09/2026).
 
     Sửa luồng hoặc chuyển người xử lý là hủy việc cũ rồi dựng việc mới, nên một
     chặng tích lại nhiều dòng việc chết. Kể hết thì câu tóm tắt của NP006 đọc ra
-    *«Đang ở chặng 1/2 · Dego Admin, Trưởng phòng Thu mua, Dego Admin»* — ba tên
+    *"Đang ở chặng 1/2 · Dego Admin, Trưởng phòng Thu mua, Dego Admin"* — ba tên
     cho một chặng một người, hai tên đã hết liên quan và một tên lặp lại.
     """
     obj = _submit(db, leave_type, submitter)
@@ -168,7 +168,7 @@ def test_chuyen_nguoi_xu_ly_ghi_dung_ba_vai_vao_dau_vet(db, flow_2_buoc, leave_t
                                                         submitter, approver1, approver2):
     """Ai BẤM · lấy của ai · giao cho ai — bản cũ ghi người NHẬN là người bấm.
 
-    `on_behalf_of` là ô của ủy quyền («B ký thay A»); mượn nó cho lượt chuyển
+    `on_behalf_of` là ô của ủy quyền ("B ký thay A"); mượn nó cho lượt chuyển
     việc thì dòng thời gian bịa ra một tờ ủy quyền không hề tồn tại.
     """
     obj = _submit(db, leave_type, submitter)
@@ -196,10 +196,10 @@ def test_duyet_het_thi_moi_chang_deu_xong(db, flow_2_buoc, leave_type, submitter
 
 def test_bi_tu_choi_thi_chi_ra_DUNG_chang_phieu_chet(db, flow_2_buoc, leave_type,
                                                      submitter, approver1, approver2):
-    """Chặng bị từ chối phải nổi lên, không được lẫn vào đám «đã hủy».
+    """Chặng bị từ chối phải nổi lên, không được lẫn vào đám "đã hủy".
 
-    Khi phiếu dừng, bộ máy dọn những việc còn treo thành «đã hủy». Xét «đã hủy»
-    trước «bị từ chối» thì chặng chết lại đọc thành chặng bị hủy, và dải chấm
+    Khi phiếu dừng, bộ máy dọn những việc còn treo thành "đã hủy". Xét "đã hủy"
+    trước "bị từ chối" thì chặng chết lại đọc thành chặng bị hủy, và dải chấm
     mất đúng thông tin người xem cần nhất — phiếu chết ở đâu.
     """
     obj = _submit(db, leave_type, submitter)
@@ -217,13 +217,13 @@ def test_chang_KHONG_CHAY_tren_phieu_da_duyet_khong_doc_thanh_da_huy(
     """Phiếu duyệt xong mà một chặng không có việc nào = chặng đó KHÔNG CHẠY.
 
     Bước tùy chọn không cần tới, nhánh rẽ không đi vào, luồng nhảy cóc — ba
-    đường đều để lại một chặng trắng trên một phiếu hoàn chỉnh. Gộp nó vào «đã
-    hủy» thì người xem đọc phiếu duyệt xong thành phiếu bị rút. Đo thật: 1313
+    đường đều để lại một chặng trắng trên một phiếu hoàn chỉnh. Gộp nó vào "đã
+    hủy" thì người xem đọc phiếu duyệt xong thành phiếu bị rút. Đo thật: 1313
     phiếu nhập từ app đặt xe cũ đều dính, riêng luồng dấu có hẳn một chặng tên
-    «(Tùy chọn)» chạy 0/946 lần.
+    "(Tùy chọn)" chạy 0/946 lần.
 
     Ngược lại, phiếu KHÔNG duyệt xong thì chặng trắng đúng là chết theo phiếu —
-    vẫn «đã hủy», xem `test_tra_ve_KHAC_bi_rut`.
+    vẫn "đã hủy", xem `test_tra_ve_KHAC_bi_rut`.
     """
     obj = _submit(db, leave_type, submitter)
     instance = _instance(db, obj)
@@ -242,9 +242,9 @@ def test_chang_KHONG_CHAY_tren_phieu_da_duyet_khong_doc_thanh_da_huy(
 
 
 def test_tra_ve_KHAC_bi_rut(db, flow_2_buoc, leave_type, submitter, approver1):
-    """Hai kết cục đều làm việc treo thành «đã hủy», chỉ trạng thái phiên phân biệt.
+    """Hai kết cục đều làm việc treo thành "đã hủy", chỉ trạng thái phiên phân biệt.
 
-    Đọc nhầm thì người nộp thấy «đã rút» cho tờ đơn họ không hề rút.
+    Đọc nhầm thì người nộp thấy "đã rút" cho tờ đơn họ không hề rút.
     """
     tra_ve = _submit(db, leave_type, submitter)
     action_service.send_back(db, _instance(db, tra_ve), approver1.id, ACTOR, "Sửa", {})
@@ -267,7 +267,7 @@ def test_nop_lai_sau_khi_bi_tra_ve_thi_doc_phien_MOI(db, flow_2_buoc, leave_type
                                                      submitter, approver1):
     """Một đơn có nhiều phiên qua thời gian — dải chấm phải nói phiên ĐANG chạy.
 
-    Đọc phiên cũ thì đơn vừa nộp lại vẫn hiện «đã trả về», và người duyệt bỏ qua
+    Đọc phiên cũ thì đơn vừa nộp lại vẫn hiện "đã trả về", và người duyệt bỏ qua
     nó vì tưởng bóng đang ở sân người nộp.
     """
     obj = _submit(db, leave_type, submitter)
@@ -307,7 +307,7 @@ def test_nguoi_dang_phai_ky_thi_doc_duoc_don_ngoai_pham_vi(db, flow_2_buoc, leav
 
 def test_ky_XONG_thi_quyen_doc_them_do_DONG_lai(db, flow_2_buoc, leave_type,
                                                 submitter, approver1):
-    """Nới theo «đã từng ký» thì mỗi lượt ký lại thêm vĩnh viễn một tờ đơn vào
+    """Nới theo "đã từng ký" thì mỗi lượt ký lại thêm vĩnh viễn một tờ đơn vào
     tầm nhìn của một người, và phạm vi dữ liệu phình dần mà không ai rà lại."""
     obj = _submit(db, leave_type, submitter)
     user = _user(approver1, uid=9)
@@ -318,7 +318,7 @@ def test_ky_XONG_thi_quyen_doc_them_do_DONG_lai(db, flow_2_buoc, leave_type,
 
 def test_nguoi_o_chang_SAU_chua_toi_luot_thi_chua_doc_duoc(db, flow_2_buoc, leave_type,
                                                            submitter, approver2):
-    """Việc của họ đang ở «chưa tới lượt», không phải «đang chờ».
+    """Việc của họ đang ở "chưa tới lượt", không phải "đang chờ".
 
     Cho đọc sớm nghĩa là mọi người trong mọi luồng đọc được mọi đơn ngay khi nó
     vừa gửi đi — nới thành gần như không còn phạm vi.
@@ -388,7 +388,7 @@ def test_tab_can_toi_duyet_chi_hien_don_DANG_cho_chinh_toi(db, flow_2_buoc, leav
 def test_dong_trong_tab_mang_du_thong_tin_de_quyet_ngay(db, flow_2_buoc, leave_type,
                                                         submitter, approver1):
     """Thiếu ô nào là người duyệt phải mở tờ đơn ra mới quyết được, và cả tính
-    năng «duyệt ngay trên dòng» mất hết ý nghĩa."""
+    năng "duyệt ngay trên dòng" mất hết ý nghĩa."""
     obj = _submit(db, leave_type, submitter)
     row = _to_approve(db, approver1)["items"][0]
 
@@ -408,7 +408,7 @@ def test_dong_trong_tab_mang_theo_NGUOI_BAN_GIAO(db, flow_2_buoc, leave_type,
 
     *Thiếu người bàn giao* là lý do trả đơn phổ biến nhất, tức chính là thứ
     quyết định người duyệt bấm Duyệt hay Trả về. Bắt họ mở tờ đơn ra mới thấy
-    thì cả tính năng «duyệt ngay trên dòng» mất lý do tồn tại.
+    thì cả tính năng "duyệt ngay trên dòng" mất lý do tồn tại.
     """
     from app.modules.leave.request_model import LeaveHandover
 
@@ -452,7 +452,7 @@ def test_ky_HAI_CHANG_cua_cung_mot_don_van_chi_MOT_dong(db, flow_2_buoc, leave_t
                                                         submitter, approver1, approver2):
     """`handled_tasks` trả theo dấu vết nên một người ký hai chặng ra hai bản ghi.
 
-    Trên màn «Tôi đã duyệt» hai dòng đó giống hệt nhau — cùng số đơn, cùng người
+    Trên màn "Tôi đã duyệt" hai dòng đó giống hệt nhau — cùng số đơn, cùng người
     nghỉ, cùng ngày, cùng trạng thái — và đọc ra như lỗi trùng dữ liệu. Dựng lại
     được ngay lần chạy thử đầu tiên (NP011, 03/09/2026).
     """
@@ -511,7 +511,7 @@ def test_hoi_muoi_don_van_chi_ba_truy_van(db, flow_2_buoc, leave_type, submitter
     from sqlalchemy import event
 
     #  Loại nghỉ KHÔNG trừ quỹ: bài này đo số truy vấn, không đo luật quỹ phép.
-    #  Dùng «Phép năm» thì đơn thứ bảy đã ăn "không đủ phép" và bài chết vì một
+    #  Dùng "Phép năm" thì đơn thứ bảy đã ăn "không đủ phép" và bài chết vì một
     #  lý do chẳng liên quan gì tới thứ nó định kiểm.
     khong_tru_quy = LeaveType(code="unpaid", name="Nghỉ không lương",
                               counts_balance=False)

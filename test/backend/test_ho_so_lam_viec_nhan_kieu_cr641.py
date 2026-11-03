@@ -1,4 +1,4 @@
-"""duoc-CR-641 phase 04 — luật nhận «kiểu làm việc»: mỗi luật 3 ca (trúng · sát dưới ngưỡng · thiếu dữ liệu tối thiểu)."""
+"""duoc-CR-641 phase 04 — luật nhận "kiểu làm việc": mỗi luật 3 ca (trúng · sát dưới ngưỡng · thiếu dữ liệu tối thiểu)."""
 import pytest
 
 from app.core.usage_codes import UsageStyle

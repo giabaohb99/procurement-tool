@@ -1,4 +1,4 @@
-"""ai-CR-136 — phase 14 «Nén hội thoại»: bản tóm tắt theo TỪNG cuộc + ba mức (lược kết quả công cụ cũ · tóm nối tiếp · bỏ
+"""ai-CR-136 — phase 14 "Nén hội thoại": bản tóm tắt theo TỪNG cuộc + ba mức (lược kết quả công cụ cũ · tóm nối tiếp · bỏ
 lượt cũ nhất) theo ngân sách token cấu hình được; tóm hỏng thì quay về cửa sổ trượt, không chặn câu trả lời."""
 import time
 from datetime import datetime, timedelta

@@ -138,7 +138,7 @@ def test_so_truy_van_co_dinh_voi_5_va_200_nguoi(db, world):
     assert len(data["people"]) == 201 and len(many) == len(few) <= 4
 
 
-# ── đơn mua hàng «Đã nhận đủ» = xong ─────────────────────────────────────────
+# ── đơn mua hàng "Đã nhận đủ" = xong ─────────────────────────────────────────
 
 def test_don_mua_hang_received_la_xong_va_lay_moc_nhan_du(db, world):
     po = PurchaseOrder(code="DMH9", status="received", company_id=world.co.id, nspt_id=world.a.id,

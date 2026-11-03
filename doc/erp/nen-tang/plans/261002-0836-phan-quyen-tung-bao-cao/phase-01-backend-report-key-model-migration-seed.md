@@ -9,7 +9,7 @@
 - Memory: migration autogenerate quét ra ~650 dòng trôi → viết tay / gọt.
 
 ## Quyết định: khóa SỐ, không phải chuỗi
-- R2/QĐ-11: cột MỚI mang nghĩa loại/kiểu → `SMALLINT` + `IntEnum`. Ngoại lệ mã chuỗi (QĐ-9) chỉ cho Thu mua, «không phải giấy phép cho cột mới».
+- R2/QĐ-11: cột MỚI mang nghĩa loại/kiểu → `SMALLINT` + `IntEnum`. Ngoại lệ mã chuỗi (QĐ-9) chỉ cho Thu mua, **không phải giấy phép cho cột mới**.
 - Cái mất của mã số (khó đọc trong DB) bù bằng bộ mã đăng ký `report_key` (nhãn tiếng Việt) → `/meta/statuses` + `statuses.ts`.
 - Luật bất biến (ghi ngay đầu tệp): **số đã cấp không đổi, không tái dùng**, báo cáo bỏ đi thì để trống số (giống luật `product_code`).
 
@@ -79,7 +79,7 @@ Tạo: `core/report_keys.py`, `modules/report_access/{__init__,model,seed_defaul
 |---|---|---|
 | Nhiều head alembic trên `erp-v2` | TB × Cao | Kiểm trước, dừng hỏi; không tự merge |
 | Lệch nhãn BE/FE | TB × Thấp | Test khớp nhãn ở phase 05 |
-| Ai đó tái dùng số khóa | Thấp × Cao (dòng gán cũ áp nhầm báo cáo) | Chú thích bất biến + test «khóa liên tục, không trùng» |
+| Ai đó tái dùng số khóa | Thấp × Cao (dòng gán cũ áp nhầm báo cáo) | Chú thích bất biến + test **khóa liên tục, không trùng** |
 
 ## Bảo mật
 Không dữ liệu nhạy cảm; Vietnamese text chỉ qua migration/SQLAlchemy (không `mysql -e`).

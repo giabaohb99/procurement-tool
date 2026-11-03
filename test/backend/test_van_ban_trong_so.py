@@ -1,4 +1,4 @@
-"""TAB «VĂN BẢN TRONG SỔ» (duoc-CR-474, 23/09/2026) — sort + lọc theo năm vào sổ.
+"""TAB "VĂN BẢN TRONG SỔ" (duoc-CR-474, 23/09/2026) — sort + lọc theo năm vào sổ.
 
 Bốn việc backend thêm ở `document/controller.py` cho tab mới trong trang chi
 tiết Sổ văn bản:

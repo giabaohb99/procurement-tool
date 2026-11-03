@@ -2,6 +2,7 @@ import {
   ArrowRightLeft,
   Banknote,
   BookUser,
+  CalendarCheck,
   CalendarOff,
   ClipboardList,
   DoorOpen,
@@ -25,7 +26,8 @@ import type { ReportCatalogEntry } from './report-catalog'
  * Nghỉ phép (tình hình nghỉ) · Quỹ phép năm · Hợp đồng lao động · Hồ sơ còn thiếu
  * (duoc-CR-686) · Sổ quản lý lao động · Mẫu 01/PLI (duoc-CR-687) · Quỹ lương · Phúc lợi & sự kiện ·
  * Cơ cấu quản lý · Điều chuyển & bổ nhiệm (duoc-CR-688) · Có mặt theo ngày ·
- * Yêu cầu sửa hồ sơ · Sử dụng phòng họp · Đối tượng cần chú ý theo luật (duoc-CR-689). Mỗi báo cáo = một `ReportPageConfig`
+ * Yêu cầu sửa hồ sơ · Sử dụng phòng họp · Đối tượng cần chú ý theo luật (duoc-CR-689) ·
+ * Làm việc vào ngày lễ, ngày nghỉ (duoc-CR-717). Mỗi báo cáo = một `ReportPageConfig`
  * (`pages/hr-headcount-report-page.tsx`/`leave-usage-report-page.tsx`/
  * `leave-balance-report-page.tsx`) — xem các tệp đó để biết KPI/chỉ số xu
  * hướng/breakdown/nhóm mặc định.
@@ -260,5 +262,20 @@ export const HR_REPORT_CATALOG: ReportCatalogEntry[] = [
     //  nhỏ) — người được giao báo cáo mà thiếu quyền đó sẽ thấy thẻ Tổng quan hỏng (như khóa 19).
     overviewKpis: [],
     load: async () => (await import('../pages/legal-watch-report-page')).LegalWatchReportPage,
+  },
+  {
+    label: 'Làm việc vào ngày lễ, ngày nghỉ',
+    description: 'Lượt đi làm vào ngày lễ, ngày nghỉ theo lịch và ngày nghỉ bù được duyệt — nguồn phiếu nghỉ bù.',
+    path: appRoutes.report.holidayWork,
+    sourcePath: appRoutes.hr.leaveCompRequests,
+    icon: CalendarCheck,
+    //  ReportKey.HOLIDAY_WORK (backend) = 30. Gác `leave_comp_request` — khớp mục menu "Nghỉ bù"
+    //  và `require('leave_comp_request', ...)` của `/api/holiday-work-report/summary`.
+    key: 30,
+    entity: 'leave_comp_request',
+    group: 'Nhân sự',
+    endpoint: '/api/holiday-work-report/summary',
+    overviewKpis: ['lines'],
+    load: async () => (await import('../pages/holiday-work-report-page')).HolidayWorkReportPage,
   },
 ]

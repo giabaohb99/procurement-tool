@@ -73,7 +73,7 @@ def test_khong_phan_biet_hoa_thuong(db, nhan_su):
 
 
 def test_khop_GIUA_chuoi_chu_khong_chi_dau_chuoi(db, nhan_su):
-    """Người ta nhớ tên riêng («Phòng») chứ ít khi nhớ họ."""
+    """Người ta nhớ tên riêng ("Phòng") chứ ít khi nhớ họ."""
     assert _search(db, "Phó") == _ids(nhan_su, "Lý Phó Phòng")
 
 
@@ -90,7 +90,7 @@ def test_tu_khoa_rong_thi_KHONG_loc_gi(db, nhan_su, keyword):
 
 
 def test_mot_tu_khoa_khop_NHIEU_nguoi_thi_ra_du(db, nhan_su):
-    """«Phòng» khớp cả hai người — trả thiếu là người dùng tưởng chỉ có một."""
+    """"Phòng" khớp cả hai người — trả thiếu là người dùng tưởng chỉ có một."""
     assert _search(db, "Phòng") == _ids(nhan_su, "Trần Trưởng Phòng", "Lý Phó Phòng")
 
 

@@ -1,4 +1,4 @@
-"""ai-CR-123: màn «Nhóm chat» trên ERP v2 — danh sách theo kênh / loại, đọc tin, tệp, bản tóm tắt, quyền quản lý bot AI.
+"""ai-CR-123: màn "Nhóm chat" trên ERP v2 — danh sách theo kênh / loại, đọc tin, tệp, bản tóm tắt, quyền quản lý bot AI.
 
 Đại ca chốt 08/10: người thường xem nhóm mình là thành viên; người có `agent_group.read` (quản lý AI) thấy HẾT kể cả
 nội dung, có nhật ký xem; `agent_group.write` phân loại / ngừng ghi / đăng nhập Zalo công ty.
@@ -70,7 +70,7 @@ def test_nguoi_thuong_chi_thay_nhom_minh_quan_ly_ai_thay_het_co_nhat_ky(db, seed
     assert [i["title"] for i in mine["items"]] == ["Kế toán DEGO"] and mine["can_view_all"] is False
     item = mine["items"][0]
     assert item["channel"] == "zalo_account" and item["message_count"] == 1 and item["is_owner"] and item["can_edit"]
-    #  Người thường xin «tất cả» vẫn chỉ ra nhóm mình; nhóm khác là 404 (không lộ nhóm tồn tại).
+    #  Người thường xin "tất cả" vẫn chỉ ra nhóm mình; nhóm khác là 404 (không lộ nhóm tồn tại).
     assert len(client.get("/api/agent-hub/groups?scope=all").json()["data"]["items"]) == 1
     other = db.query(AgentGroup).filter_by(title="Ban giám đốc").one()
     assert client.get(f"/api/agent-hub/groups/{other.id}/messages").status_code == 404
@@ -80,7 +80,7 @@ def test_nguoi_thuong_chi_thay_nhom_minh_quan_ly_ai_thay_het_co_nhat_ky(db, seed
     cap_quyen(seed.u_nstm_id, "agent_group", read=True)
     all_ = client.get("/api/agent-hub/groups?scope=all").json()["data"]
     assert {i["title"] for i in all_["items"]} == {"Kế toán DEGO", "Ban giám đốc"} and all_["can_view_all"]
-    assert client.get("/api/agent-hub/groups").json()["data"]["items"] == []          # «của tôi» vẫn là của tôi
+    assert client.get("/api/agent-hub/groups").json()["data"]["items"] == []          # "của tôi" vẫn là của tôi
     msgs = client.get(f"/api/agent-hub/groups/{other.id}/messages").json()["data"]
     assert msgs["items"][0]["text"] == "lương tháng 10" and msgs["items"][0]["from_name"] == "Sếp"
     #  Giờ trả cho web là UTC trần, giao diện tự đổi sang giờ VN — đổi ở máy chủ là lệch 7 tiếng hai lần (08/10: tin
@@ -135,7 +135,7 @@ def test_ban_tom_tat_luu_tu_cau_tra_loi_va_nut_tom_tat(db, seed, web, monkeypatc
                                {"name": "search_po", "args": {}}], "Nhóm chốt thanh toán Hòa Phát thứ 6.")
     db.commit()
     assert n == 1
-    #  Nút «Tóm tắt» trên web: model đọc đúng tin của nhóm, kết quả được lưu.
+    #  Nút "Tóm tắt" trên web: model đọc đúng tin của nhóm, kết quả được lưu.
     seen: list[str] = []
     monkeypatch.setattr(assistant_service, "ask", lambda prompt, **kw: seen.append(prompt) or {"text": "- Chốt Hòa Phát"})
     out = client.post(f"/api/agent-hub/groups/{g.id}/summarize", json={"hours": 48}).json()["data"]

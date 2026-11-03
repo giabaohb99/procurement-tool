@@ -1,7 +1,7 @@
 # Phase 06 — D1a: Thời gian trọn vòng + số lần làm lại theo loại việc và theo người
 
 ## Context links
-- Lời đại ca: «chị A làm một YCMH từ lúc tạo tới lúc xong trung bình mấy ngày, chậm nhất mấy ngày» · «số lần phải làm lại theo từng loại việc»
+- Lời đại ca: **chị A làm một YCMH từ lúc tạo tới lúc xong trung bình mấy ngày, chậm nhất mấy ngày** · **số lần phải làm lại theo từng loại việc**
 - `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §4 (`task_type_stats`: trung vị/p90, tỷ lệ làm lại, số mẫu, theo người chỉ khi ≥ 5 mẫu), §5 nhóm 3.7
 - Nguồn: `tab_change_log` (`change_log/model.py`: table_name, row_id, field, before_value, after_value, created_at; index `ix_change_log_row`; giữ **16 tháng**),
   `tab_audit_log` (YCMH `returned`), `tab_approval_instance/task/action`, `tab_work_task(+_assignee)`
@@ -13,7 +13,7 @@
 
 ## Key insights
 - Không có nguồn lịch sử trạng thái chung: Thu mua dùng cột chuỗi riêng, 5 loại dùng bộ máy duyệt; YCMH/ĐMH tự chuyển `completed`/`received` **không ghi audit**.
-  `tab_change_log` (hook ORM) là nguồn duy nhất thấy mọi lần đổi `status` → dùng **một bộ chuyển đổi chung theo cấu hình** + một ngoại lệ (YCMH «trả về» lấy từ audit vì YCMH dùng `rejected` cho cả từ chối lẫn trả về).
+  `tab_change_log` (hook ORM) là nguồn duy nhất thấy mọi lần đổi `status` → dùng **một bộ chuyển đổi chung theo cấu hình** + một ngoại lệ (YCMH **trả về** lấy từ audit vì YCMH dùng `rejected` cho cả từ chối lẫn trả về).
 - `tab_change_log` chỉ giữ 16 tháng → phải **lưu kết quả** vào bảng riêng giữ lâu (3 năm), không tính lại từ log mỗi lần hỏi. Đồng thời làm báo cáo nhanh.
 - Mọi `DateTime` trong DB là UTC naive; cột chuỗi giờ của xe/dấu không dùng (lấy mốc từ change_log/instance).
 - ⚠️ Cần **spike 0,5 ngày đầu**: xác nhận change_log có ghi `status` khi service dùng `query.update()` hàng loạt (bỏ qua sự kiện ORM). Chỗ nào không ghi → dùng mốc dự phòng của chính bảng (`completed_at` task, `decided_at` nghỉ/phòng, `issued_at` văn bản, `finished_at` instance).
@@ -21,19 +21,19 @@
 
 ## Requirements
 - Theo loại việc × người × vai: số phiếu xong, thời gian trọn vòng (giờ → hiện ngày), số lần làm lại, kết cục (xong/hủy/từ chối), trễ hạn (task có hạn).
-- Định nghĩa «xong» và «làm lại» cố định trong code, ghi tài liệu (Q2 — duyệt bảng dưới).
+- Định nghĩa **xong** và **làm lại** cố định trong code, ghi tài liệu (Q2 — duyệt bảng dưới).
 
 ## Architecture
 **Mã** `backend/app/core/capability_codes.py` (thuần stdlib, đăng ký code sets, sinh TS):
 `CycleKind` 1 PURCHASE_REQUEST · 2 SURVEY_REQUEST · 3 PURCHASE_ORDER · 4 PAYMENT_REQUEST · 5 DOCUMENT · 6 VEHICLE_BOOKING · 7 SEAL_REQUEST · 8 ROOM_BOOKING · 9 LEAVE_REQUEST · 10 WORK_TASK;
-`CycleRole` 1 CREATOR «Người lập/đề nghị» · 2 HANDLER «Người xử lý»; `CycleOutcome` 1 OPEN · 2 DONE · 3 CANCELLED · 4 REJECTED.
+`CycleRole` 1 CREATOR **Người lập/đề nghị** · 2 HANDLER **Người xử lý**; `CycleOutcome` 1 OPEN · 2 DONE · 3 CANCELLED · 4 REJECTED.
 
 **Bảng định nghĩa** (`capability/cycle_specs.py`, cấu hình — không rải `if` theo loại):
 | Loại | Bảng | Xong (status mới) | Kết cục âm | Làm lại = số lần | Người lập | Người xử lý (mốc bắt đầu) |
 |---|---|---|---|---|---|---|
 | YCMH | tab_purchase_request | `completed`/`done` | `cancelled`; audit `rejected` (từ chối) | audit action `returned` | `requester_id` | `assignee_id` (mốc: lần đầu change_log `assignee_id` = người đó) |
 | YCBG | tab_survey_request | `done` (Q2: hay `survey_done`) | `cancelled` | status → `rejected` (= Trả về) | `requester_id` | `assignee` từng dòng (mã NV → id) |
-| ĐMH | tab_purchase_order | `received` hoặc `completed` (đại ca chốt 20/10/2026: «Đã nhận đủ» = xong; mốc = lần đầu) | `cancelled` | status → `rejected` (= Trả về) | `created_by`→NV | `nspt_id` (mốc: change_log `nspt_id`) |
+| ĐMH | tab_purchase_order | `received` hoặc `completed` (đại ca chốt 20/10/2026: **Đã nhận đủ** = xong; mốc = lần đầu) | `cancelled` | status → `rejected` (= Trả về) | `created_by`→NV | `nspt_id` (mốc: change_log `nspt_id`) |
 | YCTT | tab_payment_request | `paid` | `cancelled` | — (không có trả về) | `created_by`→NV | — |
 | Văn bản | tab_document | 3 hoặc 4 (lần đầu) | 10, 7 | status → 9 | `drafter_employee_id` | — |
 | Đặt xe | tab_vehicle_booking | 5 | 6, 7 | status → 8 | `requester_id` | — |
@@ -48,7 +48,7 @@ Trọn vòng = `done_at − start` (start = `created_at` với vai lập; mốc 
 started_at DATETIME · done_at DATETIME NULL · outcome SMALLINT · cycle_hours FLOAT NULL · rework_count SMALLINT · due_date DATE NULL · is_late BOOL NULL ·
 estimate_hours DECIMAL(6,2) NULL · actual_hours DECIMAL(6,2) NULL · review_outcome SMALLINT DEFAULT 0 · computed_at DATETIME`
 UNIQUE `(kind, entity_id, role, employee_id)` · INDEX `(done_at, kind)` · INDEX `(employee_id, kind, done_at)`.
-Cùng migration gom **mọi index D1** (memory «index gom 1 migration»): `tab_change_log(table_name, field, created_at)` nếu chưa có tương đương ·
+Cùng migration gom **mọi index D1** (memory **index gom 1 migration**): `tab_change_log(table_name, field, created_at)` nếu chưa có tương đương ·
 `tab_purchase_request(assignee_id, status)` · `tab_purchase_order(status)` · `tab_payment_request(status)` (phục vụ D1c).
 
 **Dựng gia tăng** (`capability/cycle_builder.py`, celery `capability.build_cycles` 05:00 VN):
@@ -82,16 +82,16 @@ Không sửa model nghiệp vụ nào (chỉ thêm index qua migration; khai ind
 1. **change_log có bắt `status` khi đổi qua ORM** (kể cả task mở lại 2→1) — thử trực tiếp bằng service thật trong `open_context`: 3 dòng cho 3 lần đổi.
    **Đổi bằng `query.update()` hàng loạt thì KHÔNG có dòng nào** (đã thử). Rà mã: không đường nào dùng `update()` hàng loạt để đổi `status` của 10 bảng; ngoại lệ thực tế là
    việc nền Celery / script không mở `open_context` (đồng bộ app đặt xe cũ, nạp từ tệp) — cũng không ghi nhật ký.
-2. **`tab_change_log` chỉ có từ 16/09/2026** (local), `tab_audit_log` từ 01/07/2026. Với 4 chứng từ Thu mua dùng **audit** làm nguồn chính (có từ vựng «trả về»/«từ chối»),
+2. **`tab_change_log` chỉ có từ 16/09/2026** (local), `tab_audit_log` từ 01/07/2026. Với 4 chứng từ Thu mua dùng **audit** làm nguồn chính (có từ vựng **trả về**/**từ chối**),
    change_log bổ sung (bắt cả bước tự chuyển); hai nguồn gộp, sự kiện cùng loại cách ≤ 120 giây tính một. Phiếu không có dấu vết nào → **dòng ước tính** (`is_estimated`, `done_at` lấy từ cột mốc của bảng hoặc `updated_at`).
    Đây là **phương án dự phòng kế hoạch đã nêu** ("mốc dự phòng của chính bảng"), chọn vì không thể dựng lại lịch sử trước ngày bật nhật ký.
 3. **`tab_purchase_request.assignee_id` là id nhân sự nhưng luôn 0** (72/72 dòng local; bị xóa lúc duyệt/từ chối). Người phụ trách YCMH thật nằm ở `tab_purchase_request_item.assignee` (mã NV) →
    dùng cột dòng (YCBG đã vậy). Kéo theo D1c: `pr_handling` đếm theo dòng hàng, không theo `assignee_id`.
-4. Sự kiện «hoàn thành tự động» của YCMH (`sync_from_purchase_orders`) không ghi audit: 3/10 phiếu `completed` local thiếu → dòng ước tính.
+4. Sự kiện **hoàn thành tự động** của YCMH (`sync_from_purchase_orders`) không ghi audit: 3/10 phiếu `completed` local thiếu → dòng ước tính.
 5. Lệch kế hoạch khác: `tab_seal_request.approved_at/completed_at` và `tab_vehicle_booking.approved_at` là **chuỗi ISO** (không phải DateTime) → `cycle_sources.as_datetime`.
 
 **Lệch so với kế hoạch (có chủ ý):** thêm cột `is_estimated` vào `tab_work_cycle`; không thêm chỉ mục `tab_change_log(table_name, field, created_at)` (đã có `ix_change_log_row (table_name,row_id,id)` đủ cho truy vấn theo lô id) và không thêm chỉ mục `updated_at`
-(bảng nhỏ, quét một lần/đêm); chọn tập phiếu «chạm tới» bằng `updated_at >= since` + bảng con thay vì quét change_log.
+(bảng nhỏ, quét một lần/đêm); chọn tập phiếu **chạm tới** bằng `updated_at >= since` + bảng con thay vì quét change_log.
 
 ## Tests
 Backend `test_vong_doi_phieu_cr656_tinh_thuan.py` (34 bài, hàm thuần) + `test_vong_doi_phieu_cr656_dung_bang.py` (9 bài, DB + đếm truy vấn):
@@ -108,8 +108,8 @@ Backend `test_vong_doi_phieu_cr656_tinh_thuan.py` (34 bài, hàm thuần) + `tes
 | Rủi ro | K×A | Giảm thiểu |
 |---|---|---|
 | change_log thiếu dòng do `query.update()` | TB × Cao | Spike bước 1; mốc dự phòng từ bảng gốc; ghi rõ loại nào dùng dự phòng |
-| Định nghĩa «xong» sai ý đại ca | TB × TB | Q2 duyệt bảng; specs là cấu hình — đổi một dòng, chạy lại backfill |
-| Chỉ có ~16 tháng lịch sử | Chắc × Thấp | Ghi «dữ liệu từ …» trên báo cáo; từ nay giữ 3 năm trong bảng riêng |
+| Định nghĩa **xong** sai ý đại ca | TB × TB | Q2 duyệt bảng; specs là cấu hình — đổi một dòng, chạy lại backfill |
+| Chỉ có ~16 tháng lịch sử | Chắc × Thấp | Ghi **dữ liệu từ …** trên báo cáo; từ nay giữ 3 năm trong bảng riêng |
 | Thêm index trên bảng lớn | Thấp × TB | Online DDL InnoDB; chạy ngoài giờ cao điểm (như `usgprof01`) |
 
 ## Security

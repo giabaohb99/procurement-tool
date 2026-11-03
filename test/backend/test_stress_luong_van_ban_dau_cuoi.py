@@ -320,7 +320,7 @@ def test_dang_duyet_thi_khong_sua_duoc_van_ban(db, tap_doan, bo_may):
 
 
 def test_ban_clone_thieu_luong_rieng_thi_chan_TRUOC_khi_doi_trang_thai(db, tap_doan):
-    """Chặn sau commit là để lại văn bản «Đang duyệt» mà không phiên nào nhặt lên
+    """Chặn sau commit là để lại văn bản "Đang duyệt" mà không phiên nào nhặt lên
     — không màn hình nào sửa được tình trạng đó."""
     _bat_bo_may(db)
     #  Chỉ khai luồng cho Tập đoàn. SAM không có đường ký riêng.
@@ -387,7 +387,7 @@ def test_tra_lai_roi_gui_lai_o_phap_nhan_con(db, tap_doan, bo_may):
 
     db.refresh(clone)
     assert clone.status == STATUS_RETURNED
-    assert clone.clone_status == CLONE_DRAFTING, "Bị trả vẫn là «đang soạn» dưới mắt gốc"
+    assert clone.clone_status == CLONE_DRAFTING, "Bị trả vẫn là \"đang soạn\" dưới mắt gốc"
     ban = service.open_version(db, clone)
     assert ban is not None, "Bản bị trả phải CÒN mở để sửa tiếp"
     assert "Sai tên công ty" in ban.change_reason
@@ -409,7 +409,7 @@ def test_tra_lai_roi_gui_lai_o_phap_nhan_con(db, tap_doan, bo_may):
 
 
 def test_rut_phieu_giua_chung_thi_ve_nhap_va_gui_lai_duoc(db, tap_doan, bo_may):
-    """Rút xong mà kẹt ở «đang duyệt» thì vừa không gửi lại được, vừa mở ra một
+    """Rút xong mà kẹt ở "đang duyệt" thì vừa không gửi lại được, vừa mở ra một
     đường ban hành không ai ký (`chan_duong_cu` chỉ khóa khi phiên còn chạy)."""
     ns = tap_doan.ns
     origin = _soan(db, tap_doan, actor=ns["vt_td"].user)
@@ -488,7 +488,7 @@ def test_hai_lan_gui_duyet_lien_tiep_khong_mo_hai_phien(db, tap_doan, bo_may):
 
 
 def test_ngay_hieu_luc_tuong_lai_van_sinh_clone_nhung_chua_co_hieu_luc(db, tap_doan, bo_may):
-    """Ký xong trước ngày áp dụng: văn bản «Đã duyệt», CHƯA «Có hiệu lực», nhưng
+    """Ký xong trước ngày áp dụng: văn bản "Đã duyệt", CHƯA "Có hiệu lực", nhưng
     pháp nhân con vẫn phải có bản nháp trong tay để chuẩn bị."""
     ns = tap_doan.ns
     mai_sau = date.today() + timedelta(days=30)
@@ -512,7 +512,7 @@ def test_ngay_hieu_luc_tuong_lai_van_sinh_clone_nhung_chua_co_hieu_luc(db, tap_d
 
 
 def test_nguoi_ky_cua_phap_nhan_con_doc_duoc_ban_clone(db, tap_doan, bo_may):
-    """Không đọc được thì mở phiếu ở «Việc của tôi» ra là 403 — phiếu kẹt vĩnh
+    """Không đọc được thì mở phiếu ở "Việc của tôi" ra là 403 — phiếu kẹt vĩnh
     viễn vì đúng người phải ký lại là người duy nhất không xem được."""
     from app.core.auth import perm_cache_clear
     from app.modules.approval import entity_hooks

@@ -289,6 +289,11 @@ class LeaveBalanceAllocate(BaseModel):
     leave_type_ids: list[int] = Field(default_factory=list)
     #  Bỏ trống = mọi nhân sự đang làm việc trong phạm vi người bấm.
     employee_ids: list[int] = Field(default_factory=list)
+    #  duoc-CR-717: ô lọc THU HẸP danh sách người được cấp (0 = bỏ qua). Luôn nằm trong phạm vi người bấm.
+    company_id: int = Field(0, ge=0)
+    department_id: int = Field(0, ge=0)
+    employment_type: int = Field(0, ge=0)
+    job_level: int = Field(0, ge=0)
 
 
 class LeaveBalanceCloseYear(BaseModel):

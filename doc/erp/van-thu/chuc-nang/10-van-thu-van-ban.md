@@ -60,7 +60,7 @@ ngày. *Chờ ban hành* là **chưa ban hành**: chưa số hiệu, chưa khóa
 chờ một con người bấm nút. Gộp hai cái là màn danh sách không tách được "việc của tôi"
 khỏi "cứ để đó tới ngày".
 
-Trạng thái 11 chỉ xuất hiện ở loại văn bản khai **«Chờ người soạn ban hành»** — xem §14.2.
+Trạng thái 11 chỉ xuất hiện ở loại văn bản khai **Chờ người soạn ban hành** — xem §14.2.
 
 ### 2.2 Đường đi thường gặp
 
@@ -74,7 +74,7 @@ Tạo (Nháp)
            ├─ loại tự ban hành (mặc định)  → cấp số hiệu → khóa phiên bản
            │        ├─ hiệu lực hôm nay → Có hiệu lực + chạy tác động dây chuyền
            │        └─ hiệu lực sau     → Đã duyệt, chờ tới ngày mới chạy tác động
-           └─ loại «Chờ người soạn ban hành» → Chờ ban hành
+           └─ loại "Chờ người soạn ban hành" → Chờ ban hành
                     └─ người soạn bấm Ban hành (+ chọn hộp thư) → như nhánh trên
 ```
 
@@ -264,16 +264,16 @@ Ngoại lệ: người đang (hoặc đã) có việc trong phiên duyệt của
 
 ### 8.1 Bản lưu trữ hợp đồng lao động
 
-Khi Nhân sự lập hợp đồng lao động, hệ thống tự sinh một văn bản loại **«Hợp đồng lao động»** (`HDLD`) làm bản lưu trữ: tệp .docx đã sinh và bản đã ký được **chép sang** phiên bản hiện hành, trạng thái đi theo hợp đồng (Nháp → Nháp · Đã ký → Có hiệu lực · Đã chấm dứt → Hết hiệu lực · Đã hủy hoặc đã xóa → Lưu trữ). Văn bản này **chỉ đọc**, không có số hiệu và không duyệt/ký.
+Khi Nhân sự lập hợp đồng lao động, hệ thống tự sinh một văn bản loại **Hợp đồng lao động** (`HDLD`) làm bản lưu trữ: tệp .docx đã sinh và bản đã ký được **chép sang** phiên bản hiện hành, trạng thái đi theo hợp đồng (Nháp → Nháp · Đã ký → Có hiệu lực · Đã chấm dứt → Hết hiệu lực · Đã hủy hoặc đã xóa → Lưu trữ). Văn bản này **chỉ đọc**, không có số hiệu và không duyệt/ký.
 
 - **Ai xem được:** CHỈ người đang xem được hợp đồng đó ở phân hệ Nhân sự (`labor_contract.read` đúng phạm vi). Người lao động, văn thư, quản trị Văn bản không có quyền hợp đồng lao động thì **không thấy** ở danh sách, tìm kiếm, tổng quan, cây thư mục, trợ lý AI, ô chọn quan hệ; mở thẳng theo mã hoặc tải tệp đều ra 404. Chia sẻ đích danh, thành viên sổ, phạm vi áp dụng đều không mở khóa.
 - **Ai sửa được (duoc-CR-640):** người có quyền **sửa hợp đồng lao động** (`labor_contract.write`) đúng phạm vi của hợp đồng đó — cùng những người sửa được hợp đồng ở Nhân sự. Người chỉ xem hợp đồng thì chỉ đọc. Văn thư, quản trị Văn bản và người lao động không được thêm quyền gì.
 - **Sửa được:** ghi chú và thông tin bổ sung (nơi lưu bản giấy, số hiệu bản giấy, mức mật, độ khẩn, người soạn / người ký, hạn xem tệp), nội dung bản nháp, tải thêm hoặc gỡ **tệp mềm** (phụ lục, bản scan bổ sung — mọi loại tệp văn bản thường được phép), đặt thư mục. Tệp do chính người dùng tải lên không bao giờ bị đồng bộ từ hợp đồng xóa hay thay. Bản sao .docx/bản ký do hệ thống chép sang vẫn theo hợp đồng (sinh lại hoặc thay bản ký thì bản sao đổi theo; xóa tay bản sao thì lần đồng bộ sau có thể chép lại).
 - **Do hợp đồng quyết định (hiện mờ, không sửa ở Văn bản; gửi đổi → 409):** tên văn bản, tóm tắt, từ khóa, ngày hiệu lực / hết hạn, loại văn bản, sổ, pháp nhân, phòng ban, người chịu trách nhiệm. Muốn đổi thì sửa hợp đồng ở Nhân sự — bản lưu trữ tự đồng bộ lại.
-- Lưu / tải tệp ở Văn bản đòi thêm quyền **sửa văn bản** (`document.write`, phạm vi «Của tôi» là đủ) ngoài quyền sửa hợp đồng — vai trò đang chạy phải tick tay.
+- Lưu / tải tệp ở Văn bản đòi thêm quyền **sửa văn bản** (`document.write`, phạm vi **Của tôi** là đủ) ngoài quyền sửa hợp đồng — vai trò đang chạy phải tick tay.
 - **Không làm được trên bản lưu trữ:** xóa (xóa ở Nhân sự), chia sẻ hoặc cấp quyền, sao chép, clone, trích, quan hệ giữa văn bản, phạm vi áp dụng, gửi duyệt / duyệt / ký / ban hành / cấp số / bãi bỏ, đổi loại văn bản, vào sổ — vì các thao tác đó đẩy văn bản tới người khác. Trạng thái văn bản luôn theo hợp đồng.
 - Không nằm trong tìm kiếm toàn văn (kể cả với người xem được).
-- Nút **«Mở bản lưu trữ ở Văn bản»** ở dòng hợp đồng trong hồ sơ nhân sự (cần thêm quyền đọc Văn bản).
+- Nút **Mở bản lưu trữ ở Văn bản** ở dòng hợp đồng trong hồ sơ nhân sự (cần thêm quyền đọc Văn bản).
 
 ---
 
@@ -380,17 +380,17 @@ Người cũ đang mở trang chi tiết văn bản đó sẽ bị **báo lỗi 
 
 ⚠️ **Cấu trúc bước thì KHÔNG bám theo** — thêm/xóa/đổi thứ tự bước vẫn đóng băng theo bản chụp lúc phiếu bắt đầu, và đó là chủ ý: phiếu đang đứng ở một bước vừa bị xóa thì mất đích tới.
 
-⚠️ **Không có ai thay ai.** Nhánh «Đẩy lên cấp trên» đã bỏ (CR-114) — đó là chỗ duy nhất bộ máy tự chọn một người không có tên trong luồng. Bước hụt người thì chỉ còn hai lối: *chuyển cho người dự phòng* (phải khai đích danh) hoặc *dừng phiếu và báo quản trị*.
+⚠️ **Không có ai thay ai.** Nhánh **Đẩy lên cấp trên** đã bỏ (CR-114) — đó là chỗ duy nhất bộ máy tự chọn một người không có tên trong luồng. Bước hụt người thì chỉ còn hai lối: *chuyển cho người dự phòng* (phải khai đích danh) hoặc *dừng phiếu và báo quản trị*.
 
 **Ba đường tìm ra việc của mình** — cố ý nhiều đường, vì im lặng ở đây nghĩa là văn bản nằm chết giữa luồng:
 
 1. **Thư báo** vào chuông thông báo và trang `/notifications` **ngay khi** việc chuyển sang chờ mình, kèm đường dẫn thẳng tới văn bản. Người được **ủy quyền bấm thay** cũng nhận thư, và thư nói rõ đang bấm thay ai. Dùng chung hệ thông báo sẵn có, không có hộp thư thứ hai.
-2. **Menu «Chờ tôi duyệt»** trong chính phân hệ Văn bản, mang huy hiệu đếm việc (đỏ nếu có việc quá hạn). Mục này **không gác quyền** — người duyệt trong luồng thường không có vai trò nào ở phân hệ Văn bản. Màn này có ô tìm (số hiệu · tên · bước · người trình) và hai ô lọc (*Hạn duyệt*, *Người trình*), chạy ngay tại trình duyệt vì hộp việc của một người vốn ngắn.
+2. **Menu "Chờ tôi duyệt"** trong chính phân hệ Văn bản, mang huy hiệu đếm việc (đỏ nếu có việc quá hạn). Mục này **không gác quyền** — người duyệt trong luồng thường không có vai trò nào ở phân hệ Văn bản. Màn này có ô tìm (số hiệu · tên · bước · người trình) và hai ô lọc (*Hạn duyệt*, *Người trình*), chạy ngay tại trình duyệt vì hộp việc của một người vốn ngắn.
 3. **Nhãn *Chờ bạn duyệt*** trên đúng dòng của bảng danh sách văn bản.
 
-**Nhìn lại việc mình đã ký.** Ngay dưới hộp việc là khối **«Đã duyệt gần đây»** — chọn 7 / 30 / 90 ngày, có ô tìm riêng, bấm dòng mở thẳng văn bản. Nó đọc từ **dấu vết** nên ghi rõ *tôi đã làm gì* (duyệt · trả lại · từ chối) kèm ý kiến, và người **bấm thay** theo ủy quyền vẫn thấy phiếu mình đã ký. Hai cột tách hẳn: *Tôi đã* và *Phiếu bây giờ* — ký xong bước của mình mà phiếu còn ba bước nữa là chuyện thường. Ghi ý kiến **không** tính là một quyết định nên không vào danh sách này. Muốn tra đủ lịch sử thì mở dấu vết của chính văn bản (tab *Phê duyệt*), nơi có cả những người khác đã làm gì.
+**Nhìn lại việc mình đã ký.** Ngay dưới hộp việc là khối **Đã duyệt gần đây** — chọn 7 / 30 / 90 ngày, có ô tìm riêng, bấm dòng mở thẳng văn bản. Nó đọc từ **dấu vết** nên ghi rõ *tôi đã làm gì* (duyệt · trả lại · từ chối) kèm ý kiến, và người **bấm thay** theo ủy quyền vẫn thấy phiếu mình đã ký. Hai cột tách hẳn: *Tôi đã* và *Phiếu bây giờ* — ký xong bước của mình mà phiếu còn ba bước nữa là chuyện thường. Ghi ý kiến **không** tính là một quyết định nên không vào danh sách này. Muốn tra đủ lịch sử thì mở dấu vết của chính văn bản (tab *Phê duyệt*), nơi có cả những người khác đã làm gì.
 
-Màn **«Việc của tôi»** ở phân hệ Phê duyệt **đã xóa** (21/08/2026). Phân hệ đó nay chỉ còn phần cấu hình (Luồng duyệt · Bật bộ máy duyệt). Nút hộp việc trên thanh trên và nút *Việc cần làm* ở Trang cá nhân đều dẫn về **«Chờ tôi duyệt»**. Hiện chỉ Văn bản chạy bộ máy duyệt; ngày bật cho Thu mua thì dựng hộp việc trong chính phân hệ đó — **không** dựng lại một danh sách gom chung có nút duyệt trên từng dòng.
+Màn **Việc của tôi** ở phân hệ Phê duyệt **đã xóa** (21/08/2026). Phân hệ đó nay chỉ còn phần cấu hình (Luồng duyệt · Bật bộ máy duyệt). Nút hộp việc trên thanh trên và nút *Việc cần làm* ở Trang cá nhân đều dẫn về **Chờ tôi duyệt**. Hiện chỉ Văn bản chạy bộ máy duyệt; ngày bật cho Thu mua thì dựng hộp việc trong chính phân hệ đó — **không** dựng lại một danh sách gom chung có nút duyệt trên từng dòng.
 
 ### 13.1 Luồng riêng một pháp nhân (ca AGC, 22/10/2026)
 
@@ -398,14 +398,14 @@ Luồng duyệt có ô **Pháp nhân áp dụng** (màn **Phê duyệt › Luồ
 nhân nào thì luồng **khai đúng pháp nhân đó được xét trước** mọi luồng dùng chung; không có luồng
 riêng nào khớp mới rơi về luồng dùng chung; không có cả hai thì đi **luồng một bước** ở trên.
 
-Hiện trạng prod từ 22/10/2026: dòng *Văn bản* ở «Bật bộ máy duyệt» đã **BẬT**; có một luồng
+Hiện trạng prod từ 22/10/2026: dòng *Văn bản* ở **Bật bộ máy duyệt** đã **BẬT**; có một luồng
 `VB-AGC`, pháp nhân = AGC, **một chặng** khai đích danh người đứng đầu phòng Kinh doanh AGC. Mọi
 pháp nhân khác chưa có luồng nên văn bản của họ **vẫn đi luồng một bước** như trước (đã xem trước
 trên dữ liệu prod).
 
 ⚠️ **Hệ quả với bản clone.** Khi dòng *Văn bản* đã bật, **bản clone ở pháp nhân con** (mục 11)
-bắt buộc có luồng riêng của đúng pháp nhân nhận: chưa có thì nút gửi duyệt báo *"Pháp nhân «...»
-chưa có luồng duyệt Văn bản riêng. Hãy tạo luồng và chọn đúng «Pháp nhân áp dụng» trước khi gửi
+bắt buộc có luồng riêng của đúng pháp nhân nhận: chưa có thì nút gửi duyệt báo *"Pháp nhân **...**
+chưa có luồng duyệt Văn bản riêng. Hãy tạo luồng và chọn đúng **Pháp nhân áp dụng** trước khi gửi
 duyệt"* và văn bản giữ nguyên Nháp. Bản clone không được rơi về luồng dùng chung vì luồng đó đang
 phục vụ bản gốc. Ngày một pháp nhân khác bắt đầu nhận clone thì phải khai luồng cho pháp nhân đó
 trước. Mã nguồn: `document/approval_bridge.ensure_dedicated_flow`, `approval/flow_service.pick_flow`.
@@ -422,14 +422,14 @@ Bấm **Duyệt và ban hành** mở bản **xem trước trước khi ban hành
 - Văn bản nào sẽ **đổi trạng thái** theo (bị thay thế / bị bãi bỏ).
 - Phạm vi áp dụng đang khai bao nhiêu dòng; pháp nhân nào sẽ nhận bản riêng.
 - **Khối chặn (đỏ)** và **khối cảnh báo (vàng)** tách bạch: chặn thì nút Ban hành mờ đi, cảnh báo thì vẫn ban hành được.
-- Ô **«Gửi thông báo danh nghĩa»** — xem §14.3. Ô này chỉ hiện khi người đang đăng nhập
+- Ô **Gửi thông báo danh nghĩa** — xem §14.3. Ô này chỉ hiện khi người đang đăng nhập
   thật sự được cấp hộp thư nào đó.
 
 Ban hành xong: cấp số → khóa phiên bản (tính SHA-256) → vào sổ → chạy tác động dây chuyền (nếu hiệu lực hôm nay).
 
 ### 14.2 Duyệt xong KHÔNG phải lúc nào cũng ban hành
 
-Cột **«Chờ người soạn ban hành»** trên *Loại văn bản* quyết định nhịp cuối:
+Cột **Chờ người soạn ban hành** trên *Loại văn bản* quyết định nhịp cuối:
 
 | Cờ | Ký đủ chữ ký xong thì |
 |---|---|
@@ -459,7 +459,7 @@ Ca nghiệp vụ: nhân sự hành chính đăng nhập bằng tài khoản củ
 `hr@gmail.com`** — người nhận phải thấy thư đến từ phòng Hành chính, không phải từ một cá nhân.
 
 - Khai hộp thư ở **Quản trị › Hộp thư gửi** (`/system/mailboxes`, entity quyền `mailbox`).
-- **Mỗi hộp thư giữ bộ SMTP RIÊNG**, không chỉ đổi dòng «Từ». Gmail **ghi đè** `From` về
+- **Mỗi hộp thư giữ bộ SMTP RIÊNG**, không chỉ đổi dòng **Từ**. Gmail **ghi đè** `From` về
   đúng tài khoản đã đăng nhập trừ khi địa chỉ kia đã khai *Send mail as* trong chính hộp
   thư đó — chỉ đổi tiêu đề là người nhận vẫn thấy địa chỉ cũ, hỏng mà không có lỗi nào báo.
   Gmail đòi **Mật khẩu ứng dụng** (bật xác minh 2 bước rồi tạo), mật khẩu đăng nhập thường
@@ -500,9 +500,9 @@ Ca nghiệp vụ: nhân sự hành chính đăng nhập bằng tài khoản củ
 
 | Danh mục | Nội dung |
 |---|---|
-| **Loại văn bản** | Mã, tên, nhóm, kiểu định danh, thời điểm cấp số, mức mật mặc định, chu kỳ rà soát, các cờ quy tắc áp dụng (kể cả **«Chờ người soạn ban hành»**, §14.2), và **quy tắc quan hệ** của loại |
+| **Loại văn bản** | Mã, tên, nhóm, kiểu định danh, thời điểm cấp số, mức mật mặc định, chu kỳ rà soát, các cờ quy tắc áp dụng (kể cả **Chờ người soạn ban hành**, §14.2), và **quy tắc quan hệ** của loại |
 | **Thư viện văn bản mẫu** | Khung trắng theo từng loại; mọi chỗ phải điền để dấu chấm lửng, **không gán sẵn tên người hay số hiệu** |
-| **Mẫu hợp đồng lao động** (duoc-CR-629b) | Nằm cùng tab «Thư viện văn bản mẫu» của trang Thiết lập, địa chỉ `/document/settings?tab=templates&kind=labor-contract`. Mẫu là tệp .docx có biến, theo pháp nhân + loại hợp đồng. Chỉ người có khóa **`labor_contract_template`** thấy (Nhân sự); văn thư thiếu khóa này không thấy mẫu nào kể cả gõ thẳng địa chỉ. Dữ liệu nằm chung bảng `tab_document_template` (cột `template_kind=2`, bước B) nhưng người chỉ có quyền văn bản mẫu không bao giờ thấy các dòng này; API (`/api/labor-contract-templates`) và quyền giữ nguyên; người có cả hai quyền có công tắc «Văn bản mẫu / Mẫu hợp đồng lao động». Menu Nhân sự «Mẫu hợp đồng» và đường cũ `/hr/labor-contract-templates` đều chuyển sang đây |
+| **Mẫu hợp đồng lao động** (duoc-CR-629b) | Nằm cùng tab **Thư viện văn bản mẫu** của trang Thiết lập, địa chỉ `/document/settings?tab=templates&kind=labor-contract`. Mẫu là tệp .docx có biến, theo pháp nhân + loại hợp đồng. Chỉ người có khóa **`labor_contract_template`** thấy (Nhân sự); văn thư thiếu khóa này không thấy mẫu nào kể cả gõ thẳng địa chỉ. Dữ liệu nằm chung bảng `tab_document_template` (cột `template_kind=2`, bước B) nhưng người chỉ có quyền văn bản mẫu không bao giờ thấy các dòng này; API (`/api/labor-contract-templates`) và quyền giữ nguyên; người có cả hai quyền có công tắc **Văn bản mẫu / Mẫu hợp đồng lao động**. Menu Nhân sự **Mẫu hợp đồng** và đường cũ `/hr/labor-contract-templates` đều chuyển sang đây |
 | **Mức mật / độ khẩn** | Seed: Công khai · Nội bộ · Mật · Tuyệt mật; thường · khẩn · hỏa tốc. Thêm được bậc mới; bậc đã tạo chỉ sửa tên/mô tả/trạng thái |
 | **Đơn vị gửi nhận** | Cơ quan nhà nước · đối tác · khách hàng · đơn vị nội bộ · khác |
 

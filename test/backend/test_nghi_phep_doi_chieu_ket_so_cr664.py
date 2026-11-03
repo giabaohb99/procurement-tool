@@ -170,7 +170,7 @@ def test_totals_va_endpoint_xuat_excel(world):
 
 
 def test_xuat_excel_loc_theo_pham_vi_cua_quyen_xuat_khong_phai_quyen_xem(world, cap_quyen):
-    """Xem «tất cả» nhưng chỉ được XUẤT phần của mình → tệp Excel chỉ có dòng của mình.
+    """Xem "tất cả" nhưng chỉ được XUẤT phần của mình → tệp Excel chỉ có dòng của mình.
 
     Bản đầu lọc đường xuất bằng grant `read` nên người có phạm vi xuất hẹp vẫn tải
     về được sổ quỹ toàn công ty (lệch với mọi đường xuất khác, xem duoc-CR-660).

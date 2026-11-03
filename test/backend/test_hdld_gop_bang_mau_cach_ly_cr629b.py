@@ -1,7 +1,7 @@
 """duoc-CR-629b bước B — CÁCH LY: người đọc `doc_template` (mọi vai trò) KHÔNG BAO GIỜ thấy mẫu HĐLĐ.
 
 Hai loại mẫu chung bảng `tab_document_template` (single-table inheritance, cột `template_kind`).
-Mỗi bài có cặp đối chứng để chứng minh «chặn đúng chỗ» chứ không «chặn tất».
+Mỗi bài có cặp đối chứng để chứng minh "chặn đúng chỗ" chứ không "chặn tất".
 """
 import ast
 import uuid
@@ -67,7 +67,7 @@ def test_danh_sach_van_ban_mau_khong_co_mau_hdld(ctx):
     for who in (ctx.van_thu, ctx.admin_vb):
         data = who.get(DOC_URL).json()["data"]
         assert data["total"] == 1 and [i["name"] for i in data["items"]] == ["Quyết định bổ nhiệm"]
-        # Ô «Chọn mẫu» khi soạn: lọc theo loại + đang dùng.
+        # Ô "Chọn mẫu" khi soạn: lọc theo loại + đang dùng.
         sel = who.get(DOC_URL, params={"doc_type_id": ctx.kind.id, "is_active": "true"}).json()["data"]
         assert [i["name"] for i in sel["items"]] == ["Quyết định bổ nhiệm"]
         # Dò bằng loại 0 / loại HDLD / tên mẫu HĐLĐ đều rỗng.

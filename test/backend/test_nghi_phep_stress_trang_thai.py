@@ -335,7 +335,7 @@ def test_khong_gui_duyet_lai_don_da_chot(db, flow, leave_type, submitter, approv
 
 
 def test_gui_duyet_lai_don_BI_TRA_VE_thi_duoc(db, flow, leave_type, submitter, approver):
-    """Đây chính là điều phân biệt «Trả về» với «Từ chối» — đừng chặn nhầm."""
+    """Đây chính là điều phân biệt "Trả về" với "Từ chối" — đừng chặn nhầm."""
     obj = _dua_ve(db, flow, leave_type, submitter, approver, LR_RETURNED)
     obj = _submit(db, obj, submitter)
 
@@ -381,7 +381,7 @@ def test_khong_co_phien_chay_thi_duyet_thang_khong_bi_chan(db, flow, leave_type,
     """`block_legacy_path` chỉ chặn khi phiên CÒN chạy.
 
     Chặn cả lúc phiên đã đóng thì Nhân sự không bao giờ chốt được đơn của môi
-    trường chưa khai luồng — mà câu báo lỗi lại nói về «luồng nhiều bước».
+    trường chưa khai luồng — mà câu báo lỗi lại nói về "luồng nhiều bước".
     """
     obj = _dua_ve(db, flow, leave_type, submitter, approver, status)
     approval_bridge.block_legacy_path(db, obj)   # không ném

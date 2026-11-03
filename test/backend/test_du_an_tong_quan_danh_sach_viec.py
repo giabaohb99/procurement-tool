@@ -1,6 +1,6 @@
 """Phân hệ Dự án — màn Tổng quan trả kèm HAI DANH SÁCH việc.
 
-Trước đây màn này chỉ có số đếm: nó nói «22 việc quá hạn» rồi dừng ở đó, người
+Trước đây màn này chỉ có số đếm: nó nói "22 việc quá hạn" rồi dừng ở đó, người
 đọc biết mình đang có vấn đề nhưng không có chỗ nào bấm vào để xem vấn đề nằm ở
 đâu. Tệp này chốt phần bù: `overdue_tasks` và `my_tasks`.
 

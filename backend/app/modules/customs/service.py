@@ -20,12 +20,12 @@ from sqlalchemy.orm import Session
 
 from app.modules.import_tool.model import ImportBatch, ImportMode, ImportModule, ImportStatus
 
-from . import reader
+from . import read_cache, reader
 from .constants import (ACTION_KEY, COLUMNS, CONTROL_LABELS, FLAT_IMPORT_TAX_RATE, FORMULA_CAS, MIN_LINES_FOR_BEST,
                         OPTIONAL_COLUMNS, OPTIONAL_LABELS, PRODUCT_KIND_LABELS, REF_ID_KEY, REGULATION_LIST_LABELS,
                         TRANSPORT_LABELS, RegulationList)
 from .model import CustomsLine, CustomsParty, CustomsRegulation, CustomsTariff
-from .search_service import build_keyword_condition
+from .search_service import build_keyword_condition, ci_like
 
 PERIODS = ("month", "quarter", "year")
 PRICE_MODES = ("adjusted", "declared")
@@ -78,7 +78,8 @@ def apply_line_filters(q, f: dict):
     if kinds:
         q = q.filter(CustomsLine.product_kind.in_(kinds))
     if f.get("ingredient"):
-        q = q.filter(CustomsLine.active_ingredient.ilike(f"%{f['ingredient'].strip()}%"))
+        q = q.filter(ci_like(CustomsLine.active_ingredient, f"%{f['ingredient'].strip()}%",
+                             q.session.get_bind().dialect.name == "mysql"))
     if f.get("hs_code"):
         q = q.filter(CustomsLine.hs_code.like(f"{f['hs_code'].strip()}%"))
     if f.get("formulation"):
@@ -196,7 +197,13 @@ def serialize_lines(db: Session, lines: list[CustomsLine]) -> list[dict]:
 def list_lines(db: Session, f: dict, offset: int, limit: int) -> tuple[int, list[dict]]:
     q = apply_line_filters(db.query(CustomsLine), f)
     #  Đếm thẳng COUNT(id) — `Query.count()` bọc cả câu SELECT mọi cột thành bảng con.
-    total = apply_line_filters(db.query(func.count(CustomsLine.id)), f).scalar() or 0
+    #  bao-CR-718: qua đệm theo bộ lọc — lật trang không đếm lại (đếm có từ khóa ~0,5 giây trên 328 nghìn dòng).
+    total = read_cache.cached(db, "count", f, lambda: apply_line_filters(
+        db.query(func.count(CustomsLine.id)), f).scalar() or 0)
+    #  Trang lấy theo chỉ mục `ix_customs_line_date` (đi ngược, dừng khi đủ trang) — không cần đệm. Không có dòng nào
+    #  (hay trang nằm quá tổng) thì đừng dò: đi ngược chỉ mục mà không gặp dòng khớp là đọc hết bảng (~0,8 giây).
+    if total <= offset:
+        return total, []
     rows = q.order_by(CustomsLine.reg_date.desc(), CustomsLine.id.desc()).offset(offset).limit(limit).all()
     return total, serialize_lines(db, rows)
 
@@ -544,6 +551,11 @@ def get_coverage(db: Session) -> dict:
 
 
 def list_options(db: Session) -> dict:
+    #  bao-CR-718: bảy câu GROUP BY trên cả bảng (~1,1 giây với 328 nghìn dòng) mỗi lần mở màn → qua đệm.
+    return read_cache.cached(db, "options", None, lambda: _list_options(db))
+
+
+def _list_options(db: Session) -> dict:
     def distinct(col, limit=200):
         rows = (db.query(col, func.count(CustomsLine.id)).filter(col != "")
                 .group_by(col).order_by(func.count(CustomsLine.id).desc()).limit(limit).all())

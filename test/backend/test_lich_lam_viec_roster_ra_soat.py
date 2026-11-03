@@ -1,4 +1,4 @@
-"""Lịch làm việc phase 07 — vá lỗi từ đợt rà soát mã «Ai làm / ai nghỉ».
+"""Lịch làm việc phase 07 — vá lỗi từ đợt rà soát mã "Ai làm / ai nghỉ".
 
 Mốc: 05/01/2026 = thứ Hai. Mỗi bài nhắc lại lỗi đã bắt được để người sau không xóa nhầm.
 """

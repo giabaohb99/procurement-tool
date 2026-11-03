@@ -1,11 +1,11 @@
-# Backend — xuất Excel «Thuốc BVTV» (round-trip với «Nạp danh mục»)
+# Backend — xuất Excel "Thuốc BVTV" (round-trip với "Nạp danh mục")
 
 Nhánh `erp-v2`, chưa commit (theo yêu cầu).
 
 ## Việc đã làm
 
 1. `backend/app/modules/customs/pesticide_reader.py` (+10 dòng) — thêm `MANUAL_MARKER_COLUMN =
-   "thuoc_tu_them"` (cột THÊM ở cuối sheet «Danh sach thuoc», bản cào gốc không có) + bỏ qua dòng
+   "thuoc_tu_them"` (cột THÊM ở cuối sheet **Danh sach thuoc**, bản cào gốc không có) + bỏ qua dòng
    có cột này = "1" trong `read_xlsx`. Giải quyết vấn đề thuốc tự thêm (`is_manual`) luôn mang
    `source_id = 0`: nhiều thuốc tự thêm xuất ra cùng id 0 sẽ đụng khóa nối hai sheet nếu nạp lại
    coi chúng là thuốc nguồn — đánh dấu + bỏ qua là cách an toàn nhỏ nhất (gợi ý trong đề bài),
@@ -57,7 +57,7 @@ lại lên storage là triệt tiêu đúng lợi ích streaming-ra-đĩa; xuấ
 ## Xử lý thuốc tự thêm (is_manual) — không nhân đôi, không gộp nhầm id 0
 
 Chọn phương án "đánh dấu nguồn ở một cột, bộ đọc bỏ qua" (phương án 1 trong hai gợi ý của đề bài).
-Cột `thuoc_tu_them` ở cuối sheet «Danh sach thuoc» (không có trong bản cào gốc, nên tệp cào thật
+Cột `thuoc_tu_them` ở cuối sheet **Danh sach thuoc** (không có trong bản cào gốc, nên tệp cào thật
 không bao giờ có cột này → không ảnh hưởng gì khi nạp tệp cào). `export_id()` dùng `id` hệ thống
 (không phải `source_id = 0`) cho dòng thuốc tự thêm khi ghi vào CẢ HAI sheet — vẫn join đúng giữa
 hai sheet trong tệp xuất (để người dùng xem/đối chiếu phạm vi của từng thuốc tự thêm), nhưng vì

@@ -26,7 +26,7 @@ from app.core.crud import make_crud_router
 from app.core.database import get_db
 from app.core.response import success
 
-from . import line_change, line_edit_service, service
+from . import line_change, line_edit_service, read_cache, service
 from .model import CustomsRegulation
 from .schema import CustomsLineUpdate, RegulationCreate, RegulationOut, RegulationUpdate
 from app.modules.import_tool import service as import_service
@@ -145,6 +145,7 @@ def update_line(line_id: int, body: CustomsLineUpdate, db: Session = Depends(get
                 user=Depends(require(ENTITY, "write"))):
     """bao-CR-608 — sửa tay một dòng; chụp bản trước khi sửa vào `tab_customs_line_change`."""
     line = line_edit_service.update_line(db, line_id, body, user.id)
+    read_cache.clear()   # bao-CR-718: số đếm / ô chọn đã đệm có thể đổi
     return success(service.serialize_lines(db, [line])[0], "Đã lưu dòng hàng")
 
 
@@ -152,6 +153,7 @@ def update_line(line_id: int, body: CustomsLineUpdate, db: Session = Depends(get
 def delete_line(line_id: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "delete"))):
     """bao-CR-608 — xóa tay một dòng; chụp bản trước khi xóa vào `tab_customs_line_change`."""
     line_edit_service.delete_line(db, line_id, user.id)
+    read_cache.clear()
     return success(None, "Đã xóa dòng hàng")
 
 
@@ -272,6 +274,7 @@ def commit_batch(bid: int, db: Session = Depends(get_db), user=Depends(require(E
 def revert_batch(bid: int, db: Session = Depends(get_db), user=Depends(require(ENTITY, "delete"))):
     b = _get_batch(db, bid)
     res = import_service.revert_batch(db, b, user.id)
+    read_cache.clear()
     if not res.get("ok"):
         raise HTTPException(400, res.get("message", "Không hoàn tác được"))
     return success(_batch_out(db, b), res["message"])

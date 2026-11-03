@@ -344,7 +344,7 @@ def quyen_yctt(db, cap_quyen):
     `SimpleNamespace(id=1)` trơ không có grant nào, mà "không grant" nghĩa là không thấy
     gì — đúng như chạy thật, xem chú thích của fixture `cap_quyen` trong `conftest.py`.
 
-    Bộ bài này canh LUẬT TRẠNG THÁI chứ không canh phân quyền, nên cấp phạm vi «tất cả».
+    Bộ bài này canh LUẬT TRẠNG THÁI chứ không canh phân quyền, nên cấp phạm vi "tất cả".
     Phần phạm vi có bài riêng: `test_pham_vi_tai_chinh_kho_bao_cao.py` (C4–C6c).
     """
     return cap_quyen(USER.id, "payment_request", scope="all",
@@ -390,7 +390,7 @@ def test_yctt_pay_draft_is_blocked(db, quyen_yctt):
     Bài này trước tên `test_yctt_chua_chan_ghi_chi_phieu_chua_duyet`, ghi lại lỗ hổng
     nặng nhất trong ba cái: `pay_` không kiểm trạng thái nên gọi API trực tiếp là
     tiền ra khỏi sổ mà chưa ai duyệt. bao-CR-511 đã vá (`ALLOWED_FROM` trong
-    `payment_request/service.py::set_status`: chỉ «Đã duyệt» mới sang «Đã chi»),
+    `payment_request/service.py::set_status`: chỉ "Đã duyệt" mới sang "Đã chi"),
     nên nay bài canh điều ngược lại — phiếu nháp bị từ chối 400 và giữ nguyên.
     """
     r = _yctt(db, status="draft", code="YCTT-N01-HO")

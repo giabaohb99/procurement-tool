@@ -12,7 +12,7 @@ Năm thứ được canh ở đây, đều là thứ hỏng trong im lặng:
    thì mở DevTools ra là đọc được.
 4. **`build_summary` phải chạy được trên bộ máy CSDL đang dùng.** Bản đầu viết
    `DATE_FORMAT` + `IF()` của MySQL: đúng trên hệ thật, không bao giờ được kiểm.
-5. **Ô «Đến» chỉ có ngày phải kéo tới 23:59:59.** Thiếu thì lọc *"hôm nay"* trả
+5. **Ô "Đến" chỉ có ngày phải kéo tới 23:59:59.** Thiếu thì lọc *"hôm nay"* trả
    về đúng những gì xảy ra lúc 00:00:00 — màn vẫn có dữ liệu nên không ai nghi.
 
 Tài liệu: `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` §7, §8.2–8.4.
@@ -134,8 +134,8 @@ def test_parse_request_id_nhan_ca_hai_dang():
 
 @pytest.mark.parametrize("bad", ["", "   ", "summary", "123", "khong-phai-uuid"])
 def test_parse_request_id_tra_none_thay_vi_no(bad):
-    """Trả `None` chứ không ném: controller cần phân biệt «gõ bậy» (404 tử tế)
-    với «lỗi hệ thống» (500)."""
+    """Trả `None` chứ không ném: controller cần phân biệt "gõ bậy" (404 tử tế)
+    với "lỗi hệ thống" (500)."""
     assert service.parse_request_id(bad) is None
 
 
@@ -151,14 +151,14 @@ def test_luot_bi_chan_khong_co_dau_vet_van_len_man(db):
                  route="/api/units/{id}")
     rows = service.build_page(db, service.build_query(db), 0, 20)
     assert len(rows) == 1
-    #  Không có dòng audit thì cột «Lần bấm» rơi về `METHOD path` — thô, nhưng có.
+    #  Không có dòng audit thì cột "Lần bấm" rơi về `METHOD path` — thô, nhưng có.
     assert rows[0]["summary"] == "DELETE /api/units/9"
     assert rows[0]["http_status"] == 403
 
 
 def test_cot_lan_bam_lay_dong_audit_DAU_TIEN(db):
     """Cú Duyệt ghi `approve` rồi mới ghi vài dòng phụ (sinh việc, gửi chuông).
-    Lấy dòng cuối thì màn hiện «Tạo thông báo» cho thứ người ta nhớ là «Duyệt»."""
+    Lấy dòng cuối thì màn hiện "Tạo thông báo" cho thứ người ta nhớ là "Duyệt"."""
     rid = _rid()
     _add_request(db, rid=rid, audit_count=3)
     _add_audit(db, rid, action="approve", message="Duyệt phiếu YCMH-0012",
@@ -173,8 +173,8 @@ def test_cot_lan_bam_lay_dong_audit_DAU_TIEN(db):
 
 
 def test_cot_doi_dem_so_BANG_khong_phai_so_truong(db):
-    """`change_count` (số TRƯỜNG) đã nằm sẵn trên `tab_request_log`. Thứ cột «Đổi»
-    còn thiếu là «đụng mấy bảng» — con số phân biệt sửa một ô đơn giá với một cú
+    """`change_count` (số TRƯỜNG) đã nằm sẵn trên `tab_request_log`. Thứ cột "Đổi"
+    còn thiếu là "đụng mấy bảng" — con số phân biệt sửa một ô đơn giá với một cú
     Duyệt kéo theo bảng việc + bảng thông báo + bảng chứng từ."""
     rid = _rid()
     _add_request(db, rid=rid, change_count=3)
@@ -241,7 +241,7 @@ def test_trang_rong_khong_hoi_gi_them(db):
 
 def test_loc_ket_qua_tach_LOI_khoi_BI_CHAN(db):
     """401/403 là hệ thống làm đúng việc, 5xx là hệ thống hỏng. Trộn vào một bộ
-    lọc thì câu hỏi «hôm nay hỏng gì» luôn bị vùi dưới hàng trăm lượt 403."""
+    lọc thì câu hỏi "hôm nay hỏng gì" luôn bị vùi dưới hàng trăm lượt 403."""
     _add_request(db, http_status=200, route="/ok")
     _add_request(db, http_status=403, route="/chan")
     _add_request(db, http_status=401, route="/chan2")
@@ -297,7 +297,7 @@ def test_loc_theo_nhom_hanh_dong(db):
 
 
 def test_o_den_chi_co_ngay_phai_keo_toi_cuoi_ngay(db):
-    """Thiếu nhịp này thì lọc «hôm nay» trả về đúng những gì xảy ra lúc 00:00:00
+    """Thiếu nhịp này thì lọc "hôm nay" trả về đúng những gì xảy ra lúc 00:00:00
     — màn vẫn có dữ liệu nên không ai nghi ngờ."""
     _add_request(db, at=datetime(2026, 9, 15, 0, 0, 0), route="/nua-dem")
     _add_request(db, at=datetime(2026, 9, 15, 17, 45), route="/chieu")
@@ -334,7 +334,7 @@ def test_thieu_khoa_change_log_thi_LUOC_O_BACKEND(db):
     assert goi["changes"] == []
     assert goi["can_read_changes"] is False
     for o in ("request_body", "response_body", "error_detail"):
-        assert o not in goi["request"], f"«{o}» vẫn lọt ra ngoài"
+        assert o not in goi["request"], f"\"{o}\" vẫn lọt ra ngoài"
     #  Phần kể chuyện thì vẫn đọc được — đó là khác biệt giữa hai khóa.
     assert goi["audit"][0]["message"] == "Sửa đơn giá"
 
@@ -352,7 +352,7 @@ def test_co_khoa_change_log_thi_tra_du(db):
 
 
 def test_co_can_read_changes_de_phan_biet_KHONG_DOI_voi_KHONG_DUOC_XEM(db):
-    """Không có cờ này thì cả hai đều là mảng rỗng, và tab «Thay đổi» nói dối."""
+    """Không có cờ này thì cả hai đều là mảng rỗng, và tab "Thay đổi" nói dối."""
     rid = _rid()
     row = _add_request(db, rid=rid)          # lượt GET, không đổi gì
     goi = service.build_detail(db, row, with_change_log=True)
@@ -399,7 +399,7 @@ def test_build_summary_chay_duoc_khong_dung_ham_rieng_cua_mysql(db):
 
     assert [h["hour"] for h in so["by_hour"]] == ["2026-09-15 09", "2026-09-15 10"]
     assert so["by_hour"][0] == {"hour": "2026-09-15 09", "total": 2, "errors": 1}
-    #  «Hỏng» của biểu đồ giờ là 5xx; của biểu đồ endpoint là từ 400 trở lên —
+    #  "Hỏng" của biểu đồ giờ là 5xx; của biểu đồ endpoint là từ 400 trở lên —
     #  hai câu hỏi khác nhau, cố ý hai ngưỡng.
     assert so["by_hour"][1] == {"hour": "2026-09-15 10", "total": 1, "errors": 0}
     assert {r["route"]: r for r in so["by_route"]}["/api/products"]["failed"] == 1
@@ -422,7 +422,7 @@ def test_bieu_do_va_bang_dung_CHUNG_bo_loc(db):
 
 def test_audit_log_tra_them_ba_o_de_noi_sang_man_nhat_ky(db):
     """`/api/audit-logs` phải trả `request_id` dạng chuỗi, và RỖNG với dòng ghi
-    trước P1 — giao diện tự ẩn nút «Xem chi tiết», đừng dựng link tới chuỗi trống."""
+    trước P1 — giao diện tự ẩn nút "Xem chi tiết", đừng dựng link tới chuỗi trống."""
     from app.modules.audit.controller import list_logs  # noqa: F401  (đảm bảo import được)
     rid = _rid()
     moi = _add_audit(db, rid, changed_fields="unit_price", change_count=1)
@@ -444,7 +444,7 @@ def test_dong_audit_cu_khong_lot_vao_man(db):
 
 
 def test_serialize_change_giu_co_da_che(db):
-    """«Đã che» và «đổi từ rỗng sang rỗng» là hai chuyện khác nhau, mà lúc đi tra
+    """"Đã che" và "đổi từ rỗng sang rỗng" là hai chuyện khác nhau, mà lúc đi tra
     thì khác nhau rất nhiều — nên `is_masked` là cột riêng, phải trả ra."""
     rid = _rid()
     row = _add_request(db, rid=rid)

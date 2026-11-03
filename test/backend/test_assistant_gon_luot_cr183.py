@@ -1,11 +1,11 @@
-"""ai-CR-183 (phase 16.4, đại ca 13/10: «phản hồi chậm quá») — đo trên dev: một lượt soạn nháp 150k–200k token vào,
+"""ai-CR-183 (phase 16.4, đại ca 13/10: "phản hồi chậm quá") — đo trên dev: một lượt soạn nháp 150k–200k token vào,
 0,35–0,44 USD, 28–32 giây. Ba việc: (1) gói tri thức nạp theo chủ đề (cả 7 gói ≈ 77.000 ký tự, riêng nhà máy 46.000, trước
 đây đi kèm MỌI câu); (2) câu nối tiếp giữ nhóm công cụ cũ thay vì gửi đủ 72; (3) tool soạn nháp trả nháp thì dừng, không gọi
 model viết câu chốt (kênh Telegram tự gửi thẻ)."""
 from app.modules.assistant import tool_router as tr
 
 
-#  ai-CR-220 (K7): hai bài «gói tri thức nạp theo chủ đề» + «chủ đề gói theo nhóm công cụ» bỏ cùng gói — cẩm nang nay đọc
+#  ai-CR-220 (K7): hai bài "gói tri thức nạp theo chủ đề" + "chủ đề gói theo nhóm công cụ" bỏ cùng gói — cẩm nang nay đọc
 #  từ Kho skill (danh mục ngắn trong lời nhắc + tool read_skill), xem test_tro_ly_doc_kho_skill_cr220.py.
 
 
@@ -66,7 +66,7 @@ def test_ask_truyen_stop_on_draft_va_chi_mang_danh_muc_cam_nang(db, seed, monkey
     #  ai-CR-220 (K7): không còn nhồi gói — lời nhắc chỉ mang DANH MỤC cẩm nang, nội dung đọc bằng read_skill.
     FACTORY = "Bản cô đọng để trợ lý AI tra cứu nhanh"
     assert "- nghi-phep:" in s["system"] and "# Nghỉ phép" not in s["system"] and FACTORY not in s["system"]
-    #  ai-CR-192: «chào em» là xã giao → chỉ nhóm lõi (nay gồm cả ba tool đọc cẩm nang).
+    #  ai-CR-192: "chào em" là xã giao → chỉ nhóm lõi (nay gồm cả ba tool đọc cẩm nang).
     service.ask("chào em", db=db, user=user)
     assert seen[-1]["stop"] is None and FACTORY not in seen[-1]["system"]
     #  Đếm lõi THỰC có mặt: `search_docs` chỉ có khi `AI_RAG_ENABLED` bật (local thường tắt) — đừng đếm cứng `len(CORE)`.

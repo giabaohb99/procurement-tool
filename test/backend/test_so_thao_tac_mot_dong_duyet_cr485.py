@@ -1,12 +1,12 @@
-"""bao-CR-485 — Công tắc điều phối TẮT: sổ thao tác chỉ MỘT dòng «Duyệt» của trưởng phòng.
+"""bao-CR-485 — Công tắc điều phối TẮT: sổ thao tác chỉ MỘT dòng "Duyệt" của trưởng phòng.
 
 Đại ca soi dev 25/09/2026: anh Khôi (trưởng phòng nhà máy) duyệt YCMH xong, sổ hiện HAI dòng
-dưới tên anh — «Duyệt» rồi «Điều phối — tự động phân bổ 1 dòng». Anh Khôi không bấm và không
+dưới tên anh — "Duyệt" rồi "Điều phối — tự động phân bổ 1 dòng". Anh Khôi không bấm và không
 có quyền Điều phối; dòng đó do đường duyệt gọi `dispatch_pr` khi công tắc `pr_dispatch_enabled`
 tắt. Nay:
   · công tắc TẮT → một dòng `approved` duy nhất, ghi chú nói rõ hệ thống tự phân bổ;
   · công tắc BẬT → đường cũ y nguyên: `approved` lúc duyệt, `dispatched` lúc thu mua bấm nút;
-  · bản in YCMH vẫn ra ô «TP/BP mua hàng» khi công tắc tắt: `_approval_signers` lùi người
+  · bản in YCMH vẫn ra ô "TP/BP mua hàng" khi công tắc tắt: `_approval_signers` lùi người
     điều phối = người duyệt vì không còn dòng `dispatched` để tra.
 """
 from types import SimpleNamespace
@@ -82,7 +82,7 @@ def test_switch_on_keeps_two_separate_rows(db, seed, monkeypatch):
 
 
 def test_print_signers_fall_back_to_approver_when_switch_off(db, seed, monkeypatch):
-    """Không còn dòng `dispatched` thì ô «TP/BP mua hàng» không được trống."""
+    """Không còn dòng `dispatched` thì ô "TP/BP mua hàng" không được trống."""
     monkeypatch.setattr(pr_ctl.service, "dispatch_enabled", lambda: False)
     pr = _ycmh(db, seed, "PYC-CR485-IN")
     pr_ctl.approve_pr(pr.id, ApproveIn(), BackgroundTasks(), db=db, user=USER)

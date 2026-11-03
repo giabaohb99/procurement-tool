@@ -25,11 +25,11 @@ Môi trường: local, Vite DEV (React dev build), Chrome DevTools MCP, admin DE
 | Mốc (sau khởi động) | 74,4 MB | 1.282 | 0 | — |
 | +50 lần chuyển trang (5 màn × 10) | 83,1 MB | 1.282 | 0 | 1 bản mỗi loại |
 | +50 lần nữa | 83,6 MB (+0,5) | 1.282 | 0 | 1 bản mỗi loại |
-| Mở/đóng «Lập hợp đồng» ×20 | 96,6 → 97,6 MB | 1.013 | 0 | `finish` 2→2, không closure nào tăng ~1/lần |
+| Mở/đóng **Lập hợp đồng** ×20 | 96,6 → 97,6 MB | 1.013 | 0 | `finish` 2→2, không closure nào tăng ~1/lần |
 ⇒ tăng đợt đầu = cache TanStack Query, đợt sau phẳng → không rò.
 
 Nhiễu chỉ có ở bản DEV (không phải lỗi, không có trên prod):
-- `PerformanceMeasure` tăng ~2.400/lần chuyển trang = track «Components ⚛» của React 19.2 dev build (280.077/280.524 entry).
+- `PerformanceMeasure` tăng ~2.400/lần chuyển trang = track **Components ⚛** của React 19.2 dev build (280.077/280.524 entry).
 - `AXObject*` = cache trợ năng của Chrome do DevTools chụp cây a11y.
 - Sau HMR, closure bộ thu xuất hiện 2 bản (module cũ còn giữ) — chỉ khi dev sửa mã nóng.
 

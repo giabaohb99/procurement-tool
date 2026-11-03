@@ -50,7 +50,7 @@ Chỉ vào dải tiêu đề: số hiệu, loại, phiên bản, trạng thái *
 
 ### 2.2 Thẻ theo dõi — điểm nhấn mạnh nhất
 
-Mở tab **Quan hệ**, kéo xuống thẻ **«Bản clone ở pháp nhân con»**.
+Mở tab **Quan hệ**, kéo xuống thẻ **Bản clone ở pháp nhân con**.
 
 Ở đây có sẵn **12 dòng** — mỗi pháp nhân một dòng, kèm số hiệu, trạng thái, và cột theo dõi.
 
@@ -63,7 +63,7 @@ Chỉ rõ ba cột:
 
 ### 2.3 Đổi vai sang pháp nhân con
 
-Bấm nút đổi tài khoản → nhóm **«Pháp nhân con»** → **Văn thư SAM**.
+Bấm nút đổi tài khoản → nhóm **Pháp nhân con** → **Văn thư SAM**.
 
 Trang giữ nguyên, chỉ đổi người đăng nhập.
 
@@ -73,7 +73,7 @@ Vào **Văn bản** — danh sách **chỉ còn văn bản của SAM**.
 
 ### 2.4 Nhận việc qua thông báo
 
-Bấm **chuông** — có thư **«Bản nháp cần xử lý»**.
+Bấm **chuông** — có thư **Bản nháp cần xử lý**.
 
 Bấm vào thư → mở thẳng bản nháp của SAM.
 
@@ -92,7 +92,7 @@ Bấm **Lưu nội dung**.
 
 ### 2.6 Gửi duyệt
 
-Bấm **Gửi duyệt** → băng hiện: *"Đang chạy luồng «Ban hành văn bản» — bước 1 · Trưởng bộ phận duyệt"*, và *"Chờ … duyệt. Bạn không phải làm gì."*
+Bấm **Gửi duyệt** → băng hiện: *"Đang chạy luồng **Ban hành văn bản** — bước 1 · Trưởng bộ phận duyệt"*, và *"Chờ … duyệt. Bạn không phải làm gì."*
 
 > "Văn bản khóa lại ngay lúc này. Người duyệt phải ký đúng bản họ đọc — không ai sửa được dưới tay họ."
 
@@ -102,11 +102,11 @@ Thử bấm vào tab Soạn thảo cho khách thấy nội dung **đã khóa**.
 
 Đổi tài khoản → **Trưởng bộ phận**.
 
-Băng trên văn bản đổi câu: **«Đang chờ bạn duyệt. Mở «Việc của tôi» để xử lý.»**
+Băng trên văn bản đổi câu: **Đang chờ bạn duyệt. Mở "Việc của tôi" để xử lý.**
 
 > "Cùng một màn hình, hai người đọc ra hai câu khác nhau."
 
-Bấm link → màn **Việc của tôi** → thấy dòng của SAM, cột **«Văn thư SAM trình»**.
+Bấm link → màn **Việc của tôi** → thấy dòng của SAM, cột **Văn thư SAM trình**.
 
 Bấm mở → **Duyệt phiếu**.
 
@@ -114,7 +114,7 @@ Bấm mở → **Duyệt phiếu**.
 
 Quay lại văn bản: SAM giờ có số riêng — dạng **`…/QĐ-SAM`**, trạng thái **Có hiệu lực**.
 
-Đổi vai về **`DEGO0001`**, mở lại thẻ theo dõi ở văn bản gốc: dòng SAM chuyển sang **«Đã ban hành»** kèm số hiệu.
+Đổi vai về **`DEGO0001`**, mở lại thẻ theo dõi ở văn bản gốc: dòng SAM chuyển sang **Đã ban hành** kèm số hiệu.
 
 > "Một văn bản của Tập đoàn, 12 bản riêng ở 12 pháp nhân, mỗi bản có số hiệu và người ký của chính nơi đó — mà Tập đoàn vẫn nhìn thấy toàn cảnh trên một màn hình."
 
@@ -154,7 +154,7 @@ Hiện luồng giao cho trưởng bộ phận của người trình. Trong dữ 
 Không xóa được văn bản đã cấp số — số đã vào sổ. Cách đúng là **Bãi bỏ**, có ghi lý do, và văn bản vẫn nằm trong sổ để tra.
 
 **"Bản gốc sửa thì 12 bản con có tự cập nhật không?"**
-**Không, cố ý.** Hệ thống chỉ **đánh dấu «cần rà lại»** và gửi thông báo cho từng nơi. Sửa nội dung của pháp nhân khác là làm thay việc của người chịu trách nhiệm ở đó. Rà xong họ bấm **«Đã rà xong»** kèm kết luận, ghi vào nhật ký.
+**Không, cố ý.** Hệ thống chỉ **đánh dấu "cần rà lại"** và gửi thông báo cho từng nơi. Sửa nội dung của pháp nhân khác là làm thay việc của người chịu trách nhiệm ở đó. Rà xong họ bấm **Đã rà xong** kèm kết luận, ghi vào nhật ký.
 
 **"Có chặn được người không phận sự xem không?"**
 Có, hai tầng: quyền theo chức năng, và **phạm vi dữ liệu** theo pháp nhân/phòng ban/cá nhân. Demo được ngay bằng cách đổi sang `VTSAM` — danh sách chỉ còn văn bản của SAM.

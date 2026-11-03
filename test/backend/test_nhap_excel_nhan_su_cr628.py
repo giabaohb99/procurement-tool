@@ -24,7 +24,7 @@ SENT = "__/empty_value/__"
 
 # ── helper ──────────────────────────────────────────────────────────────────────
 def make_wb(rows: list[dict]):
-    """Workbook sheet «Nhan su»; khóa dict = TIÊU ĐỀ cột (cột nào không ai khai thì vắng hẳn)."""
+    """Workbook sheet "Nhan su"; khóa dict = TIÊU ĐỀ cột (cột nào không ai khai thì vắng hẳn)."""
     headers: list[str] = []
     for r in rows:
         for k in r:

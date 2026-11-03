@@ -1,7 +1,7 @@
-"""bao-CR-554 — (1) phiếu khảo sát chưa duyệt cả phiếu khi còn dòng chưa quyết; (2) «Trả về» dùng
-được cả khi phiếu ĐÃ DUYỆT ở Khảo sát · YCBG · YCMH (ĐMH đã có «Hủy duyệt» từ CR-108).
+"""bao-CR-554 — (1) phiếu khảo sát chưa duyệt cả phiếu khi còn dòng chưa quyết; (2) "Trả về" dùng
+được cả khi phiếu ĐÃ DUYỆT ở Khảo sát · YCBG · YCMH (ĐMH đã có "Hủy duyệt" từ CR-108).
 
-Đại ca chốt 02/10/2026: dòng «xong» = Đã duyệt hoặc Không duyệt; quản lý hủy duyệt thì phiếu về
+Đại ca chốt 02/10/2026: dòng "xong" = Đã duyệt hoặc Không duyệt; quản lý hủy duyệt thì phiếu về
 Bị trả lại để nhân viên sửa rồi gửi lại.
 """
 from types import SimpleNamespace

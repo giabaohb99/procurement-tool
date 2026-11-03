@@ -40,7 +40,7 @@ chốt thật luôn nằm ở backend. Trên nó, v2 có một tầng suy luận
 `src/app/router/module-visibility.ts`:
 
 - Mục menu khai khóa trong `routes.tsx`: `entity` (một khóa) / `entities` (nhiều khóa, hiện khi có
-  **bất kỳ** khóa nào — sinh ra cho «Thiết lập văn bản» CR-157) / `action` / `manage`
+  **bất kỳ** khóa nào — sinh ra cho **Thiết lập văn bản** CR-157) / `action` / `manage`
   (= `create|write|delete`). Mục **không khai gì = luôn hiện** — dành cho mục cố ý công khai.
 - **Thẻ phân hệ mở khi còn ít nhất một mục menu hiện được** (`canOpenModule`). Phân hệ
   `externalUrl` (HDSD) luôn mở — app đích tự gác quyền của nó.
@@ -49,14 +49,14 @@ chốt thật luôn nằm ở backend. Trên nó, v2 có một tầng suy luận
 
 ### Bài học CR-196 (28/08/2026) — mục menu quên khai khóa là thẻ mở cho cả người ngoài
 
-Mục «Tổng quan» của 5 phân hệ nghiệp vụ không khai `entity`/`entities`, nên nó luôn hiện →
+Mục **Tổng quan** của 5 phân hệ nghiệp vụ không khai `entity`/`entities`, nên nó luôn hiện →
 thẻ Thu mua/Sản xuất/Kho/Tài chính mở với **mọi** tài khoản, kể cả văn thư không có quyền nào bên đó
 (vào trong gặp dashboard toàn số 0, vì `/api/dashboard/overview` gác từng khối bằng `can(entity)`
 và bỏ hẳn khóa khi thiếu quyền). Sửa: Tổng quan khai `entities` = đúng các khóa dashboard vẽ.
 
 Luật rút ra, có test canh ở `module-registry.test.ts`: **mục menu của phân hệ nghiệp vụ phải khai
 khóa quyền**; phân hệ muốn mở công khai thật phải nằm trong danh sách chủ-ý-mở của test kèm lý do.
-Danh sách hiện tại: `document` («Chờ tôi duyệt» cho người duyệt ngoài phân hệ) · `forum` (bảng tin
+Danh sách hiện tại: `document` (**Chờ tôi duyệt** cho người duyệt ngoài phân hệ) · `forum` (bảng tin
 toàn công ty) · `appearance` (tùy chọn của chính mình).
 
 ### Vì sao KHÔNG gác thẻ bằng `module.entity`

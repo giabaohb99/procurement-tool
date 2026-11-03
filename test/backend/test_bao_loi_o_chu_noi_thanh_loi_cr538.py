@@ -1,12 +1,12 @@
 """bao-CR-538 (phần 2, 3, 4) — LỖI Ô CHỮ PHẢI NÓI THÀNH LỜI, KHÔNG RA 500.
 
-Sự cố D30D24DF (30/09/2026): lưu phiếu khảo sát, ô «Ghi chú NSPT» dài hơn cột, MySQL từ chối
-«Data too long for column 'nspt_note'» → người dùng thấy «Hệ thống gặp lỗi không lường trước».
-Đại ca: «để dưới model trả lỗi lên sql trả lên thì không ổn, phải bắt validate kỹ».
+Sự cố D30D24DF (30/09/2026): lưu phiếu khảo sát, ô "Ghi chú NSPT" dài hơn cột, MySQL từ chối
+"Data too long for column 'nspt_note'" → người dùng thấy "Hệ thống gặp lỗi không lường trước".
+Đại ca: "để dưới model trả lỗi lên sql trả lên thì không ổn, phải bắt validate kỹ".
 
 Ba lớp được kiểm ở đây:
-  - Phần 3: lỗi Pydantic 422 trả câu tiếng Việt chỉ đúng ô («Ô "Mục đích" tối đa 355 ký tự
-    (đang nhập 412)»), `details` giữ nguyên cho máy đọc.
+  - Phần 3: lỗi Pydantic 422 trả câu tiếng Việt chỉ đúng ô ("Ô "Mục đích" tối đa 355 ký tự
+    (đang nhập 412)"), `details` giữ nguyên cho máy đọc.
   - Phần 2: đường ghi không qua schema (Body `dict`, gán thẳng trong service) chặn bằng
     `ensure_max_length` / `ensure_model_fits` TRƯỚC khi gán.
   - Phần 4: lọt hết mà MySQL vẫn báo 1406 thì lưới cuối đổi thành 422 + rollback phiên.

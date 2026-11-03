@@ -64,11 +64,11 @@ trọn tuần/trọn tháng; tuần ISO; `milestoneCenter`; `todayLeft`), `utils
 
 **Đụng sang khung nhìn khác (cố ý, theo chốt "một nguồn cột cho cả ba khung nhìn"):**
 
-- Bộ «Tùy chỉnh» có thêm **`status` (Trạng thái)** và **`start` (Ngày bắt đầu)**.
+- Bộ **Tùy chỉnh** có thêm **`status` (Trạng thái)** và **`start` (Ngày bắt đầu)**.
 - `mergeCardFields` chen trường dựng sẵn MỚI vào **trước nhãn tùy biến đầu tiên**.
 - `TaskRowActions` thêm `onSetStart` / `onSetStatus`; `TaskListCell` **được xuất ra**.
 - `NewTaskDraft` thêm `startDate`; `TaskDueCell` nhận `label` + `tone`.
-- Panel chi tiết có nút bật/tắt **Cột mốc**; thanh công cụ có mục **«Cột mốc mới»**.
+- Panel chi tiết có nút bật/tắt **Cột mốc**; thanh công cụ có mục **Cột mốc mới**.
 
 **Ba lỗi đã bắt khi soi bằng trình duyệt** (ghi lại kẻo ai đó "dọn" mất):
 
@@ -100,7 +100,7 @@ Kéo theo: **đường găng (critical path) hoãn** vì cần lịch dây chuy�
 ## 4. CÒN LẠI — vặt
 
 - [ ] **Dữ liệu thử còn nằm trên DB local**: dự án 22 có 3 mũi tên, việc #528 là cột mốc,
-      thêm việc «Cột mốc mới», ngày của #503/#507/#513 đã sửa. Dữ liệu mẫu local, biết để
+      thêm việc **Cột mốc mới**, ngày của #503/#507/#513 đã sửa. Dữ liệu mẫu local, biết để
       khỏi tưởng seed sinh ra.
 - [ ] **Chưa tái hiện được**: sau loạt thao tác giả lập bằng script, khóa
       `erp.work.ganttpane.22` có lần bị ghi `323` (ô lưới hẹp bất thường). Kéo tay thì

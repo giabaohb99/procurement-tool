@@ -142,7 +142,7 @@ def test_doc_le_trang_keo_ve_khoang_thuoc_cho_phep():
 
 # ── Đích cuối: mẫu lưu từ web phải SINH được hợp đồng thật ────────────────────────────────
 def test_mau_soan_tren_web_sinh_hop_dong_dien_dung_du_lieu(setup, db):
-    """Biến chèn bằng nút «Chèn biến» rồi tô đậm / nghiêng vẫn phải thay được — biến bị Word cắt
+    """Biến chèn bằng nút "Chèn biến" rồi tô đậm / nghiêng vẫn phải thay được — biến bị Word cắt
     thành nhiều mảnh chữ là kiểu lỗi âm thầm: tệp lưu được, sinh ra hợp đồng còn nguyên `{{ … }}`."""
     from app.modules.employee.model import Employee
     from hdld_factory import make_contract

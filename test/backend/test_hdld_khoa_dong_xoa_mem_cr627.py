@@ -1,7 +1,7 @@
 """
 test_hdld_khoa_dong_xoa_mem_cr627.py — chốt khóa dòng của HĐLĐ phải tính cả XÓA MỀM (duoc-CR-627).
 
-Lỗi tìm ra khi rà mất dữ liệu 19/10/2026: «Ký» chạy đua với «Xóa». Người A qua chốt phạm vi
+Lỗi tìm ra khi rà mất dữ liệu 19/10/2026: "Ký" chạy đua với "Xóa". Người A qua chốt phạm vi
 (dòng còn sống), người B xóa mềm và commit trước, A chờ khóa xong nạp lại dòng — giờ đã
 `is_deleted = 1` — rồi chuyển sang ĐÃ KÝ. Kết quả là một HĐ đã ký nhưng ẩn khỏi mọi màn,
 trong khi chốt xóa nhân sự vẫn đếm nó → hồ sơ người đó không bao giờ xóa được.

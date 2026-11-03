@@ -10,7 +10,7 @@ do. Giữ cả hai như trước thì mọi dòng vừa đổ ra đều trùng k
 khuôn đẻ ra nó, và không hồ sơ nào lưu nổi.
 
 Chỗ dễ thủng còn lại: **`PATCH` không gửi `custom_fields`** mà lấy danh sách
-rỗng = mọi ô riêng bỗng thành «không còn khai báo», mất luôn chốt bắt buộc.
+rỗng = mọi ô riêng bỗng thành "không còn khai báo", mất luôn chốt bắt buộc.
 
 Bộ kiểm giá trị (`field_values.py`) đã có tệp riêng; ở đây chỉ soi phần GỘP.
 """
@@ -79,7 +79,7 @@ def test_o_bat_buoc_cua_TRUONG_RIENG_cung_bi_doi(db, loai):
     }
     with pytest.raises(HTTPException) as exc:
         service.apply_extra_fields(db, values)
-    #  ⚠️ Câu chặn KHÔNG được nói «của loại hồ sơ này» — trường này là của tờ hồ
+    #  ⚠️ Câu chặn KHÔNG được nói "của loại hồ sơ này" — trường này là của tờ hồ
     #  sơ, nói sai nguồn thì người dùng đi mở màn Loại hồ sơ tìm một ô không có ở đó.
     assert "loại hồ sơ" not in str(exc.value.detail)
     assert "Số quyết định" in str(exc.value.detail)
@@ -107,7 +107,7 @@ def test_bo_truong_cua_LOAI_khong_con_tu_ap_cho_ho_so(db, loai):
 def test_khoa_trung_ten_o_cua_loai_KHONG_con_bi_chan(db, loai):
     """Không còn hai nguồn thì không có gì để mà trùng.
 
-    Chốt cũ («Trường riêng trùng tên với ô sẵn có của loại») đã gỡ — giữ lại là
+    Chốt cũ ("Trường riêng trùng tên với ô sẵn có của loại") đã gỡ — giữ lại là
     chặn đúng cái việc mà khuôn sinh ra để làm.
     """
     values = {
@@ -123,7 +123,7 @@ def test_PATCH_khong_gui_khai_bao_thi_lay_cua_ban_ghi_cu(db, loai):
     """⚠️ Không lấy danh sách rỗng khi payload không nhắc tới `custom_fields`.
 
     Lấy rỗng thì một `PATCH` đổi mỗi ghi chú cũng làm mọi trường riêng thành
-    «không còn khai báo» — mất chốt bắt buộc, và giá trị của chúng rơi xuống
+    "không còn khai báo" — mất chốt bắt buộc, và giá trị của chúng rơi xuống
     nhánh khoan dung dành cho khóa mồ côi.
     """
     cur = Dossier(code="HS1", name="x", dossier_type_id=loai.id,
@@ -170,7 +170,7 @@ def test_cot_NULL_doc_ra_danh_sach_rong(db, loai):
     assert DossierResponse.model_validate(row).custom_fields == []
 
 
-# ── Ô «Chọn từ danh mục» (`reference`) ──────────────────────────────────────
+# ── Ô "Chọn từ danh mục" (`reference`) ──────────────────────────────────────
 def test_reference_phai_khai_danh_muc(db):
     """Không khai danh mục thì ô giá trị không bấm được gì — chặn ngay ở schema."""
     from app.modules.dossier.field_schema import validate_field_schema

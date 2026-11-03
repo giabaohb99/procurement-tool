@@ -124,7 +124,7 @@ lại rồi mới chấm.
 - Mong đợi: lưu bình thường; tick / bỏ tick, chọn cả dòng, chọn cả cột vẫn chạy như cũ.
 - Kết quả:
 
-**TC-428-12 — Nhóm mới không rơi vào «Khác»**
+**TC-428-12 — Nhóm mới không rơi vào "Khác"**
 1. Chọn vai trò tạm ở TC-428-10 (mở hết nhóm), đọc tên các nhóm trong ma trận.
 - Mong đợi: có nhóm riêng cho **Nghỉ phép**, **Hồ sơ**, **Đặt phòng họp**, **Điểm cà phê**,
   **Diễn đàn** (bảng), **Đồng bộ** (sổ đồng bộ); nhóm **Khác** (nếu còn) không chứa mấy
@@ -133,8 +133,8 @@ lại rồi mới chấm.
 
 **TC-428-13 — Nhãn bậc mới ở cột Phạm vi**
 1. Chọn `pur_staff`, nhìn cột Phạm vi của dòng *Yêu cầu mua hàng*; rồi `pur_dept_manager`.
-- Mong đợi: hai bậc đọc là **«Được giao + đã duyệt»** và **«Được giao + đã duyệt trong
-  phòng»**. Không còn chữ *Thu mua* trong nhãn bậc. Mở ô chọn bậc thấy đủ 7 bậc theo thứ tự
+- Mong đợi: hai bậc đọc là **Được giao + đã duyệt** và **Được giao + đã duyệt trong
+  phòng**. Không còn chữ *Thu mua* trong nhãn bậc. Mở ô chọn bậc thấy đủ 7 bậc theo thứ tự
   hẹp → rộng.
 - Kết quả:
 
@@ -156,16 +156,16 @@ lại rồi mới chấm.
 **TC-427-01 — Khối tóm tắt in tên công ty / phòng thật**
 1. QT vào tab Người dùng, mở TK-NM, bấm **Phạm vi** cạnh vai trò `dept_proc` đã lưu.
 - Mong đợi: hộp mở với tiêu đề *Phạm vi — <tên vai trò>*; khối đầu tiên có biểu tượng con
-  mắt, tiêu đề *"Tài khoản này thấy gì với vai trò «…»"*, bên dưới mỗi bậc một dòng dạng
+  mắt, tiêu đề *"Tài khoản này thấy gì với vai trò **…**"*, bên dưới mỗi bậc một dòng dạng
   *YCMH, ĐMH, … — chứng từ ĐÃ DUYỆT của phòng <TÊN PHÒNG THẬT>, kể cả phiếu phòng khác
   nhờ phòng này mua giúp…*. Tên phòng phải đúng phòng trong hồ sơ TK-NM, không phải chữ
   "phòng ban người này".
 - Không còn hai khối *Tầng 1 / Tầng 2* nằm cạnh nhau.
 - Kết quả:
 
-**TC-427-02 — Nhóm bậc «Tất cả» gom nhiều mục thì cắt còn 4 + "và n mục khác"**
+**TC-427-02 — Nhóm bậc "Tất cả" gom nhiều mục thì cắt còn 4 + "và n mục khác"**
 1. Mở Phạm vi của một tài khoản mang `pur_manager` hoặc `admin`.
-- Mong đợi: dòng bậc «Tất cả» chỉ liệt kê 4 nhãn rồi *"và n mục khác"*; rê chuột lên đọc
+- Mong đợi: dòng bậc **Tất cả** chỉ liệt kê 4 nhãn rồi *"và n mục khác"*; rê chuột lên đọc
   được danh sách đầy đủ.
 - Kết quả:
 
@@ -198,7 +198,7 @@ lại rồi mới chấm.
   gán vai trò xong tài khoản vẫn không thấy gì…"*.
 - Kết quả:
 
-**TC-427-07 — Năm ô tick nằm trong mục «Ngoại lệ» gập, mặc định đóng**
+**TC-427-07 — Năm ô tick nằm trong mục "Ngoại lệ" gập, mặc định đóng**
 1. Mở Phạm vi của TK-NM (chưa khai ngoại lệ gì).
 - Mong đợi: dưới khối tóm tắt chỉ có một nút *Ngoại lệ* (không số), mũi tên xuống; **không
   thấy** ô tick nào cho tới khi bấm.
@@ -226,10 +226,10 @@ lại rồi mới chấm.
   phải phòng của TK-NM).
 - Kết quả:
 
-**TC-427-10 — «Xem THÊM phòng ban» mờ đi khi vai trò đã ở bậc Tất cả**
+**TC-427-10 — "Xem THÊM phòng ban" mờ đi khi vai trò đã ở bậc Tất cả**
 1. Mở Phạm vi của tài khoản mang vai trò mà **mọi** dòng đọc đều bậc Tất cả (`admin`
    hoặc `pur_admin`).
-- Mong đợi: ô *Xem THÊM phòng ban* mờ (60%) với câu *"Vai trò đã ở bậc «Tất cả» nên cộng
+- Mong đợi: ô *Xem THÊM phòng ban* mờ (60%) với câu *"Vai trò đã ở bậc **Tất cả** nên cộng
   thêm phòng ban không đổi được gì."*; chip **vẫn bấm được** (để gỡ giá trị cũ).
 2. Mở Phạm vi của TK-NM.
 - Mong đợi: ô này **không** mờ, câu hint là *"CỘNG THÊM, không thu hẹp…"*.
@@ -350,7 +350,7 @@ hiện cạnh vai trò ĐÃ LƯU.
 - Kết quả:
 
 **TC-HQ-03** — Giao diện cũ `devthumua` màn Phân quyền không đổi gì (ba CR chỉ ở v2).
-Nhãn bậc ở v1 **có đổi** thành «Được giao + đã duyệt» vì nhãn do máy chủ cấp — đó là
+Nhãn bậc ở v1 **có đổi** thành **Được giao + đã duyệt** vì nhãn do máy chủ cấp — đó là
 chủ ý, không phải lỗi.
 - Kết quả:
 

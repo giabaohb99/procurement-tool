@@ -1,12 +1,12 @@
 """bao-CR-579 — Đặt xe và Duyệt dấu khai được NHIỀU luồng theo điều kiện.
 
 Người có quyền cấu hình luồng khai nhiều luồng cho cùng một loại phiếu (ví dụ:
-giao hàng thì thêm Giám đốc), và chọn «người tạo chọn người duyệt» như app cũ.
+giao hàng thì thêm Giám đốc), và chọn "người tạo chọn người duyệt" như app cũ.
 Ba thứ phải đúng thì điều đó mới chạy:
 
 1. Bối cảnh phiếu đưa sang bộ máy duyệt có đủ ô, và ô người là id NHÂN SỰ. Trên
    phiếu, `requester_id` / `first_approver_id` là id TÀI KHOẢN; đưa thẳng sang là
-   điều kiện «người tạo thuộc danh sách» không bao giờ khớp và bước «lấy từ ô»
+   điều kiện "người tạo thuộc danh sách" không bao giờ khớp và bước "lấy từ ô"
    giao việc cho một nhân sự trùng số với tài khoản — người khác hẳn.
 2. Luồng có điều kiện, ưu tiên cao được chọn trước luồng mặc định.
 3. Danh sách luồng nói được mỗi luồng đang có bao nhiêu phiếu chạy.

@@ -1,4 +1,4 @@
-"""ai-CR-232 — prod 28/10/2026: model Claude đời mới trả 400 «`temperature` is deprecated for this model» → bot Telegram ERP hỏng
+"""ai-CR-232 — prod 28/10/2026: model Claude đời mới trả 400 "`temperature` is deprecated for this model" → bot Telegram ERP hỏng
 mọi lượt luồng nặng. Canh: gặp lỗi đó thì gửi lại MỘT lần không có temperature và nhớ model; lượt sau không gửi temperature nữa;
 lỗi 400 khác vẫn báo như cũ; model cũ vẫn nhận temperature."""
 import pytest

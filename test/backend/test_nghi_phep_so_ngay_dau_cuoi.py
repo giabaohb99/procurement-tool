@@ -3,8 +3,8 @@
 Ô buổi nói **MỐC**, không nói buổi: `from_session` là *nghỉ bắt đầu lúc nào*,
 `to_session` là *nghỉ kết thúc lúc nào*. Bản cũ tra CHUNG một bảng
 `{Cả ngày: 1, Sáng: .5, Chiều: .5}` cho cả hai đầu, tức đọc ô buổi thành *"buổi
-nào của ngày đó được nghỉ"* — mâu thuẫn với chính luật *«chiều → sáng cùng ngày
-là khoảng trống»* mà nó đang chặn, và sai ba nhóm ca:
+nào của ngày đó được nghỉ"* — mâu thuẫn với chính luật *"chiều → sáng cùng ngày
+là khoảng trống"* mà nó đang chặn, và sai ba nhóm ca:
 
 | Ca | Bản cũ | Đúng |
 |---|---|---|

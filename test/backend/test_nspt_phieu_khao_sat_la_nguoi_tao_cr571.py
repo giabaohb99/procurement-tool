@@ -1,7 +1,7 @@
-"""bao-CR-571 — «NSPT phụ trách (người tạo)» của phiếu khảo sát là NGƯỜI TẠO, backend tự gán.
+"""bao-CR-571 — "NSPT phụ trách (người tạo)" của phiếu khảo sát là NGƯỜI TẠO, backend tự gán.
 
 Lỗi có thật 02/10/2026: nháp F5 của màn tạo phiếu lưu chung trên trình duyệt, tài khoản Quyên
-mở «Tạo phiếu» nạp nguyên nháp của chị Phương — và backend lưu đúng cái tên giao diện gửi lên.
+mở "Tạo phiếu" nạp nguyên nháp của chị Phương — và backend lưu đúng cái tên giao diện gửi lên.
 """
 from app.modules.employee.model import Employee
 from app.modules.survey import service as sv_service

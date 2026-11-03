@@ -155,7 +155,7 @@ def test_comment_moi_keo_thread_len_dau(db, bo_may):
 
 
 def test_last_comment_at_map_lay_moc_cuoi(db, bo_may):
-    """Cột «hoạt động cuối» (F13b) dựa trên map này — phải là bình luận MUỘN
+    """Cột "hoạt động cuối" (F13b) dựa trên map này — phải là bình luận MUỘN
     NHẤT của từng bài, bài chưa có bình luận thì vắng mặt trong map."""
     goc = datetime(2026, 9, 1, 8, 0, 0)
     p1 = _dang(db, bo_may.tac_gia, box_id=bo_may.box.id, title="Có bình luận")
@@ -218,7 +218,7 @@ def test_box_an_bien_khoi_cay_voi_nguoi_thuong(db, bo_may, cap_quyen, seed):
     assert groups[0]["children"][0]["status"] == int(ForumBoardStatus.HIDDEN)
 
 
-# ── F13c. Sidebar «Đang sôi nổi» + «Mới nhất» ──────────────────────────────────
+# ── F13c. Sidebar "Đang sôi nổi" + "Mới nhất" ──────────────────────────────────
 
 def _tha_cam_xuc(db, post, user_id, when):
     from app.modules.forum.model import ForumReaction, ForumReactionKind
@@ -251,7 +251,7 @@ def test_soi_noi_xep_theo_diem_7_ngay(db, bo_may):
     profile = get_perm_profile(db, bo_may.tac_gia)
     trending, latest = service.list_highlight_threads(db, bo_may.tac_gia, profile)
     assert [p.id for p in trending] == [b.id, a.id]
-    # «Mới nhất» toàn diễn đàn theo id giảm dần, KHÔNG dính cửa sổ 7 ngày
+    # "Mới nhất" toàn diễn đàn theo id giảm dần, KHÔNG dính cửa sổ 7 ngày
     assert [p.id for p in latest] == [c.id, b.id, a.id]
 
 

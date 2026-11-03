@@ -37,8 +37,8 @@ export function OrgChartPage() {
   const { can } = usePermission()
   const allowed = can('employee', 'read')
   const { data, isPending, isError, error, refetch } = useOrgChart({ enabled: allowed })
-  //  duoc-CR-713: Cài đặt nhân sự TẮT «Sơ đồ tổ chức cho mọi nhân viên» → backend trả 403 cho người không xem được toàn
-  //  bộ hồ sơ. Nói đúng lý do, đừng để câu «không tải được» làm người ta bấm Tải lại mãi.
+  //  duoc-CR-713: Cài đặt nhân sự TẮT "Sơ đồ tổ chức cho mọi nhân viên" → backend trả 403 cho người không xem được toàn
+  //  bộ hồ sơ. Nói đúng lý do, đừng để câu "không tải được" làm người ta bấm Tải lại mãi.
   const closedBySetting = (error as AxiosError | null)?.response?.status === 403
   const meId = useAuthStore((state) => state.user?.employee_id ?? 0)
   const isMobile = useIsMobile()
@@ -47,7 +47,7 @@ export function OrgChartPage() {
   const [companyChoice, setCompanyChoice] = useState<string | null>(null)
   const [department, setDepartment] = useState(ALL)
 
-  //  Pháp nhân để chọn: các pháp nhân trả về + nhóm «Chưa gán» (0) nếu có người lạc nhóm.
+  //  Pháp nhân để chọn: các pháp nhân trả về + nhóm "Chưa gán" (0) nếu có người lạc nhóm.
   const companyOptions = useMemo(() => {
     if (!data) return []
     const known = new Set(data.companies.map((company) => company.id))

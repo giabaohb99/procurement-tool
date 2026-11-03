@@ -1,5 +1,5 @@
-"""ai-CR-144 — AI-0006 (09/10/2026): model rẻ xả suy nghĩ tiếng Anh ra phần chữ, trong đó có mảnh «{…}» lẻ → kế hoạch
-rỗng mà vẫn đi tiếp: thẻ trắng kèm «nhắn duyệt», việc kẹt ở «đang hỏi lại», đại ca nhắn duyệt thì bot báo không có việc."""
+"""ai-CR-144 — AI-0006 (09/10/2026): model rẻ xả suy nghĩ tiếng Anh ra phần chữ, trong đó có mảnh "{…}" lẻ → kế hoạch
+rỗng mà vẫn đi tiếp: thẻ trắng kèm "nhắn duyệt", việc kẹt ở "đang hỏi lại", đại ca nhắn duyệt thì bot báo không có việc."""
 import json
 
 import pytest
@@ -27,7 +27,7 @@ def _res(text):
 
 
 def test_lay_dung_object_co_khoa_plan_giua_doan_suy_nghi():
-    assert manager.extract_json_with(LEAK, "plan") is None                      # mảnh lẻ không có «plan» → không nhận
+    assert manager.extract_json_with(LEAK, "plan") is None                      # mảnh lẻ không có "plan" → không nhận
     text = LEAK + "\n```json\n" + json.dumps(PLAN, ensure_ascii=False) + "\n```\nDone."
     assert manager.extract_json_with(text, "plan")["plan_files"] == PLAN["plan_files"]
     assert manager.extract_json_with('{"plan": ""}', "plan") is None
@@ -111,7 +111,7 @@ def test_lap_ke_hoach_uu_tien_khoa_claude_neu_co(monkeypatch):
 
 
 def test_khoa_claude_qua_tram_tuy_chinh_cung_duoc_uu_tien(monkeypatch):
-    """ai-CR-146: khóa modelapi.vn nhóm «claude» khai là openai_compat + model claude-… → vẫn được ưu tiên lập kế hoạch."""
+    """ai-CR-146: khóa modelapi.vn nhóm "claude" khai là openai_compat + model claude-… → vẫn được ưu tiên lập kế hoạch."""
     from app.core.config import settings
     from app.modules.agent_hub import user_keys
     from app.modules.agent_hub.ai_keys import KeyRef
@@ -153,11 +153,11 @@ def test_lap_ke_hoach_dung_ban_manh_cung_ho_con_chat_dung_ban_nhanh(monkeypatch)
 
 
 def test_bang_gia_deepseek_qua_tram_khong_con_tinh_0():
-    """ai-CR-147: «/chiphi» báo $0.00 vì bảng giá chỉ có Gemini. Nay có giá DeepSeek qua modelapi.vn (theo nhóm của trạm)."""
+    """ai-CR-147: "/chiphi" báo $0.00 vì bảng giá chỉ có Gemini. Nay có giá DeepSeek qua modelapi.vn (theo nhóm của trạm)."""
     from app.modules.agent_hub.constants import estimate_cost_usd
 
     assert estimate_cost_usd("deepseek-v4-flash", 1_000_000, 0) == pytest.approx(9.50)
     assert estimate_cost_usd("deepseek-v4-pro", 0, 1_000_000) == pytest.approx(85.54)
     assert estimate_cost_usd("deepseek-v4.1-flash", 1_000_000, 1_000_000) == pytest.approx(10.50)
-    #  Bản v4 nhóm «deepseek» đắt hơn bản v4.1 nhóm tự host khoảng 4,5 lần mỗi token vào.
+    #  Bản v4 nhóm "deepseek" đắt hơn bản v4.1 nhóm tự host khoảng 4,5 lần mỗi token vào.
     assert estimate_cost_usd("deepseek-v4-flash", 1000, 0) / estimate_cost_usd("deepseek-v4.1-flash", 1000, 0) > 4

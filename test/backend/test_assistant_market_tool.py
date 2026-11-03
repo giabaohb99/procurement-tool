@@ -41,7 +41,7 @@ def _hoi(db, seed, name, args):
 
 @pytest.fixture
 def web_gia(monkeypatch):
-    """Máy tìm giả: lượt «giá …» ra 2 trang (một trang Shopee), lượt «báo giá …» ra thêm 1 trang; đọc trang trả chữ có giá."""
+    """Máy tìm giả: lượt "giá …" ra 2 trang (một trang Shopee), lượt "báo giá …" ra thêm 1 trang; đọc trang trả chữ có giá."""
     asked: list[str] = []
 
     def fake_search(q, limit=8):
@@ -274,7 +274,7 @@ def test_nhan_con_so_y_dinh():
 # ── ai-CR-179: web về NCC trong supplier_scorecard (with_web) ────────────────────────────
 @pytest.fixture
 def web_ncc(monkeypatch):
-    """Máy tìm giả theo tên NCC: NX có website riêng + trang MST; «Thép Việt Mới» (ứng viên) ra một trang; NCC khác trống."""
+    """Máy tìm giả theo tên NCC: NX có website riêng + trang MST; "Thép Việt Mới" (ứng viên) ra một trang; NCC khác trống."""
     asked: list[str] = []
 
     def fake_search(q, limit=8, **kw):
@@ -338,7 +338,7 @@ def test_with_web_ten_ncc_chua_co_trong_erp_la_ung_vien_moi_chi_co_web(db, seed,
     _cap_du(seed, cap_quyen)
     out = _hoi(db, seed, "supplier_scorecard", {"product_code": "GA4", "supplier_names": ["NCC B", "Thép Việt Mới"],
                                                 "with_web": True})
-    #  «NCC B» có trong ERP → chấm như supplier_codes; «Thép Việt Mới» chưa có → ứng viên mới.
+    #  "NCC B" có trong ERP → chấm như supplier_codes; "Thép Việt Mới" chưa có → ứng viên mới.
     assert [i["supplier_code"] for i in out["items"]] == ["NCCB"]
     assert out["items"][0]["web"]["summary_sources"] == []
     cand = out["candidates"]

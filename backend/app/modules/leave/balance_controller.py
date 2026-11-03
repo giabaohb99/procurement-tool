@@ -38,7 +38,7 @@ def _dump(db: Session, obj: LeaveBalance, names: dict[int, str], types: dict[int
     data = LeaveBalanceResponse.model_validate(obj).model_dump()
     #  Hai số dẫn xuất — `model_validate` không lấy được `@property` nên gán tay.
     data["total_days"] = obj.total_days
-    #  duoc-CR-715: loại cộng dần trừ phần chưa tới tháng — cùng số với ô «còn lại» trên form.
+    #  duoc-CR-715: loại cộng dần trừ phần chưa tới tháng — cùng số với ô "còn lại" trên form.
     #  `available` = bản đã tính một lượt cho cả danh sách (không tra từng dòng).
     data["remaining_days"] = (available[obj.id] if available and obj.id in available
                               else balance_service.available_days(db, obj))
@@ -196,6 +196,11 @@ def allocate(data: LeaveBalanceAllocate, db: Session = Depends(get_db),
     employees = db.query(Employee).filter(Employee.is_active.is_(True))
     if data.employee_ids:
         employees = employees.filter(Employee.id.in_(data.employee_ids))
+    #  duoc-CR-717: lọc theo pháp nhân / phòng / hình thức / cấp bậc — chỉ THU HẸP, chạy TRƯỚC apply_scope.
+    for column, value in ((Employee.company_id, data.company_id), (Employee.department_id, data.department_id),
+                          (Employee.employment_type, data.employment_type), (Employee.job_level, data.job_level)):
+        if value:
+            employees = employees.filter(column == value)
     employees = apply_scope(employees, Employee, "employee", user,
                             get_perm_profile(db, user)).all()
 

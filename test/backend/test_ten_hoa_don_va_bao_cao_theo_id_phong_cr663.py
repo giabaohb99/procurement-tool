@@ -1,4 +1,4 @@
-"""duoc-CR-663 (kh-NT1-4) — (a) «Tên trên hóa đơn» của dòng ĐMH GHI vào cột lúc lưu;
+"""duoc-CR-663 (kh-NT1-4) — (a) "Tên trên hóa đơn" của dòng ĐMH GHI vào cột lúc lưu;
 (b) N-008: báo cáo mua hàng gom theo ID phòng ban, hiển thị tên hiện hành — đổi tên phòng
 không làm lệch số."""
 from types import SimpleNamespace

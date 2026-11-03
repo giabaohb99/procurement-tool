@@ -15,6 +15,9 @@ const CONFIG: ReportPageConfig = {
   sourcePath: appRoutes.hr.leaveBalances,
   //  `people_missing_balance` ("Chưa được cấp quỹ", duoc-CR-686) là chỉ số THỜI ĐIỂM — chỉ ở Tổng.
   kpis: ['granted', 'used', 'pending', 'remaining', 'usage_rate', 'people_missing_balance'],
+  //  `comp` "Nghỉ bù cộng thêm" (duoc-CR-717, D9a): phần cộng từ phiếu nghỉ bù đã duyệt — hiện sẵn
+  //  ở bảng, không lên thẻ (đa số công ty con số này nhỏ, chiếm một thẻ là thừa).
+  tableMetrics: ['comp'],
   //  Kỳ của báo cáo này là NĂM, không có trục ngày/tuần/tháng bên trong một
   //  năm — backend luôn trả `trend: []`, nên ẩn hẳn khung biểu đồ (duoc-CR-686)
   //  thay vì để một khối "chưa có phát sinh" trống trơn.

@@ -102,7 +102,7 @@ def test_ngay_le_cua_phap_nhan_khac_khong_dinh_toi_minh(db):
 
 
 def test_ngay_le_lap_hang_nam_khop_theo_ngay_thang(db):
-    """Nhập «01/01/2020» có cờ lặp thì năm 2026 vẫn phải nhận ra."""
+    """Nhập "01/01/2020" có cờ lặp thì năm 2026 vẫn phải nhận ra."""
     db.add(Holiday(company_id=0, date=date(2020, 1, 1), name="Tết Dương lịch",
                    is_recurring=True))
     db.flush()
@@ -143,7 +143,7 @@ def test_thâm_nien_tron_nam(db):
 
 
 def test_lay_bac_cao_nhat_khop_duoc_khong_cong_don(db):
-    """Khai «từ 5 năm +1» và «từ 10 năm +2» thì người 10 năm được +2, không phải +3."""
+    """Khai "từ 5 năm +1" và "từ 10 năm +2" thì người 10 năm được +2, không phải +3."""
     lt = _leave_type(db)
     db.add_all([
         LeaveTypeSeniority(leave_type_id=lt.id, years_from=5, years_to=10, extra_days=1),
@@ -231,7 +231,7 @@ def test_vuot_quy_bi_chan(db):
     with pytest.raises(HTTPException) as e:
         balance_service.check_enough(db, emp, 2026, lt, 13.0)
     assert e.value.status_code == 400
-    #  Câu báo phải chỉ đường sang «Nghỉ không lương», không chỉ nói "hết phép".
+    #  Câu báo phải chỉ đường sang "Nghỉ không lương", không chỉ nói "hết phép".
     assert "Nghỉ không lương" in e.value.detail
 
 

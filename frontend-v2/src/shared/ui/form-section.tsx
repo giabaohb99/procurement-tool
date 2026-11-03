@@ -90,7 +90,7 @@ export interface FormSectionProps {
    * nhóm đang gập và bấm Lưu là không thấy gì xảy ra (bẫy thứ nhất của duoc-CR-317).
    */
   forceOpen?: boolean
-  /** Tóm tắt hiện cạnh tiêu đề khi ĐANG GẬP, để phân biệt «đang gập» với «rỗng». */
+  /** Tóm tắt hiện cạnh tiêu đề khi ĐANG GẬP, để phân biệt "đang gập" với "rỗng". */
   summary?: ReactNode
 }
 
@@ -120,8 +120,8 @@ export function FormSection({
   const canCollapse = collapsible ?? flat
   const storageKey =
     canCollapse && context.storagePrefix ? `${context.storagePrefix}.${title}` : undefined
-  //  `null` = người dùng CHƯA TỪNG bấm nhóm này → theo `defaultOpen` (luật «bản lưu thắng,
-  //  không có thì theo mặc định», cùng `CollapsibleSection`).
+  //  `null` = người dùng CHƯA TỪNG bấm nhóm này → theo `defaultOpen` (luật "bản lưu thắng,
+  //  không có thì theo mặc định", cùng `CollapsibleSection`).
   const [saved, setSaved] = useState<boolean | null>(() => readSavedOpen(storageKey))
   const open = !canCollapse || forceOpen || (saved ?? defaultOpen)
 
@@ -163,7 +163,7 @@ export function FormSection({
     <section
       className={cn(
         //  Đường kẻ DƯỚI mỗi nhóm (không bỏ ở nhóm cuối): nhóm của nhiều component con
-        //  nằm nối nhau, bỏ kẻ ở «nhóm cuối của một component» là hở kẻ giữa hai khối.
+        //  nằm nối nhau, bỏ kẻ ở "nhóm cuối của một component" là hở kẻ giữa hai khối.
         flat ? cn('border-b py-4', context.inset && 'px-4 sm:px-6') : 'space-y-2',
         columns === 3 && '@container',
         className,

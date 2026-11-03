@@ -2,7 +2,7 @@
 
 Trước 25/08/2026 màn này không có chốt nào, nên **bất kỳ ai có `user.write` đều
 tự phong quản trị hệ thống trong một lần bấm**: mở trang của chính mình, tick
-«Quản trị hệ thống», bấm *Lưu vai trò*. Dựng lại được qua API — sau cú bấm đó
+"Quản trị hệ thống", bấm *Lưu vai trò*. Dựng lại được qua API — sau cú bấm đó
 `/api/auth/me` trả hồ sơ quyền đủ **42/42** entity (sau khi vá còn 2).
 
 Bốn lối vào, đều phải đóng:

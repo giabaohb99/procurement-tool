@@ -42,7 +42,7 @@ def _mock_vn_clock(monkeypatch, utc_value: datetime) -> None:
 def test_ap_duoc_dong_hom_nay_theo_gio_vn_du_utc_con_la_hom_truoc(world, monkeypatch):
     """06:30 sáng giờ VN = 23:30 UTC HÔM TRƯỚC. Dòng có `from_date` = hôm nay
     THEO GIỜ VN phải áp được ngay — lỗi cũ đọc ngày UTC (còn là hôm trước) nên
-    từ chối nhầm «Chưa tới ngày hiệu lực»."""
+    từ chối nhầm "Chưa tới ngày hiệu lực"."""
     real_today = date.today()
     vn_today_fake = real_today + timedelta(days=1)   # "hôm nay" theo giờ VN lúc 06:30
     _mock_vn_clock(monkeypatch, datetime.combine(real_today, time(23, 30)))

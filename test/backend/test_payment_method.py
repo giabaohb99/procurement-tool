@@ -80,7 +80,7 @@ class TestLuuHinhThuc:
 
 @pytest.fixture
 def nguoi_in(db, seed, cap_quyen):
-    """Người có khóa IN + phạm vi «tất cả».
+    """Người có khóa IN + phạm vi "tất cả".
 
     Từ 05/09/2026 route `/print` nạp phiếu qua `get_scoped` (P0 #4 — trước đó bản in trả
     ra nhiều dữ liệu hơn cả màn chi tiết, gồm số tài khoản ngân hàng NCC, mà không hỏi

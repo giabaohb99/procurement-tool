@@ -1,4 +1,4 @@
-"""ai-CR-192 (16.5 đợt 2, 13/10 16:27 anh Được thấy chậm): «hello» 70 s vì (1) bước đọc ý định chờ Gemini quá tải đủ 25 s
+"""ai-CR-192 (16.5 đợt 2, 13/10 16:27 anh Được thấy chậm): "hello" 70 s vì (1) bước đọc ý định chờ Gemini quá tải đủ 25 s
 mới đổi model, (2) câu xã giao vẫn nạp đủ 73 công cụ + 7 gói tri thức (56k token). Nay: trần chờ theo lượt cho bước ý định;
 xã giao → nhóm lõi + không gói; câu không khớp nhóm → đủ công cụ nhưng không gói chủ đề, model xin thêm được."""
 from app.modules.assistant import tool_router as tr
@@ -22,8 +22,8 @@ def test_tran_cho_theo_luot():
 
 
 def test_khong_khop_nhom_thi_du_cong_cu_va_doc_cam_nang_bang_tool(db, seed, monkeypatch):
-    """ai-CR-220 (K7) thay bài «câu không khớp nhóm → đủ công cụ nhưng không gói, xin thêm được»: gói tri thức đã bỏ, nên
-    không còn đường «xin thêm gói». Câu không khớp nhóm nào → gửi ĐỦ công cụ MỘT lần (không hỏi lại), lời nhắc mang danh
+    """ai-CR-220 (K7) thay bài "câu không khớp nhóm → đủ công cụ nhưng không gói, xin thêm được": gói tri thức đã bỏ, nên
+    không còn đường "xin thêm gói". Câu không khớp nhóm nào → gửi ĐỦ công cụ MỘT lần (không hỏi lại), lời nhắc mang danh
     mục cẩm nang và có sẵn read_skill để model tự đọc."""
     from app.modules.ai_skill.handbook_seed import ensure_system_handbook
     from app.modules.assistant import service

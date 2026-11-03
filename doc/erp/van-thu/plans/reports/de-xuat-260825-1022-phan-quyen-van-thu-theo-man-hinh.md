@@ -2,9 +2,9 @@
 
 Ngày 25/08/2026 · nhánh `erp-v2` · trạng thái **ĐÃ LÀM (PA-1) — xem CR-157**
 
-> ⚠️ **Đính chính điểm C.** Câu «phân hệ gác bằng `document` nên vai trò chỉ giữ
-> `document_book` không thấy cả phân hệ Văn thư» là **SAI**. `canOpenModule` xét
-> «còn mục menu nào hiện không», và hai mục *Văn bản* / *Chờ tôi duyệt* không
+> ⚠️ **Đính chính điểm C.** Câu "phân hệ gác bằng `document` nên vai trò chỉ giữ
+> `document_book` không thấy cả phân hệ Văn thư" là **SAI**. `canOpenModule` xét
+> **còn mục menu nào hiện không**, và hai mục *Văn bản* / *Chờ tôi duyệt* không
 > khai `entity` nên luôn hiện — `ErpModule.entity` thực ra là **trường chết,
 > không chỗ nào đọc**. Nửa còn lại của C (Tổng quan gọi API cần `document.read`
 > mà không có nhánh tắt) thì đúng và đã vá.
@@ -38,13 +38,13 @@ Ba chỗ lệch, đều kiểm chứng được:
 số · Quy tắc quan hệ. Cho một người sửa quy tắc đánh số = cho họ sửa luôn loại văn bản và
 thư viện mẫu. Không tách được, dù ba việc đó do ba người khác nhau làm.
 
-**B. Một mục menu lại gác bằng khóa mà tab bên trong không dùng.** «Thiết lập văn bản»
+**B. Một mục menu lại gác bằng khóa mà tab bên trong không dùng.** **Thiết lập văn bản**
 gác bằng `doc_type`, nhưng bốn tab chạy trên **ba** khóa. Hệ quả cụ thể:
 - ai chỉ có `external_party` → **không vào nổi trang** chứa đúng tab của mình;
 - ai có `doc_type` mà không có `security_level` → vào được trang, thấy tab *Mức mật / khẩn*,
   bấm vào ăn **403**.
 
-**C. Phân hệ gác bằng `document`, nên vai trò «quản lý sổ» không tồn tại được.**
+**C. Phân hệ gác bằng `document`, nên vai trò "quản lý sổ" không tồn tại được.**
 `documentModule.entity = 'document'`. Ai chỉ có `document_book` thì **không thấy cả phân hệ
 Văn thư** — dù màn Sổ văn bản là của họ. Cùng chuỗi đó: `useDocumentDashboard` không có
 nhánh tắt, nên nếu mở được Tổng quan mà thiếu `document.read` thì ăn toast 403 ngay lúc vào.
@@ -62,14 +62,14 @@ Thêm 3 entity, sửa gác menu:
 | `doc_link_rule` | Quy tắc quan hệ (Văn thư) | `doc_type` ở `link_rule_controller` |
 
 Kèm 3 sửa ở giao diện:
-- «Thiết lập văn bản» **bỏ `entity`**, để trang tự ẩn tab theo `can(...)` — đúng cách
-  «Văn bản» đang làm, lý lẽ đã ghi sẵn trong `routes.tsx`.
-- «Quy tắc đánh số» → `doc_numbering_rule`, «Quy tắc quan hệ» → `doc_link_rule`.
+- **Thiết lập văn bản** **bỏ `entity`**, để trang tự ẩn tab theo `can(...)` — đúng cách
+  **Văn bản** đang làm, lý lẽ đã ghi sẵn trong `routes.tsx`.
+- **Quy tắc đánh số** → `doc_numbering_rule`, **Quy tắc quan hệ** → `doc_link_rule`.
 - `documentModule.entity`: bỏ, hoặc đổi sang phép HOẶC của cả nhóm — để vai trò chỉ có
   `document_book` vẫn thấy phân hệ (điểm **C**).
 - `useDocumentDashboard` thêm `enabled: can('document', 'read')`.
 
-Sau đó: **1 mục menu = 1 khóa**, riêng «Thiết lập văn bản» = 3 khóa nhưng tab tự ẩn.
+Sau đó: **1 mục menu = 1 khóa**, riêng **Thiết lập văn bản** = 3 khóa nhưng tab tự ẩn.
 
 **Rủi ro dời dữ liệu — điểm phải quyết.** Vai trò đã có trên DB thật KHÔNG tự nhận khóa
 mới (`seed_prod` không ghi đè phân quyền sửa trên UI). Deploy xong, người đang có `doc_type`
@@ -93,7 +93,7 @@ Ma trận ngắn lại, hết lệch A và B. Nhưng mất hẳn khả năng tá
 ### PA-3 — Chỉ đổi cách hiển thị ma trận
 
 Giữ nguyên 5 khóa, chỉ gom dòng theo phân hệ và đổi nhãn theo tên màn hình
-(«Loại văn bản (Văn thư)» → «Thiết lập văn bản › Loại văn bản»). Rẻ nhất, không đụng dữ
+(**Loại văn bản (Văn thư)** → **Thiết lập văn bản › Loại văn bản**). Rẻ nhất, không đụng dữ
 liệu quyền đang chạy. **Không chữa được A, B, C** — chỉ làm ma trận dễ đọc hơn.
 
 ## 3. Khuyến nghị

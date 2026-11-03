@@ -27,6 +27,20 @@ const HOLIDAYS = '/api/holidays'
 const APPROVALS = '/api/approvals'
 const APPROVAL_STEPS = `${APPROVALS}/steps`
 
+/**
+ * Thân lệnh Cấp quỹ năm. Bốn ô lọc (duoc-CR-717) chỉ THU HẸP danh sách người trong phạm vi người
+ * bấm; `0` / bỏ trống = không lọc. Mảng rỗng = mọi loại nghỉ có trừ quỹ / mọi nhân sự đang làm.
+ */
+export interface LeaveBalanceAllocatePayload {
+  year: number
+  leave_type_ids?: number[]
+  employee_ids?: number[]
+  company_id?: number
+  department_id?: number
+  employment_type?: number
+  job_level?: number
+}
+
 /** Một khoảng ngày gửi lên — buổi dùng đúng bộ mã `LEAVE_SESSION`. */
 export interface LeavePeriodPayload {
   from_date: string
@@ -40,7 +54,7 @@ export interface LeavePeriodsEstimate {
   periods: { from_date?: string; to_date?: string; days: number }[]
   total_days: number
   schedule_name?: string
-  /** duoc-CR-715: các khoảng «ngày cấm nghỉ» mà ngày đang chọn đụng phải (rỗng = không). */
+  /** duoc-CR-715: các khoảng "ngày cấm nghỉ" mà ngày đang chọn đụng phải (rỗng = không). */
   block_conflicts?: LeaveBlockConflict[]
 }
 
@@ -156,7 +170,7 @@ export const leaveApi = {
   adjustBalance: (id: number, payload: { adjusted_days: number; note: string }) =>
     apiPatch<LeaveBalance>(`${BALANCES}/${id}/adjust`, payload),
 
-  allocate: (payload: { year: number; leave_type_ids?: number[]; employee_ids?: number[] }) =>
+  allocate: (payload: LeaveBalanceAllocatePayload) =>
     apiPost<{
       year: number
       employee_count: number

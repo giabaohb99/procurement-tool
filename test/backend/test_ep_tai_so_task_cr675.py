@@ -81,7 +81,7 @@ _ALPHABET = "0123456789.,-+ eE_abc"
 
 def test_do_ngau_nhien_o_gio_so_nhan_thi_may_chu_cung_nhan(mod):
     rnd = random.Random(675)
-    #  «999.5» / «999.99»: khớp regex nhưng vượt trần 999 của máy chủ — lỗi thật bài này tìm ra (duoc-CR-675).
+    #  "999.5" / "999.99": khớp regex nhưng vượt trần 999 của máy chủ — lỗi thật bài này tìm ra (duoc-CR-675).
     samples = {"0", "999", "999.5", "999.99", "1000", "1,5", "01.5", "1.", ".5", "1.234", "-1", "1e2", "١٢"}
     samples |= {"".join(rnd.choice(_ALPHABET) for _ in range(rnd.randint(1, 7))) for _ in range(3000)}
     accepted = 0
@@ -95,7 +95,7 @@ def test_do_ngau_nhien_o_gio_so_nhan_thi_may_chu_cung_nhan(mod):
         try:
             got = schema.TaskUpdate(estimate_hours=hours).estimate_hours
         except ValidationError as e:   # pragma: no cover — chính là lỗi bài này canh
-            pytest.fail(f"sổ nhận «{raw}» → «{hours}» nhưng máy chủ từ chối: {e}")
+            pytest.fail(f"sổ nhận \"{raw}\" → \"{hours}\" nhưng máy chủ từ chối: {e}")
         assert got == Decimal(raw.replace(",", ".")), (raw, got)
     assert accepted >= 20, "bộ mẫu quá ít chuỗi hợp lệ — bài dò mất nghĩa"
 

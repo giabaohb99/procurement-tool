@@ -51,7 +51,7 @@ def env_trong(monkeypatch):
 
     Máy của người đang chạy bài kiểm thường đã có sẵn địa chỉ app cũ và khóa
     Firebase trong `.env` (di sản của đợt nạp dữ liệu cũ). Bài nào muốn khẳng
-    định «không cấu hình» mà không dọn tầng dưới thì kết quả phụ thuộc vào máy:
+    định "không cấu hình" mà không dọn tầng dưới thì kết quả phụ thuộc vào máy:
     xanh trên máy này, đỏ trên máy khác, và người sau sẽ đi sửa nhầm mã nguồn.
     """
     for bien in ("SYNC_LEGACY_API_BASE", "SYNC_SHARED_SECRET",
@@ -61,7 +61,7 @@ def env_trong(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# 0. Ba trường hợp của luật «bảng trước, `.env` sau»
+# 0. Ba trường hợp của luật "bảng trước, `.env` sau"
 # ---------------------------------------------------------------------------
 def test_bang_cau_hinh_thang_env_khi_ca_hai_cung_co(db, cfg, monkeypatch):
     """Luật đại ca chốt: cả hai cùng có thì TIN Ở BẢNG.
@@ -105,7 +105,7 @@ def test_ha_cau_dao_tren_man_hinh_thi_ngat_dong_bo_ngay(db, cfg):
     Đây chính là tình huống người ta dời cụm này vì nó: đường nối với app cũ đang
     đổ phiếu hỏng vào, người trực mở màn Cấu hình và gạt công tắc. Nếu `SyncSource`
     chụp giá trị lúc nạp module thì công tắc ấy không làm gì cả cho tới lần khởi
-    động lại — mà màn hình vẫn báo «đã lưu».
+    động lại — mà màn hình vẫn báo "đã lưu".
     """
     nguon = require_source(SOURCE_DATXE)
 
@@ -145,7 +145,7 @@ def test_du_ba_o_thi_moi_coi_la_san_sang(db, cfg, env_trong):
 
 
 def test_tat_cau_dao_thi_khong_san_sang_du_da_co_ma_ky(db, cfg, env_trong):
-    """Tắt rồi mà vẫn «sẵn sàng» thì cầu dao chỉ là trang trí."""
+    """Tắt rồi mà vẫn "sẵn sàng" thì cầu dao chỉ là trang trí."""
     service.save(db, {"sync_datxe_enabled": False,
                       "sync_shared_secret": "ma-ky"}, user_id=7)
     assert require_source(SOURCE_DATXE).is_ready() is False
@@ -217,7 +217,7 @@ def test_cua_doc_khong_tra_ve_bi_mat_moi_duoi_bat_ky_dang_nao(db, cfg, khoa, gia
 
 
 # ---------------------------------------------------------------------------
-# 4. Con số «giữ lại bao nhiêu» phải có sàn
+# 4. Con số "giữ lại bao nhiêu" phải có sàn
 # ---------------------------------------------------------------------------
 def test_so_ban_sao_luu_khong_bao_gio_xuong_duoi_mot(db, cfg):
     """Ô này quyết định XÓA BAO NHIÊU BẢN SAO LƯU. Để trống hay gõ 0 mà đi thẳng

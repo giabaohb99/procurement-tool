@@ -1,12 +1,12 @@
 import type { AuditLogEntry } from './audit-api'
 
 /**
- * Câu mô tả một dòng nhật ký cho khối «Hoạt động» kiểu ERPNext (duoc-CR-710):
- * «‹người› đã tạo hồ sơ này» · «‹người› đã cập nhật ‹Phòng ban›, ‹Công ty›» · «‹người› — Duyệt».
+ * Câu mô tả một dòng nhật ký cho khối "Hoạt động" kiểu ERPNext (duoc-CR-710):
+ * "‹người› đã tạo hồ sơ này" · "‹người› đã cập nhật ‹Phòng ban›, ‹Công ty›" · "‹người› — Duyệt".
  *
- * `fieldLabels` dịch tên cột (`department_id`) ra chữ người dùng thấy ở form («Phòng ban»). Cột KHÔNG
+ * `fieldLabels` dịch tên cột (`department_id`) ra chữ người dùng thấy ở form ("Phòng ban"). Cột KHÔNG
  * có trong bảng (cột kỹ thuật như `updated_at`, nhãn chép `position`) bị bỏ — in ra chỉ làm rối dòng.
- * Nhật ký chỉ có TÊN trường đã đổi, không có giá trị cũ / mới, nên câu dừng ở mức «đã cập nhật …».
+ * Nhật ký chỉ có TÊN trường đã đổi, không có giá trị cũ / mới, nên câu dừng ở mức "đã cập nhật …".
  */
 export interface AuditEntryDescription {
   /** Động từ / cụm mô tả, đứng sau tên người. */
@@ -42,7 +42,7 @@ export function describeAuditEntry(
  * Gộp các dòng nhật ký sinh ra từ CÙNG một lượt gọi (cùng `request_id`, cùng người) thành một dòng.
  *
  * Một lần bấm Lưu hồ sơ có thể ghi vài dòng nhật ký giống hệt nhau (vd ảnh 02/11/2026: ba dòng
- * «Cập nhật · 29/10 11:09»). ERPNext không lặp; ở đây giữ dòng MỚI NHẤT (API trả mới nhất trước) và
+ * "Cập nhật · 29/10 11:09"). ERPNext không lặp; ở đây giữ dòng MỚI NHẤT (API trả mới nhất trước) và
  * hợp danh sách trường đã đổi của cả nhóm. Dòng không có `request_id` (ghi trước bao-CR-407) giữ nguyên.
  */
 export function collapseSameRequest(logs: AuditLogEntry[]): AuditLogEntry[] {

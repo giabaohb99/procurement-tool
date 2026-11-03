@@ -29,13 +29,13 @@ so với người cùng vai trò, nhóm < 5 thì so pháp nhân · có công t�
 FE v2 (core/telemetry) ──POST /api/telemetry/ui-events (lô ≤100, fetch keepalive, KHÔNG vào request_log)──► tab_ui_event (90 ngày)
 tab_request_log · tab_login_session · tab_audit_log · tab_export_log · tab_ui_event
    + Lịch làm việc (resolver_many) + ngày lễ + đơn nghỉ đã duyệt
-   └─ Celery 04:30 «usage.aggregate_daily» (hôm qua, ~14 truy vấn cố định) ─► tab_usage_daily (người × ngày, giữ lâu)
+   └─ Celery 04:30 "usage.aggregate_daily" (hôm qua, ~14 truy vấn cố định) ─► tab_usage_daily (người × ngày, giữ lâu)
 tab_usage_daily + audit/approval/notification/comment/… (cửa sổ 4 tuần)
-   └─ Celery T2 05:15 «usage.build_weekly_snapshots» ─► tab_user_usage_snapshot (JSON số + mã, schema v1)
+   └─ Celery T2 05:15 "usage.build_weekly_snapshots" ─► tab_user_usage_snapshot (JSON số + mã, schema v1)
                                                      └► tab_user_usage_label (nhãn §4, có bằng chứng)
 Admin ── /report/usage-profiles (+ /:userId) ── GET /api/usage-profiles/summary|/summary/export|/{user_id}|/cohorts
         gác KÉP: require("setting","read") + require_report(ReportKey.USAGE_PROFILE=14)
-Celery 04:20 «usage.cleanup_ui_events» xóa lô 2.000 dòng > 90 ngày
+Celery 04:20 "usage.cleanup_ui_events" xóa lô 2.000 dòng > 90 ngày
 ```
 
 ## Các phase

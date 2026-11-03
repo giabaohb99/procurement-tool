@@ -3,7 +3,7 @@
 Luật đại ca chốt 23/09/2026. Lý do không phải cho đủ ô: phạm vi `dept` lọc theo
 `department_id`, chuông và thư cũng định tuyến theo cùng cột đó — nên phiếu thiếu
 phòng ban gửi đi là nằm chết, không ai nhìn thấy. Trước CR này không chỗ nào chặn:
-người lập nhận câu «Đã gửi duyệt» rồi chờ một người sẽ không bao giờ thấy phiếu.
+người lập nhận câu "Đã gửi duyệt" rồi chờ một người sẽ không bao giờ thấy phiếu.
 
 Thứ tự hai nhịp mới là phần đáng canh, không phải câu chặn:
 
@@ -100,7 +100,7 @@ def test_phong_chua_gan_truong_thi_chan(db, seed):
 
 
 def test_ten_phong_khong_khop_danh_muc_thi_noi_dung_ly_do_do(db, seed):
-    """Tên phòng không tra ra id — câu lỗi phải nói đúng chuyện đó, đừng đổ cho «chưa có phòng»."""
+    """Tên phòng không tra ra id — câu lỗi phải nói đúng chuyện đó, đừng đổ cho "chưa có phòng"."""
     pr = _draft(db, seed, requester_id=0, department="Phòng Đã Đổi Tên", department_id=0)
 
     with pytest.raises(HTTPException) as e:

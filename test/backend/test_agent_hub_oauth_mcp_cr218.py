@@ -4,7 +4,7 @@ Cho phép → đổi mã lấy token (PKCE S256) → gọi /api/mcp.
 Canh (đủ nhánh Agent 1 đặt):
   - tài liệu mô tả (.well-known) đúng đường; 401 của /api/mcp có `WWW-Authenticate: Bearer resource_metadata="…"`;
   - đi trọn luồng: đăng ký → authorize chuyển sang màn đồng ý → Cho phép → token → tools/list được, nhật ký ghi tên ứng dụng
-    lúc đăng ký; kết nối hiện ở Khóa của tôi là «Kết nối OAuth», không ăn vào trần 5 khóa dán tay;
+    lúc đăng ký; kết nối hiện ở Khóa của tôi là "Kết nối OAuth", không ăn vào trần 5 khóa dán tay;
   - PKCE sai bị chặn; thiếu PKCE / không phải S256 trả lỗi về ứng dụng; mã cấp quyền dùng một lần;
   - ứng dụng chưa đăng ký / redirect_uri lạ bị từ chối và KHÔNG chuyển hướng;
   - mã truy cập hết hạn → 401 có header; làm mới xoay vòng (mã làm mới cũ chết);

@@ -1,12 +1,12 @@
 """ai-CR-212 — phát khóa kết nối AI HỘ (K4 doc/erp/21 §5.3 + §4.3, bỏ phần Telegram theo §7.1).
 
 Canh:
-  - phát cho người trong phạm vi (phòng mình) → khóa CHỈ ĐỌC «chờ nhận» + chuông cho chủ khóa; khóa chưa nhận KHÔNG dùng
+  - phát cho người trong phạm vi (phòng mình) → khóa CHỈ ĐỌC "chờ nhận" + chuông cho chủ khóa; khóa chưa nhận KHÔNG dùng
     được (cổng MCP 401, nhật ký ghi lý do);
   - nhận: khóa thô hiện đúng MỘT lần, bản niêm phong xóa trắng; lần hai / người khác → 404;
   - phát ngoài phạm vi / không có quyền → 403, không phát khóa nào; cả phòng ≤ 50 người; bỏ qua người đã đủ 5 khóa;
   - danh sách quản trị chỉ khóa của người trong phạm vi, lọc trạng thái / lượt phát;
-  - thu hồi: theo khóa / theo người / cả lượt; chủ khóa ngoài phạm vi → 403 cả lệnh; dòng giữ lại «Đã thu hồi»;
+  - thu hồi: theo khóa / theo người / cả lượt; chủ khóa ngoài phạm vi → 403 cả lệnh; dòng giữ lại "Đã thu hồi";
   - cổng B: không quyền → allowed false; bản gọi từ xa đọc đúng.
 """
 import json

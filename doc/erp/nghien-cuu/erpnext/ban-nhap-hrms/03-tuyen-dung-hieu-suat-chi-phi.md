@@ -28,7 +28,7 @@
 **Luồng trạng thái**: Draft → Submit. Có thể `Amend` (sửa lại lần khác).
 
 **Nút/Liên kết chính**:
-- **«Get Job Requisitions»** (nút): Nạp Job Requisition vào chi tiết (chép designation, vacancies, expected_compensation).
+- **Get Job Requisitions** (nút): Nạp Job Requisition vào chi tiết (chép designation, vacancies, expected_compensation).
 - **Kiểm chặn**: Không cho phép 2 Staffing Plan cùng designation × company × khoảng thời gian chồng lắp; kiểm validate vacancies không vượt quá kế hoạch của công ty cha (nếu có cây công ty).
 
 **Chưa kiểm**: Ghi lại DB mapping từ staffing_details vào field nào.
@@ -47,7 +47,7 @@
 
 **Liên kết**:
 - Job Opening tham chiếu Job Requisition; khi Job Opening đóng → Job Requisition status → "Filled".
-- Nạp vào Staffing Plan qua nút «Get Job Requisitions».
+- Nạp vào Staffing Plan qua nút **Get Job Requisitions**.
 
 ---
 
@@ -77,7 +77,7 @@
 4. Đóng tin (status = Closed) → Job Requisition status → "Filled" + lưu ngày đóng (`closed_on`)
 
 **Nút**:
-- «Close Job Opening» / «Reopen Job Opening»: Toggle trạng thái. Khi đóng, cảnh báo nếu chưa đủ định biên.
+- **Close Job Opening** / **Reopen Job Opening**: Toggle trạng thái. Khi đóng, cảnh báo nếu chưa đủ định biên.
 
 **Liên kết**:
 - Khi chọn `designation` + `company` → tự tìm Staffing Plan đang hoạt động cho khoảng ngày hôm nay.
@@ -527,14 +527,14 @@
 5. Payment submitted: employee_advance → claimed_amount cập nhật (chưa kiểm hàm nào); status → Paid / Partially Paid
 
 **Nút/Hàm**:
-- **«Make Payment Entry»** (nút): Gọi `get_payment_entry_for_employee(dt, dn)` → tạo Payment Entry (từ erpnext.overrides.employee_payment_entry module)
+- **Make Payment Entry** (nút): Gọi `get_payment_entry_for_employee(dt, dn)` → tạo Payment Entry (từ erpnext.overrides.employee_payment_entry module)
 - `notify_approver()`: Gửi thông báo cho expense_approver (sau insert)
 - `calculate_total_amount()`, `calculate_taxes()`: Tính tổng auto
 - `set_expense_account(validate=True)`: Set TK chi phí từ Expense Claim Type nếu trống
 
 **Liên kết**:
 - **Employee Advance**: Bảng `advances` khấu vào chi phí claim (trạng thái tạm ứng cập nhật)
-- **Journal Entry / Payment Entry**: Lập từ nút «Make Payment» → ghi sổ hoặc chi tiền cho nhân viên
+- **Journal Entry / Payment Entry**: Lập từ nút **Make Payment** → ghi sổ hoặc chi tiền cho nhân viên
   - Ghi: Dr. Payable Account / Cr. Bank Account (hoặc ngược lại nếu nhân viên nợ)
 - **Delivery Trip**: Nếu claim từ delivery trip → `delivery_trip` field (chỉ xem)
 - **Vehicle Log**: Nếu từ khoảng cách xe → `vehicle_log` field (chỉ xem)
@@ -575,7 +575,7 @@
 
 **Liên kết**:
 - **Expense Claim** (chưa kiểm): Có button tạo Expense Claim từ Vehicle Log?
-  - Nút «Make Expense Claim» hoặc `make_expense_claim_for_vehicle_log(vehicle_log)`: Tạo claim với expense_type = fuel, amount = fuel cost
+  - Nút **Make Expense Claim** hoặc `make_expense_claim_for_vehicle_log(vehicle_log)`: Tạo claim với expense_type = fuel, amount = fuel cost
 
 ---
 

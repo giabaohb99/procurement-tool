@@ -35,7 +35,7 @@ Tạo: `src/shared/access-subject/*`, `src/modules/hr/hooks/use-access-subject-o
 - [x] test chuyển + xanh
 
 ## Tiêu chí xong
-Hộp «Chia sẻ» thư mục chạy y như cũ (kiểm tay: gõ không dấu, lọc loại, chọn nhiều). `grep -r "modules/" src/shared/access-subject` rỗng. 3 cổng xanh.
+Hộp **Chia sẻ** thư mục chạy y như cũ (kiểm tay: gõ không dấu, lọc loại, chọn nhiều). `grep -r "modules/" src/shared/access-subject` rỗng. 3 cổng xanh.
 
 ## Rủi ro
 | Rủi ro | K×T | Giảm thiểu |

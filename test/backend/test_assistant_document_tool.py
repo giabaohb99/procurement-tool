@@ -112,7 +112,7 @@ def test_loai_khong_can_duyet_noi_thang(db, seed):
 
 
 def test_co_luong_tra_buoc_va_ten_nguoi_duyet_cua_toi(db, seed):
-    """Câu "người phê duyệt nghỉ phép CỦA TÔI là ai": bước «Trưởng bộ phận người nộp»
+    """Câu "người phê duyệt nghỉ phép CỦA TÔI là ai": bước "Trưởng bộ phận người nộp"
     phải giải ra đúng trưởng phòng của người hỏi, không chỉ trả nhãn quy tắc."""
     from app.modules.approval.flow_model import APPROVER_DEPT_HEAD, APPROVER_EMPLOYEE
     from app.modules.department.model import Department

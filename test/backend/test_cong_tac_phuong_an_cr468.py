@@ -4,7 +4,7 @@ Luật phải giữ:
 1. Mặc định TẮT. Nguồn là màn Cấu hình hệ thống (khóa `pr_options_enabled`, lưu DB) rồi mới
    tới `.env` — bật/tắt không cần deploy.
 2. TẮT thì mọi đường GHI của cụm bị từ chối (gắn / sửa / chốt / gom đơn theo phương án), và
-   «Phương án 0» KHÔNG được sinh thêm — kể cả đường sinh bù chạy kèm lúc đọc phiếu.
+   "Phương án 0" KHÔNG được sinh thêm — kể cả đường sinh bù chạy kèm lúc đọc phiếu.
 3. TẮT nhưng ĐỌC vẫn mở: phương án đã lưu trên phiếu cũ vẫn xem được, không mất dấu.
 4. Chi tiết phiếu trả cờ `options_enabled` để giao diện ẩn đúng hai chỗ — người dùng thường
    không có quyền đọc cấu hình nên không tự hỏi được.

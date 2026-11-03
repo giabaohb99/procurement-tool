@@ -1,6 +1,6 @@
 /**
- * Tên cột hồ sơ nhân sự → nhãn người dùng thấy ở form, cho khối «Hoạt động» (duoc-CR-710):
- * «Dego Admin đã cập nhật **Phòng ban**, **Công ty**».
+ * Tên cột hồ sơ nhân sự → nhãn người dùng thấy ở form, cho khối "Hoạt động" (duoc-CR-710):
+ * "Dego Admin đã cập nhật **Phòng ban**, **Công ty**".
  *
  * Cột KHÔNG có ở đây (cột kỹ thuật `updated_at`, nhãn chép `position`…) bị bỏ khỏi câu. Nhãn phải khớp
  * chữ trên các tab của màn hồ sơ (`employee-tab-*.tsx`), không phải tiêu đề cột Excel.

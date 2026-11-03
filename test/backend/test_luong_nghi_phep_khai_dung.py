@@ -7,8 +7,8 @@ sửa tay, nên hai thứ phải chắc:
      nạp lại; chạy bản kia trên dev là mất hết luồng đang chạy;
   2. **chạy lại được** — deploy gọi hai lần không đẻ ra hai luồng.
 
-Và hình dạng luồng phải đúng: chặng 2 dùng cách chọn «trưởng bộ phận của phòng
-ban chỉ định» (CR-159), trỏ vào GHẾ chứ không vào một con người.
+Và hình dạng luồng phải đúng: chặng 2 dùng cách chọn "trưởng bộ phận của phòng
+ban chỉ định" (CR-159), trỏ vào GHẾ chứ không vào một con người.
 """
 import json
 
@@ -142,7 +142,7 @@ def test_uu_tien_cao_hon_luong_mac_dinh(db, san):
     """Luồng mặc định ưu tiên 0 và KHÔNG khai điều kiện nên bắt mọi thứ.
 
     Thấp hơn nó thì đơn nghỉ phép rơi vào luồng mặc định — nơi chặng cuối là
-    «Chánh Văn phòng ký», sai người hoàn toàn.
+    "Chánh Văn phòng ký", sai người hoàn toàn.
     """
     assert _chay(db).priority > 0
 

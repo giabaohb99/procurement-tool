@@ -1,13 +1,13 @@
-"""bao-CR-524 — bỏ phòng ảo «Thu mua chung», phòng thu mua mặc định là «Sản xuất -Thu mua».
+"""bao-CR-524 — bỏ phòng ảo "Thu mua chung", phòng thu mua mặc định là "Sản xuất -Thu mua".
 
 Khách chốt 30/09/2026. Trước CR này `0` ở `handler_dept_id` (YCMH · YCBG · ĐMH), `department_id`
-(công nợ · YCTT) và `tab_category_assignee.department_id` mang nghĩa «Thu mua chung» — một phòng
+(công nợ · YCTT) và `tab_category_assignee.department_id` mang nghĩa "Thu mua chung" — một phòng
 không có trong danh mục. Nay phòng thu mua mặc định là phòng THẬT mang mã cấu hình được
 (`central_purchasing_dept_code`, mặc định `PBA017`), tra mã → id ở MỘT chỗ
 (`core/central_purchasing.py`), không gõ cứng id.
 
 Các ca canh ở đây:
-  · phiếu mới không nhờ phòng nào ghi id thật; «Trả về thu mua» ghi id thật;
+  · phiếu mới không nhờ phòng nào ghi id thật; "Trả về thu mua" ghi id thật;
   · người `dept_proc` của phòng PBA017 thấy phiếu thu mua chung — nhưng người bậc `dept` của
     phòng đó KHÔNG thấy phiếu mọi phòng (không thì trưởng phòng PBA017 duyệt bước 1 hộ cả công ty);
   · `0` còn sót vẫn được đọc là phòng mặc định ở mọi chỗ (trước và sau backfill không gãy);
@@ -209,7 +209,7 @@ def test_return_to_purchasing_sets_the_central_id_and_refuses_when_already_there
            .order_by(AuditLog.id.desc()).first())
     assert log.action == "return_dept" and "Nhà máy -> Sản xuất -Thu mua" in log.message
 
-    for handler in (depts.central, 0):   # id thật lẫn `0` cũ đều là «đang ở thu mua»
+    for handler in (depts.central, 0):   # id thật lẫn `0` cũ đều là "đang ở thu mua"
         again = _pr(db, seed, f"PYC-524-TRA-{handler}", depts.factory, handler)
         with pytest.raises(HTTPException) as e:
             pr_ctl.return_dept_(again.id, TransferDeptIn(reason="x"), BackgroundTasks(), db, admin.user)
@@ -217,7 +217,7 @@ def test_return_to_purchasing_sets_the_central_id_and_refuses_when_already_there
 
 
 def test_central_ticket_can_now_be_transferred_to_its_requesting_department(db, seed, depts):
-    """Luật cũ «0 và đích = phòng lập → trùng phòng» là di tích trước CR-480; nay 0 = thu mua."""
+    """Luật cũ "0 và đích = phòng lập → trùng phòng" là di tích trước CR-480; nay 0 = thu mua."""
     admin = _person(db, seed, depts.central, "all", approve=True)
     pr = _pr(db, seed, "PYC-524-CHUYEN", depts.factory, 0)
     out = _data(pr_ctl.transfer_dept_(pr.id, TransferDeptIn(handler_dept_id=depts.factory, reason="Nhà máy tự mua"),
@@ -292,7 +292,7 @@ def test_leftover_zero_reads_as_central_everywhere(db, seed, depts):
 
 
 def test_leftover_zero_assignment_rows_still_drive_auto_assign(db, seed, depts):
-    """Dòng phân công `0` cũ (bộ «Thu mua chung») vẫn là bộ của phòng mặc định; dòng id thật thắng."""
+    """Dòng phân công `0` cũ (bộ "Thu mua chung") vẫn là bộ của phòng mặc định; dòng id thật thắng."""
     nhan = db.query(ItemGroup).filter(ItemGroup.name == "Nhãn").one()
     db.query(CategoryAssignee).delete()
     db.add(CategoryAssignee(department_id=0, item_group_id=nhan.id, primary_employee_id=seed.emp_backup_id))

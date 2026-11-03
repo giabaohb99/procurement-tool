@@ -43,7 +43,7 @@ YCBG thì backend **không kiểm**, luật chỉ nằm ở giao diện. Đừng
   nút Lưu riêng thì Enter phải bị `preventDefault`, không thì người dùng gõ dở
   một dòng, nhấn Enter, và hệ thống lưu thứ khác rồi **báo thành công**.
 - **Nút mở hộp thoại trong `<form>` phải khai `type="button"`.** Thiếu thì HTML
-  mặc định `submit`: bấm «Xóa» là form LƯU bản ghi trước, hộp xác nhận mở sau —
+  mặc định `submit`: bấm **Xóa** là form LƯU bản ghi trước, hộp xác nhận mở sau —
   bấm Hủy thì đã lưu rồi. `shared/ui/delete-confirm-button.tsx` từng thiếu, ảnh
   hưởng ~11 màn chi tiết.
 - **`disabled={mutation.isPending}` KHÔNG chặn được bấm đúp.** Nó là state React
@@ -53,7 +53,7 @@ YCBG thì backend **không kiểm**, luật chỉ nằm ở giao diện. Đừng
 
 ⚠️ **BA BẪY CỦA BẢNG CÓ BỘ LỌC** (duoc-CR-322 — áp cho MỌI màn danh sách):
 
-- **`id = 0` là một GIÁ TRỊ THẬT, đừng lấy làm mốc «tất cả».** Cột tham chiếu
+- **`id = 0` là một GIÁ TRỊ THẬT, đừng lấy làm mốc "tất cả".** Cột tham chiếu
   bỏ trống (`department_id`, `company_id`, `manager_id`…) lưu `0`, và
   `apply_filters` so khớp CHÍNH XÁC nên `department_id=0` lọc ra đúng nhóm *chưa
   gắn*. Lấy `0` làm sentinel thì nhóm đó thành thứ **duy nhất không lọc ra
@@ -63,11 +63,11 @@ YCBG thì backend **không kiểm**, luật chỉ nằm ở giao diện. Đừng
   render đầu vẫn gọi API với số trang cũ (một request thừa vào trang không còn
   tồn tại), và ESLint chặn `setState` trong effect. Theo dõi giá trị tìm kiếm
   **đã hoãn** chứ không theo ô nhập thô, kẻo mỗi ký tự một lần đặt lại trang.
-- **Câu «bảng rỗng» phải phân biệt _rỗng vì bộ lọc_ với _rỗng vì chưa có gì_.**
+- **Câu "bảng rỗng" phải phân biệt _rỗng vì bộ lọc_ với _rỗng vì chưa có gì_.**
   Một câu chung cho cả hai thì người vừa gõ nhầm một chữ đọc ra "chưa có dữ
   liệu" và tin là vậy.
 
 Bẫy thứ tư nằm ở `frontend-v2/docs/ui/table.md` §4: **`defaultHidden` chỉ áp cho
-người chưa từng đụng menu «Cột»** — bảng nhớ bố cục trong `localStorage` và bản
+người chưa từng đụng menu "Cột"** — bảng nhớ bố cục trong `localStorage` và bản
 lưu thắng toàn bộ, nên sửa `defaultHidden` xong mà màn hình không đổi thì không
 phải mã sai.

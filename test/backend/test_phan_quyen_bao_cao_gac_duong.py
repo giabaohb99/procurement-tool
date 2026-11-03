@@ -57,7 +57,7 @@ GATED: dict[str, ReportKey] = {
     "/api/labor-contracts/summary/export": ReportKey.LABOR_CONTRACT,
     "/api/employees/profile-gaps/summary": ReportKey.HR_PROFILE_GAPS,
     "/api/employees/profile-gaps/summary/export": ReportKey.HR_PROFILE_GAPS,
-    #  duoc-CR-686: đường «bấm số ra danh sách» — gác KÉP y hệt `/summary` của nó.
+    #  duoc-CR-686: đường "bấm số ra danh sách" — gác KÉP y hệt `/summary` của nó.
     "/api/employees/summary/rows": ReportKey.HR_HEADCOUNT,
     "/api/leave-requests/summary/rows": ReportKey.LEAVE_USAGE,
     "/api/leave-balances/summary/rows": ReportKey.LEAVE_BALANCE,
@@ -96,6 +96,10 @@ GATED: dict[str, ReportKey] = {
     "/api/legal-watch/summary": ReportKey.LEGAL_WATCH,
     "/api/legal-watch/summary/export": ReportKey.LEGAL_WATCH,
     "/api/legal-watch/summary/rows": ReportKey.LEGAL_WATCH,
+    #  duoc-CR-717: làm việc vào ngày lễ, ngày nghỉ (nguồn phiếu nghỉ bù).
+    "/api/holiday-work-report/summary": ReportKey.HOLIDAY_WORK,
+    "/api/holiday-work-report/summary/export": ReportKey.HOLIDAY_WORK,
+    "/api/holiday-work-report/summary/rows": ReportKey.HOLIDAY_WORK,
 }
 #  Khóa có thêm đường `/summary/rows` (3 route) — còn lại chỉ `/summary` + `/summary/export` (2 route).
 ROWS_KEYS = {v for k, v in GATED.items() if k.endswith("/summary/rows")}
@@ -109,7 +113,7 @@ NOT_REPORT = {
 }
 
 #  (khóa, entity giữ nguyên gác quyền, đường summary, đường export).
-#  Báo cáo mà cửa phân hệ gốc đòi `write` (không phải `read`): E2 «Yêu cầu sửa hồ sơ» dùng khóa của màn duyệt.
+#  Báo cáo mà cửa phân hệ gốc đòi `write` (không phải `read`): E2 "Yêu cầu sửa hồ sơ" dùng khóa của màn duyệt.
 NEEDS_WRITE = {ReportKey.PROFILE_CHANGES}
 
 ROUTE_SPECS = [
@@ -160,13 +164,15 @@ ROUTE_SPECS = [
      "/api/management-span/summary", "/api/management-span/summary/export"),
     (ReportKey.WORK_MOVES, "employee",
      "/api/work-moves/summary", "/api/work-moves/summary/export"),
-    #  duoc-CR-689 — «Đối tượng cần chú ý theo luật» (29) đòi thêm employee_sensitive.read nên không nằm ở đây.
+    #  duoc-CR-689 — "Đối tượng cần chú ý theo luật" (29) đòi thêm employee_sensitive.read nên không nằm ở đây.
     (ReportKey.ATTENDANCE_DAILY, "employee",
      "/api/attendance-report/summary", "/api/attendance-report/summary/export"),
     (ReportKey.PROFILE_CHANGES, "employee",
      "/api/profile-change-report/summary", "/api/profile-change-report/summary/export"),
     (ReportKey.ROOM_USAGE, "room_booking",
      "/api/room-usage/summary", "/api/room-usage/summary/export"),
+    (ReportKey.HOLIDAY_WORK, "leave_comp_request",
+     "/api/holiday-work-report/summary", "/api/holiday-work-report/summary/export"),
 ]
 
 PRESET_QS = {"preset": "this_month", "compare": "none"}

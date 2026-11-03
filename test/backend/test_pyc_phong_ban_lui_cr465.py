@@ -31,7 +31,7 @@ from app.modules.purchase_request.service import create_pr
 
 @pytest.fixture
 def dept_head(db, seed):
-    """Gán Trưởng Phòng làm trưởng của «Phòng Test» — nguồn duy nhất của ô TBP."""
+    """Gán Trưởng Phòng làm trưởng của "Phòng Test" — nguồn duy nhất của ô TBP."""
     dep = db.get(Department, seed.dept_id)
     dep.manager_id = seed.emp_tp_id
     db.commit()

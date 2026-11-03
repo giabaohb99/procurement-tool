@@ -51,6 +51,7 @@ class BalanceRow:
     seniority: float = 0.0
     carried: float = 0.0
     adjusted: float = 0.0
+    comp: float = 0.0           # duoc-CR-717: nghỉ bù cộng thêm (cột `comp_days`, đã có trong BAL_COLS)
     carried_expired: float = 0.0
     #  Cờ THEO NGƯỜI (cộng mọi dòng quỹ của người đó): được cấp > 0 mà đã dùng + giữ chỗ = 0.
     person_unused: bool = False
@@ -87,7 +88,7 @@ def rows_of(db: Session, user, prof: dict, year: int, type_name: dict, emp_dept:
     conds = employee_conds(status, department_id)
     if conds:   # lọc NGAY trong SQL bằng truy vấn con — không thêm truy vấn riêng
         q = q.filter(LeaveBalance.employee_id.in_(db.query(Employee.id).filter(*conds)))
-    #  duoc-CR-715 review: «còn lại» phải TRỪ phần chưa tới tháng của loại cộng dần (như màn Quỹ / form / trợ lý
+    #  duoc-CR-715 review: "còn lại" phải TRỪ phần chưa tới tháng của loại cộng dần (như màn Quỹ / form / trợ lý
     #  AI — `balance_service.available_days`). Chế độ cộng dần + ngày vào làm lấy bằng OUTER JOIN ngay trong câu
     #  quỹ (bí danh riêng để không dính truy vấn con lọc nhân sự) — số truy vấn vẫn cố định.
     emp_join = aliased(Employee)
@@ -124,7 +125,7 @@ def rows_of(db: Session, user, prof: dict, year: int, type_name: dict, emp_dept:
             granted=granted, used=r.used_days or 0.0, pending=r.pending_days or 0.0,
             remaining=remaining, allocated=r.allocated_days or 0.0,
             seniority=r.seniority_days or 0.0, carried=r.carried_days or 0.0,
-            adjusted=r.adjusted_days or 0.0, carried_expired=r.carried_expired_days or 0.0,
+            adjusted=r.adjusted_days or 0.0, comp=r.comp_days or 0.0, carried_expired=r.carried_expired_days or 0.0,
             person_unused=(round(granted_sum[r.employee_id], 2) > 0
                            and round(spent_sum[r.employee_id], 2) == 0)))
     return out
@@ -140,6 +141,7 @@ def build_spec(company_name: dict, department_name: dict) -> ReportSpec:
         _days("allocated", "Phép năm cơ bản", "allocated"),
         _days("seniority", "Phép thâm niên", "seniority"),
         _days("carried", "Chuyển từ năm trước", "carried"), _days("adjusted", "Điều chỉnh", "adjusted"),
+        _days("comp", "Nghỉ bù cộng thêm", "comp"),
         _days("carried_expired", "Phép chuyển đã hết hạn", "carried_expired"),
         MetricSpec("people_over_quota", "Số người vượt quỹ", kind="int", good="down",
                   distinct_of=lambda r: r.employee_id if r.remaining < 0 else None),

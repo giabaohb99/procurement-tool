@@ -4,7 +4,7 @@ import type { ApprovalFlowStrip, LeaveApprovalTask } from './leave'
  * Kiểu dữ liệu PHIẾU XIN NGHỈ BÙ (duoc-CR-715 phase C).
  *
  * Phiếu nghỉ bù = "tôi đã đi làm vào ngày nghỉ X, xin cộng Y ngày vào quỹ phép". Được duyệt thì
- * backend cộng `comp_days` vào quỹ của loại nghỉ bật cờ «Loại nhận ngày nghỉ bù».
+ * backend cộng `comp_days` vào quỹ của loại nghỉ bật cờ "Loại nhận ngày nghỉ bù".
  *
  * ⚠️ Bộ mã trạng thái phải khớp `LeaveCompStatus` ở `backend/app/modules/leave/constants.py`.
  * Cố ý TRÙNG số với `LEAVE_STATUS` của đơn nghỉ phép (1..6) nên huy hiệu và màu dùng chung

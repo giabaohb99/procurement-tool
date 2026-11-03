@@ -35,7 +35,7 @@ describe('describeAuditEntry', () => {
     expect(result).toEqual({ verb: 'đã cập nhật', fields: ['Phòng ban', 'Công ty'] })
   })
 
-  it('falls back to «đã chỉnh sửa» when no change is known or every column is technical', () => {
+  it('falls back to "đã chỉnh sửa" when no change is known or every column is technical', () => {
     expect(describeAuditEntry(entry({ changed_fields: '' }), LABELS).verb).toBe('đã chỉnh sửa')
     expect(describeAuditEntry(entry({ changed_fields: undefined }), LABELS).verb).toBe(
       'đã chỉnh sửa',
@@ -54,7 +54,7 @@ describe('describeAuditEntry', () => {
 
 describe('collapseSameRequest', () => {
   it('merges rows from the same save into the newest one and unions their fields', () => {
-    //  Ảnh 02/11/2026: một lần Lưu ra ba dòng «Cập nhật · 29/10 11:09» giống hệt nhau.
+    //  Ảnh 02/11/2026: một lần Lưu ra ba dòng "Cập nhật · 29/10 11:09" giống hệt nhau.
     const rows = [
       entry({ id: 3, request_id: 'r1', changed_fields: 'department_id' }),
       entry({ id: 2, request_id: 'r1', changed_fields: 'department_id, company_id' }),

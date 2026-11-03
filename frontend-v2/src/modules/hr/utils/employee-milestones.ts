@@ -33,7 +33,7 @@ function isSameDayOfYear(origin: Date, today: Date): boolean {
  *
  * Ngày vào làm lớn hơn số ngày của tháng đích (31/01 → tháng 4, 29/02 → năm thường)
  * thì coi NGÀY CUỐI tháng là đã tròn — cùng luật với `isSameDayOfYear`, nếu không thì
- * 28/02/2025 vừa hiện «Tròn 1 năm làm việc» vừa hiện thâm niên «11 tháng».
+ * 28/02/2025 vừa hiện "Tròn 1 năm làm việc" vừa hiện thâm niên "11 tháng".
  */
 function countFullMonths(from: Date, to: Date): number {
   const months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth())
@@ -45,7 +45,7 @@ function countFullMonths(from: Date, to: Date): number {
  * Tính các mốc từ ngày sinh và ngày vào làm (`YYYY-MM-DD`).
  *
  * ⚠️ `dateOfBirth` là trường NHẠY CẢM: người không có `employee_sensitive.read`
- * nhận chuỗi rỗng / `null` từ backend, nên ở đó không bao giờ hiện «Sinh nhật»
+ * nhận chuỗi rỗng / `null` từ backend, nên ở đó không bao giờ hiện "Sinh nhật"
  * — đúng ý, đừng tìm cách suy ngày sinh từ chỗ khác.
  */
 export function computeEmployeeMilestones(
@@ -53,7 +53,7 @@ export function computeEmployeeMilestones(
   hireDate: string | null | undefined,
   today: Date,
 ): EmployeeMilestones {
-  //  «Hôm nay» theo giờ TRÌNH DUYỆT — người dùng ở Việt Nam nên trùng `vn_today()` của
+  //  "Hôm nay" theo giờ TRÌNH DUYỆT — người dùng ở Việt Nam nên trùng `vn_today()` của
   //  backend; máy đặt múi giờ khác thì mốc có thể lệch một ngày (chỉ là dòng hiển thị).
   const birth = parseLocalDate(dateOfBirth)
   const hire = parseLocalDate(hireDate)
@@ -73,7 +73,7 @@ export function computeEmployeeMilestones(
   return { isBirthday, anniversaryYears, tenure }
 }
 
-/** «3 năm 2 tháng» · «5 tháng» · «Dưới 1 tháng». */
+/** "3 năm 2 tháng" · "5 tháng" · "Dưới 1 tháng". */
 export function formatTenure(tenure: { years: number; months: number }): string {
   const parts: string[] = []
   if (tenure.years > 0) parts.push(`${tenure.years} năm`)

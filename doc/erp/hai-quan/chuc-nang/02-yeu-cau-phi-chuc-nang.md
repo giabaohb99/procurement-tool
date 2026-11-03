@@ -6,7 +6,7 @@
 | Ngày | 03/11/2026 |
 | Người phụ trách | chưa giao |
 | Trạng thái | Nháp |
-| CR liên quan | bao-CR-712 · bao-CR-470 · bao-CR-541 |
+| CR liên quan | bao-CR-712 · bao-CR-470 · bao-CR-541 · bao-CR-718 |
 
 Mỗi yêu cầu một mã `PCN-HQ-NN`, ghi **mức đo được** và **cách kiểm**. Chỗ chưa có nguồn ghi *Chưa có* (yêu cầu) hoặc
 *Chưa đo* (hiện trạng). Bảng phi chức năng gốc của phòng Thu mua (sheet 6 của FR-PROC-2026-001) ở
@@ -14,7 +14,7 @@ Mỗi yêu cầu một mã `PCN-HQ-NN`, ghi **mức đo được** và **cách k
 
 | Mã | Nhóm | Yêu cầu (đo được) | Cách kiểm | Hiện trạng |
 |---|---|---|---|---|
-| PCN-HQ-01 | Hiệu năng | Tệp khoảng 50 MB / hàng chục nghìn dòng phản hồi dưới 30 giây (yêu cầu FR-PROC sheet 6). Có chỉ mục theo mã HS, tháng, tên hàng ngay từ đầu; không tính sẵn bảng tổng hợp, kỳ gom tính lúc đọc | [`06`](../nghien-cuu/06-doi-chieu-yeu-cau-fr-proc-2026-001.md) §5; [`02`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §3.6, §3.7, §10.1b | Một phần: dev 18.243 dòng lọc và phân trang phản hồi tức thì, nạp chạy nền; chưa thử tệp 50 MB |
+| PCN-HQ-01 | Hiệu năng | Tệp khoảng 50 MB / hàng chục nghìn dòng phản hồi dưới 30 giây (yêu cầu FR-PROC sheet 6). Có chỉ mục theo mã HS, tháng, tên hàng ngay từ đầu; không tính sẵn bảng tổng hợp, kỳ gom tính lúc đọc | [`06`](../nghien-cuu/06-doi-chieu-yeu-cau-fr-proc-2026-001.md) §5; [`02`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §3.6, §3.7, §10.1b | Một phần (bao-CR-718, bảng thử 328 nghìn dòng cỡ prod): mở màn 40 ms; từ khóa lần đầu ~0,5 giây, lật trang ~30 ms; ô chọn ~3 ms khi đã đệm (lần đầu ~1 giây); biểu đồ ~0,5 giây. Số đo: [kế hoạch CR-718](../plans/261103-tim-nhanh-xuat-lo-bao-cr-718/ke-hoach.md). Chưa thử tệp 50 MB |
 | PCN-HQ-02 | Phân quyền | Khóa quyền dùng (theo [`api.md`](../tai-lieu-ky-thuat/api.md)): `customs_price` (read, create, write, delete, import, export), `customs_regulation`, `customs_pesticide`. `customs_price` khai `PUBLIC` trong `SCOPE_FIELDS` — dữ liệu thị trường ngoài, ai có quyền xem thấy toàn bộ. Quyền ghi / nạp chỉ cho người được nạp. Hệ thống không tự cấp vai trò nào | `test_pham_vi_khai_du_b07.py`; [`10`](../chuc-nang/10-danh-sach-tinh-nang.md) N-07, §9 Q1, Q3 | Đạt (FR-PROC: *Bảo mật và phân quyền* đạt) |
 | PCN-HQ-03 | Dữ liệu nhạy cảm | Không áp dụng che trường: dữ liệu là tờ khai thị trường bên ngoài, đã chốt không lọc theo phòng / công ty (Q3, 23/09/2026) | [`10`](../chuc-nang/10-danh-sach-tinh-nang.md) §9 Q3 | Không áp dụng |
 | PCN-HQ-04 | Giới hạn đầu vào | Mọi cột chữ khai `max_length` khớp đúng `String(n)` ở `model.py` (`customs/schema.py`); ô ID trên tệp nạp chặn số từ 10^15 trở lên (`customs/reader.py`). Cỡ tệp nạp tối đa: chưa có số riêng, chỉ có trần chung `client_max_body_size 100m` của nginx (sổ bảo mật BM-030) | [`backend-input-limits.md`](../../../../.claude/rules/backend-input-limits.md); kiểm ở tầng schema; [sổ bảo mật](../../../tai-lieu-ky-thuat/van-hanh/so-ghi-nhan-loi-bao-mat.md) BM-030 | Chưa đo |

@@ -1,7 +1,7 @@
 """bao-CR-487 — bộ lọc màn Xử lý khảo sát chọn được NHIỀU NCC / NHIỀU phân loại.
 
-Đại ca (25/09/2026): «màn hình xử lý khảo sát, cho nút bỏ lọc, và cho filter select nhiều,
-ví dụ phân loại hay chỗ nhà cung cấp». Backend nhận `supplier_code` / `item_group` lặp trên
+Đại ca (25/09/2026): "màn hình xử lý khảo sát, cho nút bỏ lọc, và cho filter select nhiều,
+ví dụ phân loại hay chỗ nhà cung cấp". Backend nhận `supplier_code` / `item_group` lặp trên
 URL; trong CÙNG một ô nhiều giá trị là HOẶC, hai ô khác nhau vẫn là VÀ. Đường gọi cũ truyền
 một chuỗi (màn Xử lý YCMH) phải chạy y như trước.
 """
@@ -67,7 +67,7 @@ def test_old_single_string_call_still_works(db):
 
 
 def test_empty_list_means_no_filter_on_that_box_not_match_nothing(db):
-    """Bỏ lọc một ô (danh sách rỗng) là KHÔNG lọc theo ô đó — không phải lọc «không có gì»."""
+    """Bỏ lọc một ô (danh sách rỗng) là KHÔNG lọc theo ô đó — không phải lọc "không có gì"."""
     _seed_lines(db)
     rows, total = S.available_survey_lines(db, supplier_code=[], item_group=[], search="Thùng")
     assert total == 2 and _names(rows) == ["Thùng A", "Thùng C"]

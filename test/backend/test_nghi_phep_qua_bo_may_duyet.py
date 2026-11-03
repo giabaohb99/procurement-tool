@@ -69,7 +69,7 @@ def approver(db):
 def flow_switch_off(db, approver):
     """Luồng MỘT bước đã khai, NHƯNG cờ bộ máy còn TẮT.
 
-    Tách riêng khỏi `flow` để dựng được đúng cảnh của màn «Bật bộ máy duyệt»:
+    Tách riêng khỏi `flow` để dựng được đúng cảnh của màn "Bật bộ máy duyệt":
     quản trị khai luồng xong nhưng chưa gạt công tắc. Khai luồng và bật cờ là
     HAI việc, và giữa hai việc đó đơn vẫn phải nộp được.
     """
@@ -118,7 +118,7 @@ def _remaining(db, employee, leave_type):
 
 def test_co_luong_nhung_co_TAT_thi_don_di_duong_duyet_THANG(db, flow_switch_off,
                                                             leave_type, submitter):
-    """Công tắc ở màn «Bật bộ máy duyệt» phải THẬT SỰ cắt được, không phải nút giả.
+    """Công tắc ở màn "Bật bộ máy duyệt" phải THẬT SỰ cắt được, không phải nút giả.
 
     Trước 05/09/2026 nghỉ phép trình thẳng vào bộ máy mà không hỏi cờ, nên gạt
     tắt xong đơn vẫn chui vào luồng nhiều bước — đúng cái mà cả màn hình đó nói
@@ -371,7 +371,7 @@ def test_rut_phien_thi_don_ve_nhap_chu_khong_phai_tra_ve(db, flow, leave_type, s
 
 
 def test_khong_mo_hai_phien_cho_cung_mot_don(db, flow, leave_type, submitter):
-    """Nhấp đúp «Gửi duyệt» không được đẻ ra hai phiếu duyệt cùng chạy."""
+    """Nhấp đúp "Gửi duyệt" không được đẻ ra hai phiếu duyệt cùng chạy."""
     obj, _ = _submit(db, leave_type, submitter)
     with pytest.raises(HTTPException):
         approval_bridge.start_approval(db, obj, _user(submitter))

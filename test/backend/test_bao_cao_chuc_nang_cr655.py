@@ -1,4 +1,4 @@
-"""duoc-CR-655 (D0c) — báo cáo «Mức dùng chức năng»: gom ngày, API gom theo chức năng/phòng ban, gác ReportKey 15, số truy vấn cố định.
+"""duoc-CR-655 (D0c) — báo cáo "Mức dùng chức năng": gom ngày, API gom theo chức năng/phòng ban, gác ReportKey 15, số truy vấn cố định.
 
 Đi qua `TestClient` vì `require_report` gắn ở `dependencies=[...]`. Ngày gom dùng mốc 2026-01 nên `force=True`
 (ngày đã quá hạn giữ sự kiện thô — chỉ test mới cần).

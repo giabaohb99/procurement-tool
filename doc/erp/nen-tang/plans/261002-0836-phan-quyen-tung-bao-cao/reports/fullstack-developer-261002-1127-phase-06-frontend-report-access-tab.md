@@ -1,4 +1,4 @@
-# Phase 06 — FE tab «Báo cáo» ở Phân quyền tài khoản
+# Phase 06 — FE tab "Báo cáo" ở Phân quyền tài khoản
 
 Plan: `plans/261002-0836-phan-quyen-tung-bao-cao/`. Phạm vi: phase 06 (chỉ `src/modules/system/**`
 + 1 khóa trong `query-keys.ts`). Không đụng `src/modules/report/**`, `src/app/router/**`,
@@ -66,7 +66,7 @@ Không đụng `src/modules/report/**`, `src/app/router/**`, `src/core/auth/**`,
 tôi; mọi thay đổi khác trong working tree là của agent phase 05 / phiên backend khác.
 
 **Status:** DONE
-**Summary:** Tab «Báo cáo» hoàn chỉnh — bảng 13 báo cáo nhóm theo phân hệ (nhãn/nhóm từ API, không
+**Summary:** Tab **Báo cáo** hoàn chỉnh — bảng 13 báo cáo nhóm theo phân hệ (nhãn/nhóm từ API, không
 import `modules/report`), hộp gán/thu hồi 4 loại chủ thể, gác `role.read`/`role.write` đúng yêu
 cầu. 3 cổng xanh, không chạm file ngoài phạm vi.
 **Concerns:** Không có — không có câu hỏi treo.

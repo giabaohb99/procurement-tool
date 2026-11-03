@@ -52,7 +52,7 @@ def roots(db, world):
 # ── Thư mục pháp nhân (gốc) ──────────────────────────────────────────────
 def test_ensure_company_roots_moi_cong_ty_mot_thu_muc(db, world, roots):
     assert set(roots.keys()) == {world.co["A"], world.co["B"]}
-    #  24/09/2026: thư mục pháp nhân nằm TRONG thư mục nhóm «Công ty» (cấp 2),
+    #  24/09/2026: thư mục pháp nhân nằm TRONG thư mục nhóm "Công ty" (cấp 2),
     #  không còn đứng thẳng ở gốc cây.
     group = folder_root_service.get_or_create_company_group(db)
     for folder in roots.values():
@@ -130,7 +130,7 @@ def test_tao_thu_muc_con_tinh_dung_path_va_depth(db, world, roots):
 
 
 def test_tao_thu_muc_trung_ten_anh_em_gap_dau_bi_chan(db, world, roots):
-    """«Hợp đồng» và «hợp đồng» (khác hoa/thường, có dấu) phải coi là TRÙNG."""
+    """"Hợp đồng" và "hợp đồng" (khác hoa/thường, có dấu) phải coi là TRÙNG."""
     root = roots[world.co["A"]]
     folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Hợp đồng"), 0)
     with pytest.raises(HTTPException) as exc:
@@ -168,7 +168,7 @@ def test_tao_thu_muc_sau_qua_muc_toi_da_bi_chan(db, world, roots):
 
 
 def test_doi_ten_thu_muc_phap_nhan_duoc(db, world, roots):
-    #  Luật cũ «bị chặn» BỎ ngày 24/09/2026 (đại ca chốt: thư mục là chỗ người
+    #  Luật cũ "bị chặn" BỎ ngày 24/09/2026 (đại ca chốt: thư mục là chỗ người
     #  dùng tự sắp xếp, không buộc theo pháp nhân) — bài kiểm lật lại theo luật mới.
     root = roots[world.co["A"]]
     folder_service.update_folder(db, root, FolderUpdate(name="Kho lưu trữ A"), 0)
@@ -217,7 +217,7 @@ def test_chuyen_vao_chinh_no_bi_chan(db, world, roots):
 
 
 def test_chuyen_thu_muc_phap_nhan_vao_goc_khac_duoc(db, world, roots):
-    #  Luật cũ «bị chặn» BỎ ngày 24/09/2026 (đại ca chốt: thư mục là chỗ người
+    #  Luật cũ "bị chặn" BỎ ngày 24/09/2026 (đại ca chốt: thư mục là chỗ người
     #  dùng tự sắp xếp, không buộc theo pháp nhân) — bài kiểm lật lại theo luật mới.
     root_a = roots[world.co["A"]]
     root_b = roots[world.co["B"]]
@@ -252,7 +252,7 @@ def test_chuyen_goc_vao_chinh_con_cua_no_van_bi_chan(db, world, roots):
 
 
 def test_chuyen_sang_nhanh_phap_nhan_khac_duoc(db, world, roots):
-    #  Luật cũ «bị chặn» BỎ ngày 24/09/2026 (đại ca chốt: thư mục là chỗ người
+    #  Luật cũ "bị chặn" BỎ ngày 24/09/2026 (đại ca chốt: thư mục là chỗ người
     #  dùng tự sắp xếp, không buộc theo pháp nhân) — bài kiểm lật lại theo luật mới.
     root_a = roots[world.co["A"]]
     root_b = roots[world.co["B"]]
@@ -334,7 +334,7 @@ def test_xoa_thu_muc_con_van_ban_chuyen_van_ban_mo_coi_sang_thu_muc_da_chon(db, 
 
 
 def test_xoa_thu_muc_khong_chon_dich_van_ban_mo_coi_ve_thu_muc_phap_nhan(db, world, roots):
-    #  Xóa hàng loạt không hỏi đích — luật «không mồ côi» có sẵn đỡ lấy.
+    #  Xóa hàng loạt không hỏi đích — luật "không mồ côi" có sẵn đỡ lấy.
     root = roots[world.co["A"]]
     a = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="A"), 0)
     doc = _doc(db, company_id=root.company_id)
@@ -354,7 +354,7 @@ def test_xoa_thu_muc_van_ban_con_o_noi_khac_chi_bi_go_va_doi_thu_muc_chinh(db, w
     db.add(DocumentFolderLink(document_id=doc.id, folder_id=b.id, is_primary=False))
     db.commit()
     folder_service.delete_folder(db, a, 0, dich)
-    #  KHÔNG bị kéo sang «Đích» — nó vẫn còn chỗ ở, và B lên làm thư mục chính.
+    #  KHÔNG bị kéo sang "Đích" — nó vẫn còn chỗ ở, và B lên làm thư mục chính.
     assert _links(db, doc.id) == {(b.id, True)}
 
 
@@ -456,7 +456,7 @@ def test_xoa_thu_muc_phap_nhan_con_van_ban_bi_chan(db, world, roots):
 
 
 def test_xoa_goc_khong_con_bi_khoa_ngung_dung_van_duoc(db, world, roots):
-    """«Ngừng dùng» (khôi phục) vẫn là ngoại lệ ĐƯỢC PHÉP trên gốc — chỉ đổi
+    """"Ngừng dùng" (khôi phục) vẫn là ngoại lệ ĐƯỢC PHÉP trên gốc — chỉ đổi
     tên/mô tả/mức nền là còn khóa, khoản duy nhất được nới là XÓA + Ngừng dùng."""
     root = roots[world.co["A"]]
     folder_service.update_folder(db, root, FolderUpdate(status=int(FolderStatus.ARCHIVED)), 0)
@@ -490,7 +490,7 @@ def test_xoa_goc_xong_van_ban_moi_tu_tao_lai_dung_cong_ty(db, world, roots):
         .one()
     )
     assert new_root.id != root.id   # gốc MỚI, không phải hồi sinh dòng cũ
-    #  Gốc sinh lại cũng nằm TRONG nhóm «Công ty», không lọt ra gốc cây.
+    #  Gốc sinh lại cũng nằm TRONG nhóm "Công ty", không lọt ra gốc cây.
     assert new_root.parent_id == folder_root_service.get_or_create_company_group(db).id
     link = db.query(DocumentFolderLink).filter(DocumentFolderLink.document_id == doc.id).one()
     assert link.folder_id == new_root.id
@@ -579,8 +579,8 @@ def test_tree_dem_truc_tiep_va_ca_nhanh_khu_trung(db, world, roots):
 
 
 def test_get_detail_dem_ca_nhanh_gom_van_ban_thu_muc_con(db, world, roots):
-    """Lỗi 24/09/2026: tiêu đề thư mục gốc ghi «0 văn bản» trong khi bảng
-    (mặc định «Gồm thư mục con») liệt kê 7 — `get_detail` chỉ đưa MỘT thư mục
+    """Lỗi 24/09/2026: tiêu đề thư mục gốc ghi "0 văn bản" trong khi bảng
+    (mặc định "Gồm thư mục con") liệt kê 7 — `get_detail` chỉ đưa MỘT thư mục
     vào hàm đếm nên số cả nhánh rơi về số trực tiếp. Phải khớp `tree()`."""
     root = roots[world.co["A"]]
     a = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="A"), 0)
@@ -696,7 +696,7 @@ def test_breadcrumb_map_theo_dung_thu_tu_tu_goc(db, world, roots):
 
     crumbs = folder_tree_service.breadcrumb_map(db, {b.id})[b.id]
     group = folder_root_service.get_or_create_company_group(db)
-    #  Bắt đầu từ nhóm «Công ty» (24/09/2026).
+    #  Bắt đầu từ nhóm "Công ty" (24/09/2026).
     assert [c["id"] for c in crumbs] == [group.id, root.id, a.id, b.id]
     assert crumbs[0]["name"] == "Công ty"
     #  Thư mục pháp nhân không lưu tên — breadcrumb phải rơi về TÊN CÔNG TY.
@@ -707,9 +707,9 @@ def test_breadcrumb_map_theo_dung_thu_tu_tu_goc(db, world, roots):
 
 
 def test_get_detail_tra_ve_default_access_hien_tai(db, world, roots):
-    """`default_access` (hộp «Chia sẻ» kiểu Drive, rà UI 23/09/2026) — cột
+    """`default_access` (hộp "Chia sẻ" kiểu Drive, rà UI 23/09/2026) — cột
     NULLABLE trên `DocFolder`, trước nay chỉ NHẬN qua `FolderUpdate`, chưa từng
-    có mặt trong response nào nên ô chọn «Quyền chung» luôn hiện placeholder dù
+    có mặt trong response nào nên ô chọn "Quyền chung" luôn hiện placeholder dù
     đã đặt giá trị. `_node()` (dùng chung `tree()`/`get_detail()`) nay trả kèm
     ở CHI TIẾT."""
     world.grant("a1", "doc_folder", scope="all", actions=("read", "write"))
@@ -737,7 +737,7 @@ def test_search_folders_gap_dau(db, world, roots):
 
 
 def test_tree_tra_nguoi_tao_va_ngay_tao_cho_cot_danh_sach(db, world, roots):
-    #  25/09/2026: dòng thư mục trong danh sách để trống «Người soạn»/«Ngày tạo».
+    #  25/09/2026: dòng thư mục trong danh sách để trống "Người soạn"/"Ngày tạo".
     actor = world.grant("a1", "document")
     root = roots[world.co["A"]]
     mine = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Của a1"), actor.user.id)

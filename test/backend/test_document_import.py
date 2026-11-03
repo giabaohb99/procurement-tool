@@ -123,7 +123,7 @@ def test_docx_giu_style_danh_sach_va_lien_ket():
     #
     # ⚠️ Trước 20/08/2026 chỗ này ra 1.725: nhân thêm 1,15 (chiều cao dòng đơn
     # của Times New Roman) để bản nhập nhìn giống hệt Word. Đúng lý thuyết nhưng
-    # hỏng khi dùng — trang giấy để sẵn `line-height: 1.15` nên bấm nấc «1,0»
+    # hỏng khi dùng — trang giấy để sẵn `line-height: 1.15` nên bấm nấc "1,0"
     # trên thanh công cụ ghi ra đúng 1.15, không đổi một pixel nào, người dùng
     # tưởng tính năng chết. Chốt: giãn dòng 1 là 1. Xem `word-line-spacing.ts`.
     #  Kèm `em`: không đơn vị thì trị số kế thừa xuống từng `<span style="font-size">`

@@ -1,10 +1,10 @@
-# 13 — Lộ trình bot trợ lý cá nhân «Lạc Lạc» và kiến trúc đích nhiều bot
+# 13 — Lộ trình bot trợ lý cá nhân "Lạc Lạc" và kiến trúc đích nhiều bot
 
 > Bản 1.0 · 08/10/2026 · đối chiếu mã `agent-hub-bac-1` @ `3c228a7f` (đang chạy trên dev, erp-v2 đã gộp tới đây).
 > Viết theo khuôn của `ida-zalo-assistant/doc/06-lo-trinh.md` (bot IDA) để hai bot nhìn cùng một kiểu, nhưng **hai
 > bot là hai sản phẩm riêng**: IDA phục vụ một khách, Lạc Lạc là trợ lý cá nhân trên nền ERP. Chỉ mượn ý, không chung mã.
 >
-> Thay cho bảng «Lộ trình theo phase» ở cuối [`04-danh-sach-tinh-nang.md`](04-danh-sach-tinh-nang.md) (bảng đó dừng
+> Thay cho bảng **Lộ trình theo phase** ở cuối [`04-danh-sach-tinh-nang.md`](04-danh-sach-tinh-nang.md) (bảng đó dừng
 > ở 05/10). Danh sách tính năng chi tiết từng mã (A, N, P, M, K, D, V, O, L, T, R, C) vẫn ở doc 04; doc này chỉ giữ
 > **trạng thái theo phase**, **bộ chức năng của một trợ lý cá nhân**, **kiến trúc đích** và **việc kế tiếp**.
 >
@@ -29,12 +29,12 @@
 | 10 | Thư ký biên bản họp (T-01…T-06, T-12) | **Xong** 07–08/10 | ai-CR-104, 112, 113, 114, 116, 117; T-01 mới thử tệp giả |
 | 11 | Đọc nhóm Telegram + đọc / viết báo cáo (G) | **Xong đợt 1** 07–08/10 | ai-CR-105, 115; đợt 2 ở §5 |
 | **S** | **Tách dịch vụ AI thành nhiều bot nói chuyện với nhau (A2A)** — §3 | **Xong mã S-0…S-4** 08/10 (ai-CR-119), chờ Agent 1 dựng trên dev theo doc 14 §4; S-5/S-6 là runbook | |
-| G-5 | Màn «Nhóm chat» trên ERP v2: theo kênh / loại, tin, tệp, bản tóm tắt, quyền quản lý AI thấy hết (doc 12 §9) | **Xong** DEV 08/10 (ai-CR-123) | chờ đại ca xem bằng tài khoản admin |
+| G-5 | Màn **Nhóm chat** trên ERP v2: theo kênh / loại, tin, tệp, bản tóm tắt, quyền quản lý AI thấy hết (doc 12 §9) | **Xong** DEV 08/10 (ai-CR-123) | chờ đại ca xem bằng tài khoản admin |
 | Z-3/Z-4 | Zalo hướng B: tài khoản Zalo công ty ghi lặng nhóm, đọc nhóm Zalo, chat riêng | **Xong** DEV 08/10 (ai-CR-122) | chờ đại ca quét QR bằng số Zalo công ty (khác số bot IDA) |
 | 24 | Bot điều phối việc theo kế hoạch cho sếp (doc 18, 19) | **Một phần**: 24.1 **DEV 13/10** (bao-CR-616, 1 ngày; prod chưa) | 24.2 nhắc + hỏi tiến độ · 24.3 Zalo (chờ QR) · 24.4 báo cáo · 24.5 xếp lại · 24.6 nối Đặt xe / thanh toán · 24.7 email — chưa |
 
-**Một câu:** phần «trợ lý cá nhân hỏi gì đáp nấy» (ERP, sổ nhớ, khóa AI riêng, lịch, Drive, biên bản họp, đọc báo cáo,
-tóm tắt nhóm Telegram) đã chạy thật trên dev cho mọi người đã đăng nhập; phần «bot tự theo dõi, tự báo» (tin quan trọng
+**Một câu:** phần **trợ lý cá nhân hỏi gì đáp nấy** (ERP, sổ nhớ, khóa AI riêng, lịch, Drive, biên bản họp, đọc báo cáo,
+tóm tắt nhóm Telegram) đã chạy thật trên dev cho mọi người đã đăng nhập; phần **bot tự theo dõi, tự báo** (tin quan trọng
 trong nhóm, VIP, nhắc hạn việc rút từ họp) và phần **tách dịch vụ ra VPS riêng** chưa có — đó là hai hướng của §5.
 
 ## 1. Đã chốt (bổ sung từ 06/10/2026)
@@ -44,17 +44,17 @@ trong nhóm, VIP, nhắc hạn việc rút từ họp) và phần **tách dịch
 | 06/10 | Bot là **trợ lý cá nhân** của từng người trên nền công ty, **token người dùng tự trả** (khóa riêng) | Nhóm C, mọi tính năng mới lọc theo người |
 | 07/10 | Không làm tổng hợp nhóm tự động cuối ngày; chỉ tổng hợp khi được hỏi | §5 G |
 | 07/10 | Zalo làm **cả A và B**; **không đụng** kho `ida-zalo-assistant`, chỉ mượn ý | Phase 9, Z-3/Z-4 |
-| 07/10 | Xưng hô theo sổ ghi nhớ riêng từng người; «đại ca» chỉ cho chat chủ bot | ai-CR-106 |
+| 07/10 | Xưng hô theo sổ ghi nhớ riêng từng người; **đại ca** chỉ cho chat chủ bot | ai-CR-106 |
 | 07/10 | Tra mạng không phụ thuộc Google Search của Gemini (DuckDuckGo → Bing) | ai-CR-110 |
-| 08/10 | Biên bản Word theo **chuẩn recap DEGO** (STD-RECAP-DEGO-v1.0, skill dego-docx); mẫu mặc định «Recap DEGO» | ai-CR-116 |
-| 08/10 | Họp xong đưa tệp lên thư mục «Họp» trên Drive → bot **hỏi** rồi mới làm (không tự chạy, tốn khóa người đó) | ai-CR-116, 117 |
+| 08/10 | Biên bản Word theo **chuẩn recap DEGO** (STD-RECAP-DEGO-v1.0, skill dego-docx); mẫu mặc định **Recap DEGO** | ai-CR-116 |
+| 08/10 | Họp xong đưa tệp lên thư mục **Họp** trên Drive → bot **hỏi** rồi mới làm (không tự chạy, tốn khóa người đó) | ai-CR-116, 117 |
 | 08/10 | **Tách phần AI thành dịch vụ riêng**, trước mắt cùng VPS nhưng Docker riêng, sau sang VPS riêng; kiến trúc **A2A nhiều bot** (§3) | Phase S |
 | 08/10 | Kho tin nhắn / nhóm sẽ **rất lớn** (một người 50 nhóm, thêm khách hàng) → lưu trữ phải tách tầng (§4) | §4 |
 | 08/10 | **Chưa** làm master/replica, **chưa** chia đọc/ghi; có số đo rồi mới quyết, và hướng mở rộng tự nhiên là **chia theo công ty** | §4 |
 
 ## 2. Bộ chức năng của MỘT trợ lý cá nhân
 
-Đây là «một IDA thì cần bao nhiêu chức năng» nhìn từ phía Lạc Lạc: mọi thứ một người dùng cần ở trợ lý riêng, gom theo
+Đây là **một IDA thì cần bao nhiêu chức năng** nhìn từ phía Lạc Lạc: mọi thứ một người dùng cần ở trợ lý riêng, gom theo
 nhóm, kèm trạng thái và đối chiếu với bot IDA (cột cuối: IDA **có** / **chưa** / **không cần**). Nhóm nào IDA có mà ta
 chưa thì là ứng viên cho §5.
 
@@ -97,16 +97,16 @@ chưa thì là ứng viên cho §5.
 | Bản tin 8h sáng: lịch, việc đến hạn, phiếu chờ duyệt, việc riêng | Xong | chưa (bản tin 07:30 / 17:30 chưa) |
 | Bản tin cuối ngày | Chưa | chưa |
 | Nhắc hạn việc rút từ biên bản / checklist 3 mốc (trước hạn, đúng hạn, quá hạn) | Chưa (việc Dự án có hạn, chưa nhắc 3 mốc) | chưa |
-| Ô «Lịch hôm nay» trên Trang chủ ERP (T-13) | Để sau | không cần |
+| Ô **Lịch hôm nay** trên Trang chủ ERP (T-13) | Để sau | không cần |
 
 ### 2.5 Thư ký họp
 
 | Chức năng | Trạng thái | IDA |
 |---|---|---|
-| Nhận ghi âm / video qua chat (≤ 20 MB), link Drive, thư mục «Họp» trên Drive (tự nhặt, hỏi trước) | Xong | có (Meet + ghi âm) |
+| Nhận ghi âm / video qua chat (≤ 20 MB), link Drive, thư mục **Họp** trên Drive (tự nhặt, hỏi trước) | Xong | có (Meet + ghi âm) |
 | Chép lời Gemini File API, cắt đoạn, nối nhiều tệp một cuộc họp | Xong | có |
 | 4 mẫu sẵn + mẫu riêng + lời dặn tại chỗ; viết lại theo mẫu khác không chép lời lại | Xong | một phần |
-| Word chuẩn DEGO, đẩy vào thư mục «Biên bản họp» trên Drive; «report cuộc họp mới nhất» | Xong | có (PDF) |
+| Word chuẩn DEGO, đẩy vào thư mục **Biên bản họp** trên Drive; **report cuộc họp mới nhất** | Xong | có (PDF) |
 | Thẻ việc + lịch hẹn rút từ biên bản → việc Dự án / thẻ cá nhân / lịch Google, duyệt rồi mới tạo | Xong | chưa (checklist phase 7) |
 | Thử bằng tệp họp THẬT (ồn, nói chồng, giọng vùng miền) | Chờ đại ca | — |
 
@@ -140,7 +140,7 @@ chưa thì là ứng viên cho §5.
 | Thao tác VPS có duyệt + sao lưu + hoàn tác; tự chẩn đoán và tự khôi phục; sổ sự cố | Xong | không cần |
 | Bot **tự cập nhật chính nó** (deploy stack AI) | Chưa — cần phase S (§3.3) | không cần |
 
-Đếm: **8 nhóm · 44 chức năng · 31 Xong · 2 Xong mã chờ bật · 1 Để sau · 10 Chưa.** Mười việc «Chưa» nằm gọn ở nhóm 2.7
+Đếm: **8 nhóm · 44 chức năng · 31 Xong · 2 Xong mã chờ bật · 1 Để sau · 10 Chưa.** Mười việc **Chưa** nằm gọn ở nhóm 2.7
 (nhóm) và 2.4 (nhắc hạn, bản tin cuối ngày) — đúng chỗ IDA đang làm (phase 5–7 của IDA), nên §5 mượn lại thứ tự.
 
 **Thêm 13/10/2026 — phase 24 (doc 18):** chức năng *điều phối việc nhân danh chủ kế hoạch* — bot lập kế hoạch vào Dự án, nhắn người khác hỏi nhận việc / tiến độ, bản tin sáng lịch trình, báo cáo kế hoạch so với thực tế. Đây là chức năng đầu tiên bot nói chuyện với người thứ ba; luật nới ở doc 18 §11.
@@ -167,9 +167,9 @@ nút giữ khóa công ty (B) không nhận tin lạ trực tiếp; nút sửa m
 - A ↔ B: HTTP, **token ngắn hạn cấp theo từng người** (B phát hành khi người đó đăng nhập bằng mã; B là bên kiểm quyền,
   không tin A). Lượt gọi công cụ ERP = một yêu cầu A → B kèm token người đó. Đây là N-06 A2A: thẻ năng lực + giao việc +
   báo tiến độ + trả kết quả; dùng giao thức A2A chuẩn (Linux Foundation) thay hàng đợi tự viết.
-- A ↔ D: HTTP nội bộ (cùng VPS) hoặc cùng DB lúc đầu; khi tách thì D cung cấp API «tin của nhóm X từ giờ Y» + tìm toàn văn.
+- A ↔ D: HTTP nội bộ (cùng VPS) hoặc cùng DB lúc đầu; khi tách thì D cung cấp API **tin của nhóm X từ giờ Y** + tìm toàn văn.
 - B/A → C: hàng đợi sửa mã như hiện nay (C kéo việc về qua đường hầm SSH); C deploy A bằng `deploy.sh` với **môi trường
-  mới «agent»** trong sổ môi trường (V-01) — đó chính là «bot tự cập nhật chính nó».
+  mới "agent"** trong sổ môi trường (V-01) — đó chính là **bot tự cập nhật chính nó**.
 - Sổ sự kiện chung (N-08): mọi bước của mọi nút một dòng cùng khuôn, để truy vết khi bốn nút ở bốn chỗ.
 
 ### 3.3 Đường đi (phase S)
@@ -180,7 +180,7 @@ nút giữ khóa công ty (B) không nhận tin lạ trực tiếp; nút sửa m
 | S-1 | **Xong mã 08/10** — `docker-compose.agent-hub.yml` (4 service một image + redis + qdrant riêng), `app/agent_main.py`, `AGENT_MODE=service/erp`, alembic riêng `alembic_agent.ini` (bảng ở `core/agent_tables.py`), `scripts/agent_split/` (tạo DB, chép bảng), `.env.agent.example` | 4 ngày | S-0 |
 | S-2 | **Xong mã 08/10** — `agent_hub/erp.py` (một lớp, hai cách chạy) + cổng B `agent_gateway/controller.py`; thay vì chuyển từng công cụ, cổng B chạy **cả 62 công cụ ERP** qua một đường `/tools/run` dưới quyền người gọi; 4 nhóm công cụ cá nhân chạy tại dịch vụ AI | 8–10 ngày | S-1 |
 | S-3 | **Xong mã 08/10** — ERP `AGENT_MODE=erp` chuyển tiếp `/api/agent-hub/*`, `/api/assistant/*` (trừ uploads / files / rag), `/api/mcp/*` sang dịch vụ AI kèm chữ ký (`agent_gateway/proxy.py`); dịch vụ AI nhận danh tính qua `core/agent_identity.py`; nhân sự nghỉ → ERP báo `internal/revoke` | 2 ngày | S-2 |
-| S-4 | **Xong mã 08/10** — `deploy.sh agent <commit>` (checkout `~/agent-hub`, health 127.0.0.1:8020, tự chọn 4 service); môi trường «agent» thêm vào sổ bằng câu nhắn (doc 14 §5) | 1 ngày | S-1 |
+| S-4 | **Xong mã 08/10** — `deploy.sh agent <commit>` (checkout `~/agent-hub`, health 127.0.0.1:8020, tự chọn 4 service); môi trường **agent** thêm vào sổ bằng câu nhắn (doc 14 §5) | 1 ngày | S-1 |
 | S-5 | Runbook doc 14 §6 — chép DB + volume + `.env.agent`, ERP đổi `AGENT_SERVICE_URL`, tắt poller cũ trước khi bật mới | 1 ngày | VPS mua xong |
 | S-6 | Runbook doc 14 §6 — giao diện nội bộ = 3 hàm `groups.read / find / file_by_ref` hiện có | 3 ngày | số đo |
 
@@ -188,7 +188,7 @@ nút giữ khóa công ty (B) không nhận tin lạ trực tiếp; nút sửa m
 
 ### 3.4 Chờ đại ca chốt
 
-**Đại ca chốt 08/10/2026: «cập nhật kế hoạch rồi làm S-1… làm full 6 S rồi mới đẩy lên VPS».** Em hiểu là: tách DB ngay
+**Đại ca chốt 08/10/2026: "cập nhật kế hoạch rồi làm S-1… làm full 6 S rồi mới đẩy lên VPS".** Em hiểu là: tách DB ngay
 ở S-1, làm hết phần mã của S-1…S-4 trước rồi mới dựng trên dev (một lần, không dựng dở), S-5/S-6 viết runbook vì chưa có
 VPS AI và chưa chạm ngưỡng. Cách dựng trên dev: doc 14 §4 (Agent 1 làm).
 
@@ -206,7 +206,7 @@ Số đại ca nêu: 100 người × 50 nhóm × 200 tin / ngày ≈ **1 triệu
 | Tầng | Giữ gì | Ở đâu | Hạn |
 |---|---|---|---|
 | Nóng | Tin nhóm thô 30 ngày (như nay), tin riêng, trạng thái phiên | MySQL của nút D/A, bảng tin chia **partition theo tháng** | 30 ngày (nhóm), 24 tháng (riêng) |
-| Ấm | Bản tổng hợp theo ngày / tuần của từng nhóm (do A viết khi được hỏi hoặc khi dọn) | MySQL + Qdrant (để hỏi «tháng trước nhóm X bàn gì») | 24 tháng |
+| Ấm | Bản tổng hợp theo ngày / tuần của từng nhóm (do A viết khi được hỏi hoặc khi dọn) | MySQL + Qdrant (để hỏi **tháng trước nhóm X bàn gì**) | 24 tháng |
 | Lạnh | Tệp đính kèm, ghi âm gốc, Word đã xuất | **R2** (không nhét MySQL), chỉ lưu đường dẫn | 6 tháng tệp nhóm, biên bản giữ |
 
 Luật: ghi tin nhóm theo **lô** (gom 1–2 giây rồi ghi một lần); chỉ số trên (nhóm, thời gian); vòng dọn hằng đêm chuyển
@@ -218,12 +218,12 @@ tránh trễ bản phụ) → **chia theo công ty** khi có khách (mỗi công
 
 ## 5. Việc kế tiếp (sau phase S)
 
-Thứ tự mượn từ IDA phase 5 → 7 (họ đã hỏi khách 27 câu, ta hưởng ké), nhưng giữ luật «bot không tự lên tiếng trong nhóm».
+Thứ tự mượn từ IDA phase 5 → 7 (họ đã hỏi khách 27 câu, ta hưởng ké), nhưng giữ luật **bot không tự lên tiếng trong nhóm**.
 
 | Phase | Việc | Cỡ |
 |---|---|---|
 | G-2 | **Tin cần để ý trong nhóm**: từ khóa khẩn / quan trọng (so nguyên từ, đúng dấu), @nhắc tên, VIP trong danh bạ riêng từng người; báo riêng ngay, gộp 2 phút, trần số lần / ngày, giờ yên lặng theo sổ ghi nhớ | 1 tuần |
-| G-3 | **Tìm tin nhóm**: chỉ mục toàn văn, công cụ tìm theo từ + người + nhóm + ngày, «xem tin trước / sau» | 3 ngày |
+| G-3 | **Tìm tin nhóm**: chỉ mục toàn văn, công cụ tìm theo từ + người + nhóm + ngày, **xem tin trước / sau** | 3 ngày |
 | G-4 | **Đồng hồ chờ**: câu hỏi của khách / của sếp chưa ai trả lời sau n giờ làm việc → nhắc người phụ trách | 2 ngày |
 | T-14 | **Nhắc hạn 3 mốc** cho việc rút từ biên bản và thẻ cá nhân; bản tin cuối ngày | 2 ngày |
 | Z-3/Z-4 | Zalo hướng B: tiến trình phụ ghi lặng nhóm Zalo → kho D; đọc nhóm Zalo qua 3 công cụ nhóm | 4 ngày |
@@ -246,7 +246,7 @@ xưng hô, mẫu biên bản, chuông, Google). **Chưa có:** con bot riêng ma
 |---|---|
 | Bảng | `tab_agent_bot`: chủ (user_id), kênh (Telegram / Zalo), token mã hóa, tên, cách xưng hô, lời chào, tính cách, bật / tắt từng nhóm tính năng, danh sách người được dùng, `webhook_secret`, trạng thái |
 | Mã chat | thêm mã bot vào mã chat (`tg:<bot>:<chat>`, `zl:<bot>:<chat>`) — cùng cách lớp kênh ai-CR-111 đã làm; bot chung giữ mã cũ |
-| Giao diện | Trang cá nhân → tab «Bot của tôi»: dán token (tạo ở BotFather / Zalo Bot Manager), đặt tên, tính cách, tính năng, ai được dùng |
+| Giao diện | Trang cá nhân → tab **Bot của tôi**: dán token (tạo ở BotFather / Zalo Bot Manager), đặt tên, tính cách, tính năng, ai được dùng |
 | Nhận tin | **webhook** cho bot riêng (Telegram / Zalo đẩy tin về `https://<tên miền dịch vụ AI>/hook/<bot>/<secret>`); bot chung có thể giữ polling |
 | Bộ não | dùng chung: sổ nhớ, công cụ ERP đúng quyền, khóa AI **của chủ bot** (người dùng phụ dùng khóa riêng của họ nếu có) |
 | Câu chờ chốt | ai được tạo bot (tự do / quản trị duyệt) · bot chỉ chủ dùng hay chia cho người khác (bot của phòng) · làm trước hay sau Zalo + prod |
@@ -260,7 +260,7 @@ xưng hô, mẫu biên bản, chuông, Google). **Chưa có:** con bot riêng ma
 | **Hàng đợi + worker tách loại** | webhook phải trả lời nhanh (Telegram chờ vài giây là gửi lại); lượt AI mất 5–60 s | Redis + Celery: hàng `chat` (nhiều luồng, việc chờ mạng) và hàng `heavy` (ffmpeg biên bản, đọc tệp lớn — ít luồng, ăn CPU) |
 | **Giới hạn tốc độ gửi** | Telegram: ~30 tin / giây mỗi bot, 1 tin / giây mỗi chat; Zalo có trần riêng | bộ đếm theo bot trong Redis, tin dư xếp hàng |
 | **Khóa mã hóa riêng** | token bot là chìa khóa điều khiển bot — lộ là người khác nhắn dưới tên bot | khóa Fernet RIÊNG cho token bot (không suy từ JWT_SECRET), xoay được; đổi token ở BotFather thì gỡ token cũ |
-| **Theo dõi từng bot** | chủ thu hồi token / bot bị khóa thì bot «chết im» | vòng nền hỏi `getWebhookInfo` / lỗi gửi tin → báo chủ bot qua bot chung |
+| **Theo dõi từng bot** | chủ thu hồi token / bot bị khóa thì bot **chết im** | vòng nền hỏi `getWebhookInfo` / lỗi gửi tin → báo chủ bot qua bot chung |
 | **Sao lưu** | thêm bảng bot + token mã hóa | đi chung sao lưu DB `agent_hub` |
 
 ### 7.3 Cỡ máy theo số bot
@@ -280,7 +280,7 @@ cho worker và dung lượng kho tin nhắn.
 |---|---|
 | Đại ca | Chốt S1–S4 (§3.4) |
 | Đại ca | Token bot Zalo chính thức (Zalo Bot Manager → Tạo bot), gửi qua tệp |
-| Đại ca | Một tệp họp THẬT để thử T-01 thật; thử đường Drive «Họp» với tệp ghi âm |
+| Đại ca | Một tệp họp THẬT để thử T-01 thật; thử đường Drive **Họp** với tệp ghi âm |
 | Đại ca | VPS AI riêng (cấu hình S4) |
 | Đại ca | Điện thoại giữ số Zalo công ty: quét QR khi bot gửi (`/zalo dangnhap`); không mở Zalo Web / PC bằng số đó |
 | Đại ca | K-02 / K-03 trên GitHub; bật OTP prod khi muốn |

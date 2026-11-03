@@ -306,6 +306,9 @@ export const queryKeys = {
     leaveBalances: (params?: Record<string, unknown>) =>
       ['hr', 'leave-balances', params ?? {}] as const,
     leaveBalance: (id: number) => ['hr', 'leave-balances', 'detail', id] as const,
+    /** Ma trận "Theo nhân sự" (người × loại nghỉ, duoc-CR-717) — Cấp quỹ / duyệt đơn dọn qua `hr.all`. */
+    leaveBalanceMatrix: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-balances', 'matrix', params ?? {}] as const,
     leaveBalanceSummary: (employeeId: number, year: number) =>
       ['hr', 'leave-balances', 'summary', employeeId, year] as const,
     /** Bảng đối chiếu trước/sau kết sổ năm `year` (duoc-CR-664) — kết sổ lại dọn qua `hr.all`. */
@@ -319,6 +322,20 @@ export const queryKeys = {
     /** Hạn mức theo nhóm của MỘT loại nghỉ (duoc-CR-715). */
     leaveTypeQuotas: (leaveTypeId: number) =>
       ['hr', 'leave-type-quotas', leaveTypeId] as const,
+    /** Dòng "loại nghỉ → số ngày/năm" của MỘT chính sách nghỉ phép (duoc-CR-717). */
+    leavePolicyLines: (policyId: number) => ['hr', 'leave-policy-lines', policyId] as const,
+    /**
+     * GỐC của mọi khóa phân bổ chính sách (danh sách + xem trước) — dọn bằng khóa này mới trúng cả
+     * `leavePolicyPreview`: `leavePolicyAssignments()` kết thúc bằng `{}` nên KHÔNG khớp tiền tố với
+     * khóa xem trước (phần tử thứ ba là chuỗi `'preview'`).
+     */
+    leavePolicyAssignmentsRoot: ['hr', 'leave-policy-assignments'] as const,
+    /** Phân bổ chính sách (duoc-CR-717) — dưới `hr` để mỗi lượt phân bổ dọn luôn nhánh quỹ phép qua `hr.all`. */
+    leavePolicyAssignments: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-policy-assignments', params ?? {}] as const,
+    /** Xem trước phân bổ (trước → sau) cho đúng bộ tham số đang nhập trong hộp phân bổ một người. */
+    leavePolicyPreview: (params: Record<string, unknown>) =>
+      ['hr', 'leave-policy-assignments', 'preview', params] as const,
     holidays: (params?: Record<string, unknown>) => ['hr', 'holidays', params ?? {}] as const,
 
     //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────

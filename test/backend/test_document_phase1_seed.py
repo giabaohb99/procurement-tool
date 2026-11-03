@@ -15,7 +15,7 @@ def test_phase1_catalog_has_32_official_types_trich_luc_33_and_hdld_34():
     assert (hdld["needs_approval"], hdld["needs_signature"], hdld["number_when"]) == (False, False, 2)
     assert hdld["group_code"] == "C" and hdld["retention_months"] == 120
     assert hdld["is_confidential_type"] is True
-    #  duoc-CR-692: «Căn cứ kế hoạch nhân sự» (CCKHNS) đã bỏ khỏi bản gieo.
+    #  duoc-CR-692: "Căn cứ kế hoạch nhân sự" (CCKHNS) đã bỏ khỏi bản gieo.
     assert all(row["code"] != "CCKHNS" for row in ALL_DOC_TYPES)
 
     trich_luc = ALL_DOC_TYPES[-2]

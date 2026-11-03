@@ -67,14 +67,14 @@ cột → tick việc con → hoàn thành. Đây là mốc NGHIỆM THU BẢN �
 **Đã làm (CR-218):** sidebar cây nhóm→list · kanban kéo thả (dnd-kit, cập nhật
 lạc quan) · khung nhìn danh sách trên `DataTable` · panel chi tiết đủ trường +
 việc con + `AuditTimeline` · hộp thoại thành viên (mời/gỡ/chuyển quyền) và thiết
-lập tag/nhãn · thanh công cụ D-07 phần Việc mới · «Tất cả» · Sắp xếp · Tìm ·
+lập tag/nhãn · thanh công cụ D-07 phần Việc mới · **Tất cả** · Sắp xếp · Tìm ·
 Tùy chỉnh · trạng thái khung nhìn nhớ ở `localStorage`. `npm run check` xanh.
 
 **CÒN THIẾU của chính W2 — phải làm nốt trước khi gọi là nghiệm thu MVP:**
-1. **«Lọc» điều kiện** bằng `conditional-filter` (§3.3) — P0, chưa có.
+1. **"Lọc" điều kiện** bằng `conditional-filter` (§3.3) — P0, chưa có.
 2. **Kéo ngang đổi thứ tự CỘT** (§4) — thẻ kéo được rồi, cột thì chưa.
-3. ~~Ghim list hay dùng trên sidebar (A-05).~~ **Đã làm (duoc-CR-667)** — khu «Đã ghim» đầu cây, lưu theo người dùng.
-4. «Gom nhóm» ngoài cột tự đặt là D-08 (P1) nên KHÔNG chặn mốc này; tab
+3. ~~Ghim list hay dùng trên sidebar (A-05).~~ **Đã làm (duoc-CR-667)** — khu **Đã ghim** đầu cây, lưu theo người dùng.
+4. **Gom nhóm** ngoài cột tự đặt là D-08 (P1) nên KHÔNG chặn mốc này; tab
    **Dashboard** cũng vậy — §2 cấm render tab chưa làm. **Gantt** (CR-219) và
    **tab Hoạt động** (D-09, CR-249) thì đã có, làm sớm khỏi W4/W5.
 Chưa có đội nào dùng thử trọn vòng trên dev, nên **mốc MVP chưa đóng**.

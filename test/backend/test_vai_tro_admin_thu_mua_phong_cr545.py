@@ -1,4 +1,4 @@
-"""bao-CR-545 — «Admin thu mua phòng» (`pur_dept_admin`): bộ thu mua theo phòng đủ ba vai trò
+"""bao-CR-545 — "Admin thu mua phòng" (`pur_dept_admin`): bộ thu mua theo phòng đủ ba vai trò
 như bộ chung (Nhân viên · Admin · Quản lý). Chép quyền `pur_admin`, ba chứng từ phạm vi `dept_proc`.
 """
 from app.modules.assistant.tools.account_setup_tool import PURCHASING_ROLE_CODES, TEMPLATE_ROLE_CODES

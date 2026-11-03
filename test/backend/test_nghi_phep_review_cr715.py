@@ -1,7 +1,7 @@
 """duoc-CR-715 — bài hồi quy cho đợt SỬA THEO REVIEW (phiếu nghỉ bù, báo cáo quỹ, ô gợi ý ứng phép).
 
-Mỗi bài khóa một lỗi đã dựng lại được: chiếm phiếu nguyên tử (409), chốt loại + năm quỹ, dải ngày, khóa «một ngày
-một phiếu» ở tầng dữ liệu, `HookVeto` ở bộ máy duyệt, báo cáo quỹ trừ phần chưa tới tháng với số truy vấn cố định.
+Mỗi bài khóa một lỗi đã dựng lại được: chiếm phiếu nguyên tử (409), chốt loại + năm quỹ, dải ngày, khóa "một ngày
+một phiếu" ở tầng dữ liệu, `HookVeto` ở bộ máy duyệt, báo cáo quỹ trừ phần chưa tới tháng với số truy vấn cố định.
 """
 import time
 from datetime import date, timedelta
@@ -99,7 +99,7 @@ def _submit(db, obj, emp):
 
 
 def _stale_set_status(db, obj, status):
-    """Giả lập «lượt khác vừa đổi trạng thái» mà đối tượng đang cầm trong phiên vẫn là bản cũ."""
+    """Giả lập "lượt khác vừa đổi trạng thái" mà đối tượng đang cầm trong phiên vẫn là bản cũ."""
     db.query(LeaveCompRequest).filter(LeaveCompRequest.id == obj.id).update(
         {"status": int(status)}, synchronize_session=False)
     db.commit()
@@ -148,7 +148,7 @@ def test_double_submit_second_gets_409_without_second_instance(db, comp_type):
     service.prepare_submit(db, obj, _user(emp))
     bridge.start_approval(db, obj, _user(emp))
     stale = obj
-    stale.status = int(S.DRAFT)                  # lượt bấm thứ hai vẫn thấy «Nháp»
+    stale.status = int(S.DRAFT)                  # lượt bấm thứ hai vẫn thấy "Nháp"
     with pytest.raises(HTTPException) as err:
         service.prepare_submit(db, stale, _user(emp))
     assert err.value.status_code == 409
@@ -237,7 +237,7 @@ def test_service_rejects_work_date_older_than_start_of_last_year(db, comp_type):
     assert _create(db, _emp(db, "O2"), work_date=SUN_LAST_YEAR).work_date == SUN_LAST_YEAR
 
 
-# ── 12. Khóa «một ngày một phiếu» ở tầng dữ liệu ─────────────────────────────
+# ── 12. Khóa "một ngày một phiếu" ở tầng dữ liệu ─────────────────────────────
 
 def test_unique_active_key_blocks_duplicate_insert_that_skips_service_check(db, comp_type):
     emp = _emp(db, "K1")

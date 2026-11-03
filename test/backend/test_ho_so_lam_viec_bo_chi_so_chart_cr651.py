@@ -1,4 +1,4 @@
-"""duoc-CR-651 — biểu đồ «Bộ chỉ số đánh giá»: `histogram` (tuần mới nhất) + `trend` (trung vị ≤ 8 tuần) trong /metrics."""
+"""duoc-CR-651 — biểu đồ "Bộ chỉ số đánh giá": `histogram` (tuần mới nhất) + `trend` (trung vị ≤ 8 tuần) trong /metrics."""
 from datetime import date, timedelta
 
 from app.core.usage_codes import PeriodKind
@@ -66,7 +66,7 @@ def test_count_cot_dep_toi_p95_va_cot_tran():
     assert h[0]["lo"] == 0 and h[-1]["hi"] is None and h[-1]["count"] >= 1
     assert sum(c["count"] for c in h) == len(values)
     steps = {round(c["hi"] - c["lo"], 4) for c in h[:-1]}
-    assert len(steps) == 1 and steps.pop() in (1, 2, 5)          # bước «đẹp», đếm thì ≥ 1
+    assert len(steps) == 1 and steps.pop() in (1, 2, 5)          # bước "đẹp", đếm thì ≥ 1
     assert len(h) <= 11
 
 

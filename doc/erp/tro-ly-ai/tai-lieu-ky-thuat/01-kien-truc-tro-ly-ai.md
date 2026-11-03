@@ -7,7 +7,7 @@ quyền per-record — vẫn là kế hoạch).
 
 > ⚠️ Bản trước của tệp này ghi *"thiết kế nền, chưa code"* và mô tả bốn tool gợi ý. Nay đã có
 > **36 tool**, tầng ghi có xác nhận, kho vector và hạn mức chi phí. Ba chỗ bản cũ nói **ngược
-> với mã đang chạy** đã sửa ở đây, đánh dấu «ĐÍNH CHÍNH» — đừng trích lại bản cũ.
+> với mã đang chạy** đã sửa ở đây, đánh dấu **ĐÍNH CHÍNH** — đừng trích lại bản cũ.
 
 Bốn tệp, đọc theo nhu cầu:
 

@@ -33,5 +33,5 @@ cả màn rộng (1440) lẫn màn hẹp.
 
 ## Cách báo
 - Đại ca: câu đầu là kết quả; nói việc người dùng thấy, không nói tên hàm; số liệu cổng kiểm; cuối cùng kiến nghị việc
-  kế + thứ đại ca phải quyết. Không emoji, không dùng ngoặc « ».
+  kế + thứ đại ca phải quyết. Không emoji, không dùng ngoặc ngoặc kép góc.
 - `dieu-phoi`: mã commit, số CR, tệp đã add, cổng kiểm, chỗ còn hở.

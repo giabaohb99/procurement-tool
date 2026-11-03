@@ -1,7 +1,7 @@
 """CHIA SỔ VĂN BẢN — mấy ca BIÊN mà `test_chia_so_van_ban.py` chưa chạm tới.
 
 Khách báo lại 26/08/2026: chia sổ xong người được chia **vẫn không thấy sổ ở
-trang của mình**. Lần này thủ phạm nằm ở CỬA GIAO DIỆN (mục menu «Sổ văn bản»
+trang của mình**. Lần này thủ phạm nằm ở CỬA GIAO DIỆN (mục menu "Sổ văn bản"
 gác `document_book.read`, xem `frontend-v2/src/modules/document/routes.test.ts`)
 chứ không phải ở đây — nhưng đúng dịp soi lại toàn bộ đường quyền của sổ, và
 mấy ca dưới đây trước giờ chưa ai kiểm:
@@ -74,7 +74,7 @@ def test_pham_vi_own_van_thay_so_duoc_chia(db, seed, cty_khac, cap_quyen):
     """`own` là phạm vi hẹp nhất: chỉ thấy thứ do chính mình tạo.
 
     Người được chia sổ hầu hết rơi vào đây. Chia đích danh phải THẮNG được cả
-    phạm vi hẹp nhất, nếu không thì ô «Người xem sổ» chỉ có tác dụng với đúng
+    phạm vi hẹp nhất, nếu không thì ô "Người xem sổ" chỉ có tác dụng với đúng
     những người vốn đã xem được.
     """
     nv, tk = _people(db, "SO_OWN", cty_khac.id)
@@ -235,7 +235,7 @@ def test_so_da_xoa_thi_dong_thanh_vien_khong_keo_ai_vao_duoc(db, seed, cty_khac)
 
 
 def test_nguoi_duoc_chia_mo_duoc_BO_DEM_cua_so(db, seed, cty_khac):
-    """Trang chi tiết sổ có khối «Bộ đếm» đi qua đúng cửa `so_xem_duoc_hoac_404`."""
+    """Trang chi tiết sổ có khối "Bộ đếm" đi qua đúng cửa `so_xem_duoc_hoac_404`."""
     nv, tk = _people(db, "SO_DEM", cty_khac.id)
     so = _so(db, company_id=seed.company_id, manager_ids=[seed.emp_tp_id],
              viewer_ids=[nv.id])

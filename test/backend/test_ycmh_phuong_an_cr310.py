@@ -445,7 +445,7 @@ def test_sau_chot_nstm_het_sua_phuong_an(db, seed, cap_quyen):
 
 def test_nguoi_yc_chon_duoc_khi_nstm_chua_chot(db, seed, cap_quyen):
     """bao-CR-570 (02/10/2026) ĐẢO luật đợt 3b: như YCBG, phương án NSTM gắn tới đâu người yêu
-    cầu chọn tới đó — không đợi NSTM bấm «Chốt hoàn thành xử lý»."""
+    cầu chọn tới đó — không đợi NSTM bấm "Chốt hoàn thành xử lý"."""
     pr, it = _make_pr(db, seed)
     nstm = _nstm(db, seed, cap_quyen)
     o = _data(C.add_option_manual(pr.id, it.id, PROptionManualIn(supplier_code="NX"),

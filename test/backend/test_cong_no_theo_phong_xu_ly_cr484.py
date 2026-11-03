@@ -1,7 +1,7 @@
 """bao-CR-484 — CÔNG NỢ tính cho PHÒNG XỬ LÝ (đại ca chốt 25/09/2026).
 
-Luật CR-414 GĐ4 gán nợ cho «phòng được nhờ, không thì phòng lập đơn». Từ CR-480 ô «Phòng
-xử lý» có nghĩa: `handler_dept_id = 0` = THU MUA CHUNG xử lý. Nếu giữ luật cũ thì nợ của đơn
+Luật CR-414 GĐ4 gán nợ cho "phòng được nhờ, không thì phòng lập đơn". Từ CR-480 ô "Phòng
+xử lý" có nghĩa: `handler_dept_id = 0` = THU MUA CHUNG xử lý. Nếu giữ luật cũ thì nợ của đơn
 nhà máy xin mà thu mua chung mua hộ bị tính cho nhà máy — nhà máy không trả, không cấn trừ,
 mà bậc `dept_proc` của họ lại thấy nó. Nay:
   · nợ = `handler_dept_id` của đơn, 0 = thu mua chung (`payable.service.debt_dept_of`);

@@ -1,8 +1,8 @@
 """THỨ TỰ MẶC ĐỊNH của màn danh sách hồ sơ — và cái bẫy `NULL` của MySQL.
 
 Màn danh sách sắp theo `expiry_date` tăng dần, và đó không phải lựa chọn thẩm
-mỹ: nó CHÍNH LÀ câu trả lời cho việc người ta mở màn hình này ra — *«còn tờ nào
-sắp hết hạn không?»*.
+mỹ: nó CHÍNH LÀ câu trả lời cho việc người ta mở màn hình này ra — *"còn tờ nào
+sắp hết hạn không?"*.
 
 ⚠️ Nhưng **MySQL xếp `NULL` LÊN ĐẦU khi sắp tăng dần**, mà `expiry_date` rỗng
 nghĩa là *vô thời hạn* — đúng nhóm KHÔNG cần ai để mắt tới. Để nguyên thì toàn
@@ -70,8 +70,8 @@ def test_khong_khai_nulls_last_thi_SAI_dung_kieu_da_gap(db, bon_ho_so):
 def test_nulls_last_ap_cho_CA_HAI_chieu_sap(db, bon_ho_so):
     """Sắp giảm dần cũng phải đẩy NULL xuống cuối.
 
-    Người dùng bấm tiêu đề cột lần thứ hai để đảo chiều; đảo xong mà nhóm «vô
-    thời hạn» nhảy lên đầu thì họ đọc ra là danh sách hỏng.
+    Người dùng bấm tiêu đề cột lần thứ hai để đảo chiều; đảo xong mà nhóm "vô
+    thời hạn" nhảy lên đầu thì họ đọc ra là danh sách hỏng.
     """
     q = apply_sort(db.query(Dossier), Dossier, "expiry_date", "desc",
                    nulls_last=("expiry_date",))

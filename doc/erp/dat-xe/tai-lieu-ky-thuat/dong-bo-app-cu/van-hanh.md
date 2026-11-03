@@ -150,7 +150,7 @@ Dashboard: `https://dash.cloudflare.com/d74f2df39b62699e41bb0a88d0856fe9/workers
 ## 8. Bước 0 — app cũ không đè thao tác làm trên ERP (duoc-CR-682, 26/10/2026)
 
 Vì chiều ERP → app cũ tắt, app cũ giữ ảnh chụp cũ; trước Bước 0 mỗi lượt nhận (cộng lượt quét ép 02:15) chép đè lại:
-phiếu điều phối trên ERP lùi «Đã duyệt» mà còn giữ xe, phiếu hoàn tất / đóng dấu trên ERP lùi trạng thái, nội dung
+phiếu điều phối trên ERP lùi **Đã duyệt** mà còn giữ xe, phiếu hoàn tất / đóng dấu trên ERP lùi trạng thái, nội dung
 người dùng sửa trên ERP bị trả về bản cũ.
 
 **Luật mới (chỉ phía ERP, KHÔNG ghi gì sang app cũ; mã ở `backend/app/modules/legacy_datxe/erp_ownership.py`):**
@@ -159,7 +159,7 @@ người dùng sửa trên ERP bị trả về bản cũ.
 |---|---|
 | ERP **chưa** đụng vào (`erp_action_at` rỗng) | Soi gương như cũ — điều phối, tài xế, duyệt, sửa nội dung bên app cũ vẫn chảy về ERP. |
 | ERP **đã** đụng vào (`erp_action_at` có giá trị) | ERP làm chủ **cả phiếu**: không chép ô nào (trạng thái, xe, tài xế, duyệt, km, chi phí, nội dung, công ty phiếu dấu), không dựng lại phiên duyệt soi gương. Ngoại lệ duy nhất: app cũ **hủy / từ chối** phiếu chưa chốt → nhận trạng thái đó (giữ nguyên xe / tài xế ERP đã gán). |
-| ERP đã đụng vào **và** phiếu đã chốt (hoàn tất / từ chối / hủy) | Trạng thái không đổi nữa — dòng sổ ghi «bỏ qua … không cho lùi». |
+| ERP đã đụng vào **và** phiếu đã chốt (hoàn tất / từ chối / hủy) | Trạng thái không đổi nữa — dòng sổ ghi **bỏ qua … không cho lùi**. |
 
 * `erp_action_at` tự đóng khi BẤT KỲ cột nghiệp vụ nào đổi ngoài lượt đồng bộ trên phiếu có `legacy_id` (nút trên web,
   lưu nháp, hook bộ máy duyệt, việc nền) — không ai bấm tay. Đã đóng thì không gỡ.

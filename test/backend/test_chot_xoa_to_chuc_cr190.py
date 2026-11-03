@@ -163,8 +163,8 @@ def test_nhan_su_la_chang_duyet_dich_danh_thi_400(db, seed):
 
 
 def test_nhan_su_chi_con_tai_khoan_thi_van_xoa_va_khoa_tai_khoan_nhu_cu(db, seed):
-    """Giả định ai-CR-190: tài khoản gắn hồ sơ KHÔNG tính là tham chiếu (tránh bế tắc với luật «tài khoản còn hồ sơ
-    thì không xóa» của `delete_user`) — giữ lối CR-023: xóa hồ sơ → tự khóa + gỡ tài khoản."""
+    """Giả định ai-CR-190: tài khoản gắn hồ sơ KHÔNG tính là tham chiếu (tránh bế tắc với luật "tài khoản còn hồ sơ
+    thì không xóa" của `delete_user`) — giữ lối CR-023: xóa hồ sơ → tự khóa + gỡ tài khoản."""
     locked = employee_service.delete_employee(db, seed.emp_req_id, 1)
     assert locked == 1
     assert db.get(Employee, seed.emp_req_id) is None
