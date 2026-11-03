@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react'
-import { ChevronDown, ChevronRight, Search, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, Lock, Search, X } from 'lucide-react'
 
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Checkbox } from '@/shared/ui/checkbox'
@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/ui/table'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import {
   buildPermissionTree,
   filterPermissionTree,
@@ -88,6 +89,10 @@ export function RolePermissionMatrix({
 }: RolePermissionMatrixProps) {
   const actionKeys = meta.actions.map((action) => action.key)
   const fullTree = buildPermissionTree(meta.entities)
+  //  bao-CR-716: danh mục dùng chung (NCC, sản phẩm, kho...) — phạm vi KHÔNG lọc gì, ai
+  //  được tick là thấy toàn bộ. Ô Phạm vi của chúng bị khóa kèm lời giải thích; giá trị
+  //  trong `rows` giữ nguyên nên lúc lưu không đổi dữ liệu, chỉ đổi cách nhìn.
+  const publicEntities = new Set(meta.public_entities ?? [])
   //  Mở sẵn phân hệ CÓ tick, gập phân hệ trống (bao-CR-428): 60 mục xổ hết thì
   //  người đọc phải cuộn qua hai chục nhóm trắng mới tới chỗ vai trò này thật
   //  sự có quyền. Chưa tick gì cả (vai trò mới) thì mở hết — gập hết lúc đó là
@@ -381,6 +386,23 @@ export function RolePermissionMatrix({
                         ))}
 
                         <TableCell className="border-l">
+                          {publicEntities.has(entity.key) ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span
+                                  className="flex h-8 w-full cursor-help items-center gap-1.5 rounded-md border border-dashed px-2 text-xs text-muted-foreground"
+                                  aria-label={`${entity.label} — phạm vi khóa: danh mục dùng chung`}
+                                >
+                                  <Lock className="size-3 shrink-0" />
+                                  <span className="truncate">Toàn bộ (danh mục dùng chung)</span>
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="left" className="max-w-xs">
+                                {entity.label} là danh mục dùng chung cho mọi pháp nhân, không lọc theo phạm vi:
+                                ai được tick quyền là thấy toàn bộ. Muốn giấu thì bỏ tick quyền Xem.
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
                           <Select
                             value={row.scope || 'own'}
                             disabled={readOnly}
@@ -402,6 +424,7 @@ export function RolePermissionMatrix({
                               ))}
                             </SelectContent>
                           </Select>
+                          )}
                         </TableCell>
                       </TableRow>
                     )

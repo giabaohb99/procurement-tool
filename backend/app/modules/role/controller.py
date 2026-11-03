@@ -8,6 +8,7 @@ from app.core import privilege_escalation
 from app.core.permissions import (ACTION_LABELS, ACTIONS, ENTITIES,
                                   ENTITY_LABELS, SCOPE_LABELS, SCOPES)
 from app.core.response import success
+from app.core.scoping import PUBLIC, SCOPE_FIELDS
 
 from . import service
 from .model import Role
@@ -18,11 +19,18 @@ router = APIRouter(prefix="/api/roles", tags=["role"])
 
 @router.get("/meta")
 def permission_meta(db: Session = Depends(get_db), user=Depends(require("role", "read"))):
-    """Danh sách quyền config (đối tượng x hành động) để FE dựng ma trận."""
+    """Danh sách quyền config (đối tượng x hành động) để FE dựng ma trận.
+
+    `public_entities` (bao-CR-716): entity khai `PUBLIC` trong `SCOPE_FIELDS` — danh mục dùng chung mọi pháp nhân
+    (nhà cung cấp, sản phẩm, kho...) hoặc quyền hành động không có bảng để lọc. Với chúng ô Phạm vi của vai trò KHÔNG
+    có tác dụng: ai được tick quyền là thấy toàn bộ, muốn giấu thì tắt quyền. Màn Phân quyền khóa ô Phạm vi của những
+    dòng này để khỏi hiểu nhầm (sự cố: vai trò Nhân sự tick Xem NCC phạm vi Của mình vẫn thấy toàn bộ NCC).
+    """
     return success({
         "entities": [{"key": e, "label": ENTITY_LABELS.get(e, e)} for e in ENTITIES],
         "actions": [{"key": a, "label": ACTION_LABELS.get(a, a)} for a in ACTIONS],
         "scopes": [{"key": s, "label": SCOPE_LABELS.get(s, s)} for s in SCOPES],
+        "public_entities": [e for e in ENTITIES if SCOPE_FIELDS.get(e) is PUBLIC],
     })
 
 
