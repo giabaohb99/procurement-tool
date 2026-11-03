@@ -111,6 +111,21 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-715-che-service-thu-mua | Chẻ tệp nghiệp vụ và tách hàm rối của ba phân hệ thu mua, đợt R3
+- status: dang-lam
+- date: 2026-11-03
+- list: Sản xuất - Thu mua
+- tag: Nền tảng
+**Bối cảnh:** sau đợt R2 (bao-CR-711), tệp nghiệp vụ (service) của Yêu cầu mua hàng, Yêu cầu báo giá và Đơn mua hàng dày
+từ 1.364 đến 2.210 dòng, và còn nhiều hàm rất rối như hàm lưu dòng đơn mua hàng hay hàm sinh đơn mua hàng từ phương án.
+Đây là đợt R3 của lộ trình dọn, được giao ngày 03/11.
+
+**Đang làm:** chẻ mỗi tệp nghiệp vụ theo bước của vòng đời chứng từ (tạo và sửa, duyệt, phân công, phương án, giao hàng...)
+để không tệp nào quá 1.000 dòng, rồi tách các hàm rối theo ba bước kiểm, tính, ghi. Hàm nào chưa có bài kiểm đủ thì viết bài
+kiểm chụp kết quả cũ trước khi tách. Không đổi hành vi: đường API, dữ liệu trả, câu báo lỗi và số câu truy vấn giữ nguyên.
+
+Tham chiếu: doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md mục 5 và 6
+
 ## bao-CR-714-sua-bai-kiem-do-san-co | Sửa sáu bài kiểm đỏ sẵn có lộ ra khi chạy đủ bộ backend
 - status: đang làm
 - date: 2026-11-03
