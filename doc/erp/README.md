@@ -19,7 +19,7 @@ Hướng: **giữ code Thu mua, gia cố, chia thành ERP nhiều phân hệ.** 
 | [`tham-khao-hrm/`](./tham-khao-hrm/README.md) | Khảo sát HrOnline và đề xuất áp dụng |
 | [`van-thu/`](./van-thu/README.md) | Văn thư và văn bản: 174 tính năng, lộ trình 10 phase, câu hỏi chờ chốt |
 | [`cong-viec/`](./cong-viec/README.md) | Quản lý công việc (Dự án, clone Lark Tasks) |
-| [`dien-dan/`](./dien-dan/00-pham-vi-va-ke-hoach.md) | Diễn đàn nội bộ |
+| [`dien-dan/`](dien-dan/plans/00-pham-vi-va-ke-hoach.md) | Diễn đàn nội bộ |
 | [`diem-ca-phe/`](./diem-ca-phe/README.md) | Điểm cà phê và POS365, chính sách phúc lợi điểm (`09`, `17`) |
 | [`tai-lieu-ai/`](./tai-lieu-ai/01-kien-truc-tro-ly-ai.md) | AI: trợ lý, danh sách tool, bảo mật; kho skill AI qua MCP (`21`, `21a`); AI kế hoạch và phân việc (`22`) |
 | [`san-xuat/`](./san-xuat/README.md) | Quản lý sản xuất — giai đoạn nghiên cứu nghiệp vụ |

@@ -1,6 +1,6 @@
 # DIỄN ĐÀN — LỘ TRÌNH PHASE
 
-Ngày lập: 26/08/2026. Chia việc của [`00`](./00-pham-vi-va-ke-hoach.md) mục 5 thành các phase làm được. **Không có mốc thời gian** (QĐ-D5 — làm từ từ, song song việc khác); thứ tự và điều kiện chuyển phase mới là thứ quan trọng. Thiết kế chi tiết từng phần ở [`01`](./01-giao-dien-va-logic-hien-thi.md).
+Ngày lập: 26/08/2026. Chia việc của [`00`](00-pham-vi-va-ke-hoach.md) mục 5 thành các phase làm được. **Không có mốc thời gian** (QĐ-D5 — làm từ từ, song song việc khác); thứ tự và điều kiện chuyển phase mới là thứ quan trọng. Thiết kế chi tiết từng phần ở [`01`](../chuc-nang/10-giao-dien-va-logic-hien-thi.md).
 
 Nguyên tắc chia: **mỗi phase kết thúc là hệ vẫn nguyên vẹn** — dừng giữa chừng bao lâu cũng được, không để bảng mồ côi hay màn hình gọi API chưa tồn tại.
 
@@ -112,7 +112,7 @@ Comment dùng nguyên bộ `/api/comments` với `entity=forum_post`.
 
 Đợt 3 (follow/feed cá nhân hóa, nhóm kín, khảo sát trong bài) giữ nguyên như `00` mục 5 — chỉ bàn khi đợt 2 xong và sếp còn muốn. Riêng **video** vốn nằm đợt 3 đã kéo lên làm xong 27/08/2026 (D-Q3).
 
-**Nợ đề xuất (chưa xếp lịch):** trợ lý AI đọc diễn đàn — 2 tool `forum_search`/`forum_post_read` ép quyền theo người hỏi + mở rộng search sang bình luận; KHÔNG nạp thô diễn đàn vào gói tri thức, tri thức đi đường chưng cất qua HDSD/Văn thư. Chi tiết + điều kiện đủ ở [`03-de-xuat-ai-doc-dien-dan.md`](./03-de-xuat-ai-doc-dien-dan.md) (ghi 03/09/2026).
+**Nợ đề xuất (chưa xếp lịch):** trợ lý AI đọc diễn đàn — 2 tool `forum_search`/`forum_post_read` ép quyền theo người hỏi + mở rộng search sang bình luận; KHÔNG nạp thô diễn đàn vào gói tri thức, tri thức đi đường chưng cất qua HDSD/Văn thư. Chi tiết + điều kiện đủ ở [`03-de-xuat-ai-doc-dien-dan.md`](../nghien-cuu/03-de-xuat-ai-doc-dien-dan.md) (ghi 03/09/2026).
 
 ---
 

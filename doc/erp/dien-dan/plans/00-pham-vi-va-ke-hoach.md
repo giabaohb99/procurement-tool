@@ -4,7 +4,7 @@ Ngày lập: 26/08/2026. Trạng thái: **đã chốt phạm vi sơ bộ với s
 
 Diễn đàn nội bộ kiểu Facebook cho toàn công ty: đăng bài, comment, like, kèm ảnh, bảng tin chung và trang cá nhân. **Không nằm trong 12 phân hệ WorkHub** (SRS-HOLDING-IT-001-2026) — là sản phẩm mới ngoài lộ trình, chạy song song với các việc đang làm, không chen ưu tiên.
 
-Bộ tài liệu ba tệp: **`00`** (tệp này) — phạm vi, quyết định, câu hỏi mở · [**`01`** Giao diện và logic hiển thị](./01-giao-dien-va-logic-hien-thi.md) — khung màn hình, trang cá nhân, luồng đăng bài, logic feed và comment khi dữ liệu lớn · [**`02`** Lộ trình phase](./02-lo-trinh-phase.md) — 6 phase đợt 1 + 3 phase đợt 2, điều kiện đủ từng phase.
+Bộ tài liệu ba tệp: **`00`** (tệp này) — phạm vi, quyết định, câu hỏi mở · [**`01`** Giao diện và logic hiển thị](../chuc-nang/10-giao-dien-va-logic-hien-thi.md) — khung màn hình, trang cá nhân, luồng đăng bài, logic feed và comment khi dữ liệu lớn · [**`02`** Lộ trình phase](02-lo-trinh-phase.md) — 6 phase đợt 1 + 3 phase đợt 2, điều kiện đủ từng phase.
 
 ---
 

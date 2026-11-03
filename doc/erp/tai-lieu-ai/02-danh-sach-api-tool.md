@@ -720,7 +720,7 @@ không có tool nào - tức bot **giải thích được quy trình mà không 
 ## Nhóm 17 - Diễn đàn (`forum_tool.py`, CHƯA CODE)
 
 ### T46. forum_search · T47. forum_post_read
-Đã có đề xuất chốt hướng đầy đủ ở **`doc/erp/dien-dan/03-de-xuat-ai-doc-dien-dan.md`**
+Đã có đề xuất chốt hướng đầy đủ ở **`doc/erp/dien-dan/nghien-cuu/03-de-xuat-ai-doc-dien-dan.md`**
 (03/09/2026) - tham số, ranh giới, và luật "bài diễn đàn KHÔNG phải nguồn tri thức ngang
 tài liệu, phải rào nguồn khi trích". Không chép lại ở đây; chỉ cấp số T46/T47 để danh sách
 tool liền mạch. Việc backend mới duy nhất: mở rộng search sang **nội dung bình luận**.

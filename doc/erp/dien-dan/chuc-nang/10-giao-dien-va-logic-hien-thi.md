@@ -1,6 +1,6 @@
 # DIỄN ĐÀN — GIAO DIỆN VÀ LOGIC HIỂN THỊ
 
-Ngày lập: 26/08/2026. Tài liệu trả lời bốn câu: **giao diện trông thế nào · có trang cá nhân không · đăng bài ra sao · dữ liệu lớn thì bảng tin và comment hiển thị theo logic gì**. Đọc sau [`00`](./00-pham-vi-va-ke-hoach.md); chia việc xem [`02`](./02-lo-trinh-phase.md).
+Ngày lập: 26/08/2026. Tài liệu trả lời bốn câu: **giao diện trông thế nào · có trang cá nhân không · đăng bài ra sao · dữ liệu lớn thì bảng tin và comment hiển thị theo logic gì**. Đọc sau [`00`](../plans/00-pham-vi-va-ke-hoach.md); chia việc xem [`02`](../plans/02-lo-trinh-phase.md).
 
 **Quy mô để thiết kế:** ~300 tài khoản (theo SRS WorkHub). Giả định cao tay 50 bài/ngày thì một năm ~15.000 bài, comment vài trăm nghìn dòng — với MySQL có index đây là dữ liệu NHỎ. Cái làm chậm không phải kích thước bảng mà là ba thói quen xấu: OFFSET phân trang, COUNT(*) từng dòng, và hỏi DB theo từng bài (N+1). Toàn bộ thiết kế dưới đây xoay quanh việc tránh đúng ba thứ đó — và hệ bình luận CR-033 đang chạy đã tránh sẵn cả ba, nên phần khó nhất là **bê sang, không phải nghĩ mới**.
 

@@ -1,6 +1,6 @@
 """dien_dan_f0_bang_bai_viet_like_kiem_duyet
 
-Diễn đàn nội bộ F0 (doc/erp/dien-dan/02-lo-trinh-phase.md): ba bảng
+Diễn đàn nội bộ F0 (doc/erp/dien-dan/plans/02-lo-trinh-phase.md): ba bảng
 tab_forum_post / tab_forum_reaction / tab_forum_moderation_log.
 
 Tệp autogenerate gốc kèm theo cả trăm dòng alter_column NOT NULL + đảo index

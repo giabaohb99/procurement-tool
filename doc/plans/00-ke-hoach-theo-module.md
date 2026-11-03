@@ -337,25 +337,25 @@ Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/thu-mua/n
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
 | DD1-1 | Gán vai trò `forum_admin` cho người thật trên dev và prod (vai trò seed sẵn, chưa gán cho ai) | Có ít nhất một quản trị diễn đàn mỗi môi trường, ẩn / ghim được bài | `doc/tai-lieu-ky-thuat/ke-hoach-phat-hanh-erp-v2-len-prod.md` |
-| DD1-2 | Đóng F6: nhóm nhỏ IT + HR dùng thử rồi thông báo toàn công ty *(cần kiểm lại: chưa rõ đã thông báo chưa)* | Nhóm thử đăng bài thật từ điện thoại; sao lưu R2 phủ bảng diễn đàn | `doc/erp/dien-dan/02-lo-trinh-phase.md` F6 |
+| DD1-2 | Đóng F6: nhóm nhỏ IT + HR dùng thử rồi thông báo toàn công ty *(cần kiểm lại: chưa rõ đã thông báo chưa)* | Nhóm thử đăng bài thật từ điện thoại; sao lưu R2 phủ bảng diễn đàn | `doc/erp/dien-dan/plans/02-lo-trinh-phase.md` F6 |
 
 **Phase 2**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| DD2-1 | F9 sửa bài kèm nhãn *đã chỉnh sửa* (kiểm mã: chưa có PUT cho bài). Chờ D-Q4 | Tác giả sửa được bài của mình, bài hiện nhãn | `doc/erp/dien-dan/02-lo-trinh-phase.md` F9 |
-| DD2-2 | Hai tool AI `forum_search`, `forum_post_read` ép quyền theo người hỏi, khai theo đường cổng MCP | Hỏi qua MCP ra đúng bài người đó được xem | `doc/erp/dien-dan/03-de-xuat-ai-doc-dien-dan.md` |
-| DD2-3 | F7 Help Center thành tab *Hướng dẫn* | Tab đọc chung `help_article`, chốt đích chuyển hướng tên miền help cũ | `doc/erp/dien-dan/02-lo-trinh-phase.md` F7 |
+| DD2-1 | F9 sửa bài kèm nhãn *đã chỉnh sửa* (kiểm mã: chưa có PUT cho bài). Chờ D-Q4 | Tác giả sửa được bài của mình, bài hiện nhãn | `doc/erp/dien-dan/plans/02-lo-trinh-phase.md` F9 |
+| DD2-2 | Hai tool AI `forum_search`, `forum_post_read` ép quyền theo người hỏi, khai theo đường cổng MCP | Hỏi qua MCP ra đúng bài người đó được xem | `doc/erp/dien-dan/nghien-cuu/03-de-xuat-ai-doc-dien-dan.md` |
+| DD2-3 | F7 Help Center thành tab *Hướng dẫn* | Tab đọc chung `help_article`, chốt đích chuyển hướng tên miền help cũ | `doc/erp/dien-dan/plans/02-lo-trinh-phase.md` F7 |
 
 **Phase 3 — khi cần**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| DD3-1 | F8 duyệt bài trước theo box (cờ `require_approval`); F11 tự chọn bố cục ảnh | Sếp yêu cầu | `doc/erp/dien-dan/02-lo-trinh-phase.md` F8, F11 |
-| DD3-2 | Đợt 3: theo dõi người, nhóm kín, bình chọn | Sếp muốn | `doc/erp/dien-dan/00-pham-vi-va-ke-hoach.md` |
+| DD3-1 | F8 duyệt bài trước theo box (cờ `require_approval`); F11 tự chọn bố cục ảnh | Sếp yêu cầu | `doc/erp/dien-dan/plans/02-lo-trinh-phase.md` F8, F11 |
+| DD3-2 | Đợt 3: theo dõi người, nhóm kín, bình chọn | Sếp muốn | `doc/erp/dien-dan/plans/00-pham-vi-va-ke-hoach.md` |
 
 **Câu chờ quyết:**
-- D-Q4 người đăng được tự sửa / xóa bài hay chỉ ẩn; D-Q5 người thuộc holding thấy bài *Công ty* nào; D-Q6 like có sinh chuông không (mặc định không) — đại ca (`doc/erp/dien-dan/00-pham-vi-va-ke-hoach.md`).
+- D-Q4 người đăng được tự sửa / xóa bài hay chỉ ẩn; D-Q5 người thuộc holding thấy bài *Công ty* nào; D-Q6 like có sinh chuông không (mặc định không) — đại ca (`doc/erp/dien-dan/plans/00-pham-vi-va-ke-hoach.md`).
 
 ## 10. Điểm cà phê / POS365
 
