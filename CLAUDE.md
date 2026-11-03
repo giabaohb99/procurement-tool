@@ -13,7 +13,7 @@ Domain language is **Vietnamese** — entity names, code comments, and UI labels
 
 Legacy exceptions, do not copy them into new code:
 
-- **12 columns used to hold Vietnamese text** (e.g. `line_status == "Hủy đơn"`, `tab_po_item.progress_status`). Batches B-01…B-06 converted **all twelve** to codes on branch `erp-v2` — plan and per-batch record in [`doc/erp/nen-tang/15-do-be-tong-nen-v2.md`](doc/erp/nen-tang/15-do-be-tong-nen-v2.md). Two known leftovers stay in Vietnamese and are **out of scope** of that plan: `line_approve` on the two survey line tables (§2.2) and the `STATE_*` constants in `survey_request/line_state.py` (derived, never stored).
+- **12 columns used to hold Vietnamese text** (e.g. `line_status == "Hủy đơn"`, `tab_po_item.progress_status`). Batches B-01…B-06 converted **all twelve** to codes on branch `erp-v2` — plan and per-batch record in [`doc/erp/nen-tang/tai-lieu-ky-thuat/15-do-be-tong-nen-v2.md`](doc/erp/nen-tang/tai-lieu-ky-thuat/15-do-be-tong-nen-v2.md). Two known leftovers stay in Vietnamese and are **out of scope** of that plan: `line_approve` on the two survey line tables (§2.2) and the `STATE_*` constants in `survey_request/line_state.py` (derived, never stored).
 - **Thu mua migrates to fixed English string codes, not numbers** (QĐ-9), because its document `status` columns already use codes like `draft | submitted | approved`. Mixing two shapes inside one document is worse than the inconsistency between modules. This applies **only** to columns already in that plan — it is not a licence for new ones.
 
 Fixed code sets of either shape are declared in `backend/app/core/status_catalog.py` and registered via `app/core/code_sets.py`; `backend/scripts/gen_status_ts.py` generates the frontend copy, so never hand-write a status list in TypeScript.
@@ -106,6 +106,11 @@ docker compose exec -T api python -m pytest test/backend/test_process.py -q   # 
 
 # Cổng kiểm backend bằng ruff (bao-CR-710): phải 0 lỗi trước khi đẩy. Bộ luật + khu tạm loại ở backend/ruff.toml
 docker compose exec -T api sh -c "pip install -q ruff && python -m ruff check app"
+
+# Cổng kiểm tài liệu (bao-CR-712): chặn lỗi MỚI — exit 1. Trong container đọc repo qua mount chỉ-đọc /repo.
+# Lỗi cũ nằm trong backend/scripts/kiem_tai_lieu_nen.txt; sửa xong thì --cap-nhat-nen (chỉ BỚT dòng, không thêm)
+python backend/scripts/kiem_tai_lieu.py              # --chi-bao: chỉ in, luôn exit 0
+docker compose exec -T api python -m pytest test/backend/test_kiem_tai_lieu_cr712.py -q   # cùng bài, dạng pytest
 
 # E2E (Playwright, run on host; requires stack up + demo accounts)
 pytest test/e2e --headed -v
@@ -207,4 +212,4 @@ Mỗi phiên làm việc phải ghi một mục vào sổ này; `backend/scripts
 
 ⚠️ **Luật viết mô tả (đại ca chốt 17/09/2026): mô tả phải là câu tiếng Việt trọn vẹn.** Nói việc trước, tên tệp sau — tên hàm/tên bảng/mã commit gom xuống dòng cuối mở đầu bằng `Mã nguồn:` / `Commit:` / `Deploy:`. Dòng chỉ gồm tên tệp nối nhau là SAI. Từ tiếng Anh chỉ giữ khi công ty vẫn gọi bằng từ đó (commit, deploy, migration, script, API); còn lại dịch (*upsert* → có rồi thì cập nhật chưa có thì tạo, *endpoint* → đường API, *test* → bài kiểm). Bản đầy đủ của luật nằm ở đầu chính tệp sổ — đọc trước khi ghi mục mới.
 
-⚠️ **Trước khi đụng vào cấu trúc Sản phẩm, đọc `doc/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`.** `tab_product` **là bảng VARIANT (SKU)**, không phải sản phẩm cha — cố ý như vậy. Không có FK nào trỏ vào nó; 7 bảng (YCMH, ĐMH, nhận hàng, tồn kho, luân chuyển kho, lịch sử mua hàng, option khảo sát) nối nhau bằng **chuỗi `product_code`**, nên đó là hạt dữ liệu của cả hệ. Muốn gom nhóm thì thêm tầng cha Ở TRÊN; **cấm** thêm `tab_product_variant` ở dưới, cấm đổi/tái dùng `product_code`, cấm đặt cột giá lên sản phẩm. Xem D-025 trong `change-log.md`.
+⚠️ **Trước khi đụng vào cấu trúc Sản phẩm, đọc `doc/erp/mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`.** `tab_product` **là bảng VARIANT (SKU)**, không phải sản phẩm cha — cố ý như vậy. Không có FK nào trỏ vào nó; 7 bảng (YCMH, ĐMH, nhận hàng, tồn kho, luân chuyển kho, lịch sử mua hàng, option khảo sát) nối nhau bằng **chuỗi `product_code`**, nên đó là hạt dữ liệu của cả hệ. Muốn gom nhóm thì thêm tầng cha Ở TRÊN; **cấm** thêm `tab_product_variant` ở dưới, cấm đổi/tái dùng `product_code`, cấm đặt cột giá lên sản phẩm. Xem D-025 trong `change-log.md`.

@@ -1,6 +1,6 @@
 """Bảng của phân hệ Tra cứu giá hải quan (bao-CR-470).
 
-Thiết kế + số đo: `doc/erp/hai-quan/02-thiet-ke-ky-thuat.md` §3.
+Thiết kế + số đo: `doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md` §3.
 
 - `CustomsParty` — bảng ĐỐI TƯỢNG: doanh nghiệp trong nước + đối tác nước ngoài,
   phân loại theo bản chất (`PartyType`). Tên lặp lại rất nhiều trên dòng hàng

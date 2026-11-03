@@ -113,7 +113,7 @@ FIELDS = [
              "chia theo vai trò người nhận. Bỏ trống cả hai = gửi đúng địa chỉ thật."},
     {"key": "email_test_staff", "group": "email", "type": "str",
      "label": "Hộp thư thử — nhóm nhân viên"},
-    #  Cụm đồng bộ với app đặt xe / duyệt dấu cũ. Xem doc/dong-bo-dat-xe-duyet-dau/.
+    #  Cụm đồng bộ với app đặt xe / duyệt dấu cũ. Xem doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/.
     {"key": "sync_datxe_enabled", "group": "sync", "type": "bool",
      "label": "Bật đồng bộ với app đặt xe cũ",
      "hint": "TẮT là ngắt cả hai chiều ngay lập tức: app cũ gọi vào bị từ chối, ERP cũng thôi "

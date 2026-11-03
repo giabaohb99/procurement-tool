@@ -63,7 +63,7 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| NT1-1 | Đ-13c: thêm action `import`, đổi quyền xuất `read` sang `export`, áp `apply_scope` cho 3 export CSV viết tay (product, supplier, department; hiện `/export/csv` vẫn gác `read`) | Ma trận quyền có cột Nhập/Xuất; ai chỉ có `read` mất nút xuất; CSV chỉ ra dòng trong phạm vi | `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9 |
+| NT1-1 | Đ-13c: thêm action `import`, đổi quyền xuất `read` sang `export`, áp `apply_scope` cho 3 export CSV viết tay (product, supplier, department; hiện `/export/csv` vẫn gác `read`) | Ma trận quyền có cột Nhập/Xuất; ai chỉ có `read` mất nút xuất; CSV chỉ ra dòng trong phạm vi | `doc/erp/nen-tang/tai-lieu-ky-thuat/16-quan-ly-import-export-v2.md` §9 |
 | NT1-2 | CI tối thiểu: DB trống chạy đủ migration + chạy test mỗi lần đẩy (repo chưa có `.github/workflows`) | Mỗi lần đẩy `erp-v2` có kết quả xanh/đỏ | doc cũ 19 §6 |
 | NT1-3 | Gắn công ty cho nhân sự (hầu hết `company_id=0`) để lọc công nợ, nhập kho theo công ty chạy đúng — việc vận hành | Lọc theo công ty ra đúng số trên dev và prod | doc cũ 13 |
 | NT1-4 | Nợ nhỏ Thu mua phía backend: ghi *Tên trên hóa đơn* ĐMH lúc lưu; N-008 báo cáo mua hàng gom theo id phòng thay vì TÊN phòng | Đổi tên phòng không làm vỡ báo cáo; ĐMH lưu xong có sẵn tên hóa đơn | doc cũ 13 |
@@ -74,12 +74,12 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| NT2-1 | Đ-13d/13e còn lại: adapter nhập hợp đồng, tồn/công nợ đầu kỳ; thêm hợp đồng, thương hiệu vào registry xuất; nút Nhập/Xuất trên `CrudListPage` theo `can('import'/'export')` (chưa có) | Màn danh mục hiện nút đúng quyền, dẫn về batch | `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9.1, §9.2 |
-| NT2-2 | **XONG mã, chờ rà — kh-NT2-2, 22/10** (nhánh agent3/kh-NT2-2, chưa lên erp-v2). Chip nhanh trên 4 màn Thu mua theo doc 14, A2 rà đạt | Bấm một chip ra đúng danh sách | `doc/erp/nen-tang/14-filter-sort-man-danh-sach-v2.md` |
+| NT2-1 | Đ-13d/13e còn lại: adapter nhập hợp đồng, tồn/công nợ đầu kỳ; thêm hợp đồng, thương hiệu vào registry xuất; nút Nhập/Xuất trên `CrudListPage` theo `can('import'/'export')` (chưa có) | Màn danh mục hiện nút đúng quyền, dẫn về batch | `doc/erp/nen-tang/tai-lieu-ky-thuat/16-quan-ly-import-export-v2.md` §9.1, §9.2 |
+| NT2-2 | **XONG mã, chờ rà — kh-NT2-2, 22/10** (nhánh agent3/kh-NT2-2, chưa lên erp-v2). Chip nhanh trên 4 màn Thu mua theo doc 14, A2 rà đạt | Bấm một chip ra đúng danh sách | `doc/erp/nen-tang/tai-lieu-ky-thuat/14-filter-sort-man-danh-sach-v2.md` |
 | NT2-3 | Nhóm UI dùng chung: NF-01 thùng rác (màn khôi phục trên nền xóa mềm); NF-02 bộ lọc đã lưu (mới có ở Tra cứu thị trường, nhân rộng qua `user_preference`); NF-09 thao tác hàng loạt (xóa hàng loạt `core/bulk_delete.py` đã có ở 5 module, còn duyệt/gán/xuất hàng loạt — cần kiểm lại phạm vi); NF-03 tìm toàn cục | Mỗi NF có màn chạy trên dev, dùng chung cho mọi danh sách | doc cũ 13 §NF |
 | NT2-4 | NF-07 khóa chứng từ Thu mua sau duyệt; NF-06 cấp số cấu hình được + DB9 gom đánh số (mã đang sinh rải ở `core/utils.py`, `survey_request`, `ticket`...) | Một bộ sinh số chung, cấu hình được tiền tố; phiếu đã duyệt không sửa được trừ khi mở lại có dấu vết | doc cũ 13 §NF, doc cũ 06 DB9 |
 | NT2-5 | Celery phần còn lại: đẩy chuông/web push qua worker, cảnh báo nghiệp vụ theo lịch, NF-18 thư tổng hợp định kỳ, xuất nền (đã có: sao lưu, dọn dẹp, gửi thư, nhập nền) | Các việc trên chạy bằng beat, có nhật ký lỗi | doc cũ 11 |
-| NT2-6 | Phạm vi đợt sau: `purchase_history` chưa `apply_scope` (đang cố ý: ai có `supplier.read` thấy hết), `report.compute` chưa nhận user, survey chỉ có chiều owner, contract thiếu chiều phòng; báo cáo tổng + hoàn thiện quyền P9 | Mỗi bảng có SCOPE_FIELDS đủ chiều; bài kiểm phạm vi xanh | `doc/erp/nen-tang/12-ke-hoach-erp-v2-da-phap-nhan.md` §3 |
+| NT2-6 | Phạm vi đợt sau: `purchase_history` chưa `apply_scope` (đang cố ý: ai có `supplier.read` thấy hết), `report.compute` chưa nhận user, survey chỉ có chiều owner, contract thiếu chiều phòng; báo cáo tổng + hoàn thiện quyền P9 | Mỗi bảng có SCOPE_FIELDS đủ chiều; bài kiểm phạm vi xanh | `doc/plans/12-ke-hoach-erp-v2-da-phap-nhan.md` §3 |
 | NT2-7 | Hạ tầng: giám sát + cảnh báo; deploy một lệnh (cần kiểm lại — script đang nằm ngoài repo ở `D:/vps_deploy`); đưa script đồng bộ môi trường vào repo | Máy chủ chết có cảnh báo; deploy dev/prod bằng một lệnh trong repo | doc cũ 19 §6 |
 | NT2-8 | NF-17 màn lỗi/tác vụ nền; NF-22 biểu đồ cho dashboard Tồn kho | Quản trị thấy tác vụ hỏng; dashboard Tồn kho có biểu đồ | doc cũ 13 §NF |
 
@@ -116,7 +116,7 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| TM2-1 | Báo cáo thực hiện YCBG: **nhớ gấp/mở XONG mã, chờ rà — kh-TM2-1, 22/10** (nhánh agent3/kh-TM2-1); đính kèm tệp thật, nhắc hạn, quản lý mẫu chuyển sang kh-TM2-1-may-chu (anh Dược) | Bốn ý chạy trên dev, có HDSD | `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md` |
+| TM2-1 | Báo cáo thực hiện YCBG: **nhớ gấp/mở XONG mã, chờ rà — kh-TM2-1, 22/10** (nhánh agent3/kh-TM2-1); đính kèm tệp thật, nhắc hạn, quản lý mẫu chuyển sang kh-TM2-1-may-chu (anh Dược) | Bốn ý chạy trên dev, có HDSD | `doc/erp/thu-mua/nghien-cuu/01-brief-bao-cao-thuc-hien-ycbg.md` |
 
 **Phase 3 — khi cần**
 
@@ -126,7 +126,7 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 
 **Đã ghi nhận, chưa lên lịch — chỗ hở kho và nhận hàng so với chuẩn (bao-CR-702, 30/10/2026; đại ca chốt chỉ ghi, chưa làm)**
 
-Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) mục 6 (top 10 chỗ hở, đã xếp theo giá trị cho phòng thu mua). Nửa sau luồng (nhận hàng, kho, công nợ) mới đạt 43 % so với ERPNext v16.
+Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) mục 6 (top 10 chỗ hở, đã xếp theo giá trị cho phòng thu mua). Nửa sau luồng (nhận hàng, kho, công nợ) mới đạt 43 % so với ERPNext v16.
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
@@ -148,19 +148,19 @@ Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/nghien-cu
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| NK1-1 | HQ5: chạy lại seed bài HDSD mục IX (`backend/scripts/seed_help_customs_prices.py`, bài đã viết lại theo A-05…A-08) rồi nạp lại chỉ mục RAG (cần kiểm lại trên dev/prod) | Bài mục IX trên Trung tâm trợ giúp khớp tool hiện tại | `doc/erp/hai-quan/03-lo-trinh-phase.md` HQ5 |
+| NK1-1 | HQ5: chạy lại seed bài HDSD mục IX (`backend/scripts/seed_help_customs_prices.py`, bài đã viết lại theo A-05…A-08) rồi nạp lại chỉ mục RAG (cần kiểm lại trên dev/prod) | Bài mục IX trên Trung tâm trợ giúp khớp tool hiện tại | `doc/erp/hai-quan/plans/03-lo-trinh-phase.md` HQ5 |
 
 **Phase 2**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| NK2-1 | HQ6 P-02 cảnh báo tồn kho chạm ngưỡng: dựng cầu nối vật tư (VTBB) với hoạt chất, mở lại ranh giới *không nối tồn kho* | Tồn kho chạm ngưỡng thì có cảnh báo kèm căn cứ pháp lý | `doc/erp/hai-quan/03-lo-trinh-phase.md` HQ6 |
+| NK2-1 | HQ6 P-02 cảnh báo tồn kho chạm ngưỡng: dựng cầu nối vật tư (VTBB) với hoạt chất, mở lại ranh giới *không nối tồn kho* | Tồn kho chạm ngưỡng thì có cảnh báo kèm căn cứ pháp lý | `doc/erp/hai-quan/plans/03-lo-trinh-phase.md` HQ6 |
 
 **Phase 3 — khi cần**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| NK3-1 | Phân hệ Hồ sơ và tiến độ nhập khẩu Đ1–Đ7 (đang PENDING); mở lại thì chạy checklist §14 | Đại ca mở lại | `doc/erp/nhap-khau/01-danh-sach-tinh-nang.md` §14 |
+| NK3-1 | Phân hệ Hồ sơ và tiến độ nhập khẩu Đ1–Đ7 (đang PENDING); mở lại thì chạy checklist §14 | Đại ca mở lại | `doc/erp/nhap-khau/chuc-nang/10-danh-sach-tinh-nang.md` §14 |
 
 **Câu chờ quyết:**
 - Q2 nạp bao lâu một lần, mỗi lần phủ khoảng nào — phòng Thu mua.
@@ -245,24 +245,24 @@ Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/nghien-cu
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| VT1-1 | P5 lớp kiểm mức mật: mức mật văn bản và người, chia sẻ đích danh có hạn, thu hồi, tra cứu qua kiểm quyền (kiểm mã: `document/controller.py` ghi rõ lớp `secrecy_level` CHƯA có). Chờ B3 | Đạt cả 8 bài kiểm (4 chỗ không lộ văn bản mật + 4 bài chia sẻ / thu hồi) | `doc/erp/van-thu/02-lo-trinh-phat-trien.md` §9 |
+| VT1-1 | P5 lớp kiểm mức mật: mức mật văn bản và người, chia sẻ đích danh có hạn, thu hồi, tra cứu qua kiểm quyền (kiểm mã: `document/controller.py` ghi rõ lớp `secrecy_level` CHƯA có). Chờ B3 | Đạt cả 8 bài kiểm (4 chỗ không lộ văn bản mật + 4 bài chia sẻ / thu hồi) | `doc/erp/van-thu/plans/02-lo-trinh-phat-trien.md` §9 |
 | VT1-2 | Pháp nhân nào bắt đầu dùng hoặc nhận bản clone thì khai luồng duyệt văn bản riêng (bộ máy đã bật, không có luồng là đi đường cũ) | Mỗi pháp nhân dùng thật có luồng trên `/approval/flows`, duyệt thử một văn bản ra đúng người | Dữ kiện prod 22/10 |
 
 **Phase 2**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| VT2-1 | P6 nạp dữ liệu thật: 32 loại văn bản, mã pháp nhân, văn bản đang hiệu lực; 10–15 người thử trên dev. Cần người Hành chính / Pháp chế | Người thật dùng trên dev với dữ liệu thật, có biên bản góp ý | `doc/erp/van-thu/02-lo-trinh-phat-trien.md` §10 |
-| VT2-2 | P7 lên prod từng pháp nhân, kèm bài HDSD và buổi đào tạo | Pháp nhân đầu tiên ban hành văn bản thật trên prod | `doc/erp/van-thu/02-lo-trinh-phat-trien.md` §11 |
+| VT2-1 | P6 nạp dữ liệu thật: 32 loại văn bản, mã pháp nhân, văn bản đang hiệu lực; 10–15 người thử trên dev. Cần người Hành chính / Pháp chế | Người thật dùng trên dev với dữ liệu thật, có biên bản góp ý | `doc/erp/van-thu/plans/02-lo-trinh-phat-trien.md` §10 |
+| VT2-2 | P7 lên prod từng pháp nhân, kèm bài HDSD và buổi đào tạo | Pháp nhân đầu tiên ban hành văn bản thật trên prod | `doc/erp/van-thu/plans/02-lo-trinh-phat-trien.md` §11 |
 
 **Phase 3 — khi cần**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| VT3-1 | P9 mở rộng: xác nhận đã đọc, sổ đi / đến, nhắc hết hiệu lực, AI báo trùng, tìm không dấu, ký số, dấu chìm, form web, so sánh phiên bản | Mỗi mục có người dùng thật yêu cầu và một dòng CR riêng | `doc/erp/van-thu/02-lo-trinh-phat-trien.md` §13 |
+| VT3-1 | P9 mở rộng: xác nhận đã đọc, sổ đi / đến, nhắc hết hiệu lực, AI báo trùng, tìm không dấu, ký số, dấu chìm, form web, so sánh phiên bản | Mỗi mục có người dùng thật yêu cầu và một dòng CR riêng | `doc/erp/van-thu/plans/02-lo-trinh-phat-trien.md` §13 |
 
 **Câu chờ quyết:**
-- `doc/erp/van-thu/00-danh-gia-va-cau-hoi.md` §8: A1–A4, B1–B8, C1–C5. Chặn nhất: A1 (phạm vi bản đầu), B1 (form chuẩn), B2 (ai duyệt yêu cầu), B3 (mấy mức mật, ai cấp), B5 (clone có chạy lại luồng), B6 (mã pháp nhân / loại / phòng ban), B8 (ai ký cho 3 pháp nhân chưa có đại diện) — đại ca + Pháp chế.
+- `doc/erp/van-thu/nghien-cuu/00-danh-gia-va-cau-hoi.md` §8: A1–A4, B1–B8, C1–C5. Chặn nhất: A1 (phạm vi bản đầu), B1 (form chuẩn), B2 (ai duyệt yêu cầu), B3 (mấy mức mật, ai cấp), B5 (clone có chạy lại luồng), B6 (mã pháp nhân / loại / phòng ban), B8 (ai ký cho 3 pháp nhân chưa có đại diện) — đại ca + Pháp chế.
 - C3: ai là chủ nghiệp vụ phía Pháp chế / Văn thư — đại ca. Thiếu người này thì VT2-1 đứng.
 
 ## 7. Duyệt dấu và đặt xe, đồng bộ app đặt xe cũ
@@ -273,27 +273,27 @@ Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/nghien-cu
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| DX1-1 | P1 nạp lịch sử lên dev rồi prod: xuất CSV chỗ vướng, kiểm pháp nhân tra ra có tồn tại thật (có nhân sự mang `company_id = 15` không tồn tại), chạy thử / thật dev soi 20 phiếu, sao lưu DB prod, chạy prod. Phần suy phòng ban cho 367 phiếu xe + giao hàng đã chạy ở local *(cần kiểm lại trên dev)* | Dev và prod có đủ 1 313 phiếu, 0 phiếu mang pháp nhân / phòng ban chết | `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` P1, mục chặn đường |
-| DX1-2 | Nợ nhỏ: đại ca mở Luật Firebase cho nhánh `sync_logs` (mã xong 21/09, chưa mở thì sổ rỗng); bài kiểm trần độ dài ở tầng schema của P2 | Tab *Đồng bộ ERP* bên app cũ có dòng khi ERP sập thử; bài kiểm độ dài xanh | `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` P0, P2 |
+| DX1-1 | P1 nạp lịch sử lên dev rồi prod: xuất CSV chỗ vướng, kiểm pháp nhân tra ra có tồn tại thật (có nhân sự mang `company_id = 15` không tồn tại), chạy thử / thật dev soi 20 phiếu, sao lưu DB prod, chạy prod. Phần suy phòng ban cho 367 phiếu xe + giao hàng đã chạy ở local *(cần kiểm lại trên dev)* | Dev và prod có đủ 1 313 phiếu, 0 phiếu mang pháp nhân / phòng ban chết | `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md` P1, mục chặn đường |
+| DX1-2 | Nợ nhỏ: đại ca mở Luật Firebase cho nhánh `sync_logs` (mã xong 21/09, chưa mở thì sổ rỗng); bài kiểm trần độ dài ở tầng schema của P2 | Tab *Đồng bộ ERP* bên app cũ có dòng khi ERP sập thử; bài kiểm độ dài xanh | `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md` P0, P2 |
 
 **Phase 2**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| DX2-1 | E2E Playwright: luồng 2 cổng duyệt dấu + 6 bước đặt xe (kiểm mã: repo chưa có `playwright.config`) | Hai kịch bản chạy trên host với tài khoản demo 3 vai trò, xanh | `doc/duyet-dau/TIEN-DO.md` PHA 5 · `doc/dat-xe-duyet-dau/TIEN-DO.md` |
-| DX2-2 | Điều kiện chuyển giai đoạn 2: rà ERP làm được mọi thao tác người dùng đang làm trên app cũ; rà hai danh sách người duyệt trùng | Có bảng đối chiếu thao tác, 0 dòng thiếu; danh sách người duyệt khớp | `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` mục chặn đường |
-| DX2-3 | Bật P3 ERP → app cũ: làm Bước 0 (chặn chiều nhận ghi đè kết quả ERP) trước, bật công tắc ở dev | Duyệt / điều phối trên ERP hiện bên app cũ, không bị ghi đè ngược | `doc/dong-bo-dat-xe-duyet-dau/p3-erp-sang-app-cu.md` |
-| DX2-4 | P5 đối soát đêm: đếm hai bên theo tháng và trạng thái | Mỗi sáng có số lệch, lệch 0 trên dev một tuần | `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` P5 |
+| DX2-1 | E2E Playwright: luồng 2 cổng duyệt dấu + 6 bước đặt xe (kiểm mã: repo chưa có `playwright.config`) | Hai kịch bản chạy trên host với tài khoản demo 3 vai trò, xanh | `doc/erp/duyet-dau/plans/duyet-dau-phase/tien-do.md` PHA 5 · `doc/erp/dat-xe/plans/dat-xe-duyet-dau/tien-do.md` |
+| DX2-2 | Điều kiện chuyển giai đoạn 2: rà ERP làm được mọi thao tác người dùng đang làm trên app cũ; rà hai danh sách người duyệt trùng | Có bảng đối chiếu thao tác, 0 dòng thiếu; danh sách người duyệt khớp | `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md` mục chặn đường |
+| DX2-3 | Bật P3 ERP → app cũ: làm Bước 0 (chặn chiều nhận ghi đè kết quả ERP) trước, bật công tắc ở dev | Duyệt / điều phối trên ERP hiện bên app cũ, không bị ghi đè ngược | `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/p3-erp-sang-app-cu.md` |
+| DX2-4 | P5 đối soát đêm: đếm hai bên theo tháng và trạng thái | Mỗi sáng có số lệch, lệch 0 trên dev một tuần | `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md` P5 |
 
 **Phase 3 — khi cần**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| DX3-1 | P7 phiếu dấu chiều ERP → app cũ; P8 tắt app cũ | Có ngày tắt được chốt; app cũ chỉ còn đọc rồi tắt | `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` P7, P8 |
-| DX3-2 | Duyệt dấu P4: tách khối *chứng từ chữ ký sống* với *ảnh ghi chú* (đang hoãn) | Khách xác nhận cần làm | `doc/duyet-dau/TIEN-DO.md` PHA 4 |
+| DX3-1 | P7 phiếu dấu chiều ERP → app cũ; P8 tắt app cũ | Có ngày tắt được chốt; app cũ chỉ còn đọc rồi tắt | `doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md` P7, P8 |
+| DX3-2 | Duyệt dấu P4: tách khối *chứng từ chữ ký sống* với *ảnh ghi chú* (đang hoãn) | Khách xác nhận cần làm | `doc/erp/duyet-dau/plans/duyet-dau-phase/tien-do.md` PHA 4 |
 
 **Câu chờ quyết:**
-- A: Giám đốc chỉ nhận báo hay thêm một cổng duyệt; B: Văn thư trả về thì gửi lại cho trưởng bộ phận hay thẳng Văn thư; C: chọn trưởng phòng thủ công hay tự động theo phòng ban — khách / đại ca (`doc/duyet-dau/README.md` §4).
+- A: Giám đốc chỉ nhận báo hay thêm một cổng duyệt; B: Văn thư trả về thì gửi lại cho trưởng bộ phận hay thẳng Văn thư; C: chọn trưởng phòng thủ công hay tự động theo phòng ban — khách / đại ca (`doc/erp/duyet-dau/plans/duyet-dau-phase/README.md` §4).
 - Phiếu dấu có làm chiều ERP → app cũ không; ngày tắt app cũ — đại ca.
 
 ## 8. Công việc / dự án
@@ -304,25 +304,25 @@ Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/nghien-cu
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| CV1-1 | W3 nối chuông: giao việc → chuông (F-01); việc Dự án vào tab *Việc cần làm*, giữ bất biến tập cha CR-215 (F-02); đổi trạng thái / bình luận báo người theo dõi (F-04). Kiểm mã: `modules/work` chưa gọi thông báo nào | Giao việc là chuông kêu; bài kiểm tập cha mở rộng xanh | `doc/erp/cong-viec/03-lo-trinh-phase.md` W3 |
-| CV1-2 | Nợ nhỏ: sửa bình luận của mình (E-05, mới có xóa); thùng rác có màn và nút khôi phục (B-09, mới có `deleted_at`); ghim list hay dùng trên sidebar (A-05) | Ba thao tác chạy trên dev, có bài kiểm phần sửa | `doc/erp/cong-viec/03-lo-trinh-phase.md` W2, W3, W4 |
-| CV1-3 | Đóng mốc MVP: một đội dùng thử trọn vòng trên dev (tạo nhóm → list → mời → giao nhiều PIC → nhãn → kéo cột → việc con → hoàn thành) | Có biên bản đội dùng thử | `doc/erp/cong-viec/03-lo-trinh-phase.md` W2 |
+| CV1-1 | W3 nối chuông: giao việc → chuông (F-01); việc Dự án vào tab *Việc cần làm*, giữ bất biến tập cha CR-215 (F-02); đổi trạng thái / bình luận báo người theo dõi (F-04). Kiểm mã: `modules/work` chưa gọi thông báo nào | Giao việc là chuông kêu; bài kiểm tập cha mở rộng xanh | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W3 |
+| CV1-2 | Nợ nhỏ: sửa bình luận của mình (E-05, mới có xóa); thùng rác có màn và nút khôi phục (B-09, mới có `deleted_at`); ghim list hay dùng trên sidebar (A-05) | Ba thao tác chạy trên dev, có bài kiểm phần sửa | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W2, W3, W4 |
+| CV1-3 | Đóng mốc MVP: một đội dùng thử trọn vòng trên dev (tạo nhóm → list → mời → giao nhiều PIC → nhãn → kéo cột → việc con → hoàn thành) | Có biên bản đội dùng thử | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W2 |
 
 **Phase 2**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| CV2-1 | Nhắc hạn bằng chuông ERP (F-03). Hiện chỉ có nhắc qua bot Telegram (`agent.work_due`, ai-CR-175), bot đã đóng băng và chỉ tới người có liên kết | Mỗi ngưỡng hạn bắn đúng một chuông, không lặp mỗi lượt beat | `doc/erp/cong-viec/03-lo-trinh-phase.md` W4 |
-| CV2-2 | Màn *Việc của tôi* gom việc Dự án mọi list (G-03) *(cần kiểm lại: Trang cá nhân có tab Việc cần làm, chưa thấy gom việc Dự án)* | Một màn ra mọi việc mình là PIC, lọc theo hạn | `doc/erp/cong-viec/03-lo-trinh-phase.md` W4 |
-| CV2-3 | Chuyển việc sang list khác (B-10) *(cần kiểm lại: `/tasks/{id}/move` mới đổi cột)*; mời thành viên theo phòng ban (A-06) | Chuyển được việc giữa hai list giữ bình luận, tệp; mời cả phòng một lần | `doc/erp/cong-viec/03-lo-trinh-phase.md` W4 |
-| CV2-4 | Dashboard cấp list (D-06, mới có Tổng quan cấp phân hệ); gom nhóm kanban theo PIC / ưu tiên / hạn (D-08); list kiểu dự án (A-10) *(cần kiểm lại: phân hệ đã đổi tên Dự án)* | Tab Dashboard hiện trong list; đổi được tiêu chí gom nhóm | `doc/erp/cong-viec/03-lo-trinh-phase.md` W4 |
+| CV2-1 | Nhắc hạn bằng chuông ERP (F-03). Hiện chỉ có nhắc qua bot Telegram (`agent.work_due`, ai-CR-175), bot đã đóng băng và chỉ tới người có liên kết | Mỗi ngưỡng hạn bắn đúng một chuông, không lặp mỗi lượt beat | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W4 |
+| CV2-2 | Màn *Việc của tôi* gom việc Dự án mọi list (G-03) *(cần kiểm lại: Trang cá nhân có tab Việc cần làm, chưa thấy gom việc Dự án)* | Một màn ra mọi việc mình là PIC, lọc theo hạn | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W4 |
+| CV2-3 | Chuyển việc sang list khác (B-10) *(cần kiểm lại: `/tasks/{id}/move` mới đổi cột)*; mời thành viên theo phòng ban (A-06) | Chuyển được việc giữa hai list giữ bình luận, tệp; mời cả phòng một lần | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W4 |
+| CV2-4 | Dashboard cấp list (D-06, mới có Tổng quan cấp phân hệ); gom nhóm kanban theo PIC / ưu tiên / hạn (D-08); list kiểu dự án (A-10) *(cần kiểm lại: phân hệ đã đổi tên Dự án)* | Tab Dashboard hiện trong list; đổi được tiêu chí gom nhóm | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W4 |
 
 **Phase 3 — khi cần**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| CV3-1 | Việc lặp (B-11), gắn chứng từ ERP (B-12) | Có người dùng thật yêu cầu và CR riêng | `doc/erp/cong-viec/03-lo-trinh-phase.md` W5 |
-| CV3-2 | Gantt nâng cao: dời lịch dây chuyền theo `lag_days`, đường găng, baseline; trừ ngày nghỉ bằng lịch làm việc HRM (nền `work_schedule` đã có, gọi sang, không dựng bảng riêng) | Có người dùng thật yêu cầu | `doc/erp/cong-viec/03-lo-trinh-phase.md` W5 |
+| CV3-1 | Việc lặp (B-11), gắn chứng từ ERP (B-12) | Có người dùng thật yêu cầu và CR riêng | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W5 |
+| CV3-2 | Gantt nâng cao: dời lịch dây chuyền theo `lag_days`, đường găng, baseline; trừ ngày nghỉ bằng lịch làm việc HRM (nền `work_schedule` đã có, gọi sang, không dựng bảng riêng) | Có người dùng thật yêu cầu | `doc/erp/cong-viec/plans/03-lo-trinh-phase.md` W5 |
 
 **Câu chờ quyết:**
 - Đội nào dùng thử MVP (CV1-3) — đại ca.
@@ -337,25 +337,25 @@ Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/nghien-cu
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
 | DD1-1 | Gán vai trò `forum_admin` cho người thật trên dev và prod (vai trò seed sẵn, chưa gán cho ai) | Có ít nhất một quản trị diễn đàn mỗi môi trường, ẩn / ghim được bài | `doc/tai-lieu-ky-thuat/ke-hoach-phat-hanh-erp-v2-len-prod.md` |
-| DD1-2 | Đóng F6: nhóm nhỏ IT + HR dùng thử rồi thông báo toàn công ty *(cần kiểm lại: chưa rõ đã thông báo chưa)* | Nhóm thử đăng bài thật từ điện thoại; sao lưu R2 phủ bảng diễn đàn | `doc/erp/dien-dan/02-lo-trinh-phase.md` F6 |
+| DD1-2 | Đóng F6: nhóm nhỏ IT + HR dùng thử rồi thông báo toàn công ty *(cần kiểm lại: chưa rõ đã thông báo chưa)* | Nhóm thử đăng bài thật từ điện thoại; sao lưu R2 phủ bảng diễn đàn | `doc/erp/dien-dan/plans/02-lo-trinh-phase.md` F6 |
 
 **Phase 2**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| DD2-1 | F9 sửa bài kèm nhãn *đã chỉnh sửa* (kiểm mã: chưa có PUT cho bài). Chờ D-Q4 | Tác giả sửa được bài của mình, bài hiện nhãn | `doc/erp/dien-dan/02-lo-trinh-phase.md` F9 |
-| DD2-2 | Hai tool AI `forum_search`, `forum_post_read` ép quyền theo người hỏi, khai theo đường cổng MCP | Hỏi qua MCP ra đúng bài người đó được xem | `doc/erp/dien-dan/03-de-xuat-ai-doc-dien-dan.md` |
-| DD2-3 | F7 Help Center thành tab *Hướng dẫn* | Tab đọc chung `help_article`, chốt đích chuyển hướng tên miền help cũ | `doc/erp/dien-dan/02-lo-trinh-phase.md` F7 |
+| DD2-1 | F9 sửa bài kèm nhãn *đã chỉnh sửa* (kiểm mã: chưa có PUT cho bài). Chờ D-Q4 | Tác giả sửa được bài của mình, bài hiện nhãn | `doc/erp/dien-dan/plans/02-lo-trinh-phase.md` F9 |
+| DD2-2 | Hai tool AI `forum_search`, `forum_post_read` ép quyền theo người hỏi, khai theo đường cổng MCP | Hỏi qua MCP ra đúng bài người đó được xem | `doc/erp/dien-dan/nghien-cuu/03-de-xuat-ai-doc-dien-dan.md` |
+| DD2-3 | F7 Help Center thành tab *Hướng dẫn* | Tab đọc chung `help_article`, chốt đích chuyển hướng tên miền help cũ | `doc/erp/dien-dan/plans/02-lo-trinh-phase.md` F7 |
 
 **Phase 3 — khi cần**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| DD3-1 | F8 duyệt bài trước theo box (cờ `require_approval`); F11 tự chọn bố cục ảnh | Sếp yêu cầu | `doc/erp/dien-dan/02-lo-trinh-phase.md` F8, F11 |
-| DD3-2 | Đợt 3: theo dõi người, nhóm kín, bình chọn | Sếp muốn | `doc/erp/dien-dan/00-pham-vi-va-ke-hoach.md` |
+| DD3-1 | F8 duyệt bài trước theo box (cờ `require_approval`); F11 tự chọn bố cục ảnh | Sếp yêu cầu | `doc/erp/dien-dan/plans/02-lo-trinh-phase.md` F8, F11 |
+| DD3-2 | Đợt 3: theo dõi người, nhóm kín, bình chọn | Sếp muốn | `doc/erp/dien-dan/plans/00-pham-vi-va-ke-hoach.md` |
 
 **Câu chờ quyết:**
-- D-Q4 người đăng được tự sửa / xóa bài hay chỉ ẩn; D-Q5 người thuộc holding thấy bài *Công ty* nào; D-Q6 like có sinh chuông không (mặc định không) — đại ca (`doc/erp/dien-dan/00-pham-vi-va-ke-hoach.md`).
+- D-Q4 người đăng được tự sửa / xóa bài hay chỉ ẩn; D-Q5 người thuộc holding thấy bài *Công ty* nào; D-Q6 like có sinh chuông không (mặc định không) — đại ca (`doc/erp/dien-dan/plans/00-pham-vi-va-ke-hoach.md`).
 
 ## 10. Điểm cà phê / POS365
 
@@ -367,22 +367,22 @@ Ghi chú mã phase: Phase 1 dưới đây là CP4 cũ (thí điểm), Phase 2 l�
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| CP-P1-1 | Dọn cửa hàng POS365 trước thí điểm: *Xóa dữ liệu mẫu* (36 đơn, khách mẫu; cẩn thận 25 món mẫu), void 6 đơn thử, kiểm tài khoản 46714 còn sống (mất thì tạo lại qua API, sửa `.env`) | Sổ POS365 sạch, đơn trừ điểm thử mới vào đúng tài khoản 46714 | `doc/erp/diem-ca-phe/17-ke-hoach-trien-khai-pos365-diem-ca-phe.md` |
-| CP-P1-2 | Nhập / xuất danh sách thành viên bằng xlsx (kiểm mã: `coffee_point` chưa có) | Nhập được danh sách gán cấp hàng loạt, xuất lại được | `doc/erp/diem-ca-phe/06-lo-trinh-phase.md` CP4 |
-| CP-P1-3 | Thí điểm 1 tháng trên quán thật, sau khi chốt mức điểm 4 cấp thường + âm điểm + thuế bằng văn bản và khai vào màn Chính sách; đi trọn vòng bằng tay trên dev trước | Một tháng chạy thật, số dư ví khớp đơn POS365 | `doc/erp/diem-ca-phe/06-lo-trinh-phase.md` CP4 |
+| CP-P1-1 | Dọn cửa hàng POS365 trước thí điểm: *Xóa dữ liệu mẫu* (36 đơn, khách mẫu; cẩn thận 25 món mẫu), void 6 đơn thử, kiểm tài khoản 46714 còn sống (mất thì tạo lại qua API, sửa `.env`) | Sổ POS365 sạch, đơn trừ điểm thử mới vào đúng tài khoản 46714 | `doc/erp/diem-ca-phe/plans/17-ke-hoach-trien-khai-pos365-diem-ca-phe.md` |
+| CP-P1-2 | Nhập / xuất danh sách thành viên bằng xlsx (kiểm mã: `coffee_point` chưa có) | Nhập được danh sách gán cấp hàng loạt, xuất lại được | `doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md` CP4 |
+| CP-P1-3 | Thí điểm 1 tháng trên quán thật, sau khi chốt mức điểm 4 cấp thường + âm điểm + thuế bằng văn bản và khai vào màn Chính sách; đi trọn vòng bằng tay trên dev trước | Một tháng chạy thật, số dư ví khớp đơn POS365 | `doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md` CP4 |
 
 **Phase 2**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| CP-P2-1 | Soi gương số dư điểm lên POS365 (P5 `PartnerSave` ghi `Point`, chưa gọi thử) | Thu ngân thấy số dư trên POS365 khớp ERP | `doc/erp/diem-ca-phe/06-lo-trinh-phase.md` CP5 |
-| CP-P2-2 | Báo cáo món / kỳ; bàn giao kế toán (E-02) theo đáp án thuế | Kế toán nhận được bảng kỳ đúng mẫu đã chốt | `doc/erp/diem-ca-phe/06-lo-trinh-phase.md` CP5 |
+| CP-P2-1 | Soi gương số dư điểm lên POS365 (P5 `PartnerSave` ghi `Point`, chưa gọi thử) | Thu ngân thấy số dư trên POS365 khớp ERP | `doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md` CP5 |
+| CP-P2-2 | Báo cáo món / kỳ; bàn giao kế toán (E-02) theo đáp án thuế | Kế toán nhận được bảng kỳ đúng mẫu đã chốt | `doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md` CP5 |
 
 **Phase 3 — khi cần**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| CP-P3-1 | Nối cấp phúc lợi vào danh mục Chức vụ của HRM (đã có) thay gán tay | Đổi chức vụ là cấp cà phê tự đổi | `doc/erp/diem-ca-phe/06-lo-trinh-phase.md` CP5 |
+| CP-P3-1 | Nối cấp phúc lợi vào danh mục Chức vụ của HRM (đã có) thay gán tay | Đổi chức vụ là cấp cà phê tự đổi | `doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md` CP5 |
 
 **Câu chờ quyết:**
 - Mức điểm / tháng của 4 cấp thường — đại ca + Nhân sự.
@@ -400,27 +400,27 @@ Ghi chú mã phase: Phase 1 dưới đây là CP4 cũ (thí điểm), Phase 2 l�
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| AI1-1 | Đưa D1 lên prod: duoc-CR-655..657 (báo cáo mức dùng chức năng, chỉ số Dùng AI, năng lực theo loại việc, hàm gợi ý người nhận việc) | Chạy trên prod. Quản trị mở được báo cáo theo chức năng và nhóm 3.7, 3.8 | `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §7 |
-| AI1-2 | A1: gắn công cụ `team_capacity` và `task_type_stats`. Hàm `suggest_assignees`, `get_capability` đã có ở `capability/ai_contract.py` nhưng chưa công cụ nào gọi | Có ở Trợ lý web và MCP. Gác quyền theo §6 (chỉ quản trị xem bảng số). Có nhật ký. Theo chuẩn §5.6 doc 21. Bài kiểm canh cửa xanh | `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §4, §7 |
-| AI1-3 | A2: `plan_context`; `draft_work_plan` thêm `estimate_hours`, `task_type`, `assignee_reason`; bảng `tab_ai_plan_proposal` ghi đề xuất và phần người sửa (máy chủ XONG 445d2296); màn duyệt kế hoạch **XONG — kh-AI1-3-giao-dien, 23/10, đã lên erp-v2** | Lập được kế hoạch có ước lượng và lý do giao. Bản đề xuất và bản sau sửa đều lưu | `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §4, §5, §7 |
-| AI1-4 | Vận hành sau đợt prod: khóa model riêng cho prod (đang dùng chung khóa dev); hỏi trạm modelapi.vn về khoảng 40k token dư mỗi lượt; thử claude.ai web và Claude Desktop với prod | Prod có khóa riêng. Có câu trả lời của trạm. Hai ứng dụng nối prod chạy được một lượt đọc và một lượt soạn nháp | `doc/agent-hub/20-loi-hoi-thoai-moi.md`; `doc/erp/tai-lieu-ai/21-kho-skill-ai-mcp.md` §7.2 P6 |
+| AI1-1 | Đưa D1 lên prod: duoc-CR-655..657 (báo cáo mức dùng chức năng, chỉ số Dùng AI, năng lực theo loại việc, hàm gợi ý người nhận việc) | Chạy trên prod. Quản trị mở được báo cáo theo chức năng và nhóm 3.7, 3.8 | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §7 |
+| AI1-2 | A1: gắn công cụ `team_capacity` và `task_type_stats`. Hàm `suggest_assignees`, `get_capability` đã có ở `capability/ai_contract.py` nhưng chưa công cụ nào gọi | Có ở Trợ lý web và MCP. Gác quyền theo §6 (chỉ quản trị xem bảng số). Có nhật ký. Theo chuẩn §5.6 doc 21. Bài kiểm canh cửa xanh | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §4, §7 |
+| AI1-3 | A2: `plan_context`; `draft_work_plan` thêm `estimate_hours`, `task_type`, `assignee_reason`; bảng `tab_ai_plan_proposal` ghi đề xuất và phần người sửa (máy chủ XONG 445d2296); màn duyệt kế hoạch **XONG — kh-AI1-3-giao-dien, 23/10, đã lên erp-v2** | Lập được kế hoạch có ước lượng và lý do giao. Bản đề xuất và bản sau sửa đều lưu | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §4, §5, §7 |
+| AI1-4 | Vận hành sau đợt prod: khóa model riêng cho prod (đang dùng chung khóa dev); hỏi trạm modelapi.vn về khoảng 40k token dư mỗi lượt; thử claude.ai web và Claude Desktop với prod | Prod có khóa riêng. Có câu trả lời của trạm. Hai ứng dụng nối prod chạy được một lượt đọc và một lượt soạn nháp | `doc/agent-hub/20-loi-hoi-thoai-moi.md`; `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/21-kho-skill-ai-mcp.md` §7.2 P6 |
 
 **Phase 2** (AI2-x)
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| AI2-1 | A3 vòng học: đóng task thì so ước lượng với thực tế, hiệu chỉnh `task_type_stats`; tra kế hoạch tương tự | Sau mỗi task xong có dòng so sánh. Số thống kê tự cập nhật | `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §7 |
-| AI2-2 | T1 thử với một phòng: soạn bộ skill phòng, trưởng phòng dùng 2–4 tuần, đo đề xuất đúng sai | Có số đo sau thời gian thử. Có danh sách sửa trước khi mở cả công ty | `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §7, §8 câu 2 |
-| AI2-3 | P5 phủ công cụ cho Đặt xe, Duyệt dấu, Diễn đàn, Kho và giao nhận. Làm một phần: `erp_read` mới có phiếu nhận hàng | Mỗi phân hệ có ít nhất một công cụ đọc đúng quyền. Có skill hướng dẫn khi nào gọi | `doc/erp/tai-lieu-ai/03-lo-trinh-phase.md` Phase 5 |
-| AI2-4 | Mở MCP `prompts` để ứng dụng ngoài tự xem cẩm nang trước khi trả lời (chưa có trong `agent_hub/mcp.py`) | Claude Desktop thấy danh sách prompt của công ty | `doc/erp/tai-lieu-ai/21-kho-skill-ai-mcp.md` §8 |
+| AI2-1 | A3 vòng học: đóng task thì so ước lượng với thực tế, hiệu chỉnh `task_type_stats`; tra kế hoạch tương tự | Sau mỗi task xong có dòng so sánh. Số thống kê tự cập nhật | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §7 |
+| AI2-2 | T1 thử với một phòng: soạn bộ skill phòng, trưởng phòng dùng 2–4 tuần, đo đề xuất đúng sai | Có số đo sau thời gian thử. Có danh sách sửa trước khi mở cả công ty | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §7, §8 câu 2 |
+| AI2-3 | P5 phủ công cụ cho Đặt xe, Duyệt dấu, Diễn đàn, Kho và giao nhận. Làm một phần: `erp_read` mới có phiếu nhận hàng | Mỗi phân hệ có ít nhất một công cụ đọc đúng quyền. Có skill hướng dẫn khi nào gọi | `doc/erp/tro-ly-ai/plans/03-lo-trinh-phase.md` Phase 5 |
+| AI2-4 | Mở MCP `prompts` để ứng dụng ngoài tự xem cẩm nang trước khi trả lời (chưa có trong `agent_hub/mcp.py`) | Claude Desktop thấy danh sách prompt của công ty | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/21-kho-skill-ai-mcp.md` §8 |
 | AI2-5 | O-01: đếm lỗi 5xx và độ dài hàng đợi cho dịch vụ AI (cần kiểm lại) | Có số đếm theo giờ. Vượt ngưỡng thì báo | `doc/agent-hub/13-lo-trinh.md` §0 phase 7 |
 
 **Phase 3 — khi cần** (AI3-x)
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| AI3-1 | A4 hỏi chéo phòng: AI phòng A hỏi năng lực phòng B | Chỉ làm nếu T1 cần. Gác quyền hai phòng | `doc/erp/tai-lieu-ai/22-ai-ke-hoach-phan-viec.md` §7 |
-| AI3-2 | AI-2 RAG toàn hệ, lọc quyền từng bản ghi. Khoảng hở đã biết: RAG loại B chưa lọc quyền, an toàn vì corpus chỉ có HDSD công khai | Đóng khoảng hở trước khi nạp bất kỳ tài liệu không công khai nào | `doc/erp/tai-lieu-ai/03-lo-trinh-phase.md` mục Để sau |
+| AI3-1 | A4 hỏi chéo phòng: AI phòng A hỏi năng lực phòng B | Chỉ làm nếu T1 cần. Gác quyền hai phòng | `doc/erp/tro-ly-ai/tai-lieu-ky-thuat/22-ai-ke-hoach-phan-viec.md` §7 |
+| AI3-2 | AI-2 RAG toàn hệ, lọc quyền từng bản ghi. Khoảng hở đã biết: RAG loại B chưa lọc quyền, an toàn vì corpus chỉ có HDSD công khai | Đóng khoảng hở trước khi nạp bất kỳ tài liệu không công khai nào | `doc/erp/tro-ly-ai/plans/03-lo-trinh-phase.md` mục Để sau |
 | AI3-3 | Phase 8 lõi mở (M-09, N-06..N-08: MCP ngoài, A2A, ngân sách, sổ sự kiện) và dời dịch vụ AI sang VPS riêng (S-5, S-6) | Có VPS AI. Chạy runbook doc 14 §6 không mất dữ liệu | `doc/agent-hub/13-lo-trinh.md` §0, §3.3 |
 | AI3-4 | N-01, N-05 bot riêng từng người: bảng `tab_agent_bot`, webhook, khóa mã hóa riêng | Một người tự dán token và có bot riêng chạy | `doc/agent-hub/13-lo-trinh.md` §7 |
 | AI3-5 | Việc gắn bot đang đóng băng: G-2 tin cần để ý trong nhóm, G-3 tìm tin nhóm, G-4 đồng hồ chờ, bản tin cuối ngày (phần còn lại của T-14), M-07 khóa AI cá nhân cho Trợ lý web (web vẫn dùng khóa công ty) | Chỉ mở lại khi đại ca bỏ đóng băng bot | `doc/agent-hub/13-lo-trinh.md` §5; `doc/agent-hub/04-danh-sach-tinh-nang.md` M-07 |
@@ -437,30 +437,30 @@ Ghi chú mã phase: Phase 1 dưới đây là CP4 cũ (thí điểm), Phase 2 l�
 
 ## 12. Sản xuất (SX)
 
-**Đã có:** Mới có tài liệu nghiên cứu nghiệp vụ `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` (21/10, căn cứ Thông tư 99/2025). Chưa có mã, bảng hay entity quyền nào. Dùng lại được `tab_product`, `tab_inventory` (bình quân di động), `tab_inventory_move`, Thu mua và công nợ phải trả.
+**Đã có:** Mới có tài liệu nghiên cứu nghiệp vụ `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` (21/10, căn cứ Thông tư 99/2025). Chưa có mã, bảng hay entity quyền nào. Dùng lại được `tab_product`, `tab_inventory` (bình quân di động), `tab_inventory_move`, Thu mua và công nợ phải trả.
 
 **Phase 1 — làm tiếp**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| SX1-1 | Trả lời 15 câu ở §14 (A1–A5, B1–B4, C1–C6). Ưu tiên B1 và C2 (giá chuẩn hay giá thực tế, kỳ tính giá) | Có biên bản khảo sát nghiệp vụ được xác nhận. B1 và C2 có đáp án | `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §14; `doc/erp/san-xuat/README.md` |
-| SX1-2 | Rà sổ kho: chặn âm kho, giá vốn, chốt kỳ | Có biên bản rà và danh sách việc sửa | `doc/erp/02-dai-han.md` §4 (bản cũ); `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §13 |
-| SX1-3 | DB6 bảng sản phẩm cha, nền cho BOM. Không thêm bảng biến thể dưới `tab_product`, không đổi `product_code`, không đặt cột giá lên sản phẩm | Bảng mới đã dùng thật. `tab_product` không đổi dòng nào | `doc/erp/01-ngan-han-2026.md` DB6 (bản cũ); `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §13.3 |
+| SX1-1 | Trả lời 15 câu ở §14 (A1–A5, B1–B4, C1–C6). Ưu tiên B1 và C2 (giá chuẩn hay giá thực tế, kỳ tính giá) | Có biên bản khảo sát nghiệp vụ được xác nhận. B1 và C2 có đáp án | `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §14; `doc/erp/san-xuat/README.md` |
+| SX1-2 | Rà sổ kho: chặn âm kho, giá vốn, chốt kỳ | Có biên bản rà và danh sách việc sửa | `doc/erp/02-dai-han.md` §4 (bản cũ); `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §13 |
+| SX1-3 | DB6 bảng sản phẩm cha, nền cho BOM. Không thêm bảng biến thể dưới `tab_product`, không đổi `product_code`, không đặt cột giá lên sản phẩm | Bảng mới đã dùng thật. `tab_product` không đổi dòng nào | `doc/erp/01-ngan-han-2026.md` DB6 (bản cũ); `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §13.3 |
 
 **Phase 2** (SX2-x)
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| SX2-1 | Viết tài liệu yêu cầu, rồi làm BOM (nhiều cấp, phiên bản, hiệu lực theo ngày) và lệnh sản xuất; thêm loại phiếu kho: xuất sản xuất, nhập thành phẩm, trả vật tư, xuất hủy; entity `production` | Trạng thái lưu `SMALLINT` có `IntEnum`. Entity khai đủ phạm vi. Bài kiểm canh xanh | `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §4, §13 |
-| SX2-2 | Danh mục kho thật (thay chuỗi `warehouse_code`), giữ chỗ tồn kho; lô và hạn dùng nếu C5 chốt có | Có kho cách ly, kho gia công, kho dở dang. Số khả dụng đúng | `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §13.2 |
+| SX2-1 | Viết tài liệu yêu cầu, rồi làm BOM (nhiều cấp, phiên bản, hiệu lực theo ngày) và lệnh sản xuất; thêm loại phiếu kho: xuất sản xuất, nhập thành phẩm, trả vật tư, xuất hủy; entity `production` | Trạng thái lưu `SMALLINT` có `IntEnum`. Entity khai đủ phạm vi. Bài kiểm canh xanh | `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §4, §13 |
+| SX2-2 | Danh mục kho thật (thay chuỗi `warehouse_code`), giữ chỗ tồn kho; lô và hạn dùng nếu C5 chốt có | Có kho cách ly, kho gia công, kho dở dang. Số khả dụng đúng | `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §13.2 |
 | SX2-3 | NF-23 dashboard Sản xuất có biểu đồ thật | Làm sau khi có module. Có số lệnh, sản lượng, hàng lỗi | `doc/erp/13-ke-hoach-man-con-lai-v2.md` NF-23 (bản cũ) |
 
 **Phase 3 — khi cần** (SX3-x)
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| SX3-1 | Giá thành nếu B1 chọn làm: đánh giá dở dang, phân bổ chi phí chung theo công suất bình thường, hàng lỗi, gia công ngoài | Phần vượt mức bình thường vào thẳng giá vốn, không nằm trong tồn kho | `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §5–§10 |
-| SX3-2 | MRP tự động, Routing và công đoạn, chất lượng, bảo trì máy | Theo đáp án B2, B3 và khảo sát | `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §14 nhóm B; `doc/erp/02-dai-han.md` §3.3 (bản cũ) |
+| SX3-1 | Giá thành nếu B1 chọn làm: đánh giá dở dang, phân bổ chi phí chung theo công suất bình thường, hàng lỗi, gia công ngoài | Phần vượt mức bình thường vào thẳng giá vốn, không nằm trong tồn kho | `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §5–§10 |
+| SX3-2 | MRP tự động, Routing và công đoạn, chất lượng, bảo trì máy | Theo đáp án B2, B3 và khảo sát | `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §14 nhóm B; `doc/erp/02-dai-han.md` §3.3 (bản cũ) |
 
 **Câu chờ quyết:**
 - §14 B1: bản đầu chỉ quản lý số lượng hay làm cả giá thành. Đại ca quyết.
@@ -477,7 +477,7 @@ Ghi chú mã phase: Phase 1 dưới đây là CP4 cũ (thí điểm), Phase 2 l�
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| KT1-1 | Hỏi kế toán đang dùng phần mềm nào và soát tên tài khoản sản xuất theo Thông tư 99 (chỉ khảo sát, chưa viết mã) | Có tên phần mềm và bảng tên tài khoản đã soát | `doc/erp/san-xuat/00-tong-quan-nghiep-vu.md` §14 C1, C3; `doc/erp/san-xuat/README.md` |
+| KT1-1 | Hỏi kế toán đang dùng phần mềm nào và soát tên tài khoản sản xuất theo Thông tư 99 (chỉ khảo sát, chưa viết mã) | Có tên phần mềm và bảng tên tài khoản đã soát | `doc/erp/san-xuat/chuc-nang/10-tong-quan-nghiep-vu.md` §14 C1, C3; `doc/erp/san-xuat/README.md` |
 
 **Phase 2** (KT2-x)
 

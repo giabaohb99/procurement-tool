@@ -1,6 +1,6 @@
 """forum_board_f13a
 
-Chuyên mục kiểu VOZ (F13a, QĐ-D7 — doc/erp/dien-dan/02-lo-trinh-phase.md):
+Chuyên mục kiểu VOZ (F13a, QĐ-D7 — doc/erp/dien-dan/plans/02-lo-trinh-phase.md):
 bảng `tab_forum_board` (nhóm tiêu đề + box, hai tầng qua `parent_id`) và ba cột
 mới trên `tab_forum_post`: `board_id` (NULL = bài Bảng tin thuần), `title`
 (bắt buộc khi có board_id — luật ở service), `prefix` (ForumPrefix).

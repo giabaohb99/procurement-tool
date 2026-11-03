@@ -1,6 +1,6 @@
 """Sổ đồng bộ chung `tab_sync_log` — gộp luôn `tab_pos_sync_run` vào
 
-P0 của đồng bộ app đặt xe (doc/dong-bo-dat-xe-duyet-dau/mo-ta-ky-thuat.md §3).
+P0 của đồng bộ app đặt xe (doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/mo-ta-ky-thuat.md §3).
 
 MỘT bảng cho mọi hệ ngoài và cho cả hai hạt dữ liệu (`grain`: lượt chạy · bản
 ghi). POS365 đang có bảng riêng `tab_pos_sync_run` — migration này chuyển dữ liệu

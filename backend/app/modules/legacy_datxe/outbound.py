@@ -1,4 +1,4 @@
-"""Chiều ERP -> app đặt xe cũ (P3, bao-CR-596). Bản dựng: doc/dong-bo-dat-xe-duyet-dau/p3-erp-sang-app-cu.md.
+"""Chiều ERP -> app đặt xe cũ (P3, bao-CR-596). Bản dựng: doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/p3-erp-sang-app-cu.md.
 
 Tệp này làm hai việc, cố ý tách khỏi bộ nghe ORM (`outbound_listener.py`):
 

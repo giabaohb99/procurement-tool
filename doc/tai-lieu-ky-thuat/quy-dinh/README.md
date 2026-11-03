@@ -10,7 +10,7 @@
 
 Luật, skill và định nghĩa agent phải nằm ở chỗ công cụ (Claude Code, Codex) đọc thẳng nên **không dời vào `doc/`**.
 Tệp này chỉ là MỤC LỤC trỏ tới tệp thật — không chép nội dung. **Thêm luật / skill / agent mới thì thêm một dòng ở đây
-trong cùng commit**; `backend/scripts/kiem_tai_lieu.py` báo khi thiếu.
+trong cùng commit**; `backend/scripts/kiem_tai_lieu.py` chặn (exit 1) khi thiếu.
 
 ## 1. Luật chung (luôn áp dụng)
 

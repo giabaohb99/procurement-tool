@@ -725,7 +725,7 @@ STD_ROLES["hr_leave"] = {"name": "Nhân sự — Quản lý nghỉ phép", "perm
     "meeting_room": (["read"], "all"),
 }}
 
-#  ── Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md §3) ────────────
+#  ── Điểm cà phê × POS365 (doc/erp/diem-ca-phe/tai-lieu-ky-thuat/04-phan-quyen.md §3) ────────────
 #  Người dùng thường KHÔNG cần grant nào: Ví của tôi đi endpoint riêng
 #  `/api/coffee/my-wallet` chỉ đòi đăng nhập. Ba quyền của PS12 nằm ở ba ô khác
 #  nhau và KHÔNG gộp về một vai trò nào ngoài quản trị.

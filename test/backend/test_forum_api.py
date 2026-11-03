@@ -1,4 +1,4 @@
-"""F1 Diễn đàn — điều kiện đủ của phase (doc/erp/dien-dan/02-lo-trinh-phase.md):
+"""F1 Diễn đàn — điều kiện đủ của phase (doc/erp/dien-dan/plans/02-lo-trinh-phase.md):
 
   1. người phòng khác không thấy bài `dept`;
   2. người công ty khác không thấy bài `company`;

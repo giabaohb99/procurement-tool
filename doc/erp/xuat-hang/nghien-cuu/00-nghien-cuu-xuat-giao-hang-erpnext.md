@@ -6,7 +6,7 @@
 | Mục đích | Mô tả chiều **ra** của kho theo chuẩn ERPNext v16 (xuất dùng nội bộ, xuất cho sản xuất ở mức chứng từ kho, giao hàng bán), đối chiếu với ERP DEGO bằng bảng fit-gap có chấm điểm, rồi đề xuất thứ tự làm theo nấc |
 | Mốc so sánh | ERPNext **v16.53.0** trên site học (`erpnext-hoc-backend-1`, site `frontend`, chỉ đọc), tài liệu `docs.frappe.io/erpnext`, mã `frappe/erpnext` nhánh `version-16` |
 | Mã soát | nhánh `erp-v2` ngày 02/11/2026 (`backend/app/modules`, `frontend-v2/src/modules`) |
-| Đọc kèm | [`../nghien-cuu/01`](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 4.3, 5.3–5.4, 7, 8 · [`../nghien-cuu/10`](../../nghien-cuu/10-nghiep-vu-kho.md) mục 7, 9, 10, 15 nhóm B · [`../nghien-cuu/11`](../../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) dòng F4, F5 · [`../00-ke-hoach-theo-module.md`](../../../plans/00-ke-hoach-theo-module.md) TM-GN-4, SX2-1, KH3-1 · `ke-hoach/02-danh-sach-cong-viec.md` mục 30.4 (ngoài repo, thư mục cha) |
+| Đọc kèm | [`../nghien-cuu/01`](../../../plans/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 4.3, 5.3–5.4, 7, 8 · [`../nghien-cuu/10`](../../kho/nghien-cuu/10-nghiep-vu-kho.md) mục 7, 9, 10, 15 nhóm B · [`../nghien-cuu/11`](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) dòng F4, F5 · [`../00-ke-hoach-theo-module.md`](../../../plans/00-ke-hoach-theo-module.md) TM-GN-4, SX2-1, KH3-1 · `ke-hoach/02-danh-sach-cong-viec.md` mục 30.4 (ngoài repo, thư mục cha) |
 | Trạng thái | Chỉ nghiên cứu. Không sửa mã, không ghi dữ liệu |
 
 ## Mục lục

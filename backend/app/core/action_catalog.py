@@ -89,6 +89,8 @@ _EDIT = (
     #  khôi phục phiếu đã xóa mềm (`restore_soft_deleted`).
     ActionCode("undo", "Hoàn tác", ACTION_GROUP_EDIT),
     ActionCode("restore", "Khôi phục", ACTION_GROUP_EDIT),
+    #  bao-CR-656 (khai ở bao-CR-714): sao lưu — chấp nhận cỡ CSDL mới, gỡ dấu đáng ngờ để lượt sau dọn bản cũ.
+    ActionCode("accept_size", "Chấp nhận cỡ sao lưu mới", ACTION_GROUP_EDIT),
     ActionCode("adjust", "Điều chỉnh tồn", ACTION_GROUP_EDIT),
     ActionCode("assign", "Phân bổ", ACTION_GROUP_EDIT),
     #  `ticket/service.py` ghi `"assign" if assignee_id else "unassign"` —

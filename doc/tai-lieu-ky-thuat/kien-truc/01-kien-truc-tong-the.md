@@ -91,5 +91,5 @@ Mỗi mảng có tài liệu quyết định riêng trong `doc/erp/` hoặc dòn
 - Luồng nghiệp vụ Thu mua lõi (YCBG → khảo sát → YCMH → ĐMH → nhận hàng → công nợ → YCTT) —
   TDD v1 ([`technical-design.md`](technical-design.md)) vẫn là bản mô tả đúng.
 - `tab_product` là bảng VARIANT (SKU), 7 bảng nối bằng chuỗi `product_code` — luật D-025,
-  đọc [`mo-hinh-du-lieu-san-pham.md`](../mo-hinh-du-lieu-san-pham.md) trước khi đụng.
+  đọc [`mo-hinh-du-lieu-san-pham.md`](../../erp/mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) trước khi đụng.
 - Hai trục phân quyền backend (`require` + `apply_scope`) — v2 chỉ thêm tầng hiển thị phía trên, xem `03`.

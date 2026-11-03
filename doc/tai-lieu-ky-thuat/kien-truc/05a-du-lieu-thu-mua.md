@@ -588,7 +588,7 @@ Snapshot bất biến của một dòng hàng ĐMH tại thời điểm dòng đ
 
 ## `tab_po_cost` — Chi phí thu mua của ĐMH
 
-Mỗi dòng là một khoản chi ngoài giá hàng (cước, phí cảng, thuế nhập, kiểm định, bảo hiểm, lưu kho...) của **một nhà cung cấp** trên một ĐMH, áp cho mọi loại đơn từ bao-CR-453 (trước đó là `tab_po_import_cost`, chỉ đơn nhập khẩu — bao-CR-319). Mỗi dòng mang **ba bộ số** Dự toán / Tạm tính / Quyết toán. Mã nguồn: `backend/app/modules/purchase_order/model.py` (`POCost`). Đặc tả: `doc/tai-lieu-chuc-nang/04-don-mua-hang.md` mục K.
+Mỗi dòng là một khoản chi ngoài giá hàng (cước, phí cảng, thuế nhập, kiểm định, bảo hiểm, lưu kho...) của **một nhà cung cấp** trên một ĐMH, áp cho mọi loại đơn từ bao-CR-453 (trước đó là `tab_po_import_cost`, chỉ đơn nhập khẩu — bao-CR-319). Mỗi dòng mang **ba bộ số** Dự toán / Tạm tính / Quyết toán. Mã nguồn: `backend/app/modules/purchase_order/model.py` (`POCost`). Đặc tả: `doc/erp/thu-mua/chuc-nang/13-don-mua-hang.md` mục K.
 
 | Cột | Kiểu | Ý nghĩa |
 |-----|------|---------|

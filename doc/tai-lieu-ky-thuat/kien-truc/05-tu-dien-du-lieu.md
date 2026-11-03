@@ -24,7 +24,7 @@ thì thêm mục ở đúng tệp cụm và sửa con số ở đây.
   (`draft | submitted | approved`...), bảng mới dùng **SMALLINT + IntEnum** — giá trị enum liệt kê
   ngay tại bảng đó. Bộ mã khai tập trung ở `backend/app/core/status_catalog.py`.
 - Nhiều chỗ nối bằng **chuỗi mã** thay vì FK (nặng nhất là `product_code` — 7 bảng, luật D-025,
-  xem [mo-hinh-du-lieu-san-pham.md](../mo-hinh-du-lieu-san-pham.md)); từng tệp
+  xem [mo-hinh-du-lieu-san-pham.md](../../erp/mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md)); từng tệp
   có mục **Quan hệ trong cụm** chỉ rõ chỗ nào FK thật, chỗ nào nối chuỗi.
 - Bản LLD v1 ([thiet-ke-ky-thuat-chi-tiet.md](thiet-ke-ky-thuat-chi-tiet.md),
   39 bảng thời điểm viết) vẫn giữ làm tài liệu tham chiếu lịch sử; bộ 05a–05e này là bản hiện trạng.

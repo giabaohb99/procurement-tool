@@ -4,7 +4,7 @@ Mọi endpoint chỉ đòi ĐĂNG NHẬP, không `require(...)`: người thư�
 grant `forum_post` (entity đó gác cổng kiểm duyệt của `forum_admin` — F5).
 Ai thấy bài nào do `service.can_view`/`_visible_cond` quyết, ngay trong SQL.
 
-Hợp đồng vào/ra chốt ở `doc/erp/dien-dan/02-lo-trinh-phase.md` (mục F1) —
+Hợp đồng vào/ra chốt ở `doc/erp/dien-dan/plans/02-lo-trinh-phase.md` (mục F1) —
 FE dựng F2 theo bảng đó, đổi hình dạng trả về là phải sửa tài liệu trước.
 """
 from fastapi import (APIRouter, BackgroundTasks, Depends, HTTPException, Query)

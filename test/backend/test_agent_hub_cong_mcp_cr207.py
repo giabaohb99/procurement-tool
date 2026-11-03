@@ -22,7 +22,7 @@ def test_liet_ke_tool_truyen_chu_khoa(db, monkeypatch, mcp_all_groups):
 
 
 # 2) Khóa chỉ đọc: danh sách TRẮNG — mọi tool khóa đọc thấy phải thuộc READ_TOOLS.
-def test_khoa_chi_doc_chi_thay_tool_chi_doc(mcp_all_groups):
+def test_khoa_chi_doc_chi_thay_tool_chi_doc(mcp_all_groups, monkeypatch):
     from app.modules.assistant.tools import tool_defs
 
     owner = SimpleNamespace(id=1, is_active=True)
@@ -34,10 +34,17 @@ def test_khoa_chi_doc_chi_thay_tool_chi_doc(mcp_all_groups):
         assert bad not in names and mcp.is_write_tool(bad), bad
         assert "error" in mcp.call_tool(None, owner, mcp_keys.SCOPE_READ, bad, {})
     #  Danh sách trắng chỉ gồm tool có thật (gõ sai tên thì tool thật bị giấu oan).
+    #  `search_docs` chỉ có mặt khi AI_RAG_ENABLED (`_active_specs` đọc settings mỗi lần gọi) — bật tạm để bài không
+    #  lệ thuộc .env của máy chạy (bao-CR-714).
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     assert mcp.READ_TOOLS <= {d.name for d in tool_defs(None)}
     write_names = {t["name"] for t in mcp.list_tools(None, owner, mcp_keys.SCOPE_WRITE)}
     assert {"deep_research", "create_calendar_event", "confirm_draft"} <= write_names
-    assert not write_names & {"propose_glossary_term", "report_missing_feature", "propose_document_update"}
+    #  kh-AI2-5 (008a930b): propose_document_update / _delete / propose_approval MỞ cho khóa ghi (có bước xác nhận);
+    #  ba tool HIDDEN (propose_glossary_term, report_missing_feature, propose_account_setup) vẫn giấu.
+    assert mcp.PROPOSAL_TOOLS <= write_names and not write_names & mcp.HIDDEN
 
 
 # 3) Tool báo cáo đòi đúng quyền xem báo cáo (duoc-CR-562) — chung cho Trợ lý web / bot / MCP.

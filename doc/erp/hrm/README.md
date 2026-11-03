@@ -38,7 +38,7 @@
 
 ### Báo cáo nhân sự
 
-Biến động nhân sự, tình hình nghỉ phép, quỹ phép năm thuộc **phân hệ Báo cáo**; tổng hợp kèm đề xuất báo cáo mới ở [`05-bao-cao-nhan-su.md`](05-bao-cao-nhan-su.md), khung báo cáo chung ở `doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md`; mã ở `modules/employee/report_*.py` và `modules/leave/*report*`. Mỗi báo cáo gác kép: quyền của phân hệ gốc và quyền xem từng báo cáo (`require_report`).
+Biến động nhân sự, tình hình nghỉ phép, quỹ phép năm thuộc **phân hệ Báo cáo**; tổng hợp kèm đề xuất báo cáo mới ở [`05-bao-cao-nhan-su.md`](05-bao-cao-nhan-su.md), khung báo cáo chung ở `doc/erp/thu-mua/chuc-nang/17-he-thong-bao-cao.md`; mã ở `modules/employee/report_*.py` và `modules/leave/*report*`. Mỗi báo cáo gác kép: quyền của phân hệ gốc và quyền xem từng báo cáo (`require_report`).
 
 Bảng **Chức năng đã có mã nhưng chưa có tài liệu riêng** của bản 1.0 đã hết dòng: Hợp đồng lao động, Quyền mặc định theo chức vụ và Nhập Excel nhân sự nay ở `04` (23/10/2026, duoc-CR-673).
 

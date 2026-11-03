@@ -1,0 +1,28 @@
+# YÊU CẦU PHI CHỨC NĂNG — TRA CỨU THỊ TRƯỜNG (GIÁ HẢI QUAN)
+
+| | |
+|---|---|
+| Bản | 0.1 |
+| Ngày | 03/11/2026 |
+| Người phụ trách | chưa giao |
+| Trạng thái | Nháp |
+| CR liên quan | bao-CR-712 · bao-CR-470 · bao-CR-541 |
+
+Mỗi yêu cầu một mã `PCN-HQ-NN`, ghi **mức đo được** và **cách kiểm**. Chỗ chưa có nguồn ghi *Chưa có* (yêu cầu) hoặc
+*Chưa đo* (hiện trạng). Bảng phi chức năng gốc của phòng Thu mua (sheet 6 của FR-PROC-2026-001) ở
+[`06`](../nghien-cuu/06-doi-chieu-yeu-cau-fr-proc-2026-001.md) §5.
+
+| Mã | Nhóm | Yêu cầu (đo được) | Cách kiểm | Hiện trạng |
+|---|---|---|---|---|
+| PCN-HQ-01 | Hiệu năng | Tệp khoảng 50 MB / hàng chục nghìn dòng phản hồi dưới 30 giây (yêu cầu FR-PROC sheet 6). Có chỉ mục theo mã HS, tháng, tên hàng ngay từ đầu; không tính sẵn bảng tổng hợp, kỳ gom tính lúc đọc | [`06`](../nghien-cuu/06-doi-chieu-yeu-cau-fr-proc-2026-001.md) §5; [`02`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §3.6, §3.7, §10.1b | Một phần: dev 18.243 dòng lọc và phân trang phản hồi tức thì, nạp chạy nền; chưa thử tệp 50 MB |
+| PCN-HQ-02 | Phân quyền | Khóa quyền dùng (theo [`api.md`](../tai-lieu-ky-thuat/api.md)): `customs_price` (read, create, write, delete, import, export), `customs_regulation`, `customs_pesticide`. `customs_price` khai `PUBLIC` trong `SCOPE_FIELDS` — dữ liệu thị trường ngoài, ai có quyền xem thấy toàn bộ. Quyền ghi / nạp chỉ cho người được nạp. Hệ thống không tự cấp vai trò nào | `test_pham_vi_khai_du_b07.py`; [`10`](../chuc-nang/10-danh-sach-tinh-nang.md) N-07, §9 Q1, Q3 | Đạt (FR-PROC: *Bảo mật và phân quyền* đạt) |
+| PCN-HQ-03 | Dữ liệu nhạy cảm | Không áp dụng che trường: dữ liệu là tờ khai thị trường bên ngoài, đã chốt không lọc theo phòng / công ty (Q3, 23/09/2026) | [`10`](../chuc-nang/10-danh-sach-tinh-nang.md) §9 Q3 | Không áp dụng |
+| PCN-HQ-04 | Giới hạn đầu vào | Mọi cột chữ khai `max_length` khớp đúng `String(n)` ở `model.py` (`customs/schema.py`); ô ID trên tệp nạp chặn số từ 10^15 trở lên (`customs/reader.py`). Cỡ tệp nạp tối đa: chưa có số riêng, chỉ có trần chung `client_max_body_size 100m` của nginx (sổ bảo mật BM-030) | [`backend-input-limits.md`](../../../../.claude/rules/backend-input-limits.md); kiểm ở tầng schema; [sổ bảo mật](../../../tai-lieu-ky-thuat/van-hanh/so-ghi-nhan-loi-bao-mat.md) BM-030 | Chưa đo |
+| PCN-HQ-05 | Nhật ký và truy vết | Mỗi lô ghi ai nạp, lúc nào, tệp gì, bao nhiêu dòng, bao nhiêu dòng vá ngày, khoảng ngày phủ; log từng dòng có `row_status`. Hoàn tác lô trả lại cả dòng đã bị ghi đè / xóa theo ID từ bản chụp. Lịch sử thao tác khác (xuất Excel, sửa cấu hình, gắn lại nhãn) trên trang: chưa có | [`10`](../chuc-nang/10-danh-sach-tinh-nang.md) N-08, Y-13, Y-17; [`02`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §3.1, §3.1b; [`06`](../nghien-cuu/06-doi-chieu-yeu-cau-fr-proc-2026-001.md) §7 N5 | Một phần |
+| PCN-HQ-06 | Lưu trữ và dọn dữ liệu | Nhật ký dòng của lô nạp (Thêm mới / Đã có / Trùng) xóa khi quá số ngày giữ (`customs.cleanup_row_logs`); gộp dòng hàng trùng cùng tờ khai, giá, lượng nạp nhiều lần (`customs.merge_duplicate_lines`, công tắc `customs_line_merge_enabled`). Số ngày giữ cụ thể: chưa có trong tài liệu | Sổ việc chạy ngầm `backend/app/modules/job_run/registry.py`; [`02`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §4.5, §6 | Chưa đo |
+| PCN-HQ-07 | Sao lưu và khôi phục | Dữ liệu nằm trong CSDL ERP, theo bản sao lưu chung (`backup.run`). Tệp gốc GTT02 chỉ có với lô nạp qua màn hình (lô nạp bằng script không có tệp gốc) | [`10`](../chuc-nang/10-danh-sach-tinh-nang.md) Y-04; [Nền tảng](../../nen-tang/chuc-nang/02-yeu-cau-phi-chuc-nang.md) PCN-NT-07 | Chưa đo |
+| PCN-HQ-08 | Đồng thời | Không nhân đôi dòng khi nạp nhiều tệp giao nhau (yêu cầu FR-PROC *Độ chính xác*): chống trùng bằng mã băm; nạp lô xóa khoảng ngày rồi ghi. Hai người nạp cùng lúc: chưa có | [`06`](../nghien-cuu/06-doi-chieu-yeu-cau-fr-proc-2026-001.md) §5, §6 R1; [`02`](../tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) §4.5 | Một phần: nạp lại cùng tệp không nhân đôi; có rủi ro mất dòng khi hai tệp cùng khoảng ngày khác nhóm hàng (R1) |
+| PCN-HQ-09 | Tích hợp | Nguồn duy nhất là tệp Excel GTT02 do bên ngoài kết xuất (đọc `.xls` đời cũ cần `xlrd`). Không nối VTBB, tồn kho, lịch sử mua (ranh giới chốt 23/09/2026). Trợ lý AI và cổng MCP gọi vào qua công cụ, đi qua khóa `customs_price` | [`10`](../chuc-nang/10-danh-sach-tinh-nang.md) §1, N-02, §6 | Đạt theo thiết kế |
+| PCN-HQ-10 | Khả dụng và thiết bị | Bản cũ (v1) và bản mới (v2) phải cùng chức năng; thiếu bên nào thì bù (luật 26/09/2026). Dùng trên điện thoại: chưa có | [`10`](../chuc-nang/10-danh-sach-tinh-nang.md) §11; [`11`](11-giao-dien.md) §5 | Chưa đo |
+| PCN-HQ-11 | Pháp lý | Danh mục hóa chất theo NĐ 24/2026/NĐ-CP (phụ lục I–IV, phụ lục IV có ngưỡng khối lượng), hoạt chất cấm theo TT 75/2025, phải công bố theo TT 01/2026. Trợ lý cấm tự nêu mức phạt; không thấy trong danh mục thì không kết luận là được phép. Phải có người chịu trách nhiệm cập nhật khi văn bản đổi | [`10`](../chuc-nang/10-danh-sach-tinh-nang.md) P-01, A-07 | Một phần: chưa chỉ định người cập nhật ([kế hoạch theo module](../../../plans/00-ke-hoach-theo-module.md) §3) |
+| PCN-HQ-12 | Vận hành | Nạp chạy nền; hai việc chạy ngầm `customs.cleanup_row_logs`, `customs.merge_duplicate_lines` có trong sổ. Từ khóa nhãn và từ đồng nghĩa admin sửa ở thẻ Cấu hình; quy tắc quy đổi nồng độ còn nằm trong mã | `/api/system/jobs`; [`06`](../nghien-cuu/06-doi-chieu-yeu-cau-fr-proc-2026-001.md) §5 *Bảo trì* | Một phần |

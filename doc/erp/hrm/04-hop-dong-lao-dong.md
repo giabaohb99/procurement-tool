@@ -171,7 +171,7 @@ Phòng Nhân sự tạo mới hoặc cập nhật hàng loạt hồ sơ bằng m
 3. Bấm **ghi thật**. Mỗi bản chạy thử chỉ ghi thật được **một lần** (409 nếu đã có lô ghi thật cùng tệp).
 4. Sai thì mở chi tiết lô → **hoàn tác**.
 
-Đi qua khung chung `import_tool` (adapter `EMPLOYEE`). Khung hook: `doc/erp/nen-tang/16-quan-ly-import-export-v2.md` §9.3.
+Đi qua khung chung `import_tool` (adapter `EMPLOYEE`). Khung hook: `doc/erp/nen-tang/tai-lieu-ky-thuat/16-quan-ly-import-export-v2.md` §9.3.
 
 ### C.3. Luật của tệp
 

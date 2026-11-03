@@ -5410,7 +5410,10 @@ def test_cong_mcp_json_rpc_liet_ke_theo_muc_va_goi_tool_duoi_quyen_chu_khoa(db, 
     assert "product_search" in names_r and "report_issue" in names_r
     assert not any(n.startswith("draft_") for n in names_r) and "confirm_draft" not in names_r and "ticket_create" not in names_r
     assert {"draft_leave_request", "confirm_draft", "report_issue", "ticket_create"} <= names_w
-    assert "propose_document_update" not in names_w                                # không mở qua MCP
+    #  kh-AI2-5 (008a930b): sửa / xóa phiếu qua MCP có bước xác nhận — ba tool propose_* MỞ cho khóa ghi, khóa đọc
+    #  vẫn không thấy; ba tool HIDDEN giấu ở cả hai khóa (bao-CR-714 cập nhật bài kiểm).
+    assert mcp.PROPOSAL_TOOLS <= names_w and not names_r & mcp.PROPOSAL_TOOLS
+    assert not (names_r | names_w) & mcp.HIDDEN
     #  tools/call chạy run_tool dưới danh tính chủ khóa.
     seen: list = []
     monkeypatch.setattr(tool_registry, "run_tool", lambda db_, user, name, args: seen.append((user.id, name, args)) or {"total": 1, "items": ["x"]})

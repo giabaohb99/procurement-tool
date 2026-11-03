@@ -931,7 +931,7 @@ def test_d1_moi_route_cua_phan_he_cong_viec_deu_qua_cua_thanh_vien():
         "route của phân hệ Công việc KHÔNG chứng minh được đường lọc:\n  "
         + "\n  ".join(thieu)
         + "\n`work_task` khai PUBLIC nên `apply_scope` không cắt gì — route quên gác "
-          "là mở toang việc của cả công ty. Đọc `doc/erp/cong-viec/04-phan-quyen.md` §2."
+          "là mở toang việc của cả công ty. Đọc `doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md` §2."
     )
 
 

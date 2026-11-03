@@ -7,7 +7,7 @@ Create Date: 2026-10-02
 Quyen XEM TUNG BAO CAO (phan he Bao cao) -- `tab_report_access`. Cung hinh dang
 voi `tab_doc_folder_access` (migration `1c035ad17323`): bon chu the (nguoi /
 phong ban / phap nhan / vai tro), cam thang cho phep, thu hoi la danh dau, co
-han hieu luc. Thiet ke: `frontend-v2/plans/261002-0836-phan-quyen-tung-bao-cao/
+han hieu luc. Thiet ke: `doc/erp/nen-tang/plans/261002-0836-phan-quyen-tung-bao-cao/
 phase-01-backend-report-key-model-migration-seed.md`.
 
 VIET TAY, khong autogenerate -- repo nay autogenerate troi ~650 dong moi lan.

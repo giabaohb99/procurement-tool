@@ -6,7 +6,7 @@ lọc trường `Password` phải nằm cùng nhau — rải ra là sót một c
 Nguồn sự thật về API bên kia: *API Specification Doc 1.0* (14/06/2021) + metadata
 `https://api.pos365.vn/api/metadata` — trích lục ở `doc/erp/17-...md` Phụ lục B.
 Mấy chỗ đánh dấu ⚠️POC là điểm chưa kiểm chứng bằng lời gọi thật (P1–P7 ở
-`doc/erp/diem-ca-phe/03-tich-hop-pos365.md` §5) — chốt ở phase CP0.
+`doc/erp/diem-ca-phe/tai-lieu-ky-thuat/03-tich-hop-pos365.md` §5) — chốt ở phase CP0.
 """
 import logging
 import threading

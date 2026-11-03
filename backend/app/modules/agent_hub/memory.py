@@ -35,7 +35,9 @@ _NS = uuid.UUID("3f2504e0-4f89-11d3-9a0c-0305e82c3301")
 INDEX_GLOBS = (
     "CLAUDE.md",
     "doc/tai-lieu-ky-thuat/*.md",
-    "doc/tai-lieu-chuc-nang/*.md",
+    "doc/tai-lieu-ky-thuat/*/*.md",     # bao-CR-712: kien-truc / phan-quyen / van-hanh / quy-dinh
+    "doc/erp/*/chuc-nang/*.md",         # bao-CR-712: tài liệu chức năng nay nằm trong từng phân hệ
+    "doc/tai-lieu-chuc-nang/*.md",      # phần HRM còn lại tới khi người phụ trách HRM dời
     "doc/agent-hub/*.md",
     ".claude/rules/*.md",
 )

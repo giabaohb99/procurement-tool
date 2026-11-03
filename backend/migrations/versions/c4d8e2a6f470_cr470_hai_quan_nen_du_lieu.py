@@ -8,7 +8,7 @@ MỘT migration cho cả phân hệ (gộp lúc chưa commit, khỏi đẻ chu�
   khai). Trên MySQL: khóa chính `(id, reg_date)` + **chia phân vùng theo năm**.
 
 Lô nạp KHÔNG có bảng riêng — dùng lại `tab_import_batch` (`module = 3`).
-Thiết kế: `doc/erp/hai-quan/02-thiet-ke-ky-thuat.md` §3.
+Thiết kế: `doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md` §3.
 
 Chia phân vùng NGAY LÚC BẢNG CÒN RỖNG: `ALTER TABLE … PARTITION BY` dựng lại toàn
 bộ bảng, làm lúc đã có hàng triệu dòng là khóa bảng lâu. Có phân vùng `pmax` hứng
