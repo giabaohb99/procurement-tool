@@ -21,7 +21,8 @@ from app.core.scoping import apply_scope
 #  `download_bytes(f.file_key)`: một phần `tab_file` là tệp nhập từ app đặt xe
 #  cũ, khóa của chúng thuộc kho R2 KHÁC (xem `core/legacy_files.py`).
 from app.core.legacy_files import read_file_bytes
-from app.core.storage import dated_key, safe_name, upload_fileobj
+#  `delete_key` không dùng trong tệp nhưng bài kiểm cr640 monkeypatch qua module này — giữ làm mối nối, đừng gỡ (bao-CR-710)
+from app.core.storage import dated_key, delete_key, safe_name, upload_fileobj  # noqa: F401
 from app.core.upload_guard import ensure_batch_ok, guard_upload
 from app.modules.approval.pending_reader import is_pending_approver
 from app.modules.document.file_access_log import ACTION_DOWNLOAD, ACTION_VIEW
