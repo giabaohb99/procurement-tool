@@ -1,5 +1,4 @@
 """Tồn kho: nhập từ phiếu nhận hàng (ngầm) + điều chỉnh tay. Phase 2 chỉ +nhập/điều chỉnh."""
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .model import Inventory, InventoryMove

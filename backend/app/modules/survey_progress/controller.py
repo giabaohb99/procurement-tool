@@ -325,10 +325,9 @@ def _decorate(db: Session, rows, show_supplier: bool, start: int) -> list[dict]:
                   .filter(SurveyRequestOption.survey_request_line_id.in_(line_ids),
                           SurveyRequestOption.is_chosen == True).all()):
             chosen[o.survey_request_line_id] = o
-        counts = {lid: n for lid, n in
-                  db.query(SurveyRequestOption.survey_request_line_id, func.count())
+        counts = dict(db.query(SurveyRequestOption.survey_request_line_id, func.count())
                   .filter(SurveyRequestOption.survey_request_line_id.in_(line_ids))
-                  .group_by(SurveyRequestOption.survey_request_line_id).all()}
+                  .group_by(SurveyRequestOption.survey_request_line_id).all())
     codes = {ln.assignee for _s, ln in rows if ln.assignee}
     names = ({e.code: (f"{e.code} — {e.full_name}" if e.full_name else e.code)
               for e in db.query(Employee).filter(Employee.code.in_(codes)).all()} if codes else {})
@@ -385,7 +384,7 @@ def summarize(decorated: list[dict]) -> dict:
     - Số ngày xử lý trung bình chỉ tính dòng ĐÃ có số ngày (đã trả kết quả).
     - Tháng theo NGÀY YÊU CẦU của phiếu.
     """
-    state_count = {s: 0 for s in ex.STATES}
+    state_count = dict.fromkeys(ex.STATES, 0)
     by_month: dict[str, dict] = {}
     by_assignee: dict[str, dict] = {}
     by_group: dict[str, dict] = {}

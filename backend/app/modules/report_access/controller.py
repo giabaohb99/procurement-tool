@@ -22,7 +22,7 @@ def _parse_key(key: int) -> ReportKey:
     try:
         return ReportKey(key)
     except ValueError:
-        raise HTTPException(404, f"Không có báo cáo nào mang khóa {key}")
+        raise HTTPException(404, f"Không có báo cáo nào mang khóa {key}") from None
 
 
 @router.get("")

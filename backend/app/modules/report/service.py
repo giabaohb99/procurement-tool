@@ -7,7 +7,6 @@ from datetime import datetime
 from sqlalchemy import case
 from sqlalchemy.orm import Session
 
-from app.modules.payable.model import Payable
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
 from app.modules.purchase_order.service import normalize_rate
 from .department_label import department_label, load_department_names

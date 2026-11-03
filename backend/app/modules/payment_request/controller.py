@@ -319,7 +319,7 @@ def bulk_delete_requests(ids: str, db: Session = Depends(get_db), user=Depends(r
         try:
             service.delete_request(db, rid, user.id)
         except Exception as e:
-            raise HTTPException(400, f"Lỗi khi xóa phiếu ID {rid}: {str(e)}")
+            raise HTTPException(400, f"Lỗi khi xóa phiếu ID {rid}: {str(e)}") from e
     # Báo đúng số ĐÃ xóa, không báo số đã gửi lên — lệch nhau là có id ngoài phạm vi.
     return success(None, f"Đã xóa {len(in_scope)} bản ghi")
 

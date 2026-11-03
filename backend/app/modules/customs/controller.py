@@ -243,7 +243,7 @@ def upload_files(files: list[UploadFile] = File(...), db: Session = Depends(get_
         try:
             reader.check_headers(raw, name)
         except reader.CustomsFileError as e:
-            raise HTTPException(400, f"\"{name}\": {e}")
+            raise HTTPException(400, f"\"{name}\": {e}") from e
         raws.append(f)
     out = []
     for f in raws:
@@ -306,7 +306,7 @@ def download_batch_file(bid: int, db: Session = Depends(get_db), user=Depends(re
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(404, "Không đọc được tệp từ kho lưu trữ")
+        raise HTTPException(404, "Không đọc được tệp từ kho lưu trữ") from None
     #  Tên tệp có dấu tiếng Việt phải mã hóa RFC 5987 — header HTTP chỉ nhận Latin-1, không thì 500.
     ascii_name = (b.filename or "").encode("ascii", "ignore").decode() or "gtt02.xls"
     disposition = 'attachment; filename="%s"; filename*=UTF-8\'\'%s' % (ascii_name, quote(b.filename or ascii_name))

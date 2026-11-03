@@ -395,7 +395,7 @@ def procurement(request: Request, db: Session = Depends(get_db),
     else:
         pos_all, pays = pos_year, pays_year
     # Đếm theo trạng thái: GIỮ tất cả (để thấy phân bố nháp/hủy…). Giá trị & breakdown: CHỈ đơn thật.
-    status_count = {s: 0 for s in PO_STATUSES}
+    status_count = dict.fromkeys(PO_STATUSES, 0)
     for p in pos_all:
         status_count[p.status] = status_count.get(p.status, 0) + 1
     pos = [p for p in pos_all if p.status in REAL_PO_STATUSES]
