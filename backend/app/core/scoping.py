@@ -283,7 +283,7 @@ SCOPE_FIELDS = {
     "dossier":          {"company": "company_id", "dept_id": "department_id",
                          "owner": "created_by", "self": "owner_employee_id"},
 
-    # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md) ---
+    # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/tai-lieu-ky-thuat/04-phan-quyen.md) ---
     #  Sổ điểm và thành viên khai `self` theo `employee_id` — "nhân viên chỉ thấy
     #  sổ của mình" là một phép áp scope, không phải một câu hứa (nghiệm thu 4 của
     #  `09` §11). KHÔNG khai `owner`: `created_by` của dòng sổ là người/task GHI hộ

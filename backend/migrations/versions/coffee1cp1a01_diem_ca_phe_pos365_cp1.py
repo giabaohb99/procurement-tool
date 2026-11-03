@@ -1,4 +1,4 @@
-"""Điểm cà phê × POS365 — phase CP1: 5 bảng nền (doc/erp/diem-ca-phe/02-bang-du-lieu.md)
+"""Điểm cà phê × POS365 — phase CP1: 5 bảng nền (doc/erp/diem-ca-phe/tai-lieu-ky-thuat/02-bang-du-lieu.md)
 
 Viết TAY (không autogenerate — DB dev đang lệch một migration của nhánh khác nên
 autogenerate không chạy được), đối chiếu từng cột với

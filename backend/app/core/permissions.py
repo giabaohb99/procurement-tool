@@ -116,7 +116,7 @@ ENTITIES = [
     # ⚠️ Khai CỘT THẬT ở `SCOPE_FIELDS`, không PUBLIC: hồ sơ thuộc về một phòng
     # và một người, khác hẳn danh mục loại.
     "dossier",
-    # Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md). Bốn
+    # Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/tai-lieu-ky-thuat/04-phan-quyen.md). Bốn
     # khóa vì ba quyền của PS12 phải TÁCH được: xem sổ người khác
     # (`coffee_ledger.read` + scope rộng) · điều chỉnh tay (`coffee_ledger.write`)
     # · chạy đồng bộ (`pos_order.write`). Ví của tôi KHÔNG cần grant — đi endpoint

@@ -1,6 +1,6 @@
 # PHÂN HỆ ĐIỂM CÀ PHÊ — PHÂN QUYỀN
 
-**Bản:** 1.0 — 08/09/2026 · Đọc sau [`02-bang-du-lieu.md`](./02-bang-du-lieu.md) ·
+**Bản:** 1.0 — 08/09/2026 · Đọc sau [`02-bang-du-lieu.md`](02-bang-du-lieu.md) ·
 Chạy trên hệ phân quyền hai trục sẵn có (`core/permissions.py` + `core/auth.py` + `core/scoping.py`)
 — **không viết cơ chế mới**, chỉ khai báo.
 
@@ -59,4 +59,4 @@ Seed ở cả `seed.py` lẫn `seed_prod.py`; đổi trên prod sau này nhớ l
 5. Mutation quyền/vai trò lúc seed hay trên UI xong phải `perm_cache_clear` — cache profile
    60s là đủ để "vừa cấp quyền xong sao chưa thấy" thành ticket ma.
 
-**Tiếp theo:** [`05-giao-dien.md`](./05-giao-dien.md).
+**Tiếp theo:** [`05-giao-dien.md`](../chuc-nang/11-giao-dien.md).

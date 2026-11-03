@@ -1,8 +1,8 @@
 # PHÂN HỆ ĐIỂM CÀ PHÊ — ĐẶC TẢ TÍCH HỢP POS365
 
-**Bản:** 1.0 — 08/09/2026 · Đọc sau [`02-bang-du-lieu.md`](./02-bang-du-lieu.md) ·
+**Bản:** 1.0 — 08/09/2026 · Đọc sau [`02-bang-du-lieu.md`](02-bang-du-lieu.md) ·
 Nguồn sự thật về API bên kia: *API Specification Doc 1.0* của POS365 (14/06/2021) + metadata
-`https://api.pos365.vn/api/metadata` — trích lục ở Phụ lục B của [`../17-...md`](17-ke-hoach-trien-khai-pos365-diem-ca-phe.md).
+`https://api.pos365.vn/api/metadata` — trích lục ở Phụ lục B của [`../17-...md`](../plans/17-ke-hoach-trien-khai-pos365-diem-ca-phe.md).
 
 Toàn bộ phần nói chuyện với POS365 nằm trong MỘT tệp `app/modules/coffee_point/pos365_client.py`
 — service và task **không tự gọi HTTP**, chỉ gọi client. Lý do: cầu dao HARD_OFF, phiên, retry,
@@ -144,4 +144,4 @@ chi nhánh thử** (K7) — có nó thì mọi phép thử về sau không chạ
 | Dev chạy cả bộ task ở local | Không một call nào ra ngoài | §1 + test đếm 0 |
 | Đổi `POS365_PAYMENT_ACCOUNT_ID` giữa chừng | Cấm — đơn cũ hết lọc được. Muốn đổi phải chốt sổ, ghi vận hành | Tài liệu vận hành N-04 |
 
-**Tiếp theo:** [`04-phan-quyen.md`](./04-phan-quyen.md).
+**Tiếp theo:** [`04-phan-quyen.md`](04-phan-quyen.md).

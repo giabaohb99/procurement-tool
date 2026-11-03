@@ -1,6 +1,6 @@
 # PHÂN HỆ ĐIỂM CÀ PHÊ — BẢNG DỮ LIỆU VÀ API
 
-**Bản:** 1.0 — 08/09/2026 · Đọc sau [`01-danh-sach-tinh-nang.md`](./01-danh-sach-tinh-nang.md)
+**Bản:** 1.0 — 08/09/2026 · Đọc sau [`01-danh-sach-tinh-nang.md`](../chuc-nang/10-danh-sach-tinh-nang.md)
 
 5 bảng mới, module backend `app/modules/coffee_point/`. CHƯA viết code — đây là bản thiết kế
 để soát trước khi sinh migration.
@@ -160,4 +160,4 @@ bằng `require(entity, action)`; truy vấn danh sách qua `apply_scope`; đọ
 | POST `/api/coffee/sync/run` | `pos_order` write | Chạy tay một `PosSyncKind` |
 | GET `/api/coffee/sync/runs` | `pos_order` read | Nhật ký đồng bộ |
 
-**Tiếp theo:** [`03-tich-hop-pos365.md`](./03-tich-hop-pos365.md) — client, thuật toán đồng bộ, POC.
+**Tiếp theo:** [`03-tich-hop-pos365.md`](03-tich-hop-pos365.md) — client, thuật toán đồng bộ, POC.

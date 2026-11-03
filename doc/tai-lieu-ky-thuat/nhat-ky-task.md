@@ -16976,7 +16976,7 @@ Commit: nhánh agent3/kh-NT2-8-giao-dien, chưa đẩy
 
 **Điều kiện xong:** nhập được danh sách gán cấp, xuất lại khớp; có bài kiểm.
 
-Mã nguồn: kế hoạch CP-P1-2 · `doc/erp/diem-ca-phe/06-lo-trinh-phase.md`
+Mã nguồn: kế hoạch CP-P1-2 · `doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md`
 
 ## kh-AI1-1-hdsd | Soát trên dev và viết hướng dẫn cho các màn mới của anh Dược
 - list: Kế hoạch hệ agent

@@ -1,6 +1,6 @@
 # PHÂN HỆ ĐIỂM CÀ PHÊ — GIAO DIỆN (frontend-v2)
 
-**Bản:** 1.0 — 08/09/2026 · Đọc sau [`01-danh-sach-tinh-nang.md`](./01-danh-sach-tinh-nang.md) ·
+**Bản:** 1.0 — 08/09/2026 · Đọc sau [`01-danh-sach-tinh-nang.md`](10-danh-sach-tinh-nang.md) ·
 Áp các quy ước nền tảng của `frontend-v2` (DataTable, khung CRUD khai báo, `read-only-value`,
 icon lucide, token semantic) và sổ case `/ui` — chỗ nào tài liệu này im lặng thì các quy ước
 đó quyết.
@@ -78,4 +78,4 @@ Một trang, **4 tab** (chỉ render tab đã làm — không render tab rỗng)
 | Thông báo đẩy "bạn vừa bị trừ X điểm" | Trễ đồng bộ tới 5 phút, bắn thông báo trễ gây hiểu nhầm hơn là giúp; cân nhắc lại khi có webhook |
 | Sửa/xóa dòng sổ trên UI | Sổ chỉ-INSERT — UI không được vẽ nút mà backend không có |
 
-**Tiếp theo:** [`06-lo-trinh-phase.md`](./06-lo-trinh-phase.md).
+**Tiếp theo:** [`06-lo-trinh-phase.md`](../plans/06-lo-trinh-phase.md).

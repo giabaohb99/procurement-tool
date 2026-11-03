@@ -367,22 +367,22 @@ Ghi chú mã phase: Phase 1 dưới đây là CP4 cũ (thí điểm), Phase 2 l�
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| CP-P1-1 | Dọn cửa hàng POS365 trước thí điểm: *Xóa dữ liệu mẫu* (36 đơn, khách mẫu; cẩn thận 25 món mẫu), void 6 đơn thử, kiểm tài khoản 46714 còn sống (mất thì tạo lại qua API, sửa `.env`) | Sổ POS365 sạch, đơn trừ điểm thử mới vào đúng tài khoản 46714 | `doc/erp/diem-ca-phe/17-ke-hoach-trien-khai-pos365-diem-ca-phe.md` |
-| CP-P1-2 | Nhập / xuất danh sách thành viên bằng xlsx (kiểm mã: `coffee_point` chưa có) | Nhập được danh sách gán cấp hàng loạt, xuất lại được | `doc/erp/diem-ca-phe/06-lo-trinh-phase.md` CP4 |
-| CP-P1-3 | Thí điểm 1 tháng trên quán thật, sau khi chốt mức điểm 4 cấp thường + âm điểm + thuế bằng văn bản và khai vào màn Chính sách; đi trọn vòng bằng tay trên dev trước | Một tháng chạy thật, số dư ví khớp đơn POS365 | `doc/erp/diem-ca-phe/06-lo-trinh-phase.md` CP4 |
+| CP-P1-1 | Dọn cửa hàng POS365 trước thí điểm: *Xóa dữ liệu mẫu* (36 đơn, khách mẫu; cẩn thận 25 món mẫu), void 6 đơn thử, kiểm tài khoản 46714 còn sống (mất thì tạo lại qua API, sửa `.env`) | Sổ POS365 sạch, đơn trừ điểm thử mới vào đúng tài khoản 46714 | `doc/erp/diem-ca-phe/plans/17-ke-hoach-trien-khai-pos365-diem-ca-phe.md` |
+| CP-P1-2 | Nhập / xuất danh sách thành viên bằng xlsx (kiểm mã: `coffee_point` chưa có) | Nhập được danh sách gán cấp hàng loạt, xuất lại được | `doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md` CP4 |
+| CP-P1-3 | Thí điểm 1 tháng trên quán thật, sau khi chốt mức điểm 4 cấp thường + âm điểm + thuế bằng văn bản và khai vào màn Chính sách; đi trọn vòng bằng tay trên dev trước | Một tháng chạy thật, số dư ví khớp đơn POS365 | `doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md` CP4 |
 
 **Phase 2**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| CP-P2-1 | Soi gương số dư điểm lên POS365 (P5 `PartnerSave` ghi `Point`, chưa gọi thử) | Thu ngân thấy số dư trên POS365 khớp ERP | `doc/erp/diem-ca-phe/06-lo-trinh-phase.md` CP5 |
-| CP-P2-2 | Báo cáo món / kỳ; bàn giao kế toán (E-02) theo đáp án thuế | Kế toán nhận được bảng kỳ đúng mẫu đã chốt | `doc/erp/diem-ca-phe/06-lo-trinh-phase.md` CP5 |
+| CP-P2-1 | Soi gương số dư điểm lên POS365 (P5 `PartnerSave` ghi `Point`, chưa gọi thử) | Thu ngân thấy số dư trên POS365 khớp ERP | `doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md` CP5 |
+| CP-P2-2 | Báo cáo món / kỳ; bàn giao kế toán (E-02) theo đáp án thuế | Kế toán nhận được bảng kỳ đúng mẫu đã chốt | `doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md` CP5 |
 
 **Phase 3 — khi cần**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| CP-P3-1 | Nối cấp phúc lợi vào danh mục Chức vụ của HRM (đã có) thay gán tay | Đổi chức vụ là cấp cà phê tự đổi | `doc/erp/diem-ca-phe/06-lo-trinh-phase.md` CP5 |
+| CP-P3-1 | Nối cấp phúc lợi vào danh mục Chức vụ của HRM (đã có) thay gán tay | Đổi chức vụ là cấp cà phê tự đổi | `doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md` CP5 |
 
 **Câu chờ quyết:**
 - Mức điểm / tháng của 4 cấp thường — đại ca + Nhân sự.

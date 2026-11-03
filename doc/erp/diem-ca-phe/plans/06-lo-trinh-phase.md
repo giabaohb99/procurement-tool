@@ -3,9 +3,9 @@
 **Bản:** 1.0 — 08/09/2026 · KHÔNG đặt mốc lịch (theo lệ chung của bộ tài liệu ERP), có ước
 lượng **ngày công**. Mỗi phase nghiệm thu riêng được; dừng giữa chừng không để hệ nửa vời.
 
-Mã tính năng (N-xx, A-xx…) tra ở [`01-danh-sach-tinh-nang.md`](./01-danh-sach-tinh-nang.md);
-bảng dữ liệu ở [`02`](./02-bang-du-lieu.md); thuật toán đồng bộ ở [`03`](./03-tich-hop-pos365.md);
-phân quyền ở [`04`](./04-phan-quyen.md); giao diện ở [`05`](./05-giao-dien.md).
+Mã tính năng (N-xx, A-xx…) tra ở [`01-danh-sach-tinh-nang.md`](../chuc-nang/10-danh-sach-tinh-nang.md);
+bảng dữ liệu ở [`02`](../tai-lieu-ky-thuat/02-bang-du-lieu.md); thuật toán đồng bộ ở [`03`](../tai-lieu-ky-thuat/03-tich-hop-pos365.md);
+phân quyền ở [`04`](../tai-lieu-ky-thuat/04-phan-quyen.md); giao diện ở [`05`](../chuc-nang/11-giao-dien.md).
 
 ```
 CP0 (POC, 2 ngày) ──► CP1 (nền DB+quyền) ──► CP2 (client+task+sổ cái) ──► CP3 (5 màn) ──► CP4 (thí điểm 1 tháng) ──► CP5
@@ -25,7 +25,7 @@ Partner không lộ `Password`. Đã chạy trọn đường ống dev bằng d�
 → nhặt đúng 1 đơn 46714 → hàng chờ → gán tay → ví 200.000−30.000. Còn treo: P5 (ghi
 `Point` — chỉ cần cho D-07/CP5) và 4 câu nghiệp vụ (chặn CP4 như cũ).
 
-**Phạm vi:** 7 câu P1–P7 ([`03`](./03-tich-hop-pos365.md) §5) gọi thật và lưu bằng chứng;
+**Phạm vi:** 7 câu P1–P7 ([`03`](../tai-lieu-ky-thuat/03-tich-hop-pos365.md) §5) gọi thật và lưu bằng chứng;
 lập **tài khoản API riêng** trên POS365; dựng **tài khoản thanh toán "Trừ điểm"** + đọc
 `AccountId` (N-04); hỏi POS365 về **cửa hàng thử** (K7). Song song (không phải việc dev):
 trình nghiệp vụ 4 câu treo — bộ cấp `CoffeeLevel` (A-02), bảng mức điểm, luật âm điểm
@@ -94,7 +94,7 @@ CP4 khi có kết nối thật. Nút chạy tay chạy INLINE trong request, kh�
 
 ## CP3 — Giao diện (≈ 5 ngày công) — ✅ XONG 08/09/2026 (chưa đi trọn vòng dùng thử)
 
-**Phạm vi:** phân hệ "Bán lẻ & quán" vào `module-registry.ts`; 5 màn của [`05`](./05-giao-dien.md)
+**Phạm vi:** phân hệ "Bán lẻ & quán" vào `module-registry.ts`; 5 màn của [`05`](../chuc-nang/11-giao-dien.md)
 (Ví của tôi · Chính sách · Thành viên & ghép · Sổ & đối soát 4 tab · Tra cứu quầy);
 C-02/C-03/C-04, B-02/B-03 phía UI.
 
