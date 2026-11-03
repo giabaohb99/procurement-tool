@@ -7,7 +7,7 @@
 | Trạng thái | Tài liệu nghiên cứu để lập kế hoạch, **chưa phải** tài liệu yêu cầu. Chưa sửa mã, chưa ghi dữ liệu |
 | Mốc so sánh | ERPNext **v16** bản chuẩn: mã nguồn `frappe/erpnext` nhánh `version-16` đọc trực tiếp trên trang học (container `erpnext-hoc-backend-1`, site `frontend`), cộng docs.erpnext.com |
 | Mốc ERP DEGO | Nhánh `erp-v2`, commit `601ec718` (02/11/2026) |
-| Cùng cụm | [`nghien-cuu/01` Luồng chuẩn mua hàng, kho, sản xuất](../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) · [`nghien-cuu/10` Nghiệp vụ kho](../nghien-cuu/10-nghiep-vu-kho.md) · [`nghien-cuu/11` Độ phủ thu mua và kho](../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) · [`nghien-cuu/erpnext/01` Hướng dẫn trang học](../nghien-cuu/erpnext/01-huong-dan-mua-hang-den-thanh-toan-va-kho.md) |
+| Cùng cụm | [`nghien-cuu/01` Luồng chuẩn mua hàng, kho, sản xuất](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) · [`nghien-cuu/10` Nghiệp vụ kho](../../nghien-cuu/10-nghiep-vu-kho.md) · [`nghien-cuu/11` Độ phủ thu mua và kho](../../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) · [`nghien-cuu/erpnext/01` Hướng dẫn trang học](../../nghien-cuu/erpnext/01-huong-dan-mua-hang-den-thanh-toan-va-kho.md) |
 
 **Ngoài phạm vi tài liệu này** (đã hoặc sẽ có mảng riêng): phiếu nhập mua và kiểm chất lượng (Purchase Receipt, Quality Inspection), trả hàng nhà cung cấp, hóa đơn và công nợ, lô và số sê-ri, chi tiết lệnh sản xuất. Tài liệu chỉ nhắc tới các phần đó ở chỗ chúng chạm vào sổ kho.
 
@@ -595,7 +595,7 @@ Nên **chạy thử trên dev** với dữ liệu prod sao chép, và có thể 
 
 ## 6. Kế hoạch theo nấc
 
-Khớp với ba nấc của [tài liệu 01 mục 8](../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md#8-lộ-trình-đề-xuất-ba-nấc). Mã việc dùng tiền tố **KHO-** để không trùng với TM-GN của sổ kế hoạch.
+Khớp với ba nấc của [tài liệu 01 mục 8](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md#8-lộ-trình-đề-xuất-ba-nấc). Mã việc dùng tiền tố **KHO-** để không trùng với TM-GN của sổ kế hoạch.
 
 ### 6.1. Nấc 1 — Vá trong mô hình cũ (không đổi cấu trúc)
 
@@ -669,4 +669,4 @@ Khớp với ba nấc của [tài liệu 01 mục 8](../nghien-cuu/01-luong-chua
 - Dữ liệu trang học, đọc bằng câu `SELECT` ngày 02/11/2026: số kho, dòng sổ, `Bin`, cài đặt kho, bộ chứng từ mẫu MAT-PRE-2026-00369/00370/00371, MAT-STE-2026-00005/00006, MAT-RECO-2026-00002.
 - docs.erpnext.com: Warehouse, Stock Ledger, Stock Entry, Stock Reconciliation, Stock Settings, Item Valuation, Repost Item Valuation, Auto Re-order, Putaway Rule, Pick List, Stock Reservation, Perpetual Inventory.
 - ERP DEGO nhánh `erp-v2` commit `601ec718`: `backend/app/modules/inventory/`, `backend/app/modules/goods_receipt/`, `backend/app/modules/catalog/model.py`, `backend/app/modules/purchase_order/service.py` (`recompute_effects`, `_cleanup_delivery`), `backend/app/core/scoping.py`, `frontend-v2/src/modules/inventory/`; script nạp trang học `erpnext_nap_nghiep_vu.py`.
-- Tài liệu trong repo: [`nghien-cuu/01`](../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 7, 8, 9 · [`nghien-cuu/10`](../nghien-cuu/10-nghiep-vu-kho.md) mục 4–7, 11, 12 · [`nghien-cuu/11`](../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) mục F, 6 · [`nghien-cuu/erpnext/01`](../nghien-cuu/erpnext/01-huong-dan-mua-hang-den-thanh-toan-va-kho.md) mục 0.4, C · [`00-ke-hoach-theo-module.md`](../../plans/00-ke-hoach-theo-module.md) TM-GN-2..5.
+- Tài liệu trong repo: [`nghien-cuu/01`](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 7, 8, 9 · [`nghien-cuu/10`](../../nghien-cuu/10-nghiep-vu-kho.md) mục 4–7, 11, 12 · [`nghien-cuu/11`](../../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) mục F, 6 · [`nghien-cuu/erpnext/01`](../../nghien-cuu/erpnext/01-huong-dan-mua-hang-den-thanh-toan-va-kho.md) mục 0.4, C · [`00-ke-hoach-theo-module.md`](../../../plans/00-ke-hoach-theo-module.md) TM-GN-2..5.

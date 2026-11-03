@@ -4,7 +4,7 @@
 |---|---|
 | Bản | 1.1 — 02/11/2026 (phân tích + kiến trúc, **chưa làm**) |
 | Câu hỏi | Mỗi phân loại mặt hàng có bộ thuộc tính khác nhau (chai có dung tích, cổ chai; thùng có kích thước thùng, số lớp carton…). Thiết kế theo dạng đó được không? |
-| Nguồn | Sheet danh mục VTBB đang dùng (tab DM CHAI, DM THÙNG, DM TÚI/NHÃN, QUY TẮC ĐẶT MÃ…), [mô hình dữ liệu sản phẩm](../../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) mục 5–8, [nghiên cứu mặt hàng](00-nghien-cuu-mat-hang-erpnext.md) |
+| Nguồn | Sheet danh mục VTBB đang dùng (tab DM CHAI, DM THÙNG, DM TÚI/NHÃN, QUY TẮC ĐẶT MÃ…), [mô hình dữ liệu sản phẩm](../../../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) mục 5–8, [nghiên cứu mặt hàng](../nghien-cuu/00-nghien-cuu-mat-hang-erpnext.md) |
 
 ---
 
@@ -174,4 +174,4 @@ Viết bài kiểm theo **kiểu**, không theo từng thuộc tính: mỗi ki�
 
 ## 6. Vị trí trong kế hoạch
 
-Thuộc việc **MH-2.1 → MH-2.3** của [nghiên cứu mặt hàng](00-nghien-cuu-mat-hang-erpnext.md) mục 6 (M2, M3, M4 của tài liệu mô hình dữ liệu), sau MH-1.2 (`item_group_id`). Không chặn sổ kho; làm song song với giai đoạn 2–3 của [báo cáo 12](../nghien-cuu/12-muc-do-module-kho-mat-hang-va-ke-hoach.md).
+Thuộc việc **MH-2.1 → MH-2.3** của [nghiên cứu mặt hàng](../nghien-cuu/00-nghien-cuu-mat-hang-erpnext.md) mục 6 (M2, M3, M4 của tài liệu mô hình dữ liệu), sau MH-1.2 (`item_group_id`). Không chặn sổ kho; làm song song với giai đoạn 2–3 của [báo cáo 12](../../nghien-cuu/12-muc-do-module-kho-mat-hang-va-ke-hoach.md).

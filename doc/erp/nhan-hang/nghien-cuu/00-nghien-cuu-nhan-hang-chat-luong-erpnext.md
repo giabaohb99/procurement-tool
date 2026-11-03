@@ -7,7 +7,7 @@
 | Mốc so sánh | ERPNext 16.53.0, Frappe 16.54.0 trên site học `erpnext.degoholding.vn` (site `frontend`, container `erpnext-hoc-backend-1` ở VPS 2), mã nguồn `frappe/erpnext` nhánh `version-16`, tài liệu `docs.erpnext.com` |
 | Mã soát | nhánh `erp-v2`, commit `601ec718`, ngày 02/11/2026 (`backend/app/modules`, `frontend-v2/src/modules`) |
 | Cách soát | Chỉ đọc. Trên site học chỉ chạy câu `select` và `grep` mã nguồn; không ghi dữ liệu, không sửa mã DEGO |
-| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) (mục 3.6 tới 3.12, mục 7 điểm a tới h, mục 8 ba nấc) · [11 Độ phủ thu mua, kho](../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) (mục E, F3) · [09 Nghiệp vụ mua hàng](../nghien-cuu/09-nghiep-vu-mua-hang.md) (mục 11, nhóm A mục 13) · [10 Nghiệp vụ kho](../nghien-cuu/10-nghiep-vu-kho.md) (mục 6, 9.4, 13.1) · [ERPNext 01 Hướng dẫn mua hàng tới thanh toán](../nghien-cuu/erpnext/01-huong-dan-mua-hang-den-thanh-toan-va-kho.md) (mục 0.4, Phần C) · [Chi phí thu mua bao-CR-453](../nhap-khau/02-chi-phi-thu-mua.md) |
+| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) (mục 3.6 tới 3.12, mục 7 điểm a tới h, mục 8 ba nấc) · [11 Độ phủ thu mua, kho](../../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) (mục E, F3) · [09 Nghiệp vụ mua hàng](../../nghien-cuu/09-nghiep-vu-mua-hang.md) (mục 11, nhóm A mục 13) · [10 Nghiệp vụ kho](../../nghien-cuu/10-nghiep-vu-kho.md) (mục 6, 9.4, 13.1) · [ERPNext 01 Hướng dẫn mua hàng tới thanh toán](../../nghien-cuu/erpnext/01-huong-dan-mua-hang-den-thanh-toan-va-kho.md) (mục 0.4, Phần C) · [Chi phí thu mua bao-CR-453](../../nhap-khau/02-chi-phi-thu-mua.md) |
 
 ## Mục lục
 
