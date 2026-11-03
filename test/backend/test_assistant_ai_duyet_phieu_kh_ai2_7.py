@@ -53,7 +53,11 @@ def test_khong_phai_nguoi_duyet_bi_chan(db, org):  # noqa: F811
 def test_luong_nhieu_buoc_chi_nguoi_co_viec_cho(db, org):  # noqa: F811
     _engine_with_permission_step(db)
     bk = _pending(db, org)
-    assert _propose(db, org.other, id=bk.id).get("denied") is True                   # có quyền nhưng không được giao việc
+    #  duoc-CR-706 (339dfccf): bước quyền giao người được chọn ĐỨNG ĐẦU cộng mọi người giữ quyền mà phạm vi phủ phiếu —
+    #  org.other (phạm vi Tất cả) cũng có việc chờ nên đề xuất được; người đặt và phạm vi của mình vẫn bị chặn.
+    for who in (org.creator, org.own_only):
+        assert _propose(db, who, id=bk.id).get("denied") is True
+    assert _propose(db, org.other, id=bk.id, note="ok")["proposal"]["step"] == "chặng 1"
     p = _propose(db, org.picked, id=bk.id, note="ok")["proposal"]
     assert p["step"] == "chặng 1"
     confirm_update(db, org.picked, p["confirm_token"])

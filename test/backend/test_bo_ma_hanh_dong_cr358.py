@@ -117,6 +117,8 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
     "modules/ticket/service.py::set_status": ("open", "in_progress", "answered", "closed"),
     "modules/user/service.py::set_active": ("activate", "deactivate"),
     "modules/vehicle_booking/approval_bridge.py::_write_log": ("approve", "cancel", "update"),
+    #  kh-AI2-7: xác nhận đề xuất duyệt qua AI — duyệt ghi `approve`, từ chối ghi `update` (cùng mã với cầu nối duyệt web).
+    "modules/assistant/tools/approval_action_tool.py::confirm_approval": ("approve", "update"),
 }
 
 
@@ -166,8 +168,15 @@ def _scan_record_calls() -> tuple[set[str], set[str]]:
     dynamic_sites: set[str] = set()
     for rel, tree in _parse_app_files():
         _tag_enclosing_function(tree)
+        #  kh-AI1-3: `ai_plan/service.py` có hàm `record(...)` RIÊNG (lưu đề xuất kế hoạch, không có tham số `action`)
+        #  — lời gọi tên trần tới hàm cùng tên định nghĩa ngay trong tệp không phải lời gọi `core.audit.record`.
+        #  Hàm cùng tên mà CÓ `action` (chính `core/audit.py`) vẫn quét như cũ.
+        shadowed = {n.name for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+                    and n.name in RECORD_FUNCS and "action" not in {a.arg for a in n.args.args + n.args.kwonlyargs}}
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call) or _called_name(node) not in RECORD_FUNCS:
+                continue
+            if isinstance(node.func, ast.Name) and node.func.id in shadowed:
                 continue
             arg = _arg_at(node, 4, "action")
             if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
