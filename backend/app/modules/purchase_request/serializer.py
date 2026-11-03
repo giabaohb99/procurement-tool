@@ -150,11 +150,8 @@ def _approval_signers(db: Session, pr) -> dict:
     return out
 
 
-def _out(db: Session, pr, user=None) -> dict:
-    from app.core.audit import (resolve_actor, resolve_signature,
-                                resolve_signature_by_employee)
-    d = {c: getattr(pr, c) for c in HEADER_COLS}
-    d["vat_rate"] = float(pr.vat_rate or 0)
+def _out_department_fields(db: Session, pr, d: dict) -> None:
+    """Khối phòng ban: trưởng bộ phận, phòng lập, phòng xử lý — chỉ HIỂN THỊ, không ghi đè dữ liệu đã lưu."""
     # Trưởng bộ phận: phiếu lập lúc phòng chưa gán trưởng sẽ lưu rỗng và ở rỗng vĩnh viễn.
     # Rỗng thì lấy theo Department.manager_id hiện tại để HIỂN THỊ (không ghi đè dữ liệu đã lưu).
     if not d.get("head_of_dept") and (pr.department_id or pr.department):
@@ -173,9 +170,10 @@ def _out(db: Session, pr, user=None) -> dict:
     # bao-CR-524: phiếu cũ còn `0` hiện đúng id phòng thu mua mặc định — ô chọn không còn mục
     # "Thu mua chung" mang số 0 để khớp.
     d["handler_dept_id"] = normalize_handler_dept_id(db, pr.handler_dept_id)
-    # bao-CR-490: trưởng phòng phê duyệt (người thực bấm Duyệt) + trưởng phòng theo hồ sơ.
-    from app.core.print_signers import approver_fields
-    d.update(approver_fields(db, pr))
+
+
+def _out_supplier_clusters(db: Session, pr, user, d: dict) -> bool:
+    """Khối NCC hai cụm (Task 4); trả `can_sup_read` để các khối sau che NCC theo cùng một cờ."""
     # Task 4: NCC 2 cụm. Cụm 'req' (bộ phận đề xuất) MỌI người xem/sửa được — sửa bug người
     # yêu cầu không nhập nổi NCC của chính mình. Cụm 'pur' (khảo sát/thu mua) cần supplier.read
     # để xem, supplier.write để sửa.
@@ -185,6 +183,11 @@ def _out(db: Session, pr, user=None) -> dict:
     d["supplier_pur"] = cl["pur"] if can_sup_read else service._empty_cluster()
     d["supplier_from_survey"] = cl["from_survey"]
     d["can_edit_supplier_pur"] = user is not None and user_has_permission(db, user, "supplier", "write")
+    return can_sup_read
+
+
+def _out_action_flags(db: Session, pr, user, d: dict) -> None:
+    """Khối cờ nút bấm (`can_*`) + hai công tắc — tính ở server vì phạm vi grant không có ở phía giao diện."""
     # CR-034: nút duyệt lần 2 (điều phối) — quyền tính ở server (phạm vi grant không có ở map
     # quyền phía FE). Công tắc tắt thì không ai thấy nút, vì phiếu không dừng ở 'approved' nữa.
     d["dispatch_enabled"] = service.dispatch_enabled()
@@ -210,9 +213,12 @@ def _out(db: Session, pr, user=None) -> dict:
                             and _in_approve_scope(db, user, pr.id))
     # bao-CR-554: nút "Trả về" cho người yêu cầu — server tính vì phải hỏi cả phạm vi lẫn dòng ĐMH.
     d["can_return"] = bool(user is not None and _can_return_requester(db, user, pr))
-    # NCC "hiệu lực" ở cột cũ (suggested_supplier*) — che nếu không có supplier.read (giữ Task 5).
-    if not can_sup_read:
-        _blank_supplier(d)
+
+
+def _out_people_and_signatures(db: Session, pr, d: dict) -> None:
+    """Khối người tạo / người chốt phương án, YCBG nguồn, chữ ký người lập và hai ô duyệt trên bản in."""
+    from app.core.audit import resolve_actor, resolve_signature, resolve_signature_by_employee
+
     d["created_at"] = pr.created_at
     d["created_by_name"] = resolve_actor(db, pr.created_by)
     # bao-CR-419: mốc người yêu cầu chốt xong lựa chọn phương án (None = vòng này chưa xong).
@@ -238,6 +244,9 @@ def _out(db: Session, pr, user=None) -> dict:
     # Chữ ký + họ tên 2 ô duyệt trên phiếu in (TP/BP đề xuất · TP/BP mua hàng)
     d.update(_approval_signers(db, pr))
 
+
+def _out_company_and_print_cells(db: Session, pr, d: dict) -> None:
+    """Khối pháp nhân + bộ ô ký cụm "XÉT DUYỆT" của bản in."""
     # Fetch company name safely to avoid permission issues on the frontend
     d["company_name"] = ""
     comp = None
@@ -251,6 +260,35 @@ def _out(db: Session, pr, user=None) -> dict:
     d["print_signature_cells"] = build_print_signature_cells(
         comp, d, pr.requester or "", d["requester_signature"])
 
+
+def _out_item(db: Session, i, prod_by_code: dict, thumb_by_pid: dict, assignee_names: dict, opt_counts: dict,
+              chosen, can_sup_read: bool) -> dict:
+    """Một dòng hàng của phiếu — dữ liệu phụ (ảnh, tên NSTM, phương án) đã nạp sẵn cho cả phiếu."""
+    pid_ = prod_by_code.get(i.product_code or "")
+    return {"id": i.id, "product_code": i.product_code, "product_name": i.product_name,
+            "item_group": i.item_group, "group_desc": i.group_desc, "qty": float(i.qty or 0),
+            "unit": i.unit, "price": float(i.price or 0), "vat_pct": float(i.vat_pct or 0),
+            "amount": float(i.amount or 0),
+            "warehouse": i.warehouse, "required_date": i.required_date, "assignee": i.assignee,
+            "assignee_name": assignee_names.get(i.assignee or "", ""),
+            "expected_date": i.expected_date,
+            "line_status": i.line_status,
+            # B-06: cột lưu MÃ, giao diện dùng mã để tô màu/lọc nên phải trả kèm nhãn
+            "line_status_label": PR_LINE_STATUS.label_of(i.line_status),
+            "progress_note": i.progress_note, "note": i.note,
+            "qty_ordered": float(i.qty_ordered or 0), "qty_received": float(i.qty_received or 0),
+            "product_id": pid_ or 0,                          # 0 = code không khớp catalog
+            "product_thumbnail_url": thumb_by_pid.get(pid_, "") if pid_ else "",
+            # bao-CR-310 — "đã chốt phương án chưa" SUY từ bảng phương án, dòng YCMH
+            # không có cột nào lưu việc đó (một nguồn sự thật).
+            "option_count": opt_counts.get(i.id, 0),
+            "chosen_option": _out_option(db, chosen, can_sup_read) if chosen else None,
+            # Đợt 3b — cờ "NSTM đã chốt hoàn thành xử lý" + chốt rỗng của dòng
+            "options_done": bool(i.options_done), "no_option": bool(i.no_option)}
+
+
+def _out_items(db: Session, pr, can_sup_read: bool) -> list[dict]:
+    """Khối dòng hàng: nạp dữ liệu phụ cho CẢ phiếu (ảnh, phương án, tên NSTM) rồi dựng từng dòng — không N+1."""
     items = service.items_of(db, pr.id)
     # Batch resolve ảnh gốc theo product_code (2 query/phiếu, tránh N+1).
     prod_by_code, thumb_by_pid = service.product_thumbnails(
@@ -267,32 +305,29 @@ def _out(db: Session, pr, user=None) -> dict:
     #  tên từ danh sách nhân sự tải về — danh sách đó lọc theo PHẠM VI người xem, nên ai bị
     #  giới hạn pháp nhân (mà 259 hồ sơ nhân sự đang để pháp nhân 0) chỉ thấy mã "NSU012".
     assignee_names = service.employee_names_by_code(db, {i.assignee for i in items if i.assignee})
-    d["items"] = []
-    for i in items:
-        pid_ = prod_by_code.get(i.product_code or "")
-        chosen = chosen_by_item.get(i.id)
-        d["items"].append(
-            {"id": i.id, "product_code": i.product_code, "product_name": i.product_name,
-             "item_group": i.item_group, "group_desc": i.group_desc, "qty": float(i.qty or 0),
-             "unit": i.unit, "price": float(i.price or 0), "vat_pct": float(i.vat_pct or 0),
-             "amount": float(i.amount or 0),
-             "warehouse": i.warehouse, "required_date": i.required_date, "assignee": i.assignee,
-             "assignee_name": assignee_names.get(i.assignee or "", ""),
-             "expected_date": i.expected_date,
-             "line_status": i.line_status,
-             # B-06: cột lưu MÃ, giao diện dùng mã để tô màu/lọc nên phải trả kèm nhãn
-             "line_status_label": PR_LINE_STATUS.label_of(i.line_status),
-             "progress_note": i.progress_note, "note": i.note,
-             "qty_ordered": float(i.qty_ordered or 0), "qty_received": float(i.qty_received or 0),
-             "product_id": pid_ or 0,                          # 0 = code không khớp catalog
-             "product_thumbnail_url": thumb_by_pid.get(pid_, "") if pid_ else "",
-             # bao-CR-310 — "đã chốt phương án chưa" SUY từ bảng phương án, dòng YCMH
-             # không có cột nào lưu việc đó (một nguồn sự thật).
-             "option_count": opt_counts.get(i.id, 0),
-             "chosen_option": _out_option(db, chosen, can_sup_read) if chosen else None,
-             # Đợt 3b — cờ "NSTM đã chốt hoàn thành xử lý" + chốt rỗng của dòng
-             "options_done": bool(i.options_done), "no_option": bool(i.no_option)}
-        )
+    return [_out_item(db, i, prod_by_code, thumb_by_pid, assignee_names, opt_counts,
+                      chosen_by_item.get(i.id), can_sup_read) for i in items]
+
+
+def _out(db: Session, pr, user=None) -> dict:
+    """Bản ĐẦY ĐỦ của một phiếu YCMH (màn chi tiết, bản in, xuất file).
+
+    bao-CR-715: tách theo khối, gọi ĐÚNG thứ tự cũ để thứ tự khóa và số truy vấn không đổi — có bài
+    kiểm chụp kết quả `test_chup_ket_qua_serializer_thu_mua_cr715.py`."""
+    d = {c: getattr(pr, c) for c in HEADER_COLS}
+    d["vat_rate"] = float(pr.vat_rate or 0)
+    _out_department_fields(db, pr, d)
+    # bao-CR-490: trưởng phòng phê duyệt (người thực bấm Duyệt) + trưởng phòng theo hồ sơ.
+    from app.core.print_signers import approver_fields
+    d.update(approver_fields(db, pr))
+    can_sup_read = _out_supplier_clusters(db, pr, user, d)
+    _out_action_flags(db, pr, user, d)
+    # NCC "hiệu lực" ở cột cũ (suggested_supplier*) — che nếu không có supplier.read (giữ Task 5).
+    if not can_sup_read:
+        _blank_supplier(d)
+    _out_people_and_signatures(db, pr, d)
+    _out_company_and_print_cells(db, pr, d)
+    d["items"] = _out_items(db, pr, can_sup_read)
     # Task 4: PYC tính VAT lại theo dòng — tiền hàng (chưa VAT) · VAT · tổng cộng (gồm VAT)
     subtotal = round(sum(x["qty"] * x["price"] for x in d["items"]), 2)   # chưa VAT
     total = round(sum(x["amount"] for x in d["items"]), 2)                # gồm VAT
