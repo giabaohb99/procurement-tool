@@ -255,6 +255,9 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                 else:
                     if not is_active: continue
                     if not code and code_prefix:
+                        #  Nhập CSV dòng mới không có mã: trước đây gọi `generate_code` mà không import
+                        #  (chỉ nhánh tạo đơn lẻ ở trên có import cục bộ) → NameError, cả lô hỏng.
+                        from app.core.utils import generate_code
                         data["code"] = generate_code(db, Model, code_prefix)
                     
                     new_obj = Model(**data, is_active=is_active, created_by=user.id, updated_by=user.id)
