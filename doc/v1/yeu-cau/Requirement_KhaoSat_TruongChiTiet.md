@@ -1,6 +1,6 @@
 # Thống kê trường Khảo sát (NCC & Sản phẩm) — đối chiếu + kiểu nhập liệu + chia cụm
 
-Nguồn chuẩn: `doc/sheet/sheet_03_khao_sat_ncc.json`, `doc/sheet/sheet_04_khao_sat_sp.json` + danh sách trường do nghiệp vụ cung cấp.
+Nguồn chuẩn: `doc/v1/du-lieu/sheet/sheet_03_khao_sat_ncc.json`, `doc/v1/du-lieu/sheet/sheet_04_khao_sat_sp.json` + danh sách trường do nghiệp vụ cung cấp.
 
 **Kiểu nhập liệu:** 📅 Ngày · 🔽 Chọn (dropdown) · ✏️ Nhập (text) · 🔢 Số · ☑️ Checkbox · 📎 File · ⚙️ Auto (tự tính/tự điền).
 **Trạng thái:** ✅ Đã có · 🔴 Thiếu · 🟡 Có nhưng khác (tách/gộp).

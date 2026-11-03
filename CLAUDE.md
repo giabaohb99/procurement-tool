@@ -196,7 +196,7 @@ Docker; code bind-mount nên HMR chạy. Gọi API bằng đường **tương đ
 
 ## Docs
 
-Requirements, permission design, and naming conventions live in `doc/` (Vietnamese) — index at `doc/README.md`. Permission design detail: `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`. Progress checklist: `TASKS.md`.
+Requirements, permission design, and naming conventions live in `doc/` (Vietnamese) — index at `doc/README.md`. Permission design detail: `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`. Progress checklist: `doc/v1/tasks.md`.
 
 ### Nhật ký task — `doc/tai-lieu-ky-thuat/nhat-ky-task.md`
 

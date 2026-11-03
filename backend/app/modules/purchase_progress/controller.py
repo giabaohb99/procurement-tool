@@ -15,7 +15,7 @@ Nhà cung cấp cả trên bảng lẫn file Excel.
 
 Bản 1: CHỈ dùng cột đã có trong DB. Các cột theo Mapping còn thiếu master
 (product.legal_name...) để bản 2 bổ sung migration — xem
-`doc/yeu-cau/Mapping_Sheet06_TienDoMuaHang.md`.
+`doc/v1/yeu-cau/Mapping_Sheet06_TienDoMuaHang.md`.
 """
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func, or_

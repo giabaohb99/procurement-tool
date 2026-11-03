@@ -4494,7 +4494,7 @@ cuối cùng kèm món nợ N-17.
 Hai tệp cũ không xóa được vì sổ thay đổi và bản kiểm kê việc vẫn còn trỏ tới, nên dán
 nhãn tài liệu lịch sử lên đầu để người đọc biết đây là hồ sơ cũ.
 Tham chiếu: `doc/erp/11` (giữ hồ sơ 8 câu chốt đa pháp nhân) và
-`doc/yeu-cau/Plan_CapNhat_ThuMua_2026_07.md`.
+`doc/v1/yeu-cau/Plan_CapNhat_ThuMua_2026_07.md`.
 
 ### bao-CR-403-commit | Commit
 - status: xong
@@ -8134,7 +8134,7 @@ DB thì giữ nguyên, bảy khóa cả hai nơi đều trống thì bỏ qua; �
 thì giá trị hiệu lực không đổi chỗ nào và ba khóa bí mật đều giải mã đúng độ dài.
 Quyền `setting` đã kiểm cả hai môi trường: chỉ vai trò `admin` giữ, không phải sửa gì.
 Trên dev script điền mười chín khóa, đọc lại thì giá trị hiệu lực cũng không đổi chỗ nào.
-Một bẫy lòi ra lúc deploy: bảng lệnh ở `doc/chung/Deploy_VPS.md` ghi dev chạy kèm
+Một bẫy lòi ra lúc deploy: bảng lệnh ở `doc/v1/chung/Deploy_VPS.md` ghi dev chạy kèm
 `-p procurement-dev`, nhưng bộ đang chạy thật mang tên project mặc định
 `procurement-tool-dev` lấy theo tên thư mục. Truyền `-p` sai là compose không nhận ra bộ
 đang chạy mà dựng thêm một bộ SONG SONG — hai `api`, hai `celery-worker`, và nguy nhất là

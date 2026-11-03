@@ -74,7 +74,7 @@ Mỗi tài liệu trả lời **một câu hỏi khác nhau**. Đi từ *nghiệ
 
 **④ Test cases / QA plan**
 - Bảng: mã · nội dung · bước · kết quả mong đợi · trạng thái
-- → Đã có: `doc/testcase/testcase-001…003.md`
+- → Đã có: `doc/v1/kiem-thu/testcase-001…003.md`
 
 **⑤ Tài liệu bàn giao (Handover / Release)**
 - Hướng dẫn sử dụng (User manual) theo vai trò

@@ -12,12 +12,12 @@
 
 | Vấn đề | Số đo / ví dụ |
 |---|---|
-| Quá nhiều cửa vào | `doc/` có **19 thư mục cấp 1**, cộng `plans/` (169 tệp), `frontend-v2/plans/` (56 tệp), 3 tệp lẻ ở gốc repo (`TASKS.md`, `task-process.md`, `AGENTS.md`) |
+| Quá nhiều cửa vào | `doc/` có **19 thư mục cấp 1**, cộng `plans/` (169 tệp), `frontend-v2/plans/` (56 tệp), 3 tệp lẻ ở gốc repo (`doc/v1/tasks.md`, `doc/v1/task-process.md`, `AGENTS.md`) |
 | Hai chỗ cùng tên | `doc/tai-lieu-ky-thuat/` và `doc/tai-lieu-ky-thuat/kien-truc/` |
 | Tài liệu một phân hệ nằm rải 3–4 nơi | Văn thư: `doc/erp/van-thu/` + `doc/tai-lieu-chuc-nang/14,15` + `plans/260814-…-van-thu-p0-p3`. Đặt xe / duyệt dấu: 3 thư mục ngoài `doc/erp/` |
 | Tài liệu chức năng tách khỏi phân hệ | `doc/tai-lieu-chuc-nang/` 27 tệp đánh số chung `01…19` (có số trùng: hai tệp `16-`, hai tệp `17-`) |
 | Đặt tên lẫn kiểu | `Requirement_PO_Detail.md`, `TIEN-DO.md`, `Thiet_Ke_Phan_Quyen.md` cạnh `02-nghi-phep.md`; thư mục tiếng Anh `item/ inventory/ …` cạnh `van-thu/ hai-quan/` |
-| Tài liệu thời V1 đứng lẫn với V2 | `doc/yeu-cau/` (Requirement tháng 7), `doc/testcase/`, `doc/thiet-ke/`, `doc/chung/`, `TASKS.md` — đọc vào dễ tin nhầm là còn đúng |
+| Tài liệu thời V1 đứng lẫn với V2 | `doc/v1/yeu-cau/` (Requirement tháng 7), `doc/v1/kiem-thu/`, `doc/v1/thiet-ke/`, `doc/v1/chung/`, `doc/v1/tasks.md` — đọc vào dễ tin nhầm là còn đúng |
 | Dữ liệu lẫn với tài liệu | 9 `.txt`, 3 `.json`, 5 `.xlsx`, 5 `.pdf`, 3 `.py` trong `doc/` |
 | Kế hoạch làm việc tách khỏi phân hệ | `plans/` gốc gom kế hoạch của mọi phân hệ, không ai dọn; muốn biết HRM đã lên kế hoạch gì phải lọc tay |
 
@@ -78,7 +78,7 @@ Ba thứ này **công cụ (Claude Code, Codex) đọc thẳng theo đường d�
 | **Skill của dự án** | `.claude/skills/<tên>/SKILL.md` | 13 skill, đã ở một chỗ | Giữ. Mỗi skill một dòng trong mục lục |
 | Skill toàn máy | `~/.claude/skills/` (máy từng người) | 15 skill ngoài + graphify | Không trong repo; mục lục ghi tên + mục đích để ai cài máy mới biết cần gì |
 | **Định nghĩa agent** | `.claude/agents/*.md` | 4 (ai-mcp, dieu-phoi, giao-dien-v2, tai-lieu-kiem-thu) | Giữ |
-| **Luật viết mã chung** (đặt tên hàm / biến / tệp, ngôn ngữ chuỗi và chú thích, không emoji, commit, cách viết bài kiểm) | `.claude/rules/` — tệp **không khai `paths:`** thì luôn nạp | Đang rải: `backend/.claude/rules/naming.md` và `frontend-v2/.claude/rules/naming.md` **trùng một đoạn**, `doc/chung/NAMING_CONVENTIONS.md` (bản V1), một phần trong CLAUDE.md, một phần trong bộ nhớ agent | Gom về **một tệp `.claude/rules/chung-dat-ten-va-quy-uoc.md`** (luôn nạp); xóa đoạn trùng ở hai tệp `naming.md`; `NAMING_CONVENTIONS.md` → `doc/v1/` |
+| **Luật viết mã chung** (đặt tên hàm / biến / tệp, ngôn ngữ chuỗi và chú thích, không emoji, commit, cách viết bài kiểm) | `.claude/rules/` — tệp **không khai `paths:`** thì luôn nạp | Đang rải: `backend/.claude/rules/naming.md` và `frontend-v2/.claude/rules/naming.md` **trùng một đoạn**, `doc/v1/chung/NAMING_CONVENTIONS.md` (bản V1), một phần trong CLAUDE.md, một phần trong bộ nhớ agent | Gom về **một tệp `.claude/rules/chung-dat-ten-va-quy-uoc.md`** (luôn nạp); xóa đoạn trùng ở hai tệp `naming.md`; `NAMING_CONVENTIONS.md` → `doc/v1/` |
 | **Luật theo khu** (backend, frontend-v2, nhân sự, thu mua…) | `.claude/rules/<khu>-*.md` có `paths:` (chỉ nạp khi sửa đúng thư mục); `frontend-v2/.claude/rules/*` | 8 + 7 tệp | Giữ, đặt tên theo tiền tố khu: `chung-*`, `backend-*`, `v2-*`, `hr-*`, `thu-mua-*` |
 | **Luật viết tài liệu** (mục 3 dưới) | `.claude/rules/chung-tai-lieu.md` với `paths: doc/**` | chưa có | Mới: agent sửa tài liệu là tự nạp luật này |
 | Hướng dẫn cho Codex | `AGENTS.md` | Bản chép tay của CLAUDE.md, dễ lệch | Rút gọn thành một dòng: *đọc CLAUDE.md và `.claude/rules/`* |
@@ -126,9 +126,9 @@ Ba thứ này **công cụ (Claude Code, Codex) đọc thẳng theo đường d�
 | `doc/erp/tai-lieu-ai/` | `doc/erp/tro-ly-ai/` |
 | `plans/<kế hoạch>` ở gốc repo, `frontend-v2/plans/*` | `doc/erp/<phan-he>/plans/<kế hoạch>` theo phân hệ chính của kế hoạch; kế hoạch nhiều phân hệ → `doc/plans/`; `plans/reports/` lẻ → theo phân hệ |
 | `doc/huong-dan-su-dung/van-ban/*.pdf` | `doc/erp/van-thu/du-lieu/` (đổi tên tệp có dấu và khoảng trắng) |
-| `doc/yeu-cau/`, `doc/testcase/`, `doc/thiet-ke/`, `doc/chung/`, `doc/sheet/`, `doc/datamau/`, `TASKS.md`, `task-process.md` | `doc/v1/…` (`datamau` có 2 chỗ trong mã trỏ tới — sửa cùng commit) |
+| `doc/v1/yeu-cau/`, `doc/v1/kiem-thu/`, `doc/v1/thiet-ke/`, `doc/v1/chung/`, `doc/v1/du-lieu/sheet/`, `doc/v1/du-lieu/datamau/`, `doc/v1/tasks.md`, `doc/v1/task-process.md` | `doc/v1/…` (`datamau` có 2 chỗ trong mã trỏ tới — sửa cùng commit) |
 | `doc/testcase-bao/` | `doc/erp/thu-mua/kiem-thu/` (vẫn dùng cho V2) |
-| `doc/danh-sach-tinh-nang.xlsx` | `doc/v1/du-lieu/` |
+| `doc/v1/du-lieu/danh-sach-tinh-nang.xlsx` | `doc/v1/du-lieu/` |
 
 ---
 

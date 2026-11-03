@@ -67,7 +67,7 @@ procurement-tool/
 ├─ docker/              # Dockerfile.api, Dockerfile.web, Dockerfile.help
 ├─ docker-compose.yml
 ├─ .env.example
-└─ TASKS.md             # checklist tiến độ
+└─ doc/v1/tasks.md             # checklist tiến độ
 ```
 
 ---
@@ -174,15 +174,15 @@ Toàn bộ tài liệu nằm trong `doc/` — mục lục: [`doc/README.md`](doc
 
 | Chủ đề | Đường dẫn |
 |---|---|
-| Yêu cầu tổng thể | [`doc/yeu-cau/Requirement_Mini_Tool_Thu_Mua.md`](doc/yeu-cau/Requirement_Mini_Tool_Thu_Mua.md) |
-| Yêu cầu Yêu cầu mua (chi tiết) | [`doc/yeu-cau/Requirement_YeuCauMua_ChiTiet.md`](doc/yeu-cau/Requirement_YeuCauMua_ChiTiet.md) |
+| Yêu cầu tổng thể | [`doc/v1/yeu-cau/Requirement_Mini_Tool_Thu_Mua.md`](doc/v1/yeu-cau/Requirement_Mini_Tool_Thu_Mua.md) |
+| Yêu cầu Yêu cầu mua (chi tiết) | [`doc/v1/yeu-cau/Requirement_YeuCauMua_ChiTiet.md`](doc/v1/yeu-cau/Requirement_YeuCauMua_ChiTiet.md) |
 | Thiết kế phân quyền | [`doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`](doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md) |
-| Quy ước đặt tên | [`doc/chung/NAMING_CONVENTIONS.md`](doc/chung/NAMING_CONVENTIONS.md) |
-| Thiết kế giao diện / Dashboard | [`doc/thiet-ke/`](doc/thiet-ke/) |
+| Quy ước đặt tên | [`doc/v1/chung/NAMING_CONVENTIONS.md`](doc/v1/chung/NAMING_CONVENTIONS.md) |
+| Thiết kế giao diện / Dashboard | [`doc/v1/thiet-ke/`](doc/v1/thiet-ke/) |
 
 ---
 
-## 11. Lộ trình còn lại (tham khảo `TASKS.md`)
+## 11. Lộ trình còn lại (tham khảo `doc/v1/tasks.md`)
 
 - Worker nền (Celery + Redis) cho email/thông báo thay cho background task.
 - Chuông thông báo trên FE (đếm chưa đọc, danh sách).

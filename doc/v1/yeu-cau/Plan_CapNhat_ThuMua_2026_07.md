@@ -2,7 +2,7 @@
 
 > **TÀI LIỆU LỊCH SỬ — ĐÃ HẾT HIỆU LỰC (đánh dấu 14/09/2026).** Bản nháp v0.1 tháng 07/2026,
 > chưa từng được chốt; các hạng mục trong này hoặc đã làm theo CR riêng (xem `change-log.md`)
-> hoặc đã bị thay bằng kế hoạch mới. Giữ lại chỉ vì `change-log.md` và `TASKS.md` còn trỏ tới.
+> hoặc đã bị thay bằng kế hoạch mới. Giữ lại chỉ vì `change-log.md` và `doc/v1/tasks.md` còn trỏ tới.
 > **Đừng xếp việc theo tệp này.**
 
 | Thuộc tính | Giá trị |
@@ -42,7 +42,7 @@ Các điểm trước đây còn treo, khách đã xác nhận — plan cập nh
 
 1. **Task 9 — không tồn tại.** Khách đánh số bị sót, không có task 9. Bỏ qua.
 
-2. **Task 4 — VAT: thêm lại.** Xác nhận đảo hướng quyết định cũ (`TASKS.md:32`): YCMH tính lại VAT theo dòng.
+2. **Task 4 — VAT: thêm lại.** Xác nhận đảo hướng quyết định cũ (`doc/v1/tasks.md:32`): YCMH tính lại VAT theo dòng.
    - Công thức: `giá đề xuất đã gồm VAT = giá đề xuất × (1 + VAT%)` (hệ thống tự tính).
    - `thành tiền dòng = SL × giá đề xuất đã gồm VAT`.
    - Phiếu in: đổi cột "Đơn giá đề xuất" → "Giá đề xuất đã gồm VAT", thêm cột VAT%. Layout cuối cùng vẫn cần đối chiếu mẫu in với kế toán khi làm (không chặn code).
@@ -138,7 +138,7 @@ Công thức chốt: `giá đề xuất đã gồm VAT = price × (1 + vat_pct/1
 - `pages/PurchaseRequestDetail.tsx:898-900` — đổi nhãn "Giá đề xuất" → "Giá đề xuất đã gồm VAT"; thêm input VAT (%); hiển thị giá tự tính.
 - `pages/PrintPurchaseRequest.tsx:265,279,296-313` — cột giá + dòng VAT/tổng theo chốt kế toán.
 
-**Gotcha:** đây là đảo hướng quyết định "bỏ VAT" — cần cập nhật `TASKS.md:32` và change-log. Kiểm tra prefill VAT sang ĐMH (`PurchaseRequestDetail.tsx:389`).
+**Gotcha:** đây là đảo hướng quyết định "bỏ VAT" — cần cập nhật `doc/v1/tasks.md:32` và change-log. Kiểm tra prefill VAT sang ĐMH (`PurchaseRequestDetail.tsx:389`).
 
 ### Task 5 — Ẩn NCC đề xuất theo quyền [TB] — ĐÃ CHỐT (Mục 3.3)
 
@@ -246,7 +246,7 @@ Lý do: đưa bugfix và việc ít rủi ro lên trước; dồn màn lớn/đ�
 
 ---
 
-## 7. Testcase cần bổ sung (`doc/testcase/`)
+## 7. Testcase cần bổ sung (`doc/v1/kiem-thu/`)
 
 - Task 2/3: đổi `line_status` bởi người YC / cùng phòng ban (cho phép) vs người ngoài (chặn 403); đóng phiếu bởi phòng ban YC.
 - Task 4: công thức giá gồm VAT + tổng phiếu; copy dòng giữ `vat_pct`.
@@ -264,9 +264,9 @@ Backend test tại `test/backend/` (SQLite in-memory); luồng E2E tại `test/e
 1. Thêm CR vào `doc/tai-lieu-ky-thuat/change-log.md` (trạng thái `Đề xuất`):
 
    ```
-   | CR-00X | 2026-07-22 | Khách phòng TM | Cập nhật Thu mua đợt 2026-07 (task 1-8,10): rename YCKS→Yêu cầu báo giá, line_status khảo sát, phòng ban đóng phiếu, VAT YCMH, ẩn NCC + gỡ quyền role cơ bản, cột ngày dự kiến, trang Tiến độ giao hàng, trạng thái ĐMH + ngày giao chứng từ, fix upload file + trạng thái hồ sơ chứng từ. | Trung bình-Cao — 4 migration, 3 module, 1 page mới, sửa seed quyền. | Đề xuất | [Plan_CapNhat_ThuMua_2026_07.md](../yeu-cau/Plan_CapNhat_ThuMua_2026_07.md) |
+   | CR-00X | 2026-07-22 | Khách phòng TM | Cập nhật Thu mua đợt 2026-07 (task 1-8,10): rename YCKS→Yêu cầu báo giá, line_status khảo sát, phòng ban đóng phiếu, VAT YCMH, ẩn NCC + gỡ quyền role cơ bản, cột ngày dự kiến, trang Tiến độ giao hàng, trạng thái ĐMH + ngày giao chứng từ, fix upload file + trạng thái hồ sơ chứng từ. | Trung bình-Cao — 4 migration, 3 module, 1 page mới, sửa seed quyền. | Đề xuất | [Plan_CapNhat_ThuMua_2026_07.md](Plan_CapNhat_ThuMua_2026_07.md) |
    ```
 
-2. Cập nhật `TASKS.md` (gốc) — thêm nhóm "Cập nhật Thu mua đợt 2026-07" với 9 dòng `- [ ]` (task 1-8, 10).
+2. Cập nhật `doc/v1/tasks.md` (gốc) — thêm nhóm "Cập nhật Thu mua đợt 2026-07" với 9 dòng `- [ ]` (task 1-8, 10).
 
-3. Task 4: sửa dòng `TASKS.md:32` (đảo quyết định "bỏ VAT") + cập nhật `technical-design.md` mục data model. Task 5: cập nhật `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md` (role cơ bản không còn `supplier.read`).
+3. Task 4: sửa dòng `doc/v1/tasks.md:32` (đảo quyết định "bỏ VAT") + cập nhật `technical-design.md` mục data model. Task 5: cập nhật `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md` (role cơ bản không còn `supplier.read`).

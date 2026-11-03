@@ -111,7 +111,7 @@ Ba cái dễ sai, sai là mất buổi:
 - **App nối CSDL bằng TÊN CONTAINER trên mạng `dego-db`**, không qua cổng máy chủ — nên chuyển CSDL chỉ là đổi `DB_HOST` trong `.env` rồi khởi động lại `api` + `celery`, quay lại cũng vậy. Đổi cổng không đổi được app nối vào đâu.
 - **Đổi gì thì build lại cái đó**: sửa FE → build lại `web`; sửa backend → `api`; sửa Trung tâm Hướng dẫn (`help-center/`) → `help`. Cả `web` và `help` đều build tĩnh nên **restart không ăn thua, phải `--build`**.
 
-Sau khi lên, ghi **1 dòng vào [Nhật ký deploy](../tai-lieu-ky-thuat/change-log.md#nhật-ký-deploy-môi-trường-thật)**: đẩy gì, migration tới head nào, file sao lưu tên gì, hành vi nào người dùng thấy đổi ngay.
+Sau khi lên, ghi **1 dòng vào [Nhật ký deploy](../../tai-lieu-ky-thuat/change-log.md#nhật-ký-deploy-môi-trường-thật)**: đẩy gì, migration tới head nào, file sao lưu tên gì, hành vi nào người dùng thấy đổi ngay.
 
 ### 10.1. Nội dung Trung tâm Hướng dẫn sử dụng
 

@@ -1,7 +1,7 @@
 # Luật chung: đặt tên và quy ước viết mã
 
 > **Luôn nạp** (tệp không khai `paths:`). Đây là MỘT chỗ duy nhất cho luật dùng chung mọi khu — gom ngày 03/11/2026
-> (bao-CR-712) từ `backend/.claude/rules/naming.md`, `frontend-v2/.claude/rules/naming.md`, `doc/chung/NAMING_CONVENTIONS.md`
+> (bao-CR-712) từ `backend/.claude/rules/naming.md`, `frontend-v2/.claude/rules/naming.md`, `doc/v1/chung/NAMING_CONVENTIONS.md`
 > (bản V1) và các đoạn quy ước trong `CLAUDE.md`. Luật riêng từng khu vẫn ở `.claude/rules/<khu>-*.md` và
 > `frontend-v2/.claude/rules/*.md`; mục lục đủ ở `doc/tai-lieu-ky-thuat/quy-dinh/README.md`.
 

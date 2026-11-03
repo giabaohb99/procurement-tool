@@ -20,6 +20,6 @@ Mỗi module/chức năng phải đạt đủ các mục sau trước khi coi l�
 - [ ] **Data mẫu** seed (lấy cột tương ứng từ DATA CHUNG / DATA NL-VTBB)
 - [ ] **Đính kèm chứng từ** (khi áp dụng) — lưu R2
 - [ ] Audit log (ai tạo/sửa)
-- [ ] Cập nhật `TASKS.md`
+- [ ] Cập nhật `doc/v1/tasks.md`
 
 > Ghi chú: Yêu cầu thanh toán (payment) **gom được nhiều đơn hàng** (1 phiếu ↔ nhiều công nợ qua `tab_payment_line`).

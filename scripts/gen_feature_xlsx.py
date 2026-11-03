@@ -163,7 +163,7 @@ ws1.column_dimensions["B"].width = 34
 ws1.column_dimensions["C"].width = 18
 ws1.sheet_view.showGridLines = False
 
-out = "doc/danh-sach-tinh-nang.xlsx"
+out = "doc/v1/du-lieu/danh-sach-tinh-nang.xlsx"
 wb.save(out)
 print("Da tao:", out)
 print("Tinh nang:", n_feat, "| Da xong:", n_done, "| Dang hoan thien:", n_wip,

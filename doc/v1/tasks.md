@@ -75,7 +75,7 @@
 - [x] Trang chủ "dày thông tin": 6 KPI (đơn chờ duyệt/PO chạy/nợ đến hạn/nợ quá hạn/HĐ sắp hết/mặt hàng hết) + biểu đồ chi phí 12 tháng + donut cơ cấu phân loại + Top NCC + Cảnh báo + Tồn thấp — endpoint `GET /api/dashboard/overview`
 - [x] Fix bug `alert.build` còn tham chiếu `Contract.supplier_name` (đã đổi generic → `party_name`)
 
-## Cập nhật Thu mua đợt 2026-07 (CR-007 — xem doc/yeu-cau/Plan_CapNhat_ThuMua_2026_07.md)
+## Cập nhật Thu mua đợt 2026-07 (CR-007 — xem doc/v1/yeu-cau/Plan_CapNhat_ThuMua_2026_07.md)
 Đợt A — nhanh + bugfix:
 - [x] Task 1 — Đổi nhãn "Yêu cầu khảo sát"→"Yêu cầu báo giá" (BE+FE) + đổi prefix mã phiếu `YCKS`→`YCBG` (mã dòng `YCKSL`→`YCBGL`), cập nhật test
 - [x] Task 10a — Fix bug upload file không hiện (`core/storage.py` R2 URL khi `r2_public_url` rỗng) + cho phép upload chứng từ khi PO `completed`

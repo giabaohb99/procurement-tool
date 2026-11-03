@@ -3,7 +3,7 @@
 **Phiên bản:** 1.0  
 **Ngày:** 2026-07-04  
 **Trạng thái:** Chốt — sẵn sàng triển khai  
-**Tham chiếu:** `doc/yeu-cau/Plan_CapNhat_Flow_KhaoSat_v2.md` — mục Task 4
+**Tham chiếu:** `doc/v1/yeu-cau/Plan_CapNhat_Flow_KhaoSat_v2.md` — mục Task 4
 
 ---
 
