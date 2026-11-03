@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi import BackgroundTasks, HTTPException
 
+from app.modules.purchase_request import access as pr_access
 from app.modules.purchase_request import controller as pr_ctl
 from app.modules.purchase_request import service as pr_service
 from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
@@ -142,7 +143,8 @@ def _pr(db, seed, status="approved", line_status="no_po"):
 
 
 def test_approver_can_return_approved_pr_without_po(db, seed, monkeypatch):
-    monkeypatch.setattr(pr_ctl, "_in_approve_scope", lambda db, user, pid: True)
+    #  bao-CR-711: cờ `can_return` và cổng `return_pr` cùng hỏi `access._in_approve_scope`.
+    monkeypatch.setattr(pr_access, "_in_approve_scope", lambda db, user, pid: True)
     pr = _pr(db, seed)
     assert pr_ctl._out(db, pr, USER)["can_return"] is True
     pr_ctl.return_pr(pr.id, ReasonIn(reason="Sửa số lượng"), BackgroundTasks(), db=db, user=USER)

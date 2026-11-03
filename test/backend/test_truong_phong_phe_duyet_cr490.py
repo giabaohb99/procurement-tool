@@ -19,6 +19,7 @@ from app.modules.purchase_order import controller as po_ctl
 from app.modules.purchase_order.model import PurchaseOrder
 from app.modules.purchase_order.schema import RejectIn
 from app.modules.purchase_request import controller as pr_ctl
+from app.modules.purchase_request import serializer as pr_ser
 from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
 from app.modules.purchase_request.schema import ApproveIn
 from app.modules.survey_request import controller as sr_ctl
@@ -102,7 +103,7 @@ def test_pr_print_falls_back_to_audit_for_old_tickets(db, seed, dept_with_head):
     pr.status = "approved"
     db.commit()
     record(db, _tp_user_id(db), "purchase_request", pr.id, "approved")
-    out = pr_ctl._approval_signers(db, pr)
+    out = pr_ser._approval_signers(db, pr)
     assert out["approver_name"] == "Trưởng Phòng", "cột 0 → tra nhật ký như trước CR-490"
 
 

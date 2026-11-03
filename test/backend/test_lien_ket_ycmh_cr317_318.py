@@ -10,7 +10,8 @@ CR-318 — YCMH không có đường quay về YCBG.
     ô Nội dung nên bấm không ra. Liên kết thật vốn có trong CSDL, chỉ là chưa ai đọc lên.
 """
 from app.modules.attachment.model import FileLink, StoredFile
-from app.modules.purchase_request.controller import _has_quote_file, _linked_survey_requests
+from app.modules.purchase_request.service import (has_quote_file as _has_quote_file,
+                                                  linked_survey_requests as _linked_survey_requests)
 from app.modules.purchase_request.model import PurchaseRequest
 from app.modules.survey_request.model import (SurveyRequest, SurveyRequestLine,
                                               SurveyRequestPr)
