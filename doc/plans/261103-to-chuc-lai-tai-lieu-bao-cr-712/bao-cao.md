@@ -8,7 +8,7 @@
 | Trạng thái | Hiệu lực |
 | CR liên quan | bao-CR-712 |
 
-Trạng thái kế hoạch: **xong P1–P4** (P5 — đổi bài kiểm sang chế độ chặn — chờ dọn hết lỗi dưới đây).
+Trạng thái kế hoạch: **xong P1–P5**. P5 (03/11): bài kiểm chặn lỗi MỚI; sau khi miễn luật tên `doc/v1/` và liên kết trong sổ `change-log*.md` / `nhat-ky-task.md`, 79 lỗi còn 8, ghi vào `backend/scripts/kiem_tai_lieu_nen.txt` (chỉ báo, `--cap-nhat-nen` chỉ bớt).
 
 ## 1. Đã làm
 

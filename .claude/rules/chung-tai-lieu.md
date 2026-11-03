@@ -69,8 +69,11 @@ Mỗi `doc/erp/<phan-he>/` (kể cả `agent-hub/`) phải có đủ bốn tệp
    không commit.
 10. **Dời bằng `git mv`**, sửa mọi chỗ trỏ tới trong cùng commit (CLAUDE.md, `.claude/rules`, skill, agent,
     `seed_help_*`, gói tri thức AI, script, `doc/README.md`). Chạy bài kiểm tự động trước khi đẩy:
-    `python backend/scripts/kiem_tai_lieu.py` — liên kết hỏng, tên sai luật, phân hệ thiếu `README.md`, tệp lẻ cấp
-    `doc/`, skill / luật chưa có trong mục lục.
+    `python backend/scripts/kiem_tai_lieu.py` — liên kết hỏng, tên sai luật, phân hệ thiếu `README.md` / tài liệu bắt
+    buộc, tệp lẻ cấp `doc/`, skill / luật chưa có trong mục lục. **Chặn lỗi MỚI** (exit 1); lỗi cũ nằm trong tệp nền
+    `backend/scripts/kiem_tai_lieu_nen.txt` chỉ báo. Sửa xong lỗi cũ thì chạy `--cap-nhat-nen` (chỉ BỚT dòng, cấm
+    thêm tay). Miễn: luật tên cho `doc/v1/` (lưu trữ nguyên trạng), liên kết trong `change-log*.md` / `nhat-ky-task.md`
+    (sổ không sửa lùi).
 
 ## Kế hoạch của agent
 

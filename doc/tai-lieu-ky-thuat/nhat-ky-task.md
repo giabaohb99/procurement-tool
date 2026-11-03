@@ -147,11 +147,11 @@ Mã nguồn: test/backend/test_agent_hub.py, test_agent_hub_cong_mcp_cr207.py, t
 - Dời tài liệu chung, tài liệu V1 và tài liệu từng phân hệ bằng `git mv`, mỗi nhóm một commit, sửa mọi chỗ trỏ tới trong cùng commit (kể cả đường đọc thật của hai script và chỗ bot đọc tài liệu).
 - 18 phân hệ có đủ bốn tài liệu bắt buộc ở trạng thái Nháp: trang giới thiệu, yêu cầu chức năng, yêu cầu phi chức năng, danh sách đường API dựng tự động từ mã.
 - Dời các kế hoạch không thuộc nhân sự về phân hệ; phần nhân sự để người phụ trách nhân sự tự chuẩn hóa.
-- Bài kiểm tài liệu (chế độ chỉ báo): lỗi giảm từ 118 xuống 79, còn lại chủ yếu ở sổ thay đổi cũ, tài liệu V1 và nhân sự.
+- Bài kiểm tài liệu: lỗi giảm từ 118 xuống 79 sau P4. P5 chuyển sang chế độ chặn lỗi MỚI: miễn luật tên cho tài liệu V1 và liên kết trong các sổ thay đổi / nhật ký (sổ không sửa lùi), còn 8 lỗi cũ ghi vào tệp nền chỉ báo; tệp nền chỉ được bớt dòng. Gắn vào cổng bằng một bài pytest chạy ở máy thật và lệnh trong CLAUDE.md.
 
-**Còn lại:** người phụ trách nhân sự dời phần nhân sự; sửa bộ nhớ agent trỏ đường cũ; P5 đổi bài kiểm sang chế độ chặn.
+**Còn lại:** người phụ trách nhân sự dời phần nhân sự (lỗi nhân sự tự rơi khỏi nền); 7 chỗ lệch tài liệu và mã đã chuyển điều phối.
 
-Mã nguồn: `.claude/rules/chung-*.md`, `backend/scripts/kiem_tai_lieu.py`, `doc/plans/261103-to-chuc-lai-tai-lieu-bao-cr-712/bao-cao.md`.
+Mã nguồn: `.claude/rules/chung-*.md`, `backend/scripts/kiem_tai_lieu.py`, `backend/scripts/kiem_tai_lieu_nen.txt`, `test/backend/test_kiem_tai_lieu_cr712.py`, `doc/plans/261103-to-chuc-lai-tai-lieu-bao-cr-712/bao-cao.md`.
 
 ---
 
