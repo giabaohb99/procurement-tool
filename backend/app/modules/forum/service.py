@@ -527,7 +527,7 @@ def create_board(db: Session, user, data) -> ForumBoard:
     try:
         status = ForumBoardStatus(int(data.status))
     except ValueError:
-        raise HTTPException(400, f"Trạng thái không hợp lệ: {data.status}")
+        raise HTTPException(400, f"Trạng thái không hợp lệ: {data.status}") from None
     board = ForumBoard(parent_id=parent_id, name=name,
                        description=(data.description or "").strip(),
                        icon=(data.icon or "").strip()[:50],
@@ -561,7 +561,7 @@ def update_board(db: Session, user, board: ForumBoard, data) -> ForumBoard:
     try:
         status = ForumBoardStatus(int(data.status))
     except ValueError:
-        raise HTTPException(400, f"Trạng thái không hợp lệ: {data.status}")
+        raise HTTPException(400, f"Trạng thái không hợp lệ: {data.status}") from None
     board.name = name
     board.description = (data.description or "").strip()
     board.icon = (data.icon or "").strip()[:50]
@@ -624,7 +624,7 @@ def comment_count_map(db: Session, post_ids: list[int]) -> dict[int, int]:
     rows = (db.query(Comment.entity_id, func.count(Comment.id))
             .filter(Comment.entity == "forum_post", Comment.entity_id.in_(ids))
             .group_by(Comment.entity_id).all())
-    return {pid: n for pid, n in rows}
+    return dict(rows)
 
 
 def image_map(db: Session, post_ids: list[int]) -> dict[int, list[dict]]:
@@ -673,7 +673,7 @@ def parse_prefix(db: Session, user, prefix) -> ForumPrefix:
     try:
         value = ForumPrefix(int(prefix))
     except (TypeError, ValueError):
-        raise HTTPException(400, f"Prefix không hợp lệ: {prefix}")
+        raise HTTPException(400, f"Prefix không hợp lệ: {prefix}") from None
     if value == ForumPrefix.ANNOUNCEMENT and not can_manage_posts(db, user):
         raise HTTPException(403, "Chỉ quản trị diễn đàn mới gắn được nhãn Thông báo")
     return value
@@ -688,7 +688,7 @@ def normalize_body(body: str, body_format) -> tuple[str, ForumBodyFormat]:
     try:
         fmt = ForumBodyFormat(int(body_format))
     except (TypeError, ValueError):
-        raise HTTPException(400, f"Định dạng nội dung không hợp lệ: {body_format}")
+        raise HTTPException(400, f"Định dạng nội dung không hợp lệ: {body_format}") from None
     if fmt == ForumBodyFormat.RICH_HTML:
         if len(body) > MAX_BODY_HTML:
             raise HTTPException(400, f"Bài viết tối đa {MAX_BODY_HTML} ký tự (tính cả định dạng)")
@@ -734,7 +734,7 @@ def create_post(db: Session, user, profile: dict, body: str, audience: int,
     try:
         post_kind = ForumPostKind(int(kind))
     except ValueError:
-        raise HTTPException(400, f"Loại bài không hợp lệ: {kind}")
+        raise HTTPException(400, f"Loại bài không hợp lệ: {kind}") from None
     # Bài đổi avatar (F10): ảnh là NHÂN VẬT CHÍNH — đúng 1 tấm (chính avatar
     # mới), caption có hay không tùy; thiếu ảnh thì dòng hệ thống thành nói suông.
     if post_kind == ForumPostKind.AVATAR_UPDATE and len(file_ids) != 1:
@@ -747,7 +747,7 @@ def create_post(db: Session, user, profile: dict, body: str, audience: int,
     try:
         aud = ForumAudience(int(audience))
     except ValueError:
-        raise HTTPException(400, f"Đối tượng xem không hợp lệ: {audience}")
+        raise HTTPException(400, f"Đối tượng xem không hợp lệ: {audience}") from None
     # Chọn phạm vi hẹp mà hồ sơ chưa gắn chiều đó thì 400 — đóng băng số 0 vào
     # bài là tạo ra bài "phòng ban" không phòng nào thấy, kể cả không lộ cũng
     # là dữ liệu rác; bắt sửa hồ sơ nhân sự trước.
@@ -895,7 +895,7 @@ def toggle_like(db: Session, post_id: int, user_id: int,
     try:
         kind = int(ForumReactionKind(int(kind)))
     except ValueError:
-        raise HTTPException(400, f"Cảm xúc không hợp lệ: {kind}")
+        raise HTTPException(400, f"Cảm xúc không hợp lệ: {kind}") from None
     row = (db.query(ForumReaction)
            .filter(ForumReaction.post_id == post_id, ForumReaction.user_id == user_id)
            .first())

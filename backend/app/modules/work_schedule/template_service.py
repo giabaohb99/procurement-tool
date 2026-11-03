@@ -28,7 +28,7 @@ def assignment_counts(db: Session, schedule_ids: list[int]) -> dict[int, int]:
     rows = (db.query(WorkScheduleAssignment.schedule_id, func.count(WorkScheduleAssignment.id))
             .filter(WorkScheduleAssignment.schedule_id.in_(schedule_ids))
             .group_by(WorkScheduleAssignment.schedule_id).all())
-    return {sid: n for sid, n in rows}
+    return dict(rows)
 
 
 def serialize_many(db: Session, schedules: list[WorkSchedule]) -> list[dict]:

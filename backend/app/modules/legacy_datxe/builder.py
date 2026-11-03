@@ -246,9 +246,7 @@ class PeopleResolver:
             if not user.employee_id:
                 continue
             cur = self._user_by_emp.get(user.employee_id)
-            if cur is None:
-                self._user_by_emp[user.employee_id] = user.id
-            elif user.is_active and not self._is_active(cur):
+            if cur is None or user.is_active and not self._is_active(cur):
                 self._user_by_emp[user.employee_id] = user.id
 
     def _is_active(self, user_id: int) -> bool:

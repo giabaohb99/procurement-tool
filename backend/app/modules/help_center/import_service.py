@@ -160,7 +160,7 @@ def parse_file(filename: str, raw: bytes) -> dict:
             except UnicodeDecodeError:
                 continue
         else:
-            raise ValueError("Không đọc được nội dung file (mã hóa lạ)")
+            raise ValueError("Không đọc được nội dung file (mã hóa lạ)") from None
 
     doc_title = ""
     if ext in MD_EXTS:

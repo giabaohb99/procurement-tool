@@ -26,8 +26,8 @@ def list_cohorts(db: Session, week: date | None) -> dict:
         .outerjoin(Company, and_(S.cohort_kind == 2, Company.id == S.cohort_key))
         .where(S.period_kind == int(PeriodKind.WEEK), S.period_start == week)
         .group_by(S.cohort_kind, S.cohort_key).order_by(S.cohort_kind, S.cohort_key)).all()
-    metrics_by_id = {sid: m for sid, m in db.execute(
-        select(S.id, S.metrics).where(S.id.in_([g[3] for g in groups]))).all()} if groups else {}
+    metrics_by_id = dict(db.execute(
+        select(S.id, S.metrics).where(S.id.in_([g[3] for g in groups]))).all()) if groups else {}
     cohorts = []
     for kind, key, size, sid, role_name, company_name in groups:
         medians = {k: v.get("med") for k, v in (metrics_by_id.get(sid) or {}).get("metrics", {}).items()

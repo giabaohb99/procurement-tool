@@ -8,6 +8,7 @@ from app.core.storage import dated_key, delete_key, upload_fileobj
 from app.core.upload_guard import guard_upload
 
 from .model import FileLink, StoredFile
+import contextlib
 
 
 def make_thumb_for(filename: str, fileobj, *, max_edge: int = 1280):
@@ -94,10 +95,8 @@ def _delete_storage_of(f: StoredFile):
     for key in (f.file_key, f.thumb_key):
         if not key:
             continue
-        try:
+        with contextlib.suppress(Exception):
             delete_key(key)
-        except Exception:
-            pass
 
 
 def _delete_file_if_orphan(db: Session, file_id: int):

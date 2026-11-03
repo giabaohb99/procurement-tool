@@ -89,9 +89,7 @@ def normalize_route(raw: str | None) -> str:
     for seg in text.split("/"):
         if not seg:
             continue
-        if seg == ":id" or _NUMERIC.match(seg) or _UUID.match(seg):
-            parts.append(":id")
-        elif _DOC_CODE.match(seg) and any(c.isdigit() for c in seg) and seg[:2].isupper():
+        if seg == ":id" or _NUMERIC.match(seg) or _UUID.match(seg) or _DOC_CODE.match(seg) and any(c.isdigit() for c in seg) and seg[:2].isupper():
             parts.append(":id")
         else:
             parts.append(seg)

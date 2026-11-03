@@ -29,7 +29,7 @@ from app.modules.survey_request.model import SurveyRequest, SurveyRequestLine
 from app.modules.user.model import User
 from app.modules.vehicle_booking.model import (BOOKING_STATUS_LABELS,
                                                DRIVER_STATUS_LABELS,
-                                               REQUEST_TYPE_LABELS, TYPE_CAR,
+                                               TYPE_CAR,
                                                TYPE_DELIVERY, Driver, Vehicle,
                                                VehicleBooking)
 

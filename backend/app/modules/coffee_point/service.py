@@ -538,7 +538,7 @@ def build_pos_dashboard(orders: list[dict], accounts: list[dict],
     today = datetime.now().strftime("%Y-%m-%d")
     day_labels = [(datetime.now() - timedelta(days=d)).strftime("%Y-%m-%d")
                   for d in range(days - 1, -1, -1)]
-    by_day = {d: 0 for d in day_labels}
+    by_day = dict.fromkeys(day_labels, 0)
     stats = {"orders": 0, "revenue": 0, "cash": 0, "account": 0, "points": 0,
              "voided": 0}
     recent = []

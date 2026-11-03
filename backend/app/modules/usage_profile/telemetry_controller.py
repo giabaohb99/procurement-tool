@@ -60,7 +60,7 @@ async def _read_batch(request: Request) -> UiEventBatch:
     except ValidationError as exc:
         first = exc.errors(include_url=False, include_context=False, include_input=False)[0]
         loc = ".".join(str(p) for p in first["loc"])
-        raise HTTPException(422, f"Lô sự kiện không hợp lệ ({loc}: {first['msg']})")
+        raise HTTPException(422, f"Lô sự kiện không hợp lệ ({loc}: {first['msg']})") from exc
 
 
 @router.post("/ui-events")
@@ -76,5 +76,5 @@ def post_ui_events(request: Request, payload: UiEventBatch = Depends(_read_batch
     except Exception:  # noqa: BLE001 — thu thập hỏng không được làm hỏng màn người dùng đang dùng
         db.rollback()
         log.exception("Không ghi được lô sự kiện giao diện của user %s", user.id)
-        raise HTTPException(500, "Không ghi được lô sự kiện")
+        raise HTTPException(500, "Không ghi được lô sự kiện") from None
     return success({"accepted": accepted})

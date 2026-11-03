@@ -31,8 +31,8 @@ ENTITY = "room_booking"
 def _inputs(request: Request, db: Session, user, action: str = "read") -> dict:
     qp = request.query_params
     q = apply_scope(db.query(RoomBooking), RoomBooking, ENTITY, user, get_perm_profile(db, user), action)
-    return dict(booking_q=q, period=parse_period(qp), company_id=valid_company_id(qp.get("company_id")),
-                department_id=valid_department_id(qp.get("department_id")))
+    return {"booking_q": q, "period": parse_period(qp), "company_id": valid_company_id(qp.get("company_id")),
+                "department_id": valid_department_id(qp.get("department_id"))}
 
 
 @router.get("/summary", dependencies=_GUARD)

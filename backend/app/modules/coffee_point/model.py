@@ -21,7 +21,7 @@ Năm quy ước xuyên suốt — đọc trước khi thêm cột:
 """
 from enum import IntEnum
 
-from sqlalchemy import (BigInteger, DateTime, Index, Integer, Numeric,
+from sqlalchemy import (BigInteger, Index, Integer, Numeric,
                         SmallInteger, String, Text, UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column
 

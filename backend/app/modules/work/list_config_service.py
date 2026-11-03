@@ -245,7 +245,7 @@ def create_label_field(db: Session, actor: Actor, list_id: int, data) -> dict:
         raw = getattr(data, "field_type", None)
         kind = WorkLabelFieldType(int(1 if raw is None else raw))
     except ValueError:
-        raise HTTPException(400, "Kiểu trường không hợp lệ")
+        raise HTTPException(400, "Kiểu trường không hợp lệ") from None
 
     f = WorkLabelField(company_id=actor.company_id, list_id=list_id,
                        name=data.name.strip(), sort_order=data.sort_order or 0,
@@ -278,7 +278,7 @@ def update_label_field(db: Session, actor: Actor, field_id: int, data) -> dict:
         try:
             f.field_type = int(WorkLabelFieldType(int(kieu_moi)))
         except ValueError:
-            raise HTTPException(400, "Kiểu trường không hợp lệ")
+            raise HTTPException(400, "Kiểu trường không hợp lệ") from None
 
     if data.sort_order is not None:
         f.sort_order = data.sort_order

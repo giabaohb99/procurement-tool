@@ -12,6 +12,7 @@ from app.modules.user.model import User, UserRole
 from app.modules.role.model import Role, Permission
 from .model import Notification, EmailLog
 from .email_templates import HTML_LAYOUT
+import contextlib
 
 
 def _abs_link(link: str) -> str:
@@ -461,9 +462,6 @@ def trigger_notification(
     creator = db.query(User).filter(User.id == creator_id).first()
     creator_name = get_user_display_name(db, creator) if creator else "Hệ thống"
     
-    # Generate labels and messages based on event
-    doc_type_label = "Yêu cầu mua hàng" if doc_type == "purchase_request" else "Phiếu khảo sát"
-
     # Nhãn loại chứng từ + động từ theo hành động (dùng cho fallback rõ nghĩa, vd Đơn mua hàng)
     DOC_LABEL = {"purchase_request": "Yêu cầu mua hàng", "survey_request": "Yêu cầu báo giá",
                  "survey": "Phiếu khảo sát",
@@ -621,11 +619,9 @@ def trigger_notification(
         pass
 
     # EMAIL workflow (chỉ dev/UAT khi EMAIL_WORKFLOW_ENABLED) — best-effort, không chặn luồng.
-    try:
+    with contextlib.suppress(Exception):
         _send_workflow_emails(db, background_tasks, recipients, subject, body,
                               doc_type, doc_code, creator_name, reason, approve_note, is_urgent, link)
-    except Exception:
-        pass
 
 
 def send_account_creation_email(db: Session, user_id: int, background_tasks, full_name: str, email: str, link: str):

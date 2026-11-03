@@ -21,7 +21,7 @@ from app.core.scoping import apply_scope
 #  `download_bytes(f.file_key)`: một phần `tab_file` là tệp nhập từ app đặt xe
 #  cũ, khóa của chúng thuộc kho R2 KHÁC (xem `core/legacy_files.py`).
 from app.core.legacy_files import read_file_bytes
-from app.core.storage import dated_key, delete_key, safe_name, upload_fileobj
+from app.core.storage import dated_key, safe_name, upload_fileobj
 from app.core.upload_guard import ensure_batch_ok, guard_upload
 from app.modules.approval.pending_reader import is_pending_approver
 from app.modules.document.file_access_log import ACTION_DOWNLOAD, ACTION_VIEW
@@ -265,7 +265,7 @@ def _store_one(db: Session, f: UploadFile, exts: set, max_mb: int, user_id: int)
         url = upload_fileobj(f.file, key, content_type)
     except RuntimeError as e:
         db.rollback()
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e)) from e
     sf.file_key = key; sf.url = url
     attach_thumb(sf, thumb)
     db.commit(); db.refresh(sf)
@@ -625,7 +625,7 @@ def preview_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_cu
     except ValueError as error:
         #  415 = "hiểu yêu cầu nhưng không xử được kiểu tệp này". Câu của
         #  `parse_document_file` đã nói rõ vì sao (sai đuôi, tệp rỗng, quá lớn).
-        raise HTTPException(415, str(error))
+        raise HTTPException(415, str(error)) from error
 
     return success({"filename": f.filename, "html": result["content_html"]})
 

@@ -28,7 +28,7 @@ from app.modules.user.model import User, UserRole
 from app.modules.user_preference.service import get_preferences
 
 from . import service
-from . import schema, service
+from . import schema
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -310,7 +310,7 @@ def update_avatar(file: UploadFile = File(...), user=Depends(get_current_user), 
         #  "Lỗi tải ảnh: 400: ..." là nuốt mất câu người dùng cần đọc.
         raise
     except Exception as e:
-        raise HTTPException(400, f"Lỗi tải ảnh: {str(e)}")
+        raise HTTPException(400, f"Lỗi tải ảnh: {str(e)}") from e
 
 
 @router.post("/signature")
@@ -337,7 +337,7 @@ def update_signature(file: UploadFile = File(...), user=Depends(get_current_user
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(400, f"Lỗi tải ảnh chữ ký: {str(e)}")
+        raise HTTPException(400, f"Lỗi tải ảnh chữ ký: {str(e)}") from e
 
 
 @router.delete("/signature")
@@ -378,7 +378,7 @@ def reset_password(request: Request, data: schema.ResetPasswordInput, db: Sessio
         user_id = decode_token(data.token, "reset_password")
     except Exception:
         from fastapi import HTTPException
-        raise HTTPException(400, "Token không hợp lệ hoặc đã hết hạn")
+        raise HTTPException(400, "Token không hợp lệ hoặc đã hết hạn") from None
         
     user = db.get(User, user_id)
     if not user or not user.is_active:
