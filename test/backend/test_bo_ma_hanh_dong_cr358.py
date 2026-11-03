@@ -100,7 +100,7 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
     #  bao-CR-414: về 0 là trả về thu mua, khác 0 là chuyển sang phòng khác.
     #  bao-CR-715: ba phân hệ thu mua chẻ `service.py` theo bước nghiệp vụ — khóa trỏ tệp con định nghĩa hàm.
     "modules/purchase_request/lifecycle_service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
-    "modules/survey_request/service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
+    "modules/survey_request/lifecycle_service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
     #  bao-CR-453: chốt lên giai đoạn nào thì ghi mã của giai đoạn đó.
     "modules/purchase_order/service.py::advance_cost_stage": ("cost_stage_prov", "cost_stage_final"),
     #  bao-CR-448: việc nền báo bất thường, `action` là hằng của module.
@@ -108,10 +108,10 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
     "modules/seal_request/approval_bridge.py::_write_log": ("approve", "cancel", "update"),
     "modules/survey/service.py::set_status": (
         "submitted", "approved", "rejected", "cancelled"),
-    "modules/survey_request/service.py::set_status": (
+    "modules/survey_request/lifecycle_service.py::set_status": (
         "submitted", "approved", "processing", "rejected", "cancelled",
         "done", "survey_done"),
-    "modules/survey_request/service.py::choose_option": ("choose_option", "unchoose_option"),
+    "modules/survey_request/option_service.py::choose_option": ("choose_option", "unchoose_option"),
     #  HĐLĐ: `_audit(db, user, row, action, message)` nhận mã qua tham số — ba mã đọc từ các lời gọi tới nó.
     "modules/labor_contract/controller.py::_audit": ("create", "update", "document_status"),
     "modules/ticket/service.py::assign": ("assign", "unassign"),
