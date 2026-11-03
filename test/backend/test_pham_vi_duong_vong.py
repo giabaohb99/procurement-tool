@@ -266,6 +266,10 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_KHONG_CAN, "L254 `StoredFile` (tải lại tệp GTT02 gốc, bao-CR-493) — `file_id` lấy từ CHÍNH "
                        "lô, lô đã qua `_get_batch` (khác module hải quan → 404); entity `customs_price` "
                        "PUBLIC + require(ENTITY, 'read') trên route"),
+        (OK_DA_KIEM, "L144 `CustomsExportBatch` trong `_own_batch` (bao-CR-718) — ngay dưới: không thấy → 404, "
+                     "không phải người tạo lô và không có export phạm vi tất cả → 403"),
+        (OK_KHONG_CAN, "L191 `StoredFile` tệp của lô xuất (bao-CR-718) — `file_id` lấy từ CHÍNH lô đã qua "
+                       "`_own_batch`; route gác require(ENTITY, 'export')"),
     ],
     "document/approval_preview_controller.py": [
         (OK_DA_KIEM, "L132 `Document` (văn bản gốc khi tạo theo mẫu) — L133 "
@@ -511,7 +515,9 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #    cụm 03) — route nay gọi `_in_scope(..., "read")` trước khi tra, đừng bỏ chốt đó khi sửa.
     #  96 → 95 (bao-CR-711, controller ĐMH): `db.get(Company)` tra tên pháp nhân cho bản in sang
     #    `service.company_by_id` (gọi từ `serializer._out_print`); bản in vẫn qua `_in_scope(..., "print")`.
-    assert sum(that.values()) == 95, f"tổng phải là 95, đang là {sum(that.values())}"
+    #  95 → 97 (bao-CR-718, khai muộn ở bao-CR-719): `customs/controller.py` +2 — lô xuất chạy nền: `_own_batch`
+    #    (kiểm người tạo / phạm vi ngay sau) và tệp của lô đã qua `_own_batch`.
+    assert sum(that.values()) == 97, f"tổng phải là 97, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():
