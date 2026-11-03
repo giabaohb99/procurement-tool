@@ -124,7 +124,7 @@ lên dev, prod chờ xác nhận.
 Mã nguồn: backend/app/modules/inventory, backend/alembic, doc/erp/kho/chuc-nang/02-yeu-cau-phi-chuc-nang.md
 
 ## bao-CR-716-khoa-pham-vi-danh-muc-dung-chung | Khóa ô phạm vi cho danh mục dùng chung ở màn Phân quyền
-- status: dang-lam
+- status: xong
 - date: 2026-11-03
 - tag: Nền tảng
 **Bối cảnh:** vai trò Nhân sự được tick Xem nhà cung cấp với phạm vi Của mình nhưng nhà cung cấp là danh mục dùng chung (khai
@@ -133,7 +133,15 @@ thể có tác dụng, gây hiểu nhầm.
 **Việc:** backend trả danh sách thực thể công khai trong API có sẵn của màn Phân quyền; màn Vai trò và quyền khóa ô phạm vi của
 những dòng đó, hiện Toàn bộ (danh mục dùng chung) kèm giải thích, khi lưu vẫn gửi phạm vi như cũ; bài kiểm backend và vitest;
 HDSD Phân quyền thêm một câu.
-Mã nguồn: backend/app/modules/role/controller.py, frontend-v2/src/modules/system/components/role-permission-matrix.tsx
+**Kết quả:** API meta của màn Phân quyền trả thêm danh sách thực thể công khai (lấy thẳng từ bảng phạm vi, không thêm thực thể,
+không đổi dữ liệu quyền). Màn Vai trò và quyền: dòng công khai thay ô chọn phạm vi bằng ô khóa ghi Toàn bộ (danh mục dùng
+chung) kèm chú giải khi rê chuột; giá trị phạm vi trong bộ nhớ giữ nguyên nên lưu không đổi gì. Máy chủ cũ chưa trả trường
+mới thì màn chạy như trước. Bài kiểm: backend 2 bài (danh sách đúng và bằng chứng phạm vi Của mình vẫn thấy hết nhà cung cấp),
+vitest 2 bài; cả cụm 33 + 151 đạt, typecheck và eslint sạch. Bài hướng dẫn lập bộ tài khoản thêm một đoạn về ô phạm vi khóa.
+Chưa làm cảnh báo riêng khi vai trò Nhân sự được tick đọc nhà cung cấp hay hợp đồng (A1 để tùy chọn); đề nghị làm ở CR khác
+nếu cần.
+Mã nguồn: backend/app/modules/role/controller.py, test/backend/test_pham_vi_danh_muc_dung_chung_cr716.py, frontend-v2/src/modules/hr/types/role.ts, frontend-v2/src/modules/system/components/role-permission-matrix.tsx (+ .test.tsx), backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py
+Commit: a0f5b768 (đặt chỗ), 9010473f
 
 ## bao-CR-715-che-service-thu-mua | Chẻ tệp nghiệp vụ và tách hàm rối của ba phân hệ thu mua, đợt R3
 - status: dang-lam
