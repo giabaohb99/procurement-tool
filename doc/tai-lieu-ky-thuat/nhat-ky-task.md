@@ -112,7 +112,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-717-chan-trung-dong-ton-kho | Chặn trùng dòng tồn kho khi hai lượt ghi cùng lúc
-- status: dang-lam
+- status: xong
 - date: 2026-11-03
 - tag: Nền tảng
 **Bối cảnh:** tài liệu phi chức năng của Kho ghi bảng tồn kho chưa có ràng buộc duy nhất theo công ty, kho, mã hàng, nên hai lượt
@@ -121,7 +121,17 @@ nhóm trùng, nên thêm được ràng buộc.
 **Việc:** migration thêm ràng buộc duy nhất (kiểm trùng trước, có trùng thì dừng kèm câu báo rõ, không tự gộp); chỗ ghi tồn xử lý
 đụng ràng buộc khi chạy đồng thời; bài kiểm mô phỏng hai lượt cùng mã; cập nhật tài liệu phi chức năng của Kho. Có migration nên chỉ
 lên dev, prod chờ xác nhận.
-Mã nguồn: backend/app/modules/inventory, backend/alembic, doc/erp/kho/chuc-nang/02-yeu-cau-phi-chuc-nang.md
+**Kết quả:** bảng tồn kho có ràng buộc duy nhất theo công ty, kho, mã hàng (khai ở model và migration invuq717, nối sau
+lvcmp716). Migration đếm nhóm trùng trước; có trùng thì dừng và in danh sách tối đa 20 nhóm kèm cách gộp tay, không tự gộp.
+Hàm tính lại tồn: giữ dòng tồn bằng khóa đọc để hai lượt cùng khóa nối đuôi nhau; chưa có dòng thì chèn trong savepoint,
+đụng ràng buộc thì lùi về savepoint, đọc lại dòng lượt trước vừa chèn rồi ghi tổng; sổ phát sinh đọc sau khi giữ dòng nên
+tổng không thiếu. Chỗ ghi tồn chỉ có một hàm này (gộp công ty cũng gọi nó), không đụng ba phân hệ thu mua. Bài kiểm 4 bài
+mới (ràng buộc ở model, hai lần giao một dòng, mô phỏng lượt sau đụng ràng buộc, câu đếm trùng của migration); cùng cụm
+tồn kho và phạm vi 670 đạt; alembic một đầu; ruff sạch. Tài liệu phi chức năng Kho: PCN-KHO-08 sang Đạt trên dev.
+**Còn lại:** lên prod theo đợt phát hành, có migration nên cần xác nhận; nếu prod lúc đó có nhóm trùng thì migration tự dừng
+và báo danh sách.
+Mã nguồn: backend/app/modules/inventory/model.py, backend/app/modules/inventory/service.py, backend/migrations/versions/invuq717_bao_cr717_ton_kho_khoa_duy_nhat.py, test/backend/test_ton_kho_chan_trung_cr717.py, doc/erp/kho/chuc-nang/02-yeu-cau-phi-chuc-nang.md
+Commit: a0f5b768 (đặt chỗ), 13a46e1a
 
 ## bao-CR-716-khoa-pham-vi-danh-muc-dung-chung | Khóa ô phạm vi cho danh mục dùng chung ở màn Phân quyền
 - status: xong
