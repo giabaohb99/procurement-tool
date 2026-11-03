@@ -12,6 +12,7 @@ from fastapi import BackgroundTasks
 
 from app.modules.department.model import Department
 from app.modules.purchase_order import controller as po_ctl
+from app.modules.purchase_order import serializer as po_ser
 from app.modules.purchase_order.model import PurchaseOrder
 from app.modules.purchase_order.schema import POCreate, POUpdate, RejectIn
 from app.modules.purchase_request import controller as pr_ctl
@@ -128,14 +129,14 @@ def test_po_chosen_approver_is_notified_and_kept_after_unapprove(db, seed, captu
     #  Chưa duyệt: ô người duyệt trên bản in để TRỐNG (bao-CR-521, ticket prod #57) — người được
     #  chọn chỉ hiện ở màn chi tiết.
     assert po.approver_employee_id == seed.emp_tp_id
-    signers = po_ctl.resolve_print_signers(db, po)
+    signers = po_ser.resolve_print_signers(db, po)
     assert signers["approver_name"] == "" and signers["approver_signature"] == ""
 
     po_ctl.approve_po(po.id, BackgroundTasks(), db=db, user=USER)
     db.refresh(po)
     actual = db.get(User, USER.id).employee_id
     assert po.approver_employee_id == actual
-    assert po_ctl.resolve_print_signers(db, po)["approver_name"] == "Người YC"
+    assert po_ser.resolve_print_signers(db, po)["approver_name"] == "Người YC"
 
     #  Hủy duyệt: KHÔNG xóa cột nữa — người vừa duyệt vẫn là người được chọn cho lần sau.
     po_ctl.unapprove_po(po.id, RejectIn(reason="sai giá"), db=db, user=USER)

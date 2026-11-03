@@ -374,10 +374,6 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_DA_KIEM, "L126 `Company` — tra tên, nằm SAU `_scoped(..., \"print\")` ở "
                      "L124 (vá P0 #4, 05/09/2026 — trước đó là `service.get_request` trần)"),
     ],
-    "purchase_order/controller.py": [
-        (OK_KHONG_CAN, "L351 `Company` — tra tên; lỗ của `GET /{pid}/print` nằm ở L349 "
-                       "`service.get_po` (= D3 cụm 03)"),
-    ],
     # ── Thu mua ──────────────────────────────────────────────────────────────
     "ticket/controller.py": [
         (OK_KHONG_CAN, "L44 `User` — tra tên hiển thị người tạo/xử lý"),
@@ -513,7 +509,9 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #    `service.survey_product_line`. Cổng phạm vi (`_in_scope`, `_scope_with_named_head`) ở nguyên controller.
     #    ⚠️ Ghi chú cũ của dòng `Survey`: lỗ của route chọn NCC thủ công từng là `service.get_sr` trần (= S6
     #    cụm 03) — route nay gọi `_in_scope(..., "read")` trước khi tra, đừng bỏ chốt đó khi sửa.
-    assert sum(that.values()) == 96, f"tổng phải là 96, đang là {sum(that.values())}"
+    #  96 → 95 (bao-CR-711, controller ĐMH): `db.get(Company)` tra tên pháp nhân cho bản in sang
+    #    `service.company_by_id` (gọi từ `serializer._out_print`); bản in vẫn qua `_in_scope(..., "print")`.
+    assert sum(that.values()) == 95, f"tổng phải là 95, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():

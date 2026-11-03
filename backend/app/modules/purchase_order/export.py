@@ -19,7 +19,7 @@ cung cấp. Căn cứ quy đổi nằm ở hai cột "Đồng tiền" và "Tỷ 
 from sqlalchemy.orm import Session
 
 from app.core.export_xlsx import Col
-from app.core.status_codes import PO_DOCUMENT_STATUS, PO_ITEM_LINE_STATUS
+from app.core.status_codes import PO_DOCUMENT_STATUS
 from app.modules.company.model import Company
 from app.modules.purchase_progress import export as progress_ex
 from .model import PODelivery, POItem, PurchaseOrder

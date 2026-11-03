@@ -16,6 +16,7 @@ from app.core.audit import record
 from app.core.print_signers import approver_fields, department_head_block, stamp_approver
 from app.modules.department.model import Department
 from app.modules.purchase_order import controller as po_ctl
+from app.modules.purchase_order import serializer as po_ser
 from app.modules.purchase_order.model import PurchaseOrder
 from app.modules.purchase_order.schema import RejectIn
 from app.modules.purchase_request import controller as pr_ctl
@@ -131,7 +132,7 @@ def test_po_approve_stamps_and_unapprove_clears(db, seed, dept_with_head):
     po_ctl.approve_po(po.id, BackgroundTasks(), db=db, user=USER)
     db.refresh(po)
     assert po.approver_employee_id == db.get(User, USER.id).employee_id
-    signers = po_ctl.resolve_print_signers(db, po)
+    signers = po_ser.resolve_print_signers(db, po)
     assert signers["approver_name"] == "Người YC"
     assert signers["dept_head_name"] == "Trưởng Phòng"
 
