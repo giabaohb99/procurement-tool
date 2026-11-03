@@ -115,7 +115,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-720-canh-bao-quyen-nhay-cam-vai-tro-nguoi-yeu-cau | Cảnh báo vàng khi vai trò người yêu cầu có quyền xem dữ liệu nhạy cảm thu mua
-- status: dang-lam
+- status: xong
 - date: 2026-11-03
 - tag: Nền tảng
 **Bối cảnh:** tiếp bao-CR-716. Vai trò Nhân sự là vai trò mọi tài khoản mới tự nhận, có hàng trăm người giữ. Nếu vai trò này
@@ -124,7 +124,14 @@ thì toàn bộ người giữ thấy dữ liệu đó, mà màn Phân quyền k
 **Việc:** backend khai một chỗ danh sách thực thể nhạy cảm và mã vai trò người yêu cầu, trả qua API meta của màn Phân quyền;
 màn Vai trò và quyền hiện một dòng vàng dưới ma trận nêu tên quyền và số người đang giữ sẽ thấy toàn bộ dữ liệu, không chặn
 lưu; bài kiểm backend và vitest; HDSD Phân quyền thêm một câu.
-Mã nguồn: backend/app/modules/role/controller.py, frontend-v2/src/modules/system/components
+**Kết quả:** danh sách thực thể nhạy cảm (nhà cung cấp, hợp đồng, đơn mua hàng, công nợ, yêu cầu thanh toán, tra cứu thị
+trường) và hai hành động cần nhắc (xem, xuất) khai một chỗ trong bảng quyền dùng chung; API meta trả thêm ba trường gồm cả
+mã vai trò người yêu cầu lấy từ hằng của phân hệ tài khoản. Màn Vai trò và quyền có dòng vàng dưới ma trận: tên vai trò, số
+người đang giữ lấy từ danh sách vai trò, từng thực thể kèm hành động đã tick, gợi ý tách sang vai trò riêng. Không chặn lưu.
+Máy chủ cũ chưa trả trường mới thì không hiện. Bài kiểm: backend 3 bài, cụm 53 đạt; vitest 3 bài, cụm system 341 đạt;
+typecheck, eslint, ruff sạch. Bài hướng dẫn lập bộ tài khoản thêm một đoạn, đã seed dev.
+Mã nguồn: backend/app/core/permissions.py, backend/app/modules/role/controller.py, test/backend/test_canh_bao_quyen_nhay_cam_cr720.py, frontend-v2/src/modules/system/components/sensitive-permission-warning.tsx (+ .test.tsx), role-permission-roles-tab.tsx, frontend-v2/src/modules/hr/types/role.ts, backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py
+Commit: cc94e399 (đặt chỗ), 5b64e06b
 
 ## bao-CR-718-tra-cuu-thi-truong-nhanh-xuat-lo | Tra cứu thị trường: tìm nhanh hơn và xuất toàn bộ chạy nền chia nhiều tệp
 - status: xong
