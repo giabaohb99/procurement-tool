@@ -54,6 +54,10 @@
 - Đổi model thì đi bằng migration Alembic; **cấm** `ALTER` / `INSERT` chữ tiếng Việt thẳng qua `mysql -e` (lỗi mã hóa).
 - API REST: `GET /api/<danh-từ-số-nhiều>`, `GET /api/<…>/{id}`, `POST`, `PATCH`, `DELETE`; hành động
   `POST /api/<…>/{id}/approve`. Mọi đường trả phong bì `success(data, message)` → `{success, message, data}`.
+- **Mô tả API cho trang `/docs`** (giữ mở trên dev và prod, người chủ chốt 03/11/2026): đường API MỚI hoặc vừa sửa phải
+  có **docstring tiếng Việt** (dòng đầu = tóm tắt một câu, hiện ở `/docs`; các dòng sau: quyền, phạm vi, lỗi riêng) và
+  router khai `tags=[...]` theo phân hệ. Khai `response_model` khi dữ liệu trả về có schema rõ. Đường cũ thiếu mô tả bổ
+  sung dần khi đụng tới. Đồng thời cập nhật `doc/erp/<phan-he>/tai-lieu-ky-thuat/api.md` (luật ở `chung-tai-lieu.md`).
 
 ## 4. Ngôn ngữ chuỗi, chú thích, tài liệu
 

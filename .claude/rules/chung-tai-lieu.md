@@ -30,6 +30,23 @@ doc/
 
 Khuôn con chỉ tạo **khi có nội dung** — không dựng thư mục rỗng cho đủ bộ.
 
+## Tài liệu bắt buộc của mỗi phân hệ (người chủ chốt 03/11/2026)
+
+Mỗi `doc/erp/<phan-he>/` (kể cả `agent-hub/`) phải có đủ bốn tệp dưới; chưa viết xong thì vẫn tạo tệp với trạng thái
+*Nháp* và ghi rõ phần còn thiếu. Khuôn mẫu ở `doc/tai-lieu-ky-thuat/quy-dinh/mau/` — chép khuôn rồi điền, đừng tự chế bố cục.
+
+| Tệp | Trả lời câu hỏi | Khuôn |
+|---|---|---|
+| `README.md` | Phân hệ này là gì, tới đâu, ai giữ, đọc gì trước | `mau/mau-readme-phan-he.md` |
+| `chuc-nang/01-yeu-cau-chuc-nang.md` | Làm được gì: từng chức năng (mã `CN-<phân hệ>-NN`), ai dùng, luật nghiệp vụ, màn hình, trạng thái *có / đang làm / chưa* | `mau/mau-yeu-cau-chuc-nang.md` |
+| `chuc-nang/02-yeu-cau-phi-chuc-nang.md` | Chạy tốt cỡ nào: hiệu năng, phân quyền và dữ liệu nhạy cảm, lưu trữ và sao lưu, nhật ký, giới hạn đầu vào, đồng thời, tích hợp, pháp lý (mã `PCN-<phân hệ>-NN`) | `mau/mau-yeu-cau-phi-chuc-nang.md` |
+| `tai-lieu-ky-thuat/api.md` | Gọi gì: mỗi đường API một dòng — phương thức, đường, mục đích, quyền (`entity.action`), phạm vi, dữ liệu vào / ra chính, lỗi riêng, ai gọi (màn nào, công cụ MCP nào) | `mau/mau-tai-lieu-api.md` |
+
+- Trang **`/docs`** (Swagger do FastAPI tự sinh) **giữ mở** trên dev và prod (người chủ chốt 03/11/2026) — đó là bản tra
+  cứu đầy đủ, sinh từ mã. `api.md` không chép lại toàn bộ tham số: nó giữ phần Swagger không nói được (quyền, phạm vi,
+  luật nghiệp vụ, ai gọi) và trỏ sang nhóm (tag) tương ứng trên `/docs`.
+- Thêm / đổi / bỏ chức năng hay đường API thì sửa `01`, `02`, `api.md` **trong cùng commit** với mã.
+
 ## Mười luật
 
 1. **Riêng thì về phân hệ, chung thì lên cấp `doc/`.** Tài liệu chỉ nói về một phân hệ → `doc/erp/<phan-he>/<loại>/`.
