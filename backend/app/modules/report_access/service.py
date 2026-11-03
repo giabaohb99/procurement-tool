@@ -6,7 +6,7 @@ xem `auth/controller.py::_me_payload`). MỘT nguồn, không tính theo hai lu�
 khác nhau ở hai nơi.
 
 Số truy vấn CỐ ĐỊNH = 1 (đúng luật "API báo cáo nhanh nhất" —
-`doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md` không áp ở đây, nhưng cùng
+`doc/tai-lieu-ky-thuat/van-hanh/so-ghi-nhan-loi-bao-mat.md` không áp ở đây, nhưng cùng
 tinh thần với mọi API báo cáo khác trong repo: không N+1 theo số dòng).
 """
 from sqlalchemy.orm import Session

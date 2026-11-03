@@ -5,7 +5,7 @@
 | Bản | 0.1 — 22/10/2026, Agent 2 (*A2 Rà mã & Tài liệu*), việc *kh-tai-lieu-agc* |
 | Mục đích | Một đội thật đi **trọn một vòng** trên dev để đóng mốc MVP của W2 (`03-lo-trinh-phase.md`) |
 | Ở đâu | `https://deverp.degoholding.vn`, thẻ **Dự án** ở màn chọn phân hệ |
-| Ai | **Chưa chốt đội** — đại ca chọn (câu treo ở `doc/erp/00-ke-hoach-theo-module.md` mục 8). Cần 3–5 người: 1 người làm *Chủ sở hữu*, 1 *Quản trị*, 2–3 *Thành viên*, nên có 1 *Khách xem* |
+| Ai | **Chưa chốt đội** — đại ca chọn (câu treo ở `doc/plans/00-ke-hoach-theo-module.md` mục 8). Cần 3–5 người: 1 người làm *Chủ sở hữu*, 1 *Quản trị*, 2–3 *Thành viên*, nên có 1 *Khách xem* |
 | Thời lượng | Buổi đầu 45 phút cùng nhau; sau đó dùng thật 5 ngày làm việc |
 | Kết quả | Biên bản theo mẫu ở mục 5, gửi Agent 1 để chốt mốc MVP |
 

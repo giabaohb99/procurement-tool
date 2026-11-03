@@ -11,7 +11,7 @@
 #
 # Trần trong tệp này chỉ chặn được TỪNG container. Muốn chặn cả máy ảo Docker thì phải đặt
 # thêm `%USERPROFILE%\.wslconfig` (Windows) — mẫu ở `docker/wslconfig.example`.
-# Giải thích đầy đủ: doc/tai-lieu-ky-thuat/gioi-han-tai-nguyen-docker.md
+# Giải thích đầy đủ: doc/tai-lieu-ky-thuat/van-hanh/gioi-han-tai-nguyen-docker.md
 #
 # Máy yếu hơn thì ĐỪNG sửa tệp này (nó dùng chung cả đội) — tạo `docker-compose.override.yml`
 # riêng, compose tự gộp, và tệp đó đã được .gitignore bỏ qua.
@@ -78,6 +78,8 @@ services:
       args:
         INSTALL_TEST_DEPS: "1"   # pytest + pytest-timeout + pytest-xdist, chỉ cho local
     env_file: .env
+    environment:
+      API_DOCS_ENABLED: "true"   # trang tài liệu API http://localhost:8000/api/docs (prod tắt)
     # Trần rộng hơn các service khác vì pytest chạy trong chính container này.
     mem_limit: 2g
     cpus: 3

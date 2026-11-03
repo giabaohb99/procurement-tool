@@ -16,7 +16,7 @@ from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 from app.modules.purchase_order.model import PurchaseOrder
 from app.modules.purchase_request import service as pr_service
-from app.modules.purchase_request.controller import _out as pr_out
+from app.modules.purchase_request.serializer import _out as pr_out
 from app.modules.purchase_request.model import PurchaseRequest
 from app.modules.purchase_request.schema import PRCreate, PRUpdate
 from app.modules.role.model import Permission, Role

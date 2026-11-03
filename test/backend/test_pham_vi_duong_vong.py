@@ -378,26 +378,7 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_KHONG_CAN, "L351 `Company` — tra tên; lỗ của `GET /{pid}/print` nằm ở L349 "
                        "`service.get_po` (= D3 cụm 03)"),
     ],
-    "purchase_request/controller.py": [
-        (OK_KHONG_CAN, "L191 `User` — `_purchasing_head`: id người điều phối lấy từ chính "
-                       "phiếu đã qua cổng phạm vi, chỉ để in tên trưởng phòng thu mua"),
-        (OK_KHONG_CAN, "L192 `Employee` — hồ sơ của người điều phối đó, cùng lý do L191"),
-        (OK_KHONG_CAN, "L193 `Department` — phòng của người điều phối, danh mục PUBLIC"),
-        (OK_KHONG_CAN, "L194 `Employee` — trưởng phòng đó, lấy tên + chữ ký in lên phiếu"),
-        (OK_KHONG_CAN, "L1063 `db.get(Survey)` — tra tên/thông tin phiếu khảo sát cho ô chọn "
-                       "kho khảo sát; phạm vi đã hỏi ở `_open_line(..., \"write\")` trên PR nền, "
-                       "khảo sát là dữ liệu tham chiếu (cùng khuôn survey_request L539)."),
-    ],
     # ── Thu mua ──────────────────────────────────────────────────────────────
-    "survey_request/controller.py": [
-        (OK_KHONG_CAN, "L109 `Employee` — của CHÍNH người đang gọi, để so phòng ban"),
-        (OK_KHONG_CAN, "L114 `Employee` — người yêu cầu của phiếu, để so phòng ban"),
-        (OK_KHONG_CAN, "L539 `Survey` — tra mã/phân loại phiếu khảo sát cho ô chọn NCC "
-                       "thủ công (tìm MỞ theo thiết kế). ⚠️ lỗ của route này là "
-                       "`service.get_sr` ở L529 (= S6 cụm 03)"),
-        (OK_KHONG_CAN, "L674 `SurveyProductLine` — dòng nguồn của chính option đang "
-                       "serialize, chỉ lấy ngày khảo sát"),
-    ],
     "ticket/controller.py": [
         (OK_KHONG_CAN, "L44 `User` — tra tên hiển thị người tạo/xử lý"),
     ],
@@ -522,7 +503,17 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #    loại nghỉ (danh mục PUBLIC) để biết có trừ ngày lễ không; người nghỉ đi qua `resolve_leave_taker`.
     #  100 → 105 (duoc-CR-715): `leave/catalog_controller.py` +2, `leave/request_controller.py` +1 (dò ngày cấm nghỉ)
     #    và `leave/comp_request_controller.py` +2 (phiếu nghỉ bù).
-    assert sum(that.values()) == 105, f"tổng phải là 105, đang là {sum(that.values())}"
+    #  105 → 100 (bao-CR-711, làm gọn controller YCMH): năm lần tra tên để in / hiển thị rời
+    #    `purchase_request/controller.py` cùng hàm chứa chúng — bốn lần của `_purchasing_head` sang
+    #    `service.purchasing_head`, `db.get(Survey)` của kho khảo sát sang `survey_request.service.survey_header`.
+    #    Cổng phạm vi giữ nguyên ở route (`_in_scope` / `_open_line`), bảng này chỉ canh tệp controller.
+    #  100 → 96 (bao-CR-711, controller YCBG): `_same_dept_as_requester` (hai lần tra hồ sơ để so phòng ban)
+    #    sang `service.same_dept_as_requester`; `db.get(Survey)` của ô chọn NCC thủ công sang
+    #    `service.survey_header`; `db.get(SurveyProductLine)` của bản kết quả cho người yêu cầu sang
+    #    `service.survey_product_line`. Cổng phạm vi (`_in_scope`, `_scope_with_named_head`) ở nguyên controller.
+    #    ⚠️ Ghi chú cũ của dòng `Survey`: lỗ của route chọn NCC thủ công từng là `service.get_sr` trần (= S6
+    #    cụm 03) — route nay gọi `_in_scope(..., "read")` trước khi tra, đừng bỏ chốt đó khi sửa.
+    assert sum(that.values()) == 96, f"tổng phải là 96, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():

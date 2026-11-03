@@ -7,7 +7,7 @@
 | **Loại** | Technical Design Document (TDD) — thiết kế 1 phân hệ |
 | **Phiên bản** | v0.1 (DRAFT — chờ duyệt nội bộ kỹ thuật) |
 | **Ngày** | 2026-07-13 |
-| **Liên quan** | [technical-design.md](technical-design.md) · [thiet-ke-ky-thuat-chi-tiet.md](thiet-ke-ky-thuat-chi-tiet.md) · [change-log.md](change-log.md) (CR-001) |
+| **Liên quan** | [technical-design.md](kien-truc/technical-design.md) · [thiet-ke-ky-thuat-chi-tiet.md](kien-truc/thiet-ke-ky-thuat-chi-tiet.md) · [change-log.md](change-log.md) (CR-001) |
 | **Trạng thái quyết định** | ✅ Giữ nguyên mã kho cũ · ✅ Kho nội bộ→`company_id`, kho đối tác→`supplier_code` |
 
 > Tài liệu này mô tả **XÂY BẰNG CÁCH NÀO** cho việc quy hoạch lại danh mục Kho. **Chưa code** cho tới khi được duyệt (theo [quy-trinh-tai-lieu.md](quy-trinh-tai-lieu.md)).
@@ -73,7 +73,7 @@ Cột giữ nguyên: `code` (VARCHAR(25) UNIQUE, **không đổi giá trị cũ*
 - `code` vẫn UNIQUE.
 
 ### 3.3 Cập nhật LLD
-Bổ sung mục `tab_warehouse` vào [thiet-ke-ky-thuat-chi-tiet.md](thiet-ke-ky-thuat-chi-tiet.md) §3.1 (thay dòng "danh mục khác — cấu trúc đơn giản").
+Bổ sung mục `tab_warehouse` vào [thiet-ke-ky-thuat-chi-tiet.md](kien-truc/thiet-ke-ky-thuat-chi-tiet.md) §3.1 (thay dòng "danh mục khác — cấu trúc đơn giản").
 
 ---
 

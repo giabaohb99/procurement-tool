@@ -1,6 +1,6 @@
 """Bảo mật khâu TẢI TỆP LÊN — bao-CR-408, đóng BM-025…BM-031.
 
-Từng dòng dưới đây ứng với một lỗ trong `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md`
+Từng dòng dưới đây ứng với một lỗ trong `doc/tai-lieu-ky-thuat/van-hanh/so-ghi-nhan-loi-bao-mat.md`
 §2b. Đọc sổ đó trước khi sửa bài kiểm nào ở đây: mỗi bài giữ một câu khẳng định đã được
 chứng minh chạy thật trên hệ, không phải suy đoán.
 

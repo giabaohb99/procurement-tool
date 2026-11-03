@@ -20,7 +20,7 @@ Fixed code sets of either shape are declared in `backend/app/core/status_catalog
 
 Stack: FastAPI 0.115 · SQLAlchemy 2.0 · Pydantic v2 · MySQL 8 · Alembic · React 18 + Vite + TS. Runs entirely via Docker Compose.
 
-⚠️ **Trước khi đụng vào nhánh `main` hoặc vào VPS, đọc `doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md`.**
+⚠️ **Trước khi đụng vào nhánh `main` hoặc vào VPS, đọc `doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md`.**
 Repo có **hai nhánh chạy song song**: `main` = prod (backend + `frontend/` + `help-center/`),
 `erp-v2` = dev (`frontend-v2/`). Deploy prod **bắt buộc** có `-f docker-compose.production.yml`.
 
@@ -34,7 +34,14 @@ ngưỡng quay đầu), xem §A.2 của `quy-trinh-nhanh-va-deploy.md`.
 
 ## Rules
 
-    Pls check rule in @backend/.claude/rules/**
+**Luật chung luôn nạp:** `.claude/rules/chung-dat-ten-va-quy-uoc.md` — đặt tên (định danh tiếng Anh, hàm là động từ,
+tệp v2 kebab-case), chuỗi / chú thích tiếng Việt, không emoji, không ngoặc kép góc, trạng thái SMALLINT + IntEnum, commit
+(mã CR, `Co-Authored-By`, merge không rebase, `git add` đúng tệp), bài kiểm theo thư mục. **Luật tài liệu:**
+`.claude/rules/chung-tai-lieu.md` (nạp khi sửa `doc/`). Mục lục mọi luật / skill / agent:
+[`doc/tai-lieu-ky-thuat/quy-dinh/README.md`](doc/tai-lieu-ky-thuat/quy-dinh/README.md).
+
+**Kế hoạch làm việc của agent** ghi vào `doc/erp/<phan-he>/plans/<YYMMDD>-<slug>[-<mã CR>]/`; kế hoạch nhiều phân hệ ghi
+`doc/plans/`. KHÔNG ghi vào `plans/` ở gốc repo hay `frontend-v2/plans/` nữa (bao-CR-712).
 
 Luật chi tiết theo từng khu nằm ở `.claude/rules/` — mỗi tệp khai `paths:` nên chỉ nạp khi làm việc
 với đúng thư mục đó (CLAUDE.md giữ phần cốt lõi). Thêm luật cho một khu cụ thể thì ghi vào tệp đó,
@@ -50,13 +57,15 @@ với đúng thư mục đó (CLAUDE.md giữ phần cốt lõi). Thêm luật c
 | `.claude/rules/hr-labor-contract-variables.md` | `labor_contract/`, `hr/`, test `*hdld*` | Danh mục biến mẫu HĐLĐ động, `custom_values` gán dict mới, `json_extract`, mặc định sao lúc lập, quyền ghi phạm vi tất cả |
 | `.claude/rules/backend-input-limits.md` | `backend/app/`, `test/backend/` | Cột `String(n)` phải có `max_length` (500 → 422), trần JSON/ngày/số dòng |
 | `.claude/rules/document-folders-search.md` | `document/`, `doc_catalog/`, migrations | Thư mục văn bản, `doc_folder`, chỉ mục tìm toàn văn, bẫy từ dừng FULLTEXT |
+| `.claude/rules/chung-dat-ten-va-quy-uoc.md` | luôn nạp | Đặt tên, ngôn ngữ chuỗi / chú thích, trạng thái, commit, bài kiểm |
+| `.claude/rules/chung-tai-lieu.md` | `doc/` | Khuôn thư mục tài liệu, 10 luật, chỗ ghi kế hoạch |
 | `frontend-v2/.claude/rules/*.md` | `frontend-v2/` | Component, styling, icon, naming, TypeScript, testing của giao diện v2 |
 
 ## Commands
 
 Everything runs in Docker; there is no local venv/npm workflow.
 
-⚠️ **Máy đơ / tự thoát app khi chạy test hay build? Đọc `doc/tai-lieu-ky-thuat/gioi-han-tai-nguyen-docker.md`.**
+⚠️ **Máy đơ / tự thoát app khi chạy test hay build? Đọc `doc/tai-lieu-ky-thuat/van-hanh/gioi-han-tai-nguyen-docker.md`.**
 Stack local có **11 container**; `docker-compose.yml` đã đặt `mem_limit` + `cpus` cho từng cái —
 **không tự ý gỡ**. Trần đó chỉ chặn từng container; chặn cả máy ảo Docker phải đặt thêm
 `%USERPROFILE%\.wslconfig` (mẫu ở `docker/wslconfig.example`, mỗi máy tự chép, không commit).
@@ -71,7 +80,7 @@ docker compose up --build           # start db + api + web + erp + help + admine
 # Web (frontend/, đóng băng) http://localhost:8080
 # ERP v2 (frontend-v2/, đang phát triển) http://localhost:8083
 # Help Center http://localhost:8082
-# API http://localhost:8000/docs · Adminer http://localhost:8081
+# API http://localhost:8000/api/docs (dev: https://deverp.degoholding.vn/api/docs, prod tắt) · Adminer http://localhost:8081
 ```
 
 On `api` startup, `backend/start.sh` runs automatically: wait for DB → `alembic upgrade head` → `python -m app.seed` (idempotent) → uvicorn with `--reload`. Code is bind-mounted, so backend and frontend hot-reload without rebuilds.
@@ -190,7 +199,7 @@ Docker; code bind-mount nên HMR chạy. Gọi API bằng đường **tương đ
 
 ## Docs
 
-Requirements, permission design, and naming conventions live in `doc/` (Vietnamese) — index at `doc/README.md`. Permission design detail: `doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`. Progress checklist: `TASKS.md`.
+Requirements, permission design, and naming conventions live in `doc/` (Vietnamese) — index at `doc/README.md`. Permission design detail: `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`. Progress checklist: `doc/v1/tasks.md`.
 
 ### Nhật ký task — `doc/tai-lieu-ky-thuat/nhat-ky-task.md`
 

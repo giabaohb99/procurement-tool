@@ -20,7 +20,7 @@
 > đánh giá cá nhân. Thắc mắc liên hệ phòng Nhân sự.
 (Câu "không phải căn cứ đánh giá" chờ chốt Q3 — HR/pháp chế duyệt văn bản cuối.)
 
-## Triển khai (dev → prod, theo `doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md`)
+## Triển khai (dev → prod, theo `doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md`)
 1. Merge PR (05 + 07 chung PR); `alembic upgrade head` (kiểm `alembic heads` = 1, head `usgprof01`).
 2. Khởi động lại api → `ensure_report_access_defaults` chèn khóa 14 cho admin (kiểm: `/auth/me` của admin có 14).
 3. Khởi động lại celery-worker + beat (3 job mới trong `imports`).

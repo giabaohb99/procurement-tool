@@ -1,7 +1,7 @@
 # Bộ kịch bản kiểm thử — dải `bao`
 
 Kịch bản kiểm thử **thủ công** cho phần việc thuộc dải CR `bao`. Tách hẳn khỏi
-`doc/testcase/` (bộ cũ, viết cho giao diện `frontend/` cổng 8080) vì ba lẽ:
+`doc/v1/kiem-thu/` (bộ cũ, viết cho giao diện `frontend/` cổng 8080) vì ba lẽ:
 
  · bộ này nhắm **giao diện mới `frontend-v2`** (cổng 8083 dưới máy, `deverp` trên dev);
  · một thư mục riêng thì hai phiên làm việc song song không giẫm lên nhau;

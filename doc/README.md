@@ -6,7 +6,8 @@
 |---|---|
 | Hệ thống làm được gì, màn nào chạy ra sao | [tai-lieu-chuc-nang/00-muc-luc.md](tai-lieu-chuc-nang/00-muc-luc.md) |
 | Ai đổi gì, khi nào, ảnh hưởng ra sao (+ nhật ký deploy, quyết định đã chốt) | [tai-lieu-ky-thuat/change-log.md](tai-lieu-ky-thuat/change-log.md) **+** [change-log-bao.md](tai-lieu-ky-thuat/change-log-bao.md) — **đọc cả hai** (mảng AI có sổ riêng: [change-log-ai.md](tai-lieu-ky-thuat/change-log-ai.md)) |
-| Xây bằng cách nào (kiến trúc, DB, API, phân quyền) | [tai-lieu-ky-thuat/technical-design.md](tai-lieu-ky-thuat/technical-design.md) |
+| Xây bằng cách nào (kiến trúc, DB, API, phân quyền) | [tai-lieu-ky-thuat/technical-design.md](tai-lieu-ky-thuat/kien-truc/technical-design.md) |
+| Luật viết mã, luật tài liệu, skill và agent nằm đâu, khi nào nạp | [tai-lieu-ky-thuat/quy-dinh/README.md](tai-lieu-ky-thuat/quy-dinh/README.md) (luật tài liệu: [`.claude/rules/chung-tai-lieu.md`](../.claude/rules/chung-tai-lieu.md)) |
 
 ## tai-lieu-chuc-nang/ — Tài liệu chức năng (nghiệp vụ, cho người dùng & BA)
 - `00-muc-luc.md` — mục lục; `01`…`17` theo từng phân hệ (Phiếu khảo sát, YCBG, YCMH, ĐMH, YCTT, Tồn kho & Công nợ, Danh mục, Báo cáo, Thông báo & Trang cá nhân, Phiếu hỗ trợ, Bình luận, Lịch sử mua hàng, Trung tâm HDSD, Văn thư, **Dự án — quản lý công việc**, **Nghỉ phép**)

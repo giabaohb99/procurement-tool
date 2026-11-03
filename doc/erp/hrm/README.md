@@ -39,7 +39,7 @@ Bảng «Chức năng đã có mã nhưng chưa có tài liệu riêng» của b
 
 | Tệp | Đọc khi nào |
 |---|---|
-| [`../00-ke-hoach-theo-module.md`](../00-ke-hoach-theo-module.md) mục HRM | Kế hoạch còn lại của phân hệ Nhân sự, chia phase, cùng bộ với các phân hệ khác (thay `01`, `06`, `10`, `19` cũ đã xóa 22/10/2026) |
+| [`../00-ke-hoach-theo-module.md`](../../plans/00-ke-hoach-theo-module.md) mục HRM | Kế hoạch còn lại của phân hệ Nhân sự, chia phase, cùng bộ với các phân hệ khác (thay `01`, `06`, `10`, `19` cũ đã xóa 22/10/2026) |
 | [`03-cau-hoi-khao-sat-hrm.md`](03-cau-hoi-khao-sat-hrm.md) | Bộ câu hỏi phỏng vấn phòng Nhân sự |
 | [`../tham-khao-hrm/`](../tham-khao-hrm/README.md) | Khảo sát phần mềm HrOnline: 59 chức năng, mỗi chức năng có danh sách trường. **Là bảng đối chiếu, không phải yêu cầu** |
 

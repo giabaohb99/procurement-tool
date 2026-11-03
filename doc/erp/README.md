@@ -2,7 +2,7 @@
 
 Hướng: **giữ code Thu mua, gia cố, chia thành ERP nhiều phân hệ.** Vào web thấy lưới biểu tượng phân hệ, ai có quyền tới đâu thấy tới đó.
 
-**Đọc trước tiên: [`00-ke-hoach-theo-module.md`](00-ke-hoach-theo-module.md)** — kế hoạch còn lại của toàn hệ, chia theo module và theo phase, kèm danh sách câu đang chờ quyết. Đây là tệp duy nhất ở cấp này; mọi tài liệu khác nằm trong thư mục phân hệ.
+**Đọc trước tiên: [`00-ke-hoach-theo-module.md`](../plans/00-ke-hoach-theo-module.md)** — kế hoạch còn lại của toàn hệ, chia theo module và theo phase, kèm danh sách câu đang chờ quyết. Đây là tệp duy nhất ở cấp này; mọi tài liệu khác nằm trong thư mục phân hệ.
 
 > Gọn lại ngày 22/10/2026: các kế hoạch tháng 8–9 (`01` ngắn hạn, `02` dài hạn, `04` danh mục chờ, `06` lộ trình nền tảng và HRM, `08` task củng cố, `10` báo cáo WorkHub, `11` đa pháp nhân, `13` đối chiếu màn v1↔v2, `19` việc còn lại) đã gộp phần chưa làm vào `00` rồi xóa. Cần đọc lại bản cũ thì xem lịch sử git trước commit gọn tài liệu.
 
@@ -11,7 +11,7 @@ Hướng: **giữ code Thu mua, gia cố, chia thành ERP nhiều phân hệ.** 
 | Thư mục | Nội dung |
 |---|---|
 | [`nen-tang/`](./nen-tang/) | Nền ERP v2: kiến trúc vỏ (`07`), phạm vi theo phòng ban (`12`), bộ lọc và sắp xếp (`14`), đổ bê tông nền (`15`), quản lý import/export (`16`), rà soát xóa cứng (`20`) |
-| [`tai-lieu-ky-thuat/`](./tai-lieu-ky-thuat/README.md) | Hiện trạng kỹ thuật ERP v2: kiến trúc, danh mục module, phân quyền, từ điển dữ liệu, danh sách màn |
+| [`tai-lieu-ky-thuat/`](../tai-lieu-ky-thuat/kien-truc/README.md) | Hiện trạng kỹ thuật ERP v2: kiến trúc, danh mục module, phân quyền, từ điển dữ liệu, danh sách màn |
 | [`thu-mua/`](./thu-mua/) | Thu mua: khối Báo cáo thực hiện trên YCBG (`18`) |
 | [`nhap-khau/`](./nhap-khau/01-danh-sach-tinh-nang.md) | Hồ sơ và tiến độ nhập khẩu, chi phí thu mua |
 | [`hai-quan/`](./hai-quan/) | Tra cứu thị trường (giá hải quan) |

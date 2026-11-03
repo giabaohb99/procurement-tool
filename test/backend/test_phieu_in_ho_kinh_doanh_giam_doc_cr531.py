@@ -25,7 +25,7 @@ from app.modules.company.model import Company
 from app.modules.company.schema import CompanyCreate, CompanyOut, CompanyUpdate
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
-from app.modules.purchase_request.controller import _out as pr_out
+from app.modules.purchase_request.serializer import _out as pr_out
 from app.modules.purchase_request.model import PurchaseRequest
 from app.modules.purchase_request.print_signature_cells import build_print_signature_cells
 from app.modules.user.model import User

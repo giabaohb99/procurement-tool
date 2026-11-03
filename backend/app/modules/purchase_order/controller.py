@@ -635,9 +635,10 @@ def get_po_purchase_request(pid: int, db: Session = Depends(get_db),
     pr_code = (po.pr_code or "").strip()
     if not pr_code:
         raise HTTPException(404, "Đơn mua hàng này không gắn phiếu yêu cầu mua hàng")
-    #  Nhập trong hàm: `purchase_request.controller` nạp cả cụm model/serializer của YCMH,
-    #  kéo lên đầu tệp là buộc hai controller phụ thuộc vòng nhau lúc `app.main` dựng router.
-    from app.modules.purchase_request.controller import _out as pr_out
+    #  Nhập trong hàm: serializer YCMH nạp cả cụm model/service của YCMH, kéo lên đầu tệp là
+    #  buộc hai phân hệ phụ thuộc vòng nhau lúc `app.main` dựng router (bao-CR-711: `_out` đã
+    #  dời từ `purchase_request.controller` sang `purchase_request.serializer`).
+    from app.modules.purchase_request.serializer import _out as pr_out
     from app.modules.purchase_request.model import PurchaseRequest
     pr = db.query(PurchaseRequest).filter(PurchaseRequest.code == pr_code,
                                           PurchaseRequest.is_deleted == False).first()  # noqa: E712

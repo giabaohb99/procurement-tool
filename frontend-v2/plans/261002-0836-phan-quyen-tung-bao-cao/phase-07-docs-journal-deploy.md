@@ -3,7 +3,7 @@
 **Ưu tiên:** P2 · **Effort:** 1.5h · **Trạng thái:** done · **Phụ thuộc:** 01-06
 
 ## Context
-- `doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`, `doc/tai-lieu-ky-thuat/change-log.md`, `doc/tai-lieu-ky-thuat/nhat-ky-task.md` (đọc luật viết mô tả ở đầu tệp), `doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md`
+- `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`, `doc/tai-lieu-ky-thuat/change-log.md`, `doc/tai-lieu-ky-thuat/nhat-ky-task.md` (đọc luật viết mô tả ở đầu tệp), `doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md`
 - `CLAUDE.md` mục «Two-axis permission system»
 
 ## Việc

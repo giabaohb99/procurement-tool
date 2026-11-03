@@ -17,6 +17,7 @@ from fastapi import BackgroundTasks
 from app.core.audit import record
 from app.modules.audit.model import AuditLog
 from app.modules.purchase_request import controller as pr_ctl
+from app.modules.purchase_request import serializer as pr_ser
 from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
 from app.modules.purchase_request.schema import ApproveIn
 
@@ -87,7 +88,7 @@ def test_print_signers_fall_back_to_approver_when_switch_off(db, seed, monkeypat
     pr_ctl.approve_pr(pr.id, ApproveIn(), BackgroundTasks(), db=db, user=USER)
     db.refresh(pr)
 
-    out = pr_ctl._approval_signers(db, pr)
+    out = pr_ser._approval_signers(db, pr)
     assert out["approver_name"] and out["dispatcher_name"] == out["approver_name"]
     assert out["purchasing_head_name"]
 
@@ -101,5 +102,5 @@ def test_print_signers_keep_real_dispatcher_when_row_exists(db, seed, monkeypatc
     record(db, USER.id, "purchase_request", pr.id, "approved")
     record(db, seed.u_nstm_id, "purchase_request", pr.id, "dispatched")
 
-    out = pr_ctl._approval_signers(db, pr)
+    out = pr_ser._approval_signers(db, pr)
     assert out["dispatcher_name"] != out["approver_name"]

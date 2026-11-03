@@ -206,7 +206,7 @@ ra. Log của nginx / Cloudflare (lượt chưa tới API) **vẫn ở ngoài**,
 | Máy dội máy (**chỉ bỏ GET**) | `/api/notifications` · `/api/alerts` | 4.427 trong 7.440 lượt GET một ngày trên prod — **59,5%** — chỉ để vẽ con số trên hình cái chuông. `PATCH /api/notifications/{id}` (bấm "đã đọc") **vẫn ghi**: đó là thao tác của người. |
 | Đường của chính nhật ký | `/api/system-logs` · `/api/audit-logs` | NT-5 — mở màn đọc nhật ký mà lại đẻ thêm dòng nhật ký để đọc |
 | Đường đo cách dùng giao diện (duoc-CR-641) | `/api/telemetry` | NT-5 — mỗi lô sự kiện giao diện (FE gửi theo lô vài chục giây một lần) mà đẻ thêm một dòng `tab_request_log` thì bảng nhật ký phình mà không thêm thông tin nào |
-| Hạ tầng | `/api/health` · `/api/uploads` · `/docs` · `/redoc` · `/openapi.json` | không phải thao tác nghiệp vụ |
+| Hạ tầng | `/api/health` · `/api/uploads` · `/api/docs` · `/api/redoc` · `/api/openapi.json` | không phải thao tác nghiệp vụ |
 
 **Vì sao đảo luật cũ.** Ba lý do, lý do thứ hai mới là lý do nặng:
 
@@ -903,7 +903,7 @@ Ngoài năm chỗ đó, hai thứ **không** có trong bản vẽ nhưng cần b
 Bảng §8.5 nói tab Nhân sự có nút *"Khóa tài khoản + đăng xuất mọi thiết bị — nút của quy trình
 nghỉ việc"*. P3b làm nút đó, nhưng HR **không bấm nó** khi cho nghỉ việc: họ đổi ô *Trạng
 thái* của hồ sơ sang *Nghỉ việc* và tin là xong. Hai công tắc không nối nhau → **BM-015**
-trong [`so-ghi-nhan-loi-bao-mat.md`](so-ghi-nhan-loi-bao-mat.md). Bao-CR-400 nối lại:
+trong [`so-ghi-nhan-loi-bao-mat.md`](van-hanh/so-ghi-nhan-loi-bao-mat.md). Bao-CR-400 nối lại:
 
 - **Hồ sơ chuyển `resigned` hoặc tắt `is_active`** (`employee/service.py::has_left_company`,
   chỉ bắt lúc *chuyển*) → `lock_linked_users` khóa mọi tài khoản gắn hồ sơ + `force_relogin`

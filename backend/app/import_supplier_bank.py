@@ -4,7 +4,7 @@ Nguồn: app/seed_data/nganhangncc.txt (tab-separated: Tên TK | Số TK | Ngân
 Khớp NCC theo tên pháp lý (Supplier.name) — exact trước, fuzzy (difflib) sau.
 Tên trùng trong file: last-wins. In log rõ từng dòng UPDATE / SKIP để duyệt.
 
-Chạy:  cat doc/datamau/nganhangncc.txt | docker compose exec -T api python -m app.import_supplier_bank
+Chạy:  cat doc/v1/du-lieu/datamau/nganhangncc.txt | docker compose exec -T api python -m app.import_supplier_bank
    hoặc (đọc file trong container):  docker compose exec -T api python -m app.import_supplier_bank
 """
 import os

@@ -111,6 +111,17 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-712-to-chuc-lai-tai-lieu | Tổ chức lại tài liệu dự án theo khuôn phân hệ
+- status: dang-lam
+- date: 2026-11-03
+- list: Kế hoạch hệ agent
+- tag: Agent 4
+**Bối cảnh:** tài liệu nằm rải ở 19 thư mục cấp `doc/`, kế hoạch ở `plans/` gốc, tài liệu V1 đứng lẫn V2. Đề xuất 1.2 (`de-xuat-to-chuc-lai-tai-lieu.md`) đã chốt: mỗi phân hệ một thư mục chứa đủ chức năng / kỹ thuật / nghiên cứu / kế hoạch / kiểm thử / dữ liệu, phần chung ở cấp `doc/`, V1 vào `doc/v1/`.
+
+**Đang làm:** P1 — luật đặt tên và quy ước chung một tệp, luật viết tài liệu, mục lục quy định, đổi chỗ ghi kế hoạch, bài kiểm tài liệu chế độ chỉ báo. Sau đó P2–P4 dời tệp theo bảng (HRM để người phụ trách HRM tự chuẩn hóa).
+
+---
+
 ## bao-CR-710-ruff-don-tu-dong | Dọn mã backend tự động bằng ruff, đợt R1
 - status: đang làm
 - date: 2026-11-03
@@ -131,7 +142,7 @@ logic thì phải chép. Đây là đợt R2 của lộ trình dọn, được g
 - Đặt chỗ việc; đang dời truy vấn xuống lớp nghiệp vụ và dời hàm dựng kết quả sang tệp riêng, lần lượt từng phân hệ, không
   đổi hành vi.
 
-Tham chiếu: `doc/tai-lieu-ky-thuat/danh-gia-chat-luong-backend.md` mục 2.4 và 5.
+Tham chiếu: `doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md` mục 2.4 và 5.
 
 ## bao-CR-703-may-chu | Sổ việc chạy ngầm (máy chủ) + công cụ hỏi bằng lời
 - status: xong
@@ -4483,7 +4494,7 @@ cuối cùng kèm món nợ N-17.
 Hai tệp cũ không xóa được vì sổ thay đổi và bản kiểm kê việc vẫn còn trỏ tới, nên dán
 nhãn tài liệu lịch sử lên đầu để người đọc biết đây là hồ sơ cũ.
 Tham chiếu: `doc/erp/11` (giữ hồ sơ 8 câu chốt đa pháp nhân) và
-`doc/yeu-cau/Plan_CapNhat_ThuMua_2026_07.md`.
+`doc/v1/yeu-cau/Plan_CapNhat_ThuMua_2026_07.md`.
 
 ### bao-CR-403-commit | Commit
 - status: xong
@@ -6196,7 +6207,7 @@ Mã nguồn: hàm `attachment/controller.py::_store_one`; tệp nền mới `cor
 `test/backend/test_bao_mat_tai_tep.py`; ba máy ảo `api`, `celery-worker`, `celery-beat`.
 Commit: erp-v2 7086a4d0.
 Deploy: đã lên máy chủ thử 16/09/2026; máy chủ thật chờ chỉ đạo.
-Tham chiếu: bảy lỗ là BM-025 đến BM-031 trong `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md`;
+Tham chiếu: bảy lỗ là BM-025 đến BM-031 trong `doc/tai-lieu-ky-thuat/van-hanh/so-ghi-nhan-loi-bao-mat.md`;
 lỗ còn mở một phần là BM-030.
 
 ### bao-CR-408-tai-lieu | Cập nhật sổ ghi nhận lỗi bảo mật sau khi vá
@@ -6207,7 +6218,7 @@ làm bản ghi hiện trường; chỉ thêm một băng cảnh báo lên đầu
 để người đọc sau không tưởng lời cũ là sự thật hôm nay.
 Việc thứ sáu ghi rõ ba chỗ mã nguồn cố ý làm khác bản vẽ trong sổ, kẻo có người đi sửa mã cho
 khớp tài liệu.
-Tham chiếu: `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md` mục 2 và 2b; lỗ vá hai trong ba
+Tham chiếu: `doc/tai-lieu-ky-thuat/van-hanh/so-ghi-nhan-loi-bao-mat.md` mục 2 và 2b; lỗ vá hai trong ba
 vế là BM-030.
 
 ## bao-CR-409 | Màn Tiến độ mua hàng: thêm hai cột ngày chứng từ
@@ -7839,7 +7850,7 @@ Mã nguồn: backend/app/core/permissions.py · backend/app/seed.py ·
 backend/app/modules/role/service.py · frontend-v2/src/modules/system/utils/role-module-summary.ts ·
 components/role-list-item.tsx · components/role-name-inline-edit.tsx ·
 components/role-permission-matrix.tsx · pages/role-permission-page.tsx ·
-doc/phan-quyen/Thiet_Ke_Phan_Quyen.md mục 8.
+doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md mục 8.
 Commit: 277b0cd2 (gom chung CR-427/428/430) + 6b68a676 (vá ký tự rỗng).
 Deploy: dev chiều 19/09/2026 (8d2c52a2), không có migration.
 
@@ -8123,7 +8134,7 @@ DB thì giữ nguyên, bảy khóa cả hai nơi đều trống thì bỏ qua; �
 thì giá trị hiệu lực không đổi chỗ nào và ba khóa bí mật đều giải mã đúng độ dài.
 Quyền `setting` đã kiểm cả hai môi trường: chỉ vai trò `admin` giữ, không phải sửa gì.
 Trên dev script điền mười chín khóa, đọc lại thì giá trị hiệu lực cũng không đổi chỗ nào.
-Một bẫy lòi ra lúc deploy: bảng lệnh ở `doc/chung/Deploy_VPS.md` ghi dev chạy kèm
+Một bẫy lòi ra lúc deploy: bảng lệnh ở `doc/v1/chung/Deploy_VPS.md` ghi dev chạy kèm
 `-p procurement-dev`, nhưng bộ đang chạy thật mang tên project mặc định
 `procurement-tool-dev` lấy theo tên thư mục. Truyền `-p` sai là compose không nhận ra bộ
 đang chạy mà dựng thêm một bộ SONG SONG — hai `api`, hai `celery-worker`, và nguy nhất là
@@ -10071,7 +10082,7 @@ cho khách nằm ở tài liệu thiết kế; giá hàng ba giai đoạn trên 
 riêng sau.
 
 Tài liệu: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`, `doc/tai-lieu-chuc-nang/04-don-mua-hang.md` mục K,
-`08-he-thong-bao-cao.md`, `doc/erp/tai-lieu-ky-thuat/05a-du-lieu-thu-mua.md`, `doc/erp/nhap-khau/01-danh-sach-tinh-nang.md`,
+`08-he-thong-bao-cao.md`, `doc/tai-lieu-ky-thuat/kien-truc/05a-du-lieu-thu-mua.md`, `doc/erp/nhap-khau/01-danh-sach-tinh-nang.md`,
 `doc/erp/19-viec-con-lai-tong-hop.md` §5, `doc/tai-lieu-ky-thuat/change-log-bao.md` (dòng bao-CR-453).
 Mã nguồn: `backend/app/modules/purchase_order/` (model, schema, service, controller, cost_type.py),
 `backend/migrations/versions/05a62d38a47a_*.py`, `backend/scripts/seed_help_chi_phi_thu_mua.py`,
@@ -16334,7 +16345,7 @@ Commit: đẩy thẳng lên erp-v2 (xem lịch sử git, thông điệp có mã 
 
 **Điều kiện xong:** có xác nhận đạt; Agent 1 chốt giờ cắt đợt prod năm với Ban điều hành.
 
-Mã nguồn: kế hoạch `doc/erp/00-ke-hoach-theo-module.md` mục AI1-1
+Mã nguồn: kế hoạch `doc/plans/00-ke-hoach-theo-module.md` mục AI1-1
 
 ## kh-HR1-1 | Chặn xuất CSV nhân sự chỉ cần quyền xem, che cột nhạy cảm khi xuất
 - status: xong
@@ -16472,7 +16483,7 @@ Commit: 5d0bcb60
 ### kh-HR1-5-5 | Cập nhật kế hoạch theo phân hệ, mục Nhân sự
 - status: xong
 Kế hoạch viết ngày 22/10 vẫn ghi nhiều việc là chưa làm. Chuyển các việc đã xong (bắt buộc đính kèm, kiểm việc treo trước khi khóa tài khoản, đối chiếu kết sổ phép, sơ đồ tổ chức) lên dòng «Đã có», ghi rõ tình trạng việc chặn xuất tệp nhân sự, và thu gọn việc này về phần dữ liệu còn lại.
-Mã nguồn: `doc/erp/00-ke-hoach-theo-module.md` mục 5.
+Mã nguồn: `doc/plans/00-ke-hoach-theo-module.md` mục 5.
 Commit: 5d0bcb60
 
 ### kh-HR1-5-6 | Nhập bù ngày vào làm cho hồ sơ cũ
@@ -17179,7 +17190,7 @@ Mã nguồn: backend/app/core/request_middleware.py · backend/app/core/concurre
 
 **Kết quả:** trên bản local hai bài đã vào Trung tâm trợ giúp và kho tìm kiếm của trợ lý; hỏi thử «bấm lưu báo hệ thống đang bận có mất dữ liệu không» thì trợ lý tìm đúng bài mới đứng đầu. Khi deploy prod chạy script nạp bài hệ thống một lệnh rồi chạy lệnh dọn kho tìm kiếm theo mục B.6.
 
-Mã nguồn: backend/scripts/seed_help_he_thong_cap_nhat.py · backend/scripts/help_seed_common.py · backend/scripts/seed_help_thu_mua_cap_nhat.py · doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md · .env.example
+Mã nguồn: backend/scripts/seed_help_he_thong_cap_nhat.py · backend/scripts/help_seed_common.py · backend/scripts/seed_help_thu_mua_cap_nhat.py · doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md · .env.example
 
 ## duoc-CR-672 | Giữ khung biểu đồ ở báo cáo Năng lực theo loại việc khi chưa đủ dữ liệu
 - status: xong
@@ -17251,7 +17262,7 @@ Mã nguồn: doc/tai-lieu-ky-thuat/nhat-ky-task.md
 - status: xong
 - date: 2026-10-23
 - tag: Thu mua
-**Bối cảnh:** lỗi ô lọc tự dính giá trị lặp lại nhiều lần (bao-CR-388 tháng 9, bao-CR-657 sáng 23/10) vì ô chọn dùng chung của giao diện thumua mặc định tự chọn khi danh sách chỉ còn một lựa chọn, mà danh mục công ty, phòng ban, nhân sự lại bị lọc theo quyền. Rà soát đầy đủ ở `doc/tai-lieu-ky-thuat/ra-soat-o-loc-tu-gan.md`.
+**Bối cảnh:** lỗi ô lọc tự dính giá trị lặp lại nhiều lần (bao-CR-388 tháng 9, bao-CR-657 sáng 23/10) vì ô chọn dùng chung của giao diện thumua mặc định tự chọn khi danh sách chỉ còn một lựa chọn, mà danh mục công ty, phòng ban, nhân sự lại bị lọc theo quyền. Rà soát đầy đủ ở `doc/tai-lieu-ky-thuat/van-hanh/ra-soat-o-loc-tu-gan.md`.
 
 **Đã làm:** đổi mặc định sang không tự gán. Biểu mẫu chỉ còn tự điền ở ô lấy từ danh sách cố định hoặc danh mục mở (nhà cung cấp, sản phẩm, kho, đơn vị tính, phân loại); ô công ty, bộ phận, nhân sự, người duyệt, NSTM, NSPT không tự điền nữa, nên ô Bộ phận của YCBG hết bị điền sẵn phòng Kinh doanh AGC. Thêm bài quét `npm run check:filters`: ô lọc nào bật tự gán là báo đỏ.
 
@@ -17415,7 +17426,7 @@ Mã nguồn: test/backend/test_duyet_theo_quyen_cr680.py · plans/reports/code-r
 ### duoc-CR-680-4 | Ép tải và tài liệu
 - status: xong
 Đo trên MySQL thật với mười, sáu mươi và hai trăm người giữ quyền: đúng người ở cả ba mức, sáu truy vấn cố định khi bộ đệm quyền đã nóng. Viết bài hướng dẫn sử dụng, bổ sung tài liệu dữ liệu bộ máy duyệt, nâng cẩm nang trợ lý phần Nghỉ phép. Tiện tay sửa một lỗi kiểm mã còn sót của CR-676.
-Mã nguồn: plans/261023-1330-ep-tai-cr680/scripts/load-permission-approvers-cr680.py · backend/scripts/seed_help_phe_duyet_theo_quyen.py · doc/erp/tai-lieu-ky-thuat/05d-du-lieu-van-thu-duyet.md
+Mã nguồn: plans/261023-1330-ep-tai-cr680/scripts/load-permission-approvers-cr680.py · backend/scripts/seed_help_phe_duyet_theo_quyen.py · doc/tai-lieu-ky-thuat/kien-truc/05d-du-lieu-van-thu-duyet.md
 
 ## nc-02-khao-sat-san-xuat | Phân tích khảo sát hiện trạng Quản lý sản xuất ngày 19/10
 - status: xong
@@ -17660,7 +17671,7 @@ Commit: 51c9a2b6 (main = erp-v2) · Deploy: prod toàn bộ dịch vụ ERP và 
 
 **Đã làm:** tạo người dùng Linux ida, thư mục riêng, đăng nhập bằng chìa khóa, không sudo, không thuộc nhóm docker; cài Docker rootless chạy dưới quyền ida, đã thử container chạy được và chỉ thấy container của chính mình. Chìa khóa riêng giao cho người dùng; bản trên máy chủ đã xóa. Viết hướng dẫn dùng cơ bản.
 
-Mã nguồn: doc/tai-lieu-ky-thuat/vps-dev-tai-khoan-ida.md
+Mã nguồn: doc/tai-lieu-ky-thuat/van-hanh/vps-dev-tai-khoan-ida.md
 
 ## nc-07-khao-sat-sx-tra-loi-chung | Tổng hợp khảo sát Sản xuất trả lời chung ngày 26/10
 - status: xong
@@ -18108,6 +18119,31 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 - Gán quản lý trực tiếp trên hồ sơ nhân viên; gán trưởng phòng cho tám phòng còn trống (N2AGRO, Dego Holding, Agricare, N2AGRO-KT, Mua Hàng, Dego Agrochem, Pháp Lý, R&D).
 - Chốt người duyệt chặng một khi chính Trưởng phòng Nhân sự xin nghỉ.
 - Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
+
+## bao-CR-713 | Tắt trang tài liệu API trên prod, chỉ mở ở dev
+- status: xong
+- date: 2026-11-03
+- list: Nền tảng
+- tag: Hạ tầng
+
+**Đã làm:** Trang tài liệu API do hệ thống tự sinh dời về đường /api/docs và chỉ mở khi bật cờ cấu hình; prod mặc định tắt, máy dev và máy local bật. Luật viết tài liệu sửa theo.
+
+Mã nguồn: backend/app/main.py build_docs_urls, core/config.py API_DOCS_ENABLED. Deploy: dev cần thêm API_DOCS_ENABLED=true vào .env.dev; prod đi theo đợt phát hành kế.
+
+## td-0311-tai-lieu-api-chuc-nang-hdsd | Chờ lúc rảnh: tài liệu chức năng, phi chức năng, API, hướng dẫn sử dụng và đồng bộ cho trợ lý đọc
+- status: dang-lam
+- date: 2026-11-03
+- list: Nền tảng
+- tag: Tài liệu
+
+**Bối cảnh:** Người chủ chốt làm khi trống việc. Hiện trang tài liệu API có 1.203 thao tác nhưng chỉ khoảng 38% có mô tả và không thao tác nào khai dữ liệu trả về; nhiều phân hệ chưa có tài liệu chức năng theo khuôn mới.
+
+**Việc cần làm (theo từng phân hệ, khuôn ở doc/tai-lieu-ky-thuat/quy-dinh/mau/)**
+- Viết yêu cầu chức năng và yêu cầu phi chức năng cho từng phân hệ.
+- Viết tài liệu API của phân hệ, bổ sung mô tả tiếng Việt và nhóm cho các đường API còn thiếu, khai kiểu dữ liệu trả về khi rõ.
+- Viết hoặc cập nhật bài hướng dẫn sử dụng trên Trung tâm trợ giúp cho khớp màn hình.
+- Đồng bộ cho trợ lý AI và bot đọc được: chạy lại nạp bài hướng dẫn, cập nhật cẩm nang trợ lý và nạp lại chỉ mục tìm kiếm trên dev rồi prod.
+- Ưu tiên cụm thu mua và các đường mà công cụ MCP đang dùng, làm sau khi đợt làm gọn controller thu mua xong.
 
 ## bao-CR-709 | Hỏi giữ phòng cũ làm kiêm nhiệm khi đổi phòng chính
 - status: xong

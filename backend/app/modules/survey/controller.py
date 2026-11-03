@@ -115,7 +115,7 @@ def search_condition(keyword: str):
 
     Vế bảng dòng dùng SUBQUERY, KHÔNG gom id ra Python rồi `.in_(list)`: bảng dòng SP trên
     thật đã hơn 5000 dòng, gõ một từ phổ biến là SQLAlchemy nhồi hàng nghìn tham số thẳng vào
-    câu SQL (mẫu C1 trong doc/tai-lieu-ky-thuat/ra-soat-api-hieu-nang.md — đúng lỗi đã vá ở
+    câu SQL (mẫu C1 trong doc/tai-lieu-ky-thuat/van-hanh/ra-soat-api-hieu-nang.md — đúng lỗi đã vá ở
     `service.report_rows`).
     """
     from sqlalchemy import or_, select

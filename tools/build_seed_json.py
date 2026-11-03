@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Đọc doc/datamau/*.txt -> xuất JSON chuẩn vào backend/app/seed_data/*.json."""
+"""Đọc doc/v1/du-lieu/datamau/*.txt -> xuất JSON chuẩn vào backend/app/seed_data/*.json."""
 import csv
 import json
 import os
@@ -9,7 +9,7 @@ import sys
 sys.stdout.reconfigure(encoding="utf-8")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(HERE, "..", "doc", "datamau")
+SRC = os.path.join(HERE, "..", "doc", "v1", "du-lieu", "datamau")
 OUT = os.path.join(HERE, "..", "backend", "app", "seed_data")
 os.makedirs(OUT, exist_ok=True)
 

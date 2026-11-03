@@ -18,7 +18,7 @@ Có việc **tự làm theo hạn mức hoặc tiền lệ** thì thêm một d�
 1. **Kiểm thật trước khi báo xong.** Bài kiểm chạy rồi (con số pass / fail), rà mã có biên bản, việc có giao diện thì đã soát trên dev. Chưa kiểm thì báo *xong mã, chưa kiểm*, không báo *xong*.
 2. **Sổ task** `doc/tai-lieu-ky-thuat/nhat-ky-task.md`: sửa mục của việc — `status: xong`, mô tả theo luật 7 (Bối cảnh / Đã làm / Kết quả / Còn lại, dòng cuối Mã nguồn / Commit / Deploy).
 3. **Đồng bộ lên Dự án** bằng `backend/scripts/sync_task_journal.py` với tệp cấu hình của người chủ (`--env-file`), chạy `--dry-run` trước, chỉ chạy thật khi danh sách thay đổi đúng ý. Đây là việc M3 — không cần hỏi.
-4. **Kế hoạch** `doc/erp/00-ke-hoach-theo-module.md`: dòng của việc ghi **XONG — <CR>, <ngày>** (chờ deploy thì ghi rõ), hoặc chuyển nội dung vào dòng *Đã có* của module.
+4. **Kế hoạch** `doc/plans/00-ke-hoach-theo-module.md`: dòng của việc ghi **XONG — <CR>, <ngày>** (chờ deploy thì ghi rõ), hoặc chuyển nội dung vào dòng *Đã có* của module.
 5. **Gửi mẫu báo** cho người chủ. Không kèm nhật ký lệnh, không kèm giải thích dài — chi tiết đã nằm ở sổ task.
 6. Có câu ở **Cần đại ca** thì đi qua skill `he-agent-truoc-khi-hoi` trước (có thể tiền lệ đã trả lời rồi).
 

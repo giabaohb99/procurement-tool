@@ -320,7 +320,7 @@ Danh mục nội bộ hỗ trợ tìm nhân sự: `/api/users?search=<SĐT>` (ba
 | Quản lý điều phối (`booking_manager`) | như trên + `vehicle`/`driver` create/write/delete | `all` |
 | Tài xế (`booking_driver`) | `vehicle_booking` read/write · `vehicle`/`driver` read | **`assigned`** |
 
-Chi tiết thiết kế phân quyền hai trục: `doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`.
+Chi tiết thiết kế phân quyền hai trục: `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`.
 
 ## Liên quan
 
