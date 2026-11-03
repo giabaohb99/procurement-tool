@@ -21,13 +21,18 @@ Năm nhóm:
   muc-luc        skill / agent / luật chưa có dòng trong `doc/tai-lieu-ky-thuat/quy-dinh/README.md`.
 """
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
 from urllib.parse import unquote
 
 def find_root() -> Path:
-    """Gốc repo: thư mục có cả `doc/` và `CLAUDE.md` (container api chỉ mount `backend/` thì không thấy → trả None)."""
+    """Gốc repo: biến `KIEM_TAI_LIEU_ROOT` (container api mount repo chỉ-đọc ở /repo), không có thì dò thư mục cha có
+    cả `doc/` và `CLAUDE.md`."""
+    env = os.environ.get("KIEM_TAI_LIEU_ROOT")
+    if env and (Path(env) / "doc").is_dir():
+        return Path(env)
     for cand in Path(__file__).resolve().parents:
         if (cand / "doc").is_dir() and (cand / "CLAUDE.md").is_file():
             return cand

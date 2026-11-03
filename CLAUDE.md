@@ -107,10 +107,10 @@ docker compose exec -T api python -m pytest test/backend/test_process.py -q   # 
 # Cổng kiểm backend bằng ruff (bao-CR-710): phải 0 lỗi trước khi đẩy. Bộ luật + khu tạm loại ở backend/ruff.toml
 docker compose exec -T api sh -c "pip install -q ruff && python -m ruff check app"
 
-# Cổng kiểm tài liệu (bao-CR-712): chạy ở MÁY THẬT (container api không mount doc/), chặn lỗi MỚI — exit 1.
+# Cổng kiểm tài liệu (bao-CR-712): chặn lỗi MỚI — exit 1. Trong container đọc repo qua mount chỉ-đọc /repo.
 # Lỗi cũ nằm trong backend/scripts/kiem_tai_lieu_nen.txt; sửa xong thì --cap-nhat-nen (chỉ BỚT dòng, không thêm)
 python backend/scripts/kiem_tai_lieu.py              # --chi-bao: chỉ in, luôn exit 0
-python -m pytest test/backend/test_kiem_tai_lieu_cr712.py -q   # cùng bài, dạng pytest
+docker compose exec -T api python -m pytest test/backend/test_kiem_tai_lieu_cr712.py -q   # cùng bài, dạng pytest
 
 # E2E (Playwright, run on host; requires stack up + demo accounts)
 pytest test/e2e --headed -v

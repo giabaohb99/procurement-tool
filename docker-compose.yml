@@ -80,6 +80,7 @@ services:
     env_file: .env
     environment:
       API_DOCS_ENABLED: "true"   # trang tài liệu API http://localhost:8000/api/docs (prod tắt)
+      KIEM_TAI_LIEU_ROOT: /repo   # bao-CR-712: gốc repo cho backend/scripts/kiem_tai_lieu.py (xem mount /repo bên dưới)
     # Trần rộng hơn các service khác vì pytest chạy trong chính container này.
     mem_limit: 2g
     cpus: 3
@@ -96,6 +97,10 @@ services:
       - ./frontend-v2/src:/app/fe-src:ro
       # bao-CR-649: bài kiểm đối chiếu mã sự kiện của bộ thu bên app cũ (frontend/src/telemetry) với Python
       - ./frontend/src:/app/thumua-src:ro
+      # bao-CR-712: CHỈ-ĐỌC, cả repo, cho bài `test_kiem_tai_lieu_cr712.py` — bài kiểm tài liệu soát liên kết / đường
+      # dẫn trỏ sang mọi thư mục (backend, frontend-v2, .claude...) nên mount riêng doc/ là báo lỗi giả. Đặt ngoài /app
+      # để uvicorn --reload không dò cây này.
+      - .:/repo:ro
     ports:
       - "8000:8000"
 
