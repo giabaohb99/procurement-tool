@@ -162,6 +162,11 @@ def test_chay_lai_khong_nhan_doi_dong(db, world):
 def test_gia_tang_chi_tinh_lai_phieu_cham_toi_va_watermark_tien(db, world):
     old = make_pr(db, world, "OLD")
     old.updated_at = datetime(2026, 1, 1)
+    #  Dòng hàng cũng là "chạm tới" (`cycle_sources._CHILD`): `updated_at` mặc định là giờ thật, từ 29/10/2026 thì
+    #  >= since và phiếu cũ bị dựng lại oan (bài đỏ theo lịch) — đặt cũ luôn cho đúng kịch bản (bao-CR-714).
+    db.flush()                                                                         # dòng hàng mới add, chưa ở DB
+    for it in db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == old.id):
+        it.updated_at = datetime(2026, 1, 1)
     db.commit()
     result = cycle_builder.run_incremental(db, now=NOW)                                # lần đầu: dựng toàn bộ
     assert result["since"] is None and result["rows"][PR] == 2

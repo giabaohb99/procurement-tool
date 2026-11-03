@@ -127,13 +127,23 @@ kiểm chụp kết quả cũ trước khi tách. Không đổi hành vi: đư�
 Tham chiếu: doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md mục 5 và 6
 
 ## bao-CR-714-sua-bai-kiem-do-san-co | Sửa sáu bài kiểm đỏ sẵn có lộ ra khi chạy đủ bộ backend
-- status: đang làm
+- status: xong
 - date: 2026-11-03
 - tag: Nền tảng
 Chạy đủ bộ backend ở đợt dọn mã bao-CR-710 lộ ra chín bài đỏ có từ trước. Ba bài phần nhân sự người khác sửa; sáu bài còn lại
 làm ở đây: với mỗi bài tìm commit làm đỏ, phân biệt mã sai (sửa mã) hay bài kiểm lỗi thời (cập nhật bài kiểm, ghi rõ CR đổi hành
 vi), không nới luật canh cho xanh.
-Mã nguồn: test/backend/test_agent_hub.py, test_agent_hub_cong_mcp_cr207.py, test_assistant_ai_duyet_phieu_kh_ai2_7.py, test_bo_ma_hanh_dong_cr358.py, test_vong_doi_phieu_cr656_dung_bang.py
+Kết quả: một mã sai, năm bài kiểm lỗi thời. Mã sai: bao-CR-656 ghi dấu vết accept_size ở sao lưu mà quên khai sổ mã, nay
+khai vào action_catalog. Bài kiểm lỗi thời: hai bài MCP liệt kê tool khẳng định propose_document_update không mở, nhưng
+kh-AI2-5 đã mở ba tool đề xuất cho khóa ghi có bước xác nhận; bài cr207 còn mục search_docs chỉ hiện khi bật RAG nên đỏ hay
+xanh tùy .env máy chạy, nay bật tạm trong bài; bài AI duyệt phiếu còn kỳ vọng người cùng quyền bị chặn, nhưng duoc-CR-706
+đã giao bước quyền cho người được chọn cộng người cùng quyền; bài bộ mã hành động chưa khai chỗ động confirm_approval và
+đếm nhầm hàm record riêng của ai_plan (không có tham số action) là chỗ ghi dấu vết, nay bộ quét bỏ qua hàm cùng tên không
+có action; bài vòng đời phiếu đỏ theo lịch vì dòng hàng mặc định updated_at là giờ thật, từ 29/10/2026 vượt mốc và phiếu
+cũ bị dựng lại oan, nay đặt lại ngày cũ cho dòng hàng. Kiểm: 5 tệp cộng bài chọn người duyệt đặt xe cộng cụm MCP trong
+test_agent_hub, 117 đạt; cổng ruff sạch.
+Mã nguồn: backend/app/core/action_catalog.py, test/backend/test_agent_hub.py, test_agent_hub_cong_mcp_cr207.py, test_assistant_ai_duyet_phieu_kh_ai2_7.py, test_bo_ma_hanh_dong_cr358.py, test_vong_doi_phieu_cr656_dung_bang.py
+Commit: 52a6b2fe (đặt chỗ), a0af3187
 
 ## bao-CR-712-to-chuc-lai-tai-lieu | Tổ chức lại tài liệu dự án theo khuôn phân hệ
 - status: xong
