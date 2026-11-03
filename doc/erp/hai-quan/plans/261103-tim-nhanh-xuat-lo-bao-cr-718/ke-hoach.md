@@ -5,7 +5,7 @@
 | Bản | 1.0 |
 | Ngày | 03/11/2026 |
 | Người phụ trách | Agent 4 (A1 Điều phối giao, người chủ chốt) |
-| Trạng thái | Đang làm — phần tìm nhanh xong, phần xuất lô đang làm |
+| Trạng thái | Đang làm — tìm nhanh xong (dev); xuất lô: backend xong, giao diện v2 đang làm |
 | CR liên quan | bao-CR-718 |
 
 ## 1. Việc
@@ -89,7 +89,7 @@ lô (các thao tác bớt dòng mà `MAX(id)` không đổi). Chỉ bật trên 
 *lần đầu* = đệm trống (người đầu tiên gõ từ khóa đó); *lật trang* = đệm đã có. Từ khóa không có dòng nào: lần đầu ~0,45 giây
 (chỉ còn câu đếm). Biểu đồ / Doanh nghiệp vẫn dò cả tập lọc (~0,5 giây) — chấp nhận, chỉ chạy khi người dùng mở thẻ đó.
 
-## 6. Xuất toàn bộ chạy nền — thiết kế (đang làm)
+## 6. Xuất toàn bộ chạy nền — thiết kế
 
 - Bảng `tab_customs_export_batch`: người xuất, bộ lọc, trạng thái (SMALLINT + `CustomsExportStatus`), tổng dòng lúc tạo,
   số tệp dự kiến, tệp xong, dòng xong, con trỏ `last_id`, trần `max_id` (ảnh chụp lúc tạo), danh sách tệp, hạn giữ,
@@ -101,6 +101,10 @@ lô (các thao tác bớt dòng mà `MAX(id)` không đổi). Chỉ bật trên 
 - Mỗi tệp: lưu kho (R2) + một dòng `tab_export_log`. Xong: chuông trỏ trang chi tiết lô (tải từng tệp).
 - Dọn: `customs.cleanup_export_batches` hằng đêm, giữ `customs_export_keep_days` ngày (mặc định 7); lô kẹt quá 2 giờ
   không chạy tiếp thì đánh hỏng, nhả khóa người dùng.
+
+Chạy thử trên bảng 328.374 dòng (`bench_export`): tạo lô 0,2 giây (đếm đã đệm); 7 tệp, mỗi tệp 50.000 dòng ~22 giây
+(gồm 7,5 giây nghỉ giữa khối), ~12,8 MB; bộ nhớ tiến trình đứng ~300 MB suốt lô; cả lô ~2,5 phút (+5 giây nghỉ giữa tệp
+khi chạy qua Celery). Lọc *abamectin* 5.724 dòng: 1 tệp, 2,8 giây.
 
 ## 7. Lên môi trường
 

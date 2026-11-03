@@ -602,16 +602,25 @@ def export_lines_xlsx(db: Session, f: dict) -> bytes:
     #  xuất ra sửa tay rồi nạp lại được; bỏ chữ "(suy ra)" vì giá trị có thể lấy từ tệp.
     #  bao-CR-608: cột "ID" ĐẦU TIÊN + cột "Thao tác" RỖNG ở CUỐI — xuất → sửa ô → nạp lại là ghi
     #  đè đúng dòng; gõ "xóa" vào ô Thao tác là xóa dòng đó (bộ đọc nhận hai cột này, `reader.py`).
-    header = ([CONTROL_LABELS[REF_ID_KEY]] + [label for _, label in COLUMNS]
-              + [OPTIONAL_LABELS[k] for k, _ in OPTIONAL_COLUMNS] + [CONTROL_LABELS[ACTION_KEY]])
-    ws.append(header)
+    ws.append(export_header())
     for d in lines:
-        row = [d.get("transport_label") if k == "transport_mode" else d.get(k) for k, _ in COLUMNS]
-        ws.append([d["id"]] + row + [d.get("active_ingredient"), d.get("formulation"),
-                                     d.get("price_vnd_flat"), d.get("price_vnd_line_tax"), None])
+        ws.append(export_row(d))
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
+
+
+def export_header() -> list[str]:
+    """Tiêu đề tệp xuất — DÙNG CHUNG cho nút xuất ngay và lô xuất nền (bao-CR-718) để tệp nào cũng nạp lại được."""
+    return ([CONTROL_LABELS[REF_ID_KEY]] + [label for _, label in COLUMNS]
+            + [OPTIONAL_LABELS[k] for k, _ in OPTIONAL_COLUMNS] + [CONTROL_LABELS[ACTION_KEY]])
+
+
+def export_row(d: dict) -> list:
+    """Một dòng tệp xuất từ một dòng đã `serialize_lines` — khớp thứ tự `export_header`."""
+    row = [d.get("transport_label") if k == "transport_mode" else d.get(k) for k, _ in COLUMNS]
+    return [d["id"]] + row + [d.get("active_ingredient"), d.get("formulation"),
+                              d.get("price_vnd_flat"), d.get("price_vnd_line_tax"), None]
 
 
 # ── Biểu thuế (P-04) ────────────────────────────────────────────────────────

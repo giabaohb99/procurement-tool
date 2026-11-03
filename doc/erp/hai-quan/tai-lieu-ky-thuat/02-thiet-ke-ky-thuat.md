@@ -502,3 +502,16 @@ Nếu dùng `--no-retag` (hoặc không có từ khóa mới) thì bấm **Gắn
 - **Không dùng FULLTEXT**: bảng chia phân vùng theo năm nên MySQL không cho đặt. Lượng chữ phải dò (~61 MB tên hàng)
   mới là chỗ chậm — so nhị phân vẫn 330 ms. Khi dữ liệu tăng vài lần nữa mới xét bảng tìm kiếm phụ (đồng bộ ở mọi đường
   ghi) hoặc bỏ phân vùng.
+
+### 12.1 Xuất toàn bộ chạy nền, chia nhiều tệp (bao-CR-718 phần 2)
+
+- Bảng `tab_customs_export_batch` (migration `hqx718b`): bộ lọc, trạng thái `CustomsExportStatus` (1 chờ · 2 đang xuất ·
+  3 xong · 4 lỗi · 5 đã dừng · 6 hết hạn), tổng dòng lúc tạo, số tệp dự kiến / xong, `max_id` chụp lúc tạo, con trỏ
+  `last_id`, danh sách tệp (JSON), hạn giữ. `active_user_id` UNIQUE, NULL khi lô kết thúc = mỗi người một lô đang chạy.
+- `customs/line_export.py`: `create_batch` (đếm qua đệm, báo ngay số tệp), `run_next_part` (một tệp: khối 2.000 dòng theo
+  `id > last_id AND id <= max_id`, nghỉ 0,3 giây, `Workbook(write_only=True)` ra tệp tạm, lưu kho + `tab_export_log` entity
+  `customs_line`), `cleanup` (lô kẹt quá 2 giờ → lỗi; quá `customs_export_keep_days` → xóa tệp, hết hạn).
+- Task `customs.export_batch_part`: mỗi lần chạy MỘT tệp, còn thì tự hẹn lần sau 5 giây — không giữ worker quá một tệp,
+  không cần hàng đợi riêng. Commit giữa các khối để thấy lệnh dừng (MySQL REPEATABLE READ giữ ảnh chụp cũ).
+- Beat `customs.cleanup_export_batches` 02:50 hằng đêm (có trong sổ việc chạy ngầm).
+- Chạy thử 328.374 dòng: 7 tệp × ~12,8 MB, ~22 giây / tệp, bộ nhớ tiến trình đứng ~300 MB suốt lô.

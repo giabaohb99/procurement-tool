@@ -175,6 +175,7 @@ class Settings(BaseSettings):
     # bao-CR-698: nhật ký TỪNG DÒNG của lô hải quan (Thêm mới / Đã có / Trùng) cũ hơn N ngày tự dọn hằng đêm;
     # 0 = tắt. Dòng Lỗi / Ghi đè / Xóa / Bỏ qua và dòng nghi sửa giá giữ vĩnh viễn.
     CUSTOMS_ROW_LOG_KEEP_DAYS: int = 7     # đại ca chốt 30/10
+    CUSTOMS_EXPORT_KEEP_DAYS: int = 7      # bao-CR-718: tệp của lô xuất toàn bộ tra cứu thị trường
     # bao-CR-699: gộp dòng hàng hải quan trùng (cùng tờ khai + giá + lượng, không xung đột) ngày 1 và 16 lúc 03:30.
     CUSTOMS_LINE_MERGE_ENABLED: bool = True
     # bao-CR-703: sổ việc chạy ngầm (tab_job_run) giữ N ngày; 0 = tắt dọn.

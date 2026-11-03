@@ -162,6 +162,11 @@ FIELDS = [
      "label": "Tự gộp dòng hàng hải quan trùng (ngày 1 và 16)",
      "hint": "Dòng cùng tờ khai, giá, lượng mà không khác ô nào (hoặc chỉ một bên trống) được gộp về dòng nạp sớm "
              "nhất, ô trống điền bù. Nhóm khác ô hoặc từng sửa tay thì để nguyên. Tắt để dừng việc gộp định kỳ."},
+    #  bao-CR-718 — tệp của lô xuất toàn bộ Tra cứu thị trường.
+    {"key": "customs_export_keep_days", "group": "system", "type": "int",
+     "label": "Số ngày giữ tệp xuất toàn bộ của Tra cứu thị trường",
+     "hint": "Tệp của lô xuất toàn bộ (chạy nền, chia nhiều tệp) cũ hơn số ngày này bị vòng dọn đêm xóa khỏi kho; "
+             "nhật ký xuất vẫn còn. Đặt 0 để giữ mãi."},
     #  bao-CR-703 — sổ việc chạy ngầm.
     {"key": "job_run_keep_days", "group": "system", "type": "int",
      "label": "Số ngày giữ lịch sử việc chạy ngầm",
