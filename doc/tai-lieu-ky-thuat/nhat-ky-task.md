@@ -114,6 +114,18 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-720-canh-bao-quyen-nhay-cam-vai-tro-nguoi-yeu-cau | Cảnh báo vàng khi vai trò người yêu cầu có quyền xem dữ liệu nhạy cảm thu mua
+- status: dang-lam
+- date: 2026-11-03
+- tag: Nền tảng
+**Bối cảnh:** tiếp bao-CR-716. Vai trò Nhân sự là vai trò mọi tài khoản mới tự nhận, có hàng trăm người giữ. Nếu vai trò này
+được tick Xem hay Xuất ở danh mục nhạy cảm của thu mua (nhà cung cấp, hợp đồng, giá hải quan, công nợ, yêu cầu thanh toán)
+thì toàn bộ người giữ thấy dữ liệu đó, mà màn Phân quyền không nhắc gì.
+**Việc:** backend khai một chỗ danh sách thực thể nhạy cảm và mã vai trò người yêu cầu, trả qua API meta của màn Phân quyền;
+màn Vai trò và quyền hiện một dòng vàng dưới ma trận nêu tên quyền và số người đang giữ sẽ thấy toàn bộ dữ liệu, không chặn
+lưu; bài kiểm backend và vitest; HDSD Phân quyền thêm một câu.
+Mã nguồn: backend/app/modules/role/controller.py, frontend-v2/src/modules/system/components
+
 ## bao-CR-718-tra-cuu-thi-truong-nhanh-xuat-lo | Tra cứu thị trường: tìm nhanh hơn và xuất toàn bộ chạy nền chia nhiều tệp
 - status: xong
 - date: 2026-11-03
