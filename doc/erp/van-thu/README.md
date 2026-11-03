@@ -77,6 +77,10 @@ Ghi chú: README cũ (13/08/2026) ghi "chưa có dòng mã nào"; thông tin đ�
 | [tai-lieu-ky-thuat/04-bang-du-lieu.md](tai-lieu-ky-thuat/04-bang-du-lieu.md) | 25 bảng mới, 4 bảng sửa, chỉ mục, ràng buộc, chỗ dễ sai | Bản 1.1 |
 | [tai-lieu-ky-thuat/05-vong-doi-phien-ban.md](tai-lieu-ky-thuat/05-vong-doi-phien-ban.md) | Sửa văn bản đã ban hành: lên phiên bản hay ra văn bản sửa đổi | Bản 1.1, 13/08/2026 |
 | [tai-lieu-ky-thuat/api.md](tai-lieu-ky-thuat/api.md) | Bảng đường API dựng tự động từ mã | Nháp, bản 0.1, 03/11/2026 |
+| [`plans/260814-1036-van-thu-p0-p3/`](plans/260814-1036-van-thu-p0-p3/plan.md) | VĂN THƯ — PHASE 0→3 · KẾ HOẠCH TRIỂN KHAI (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
+| [`plans/260824-1342-trang-thai-tra-ve-van-ban/`](plans/260824-1342-trang-thai-tra-ve-van-ban/plan.md) | Văn bản — tách trạng thái «Trả về» và «Đã từ chối» (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
+| [`plans/260921-0920-dieu-kien-ap-dung-ho-so/`](plans/260921-0920-dieu-kien-ap-dung-ho-so/plan.md) | Điều kiện áp dụng của hồ sơ (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
+| [`plans/reports/`](plans/reports/) | Báo cáo của agent khi làm kế hoạch (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
 
 ## Mã nguồn
 

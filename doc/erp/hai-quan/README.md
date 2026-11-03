@@ -56,6 +56,9 @@ Ranh giới đã chốt: **không nối** danh mục VTBB, tồn kho, lịch s�
 | [`plans/05-giao-viec-cr496-luu-bo-loc-log-dong.md`](plans/05-giao-viec-cr496-luu-bo-loc-log-dong.md) | Giao việc bao-CR-496: lưu bộ lọc riêng, log từng dòng khi nạp | chưa ghi |
 | [`tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md`](tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md) | Lược đồ, đường nạp, chống trùng, dung lượng, bài kiểm, nạp cấu hình | Thiết kế + đã dựng (bản 1.5, 23/09/2026) |
 | [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md) | Bảng đường API (dựng tự động từ mã) | Nháp |
+| [`plans/260928-1553-thuoc-bvtv-danh-muc/`](plans/260928-1553-thuoc-bvtv-danh-muc/) | Kế hoạch (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
+| [`plans/260929-1356-thuoc-bvtv-tra-cuu-thi-truong/`](plans/260929-1356-thuoc-bvtv-tra-cuu-thi-truong/plan.md) | Thuốc BVTV — mục mới của Tra cứu thị trường (29/09/2026) (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
+| [`plans/reports/`](plans/reports/) | Báo cáo của agent khi làm kế hoạch (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
 
 ## Mã nguồn
 

@@ -66,6 +66,10 @@ Chỉ ghi trạng thái khi tài liệu nguồn nói rõ; còn lại ghi *chưa 
 | [`tai-lieu-ky-thuat/20-ra-soat-xoa-cung.md`](tai-lieu-ky-thuat/20-ra-soat-xoa-cung.md) | Rà soát xóa cứng, chuyển sang xóa mềm theo đợt | chưa ghi |
 | [`tai-lieu-ky-thuat/api.md`](tai-lieu-ky-thuat/api.md) | Bảng đường API nền tảng (dựng tự động từ mã) | Nháp |
 | [`tai-lieu-ky-thuat/thiet-ke-luu-va-trang-thai-dong.md`](tai-lieu-ky-thuat/thiet-ke-luu-va-trang-thai-dong.md) | Quyết định nút Lưu hay tự lưu; trạng thái dòng YCKS, YCMH, ĐMH | chưa ghi |
+| [`plans/261019-1450-tracking-ho-so-lam-viec-cr641/`](plans/261019-1450-tracking-ho-so-lam-viec-cr641/plan.md) | duoc-CR-641 — Hồ sơ cách làm việc (pha 1, 2, 3 của duoc-CR-626) (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
+| [`plans/261020-1600-d0-d1-ghi-nhan-thao-tac-nang-luc/`](plans/261020-1600-d0-d1-ghi-nhan-thao-tac-nang-luc/plan.md) | D0 + D1 — ghi nhận thao tác & năng lực theo loại việc (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
+| [`plans/261002-0836-phan-quyen-tung-bao-cao/`](plans/261002-0836-phan-quyen-tung-bao-cao/plan.md) | Phân quyền xem từng báo cáo (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
+| [`plans/reports/`](plans/reports/) | Báo cáo của agent khi làm kế hoạch (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
 
 ## Mã nguồn
 

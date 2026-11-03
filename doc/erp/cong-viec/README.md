@@ -63,6 +63,7 @@ thị cho người dùng là **Dự án**, đường `/project`; mã nguồn, AP
 | [tai-lieu-ky-thuat/02-bang-du-lieu.md](tai-lieu-ky-thuat/02-bang-du-lieu.md) | Bảng `tab_work_*`, IntEnum, phác API | Bản 1.1, 28/08/2026 |
 | [tai-lieu-ky-thuat/04-phan-quyen.md](tai-lieu-ky-thuat/04-phan-quyen.md) | Phân quyền hai tầng, ma trận vai trò trong dự án | Bản 1.0, 28/08/2026 |
 | [tai-lieu-ky-thuat/api.md](tai-lieu-ky-thuat/api.md) | Bảng đường API dựng tự động từ mã | Nháp, bản 0.1, 03/11/2026 |
+| [`plans/260829-1600-gantt-lark-b14-b15/`](plans/260829-1600-gantt-lark-b14-b15/) | Kế hoạch (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
 
 ## Mã nguồn
 

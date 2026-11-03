@@ -64,6 +64,8 @@ và thuê ngoài). Giao diện chỉ có trên `frontend-v2`, menu **Đặt xe**
 | [tai-lieu-ky-thuat/dong-bo-app-cu/p3-erp-sang-app-cu.md](tai-lieu-ky-thuat/dong-bo-app-cu/p3-erp-sang-app-cu.md) | Chiều ERP sang app cũ (bản dựng) | Bản 1.0, 05/10/2026 |
 | [tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md](tai-lieu-ky-thuat/dong-bo-app-cu/tien-do.md) | Tiến độ đồng bộ | chưa ghi (trạng thái chung 16/09/2026) |
 | [tai-lieu-ky-thuat/dong-bo-app-cu/van-hanh.md](tai-lieu-ky-thuat/dong-bo-app-cu/van-hanh.md) | Sổ tay vận hành cho người trực | Bản 1.0, 23/10/2026 |
+| [`plans/261023-1352-dat-xe-chon-nguoi-duyet-cr681/`](plans/261023-1352-dat-xe-chon-nguoi-duyet-cr681/) | Kế hoạch (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
+| [`plans/reports/`](plans/reports/) | Báo cáo của agent khi làm kế hoạch (dời từ `plans/` gốc, bao-CR-712) | chưa ghi |
 
 ## Mã nguồn
 
