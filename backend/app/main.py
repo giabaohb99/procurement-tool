@@ -186,7 +186,16 @@ from app.modules.vehicle_booking import approval_bridge as _vehicle_booking_brid
 #  không đổi trạng thái, vì lúc đó chưa ai khai hàm hook.
 from app.modules.seal_request import approval_bridge as _seal_request_bridge  # noqa: F401
 
-app = FastAPI(title="Procurement Tool API", version="0.1.0")
+def build_docs_urls(enabled: bool) -> dict:
+    """Đường trang tài liệu API: mở dưới `/api/` khi bật cờ (local + dev), tắt hẳn khi không (prod).
+
+    Xem `Settings.API_DOCS_ENABLED`."""
+    if not enabled:
+        return {"docs_url": None, "redoc_url": None, "openapi_url": None}
+    return {"docs_url": "/api/docs", "redoc_url": "/api/redoc", "openapi_url": "/api/openapi.json"}
+
+
+app = FastAPI(title="DEGO ERP API", version="0.1.0", **build_docs_urls(settings.API_DOCS_ENABLED))
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

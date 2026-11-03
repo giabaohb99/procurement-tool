@@ -15,7 +15,6 @@ from app.core.report_aggregate import DerivedSpec, DimensionSpec, MetricSpec, Re
 from app.core.report_drilldown import Col, filter_group, rows_response
 from app.core.report_period import Period
 from app.core.vn_time import vn_today
-from app.modules.employee.model import Employee
 from app.modules.employee.profile_gaps_report_data import load_group_names
 from app.modules.leave.catalog_model import LeaveType
 

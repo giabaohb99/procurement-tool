@@ -8,7 +8,6 @@ Sau khi dựng PO+dòng+lần giao -> recompute_effects() tự sinh nhập kho +
 Dòng vào `completed` -> tạo YCTT + ghi ĐÃ CHI + chốt LỊCH SỬ MUA HÀNG (chỉ ở chế độ Ghi).
 """
 import json
-from datetime import datetime
 
 from sqlalchemy import inspect as sa_inspect
 
@@ -26,7 +25,7 @@ from app.modules.purchase_order import service as po_service
 from app.modules.purchase_order.model import POItem, PODelivery, PurchaseOrder
 from app.modules.supplier.model import Supplier
 
-from .model import ImportBatch, ImportStatus, LogLevel
+from .model import ImportBatch, LogLevel
 from .survey_import import _b, _cell, _d, _fit, _n, _ncode, _persist, _s, _vat
 
 HEADER_ROW = 4
@@ -215,10 +214,10 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
                                             PurchaseOrder.is_deleted.is_(False)).first()
         was_new = po is None
         sup = db.query(Supplier).filter(Supplier.code == d["supplier"]).first()
-        fields = dict(misa_code=misa, supplier_code=d["supplier"],
-                      supplier_name=(sup.name if sup else d["supplier"]), company_id=d["company_id"],
-                      department=d["department"], nspt=d["nspt"], order_date=d["order_date"],
-                      payment_terms=d["payment_terms"])
+        fields = {"misa_code": misa, "supplier_code": d["supplier"],
+                      "supplier_name": (sup.name if sup else d["supplier"]), "company_id": d["company_id"],
+                      "department": d["department"], "nspt": d["nspt"], "order_date": d["order_date"],
+                      "payment_terms": d["payment_terms"]}
         if po is None:
             po = PurchaseOrder(status="approved", created_by=uid, updated_by=uid, **fields)
             sync_department_ref(db, po)   # CR-086: nạp từ Misa chỉ có TÊN phòng → suy ra id
@@ -254,12 +253,12 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
                     f"Trạng thái '{d['progress']}' không nhận ra — tạm để "
                     f"'{PO_PROGRESS_STATUS.label_of(DEFAULT_PROGRESS)}'",
                     ref_key=d["product_code"], target_code=po.code)
-        fields = dict(product_code=d["product_code"], product_name=d["product_name"], invoice_name=d["invoice_name"],
-                      item_group=d["item_group"], spec=d["spec"], fg_code=d["fg_code"], fg_name=d["fg_name"],
-                      invoice_no=d["invoice_no"], supplier_ready=d["supplier_ready"], required_date=d["required_date"],
-                      unit=d["unit"], qty_request=d["qty_request"], qty_order=d["qty_order"], price=d["price"],
-                      vat=d["vat"], warehouse_code=d["warehouse"], note=d["note"][:255],
-                      progress_status=_prog)
+        fields = {"product_code": d["product_code"], "product_name": d["product_name"], "invoice_name": d["invoice_name"],
+                      "item_group": d["item_group"], "spec": d["spec"], "fg_code": d["fg_code"], "fg_name": d["fg_name"],
+                      "invoice_no": d["invoice_no"], "supplier_ready": d["supplier_ready"], "required_date": d["required_date"],
+                      "unit": d["unit"], "qty_request": d["qty_request"], "qty_order": d["qty_order"], "price": d["price"],
+                      "vat": d["vat"], "warehouse_code": d["warehouse"], "note": d["note"][:255],
+                      "progress_status": _prog}
         po_service.fill_blank_invoice_name(db, fields, inv_cache)   # duoc-CR-663: ô trống -> tên master
         fields, _t = _fit(POItem, fields)
         if it is None:
@@ -281,12 +280,12 @@ def run(db, batch: ImportBatch, wb, apply: bool, default_nspt: str = "") -> None
                                          PODelivery.received_date == d["received_date"],
                                          PODelivery.warehouse_code == d["warehouse"],
                                          PODelivery.carrier_code == d["carrier"]).first()
-        fields = dict(po_id=po.id, warehouse_code=d["warehouse"], carrier_code=d["carrier"],
-                      carrier_name=(d["carrier"] or ""), ship_qty=d["ship_qty"], ship_unit=d["ship_unit"],
-                      received_qty=d["received_qty"], received_date=d["received_date"],
-                      promised_date=d["promised_date"], invoice_no=d["invoice_no"],
-                      shipping_unit_price=d["ship_price"], shipping_amount=d["ship_amount"],
-                      progress_note=d["progress_note"])
+        fields = {"po_id": po.id, "warehouse_code": d["warehouse"], "carrier_code": d["carrier"],
+                      "carrier_name": (d["carrier"] or ""), "ship_qty": d["ship_qty"], "ship_unit": d["ship_unit"],
+                      "received_qty": d["received_qty"], "received_date": d["received_date"],
+                      "promised_date": d["promised_date"], "invoice_no": d["invoice_no"],
+                      "shipping_unit_price": d["ship_price"], "shipping_amount": d["ship_amount"],
+                      "progress_note": d["progress_note"]}
         fields, _t = _fit(PODelivery, fields)
         if dv is None:
             dv = PODelivery(po_item_id=it.id, created_by=uid, updated_by=uid, **fields)

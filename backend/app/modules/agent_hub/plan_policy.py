@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import contextlib
 
 log = logging.getLogger("app.agent_hub.plan_policy")
 
@@ -68,10 +69,8 @@ def current() -> dict:
         elif isinstance(DEFAULTS[k], bool):
             out[k] = bool(v)
         elif isinstance(DEFAULTS[k], int):
-            try:
+            with contextlib.suppress(TypeError, ValueError):
                 out[k] = int(v)
-            except (TypeError, ValueError):
-                pass
         elif isinstance(DEFAULTS[k], str):
             out[k] = str(v)[:300]
     return out

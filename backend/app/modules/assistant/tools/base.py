@@ -16,7 +16,6 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.core.audit import record
 from app.core.auth import get_perm_profile, user_has_permission
 
 from ..provider import ToolDef

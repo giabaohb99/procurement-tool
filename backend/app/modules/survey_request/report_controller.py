@@ -107,11 +107,11 @@ def _readable(db: Session, entity: str, owner_id: int, user):
     rule = _rule_of(entity)
     parent = rule.load(db, owner_id, user, rule.read_action)
     report_id = report_service.report_id_of(db, entity, owner_id)
-    if report_id and rule.items_locked:
-        #  Đồng bộ là việc của hệ thống, không phải người đọc: ghi nhận bằng
-        #  `updated_by` của người đang xem nhưng không lên lịch sử thao tác.
-        if report_service.sync_line_items(db, report_id, rule.lines(db, parent), user.id):
-            db.commit()
+    #  Đồng bộ là việc của hệ thống, không phải người đọc: ghi nhận bằng
+    #  `updated_by` của người đang xem nhưng không lên lịch sử thao tác.
+    if (report_id and rule.items_locked
+            and report_service.sync_line_items(db, report_id, rule.lines(db, parent), user.id)):
+        db.commit()
     return parent, report_id
 
 

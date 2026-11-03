@@ -1,8 +1,6 @@
 import csv
 from io import StringIO
-from fastapi import HTTPException
 from fastapi.responses import Response
-from app.core.utils import generate_code
 
 def export_csv_response(items, headers_map, filename):
     output = StringIO()
@@ -12,7 +10,7 @@ def export_csv_response(items, headers_map, filename):
 
     for item in items:
         row = []
-        for field in headers_map.keys():
+        for field in headers_map:
             val = getattr(item, field, "")
             row.append(str(val) if val is not None else "")
         is_active = getattr(item, "is_active", True)

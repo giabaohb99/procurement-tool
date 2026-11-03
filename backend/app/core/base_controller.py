@@ -2,6 +2,7 @@ from fastapi import Query, Request
 
 from app.core.filter_operators import apply_operator_filters
 from app.core.ref_filter import owns as _ref_owns
+import contextlib
 
 
 def pagination(
@@ -115,7 +116,7 @@ def apply_sort(query, model, sort_by: str | None, sort_dir: str = "asc", default
     """
     col = getattr(model, sort_by, None) if sort_by else None
     # chỉ cho phép cột vật lý trong bảng, tránh sort theo relationship/hybrid/method
-    valid = col is not None and sort_by in model.__table__.columns.keys()
+    valid = col is not None and sort_by in model.__table__.columns
     if valid:
         is_desc = str(sort_dir).lower() == "desc"
         order = col.desc() if is_desc else col.asc()
@@ -206,8 +207,6 @@ def apply_equals(query, model, request: Request, fields: list[str], cast=int):
         col = getattr(model, field, None)
         raw = (request.query_params.get(field) or "").strip()
         if col is not None and raw:
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 query = query.filter(col == cast(raw))
-            except (ValueError, TypeError):
-                pass
     return query

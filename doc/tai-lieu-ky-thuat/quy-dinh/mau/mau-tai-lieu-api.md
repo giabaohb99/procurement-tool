@@ -8,7 +8,7 @@
 | Trạng thái | Nháp / Hiệu lực |
 | CR liên quan | <mã CR> |
 
-**Tra tham số đầy đủ:** trang `/docs` (Swagger do FastAPI sinh từ mã — dev `https://deverp.degoholding.vn/docs`, prod `https://erp.degoholding.vn/docs`), nhóm (tag) `<tag>`. Tệp này giữ phần Swagger không nói được: **quyền, phạm vi, luật nghiệp vụ, ai gọi**.
+**Tra tham số đầy đủ:** trang `/api/docs` (Swagger do FastAPI sinh từ mã — chỉ mở ở dev `https://deverp.degoholding.vn/api/docs` và local `http://localhost:8000/api/docs`; prod tắt), nhóm (tag) `<tag>`. Tệp này giữ phần Swagger không nói được: **quyền, phạm vi, luật nghiệp vụ, ai gọi**.
 
 **Phong bì chung:** mọi đường trả `{success, message, data}`; lỗi trả `{success: false, error: {code, message, details}}`. Danh sách có phân trang trả `data = {items, total, page, page_size}`.
 
@@ -25,7 +25,7 @@
 
 ## 2. Dữ liệu vào / ra chính
 
-Chỉ ghi trường mang luật nghiệp vụ (bắt buộc, giá trị mã, đơn vị); phần còn lại xem `/docs`.
+Chỉ ghi trường mang luật nghiệp vụ (bắt buộc, giá trị mã, đơn vị); phần còn lại xem `/api/docs`.
 
 | Đường | Trường | Ý nghĩa / luật |
 |---|---|---|

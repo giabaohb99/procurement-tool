@@ -25,6 +25,7 @@ from html.parser import HTMLParser
 
 from .docx_writer import (EmbeddedImage, DocxPackage, header_footer_paragraph, pack,
                           page_number_field, xml_escape)
+import contextlib
 
 #  Thẻ khối tạo ra một đoạn mới trong Word.
 _PARAGRAPH_TAGS = {"p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote"}
@@ -245,10 +246,8 @@ class _Converter(HTMLParser):
                 new.font = style["font-family"].split(",")[0].strip(" '\"")
             size = style.get("font-size", "")
             if size.endswith("pt"):
-                try:
+                with contextlib.suppress(ValueError):
                     new.size_pt = float(size[:-2])
-                except ValueError:
-                    pass
             new.color = _color(style.get("color")) or new.color
             new.background = _color(style.get("background-color")) or new.background
             self._styles.append(new)

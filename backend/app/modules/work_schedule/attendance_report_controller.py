@@ -41,7 +41,7 @@ def _inputs(request: Request, db: Session, user, action: str = "read") -> tuple[
         emp_q = emp_q.filter(Employee.department_id == department_id)
     with_leave = has_perm(prof, "leave_request", "read")
     leave_q = apply_scope(db.query(LeaveRequest), LeaveRequest, "leave_request", user, prof) if with_leave else None
-    return dict(emp_q=emp_q, leave_q=leave_q, period=parse_period(qp)), with_leave
+    return {"emp_q": emp_q, "leave_q": leave_q, "period": parse_period(qp)}, with_leave
 
 
 @router.get("/summary", dependencies=_GUARD)

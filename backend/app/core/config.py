@@ -99,6 +99,11 @@ class Settings(BaseSettings):
     # Cách dùng: khi CỐ Ý áp lại phân quyền chuẩn -> đặt SEED_FORCE_SYNC=true, restart api 1 lần,
     # rồi trả về false (hoặc bỏ dòng đó) trước lần deploy sau.
     SEED_FORCE_SYNC: bool = False
+    # Trang tài liệu API do FastAPI tự sinh (Swagger `/api/docs`, `/api/redoc`, `/api/openapi.json`). Mặc định TẮT:
+    # prod không mở (người chủ chốt 03/11/2026 — bản đồ trọn 1.200 đường API không cho người ngoài xem). Bật ở
+    # local (docker-compose.yml) và dev (`.env.dev` trên VPS 2: API_DOCS_ENABLED=true). Đặt dưới `/api/` để đi qua
+    # nginx của giao diện như mọi đường API khác — `/docs` trần thì nginx trả trang SPA.
+    API_DOCS_ENABLED: bool = False
 
     # --- Quy trình duyệt YCMH (CR-034) ---
     # BẬT (mặc định): trưởng bộ phận duyệt xong phiếu dừng ở "Đã duyệt", phải có Admin/Quản lý

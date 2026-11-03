@@ -80,7 +80,7 @@ docker compose up --build           # start db + api + web + erp + help + admine
 # Web (frontend/, đóng băng) http://localhost:8080
 # ERP v2 (frontend-v2/, đang phát triển) http://localhost:8083
 # Help Center http://localhost:8082
-# API http://localhost:8000/docs · Adminer http://localhost:8081
+# API http://localhost:8000/api/docs (dev: https://deverp.degoholding.vn/api/docs, prod tắt) · Adminer http://localhost:8081
 ```
 
 On `api` startup, `backend/start.sh` runs automatically: wait for DB → `alembic upgrade head` → `python -m app.seed` (idempotent) → uvicorn with `--reload`. Code is bind-mounted, so backend and frontend hot-reload without rebuilds.
@@ -103,6 +103,9 @@ docker compose exec api python -m app.seed
 docker compose exec -T api pip install pytest
 docker compose exec -T api python -m pytest test/backend -q
 docker compose exec -T api python -m pytest test/backend/test_process.py -q   # single file
+
+# Cổng kiểm backend bằng ruff (bao-CR-710): phải 0 lỗi trước khi đẩy. Bộ luật + khu tạm loại ở backend/ruff.toml
+docker compose exec -T api sh -c "pip install -q ruff && python -m ruff check app"
 
 # E2E (Playwright, run on host; requires stack up + demo accounts)
 pytest test/e2e --headed -v

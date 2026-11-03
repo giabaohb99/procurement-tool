@@ -7,7 +7,6 @@ và nhật ký thao tác ngập dòng "đã tạo" cho những thứ chưa ai đ
 """
 from datetime import date
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from .constants import DP_DONE, DP_IDLE, DP_STATUS_LABELS

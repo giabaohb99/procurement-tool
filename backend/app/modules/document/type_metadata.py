@@ -53,7 +53,7 @@ def _number(value, name: str, *, required: bool) -> int:
     try:
         return int(value)
     except (TypeError, ValueError):
-        raise HTTPException(400, f"\"{name}\" phải là số")
+        raise HTTPException(400, f"\"{name}\" phải là số") from None
 
 
 def _date(value, name: str) -> str:
@@ -63,7 +63,7 @@ def _date(value, name: str) -> str:
     try:
         return date.fromisoformat(str(value)[:10]).isoformat()
     except ValueError:
-        raise HTTPException(400, f"\"{name}\" không phải ngày hợp lệ (cần YYYY-MM-DD)")
+        raise HTTPException(400, f"\"{name}\" không phải ngày hợp lệ (cần YYYY-MM-DD)") from None
 
 
 def suggested_days(from_date: str, to_date: str, from_session: str, to_session: str) -> float:
@@ -120,7 +120,7 @@ def _check_leave(payload: dict, creator_employee_id: int | None) -> dict:
         day_count = float(raw) if raw not in (None, "") else suggested_days(
             from_date, to_date, from_session, to_session)
     except (TypeError, ValueError):
-        raise HTTPException(400, "\"Tổng số ngày\" phải là số")
+        raise HTTPException(400, "\"Tổng số ngày\" phải là số") from None
     if day_count <= 0:
         raise HTTPException(400, "\"Tổng số ngày\" phải lớn hơn 0")
 

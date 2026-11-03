@@ -26,7 +26,7 @@ from app.core.report_aggregate import BREAKDOWN_LIMIT, EMPTY_LABEL
 from app.core.report_compute import compute_derived, drop_snapshot, merge_groups_by_key
 
 from . import report_grouped_fetch as grouped
-from .instance_model import (ApprovalInstance, INSTANCE_APPROVED, INSTANCE_REJECTED,
+from .instance_model import (INSTANCE_APPROVED, INSTANCE_REJECTED,
                              INSTANCE_RETURNED, INSTANCE_WITHDRAWN)
 
 

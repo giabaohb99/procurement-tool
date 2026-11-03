@@ -13,7 +13,7 @@ Luật phải giữ:
 from app.modules.payable.model import Payable
 from app.modules.report import import_landed_cost as ilc
 from app.modules.purchase_order import service
-from app.modules.purchase_order.controller import _out
+from app.modules.purchase_order.serializer import _out
 from app.modules.purchase_order.model import (IMPORT_COST_TYPE_LABELS, CostStage,
                                               ImportCostType, OrderType, POItem,
                                               PurchaseOrder)

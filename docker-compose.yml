@@ -78,6 +78,8 @@ services:
       args:
         INSTALL_TEST_DEPS: "1"   # pytest + pytest-timeout + pytest-xdist, chỉ cho local
     env_file: .env
+    environment:
+      API_DOCS_ENABLED: "true"   # trang tài liệu API http://localhost:8000/api/docs (prod tắt)
     # Trần rộng hơn các service khác vì pytest chạy trong chính container này.
     mem_limit: 2g
     cpus: 3

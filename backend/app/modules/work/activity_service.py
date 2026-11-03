@@ -87,7 +87,7 @@ def _resolve_task_titles(db: Session, task_ids: set[int]) -> dict[int, str]:
     if not task_ids:
         return {}
     rows = db.query(WorkTask.id, WorkTask.title).filter(WorkTask.id.in_(task_ids)).all()
-    return {i: t for i, t in rows}
+    return dict(rows)
 
 
 def list_activities(db: Session, actor: Actor, list_id: int,

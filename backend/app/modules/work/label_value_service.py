@@ -108,14 +108,14 @@ def _as_int(value, message: str) -> int:
     try:
         return int(value)
     except (TypeError, ValueError):
-        raise HTTPException(400, message)
+        raise HTTPException(400, message) from None
 
 
 def _as_decimal(value) -> Decimal:
     try:
         return Decimal(str(value).strip().replace(",", "."))
     except (InvalidOperation, AttributeError):
-        raise HTTPException(400, "Giá trị của trường số không phải là số")
+        raise HTTPException(400, "Giá trị của trường số không phải là số") from None
 
 
 def _as_date(value) -> str:
@@ -130,5 +130,5 @@ def _as_date(value) -> str:
     try:
         datetime.strptime(text, "%Y-%m-%d")
     except ValueError:
-        raise HTTPException(400, "Ngày không có thật")
+        raise HTTPException(400, "Ngày không có thật") from None
     return text

@@ -111,6 +111,15 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-714-sua-bai-kiem-do-san-co | Sửa sáu bài kiểm đỏ sẵn có lộ ra khi chạy đủ bộ backend
+- status: đang làm
+- date: 2026-11-03
+- tag: Nền tảng
+Chạy đủ bộ backend ở đợt dọn mã bao-CR-710 lộ ra chín bài đỏ có từ trước. Ba bài phần nhân sự người khác sửa; sáu bài còn lại
+làm ở đây: với mỗi bài tìm commit làm đỏ, phân biệt mã sai (sửa mã) hay bài kiểm lỗi thời (cập nhật bài kiểm, ghi rõ CR đổi hành
+vi), không nới luật canh cho xanh.
+Mã nguồn: test/backend/test_agent_hub.py, test_agent_hub_cong_mcp_cr207.py, test_assistant_ai_duyet_phieu_kh_ai2_7.py, test_bo_ma_hanh_dong_cr358.py, test_vong_doi_phieu_cr656_dung_bang.py
+
 ## bao-CR-712-to-chuc-lai-tai-lieu | Tổ chức lại tài liệu dự án theo khuôn phân hệ
 - status: dang-lam
 - date: 2026-11-03
@@ -123,15 +132,26 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-710-ruff-don-tu-dong | Dọn mã backend tự động bằng ruff, đợt R1
-- status: đang làm
+- status: xong
 - date: 2026-11-03
 - tag: Nền tảng
-Đợt R1 trong lộ trình dọn backend: dọn import thừa, thêm nguồn lỗi gốc khi ném lại lỗi, gọn vòng lặp và điều kiện an toàn, xem tay
-biến gán không dùng; thêm cấu hình ruff và lệnh kiểm vào cổng kiểm backend. Không đổi hành vi, không đụng ba phân hệ thu mua
-đang dọn ở đợt R2 và cụm nhân sự đang có người đẩy.
-Mã nguồn: backend/app (trừ purchase_request, survey_request, purchase_order, employee, leave, hr*)
+Đợt R1 trong lộ trình dọn backend. Phạm vi là toàn bộ app trừ ba phân hệ thu mua đang dọn ở đợt R2, cụm nhân sự đang có người
+đẩy liên tục, ba script gieo dữ liệu, và mọi tệp có người khác sửa trong 24 giờ gần nhất (73 tệp, kiểm bằng git log). Trong
+phạm vi đó: cảnh báo từ 262 xuống 61, phần còn lại là vòng lặp viết tay và if lồng chưa đưa vào cổng. Tính cả app: 345 xuống
+158. Đã làm: gỡ import thừa, thêm nguồn lỗi gốc cho 68 chỗ ném lại lỗi trong except, bỏ dict() và list() thừa, gọn comprehension,
+contextlib.suppress thay try-except-pass. Sáu chỗ xem tay: bỏ cờ pushed không ai đọc ở coder, giữ lời gọi kiểm phạm vi ở cập
+nhật logo công ty, bỏ nhãn tính thừa ở thông báo, ràng biến vòng lặp cho lambda đọc tờ khai hải quan, nhập CompanyRef cho chú
+thích kiểu ở duyệt dấu, gỡ import trùng ở đăng nhập. Không đổi hành vi.
+Hai mối nối phát hiện nhờ bài kiểm và phải giữ lại kèm ghi chú: delete_key ở attachment (cr640, cr659 monkeypatch) và bốn hằng
+ACT_* ở agent_hub.service (test_agent_hub đọc qua module). Cổng kiểm mới: backend/ruff.toml (F, B904, B023, C4, SIM114, SIM118,
+bỏ B008 báo nhầm của FastAPI; khu chưa dọn tạm loại, năm tệp 24 giờ tạm bỏ qua từng mã) và lệnh trong CLAUDE.md; chạy sạch.
+Bài kiểm: chạy đủ bộ backend hai lần (11.196 đạt); sau khi giữ mối nối, chỉ còn 9 bài đỏ sẵn có trên nền gốc (agent_hub MCP
+liệt kê tool, AI duyệt phiếu, bộ mã hành động cr358, canh độ dài ô chữ cr538, hồ sơ trường riêng, nhập Excel nhân sự cr628,
+vòng đời phiếu cr656), không do đợt này. Sáu commit theo cụm phân hệ cộng hai commit giữ mối nối.
+Mã nguồn: backend/app (96 tệp), backend/ruff.toml, CLAUDE.md
+
 ## bao-CR-711 | Làm gọn phần nhận yêu cầu (controller) của ba phân hệ thu mua
-- status: dang-lam
+- status: xong
 - date: 2026-11-03
 - list: Sản xuất - Thu mua
 **Bối cảnh:** bản đánh giá chất lượng backend ghi nhận phần nhận yêu cầu của Yêu cầu mua hàng, Yêu cầu báo giá và Đơn mua
@@ -139,10 +159,24 @@ hàng ôm khoảng 71 câu truy vấn cơ sở dữ liệu và hàm dựng kết
 logic thì phải chép. Đây là đợt R2 của lộ trình dọn, được giao ngày 03/11.
 
 **Đã làm**
-- Đặt chỗ việc; đang dời truy vấn xuống lớp nghiệp vụ và dời hàm dựng kết quả sang tệp riêng, lần lượt từng phân hệ, không
-  đổi hành vi.
+- Mỗi phân hệ nay chia ba lớp rõ: phần nhận yêu cầu chỉ còn gác quyền và phạm vi dữ liệu rồi gọi xuống; mọi câu truy vấn
+  dời xuống lớp nghiệp vụ (service); hàm dựng kết quả trả về màn hình dời sang tệp riêng (serializer).
+- Làm lần lượt **Yêu cầu mua hàng → Yêu cầu báo giá → Đơn mua hàng**; xong phân hệ nào thì chạy bài kiểm của phân hệ đó,
+  xanh mới đẩy rồi sang phân hệ kế.
+- **Không đổi hành vi:** đường API, tham số, câu báo lỗi, thứ tự trường trong kết quả và số câu truy vấn giữ nguyên; các
+  chốt phạm vi dữ liệu vẫn nằm ở phần nhận yêu cầu, mọi chú thích cảnh báo đi theo mã.
+- Dọn luôn các cảnh báo của công cụ soát mã (ruff) trong ba thư mục: 15 cảnh báo về 0.
+- Sửa chỗ nạp hàm trong 18 tệp bài kiểm cho đúng tệp mới; bảng đếm lần tra theo id trong phần nhận yêu cầu giảm từ 105 xuống 95.
 
-Tham chiếu: `doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md` mục 2.4 và 5.
+**Kết quả:** đã nằm trên dev (nhánh erp-v2). Ba phần nhận yêu cầu từ 3.438 dòng còn 2.001 dòng, 71 câu truy vấn viết thẳng
+còn 0, độ phức tạp trung bình từ hạng B xuống hạng A. Ba lượt bài kiểm theo phân hệ (khoảng 2.300 đến 3.100 bài mỗi lượt)
+chỉ còn các bài đỏ sẵn có trên erp-v2 từ trước, không bài nào đỏ do đợt này.
+
+**Còn lại:** tệp nghiệp vụ (service) của ba phân hệ dày thêm (Đơn mua hàng 2.210 dòng), nên chẻ khi làm đợt R3.
+
+Mã nguồn: `backend/app/modules/{purchase_request,survey_request,purchase_order}/` (controller.py, service.py, serializer.py mới, purchase_request/access.py mới)
+Commit: f13af8a2 (YCMH), c238d53a (YCBG), aff188b5 (ĐMH)
+Tham chiếu: `doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md` mục 6.1.
 
 ## bao-CR-703-may-chu | Sổ việc chạy ngầm (máy chủ) + công cụ hỏi bằng lời
 - status: xong
@@ -18119,6 +18153,31 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 - Gán quản lý trực tiếp trên hồ sơ nhân viên; gán trưởng phòng cho tám phòng còn trống (N2AGRO, Dego Holding, Agricare, N2AGRO-KT, Mua Hàng, Dego Agrochem, Pháp Lý, R&D).
 - Chốt người duyệt chặng một khi chính Trưởng phòng Nhân sự xin nghỉ.
 - Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
+
+## bao-CR-713 | Tắt trang tài liệu API trên prod, chỉ mở ở dev
+- status: xong
+- date: 2026-11-03
+- list: Nền tảng
+- tag: Hạ tầng
+
+**Đã làm:** Trang tài liệu API do hệ thống tự sinh dời về đường /api/docs và chỉ mở khi bật cờ cấu hình; prod mặc định tắt, máy dev và máy local bật. Luật viết tài liệu sửa theo.
+
+Mã nguồn: backend/app/main.py build_docs_urls, core/config.py API_DOCS_ENABLED. Deploy: dev cần thêm API_DOCS_ENABLED=true vào .env.dev; prod đi theo đợt phát hành kế.
+
+## td-0311-tai-lieu-api-chuc-nang-hdsd | Chờ lúc rảnh: tài liệu chức năng, phi chức năng, API, hướng dẫn sử dụng và đồng bộ cho trợ lý đọc
+- status: dang-lam
+- date: 2026-11-03
+- list: Nền tảng
+- tag: Tài liệu
+
+**Bối cảnh:** Người chủ chốt làm khi trống việc. Hiện trang tài liệu API có 1.203 thao tác nhưng chỉ khoảng 38% có mô tả và không thao tác nào khai dữ liệu trả về; nhiều phân hệ chưa có tài liệu chức năng theo khuôn mới.
+
+**Việc cần làm (theo từng phân hệ, khuôn ở doc/tai-lieu-ky-thuat/quy-dinh/mau/)**
+- Viết yêu cầu chức năng và yêu cầu phi chức năng cho từng phân hệ.
+- Viết tài liệu API của phân hệ, bổ sung mô tả tiếng Việt và nhóm cho các đường API còn thiếu, khai kiểu dữ liệu trả về khi rõ.
+- Viết hoặc cập nhật bài hướng dẫn sử dụng trên Trung tâm trợ giúp cho khớp màn hình.
+- Đồng bộ cho trợ lý AI và bot đọc được: chạy lại nạp bài hướng dẫn, cập nhật cẩm nang trợ lý và nạp lại chỉ mục tìm kiếm trên dev rồi prod.
+- Ưu tiên cụm thu mua và các đường mà công cụ MCP đang dùng, làm sau khi đợt làm gọn controller thu mua xong.
 
 ## bao-CR-709 | Hỏi giữ phòng cũ làm kiêm nhiệm khi đổi phòng chính
 - status: xong

@@ -86,7 +86,7 @@ class SnapshotSources:
 
 
 def _counts(db: Session, col, *conds) -> dict:
-    return {k: n for k, n in db.execute(select(col, func.count()).where(*conds).group_by(col)).all()}
+    return dict(db.execute(select(col, func.count()).where(*conds).group_by(col)).all())
 
 
 def load_snapshot_sources(db: Session, week_start: date) -> SnapshotSources:
@@ -157,8 +157,8 @@ def load_snapshot_sources(db: Session, week_start: date) -> SnapshotSources:
                             AssistantMessage.created_at >= w.utc_lo, AssistantMessage.created_at < w.utc_hi)
     s.assistant_chg = _counts(db, AssistantChange.created_by, AssistantChange.created_at >= w.utc_lo,
                               AssistantChange.created_at < w.utc_hi)
-    s.prefs = {k: n for k, n in db.execute(
-        select(UserPreference.user_id, func.count()).group_by(UserPreference.user_id)).all()}
+    s.prefs = dict(db.execute(
+        select(UserPreference.user_id, func.count()).group_by(UserPreference.user_id)).all())
     s.imports = {r[0]: (r[1], r[2] or 0, r[3] or 0) for r in db.execute(
         select(ImportBatch.created_by, func.count(), func.sum(ImportBatch.total_rows),
                func.sum(ImportBatch.error_count))

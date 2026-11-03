@@ -9,7 +9,7 @@ lấy đơn nằm trong `apply_scope(LeaveRequest, 'leave_request')` — thấy 
 thấy được đơn nghỉ của người đó (đơn có thể mang lý do riêng tư); đơn ngoài tầm → ô hiện như
 ngày làm bình thường theo lịch.
 """
-from datetime import date, time, timedelta
+from datetime import time, timedelta
 
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session

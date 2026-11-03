@@ -18,6 +18,7 @@ import markdown
 from app.modules.help_center.import_service import sanitize_html
 
 from .docx_html import docx_to_html
+import contextlib
 
 MAX_FILE_SIZE = 10 * 1024 * 1024
 # Trình soạn thảo có phân trang theo kích thước DOM thật. Cho một tài liệu vô
@@ -87,10 +88,8 @@ def _doc_to_html(raw: bytes) -> str:
         raise ValueError("Tệp .doc mất quá nhiều thời gian để xử lý") from exc
     finally:
         if path:
-            try:
+            with contextlib.suppress(FileNotFoundError):
                 os.unlink(path)
-            except FileNotFoundError:
-                pass
 
     if completed.returncode != 0:
         detail = _decode_text(completed.stderr).strip()

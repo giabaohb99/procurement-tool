@@ -85,9 +85,8 @@ def get_report_payload(db: Session, report_id: int) -> dict:
     assignee_ids = {d.assignee_id for d in docs if d.assignee_id}
     names: dict[int, str] = {}
     if assignee_ids:
-        names = {eid: full_name for eid, full_name in
-                 db.query(Employee.id, Employee.full_name)
-                 .filter(Employee.id.in_(assignee_ids)).all()}
+        names = dict(db.query(Employee.id, Employee.full_name)
+                     .filter(Employee.id.in_(assignee_ids)).all())
     return {
         "items": [{"id": r.id, "name": r.name, "line_id": r.line_id, "sort_order": r.sort_order}
                   for r in _rows_of(db, SurveyReportItem, report_id)],

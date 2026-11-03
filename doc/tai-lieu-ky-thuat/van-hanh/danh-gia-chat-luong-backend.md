@@ -139,3 +139,49 @@ docker compose exec -T api sh -c "pip install -q radon ruff && cd /app && python
 ```
 
 Ghi kết quả mỗi lần đo vào cuối tệp này để thấy xu hướng.
+
+### 6.1. Đo sau đợt R2 — làm gọn controller thu mua (bao-CR-711, 03/11/2026)
+
+Đo trên nhánh `erp-v2`, trước = `234383a8`, sau = `aff188b5`. Không đổi hành vi: đường API, tham số, phong bì, câu lỗi,
+thứ tự trường và số truy vấn giữ nguyên; chỉ dời mã.
+
+| Phân hệ | Dòng controller trước → sau | Truy vấn `db.query` / `db.execute` trong controller | `db.get` trong controller | Tệp mới |
+|---|---|---|---|---|
+| purchase_request | 1.454 → 838 | 27 → 0 | 5 → 0 | `serializer.py` 349 dòng, `access.py` 66 dòng |
+| survey_request | 1.043 → 679 | 25 → 0 | 4 → 0 | `serializer.py` 231 dòng |
+| purchase_order | 941 → 484 | 19 → 0 | 1 → 0 | `serializer.py` 412 dòng |
+| **Cộng** | **3.438 → 2.001** | **71 → 0** | **10 → 0** | |
+
+- Độ phức tạp trung bình (radon cc) của ba tệp controller: **B (5,74) → A (3,05)**. Hàm C trở lên còn lại trong
+  controller: `submit_` của YCBG và `submit_po` của ĐMH (cùng C 12, là cổng kiểm trước khi gửi duyệt).
+- Hàm đã dời và độ phức tạp (radon cc, trước → sau; khác số là vì phần truy vấn đã tách thành hàm service riêng):
+
+| Hàm cũ ở controller | Chỗ mới | Trước | Sau |
+|---|---|---|---|
+| YCMH `_out` | `purchase_request/serializer.py` | F 59 | F 53 |
+| YCMH `_approval_signers` | `purchase_request/serializer.py` | D 24 | D 24 |
+| YCMH `_linked_survey_requests` | `service.linked_survey_requests` | C 16 | C 16 |
+| YCMH `_list_query` (phần lọc) | `service.build_list_query` | C 15 | C 15 |
+| YCMH `list_pr` (phần dựng dòng + gom số) | `serializer._out_list` + `service.list_line_summaries` | C 14 | B 7 + B 8 |
+| YCMH `_purchasing_head` | `service.purchasing_head` | C 11 | C 11 |
+| YCMH `available_survey_lines` (phần dựng) | `serializer._out_survey_lines` | C 17 | C 11 |
+| YCBG `_out` | `survey_request/serializer.py` | D 23 | D 21 |
+| YCBG `_list_query` (phần lọc) | `service.build_list_query` | C 19 | C 18 |
+| YCBG `_out_result` | `survey_request/serializer.py` | C 18 | C 15 |
+| YCBG `_same_dept_as_requester` | `service.same_dept_as_requester` | C 13 | C 13 |
+| ĐMH `_item` | `purchase_order/serializer.py` | E 36 | E 36 |
+| ĐMH `_out` | `purchase_order/serializer.py` | D 30 | D 27 |
+| ĐMH `_import_cost` / `_import_cost_summary` | `purchase_order/serializer.py` | D 26 / D 22 | D 26 / D 22 |
+| ĐMH `list_po_lines` | `service.build_line_query` + `service.received_by_warehouse` + `serializer._out_lines` | C 20 | B 6 + A 4 (phần còn ở controller dưới hạng C) |
+| ĐMH `print_po` | `serializer._out_print` | C 18 | C 18 |
+| ĐMH `_list_query` (phần lọc) | `service.build_list_query` | C 15 | C 15 |
+
+- ruff `F401,B904,C4,SIM` trên ba thư mục: **15 → 0**, thêm một F841 (biến gán thừa ở route kho khảo sát YCBG); gồm cả
+  các tệp `report_*`, `export.py`, `service.py` cùng thư mục. Chạy `ruff --select F,B904,C4,SIM` trên ba thư mục nay sạch.
+- Bảng `db.get` trong controller (`test_pham_vi_duong_vong.py`): tổng **105 → 95**; mười lần tra tên để in / hiển thị
+  đi theo hàm sang service, cổng phạm vi (`_in_scope`, `_scope_with_named_head`, `_open_line`) vẫn ở controller.
+- Mặt trái: `service.py` dày thêm (YCMH 1.592 → 1.901, YCBG 1.128 → 1.364, ĐMH 2.047 → 2.210 dòng). Mục tiêu "không
+  tệp nào > 1.500 dòng" để cho R3 (tách hàm F theo bước nghiệp vụ) — nên chẻ `service.py` theo nhóm (truy vấn đọc /
+  ghi / chuông) khi làm R3.
+- Ba hàm có cờ quyền dùng chung giữa route và kết quả (`_can_dispatch`, `_in_approve_scope`, `_can_return_requester`
+  của YCMH) nằm ở `purchase_request/access.py` để serializer không phải import ngược controller.

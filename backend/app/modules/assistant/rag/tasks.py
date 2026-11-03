@@ -22,13 +22,13 @@ from . import indexer
 log = logging.getLogger("app.assistant.rag")
 
 # Thử lại tối đa 5 lần, giãn 4s -> 8s -> ... trần 5 phút, có nhiễu để khỏi dồn cục.
-_RETRY = dict(
-    autoretry_for=(Exception,),
-    max_retries=5,
-    retry_backoff=4,
-    retry_backoff_max=300,
-    retry_jitter=True,
-)
+_RETRY = {
+    "autoretry_for": (Exception,),
+    "max_retries": 5,
+    "retry_backoff": 4,
+    "retry_backoff_max": 300,
+    "retry_jitter": True,
+}
 
 
 @celery_app.task(name="assistant.rag.reindex_source", **_RETRY)

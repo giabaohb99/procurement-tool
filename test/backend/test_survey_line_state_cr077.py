@@ -33,7 +33,7 @@ def test_moi_nhan_deu_co_mau_hop_le():
 
 def test_payload_chi_tiet_ycbg_co_san_nhan(db, seed):
     """`_out` phải kèm `progress_state`/`progress_tone` — đây là thứ FE hiển thị thẳng."""
-    from app.modules.survey_request.controller import _out
+    from app.modules.survey_request.serializer import _out
 
     s = SurveyRequest(code="YCBG77", status="processing", company_id=1)
     db.add(s); db.flush()

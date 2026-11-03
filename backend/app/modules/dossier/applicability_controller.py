@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
-from app.core.auth import get_current_user, get_perm_profile, require, user_has_permission
+from app.core.auth import get_perm_profile, require, user_has_permission
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
@@ -174,7 +174,7 @@ def _assignee_names(db: Session, progress: dict) -> dict[int, str]:
         return {}
     from app.modules.employee.model import Employee
     rows = db.query(Employee.id, Employee.full_name).filter(Employee.id.in_(ids)).all()
-    return {eid: name for eid, name in rows}
+    return dict(rows)
 
 
 def _row(

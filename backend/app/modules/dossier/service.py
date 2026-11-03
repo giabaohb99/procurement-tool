@@ -97,7 +97,7 @@ def apply_extra_fields(db: Session, values: dict, current: Dossier | None = None
     try:
         values["extra_fields"] = validate_extra_values(defs, values.get("extra_fields"))
     except ValueError as exc:
-        raise HTTPException(422, str(exc))
+        raise HTTPException(422, str(exc)) from exc
 
     _check_references(db, defs, values["extra_fields"])
 

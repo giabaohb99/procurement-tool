@@ -24,7 +24,7 @@ from .link_model import DocumentLink
 from .link_service import missing_required
 from .model import STATUS_LABELS, Document
 from .scope_service import scopes_of
-from .service import NUMBER_ON_APPROVE, doc_type_or_400, issue_year, open_version
+from .service import NUMBER_ON_APPROVE, doc_type_or_400, open_version
 from .supersede_service import SUPERSEDE_EFFECT
 
 

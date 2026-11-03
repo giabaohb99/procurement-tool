@@ -56,7 +56,7 @@ def _coerce(d: DossierFieldDef, raw):
         try:
             num = float(raw)
         except (TypeError, ValueError):
-            raise ValueError(f"\"{d.label}\" phải là một con số")
+            raise ValueError(f"\"{d.label}\" phải là một con số") from None
         if num != num or num in (float("inf"), float("-inf")):
             raise ValueError(f"\"{d.label}\" phải là một con số")
         #  Trả về `int` khi tròn, để hồ sơ không bày ra "2026.0" ở chỗ đáng lẽ
@@ -72,7 +72,7 @@ def _coerce(d: DossierFieldDef, raw):
         try:
             row_id = int(raw)
         except (TypeError, ValueError):
-            raise ValueError(f"\"{d.label}\" phải là một mục chọn từ danh mục")
+            raise ValueError(f"\"{d.label}\" phải là một mục chọn từ danh mục") from None
         if row_id <= 0:
             raise ValueError(f"\"{d.label}\" phải là một mục chọn từ danh mục")
         return row_id
@@ -84,7 +84,7 @@ def _coerce(d: DossierFieldDef, raw):
         try:
             date.fromisoformat(text)
         except ValueError:
-            raise ValueError(f"\"{d.label}\" phải là ngày dạng nam-thang-ngay (2026-09-16)")
+            raise ValueError(f"\"{d.label}\" phải là ngày dạng nam-thang-ngay (2026-09-16)") from None
         return text
 
     text = "" if raw is None else str(raw)

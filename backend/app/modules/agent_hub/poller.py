@@ -108,7 +108,7 @@ def run_zalo_account(*, session_factory: Callable, should_stop: Callable[[], boo
                      sleep: Callable[[float], None] = time.sleep, timeout: int | None = None,
                      clock: Callable[[], float] = time.monotonic) -> int:
     """Vòng kéo sự kiện từ `zalo-listener` (ai-CR-122, tài khoản Zalo của công ty) — luồng phụ, như `run_zalo`."""
-    from . import service, telegram, zalo_account
+    from . import service, zalo_account
 
     poll_timeout = zalo_account.LONG_POLL_TIMEOUT if timeout is None else timeout
     rounds = 0

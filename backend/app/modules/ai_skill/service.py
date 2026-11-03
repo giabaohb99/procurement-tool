@@ -22,7 +22,7 @@ from app.core.scoping import apply_scope, get_scoped
 
 from .constants import (BODY_MAX_CHARS, ENTITY, FILE_MAX_BYTES, FILE_PATH_MAX, FILE_PATH_MAX_DEPTH, FILES_MAX_BYTES,
                         PACKAGE_MAX_BYTES, PACKAGE_MAX_ENTRIES, SECURITY_LEVEL_LABELS, SKILL_SET_STATUS_LABELS,
-                        SKILL_STATUS_LABELS, SUMMARY_MAX, TEXT_FILE_EXTS, TITLE_MAX, SkillSetStatus, SkillStatus)
+                        SKILL_STATUS_LABELS, SUMMARY_MAX, TEXT_FILE_EXTS, TITLE_MAX, SkillStatus)
 from .model import AiSkill, AiSkillFile, AiSkillSet, AiSkillVersion
 from .schema import SLUG_HINT, SLUG_RE
 
@@ -367,7 +367,7 @@ def read_package(data: bytes) -> dict:
     try:
         archive = zipfile.ZipFile(io.BytesIO(data))
     except zipfile.BadZipFile:
-        raise HTTPException(400, "Tệp không phải gói .zip / .skill hợp lệ")
+        raise HTTPException(400, "Tệp không phải gói .zip / .skill hợp lệ") from None
     infos = [i for i in archive.infolist() if not i.is_dir()]
     if len(infos) > PACKAGE_MAX_ENTRIES:
         raise HTTPException(400, f"Gói có quá {PACKAGE_MAX_ENTRIES} mục")
@@ -396,7 +396,7 @@ def read_package(data: bytes) -> dict:
     try:
         body = archive.read(skill_md[0]).decode("utf-8")
     except UnicodeDecodeError:
-        raise HTTPException(400, "SKILL.md phải là chữ UTF-8")
+        raise HTTPException(400, "SKILL.md phải là chữ UTF-8") from None
     meta, _ = parse_front_matter(body)
     if len(body) > BODY_MAX_CHARS:
         raise HTTPException(400, f"SKILL.md vượt {BODY_MAX_CHARS:,} ký tự")

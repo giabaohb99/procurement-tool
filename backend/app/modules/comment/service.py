@@ -181,7 +181,7 @@ def reply_counts(db: Session, root_ids: list[int]) -> dict[int, int]:
         return {}
     rows = (db.query(Comment.parent_id, func.count(Comment.id))
             .filter(Comment.parent_id.in_(ids)).group_by(Comment.parent_id).all())
-    return {pid: n for pid, n in rows}
+    return dict(rows)
 
 
 def like_map(db: Session, comment_ids: list[int], user_id: int) -> dict[int, dict]:

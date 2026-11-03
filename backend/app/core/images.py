@@ -7,6 +7,7 @@ ngay lúc upload, lưu cạnh tệp gốc trên storage (`{file_key}.thumb.jpg`)
 chỉ hiển thị thì đọc bản nhẹ, bấm xem lớn (đèn chiếu / tải về) mới đụng bản gốc.
 """
 from io import BytesIO
+import contextlib
 
 # Đuôi ảnh sinh được thumbnail. GIF cố ý ĐỨNG NGOÀI: ép về JPEG là mất chuyển động.
 THUMBABLE_EXTS = {"jpg", "jpeg", "png", "webp", "bmp"}
@@ -46,7 +47,5 @@ def make_thumb(fileobj, *, max_edge: int = 1280, quality: int = 82) -> BytesIO |
     except Exception:
         return None
     finally:
-        try:
+        with contextlib.suppress(Exception):
             fileobj.seek(0)
-        except Exception:
-            pass

@@ -77,7 +77,7 @@ def task_type_names(db: Session, tasks: list[WorkTask]) -> dict[int, str]:
     type_ids = {int(t.task_type_id) for t in tasks if t.task_type_id}
     if not type_ids:
         return {}
-    return {i: n for i, n in db.query(WorkTaskType.id, WorkTaskType.name).filter(WorkTaskType.id.in_(type_ids)).all()}
+    return dict(db.query(WorkTaskType.id, WorkTaskType.name).filter(WorkTaskType.id.in_(type_ids)).all())
 
 
 def comment_counts(db: Session, task_ids: list[int]) -> dict[int, int]:
@@ -94,4 +94,4 @@ def comment_counts(db: Session, task_ids: list[int]) -> dict[int, int]:
     rows = (db.query(Comment.entity_id, func.count(Comment.id))
             .filter(Comment.entity == "work_task", Comment.entity_id.in_(task_ids))
             .group_by(Comment.entity_id).all())
-    return {tid: n for tid, n in rows}
+    return dict(rows)
