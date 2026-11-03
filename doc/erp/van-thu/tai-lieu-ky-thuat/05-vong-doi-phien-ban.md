@@ -206,7 +206,7 @@ Phiên bản 2.0 có được đổi phạm vi áp dụng không?
 
 ---
 
-## 6. Phải bổ sung vào [`04` Các bảng dữ liệu](./04-bang-du-lieu.md)
+## 6. Phải bổ sung vào [`04` Các bảng dữ liệu](04-bang-du-lieu.md)
 
 ### 6.1 `tab_document_version` — thêm 5 cột
 
@@ -255,9 +255,9 @@ Quy chế lên bản 2.0 thì **văn bản vẫn ở trạng thái 4 có hiệu 
 
 ---
 
-## 7. Phải bổ sung vào [`01` Danh sách tính năng](./01-danh-sach-tinh-nang.md)
+## 7. Phải bổ sung vào [`01` Danh sách tính năng](../chuc-nang/12-danh-sach-tinh-nang.md)
 
-Tám tính năng, tất cả thuộc bản đầu, tất cả nằm ở **phase 2** trong [`02`](./02-lo-trinh-phat-trien.md) trừ C18 nằm ở phase 4.
+Tám tính năng, tất cả thuộc bản đầu, tất cả nằm ở **phase 2** trong [`02`](../plans/02-lo-trinh-phat-trien.md) trừ C18 nằm ở phase 4.
 
 | Mã | Tính năng | Nội dung | Bản |
 |---|---|---|---|
@@ -287,7 +287,7 @@ Cộng thêm tám mục: **160 tính năng, 119 thuộc bản đầu.**
 
 ## 9. Bốn câu cần trả lời
 
-Bổ sung vào 17 câu ở [`00` mục 8](./00-danh-gia-va-cau-hoi.md). Cả bốn đều là câu nghiệp vụ, **đội phần mềm không tự quyết được**.
+Bổ sung vào 17 câu ở [`00` mục 8](../nghien-cuu/00-danh-gia-va-cau-hoi.md). Cả bốn đều là câu nghiệp vụ, **đội phần mềm không tự quyết được**.
 
 | Mã | Câu hỏi | Ai trả lời | Chặn gì |
 |---|---|---|---|

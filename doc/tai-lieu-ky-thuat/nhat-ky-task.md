@@ -16575,7 +16575,7 @@ Mã nguồn: kế hoạch mục TM1-1 · duoc-CR-662 · backend/app/modules/noti
 
 **Điều kiện xong:** người thiếu mức không thấy văn bản mật ở danh sách, chi tiết, tìm kiếm, tải tệp; đủ 8 bài kiểm.
 
-Mã nguồn: kế hoạch mục VT1-1 · `doc/erp/van-thu/02-lo-trinh-phat-trien.md` P5
+Mã nguồn: kế hoạch mục VT1-1 · `doc/erp/van-thu/plans/02-lo-trinh-phat-trien.md` P5
 
 ## kh-CV1-1 | Chuông báo cho phân hệ Công việc
 - status: xong
@@ -17034,7 +17034,7 @@ Mã nguồn: kế hoạch DX2-1
 
 **Còn:** nạp bài hướng dẫn lên devhelp (lệnh chạy seed trên VPS dev đang chờ duyệt); đi lại hai kịch bản trên dev để chốt nhãn nút khi người dùng đăng nhập khung trình duyệt; commit tệp seed chờ gật vì là tệp chạy được.
 
-Mã nguồn: `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md` · `doc/erp/hrm/02-nghi-phep.md` · `doc/tai-lieu-chuc-nang/14-van-thu-van-ban.md` · `doc/erp/cong-viec/06-kich-ban-dung-thu.md` · `doc/erp/dien-dan/04-kich-ban-dung-thu.md` · `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py`
+Mã nguồn: `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md` · `doc/erp/hrm/02-nghi-phep.md` · `doc/erp/van-thu/chuc-nang/10-van-thu-van-ban.md` · `doc/erp/cong-viec/06-kich-ban-dung-thu.md` · `doc/erp/dien-dan/04-kich-ban-dung-thu.md` · `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py`
 
 **Việc cần làm**
 - Ghi vào tài liệu chức năng và bài hướng dẫn liên quan (lập bộ tài khoản theo công ty, khai luồng duyệt riêng một công ty).

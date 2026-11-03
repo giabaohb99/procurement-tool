@@ -2,7 +2,7 @@
 
 Bản kê **hành vi nào của phân hệ Văn thư đang được bài kiểm tự động khoá lại**.
 
-Tài liệu chức năng ([14-van-thu-van-ban.md](14-van-thu-van-ban.md)) trả lời *"hệ làm
+Tài liệu chức năng ([14-van-thu-van-ban.md](10-van-thu-van-ban.md)) trả lời *"hệ làm
 gì"*. Tài liệu này trả lời câu khác: *"cái gì đã được chứng minh là đúng, và bằng
 bài kiểm nào"* — thứ cần khi sắp sửa một chỗ nhạy cảm và muốn biết mình đang được
 lưới nào đỡ.
@@ -283,7 +283,7 @@ tác thật (trợ lý lập uỷ quyền hộ sếp, hành chính bàn giao khi
 `test_chon_hop_thu_khi_ban_hanh.py` · 21 ca · `test_api_hop_thu_gui.py` · 11 ca ·
 `test_stress_gui_thu_theo_hop_thu.py` · 11 ca
 
-Chi tiết nghiệp vụ ở [14-van-thu-van-ban.md §14.3](14-van-thu-van-ban.md). Phần được
+Chi tiết nghiệp vụ ở [14-van-thu-van-ban.md §14.3](10-van-thu-van-ban.md). Phần được
 bài kiểm khoá lại:
 
 - **Loại giữ mặc định thì duyệt xong ban hành luôn** — điều kiện số một của cam kết
@@ -430,6 +430,6 @@ docker compose exec erp npm run check      # typecheck + lint + test
 
 ## Liên quan
 
-- [14-van-thu-van-ban.md](14-van-thu-van-ban.md) — tài liệu chức năng phân hệ Văn thư
-- [`doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`](../tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md) — thiết kế hai trục phân quyền
-- [`doc/tai-lieu-ky-thuat/change-log.md`](../tai-lieu-ky-thuat/change-log.md) — CR-182…CR-188 là các đợt gần nhất chạm vào phân hệ này
+- [14-van-thu-van-ban.md](10-van-thu-van-ban.md) — tài liệu chức năng phân hệ Văn thư
+- [`doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`](../../../tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md) — thiết kế hai trục phân quyền
+- [`doc/tai-lieu-ky-thuat/change-log.md`](../../../tai-lieu-ky-thuat/change-log.md) — CR-182…CR-188 là các đợt gần nhất chạm vào phân hệ này

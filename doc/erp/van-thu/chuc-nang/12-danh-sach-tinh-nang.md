@@ -7,7 +7,7 @@
 
 | Bổ sung | Mã | Vì sao thiếu |
 |---|---|---|
-| Sửa văn bản **đã ban hành** | C13–C18, J10, J11 | Bốn tệp đầu có nói tới phiên bản nhưng không nói luồng. Hai loại văn bản sửa theo hai cách khác nhau: tài liệu hệ thống thì lên bản 2.0 giữ nguyên mã, văn bản hành chính thì ra một văn bản mới sửa đổi văn bản cũ. Chi tiết ở [`05`](./05-vong-doi-phien-ban.md) |
+| Sửa văn bản **đã ban hành** | C13–C18, J10, J11 | Bốn tệp đầu có nói tới phiên bản nhưng không nói luồng. Hai loại văn bản sửa theo hai cách khác nhau: tài liệu hệ thống thì lên bản 2.0 giữ nguyên mã, văn bản hành chính thì ra một văn bản mới sửa đổi văn bản cũ. Chi tiết ở [`05`](../tai-lieu-ky-thuat/05-vong-doi-phien-ban.md) |
 | **Chia sẻ và thu hồi** | G14–G24, G09 chuyển lên bản 1 | Chỉ có G07 "chia sẻ không vượt được mức mật" thì giám đốc bấm chia sẻ xong không ai thấy gì và không biết làm tiếp thế nào. Chi tiết nằm ngay trong nhóm G |
 | **Bản trích** xếp lại cho đúng chỗ | C19, C20, E11; G18 thành dòng trỏ | Bản trích trước nằm ở G18 trong nhóm quyền truy cập, vì cái *làm nó phát sinh* là bài toán chia sẻ. Nhưng việc phải làm là **soạn thảo** cộng **quan hệ cha–con**, người đọc nhóm C và nhóm E không bao giờ thấy nó. Kèm theo, G18 cũ dùng lại quan hệ *thuộc về* là sai — bản trích cần **quan hệ thứ mười, *trích từ*** |
 
@@ -134,7 +134,7 @@ Tổng: **174 tính năng**, trong đó **132 thuộc bản đầu tiên**.
 
 # NHÓM E · QUAN HỆ CHA–CON
 
-> Phần này được yêu cầu đề xuất. Thiết kế đầy đủ ở [`00` mục 5](./00-danh-gia-va-cau-hoi.md#5-đề-xuất-tính-năng-cha–con-theo-loại-văn-bản).
+> Phần này được yêu cầu đề xuất. Thiết kế đầy đủ ở [`00` mục 5](../nghien-cuu/00-danh-gia-va-cau-hoi.md#5-đề-xuất-tính-năng-cha–con-theo-loại-văn-bản).
 
 | Mã | Tính năng | Nội dung | Bản | Có sẵn |
 |---|---|---|---|---|
@@ -235,7 +235,7 @@ Tổng: **174 tính năng**, trong đó **132 thuộc bản đầu tiên**.
 
 # NHÓM I · BỘ MÁY PHÊ DUYỆT DÙNG CHUNG
 
-> Danh sách đầy đủ tính năng của Lark Approver và phần nào lấy, phần nào không, ở [`03`](./03-lark-approver.md).
+> Danh sách đầy đủ tính năng của Lark Approver và phần nào lấy, phần nào không, ở [`03`](../nghien-cuu/03-lark-approver.md).
 
 | Mã | Tính năng | Nội dung | Bản | Có sẵn |
 |---|---|---|---|---|
@@ -369,4 +369,4 @@ Tổng: **174 tính năng**, trong đó **132 thuộc bản đầu tiên**.
 
 Hai nhóm chiếm gần một nửa khối lượng là **I bộ máy duyệt** và **F phạm vi cộng clone**. Đây cũng là hai nhóm dùng lại được nhiều nhất về sau: bộ máy duyệt sẽ thay 5 luồng viết tay của Thu mua, còn phần phạm vi là nền cho mọi phân hệ nhiều pháp nhân sau này.
 
-Tiếp theo: [`02` Lộ trình phát triển](./02-lo-trinh-phat-trien.md) · [`05` Vòng đời phiên bản](./05-vong-doi-phien-ban.md)
+Tiếp theo: [`02` Lộ trình phát triển](../plans/02-lo-trinh-phat-trien.md) · [`05` Vòng đời phiên bản](../tai-lieu-ky-thuat/05-vong-doi-phien-ban.md)

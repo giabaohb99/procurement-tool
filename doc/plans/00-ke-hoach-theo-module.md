@@ -245,24 +245,24 @@ Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/thu-mua/n
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| VT1-1 | P5 lớp kiểm mức mật: mức mật văn bản và người, chia sẻ đích danh có hạn, thu hồi, tra cứu qua kiểm quyền (kiểm mã: `document/controller.py` ghi rõ lớp `secrecy_level` CHƯA có). Chờ B3 | Đạt cả 8 bài kiểm (4 chỗ không lộ văn bản mật + 4 bài chia sẻ / thu hồi) | `doc/erp/van-thu/02-lo-trinh-phat-trien.md` §9 |
+| VT1-1 | P5 lớp kiểm mức mật: mức mật văn bản và người, chia sẻ đích danh có hạn, thu hồi, tra cứu qua kiểm quyền (kiểm mã: `document/controller.py` ghi rõ lớp `secrecy_level` CHƯA có). Chờ B3 | Đạt cả 8 bài kiểm (4 chỗ không lộ văn bản mật + 4 bài chia sẻ / thu hồi) | `doc/erp/van-thu/plans/02-lo-trinh-phat-trien.md` §9 |
 | VT1-2 | Pháp nhân nào bắt đầu dùng hoặc nhận bản clone thì khai luồng duyệt văn bản riêng (bộ máy đã bật, không có luồng là đi đường cũ) | Mỗi pháp nhân dùng thật có luồng trên `/approval/flows`, duyệt thử một văn bản ra đúng người | Dữ kiện prod 22/10 |
 
 **Phase 2**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| VT2-1 | P6 nạp dữ liệu thật: 32 loại văn bản, mã pháp nhân, văn bản đang hiệu lực; 10–15 người thử trên dev. Cần người Hành chính / Pháp chế | Người thật dùng trên dev với dữ liệu thật, có biên bản góp ý | `doc/erp/van-thu/02-lo-trinh-phat-trien.md` §10 |
-| VT2-2 | P7 lên prod từng pháp nhân, kèm bài HDSD và buổi đào tạo | Pháp nhân đầu tiên ban hành văn bản thật trên prod | `doc/erp/van-thu/02-lo-trinh-phat-trien.md` §11 |
+| VT2-1 | P6 nạp dữ liệu thật: 32 loại văn bản, mã pháp nhân, văn bản đang hiệu lực; 10–15 người thử trên dev. Cần người Hành chính / Pháp chế | Người thật dùng trên dev với dữ liệu thật, có biên bản góp ý | `doc/erp/van-thu/plans/02-lo-trinh-phat-trien.md` §10 |
+| VT2-2 | P7 lên prod từng pháp nhân, kèm bài HDSD và buổi đào tạo | Pháp nhân đầu tiên ban hành văn bản thật trên prod | `doc/erp/van-thu/plans/02-lo-trinh-phat-trien.md` §11 |
 
 **Phase 3 — khi cần**
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| VT3-1 | P9 mở rộng: xác nhận đã đọc, sổ đi / đến, nhắc hết hiệu lực, AI báo trùng, tìm không dấu, ký số, dấu chìm, form web, so sánh phiên bản | Mỗi mục có người dùng thật yêu cầu và một dòng CR riêng | `doc/erp/van-thu/02-lo-trinh-phat-trien.md` §13 |
+| VT3-1 | P9 mở rộng: xác nhận đã đọc, sổ đi / đến, nhắc hết hiệu lực, AI báo trùng, tìm không dấu, ký số, dấu chìm, form web, so sánh phiên bản | Mỗi mục có người dùng thật yêu cầu và một dòng CR riêng | `doc/erp/van-thu/plans/02-lo-trinh-phat-trien.md` §13 |
 
 **Câu chờ quyết:**
-- `doc/erp/van-thu/00-danh-gia-va-cau-hoi.md` §8: A1–A4, B1–B8, C1–C5. Chặn nhất: A1 (phạm vi bản đầu), B1 (form chuẩn), B2 (ai duyệt yêu cầu), B3 (mấy mức mật, ai cấp), B5 (clone có chạy lại luồng), B6 (mã pháp nhân / loại / phòng ban), B8 (ai ký cho 3 pháp nhân chưa có đại diện) — đại ca + Pháp chế.
+- `doc/erp/van-thu/nghien-cuu/00-danh-gia-va-cau-hoi.md` §8: A1–A4, B1–B8, C1–C5. Chặn nhất: A1 (phạm vi bản đầu), B1 (form chuẩn), B2 (ai duyệt yêu cầu), B3 (mấy mức mật, ai cấp), B5 (clone có chạy lại luồng), B6 (mã pháp nhân / loại / phòng ban), B8 (ai ký cho 3 pháp nhân chưa có đại diện) — đại ca + Pháp chế.
 - C3: ai là chủ nghiệp vụ phía Pháp chế / Văn thư — đại ca. Thiếu người này thì VT2-1 đứng.
 
 ## 7. Duyệt dấu và đặt xe, đồng bộ app đặt xe cũ

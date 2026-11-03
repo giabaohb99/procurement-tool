@@ -1,7 +1,7 @@
 # 02 · LỘ TRÌNH PHÁT TRIỂN QUẢN LÝ VĂN THƯ
 
 > Xây trên mã nguồn Thu mua đang chạy
-> Danh sách tính năng ở [`01`](./01-danh-sach-tinh-nang.md) · đánh giá và câu hỏi ở [`00`](./00-danh-gia-va-cau-hoi.md)
+> Danh sách tính năng ở [`01`](../chuc-nang/12-danh-sach-tinh-nang.md) · đánh giá và câu hỏi ở [`00`](../nghien-cuu/00-danh-gia-va-cau-hoi.md)
 > **Tài liệu này chia theo phase, không đặt mốc thời gian.** Thứ tự và điều kiện chuyển phase mới là thứ quan trọng.
 
 ---
@@ -159,7 +159,7 @@ Và năm phép thử nữa:
 
 ## 7. Phase 3 · Bộ máy phê duyệt dùng chung
 
-Phase nặng nhất, 20 tính năng bản đầu. Chi tiết lấy gì từ Lark ở [`03`](./03-lark-approver.md).
+Phase nặng nhất, 20 tính năng bản đầu. Chi tiết lấy gì từ Lark ở [`03`](../nghien-cuu/03-lark-approver.md).
 
 | Việc | Mã |
 |---|---|
@@ -396,11 +396,11 @@ Nếu có thực tập sinh: giao được A01, A07 và toàn bộ phần nhập
 
 | Tài liệu | Ảnh hưởng |
 |---|---|
-| [`01` Ngắn hạn 2026](../../plans/00-ke-hoach-theo-module.md) | Bước 1 khảo sát nghiệp vụ HRM và bước 6 HRM **lùi lại phía sau văn thư**. Bước 5 bộ máy duyệt dùng chung **được làm sớm hơn** — chính là phase 3 ở đây |
-| [`06` Lộ trình nền tảng và HRM](../../plans/00-ke-hoach-theo-module.md) | Các hạng mục PQ11, PQ13, PQ14, DB15, H17, H18 **được làm trong phase 0**, sớm hơn thứ tự cũ |
-| [`08` Danh sách task củng cố](../../plans/00-ke-hoach-theo-module.md) | Các task CC tương ứng với nhóm N chuyển lên đầu; phần còn lại giữ nguyên thứ tự |
-| [`10` Báo cáo WorkHub](../../plans/00-ke-hoach-theo-module.md) | Mốc thời gian trong báo cáo không còn đúng. Phân hệ Văn bản **được làm trước phân hệ Con người**, ngược với thứ tự đã trình. Cần cập nhật mục 7.3 khi báo cáo lần tới |
-| [`09` Phúc lợi điểm và POS](../diem-ca-phe/09-phuc-loi-diem-va-pos.md) | Không đổi. Phần gọi thử API POS365 vẫn làm song song được vì không đụng mã nguồn |
+| [`01` Ngắn hạn 2026](../../../plans/00-ke-hoach-theo-module.md) | Bước 1 khảo sát nghiệp vụ HRM và bước 6 HRM **lùi lại phía sau văn thư**. Bước 5 bộ máy duyệt dùng chung **được làm sớm hơn** — chính là phase 3 ở đây |
+| [`06` Lộ trình nền tảng và HRM](../../../plans/00-ke-hoach-theo-module.md) | Các hạng mục PQ11, PQ13, PQ14, DB15, H17, H18 **được làm trong phase 0**, sớm hơn thứ tự cũ |
+| [`08` Danh sách task củng cố](../../../plans/00-ke-hoach-theo-module.md) | Các task CC tương ứng với nhóm N chuyển lên đầu; phần còn lại giữ nguyên thứ tự |
+| [`10` Báo cáo WorkHub](../../../plans/00-ke-hoach-theo-module.md) | Mốc thời gian trong báo cáo không còn đúng. Phân hệ Văn bản **được làm trước phân hệ Con người**, ngược với thứ tự đã trình. Cần cập nhật mục 7.3 khi báo cáo lần tới |
+| [`09` Phúc lợi điểm và POS](../../diem-ca-phe/09-phuc-loi-diem-va-pos.md) | Không đổi. Phần gọi thử API POS365 vẫn làm song song được vì không đụng mã nguồn |
 
 Bốn tài liệu trên **chưa sửa** — chờ chốt lộ trình này rồi sửa một lần, tránh sửa đi sửa lại.
 
@@ -412,10 +412,10 @@ Bốn tài liệu trên **chưa sửa** — chờ chốt lộ trình này rồi 
 |---|---|---|
 | Bắt đầu N01 — viết kiểm thử tự động cho 5 luồng duyệt Thu mua | Đội phần mềm | **Không chờ gì** |
 | Bắt đầu rà soát và số hóa văn bản giấy đang hiệu lực | Hành chính | Không chờ phần mềm |
-| Gửi 17 câu hỏi ở [`00`](./00-danh-gia-va-cau-hoi.md) cho người quyết, hẹn buổi trả lời | Chủ trì | |
+| Gửi 17 câu hỏi ở [`00`](../nghien-cuu/00-danh-gia-va-cau-hoi.md) cho người quyết, hẹn buổi trả lời | Chủ trì | |
 | Chốt ai của Hành chính phụ trách quản trị văn thư về sau | Ban lãnh đạo | |
 | Đưa 32 loại văn bản, 13 mã pháp nhân, mã phòng ban sang Pháp chế duyệt | Hành chính | |
 
 ---
 
-Tiếp theo: [`03` Tính năng Lark Approver](./03-lark-approver.md) · [`04` Các bảng dữ liệu](./04-bang-du-lieu.md)
+Tiếp theo: [`03` Tính năng Lark Approver](../nghien-cuu/03-lark-approver.md) · [`04` Các bảng dữ liệu](../tai-lieu-ky-thuat/04-bang-du-lieu.md)

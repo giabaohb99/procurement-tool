@@ -1,8 +1,8 @@
 # 04 · CÁC BẢNG DỮ LIỆU CẦN SINH RA
 
 > Áp lên cơ sở dữ liệu `procurement` đang chạy (MySQL 8.4) · 57 bảng hiện có → khoảng 82 bảng
-> Bản 1.1 · đã gom bớt bảng, xem [nhật ký thay đổi](./CHANGELOG.md)
-> Danh sách tính năng ở [`01`](./01-danh-sach-tinh-nang.md) · lộ trình ở [`02`](./02-lo-trinh-phat-trien.md)
+> Bản 1.1 · đã gom bớt bảng, xem [nhật ký thay đổi](../changelog.md)
+> Danh sách tính năng ở [`01`](../chuc-nang/12-danh-sach-tinh-nang.md) · lộ trình ở [`02`](../plans/02-lo-trinh-phat-trien.md)
 
 ---
 
@@ -116,7 +116,7 @@ Bảng gốc của cả phân hệ. 32 dòng.
 | `group_code` | CHAR(1) | Nhóm A đến F |
 | `description` | TEXT | Định nghĩa, dùng khi nào |
 | `id_scheme` | TINYINT | **1 mã tài liệu bất biến** (`DEGO-QC-012`) · **2 số hiệu theo sổ** (`08/2026/TB-NS-DEGO`) |
-| `needs_decision` | BOOLEAN | Ban hành có phải kèm một Quyết định không. **Kiểm ở mức phiên bản, không phải mức văn bản** — mỗi lần sửa lớn là phải có một Quyết định mới, xem [`05` mục 5.5](./05-vong-doi-phien-ban.md) |
+| `needs_decision` | BOOLEAN | Ban hành có phải kèm một Quyết định không. **Kiểm ở mức phiên bản, không phải mức văn bản** — mỗi lần sửa lớn là phải có một Quyết định mới, xem [`05` mục 5.5](05-vong-doi-phien-ban.md) |
 | `default_secrecy` | TINYINT | Mức mật mặc định 1–4 |
 | `is_confidential_type` | BOOLEAN | Cả loại là loại bảo mật |
 | `needs_request` | BOOLEAN | Phải có yêu cầu được duyệt mới soạn được |
@@ -269,7 +269,7 @@ Bài kiểm bắt buộc trước khi nghiệm thu: mở 100 kết nối cùng l
 
 Ràng buộc: `UNIQUE(department_id, company_id)`.
 
-Bảng này nhỏ nhưng gỡ đúng cái bẫy nêu ở [`03` mục 5](./03-lark-approver.md#5-nhóm-c--cách-chọn-người-duyệt): phòng Kế toán có mặt ở nhiều pháp nhân, trưởng phòng mỗi nơi là người khác. Không có bảng này thì luồng duyệt "gửi cho trưởng phòng của người nộp" sẽ gửi nhầm người ở nhầm công ty.
+Bảng này nhỏ nhưng gỡ đúng cái bẫy nêu ở [`03` mục 5](../nghien-cuu/03-lark-approver.md#5-nhóm-c--cách-chọn-người-duyệt): phòng Kế toán có mặt ở nhiều pháp nhân, trưởng phòng mỗi nơi là người khác. Không có bảng này thì luồng duyệt "gửi cho trưởng phòng của người nộp" sẽ gửi nhầm người ở nhầm công ty.
 
 ---
 
@@ -411,7 +411,7 @@ Cột sinh này bằng `document_id` khi phiên bản còn nháp hoặc đang du
 
 **Đừng nhầm `status` của phiên bản với `status` của văn bản.** Quy chế lên bản 2.0 thì `tab_document.status` **vẫn là 4 có hiệu lực**, chỉ dòng phiên bản 1.0 chuyển sang 4 bị thay thế. Nhầm chỗ này là cả công ty thấy quy chế lương biến mất khỏi danh sách đang hiệu lực. Giá trị 5 bị thay thế trên `tab_document` chỉ dùng khi bị **một văn bản khác** thay thế.
 
-Luồng đầy đủ của việc lên phiên bản nằm ở [`05` Vòng đời phiên bản](./05-vong-doi-phien-ban.md).
+Luồng đầy đủ của việc lên phiên bản nằm ở [`05` Vòng đời phiên bản](05-vong-doi-phien-ban.md).
 
 Hai cột `change_summary` và `change_reason` chính là biên bản sửa đổi tài liệu mà ISO đòi hỏi — không phải làm thêm một bảng riêng cho nó.
 
@@ -665,7 +665,7 @@ Ràng buộc: `UNIQUE(version_id, recipient_kind, recipient_id)`.
 
 Cột `sign_kind` phải hiện rõ trên giao diện. Ký điện tử nội bộ có giá trị trong nội bộ tập đoàn; ký số có chứng thư mới có giá trị với bên ngoài. Người dùng không được phép nhầm hai thứ này, và cách chắc chắn nhất để họ không nhầm là **ghi rõ ngay cạnh chữ ký** chứ không giấu trong tài liệu hướng dẫn.
 
-Phần xác nhận đã đọc **không còn là bảng riêng** — đã gộp vào mục 7.1. Bảng tạo đủ cột ngay ở bản đầu, màn hình xác nhận làm sau, chờ trả lời câu hỏi ở [`00`](./00-danh-gia-va-cau-hoi.md).
+Phần xác nhận đã đọc **không còn là bảng riêng** — đã gộp vào mục 7.1. Bảng tạo đủ cột ngay ở bản đầu, màn hình xác nhận làm sau, chờ trả lời câu hỏi ở [`00`](../nghien-cuu/00-danh-gia-va-cau-hoi.md).
 
 ---
 
@@ -924,7 +924,7 @@ Bản 1.1 bớt một migration so với bản 1.0, và **M6 nặng thêm** vì 
 | 4 | Gắn xác nhận đã đọc vào văn bản thay vì vào phiên bản | Người đã xác nhận bản 1.0 hiện là đã đọc bản 2.0 mà chưa từng đọc | `UNIQUE(version_id, employee_id)` |
 | 5 | Phiên bản chạy theo bản luồng đang sống | Sửa luồng làm phiếu đang chạy nhảy bước | Chép định nghĩa luồng vào `flow_snapshot` lúc khởi tạo |
 | 6 | Quên khai bảng mới trong `SCOPE_FIELDS` | **Không lọc dữ liệu gì cả** — ai cũng thấy mọi thứ | Bổ sung kiểm tra khi khởi động: bảng nào có `company_id` mà chưa khai phạm vi thì báo lỗi ngay lúc chạy |
-| 7 | Nhầm `status` của văn bản với `status` của phiên bản | Quy chế lên bản 2.0 xong thì biến mất khỏi danh sách văn bản đang hiệu lực | Lên phiên bản **không đụng tới** `tab_document.status`. Xem [`05` mục 6.4](./05-vong-doi-phien-ban.md) |
+| 7 | Nhầm `status` của văn bản với `status` của phiên bản | Quy chế lên bản 2.0 xong thì biến mất khỏi danh sách văn bản đang hiệu lực | Lên phiên bản **không đụng tới** `tab_document.status`. Xem [`05` mục 6.4](05-vong-doi-phien-ban.md) |
 | 8 | Chỉ kiểm "một bản nháp mỗi văn bản" trong mã nguồn | Hai người bấm cùng lúc, hai bản nháp 2.0 cùng tồn tại, một bản mất công vô ích | Cột sinh `open_slot` kèm ràng buộc duy nhất, mục 5.3 |
 | 9 | Thu hồi chia sẻ bằng cách **xóa dòng** ACL | Mất luôn thông tin ai từng được xem — đúng thứ cần nhất khi điều tra rò rỉ | `revoked_at` chứ không `DELETE`. Cũng đừng quên `perm_cache_clear`, không thì tới 60 giây sau mới có hiệu lực |
 | 10 | Cho phép chia sẻ đặc cách mà không bắt hạn | Đặc cách vô thời hạn bằng nâng mức mật, nhưng không ai rà lại được vì nó nằm rải trên từng văn bản | `CHECK` bắt `valid_to` và `override_approved_by` khác rỗng, mục 8.2 |
@@ -948,10 +948,10 @@ Hai điều đáng làm thành bài kiểm tự động là số 6 và số 12, 
 | 6 · Tạo sớm dùng sau | 3 | **1** | |
 | **Tổng** | **29** | **25** | **4** |
 
-Thiết kế hệ văn thư độc lập trước đây cần **42 bảng**. Xây trong Thu mua còn **25**, vì 12 bảng nền dùng lại được nguyên, 4 bảng nữa chỉ cần thêm cột, và 4 bảng đã gom ở bản 1.1. Phần tiết kiệm được đổi lại bằng hai thứ: phải sửa nền trên một hệ đang chạy thật (phase 0 trong [`02`](./02-lo-trinh-phat-trien.md)), và phải kỷ luật với bộ lọc `origin` (chỗ dễ sai số 12).
+Thiết kế hệ văn thư độc lập trước đây cần **42 bảng**. Xây trong Thu mua còn **25**, vì 12 bảng nền dùng lại được nguyên, 4 bảng nữa chỉ cần thêm cột, và 4 bảng đã gom ở bản 1.1. Phần tiết kiệm được đổi lại bằng hai thứ: phải sửa nền trên một hệ đang chạy thật (phase 0 trong [`02`](../plans/02-lo-trinh-phat-trien.md)), và phải kỷ luật với bộ lọc `origin` (chỗ dễ sai số 12).
 
 **Gom bảng không làm giảm khối lượng công việc.** Cột vẫn từng ấy cột, màn hình vẫn từng ấy màn hình. Cái được là bớt bốn chỗ dữ liệu có thể lệch nhau, và vá được hai lỗi thiết kế mà việc gom làm lộ ra. Đừng đọc con số 29 xuống 25 thành "nhẹ đi 14%".
 
 ---
 
-Quay lại: [`00` Đánh giá và câu hỏi](./00-danh-gia-va-cau-hoi.md) · [`01` Danh sách tính năng](./01-danh-sach-tinh-nang.md) · [`02` Lộ trình](./02-lo-trinh-phat-trien.md) · [`03` Lark Approver](./03-lark-approver.md) · [`05` Vòng đời phiên bản](./05-vong-doi-phien-ban.md) · [Nhật ký thay đổi](./CHANGELOG.md)
+Quay lại: [`00` Đánh giá và câu hỏi](../nghien-cuu/00-danh-gia-va-cau-hoi.md) · [`01` Danh sách tính năng](../chuc-nang/12-danh-sach-tinh-nang.md) · [`02` Lộ trình](../plans/02-lo-trinh-phat-trien.md) · [`03` Lark Approver](../nghien-cuu/03-lark-approver.md) · [`05` Vòng đời phiên bản](05-vong-doi-phien-ban.md) · [Nhật ký thay đổi](../changelog.md)

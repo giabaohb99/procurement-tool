@@ -1,6 +1,6 @@
 # 03 · TÍNH NĂNG LARK APPROVER — LẤY GÌ, BỎ GÌ
 
-> Dùng làm bảng đối chiếu khi thiết kế bộ máy phê duyệt dùng chung (phase 3 trong [`02`](./02-lo-trinh-phat-trien.md))
+> Dùng làm bảng đối chiếu khi thiết kế bộ máy phê duyệt dùng chung (phase 3 trong [`02`](../plans/02-lo-trinh-phat-trien.md))
 > **Đây là bảng đối chiếu, không phải bản mô tả yêu cầu.** Chốt lấy gì rồi mới viết yêu cầu.
 
 ---
@@ -268,10 +268,10 @@ Bốn việc trên là lý do **không dùng thẳng Lark mà tự làm**: chún
 | Không lấy | 10 |
 | Cấm | 1 |
 
-Nhóm "lấy bản 1" chính là 20 tính năng I01–I26 đánh dấu bản 1 trong [`01`](./01-danh-sach-tinh-nang.md) — phase 3 trong [`02`](./02-lo-trinh-phat-trien.md).
+Nhóm "lấy bản 1" chính là 20 tính năng I01–I26 đánh dấu bản 1 trong [`01`](../chuc-nang/12-danh-sach-tinh-nang.md) — phase 3 trong [`02`](../plans/02-lo-trinh-phat-trien.md).
 
 **Việc nên làm trước khi viết dòng mã đầu tiên của phase 3:** lấy 5 luồng duyệt thật đang chạy của Thu mua, cộng 3 luồng của văn thư (duyệt yêu cầu văn bản, duyệt nội dung văn bản, duyệt bản clone ở pháp nhân con), **khai thử cả 8 luồng ra giấy** bằng đúng mô hình dữ liệu định làm. Chỗ nào khai không nổi thì mô hình còn thiếu, và sửa lúc còn trên giấy rẻ hơn sửa sau khi đã có 200 phiếu chạy trong đó.
 
 ---
 
-Tiếp theo: [`04` Các bảng dữ liệu](./04-bang-du-lieu.md)
+Tiếp theo: [`04` Các bảng dữ liệu](../tai-lieu-ky-thuat/04-bang-du-lieu.md)

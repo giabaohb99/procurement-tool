@@ -341,4 +341,4 @@ Nêu ra để cân nhắc, không phải để làm hết.
 | Chỗ rủi ro nhất | Bộ máy duyệt chung đụng vào 5 luồng duyệt đang chạy của Thu mua |
 | Việc phải làm ngay tuần đầu, không cần chờ trả lời câu hỏi nào | Viết kiểm thử tự động cho 5 luồng duyệt hiện tại của Thu mua |
 
-Tiếp theo: [`01` Danh sách tính năng](./01-danh-sach-tinh-nang.md)
+Tiếp theo: [`01` Danh sách tính năng](../chuc-nang/12-danh-sach-tinh-nang.md)
