@@ -11,52 +11,52 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 |---|-----------|-----------|-------------------|
 | 1 | Trang chủ (Dashboard) | `/` | chưa có tài liệu |
 | 2 | Hỗ trợ (Phiếu hỗ trợ / Ticket) | `/tickets` | [10-ho-tro-ticket.md](10-ho-tro-ticket.md) — đã có tài liệu |
-| 3 | Báo cáo mua hàng | `/reports` | [08-he-thong-bao-cao.md](08-he-thong-bao-cao.md) — đã có tài liệu |
+| 3 | Báo cáo mua hàng | `/reports` | [08-he-thong-bao-cao.md](../erp/thu-mua/chuc-nang/17-he-thong-bao-cao.md) — đã có tài liệu |
 
 ## Nhóm: Mua hàng
 
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
-| 3 | Yêu cầu mua hàng (PYC) | `/purchase-requests` | [03-yeu-cau-mua-hang.md](03-yeu-cau-mua-hang.md) — đã có tài liệu |
-| 4 | Yêu cầu báo giá (YCBG) | `/survey-requests` | [02-yeu-cau-khao-sat.md](02-yeu-cau-khao-sat.md) — đã có tài liệu (tên cũ: Yêu cầu khảo sát) |
-| 5 | Đơn mua hàng (PO) | `/purchase-orders` | [04-don-mua-hang.md](04-don-mua-hang.md) — đã có tài liệu |
+| 3 | Yêu cầu mua hàng (PYC) | `/purchase-requests` | [03-yeu-cau-mua-hang.md](../erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md) — đã có tài liệu |
+| 4 | Yêu cầu báo giá (YCBG) | `/survey-requests` | [02-yeu-cau-khao-sat.md](../erp/thu-mua/chuc-nang/11-yeu-cau-khao-sat.md) — đã có tài liệu (tên cũ: Yêu cầu khảo sát) |
+| 5 | Đơn mua hàng (PO) | `/purchase-orders` | [04-don-mua-hang.md](../erp/thu-mua/chuc-nang/13-don-mua-hang.md) — đã có tài liệu |
 
 ## Nhóm: Khảo sát
 
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
-| 6 | Phiếu khảo sát | `/surveys` | [01-phieu-khao-sat.md](01-phieu-khao-sat.md) — đã có tài liệu |
-| 7 | Báo cáo khảo sát | `/survey-report` | [08-he-thong-bao-cao.md](08-he-thong-bao-cao.md) — đã có tài liệu |
+| 6 | Phiếu khảo sát | `/surveys` | [01-phieu-khao-sat.md](../erp/thu-mua/chuc-nang/10-phieu-khao-sat.md) — đã có tài liệu |
+| 7 | Báo cáo khảo sát | `/survey-report` | [08-he-thong-bao-cao.md](../erp/thu-mua/chuc-nang/17-he-thong-bao-cao.md) — đã có tài liệu |
 
 ## Nhóm: Kho & Công nợ
 
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
-| 8 | Tồn kho | `/inventory` | [06-ton-kho-cong-no.md](06-ton-kho-cong-no.md) — đã có tài liệu |
-| 9 | Công nợ | `/payables` | [06-ton-kho-cong-no.md](06-ton-kho-cong-no.md) — đã có tài liệu |
-| 10 | Yêu cầu thanh toán | `/payment-requests` | [05-yeu-cau-thanh-toan.md](05-yeu-cau-thanh-toan.md) — đã có tài liệu |
+| 8 | Tồn kho | `/inventory` | [06-ton-kho-cong-no.md](../erp/thu-mua/chuc-nang/15-ton-kho-cong-no.md) — đã có tài liệu |
+| 9 | Công nợ | `/payables` | [06-ton-kho-cong-no.md](../erp/thu-mua/chuc-nang/15-ton-kho-cong-no.md) — đã có tài liệu |
+| 10 | Yêu cầu thanh toán | `/payment-requests` | [05-yeu-cau-thanh-toan.md](../erp/thu-mua/chuc-nang/14-yeu-cau-thanh-toan.md) — đã có tài liệu |
 
 ## Nhóm: Danh mục
 
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
-| 11 | Nhà cung cấp | `/suppliers` | [07-danh-muc.md](07-danh-muc.md) — đã có tài liệu |
-| 12 | Sản phẩm | `/products` | [07-danh-muc.md](07-danh-muc.md) — đã có tài liệu |
-| 13 | Hợp đồng | `/contracts` | [07-danh-muc.md](07-danh-muc.md) — đã có tài liệu |
-| 14 | Kho | `/warehouses` | [07-danh-muc.md](07-danh-muc.md) — đã có tài liệu |
-| 15 | Đơn vị tính | `/units` | [07-danh-muc.md](07-danh-muc.md) — đã có tài liệu |
-| 16 | Phân loại | `/item-groups` | [07-danh-muc.md](07-danh-muc.md) — đã có tài liệu |
-| 17 | Phòng ban | `/departments` | [07-danh-muc.md](07-danh-muc.md) — đã có tài liệu |
-| 18 | Phân công phụ trách | `/category-assignees` | [07-danh-muc.md](07-danh-muc.md) — đã có tài liệu |
+| 11 | Nhà cung cấp | `/suppliers` | [07-danh-muc.md](../erp/thu-mua/chuc-nang/16-danh-muc.md) — đã có tài liệu |
+| 12 | Sản phẩm | `/products` | [07-danh-muc.md](../erp/thu-mua/chuc-nang/16-danh-muc.md) — đã có tài liệu |
+| 13 | Hợp đồng | `/contracts` | [07-danh-muc.md](../erp/thu-mua/chuc-nang/16-danh-muc.md) — đã có tài liệu |
+| 14 | Kho | `/warehouses` | [07-danh-muc.md](../erp/thu-mua/chuc-nang/16-danh-muc.md) — đã có tài liệu |
+| 15 | Đơn vị tính | `/units` | [07-danh-muc.md](../erp/thu-mua/chuc-nang/16-danh-muc.md) — đã có tài liệu |
+| 16 | Phân loại | `/item-groups` | [07-danh-muc.md](../erp/thu-mua/chuc-nang/16-danh-muc.md) — đã có tài liệu |
+| 17 | Phòng ban | `/departments` | [07-danh-muc.md](../erp/thu-mua/chuc-nang/16-danh-muc.md) — đã có tài liệu |
+| 18 | Phân công phụ trách | `/category-assignees` | [07-danh-muc.md](../erp/thu-mua/chuc-nang/16-danh-muc.md) — đã có tài liệu |
 
 ## Nhóm: Hệ thống
 
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
-| 19 | Công ty | `/companies` | [07-danh-muc.md](07-danh-muc.md) — đã có tài liệu |
-| 20 | Nhân sự | `/employees` | [08-he-thong-bao-cao.md](08-he-thong-bao-cao.md) — đã có tài liệu |
-| 21 | Vai trò & Phân quyền | `/roles` | [08-he-thong-bao-cao.md](08-he-thong-bao-cao.md) — đã có tài liệu |
-| 22 | Cấu hình hệ thống | `/settings` | [08-he-thong-bao-cao.md](08-he-thong-bao-cao.md) — đã có tài liệu |
+| 19 | Công ty | `/companies` | [07-danh-muc.md](../erp/thu-mua/chuc-nang/16-danh-muc.md) — đã có tài liệu |
+| 20 | Nhân sự | `/employees` | [08-he-thong-bao-cao.md](../erp/thu-mua/chuc-nang/17-he-thong-bao-cao.md) — đã có tài liệu |
+| 21 | Vai trò & Phân quyền | `/roles` | [08-he-thong-bao-cao.md](../erp/thu-mua/chuc-nang/17-he-thong-bao-cao.md) — đã có tài liệu |
+| 22 | Cấu hình hệ thống | `/settings` | [08-he-thong-bao-cao.md](../erp/thu-mua/chuc-nang/17-he-thong-bao-cao.md) — đã có tài liệu |
 
 ## Nhóm: Người dùng cá nhân
 
@@ -70,7 +70,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 | # | Chức năng | Đường dẫn | Tài liệu chức năng |
 |---|-----------|-----------|-------------------|
 | 25 | Bình luận / Trao đổi trên chứng từ (2 cấp · @nhắc tên · lượt thích) | cuối trang chi tiết YCMH · YCBG · Phiếu khảo sát · ĐMH | [11-binh-luan-tren-chung-tu.md](11-binh-luan-tren-chung-tu.md) — đã có tài liệu |
-| 26 | Lịch sử mua hàng (từng lần mua của mã hàng · tham chiếu giá khi lập đơn) | tab ở chi tiết Sản phẩm · chi tiết NCC · popup trong ô Mã hàng của YCMH/ĐMH | [12-lich-su-mua-hang.md](12-lich-su-mua-hang.md) — đã có tài liệu |
+| 26 | Lịch sử mua hàng (từng lần mua của mã hàng · tham chiếu giá khi lập đơn) | tab ở chi tiết Sản phẩm · chi tiết NCC · popup trong ô Mã hàng của YCMH/ĐMH | [12-lich-su-mua-hang.md](../erp/thu-mua/chuc-nang/18-lich-su-mua-hang.md) — đã có tài liệu |
 
 ## Nhóm: ERP v2 — phân hệ chỉ có trên giao diện mới (cổng 8083)
 
@@ -84,7 +84,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 | 31 | **Đặt phòng họp** (lịch phòng · phiếu đặt · danh mục phòng) | `/hr/room-calendar` | [18-dat-phong-hop.md](18-dat-phong-hop.md) — đã có tài liệu |
 | 32 | **Đặt xe nội bộ** (yêu cầu đặt xe 2 loại · điều phối xe/tài xế · luồng duyệt theo vai trò · danh mục Xe & Tài xế nội bộ/thuê ngoài) | `/vehicle-booking` | [16-dat-xe.md](16-dat-xe.md) — đã có tài liệu |
 | 33 | **Duyệt dấu** (yêu cầu đóng dấu · upload chứng từ chữ ký sống · TBP duyệt · Văn thư đóng dấu/hoàn thành · thông báo NSYC/Văn thư/Giám đốc · danh mục Loại con dấu) | `/approval-seal` | [17-duyet-dau.md](17-duyet-dau.md) — **kế hoạch** (backend đang là stub), xem `doc/duyet-dau/` |
-| 34 | **HDSD lập bộ tài khoản phòng tự mua hàng** (thao tác từng bước: hồ sơ nhân sự · tài khoản đăng nhập · gán vai trò · ô Loại trừ phòng ban · Phân công phụ trách theo phòng; hai bộ mẫu Nhà máy / Thu mua trừ nhà máy) | Nhân sự › Nhân sự · Quản trị › Phân quyền tài khoản · Thu mua › Cấu hình › Phân công phụ trách | [20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md](20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md) — đã có tài liệu (bao-CR-414) |
+| 34 | **HDSD lập bộ tài khoản phòng tự mua hàng** (thao tác từng bước: hồ sơ nhân sự · tài khoản đăng nhập · gán vai trò · ô Loại trừ phòng ban · Phân công phụ trách theo phòng; hai bộ mẫu Nhà máy / Thu mua trừ nhà máy) | Nhân sự › Nhân sự · Quản trị › Phân quyền tài khoản · Thu mua › Cấu hình › Phân công phụ trách | [20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md](../erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md) — đã có tài liệu (bao-CR-414) |
 | 35 | **Kết nối AI riêng + Kho skill AI** (khóa kết nối ở Trang cá nhân · nối Claude Desktop / Claude Code / Cursor / Gemini CLI · công cụ và skill AI đọc được · quản trị bộ skill, xuất bản, ai được đọc, phát khóa, cấu hình · nhật ký và lỗi thường gặp) | `/me?tab=ai-connect` · `/ai-skill` | [22-ket-noi-ai-rieng-va-kho-skill.md](22-ket-noi-ai-rieng-va-kho-skill.md) — đã có tài liệu (bao-CR-631) |
 | 36 | **Báo cáo Nhân sự** (Biến động nhân sự kèm chiều cơ cấu tuổi · trình độ · nơi làm việc · nhóm vị trí việc làm · Tình hình nghỉ phép · Quỹ phép năm · Hợp đồng lao động · Hồ sơ & tài khoản còn thiếu · Sổ quản lý lao động · Báo cáo sử dụng lao động mẫu 01/PLI · Quỹ lương theo pháp nhân · Phúc lợi & sự kiện · Cơ cấu quản lý · Điều chuyển & bổ nhiệm · Có mặt theo ngày · Yêu cầu sửa hồ sơ · Sử dụng phòng họp · Đối tượng cần chú ý theo luật; ô Lịch nhắc trong tháng ở Tổng quan Nhân sự; lọc phòng ban, ngăn «Danh sách» sau mỗi con số, giao quyền xem ở tab «Báo cáo») | `/report/hr-headcount` · `/report/leave-usage` · `/report/leave-balance` · `/report/labor-contract` · `/report/hr-profile-gaps` · `/report/labor-register` · `/report/labor-usage-report` · `/report/attendance` · `/report/profile-changes` · `/report/room-usage` · `/report/legal-watch` | [../erp/hrm/05-bao-cao-nhan-su.md](../erp/hrm/05-bao-cao-nhan-su.md) — đã có tài liệu (duoc-CR-686, mở rộng duoc-CR-687 mục A2 · B2 · B3, duoc-CR-688, duoc-CR-689 mục A5 · B4 · C3 · E2 · E3 · F1; duoc-CR-692 bỏ phần kế hoạch và báo cáo khóa 25; duoc-CR-693 đổi nguồn A5 sang ô Lương + Phụ cấp nhập ở hồ sơ nhân sự, chỉ có tổng, bài nhập lương nằm ở `seed_help_nhan_su.py`); bài Help Center: thẻ «Hướng dẫn sử dụng Báo cáo Nhân sự» (`backend/scripts/seed_help_bao_cao_nhan_su.py`). Nội dung ở tài liệu và ở seed phải khớp nhau |
 

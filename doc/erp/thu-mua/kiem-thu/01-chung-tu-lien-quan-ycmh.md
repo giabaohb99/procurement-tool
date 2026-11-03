@@ -1,7 +1,7 @@
 # 01 — Thẻ *Chứng từ liên quan* trên phiếu yêu cầu mua hàng
 
 > **bao-CR-422** · màn `/procurement/purchase-requests/<id>` trên giao diện mới.
-> Tài liệu chức năng: [03-yeu-cau-mua-hang.md](../tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md) §I
+> Tài liệu chức năng: [03-yeu-cau-mua-hang.md](../chuc-nang/12-yeu-cau-mua-hang.md) §I
 
 ## Vì sao phải kiểm tay
 

@@ -116,7 +116,7 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|
-| TM2-1 | Báo cáo thực hiện YCBG: **nhớ gấp/mở XONG mã, chờ rà — kh-TM2-1, 22/10** (nhánh agent3/kh-TM2-1); đính kèm tệp thật, nhắc hạn, quản lý mẫu chuyển sang kh-TM2-1-may-chu (anh Dược) | Bốn ý chạy trên dev, có HDSD | `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md` |
+| TM2-1 | Báo cáo thực hiện YCBG: **nhớ gấp/mở XONG mã, chờ rà — kh-TM2-1, 22/10** (nhánh agent3/kh-TM2-1); đính kèm tệp thật, nhắc hạn, quản lý mẫu chuyển sang kh-TM2-1-may-chu (anh Dược) | Bốn ý chạy trên dev, có HDSD | `doc/erp/thu-mua/nghien-cuu/01-brief-bao-cao-thuc-hien-ycbg.md` |
 
 **Phase 3 — khi cần**
 
@@ -126,7 +126,7 @@ Chi tiết câu chờ của từng module nằm cuối mục module đó.
 
 **Đã ghi nhận, chưa lên lịch — chỗ hở kho và nhận hàng so với chuẩn (bao-CR-702, 30/10/2026; đại ca chốt chỉ ghi, chưa làm)**
 
-Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) mục 6 (top 10 chỗ hở, đã xếp theo giá trị cho phòng thu mua). Nửa sau luồng (nhận hàng, kho, công nợ) mới đạt 43 % so với ERPNext v16.
+Nguồn: [`nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md`](../erp/thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) mục 6 (top 10 chỗ hở, đã xếp theo giá trị cho phòng thu mua). Nửa sau luồng (nhận hàng, kho, công nợ) mới đạt 43 % so với ERPNext v16.
 
 | Mã | Việc | Điều kiện xong | Nguồn |
 |---|---|---|---|

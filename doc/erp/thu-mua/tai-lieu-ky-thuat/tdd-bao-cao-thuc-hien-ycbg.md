@@ -6,8 +6,8 @@
 | Bản | 1.0 — 12/09/2026 |
 | Phạm vi mã | backend `app/modules/survey_request/report_*` · frontend `frontend-v2/src/modules/procurement/**/survey-report/**` |
 | Migration | `7816572fed52` (down_revision `bee157de2ec8`) |
-| Tài liệu chức năng | [`19-bao-cao-thuc-hien-ycbg.md`](../tai-lieu-chuc-nang/19-bao-cao-thuc-hien-ycbg.md) |
-| Brief | [`doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md`](../erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md) |
+| Tài liệu chức năng | [`19-bao-cao-thuc-hien-ycbg.md`](../chuc-nang/19-bao-cao-thuc-hien-ycbg.md) |
+| Brief | [`doc/erp/thu-mua/nghien-cuu/01-brief-bao-cao-thuc-hien-ycbg.md`](../nghien-cuu/01-brief-bao-cao-thuc-hien-ycbg.md) |
 
 ---
 

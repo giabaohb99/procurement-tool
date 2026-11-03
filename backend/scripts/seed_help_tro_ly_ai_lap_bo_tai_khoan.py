@@ -10,7 +10,7 @@ Chạy trong container api:
 Idempotent: đã có bài cùng tiêu đề dưới cùng bài cha thì xóa bài đó (kèm con, nếu có)
 rồi chèn lại. Không thấy bài cha "Trợ lý AI" thì DỪNG, không tự tạo bài gốc.
 
-⚠️ Nội dung ở đây phải KHỚP với `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`
+⚠️ Nội dung ở đây phải KHỚP với `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`
 mục 3 (phần "Làm nhanh Bước 3 và 4 bằng Trợ lý AI") và với tool T49
 `propose_account_setup` (`app/modules/assistant/tools/account_setup_tool.py`, bao-CR-435).
 Đổi hành vi tool thì sửa cả ba chỗ.

@@ -7,7 +7,7 @@
 | Mốc so sánh | ERPNext trên site học `erpnext.degoholding.vn` (container `erpnext-hoc-backend-1`, `__version__` = `16.53.0`, site `frontend`); DocType JSON và `item.py` đọc thẳng trong container; docs.erpnext.com mục Stock (Item, Item Variants, Item Price, UOM) |
 | Mã soát | nhánh `erp-v2` ngày 02/11/2026 (commit `601ec718`): `backend/app/modules/product`, `catalog`, `supplier`, `survey`, `purchase_history`, `inventory`, `category_assignee`; v2 `frontend-v2/src/modules/production`, `inventory` |
 | Số đo dữ liệu | DB local (bản sao gần prod, 6.803 mã) và site học (7.004 mã đồng bộ từ ERP DEGO); chỉ chạy câu đọc |
-| Đọc kèm | [`mo-hinh-du-lieu-san-pham.md`](../../../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) (luật bất biến, BẮT BUỘC) · [11 Độ phủ thu mua, kho](../../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) · [10 Nghiệp vụ kho](../../nghien-cuu/10-nghiep-vu-kho.md) · [00 Kế hoạch theo module](../../../plans/00-ke-hoach-theo-module.md) |
+| Đọc kèm | [`mo-hinh-du-lieu-san-pham.md`](../../../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) (luật bất biến, BẮT BUỘC) · [11 Độ phủ thu mua, kho](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) · [10 Nghiệp vụ kho](../../nghien-cuu/10-nghiep-vu-kho.md) · [00 Kế hoạch theo module](../../../plans/00-ke-hoach-theo-module.md) |
 
 ## Mục lục
 

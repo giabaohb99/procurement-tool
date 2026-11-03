@@ -220,7 +220,7 @@ vào giá vốn, sổ kho có ngày ghi sổ và khóa kỳ, hợp đồng khung
 liệt kê chỗ ERP DEGO đi xa hơn ERPNext để nhìn công bằng. Người chủ chốt 30/10: chưa làm, chỉ ghi nhận; bốn việc
 đầu (số lượng từ chối và QC chặn nhập, trả hàng NCC, phiếu nhập do thủ kho lập, xuất và chuyển kho) đã ghi vào kế hoạch theo
 module mục Thu mua với trạng thái đã ghi nhận, chưa lên lịch; sáu việc còn lại ghi một dòng dẫn về tài liệu 11.
-Mã nguồn: doc/erp/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md
+Mã nguồn: doc/erp/thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md
 
 ## bao-CR-696-hdsd | Sửa bài hướng dẫn cụm AI theo màn mới: một phân hệ AI, Kết nối, Nâng cao, Nhật ký
 - status: xong
@@ -305,7 +305,7 @@ theo bộ lọc, trần 5.000 dòng; hạn chế ghép đơn theo mã phiếu v�
 ở hai bài có sẵn của Trung tâm trợ giúp (bài riêng và câu nhắc trong bài nhóm) bằng script sửa thẳng vì hai bài đó không có
 tệp seed. Tài liệu chức năng: thêm mục Màn Chi tiết YC mua hàng ở tài liệu Hệ thống và Báo cáo (API, xuất Excel, giao diện,
 hạn chế), đổi nhãn ở tài liệu Đơn mua hàng và Yêu cầu khảo sát. Đã nạp bài mới lên dev kèm kho vector; prod nạp 30/10 sau khi người chủ gật (bài số 211, kho vector 5 đoạn).
-Mã nguồn: backend/scripts/seed_help_chi_tiet_yc_mua_hang.py (mới), doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md, 04-don-mua-hang.md, 02-yeu-cau-khao-sat.md
+Mã nguồn: backend/scripts/seed_help_chi_tiet_yc_mua_hang.py (mới), doc/erp/thu-mua/chuc-nang/17-he-thong-bao-cao.md, 04-don-mua-hang.md, 02-yeu-cau-khao-sat.md
 Deploy: dev 29/10 (bài mới + đổi tên hai bài, kho vector nạp lại); prod 30/10 (bài mới)
 
 ## bao-CR-693 | Mở chi tiết chứng từ ở tab mới từ trang danh sách đang lọc
@@ -2300,7 +2300,7 @@ luồng thì phiếu đi theo. Cả ba chạy đúng: phiếu giao hàng tự r�
 theo luồng mới còn phiếu gửi trước giữ luồng cũ. Đã chốt: duyệt dấu cũng dùng luồng cấu hình, ai có quyền thì tự
 cấu hình luồng riêng (xem bao-CR-579).
 
-Kiểm: 2 bài kiểm mới đỏ trên mã cũ, xanh trên mã vá. Bộ kịch bản kiểm cho quản trị ở doc/testcase-bao/06. Ghi nhận
+Kiểm: 2 bài kiểm mới đỏ trên mã cũ, xanh trên mã vá. Bộ kịch bản kiểm cho quản trị ở doc/erp/thu-mua/kiem-thu/06. Ghi nhận
 thêm, chưa tra: ô «Trao đổi» báo không tải được khi trưởng bộ phận mở phiếu đặt xe ngoài phạm vi của mình.
 
 Mã nguồn: `backend/app/modules/approval/approver_resolver.py` (`_by_role`), script
@@ -4731,7 +4731,7 @@ hàng, người thu mua gắn các phương án nhà cung cấp lên từng dòn
 chọn lấy một phương án cho mỗi dòng, rồi từ những dòng đã chọn hệ sinh thẳng ra đơn mua
 hàng.
 Tham chiếu: kế hoạch đầy đủ ở mục H của
-`doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`.
+`doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md`.
 
 CÁCH LÀM ĐÃ CHỐT:
 - Phương án lưu trong một bảng riêng móc về dòng hàng của phiếu. Những cột chụp lại giá
@@ -4911,7 +4911,7 @@ Ngày 14/09 — ĐÃ TÌM XONG HƯỚNG PHÁT TRIỂN: chốt thiết kế với
   phần tự điền nhà cung cấp, giá và mã hàng từ phương án đã chọn của dòng.
 Thứ tự thi công: phần lõi trước, rồi màn chọn, rồi sinh đơn. Bản in dồn về đợt bốn.
 Tham chiếu: thiết kế đầy đủ ở mục H.10 của
-`doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`; luật thuế trống rơi về dòng là
+`doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md`; luật thuế trống rơi về dòng là
 bao-CR-058, cửa gửi duyệt chặn thiếu nhà cung cấp là bao-CR-095, luật mã hàng trùng dòng
 khác là bao-CR-047, đồng bộ phiếu yêu cầu khi có đơn là bao-CR-074.
 Mã nguồn: `option_service.generate_purchase_orders`, cửa
@@ -5208,7 +5208,7 @@ Mã nguồn: `purchase-request-print-page.tsx`, trang mới
 `dominantChosenSupplier`, bài kiểm `purchase-request-print-options.test.ts`; luật dòng đã
 lên đơn là của bao-CR-074, thuế trống rơi về dòng là bao-CR-058; phiếu mẫu
 DEMO-CR310-02.
-Tham chiếu: thiết kế ở mục H.6 và H.9 của `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`;
+Tham chiếu: thiết kế ở mục H.6 và H.9 của `doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md`;
 sổ thay đổi đã cập nhật cùng lượt.
 
 ## bao-CR-310-dot-4-ra-lai | Rà lại đợt 4 theo góp ý của khách: lỗi nút gom, khuôn bản in thu mua, gom bốn nút thành hai
@@ -5317,7 +5317,7 @@ trạng thái dòng `no_po`, hàm `generate_orders`, hàm tích phương án g�
 `ensure_option_zero`, cờ `hasDoneLine`; hai đơn nháp PO00365 và PO00366; trang lập đơn tay
 `/purchase-orders/new`; phiếu mẫu DEMO-CR310-02.
 Tham chiếu: luật rời trạng thái ngay khi lên đơn nháp là của bao-CR-074; luật in chú đơn vị
-lệch ở mục H.4 của `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`.
+lệch ở mục H.4 của `doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md`.
 
 ### bao-CR-310-dot-4-ra-lai-vong-3 | Vòng ba cùng ngày: ô nhà cung cấp chung, nhảy sang danh sách đơn, cụm ký của bản in thu mua
 - status: xong local, chưa commit
@@ -6799,7 +6799,7 @@ Mã nguồn: `frontend-v2/src/modules/procurement/pages/purchase-request-detail-
 lại `useRelatedPurchaseOrders` để biết phiếu đã có đơn nào). Không thêm khóa phân quyền, không
 thêm đường API, không đổi hành vi của `generate_orders` bên máy chủ.
 Tham chiếu: dòng `bao-CR-421-hoi-truoc-khi-gom-them-don` trong `change-log-bao.md`; bảng hai
-lời của hộp xác nhận ở mục H.10.6 của `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`. Đợt
+lời của hộp xác nhận ở mục H.10.6 của `doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md`. Đợt
 liền trước là `bao-CR-420`.
 
 ## bao-CR-420 | Một nút tạo đơn mua hàng và một nút in, chọn sẵn theo vai trò người bấm
@@ -6849,7 +6849,7 @@ qua lại, dùng `appRoutes.procurement.purchaseRequestPrint` và
 `appRoutes.procurement.purchaseRequestSupplierPrint`) · hai khóa quyền dùng lại là
 `purchase_order:create` và `supplier:read`, không thêm khóa mới.
 Tham chiếu: dòng `bao-CR-420-mot-nut-tao-don-va-in` trong `change-log-bao.md`; mô tả giao
-diện ở mục H.6.1 và H.10.6 của `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`, kèm đính
+diện ở mục H.6.1 và H.10.6 của `doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md`, kèm đính
 chính cho phần sổ xuống của `bao-CR-310` đợt 4.
 
 ## bao-CR-419 | Chuông cho luồng phương án yêu cầu mua hàng và mốc chốt xong lựa chọn
@@ -6926,7 +6926,7 @@ và `pr_options_chosen` · `frontend-v2/src/modules/procurement/components/purch
 (bỏ khối nút) · `use-purchase-request-options.ts` (hook `useCompletePrOptionChoice` giữ lại kèm ghi chú)
 · bài kiểm `test/backend/test_chuong_phuong_an_cr419.py`.
 Tham chiếu: dòng `bao-CR-419-chuong-phuong-an-ycmh` trong `change-log-bao.md`; thiết kế ở
-mục H.11, H.11.1 (quyết định bỏ nút) và H.12 của `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`.
+mục H.11, H.11.1 (quyết định bỏ nút) và H.12 của `doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md`.
 
 
 ## dong-bo-datxe-cua-nhan | Cửa nhận phiếu app đặt xe cũ, luật ghi đè, bộ tra người xe tài xế và hai vòng quét nền
@@ -7050,7 +7050,7 @@ thành `_linked_survey_requests`, `_out` trả thêm khóa `survey_requests`) ·
 `test/backend/test_lien_ket_ycmh_cr317_318.py` và
 `purchase-request-linked-documents-card.test.tsx`.
 Tham chiếu: dòng `bao-CR-422-chung-tu-lien-quan-tren-ycmh` trong `change-log-bao.md`; mô tả
-chức năng ở mục I của `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`.
+chức năng ở mục I của `doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md`.
 
 ## bao-CR-423 | Ô lọc trạng thái và công ty ở hai màn Tiến độ chọn được nhiều giá trị
 - status: xong
@@ -8393,7 +8393,7 @@ sơ nhân sự với vai trò nhân viên, và tài khoản thiếu quyền đ�
 được đọc sửa vai trò và tài khoản, đọc phòng ban và công ty. Cả hai đăng nhập bằng email vì
 không có mã nhân viên. Script chạy lại không đẻ thêm bản ghi và có xóa bộ đệm quyền. Đã điền mã
 tài khoản thật vào bảng chuẩn bị của tệp 05. Vai trò tạm phải xóa sau khi chấm xong.
-Mã nguồn: `doc/testcase-bao/05-vai-tro-va-pham-vi.md` · `doc/testcase-bao/00-muc-luc.md` ·
+Mã nguồn: `doc/erp/thu-mua/kiem-thu/05-vai-tro-va-pham-vi.md` · `doc/erp/thu-mua/kiem-thu/00-muc-luc.md` ·
 `backend/app/seed_tai_khoan_cr414.py` (script hai tài khoản phụ để ngoài kho mã).
 Commit: 4106270c (tệp 05 + mục lục, chưa đẩy); phần điền mã tài khoản chưa commit.
 Deploy: dữ liệu test trên máy chủ thử 19/09/2026, không đụng mã nguồn đang chạy.
@@ -8455,7 +8455,7 @@ khoản (hồ sơ nhân sự, tài khoản đăng nhập, gán vai trò, phạm 
 kiểm tra sau khi làm theo từng tài khoản, bẫy hay gặp, và cách mở thêm một phòng tự mua khác
 (phải nhớ thêm phòng đó vào ô loại trừ của mọi tài khoản thu mua chung, không có gì tự nhắc).
 Thêm một dòng vào mục lục tài liệu chức năng. Chưa commit, chờ Ban điều hành bảo.
-Mã nguồn: `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md` ·
+Mã nguồn: `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md` ·
 `doc/tai-lieu-chuc-nang/00-muc-luc.md`.
 
 ## bao-CR-432 | Phiếu Chờ duyệt nói rõ đang chờ ở chặng nào
@@ -8586,7 +8586,7 @@ bị phiên khác lấy trong ngày nên việc này mang số 434. Chưa commit
 Mã nguồn: `backend/app/core/scoping.py` (`_proc_status_cond`) · `backend/app/seed_tai_khoan_cr414.py` ·
 `test/backend/test_proc_khong_loc_theo_phap_nhan_cr434.py` (đổi tên từ `test_proc_loc_cong_ty_p1.py`) ·
 `test/backend/test_pham_vi_cap_bac_ma_tran.py` · `test/backend/test_pham_vi_thu_mua.py` ·
-`doc/erp/12-ke-hoach-erp-v2-da-phap-nhan.md` · `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`.
+`doc/erp/12-ke-hoach-erp-v2-da-phap-nhan.md` · `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`.
 
 ## bao-CR-436 | Màn Đơn mua hàng và màn Công nợ hỏi gọn cả trang thay vì hỏi từng dòng
 - status: xong
@@ -8867,7 +8867,7 @@ tiêu đề thì xóa rồi chèn lại giữ nguyên thứ tự, không thấy 
 bài gốc. Đã chạy hai lần dưới máy, xem trên Trung tâm HDSD cổng 8082 thấy đúng cây và các liên
 kết nội bộ. Hướng dẫn 20 thêm một dòng trỏ sang bài này để ai đổi hành vi tool thì sửa cả hai.
 
-Mã nguồn: backend/scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py, doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md
+Mã nguồn: backend/scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py, doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md
 
 ## bao-CR-442 | Thêm xuất Excel, bộ lọc điều kiện và ô lọc tình trạng nhận cho màn Tiến độ mua hàng bản mới
 - status: xong
@@ -8974,7 +8974,7 @@ Script seed idempotent cùng khuôn bài trước: tìm bài cha theo tiêu đ�
 chèn lại giữ thứ tự, không thấy bài cha thì dừng. Chạy hai lần dưới máy ra cùng kết quả, đã mở
 Trung tâm HDSD dưới máy xem cây, đường dẫn và các bảng. Hướng dẫn 20 thêm một đoạn trỏ sang bài.
 
-Mã nguồn: `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py` (mới), `backend/scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py`, `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`, `doc/tai-lieu-ky-thuat/change-log-bao.md`.
+Mã nguồn: `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py` (mới), `backend/scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py`, `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`, `doc/tai-lieu-ky-thuat/change-log-bao.md`.
 
 ## bao-CR-445 | Script seed nhận sở hữu bài cha «Trợ lý AI» trên Trung tâm HDSD
 - status: xong
@@ -9231,7 +9231,7 @@ nên chỉ trả bản đề xuất, người dùng bấm xác nhận thì mới
 tạo đơn mua hàng từ phương án, gắn sửa xóa phương án, và bấm nút chốt hoàn thành xử lý.
 
 Mã nguồn: script seed hai bài ở `backend/scripts/seed_help_xu_ly_phuong_an.py` (mới). Tài liệu
-nghiệp vụ `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md` mục H đóng khoản nợ N-20. Danh sách công
+nghiệp vụ `doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md` mục H đóng khoản nợ N-20. Danh sách công
 cụ trợ lý `doc/erp/tai-lieu-ai/02-danh-sach-api-tool.md` thêm Nhóm 20 và ghi chú mở rộng ở T27;
 `doc/erp/tai-lieu-ai/04-bao-mat-va-van-hanh.md` mục 5 cập nhật số công cụ còn nợ và hai chỗ phải
 soi khi code.
@@ -10081,7 +10081,7 @@ Máy chủ chính đang tạm dừng cập nhật nên đợt này chỉ lên m�
 cho khách nằm ở tài liệu thiết kế; giá hàng ba giai đoạn trên đơn nhập khẩu tách thành yêu cầu
 riêng sau.
 
-Tài liệu: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`, `doc/tai-lieu-chuc-nang/04-don-mua-hang.md` mục K,
+Tài liệu: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`, `doc/erp/thu-mua/chuc-nang/13-don-mua-hang.md` mục K,
 `08-he-thong-bao-cao.md`, `doc/tai-lieu-ky-thuat/kien-truc/05a-du-lieu-thu-mua.md`, `doc/erp/nhap-khau/01-danh-sach-tinh-nang.md`,
 `doc/erp/19-viec-con-lai-tong-hop.md` §5, `doc/tai-lieu-ky-thuat/change-log-bao.md` (dòng bao-CR-453).
 Mã nguồn: `backend/app/modules/purchase_order/` (model, schema, service, controller, cost_type.py),
@@ -16933,7 +16933,7 @@ Commit: nhánh agent3/kh-TM2-1, chưa đẩy
 
 **Điều kiện xong:** ba việc chạy trên dev, có bài kiểm; gửi hợp đồng API cho Agent 1 để Agent 3 làm phần giao diện; xin duyệt trước khi commit (có bảng mới và đụng phân quyền tệp).
 
-Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/18-bao-cao-thuc-hien-ycbg.md` §6 · backend/app/core/file_registry.py · backend/app/core/attachment_scope.py · backend/app/modules/survey_request/report_constants.py · report_controller.py · report_model.py
+Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/nghien-cuu/01-brief-bao-cao-thuc-hien-ycbg.md` §6 · backend/app/core/file_registry.py · backend/app/core/attachment_scope.py · backend/app/modules/survey_request/report_constants.py · report_controller.py · report_model.py
 
 ## kh-NT2-8 | Biểu đồ dashboard Tồn kho và màn lỗi tác vụ nền
 - list: Kế hoạch hệ agent
@@ -17034,7 +17034,7 @@ Mã nguồn: kế hoạch DX2-1
 
 **Còn:** nạp bài hướng dẫn lên devhelp (lệnh chạy seed trên VPS dev đang chờ duyệt); đi lại hai kịch bản trên dev để chốt nhãn nút khi người dùng đăng nhập khung trình duyệt; commit tệp seed chờ gật vì là tệp chạy được.
 
-Mã nguồn: `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md` · `doc/erp/hrm/02-nghi-phep.md` · `doc/tai-lieu-chuc-nang/14-van-thu-van-ban.md` · `doc/erp/cong-viec/06-kich-ban-dung-thu.md` · `doc/erp/dien-dan/04-kich-ban-dung-thu.md` · `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py`
+Mã nguồn: `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md` · `doc/erp/hrm/02-nghi-phep.md` · `doc/tai-lieu-chuc-nang/14-van-thu-van-ban.md` · `doc/erp/cong-viec/06-kich-ban-dung-thu.md` · `doc/erp/dien-dan/04-kich-ban-dung-thu.md` · `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py`
 
 **Việc cần làm**
 - Ghi vào tài liệu chức năng và bài hướng dẫn liên quan (lập bộ tài khoản theo công ty, khai luồng duyệt riêng một công ty).
@@ -17898,7 +17898,7 @@ Commit: 0c7b2104 (main) · Deploy: prod toàn bộ dịch vụ ERP và cụm AI,
 
 **Kết quả:** văn bản số 09 và 10 trên nhánh erp-v2.
 
-Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md · doc/erp/nghien-cuu/10-nghiep-vu-kho.md
+Tham chiếu: doc/erp/thu-mua/nghien-cuu/09-nghiep-vu-mua-hang.md · doc/erp/nghien-cuu/10-nghiep-vu-kho.md
 
 ## nc-09b-tra-truoc-nhap-khau | Bổ sung trả trước, nhập khẩu và cách cân bằng vào nghiệp vụ Mua hàng
 - status: xong
@@ -17913,7 +17913,7 @@ Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md · doc/erp/nghien-cuu/
 
 **Kết quả:** tài liệu 09 bản 1.1 trên nhánh erp-v2.
 
-Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
+Tham chiếu: doc/erp/thu-mua/nghien-cuu/09-nghiep-vu-mua-hang.md
 
 ## nc-09c-truong-hop-thuong-gap | Viết lại các trường hợp thường gặp trong nghiệp vụ Mua hàng
 - status: xong
@@ -17928,7 +17928,7 @@ Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
 
 **Kết quả:** tài liệu 09 bản 1.2 trên nhánh erp-v2, kèm bản PDF xuất lại.
 
-Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
+Tham chiếu: doc/erp/thu-mua/nghien-cuu/09-nghiep-vu-mua-hang.md
 
 ## nc-09d-giao-trinh | Dựng lại tài liệu nghiệp vụ Mua hàng dạng giáo trình
 - status: xong
@@ -17944,7 +17944,7 @@ Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
 
 **Kết quả:** tài liệu 09 bản 2.0 trên nhánh erp-v2, bản PDF 29 trang.
 
-Tham chiếu: doc/erp/nghien-cuu/09-nghiep-vu-mua-hang.md
+Tham chiếu: doc/erp/thu-mua/nghien-cuu/09-nghiep-vu-mua-hang.md
 
 ## nc-10b-giao-trinh-kho | Dựng lại tài liệu nghiệp vụ Kho dạng giáo trình
 - status: xong

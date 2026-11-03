@@ -7,7 +7,7 @@
 | Mốc so sánh | ERPNext **v16.53.0** trên site học (VPS 2, container `erpnext-hoc-backend-1`, site `frontend`), mã nguồn `apps/erpnext/erpnext/stock/doctype/batch`, `serial_no`, `serial_and_batch_bundle`, `serial_and_batch_entry`, `pick_list`, `manufacturing/doctype/work_order`; tài liệu chính thức ở `docs.frappe.io/erpnext` (trước đây `docs.erpnext.com`) |
 | Mã soát | nhánh `erp-v2` ngày 02/11/2026, `backend/app/modules/inventory`, `goods_receipt`, `product`, `purchase_order`, `dossier` |
 | Tính chất | Tài liệu nghiên cứu. Không sửa mã, không đổi dữ liệu |
-| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 4.6 và 8.2 việc 2.10 · [10 Nghiệp vụ kho](../../nghien-cuu/10-nghiep-vu-kho.md) tình huống A4, B3 · [11 Độ phủ thu mua, kho](../../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) dòng A3 · [san-xuat/00](../../san-xuat/00-tong-quan-nghiep-vu.md) câu A3 · [Mô hình dữ liệu sản phẩm](../../../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) |
+| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) mục 4.6 và 8.2 việc 2.10 · [10 Nghiệp vụ kho](../../nghien-cuu/10-nghiep-vu-kho.md) tình huống A4, B3 · [11 Độ phủ thu mua, kho](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) dòng A3 · [san-xuat/00](../../san-xuat/00-tong-quan-nghiep-vu.md) câu A3 · [Mô hình dữ liệu sản phẩm](../../../tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md) |
 
 ## Mục lục
 
@@ -257,7 +257,7 @@ Câu A3 (*có theo dõi lô và hạn dùng không, khách có đòi truy xuất
 
 ## 6. Bảng fit-gap và tỷ lệ phủ
 
-Cách chấm theo [doc 11 mục 2](../../nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md#2-cách-chấm): **Có** = 1, **Một phần** = 0,5, **Chưa** = 0. Cột *DEGO cần* là đề xuất của mục 7.
+Cách chấm theo [doc 11 mục 2](../../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md#2-cách-chấm): **Có** = 1, **Một phần** = 0,5, **Chưa** = 0. Cột *DEGO cần* là đề xuất của mục 7.
 
 | # | Chức năng | ERPNext v16 | ERP DEGO | Điểm | DEGO cần |
 |---|---|---|---|---|---|

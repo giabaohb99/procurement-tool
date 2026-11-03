@@ -127,7 +127,7 @@ Ba thứ này **công cụ (Claude Code, Codex) đọc thẳng theo đường d�
 | `plans/<kế hoạch>` ở gốc repo, `frontend-v2/plans/*` | `doc/erp/<phan-he>/plans/<kế hoạch>` theo phân hệ chính của kế hoạch; kế hoạch nhiều phân hệ → `doc/plans/`; `plans/reports/` lẻ → theo phân hệ |
 | `doc/huong-dan-su-dung/van-ban/*.pdf` | `doc/erp/van-thu/du-lieu/` (đổi tên tệp có dấu và khoảng trắng) |
 | `doc/v1/yeu-cau/`, `doc/v1/kiem-thu/`, `doc/v1/thiet-ke/`, `doc/v1/chung/`, `doc/v1/du-lieu/sheet/`, `doc/v1/du-lieu/datamau/`, `doc/v1/tasks.md`, `doc/v1/task-process.md` | `doc/v1/…` (`datamau` có 2 chỗ trong mã trỏ tới — sửa cùng commit) |
-| `doc/testcase-bao/` | `doc/erp/thu-mua/kiem-thu/` (vẫn dùng cho V2) |
+| `doc/erp/thu-mua/kiem-thu/` | `doc/erp/thu-mua/kiem-thu/` (vẫn dùng cho V2) |
 | `doc/v1/du-lieu/danh-sach-tinh-nang.xlsx` | `doc/v1/du-lieu/` |
 
 ---

@@ -291,7 +291,7 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
                          "(icon cái cân) trên màn Công nợ. Cả hai đều trừ tối đa = "
                          "min(treo, nợ còn lại). Phần gắn đơn sẽ TỰ đối trừ khi đơn đó "
                          "nhận hàng, không cần thao tác. Nghiệp vụ đầy đủ: "
-                         "doc/tai-lieu-chuc-nang/05-yeu-cau-thanh-toan.md mục F."),
+                         "doc/erp/thu-mua/chuc-nang/14-yeu-cau-thanh-toan.md mục F."),
             }
     return _attach_all(out)
 
@@ -621,7 +621,7 @@ def _run_read_request(ctx: ToolContext, args: dict) -> dict:
                 "thoại tạo YCTT ở đơn mua hàng gợi ý sẵn, trừ thật khi phiếu được duyệt "
                 "— CR-260); đường phụ là kế toán cấn trừ tay ở màn Công nợ (nút icon "
                 "cái cân) hoặc ghi nhận NCC hoàn tiền ngay trên phiếu này. Xem "
-                "doc/tai-lieu-chuc-nang/05-yeu-cau-thanh-toan.md mục F.")
+                "doc/erp/thu-mua/chuc-nang/14-yeu-cau-thanh-toan.md mục F.")
     return out
 
 

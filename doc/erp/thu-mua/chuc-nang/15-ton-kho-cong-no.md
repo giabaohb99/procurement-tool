@@ -541,7 +541,7 @@ Hàm `recompute_effects` trong `purchase_order/service.py` được gọi mỗi 
 3. NCC: khai ở **từng dòng chi phí** (hãng tàu, khai thuê, kho bãi, `NSNN` *Ngân sách nhà nước* cho các khoản thuế), không lấy theo NCC bán hàng.
 4. Số tiền: `amount` = tiền trước VAT đã quy đổi, `vat` = tiền thuế, `total = base_amount` của dòng. `incur_date` = ngày hóa đơn của dòng (trống thì ngày đặt hàng). `due_date` ưu tiên "Hạn thanh toán" của dòng, trống thì tính theo điều khoản NCC.
 5. Đồng bộ idempotent qua `purchase_order.service.sync_import_cost_payables` sau mỗi lần lưu bảng chi phí / đổi trạng thái đơn: sửa dòng thì khoản nợ đổi theo, bỏ NCC hoặc xóa dòng thì gỡ khoản chưa chi; **dòng đã chi thì cấm xóa** (400). Hủy đơn giữ khoản đã chi.
-6. Chi tiết và cách tạo YCTT từ các khoản này: [04-don-mua-hang.md §K.4](04-don-mua-hang.md).
+6. Chi tiết và cách tạo YCTT từ các khoản này: [04-don-mua-hang.md §K.4](13-don-mua-hang.md).
 
 ---
 

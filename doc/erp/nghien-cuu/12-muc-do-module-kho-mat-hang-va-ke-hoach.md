@@ -4,7 +4,7 @@
 |---|---|
 | Bản | 1.0 — 02/11/2026 |
 | Mục đích | Gộp năm bản nghiên cứu theo module thành một bức tranh: ERP DEGO đang ở ngưỡng nào so với ERPNext v16, và làm theo thứ tự nào |
-| Nguồn | [Mặt hàng](../mat-hang/nghien-cuu/00-nghien-cuu-mat-hang-erpnext.md) · [Kho lõi](../kho/nghien-cuu/00-nghien-cuu-kho-erpnext.md) · [Nhận hàng và chất lượng](../nhan-hang/nghien-cuu/00-nghien-cuu-nhan-hang-chat-luong-erpnext.md) · [Lô, serial, hạn dùng](../lo-serial/nghien-cuu/00-nghien-cuu-lo-serial-erpnext.md) · [Xuất kho và giao hàng](../xuat-hang/nghien-cuu/00-nghien-cuu-xuat-giao-hang-erpnext.md); nền: [01 luồng chuẩn](01-luong-chuan-mua-hang-kho-san-xuat.md), [10 nghiệp vụ kho](10-nghiep-vu-kho.md), [11 độ phủ thu mua - kho](11-do-phu-thu-mua-kho-so-voi-erpnext.md) |
+| Nguồn | [Mặt hàng](../mat-hang/nghien-cuu/00-nghien-cuu-mat-hang-erpnext.md) · [Kho lõi](../kho/nghien-cuu/00-nghien-cuu-kho-erpnext.md) · [Nhận hàng và chất lượng](../nhan-hang/nghien-cuu/00-nghien-cuu-nhan-hang-chat-luong-erpnext.md) · [Lô, serial, hạn dùng](../lo-serial/nghien-cuu/00-nghien-cuu-lo-serial-erpnext.md) · [Xuất kho và giao hàng](../xuat-hang/nghien-cuu/00-nghien-cuu-xuat-giao-hang-erpnext.md); nền: [01 luồng chuẩn](01-luong-chuan-mua-hang-kho-san-xuat.md), [10 nghiệp vụ kho](10-nghiep-vu-kho.md), [11 độ phủ thu mua - kho](../thu-mua/nghien-cuu/11-do-phu-thu-mua-kho-so-voi-erpnext.md) |
 | Mốc so sánh | ERPNext 16.53 trên trang học erpnext.degoholding.vn (có dữ liệu thật đồng bộ từ ERP DEGO), mã ERP DEGO nhánh `erp-v2` |
 
 ---

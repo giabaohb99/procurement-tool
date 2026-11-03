@@ -6,7 +6,7 @@
 | Người viết | A5 Nghiên cứu nghiệp vụ |
 | Trạng thái | Tài liệu nghiên cứu nghiệp vụ chuẩn, chưa phải tài liệu yêu cầu |
 | Căn cứ | Cách SAP, Oracle, Odoo, Microsoft Dynamics dựng phân hệ Mua hàng · Chuẩn mực kế toán số 02 · Thông tư 99/2025 (số hiệu tài khoản giữ như Thông tư 200) |
-| Cùng cụm | [`10` Nghiệp vụ Kho](./10-nghiep-vu-kho.md) · [`san-xuat/00` Nghiệp vụ Sản xuất](../san-xuat/00-tong-quan-nghiep-vu.md) · [`01` Luồng nối Mua hàng, Kho, Sản xuất](./01-luong-chuan-mua-hang-kho-san-xuat.md) |
+| Cùng cụm | [`10` Nghiệp vụ Kho](../../nghien-cuu/10-nghiep-vu-kho.md) · [`san-xuat/00` Nghiệp vụ Sản xuất](../../san-xuat/00-tong-quan-nghiep-vu.md) · [`01` Luồng nối Mua hàng, Kho, Sản xuất](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) |
 
 Số tiền trong ví dụ là giả định. Thuế suất GTGT lấy 10% cho dễ tính. Chỗ dính quy định thuế cần kế toán xác nhận.
 
@@ -890,7 +890,7 @@ Hai cách đều cân, chỉ khác dòng tiền từng đợt.
 ## 15. Ranh giới với Kho và Kế toán
 
 - **Mua hàng** sở hữu: yêu cầu mua, yêu cầu báo giá, đơn mua, bảng giá NCC, đánh giá NCC.
-- **Kho** sở hữu: phiếu nhập, kết quả kiểm, phiếu trả hàng NCC, tồn kho, giá vốn tồn. Xem [`10`](./10-nghiep-vu-kho.md).
+- **Kho** sở hữu: phiếu nhập, kết quả kiểm, phiếu trả hàng NCC, tồn kho, giá vốn tồn. Xem [`10`](../../nghien-cuu/10-nghiep-vu-kho.md).
 - **Kế toán** sở hữu: hóa đơn NCC, công nợ phải trả, thanh toán, sổ cái.
 - Mỗi phân hệ chỉ **đọc** chứng từ của phân hệ khác, không sửa.
 

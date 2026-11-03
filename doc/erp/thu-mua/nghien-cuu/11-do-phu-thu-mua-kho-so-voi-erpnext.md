@@ -6,7 +6,7 @@
 | Mục đích | Trả lời câu hỏi "luồng thu mua, kho hiện tại nằm được bao nhiêu phần trăm so với chuẩn" bằng một bảng fit-gap có chấm điểm |
 | Mốc so sánh | ERPNext v16 (site học `erpnext.degoholding.vn`, bài tập ở `ERPNext/erpnext-bai-tap-thu-mua-nhap-kho.md`) |
 | Mã soát | nhánh `erp-v2` ngày 30/10/2026 (`backend/app/modules`, `frontend-v2/src/modules`) |
-| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](01-luong-chuan-mua-hang-kho-san-xuat.md) (mục 7 hiện trạng, mục 8 lộ trình ba nấc) · [09 Nghiệp vụ mua hàng](09-nghiep-vu-mua-hang.md) · [10 Nghiệp vụ kho](10-nghiep-vu-kho.md) |
+| Đọc kèm | [01 Luồng chuẩn mua hàng, kho, sản xuất](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md) (mục 7 hiện trạng, mục 8 lộ trình ba nấc) · [09 Nghiệp vụ mua hàng](09-nghiep-vu-mua-hang.md) · [10 Nghiệp vụ kho](../../nghien-cuu/10-nghiep-vu-kho.md) |
 
 ## Mục lục
 
@@ -25,7 +25,7 @@
 
 - Tính trên **52 chức năng** của chuỗi mua hàng và kho (từ dữ liệu gốc tới báo cáo), ERP DEGO phủ **30,5 / 52 = 59 %** so với ERPNext v16.
 - Phần **trước khi hàng về** làm tốt, nhiều chỗ hơn hẳn ERPNext: hỏi giá và chọn nhà cung cấp 90 %, đơn mua hàng và duyệt 81 %, báo cáo 90 %.
-- Phần **từ cửa kho trở đi** là chỗ hở: nhận hàng và kiểm chất lượng 43 %, kho 38 %, hóa đơn và công nợ 50 %. Nguyên nhân gốc đã nêu ở [01 mục 7](01-luong-chuan-mua-hang-kho-san-xuat.md#7-so-với-hiện-trạng-erp-dego): phiếu nhập kho sinh ngầm từ dòng giao của đơn, công nợ sinh theo giá đơn chứ không theo hóa đơn, sổ kho chỉ có nhập và điều chỉnh tay.
+- Phần **từ cửa kho trở đi** là chỗ hở: nhận hàng và kiểm chất lượng 43 %, kho 38 %, hóa đơn và công nợ 50 %. Nguyên nhân gốc đã nêu ở [01 mục 7](../../nghien-cuu/01-luong-chuan-mua-hang-kho-san-xuat.md#7-so-với-hiện-trạng-erp-dego): phiếu nhập kho sinh ngầm từ dòng giao của đơn, công nợ sinh theo giá đơn chứ không theo hóa đơn, sổ kho chỉ có nhập và điều chỉnh tay.
 - Dữ liệu gốc 50 %, yêu cầu mua 40 %: thiếu mức tồn tối thiểu tự đề nghị mua, thiếu lô và hạn dùng, thiếu ngân sách.
 - Muốn lên **75 %** thì làm bảy việc đầu trong mục 6 (trả hàng, số lượng từ chối, phiếu nhập của thủ kho, xuất và chuyển kho, hóa đơn nhà cung cấp, mức tồn tối thiểu, chi phí vào giá vốn). Đây cũng chính là nấc 1 và nấc 2 của lộ trình ở doc 01 mục 8.
 

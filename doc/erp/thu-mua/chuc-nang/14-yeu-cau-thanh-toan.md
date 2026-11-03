@@ -75,7 +75,7 @@ Thông báo gửi qua chuông trong app (và Web Push nếu thiết bị đã đ
 - Kiểu nhập: Tự động
 - Mặc định: `goods` (hàng hóa); hoặc `shipping` (vận chuyển); hoặc `import_cost` (chi phí nhập khẩu — bao-CR-319 P5) — lấy từ `payable.source_type`
 - Bắt buộc: — (hệ thống điền, không sửa)
-- Nguồn dữ liệu / liên kết: `payable.source_type`; hiển thị: `goods` -> "Hàng hóa", `shipping` -> "Vận chuyển", `import_cost` -> "Chi phí nhập khẩu" (nhãn dùng chung `frontend/src/utils/payable.ts`). Với dòng `import_cost`, `check_submit` / chi tiền không khớp được theo số HĐ thì lùi về `payable_id` của dòng — xem [04-don-mua-hang.md §K.4](04-don-mua-hang.md)
+- Nguồn dữ liệu / liên kết: `payable.source_type`; hiển thị: `goods` -> "Hàng hóa", `shipping` -> "Vận chuyển", `import_cost` -> "Chi phí nhập khẩu" (nhãn dùng chung `frontend/src/utils/payable.ts`). Với dòng `import_cost`, `check_submit` / chi tiền không khớp được theo số HĐ thì lùi về `payable_id` của dòng — xem [04-don-mua-hang.md §K.4](13-don-mua-hang.md)
 - Người sửa: Hệ thống (khóa hoàn toàn; là khóa nhóm cùng với `supplier_code` khi tách phiếu)
 
 ### 5. Công ty (`company_id`)
@@ -305,7 +305,7 @@ Entity: `payment_request`
 
 ## E. Phiếu in (`/print/payment-request/:id`)
 
-**Tên file khi lưu PDF (CR-057).** Trang in đặt `document.title` = **`<Mã YCTT>-DDMMYYYY`** (ví dụ `YCTT00190-07082026`) qua hook `usePrintTitle` — trình duyệt và máy in ảo (Foxit, Microsoft Print to PDF) lấy đúng chuỗi đó làm tên file gợi ý, thay cho `Thu Mua Tool` mặc định. Ngày lấy `request_date` (ngày yêu cầu), **không** lấy ngày bấm in, nên in lại lúc nào cũng ra cùng một tên. Đây cũng chính là cột đang dùng để tính `period` in trên phiếu. Chi tiết cách làm: xem mục E của [04-don-mua-hang.md](04-don-mua-hang.md).
+**Tên file khi lưu PDF (CR-057).** Trang in đặt `document.title` = **`<Mã YCTT>-DDMMYYYY`** (ví dụ `YCTT00190-07082026`) qua hook `usePrintTitle` — trình duyệt và máy in ảo (Foxit, Microsoft Print to PDF) lấy đúng chuỗi đó làm tên file gợi ý, thay cho `Thu Mua Tool` mặc định. Ngày lấy `request_date` (ngày yêu cầu), **không** lấy ngày bấm in, nên in lại lúc nào cũng ra cùng một tên. Đây cũng chính là cột đang dùng để tính `period` in trên phiếu. Chi tiết cách làm: xem mục E của [04-don-mua-hang.md](13-don-mua-hang.md).
 
 ---
 

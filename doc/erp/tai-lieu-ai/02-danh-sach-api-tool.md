@@ -773,7 +773,7 @@ hai bước đó, theo khuôn **đề xuất rồi xác nhận** của T31/T32 �
 
 **Thuộc phần nào:** phân hệ **Thu mua** → chứng từ **Yêu cầu mua hàng (YCMH)** → màn *Xử lý
 phương án* (`/procurement/purchase-requests/:id/process`) và cụm chọn phương án trên màn chi
-tiết YCMH. Tài liệu nghiệp vụ gốc: `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md` mục **H**
+tiết YCMH. Tài liệu nghiệp vụ gốc: `doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md` mục **H**
 (bao-CR-310 và các đợt nối bao-CR-419 · 420 · 421 · 422). Hướng dẫn sử dụng cho người dùng:
 hai bài của bao-CR-450 (*Xử lý phương án trên yêu cầu mua hàng* cho NSTM · *Chọn phương án
 trên yêu cầu mua hàng* cho người yêu cầu).

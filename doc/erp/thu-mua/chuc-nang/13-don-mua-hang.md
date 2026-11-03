@@ -445,7 +445,7 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
 - Logic đặc biệt:
   - **Chép xuống:** chỉ điền khi ô còn TRỐNG. Đã có giá trị (nhập tay hay chép từ lần lưu trước) thì giữ nguyên. Đặt ở backend `_save_items` nên nhập khẩu và dòng thêm sau cũng được điền, không chỉ nút "Tạo ĐMH".
-  - **Cuộn ngược:** giá trị MUỘN NHẤT trong các dòng ĐMH cùng `pr_code` + mã hàng được đẩy lên dòng YCMH nếu ô bên đó còn trống; nếu bên đó đã có và lệch thì **KHÔNG ghi đè** và hệ thống không tạo thông báo nào. Chi tiết ở [03 §12](./03-yeu-cau-mua-hang.md).
+  - **Cuộn ngược:** giá trị MUỘN NHẤT trong các dòng ĐMH cùng `pr_code` + mã hàng được đẩy lên dòng YCMH nếu ô bên đó còn trống; nếu bên đó đã có và lệch thì **KHÔNG ghi đè** và hệ thống không tạo thông báo nào. Chi tiết ở [03 §12](12-yeu-cau-mua-hang.md).
   - **Popup cảnh báo lệch ngày:** khi bấm Lưu đơn, nếu có dòng mà ngày ở đây khác ngày đang ghi trên YCMH thì hiện hộp thoại "Lệch ngày dự kiến có hàng", liệt kê từng dòng (`YCMH dd/mm/yyyy → đơn này dd/mm/yyyy`) và nói rõ ngày trên YCMH sẽ KHÔNG tự đổi theo. Hai lựa chọn: **Vẫn lưu** / **Quay lại sửa**. Ngày YCMH để so sánh do API trả kèm trong trường chỉ-đọc `pr_expected_date` của mỗi dòng.
   - Dòng ĐMH **không gắn YCMH** (`pr_code` trống — đơn tạo tay) hoặc mã hàng không có trên YCMH: nhập tay bình thường, không có gì để cuộn.
   - Cột **"Dự kiến nhận"** ở màn Tiến độ mua hàng đọc từ đây. Trước CR-062 nó đọc `tab_po_delivery.expected_date` — cột đó không nơi nào ghi (chỉ có 10 dòng rác nạp tay), nay **đã bỏ dùng** và đã dọn về rỗng.
@@ -895,7 +895,7 @@ Cả hai mẫu gọi cùng endpoint `GET /api/purchase-orders/{id}/print` (yêu 
 | Đơn đặt hàng (gửi NCC) | `PrintPurchaseOrder.tsx` | A4 ngang (landscape) | Bảng hàng theo SL đặt, đơn giá chưa/đã VAT, kho nhận, tên trên HĐ; điều khoản giao nhận + thông tin HĐ | `order_total` (theo SL đặt) |
 | Đơn mua hàng (nội bộ) | `PrintPurchaseOrderMH.tsx` | A4 dọc (portrait) | Bảng hàng theo SL yêu cầu + SL thực nhập, tiền thuế GTGT riêng; số tiền bằng chữ; điều khoản NCC | `order_total` (theo SL đặt) + `order_subtotal` tách thuế riêng |
 
-**Tên file khi lưu PDF (CR-057).** Hộp thoại "Save As" do hệ điều hành vẽ, trang web không can thiệp được; thứ duy nhất điều khiển được tên gợi ý là **`document.title`** — trình duyệt và máy in ảo (Foxit, Microsoft Print to PDF) lấy đúng chuỗi đó. Cả 2 mẫu dùng hook `usePrintTitle` (`frontend/src/hooks/usePrintTitle.ts`) đặt tiêu đề tab thành **`<Mã PO>-DDMMYYYY`** (ví dụ `PO00353-31072026`), trả lại tiêu đề cũ khi rời trang. Dùng `code` **chứ không phải `misa_code`** — mã MISA chỉ một phần đơn có và trùng nhau giữa các đơn nhập lại, đặt tên theo nó thì file đè lên nhau. Ngày lấy `order_date` (ngày đơn), **không** lấy ngày bấm in, để in lại lúc nào cũng ra cùng một tên. Tiêu đề tab không lọt lên giấy vì `@page { margin: 0 }` đã bỏ header/footer của trình duyệt. Quy ước này dùng chung cho **cả 4 phiếu in** của hệ thống — 2 mẫu ĐMH ở trên, [phiếu đề xuất YCMH](03-yeu-cau-mua-hang.md) và [phiếu YCTT](05-yeu-cau-thanh-toan.md) (hai phiếu kia lấy `request_date` thay cho `order_date`). Test: `test/e2e/test_print_filename.py`.
+**Tên file khi lưu PDF (CR-057).** Hộp thoại "Save As" do hệ điều hành vẽ, trang web không can thiệp được; thứ duy nhất điều khiển được tên gợi ý là **`document.title`** — trình duyệt và máy in ảo (Foxit, Microsoft Print to PDF) lấy đúng chuỗi đó. Cả 2 mẫu dùng hook `usePrintTitle` (`frontend/src/hooks/usePrintTitle.ts`) đặt tiêu đề tab thành **`<Mã PO>-DDMMYYYY`** (ví dụ `PO00353-31072026`), trả lại tiêu đề cũ khi rời trang. Dùng `code` **chứ không phải `misa_code`** — mã MISA chỉ một phần đơn có và trùng nhau giữa các đơn nhập lại, đặt tên theo nó thì file đè lên nhau. Ngày lấy `order_date` (ngày đơn), **không** lấy ngày bấm in, để in lại lúc nào cũng ra cùng một tên. Tiêu đề tab không lọt lên giấy vì `@page { margin: 0 }` đã bỏ header/footer của trình duyệt. Quy ước này dùng chung cho **cả 4 phiếu in** của hệ thống — 2 mẫu ĐMH ở trên, [phiếu đề xuất YCMH](12-yeu-cau-mua-hang.md) và [phiếu YCTT](14-yeu-cau-thanh-toan.md) (hai phiếu kia lấy `request_date` thay cho `order_date`). Test: `test/e2e/test_print_filename.py`.
 
 Ngoài 2 mẫu trên, phiếu liên quan là **Phiếu đề xuất mua hàng hóa/dịch vụ** (Mẫu 003/BM/PKT, file `PrintPurchaseRequest.tsx`) — là bản in của phiếu YCMH nguồn, mở từ trang chi tiết YCMH (không phải từ trang PO). Bảng hàng hóa trên phiếu đề xuất đã có cột **Nơi giao** hiển thị mã kho nhận (`warehouse_code`) thay vì tên đầy đủ kho (dùng hàm `whCode` tra ngược từ danh mục kho).
 
@@ -1127,7 +1127,7 @@ Ngày nhận · Ngày QĐ · Ngày quy định · CL cam kết · CL quy định
 Tiền VC · QC · TT giao · Thành tiền nhận · SL còn lại · Trạng thái dòng · Ghi chú dòng.
 
 Tên file `don-mua-hang-DDMMYYYY.xlsx`. Quy ước định dạng và trần 5.000 dòng/lần xuất — xem
-[03-yeu-cau-mua-hang.md §G](03-yeu-cau-mua-hang.md).
+[03-yeu-cau-mua-hang.md §G](12-yeu-cau-mua-hang.md).
 
 ### J.2 Màn Tiến độ đơn mua hàng
 

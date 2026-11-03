@@ -636,7 +636,7 @@ Dữ liệu trong bảng này được dùng để:
 
 ### Lối vào từ YCMH bị trả lại / từ chối (CR-026)
 
-Ngoài lối tạo YCBG thông thường, màn `/survey-requests/new` còn nhận dữ liệu điền sẵn từ nút **"Tạo yêu cầu báo giá"** trên phiếu YCMH ở trạng thái `rejected` (Bị trả lại) hoặc `cancelled` (Đã từ chối). Dữ liệu đi kèm điều hướng (`location.state`), **chưa ghi DB**; tiêu đề phiếu hiện nhãn `Từ {mã YCMH}` để biết nguồn. Chi tiết ánh xạ trường xem [03-yeu-cau-mua-hang.md](03-yeu-cau-mua-hang.md) §C.21.
+Ngoài lối tạo YCBG thông thường, màn `/survey-requests/new` còn nhận dữ liệu điền sẵn từ nút **"Tạo yêu cầu báo giá"** trên phiếu YCMH ở trạng thái `rejected` (Bị trả lại) hoặc `cancelled` (Đã từ chối). Dữ liệu đi kèm điều hướng (`location.state`), **chưa ghi DB**; tiêu đề phiếu hiện nhãn `Từ {mã YCMH}` để biết nguồn. Chi tiết ánh xạ trường xem [03-yeu-cau-mua-hang.md](12-yeu-cau-mua-hang.md) §C.21.
 
 Bổ sung ở CR-027:
 
@@ -707,7 +707,7 @@ Ghi chú NSTM).
 | Người tạo · người yêu cầu · Quản lý/Admin TM | Thấy hết dòng của phiếu |
 
 Quy ước định dạng file, trần 5.000 dòng/lần xuất và tên file `yeu-cau-bao-gia-DDMMYYYY.xlsx` — xem
-[03-yeu-cau-mua-hang.md §G](03-yeu-cau-mua-hang.md).
+[03-yeu-cau-mua-hang.md §G](12-yeu-cau-mua-hang.md).
 
 **Ai được xuất.** Vai trò chuẩn có sẵn ô "Xuất" của YCBG: *Trưởng phòng · NV thu mua · Admin thu mua ·
 Quản lý thu mua · Quản trị hệ thống*. Vai trò **"Nhân sự"** (người yêu cầu thường) **KHÔNG** được xuất —
