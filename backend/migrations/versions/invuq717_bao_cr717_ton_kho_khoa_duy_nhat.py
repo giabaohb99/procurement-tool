@@ -1,7 +1,7 @@
 """bao-CR-717: rang buoc duy nhat (company_id, warehouse_code, product_code) cho tab_inventory
 
 Revision ID: invuq717
-Revises: lvcmp716
+Revises: hqx718 (nối lại sau hqx718 của bao-CR-718 — hai đầu alembic làm api dev không khởi động)
 Create Date: 2026-11-03
 
 Tai lieu phi chuc nang cua Kho (PCN-KHO-08) ghi mot dong ton cho moi bo (cong ty, kho, ma) nhung bang chi co ba chi muc
@@ -20,7 +20,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "invuq717"
-down_revision: Union[str, None] = "lvcmp716"
+down_revision: Union[str, None] = "hqx718"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
