@@ -5,8 +5,9 @@ còn bao nhiêu", "đơn tôi nộp duyệt tới đâu rồi".
 
 Ba ràng buộc của phân hệ Nghỉ phép mà tool này phải tuân, không phải tùy chọn:
 
-* **Số còn lại KHÔNG có cột nào lưu sẵn** — `LeaveBalance.remaining_days` là chỗ
-  duy nhất tính. Đừng cộng trừ các cột của `tab_leave_balance` ở đây.
+* **Số còn lại KHÔNG có cột nào lưu sẵn** — `balance_service.available_days_map` là chỗ
+  duy nhất tính (property `remaining_days` trừ thêm phần chưa tới tháng của loại cộng dần,
+  duoc-CR-715). Đừng cộng trừ các cột của `tab_leave_balance` ở đây.
 * **Một đơn khai NHIỀU loại nghỉ** (`tab_leave_request_line`, 07/09/2026). Hai
   cột đầu đơn là DẪN XUẤT: `total_days` = tổng các dòng, `leave_type_id` = loại
   của dòng nhiều ngày nhất. Muốn nói đúng "3 ngày phép năm + 2 ngày không lương"
@@ -29,15 +30,17 @@ vào màn Nghỉ phép.
 """
 from datetime import date
 
+from app.modules.leave import balance_service
 from app.modules.leave.balance_model import LeaveBalance
 from app.modules.leave.catalog_model import LeaveType
-from app.modules.leave.constants import (LEAVE_REQUEST_STATUS_LABELS, LEAVE_SESSION_LABELS,
-                                         LR_APPROVED, LR_CANCELLED, LR_DRAFT, LR_PENDING,
+from app.modules.leave.constants import (LEAVE_ACCRUAL_MODE_LABELS, LEAVE_REQUEST_STATUS_LABELS,
+                                         LEAVE_SESSION_LABELS, LR_APPROVED, LR_CANCELLED, LR_DRAFT, LR_PENDING,
                                          LR_REJECTED, LR_RETURNED, label)
 from app.modules.leave.period_spans import header_period, period_text, periods_by_request
 from app.modules.leave.request_model import LeaveRequest, LeaveRequestLine
 
 from .base import ToolContext, ToolSpec, denied
+from .leave_comp_tool import my_comp_requests
 
 MAX_ROWS = 30
 
@@ -71,7 +74,10 @@ _DESC = (
     "'phép năm còn mấy ngày', 'đơn nghỉ phép của tôi duyệt chưa', 'tôi đã nghỉ mấy ngày "
     "rồi'... Chỉ trả dữ liệu của người hỏi — KHÔNG tra được phép của người khác. Khi trả "
     "lời, nói rõ 'đang giữ chỗ' là ngày của đơn đã gửi nhưng chưa duyệt xong (đã bị trừ "
-    "khỏi số còn lại), và kèm `url` dạng link để người dùng bấm mở đơn."
+    "khỏi số còn lại), và kèm `url` dạng link để người dùng bấm mở đơn. Số còn nghỉ được là "
+    "`remaining_days` (đã trừ phần chưa tới tháng của loại cộng dần) — đừng tự cộng trừ; "
+    "`comp_days` là ngày nghỉ bù đã được duyệt cộng thêm, `max_negative_days` > 0 là được ứng "
+    "phép tới số đó. Kèm cả phiếu xin nghỉ bù của họ (`comp_requests`)."
 )
 
 
@@ -88,7 +94,21 @@ def _type_names(db) -> dict[int, dict]:
     rows = db.query(LeaveType).all()
     return {r.id: {"name": r.name, "code": r.code,
                    "counts_balance": bool(r.counts_balance),
-                   "is_active": bool(r.is_active)} for r in rows}
+                   "is_active": bool(r.is_active),
+                   #  duoc-CR-715: luật cấp quỹ — để trợ lý giải thích được vì sao con số thấp hơn hạn mức năm.
+                   "accrual_mode": int(r.accrual_mode or 1),
+                   "max_negative_days": float(r.max_negative_days or 0.0),
+                   "applicable_after_days": int(r.applicable_after_days or 0),
+                   "is_compensatory": bool(r.is_compensatory)} for r in rows}
+
+
+def _rules(info: dict) -> dict:
+    """Luật của loại nghỉ người dùng hay hỏi (cách cấp, ứng phép, dùng sau N ngày vào làm, nhận ngày bù)."""
+    mode = info.get("accrual_mode", 1)
+    return {"accrual_mode": mode, "accrual_mode_label": label(LEAVE_ACCRUAL_MODE_LABELS, mode),
+            "max_negative_days": info.get("max_negative_days", 0.0),
+            "applicable_after_days": info.get("applicable_after_days", 0),
+            "is_compensatory": info.get("is_compensatory", False)}
 
 
 def _balances(db, employee_id: int, year: int, types: dict[int, dict]) -> list[dict]:
@@ -101,6 +121,7 @@ def _balances(db, employee_id: int, year: int, types: dict[int, dict]) -> list[d
     rows = (db.query(LeaveBalance)
             .filter(LeaveBalance.employee_id == employee_id, LeaveBalance.year == year)
             .all())
+    available = balance_service.available_days_map(db, rows)    # một lượt, không tra từng dòng
     items = []
     for r in rows:
         info = types.get(r.leave_type_id) or {}
@@ -113,8 +134,15 @@ def _balances(db, employee_id: int, year: int, types: dict[int, dict]) -> list[d
             "used_days": r.used_days,
             "pending_days": r.pending_days,
             "carried_days": r.carried_days,
-            #  Nguồn DUY NHẤT của con số này là property của model — đừng tự trừ.
-            "remaining_days": r.remaining_days,
+            "allocated_days": r.allocated_days,
+            #  duoc-CR-715 C: ngày nghỉ bù đã duyệt cộng vào loại này (đã nằm trong `total_days`).
+            "comp_days": float(r.comp_days or 0.0),
+            #  Phần hạn mức CHƯA TỚI THÁNG của loại cộng dần — có trong `total_days` nhưng chưa nghỉ được.
+            "not_yet_accrued_days": round(r.remaining_days - available[r.id], 2),
+            **_rules(info),
+            #  Nguồn DUY NHẤT của con số này là `balance_service.available_days` (property của model trừ phần chưa tới
+            #  tháng của loại cộng dần — duoc-CR-715). Đọc thẳng `r.remaining_days` là trợ lý báo dư phép.
+            "remaining_days": available[r.id],
         })
     have = {r.leave_type_id for r in rows}
     for tid, info in types.items():
@@ -129,6 +157,10 @@ def _balances(db, employee_id: int, year: int, types: dict[int, dict]) -> list[d
             "used_days": 0.0,
             "pending_days": 0.0,
             "carried_days": 0.0,
+            "allocated_days": 0.0,
+            "comp_days": 0.0,
+            "not_yet_accrued_days": 0.0,
+            **_rules(info),
             "remaining_days": 0.0,
             "note": "Nhân sự chưa cấp quỹ phép loại này cho bạn trong năm.",
         })
@@ -212,10 +244,14 @@ def _run(ctx: ToolContext, args: dict) -> dict:
         "url": f"/hr/leave-requests/{r.id}",
     } for r in rows]
 
+    #  Phiếu xin nghỉ bù của CHÍNH người hỏi (khóa riêng `leave_comp_request`; thiếu khóa thì bỏ qua, không chặn cả tool).
+    comp = my_comp_requests(ctx.db, emp_id, limit) if ctx.can("leave_comp_request") else None
+
     return {
         "year": year,
         "balances": _balances(ctx.db, emp_id, year, types),
         "requests": requests,
+        "comp_requests": comp if comp is not None else [],
         "total": len(requests),
         "glossary": {
             "total_days": "Tổng quỹ được hưởng trong năm (đã gồm thâm niên và ngày chuyển "
@@ -225,7 +261,17 @@ def _run(ctx: ToolContext, args: dict) -> dict:
             "from_date_to_date": "from_date/to_date là ngày ĐẦU và CUỐI của cả đơn. Đơn nghỉ nhiều "
                                  "khoảng không liền nhau (periods có từ 2 phần tử) thì chỉ nghỉ trong "
                                  "từng khoảng — đọc `periods`/`periods_text`, đừng nói nghỉ liền cả quãng.",
-            "remaining_days": "Số ngày còn nghỉ được = tổng quỹ - đã dùng - đang giữ chỗ.",
+            "remaining_days": "Số ngày còn nghỉ được = tổng quỹ - đã dùng - đang giữ chỗ - phần chưa tới tháng "
+                              "(not_yet_accrued_days, chỉ loại cộng dần theo tháng). Đây là con số DUY NHẤT để trả lời "
+                              "'còn bao nhiêu phép'.",
+            "comp_days": "Ngày nghỉ bù đã được duyệt (đi làm ngày lễ / ngày nghỉ), đã cộng vào total_days của loại "
+                         "nghỉ bù. Xin thêm thì dùng draft_leave_comp_request.",
+            "max_negative_days": "Lớn hơn 0 = loại này cho ỨNG PHÉP: được xin vượt số còn lại tối đa chừng đó ngày "
+                                 "(còn lại thành số âm). Bằng 0 = không cho ứng, vượt phải chọn Nghỉ không lương.",
+            "applicable_after_days": "Lớn hơn 0 = loại này chỉ dùng được sau chừng đó ngày kể từ ngày vào làm.",
+            "accrual_mode_label": "Cách cấp quỹ: đủ hạn mức đầu năm / theo tỷ lệ tháng làm việc (người vào làm trong "
+                                  "năm) / cộng dần theo tháng.",
+            "comp_requests": "Phiếu xin nghỉ bù của người hỏi; Đã duyệt = số ngày đã cộng vào comp_days.",
         },
     }
 

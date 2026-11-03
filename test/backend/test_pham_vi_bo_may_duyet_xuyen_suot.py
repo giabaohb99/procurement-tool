@@ -1242,6 +1242,8 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "office_read": "ctx.can(entity) + route list / chi tiết của màn web (đặt xe, duyệt dấu, tồn kho, diễn đàn) (kh-AI2-3)",
     "draft_vehicle_booking": "ctx.can(vehicle_booking, create) — chỉ soạn nháp; tạo qua service create_booking (kh-AI2-6)",
     "draft_seal_request": "ctx.can(seal_request, create) — chỉ soạn nháp; tạo qua service create_seal_request (kh-AI2-6)",
+    "draft_leave_comp_request": "ctx.can(leave_comp_request, create); lập hộ: apply_scope(Employee, 'employee') + "
+                                "ensure_can_create_for — chỉ soạn nháp, tạo qua comp_request_service.create (duoc-CR-715 C)",
     "propose_approval": "pending_task_of (luồng nhiều bước) hoặc quyền approve + get_scoped(approve) (duyệt thẳng); "
                         "chỉ đề xuất, ghi qua route duyệt của web khi xác nhận token (kh-AI2-7)",
     #  ai-CR-220 (K7): Kho skill — quyền đọc theo chủ thể ở `ai_skill.access_service.visible_skills` (cấm thắng, phòng con).

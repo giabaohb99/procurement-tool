@@ -18259,3 +18259,102 @@ Mã nguồn: frontend-v2/src/modules/hr/pages/org-chart-page.tsx · components/o
 **Còn lại:** không có.
 
 Mã nguồn: frontend-v2/src/modules/hr/routes.tsx · backend/scripts/seed_help_nhan_su.py · seed_help_tro_ly_ai_lap_bo_tai_khoan.py · seed_help_lap_bo_tai_khoan_phong_tu_mua.py
+
+## duoc-CR-713 | Trang Cài đặt nhân sự theo nexterp: chặn đơn nghỉ lùi ngày và chặn tự duyệt
+- status: xong
+- date: 2026-11-02
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được thấy trang cài đặt nhân sự của nexterp hay, muốn đem sang phân hệ Nhân sự. Đối chiếu sáu tab của nexterp thì chỉ tab Nhân viên và Nghỉ phép có chỗ tác động thật lên hệ mình; anh chọn làm hai cài đặt của tab Nghỉ phép và để người có quyền Cấu hình hệ thống được sửa.
+
+**Đã làm**
+- Dựng trang Cài đặt nhân sự trong cụm Master, bố cục giống nexterp: tiêu đề, dải tab gạch chân, mới có tab Nghỉ phép; dùng chung kho cài đặt và nhật ký thay đổi của màn Cấu hình hệ thống.
+- Thêm công tắc chặn đơn nghỉ lùi ngày: khi bật, không lập, sửa hay gửi duyệt được đơn có ngày nghỉ trước hôm nay theo giờ Việt Nam, trừ quản trị và các vai trò được khai miễn trên trang.
+- Thêm công tắc chặn tự duyệt đơn nghỉ: khi bật, người nghỉ bị gạt khỏi danh sách duyệt kể cả ở bước khai đích danh và khi là người dự phòng, nút duyệt trong luồng và nút duyệt thẳng đều từ chối nếu người bấm chính là người nghỉ; bước không còn ai thì chuyển người dự phòng, không có thì đơn dừng chờ quản trị.
+- Màn xem trước luồng duyệt áp cùng luật để không nói một đằng làm một nẻo.
+- Theo góp ý của anh, thêm tab Nhân viên (tiền tố mã nhân sự cho hồ sơ mới, bật tắt sơ đồ tổ chức cho mọi nhân viên, mốc kỷ niệm vào làm trên lịch nhắc trong tháng) và tab Hợp đồng lao động (số ngày báo hợp đồng sắp hết hạn và mức gấp, không cho dưới mười lăm ngày theo luật); tab Nghỉ phép có thêm lối tắt tới danh mục loại nghỉ và lịch ngày lễ. Mọi ô mặc định đúng giá trị hệ vẫn chạy trước nay; không dựng các tab chi phí, chấm công, tuyển dụng vì công ty không dùng.
+- Viết bài hướng dẫn sử dụng mới cho trang Cài đặt nhân sự.
+
+**Kết quả:** hai mươi mốt bài kiểm máy chủ mới đều xanh, các bộ hợp đồng lao động, lịch nhắc, sơ đồ tổ chức, hồ sơ, nhập Excel chạy lại xanh (1804 bài); bộ bài kiểm nghỉ phép, duyệt và cấu hình (1569 bài) chạy lại xanh trừ một bài của trợ lý AI về phiếu đặt xe vốn đã đỏ trên mã gốc trước thay đổi này. Sau lượt rà mã đã sửa thêm: màn Cấu hình hệ thống chỉ gửi những ô nó hiện và ô vai trò không kiểm lại khi giá trị không đổi (trước đó một vai trò bị xóa làm hỏng mọi lần lưu cấu hình); đơn bị trả về hoặc chỉ sửa lý do không bị chặn vì ngày đã qua, đơn do người được miễn lập hộ thì người nghỉ vẫn gửi được; trợ lý AI tả luồng duyệt cũng áp công tắc chặn tự duyệt. Phía giao diện: kiểm tra kiểu và kiểm lỗi cú pháp sạch, 1679 bài kiểm của khung menu và phân hệ Nhân sự xanh, trong đó 9 bài mới. Đã bật thử, lưu và tải lại trang trên máy local rồi trả về mặc định. Đã lên nhánh erp-v2.
+
+**Còn lại:** bài kiểm đề xuất duyệt phiếu đặt xe của trợ lý AI đang đỏ sẵn, cần người phụ trách phần đó xem; các mục khác của nexterp (mã nhân sự theo tiền tố, sơ đồ tổ chức chỉ cho phòng Nhân sự, nhắc sinh nhật) chưa làm, chờ anh quyết.
+
+Mã nguồn: backend/app/modules/leave/leave_policy.py · backend/app/modules/approval/self_approval_policy.py · approval/instance_service.py · approval/preview_service.py · approval/action_service.py · leave/request_service.py · leave/request_controller.py · setting/service.py · frontend-v2/src/modules/hr/pages/hr-settings-page.tsx · components/hr-settings-form.tsx · test/backend/test_cai_dat_nhan_su_cr713.py
+
+## duoc-CR-714 | Tiêu đề trang trùng thanh đường dẫn thì ẩn đi
+- status: xong
+- date: 2026-11-02
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được thấy nhiều trang ghi tên hai lần, một lần ở thanh đường dẫn phía trên và một lần ở tiêu đề ngay dưới, nên chốt: trùng thì bỏ cái dưới.
+
+**Đã làm**
+- Tách phần tính thanh đường dẫn thành một hàm dùng chung, để thanh trên và tiêu đề trang cùng một luật.
+- Khối tiêu đề dùng chung của gần một trăm trang tự so với chữ cuối của thanh đường dẫn: trùng thì ẩn tiêu đề khỏi mắt nhưng vẫn giữ cho trình đọc màn hình; dòng mô tả và các nút vẫn hiện.
+- Trang chi tiết bản ghi không bị ảnh hưởng vì tiêu đề ở đó là tên bản ghi; trang Cài đặt nhân sự dùng cùng luật và đưa nút Lưu lên đầu phải dải tab.
+
+**Kết quả:** kiểm tra kiểu và kiểm lỗi cú pháp sạch, bài kiểm mới cho hàm thanh đường dẫn và khối tiêu đề đều xanh, khu dùng chung chạy lại xanh. Đã xem trên máy local ở trang Chức vụ và Cài đặt nhân sự. Đã lên nhánh erp-v2.
+
+**Còn lại:** không có.
+
+Mã nguồn: frontend-v2/src/app/layouts/resolve-module-breadcrumb.ts · module-topbar.tsx · module-layout.tsx · frontend-v2/src/shared/ui/breadcrumb-page-label.ts · page-header.tsx
+
+## duoc-CR-715 | Nghỉ phép thêm năm chức năng theo nexterp
+- status: xong
+- date: 2026-11-02
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được muốn mang các chức năng nghỉ phép hay của nexterp sang phân hệ Nhân sự. Đối chiếu hai bên thì phần lõi của mình đã đủ, còn thiếu năm chức năng làm được mà không cần chấm công hay lương; anh chọn làm cả năm. Lúc rà còn thấy người vào làm giữa năm đang được cấp đủ phép cả năm, trái Điều 113 Bộ luật Lao động.
+
+**Đã làm**
+- Mỗi loại nghỉ chọn cách cấp quỹ: đủ đầu năm như cũ, theo tỷ lệ số tháng vào làm, hoặc cộng dần mỗi tháng; thêm hạn mức riêng theo hình thức nhân viên hay cấp bậc, luật chỉ được nghỉ sau một số ngày vào làm, và cho ứng phép xuống âm có giới hạn.
+- Thêm danh mục ngày cấm nghỉ theo pháp nhân hay phòng ban: lập đơn rơi vào thì cảnh báo, tới bước duyệt cuối thì bị chặn trừ quản trị và vai trò được miễn khai ở Cài đặt nhân sự; lệnh chặn cuộn lại trọn lượt duyệt nên không để đơn dở dang.
+- Thêm phiếu xin nghỉ bù khi đi làm ngày lễ hay ngày nghỉ, chạy qua luồng duyệt chung, duyệt xong tự cộng vào quỹ loại nghỉ bù; có khóa quyền riêng, menu riêng, trang danh sách, lập phiếu và chi tiết.
+- Mọi cột và công tắc mới mặc định giữ đúng cách hệ đang chạy; viết bài hướng dẫn sử dụng cho từng phần.
+- Làm theo ba giai đoạn liên tiếp, mỗi giai đoạn có bài kiểm riêng và được rà lại trước khi sang giai đoạn sau.
+
+**Kết quả:** bảy mươi bài kiểm máy chủ mới đều xanh; bộ kiểm nghỉ phép, bộ máy duyệt và phạm vi dữ liệu chạy lại xanh (645, 1122, 1262 bài) trừ một bài trợ lý AI về phiếu đặt xe vốn đã đỏ trên mã gốc. Giao diện: kiểm tra kiểu và kiểm lỗi cú pháp sạch, 1841 bài kiểm xanh. Đã thử trên máy local trọn vòng lập phiếu nghỉ bù, gửi duyệt, duyệt và thấy quỹ nghỉ bù tăng một ngày. Đã lên nhánh erp-v2.
+
+**Còn lại:** trên dev và prod các vai trò cũ chưa có quyền phiếu nghỉ bù, phải tick ở màn Phân quyền hoặc đồng bộ quyền một lần; muốn phiếu nghỉ bù đi theo luồng duyệt thì quản trị khai luồng và bật bộ máy cho loại phiếu này; cần bật cờ «Loại nhận ngày nghỉ bù» cho một loại nghỉ có tính quỹ.
+
+Mã nguồn: backend/app/modules/leave/accrual_service.py · block_period_service.py · comp_request_service.py · comp_approval_bridge.py · balance_service.py · backend/app/modules/approval/entity_hooks.py · migration lvacc715, lvblk715, lvcmp715 · frontend-v2/src/modules/hr (loại nghỉ, ngày cấm nghỉ, nghỉ bù)
+
+## duoc-CR-716 | Trang chi tiết danh mục bố cục phẳng theo nexterp, bắt đầu từ Loại nghỉ
+- status: xong
+- date: 2026-11-03
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được xem trang chi tiết Loại nghỉ và thấy giao diện thẻ lồng thẻ nhìn xấu, muốn theo kiểu phẳng của nexterp; sau bản đầu anh báo thêm các ô nhập chưa trải đều.
+
+**Đã làm**
+- Thêm cho khung danh mục dùng chung một bố cục phẳng bật bằng một dòng cấu hình: hàng tiêu đề dính khi cuộn có mũi tên quay lại, tên, nhãn và nút Lưu, Xóa; dải tab gạch chân; các nhóm ô ngăn bằng đường kẻ, gập mở được và nhớ trạng thái.
+- Chú thích của từng ô thu vào nút chữ i, công tắc thành dòng gọn, ô nhập xếp ba cột đều nhau khi màn đủ rộng, ô chỉ xem dùng nền mờ không viền.
+- Các tab khác như bậc thâm niên và hạn mức theo nhóm tự bỏ khung thẻ; khối Hoạt động thành một nhóm gập ở cuối tab Thông tin.
+- Tách hai bộ lớp làm phẳng của trang hồ sơ nhân sự ra tệp dùng chung để hai trang cùng một kiểu.
+- Mới bật cho trang Loại nghỉ; hộp thoại thêm nhanh và các màn danh mục khác giữ nguyên.
+
+**Kết quả:** kiểm tra kiểu sạch, 1855 bài kiểm của khung danh mục, khối giao diện dùng chung và phân hệ Nhân sự xanh. Đã xem trên máy local ở trang sửa, trang thêm mới và tab hạn mức của Loại nghỉ.
+
+**Còn lại:** muốn các màn danh mục khác cũng phẳng thì chỉ cần bật cấu hình từng màn, chờ anh chọn màn nào.
+
+Mã nguồn: frontend-v2/src/shared/crud/crud-detail-flat-layout.tsx · crud-detail-page.tsx · crud-form-fields.tsx · crud-field.tsx · types.ts · frontend-v2/src/shared/ui/erp-flat-styles.ts · frontend-v2/src/modules/hr/config/leave-type-crud.tsx
+
+## duoc-CR-715-b | Cập nhật hướng dẫn sử dụng, trợ lý AI và tài liệu cho nghỉ phép kiểu nexterp và Cài đặt nhân sự
+- status: xong
+- date: 2026-11-03
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** sau khi làm xong Cài đặt nhân sự, nghỉ phép kiểu nexterp và trang Loại nghỉ bố cục phẳng, anh Được dặn cập nhật hướng dẫn sử dụng, cổng MCP, bot AI và tài liệu cho khớp.
+
+**Đã làm**
+- Sửa mười hai bài hướng dẫn Nghỉ phép và các bài Nhân sự cho khớp nhãn, menu và luật trên màn hình: thêm Nghỉ bù, Ngày cấm nghỉ, cách cấp quỹ, hạn mức theo nhóm, ứng phép, ba tab Cài đặt nhân sự; bỏ những đoạn đã cũ như luật nộp trước N ngày và câu «không có ứng phép».
+- Viết thêm phần nghỉ phép kiểu nexterp vào tài liệu chức năng Nghỉ phép, tab Nhân viên vào tài liệu Hồ sơ nhân sự, số ngày báo hết hạn vào tài liệu Hợp đồng lao động; đánh dấu các mục đã có trong tài liệu nghiên cứu nexterp.
+- Thêm công cụ AI soạn phiếu xin nghỉ bù, dùng chung cho cổng MCP, Trợ lý web và bot Telegram, xác nhận bằng bước xác nhận bản nháp như các phiếu khác.
+- Công cụ xem quỹ phép đọc đúng số dùng được, có ngày nghỉ bù và phần chưa tới tháng; bản nháp đơn nghỉ báo trước đơn lùi ngày, chưa đủ ngày vào làm, ngày cấm nghỉ và ứng phép; đề xuất duyệt không bao giờ cho người tự duyệt phiếu nghỉ bù của mình.
+- Cập nhật cẩm nang AI Nghỉ phép và Hồ sơ nhân sự, xuất bản phiên bản mới trên máy local; thêm cờ chọn từng cẩm nang cho script xuất bản.
+
+**Kết quả:** mười bài kiểm mới của trợ lý AI xanh; bộ trợ lý (395 bài) và cổng MCP (891 bài) xanh trừ các bài vốn đã đỏ trên mã gốc. Bài canh độ dài ô chữ đã khai thêm các schema hạn mức của nghỉ phép; còn đỏ vì ba schema của phân hệ Hải quan và Diễn đàn, không thuộc việc này. Seed lại bài hướng dẫn trên máy local không lỗi.
+
+**Còn lại:** chưa nạp lại kho tìm kiếm trợ giúp vì máy local tắt cờ RAG, sẽ chạy trên dev lúc deploy cùng script xuất bản cẩm nang; Trợ lý web chưa có nút mở biểu mẫu phiếu nghỉ bù; câu tóm tắt của cẩm nang Nghỉ phép trên dev và prod phải sửa tay ở màn Bộ skill.
+
+Mã nguồn: backend/app/modules/assistant/tools/leave_comp_tool.py · leave_tool.py · draft_tool.py · approval_action_tool.py · backend/app/modules/agent_hub/draft_create.py · mcp.py · ai_skill/seed_handbook/40-nghi-phep.md · 60-nhan-su-ho-so.md · backend/scripts/seed_help_nghi_phep.py · seed_help_nhan_su.py · publish_handbook_update.py · doc/erp/hrm/01, 02, 04

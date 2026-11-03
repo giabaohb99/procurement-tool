@@ -18,6 +18,8 @@ export function hasQuota(balance: LeaveBalance): boolean {
     balance.allocated_days > 0 ||
     balance.seniority_days > 0 ||
     balance.carried_days > 0 ||
-    balance.adjusted_days !== 0
+    balance.adjusted_days !== 0 ||
+    //  Ngày nghỉ bù đã duyệt (CR-715) cũng là quỹ tiêu được — dòng chỉ có `comp_days` mà tiêu hết vẫn là *hết phép*.
+    (balance.comp_days ?? 0) !== 0
   )
 }

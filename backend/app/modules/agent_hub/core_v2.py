@@ -1280,7 +1280,8 @@ V2_TOOL_DESC: dict[str, str] = {
     "draft_leave_request": (
         "Soạn NHÁP đơn nghỉ phép của CHÍNH người hỏi — chưa ghi gì. **nghỉ việc ngày X** = xin nghỉ phép ngày đó. Gọi khi đã biết "
         "NGÀY nghỉ; lý do / loại nghỉ chưa nói thì để trống, tool trả need_info để hỏi một lượt. Nửa ngày thì hỏi buổi. Có "
-        "warnings (trùng đơn, thiếu quỹ phép) thì đọc nguyên. Không dùng cho Giấy nghỉ phép ở Văn thư (hệ tự sinh)."),
+        "warnings (trùng đơn, thiếu quỹ phép, ứng phép, đơn lùi ngày, ngày cấm nghỉ) thì đọc nguyên. Không dùng cho Giấy "
+        "nghỉ phép ở Văn thư (hệ tự sinh). Đi làm ngày lễ / ngày nghỉ xin nghỉ bù là draft_leave_comp_request."),
     "draft_payment_request": (
         "Soạn NHÁP Yêu cầu thanh toán (YCTT) từ khoản CÔNG NỢ CÒN PHẢI TRẢ — không tạo trong chat; bot gửi link form web điền "
         "sẵn. Đã gọi payable_lookup thì truyền payable_ids; chưa thì truyền supplier (+ company + một cặp ngày: due_from/due_to "

@@ -65,7 +65,7 @@ def test_loai_ngoai_danh_sach_va_tu_choi_can_ly_do(db, org):  # noqa: F811
     bk = _pending(db, org)
     for entity in ("payment_request", "purchase_order", "seal_request", "document"):
         out = T.run_tool(db, org.other, "propose_approval", {"entity": entity, "id": 1, "action": "approve"})
-        assert "chỉ duyệt phiếu đặt xe, đặt phòng họp và đơn nghỉ phép" in out["error"]
+        assert "chỉ duyệt phiếu đặt xe, đặt phòng họp, đơn nghỉ phép và phiếu nghỉ bù" in out["error"]   # + CR-715
     assert "lý do" in _propose(db, org.other, id=bk.id, action="reject")["error"]
     p = _propose(db, org.other, id=bk.id, action="reject", note="Trùng lịch xe")["proposal"]
     confirm_update(db, org.other, p["confirm_token"])

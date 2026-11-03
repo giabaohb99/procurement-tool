@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { useIsBreadcrumbDuplicate } from '@/shared/ui/breadcrumb-page-label'
 import { cn } from '@/shared/utils/cn'
 
 interface PageHeaderProps {
@@ -62,6 +63,9 @@ export function PageHeader({
   actionsClassName,
   sticky = false,
 }: PageHeaderProps) {
+  //  duoc-CR-714: tiêu đề lặp đúng chữ cuối của breadcrumb thì ẨN khỏi mắt (giữ `sr-only` cho trình đọc màn hình —
+  //  trang vẫn có một `<h1>`). Mô tả, nút quay lại và cụm nút vẫn hiện như cũ.
+  const duplicate = useIsBreadcrumbDuplicate(title)
   return (
     <div
       className={cn(
@@ -86,7 +90,9 @@ export function PageHeader({
       <div className="flex min-w-0 flex-[1_1_16rem] items-start gap-3">
         {leading}
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-navy">{title}</h1>
+          <h1 className={cn('text-xl font-semibold tracking-tight text-navy', duplicate && 'sr-only')}>
+            {title}
+          </h1>
           {description && (
             <div className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
               {description}

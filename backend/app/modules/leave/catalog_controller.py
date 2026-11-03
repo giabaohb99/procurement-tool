@@ -20,11 +20,15 @@ from app.core.database import get_db
 from app.core.response import success
 
 from .balance_model import LeaveBalance
-from .catalog_model import Holiday, LeaveType, LeaveTypeSeniority
+from .catalog_model import (Holiday, LeaveBlockPeriod, LeaveType, LeaveTypeQuota,
+                            LeaveTypeSeniority)
 from .constants import YEAR_END_CONVERT
 from .request_model import LeaveRequest, LeaveRequestLine
 from .schema import (HolidayCreate, HolidayResponse, HolidayUpdate,
+                     LeaveBlockPeriodCreate, LeaveBlockPeriodResponse,
+                     LeaveBlockPeriodUpdate, check_block_range,
                      LeaveTypeCreate, LeaveTypeResponse, LeaveTypeUpdate,
+                     QuotaRuleReplace, QuotaRuleResponse,
                      SeniorityTierCreate, SeniorityTierResponse,
                      SeniorityTierUpdate)
 
@@ -54,6 +58,9 @@ def _block_delete_used_type(db: Session, obj: LeaveType) -> None:
         raise HTTPException(
             400, f"{names} đang quy đổi số dư sang \"{obj.name}\" nên không xóa được. "
                  "Đổi cách xử lý số dư cuối năm của các loại đó trước.")
+    #  duoc-CR-715: qua hết các chốt chặn thì dọn bảng hạn mức theo nhóm của loại này (không để dòng mồ côi).
+    db.query(LeaveTypeQuota).filter(LeaveTypeQuota.leave_type_id == obj.id).delete(
+        synchronize_session=False)
 
 
 def _check_year_end_config(db: Session, mode: int, target_id: int, ratio: float,
@@ -114,7 +121,7 @@ def _block_code_change(db: Session, obj: LeaveType, values: dict) -> None:
 leave_type_router = make_crud_router(
     "/api/leave-types", "leave_type", LeaveType,
     LeaveTypeCreate, LeaveTypeUpdate, LeaveTypeResponse,
-    filterable=["code", "name", "is_active", "counts_balance", "gender",
+    filterable=["code", "name", "is_active", "counts_balance", "is_compensatory", "gender",
                 "year_end_mode"],
     unique_field="code",
     before_create=_check_type_create,
@@ -132,6 +139,70 @@ holiday_router = make_crud_router(
     #  chạy chứ không lúc nạp.
     unique_field=None,
 )
+
+
+def _check_block_update(db: Session, obj: LeaveBlockPeriod, values: dict) -> None:
+    """Sửa lẻ một ô thì ngày còn lại lấy giá trị ĐANG CÓ — kiểm khoảng sau khi gộp."""
+    message = check_block_range(values.get("from_date", obj.from_date),
+                                values.get("to_date", obj.to_date))
+    if message:
+        raise HTTPException(422, message)
+
+
+#  Ngày cấm nghỉ (duoc-CR-715): khóa quyền `leave_type` — cùng «Thiết lập» nghỉ phép, không thêm entity.
+block_period_router = make_crud_router(
+    "/api/leave-block-periods", "leave_type", LeaveBlockPeriod,
+    LeaveBlockPeriodCreate, LeaveBlockPeriodUpdate, LeaveBlockPeriodResponse,
+    filterable=["company_id", "department_id", "is_active"],
+    unique_field=None,
+    before_update=_check_block_update,
+)
+
+
+# ── Hạn mức theo nhóm (duoc-CR-715) ────────────────────────────────────────────
+
+quota_router = APIRouter(prefix="/api/leave-types", tags=["leave"])
+
+
+@quota_router.get("/{type_id}/quotas")
+def list_quotas(type_id: int, db: Session = Depends(get_db),
+                user=Depends(require("leave_type", "read"))):
+    """Hạn mức theo hình thức nhân viên / cấp bậc của một loại nghỉ. Không phân trang (trần 50 dòng)."""
+    if db.get(LeaveType, type_id) is None:
+        raise HTTPException(404, "Không tìm thấy loại nghỉ")
+    rows = (db.query(LeaveTypeQuota).filter(LeaveTypeQuota.leave_type_id == type_id)
+            .order_by(LeaveTypeQuota.basis, LeaveTypeQuota.basis_value).all())
+    return success({"total": len(rows),
+                    "items": [QuotaRuleResponse.model_validate(r).model_dump() for r in rows]})
+
+
+@quota_router.put("/{type_id}/quotas")
+def replace_quotas(type_id: int, data: QuotaRuleReplace, db: Session = Depends(get_db),
+                   user=Depends(require("leave_type", "write"))):
+    """THAY cả danh sách hạn mức. Quỹ đã cấp không tính lại — chỉ áp cho lần cấp sau."""
+    leave_type = db.get(LeaveType, type_id)
+    if leave_type is None:
+        raise HTTPException(404, "Không tìm thấy loại nghỉ")
+    seen: set[tuple[int, int]] = set()
+    for item in data.items:
+        key = (item.basis, item.basis_value)
+        if key in seen:
+            raise HTTPException(422, "Mỗi nhóm chỉ được khai một dòng hạn mức — có nhóm bị trùng.")
+        seen.add(key)
+    try:
+        db.query(LeaveTypeQuota).filter(LeaveTypeQuota.leave_type_id == type_id).delete(
+            synchronize_session=False)
+        for item in data.items:
+            db.add(LeaveTypeQuota(leave_type_id=type_id, basis=item.basis,
+                                  basis_value=item.basis_value, quota_days=item.quota_days,
+                                  created_by=user.id, updated_by=user.id))
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    audit_record(db, user.id, "leave_type", type_id, "update",
+                 f"Cập nhật hạn mức theo nhóm của \"{leave_type.name}\" ({len(data.items)} dòng)")
+    return list_quotas(type_id, db, user)
 
 
 # ── Bậc thâm niên: viết tay, vì nó luôn đọc/ghi theo LOẠI NGHỈ ─────────────────

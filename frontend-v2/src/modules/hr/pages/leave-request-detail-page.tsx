@@ -29,6 +29,7 @@ import {
   toLeavePayload,
   type LeaveFormValues,
 } from '../utils/leave-form-values'
+import { LeaveBlockWarningBanner } from '../components/leave-block-warning-banner'
 import { LeaveRequestSummary } from '../components/leave-request-summary'
 import {
   PRIMARY_ACTION_SLOT,
@@ -367,7 +368,9 @@ export function LeaveRequestDetailPage() {
             <Card className="py-4 sm:py-6">
               {/*  Lề trong hẹp lại trên điện thoại: `px-6` mặc định ăn 48px của
                    một màn 390px, tức 12% bề ngang chỉ để lấy khoảng trắng. */}
-              <CardContent className="px-3 sm:px-6">
+              <CardContent className="space-y-3 px-3 sm:px-6">
+                {/*  duoc-CR-715: đơn đã gửi duyệt vẫn nhắc người duyệt biết nó đụng ngày cấm nghỉ. */}
+                <LeaveBlockWarningBanner conflicts={request.block_conflicts} />
                 <LeaveRequestSummary request={request} />
               </CardContent>
             </Card>

@@ -19,6 +19,14 @@ CHỈ viết bài cho tính năng MỚI, KHÔNG viết lại toàn bộ phân h�
     xuất Excel (đường `/api/employees/export/*` có, bản cũ dùng) nên bài chỉ nói "tệp xuất danh sách nhân sự".
   * duoc-CR-708 (02/11): màn chi tiết nhân sự đổi khung theo ERPNext — tab Chung không còn thẻ, các nhóm Thông tin cá
     nhân · Công việc · Vào làm & nghỉ việc ngăn bằng đường kẻ, Lương và Kiêm nhiệm gập / mở được; nút In / Lưu / Xóa vẫn ở góc phải hàng tiêu đề.
+  * duoc-CR-713 (02/11): Cài đặt nhân sự (Master ▸ Cài đặt nhân sự) — 3 tab: Nhân viên (tiền tố mã, sơ đồ tổ chức cho
+    mọi nhân viên, mốc kỷ niệm), Nghỉ phép (chặn đơn lùi ngày + vai trò miễn, chặn tự duyệt, lối tắt danh mục), Hợp đồng
+    lao động (ngày báo hết hạn, mức gấp). Nhãn đối chiếu bằng đọc `hr/components/hr-settings-form.tsx` và `FIELDS` nhóm `hr` ở
+    `setting/service.py` (lời giải thích trên màn lấy nguyên từ đó).
+  * 03/11 (đối chiếu duoc-CR-713/714/715): đường menu bỏ chữ «Danh mục» cho khớp thanh đường dẫn (Nhân sự › Master ›
+    Cài đặt nhân sự, trang không lặp tiêu đề — CR-714); nhãn ô viết đúng chữ của `FIELDS`; nút duyệt thẳng tên thật
+    là «Duyệt đơn»; thêm ý phiếu nghỉ bù luôn chặn tự duyệt; bài Sơ đồ tổ chức thêm công tắc «Sơ đồ tổ chức cho mọi
+    nhân viên».
   * duoc-CR-711 (02/11): Sơ đồ tổ chức làm lại theo ERPNext — khung vẽ kéo thả, thẻ người nối theo quản lý trực tiếp,
     nút mở nhóm, khung thông tin, tìm người, Tìm tôi, Mở hết, hai kiểu vẽ, lọc pháp nhân / phòng ban. Nhãn đối chiếu
     bằng đọc `hr/pages/org-chart-page.tsx`, `hr/components/org-chart-{board,canvas,person-popover}.tsx`.
@@ -45,13 +53,14 @@ SELF_CHANGE = "Nhân sự — Tự đề nghị sửa hồ sơ ở Trang cá nh�
 REVIEW_CHANGE = "Nhân sự — Duyệt đề nghị sửa hồ sơ của nhân viên"
 SALARY = "Nhân sự — Nhập lương ở hồ sơ và xem lương của mình"
 PHONES = "Nhân sự — Khai nhiều số điện thoại và địa chỉ liên hệ"
+HR_SETTINGS = "Nhân sự — Cài đặt nhân sự: mã nhân sự, sơ đồ tổ chức, nghỉ phép, hợp đồng"
 #  Bài thuộc cây Báo cáo Nhân sự (`seed_help_bao_cao_nhan_su.py`) — chỉ để nối liên kết.
 PAYROLL = "Báo cáo Nhân sự — Đọc báo cáo Quỹ lương theo pháp nhân"
 
 TREE = {
     "title": "Hướng dẫn sử dụng Nhân sự — Hồ sơ và tổ chức",
     "icon": "users",
-    "summary": "In phiếu thông tin nhân viên; tự đề nghị sửa hồ sơ và phòng Nhân sự duyệt; nhập lương ở hồ sơ và xem lương của mình; nhiều số điện thoại; sơ đồ tổ chức; chuyển việc duyệt treo trước khi khóa tài khoản",
+    "summary": "In phiếu thông tin; tự đề nghị sửa hồ sơ, phòng Nhân sự duyệt; lương ở hồ sơ; nhiều số điện thoại; sơ đồ tổ chức; chuyển việc duyệt treo khi khóa tài khoản; cài đặt nhân sự (chặn đơn lùi ngày, tự duyệt)",
     "content": f"""<h2>Nhân sự — Hồ sơ và tổ chức</h2>
 <p>Phân hệ <strong>Nhân sự</strong> giữ hồ sơ nhân viên, phòng ban, chức vụ và (ở bộ hướng dẫn riêng) nghỉ phép. Bộ hướng dẫn này gom các tính năng <strong>mới</strong> về hồ sơ và tổ chức:</p>
 <ul>
@@ -62,6 +71,7 @@ TREE = {
 <li>Một người dùng nhiều số điện thoại (số cá nhân, số công việc, Zalo…) hay cần sửa địa chỉ liên hệ: {ref(PHONES, "Khai nhiều số điện thoại và địa chỉ liên hệ")}.</li>
 <li>Muốn xem ai thuộc phòng nào, ai quản lý ai: {ref(SO_DO, "Xem Sơ đồ tổ chức")}.</li>
 <li>Sắp khóa tài khoản hay cho một người nghỉ việc mà người đó còn phiếu cần duyệt: {ref(KHOA, "Khóa tài khoản hoặc cho nghỉ việc khi còn việc duyệt treo")}.</li>
+<li>Muốn đổi tiền tố mã nhân sự, giới hạn ai xem sơ đồ tổ chức, chặn đơn nghỉ lùi ngày / tự duyệt, hay đổi số ngày báo HĐLĐ hết hạn: {ref(HR_SETTINGS, "Cài đặt nhân sự")}.</li>
 </ul>
 <p>Nghỉ phép có bộ hướng dẫn riêng ở thẻ <strong>Hướng dẫn sử dụng Nghỉ phép</strong>.</p>""",
     "children": [
@@ -361,6 +371,7 @@ TREE = {
 <h2>Ai xem được, thấy những gì</h2>
 <ul>
 <li>Cần quyền <strong>xem hồ sơ nhân sự</strong>. Không có thì màn báo <em>Không có quyền xem sơ đồ tổ chức</em>; liên hệ quản trị để được cấp.</li>
+<li>Công ty có thể tắt <strong>Sơ đồ tổ chức cho mọi nhân viên</strong> ở {ref(HR_SETTINGS, "Cài đặt nhân sự")}. Khi đó chỉ người xem được toàn bộ hồ sơ nhân sự mới mở được sơ đồ; người khác thấy câu <em>Sơ đồ tổ chức chưa mở cho bạn</em> — liên hệ phòng Nhân sự nếu cần xem.</li>
 <li>⚠️ Sơ đồ <strong>chỉ hiện những người trong phạm vi dữ liệu của bạn</strong> (xem cùng một sơ đồ, người thấy nhiều người thấy ít là bình thường). Một trưởng phòng hay quản lý <em>nằm ngoài phạm vi</em> của bạn thì tên họ <strong>không hiện</strong>, kể cả khi họ là cấp trên của người bạn xem được. Khi đó người đó đứng ở hàng trên cùng như không có quản lý.</li>
 <li>Người đã <strong>nghỉ việc</strong> hoặc đã ngưng hoạt động thì không có trên sơ đồ.</li>
 <li>Con số trên nút mở nhóm cũng chỉ đếm cấp dưới bạn được thấy, nên đừng dùng nó làm quân số chính thức.</li>
@@ -372,7 +383,7 @@ TREE = {
 <tbody>
 <tr><td>Người nằm nhầm phòng</td><td>Hồ sơ nhân sự ▸ ô <strong>Phòng ban</strong></td></tr>
 <tr><td>Người báo cáo nhầm sếp</td><td>Hồ sơ nhân sự ▸ ô <strong>Người quản lý trực tiếp</strong></td></tr>
-<tr><td>Lọc một phòng mà thiếu (hoặc thừa) người của phòng con</td><td>Nhân sự ▸ Danh mục ▸ Master ▸ <strong>Phòng ban</strong> ▸ ô phòng cha</td></tr>
+<tr><td>Lọc một phòng mà thiếu (hoặc thừa) người của phòng con</td><td>Nhân sự ▸ Master ▸ <strong>Phòng ban</strong> ▸ ô phòng cha</td></tr>
 <tr><td>Màn trống</td><td>Chưa có nhân sự nào trong phạm vi của bạn — màn ghi đúng câu này. Trống sau khi chọn phòng ban thì phòng đó chưa có ai: bỏ bớt bộ lọc</td></tr>
 </tbody>
 </table>
@@ -417,6 +428,56 @@ TREE = {
 <p>Hệ <strong>không chặn cứng</strong>, vì có người nghỉ đột xuất cần khóa ngay. Khi còn việc treo, nút xác nhận đổi chữ thành <strong>Vẫn khóa … (còn việc treo)</strong> để bạn biết mình đang để phiếu kẹt. Bấm xác nhận thì tài khoản vẫn bị khóa và người đó bị đăng xuất khỏi mọi thiết bị như thường; việc treo phải xử lý sau bằng cách nhờ quản trị luồng duyệt chuyển.</p>
 <p>Nếu hộp ghi <em>Không xem được danh sách việc đang giữ (thiếu quyền hoặc lỗi)</em> thì bạn chưa đọc được danh sách; hãy tự kiểm ở màn Báo cáo duyệt trước khi khóa.</p>
 <p>Xem thêm: {ref(SO_DO, "Xem Sơ đồ tổ chức")}.</p>""",
+        },
+        {
+            "title": HR_SETTINGS,
+            "icon": "settings",
+            "summary": "Menu Nhân sự > Master > Cài đặt nhân sự: tiền tố mã, sơ đồ tổ chức, mốc kỷ niệm; chặn đơn nghỉ lùi ngày, vai trò duyệt qua ngày cấm nghỉ, chặn tự duyệt; ngày báo HĐLĐ hết hạn",
+            "content": f"""<h2>Cài đặt nhân sự</h2>
+<p>Vào <strong>Nhân sự ▸ Master ▸ Cài đặt nhân sự</strong> (cụm <strong>Master</strong> nằm trong nhóm <em>Danh mục</em> ở menu trái). Tên trang hiện trên thanh đường dẫn ở đầu màn (<em>Nhân sự › Master › Cài đặt nhân sự</em>) nên trang không lặp lại tiêu đề lần nữa. Trang có ba tab <strong>Nhân viên</strong> · <strong>Nghỉ phép</strong> · <strong>Hợp đồng lao động</strong>; mọi ô mặc định đúng như hệ vẫn chạy trước nay, và mỗi ô có sẵn lời giải thích ngay dưới nhãn.</p>
+<p>Sửa ở tab nào cũng được, rồi bấm <strong>Lưu</strong> ở đầu phải dải tab (lưu cả ba tab một lần; nút chỉ sáng khi có thay đổi). Lưu xong màn báo <em>Đã lưu cài đặt nhân sự</em>; thay đổi có hiệu lực sau tối đa khoảng nửa phút (máy chủ giữ bộ nhớ đệm cấu hình 30 giây), không cần khởi động lại gì.</p>
+<p>Ai mở được trang: người có quyền <strong>Cấu hình hệ thống</strong> (xem). Ai sửa được: người có quyền Cấu hình hệ thống (sửa) — thường chỉ quản trị. Người chỉ có quyền xem thì không thấy nút Lưu, các ô bị khóa và đầu mỗi tab có câu <em>Bạn chỉ xem được — sửa cần quyền Cấu hình hệ thống.</em> Mỗi lần lưu đều ghi vào tab <strong>Lịch sử thay đổi</strong> của màn <strong>Quản trị ▸ Cấu hình hệ thống</strong>.</p>
+
+<h2>Tab Nhân viên</h2>
+<ul>
+<li><strong>Tiền tố mã nhân sự</strong> (mặc định NSU): hồ sơ tạo mới — tạo tay hoặc nhập Excel mà để trống Mã NV — được đánh mã tiền tố này + số tăng dần, ví dụ NSU245. 2–10 chữ cái in hoa không dấu, không có số. Mã đã cấp không đổi theo. Để trống là dùng NSU.</li>
+<li><strong>Sơ đồ tổ chức cho mọi nhân viên</strong> (mặc định BẬT): bật thì ai có quyền xem hồ sơ nhân sự đều mở được Sơ đồ tổ chức (chỉ thấy người trong phạm vi của mình). Tắt thì chỉ người xem được <em>toàn bộ</em> hồ sơ nhân sự (thường là phòng Nhân sự, quản trị) mới mở được; người khác mở ra sẽ thấy câu <em>Sơ đồ tổ chức chưa mở cho bạn</em>.</li>
+<li><strong>Mốc kỷ niệm vào làm (năm)</strong> (mặc định 1, 3, 5, 10): ô <em>Lịch nhắc trong tháng</em> ở Tổng quan Nhân sự liệt kê người tròn đúng các mốc này. Nhập các số cách nhau bằng dấu phẩy, mỗi số 1–60, tối đa 10 mốc.</li>
+</ul>
+
+<h2>Tab Nghỉ phép — chặn đơn nghỉ lùi ngày</h2>
+<ul>
+<li>Công tắc <strong>Chặn đơn nghỉ lùi ngày</strong> (mặc định TẮT). Bật thì <strong>không lập, sửa hay gửi duyệt</strong> được đơn nghỉ có ngày nghỉ <strong>trước hôm nay</strong> (tính theo giờ Việt Nam). Ngày hôm nay vẫn lập được.</li>
+<li>Nháp lập khi còn hợp lệ mà để qua ngày mới bấm gửi thì lúc gửi cũng bị chặn — đổi ngày hoặc nhờ người được miễn.</li>
+<li>Ô <strong>Vai trò được lập đơn nghỉ lùi ngày</strong> (bấm <em>Chọn vai trò được miễn</em>): các vai trò chọn ở đây (ví dụ Hành chính, Nhân sự — người hay lập hộ đơn quên nộp) vẫn lập được. Quản trị hệ thống luôn được miễn. Để trống là chỉ quản trị. Ô này mờ đi khi công tắc ở trên đang tắt, vì lúc đó nó không có tác dụng.</li>
+<li>Đơn đã gửi duyệt hay đã duyệt trước khi bật <strong>không bị ảnh hưởng</strong>. Đơn bị <strong>trả về</strong> vẫn sửa lý do, bổ sung giấy tờ và gửi lại được; chỉ khi đổi sang ngày đã qua mới bị chặn. Đơn do người được miễn lập hộ thì người nghỉ vẫn gửi duyệt được.</li>
+<li>Bị chặn thì màn báo <em>Không lập được đơn nghỉ cho ngày đã qua (ngày …). Cài đặt nhân sự đang chặn đơn lùi ngày — nhờ phòng Nhân sự lập hộ nếu cần.</em></li>
+</ul>
+
+<h2>Tab Nghỉ phép — vai trò duyệt qua ngày cấm nghỉ</h2>
+<ul>
+<li>Ô <strong>Vai trò được duyệt đơn nghỉ rơi vào ngày cấm nghỉ</strong> đi cặp với danh mục <strong>Nghỉ phép ▸ Thiết lập ▸ Ngày cấm nghỉ</strong>. Đơn nghỉ đụng một khoảng cấm vẫn lập và gửi duyệt được, nhưng lượt duyệt cuối bị chặn — trừ người có vai trò chọn ở ô này.</li>
+<li>Quản trị hệ thống luôn được duyệt qua. Để trống là chỉ quản trị.</li>
+<li>Ô này không có công tắc riêng: danh mục Ngày cấm nghỉ trống thì không có gì để chặn.</li>
+</ul>
+
+<h2>Tab Nghỉ phép — chặn tự duyệt đơn nghỉ</h2>
+<ul>
+<li>Bình thường, người duyệt được <strong>suy ra</strong> (trưởng phòng, quản lý trực tiếp, theo vai trò…) đã tự né người nộp đơn. Riêng bước luồng duyệt <strong>khai đích danh</strong> một người, hay <strong>người dự phòng</strong>, thì hệ giữ đúng người đã khai — kể cả khi đó chính là người nghỉ.</li>
+<li>Bật công tắc <strong>Chặn tự duyệt đơn nghỉ</strong> (mặc định TẮT) thì với đơn nghỉ, <strong>người nghỉ không bao giờ là người duyệt</strong> đơn của chính mình ở mọi kiểu bước, và nút <strong>Duyệt đơn</strong> trên trang chi tiết (duyệt thẳng khi chưa khai luồng) cũng không cho họ tự bấm.</li>
+<li>Bước chỉ có mỗi người nghỉ thì đơn chuyển cho <strong>người dự phòng</strong> của bước. Không có người dự phòng (hoặc người dự phòng cũng là người nghỉ) thì đơn <strong>dừng lại</strong> ở trạng thái kẹt, chờ quản trị sửa luồng — hệ <strong>không tự duyệt qua</strong>.</li>
+<li>Việc duyệt đã giao cho người nghỉ từ trước khi bật: họ bấm duyệt sẽ bị báo <em>Cài đặt nhân sự đang chặn tự duyệt: bạn không duyệt được đơn nghỉ của chính mình.</em> Quản trị chuyển việc đó cho người khác ở màn quản lý luồng duyệt.</li>
+<li><strong>Phiếu nghỉ bù luôn chặn tự duyệt</strong>, dù công tắc này bật hay tắt, vì duyệt phiếu là tạo thêm ngày phép.</li>
+</ul>
+<p>Cuối tab Nghỉ phép có khối <strong>Danh mục nghỉ phép</strong> với ba lối tắt <strong>Loại nghỉ &amp; bậc thâm niên</strong>, <strong>Lịch ngày lễ</strong> và <strong>Ngày cấm nghỉ</strong> (mỗi lối tắt chỉ hiện với người được sửa danh mục đó).</p>
+
+<h2>Tab Hợp đồng lao động</h2>
+<ul>
+<li><strong>Báo HĐLĐ sắp hết hạn trước (ngày)</strong> (mặc định 30, được đặt 15–180): HĐLĐ đã ký còn từng này ngày (hoặc đã quá hạn) mà chưa có hợp đồng nối tiếp thì hiện ở chuông thông báo, ô Tổng quan Nhân sự và màn HĐLĐ sắp hết hạn.</li>
+<li><strong>Mức gấp — tô đỏ khi còn (ngày)</strong> (mặc định 15): còn từng này ngày trở xuống thì cảnh báo chuyển đỏ. Không được dưới 15 (Điều 45 Bộ luật Lao động 2019 buộc báo người lao động trước ít nhất 15 ngày) và không lớn hơn số ngày báo ở trên — đặt sai thì bấm Lưu sẽ bị báo lỗi.</li>
+<li>Các chỉ số cố định <em>Hết hạn trong 30 / 60 / 90 ngày</em> của báo cáo Hợp đồng lao động ở phân hệ Báo cáo không đổi theo ô này.</li>
+</ul>
+<p>Liên quan: {ref("Nộp đơn nghỉ phép", "Nộp đơn nghỉ phép")} · {ref("Nhân sự — Phân quyền và luồng duyệt", "Phân quyền và luồng duyệt nghỉ phép")} · {ref("Nhân sự — Loại nghỉ, bậc thâm niên và Lịch ngày lễ", "Loại nghỉ và Ngày cấm nghỉ")} · {ref(SO_DO, "Xem Sơ đồ tổ chức")}.</p>""",
         },
     ],
 }

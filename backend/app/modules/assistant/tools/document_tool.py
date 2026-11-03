@@ -186,7 +186,7 @@ def _entity_flow(ctx: ToolContext, entity: str) -> dict:
         "company_name": (serializer.flow_out(db, flow)["company_name"] or "Dùng chung"),
         "priority": flow.priority,
         "condition": flow.condition or "",
-        "steps": [describe_step(db, node, subject, submitter_id)
+        "steps": [describe_step(db, node, subject, submitter_id, entity=entity)
                   for node in flow_service.nodes_of(db, flow.id)],
     } for flow in flows]
     return result

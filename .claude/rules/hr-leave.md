@@ -110,3 +110,40 @@ _Tôi đã duyệt_. Người duyệt không phải sang màn Phê duyệt nữa
   đó"*. Mà **thiếu người bàn giao là lý do trả đơn phổ biến nhất**, tức chính là
   thứ quyết định họ bấm Duyệt hay Trả về — nó phải nói thành lời, không để suy ra
   từ một khoảng trống. Hộp việc duyệt trả kèm `handovers` đúng vì lý do đó.
+
+#### Cài đặt nhân sự — tab Nghỉ phép (duoc-CR-713, 02/11/2026)
+
+Trang `/hr/settings` (gác `setting.read`/`write`, đi chung `/api/settings`, nhóm khóa `hr`). Hai công tắc, mặc định TẮT:
+
+- ⚠️ **Chặn đơn nghỉ lùi ngày** — chỉ đọc qua `leave/leave_policy.ensure_not_backdated`, gọi ở ĐỦ ba nhịp `create` ·
+  `update` · `prepare_submit` (nháp hợp lệ để qua ngày mới gửi cũng là lùi ngày). «Hôm nay» = `vn_today()`. Miễn:
+  vai trò khai ở `leave_backdated_roles` + `admin`. Thêm đường lập đơn mới (nhập Excel, trợ lý AI lập nháp…) thì phải
+  gọi hàm này, đừng đọc thẳng `app_settings`.
+- ⚠️ **Chặn tự duyệt đơn nghỉ** — chỉ đọc qua `approval/self_approval_policy`. Luật I08 (`exclude_submitter_ids`) CỐ Ý
+  giữ bước khai đích danh + người dự phòng (CR-113, NP022); cờ `strict` chỉ siết cho `leave_request`. Mọi chỗ tra người
+  duyệt cho một phiên phải truyền `strict=strict_self_exclusion(entity)` (mở chặng, đồng bộ luồng, xem trước) — sót một
+  chỗ là màn xem trước nói một người, lúc chạy ra người khác. Chốt cuối ở `action_service.approve` + duyệt thẳng.
+  Bước rỗng → người dự phòng → KẸT; đừng thêm nhánh tự duyệt qua.
+
+#### Nghỉ phép kiểu ERPNext (duoc-CR-715, 02/11/2026)
+
+- ⚠️ **Số dùng được = `balance_service.available_days(db, row)`**, KHÔNG phải `row.remaining_days`: loại nghỉ
+  `accrual_mode = MONTHLY` giữ lại phần chưa tới tháng (`accrual_service.accrual_holdback`). Màn hình, chốt đủ quỹ, trợ lý
+  AI đều phải đọc hàm này; chỗ đọc thẳng property chỉ đúng với năm đã qua (kết sổ cuối năm).
+- Cấp quỹ (`ensure_balance`): hạn mức `accrual_service.resolve_quota` (hình thức nhân viên > cấp bậc > `annual_quota_days`)
+  rồi `prorate_allocation` (ngày vào làm 1–15 tính cả tháng; vào làm năm SAU → 0). Quỹ đã cấp không tính lại khi đổi luật.
+- `check_enough*` cho xuống `-max_negative_days`; `applicable_after_days` chặn ở lập / sửa (khi ngày hoặc dòng loại đổi) / gửi.
+- ⚠️ **Ngày cấm nghỉ chặn ở hook `_on_approved` bằng `approval.entity_hooks.HookVeto`** — loại lỗi hook DUY NHẤT `fire`
+  ném tiếp. Hook nào ném nó phải ném TRƯỚC khi đổi gì của chứng từ; đường duyệt không được commit trước lúc `fire`.
+- ⚠️ **Phiếu nghỉ bù** (`leave_comp_request`, khóa quyền riêng, owner + self như đơn nghỉ): duyệt xong cộng
+  `tab_leave_balance.comp_days` của loại `is_compensatory`; mọi chỗ cộng `allocated + seniority + carried + adjusted`
+  phải cộng cả `comp_days`. Hủy phiếu đã duyệt chỉ khi số dùng được của loại đó ≥ `days`.
+- ⚠️ Phiếu nghỉ bù LƯU SẴN đích cộng: `comp_leave_type_id` (chốt lúc gửi) + `balance_year` (= max(năm làm, năm nay),
+  chốt lúc duyệt); duyệt / hủy chỉ dùng hai cột này, KHÔNG gọi lại `get_comp_type()` (HR đổi cờ giữa chừng là cộng /
+  trừ nhầm loại). Mọi đổi trạng thái đi qua `comp_request_service.claim` (UPDATE … WHERE status IN …, thua → 409).
+  `active_key` UNIQUE giữ «một ngày một phiếu» khi hai lượt chèn cùng lúc (NULL khi từ chối / hủy / xóa).
+- ⚠️ Phiếu nghỉ bù LUÔN chặn tự duyệt (`self_approval_policy.ALWAYS_STRICT_ENTITIES`), bất kể công tắc: nó tạo ra ngày
+  phép mới. Đơn nghỉ vẫn theo công tắc `leave_prevent_self_approval`.
+- ⚠️ `entity_hooks.fire` gặp `HookVeto` thì TỰ `db.rollback()` rồi mới ném — nơi gọi bắt lỗi rồi commit (cổng MCP ghi
+  nhật ký) không thể lưu nửa lượt duyệt. Thêm nơi gọi duyệt mới vẫn nên rollback ở nhánh lỗi.
+- Báo cáo quỹ phép trừ phần chưa tới tháng ngay trong câu SQL (join loại nghỉ + ngày vào làm) — số truy vấn cố định.

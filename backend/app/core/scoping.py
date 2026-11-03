@@ -190,6 +190,9 @@ SCOPE_FIELDS = {
     #  Nhánh `own` ở `_role_scope_cond` HỢP cả hai — xem ghi chú tại đó.
     "leave_request":    {"company": "company_id", "dept_id": "department_id",
                          "owner": "created_by", "self": "employee_id"},
+    #  Phiếu nghỉ bù: cùng khuôn đơn nghỉ — người nghỉ (`employee_id`) và người lập (`created_by`).
+    "leave_comp_request": {"company": "company_id", "dept_id": "department_id",
+                           "owner": "created_by", "self": "employee_id"},
     #  Quỹ phép KHÔNG có `owner`: `created_by` là người Nhân sự bấm nút cấp phát,
     #  lấy đó làm "của mình" thì nhân viên xem quỹ của chính họ lại không ra dòng
     #  nào. Chỉ `self` — `own` nghĩa là "quỹ của tôi".

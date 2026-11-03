@@ -148,6 +148,7 @@ def test_loai_chung_tu_chua_co_man_thi_url_rong(db, seed):
     thì `url` rỗng để model khỏi gắn link 404."""
     from app.modules.user.model import User
 
-    _phien(db, entity="leave_request", started_by=seed.emp_req_id)
+    #  duoc-CR-715: đơn nghỉ / phiếu nghỉ bù đã có màn chi tiết v2 nên nằm trong bảng ánh xạ — dùng loại chưa có màn.
+    _phien(db, entity="loai_moi_chua_co_man", started_by=seed.emp_req_id)
     out = _run_my_requests_status(_ctx(db, db.get(User, seed.u_req_id)), {})
     assert out["items"][0]["url"] == ""

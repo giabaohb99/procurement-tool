@@ -14,6 +14,7 @@ Chạy trong container api:
     docker compose exec -T api python scripts/publish_handbook_update.py --dry-run   # xem sẽ làm gì
     docker compose exec -T api python scripts/publish_handbook_update.py            # làm thật
     docker compose exec -T api python scripts/publish_handbook_update.py --note "… (duoc-CR-676)"  # ghi số CR
+    docker compose exec -T api python scripts/publish_handbook_update.py --only nghi-phep,nhan-su-ho-so  # chỉ vài skill
 
 Quy tắc cho từng skill (idempotent — chạy lại lần hai là "đã mới nhất", không sinh phiên bản):
   - nội dung xuất bản hiện hành == tệp                         → bỏ qua (đã mới nhất);
@@ -81,7 +82,10 @@ def main() -> int:
     parser.add_argument("--force", action="store_true", help="Đè cả skill quản trị đã sửa tay")
     parser.add_argument("--note", default=CHANGE_NOTE,
                         help="Ghi chú thay đổi của phiên bản mới (nên ghi số CR của đợt cập nhật)")
+    parser.add_argument("--only", default="",
+                        help="Chỉ xét các slug này (cách nhau dấu phẩy) — để ghi chú CR không dính sang skill khác")
     args = parser.parse_args()
+    only = {x.strip() for x in args.only.split(",") if x.strip()}
 
     db = SessionLocal()
     try:
@@ -91,6 +95,8 @@ def main() -> int:
             return 0
         published = skipped = 0
         for slug, title, _summary, body in seed_files():
+            if only and slug not in only:
+                continue
             skill = db.query(AiSkill).filter(AiSkill.skill_set_id == skill_set.id, AiSkill.slug == slug).first()
             if skill is None:
                 print(f"[bỏ qua] {slug}: skill không có trong bộ (quản trị đã xóa hẳn hoặc chưa từng gieo).")

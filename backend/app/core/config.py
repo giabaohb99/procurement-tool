@@ -152,6 +152,18 @@ class Settings(BaseSettings):
     # Công tắc thu sự kiện giao diện (POST /api/telemetry/ui-events). MẶC ĐỊNH BẬT (chủ sản phẩm chốt);
     # tắt thì máy chủ nhận rồi bỏ lô (204), không ghi. Gom số từ bảng sẵn có thì luôn chạy.
     USAGE_TRACKING_ENABLED: bool = True
+    #  duoc-CR-713 — trang Cài đặt nhân sự (tab Nghỉ phép). Mặc định TẮT cả hai: bật là đổi luật duyệt / lập đơn.
+    LEAVE_RESTRICT_BACKDATED: bool = False
+    LEAVE_BACKDATED_ROLES: str = ""
+    #  duoc-CR-715 — vai trò được duyệt đơn nghỉ rơi vào ngày cấm nghỉ (trống = chỉ quản trị).
+    LEAVE_BLOCK_EXEMPT_ROLES: str = ""
+    LEAVE_PREVENT_SELF_APPROVAL: bool = False
+    #  duoc-CR-713 — tab Nhân viên + Hợp đồng lao động. Mặc định = đúng giá trị từng viết cứng trong mã.
+    EMPLOYEE_CODE_PREFIX: str = "NSU"
+    ORG_CHART_VISIBLE_TO_ALL: bool = True
+    EMPLOYEE_ANNIVERSARY_YEARS: str = "1,3,5,10"
+    LABOR_CONTRACT_WARN_DAYS: int = 30
+    LABOR_CONTRACT_DANGER_DAYS: int = 15
 
     # --- Dọn dẹp ---
     NOTIFICATION_KEEP_DAYS: int = 10   # thông báo cũ hơn N ngày sẽ tự xóa

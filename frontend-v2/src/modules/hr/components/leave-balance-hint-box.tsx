@@ -57,7 +57,9 @@ export function LeaveBalanceHintBox({
     )
   }
 
-  const enough = requestedDays <= data.remaining_days
+  //  CR-715: loại cho ứng phép (`max_negative_days` = N) chỉ chặn khi vượt cả N — khớp `check_enough` ở backend.
+  const allowedOverrun = Math.max(0, data.max_negative_days ?? 0)
+  const enough = requestedDays <= data.remaining_days + allowedOverrun
   //  Số còn lại SAU khi trừ chính dòng đang nhập. Làm tròn 2 chữ số vì nửa ngày
   //  phép là hợp lệ và `4 - 0.1` trong dấu phẩy động ra `3.9000000000000004`.
   const afterThis = Math.round((data.remaining_days - requestedDays) * 100) / 100

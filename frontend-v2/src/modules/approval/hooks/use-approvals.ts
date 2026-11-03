@@ -241,6 +241,8 @@ const HO_QUERY_CUA_CHUNG_TU: Record<string, readonly string[]> = {
   //  Nghỉ phép và Đặt phòng nằm trong phân hệ Nhân sự — ký xong phải nạp lại cả
   //  họ `hr`, vì một phiếu xuất hiện ở danh sách, ở chi tiết và ở lịch.
   leave_request: queryKeys.hr.all,
+  //  Duyệt phiếu nghỉ bù đổi `comp_days` của quỹ phép — cùng họ `hr` nên nạp lại cả quỹ.
+  leave_comp_request: queryKeys.hr.all,
   room_booking: queryKeys.hr.all,
   //  Thiếu tới 23/09/2026: ký xong phiếu đặt xe, trang chi tiết vẫn "Chờ duyệt"
   //  và nút Duyệt vẫn còn đó cho tới lần F5 — bấm lần nữa là nhận lỗi.

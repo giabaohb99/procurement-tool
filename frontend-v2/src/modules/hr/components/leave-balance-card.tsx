@@ -36,6 +36,7 @@ export function LeaveBalanceCard({ balance, hideEmployeeName }: LeaveBalanceCard
   if (balance.carried_days) extras.push(`+${balance.carried_days} chuyển năm trước`)
   if (balance.carried_out_days) extras.push(`${balance.carried_out_days} đã chuyển đi`)
   if (balance.carried_expired_days) extras.push(`${balance.carried_expired_days} hết hạn`)
+  if (balance.comp_days) extras.push(`+${balance.comp_days} nghỉ bù`)
   if (balance.adjusted_days) {
     const sign = balance.adjusted_days > 0 ? '+' : ''
     extras.push(`${sign}${balance.adjusted_days} điều chỉnh tay`)

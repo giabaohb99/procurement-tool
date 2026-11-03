@@ -17,6 +17,7 @@ from .instance_model import (ACTION_APPROVE, ACTION_COMMENT, ACTION_REASSIGN,
                              INSTANCE_WITHDRAWN, TASK_APPROVED, TASK_CANCELLED,
                              TASK_PENDING, TASK_REJECTED, TASK_WAITING,
                              ApprovalInstance, ApprovalTask)
+from .self_approval_policy import ensure_not_self_approval
 
 
 def _ensure_open(instance: ApprovalInstance) -> None:
@@ -104,6 +105,8 @@ def claim_task(db: Session, task: ApprovalTask, new_status: int, actor: int) -> 
 def approve(db: Session, instance: ApprovalInstance, actor_employee_id: int,
           actor: int, subject: dict, comment: str = "") -> ApprovalInstance:
     _ensure_open(instance)
+    #  duoc-CR-713: chốt cuối cho việc đã mở cho người nghỉ TRƯỚC khi bật «Chặn tự duyệt đơn nghỉ».
+    ensure_not_self_approval(instance.entity, actor_employee_id, instance.started_by_employee_id)
     task, delegation_id = pending_task_of(db, instance, actor_employee_id)
 
     claim_task(db, task, TASK_APPROVED, actor)

@@ -293,6 +293,12 @@ export interface CrudConfig<T> {
    * Phòng họp) — bảng bị bóp còn 1024px là cụt cột.
    */
   detailMaxWidth?: string
+  /**
+   * Bố cục trang chi tiết. `'card'` (mặc định) = khuôn thẻ cũ. `'flat'` = mặt phẳng kiểu ERPNext (duoc-CR-716): hàng
+   * tiêu đề dính, tab gạch chân, nhóm ngăn bằng đường kẻ gập / mở được, công tắc dòng gọn, chú thích (i), khối
+   * «Hoạt động» dạng dòng thời gian. `detailMaxWidth` không áp ở bố cục `flat` (luôn tràn khung).
+   */
+  detailLayout?: 'card' | 'flat'
   /** Render thêm nội dung ở đầu thanh công cụ. */
   renderToolbarExtra?: () => ReactNode
   /**

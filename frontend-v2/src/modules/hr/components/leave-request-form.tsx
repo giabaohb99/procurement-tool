@@ -12,6 +12,7 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { SearchSelect } from '@/shared/ui/search-select'
 import { useEmployees } from '../hooks/use-employees'
 import { useEstimateLeavePeriods, useLeaveTypes } from '../hooks/use-leave'
+import { LeaveBlockWarningBanner } from './leave-block-warning-banner'
 import {
   REASON_MAX,
   isHourlyForm,
@@ -241,6 +242,9 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
           estimateError={estimateError}
           onChange={(patch) => onChange({ ...value, ...patch })}
         />
+
+        {/*  duoc-CR-715: cảnh báo ngày cấm nghỉ ngay khi chọn ngày — không chặn lưu. */}
+        <LeaveBlockWarningBanner conflicts={estimate?.block_conflicts} />
 
         {isHourly && (
           <p className="text-xs text-muted-foreground md:col-span-2">

@@ -86,15 +86,16 @@ CONFIRM_DRAFT_DEF = {
     "name": "confirm_draft",
     "description": ("Tạo thật phiếu từ bản nháp do tool draft_* trả về (leave = đơn nghỉ phép, survey = yêu cầu báo giá, "
                     "purchase = yêu cầu mua hàng, ticket = phiếu hỗ trợ, vehicle_booking = phiếu đặt xe, seal_request = phiếu duyệt "
-                    "dấu (chỉ lưu nháp); skill / skill_publish / skill_access / key_issue / "
+                    "dấu (chỉ lưu nháp), leave_comp = phiếu xin nghỉ bù; skill / skill_publish / skill_access / key_issue / "
                     "key_revoke = quản trị Kho skill và khóa AI, lấy `kind` từ kết quả draft_*; update / delete = sửa / xóa phiếu, "
                     "`draft` là đúng đối tượng `proposal` do propose_document_update / propose_document_delete trả về; approval = "
                     "duyệt / từ chối MỘT phiếu, `draft` là `proposal` của propose_approval). "
                     "CHỈ gọi sau khi người "
-                    "dùng đã xem bản nháp và đồng ý. submit=true thì gửi duyệt ngay sau khi tạo (leave/survey/purchase)."),
+                    "dùng đã xem bản nháp và đồng ý. submit=true thì gửi duyệt ngay sau khi tạo (leave/survey/purchase/"
+                    "vehicle_booking/leave_comp)."),
     "inputSchema": {"type": "object", "properties": {
         "kind": {"type": "string", "enum": ["leave", "survey", "purchase", "ticket", "vehicle_booking", "seal_request",
-                                            "update", "delete", "approval",
+                                            "leave_comp", "update", "delete", "approval",
                                             *mcp_admin.KIND_TOOL]},
         "draft": {"type": "object", "description": "Đúng đối tượng draft mà tool draft_* trả về."},
         "submit": {"type": "boolean", "default": False}}, "required": ["kind", "draft"]},
@@ -271,6 +272,11 @@ def _offset(args: dict) -> int:
         return 0
 
 
+#  kind của confirm_draft → tool soạn nháp của nó; nhóm G7 chứa tool đó đang tắt thì không cho tạo qua cổng.
+_GROUP_GATED_KINDS = {"vehicle_booking": "draft_vehicle_booking", "seal_request": "draft_seal_request",
+                      "leave_comp": "draft_leave_comp_request"}
+
+
 def _confirm_draft(db: Session, user, args: dict) -> dict:
     kind = str(args.get("kind") or "")
     draft = args.get("draft") if isinstance(args.get("draft"), dict) else None
@@ -278,10 +284,10 @@ def _confirm_draft(db: Session, user, args: dict) -> dict:
         return mcp_admin.confirm(db, user, mcp_keys.SCOPE_WRITE, kind, draft)
     if kind in PROPOSAL_KINDS:
         return _confirm_proposal(db, user, kind, draft)
-    if kind in ("vehicle_booking", "seal_request"):         # kh-AI2-6: nhóm "office_write" tắt thì chặn cả bước tạo
+    if kind in _GROUP_GATED_KINDS:      # kh-AI2-6 / duoc-CR-715 C: nhóm của tool soạn nháp tắt thì chặn cả bước tạo
         from . import mcp_settings
 
-        if blocked := mcp_settings.tool_blocked(db, f"draft_{kind}"):
+        if blocked := mcp_settings.tool_blocked(db, _GROUP_GATED_KINDS[kind]):
             return {"denied": True, "error": blocked}
     if kind not in draft_create.LABELS or draft is None:
         return {"error": "Cần kind (leave/survey/purchase/ticket) và draft là đối tượng do tool draft_* trả về."}
@@ -325,6 +331,9 @@ def _confirm_proposal(db: Session, user, kind: str, proposal: dict | None) -> di
     try:
         out = erp.confirm_proposal(db, user, token, source=int(_change_source_mcp()))
     except HTTPException as e:
+        #  Cuộn lại trước khi trả lỗi: `handle` còn ghi nhật ký cuộc gọi rồi commit — không để nó ghi luôn phần
+        #  việc dở dang của lượt duyệt vừa bị chặn (giống bot Telegram ở agent_hub/service.py).
+        db.rollback()
         return {"error": f"{e.detail} Chưa ghi gì."}
     return {"ok": True, **(out or {})}
 
@@ -472,6 +481,7 @@ def handle(db: Session, user, key, msg: dict, trace: dict | None = None) -> dict
                     result = call_tool(db, user, int(key.scope or 0), name, args)
             except Exception as e:  # noqa: BLE001 — lỗi tool không được thành 500 của cổng
                 log.exception("agent_hub mcp: tool %s hỏng", name)
+                db.rollback()      # việc dở dang của công cụ không được đi theo lần commit ghi nhật ký
                 result = {"error": f"Lỗi khi chạy công cụ: {e}"}
             if name in ROW_BUDGET_TOOLS and isinstance(result, dict):
                 mcp_log.spend_rows(key.id, len(result.get("items") or []) + (1 if result.get("item") else 0))

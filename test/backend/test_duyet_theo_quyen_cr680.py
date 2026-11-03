@@ -218,7 +218,7 @@ def test_review_c2_doi_sang_loai_chua_mo_cach_9_thi_chan(db):
 def test_options_bay_lua_chon_thu_chin_kem_danh_sach_loai_dung_duoc():
     data = options(user=None).body.decode()
     assert "Người có quyền duyệt (theo phân quyền)" in data
-    assert '"permission_approver_entities":["vehicle_booking","leave_request","room_booking"]' in data
+    assert '"permission_approver_entities":["vehicle_booking","leave_request","leave_comp_request","room_booking"]' in data
 
 
 def test_review_m3_duong_danh_sach_khong_cho_do_khoa_khac(db):

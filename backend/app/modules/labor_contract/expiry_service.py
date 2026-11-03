@@ -31,6 +31,7 @@ from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.core import app_settings
 from app.core.auth import get_perm_profile
 from app.core.labor_contract_codes import LaborContractStatus as S
 from app.core.scoping import apply_scope, not_deleted_cond
@@ -46,6 +47,24 @@ WARN_DAYS = 30
 DANGER_DAYS = 15
 #: Trần cửa sổ của đường API — người gọi xin dài hơn thì cắt về đây.
 MAX_WINDOW_DAYS = 180
+
+
+def warn_days() -> int:
+    """Số ngày báo trước HIỆU LỰC — Cài đặt nhân sự (duoc-CR-713), kẹp vào [DANGER_DAYS, MAX_WINDOW_DAYS]."""
+    try:
+        value = int(app_settings.get("labor_contract_warn_days") or WARN_DAYS)
+    except (TypeError, ValueError):
+        value = WARN_DAYS
+    return max(DANGER_DAYS, min(value, MAX_WINDOW_DAYS))
+
+
+def danger_days() -> int:
+    """Mức đỏ HIỆU LỰC — không dưới 15 (Điều 45 BLLĐ 2019), không vượt số ngày báo."""
+    try:
+        value = int(app_settings.get("labor_contract_danger_days") or DANGER_DAYS)
+    except (TypeError, ValueError):
+        value = DANGER_DAYS
+    return max(DANGER_DAYS, min(value, warn_days()))
 
 
 @dataclass(frozen=True)
@@ -78,7 +97,7 @@ class ExpiringContract:
 
 
 def level_of(days_left: int) -> str:
-    return "danger" if days_left <= DANGER_DAYS else "warn"
+    return "danger" if days_left <= danger_days() else "warn"
 
 
 def _has_successor(rows, start_date: date, *, overdue: bool) -> bool:
@@ -92,11 +111,11 @@ def _has_successor(rows, start_date: date, *, overdue: bool) -> bool:
 
 
 def find_expiring(db: Session, today: date, *, user=None, profile: dict | None = None,
-                  within_days: int = WARN_DAYS) -> list[ExpiringContract]:
+                  within_days: int | None = None) -> list[ExpiringContract]:
     """HĐLĐ cần báo, xếp hết hạn sớm nhất lên đầu. `user=None` (worker / kiểm) = không lọc phạm vi.
 
     Có `user` thì LUÔN lọc phạm vi — thiếu `profile` thì tự dựng, không lặng lẽ trả hết."""
-    within_days = max(0, min(int(within_days), MAX_WINDOW_DAYS))
+    within_days = max(0, min(int(warn_days() if within_days is None else within_days), MAX_WINDOW_DAYS))
     query = db.query(LaborContract).filter(
         LaborContract.status == int(S.SIGNED),
         LaborContract.end_date.isnot(None),

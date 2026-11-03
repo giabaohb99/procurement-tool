@@ -1,3 +1,4 @@
+import type { AxiosError } from 'axios'
 import { useMemo, useState } from 'react'
 
 import { useAuthStore } from '@/core/auth/auth-store'
@@ -35,7 +36,10 @@ function readSavedLayout(): 'tree' | 'columns' {
 export function OrgChartPage() {
   const { can } = usePermission()
   const allowed = can('employee', 'read')
-  const { data, isPending, isError, refetch } = useOrgChart({ enabled: allowed })
+  const { data, isPending, isError, error, refetch } = useOrgChart({ enabled: allowed })
+  //  duoc-CR-713: Cài đặt nhân sự TẮT «Sơ đồ tổ chức cho mọi nhân viên» → backend trả 403 cho người không xem được toàn
+  //  bộ hồ sơ. Nói đúng lý do, đừng để câu «không tải được» làm người ta bấm Tải lại mãi.
+  const closedBySetting = (error as AxiosError | null)?.response?.status === 403
   const meId = useAuthStore((state) => state.user?.employee_id ?? 0)
   const isMobile = useIsMobile()
   const [chosenLayout, setChosenLayout] = useState(readSavedLayout)
@@ -108,6 +112,12 @@ export function OrgChartPage() {
             <Skeleton className="h-14 w-52" />
           </div>
         </div>
+      ) : closedBySetting ? (
+        <ErrorState
+          code="403"
+          title="Sơ đồ tổ chức chưa mở cho bạn"
+          description="Công ty đang chỉ mở sơ đồ tổ chức cho người xem được toàn bộ hồ sơ nhân sự. Liên hệ phòng Nhân sự nếu bạn cần xem."
+        />
       ) : isError || !data || !forest ? (
         <ErrorState title="Không tải được sơ đồ tổ chức" description="Thử tải lại; nếu vẫn lỗi hãy báo quản trị.">
           <button type="button" className="text-primary underline" onClick={() => void refetch()}>

@@ -90,6 +90,17 @@ REGISTRY = {
     "backup_keep": ("int", "BACKUP_KEEP"),
     #  duoc-CR-641: công tắc thu sự kiện giao diện cho hồ sơ cách làm việc (mặc định BẬT).
     "usage_tracking_enabled": ("bool", "USAGE_TRACKING_ENABLED"),
+    #  duoc-CR-713 — Cài đặt nhân sự, tab Nghỉ phép. Đọc qua `leave/leave_policy.py` và
+    #  `approval/self_approval_policy.py`, không đọc thẳng ở chỗ khác.
+    "leave_restrict_backdated": ("bool", "LEAVE_RESTRICT_BACKDATED"),
+    "leave_backdated_roles": ("str", "LEAVE_BACKDATED_ROLES"),
+    "leave_block_exempt_roles": ("str", "LEAVE_BLOCK_EXEMPT_ROLES"),
+    "leave_prevent_self_approval": ("bool", "LEAVE_PREVENT_SELF_APPROVAL"),
+    "employee_code_prefix": ("str", "EMPLOYEE_CODE_PREFIX"),
+    "org_chart_visible_to_all": ("bool", "ORG_CHART_VISIBLE_TO_ALL"),
+    "employee_anniversary_years": ("str", "EMPLOYEE_ANNIVERSARY_YEARS"),
+    "labor_contract_warn_days": ("int", "LABOR_CONTRACT_WARN_DAYS"),
+    "labor_contract_danger_days": ("int", "LABOR_CONTRACT_DANGER_DAYS"),
 }
 
 #  BỐN khóa AI CỐ Ý ở lại `.env`, đừng dời theo cho đủ bộ:

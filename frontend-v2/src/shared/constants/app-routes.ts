@@ -515,6 +515,8 @@ export const appRoutes = {
     companyDetail: (id: number | string) => `/hr/companies/${id}`,
     /** Sơ đồ tổ chức tự vẽ từ dữ liệu (duoc-CR-669) — pháp nhân › phòng ban › người. */
     orgChart: '/hr/org-chart',
+    /** Cài đặt nhân sự (duoc-CR-713) — gác `setting.read`, sửa `setting.write`. */
+    settings: '/hr/settings',
     /** Danh mục Chức vụ — nguồn của ô chọn "Vị trí / Chức vụ" trên hồ sơ. */
     jobPositions: '/hr/job-positions',
     /** Thêm chức vụ mở TRANG RIÊNG, không phải hộp thoại — xem `CrudConfig.createRoute`. */
@@ -542,6 +544,10 @@ export const appRoutes = {
     leaveRequestNew: '/hr/leave-requests/new',
     leaveRequestDetail: (id: number | string) => `/hr/leave-requests/${id}`,
     leaveRequestPrint: (id: number | string) => `/print/leave-request/${id}`,
+    /** Phiếu xin nghỉ bù (duoc-CR-715 phase C) — đi làm ngày nghỉ, xin cộng ngày vào quỹ phép. */
+    leaveCompRequests: '/hr/leave-comp-requests',
+    leaveCompRequestNew: '/hr/leave-comp-requests/new',
+    leaveCompRequestDetail: (id: number | string) => `/hr/leave-comp-requests/${id}`,
     /** Lịch nghỉ — "tuần tới ai nghỉ". */
     leaveCalendar: '/hr/leave-calendar',
     /** Quỹ phép năm: cấp phát, chỉnh tay. */
@@ -554,6 +560,10 @@ export const appRoutes = {
     holidays: '/hr/holidays',
     holidayNew: '/hr/holidays/new',
     holidayDetail: (id: number | string) => `/hr/holidays/${id}`,
+    /** Ngày cấm nghỉ (duoc-CR-715): khoảng ngày công ty không muốn ai nghỉ. */
+    leaveBlocks: '/hr/leave-blocks',
+    leaveBlockNew: '/hr/leave-blocks/new',
+    leaveBlockDetail: (id: number | string) => `/hr/leave-blocks/${id}`,
     /** Lịch làm việc: mẫu lịch tuần (trang riêng vì form dài) và việc gán lịch theo cấp. */
     workSchedules: '/hr/work-schedules',
     workScheduleNew: '/hr/work-schedules/new',

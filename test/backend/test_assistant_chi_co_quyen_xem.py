@@ -199,6 +199,8 @@ TOOL_GHI = {
     "draft_seal_request": ("seal_request", "create", {"purpose": "Đóng dấu hợp đồng"}),
     #  kh-AI2-7 — chỉ đề xuất; người không được giao duyệt (kể cả có quyền đọc) nhận denied, duyệt thật khi xác nhận token.
     "propose_approval": ("leave_request", "approve", {"entity": "leave_request", "id": 1, "action": "approve"}),
+    #  duoc-CR-715 C — chỉ soạn nháp; tạo thật qua draft_create bằng comp_request_service.create (kiểm lại quyền lập hộ).
+    "draft_leave_comp_request": ("leave_comp_request", "create", {"work_date": "2026-10-25", "reason": "Trực kho"}),
 }
 
 #  Tool GHI ra NGOÀI ERP (ai-CR-064): ghi vào tài khoản Google của CHÍNH người hỏi qua

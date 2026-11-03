@@ -333,8 +333,11 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_KHONG_CAN, "L110 `LeaveType` — PUBLIC, chỉ kiểm tồn tại"),
         (OK_KHONG_CAN, "L144 `LeaveTypeSeniority` — bậc thâm niên của `leave_type` PUBLIC"),
         (OK_KHONG_CAN, "L162 `LeaveTypeSeniority` (xóa) — cùng lý do L144, PUBLIC"),
+        (OK_KHONG_CAN, "L171 `LeaveType` — PUBLIC, chỉ kiểm tồn tại trước khi liệt kê hạn mức theo nhóm (duoc-CR-715 A)"),
+        (OK_KHONG_CAN, "L183 `LeaveType` — PUBLIC, lấy loại nghỉ để thay danh sách hạn mức theo nhóm (duoc-CR-715 A)"),
     ],
     "leave/request_controller.py": [
+        (OK_KHONG_CAN, "L60 `Employee` người nghỉ của chính tờ đơn đã qua `_get_or_404` — dò ngày cấm nghỉ (duoc-CR-715 B)"),
         (OK_KHONG_CAN, "L5 — dòng DOCSTRING nhắc tên `db.get()`, không phải một lời gọi"),
         (OK_DA_KIEM, "L122 `_readable_by_approver` — ngay trên là `approval_bridge."
                      "can_read_request` (nới đúng lúc có việc TASK_PENDING)"),
@@ -351,6 +354,11 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
                        "rằng `resolve_leave_taker` là `db.get(Employee, ...)` trần; "
                        "chốt thật là `get_scoped(..., \"leave_balance\")` ngay dưới "
                        "(vá 05/09/2026, ca A6d cụm 06)"),
+    ],
+    "leave/comp_request_controller.py": [
+        (OK_KHONG_CAN, "L47 `Department` trong `_dump_one` — tên phòng, danh mục PUBLIC; phiếu đã qua `_get_or_404`"),
+        (OK_DA_KIEM, "L55 `_get_or_404` — ngay trên là `get_scoped(..., action)`; chỉ nới cho `read` khi "
+                     "`comp_approval_bridge.can_read_request` đúng (có việc duyệt treo) — duoc-CR-715 C"),
     ],
     # ── Phòng họp ────────────────────────────────────────────────────────────
     "meeting_room/controller.py": [
@@ -512,7 +520,9 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #    (cửa duyệt, chỉ khi `is_picked_legacy_approver` đúng).
     #  99 → 100 (duoc-CR-683, khai muộn ở bao-CR-709): `leave/request_controller.py` +1 — `estimate_periods` tra
     #    loại nghỉ (danh mục PUBLIC) để biết có trừ ngày lễ không; người nghỉ đi qua `resolve_leave_taker`.
-    assert sum(that.values()) == 100, f"tổng phải là 100, đang là {sum(that.values())}"
+    #  100 → 105 (duoc-CR-715): `leave/catalog_controller.py` +2, `leave/request_controller.py` +1 (dò ngày cấm nghỉ)
+    #    và `leave/comp_request_controller.py` +2 (phiếu nghỉ bù).
+    assert sum(that.values()) == 105, f"tổng phải là 105, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():

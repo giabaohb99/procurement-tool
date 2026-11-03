@@ -38,6 +38,7 @@ import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
 import { TAB_LIST_UNDERLINE_ALWAYS, TAB_TRIGGER_UNDERLINE_ALWAYS } from '@/shared/ui/tab-underline'
 import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 import { cn } from '@/shared/utils/cn'
+import { ERP_FILLED_FIELDS, ERP_FLATTEN_CARDS } from '@/shared/ui/erp-flat-styles'
 import { EmployeeAccountCard } from '../components/employee-account-card'
 import { EmployeePendingChangeRequestBanner } from '../components/employee-pending-change-request-banner'
 import { EmployeePendingWorkConfirmDialog } from '../components/employee-pending-work-confirm-dialog'
@@ -85,37 +86,6 @@ const FORM_SECTION_STYLE: FormSectionContextValue = {
   storagePrefix: 'hr.employee-detail',
   hints: 'icon',
 }
-
-/**
- * Làm PHẲNG mọi `Card` trong cột nội dung (duoc-CR-708): các tab cũ vẫn dựng bằng thẻ,
- * mà khung ERPNext không có thẻ lồng trong mặt phẳng. Chỉ gỡ viền / bóng / nền / đệm
- * NGOÀI của thẻ; nội dung giữ nguyên. Hộp thoại dựng qua portal nên không bị ảnh hưởng.
- */
-const FLATTEN_CARDS = cn(
-  '[&_[data-slot=card]]:gap-4 [&_[data-slot=card]]:rounded-none [&_[data-slot=card]]:border-0',
-  '[&_[data-slot=card]]:bg-transparent [&_[data-slot=card]]:p-0 [&_[data-slot=card]]:shadow-none',
-  '[&_[data-slot=card-content]]:px-0 [&_[data-slot=card-header]]:px-0',
-)
-
-/**
- * Ô nhập NỀN XÁM, không viền — như form ERPNext (duoc-CR-708). Chỉ áp trong màn này:
- * ô nhập thường, ô chữ dài, ô chọn, và nút mở lịch / hộp chọn nằm trong một ô biểu mẫu.
- * Ô bị khóa vẫn mờ đi như cũ nên vẫn phân biệt được với ô sửa được.
- */
-const FILLED_FIELDS = cn(
-  //  Ô chọn nằm trong `FormControl` (Ô mã số, chọn người…) là `<button data-slot="form-control">`.
-  //  Trừ checkbox / switch của Radix — chúng cũng là `<button>`, tô xám bỏ viền là biến mất.
-  '[&_button[data-slot=form-control]:not([role=checkbox]):not([role=switch])]:border-transparent [&_button[data-slot=form-control]:not([role=checkbox]):not([role=switch])]:bg-muted [&_button[data-slot=form-control]:not([role=checkbox]):not([role=switch])]:shadow-none',
-  //  Ô nằm trong `FormControl` mang `data-slot="form-control"` (Slot đè `data-slot="input"`),
-  //  nên phải bắt thêm theo thẻ. Chỉ `input`/`textarea` — ô đánh dấu (checkbox) cũng có thể
-  //  nằm trong `FormControl`, tô nền xám + bỏ viền là nó biến mất.
-  '[&_input[data-slot=form-control]:not([type=checkbox])]:border-transparent [&_input[data-slot=form-control]:not([type=checkbox])]:bg-muted [&_input[data-slot=form-control]:not([type=checkbox])]:shadow-none',
-  '[&_textarea[data-slot=form-control]]:border-transparent [&_textarea[data-slot=form-control]]:bg-muted [&_textarea[data-slot=form-control]]:shadow-none',
-  '[&_[data-slot=input]]:border-transparent [&_[data-slot=input]]:bg-muted [&_[data-slot=input]]:shadow-none',
-  '[&_[data-slot=textarea]]:border-transparent [&_[data-slot=textarea]]:bg-muted [&_[data-slot=textarea]]:shadow-none',
-  '[&_[data-slot=select-trigger]]:border-transparent [&_[data-slot=select-trigger]]:bg-muted [&_[data-slot=select-trigger]]:shadow-none',
-  '[&_[data-slot=form-item]_button[aria-haspopup=dialog]]:border-transparent [&_[data-slot=form-item]_button[aria-haspopup=dialog]]:bg-muted [&_[data-slot=form-item]_button[aria-haspopup=dialog]]:shadow-none',
-)
 
 /** Lần lưu đang chờ xác nhận nghỉ việc — kèm câu trả lời giữ phòng cũ (bao-CR-709) nếu đã hỏi. */
 interface PendingSave {
@@ -472,7 +442,7 @@ export function EmployeeDetailPage() {
                 {/*  Bật cho CẢ cột nội dung: mọi nhóm phẳng + gập / mở (nhớ trạng thái), chú thích
                      dưới ô thu vào biểu tượng (i) — anh Được chốt 02/11/2026. */}
                 <FormSectionProvider value={FORM_SECTION_STYLE}>
-                  <div className={cn('min-w-0', FLATTEN_CARDS, FILLED_FIELDS)}>
+                  <div className={cn('min-w-0', ERP_FLATTEN_CARDS, ERP_FILLED_FIELDS)}>
                     <TabsContent value="general" className="mt-0">
                       <EmployeeTabGeneral
                         employee={employee}

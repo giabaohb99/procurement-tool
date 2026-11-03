@@ -29,6 +29,7 @@ from .meeting_tool import MEETING_SPECS
 from .work_tool import DRAFT_WORK_PLAN_SPEC, DRAFT_WORK_TASK_SPEC, MY_WORK_TASKS_SPEC
 from .brief_tool import MANAGE_BRIEFS_SPEC
 from .leave_tool import MY_LEAVE_SUMMARY_SPEC
+from .leave_comp_tool import DRAFT_LEAVE_COMP_REQUEST_SPEC
 from .payable_tool import (DRAFT_PAYMENT_REQUEST_SPEC, PAYABLE_LOOKUP_SPEC,
                            PAYMENT_REQUEST_READ_SPEC)
 from .procurement_doc_tool import (MY_PROCUREMENT_REQUESTS_SPEC,
@@ -96,6 +97,7 @@ def _active_specs() -> list:
                            OFFICE_READ_SPEC,      # kh-AI2-3: đặt xe, duyệt dấu, tồn kho, diễn đàn — cùng bộ đọc
                            *OFFICE_DRAFT_SPECS,   # kh-AI2-6: soạn nháp phiếu đặt xe / duyệt dấu
                            PROPOSE_APPROVAL_SPEC, # kh-AI2-7: đề xuất duyệt / từ chối một phiếu (đặt xe, phòng họp, nghỉ phép)
+                           DRAFT_LEAVE_COMP_REQUEST_SPEC,  # duoc-CR-715 C: soạn nháp phiếu xin nghỉ bù
                            *SKILL_SPECS,          # ai-CR-220: đọc Kho skill (cẩm nang công ty) thay gói tri thức (K7)
                            *CAPABILITY_SPECS,     # kh-AI1-2: năng lực đội + thống kê loại việc (doc/erp/tai-lieu-ai/22 §4)
                            BACKGROUND_JOBS_SPEC]  # bao-CR-703: sổ việc chạy ngầm (chỉ quản trị)

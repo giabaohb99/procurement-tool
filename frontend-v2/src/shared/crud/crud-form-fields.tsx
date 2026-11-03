@@ -1,5 +1,7 @@
 import type { Control, FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form'
 
+import { FormSection, useFormSectionContext } from '@/shared/ui/form-section'
+import { cn } from '@/shared/utils/cn'
 import { CrudField } from './crud-field'
 import { resolveFormFields } from './resolve-form-fields'
 import type { CrudFormField, CrudFormFieldsSpec, CrudRecord } from './types'
@@ -61,6 +63,10 @@ export function CrudFormFields({
   //  Theo dõi TOÀN BỘ form: `showWhen` là hàm của người khai config, không khai
   //  trước nó đọc ô nào. Form danh mục cỡ chục ô nên chi phí vẽ lại không đáng kể.
   const values = watch()
+  //  Vùng phẳng kiểu ERPNext (`CrudConfig.detailLayout = 'flat'`, duoc-CR-716): nhóm thành dải ngăn bằng đường kẻ,
+  //  gập / mở được; lưới lên 3 cột khi chỗ chứa đủ rộng. Ngoài vùng đó (hộp thoại, màn kiểu thẻ) giữ khuôn thẻ cũ.
+  const sectionContext = useFormSectionContext()
+  const flat = sectionContext.variant === 'flat'
   const resolved = resolveFormFields(fields, values)
   const visible = resolved.filter((field) => !field.showWhen || field.showWhen(values))
 
@@ -89,7 +95,12 @@ export function CrudFormFields({
     const switchesFirst = group[0]?.type === 'switch'
 
     const inputGrid = inputs.length > 0 && (
-      <div className="grid grid-cols-1 gap-4 @md:grid-cols-2">
+      <div
+        className={cn(
+          'grid grid-cols-1 gap-4 @md:grid-cols-2',
+          flat && 'gap-x-6 gap-y-3 @4xl:grid-cols-3',
+        )}
+      >
         {inputs.map((field) => (
           <CrudField
             key={field.name}
@@ -104,7 +115,12 @@ export function CrudFormFields({
     )
 
     const switchGrid = switches.length > 0 && (
-      <div className="grid grid-cols-1 gap-2.5 @2xl:grid-cols-2">
+      <div
+        className={cn(
+          'grid grid-cols-1 gap-2.5 @2xl:grid-cols-2',
+          flat && 'gap-x-6 gap-y-1 @md:grid-cols-2 @4xl:grid-cols-3',
+        )}
+      >
         {switches.map((field) => (
           <CrudField
             key={field.name}
@@ -132,6 +148,32 @@ export function CrudFormFields({
   //  Dùng `sm:` (ngưỡng theo màn hình) thì mở hộp thoại trên màn 24" vẫn ra hai
   //  cột, mỗi cột hơn 200 điểm ảnh: chú thích của một công tắc xuống ba dòng và
   //  hàng đó chật cứng.
+  if (flat) {
+    return (
+      <div className="@container">
+        {groups.map(({ section, fields: group }, index) =>
+          section ? (
+            <FormSection key={section} title={section}>
+              <div className="col-span-full space-y-4">
+                {sectionHints?.[section] && (
+                  <p className="-mt-2 text-xs text-muted-foreground">{sectionHints[section]}</p>
+                )}
+                {renderGroup(group)}
+              </div>
+            </FormSection>
+          ) : (
+            <div
+              key={`plain-${index}`}
+              className={cn('space-y-4 border-b py-4', sectionContext.inset && 'px-4 sm:px-6')}
+            >
+              {renderGroup(group)}
+            </div>
+          ),
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="@container space-y-5">
       {groups.map(({ section, fields: group }, index) => {
@@ -157,9 +199,7 @@ export function CrudFormFields({
             <header className="border-b bg-muted/30 px-3 py-2.5 sm:px-4">
               <h3 className="text-sm font-semibold">{section}</h3>
               {sectionHints?.[section] && (
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {sectionHints[section]}
-                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{sectionHints[section]}</p>
               )}
             </header>
             <div className="space-y-4 px-3 py-3.5 sm:px-4 sm:py-4">{renderGroup(group)}</div>
