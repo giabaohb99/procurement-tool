@@ -121,13 +121,22 @@ vi), không nới luật canh cho xanh.
 Mã nguồn: test/backend/test_agent_hub.py, test_agent_hub_cong_mcp_cr207.py, test_assistant_ai_duyet_phieu_kh_ai2_7.py, test_bo_ma_hanh_dong_cr358.py, test_vong_doi_phieu_cr656_dung_bang.py
 
 ## bao-CR-712-to-chuc-lai-tai-lieu | Tổ chức lại tài liệu dự án theo khuôn phân hệ
-- status: dang-lam
+- status: xong
 - date: 2026-11-03
 - list: Kế hoạch hệ agent
 - tag: Agent 4
-**Bối cảnh:** tài liệu nằm rải ở 19 thư mục cấp `doc/`, kế hoạch ở `plans/` gốc, tài liệu V1 đứng lẫn V2. Đề xuất 1.2 (`de-xuat-to-chuc-lai-tai-lieu.md`) đã chốt: mỗi phân hệ một thư mục chứa đủ chức năng / kỹ thuật / nghiên cứu / kế hoạch / kiểm thử / dữ liệu, phần chung ở cấp `doc/`, V1 vào `doc/v1/`.
+**Bối cảnh:** tài liệu nằm rải ở 19 thư mục cấp `doc/`, kế hoạch ở `plans/` gốc, tài liệu V1 đứng lẫn V2. Đề xuất 1.2 đã chốt: mỗi phân hệ một thư mục chứa đủ chức năng, kỹ thuật, nghiên cứu, kế hoạch, kiểm thử, dữ liệu; phần chung ở cấp `doc/`; V1 vào `doc/v1/`.
 
-**Đang làm:** P1 — luật đặt tên và quy ước chung một tệp, luật viết tài liệu, mục lục quy định, đổi chỗ ghi kế hoạch, bài kiểm tài liệu chế độ chỉ báo. Sau đó P2–P4 dời tệp theo bảng (HRM để người phụ trách HRM tự chuẩn hóa).
+**Đã làm**
+- Gom luật đặt tên và quy ước viết mã về một tệp luôn nạp; thêm luật viết tài liệu và mục lục mọi luật, skill, agent; kế hoạch của agent từ nay ghi trong thư mục `plans/` của phân hệ.
+- Dời tài liệu chung, tài liệu V1 và tài liệu từng phân hệ bằng `git mv`, mỗi nhóm một commit, sửa mọi chỗ trỏ tới trong cùng commit (kể cả đường đọc thật của hai script và chỗ bot đọc tài liệu).
+- 18 phân hệ có đủ bốn tài liệu bắt buộc ở trạng thái Nháp: trang giới thiệu, yêu cầu chức năng, yêu cầu phi chức năng, danh sách đường API dựng tự động từ mã.
+- Dời các kế hoạch không thuộc nhân sự về phân hệ; phần nhân sự để người phụ trách nhân sự tự chuẩn hóa.
+- Bài kiểm tài liệu (chế độ chỉ báo): lỗi giảm từ 118 xuống 79, còn lại chủ yếu ở sổ thay đổi cũ, tài liệu V1 và nhân sự.
+
+**Còn lại:** người phụ trách nhân sự dời phần nhân sự; sửa bộ nhớ agent trỏ đường cũ; P5 đổi bài kiểm sang chế độ chặn.
+
+Mã nguồn: `.claude/rules/chung-*.md`, `backend/scripts/kiem_tai_lieu.py`, `doc/plans/261103-to-chuc-lai-tai-lieu-bao-cr-712/bao-cao.md`.
 
 ---
 
