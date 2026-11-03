@@ -234,8 +234,8 @@ nên mọi nơi gọi `service.<tên>` (controller, serializer, trợ lý AI, c�
 
 ### 6.3. Đo sau đợt R3b — tách hàm tiền ĐMH (bao-CR-719, 03/11/2026)
 
-Đo trên nhánh `erp-v2`, trước = `e9faa545` (đã có bài kiểm chụp kết quả, mã chưa tách), sau = commit tách của
-bao-CR-719. Không đổi hành vi: không đổi một đồng nào (giá vốn / chi phí phân bổ từng dòng, giá nhập tồn kho, công nợ),
+Đo trên nhánh `erp-v2`, trước = `e9faa545` (đã có bài kiểm chụp kết quả, mã chưa tách), sau = `6f5e700a`
+(commit tách của bao-CR-719). Không đổi hành vi: không đổi một đồng nào (giá vốn / chi phí phân bổ từng dòng, giá nhập tồn kho, công nợ),
 thứ tự ghi, dòng nhật ký, câu lỗi, thứ tự khóa dữ liệu trả và số câu truy vấn giữ nguyên; mọi chú thích ⚠️ / luật CR đi
 theo mã. Chỉ đổi mã phía máy chủ, không đổi đường API.
 

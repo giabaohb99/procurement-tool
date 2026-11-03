@@ -115,17 +115,34 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-719-tach-ham-tien-dmh | Tách các hàm tính tiền chi phí thu mua và công nợ của đơn mua hàng, đợt R3b
-- status: dang-lam
+- status: xong
 - date: 2026-11-03
 - list: Sản xuất - Thu mua
 - tag: Nền tảng
-**Bối cảnh:** sau đợt R3 (bao-CR-715), đơn mua hàng còn bốn hàm rất rối đụng tới tiền: lưu bảng chi phí thu mua, tính
-lại phiếu nhập kho ngầm cùng tồn kho và công nợ, chọn cơ sở phân bổ chi phí, và phân bổ chi phí về dòng hàng. Đây là đợt
-cuối của lộ trình dọn trước lần đẩy prod chung, được giao ngày 03/11.
+**Bối cảnh:** sau đợt R3 (bao-CR-715), ĐMH (đơn mua hàng) còn bốn hàm rất rối đụng tới tiền: lưu bảng chi phí thu mua,
+tính lại phiếu nhập kho ngầm cùng tồn kho và công nợ, chọn cơ sở phân bổ chi phí, và phân bổ chi phí về dòng hàng. Đây là
+đợt cuối của lộ trình dọn trước lần đẩy prod chung, được giao ngày 03/11.
 
-**Việc:** viết bài kiểm chụp kết quả có số tiền từng dòng, công nợ sinh ra, dòng nhật ký và số câu truy vấn, cho chạy xanh
-trên mã cũ; sau đó tách các hàm theo ba bước kiểm, tính, ghi mà không đổi một đồng nào. Chỉ đổi mã phía máy chủ, không đổi
-màn hình hay đường API.
+**Đã làm**
+- Viết **bài kiểm chụp kết quả** trước khi sửa mã và cho chạy xanh trên mã cũ, gồm năm kịch bản: ba giai đoạn Dự toán,
+  Tạm tính, Quyết toán với nhiều loại tiền và tỷ giá; chốt từng dòng, mở lại, dòng đã chi không lùi; khi nào sinh và khi
+  nào không sinh công nợ; phân bổ chi phí theo mọi cách chia kèm làm tròn; tính lại khi nhận hàng. Bài kiểm so số tiền
+  từng dòng, công nợ sinh ra, dòng nhật ký, câu báo lỗi, thứ tự trường dữ liệu trả về và số câu truy vấn.
+- Tách tám hàm theo ba bước kiểm, tính, ghi: lưu bảng chi phí (dời sang một tệp riêng), tính lại khi nhận hàng, chọn cơ
+  sở phân bổ, phân bổ chi phí, đồng bộ công nợ chi phí, quyết toán nhiều dòng, và hai hàm dựng dữ liệu chi phí cho màn
+  hình. Không đổi một đồng nào, không đổi thứ tự ghi hay câu báo lỗi.
+
+**Kết quả:** số hàm rất rối (hạng D đến F) của ĐMH giảm từ 12 xuống 4, bốn hàm còn lại không đụng tiền; độ phức tạp trung
+bình giảm từ 6,02 xuống 5,15. Bài kiểm chụp kết quả xanh cả trước và sau khi tách; chạy 167 tệp bài kiểm liên quan được
+3.751 bài đạt, 2 bài đỏ có sẵn trên nhánh chung và không do việc này (một bài khai độ dài ô chữ của tra cứu hải quan và
+diễn đàn, một bài đếm lần đọc thẳng theo id ở tra cứu hải quan sau bao-CR-718). Mã đã lên nhánh erp-v2; chỉ đổi mã phía
+máy chủ, không đổi màn hình hay đường API.
+
+**Còn lại:** bốn hàm hạng D của ĐMH không đụng tiền (dựng dữ liệu chi tiết đơn, khóa sửa sau duyệt, chọn người phụ trách
+mặc định, xuất Excel) để đợt khác nếu cần.
+
+Mã nguồn: `backend/app/modules/purchase_order/` (`cost_save_service.py` mới, `cost_allocation_service.py`, `delivery_service.py`, `import_cost_service.py`, `serializer.py`, `service.py`, `edit_service.py`), `test/backend/test_chup_ket_qua_tien_dmh_cr719.py`, `test/backend/du_lieu_chup_tien_dmh_cr719.py`, `doc/tai-lieu-ky-thuat/van-hanh/danh-gia-chat-luong-backend.md` mục 6.3
+Commit: 916397f4 (đặt chỗ), e9faa545 (bài kiểm), 6f5e700a (tách)
 
 ---
 ## bao-CR-720-canh-bao-quyen-nhay-cam-vai-tro-nguoi-yeu-cau | Cảnh báo vàng khi vai trò người yêu cầu có quyền xem dữ liệu nhạy cảm thu mua
