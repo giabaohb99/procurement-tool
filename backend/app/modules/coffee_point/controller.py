@@ -2,7 +2,7 @@
 
 Gác hai trục như mọi module: `require(entity, action)` cho quyền hành động,
 `apply_scope(...)` bó phạm vi; đọc lẻ theo id qua `get_scoped` (không `db.get`).
-Bảng quyền: `doc/erp/diem-ca-phe/04-phan-quyen.md`.
+Bảng quyền: `doc/erp/diem-ca-phe/tai-lieu-ky-thuat/04-phan-quyen.md`.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.exc import IntegrityError

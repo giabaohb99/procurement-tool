@@ -1,4 +1,4 @@
-// bao-CR-470 — Tra cứu giá hải quan (bản cũ). Thiết kế: doc/erp/hai-quan/04-giao-dien.md.
+// bao-CR-470 — Tra cứu giá hải quan (bản cũ). Thiết kế: doc/erp/hai-quan/chuc-nang/11-giao-dien.md.
 //
 // MỘT màn hình, nhiều thẻ: Danh sách · Biểu đồ · Nhà nhập khẩu · So sánh · Pháp lý · Thuế ·
 // Thuốc BVTV · Lịch sử nạp · Cấu hình.

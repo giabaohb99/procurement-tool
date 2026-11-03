@@ -6,7 +6,7 @@
 ## Tài liệu cần sửa
 - `doc/tai-lieu-ky-thuat/change-log.md:44` — dòng `duoc-CR-629-...` (đã đặt chỗ): điền kết quả, trạng thái «Xong».
 - `doc/tai-lieu-ky-thuat/nhat-ky-task.md` — mục mới mã duy nhất (`duoc-CR-629`, lượt sau thêm hậu tố); câu tiếng Việt trọn vẹn, tên tệp/commit dồn xuống dòng `Mã nguồn:` / `Commit:` (luật 17/09/2026).
-- `doc/tai-lieu-chuc-nang/14-van-thu-van-ban.md` — §8 «Quyền truy cập theo từng văn bản»: thêm mục «Bản lưu trữ HĐLĐ» (ai xem, chỉ đọc, không chia sẻ/sao chép/clone/trích/ký, không có trong tìm toàn văn).
+- `doc/erp/van-thu/chuc-nang/10-van-thu-van-ban.md` — §8 «Quyền truy cập theo từng văn bản»: thêm mục «Bản lưu trữ HĐLĐ» (ai xem, chỉ đọc, không chia sẻ/sao chép/clone/trích/ký, không có trong tìm toàn văn).
 - `doc/erp/hrm/01-ho-so-nhan-su.md` — dòng bảng :152 + một đoạn ngắn «HĐLĐ → bản lưu trữ Văn bản» (ánh xạ trạng thái, gương tệp, script bù). Nếu tài liệu HĐLĐ riêng chưa có thì để ở đây, KHÔNG tạo tệp mới.
 - `.claude/rules/document-folders-search.md` — 3 gạch: (1) bản lưu trữ HĐLĐ nhận diện bằng `tab_labor_contract.document_id`, quyền đọc chỉ theo `labor_contract.read`; (2) `visible_condition` không còn trả `None`; (3) loại `HDLD` bị loại khỏi `tab_document_search`.
 - `.claude/rules/hr-employee-profile.md` (hoặc rule HĐLĐ nếu có) — 1 gạch: mọi đường ghi HĐ mới phải gọi `archive_sync`.

@@ -1,0 +1,271 @@
+# PHÂN HỆ CÔNG VIỆC — BẢNG DỮ LIỆU VÀ API
+
+**Bản:** 1.1 — 28/08/2026 · **CR:** CR-216 (bản 1.1: CR-217 — ghi chú mở rộng A-10 lên `tab_work_list`) · Đọc sau [`01-danh-sach-tinh-nang.md`](../chuc-nang/11-danh-sach-tinh-nang.md)
+
+14 bảng mới, tiền tố `tab_work_*`, module backend `app/modules/work/`. CHƯA viết code —
+đây là bản thiết kế để soát trước khi sinh migration.
+
+## 0. Bốn quyết định xuyên suốt (đọc trước khi soát từng bảng)
+
+1. **Người là `employee_id` (ID NHÂN SỰ), không phải ID tài khoản** — nhất quán với
+   `assignee_id`/`requester_id` trên các chứng từ hiện có. Hệ quả chấp nhận: tài khoản
+   không gắn nhân sự (admin kỹ thuật, `employee_id = 0`) không tham gia list / không được
+   giao việc — họ đi cửa quản trị (`04-phan-quyen.md` §4).
+2. **Ngày lưu chuỗi `"YYYY-MM-DD"`** (VARCHAR 10), so sánh từ vựng — khớp đúng cách
+   chuông cảnh báo và Việc cần làm đang so hạn (`promised_date`, `due_date` của
+   delivery/payable). Đổi kiểu DATE là lệch khuôn tích hợp F-02/F-03.
+3. **Trạng thái / vai trò / độ ưu tiên là `SMALLINT` + `IntEnum`** (luật R2/QĐ-11), khai ở
+   `backend/app/core/status_catalog.py`, đăng qua `app/core/code_sets.py`, FE lấy từ
+   `gen_status_ts.py` — không hand-write bộ trạng thái nào ở TypeScript.
+4. **Mọi bảng có `company_id`**; model đăng vào `app/core/all_models.py` kẻo
+   autogenerate bỏ sót. Nhật ký hoạt động KHÔNG có bảng riêng — dùng `core/audit.py`
+   ghi vào `tab_audit` với entity `work_task`, FE hiện bằng `AuditTimeline` sẵn có.
+
+## 1. Bộ IntEnum
+
+| Enum | Giá trị | Ghi chú |
+|---|---|---|
+| `WorkTaskStatus` | `1 OPEN` · `2 DONE` · `3 CANCELLED` | Trạng thái HỆ THỐNG của task — độc lập với cột kanban (Q2) |
+| `WorkPriority` | `0 NONE` · `1 P1` · `2 P2` · `3 P3` · `4 P4` | P1 cao nhất, tô đỏ như Lark |
+| `WorkMemberRole` | `1 OWNER` · `2 ADMIN` · `3 MEMBER` · `4 VIEWER` | Số nhỏ = quyền to, tiện lấy `min()` khi gộp vai trò kế thừa (Q9) |
+| `WorkAssigneeKind` | `1 PIC` · `2 FOLLOWER` | Một người chỉ một dòng mỗi task |
+| `WorkTaskKind` | `1 TASK` · `2 MILESTONE` | **B-14** — cột mốc là task như mọi task (vẫn có người phụ trách, bình luận, phụ thuộc), chỉ khác cách đọc NGÀY: chỉ `due_date` có nghĩa và Gantt vẽ hình thoi |
+| `WorkLinkType` | `1 FS` · `2 SS` · `3 FF` · `4 SF` | **B-15** — đọc theo "đầu việc TRƯỚC → đầu việc SAU"; `FS` (xong mới bắt đầu) là mặc định vì chiếm đại đa số |
+
+## 2. Cụm tổ chức: nhóm — list — thành viên
+
+### `tab_work_group` — nhóm (thư mục) chứa task list
+
+| Cột | Kiểu | Ghi chú |
+|---|---|---|
+| id | INT PK | |
+| company_id | INT, index | |
+| parent_id | INT FK `tab_work_group.id`, NULL | Nhóm con. **Service chặn quá 2 cấp**: cha đã có `parent_id` thì không nhận con |
+| name | VARCHAR(200) | |
+| description | TEXT | |
+| sort_order | INT | Thứ tự trên sidebar |
+| is_archived | SMALLINT | 0/1 — lưu trữ, không xóa cứng (A-01) |
+| created_at / updated_at | DATETIME | |
+
+### `tab_work_list` — danh sách công việc
+
+| Cột | Kiểu | Ghi chú |
+|---|---|---|
+| id | INT PK | |
+| company_id | INT, index | |
+| group_id | INT FK `tab_work_group.id`, NULL | NULL = list đứng lẻ ngoài nhóm (hợp lệ, A-08) |
+| name | VARCHAR(200) | |
+| description | TEXT | |
+| color | VARCHAR(20) | Mã màu hiển thị sidebar |
+| sort_order | INT | |
+| is_archived | SMALLINT | 0/1 |
+| created_at / updated_at | DATETIME | |
+
+**Mở rộng A-10 — list kiểu dự án (bản 1.1, QĐ-T2 ở 01 §4b, làm ở W4):** thêm lên chính
+bảng này, KHÔNG đẻ bảng `tab_project` riêng: `kind` SMALLINT (`1 thường · 2 dự án`,
+mặc định 1) · `start_date` / `end_date` VARCHAR(10) "YYYY-MM-DD" (§0.2) · `proj_status`
+SMALLINT — IntEnum mới `WorkProjectStatus`, chỉ có nghĩa khi `kind = 2`, bộ giá trị chốt
+lúc làm W4. Tiến độ tổng KHÔNG có cột — tự tính `COUNT(task DONE) / COUNT(task)` lúc đọc.
+
+| Cột | Kiểu | Ghi chú |
+|---|---|---|
+| id | INT PK | |
+| company_id | INT, index | |
+| group_id / list_id | INT FK, index | Mỗi bảng một cột |
+| employee_id | INT, index | ID nhân sự (§0.1) |
+| role | SMALLINT | `WorkMemberRole`. Mỗi group/list đúng MỘT dòng `OWNER` — service giữ bất biến khi chuyển quyền sở hữu (A-04) |
+| created_at | DATETIME | |
+
+Unique `(group_id, employee_id)` và `(list_id, employee_id)`. Tách hai bảng thay vì một
+bảng đa hình `target_type/target_id` để giữ được FK thật. **Vai trò hiệu lực trên một
+list** = `min(role mời riêng ở list, role kế thừa từ nhóm cha, role kế thừa từ nhóm ông)`
+— tính trong service, không lưu (Q9: lấy vai trò cao hơn).
+
+Mời theo phòng ban (A-06, P1): thêm cột `department_id` NULL vào hai bảng này, một dòng
+= một phòng; nở ra nhân sự lúc tính quyền — KHÔNG chép từng người vào bảng.
+
+## 3. Cụm việc: cột — task — việc con — người phụ trách
+
+### `tab_work_section` — cột kanban của một list
+
+| Cột | Kiểu | Ghi chú |
+|---|---|---|
+| id | INT PK | |
+| company_id | INT | |
+| list_id | INT FK, index | |
+| name | VARCHAR(100) | "Documentation", "To do"… — người dùng tự đặt, KHÔNG phải trạng thái |
+| color | VARCHAR(20) | |
+| sort_order | INT | Kéo thả đổi thứ tự cột |
+| created_at | DATETIME | |
+
+Tạo list là seed sẵn 3 cột mặc định ("Cần làm", "Đang làm", "Hoàn thành") — sửa/xóa tự do.
+Xóa cột đang có task: bắt chọn cột nhận task trước, không xóa mồ côi.
+
+### `tab_work_task` — task và việc con (chung một bảng)
+
+| Cột | Kiểu | Ghi chú |
+|---|---|---|
+| id | INT PK | |
+| company_id | INT, index | |
+| list_id | INT FK, index | Việc con mang `list_id` CỦA CHA (C-05) |
+| section_id | INT FK `tab_work_section.id`, NULL | Việc con để NULL — không nằm cột nào nên không bao giờ hiện trên kanban |
+| parent_id | INT FK `tab_work_task.id`, NULL | Việc con trỏ cha. **Service chặn cấp 3**: cha đã có `parent_id` thì không nhận con |
+| title | VARCHAR(500) | |
+| description | TEXT | Bản đầu văn bản thường; rich text tính sau |
+| status | SMALLINT | `WorkTaskStatus` |
+| kind | SMALLINT | `WorkTaskKind` — `2` = **cột mốc** (B-14). Mặc định `1`, `server_default='1'` nên task cũ nhận đúng giá trị này lúc migration chạy |
+| ~~priority~~ | — | **ĐÃ BỎ** ở migration `b2f7c1d94a30` (CR-222): độ ưu tiên nay là một trường tùy biến nạp sẵn, xem §4.1 |
+| start_date | VARCHAR(10) | `"YYYY-MM-DD"`, rỗng được. **Cột mốc luôn để rỗng** — một mốc là một điểm, giữ hai ngày thì Gantt không biết vẽ hình thoi ở đâu |
+| due_date | VARCHAR(10) | Nền cho nhắc hạn F-03 và key `job:{id}`. Với cột mốc, đây là ngày DUY NHẤT có nghĩa |
+| sort_order | INT | Thứ tự tay trong cột (B-07); với việc con là thứ tự trong danh sách con |
+| created_by | INT | employee_id người tạo |
+| completed_at | DATETIME NULL | Đặt khi `status -> DONE`, xóa khi mở lại |
+| completed_by | INT NULL | employee_id |
+| deleted_at | DATETIME NULL | Xóa mềm — thùng rác B-09; mọi query mặc định lọc `deleted_at IS NULL` |
+| created_at / updated_at | DATETIME | |
+
+Đếm việc của list/cột và tiến độ chỉ tính **task cha** (`parent_id IS NULL`); việc con chỉ
+đóng góp vào `n/m` của thẻ cha (C-02). Hoàn thành cha KHÔNG tự tick hết con — hiện cảnh
+báo "còn n việc con chưa xong" và cho xác nhận.
+
+### `tab_work_task_assignee` — người phụ trách và người theo dõi
+
+| Cột | Kiểu | Ghi chú |
+|---|---|---|
+| id | INT PK | |
+| task_id | INT FK, index | |
+| employee_id | INT, index | Index phục vụ "Việc của tôi" (G-03) và `job:{id}` trong Việc cần làm |
+| kind | SMALLINT | `WorkAssigneeKind` — PIC nhiều người được (Q5, như Lark) |
+| created_at | DATETIME | |
+
+Unique `(task_id, employee_id)` — một người một vai trên một task; PIC thắng follower.
+
+### `tab_work_task_link` — phụ thuộc việc trước–sau (B-15)
+
+Một dòng = **một mũi tên** trên Gantt.
+
+| Cột | Kiểu | Ghi chú |
+|---|---|---|
+| id | INT PK | |
+| company_id | INT, index | |
+| list_id | INT FK `tab_work_list.id` CASCADE, index | Lưu sẵn để vẽ Gantt lấy hết mũi tên của dự án bằng MỘT query, khỏi join hai lượt sang `tab_work_task` |
+| predecessor_id | INT FK `tab_work_task.id` CASCADE, index | Việc TRƯỚC |
+| successor_id | INT FK `tab_work_task.id` CASCADE, index | Việc SAU |
+| link_type | SMALLINT | `WorkLinkType`, mặc định `1 = FS` |
+| lag_days | INT | Độ trễ cộng vào mốc của việc sau; âm = chồng lấn. Hiện chỉ LƯU và hiện lên mũi tên — **chưa có bộ dời lịch dây chuyền** (đổi ngày việc trước không tự đẩy việc sau), đó là quyết định riêng, làm khi có người đòi |
+| created_at / updated_at / created_by / updated_by | | `AuditMixin` |
+
+Bốn luật, ba cái đầu DB giữ được, cái cuối thì **không**:
+
+1. **Hai đầu cùng một list** — service kiểm, không phải khóa ngoại.
+2. **Không tự nối vào chính mình.**
+3. **Một cặp việc chỉ một mũi tên**, bất kể loại: unique `(predecessor_id, successor_id)`.
+   Hai mũi tên chồng nhau giữa cùng một cặp thì nhìn như một, mà xóa mãi không hết.
+4. ⚠️ **KHÔNG được có vòng lặp** (A→B→C→A). Khóa ngoại không diễn đạt nổi ràng buộc này —
+   `link_service.creates_cycle()` duyệt đồ thị trước mỗi lượt ghi (hàm THUẦN, nhận sẵn
+   danh sách cạnh nên test được không cần CSDL). Tài liệu QLDA của Công cụ Văn thư tự ghi
+   nhận bên đó **chưa chặn**; đây là chỗ ta cố ý không lặp lại (01 §4b).
+
+Loại phụ thuộc KHÔNG được xét khi dò vòng lặp: FS hay SS gì thì cũng là "việc này đứng
+trước việc kia".
+
+**Việc CON không có phụ thuộc** — nó không bao giờ hiện trên Gantt (C-05) nên một mũi tên
+trỏ vào nó là mũi tên không vẽ ra được; service trả 400.
+
+⚠️ **Xóa MỀM một việc không đụng tới bảng này** (khóa ngoại chỉ bắt xóa cứng), nên tầng
+hiển thị phải tự bỏ qua mũi tên có đầu đã xóa. Cố ý — có test ghim hành vi.
+
+## 4. Cụm nhãn tùy biến
+
+⚠️ **`tab_work_tag` và `tab_work_task_tag` KHÔNG CÒN** (migration `c8a1d4f60b72`).
+Tag nay là một trường tùy biến kiểu CHỌN NHIỀU tên "Tag", nạp sẵn cho list mới
+nhưng `system_key` rỗng — đổi tên, đổi bộ giá trị, xóa hẳn đều được như mọi
+trường khác. Xem §4.1 bên dưới.
+
+### `tab_work_label_field` + `tab_work_label_option` + `tab_work_task_label` — nhãn tùy biến (B-08)
+
+| Bảng | Cột | Ghi chú |
+|---|---|---|
+| `tab_work_label_field` | id · company_id · list_id FK · name VARCHAR(100) · sort_order · created_at | Một TRƯỜNG do list tự đặt ("Phiên bản"). Unique `(list_id, name)` |
+| `tab_work_label_option` | id · field_id FK · name VARCHAR(100) · color · sort_order | Bộ giá trị của trường ("Thumua"…). Unique `(field_id, name)` |
+| `tab_work_task_label` | id · task_id FK · field_id FK · option_id FK | **Unique `(task_id, field_id)`** = chọn MỘT giá trị mỗi trường (single-select). Sau này B-13 thêm kiểu khác thì thêm cột `value_text/value_number` vào bảng này, không đập lại |
+
+### 4.1 Ba trường từng là "cứng" nay đều là nhãn tùy biến
+
+| Trường | Trước | Nay |
+|---|---|---|
+| Độ ưu tiên | cột `tab_work_task.priority` | trường `system_key = 'priority'`, kiểu chọn một (migration `b2f7c1d94a30`) |
+| Tag | bảng `tab_work_tag` + `tab_work_task_tag` | trường tên "Tag", kiểu CHỌN NHIỀU, `system_key` rỗng (migration `c8a1d4f60b72`) |
+
+Lý do gộp: mọi thứ đụng tới một trường — vẽ trên thẻ, ô nhập ở panel chi tiết, lọc,
+sắp xếp, hộp sửa danh mục — phải viết một lần cho tag và một lần cho trường tùy biến,
+và hai bản ấy đã bắt đầu lệch nhau. Đổi lại, mỗi dự án tự quyết bộ trường của mình.
+
+`system_key` chỉ là CÁI MÓC để mã nguồn tìm lại trường ưu tiên (tô màu thanh Gantt,
+đếm biểu đồ Tổng quan) — nó khóa mỗi việc đổi KIỂU, còn tên · màu · bộ giá trị vẫn
+sửa được. Trường "Tag" cố ý KHÔNG mang móc nào.
+
+## 5. Cụm trao đổi: bình luận — đính kèm
+
+⚠️ **ĐÍNH CHÍNH 03/09/2026 (CR-253) — KHÔNG có `tab_work_comment` và
+`tab_work_attachment`.** Mục này từng vẽ hai bảng riêng cho phân hệ; khi bắt tay làm
+thì repo đã có sẵn hạ tầng DÙNG CHUNG mà Diễn đàn đang xài, nên đẻ bảng riêng là chép
+lại cả một hệ con (đếm, nhắc tên, bắn chuông, thu hồi tệp mồ côi, tải có kiểm quyền)
+chỉ để đổi cái tiền tố. Bản mô tả cột bên dưới giữ lại làm bản ghi ý định gốc, **đừng
+dựng theo nó**.
+
+### Cách làm THẬT
+
+| Việc | Bảng | Cửa vào | Khai ở |
+|---|---|---|---|
+| Bình luận (E-01) | `tab_comment` (+ `tab_comment_mention`) | `/api/comments` với `entity="work_task"` | `core/comment_registry.py` |
+| Đính kèm (E-03) | `tab_file` + `tab_file_link` | `/api/attachments` với `entity="work_task"` | `core/file_registry.py` |
+
+Nhắc tên @ (E-02) và bắn chuông đi kèm luôn, không phải làm thêm. `comment_count` trên
+thẻ do `work/task_enrich.comment_counts` đếm thẳng `tab_comment` — có sẵn từ W1.
+
+⚠️ **Quyền KHÔNG đi đường `apply_scope`.** Hai cửa dùng chung đều thiết kế cho khuôn
+phạm vi dữ liệu thường, mà `work_task` khai `PUBLIC` ở `core/scoping.SCOPE_FIELDS`:
+phạm vi thật là **tư cách THÀNH VIÊN** của danh sách chứa việc. Để chúng đi đường chung
+thì `apply_scope` không thêm mệnh đề nào và `ensure_in_scope` im lặng cho qua — ai đăng
+nhập cũng bình luận được vào việc của dự án mình không tham gia, và đoán đúng `link_id`
+là tải được tệp. Vì thế có hai nhánh riêng, **đừng gỡ**:
+`comment/service.resolve_doc` và `core/attachment_scope._ensure_task_member`.
+Bài khóa: `test/backend/test_cong_viec_binh_luan_dinh_kem.py`.
+
+Khách xem (`VIEWER`) **đọc được nhưng không gửi/gắn** — `resolve_doc` nhận tham số
+`mode`, `CAN_EDIT` khai rõ bình luận nằm trong nhóm quyền sửa.
+
+Tải xuống bắt buộc qua endpoint kiểm quyền, không có URL công khai (PQ13/H17) —
+`GET /api/attachments/{link_id}/download`, đo được 401 khi thiếu token.
+
+### Bản mô tả GỐC (đã bỏ, giữ để tra lại ý định)
+
+~~`tab_work_comment`~~: id · company_id · task_id FK index · employee_id · content TEXT ·
+is_edited SMALLINT · deleted_at DATETIME NULL · created_at / updated_at.
+
+~~`tab_work_attachment`~~: id · company_id · task_id NULL · comment_id NULL · file_key ·
+file_name · file_size · content_type · uploaded_by · created_at.
+
+## 6. Phác API (prefix `/api/work` — tránh `/api/tasks` đã bị Việc cần làm chiếm)
+
+| Nhóm | Endpoint | Ghi chú |
+|---|---|---|
+| Nhóm | `GET/POST /api/work/groups` · `PATCH/DELETE /groups/{id}` · `GET/POST/PATCH/DELETE /groups/{id}/members` | Sidebar trả cây nhóm + list lồng sẵn một lần |
+| List | `GET/POST /api/work/lists` · `PATCH/DELETE /lists/{id}` · `/lists/{id}/members` · `/lists/{id}/sections` · `/lists/{id}/label-fields` (+`/options`) | Không còn `/lists/{id}/tags` lẫn `PUT /tasks/{id}/tags` |
+| Task | `GET /api/work/lists/{id}/board` (cột + task cha + **`links`**, payload kanban/Gantt một phát) · `POST /api/work/tasks` · `PATCH /api/work/tasks/{id}` (sửa, kéo cột = `section_id` + `sort_order`, tick xong = `status`, đổi việc↔cột mốc = `kind`) · `DELETE` (xóa mềm) · `/tasks/{id}/subtasks` · `/tasks/{id}/comments` | |
+| Phụ thuộc | `POST /api/work/task-links` · `DELETE /api/work/task-links/{id}` | B-15. **Không có endpoint ĐỌC riêng** — mũi tên đi kèm `board` để Gantt vẽ thanh và mũi tên trong cùng một nhịp; tách ra là biểu đồ vẽ xong rồi mũi tên mới nhảy vào sau. Xóa CỨNG: mũi tên là quan hệ hiển thị, không có gì để tra lại |
+| Cá nhân | `GET /api/work/my-tasks` | Gom task mình là PIC từ mọi list, nhóm theo hạn (G-03) |
+| Quản trị | `GET /api/work/admin/lists` · `POST /api/work/admin/lists/{id}/join` | H-03/Q4 — join tự ghi audit |
+
+Tất cả trả phong bì `{success, message, data}` qua `core/response.py` như mọi module.
+
+## 7. Chỉ mục (index) đáng chú ý
+
+- `tab_work_task (list_id, parent_id, deleted_at)` — query kanban/danh sách chính.
+- `tab_work_task (due_date, status)` — job nhắc hạn Celery quét (F-03).
+- `tab_work_task_assignee (employee_id)` — "Việc của tôi" + đổ vào `build_my_tasks`.
+- `tab_work_task_link (predecessor_id, successor_id)` **UNIQUE** — một cặp việc một mũi
+  tên; kèm index `list_id` để lấy cả bộ mũi tên của dự án trong một query.
+- `tab_work_list_member (employee_id)` / `tab_work_group_member (employee_id)` — dựng
+  sidebar và lọc phạm vi thành viên ở MỌI query (xem `04-phan-quyen.md` §2).

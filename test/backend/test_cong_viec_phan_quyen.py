@@ -5,7 +5,7 @@ lọc gì cho phân hệ này: toàn bộ phạm vi dữ liệu do `membership_s
 Bộ test này là cái chốt cho thỏa thuận đó — nới lỏng chỗ nào ở đây là mở toang
 việc của cả công ty.
 
-Sáu bài bắt buộc theo `doc/erp/cong-viec/04-phan-quyen.md` §5 nằm ở đây; bài 7
+Sáu bài bắt buộc theo `doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md` §5 nằm ở đây; bài 7
 (tập cha CR-215) thuộc W3, chưa tới.
 """
 import pytest

@@ -1,7 +1,7 @@
 """bao_cr453_chi_phi_thu_mua_ba_giai_doan
 
 Chi phí thu mua ba giai đoạn (Dự toán → Tạm tính → Quyết toán) + danh mục loại chi phí —
-bao-CR-453, thiết kế ở `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`.
+bao-CR-453, thiết kế ở `doc/erp/nhap-khau/chuc-nang/11-chi-phi-thu-mua.md`.
 
 1. Đổi tên `tab_po_import_cost` → `tab_po_cost`: chi phí thu mua áp cho MỌI loại đơn, không
    riêng nhập khẩu. Ba chỉ mục cũ đổi tên theo để `alembic --autogenerate` không đòi dựng lại.

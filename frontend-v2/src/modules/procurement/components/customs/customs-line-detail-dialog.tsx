@@ -1,5 +1,5 @@
 // bao-CR-470 — chi tiết MỘT DÒNG HÀNG (không phải một tờ khai: tệp GTT02 không có số tờ
-// khai, xem doc/erp/hai-quan/02-thiet-ke-ky-thuat.md §2.2). POPUP giữa màn (đại ca chốt
+// khai, xem doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md §2.2). POPUP giữa màn (đại ca chốt
 // 23/09/2026 — bản đầu là ngăn kéo bên phải), đủ 32 cột của tệp gốc xếp thành 6 nhóm. Giá trị là chữ thường — bôi đen và chép được, không dùng
 // ô nhập bị khóa. Chân popup có hai lối đổ ngược bộ lọc vào màn: cùng doanh nghiệp / cùng
 // đối tác.

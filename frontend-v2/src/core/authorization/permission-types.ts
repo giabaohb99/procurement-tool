@@ -84,7 +84,7 @@ export const ENTITIES = [
   //  quyền *dùng* một hộp thư — cái đó khai đích danh ở `tab_mailbox_member`.
   'mailbox',
   //  Phân hệ Công việc (CR-216). MỘT khóa cho cả phân hệ — quyền thật nằm ở
-  //  tầng thành viên của từng list, xem `doc/erp/cong-viec/04-phan-quyen.md`.
+  //  tầng thành viên của từng list, xem `doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md`.
   'work_task',
   //  Diễn đàn (CR-263): hai khóa CHỈ của vai trò `forum_admin` — kiểm duyệt bài
   //  và dựng chuyên mục. Người thường không có grant nào: đọc/đăng đi theo luật

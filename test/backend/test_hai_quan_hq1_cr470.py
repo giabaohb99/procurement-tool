@@ -1,6 +1,6 @@
 """bao-CR-470 — HQ1 phân hệ Tra cứu giá hải quan: bộ đọc tệp GTT02 + đường nạp.
 
-Thiết kế: `doc/erp/hai-quan/02-thiet-ke-ky-thuat.md` (§4 luật đọc, §8 danh sách
+Thiết kế: `doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md` (§4 luật đọc, §8 danh sách
 bài kiểm). Ba cái bẫy được canh ở đây đều IM LẶNG nếu vỡ — không lỗi, chỉ ra số sai:
 
 ```

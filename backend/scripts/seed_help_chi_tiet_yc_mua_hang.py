@@ -12,7 +12,7 @@ Chạy trong container api:
 
 Idempotent: có bài cùng tiêu đề dưới đúng nhóm thì ghi đè nội dung, giữ chỗ. Thêm mới thì chen vào sort_order 5 và đẩy các
 bài 5..49 của nhóm xuống một bậc (bài sort 50+ là cố ý nằm cuối, không đụng). Nội dung phải KHỚP
-`doc/tai-lieu-chuc-nang/08-he-thong-bao-cao.md` mục "Màn Chi tiết YC mua hàng" và hành vi thật của
+`doc/erp/thu-mua/chuc-nang/17-he-thong-bao-cao.md` mục "Màn Chi tiết YC mua hàng" và hành vi thật của
 `frontend-v2/src/modules/procurement/components/report-pr-lines-tab.tsx` (v2) / `frontend/src/components/PrLinesReport.tsx` (thumua).
 """
 from help_seed_common import HelpArticle, SessionLocal, ref, reindex_articles

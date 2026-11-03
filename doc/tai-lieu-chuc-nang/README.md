@@ -1,4 +1,8 @@
-# Tài liệu chức năng — Mini Tool Quản lý Thu Mua
+# Tài liệu chức năng — ĐÃ CHUYỂN VỀ TỪNG PHÂN HỆ
+
+> **03/11/2026 (bao-CR-712):** tài liệu chức năng nay nằm trong `doc/erp/<phan-he>/chuc-nang/` của từng phân hệ (bản đồ ở
+> [`doc/README.md`](../README.md)). Thư mục này chỉ còn phần Nhân sự (`17-nghi-phep.md`, `18-dat-phong-hop.md`,
+> `21-lich-lam-viec.md`) chờ người phụ trách HRM dời về `doc/erp/hrm/chuc-nang/`; các liên kết trong bảng dưới đã trỏ chỗ mới.
 
 Mỗi chức năng một file riêng. Khi có thay đổi (thêm/bớt trường, đổi quyền, đổi luồng),
 cập nhật trực tiếp vào file tương ứng.
@@ -9,13 +13,13 @@ Mục lục toàn bộ tính năng: [00-muc-luc.md](00-muc-luc.md)
 
 | File | Chức năng |
 |------|-----------|
-| [01-phieu-khao-sat.md](01-phieu-khao-sat.md) | Phiếu khảo sát (NCC + Sản phẩm) |
-| [16-du-an-cong-viec.md](16-du-an-cong-viec.md) | Dự án — quản lý công việc (ERP v2) |
+| [01-phieu-khao-sat.md](../erp/thu-mua/chuc-nang/10-phieu-khao-sat.md) | Phiếu khảo sát (NCC + Sản phẩm) |
+| [16-du-an-cong-viec.md](../erp/cong-viec/chuc-nang/10-du-an-cong-viec.md) | Dự án — quản lý công việc (ERP v2) |
 | [../erp/hrm/02-nghi-phep.md](../erp/hrm/02-nghi-phep.md) | Nghỉ phép — đơn nghỉ · quỹ phép năm · lịch nghỉ (ERP v2, trong phân hệ Nhân sự) — **đã dời sang `doc/erp/hrm/`** (22/10/2026) |
 | [18-dat-phong-hop.md](18-dat-phong-hop.md) | Đặt phòng họp — lịch phòng · phiếu đặt chạy qua bộ máy duyệt · danh mục phòng (ERP v2, trong phân hệ Nhân sự) |
-| [19-bao-cao-thuc-hien-ycbg.md](19-bao-cao-thuc-hien-ycbg.md) | Báo cáo thực hiện — khối theo dõi tiến trình thương vụ trên chi tiết Yêu cầu báo giá (ERP v2). Xem thêm TDD kỹ thuật [`tdd-bao-cao-thuc-hien-ycbg.md`](../tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md) |
+| [19-bao-cao-thuc-hien-ycbg.md](../erp/thu-mua/chuc-nang/19-bao-cao-thuc-hien-ycbg.md) | Báo cáo thực hiện — khối theo dõi tiến trình thương vụ trên chi tiết Yêu cầu báo giá (ERP v2). Xem thêm TDD kỹ thuật [`tdd-bao-cao-thuc-hien-ycbg.md`](../erp/thu-mua/tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md) |
 | [../erp/hrm/03-lich-lam-viec.md](../erp/hrm/03-lich-lam-viec.md) | Lịch làm việc — mẫu lịch tuần · gán theo 4 cấp · tính ngày công · xem lịch (ERP v2, trong phân hệ Nhân sự) — **đã dời sang `doc/erp/hrm/`** (22/10/2026) |
-| [22-ket-noi-ai-rieng-va-kho-skill.md](22-ket-noi-ai-rieng-va-kho-skill.md) | Kết nối AI riêng + Kho skill AI — khóa kết nối · nối Claude / Cursor / Gemini · công cụ và skill · quản trị kho skill · nhật ký và lỗi (ERP v2, Trang cá nhân + phân hệ Kho skill AI) |
+| [22-ket-noi-ai-rieng-va-kho-skill.md](../erp/tro-ly-ai/chuc-nang/10-ket-noi-ai-rieng-va-kho-skill.md) | Kết nối AI riêng + Kho skill AI — khóa kết nối · nối Claude / Cursor / Gemini · công cụ và skill · quản trị kho skill · nhật ký và lỗi (ERP v2, Trang cá nhân + phân hệ Kho skill AI) |
 | [../erp/hrm/05-bao-cao-nhan-su.md](../erp/hrm/05-bao-cao-nhan-su.md) | Báo cáo Nhân sự — kho mẫu báo cáo và mười lăm báo cáo đang chạy (biến động và cơ cấu, nghỉ phép, quỹ phép, hợp đồng lao động, hồ sơ còn thiếu, sổ quản lý lao động, mẫu 01/PLI, quỹ lương, phúc lợi theo dịp, cơ cấu quản lý, điều chuyển, có mặt theo ngày, yêu cầu sửa hồ sơ, sử dụng phòng họp, đối tượng theo luật) và ô Lịch nhắc trong tháng, ERP v2. Bài Help Center: thẻ «Hướng dẫn sử dụng Báo cáo Nhân sự» (`seed_help_bao_cao_nhan_su.py`, duoc-CR-686, mở rộng duoc-CR-687, 688, 689; duoc-CR-692 bỏ phần kế hoạch; duoc-CR-693 quỹ lương đọc ô lương ở hồ sơ nhân sự); nội dung ở tài liệu và ở seed phải khớp nhau |
 
 Danh sách đầy đủ ở [00-muc-luc.md](00-muc-luc.md); bảng trên chỉ liệt kê vài mục

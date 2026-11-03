@@ -1,65 +1,53 @@
-# Tài liệu dự án — Mini Tool Thu Mua
+# Tài liệu dự án ERP DEGO — bản đồ
 
-Đã gom nhóm cho dễ quản lý. **Vào lần đầu thì đọc 3 file này trước:**
+| | |
+|---|---|
+| Bản | 2.0 — tổ chức lại theo khuôn phân hệ (bao-CR-712, đề xuất [`de-xuat-to-chuc-lai-tai-lieu.md`](tai-lieu-ky-thuat/de-xuat-to-chuc-lai-tai-lieu.md)) |
+| Ngày | 03/11/2026 |
+| Người phụ trách | A1 Điều phối (chạy bài kiểm tài liệu, nhắc) |
+| Trạng thái | Hiệu lực |
+
+Cấp `doc/` chỉ giữ cái **chung**; cái **riêng** của phân hệ nào nằm trọn trong `doc/erp/<phan-he>/`. Luật viết và xếp tài
+liệu: [`.claude/rules/chung-tai-lieu.md`](../.claude/rules/chung-tai-lieu.md). Kiểm: `python backend/scripts/kiem_tai_lieu.py`.
+
+## Vào lần đầu thì đọc
 
 | Muốn biết | Đọc |
 |---|---|
-| Hệ thống làm được gì, màn nào chạy ra sao | [tai-lieu-chuc-nang/00-muc-luc.md](tai-lieu-chuc-nang/00-muc-luc.md) |
-| Ai đổi gì, khi nào, ảnh hưởng ra sao (+ nhật ký deploy, quyết định đã chốt) | [tai-lieu-ky-thuat/change-log.md](tai-lieu-ky-thuat/change-log.md) **+** [change-log-bao.md](tai-lieu-ky-thuat/change-log-bao.md) — **đọc cả hai** (mảng AI có sổ riêng: [change-log-ai.md](tai-lieu-ky-thuat/change-log-ai.md)) |
-| Xây bằng cách nào (kiến trúc, DB, API, phân quyền) | [tai-lieu-ky-thuat/technical-design.md](tai-lieu-ky-thuat/kien-truc/technical-design.md) |
-| Luật viết mã, luật tài liệu, skill và agent nằm đâu, khi nào nạp | [tai-lieu-ky-thuat/quy-dinh/README.md](tai-lieu-ky-thuat/quy-dinh/README.md) (luật tài liệu: [`.claude/rules/chung-tai-lieu.md`](../.claude/rules/chung-tai-lieu.md)) |
+| Một phân hệ làm được gì, gọi API nào, tới đâu rồi | `README.md` của phân hệ đó (bảng dưới) — mỗi phân hệ có `chuc-nang/01-yeu-cau-chuc-nang.md`, `02-yeu-cau-phi-chuc-nang.md`, `tai-lieu-ky-thuat/api.md` |
+| Ai đổi gì, khi nào (+ nhật ký deploy, quyết định đã chốt) | [change-log.md](tai-lieu-ky-thuat/change-log.md) **+** [change-log-bao.md](tai-lieu-ky-thuat/change-log-bao.md) — **đọc cả hai**; mảng AI có sổ riêng [change-log-ai.md](tai-lieu-ky-thuat/change-log-ai.md); nhật ký việc [nhat-ky-task.md](tai-lieu-ky-thuat/nhat-ky-task.md) |
+| Kiến trúc, từ điển dữ liệu, danh sách màn | [tai-lieu-ky-thuat/kien-truc/](tai-lieu-ky-thuat/kien-truc/README.md) |
+| Phân quyền hai trục, phạm vi dữ liệu | [tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md](tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md) |
+| Nhánh, deploy, Docker, bảo mật, rà hiệu năng | [tai-lieu-ky-thuat/van-hanh/](tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md) |
+| Luật viết mã, luật tài liệu, skill và agent | [tai-lieu-ky-thuat/quy-dinh/README.md](tai-lieu-ky-thuat/quy-dinh/README.md) (khuôn tài liệu ở `quy-dinh/mau/`) |
+| Kế hoạch tổng, lộ trình theo module | [plans/](plans/00-ke-hoach-theo-module.md) |
 
-## tai-lieu-chuc-nang/ — Tài liệu chức năng (nghiệp vụ, cho người dùng & BA)
-- `00-muc-luc.md` — mục lục; `01`…`17` theo từng phân hệ (Phiếu khảo sát, YCBG, YCMH, ĐMH, YCTT, Tồn kho & Công nợ, Danh mục, Báo cáo, Thông báo & Trang cá nhân, Phiếu hỗ trợ, Bình luận, Lịch sử mua hàng, Trung tâm HDSD, Văn thư, **Dự án — quản lý công việc**, **Nghỉ phép**)
-- ⚠️ Sửa tài liệu chức năng của một phân hệ thì xem luôn có cần cập nhật **gói tri thức Trợ lý AI** không: `backend/app/modules/assistant/packs/` — gói đó nạp thẳng vào system prompt mỗi lượt hỏi, lệch với tài liệu là trợ lý trả lời sai mà không ai biết.
+## Phân hệ (`doc/erp/`)
 
-## tai-lieu-ky-thuat/ — Tài liệu kỹ thuật
-- `change-log.md` — **sổ CR** (mỗi thay đổi 1 dòng) + việc còn nợ (N-xxx) + quyết định đã chốt (D-xxx) + **nhật ký deploy**
-- `change-log-bao.md` — **cùng một sổ CR đó, phần của dải `bao` từ bao-CR-310** (tách 07/09/2026 vì cả đội chèn chung một dòng đầu bảng nên merge nào cũng xung đột). **Tra CR thì đọc cả hai tệp; cấp số mới cũng grep cả hai** — dải số vẫn chung cho cả đội. N-xxx / D-xxx / deploy cũ vẫn chỉ ở `change-log.md`
-- `change-log-ai.md` — **sổ RIÊNG của mảng tự động hóa bằng AI** (Agent Hub), tách 18/09/2026. Dải `ai-CR-*` là **dải số độc lập**, cấp số chỉ grep tệp này. Đây là bộ máy *làm ra* phần mềm chứ không phải một phân hệ của phần mềm, nên không trộn vào hai sổ trên. Thiết kế ở [`../agent-hub/`](../agent-hub/README.md)
-- `technical-design.md`, `thiet-ke-ky-thuat-chi-tiet.md`, `so-do-ky-thuat.md` — TDD
-- `mo-hinh-du-lieu-san-pham.md` — **đọc trước khi đụng vào cấu trúc Sản phẩm**: vì sao `tab_product` là bảng variant, thuộc tính động, tầng họ sản phẩm, hợp đồng "chọn mã VTBB → tự động điền", và danh sách việc CẤM làm
-- `quy-trinh-tai-lieu.md` — quy trình tài liệu & kiểm soát thay đổi (tài liệu nào ra đời khi nào)
-- `tracking-nguoi-dung-ho-so-ca-nhan.md` — **đề xuất** tracking người dùng: hồ sơ cách làm việc của từng người (trang hay vào, cách làm task, nhịp làm việc), kiểu làm việc để nhận diện, cách cho AI đọc chỉ số (duoc-CR-626, chưa gõ mã)
+| Phân hệ | Thư mục | Ghi chú |
+|---|---|---|
+| Thu mua (YCBG, YCMH, ĐMH, công nợ, YCTT, báo cáo thu mua) | [erp/thu-mua/](erp/thu-mua/README.md) | dùng chung backend với bản V1 |
+| Nhập khẩu (chi phí ba giai đoạn) | [erp/nhap-khau/](erp/nhap-khau/README.md) | |
+| Kho · Mặt hàng · Nhận hàng · Xuất hàng · Lô / serial | [kho](erp/kho/README.md) · [mat-hang](erp/mat-hang/README.md) · [nhan-hang](erp/nhan-hang/README.md) · [xuat-hang](erp/xuat-hang/README.md) · [lo-serial](erp/lo-serial/README.md) | phần lớn đang ở mức nghiên cứu |
+| Hải quan (tra cứu thị trường) | [erp/hai-quan/](erp/hai-quan/README.md) | |
+| Sản xuất | [erp/san-xuat/](erp/san-xuat/README.md) | khảo sát hiện trạng |
+| Nhân sự (HRM) | [erp/hrm/](erp/hrm/README.md) | người phụ trách HRM tự chuẩn hóa |
+| Văn thư | [erp/van-thu/](erp/van-thu/README.md) | |
+| Duyệt dấu · Đặt xe | [duyet-dau](erp/duyet-dau/README.md) · [dat-xe](erp/dat-xe/README.md) | đồng bộ app cũ ở `dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/` |
+| Dự án và công việc | [erp/cong-viec/](erp/cong-viec/README.md) | |
+| Diễn đàn · Điểm cà phê | [dien-dan](erp/dien-dan/README.md) · [diem-ca-phe](erp/diem-ca-phe/README.md) | |
+| Trợ lý AI (Trợ lý web, cổng MCP, Kho skill) | [erp/tro-ly-ai/](erp/tro-ly-ai/README.md) | bộ máy bot làm ra phần mềm ở [agent-hub/](agent-hub/README.md) |
+| CRM | [erp/crm/](erp/crm/README.md) | kế hoạch |
+| Nền tảng dùng chung (luồng duyệt, thông báo, phiếu hỗ trợ, bình luận, nhập xuất, báo cáo, cấu hình, việc chạy ngầm) | [erp/nen-tang/](erp/nen-tang/README.md) | |
 
-## yeu-cau/ — Yêu cầu nghiệp vụ
-- `Requirement_Mini_Tool_Thu_Mua.md` — tổng quan hệ thống
-- `Requirement_Features_Detail.md` — chi tiết tính năng
-- `Requirement_KhaoSat_NCC_SP.md` — khảo sát NCC / sản phẩm
-- `Requirement_YeuCauMua_ChiTiet.md` — chi tiết Yêu cầu mua (form item, luồng, VAT/thời gian theo dòng)
-- `Requirement_PO_Detail.md`, `Requirement_PO_GR_CongNo.md` — đơn mua / nhận / công nợ
-- `Requirement_BaoCao_MuaHang.md` — báo cáo
-- `Requirement_Email_Approval.md`, `Requirement_Phase34_UX.md` — email/UX
-- `Mapping_Sheet06_TienDoMuaHang.md` — map cột Sheet 6
-
-## thiet-ke/ — Thiết kế giao diện
-- `Thiet_Ke_Giao_Dien.md` — hệ thiết kế + dashboard (Horizon, màu logo)
-- `Dashboard_Spec_UXUI.md` — bản mô tả dashboard cho UX/UI
-- `AI_Gen_Prompt.md` — prompt gen UI bằng AI
-
-## phan-quyen/ — Phân quyền
-- `Thiet_Ke_Phan_Quyen.md` — thiết kế RBAC + phạm vi (grant)
-- `Requirement_VaiTro.md` — vai trò
-- `Plan_PhanQuyen_PYC.md` — plan phân quyền Yêu cầu mua
-- `Plan_Dashboard_Menu_Quyen.md` — quyền → menu → dashboard
-- `Test_PhanQuyen_PYC.md` — kịch bản test + tài khoản mẫu
-
-## chung/ — Tham chiếu dev & vận hành
-- `Deploy_VPS.md` — runbook deploy prod/dev trên VPS (kèm cách nạp nội dung Trung tâm Hướng dẫn)
-- `Go_Live_Checklist.md` — checklist trước khi chạy thật
-- `CHANGELOG.md` — nhật ký theo ngày (bản ngắn, đọc nhanh)
-- `FEATURE_CHECKLIST.md`, `NAMING_CONVENTIONS.md`, `Plan_Celery_Worker.md`
-
-## agent-hub/ — Tự động hóa bằng AI (BẬC 1 ĐANG DỰNG, `ai-CR-002`)
-Bộ máy nhận ticket → AI quản lý (Gemini) tóm tắt & đề xuất → đại ca duyệt qua Telegram → bot code (Claude Code CLI trên máy đại ca) thực hiện → CI/CD → dev → đại ca duyệt → prod.
-- `README.md` — tóm tắt + mục lục
-- `01-thiet-ke-ky-thuat.md` — TDD: kiến trúc, bảy trạm, mô hình dữ liệu, cấu hình, lộ trình bốn bậc, bảng rủi ro
-- `02-bo-quy-tac-bot.md` — ⚠️ **bot được phép và bị cấm làm gì.** Đọc trước khi dựng bậc 2
-- Sổ CR riêng: [`tai-lieu-ky-thuat/change-log-ai.md`](tai-lieu-ky-thuat/change-log-ai.md)
+⚠️ Sửa tài liệu chức năng của một phân hệ thì xem luôn có cần cập nhật **cẩm nang Kho skill / gói tri thức Trợ lý AI**
+(`backend/app/modules/ai_skill/seed_handbook/`, `backend/app/modules/assistant/packs/`) và bài HDSD (`backend/scripts/seed_help_*.py`)
+không — lệch với tài liệu là trợ lý trả lời sai mà không ai biết.
 
 ## Khác
-- `testcase/` — kịch bản test tay; `dat-xe-duyet-dau/` — kế hoạch từng mảng
-  - `dat-xe-duyet-dau/` — **Phân hệ Đặt xe nội bộ** (kế hoạch + tiến độ theo phase). Xem `README.md` + `TIEN-DO.md`.
-- `datamau/`, `sheet/` — dữ liệu mẫu / bảng gốc
-- `../TASKS.md` — tiến độ triển khai
-- `../help-center/README.md` — Trung tâm Hướng dẫn sử dụng (app riêng)
+
+- [agent-hub/](agent-hub/README.md) — bộ máy AI làm ra phần mềm (bot nhận ticket, sửa mã, deploy); sổ CR riêng [change-log-ai.md](tai-lieu-ky-thuat/change-log-ai.md).
+- [he-agent/](he-agent/) — luật vận hành hệ agent (điều phối, mức tự quyết).
+- [v1/](v1/) — mọi thứ thời Mini Tool Thu Mua V1 (yêu cầu tháng 6–7, thiết kế giao diện cũ, testcase cũ, `tasks.md`, dữ liệu mẫu). V1 còn chạy ở thumua.degoholding.vn tới đợt Đ-15, **không nhận tính năng mới**.
+- [tai-lieu-chuc-nang/](tai-lieu-chuc-nang/README.md) — chỉ còn phần HRM chờ dời về `erp/hrm/`.
+- `../help-center/README.md` — Trung tâm Hướng dẫn sử dụng (app riêng).

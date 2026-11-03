@@ -3,7 +3,7 @@
 `work_task` khai `PUBLIC` ở `core/scoping.SCOPE_FIELDS` vì phạm vi thật của nó là
 "theo tư cách THÀNH VIÊN của list", không diễn đạt được bằng cột phòng ban/pháp
 nhân của khuôn `apply_scope`. Đổi lại, **mọi đường đọc/ghi phải đi qua tệp này**
-(`doc/erp/cong-viec/04-phan-quyen.md` §2). Gọi `db.query(WorkTask)` thẳng ở
+(`doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md` §2). Gọi `db.query(WorkTask)` thẳng ở
 controller là mở toang việc của cả công ty — đúng lỗ B-07 từng phải vá.
 
 Hai hàm phải nhớ:

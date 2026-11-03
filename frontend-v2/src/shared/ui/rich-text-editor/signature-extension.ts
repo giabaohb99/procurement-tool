@@ -31,7 +31,7 @@ import { createSignatureNodeView } from './signature-node-view'
  *
  * ⚠️ Node **không chiếm chỗ trong dòng chảy** nên không đụng tới bộ phân trang —
  * đây là điểm cộng có chủ ý, xem lỗi phân trang chạy loạn ở
- * `doc/tai-lieu-chuc-nang/15-van-thu-cac-ca-da-kiem.md` §7.3.
+ * `doc/erp/van-thu/chuc-nang/11-van-thu-cac-ca-da-kiem.md` §7.3.
  */
 
 /** Bề rộng mặc định lúc chèn (px trên tờ A4 794px). */

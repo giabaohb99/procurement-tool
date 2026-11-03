@@ -1,4 +1,4 @@
-"""bao-CR-596 — chiều ERP -> app đặt xe cũ (P3). Bản dựng: doc/dong-bo-dat-xe-duyet-dau/p3-erp-sang-app-cu.md.
+"""bao-CR-596 — chiều ERP -> app đặt xe cũ (P3). Bản dựng: doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/p3-erp-sang-app-cu.md.
 
 Canh bốn thứ: ảnh chụp dịch đúng tên trường và đúng trạng thái app cũ (đi sang rồi về vẫn ra
 y như cũ); gửi có sổ, có van, không gửi lại thứ không đổi; phiếu ERP được app cũ tạo thì ghi

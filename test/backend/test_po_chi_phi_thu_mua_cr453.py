@@ -1,5 +1,5 @@
 """bao-CR-453 — chi phí thu mua BA GIAI ĐOẠN (Dự toán → Tạm tính → Quyết toán) + danh mục
-loại chi phí. Thiết kế: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`.
+loại chi phí. Thiết kế: `doc/erp/nhap-khau/chuc-nang/11-chi-phi-thu-mua.md`.
 
 Luật phải giữ:
 1. Đơn mới ở Dự toán. Chốt lên giai đoạn trên thì cột trống được CHÉP số từ giai đoạn dưới,

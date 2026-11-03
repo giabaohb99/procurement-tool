@@ -51,7 +51,7 @@ def count_references(db: Session, code: str) -> list[tuple[str, int]]:
     """ai-CR-169: số chứng từ đang trỏ tới sản phẩm theo chuỗi `product_code`.
 
     `tab_product` là bảng SKU, không có FK nào trỏ vào — 7 bảng nối bằng chuỗi mã (xem
-    `doc/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`). ⚠️ KHÔNG lọc theo phạm vi dữ liệu,
+    `doc/erp/mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`). ⚠️ KHÔNG lọc theo phạm vi dữ liệu,
     cố ý: chốt toàn vẹn phải đếm hết.
     """
     from app.modules.goods_receipt.model import GoodsReceipt

@@ -23,7 +23,7 @@ Luật mới, chốt cùng khách 24/08/2026:
 Nhóm 4 là chỗ khác với câu chữ *"ngoài người tạo thì không ai xem được"*, và cố
 ý: **Sổ văn bản phải tra ra được**. Văn bản đã cấp số mà biến mất khỏi sổ với cả
 người giữ sổ thì đó là một lỗ trong sổ đăng ký — đúng thứ mà luật *"bản cũ không
-xóa, không ẩn — xóa là mất bằng chứng"* (`doc/erp/van-thu/05-vong-doi-phien-ban.md`)
+xóa, không ẩn — xóa là mất bằng chứng"* (`doc/erp/van-thu/tai-lieu-ky-thuat/05-vong-doi-phien-ban.md`)
 cấm. Người phải tuân theo văn bản thì hết thấy; người phải lưu hồ sơ thì vẫn thấy.
 """
 from sqlalchemy import or_

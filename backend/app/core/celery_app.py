@@ -181,7 +181,7 @@ celery_app.conf.update(
         # POS365_HARD_OFF: khi tắt thì không đưa các task này vào lịch beat.
         # coffee.mirror_balance (D-07) CHƯA có lịch — bật sau khi POC P5 xác nhận
         # PartnerSave ghi được Point.
-        # --- App đặt xe / duyệt dấu cũ (doc/dong-bo-dat-xe-duyet-dau/ §11).
+        # --- App đặt xe / duyệt dấu cũ (doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/ §11).
         # Đường chính là cái móc bên app cũ gọi thẳng vào ERP; hai vòng này là
         # lưới an toàn. Chưa bật SYNC_DATXE_ENABLED hoặc chưa khai khóa đọc
         # Firebase thì chúng kết thúc ngay bằng một dòng sổ SKIPPED.

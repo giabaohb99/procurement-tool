@@ -1,5 +1,5 @@
 """Điểm cà phê × POS365 — 6 bài bắt buộc của phase CP2
-(`doc/erp/diem-ca-phe/06-lo-trinh-phase.md`):
+(`doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md`):
 
 1. Kéo đơn 2 lần trên cùng dữ liệu — lần hai không ghi gì, số dư không đổi.
 2. Reset kỳ 2 lần cùng kỳ — không nhân đôi điểm (nghiệm thu 2 của `09` §11).

@@ -1,6 +1,6 @@
 """Dựng DỮ LIỆU MẪU kiểm phân quyền Đặt xe (2 phiếu A & B) bằng CHÍNH 7 tài khoản test.
 
-Luồng dựng (khớp doc/dat-xe-duyet-dau/test-phan-quyen.md §2):
+Luồng dựng (khớp doc/erp/dat-xe/kiem-thu/test-phan-quyen.md §2):
   A: NS1 tạo+gửi duyệt → TP1 duyệt → ĐPV điều phối cho TX1
   B: NS2 tạo+gửi duyệt → TP2 duyệt → ĐPV điều phối cho TX2
 

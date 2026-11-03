@@ -20,7 +20,7 @@ Chạy trong container api:
 Idempotent: đã có bài cùng tiêu đề dưới đúng nhóm thì xóa bài đó (kèm bài con, nếu có) rồi
 chèn lại ở nguyên chỗ cũ. Thiếu nhóm cha thì DỪNG, không tự tạo bài gốc.
 
-Nội dung phải KHỚP với `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md` mục H (H.1 → H.12) và
+Nội dung phải KHỚP với `doc/erp/thu-mua/chuc-nang/12-yeu-cau-mua-hang.md` mục H (H.1 → H.12) và
 mục I, cùng hành vi thật của `purchase-request-process-card.tsx` +
 `purchase-request-choose-card.tsx`. Không nêu mã phiếu mẫu của môi trường thử.
 """

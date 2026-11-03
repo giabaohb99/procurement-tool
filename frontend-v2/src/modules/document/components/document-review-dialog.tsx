@@ -58,7 +58,7 @@ interface DocumentReviewDialogProps {
  *
  * Hệ thống **không bao giờ tự chép nội dung** từ bản gốc sang bản riêng: nó chỉ
  * mở một bản nháp trống-y-như-bản-cũ để người rà tự sửa (F11 —
- * `doc/erp/van-thu/05-vong-doi-phien-ban.md`).
+ * `doc/erp/van-thu/tai-lieu-ky-thuat/05-vong-doi-phien-ban.md`).
  */
 export function DocumentReviewDialog({
   documentId,
