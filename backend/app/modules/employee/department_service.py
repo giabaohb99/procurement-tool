@@ -138,7 +138,9 @@ def detach_other_company_departments(db: Session, employee: Employee, actor: int
 
     1. `_sync_primary_department` đổi phòng chính thì **hạ phòng cũ xuống kiêm
        nhiệm** chứ không xóa — kể cả khi phòng chính mới là "không có". Nên xóa
-       ô "Phòng ban" ở giao diện không hề gỡ người đó khỏi phòng cũ.
+       ô "Phòng ban" ở giao diện không hề gỡ người đó khỏi phòng cũ. (Từ
+       bao-CR-709 phòng cũ mặc định bị gỡ, chỉ giữ khi người thao tác chọn giữ;
+       các phòng kiêm nhiệm KHÁC của pháp nhân cũ vẫn cần hàm này.)
     2. `_check_departments_exist` (L3) chặn mọi phòng khác pháp nhân.
 
     Kết quả: đổi pháp nhân xong là ăn 400 *"Phòng ban thuộc pháp nhân khác"* trỏ

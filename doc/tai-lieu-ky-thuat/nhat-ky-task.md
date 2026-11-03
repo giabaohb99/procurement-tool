@@ -18087,6 +18087,22 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 - Chốt người duyệt chặng một khi chính Trưởng phòng Nhân sự xin nghỉ.
 - Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
 
+## bao-CR-709 | Hỏi giữ phòng cũ làm kiêm nhiệm khi đổi phòng chính
+- status: xong
+- date: 2026-11-03
+- list: HRM
+- tag: Nhân sự
+
+**Bối cảnh:** Khi đổi phòng chính của một nhân sự ở hồ sơ, hệ thống tự hạ phòng cũ xuống phòng kiêm nhiệm. Người đó vẫn thấy phiếu của phòng cũ vì phạm vi dữ liệu tính theo mọi phòng, như trường hợp NSU012 chuyển về nhà máy ngày 31/10 vẫn thấy phiếu của Sản xuất - Thu mua.
+
+**Đã làm**
+- Đổi phòng chính nay mặc định gỡ phòng cũ, ở cả màn hồ sơ, áp quyết định điều chuyển và nhập Excel; các phòng kiêm nhiệm khác giữ nguyên.
+- Màn hồ sơ nhân sự hỏi "Giữ phòng cũ làm kiêm nhiệm?" khi đổi từ phòng này sang phòng khác, nút mặc định là gỡ; chọn giữ thì phòng cũ thành kiêm nhiệm.
+- Nhật ký hồ sơ ghi rõ phòng cũ đã gỡ hay được giữ.
+- Bài kiểm cho cả hai nhánh ở máy chủ và hộp thoại.
+
+Mã nguồn: employee/service.py `_sync_primary_department`, employee/schema.py `keep_old_department`, frontend-v2 modules/hr employee-keep-old-department-dialog.tsx, employee-detail-page.tsx.
+
 ## bao-CR-708 | Tách riêng các loại nghỉ chế độ BHXH
 - status: xong
 - date: 2026-11-02

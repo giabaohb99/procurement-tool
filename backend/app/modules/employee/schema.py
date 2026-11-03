@@ -286,6 +286,10 @@ class EmployeeUpdate(BaseModel):
     extra_phones: ExtraPhones | None = None
     company_id: int | None = None
     department_id: int | None = None
+    #  bao-CR-709: đổi phòng chính thì phòng CŨ có giữ lại làm kiêm nhiệm không. Mặc định KHÔNG — giữ lại là
+    #  người đó vẫn thấy phiếu của phòng cũ (phạm vi dữ liệu tính theo MỌI phòng), như ca NSU012 ngày 31/10.
+    #  Cờ điều khiển, không phải cột hồ sơ: `update_employee_core` bóc ra trước vòng `setattr`.
+    keep_old_department: bool | None = None
     position: Str100 | None = None
     position_id: int | None = None
     role_name: Str100 | None = None

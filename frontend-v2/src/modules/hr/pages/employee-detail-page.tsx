@@ -44,6 +44,7 @@ import { EmployeePendingWorkConfirmDialog } from '../components/employee-pending
 import { EmployeeDepartmentCard } from '../components/employee-department-card'
 import { EmployeeDetailBlock } from '../components/employee-detail-block'
 import { EmployeeDetailSidebar } from '../components/employee-detail-sidebar'
+import { EmployeeKeepOldDepartmentDialog } from '../components/employee-keep-old-department-dialog'
 import { EmployeeSignatureCard } from '../components/employee-signature-card'
 import { EmployeeStatusIndicator } from '../components/employee-status-indicator'
 import { EmployeeTabContact } from '../components/employee-tab-contact'
@@ -116,6 +117,12 @@ const FILLED_FIELDS = cn(
   '[&_[data-slot=form-item]_button[aria-haspopup=dialog]]:border-transparent [&_[data-slot=form-item]_button[aria-haspopup=dialog]]:bg-muted [&_[data-slot=form-item]_button[aria-haspopup=dialog]]:shadow-none',
 )
 
+/** Lần lưu đang chờ xác nhận nghỉ việc — kèm câu trả lời giữ phòng cũ (bao-CR-709) nếu đã hỏi. */
+interface PendingSave {
+  values: EmployeeProfileFormValues
+  keepOldDepartment?: boolean
+}
+
 /**
  * Chi tiết hồ sơ nhân sự — 8 TAB (duoc-CR-314 Đợt 2, thêm dần về sau).
  *
@@ -176,7 +183,9 @@ export function EmployeeDetailPage() {
   const submittingRef = useRef(false)
   //  duoc-CR-665 (V0-4): lần lưu đưa hồ sơ sang NGHỈ VIỆC / ngừng hoạt động sẽ khóa tài khoản,
   //  nên dừng lại ở hộp "kiểm việc duyệt đang treo" trước. Giữ giá trị form để lưu tiếp khi xác nhận.
-  const [pendingLeave, setPendingLeave] = useState<EmployeeProfileFormValues | null>(null)
+  const [pendingLeave, setPendingLeave] = useState<PendingSave | null>(null)
+  //  bao-CR-709: đổi phòng chính thì hỏi giữ phòng cũ làm kiêm nhiệm hay gỡ, TRƯỚC hộp nghỉ việc.
+  const [pendingDepartment, setPendingDepartment] = useState<EmployeeProfileFormValues | null>(null)
 
   //  ⚠️ `keepDirtyValues` — `employee` đổi không chỉ lúc mở trang: tải ảnh CCCD /
   //  ảnh đại diện / chữ ký hay "Áp" một dòng quá trình công tác đều làm hồ sơ
@@ -214,18 +223,33 @@ export function EmployeeDetailPage() {
     )
   }
 
+  function departmentName(id: number, fallback?: string | null) {
+    return departments?.items.find((d) => d.id === id)?.name ?? fallback ?? `Phòng #${id}`
+  }
+
   async function onSubmit(values: EmployeeProfileFormValues) {
+    //  Chỉ hỏi khi đổi từ một phòng THẬT sang một phòng THẬT khác. Bỏ trống phòng thì không có gì để
+    //  giữ: phòng cũ mà giữ làm kiêm nhiệm sẽ bị đẩy lên lại làm phòng chính (backend lấy phần tử đầu).
+    const oldDepartment = employee?.department_id ?? 0
+    if (oldDepartment && values.department_id && values.department_id !== oldDepartment) {
+      setPendingDepartment(values)
+      return
+    }
+    await continueSave(values)
+  }
+
+  async function continueSave(values: EmployeeProfileFormValues, keepOldDepartment?: boolean) {
     const leaving =
       (values.status === 'resigned' && employee?.status !== 'resigned') ||
       (!values.is_active && employee?.is_active === true)
     if (leaving) {
-      setPendingLeave(values)
+      setPendingLeave({ values, keepOldDepartment })
       return
     }
-    await saveProfile(values)
+    await saveProfile(values, keepOldDepartment)
   }
 
-  async function saveProfile(values: EmployeeProfileFormValues) {
+  async function saveProfile(values: EmployeeProfileFormValues, keepOldDepartment?: boolean) {
     //  ⚠️ Chặn GỬI HAI LẦN bằng ref, không dựa vào `disabled={isPending}`.
     //
     //  `isPending` là state React nên chỉ đúng ở lần render SAU. Bấm đúp — hay
@@ -248,7 +272,11 @@ export function EmployeeDetailPage() {
       //  khoản ngân hàng thật. Lý lẽ đầy đủ ở `pickWritableProfile`.
       await saveEmployee.mutateAsync({
         id: employeeId,
-        values: pickWritableProfile(values, canReadSensitive, employee?.extra_phones),
+        values: {
+          ...pickWritableProfile(values, canReadSensitive, employee?.extra_phones),
+          //  Chỉ gửi khi người dùng vừa trả lời câu hỏi giữ phòng cũ; vắng = backend gỡ phòng cũ.
+          ...(keepOldDepartment !== undefined && { keep_old_department: keepOldDepartment }),
+        },
       })
       //  Lưu xong thì coi giá trị vừa gửi là mốc sạch. `keepDirtyValues` ở effect
       //  trên KHÔNG xóa `dirtyFields`, nên thiếu dòng này thì ô đã lưu vẫn bị coi
@@ -612,9 +640,23 @@ export function EmployeeDetailPage() {
           confirmLabel="Lưu và chuyển nghỉ việc"
           pending={saveEmployee.isPending}
           onConfirm={() => {
-            const values = pendingLeave
+            const { values, keepOldDepartment } = pendingLeave
             setPendingLeave(null)
-            void saveProfile(values)
+            void saveProfile(values, keepOldDepartment)
+          }}
+        />
+      )}
+      {pendingDepartment && (
+        <EmployeeKeepOldDepartmentDialog
+          open
+          onOpenChange={(next) => !next && setPendingDepartment(null)}
+          oldDepartmentName={departmentName(employee.department_id, employee.department_name)}
+          newDepartmentName={departmentName(pendingDepartment.department_id)}
+          pending={saveEmployee.isPending}
+          onChoose={(keepOld) => {
+            const values = pendingDepartment
+            setPendingDepartment(null)
+            void continueSave(values, keepOld)
           }}
         />
       )}

@@ -258,7 +258,8 @@ def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee
     return obj
 
 
-def _sync_primary_department(db: Session, obj: Employee, user_id: int) -> None:
+def _sync_primary_department(db: Session, obj: Employee, user_id: int, *,
+                             old_primary: int = 0, keep_old: bool = False) -> str:
     """Giữ `tab_employee_department` khớp với `tab_employee.department_id`.
 
     ⚠️ KIÊM NHIỆM (CR-167) có HAI nguồn ghi phòng ban: cửa riêng
@@ -267,20 +268,35 @@ def _sync_primary_department(db: Session, obj: Employee, user_id: int) -> None:
     hồ sơ hiện một phòng, phạm vi dữ liệu chạy theo phòng khác, mà không chỗ nào
     báo.
 
-    Ở đây chỉ đụng tới PHÒNG CHÍNH: đổi `department_id` là đổi dòng `is_primary`,
-    các phòng kiêm nhiệm khác giữ nguyên. Đổi cả danh sách thì dùng cửa riêng —
-    nó có ba chốt chống vượt quyền, cột này thì không.
+    Đổi phòng chính thì PHÒNG CŨ (`old_primary`) bị GỠ, trừ khi `keep_old` — người
+    thao tác chọn giữ nó làm kiêm nhiệm (bao-CR-709). Trước đây phòng cũ luôn bị hạ
+    xuống kiêm nhiệm một cách âm thầm, nên người vừa chuyển phòng vẫn thấy phiếu của
+    phòng cũ (NSU012 về nhà máy 31/10 vẫn thấy phiếu Sản xuất - Thu mua). Các phòng
+    kiêm nhiệm KHÁC giữ nguyên. Đổi cả danh sách thì dùng cửa riêng — nó có ba chốt
+    chống vượt quyền, cột này thì không.
+
+    Trả về một câu cho nhật ký thao tác (rỗng nếu phòng chính không đổi).
     """
     from .department_service import set_departments, departments_of
 
     existing = departments_of(db, obj.id)
     new = obj.department_id or 0
-    if existing and existing[0] == new:
-        return                        # phòng chính không đổi
+    moved = bool(old_primary) and old_primary != new
+    drop = old_primary if moved and not keep_old else 0
+    if existing and existing[0] == new and drop not in existing:
+        return ""                     # phòng chính không đổi, không có gì để gỡ
 
-    remaining = [x for x in existing if x != new]
+    remaining = [x for x in existing if x != new and x != drop]
     set_departments(db, obj, ([new] if new else []) + remaining, user_id,
                   primary_department=new or None)
+    if not moved:
+        return ""
+    from app.modules.department.model import Department
+    old = db.get(Department, old_primary)
+    label = old.name if old else str(old_primary)
+    if drop:
+        return f'Đổi phòng chính — gỡ phòng cũ "{label}"'
+    return f'Đổi phòng chính — giữ phòng cũ "{label}" làm kiêm nhiệm'
 
 
 def clear_perm_cache_of(db: Session, employee_id: int) -> None:
@@ -411,6 +427,8 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
         block_manager_cycle(db, obj.id, fields["manager_id"])
     if "email" in fields:
         fields["email"] = ensure_email_unique(db, fields["email"] or "", exclude_id=obj.id)
+    #  bao-CR-709: cờ điều khiển, không phải cột hồ sơ — bóc ra trước vòng `setattr`.
+    keep_old_department = bool(fields.pop("keep_old_department", False))
     for key, value in fields.items():
         setattr(obj, key, value)
     if "phone" in fields or "extra_phones" in fields:
@@ -434,8 +452,10 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
         from .department_service import detach_other_company_departments
         dropped_departments = detach_other_company_departments(db, obj, user_id)
 
+    department_note = ""
     if "department_id" in fields:
-        _sync_primary_department(db, obj, user_id)
+        department_note = _sync_primary_department(db, obj, user_id, old_primary=old_scope[1],
+                                                   keep_old=keep_old_department)
 
     # CR-022: hồ sơ nhân sự KHÔNG còn cấp quyền cho tài khoản đăng nhập. Quyền thật của tài khoản
     # chỉ gán ở màn "Phân quyền tài khoản" (tab_user_role).
@@ -460,6 +480,8 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
     notes = []
     if salary_changed:
         notes.append("Cập nhật lương")      # KHÔNG kèm số — lương không vào nhật ký
+    if department_note:
+        notes.append(department_note)
     if dropped_departments:
         notes.append("Đổi pháp nhân — gỡ khỏi phòng ban của pháp nhân cũ: "
                      + ", ".join(dropped_departments))

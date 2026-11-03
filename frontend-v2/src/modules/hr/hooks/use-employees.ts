@@ -7,7 +7,7 @@ import type { ListParams } from '@/shared/types/api'
 import { employeeApi } from '../api/employee-api'
 import type {
   EmployeeFormValues,
-  EmployeeProfileFormValues,
+  EmployeeProfileUpdate,
 } from '../schemas/employee-schema'
 
 /**
@@ -109,7 +109,7 @@ export function useSaveEmployee() {
       values,
     }: {
       id?: number
-      values: EmployeeFormValues | Partial<EmployeeProfileFormValues>
+      values: EmployeeFormValues | EmployeeProfileUpdate
     }) =>
       id
         ? employeeApi.update(id, values)

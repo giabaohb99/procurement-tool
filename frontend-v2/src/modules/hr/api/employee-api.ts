@@ -10,7 +10,7 @@ import type {
 } from '../types/employee'
 import type {
   EmployeeFormValues,
-  EmployeeProfileFormValues,
+  EmployeeProfileUpdate,
 } from '../schemas/employee-schema'
 
 const BASE_URL = '/api/employees'
@@ -86,7 +86,7 @@ export const employeeApi = {
 
   update: (
     id: number,
-    payload: Partial<EmployeeFormValues> | Partial<EmployeeProfileFormValues>,
+    payload: Partial<EmployeeFormValues> | EmployeeProfileUpdate,
   ) => apiPatch<Employee>(`${BASE_URL}/${id}`, toEmployeePayload(payload)),
 
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/${id}`),
