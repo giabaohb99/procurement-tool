@@ -92,6 +92,8 @@ from app.modules.employee.monthly_reminders_controller import router as monthly_
 from app.modules.employee.org_chart_controller import router as employee_org_chart_router  # duoc-CR-669
 from app.modules.leave.report_controller import router as leave_report_router
 from app.modules.leave.balance_report_controller import router as leave_balance_report_router
+from app.modules.leave.balance_matrix_controller import router as leave_balance_matrix_router  # duoc-CR-717
+from app.modules.leave.holiday_work_report_controller import router as holiday_work_report_router  # duoc-CR-717
 from app.modules.vehicle_booking.report_controller import router as vehicle_booking_report_router
 from app.modules.seal_request.report_controller import router as seal_request_report_router
 from app.modules.document.report_controller import router as document_report_router
@@ -159,6 +161,9 @@ from app.modules.leave.request_controller import router as leave_request_router
 from app.modules.leave.comp_request_controller import router as leave_comp_request_router
 from app.modules.leave.inbox_controller import router as leave_inbox_router
 from app.modules.leave.balance_controller import router as leave_balance_router
+from app.modules.leave.policy_controller import (lines_router as leave_policy_lines_router,
+                                                 policy_router as leave_policy_router)
+from app.modules.leave.policy_assignment_controller import router as leave_policy_assignment_router
 from app.modules.work_schedule.template_controller import router as work_schedule_router
 from app.modules.work_schedule.assignment_controller import router as work_schedule_assignment_router
 from app.modules.meeting_room.controller import (meeting_room_router,
@@ -323,6 +328,8 @@ app.include_router(labor_usage_report_router)  # duoc-CR-687: mẫu 01/PLI (khó
 app.include_router(employee_org_chart_router)  # duoc-CR-669: /api/org-chart
 app.include_router(leave_report_router)
 app.include_router(leave_balance_report_router)
+app.include_router(leave_balance_matrix_router)  # duoc-CR-717: /matrix TRƯỚC leave_balance_router (/{bid})
+app.include_router(holiday_work_report_router)  # duoc-CR-717: làm việc ngày lễ, ngày nghỉ (khóa 30)
 app.include_router(vehicle_booking_report_router)
 app.include_router(seal_request_report_router)
 app.include_router(document_report_router)
@@ -462,6 +469,9 @@ app.include_router(work_schedule_router)
 app.include_router(work_schedule_assignment_router)
 app.include_router(leave_type_router)
 app.include_router(leave_type_quota_router)
+app.include_router(leave_policy_router)             # duoc-CR-717: chính sách nghỉ phép + dòng của gói
+app.include_router(leave_policy_lines_router)
+app.include_router(leave_policy_assignment_router)  # duoc-CR-717: phân bổ chính sách (preview/bulk khai trước /{aid})
 #  Đặt phòng họp (duoc-CR-279) — phiếu đặt + danh mục phòng.
 #  ⚠️ Hộp việc duyệt đăng TRƯỚC: `/inbox/...` là đường tĩnh, mà router phiếu có
 #  `/{bid}` nuốt mọi đường một đoạn (cùng bẫy với `/api/leave-requests`).

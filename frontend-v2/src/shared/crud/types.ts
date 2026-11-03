@@ -13,6 +13,9 @@ import type { IdentityChip } from '@/shared/ui/record-identity-card'
  */
 export type CrudRecord = Record<string, unknown>
 
+/** Đích dọn cache phụ sau khi ghi: `apiPath` của bảng CRUD khác, hoặc một khóa query thô. */
+export type CrudInvalidateTarget = string | readonly unknown[]
+
 export interface CrudOption {
   value: string | number | boolean
   label: string
@@ -251,8 +254,12 @@ export interface CrudConfig<T> {
    * `apiPath` của các bảng KHÁC cần làm mới cache sau khi tạo/sửa/xóa ở bảng này
    * (vd Gán lịch khai `['/api/work-schedules']` vì số "đang gán n nơi" và tên mẫu
    * hiện ở màn kia đổi theo). Mặc định chỉ dọn chính `apiPath`.
+   *
+   * Phần tử là MẢNG thì hiểu là một khóa TanStack Query thô (lấy từ `queryKeys`) — cho bảng
+   * kéo theo dữ liệu KHÔNG đi cache CRUD (vd Chính sách nghỉ phép đổi tên / ngừng dùng thì
+   * danh sách phân bổ `queryKeys.hr.leavePolicyAssignmentsRoot` phải nạp lại, duoc-CR-717).
    */
-  alsoInvalidate?: string[]
+  alsoInvalidate?: CrudInvalidateTarget[]
   /** Thẻ danh tính hiển thị trên đầu trang chi tiết. */
   chips?: (row: T) => IdentityChip[]
   /** Cảnh báo khi xóa bản ghi (vd 'Dữ liệu tồn kho liên quan có thể bị ảnh hưởng'). */
@@ -296,7 +303,7 @@ export interface CrudConfig<T> {
   /**
    * Bố cục trang chi tiết. `'card'` (mặc định) = khuôn thẻ cũ. `'flat'` = mặt phẳng kiểu ERPNext (duoc-CR-716): hàng
    * tiêu đề dính, tab gạch chân, nhóm ngăn bằng đường kẻ gập / mở được, công tắc dòng gọn, chú thích (i), khối
-   * «Hoạt động» dạng dòng thời gian. `detailMaxWidth` không áp ở bố cục `flat` (luôn tràn khung).
+   * "Hoạt động" dạng dòng thời gian. `detailMaxWidth` không áp ở bố cục `flat` (luôn tràn khung).
    */
   detailLayout?: 'card' | 'flat'
   /** Render thêm nội dung ở đầu thanh công cụ. */

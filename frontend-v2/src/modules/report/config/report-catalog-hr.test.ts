@@ -93,3 +93,36 @@ describe('HR_REPORT_CATALOG — khóa 25 đã bỏ (duoc-CR-692)', () => {
     expect(REPORT_KEY.find((o) => o.value === '25')).toBeUndefined()
   })
 })
+
+/**
+ * "Làm việc vào ngày lễ, ngày nghỉ" (duoc-CR-717, khóa 30). Nguồn là phiếu nghỉ bù nên gác
+ * `leave_comp_request` — khớp mục menu "Nghỉ bù" và `require(...)` của `/api/holiday-work-report`.
+ */
+describe('HR_REPORT_CATALOG — khóa 30 (duoc-CR-717)', () => {
+  const entry = HR_REPORT_CATALOG.find((r) => r.key === 30)
+
+  it('has the backend label, the comp-request gate, route and endpoint', () => {
+    expect(entry, 'thiếu khóa 30').toBeDefined()
+    const backend = REPORT_KEY.find((o) => o.value === '30')
+    expect(backend, 'REPORT_KEY chưa sinh khóa 30 — chạy gen_status_ts.py').toBeDefined()
+    expect(entry?.label).toBe(backend?.label)
+    expect(entry).toMatchObject({
+      path: '/report/holiday-work',
+      sourcePath: appRoutes.hr.leaveCompRequests,
+      entity: 'leave_comp_request',
+      endpoint: '/api/holiday-work-report/summary',
+      group: 'Nhân sự',
+    })
+  })
+
+  it('puts only the always-present "lines" metric on the overview strip', () => {
+    //  `pending_lines` chỉ có khi bật "Gồm phiếu chờ duyệt" — trang Tổng quan không bật nó.
+    expect(entry?.overviewKpis).toEqual(['lines'])
+  })
+
+  //  Nạp động cả cây trang báo cáo (recharts…) mất 3-6 giây khi chạy chung thư mục — trần 5 giây mặc
+  //  định từng làm bài này (và bài "đợt 4" bên trên) đỏ chập chờn khi máy bận.
+  it('loads the page component', { timeout: 20_000 }, async () => {
+    expect(typeof (await entry?.load())).toBe('function')
+  })
+})

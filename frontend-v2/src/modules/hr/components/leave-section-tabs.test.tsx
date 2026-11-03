@@ -78,7 +78,7 @@ describe('LeaveSectionTabs', () => {
 
   it('chỉ sửa được MỘT danh mục thì không dựng hàng tab một mục', () => {
     // Một tab thì không phải là tab — người dùng không chuyển đi đâu được.
-    // (`leave_type.write` mở cả «Loại nghỉ» lẫn «Ngày cấm nghỉ» từ CR-715 nên dùng `holiday.write`.)
+    // (`leave_type.write` mở cả "Loại nghỉ" lẫn "Ngày cấm nghỉ" từ CR-715 nên dùng `holiday.write`.)
     grants = [...NHAN_VIEN, 'holiday.write']
     const { container } = render(
       <MemoryRouter initialEntries={[appRoutes.hr.leaveTypes]}>
@@ -88,7 +88,7 @@ describe('LeaveSectionTabs', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('duoc-CR-715: có quyền sửa loại nghỉ thì thấy tab «Ngày cấm nghỉ» và nó SÁNG ở màn của nó', () => {
+  it('duoc-CR-715: có quyền sửa loại nghỉ thì thấy tab "Ngày cấm nghỉ" và nó SÁNG ở màn của nó', () => {
     grants = NHAN_SU
     build(appRoutes.hr.leaveBlocks)
     expect(screen.getByRole('link', { name: 'Ngày cấm nghỉ' })).toBeInTheDocument()
@@ -99,5 +99,37 @@ describe('LeaveSectionTabs', () => {
     grants = NHAN_SU
     build(appRoutes.hr.leaveBlockDetail(5))
     expect(activeLabels()).toEqual(['Ngày cấm nghỉ'])
+  })
+
+  it('duoc-CR-717: shows the 4th tab "Chính sách nghỉ phép" to leave_type writers, lit on its own screens', () => {
+    grants = NHAN_SU
+    build(appRoutes.hr.leavePolicyDetail(3))
+    expect(screen.getAllByRole('link').map((a) => a.textContent)).toEqual([
+      'Loại nghỉ',
+      'Lịch ngày lễ',
+      'Ngày cấm nghỉ',
+      'Chính sách nghỉ phép',
+    ])
+    expect(activeLabels()).toEqual(['Chính sách nghỉ phép'])
+  })
+
+  it('duoc-CR-717: hides the policy tab without leave_type.write even when other setting tabs are visible', () => {
+    //  `leave_type.read` (chỉ đọc) KHÔNG đủ: còn mỗi tab "Lịch ngày lễ", một tab thì thanh ẩn hẳn.
+    grants = [...NHAN_VIEN, 'holiday.write', 'leave_type.read']
+    const { container } = render(
+      <MemoryRouter initialEntries={[appRoutes.hr.leavePolicies]}>
+        <LeaveSectionTabs />
+      </MemoryRouter>,
+    )
+    expect(screen.queryByRole('link', { name: 'Chính sách nghỉ phép' })).not.toBeInTheDocument()
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('duoc-CR-717: the policy path does not light "Loại nghỉ" by prefix accident', () => {
+    //  `/hr/leave-policies` không bắt đầu bằng `/hr/leave-types` — nhưng canh luôn để ai đổi tên đường
+    //  thành tiền tố của đường khác thì đỏ ngay.
+    grants = NHAN_SU
+    build(appRoutes.hr.leavePolicies)
+    expect(activeLabels()).toEqual(['Chính sách nghỉ phép'])
   })
 })

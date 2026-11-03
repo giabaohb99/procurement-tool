@@ -464,6 +464,28 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       expect(canAccessRoute(hr, '/hr/holidays', makeCan({}))).toBe(false)
     })
 
+    it('/hr/leave-policies (duoc-CR-717): đòi hỏi quyền quản lý trên leave_type, không mở cho ai chỉ đọc', () => {
+      for (const path of ['/hr/leave-policies', '/hr/leave-policies/new', '/hr/leave-policies/3']) {
+        expect(canAccessRoute(hr, path, makeCan({ leave_type: ['write'] }))).toBe(true)
+        expect(canAccessRoute(hr, path, makeCan({ leave_type: ['read'] }))).toBe(false)
+        expect(canAccessRoute(hr, path, makeCan({ leave_balance: ['read', 'write'] }))).toBe(false)
+        expect(canAccessRoute(hr, path, makeCan({}))).toBe(false)
+      }
+    })
+
+    it('/hr/leave-policy-assignments (duoc-CR-717): cả danh sách lẫn trang hàng loạt cần leave_balance.write — chỉ nhân sự', () => {
+      const list = '/hr/leave-policy-assignments'
+      const bulk = '/hr/leave-policy-assignments/bulk'
+      //  Seed cấp `leave_balance.read` (phạm vi "của tôi") cho MỌI nhân viên — gác `read` là ai cũng vào được.
+      expect(canAccessRoute(hr, list, makeCan({ leave_balance: ['read'] }))).toBe(false)
+      expect(canAccessRoute(hr, list, makeCan({ leave_balance: ['read', 'write'] }))).toBe(true)
+      expect(canAccessRoute(hr, list, makeCan({ leave_type: ['write'] }))).toBe(false)
+      expect(canAccessRoute(hr, list, makeCan({}))).toBe(false)
+      expect(canAccessRoute(hr, bulk, makeCan({ leave_balance: ['read'] }))).toBe(false)
+      expect(canAccessRoute(hr, bulk, makeCan({ leave_balance: ['read', 'write'] }))).toBe(true)
+      expect(canAccessRoute(hr, bulk, makeCan({}))).toBe(false)
+    })
+
     it('/hr/leave-blocks (duoc-CR-715): đòi hỏi quyền quản lý trên leave_type, không mở cho ai chỉ đọc', () => {
       for (const path of ['/hr/leave-blocks', '/hr/leave-blocks/new', '/hr/leave-blocks/7']) {
         expect(canAccessRoute(hr, path, makeCan({ leave_type: ['write'] }))).toBe(true)
@@ -482,11 +504,17 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Đơn nghỉ phép', 'Lịch nghỉ'])
     })
 
-    it('người quản lý quỹ phép (leave_balance): chỉ thấy Quỹ phép năm', () => {
+    it('chỉ ĐỌC quỹ phép (seed cấp cho mọi nhân viên): thấy Quỹ phép năm, KHÔNG thấy Phân bổ chính sách (duoc-CR-717)', () => {
       const items = visibleNavItems(hr, makeCan({ leave_balance: ['read'], employee: ['read'] }))
       const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
       expect(leaveMenu).toBeDefined()
       expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Quỹ phép năm'])
+    })
+
+    it('người quản lý quỹ phép (leave_balance.write): thấy Quỹ phép năm + Phân bổ chính sách (duoc-CR-717)', () => {
+      const items = visibleNavItems(hr, makeCan({ leave_balance: ['read', 'write'], employee: ['read'] }))
+      const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
+      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Quỹ phép năm', 'Phân bổ chính sách'])
     })
 
     it('người quản lý danh mục (leave_type:write): chỉ thấy Thiết lập', () => {
@@ -501,7 +529,7 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
         hr,
         makeCan({
           leave_request: ['read'],
-          leave_balance: ['read'],
+          leave_balance: ['read', 'write'],
           leave_type: ['write'],
           holiday: ['write'],
           employee: ['read'],
@@ -513,6 +541,7 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
         'Đơn nghỉ phép',
         'Lịch nghỉ',
         'Quỹ phép năm',
+        'Phân bổ chính sách',
         'Thiết lập',
       ])
     })

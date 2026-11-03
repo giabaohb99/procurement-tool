@@ -228,7 +228,22 @@ LEAVE_COMP_STATUS_LABELS = {
     LeaveCompStatus.CANCELLED: "Đã hủy",
 }
 COMP_EDITABLE_STATUSES = (LeaveCompStatus.DRAFT, LeaveCompStatus.RETURNED)
-#  Phiếu còn hiệu lực — tính vào luật «một ngày một phiếu».
+#  Phiếu còn hiệu lực — tính vào luật "một ngày một phiếu".
 COMP_ACTIVE_STATUSES = (LeaveCompStatus.DRAFT, LeaveCompStatus.PENDING,
                         LeaveCompStatus.APPROVED, LeaveCompStatus.RETURNED)
 COMP_DAYS_ALLOWED = (0.5, 1.0)
+
+
+class LeavePolicyAssignmentState(IntEnum):
+    """Trạng thái phân bổ chính sách (duoc-CR-717) — DẪN XUẤT theo `vn_today()`, KHÔNG lưu thành cột."""
+
+    UPCOMING = 1   # Sắp tới: ngày bắt đầu còn ở tương lai
+    ACTIVE = 2     # Đang hiệu lực (kể cả "không thời hạn")
+    ENDED = 3      # Đã kết thúc: ngày kết thúc đã qua
+
+
+LEAVE_POLICY_ASSIGNMENT_STATE_LABELS = {
+    LeavePolicyAssignmentState.UPCOMING: "Sắp tới",
+    LeavePolicyAssignmentState.ACTIVE: "Đang hiệu lực",
+    LeavePolicyAssignmentState.ENDED: "Đã kết thúc",
+}
