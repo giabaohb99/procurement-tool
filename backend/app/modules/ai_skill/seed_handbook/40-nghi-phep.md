@@ -22,6 +22,7 @@ Phân hệ để nhân viên **nộp đơn nghỉ phép**, quản lý duyệt, v
 | **Giấy nghỉ phép (GNP)** | **Văn bản** trong phân hệ Văn thư, tự sinh **sau khi đơn đã duyệt**. Là hồ sơ lưu sổ, không phải thứ để nộp. |
 | **Loại nghỉ** | Danh mục cấu hình (Phép năm, Nghỉ ốm, Thai sản…). Sửa được luật mà không cần lập trình. Có sẵn năm loại chế độ BHXH riêng (BHXH chi trả, không trừ quỹ phép): Nghỉ khám thai, Nghỉ sảy thai/phá thai, Nghỉ thực hiện biện pháp tránh thai, Nghỉ chăm con ốm, Nghỉ dưỡng sức phục hồi sức khỏe — mức luật ghi ở ghi chú từng loại. |
 | **Quỹ phép** | Số ngày của **một người × một năm × một loại nghỉ**. |
+| **Phiếu nghỉ bù** (`NB…`) | Đã **đi làm** ngày lễ / ngày nghỉ theo lịch → xin **cộng thêm** ngày vào quỹ. **Không phải đơn nghỉ**: duyệt xong mới có ngày, rồi nộp đơn nghỉ loại nghỉ bù để dùng. |
 
 Người dùng hỏi "làm giấy nghỉ phép" thì họ muốn **nộp đơn** ở
 *Nhân sự ▸ Đơn nghỉ phép*, **không** phải tạo văn bản ở Văn thư. Giấy GNP hệ tự
@@ -39,9 +40,14 @@ sinh; tạo tay là ra một tờ giấy không gắn với quỹ phép nào.
   Nhưng **chỉ chính người nộp** mới hủy được đơn đang nằm trong luồng duyệt;
   người khác phải dùng *Trả lại* / *Từ chối* ở màn **Phê duyệt**.
 
-## Quỹ phép — bốn con số cộng, hai con số trừ
+## Quỹ phép — năm con số cộng, hai con số trừ
 
-    còn lại = (hạn mức + thâm niên + chuyển năm trước + điều chỉnh tay) − đã nghỉ − đang chờ duyệt
+    còn lại = (hạn mức + thâm niên + chuyển năm trước + điều chỉnh tay + nghỉ bù cộng thêm) − đã nghỉ − đang chờ duyệt
+              (− phần CHƯA TỚI THÁNG nếu loại nghỉ cộng dần theo tháng)
+
+- ⚠️ **Hỏi "còn bao nhiêu phép" thì gọi `my_leave_summary` và đọc `remaining_days`** — đó là đúng con số form nộp
+  đơn, bảng Quỹ phép năm và báo cáo đang dùng. **Đừng tự lấy hạn mức năm trừ đi** (sai với loại cộng dần, sai khi
+  có nghỉ bù, sai khi có ứng phép).
 
 - ***Đang chờ duyệt* ĐÃ bị trừ khỏi *còn lại*.** Nộp đơn 3 ngày là số còn lại tụt
   ngay 3 ngày, chưa cần ai duyệt. Người dùng thấy hụt ngày mà chưa nghỉ hôm nào —
@@ -51,8 +57,63 @@ sinh; tạo tay là ra một tờ giấy không gắn với quỹ phép nào.
   10 năm được +2, không phải +3.
 - Hồ sơ **chưa có ngày vào làm** thì thâm niên tính bằng **0** và quỹ có thể
   thiếu ngày. Màn hình có cảnh báo; bảo họ báo phòng Nhân sự nhập bổ sung.
-- **Không có ứng phép, không ghi nợ.** Xin vượt quỹ là bị **chặn lúc gửi duyệt**.
-  Muốn nghỉ tiếp thì chọn loại ***Nghỉ không lương***.
+- **Ứng phép: mặc định KHÔNG cho**, xin vượt quỹ là bị **chặn lúc gửi duyệt** — muốn nghỉ tiếp thì thêm dòng
+  ***Nghỉ không lương***. Nhân sự bật được **theo từng loại nghỉ** bằng ô ***Cho ứng phép tối đa (ngày)*** (trần 30):
+  khi đó còn lại được xuống tới **âm** số đó (cột *Còn lại* hiện số âm = đã dùng trước), vượt nữa vẫn bị chặn. Trong
+  kết quả tool là `max_negative_days` (0 = không cho ứng). Đừng hứa ứng phép khi số đó bằng 0.
+
+## Loại nghỉ cấp quỹ thế nào (từ 02/11/2026)
+
+Nhân sự khai ở *Thiết lập ▸ Loại nghỉ* (tab *Thông tin* / *Bậc thâm niên* / *Hạn mức theo nhóm*). Tool trả
+`accrual_mode_label` cho từng loại:
+
+| Cách cấp | Nghĩa |
+|---|---|
+| **Đủ hạn mức đầu năm** (mặc định) | Đầu năm có đủ số ngày. |
+| **Theo tỷ lệ tháng làm việc** | Người vào làm giữa năm được hạn mức × số tháng làm / 12 (vào làm ngày 1–15 tính cả tháng đó). |
+| **Cộng dần theo tháng** | Quỹ ghi đủ cả năm nhưng **phần chưa tới tháng chưa dùng được**: 12 ngày, đang tháng 5 → dùng được 5 (làm tròn xuống nửa ngày). Tool trả phần này ở `not_yet_accrued_days`. Thâm niên, phép chuyển sang, điều chỉnh tay, nghỉ bù không bị cộng dần. |
+
+- **Hạn mức theo nhóm**: một loại nghỉ có thể khai hạn mức riêng theo **hình thức nhân viên** (chính thức, thử việc…)
+  hoặc **cấp bậc**; ưu tiên hình thức → cấp bậc → hạn mức chung. Quỹ đã cấp **không tự tính lại** khi Nhân sự đổi luật —
+  người dùng hỏi "sao đổi rồi mà quỹ tôi không đổi" thì bảo họ nhờ Nhân sự điều chỉnh tay.
+- **Dùng được sau N ngày vào làm** (`applicable_after_days`): nhân viên mới xin loại đó trước mốc thì hệ chặn với câu
+  *Loại nghỉ "Phép năm" chỉ dùng được sau 60 ngày vào làm (từ dd/mm/yyyy).* — chọn ngày từ mốc đó hoặc loại khác.
+
+## Ngày cấm nghỉ (từ 02/11/2026)
+
+Nhân sự khai ở *Thiết lập ▸ Ngày cấm nghỉ* (khoảng ngày + lý do, áp cho cả công ty, một pháp nhân hoặc một phòng).
+
+- **Lập, sửa, gửi duyệt KHÔNG bị chặn** — chỉ hiện khung vàng *Đơn nghỉ này rơi vào ngày cấm nghỉ.*
+- **Lượt duyệt CUỐI bị chặn** (kể cả duyệt thẳng), trừ người có vai trò được miễn (*Cài đặt nhân sự ▸ Nghỉ phép*) hoặc
+  quản trị. Đơn vẫn *Chờ duyệt*, phép vẫn giữ chỗ — người duyệt **Trả về** để đổi ngày hoặc nhờ người được miễn duyệt.
+- Soạn đơn bằng trợ lý mà đụng ngày cấm thì `draft_leave_request` trả cảnh báo + `block_conflicts` — **nói trước cho
+  người dùng** rằng đơn sẽ kẹt ở lượt duyệt cuối, khuyên đổi ngày.
+
+## Phiếu xin nghỉ bù (từ 02/11/2026)
+
+Menu *Nhân sự ▸ Nghỉ phép ▸ Nghỉ bù*, khóa quyền riêng `leave_comp_request`.
+
+- Chỉ xin cho ngày **đã đi làm** (không ở tương lai, từ 01/01 năm ngoái) mà ngày đó là **ngày lễ** hoặc **ngày nghỉ
+  theo lịch làm việc** của chính người đó; mỗi ngày **một phiếu**; **0,5 hoặc 1 ngày**; gửi duyệt phải có lý do.
+- Duyệt xong số ngày **cộng vào quỹ loại nghỉ nhận ngày bù** (Nhân sự bật ô *Loại nhận ngày nghỉ bù*) của năm đi làm,
+  hoặc năm nay nếu ngày đi làm thuộc năm ngoái. Từ đó nghỉ bằng **đơn nghỉ phép** loại đó như mọi loại khác.
+- ⚠️ **Không ai tự duyệt được phiếu nghỉ bù của chính mình**, bất kể công tắc nào. Trợ lý không bao giờ đề xuất duyệt
+  phiếu của chính người hỏi.
+- Hủy phiếu đã duyệt chỉ được khi ngày bù **chưa bị dùng** để nghỉ.
+- **Soạn bằng trợ lý:** `draft_leave_comp_request` (cần `work_date` + lý do; `days` 0.5 / 1; Nhân sự / trưởng phòng lập
+  hộ thì truyền `employee` = mã nhân sự). Tool chạy trước đủ các chốt trên; có `error` thì **đọc nguyên câu**, đừng tự
+  soạn tiếp. Người dùng đồng ý thì xác nhận nháp với kind **`leave_comp`** (submit=true để gửi duyệt luôn). **Đừng lẫn**
+  với `draft_leave_request`: xin nghỉ bù = xin THÊM ngày; nghỉ bằng ngày bù đã có = đơn nghỉ.
+
+## Cài đặt nhân sự — hai công tắc nghỉ phép (từ 02/11/2026)
+
+*Nhân sự ▸ Master ▸ Cài đặt nhân sự*, tab **Nghỉ phép**; cả hai mặc định **TẮT**.
+
+- **Chặn đơn nghỉ lùi ngày**: bật thì không lập / sửa / gửi duyệt được đơn có ngày nghỉ **trước hôm nay** — hệ báo
+  *Không lập được đơn nghỉ cho ngày đã qua (dd/mm/yyyy)…*. Hôm nay vẫn lập được. Vai trò được miễn (khai ở cùng tab) và
+  quản trị lập hộ được; đơn họ lập hộ thì người nghỉ vẫn gửi duyệt được. Người dùng quên nộp đơn thì bảo nhờ Nhân sự lập hộ.
+- **Chặn tự duyệt đơn nghỉ**: bật thì người nghỉ không bao giờ là người duyệt đơn của chính mình, kể cả ở bước khai
+  đích danh — bước chỉ còn chính họ thì chuyển người dự phòng. (Phiếu nghỉ bù thì luôn chặn, không cần công tắc.)
 
 ## Phép không dùng hết thì đi đâu (kết sổ cuối năm)
 
@@ -179,8 +240,13 @@ soạn xong mới biết không đủ phép là bắt người ta làm lại.
 
 - `balances` là **một dòng cho MỖI loại nghỉ**, không phải một con số chung. Trả lời
   **còn 7 ngày** mà không nói loại nào là câu trả lời sai.
-- `remaining_days` **đã trừ** `pending_days` (đơn đang chờ duyệt). Người hỏi thấy hụt
-  ngày mà chưa nghỉ hôm nào thì đó là lý do — nói rõ ra.
+- `remaining_days` **đã trừ** `pending_days` (đơn đang chờ duyệt) và phần chưa tới tháng
+  (`not_yet_accrued_days`, loại cộng dần). Người hỏi thấy hụt ngày mà chưa nghỉ hôm nào thì
+  nói rõ lý do nào. Số **âm** = đang ứng phép (chỉ có khi `max_negative_days` > 0).
+- `comp_days` là ngày **nghỉ bù đã duyệt** cộng vào loại đó (đã nằm trong `total_days`);
+  `comp_requests` là các phiếu xin nghỉ bù của họ kèm trạng thái.
+- Hỏi "được ứng phép không / mới vào làm nghỉ phép năm được chưa" thì đọc `max_negative_days`
+  và `applicable_after_days` của đúng loại — đừng đoán.
 - `allocated: false` nghĩa là **năm đó chưa ai cấp quỹ loại nghỉ này**, KHÔNG phải
   **đã dùng hết**. Bảo họ hỏi phòng Nhân sự, đừng nói họ hết phép.
 - Đơn khai **nhiều loại nghỉ** thì đọc theo `lines`; `total_days` đầu đơn là tổng
@@ -206,10 +272,11 @@ khung giờ (`hourly` + `from_time`/`to_time` dạng `HH:MM`).
 
 Đọc kết quả:
 
-- **`warnings` phải đọc nguyên cho người dùng, đừng nuốt.** Ba thứ có thể nằm trong
-  đó, và cả ba là thứ backend sẽ **chặn lúc lưu**: trùng đơn cũ · vượt trần một đơn
-  của loại nghỉ · không đủ quỹ phép. Nói trước thì họ sửa ngay; im thì họ điền xong
-  form mới ăn câu chặn.
+- **`warnings` phải đọc nguyên cho người dùng, đừng nuốt.** Backend sẽ **chặn lúc lưu / gửi**:
+  trùng đơn cũ · vượt trần một đơn của loại nghỉ · không đủ quỹ (kể cả phần được ứng) · đơn lùi
+  ngày khi công tắc bật · chưa đủ ngày vào làm của loại đó. Hai cảnh báo **không chặn lưu**: đang
+  **ứng phép** trong mức cho phép (nói rõ còn lại sẽ thành số âm), và **ngày cấm nghỉ** (kẹt ở lượt
+  duyệt cuối, xem `block_conflicts`). Nói trước thì họ sửa ngay; im thì họ điền xong form mới ăn câu chặn.
 - `total_days` là **gợi ý** theo lịch làm việc (đã trừ Chủ nhật và ngày lễ) — người
   dùng sửa được trên form. Đừng nói đó là con số chốt.
 - `remaining_days` chỉ có với loại nghỉ **trừ quỹ**; `null` nghĩa là loại này không
@@ -222,21 +289,22 @@ nghỉ là chính người đang lập — ai cần lập hộ thì vào màn Đ
 không khai **nhiều loại nghỉ** trong một đơn (bấm *Thêm loại nghỉ* ngay trên form),
 và không tự bấm Lưu thay người dùng.
 
-## Bốn khóa quyền — đừng gộp
+## Năm khóa quyền — đừng gộp
 
 | Khóa | Mở màn nào |
 |---|---|
 | `leave_request` | Đơn nghỉ phép · Lịch nghỉ |
+| `leave_comp_request` | Nghỉ bù (phiếu xin nghỉ bù) |
 | `leave_balance` | Quỹ phép năm (cấp phát, **điều chỉnh tay**) |
-| `leave_type` | Thiết lập ▸ Loại nghỉ (kèm bậc thâm niên) |
+| `leave_type` | Thiết lập ▸ Loại nghỉ (kèm bậc thâm niên, hạn mức theo nhóm) |
 | `holiday` | Thiết lập ▸ Lịch ngày lễ |
 
-Tách bốn vì **`leave_balance` ghi được nghĩa là tặng thêm ngày phép cho bất kỳ ai**.
+Tách như vậy vì **`leave_balance` ghi được nghĩa là tặng thêm ngày phép cho bất kỳ ai**.
 Đó là việc của phòng Nhân sự (vai trò mẫu **`hr_leave`**), không phải của người nộp đơn.
 
-⚠️ Bốn khóa này **mới thêm 03/09/2026**. Trên hệ đang chạy, các vai trò cũ
-**không tự có** chúng — quản trị phải tick thêm ở *Nhân sự ▸ Phân quyền tài khoản*.
-Người dùng báo "không thấy menu Nghỉ phép" thì gần như chắc là do chỗ này.
+⚠️ Bốn khóa đầu **mới thêm 03/09/2026**, `leave_comp_request` thêm **02/11/2026**. Trên hệ đang chạy,
+các vai trò cũ **không tự có** chúng — quản trị phải tick thêm ở *Nhân sự ▸ Phân quyền tài khoản*.
+Người dùng báo "không thấy menu Nghỉ phép / Nghỉ bù" thì gần như chắc là do chỗ này.
 
 Luồng duyệt đơn có thể khai bước ***Người có quyền duyệt (theo phân quyền)*** (duoc-CR-680): người
 nhận việc là ai giữ vai trò được tick **Duyệt** trên `leave_request` với phạm vi Phòng ban, Công ty
@@ -253,7 +321,8 @@ phạm vi phủ phòng / công ty của người nộp — đừng đoán tên n
 | Quỹ phép năm | số dư phép, tài khoản phép |
 | Gửi duyệt | trình ký, submit |
 | Trả về chỉnh sửa | trả lại (dễ lẫn với Từ chối) |
-| Điều chỉnh tay | cộng phép, bù phép |
+| Điều chỉnh tay | cộng phép, bù phép (đó là việc Nhân sự sửa quỹ) |
+| Phiếu xin nghỉ bù | đơn nghỉ bù, phiếu làm thêm |
 | Lịch ngày lễ | ngày nghỉ lễ (đó là danh mục, tên đúng là **Lịch ngày lễ**) |
 | Kết sổ cuối năm | chốt sổ, khóa sổ, chuyển phép tự động |
 | Mang sang năm sau | bảo lưu phép, cộng dồn phép |

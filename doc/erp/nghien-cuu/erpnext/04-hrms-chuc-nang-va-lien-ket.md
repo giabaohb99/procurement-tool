@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Mã việc** | duoc-CR-709 |
-| **Ngày viết** | 02/11/2026 |
+| **Ngày viết** | 02/11/2026 · cập nhật 03/11/2026 (trạng thái DEGO ở §6 và Phụ lục A sau duoc-CR-713, duoc-CR-715) |
 | **Mục đích** | Đi sâu từng chức năng nhân sự của nexterp (ERPNext + app `hrms`), đặc biệt là cách các chứng từ con **liên kết** với nhau và với hồ sơ nhân viên, rồi đối chiếu với phân hệ Nhân sự của DEGO để biết nên học gì. |
 | **Nguồn** | App `hrms` nhánh `develop`, commit `ffadbbf` (01/11/2026), clone vào `dego-holding/nexterp/hrms` để đọc mã — khớp với lõi ERPNext `17.0.0-dev` đang có ở `nexterp/erpnext`. Đường dẫn trong tài liệu tính từ `nexterp/hrms/hrms/` (gọi tắt `hrms/`), trừ khi ghi rõ. |
 | **Đọc trước** | `03-chuc-nang-nhan-su-erpnext-va-doi-chieu.md` (phần nhân sự trong LÕI ERPNext: hồ sơ Employee, phòng ban, chức danh, lịch nghỉ). Tài liệu này nói phần app `hrms` cài thêm. |
@@ -278,14 +278,24 @@ lịch nhắc sinh nhật / kỷ niệm / hợp đồng sắp hết, báo cáo n
 | **Cao** | **Checklist tiếp nhận / cho nghỉ việc sinh việc vào phân hệ Dự án**: mẫu hoạt động theo vai trò, gửi phiếu là tạo task giao đúng người, hạn tự lùi qua ngày lễ, chốt «việc bắt buộc xong mới tạo hồ sơ / mới khóa tài khoản» | DEGO đã có phân hệ Dự án và lịch làm việc; hiện việc đón / tiễn người chỉ làm bằng trí nhớ, và hộp kiểm việc treo khi nghỉ việc mới phủ việc **duyệt** |
 | **Cao** | **Điều chuyển / bổ nhiệm thành chứng từ có duyệt**: duyệt xong tự ghi vào hồ sơ + quá trình công tác, hủy thì trả lại (kiểu `update_employee_work_history`) | DEGO đang «Áp» bằng tay từng dòng quá trình công tác; gắn vào luồng duyệt chung là có dấu vết ai cho phép |
 | **Cao** | **Tab «Kết nối» trên hồ sơ nhân sự**: đếm và mở nhanh mọi chứng từ của người đó (đơn nghỉ, hợp đồng, quá trình công tác, đặt xe, yêu cầu mua hàng đã lập…), nút «+» tạo mới có điền sẵn | Màn hồ sơ vừa đổi khung kiểu ERPNext (duoc-CR-708); thêm tab này là bước tự nhiên, dữ liệu đã có sẵn ở các phân hệ |
-| **Trung bình** | **Gói chính sách nghỉ theo cấp bậc + màn cấp quỹ hàng loạt** (Leave Policy, Leave Control Panel) | DEGO đã có loại nghỉ + quỹ năm; gói theo cấp bậc giảm việc cấp tay cho người mới / đổi cấp |
-| **Trung bình** | **Ngày cấm nghỉ** (Leave Block List: cảnh báo lúc lập, chặn lúc duyệt) | Rẻ, hợp các đợt kiểm kê / quyết toán cuối năm |
+| ~~**Trung bình**~~ **Đã có (duoc-CR-715)** | **Gói chính sách nghỉ theo cấp bậc + màn cấp quỹ hàng loạt** (Leave Policy, Leave Control Panel) | Làm theo kiểu gọn: tab «Hạn mức theo nhóm» ngay trên loại nghỉ (hình thức nhân viên > cấp bậc > hạn mức chung), cộng cách cấp quỹ theo tỷ lệ / cộng dần; nút «Cấp quỹ năm» sẵn có đóng vai màn cấp hàng loạt. Chưa có «gói» gán riêng từng người |
+| ~~**Trung bình**~~ **Đã có (duoc-CR-715)** | **Ngày cấm nghỉ** (Leave Block List: cảnh báo lúc lập, chặn lúc duyệt) | Đúng hai nhịp như `hrms`; vai trò được duyệt qua khai ở Cài đặt nhân sự |
 | **Trung bình** | **Phỏng vấn nghỉ việc + khiếu nại** dạng phiếu đơn giản | Có dữ liệu cho báo cáo nghỉ việc và giữ chân; khớp đề xuất «ghi lý do nghỉ việc» ở tài liệu 03 |
 | **Trung bình** | **Nhật ký xe ↔ Đặt xe**: ghi số km cuối vào xe, sinh đề nghị thanh toán chi phí xe | DEGO đã có Đặt xe và Yêu cầu thanh toán, thiếu khâu ghi km / chi phí sau chuyến |
 | **Thấp** | Đào tạo (chương trình, khóa, kết quả, phản hồi) + bản đồ kỹ năng | Cần khi công ty có kế hoạch đào tạo chính thức |
 | **Thấp** | Tuyển dụng đủ chuỗi (định biên → tin → ứng viên → phỏng vấn → thư mời → nhân viên) | Lớn; DEGO vừa gỡ «Kế hoạch nhân sự» (duoc-CR-692), nên phần định biên cần quyết lại trước |
 | **Thấp** | Đánh giá hiệu suất (kỳ, mục tiêu dạng cây, công thức điểm) | Lớn, phụ thuộc chính sách đánh giá của công ty |
-| — | Ca, chấm công, nghỉ bù dựa trên chấm công, lương, thuế, quy đổi phép ra tiền, quyết toán nghỉ việc | **Ngoài phạm vi (đã chốt không làm)** |
+| — | Ca, chấm công, lương, thuế, quy đổi phép ra tiền, quyết toán nghỉ việc | **Ngoài phạm vi (đã chốt không làm)** |
+
+**Cập nhật 03/11/2026 — đã làm sau khi viết tài liệu này** (chi tiết ở [`doc/erp/hrm/02-nghi-phep.md`](../../hrm/02-nghi-phep.md) §13–§14 và [`01-ho-so-nhan-su.md`](../../hrm/01-ho-so-nhan-su.md) §7.17):
+
+| Chức năng `hrms` | DEGO | Khác `hrms` ở đâu |
+|---|---|---|
+| Leave Type: earned leave, nghỉ sau N ngày vào làm, cho âm | **Đã có (duoc-CR-715)** — `accrual_mode` (đủ đầu năm / theo tỷ lệ tháng vào làm / cộng dần theo tháng), `applicable_after_days`, `max_negative_days` | Cộng dần tính động khi xem số dư, không có việc chạy ngầm cộng phép; không có sổ công nợ phép |
+| Leave Policy (quỹ theo nhóm) | **Đã có một phần (duoc-CR-715)** — bảng `tab_leave_type_quota` theo hình thức nhân viên / cấp bậc | Không có gói gán riêng từng người, không có Leave Control Panel riêng |
+| Leave Block List | **Đã có (duoc-CR-715)** | Chặn ở duyệt chặng cuối bằng `HookVeto`; miễn theo vai trò ở Cài đặt nhân sự |
+| Compensatory Leave Request | **Đã có (duoc-CR-715)** — phiếu nghỉ bù, khóa `leave_comp_request` | Không dựa chấm công: kiểm ngày lễ + lịch làm việc của người đó; luôn chặn tự duyệt; giữ chỗ «một ngày một phiếu» |
+| HR Settings | **Một phần (duoc-CR-713)** — trang Cài đặt nhân sự, ba tab Nhân viên · Nghỉ phép · Hợp đồng lao động | Chỉ lấy các cài đặt hợp phạm vi DEGO (chặn đơn lùi ngày + vai trò miễn, chặn tự duyệt, vai trò duyệt qua ngày cấm nghỉ, tiền tố mã, sơ đồ tổ chức, mốc kỷ niệm, ngày báo HĐLĐ); bỏ tab Chi phí, Chấm công, Tuyển dụng |
 
 **Điều DEGO đang làm tốt hơn `hrms`** (giữ nguyên, đừng «học ngược»): đơn nghỉ nhiều loại + nhiều khoảng ngày; giữ chỗ quỹ
 ngay khi gửi duyệt (`hrms` chỉ hiển thị số chờ duyệt, không giữ chỗ — `leave_application.py:1006-1013`); phạm vi dữ liệu
@@ -313,7 +323,7 @@ Lấy thẳng từ mã: mọi doctype **không phải bảng con** của app `hr
 Ba doctype hệ thống không phải nghiệp vụ bị bỏ: HR Telemetry Milestone, PWA Notification, Interest.
 
 Ký hiệu: **[P]** = chứng từ có bước gửi (submit), khi gửi mới tự cập nhật sang chỗ khác · **[1]** = màn một trang
-(cấu hình hoặc thao tác hàng loạt). Cột DEGO: **Có** · **Một phần** · **Chưa** · **Ngoài** (ngoài phạm vi, đã chốt không làm).
+(cấu hình hoặc thao tác hàng loạt). Cột DEGO: **Có** · **Một phần** · **Chưa** · **Ngoài** (ngoài phạm vi, đã chốt không làm) · **Đã có (CR)** = làm sau ngày viết tài liệu, kèm mã việc.
 
 ### A.1 HR Setup — Thiết lập nhân sự
 
@@ -327,7 +337,7 @@ Ký hiệu: **[P]** = chứng từ có bước gửi (submit), khi gửi mới t
 | Employment Type | Hình thức làm việc | Có |
 | Identification Document Type | Loại giấy tờ tùy thân | Một phần (chỉ CCCD) |
 | Employee Health Insurance | Bảo hiểm sức khỏe | Một phần (số BHXH, nơi khám BHYT) |
-| HR Settings [1] | Cấu hình nhân sự chung | Một phần |
+| HR Settings [1] | Cấu hình nhân sự chung | Một phần — trang Cài đặt nhân sự (duoc-CR-713): tab Nhân viên, Nghỉ phép, Hợp đồng lao động |
 
 ### A.2 Tenure — Vòng đời nhân viên
 
@@ -348,16 +358,16 @@ Ký hiệu: **[P]** = chứng từ có bước gửi (submit), khi gửi mới t
 
 | Chức năng | Nghĩa | DEGO |
 |---|---|---|
-| Leave Type | Loại nghỉ | Có |
+| Leave Type | Loại nghỉ | Có — thêm cách cấp quỹ (tỷ lệ / cộng dần), dùng sau N ngày, ứng phép, loại nhận nghỉ bù (duoc-CR-715) |
 | Leave Period | Kỳ phép | Có (theo năm) |
-| Leave Policy [P] + Leave Policy Assignment [P] | Gói chính sách nghỉ và gán gói | Chưa |
-| Leave Allocation [P] | Cấp quỹ phép | Có |
-| Leave Control Panel [1] | Cấp quỹ / gán gói hàng loạt | Chưa |
+| Leave Policy [P] + Leave Policy Assignment [P] | Gói chính sách nghỉ và gán gói | Đã có một phần (duoc-CR-715) — hạn mức theo hình thức nhân viên / cấp bậc trên từng loại nghỉ; chưa có gói gán riêng từng người |
+| Leave Allocation [P] | Cấp quỹ phép | Có — cấp theo tỷ lệ tháng vào làm hoặc cộng dần (duoc-CR-715) |
+| Leave Control Panel [1] | Cấp quỹ / gán gói hàng loạt | Một phần — nút «Cấp quỹ năm» cấp cả công ty theo hạn mức nhóm; chưa lọc nhóm, chưa gán gói |
 | Leave Application [P] | Đơn xin nghỉ | Có (đơn nhiều loại, nhiều khoảng) |
 | Leave Adjustment [P] | Điều chỉnh quỹ phép | Có (sửa quỹ) |
 | Leave Ledger Entry | Sổ cái quỹ phép (tự sinh) | Một phần (số dư tính động) |
-| Compensatory Leave Request [P] | Xin nghỉ bù khi làm ngày lễ | Chưa (dựa chấm công) |
-| Leave Block List | Ngày cấm nghỉ | Chưa |
+| Compensatory Leave Request [P] | Xin nghỉ bù khi làm ngày lễ | Đã có (duoc-CR-715) — kiểm theo ngày lễ + lịch làm việc, không dựa chấm công |
+| Leave Block List | Ngày cấm nghỉ | Đã có (duoc-CR-715) |
 | Leave Encashment [P] | Quy đổi phép ra tiền | Ngoài |
 | Holiday List *(lõi ERPNext)* · Holiday List Assignment [P] | Lịch nghỉ lễ · Gán lịch theo người | Có (ngày lễ + lịch làm việc 4 cấp) |
 | *Báo cáo:* Employee Leave Balance, Employee Leave Balance Summary, Employees working on a holiday | Số dư phép, tổng hợp, người đi làm ngày lễ | Có (hai báo cáo đầu) |

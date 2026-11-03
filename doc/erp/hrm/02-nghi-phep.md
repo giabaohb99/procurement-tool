@@ -2,10 +2,11 @@
 
 | | |
 |---|---|
-| Bản | 1.7 — 26/10/2026 (**một đơn khai nhiều khoảng ngày không liền kề** — duoc-CR-683: §7.3 mới, §6 + §7 + §12 sửa; **bỏ HR3-3** ở §7.1) · 1.6 — 23/10/2026 (sửa dòng cờ «Bắt buộc đính kèm» ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ «Bắt buộc đính kèm» chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
-| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 · **duoc-CR-683** |
+| Bản | 1.8 — 03/11/2026 (**nghỉ phép kiểu ERPNext** — duoc-CR-715: cách cấp quỹ, hạn mức theo nhóm, dùng sau N ngày, ứng phép, ngày cấm nghỉ, phiếu nghỉ bù — §13 mới; **Cài đặt nhân sự tab Nghỉ phép** — duoc-CR-713, §14 mới; trang Loại nghỉ bố cục phẳng — duoc-CR-716, §11; §3 · §5 · §9 · §10 · §11.1 · §12 sửa) · 1.7 — 26/10/2026 (**một đơn khai nhiều khoảng ngày không liền kề** — duoc-CR-683: §7.3 mới, §6 + §7 + §12 sửa; **bỏ HR3-3** ở §7.1) · 1.6 — 23/10/2026 (sửa dòng cờ «Bắt buộc đính kèm» ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ «Bắt buộc đính kèm» chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
+| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 · **duoc-CR-683** · duoc-CR-713 · **duoc-CR-715** · duoc-CR-716 |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Nghỉ phép* |
-| Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` |
+| Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` · CR-715: `plans/261102-1652-nghi-phep-kieu-erpnext/plan.md` (+ `reports/review-fixes.md`) |
+| Bài Help Center | `backend/scripts/seed_help_nghi_phep.py` (12 bài) · bài Cài đặt nhân sự ở `backend/scripts/seed_help_nhan_su.py`. Nội dung ở đây và ở seed phải khớp nhau |
 | Nguồn nghiệp vụ | `doc/erp/tham-khao-hrm/02-don-tu-va-duyet.md` (DT1, DT6) · `10-de-xuat-ap-dung.md` (V1-6, V1-7) |
 
 ---
@@ -41,18 +42,26 @@ không bỏ. Hai thứ nối nhau bằng `LeaveRequest.document_id`.
 ⚠️ Người dùng hỏi "làm giấy nghỉ phép" thì họ muốn **nộp đơn**, không phải tạo
 văn bản ở Văn thư. Tạo tay ở Văn thư là ra một tờ giấy **không gắn với quỹ phép nào**.
 
-## 3. Năm màn hình
+## 3. Bảy màn hình
+
+Menu *Nhân sự ▸ Nghỉ phép* có năm mục con: **Đơn nghỉ phép · Nghỉ bù · Lịch nghỉ · Quỹ phép năm · Thiết lập**.
+*Thiết lập* gom ba màn danh mục, chuyển qua lại bằng hàng thẻ `LeaveSectionTabs` (mỗi thẻ chỉ hiện với người sửa được
+danh mục đó). Hai đường dẫn `/hr/holidays`, `/hr/leave-blocks` có mục menu **ẩn** để route có gác quyền (gác điều
+hướng mặc định MỞ).
 
 | Màn | Đường dẫn | Khóa quyền |
 |---|---|---|
 | Đơn nghỉ phép (danh sách + chi tiết + nộp mới) | `/hr/leave-requests` | `leave_request` |
+| Nghỉ bù — phiếu xin nghỉ bù (danh sách + chi tiết + lập mới) — §13.6 | `/hr/leave-comp-requests` | `leave_comp_request` |
 | Lịch nghỉ (theo tuần) | `/hr/leave-calendar` | `leave_request` |
 | Quỹ phép năm | `/hr/leave-balances` | `leave_balance` |
-| Thiết lập ▸ Loại nghỉ (kèm tab *Bậc thâm niên*) | `/hr/leave-types` | `leave_type` |
+| Thiết lập ▸ Loại nghỉ (tab *Thông tin* · *Bậc thâm niên* · *Hạn mức theo nhóm*) | `/hr/leave-types` | `leave_type` |
 | Thiết lập ▸ Lịch ngày lễ | `/hr/holidays` | `holiday` |
+| Thiết lập ▸ Ngày cấm nghỉ — §13.5 | `/hr/leave-blocks` | `leave_type` (không thêm khóa) |
 
-Hai màn thiết lập dựng bằng **khung CRUD khai báo** (`shared/crud/`), ba màn còn
-lại viết tay vì có nghiệp vụ riêng.
+Ba màn thiết lập dựng bằng **khung CRUD khai báo** (`shared/crud/`), các màn còn
+lại viết tay vì có nghiệp vụ riêng. Các công tắc của nghỉ phép nằm ở trang **Cài đặt nhân sự** (`/hr/settings`,
+khóa `setting`) — §14.
 
 ### 3.1. Lịch nghỉ ở khổ điện thoại (duoc-CR-329, 09/09/2026)
 
@@ -171,12 +180,19 @@ cái vào một trạng thái thì người soạn mở đơn ra không biết m
 ## 5. Quỹ phép — công thức và bốn nhịp
 
 ```
-còn lại = (hạn mức + thâm niên + chuyển năm trước + điều chỉnh tay)
+còn lại = (hạn mức + thâm niên + chuyển năm trước + điều chỉnh tay + nghỉ bù)
           − đã nghỉ − đang chờ duyệt
+dùng được hôm nay = còn lại − phần chưa tới tháng (chỉ loại «Cộng dần theo tháng»)
 ```
 
 **Số còn lại KHÔNG lưu thành cột.** Lưu thêm thì có hai nguồn sự thật, và cái thứ
 hai sẽ lệch. `balance_service.remaining()` là nơi duy nhất tính.
+
+⚠️ Từ duoc-CR-715, số mà **màn hình, chốt đủ quỹ, báo cáo và trợ lý AI** đọc là
+`balance_service.available_days(db, row)` (nhiều dòng: `available_days_map`, 3 truy vấn cho bất kỳ số dòng), không
+phải property `remaining_days`: loại `accrual_mode = MONTHLY` giữ lại phần chưa tới tháng
+(`accrual_service.accrual_holdback`). Đọc thẳng `remaining_days` chỉ đúng với năm đã qua. Cột `comp_days` (ngày nghỉ bù
+đã duyệt, §13.6) nằm trong tổng được nghỉ — mọi chỗ cộng `allocated + seniority + carried + adjusted` phải cộng cả nó.
 
 Sổ quỹ chạy theo bốn nhịp, khớp bốn kết cục của bộ máy duyệt:
 
@@ -204,17 +220,24 @@ không deploy lại. Bộ seed: *5 năm +1 · 10 năm +2 · 15 năm +3 · 20 nă
 **Lấy bậc CAO NHẤT khớp được, không cộng dồn**: người 10 năm được **+2**, không
 phải +3. Màn hình nói câu này ra thành chữ, vì đọc bảng số không đoán được.
 
-### Không có ứng phép (QĐ-NP2)
+### Ứng phép: mặc định không có (QĐ-NP2, nới ở duoc-CR-715)
 
-Xin vượt quỹ là **chặn lúc gửi duyệt**, không ghi nợ. Muốn nghỉ tiếp thì chọn loại
-**«Nghỉ không lương»** — câu chặn của backend nói thẳng đường đó. Ghi nợ nghe thì
-tiện nhưng kéo theo cả một sổ công nợ phép và luật trừ lương khi nghỉ việc.
+Mặc định xin vượt quỹ là **chặn lúc gửi duyệt**, không ghi nợ. Muốn nghỉ tiếp thì chọn loại
+**«Nghỉ không lương»** — câu chặn của backend nói thẳng đường đó.
+
+Từ duoc-CR-715 mỗi loại nghỉ có `max_negative_days` (ô *Cho ứng phép tối đa (ngày)*, 0–30, mặc định 0 = như cũ):
+`check_enough*` cho số dùng được xuống tới `−N`. Hệ **vẫn không có sổ công nợ phép** — phần ứng chỉ hiện thành số âm
+ở cột *Còn lại*; đối chiếu khi nghỉ việc là việc của phòng Nhân sự. Hộp gợi ý trên form đơn đọc `max_negative_days` từ
+`/api/leave-requests/tools/my-balance` và chỉ cảnh báo khi vượt cả phần được ứng.
 
 ### Cấp phát quỹ
 
 Nút *Cấp quỹ năm* ở màn Quỹ phép, **chạy lại được**: chỉ tạo dòng còn thiếu. Bấm
 hai lần không nhân đôi; thêm người giữa năm thì bấm lại là họ có quỹ. Cấp **một
 lần đầu năm** (Q1), thâm niên tính tại 01/01 — không cộng dần theo tháng.
+
+Số `allocated_days` của dòng mới (duoc-CR-715, §13.1–13.2): `accrual_service.resolve_quota` chọn hạn mức (khớp hình
+thức nhân viên → khớp cấp bậc → `annual_quota_days`), rồi `prorate_allocation` nhân tỷ lệ theo `accrual_mode`.
 
 ⚠️ Cố ý **không** cập nhật dòng đã có theo hạn mức mới: đổi hạn mức giữa năm thì
 quỹ đã cấp giữ nguyên, luật mới áp cho lần cấp sau.
@@ -566,14 +589,19 @@ sót:**
 bảng đó: bảng nhớ bố cục trong `localStorage`, có bản lưu là bản đó thắng. Muốn
 thấy đúng mặc định mới thì xóa khóa `erp.table.hr.leave-to-approve`.
 
-## 9. Phân quyền — bốn khóa, đừng gộp
+## 9. Phân quyền — năm khóa, đừng gộp
 
 | Khóa | Màn |
 |---|---|
 | `leave_request` | Đơn nghỉ phép · Lịch nghỉ |
+| `leave_comp_request` (nhãn *Nghỉ phép › Phiếu nghỉ bù*, duoc-CR-715) | Nghỉ bù |
 | `leave_balance` | Quỹ phép năm |
-| `leave_type` | Loại nghỉ (kèm bậc thâm niên) |
+| `leave_type` | Loại nghỉ (kèm bậc thâm niên, hạn mức theo nhóm) · Ngày cấm nghỉ |
 | `holiday` | Lịch ngày lễ |
+
+`leave_comp_request` tách riêng vì duyệt phiếu = **tạo thêm ngày phép**; vì cùng lý do, phiếu nghỉ bù luôn chặn tự
+duyệt (§13.6). Ngày cấm nghỉ dùng chung `leave_type` (cùng người khai danh mục, luật «một khóa = một màn hình» được
+nới vì đây là một thẻ trong cùng mục *Thiết lập*).
 
 Tách bốn vì **`leave_balance` ghi được nghĩa là tặng thêm ngày phép cho bất kỳ ai**.
 Gộp chung với `leave_request` thì cho ai xem đơn của mình là cho họ tự cộng phép.
@@ -584,12 +612,17 @@ người **nghỉ** (`employee_id`), cả hai phải thấy nó ở phạm vi «
 `leave_balance` chỉ khai `self` (người cấp phát là Nhân sự, lấy đó làm "của mình"
 thì nhân viên không thấy quỹ của chính họ). Hai danh mục khai `PUBLIC`.
 
-**Vai trò mẫu `hr_leave`** — Nhân sự quản lý nghỉ phép, có đủ bốn khóa. Không gán
-tự động cho ai.
+`leave_comp_request` khai **cả `owner` (`created_by`) lẫn `self` (`employee_id`)** như `leave_request`, chặn
+`employee_id = 0`. Người đang có việc duyệt trên phiếu đọc được phiếu dù ngoài phạm vi (cùng luật CR-260).
 
-⚠️ **Trên hệ ĐANG CHẠY, vai trò cũ không tự có bốn khóa này.** Seed cố ý không ghi
-đè phân quyền đã chỉnh tay (D-018), nên quản trị phải tick thêm ở
-*Nhân sự ▸ Phân quyền tài khoản*, hoặc chạy một lần với `SEED_FORCE_SYNC=true`.
+**Vai trò mẫu `hr_leave`** — Nhân sự quản lý nghỉ phép, có đủ năm khóa. Không gán
+tự động cho ai. Seed (`app/seed.py`) cấp `leave_comp_request` phạm vi «của mình» cho mọi vai trò, trưởng bộ phận
+thêm `approve` phạm vi phòng, trưởng công ty phạm vi công ty; khóa này nằm trong `_SYS_ENTITIES` nên Quản lý thu mua
+không tự có.
+
+⚠️ **Trên hệ ĐANG CHẠY, vai trò cũ không tự có các khóa này** (kể cả `leave_comp_request` mới thêm 02/11/2026).
+Seed cố ý không ghi đè phân quyền đã chỉnh tay (D-018), nên quản trị phải tick thêm ở
+*Quản trị ▸ Phân quyền tài khoản*, hoặc chạy một lần với `SEED_FORCE_SYNC=true` rồi trả về `false`.
 Người dùng báo "không thấy menu Nghỉ phép" thì gần như chắc là chỗ này.
 
 ## 10. Những thứ CHƯA có
@@ -601,18 +634,31 @@ Người dùng báo "không thấy menu Nghỉ phép" thì gần như chắc là
 | ~~Danh sách **bàn giao** trên giao diện~~ | **ĐÃ CÓ** — ô nhập `leave-handover-editor.tsx` trên form đơn (đối chiếu 01/10/2026) |
 | ~~**Chuyển phép sang năm sau**~~ | **ĐÃ CÓ 07/09/2026** — ba nước *mất / mang sang / quy đổi* + nút **Kết sổ cuối năm**, xem §5. Cờ `carry_over` cũ thành di tích (§11.2). **Bảng đối chiếu** trước/sau kết sổ: **ĐÃ CÓ 22/10/2026** (duoc-CR-664, §5) |
 | ~~**Báo cáo / thống kê** nghỉ phép~~ | **ĐÃ CÓ 01/10/2026** (duoc-CR-548) — phân hệ Báo cáo: «Tình hình nghỉ phép» và «Quỹ phép năm» |
+| ~~Cấp quỹ **theo tỷ lệ** người vào làm giữa năm / **cộng dần** / hạn mức **theo nhóm** / **dùng sau N ngày** / **ứng phép**~~ | **ĐÃ CÓ 02/11/2026** (duoc-CR-715, §13.1–13.4) |
+| ~~**Ngày cấm nghỉ** (Leave Block List)~~ | **ĐÃ CÓ 02/11/2026** (duoc-CR-715, §13.5) |
+| ~~**Phiếu xin nghỉ bù** (Compensatory Leave Request)~~ | **ĐÃ CÓ 02/11/2026** (duoc-CR-715, §13.6) |
+| ~~Chặn đơn **lùi ngày** · chặn **tự duyệt** bước khai đích danh~~ | **ĐÃ CÓ 02/11/2026** (duoc-CR-713, §14) |
+| Sổ **công nợ phép** khi ứng phép, quy đổi phép dư ra tiền (Leave Encashment) | Chưa có, chưa có yêu cầu. Ứng phép chỉ hiện số âm ở *Còn lại* |
 | Nạp `hire_date` cho hồ sơ cũ | **Ô nhập đã có từ 07/09/2026** ở *Nhân sự ▸ chi tiết hồ sơ* (kèm ô *Giới tính*) — trước đó hai cột này có trong bảng nhưng không schema nào khai, nên không màn nào nhập được và thâm niên của cả công ty tính bằng 0. Việc còn lại là **nhập bù dữ liệu**, không phải dựng màn |
 
 ## 11. Danh mục **Loại nghỉ** — từng trường
 
 `/hr/leave-types` (danh sách) · `/hr/leave-types/new` (thêm) · `/hr/leave-types/:id`
-(sửa, kèm tab *Bậc thâm niên*). Dựng bằng khung CRUD khai báo — mọi thứ dưới đây
+(sửa, tab *Thông tin* · *Bậc thâm niên* · *Hạn mức theo nhóm*; hai tab sau chỉ hiện khi bản ghi đã tạo). Dựng bằng khung CRUD khai báo — mọi thứ dưới đây
 khai ở **một chỗ**: `frontend-v2/src/modules/hr/config/leave-type-crud.tsx`.
 Bảng: `tab_leave_type` (`leave/catalog_model.py`).
 
 Form thêm/sửa **dài nên đi trang riêng, không hộp thoại**, và chia **ba cụm** —
 người khai danh mục là nhân sự, không phải người viết luật, mà ở màn này đoán sai
 quan hệ giữa hai ô là khai sai luật nghỉ cho **cả công ty**.
+
+**Bố cục phẳng kiểu ERPNext (duoc-CR-716, 03/11/2026)** — `LEAVE_TYPE_CRUD_CONFIG.detailLayout = 'flat'`
+(`shared/crud/crud-detail-flat-layout.tsx`): một mặt phẳng trắng tràn khung, hàng tiêu đề **dính** (mũi tên lùi · tên ·
+nhãn trạng thái/mã · nút *Lưu* — lúc thêm là *Tạo loại nghỉ* — và *Xóa*), dải tab gạch chân, ba cụm thành dải ngăn bằng
+đường kẻ **gập / mở được** (nhớ trạng thái ở `erp.section.crud.leave_type.*`), chú thích ô thu vào nút **(i)** cạnh
+nhãn, công tắc thành dòng gọn không viền, lưới ô 3 cột khi đủ rộng. Khối «Hoạt động» (`AuditActivityFeed`) là nhóm cuối
+của tab *Thông tin*. Tab *Bậc thâm niên* / *Hạn mức theo nhóm* tự làm phẳng thẻ con bằng `ERP_FLATTEN_CARDS`. Hộp thoại
+thêm nhanh và mọi màn CRUD khác vẫn bố cục thẻ (`'card'`, mặc định).
 
 ### 11.1. Các trường có trên form
 
@@ -621,13 +667,17 @@ quan hệ giữa hai ô là khai sai luật nghỉ cho **cả công ty**.
 | **Mã loại nghỉ** | `code` | chữ | — | ⚠️ **KHÓA sau khi tạo** (`readonlyOnEdit` + backend chặn lớp hai): mã này đi vào metadata mọi giấy GNP đã phát hành. Phải khớp `core/leave_codes.LEAVE_TYPE_SET` |
 | **Tên loại nghỉ** | `name` | chữ | — | Bắt buộc |
 | *Cụm «Quỹ phép và lương»* | | | | |
-| Trừ vào quỹ phép năm | `counts_balance` | công tắc | Tắt | Bật thì nộp đơn **bị chặn khi hết phép** (không ứng trước). Đứng **đầu cụm, cột trái** vì nó mở ra ô hạn mức ngay bên dưới |
+| Trừ vào quỹ phép năm | `counts_balance` | công tắc | Tắt | Bật thì nộp đơn **bị chặn khi hết phép** — trừ phần «Cho ứng phép tối đa». Đứng **đầu cụm, cột trái** vì nó mở ra ô hạn mức ngay bên dưới |
 | Có hưởng lương | `is_paid` | công tắc | Bật | Tách khỏi `counts_balance`: cưới hỏi vẫn hưởng lương nhưng không ăn vào phép năm |
-| Hạn mức mỗi năm (ngày) | `annual_quota_days` | số | 0 | **Chỉ hiện khi** «Trừ vào quỹ phép năm» bật. Bậc thâm niên cộng thêm khai ở tab riêng |
+| Hạn mức mỗi năm (ngày) | `annual_quota_days` | số | 0 | **Chỉ hiện khi** «Trừ vào quỹ phép năm» bật. Bậc thâm niên cộng thêm khai ở tab riêng; mức riêng theo nhóm ở tab *Hạn mức theo nhóm* (§13.2) |
+| Cách cấp quỹ | `accrual_mode` | chọn | Đủ hạn mức đầu năm (`1`) | **Chỉ hiện khi** có trừ quỹ. `1` Đủ hạn mức đầu năm · `2` Theo tỷ lệ tháng làm việc (người vào làm trong năm) · `3` Cộng dần theo tháng — §13.1 |
+| Cho ứng phép tối đa (ngày) | `max_negative_days` | số | 0 | **Chỉ hiện khi** có trừ quỹ. 0–30; `0` = không cho ứng — §13.4 |
+| Loại nhận ngày nghỉ bù | `is_compensatory` | công tắc | Tắt | **Chỉ hiện khi** có trừ quỹ. Loại được cộng `comp_days` khi phiếu nghỉ bù duyệt; nhiều loại bật thì lấy `sort_order` nhỏ nhất — §13.6 |
 | *Cụm «Điều kiện áp dụng»* | | | | |
 | Áp dụng cho giới tính | `gender` | chọn | Mọi giới (`0`) | Hồ sơ **chưa khai** giới tính vẫn nộp được — chặn là khóa cả công ty tới khi Nhân sự nhập bù |
 | Tối đa mỗi lần nghỉ (ngày) | `max_days_per_request` | số | 0 | `0` = không giới hạn. Trần của **một đơn**, không dính quỹ năm |
-| Trừ Chủ nhật và ngày lễ | `exclude_holiday` | công tắc | Bật | ⚠️ **Thứ Bảy VẪN tính công** — DEGO làm cả T7 (lịch mặc định T2–T7, CN OFF). Xem [21-lich-lam-viec.md §12.2](03-lich-lam-viec.md) để hiểu khi nào tắt cửa này. |
+| Dùng được sau (ngày kể từ ngày vào làm) | `applicable_after_days` | số | 0 | 0–3650; `0` = không chặn — §13.3 |
+| Trừ ngày nghỉ theo lịch làm việc và ngày lễ | `exclude_holiday` | công tắc | Bật | ⚠️ **Thứ Bảy VẪN tính công** — DEGO làm cả T7 (lịch mặc định T2–T7, CN OFF). Xem [21-lich-lam-viec.md §12.2](03-lich-lam-viec.md) để hiểu khi nào tắt cửa này. |
 | Bắt buộc đính kèm | `require_attachment` | công tắc | Tắt | Bật lên thì đơn thiếu tệp bị chặn **lúc Gửi duyệt**, lưu nháp không chặn (duoc-CR-661, §7.2) |
 | *Cụm «Số dư cuối năm»* — xem §5 | | | | |
 | Cách xử lý số dư | `year_end_mode` | chọn | Hết năm là mất (`0`) | Ba nước loại trừ nhau nên là ô chọn, không phải hai công tắc |
@@ -708,5 +758,162 @@ tuổi; dưỡng sức 5–10 ngày, tính cả lễ. Máy chỉ chặn trần m
 | Giao diện | `frontend-v2/src/modules/hr/` (`pages/leave-*`, `components/leave-*`) |
 | Gói tri thức Trợ lý AI | `backend/app/modules/assistant/packs/40-nghi-phep.md` |
 | Hai tool Trợ lý AI đọc/soạn nghỉ phép | `assistant/tools/leave_tool.py` (`my_leave_summary`, bao-CR-386) · `assistant/tools/draft_tool.py` → `_run_leave` (`draft_leave_request`, bao-CR-387). ⚠️ `draft_leave_request` **chỉ soạn nháp**, không ghi DB, và **không mang `employee_id`** để không mở đường nộp đơn hộ người khác qua chat. Nó gác `leave_request.create` — trước 12/09/2026 gác nhầm `document.create` vì bản đầu soạn **văn bản GNP ở Văn thư**, thứ mà `approval_bridge` vốn tự sinh sau khi duyệt |
-| HDSD cho người dùng (Help Center) | `backend/scripts/seed_help_nghi_phep.py` — **10 bài** (bản 2, 04/09/2026), chạy `docker compose exec -T api python scripts/seed_help_nghi_phep.py`. Nội dung nằm trong DB **từng môi trường**, chạy script ở môi trường đích thì mới có |
-| Bài kiểm | `test/backend/test_nghi_phep_*.py` · `frontend-v2/src/modules/hr/**/leave-*.test.*` |
+| Cấp quỹ: chọn hạn mức theo nhóm · tỷ lệ · cộng dần · chốt «dùng sau N ngày» | `backend/app/modules/leave/accrual_service.py` — `resolve_quota` · `prorate_allocation` · `accrual_holdback` · `ensure_applicable` |
+| Ngày cấm nghỉ (tìm xung đột · chốt duyệt) | `backend/app/modules/leave/block_period_service.py` — `find_conflicts` · `ensure_approvable` |
+| Phiếu nghỉ bù | `backend/app/modules/leave/comp_request_{model,schema,service,controller}.py` · `comp_approval_bridge.py` |
+| Chặn đơn lùi ngày (Cài đặt nhân sự) | `backend/app/modules/leave/leave_policy.py` — `ensure_not_backdated` |
+| Chặn tự duyệt | `backend/app/modules/approval/self_approval_policy.py` (`ALWAYS_STRICT_ENTITIES`, `strict_self_exclusion`) |
+| Lỗi hook được ném tiếp | `backend/app/modules/approval/entity_hooks.py` — `HookVeto` |
+| Giao diện CR-715 | `frontend-v2/src/modules/hr/`: `components/leave-type-quota-card.tsx`, `config/leave-block-crud.tsx`, `pages/leave-block-*`, `components/leave-block-warning-banner.tsx`, `pages/leave-comp-request-*`, `components/leave-comp-*`, `hooks/use-single-flight.ts` |
+| HDSD cho người dùng (Help Center) | `backend/scripts/seed_help_nghi_phep.py` — **12 bài** (bản 6, 03/11/2026; ban đầu 10 bài, bản 2 04/09/2026), chạy `docker compose exec -T api python scripts/seed_help_nghi_phep.py`. Nội dung nằm trong DB **từng môi trường**, chạy script ở môi trường đích thì mới có |
+| Bài kiểm | `test/backend/test_nghi_phep_*.py` (CR-715: `test_nghi_phep_cap_quy_cr715.py`, `test_nghi_phep_ngay_cam_cr715.py`, `test_nghi_phep_nghi_bu_cr715.py`, `test_nghi_phep_review_cr715.py`) · `frontend-v2/src/modules/hr/**/leave-*.test.*` |
+
+## 13. Nghỉ phép kiểu ERPNext (duoc-CR-715, 02/11/2026)
+
+Mang năm chức năng nghỉ phép của ERPNext (hrms) sang. Đối chiếu nguồn ở
+[`doc/erp/nghien-cuu/erpnext/04-hrms-chuc-nang-va-lien-ket.md`](../nghien-cuu/erpnext/04-hrms-chuc-nang-va-lien-ket.md) §4;
+kế hoạch + báo cáo từng giai đoạn ở `plans/261102-1652-nghi-phep-kieu-erpnext/`. **Luật chung: mọi cột / công tắc mới
+mặc định = hành vi cũ** — bật tính năng mới là việc của quản trị. Chuỗi migration: `lvacc715` (down `jobrun01`) →
+`lvblk715` → `lvcmp715` → `lvcmp716` (lượt rà mã), cả bốn viết tay, chạy lại được. Bộ mã số mới (R2/QĐ-11) ở
+`leave/constants.py`, bản TS gõ tay ở `hr/types/leave.ts` và `hr/types/leave-comp.ts`.
+
+### 13.1. Cách cấp quỹ — `tab_leave_type.accrual_mode` (SMALLINT, `LeaveAccrualMode`)
+
+| Mã | Nhãn trên form | Luật |
+|---|---|---|
+| `1` FULL_YEAR | Đủ hạn mức đầu năm | Như cũ: ai cũng nhận đủ hạn mức (mặc định) |
+| `2` PRORATA_HIRE | Theo tỷ lệ tháng làm việc (người vào làm trong năm) | Người vào làm TRONG năm: `hạn mức × số tháng làm / 12` (Điều 113 khoản 2 BLLĐ 2019). Ngày vào làm 1–15 tính cả tháng đó, từ 16 tính từ tháng sau; làm tròn **lên** tới 0,5. Vào làm trước năm đó hoặc chưa có `hire_date` → đủ; vào làm năm SAU → 0 |
+| `3` MONTHLY | Cộng dần theo tháng | `allocated_days` vẫn ghi CẢ NĂM (đã tỷ lệ như mã 2) để báo cáo đọc đúng; phần chưa tới tháng trừ động ở `accrual_holdback`: dùng được = `allocated × số tháng đã tới (tính cả tháng hiện tại) / số tháng của kỳ`, làm tròn **xuống** 0,5. Năm đã qua → đủ |
+
+Ví dụ hạn mức 12: vào làm 10/03 → 10 ngày; vào làm 20/03 → 9 ngày; loại cộng dần, đang tháng 5 → dùng được 5 ngày.
+Thâm niên, phép mang sang, điều chỉnh tay và `comp_days` **không** tỷ lệ, **không** cộng dần.
+
+⚠️ Quỹ ĐÃ CẤP không tính lại khi đổi `accrual_mode` hay hạn mức (luật cũ của `allocate`) — **trừ** mã 3, vì phần chưa
+tới tháng tính động. Lời giải thích của ô trên form nói đúng điều này.
+
+### 13.2. Hạn mức theo nhóm — `tab_leave_type_quota`
+
+`(id, leave_type_id, basis SMALLINT, basis_value SMALLINT, quota_days FLOAT, audit)`, UNIQUE
+`(leave_type_id, basis, basis_value)`. `basis`: `1` hình thức nhân viên (`Employee.employment_type`), `2` cấp bậc
+(`Employee.job_level`) — bộ mã của hồ sơ ở `employee/constants.py`. Thứ tự áp lúc cấp (`accrual_service.resolve_quota`):
+khớp hình thức nhân viên → khớp cấp bậc → `annual_quota_days`.
+
+API thay-cả-danh-sách: `GET /api/leave-types/{id}/quotas` (gác `leave_type.read`) · `PUT /api/leave-types/{id}/quotas`
+(gác `leave_type.write`), trần 50 dòng. Giao diện: tab *Hạn mức theo nhóm* (`components/leave-type-quota-card.tsx`) —
+ô *Theo* · *Nhóm* · *Số ngày mỗi năm*, nút *Thêm dòng* (trùng nhóm thì ghi đè), *Lưu hạn mức* gửi cả danh sách.
+
+### 13.3. Dùng được sau N ngày vào làm — `tab_leave_type.applicable_after_days`
+
+INT 0–3650, mặc định 0 = không chặn. Ngày bắt đầu của khoảng sớm nhất có dòng loại đó < `hire_date + N` → 422
+*Loại nghỉ "X" chỉ dùng được sau N ngày vào làm (từ dd/mm/yyyy).* (`accrual_service.ensure_applicable`). Kiểm ở **lập**,
+**sửa** (khi ngày hoặc dòng loại đổi) và **gửi duyệt**. Không có `hire_date` → không chặn.
+
+### 13.4. Ứng phép — `tab_leave_type.max_negative_days`
+
+FLOAT 0–30, mặc định 0. `check_enough*` cho số dùng được xuống tới `−N`; loại `counts_balance = False` không bị ảnh
+hưởng. `/api/leave-requests/tools/my-balance` trả kèm `max_negative_days` để hộp gợi ý trên form chỉ cảnh báo khi vượt
+cả phần được ứng (client cũ không đọc trường này thì coi là 0). Xem §5.
+
+### 13.5. Ngày cấm nghỉ — `tab_leave_block_period` (Leave Block List)
+
+`(id, company_id, department_id, from_date, to_date, reason String(255), is_active, audit)`; `0` ở pháp nhân / phòng ban
+= mọi nơi. Một khoảng dài tối đa 366 ngày, năm 2000–2100. CRUD khai báo (`config/leave-block-crud.tsx`,
+`block_period_router` ở `catalog_controller.py`), khóa `leave_type`; màn `/hr/leave-blocks` là thẻ thứ ba của *Thiết lập*.
+
+| Nhịp | Hệ làm gì |
+|---|---|
+| Lập · sửa · gửi duyệt | **Không chặn.** `find_conflicts` (một truy vấn) trả `block_conflicts` trong `/tools/estimate-days`, `/tools/estimate-periods` và trang chi tiết đơn (không có ở danh sách — tránh N+1; bỏ qua với đơn từ chối / hủy). Giao diện hiện khung vàng *Đơn nghỉ này rơi vào ngày cấm nghỉ.* (`leave-block-warning-banner.tsx`) |
+| Duyệt chặng cuối · duyệt thẳng | `approval_bridge._on_approved` gọi `block_period_service.ensure_approvable` **trước** khi trừ quỹ: còn xung đột mà người bấm không phải `admin` và không có vai trò trong `leave_block_exempt_roles` (§14) → `HookVeto` 422 *Đơn nghỉ này rơi vào ngày cấm nghỉ: … Chưa duyệt được — …*. Đơn ở nguyên Chờ duyệt, quỹ giữ chỗ nguyên |
+
+Khớp theo **người nghỉ** (pháp nhân / phòng của họ), không theo người lập hộ. Đơn nhiều khoảng đọc qua `period_spans`:
+KHE giữa các khoảng không dính. Thêm / tắt một khoảng cấm không đổi đơn đã duyệt.
+
+⚠️ **`HookVeto`** (`approval/entity_hooks.py`, lớp con của `HTTPException`) là loại lỗi hook **duy nhất** `fire` ném
+tiếp — mọi lỗi hook khác vẫn bị nuốt và ghi `finish_reason` như cũ. Hook nào ném nó phải ném **trước** khi đổi gì của
+chứng từ; đường duyệt không được commit trước lúc `fire`. Sau lượt rà mã, `fire` **tự `db.rollback()`** trước khi ném,
+nên nơi gọi bắt lỗi rồi commit (cổng MCP ghi nhật ký) không thể lưu nửa lượt duyệt.
+
+### 13.6. Phiếu xin nghỉ bù — `tab_leave_comp_request` (Compensatory Leave Request)
+
+Nhân sự đi làm vào ngày lễ hoặc ngày nghỉ theo lịch làm việc thì lập phiếu; duyệt xong cộng ngày vào quỹ. Giao diện
+mục *Nghỉ bù* (`/hr/leave-comp-requests`, `/new`, `/:id`); bài HDSD *Xin nghỉ bù*.
+
+**Bảng** `(id, code «NB…», company_id, department_id, employee_id, work_date, days FLOAT 0.5|1, reason String(1000),
+status SMALLINT, approval_instance_id, decided_at, decision_note, comp_leave_type_id, balance_year, active_key String(40)
+UNIQUE NULL, created_by, …)`. Thêm cột `tab_leave_balance.comp_days` và cờ `tab_leave_type.is_compensatory`.
+
+**Trạng thái** (`LeaveCompStatus`, cùng số với đơn nghỉ): `1` Nháp · `2` Chờ duyệt · `3` Đã duyệt · `4` Từ chối ·
+`5` Trả về chỉnh sửa · `6` Đã hủy. Sửa / gửi được ở 1 và 5; xóa mềm chỉ ở 1.
+
+**API** `/api/leave-comp-requests` (khóa `leave_comp_request`, phong bì chuẩn): `GET /` (lọc `status`, `employee_id`,
+`company_id`, `department_id`, `q`) · `GET /to-approve` · `GET /{id}` · `POST /` · `PATCH /{id}` · `DELETE /{id}` ·
+`POST /{id}/submit` · `POST /{id}/approve` · `POST /{id}/reject?reason=` · `POST /{id}/cancel?reason=`. Gửi duyệt: bật
+bộ máy duyệt cho *Phiếu nghỉ bù* thì trình luồng; không thì `approval_instance_id = 0` và người có `approve` duyệt thẳng.
+
+**Luật lập / gửi** (`comp_request_service`):
+- `work_date ≤ vn_today()` và `≥ 01/01 của năm trước` (năm kết sổ từ lâu không nhận thêm ngày bù); schema chặn năm
+  ngoài 2000–2100.
+- Phải là ngày lễ HOẶC ngày nghỉ theo lịch làm việc của người đó (`workday_service.count_leave_days(..., employee=)` = 0;
+  nửa ngày làm, ví dụ sáng thứ Bảy, vẫn là ngày làm việc).
+- Một ngày một phiếu còn hiệu lực (Nháp / Chờ duyệt / Đã duyệt / Trả về) → 409. Giữ bằng cả câu kiểm lẫn khóa UNIQUE
+  `active_key = "{employee_id}:{work_date}"` (NULL khi Từ chối / Đã hủy / xóa) — hai lượt chèn cùng lúc thì lượt sau
+  thua ở khóa → 409.
+- Lý do bắt buộc lúc gửi; `days ∈ {0.5, 1}`; chưa có loại `is_compensatory` đang dùng + có trừ quỹ → 422.
+
+**Luật duyệt / hủy (sau lượt rà mã, `lvcmp716`)**:
+- **Đích cộng lưu sẵn trên phiếu**: `comp_leave_type_id` chốt lúc GỬI; `balance_year = max(năm của work_date, năm nay)`
+  chốt lúc DUYỆT (ngày đi làm thuộc năm trước thì cộng vào quỹ năm nay vì quỹ năm cũ đã kết sổ). Duyệt / hủy chỉ dùng hai
+  cột này, **không** gọi lại `get_comp_type()` — HR đổi cờ giữa chừng không làm ngày bù rơi sang loại khác. Loại đã chốt
+  không còn hợp lệ lúc duyệt qua bộ máy → `HookVeto` 422.
+- **Mọi đổi trạng thái đi qua `claim`**: `UPDATE … SET status=… WHERE id AND status IN (expected)`, đếm dòng; thua → 409
+  *Phiếu vừa được xử lý bởi lượt khác — tải lại trang*. Áp cho gửi, duyệt thẳng, từ chối, hủy (chiếm trước rồi mới trừ quỹ,
+  trừ hỏng thì rollback), sửa, xóa, hook bộ máy. Giao diện chặn bấm đúp bằng `useSingleFlight` (`useRef`).
+- **Luôn chặn tự duyệt**: `self_approval_policy.ALWAYS_STRICT_ENTITIES = {"leave_comp_request"}` — gạt người nghỉ ở mọi
+  kiểu bước (kể cả khai đích danh, người dự phòng) và chặn duyệt thẳng 403 *Bạn không được tự duyệt phiếu nghỉ bù của
+  chính mình.*, **bất kể** công tắc `leave_prevent_self_approval` (đơn nghỉ vẫn theo công tắc).
+- Duyệt xong: `comp_days += days` ở dòng quỹ (`ensure_balance` tạo nếu chưa có). Hủy phiếu ĐÃ DUYỆT chỉ khi
+  `available_days` của dòng đó ≥ `days`, rồi `comp_days −= days`; thiếu → 422 *Không hủy được: ngày nghỉ bù của phiếu này
+  (… ngày) đã được dùng để nghỉ…*.
+
+**Hiển thị quỹ**: cột *Nghỉ bù cộng thêm* ở bảng Quỹ phép năm (`defaultHidden`), ô cùng tên ở trang chi tiết dòng quỹ khi
+khác 0, thẻ quỹ trên Trang cá nhân ghi `+N nghỉ bù`; `hasQuota` tính cả `comp_days`.
+
+**Thông báo**: `task_notification.ENTITY_LABELS` = «Phiếu nghỉ bù», `ENTITY_LINKS` = `/hr/leave-comp-requests/{id}`.
+
+### 13.7. Báo cáo và trợ lý AI
+
+Báo cáo «Quỹ phép năm» (`balance_report_spec.rows_of`) trừ phần chưa tới tháng ngay trong câu truy vấn quỹ (OUTER JOIN
+`LeaveType.accrual_mode` + `Employee.hire_date`, tính `accrual_holdback` từng dòng bằng Python) — số truy vấn không đổi,
+có bài kiểm đếm truy vấn. Số tổng / còn lại của báo cáo gồm cả `comp_days`. Danh sách quỹ, quỹ của tôi và
+`assistant/tools/leave_tool.py` đọc `available_days_map`.
+
+### 13.8. Khóa quyền trên hệ đang chạy (D-018)
+
+Khóa `leave_comp_request` mới: hệ đang chạy **không tự cấp** cho vai trò cũ (seed không ghi đè). Tick ở *Quản trị ▸ Phân
+quyền tài khoản* (hr_leave, trưởng bộ phận, trưởng công ty, nhân viên «của mình»), hoặc `SEED_FORCE_SYNC=true` một lần
+rồi trả về `false`. Người đang đăng nhập giữ map quyền cũ tới khi đăng xuất / đăng nhập lại. Không có luồng duyệt mẫu
+cho *Phiếu nghỉ bù* — quản trị tự bật bộ máy duyệt nếu muốn đi luồng.
+
+## 14. Cài đặt nhân sự — tab Nghỉ phép (duoc-CR-713, 02/11/2026)
+
+Trang `/hr/settings` (menu *Nhân sự ▸ Master ▸ Cài đặt nhân sự*), bố cục HR Settings của ERPNext: dải tab gạch chân
+*Nhân viên · Nghỉ phép · Hợp đồng lao động*, nút *Lưu* ở đầu phải dải tab lưu cả ba tab một lần. Gác `setting.read`
+(xem) / `setting.write` (sửa); lưu qua `PUT /api/settings` nên ghi chung nhật ký *Lịch sử thay đổi* của Cấu hình hệ
+thống; khóa thuộc nhóm `hr` (màn Cấu hình hệ thống không vẽ nhóm này). Bộ đệm cấu hình 30 giây. Tiêu đề trang trùng chữ
+cuối của thanh đường dẫn nên chỉ còn `sr-only` (duoc-CR-714). Tab *Nhân viên* / *Hợp đồng lao động*: xem
+[01-ho-so-nhan-su.md §7.17](01-ho-so-nhan-su.md) và [04-hop-dong-lao-dong.md §A.8](04-hop-dong-lao-dong.md).
+
+| Khóa | Nhãn trên màn | Kiểu · mặc định | Đọc ở đâu |
+|---|---|---|---|
+| `leave_restrict_backdated` | Chặn đơn nghỉ lùi ngày | công tắc · TẮT | `leave/leave_policy.ensure_not_backdated` — gọi ở ĐỦ ba nhịp `create` · `update` · `prepare_submit` (nháp hợp lệ để qua ngày mới gửi cũng là lùi ngày). «Hôm nay» = `vn_today()`. 422 *Không lập được đơn nghỉ cho ngày đã qua (dd/mm/yyyy). Cài đặt nhân sự đang chặn đơn lùi ngày — nhờ phòng Nhân sự lập hộ nếu cần.* |
+| `leave_backdated_roles` | Vai trò được lập đơn nghỉ lùi ngày | danh sách vai trò · rỗng (= chỉ quản trị) | Miễn khi người thao tác HOẶC người đã lập đơn có vai trò này (Nhân sự lập hộ thì nhân viên vẫn gửi duyệt được). Ô mờ khi công tắc trên tắt |
+| `leave_block_exempt_roles` | Vai trò được duyệt đơn nghỉ rơi vào ngày cấm nghỉ | danh sách vai trò · rỗng (= chỉ quản trị) | `block_period_service.exempt_roles` — §13.5 |
+| `leave_prevent_self_approval` | Chặn tự duyệt đơn nghỉ | công tắc · TẮT | `approval/self_approval_policy` — `strict_self_exclusion(entity)` phải truyền ở mọi chỗ tra người duyệt (mở chặng, đồng bộ luồng, xem trước); chốt cuối ở `action_service.approve` + duyệt thẳng, 403 *Cài đặt nhân sự đang chặn tự duyệt: bạn không duyệt được đơn nghỉ của chính mình.* Bước rỗng → người dự phòng → KẸT (không tự duyệt qua). Phiếu nghỉ bù luôn strict (§13.6) |
+
+Kiểu ô `roles` (mới): giao diện là ô chọn nhiều vai trò (cần `role.read`, không có thì hiện mã trơn), lưu chuỗi
+`"a,b"`; cửa lưu kiểm mã vai trò có thật. Thêm đường lập đơn mới (nhập Excel, trợ lý AI lập nháp…) thì phải gọi
+`ensure_not_backdated`, đừng đọc thẳng `app_settings`. Cuối tab có khối *Danh mục nghỉ phép* với ba lối tắt *Loại nghỉ &
+bậc thâm niên* · *Lịch ngày lễ* · *Ngày cấm nghỉ* (mỗi lối tắt gác quyền sửa danh mục đó).
+
+Bài kiểm: `test/backend/test_cai_dat_nhan_su_cr713.py`; vitest `hr/components/hr-settings-form.test.tsx`,
+`hr/utils/hr-setting-values.test.ts`.

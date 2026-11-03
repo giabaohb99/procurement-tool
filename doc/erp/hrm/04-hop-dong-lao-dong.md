@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Bản | 1.0 — 23/10/2026 (duoc-CR-673: gom tài liệu đang rải ở `01`, sổ thay đổi và các kế hoạch về một tệp) |
+| Bản | 1.1 — 03/11/2026 (§A.8: số ngày báo và mức đỏ đặt được ở Cài đặt nhân sự — duoc-CR-713) · 1.0 — 23/10/2026 (duoc-CR-673: gom tài liệu đang rải ở `01`, sổ thay đổi và các kế hoạch về một tệp) |
 | Giao diện | Chỉ có trên `frontend-v2/` (cổng 8083), menu *Nhân sự* |
 | Mã nguồn backend | `modules/labor_contract/` (HĐLĐ) · `modules/employee/position_role_*.py` (quyền theo chức vụ) · `modules/import_tool/employee_import*.py` (nhập Excel) |
 | Luật cho trợ lý AI | `.claude/rules/hr-labor-contract-variables.md` · `.claude/rules/hr-employee-profile.md` (hai mục cuối) |
@@ -98,8 +98,9 @@ Mỗi hợp đồng (`tab_labor_contract`) có cột `document_id` trỏ tới m
 
 Một nguồn `labor_contract/expiry_service.find_expiring` cho ba chỗ: **chuông** (`/api/alerts`), **tab Việc cần làm** (chỗ duy nhất ẩn được dòng chuông) và **thẻ trên Tổng quan Nhân sự** (`GET /api/labor-contracts/expiring`).
 
-- Báo khi hợp đồng **Đã ký**, có ngày kết thúc, chưa xóa mềm, trong phạm vi người xem, và hết hạn trong **30 ngày** tới hoặc **đã quá hạn** (người vẫn đi làm mà hết hợp đồng thì báo tới khi xử lý).
-- **Đỏ** khi còn ≤ **15 ngày** (mốc báo trước của Điều 45 BLLĐ 2019) hoặc đã quá hạn; còn lại vàng. Mức vàng đã ẩn sẽ nổi lại khi sang đỏ.
+- Báo khi hợp đồng **Đã ký**, có ngày kết thúc, chưa xóa mềm, trong phạm vi người xem, và hết hạn trong **N ngày** tới (mặc định **30**) hoặc **đã quá hạn** (người vẫn đi làm mà hết hợp đồng thì báo tới khi xử lý).
+- **Đỏ** khi còn ≤ **M ngày** (mặc định **15** — mốc báo trước của Điều 45 BLLĐ 2019) hoặc đã quá hạn; còn lại vàng. Mức vàng đã ẩn sẽ nổi lại khi sang đỏ.
+- **N và M đặt được** ở *Nhân sự ▸ Master ▸ Cài đặt nhân sự*, tab *Hợp đồng lao động* (duoc-CR-713): khóa `labor_contract_warn_days` (nhãn *Báo HĐLĐ sắp hết hạn trước (ngày)*, 15–180, để trống = 30) và `labor_contract_danger_days` (nhãn *Mức gấp — tô đỏ khi còn (ngày)*, không dưới 15, không lớn hơn N, để trống = 15). Mã đọc qua `expiry_service.warn_days()` / `danger_days()`; hằng `WARN_DAYS` / `DANGER_DAYS` chỉ còn là mặc định. `GET /api/labor-contracts/expiring` trả kèm `warn_days` và `danger_days` cho giao diện. Các chỉ số cố định *Hết hạn trong 30 / 60 / 90 ngày* của báo cáo Hợp đồng lao động (`labor_contract/report_service.py`) không đổi theo cài đặt này.
 - **Không báo** khi người đó đã có hợp đồng **nối tiếp** bắt đầu sau (Đã ký: luôn che; Nháp: chỉ che khi hợp đồng cũ CHƯA hết hạn) hoặc đã nghỉ việc.
 - Tính tại chỗ lúc mở, không có job chạy nền, không gửi email. Không trả lương.
 

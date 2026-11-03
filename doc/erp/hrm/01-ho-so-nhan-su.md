@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Thuộc bộ | Phân hệ Nhân sự (HRM) — ERP v2 |
-| Bản | 1.8 — 23/10/2026 (**In Phiếu thông tin nhân viên C5 + nhân viên tự đề nghị sửa hồ sơ C6 — xong**, duoc-CR-676; §7.14 mới, §7.10 cập nhật) · 1.7 — 23/10/2026 (hai mục Hợp đồng lao động cuối tệp chuyển sang `04-hop-dong-lao-dong.md` — duoc-CR-673) · 1.6 — 22/10/2026 (**Sơ đồ tổ chức V2-6 + kiểm việc duyệt treo trước khi khóa V0-4 — xong**; §7.12, §7.13 mới; §7.10 + Đợt 3 cập nhật) · 1.5 — 03/10/2026 (**Đợt 1 + Đợt 2 + Đợt 3 + Quá trình công tác bản gọn V1-8 (duoc-CR-585) — xong mã nguồn**; §7.11 mới, §4 + §7.10 cập nhật) · 1.4 — 01/10/2026 (Đợt 3 xong phần lớn — K3 xong, còn thiếu màn kiểm việc, Đợt 4 chưa) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
+| Bản | 1.9 — 03/11/2026 (**Cài đặt nhân sự tab Nhân viên** — tiền tố mã, sơ đồ tổ chức cho mọi nhân viên, mốc kỷ niệm — duoc-CR-713; §7.17 mới, §7.12 thêm công tắc) · 1.8 — 23/10/2026 (**In Phiếu thông tin nhân viên C5 + nhân viên tự đề nghị sửa hồ sơ C6 — xong**, duoc-CR-676; §7.14 mới, §7.10 cập nhật) · 1.7 — 23/10/2026 (hai mục Hợp đồng lao động cuối tệp chuyển sang `04-hop-dong-lao-dong.md` — duoc-CR-673) · 1.6 — 22/10/2026 (**Sơ đồ tổ chức V2-6 + kiểm việc duyệt treo trước khi khóa V0-4 — xong**; §7.12, §7.13 mới; §7.10 + Đợt 3 cập nhật) · 1.5 — 03/10/2026 (**Đợt 1 + Đợt 2 + Đợt 3 + Quá trình công tác bản gọn V1-8 (duoc-CR-585) — xong mã nguồn**; §7.11 mới, §4 + §7.10 cập nhật) · 1.4 — 01/10/2026 (Đợt 3 xong phần lớn — K3 xong, còn thiếu màn kiểm việc, Đợt 4 chưa) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
 | Dùng để làm gì | Chốt danh sách trường của hồ sơ nhân viên (mở rộng `tab_employee`), hai bảng con, chức năng màn hình, và phần tài khoản đăng nhập đi kèm |
 | Ai đọc | Đội phần mềm, người chủ trì |
 | Nguồn đối chiếu | [tham-khao-hrm/01-nhan-su.md](../tham-khao-hrm/01-nhan-su.md) (NS1, ~90 trường/7 nhóm), [tham-khao-hrm/10-de-xuat-ap-dung.md](../tham-khao-hrm/10-de-xuat-ap-dung.md) (V1-2, V1-3, V1-4), và **Phiếu thông tin nhân viên BM00../QT01/NS** (mẫu công ty đang dùng khi nhận việc, ban hành 01/06/2025) |
@@ -726,6 +726,7 @@ Menu **Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức** (`/hr/org-chart`). 
 - API `GET /api/org-chart` trả **dữ liệu phẳng** (pháp nhân · phòng ban có `parent` · nhân sự có `manager_id`), **5 truy vấn cố định**; giao diện dựng cây: pháp nhân › phòng ban (phòng con thụt vào) › người (cấp dưới thụt dưới người quản lý cùng phòng). Thẻ phòng gấp / mở được, mở sẵn hai tầng; đầu thẻ có «Trưởng phòng: …» và số người. Chịu được vòng `parent` / `manager` trong dữ liệu cũ (không treo).
 - **Phạm vi người xem:** chỉ vẽ nhân sự trong `employee` scope; quản lý / trưởng phòng ngoài phạm vi bị ẩn danh (id `0`, không lộ tên); phòng ban hiện nếu trong phạm vi hoặc có người xem được ở đó, kèm chuỗi phòng cha. Người đã nghỉ việc / ngưng hoạt động không vẽ. Chỉ lấy cột công việc, không đụng nhóm nhạy cảm.
 - Quyền: `employee.read` (cả route lẫn API). Bài kiểm `test_so_do_to_chuc_cr669.py`.
+- **Công tắc «Sơ đồ tổ chức cho mọi nhân viên»** (Cài đặt nhân sự, duoc-CR-713, §7.17): khóa `org_chart_visible_to_all` mặc định BẬT. TẮT thì `/api/org-chart` trả 403 trừ người có `scope_condition(Employee, "employee", ...) is None` (không giới hạn công ty / phòng / người); giao diện hiện *Sơ đồ tổ chức chưa mở cho bạn*.
 
 ### 7.13. Kiểm việc duyệt đang treo trước khi khóa tài khoản (V0-4 / U3, duoc-CR-665, 22/10/2026)
 
@@ -784,6 +785,23 @@ Anh Được chốt: lương nhập bằng **một chỗ trên hồ sơ** thay v
 - Luật số (`employee/phone_rules.py`): chữ số, khoảng trắng và `+ . - ( )`, 8–15 chữ số; không trùng nhau (bỏ ký tự phân cách rồi so), không trùng số chính. Không phải trường nhạy cảm (như `phone`).
 - Màn tab «Liên hệ & Ngân hàng» và hộp tự sửa liên hệ ở Trang cá nhân (§7.9): một danh sách «Số điện thoại» (nhãn + số, «Số chính» / «Đặt làm chính» / xóa, «+ Thêm số»), bên dưới một hàng hai ô địa chỉ (thường trú | tạm trú) + nút «Giống địa chỉ thường trú».
 - Tìm nhân sự theo số khớp cả số phụ (chỉ khi từ khóa toàn chữ số / ký tự phân cách, ≥ 3 chữ số). Xuất / nhập Excel có cột «Số điện thoại khác» dạng «số (nhãn); số».
+
+### 7.17. Cài đặt nhân sự — tab Nhân viên (duoc-CR-713, 02/11/2026)
+
+Trang **Cài đặt nhân sự** (`/hr/settings`, menu *Nhân sự ▸ Master ▸ Cài đặt nhân sự*) chép bố cục HR Settings của
+ERPNext: dải tab *Nhân viên · Nghỉ phép · Hợp đồng lao động*, nút *Lưu* ở đầu phải dải tab lưu cả ba tab. Gác
+`setting.read` / `setting.write`, lưu qua `PUT /api/settings` (nhóm khóa `hr`, chung nhật ký *Lịch sử thay đổi* của Cấu
+hình hệ thống), bộ đệm 30 giây. Tab *Nghỉ phép*: [02-nghi-phep.md §14](02-nghi-phep.md); tab *Hợp đồng lao động*:
+[04-hop-dong-lao-dong.md §A.8](04-hop-dong-lao-dong.md). Bài HDSD: *Nhân sự — Cài đặt nhân sự: mã nhân sự, sơ đồ tổ
+chức, nghỉ phép, hợp đồng* (`backend/scripts/seed_help_nhan_su.py`) — nội dung ở đây và ở seed phải khớp nhau.
+
+| Khóa | Nhãn trên màn | Mặc định | Luật | Đọc ở đâu |
+|---|---|---|---|---|
+| `employee_code_prefix` | Tiền tố mã nhân sự | `NSU` (để trống = NSU) | 2–10 chữ cái in hoa, không dấu, không số. Chỉ áp cho hồ sơ MỚI (tạo tay hoặc nhập Excel để trống Mã NV), mã = tiền tố + số tăng dần; mã đã cấp không đổi | `employee/service.employee_code_prefix()` — đừng gõ lại chuỗi "NSU" ở đường tạo hồ sơ mới |
+| `org_chart_visible_to_all` | Sơ đồ tổ chức cho mọi nhân viên | BẬT | TẮT → chỉ người xem được toàn bộ hồ sơ nhân sự mở được sơ đồ (§7.12) | `employee/org_chart_controller.py` |
+| `employee_anniversary_years` | Mốc kỷ niệm vào làm (năm) | `1, 3, 5, 10` | Số cách nhau bằng dấu phẩy, mỗi số 1–60, tối đa 10 mốc. Ô *Lịch nhắc trong tháng* ở Tổng quan Nhân sự liệt kê người tròn đúng các mốc | `employee/monthly_reminders_service.anniversary_years()` |
+
+Bài kiểm: `test/backend/test_cai_dat_nhan_su_cr713.py`; vitest `hr/components/hr-settings-form.test.tsx`.
 
 ## Hợp đồng lao động
 
