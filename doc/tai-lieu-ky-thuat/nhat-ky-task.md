@@ -18404,6 +18404,18 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 - Chốt người duyệt chặng một khi chính Trưởng phòng Nhân sự xin nghỉ.
 - Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
 
+## bao-CR-726 | Chặn chèn công thức ở các tệp Excel / CSV xuất ra còn lại
+- status: xong
+- date: 2026-11-04
+- list: Nền tảng
+- tag: Bảo mật, Agent 4
+
+**Bối cảnh:** rà soát bảo mật bao-CR-723 mới chặn chèn công thức ở tệp xuất tra cứu thị trường; còn báo cáo mua hàng, sổ lao động / phúc lợi, tệp mẫu nhập, tệp Excel Trợ lý dựng và CSV danh mục.
+
+**Đã làm:** mọi tệp Excel tự dựng được rà trước khi lưu, ô chữ mở đầu bằng dấu bằng giữ nguyên chữ chứ không thành công thức. Tệp CSV danh mục và CSV xuất tập trung thêm dấu nháy đơn trước ô nguy hiểm; khi nạp lại tệp đó, hệ gỡ đúng dấu nháy nên dữ liệu không đổi. Tệp CSV báo cáo khảo sát tải ở giao diện mới cũng thêm dấu nháy. Đóng mục BM-033 trong sổ lỗi bảo mật.
+
+Mã nguồn: core/export_xlsx.py guard_workbook, core/csv_utils.py, core/crud.py, product/controller.py, supplier/controller.py, export_log/service.py, import_tool/tasks.py, labor_register/export_common.py, report/excel/builder.py, import_tool/catalog_import.py, import_tool/doc_import.py, assistant/tools/export_tool.py, frontend-v2 survey-report-page.tsx; bài kiểm test_bao_mat_xuat_cong_thuc_cr726.py.
+
 ## bao-CR-723 | Rà soát bảo mật toàn ứng dụng
 - status: xong
 - date: 2026-11-04

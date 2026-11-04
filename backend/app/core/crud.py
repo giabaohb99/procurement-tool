@@ -204,6 +204,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         ):
             import csv
             from io import StringIO
+            from app.core.csv_utils import unescape_row
             from app.core.scoping import scope_condition
             content = file.file.read().decode("utf-8")
             reader = csv.DictReader(StringIO(content))
@@ -215,7 +216,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
             # thì BỎ QUA và đếm riêng — không lặng lẽ ghi đè, cũng không dừng cả file.
             scope_cond = scope_condition(Model, entity, user, get_perm_profile(db, user), "import")
             created, updated, deleted, skipped = 0, 0, 0, 0
-            for row in reader:
+            for row in map(unescape_row, reader):   # bao-CR-726: gỡ dấu ' chống công thức của tệp xuất
                 action = row.get("Hành động", "").strip().lower()
                 is_active = action not in ["xóa", "delete", "ngừng"]
                 
