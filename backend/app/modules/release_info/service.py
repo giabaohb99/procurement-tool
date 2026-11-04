@@ -27,7 +27,7 @@ MODULES = [
 ]
 #  Đại ca chốt 04/11/2026: phiên bản dạng SỐ 2.X.Y — 2 = ERP v2 (2.0.0 = 11/09/2026), X tăng mỗi đợt prod có tính năng,
 #  Y tăng khi đợt chỉ vá lỗi. Ngày phát hành ghi ở `date` của từng mục.
-VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
+VERSION_RE = re.compile(r"^2\.\d+\.\d+$")   # A1 chốt: luôn bắt đầu bằng 2 (ERP v2)
 
 
 def version_key(version: str) -> tuple[int, ...]:

@@ -28,6 +28,8 @@ def test_tep_ghi_chu_phat_hanh_dung_khuon():
     ({"releases": []}, "thiếu danh sách"),
     ({"releases": [{"version": "2.12", "date": "2026-11-04", "title": "x", "notes": [{"module": "Kho", "kind": "them", "text": "a"}]}]},
      "version"),
+    ({"releases": [{"version": "3.0.0", "date": "2026-11-04", "title": "x", "notes": [{"module": "Kho", "kind": "them", "text": "a"}]}]},
+     "version"),
     ({"releases": [{"version": "2.12.0", "date": "04/11/2026", "title": "x", "notes": [{"module": "Kho", "kind": "them", "text": "a"}]}]},
      "date"),
     ({"releases": [{"version": "2.12.0", "date": "2026-11-04", "title": "x", "notes": [{"module": "Lạ", "kind": "them", "text": "a"}]}]},
