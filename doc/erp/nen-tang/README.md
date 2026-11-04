@@ -24,7 +24,7 @@ Chỉ ghi trạng thái khi tài liệu nguồn nói rõ; còn lại ghi *chưa 
 
 | Mảng | Trạng thái | Ghi chú |
 |---|---|---|
-| Chuông thông báo, Web Push, email luồng duyệt, nhật ký email (`/system/email-logs`, bao-CR-721) | chưa ghi | Mô tả ở [`10`](chuc-nang/10-thong-bao-va-trang-ca-nhan.md); bao-CR-349 công tắc email theo người |
+| Chuông thông báo, Web Push, email luồng duyệt, nhật ký email (`/system/email-logs`, bao-CR-721), phiên bản và Có gì mới (`/whats-new`, bao-CR-722) | chưa ghi | Mô tả ở [`10`](chuc-nang/10-thong-bao-va-trang-ca-nhan.md); bao-CR-349 công tắc email theo người |
 | Phiếu hỗ trợ | Trên dev | Tài liệu [`11`](chuc-nang/11-ho-tro-ticket.md) ghi bật ở dev, tắt ở prod bằng cờ build `VITE_FEATURE_TICKET` (ghi cho bản v1) |
 | Bình luận trên chứng từ | chưa ghi | [`12`](chuc-nang/12-binh-luan-tren-chung-tu.md); CR-030, CR-031, CR-033 |
 | Trung tâm trợ giúp (HDSD) | Đã lên prod | `help.degoholding.vn` theo [`13`](chuc-nang/13-trung-tam-hdsd.md); CR-019, CR-052..054 |

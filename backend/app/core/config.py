@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = "dego2026"
 
     DEV_MODE: bool = False   # bật ở .env local (=true) để mở các API dev-only (vd xóa data test)
+    #  bao-CR-722: phiên bản đang chạy. Hai biến đầu do Dockerfile.api bơm lúc build (build arg BUILD_COMMIT /
+    #  BUILD_TIME, xem quy-trinh-nhanh-va-deploy.md B.3); APP_ENV do compose đặt (prod / dev). Thiếu = rỗng, màn ghi
+    #  không rõ — không đoán.
+    BUILD_COMMIT: str = ""
+    BUILD_TIME: str = ""
+    APP_ENV: str = ""
     
     FRONTEND_URL: str = "https://thumuatool.degoholding.vn"
     
@@ -223,6 +229,10 @@ class Settings(BaseSettings):
     # Sau mỗi buổi chat RIÊNG đã tóm tắt, một lượt model rẻ rút điều bền về người đó; nhắc lại ≥ 3 lần trên ≥ 2 ngày mới
     # ghi vào lõi sổ nhớ (đuôi "tự rút"). Tắt thì sổ ý định vẫn ghi, chỉ thôi rút.
     AGENT_AUTO_MEMORY_ENABLED: bool = True
+    # bao-CR-723 / BM-032: bot TỰ TÍNH ô công thức Excel bằng pycel (ai-CR-115). pycel 1.0b30 có lỗ thực thi mã khi tính
+    # công thức của tệp không tin cậy (PYSEC-2025-177, chưa có bản vá) — mà tệp đến từ bất kỳ ai nhắn bot / MCP. Mặc định
+    # TẮT: ô công thức chưa có kết quả lưu sẵn thì in "=công thức" cho model tự suy. Chỉ bật khi pycel có bản vá.
+    AGENT_XLSX_EVAL_FORMULAS: bool = False
     # kh-AI1-3: kế hoạch AI soạn phải nằm chờ duyệt trên màn "Duyệt kế hoạch AI" rồi mới tạo việc. TẮT tới khi màn đó lên
     # (Agent 3); tắt thì "tạo" dựng bảng Dự án ngay như bao-CR-616 và ghi đề xuất trạng thái "Tạo thẳng".
     AI_PLAN_REVIEW_ENABLED: bool = False

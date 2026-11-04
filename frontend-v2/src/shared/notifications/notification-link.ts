@@ -62,6 +62,7 @@ const V2_PREFIXES = [
   '/support',
   '/system',
   '/vehicle-booking',
+  '/whats-new',
 ]
 
 /**

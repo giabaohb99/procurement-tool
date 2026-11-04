@@ -317,12 +317,16 @@ def _due(row_or_state: dict, local: datetime) -> bool:
 
 
 def _bell_on(db: Session, user_id: int) -> bool:
-    """Bản tin NGẦM (người nối Google chưa tự bật) giữ luật cũ của ai-CR-064: chuông của chat không tắt mới gửi."""
+    """Bản tin NGẦM (người nối Google chưa tự bật) giữ luật cũ của ai-CR-064: chuông của chat không tắt mới gửi.
+    ai-CR-234: chỉ chat đang đăng nhập (chưa gỡ, CHƯA HẾT HẠN)."""
+    from datetime import datetime as _dt
+
     from .constants import NOTIFY_OFF
     from .model import AgentChatLink
 
     return any(int(c.notify_mode or 0) != NOTIFY_OFF for c in db.scalars(select(AgentChatLink).where(
-        AgentChatLink.user_id == int(user_id), AgentChatLink.chat_id != "", AgentChatLink.revoked_at.is_(None))))
+        AgentChatLink.user_id == int(user_id), AgentChatLink.chat_id != "", AgentChatLink.revoked_at.is_(None),
+        AgentChatLink.expires_at > _dt.now())))
 
 
 def _candidates(db: Session) -> list[tuple[int, object]]:

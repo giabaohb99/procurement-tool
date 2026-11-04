@@ -82,6 +82,17 @@ def get_active_link(db: Session, chat_id: str, *, now: datetime | None = None) -
         AgentChatLink.expires_at > now).order_by(AgentChatLink.id.desc()).limit(1))
 
 
+def active_chat_ids_of(db: Session, user_id: int, *, now: datetime | None = None) -> list[str]:
+    """Mọi chat ĐANG đăng nhập của một tài khoản — cùng luật với `get_active_link` (chưa gỡ VÀ chưa hết hạn).
+
+    ai-CR-234: bản tin sáng / chọn chat riêng / quyền đọc nhóm từng chỉ xét `revoked_at`, nên chat có liên kết đã HẾT
+    hạn vẫn nhận việc riêng của tài khoản cũ, trong khi hỏi lại thì bot báo "chưa liên kết" (dev 04/11/2026)."""
+    now = now or datetime.now()
+    return [c for c in db.scalars(select(AgentChatLink.chat_id).where(
+        AgentChatLink.user_id == int(user_id), AgentChatLink.chat_id != "", AgentChatLink.revoked_at.is_(None),
+        AgentChatLink.expires_at > now).order_by(AgentChatLink.id)) if c]
+
+
 def get_expired_link(db: Session, chat_id: str, *, now: datetime | None = None) -> AgentChatLink | None:
     """Liên kết đã HẾT HẠN mà chưa ai gỡ — để báo người dùng lấy mã mới (đúng một lần)."""
     now = now or datetime.now()

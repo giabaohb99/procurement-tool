@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import require
 from app.core.database import get_db
+from app.core.permissions import ENTITY_LABELS
 from app.core.response import success
 
 from . import email_template_service
@@ -26,6 +27,30 @@ from .model import EmailLog
 router = APIRouter(prefix="/api/email-logs", tags=["email-log"])
 
 STATUS_LABELS = {"pending": "Đang chờ", "sent": "Đã gửi", "failed": "Lỗi", "disabled": "Tắt gửi"}
+#  Sự kiện KHÔNG nằm trong danh mục mẫu email (ghi thẳng bằng EmailLog(...) ở nơi khác) — soát dev 04/11/2026: workflow_<loại
+#  chứng từ> (luồng duyệt dùng chung, `notification/service._send_workflow_emails`), document_issued (văn thư ban hành),
+#  password_reset (quên mật khẩu), <event>_test (nút Gửi thử của màn Mẫu email). Không khai thì màn in mã Anh trần.
+EXTRA_EVENT_LABELS = {
+    "document_issued": "Văn bản mới ban hành",
+    "password_reset": "Đặt lại mật khẩu",
+    "workflow_preview": "Luồng duyệt → thử mẫu",
+}
+
+
+def event_label(event: str) -> str:
+    """Nhãn tiếng Việt của sự kiện: danh mục mẫu email trước, rồi các họ ghi thẳng; lạ thì trả nguyên mã."""
+    if not event:
+        return ""
+    if email_template_service.is_known(event):
+        return email_template_service.event_display(event)
+    if event in EXTRA_EVENT_LABELS:
+        return EXTRA_EVENT_LABELS[event]
+    if event.startswith("workflow_"):
+        doc_type = event[len("workflow_"):]
+        return f"Luồng duyệt → {ENTITY_LABELS.get(doc_type, doc_type)}"
+    if event.endswith("_test"):
+        return f"Gửi thử → {event_label(event[:-len('_test')])}"
+    return event
 #  Thứ tự hiện trên ô lọc: cái người ta tra nhiều nhất đứng trước.
 STATUS_ORDER = ("failed", "sent", "pending", "disabled")
 
@@ -38,7 +63,7 @@ def _format(r: EmailLog) -> dict:
     return {
         "id": r.id,
         "event": r.event or "",
-        "event_label": email_template_service.event_display(r.event or ""),
+        "event_label": event_label(r.event or ""),
         "to_email": r.to_email or "",
         "subject": r.subject or "",
         "status": r.status or "",
@@ -67,7 +92,7 @@ def email_log_meta(db: Session = Depends(get_db), user=Depends(require("audit", 
     known = [d["event"] for d in email_template_service.DEFAULTS]
     seen = [e for (e,) in db.query(EmailLog.event).distinct().all() if e]
     extra = sorted(e for e in set(seen) - set(known))
-    events = [{"code": e, "label": email_template_service.event_display(e)} for e in known + extra]
+    events = [{"code": e, "label": event_label(e)} for e in known + extra]
     statuses = [{"code": s, "label": STATUS_LABELS[s]} for s in STATUS_ORDER]
     return success({"events": events, "statuses": statuses})
 

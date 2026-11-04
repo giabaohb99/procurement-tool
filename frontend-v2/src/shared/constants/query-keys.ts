@@ -7,6 +7,11 @@
  */
 export const queryKeys = {
   /** Hồ sơ của chính người đang đăng nhập — Trang cá nhân đọc bằng khóa này. */
+  /** Phiên bản đang chạy + ghi chú phát hành (bao-CR-722) — không đổi trong một phiên. */
+  release: {
+    version: () => ['release', 'version'] as const,
+    notes: () => ['release', 'notes'] as const,
+  },
   auth: {
     all: ['auth'] as const,
     me: () => ['auth', 'me'] as const,

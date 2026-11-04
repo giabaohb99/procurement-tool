@@ -114,6 +114,61 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-724-tra-ho-so-nhan-su-ve-giao-dien-cu | Trả màn chi tiết nhân sự về giao diện ERP v2 cũ
+- status: xong
+- date: 2026-11-04
+- list: HRM
+- tag: Nhân sự, Giao diện
+**Bối cảnh:** màn chi tiết hồ sơ nhân sự đã đổi sang kiểu nexterp ở duoc-CR-708 và duoc-CR-710 (mặt phẳng trắng, thanh bên
+phải, nhóm gập mở, chú thích thu vào biểu tượng). Người chủ dùng thử thấy không hợp, bảo trả về giao diện ERP v2 trước đó.
+**Việc:** lấy lại đúng bản trước duoc-CR-708 cho trang chi tiết nhân sự và năm thành phần của nó (tab Chung, tab Liên hệ và
+Ngân hàng, tab Giấy tờ và BHXH, thẻ phòng ban, nhóm lương), giữ nguyên các tính năng làm sau đó.
+**Kết quả:** màn hồ sơ trở lại nền xám có thẻ trắng, thẻ danh tính với các nhãn mã nhân viên, chức vụ, phòng ban, quản lý,
+tình trạng; tiêu đề nhóm in hoa, chú thích hiện dòng dưới từng ô; cuối trang là khối **Lịch sử thao tác** như cũ. Thanh bên
+phải, tiêu đề dính khi cuộn và khối **Hoạt động** bỏ hẳn. Hộp hỏi **Giữ phòng cũ làm kiêm nhiệm** của bao-CR-709 được gắn lại
+vào bản cũ; phần sửa thanh điều hướng hết lặp "Nhân sự › Nhân sự" của duoc-CR-708 vẫn giữ. Các khung dùng chung (nhóm phẳng,
+biểu tượng chú thích, bố cục phẳng của trang danh mục duoc-CR-716) không đụng vì trang Loại nghỉ và Chính sách nghỉ phép đang
+dùng. Xóa các tệp chỉ phục vụ kiểu nexterp mà nay không chỗ nào dùng: thanh bên, khối nhóm, chấm tình trạng, mốc thời gian,
+nhãn cột của khối Hoạt động, hook đo chiều cao, cùng bài kiểm của chúng. Bài kiểm: typecheck 0 lỗi, eslint 0 lỗi, vitest phần
+nhân sự 21 tệp 269 bài đạt; mở thử trên trình duyệt ở khổ 1440 và 390, không tràn ngang.
+**Còn lại:** trang phiếu thanh toán nghỉ phép (duoc-CR-719, chưa commit) và trang Loại nghỉ, Chính sách nghỉ phép vẫn kiểu
+nexterp, chờ người chủ quyết có trả về không.
+Mã nguồn: frontend-v2/src/modules/hr/pages/employee-detail-page.tsx, frontend-v2/src/modules/hr/components/employee-tab-general.tsx, employee-tab-contact.tsx, employee-tab-documents.tsx, employee-department-card.tsx, employee-salary-section.tsx
+Commit: xem dòng bao-CR-724 trong change-log-bao.md
+
+## bao-CR-722-phien-ban-va-co-gi-moi | Trang Phiên bản và Có gì mới
+- status: xong
+- date: 2026-11-04
+- list: Nền tảng
+- tag: Nền tảng
+**Bối cảnh:** người dùng trên prod không biết hệ đang chạy bản nào và mỗi đợt cập nhật có gì mới; mỗi đợt phát hành chỉ có
+ghi chú kỹ thuật trong sổ thay đổi, không có chỗ đọc bằng lời người dùng.
+**Việc:** tệp ghi chú phát hành trong mã nguồn, mỗi đợt một mục (mã phiên bản, ngày, thay đổi theo phân hệ, lưu ý), dựng sẵn
+đợt 04/11 và vài đợt trước; bơm mã commit và giờ build lúc dựng ảnh; API phiên bản và ghi chú phát hành cho người đã đăng
+nhập; trang Có gì mới trong giao diện với lọc theo phân hệ, chân menu trái hiện phiên bản, chấm đỏ khi có đợt chưa xem; bài
+kiểm, HDSD ngắn, cập nhật tài liệu nền tảng. Không gấp, đi đợt prod sau.
+**Kết quả:** tệp ghi chú phát hành trong mã nguồn, mỗi đợt một mục với mã phiên bản theo ngày, tiêu đề, từng dòng thêm,
+sửa, bỏ theo phân hệ kèm mã thay đổi, và lưu ý; khuôn tệp được kiểm lúc khởi động và bằng bài kiểm. Dựng sẵn đợt 04/11 và
+ba đợt trước (30/10, 31/10, 02/11). Mã commit và giờ build bơm vào ảnh máy chủ lúc dựng qua hai tham số build, ảnh giao diện
+nhận mã commit riêng; hai tệp compose truyền tham số cho mọi dịch vụ dùng chung ảnh và đặt nhãn môi trường; quy trình deploy
+thêm dòng đặt biến trước khi dựng. API phiên bản và ghi chú phát hành cho người đã đăng nhập. Giao diện: trang Có gì mới ở
+khung chung như Trang cá nhân, lọc theo phân hệ, dòng phiên bản đang chạy ghi không rõ khi thiếu dữ liệu; chân menu trái
+hiện phiên bản và mã commit, bấm mở trang; menu tài khoản thêm mục; chấm đỏ khi phiên bản khác bản đã xem, mở trang là ghi
+đã xem vào tùy chọn cá nhân. Bài kiểm: backend 11 bài, vitest 7 bài mới và các cụm liên quan 151 đạt, typecheck, eslint,
+ruff sạch. Bài HDSD mới dưới thẻ Bắt đầu đã seed dev. Tài liệu nền tảng thêm dòng chức năng, hai đường API, README; sửa
+số dòng chức năng trùng của bao-CR-721.
+**Bổ sung 04/11 (đã chốt):** phiên bản ghi bằng số 2.X.Y thay vì ngày: 2 là ERP thế hệ hai (11/09/2026 lên prod là
+2.0.0), X tăng mỗi đợt có tính năng, Y tăng khi đợt chỉ vá lỗi. Đã đánh lại lịch sử theo các đợt prod đã ghi nhớ: 30/10 là
+2.9.0, 31/10 là 2.10.0, 02/11 là 2.11.0, 04/11 là 2.12.0 (các đợt trước ghi trong chú thích của tệp, chưa có mục). Chân menu chỉ
+hiện số phiên bản; mã commit và giờ build hiện khi rê chuột và trong trang. Ngày phát hành vẫn ghi ở từng mục.
+**Bổ sung 04/11 lần hai (góp ý sau khi soát dev):** trang chủ chọn phân hệ không có menu trái nên dòng cuối trang nối thêm
+liên kết Phiên bản kèm chấm đỏ; trang Có gì mới chuyển sang danh sách thu gọn, mỗi đợt một dòng gồm số bản, ngày, tiêu
+đề, đợt mới nhất mở sẵn, các đợt khác bấm để sổ; bỏ mã thay đổi ở cuối mỗi dòng (vẫn giữ trong tệp cho nội bộ). Thêm
+thành phần accordion dùng chung. Vitest 3 bài trang cập nhật, cụm layouts 30 đạt, typecheck và eslint sạch.
+**Còn lại:** mỗi đợt đẩy prod A1 thêm một mục vào release_notes.json và đặt hai biến build trước khi dựng ảnh; prod đợt sau.
+Mã nguồn: backend/app/data/release_notes.json, backend/app/modules/release_info, backend/app/core/config.py, docker/Dockerfile.api, docker/Dockerfile.erp.prod, docker-compose.production.yml, docker-compose.dev.yml, frontend-v2/src/app/pages/whats-new-page.tsx, frontend-v2/src/app/layouts/sidebar-version-footer.tsx, frontend-v2/src/shared/release, test/backend/test_phien_ban_va_ghi_chu_phat_hanh_cr722.py, backend/scripts/seed_help_co_gi_moi.py, doc/erp/nen-tang, doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md
+Commit: f8bcd696 (đặt chỗ), 67f0b71f
+
 ## bao-CR-721-man-nhat-ky-email | Màn Nhật ký email trong phân hệ Quản trị
 - status: xong
 - date: 2026-11-03
@@ -18348,6 +18403,16 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 - Gán quản lý trực tiếp trên hồ sơ nhân viên; gán trưởng phòng cho tám phòng còn trống (N2AGRO, Dego Holding, Agricare, N2AGRO-KT, Mua Hàng, Dego Agrochem, Pháp Lý, R&D).
 - Chốt người duyệt chặng một khi chính Trưởng phòng Nhân sự xin nghỉ.
 - Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
+
+## bao-CR-723 | Rà soát bảo mật toàn ứng dụng
+- status: xong
+- date: 2026-11-04
+- list: Nền tảng
+- tag: Bảo mật
+
+**Đã làm:** Rà thư viện có lỗ đã công bố, các đường API không đòi đăng nhập, khóa bí mật trong lịch sử mã nguồn, header bảo mật và CORS trên prod, chèn công thức vào tệp Excel xuất ra và cách bot đọc tệp người dùng gửi. Vá ngay lỗi bot tự tính công thức Excel bằng thư viện có lỗ thực thi mã (tắt mặc định) và chặn chèn công thức ở hai đường xuất tra cứu thị trường. Ghi năm mục mới vào sổ lỗi bảo mật, trong đó nâng thư viện và thêm chính sách chặn script để CR riêng.
+
+Mã nguồn: agent_hub/doc_text.py, core/config.py AGENT_XLSX_EVAL_FORMULAS, core/export_xlsx.py guard_formula_row, customs/service.py, customs/line_export.py; bài kiểm test_bao_mat_ra_soat_cr723.py.
 
 ## bao-CR-713 | Tắt trang tài liệu API trên prod, chỉ mở ở dev
 - status: xong

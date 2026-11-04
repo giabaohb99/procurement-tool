@@ -93,5 +93,16 @@ def test_meta_va_the_dem_7_ngay(world, client_as):  # noqa: F811
     assert stats["days"] == 7 and stats["failed"] == 1 and stats["total"] == 3            # dòng 30 ngày không tính
 
 
+def test_nhan_su_kien_ngoai_danh_muc_mau_email():
+    """Soát dev 04/11: phần lớn thư là luồng duyệt dùng chung / văn thư / quên mật khẩu — không thuộc danh mục mẫu email."""
+    from app.modules.notification.email_log_controller import event_label
+
+    assert event_label("workflow_purchase_request") == "Luồng duyệt → Yêu cầu mua hàng"
+    assert event_label("workflow_la_lam") == "Luồng duyệt → la_lam"
+    assert event_label("document_issued") == "Văn bản mới ban hành"
+    assert event_label("dx_submitted_test") == "Gửi thử → Gửi duyệt → Người duyệt"
+    assert event_label("dx_submitted") == "Gửi duyệt → Người duyệt" and event_label("thu_la") == "thu_la"
+
+
 def test_duong_doc_nhat_ky_khong_ghi_request_log():
     assert "/api/email-logs" in SKIP_PATH_PREFIXES
