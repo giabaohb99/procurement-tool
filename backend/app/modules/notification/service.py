@@ -77,6 +77,11 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
         log = db.query(EmailLog).filter(EmailLog.id == log_id).first()
         if not log:
             return
+        #  bao-CR-727: giữ nội dung để nút "Gửi lại" của màn Nhật ký email gửi lại y nguyên. Ghi TRƯỚC mọi nhánh
+        #  chặn bên dưới — thư bị tắt / thiếu SMTP mới là thư người ta cần gửi lại nhất. Thư mật khẩu: `keep_body`
+        #  tự bỏ qua.
+        if not log.html_body:
+            log.keep_body(html_body)
 
         # Chặn CỨNG theo môi trường (.env EMAIL_HARD_OFF) — vượt cả force. Dùng cho dev/UAT
         # để không bao giờ gửi mail thật kể cả reset mật khẩu / cấp tài khoản.
@@ -152,6 +157,8 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
         if log:
             log.status = "failed"
             log.error = str(ex)
+            if not log.html_body:
+                log.keep_body(html_body)
             db.commit()
     finally:
         db.close()
@@ -428,6 +435,7 @@ def _send_workflow_emails(db: Session, background_tasks, recipients: list, subje
         })
         log = EmailLog(event=f"workflow_{doc_type}", to_email=target, subject=subject,
                        status="pending", created_by=r.id)
+        log.keep_body(html)  # bao-CR-727
         db.add(log); db.flush()
         jobs.append((log.id, target, html))
     db.commit()  # bảo đảm EmailLog tồn tại trước khi task nền (session mới) đọc

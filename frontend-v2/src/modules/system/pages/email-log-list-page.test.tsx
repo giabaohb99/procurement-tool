@@ -43,6 +43,10 @@ function item(over: Partial<EmailLogItem> = {}): EmailLogItem {
     from_email: 'erp@dego.vn',
     created_at: '2026-11-03T08:00:00',
     created_by: 0,
+    resent_from_id: null,
+    has_body: true,
+    can_resend: true,
+    resend_block_reason: '',
     ...over,
   }
 }
@@ -107,6 +111,12 @@ describe('EmailLogListPage', () => {
     //  Mở màn không gọi chi tiết thư nào.
     const detailCalls = apiGet.mock.calls.filter(([url]) => /\/api\/email-logs\/\d+/.test(String(url)))
     expect(detailCalls).toHaveLength(0)
+  })
+
+  it('labels a resent row with "Gửi lại từ #id" in the table (bao-CR-727)', async () => {
+    listResult = { total: 1, page: 1, page_size: 50, items: [item({ id: 5, resent_from_id: 2 })] }
+    dung()
+    expect(await screen.findByText('Gửi lại từ #2')).toBeInTheDocument()
   })
 
   it('bảng rỗng do lọc nói khác bảng rỗng vì chưa ghi gì', async () => {

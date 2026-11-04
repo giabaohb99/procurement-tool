@@ -114,6 +114,35 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-727-gui-lai-email | Nút Gửi lại trên màn Nhật ký email
+- status: xong
+- date: 2026-11-04
+- list: Nền tảng
+- tag: Nền tảng
+**Bối cảnh:** màn Nhật ký email (bao-CR-721) chỉ đọc; người quản trị thấy thư lỗi nhưng không gửi lại được, phải chờ bước
+nghiệp vụ tự gửi lần nữa. Đã chốt: lưu nội dung thư từ nay, thư cũ không có nội dung thì nút tắt kèm câu giải thích.
+
+**Việc:** lưu nội dung thư vào nhật ký email, thêm đường API gửi lại sinh dòng nhật ký mới, nút Gửi lại có hộp xác nhận
+trong ngăn chi tiết, không lưu và không gửi lại thư đặt lại mật khẩu hay cấp tài khoản.
+
+**Kết quả:** migration thêm cột nội dung thư (MEDIUMTEXT) và cột dòng gốc của bản gửi lại (có chỉ mục) vào bảng nhật ký
+email. Nội dung được giữ ngay lúc xếp thư ở mọi nơi tạo dòng nhật ký (luồng duyệt dùng chung, mẫu email, hàng đợi sau
+commit, văn thư ban hành và bãi bỏ, gửi thử) và ở chỗ gửi chung trước mọi nhánh chặn, nên thư bị tắt gửi hay thiếu cấu
+hình máy chủ thư cũng gửi lại được. Thư đặt lại mật khẩu và cấp tài khoản không bao giờ lưu nội dung vì chứa liên kết
+đặt mật khẩu. Không thư nào của hệ có tệp đính kèm, nên gửi lại là gửi trọn thư. Đường API gửi lại đòi quyền sửa ở khóa
+Nhật ký hệ thống, tạo dòng mới cùng người nhận, tiêu đề, nội dung, hộp thư gửi danh nghĩa, gửi nền qua đường gửi chung
+(công tắc email vẫn áp, thư luồng duyệt giữ cách gửi gốc), ghi nhật ký thao tác, chặn cùng một thư gửi lại trong 60 giây,
+từ chối thư không có nội dung với câu **Thư gửi trước ngày ... không lưu nội dung nên không gửi lại được**. Danh sách và
+chi tiết trả thêm cờ gửi lại được và lý do. Giao diện: nút Gửi lại ở chân ngăn chi tiết, chỉ hiện khi có quyền, hộp xác
+nhận ghi người nhận và tiêu đề, xong báo dòng mới và làm mới danh sách; dòng gửi lại mang nhãn **Gửi lại từ #id** ở bảng
+và ngăn. Bài HDSD nhật ký email thêm mục Gửi lại một thư (chưa seed dev). Tài liệu nền tảng: dòng CN-NT-25, api.md,
+tài liệu thông báo mục G.
+
+Kiểm: backend 15 bài mới đạt, các bài email liên quan đạt, ruff sạch, alembic một head; vitest cụm Quản trị 351 đạt (thêm
+5 bài), typecheck và eslint cả cây 0 lỗi.
+Mã nguồn: backend/app/modules/notification (model.py, service.py, email_log_controller.py, email_queue.py, email_template_service.py, email_template_controller.py), backend/app/modules/document (issue_notification.py, revoke_notification.py), backend/migrations/versions/emresend727_noi_dung_thu_gui_lai.py, test/backend/test_gui_lai_email_cr727.py, backend/scripts/seed_help_nhat_ky_email.py, frontend-v2/src/modules/system (api/email-log-api.ts, hooks/use-email-logs.ts, components/email-log-detail-sheet.tsx + .test.tsx, pages/email-log-list-page.tsx + .test.tsx), doc/erp/nen-tang
+Còn lại: seed bài HDSD lên dev sau khi dựng dev (`scripts/seed_help_nhat_ky_email.py` rồi `reindex_help_rag.py`).
+
 ## bao-CR-725-nang-thu-vien-co-lo | Nâng thư viện có lỗ đã công bố (BM-034)
 - status: xong
 - date: 2026-11-04

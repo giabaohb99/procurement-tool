@@ -91,6 +91,8 @@ def queue_event_email(db: Session, event_code: str, recipients: list, context: d
         subject = render_template(eff["subject"], ctx)[:255]
         html = render_template(eff["body_html"], ctx)
         log = EmailLog(event=event_code, to_email=to_email, subject=subject, status="pending", created_by=actor_id)
+        #  bao-CR-727: lưu nội dung ngay lúc xếp — đẩy sang worker hỏng thì dòng vẫn gửi lại được từ màn Nhật ký email.
+        log.keep_body(html)
         db.add(log)
         db.flush()
         _ensure_hooked(db)

@@ -1,6 +1,10 @@
+import { Send } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { CopyButton } from '@/shared/ui/copy-button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -8,7 +12,8 @@ import { TONE_CLASS } from '@/shared/ui/status-tone'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { cn } from '@/shared/utils/cn'
 
-import { useEmailLogDetail } from '../hooks/use-email-logs'
+import type { EmailLogItem } from '../api/email-log-api'
+import { useEmailLogDetail, useResendEmailLog } from '../hooks/use-email-logs'
 import { emailStatusTone } from '../utils/email-log-format'
 
 interface EmailLogDetailSheetProps {
@@ -30,11 +35,27 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
  * Ngăn CHI TIẾT MỘT THƯ (bao-CR-721): đủ câu lỗi nguyên văn của máy chủ thư.
  *
  * Trên bảng câu lỗi bị cắt một dòng; ở đây in nguyên, có nút chép để dán vào phiếu hỗ
- * trợ. Không có nút gửi lại — thư là hệ quả của một bước nghiệp vụ, sửa nguyên nhân
- * (hộp thư, địa chỉ người nhận) rồi để bước đó gửi lại.
+ * trợ.
+ *
+ * Nút *Gửi lại* (bao-CR-727) cố ý CHỈ nằm ở đây, giống nút Chạy lại của sổ đồng bộ: bắt
+ * mở dòng ra, đọc câu lỗi trước khi bấm. Chỉ hiện với người có `audit.write`; thư không
+ * gửi lại được thì nút tắt và in lý do backend trả (thư cũ không lưu nội dung, thư mật khẩu).
  */
 export function EmailLogDetailSheet({ logId, onClose }: EmailLogDetailSheetProps) {
+  const { can } = usePermission()
   const { data, isLoading, isError } = useEmailLogDetail(logId)
+  const resend = useResendEmailLog()
+  const canWrite = can('audit', 'write')
+
+  const handleResend = async (row: EmailLogItem) => {
+    const ok = await confirm({
+      title: 'Gửi lại thư này?',
+      message: `Gửi lại y nguyên thư tới ${row.to_email}, tiêu đề: ${row.subject}. Hệ ghi một dòng nhật ký mới, dòng này giữ nguyên.`,
+      confirmLabel: 'Gửi lại',
+      tone: 'default',
+    })
+    if (ok) resend.mutate(row.id)
+  }
 
   return (
     <Sheet open={logId !== null} onOpenChange={(open) => !open && onClose()}>
@@ -50,7 +71,12 @@ export function EmailLogDetailSheet({ logId, onClose }: EmailLogDetailSheetProps
               'Chi tiết thư'
             )}
           </SheetTitle>
-          <SheetDescription className="font-mono text-xs">#{logId}</SheetDescription>
+          <SheetDescription className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-xs">#{logId}</span>
+            {data?.resent_from_id && (
+              <Badge variant="secondary">Gửi lại từ #{data.resent_from_id}</Badge>
+            )}
+          </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 space-y-4 overflow-y-auto p-4">
@@ -95,6 +121,25 @@ export function EmailLogDetailSheet({ logId, onClose }: EmailLogDetailSheetProps
             </>
           )}
         </div>
+
+        {data && canWrite && (
+          <div className="flex items-center justify-between gap-3 border-t p-4">
+            <p className="text-xs text-muted-foreground">
+              {data.can_resend
+                ? 'Gửi lại y nguyên thư (thân thư, không có tệp đính kèm) và ghi một dòng mới — dòng này giữ nguyên.'
+                : data.resend_block_reason}
+            </p>
+            <Button
+              className="shrink-0"
+              onClick={() => void handleResend(data)}
+              disabled={!data.can_resend || resend.isPending}
+              title={data.can_resend ? undefined : data.resend_block_reason}
+            >
+              <Send className="size-4 mr-1.5" />
+              Gửi lại
+            </Button>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   )
