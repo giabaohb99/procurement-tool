@@ -15,10 +15,10 @@ from hdld_factory import client_as  # noqa: F401
 
 def test_tep_ghi_chu_phat_hanh_dung_khuon():
     releases = service.load_releases()
-    assert releases and releases[0]["version"] >= "2026.11.04"
+    assert releases and service.version_key(releases[0]["version"]) >= (2, 12, 0)
     #  Mọi mục đều có phân hệ hợp lệ, loại hợp lệ, câu không rỗng; đợt xếp mới nhất trước.
     versions = [r["version"] for r in releases]
-    assert versions == sorted(versions, reverse=True) and len(set(versions)) == len(versions)
+    assert versions == sorted(versions, key=service.version_key, reverse=True) and len(set(versions)) == len(versions)
     for r in releases:
         for n in r["notes"]:
             assert n["module"] in service.MODULES and n["kind"] in service.KINDS and n["text"].strip()
@@ -26,19 +26,19 @@ def test_tep_ghi_chu_phat_hanh_dung_khuon():
 
 @pytest.mark.parametrize("bad, msg", [
     ({"releases": []}, "thiếu danh sách"),
-    ({"releases": [{"version": "v1", "date": "2026-11-04", "title": "x", "notes": [{"module": "Kho", "kind": "them", "text": "a"}]}]},
+    ({"releases": [{"version": "2.12", "date": "2026-11-04", "title": "x", "notes": [{"module": "Kho", "kind": "them", "text": "a"}]}]},
      "version"),
-    ({"releases": [{"version": "2026.11.04", "date": "04/11/2026", "title": "x", "notes": [{"module": "Kho", "kind": "them", "text": "a"}]}]},
+    ({"releases": [{"version": "2.12.0", "date": "04/11/2026", "title": "x", "notes": [{"module": "Kho", "kind": "them", "text": "a"}]}]},
      "date"),
-    ({"releases": [{"version": "2026.11.04", "date": "2026-11-04", "title": "x", "notes": [{"module": "Lạ", "kind": "them", "text": "a"}]}]},
+    ({"releases": [{"version": "2.12.0", "date": "2026-11-04", "title": "x", "notes": [{"module": "Lạ", "kind": "them", "text": "a"}]}]},
      "module"),
-    ({"releases": [{"version": "2026.11.04", "date": "2026-11-04", "title": "x", "notes": [{"module": "Kho", "kind": "doi", "text": "a"}]}]},
+    ({"releases": [{"version": "2.12.0", "date": "2026-11-04", "title": "x", "notes": [{"module": "Kho", "kind": "doi", "text": "a"}]}]},
      "kind"),
-    ({"releases": [{"version": "2026.11.04", "date": "2026-11-04", "title": "x", "notes": [{"module": "Kho", "kind": "them", "text": "«a»"}]}]},
+    ({"releases": [{"version": "2.12.0", "date": "2026-11-04", "title": "x", "notes": [{"module": "Kho", "kind": "them", "text": "«a»"}]}]},
      "ngoặc kép góc"),
     ({"releases": [
-        {"version": "2026.11.02", "date": "2026-11-02", "title": "x", "notes": [{"module": "Kho", "kind": "them", "text": "a"}]},
-        {"version": "2026.11.04", "date": "2026-11-04", "title": "y", "notes": [{"module": "Kho", "kind": "them", "text": "b"}]}]},
+        {"version": "2.9.0", "date": "2026-10-30", "title": "x", "notes": [{"module": "Kho", "kind": "them", "text": "a"}]},
+        {"version": "2.12.0", "date": "2026-11-04", "title": "y", "notes": [{"module": "Kho", "kind": "them", "text": "b"}]}]},
      "MỚI NHẤT"),
 ])
 def test_khuon_sai_bao_ro_cho_sai(bad, msg):

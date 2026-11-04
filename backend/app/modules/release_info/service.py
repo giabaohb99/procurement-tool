@@ -25,7 +25,14 @@ MODULES = [
     "Thu mua", "Nhập khẩu", "Kho", "Tra cứu thị trường", "Nhân sự", "Nghỉ phép", "Đặt xe", "Duyệt dấu", "Văn thư",
     "Công việc", "Diễn đàn", "Trợ lý AI", "Báo cáo", "Quản trị", "Nền tảng",
 ]
-VERSION_RE = re.compile(r"^\d{4}\.\d{2}\.\d{2}(\.\d+)?$")
+#  Đại ca chốt 04/11/2026: phiên bản dạng SỐ 2.X.Y — 2 = ERP v2 (2.0.0 = 11/09/2026), X tăng mỗi đợt prod có tính năng,
+#  Y tăng khi đợt chỉ vá lỗi. Ngày phát hành ghi ở `date` của từng mục.
+VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
+
+
+def version_key(version: str) -> tuple[int, ...]:
+    """So phiên bản theo từng số (2.10.0 > 2.9.0), không so chuỗi."""
+    return tuple(int(x) for x in version.split("."))
 
 
 def validate_releases(data: dict) -> list[dict]:
@@ -38,7 +45,7 @@ def validate_releases(data: dict) -> list[dict]:
         where = f"releases[{i}]"
         version = str(rel.get("version", ""))
         if not VERSION_RE.match(version):
-            raise ValueError(f"{where}: version '{version}' phải dạng YYYY.MM.DD hoặc YYYY.MM.DD.n")
+            raise ValueError(f"{where}: version '{version}' phải dạng số 2.X.Y (vd 2.12.0)")
         if version in seen:
             raise ValueError(f"{where}: version '{version}' trùng")
         seen.add(version)
@@ -66,7 +73,7 @@ def validate_releases(data: dict) -> list[dict]:
                 raise ValueError(f"{nw}: cr phải là chuỗi (rỗng nếu không có)")
         if not isinstance(rel.get("remarks", []), list):
             raise ValueError(f"{where}: remarks phải là danh sách")
-    ordered = sorted(releases, key=lambda r: r["version"], reverse=True)
+    ordered = sorted(releases, key=lambda r: version_key(r["version"]), reverse=True)
     if [r["version"] for r in ordered] != [r["version"] for r in releases]:
         raise ValueError("release_notes.json: các đợt phải xếp MỚI NHẤT ĐỨNG ĐẦU")
     return releases

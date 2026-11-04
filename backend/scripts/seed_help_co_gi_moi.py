@@ -23,14 +23,14 @@ ARTICLES = [
 bỏ gì, ở phân hệ nào. Trang <strong>Có gì mới</strong> cho mọi người đọc các mục đó mà không cần hỏi.</p>
 <h3>1. Mở trang</h3>
 <ul>
-<li>Bấm vào dòng <strong>Phiên bản 2026.11.04 · abc1234</strong> ở chân menu trái của bất kỳ phân hệ nào, hoặc mở menu tài khoản
+<li>Bấm vào dòng <strong>Phiên bản 2.12.0</strong> ở chân menu trái (rê chuột lên dòng này thấy mã bản dựng và giờ dựng) của bất kỳ phân hệ nào, hoặc mở menu tài khoản
 (ảnh đại diện góc phải) rồi chọn <strong>Có gì mới</strong>. Đường dẫn: <code>/whats-new</code>.</li>
 <li>Ai đăng nhập cũng xem được, không cần quyền riêng.</li>
 </ul>
 <h3>2. Đọc trang</h3>
 <ul>
-<li>Dòng đầu ghi <strong>phiên bản đang chạy</strong> (số theo ngày phát hành, ví dụ 2026.11.04), mã bản dựng của máy chủ, giờ dựng
-và môi trường. Chỗ nào ghi <em>không rõ</em> là bản dựng không kèm thông tin đó, không phải lỗi.</li>
+<li>Dòng đầu ghi <strong>phiên bản đang chạy</strong> dạng 2.X.Y (2 là ERP thế hệ hai, X tăng mỗi đợt có tính năng mới, Y tăng khi
+đợt chỉ sửa lỗi, ví dụ 2.12.0), ngày phát hành, mã bản dựng của máy chủ, giờ dựng và môi trường. Chỗ nào ghi <em>không rõ</em> là bản dựng không kèm thông tin đó, không phải lỗi.</li>
 <li>Các đợt xếp <strong>mới nhất trước</strong>, đợt đầu có nhãn <strong>Mới nhất</strong>. Trong mỗi đợt, từng dòng có nhãn
 <strong>Thêm</strong> (xanh lá), <strong>Sửa</strong> (xanh dương) hay <strong>Bỏ</strong> (đỏ), tên phân hệ, câu mô tả và mã thay đổi để
 tra khi cần.</li>

@@ -32,7 +32,7 @@ vi.mock('@/core/auth/use-auth', () => ({
 }))
 
 const VERSION: ReleaseVersion = {
-  version: '2026.11.04',
+  version: '2.12.0',
   release_date: '2026-11-04',
   release_title: 'Đợt tháng 11',
   commit: 'abc1234',
@@ -41,7 +41,7 @@ const VERSION: ReleaseVersion = {
 }
 const RELEASES: ReleaseEntry[] = [
   {
-    version: '2026.11.04',
+    version: '2.12.0',
     date: '2026-11-04',
     title: 'Đợt tháng 11',
     notes: [
@@ -51,7 +51,7 @@ const RELEASES: ReleaseEntry[] = [
     remarks: ['Có tám thay đổi cấu trúc dữ liệu.'],
   },
   {
-    version: '2026.10.31',
+    version: '2.10.0',
     date: '2026-10-31',
     title: 'Đợt cuối tháng 10',
     notes: [{ module: 'Thu mua', kind: 'sua', kind_label: 'Sửa', cr: 'bao-CR-705', text: 'Thêm cột Phòng xử lý.' }],
@@ -86,16 +86,16 @@ beforeEach(() => {
     if (url.startsWith('/api/me/preferences')) return Promise.resolve({ release_seen_version: seenVersion })
     return Promise.reject(new Error(`không mock: ${url}`))
   })
-  apiPut.mockResolvedValue({ release_seen_version: '2026.11.04' })
+  apiPut.mockResolvedValue({ release_seen_version: '2.12.0' })
 })
 
 describe('runningVersionText', () => {
   it('đủ dữ liệu thì ghi phiên bản, commit, giờ build, môi trường', () => {
-    expect(runningVersionText(VERSION, '')).toMatch(/^Phiên bản 2026\.11\.04 · máy chủ abc1234 · build lúc .+ · prod$/)
+    expect(runningVersionText(VERSION, '')).toMatch(/^Phiên bản 2\.12\.0 · máy chủ abc1234 · build lúc .+ · prod$/)
   })
   it('thiếu commit / giờ build thì ghi không rõ, không in chuỗi rỗng', () => {
     const text = runningVersionText({ ...VERSION, commit: '', built_at: '', environment: '' }, '')
-    expect(text).toBe('Phiên bản 2026.11.04 · máy chủ không rõ · giờ build không rõ')
+    expect(text).toBe('Phiên bản 2.12.0 · máy chủ không rõ · giờ build không rõ')
   })
   it('commit giao diện khác máy chủ thì nêu cả hai', () => {
     expect(runningVersionText(VERSION, 'fff9999')).toContain('giao diện fff9999')
@@ -115,19 +115,19 @@ describe('filterReleases', () => {
 describe('WhatsNewPage', () => {
   it('in các đợt mới nhất trước, nhãn loại, lưu ý; mở trang thì ghi đã xem bản đang chạy', async () => {
     dung()
-    expect(await screen.findByText('Bản 2026.11.04')).toBeInTheDocument()
-    expect(screen.getByText('Bản 2026.10.31')).toBeInTheDocument()
+    expect(await screen.findByText('Bản 2.12.0')).toBeInTheDocument()
+    expect(screen.getByText('Bản 2.10.0')).toBeInTheDocument()
     expect(screen.getByText('Mới nhất')).toBeInTheDocument()
     expect(screen.getAllByText('Thêm').length).toBe(2)
     expect(screen.getByText('Có tám thay đổi cấu trúc dữ liệu.')).toBeInTheDocument()
     await waitFor(() => expect(apiPut).toHaveBeenCalledTimes(1))
-    expect(apiPut.mock.calls[0][1]).toEqual({ values: { release_seen_version: '2026.11.04' } })
+    expect(apiPut.mock.calls[0][1]).toEqual({ values: { release_seen_version: '2.12.0' } })
   })
 
   it('đã xem bản đang chạy rồi thì không ghi lại', async () => {
-    seenVersion = '2026.11.04'
+    seenVersion = '2.12.0'
     dung()
-    expect(await screen.findByText('Bản 2026.11.04')).toBeInTheDocument()
+    expect(await screen.findByText('Bản 2.12.0')).toBeInTheDocument()
     await new Promise((r) => setTimeout(r, 50))
     expect(apiPut).not.toHaveBeenCalled()
   })
