@@ -56,6 +56,13 @@ RUN if [ "$INSTALL_TEST_DEPS" = "1" ]; then pip install --no-cache-dir -r /app/r
 
 # Code sẽ được mount qua volume khi dev; COPY để chạy được cả khi không mount
 COPY backend/ /app/
+# bao-CR-722: dấu bản build cho /api/system/version — compose truyền `BUILD_COMMIT=$(git rev-parse --short HEAD)`
+# và `BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)` qua build arg (quy-trinh-nhanh-va-deploy.md B.3). Không truyền thì
+# rỗng, màn Có gì mới ghi không rõ. Đặt SAU COPY code để không phá bộ đệm các lớp cài gói.
+ARG BUILD_COMMIT=""
+ARG BUILD_TIME=""
+ENV BUILD_COMMIT=$BUILD_COMMIT
+ENV BUILD_TIME=$BUILD_TIME
 # Scripts nạp dữ liệu — một số hàm dùng chung với đồng bộ thường trực (sync_legacy_*)
 COPY scripts/ /app/scripts/
 

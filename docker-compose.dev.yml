@@ -24,9 +24,13 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+      args:
+        BUILD_COMMIT: "${BUILD_COMMIT:-}"   # bao-CR-722: dấu bản build
+        BUILD_TIME: "${BUILD_TIME:-}"
     env_file: .env.dev
     environment:
       PYTHONPATH: /app
+      APP_ENV: dev             # bao-CR-722: nhãn môi trường ở /api/system/version
     restart: always
     command: ["sh", "start.prod.sh"]
     networks:
@@ -66,6 +70,7 @@ services:
         VITE_APP_NAME: "DEGO ERP (dev)"
         VITE_HELP_URL: "https://devhelp.degoholding.vn"
         VITE_GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID:-}"  # Client ID đăng nhập Google, dùng chung với `web`
+        VITE_BUILD_COMMIT: "${BUILD_COMMIT:-}"   # bao-CR-722: commit của gói giao diện
         VITE_DEVELOPER_MODE: "${VITE_DEVELOPER_MODE:-}"  # =dev thì hiện "Đổi tài khoản nhanh", giống `web`
     container_name: erp-dev
     restart: always
@@ -114,6 +119,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+      args:
+        BUILD_COMMIT: "${BUILD_COMMIT:-}"   # bao-CR-722: dấu bản build
+        BUILD_TIME: "${BUILD_TIME:-}"
     env_file: .env.dev
     environment:
       PYTHONPATH: /app
@@ -134,6 +142,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+      args:
+        BUILD_COMMIT: "${BUILD_COMMIT:-}"   # bao-CR-722: dấu bản build
+        BUILD_TIME: "${BUILD_TIME:-}"
     env_file: .env.dev
     environment:
       PYTHONPATH: /app
@@ -159,6 +170,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+      args:
+        BUILD_COMMIT: "${BUILD_COMMIT:-}"   # bao-CR-722: dấu bản build
+        BUILD_TIME: "${BUILD_TIME:-}"
     env_file: .env.dev
     environment:
       PYTHONPATH: /app

@@ -19,7 +19,12 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+      args:
+        BUILD_COMMIT: "${BUILD_COMMIT:-}"   # bao-CR-722: dấu bản build
+        BUILD_TIME: "${BUILD_TIME:-}"
     env_file: .env
+    environment:
+      APP_ENV: prod            # bao-CR-722: nhãn môi trường ở /api/system/version
     restart: always
     command: ["sh", "start.prod.sh"]
     networks:
@@ -75,6 +80,7 @@ services:
         VITE_APP_NAME: "DEGO ERP"
         VITE_HELP_URL: "https://help.degoholding.vn"
         VITE_GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID:-}"   # Client ID đăng nhập Google (baked lúc build erp), dùng chung với `web`
+        VITE_BUILD_COMMIT: "${BUILD_COMMIT:-}"   # bao-CR-722: commit của gói giao diện
     container_name: procurement-erp
     restart: always
     depends_on:
@@ -124,6 +130,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+      args:
+        BUILD_COMMIT: "${BUILD_COMMIT:-}"   # bao-CR-722: dấu bản build
+        BUILD_TIME: "${BUILD_TIME:-}"
     env_file: .env
     restart: always
     command: celery -A app.core.celery_app worker -l info -c 2
@@ -138,6 +147,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+      args:
+        BUILD_COMMIT: "${BUILD_COMMIT:-}"   # bao-CR-722: dấu bản build
+        BUILD_TIME: "${BUILD_TIME:-}"
     env_file: .env
     restart: always
     command: celery -A app.core.celery_app beat -l info --scheduler celery.beat:PersistentScheduler --schedule /app/beatdata/celerybeat-schedule

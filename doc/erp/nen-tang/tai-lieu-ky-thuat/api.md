@@ -65,6 +65,8 @@ Mã backend: `approval`, `notification`, `comment`, `ticket`, `attachment`, `imp
 | GET | `/api/email-logs/meta` | Bộ chọn ô lọc: sự kiện (danh mục mẫu email + sự kiện lạ đã ghi) và trạng thái, kèm nhãn. | `audit.read` |  | |
 | GET | `/api/email-logs/stats` | Số thư theo trạng thái trong `days` ngày (mặc định 7) — thẻ đầu màn. | `audit.read` |  | |
 | GET | `/api/email-logs/{log_id}` | Một thư đầy đủ, câu lỗi nguyên văn. | `audit.read` |  | |
+| GET | `/api/system/version` | Phiên bản đang chạy (bao-CR-722): mục mới nhất của release_notes.json + `commit`, `built_at` (biến BUILD_COMMIT / BUILD_TIME bơm lúc build), `environment` (APP_ENV của compose). | đăng nhập | Không gác quyền | chân menu trái, trang Có gì mới |
+| GET | `/api/system/release-notes` | Các đợt phát hành mới nhất trước (`limit` tối đa 100), từng mục có module / kind / kind_label / cr / text, kèm `modules` có mục và `kinds`. | đăng nhập |  | `/whats-new` |
 | POST | `/api/email-templates/{event}/test-send` | Gửi thử email của bước này về đúng địa chỉ của người đang bấm. | `setting.write` |  | |
 | GET | `/api/mailboxes` | Danh sách hộp thư. **Trả thẳng một mảng, KHÔNG phân trang.** | `mailbox.read` | `apply_scope` | |
 | POST | `/api/mailboxes` | create mailbox | `mailbox.create` |  | |
