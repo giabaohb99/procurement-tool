@@ -13,6 +13,7 @@ import pytest
 from fastapi.routing import APIRoute
 from sqlalchemy import event
 
+from app.core.route_iter import api_routes
 from app.core.permissions import ACTIONS, ENTITIES
 from app.main import app
 from hdld_factory import client_as  # noqa: F401
@@ -22,7 +23,7 @@ NON_EXPORT_ACTIONS = tuple(a for a in ACTIONS if a not in ("export", "import"))
 
 def _routes(method: str, suffixes: tuple[str, ...]) -> list[str]:
     out = []
-    for r in app.routes:
+    for r in api_routes(app):
         if isinstance(r, APIRoute) and method in r.methods and r.path.endswith(suffixes) and "{" not in r.path:
             out.append(r.path)
     return sorted(set(out))

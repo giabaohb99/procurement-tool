@@ -175,6 +175,9 @@ describe('aiModule keeps the old routes', () => {
 
 //  Sidebar thật, quyền đổi theo từng bài — để thấy mục Bot Telegram đóng / mở và mục thiếu quyền biến mất.
 const permissionState = vi.hoisted(() => ({ grants: {} as Partial<Record<string, string[]>> }))
+//  bao-CR-722 thêm chân menu Phiên bản (useQuery) vào ModuleSidebar — bài này không dựng QueryClient nên thay bằng rỗng.
+vi.mock('@/app/layouts/sidebar-version-footer', () => ({ SidebarVersionFooter: () => null }))
+
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
     can: (entity: string, action: string) => permissionState.grants[entity]?.includes(action) ?? false,

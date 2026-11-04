@@ -210,6 +210,10 @@ def test_bb3_khong_entity_nao_vua_public_vua_co_cot():
 #  Giá trị của bài kiểm này KHÔNG nằm ở 40 dòng đang có, mà ở dòng thứ 41: ai
 #  thêm controller mới buộc phải trả lời "màn này có phải lọc phạm vi không".
 BB4_CONTROLLER_MIEN_TRU = {
+    "notification/email_log_controller.py": "bao-CR-721: nhật ký email CHỈ ĐỌC, gác `require('audit', 'read')` — khóa "
+                                              "Nhật ký hệ thống là khóa toàn hệ, không có phạm vi phòng / người",
+    "release_info/controller.py": "bao-CR-722: phiên bản + ghi chú phát hành đọc từ TỆP trong mã nguồn, không có dữ liệu "
+                                  "theo người; chỉ đòi đăng nhập (`get_current_user`)",
     # -- gác bằng hàm tự viết trong thân hàm, grep không thấy --
     "import_tool/controller.py": "gác bằng `_guard` → user_has_permission(..., 'import')",
     "assistant/change_controller.py": "ai-CR-182: sổ thay đổi do bot ghi — danh sách lọc theo `user_id` của CHÍNH người "

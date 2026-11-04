@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import event
 from starlette.datastructures import QueryParams
 
+from app.core.route_iter import api_routes
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.report_keys import ReportKey
@@ -159,7 +160,7 @@ class TestThuTuRoute:
     def test_summary_dang_ky_truoc_duong_dong_id(self):
         """`/summary` phải nằm TRƯỚC `/{id}` trong bảng route, nếu không FastAPI khớp nhầm
         `int("summary")` ở route động và trả 422 thay vì chạy đúng handler."""
-        paths = [r.path for r in app.routes if getattr(r, "path", "").startswith("/api/employees")]
+        paths = [r.path for r in api_routes(app) if getattr(r, "path", "").startswith("/api/employees")]
         assert paths.index("/api/employees/summary") < paths.index("/api/employees/{eid}")
 
     def test_testclient_goi_summary_tra_200(self, db, world, gan_bao_cao):

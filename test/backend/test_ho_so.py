@@ -18,6 +18,8 @@ import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
+from app.core.route_iter import api_routes
+
 from app.core.permissions import ENTITIES, ENTITY_LABELS
 from app.core.scoping import PUBLIC, SCOPE_FIELDS
 from app.modules.dossier import service
@@ -419,7 +421,7 @@ def test_ho_so_CHI_XUAT_csv_khong_mo_cua_NHAP():
     #  chứ không phải một phép tắt toàn hệ.
     from app.modules.dossier.type_controller import router as type_router
 
-    type_paths = {getattr(r, "path", "") for r in type_router.routes}
+    type_paths = {getattr(r, "path", "") for r in api_routes(type_router)}
     assert "/api/dossier-types/import/csv" in type_paths
 
 

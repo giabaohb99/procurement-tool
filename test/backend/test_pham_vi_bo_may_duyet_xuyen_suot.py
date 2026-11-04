@@ -28,6 +28,8 @@ from datetime import date, datetime, timedelta
 import pytest
 from fastapi import HTTPException
 
+from app.core.route_iter import api_routes
+
 from scope_factory import build_world  # noqa: F401 — fixture `world` dùng nó
 
 # ── Hằng dùng chung ────────────────────────────────────────────────────────────
@@ -154,7 +156,7 @@ def list_work_routes():
     modules = {work_controller.__name__: work_controller,
                work_task_controller.__name__: work_task_controller}
     out = []
-    for route in main_module.app.routes:
+    for route in api_routes(main_module.app):
         endpoint = getattr(route, "endpoint", None)
         if endpoint is None or getattr(endpoint, "__module__", "") not in modules:
             continue

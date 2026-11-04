@@ -73,6 +73,19 @@ def guard_formula_row(ws, values) -> list:
     return out
 
 
+def guard_workbook(wb):
+    """Rà cả sổ (sổ thường, KHÔNG phải `write_only`) ngay trước khi lưu: ô nào openpyxl đã tự suy thành công thức
+    (chuỗi mở đầu bằng `=`) thì ép về chuỗi — giữ nguyên chữ (bao-CR-726 / BM-033). Dùng cho các bộ dựng sổ tự đặt ô
+    (báo cáo Excel, tệp mẫu nhập, sổ tải về) thay vì vá từng `ws.cell`. Chuỗi mở đầu bằng + - @ openpyxl đã lưu là
+    chuỗi nên vô hại. CHÚ Ý: sổ nào cố ý ghi công thức thật thì KHÔNG được gọi hàm này. Trả lại chính `wb`."""
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for c in row:
+                if c.data_type == "f" and isinstance(c.value, str):
+                    c.data_type = "s"
+    return wb
+
+
 class Col(NamedTuple):
     """Một cột trong file xuất. `kind` quyết định định dạng ô Excel."""
 
