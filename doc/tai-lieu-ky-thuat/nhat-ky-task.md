@@ -115,7 +115,7 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 ---
 
 ## bao-CR-722-phien-ban-va-co-gi-moi | Trang Phiên bản và Có gì mới
-- status: dang-lam
+- status: xong
 - date: 2026-11-04
 - list: Nền tảng
 - tag: Nền tảng
@@ -125,7 +125,19 @@ ghi chú kỹ thuật trong sổ thay đổi, không có chỗ đọc bằng l�
 đợt 04/11 và vài đợt trước; bơm mã commit và giờ build lúc dựng ảnh; API phiên bản và ghi chú phát hành cho người đã đăng
 nhập; trang Có gì mới trong giao diện với lọc theo phân hệ, chân menu trái hiện phiên bản, chấm đỏ khi có đợt chưa xem; bài
 kiểm, HDSD ngắn, cập nhật tài liệu nền tảng. Không gấp, đi đợt prod sau.
-Mã nguồn: backend/app/data/release_notes.json, backend/app/modules/system_info, frontend-v2/src/modules/system
+**Kết quả:** tệp ghi chú phát hành trong mã nguồn, mỗi đợt một mục với mã phiên bản theo ngày, tiêu đề, từng dòng thêm,
+sửa, bỏ theo phân hệ kèm mã thay đổi, và lưu ý; khuôn tệp được kiểm lúc khởi động và bằng bài kiểm. Dựng sẵn đợt 04/11 và
+ba đợt trước (30/10, 31/10, 02/11). Mã commit và giờ build bơm vào ảnh máy chủ lúc dựng qua hai tham số build, ảnh giao diện
+nhận mã commit riêng; hai tệp compose truyền tham số cho mọi dịch vụ dùng chung ảnh và đặt nhãn môi trường; quy trình deploy
+thêm dòng đặt biến trước khi dựng. API phiên bản và ghi chú phát hành cho người đã đăng nhập. Giao diện: trang Có gì mới ở
+khung chung như Trang cá nhân, lọc theo phân hệ, dòng phiên bản đang chạy ghi không rõ khi thiếu dữ liệu; chân menu trái
+hiện phiên bản và mã commit, bấm mở trang; menu tài khoản thêm mục; chấm đỏ khi phiên bản khác bản đã xem, mở trang là ghi
+đã xem vào tùy chọn cá nhân. Bài kiểm: backend 11 bài, vitest 7 bài mới và các cụm liên quan 151 đạt, typecheck, eslint,
+ruff sạch. Bài HDSD mới dưới thẻ Bắt đầu đã seed dev. Tài liệu nền tảng thêm dòng chức năng, hai đường API, README; sửa
+số dòng chức năng trùng của bao-CR-721.
+**Còn lại:** mỗi đợt đẩy prod A1 thêm một mục vào release_notes.json và đặt hai biến build trước khi dựng ảnh; prod đợt sau.
+Mã nguồn: backend/app/data/release_notes.json, backend/app/modules/release_info, backend/app/core/config.py, docker/Dockerfile.api, docker/Dockerfile.erp.prod, docker-compose.production.yml, docker-compose.dev.yml, frontend-v2/src/app/pages/whats-new-page.tsx, frontend-v2/src/app/layouts/sidebar-version-footer.tsx, frontend-v2/src/shared/release, test/backend/test_phien_ban_va_ghi_chu_phat_hanh_cr722.py, backend/scripts/seed_help_co_gi_moi.py, doc/erp/nen-tang, doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md
+Commit: f8bcd696 (đặt chỗ), 67f0b71f
 
 ## bao-CR-721-man-nhat-ky-email | Màn Nhật ký email trong phân hệ Quản trị
 - status: xong
