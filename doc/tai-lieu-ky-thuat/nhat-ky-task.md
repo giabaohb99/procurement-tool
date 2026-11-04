@@ -114,6 +114,28 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-724-tra-ho-so-nhan-su-ve-giao-dien-cu | Trả màn chi tiết nhân sự về giao diện ERP v2 cũ
+- status: xong
+- date: 2026-11-04
+- list: HRM
+- tag: Nhân sự, Giao diện
+**Bối cảnh:** màn chi tiết hồ sơ nhân sự đã đổi sang kiểu nexterp ở duoc-CR-708 và duoc-CR-710 (mặt phẳng trắng, thanh bên
+phải, nhóm gập mở, chú thích thu vào biểu tượng). Người chủ dùng thử thấy không hợp, bảo trả về giao diện ERP v2 trước đó.
+**Việc:** lấy lại đúng bản trước duoc-CR-708 cho trang chi tiết nhân sự và năm thành phần của nó (tab Chung, tab Liên hệ và
+Ngân hàng, tab Giấy tờ và BHXH, thẻ phòng ban, nhóm lương), giữ nguyên các tính năng làm sau đó.
+**Kết quả:** màn hồ sơ trở lại nền xám có thẻ trắng, thẻ danh tính với các nhãn mã nhân viên, chức vụ, phòng ban, quản lý,
+tình trạng; tiêu đề nhóm in hoa, chú thích hiện dòng dưới từng ô; cuối trang là khối **Lịch sử thao tác** như cũ. Thanh bên
+phải, tiêu đề dính khi cuộn và khối **Hoạt động** bỏ hẳn. Hộp hỏi **Giữ phòng cũ làm kiêm nhiệm** của bao-CR-709 được gắn lại
+vào bản cũ; phần sửa thanh điều hướng hết lặp "Nhân sự › Nhân sự" của duoc-CR-708 vẫn giữ. Các khung dùng chung (nhóm phẳng,
+biểu tượng chú thích, bố cục phẳng của trang danh mục duoc-CR-716) không đụng vì trang Loại nghỉ và Chính sách nghỉ phép đang
+dùng. Xóa các tệp chỉ phục vụ kiểu nexterp mà nay không chỗ nào dùng: thanh bên, khối nhóm, chấm tình trạng, mốc thời gian,
+nhãn cột của khối Hoạt động, hook đo chiều cao, cùng bài kiểm của chúng. Bài kiểm: typecheck 0 lỗi, eslint 0 lỗi, vitest phần
+nhân sự 21 tệp 269 bài đạt; mở thử trên trình duyệt ở khổ 1440 và 390, không tràn ngang.
+**Còn lại:** trang phiếu thanh toán nghỉ phép (duoc-CR-719, chưa commit) và trang Loại nghỉ, Chính sách nghỉ phép vẫn kiểu
+nexterp, chờ người chủ quyết có trả về không.
+Mã nguồn: frontend-v2/src/modules/hr/pages/employee-detail-page.tsx, frontend-v2/src/modules/hr/components/employee-tab-general.tsx, employee-tab-contact.tsx, employee-tab-documents.tsx, employee-department-card.tsx, employee-salary-section.tsx
+Commit: xem dòng bao-CR-724 trong change-log-bao.md
+
 ## bao-CR-722-phien-ban-va-co-gi-moi | Trang Phiên bản và Có gì mới
 - status: xong
 - date: 2026-11-04

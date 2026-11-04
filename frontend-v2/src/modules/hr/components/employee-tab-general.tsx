@@ -1,6 +1,7 @@
 import { useFormContext } from 'react-hook-form'
 
 import { usePermission } from '@/core/authorization/use-permission'
+import { Card } from '@/shared/ui/card'
 import { FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/ui/form'
 import { FormSection } from '@/shared/ui/form-section'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
@@ -105,83 +106,74 @@ export function EmployeeTabGeneral({
   }
 
   return (
-    //  duoc-CR-708: kiểu form ERPNext — KHÔNG thẻ, các nhóm nằm liền nhau ngăn bằng
-    //  đường kẻ ngang, ô xếp 3 cột khi đủ rộng, mọi nhóm gập / mở được. Kiểu `flat` do
-    //  `FormSectionProvider` ở trang chi tiết bật cho cả màn. Trước đó là hai thẻ đứng
-    //  cạnh nhau (Cá nhân | Công việc).
-    <>
-      <FormSection title="Thông tin cá nhân" columns={3}>
-        {/* Ngày sinh nằm trong nhóm nhạy cảm → cảnh báo ngay đầu khối. */}
-        {/*  `col-span-full`: thiếu nó thì dải cảnh báo chiếm MỘT ô lưới, đẩy lệch mọi ô phía sau
-             (lưới 3 cột thủng một lỗ sau Ngày sinh, ô giữ chỗ "Số con" mất tác dụng). */}
-        {!canReadSensitive && (
-          <div className="col-span-full">
-            <SensitiveFieldsNotice />
-          </div>
-        )}
+    <div className="grid gap-5 lg:grid-cols-2">
+      <Card className="gap-4 p-5">
+        <FormSection title="Thông tin cá nhân">
+          {/* Ngày sinh nằm trong nhóm nhạy cảm → cảnh báo ngay đầu khối. */}
+          {!canReadSensitive && <SensitiveFieldsNotice />}
 
-        <EmployeeTextField
-          name="code"
-          label="Mã NV"
-          // Mã dùng khắp hệ — đổi sau khi tạo sẽ vỡ tham chiếu.
-          disabled
-        />
-        <EmployeeTextField name="full_name" label="Họ tên" disabled={disabled} />
+          <EmployeeTextField
+            name="code"
+            label="Mã NV"
+            // Mã dùng khắp hệ — đổi sau khi tạo sẽ vỡ tham chiếu.
+            disabled
+          />
+          <EmployeeTextField name="full_name" label="Họ tên" disabled={disabled} />
 
-        <FormField
-          control={form.control}
-          name="gender"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Giới tính</FormLabel>
-              <Select
-                onValueChange={(v) => field.onChange(Number(v))}
-                value={String(field.value)}
-                disabled={disabled}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EMPLOYEE_GENDER_OPTIONS.map((item) => (
-                    <SelectItem key={item.value} value={String(item.value)}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                Dùng để lọc loại nghỉ theo giới, ví dụ nghỉ thai sản.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="gender"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Giới tính</FormLabel>
+                <Select
+                  onValueChange={(v) => field.onChange(Number(v))}
+                  value={String(field.value)}
+                  disabled={disabled}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EMPLOYEE_GENDER_OPTIONS.map((item) => (
+                      <SelectItem key={item.value} value={String(item.value)}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  Dùng để lọc loại nghỉ theo giới, ví dụ nghỉ thai sản.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <EmployeeDateField
-          name="date_of_birth"
-          label="Ngày sinh"
-          disabled={disabled || !canReadSensitive}
-        />
+          <EmployeeDateField
+            name="date_of_birth"
+            label="Ngày sinh"
+            disabled={disabled || !canReadSensitive}
+          />
 
-        {/*  NƠI SINH chiếm cả hàng: thực tế người ta nhập nguyên một địa chỉ
+          {/*  NƠI SINH chiếm cả hàng: thực tế người ta nhập nguyên một địa chỉ
                ("Xã …, Huyện …, Tỉnh …") chứ không nhập mỗi tên tỉnh, nhét vào
                nửa hàng thì chữ bị cắt. Nó cũng là ô lẻ của nhóm khai sinh — nhờ
                vậy các cặp bên dưới mới đứng đúng đôi với nhau. */}
-        <div className="sm:col-span-2">
-          <EmployeeTextField name="place_of_birth" label="Nơi sinh" disabled={disabled} />
-        </div>
+          <div className="sm:col-span-2">
+            <EmployeeTextField name="place_of_birth" label="Nơi sinh" disabled={disabled} />
+          </div>
 
-        <EmployeeTextField name="ethnicity" label="Dân tộc" disabled={disabled} />
-        <EmployeeTextField name="religion" label="Tôn giáo" disabled={disabled} />
+          <EmployeeTextField name="ethnicity" label="Dân tộc" disabled={disabled} />
+          <EmployeeTextField name="religion" label="Tôn giáo" disabled={disabled} />
 
-        <EmployeeCodeSelect
-          name="marital_status"
-          label="Tình trạng hôn nhân"
-          options={MARITAL_STATUS_OPTIONS}
-          disabled={disabled}
-        />
-        {/*  Ô "Số con" CHỈ hiện khi đã khai "Có gia đình" (khách chốt
+          <EmployeeCodeSelect
+            name="marital_status"
+            label="Tình trạng hôn nhân"
+            options={MARITAL_STATUS_OPTIONS}
+            disabled={disabled}
+          />
+          {/*  Ô "Số con" CHỈ hiện khi đã khai "Có gia đình" (khách chốt
                08/09/2026 — trước đó luật ngược lại: ẩn khi *Độc thân*).
 
                ⚠️ Ẩn/hiện chỉ là chuyện HIỂN THỊ — giá trị vẫn nằm trong form và
@@ -195,37 +187,38 @@ export function EmployeeTabGeneral({
                nên bỏ trống một ô là mọi cặp phía dưới lệch sang nửa hàng bên
                kia — đúng cảnh "Số con" từng nằm dưới "Tôn giáo" thay vì đứng
                cạnh "Tình trạng hôn nhân". */}
-        {maritalStatus === MARITAL_MARRIED ? (
-          <EmployeeNumberField name="children_count" label="Số con" disabled={disabled} />
-        ) : (
-          //  Ô rỗng chỉ cần ở lưới 2 cột; lưới 3 cột (nhóm rộng ≥ 48rem) tự xếp đúng.
-          <div aria-hidden className="hidden sm:block @3xl:hidden" />
-        )}
+          {maritalStatus === MARITAL_MARRIED ? (
+            <EmployeeNumberField name="children_count" label="Số con" disabled={disabled} />
+          ) : (
+            <div aria-hidden className="hidden sm:block" />
+          )}
 
-        <EmployeeCodeSelect
-          name="education_level"
-          label="Trình độ học vấn"
-          options={EDUCATION_LEVEL_OPTIONS}
-          disabled={disabled}
-        />
-        <EmployeeTextField name="major" label="Chuyên ngành" disabled={disabled} />
+          <EmployeeCodeSelect
+            name="education_level"
+            label="Trình độ học vấn"
+            options={EDUCATION_LEVEL_OPTIONS}
+            disabled={disabled}
+          />
+          <EmployeeTextField name="major" label="Chuyên ngành" disabled={disabled} />
 
-        <EmployeeTextField
-          name="tax_code"
-          label="Mã số thuế cá nhân"
-          disabled={disabled || !canReadSensitive}
-        />
-        <EmployeeTextField
-          name="personal_email"
-          label="Email cá nhân"
-          type="email"
-          description="Email riêng, khác với email công việc (email đăng nhập) ở mục Công việc."
-          disabled={disabled}
-        />
-      </FormSection>
+          <EmployeeTextField
+            name="tax_code"
+            label="Mã số thuế cá nhân"
+            disabled={disabled || !canReadSensitive}
+          />
+          <EmployeeTextField
+            name="personal_email"
+            label="Email cá nhân"
+            type="email"
+            description="Email riêng, khác với email công việc (email đăng nhập) ở mục Công việc."
+            disabled={disabled}
+          />
+        </FormSection>
+      </Card>
 
-      <FormSection title="Công việc" columns={3}>
-        {/*  CÔNG TY — ô CHỌN, sửa được (duoc-CR-342, khách yêu cầu).
+      <Card className="gap-4 p-5">
+        <FormSection title="Công việc">
+          {/*  CÔNG TY — ô CHỌN, sửa được (duoc-CR-342, khách yêu cầu).
                Trước đây ô này CHỈ XEM với lý do "đổi pháp nhân là đổi tập dữ
                liệu người đó đọc được, và phải kèm luật "phòng ban đang gán có
                thuộc pháp nhân mới không"". Luật đó nay có mặt ngay dưới đây, nên
@@ -241,55 +234,55 @@ export function EmployeeTabGeneral({
                (`update_employee` → `clear_perm_cache_of`), nhưng người ĐANG ĐĂNG
                NHẬP vẫn giữ map quyền cũ tới lúc đăng nhập lại — nói ra ở dòng
                mô tả, không để họ tưởng đổi xong là có hiệu lực ngay. */}
-        <FormField
-          control={form.control}
-          name="company_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Công ty</FormLabel>
-              <LookupSelect
-                value={field.value}
-                onChange={(next) => handleCompanyChange(next, field.onChange)}
-                //  Thiếu `company.read` thì danh sách rỗng — chọn từ một danh
-                //  sách rỗng là không chọn được gì, nên khóa hẳn cho thành
-                //  thật. `fallbackLabel` vẫn giữ tên pháp nhân hiện tại.
-                disabled={disabled || !canReadCompany}
-                placeholder="Chọn công ty"
-                emptyLabel="— Chưa gán công ty —"
-                fallbackLabel={employee.company_name ?? ''}
-                items={(companies?.items ?? []).map((c) => ({ id: c.id, label: c.name }))}
-              />
-              <FormDescription>
-                Pháp nhân quyết định phạm vi dữ liệu người này đọc được. Đổi pháp nhân sẽ{' '}
-                <strong>gỡ họ khỏi mọi phòng ban của pháp nhân cũ</strong>, kể cả phòng kiêm nhiệm.
-                Họ phải đăng xuất rồi đăng nhập lại mới thấy hiệu lực.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="company_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Công ty</FormLabel>
+                <LookupSelect
+                  value={field.value}
+                  onChange={(next) => handleCompanyChange(next, field.onChange)}
+                  //  Thiếu `company.read` thì danh sách rỗng — chọn từ một danh
+                  //  sách rỗng là không chọn được gì, nên khóa hẳn cho thành
+                  //  thật. `fallbackLabel` vẫn giữ tên pháp nhân hiện tại.
+                  disabled={disabled || !canReadCompany}
+                  placeholder="Chọn công ty"
+                  emptyLabel="— Chưa gán công ty —"
+                  fallbackLabel={employee.company_name ?? ''}
+                  items={(companies?.items ?? []).map((c) => ({ id: c.id, label: c.name }))}
+                />
+                <FormDescription>
+                  Pháp nhân quyết định phạm vi dữ liệu người này đọc được. Đổi pháp nhân
+                  sẽ <strong>gỡ họ khỏi mọi phòng ban của pháp nhân cũ</strong>, kể cả
+                  phòng kiêm nhiệm. Họ phải đăng xuất rồi đăng nhập lại mới thấy hiệu lực.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="department_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phòng ban</FormLabel>
-              <LookupSelect
-                value={field.value}
-                onChange={field.onChange}
-                disabled={disabled}
-                placeholder="Chọn phòng ban"
-                emptyLabel="— Chưa gán phòng ban —"
-                fallbackLabel={employee.department_name ?? ''}
-                items={selectableDepartments.map((d) => ({ id: d.id, label: d.name }))}
-              />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="department_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phòng ban</FormLabel>
+                <LookupSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={disabled}
+                  placeholder="Chọn phòng ban"
+                  emptyLabel="— Chưa gán phòng ban —"
+                  fallbackLabel={employee.department_name ?? ''}
+                  items={selectableDepartments.map((d) => ({ id: d.id, label: d.name }))}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        {/*  VỊ TRÍ / CHỨC VỤ — ô CHỌN từ danh mục kể từ duoc-CR-320, không
+          {/*  VỊ TRÍ / CHỨC VỤ — ô CHỌN từ danh mục kể từ duoc-CR-320, không
                còn gõ tay. Chữ tự do làm cùng một chức vụ hiện ra bốn cách viết
                trên bản in, tệp Excel và hồ sơ mà trợ lý AI đọc.
 
@@ -297,149 +290,146 @@ export function EmployeeTabGeneral({
                map (hoặc đang giữ một chức vụ vừa bị cho ngừng dùng) không có
                dòng nào trong danh sách, và thiếu nhãn dự phòng thì ô hiện trống
                — người đọc hiểu thành "chưa khai chức vụ" rồi lưu đè lên. */}
-        <FormField
-          control={form.control}
-          name="position_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Vị trí / Chức vụ</FormLabel>
-              <LookupSelect
-                value={field.value}
-                onChange={field.onChange}
-                disabled={disabled}
-                placeholder="Chọn chức vụ"
-                emptyLabel="— Chưa gán chức vụ —"
-                fallbackLabel={employee.position ?? ''}
-                items={jobPositions}
-              />
-              <FormDescription>
-                Chức danh in trên phiếu — không phải phân quyền. Thêm chức vụ mới ở danh mục Chức
-                vụ.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="position_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Vị trí / Chức vụ</FormLabel>
+                <LookupSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={disabled}
+                  placeholder="Chọn chức vụ"
+                  emptyLabel="— Chưa gán chức vụ —"
+                  fallbackLabel={employee.position ?? ''}
+                  items={jobPositions}
+                />
+                <FormDescription>
+                  Chức danh in trên phiếu — không phải phân quyền. Thêm chức vụ mới ở
+                  danh mục Chức vụ.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        {/*  NGƯỜI QUẢN LÝ TRỰC TIẾP — dữ liệu mà bộ máy duyệt đọc để tìm người
+          {/*  NGƯỜI QUẢN LÝ TRỰC TIẾP — dữ liệu mà bộ máy duyệt đọc để tìm người
                ký, không phải trường hiển thị cho đẹp. Sai ô này thì đơn từ chạy
                sai đường mà không màn nào báo. Chưa gán thì luồng lùi về trưởng
                bộ phận nên đơn không kẹt. */}
-        <FormField
-          control={form.control}
-          name="manager_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Người quản lý trực tiếp</FormLabel>
-              <LookupSelect
-                value={field.value}
-                onChange={field.onChange}
-                disabled={disabled}
-                placeholder="Chọn người quản lý"
-                emptyLabel="— Chưa gán —"
-                fallbackLabel={employee.direct_manager_name ?? ''}
-                items={colleagues}
-              />
-              <FormDescription>
-                Người ký duyệt đơn từ của nhân viên này ở những luồng duyệt có bước{' '}
-                <em>Quản lý trực tiếp người nộp</em>. Bỏ trống thì bước đó chuyển cho trưởng bộ
-                phận.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="manager_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Người quản lý trực tiếp</FormLabel>
+                <LookupSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={disabled}
+                  placeholder="Chọn người quản lý"
+                  emptyLabel="— Chưa gán —"
+                  fallbackLabel={employee.direct_manager_name ?? ''}
+                  items={colleagues}
+                />
+                <FormDescription>
+                  Người ký duyệt đơn từ của nhân viên này ở những luồng duyệt có bước{' '}
+                  <em>Quản lý trực tiếp người nộp</em>. Bỏ trống thì bước đó chuyển cho trưởng
+                  bộ phận.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <EmployeeCodeSelect
-          name="employment_type"
-          label="Hình thức nhân viên"
-          options={EMPLOYMENT_TYPE_OPTIONS}
-          disabled={disabled}
-        />
-        <EmployeeCodeSelect
-          name="job_level"
-          label="Cấp bậc"
-          options={JOB_LEVEL_OPTIONS}
-          disabled={disabled}
-        />
-        <EmployeeTextField name="work_location" label="Nơi làm việc" disabled={disabled} />
+          <EmployeeCodeSelect
+            name="employment_type"
+            label="Hình thức nhân viên"
+            options={EMPLOYMENT_TYPE_OPTIONS}
+            disabled={disabled}
+          />
+          <EmployeeCodeSelect
+            name="job_level"
+            label="Cấp bậc"
+            options={JOB_LEVEL_OPTIONS}
+            disabled={disabled}
+          />
+          <EmployeeTextField name="work_location" label="Nơi làm việc" disabled={disabled} />
 
-        {/*  EMAIL CÔNG VIỆC = EMAIL ĐĂNG NHẬP — dời từ tab "Liên hệ & Ngân hàng" sang đây
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tình trạng làm việc</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employeeStatusOptions(field.value).map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/*  NGÀY VÀO LÀM — mốc THÂM NIÊN. Cột có trong bảng từ 03/09/2026
+               nhưng không ô nào khai được cho tới 07/09, nên thâm niên của cả
+               công ty đang tính bằng 0. */}
+          <EmployeeDateField
+            name="hire_date"
+            label="Ngày vào làm"
+            description="Dùng để tính thâm niên và số ngày phép được cộng thêm."
+            disabled={disabled}
+          />
+          <EmployeeDateField
+            name="resign_date"
+            label="Ngày nghỉ việc"
+            description="Điền ngày này thì nhớ đổi cả ô Tình trạng làm việc."
+            disabled={disabled}
+          />
+
+          <FormField
+            control={form.control}
+            name="is_active"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Trạng thái hồ sơ</FormLabel>
+                <ActiveStatusSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={disabled}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/*  EMAIL CÔNG VIỆC = EMAIL ĐĂNG NHẬP — dời từ tab "Liên hệ & Ngân hàng" sang đây
                (đại ca chốt 23/09/2026) vì sửa ô này là sửa cách người đó đăng nhập:
                - Đăng nhập Google tra THẲNG email nhân sự (`auth/service.google_login`).
                - Đăng nhập mật khẩu tra `User.email`; lưu hồ sơ mà ô này đổi thì
                  `_sync_user_email_from_employee` đẩy email mới sang tài khoản gắn với
                  người này (chặn 400 nếu tài khoản khác đang dùng email đó).
                Câu mô tả cũ "đổi ở đây không tự đổi tài khoản đã cấp" là SAI với backend. */}
-        <EmployeeTextField
-          name="email"
-          label="Email công việc"
-          type="email"
-          description="Cũng là email đăng nhập (cả đăng nhập Google). Đổi ở đây thì email đăng nhập của tài khoản gắn với người này đổi theo."
-          disabled={disabled}
-        />
-      </FormSection>
+          <EmployeeTextField
+            name="email"
+            label="Email công việc"
+            type="email"
+            description="Cũng là email đăng nhập (cả đăng nhập Google). Đổi ở đây thì email đăng nhập của tài khoản gắn với người này đổi theo."
+            disabled={disabled}
+          />
+        </FormSection>
 
-      {/*  Nhóm "Vào làm & nghỉ việc" tách khỏi "Công việc" theo ERPNext (tab Joining /
-             Exit): bốn ô này quyết định thâm niên, phép cộng thêm và việc KHÓA tài khoản. */}
-      <FormSection title="Vào làm & nghỉ việc" columns={3}>
-        <FormField
-          control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tình trạng làm việc</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {employeeStatusOptions(field.value).map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/*  NGÀY VÀO LÀM — mốc THÂM NIÊN. Cột có trong bảng từ 03/09/2026
-               nhưng không ô nào khai được cho tới 07/09, nên thâm niên của cả
-               công ty đang tính bằng 0. */}
-        <EmployeeDateField
-          name="hire_date"
-          label="Ngày vào làm"
-          description="Dùng để tính thâm niên và số ngày phép được cộng thêm."
-          disabled={disabled}
-        />
-        <EmployeeDateField
-          name="resign_date"
-          label="Ngày nghỉ việc"
-          description="Điền ngày này thì nhớ đổi cả ô Tình trạng làm việc."
-          disabled={disabled}
-        />
-
-        <FormField
-          control={form.control}
-          name="is_active"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Trạng thái hồ sơ</FormLabel>
-              <ActiveStatusSelect
-                value={field.value}
-                onChange={field.onChange}
-                disabled={disabled}
-              />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </FormSection>
-
-      <EmployeeSalarySection employee={employee} isSelf={isSelf} canWrite={canWrite} collapsible />
-    </>
+        <EmployeeSalarySection employee={employee} isSelf={isSelf} canWrite={canWrite} />
+      </Card>
+    </div>
   )
 }
