@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = "dego2026"
 
     DEV_MODE: bool = False   # bật ở .env local (=true) để mở các API dev-only (vd xóa data test)
+    #  bao-CR-722: phiên bản đang chạy. Hai biến đầu do Dockerfile.api bơm lúc build (build arg BUILD_COMMIT /
+    #  BUILD_TIME, xem quy-trinh-nhanh-va-deploy.md B.3); APP_ENV do compose đặt (prod / dev). Thiếu = rỗng, màn ghi
+    #  không rõ — không đoán.
+    BUILD_COMMIT: str = ""
+    BUILD_TIME: str = ""
+    APP_ENV: str = ""
     
     FRONTEND_URL: str = "https://thumuatool.degoholding.vn"
     

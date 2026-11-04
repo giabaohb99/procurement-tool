@@ -29,6 +29,9 @@ ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 # khẩu demo. Đổi mặc định ở đây là làm rò mật khẩu ra prod.
 ARG VITE_DEVELOPER_MODE=""
 ENV VITE_DEVELOPER_MODE=$VITE_DEVELOPER_MODE
+# bao-CR-722: mã commit của gói giao diện (chân trang Có gì mới so với commit máy chủ). Rỗng = không rõ.
+ARG VITE_BUILD_COMMIT=""
+ENV VITE_BUILD_COMMIT=$VITE_BUILD_COMMIT
 RUN npm run build
 
 FROM nginx:alpine

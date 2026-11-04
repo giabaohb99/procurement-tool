@@ -16,6 +16,8 @@ export const appRoutes = {
    */
   notifications: '/notifications',
   me: '/me',
+  /** Có gì mới + phiên bản đang chạy (bao-CR-722) — dùng chung mọi phân hệ, ở khung launcher như `/me`. */
+  whatsNew: '/whats-new',
   /** Trang công khai hướng dẫn nối AI riêng (bao-CR-638) — không cần đăng nhập, không bao giờ chứa khóa. */
   connectAi: '/connect-ai',
   /**

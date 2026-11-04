@@ -7,6 +7,9 @@ import type { ErpModule } from '@/app/router/module-definition'
 import { SidebarProvider } from '@/shared/ui/sidebar'
 import { ModuleSidebar } from './module-sidebar'
 
+//  Chân menu phiên bản (bao-CR-722) gọi API + bộ đệm truy vấn, không thuộc chốt đang kiểm.
+vi.mock('./sidebar-version-footer', () => ({ SidebarVersionFooter: () => null }))
+
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
     can: () => true,
