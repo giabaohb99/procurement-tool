@@ -114,6 +114,19 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-722-phien-ban-va-co-gi-moi | Trang Phiên bản và Có gì mới
+- status: dang-lam
+- date: 2026-11-04
+- list: Nền tảng
+- tag: Nền tảng
+**Bối cảnh:** người dùng trên prod không biết hệ đang chạy bản nào và mỗi đợt cập nhật có gì mới; mỗi đợt phát hành chỉ có
+ghi chú kỹ thuật trong sổ thay đổi, không có chỗ đọc bằng lời người dùng.
+**Việc:** tệp ghi chú phát hành trong mã nguồn, mỗi đợt một mục (mã phiên bản, ngày, thay đổi theo phân hệ, lưu ý), dựng sẵn
+đợt 04/11 và vài đợt trước; bơm mã commit và giờ build lúc dựng ảnh; API phiên bản và ghi chú phát hành cho người đã đăng
+nhập; trang Có gì mới trong giao diện với lọc theo phân hệ, chân menu trái hiện phiên bản, chấm đỏ khi có đợt chưa xem; bài
+kiểm, HDSD ngắn, cập nhật tài liệu nền tảng. Không gấp, đi đợt prod sau.
+Mã nguồn: backend/app/data/release_notes.json, backend/app/modules/system_info, frontend-v2/src/modules/system
+
 ## bao-CR-721-man-nhat-ky-email | Màn Nhật ký email trong phân hệ Quản trị
 - status: xong
 - date: 2026-11-03
