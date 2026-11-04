@@ -18378,6 +18378,16 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 - Chốt người duyệt chặng một khi chính Trưởng phòng Nhân sự xin nghỉ.
 - Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
 
+## bao-CR-723 | Rà soát bảo mật toàn ứng dụng
+- status: xong
+- date: 2026-11-04
+- list: Nền tảng
+- tag: Bảo mật
+
+**Đã làm:** Rà thư viện có lỗ đã công bố, các đường API không đòi đăng nhập, khóa bí mật trong lịch sử mã nguồn, header bảo mật và CORS trên prod, chèn công thức vào tệp Excel xuất ra và cách bot đọc tệp người dùng gửi. Vá ngay lỗi bot tự tính công thức Excel bằng thư viện có lỗ thực thi mã (tắt mặc định) và chặn chèn công thức ở hai đường xuất tra cứu thị trường. Ghi năm mục mới vào sổ lỗi bảo mật, trong đó nâng thư viện và thêm chính sách chặn script để CR riêng.
+
+Mã nguồn: agent_hub/doc_text.py, core/config.py AGENT_XLSX_EVAL_FORMULAS, core/export_xlsx.py guard_formula_row, customs/service.py, customs/line_export.py; bài kiểm test_bao_mat_ra_soat_cr723.py.
+
 ## bao-CR-713 | Tắt trang tài liệu API trên prod, chỉ mở ở dev
 - status: xong
 - date: 2026-11-03

@@ -18,6 +18,7 @@ from fastapi import HTTPException
 from sqlalchemy import extract, func, or_
 from sqlalchemy.orm import Session
 
+from app.core.export_xlsx import guard_formula_row
 from app.modules.import_tool.model import ImportBatch, ImportMode, ImportModule, ImportStatus
 
 from . import read_cache, reader
@@ -604,7 +605,7 @@ def export_lines_xlsx(db: Session, f: dict) -> bytes:
     #  đè đúng dòng; gõ "xóa" vào ô Thao tác là xóa dòng đó (bộ đọc nhận hai cột này, `reader.py`).
     ws.append(export_header())
     for d in lines:
-        ws.append(export_row(d))
+        ws.append(guard_formula_row(ws, export_row(d)))   # BM-033: dữ liệu từ tệp ngoài
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()

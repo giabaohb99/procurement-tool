@@ -30,6 +30,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core import app_settings
+from app.core.export_xlsx import guard_formula_row
 from app.core.storage import dated_key, delete_key, upload_fileobj
 from app.modules.attachment.model import StoredFile
 from app.modules.export_log.model import ExportLog
@@ -160,7 +161,7 @@ def run_next_part(db: Session, batch_id: int, *, sleep=time.sleep) -> bool:
             rows = (_filtered(db, batch.filters, batch).filter(CustomsLine.id > last_id)
                     .order_by(CustomsLine.id.asc()).limit(take).all())
             for d in service.serialize_lines(db, rows):
-                ws.append(service.export_row(d))
+                ws.append(guard_formula_row(ws, service.export_row(d)))   # BM-033: dữ liệu từ tệp ngoài
             written += len(rows)
             if rows:
                 last_id = rows[-1].id
