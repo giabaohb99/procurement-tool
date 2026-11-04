@@ -8796,7 +8796,8 @@ def test_tep_roi_moi_hoi_chi_tra_loi_mot_lan_theo_cau_hoi(db, bot, seed, monkeyp
     assert asked == [] and service._doc_wait_log                  # chưa trả lời, đang chờ câu hỏi
     service.handle_message(db, _msg("phân tích báo cáo này"))
     assert len(asked) == 1 and asked[0].startswith("phân tích báo cáo này")
-    assert "Trả lời đầy đủ và chi tiết" in asked[0] and "0.1733" in asked[0]
+    #  Ô số thường, không ô công thức: từ bao-CR-723 (BM-032) công thức của tệp lạ mặc định KHÔNG tự tính.
+    assert "Trả lời đầy đủ và chi tiết" in asked[0] and "Doanh thu | 308.7" in asked[0]
     #  Hết giờ chờ: tệp đã được hỏi rồi thì vòng hẹn giờ không trả lời lần hai.
     assert service.flush_pending_doc(db, service._doc_wait_log[-1]) is False
     assert len(asked) == 1
