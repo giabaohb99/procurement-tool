@@ -103,6 +103,9 @@ def _eval_formulas(data: bytes, cells: list[tuple[str, str]]) -> dict[tuple[str,
     """
     if not cells:
         return {}
+    from app.core.config import settings
+    if not getattr(settings, "AGENT_XLSX_EVAL_FORMULAS", False):
+        return {}   # bao-CR-723 / BM-032: pycel thực thi được mã từ công thức của tệp lạ — xem config
     try:
         from pycel import ExcelCompiler
     except ImportError:

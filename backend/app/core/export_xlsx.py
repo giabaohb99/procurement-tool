@@ -56,6 +56,23 @@ _RIGHT = {"money", "price", "qty", "int", "percent", "decimal"}
 _FORMULA_TRIGGER_CHARS = ("=", "+", "-", "@", "\t", "\r")
 
 
+def guard_formula_row(ws, values) -> list:
+    """Một dòng cho `ws.append(...)` mà ô CHUỖI mở đầu bằng = + - @ (hay tab / xuống dòng) không bị Excel chạy như công
+    thức (bao-CR-723 / BM-033). Giá trị giữ NGUYÊN — chỉ ép kiểu ô về chuỗi, nên tệp xuất nạp lại vẫn ra đúng chữ.
+    Dùng được cho cả sổ thường lẫn sổ `write_only` (openpyxl nhận ô dựng sẵn trong `append`)."""
+    from openpyxl.cell import WriteOnlyCell
+
+    out = []
+    for v in values:
+        if isinstance(v, str) and v[:1] in _FORMULA_TRIGGER_CHARS:
+            c = WriteOnlyCell(ws, value=v)
+            c.data_type = "s"
+            out.append(c)
+        else:
+            out.append(v)
+    return out
+
+
 class Col(NamedTuple):
     """Một cột trong file xuất. `kind` quyết định định dạng ô Excel."""
 
