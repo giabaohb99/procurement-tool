@@ -27,7 +27,8 @@ import logging
 import time
 import traceback
 
-from jose import ExpiredSignatureError, JWTError, jwt
+import jwt
+from jwt import ExpiredSignatureError, PyJWTError
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -89,9 +90,9 @@ def _peek_user_id(request) -> tuple[int, bool]:
             payload = jwt.decode(raw, settings.JWT_SECRET, algorithms=[settings.JWT_ALG],
                                  options={"verify_exp": False})
             return int(payload.get("sub") or 0), True
-        except (JWTError, KeyError, ValueError, TypeError):
+        except (PyJWTError, KeyError, ValueError, TypeError):
             return 0, True
-    except (JWTError, KeyError, ValueError, TypeError):
+    except (PyJWTError, KeyError, ValueError, TypeError):
         return 0, False
 
 

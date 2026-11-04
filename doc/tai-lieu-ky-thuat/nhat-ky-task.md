@@ -114,6 +114,30 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-725-nang-thu-vien-co-lo | Nâng thư viện có lỗ đã công bố (BM-034)
+- status: xong
+- date: 2026-11-04
+- list: Bảo mật
+- tag: Bảo mật
+**Bối cảnh:** rà bảo mật 04/11 (bao-CR-723, dòng BM-034 sổ bảo mật) thấy nhiều thư viện đang dùng có lỗ đã công bố:
+backend python-multipart, starlette (kéo theo fastapi), python-jose, pypdf, cryptography, requests; giao diện dompurify,
+tiptap, prosemirror-view, axios, follow-redirects, zod, vite, nanoid.
+**Việc:** nâng các gói backend lên bản vá, đổi python-jose sang PyJWT, nâng fastapi và starlette cẩn thận chạy đủ bộ kiểm;
+npm update trong phạm vi bản vá ở ba ứng dụng giao diện, chạy đủ cổng; chạy lại pip-audit và npm audit ghi số trước, sau
+vào BM-034. Không đụng redis, kombu, celery (đã ghim ở bao-CR-722). Chỉ lên dev, đợt prod hỏi sau.
+**Kết quả:** backend: fastapi 0.115.2 lên 0.162.0 kèm starlette 1.10.0, python-multipart 0.0.33, pypdf 6.21.4,
+cryptography 50.0.2, requests 2.34.2; bỏ python-jose (hai lỗ chưa có bản vá, kéo theo ecdsa) thay bằng PyJWT 2.15.1 ở hai
+tệp lõi và ba bài kiểm, chỉ HS256, vé đã cấp vẫn đọc được nên không ai phải đăng nhập lại; Dockerfile api và runner nâng
+pip trước khi cài. pip-audit từ 13 gói có lỗ xuống 1 (pycel chưa có bản vá, đã tắt ở BM-032). FastAPI 0.137 trở đi không
+trải phẳng router vào danh sách đường của app, nên thêm hàm duyệt đường dùng chung ở lõi, dùng cho bảng khóa báo cáo (nếu
+không bảng rỗng, chỉ số báo cáo hay mở mất) và 13 bài kiểm quét đường. Giao diện: frontend-v2 npm update và npm audit fix
+không phá vỡ, cả bộ tiptap lên 3.32.2 cùng lúc vì các gói mở rộng ghim core đúng số; 61 lỗ xuống 17 (còn zod 4 và minimatch
+11 đòi nâng bản lớn, đợt hai); frontend 26 xuống 16, help-center 11 xuống 7, build thử đạt. Vá kèm ba bài kiểm đỏ sẵn của
+bao-CR-721/722 (mock chân menu Phiên bản, khai db.get và miễn trừ phạm vi). Cổng kiểm: backend đủ bộ 11493 đạt (một bài
+đo thời gian đỏ lúc máy tải nặng, xanh khi chạy riêng), ruff sạch; frontend-v2 typecheck 0, eslint 0 lỗi 30 cảnh báo như cũ,
+vitest 7264 đạt; frontend và help-center build đạt. Sổ bảo mật bản 2.7 ghi số trước và sau ở BM-034. Chỉ lên dev, đợt prod
+hỏi sau. Không đụng redis, kombu, celery.
+
 ## bao-CR-724-tra-ho-so-nhan-su-ve-giao-dien-cu | Trả màn chi tiết nhân sự về giao diện ERP v2 cũ
 - status: xong
 - date: 2026-11-04

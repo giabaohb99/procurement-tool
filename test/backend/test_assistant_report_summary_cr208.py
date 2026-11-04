@@ -14,6 +14,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.route_iter import api_routes
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.report_keys import ReportKey
@@ -202,7 +203,7 @@ def test_moi_khoa_bao_cao_deu_co_route_va_dung_khoa_gac():
     assert {r.key for r in rs.REPORTS.values()} == set(ReportKey) - closed
     assert set(rs.CLOSED_FOR_AI) == closed   # khóa đóng nào cũng có câu lý do để trợ lý nói đúng
     gated = {}
-    for route in app.routes:
+    for route in api_routes(app):
         for dep in getattr(route, "dependencies", []) or []:
             key = getattr(dep.dependency, "report_key", None)
             if key is not None and route.path.endswith("/summary"):

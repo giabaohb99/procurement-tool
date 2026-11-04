@@ -17,6 +17,8 @@ không riêng ba cái đang có.
 """
 import pytest
 
+from app.core.route_iter import api_routes
+
 PREFIX = "/api/documents"
 
 
@@ -24,7 +26,7 @@ def _document_routes():
     from app.main import app
 
     return [
-        route for route in app.routes
+        route for route in api_routes(app)
         if getattr(route, "path", "").startswith(PREFIX + "/")
     ]
 
@@ -45,14 +47,14 @@ def test_moi_duong_dan_tinh_dang_ky_truoc_route_dong():
     from app.main import app
 
     vi_tri_dong = next(
-        (i for i, route in enumerate(app.routes)
+        (i for i, route in enumerate(api_routes(app))
          if getattr(route, "path", "") == PREFIX + "/{document_id}"),
         None,
     )
     assert vi_tri_dong is not None, "Không tìm thấy route động /{document_id}"
 
     borrowed = [
-        route.path for i, route in enumerate(app.routes)
+        route.path for i, route in enumerate(api_routes(app))
         if i > vi_tri_dong
         and getattr(route, "path", "").startswith(PREFIX + "/")
         and _bi_nuot_boi_route_dong(route.path)

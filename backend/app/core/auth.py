@@ -3,7 +3,8 @@ import time
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, Header, HTTPException
-from jose import JWTError, jwt
+import jwt
+from jwt import PyJWTError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
@@ -64,7 +65,7 @@ def decode_token_claims(token: str, expected_type: str) -> dict:
             raise HTTPException(401, "Sai loại token")
         int(payload["sub"])   # thiếu `sub` / `sub` không phải số cũng là vé hỏng
         return payload
-    except (JWTError, KeyError, ValueError):
+    except (PyJWTError, KeyError, ValueError):
         raise HTTPException(401, "Token không hợp lệ hoặc đã hết hạn") from None
 
 

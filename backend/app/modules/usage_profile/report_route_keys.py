@@ -17,15 +17,15 @@ def report_route_keys() -> dict[str, int]:
     if _cache:
         return _cache
     try:
-        from fastapi.routing import APIRoute
-
+        from app.core.route_iter import iter_api_routes
         from app.main import app
     except Exception:  # noqa: BLE001 — worker không nạp được app thì chỉ mất chỉ số "báo cáo hay mở"
         log.warning("Không nạp được app để dựng bảng báo cáo — chỉ số \"báo cáo hay mở\" tạm rỗng, sẽ thử lại", exc_info=True)
         return {}
     out: dict[str, int] = {}
-    for route in app.routes:
-        if not isinstance(route, APIRoute) or not route.path.endswith("/summary"):
+    #  bao-CR-725: fastapi >= 0.137 không trải phẳng `app.routes` — duyệt qua helper, nếu không bảng rỗng.
+    for route in iter_api_routes(app):
+        if not route.path.endswith("/summary"):
             continue
         for dep in route.dependencies:
             key = getattr(dep.dependency, "report_key", None)

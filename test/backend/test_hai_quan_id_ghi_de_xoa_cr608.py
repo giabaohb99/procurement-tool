@@ -22,6 +22,7 @@ import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
+from app.core.route_iter import api_routes
 from app.modules.audit.model import AuditLog
 from app.modules.customs import dedupe, importer, line_edit_service, reader
 from app.modules.customs import service as S
@@ -354,6 +355,6 @@ def test_export_has_id_first_and_round_trips_to_overwrite(db):
 def test_line_edit_and_delete_routes_are_wired():
     """Hai đường mới nằm trong app thật (đăng ký router) — sửa = PATCH, xóa = DELETE."""
     import app.main as main
-    wired = {(m, r.path) for r in main.app.routes for m in getattr(r, "methods", set())}
+    wired = {(m, r.path) for r in api_routes(main.app) for m in getattr(r, "methods", set())}
     assert ("PATCH", "/api/customs/lines/{line_id}") in wired
     assert ("DELETE", "/api/customs/lines/{line_id}") in wired
