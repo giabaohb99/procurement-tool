@@ -137,6 +137,21 @@ tên người để mở hồ sơ.
 - Người đã **nghỉ việc** hoặc ngưng hoạt động không có trên sơ đồ. Người chưa gán phòng/pháp nhân vào nhóm
   **Chưa gán pháp nhân**.
 - Sơ đồ sai thì sửa **ở nguồn**: ô *Phòng ban* và *Người quản lý trực tiếp* trên hồ sơ, hoặc *trưởng phòng* ở màn Phòng ban.
+- Từ 02/11/2026 Nhân sự có công tắc **Ai cũng xem được sơ đồ tổ chức** (mặc định BẬT) ở *Cài đặt nhân sự*. Tắt thì chỉ
+  người có phạm vi hồ sơ nhân sự **không giới hạn** (không bó theo công ty / phòng / người) mới mở được sơ đồ — người khác
+  nhận báo không có quyền. Người dùng hỏi "sao hôm qua xem được mà nay không" thì gợi ý hỏi Nhân sự về công tắc này.
+
+## Cài đặt nhân sự — tab Nhân viên / Hợp đồng (từ 02/11/2026)
+
+*Nhân sự ▸ Master ▸ Cài đặt nhân sự* (quyền `setting`). Những con số dưới đây là **cài đặt**, mỗi công ty có thể khác —
+đừng khẳng định số mặc định khi người dùng hỏi về hệ của họ, bảo họ xem ở màn này.
+
+- **Tiền tố mã nhân sự** (mặc định `NSU`): áp cho hồ sơ **tạo mới**; mã đã cấp không đổi.
+- **Mốc kỷ niệm ngày vào làm** (mặc định 1, 3, 5, 10 năm): các mốc được nhắc trong lời nhắc hằng tháng.
+- **Báo hợp đồng lao động sắp hết hạn**: báo trước **N ngày** (mặc định 30) và mức **khẩn** khi còn ≤ **M ngày**
+  (mặc định 15 — Bộ luật Lao động buộc báo người lao động ít nhất 15 ngày). Danh sách / báo cáo hợp đồng sắp hết hạn
+  dùng đúng hai số này.
+- Tab **Nghỉ phép** (chặn đơn lùi ngày, chặn tự duyệt, vai trò được duyệt qua ngày cấm nghỉ) — xem cẩm nang Nghỉ phép.
 
 ## Khóa tài khoản / cho nghỉ việc khi người đó còn việc duyệt treo (từ 22/10/2026)
 

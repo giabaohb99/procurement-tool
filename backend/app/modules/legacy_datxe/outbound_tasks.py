@@ -40,11 +40,11 @@ def _stuck_targets(db) -> list[tuple[str, int]]:
             SyncLog.grain == int(SyncGrain.RECORD),
             SyncLog.direction == int(SyncDirection.OUTBOUND),
             SyncLog.local_id > 0)
-    last_ok = dict(
-        ((entity, local_id), newest) for entity, local_id, newest in db.execute(
+    last_ok = {
+        (entity, local_id): newest for entity, local_id, newest in db.execute(
             select(SyncLog.entity, SyncLog.local_id, func.max(SyncLog.id))
             .where(*base, SyncLog.status == int(SyncStatus.SUCCESS))
-            .group_by(SyncLog.entity, SyncLog.local_id)))
+            .group_by(SyncLog.entity, SyncLog.local_id))}
     open_rows = db.execute(
         select(SyncLog.entity, SyncLog.local_id, func.max(SyncLog.id))
         .where(*base, SyncLog.status.in_([int(SyncStatus.PENDING), int(SyncStatus.FAILED),

@@ -1,5 +1,5 @@
 """duoc-CR-686 — Báo cáo Tình hình nghỉ phép: CHIA NGÀY THEO KỲ/MỐC, chỉ số mới, lọc phòng ban,
-danh sách «bấm số» (`/summary/rows`). Lịch mặc định: T2-T7 làm, CN nghỉ (chưa gán lịch nào).
+danh sách "bấm số" (`/summary/rows`). Lịch mặc định: T2-T7 làm, CN nghỉ (chưa gán lịch nào).
 
 Lịch tháng 9-11/2026 dùng trong bài: 28/09 = T2 · 30/09 = T4 · 01/10 = T5 · 03/10 = T7 ·
 04/10 = CN · 31/10 = T7 · 01/11 = CN · 02/11 = T2.

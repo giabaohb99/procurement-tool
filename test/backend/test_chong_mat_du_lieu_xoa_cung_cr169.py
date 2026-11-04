@@ -1,11 +1,11 @@
-"""ai-CR-169 — đợt 1 chống mất dữ liệu do xóa cứng (doc/erp/nen-tang/20-ra-soat-xoa-cung.md §2).
+"""ai-CR-169 — đợt 1 chống mất dữ liệu do xóa cứng (doc/erp/nen-tang/tai-lieu-ky-thuat/20-ra-soat-xoa-cung.md §2).
 
 Bảy mục, mỗi mục một cụm bài kiểm:
 1. Hợp đồng: chỉ xóa được khi chưa ký và chưa hiệu lực; xóa nhiều kiểm cả lô.
 2. Hoàn tác lô nhập: phiếu đã đổi trạng thái / đã phát sinh thì từ chối cả lượt; phiếu có xóa mềm thì xóa mềm.
 3. Công nợ đã trả / đã có YCTT trỏ tới thì không gỡ được (sửa đợt giao).
 4. NCC / sản phẩm còn chứng từ tham chiếu thì không xóa, chỉ ngưng dùng; lấy một dòng qua phạm vi.
-5. Nhập CSV hành động «xóa» phải qua `before_delete` như nút xóa.
+5. Nhập CSV hành động "xóa" phải qua `before_delete` như nút xóa.
 6. Bot vận hành: lan can SQL chặn hẳn DELETE (bài ở `test_agent_hub.py`).
 7. Xóa cha + tệp đính kèm là MỘT giao dịch (không commit trước khi cha bị xóa).
 """
@@ -284,7 +284,7 @@ def test_nhap_csv_xoa_phai_qua_before_delete(db, seed, cap_quyen):
         data = ("Mã chức vụ,Tên chức vụ,Đang dùng,Ghi chú,Hành động\n" + f"{code},x,1,,xóa\n").encode("utf-8")
         return UploadFile(file=BytesIO(data), filename="cv.csv")
 
-    #  Chức vụ còn người giữ: dòng CSV «xóa» ăn đúng câu chặn của nút xóa, không xóa.
+    #  Chức vụ còn người giữ: dòng CSV "xóa" ăn đúng câu chặn của nút xóa, không xóa.
     with pytest.raises(HTTPException) as e:
         import_csv(file=_upload("cv_dung"), db=db, user=user)
     assert e.value.status_code == 400 and "đang có 1 hồ sơ" in e.value.detail
@@ -315,7 +315,7 @@ def _assert_no_commit_before_parent_gone(db, monkeypatch, model, oid: int, run) 
 
 
 #  ai-CR-176: ĐMH / PKS / YCTT nay xóa MỀM — cha không rời DB, tệp đính kèm GIỮ NGUYÊN (không còn
-#  bước `delete_attachments_for`), nên câu hỏi «tệp có commit trước cha không» chỉ còn với hợp đồng.
+#  bước `delete_attachments_for`), nên câu hỏi "tệp có commit trước cha không" chỉ còn với hợp đồng.
 def test_xoa_don_mua_hang_xoa_mem_giu_tep(db, seed):
     from app.modules.purchase_order import service as po_service
 
@@ -353,7 +353,7 @@ def test_xoa_yctt_xoa_mem_giu_tep(db, seed):
 
 def test_xoa_hop_dong_giu_nguyen_tep_dinh_kem(db, seed, cap_quyen):
     """ai-CR-177: hợp đồng xóa MỀM nên không còn bước xóa tệp — tệp đính kèm GIỮ NGUYÊN trong DB
-    (mục 7 «một giao dịch» trước đây canh xóa cứng cha + tệp, nay không còn áp cho hợp đồng)."""
+    (mục 7 "một giao dịch" trước đây canh xóa cứng cha + tệp, nay không còn áp cho hợp đồng)."""
     user = _user(db, seed)
     cap_quyen(user.id, "contract", scope="all", read=True, delete=True)
     c = _contract(db, seed, "HD-TEP", signed=False, status="active")

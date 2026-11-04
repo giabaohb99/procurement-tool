@@ -94,10 +94,43 @@ def _isolate_app_settings():
     app_settings._cache, app_settings._exp = goc_cache, goc_exp
 
 
+class _NoNetworkSMTP:
+    """SMTP giả cho MỌI bài kiểm: nhận lời gọi rồi thôi, không mở kết nối mạng nào."""
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def __getattr__(self, name):
+        #  starttls / login / ehlo / sendmail / send_message / quit … — tất cả không làm gì.
+        return lambda *a, **k: {}
+
+
+@pytest.fixture(autouse=True)
+def _chan_gui_thu_that(monkeypatch):
+    """Bài kiểm KHÔNG BAO GIỜ được gửi thư thật.
+
+    `_isolate_app_settings` đẩy cấu hình về `.env`, mà `.env` của máy chạy test (local, dev) BẬT email kèm tài khoản
+    SMTP thật. Trước khi có chốt này, mỗi lần chạy cả bộ, bài như `test_ban_hanh_ai_thay_van_ban.py` (người nhận
+    `kd1@a.vn`, `gd@a.vn`…) gửi thư thật ra Internet → hộp thư của tài khoản SMTP nhận hơn 1.000 thư báo lỗi
+    "Address not found" (phát hiện 03/11/2026). Bài nào cần soi lời gọi SMTP thì tự monkeypatch `smtplib.SMTP`
+    như `test_stress_gui_thu_theo_hop_thu.py` — bản của bài đó đè lên bản này.
+    """
+    import smtplib
+
+    monkeypatch.setattr(smtplib, "SMTP", _NoNetworkSMTP)
+    monkeypatch.setattr(smtplib, "SMTP_SSL", _NoNetworkSMTP)
+
+
 # ── Cache báo cáo: TẮT mặc định trong mọi test (M6, code review phân quyền báo cáo) ────
 @pytest.fixture(autouse=True)
 def _tat_bao_nhan_tuc_thi(monkeypatch):
-    """ai-CR-194: tin «Em nhận rồi, đang xử lý…» gửi trước mọi tin chữ sẽ làm các bài bot đếm `telegram.send` lệch một tin —
+    """ai-CR-194: tin "Em nhận rồi, đang xử lý…" gửi trước mọi tin chữ sẽ làm các bài bot đếm `telegram.send` lệch một tin —
     tắt mặc định trong bộ kiểm; bài riêng của ai-CR-194 tự bật."""
     from app.core.config import settings
 

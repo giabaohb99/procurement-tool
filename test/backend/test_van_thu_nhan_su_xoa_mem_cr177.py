@@ -273,7 +273,7 @@ def test_van_ban_luat_trang_thai_va_bo_nhap_cua_minh(db, van_ban):
     assert e.value.status_code == 400
     assert db.get(Document, giu).is_deleted is False
 
-    # Nút «Hủy» ở màn Tạo văn bản: cũng xóa mềm, ghi đúng người bỏ nháp.
+    # Nút "Hủy" ở màn Tạo văn bản: cũng xóa mềm, ghi đúng người bỏ nháp.
     service.discard_own_draft(db, db.get(Document, xoa), user.id)
     row = db.get(Document, xoa)
     assert row.is_deleted is True and row.deleted_by == user.id

@@ -98,11 +98,11 @@ def upload_import(module: int = Form(...), mode: int = Form(0), file: UploadFile
     try:
         precheck_headers(module, workbook_from_bytes(file.filename or "", raw))
     except ImportValidationError as e:
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e)) from e
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(400, "Không đọc được file — kiểm tra lại định dạng .xlsx/.csv")
+        raise HTTPException(400, "Không đọc được file — kiểm tra lại định dạng .xlsx/.csv") from None
 
     sf = service.save_upload(db, file, user.id)
     batch = service.create_batch(db, module, mode, sf, user.id)
@@ -210,7 +210,7 @@ def commit_import(bid: int, db: Session = Depends(get_db), user=Depends(get_curr
     try:
         new = service.commit_dry_run(db, b, user.id)
     except service.DryRunAlreadyCommitted as e:
-        raise HTTPException(409, str(e))
+        raise HTTPException(409, str(e)) from e
     run_import.delay(new.id)
     return success(_batch_out(db, new), "Đang ghi thật dữ liệu — sẽ báo khi xong", 201)
 
@@ -230,7 +230,7 @@ def download_import_file(bid: int, db: Session = Depends(get_db), user=Depends(g
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(404, "Không đọc được file từ kho lưu trữ")
+        raise HTTPException(404, "Không đọc được file từ kho lưu trữ") from None
     return Response(content=data,
                     media_type=sf.content_type or "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     headers={"Content-Disposition": _content_disposition(sf.filename)})

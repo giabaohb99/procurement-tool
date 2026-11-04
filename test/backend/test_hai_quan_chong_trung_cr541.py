@@ -1,7 +1,7 @@
 """bao-CR-541 — Tra cứu thị trường: chống trùng dòng khi nạp GTT02 bằng mã băm.
 
 Đại ca chốt 01/10/2026: nguồn xuất ra là đổ vào luôn, người nạp không biết tệp nào chồng tệp
-nào → hệ thống tự so. Trùng thì BỎ QUA; không ghi đè; bỏ hẳn «thay theo khoảng ngày».
+nào → hệ thống tự so. Trùng thì BỎ QUA; không ghi đè; bỏ hẳn "thay theo khoảng ngày".
 
 Bẫy được canh ở đây đều IM LẶNG nếu vỡ:
   · mã tính từ dòng trong tệp phải BẰNG mã tính lại từ dòng đã lưu — lệch là chống trùng

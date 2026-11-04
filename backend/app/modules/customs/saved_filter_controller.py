@@ -7,7 +7,7 @@ Khóa quyền: `customs_price.read` là đủ cho cả hai — đọc được m
 mình và xem được lô đã nạp (đường `/imports/{bid}/logs` cũ cũng chỉ đòi `read`). Tách tệp
 khỏi `controller.py` vì bao-CR-493 đang sửa tệp đó — gộp không đụng nhau.
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.auth import require

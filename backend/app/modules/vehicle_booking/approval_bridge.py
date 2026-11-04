@@ -356,3 +356,26 @@ def _mail_new_task(db: Session, instance, task, users: list) -> None:
 
 
 entity_hooks.register_task_mailer(ENTITY, _mail_new_task)
+
+
+def _should_notify_task(db: Session, instance, task) -> bool:
+    """Chuông + thư "chờ bạn duyệt" chỉ tới NGƯỜI ĐƯỢC CHỌN khi phiếu có chọn (duoc-CR-706).
+
+    Người cùng quyền cũng được giao việc (thấy ở "Việc chờ duyệt" và có nút Duyệt trên phiếu) nhưng không bị
+    báo. Phiếu không chọn người, hoặc người chọn KHÔNG có việc ở chính chặng này (đã mất quyền nên bộ máy
+    bỏ lựa chọn, hoặc chặng khác không dính quyền) → báo hết như cũ, để chặng không bị im lặng.
+    """
+    from app.modules.approval.instance_model import ApprovalTask
+
+    booking = db.get(VehicleBooking, instance.entity_id)
+    if booking is None or not booking.first_approver_id:
+        return True
+    picked = _employee_id_of_user(db, booking.first_approver_id)
+    if not picked or task.assignee_employee_id == picked:
+        return True
+    return db.query(ApprovalTask.id).filter(
+        ApprovalTask.instance_id == instance.id, ApprovalTask.node_seq == task.node_seq,
+        ApprovalTask.assignee_employee_id == picked).first() is None
+
+
+entity_hooks.register_task_notify_filter(ENTITY, _should_notify_task)

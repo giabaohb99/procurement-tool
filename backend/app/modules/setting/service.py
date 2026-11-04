@@ -1,3 +1,4 @@
+import re
 import smtplib
 from email.mime.text import MIMEText
 
@@ -112,7 +113,7 @@ FIELDS = [
              "chia theo vai trò người nhận. Bỏ trống cả hai = gửi đúng địa chỉ thật."},
     {"key": "email_test_staff", "group": "email", "type": "str",
      "label": "Hộp thư thử — nhóm nhân viên"},
-    #  Cụm đồng bộ với app đặt xe / duyệt dấu cũ. Xem doc/dong-bo-dat-xe-duyet-dau/.
+    #  Cụm đồng bộ với app đặt xe / duyệt dấu cũ. Xem doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/.
     {"key": "sync_datxe_enabled", "group": "sync", "type": "bool",
      "label": "Bật đồng bộ với app đặt xe cũ",
      "hint": "TẮT là ngắt cả hai chiều ngay lập tức: app cũ gọi vào bị từ chối, ERP cũng thôi "
@@ -161,6 +162,11 @@ FIELDS = [
      "label": "Tự gộp dòng hàng hải quan trùng (ngày 1 và 16)",
      "hint": "Dòng cùng tờ khai, giá, lượng mà không khác ô nào (hoặc chỉ một bên trống) được gộp về dòng nạp sớm "
              "nhất, ô trống điền bù. Nhóm khác ô hoặc từng sửa tay thì để nguyên. Tắt để dừng việc gộp định kỳ."},
+    #  bao-CR-718 — tệp của lô xuất toàn bộ Tra cứu thị trường.
+    {"key": "customs_export_keep_days", "group": "system", "type": "int",
+     "label": "Số ngày giữ tệp xuất toàn bộ của Tra cứu thị trường",
+     "hint": "Tệp của lô xuất toàn bộ (chạy nền, chia nhiều tệp) cũ hơn số ngày này bị vòng dọn đêm xóa khỏi kho; "
+             "nhật ký xuất vẫn còn. Đặt 0 để giữ mãi."},
     #  bao-CR-703 — sổ việc chạy ngầm.
     {"key": "job_run_keep_days", "group": "system", "type": "int",
      "label": "Số ngày giữ lịch sử việc chạy ngầm",
@@ -170,6 +176,49 @@ FIELDS = [
      "label": "Số bản sao lưu cơ sở dữ liệu giữ lại",
      "hint": "Giữ bấy nhiêu bản mới nhất, cũ hơn thì xóa cả tệp lẫn dòng ghi. Chạy hai lần mỗi "
              "ngày nên 30 bản là khoảng mười lăm ngày."},
+    #  duoc-CR-713 — CÀI ĐẶT NHÂN SỰ (tab Nghỉ phép), nhóm `hr`: màn Cấu hình hệ thống KHÔNG vẽ nhóm này
+    #  (nó chỉ vẽ các nhóm nó biết) — trang `/hr/settings` của phân hệ Nhân sự sở hữu ba ô dưới.
+    {"key": "leave_restrict_backdated", "group": "hr", "tab": "leave", "type": "bool",
+     "label": "Chặn đơn nghỉ lùi ngày",
+     "hint": "BẬT: không lập, sửa hay gửi duyệt được đơn nghỉ có ngày nghỉ TRƯỚC hôm nay — trừ quản trị và các "
+             "vai trò khai ở ô bên dưới (vd Hành chính lập hộ đơn quên nộp). TẮT: như trước, đơn nào cũng lập được. "
+             "Đơn đã gửi duyệt hay đã duyệt không bị ảnh hưởng."},
+    {"key": "leave_backdated_roles", "group": "hr", "tab": "leave", "type": "roles",
+     "label": "Vai trò được lập đơn nghỉ lùi ngày",
+     "hint": "Chỉ có tác dụng khi công tắc ở trên đang BẬT. Để trống = chỉ quản trị được lập đơn lùi ngày."},
+    {"key": "leave_block_exempt_roles", "group": "hr", "tab": "leave", "type": "roles",
+     "label": "Vai trò được duyệt đơn nghỉ rơi vào ngày cấm nghỉ",
+     "hint": "Đơn nghỉ trùng một khoảng trong danh mục \"Ngày cấm nghỉ\" (Nghỉ phép › Thiết lập) vẫn lập và gửi duyệt "
+             "được nhưng bị chặn ở lượt duyệt cuối. Người có vai trò khai ở đây (và quản trị) duyệt qua được. "
+             "Để trống = chỉ quản trị."},
+    {"key": "leave_prevent_self_approval", "group": "hr", "tab": "leave", "type": "bool",
+     "label": "Chặn tự duyệt đơn nghỉ",
+     "hint": "BẬT: người nghỉ không bao giờ là người duyệt đơn của chính mình, kể cả khi luồng khai đích danh họ, khi họ "
+             "là người dự phòng, hay khi họ có quyền duyệt thẳng. Bước chỉ có mỗi họ thì chuyển cho người dự phòng; không "
+             "có người dự phòng thì đơn KẸT chờ quản trị sửa luồng (bộ máy không tự duyệt qua). TẮT: như trước — người "
+             "duyệt được suy ra vẫn tự né người nộp, riêng bước khai đích danh thì giữ đúng người đã khai."},
+    #  duoc-CR-713 — tab NHÂN VIÊN.
+    {"key": "employee_code_prefix", "group": "hr", "tab": "employee", "type": "code_prefix",
+     "label": "Tiền tố mã nhân sự",
+     "hint": "Hồ sơ MỚI (tạo tay hoặc nhập Excel mà để trống Mã NV) được đánh mã tiền tố này + số tăng dần, vd NSU245. "
+             "2–10 chữ cái in hoa, không dấu, không số. Mã đã cấp KHÔNG đổi theo. Để trống = NSU."},
+    {"key": "org_chart_visible_to_all", "group": "hr", "tab": "employee", "type": "bool",
+     "label": "Sơ đồ tổ chức cho mọi nhân viên",
+     "hint": "BẬT: ai có quyền xem hồ sơ nhân sự đều mở được Sơ đồ tổ chức (chỉ thấy người trong phạm vi của mình). "
+             "TẮT: chỉ người xem được TOÀN BỘ hồ sơ nhân sự (thường là phòng Nhân sự, quản trị) mới mở được."},
+    {"key": "employee_anniversary_years", "group": "hr", "tab": "employee", "type": "int_list",
+     "label": "Mốc kỷ niệm vào làm (năm)",
+     "hint": "Ô \"Lịch nhắc trong tháng\" ở Tổng quan Nhân sự liệt kê người tròn đúng các mốc này. Nhập các số năm cách nhau "
+             "bằng dấu phẩy, vd 1, 3, 5, 10 (mỗi số 1–60, tối đa 10 mốc). Để trống = 1, 3, 5, 10."},
+    #  duoc-CR-713 — tab HỢP ĐỒNG LAO ĐỘNG.
+    {"key": "labor_contract_warn_days", "group": "hr", "tab": "contract", "type": "int", "min": 15, "max": 180,
+     "label": "Báo HĐLĐ sắp hết hạn trước (ngày)",
+     "hint": "HĐLĐ đã ký còn từng này ngày (hoặc đã quá hạn) mà chưa có HĐ nối tiếp thì hiện ở chuông, ô Tổng quan và màn "
+             "HĐLĐ sắp hết hạn. 15–180 ngày. Để trống = 30."},
+    {"key": "labor_contract_danger_days", "group": "hr", "tab": "contract", "type": "int", "min": 15, "max": 180,
+     "label": "Mức gấp — tô đỏ khi còn (ngày)",
+     "hint": "Còn từng này ngày trở xuống thì cảnh báo chuyển màu đỏ. Không dưới 15 vì Điều 45 Bộ luật Lao động 2019 buộc "
+             "báo người lao động trước ít nhất 15 ngày; không lớn hơn số ngày báo ở trên. Để trống = 15."},
     #  duoc-CR-641 — hồ sơ cách làm việc.
     {"key": "usage_tracking_enabled", "group": "system", "type": "bool",
      "label": "Thu thập cách dùng giao diện (hồ sơ cách làm việc)",
@@ -254,9 +303,30 @@ def _normalize(field: dict, val, db: Session | None = None) -> str:
         return ""
     if kind == "int":
         try:
-            return str(int(str(val).strip()))
+            number = int(str(val).strip())
         except (TypeError, ValueError):
             raise HTTPException(400, f"\"{nhan}\" phải là số nguyên") from None
+        #  duoc-CR-713: ô khai `min`/`max` (vd số ngày báo HĐLĐ) chặn ở cửa lưu, kẻo số ngoài dải lặng lẽ chạy.
+        low, high = field.get("min"), field.get("max")
+        if (low is not None and number < low) or (high is not None and number > high):
+            raise HTTPException(400, f"\"{nhan}\" phải trong khoảng {low}–{high}")
+        return str(number)
+    if kind == "code_prefix":
+        #  duoc-CR-713: tiền tố mã nhân sự. Chỉ CHỮ: có số thì "NSU1" + "001" đọc ra NSU1001 — lẫn với số thứ tự.
+        raw = str(val or "").strip().upper()
+        if raw and not re.fullmatch(r"[A-Z]{2,10}", raw):
+            raise HTTPException(400, f"\"{nhan}\" chỉ gồm 2–10 chữ cái in hoa không dấu (vd NSU)")
+        return raw
+    if kind == "int_list":
+        #  duoc-CR-713: "1, 3,5 ,10" → "1,3,5,10" (bỏ trùng, sắp tăng). Trống = dùng mặc định `.env`.
+        parts = [p.strip() for p in str(val or "").replace(";", ",").split(",") if p.strip()]
+        try:
+            numbers = sorted({int(p) for p in parts})
+        except ValueError:
+            raise HTTPException(400, f"\"{nhan}\" chỉ nhận các số nguyên cách nhau bằng dấu phẩy") from None
+        if any(n < 1 or n > 60 for n in numbers) or len(numbers) > 10:
+            raise HTTPException(400, f"\"{nhan}\": mỗi mốc 1–60 năm, tối đa 10 mốc")
+        return ",".join(str(n) for n in numbers)
     if kind == "bool":
         if isinstance(val, bool):
             return "true" if val else "false"
@@ -288,6 +358,24 @@ def _normalize(field: dict, val, db: Session | None = None) -> str:
             raise HTTPException(400, f"\"{nhan}\": điều kiện {problem}")
         #  `[]` nghĩa y như để trống — lưu thành rỗng cho nhật ký và màn hình đọc ra một nghĩa.
         return raw if parse(raw) else ""
+    if kind == "roles":
+        #  duoc-CR-713: danh sách MÃ vai trò, lưu "a,b,c" (bỏ trùng, giữ thứ tự gửi lên). Mã không có trong
+        #  danh mục thì chặn ngay — lọt xuống DB là một vai trò "được miễn" không tồn tại, không ai hay.
+        items = val if isinstance(val, (list, tuple)) else str(val or "").split(",")
+        codes = list(dict.fromkeys(str(c).strip() for c in items if str(c).strip()))
+        raw = ",".join(codes)
+        #  Cùng luật ô `department`: giá trị KHÔNG ĐỔI thì không kiểm lại. Màn Cấu hình hệ thống gửi lại mọi ô mỗi lần
+        #  Lưu (kể cả nhóm `hr` nó không vẽ) — một vai trò trong danh sách bị xóa về sau không được chặn cả lần lưu
+        #  của người chỉ sửa ô SMTP (rà mã CR-713).
+        if raw == str(app_settings.get(field["key"]) or "").strip():
+            return raw
+        if codes and db is not None:
+            from app.modules.role.model import Role
+            known = {row.code for row in db.query(Role.code).filter(Role.code.in_(codes)).all()}
+            unknown = [c for c in codes if c not in known]
+            if unknown:
+                raise HTTPException(400, f"\"{nhan}\": không có vai trò mã {', '.join(unknown)}")
+        return raw
     if kind == "department":
         #  bao-CR-529: lưu MÃ phòng. Mã không có trong danh mục thì `core/central_purchasing` lặng
         #  lẽ quay về "phòng xử lý để trống" — đúng loại lỗi không ai hay, nên chặn ngay ở cửa lưu.
@@ -408,6 +496,19 @@ def _write_audit(db: Session, user_id: int, changes: list[tuple[str, str]]):
     db.commit()
 
 
+def _check_cross_fields(values: dict) -> None:
+    """Luật giữa HAI ô (duoc-CR-713): mức gấp HĐLĐ không được lớn hơn số ngày báo. So theo giá trị HIỆU LỰC sau lần lưu
+    (ô không gửi lên thì lấy giá trị đang chạy) — gửi lẻ một ô vẫn không lách được."""
+    def effective(key: str) -> int:
+        raw = values.get(key)
+        if raw is None or str(raw).strip() == "":
+            return int(app_settings.get(key) or 0) if raw is None else int(getattr(app_settings._env, key.upper()))
+        return int(raw)
+    if "labor_contract_warn_days" in values or "labor_contract_danger_days" in values:
+        if effective("labor_contract_danger_days") > effective("labor_contract_warn_days"):
+            raise HTTPException(400, "\"Mức gấp\" của HĐLĐ không được lớn hơn số ngày báo sắp hết hạn")
+
+
 def save(db: Session, values: dict, user_id: int) -> dict:
     #  Kiểm + quy đổi MỌI ô trước khi đụng tới DB: một ô hỏng thì cả lần lưu
     #  dừng lại, không có chuyện lưu được nửa chừng. Bước này của bao-CR-429 từng
@@ -415,6 +516,7 @@ def save(db: Session, values: dict, user_id: int) -> dict:
     #  ai gọi, nên "50 câu" lọt xuống bảng và `_cast` đọc ra 0 = không giới hạn.
     values = {key: (_normalize(_FIELD_KEYS[key], val, db) if key in _FIELD_KEYS else val)
               for key, val in (values or {}).items()}
+    _check_cross_fields(values)
     #  Gom chênh lệch TRƯỚC khi ghi — ghi xong thì giá trị cũ không còn ở đâu nữa.
     #  Không đổi gì thì KHÔNG đẻ dòng nhật ký: bấm Lưu hai lần vẫn chỉ một dấu vết.
     changes = _collect_changes(values)

@@ -178,7 +178,7 @@ SCOPE_FIELDS = {
     #
     #   ⚠️ MỌI query của `app/modules/work/` PHẢI tự lọc qua `visible_list_ids(...)`.
     #   Khai PUBLIC mà quên lọc là lộ sạch việc của cả công ty — đọc
-    #   `doc/erp/cong-viec/04-phan-quyen.md` §2 trước khi viết endpoint đầu tiên.
+    #   `doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md` §2 trước khi viết endpoint đầu tiên.
     "work_task":        PUBLIC,
 
     # --- Nghỉ phép (CR-259) ---
@@ -190,6 +190,9 @@ SCOPE_FIELDS = {
     #  Nhánh `own` ở `_role_scope_cond` HỢP cả hai — xem ghi chú tại đó.
     "leave_request":    {"company": "company_id", "dept_id": "department_id",
                          "owner": "created_by", "self": "employee_id"},
+    #  Phiếu nghỉ bù: cùng khuôn đơn nghỉ — người nghỉ (`employee_id`) và người lập (`created_by`).
+    "leave_comp_request": {"company": "company_id", "dept_id": "department_id",
+                           "owner": "created_by", "self": "employee_id"},
     #  Quỹ phép KHÔNG có `owner`: `created_by` là người Nhân sự bấm nút cấp phát,
     #  lấy đó làm "của mình" thì nhân viên xem quỹ của chính họ lại không ra dòng
     #  nào. Chỉ `self` — `own` nghĩa là "quỹ của tôi".
@@ -280,7 +283,7 @@ SCOPE_FIELDS = {
     "dossier":          {"company": "company_id", "dept_id": "department_id",
                          "owner": "created_by", "self": "owner_employee_id"},
 
-    # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md) ---
+    # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/tai-lieu-ky-thuat/04-phan-quyen.md) ---
     #  Sổ điểm và thành viên khai `self` theo `employee_id` — "nhân viên chỉ thấy
     #  sổ của mình" là một phép áp scope, không phải một câu hứa (nghiệm thu 4 của
     #  `09` §11). KHÔNG khai `owner`: `created_by` của dòng sổ là người/task GHI hộ
@@ -698,7 +701,7 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             # NGƯỜI DÙNG CHƯA GẮN PHÁP NHÂN. Cùng luật với nhánh `dept` ở trên (chưa gắn
             # phòng → không thấy gì): thiếu dữ liệu thì chặn, chứ mở toang là nguy hiểm hơn.
             # ⚠️ Trước khi đưa lên môi trường thật phải gắn `company_id` cho nhân sự — xem
-            # phần B-07 trong `doc/erp/nen-tang/15-do-be-tong-nen-v2.md`, đã đếm sẵn số người dính.
+            # phần B-07 trong `doc/erp/nen-tang/tai-lieu-ky-thuat/15-do-be-tong-nen-v2.md`, đã đếm sẵn số người dính.
             return _chan(entity, scope, user, "nguoi dung chua gan phap nhan (company_id=0)")
         cond = getattr(model, f["company"]) == company_id
         if f.get("company_alt"):

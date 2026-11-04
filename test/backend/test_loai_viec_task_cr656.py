@@ -1,6 +1,6 @@
 """duoc-CR-656 (D1b) — task Dự án có loại việc, giờ ước lượng, giờ thực tế, kết quả; danh mục loại việc.
 
-Luật cần giữ: giờ ngoài 0…999 → 422 · giờ thực tế chỉ khi xong · «Đạt» chỉ khi xong · «Phải làm lại» mở lại task, xóa
+Luật cần giữ: giờ ngoài 0…999 → 422 · giờ thực tế chỉ khi xong · "Đạt" chỉ khi xong · "Phải làm lại" mở lại task, xóa
 `completed_at` nhưng GIỮ kết quả đó cho tới khi xong lần nữa · chỉ người giao/quản lý đánh giá · danh mục (công ty, mã)
 duy nhất · ghi danh mục cần `setting.write`.
 """

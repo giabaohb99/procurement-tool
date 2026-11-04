@@ -10,8 +10,8 @@ paths:
 ⚠️ **CỘT `String(n)` MÀ SCHEMA KHÔNG KHAI `max_length` = LỖI 500, KHÔNG PHẢI
 422** (duoc-CR-316 — luật này áp cho MỌI module, không riêng nhân sự). Chuỗi dài
 đi thẳng xuống MySQL, và MySQL là chỗ đầu tiên phản đối: người dùng dán nhầm một
-đoạn văn bản vào ô là nhận «mã sự cố», quản trị đi tra một lỗi vốn đáng ra là câu
-«tối đa n ký tự». Rà 22 trường của hồ sơ nhân sự thì **12 ca trả 500**, trong đó
+đoạn văn bản vào ô là nhận **mã sự cố**, quản trị đi tra một lỗi vốn đáng ra là câu
+**tối đa n ký tự**. Rà 22 trường của hồ sơ nhân sự thì **12 ca trả 500**, trong đó
 4 trường có lỗ từ lâu.
 
 - Khai bằng bí danh ở `modules/employee/field_limits.py` (`Str20`, `Str255`…),

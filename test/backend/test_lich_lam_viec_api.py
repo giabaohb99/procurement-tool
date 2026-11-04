@@ -1,7 +1,7 @@
 """Lịch làm việc phase 02 — schema, nghiệp vụ gán lịch và API qua HTTP.
 
 Chú ý: SQLite không ép độ dài VARCHAR nên mọi trần kiểm ở tầng SCHEMA (`ValidationError`).
-Quy tắc gán chồng (chốt 05/10/2026): POST tự đóng dòng «không thời hạn» bắt đầu TRƯỚC `from`
+Quy tắc gán chồng (chốt 05/10/2026): POST tự đóng dòng "không thời hạn" bắt đầu TRƯỚC `from`
 mới; mọi chồng khác 400; PATCH KHÔNG BAO GIỜ tự đóng.
 """
 import uuid
@@ -305,7 +305,7 @@ def test_tools_effective_fallback_co_gan_va_ngoai_pham_vi(api, db, cap_quyen):
     assert api.get("/api/work-schedules/tools/effective?employee_id=99999").status_code == 404
     assert api.get(f"/api/work-schedules/tools/effective?employee_id={emp.id}&on_date=1900-01-01").status_code == 422
 
-    # Người chỉ có `employee.read` phạm vi «own» KHÔNG được xem lịch của người khác.
+    # Người chỉ có `employee.read` phạm vi "own" KHÔNG được xem lịch của người khác.
     _, _, other = make_world(db, "AP2")
     user2 = User(email="nv2@dego.vn", employee_id=other.id, is_active=True)
     db.add(user2)

@@ -1,5 +1,5 @@
-"""ai-CR-157 — đại ca 10/10/2026: «cập nhật hướng dẫn của các phần này cho bot, họ hỏi hoặc em có thể gợi ý cho để họ có
-thể xem hướng dẫn sử dụng hoặc check quyền của họ có thể sử dụng chức năng nào»."""
+"""ai-CR-157 — đại ca 10/10/2026: "cập nhật hướng dẫn của các phần này cho bot, họ hỏi hoặc em có thể gợi ý cho để họ có
+thể xem hướng dẫn sử dụng hoặc check quyền của họ có thể sử dụng chức năng nào"."""
 import pytest
 
 from app.modules.agent_hub import user_guide as ug

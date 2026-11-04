@@ -42,11 +42,11 @@ def build_inputs(request: Request, db: Session, user, export: bool = False, with
     ensure_hr_permissions(prof, export)
     qp = request.query_params
     action = "export" if export else "read"
-    out = dict(
-        employees_q=apply_scope(db.query(Employee), Employee, "employee", user, prof, action),
-        contracts_q=apply_scope(db.query(LaborContract), LaborContract, "labor_contract", user, prof, action),
-        period=parse_period(qp), company_id=valid_company_id(qp.get("company_id")),
-        department_id=valid_department_id(qp.get("department_id")))
+    out = {
+        "employees_q": apply_scope(db.query(Employee), Employee, "employee", user, prof, action),
+        "contracts_q": apply_scope(db.query(LaborContract), LaborContract, "labor_contract", user, prof, action),
+        "period": parse_period(qp), "company_id": valid_company_id(qp.get("company_id")),
+        "department_id": valid_department_id(qp.get("department_id"))}
     if with_leave:
         can_leave = (prof.get("perms_union") or {}).get("leave_request", {}).get("read")
         out["leave_q"] = apply_scope(db.query(LeaveRequest), LeaveRequest, "leave_request", user, prof) \

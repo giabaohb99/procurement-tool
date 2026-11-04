@@ -1,7 +1,7 @@
 """Danh mục KHÓA chỉ số (duoc-CR-641) — nguồn duy nhất: snapshot, API và pha 4 (AI) cùng đọc khóa ở đây.
 
 ⚠️ Khóa là ĐỊNH DANH CỐ ĐỊNH: đổi tên là gãy snapshot cũ + pha 4. Thêm khóa mới thì thêm dòng; không tái dùng tên.
-Bảng định nghĩa/nguồn/công thức từng chỉ số: `plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md`.
+Bảng định nghĩa/nguồn/công thức từng chỉ số: `doc/erp/nen-tang/plans/261019-1450-tracking-ho-so-lam-viec-cr641/metric-definitions.md`.
 
 Mỗi dòng: khóa → (đơn vị, mục §3, pha, hướng). Pha: 1 = gom từ bảng có sẵn · 2 = cần sự kiện giao diện / `read_at` · 3 = cần số dùng AI (`tab_ai_usage_daily`).
 Hướng: +1 càng cao càng tốt · -1 càng thấp càng tốt · 0 trung tính (chỉ mô tả).

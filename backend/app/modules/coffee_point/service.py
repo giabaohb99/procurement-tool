@@ -1,6 +1,6 @@
 """Nghiệp vụ Điểm cà phê — sổ cái, reset kỳ, xử lý đơn POS365.
 
-Hai luật cứng của tệp này (xem `doc/erp/diem-ca-phe/02-bang-du-lieu.md`):
+Hai luật cứng của tệp này (xem `doc/erp/diem-ca-phe/tai-lieu-ky-thuat/02-bang-du-lieu.md`):
 
 1. **`append_ledger` là ĐƯỜNG GHI SỔ DUY NHẤT.** Controller và task đều gọi nó; chỉ
    nó biết luật `uniq_key` và `reason` bắt buộc. Không chỗ nào `db.add(CoffeeLedger)`.
@@ -538,7 +538,7 @@ def build_pos_dashboard(orders: list[dict], accounts: list[dict],
     today = datetime.now().strftime("%Y-%m-%d")
     day_labels = [(datetime.now() - timedelta(days=d)).strftime("%Y-%m-%d")
                   for d in range(days - 1, -1, -1)]
-    by_day = {d: 0 for d in day_labels}
+    by_day = dict.fromkeys(day_labels, 0)
     stats = {"orders": 0, "revenue": 0, "cash": 0, "account": 0, "points": 0,
              "voided": 0}
     recent = []

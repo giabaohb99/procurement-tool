@@ -1,7 +1,7 @@
 """Phân hệ Công việc — cụm nhãn tùy biến của từng list.
 
 Quy ước chung của phân hệ nằm ở đầu `model.py`. Thiết kế:
-`doc/erp/cong-viec/02-bang-du-lieu.md` §4.
+`doc/erp/cong-viec/tai-lieu-ky-thuat/02-bang-du-lieu.md` §4.
 
 **Độ ưu tiên NAY LÀ MỘT TRƯỜNG TÙY BIẾN**, không còn là cột cứng `tab_work_task.
 priority` (bỏ ở migration `b2f7c1d94a30`). Mỗi list được nạp sẵn một trường

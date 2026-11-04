@@ -3,7 +3,7 @@
 Bối cảnh: image api cài `default-mysql-client` (thực chất là MariaDB), bản dump do
 `mariadb-dump` tạo nạp vào MySQL 8.4 chết ở lỗi 3105 — cột sinh
 `tab_approval_instance.running_slot` (và `tab_document_version.open_slot`) bị chèn
-giá trị. Bộ sao lưu vẫn ghi «thành công», rồi `_prune` xóa dần các bản cũ còn tốt.
+giá trị. Bộ sao lưu vẫn ghi "thành công", rồi `_prune` xóa dần các bản cũ còn tốt.
 
 Bốn chốt chặn kiểm ở đây:
 1. Client MySQL thật → lệnh dump có `--set-gtid-purged=OFF`.
@@ -155,7 +155,7 @@ def test_prune_skipped_when_new_backup_not_success(db, monkeypatch, storage):
 
 
 def test_run_backup_keeps_old_copies_when_dump_shrinks(db, monkeypatch, storage):
-    """Nối dây đầy đủ: dump «thành công» nhưng bé tí thì bản cũ vẫn còn nguyên."""
+    """Nối dây đầy đủ: dump "thành công" nhưng bé tí thì bản cũ vẫn còn nguyên."""
     _, deleted = storage
     monkeypatch.setattr(backup_service, "keep_count", lambda: 1)
     _add(db, "success", 10_000_000, "old.sql.gz")
@@ -315,7 +315,7 @@ def test_restore_command_has_no_force_flag():
     cmd = build_restore_command("mysql")
     assert "-f" not in cmd and "--force" not in cmd
     #  Chỉ mục FULLTEXT ngram dựng ngay ở CREATE TABLE của bản dump — phải tắt từ dừng
-    #  trong CHÍNH phiên nạp, không thì tìm «văn bản» ra rỗng sau khôi phục.
+    #  trong CHÍNH phiên nạp, không thì tìm "văn bản" ra rỗng sau khôi phục.
     assert any(a.startswith("--init-command=") and "innodb_ft_enable_stopword" in a
                and "= 0" in a for a in cmd)
 

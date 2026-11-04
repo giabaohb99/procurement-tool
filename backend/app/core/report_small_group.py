@@ -29,7 +29,7 @@ def hide_group(g: dict) -> None:
     """Mọi giá trị (kỳ này + kỳ so sánh) -> None; cờ `suppressed` cho bước xuất Excel."""
     for side in _SIDES:
         if g.get(side) is not None:
-            g[side] = {k: None for k in g[side]}
+            g[side] = dict.fromkeys(g[side])
     g["suppressed"] = True
 
 

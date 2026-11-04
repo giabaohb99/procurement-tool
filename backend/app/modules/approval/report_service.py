@@ -27,6 +27,7 @@ from app.core.report_aggregate import (DerivedSpec, DimensionSpec, MetricSpec, R
                                        build_report)
 from app.core.report_period import Period
 from app.core.scoping import apply_scope
+from app.modules.leave.comp_request_model import LeaveCompRequest
 from app.modules.leave.request_model import LeaveRequest
 from app.modules.meeting_room.model import RoomBooking
 from app.modules.seal_request.model import SealRequest
@@ -66,6 +67,7 @@ APPROVAL_REPORT_SOURCES = {
     "seal_request": _scoped_ids(SealRequest, "seal_request"),
     "vehicle_booking": _scoped_ids(VehicleBooking, "vehicle_booking"),
     "leave_request": _scoped_ids(LeaveRequest, "leave_request"),
+    "leave_comp_request": _scoped_ids(LeaveCompRequest, "leave_comp_request"),
     "room_booking": _scoped_ids(RoomBooking, "room_booking"),
 }
 

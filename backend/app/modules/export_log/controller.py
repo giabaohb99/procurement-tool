@@ -98,7 +98,7 @@ def download_export_file(bid: int, db: Session = Depends(get_db), user=Depends(g
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(404, "Không đọc được file từ kho lưu trữ")
+        raise HTTPException(404, "Không đọc được file từ kho lưu trữ") from None
     return Response(content=data,
                     media_type=sf.content_type or "application/octet-stream",
                     headers={"Content-Disposition": _content_disposition(sf.filename)})

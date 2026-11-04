@@ -1,5 +1,5 @@
 """ai-CR-160 (phase 16.1) — đo từng lượt trả lời: sổ ý định ghi token / tiền / thời gian / số khai báo công cụ đã gửi;
-lượt Trợ lý trả lời trên Telegram ghi sổ chi phí (trước đây không, nên báo chi phí «AI theo khóa» thiếu phần lớn nhất)."""
+lượt Trợ lý trả lời trên Telegram ghi sổ chi phí (trước đây không, nên báo chi phí "AI theo khóa" thiếu phần lớn nhất)."""
 from app.modules.agent_hub import intent_ledger as il
 
 

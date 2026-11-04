@@ -317,4 +317,6 @@ def is_exportable(entity: str) -> bool:
 #  `available_entities()`, nên không bật nút "Xuất" chung cho các entity này.
 ENTITY_LABELS_EXTRA: dict[str, str] = {
     "customs_price": "Thuốc BVTV",
+    #  bao-CR-718 — từng tệp của lô xuất toàn bộ Tra cứu thị trường (`customs.line_export`).
+    "customs_line": "Tra cứu thị trường (dòng hàng)",
 }

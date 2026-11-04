@@ -337,17 +337,17 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             line = db.query(SurveyProductLine).filter(SurveyProductLine.survey_id == s.id,
                                                       SurveyProductLine.import_line_key == lk).first()
             pname = _s(_cell(ws4, r, "Q")) or _s(_cell(ws4, r, "R"))
-            data = dict(
-                import_line_key=lk, request_qty=hdr["qty"], contact_date=_d(_cell(ws4, r, "L")), reply_date=_d(_cell(ws4, r, "M")),
-                result_date=_d(_cell(ws4, r, "N")), supplier_code=code, internal_code=vtbb, product_name=pname,
-                spec=_s(_cell(ws4, r, "S")), origin=_s(_cell(ws4, r, "T")),
-                quote_unit=cat(_cell(ws4, r, "U"), unit_map, "ĐVT", "4.KS-SP", r), moq=_n(_cell(ws4, r, "V")),
-                price_by_volume=_n(_cell(ws4, r, "W")), volume_range=_s(_cell(ws4, r, "X")), vat=_vat(_cell(ws4, r, "Y")),
-                amount=_n(_cell(ws4, r, "Z")), internal_unit=cat(_cell(ws4, r, "AA"), unit_map, "ĐVT", "4.KS-SP", r),
-                amount_converted=_n(_cell(ws4, r, "AB")), shipping_cost=_n(_cell(ws4, r, "AC")),
-                delivery_time=_s(_cell(ws4, r, "AD")), delivery_place=_s(_cell(ws4, r, "AE")), quote_file=_s(_cell(ws4, r, "AF")),
-                sample_ready=_b(_cell(ws4, r, "AG")), sample_date=_d(_cell(ws4, r, "AH")), sample_qty=_n(_cell(ws4, r, "AI")),
-                lab_result=_s(_cell(ws4, r, "AJ")), nspt_note=_s(_cell(ws4, r, "AK")))
+            data = {
+                "import_line_key": lk, "request_qty": hdr["qty"], "contact_date": _d(_cell(ws4, r, "L")), "reply_date": _d(_cell(ws4, r, "M")),
+                "result_date": _d(_cell(ws4, r, "N")), "supplier_code": code, "internal_code": vtbb, "product_name": pname,
+                "spec": _s(_cell(ws4, r, "S")), "origin": _s(_cell(ws4, r, "T")),
+                "quote_unit": cat(_cell(ws4, r, "U"), unit_map, "ĐVT", "4.KS-SP", r), "moq": _n(_cell(ws4, r, "V")),
+                "price_by_volume": _n(_cell(ws4, r, "W")), "volume_range": _s(_cell(ws4, r, "X")), "vat": _vat(_cell(ws4, r, "Y")),
+                "amount": _n(_cell(ws4, r, "Z")), "internal_unit": cat(_cell(ws4, r, "AA"), unit_map, "ĐVT", "4.KS-SP", r),
+                "amount_converted": _n(_cell(ws4, r, "AB")), "shipping_cost": _n(_cell(ws4, r, "AC")),
+                "delivery_time": _s(_cell(ws4, r, "AD")), "delivery_place": _s(_cell(ws4, r, "AE")), "quote_file": _s(_cell(ws4, r, "AF")),
+                "sample_ready": _b(_cell(ws4, r, "AG")), "sample_date": _d(_cell(ws4, r, "AH")), "sample_qty": _n(_cell(ws4, r, "AI")),
+                "lab_result": _s(_cell(ws4, r, "AJ")), "nspt_note": _s(_cell(ws4, r, "AK"))}
             data, _t = _fit(SurveyProductLine, data)
             appr, appr_note = _approve(_cell(ws4, r, "AL"))
             data["line_approve"] = appr
@@ -389,17 +389,17 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
             line = db.query(SurveySupplierLine).filter(SurveySupplierLine.survey_id == s.id,
                                                        SurveySupplierLine.import_line_key == lk).first()
             catsup = db.query(Supplier).filter(Supplier.code == code).first()
-            data = dict(
-                import_line_key=lk, contact_date=_d(_cell(ws3, r, "L")), reply_date=_d(_cell(ws3, r, "M")),
-                result_date=_d(_cell(ws3, r, "N")), supplier_code=code,
-                supplier_name=_s(_cell(ws3, r, "P")) or (catsup.name if catsup else ""), tax_code=mst,
-                reg_address=_s(_cell(ws3, r, "R")) or (catsup.address if catsup else ""),
-                warehouse_address=_s(_cell(ws3, r, "S")), google_maps=_s(_cell(ws3, r, "T")),
-                contact_person=_s(_cell(ws3, r, "U")), contact_phone=_s(_cell(ws3, r, "V")), supply_group=_s(_cell(ws3, r, "W")),
-                quote_folder=_s(_cell(ws3, r, "X")), source_of_information=_s(_cell(ws3, r, "Y")),
-                production_tech=_s(_cell(ws3, r, "Z")), production_time=_s(_cell(ws3, r, "AA")), nvkd_eval=_s(_cell(ws3, r, "AB")),
-                invoice_policy=_s(_cell(ws3, r, "AC")), reliability=_s(_cell(ws3, r, "AD")), delivery_policy=_s(_cell(ws3, r, "AE")),
-                debt_policy=_s(_cell(ws3, r, "AF")), defect_return=_s(_cell(ws3, r, "AG")), nspt_reason=_s(_cell(ws3, r, "AH")))
+            data = {
+                "import_line_key": lk, "contact_date": _d(_cell(ws3, r, "L")), "reply_date": _d(_cell(ws3, r, "M")),
+                "result_date": _d(_cell(ws3, r, "N")), "supplier_code": code,
+                "supplier_name": _s(_cell(ws3, r, "P")) or (catsup.name if catsup else ""), "tax_code": mst,
+                "reg_address": _s(_cell(ws3, r, "R")) or (catsup.address if catsup else ""),
+                "warehouse_address": _s(_cell(ws3, r, "S")), "google_maps": _s(_cell(ws3, r, "T")),
+                "contact_person": _s(_cell(ws3, r, "U")), "contact_phone": _s(_cell(ws3, r, "V")), "supply_group": _s(_cell(ws3, r, "W")),
+                "quote_folder": _s(_cell(ws3, r, "X")), "source_of_information": _s(_cell(ws3, r, "Y")),
+                "production_tech": _s(_cell(ws3, r, "Z")), "production_time": _s(_cell(ws3, r, "AA")), "nvkd_eval": _s(_cell(ws3, r, "AB")),
+                "invoice_policy": _s(_cell(ws3, r, "AC")), "reliability": _s(_cell(ws3, r, "AD")), "delivery_policy": _s(_cell(ws3, r, "AE")),
+                "debt_policy": _s(_cell(ws3, r, "AF")), "defect_return": _s(_cell(ws3, r, "AG")), "nspt_reason": _s(_cell(ws3, r, "AH"))}
             data, _t = _fit(SurveySupplierLine, data)
             appr, appr_note = _approve(_cell(ws3, r, "AI"))
             data["line_approve"] = appr

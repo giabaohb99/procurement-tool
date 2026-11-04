@@ -65,7 +65,7 @@ def decode_token_claims(token: str, expected_type: str) -> dict:
         int(payload["sub"])   # thiếu `sub` / `sub` không phải số cũng là vé hỏng
         return payload
     except (JWTError, KeyError, ValueError):
-        raise HTTPException(401, "Token không hợp lệ hoặc đã hết hạn")
+        raise HTTPException(401, "Token không hợp lệ hoặc đã hết hạn") from None
 
 
 def decode_token(token: str, expected_type: str) -> int:
@@ -185,7 +185,7 @@ def get_perm_profile(db: Session, user) -> dict:
     if role_ids:
         for p in db.query(Permission).filter(Permission.role_id.in_(role_ids)).all():
             rp = role_perms.setdefault(p.role_id, {})
-            ent = rp.setdefault(p.entity, {**{a: False for a in ACTIONS}, "scope": "own"})
+            ent = rp.setdefault(p.entity, {**dict.fromkeys(ACTIONS, False), "scope": "own"})
             for a in ACTIONS:
                 if getattr(p, f"can_{a}", False):
                     ent[a] = True
@@ -226,7 +226,7 @@ def get_perm_profile(db: Session, user) -> dict:
     perms_union: dict = {}
     for g in grants:
         for ent, p in g["perms"].items():
-            u = perms_union.setdefault(ent, {a: False for a in ACTIONS})
+            u = perms_union.setdefault(ent, dict.fromkeys(ACTIONS, False))
             for a in ACTIONS:
                 if p.get(a):
                     u[a] = True
@@ -240,7 +240,7 @@ def get_perm_profile(db: Session, user) -> dict:
         for g in grants
     )
     if is_purchaser:
-        perms_union.setdefault("survey_request", {a: False for a in ACTIONS})["process"] = True
+        perms_union.setdefault("survey_request", dict.fromkeys(ACTIONS, False))["process"] = True
 
     company_id, dept_name, emp_code, dept_id, emp_name = 0, "", "", 0, ""
     dept_ids: list[int] = []

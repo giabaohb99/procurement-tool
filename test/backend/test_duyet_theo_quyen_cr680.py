@@ -1,8 +1,8 @@
-"""duoc-CR-680 — cách chọn người duyệt thứ chín «Người có quyền duyệt (theo phân quyền)».
+"""duoc-CR-680 — cách chọn người duyệt thứ chín "Người có quyền duyệt (theo phân quyền)".
 
-Người được giao = giữ vai trò có ô «Duyệt» trên khóa quyền của loại chứng từ (vd `vehicle_booking`),
+Người được giao = giữ vai trò có ô "Duyệt" trên khóa quyền của loại chứng từ (vd `vehicle_booking`),
 phạm vi Phòng ban / Công ty / Tất cả, KHÔNG tính vai trò `admin`, tài khoản mở + có hồ sơ, và phạm vi
-của CHÍNH các grant đó phủ được phiếu. Các bài «review C1/C2/H1/H2/M1/M3» nhắc lại lỗi code review tìm ra.
+của CHÍNH các grant đó phủ được phiếu. Các bài "review C1/C2/H1/H2/M1/M3" nhắc lại lỗi code review tìm ra.
 """
 from types import SimpleNamespace
 
@@ -82,8 +82,8 @@ def test_chi_nguoi_giu_vai_tro_co_o_duyet_moi_duoc_giao(db):
 
 @pytest.mark.parametrize("scope", ["own", "assigned", "proc", "dept_proc"])
 def test_pham_vi_khong_phu_phieu_moi_cua_nguoi_khac_thi_khong_tinh(db, scope):
-    """Local 23/10: 7 «Quản lý thu mua» có Duyệt đặt xe phạm vi «Của mình» (seed cấp mọi khóa) hiện
-    thành người giữ quyền dù không bao giờ được giao. Đặt xe «Được giao» = người tạo / tài xế được phân."""
+    """Local 23/10: 7 "Quản lý thu mua" có Duyệt đặt xe phạm vi "Của mình" (seed cấp mọi khóa) hiện
+    thành người giữ quyền dù không bao giờ được giao. Đặt xe "Được giao" = người tạo / tài xế được phân."""
     narrow = _role(db, f"r_{scope}", scope=scope)
     _person(db, "TM01", narrow)
     a, _ = _person(db, "DP01", _role(db, "booking_dispatcher"), narrow)
@@ -103,7 +103,7 @@ def test_khong_tinh_vai_tro_admin_nhung_admin_giu_them_vai_tro_duyet_thi_van_tin
 
 
 def test_review_c1_grant_admin_khong_lot_lai_qua_buoc_soi_pham_vi(db):
-    """Review C1: soi phạm vi bằng NGUYÊN hồ sơ quyền thì grant admin «Tất cả» mở luôn phiếu công ty 5
+    """Review C1: soi phạm vi bằng NGUYÊN hồ sơ quyền thì grant admin "Tất cả" mở luôn phiếu công ty 5
     cho điều phối phạm vi công ty 3."""
     admin = _role(db, "admin")
     company_scope = _role(db, "dispatcher_company", scope="company")
@@ -218,7 +218,7 @@ def test_review_c2_doi_sang_loai_chua_mo_cach_9_thi_chan(db):
 def test_options_bay_lua_chon_thu_chin_kem_danh_sach_loai_dung_duoc():
     data = options(user=None).body.decode()
     assert "Người có quyền duyệt (theo phân quyền)" in data
-    assert '"permission_approver_entities":["vehicle_booking","leave_request","room_booking"]' in data
+    assert '"permission_approver_entities":["vehicle_booking","leave_request","leave_comp_request","room_booking"]' in data
 
 
 def test_review_m3_duong_danh_sach_khong_cho_do_khoa_khac(db):

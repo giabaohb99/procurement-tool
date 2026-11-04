@@ -1,4 +1,4 @@
-"""ai-CR-138 — phase 13 đợt B: màn «Bot đang nhớ gì về tôi» (chỉ chủ sổ), thu hồi xóa sạch, điền đối tượng theo thói
+"""ai-CR-138 — phase 13 đợt B: màn "Bot đang nhớ gì về tôi" (chỉ chủ sổ), thu hồi xóa sạch, điền đối tượng theo thói
 quen + nói rõ giả định, gợi ý chỉ là đề xuất, bộ đo độ đúng (bộ câu mẫu cố định, chấm nhãn tay, tỷ lệ hỏi lại)."""
 import json
 import os
@@ -249,7 +249,7 @@ def test_cham_bo_mau_va_nhan_tay():
     data = ie.load_samples()
     perfect = ie.run_fixed(lambda text, ctx, tasks: next(s["intent"] for s in data["samples"] if s["text"] == text), data)
     assert perfect["accuracy"] == 1.0 and perfect["misses"] == []
-    #  Bộ phân loại «trả hoi cho mọi câu» phải trượt ngưỡng — bài kiểm không được xanh giả.
+    #  Bộ phân loại "trả hoi cho mọi câu" phải trượt ngưỡng — bài kiểm không được xanh giả.
     lazy = ie.run_fixed(lambda *a: "hoi", data)
     assert lazy["accuracy"] < data["min_accuracy"]
     rows = [{"intent": "hoi", "sub_intent": "tra_cuu.cong_no", "true_intent": "hoi", "true_sub": "tra_cuu.cong_no",

@@ -1,4 +1,4 @@
-"""duoc-CR-686 — helper «bấm số ra danh sách người» (`core/report_drilldown.py`) và
+"""duoc-CR-686 — helper "bấm số ra danh sách người" (`core/report_drilldown.py`) và
 `valid_department_id`. Bài của từng báo cáo nằm ở tệp `test_bao_cao_*_cr686.py` riêng."""
 from datetime import date
 from types import SimpleNamespace
@@ -80,7 +80,7 @@ class TestPhongBan:
         assert valid_department_id(" 12 ") == 12
 
     def test_khong_phai_so_422(self):
-        #  «²» là chữ số Unicode: `isdigit()` nhận nhưng `int()` ném lỗi — từng lộ 500 (review CR-686).
+        #  "²" là chữ số Unicode: `isdigit()` nhận nhưng `int()` ném lỗi — từng lộ 500 (review CR-686).
         for raw in ("abc", "²", "-1", "1.5"):
             with pytest.raises(HTTPException) as e:
                 valid_department_id(raw)

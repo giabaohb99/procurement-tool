@@ -46,7 +46,7 @@ backend ở `app/modules/leave/`. Tài liệu đầy đủ: `doc/erp/hrm/02-nghi
   đơn chưa có dòng khoảng rơi về đầu đơn. Đọc thẳng `[from_date, to_date]` của đầu đơn là
   ngày khe hiện nghỉ, im lặng. Ghi khoảng chỉ qua `leave/request_periods.py`; ≥2 khoảng phải
   cùng năm (422), nghỉ theo giờ chỉ 1 khoảng, tối đa 20; đơn ≥2 khoảng sửa ngày thì PATCH phải
-  gửi đủ `periods`. Chỉ tổng được sửa đè, không sửa đè từng khoảng. Báo cáo «Tình hình nghỉ phép»
+  gửi đủ `periods`. Chỉ tổng được sửa đè, không sửa đè từng khoảng. Báo cáo **Tình hình nghỉ phép**
   (duoc-CR-686, đổi luật cũ của CR-683): số ĐƠN / người / tỷ lệ neo ngày bắt đầu; số NGÀY chia
   theo ngày thật rơi vào kỳ / mốc — chỉ đơn vắt qua biên mới tính lại bằng Python
   (`leave/report_day_split*.py`), đừng thêm đường tính ngày thứ hai. Chi tiết `02-nghi-phep.md` §7.3.
@@ -80,12 +80,12 @@ _Tôi đã duyệt_. Người duyệt không phải sang màn Phê duyệt nữa
 - ⚠️ **Không tab nào của màn Đơn nghỉ phép còn BÀY cột đó nữa** (duoc-CR-323,
   08/09/2026): _Đơn của tôi_ và _Tôi đã duyệt_ bỏ hẳn, _Cần tôi duyệt_ giữ nhưng
   `defaultHidden`. Cột **Việc của tôi** bỏ hẳn, **Hạn xử lý** rút về ngày giờ
-  trần. Hai tín hiệu mất theo, đừng tưởng là sót: dấu **«Quá hạn»** (cờ
+  trần. Hai tín hiệu mất theo, đừng tưởng là sót: dấu **Quá hạn** (cờ
   `task.is_overdue` backend vẫn gửi, màn hình thôi không vẽ — bày lại thì đọc cờ
-  đó, đừng tự so ngày ở TS) và dòng **«Bấm thay ‹tên›»**, thứ báo cho người được
+  đó, đừng tự so ngày ở TS) và dòng **Bấm thay ‹tên›**, thứ báo cho người được
   ủy quyền biết họ đang ký THAY người khác; nay chỉ còn ở màn chi tiết. Chi tiết
   ở §8.1 của `doc/erp/hrm/02-nghi-phep.md`.
-- ⚠️ **`defaultHidden` KHÔNG áp cho người đã từng đụng menu «Cột»** của bảng đó:
+- ⚠️ **`defaultHidden` KHÔNG áp cho người đã từng đụng menu "Cột"** của bảng đó:
   `useTableLayout` đọc `readLayout(storageKey) ?? defaultLayout`, có bản lưu
   trong `localStorage` là bản đó thắng. Muốn thấy đúng mặc định mới thì xóa khóa
   `erp.table.<storageKey>`.
@@ -104,9 +104,78 @@ _Tôi đã duyệt_. Người duyệt không phải sang màn Phê duyệt nữa
 - Hai hook duyệt **khác nhau, đừng gọi nhầm**: `useLeaveRequestAction` bấm vào tờ
   ĐƠN (duyệt thẳng, chỉ chạy khi chưa khai luồng — nút này nay chỉ hiện khi
   `approval_instance_id === 0`), còn `useLeaveApprovalDecision` bấm vào PHIÊN DUYỆT.
-- ⚠️ **Mục «Bàn giao công việc» LUÔN dựng, kể cả khi rỗng** — ở cả màn chi tiết
+- ⚠️ **Mục "Bàn giao công việc" LUÔN dựng, kể cả khi rỗng** — ở cả màn chi tiết
   lẫn hộp xác nhận duyệt. Trước 03/09/2026 nó ẩn hẳn khi không có ai, và người
   duyệt không phân biệt được *"người nộp chưa khai ai"* với *"màn hình thiếu mục
   đó"*. Mà **thiếu người bàn giao là lý do trả đơn phổ biến nhất**, tức chính là
   thứ quyết định họ bấm Duyệt hay Trả về — nó phải nói thành lời, không để suy ra
   từ một khoảng trống. Hộp việc duyệt trả kèm `handovers` đúng vì lý do đó.
+
+#### Cài đặt nhân sự — tab Nghỉ phép (duoc-CR-713, 02/11/2026)
+
+Trang `/hr/settings` (gác `setting.read`/`write`, đi chung `/api/settings`, nhóm khóa `hr`). Hai công tắc, mặc định TẮT:
+
+- ⚠️ **Chặn đơn nghỉ lùi ngày** — chỉ đọc qua `leave/leave_policy.ensure_not_backdated`, gọi ở ĐỦ ba nhịp `create` ·
+  `update` · `prepare_submit` (nháp hợp lệ để qua ngày mới gửi cũng là lùi ngày). **Hôm nay** = `vn_today()`. Miễn:
+  vai trò khai ở `leave_backdated_roles` + `admin`. Thêm đường lập đơn mới (nhập Excel, trợ lý AI lập nháp…) thì phải
+  gọi hàm này, đừng đọc thẳng `app_settings`.
+- ⚠️ **Chặn tự duyệt đơn nghỉ** — chỉ đọc qua `approval/self_approval_policy`. Luật I08 (`exclude_submitter_ids`) CỐ Ý
+  giữ bước khai đích danh + người dự phòng (CR-113, NP022); cờ `strict` chỉ siết cho `leave_request`. Mọi chỗ tra người
+  duyệt cho một phiên phải truyền `strict=strict_self_exclusion(entity)` (mở chặng, đồng bộ luồng, xem trước) — sót một
+  chỗ là màn xem trước nói một người, lúc chạy ra người khác. Chốt cuối ở `action_service.approve` + duyệt thẳng.
+  Bước rỗng → người dự phòng → KẸT; đừng thêm nhánh tự duyệt qua.
+
+#### Nghỉ phép kiểu ERPNext (duoc-CR-715, 02/11/2026)
+
+- ⚠️ **Số dùng được = `balance_service.available_days(db, row)`**, KHÔNG phải `row.remaining_days`: loại nghỉ
+  `accrual_mode = MONTHLY` giữ lại phần chưa tới tháng (`accrual_service.accrual_holdback`). Màn hình, chốt đủ quỹ, trợ lý
+  AI đều phải đọc hàm này; chỗ đọc thẳng property chỉ đúng với năm đã qua (kết sổ cuối năm).
+- Cấp quỹ (`ensure_balance`): hạn mức `accrual_service.resolve_quota` (hình thức nhân viên > cấp bậc > `annual_quota_days`)
+  rồi `prorate_allocation` (ngày vào làm 1–15 tính cả tháng; vào làm năm SAU → 0). Quỹ đã cấp không tính lại khi đổi luật.
+- `check_enough*` cho xuống `-max_negative_days`; `applicable_after_days` chặn ở lập / sửa (khi ngày hoặc dòng loại đổi) / gửi.
+- ⚠️ **Ngày cấm nghỉ chặn ở hook `_on_approved` bằng `approval.entity_hooks.HookVeto`** — loại lỗi hook DUY NHẤT `fire`
+  ném tiếp. Hook nào ném nó phải ném TRƯỚC khi đổi gì của chứng từ; đường duyệt không được commit trước lúc `fire`.
+- ⚠️ **Phiếu nghỉ bù** (`leave_comp_request`, khóa quyền riêng, owner + self như đơn nghỉ): duyệt xong cộng
+  `tab_leave_balance.comp_days` của loại `is_compensatory`; mọi chỗ cộng `allocated + seniority + carried + adjusted`
+  phải cộng cả `comp_days`. Hủy phiếu đã duyệt chỉ khi số dùng được của loại đó ≥ `days`.
+- ⚠️ Phiếu nghỉ bù LƯU SẴN đích cộng: `comp_leave_type_id` (chốt lúc gửi) + `balance_year` (= max(năm làm, năm nay),
+  chốt lúc duyệt); duyệt / hủy chỉ dùng hai cột này, KHÔNG gọi lại `get_comp_type()` (HR đổi cờ giữa chừng là cộng /
+  trừ nhầm loại). Mọi đổi trạng thái đi qua `comp_request_service.claim` (UPDATE … WHERE status IN …, thua → 409).
+  `active_key` UNIQUE giữ **một ngày một phiếu** khi hai lượt chèn cùng lúc (NULL khi từ chối / hủy / xóa).
+- ⚠️ Phiếu nghỉ bù LUÔN chặn tự duyệt (`self_approval_policy.ALWAYS_STRICT_ENTITIES`), bất kể công tắc: nó tạo ra ngày
+  phép mới. Đơn nghỉ vẫn theo công tắc `leave_prevent_self_approval`.
+- ⚠️ `entity_hooks.fire` gặp `HookVeto` thì TỰ `db.rollback()` rồi mới ném — nơi gọi bắt lỗi rồi commit (cổng MCP ghi
+  nhật ký) không thể lưu nửa lượt duyệt. Thêm nơi gọi duyệt mới vẫn nên rollback ở nhánh lỗi.
+- Báo cáo quỹ phép trừ phần chưa tới tháng ngay trong câu SQL (join loại nghỉ + ngày vào làm) — số truy vấn cố định.
+
+#### Chính sách nghỉ phép + phân bổ (duoc-CR-717, 03/11/2026)
+
+Chi tiết: `doc/erp/hrm/02-nghi-phep.md` §15. Module `leave/policy_*.py` — ⚠️ `leave/leave_policy.py` là của CR-713 (chặn
+đơn lùi ngày), đừng đè / đừng nhầm.
+
+- ⚠️ **Cấp quỹ chỉ đi qua `balance_service.ensure_balance` → `policy_allocation.allocated_days`** (hàm thuần
+  `policy_allocation_math.compute_allocated`). Đừng mở đường cấp / tính `allocated_days` thứ hai (nhập Excel, trợ lý AI,
+  kết sổ…). Thứ tự: phân bổ chính sách của người > hình thức NV > cấp bậc > `annual_quota_days`; loại vắng trong gói →
+  luật của loại. Đổi gói giữa năm chia theo tháng, mốc ngày 15; phân bổ bắt đầu ≤ tháng vào làm kéo lùi về 01/01 (áp cả
+  năm theo số của gói).
+- ⚠️ **Không có phân bổ = kết quả CŨ, từng con số** (`prorate_allocation(resolve_quota(...))`, kể cả hạn mức lẻ 12.25) và
+  không thêm truy vấn thứ hai. Có bài kiểm ghim — sửa toán thì giữ bất biến này.
+- ⚠️ **Đường ghi phân bổ phải đọc có khóa** (MySQL REPEATABLE READ): khóa `tab_employee` FOR UPDATE theo id tăng dần
+  (`lock_employees`), rồi MỌI lần đọc phân bổ / dòng gói / dòng quỹ sau đó qua `policy_allocation.with_row_lock`
+  (`lock=True`). Đọc thường thấy ảnh chụp cũ → lọt chồng ngày / ghi đè `allocated_days` của lượt khác. SQLite không tái
+  hiện được — kiểm bằng cách soi SQL biên dịch sang MySQL (`test_nghi_phep_review_cr717.py`).
+- ⚠️ **Phạm vi người được phân bổ = phạm vi XEM `employee` ∩ phạm vi GHI `leave_balance`**
+  (`policy_assignment_scope.writable_employee_query`), chỉ người **đang làm**. Không thêm khóa quyền: gói theo
+  `leave_type`, phân bổ theo `leave_balance` (D4) — ENTITIES / `SCOPE_FIELDS` / seed giữ nguyên. Bảng phân bổ phải giữ
+  `company_id` + `employee_id` vì `apply_scope(..., "leave_balance")` đọc hai cột đó.
+- ⚠️ **D5: không ai trừ `is_system_admin` tự tạo / sửa / xóa phân bổ của chính mình** (403, cả hàng loạt → `skipped`).
+- Xem trước và ghi dùng CHUNG `policy_assignment_plan.plan_change` — thêm chốt mới thì thêm ở đó, không thì màn xem trước
+  hứa điều đường ghi chặn. Hàng loạt KHÔNG savepoint (nhả savepoint làm `change_tracker` đóng dấu commit sớm); cả lô một
+  commit, số truy vấn cố định theo số người.
+- Tính lại quỹ: chỉ năm `vn_today().year`, chỉ cột `allocated_days`, ghi nhật ký `leave_balance`; năm đã qua không bao giờ.
+- Trạng thái phân bổ (`LeavePolicyAssignmentState` 1 Sắp tới · 2 Đang hiệu lực · 3 Đã kết thúc) DẪN XUẤT theo ngày, không lưu.
+- Ma trận `/api/leave-balances/matrix` phải đăng ký router TRƯỚC `leave_balance_router` (không thì `/{bid}` nuốt); khóa
+  `cells` là chuỗi id loại, ô vắng = chưa có dòng quỹ (khác 0).
+- Báo cáo **ReportKey 30** `HOLIDAY_WORK` **Làm việc vào ngày lễ, ngày nghỉ**: nguồn phiếu nghỉ bù (không chấm công), gác kép
+  `leave_comp_request` + `require_report(30)`; phòng ban = phòng ghi trên phiếu. Số 30 đã cấp, bỏ thì để trống, không tái dùng.
+- Kỳ nghỉ phép (Leave Period): **không làm** (anh Được bỏ 03/11/2026) — đừng đề xuất lại.

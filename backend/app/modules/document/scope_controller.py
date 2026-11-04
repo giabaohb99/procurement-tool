@@ -85,7 +85,7 @@ def applies_to_me(db: Session = Depends(get_db), user=Depends(get_current_user))
     #  vẫn thấy nó nằm trong "Áp dụng cho tôi", bấm vào thì nhận 404 (`can()`
     #  xét dòng cấm và từ chối).
     #
-    #  Đúng cái bẫy đã ghi ở `doc/erp/van-thu/06-kich-ban-test.md` §4.6: danh
+    #  Đúng cái bẫy đã ghi ở `doc/erp/van-thu/kiem-thu/06-kich-ban-test.md` §4.6: danh
     #  sách rộng hơn thứ mở được. Lọc lại bằng chính `can()` để hai đường không
     #  bao giờ lệch nhau nữa.
     profile = get_perm_profile(db, user)
@@ -132,7 +132,7 @@ def add_scope(
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(400, "Dòng phạm vi này đã khai rồi")
+        raise HTTPException(400, "Dòng phạm vi này đã khai rồi") from None
     db.refresh(row)
     record(db, user.id, "document", doc.id, "update")
     return success(scope_service.serialize(db, row), "Đã thêm phạm vi áp dụng", 201)

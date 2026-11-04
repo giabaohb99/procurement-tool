@@ -48,8 +48,8 @@ def ho_so_nhan_su(db):
 
     Bắt buộc, không phải trang trí: cả hai cửa mới đều gọi `resolve_actor`, mà
     hàm ấy TRA BẢNG `Employee` theo `user.employee_id` — không có dòng thật thì
-    nó trả `employee_id = 0` và `require_employee` chặn ở 400 «chưa gắn nhân
-    sự», che mất đúng cái 403 mà bài test đang muốn đo.
+    nó trả `employee_id = 0` và `require_employee` chặn ở 400 "chưa gắn nhân
+    sự", che mất đúng cái 403 mà bài test đang muốn đo.
     """
     from app.modules.employee.model import Employee
 

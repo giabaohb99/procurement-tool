@@ -1,5 +1,5 @@
-"""duoc-CR-652 — «Hợp đồng của tôi»: nhân sự TỰ XEM HĐLĐ của chính mình (chỉ đọc), kể cả tệp mềm / bản ký và
-bản lưu trữ ở Văn bản. Mỗi luật chặn có cặp đối chứng để chứng minh «chặn đúng chỗ» chứ không «chặn tất»."""
+"""duoc-CR-652 — "Hợp đồng của tôi": nhân sự TỰ XEM HĐLĐ của chính mình (chỉ đọc), kể cả tệp mềm / bản ký và
+bản lưu trữ ở Văn bản. Mỗi luật chặn có cặp đối chứng để chứng minh "chặn đúng chỗ" chứ không "chặn tất"."""
 from datetime import date
 
 import pytest
@@ -25,7 +25,7 @@ def _sync_index(monkeypatch):
 @pytest.fixture
 def ctx(db, world, storage, client_as):  # noqa: F811
     """a1 = Nhân sự (đủ quyền HĐLĐ, công ty A); a2 / a3 = nhân viên thường, KHÔNG có `labor_contract`,
-    nhưng đọc được Văn bản công ty. a2 có hợp đồng; a3 là «người khác»."""
+    nhưng đọc được Văn bản công ty. a2 có hợp đồng; a3 là "người khác"."""
     grant_all(world, "a1")
     world.grant("a1", "document", "own", actions=("read",))
     for k in ("a2", "a3"):

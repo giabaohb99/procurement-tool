@@ -7,7 +7,7 @@ from app.core.database import SessionLocal
 
 from app.core import app_settings
 
-from . import line_merge
+from . import line_merge, read_cache
 from .row_log_cleanup import cleanup
 
 log = logging.getLogger("app.customs.tasks")
@@ -34,10 +34,48 @@ def merge_duplicate_lines_task(dry_run: bool = False) -> dict:
         return {"status": "disabled"}
     db = SessionLocal()
     try:
-        return line_merge.run(db, dry_run=dry_run)
+        result = line_merge.run(db, dry_run=dry_run)
+        if not dry_run:
+            read_cache.clear()   # bao-CR-718: gộp xóa dòng mà MAX(id) không đổi — số đếm đã đệm phải tính lại
+        return result
     except Exception as e:  # noqa: BLE001
         db.rollback()
         log.exception("Gộp dòng hải quan trùng hỏng")
+        return {"status": "failed", "error": str(e)}
+    finally:
+        db.close()
+
+
+#  bao-CR-718 — lô xuất toàn bộ: MỖI TỆP MỘT LẦN CHẠY. Xong một tệp thì tự hẹn tệp kế sau vài giây (countdown), nên
+#  task không giữ worker quá một tệp và việc khác chen được giữa hai tệp — không cần hàng đợi / worker riêng.
+@celery_app.task(name="customs.export_batch_part")
+def export_batch_part_task(batch_id: int) -> dict:
+    from . import line_export
+    from .constants import EXPORT_FILE_PAUSE_SECONDS
+    db = SessionLocal()
+    try:
+        more = line_export.run_next_part(db, batch_id)
+    except Exception as e:  # noqa: BLE001
+        log.exception("Lô xuất tra cứu thị trường #%s hỏng", batch_id)
+        line_export.mark_failed(db, batch_id, f"Lỗi khi ghi tệp: {e}")
+        return {"status": "failed", "error": str(e)}
+    finally:
+        db.close()
+    if more:
+        export_batch_part_task.apply_async(args=[batch_id], countdown=EXPORT_FILE_PAUSE_SECONDS)
+    return {"status": "success", "batch_id": batch_id, "more": more}
+
+
+@celery_app.task(name="customs.cleanup_export_batches")
+def cleanup_export_batches_task() -> dict:
+    """Hằng đêm: lô xuất kẹt quá `EXPORT_STALE_HOURS` giờ thì đánh hỏng; lô quá `customs_export_keep_days` thì xóa tệp."""
+    from . import line_export
+    db = SessionLocal()
+    try:
+        return line_export.cleanup(db)
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        log.exception("Dọn lô xuất tra cứu thị trường hỏng")
         return {"status": "failed", "error": str(e)}
     finally:
         db.close()

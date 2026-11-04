@@ -1,9 +1,10 @@
-"""duoc-CR-681 — phiếu đặt xe tự chọn Công ty và Người duyệt; thư «Gửi duyệt» tới đúng người được chọn.
+"""duoc-CR-681 — phiếu đặt xe tự chọn Công ty và Người duyệt; thư "Gửi duyệt" tới đúng người được chọn.
 
 - Danh sách người duyệt = người có quyền Duyệt đặt xe (Phòng ban / Công ty / Tất cả, không admin) — CR-680.
 - Công ty và Người duyệt ĐỘC LẬP: chọn điều phối phạm vi công ty 5 cho phiếu công ty 3 vẫn hợp lệ.
-- Bộ máy TẮT: thư + chuông `dx_submitted` chỉ tới người được chọn. Bộ máy BẬT, bước «Người có quyền
-  duyệt»: chỉ người được chọn nhận việc + có thư (`EmailLog`).
+- Bộ máy TẮT: thư + chuông `dx_submitted` chỉ tới người được chọn. Bộ máy BẬT, bước "Người có quyền
+  duyệt": người được chọn nhận việc + thư (`EmailLog`); từ duoc-CR-706 người cùng quyền cũng được giao việc
+  (không có thư) — xem `test_duyet_xe_cung_quyen_cr706.py`.
 """
 from types import SimpleNamespace
 
@@ -84,8 +85,8 @@ def _payload(**over):
 # ─────────────────────────── Danh sách người duyệt ───────────────────────────
 
 def test_o_chon_tren_phieu_trung_dung_danh_sach_man_khai_luong(db, org):
-    """Anh Được 26/10 (dev): bước «Người có quyền duyệt» hiện 3 người mà ô chọn trên phiếu hiện nhiều hơn (bản 24/10
-    nới ra mọi phạm vi + Quản trị). Hai nơi phải ra CÙNG một danh sách: không Quản trị, không phạm vi «Của mình»."""
+    """Anh Được 26/10 (dev): bước "Người có quyền duyệt" hiện 3 người mà ô chọn trên phiếu hiện nhiều hơn (bản 24/10
+    nới ra mọi phạm vi + Quản trị). Hai nơi phải ra CÙNG một danh sách: không Quản trị, không phạm vi "Của mình"."""
     from app.modules.approval import permission_approvers
 
     rows = approver_picker.approver_options(db)
@@ -199,7 +200,7 @@ def test_bo_may_tat_chuong_va_thu_chi_toi_nguoi_duoc_chon(db, org):
 def test_bo_may_tat_chua_chon_thi_giu_duong_cu(db, org):
     booking = create_booking(db, _payload(), org.creator, submit=True)
     assert booking.first_approver_id == 0
-    #  Không TBP phòng 7 → lùi về người có quyền duyệt đặt xe (luật cũ, gồm cả admin / «Của mình»).
+    #  Không TBP phòng 7 → lùi về người có quyền duyệt đặt xe (luật cũ, gồm cả admin / "Của mình").
     assert org.picked.id in {n.user_id for n in db.query(Notification)}
 
 
@@ -230,14 +231,14 @@ def test_bo_may_bat_buoc_theo_quyen_chi_giao_nguoi_duoc_chon_va_gui_thu(db, org)
     booking = create_booking(db, _payload(company_id=3, first_approver_id=org.picked.id), org.creator,
                              submit=True)
     #  Người được chọn phạm vi CÔNG TY 5, phiếu công ty 3 — vẫn nhận vì hai ô độc lập.
-    assert _pending_assignees(db, booking) == [org.picked.employee_id]
+    assert _pending_assignees(db, booking)[0] == org.picked.employee_id   # CR-706: người được chọn đứng đầu, kèm người cùng quyền
     assert [e.to_email for e in db.query(EmailLog).filter_by(event="dx_submitted")] == [org.picked.email]
 
 
 def test_bo_may_bat_chua_chon_thi_buoc_theo_quyen_tinh_nhu_cu(db, org):
     _engine_with_permission_step(db)
     booking = create_booking(db, _payload(company_id=3), org.creator, submit=True)
-    #  Không chọn → mọi người giữ quyền mà phạm vi phủ phiếu công ty 3: chỉ điều phối «Tất cả».
+    #  Không chọn → mọi người giữ quyền mà phạm vi phủ phiếu công ty 3: chỉ điều phối "Tất cả".
     assert _pending_assignees(db, booking) == [org.other.employee_id]
     assert [e.to_email for e in db.query(EmailLog).filter_by(event="dx_submitted")] == [org.other.email]
 
@@ -259,7 +260,7 @@ def test_thu_chi_gui_mot_lan_khi_ai_cung_khong_co_email(db, org):
     db.commit()
     _engine_with_permission_step(db)
     booking = create_booking(db, _payload(first_approver_id=org.picked.id), org.creator, submit=True)
-    assert _pending_assignees(db, booking) == [org.picked.employee_id]
+    assert _pending_assignees(db, booking)[0] == org.picked.employee_id   # CR-706: người được chọn đứng đầu, kèm người cùng quyền
     assert db.query(EmailLog).filter_by(event="dx_submitted").count() == 0
 
 
@@ -352,7 +353,7 @@ def test_ten_nguoi_duyet_da_chon_tach_khoi_nguoi_da_ky(db, org):
     assert out["approver_name"] == "Nhân sự DP99"
 
 
-# ─────────── Anh Được 24/10: chọn công ty khác thì CẢ HAI bên vẫn thấy phiếu (luồng «Người có quyền duyệt») ───────────
+# ─────────── Anh Được 24/10: chọn công ty khác thì CẢ HAI bên vẫn thấy phiếu (luồng "Người có quyền duyệt") ───────────
 
 def _can_see(db, user, booking_id, action="read"):
     from app.core.auth import get_perm_profile
@@ -378,8 +379,8 @@ def test_chon_cong_ty_khac_thi_pham_vi_cong_ty_o_ca_hai_ben_deu_thay(db, org):
     assert _can_see(db, org.picked, booking.id)               # phạm vi công ty 5 = công ty chọn trên phiếu
     assert _can_see(db, in_creator_company, booking.id, "approve")
     assert not _can_see(db, in_other, booking.id)
-    #  Bước «Người có quyền duyệt» vẫn giao ĐÚNG người được chọn, có thư.
-    assert _pending_assignees(db, booking) == [org.picked.employee_id]
+    #  Bước "Người có quyền duyệt" giao người được chọn (đứng đầu, có thư) + người cùng quyền phủ phiếu (CR-706).
+    assert _pending_assignees(db, booking)[0] == org.picked.employee_id   # CR-706: người được chọn đứng đầu, kèm người cùng quyền
 
 
 def test_chua_chon_nguoi_thi_buoc_theo_quyen_giao_ca_hai_cong_ty(db, org):
@@ -409,7 +410,7 @@ def test_danh_sach_dat_xe_cua_dieu_phoi_hai_ben_deu_co_phieu(db, org):
 
 
 def test_o_chon_cong_ty_cua_nguoi_dung_khop_ca_cong_ty_nguoi_tao(db, org):
-    """Giới hạn «chọn công ty» gán riêng cho người (UserScope) cũng khớp cột pháp nhân người tạo."""
+    """Giới hạn "chọn công ty" gán riêng cho người (UserScope) cũng khớp cột pháp nhân người tạo."""
     from app.modules.user.model import UserScope
 
     role = db.query(Role).filter_by(code="dispatcher_all").one()
@@ -483,7 +484,7 @@ def test_mau_thu_tat_thi_bo_may_khong_xep_thu(db, org, email_queue_sent):
     ets.upsert(db, "dx_submitted", enabled=False, subject="x", body_html="x", user=SimpleNamespace(id=1))
     _engine_with_permission_step(db)
     booking = create_booking(db, _payload(first_approver_id=org.picked.id), org.creator, submit=True)
-    assert _pending_assignees(db, booking) == [org.picked.employee_id]   # việc vẫn giao, chuông vẫn có
+    assert _pending_assignees(db, booking)[0] == org.picked.employee_id   # CR-706: người được chọn đứng đầu, kèm người cùng quyền   # việc vẫn giao, chuông vẫn có
     assert db.query(EmailLog).count() == 0 and email_queue_sent == []
 
 
@@ -505,7 +506,7 @@ def test_day_sang_worker_loi_khong_lam_hong_nghiep_vu(db, org, monkeypatch):
     monkeypatch.setattr(email_queue, "dispatch", boom)
     _engine_with_permission_step(db)
     booking = create_booking(db, _payload(first_approver_id=org.picked.id), org.creator, submit=True)
-    assert _pending_assignees(db, booking) == [org.picked.employee_id]
+    assert _pending_assignees(db, booking)[0] == org.picked.employee_id   # CR-706: người được chọn đứng đầu, kèm người cùng quyền
     assert db.query(EmailLog).filter_by(to_email=org.picked.email).one().status == "pending"
 
 
@@ -546,7 +547,7 @@ def test_review2_tieu_de_mau_qua_dai_khong_lam_hong_luot_duyet(db, org):
     _engine_with_permission_step(db)
     booking = create_booking(db, _payload(purpose="x" * 600, first_approver_id=org.picked.id), org.creator,
                              submit=True)
-    assert _pending_assignees(db, booking) == [org.picked.employee_id]
+    assert _pending_assignees(db, booking)[0] == org.picked.employee_id   # CR-706: người được chọn đứng đầu, kèm người cùng quyền
     assert len(db.query(EmailLog).filter_by(to_email=org.picked.email).one().subject) == 255
 
 
@@ -578,7 +579,7 @@ def test_review2_dong_bo_app_cu_khong_ghi_de_cong_ty_nguoi_tao():
 
 
 def test_chi_tiet_phieu_tra_nguoi_phe_duyet_va_cong_ty_de_hien_tren_trang(db, org):
-    """Anh Được 26/10: chi tiết phiếu hiện người phê duyệt («Mã - Tên» + ảnh) và công ty (logo)."""
+    """Anh Được 26/10: chi tiết phiếu hiện người phê duyệt ("Mã - Tên" + ảnh) và công ty (logo)."""
     from app.modules.vehicle_booking.service import serialize_booking
 
     booking = create_booking(db, _payload(company_id=5, first_approver_id=org.picked.id), org.creator, submit=False)

@@ -1,7 +1,7 @@
 """THÔNG BÁO của Đặt phòng họp — hai đường thư, hai lúc khác nhau.
 
-1. **Gửi duyệt → người duyệt nhận thư «Chờ bạn duyệt»** (bộ máy dùng chung).
-2. **Duyệt xong → người được mời nhận thư «Mời họp»** (riêng của phân hệ này).
+1. **Gửi duyệt → người duyệt nhận thư "Chờ bạn duyệt"** (bộ máy dùng chung).
+2. **Duyệt xong → người được mời nhận thư "Mời họp"** (riêng của phân hệ này).
 
 ⚠️ Cả hai đường đều **nuốt lỗi có chủ ý** — mất phiếu vì không gửi được thư thì
 tệ hơn thiếu một cái thư. Nghĩa là mọi hỏng hóc ở đây đều IM LẶNG, và bài kiểm
@@ -117,7 +117,7 @@ def test_gui_duyet_thi_nguoi_duyet_nhan_thu(db, env):
 
 
 def test_thu_bao_viec_goi_dung_TEN_LOAI_chung_tu(db, env):
-    """Thiếu `ENTITY_LABELS` thì thư mở đầu bằng «Phiếu PH001 đang chờ bạn»."""
+    """Thiếu `ENTITY_LABELS` thì thư mở đầu bằng "Phiếu PH001 đang chờ bạn"."""
     assert ENTITY_LABELS.get(ENTITY) == "Phiếu đặt phòng họp"
 
     obj = _book_and_submit(db, env)

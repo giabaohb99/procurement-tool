@@ -45,7 +45,7 @@ function column(
 }
 
 describe('buildLeaveBalanceColumns', () => {
-  it('bày sẵn đúng năm cột, sáu cột giải thích ẩn sẵn', () => {
+  it('bày sẵn đúng năm cột, bảy cột giải thích ẩn sẵn (thêm "Nghỉ bù cộng thêm", duoc-CR-715)', () => {
     //  ⚠️ Đây là lý do tồn tại của lần bố trí lại 19/09/2026: bản cũ bày cả
     //  mười một cột và ở màn 1600px thứ bị đẩy ra ngoài mép phải chính là
     //  "Còn lại" — con số duy nhất người ta mở màn này để xem. Thêm cột vào
@@ -60,7 +60,7 @@ describe('buildLeaveBalanceColumns', () => {
       'pending_days',
       'remaining_days',
     ])
-    expect(columns.filter((c) => c.defaultHidden)).toHaveLength(6)
+    expect(columns.filter((c) => c.defaultHidden)).toHaveLength(7)
   })
 
   it('cột "Nhân sự" không khai bề rộng cứng nên nó nuốt chỗ thừa', () => {

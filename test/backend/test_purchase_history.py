@@ -96,7 +96,8 @@ def test_goi_lai_khong_ghi_trung(db):
 # ── Điểm ghi: auto_advance_line ────────────────────────────────────────────────
 def test_dong_vao_hoan_thanh_thi_tu_ghi_lich_su(db, monkeypatch):
     """auto_advance_line là chỗ duy nhất dòng vào "Hoàn thành" → phải tự chốt lịch sử."""
-    import app.modules.purchase_order.service as po_service
+    # bao-CR-715: patch ở tệp con định nghĩa hàm — auto_advance_line gọi tên trong chính progress_service
+    import app.modules.purchase_order.progress_service as po_service
     monkeypatch.setattr(po_service, "highest_satisfied_step", lambda *a, **k: 5)  # → "Hoàn thành"
 
     po = _po(db)
@@ -109,7 +110,8 @@ def test_dong_vao_hoan_thanh_thi_tu_ghi_lich_su(db, monkeypatch):
 
 
 def test_dong_chua_hoan_thanh_thi_khong_ghi(db, monkeypatch):
-    import app.modules.purchase_order.service as po_service
+    # bao-CR-715: patch ở tệp con định nghĩa hàm — auto_advance_line gọi tên trong chính progress_service
+    import app.modules.purchase_order.progress_service as po_service
     monkeypatch.setattr(po_service, "highest_satisfied_step", lambda *a, **k: 2)  # "Đã nhận hàng"
 
     po = _po(db)
@@ -122,7 +124,8 @@ def test_dong_chua_hoan_thanh_thi_khong_ghi(db, monkeypatch):
 
 def test_dong_da_hoan_thanh_chay_lai_khong_ghi_them(db, monkeypatch):
     """Sau reopen ĐMH, auto_advance_line vẫn chạy lại — dòng đã ở điểm cuối phải bị bỏ qua."""
-    import app.modules.purchase_order.service as po_service
+    # bao-CR-715: patch ở tệp con định nghĩa hàm — auto_advance_line gọi tên trong chính progress_service
+    import app.modules.purchase_order.progress_service as po_service
     monkeypatch.setattr(po_service, "highest_satisfied_step", lambda *a, **k: 5)
 
     po = _po(db)

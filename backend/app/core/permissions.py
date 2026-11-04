@@ -46,7 +46,7 @@ ENTITIES = [
     # `tab_work_list_member`), tách hai khóa chỉ đẻ thêm ô ma trận không ai hiểu.
     # Tên có tiền tố `work_` vì chữ "task" trần đã bị chiếm hai chỗ: task của bộ
     # máy duyệt và `/api/dashboard/tasks` (Việc cần làm). Xem
-    # `doc/erp/cong-viec/04-phan-quyen.md` §1.
+    # `doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md` §1.
     "work_task",
     # Phân hệ Nghỉ phép (CR-259). Bốn khóa vì bốn màn hình do BA nhóm người
     # khác nhau dùng, và gộp lại thì không tách được:
@@ -57,6 +57,8 @@ ENTITIES = [
     #  · `holiday`       — lịch ngày lễ, cũng của quản trị nhưng đổi theo năm
     #    nên thường giao cho hành chính, tách khỏi `leave_type`.
     "leave_request", "leave_balance", "leave_type", "holiday",
+    #  Phiếu xin nghỉ bù (duoc-CR-715 giai đoạn C) — khóa riêng, cùng khuôn `leave_request`.
+    "leave_comp_request",
     # Lịch làm việc (05/10/2026) — mẫu lịch tuần + gán theo hệ thống / pháp nhân /
     # phòng ban / nhân sự; `workday_service` đọc lịch này để tính ngày nghỉ phép.
     # Khóa riêng: sửa lịch đổi cách tính ngày phép của cả công ty.
@@ -114,7 +116,7 @@ ENTITIES = [
     # ⚠️ Khai CỘT THẬT ở `SCOPE_FIELDS`, không PUBLIC: hồ sơ thuộc về một phòng
     # và một người, khác hẳn danh mục loại.
     "dossier",
-    # Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md). Bốn
+    # Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/tai-lieu-ky-thuat/04-phan-quyen.md). Bốn
     # khóa vì ba quyền của PS12 phải TÁCH được: xem sổ người khác
     # (`coffee_ledger.read` + scope rộng) · điều chỉnh tay (`coffee_ledger.write`)
     # · chạy đồng bộ (`pos_order.write`). Ví của tôi KHÔNG cần grant — đi endpoint
@@ -246,6 +248,7 @@ ENTITY_LABELS = {
     "forum_board": "Diễn đàn › Quản trị chuyên mục (box)",
     "work_task": "Công việc (task list, kanban)",
     "leave_request": "Nghỉ phép › Đơn nghỉ phép",
+    "leave_comp_request": "Nghỉ phép › Phiếu nghỉ bù",
     "leave_balance": "Nghỉ phép › Quỹ phép năm",
     "leave_type": "Nghỉ phép › Thiết lập › Loại nghỉ",
     "holiday": "Nghỉ phép › Thiết lập › Lịch ngày lễ",
@@ -283,6 +286,13 @@ ACTION_LABELS = {
 # "dept_proc" (bao-CR-414, phòng ban tự mua hàng) = `proc` NHƯNG chỉ trong phòng mình: phiếu đã
 # duyệt mà phòng lập phiếu HOẶC phòng được nhờ xử lý (`handler_dept_id`) là một trong các phòng
 # của người xem. Dùng cho người quản lý thu mua của một phòng tự mua (nhà máy).
+#  bao-CR-720: entity NHẠY CẢM của thu mua. Vai trò người yêu cầu (`user.service.DEFAULT_ROLE_CODE`, mọi tài khoản mới
+#  tự nhận, hàng trăm người giữ) mà được tick Xem / Xuất ở đây thì màn Phân quyền hiện một dòng vàng nhắc (KHÔNG chặn lưu).
+#  Khai MỘT chỗ, giao diện chỉ đọc qua /api/roles/meta. Thêm entity thì thêm vào đây, không gõ ở frontend.
+SENSITIVE_PROCUREMENT_ENTITIES = ["supplier", "contract", "purchase_order", "payable", "payment_request",
+                                  "customs_price"]
+SENSITIVE_WARN_ACTIONS = ["read", "export"]
+
 SCOPES = ["own", "assigned", "proc", "dept_proc", "dept", "company", "all"]
 SCOPE_LABELS = {
     #  bao-CR-428: nhãn hai bậc `proc`/`dept_proc` viết TỔNG QUÁT (không gắn chữ "Thu mua"),

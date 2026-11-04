@@ -12,7 +12,7 @@ Ranh giới của khe vừa mở, và là thứ bộ bài này canh:
   4. phiếu đang KẸT → hồi sinh khi bước đó nay tìm được người duyệt;
   5. sửa xong mà không còn ai duyệt được → phiếu KẸT, không tự đi tiếp.
 
-Bài cuối canh việc **bỏ nhánh «đẩy lên cấp trên»**: đó là chỗ duy nhất bộ máy
+Bài cuối canh việc **bỏ nhánh "đẩy lên cấp trên"**: đó là chỗ duy nhất bộ máy
 tự chọn một người không có tên trong luồng.
 """
 import pytest
@@ -36,7 +36,7 @@ DOC_ID = 909
 
 @pytest.fixture()
 def person(db, seed):
-    """Bốn nhân sự. `nghi_viec` là cách dựng cảnh «bước không còn ai duyệt».
+    """Bốn nhân sự. `nghi_viec` là cách dựng cảnh "bước không còn ai duyệt".
 
     ⚠️ Trước 05/09/2026 các bài dưới đây dựng cảnh đó bằng cách chỉ bước vào
     CHÍNH NGƯỜI NỘP — hồi ấy luật I08 gạt họ nên bước rỗng. Nay bước khai đích
@@ -204,7 +204,7 @@ def test_sua_thanh_khong_con_ai_thi_phieu_ket_chu_khong_di_tiep(db, seed, person
     assert _dang_cho(db, instance) == []
 
 
-# ── 6 · bỏ nhánh «đẩy lên cấp trên» ─────────────────────────────────────────
+# ── 6 · bỏ nhánh "đẩy lên cấp trên" ─────────────────────────────────────────
 
 def test_bo_nhanh_day_len_cap_tren_thi_phieu_ket(db, seed, person):
     """CR-114 — bộ máy không còn TỰ CHỌN người ngoài luồng.

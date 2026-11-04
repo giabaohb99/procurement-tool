@@ -227,7 +227,7 @@ def test_a1_mo_phien_duyet_cua_chung_tu_ngoai_pham_vi_bi_404(db, world, don_hai_
 
     Hỏng thì hỏng thế nào: người của pháp nhân A mở `/api/leave-requests/<id của
     B>` ăn 404, nhưng `/api/approvals/<id phiên của B>` trả 200 kèm
-    `entity_title` = «Nghỉ phép — Nhân sự b1». Không lộ bảng, lộ đúng cái tên.
+    `entity_title` = "Nghỉ phép — Nhân sự b1". Không lộ bảng, lộ đúng cái tên.
     """
     from app.modules.approval import instance_controller
 
@@ -272,7 +272,7 @@ def test_a2_ban_in_dau_vet_cung_di_qua_dung_mot_chot_load(db, world, don_hai_pha
 
 def test_a3_hoi_phien_duyet_theo_chung_tu_tra_null_chu_khong_403(db, world, don_hai_phap_nhan):
     """`/of/{entity}/{id}` — không đọc được thì trả `null`, y như chứng từ chưa
-    vào bộ máy. Trả 403 là tự khai «có phiếu nhưng anh không được xem»."""
+    vào bộ máy. Trả 403 là tự khai "có phiếu nhưng anh không được xem"."""
     from app.modules.approval import instance_controller
 
     a1 = world.grant("a1", "leave_request", scope="company")
@@ -324,7 +324,7 @@ def test_a4_loai_chung_tu_chua_khai_reader_thi_can_read_cho_qua_tat(db, world):
 def test_a5_khong_co_viec_dang_cho_thi_khong_bam_duyet_duoc(db, world, don_hai_phap_nhan):
     """`approve/reject/return/withdraw` CỐ Ý không dùng `require(...)`.
 
-    Quyền ở đây là «có việc đang chờ mình», do `action_service.pending_task_of`
+    Quyền ở đây là "có việc đang chờ mình", do `action_service.pending_task_of`
     xét. Kiểm cả hai chiều: gắn thêm `require` thì người được giao việc không
     bấm được nữa; bỏ chốt này thì ai đăng nhập cũng ký được phiếu bất kỳ.
     """
@@ -353,7 +353,7 @@ def test_a5_khong_co_viec_dang_cho_thi_khong_bam_duyet_duoc(db, world, don_hai_p
 def test_a6_hop_viec_va_lich_su_chi_ra_viec_cua_chinh_minh(db, world, don_hai_phap_nhan):
     """`/my-tasks` + `/my-history` — dữ liệu của CHÍNH người đăng nhập.
 
-    Hai đường này cố ý 0 `require`: đây là hộp việc của họ. Nhưng «của họ» phải
+    Hai đường này cố ý 0 `require`: đây là hộp việc của họ. Nhưng "của họ" phải
     lọc bằng `assignee_employee_id`, không phải bằng phạm vi — nên bài này so
     tập id cụ thể chứ không chỉ đếm.
     """
@@ -414,7 +414,7 @@ def test_a8_a9_a10_ba_cong_toan_he_deu_dung_has_global_scope(db, world):
     assert has_global_scope(rong.profile(), "approval_flow", "write") is True
 
     #  Phạm vi hẹp → tầng dịch vụ nhận `employee_id` thật, nên nó chặn được việc
-    #  «lập hộ / bàn giao hộ». Phạm vi toàn hệ → `None` = miễn kiểm.
+    #  "lập hộ / bàn giao hộ". Phạm vi toàn hệ → `None` = miễn kiểm.
     assert instance_controller._acting_employee_id(db, hep.user, "write") == world.emp["a1"]
     assert instance_controller._acting_employee_id(db, rong.user, "write") is None
     assert delegation_controller._acting_employee_id(db, hep.user, "create") == world.emp["a1"]
@@ -501,7 +501,7 @@ def test_b1_thu_cua_nguoi_khac_go_thang_id_van_khong_doc_duoc(db, world):
 #  ── B2: LUẬT BẤT BIẾN, cùng khuôn BB-1 ────────────────────────────────────────
 #
 #  Loại chứng từ vào bộ máy duyệt mà thiếu tên ở `ENTITY_LABELS`/`ENTITY_LINKS`
-#  thì thư báo vẫn gửi, nhưng ghi «Phiếu NP009» và `link` RỖNG — bấm vào không
+#  thì thư báo vẫn gửi, nhưng ghi "Phiếu NP009" và `link` RỖNG — bấm vào không
 #  đi đâu cả. Mà `notify_new_tasks` NUỐT LỖI (có chủ ý: mất thư còn hơn mất
 #  phiếu), nên không một chỗ nào đỏ lên.
 #
@@ -530,7 +530,7 @@ def test_b2_moi_entity_vao_bo_may_duyet_deu_phai_co_nhan_va_duong_dan():
     assert thieu == sorted(B2_THIEU_NHAN_DA_BIET), (
         f"chênh lệch so với bản ghim: {thieu}. Loại chứng từ vào bộ máy duyệt phải có "
         "tên ở CẢ `ENTITY_LABELS` lẫn `ENTITY_LINKS` của `approval/task_notification.py` "
-        "— thiếu thì thư ghi «Phiếu <mã>» và bấm vào không đi đâu, mà `notify_new_tasks` "
+        "— thiếu thì thư ghi \"Phiếu <mã>\" và bấm vào không đi đâu, mà `notify_new_tasks` "
         "nuốt lỗi nên không chỗ nào đỏ. Vá xong thì rút tên khỏi B2_THIEU_NHAN_DA_BIET."
     )
 
@@ -539,7 +539,7 @@ def test_b2_thu_bao_viec_goi_dung_ten_va_bam_vao_di_dung_cho(db, world):
     """Không nói suông: dựng thư THẬT rồi đọc lại dòng đó trong bảng.
 
     Đây là phần làm cho luật bất biến ở trên có nghĩa. Trước 05/09/2026 ca này
-    ghim khoảng trống của `vehicle_booking`: thư ghi «Phiếu XE009» và `link`
+    ghim khoảng trống của `vehicle_booking`: thư ghi "Phiếu XE009" và `link`
     RỖNG — bấm vào không đi đâu cả. Nay khẳng định chiều ngược lại.
 
     Vì sao phải dựng thư thật chứ không đọc hai bảng hằng số: `notify_new_tasks`
@@ -561,7 +561,7 @@ def test_b2_thu_bao_viec_goi_dung_ten_va_bam_vao_di_dung_cho(db, world):
         Notification.user_id == world.actor("a2").user.id).one()
     assert thu.link == "/vehicle-booking/9", "khớp `app-routes.ts:327` của frontend-v2"
     assert thu.body.startswith("Phiếu đặt xe XE009"), (
-        "thiếu ENTITY_LABELS thì thư gọi mọi thứ là «Phiếu»")
+        "thiếu ENTITY_LABELS thì thư gọi mọi thứ là \"Phiếu\"")
 
     #  Đối chứng: loại khai từ trước vẫn nói đúng tên và có đường dẫn.
     don = make_leave_request(db, world, "a1", "NP-B2-001")
@@ -931,7 +931,7 @@ def test_d1_moi_route_cua_phan_he_cong_viec_deu_qua_cua_thanh_vien():
         "route của phân hệ Công việc KHÔNG chứng minh được đường lọc:\n  "
         + "\n  ".join(thieu)
         + "\n`work_task` khai PUBLIC nên `apply_scope` không cắt gì — route quên gác "
-          "là mở toang việc của cả công ty. Đọc `doc/erp/cong-viec/04-phan-quyen.md` §2."
+          "là mở toang việc của cả công ty. Đọc `doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md` §2."
     )
 
 
@@ -949,7 +949,7 @@ def test_d1_khong_endpoint_nao_tu_truy_van_bang_cong_viec():
 
     for module in (work_controller, work_task_controller):
         #  Đọc bằng `ast`, không grep chuỗi: chính docstring của hai tệp này có
-        #  câu «KHÔNG endpoint nào tự `db.query(...)`», nên grep tự bắt được
+        #  câu "KHÔNG endpoint nào tự `db.query(...)`", nên grep tự bắt được
         #  lời dặn rồi báo động giả.
         cay = ast.parse(inspect.getsource(module))
         goi_truy_van = [
@@ -1022,7 +1022,7 @@ def test_d2_moi_cheo_phap_nhan_thi_thay_that_chu_khong_im_lang_rong(db, world):
 
 
 def test_d3_bon_o_pham_vi_khong_co_tac_dung_len_cong_viec(db, world):
-    """Người khai quyền cần biết: hộp thoại «Phạm vi — vai trò» KHÔNG áp cho Công việc.
+    """Người khai quyền cần biết: hộp thoại "Phạm vi — vai trò" KHÔNG áp cho Công việc.
 
     `work_task` là `PUBLIC`, nên bốn ô include/exclude không sinh ra điều kiện
     nào. Ai thấy dự án nào hoàn toàn do bảng thành viên quyết. Bài này ghim cả
@@ -1092,7 +1092,7 @@ def test_d4_bai_dien_dan_cua_phap_nhan_khac_khong_lot_vao_feed(db, world):
     feed_b1 = {row.id for row in list_posts(db, b1.user, b1.profile(), limit=50)}
     assert feed_b1 == {bai["public"], bai["cty_B"], bai["phong_B_kt"]}
 
-    #  ⚠️ A.kt và B.kt TRÙNG TÊN «Phòng Kế toán», khác pháp nhân. Nếu luật
+    #  ⚠️ A.kt và B.kt TRÙNG TÊN "Phòng Kế toán", khác pháp nhân. Nếu luật
     #  audience lỡ so theo TÊN phòng thì hai bài phòng ban trộn vào nhau.
     assert can_view(db, a1.user, db.get(ForumPost, bai["phong_B_kt"])) is False
     assert can_view(db, b1.user, db.get(ForumPost, bai["phong_A_kt"])) is False
@@ -1242,6 +1242,8 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "office_read": "ctx.can(entity) + route list / chi tiết của màn web (đặt xe, duyệt dấu, tồn kho, diễn đàn) (kh-AI2-3)",
     "draft_vehicle_booking": "ctx.can(vehicle_booking, create) — chỉ soạn nháp; tạo qua service create_booking (kh-AI2-6)",
     "draft_seal_request": "ctx.can(seal_request, create) — chỉ soạn nháp; tạo qua service create_seal_request (kh-AI2-6)",
+    "draft_leave_comp_request": "ctx.can(leave_comp_request, create); lập hộ: apply_scope(Employee, 'employee') + "
+                                "ensure_can_create_for — chỉ soạn nháp, tạo qua comp_request_service.create (duoc-CR-715 C)",
     "propose_approval": "pending_task_of (luồng nhiều bước) hoặc quyền approve + get_scoped(approve) (duyệt thẳng); "
                         "chỉ đề xuất, ghi qua route duyệt của web khi xác nhận token (kh-AI2-7)",
     #  ai-CR-220 (K7): Kho skill — quyền đọc theo chủ thể ở `ai_skill.access_service.visible_skills` (cấm thắng, phòng con).
@@ -1252,7 +1254,7 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     #  ⚠️ Bảng này CÓ `company_id` nhưng `purchase_history` không nằm trong
     #  `ENTITIES`, nên không entity nào để `apply_scope`. Cổng duy nhất là
     #  `ctx.can("product")` (+ `ctx.can("supplier")` khi câu trả lời nêu tên
-    #  NCC) — hai khóa của danh mục PUBLIC. Giống hệt màn «Lịch sử mua hàng»
+    #  NCC) — hai khóa của danh mục PUBLIC. Giống hệt màn "Lịch sử mua hàng"
     #  của giao diện, nên đây KHÔNG phải lỗ riêng của Trợ lý AI.
     #  # QUYẾT ĐỊNH CHỜ: giá mua theo pháp nhân có phải dữ liệu dùng chung
     #  # toàn tập đoàn không? Xem báo cáo cụm 07 mục E2.
@@ -1281,7 +1283,7 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
                           "catalog._scoped_contracts khi có contract.read; thiếu khóa nào thì phần đó vào data_gaps",
     # (b) dữ liệu của CHÍNH người hỏi — lọc bằng employee_id/user_id, không phải phạm vi
     # (b-bis) Google CÁ NHÂN (ai-CR-064): token lấy từ `google_link.get_link(db, ctx.user.id)`
-    #  — kết nối của chính người hỏi; không nối thì tool trả lời «chưa nối Google». Dữ liệu là
+    #  — kết nối của chính người hỏi; không nối thì tool trả lời "chưa nối Google". Dữ liệu là
     #  Lịch / Drive của người đó bên Google, không phải bảng nghiệp vụ ERP nên không có phạm vi.
     "my_calendar_events": "google_link.get_link(user.id) — lịch Google của chính người hỏi",
     "create_calendar_event": "google_link.get_link(user.id) — ghi vào lịch của chính người hỏi",
@@ -1322,8 +1324,8 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "draft_survey_request": "ctx.can(survey_request, create) — chỉ soạn nháp",
     "draft_purchase_request": "ctx.can(purchase_request, create) — chỉ soạn nháp",
     "draft_leave_request": "ctx.can(leave_request, create) — chỉ soạn nháp",
-    "draft_work_task": "ctx.can(work_task, create) — chỉ soạn nháp, bước «tạo» mới ghi (ai-CR-080)",
-    "draft_work_plan": "ctx.can(work_task, create) — chỉ soạn nháp cả cây kế hoạch; «tạo» qua draft_create → work_plan.build "
+    "draft_work_task": "ctx.can(work_task, create) — chỉ soạn nháp, bước \"tạo\" mới ghi (ai-CR-080)",
+    "draft_work_plan": "ctx.can(work_task, create) — chỉ soạn nháp cả cây kế hoạch; \"tạo\" qua draft_create → work_plan.build "
                        "dùng đúng list/task_service của web (thành viên dự án), người lạ không đọc gì (bao-CR-616)",
     "my_work_tasks": "ctx.can(work_task, read) + visible_list_ids + người phụ trách = chính người hỏi (ai-CR-140)",
     "team_capacity": "khóa báo cáo 16 (can_view_report) → mọi phòng; không khóa → chỉ phòng có manager_id = người hỏi + phòng con, chỉ thứ tự không số (kh-AI1-2)",
@@ -1332,7 +1334,7 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "plan_context": "ctx.can(work_task, create) + gọi lại đúng hai handler trên + đề xuất lọc owner_user_id = người hỏi (kh-AI1-3)",
     "manage_briefs": "brief_subs theo ctx.user.id — chỉ lịch bản tin của chính người hỏi (ai-CR-140)",
     "propose_glossary_term": "chỉ ghi đề xuất thuật ngữ chờ duyệt; sửa thẳng chỉ khi chính là chủ từ điển (ai-CR-078)",
-    "report_missing_feature": "chỉ ghi phản hồi «thiếu chức năng» kèm user_id người báo (ai-CR-078)",
+    "report_missing_feature": "chỉ ghi phản hồi \"thiếu chức năng\" kèm user_id người báo (ai-CR-078)",
     "propose_account_setup": "ctx.can(user/role…) + apply_scope(Employee) + get_scoped "
                              "tài khoản đích + chặn tự nâng quyền — chỉ đề xuất, bước "
                              "confirm mới ghi (bao-CR-435)",
@@ -1396,7 +1398,7 @@ def test_e2_tool_doc_bang_nghiep_vu_deu_co_apply_scope_trong_ma():
 
 
 def test_e3_cam_nang_he_thong_gieo_cho_moi_phap_nhan_khong_mang_so_dinh_danh():
-    """🔴 GHIM HÀNH VI — bộ «Cẩm nang hệ thống» (ai-CR-220, thay `assistant/packs/`) gieo cho MỌI pháp nhân.
+    """🔴 GHIM HÀNH VI — bộ "Cẩm nang hệ thống" (ai-CR-220, thay `assistant/packs/`) gieo cho MỌI pháp nhân.
 
     Trước K7, `packs/` là MỘT gói dùng chung nhồi vào mọi câu hỏi, không phân biệt pháp nhân. Nay cẩm nang là skill trong
     Kho skill AI, có quyền đọc theo chủ thể — nhưng hạt giống vẫn gán CẢ CÔNG TY (mỗi pháp nhân một dòng) để giữ đúng
@@ -1432,7 +1434,7 @@ def test_e3_khoa_assistant_la_cong_quyen_khong_phai_cong_pham_vi():
 
     Bot không có bảng nào của riêng nó để lọc; mọi dữ liệu nó chạm đều đi qua
     `apply_scope` của từng tool (bài E1/E2). Khóa `assistant` chỉ trả lời câu
-    «ai được dùng Trợ lý AI».
+    "ai được dùng Trợ lý AI".
     """
     from app.core.permissions import ENTITIES
     from app.core.scoping import PUBLIC, SCOPE_FIELDS

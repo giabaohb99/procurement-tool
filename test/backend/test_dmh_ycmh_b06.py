@@ -1,6 +1,6 @@
 """B-06 — cụm Đơn mua hàng + Yêu cầu mua hàng chuyển sang MÃ tiếng Anh.
 
-Đợt thứ sáu của kế hoạch đổ bê tông nền v2 (`doc/erp/nen-tang/15-do-be-tong-nen-v2.md` §3), và là đợt
+Đợt thứ sáu của kế hoạch đổ bê tông nền v2 (`doc/erp/nen-tang/tai-lieu-ky-thuat/15-do-be-tong-nen-v2.md` §3), và là đợt
 nặng nhất: **sáu cột trong một đợt**, chia hai nhịp migration.
 
   nhịp 1 · `a3f7d2e51c94` — bốn cột "phẳng", không cột nào có thứ tự tiến trình:
@@ -152,10 +152,11 @@ def test_import_misa_khong_ghi_thang_chu_la_vao_cot():
 # ── Tầng đọc: nhãn đi kèm mã ────────────────────────────────────────────────────
 def test_api_ycmh_gan_san_nhan_tieng_viet(db):
     """Giao diện KHÔNG được tự dịch mã. Quên gắn nhãn là cột hiện `no_po` giữa màn tiếng Việt."""
-    from app.modules.purchase_request import controller as pr_ctrl
+    #  bao-CR-711: hàm dựng kết quả YCMH dời từ controller sang serializer.
+    from app.modules.purchase_request import serializer as pr_ser
 
     assert PR_LINE_STATUS.label_of("no_po") == "Chưa tạo đơn mua hàng"
-    src = __import__("inspect").getsource(pr_ctrl)
+    src = __import__("inspect").getsource(pr_ser)
     assert "line_status_label" in src
 
 

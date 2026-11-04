@@ -43,7 +43,7 @@ def google_login(db: Session, credential: str) -> User:
         idinfo = id_token.verify_oauth2_token(credential, requests.Request(), settings.GOOGLE_CLIENT_ID, clock_skew_in_seconds=60)
     except ValueError as e:
         print(f"Google Token error: {e}")
-        raise HTTPException(401, f"Google Token không hợp lệ: {e}")
+        raise HTTPException(401, f"Google Token không hợp lệ: {e}") from e
 
     email = idinfo.get("email")
     if not email:

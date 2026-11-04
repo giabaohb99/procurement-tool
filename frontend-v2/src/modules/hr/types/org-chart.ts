@@ -33,36 +33,3 @@ export interface OrgChartPayload {
   departments: OrgChartDepartmentRow[]
   employees: OrgChartEmployeeRow[]
 }
-
-/** Một người trên sơ đồ; `reports` là cấp dưới trực tiếp CÙNG phòng. */
-export interface OrgPersonNode {
-  id: number
-  code: string
-  fullName: string
-  position: string
-  isHead: boolean
-  reports: OrgPersonNode[]
-}
-
-export interface OrgDepartmentNode {
-  id: number
-  code: string
-  name: string
-  head: { id: number; fullName: string; position: string } | null
-  /** Gốc của cây quản lý trong phòng (người không có quản lý cùng phòng). */
-  people: OrgPersonNode[]
-  children: OrgDepartmentNode[]
-  /** Số người của phòng này, chưa tính phòng con. */
-  ownHeadcount: number
-  /** Số người của phòng này + mọi phòng con. */
-  headcount: number
-}
-
-export interface OrgCompanyNode {
-  /** `0` = nhóm "Chưa gán pháp nhân". */
-  id: number
-  code: string
-  name: string
-  departments: OrgDepartmentNode[]
-  headcount: number
-}

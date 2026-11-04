@@ -105,8 +105,8 @@ def test_rut_lai_khong_co_ly_do_thi_bi_chan(db, seed, person):
 # ── Từ chối · trả lại · rút lại ─────────────────────────────────────────────
 
 def test_tu_choi_dong_phieu_va_don_sach_viec_con_treo(db, seed, person):
-    """Việc còn treo mà phiếu đã chết thì phải hủy — nếu không, màn «Việc của
-    tôi» hiện việc của một phiếu không làm gì được nữa, và người dùng thôi tin
+    """Việc còn treo mà phiếu đã chết thì phải hủy — nếu không, màn "Việc của
+    tôi" hiện việc của một phiếu không làm gì được nữa, và người dùng thôi tin
     cái danh sách đó."""
     _luong_mot_buoc(db, [person["a"], person["b"]], multi_mode=MULTI_ALL)
     instance = _trinh(db, person["nop"])
@@ -221,7 +221,7 @@ def test_tat_ca_phai_duyet(db, seed, person):
 
 
 def test_lan_luot_thi_nguoi_sau_chua_thay_viec(db, seed, person):
-    """Mở việc cho cả ba cùng lúc thì «lần lượt» không còn nghĩa gì."""
+    """Mở việc cho cả ba cùng lúc thì "lần lượt" không còn nghĩa gì."""
     _luong_mot_buoc(db, [person["a"], person["b"], person["c"]], multi_mode=MULTI_SEQUENTIAL)
     instance = _trinh(db, person["nop"])
 
@@ -281,7 +281,7 @@ def _uy_quyen(db, tu, den, ngay_bat_dau=None, ngay_ket_thuc=None, entity=""):
 
 
 def test_duyet_thay_thi_nhat_ky_ghi_ca_hai_danh_tinh(db, seed, person):
-    """Bản in phải ghi được câu «ông B duyệt thay ông A theo ủy quyền số 12».
+    """Bản in phải ghi được câu "ông B duyệt thay ông A theo ủy quyền số 12".
 
     Ghi mỗi một người là sau này không phân biệt được ai chịu trách nhiệm — mà
     đó chính là câu kiểm toán sẽ hỏi.

@@ -88,8 +88,7 @@ def _code_map(db: Session, ref: str, self_model) -> dict:
     if ref == "driver":
         return {row[0]: row[1] for row in db.query(Driver.id, Driver.name).all()}
     if ref == "approver":  # id TÀI KHOẢN -> họ tên nhân sự gắn với tài khoản đó
-        return {u_id: name for u_id, name in
-                db.query(User.id, Employee.full_name).join(Employee, User.employee_id == Employee.id).all()}
+        return dict(db.query(User.id, Employee.full_name).join(Employee, User.employee_id == Employee.id).all())
     model = {"company": Company, "department": Department, "employee": Employee}.get(ref)
     if model is None:
         return {}

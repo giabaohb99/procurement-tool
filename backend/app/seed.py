@@ -220,7 +220,7 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  duoc-CR-490: sửa / nạp lại danh mục thuốc BVTV — cùng lý do, đại ca tick tay.
                  "customs_pesticide",
                  "forum_post", "forum_board",
-                 "leave_request", "leave_balance", "leave_type", "holiday",
+                 "leave_request", "leave_balance", "leave_type", "holiday", "leave_comp_request",
                  #  Lịch làm việc: sửa lịch đổi cách tính ngày phép cả công ty —
                  #  Quản lý thu mua không tự có (chỉ `read` đại trà + hr_leave/hr_profile sửa).
                  "work_schedule",
@@ -637,6 +637,8 @@ for _role_info in STD_ROLES.values():
 for _role_info in STD_ROLES.values():
     _role_info["perms"].setdefault(
         "leave_request", (["read", "create", "write", "delete"], "own"))
+    _role_info["perms"].setdefault(
+        "leave_comp_request", (["read", "create", "write", "delete"], "own"))
     _role_info["perms"].setdefault("leave_balance", (["read"], "own"))
     #  Đọc danh mục loại nghỉ + lịch lễ: cần để form dựng được ô chọn và tính
     #  được số ngày. Chỉ `read` — sửa luật là việc của vai trò `hr_leave` dưới.
@@ -685,10 +687,14 @@ for _role_info in STD_ROLES.values():
 #  màn Nghỉ phép ra không thấy đơn nào của nhân viên.
 STD_ROLES["dept_head"]["perms"]["leave_request"] = (
     ["read", "create", "write", "delete", "approve", "export"], "dept")
+STD_ROLES["dept_head"]["perms"]["leave_comp_request"] = (
+    ["read", "create", "write", "delete", "approve", "export"], "dept")
 STD_ROLES["dept_head"]["perms"]["leave_balance"] = (["read"], "dept")
 STD_ROLES["dept_head"]["perms"]["room_booking"] = (
     ["read", "create", "write", "delete", "approve", "cancel"], "dept")
 STD_ROLES["company_head"]["perms"]["leave_request"] = (
+    ["read", "approve", "export"], "company")
+STD_ROLES["company_head"]["perms"]["leave_comp_request"] = (
     ["read", "approve", "export"], "company")
 STD_ROLES["company_head"]["perms"]["leave_balance"] = (["read"], "company")
 STD_ROLES["company_head"]["perms"]["room_booking"] = (
@@ -702,6 +708,7 @@ STD_ROLES["company_head"]["perms"]["room_booking"] = (
 #  `leave_balance` là khóa riêng chứ không đi kèm `leave_request`.
 STD_ROLES["hr_leave"] = {"name": "Nhân sự — Quản lý nghỉ phép", "perms": {
     "leave_request": (["read", "create", "write", "delete", "export"], "all"),
+    "leave_comp_request": (["read", "create", "write", "delete", "export"], "all"),
     "leave_balance": (["read", "create", "write", "delete", "export"], "all"),
     "leave_type": (["read", "create", "write", "delete"], "all"),
     "holiday": (["read", "create", "write", "delete"], "all"),
@@ -718,7 +725,7 @@ STD_ROLES["hr_leave"] = {"name": "Nhân sự — Quản lý nghỉ phép", "perm
     "meeting_room": (["read"], "all"),
 }}
 
-#  ── Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md §3) ────────────
+#  ── Điểm cà phê × POS365 (doc/erp/diem-ca-phe/tai-lieu-ky-thuat/04-phan-quyen.md §3) ────────────
 #  Người dùng thường KHÔNG cần grant nào: Ví của tôi đi endpoint riêng
 #  `/api/coffee/my-wallet` chỉ đòi đăng nhập. Ba quyền của PS12 nằm ở ba ô khác
 #  nhau và KHÔNG gộp về một vai trò nào ngoài quản trị.

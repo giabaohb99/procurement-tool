@@ -1,5 +1,5 @@
 """ai-CR-196 (14/10) — nút bấm từ chat không phải đại ca bị cửa nút bỏ im lặng (Agent 1 phát hiện), nên người đã liên kết
-không xác nhận được thẻ sửa / xóa phiếu. Nay thẻ đề xuất có ĐƯỜNG CHỮ: «xác nhận» / «đồng ý» → ghi, «không sửa» / «thôi» →
+không xác nhận được thẻ sửa / xóa phiếu. Nay thẻ đề xuất có ĐƯỜNG CHỮ: "xác nhận" / "đồng ý" → ghi, "không sửa" / "thôi" →
 bỏ; trong 15 phút; có thẻ chờ khác mới hơn thì không nuốt."""
 import json
 from datetime import timedelta
@@ -43,13 +43,13 @@ def test_qua_han_hoac_co_the_cho_khac_moi_hon_thi_khong_nuot(db, monkeypatch):
     db.commit()
     assert not service._proposal_by_text(db, "999", _say(db, "đồng ý"), "đồng ý") and resolved == []
     card = _card(db)
-    service.log_message(db, DIR_OUT, "999", 6, "{}", action=ACT_DRAFT_WAIT)        # thẻ nháp mới hơn → «đồng ý» là của nó
+    service.log_message(db, DIR_OUT, "999", 6, "{}", action=ACT_DRAFT_WAIT)        # thẻ nháp mới hơn → "đồng ý" là của nó
     db.commit()
     assert not service._proposal_by_text(db, "999", _say(db, "đồng ý"), "đồng ý") and resolved == []
 
 
 def test_chat_lien_ket_di_qua_chuoi_lenh(db, monkeypatch):
-    """Người liên kết (không phải chat đại ca) nhắn «xác nhận» sau thẻ → tới `_resolve_proposal`, không rơi xuống Trợ lý."""
+    """Người liên kết (không phải chat đại ca) nhắn "xác nhận" sau thẻ → tới `_resolve_proposal`, không rơi xuống Trợ lý."""
     from types import SimpleNamespace
 
     from app.core.config import settings

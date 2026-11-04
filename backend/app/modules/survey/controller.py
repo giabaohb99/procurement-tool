@@ -115,7 +115,7 @@ def search_condition(keyword: str):
 
     Vế bảng dòng dùng SUBQUERY, KHÔNG gom id ra Python rồi `.in_(list)`: bảng dòng SP trên
     thật đã hơn 5000 dòng, gõ một từ phổ biến là SQLAlchemy nhồi hàng nghìn tham số thẳng vào
-    câu SQL (mẫu C1 trong doc/tai-lieu-ky-thuat/ra-soat-api-hieu-nang.md — đúng lỗi đã vá ở
+    câu SQL (mẫu C1 trong doc/tai-lieu-ky-thuat/van-hanh/ra-soat-api-hieu-nang.md — đúng lỗi đã vá ở
     `service.report_rows`).
     """
     from sqlalchemy import or_, select
@@ -210,7 +210,7 @@ def bulk_delete_surveys(ids: str, db: Session = Depends(get_db), user=Depends(re
                 raise HTTPException(400, f"Phiếu {s.code} không ở trạng thái Nháp / Bị trả lại / Đã hủy")
             service.delete_survey(db, sid, user.id)
         except Exception as e:
-            raise HTTPException(400, f"Lỗi khi xóa khảo sát ID {sid}: {str(e)}")
+            raise HTTPException(400, f"Lỗi khi xóa khảo sát ID {sid}: {str(e)}") from e
     # Báo đúng số ĐÃ xóa, không báo số đã gửi lên.
     return success(None, f"Đã xóa {len(rows)} bản ghi")
 
@@ -407,10 +407,10 @@ def summarize_report_rows(rows) -> dict:
     """Gom dòng Báo cáo khảo sát cho màn BIỂU ĐỒ (phân hệ Báo cáo).
 
     `line_approve` ở hai bảng dòng khảo sát vẫn lưu CHỮ tiếng Việt (ngoại lệ đã biết, xem
-    §2.2 của `doc/erp/nen-tang/15-do-be-tong-nen-v2.md`) nên khóa trả về cũng là chữ — cùng bốn nhãn
+    §2.2 của `doc/erp/nen-tang/tai-lieu-ky-thuat/15-do-be-tong-nen-v2.md`) nên khóa trả về cũng là chữ — cùng bốn nhãn
     của `summary` bên `/lines`. Tháng theo cột `date` của dòng (ngày liên hệ, lùi về ngày nhận).
     """
-    by_approve = {k: 0 for k in APPROVE_STATES}
+    by_approve = dict.fromkeys(APPROVE_STATES, 0)
     by_kind = {"supplier": 0, "product": 0}
     by_month: dict[str, dict] = {}
     by_nspt: dict[str, dict] = {}

@@ -136,7 +136,7 @@ def parse_import_file(
     try:
         return success(import_service.parse_file(file.filename or "khong-ten", file.file.read()))
     except ValueError as e:
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e)) from e
 
 
 @router.post("/upload-image")
@@ -154,7 +154,7 @@ def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db),
     try:
         url = upload_fileobj(file.file, key, content_type)
     except Exception as e:
-        raise HTTPException(400, f"Lỗi tải ảnh: {e}")
+        raise HTTPException(400, f"Lỗi tải ảnh: {e}") from e
     return success({"url": url}, "Tải ảnh thành công")
 
 

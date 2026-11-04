@@ -7,7 +7,7 @@ hướng ngược lại: dựng đúng những gì người dùng bấm trên m�
 | Đầu ra | Hàm | Người dùng thấy ở đâu |
 | --- | --- | --- |
 | Thuộc phạm vi | `scope_service.applies_to` | luật gốc |
-| Danh sách của tôi | `scope_service.document_ids_for` | màn «Văn bản áp dụng cho tôi» |
+| Danh sách của tôi | `scope_service.document_ids_for` | màn "Văn bản áp dụng cho tôi" |
 | Mở được chi tiết | `access_service.can(..., "read")` | bấm từ chuông / gõ URL |
 | Nhận chuông + email | `issue_notification.recipients_for_issue` | lúc bấm Ban hành |
 
@@ -156,7 +156,7 @@ def _ai_thay(db, doc: Document, to_chuc) -> set[str]:
         if recipients.employee.id == emp.id
     }
 
-    assert theo_danh_sach == theo_luat, "Màn «áp dụng cho tôi» lệch luật phạm vi"
+    assert theo_danh_sach == theo_luat, "Màn \"áp dụng cho tôi\" lệch luật phạm vi"
     assert theo_chi_tiet == theo_luat, "Mở chi tiết lệch luật phạm vi (nhận mail xong bấm vào 404)"
     assert nhan_thong_bao == theo_luat, "Người nhận chuông/email lệch luật phạm vi"
     return theo_luat
@@ -180,7 +180,7 @@ def test_ca1_khong_khai_gi_thi_ca_phap_nhan_ban_hanh_deu_thay(db, van_ban, to_ch
 
 
 def test_ca1_khai_tay_dung_phap_nhan_do_cho_ket_qua_y_het(db, van_ban, to_chuc):
-    """Khai tay «bao gồm Công ty A» phải bằng đúng mặc định, không hơn không kém.
+    """Khai tay "bao gồm Công ty A" phải bằng đúng mặc định, không hơn không kém.
 
     Người soạn cẩn thận sẽ khai tay; người soạn vội thì bỏ trống. Hai lối bấm
     ấy mà ra hai tập người khác nhau là văn bản tới ai phụ thuộc thói quen gõ.
@@ -190,7 +190,7 @@ def test_ca1_khai_tay_dung_phap_nhan_do_cho_ket_qua_y_het(db, van_ban, to_chuc):
 
 
 def test_ca1_van_ban_chua_duyet_thi_chua_toi_ai(db, to_chuc):
-    """Bản nháp không phải thứ nằm trong «Văn bản áp dụng cho tôi»."""
+    """Bản nháp không phải thứ nằm trong "Văn bản áp dụng cho tôi"."""
     nhap = service.create_document(db, DocumentCreate(
         doc_type_id=to_chuc.kind.id, company_id=to_chuc.a.id,
         department_id=to_chuc.kinh_doanh.id,
@@ -225,7 +225,7 @@ def test_ca2_nguoi_bi_loai_tru_go_thang_url_van_khong_vao_duoc(db, van_ban, to_c
 def test_chi_khai_loai_tru_thi_khong_ai_thay(db, van_ban, to_chuc):
     """⚠️ BẪY ĐANG CÓ THẬT — ghi lại hành vi, KHÔNG phải xác nhận nó đúng.
 
-    Người dùng chỉ bấm «loại trừ anh B» mà quên khai «bao gồm Công ty A»: khai
+    Người dùng chỉ bấm "loại trừ anh B" mà quên khai "bao gồm Công ty A": khai
     bất kỳ dòng nào là mặc định-theo-pháp-nhân TẮT (quy tắc 4), nên còn đúng một
     dòng loại trừ, không ai có dòng BAO GỒM nào trúng mình → văn bản không tới
     một ai, kể cả những người chẳng liên quan tới dòng loại trừ đó.
@@ -250,7 +250,7 @@ def test_ca3_loai_tru_mot_phong_ban(db, van_ban, to_chuc):
 
 
 def test_ca3_loai_tru_phong_cung_ten_o_phap_nhan_khac_khong_anh_huong(db, van_ban, to_chuc):
-    """Phòng ban luôn khai kèm pháp nhân, nên «Kế toán» của B là phòng khác."""
+    """Phòng ban luôn khai kèm pháp nhân, nên "Kế toán" của B là phòng khác."""
     ke_toan_b = Department(code="KT-B", name="Kế toán", company_id=to_chuc.b.id, is_active=True)
     db.add(ke_toan_b)
     db.commit()
@@ -298,7 +298,7 @@ def test_ca4_cam_dich_danh_van_thang_khi_da_cho_lai(db, van_ban, to_chuc):
 def ban_clone(db, van_ban, to_chuc):
     """A ban hành gốc → clone xuống B → giám đốc B ban hành bản của mình."""
     #  Gốc phải khai rõ hai pháp nhân, nếu không thì clone chỉ mang đúng dòng
-    #  «bao gồm pháp nhân nhận» do `clone_service` tự điền.
+    #  "bao gồm pháp nhân nhận" do `clone_service` tự điền.
     _bao_gom_phap_nhan(db, van_ban, to_chuc.a.id)
     _bao_gom_phap_nhan(db, van_ban, to_chuc.b.id)
 

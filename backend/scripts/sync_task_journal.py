@@ -74,6 +74,12 @@ LIST_RULES: list[tuple[str, str]] = [
     (r"văn thư|văn bản|doc_folder|thư mục văn bản|sổ văn bản", "Công cụ văn thư"),
     (r"đặt xe|duyệt dấu|đóng dấu|dấu mộc|app cũ|datxe|vehicle_booking|seal_request", "Duyệt dấu, Đặt xe"),
     (r"diễn đàn|forum", "Diễn đàn"),
+    #  02/11/2026: hai dự án theo khối nghiệp vụ. HRM đứng trước Sản xuất - Thu mua vì đơn nghỉ
+    #  phép / hồ sơ nhân sự hay nhắc "phòng thu mua" trong tiêu đề.
+    (r"^hrm-|nghỉ phép|nghỉ lễ|ngày lễ|quỹ phép|thai sản|bhxh|nhân sự|hồ sơ nhân|hợp đồng lao động|hđlđ|"
+     r"chức vụ|chấm công|lịch làm việc|lương|tuyển dụng|leave_|\bhr\b", "HRM"),
+    (r"^tm-|thu mua|yêu cầu mua|ycmh|ycbg|đơn mua|đmh|\bpo\b|nhà máy|nhà cung cấp|ncc|hải quan|"
+     r"tra cứu thị trường|công nợ|yctt|nhận hàng|nhập kho|sản xuất|purchase_", "Sản xuất - Thu mua"),
     (r"^ai-cr|agent hub|bot telegram|đậu đậu|trợ lý ai|assistant|agent_hub", "Công cụ Ai"),
     (r"nhật ký hệ thống|system_log", "Nhật ký hệ thống"),
 ]

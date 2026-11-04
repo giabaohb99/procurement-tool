@@ -13,14 +13,14 @@ Domain language is **Vietnamese** — entity names, code comments, and UI labels
 
 Legacy exceptions, do not copy them into new code:
 
-- **12 columns used to hold Vietnamese text** (e.g. `line_status == "Hủy đơn"`, `tab_po_item.progress_status`). Batches B-01…B-06 converted **all twelve** to codes on branch `erp-v2` — plan and per-batch record in [`doc/erp/nen-tang/15-do-be-tong-nen-v2.md`](doc/erp/nen-tang/15-do-be-tong-nen-v2.md). Two known leftovers stay in Vietnamese and are **out of scope** of that plan: `line_approve` on the two survey line tables (§2.2) and the `STATE_*` constants in `survey_request/line_state.py` (derived, never stored).
+- **12 columns used to hold Vietnamese text** (e.g. `line_status == "Hủy đơn"`, `tab_po_item.progress_status`). Batches B-01…B-06 converted **all twelve** to codes on branch `erp-v2` — plan and per-batch record in [`doc/erp/nen-tang/tai-lieu-ky-thuat/15-do-be-tong-nen-v2.md`](doc/erp/nen-tang/tai-lieu-ky-thuat/15-do-be-tong-nen-v2.md). Two known leftovers stay in Vietnamese and are **out of scope** of that plan: `line_approve` on the two survey line tables (§2.2) and the `STATE_*` constants in `survey_request/line_state.py` (derived, never stored).
 - **Thu mua migrates to fixed English string codes, not numbers** (QĐ-9), because its document `status` columns already use codes like `draft | submitted | approved`. Mixing two shapes inside one document is worse than the inconsistency between modules. This applies **only** to columns already in that plan — it is not a licence for new ones.
 
 Fixed code sets of either shape are declared in `backend/app/core/status_catalog.py` and registered via `app/core/code_sets.py`; `backend/scripts/gen_status_ts.py` generates the frontend copy, so never hand-write a status list in TypeScript.
 
 Stack: FastAPI 0.115 · SQLAlchemy 2.0 · Pydantic v2 · MySQL 8 · Alembic · React 18 + Vite + TS. Runs entirely via Docker Compose.
 
-⚠️ **Trước khi đụng vào nhánh `main` hoặc vào VPS, đọc `doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md`.**
+⚠️ **Trước khi đụng vào nhánh `main` hoặc vào VPS, đọc `doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md`.**
 Repo có **hai nhánh chạy song song**: `main` = prod (backend + `frontend/` + `help-center/`),
 `erp-v2` = dev (`frontend-v2/`). Deploy prod **bắt buộc** có `-f docker-compose.production.yml`.
 
@@ -34,7 +34,14 @@ ngưỡng quay đầu), xem §A.2 của `quy-trinh-nhanh-va-deploy.md`.
 
 ## Rules
 
-    Pls check rule in @backend/.claude/rules/**
+**Luật chung luôn nạp:** `.claude/rules/chung-dat-ten-va-quy-uoc.md` — đặt tên (định danh tiếng Anh, hàm là động từ,
+tệp v2 kebab-case), chuỗi / chú thích tiếng Việt, không emoji, không ngoặc kép góc, trạng thái SMALLINT + IntEnum, commit
+(mã CR, `Co-Authored-By`, merge không rebase, `git add` đúng tệp), bài kiểm theo thư mục. **Luật tài liệu:**
+`.claude/rules/chung-tai-lieu.md` (nạp khi sửa `doc/`). Mục lục mọi luật / skill / agent:
+[`doc/tai-lieu-ky-thuat/quy-dinh/README.md`](doc/tai-lieu-ky-thuat/quy-dinh/README.md).
+
+**Kế hoạch làm việc của agent** ghi vào `doc/erp/<phan-he>/plans/<YYMMDD>-<slug>[-<mã CR>]/`; kế hoạch nhiều phân hệ ghi
+`doc/plans/`. KHÔNG ghi vào `plans/` ở gốc repo hay `frontend-v2/plans/` nữa (bao-CR-712).
 
 Luật chi tiết theo từng khu nằm ở `.claude/rules/` — mỗi tệp khai `paths:` nên chỉ nạp khi làm việc
 với đúng thư mục đó (CLAUDE.md giữ phần cốt lõi). Thêm luật cho một khu cụ thể thì ghi vào tệp đó,
@@ -50,13 +57,15 @@ với đúng thư mục đó (CLAUDE.md giữ phần cốt lõi). Thêm luật c
 | `.claude/rules/hr-labor-contract-variables.md` | `labor_contract/`, `hr/`, test `*hdld*` | Danh mục biến mẫu HĐLĐ động, `custom_values` gán dict mới, `json_extract`, mặc định sao lúc lập, quyền ghi phạm vi tất cả |
 | `.claude/rules/backend-input-limits.md` | `backend/app/`, `test/backend/` | Cột `String(n)` phải có `max_length` (500 → 422), trần JSON/ngày/số dòng |
 | `.claude/rules/document-folders-search.md` | `document/`, `doc_catalog/`, migrations | Thư mục văn bản, `doc_folder`, chỉ mục tìm toàn văn, bẫy từ dừng FULLTEXT |
+| `.claude/rules/chung-dat-ten-va-quy-uoc.md` | luôn nạp | Đặt tên, ngôn ngữ chuỗi / chú thích, trạng thái, commit, bài kiểm |
+| `.claude/rules/chung-tai-lieu.md` | `doc/` | Khuôn thư mục tài liệu, 10 luật, chỗ ghi kế hoạch |
 | `frontend-v2/.claude/rules/*.md` | `frontend-v2/` | Component, styling, icon, naming, TypeScript, testing của giao diện v2 |
 
 ## Commands
 
 Everything runs in Docker; there is no local venv/npm workflow.
 
-⚠️ **Máy đơ / tự thoát app khi chạy test hay build? Đọc `doc/tai-lieu-ky-thuat/gioi-han-tai-nguyen-docker.md`.**
+⚠️ **Máy đơ / tự thoát app khi chạy test hay build? Đọc `doc/tai-lieu-ky-thuat/van-hanh/gioi-han-tai-nguyen-docker.md`.**
 Stack local có **11 container**; `docker-compose.yml` đã đặt `mem_limit` + `cpus` cho từng cái —
 **không tự ý gỡ**. Trần đó chỉ chặn từng container; chặn cả máy ảo Docker phải đặt thêm
 `%USERPROFILE%\.wslconfig` (mẫu ở `docker/wslconfig.example`, mỗi máy tự chép, không commit).
@@ -71,7 +80,7 @@ docker compose up --build           # start db + api + web + erp + help + admine
 # Web (frontend/, đóng băng) http://localhost:8080
 # ERP v2 (frontend-v2/, đang phát triển) http://localhost:8083
 # Help Center http://localhost:8082
-# API http://localhost:8000/docs · Adminer http://localhost:8081
+# API http://localhost:8000/api/docs (dev: https://deverp.degoholding.vn/api/docs, prod tắt) · Adminer http://localhost:8081
 ```
 
 On `api` startup, `backend/start.sh` runs automatically: wait for DB → `alembic upgrade head` → `python -m app.seed` (idempotent) → uvicorn with `--reload`. Code is bind-mounted, so backend and frontend hot-reload without rebuilds.
@@ -94,6 +103,14 @@ docker compose exec api python -m app.seed
 docker compose exec -T api pip install pytest
 docker compose exec -T api python -m pytest test/backend -q
 docker compose exec -T api python -m pytest test/backend/test_process.py -q   # single file
+
+# Cổng kiểm backend bằng ruff (bao-CR-710): phải 0 lỗi trước khi đẩy. Bộ luật + khu tạm loại ở backend/ruff.toml
+docker compose exec -T api sh -c "pip install -q ruff && python -m ruff check app"
+
+# Cổng kiểm tài liệu (bao-CR-712): chặn lỗi MỚI — exit 1. Trong container đọc repo qua mount chỉ-đọc /repo.
+# Lỗi cũ nằm trong backend/scripts/kiem_tai_lieu_nen.txt; sửa xong thì --cap-nhat-nen (chỉ BỚT dòng, không thêm)
+python backend/scripts/kiem_tai_lieu.py              # --chi-bao: chỉ in, luôn exit 0
+docker compose exec -T api python -m pytest test/backend/test_kiem_tai_lieu_cr712.py -q   # cùng bài, dạng pytest
 
 # E2E (Playwright, run on host; requires stack up + demo accounts)
 pytest test/e2e --headed -v
@@ -131,7 +148,7 @@ docker compose exec -T erp npx vitest run src/shared/<khu>            # đụng 
 
 A typical list endpoint composes both: `require(...)` as the route dependency, then `apply_scope(apply_filters(query, ...), ...)`. See `modules/purchase_request/controller.py` for the canonical example.
 
-**Lớp gác thứ ba — quyền xem TỪNG báo cáo** (duoc-CR-562, 02/10/2026). Mọi đường `/summary` + `/summary/export` (+ `/summary/rows` «bấm số ra danh sách người», duoc-CR-686) của 24 báo cáo gác KÉP: `require(entity, action)` cũ của phân hệ gốc (giữ nguyên, kèm `apply_scope`) VÀ `dependencies=[Depends(require_report(ReportKey.X))]` (`modules/report_access/guard.py`). Gán ở `tab_report_access` (cùng hình dạng `tab_doc_folder_access`: người/phòng ban/pháp nhân/vai trò, CẤM thắng, thu hồi = `revoked_at`). Chỉ áp cho phân hệ Báo cáo — màn bảng gốc ở từng phân hệ vẫn theo quyền vai trò (đại ca chốt). Chưa gán = ĐÓNG; admin được gán sẵn bởi migration + `ensure_report_access_defaults` (chỉ chèn cho khóa chưa từng có dòng nào). Frontend nhận `report_keys` qua `/api/auth/me`. Màn cấu hình: tab «Báo cáo» ở Phân quyền tài khoản, gác `role.read`/`role.write` (không có entity mới). Khóa 14 «Hồ sơ cách làm việc» (duoc-CR-641, `modules/usage_profile/`) gác `setting.read`/`export` + chỉ admin (admin giao thêm ở tab «Báo cáo»); 4 đường `/api/usage-profiles/*` (`/summary`, `/summary/export`, `/cohorts`, `/{user_id}`), không mở cho chính người đó/quản lý; công tắc thu sự kiện `usage_tracking_enabled` (mặc định BẬT) — xem `doc/tai-lieu-ky-thuat/tracking-nguoi-dung-ho-so-ca-nhan.md`. **Thêm báo cáo mới** = thêm `ReportKey` ở `core/report_keys.py` (số đã cấp không đổi/không tái dùng) → chạy `gen_status_ts.py` → khai `key` ở `report-catalog-*.ts` → gắn `require_report` lên cả 2 đường; test soi `app.routes` sẽ đỏ nếu sót.
+**Lớp gác thứ ba — quyền xem TỪNG báo cáo** (duoc-CR-562, 02/10/2026). Mọi đường `/summary` + `/summary/export` (+ `/summary/rows` **bấm số ra danh sách người**, duoc-CR-686) của 24 báo cáo gác KÉP: `require(entity, action)` cũ của phân hệ gốc (giữ nguyên, kèm `apply_scope`) VÀ `dependencies=[Depends(require_report(ReportKey.X))]` (`modules/report_access/guard.py`). Gán ở `tab_report_access` (cùng hình dạng `tab_doc_folder_access`: người/phòng ban/pháp nhân/vai trò, CẤM thắng, thu hồi = `revoked_at`). Chỉ áp cho phân hệ Báo cáo — màn bảng gốc ở từng phân hệ vẫn theo quyền vai trò (đại ca chốt). Chưa gán = ĐÓNG; admin được gán sẵn bởi migration + `ensure_report_access_defaults` (chỉ chèn cho khóa chưa từng có dòng nào). Frontend nhận `report_keys` qua `/api/auth/me`. Màn cấu hình: tab **Báo cáo** ở Phân quyền tài khoản, gác `role.read`/`role.write` (không có entity mới). Khóa 14 **Hồ sơ cách làm việc** (duoc-CR-641, `modules/usage_profile/`) gác `setting.read`/`export` + chỉ admin (admin giao thêm ở tab **Báo cáo**); 4 đường `/api/usage-profiles/*` (`/summary`, `/summary/export`, `/cohorts`, `/{user_id}`), không mở cho chính người đó/quản lý; công tắc thu sự kiện `usage_tracking_enabled` (mặc định BẬT) — xem `doc/tai-lieu-ky-thuat/tracking-nguoi-dung-ho-so-ca-nhan.md`. **Thêm báo cáo mới** = thêm `ReportKey` ở `core/report_keys.py` (số đã cấp không đổi/không tái dùng) → chạy `gen_status_ts.py` → khai `key` ở `report-catalog-*.ts` → gắn `require_report` lên cả 2 đường; test soi `app.routes` sẽ đỏ nếu sót.
 
 **Permission profile cache.** `get_perm_profile(db, user)` builds the grant profile and caches it in-process for 60s (`_PERM_CACHE` in `core/auth.py`). **When mutating roles/permissions/role-assignments you must call `perm_cache_clear(user_id)`** or scopes go stale for up to a minute.
 
@@ -187,7 +204,7 @@ Docker; code bind-mount nên HMR chạy. Gọi API bằng đường **tương đ
 
 ## Docs
 
-Requirements, permission design, and naming conventions live in `doc/` (Vietnamese) — index at `doc/README.md`. Permission design detail: `doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`. Progress checklist: `TASKS.md`.
+Requirements, permission design, and naming conventions live in `doc/` (Vietnamese) — index at `doc/README.md`. Permission design detail: `doc/tai-lieu-ky-thuat/phan-quyen/thiet-ke-phan-quyen.md`. Progress checklist: `doc/v1/tasks.md`.
 
 ### Nhật ký task — `doc/tai-lieu-ky-thuat/nhat-ky-task.md`
 
@@ -195,4 +212,4 @@ Mỗi phiên làm việc phải ghi một mục vào sổ này; `backend/scripts
 
 ⚠️ **Luật viết mô tả (đại ca chốt 17/09/2026): mô tả phải là câu tiếng Việt trọn vẹn.** Nói việc trước, tên tệp sau — tên hàm/tên bảng/mã commit gom xuống dòng cuối mở đầu bằng `Mã nguồn:` / `Commit:` / `Deploy:`. Dòng chỉ gồm tên tệp nối nhau là SAI. Từ tiếng Anh chỉ giữ khi công ty vẫn gọi bằng từ đó (commit, deploy, migration, script, API); còn lại dịch (*upsert* → có rồi thì cập nhật chưa có thì tạo, *endpoint* → đường API, *test* → bài kiểm). Bản đầy đủ của luật nằm ở đầu chính tệp sổ — đọc trước khi ghi mục mới.
 
-⚠️ **Trước khi đụng vào cấu trúc Sản phẩm, đọc `doc/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`.** `tab_product` **là bảng VARIANT (SKU)**, không phải sản phẩm cha — cố ý như vậy. Không có FK nào trỏ vào nó; 7 bảng (YCMH, ĐMH, nhận hàng, tồn kho, luân chuyển kho, lịch sử mua hàng, option khảo sát) nối nhau bằng **chuỗi `product_code`**, nên đó là hạt dữ liệu của cả hệ. Muốn gom nhóm thì thêm tầng cha Ở TRÊN; **cấm** thêm `tab_product_variant` ở dưới, cấm đổi/tái dùng `product_code`, cấm đặt cột giá lên sản phẩm. Xem D-025 trong `change-log.md`.
+⚠️ **Trước khi đụng vào cấu trúc Sản phẩm, đọc `doc/erp/mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`.** `tab_product` **là bảng VARIANT (SKU)**, không phải sản phẩm cha — cố ý như vậy. Không có FK nào trỏ vào nó; 7 bảng (YCMH, ĐMH, nhận hàng, tồn kho, luân chuyển kho, lịch sử mua hàng, option khảo sát) nối nhau bằng **chuỗi `product_code`**, nên đó là hạt dữ liệu của cả hệ. Muốn gom nhóm thì thêm tầng cha Ở TRÊN; **cấm** thêm `tab_product_variant` ở dưới, cấm đổi/tái dùng `product_code`, cấm đặt cột giá lên sản phẩm. Xem D-025 trong `change-log.md`.

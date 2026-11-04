@@ -46,7 +46,7 @@ import subprocess
 import tempfile
 import time
 import uuid
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime
 from pathlib import Path
 
@@ -2118,10 +2118,8 @@ def _ssh_key_file():
         os.chmod(tmp, 0o600)
         yield tmp
     finally:
-        try:
+        with suppress(OSError):
             os.unlink(tmp)
-        except OSError:
-            pass
 
 
 def _ssh_cmd(key: str, target=None) -> list[str]:
@@ -2292,10 +2290,8 @@ def merge_into_base(task: AgentTask) -> str:
         _git(wt, "merge", "--no-ff", "--no-edit", "-m", msg, branch, timeout=300,
              extra_env=_GIT_IDENTITY_ENV)
     except CoderError as e:
-        try:
+        with suppress(CoderError):
             _git(wt, "merge", "--abort", timeout=120)
-        except CoderError:
-            pass
         raise CoderError(f"gộp {branch} vào {settings.AGENT_BASE_BRANCH} bị xung đột, cần đại ca "
                          f"gộp tay: {str(e)[:400]}") from None
     heads = schema_change.migration_heads(wt)
@@ -2385,7 +2381,6 @@ def merge_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
     một lượt deploy hỏng thì đi thẳng tới ssh. `run.artifact["merged"]` được ghi và commit NGAY sau
     khi đẩy, trước khi ssh — hỏng giữa chừng vẫn biết mã đã lên nhánh nền.
     """
-    from . import service
 
     art = dict(run.artifact) if isinstance(run.artifact, dict) else {}
     deploy = art.get("deploy", True)
@@ -2529,7 +2524,6 @@ def revert_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
                             pushed=False)
     task.status = ST_DEPLOYING
     db.commit()
-    pushed = False
     try:
         wt = _merge_worktree()
         try:
@@ -2540,15 +2534,12 @@ def revert_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
         try:
             _git(wt, "revert", "--no-edit", "-m", "1", sha, timeout=300, extra_env=_GIT_IDENTITY_ENV)
         except CoderError as e:
-            try:
+            with suppress(CoderError):
                 _git(wt, "revert", "--abort", timeout=120)
-            except CoderError:
-                pass
             raise CoderError(f"revert bị xung đột (có bản đẩy sau chồng lên), cần đại ca gỡ tay: "
                              f"{str(e)[:400]}") from None
         revert_sha = _git(wt, "rev-parse", "HEAD", timeout=60).strip()
         _push_base_branch(wt)
-        pushed = True
         #  Dev chưa từng lên bản này (chỉ gộp, ai-CR-029) thì thu hồi cũng chỉ ở nhánh nền.
         bot_paths: list[str] = []
         if task.deployed_dev_at:
@@ -2750,7 +2741,7 @@ def build_scan_brief(task: AgentTask, docs: list[dict], head: str, main_head: st
             f"`{local}` là thư mục `doc/` trên máy đại ca, GỒM CẢ PHẦN CHƯA COMMIT. Tra ở đó trước "
             "khi kết luận, nhất là sổ thay đổi và nhật ký: "
             f"`{local}/tai-lieu-ky-thuat/change-log-bao.md`, `{local}/tai-lieu-ky-thuat/change-log.md`, "
-            f"`{local}/tai-lieu-ky-thuat/nhat-ky-task.md`, `{local}/tai-lieu-chuc-nang/`. Tài liệu "
+            f"`{local}/tai-lieu-ky-thuat/nhat-ky-task.md`, `{local}/erp/<phan-he>/chuc-nang/`. Tài liệu "
             "trong worktree có thể cũ hơn; mã thì tin worktree.", "",
         ]
     if docs:

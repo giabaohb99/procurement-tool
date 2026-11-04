@@ -16,6 +16,9 @@ export function SectionHeading({
 }) {
   return (
     <h3
+      //  `data-slot` để một khung bọc ngoài (nhóm gập / mở của màn hồ sơ) ẩn được tiêu đề
+      //  này khi chính nó đã có tiêu đề — tránh hai tiêu đề chồng nhau.
+      data-slot="section-heading"
       className={cn(
         'border-b pb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase',
         className,

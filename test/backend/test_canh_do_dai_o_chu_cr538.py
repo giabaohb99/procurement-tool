@@ -1,7 +1,7 @@
 """bao-CR-538 — bài kiểm CANH: ô chữ của schema GHI phải chặn độ dài trước khi xuống MySQL.
 
 Sự cố D30D24DF (30/09/2026): ghi chú 263 ký tự đi qua schema không có `max_length`, xuống MySQL
-mới bị từ chối «Data too long» → người dùng thấy «lỗi không lường trước». Đại ca chốt: chặn ở
+mới bị từ chối "Data too long" → người dùng thấy "lỗi không lường trước". Đại ca chốt: chặn ở
 SCHEMA là tuyến chính, lỗi MySQL chỉ là lưới cuối.
 
 Bài này quét các phân hệ thu mua: với mỗi schema GHI (không phải schema trả ra) và mỗi trường
@@ -22,7 +22,7 @@ from sqlalchemy import String
 import app.core.all_models  # noqa: F401
 from app.core.base_model import Base
 
-#  Đợt 1 (thu mua) + đợt 2 (đại ca: «làm luôn 26 phân hệ kia»). Phân hệ nào có cột String(n) mà chưa
+#  Đợt 1 (thu mua) + đợt 2 (đại ca: "làm luôn 26 phân hệ kia"). Phân hệ nào có cột String(n) mà chưa
 #  nằm ở đây thì `test_every_module_with_string_columns_is_covered` đỏ.
 MODULES = ["survey", "survey_request", "purchase_request", "purchase_order", "payment_request", "supplier",
            "doc_catalog", "product", "work", "help_center", "catalog", "contract", "company", "approval",
@@ -104,6 +104,10 @@ TARGETS.update({
     **_same("leave", "LeaveHandover", "HandoverItem"),
     **_same("leave", "LeaveBalance", "LeaveBalanceAdjust", "LeaveBalanceAllocate", "LeaveBalanceCloseYear"),
     **_same("leave", "LeaveTypeSeniority", "SeniorityTierBase", "SeniorityTierCreate", "SeniorityTierUpdate"),
+    #  duoc-CR-717: chính sách nghỉ phép (code 30 · name 150 · note 500) + phân bổ (note 500)
+    **_same("leave", "LeavePolicy", "PolicyCreate", "PolicyUpdate"),
+    **_same("leave", "LeavePolicyAssignment", "AssignmentBase", "AssignmentCreate", "AssignmentUpdate",
+            "AssignmentBulk"),
     **_same("coffee_point", "CoffeeLedger", "AdjustIn"),
     **_same("coffee_point", "CoffeeMember", "MemberCreate", "MemberUpdate", "CreatePartnerIn"),
     **_same("coffee_point", "CoffeePolicy", "PolicyIn"),
@@ -124,11 +128,12 @@ TARGETS.update({
     **_same("customs", "CustomsRegulation", "RegulationCreate", "RegulationUpdate"),
     **_same("customs", "CustomsSavedFilter", "SavedFilterCreate", "SavedFilterUpdate"),
     **_same("customs", "CustomsSearchSynonym", "SearchSynonymCreate", "SearchSynonymUpdate"),
+    **_same("customs", "CustomsFormulationCode", "FormulationCodeCreate", "FormulationCodeUpdate"),   # duoc-CR-684
     **_same("department", "DepartmentCompany", "DepartmentCompanyReplace"),
     "inventory.AdjustIn": ["Inventory", "InventoryMove"],
     "attachment.RegisterIn": ["StoredFile", "FileLink"],
     **_same("forum", "ForumBoard", "BoardIn"),
-    **_same("forum", "ForumPost", "PostIn", "ModerationIn"),
+    **_same("forum", "ForumPost", "PostIn", "ModerationIn", "PostPatch"),   # PostPatch: bao-CR-707
     **_same("assistant", "AssistantMessage", "AskIn", "HistoryItem"),
     **_same("dossier", "DossierProgress", "ProgressPayload"),
     **_same("role", "Permission", "PermissionItem"),
@@ -204,6 +209,12 @@ NO_TARGET = {
     #  ghi vào bảng không có cột chữ, hoặc vào cột JSON của bảng cha
     "doc_catalog.DocTypeLinkRuleBase", "doc_catalog.DocTypeLinkRuleCreate", "doc_catalog.DocTypeLinkRuleUpdate",
     "leave.LeaveLineItem", "dossier.DossierFieldDef",
+    #  duoc-CR-715: hạn mức theo nhóm chỉ mang mã nhóm + số ngày (bảng không có cột chữ)
+    "leave.QuotaRuleItem", "leave.QuotaRuleReplace",
+    #  duoc-CR-717: dòng của gói chính sách (mã loại + số ngày) và xem trước phân bổ (chỉ đọc, không ghi bảng nào)
+    "leave.PolicyLineItem", "leave.PolicyLinesReplace", "leave.AssignmentPreview",
+    #  duoc-CR-683: ước lượng số ngày theo nhiều khoảng — chỉ đọc, không ghi bảng nào
+    "leave.LeaveEstimateIn", "leave.LeavePeriodItem",
     #  ghi `issue_code` của Công ty / Phòng ban (phân hệ khác) — xem bài kiểm riêng của văn thư
     "doc_catalog.IssueCodeUpdate",
 }

@@ -1,4 +1,4 @@
-"""bao-CR-590 — YCMH gửi duyệt BUỘC phải có «Trưởng phòng phê duyệt».
+"""bao-CR-590 — YCMH gửi duyệt BUỘC phải có "Trưởng phòng phê duyệt".
 
 Đại ca chốt 05/10/2026. Hai tầng giữ luật:
 

@@ -58,12 +58,14 @@ SKIP_PATH_PREFIXES = (
     "/api/uploads",
     "/api/system-logs",
     "/api/audit-logs",
+    #  bao-CR-721: màn Nhật ký email cũng là màn ĐỌC nhật ký — cùng lý.
+    "/api/email-logs",
     #  duoc-CR-641: lô sự kiện giao diện (FE gửi mỗi vài chục giây). Ghi nhật ký request cho chính
     #  đường đo là mỗi lô đẻ thêm một dòng `tab_request_log` — NT-5, lớp tự động không ghi chính nó.
     "/api/telemetry",
-    "/docs",
-    "/redoc",
-    "/openapi.json",
+    "/api/docs",
+    "/api/redoc",
+    "/api/openapi.json",
 )
 
 #  Máy tự dội, KHÔNG phải người đọc dữ liệu: giao diện hỏi chuông và cảnh báo

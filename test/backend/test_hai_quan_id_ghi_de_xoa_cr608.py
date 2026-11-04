@@ -1,9 +1,9 @@
-"""bao-CR-608 — Tra cứu thị trường: cột «ID» ghi đè, cột «Thao tác» xóa, sửa / xóa tay từng dòng.
+"""bao-CR-608 — Tra cứu thị trường: cột "ID" ghi đè, cột "Thao tác" xóa, sửa / xóa tay từng dòng.
 
 ```
 tệp không có ID / Thao tác     -> nạp như cũ (bao-CR-541)
 ID có thật                     -> GHI ĐÈ đủ cột, giữ id + batch_id cũ, row_hash tính lại
-ID có số mà không có           -> THÊM MỚI như dòng thường + cảnh báo «ID n không có — thêm mới»
+ID có số mà không có           -> THÊM MỚI như dòng thường + cảnh báo "ID n không có — thêm mới"
 Thao tác = xóa, ID có thật     -> XÓA (dòng xóa chỉ cần ô ID — thiếu Ngày đăng ký vẫn chạy)
 Thao tác = xóa, ID trống/không -> BỎ QUA + cảnh báo
 chạy thử                       -> đếm đủ, KHÔNG ghi gì
@@ -38,7 +38,7 @@ USER = 7
 
 
 def _xlsx(rows, action_header="Thao tác") -> bytes:
-    """Tệp có cột «ID» đầu + cột thao tác cuối. Ô thiếu khóa thì để trống."""
+    """Tệp có cột "ID" đầu + cột thao tác cuối. Ô thiếu khóa thì để trống."""
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.append(["ID"] + [label for _, label in COLUMNS] + [action_header])
@@ -82,7 +82,7 @@ def test_reader_reads_id_and_action_columns_and_aliases():
     assert [(d["source_row"], d["ref_id"]) for d in res.deletes] == [(3, 34), (4, 5)]
     warns = [m for _, level, m in res.logs if level == LogLevel.WARNING]
     assert any("\"ID\" \"abc\"" in m for m in warns) and any("\"Thao tác\" \"sửa\"" in m for m in warns)
-    #  Tiêu đề «Action» cũng nhận
+    #  Tiêu đề "Action" cũng nhận
     assert reader.parse(_xlsx([{"id": 1, "action": "delete"}], action_header="Action"),
                         today=date(2026, 9, 23)).deletes[0]["ref_id"] == 1
 
@@ -135,7 +135,7 @@ def test_overwrite_row_identical_to_stored_is_skipped_as_existing(db):
 
 
 def test_overwrite_bypasses_dedupe_and_is_never_duplicate(db):
-    """Hai dòng có ID khác nhau mang CÙNG nội dung: cả hai là ghi đè, không cái nào «trùng trong tệp»."""
+    """Hai dòng có ID khác nhau mang CÙNG nội dung: cả hai là ghi đè, không cái nào "trùng trong tệp"."""
     _, (a, b) = _seed(db, _row(), _row(line_no=2))
     batch = _batch(db)
     importer.run(db, batch, _xlsx([{**_row(line_no=9), "id": a.id}, {**_row(line_no=9), "id": b.id}]), apply=True)
@@ -347,7 +347,7 @@ def test_export_has_id_first_and_round_trips_to_overwrite(db):
     assert (b.created_count, b.updated_count) == (0, 1)
     line = db.get(CustomsLine, a.id)
     assert line.price_usd == Decimal("21")
-    #  Ô suy ra / tính sẵn trong tệp xuất KHÔNG bị đóng băng thành «do người nhập»
+    #  Ô suy ra / tính sẵn trong tệp xuất KHÔNG bị đóng băng thành "do người nhập"
     assert line.active_ingredient_from_file is False and line.price_vnd_flat is None
 
 

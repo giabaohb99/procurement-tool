@@ -2,7 +2,7 @@ from fastapi import (APIRouter, BackgroundTasks, Depends, HTTPException,
                      Request)
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_user, get_perm_profile, require
+from app.core.auth import get_perm_profile, require
 from app.core.base_controller import (apply_filters, apply_sort_from_request,
                                        pagination)
 from app.core.database import get_db

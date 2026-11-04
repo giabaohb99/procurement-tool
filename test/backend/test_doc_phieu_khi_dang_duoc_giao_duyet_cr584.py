@@ -6,7 +6,7 @@ trưởng bộ phận được người tạo chọn ở phòng khác. Trước 
 
 1. trang chi tiết — `require(..., "read")` ở mức route trả 403 trước cả đường lùi;
 2. tệp chứng từ — người kiểm không mở được thứ mình phải kiểm;
-3. ô Trao đổi — «không tải được nội dung trao đổi» (thấy tận mắt 03/10/2026).
+3. ô Trao đổi — "không tải được nội dung trao đổi" (thấy tận mắt 03/10/2026).
 
 Luật: chỉ nới khi việc CÒN TREO, chỉ cho loại chứng từ khai trong `APPROVER_READABLE`.
 """

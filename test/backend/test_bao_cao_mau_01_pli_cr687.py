@@ -1,7 +1,7 @@
 """duoc-CR-687 — Báo cáo sử dụng lao động mẫu 01/PLI (khóa 20): `/api/labor-usage-report/summary` (+ export, rows).
 
 Canh: chỉ số nhóm vị trí việc làm / loại HĐ / giới tính, suy nhóm vị trí ở danh sách, 403 thiếu quyền ở cả
-ba đường, và bố cục tệp Excel đúng mẫu (ô tiêu đề gộp 3 tầng, dòng số 1…27, dòng Tổng, «x», cột HĐ, cột
+ba đường, và bố cục tệp Excel đúng mẫu (ô tiêu đề gộp 3 tầng, dòng số 1…27, dòng Tổng, "x", cột HĐ, cột
 trống, mỗi pháp nhân một sheet). Kỳ cố định 2025 -> `as_of` = 31/12/2025.
 """
 import uuid
@@ -154,7 +154,7 @@ def test_excel_dung_bo_cuc_mau_01_pli(db, world, client_as):
     assert ws["A8"].value == "1. Thông tin chung" and "Mã số thuế" in ws["A11"].value
     head = 15
     merged = _merged(ws)
-    #  Gộp ô đối chiếu bản PDF Mẫu số 01/PLI: «Phụ cấp» là tầng giữa M16:Q16, hai cột BHXH (25, 26) đứng riêng.
+    #  Gộp ô đối chiếu bản PDF Mẫu số 01/PLI: "Phụ cấp" là tầng giữa M16:Q16, hai cột BHXH (25, 26) đứng riêng.
     for rng in ("A15:A17", "B15:B17", "H15:K15", "L15:Q15", "M16:Q16", "R15:S15", "T15:X15", "U16:V16",
                 "W16:X16", "Y15:Y17", "Z15:Z17", "AA15:AA17", "H16:H17", "L16:L17"):
         assert rng in merged, rng

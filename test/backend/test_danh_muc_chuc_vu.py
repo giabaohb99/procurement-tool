@@ -1,7 +1,7 @@
 """
 test_danh_muc_chuc_vu.py — DANH MỤC CHỨC VỤ (duoc-CR-320).
 
-Ô «Vị trí / Chức vụ» của hồ sơ nhân sự nay lấy từ `tab_job_position` thay vì gõ
+Ô "Vị trí / Chức vụ" của hồ sơ nhân sự nay lấy từ `tab_job_position` thay vì gõ
 tay. Cái đắt nhất trong thiết kế đó là **hai cột cho một sự thật**: `position_id`
 là khóa, còn `position` là nhãn đã chép — mười chỗ (bản in YCMH/YCBG, tệp Excel,
 hồ sơ cho trợ lý AI, `core/audit`) vẫn đọc thẳng cột chữ.
@@ -121,7 +121,7 @@ def test_resaving_unmapped_profile_keeps_text_label(db):
 
     Màn hồ sơ gửi LẠI `position_id = 0` ở mọi lần lưu (không gửi chữ). Hồ sơ cũ
     nhập từ CSV giữ chức danh dạng chữ mà chưa map danh mục (`position_id = 0`)
-    thì sửa «Nơi làm việc» xong bấm Lưu là mất luôn «Trưởng phòng» — phiếu in
+    thì sửa "Nơi làm việc" xong bấm Lưu là mất luôn "Trưởng phòng" — phiếu in
     trống chức danh người ký. 0 → 0 không phải "bỏ chọn".
     """
     emp = _emp(db, code="NS001", position="Trưởng phòng")
@@ -189,7 +189,7 @@ def test_profile_already_holding_inactive_position_still_saves(db):
     """Màn hồ sơ gửi lại MỌI ô mỗi lần lưu.
 
     Không có ngoại lệ này thì một người bị Nhân sự cho ngừng chức vụ sẽ **không
-    sửa nổi ô nào khác** — mỗi lần bấm Lưu đều ăn câu «chức vụ đã ngừng dùng» —
+    sửa nổi ô nào khác** — mỗi lần bấm Lưu đều ăn câu "chức vụ đã ngừng dùng" —
     cho tới khi có ai đó đi đổi chức vụ của họ.
     """
     pos = _position(db, name="Chức vụ sắp bỏ")
@@ -207,7 +207,7 @@ def test_profile_already_holding_inactive_position_still_saves(db):
 # ── 5. Khớp tên cho đường nhập CSV ─────────────────────────────────────────────
 
 def test_name_matching_ignores_case_and_extra_spaces(db):
-    """Tệp CSV người dùng sửa trong Excel: «Trưởng phòng » và «trưởng PHÒNG» là một."""
+    """Tệp CSV người dùng sửa trong Excel: "Trưởng phòng " và "trưởng PHÒNG" là một."""
     pos = _position(db, name="Trưởng phòng")
     assert position_service.resolve_by_name(db, "  trưởng PHÒNG  ").id == pos.id
     #  Dấu cách ĐÔI ở GIỮA cũng khớp: `" ".join(s.split())` bóp mọi cụm khoảng
@@ -240,7 +240,7 @@ def test_blank_name_matches_nothing(db):
 
 def test_overlong_name_is_blocked_at_schema_level():
     """Bài học duoc-CR-316: thiếu `max_length` thì chuỗi dài xuống thẳng MySQL và
-    người dùng nhận «mã sự cố» thay vì câu «tối đa 100 ký tự»."""
+    người dùng nhận "mã sự cố" thay vì câu "tối đa 100 ký tự"."""
     from pydantic import ValidationError
 
     from app.modules.employee.position_schema import JobPositionCreate
@@ -258,7 +258,7 @@ def test_blank_name_is_blocked_but_blank_code_is_allowed():
 
     Mã rỗng thì NGƯỢC LẠI: đó là đường đi bình thường, bộ sinh CRUD tự cấp
     `cv001`. Trước 08/09/2026 chỗ này chặn cả mã rỗng, nên câu gợi ý trên biểu
-    mẫu — «bỏ trống thì hệ thống tự sinh» — là lời hứa chưa từng chạy: làm đúng
+    mẫu — "bỏ trống thì hệ thống tự sinh" — là lời hứa chưa từng chạy: làm đúng
     như chỉ dẫn thì ăn lỗi 422."""
     from pydantic import ValidationError
 

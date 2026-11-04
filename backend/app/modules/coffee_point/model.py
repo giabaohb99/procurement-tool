@@ -1,6 +1,6 @@
 """Phân hệ Điểm cà phê (POS365) — bộ IntEnum và 5 bảng dữ liệu.
 
-Thiết kế chốt ở `doc/erp/diem-ca-phe/02-bang-du-lieu.md` (08/09/2026). Đây là phase
+Thiết kế chốt ở `doc/erp/diem-ca-phe/tai-lieu-ky-thuat/02-bang-du-lieu.md` (08/09/2026). Đây là phase
 **CP1**: nền dữ liệu + phân quyền, nghiệp vụ ở `service.py`/`tasks.py` (CP2).
 
 Năm quy ước xuyên suốt — đọc trước khi thêm cột:
@@ -21,7 +21,7 @@ Năm quy ước xuyên suốt — đọc trước khi thêm cột:
 """
 from enum import IntEnum
 
-from sqlalchemy import (BigInteger, DateTime, Index, Integer, Numeric,
+from sqlalchemy import (BigInteger, Index, Integer, Numeric,
                         SmallInteger, String, Text, UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column
 

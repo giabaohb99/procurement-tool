@@ -26,6 +26,13 @@ interface ScrollableTabsListProps {
    * đúng dải 768–805px thì tab cuối rơi ra ngoài mà không có cách nào kéo tới.
    */
   listClassName?: string
+  /**
+   * `mobile` (mặc định) = chỉ cuộn ngang dưới `md`, từ `md` trả về `TabsList` nền xám.
+   * `always` = cuộn ngang ở MỌI khổ, không bao giờ xuống hàng — dùng trên mặt phẳng
+   * nền trắng kiểu ERPNext (màn chi tiết nhân sự, duoc-CR-708: 8 tab trong cột nội dung
+   * ~720px ở laptop 1280px, xuống hàng thì dải tab cao gấp đôi và tab cuối nằm lẻ loi).
+   */
+  scroll?: 'mobile' | 'always'
 }
 
 /**
@@ -66,7 +73,9 @@ export function ScrollableTabsList({
   children,
   className,
   listClassName,
+  scroll = 'mobile',
 }: ScrollableTabsListProps) {
+  const always = scroll === 'always'
   const scrollerRef = useRef<HTMLDivElement>(null)
   const [edges, setEdges] = useState({ left: false, right: false })
 
@@ -129,7 +138,11 @@ export function ScrollableTabsList({
         //  374px — hai khối rời hẳn nhau, không còn gì nối chúng lại (khách báo
         //  10/09/2026). Ở khung cuộn thì đường kẻ luôn chạy hết bề ngang, bất kể
         //  bao nhiêu tab, và nó chính là thứ neo dải tab vào phần dưới.
-        className="max-md:overflow-x-auto max-md:border-b max-md:px-4 max-md:scrollbar-none"
+        className={
+          always
+            ? 'scrollbar-none overflow-x-auto border-b px-4 md:px-6'
+            : 'max-md:scrollbar-none max-md:overflow-x-auto max-md:border-b max-md:px-4'
+        }
       >
         {/*  ⚠️ `w-max` phải đứng SAU `TAB_LIST_UNDERLINE` — hằng đó khai
              `max-md:w-full`, và tailwind-merge lấy lớp đứng sau khi hai lớp cùng
@@ -146,6 +159,7 @@ export function ScrollableTabsList({
             TAB_LIST_UNDERLINE,
             //  Bỏ đường kẻ của DẢI — nó đã chuyển lên khung cuộn (xem trên).
             'max-md:w-max max-md:border-b-0 max-md:[&_[data-slot=tabs-trigger]]:flex-none',
+            always && 'w-max border-b-0 [&_[data-slot=tabs-trigger]]:flex-none',
             listClassName,
           )}
         >
@@ -153,8 +167,8 @@ export function ScrollableTabsList({
         </TabsList>
       </div>
 
-      {edges.left && <EdgeButton side="left" onClick={() => nudge(-1)} />}
-      {edges.right && <EdgeButton side="right" onClick={() => nudge(1)} />}
+      {edges.left && <EdgeButton side="left" always={always} onClick={() => nudge(-1)} />}
+      {edges.right && <EdgeButton side="right" always={always} onClick={() => nudge(1)} />}
     </div>
   )
 }
@@ -168,8 +182,18 @@ export function ScrollableTabsList({
  *
  * ⚠️ `md:hidden` — từ `md` khung không còn cuộn nên nút này không điều khiển
  * được gì; `bottom-px` để nút đứng TRÊN đường kẻ chân, không đè lên nó.
+ * Chế độ `always` thì khung cuộn ở mọi khổ nên nút luôn hiện, và nền chuyển sắc lấy
+ * màu `card` vì dải nằm trên mặt phẳng trắng chứ không trên nền trang.
  */
-function EdgeButton({ side, onClick }: { side: 'left' | 'right'; onClick: () => void }) {
+function EdgeButton({
+  side,
+  always,
+  onClick,
+}: {
+  side: 'left' | 'right'
+  always: boolean
+  onClick: () => void
+}) {
   const isLeft = side === 'left'
   const Icon = isLeft ? ChevronLeft : ChevronRight
 
@@ -179,10 +203,12 @@ function EdgeButton({ side, onClick }: { side: 'left' | 'right'; onClick: () => 
       onClick={onClick}
       aria-label={isLeft ? 'Xem các tab bên trái' : 'Xem các tab bên phải'}
       className={cn(
-        'absolute top-0 bottom-px flex w-10 items-center md:hidden',
+        'absolute top-0 bottom-px flex w-10 items-center',
+        !always && 'md:hidden',
         isLeft
-          ? 'left-0 justify-start bg-gradient-to-r from-canvas from-60% to-transparent pl-1'
-          : 'right-0 justify-end bg-gradient-to-l from-canvas from-60% to-transparent pr-1',
+          ? 'left-0 justify-start bg-gradient-to-r from-60% to-transparent pl-1'
+          : 'right-0 justify-end bg-gradient-to-l from-60% to-transparent pr-1',
+        always ? 'from-card' : 'from-canvas',
       )}
     >
       <Icon className="size-4 text-muted-foreground" aria-hidden="true" />

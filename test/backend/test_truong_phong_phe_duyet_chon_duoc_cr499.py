@@ -1,9 +1,9 @@
-"""bao-CR-499 — ô «Trưởng phòng phê duyệt» CHỌN được, báo người được chọn, bản in in người thực duyệt.
+"""bao-CR-499 — ô "Trưởng phòng phê duyệt" CHỌN được, báo người được chọn, bản in in người thực duyệt.
 
 Đại ca chốt 26/09/2026 (qua ERP Agent 2, xác nhận lại ở phiên Erp Agent 1): giữ HAI ô tách
-(«Trưởng bộ phận» CR-474 và ô này); ô này chọn được để hệ gửi mail/chuông cho người đó; bấm Duyệt
+("Trưởng bộ phận" CR-474 và ô này); ô này chọn được để hệ gửi mail/chuông cho người đó; bấm Duyệt
 xong cột đổi thành người THỰC duyệt; bản in in tên trong cột (chưa ai duyệt thì in người được chọn);
-bỏ công tắc «người ký» của bao-CR-490.
+bỏ công tắc "người ký" của bao-CR-490.
 """
 from types import SimpleNamespace
 
@@ -12,9 +12,11 @@ from fastapi import BackgroundTasks
 
 from app.modules.department.model import Department
 from app.modules.purchase_order import controller as po_ctl
+from app.modules.purchase_order import serializer as po_ser
 from app.modules.purchase_order.model import PurchaseOrder
 from app.modules.purchase_order.schema import POCreate, POUpdate, RejectIn
 from app.modules.purchase_request import controller as pr_ctl
+from app.modules.purchase_request import serializer as pr_ser
 from app.modules.purchase_request import service as pr_service
 from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
 from app.modules.purchase_request.schema import ApproveIn, PRCreate, PRUpdate
@@ -74,9 +76,9 @@ def test_pr_chosen_approver_is_notified_on_submit_and_not_printed_before_approva
     db.commit()
     assert pr.approver_employee_id == seed.emp_nstm_id
 
-    #  Chưa ai duyệt: ô «TP/BP đề xuất» trên bản in để TRỐNG (bao-CR-521, ticket prod #57 — trước đó
+    #  Chưa ai duyệt: ô "TP/BP đề xuất" trên bản in để TRỐNG (bao-CR-521, ticket prod #57 — trước đó
     #  in sẵn tên người được chọn, người đọc hiểu là đã ký).
-    signers = pr_ctl._approval_signers(db, pr)
+    signers = pr_ser._approval_signers(db, pr)
     assert signers["approver_name"] == "" and signers["approver_signature"] == ""
 
     pr_ctl.submit_pr(pr.id, BackgroundTasks(), db=db, user=SimpleNamespace(id=seed.u_req_id))
@@ -88,7 +90,7 @@ def test_pr_chosen_approver_is_notified_on_submit_and_not_printed_before_approva
     pr_ctl.approve_pr(pr.id, ApproveIn(), BackgroundTasks(), db=db, user=USER)
     db.refresh(pr)
     assert pr.approver_employee_id == db.get(User, USER.id).employee_id
-    assert pr_ctl._approval_signers(db, pr)["approver_name"] == "Người YC"
+    assert pr_ser._approval_signers(db, pr)["approver_name"] == "Người YC"
 
 
 def test_pr_update_can_change_the_chosen_approver_while_draft(db, seed):
@@ -127,14 +129,14 @@ def test_po_chosen_approver_is_notified_and_kept_after_unapprove(db, seed, captu
     #  Chưa duyệt: ô người duyệt trên bản in để TRỐNG (bao-CR-521, ticket prod #57) — người được
     #  chọn chỉ hiện ở màn chi tiết.
     assert po.approver_employee_id == seed.emp_tp_id
-    signers = po_ctl.resolve_print_signers(db, po)
+    signers = po_ser.resolve_print_signers(db, po)
     assert signers["approver_name"] == "" and signers["approver_signature"] == ""
 
     po_ctl.approve_po(po.id, BackgroundTasks(), db=db, user=USER)
     db.refresh(po)
     actual = db.get(User, USER.id).employee_id
     assert po.approver_employee_id == actual
-    assert po_ctl.resolve_print_signers(db, po)["approver_name"] == "Người YC"
+    assert po_ser.resolve_print_signers(db, po)["approver_name"] == "Người YC"
 
     #  Hủy duyệt: KHÔNG xóa cột nữa — người vừa duyệt vẫn là người được chọn cho lần sau.
     po_ctl.unapprove_po(po.id, RejectIn(reason="sai giá"), db=db, user=USER)
@@ -202,7 +204,7 @@ def test_system_admin_role_is_not_offered(db, seed, cap_quyen):
     pr = pr_service.create_pr(db, PRCreate(company_id=seed.company_id, requester="Người YC",
                                            requester_id=seed.emp_req_id, department=dept.name), seed.u_req_id)
     ids = {c["employee_id"] for c in candidates_for_row(db, PurchaseRequest, "purchase_request", pr.id)}
-    assert boss.id not in ids, "quản trị hệ thống không phải «trưởng phòng» — không đưa vào ô chọn"
+    assert boss.id not in ids, "quản trị hệ thống không phải \"trưởng phòng\" — không đưa vào ô chọn"
 
 
 def test_endpoints_exist_for_all_three_documents():
@@ -264,7 +266,7 @@ def test_pr_candidate_list_covers_every_approver_not_only_the_head_box(db, seed,
 # ── Rà trước prod 28/09/2026 ─────────────────────────────────────────────────────────────
 
 def test_unapproved_print_leaves_approver_slot_blank(db, seed, monkeypatch):
-    """bao-CR-521 (ticket prod #57): phiếu Nháp in ra đã có tên trưởng phòng ở ô «TP/BP đề xuất»,
+    """bao-CR-521 (ticket prod #57): phiếu Nháp in ra đã có tên trưởng phòng ở ô "TP/BP đề xuất",
     người đọc hiểu là đã ký. Chưa duyệt thì cả TÊN lẫn CHỮ KÝ đều trống."""
     from app.core import print_signers
     monkeypatch.setattr(print_signers, "person_block",
@@ -275,6 +277,6 @@ def test_unapproved_print_leaves_approver_slot_blank(db, seed, monkeypatch):
     pr = pr_service.create_pr(db, PRCreate(company_id=seed.company_id, requester="Người YC",
                                            requester_id=seed.emp_req_id, department=dept.name,
                                            head_of_dept_id=seed.emp_tp_id), seed.u_req_id)
-    out = pr_ctl._approval_signers(db, pr)
+    out = pr_ser._approval_signers(db, pr)
     assert out["approver_name"] == "", "chưa duyệt thì không in tên người được chọn"
     assert out["approver_signature"] == "", "chưa duyệt thì không in ảnh chữ ký"

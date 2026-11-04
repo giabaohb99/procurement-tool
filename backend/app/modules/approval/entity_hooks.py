@@ -11,7 +11,16 @@ từ lại phải sửa lõi, và lõi dần biến thành nơi chứa luật c�
 """
 from typing import Callable
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
+
+
+class HookVeto(HTTPException):
+    """Hàm hook của chứng từ MUỐN CHẶN kết cục (vd đơn nghỉ rơi vào ngày cấm nghỉ, duoc-CR-715).
+
+    Khác mọi lỗi hook khác: `fire` KHÔNG nuốt nó mà ném tiếp, để giao dịch của lượt duyệt bị cuộn lại (phiếu vẫn
+    đang chạy, chữ ký vừa đặt không được ghi). Hook ném nó phải ném TRƯỚC khi đổi bất cứ gì của chứng từ.
+    """
 
 #  entity → {"approved": fn, "rejected": fn, "returned": fn, "withdrawn": fn}
 _HOOKS: dict[str, dict[str, Callable]] = {}
@@ -59,6 +68,12 @@ def fire(db: Session, instance, outcome: str) -> None:
         return
     try:
         hook_fn(db, instance.entity_id, instance)
+    except HookVeto:
+        #  ⚠️ CUỘN LẠI NGAY tại nguồn, không đợi người gọi. Tới đây `approve` / `send_back`… đã `flush` việc
+        #  APPROVED, phiên APPROVED và dòng nhật ký; người gọi nào bắt lỗi rồi vẫn `commit` (cổng MCP ghi nhật ký
+        #  cuộc gọi, bot Telegram…) sẽ ghi luôn nửa chừng đó: phiên "Đã duyệt" mà đơn nghỉ vẫn Chờ duyệt, quỹ kẹt.
+        db.rollback()
+        raise
     except Exception as error:   # noqa: BLE001 — xem ghi chú trên
         import logging
 
@@ -179,6 +194,32 @@ _TASK_MAILERS: dict[str, Callable] = {}
 def register_task_mailer(entity: str, fn: Callable) -> None:
     """Khai hàm gửi thư việc duyệt mới cho loại chứng từ này. Xem `_TASK_MAILERS`."""
     _TASK_MAILERS[entity] = fn
+
+
+#  entity → hàm `(db, instance, task) -> bool` cho biết việc MỚI MỞ này có được báo (chuông + thư) không
+#  (duoc-CR-706). Việc vẫn được giao và hiện ở "Việc chờ duyệt" — chỉ thông báo bị chặn. Phiếu đặt xe chọn
+#  sẵn người duyệt dùng nó: người cùng quyền được giao việc nhưng không bị làm phiền. Chưa khai = báo hết.
+_TASK_NOTIFY_FILTERS: dict[str, Callable] = {}
+
+
+def register_task_notify_filter(entity: str, fn: Callable) -> None:
+    """Khai hàm lọc thông báo việc mới cho loại chứng từ này. Xem `_TASK_NOTIFY_FILTERS`."""
+    _TASK_NOTIFY_FILTERS[entity] = fn
+
+
+def should_notify_task(db: Session, instance, task) -> bool:
+    """Việc mới này có được báo không. Hàm lọc lỗi thì BÁO (thà thừa một thư còn hơn mất thư)."""
+    fn = _TASK_NOTIFY_FILTERS.get(instance.entity)
+    if fn is None:
+        return True
+    try:
+        return bool(fn(db, instance, task))
+    except Exception:   # noqa: BLE001 — xem docstring
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "Hàm lọc thông báo việc duyệt %s #%s lỗi", instance.entity, instance.entity_id)
+        return True
 
 
 def mail_new_task(db: Session, instance, task, users: list) -> None:

@@ -303,6 +303,7 @@ export const REPORT_KEY: readonly StatusOption[] = [
   {"value": "27", "label": "Yêu cầu sửa hồ sơ", "sort_order": 27, "is_terminal": false, "is_exception": false},
   {"value": "28", "label": "Sử dụng phòng họp", "sort_order": 28, "is_terminal": false, "is_exception": false},
   {"value": "29", "label": "Đối tượng cần chú ý theo luật", "sort_order": 29, "is_terminal": false, "is_exception": false},
+  {"value": "30", "label": "Làm việc vào ngày lễ, ngày nghỉ", "sort_order": 30, "is_terminal": false, "is_exception": false},
 ]
 
 /** Loại hình pháp lý NCC */

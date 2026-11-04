@@ -11,7 +11,7 @@
   5. mã phiếu KHÔNG tái dùng — `_gen_code` đếm cả phiếu đã xóa;
   6. phiếu khác (cùng người, cùng pháp nhân) không bị ảnh hưởng;
   7. `apply_scope` / `get_scoped` TỰ lọc cho MỌI model có cột `is_deleted` (kể cả phạm vi
-     «thấy tất»), và không đụng model không có cột đó.
+     "thấy tất"), và không đụng model không có cột đó.
 
 Dựng dữ liệu bằng `scope_factory` (fixture `world`) để hồ sơ quyền là hồ sơ thật.
 """
@@ -62,7 +62,7 @@ def _make_sr(db, *, code, company_id, department_id, created_by, status="draft",
 
 @pytest.fixture
 def actor(world):
-    """`a1` thấy TẤT (scope `all`) với đủ hành động — để mọi khẳng định «không thấy» ở dưới
+    """`a1` thấy TẤT (scope `all`) với đủ hành động — để mọi khẳng định "không thấy" ở dưới
     chỉ có thể do cờ xóa mềm, không phải do phạm vi vai trò."""
     return world.grant("a1", "survey_request", scope="all",
                        actions=("read", "create", "write", "delete", "export", "approve"))
@@ -163,7 +163,7 @@ def test_trang_chu_bo_qua_phieu_da_xoa(world, actor, phieu):
     db, user = world.db, actor.user
     sr_service.delete_sr(db, phieu["xoa"], user.id)                # xóa lúc còn nháp
     for sid in phieu.values():
-        db.get(SurveyRequest, sid).status = "submitted"             # cả hai «chờ duyệt», một đã xóa
+        db.get(SurveyRequest, sid).status = "submitted"             # cả hai "chờ duyệt", một đã xóa
     db.commit()
 
     data = _body(overview(db, user))["data"]
@@ -265,7 +265,7 @@ def test_get_scoped_pham_vi_hep_van_loc_co_xoa(world, phieu):
 
 def test_lien_ket_tu_ycmh_va_chuoi_dinh_kem_bo_phieu_da_xoa(world, actor, phieu):
     from app.core import attachment_scope
-    from app.modules.purchase_request.controller import _linked_survey_requests
+    from app.modules.purchase_request.service import linked_survey_requests as _linked_survey_requests
     from app.modules.purchase_request.model import PurchaseRequest
     from app.modules.survey_request.model import SurveyRequestPr
 
@@ -284,7 +284,7 @@ def test_lien_ket_tu_ycmh_va_chuoi_dinh_kem_bo_phieu_da_xoa(world, actor, phieu)
     sr_service.delete_sr(db, phieu["xoa"], user.id)
     assert {x["code"] for x in _linked_survey_requests(db, pr)} == {"YCBG_GIU"}
 
-    # Đính kèm treo vào phiếu đã xóa: chứng từ cha «không còn» → 404; phiếu sống vẫn mở được.
+    # Đính kèm treo vào phiếu đã xóa: chứng từ cha "không còn" → 404; phiếu sống vẫn mở được.
     model, ids = attachment_scope.parent_records(db, "survey_request", phieu["xoa"])
     assert model is SurveyRequest and ids == []
     with pytest.raises(HTTPException) as e:
@@ -317,7 +317,7 @@ def test_tu_hoan_thanh_va_go_lien_ket_bo_qua_phieu_da_xoa(world, actor, phieu):
 
     sr_service.delete_sr(db, sid, user.id)
     row = db.get(SurveyRequest, sid)
-    row.status = "pr_created"          # giả lập phiếu đã xóa còn đứng ở «Đã tạo YCMH»
+    row.status = "pr_created"          # giả lập phiếu đã xóa còn đứng ở "Đã tạo YCMH"
     db.commit()
 
     sr_service._auto_complete_sr(db, sid, user.id)

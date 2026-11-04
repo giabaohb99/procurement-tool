@@ -112,6 +112,13 @@ export const appRoutes = {
     customsPriceSection: (section: string) => `/procurement/customs-prices/${section}`,
     /** duoc-CR-492 — trang chi tiết một thuốc BVTV (nằm dưới mục "Thuốc BVTV" nên cùng khóa gác). */
     customsPesticideDetail: (id: number | string) => `/procurement/customs-prices/pesticides/${id}`,
+    /**
+     * bao-CR-718 — lô xuất toàn bộ chạy nền của chính người dùng. ⚠️ `exports` KHÔNG được thành khóa
+     * trong `CUSTOMS_SECTIONS`: route tĩnh này đứng cạnh `customsPriceSection(':section')`.
+     * Chuông "xuất xong" của backend trỏ đúng `customsExportDetail(id)`.
+     */
+    customsExports: '/procurement/customs-prices/exports',
+    customsExportDetail: (id: number | string) => `/procurement/customs-prices/exports/${id}`,
   },
   /**
    * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì "Việc của tôi"
@@ -375,6 +382,8 @@ export const appRoutes = {
     roomUsage: '/report/room-usage',
     /** Đối tượng cần chú ý theo luật (duoc-CR-689, khóa 29). */
     legalWatch: '/report/legal-watch',
+    /** Làm việc vào ngày lễ, ngày nghỉ — nguồn phiếu nghỉ bù (duoc-CR-717, khóa 30). */
+    holidayWork: '/report/holiday-work',
     vehicleBooking: '/report/vehicle-booking',
     sealRequest: '/report/seal-request',
     document: '/report/document',
@@ -408,6 +417,8 @@ export const appRoutes = {
     emailTemplates: '/system/email-templates',
     /** Trang con sửa nội dung một mẫu email theo bước. */
     emailTemplate: (event: string) => `/system/email-templates/${event}`,
+    /** Nhật ký email (bao-CR-721): thư hệ đã gửi / lỗi, chỉ đọc. `?status=` và `?id=` đi qua URL. */
+    emailLogs: '/system/email-logs',
     /** Quản lý sao lưu CSDL hệ thống. */
     backups: '/system/backups',
     /**
@@ -515,6 +526,8 @@ export const appRoutes = {
     companyDetail: (id: number | string) => `/hr/companies/${id}`,
     /** Sơ đồ tổ chức tự vẽ từ dữ liệu (duoc-CR-669) — pháp nhân › phòng ban › người. */
     orgChart: '/hr/org-chart',
+    /** Cài đặt nhân sự (duoc-CR-713) — gác `setting.read`, sửa `setting.write`. */
+    settings: '/hr/settings',
     /** Danh mục Chức vụ — nguồn của ô chọn "Vị trí / Chức vụ" trên hồ sơ. */
     jobPositions: '/hr/job-positions',
     /** Thêm chức vụ mở TRANG RIÊNG, không phải hộp thoại — xem `CrudConfig.createRoute`. */
@@ -542,6 +555,10 @@ export const appRoutes = {
     leaveRequestNew: '/hr/leave-requests/new',
     leaveRequestDetail: (id: number | string) => `/hr/leave-requests/${id}`,
     leaveRequestPrint: (id: number | string) => `/print/leave-request/${id}`,
+    /** Phiếu xin nghỉ bù (duoc-CR-715 phase C) — đi làm ngày nghỉ, xin cộng ngày vào quỹ phép. */
+    leaveCompRequests: '/hr/leave-comp-requests',
+    leaveCompRequestNew: '/hr/leave-comp-requests/new',
+    leaveCompRequestDetail: (id: number | string) => `/hr/leave-comp-requests/${id}`,
     /** Lịch nghỉ — "tuần tới ai nghỉ". */
     leaveCalendar: '/hr/leave-calendar',
     /** Quỹ phép năm: cấp phát, chỉnh tay. */
@@ -554,6 +571,17 @@ export const appRoutes = {
     holidays: '/hr/holidays',
     holidayNew: '/hr/holidays/new',
     holidayDetail: (id: number | string) => `/hr/holidays/${id}`,
+    /** Ngày cấm nghỉ (duoc-CR-715): khoảng ngày công ty không muốn ai nghỉ. */
+    leaveBlocks: '/hr/leave-blocks',
+    leaveBlockNew: '/hr/leave-blocks/new',
+    leaveBlockDetail: (id: number | string) => `/hr/leave-blocks/${id}`,
+    /** Chính sách nghỉ phép (duoc-CR-717): gói "loại nghỉ → số ngày/năm", thẻ thứ 4 của Thiết lập. */
+    leavePolicies: '/hr/leave-policies',
+    leavePolicyNew: '/hr/leave-policies/new',
+    leavePolicyDetail: (id: number | string) => `/hr/leave-policies/${id}`,
+    /** Phân bổ chính sách cho nhân sự (duoc-CR-717) — mục con của Nghỉ phép; trang hàng loạt nằm DƯỚI nó. */
+    leavePolicyAssignments: '/hr/leave-policy-assignments',
+    leavePolicyBulkAssign: '/hr/leave-policy-assignments/bulk',
     /** Lịch làm việc: mẫu lịch tuần (trang riêng vì form dài) và việc gán lịch theo cấp. */
     workSchedules: '/hr/work-schedules',
     workScheduleNew: '/hr/work-schedules/new',

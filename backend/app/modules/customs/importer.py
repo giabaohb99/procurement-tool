@@ -2,7 +2,7 @@
 
 Lô nạp dùng lại `tab_import_batch` (`ImportModule.CUSTOMS_DECLARATION`), chế độ
 `DRY_RUN` (chạy thử, không ghi gì) hoặc `APPLY`. Thiết kế:
-`doc/erp/hai-quan/02-thiet-ke-ky-thuat.md` §3.1 + §4.
+`doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md` §3.1 + §4.
 
 ⚠️ **Nạp theo LÔ, CHỈ THÊM dòng chưa có — không ghi đè, không thay theo khoảng ngày**
 (bao-CR-541, đại ca chốt 01/10/2026). Mỗi dòng mang mã băm đủ các cột dữ liệu

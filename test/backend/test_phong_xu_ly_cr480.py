@@ -1,7 +1,7 @@
-"""bao-CR-480 — «Phòng xử lý» là một ô duy nhất, lọc theo nó, và tự điền cho phòng tự mua hàng.
+"""bao-CR-480 — "Phòng xử lý" là một ô duy nhất, lọc theo nó, và tự điền cho phòng tự mua hàng.
 
 Ba luật, đại ca chốt 24/09/2026 sau khi xem bộ đơn mẫu trên dev:
-  1. «Loại trừ phòng ban» trên chứng từ thu mua so cột PHÒNG XỬ LÝ (`handler_dept_id`),
+  1. "Loại trừ phòng ban" trên chứng từ thu mua so cột PHÒNG XỬ LÝ (`handler_dept_id`),
      không so phòng lập — quản lý thu mua chung trừ nhà máy phải thấy đơn nhân viên mình
      đang mua cho nhà máy, và KHÔNG thấy đơn nhà máy mua hộ phòng khác.
   2. Người của phòng TỰ MUA HÀNG (phòng có ai đó giữ bậc `dept_proc`) lập phiếu thì phòng
@@ -16,7 +16,7 @@ from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 from app.modules.purchase_order.model import PurchaseOrder
 from app.modules.purchase_request import service as pr_service
-from app.modules.purchase_request.controller import _out as pr_out
+from app.modules.purchase_request.serializer import _out as pr_out
 from app.modules.purchase_request.model import PurchaseRequest
 from app.modules.purchase_request.schema import PRCreate, PRUpdate
 from app.modules.role.model import Permission, Role
@@ -173,7 +173,7 @@ def test_create_pr_keeps_an_explicit_handler_and_other_departments_default_to_sh
 
 
 def test_update_to_shared_purchasing_is_respected_not_refilled(db, seed, two_departments):
-    """Sau khi tạo, nhà máy đổi sang «Thu mua chung» (0) là lựa chọn có chủ ý."""
+    """Sau khi tạo, nhà máy đổi sang "Thu mua chung" (0) là lựa chọn có chủ ý."""
     factory_id, _ = two_departments
     _, factory_emp = _person(db, seed, factory_id, scope="dept_proc")
     pr = pr_service.create_pr(db, PRCreate(company_id=seed.company_id, requester_id=factory_emp.id,
@@ -224,7 +224,7 @@ def test_out_shows_department_from_employee_when_ticket_left_it_blank(db, seed):
 
 def test_backfill_flips_legacy_factory_tickets_and_leaves_shared_purchasing_alone(
         db, seed, two_departments):
-    """Phiếu cũ «không nhờ ai» của phòng tự mua → phòng xử lý = chính phòng đó, ở cả ba
+    """Phiếu cũ "không nhờ ai" của phòng tự mua → phòng xử lý = chính phòng đó, ở cả ba
     chứng từ; phiếu phòng thường và phiếu đã có phòng xử lý thì không đụng."""
     factory_id, purchasing_id = two_departments
     _person(db, seed, factory_id, scope="dept_proc")

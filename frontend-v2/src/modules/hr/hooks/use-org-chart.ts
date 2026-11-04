@@ -1,17 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import { orgChartApi } from '../api/org-chart-api'
-import { buildOrgChartTree } from '../utils/org-chart-tree'
 
-/** Đọc thẳng dữ liệu mỗi lần mở (không lưu bản vẽ), nên đổi phòng / quản lý là sơ đồ đổi theo. */
+/**
+ * Dữ liệu PHẲNG của sơ đồ tổ chức. Đọc thẳng mỗi lần mở (không lưu bản vẽ), nên đổi phòng /
+ * quản lý là sơ đồ đổi theo; cây do trang dựng bằng `buildOrgChartForest`.
+ */
 export function useOrgChart(options: { enabled?: boolean } = {}) {
-  const query = useQuery({
+  return useQuery({
     queryKey: queryKeys.hr.orgChart(),
     queryFn: orgChartApi.get,
     enabled: options.enabled ?? true,
   })
-  const tree = useMemo(() => (query.data ? buildOrgChartTree(query.data) : []), [query.data])
-  return { ...query, tree }
 }

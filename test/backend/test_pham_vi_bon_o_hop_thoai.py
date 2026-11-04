@@ -1,4 +1,4 @@
-"""Cụm 01 — năm ô trong hộp thoại «Phạm vi — <vai trò>» của màn Phân quyền.
+"""Cụm 01 — năm ô trong hộp thoại "Phạm vi — <vai trò>" của màn Phân quyền.
 
 Hộp thoại ghi *"Để trống một mục = không giới hạn chiều đó"*. Người khai quyền
 đọc năm ô ấy như năm bộ lọc cùng loại, nhưng mã xử **bốn ô thu hẹp (AND) và
@@ -31,7 +31,7 @@ from scope_factory import build_world  # noqa: F401 — fixture `world` dùng n�
 #  nhập trước CR-086, và là đường lùi `_dept_match` chỉ chạy cho chúng. Bỏ chúng
 #  đi thì A9/B8/B10 mất sạch thứ chúng canh.
 #
-#  bao-CR-480: «Loại trừ phòng ban» trên chứng từ thu mua nay so PHÒNG XỬ LÝ
+#  bao-CR-480: "Loại trừ phòng ban" trên chứng từ thu mua nay so PHÒNG XỬ LÝ
 #  (`handler_dept_id`). Phiếu mẫu có id phòng thì coi như phòng đó TỰ xử lý
 #  (`handler_dept_id = department_id`); phiếu cũ `department_id = 0` không có
 #  phòng xử lý → thu mua chung (0) → không ô loại trừ nào bắt được nữa (A9).
@@ -100,7 +100,7 @@ def model_pr():
 
 
 def test_a1_o_cong_ty_duoc_xem_thang_ca_pham_vi_tat_ca_cua_vai_tro(world, pr_ids):
-    """Ô «Công ty được xem» phải THU HẸP kể cả khi vai trò để phạm vi `tất cả`.
+    """Ô "Công ty được xem" phải THU HẸP kể cả khi vai trò để phạm vi `tất cả`.
 
     Hỏng thì hỏng lặng: `_role_scope_cond` trả `None` cho `all`, mà `None` trong
     `scope_condition` nghĩa là *thấy tất*. Nếu phần include công ty cũng rơi vào

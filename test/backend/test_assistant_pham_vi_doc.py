@@ -155,7 +155,7 @@ TOOL_KHONG_PHAM_VI = {
     "list_my_meetings": "cuộc họp người hỏi đã gửi làm biên bản",
     "rewrite_meeting_minutes": "viết lại biên bản cuộc họp của chính người hỏi",
     "save_meeting_template": "lưu mẫu biên bản riêng vào sổ ghi nhớ của chính người hỏi",
-    "latest_meeting_report": "cuộc họp mới nhất của chính người hỏi + thư mục «Họp» trên Drive của chính họ",
+    "latest_meeting_report": "cuộc họp mới nhất của chính người hỏi + thư mục \"Họp\" trên Drive của chính họ",
     #  ai-CR-140: đăng ký bản tin — tab_agent_brief_sub lọc cứng theo ctx.user.id, không đọc bản ghi nghiệp vụ.
     "manage_briefs": "bật / tắt / hẹn bản tin của chính người hỏi",
     #  ai-CR-178 (phase 23.1): nguồn là web CÔNG KHAI (không của ai), kết quả về chat riêng của chính người hỏi
@@ -181,7 +181,8 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     #  74 = 73 + `report_summary` (ai-CR-208, K11 doc/erp/21); 75 = + `dataset_query` (ai-CR-210, K12); 76 = + `erp_read` (ai-CR-211, K13).
     #  79 = 76 + `list_skills` / `read_skill` / `read_skill_file` (ai-CR-220, K7 — đọc Kho skill thay gói tri thức).
     #  81 = 79 + `team_capacity` / `task_type_stats` (kh-AI1-2, doc/erp/tai-lieu-ai/22 §4); 82 = + `plan_context` (kh-AI1-3); 83 = + `office_read` (kh-AI2-3); 85 = + `draft_vehicle_booking` / `draft_seal_request` (kh-AI2-6); 86 = + `propose_approval` (kh-AI2-7); 87 = + `background_jobs` (bao-CR-703).
-    assert len(thuc_te) == 87, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    #  88 = + `draft_leave_comp_request` (duoc-CR-715 C — soạn nháp phiếu xin nghỉ bù).
+    assert len(thuc_te) == 88, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

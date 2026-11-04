@@ -1,7 +1,7 @@
 """NGƯỜI DUYỆT PHẢI ĐỌC ĐƯỢC THỨ MÌNH KÝ.
 
-Lỗi thật, bắt được trên trình duyệt ngày 18/08/2026: trưởng bộ phận mở «Việc của
-tôi», thấy dòng việc, bấm sang văn bản — nhận **404 Không tìm thấy văn bản**. Họ
+Lỗi thật, bắt được trên trình duyệt ngày 18/08/2026: trưởng bộ phận mở "Việc của
+tôi", thấy dòng việc, bấm sang văn bản — nhận **404 Không tìm thấy văn bản**. Họ
 chỉ còn cái tiêu đề trên dòng việc để mà ký. Nguyên nhân: người duyệt trong luồng
 thường không có vai trò nào ở phân hệ Văn bản, mà bộ máy duyệt lại chỉ hỏi "anh
 có việc ở phiếu này không" — hai hệ hỏi hai câu khác nhau về cùng một người.
@@ -119,7 +119,7 @@ def test_van_ban_khac_thi_khong_theo_lay(db, align, seed):
 # ── Chiều ngược: KHÔNG đọc được văn bản thì cũng không đọc được PHIẾU của nó ──
 
 def test_nguoi_la_khong_doc_duoc_phien_duyet_va_khong_ghi_duoc_y_kien(db, align):
-    """Lỗ bắt được 25/08/2026 khi chịu tải bốn nút của hộp «Duyệt / Trả lại».
+    """Lỗ bắt được 25/08/2026 khi chịu tải bốn nút của hộp "Duyệt / Trả lại".
 
     Văn thư pháp nhân khác mở `/api/documents/507` ăn **404**, nhưng
     `/api/approvals/of/document/507` trả **200** kèm tên văn bản, tên luồng, tên

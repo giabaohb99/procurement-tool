@@ -1,14 +1,16 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
 import type {
   ApprovalFlowStrip,
   Holiday,
+  LeaveBlockConflict,
   LeaveBalance,
   LeaveBalanceHint,
   LeaveCloseYearReview,
   LeaveInboxRow,
   LeaveRequest,
   LeaveType,
+  LeaveTypeQuotaRule,
   SeniorityTier,
 } from '../types/leave'
 
@@ -25,6 +27,20 @@ const HOLIDAYS = '/api/holidays'
 const APPROVALS = '/api/approvals'
 const APPROVAL_STEPS = `${APPROVALS}/steps`
 
+/**
+ * Thân lệnh Cấp quỹ năm. Bốn ô lọc (duoc-CR-717) chỉ THU HẸP danh sách người trong phạm vi người
+ * bấm; `0` / bỏ trống = không lọc. Mảng rỗng = mọi loại nghỉ có trừ quỹ / mọi nhân sự đang làm.
+ */
+export interface LeaveBalanceAllocatePayload {
+  year: number
+  leave_type_ids?: number[]
+  employee_ids?: number[]
+  company_id?: number
+  department_id?: number
+  employment_type?: number
+  job_level?: number
+}
+
 /** Một khoảng ngày gửi lên — buổi dùng đúng bộ mã `LEAVE_SESSION`. */
 export interface LeavePeriodPayload {
   from_date: string
@@ -38,6 +54,8 @@ export interface LeavePeriodsEstimate {
   periods: { from_date?: string; to_date?: string; days: number }[]
   total_days: number
   schedule_name?: string
+  /** duoc-CR-715: các khoảng "ngày cấm nghỉ" mà ngày đang chọn đụng phải (rỗng = không). */
+  block_conflicts?: LeaveBlockConflict[]
 }
 
 export interface LeaveRequestPayload {
@@ -107,7 +125,8 @@ export const leaveApi = {
     employee_id?: number
     from_time?: string
     to_time?: string
-  }) => apiGet<{ total_days: number; schedule_name?: string }>(`${REQUESTS}/tools/estimate-days`, { params }),
+  }) => apiGet<{ total_days: number; schedule_name?: string; block_conflicts?: LeaveBlockConflict[] }>(
+      `${REQUESTS}/tools/estimate-days`, { params }),
 
   /**
    * Số ngày GỢI Ý cho từng khoảng của đơn nhiều khoảng (duoc-CR-683) — một lượt cho cả danh
@@ -151,7 +170,7 @@ export const leaveApi = {
   adjustBalance: (id: number, payload: { adjusted_days: number; note: string }) =>
     apiPatch<LeaveBalance>(`${BALANCES}/${id}/adjust`, payload),
 
-  allocate: (payload: { year: number; leave_type_ids?: number[]; employee_ids?: number[] }) =>
+  allocate: (payload: LeaveBalanceAllocatePayload) =>
     apiPost<{
       year: number
       employee_count: number
@@ -191,6 +210,16 @@ export const leaveApi = {
     apiPatch<SeniorityTier>(`${TIERS}/${id}`, payload),
 
   removeTier: (id: number) => apiDelete<null>(`${TIERS}/${id}`),
+
+  /** Hạn mức theo hình thức nhân viên / cấp bậc của một loại nghỉ (duoc-CR-715). */
+  listQuotas: (leaveTypeId: number) =>
+    apiGet<{ total: number; items: LeaveTypeQuotaRule[] }>(`${TYPES}/${leaveTypeId}/quotas`),
+
+  /** THAY cả danh sách (tối đa 50 dòng). */
+  replaceQuotas: (leaveTypeId: number, items: LeaveTypeQuotaRule[]) =>
+    apiPut<{ total: number; items: LeaveTypeQuotaRule[] }>(`${TYPES}/${leaveTypeId}/quotas`, {
+      items,
+    }),
 
   listHolidays: (params: ListParams = {}) =>
     apiGet<PaginatedResult<Holiday>>(HOLIDAYS, { params }),

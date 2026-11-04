@@ -72,7 +72,7 @@ def create_rule(db: Session, data: DocTypeLinkRuleCreate, actor: int) -> DocType
             f"Đã có quy tắc \"{RELATION_LABELS.get(values['relation'], '')}\" cho cặp "
             "loại này. Sửa dòng cũ thay vì thêm dòng thứ hai — hai dòng mâu thuẫn "
             "nhau thì không biết tin dòng nào.",
-        )
+        ) from None
     db.refresh(rule)
     return rule
 
@@ -89,7 +89,7 @@ def update_rule(db: Session, rule: DocTypeLinkRule, data: DocTypeLinkRuleUpdate,
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(400, "Trùng với một quy tắc đã có cho cặp loại này")
+        raise HTTPException(400, "Trùng với một quy tắc đã có cho cặp loại này") from None
     db.refresh(rule)
     return rule
 

@@ -9,7 +9,7 @@ năng — hai tờ giấy cùng nói về một văn bản mà gọi hai tên kh
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from .security_level_model import KIND_CONFIDENTIAL, KIND_URGENCY, SecurityLevel
+from .security_level_model import KIND_CONFIDENTIAL, SecurityLevel
 
 
 def label_maps(db: Session) -> tuple[dict[int, str], dict[int, str]]:

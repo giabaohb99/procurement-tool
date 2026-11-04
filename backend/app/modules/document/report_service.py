@@ -91,14 +91,14 @@ def fetch_rows(db: Session, user, profile, company_id: int | None, d_from: date,
                  db.query(DocType.id, DocType.name, DocType.group_code)
                  .filter(DocType.id.in_(type_ids)).all()} if type_ids else {})
     company_ids = {r.company_id for r in cols if r.company_id}
-    companies = ({c_id: name for c_id, name in db.query(Company.id, Company.name)
-                 .filter(Company.id.in_(company_ids)).all()} if company_ids else {})
+    companies = (dict(db.query(Company.id, Company.name)
+                 .filter(Company.id.in_(company_ids)).all()) if company_ids else {})
     dept_ids = {r.department_id for r in cols if r.department_id}
-    departments = ({d_id: name for d_id, name in db.query(Department.id, Department.name)
-                   .filter(Department.id.in_(dept_ids)).all()} if dept_ids else {})
+    departments = (dict(db.query(Department.id, Department.name)
+                   .filter(Department.id.in_(dept_ids)).all()) if dept_ids else {})
     drafter_ids = {r.drafter_employee_id for r in cols if r.drafter_employee_id}
-    drafters = ({e_id: name for e_id, name in db.query(Employee.id, Employee.full_name)
-                .filter(Employee.id.in_(drafter_ids)).all()} if drafter_ids else {})
+    drafters = (dict(db.query(Employee.id, Employee.full_name)
+                .filter(Employee.id.in_(drafter_ids)).all()) if drafter_ids else {})
     _, urgency_labels = label_maps(db)
 
     rows = []

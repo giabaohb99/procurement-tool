@@ -1,4 +1,4 @@
-"""bao-CR-490 — «Trưởng phòng phê duyệt» + hai người ký chọn được trên bản in nội bộ.
+"""bao-CR-490 — "Trưởng phòng phê duyệt" + hai người ký chọn được trên bản in nội bộ.
 
 Đại ca chốt 25/09/2026: ba chứng từ YCMH · YCBG · ĐMH có cột `approver_employee_id` = NHÂN SỰ
 thực bấm Duyệt ở chặng trưởng phòng; bản in nội bộ cho chọn ô ký hiện người duyệt hay trưởng
@@ -16,9 +16,11 @@ from app.core.audit import record
 from app.core.print_signers import approver_fields, department_head_block, stamp_approver
 from app.modules.department.model import Department
 from app.modules.purchase_order import controller as po_ctl
+from app.modules.purchase_order import serializer as po_ser
 from app.modules.purchase_order.model import PurchaseOrder
 from app.modules.purchase_order.schema import RejectIn
 from app.modules.purchase_request import controller as pr_ctl
+from app.modules.purchase_request import serializer as pr_ser
 from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
 from app.modules.purchase_request.schema import ApproveIn
 from app.modules.survey_request import controller as sr_ctl
@@ -102,7 +104,7 @@ def test_pr_print_falls_back_to_audit_for_old_tickets(db, seed, dept_with_head):
     pr.status = "approved"
     db.commit()
     record(db, _tp_user_id(db), "purchase_request", pr.id, "approved")
-    out = pr_ctl._approval_signers(db, pr)
+    out = pr_ser._approval_signers(db, pr)
     assert out["approver_name"] == "Trưởng Phòng", "cột 0 → tra nhật ký như trước CR-490"
 
 
@@ -130,11 +132,11 @@ def test_po_approve_stamps_and_unapprove_clears(db, seed, dept_with_head):
     po_ctl.approve_po(po.id, BackgroundTasks(), db=db, user=USER)
     db.refresh(po)
     assert po.approver_employee_id == db.get(User, USER.id).employee_id
-    signers = po_ctl.resolve_print_signers(db, po)
+    signers = po_ser.resolve_print_signers(db, po)
     assert signers["approver_name"] == "Người YC"
     assert signers["dept_head_name"] == "Trưởng Phòng"
 
     po_ctl.unapprove_po(po.id, RejectIn(reason="sai giá"), db=db, user=USER)
     db.refresh(po)
-    #  bao-CR-499: hủy duyệt KHÔNG xóa cột nữa — nó đồng thời là «người được chọn» cho lần gửi sau.
+    #  bao-CR-499: hủy duyệt KHÔNG xóa cột nữa — nó đồng thời là "người được chọn" cho lần gửi sau.
     assert po.approver_employee_id == db.get(User, USER.id).employee_id

@@ -6,10 +6,12 @@ import { queryKeys } from '@/shared/constants/query-keys'
 import type { ListParams } from '@/shared/types/api'
 import {
   leaveApi,
+  type LeaveBalanceAllocatePayload,
   type LeavePeriodPayload,
   type LeavePeriodsEstimate,
   type LeaveRequestPayload,
 } from '../api/leave-api'
+import type { LeaveTypeQuotaRule } from '../types/leave'
 
 /**
  * Hook của phân hệ Nghỉ phép (CR-259).
@@ -140,7 +142,12 @@ export function useEstimateLeavePeriods(params: {
           from_time: body.from_time,
           to_time: body.to_time,
         })
-        return { periods: [{ days: one.total_days }], total_days: one.total_days, schedule_name: one.schedule_name }
+        return {
+          periods: [{ days: one.total_days }],
+          total_days: one.total_days,
+          schedule_name: one.schedule_name,
+          block_conflicts: one.block_conflicts,
+        }
       }
       return leaveApi.estimatePeriods({
         employee_id: body.employee_id,
@@ -214,8 +221,7 @@ export function useAdjustLeaveBalance() {
 export function useAllocateLeaveBalance() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (values: { year: number; leave_type_ids?: number[]; employee_ids?: number[] }) =>
-      leaveApi.allocate(values),
+    mutationFn: (values: LeaveBalanceAllocatePayload) => leaveApi.allocate(values),
     onSuccess: (data) => {
       toast.success(`Đã cấp quỹ phép năm ${data.year} — thêm ${data.created} dòng`)
       //  Q4 — nói thẳng ra ai chưa có ngày vào làm. Những người này được cấp quỹ
@@ -312,6 +318,25 @@ export function useDeleteSeniorityTier(leaveTypeId: number) {
     onSuccess: () => {
       toast.success('Đã xóa bậc')
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.seniorityTiers(leaveTypeId) })
+    },
+  })
+}
+
+export function useLeaveTypeQuotas(leaveTypeId: number) {
+  return useQuery({
+    queryKey: queryKeys.hr.leaveTypeQuotas(leaveTypeId),
+    queryFn: () => leaveApi.listQuotas(leaveTypeId),
+    enabled: leaveTypeId > 0,
+  })
+}
+
+export function useReplaceLeaveTypeQuotas(leaveTypeId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (items: LeaveTypeQuotaRule[]) => leaveApi.replaceQuotas(leaveTypeId, items),
+    onSuccess: () => {
+      toast.success('Đã lưu hạn mức theo nhóm')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leaveTypeQuotas(leaveTypeId) })
     },
   })
 }

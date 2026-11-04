@@ -179,7 +179,7 @@ def test_period_text():
     assert got == "27/10/2026 · 03/11 (chiều) → 07/11/2026"
 
 
-# ── Phase 3 ── «Ai làm / ai nghỉ», hồ sơ làm việc ngày, tải việc: ngày KHE không phải ngày nghỉ ──
+# ── Phase 3 ── "Ai làm / ai nghỉ", hồ sơ làm việc ngày, tải việc: ngày KHE không phải ngày nghỉ ──
 
 def _raw_two_period_leave(db, emp, d1, d2a, d2b, status=3):
     """Đơn dựng tay: đầu đơn là bao ngoài [d1, d2b], hai dòng khoảng [d1] và [d2a..d2b]."""

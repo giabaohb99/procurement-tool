@@ -27,6 +27,7 @@ from .flow_model import (APPROVER_DIRECT_MANAGER, APPROVER_FIELD, APPROVER_LEVEL
                          APPROVER_ROLE,
                          NODE_CC, NO_APPROVER_FALLBACK, SKIP_ADJACENT,
                          SKIP_ANY_BEFORE, MULTI_MODE_LABELS, NODE_KIND_LABELS)
+from .self_approval_policy import strict_self_exclusion
 
 MODE_FLOW = "flow"
 MODE_LEGACY = "legacy"
@@ -105,7 +106,8 @@ def preview_flow(db: Session, entity: str, subject: dict,
             continue
 
         step = _stage_step(db, node, subject, submitter_employee_id,
-                            approved_prev_stage, approved_any_stage)
+                            approved_prev_stage, approved_any_stage,
+                            strict=strict_self_exclusion(entity))
         steps.append(step)
 
         newly_covered = {row["employee_id"] for row in step["approvers"]}
@@ -117,8 +119,12 @@ def preview_flow(db: Session, entity: str, subject: dict,
 
 
 def _stage_step(db: Session, node, subject: dict, submitter_employee_id: int | None,
-                 approved_prev_stage: set[int], approved_any_stage: set[int]) -> dict:
-    """Một chặng DUYỆT (đã loại CC) — áp đủ ba luật của `open_stage`."""
+                 approved_prev_stage: set[int], approved_any_stage: set[int],
+                 strict: bool = False) -> dict:
+    """Một chặng DUYỆT (đã loại CC) — áp đủ ba luật của `open_stage`.
+
+    `strict` = Cài đặt nhân sự "Chặn tự duyệt đơn nghỉ" (duoc-CR-713), cùng cờ `open_stage` dùng.
+    """
     step = {
         "seq": node.seq, "name": node.name or "", "rule_label": _rule_label(db, node),
         "approvers": [], "fallback_used": False, "pending_field": "", "note": "",
@@ -137,7 +143,8 @@ def _stage_step(db: Session, node, subject: dict, submitter_employee_id: int | N
         step["unresolved_reason"] = f"Sẽ là {FIELD_LABELS.get(field, field or 'người duyệt')} — chưa chọn"
         return step
 
-    ids = instance_service.exclude_submitter_ids(node.approver_kind, submitter_employee_id, raw_ids)
+    ids = instance_service.exclude_submitter_ids(node.approver_kind, submitter_employee_id, raw_ids,
+                                                 strict=strict)
 
     if node.skip_duplicate == SKIP_ADJACENT:
         already = approved_prev_stage
@@ -165,7 +172,8 @@ def _stage_step(db: Session, node, subject: dict, submitter_employee_id: int | N
                        "— chặng này sẽ tự động qua, không cần ai bấm thêm.")
         return step
 
-    if node.on_no_approver == NO_APPROVER_FALLBACK and node.fallback_employee_id:
+    fallback_is_submitter = strict and node.fallback_employee_id == submitter_employee_id
+    if node.on_no_approver == NO_APPROVER_FALLBACK and node.fallback_employee_id and not fallback_is_submitter:
         step["approvers"] = _approver_profiles(db, [node.fallback_employee_id])
         step["fallback_used"] = True
         step["note"] = "Không tìm được người duyệt theo quy tắc — sẽ chuyển cho người dự phòng."
@@ -235,7 +243,8 @@ def _employee_names(db: Session, ids: list[int]) -> list[str]:
     return [row["name"] for row in _approver_profiles(db, ids)]
 
 
-def describe_step(db: Session, node, subject: dict, submitter_employee_id: int | None) -> dict:
+def describe_step(db: Session, node, subject: dict, submitter_employee_id: int | None,
+                  entity: str = "") -> dict:
     """Mô tả MỘT bước rời rạc — trợ lý AI dùng (`assistant/tools/document_tool.py`).
 
     Trước 23/09/2026 hàm này (`_describe_step`) sống trong chính công cụ trợ lý,
@@ -250,7 +259,8 @@ def describe_step(db: Session, node, subject: dict, submitter_employee_id: int |
     """
     approvers = approver_resolver.resolve(db, node, subject, submitter_employee_id)
     approvers = instance_service.exclude_submitter_ids(
-        node.approver_kind, submitter_employee_id, approvers)
+        node.approver_kind, submitter_employee_id, approvers,
+        strict=strict_self_exclusion(entity))   # duoc-CR-713: trợ lý không nói "bạn tự duyệt bước X"
 
     rule = _rule_label(db, node)
     step = {

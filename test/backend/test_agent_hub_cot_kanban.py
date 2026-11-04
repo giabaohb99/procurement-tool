@@ -1,5 +1,5 @@
-"""ai-CR-181 (đại ca 13/10) — bot biết CỘT kanban của dự án: nháp việc nhận «trạng thái là todo» = tên cột, không nói thì cột
-đầu và ghi vào «em đang hiểu là»; «dự án X có cột nào» trả danh sách cột; mỗi việc trong danh sách có cột đang nằm."""
+"""ai-CR-181 (đại ca 13/10) — bot biết CỘT kanban của dự án: nháp việc nhận "trạng thái là todo" = tên cột, không nói thì cột
+đầu và ghi vào "em đang hiểu là"; "dự án X có cột nào" trả danh sách cột; mỗi việc trong danh sách có cột đang nằm."""
 from app.modules.user.model import User
 
 

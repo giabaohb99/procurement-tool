@@ -369,8 +369,8 @@ REPORT_SORTABLE_FIELDS = frozenset(
 )
 
 _EMPTY_REPORT_ROW = {
-    **{k: "" for k in REPORT_TEXT_FIELDS},
-    **{k: None for k in REPORT_NUMBER_FIELDS},
+    **dict.fromkeys(REPORT_TEXT_FIELDS, ""),
+    **dict.fromkeys(REPORT_NUMBER_FIELDS),
 }
 
 

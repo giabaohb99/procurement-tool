@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from app.modules.employee.field_limits import Str30, Str100, Str150, Str255, Str500, Str1000
 from .constants import (GENDER_LABELS, LEAVE_REQUEST_STATUS_LABELS,
                         LEAVE_SESSION_LABELS, LEAVE_UNIT_LABELS, SESSION_FULL,
-                        UNIT_DAY, YEAR_END_DROP, YEAR_END_MODE_LABELS, label)
+                        UNIT_DAY, YEAR_END_DROP, LeaveAccrualMode, QUOTA_BASIS_VALUES, YEAR_END_MODE_LABELS, label)
 
 #  Bí danh của `datetime.date`, dùng cho các lớp có TRƯỜNG TÊN LÀ `date`
 #  (`HolidayBase`, `HolidayUpdate`). Trong thân lớp, Python gán tên đích TRƯỚC
@@ -30,6 +30,7 @@ class LeaveTypeBase(BaseModel):
     name: str = Field(..., max_length=100)
     is_paid: bool = True
     counts_balance: bool = False
+    is_compensatory: bool = False
     annual_quota_days: float = 0.0
     max_days_per_request: float = 0.0
     #  ⚠️ KHÔNG khai `carry_over`: công tắc hai nước đó đã thay bằng
@@ -45,6 +46,10 @@ class LeaveTypeBase(BaseModel):
     #  (05/09/2026). Cột còn trong bảng nhưng không đọc, không sửa, không trả về.
     require_attachment: bool = False
     exclude_holiday: bool = True
+    #  duoc-CR-715 — mặc định = hành vi cũ.
+    accrual_mode: int = Field(int(LeaveAccrualMode.FULL_YEAR), ge=1, le=3)
+    applicable_after_days: int = Field(0, ge=0, le=3650)
+    max_negative_days: float = Field(0.0, ge=0, le=30)
     sort_order: int = 0
     is_active: bool = True
     note: str = Field("", max_length=500)
@@ -67,6 +72,7 @@ class LeaveTypeUpdate(BaseModel):
     name: Str100 | None = None
     is_paid: bool | None = None
     counts_balance: bool | None = None
+    is_compensatory: bool | None = None
     annual_quota_days: float | None = None
     max_days_per_request: float | None = None
     year_end_mode: int | None = None
@@ -77,6 +83,9 @@ class LeaveTypeUpdate(BaseModel):
     gender: int | None = None
     require_attachment: bool | None = None
     exclude_holiday: bool | None = None
+    accrual_mode: int | None = Field(None, ge=1, le=3)
+    applicable_after_days: int | None = Field(None, ge=0, le=3650)
+    max_negative_days: float | None = Field(None, ge=0, le=30)
     sort_order: int | None = None
     is_active: bool | None = None
     note: Str500 | None = None
@@ -92,6 +101,34 @@ class LeaveTypeResponse(LeaveTypeBase):
     @property
     def year_end_mode_label(self) -> str:
         return label(YEAR_END_MODE_LABELS, self.year_end_mode)
+
+    class Config:
+        from_attributes = True
+
+
+class QuotaRuleItem(BaseModel):
+    """Một dòng hạn mức theo nhóm — `basis_value` là mã trong bộ mã nhân sự tương ứng."""
+
+    basis: int
+    basis_value: int = Field(..., ge=1, le=99)
+    quota_days: float = Field(..., ge=0, le=366)
+
+    @field_validator("basis")
+    @classmethod
+    def _known_basis(cls, v: int) -> int:
+        if v not in QUOTA_BASIS_VALUES:
+            raise ValueError("Cơ sở hạn mức phải là 1 (hình thức nhân viên) hoặc 2 (cấp bậc)")
+        return v
+
+
+class QuotaRuleReplace(BaseModel):
+    """Thay CẢ danh sách — trần 50 dòng (luật trần số dòng của backend-input-limits)."""
+
+    items: list[QuotaRuleItem] = Field(default_factory=list, max_length=50)
+
+
+class QuotaRuleResponse(QuotaRuleItem):
+    id: int = 0
 
     class Config:
         from_attributes = True
@@ -154,6 +191,59 @@ class HolidayResponse(HolidayBase):
         from_attributes = True
 
 
+# ── Ngày cấm nghỉ (duoc-CR-715) ─────────────────────────────────────────────────
+
+BLOCK_MAX_SPAN_DAYS = 366
+BLOCK_MIN_YEAR, BLOCK_MAX_YEAR = 2000, 2100
+
+
+def check_block_range(from_date: date, to_date: date) -> str:
+    """Câu lỗi tiếng Việt nếu khoảng cấm không hợp lệ, `""` nếu hợp lệ. Dùng chung cho tạo và sửa."""
+    if not (BLOCK_MIN_YEAR <= from_date.year <= BLOCK_MAX_YEAR
+            and BLOCK_MIN_YEAR <= to_date.year <= BLOCK_MAX_YEAR):
+        return f"Ngày cấm nghỉ phải nằm trong khoảng năm {BLOCK_MIN_YEAR} đến {BLOCK_MAX_YEAR}."
+    if to_date < from_date:
+        return "\"Đến ngày\" không được trước \"Từ ngày\"."
+    if (to_date - from_date).days + 1 > BLOCK_MAX_SPAN_DAYS:
+        return f"Một khoảng cấm nghỉ dài tối đa {BLOCK_MAX_SPAN_DAYS} ngày."
+    return ""
+
+
+class LeaveBlockPeriodBase(BaseModel):
+    #  `0` = mọi pháp nhân / mọi phòng ban.
+    company_id: int = Field(0, ge=0)
+    department_id: int = Field(0, ge=0)
+    from_date: DateOnly
+    to_date: DateOnly
+    reason: str = Field("", max_length=255)
+    is_active: bool = True
+
+
+class LeaveBlockPeriodCreate(LeaveBlockPeriodBase):
+    @model_validator(mode="after")
+    def _check_range(self):
+        message = check_block_range(self.from_date, self.to_date)
+        if message:
+            raise ValueError(message)
+        return self
+
+
+class LeaveBlockPeriodUpdate(BaseModel):
+    company_id: int | None = Field(None, ge=0)
+    department_id: int | None = Field(None, ge=0)
+    from_date: DateOnly | None = None
+    to_date: DateOnly | None = None
+    reason: Str255 | None = None
+    is_active: bool | None = None
+
+
+class LeaveBlockPeriodResponse(LeaveBlockPeriodBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
 # ── Quỹ phép ────────────────────────────────────────────────────────────────────
 
 class LeaveBalanceResponse(BaseModel):
@@ -166,6 +256,8 @@ class LeaveBalanceResponse(BaseModel):
     seniority_days: float
     carried_days: float
     adjusted_days: float
+    #  Ngày nghỉ bù đã duyệt (duoc-CR-715 C) — đã nằm trong total_days / remaining_days.
+    comp_days: float = 0.0
     used_days: float
     pending_days: float
     #  Đã mang khỏi dòng này lúc kết sổ; `carried_expired_days` là phần mang
@@ -197,6 +289,11 @@ class LeaveBalanceAllocate(BaseModel):
     leave_type_ids: list[int] = Field(default_factory=list)
     #  Bỏ trống = mọi nhân sự đang làm việc trong phạm vi người bấm.
     employee_ids: list[int] = Field(default_factory=list)
+    #  duoc-CR-717: ô lọc THU HẸP danh sách người được cấp (0 = bỏ qua). Luôn nằm trong phạm vi người bấm.
+    company_id: int = Field(0, ge=0)
+    department_id: int = Field(0, ge=0)
+    employment_type: int = Field(0, ge=0)
+    job_level: int = Field(0, ge=0)
 
 
 class LeaveBalanceCloseYear(BaseModel):

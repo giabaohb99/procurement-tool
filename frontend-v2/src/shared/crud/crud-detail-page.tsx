@@ -5,7 +5,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
-import { AuditTimeline } from '@/shared/audit'
+import { AuditActivityFeed, AuditTimeline } from '@/shared/audit'
+import { FormSection } from '@/shared/ui/form-section'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
@@ -21,6 +22,8 @@ import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { cn } from '@/shared/utils/cn'
+import { CrudDetailFlatLayout } from './crud-detail-flat-layout'
+import { CrudTabDraftProvider } from './crud-tab-draft-provider'
 import { CrudFormFields } from './crud-form-fields'
 import { buildFormDefaults, toApiPayload } from './field-values'
 import { resolveFormFields } from './resolve-form-fields'
@@ -44,9 +47,18 @@ interface CrudDetailPageProps<T> {
  * tính / dấu vết / nút Xóa (chưa có gì để kể), ô khai `readonlyOnEdit` mở ra cho
  * nhập, và lưu xong thì nhảy thẳng sang trang chi tiết của bản ghi vừa tạo.
  */
-export function CrudDetailPage<T extends CrudRecord>({
-  config,
-}: CrudDetailPageProps<T>) {
+export function CrudDetailPage<T extends CrudRecord>({ config }: CrudDetailPageProps<T>) {
+  //  Bản nháp của tab con sống qua lượt đổi tab, nhưng KHÔNG qua lượt đổi bản ghi (`key` theo `:id`) —
+  //  xem `use-crud-tab-draft.ts`.
+  const { id } = useParams()
+  return (
+    <CrudTabDraftProvider key={id ?? 'new'}>
+      <CrudDetailPageBody config={config} />
+    </CrudTabDraftProvider>
+  )
+}
+
+function CrudDetailPageBody<T extends CrudRecord>({ config }: CrudDetailPageProps<T>) {
   const { id } = useParams()
   const navigate = useNavigate()
   const { can } = usePermission()
@@ -156,24 +168,24 @@ export function CrudDetailPage<T extends CrudRecord>({
 
   const onSubmit = (values: Record<string, unknown>) =>
     once(async () => {
-    //  Dựng bộ ô theo GIÁ TRỊ VỪA GỬI — người dùng có thể vừa đổi loại hồ sơ
-    //  trong chính lần sửa này, nên lấy bộ ô của bản ghi cũ là quy đổi nhầm.
-    const fields = resolveFormFields(config.formFields, values)
-    const payload = toApiPayload(fields, values)
-    const saved = await saveMutation.mutateAsync({
-      id: item ? (item[idKey] as string | number) : undefined,
-      values: config.buildPayload ? config.buildPayload(payload, item) : payload,
-    })
-
-    //  Tạo xong thì đi tiếp sang chính bản ghi vừa tạo, KHÔNG ở lại form rỗng:
-    //  đứng yên thì bấm Lưu lần nữa là tạo thêm một bản trùng. `replace` để nút
-    //  Lùi đưa về danh sách chứ không quay lại form đã gửi.
-    if (isCreate) {
-      const newId = (saved as CrudRecord | undefined)?.[idKey] as string | number | undefined
-      navigate(newId && config.detailRoute ? config.detailRoute(newId) : listUrl, {
-        replace: true,
+      //  Dựng bộ ô theo GIÁ TRỊ VỪA GỬI — người dùng có thể vừa đổi loại hồ sơ
+      //  trong chính lần sửa này, nên lấy bộ ô của bản ghi cũ là quy đổi nhầm.
+      const fields = resolveFormFields(config.formFields, values)
+      const payload = toApiPayload(fields, values)
+      const saved = await saveMutation.mutateAsync({
+        id: item ? (item[idKey] as string | number) : undefined,
+        values: config.buildPayload ? config.buildPayload(payload, item) : payload,
       })
-    }
+
+      //  Tạo xong thì đi tiếp sang chính bản ghi vừa tạo, KHÔNG ở lại form rỗng:
+      //  đứng yên thì bấm Lưu lần nữa là tạo thêm một bản trùng. `replace` để nút
+      //  Lùi đưa về danh sách chứ không quay lại form đã gửi.
+      if (isCreate) {
+        const newId = (saved as CrudRecord | undefined)?.[idKey] as string | number | undefined
+        navigate(newId && config.detailRoute ? config.detailRoute(newId) : listUrl, {
+          replace: true,
+        })
+      }
     })
 
   const handleDelete = async () => {
@@ -186,21 +198,42 @@ export function CrudDetailPage<T extends CrudRecord>({
   const chips: IdentityChip[] = !item
     ? []
     : config.chips
-    ? config.chips(item)
-    : [
-        ...(item.code
-          ? [{ icon: Hash, text: String(item.code), tone: 'code' as const }]
-          : []),
-        ...(item.is_active !== undefined
-          ? [
-              {
-                icon: item.is_active ? CircleCheck : CircleX,
-                text: item.is_active ? 'Đang dùng' : 'Ngừng / Ẩn',
-                tone: item.is_active ? ('ok' as const) : ('muted' as const),
-              },
-            ]
-          : []),
-      ]
+      ? config.chips(item)
+      : [
+          ...(item.code ? [{ icon: Hash, text: String(item.code), tone: 'code' as const }] : []),
+          ...(item.is_active !== undefined
+            ? [
+                {
+                  icon: item.is_active ? CircleCheck : CircleX,
+                  text: item.is_active ? 'Đang dùng' : 'Ngừng / Ẩn',
+                  tone: item.is_active ? ('ok' as const) : ('muted' as const),
+                },
+              ]
+            : []),
+        ]
+
+  //  Nút Lưu / Xóa — dùng chung cho hai bố cục.
+  const actionButtons = (
+    <>
+      <PermissionGate entity={config.entity} action={isCreate ? 'create' : 'write'}>
+        <Button type="submit" form="crud-detail-form" disabled={saveMutation.isPending || !canSave}>
+          {saveMutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+          {isCreate ? `Tạo ${config.unitLabel}` : 'Lưu'}
+        </Button>
+      </PermissionGate>
+
+      {item && (
+        <PermissionGate entity={config.entity} action="delete">
+          <DeleteConfirmButton
+            recordName={itemName as string}
+            pending={deleteMutation.isPending}
+            onConfirm={handleDelete}
+            warning={config.deleteWarning}
+          />
+        </PermissionGate>
+      )}
+    </>
+  )
 
   const infoPanel = (
     <div className="space-y-6">
@@ -234,11 +267,78 @@ export function CrudDetailPage<T extends CrudRecord>({
 
       {Boolean(item?.[idKey]) && item && (
         <div>
-          <AuditTimeline entity={config.entity} entityId={Number(item[idKey])} />
+          <AuditTimeline entity={config.auditEntity ?? config.entity} entityId={Number(item[idKey])} />
         </div>
       )}
     </div>
   )
+
+  if (config.detailLayout === 'flat') {
+    //  Nhãn cột cho khối "Hoạt động" lấy thẳng từ cấu hình ô — không khai lại một bảng thứ hai.
+    const fieldLabels = Object.fromEntries(
+      resolveFormFields(config.formFields, item ?? {}).map((field) => [field.name, field.label]),
+    )
+    const flatInfo = (
+      <>
+        <form
+          id="crud-detail-form"
+          onSubmit={handleSubmit(onSubmit)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+              e.preventDefault()
+            }
+          }}
+        >
+          <CrudFormFields
+            fields={config.formFields}
+            register={register}
+            control={control}
+            errors={errors}
+            watch={watch}
+            sectionHints={config.formSections}
+            isReadonly={(field) => !canSave || (!isCreate && Boolean(field.readonlyOnEdit))}
+          />
+        </form>
+        {item && config.renderExtra && (
+          <div className="px-4 py-4 sm:px-6">{config.renderExtra(item)}</div>
+        )}
+        {Boolean(item?.[idKey]) && item && (
+          <FormSection title="Hoạt động">
+            <div className="col-span-full">
+              <AuditActivityFeed
+                entity={config.auditEntity ?? config.entity}
+                entityId={Number(item[idKey])}
+                fieldLabels={fieldLabels}
+                createdNoun={config.unitLabel}
+              />
+            </div>
+          </FormSection>
+        )}
+      </>
+    )
+    return (
+      <CrudDetailFlatLayout
+        storagePrefix={`crud.${config.entity}`}
+        backTo={listUrl}
+        backLabel={`Danh sách ${config.unitLabel}`}
+        title={item ? (cardTitle as string) : `Thêm ${config.unitLabel}`}
+        chips={chips}
+        actions={actionButtons}
+        tabs={[
+          { key: TAB_INFO, label: 'Thông tin', content: flatInfo },
+          ...(item
+            ? (config.tabs ?? []).map((tab) => ({
+                key: tab.key,
+                label: tab.label,
+                content: tab.render(item),
+              }))
+            : []),
+        ]}
+        activeTab={activeTab}
+        onTabChange={setTab}
+      />
+    )
+  }
 
   return (
     <PageContainer className={pageWidth}>
@@ -274,29 +374,7 @@ export function CrudDetailPage<T extends CrudRecord>({
           </Link>
         </Button>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <PermissionGate entity={config.entity} action={isCreate ? 'create' : 'write'}>
-            <Button
-              type="submit"
-              form="crud-detail-form"
-              disabled={saveMutation.isPending || !canSave}
-            >
-              {saveMutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-              {isCreate ? `Tạo ${config.unitLabel}` : 'Lưu'}
-            </Button>
-          </PermissionGate>
-
-          {item && (
-            <PermissionGate entity={config.entity} action="delete">
-              <DeleteConfirmButton
-                recordName={itemName as string}
-                pending={deleteMutation.isPending}
-                onConfirm={handleDelete}
-                warning={config.deleteWarning}
-              />
-            </PermissionGate>
-          )}
-        </div>
+        <div className="flex shrink-0 items-center gap-2">{actionButtons}</div>
       </div>
 
       {/*  `group` + `data-scrolled` là đường dẫn tín hiệu "đã cuộn" xuống dải
@@ -312,11 +390,7 @@ export function CrudDetailPage<T extends CrudRecord>({
            trùng `data-scrolled`). Thêm component mới thì rà lại, hoặc đặt tên
            cho nhóm ở cả ba chỗ — `TOOLBAR_STICKY_BASE` dùng chung với màn danh
            sách nên phải đổi cùng lúc. */}
-      <div
-        ref={stickyRef}
-        data-scrolled={scrolled ? '' : undefined}
-        className="group space-y-6"
-      >
+      <div ref={stickyRef} data-scrolled={scrolled ? '' : undefined} className="group space-y-6">
         {/*  Chưa có bản ghi thì không dựng thẻ danh tính: nó sinh ra để trưng mã
              / trạng thái của MỘT bản ghi, để rỗng chỉ còn một cái khung. */}
         {item ? (
@@ -339,11 +413,7 @@ export function CrudDetailPage<T extends CrudRecord>({
              thành một khối. Màn rộng không đổi: ở đó dải co theo nội dung nên nó
              vốn đã ra hình một bộ điều khiển. Xem `shared/ui/tab-underline.ts`. */}
         {item && config.tabs && config.tabs.length > 0 ? (
-          <Tabs
-            value={activeTab}
-            onValueChange={setTab}
-            className="space-y-4 max-md:space-y-2"
-          >
+          <Tabs value={activeTab} onValueChange={setTab} className="space-y-4 max-md:space-y-2">
             {/*  ⚠️ Dải tab TỰ CUỘN NGANG: màn nhiều tab (Nhà cung cấp có 5)
                  không vừa một hàng 390px, mà để nó tràn là kéo theo CẢ TRANG
                  trôi ngang. `ScrollableTabsList` cũng lo việc kéo tab đang mở

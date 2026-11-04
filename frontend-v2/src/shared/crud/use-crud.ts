@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import { appConfig } from '@/core/config/app-config'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
-import type { CrudOption } from './types'
+import type { CrudInvalidateTarget, CrudOption } from './types'
 
 /**
  * Khóa cache của lớp CRUD chung. Ba dạng chung một gốc `['crud', apiPath]` để
@@ -55,17 +55,19 @@ export function useCrudDetail<T>(apiPath: string, id: string | number | undefine
 export function invalidateCrudRoots(
   queryClient: QueryClient,
   apiPath: string,
-  alsoInvalidate: readonly string[] = [],
+  alsoInvalidate: readonly CrudInvalidateTarget[] = [],
 ) {
-  for (const path of [apiPath, ...alsoInvalidate]) {
-    void queryClient.invalidateQueries({ queryKey: getCrudRootKey(path) })
+  for (const target of [apiPath, ...alsoInvalidate]) {
+    //  Chuỗi = apiPath của bảng CRUD (gốc `['crud', path]`); mảng = khóa query thô dọn theo tiền tố.
+    const queryKey = typeof target === 'string' ? getCrudRootKey(target) : target
+    void queryClient.invalidateQueries({ queryKey })
   }
 }
 
 export function useCrudSave<T, TValues extends Record<string, unknown> = Record<string, unknown>>(
   apiPath: string,
   title: string,
-  alsoInvalidate?: readonly string[],
+  alsoInvalidate?: readonly CrudInvalidateTarget[],
 ) {
   const queryClient = useQueryClient()
 
@@ -80,7 +82,11 @@ export function useCrudSave<T, TValues extends Record<string, unknown> = Record<
   })
 }
 
-export function useCrudDelete(apiPath: string, title: string, alsoInvalidate?: readonly string[]) {
+export function useCrudDelete(
+  apiPath: string,
+  title: string,
+  alsoInvalidate?: readonly CrudInvalidateTarget[],
+) {
   const queryClient = useQueryClient()
 
   return useMutation({

@@ -19,8 +19,13 @@ from datetime import date
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.vn_time import vn_today
+from app.modules.employee.model import Employee
+
+from . import accrual_service, policy_allocation
 from .balance_model import LeaveBalance
 from .catalog_model import LeaveType, LeaveTypeSeniority
+from .constants import LeaveAccrualMode
 
 
 def seniority_years(hire_date: date | None, at: date | None = None) -> int:
@@ -113,11 +118,15 @@ def ensure_balance(db: Session, employee, year: int, leave_type: LeaveType,
         carryover_service.expire_carried(existing, leave_type)
         return existing
 
-    years = seniority_years(getattr(employee, "hire_date", None), date(year, 1, 1))
+    hire_date = getattr(employee, "hire_date", None)
+    years = seniority_years(hire_date, date(year, 1, 1))
+    #  duoc-CR-715: hạn mức theo nhóm (hình thức > cấp bậc > mặc định), rồi tỷ lệ theo tháng làm việc
+    #  với hai chế độ không phải FULL_YEAR. Thâm niên KHÔNG tỷ lệ.
+    #  duoc-CR-717: phân bổ chính sách (nếu có) đổi hạn mức theo tháng; không có thì ra đúng số cũ.
     row = LeaveBalance(
         employee_id=employee.id, year=year, leave_type_id=leave_type.id,
         company_id=getattr(employee, "company_id", 0) or 0,
-        allocated_days=float(leave_type.annual_quota_days or 0.0),
+        allocated_days=policy_allocation.allocated_days(db, leave_type, employee, year),
         seniority_days=seniority_days(db, leave_type.id, years),
         created_by=actor, updated_by=actor,
     )
@@ -134,12 +143,48 @@ def remaining(db: Session, employee_id: int, year: int, leave_type_id: int) -> f
     phép, nơi có chỗ để giải thích.
     """
     row = get_balance(db, employee_id, year, leave_type_id)
-    return row.remaining_days if row else 0.0
+    return available_days(db, row) if row else 0.0
+
+
+_UNSET = object()
+
+
+def available_days(db: Session, row: LeaveBalance, today: date | None = None, *,
+                   leave_type: LeaveType | None = None, hire_date=_UNSET) -> float:
+    """`row.remaining_days` trừ phần CHƯA TỚI THÁNG của loại cộng dần (duoc-CR-715).
+
+    Chế độ khác MONTHLY thì không trừ gì — kết quả y hệt `row.remaining_days`. Thâm niên / mang sang / điều
+    chỉnh không bị cộng dần: chỉ `allocated_days` bị giữ lại một phần.
+
+    Gọi trong VÒNG LẶP thì truyền sẵn `leave_type` và `hire_date` (đã nạp một lượt) để khỏi tra lại từng dòng;
+    không truyền thì tra qua `db.get` (có bản nhớ của phiên).
+    """
+    leave_type = leave_type or db.get(LeaveType, row.leave_type_id)
+    if leave_type is None or int(leave_type.accrual_mode or 1) != int(LeaveAccrualMode.MONTHLY):
+        return row.remaining_days
+    if hire_date is _UNSET:
+        employee = db.get(Employee, row.employee_id)
+        hire_date = getattr(employee, "hire_date", None) if employee else None
+    held = accrual_service.accrual_holdback(
+        row.allocated_days, int(leave_type.accrual_mode), hire_date, row.year, today or vn_today())
+    return round(row.remaining_days - held, 2)
+
+
+def available_days_map(db: Session, rows: list[LeaveBalance], today: date | None = None) -> dict[int, float]:
+    """`available_days` cho NHIỀU dòng quỹ với số truy vấn CỐ ĐỊNH (loại nghỉ + ngày vào làm nạp một lượt)."""
+    if not rows:
+        return {}
+    types = {t.id: t for t in db.query(LeaveType).filter(
+        LeaveType.id.in_({r.leave_type_id for r in rows})).all()}
+    hires = {i: h for i, h in db.query(Employee.id, Employee.hire_date).filter(
+        Employee.id.in_({r.employee_id for r in rows})).all()}
+    return {r.id: available_days(db, r, today, leave_type=types.get(r.leave_type_id),
+                                 hire_date=hires.get(r.employee_id)) for r in rows}
 
 
 def check_enough(db: Session, employee, year: int, leave_type: LeaveType,
                  days: float, *, exclude_days: float = 0.0) -> None:
-    """Chặn nếu nghỉ vượt quỹ — QĐ-NP2: **không cho ứng phép**.
+    """Chặn nếu nghỉ vượt quỹ — QĐ-NP2: **không cho ứng phép** (trừ khi loại nghỉ khai `max_negative_days`).
 
     Vượt thì đổi sang loại *Nghỉ không lương*, không ghi nợ. Ghi nợ nghe thì
     tiện nhưng kéo theo cả một sổ công nợ phép và luật trừ lương khi nghỉ việc;
@@ -160,8 +205,10 @@ def check_enough(db: Session, employee, year: int, leave_type: LeaveType,
     #  07/09/2026: quỹ còn 11 ngày, 12 đơn gửi song song, **cả 12 đều qua**).
     #  Khóa giữ tới commit nên phiên sau đọc ra số đã trừ và bị chặn đúng lúc.
     row = ensure_balance(db, employee, year, leave_type, for_update=True)
-    available = round(row.remaining_days + exclude_days, 2)
-    if days > available:
+    available = round(available_days(db, row) + exclude_days, 2)
+    #  duoc-CR-715: ứng phép — còn lại được xuống tới `-N` (mặc định 0 = như cũ).
+    floor_days = float(leave_type.max_negative_days or 0.0)
+    if days > available + floor_days:
         raise HTTPException(
             400,
             f"Không đủ phép: \"{leave_type.name}\" còn {available} ngày, "

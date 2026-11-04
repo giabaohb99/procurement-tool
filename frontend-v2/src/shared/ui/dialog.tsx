@@ -72,14 +72,19 @@ function DialogContent({
      *
      *  Hệ quả: màn nào cần cuộn thì ĐỪNG tự đặt `max-h-… overflow-y-auto` lên
      *  `DialogContent` nữa. Hai khung cuộn lồng nhau chính là thứ làm con lăn
-     *  chuột chết ở hộp Quản lý dự án (03/09/2026).  */
+     *  chuột chết ở hộp Quản lý dự án (03/09/2026).
+     *
+     *  ⚠️ `grid-cols-[minmax(0,1fr)]`: lưới không khai cột thì cột ngầm là `auto`
+     *  và nở theo con rộng nhất — bảng nhiều cột trong hộp (Đối chiếu kết sổ phép,
+     *  03/11/2026) đẩy tràn cả bảng, thanh công cụ lẫn dòng ghi chú ra ngoài viền.
+     *  Ép cột co về bề rộng hộp thì bảng tự cuộn ngang bên trong khung của nó.  */
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay>
         <div className="flex min-h-full items-center justify-center p-4">
           <DialogPrimitive.Content
             data-slot="dialog-content"
             className={cn(
-              "relative z-50 grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-lg border bg-background p-6 shadow-lg duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg",
+              "relative z-50 grid w-full max-w-[calc(100%-2rem)] grid-cols-[minmax(0,1fr)] gap-4 rounded-lg border bg-background p-6 shadow-lg duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg",
               className
             )}
             {...props}

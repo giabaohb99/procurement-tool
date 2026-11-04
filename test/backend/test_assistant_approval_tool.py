@@ -1,7 +1,7 @@
 """Tool hộp việc phê duyệt của Trợ lý AI: `my_approval_tasks` + `my_requests_status`.
 
 Chốt các điều: (1) tài khoản chưa gắn hồ sơ nhân sự trả rỗng kèm lời giải thích chứ
-không lỗi, (2) việc chờ duyệt đi đúng hàm của màn «Chờ tôi duyệt» và kèm đường dẫn mở
+không lỗi, (2) việc chờ duyệt đi đúng hàm của màn "Chờ tôi duyệt" và kèm đường dẫn mở
 thẳng phiếu, (3) trạng thái phiếu đã trình chỉ thấy phiếu CỦA CHÍNH người hỏi — phiếu
 đang chạy nói rõ đang chờ ai ở bước nào, phiếu bị trả lại nói rõ lý do, (4) loại chứng
 từ chưa có màn bên v2 thì `url` rỗng chứ không bịa đường dẫn.
@@ -148,6 +148,7 @@ def test_loai_chung_tu_chua_co_man_thi_url_rong(db, seed):
     thì `url` rỗng để model khỏi gắn link 404."""
     from app.modules.user.model import User
 
-    _phien(db, entity="leave_request", started_by=seed.emp_req_id)
+    #  duoc-CR-715: đơn nghỉ / phiếu nghỉ bù đã có màn chi tiết v2 nên nằm trong bảng ánh xạ — dùng loại chưa có màn.
+    _phien(db, entity="loai_moi_chua_co_man", started_by=seed.emp_req_id)
     out = _run_my_requests_status(_ctx(db, db.get(User, seed.u_req_id)), {})
     assert out["items"][0]["url"] == ""

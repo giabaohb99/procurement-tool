@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
@@ -95,7 +95,7 @@ def update_company_logo(
     from app.modules.attachment.controller import _store_one
     from app.modules.attachment.model import FileLink
 
-    company = _company_in_scope(db, cid, user, "write")
+    _company_in_scope(db, cid, user, "write")   # kiểm phạm vi ghi (ném lỗi nếu không được), không cần giá trị
     _, exts, max_mb = policy("company")
     sf = _store_one(db, file, exts, max_mb, user.id)
 

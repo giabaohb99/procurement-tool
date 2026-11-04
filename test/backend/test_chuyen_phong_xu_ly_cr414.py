@@ -196,7 +196,7 @@ def test_pr_transfer_clears_assignees_moves_dept_and_logs_reason(db, seed, two_d
 
     db.refresh(pr)
     assert pr.handler_dept_id == factory_id
-    assert pr.status == "approved"                    # về «Đã duyệt» để phòng nhận điều phối lại
+    assert pr.status == "approved"                    # về "Đã duyệt" để phòng nhận điều phối lại
     assert pr.assignee_id == 0
     assert all(it.assignee == "" for it in pr_service.items_of(db, pr.id))
     assert all(it.line_status == "no_po" for it in pr_service.items_of(db, pr.id))

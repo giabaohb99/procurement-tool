@@ -18,7 +18,7 @@ không ai truy ra vì sao.
 """
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, StringConstraints, field_validator
+from pydantic import BaseModel, StringConstraints, field_validator
 
 from .reference_sources import REFERENCE_LABELS, is_known
 

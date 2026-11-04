@@ -18,9 +18,9 @@
 |---|---|---|---|
 | Hồ sơ nhân viên | **Đã có** | ~38 trường, người báo tin, thành viên gia đình; trường nhạy cảm (CCCD, ngân hàng, BHXH) chỉ người có quyền mới thấy; nhập Excel có hoàn tác; nhân viên tự sửa phần liên hệ | Nhân viên tự khai các nhóm còn lại; in phiếu thông tin nhân viên |
 | Cơ cấu tổ chức | **Đã có** | Pháp nhân, phòng ban cha con, chức vụ, cấp bậc, kiêm nhiệm, quản lý trực tiếp (chặn vòng); sơ đồ tổ chức vẽ từ dữ liệu theo phạm vi người xem | — |
-| Hợp đồng lao động | **Đã có** | Mẫu Word theo từng pháp nhân, biến mẫu khai được, sinh tệp, tải bản ký, cảnh báo sắp hết hạn, «Hợp đồng của tôi» | Phụ lục hợp đồng |
-| Quyết định nhân sự | **Bản gọn** | Quá trình công tác: tuyển dụng, điều chuyển, bổ nhiệm, kiêm nhiệm, miễn nhiệm, thôi việc; có tệp quyết định, «Áp» vào hồ sơ; thôi việc tự khóa tài khoản | Phiếu nhiều người có tờ trình + duyệt; khen thưởng / kỷ luật; đi làm lại |
-| Nghỉ phép | **Đã có, đầy đủ** | Đơn nhiều loại nghỉ, nửa ngày, theo giờ; quỹ phép năm theo thâm niên; kết sổ cuối năm; ngày lễ; lịch nghỉ; duyệt qua bộ máy duyệt chung | — (cờ «Bắt buộc đính kèm» và bảng đối chiếu kết sổ đã xong 22/10/2026) |
+| Hợp đồng lao động | **Đã có** | Mẫu Word theo từng pháp nhân, biến mẫu khai được, sinh tệp, tải bản ký, cảnh báo sắp hết hạn, **Hợp đồng của tôi** | Phụ lục hợp đồng |
+| Quyết định nhân sự | **Bản gọn** | Quá trình công tác: tuyển dụng, điều chuyển, bổ nhiệm, kiêm nhiệm, miễn nhiệm, thôi việc; có tệp quyết định, **Áp** vào hồ sơ; thôi việc tự khóa tài khoản | Phiếu nhiều người có tờ trình + duyệt; khen thưởng / kỷ luật; đi làm lại |
+| Nghỉ phép | **Đã có, đầy đủ** | Đơn nhiều loại nghỉ, nửa ngày, theo giờ; quỹ phép năm theo thâm niên; kết sổ cuối năm; ngày lễ; lịch nghỉ; duyệt qua bộ máy duyệt chung | — (cờ **Bắt buộc đính kèm** và bảng đối chiếu kết sổ đã xong 22/10/2026) |
 | Lịch làm việc | **Đã có** | Mẫu lịch tuần, gán theo 4 cấp; dùng để tính đúng số ngày nghỉ (không phải chấm công) | — |
 | Phân quyền | **Đã có, mạnh hơn mặt bằng** | Vai trò + phạm vi dữ liệu theo từng người; quyền mặc định theo chức vụ (đổi chức vụ là quyền tự đổi theo); hộp liệt kê việc treo trước khi khóa tài khoản (V0-4) | — |
 | Báo cáo | **Đã có** | Biến động nhân sự, tình hình nghỉ phép, quỹ phép năm, trang Tổng quan Nhân sự | Dashboard động (V3-5) |
@@ -33,28 +33,28 @@
 
 Gọn một câu: phần **nền** và phần **hồ sơ · hợp đồng · nghỉ phép** đã ngang mặt bằng; phần trống là **tuyển dụng, đánh giá, nhận việc / nghỉ việc, tài sản, bảo hiểm, đào tạo**. Thứ tự đề xuất ở §0.1.
 
-Bảng dưới theo dõi từng mục của §3. Chỉ ghi «Xong» khi tìm được chỗ trong mã nhánh `erp-v2`.
+Bảng dưới theo dõi từng mục của §3. Chỉ ghi **Xong** khi tìm được chỗ trong mã nhánh `erp-v2`.
 Chi tiết phần hồ sơ nhân sự xem [`../hrm/01-ho-so-nhan-su.md` §7.10](../hrm/01-ho-so-nhan-su.md).
 
 | Mã | Việc | Tình trạng | Ghi chú |
 |---|---|---|---|
 | V0-1 | Khai đủ phạm vi dữ liệu, thiếu khai thì chặn | **Xong** | `core/scoping.py` (B-07 / CR-131) |
 | V0-2 | Tách quyền xuất / nhập file | **Phần lớn** | Có action `export`; XLSX nhân sự gác bằng nó. **Còn sót:** CSV nhân sự vẫn gác bằng `read` |
-| V0-3 | Bộ máy duyệt dùng chung | **Xong** | `approval/` — 8 loại người duyệt, có «Quản lý trực tiếp người nộp» (`APPROVER_DIRECT_MANAGER`, K3, duoc-CR-553) |
-| V0-4 | Màn kiểm tra trước khi khóa tài khoản | **Xong** (22/10/2026, duoc-CR-665) | Hộp «việc đang giữ» ở cả bốn lối khóa: liệt kê việc duyệt + bước luồng chỉ đích danh, chuyển từng việc / chuyển hết, còn treo vẫn khóa được sau xác nhận |
+| V0-3 | Bộ máy duyệt dùng chung | **Xong** | `approval/` — 8 loại người duyệt, có **Quản lý trực tiếp người nộp** (`APPROVER_DIRECT_MANAGER`, K3, duoc-CR-553) |
+| V0-4 | Màn kiểm tra trước khi khóa tài khoản | **Xong** (22/10/2026, duoc-CR-665) | Hộp **việc đang giữ** ở cả bốn lối khóa: liệt kê việc duyệt + bước luồng chỉ đích danh, chuyển từng việc / chuyển hết, còn treo vẫn khóa được sau xác nhận |
 | V1-1 | Danh mục tổ chức (phòng ban cha con, chức danh, cấp bậc, pháp nhân, hình thức) | **Xong** | Kèm danh mục Chức vụ (duoc-CR-320) và kiêm nhiệm (CR-167) |
 | V1-2 | Hồ sơ ~30 trường, tạo nhanh ~10 ô | **Xong** | duoc-CR-314, -315 |
-| V1-3 | Trường quản lý trực tiếp + cây quản lý đúng | **Xong** | Dữ liệu, chặn vòng, và bộ máy duyệt đọc trường này qua bước «Quản lý trực tiếp người nộp» (K3, duoc-CR-553) |
+| V1-3 | Trường quản lý trực tiếp + cây quản lý đúng | **Xong** | Dữ liệu, chặn vòng, và bộ máy duyệt đọc trường này qua bước **Quản lý trực tiếp người nộp** (K3, duoc-CR-553) |
 | V1-4 | Phân quyền theo trường cho nhóm nhạy cảm | **Xong** | `employee_sensitive`, che ở serializer; nhật ký hệ thống (`tab_request_log`, `tab_change_log`) che từ 02/10/2026 (duoc-CR-554). **Còn:** dòng nhật ký ghi trước ngày đó chưa dọn |
-| V1-5 | Hợp đồng lao động + cảnh báo hết hạn | **Xong** | `modules/labor_contract`: tab «Hợp đồng» trên hồ sơ + mẫu Word theo pháp nhân (duoc-CR-606); cảnh báo sắp hết / đã hết hạn trên chuông + thẻ Tổng quan Nhân sự, báo trước 30 ngày, đỏ khi còn ≤ 15 ngày (duoc-CR-620). Không gửi email / không có job — tính tại chỗ mỗi lần đọc |
-| V1-6 | Cấu hình loại đơn từ (loại nghỉ + bậc thâm niên) | **Xong** | Hết lỗ: cờ «Bắt buộc đính kèm» được kiểm lúc gửi duyệt (22/10/2026, duoc-CR-661) |
+| V1-5 | Hợp đồng lao động + cảnh báo hết hạn | **Xong** | `modules/labor_contract`: tab **Hợp đồng** trên hồ sơ + mẫu Word theo pháp nhân (duoc-CR-606); cảnh báo sắp hết / đã hết hạn trên chuông + thẻ Tổng quan Nhân sự, báo trước 30 ngày, đỏ khi còn ≤ 15 ngày (duoc-CR-620). Không gửi email / không có job — tính tại chỗ mỗi lần đọc |
+| V1-6 | Cấu hình loại đơn từ (loại nghỉ + bậc thâm niên) | **Xong** | Hết lỗ: cờ **Bắt buộc đính kèm** được kiểm lúc gửi duyệt (22/10/2026, duoc-CR-661) |
 | V1-7 | Đơn nghỉ phép + quỹ phép năm | **Xong** | CR-259, -260 và các bản vá sau; báo cáo nghỉ phép duoc-CR-548 |
-| V1-8 | Quyết định điều chuyển và bổ nhiệm | **Bản gọn đã làm (duoc-CR-585)** — lịch sử công tác ghi tay theo người, tệp QĐ, hỏi rồi áp hồ sơ. **Còn:** phiếu nhiều người, tờ trình, duyệt, «Thay thế cho». | duoc-CR-585 |
-| V2-1 | Onboarding / Offboarding — danh sách việc khi một người vào và ra | **Chưa bắt đầu** | Hiện chỉ có dòng «Thôi việc» ở quá trình công tác + tự khóa tài khoản |
+| V1-8 | Quyết định điều chuyển và bổ nhiệm | **Bản gọn đã làm (duoc-CR-585)** — lịch sử công tác ghi tay theo người, tệp QĐ, hỏi rồi áp hồ sơ. **Còn:** phiếu nhiều người, tờ trình, duyệt, **Thay thế cho**. | duoc-CR-585 |
+| V2-1 | Onboarding / Offboarding — danh sách việc khi một người vào và ra | **Chưa bắt đầu** | Hiện chỉ có dòng **Thôi việc** ở quá trình công tác + tự khóa tài khoản |
 | V2-2 | Quyết định thôi việc đầy đủ, có thẻ bàn giao | **Chưa bắt đầu** | V0-4 (màn kiểm việc treo) đã xong; còn chờ V2-3 |
 | V2-3 | Tài sản cấp cho nhân viên: danh sách, cấp, thu hồi, biên bản bàn giao | **Chưa bắt đầu** | `modules/inventory` là kho hàng mua về, không theo dõi tài sản đang trong tay ai |
 | V2-4 | Chấm công | **Không làm** | Đại ca chốt 16/10/2026. Lịch làm việc (duoc-CR-589) chỉ để tính ngày nghỉ phép. Kéo theo: không làm đơn tăng ca, bổ sung công |
-| V2-5 | Các quyết định nhân sự còn lại: khen thưởng / kỷ luật (QĐ5), đi làm lại (QĐ4), phụ lục hợp đồng (QĐ6) | **Chưa bắt đầu** | Mã 7 của `WorkEventType` đã chừa cho «Đi làm lại». Điều chỉnh lương (QĐ3) bỏ theo V3-1 |
+| V2-5 | Các quyết định nhân sự còn lại: khen thưởng / kỷ luật (QĐ5), đi làm lại (QĐ4), phụ lục hợp đồng (QĐ6) | **Chưa bắt đầu** | Mã 7 của `WorkEventType` đã chừa cho **Đi làm lại**. Điều chỉnh lương (QĐ3) bỏ theo V3-1 |
 | V2-6 | Sơ đồ tổ chức vẽ từ dữ liệu | **Xong** (22/10/2026, duoc-CR-669) | Menu Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức; chỉ hiện người trong phạm vi người xem |
 | V3-1 | Lương / phiếu lương điện tử | **Không làm** | Đại ca chốt 16/10/2026. Kéo theo: không phụ cấp, khoản cộng trừ, thuế TNCN |
 | V3-2 | Đánh giá (KPI / OKR): tiêu chí, kỳ, phiếu tự chấm + quản lý chấm, kết quả | **Chưa bắt đầu** | Không còn ràng với lương vì V3-1 đã bỏ. Chặn bởi: công ty chốt cách đánh giá. Báo cáo năng lực theo loại việc (duoc-CR-657) lấy số từ Dự án, không thay được |
@@ -66,7 +66,7 @@ Chi tiết phần hồ sơ nhân sự xem [`../hrm/01-ho-so-nhan-su.md` §7.10](
 Ngoài lộ trình đã làm thêm: Đặt phòng họp (duoc-CR-279), tab Tài khoản trên hồ sơ, nhân viên tự sửa
 liên hệ (bao-CR-508), trang Tổng quan Nhân sự, ba báo cáo Nhân sự trong phân hệ Báo cáo (duoc-CR-548),
 Lịch làm việc theo bốn cấp (duoc-CR-589), Quá trình công tác (duoc-CR-585), Nhập Excel nhân sự (duoc-CR-628),
-biến mẫu HĐLĐ + «Hợp đồng của tôi» (duoc-CR-630, -652), Quyền mặc định theo chức vụ (duoc-CR-653).
+biến mẫu HĐLĐ + **Hợp đồng của tôi** (duoc-CR-630, -652), Quyền mặc định theo chức vụ (duoc-CR-653).
 
 ### 0.1. Thứ tự đề xuất cho phần còn lại (22/10/2026)
 
@@ -98,7 +98,7 @@ Cái này **không thuộc HRM**. Nó thuộc phần nền, và phải làm trư
 
 Họ không viết cứng công thức lương. Họ làm **một bộ máy công thức**: người dùng khai cột, viết công thức bằng một ngôn ngữ nhỏ có `IIF`, `isnull`, `round`, các toán tử số học và so sánh, tham chiếu tới cột khác bằng từ khóa. Nghĩa là làm lương không phải làm một màn hình — là làm một ngôn ngữ kịch bản thu nhỏ, cộng màn hình khai công thức, cộng trình kiểm tra công thức sai, cộng xử lý tham chiếu vòng.
 
-Đây là câu nên đưa nguyên văn vào buổi trình bày khi trả lời mục C2 trong [danh mục chờ quyết](../00-ke-hoach-theo-module.md).
+Đây là câu nên đưa nguyên văn vào buổi trình bày khi trả lời mục C2 trong [danh mục chờ quyết](../../plans/00-ke-hoach-theo-module.md).
 
 ---
 
@@ -249,11 +249,11 @@ Phần này trả lời trực tiếp câu "cần chỉnh sửa gì". Chia hai l
 
 | Tài liệu | Ảnh hưởng |
 |---|---|
-| [`04` Danh mục chờ quyết](../00-ke-hoach-theo-module.md), mục **C2** | Khuyến nghị "không làm lương trong bản 1" giờ có bằng chứng: lương là một bộ máy công thức, không phải một màn hình. Nên đưa nguyên văn vào phần trình bày C2 |
-| [`01` Ngắn hạn](../00-ke-hoach-theo-module.md) | **Bộ máy duyệt dùng chung phải được đưa lên thành hạng mục của phần nền, đứng trước bước 4 (HRM).** Hiện chưa có trong danh sách. Đây là thay đổi lớn nhất mà khảo sát này gây ra cho kế hoạch |
+| [`04` Danh mục chờ quyết](../../plans/00-ke-hoach-theo-module.md), mục **C2** | Khuyến nghị "không làm lương trong bản 1" giờ có bằng chứng: lương là một bộ máy công thức, không phải một màn hình. Nên đưa nguyên văn vào phần trình bày C2 |
+| [`01` Ngắn hạn](../../plans/00-ke-hoach-theo-module.md) | **Bộ máy duyệt dùng chung phải được đưa lên thành hạng mục của phần nền, đứng trước bước 4 (HRM).** Hiện chưa có trong danh sách. Đây là thay đổi lớn nhất mà khảo sát này gây ra cho kế hoạch |
 | [`03` Câu hỏi khảo sát HRM](../hrm/03-cau-hoi-khao-sat-hrm.md) | Phải thêm phần hỏi về **phân quyền xem theo trường** trên hồ sơ nhân viên — ai được xem lương, căn cước, tài khoản ngân hàng, hồ sơ sức khỏe. Đây là hạng mục dễ sót và đắt khi thêm sau |
 | [`03` Câu hỏi khảo sát HRM](../hrm/03-cau-hoi-khao-sat-hrm.md) | Thêm câu về **chấm công khi đi công tác** — chỗ mọi hệ thống chấm công theo vị trí đều vướng |
-| [`02` Dài hạn](../00-ke-hoach-theo-module.md) | Không đổi. Thứ tự phân hệ HRM → MFM → Kế toán → CRM vẫn đứng |
+| [`02` Dài hạn](../../plans/00-ke-hoach-theo-module.md) | Không đổi. Thứ tự phân hệ HRM → MFM → Kế toán → CRM vẫn đứng |
 
 ---
 

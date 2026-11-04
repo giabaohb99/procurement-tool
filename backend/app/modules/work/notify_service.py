@@ -32,7 +32,7 @@ import logging
 
 from sqlalchemy.orm import Session
 
-from app.modules.work.model import (WorkAssigneeKind, WorkGroup, WorkGroupMember,
+from app.modules.work.model import (WorkGroup, WorkGroupMember,
                                     WorkList, WorkListMember, WorkTaskStatus)
 from app.modules.work.task_model import WorkTask, WorkTaskAssignee
 
@@ -60,7 +60,7 @@ def _user_ids_of_employees(db: Session, employee_ids) -> dict[int, int]:
         return {}
     rows = (db.query(User.id, User.employee_id)
             .filter(User.employee_id.in_(ids), User.is_active == True).all())  # noqa: E712
-    return {uid: eid for uid, eid in rows}
+    return dict(rows)
 
 
 def _actor_name(db: Session, actor) -> str:

@@ -118,7 +118,7 @@ def test_so_truy_van_hang_so_theo_so_nguoi_khi_sap_theo_chi_so(db, admin, client
     assert len(pick(few)) == len(pick(many)) == len(pick(base)) <= 5
 
 
-#  Thử tay 20/10: tệp Excel ghi «Chỉ số first_seen_p50_min» và giờ vào là «1025» (số phút) thay vì «17:05».
+#  Thử tay 20/10: tệp Excel ghi "Chỉ số first_seen_p50_min" và giờ vào là "1025" (số phút) thay vì "17:05".
 def test_o_excel_dinh_dang_theo_don_vi_chua_do_de_trong():
     from app.modules.usage_profile.list_export import format_metric_cell
     assert format_metric_cell(1025, "minute_of_day") == "17:05"

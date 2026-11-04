@@ -13,7 +13,7 @@ Chạy trong container api:
 Idempotent: đã có bài cùng tiêu đề dưới cùng bài cha thì xóa bài đó (kèm con, nếu có)
 rồi chèn lại. Không thấy bài cha "Trợ lý AI" thì DỪNG, không tự tạo bài gốc.
 
-⚠️ Nội dung ở đây phải KHỚP với `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`
+⚠️ Nội dung ở đây phải KHỚP với `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`
 (mục 1 → 8) và với hành vi thật của màn Nhân sự / Phân quyền tài khoản / hộp Phạm vi.
 Bài cố ý nói bằng TÊN VAI TRÒ, không nêu mã tài khoản mẫu của môi trường thử.
 """
@@ -82,7 +82,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <h2>III. Chuẩn bị</h2>
 <table><thead><tr><th>Cần</th><th>Kiểm ở đâu</th></tr></thead><tbody>
 <tr><td>Tài khoản quản trị (vai trò <em>Quản trị hệ thống</em>, hoặc vai trò có quyền quản lý Vai trò, sửa Người dùng và tạo Nhân sự)</td><td>Menu <strong>Quản trị › Phân quyền tài khoản</strong> mở được là đủ</td></tr>
-<tr><td>Phòng tự mua và phòng Sản xuất -Thu mua đã có trong danh mục</td><td><strong>Nhân sự › Phòng ban</strong> — xem bài {ref("Phòng ban", "Phòng ban")}</td></tr>
+<tr><td>Phòng tự mua và phòng Sản xuất -Thu mua đã có trong danh mục</td><td><strong>Nhân sự › Master › Phòng ban</strong> — xem bài {ref("Phòng ban", "Phòng ban")}</td></tr>
 <tr><td>Vai trò <em>Quản lý thu mua phòng</em> có trong danh sách vai trò</td><td><strong>Quản trị › Phân quyền tài khoản › Vai trò &amp; quyền</strong> — xem bài {ref("Vai trò", "Vai trò")}. Thiếu thì báo kỹ thuật</td></tr>
 <tr><td>Không tự sửa quyền của chính mình</td><td>Màn hồ sơ và màn phân quyền <strong>khóa</strong> khi mở đúng tài khoản đang đăng nhập; nhờ một quản trị khác</td></tr>
 </tbody></table>
@@ -125,6 +125,8 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <li>Bộ B: mở mục gập <strong>Ngoại lệ</strong>, xuống ô <strong>Loại trừ phòng ban</strong> (khung đỏ), chọn phòng tự mua. Các ô còn lại <strong>để trống</strong>, nhất là <em>Chỉ trong công ty</em>: khai vào là bộ B mất phiếu đứng tên các pháp nhân khác.</li>
 <li>Bấm <strong>Lưu phạm vi</strong>.</li>
 </ul>
+<p>Lưu ý ở tab <strong>Vai trò &amp; quyền</strong>: dòng danh mục dùng chung (Nhà cung cấp, Sản phẩm, Kho, Đơn vị tính...) có ô <strong>Phạm vi</strong> bị khóa và ghi <em>Toàn bộ (danh mục dùng chung)</em>. Phạm vi không lọc được các danh mục này, ai được tick <strong>Xem</strong> là thấy toàn bộ; muốn một vai trò không thấy nhà cung cấp thì bỏ tick quyền Xem, không chọn phạm vi.</p>
+<p>Vai trò <em>Nhân sự</em> là vai trò mọi tài khoản mới tự nhận. Nếu vai trò này được tick <strong>Xem</strong> hay <strong>Xuất</strong> ở Nhà cung cấp, Hợp đồng, Đơn mua hàng, Công nợ, Yêu cầu thanh toán hay Tra cứu thị trường, dưới ma trận hiện một dòng vàng nêu tên quyền và số người đang giữ vai trò sẽ thấy toàn bộ dữ liệu đó. Dòng này chỉ nhắc, không chặn lưu; muốn chỉ một nhóm thấy thì bỏ tick ở vai trò Nhân sự và tick cho vai trò riêng của nhóm đó.</p>
 <p>💡 Bước 3 và 4 làm cho nhiều người thì nhờ trợ lý cho nhanh: gõ một câu như <em>"lập bộ tài khoản nhân viên thu mua cho Nguyễn Văn A, loại trừ phòng Dego Organic"</em>, đọc thẻ đề xuất rồi bấm Xác nhận. Cách hỏi và các giới hạn ở bài {ref(AI_ARTICLE_TITLE, "Lập bộ tài khoản thu mua bằng Trợ lý AI")}.</p>
 
 <h2>V. Bộ A — Phòng tự mua hàng</h2>

@@ -56,7 +56,7 @@ def test_latest_close_log_wins(db):
 
 def test_placeholder_reason_counts_as_empty(db):
     """Câu mặc định của bộ máy duyệt KHÔNG phải lý do — để giao diện nói
-    «Không ghi lý do» thay vì lặp lại nhãn trạng thái."""
+    "Không ghi lý do" thay vì lặp lại nhãn trạng thái."""
     obj = _booking(db, 'DX905', m.BK_REJECTED)
     record(db, 1, 'vehicle_booking', obj.id, 'cancel', 'Bị từ chối')
 

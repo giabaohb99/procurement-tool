@@ -1,7 +1,7 @@
 """Đọc tệp kết xuất GTT02 thành dòng hàng đã chuẩn hóa — KHÔNG đụng DB (bao-CR-470).
 
 Tách khỏi phần ghi để kiểm được bằng dữ liệu giả, không cần cơ sở dữ liệu. Mọi
-luật đọc nằm ở đây; thiết kế ở `doc/erp/hai-quan/02-thiet-ke-ky-thuat.md` §4.
+luật đọc nằm ở đây; thiết kế ở `doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md` §4.
 
 Ba cái bẫy đo được trên 5 tệp thật, cả ba im lặng nếu bỏ qua:
 
@@ -446,7 +446,7 @@ def parse(raw: bytes, filename: str = "", today: date | None = None) -> ParseRes
     for offset, cells in enumerate(body):
         row_no = offset + 2                      # dòng thật trong tệp (dòng 1 là tiêu đề)
         #  Cột tùy chọn mà tệp không có thì trả ô TRỐNG — mọi luật phía dưới chạy y như cũ.
-        get = lambda key: cells[col[key]] if key in col else Cell(EMPTY)   # noqa: E731
+        get = lambda key, cells=cells: cells[col[key]] if key in col else Cell(EMPTY)   # noqa: E731
         #  bao-CR-608: hai cột điều khiển. Dòng "xóa" chỉ cần ô ID — tách ra TRƯỚC luật đọc dữ
         #  liệu, kẻo bị bỏ vì thiếu Ngày đăng ký.
         ref_id, warn = read_ref_id(get(REF_ID_KEY))

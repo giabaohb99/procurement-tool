@@ -1,0 +1,173 @@
+# Brief — Khối "Báo cáo thực hiện" trên chi tiết Yêu cầu báo giá (YCBG)
+
+> Bản mô tả yêu cầu, viết ngày 12/09/2026. Tính năng đã chạy trên **dev + prod** từ
+> 12/09/2026 (backend + `frontend-v2` + màn cũ `frontend/`), tài liệu này ghi lại **yêu cầu và hai khung nhìn** để làm
+> căn cứ nghiệm thu và phát triển tiếp. Mẫu tham chiếu: artifact **Nhập khẩu K₂SO₄ & KNO₃**
+> của Phòng Thu mua (11/09/2026).
+
+## 1. Bài toán
+
+Một phiếu YCBG được duyệt xong không có nghĩa là thương vụ xong — phía sau nó là một
+chuỗi việc kéo dài hàng tuần tới hàng tháng: xin giấy phép, ký hợp đồng, sản xuất,
+vận chuyển, kiểm tra chất lượng, thông quan, về kho. Trước đây chuỗi này nằm trong
+file Excel/Zalo của từng nhân sự thu mua (NSTM); người yêu cầu muốn biết **hàng của
+tôi tới đâu rồi** thì phải đi hỏi.
+
+**Khối "Báo cáo thực hiện"** đưa chuỗi việc đó lên ngay trang chi tiết YCBG
+(`/procurement/survey-requests/:id`): NSTM khai và cập nhật, mọi người liên quan
+tới phiếu mở ra là thấy — cùng một nguồn sự thật, có dấu vết.
+
+## 2. Khái niệm dữ liệu
+
+| Khái niệm | Là gì | Ghi chú |
+| --- | --- | --- |
+| **Nút dòng hàng** (item) | Nhãn lọc theo mặt hàng của phiếu (vd **K₂SO₄**, **KNO₃**) | Thêm/đổi tên/xóa tự do; khởi tạo mặc định từ các dòng của phiếu. Xóa nút KHÔNG xóa hồ sơ — hồ sơ gắn nút chuyển về **Chung** |
+| **Giai đoạn** (phase) | Một chặng của tiến trình (vd **Pháp lý & Giấy phép**) | Có tên + diễn giải/nơi thực hiện; khởi tạo mặc định 5 chặng nhập khẩu, sửa/thêm/xóa tự do (còn hồ sơ thì chặn xóa) |
+| **Hồ sơ** (doc) | Một đầu việc/chứng từ cần hoàn thành | Thuộc đúng 1 giai đoạn; gắn 1 nút dòng hàng hoặc **Chung** (hiện ở mọi nút); có mô tả, cờ **Bắt buộc**, ô **tệp/link**, **trạng thái**, danh sách **tiên quyết** |
+| **Trạng thái hồ sơ** | `0` Chưa bắt đầu · `1` Đang làm · `2` Chờ duyệt · `3` Hoàn thành | Mã SỐ theo R2/QĐ-11 (`report_constants.py`) |
+| **Tiên quyết** | Các hồ sơ phải Hoàn thành trước | Hồ sơ còn tiên quyết chưa xong thì **bị khóa** (không tick ✓ được); hệ chặn vòng lặp và tự gỡ tham chiếu khi hồ sơ tiên quyết bị xóa |
+
+## 3. Hai khung nhìn
+
+### 3.1. Người YÊU CẦU (người lập phiếu, TBP duyệt, người được xem phiếu)
+
+Ai **mở được phiếu YCBG** (quyền `survey_request.read` + phạm vi dữ liệu) thì xem
+được khối báo cáo — **chỉ xem, không sửa**. Câu hỏi họ cần trả lời trong 10 giây:
+
+- **Tới đâu rồi?** — thanh tóm tắt `x/y hồ sơ · z%` trên đầu khối; khung
+  **Tiến trình** bên phải cho biết mỗi mặt hàng đang đứng ở giai đoạn nào
+  (điểm nhấp nháy, đánh số theo nút dòng hàng, trùng chặng thì gộp **+n**).
+- **Đang tắc ở đâu, vì sao?** — hồ sơ bị khóa mờ đi kèm biểu tượng 🔒, rê chuột
+  đọc **Chờ: …** liệt kê đúng những hồ sơ tiên quyết chưa xong.
+- **Cái gì bắt buộc mà chưa làm?** — tag **Bắt buộc** đỏ + pill trạng thái từng dòng;
+  lọc nhanh theo nút dòng hàng / trạng thái, tìm theo mọi ô chữ (bỏ dấu được).
+
+Người xem **không thấy**: nút Khởi tạo, mọi nút thêm/sửa/xóa, bút chì; nút ✓ bị vô
+hiệu. Phiếu **chưa có báo cáo thì khối tự ẩn** với họ — không bày một thẻ trắng.
+Đây là tiện ích giao diện; chốt thật nằm ở backend (mục 4).
+
+### 3.2. Người THỰC HIỆN (NS Thu mua — cờ `process` của `survey_request`)
+
+Toàn quyền dựng và cập nhật báo cáo, ngay trên trang chi tiết phiếu:
+
+1. **Khởi tạo** — phiếu chưa có báo cáo: bấm **Khởi tạo báo cáo mẫu** (5 giai đoạn
+   nhập khẩu + **bộ hồ sơ chung của mẫu** + một nút cho mỗi dòng hàng của phiếu, tên
+   lấy từ mô tả dòng) rồi sửa lại cho hợp, hoặc **Thêm giai đoạn** dựng tay từ đầu.
+   Bấm lặp không nhân đôi. Đã có báo cáo rồi thì mỗi dòng hàng / mỗi giai đoạn có nút
+   **Tạo mẫu** để đổ thêm mẫu chung vào đúng chỗ đó (bao-CR-388, cộng thêm, bỏ qua
+   hồ sơ trùng).
+2. **Quản lý nút dòng hàng** — dấu `+` để thêm; bút chì **nằm chung khung** với tên
+   nút để đổi tên/xóa. Xóa nút thì hồ sơ gắn nó chuyển về **Chung**.
+3. **Quản lý giai đoạn** — thêm/sửa tên + diễn giải; giai đoạn còn hồ sơ thì hệ
+   chặn xóa và nói rõ còn bao nhiêu.
+4. **Quản lý hồ sơ** — **Thêm hồ sơ** / bút chì từng dòng mở hộp thoại (theo case
+   C-01: chỉ đóng bằng Hủy/X, form dở thì hỏi xác nhận): tiêu đề*, mô tả, dòng
+   hàng, giai đoạn, bắt buộc?, trạng thái, tệp/link, danh sách tiên quyết
+   (tick chọn từ các hồ sơ khác của phiếu; chọn thành vòng lặp là bị chặn ngay lúc lưu).
+5. **Cập nhật nhanh** — nút ✓ đầu dòng gạt Hoàn thành ↔ Đang làm không cần mở hộp
+   thoại; 📎 mở thẳng hộp sửa khi chưa có tệp. Hồ sơ đang khóa thì ✓ bị vô hiệu —
+   muốn mở phải xong tiên quyết trước (hoặc gỡ tiên quyết trong hộp sửa).
+6. **Mọi thao tác ghi đều vào Lịch sử thao tác** của phiếu (**Báo cáo: thêm hồ sơ…**,
+   **Báo cáo: xóa nút…**) — ai làm gì lúc nào đều tra được.
+
+### 3.3. Hành vi dùng chung cho cả hai khung nhìn
+
+- **Lọc & tìm**: dãy nút **Tất cả + từng dòng hàng** (hồ sơ **Chung** hiện ở mọi nút);
+  select trạng thái; ô tìm kiếm khớp **theo từng từ**, không dấu, soi tiêu đề + mô tả
+  + tệp + nhãn trạng thái + tên nút (gõ `kno3` khớp **KNO₃**). Rỗng-vì-bộ-lọc có câu
+  riêng, không lẫn với **Chưa có hồ sơ**.
+- **Thu gọn**: nút gấp/mở **tất cả** trên header + chevron từng giai đoạn; giai đoạn
+  gấp hiện tóm tắt `n hồ sơ · %`. Đang tìm kiếm/lọc trạng thái thì tự mở hết để
+  kết quả không bị giấu.
+- **Mỗi hồ sơ MỘT dòng**: ✓ · tiêu đề · tag dòng hàng · **Bắt buộc** · mô tả (cắt bớt,
+  tooltip đọc đủ) · 🔒 · 📎 · pill trạng thái · ✎ · thùng rác (icon-only, chỉ người
+  thực hiện thấy; thùng rác xóa thẳng sau hộp xác nhận, bao-CR-388).
+- **Khung Tiến trình** (bên phải, ẩn dưới `lg`): mỗi giai đoạn một điểm từ trên
+  xuống; chặng xong = xanh ✓; chặng hiện tại của mỗi track nhấp nháy (`animate-ping`);
+  tiến độ tính theo **nút đang lọc**, cố ý không đổi theo từ khóa đang gõ.
+
+## 4. Phân quyền & phạm vi (chốt thật)
+
+- **Không có khóa quyền mới** — khối nằm trong màn chi tiết YCBG nên tái dùng khóa
+  `survey_request` (luật **một khóa = một màn hình**, CR-157).
+- ĐỌC: `require(survey_request, read)`; GHI: `require(survey_request, process)`
+  — cờ suy ra **là NS Thu mua**. Vì `process` không phải action có trong grant,
+  **phạm vi luôn hỏi theo `read`** qua `_in_scope` của phiếu cha: ngoài phạm vi là
+  404, kể cả gõ thẳng id vào URL/API.
+
+## 5. Nền kỹ thuật (tóm tắt)
+
+- 3 bảng con của phiếu: `tab_survey_request_report_{item,phase,doc}`
+  (migration `7816572fed52`); `depends` là cột JSON danh sách id, trần 30 phần tử;
+  trần số dòng 50/50/500 mỗi phiếu (chống tràn `sort_order` SMALLINT).
+- API: `GET/POST /api/survey-requests/{id}/report[...]` — mọi mutation trả về
+  **nguyên khối mới**, frontend thay cache một lượt (`setQueryData`, không refetch).
+- Mã nguồn chính: backend `app/modules/survey_request/report_*.py`; frontend
+  `frontend-v2/src/modules/procurement/components/survey-report/*`,
+  logic thuần + test ở `utils/survey-report-helpers.ts`; test backend
+  `test/backend/test_bao_cao_thuc_hien_ycbg.py`.
+- **Màn cũ `frontend/` cũng có khối này** (bao-CR-390, 12/09/2026 — ngoại lệ D-026 theo
+  yêu cầu của khách vì màn cũ vẫn dùng hằng ngày): `components/SurveyReportCard.tsx` +
+  `utils/surveyReportHelpers.ts` (bản chép của helper v2 — sửa luật ở một bên thì phải
+  sửa bên kia) + khối CSS `.srp-*` trong `index.css`. Cùng API, cùng hành vi; khác biệt
+  duy nhất là kiểu dáng theo CSS thuần của v1.
+
+## 6. Ngoài phạm vi bản này / việc còn lại
+
+- **Tệp đính kèm thật**: ô 📎 hiện là chữ tự do (tên tệp hoặc link Drive) — chưa nối
+  kho `attachment` của hệ. Muốn upload trực tiếp thì làm đợt sau.
+- Trạng thái gấp/mở giai đoạn chưa nhớ theo người dùng (`localStorage`).
+- Deadline từng hồ sơ **đã có** từ bao-CR-392 (12/09/2026): ô **Dự định hoàn tất**
+  (`planned_date`), dòng chưa xong qua ngày đó hiện **Trễ n ngày**, thẻ tóm tắt thứ 4
+  lấy mốc xa nhất. Còn thiếu **thông báo chủ động** (nhắc hạn qua chuông/email) và
+  điều kiện rẽ nhánh — artifact gốc cũng chưa khai.
+- **Quản lý mẫu** (nhiều mẫu, sửa trên giao diện, lưu báo cáo thành mẫu): cố ý để
+  sau. Mẫu chung hiện là `DEFAULT_TEMPLATE_DOCS` trong `report_constants.py` —
+  bao-CR-391 (12/09/2026) lấy 22 hồ sơ của mẫu **Nhập khẩu K₂SO₄ & KNO₃** (thay bộ 15
+  hồ sơ tạm), rồi bao-CR-393 cùng ngày **gom về 19 hồ sơ CHUNG** theo ý khách: mỗi
+  việc một dòng, không tách theo mặt hàng; hồ sơ riêng của một mặt hàng thêm tay.
+- Đã lên **dev + prod** ngày 12/09/2026 (bao-CR-388 · 390 · 391 · 392 · 393, ghi ở
+  `doc/tai-lieu-ky-thuat/change-log-bao.md`); prod chạy 4 migration báo cáo từ
+  `bee157de2ec8` tới `c3e5a7b9d1f2`.
+
+## Mở rộng sang Đơn mua hàng (bao-CR-602, 06/10/2026)
+
+- Khối không còn là của riêng YCBG: bảng đầu `tab_exec_report(owner_entity, owner_id)` nói
+  **chứng từ nào sở hữu khối**; bốn bảng con đổi tên `tab_exec_report_{item,phase,doc,trash}`
+  và nối vào đầu bằng `report_id`. Migration `bcth01` dựng đầu cho mọi YCBG đang có dữ liệu
+  với `id = id phiếu`, nên cột khóa chỉ đổi tên, không chép dòng nào.
+- Một bộ API `/api/execution-report/{entity}/{owner_id}` (thay `/api/survey-requests/{sid}/report`).
+  Luật theo loại chứng từ ở `_OWNER_RULES` của `report_controller.py`:
+
+  | Chứng từ | Đọc | Ghi | Khóa khi | Nút dòng hàng |
+  |---|---|---|---|---|
+  | YCBG `survey_request` | `read` + phạm vi | `process` (phạm vi hỏi theo `read`) | done · cancelled | đặt tay |
+  | ĐMH `purchase_order` | `read` + phạm vi | `write` + phạm vi `write` | completed · cancelled | **bám dòng đơn** |
+
+- **Mỗi đơn một báo cáo riêng**, không nối YCBG (đại ca chốt 06/10: **mỗi cái đơn là mỗi cái báo
+  cáo riêng, tại họ tự thêm dòng vào được mà**).
+- Nút dòng hàng của ĐMH mang `line_id = tab_po_item.id`; mỗi lần đọc khối máy chủ đồng bộ theo
+  dòng đơn (thêm / đổi tên / xóa nút, hồ sơ của nút bị xóa về Chung). Thêm/đổi tên/xóa nút tay
+  trên ĐMH trả 400. Khối CHƯA khởi tạo thì đồng bộ không đẻ nút.
+- Bảng dòng hàng ĐMH (cả hai bản) có cột **Hồ sơ** = % hồ sơ hoàn tất của dòng (hồ sơ của
+  dòng + hồ sơ Chung, `lineReportProgress`); bấm là cuộn xuống thẻ, chuyển dạng xem theo dòng
+  hàng và sổ đúng dòng (`focusItem` qua ref).
+
+### Đối chiếu cột bảng kế hoạch Excel của Thu mua ("2870 — Kế hoạch Abamectin 3.6")
+
+| Cột Excel | Trường hồ sơ | Ghi chú |
+|---|---|---|
+| STT | `sort_order` | |
+| Hạng mục | `title` | |
+| Công việc chi tiết | `description` | |
+| Người/Đơn vị phụ trách | `assignee_id` | Excel ghi tên gọi (**Tiên**, **Ngân**); ERP chọn nhân sự thật |
+| Ngày thực hiện | `start_date` | |
+| Time xử lý (ngày) | *suy ra* | Hộp sửa có ô **Số ngày xử lý**: gõ n → dự định hoàn tất = ngày bắt đầu + n. Không lưu cột riêng |
+| Trạng thái | `status` | Đang thực hiện → Đang làm (1) · Chưa hoàn thành → Chưa bắt đầu (0) · Hoàn thành (3) |
+| Ngày dự kiến hoàn thành | `planned_date` | |
+| Kết quả | `result` | **Cột mới** bao-CR-602, `String(1000)`; hiện trên dòng và trong hộp sửa |
+| Công việc đang thực hiện · Ghi chú | `result` / `description` | Excel để trống; gộp vào hai ô trên |
+| Link | `file_note` | |
+| *(không có)* Giai đoạn | `phase_id` | Excel chạy tuần tự, không chia khâu → script xếp vào 5 giai đoạn mẫu; mỗi dòng là tiên quyết của dòng kế |
+
+Script nạp thử: `python scripts/seed_bao_cao_abamectin.py <id ĐMH> [--ghi-de]` (21 dòng, gắn nút dòng hàng đầu tiên của đơn).

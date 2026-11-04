@@ -1,4 +1,4 @@
-"""bao-CR-526 — bộ vai trò «thu mua theo phòng»: `pur_dept_manager` (đã có) + `pur_dept_staff` (mới).
+"""bao-CR-526 — bộ vai trò "thu mua theo phòng": `pur_dept_manager` (đã có) + `pur_dept_staff` (mới).
 
 Đại ca chốt 30/09/2026: tạo SẴN, chưa gán cho ai. Nhân viên thu mua phòng cùng hành động với
 nhân viên thu mua thường, chỉ khác phạm vi ba chứng từ là `dept_proc` (mọi phiếu đã duyệt của

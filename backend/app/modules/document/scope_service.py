@@ -22,7 +22,7 @@ nháp trong công ty không phải thứ nằm trong mục "Văn bản áp dụn
 (1 Tập đoàn · 2 công ty con · 3 …), KHÔNG có cột cha, nên "gồm đơn vị con" hiện
 được hiểu là *mọi pháp nhân có `level` lớn hơn*. Đúng với cây một tầng đang có,
 sai ngay khi xuất hiện tầng thứ ba thuộc hai nhánh khác nhau. Muốn đúng hẳn thì
-phải thêm `parent_id` vào `tab_company` — xem câu hỏi cuối `task-process.md`.
+phải thêm `parent_id` vào `tab_company` — xem câu hỏi cuối `doc/v1/task-process.md`.
 """
 from sqlalchemy.orm import Session
 
@@ -30,7 +30,7 @@ from app.modules.company.model import Company
 from app.modules.employee.model import Employee
 
 from .model import ALIVE_STATUSES, Document
-from .scope_model import (DIM_COMPANY, DIM_DEPARTMENT, DIM_EMPLOYEE,
+from .scope_model import (DIM_DEPARTMENT, DIM_EMPLOYEE,
                           MODE_EXCLUDE, MODE_INCLUDE, DocumentScope)
 
 

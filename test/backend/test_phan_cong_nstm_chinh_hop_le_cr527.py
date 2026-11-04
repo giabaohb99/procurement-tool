@@ -1,13 +1,13 @@
 """bao-CR-527 — Phân công phụ trách: đúng 1 NSTM chính + tối đa 1 dự phòng, NSTM chính phải
-«Chính thức» (khách chốt 30/09/2026).
+"Chính thức" (khách chốt 30/09/2026).
 
 Luật chốt ở MỘT chỗ (`category_assignee.service.validate_assignee_pair`) cho mọi cửa ghi — tạo,
 sửa, gán hàng loạt:
-  · NSTM chính BẮT BUỘC, phải «Chính thức» + đang hoạt động; sai → 400, câu nói rõ người + tình
+  · NSTM chính BẮT BUỘC, phải "Chính thức" + đang hoạt động; sai → 400, câu nói rõ người + tình
     trạng;
-  · dự phòng không bắt buộc; có thì phải khác người chính và cũng «Chính thức» + đang hoạt động.
+  · dự phòng không bắt buộc; có thì phải khác người chính và cũng "Chính thức" + đang hoạt động.
 Màn danh sách nhận cờ `primary_not_official` để gắn cảnh báo cho dòng có người chính NAY đã nghỉ.
-Tự gán lúc duyệt/điều phối: người chính không còn «Chính thức» → dự phòng; không ai → để trống.
+Tự gán lúc duyệt/điều phối: người chính không còn "Chính thức" → dự phòng; không ai → để trống.
 """
 import json
 

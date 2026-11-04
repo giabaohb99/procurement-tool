@@ -5,7 +5,7 @@ lọc gì cho phân hệ này: toàn bộ phạm vi dữ liệu do `membership_s
 Bộ test này là cái chốt cho thỏa thuận đó — nới lỏng chỗ nào ở đây là mở toang
 việc của cả công ty.
 
-Sáu bài bắt buộc theo `doc/erp/cong-viec/04-phan-quyen.md` §5 nằm ở đây; bài 7
+Sáu bài bắt buộc theo `doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md` §5 nằm ở đây; bài 7
 (tập cha CR-215) thuộc W3, chưa tới.
 """
 import pytest
@@ -73,7 +73,7 @@ def test_nguoi_ngoai_khong_thay_list_va_khong_doc_duoc_task_theo_id(db, chu, ngu
 
 
 def test_moi_cheo_phap_nhan_van_thay_du_an_vi_ranh_gioi_la_tu_cach_thanh_vien(db):
-    """Dựng lại đúng lỗi gặp trên dev 15/09/2026 — dự án «ERP v2».
+    """Dựng lại đúng lỗi gặp trên dev 15/09/2026 — dự án "ERP v2".
 
     Chủ dự án CHƯA GẮN pháp nhân (`company_id = 0`), người được mời thuộc pháp
     nhân `16`. Bản cũ chốt thêm `WorkList.company_id == <pháp nhân người xem>`,

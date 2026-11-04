@@ -80,7 +80,7 @@ def breakdown(db: Session, f: Filters, kind: int, code: int, route: str) -> dict
     try:
         K(kind)
     except ValueError:
-        raise HTTPException(422, f"Loại chức năng không hợp lệ: {kind}")
+        raise HTTPException(422, f"Loại chức năng không hợp lệ: {kind}") from None
     feat = [F.kind == kind, F.code == code]
     if kind in (int(K.SCREEN), int(K.SEARCH), int(K.CLIENT_ERROR)):
         feat.append(F.route == route)

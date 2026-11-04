@@ -58,7 +58,7 @@ def _payables(db, seed, other_dept):
         Payable(company_id=seed.company_id, department_id=seed.dept_id, supplier_code="B", supplier_name="NCC B",
                 incur_date="2026-10-03", due_date=future, amount=2000, vat=200, total=2200, paid_amount=200,
                 remaining=2000, status="partial"),
-        #  Phòng KHÁC — người phạm vi «phòng ban» không được thấy.
+        #  Phòng KHÁC — người phạm vi "phòng ban" không được thấy.
         Payable(company_id=seed.company_id, department_id=other_dept.id, supplier_code="C", supplier_name="NCC C",
                 incur_date="2026-10-04", due_date=past, amount=9000, vat=900, total=9900, paid_amount=0, remaining=9900,
                 status="unpaid"),

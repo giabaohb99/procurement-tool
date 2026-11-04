@@ -116,6 +116,15 @@ export function buildLeaveBalanceColumns({
       defaultHidden: true,
     },
     {
+      key: 'comp_days',
+      header: 'Nghỉ bù cộng thêm',
+      //  Ngày nghỉ bù đã duyệt (phiếu nghỉ bù) — đã nằm trong "Tổng được nghỉ".
+      cell: (row) => <DayCount value={rowTotals(row).comp_days ?? 0} signed />,
+      width: 150,
+      align: 'right',
+      defaultHidden: true,
+    },
+    {
       key: 'used_days',
       header: 'Đã nghỉ',
       cell: (row) => <DayCount value={rowTotals(row).used_days} />,

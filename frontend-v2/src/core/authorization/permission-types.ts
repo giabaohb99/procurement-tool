@@ -84,7 +84,7 @@ export const ENTITIES = [
   //  quyền *dùng* một hộp thư — cái đó khai đích danh ở `tab_mailbox_member`.
   'mailbox',
   //  Phân hệ Công việc (CR-216). MỘT khóa cho cả phân hệ — quyền thật nằm ở
-  //  tầng thành viên của từng list, xem `doc/erp/cong-viec/04-phan-quyen.md`.
+  //  tầng thành viên của từng list, xem `doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md`.
   'work_task',
   //  Diễn đàn (CR-263): hai khóa CHỈ của vai trò `forum_admin` — kiểm duyệt bài
   //  và dựng chuyên mục. Người thường không có grant nào: đọc/đăng đi theo luật
@@ -104,6 +104,8 @@ export const ENTITIES = [
   'leave_balance',
   'leave_type',
   'holiday',
+  //  Phiếu xin nghỉ bù (duoc-CR-715 phase C) — khóa riêng, backend `leave_comp_request`.
+  'leave_comp_request',
   //  Lịch làm việc (05/10/2026) — mẫu lịch tuần + gán 4 cấp; mọi vai trò `read`, sửa: hr_leave/hr_profile.
   'work_schedule',
   //  Hợp đồng lao động (có lương) + mẫu hợp đồng theo pháp nhân (05/10/2026) — chỉ hr_profile + admin.

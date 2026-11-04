@@ -18,7 +18,7 @@ Dot nay khac ba dot truoc o hai diem, va ca hai deu nam trong code duoi day:
    UPDATE cung xong trong tich tac, nhung bang nay lon len theo tung lan bao gia (bang dong SP
    cua no da 5.074 dong prod) nen cat lo san, khoi phai nho quay lai sua. Cat theo KHOANG ID
    chu khong dung `UPDATE ... LIMIT` (MySQL co, SQLite khong -- test se do) va cung khong dung
-   `WHERE id IN (...)` nghin tham so (mau C1 trong doc/tai-lieu-ky-thuat/ra-soat-api-hieu-nang.md).
+   `WHERE id IN (...)` nghin tham so (mau C1 trong doc/tai-lieu-ky-thuat/van-hanh/ra-soat-api-hieu-nang.md).
 
 QD-12 (doc/erp/15 muc 4.3): DOI TAI CHO, khong them cot moi. Ba dieu kien:
   1. Anh xa song anh va phu het. Dem SELECT DISTINCT ngay 22/08/2026 tren ca ba moi truong --

@@ -1,13 +1,21 @@
-from sqlalchemy import BigInteger, Numeric, String, Text
+from sqlalchemy import BigInteger, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
 
+#  bao-CR-717: tên ràng buộc dùng chung với migration `invuq717` — đổi một nơi thì đổi cả hai.
+INVENTORY_KEY_CONSTRAINT = "uq_inventory_company_wh_product"
+
 
 class Inventory(Base, AuditMixin):
-    """Tồn kho hiện tại theo công ty + kho + sản phẩm (key duy nhất)."""
+    """Tồn kho hiện tại theo công ty + kho + sản phẩm (key duy nhất).
+
+    bao-CR-717: khóa duy nhất được ÉP ở CSDL (trước chỉ ghi trên giấy, ba chỉ mục rời). Hai lượt ghi cùng lúc cho cùng
+    bộ khóa thì lượt sau đụng ràng buộc — `service._recompute` bắt lỗi đó rồi đọc lại dòng mà lượt trước vừa chèn.
+    """
 
     __tablename__ = "tab_inventory"
+    __table_args__ = (UniqueConstraint("company_id", "warehouse_code", "product_code", name=INVENTORY_KEY_CONSTRAINT),)
 
     company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     warehouse_code: Mapped[str] = mapped_column(String(50), default="", index=True)

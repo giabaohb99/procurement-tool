@@ -1,6 +1,6 @@
 """duoc-CR-656 (D1a) — tính vòng đời phiếu: hàm THUẦN, không DB.
 
-Định nghĩa «xong» / «làm lại» của từng loại phiếu nằm ở `cycle_specs.SPECS`; bài này là hợp đồng của chúng.
+Định nghĩa "xong" / "làm lại" của từng loại phiếu nằm ở `cycle_specs.SPECS`; bài này là hợp đồng của chúng.
 """
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -42,10 +42,10 @@ def test_moi_loai_phieu_deu_co_dinh_nghia_va_khong_chong_nhau():
     (CycleKind.PURCHASE_REQUEST, "approved", "completed", Ev.DONE),
     (CycleKind.PURCHASE_REQUEST, "submitted", "rejected", None),            # mơ hồ: audit mới biết từ chối hay trả về
     (CycleKind.SURVEY_REQUEST, "processing", "rejected", Ev.RETURN),        # YCBG: rejected = Trả về
-    (CycleKind.SURVEY_REQUEST, "processing", "survey_done", None),          # Q2: «xong» của YCBG là `done`
+    (CycleKind.SURVEY_REQUEST, "processing", "survey_done", None),          # Q2: "xong" của YCBG là `done`
     (CycleKind.SURVEY_REQUEST, "survey_done", "done", Ev.DONE),
     (CycleKind.PURCHASE_ORDER, "submitted", "rejected", Ev.RETURN),
-    (CycleKind.PURCHASE_ORDER, "partial", "received", Ev.DONE),             # «Đã nhận đủ» = xong (20/10)
+    (CycleKind.PURCHASE_ORDER, "partial", "received", Ev.DONE),             # "Đã nhận đủ" = xong (20/10)
     (CycleKind.PAYMENT_REQUEST, "approved", "paid", Ev.DONE),
     (CycleKind.DOCUMENT, "2", "3", Ev.DONE),
     (CycleKind.DOCUMENT, "2", "9", Ev.RETURN),
@@ -93,7 +93,7 @@ def test_huy_khong_co_ngay_xong():
 
 
 def test_hai_nguon_ke_cung_mot_lan_tra_ve_chi_tinh_mot():
-    """Nhật ký thay đổi và audit cùng ghi «rejected» của YCBG cách nhau vài giây → một lần làm lại."""
+    """Nhật ký thay đổi và audit cùng ghi "rejected" của YCBG cách nhau vài giây → một lần làm lại."""
     rows = run(CycleKind.SURVEY_REQUEST, status="processing",
                events=[(at(1), Ev.RETURN), (at(1) + timedelta(seconds=3), Ev.RETURN), (at(3), Ev.RETURN)])
     assert rows[0]["rework_count"] == 2

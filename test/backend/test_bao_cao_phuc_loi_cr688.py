@@ -1,4 +1,4 @@
-"""duoc-CR-688 — báo cáo H1 «Phúc lợi & sự kiện» (khóa 22): `/api/benefit-audience/summary`.
+"""duoc-CR-688 — báo cáo H1 "Phúc lợi & sự kiện" (khóa 22): `/api/benefit-audience/summary`.
 
 Canh: ngày dịp = cuối kỳ, từng bộ lọc, người đang nghỉ, đếm con, ngân sách hai mức, 403 lọc nhạy cảm,
 422 đầu vào, phạm vi, gác khóa báo cáo ở cả ba đường, Excel và số truy vấn CỐ ĐỊNH.

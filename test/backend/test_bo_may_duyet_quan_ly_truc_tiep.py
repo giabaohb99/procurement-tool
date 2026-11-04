@@ -2,7 +2,7 @@
 
 Đọc `Employee.manager_id` trên hồ sơ người nộp. Không dùng được (chưa gán, đã nghỉ,
 tài khoản khóa, trùng chính người nộp) thì LÙI về trưởng bộ phận người nộp — đúng câu ô
-«Quản lý trực tiếp» trên hồ sơ đã hứa, và để một hồ sơ chưa kịp gán không làm kẹt đơn.
+"Quản lý trực tiếp" trên hồ sơ đã hứa, và để một hồ sơ chưa kịp gán không làm kẹt đơn.
 
 Trước 01/10 ô `manager_id` có trên hồ sơ nhưng bộ máy duyệt KHÔNG đọc nó: nhân sự gán
 quản lý, tin đơn sẽ tới người đó, còn đơn vẫn đi trưởng bộ phận mà không gì báo.

@@ -1,8 +1,8 @@
 """bao-CR-535 — seed văn thư không được đẻ lại công ty trùng mã số thuế mỗi lần deploy.
 
-bao-CR-532 gộp «DEGO HOLDING» vào «DEGO» (cùng MST 1801722464) rồi xóa. Nhưng
+bao-CR-532 gộp "DEGO HOLDING" vào "DEGO" (cùng MST 1801722464) rồi xóa. Nhưng
 `seed_document_phase1` chạy ở MỖI lần khởi động (`seed_prod`) và danh sách
-`DOCUMENT_COMPANIES` còn dòng «DEGO HOLDING», nên deploy dev xong là nó mọc lại (id 17).
+`DOCUMENT_COMPANIES` còn dòng "DEGO HOLDING", nên deploy dev xong là nó mọc lại (id 17).
 """
 from app.modules.company.model import Company
 from app.seed import seed_document_phase1

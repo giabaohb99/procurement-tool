@@ -1,7 +1,7 @@
 """Phân hệ Công việc — PHỤ THUỘC việc trước–sau (B-15).
 
 Quy ước chung của phân hệ (employee_id, ngày dạng chuỗi, IntEnum) nằm ở đầu
-`model.py` — đọc trước. Thiết kế: `doc/erp/cong-viec/01-danh-sach-tinh-nang.md`
+`model.py` — đọc trước. Thiết kế: `doc/erp/cong-viec/chuc-nang/11-danh-sach-tinh-nang.md`
 §4b (cụm Gantt mở rộng).
 """
 from sqlalchemy import BigInteger, ForeignKey, Index, Integer, SmallInteger

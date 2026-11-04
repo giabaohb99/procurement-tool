@@ -119,7 +119,7 @@ def test_dat_hon_nguong_thi_hoi_ok_roi_moi_chay(db, env, monkeypatch):
     assert row.status == mt.MeetingStatus.QUEUED and mt._has(row, mt.Progress.COST_OK)
     out = mt.process(db, row.id)
     assert out["status"] == "done" and len(transcribed) == 18          # 3 giờ = 18 đoạn 10 phút (ai-CR-168)
-    #  «thôi» trên thẻ khác → bỏ phiên, không chạy.
+    #  "thôi" trên thẻ khác → bỏ phiên, không chạy.
     row2 = _row(db)
     mt.process(db, row2.id)
     msg = service.log_message(db, DIR_IN, "12345", 6, "thôi")

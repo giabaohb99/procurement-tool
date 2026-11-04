@@ -99,6 +99,11 @@ class Settings(BaseSettings):
     # Cách dùng: khi CỐ Ý áp lại phân quyền chuẩn -> đặt SEED_FORCE_SYNC=true, restart api 1 lần,
     # rồi trả về false (hoặc bỏ dòng đó) trước lần deploy sau.
     SEED_FORCE_SYNC: bool = False
+    # Trang tài liệu API do FastAPI tự sinh (Swagger `/api/docs`, `/api/redoc`, `/api/openapi.json`). Mặc định TẮT:
+    # prod không mở (người chủ chốt 03/11/2026 — bản đồ trọn 1.200 đường API không cho người ngoài xem). Bật ở
+    # local (docker-compose.yml) và dev (`.env.dev` trên VPS 2: API_DOCS_ENABLED=true). Đặt dưới `/api/` để đi qua
+    # nginx của giao diện như mọi đường API khác — `/docs` trần thì nginx trả trang SPA.
+    API_DOCS_ENABLED: bool = False
 
     # --- Quy trình duyệt YCMH (CR-034) ---
     # BẬT (mặc định): trưởng bộ phận duyệt xong phiếu dừng ở "Đã duyệt", phải có Admin/Quản lý
@@ -152,12 +157,25 @@ class Settings(BaseSettings):
     # Công tắc thu sự kiện giao diện (POST /api/telemetry/ui-events). MẶC ĐỊNH BẬT (chủ sản phẩm chốt);
     # tắt thì máy chủ nhận rồi bỏ lô (204), không ghi. Gom số từ bảng sẵn có thì luôn chạy.
     USAGE_TRACKING_ENABLED: bool = True
+    #  duoc-CR-713 — trang Cài đặt nhân sự (tab Nghỉ phép). Mặc định TẮT cả hai: bật là đổi luật duyệt / lập đơn.
+    LEAVE_RESTRICT_BACKDATED: bool = False
+    LEAVE_BACKDATED_ROLES: str = ""
+    #  duoc-CR-715 — vai trò được duyệt đơn nghỉ rơi vào ngày cấm nghỉ (trống = chỉ quản trị).
+    LEAVE_BLOCK_EXEMPT_ROLES: str = ""
+    LEAVE_PREVENT_SELF_APPROVAL: bool = False
+    #  duoc-CR-713 — tab Nhân viên + Hợp đồng lao động. Mặc định = đúng giá trị từng viết cứng trong mã.
+    EMPLOYEE_CODE_PREFIX: str = "NSU"
+    ORG_CHART_VISIBLE_TO_ALL: bool = True
+    EMPLOYEE_ANNIVERSARY_YEARS: str = "1,3,5,10"
+    LABOR_CONTRACT_WARN_DAYS: int = 30
+    LABOR_CONTRACT_DANGER_DAYS: int = 15
 
     # --- Dọn dẹp ---
     NOTIFICATION_KEEP_DAYS: int = 10   # thông báo cũ hơn N ngày sẽ tự xóa
     # bao-CR-698: nhật ký TỪNG DÒNG của lô hải quan (Thêm mới / Đã có / Trùng) cũ hơn N ngày tự dọn hằng đêm;
     # 0 = tắt. Dòng Lỗi / Ghi đè / Xóa / Bỏ qua và dòng nghi sửa giá giữ vĩnh viễn.
     CUSTOMS_ROW_LOG_KEEP_DAYS: int = 7     # đại ca chốt 30/10
+    CUSTOMS_EXPORT_KEEP_DAYS: int = 7      # bao-CR-718: tệp của lô xuất toàn bộ tra cứu thị trường
     # bao-CR-699: gộp dòng hàng hải quan trùng (cùng tờ khai + giá + lượng, không xung đột) ngày 1 và 16 lúc 03:30.
     CUSTOMS_LINE_MERGE_ENABLED: bool = True
     # bao-CR-703: sổ việc chạy ngầm (tab_job_run) giữ N ngày; 0 = tắt dọn.

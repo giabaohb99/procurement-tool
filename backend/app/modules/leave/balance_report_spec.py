@@ -12,13 +12,16 @@ from dataclasses import dataclass
 
 from fastapi import HTTPException
 from sqlalchemy import and_, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
+from app.core.vn_time import vn_today
 from app.core.report_aggregate import DerivedSpec, DimensionSpec, MetricSpec, ReportSpec
 from app.core.scoping import apply_scope
 from app.modules.employee.model import Employee
 from app.modules.employee.service import STATUS_RESIGNED
+from app.modules.leave import accrual_service
 from app.modules.leave.balance_model import LeaveBalance
+from app.modules.leave.catalog_model import LeaveType
 
 EMPLOYEE_STATUSES = ("working", "resigned", "all")
 #  Chỉ số bấm được ra danh sách (`GET /api/leave-balances/summary/rows`).
@@ -28,7 +31,7 @@ DRILLDOWN_METRICS = {"remaining": "Còn lại", "people_over_quota": "Số ngư�
 
 BAL_COLS = (LeaveBalance.company_id, LeaveBalance.leave_type_id, LeaveBalance.employee_id,
             LeaveBalance.allocated_days, LeaveBalance.seniority_days, LeaveBalance.carried_days,
-            LeaveBalance.adjusted_days, LeaveBalance.used_days, LeaveBalance.pending_days,
+            LeaveBalance.adjusted_days, LeaveBalance.comp_days, LeaveBalance.used_days, LeaveBalance.pending_days,
             LeaveBalance.carried_out_days, LeaveBalance.carried_expired_days)
 
 
@@ -48,6 +51,7 @@ class BalanceRow:
     seniority: float = 0.0
     carried: float = 0.0
     adjusted: float = 0.0
+    comp: float = 0.0           # duoc-CR-717: nghỉ bù cộng thêm (cột `comp_days`, đã có trong BAL_COLS)
     carried_expired: float = 0.0
     #  Cờ THEO NGƯỜI (cộng mọi dòng quỹ của người đó): được cấp > 0 mà đã dùng + giữ chỗ = 0.
     person_unused: bool = False
@@ -84,14 +88,23 @@ def rows_of(db: Session, user, prof: dict, year: int, type_name: dict, emp_dept:
     conds = employee_conds(status, department_id)
     if conds:   # lọc NGAY trong SQL bằng truy vấn con — không thêm truy vấn riêng
         q = q.filter(LeaveBalance.employee_id.in_(db.query(Employee.id).filter(*conds)))
-    rows = q.filter(LeaveBalance.year == year).with_entities(*BAL_COLS).all()
+    #  duoc-CR-715 review: "còn lại" phải TRỪ phần chưa tới tháng của loại cộng dần (như màn Quỹ / form / trợ lý
+    #  AI — `balance_service.available_days`). Chế độ cộng dần + ngày vào làm lấy bằng OUTER JOIN ngay trong câu
+    #  quỹ (bí danh riêng để không dính truy vấn con lọc nhân sự) — số truy vấn vẫn cố định.
+    emp_join = aliased(Employee)
+    rows = (q.filter(LeaveBalance.year == year)
+            .outerjoin(LeaveType, LeaveType.id == LeaveBalance.leave_type_id)
+            .outerjoin(emp_join, emp_join.id == LeaveBalance.employee_id)
+            .with_entities(*BAL_COLS, LeaveType.accrual_mode.label("accrual_mode"),
+                           emp_join.hire_date.label("hire_date")).all())
+    today = vn_today()
     #  "Chưa nghỉ ngày nào" xét THEO NGƯỜI: tổng cấp > 0 và tổng (dùng + giữ chỗ) = 0 trên MỌI
     #  dòng quỹ — người đã nghỉ phép năm nhưng còn quỹ ốm chưa đụng thì KHÔNG tính.
     granted_sum, spent_sum = {}, {}
     for r in rows:
         granted_sum[r.employee_id] = granted_sum.get(r.employee_id, 0.0) + (
             (r.allocated_days or 0) + (r.seniority_days or 0) + (r.carried_days or 0)
-            + (r.adjusted_days or 0))
+            + (r.adjusted_days or 0) + (r.comp_days or 0))
         spent_sum[r.employee_id] = spent_sum.get(r.employee_id, 0.0) + (
             (r.used_days or 0) + (r.pending_days or 0))
     out = []
@@ -100,9 +113,11 @@ def rows_of(db: Session, user, prof: dict, year: int, type_name: dict, emp_dept:
         #  lại vì `with_entities` không nạp @property, chỉ nạp cột thô. Đổi công thức ở model
         #  thì nhớ sửa luôn ở đây.
         granted = round((r.allocated_days or 0) + (r.seniority_days or 0) + (r.carried_days or 0)
-                        + (r.adjusted_days or 0), 2)
+                        + (r.adjusted_days or 0) + (r.comp_days or 0), 2)
+        held = accrual_service.accrual_holdback(
+            r.allocated_days or 0.0, int(r.accrual_mode or 1), r.hire_date, year, today)
         remaining = round(granted - (r.used_days or 0) - (r.pending_days or 0)
-                          - (r.carried_out_days or 0), 2)
+                          - (r.carried_out_days or 0) - held, 2)
         out.append(BalanceRow(
             company_id=r.company_id or 0, department_id=emp_dept.get(r.employee_id, 0),
             leave_type_id=r.leave_type_id or 0, leave_type_name=type_name.get(r.leave_type_id, ""),
@@ -110,7 +125,7 @@ def rows_of(db: Session, user, prof: dict, year: int, type_name: dict, emp_dept:
             granted=granted, used=r.used_days or 0.0, pending=r.pending_days or 0.0,
             remaining=remaining, allocated=r.allocated_days or 0.0,
             seniority=r.seniority_days or 0.0, carried=r.carried_days or 0.0,
-            adjusted=r.adjusted_days or 0.0, carried_expired=r.carried_expired_days or 0.0,
+            adjusted=r.adjusted_days or 0.0, comp=r.comp_days or 0.0, carried_expired=r.carried_expired_days or 0.0,
             person_unused=(round(granted_sum[r.employee_id], 2) > 0
                            and round(spent_sum[r.employee_id], 2) == 0)))
     return out
@@ -126,6 +141,7 @@ def build_spec(company_name: dict, department_name: dict) -> ReportSpec:
         _days("allocated", "Phép năm cơ bản", "allocated"),
         _days("seniority", "Phép thâm niên", "seniority"),
         _days("carried", "Chuyển từ năm trước", "carried"), _days("adjusted", "Điều chỉnh", "adjusted"),
+        _days("comp", "Nghỉ bù cộng thêm", "comp"),
         _days("carried_expired", "Phép chuyển đã hết hạn", "carried_expired"),
         MetricSpec("people_over_quota", "Số người vượt quỹ", kind="int", good="down",
                   distinct_of=lambda r: r.employee_id if r.remaining < 0 else None),

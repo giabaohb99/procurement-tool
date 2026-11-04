@@ -243,7 +243,7 @@ def test_import_seal_creates_attachment_placeholder_and_revert_cleans_it(db):
 
     #  ai-CR-169: Duyệt dấu có xóa mềm -> hoàn tác chỉ đánh `is_deleted`, giữ bảng nối công ty và tệp
     #  giữ chỗ (phiếu còn khôi phục được). Trạng thái từ file (Hoàn thành) đã ghi vào snapshot nên
-    #  không bị coi là «đã đổi».
+    #  không bị coi là "đã đổi".
     res = service.revert_batch(db, b, user_id=1)
     assert res["ok"] is True, res
     req = db.query(SealRequest).filter(SealRequest.code == "DD010").one()

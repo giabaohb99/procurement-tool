@@ -2,7 +2,7 @@
 
 Gác hai trục như mọi module: `require(entity, action)` cho quyền hành động,
 `apply_scope(...)` bó phạm vi; đọc lẻ theo id qua `get_scoped` (không `db.get`).
-Bảng quyền: `doc/erp/diem-ca-phe/04-phan-quyen.md`.
+Bảng quyền: `doc/erp/diem-ca-phe/tai-lieu-ky-thuat/04-phan-quyen.md`.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.exc import IntegrityError
@@ -85,7 +85,7 @@ def create_policy(data: PolicyIn, db: Session = Depends(get_db),
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(400, "Đã có dòng chính sách cho cấp này với cùng ngày hiệu lực")
+        raise HTTPException(400, "Đã có dòng chính sách cho cấp này với cùng ngày hiệu lực") from None
     audit_record(db, user.id, "coffee_policy", row.id, "create",
                  f"Khai mức {data.monthly_points} điểm/kỳ cho cấp {row.level_label} "
                  f"từ {data.effective_from}")
@@ -144,7 +144,7 @@ def create_member(data: MemberCreate, db: Session = Depends(get_db),
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(400, "Nhân sự đã thuộc chương trình điểm cà phê")
+        raise HTTPException(400, "Nhân sự đã thuộc chương trình điểm cà phê") from None
     audit_record(db, user.id, "coffee_member", row.id, "create",
                  f"Gán {emp.full_name} vào chương trình, cấp {row.level_label}")
     db.commit()
@@ -188,9 +188,9 @@ def pos_search(q: str = Query(min_length=3), db: Session = Depends(get_db),
     try:
         results = get_client().search_partners(q)
     except Pos365Disabled:
-        raise HTTPException(400, "Kết nối POS365 đang tắt (POS365_HARD_OFF)")
+        raise HTTPException(400, "Kết nối POS365 đang tắt (POS365_HARD_OFF)") from None
     except Pos365Error as e:
-        raise HTTPException(502, str(e))
+        raise HTTPException(502, str(e)) from e
     return success({"items": [{
         "pos_partner_id": p.get("Id"), "code": p.get("Code"), "name": p.get("Name"),
         "phone": p.get("Phone"), "point": p.get("Point"),
@@ -253,9 +253,9 @@ def create_partner(mid: int, data: CreatePartnerIn, db: Session = Depends(get_db
             phone=data.phone or (emp.phone if emp else ""),
             code=emp.code if emp else "")
     except Pos365Disabled:
-        raise HTTPException(400, "Kết nối POS365 đang tắt (POS365_HARD_OFF)")
+        raise HTTPException(400, "Kết nối POS365 đang tắt (POS365_HARD_OFF)") from None
     except Pos365Error as e:
-        raise HTTPException(502, str(e))
+        raise HTTPException(502, str(e)) from e
     row.pos_partner_id = int(created.get("Id") or 0)
     row.pos_partner_code = str(created.get("Code") or "")
     row.matched_by = user.id
@@ -331,9 +331,9 @@ def get_menu(user=Depends(get_current_user)):
     try:
         products = get_client().list_products(top=200)
     except Pos365Disabled:
-        raise HTTPException(400, "Kết nối POS365 đang tắt (POS365_HARD_OFF)")
+        raise HTTPException(400, "Kết nối POS365 đang tắt (POS365_HARD_OFF)") from None
     except Pos365Error as e:
-        raise HTTPException(502, str(e))
+        raise HTTPException(502, str(e)) from e
     items = []
     for p in products:
         if int(p.get("ProductType") or 0) != 1:
@@ -374,9 +374,9 @@ def create_self_order(data: SelfOrderIn, db: Session = Depends(get_db),
     try:
         products = {int(p.get("Id")): p for p in client.list_products(top=200)}
     except Pos365Disabled:
-        raise HTTPException(400, "Kết nối POS365 đang tắt (POS365_HARD_OFF)")
+        raise HTTPException(400, "Kết nối POS365 đang tắt (POS365_HARD_OFF)") from None
     except Pos365Error as e:
-        raise HTTPException(502, str(e))
+        raise HTTPException(502, str(e)) from e
 
     items, total = [], 0
     for line in data.items:
@@ -403,7 +403,7 @@ def create_self_order(data: SelfOrderIn, db: Session = Depends(get_db),
             partner_id=member.pos_partner_id, items=items,
             account_id=app_settings.get("pos365_payment_account_id"), description=note)
     except Pos365Error as e:
-        raise HTTPException(502, f"POS365 từ chối đơn: {e}")
+        raise HTTPException(502, f"POS365 từ chối đơn: {e}") from e
 
     audit_record(db, user.id, "pos_order", 0, "create",
                  f"Tự đặt nước {created.get('Code')} — {total:,} điểm")
@@ -449,7 +449,7 @@ def adjust_ledger(data: AdjustIn, db: Session = Depends(get_db),
             period=service.current_period(), type_=CoffeeLedgerType.ADJUST,
             points=data.points, reason=data.reason, actor_id=user.id)
     except ValueError as e:
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e)) from e
     audit_record(db, user.id, "coffee_ledger", row.id if row else 0, "create",
                  f"Điều chỉnh {data.points:+d} điểm cho nhân sự #{data.employee_id} — "
                  f"Lý do: {data.reason}")
@@ -508,7 +508,7 @@ def resolve_pos_order(oid: int, data: ResolveIn, db: Session = Depends(get_db),
         service.resolve_order(db, row, employee_id=data.employee_id,
                               reason=data.reason, actor_id=user.id)
     except ValueError as e:
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e)) from e
     action = (f"Gán đơn {row.pos_code} cho nhân sự #{data.employee_id}"
               if data.employee_id else f"Bỏ qua đơn {row.pos_code} — Lý do: {data.reason}")
     audit_record(db, user.id, "pos_order", row.id, "update", action)
@@ -529,9 +529,9 @@ def pos_dashboard(days: int = Query(7, ge=1, le=31),
         orders = service.fetch_recent_orders(client, days=days)
     except Pos365Disabled:
         raise HTTPException(400, "Kết nối POS365 đang tắt (POS365_HARD_OFF) — "
-                                 "màn này cần đọc trực tiếp từ cửa hàng")
+                                 "màn này cần đọc trực tiếp từ cửa hàng") from None
     except Pos365Error as e:
-        raise HTTPException(502, str(e))
+        raise HTTPException(502, str(e)) from e
     data = service.build_pos_dashboard(
         orders, accounts, app_settings.get("pos365_payment_account_id"), days=days)
     data["store_url"] = app_settings.get("pos365_base_url")

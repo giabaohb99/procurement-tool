@@ -419,7 +419,7 @@ def _delivery_stats(ctx: ToolContext, supplier_codes: list[str], since: str) -> 
         return None
     po_q = apply_scope(ctx.db.query(PurchaseOrder.id, PurchaseOrder.supplier_code), PurchaseOrder, "purchase_order",
                        ctx.user, ctx.profile).filter(PurchaseOrder.supplier_code.in_(supplier_codes))
-    po_supplier = {po_id: code for po_id, code in po_q.all()}
+    po_supplier = dict(po_q.all())
     stats = {c: {"total": 0, "on_time": 0, "late_days_max": 0} for c in supplier_codes}
     if not po_supplier:
         return stats

@@ -1,6 +1,6 @@
 """kh-AI2-7 — AI duyệt phiếu đợt 1 (đặt xe, đặt phòng họp, nghỉ phép): propose_approval chỉ đề xuất + token; xác nhận mới ghi,
 kiểm lại từ đầu bằng đúng đường duyệt của web. Năm ca A1 yêu cầu: không phải người duyệt bị chặn, loại phiếu ngoài danh sách
-bị chặn, đổi trạng thái giữa hai bước bị chặn, từ chối phải có lý do, nhóm G7 «approve» tắt bị chặn."""
+bị chặn, đổi trạng thái giữa hai bước bị chặn, từ chối phải có lý do, nhóm G7 "approve" tắt bị chặn."""
 import json
 
 import pytest
@@ -43,7 +43,7 @@ def test_nguoi_duoc_giao_duyet_qua_hai_buoc(db, org):  # noqa: F811
 
 def test_khong_phai_nguoi_duyet_bi_chan(db, org):  # noqa: F811
     bk = _pending(db, org)
-    for who in (org.creator, org.own_only):                                           # người đặt; phạm vi «của mình»
+    for who in (org.creator, org.own_only):                                           # người đặt; phạm vi "của mình"
         out = _propose(db, who, id=bk.id)
         assert out.get("denied") is True and "đang chờ bạn duyệt" in out["reason"]
     ghost = _propose(db, org.other, code="DX99999")
@@ -53,7 +53,11 @@ def test_khong_phai_nguoi_duyet_bi_chan(db, org):  # noqa: F811
 def test_luong_nhieu_buoc_chi_nguoi_co_viec_cho(db, org):  # noqa: F811
     _engine_with_permission_step(db)
     bk = _pending(db, org)
-    assert _propose(db, org.other, id=bk.id).get("denied") is True                   # có quyền nhưng không được giao việc
+    #  duoc-CR-706 (339dfccf): bước quyền giao người được chọn ĐỨNG ĐẦU cộng mọi người giữ quyền mà phạm vi phủ phiếu —
+    #  org.other (phạm vi Tất cả) cũng có việc chờ nên đề xuất được; người đặt và phạm vi của mình vẫn bị chặn.
+    for who in (org.creator, org.own_only):
+        assert _propose(db, who, id=bk.id).get("denied") is True
+    assert _propose(db, org.other, id=bk.id, note="ok")["proposal"]["step"] == "chặng 1"
     p = _propose(db, org.picked, id=bk.id, note="ok")["proposal"]
     assert p["step"] == "chặng 1"
     confirm_update(db, org.picked, p["confirm_token"])
@@ -65,7 +69,7 @@ def test_loai_ngoai_danh_sach_va_tu_choi_can_ly_do(db, org):  # noqa: F811
     bk = _pending(db, org)
     for entity in ("payment_request", "purchase_order", "seal_request", "document"):
         out = T.run_tool(db, org.other, "propose_approval", {"entity": entity, "id": 1, "action": "approve"})
-        assert "chỉ duyệt phiếu đặt xe, đặt phòng họp và đơn nghỉ phép" in out["error"]
+        assert "chỉ duyệt phiếu đặt xe, đặt phòng họp, đơn nghỉ phép và phiếu nghỉ bù" in out["error"]   # + CR-715
     assert "lý do" in _propose(db, org.other, id=bk.id, action="reject")["error"]
     p = _propose(db, org.other, id=bk.id, action="reject", note="Trùng lịch xe")["proposal"]
     confirm_update(db, org.other, p["confirm_token"])

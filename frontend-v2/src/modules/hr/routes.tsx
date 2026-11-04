@@ -7,10 +7,15 @@ import {
   FilePen,
   FileSignature,
   CalendarOff,
+  CalendarPlus,
   CalendarRange,
+  Database,
   IdCard,
   LayoutDashboard,
   Network,
+  ScrollText,
+  Settings2,
+  UserCheck,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -72,45 +77,69 @@ export const hrModule: ErpModule = {
       entity: 'employee',
       group: 'Danh mục',
     },
+    //  ── Master (duoc-CR-712) ──────────────────────────────────────────────
+    //  Gom các danh mục nền (phòng ban, công ty, chức vụ, mẫu HĐLĐ) vào một cụm sổ xuống cho menu gọn.
+    //  ⚠️ Mỗi mục con GIỮ NGUYÊN `entity` / `manage` của mình: bộ gác route (`canAccessRoute`) duyệt cả
+    //  mục con và khớp theo đường dẫn dài nhất, mục con xét trước mục cha — nên dời vào cụm không đổi
+    //  quyền của màn nào. Mục cha hiện khi có ít nhất một mục con được phép.
     {
-      label: 'Phòng ban',
+      label: 'Master',
       path: appRoutes.hr.departments,
-      icon: Building,
-      entity: 'department',
+      icon: Database,
+      entities: ['department', 'company', 'job_position', 'labor_contract_template', 'setting'],
       group: 'Danh mục',
-    },
-    {
-      label: 'Công ty',
-      path: appRoutes.hr.companies,
-      icon: Building2,
-      entity: 'company',
-      group: 'Danh mục',
-    },
-    {
-      //  Danh mục CHỨC VỤ (duoc-CR-320) — nguồn của ô chọn "Vị trí / Chức vụ".
-      //  `manage: true`: mọi vai trò đều ĐỌC được danh mục (ô chọn cần thế),
-      //  nhưng vào màn quản lý thì chỉ người SỬA được — cùng luật với "Danh mục
-      //  phòng họp". Không có nó thì cả công ty thấy một mục menu mở ra chỉ để
-      //  nhìn, mọi nút đều xám.
-      label: 'Chức vụ',
-      path: appRoutes.hr.jobPositions,
-      icon: BriefcaseBusiness,
-      entity: 'job_position',
-      manage: true,
-      group: 'Danh mục',
-    },
-    {
-      //  Mẫu HĐLĐ (.docx) theo pháp nhân. ⚠️ Mục menu khai `entity` LÀ hàng rào
-      //  của route (gác điều hướng mặc định MỞ): thiếu mục này thì ai đăng nhập
-      //  cũng gõ URL vào được. Trang còn tự kiểm `can(..., 'read')` một lần nữa.
-      label: 'Mẫu hợp đồng',
-      //  duoc-CR-643: mở trang mẫu NGAY TRONG Nhân sự (CR-629b từng nhảy sang Thiết lập văn bản của
-      //  phân hệ Văn bản — người dùng bị đẩy khỏi Nhân sự). Mục này cũng là hàng rào cho cả
-      //  `/hr/labor-contract-templates/*` (trình soạn, danh sách biến) vì gác khớp theo ranh giới `/`.
-      path: appRoutes.hr.laborContractTemplates,
-      icon: FileSignature,
-      entity: 'labor_contract_template',
-      group: 'Danh mục',
+      matchPaths: [
+        appRoutes.hr.companies,
+        appRoutes.hr.jobPositions,
+        appRoutes.hr.laborContractTemplates,
+        appRoutes.hr.settings,
+      ],
+      children: [
+        {
+          label: 'Phòng ban',
+          path: appRoutes.hr.departments,
+          icon: Building,
+          entity: 'department',
+        },
+        {
+          label: 'Công ty',
+          path: appRoutes.hr.companies,
+          icon: Building2,
+          entity: 'company',
+        },
+        {
+          //  Danh mục CHỨC VỤ (duoc-CR-320) — nguồn của ô chọn "Vị trí / Chức vụ".
+          //  `manage: true`: mọi vai trò đều ĐỌC được danh mục (ô chọn cần thế),
+          //  nhưng vào màn quản lý thì chỉ người SỬA được — cùng luật với "Danh mục
+          //  phòng họp". Không có nó thì cả công ty thấy một mục menu mở ra chỉ để
+          //  nhìn, mọi nút đều xám.
+          label: 'Chức vụ',
+          path: appRoutes.hr.jobPositions,
+          icon: BriefcaseBusiness,
+          entity: 'job_position',
+          manage: true,
+        },
+        {
+          //  Mẫu HĐLĐ (.docx) theo pháp nhân. ⚠️ Mục menu khai `entity` LÀ hàng rào
+          //  của route (gác điều hướng mặc định MỞ): thiếu mục này thì ai đăng nhập
+          //  cũng gõ URL vào được. Trang còn tự kiểm `can(..., 'read')` một lần nữa.
+          label: 'Mẫu hợp đồng',
+          //  duoc-CR-643: mở trang mẫu NGAY TRONG Nhân sự (CR-629b từng nhảy sang Thiết lập văn bản của
+          //  phân hệ Văn bản — người dùng bị đẩy khỏi Nhân sự). Mục này cũng là hàng rào cho cả
+          //  `/hr/labor-contract-templates/*` (trình soạn, danh sách biến) vì gác khớp theo ranh giới `/`.
+          path: appRoutes.hr.laborContractTemplates,
+          icon: FileSignature,
+          entity: 'labor_contract_template',
+        },
+        {
+          //  duoc-CR-713: Cài đặt nhân sự (kiểu HR Settings của ERPNext). ⚠️ `entity` ở đây LÀ hàng rào của route
+          //  (gác điều hướng mặc định MỞ); backend `/api/settings` gác `setting.read` / `setting.write`.
+          label: 'Cài đặt nhân sự',
+          path: appRoutes.hr.settings,
+          icon: Settings2,
+          entity: 'setting',
+        },
+      ],
     },
     //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
     //  Submenu gồm 4 mục con trên sidebar bên trái:
@@ -122,17 +151,21 @@ export const hrModule: ErpModule = {
       label: 'Nghỉ phép',
       path: appRoutes.hr.leaveRequests,
       icon: CalendarOff,
-      entities: ['leave_request', 'leave_balance', 'leave_type', 'holiday'],
+      entities: ['leave_request', 'leave_comp_request', 'leave_balance', 'leave_type', 'holiday'],
       //  ⚠️ Phải khai `group`, kẻo mục rơi vào rổ KHÔNG NHÓM — rổ đó đứng trên
       //  cùng, không tiêu đề, và vốn chỉ dành cho "Tổng quan". Hai mục nghỉ phép
       //  / phòng họp nằm lửng ở đó đọc như phần đuôi của Tổng quan chứ không ra
       //  mục riêng (khách nêu 14/09/2026).
       group: 'Danh mục',
       matchPaths: [
+        appRoutes.hr.leaveCompRequests,
         appRoutes.hr.leaveCalendar,
         appRoutes.hr.leaveBalances,
         appRoutes.hr.leaveTypes,
         appRoutes.hr.holidays,
+        appRoutes.hr.leaveBlocks,
+        appRoutes.hr.leavePolicies,
+        appRoutes.hr.leavePolicyAssignments,
       ],
       children: [
         {
@@ -140,6 +173,14 @@ export const hrModule: ErpModule = {
           path: appRoutes.hr.leaveRequests,
           icon: CalendarOff,
           entity: 'leave_request',
+        },
+        {
+          //  duoc-CR-715 phase C. Khóa `leave_comp_request` gác luôn cả `/new` và `/:id` (nằm dưới đường
+          //  dẫn danh sách) — route thiếu mục menu gác là ai đăng nhập cũng vào.
+          label: 'Nghỉ bù',
+          path: appRoutes.hr.leaveCompRequests,
+          icon: CalendarPlus,
+          entity: 'leave_comp_request',
         },
         {
           label: 'Lịch nghỉ',
@@ -154,12 +195,24 @@ export const hrModule: ErpModule = {
           entity: 'leave_balance',
         },
         {
+          //  duoc-CR-717. ⚠️ `entity` + `action` ở đây LÀ hàng rào của route (gác điều hướng mặc định MỞ).
+          //  Gác `leave_balance.WRITE` chứ không `read`: seed cấp `leave_balance.read` phạm vi "của tôi" cho
+          //  MỌI nhân viên, gác `read` là ai cũng thấy mục này — màn này là việc của nhân sự (đại ca chốt
+          //  03/11/2026). Trang hàng loạt có mục ẩn riêng, cùng gác `write`.
+          label: 'Phân bổ chính sách',
+          path: appRoutes.hr.leavePolicyAssignments,
+          icon: UserCheck,
+          entity: 'leave_balance',
+          action: 'write',
+          matchPaths: [appRoutes.hr.leavePolicyBulkAssign],
+        },
+        {
           label: 'Thiết lập',
           path: appRoutes.hr.leaveTypes,
           icon: CalendarDays,
           entities: ['leave_type', 'holiday'],
           manage: true,
-          matchPaths: [appRoutes.hr.holidays],
+          matchPaths: [appRoutes.hr.holidays, appRoutes.hr.leaveBlocks, appRoutes.hr.leavePolicies],
         },
       ],
     },
@@ -169,6 +222,35 @@ export const hrModule: ErpModule = {
       icon: CalendarDays,
       entity: 'holiday',
       manage: true,
+      hidden: true,
+    },
+    //  duoc-CR-715: mục ẩn để ĐƯỜNG DẪN có gác quyền (route thiếu mục menu gác = ai đăng nhập cũng vào).
+    //  Khóa `leave_type` — cùng "Thiết lập" nghỉ phép.
+    {
+      label: 'Ngày cấm nghỉ',
+      path: appRoutes.hr.leaveBlocks,
+      icon: CalendarOff,
+      entity: 'leave_type',
+      manage: true,
+      hidden: true,
+    },
+    //  duoc-CR-717: hai mục ẩn làm hàng rào route. Chính sách nghỉ phép gác `leave_type` (cùng Thiết lập);
+    //  trang Phân bổ hàng loạt nằm DƯỚI `/hr/leave-policy-assignments` nhưng cần quyền GHI — mục ẩn dài hơn
+    //  thắng (gác khớp đường dài nhất), nên người chỉ có `leave_balance.read` không mở được trang đó.
+    {
+      label: 'Chính sách nghỉ phép',
+      path: appRoutes.hr.leavePolicies,
+      icon: ScrollText,
+      entity: 'leave_type',
+      manage: true,
+      hidden: true,
+    },
+    {
+      label: 'Phân bổ hàng loạt',
+      path: appRoutes.hr.leavePolicyBulkAssign,
+      icon: UserCheck,
+      entity: 'leave_balance',
+      action: 'write',
       hidden: true,
     },
     //  ── Lịch làm việc (mẫu lịch tuần + gán lịch) — xem `work-schedule-module-entries.tsx`.
@@ -251,6 +333,12 @@ export const hrModule: ErpModule = {
       }),
     },
     {
+      path: appRoutes.hr.settings,
+      lazy: async () => ({
+        Component: (await import('./pages/hr-settings-page')).HrSettingsPage,
+      }),
+    },
+    {
       path: appRoutes.hr.departments,
       lazy: async () => ({
         Component: (await import('./pages/department-list-page')).DepartmentListPage,
@@ -314,6 +402,26 @@ export const hrModule: ErpModule = {
       }),
     },
     {
+      path: appRoutes.hr.leaveCompRequests,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-comp-request-list-page')).LeaveCompRequestListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveCompRequestNew,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-comp-request-detail-page'))
+          .LeaveCompRequestDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveCompRequestDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/leave-comp-request-detail-page'))
+          .LeaveCompRequestDetailPage,
+      }),
+    },
+    {
       path: appRoutes.hr.leaveCalendar,
       lazy: async () => ({
         Component: (await import('./pages/leave-calendar-page')).LeaveCalendarPage,
@@ -361,6 +469,53 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.holidayNew,
       lazy: async () => ({
         Component: (await import('./pages/holiday-detail-page')).HolidayDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveBlocks,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-block-list-page')).LeaveBlockListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveBlockNew,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-block-detail-page')).LeaveBlockDetailPage,
+      }),
+    },
+    //  ── Chính sách nghỉ phép + Phân bổ chính sách (duoc-CR-717) ──────────────
+    //  Hàng rào: mục ẩn "Chính sách nghỉ phép" (`leave_type`), mục "Phân bổ chính sách" và mục ẩn
+    //  "Phân bổ hàng loạt" (cả hai `leave_balance` + write).
+    {
+      path: appRoutes.hr.leavePolicies,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-policy-list-page')).LeavePolicyListPage,
+      }),
+    },
+    {
+      //  ⚠️ Phải đứng TRƯỚC `:id` — `CrudDetailPage` tự nhận ra chế độ thêm mới.
+      path: appRoutes.hr.leavePolicyNew,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-policy-detail-page')).LeavePolicyDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leavePolicyDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/leave-policy-detail-page')).LeavePolicyDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leavePolicyAssignments,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-policy-assignment-list-page'))
+          .LeavePolicyAssignmentListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leavePolicyBulkAssign,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-policy-bulk-assign-page')).LeavePolicyBulkAssignPage,
       }),
     },
     //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
@@ -455,6 +610,12 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.holidayDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/holiday-detail-page')).HolidayDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveBlockDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/leave-block-detail-page')).LeaveBlockDetailPage,
       }),
     },
     ...workScheduleRoutes,

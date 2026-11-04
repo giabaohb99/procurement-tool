@@ -17,7 +17,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import AuditMixin, Base
 
-from .constants import GENDER_UNKNOWN, YEAR_END_DROP
+from .constants import GENDER_UNKNOWN, YEAR_END_DROP, LeaveAccrualMode
 
 
 class LeaveType(Base, AuditMixin):
@@ -43,6 +43,9 @@ class LeaveType(Base, AuditMixin):
     #  Tách khỏi `is_paid` vì hai thứ không đi đôi: nghỉ cưới hỏi vẫn hưởng
     #  lương nhưng không ăn vào 12 ngày phép năm.
     counts_balance: Mapped[bool] = mapped_column(Boolean, default=False)
+    #  Loại NHẬN ngày nghỉ bù (duoc-CR-715 C): phiếu nghỉ bù đã duyệt cộng `days` vào `comp_days` của loại này.
+    #  Nhiều loại cùng bật thì lấy loại `sort_order` nhỏ nhất; phải kèm `counts_balance`.
+    is_compensatory: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
 
     #  Hạn mức cơ bản mỗi năm, trước khi cộng bậc thâm niên. `0` = không có hạn
     #  mức (nghỉ không lương), lúc đó `counts_balance` phải là False.
@@ -93,6 +96,15 @@ class LeaveType(Base, AuditMixin):
     #  KHÔNG (nghỉ 6 tháng liên tục, tính cả cuối tuần).
     exclude_holiday: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    #  duoc-CR-715 — luật cấp quỹ kiểu ERPNext. Mặc định của cả ba = hành vi cũ.
+    #  Cách cấp quỹ (`LeaveAccrualMode`); quỹ ĐÃ cấp không tính lại khi đổi, trừ MONTHLY.
+    accrual_mode: Mapped[int] = mapped_column(
+        SmallInteger, default=int(LeaveAccrualMode.FULL_YEAR), server_default="1")
+    #  Chỉ dùng được loại này sau N ngày kể từ ngày vào làm. `0` = không chặn.
+    applicable_after_days: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    #  Cho ứng phép: còn lại được xuống tới `-N` ngày. `0` = không ứng (QĐ-NP2 cũ).
+    max_negative_days: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
+
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     note: Mapped[str] = mapped_column(String(500), default="")
@@ -132,6 +144,25 @@ class LeaveTypeSeniority(Base, AuditMixin):
     note: Mapped[str] = mapped_column(String(255), default="")
 
 
+class LeaveTypeQuota(Base, AuditMixin):
+    """Hạn mức năm THEO NHÓM của một loại nghỉ (duoc-CR-715) — khớp hình thức nhân viên hoặc cấp bậc.
+
+    Thứ tự áp lúc cấp quỹ: hình thức nhân viên → cấp bậc → `LeaveType.annual_quota_days`.
+    """
+
+    __tablename__ = "tab_leave_type_quota"
+    __table_args__ = (
+        UniqueConstraint("leave_type_id", "basis", "basis_value", name="uq_leave_quota_type_basis"),
+    )
+
+    leave_type_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    #  `QUOTA_BASIS_*` ở constants.
+    basis: Mapped[int] = mapped_column(SmallInteger, default=1)
+    #  Mã của bộ mã tương ứng ở `employee/constants.py` (hình thức làm việc / cấp bậc).
+    basis_value: Mapped[int] = mapped_column(SmallInteger, default=0)
+    quota_days: Mapped[float] = mapped_column(Float, default=0.0)
+
+
 class Holiday(Base, AuditMixin):
     """Một ngày nghỉ lễ. Dùng để KHÔNG tính nó vào số ngày phép đã dùng.
 
@@ -157,4 +188,24 @@ class Holiday(Base, AuditMixin):
     #  Lặp lại hằng năm theo ngày/tháng (Tết Dương lịch, Quốc khánh). Tết Âm và
     #  Giỗ Tổ **không** lặp được vì trôi theo lịch âm — mỗi năm nhập một lần.
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class LeaveBlockPeriod(Base, AuditMixin):
+    """NGÀY CẤM NGHỈ (duoc-CR-715, chép ý Leave Block List của ERPNext) — khoảng ngày công ty không muốn ai nghỉ.
+
+    Chỉ CẢNH BÁO lúc lập / sửa đơn; chặn ở chặng DUYỆT CUỐI (xem `block_period_service`). `company_id` /
+    `department_id` = `0` nghĩa là áp cho mọi pháp nhân / mọi phòng ban.
+    """
+
+    __tablename__ = "tab_leave_block_period"
+    __table_args__ = (
+        Index("ix_leave_block_dates", "is_active", "from_date", "to_date"),
+    )
+
+    company_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    department_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    from_date: Mapped[date] = mapped_column(Date)
+    to_date: Mapped[date] = mapped_column(Date)
+    reason: Mapped[str] = mapped_column(String(255), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

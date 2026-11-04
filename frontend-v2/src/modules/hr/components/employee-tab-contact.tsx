@@ -1,10 +1,9 @@
 import { Card } from '@/shared/ui/card'
-import { FormSection } from '@/shared/ui/form-section'
-import {
-  EmployeeTextField,
-  SensitiveFieldsNotice,
-} from './employee-form-fields'
+import { FormSection, useFormSectionContext } from '@/shared/ui/form-section'
+import { cn } from '@/shared/utils/cn'
+import { EmployeeTextField, SensitiveFieldsNotice } from './employee-form-fields'
 import { CopyAddressButton } from './copy-address-button'
+import { EmployeeDetailBlock } from './employee-detail-block'
 import { EmployeePeopleEditor } from './employee-people-editor'
 import { PhoneListEditor } from './phone-list-editor'
 import {
@@ -12,10 +11,7 @@ import {
   createEmptyContactRow,
   toContactPayload,
 } from '../config/employee-contact-columns'
-import {
-  useEmployeeContacts,
-  useSaveEmployeeContacts,
-} from '../hooks/use-employee-profile'
+import { useEmployeeContacts, useSaveEmployeeContacts } from '../hooks/use-employee-profile'
 import type { EmployeeContact } from '../types/employee'
 
 interface EmployeeTabContactProps {
@@ -42,11 +38,19 @@ export function EmployeeTabContact({
   const saveContacts = useSaveEmployeeContacts(employeeId)
   const lockedField = !canWrite || !canReadSensitive
 
+  const flat = useFormSectionContext().variant === 'flat'
   return (
-    <div className="flex flex-col gap-5">
-      {!canReadSensitive && <SensitiveFieldsNotice />}
+    <div className={cn('flex flex-col', !flat && 'gap-5')}>
+      {!canReadSensitive && (
+        //  Kiểu phẳng không có đệm khung — tự đệm để cảnh báo không dính sát mép.
+        <div className={cn(flat && 'px-4 pt-4 sm:px-6')}>
+          <SensitiveFieldsNotice />
+        </div>
+      )}
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      {/*  Kiểu phẳng (màn hồ sơ kiểu ERPNext, duoc-CR-708): các nhóm XẾP CHỒNG sát nhau để
+           đường kẻ ngăn nhóm chạy liền một mạch; lưới hai cột + khoảng hở là của bản thẻ. */}
+      <div className={cn(!flat && 'grid gap-5 lg:grid-cols-2')}>
         <Card className="gap-4 p-5">
           <FormSection title="Liên hệ">
             {/*  "Email công việc" đã dời sang tab Chung (đại ca chốt 23/09/2026) —
@@ -77,11 +81,7 @@ export function EmployeeTabContact({
 
         <Card className="gap-4 p-5">
           <FormSection title="Ngân hàng nhận lương">
-            <EmployeeTextField
-              name="bank_account_no"
-              label="Số tài khoản"
-              disabled={lockedField}
-            />
+            <EmployeeTextField name="bank_account_no" label="Số tài khoản" disabled={lockedField} />
             <EmployeeTextField
               name="bank_account_name"
               label="Tên chủ tài khoản"
@@ -94,17 +94,19 @@ export function EmployeeTabContact({
       </div>
 
       {canReadSensitive && (
-        <EmployeePeopleEditor<EmployeeContact>
-          title="Người báo tin trong trường hợp cần thiết"
-          description="Người thân để liên hệ khi cần. Có thể khai nhiều người."
-          columns={CONTACT_COLUMNS}
-          rows={contacts.data}
-          isLoading={contacts.isLoading}
-          emptyRow={createEmptyContactRow}
-          canWrite={canWrite}
-          isSaving={saveContacts.isPending}
-          onSave={(rows) => saveContacts.mutate(toContactPayload(rows))}
-        />
+        <EmployeeDetailBlock title="Người báo tin trong trường hợp cần thiết">
+          <EmployeePeopleEditor<EmployeeContact>
+            title="Người báo tin trong trường hợp cần thiết"
+            description="Người thân để liên hệ khi cần. Có thể khai nhiều người."
+            columns={CONTACT_COLUMNS}
+            rows={contacts.data}
+            isLoading={contacts.isLoading}
+            emptyRow={createEmptyContactRow}
+            canWrite={canWrite}
+            isSaving={saveContacts.isPending}
+            onSave={(rows) => saveContacts.mutate(toContactPayload(rows))}
+          />
+        </EmployeeDetailBlock>
       )}
     </div>
   )

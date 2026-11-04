@@ -40,7 +40,7 @@ def test_co_setting_read_chua_gan_khoa_14_403(db, cap_quyen, client_as):
 
 
 def test_metrics_khong_bi_duong_user_id_nuot(db, admin, client_as):
-    #  Nếu khai sau `/{user_id}` thì «metrics» vào tham số int → 422.
+    #  Nếu khai sau `/{user_id}` thì "metrics" vào tham số int → 422.
     r = client_as(admin).get(URL)
     assert r.status_code == 200, r.text
     assert r.json()["data"]["metrics"]

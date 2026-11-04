@@ -1,0 +1,46 @@
+# Cổng kiểm ruff cho backend (bao-CR-710, đợt R1 của doc/tai-lieu-ky-thuat/danh-gia-chat-luong-backend.md mục 5).
+# Chạy: docker compose exec -T api sh -c "pip install -q ruff && python -m ruff check app"  — phải 0 lỗi.
+# Bộ luật: chỉ những loại đã dọn sạch (lỗi thật, không đổi hành vi). Muốn thêm luật thì dọn sạch trước rồi mới thêm,
+# đừng thêm luật đang đỏ. PERF401 / SIM105 / SIM102 còn ~60 chỗ chưa dọn, chưa đưa vào cổng.
+target-version = "py312"
+line-length = 120
+
+# Khu chưa dọn, cố ý để ngoài cổng (gỡ dần khi dọn xong):
+# - ba phân hệ thu mua: Agent 3 đang dọn controller ở đợt R2 (cấm đụng song song)
+# - cụm nhân sự (employee, leave, labor_contract): anh Dược đang đẩy liên tục
+# - seed / script một lần: import model để đăng ký mapper, ruff coi là import thừa
+extend-exclude = [
+  "app/modules/purchase_request",
+  "app/modules/survey_request",
+  "app/modules/purchase_order",
+  "app/modules/employee",
+  "app/modules/leave",
+  "app/modules/labor_contract",
+  "app/seed.py",
+  "app/seed_approval_demo.py",
+  "app/seed_document_demo.py",
+  "app/sync_phanloai.py",
+]
+
+[lint]
+select = [
+  "F",       # pyflakes: import thừa, biến chưa định nghĩa, biến gán không dùng
+  "B904",    # raise trong except phải kèm `from err` / `from None`
+  "B023",    # hàm trong vòng lặp bắt biến vòng lặp
+  "C4",      # comprehension: dict()/list() thừa, comprehension không cần
+  "SIM114",  # if với hai nhánh y hệt
+  "SIM118",  # `key in dict.keys()`
+]
+ignore = [
+  "B008",    # gọi hàm ở giá trị mặc định — báo nhầm kiểu `Depends(...)` của FastAPI
+]
+
+[lint.per-file-ignores]
+# Tệp có người khác sửa trong 24 giờ lúc dọn R1 (luật: không đụng), còn vài chỗ — dọn ở đợt kế
+"app/core/app_settings.py" = ["F401"]
+"app/core/crud.py" = ["B904"]
+"app/core/scoping.py" = ["C401"]
+"app/modules/approval/instance_service.py" = ["B904"]
+"app/modules/assistant/tools/draft_tool.py" = ["F401"]
+# `__init__.py` gom tên cho gói, không phải import thừa
+"__init__.py" = ["F401"]

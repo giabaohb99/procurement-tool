@@ -13,7 +13,7 @@ cr: duoc-CR-686
 # Kho mẫu báo cáo Nhân sự
 
 Tài liệu nghiệp vụ (nguồn chính, 8 nhóm / 19 mẫu): [`doc/erp/hrm/05-bao-cao-nhan-su.md`](../../doc/erp/hrm/05-bao-cao-nhan-su.md).
-Khung báo cáo dùng lại: plan [`260928-0841-bao-cao-kieu-haravan-da-phan-he`](../260928-0841-bao-cao-kieu-haravan-da-phan-he/plan.md).
+Khung báo cáo dùng lại: plan [`260928-0841-bao-cao-kieu-haravan-da-phan-he`](../../doc/plans/260928-0841-bao-cao-kieu-haravan-da-phan-he/plan.md).
 
 ## Quyết định đã chốt (27/10/2026, anh Được)
 - Đợt code đầu = **nền + sửa lỗi + B1 + E1**.

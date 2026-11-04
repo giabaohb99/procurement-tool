@@ -11,6 +11,8 @@ import type {
   CustomsBatchLogList,
   CustomsCompare,
   CustomsCoverage,
+  CustomsExportBatch,
+  CustomsExportBatchList,
   CustomsImportBatch,
   CustomsImportBatchList,
   CustomsImporters,
@@ -144,6 +146,45 @@ export async function downloadCustomsBatchFile(id: number, filename: string) {
 export async function exportCustomsLines(params: Params) {
   try {
     await downloadFile(`${BASE}/lines/export`, 'tra-cuu-gia-hai-quan.xlsx', params)
+  } catch (error) {
+    throw new Error(await readBlobErrorMessage(error), { cause: error })
+  }
+}
+
+// ── bao-CR-718: lô xuất toàn bộ chạy nền (chia nhiều tệp 50.000 dòng) ─────────────────────
+/**
+ * Tạo lô xuất TOÀN BỘ dòng khớp bộ lọc — tham số y hệt `GET /lines` (dựng bằng `buildCustomsParams`,
+ * không kèm `page`/`page_size`), gửi trên QUERY chứ không trong thân. Trả kèm câu của backend
+ * ("Đã tạo lô xuất #12: 328.374 dòng, dự kiến 7 tệp…") để báo đúng số. 409 = đang có một lô
+ * chờ / chạy; 400 = bộ lọc không có dòng nào.
+ */
+export async function createCustomsExportBatch(params: Params) {
+  const res = await httpClient.post<SuccessEnvelope<CustomsExportBatch>>(
+    `${BASE}/export-batches`,
+    null,
+    { params },
+  )
+  return { batch: res.data.data, message: res.data.message }
+}
+
+/** Lô xuất của CHÍNH người dùng, mới nhất trước. */
+export function fetchCustomsExportBatches(params: Params) {
+  return apiGet<CustomsExportBatchList>(`${BASE}/export-batches`, { params })
+}
+
+export function fetchCustomsExportBatch(id: number) {
+  return apiGet<CustomsExportBatch>(`${BASE}/export-batches/${id}`)
+}
+
+/** Dừng lô đang chờ / đang xuất (chỉ người xuất). Tệp đã xong vẫn tải được tới hạn giữ. */
+export function cancelCustomsExportBatch(id: number) {
+  return apiPost<CustomsExportBatch>(`${BASE}/export-batches/${id}/cancel`)
+}
+
+/** Tải MỘT tệp của lô. Tệp quá hạn bị dọn thì backend trả 404 kèm câu tiếng Việt (về dạng blob). */
+export async function downloadCustomsExportFile(id: number, part: number, filename: string) {
+  try {
+    await downloadFile(`${BASE}/export-batches/${id}/files/${part}`, filename)
   } catch (error) {
     throw new Error(await readBlobErrorMessage(error), { cause: error })
   }

@@ -17,7 +17,9 @@ import { canManageEntity } from '@/app/router/module-visibility'
 import { usePermission } from '@/core/authorization/use-permission'
 
 import {
+  cancelCustomsExportBatch,
   commitCustomsBatch,
+  createCustomsExportBatch,
   deleteCustomsLine,
   fetchCustomsAlerts,
   fetchCustomsBatch,
@@ -25,6 +27,8 @@ import {
   fetchCustomsBatchLogs,
   fetchCustomsCompare,
   fetchCustomsCoverage,
+  fetchCustomsExportBatch,
+  fetchCustomsExportBatches,
   fetchCustomsImporters,
   fetchCustomsLine,
   fetchCustomsLines,
@@ -39,7 +43,12 @@ import {
   updateCustomsLine,
   uploadCustomsFiles,
 } from '../api/customs-api'
-import type { CustomsImportBatch, CustomsPartyType } from '../types/customs'
+import type {
+  CustomsExportBatch,
+  CustomsExportBatchList,
+  CustomsImportBatch,
+  CustomsPartyType,
+} from '../types/customs'
 import { isBatchRunning } from '../utils/customs'
 
 type Params = Record<string, unknown>
@@ -63,10 +72,17 @@ const customsKeys = {
   batch: (id: number) => ['procurement', 'customs', 'batch', id] as const,
   batchLogs: (id: number, params: Params) =>
     ['procurement', 'customs', 'batch', id, 'logs', params] as const,
+  //  bao-CR-718 — lô XUẤT (khác `batch` = lô NẠP). Chung gốc `export-batches` để dừng / tạo lô
+  //  bỏ hiệu lực cả danh sách lẫn chi tiết trong một lệnh.
+  exportBatchesAll: () => ['procurement', 'customs', 'export-batches'] as const,
+  exportBatches: (params: Params) => ['procurement', 'customs', 'export-batches', 'list', params] as const,
+  exportBatch: (id: number) => ['procurement', 'customs', 'export-batches', 'detail', id] as const,
 }
 
 /** Nhịp hỏi lại trạng thái lô đang chạy — khớp bản v1 (1,5 giây). */
 const BATCH_POLL_MS = 1500
+/** bao-CR-718 — nhịp hỏi lại lô XUẤT đang chờ / đang chạy. Mỗi tệp ~20 giây, 3 giây là đủ mịn. */
+export const EXPORT_BATCH_POLL_MS = 3000
 
 export function useCustomsCoverage() {
   return useQuery({ queryKey: customsKeys.coverage(), queryFn: fetchCustomsCoverage })
@@ -200,6 +216,52 @@ export function useCustomsBatchPolling(batches: CustomsImportBatch[]): CustomsIm
         query.state.data && isBatchRunning(query.state.data) ? BATCH_POLL_MS : false,
     })),
     combine: (results) => results.map((result, index) => result.data ?? batches[index]),
+  })
+}
+
+/** bao-CR-718 — "Lô xuất của tôi". Còn lô nào đang chạy thì hỏi lại cả trang theo nhịp lô xuất. */
+export function useCustomsExportBatches(params: Params) {
+  return useQuery({
+    queryKey: customsKeys.exportBatches(params),
+    queryFn: () => fetchCustomsExportBatches(params),
+    placeholderData: keepPreviousData,
+    refetchInterval: (query: { state: { data?: CustomsExportBatchList } }) =>
+      query.state.data?.items.some((batch) => batch.active) ? EXPORT_BATCH_POLL_MS : false,
+  })
+}
+
+/** bao-CR-718 — chi tiết một lô xuất; lô còn `active` thì hỏi lại mỗi 3 giây, hết active thì thôi. */
+export function useCustomsExportBatch(id: number | null) {
+  return useQuery({
+    queryKey: customsKeys.exportBatch(id ?? 0),
+    queryFn: () => fetchCustomsExportBatch(id ?? 0),
+    enabled: id !== null,
+    refetchInterval: (query: { state: { data?: CustomsExportBatch } }) =>
+      query.state.data?.active ? EXPORT_BATCH_POLL_MS : false,
+  })
+}
+
+/** bao-CR-718 — tạo lô xuất toàn bộ; xong bỏ hiệu lực danh sách lô để "Lô xuất của tôi" có lô mới. */
+export function useCreateCustomsExportBatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createCustomsExportBatch,
+    onSuccess: ({ batch }) => {
+      queryClient.setQueryData(customsKeys.exportBatch(batch.id), batch)
+      return queryClient.invalidateQueries({ queryKey: customsKeys.exportBatchesAll() })
+    },
+  })
+}
+
+/** bao-CR-718 — dừng lô; ghi ngay bản backend trả về để màn chi tiết thôi hỏi lại. */
+export function useCancelCustomsExportBatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: cancelCustomsExportBatch,
+    onSuccess: (batch) => {
+      queryClient.setQueryData(customsKeys.exportBatch(batch.id), batch)
+      return queryClient.invalidateQueries({ queryKey: customsKeys.exportBatchesAll() })
+    },
   })
 }
 

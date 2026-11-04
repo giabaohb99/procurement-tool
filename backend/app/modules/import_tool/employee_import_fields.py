@@ -163,7 +163,7 @@ def parse_int(v) -> int:
     try:
         return int(float(t))
     except (ValueError, OverflowError):          # "inf"/"1e999" -> OverflowError (L6)
-        raise CellError("phải là số nguyên")
+        raise CellError("phải là số nguyên") from None
 
 
 def parse_scalar(spec: dict, raw):

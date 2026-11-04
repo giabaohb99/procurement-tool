@@ -123,7 +123,6 @@ def sync_log_stats(
     Gom bằng MỘT truy vấn `GROUP BY` chứ không đếm năm lần — sổ này là bảng dày
     nhất hệ thống.
     """
-    from sqlalchemy import func
 
     profile = get_perm_profile(db, user)
     query = db.query(SyncLog.status, func.count(SyncLog.id))

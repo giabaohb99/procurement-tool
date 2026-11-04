@@ -24,7 +24,7 @@ rồi `python scripts/reindex_help_rag.py` để Trợ lý AI đọc được b�
 
 Idempotent: có thẻ gốc cũ thì xóa nguyên cây con (con trước, cha sau — FK tự tham chiếu không cascade) rồi dựng lại.
 
-⚠️ Nội dung ở đây phải KHỚP với `doc/tai-lieu-chuc-nang/22-ket-noi-ai-rieng-va-kho-skill.md` và
+⚠️ Nội dung ở đây phải KHỚP với `doc/erp/tro-ly-ai/chuc-nang/10-ket-noi-ai-rieng-va-kho-skill.md` và
 `doc/agent-hub/06-cong-mcp.md` (hợp đồng cổng). Ba nơi lệch nhau thì người dùng đọc một đằng, màn hình làm một nẻo.
 
 ⚠️ Tiêu đề bài phải KHÁC mọi bài đang có trong Trung tâm trợ giúp (portal tra ngược slug -> id trên client, trùng tiêu đề

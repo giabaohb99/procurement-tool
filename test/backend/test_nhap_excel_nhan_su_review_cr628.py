@@ -301,7 +301,8 @@ def test_hb_hoan_tac_khoi_phuc_dung_tap_phong_kiem_nhiem(db, seed, hr):
     db.commit()
     b = run_import(db, [{"Mã NV *": "DEMONV", "Phòng ban (mã)": "DEPT03"}], hr)
     assert b.error_count == 0
-    assert set(departments_of(db, seed.emp_nstm_id)) == {d3, seed.dept_id, d4}     # phòng cũ bị hạ xuống kiêm nhiệm
+    #  bao-CR-709: đổi phòng chính mặc định GỠ phòng cũ (trước đây hạ xuống kiêm nhiệm); kiêm nhiệm khác giữ nguyên.
+    assert set(departments_of(db, seed.emp_nstm_id)) == {d3, d4}
     assert revert(db, b, hr)["ok"]
     db.expire_all()
     rows = {(r.department_id, bool(r.is_primary)) for r in
@@ -347,7 +348,7 @@ def test_ma_hoan_tac_ve_phong_ngoai_tam_la_l2(db, seed, hr, cap_quyen):
 def test_mb_dau_thoi_gian_khong_co_do_tre(db, seed, hr):
     b = run_import(db, [{"Mã NV *": "MOI01", "Họ tên *": "Mới"}], hr)
     n = emp(db, "MOI01")
-    n.updated_at = n.updated_at + timedelta(seconds=1)       # 1 giây vẫn là «bị sửa sau» (không còn 60s lỏng)
+    n.updated_at = n.updated_at + timedelta(seconds=1)       # 1 giây vẫn là "bị sửa sau" (không còn 60s lỏng)
     db.commit()
     res = revert(db, b, hr)
     assert not res["ok"] and "chỉnh sửa" in res["message"]

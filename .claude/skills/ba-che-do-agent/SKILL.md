@@ -6,8 +6,8 @@ description: Ba chế độ chạy dịch vụ AI của DEGO ERP (AGENT_MODE nh�
 # Ba chế độ của dịch vụ AI
 
 ## Khi nào dùng
-Mọi thay đổi trong `agent_hub/`, `assistant/`, `ai_skill/`, `agent_gateway/`; dựng / soát `.env.agent`; lỗi kiểu «local
-chạy, dev hỏng».
+Mọi thay đổi trong `agent_hub/`, `assistant/`, `ai_skill/`, `agent_gateway/`; dựng / soát `.env.agent`; lỗi kiểu **local
+chạy, dev hỏng**.
 
 ## Bản đồ
 | `AGENT_MODE` | Ai chạy | DB | Đường vào |
@@ -35,14 +35,14 @@ chạy, dev hỏng».
 1. Đọc xem mã mình sửa chạy ở tiến trình nào (bảng trên). Cần dữ liệu ERP từ dịch vụ AI → thêm cặp `_Local` / `_Remote`
    trong `erp.py` + đường cổng B, KHÔNG import model ERP rồi query.
 2. Ghi nhật ký thao tác → `agent_hub.erp.audit` (không `core.audit.record`).
-3. Thêm bảng / cột `tab_agent_*` → hai migration (ERP + `migrations_agent`), cùng nội dung, «chỉ thêm khi thiếu».
+3. Thêm bảng / cột `tab_agent_*` → hai migration (ERP + `migrations_agent`), cùng nội dung, **chỉ thêm khi thiếu**.
 4. Lời nhắc core_v2: phần TĨNH (system) không chứa thứ đổi mỗi lượt; phần theo người (danh mục skill) để CUỐI system;
    phần đổi mỗi lượt vào `turn_context` đầu tin người dùng — trạm cache theo tiền tố công cụ → system → lịch sử.
 
 ## Bẫy đã gặp
 - 13/10 sự cố sót `change_undo.py` khi `git add` → tiến trình service không nạp được; luôn kiểm nạp cả ba chế độ.
 - 15/10 trạm modelapi: đổi một chữ ở system là ghi lại cả bộ đệm (~20k token) — system phải tĩnh.
-- 16/10 ai-CR-207: gọi cổng B không kèm user → «Tài khoản không tồn tại», danh sách công cụ cụt ở chế độ tách.
+- 16/10 ai-CR-207: gọi cổng B không kèm user → **Tài khoản không tồn tại**, danh sách công cụ cụt ở chế độ tách.
 - 19/10 ai-CR-222: issuer OAuth lấy `X-Forwarded-Host` → giả được, và ở chế độ tách thành gốc nội bộ `agent:8001`.
   Nay chỉ lấy `AGENT_ERP_URL`; thiếu thì 503.
 - 19/10 ai-CR-223: đường hỏi về tệp không đi core_v2 → không phân luồng model → rơi vào khóa trạm đầu tiên (DeepSeek nghĩ
@@ -50,7 +50,7 @@ chạy, dev hỏng».
 - 19/10 ai-CR-226: audit công cụ chạy tại chỗ ghi vào DB `agent_hub` → `tab_audit_log doesn't exist`, mất trắng.
 - 19/10 Agent 1 đo: trạm cộng thêm ~40–45k token mỗi lần gọi ngoài phần mình gửi (~10–15k) — xem `cache_read` trong
   `AgentRun.artifact` trước khi kết luận lời nhắc của mình phình.
-- Bài kiểm chạy «ERP» và «dịch vụ AI» trong CÙNG tiến trình (cùng `AGENT_MODE`) → phía ERP cũng đi cổng B; đừng khẳng
+- Bài kiểm chạy **ERP** và **dịch vụ AI** trong CÙNG tiến trình (cùng `AGENT_MODE`) → phía ERP cũng đi cổng B; đừng khẳng
   định số lượt HTTP chính xác ở bài kiểm tách dịch vụ.
 
 ## Kiểm

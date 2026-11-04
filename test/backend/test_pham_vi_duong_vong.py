@@ -62,7 +62,7 @@ Quét toàn hệ: **274 route có `require(entity, action)` với action ≠ rea
 Hai kết luận rộng hơn từng dòng ở trên:
 
 1. **6/6 route `/export/xlsx` của cả hệ** lọc bằng phạm vi `read` vì dùng chung
-   `_list_query`/`_filtered` với màn danh sách. Ô «Xuất» trong hộp thoại phạm vi
+   `_list_query`/`_filtered` với màn danh sách. Ô "Xuất" trong hộp thoại phạm vi
    **chưa bao giờ cắt được một dòng nào** — nó chỉ bật/tắt cái nút.
 2. **Văn thư không có phạm vi cho `approve`/`cancel` ở mức mô hình.**
    `access_service.ACTION_COLUMN` (`:47-51`) chỉ khai `read · write · delete`,
@@ -160,7 +160,7 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
     ],
     "approval/instance_controller.py": [
         (OK_DA_KIEM, "L312 `ApprovalTask` (reassign) — chốt ở `action_service.reassign:"
-                     "310-315` «không tự bốc việc của người khác». ⚠️ phạm vi CHỨNG TỪ "
+                     "310-315` \"không tự bốc việc của người khác\". ⚠️ phạm vi CHỨNG TỪ "
                      "nền thì không hỏi — chuyển cụm 07 xem xét"),
         (OK_DA_KIEM, "L333 `_load(ApprovalInstance)` — L336 `entity_hooks.can_read`"),
     ],
@@ -266,11 +266,15 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_KHONG_CAN, "L254 `StoredFile` (tải lại tệp GTT02 gốc, bao-CR-493) — `file_id` lấy từ CHÍNH "
                        "lô, lô đã qua `_get_batch` (khác module hải quan → 404); entity `customs_price` "
                        "PUBLIC + require(ENTITY, 'read') trên route"),
+        (OK_DA_KIEM, "L144 `CustomsExportBatch` trong `_own_batch` (bao-CR-718) — ngay dưới: không thấy → 404, "
+                     "không phải người tạo lô và không có export phạm vi tất cả → 403"),
+        (OK_KHONG_CAN, "L191 `StoredFile` tệp của lô xuất (bao-CR-718) — `file_id` lấy từ CHÍNH lô đã qua "
+                       "`_own_batch`; route gác require(ENTITY, 'export')"),
     ],
     "document/approval_preview_controller.py": [
         (OK_DA_KIEM, "L132 `Document` (văn bản gốc khi tạo theo mẫu) — L133 "
                      "`access_service.can(db, source_doc, user, profile, 'read')` ngay dòng sau, "
-                     "không có thì 400 gộp chung «không thấy / không có quyền» — cụm 05"),
+                     "không có thì 400 gộp chung \"không thấy / không có quyền\" — cụm 05"),
     ],
     "document/controller.py": [
         (OK_DA_KIEM, "L599 `DocumentVersion` — L597 `_load(db, document_id, user, \"read\")` "
@@ -328,13 +332,16 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
     ],
     # ── Nghỉ phép ────────────────────────────────────────────────────────────
     "leave/catalog_controller.py": [
-        (OK_KHONG_CAN, "L67 `LeaveType` — loại nghỉ ĐÍCH của «quy đổi số dư cuối "
-                       "năm»; danh mục PUBLIC, chỉ kiểm tồn tại + có trừ quỹ không"),
+        (OK_KHONG_CAN, "L67 `LeaveType` — loại nghỉ ĐÍCH của \"quy đổi số dư cuối "
+                       "năm\"; danh mục PUBLIC, chỉ kiểm tồn tại + có trừ quỹ không"),
         (OK_KHONG_CAN, "L110 `LeaveType` — PUBLIC, chỉ kiểm tồn tại"),
         (OK_KHONG_CAN, "L144 `LeaveTypeSeniority` — bậc thâm niên của `leave_type` PUBLIC"),
         (OK_KHONG_CAN, "L162 `LeaveTypeSeniority` (xóa) — cùng lý do L144, PUBLIC"),
+        (OK_KHONG_CAN, "L171 `LeaveType` — PUBLIC, chỉ kiểm tồn tại trước khi liệt kê hạn mức theo nhóm (duoc-CR-715 A)"),
+        (OK_KHONG_CAN, "L183 `LeaveType` — PUBLIC, lấy loại nghỉ để thay danh sách hạn mức theo nhóm (duoc-CR-715 A)"),
     ],
     "leave/request_controller.py": [
+        (OK_KHONG_CAN, "L60 `Employee` người nghỉ của chính tờ đơn đã qua `_get_or_404` — dò ngày cấm nghỉ (duoc-CR-715 B)"),
         (OK_KHONG_CAN, "L5 — dòng DOCSTRING nhắc tên `db.get()`, không phải một lời gọi"),
         (OK_DA_KIEM, "L122 `_readable_by_approver` — ngay trên là `approval_bridge."
                      "can_read_request` (nới đúng lúc có việc TASK_PENDING)"),
@@ -345,10 +352,17 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_KHONG_CAN, "L172 `Department` — tên phòng, danh mục PUBLIC"),
         (OK_KHONG_CAN, "L175 `Company` — tên pháp nhân, danh mục PUBLIC"),
         (OK_KHONG_CAN, "L316 `LeaveType` — PUBLIC, dùng để ước tính số ngày"),
+        (OK_KHONG_CAN, "L368 `LeaveType` của `estimate_periods` (duoc-CR-683, ước tính số ngày từng "
+                       "khoảng) — cùng lý do dòng trên, danh mục PUBLIC"),
         (OK_KHONG_CAN, "L341 — dòng DOCSTRING của `_ensure_balance_in_scope` kể lại "
                        "rằng `resolve_leave_taker` là `db.get(Employee, ...)` trần; "
                        "chốt thật là `get_scoped(..., \"leave_balance\")` ngay dưới "
                        "(vá 05/09/2026, ca A6d cụm 06)"),
+    ],
+    "leave/comp_request_controller.py": [
+        (OK_KHONG_CAN, "L47 `Department` trong `_dump_one` — tên phòng, danh mục PUBLIC; phiếu đã qua `_get_or_404`"),
+        (OK_DA_KIEM, "L55 `_get_or_404` — ngay trên là `get_scoped(..., action)`; chỉ nới cho `read` khi "
+                     "`comp_approval_bridge.can_read_request` đúng (có việc duyệt treo) — duoc-CR-715 C"),
     ],
     # ── Phòng họp ────────────────────────────────────────────────────────────
     "meeting_room/controller.py": [
@@ -364,30 +378,7 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_DA_KIEM, "L126 `Company` — tra tên, nằm SAU `_scoped(..., \"print\")` ở "
                      "L124 (vá P0 #4, 05/09/2026 — trước đó là `service.get_request` trần)"),
     ],
-    "purchase_order/controller.py": [
-        (OK_KHONG_CAN, "L351 `Company` — tra tên; lỗ của `GET /{pid}/print` nằm ở L349 "
-                       "`service.get_po` (= D3 cụm 03)"),
-    ],
-    "purchase_request/controller.py": [
-        (OK_KHONG_CAN, "L191 `User` — `_purchasing_head`: id người điều phối lấy từ chính "
-                       "phiếu đã qua cổng phạm vi, chỉ để in tên trưởng phòng thu mua"),
-        (OK_KHONG_CAN, "L192 `Employee` — hồ sơ của người điều phối đó, cùng lý do L191"),
-        (OK_KHONG_CAN, "L193 `Department` — phòng của người điều phối, danh mục PUBLIC"),
-        (OK_KHONG_CAN, "L194 `Employee` — trưởng phòng đó, lấy tên + chữ ký in lên phiếu"),
-        (OK_KHONG_CAN, "L1063 `db.get(Survey)` — tra tên/thông tin phiếu khảo sát cho ô chọn "
-                       "kho khảo sát; phạm vi đã hỏi ở `_open_line(..., \"write\")` trên PR nền, "
-                       "khảo sát là dữ liệu tham chiếu (cùng khuôn survey_request L539)."),
-    ],
     # ── Thu mua ──────────────────────────────────────────────────────────────
-    "survey_request/controller.py": [
-        (OK_KHONG_CAN, "L109 `Employee` — của CHÍNH người đang gọi, để so phòng ban"),
-        (OK_KHONG_CAN, "L114 `Employee` — người yêu cầu của phiếu, để so phòng ban"),
-        (OK_KHONG_CAN, "L539 `Survey` — tra mã/phân loại phiếu khảo sát cho ô chọn NCC "
-                       "thủ công (tìm MỞ theo thiết kế). ⚠️ lỗ của route này là "
-                       "`service.get_sr` ở L529 (= S6 cụm 03)"),
-        (OK_KHONG_CAN, "L674 `SurveyProductLine` — dòng nguồn của chính option đang "
-                       "serialize, chỉ lấy ngày khảo sát"),
-    ],
     "ticket/controller.py": [
         (OK_KHONG_CAN, "L44 `User` — tra tên hiển thị người tạo/xử lý"),
     ],
@@ -508,7 +499,25 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #  và `_scoped_request` (đi tiếp `get_scoped(Employee, "write")`).
     #  98 → 99 (duoc-CR-681): `vehicle_booking/controller.py` +1 — `_scoped_or_404` cho người duyệt CHỌN trên phiếu
     #    (cửa duyệt, chỉ khi `is_picked_legacy_approver` đúng).
-    assert sum(that.values()) == 99, f"tổng phải là 99, đang là {sum(that.values())}"
+    #  99 → 100 (duoc-CR-683, khai muộn ở bao-CR-709): `leave/request_controller.py` +1 — `estimate_periods` tra
+    #    loại nghỉ (danh mục PUBLIC) để biết có trừ ngày lễ không; người nghỉ đi qua `resolve_leave_taker`.
+    #  100 → 105 (duoc-CR-715): `leave/catalog_controller.py` +2, `leave/request_controller.py` +1 (dò ngày cấm nghỉ)
+    #    và `leave/comp_request_controller.py` +2 (phiếu nghỉ bù).
+    #  105 → 100 (bao-CR-711, làm gọn controller YCMH): năm lần tra tên để in / hiển thị rời
+    #    `purchase_request/controller.py` cùng hàm chứa chúng — bốn lần của `_purchasing_head` sang
+    #    `service.purchasing_head`, `db.get(Survey)` của kho khảo sát sang `survey_request.service.survey_header`.
+    #    Cổng phạm vi giữ nguyên ở route (`_in_scope` / `_open_line`), bảng này chỉ canh tệp controller.
+    #  100 → 96 (bao-CR-711, controller YCBG): `_same_dept_as_requester` (hai lần tra hồ sơ để so phòng ban)
+    #    sang `service.same_dept_as_requester`; `db.get(Survey)` của ô chọn NCC thủ công sang
+    #    `service.survey_header`; `db.get(SurveyProductLine)` của bản kết quả cho người yêu cầu sang
+    #    `service.survey_product_line`. Cổng phạm vi (`_in_scope`, `_scope_with_named_head`) ở nguyên controller.
+    #    ⚠️ Ghi chú cũ của dòng `Survey`: lỗ của route chọn NCC thủ công từng là `service.get_sr` trần (= S6
+    #    cụm 03) — route nay gọi `_in_scope(..., "read")` trước khi tra, đừng bỏ chốt đó khi sửa.
+    #  96 → 95 (bao-CR-711, controller ĐMH): `db.get(Company)` tra tên pháp nhân cho bản in sang
+    #    `service.company_by_id` (gọi từ `serializer._out_print`); bản in vẫn qua `_in_scope(..., "print")`.
+    #  95 → 97 (bao-CR-718, khai muộn ở bao-CR-719): `customs/controller.py` +2 — lô xuất chạy nền: `_own_batch`
+    #    (kiểm người tạo / phạm vi ngay sau) và tệp của lô đã qua `_own_batch`.
+    assert sum(that.values()) == 97, f"tổng phải là 97, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():
@@ -817,7 +826,7 @@ def test_b2_xuat_excel_di_theo_pham_vi_read_khong_theo_export(world):
     `apply_scope(query, Employee, "employee", user, profile)` — **không truyền
     `action`**, nên rơi vào mặc định `"read"` (`scoping.py:483`).
 
-    Ca này dựng đúng cấu hình mà hộp thoại «Phạm vi» cho phép: vai trò 1 = XEM
+    Ca này dựng đúng cấu hình mà hộp thoại "Phạm vi" cho phép: vai trò 1 = XEM
     toàn hệ, vai trò 2 = XUẤT trong pháp nhân mình. Người dùng (và người khai
     quyền) đọc cấu hình đó là "xuất được người của công ty mình"; thực tế tệp
     tải về có đủ nhân sự cả hai pháp nhân.
@@ -846,7 +855,7 @@ def test_b2b_sau_route_export_xlsx_deu_dung_pham_vi_read():
 
     Năm route còn lại (`purchase_request` · `purchase_order` · `survey_request` ·
     `payable` · `document`) dùng chung hàm `_list_query`/`_filtered` với màn danh
-    sách, mà hàm đó tất nhiên lọc bằng `read`. Nên **ô «Xuất» trong hộp thoại
+    sách, mà hàm đó tất nhiên lọc bằng `read`. Nên **ô "Xuất" trong hộp thoại
     phạm vi chưa từng cắt được một dòng nào** — nó chỉ bật/tắt cái nút.
 
     # QUYẾT ĐỊNH CHỜ: cho `_list_query` nhận `action` (danh sách → "read",
@@ -858,7 +867,7 @@ def test_b2b_sau_route_export_xlsx_deu_dung_pham_vi_read():
     import app.modules
 
     root = Path(app.modules.__file__).parent
-    #  duoc-CR-660 đã chốt cho NHÂN SỰ: hai đường xuất lọc bằng phạm vi «export» — rút khỏi danh sách,
+    #  duoc-CR-660 đã chốt cho NHÂN SỰ: hai đường xuất lọc bằng phạm vi "export" — rút khỏi danh sách,
     #  canh riêng ở dưới để không ai lỡ tay trả về `read`. Năm tệp còn lại vẫn chờ quyết định.
     tep = ["purchase_request/controller.py", "purchase_order/controller.py",
            "survey_request/controller.py", "payable/controller.py",
@@ -881,11 +890,11 @@ def test_b3_can_tru_tien_treo_cong_no_di_theo_pham_vi_write(world):
 
     Route gác `require("payable", "write")` nhưng trước 05/09/2026 nạp khoản nợ
     bằng `apply_scope(...)` **không truyền action**, tức mượn phạm vi `read`: ai
-    có ô «Sửa» công nợ, dù phạm vi ghi hẹp tới đâu, cấn trừ được tiền treo vào
+    có ô "Sửa" công nợ, dù phạm vi ghi hẹp tới đâu, cấn trừ được tiền treo vào
     khoản nợ mà họ chỉ được XEM. Đây là thao tác ĐỔI TIỀN, không phải đọc trộm.
     Bản vá (P0 #5) truyền `action="write"`.
 
-    Cấu hình dựng ở đây là cấu hình hộp thoại «Phạm vi» cho phép và người khai
+    Cấu hình dựng ở đây là cấu hình hộp thoại "Phạm vi" cho phép và người khai
     quyền đọc là *"xem cả tập đoàn, sửa trong công ty mình"*.
 
     Ca ĐẦY ĐỦ (gọi thật cả hai chiều, kèm số tiền) nằm ở
@@ -931,7 +940,7 @@ def test_b4_duyet_van_ban_muon_pham_vi_cua_quyen_doc(world):
     hành động `read · write · delete`. Gọi `can(..., "approve")` là `KeyError`
     → 500, chứ không phải "chặn". Nghĩa là với phân hệ Văn thư, `approve` và
     `cancel` **chỉ tồn tại trên trục QUYỀN, không tồn tại trên trục PHẠM VI**.
-    Hai ô «Duyệt»/«Hủy» trong hộp thoại phạm vi vai trò không cắt được văn bản nào.
+    Hai ô "Duyệt"/"Hủy" trong hộp thoại phạm vi vai trò không cắt được văn bản nào.
 
     Cấu hình dựng ở đây là cấu hình phổ biến nhất của Văn thư: *xem văn bản toàn
     tập đoàn, ký văn bản của pháp nhân mình*.
@@ -1031,7 +1040,7 @@ def test_b6_sau_module_lam_dung_khuon_truyen_action(world):
 def test_c1_doi_pham_vi_vai_tro_co_hieu_luc_ngay(world):
     """C1 — thêm/bớt dòng phạm vi đi qua `user/service.py:288` → xóa cache → ăn NGAY.
 
-    Ca này canh chính đường mà màn «Phân quyền» dùng, không phải helper của test:
+    Ca này canh chính đường mà màn "Phân quyền" dùng, không phải helper của test:
     `set_user_scope` ghi `tab_user_scope` rồi gọi `perm_cache_clear(user_id)`.
     """
     from app.modules.contract.model import Contract
@@ -1185,7 +1194,7 @@ def test_c5_ho_so_cache_cu_thieu_dept_ids_thi_lui_ve_phong_chinh(world):
     Tình huống thật: nâng cấp lên bản có KIÊM NHIỆM (CR-167) trong lúc có người
     đang dùng. Hồ sơ họ đã cache theo hình dạng CŨ (không có `dept_ids`), và nó
     còn sống thêm 60 giây. Nếu nhánh này không lùi thì trong một phút đó phạm vi
-    bậc «phòng ban» rỗng — tức người dùng **mất sạch dữ liệu** giữa giờ làm, đúng
+    bậc "phòng ban" rỗng — tức người dùng **mất sạch dữ liệu** giữa giờ làm, đúng
     kiểu sự cố không ai dựng lại được.
     """
     from app.core.scoping import apply_scope

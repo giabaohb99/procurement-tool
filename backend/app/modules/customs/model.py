@@ -1,6 +1,6 @@
 """Bảng của phân hệ Tra cứu giá hải quan (bao-CR-470).
 
-Thiết kế + số đo: `doc/erp/hai-quan/02-thiet-ke-ky-thuat.md` §3.
+Thiết kế + số đo: `doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md` §3.
 
 - `CustomsParty` — bảng ĐỐI TƯỢNG: doanh nghiệp trong nước + đối tác nước ngoài,
   phân loại theo bản chất (`PartyType`). Tên lặp lại rất nhiều trên dòng hàng
@@ -58,6 +58,9 @@ class CustomsLine(Base):
         #  bao-CR-541: tra mã băm chống trùng. Kèm `reg_date` vì bảng chia phân vùng theo năm
         #  của nó — sau này nâng thành UNIQUE thì MySQL buộc khóa phải chứa cột phân vùng.
         Index("ix_customs_line_hash_date", "row_hash", "reg_date"),
+        #  bao-CR-718: màn danh sách sắp "ngày đăng ký giảm dần" + LIMIT — có chỉ mục này MySQL đi ngược chỉ mục và
+        #  dừng khi đủ một trang thay vì quét cả bảng rồi sắp (đo 328 nghìn dòng: 352 ms → 0,1 ms; có từ khóa 739 → 9 ms).
+        Index("ix_customs_line_date", "reg_date"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
@@ -333,3 +336,40 @@ class CustomsFormulationCode(Base, AuditMixin):
     name_vi: Mapped[str] = mapped_column(String(100), default="")
     description: Mapped[str] = mapped_column(String(255), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class CustomsExportBatch(Base, AuditMixin):
+    """bao-CR-718 — một lô XUẤT TOÀN BỘ (hoặc theo bộ lọc) chạy nền, chia nhiều tệp `.xlsx`.
+
+    Mỗi tệp do MỘT task Celery ghi (`customs.export_batch_part`), xong tự hẹn tệp kế — không chiếm worker lâu. Đọc theo
+    khối, `id` tăng dần từ `last_id`, chặn trên bằng `max_id` chụp lúc tạo (dòng nạp sau không lọt vào giữa chừng).
+    Mỗi tệp lưu kho + một dòng `tab_export_log` (truy vết như mọi lần xuất); `files` giữ danh sách để màn chi tiết lô
+    bày và tải từng tệp.
+
+    `active_user_id` = người xuất khi lô còn chờ / chạy, NULL khi đã kết thúc — UNIQUE nên mỗi người chỉ một lô đang chạy,
+    đứng vững cả khi hai yêu cầu tới cùng lúc ở hai tiến trình.
+    """
+    __tablename__ = "tab_customs_export_batch"
+    __table_args__ = (
+        UniqueConstraint("active_user_id", name="uq_customs_export_active_user"),
+        Index("ix_customs_export_batch_creator", "created_by", "id"),
+        Index("ix_customs_export_batch_status", "status"),
+    )
+
+    status: Mapped[int] = mapped_column(SmallInteger, default=1)                 # CustomsExportStatus
+    active_user_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    filters: Mapped[dict] = mapped_column(JSON, nullable=True)                   # bộ lọc lúc bấm (dict của line_filters)
+    filter_summary: Mapped[str] = mapped_column(String(500), default="")
+    total_rows: Mapped[int] = mapped_column(Integer, default=0)                  # số dòng lúc tạo (để báo dự kiến)
+    rows_per_file: Mapped[int] = mapped_column(Integer, default=0)
+    file_count: Mapped[int] = mapped_column(Integer, default=0)                  # dự kiến; lúc xong = số tệp thật
+    files_done: Mapped[int] = mapped_column(Integer, default=0)
+    rows_done: Mapped[int] = mapped_column(Integer, default=0)
+    max_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    last_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    #  [{part, filename, rows, size, file_id, export_log_id}] — file_id = 0 khi đã dọn.
+    files: Mapped[list] = mapped_column(JSON, nullable=True)
+    error: Mapped[str] = mapped_column(String(500), default="")
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

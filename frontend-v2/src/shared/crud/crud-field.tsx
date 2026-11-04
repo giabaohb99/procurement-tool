@@ -1,16 +1,12 @@
 import { Controller, type Control, type FieldErrors, type UseFormRegister } from 'react-hook-form'
 
 import { DatePicker } from '@/shared/ui/date-picker'
+import { FormDescriptionHint } from '@/shared/ui/form-description-hint'
+import { useFormSectionContext } from '@/shared/ui/form-section'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Switch } from '@/shared/ui/switch'
 import { Textarea } from '@/shared/ui/textarea'
 import { cn } from '@/shared/utils/cn'
@@ -38,6 +34,8 @@ interface CrudFieldProps {
  * hai chỗ và quên một chỗ là thêm mới với sửa hiện khác nhau.
  */
 export function CrudField({ field, register, control, errors, isReadonly }: CrudFieldProps) {
+  //  Trong vùng phẳng kiểu ERPNext (`detailLayout: 'flat'`, duoc-CR-716) chú thích thu vào biểu tượng (i) cạnh nhãn.
+  const iconHints = useFormSectionContext().hints === 'icon'
   const isFullWidth = field.fullWidth || field.type === 'textarea'
   //  ⚠️ `getPath`, không phải `errors[field.name]`. react-hook-form dựng cây
   //  lỗi LỒNG theo dấu chấm, nên ô `'extra_fields.so_gp'` có lỗi thì nó nằm ở
@@ -45,8 +43,7 @@ export function CrudField({ field, register, control, errors, isReadonly }: Crud
   //  quả là im lặng tuyệt đối: react-hook-form chặn submit vì ô sai, mà không
   //  câu báo lỗi nào hiện ra, nên bấm Lưu thì **không có gì xảy ra** (đúng bẫy
   //  thứ nhất của duoc-CR-317).
-  const errorMessage = (getPath(errors, field.name) as { message?: string } | undefined)
-    ?.message
+  const errorMessage = (getPath(errors, field.name) as { message?: string } | undefined)?.message
   //  Ô SỐ hẹp lại: bề ngang của ô là lời hứa về lượng chữ phải gõ. Kéo ô nhập
   //  "Tối đa mỗi lần nghỉ (ngày)" dài nửa màn hình cho một con số hai chữ số thì
   //  nó đọc như một ô ghi chú bỏ trống. Chỉ ô nhập bị chặn, còn nhãn và chú thích
@@ -75,10 +72,20 @@ export function CrudField({ field, register, control, errors, isReadonly }: Crud
     //  ngưỡng khác hệ quy chiếu, nên mở hộp thoại hẹp trên màn 24" là ô ghi chú
     //  đòi 2 cột trong một lưới chỉ có 1.
     <div className={cn('space-y-1.5', isFullWidth && 'col-span-full')}>
-      <Label htmlFor={field.name} className="flex items-center gap-1">
-        {field.label}
-        {field.required && !isReadonly && <span className="text-destructive">*</span>}
-      </Label>
+      {/*  Hàng nhãn cao TỐI THIỂU `min-h-5` (= nút (i) 20px): ô có (i) và ô không có nằm cạnh nhau trong lưới thì hàng nhãn
+          cao lệch 6px, ô nhập bên dưới so le nhau (báo 03/11/2026, trang Loại nghỉ). */}
+      <div className="flex min-h-5 items-center gap-1">
+        <Label htmlFor={field.name} className="flex items-center gap-1">
+          {field.label}
+          {field.required && !isReadonly && <span className="text-destructive">*</span>}
+        </Label>
+        {/*  (i) NẰM NGOÀI `<label>`: trong nhãn thì bấm (i) là con trỏ nhảy vào ô nhập. */}
+        {iconHints && field.hint && (
+          <FormDescriptionHint id={`${field.name}-hint`} className="static inline-flex">
+            {field.hint}
+          </FormDescriptionHint>
+        )}
+      </div>
 
       {isReadonly ? (
         <CrudFieldReadOnly field={field} control={control} />
@@ -108,7 +115,8 @@ export function CrudField({ field, register, control, errors, isReadonly }: Crud
       ) : (
         <Input
           id={field.name}
-          className={cn(isNumeric && 'max-w-[220px]')}
+          //  Bố cục phẳng (duoc-CR-716) xếp 3 cột đều nhau — ô số rộng hết cột cho thẳng hàng với ô chọn bên cạnh.
+          className={cn(isNumeric && !iconHints && 'max-w-[220px]')}
           type={isNumeric ? 'number' : 'text'}
           step={field.type === 'percent' ? '0.1' : undefined}
           placeholder={field.placeholder}
@@ -126,7 +134,7 @@ export function CrudField({ field, register, control, errors, isReadonly }: Crud
         />
       )}
 
-      {field.hint && <p className="text-xs text-muted-foreground">{field.hint}</p>}
+      {!iconHints && field.hint && <p className="text-xs text-muted-foreground">{field.hint}</p>}
       {errorMessage && <p className="text-xs text-destructive">{errorMessage}</p>}
     </div>
   )
@@ -165,6 +173,41 @@ function CrudSwitchRow({
   control: Control<FormValues>
   isReadonly?: boolean
 }) {
+  //  Vùng phẳng kiểu ERPNext (duoc-CR-716): dòng gọn KHÔNG viền / nền — công tắc đứng ngay sau nhãn chứ không dạt
+  //  về mép phải, chú thích thu vào (i). Ngoài vùng đó (hộp thoại, màn kiểu thẻ) giữ khuôn hàng có viền bên dưới.
+  const flat = useFormSectionContext().variant === 'flat'
+  if (flat) {
+    return (
+      <Controller
+        control={control}
+        name={field.name}
+        render={({ field: controllerField }) => (
+          <div className="flex min-h-9 items-center gap-3">
+            {isReadonly ? (
+              <span className="w-10 shrink-0 text-sm font-medium">
+                {controllerField.value ? 'Có' : 'Không'}
+              </span>
+            ) : (
+              <Switch
+                id={field.name}
+                className="shrink-0"
+                checked={Boolean(controllerField.value)}
+                onCheckedChange={controllerField.onChange}
+              />
+            )}
+            <Label htmlFor={field.name} className="cursor-pointer">
+              {field.label}
+            </Label>
+            {field.hint && (
+              <FormDescriptionHint id={`${field.name}-hint`} className="static -ml-1 inline-flex">
+                {field.hint}
+              </FormDescriptionHint>
+            )}
+          </div>
+        )}
+      />
+    )
+  }
   return (
     <Controller
       control={control}
@@ -178,9 +221,7 @@ function CrudSwitchRow({
             <Label htmlFor={field.name} className="cursor-pointer">
               {field.label}
             </Label>
-            {field.hint && (
-              <p className="text-xs text-muted-foreground">{field.hint}</p>
-            )}
+            {field.hint && <p className="text-xs text-muted-foreground">{field.hint}</p>}
           </div>
 
           {isReadonly ? (
@@ -218,6 +259,9 @@ function CrudFieldReadOnly({
   field: CrudFormField
   control: Control<FormValues>
 }) {
+  //  Bố cục phẳng (duoc-CR-716): ô chỉ xem cùng kiểu ô nền xám không viền, cùng chiều cao với ô nhập bên cạnh.
+  const flat = useFormSectionContext().variant === 'flat'
+  const flatClass = flat ? 'min-h-9 border-transparent bg-muted py-1.5 font-medium' : undefined
   const { data: remoteOptions } = useCrudSourceOptions(
     // Ô chọn tĩnh thì khỏi gọi mạng chỉ để dịch một nhãn.
     field.type === 'select' && !field.options ? field.source : undefined,
@@ -232,23 +276,31 @@ function CrudFieldReadOnly({
 
         if (field.type === 'switch') {
           return (
-            <ReadOnlyValue>{value ? 'Đang dùng / Hoạt động' : 'Ngừng / Ẩn'}</ReadOnlyValue>
+            <ReadOnlyValue className={flatClass}>
+              {value ? 'Đang dùng / Hoạt động' : 'Ngừng / Ẩn'}
+            </ReadOnlyValue>
           )
         }
         if (field.type === 'percent') {
-          return <ReadOnlyValue>{`${Number(value ?? 0)}%`}</ReadOnlyValue>
+          return <ReadOnlyValue className={flatClass}>{`${Number(value ?? 0)}%`}</ReadOnlyValue>
         }
         if (field.type === 'date') {
-          return <ReadOnlyValue>{formatDate(String(value ?? ''))}</ReadOnlyValue>
+          return (
+            <ReadOnlyValue className={flatClass}>{formatDate(String(value ?? ''))}</ReadOnlyValue>
+          )
         }
         if (field.type === 'select') {
           const options = field.options ?? remoteOptions ?? []
           const matched = options.find((opt) => String(opt.value) === String(value ?? ''))
-          return <ReadOnlyValue>{matched?.label ?? String(value ?? '')}</ReadOnlyValue>
+          return (
+            <ReadOnlyValue className={flatClass}>
+              {matched?.label ?? String(value ?? '')}
+            </ReadOnlyValue>
+          )
         }
 
         return (
-          <ReadOnlyValue multiline={field.type === 'textarea'}>
+          <ReadOnlyValue multiline={field.type === 'textarea'} className={flatClass}>
             {String(value ?? '')}
           </ReadOnlyValue>
         )

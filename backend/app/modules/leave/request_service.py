@@ -21,10 +21,10 @@ from sqlalchemy.orm import Session
 from app.core.utils import generate_code
 from app.modules.employee.model import Employee
 
-from . import balance_service, request_periods, workday_service
+from . import accrual_service, balance_service, leave_policy, request_periods, workday_service
 from .catalog_model import LeaveType
 from .constants import (EDITABLE_STATUSES, GENDER_UNKNOWN,
-                        LR_APPROVED, LR_CANCELLED, LR_DRAFT, LR_PENDING,
+                        LR_APPROVED, LR_CANCELLED, LR_DRAFT, LR_PENDING, LR_RETURNED,
                         SESSION_AFTERNOON, SESSION_HOURLY, SESSION_MORNING,
                         UNIT_DAY, UNIT_HOUR)
 from .period_spans import PeriodView
@@ -94,7 +94,8 @@ def resolve_leave_taker(db: Session, user, employee_id: int) -> Employee:
     return get_employee(db, target)
 
 
-def ensure_can_create_for(db: Session, user, employee: Employee) -> None:
+def ensure_can_create_for(db: Session, user, employee: Employee,
+                          entity: str = "leave_request") -> None:
     """LẬP HỘ — ai được đứng tên người khác trên tờ đơn nghỉ (07/09/2026).
 
     ⚠️ Trước hôm nay ô "người nghỉ" chỉ có ở API chứ không có trên màn hình, và
@@ -122,8 +123,8 @@ def ensure_can_create_for(db: Session, user, employee: Employee) -> None:
 
     profile = get_perm_profile(db, user)
     can_create_for_others = any(
-        grant.get("perms", {}).get("leave_request", {}).get("create")
-        and grant.get("perms", {}).get("leave_request", {}).get("scope") != "own"
+        grant.get("perms", {}).get(entity, {}).get("create")
+        and grant.get("perms", {}).get(entity, {}).get("scope") != "own"
         for grant in profile.get("grants", [])
     )
     if not can_create_for_others:
@@ -481,6 +482,17 @@ def lines_of(db: Session, request_id: int) -> list[LeaveRequestLine]:
 #  tự lặp: nơi gọi có bốn chỗ (gửi duyệt · duyệt xong · ba kết cục không duyệt ·
 #  hủy đơn) và chỉ cần một chỗ quên vòng lặp là sổ lệch âm thầm.
 
+def check_applicable_after(employee: Employee, leave_types: list[LeaveType],
+                           periods: list[PeriodView]) -> None:
+    """duoc-CR-715: mỗi loại nghỉ có "dùng được sau N ngày vào làm" — kiểm theo ngày bắt đầu SỚM NHẤT của đơn."""
+    starts = [p.from_date for p in periods if p.from_date]
+    if not starts:
+        return
+    earliest = min(starts)
+    for leave_type in leave_types:
+        accrual_service.ensure_applicable(leave_type, getattr(employee, "hire_date", None), earliest)
+
+
 def check_enough_lines(db: Session, employee: Employee, obj: LeaveRequest) -> None:
     """Đủ phép cho MỌI dòng. Một dòng thiếu là cả đơn không gửi được (QĐ-NP2)."""
     year = obj.from_date.year
@@ -538,9 +550,11 @@ def create(db: Session, data, user) -> LeaveRequest:
 
     periods = validate_periods(request_periods.normalize_create(data),
                                data.from_time, data.to_time)
+    leave_policy.ensure_not_backdated(db, user, periods)   # duoc-CR-713
     pairs = collect_lines(db, data.lines, data.leave_type_id, data.total_days)
     for leave_type, _ in pairs:
         check_gender(leave_type, employee)
+    check_applicable_after(employee, [lt for lt, _ in pairs], periods)
     pairs, per_days = resolve_period_days(db, pairs, employee, periods,
                                           data.from_time, data.to_time)
     days = check_lines(pairs, periods)
@@ -631,6 +645,7 @@ def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
     #  cho mình rồi sửa sang tên người khác là đi vòng qua đúng cái chốt đó.
     ensure_can_create_for(db, user, employee)
 
+    old_periods = request_periods.periods_of(db, obj)
     periods = request_periods.normalize_update(db, obj, values, data)
     #  Đổi buổi mà KHÔNG gửi kèm giờ thì đọc giờ cũ trên phiếu — trừ khi vừa
     #  chuyển ra khỏi "Theo giờ", lúc đó giờ cũ phải bị xóa chứ không giữ lại.
@@ -638,6 +653,9 @@ def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
     from_time = values.get("from_time", obj.from_time if hourly else None)
     to_time = values.get("to_time", obj.to_time if hourly else None)
     periods = validate_periods(periods, from_time, to_time)
+    #  duoc-CR-713: chỉ kiểm khi NGÀY đổi — đơn bị trả về để bổ sung giấy tờ / sửa lý do vẫn phải lưu được.
+    if not leave_policy.same_periods(old_periods, periods):
+        leave_policy.ensure_not_backdated(db, user, periods, creator_id=obj.created_by)
 
     #  `total_days` chỉ coi là "sửa đè" khi người dùng GỬI LÊN nó. Không gửi thì
     #  tính lại — sửa ngày mà giữ nguyên số ngày cũ là sai ngay lập tức.
@@ -646,6 +664,11 @@ def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
                               values.get("leave_type_id"), requested)
     for line_type, _ in pairs:
         check_gender(line_type, employee)
+    #  duoc-CR-715: chỉ kiểm khi NGÀY hoặc LOẠI NGHỈ đổi — đơn bị trả về chỉ sửa lý do vẫn lưu được.
+    old_type_ids = {line.leave_type_id for line in lines_of(db, obj.id)}
+    if (not leave_policy.same_periods(old_periods, periods)
+            or {lt.id for lt, _ in pairs} != old_type_ids):
+        check_applicable_after(employee, [lt for lt, _ in pairs], periods)
     pairs, per_days = resolve_period_days(db, pairs, employee, periods, from_time, to_time)
     days = check_lines(pairs, periods)
     periods = request_periods.with_days(periods, per_days)
@@ -740,8 +763,14 @@ def prepare_submit(db: Session, obj: LeaveRequest, user) -> Employee:
     check_required_attachment(db, obj)
 
     employee = get_employee(db, obj.employee_id)
-    request_periods.raise_if_overlap(db, obj.employee_id, request_periods.periods_of(db, obj),
-                                     exclude_id=obj.id)
+    periods = request_periods.periods_of(db, obj)
+    #  duoc-CR-713: nháp lập hôm qua cho hôm nay mà để tới mai mới gửi thì lúc gửi đã là đơn lùi ngày. Đơn BỊ TRẢ VỀ
+    #  thì đã gửi duyệt một lần (lúc đó hợp lệ) — gửi lại không chặn, như lời hứa "đơn đã gửi không bị ảnh hưởng".
+    if obj.status != LR_RETURNED:
+        leave_policy.ensure_not_backdated(db, user, periods, creator_id=obj.created_by)
+    request_periods.raise_if_overlap(db, obj.employee_id, periods, exclude_id=obj.id)
+    check_applicable_after(employee, [get_leave_type(db, line.leave_type_id)
+                                      for line in lines_of(db, obj.id)], periods)   # duoc-CR-715
     #  Kiểm TỪNG DÒNG, không kiểm tổng: mỗi loại nghỉ có sổ quỹ riêng, nên
     #  4 ngày = 3 phép năm + 1 không lương có thể qua trong khi 4 ngày phép năm
     #  thì hết phép.

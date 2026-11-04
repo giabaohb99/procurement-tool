@@ -30,6 +30,7 @@ from .model import (
     SealRequestCompany,
 )
 from .schema import (
+    CompanyRef,
     CompleteSealIn,
     ReasonIn,
     SealRequestCreate,
@@ -391,7 +392,6 @@ def _emp_of_user(db: Session, user_id: int) -> Employee | None:
 
 def _company_refs(db: Session, company_ids: list[int], *, logo_map=None, company_map=None) -> list["CompanyRef"]:
     """[CompanyRef] cho danh sách công ty (giữ thứ tự)."""
-    from .schema import CompanyRef
     if not company_ids:
         return []
     if company_map is None:

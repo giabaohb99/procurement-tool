@@ -177,7 +177,7 @@ def write_row_logs(db: Session, batch: ImportBatch, statuses: list[RowStatus]) -
                for row_no, status, message, name in statuses]
     for i in range(0, len(payload), INSERT_CHUNK):
         db.execute(insert(ImportLog), payload[i:i + INSERT_CHUNK])
-    counts = {key: 0 for key in _COUNT_KEY.values()}
+    counts = dict.fromkeys(_COUNT_KEY.values(), 0)
     for _, status, _, _ in statuses:
         counts[_COUNT_KEY[status]] += 1
     return counts

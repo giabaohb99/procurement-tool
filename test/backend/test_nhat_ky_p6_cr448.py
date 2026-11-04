@@ -208,7 +208,7 @@ def test_dry_run_chi_dem_khong_xoa(cleanup, db):
 # ---------------------------------------------------------------------------
 @pytest.fixture
 def clock(db) -> datetime:
-    """Mốc «bây giờ» theo ĐỒNG HỒ CSDL — dòng đánh dấu do `record()` ghi cũng theo đồng hồ đó."""
+    """Mốc "bây giờ" theo ĐỒNG HỒ CSDL — dòng đánh dấu do `record()` ghi cũng theo đồng hồ đó."""
     return anomaly.db_now(db)
 
 

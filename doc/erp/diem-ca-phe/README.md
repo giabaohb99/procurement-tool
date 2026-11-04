@@ -1,40 +1,75 @@
-# PHÂN HỆ ĐIỂM CÀ PHÊ (POS365) — BỘ TÀI LIỆU KỸ THUẬT
+# ĐIỂM CÀ PHÊ (POS365)
 
-**Lập:** 08/09/2026 · **Trạng thái:** thiết kế đã soát, CHƯA viết code — việc kế tiếp là
-phase **CP0 (POC)** trong [`06-lo-trinh-phase.md`](./06-lo-trinh-phase.md).
-
-Bài toán: quầy cà phê công ty bán trên **POS365**; nhân sự order và thanh toán bằng
-**phương thức "Trừ điểm"** trên tài khoản điểm cá nhân; điểm **reset đầu mỗi tháng theo cấp
-nhân sự**. ERP là **sổ cái duy nhất** — POS365 không giữ số dư.
-
-## Gốc gác — đọc theo thứ tự nào
-
-| Tài liệu | Vai trò |
+| | |
 |---|---|
-| [`09-phuc-loi-diem-va-pos.md`](09-phuc-loi-diem-va-pos.md) | Bản **định hướng** (12/08): vì sao tách chính sách khỏi đầu nối, 3 phương án ai giữ số dư, 10 câu nghiệp vụ, 4 chỗ mất tiền thật. Các LUẬT ở đây vẫn hiệu lực |
-| [`17-ke-hoach-trien-khai-pos365-diem-ca-phe.md`](17-ke-hoach-trien-khai-pos365-diem-ca-phe.md) | Bản **quyết định phương án** (07/09): đổi từ "đẩy điểm" sang "phương thức thanh toán"; chốt reset tháng; phần API đã kiểm chứng + Phụ lục A chờ POC. Chỗ nào lệch `09` thì lấy `17` |
-| **Thư mục này** | Bản **thiết kế thực thi** (08/09): tính năng có mã, bảng dữ liệu, thuật toán, phân quyền, giao diện, phase. Chỗ nào lệch `17` thì lấy thư mục này |
+| Bản | 0.1 |
+| Ngày | 03/11/2026 |
+| Người phụ trách | chưa giao |
+| Trạng thái | Nháp |
+| CR liên quan | bao-CR-712 |
 
-## Sáu tệp
+## Phân hệ này là gì
 
-| Tệp | Nội dung |
+Phúc lợi điểm cho quầy cà phê công ty: quầy bán trên POS365, nhân sự order và thanh toán bằng phương thức **Trừ điểm**
+trên tài khoản điểm cá nhân; điểm cấp lại đầu mỗi tháng theo cấp nhân sự, không cộng dồn. ERP là sổ cái duy nhất,
+POS365 không giữ số dư. Giao diện trên `frontend-v2`, gốc `/dego-coffee` (Ví của tôi, Chính sách, Thành viên và ghép,
+Sổ và đối soát, Tra cứu quầy, Quản lý POS, Tự đặt nước; đường lấy từ `frontend-v2/src/shared/constants/app-routes.ts`,
+tài liệu giao diện cũ còn ghi gốc `/retail/...`) — chi tiết ở [giao diện](chuc-nang/11-giao-dien.md) và
+[lộ trình, phần bổ sung 08/09/2026](plans/06-lo-trinh-phase.md#bổ-sung-chiều-08092026--sếp-chốt-nghiệp-vụ--3-tính-năng-mới).
+
+## Tới đâu rồi
+
+| Mảng | Trạng thái | Ghi chú |
+|---|---|---|
+| CP0 POC trên cửa hàng thật `degocode` · CP1 nền dữ liệu và phân quyền · CP2 client POS365, sổ cái, tác vụ đồng bộ · CP3 giao diện | Đã có trong mã (08/09/2026); CP3 chưa đi trọn vòng dùng thử | [lộ trình](plans/06-lo-trinh-phase.md) |
+| Quản lý POS, Tự đặt nước, cấp phát kỳ có người duyệt | Đã có trong mã (08/09/2026) | Đơn tự đặt đã chạy thật `HD080926-0007` |
+| CP4 thí điểm trên quán thật | Chưa làm | Chặn cứng bởi các câu nghiệp vụ còn treo |
+| CP5 mở rộng (soi gương số dư, menu, báo cáo, bàn giao kế toán, nhập CSV) | Chưa làm | |
+| Lên prod | chưa ghi | Dev được đặt làm môi trường thí điểm (`POS365_HARD_OFF=false` ở dev, 08/09/2026) |
+
+README cũ (08/09/2026) ghi *CHƯA viết code*; thông tin đó đã cũ, nay mã đã có (xem [api.md](tai-lieu-ky-thuat/api.md)).
+
+**Câu nghiệp vụ còn treo** (cập nhật theo phần bổ sung 08/09/2026 của lộ trình): bộ cấp đã chốt 5 cấp nhưng **chưa có mức
+điểm / tháng của 4 cấp thường**; cấp phát từng kỳ đã chốt **phải có người duyệt**; còn treo **âm điểm** (C-05) và **thuế
+TNCN** (E-02).
+
+**Ba luật một dòng (giữ từ README cũ):** sổ chỉ ghi thêm, mọi thay đổi số dư là một dòng sổ, kể cả sửa sai · không tự sửa
+khi lệch, lệch lên màn hình cho người xử lý · `POS365_HARD_OFF` mặc định bật, chỉ môi trường được phép mới tắt.
+
+## Đọc gì trước
+
+| Muốn biết | Đọc |
 |---|---|
-| [`01-danh-sach-tinh-nang.md`](./01-danh-sach-tinh-nang.md) | **31 tính năng** chia 7 nhóm (N nền · A chính sách · B thành viên · C sổ điểm · D đồng bộ · E báo cáo · G quyền), 22 thuộc bản đầu; mã N-xx/A-xx… là mã tra cứu chung của cả bộ |
-| [`02-bang-du-lieu.md`](./02-bang-du-lieu.md) | 5 bảng + 6 IntEnum + biến cấu hình + 13 endpoint `/api/coffee/...`. Điểm đáng soát nhất: sổ cái chỉ-INSERT với cột `uniq_key` gánh mọi lời hứa chống trùng |
-| [`03-tich-hop-pos365.md`](./03-tich-hop-pos365.md) | Client (phiên `ss-id`, retry, cầu dao `POS365_HARD_OFF`, lọc `Password`), thuật toán 5 task Celery, **POC 7 câu P1–P7**, bảng kịch bản hỏng |
-| [`04-phan-quyen.md`](./04-phan-quyen.md) | 4 entity + SCOPE_FIELDS (test B-07 lên 48/48), ma trận action, 3 vai trò seed, 5 chỗ dễ hở phải soát lúc review |
-| [`05-giao-dien.md`](./05-giao-dien.md) | Phân hệ "Bán lẻ & quán", 5 màn (Ví của tôi · Chính sách · Thành viên & ghép · Sổ & đối soát · Tra cứu quầy) theo khung CRUD + sổ case `/ui` |
-| [`06-lo-trinh-phase.md`](./06-lo-trinh-phase.md) | **CP0 → CP5**, mỗi phase có điều kiện cần/đủ kiểm được + đường lui; tổng bản 1 ≈ **17–18 ngày công** 1 dev |
+| Làm được gì | [chuc-nang/01-yeu-cau-chuc-nang.md](chuc-nang/01-yeu-cau-chuc-nang.md) |
+| Chạy tốt cỡ nào, ai được xem gì | [chuc-nang/02-yeu-cau-phi-chuc-nang.md](chuc-nang/02-yeu-cau-phi-chuc-nang.md) |
+| Gọi API nào | [tai-lieu-ky-thuat/api.md](tai-lieu-ky-thuat/api.md) · nhóm `coffee_point` trên `/docs` |
+| Thiết kế, bảng dữ liệu, bẫy | [tai-lieu-ky-thuat/02-bang-du-lieu.md](tai-lieu-ky-thuat/02-bang-du-lieu.md), [tai-lieu-ky-thuat/03-tich-hop-pos365.md](tai-lieu-ky-thuat/03-tich-hop-pos365.md), [tai-lieu-ky-thuat/04-phan-quyen.md](tai-lieu-ky-thuat/04-phan-quyen.md) |
+| So sánh, khảo sát, câu hỏi chờ chốt | [chuc-nang/12-phuc-loi-diem-va-pos.md](chuc-nang/12-phuc-loi-diem-va-pos.md) (bản định hướng), [plans/17-ke-hoach-trien-khai-pos365-diem-ca-phe.md](plans/17-ke-hoach-trien-khai-pos365-diem-ca-phe.md) (bản quyết định phương án) |
+| Kế hoạch đang làm / đã xong | [plans/06-lo-trinh-phase.md](plans/06-lo-trinh-phase.md) |
+| Kịch bản kiểm thử tay | chưa có (điều kiện đủ của CP4 ở [lộ trình](plans/06-lo-trinh-phase.md#cp4--thí-điểm-trên-quán-thật--1-tháng-lịch-3-ngày-công-vận-hành)) |
+| Hướng dẫn người dùng | chưa có bài trên Trung tâm trợ giúp |
 
-## Bốn câu nghiệp vụ còn treo (không chặn CP0–CP3, CHẶN CỨNG CP4)
+Thứ tự ưu tiên khi các bản lệch nhau (giữ từ README cũ): bản định hướng `12` < bản quyết định `17` < bộ thiết kế thực thi
+(`10`, `11`, `02`, `03`, `04`, `06`).
 
-1. **Bộ cấp phúc lợi** (`CoffeeLevel`) + bảng mức điểm từng cấp — A-02.
-2. Có cần **duyệt bảng cấp phát từng kỳ** không (đề nghị: không — mức đã duyệt ở chính sách) — A-06.
-3. **Âm điểm** xử lý thế nào (trừ kỳ sau / thu tiền) — C-05.
-4. **Thuế TNCN** cho phúc lợi này — hỏi kế toán, quyết định khuôn xuất E-02.
+## Mục lục
 
-## Ba luật một dòng, nhắc để khỏi mở lại tài liệu
+| Tệp | Nội dung | Trạng thái |
+|---|---|---|
+| [chuc-nang/01-yeu-cau-chuc-nang.md](chuc-nang/01-yeu-cau-chuc-nang.md) | Yêu cầu chức năng, mã `CN-CP-NN` | Nháp, bản 0.1 |
+| [chuc-nang/02-yeu-cau-phi-chuc-nang.md](chuc-nang/02-yeu-cau-phi-chuc-nang.md) | Yêu cầu phi chức năng, mã `PCN-CP-NN` | Nháp, bản 0.1 |
+| [chuc-nang/10-danh-sach-tinh-nang.md](chuc-nang/10-danh-sach-tinh-nang.md) | 31 tính năng chia 7 nhóm (N, A, B, C, D, E, G) | Bản 1.0, 08/09/2026 (kế hoạch) |
+| [chuc-nang/11-giao-dien.md](chuc-nang/11-giao-dien.md) | Giao diện các màn của phân hệ | Bản 1.0, 08/09/2026 |
+| [chuc-nang/12-phuc-loi-diem-va-pos.md](chuc-nang/12-phuc-loi-diem-va-pos.md) | Bản định hướng: phương án, câu nghiệp vụ, chỗ mất tiền thật | Bản 1.0, 12/08/2026 |
+| [plans/06-lo-trinh-phase.md](plans/06-lo-trinh-phase.md) | Lộ trình CP0–CP5, phần bổ sung 08/09/2026, nợ phải dọn | Bản 1.0, 08/09/2026 |
+| [plans/17-ke-hoach-trien-khai-pos365-diem-ca-phe.md](plans/17-ke-hoach-trien-khai-pos365-diem-ca-phe.md) | Bản quyết định phương án: thanh toán Trừ điểm, reset tháng | Bản 1.0, 07/09/2026 |
+| [tai-lieu-ky-thuat/02-bang-du-lieu.md](tai-lieu-ky-thuat/02-bang-du-lieu.md) | 5 bảng, IntEnum, cấu hình, API | Bản 1.0, 08/09/2026 |
+| [tai-lieu-ky-thuat/03-tich-hop-pos365.md](tai-lieu-ky-thuat/03-tich-hop-pos365.md) | Client POS365, thuật toán tác vụ, POC, kịch bản hỏng | Bản 1.0, 08/09/2026 |
+| [tai-lieu-ky-thuat/04-phan-quyen.md](tai-lieu-ky-thuat/04-phan-quyen.md) | 4 entity, ma trận hành động, vai trò seed, chỗ dễ hở | Bản 1.0, 08/09/2026 |
+| [tai-lieu-ky-thuat/api.md](tai-lieu-ky-thuat/api.md) | Bảng đường API dựng tự động từ mã | Nháp, bản 0.1, 03/11/2026 |
 
-- **Sổ chỉ ghi thêm** — mọi thay đổi số dư là một dòng sổ, kể cả sửa sai.
-- **Không tự sửa khi lệch** — lệch lên màn hình, người xử lý, có lý do.
-- **`POS365_HARD_OFF` mặc định bật** — chỉ prod được tắt; dev chạy cả ngày không một call ra quán thật.
+## Mã nguồn
+
+- Backend: `backend/app/modules/coffee_point/` (client POS365 nằm riêng ở `pos365_client.py`)
+- Giao diện v2: `frontend-v2/src/modules/dego-coffee/`
+- Luật cho người viết mã: chưa có tệp luật riêng

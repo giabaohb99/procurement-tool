@@ -25,6 +25,7 @@ import {
 import { rowsToMatrix, toPermissionPayload } from '../utils/permission-matrix-cells'
 import { RoleNameInlineEdit } from './role-name-inline-edit'
 import { RolePermissionMatrix } from './role-permission-matrix'
+import { SensitivePermissionWarning } from './sensitive-permission-warning'
 import { RoleSidePanel } from './role-side-panel'
 
 interface RolePermissionRolesTabProps {
@@ -198,6 +199,10 @@ export function RolePermissionRolesTab({
                 onChange={setMatrix}
                 readOnly={!canWriteRole}
               />
+            )}
+
+            {meta && (
+              <SensitivePermissionWarning meta={meta} role={selectedRole} rows={matrix} />
             )}
 
             <p className="text-xs text-muted-foreground">

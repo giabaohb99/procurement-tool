@@ -43,18 +43,18 @@ export function LeaveCloseYearReviewDialog({ year, onClose }: LeaveCloseYearRevi
 
   const columns = useMemo<DataTableColumn<LeaveCloseYearReviewRow>[]>(
     () => [
-      { key: 'employee', header: 'Nhân sự', width: 220, hideable: false, wrap: true,
+      { key: 'employee', header: 'Nhân sự', width: 200, hideable: false, wrap: true,
         cell: (r) => `${r.employee_name} (${r.employee_code})` },
-      { key: 'source', header: 'Loại nghỉ', width: 150, wrap: true, cell: (r) => r.source_type_name },
+      { key: 'source', header: 'Loại nghỉ', width: 130, wrap: true, cell: (r) => r.source_type_name },
       { key: 'before', header: 'Số cũ (trước)', width: 110, align: 'right',
         cell: (r) => formatDays(r.before_days) },
       { key: 'after', header: 'Số mới (sau)', width: 110, align: 'right',
         cell: (r) => formatDays(r.after_days) },
       { key: 'diff', header: 'Chênh', width: 90, align: 'right',
         cell: (r) => formatDays(r.diff_days) },
-      { key: 'dest', header: 'Sang loại', width: 150, wrap: true,
+      { key: 'dest', header: 'Sang loại', width: 130, wrap: true,
         cell: (r) => r.dest_type_name || 'Chưa khai' },
-      { key: 'credited', header: 'Cộng vào năm sau', width: 130, align: 'right',
+      { key: 'credited', header: 'Cộng vào năm sau', width: 120, align: 'right',
         cell: (r) => formatDays(r.credited_days) },
     ],
     [],
@@ -76,7 +76,7 @@ export function LeaveCloseYearReviewDialog({ year, onClose }: LeaveCloseYearRevi
 
   return (
     <Dialog open={year !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle>Đối chiếu kết sổ phép năm {year}</DialogTitle>
           <DialogDescription>

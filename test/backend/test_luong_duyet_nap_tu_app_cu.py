@@ -6,8 +6,8 @@ bên app cũ, còn `scripts/legacy_sync/import_approval_history.py` chỉ dựng
 việc cho những chặng ĐÃ KÝ (chặng chưa ký không có dòng nào trong `history`).
 
 Hậu quả thật, phiếu DD000864 ngày 19/09/2026: phiếu đã ký chặng 1, đang chờ Pháp
-chế ở chặng 3, mà ERP không chặng nào sáng lên và câu tóm tắt rơi về «Đang chạy» —
-trong khi app cũ lại gọi cùng phiếu đó là «Đã Duyệt» (nó đặt tên trạng thái theo
+chế ở chặng 3, mà ERP không chặng nào sáng lên và câu tóm tắt rơi về "Đang chạy" —
+trong khi app cũ lại gọi cùng phiếu đó là "Đã Duyệt" (nó đặt tên trạng thái theo
 chặng đang chờ). Hai màn hình, hai câu chuyện, cùng một tờ phiếu.
 """
 import json
@@ -97,7 +97,7 @@ def test_chang_chua_co_viec_nhung_dung_chang_dang_cho_thi_SANG_LEN(db, signer):
 
 
 def test_cau_tom_tat_goi_TEN_CHANG_khi_khong_biet_ten_nguoi(db, signer):
-    """«Đang ở chặng 3/3» một mình thì đúng nhưng vô dụng — người xem vẫn phải mở
+    """"Đang ở chặng 3/3" một mình thì đúng nhưng vô dụng — người xem vẫn phải mở
     phiếu ra mới biết đang kẹt ở đâu. Việc duyệt còn nằm bên app cũ nên ERP không
     có ai được giao để mà kể tên."""
     _legacy_instance(db, 864, current_seq=3, signed_until=1, signer_id=signer.id)
@@ -109,7 +109,7 @@ def test_chang_bi_TRA_VE_roi_nop_lai_dung_chang_do_thi_sang_lai(db, signer):
     """DD000865: Pháp chế trả về cho sửa, người nộp sửa rồi gửi lại đúng chặng 3.
 
     Bản nạp ghi lượt cũ thành việc ĐÃ HỦY, mà phiên thì vẫn đang chạy. Đọc mỗi
-    bảng việc thì chặng 3 hiện «đã hủy» — người xem đọc ra phiếu chết, trong khi
+    bảng việc thì chặng 3 hiện "đã hủy" — người xem đọc ra phiếu chết, trong khi
     phiếu đang nằm chờ đúng chặng đó.
     """
     inst = _legacy_instance(db, 869, current_seq=3, signed_until=1, signer_id=signer.id)

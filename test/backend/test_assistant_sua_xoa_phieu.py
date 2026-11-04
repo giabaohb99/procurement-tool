@@ -222,8 +222,8 @@ def test_sua_don_nghi_doi_ngay_va_loai_nghi(db, seed, cap_quyen):
 
 
 def test_sua_ly_do_don_nghi(db, seed, cap_quyen):
-    """ai-CR-151 — ca thật 09/10: «chỉnh lý do của đơn ngày t2 tuần sau, lý do là đi khám nghĩa vụ vòng 1 địa
-    phương» → bot trả «em không sửa được». Lý do nay sửa được, qua đúng thẻ xác nhận."""
+    """ai-CR-151 — ca thật 09/10: "chỉnh lý do của đơn ngày t2 tuần sau, lý do là đi khám nghĩa vụ vòng 1 địa
+    phương" → bot trả "em không sửa được". Lý do nay sửa được, qua đúng thẻ xác nhận."""
     cap_quyen(seed.u_req_id, "leave_request", scope="own", read=True, write=True)
     don, _, _ = _tao_don_nghi(db, seed)
     out = _goi(db, seed.u_req_id, "propose_document_update", {

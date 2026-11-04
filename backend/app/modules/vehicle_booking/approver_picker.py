@@ -8,9 +8,14 @@ Tất cả, không tính vai trò Quản trị, tài khoản mở + hồ sơ cò
 luồng hiện 3 người thì ô chọn cũng phải đúng 3 người (bản 24/10 từng nới ra "mọi phạm vi, kể cả Quản trị": bỏ).
 Người được chọn được mở quyền xem + duyệt riêng phiếu đó (`approval_bridge.is_picked_legacy_approver`). `first_approver_id` lưu id TÀI KHOẢN (cột có từ bản cũ).
 
-Người được chọn đi đâu: bộ máy duyệt TẮT → thư "Gửi duyệt" chỉ tới người đó (`notify._approvers`);
-bộ máy BẬT → bước cách 9 chỉ giao cho người đó (`permission_approvers.resolve` đọc
-`picked_approver_employee_id` của bối cảnh), rồi `_after_submit` gửi thư cho người nhận việc.
+Người được chọn đi đâu (luật mới duoc-CR-706 — người CÙNG QUYỀN cũng duyệt được):
+bộ máy duyệt BẬT → bước cách 9 giao cho người được chọn ∪ mọi người giữ quyền mà phạm vi phủ phiếu
+(`permission_approvers.resolve` đọc `picked_approver_employee_id` của bối cảnh); người được chọn vẫn được giao kể
+cả phạm vi không phủ. Chuông + thư "chờ bạn duyệt" CHỈ gửi người được chọn (`approval_bridge._should_notify_task`);
+người cùng quyền thấy việc ở "Việc chờ duyệt" và có nút Duyệt trên phiếu. Bộ máy TẮT → thư "Gửi duyệt" vẫn chỉ tới
+người được chọn (`notify._approvers`), còn quyền DUYỆT thuộc mọi người có `vehicle_booking.approve` với phạm vi phủ
+phiếu (`get_scoped`) — người được chọn thêm cửa riêng khi phạm vi không phủ. Phiếu đang chờ đã giao trước CR-706:
+`approver_expand.expand_pending_approvers` (script `scripts/mo_rong_nguoi_duyet_dat_xe.py`).
 """
 from __future__ import annotations
 

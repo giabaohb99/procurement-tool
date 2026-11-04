@@ -45,24 +45,24 @@ ANNUAL, COMP_OFF, SICK, UNPAID = "annual", "comp_off", "sick", "unpaid"
 CA_MAU = [
     (
         "Một loại nghỉ, còn nhiều — hàng ĐƠN, không có mũi tên bung",
-        [(ANNUAL, dict(allocated_days=12, used_days=2))],
+        [(ANNUAL, {"allocated_days": 12, "used_days": 2})],
     ),
     (
         "Một loại nghỉ, HẾT PHÉP — \"còn lại 0\" phải tô ĐỎ",
-        [(ANNUAL, dict(allocated_days=12, used_days=12))],
+        [(ANNUAL, {"allocated_days": 12, "used_days": 12})],
     ),
     (
         "Ba loại nghỉ — hàng NHÓM có mũi tên; kèm ngày chờ duyệt (hổ phách) "
         "và một loại 0-không-quỹ để đối chiếu với 0-hết-phép",
         [
             #  12 + 2 thâm niên − 3 đã nghỉ − 1.5 giữ chỗ = 9.5  (số LẺ, cố ý)
-            (ANNUAL, dict(allocated_days=12, seniority_days=2,
-                          used_days=3, pending_days=1.5)),
+            (ANNUAL, {"allocated_days": 12, "seniority_days": 2,
+                          "used_days": 3, "pending_days": 1.5}),
             #  Có quỹ mà tiêu hết -> 0 ĐỎ
-            (SICK, dict(allocated_days=5, used_days=5)),
+            (SICK, {"allocated_days": 5, "used_days": 5}),
             #  Không cấp hạn mức bao giờ -> 0 MỜ. Hai số 0 nằm cạnh nhau trong
             #  cùng một nhóm là chỗ dễ thấy nhất để kiểm luật `hasQuota`.
-            (COMP_OFF, dict()),
+            (COMP_OFF, {}),
         ],
     ),
     (
@@ -74,20 +74,20 @@ CA_MAU = [
         #  có `counts_balance = False`, nên `used_days` của loại không trừ quỹ
         #  vĩnh viễn bằng 0. Dữ liệu mẫu bịa ra cảnh sản phẩm không dựng nổi thì
         #  người nghiệm thu đi soi một lỗi không tồn tại.
-        [(ANNUAL, dict(allocated_days=12, carried_days=3,
-                       carried_expired_days=1, used_days=4))],
+        [(ANNUAL, {"allocated_days": 12, "carried_days": 3,
+                       "carried_expired_days": 1, "used_days": 4})],
     ),
     (
         "Bị TRỪ TAY 2 ngày — cột \"Điều chỉnh tay\" là cột duy nhất mang số âm",
-        [(ANNUAL, dict(allocated_days=12, adjusted_days=-2, used_days=1))],
+        [(ANNUAL, {"allocated_days": 12, "adjusted_days": -2, "used_days": 1})],
     ),
     (
         "Đã kết sổ: 4 ngày đã mang sang năm sau — \"Đã chuyển đi\" giải thích "
         "vì sao số dư tụt mà không ai nghỉ thêm ngày nào. Hai loại nghỉ nên "
         "đây là hàng NHÓM thứ hai, để so cảnh thu gọn với cảnh đang bung",
         [
-            (ANNUAL, dict(allocated_days=12, used_days=3, carried_out_days=4)),
-            (SICK, dict(allocated_days=3, used_days=1)),
+            (ANNUAL, {"allocated_days": 12, "used_days": 3, "carried_out_days": 4}),
+            (SICK, {"allocated_days": 3, "used_days": 1}),
         ],
     ),
 ]

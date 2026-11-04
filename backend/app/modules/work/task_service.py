@@ -23,8 +23,7 @@ from app.modules.work import task_outcome_service as outcome_svc
 from app.modules.work import label_value_service as label_values
 from app.modules.work import notify_service as notify
 from app.modules.work import link_service as links
-from app.modules.work.label_model import (WorkLabelField, WorkLabelOption,
-                                          WorkTaskLabel)
+from app.modules.work.label_model import (WorkLabelField)
 from app.modules.work.membership_service import (CAN_EDIT, CAN_MANAGE, Actor,
                                                  block_if_archived,
                                                  effective_role, get_list_or_403)

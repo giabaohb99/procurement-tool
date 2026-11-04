@@ -50,6 +50,11 @@ describe('hasQuota', () => {
     expect(hasQuota(balance({ adjusted_days: -2 }))).toBe(true)
   })
 
+  it('ngày nghỉ bù (comp_days) cũng là quỹ — dòng chỉ có nghỉ bù mà tiêu hết thì tô đỏ như mọi dòng quỹ', () => {
+    expect(hasQuota(balance({ comp_days: 1 }))).toBe(true)
+    expect(hasQuota(balance({ comp_days: 0 }))).toBe(false)
+  })
+
   it('đã nghỉ / chờ duyệt KHÔNG phải quỹ', () => {
     //  Hai cột đó là phần TIÊU RA. Lấy chúng làm dấu hiệu "có quỹ" thì một dòng
     //  hạn mức 0 mà lỡ có đơn treo sẽ tự nhiên hóa đỏ.

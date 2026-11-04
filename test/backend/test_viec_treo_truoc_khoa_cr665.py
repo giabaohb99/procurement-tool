@@ -106,7 +106,7 @@ def test_chuyen_xong_nguoi_moi_nhan_nguoi_cu_het_va_khoa_khong_ke_phieu(db, seed
 
 
 def test_khoa_khong_chuyen_thi_viec_van_nam_lai_de_man_hinh_canh_bao(db, seed, person):
-    """Chốt hành vi «cho qua có xác nhận»: server không chặn khóa, nên danh sách PHẢI còn
+    """Chốt hành vi "cho qua có xác nhận": server không chặn khóa, nên danh sách PHẢI còn
     thấy việc sau khi khóa — để màn hình dựa vào đó mà cảnh báo trước."""
     _flow(db, str(person["a"]))
     _trinh(db, person["nop"], 730)

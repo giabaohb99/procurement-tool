@@ -155,7 +155,7 @@ def open_new_version(db: Session, doc: Document, data: VersionCreate,
         #  `open_slot` chặn ở tầng dữ liệu: người thứ hai đi tới đây nghĩa là
         #  người thứ nhất vừa ghi xong giữa hai câu lệnh của ta.
         db.rollback()
-        raise HTTPException(409, "Một bản nháp khác vừa được mở cho văn bản này")
+        raise HTTPException(409, "Một bản nháp khác vừa được mở cho văn bản này") from None
 
     _copy_attachments(db, base.id, version.id, actor)
     db.commit()

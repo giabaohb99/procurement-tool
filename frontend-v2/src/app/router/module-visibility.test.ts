@@ -11,6 +11,7 @@ import {
   visibleNavItems,
 } from './module-visibility'
 import { allModules, moduleRegistry } from './module-registry'
+import { resolveModuleBreadcrumb } from '@/app/layouts/resolve-module-breadcrumb'
 
 function module(nav: ErpModule['nav'], entity?: string): ErpModule {
   return { id: 'x', title: 'X', path: '/x', enabled: true, entity, nav } as ErpModule
@@ -463,6 +464,37 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       expect(canAccessRoute(hr, '/hr/holidays', makeCan({ leave_request: ['read'] }))).toBe(false)
       expect(canAccessRoute(hr, '/hr/holidays', makeCan({}))).toBe(false)
     })
+
+    it('/hr/leave-policies (duoc-CR-717): đòi hỏi quyền quản lý trên leave_type, không mở cho ai chỉ đọc', () => {
+      for (const path of ['/hr/leave-policies', '/hr/leave-policies/new', '/hr/leave-policies/3']) {
+        expect(canAccessRoute(hr, path, makeCan({ leave_type: ['write'] }))).toBe(true)
+        expect(canAccessRoute(hr, path, makeCan({ leave_type: ['read'] }))).toBe(false)
+        expect(canAccessRoute(hr, path, makeCan({ leave_balance: ['read', 'write'] }))).toBe(false)
+        expect(canAccessRoute(hr, path, makeCan({}))).toBe(false)
+      }
+    })
+
+    it('/hr/leave-policy-assignments (duoc-CR-717): cả danh sách lẫn trang hàng loạt cần leave_balance.write — chỉ nhân sự', () => {
+      const list = '/hr/leave-policy-assignments'
+      const bulk = '/hr/leave-policy-assignments/bulk'
+      //  Seed cấp `leave_balance.read` (phạm vi "của tôi") cho MỌI nhân viên — gác `read` là ai cũng vào được.
+      expect(canAccessRoute(hr, list, makeCan({ leave_balance: ['read'] }))).toBe(false)
+      expect(canAccessRoute(hr, list, makeCan({ leave_balance: ['read', 'write'] }))).toBe(true)
+      expect(canAccessRoute(hr, list, makeCan({ leave_type: ['write'] }))).toBe(false)
+      expect(canAccessRoute(hr, list, makeCan({}))).toBe(false)
+      expect(canAccessRoute(hr, bulk, makeCan({ leave_balance: ['read'] }))).toBe(false)
+      expect(canAccessRoute(hr, bulk, makeCan({ leave_balance: ['read', 'write'] }))).toBe(true)
+      expect(canAccessRoute(hr, bulk, makeCan({}))).toBe(false)
+    })
+
+    it('/hr/leave-blocks (duoc-CR-715): đòi hỏi quyền quản lý trên leave_type, không mở cho ai chỉ đọc', () => {
+      for (const path of ['/hr/leave-blocks', '/hr/leave-blocks/new', '/hr/leave-blocks/7']) {
+        expect(canAccessRoute(hr, path, makeCan({ leave_type: ['write'] }))).toBe(true)
+        expect(canAccessRoute(hr, path, makeCan({ leave_type: ['read'] }))).toBe(false)
+        expect(canAccessRoute(hr, path, makeCan({ leave_request: ['read', 'create'] }))).toBe(false)
+        expect(canAccessRoute(hr, path, makeCan({}))).toBe(false)
+      }
+    })
   })
 
   describe('Hiển thị trên Sidebar (visibleNavItems)', () => {
@@ -473,11 +505,17 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
       expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Đơn nghỉ phép', 'Lịch nghỉ'])
     })
 
-    it('người quản lý quỹ phép (leave_balance): chỉ thấy Quỹ phép năm', () => {
+    it('chỉ ĐỌC quỹ phép (seed cấp cho mọi nhân viên): thấy Quỹ phép năm, KHÔNG thấy Phân bổ chính sách (duoc-CR-717)', () => {
       const items = visibleNavItems(hr, makeCan({ leave_balance: ['read'], employee: ['read'] }))
       const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
       expect(leaveMenu).toBeDefined()
       expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Quỹ phép năm'])
+    })
+
+    it('người quản lý quỹ phép (leave_balance.write): thấy Quỹ phép năm + Phân bổ chính sách (duoc-CR-717)', () => {
+      const items = visibleNavItems(hr, makeCan({ leave_balance: ['read', 'write'], employee: ['read'] }))
+      const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
+      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Quỹ phép năm', 'Phân bổ chính sách'])
     })
 
     it('người quản lý danh mục (leave_type:write): chỉ thấy Thiết lập', () => {
@@ -492,7 +530,7 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
         hr,
         makeCan({
           leave_request: ['read'],
-          leave_balance: ['read'],
+          leave_balance: ['read', 'write'],
           leave_type: ['write'],
           holiday: ['write'],
           employee: ['read'],
@@ -504,6 +542,7 @@ describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
         'Đơn nghỉ phép',
         'Lịch nghỉ',
         'Quỹ phép năm',
+        'Phân bổ chính sách',
         'Thiết lập',
       ])
     })
@@ -553,6 +592,24 @@ describe('Tra cứu thị trường — submenu thật (procurementModule)', () 
       expect(canAccessRoute(procurement as ErpModule, path, grants())).toBe(false)
       expect(canAccessRoute(procurement as ErpModule, path, grants('customs_price.read'))).toBe(true)
     }
+  })
+
+  //  bao-CR-718 — "Lô xuất của tôi" + chi tiết lô (đích chuông "xuất xong"): đòi `customs_price.export`, KHÔNG ăn
+  //  theo quyền đọc của mục cha; và không mọc mục mới trên menu trái.
+  it('the export batch routes require customs_price.export and stay off the left menu', () => {
+    for (const path of ['/procurement/customs-prices/exports', '/procurement/customs-prices/exports/12']) {
+      expect(canAccessRoute(procurement as ErpModule, path, grants('customs_price.read'))).toBe(false)
+      expect(
+        canAccessRoute(procurement as ErpModule, path, grants('customs_price.read', 'customs_price.export')),
+      ).toBe(true)
+    }
+    expect(customsChildren(grants('customs_price.read', 'customs_price.export'))).not.toContain(
+      '/procurement/customs-prices/exports',
+    )
+    //  Breadcrumb + mục sáng: "Thu mua › Tra cứu thị trường › Giá thị trường" — lô sinh từ thẻ Danh sách.
+    const crumb = resolveModuleBreadcrumb(procurement as ErpModule, '/procurement/customs-prices/exports/12')
+    expect(crumb.current?.label).toBe('Tra cứu thị trường')
+    expect(crumb.activeChild?.label).toBe('Giá thị trường')
   })
 
   //  "Cấu hình" có hai mức quyền trên hai khóa: QUẢN LÝ `customs_price` (từ khóa + đồng

@@ -81,6 +81,7 @@ ENTITY_MODEL_PATHS = {
     "seal_request": ("app.modules.seal_request.model", "SealRequest"),
     "vehicle_booking": ("app.modules.vehicle_booking.model", "VehicleBooking"),
     "leave_request": ("app.modules.leave.request_model", "LeaveRequest"),
+    "leave_comp_request": ("app.modules.leave.comp_request_model", "LeaveCompRequest"),   # duoc-CR-715 C
     "leave_balance": ("app.modules.leave.balance_model", "LeaveBalance"),
     "room_booking": ("app.modules.meeting_room.model", "RoomBooking"),
     "coffee_policy": ("app.modules.coffee_point.model", "CoffeePolicy"),
@@ -121,12 +122,12 @@ class Actor:
               inc_employee=(), exc_employee=(), role_code: str | None = None):
         """Thêm MỘT vai trò (= một grant) cho tài khoản này.
 
-        `inc_*`/`exc_*` chính là năm ô của hộp thoại «Phạm vi — <vai trò>»:
+        `inc_*`/`exc_*` chính là năm ô của hộp thoại "Phạm vi — <vai trò>":
         công ty nhận khóa của `world.co`, phòng ban nhận khóa của `world.dept`
         (lưu ID theo CR-086), nhân sự nhận khóa của `world.emp`.
 
         Gọi nhiều lần = nhiều vai trò. Phạm vi luôn gắn vào ĐÚNG vai trò vừa tạo,
-        đúng như câu «Chỉ áp dụng cho vai trò này» trên màn hình.
+        đúng như câu "Chỉ áp dụng cho vai trò này" trên màn hình.
         """
         from app.modules.role.model import Permission, Role
         from app.modules.user.model import UserRole

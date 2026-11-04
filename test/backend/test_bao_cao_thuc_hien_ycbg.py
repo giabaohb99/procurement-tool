@@ -2,7 +2,7 @@
 
 Bốn thứ phải khóa bằng test:
 
-1. `init_report` idempotent — bấm «Khởi tạo» hai lần không nhân đôi khung.
+1. `init_report` idempotent — bấm "Khởi tạo" hai lần không nhân đôi khung.
 2. Ba đường XÓA phải dọn hậu quả: xóa nút → hồ sơ về Chung; xóa hồ sơ → gỡ khỏi
    danh sách tiên quyết của hồ sơ khác; xóa giai đoạn còn hồ sơ → CHẶN.
 3. Vòng tiên quyết bị chặn lúc lưu — để lọt là cả cụm hồ sơ khóa lẫn nhau vĩnh viễn.
@@ -60,12 +60,12 @@ def test_khoi_tao_dung_khung_va_khong_nhan_doi(db):
     s = _sr(db)
     _line(db, s.id, requirement_detail="K2SO4 tinh khiết 98%\ndòng hai bị cắt")
     _line(db, s.id, requirement_detail="", item_group="Phân bón")
-    _line(db, s.id)          # dòng trống hoàn toàn -> tên «Dòng 3»
+    _line(db, s.id)          # dòng trống hoàn toàn -> tên "Dòng 3"
 
     assert _init(db, s) == len(DEFAULT_TEMPLATE_DOCS)
     payload = svc.get_report_payload(db, s.rid)
     assert [p["name"] for p in payload["phases"]] == [n for n, _ in DEFAULT_PHASES]
-    # Tên nút: mô tả yêu cầu (chỉ dòng đầu) > phân loại > «Dòng N».
+    # Tên nút: mô tả yêu cầu (chỉ dòng đầu) > phân loại > "Dòng N".
     assert [i["name"] for i in payload["items"]] == [
         "K2SO4 tinh khiết 98%", "Phân bón", "Dòng 3"]
     # Khởi tạo phải RA HỒ SƠ (bao-CR-388) — khung 5 giai đoạn rỗng thì bấm xong
@@ -88,7 +88,7 @@ def test_khoi_tao_dung_khung_va_khong_nhan_doi(db):
     assert len(again["docs"]) == len(DEFAULT_TEMPLATE_DOCS)
 
 
-# ── apply_template: nút «Tạo mẫu» trên nút dòng hàng / giai đoạn ────────────────
+# ── apply_template: nút "Tạo mẫu" trên nút dòng hàng / giai đoạn ────────────────
 def test_tao_mau_cho_nut_dong_hang_cong_them_va_khong_nhan_doi(db):
     s = _sr(db)
     _init(db, s)                 # đã có hồ sơ CHUNG của mẫu
@@ -126,8 +126,8 @@ def test_tao_mau_vao_mot_giai_doan_chi_do_phan_do_va_cat_tien_quyet_ngoai(db):
     assert len(payload["phases"]) == 2
     docs = payload["docs"]
     assert all(d["phase_id"] == ph.id for d in docs)
-    # «NCC xuất hàng FOB» của mẫu trỏ về Hợp đồng NK (giai đoạn 2, không được đổ)
-    # → tiên quyết đó bị cắt; «Packing List» chờ Invoice cùng giai đoạn thì giữ.
+    # "NCC xuất hàng FOB" của mẫu trỏ về Hợp đồng NK (giai đoạn 2, không được đổ)
+    # → tiên quyết đó bị cắt; "Packing List" chờ Invoice cùng giai đoạn thì giữ.
     by_title = {d["title"]: d for d in docs}
     assert by_title["NCC xuất hàng FOB"]["depends"] == []
     assert by_title["Packing List"]["depends"] == [by_title["Commercial Invoice"]["id"]]
@@ -350,7 +350,7 @@ def test_tien_quyet_phai_cung_phieu(db):
 
 def test_payload_loc_id_tien_quyet_chet(db):
     """Id chết lọt vào `depends` (dữ liệu cũ, sửa tay DB) không được ra FE —
-    FE đếm nó là «chưa xong» và hồ sơ khóa vĩnh viễn."""
+    FE đếm nó là "chưa xong" và hồ sơ khóa vĩnh viễn."""
     s = _sr(db)
     ph = svc.create_phase(db, s.rid, "GĐ1", "", 1)
     a = _doc(db, s.rid, ph.id, title="A")

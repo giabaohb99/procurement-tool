@@ -15,13 +15,13 @@ from . import search_index_service
 
 log = logging.getLogger("app.document.search")
 
-_RETRY = dict(
-    autoretry_for=(Exception,),
-    max_retries=5,
-    retry_backoff=4,
-    retry_backoff_max=300,
-    retry_jitter=True,
-)
+_RETRY = {
+    "autoretry_for": (Exception,),
+    "max_retries": 5,
+    "retry_backoff": 4,
+    "retry_backoff_max": 300,
+    "retry_jitter": True,
+}
 
 
 @celery_app.task(name="document.search.reindex", **_RETRY)

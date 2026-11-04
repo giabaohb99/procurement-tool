@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
+import contextlib
 
 #  Gói A1 (hiệu năng báo cáo, 01/10/2026) — pool TƯỜNG MINH thay cho mặc định SQLAlchemy
 #  (pool_size=5 + max_overflow=10 = 15 kết nối/engine). Load-test
@@ -47,10 +48,8 @@ def get_db():
         #  bao-CR-538: lỗi nào đi ngang qua đây (kể cả MySQL 1406 "Data too long") thì
         #  rollback trước khi trả kết nối — không để giao dịch hỏng dính sang lượt sau.
         #  Rollback hỏng (mất kết nối) thì bỏ qua — lỗi GỐC mới là thứ cần nổi lên.
-        try:
+        with contextlib.suppress(Exception):
             db.rollback()
-        except Exception:
-            pass
         raise
     finally:
         db.close()

@@ -1,4 +1,4 @@
-"""Phân hệ Công việc — tab «Hoạt động» cấp dự án (D-09, §8 của `05-giao-dien.md`).
+"""Phân hệ Công việc — tab "Hoạt động" cấp dự án (D-09, §8 của `05-giao-dien.md`).
 
 Hai thứ dễ hỏng ÂM THẦM ở đây, cả hai đều không lộ ra trên màn hình:
 

@@ -92,6 +92,8 @@ from app.modules.employee.monthly_reminders_controller import router as monthly_
 from app.modules.employee.org_chart_controller import router as employee_org_chart_router  # duoc-CR-669
 from app.modules.leave.report_controller import router as leave_report_router
 from app.modules.leave.balance_report_controller import router as leave_balance_report_router
+from app.modules.leave.balance_matrix_controller import router as leave_balance_matrix_router  # duoc-CR-717
+from app.modules.leave.holiday_work_report_controller import router as holiday_work_report_router  # duoc-CR-717
 from app.modules.vehicle_booking.report_controller import router as vehicle_booking_report_router
 from app.modules.seal_request.report_controller import router as seal_request_report_router
 from app.modules.document.report_controller import router as document_report_router
@@ -127,6 +129,7 @@ from app.modules.notification.controller import router as notification_router
 from app.modules.notification.email_template_controller import router as email_template_router
 from app.modules.notification.email_exclusion_controller import router as email_exclusion_router
 from app.modules.notification.mailbox_controller import router as mailbox_router
+from app.modules.notification.email_log_controller import router as email_log_router
 from app.modules.push.controller import router as push_router
 from app.modules.category_assignee.controller import router as category_assignee_router
 from app.modules.survey_request.controller import router as survey_request_router
@@ -156,16 +159,22 @@ from app.modules.work.task_type_controller import router as work_task_type_route
 #  Phân hệ Nghỉ phép (CR-259) — bốn router: đơn · quỹ · loại nghỉ · lịch lễ,
 #  cộng bậc thâm niên đi kèm loại nghỉ.
 from app.modules.leave.request_controller import router as leave_request_router
+from app.modules.leave.comp_request_controller import router as leave_comp_request_router
 from app.modules.leave.inbox_controller import router as leave_inbox_router
 from app.modules.leave.balance_controller import router as leave_balance_router
+from app.modules.leave.policy_controller import (lines_router as leave_policy_lines_router,
+                                                 policy_router as leave_policy_router)
+from app.modules.leave.policy_assignment_controller import router as leave_policy_assignment_router
 from app.modules.work_schedule.template_controller import router as work_schedule_router
 from app.modules.work_schedule.assignment_controller import router as work_schedule_assignment_router
 from app.modules.meeting_room.controller import (meeting_room_router,
                                                  router as room_booking_router)
 from app.modules.meeting_room.inbox_controller import router as room_inbox_router
 from app.modules.meeting_room import approval_bridge as room_approval_bridge  # noqa: F401
-from app.modules.leave.catalog_controller import (holiday_router,
+from app.modules.leave.catalog_controller import (block_period_router as leave_block_period_router,
+                                                  holiday_router,
                                                   leave_type_router,
+                                                  quota_router as leave_type_quota_router,
                                                   seniority_router)
 from app.modules.approval.flow_controller import router as approval_flow_router
 from app.modules.approval.instance_controller import router as approval_router
@@ -177,12 +186,22 @@ from app.modules.document import approval_bridge  # noqa: F401
 #  Cùng lý do, cho Nghỉ phép: nạp lười thì phiên duyệt đầu tiên chạy xong mà đơn
 #  không đổi trạng thái và quỹ phép không trừ, vì lúc đó chưa ai khai hàm.
 from app.modules.leave import approval_bridge as leave_approval_bridge  # noqa: F401
+from app.modules.leave import comp_approval_bridge as _leave_comp_bridge  # noqa: F401
 from app.modules.vehicle_booking import approval_bridge as _vehicle_booking_bridge  # noqa: F401
 #  Cùng lý do, cho Duyệt dấu: nạp lười thì phiên duyệt đầu tiên chạy xong mà phiếu
 #  không đổi trạng thái, vì lúc đó chưa ai khai hàm hook.
 from app.modules.seal_request import approval_bridge as _seal_request_bridge  # noqa: F401
 
-app = FastAPI(title="Procurement Tool API", version="0.1.0")
+def build_docs_urls(enabled: bool) -> dict:
+    """Đường trang tài liệu API: mở dưới `/api/` khi bật cờ (local + dev), tắt hẳn khi không (prod).
+
+    Xem `Settings.API_DOCS_ENABLED`."""
+    if not enabled:
+        return {"docs_url": None, "redoc_url": None, "openapi_url": None}
+    return {"docs_url": "/api/docs", "redoc_url": "/api/redoc", "openapi_url": "/api/openapi.json"}
+
+
+app = FastAPI(title="DEGO ERP API", version="0.1.0", **build_docs_urls(settings.API_DOCS_ENABLED))
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -310,6 +329,8 @@ app.include_router(labor_usage_report_router)  # duoc-CR-687: mẫu 01/PLI (khó
 app.include_router(employee_org_chart_router)  # duoc-CR-669: /api/org-chart
 app.include_router(leave_report_router)
 app.include_router(leave_balance_report_router)
+app.include_router(leave_balance_matrix_router)  # duoc-CR-717: /matrix TRƯỚC leave_balance_router (/{bid})
+app.include_router(holiday_work_report_router)  # duoc-CR-717: làm việc ngày lễ, ngày nghỉ (khóa 30)
 app.include_router(vehicle_booking_report_router)
 app.include_router(seal_request_report_router)
 app.include_router(document_report_router)
@@ -402,6 +423,7 @@ app.include_router(alert_router)
 app.include_router(setting_router)
 app.include_router(user_preference_router)
 app.include_router(notification_router)
+app.include_router(email_log_router)   # bao-CR-721: màn Nhật ký email (chỉ đọc)
 app.include_router(email_template_router)
 app.include_router(email_exclusion_router)
 app.include_router(mailbox_router)
@@ -443,10 +465,15 @@ app.include_router(work_task_type_router)   # duoc-CR-656: danh mục loại vi�
 #  `/api/leave-requests`, mà bên kia có `/{rid}` nuốt mọi đường một đoạn.
 app.include_router(leave_inbox_router)
 app.include_router(leave_request_router)
+app.include_router(leave_comp_request_router)
 app.include_router(leave_balance_router)
 app.include_router(work_schedule_router)
 app.include_router(work_schedule_assignment_router)
 app.include_router(leave_type_router)
+app.include_router(leave_type_quota_router)
+app.include_router(leave_policy_router)             # duoc-CR-717: chính sách nghỉ phép + dòng của gói
+app.include_router(leave_policy_lines_router)
+app.include_router(leave_policy_assignment_router)  # duoc-CR-717: phân bổ chính sách (preview/bulk khai trước /{aid})
 #  Đặt phòng họp (duoc-CR-279) — phiếu đặt + danh mục phòng.
 #  ⚠️ Hộp việc duyệt đăng TRƯỚC: `/inbox/...` là đường tĩnh, mà router phiếu có
 #  `/{bid}` nuốt mọi đường một đoạn (cùng bẫy với `/api/leave-requests`).
@@ -455,6 +482,7 @@ app.include_router(room_booking_router)
 app.include_router(meeting_room_router)
 app.include_router(seniority_router)
 app.include_router(holiday_router)
+app.include_router(leave_block_period_router)
 #  Đặt xe nội bộ (DEGO Booking Auto) — phân hệ mới
 app.include_router(vehicle_booking_router)
 app.include_router(vehicle_router)

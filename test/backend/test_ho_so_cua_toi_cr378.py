@@ -14,7 +14,7 @@ Bộ này canh bốn thứ, xếp theo mức thiệt hại nếu vỡ:
      quán" mà thêm khóa vào là chín vai trò trên mất luôn trang cá nhân — mà lỗi
      đó không đỏ ở đâu cả, chỉ có người dùng thấy 403.
   2. **`/me` phải khai TRƯỚC `/{eid}`.** FastAPI dò route theo thứ tự khai; để
-     sau thì «me» rơi vào `eid: int` và trả 422.
+     sau thì "me" rơi vào `eid: int` và trả 422.
   3. **Chỉ trả hồ sơ của CHÍNH MÌNH** — id lấy từ phiên đăng nhập, không từ URL.
   4. **Tài khoản chưa gắn nhân sự trả `None`, không nổ.** Admin và tài khoản hệ
      thống có `employee_id = 0`.
@@ -94,7 +94,7 @@ def test_reading_someone_elses_profile_is_still_gated():
 # ── 2. Thứ tự khai route ────────────────────────────────────────────────────
 
 def test_self_route_is_declared_before_the_id_route():
-    """`/me` phải đứng trước `/{eid}`, nếu không «me» rơi vào `eid: int` → 422."""
+    """`/me` phải đứng trước `/{eid}`, nếu không "me" rơi vào `eid: int` → 422."""
     paths = [getattr(r, "path", "") for r in controller.router.routes]
     assert paths.index("/api/employees/me") < paths.index("/api/employees/{eid}")
 

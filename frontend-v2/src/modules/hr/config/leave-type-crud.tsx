@@ -3,10 +3,13 @@ import { ArrowRightLeft, CalendarOff, CircleCheck, CircleX, Coins, Hash } from '
 import { appRoutes } from '@/shared/constants/app-routes'
 import { CrudRecordCard, type CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
+import { LeaveTypeQuotaCard } from '../components/leave-type-quota-card'
 import { SeniorityTierCard } from '../components/seniority-tier-card'
 import {
   GENDER,
   GENDER_LABELS,
+  LEAVE_ACCRUAL_MODE,
+  LEAVE_ACCRUAL_MODE_LABELS,
   YEAR_END_MODE,
   YEAR_END_MODE_LABELS,
   type LeaveType,
@@ -29,6 +32,13 @@ const GENDER_OPTIONS = [
   { value: GENDER.MALE, label: GENDER_LABELS[GENDER.MALE] },
   { value: GENDER.FEMALE, label: GENDER_LABELS[GENDER.FEMALE] },
 ]
+
+//  Cách cấp quỹ (duoc-CR-715) — xem `LEAVE_ACCRUAL_MODE`.
+const ACCRUAL_OPTIONS = [
+  LEAVE_ACCRUAL_MODE.FULL_YEAR,
+  LEAVE_ACCRUAL_MODE.PRORATA_HIRE,
+  LEAVE_ACCRUAL_MODE.MONTHLY,
+].map((value) => ({ value, label: LEAVE_ACCRUAL_MODE_LABELS[value] }))
 
 //  Ba nước xử lý số dư cuối năm — xem `YEAR_END_MODE`. Trước 07/09/2026 chỗ này
 //  là một công tắc hai nước và ba ô của nó là CỘT CHẾT: lưu được, hiện được, và
@@ -100,6 +110,8 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
   detailRoute: (id) => appRoutes.hr.leaveTypeDetail(id),
   //  Form 10 ô + bậc thâm niên — quá dài cho một hộp thoại, xem `createRoute`.
   createRoute: appRoutes.hr.leaveTypeNew,
+  //  duoc-CR-716: trang chi tiết bố cục phẳng kiểu ERPNext (anh Được: "làm UI card xấu quá, theo style như nexterp").
+  detailLayout: 'flat',
   searchParam: 'name',
   searchPlaceholder: 'Tìm theo tên hoặc mã loại nghỉ…',
   quickFilters: [
@@ -270,7 +282,7 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       type: 'switch',
       defaultValue: false,
       section: 'Quỹ phép và lương',
-      hint: 'Bật thì nộp đơn bị chặn khi hết phép (không cho ứng trước).',
+      hint: 'Bật thì nộp đơn bị chặn khi hết phép — trừ phần "Cho ứng phép tối đa" khai bên dưới.',
     },
     {
       name: 'is_paid',
@@ -289,7 +301,41 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       //  Chỉ hỏi khi loại nghỉ CÓ quỹ. Hạn mức của loại không trừ quỹ là con số
       //  không ai đọc, mà nó vẫn nằm đó mời người ta điền.
       showWhen: (values) => Boolean(values.counts_balance),
-      hint: 'Bậc thâm niên cộng thêm khai ở tab "Bậc thâm niên" bên dưới.',
+      hint: 'Bậc thâm niên cộng thêm khai ở tab "Bậc thâm niên", hạn mức riêng theo nhóm khai ở tab "Hạn mức theo nhóm".',
+    },
+    {
+      name: 'accrual_mode',
+      label: 'Cách cấp quỹ',
+      type: 'select',
+      options: ACCRUAL_OPTIONS,
+      defaultValue: LEAVE_ACCRUAL_MODE.FULL_YEAR,
+      section: 'Quỹ phép và lương',
+      showWhen: (values) => Boolean(values.counts_balance),
+      //  Nói thẳng điều dễ hiểu nhầm: quỹ ĐÃ cấp không đổi theo ô này, trừ "cộng dần".
+      hint:
+        'Chỉ áp cho quỹ cấp SAU khi lưu — quỹ đã cấp cho từng người không tính lại. ' +
+        'Ngoại lệ là "Cộng dần theo tháng": phần chưa tới tháng được trừ ngay lúc xem số còn lại. ' +
+        '"Theo tỷ lệ tháng" và "Cộng dần" tính tháng vào làm từ ngày 1–15 là cả tháng, từ ngày 16 là tháng sau.',
+    },
+    {
+      name: 'max_negative_days',
+      label: 'Cho ứng phép tối đa (ngày)',
+      type: 'number',
+      defaultValue: 0,
+      section: 'Quỹ phép và lương',
+      showWhen: (values) => Boolean(values.counts_balance),
+      hint: '0 = không cho ứng. Điền 3 thì số phép còn lại được xuống tới -3 ngày (tối đa 30).',
+    },
+    {
+      //  duoc-CR-715 phase C: loại hứng ngày nghỉ bù. Backend chọn loại bật cờ này (đang dùng,
+      //  có trừ quỹ, thứ tự nhỏ nhất) làm nơi cộng ngày khi phiếu nghỉ bù được duyệt.
+      name: 'is_compensatory',
+      label: 'Loại nhận ngày nghỉ bù',
+      type: 'switch',
+      defaultValue: false,
+      section: 'Quỹ phép và lương',
+      showWhen: (values) => Boolean(values.counts_balance),
+      hint: 'Bật cho loại (thường là "Phép năm") sẽ được cộng thêm ngày khi phiếu nghỉ bù được duyệt. Cần có đúng một loại bật; nếu bật nhiều loại, hệ thống lấy loại có thứ tự nhỏ nhất.',
     },
 
     // ── Ai được nghỉ, tính ngày thế nào ──────────────────────────────────────
@@ -313,6 +359,14 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       defaultValue: 0,
       section: 'Điều kiện áp dụng',
       hint: '0 = không giới hạn. Dùng cho luật cứng như cưới hỏi 3 ngày.',
+    },
+    {
+      name: 'applicable_after_days',
+      label: 'Dùng được sau (ngày kể từ ngày vào làm)',
+      type: 'number',
+      defaultValue: 0,
+      section: 'Điều kiện áp dụng',
+      hint: '0 = không chặn. Điền 60 thì ngày nghỉ sớm nhất phải từ ngày thứ 60 sau ngày vào làm; hồ sơ chưa có ngày vào làm thì không bị chặn.',
     },
     {
       //  ⚠️ ĐI LIỀN "Tối đa mỗi lần nghỉ": cả hai đều nói về SỐ NGÀY. Trước
@@ -433,6 +487,11 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       key: 'seniority',
       label: 'Bậc thâm niên',
       render: (t) => <SeniorityTierCard leaveTypeId={t.id} />,
+    },
+    {
+      key: 'quotas',
+      label: 'Hạn mức theo nhóm',
+      render: (t) => <LeaveTypeQuotaCard leaveTypeId={t.id} />,
     },
   ],
 }

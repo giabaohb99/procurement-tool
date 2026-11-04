@@ -20,14 +20,14 @@ Ba màn, một mục menu, chuyển qua lại bằng thanh tab:
 
 Vòng đời phiếu: **Nháp → Chờ duyệt → Đã duyệt**, ba lối rẽ *Từ chối* · *Trả về
 chỉnh sửa* · *Đã hủy*. Chạy trên **bộ máy duyệt dùng chung** như Nghỉ phép và
-Văn thư: khai luồng ở phân hệ Phê duyệt, việc rơi vào hộp «Chờ tôi duyệt» kèm
+Văn thư: khai luồng ở phân hệ Phê duyệt, việc rơi vào hộp **Chờ tôi duyệt** kèm
 thư báo, ký được ngay trong trang chi tiết phiếu.
 
 Chưa khai luồng nào thì phiếu vẫn gửi duyệt được và người có
 `room_booking.approve` bấm **Duyệt thẳng** — không có đường lùi này thì cài mới
 xong là không ai đặt nổi phòng.
 
-⚠️ **Còn một công tắc nữa: màn «Bật bộ máy duyệt»** (`/approval/engine`, dòng
+⚠️ **Còn một công tắc nữa: màn "Bật bộ máy duyệt"** (`/approval/engine`, dòng
 *Đặt phòng họp*). Đó là **đường lui của cả phân hệ** — gạt tắt là mọi phiếu gửi
 duyệt từ giây đó đi đường duyệt thẳng ở đoạn trên, kể cả khi luồng đã khai đầy đủ;
 phiếu đang chạy dở thì đi hết bản luồng đã chụp lúc trình, không bị cắt ngang.
@@ -66,7 +66,7 @@ Bốn điều đáng biết:
   *Trả về* mới sửa được) thì tính năng này không dùng được lấy một lần.
 - **Vẫn chặn trùng y như lúc gửi duyệt** (§2), qua cùng một khoá hàng phòng. Bỏ
   chốt đó thì ai muốn đặt đôi chỉ cần đặt lệch giờ rồi kéo về.
-- **Phiếu đã duyệt bị dời thì người dự nhận thư «Đổi giờ họp»**. Cuộc họp bị dời
+- **Phiếu đã duyệt bị dời thì người dự nhận thư "Đổi giờ họp"**. Cuộc họp bị dời
   mà không báo thì họ tới đúng phòng cũ vào đúng giờ cũ — tệ hơn cả không mời.
 - **Thiếu quyền `room_booking.write` thì kéo thả tắt hẳn**, khối vẫn bấm mở phiếu
   như cũ. Không gác thì người chỉ được xem vẫn kéo được, thấy khối nhảy sang chỗ
@@ -75,8 +75,8 @@ Bốn điều đáng biết:
 
 Đường API riêng: `PATCH /api/room-bookings/{id}/reschedule` (ba ô: `room_id` ·
 `start_at` · `end_at`). Cố ý **không** dùng `PATCH /{id}` — đường đó chỉ nhận
-phiếu chưa vào luồng, gọi nhầm là mọi cú kéo đều trả về *«Phiếu đã gửi duyệt nên
-không sửa được»*.
+phiếu chưa vào luồng, gọi nhầm là mọi cú kéo đều trả về *Phiếu đã gửi duyệt nên
+không sửa được*.
 
 ⚠️ **Mọi ô giờ gửi lên phải là giờ ĐỊA PHƯƠNG, không kèm múi giờ**
 (`2026-09-20T09:00:00`). Cả hệ lưu giờ trần theo giờ Việt Nam; gửi kèm múi giờ
@@ -98,7 +98,7 @@ Bốn chi tiết dễ hiểu sai:
    người duyệt — lúc đó cả hai đã báo lịch cho khách.
 2. **Nháp KHÔNG giữ phòng.** Lưu nháp không kiểm trùng; chặn ở đó là bắt người
    dùng chọn xong phòng + giờ đúng ngay trong một lần gõ. Cảnh báo sớm nằm ở dải
-   «phòng còn trống» ngay dưới hai ô giờ trên form.
+   **phòng còn trống** ngay dưới hai ô giờ trên form.
 3. **Ca liền nhau KHÔNG tính là trùng**: 9–10h và 10–11h là hai cuộc nối tiếp,
    đúng cách người ta xếp lịch thật.
 4. **Ba kết cục không-duyệt đều NHẢ phòng** (từ chối · trả về · rút). Quên một
@@ -116,7 +116,7 @@ chưa duyệt thì cuộc họp chưa chắc diễn ra, mà thư đã gửi thì
 Người đặt không tự nhận thư mời của chính mình. Thư hỏng không làm hỏng việc
 chốt phòng (nuốt lỗi có chủ ý, cùng lẽ với thư báo việc duyệt).
 
-Mục «Mời tham dự» **luôn hiện trên bản chỉ-xem kể cả khi rỗng**: người duyệt
+Mục **Mời tham dự** **luôn hiện trên bản chỉ-xem kể cả khi rỗng**: người duyệt
 phải phân biệt được *"chưa mời ai"* với *"màn hình thiếu mục đó"*.
 
 ## 4. Phòng dùng chung

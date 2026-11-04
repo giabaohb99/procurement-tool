@@ -1,6 +1,6 @@
 """Bộ mã và danh sách cột của phân hệ Tra cứu giá hải quan (bao-CR-470).
 
-Thiết kế: `doc/erp/hai-quan/02-thiet-ke-ky-thuat.md`.
+Thiết kế: `doc/erp/hai-quan/tai-lieu-ky-thuat/02-thiet-ke-ky-thuat.md`.
 """
 from enum import IntEnum
 
@@ -249,3 +249,36 @@ PESTICIDE_STATUS_LABELS = {
 }
 
 PESTICIDE_STATUS_BY_LABEL = {label.lower(): code for code, label in PESTICIDE_STATUS_LABELS.items() if label}
+
+
+# ── bao-CR-718: lô XUẤT TOÀN BỘ chạy nền (chia nhiều tệp) ─────────────────────────────────
+class CustomsExportStatus(IntEnum):
+    """Trạng thái lô xuất `tab_customs_export_batch.status` — SMALLINT theo luật R2."""
+    QUEUED = 1      # vừa tạo, chờ task đầu
+    RUNNING = 2     # đang ghi tệp
+    DONE = 3        # xong mọi tệp
+    FAILED = 4      # hỏng giữa chừng / kẹt quá lâu (tệp đã xong vẫn tải được tới hạn)
+    CANCELLED = 5   # người xuất dừng
+    EXPIRED = 6     # quá hạn giữ, tệp đã dọn
+
+
+CUSTOMS_EXPORT_STATUS_LABELS = {
+    CustomsExportStatus.QUEUED: "Đang chờ",
+    CustomsExportStatus.RUNNING: "Đang xuất",
+    CustomsExportStatus.DONE: "Xong",
+    CustomsExportStatus.FAILED: "Lỗi",
+    CustomsExportStatus.CANCELLED: "Đã dừng",
+    CustomsExportStatus.EXPIRED: "Hết hạn",
+}
+ACTIVE_EXPORT_STATUSES = (CustomsExportStatus.QUEUED, CustomsExportStatus.RUNNING)
+
+#  Cỡ tệp / khối / nhịp nghỉ (đo trên bảng thử 328 nghìn dòng, xem kế hoạch CR-718 §6). 50.000 dòng ≈ vài MB xlsx,
+#  mở được trên máy văn phòng; khối 2.000 dòng giữ bộ nhớ worker nhỏ; nghỉ giữa khối + giữa tệp để việc khác chen vào.
+EXPORT_ROWS_PER_FILE = 50_000
+EXPORT_CHUNK_ROWS = 2_000
+EXPORT_CHUNK_PAUSE_SECONDS = 0.3
+EXPORT_FILE_PAUSE_SECONDS = 5
+#  Lô đang chờ / đang chạy mà không nhích quá chừng này giờ (worker chết, task mất) thì đánh hỏng, nhả khóa người dùng.
+EXPORT_STALE_HOURS = 2
+#  Khóa `ExportLog.entity` cho tệp của lô — không đăng ký khung xuất chung (xem `export_log.registry.ENTITY_LABELS_EXTRA`).
+EXPORT_LOG_ENTITY = "customs_line"

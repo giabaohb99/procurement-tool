@@ -17,7 +17,7 @@ Chạy trong container api:
 Idempotent: đã có bài cùng tiêu đề dưới đúng nhóm thì xóa bài đó (kèm bài con, nếu có) rồi
 chèn lại ở nguyên chỗ cũ. Thiếu nhóm cha thì DỪNG, không tự tạo bài gốc.
 
-Nội dung phải KHỚP với `doc/tai-lieu-chuc-nang/04-don-mua-hang.md` mục K (K.0 → K.7) và
+Nội dung phải KHỚP với `doc/erp/thu-mua/chuc-nang/13-don-mua-hang.md` mục K (K.0 → K.7) và
 `08-he-thong-bao-cao.md` tab Giá vốn nhập khẩu. Không nêu mã phiếu mẫu của môi trường thử.
 """
 import re

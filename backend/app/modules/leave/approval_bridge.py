@@ -32,6 +32,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.modules.approval import entity_hooks, flow_service, instance_service
+from app.modules.employee.model import Employee
 
 from .constants import (LR_APPROVED, LR_DRAFT, LR_PENDING, LR_REJECTED,
                         LR_RETURNED, SESSION_TO_DOC_CODE)
@@ -189,7 +190,14 @@ def _on_approved(db: Session, request_id: int, instance) -> None:
     if obj is None or obj.status == LR_APPROVED:
         return
 
-    from . import request_service
+    from . import block_period_service, request_service
+    from .period_spans import periods_by_request
+
+    #  duoc-CR-715: ngày cấm nghỉ — kiểm TRƯỚC khi trừ quỹ, để ném `HookVeto` là không còn gì dở dang.
+    #  Dùng chung cho duyệt chặng cuối của bộ máy và duyệt thẳng (cùng đi qua hàm này).
+    block_period_service.ensure_approvable(
+        db, db.get(Employee, obj.employee_id),
+        periods_by_request(db, [obj.id]).get(obj.id) or [], instance.updated_by or 0)
 
     #  Trừ theo TỪNG DÒNG loại nghỉ — đơn khai được nhiều loại từ 07/09/2026, và
     #  mỗi loại có sổ quỹ riêng. Trừ tổng vào loại chính là cộng nhầm ngày không

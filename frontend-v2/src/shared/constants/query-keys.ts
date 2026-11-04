@@ -282,6 +282,12 @@ export const queryKeys = {
     leaveRequests: (params?: Record<string, unknown>) =>
       ['hr', 'leave-requests', params ?? {}] as const,
     leaveRequest: (id: number) => ['hr', 'leave-requests', 'detail', id] as const,
+    //  ── Phiếu nghỉ bù (duoc-CR-715 phase C) ───────────────────────────────
+    //  Nằm dưới `hr` để duyệt/hủy phiếu dọn luôn nhánh quỹ phép (`leave-balances`) qua `hr.all`.
+    leaveCompRequests: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-comp-requests', params ?? {}] as const,
+    leaveCompRequest: (id: number) => ['hr', 'leave-comp-requests', 'detail', id] as const,
+    leaveCompToApprove: () => ['hr', 'leave-comp-requests', 'to-approve'] as const,
     /** Tệp đính kèm của MỘT tờ đơn (bao-CR-505) — màn chi tiết và trang in dùng chung. */
     leaveAttachments: (id: number) =>
       ['hr', 'leave-requests', 'detail', id, 'attachments'] as const,
@@ -300,6 +306,9 @@ export const queryKeys = {
     leaveBalances: (params?: Record<string, unknown>) =>
       ['hr', 'leave-balances', params ?? {}] as const,
     leaveBalance: (id: number) => ['hr', 'leave-balances', 'detail', id] as const,
+    /** Ma trận "Theo nhân sự" (người × loại nghỉ, duoc-CR-717) — Cấp quỹ / duyệt đơn dọn qua `hr.all`. */
+    leaveBalanceMatrix: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-balances', 'matrix', params ?? {}] as const,
     leaveBalanceSummary: (employeeId: number, year: number) =>
       ['hr', 'leave-balances', 'summary', employeeId, year] as const,
     /** Bảng đối chiếu trước/sau kết sổ năm `year` (duoc-CR-664) — kết sổ lại dọn qua `hr.all`. */
@@ -310,6 +319,23 @@ export const queryKeys = {
     /** Bậc thâm niên của MỘT loại nghỉ. `0` = mọi loại. */
     seniorityTiers: (leaveTypeId: number) =>
       ['hr', 'leave-seniority-tiers', leaveTypeId] as const,
+    /** Hạn mức theo nhóm của MỘT loại nghỉ (duoc-CR-715). */
+    leaveTypeQuotas: (leaveTypeId: number) =>
+      ['hr', 'leave-type-quotas', leaveTypeId] as const,
+    /** Dòng "loại nghỉ → số ngày/năm" của MỘT chính sách nghỉ phép (duoc-CR-717). */
+    leavePolicyLines: (policyId: number) => ['hr', 'leave-policy-lines', policyId] as const,
+    /**
+     * GỐC của mọi khóa phân bổ chính sách (danh sách + xem trước) — dọn bằng khóa này mới trúng cả
+     * `leavePolicyPreview`: `leavePolicyAssignments()` kết thúc bằng `{}` nên KHÔNG khớp tiền tố với
+     * khóa xem trước (phần tử thứ ba là chuỗi `'preview'`).
+     */
+    leavePolicyAssignmentsRoot: ['hr', 'leave-policy-assignments'] as const,
+    /** Phân bổ chính sách (duoc-CR-717) — dưới `hr` để mỗi lượt phân bổ dọn luôn nhánh quỹ phép qua `hr.all`. */
+    leavePolicyAssignments: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-policy-assignments', params ?? {}] as const,
+    /** Xem trước phân bổ (trước → sau) cho đúng bộ tham số đang nhập trong hộp phân bổ một người. */
+    leavePolicyPreview: (params: Record<string, unknown>) =>
+      ['hr', 'leave-policy-assignments', 'preview', params] as const,
     holidays: (params?: Record<string, unknown>) => ['hr', 'holidays', params ?? {}] as const,
 
     //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
@@ -534,6 +560,11 @@ export const queryKeys = {
     ragIndexStatus: () => ['system', 'rag-index-status'] as const,
     backups: (params?: Record<string, unknown>) => ['system', 'backups', params ?? {}] as const,
     auditLogs: (params?: Record<string, unknown>) => ['system', 'audit-logs', params ?? {}] as const,
+    /** Nhật ký email (bao-CR-721) — đọc `tab_email_log`, KHÁC `auditLogs`. */
+    emailLogs: (params?: Record<string, unknown>) => ['system', 'email-logs', params ?? {}] as const,
+    emailLogMeta: () => ['system', 'email-logs', 'meta'] as const,
+    emailLogStats: (days: number) => ['system', 'email-logs', 'stats', days] as const,
+    emailLogDetail: (id: number) => ['system', 'email-logs', 'detail', id] as const,
     /**
      * Nhật ký của chính màn *Cấu hình hệ thống* (bao-CR-462) — đọc `entity=setting`
      * dạng mảng đơn. Nằm CÙNG nhánh `audit-logs` để lưu cấu hình xong chỉ cần bỏ

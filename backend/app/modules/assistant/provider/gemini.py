@@ -60,7 +60,7 @@ def _gemini_schema(schema):
     """
     if not isinstance(schema, dict):
         return schema
-    out = {k: v for k, v in schema.items()}
+    out = dict(schema.items())
     values = out.get("enum")
     if isinstance(values, list) and any(not isinstance(v, str) for v in values):
         out.pop("enum")

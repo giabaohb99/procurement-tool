@@ -85,7 +85,7 @@ def test_du_55_entity():
     PUBLIC là CỐ Ý và có điều kiện kèm: phạm vi thật của phân hệ là "theo tư cách
     THÀNH VIÊN của list", không diễn đạt được bằng cột của `apply_scope` — đổi
     lại mọi query trong `app/modules/work/` phải tự lọc qua `visible_list_ids`
-    (`doc/erp/cong-viec/04-phan-quyen.md` §2).
+    (`doc/erp/cong-viec/tai-lieu-ky-thuat/04-phan-quyen.md` §2).
     46 → 47 ngày 03/09/2026: thêm `forum_board` (chuyên mục kiểu VOZ, F13a) —
     PUBLIC cùng lý do với `forum_post`: entity chỉ gác CRUD cấu trúc nhóm/box
     của `forum_admin`, ai thấy gì do luật audience của API diễn đàn.
@@ -108,13 +108,13 @@ def test_du_55_entity():
     ⚠️ Hai bảng con `tab_employee_contact` / `tab_employee_family` CỐ Ý không có
     khóa riêng, nên con số chỉ tăng 1 chứ không phải 3 (bản thiết kế
     `doc/erp/hrm/01-ho-so-nhan-su.md` K2 ghi 3 là chưa tính tới hai điều: chúng
-    không có màn hình riêng — luật «một khóa = một màn hình» của CR-157 — và
+    không có màn hình riêng — luật "một khóa = một màn hình" của CR-157 — và
     phạm vi của chúng KHÔNG diễn đạt được bằng khuôn một-cột của `apply_scope`
     vì bảng con chỉ có `employee_id`. Chốt của chúng là chốt của hồ sơ CHA).
 
     54 → 55 ngày 08/09/2026: danh mục CHỨC VỤ (`job_position`, duoc-CR-320) —
-    nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ. Khóa riêng theo luật «một
-    khóa = một màn hình»: MỌI vai trò cần `read` để đổ ô chọn đó, nhưng THÊM
+    nguồn của ô chọn "Vị trí / Chức vụ" trên hồ sơ. Khóa riêng theo luật "một
+    khóa = một màn hình": MỌI vai trò cần `read` để đổ ô chọn đó, nhưng THÊM
     BỚT chức vụ là việc của Nhân sự. PUBLIC ở `SCOPE_FIELDS` — bảng có
     `department_id` nhưng `0` nghĩa là "dùng chung mọi phòng ban", nên lọc theo
     cột đó cắt mất đúng những dòng dùng chung (cùng bẫy của `meeting_room`).
@@ -128,19 +128,19 @@ def test_du_55_entity():
     59 → 60 ngày 14/09/2026 (bao-CR-395, CR-312 P3b): `login_session` — màn
     Phiên đăng nhập. Khai `{"owner": "user_id"}`: bảng chỉ có tài khoản, không
     có công ty/phòng ban, nên chỉ `all` (admin/Nhân sự) và `own` có nghĩa. Tab
-    «Thiết bị của tôi» KHÔNG đi qua khóa này (endpoint `/api/auth/sessions` chỉ
+    "Thiết bị của tôi" KHÔNG đi qua khóa này (endpoint `/api/auth/sessions` chỉ
     đòi đăng nhập) — vai trò cũ trên hệ đang chạy không tự có khóa mới.
 
     60 → 62 ngày 15/09/2026 (bao-CR-407, CR-312 P5): `audit` + `change_log` —
     màn Nhật ký hệ thống. HAI khóa vì đó là hai mức nhạy cảm khác hẳn nhau: tra
-    «ai làm gì» là một chuyện, đọc GIÁ TRỊ TRƯỚC/SAU của từng ô (có thể chứa tên
+    "ai làm gì" là một chuyện, đọc GIÁ TRỊ TRƯỚC/SAU của từng ô (có thể chứa tên
     nhà cung cấp) là chuyện khác. Cả hai khai `PUBLIC`: cắt nhật ký theo phạm vi
     của người tra thì đúng lượt gọi cần nhìn nhất — 403 của người ngoài phạm vi,
     script chạy dưới `user_id = 0` — biến mất; chốt nằm ở việc CẤP khóa.
 
     62 → 63 ngày 16/09/2026: danh mục LOẠI HỒ SƠ (`dossier_type`, phân hệ Hồ sơ)
-    — nguồn của ô chọn «Loại hồ sơ» và chỗ khai hạn hiệu lực mặc định của từng
-    loại giấy tờ. Khóa riêng theo luật «một khóa = một màn hình» (`/dossier/types`);
+    — nguồn của ô chọn "Loại hồ sơ" và chỗ khai hạn hiệu lực mặc định của từng
+    loại giấy tờ. Khóa riêng theo luật "một khóa = một màn hình" (`/dossier/types`);
     đừng gộp với khóa `dossier` của bảng hồ sơ (CHƯA dựng) — đọc hồ sơ là việc
     hằng ngày của nhiều người, thêm bớt LOẠI là đổi luật phân loại cho cả công ty.
     PUBLIC ở `SCOPE_FIELDS`: một loại giấy tờ là một loại giấy tờ với cả công ty,
@@ -155,17 +155,17 @@ def test_du_55_entity():
 
     64 → 65 ngày 16/09/2026: bảng HỒ SƠ (`dossier`, `tab_dossier`) — bộ giấy tờ
     công ty đang giữ, kèm bộ trường tùy biến khai theo từng loại. Tách khỏi
-    `dossier_type` theo luật «một khóa = một màn hình»: lập hồ sơ là việc hằng
+    `dossier_type` theo luật "một khóa = một màn hình": lập hồ sơ là việc hằng
     ngày của hành chính mỗi phòng, còn thêm bớt LOẠI thì đổi luôn KHUÔN BIỂU MẪU
     cho cả công ty — gộp một khóa là ai lập được một tờ giấy phép cũng xóa được
-    ô «Số giấy phép» khỏi mọi hồ sơ cùng loại.
+    ô "Số giấy phép" khỏi mọi hồ sơ cùng loại.
     ⚠️ Khai **CỘT THẬT** ở `SCOPE_FIELDS` (`company_id` · `department_id` ·
     `created_by` · `owner_employee_id`), KHÔNG PUBLIC — hồ sơ thuộc về một pháp
     nhân, một phòng và một người. Bốn chiều kiểm ở `test_ho_so_pham_vi.py`.
 
     65 → 66 ngày 22/09/2026 (bao-CR-453): `purchase_cost_type` — Danh mục Loại chi
     phí thu mua (`tab_po_cost_type`), thay bộ mã cứng `ImportCostType`. Khóa riêng
-    theo luật «một khóa = một màn hình» (`/api/po-cost-types`): khai chi phí trên
+    theo luật "một khóa = một màn hình" (`/api/po-cost-types`): khai chi phí trên
     đơn là việc hằng ngày của thu mua, còn thêm bớt LOẠI chi phí là đổi cột của
     báo cáo giá vốn cho cả công ty. PUBLIC ở `SCOPE_FIELDS`: một loại chi phí là
     một loại chi phí với mọi pháp nhân, không có chủ để lọc.
@@ -196,10 +196,11 @@ def test_du_55_entity():
     khóa (pháp nhân / phòng / chính mình); nằm trong `_SYS_ENTITIES`.
     78 → 79 ngày 28/10/2026 (duoc-CR-689): kế hoạch nhân sự (`headcount_plan`) — scope company / dept_id trên
     `tab_headcount_plan`; nằm trong `_SYS_ENTITIES`.
-    79 → 78 ngày 29/10/2026 (duoc-CR-692): BỎ «Kế hoạch nhân sự» — gỡ entity `headcount_plan`.
+    79 → 78 ngày 29/10/2026 (duoc-CR-692): BỎ "Kế hoạch nhân sự" — gỡ entity `headcount_plan`.
+    78 → 79 ngày 02/11/2026 (duoc-CR-715 C): phiếu xin nghỉ bù (`leave_comp_request`) — owner + self như `leave_request`.
     """
-    assert len(ENTITIES) == 78
-    assert len(SCOPE_FIELDS) == 78
+    assert len(ENTITIES) == 79
+    assert len(SCOPE_FIELDS) == 79
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

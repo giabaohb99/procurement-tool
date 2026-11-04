@@ -87,8 +87,8 @@ def test_co_quyen_doc_entity_va_ban_ghi_trong_pham_vi_thi_xem_duoc(world):
 
 
 def test_ban_ghi_ngoai_pham_vi_thi_404_du_co_quyen_doc_entity(world):
-    """Quyền vai trò một mình không đủ: nó nói «được đọc hợp đồng», không nói
-    «được đọc hợp đồng NÀO». Gõ thẳng id vào URL là đường vòng cổ điển."""
+    """Quyền vai trò một mình không đủ: nó nói "được đọc hợp đồng", không nói
+    "được đọc hợp đồng NÀO". Gõ thẳng id vào URL là đường vòng cổ điển."""
     ids = make_two_contracts(world)
     a1 = world.grant("a1", "contract", scope="company")   # a1 thuộc pháp nhân A
 
@@ -130,14 +130,14 @@ def test_loc_theo_loai_chung_tu_cung_phai_cat_theo_pham_vi(world):
 
 def test_pham_vi_tat_ca_thi_khong_bi_cat(world):
     """VẾ ĐỐI CHỨNG cho ca ngay trên: siết lối lọc theo loại **không** được làm
-    hẹp tầm nhìn của người vốn có phạm vi «tất cả»."""
+    hẹp tầm nhìn của người vốn có phạm vi "tất cả"."""
     ids = make_two_contracts(world)
     a1 = world.grant("a1", "contract", scope="all")
     thay = read_logs(world.db, a1.user, entity="contract")
     assert sorted(r["entity_id"] for r in thay) == sorted(ids.values())
 
 
-# ── Chế độ DUYỆT TOÀN HỆ: màn «Nhật ký hệ thống» ───────────────────────────────
+# ── Chế độ DUYỆT TOÀN HỆ: màn "Nhật ký hệ thống" ───────────────────────────────
 
 def test_duyet_toan_he_khong_kem_entity_thi_doi_khoa_quan_tri(world):
     """Lối duyệt không truyền `entity` — đọc được mọi loại chứng từ một lượt.
@@ -154,7 +154,7 @@ def test_duyet_toan_he_khong_kem_entity_thi_doi_khoa_quan_tri(world):
 
 
 def test_quan_tri_he_thong_van_duyet_duoc_toan_he(world):
-    """VẾ ĐỐI CHỨNG cho màn «Nhật ký hệ thống» — giao diện v2 gác menu đó bằng
+    """VẾ ĐỐI CHỨNG cho màn "Nhật ký hệ thống" — giao diện v2 gác menu đó bằng
     `setting` (`system/routes.tsx:57`), backend gác cho khớp."""
     make_two_contracts(world)
     quan_tri = world.grant("a2", "setting", scope="all", actions=("read",))
@@ -177,7 +177,7 @@ def test_trang_ca_nhan_van_thay_lich_su_cua_chinh_minh(world):
     người dùng, mà `user.read` là khóa QUẢN TRỊ TÀI KHOẢN — nhân viên thường
     không có. Không có ngoại lệ này thì bản vá làm mọi Trang cá nhân trống lịch
     sử, và vì 403 trên GET đang im lặng, trống đó không phân biệt được với
-    «chưa có thao tác nào».
+    "chưa có thao tác nào".
     """
     a1 = world.actor("a1")   # không một grant nào
     record(world.db, a1.user.id, "user", a1.user.id, "update", "Đổi mật khẩu")
@@ -201,7 +201,7 @@ def test_moi_hanh_dong_co_trong_bang_deu_phai_co_nhan_tieng_viet():
     """Dấu vết là thứ NGƯỜI đọc, nên mã Anh trần lọt ra là lỗi hiển thị thật.
 
     Đếm trên dữ liệu thật ngày 05/09/2026: 10 mã (`login`, `assign`,
-    `view_file`…) chiếm 971 dòng đang hiện «Dego Admin — assign: Phân bổ NSTM».
+    `view_file`…) chiếm 971 dòng đang hiện "Dego Admin — assign: Phân bổ NSTM".
 
     ⚠️ **Phép quét đã dời sang `test_bo_ma_hanh_dong_cr358.py`** (bao-CR-358 /
     CR-312 P2) và mạnh hơn hẳn bản từng nằm ở đây: bản cũ chỉ quét `app/modules`
@@ -219,4 +219,4 @@ def test_moi_hanh_dong_co_trong_bang_deu_phai_co_nhan_tieng_viet():
     assert ACTION_LABEL, "bảng nhãn rỗng — controller đang mất nguồn nhãn"
     for action in ACTION_CATALOG:
         nhan = label_of_action(action)
-        assert nhan and nhan != action, f"mã «{action}» tra ra chính nó, tức mất nhãn"
+        assert nhan and nhan != action, f"mã \"{action}\" tra ra chính nó, tức mất nhãn"

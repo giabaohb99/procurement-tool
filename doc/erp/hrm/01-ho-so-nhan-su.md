@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Thuộc bộ | Phân hệ Nhân sự (HRM) — ERP v2 |
-| Bản | 1.8 — 23/10/2026 (**In Phiếu thông tin nhân viên C5 + nhân viên tự đề nghị sửa hồ sơ C6 — xong**, duoc-CR-676; §7.14 mới, §7.10 cập nhật) · 1.7 — 23/10/2026 (hai mục Hợp đồng lao động cuối tệp chuyển sang `04-hop-dong-lao-dong.md` — duoc-CR-673) · 1.6 — 22/10/2026 (**Sơ đồ tổ chức V2-6 + kiểm việc duyệt treo trước khi khóa V0-4 — xong**; §7.12, §7.13 mới; §7.10 + Đợt 3 cập nhật) · 1.5 — 03/10/2026 (**Đợt 1 + Đợt 2 + Đợt 3 + Quá trình công tác bản gọn V1-8 (duoc-CR-585) — xong mã nguồn**; §7.11 mới, §4 + §7.10 cập nhật) · 1.4 — 01/10/2026 (Đợt 3 xong phần lớn — K3 xong, còn thiếu màn kiểm việc, Đợt 4 chưa) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
+| Bản | 1.9 — 03/11/2026 (**Cài đặt nhân sự tab Nhân viên** — tiền tố mã, sơ đồ tổ chức cho mọi nhân viên, mốc kỷ niệm — duoc-CR-713; §7.17 mới, §7.12 thêm công tắc) · 1.8 — 23/10/2026 (**In Phiếu thông tin nhân viên C5 + nhân viên tự đề nghị sửa hồ sơ C6 — xong**, duoc-CR-676; §7.14 mới, §7.10 cập nhật) · 1.7 — 23/10/2026 (hai mục Hợp đồng lao động cuối tệp chuyển sang `04-hop-dong-lao-dong.md` — duoc-CR-673) · 1.6 — 22/10/2026 (**Sơ đồ tổ chức V2-6 + kiểm việc duyệt treo trước khi khóa V0-4 — xong**; §7.12, §7.13 mới; §7.10 + Đợt 3 cập nhật) · 1.5 — 03/10/2026 (**Đợt 1 + Đợt 2 + Đợt 3 + Quá trình công tác bản gọn V1-8 (duoc-CR-585) — xong mã nguồn**; §7.11 mới, §4 + §7.10 cập nhật) · 1.4 — 01/10/2026 (Đợt 3 xong phần lớn — K3 xong, còn thiếu màn kiểm việc, Đợt 4 chưa) · 1.3 — 08/09/2026 (§7.7 danh mục Chức vụ) |
 | Dùng để làm gì | Chốt danh sách trường của hồ sơ nhân viên (mở rộng `tab_employee`), hai bảng con, chức năng màn hình, và phần tài khoản đăng nhập đi kèm |
 | Ai đọc | Đội phần mềm, người chủ trì |
 | Nguồn đối chiếu | [tham-khao-hrm/01-nhan-su.md](../tham-khao-hrm/01-nhan-su.md) (NS1, ~90 trường/7 nhóm), [tham-khao-hrm/10-de-xuat-ap-dung.md](../tham-khao-hrm/10-de-xuat-ap-dung.md) (V1-2, V1-3, V1-4), và **Phiếu thông tin nhân viên BM00../QT01/NS** (mẫu công ty đang dùng khi nhận việc, ban hành 01/06/2025) |
@@ -307,17 +307,17 @@ Toàn bộ ở `frontend-v2`. Backend chỉ đụng **một dòng**: mở `FILTE
 - **Nhãn trong bảng con không nối vào ô nhập** (`<label>` trần, không `htmlFor`). Nhãn hiện ra bằng mắt nhưng trình đọc màn hình đọc ô đó là "textbox" không tên, và bấm vào chữ không nhảy được vào ô — nhân lên 5 cột × N dòng. Vá bằng `useId`, và `DatePicker` được bổ sung prop `id` để dùng chung.
 - **Cảnh báo React** *"Calling setState synchronously within an effect"* ở bảng con. Thay `useEffect` bằng khuôn "điều chỉnh state khi prop đổi" — vừa hết cảnh báo vừa bỏ được một khung hình vẽ bằng dữ liệu cũ.
 
-⚠️ **BẪY LÚC NGHIỆM THU:** người đang đăng nhập **giữ map quyền CŨ** cho tới khi đăng xuất/đăng nhập lại. Đã dính ngay lúc thử: admin có `employee_sensitive` ở API nhưng màn hình vẫn hiện «bạn không có quyền xem». Không phải lỗi của đợt này (cơ chế sẵn có), nhưng phải nói với người nghiệm thu, kẻo họ báo lỗi nhầm.
+⚠️ **BẪY LÚC NGHIỆM THU:** người đang đăng nhập **giữ map quyền CŨ** cho tới khi đăng xuất/đăng nhập lại. Đã dính ngay lúc thử: admin có `employee_sensitive` ở API nhưng màn hình vẫn hiện **bạn không có quyền xem**. Không phải lỗi của đợt này (cơ chế sẵn có), nhưng phải nói với người nghiệm thu, kẻo họ báo lỗi nhầm.
 
 **Đã thử thật trên `localhost:8083`:** danh sách (3 cột mới + cảnh báo K5) · 5 tab · lưu tab Chung (gồm ô nhạy cảm + ô mã số) · thêm/lưu dòng hộ gia đình (tiếng Việt không mojibake) · ngoại lệ `self` · bảng con trả 403 đúng người. Test: `employee-schema.test.ts` (17 ca) + `employee-codes.test.ts` (8 ca).
 
 ### 7.3. Rà cực đoan trước khi sang Đợt 3 (duoc-CR-316, 08/09/2026)
 
-Bắn ca cực đoan thẳng vào **MySQL thật**, không qua SQLite. Kết quả: **12 ca trả 500** «Hệ thống gặp lỗi không lường trước». Không ca nào là lỗi logic — tất cả chỉ vì tầng schema không khai giới hạn, nên **MySQL là chỗ đầu tiên phản đối**.
+Bắn ca cực đoan thẳng vào **MySQL thật**, không qua SQLite. Kết quả: **12 ca trả 500** **Hệ thống gặp lỗi không lường trước**. Không ca nào là lỗi logic — tất cả chỉ vì tầng schema không khai giới hạn, nên **MySQL là chỗ đầu tiên phản đối**.
 
 | # | Ca | Trước | Sau |
 |---|---|---|---|
-| 1 | Chuỗi dài hơn cột (22 trường, **gồm cả 4 trường CŨ** `full_name`·`email`·`phone`·`position`) | **500** | 422 «tối đa n ký tự» |
+| 1 | Chuỗi dài hơn cột (22 trường, **gồm cả 4 trường CŨ** `full_name`·`email`·`phone`·`position`) | **500** | 422 **tối đa n ký tự** |
 | 2 | `extra_fields` một khóa 2MB | lưu OK → mọi màn đọc hồ sơ đó đứng hình | 422 |
 | 3 | `extra_fields` lồng sâu 100 tầng | **500** | 422 |
 | 4 | `extra_fields` khóa dài 10 000 ký tự | lưu OK | 422 |
@@ -341,8 +341,8 @@ Tệp mới: `backend/app/modules/employee/field_limits.py` (bí danh `Str<n>` +
 
 | # | Lỗi | Vì sao tệ |
 |---|---|---|
-| 1 | Nhấn **Enter** trong ô bảng con → `PATCH` **lưu hồ sơ**, còn dòng đang gõ thì không | Toast báo «Đã cập nhật nhân sự» → **thao tác sai nhưng báo thành công** |
-| 2 | Nút **Xóa** thiếu `type="button"` → bấm là form **lưu bản ghi** rồi hộp xác nhận mới mở | Bấm Hủy thì bản ghi đã lưu rồi; lịch sử có một dòng «Cập nhật» không ai làm. **Component dùng chung, lỗi có sẵn ở ~11 màn** |
+| 1 | Nhấn **Enter** trong ô bảng con → `PATCH` **lưu hồ sơ**, còn dòng đang gõ thì không | Toast báo **Đã cập nhật nhân sự** → **thao tác sai nhưng báo thành công** |
+| 2 | Nút **Xóa** thiếu `type="button"` → bấm là form **lưu bản ghi** rồi hộp xác nhận mới mở | Bấm Hủy thì bản ghi đã lưu rồi; lịch sử có một dòng **Cập nhật** không ai làm. **Component dùng chung, lỗi có sẵn ở ~11 màn** |
 | 3 | UI cho thêm **35 dòng** bảng con dù trần là 30 | Gõ hết rồi bấm Lưu mới ăn 422 **tiếng Anh**, mất trắng công gõ |
 | 4 | Ô sai ở **tab đang ẩn** → bấm Lưu **không có gì xảy ra** | Không toast, không lỗi, không API. Nút Lưu đọc ra như hỏng — im lặng tuyệt đối |
 | 5 | Bấm Lưu 5 lần → **5 `PATCH`** | `disabled={isPending}` là state React nên chỉ đúng ở lần render sau; bấm đúp ra 2 dòng nhật ký |
@@ -357,26 +357,26 @@ Test: `profile-field-tab.test.ts` (17 ca).
 
 ### 7.5. Ba chỉnh theo phản hồi khách (duoc-CR-318, 08/09/2026)
 
-1. **Ô «Quan hệ» thành Ô CHỌN**, không gõ tay nữa — ở CẢ hai bảng con. Chữ tự do làm mỗi người gõ một kiểu («vợ» · «Vợ» · «v/c» · «vo») nên không lọc được, không đếm được, bản in ra không đều.
+1. **Ô "Quan hệ" thành Ô CHỌN**, không gõ tay nữa — ở CẢ hai bảng con. Chữ tự do làm mỗi người gõ một kiểu (**vợ** · **Vợ** · **v/c** · **vo**) nên không lọc được, không đếm được, bản in ra không đều.
    Thành danh sách cố định thì **R2/QĐ-11 áp dụng**: cột `relation` đổi từ `VARCHAR(50)` sang **`SMALLINT`** (migration `b7c1d4e90a52`, bộ mã ở `constants.RELATION_LABELS`). Đổi ngay vì hai bảng con **chưa lên prod** — đây là lúc rẻ nhất; để có dữ liệu thật rồi mới đổi thì phải viết migration đoán ý từng chuỗi người gõ.
-   Danh sách **dùng chung, không lọc theo giới tính** (khách chốt): Chủ hộ · Cha · Mẹ · Vợ · Chồng · Con trai · Con gái · Anh trai · Chị gái · Em trai · Em gái · Ông · Bà · Khác. Mã «Khác» là **99** chứ không phải 14 — chừa chỗ cho quan hệ thêm về sau, và «Khác» luôn đứng cuối.
-2. **Ô «Số con» ẩn khi Tình trạng hôn nhân = Độc thân.** ⚠️ CHỈ ẩn với *Độc thân* — không ẩn với *Ly hôn* (ly hôn rồi vẫn có con) và không ẩn khi *chưa khai*. Ẩn/hiện chỉ là chuyện hiển thị, giá trị vẫn trong form và vẫn gửi lên; cố ý **không tự xóa về 0**, vì tự ý xóa dữ liệu người ta đã nhập nguy hiểm hơn nhiều so với việc giữ một con số không hiện ra.
-3. **Viết lại toàn bộ chữ trên màn cho nhẹ giọng.** Bản đầu viết như ghi chú kỹ thuật: *«Số gọi khi có tai nạn lao động. Phiếu thông tin nhân viên ghi rõ BẮT BUỘC…»*, *«Chỉ để lọc và làm báo cáo cơ cấu — KHÔNG dùng để suy ra người duyệt»*, *«Đi CẶP với Tình trạng làm việc — điền ngày mà quên đổi trạng thái thì mọi màn khác vẫn coi người này đang làm»*. Đó là chữ dành cho lập trình viên, không phải cho người dùng. Nay: *«Người thân để liên hệ khi cần. Có thể khai nhiều người.»*, *«Người ký duyệt đơn từ của nhân viên này. Bỏ trống thì đơn chuyển cho trưởng bộ phận.»*, *«Điền ngày này thì nhớ đổi cả ô Tình trạng làm việc.»* Lý lẽ kỹ thuật vẫn giữ nguyên — nhưng ở **bình luận mã nguồn**, đúng chỗ của nó.
+   Danh sách **dùng chung, không lọc theo giới tính** (khách chốt): Chủ hộ · Cha · Mẹ · Vợ · Chồng · Con trai · Con gái · Anh trai · Chị gái · Em trai · Em gái · Ông · Bà · Khác. Mã **Khác** là **99** chứ không phải 14 — chừa chỗ cho quan hệ thêm về sau, và **Khác** luôn đứng cuối.
+2. **Ô "Số con" ẩn khi Tình trạng hôn nhân = Độc thân.** ⚠️ CHỈ ẩn với *Độc thân* — không ẩn với *Ly hôn* (ly hôn rồi vẫn có con) và không ẩn khi *chưa khai*. Ẩn/hiện chỉ là chuyện hiển thị, giá trị vẫn trong form và vẫn gửi lên; cố ý **không tự xóa về 0**, vì tự ý xóa dữ liệu người ta đã nhập nguy hiểm hơn nhiều so với việc giữ một con số không hiện ra.
+3. **Viết lại toàn bộ chữ trên màn cho nhẹ giọng.** Bản đầu viết như ghi chú kỹ thuật: *Số gọi khi có tai nạn lao động. Phiếu thông tin nhân viên ghi rõ BẮT BUỘC…*, *Chỉ để lọc và làm báo cáo cơ cấu — KHÔNG dùng để suy ra người duyệt*, *Đi CẶP với Tình trạng làm việc — điền ngày mà quên đổi trạng thái thì mọi màn khác vẫn coi người này đang làm*. Đó là chữ dành cho lập trình viên, không phải cho người dùng. Nay: *Người thân để liên hệ khi cần. Có thể khai nhiều người.*, *Người ký duyệt đơn từ của nhân viên này. Bỏ trống thì đơn chuyển cho trưởng bộ phận.*, *Điền ngày này thì nhớ đổi cả ô Tình trạng làm việc.* Lý lẽ kỹ thuật vẫn giữ nguyên — nhưng ở **bình luận mã nguồn**, đúng chỗ của nó.
 
-### 7.6. Ba chỉnh tiếp theo trên tab «Chung» (duoc-CR-319, 08/09/2026)
+### 7.6. Ba chỉnh tiếp theo trên tab "Chung" (duoc-CR-319, 08/09/2026)
 
-1. **Giới tính có thêm mục «Khác»** — mã **`3`**, khai ở `employee/constants.py` (`GENDER_OTHER`), bản TypeScript ở `hr/types/employee.ts`. Áp cho cả hồ sơ nhân viên lẫn dòng thành viên hộ gia đình (cùng một bộ nhãn).
+1. **Giới tính có thêm mục "Khác"** — mã **`3`**, khai ở `employee/constants.py` (`GENDER_OTHER`), bản TypeScript ở `hr/types/employee.ts`. Áp cho cả hồ sơ nhân viên lẫn dòng thành viên hộ gia đình (cùng một bộ nhãn).
    ⚠️ **`3` KHÔNG có ở bộ lọc của LOẠI NGHỈ** (`leave/constants.GENDER_LABELS` giữ nguyên 3 mục): một loại nghỉ *"chỉ dành cho giới Khác"* không định nghĩa được. Có test canh mã `3` không lọt vào bảng nhãn bên đó.
-   ⚠️ Hệ quả ở nghỉ phép, **có chủ ý**: `check_gender` so `want != got`, nên người khai «Khác» **bị chặn** khỏi loại nghỉ giới hạn nam/nữ (thai sản) — khác hẳn `0` (*chưa khai* thì không chặn). Cần ngoại lệ thì Nhân sự sửa ô giới tính, đừng nới luật ở `request_service`.
+   ⚠️ Hệ quả ở nghỉ phép, **có chủ ý**: `check_gender` so `want != got`, nên người khai **Khác** **bị chặn** khỏi loại nghỉ giới hạn nam/nữ (thai sản) — khác hẳn `0` (*chưa khai* thì không chặn). Cần ngoại lệ thì Nhân sự sửa ô giới tính, đừng nới luật ở `request_service`.
    Ba bản chép của validator giới tính (Create · Update · hộ gia đình) gom về một hàm `_check_gender_value` — thêm đúng một mã đã lộ ra rằng có ba chỗ phải nhớ sửa.
-2. **Ô «Số con» đổi chiều: CHỈ hiện khi «Có gia đình»** (khách chốt, thay luật ở §7.5 mục 2). Trước đó là *ẩn khi Độc thân*, tức *Ly hôn* và *chưa khai* vẫn thấy ô đó.
+2. **Ô "Số con" đổi chiều: CHỈ hiện khi "Có gia đình"** (khách chốt, thay luật ở §7.5 mục 2). Trước đó là *ẩn khi Độc thân*, tức *Ly hôn* và *chưa khai* vẫn thấy ô đó.
    ⚠️ Hệ quả phải biết: hồ sơ **Ly hôn** có sẵn số con thì **không sửa được qua màn này nữa** — con số cũ vẫn nguyên trong DB và vẫn được gửi lên khi lưu (ẩn/hiện vẫn chỉ là chuyện hiển thị, không tự xóa về 0), muốn sửa thì đổi ô hôn nhân trước. Hằng số đổi từ `MARITAL_SINGLE` sang **`MARITAL_MARRIED`**, test đổi theo.
-3. **Xếp lại thứ tự ô của khối «Thông tin cá nhân»** — cũ là *…Tôn giáo | Tình trạng hôn nhân · Số con | Email…*, nên «Số con» rơi xuống **nửa hàng bên trái, dưới «Tôn giáo»**, đứng rời khỏi ô hôn nhân sinh ra nó. Nay xếp theo nhóm nghĩa, mỗi hàng một cặp đi với nhau: *Mã NV | Họ tên* · *Giới tính | Ngày sinh* · *Nơi sinh (cả hàng — thực tế nhập nguyên một địa chỉ)* · *Dân tộc | Tôn giáo* · *Tình trạng hôn nhân | Số con* · *Trình độ học vấn | Chuyên ngành* · *Mã số thuế | Email cá nhân*.
-   ⚠️ Ô ẩn được thì phải **chừa chỗ trống**: lưới 2 cột xếp ô lần lượt, nên bỏ hẳn một ô là mọi cặp phía dưới lệch sang nửa hàng bên kia — chính là lỗi bố cục đang phải sửa ở đây. «Số con» khi ẩn được thay bằng một ô rỗng `aria-hidden`.
+3. **Xếp lại thứ tự ô của khối "Thông tin cá nhân"** — cũ là *…Tôn giáo | Tình trạng hôn nhân · Số con | Email…*, nên **Số con** rơi xuống **nửa hàng bên trái, dưới "Tôn giáo"**, đứng rời khỏi ô hôn nhân sinh ra nó. Nay xếp theo nhóm nghĩa, mỗi hàng một cặp đi với nhau: *Mã NV | Họ tên* · *Giới tính | Ngày sinh* · *Nơi sinh (cả hàng — thực tế nhập nguyên một địa chỉ)* · *Dân tộc | Tôn giáo* · *Tình trạng hôn nhân | Số con* · *Trình độ học vấn | Chuyên ngành* · *Mã số thuế | Email cá nhân*.
+   ⚠️ Ô ẩn được thì phải **chừa chỗ trống**: lưới 2 cột xếp ô lần lượt, nên bỏ hẳn một ô là mọi cặp phía dưới lệch sang nửa hàng bên kia — chính là lỗi bố cục đang phải sửa ở đây. **Số con** khi ẩn được thay bằng một ô rỗng `aria-hidden`.
 
 ### 7.7. Danh mục CHỨC VỤ (duoc-CR-320, 08/09/2026)
 
-Khách chốt: ô «Vị trí / Chức vụ» phải **lấy từ một danh mục quản lý được**, không gõ tay nữa. Trước đợt này nó là chữ tự do, nên cùng một chức vụ hiện ra bốn cách viết («Trưởng phòng» · «TP.» · «truong phong» · «Trưởng Phòng ») trên **bản in phiếu, tệp Excel xuất ra và hồ sơ mà trợ lý AI đọc** — ba nơi khách nhìn thấy.
+Khách chốt: ô **Vị trí / Chức vụ** phải **lấy từ một danh mục quản lý được**, không gõ tay nữa. Trước đợt này nó là chữ tự do, nên cùng một chức vụ hiện ra bốn cách viết (**Trưởng phòng** · **TP.** · **truong phong** · "Trưởng Phòng ") trên **bản in phiếu, tệp Excel xuất ra và hồ sơ mà trợ lý AI đọc** — ba nơi khách nhìn thấy.
 
 **Bảng mới `tab_job_position`** (`employee/position_model.py`): mã · tên · đang dùng · thứ tự · ghi chú · phòng ban thường giữ. Màn hình `/hr/job-positions` dựng bằng khung CRUD khai báo. ⚠️ **Hai cột cuối cùng KHÔNG lên giao diện** — xem mục *Giao diện* bên dưới; chúng còn dưới DB nhưng người dùng không thấy, đừng lấy danh sách cột này làm danh sách ô nhập.
 ⚠️ Đây là **DANH MỤC, không phải bộ mã** — R2/QĐ-11 không áp: người dùng tự thêm bớt trên giao diện, như phòng ban hay phòng họp. Cũng **khác `job_level` (Cấp bậc)**: cấp bậc là thang bậc cố định bảy mức khai trong mã nguồn, chức vụ là chức danh cụ thể in trên phiếu.
@@ -393,40 +393,40 @@ Khách chốt: ô «Vị trí / Chức vụ» phải **lấy từ một danh m�
 
 **Bốn chốt, và lý do từng cái:**
 
-- **Không xóa chức vụ đang có người giữ** (`before_delete`) — xóa là để lại hồ sơ trỏ vào id không tồn tại: ô chọn hiện trống còn cột nhãn vẫn giữ chữ cũ, hai chỗ nói hai điều khác nhau về một người. Muốn dẹp thì bỏ tick «Đang dùng».
+- **Không xóa chức vụ đang có người giữ** (`before_delete`) — xóa là để lại hồ sơ trỏ vào id không tồn tại: ô chọn hiện trống còn cột nhãn vẫn giữ chữ cũ, hai chỗ nói hai điều khác nhau về một người. Muốn dẹp thì bỏ tick **Đang dùng**.
 - **Không gán id chết** — cột không có khóa ngoại cứng (cùng quy ước `department_id` / `manager_id`), không kiểm ở tầng dịch vụ thì `position_id = 99999` ghi xuống êm ru.
 - **Không gán MỚI chức vụ đã ngừng dùng**, nhưng ⚠️ **hồ sơ đang giữ nó vẫn lưu được**: màn hồ sơ gửi lại mọi ô mỗi lần lưu, nên không có ngoại lệ này thì người đó **không sửa nổi ô nào khác** cho tới khi ai đó đi đổi chức vụ của họ.
 - **Mã không sửa được sau khi tạo** — mã đi vào tệp CSV đã phát ra ngoài.
 - **Mã luôn CHỮ THƯỜNG** (08/09/2026, `position_schema._code_lowercase`; migration `4f5033c40f3c` hạ 13 dòng cũ). Ép ở tầng **schema** chứ không ở ô nhập, vì mã còn vào hệ qua đường nhập CSV và qua bất kỳ ai gọi thẳng API. Nó cũng chữa một chỗ lệch có sẵn: chốt trùng mã so bằng `==`, mà MySQL đối chiếu **không phân biệt hoa thường** còn SQLite của bộ test thì **có** — `TP` và `tp` là một dòng trên chạy thật nhưng hai dòng trong test.
-- ⚠️ **Mã ĐỂ TRỐNG được, và đó là đường đi bình thường** — bộ sinh CRUD tự cấp `cv001`. Trước 08/09/2026 schema bắt buộc ô này, nên câu gợi ý trên biểu mẫu *«bỏ trống thì hệ thống tự sinh»* là **lời hứa chưa từng chạy**: schema chặn rỗng trước khi bộ sinh kịp cấp mã, người dùng làm đúng chỉ dẫn thì ăn 422. Cùng họ với lời hứa sai của `sort_order` ở trên — khai một câu gợi ý thì phải thử đúng cái việc nó hứa.
+- ⚠️ **Mã ĐỂ TRỐNG được, và đó là đường đi bình thường** — bộ sinh CRUD tự cấp `cv001`. Trước 08/09/2026 schema bắt buộc ô này, nên câu gợi ý trên biểu mẫu *bỏ trống thì hệ thống tự sinh* là **lời hứa chưa từng chạy**: schema chặn rỗng trước khi bộ sinh kịp cấp mã, người dùng làm đúng chỉ dẫn thì ăn 422. Cùng họ với lời hứa sai của `sort_order` ở trên — khai một câu gợi ý thì phải thử đúng cái việc nó hứa.
 
 ⚠️ **Luật "khóa = 0 thì xóa nhãn" CHỈ đúng ở đường CẬP NHẬT** (người dùng vừa bỏ chọn). Áp cả vào lúc TẠO thì đường nhập CSV, seed và mã cũ — những nơi chỉ truyền `position` chữ — làm hồ sơ **mất chức danh ngay khi ra đời**, im lặng. Lỗi thật đã dính khi làm đợt này; `test_employee_position.py` bắt được.
 
-**Migration `c5e2a8b31d47`** tạo bảng, thêm cột, và **nạp lại dữ liệu cũ**: gom các giá trị `position` phân biệt (bỏ khoảng trắng thừa, **không phân biệt hoa thường**) thành dòng danh mục rồi trỏ `position_id` của từng hồ sơ vào. Chạy thật trên MySQL local: 13 chức vụ dựng từ dữ liệu đang có, không hồ sơ nào mồ côi. ⚠️ Gom bỏ qua hoa thường là có chủ ý — dữ liệu thật có «Trưởng phòng» và «Trưởng Phòng» của cùng một chức vụ, gom phân biệt thì ô chọn hiện hai dòng trông giống hệt nhau và không ai bấm đúng được cái nào.
+**Migration `c5e2a8b31d47`** tạo bảng, thêm cột, và **nạp lại dữ liệu cũ**: gom các giá trị `position` phân biệt (bỏ khoảng trắng thừa, **không phân biệt hoa thường**) thành dòng danh mục rồi trỏ `position_id` của từng hồ sơ vào. Chạy thật trên MySQL local: 13 chức vụ dựng từ dữ liệu đang có, không hồ sơ nào mồ côi. ⚠️ Gom bỏ qua hoa thường là có chủ ý — dữ liệu thật có **Trưởng phòng** và **Trưởng Phòng** của cùng một chức vụ, gom phân biệt thì ô chọn hiện hai dòng trông giống hệt nhau và không ai bấm đúng được cái nào.
 
 **Nhập CSV** khớp tên vào danh mục (bỏ qua hoa thường / khoảng trắng thừa), không khớp thì **giữ chữ, `position_id = 0`** — cố ý **không tự tạo** dòng danh mục mới, vì tự tạo thì mỗi lỗi gõ trong một tệp CSV đẻ ra một chức vụ và danh mục vừa dọn lại đầy rác.
 
-**Bộ lọc** danh sách nhân sự đổi từ ô chữ sang ô chọn theo **`position_id`**: lọc bằng chữ thì đổi tên một chức vụ là mọi bộ lọc đã lưu trượt sạch, và `contains` còn khớp chuỗi con («Phó phòng» lọt vào kết quả tìm «Trưởng phòng»). Cột trong bảng vẫn đọc nhãn — một câu truy vấn là đủ.
+**Bộ lọc** danh sách nhân sự đổi từ ô chữ sang ô chọn theo **`position_id`**: lọc bằng chữ thì đổi tên một chức vụ là mọi bộ lọc đã lưu trượt sạch, và `contains` còn khớp chuỗi con (**Phó phòng** lọt vào kết quả tìm **Trưởng phòng**). Cột trong bảng vẫn đọc nhãn — một câu truy vấn là đủ.
 
 Test: `test_danh_muc_chuc_vu.py` (**20 ca**) + sửa số đếm entity ở `test_pham_vi_khai_du_b07.py` (54→55) và `test_pham_vi_luat_bat_bien.py` (BB3 + BB4).
 
 **Giao diện — bỏ hai ô, dời nút Thêm sang trang riêng** (08/09/2026, sau khi khách bấm thử).
 
-- **Bỏ cột + ô «Thứ tự hiển thị».** Người dùng cuối không có khái niệm đó: bảng hiện một cột toàn 10·20·130 mà không chỗ nào nói số ấy nghĩa gì. Nặng hơn, `hint` cũ hứa *"số nhỏ lên trước trong ô chọn"* — **lời hứa sai**, vì `make_crud_router` mặc định sắp theo `id desc` và chưa từng có ai sắp theo cột này. Nay ô chọn sắp theo **TÊN** (`sort_by=name` khai thẳng trong `use-job-positions.ts` và trong ô lọc ở `hr-filter-fields.ts`) — bỏ trống thì danh sách đổ ra theo thứ tự người ta gõ vào và **tự đổi chỗ mỗi lần có ai thêm một dòng**. Cột `sort_order` giữ nguyên dưới DB, migration vẫn nạp số.
-- **Bỏ ô «Phòng ban thường giữ».** Nó không chặn gì cả — gán chức vụ đó cho người phòng khác vẫn được, và chính `hint` của nó phải thú nhận điều ấy. Một ô bắt chọn rồi tự nói chọn xong cũng chẳng để làm gì thì thà đừng hỏi. Cột `department_id` giữ nguyên dưới DB và vẫn lọc được qua API.
-- **Nút «Thêm chức vụ» mở TRANG RIÊNG** `/hr/job-positions/new` (`CrudConfig.createRoute`, cùng khuôn với Loại nghỉ · Phòng họp · Ngày lễ · Xe · Tài xế) thay cho hộp thoại. Không phải vì form dài — còn 4 ô — mà vì mỗi ô kéo theo một hệ quả phải đọc TRƯỚC khi gõ: mã không sửa lại được, còn đổi tên là đổi luôn chức danh in trên phiếu của mọi người đang giữ. Hộp thoại buộc cắt ngắn những câu đó cho vừa khung.
+- **Bỏ cột + ô "Thứ tự hiển thị".** Người dùng cuối không có khái niệm đó: bảng hiện một cột toàn 10·20·130 mà không chỗ nào nói số ấy nghĩa gì. Nặng hơn, `hint` cũ hứa *"số nhỏ lên trước trong ô chọn"* — **lời hứa sai**, vì `make_crud_router` mặc định sắp theo `id desc` và chưa từng có ai sắp theo cột này. Nay ô chọn sắp theo **TÊN** (`sort_by=name` khai thẳng trong `use-job-positions.ts` và trong ô lọc ở `hr-filter-fields.ts`) — bỏ trống thì danh sách đổ ra theo thứ tự người ta gõ vào và **tự đổi chỗ mỗi lần có ai thêm một dòng**. Cột `sort_order` giữ nguyên dưới DB, migration vẫn nạp số.
+- **Bỏ ô "Phòng ban thường giữ".** Nó không chặn gì cả — gán chức vụ đó cho người phòng khác vẫn được, và chính `hint` của nó phải thú nhận điều ấy. Một ô bắt chọn rồi tự nói chọn xong cũng chẳng để làm gì thì thà đừng hỏi. Cột `department_id` giữ nguyên dưới DB và vẫn lọc được qua API.
+- **Nút "Thêm chức vụ" mở TRANG RIÊNG** `/hr/job-positions/new` (`CrudConfig.createRoute`, cùng khuôn với Loại nghỉ · Phòng họp · Ngày lễ · Xe · Tài xế) thay cho hộp thoại. Không phải vì form dài — còn 4 ô — mà vì mỗi ô kéo theo một hệ quả phải đọc TRƯỚC khi gõ: mã không sửa lại được, còn đổi tên là đổi luôn chức danh in trên phiếu của mọi người đang giữ. Hộp thoại buộc cắt ngắn những câu đó cho vừa khung.
 - **Tên đứng trước Mã** trong form: tên là thứ người khai đang nghĩ tới, mã thì bỏ trống được vì hệ thống tự sinh. Bắt gõ mã trước là chặn người ta ngay ở ô lẽ ra được phép bỏ qua.
 
 **Đếm ngược người giữ + cụm ảnh xếp chồng** (duoc-CR-322, 08/09/2026). Câu hỏi thật của người quản lý danh mục trước khi sửa hay dẹp một chức vụ là *ai đang mang chức danh này* — không có nó thì việc duy nhất làm được là bấm Xóa rồi đọc câu từ chối.
 
 > ⚠️ **ĐÍNH CHÍNH 19/09/2026 (duoc-CR-426) — phần dưới đây là LỊCH SỬ, không còn chạy.**
-> Khách yêu cầu bỏ hai cột «Đang giữ» và «Phòng ban đang giữ» khỏi bảng danh mục.
+> Khách yêu cầu bỏ hai cột **Đang giữ** và **Phòng ban đang giữ** khỏi bảng danh mục.
 > Đã gỡ luôn `GET /api/job-positions/stats` cùng hai hàm `count_holders_by_department`
 > và `list_holder_faces` — giữ một đường API không màn nào đọc thì lần sau có người
-> sửa nhầm cũng không ai biết. **Còn nguyên:** tab «Người đang giữ» ở trang chi tiết
+> sửa nhầm cũng không ai biết. **Còn nguyên:** tab **Người đang giữ** ở trang chi tiết
 > (nguồn duy nhất trả lời *ai đang mang chức danh này*), chốt chặn xóa, và luật
-> «chốt xóa đếm toàn công ty». Ô lọc phòng ban của tab đó nay đọc **danh mục phòng
-> ban** nên liệt kê mọi phòng và không kèm số người; mục «(Chưa gắn phòng ban)» phải
+> **chốt xóa đếm toàn công ty**. Ô lọc phòng ban của tab đó nay đọc **danh mục phòng
+> ban** nên liệt kê mọi phòng và không kèm số người; mục **(Chưa gắn phòng ban)** phải
 > tự thêm tay vì danh mục không có dòng nào mang `id = 0`. Cột nhận diện trên bảng
 > đổi từ `code` sang `id` (mã vẫn ở trong biểu mẫu và ở bộ lọc nâng cao). Đọc tiếp
 > phần dưới chỉ để hiểu **vì sao** từng làm vậy, đừng lấy làm đặc tả.
@@ -435,15 +435,15 @@ Test: `test_danh_muc_chuc_vu.py` (**20 ca**) + sửa số đếm entity ở `tes
 
 - ⚠️ **Tách endpoint riêng, không thêm `employee_count` vào `JobPositionResponse`** — serializer chạy cho từng dòng nên đếm ở đó là một truy vấn mỗi dòng, và nó chạy cả ở những chỗ chỉ cần tên chức vụ.
 - ⚠️ **`Employee.avatar` và `User.avatar` đều là `@property`, không phải cột.** Đưa vào `with_entities` là `ArgumentError` ngay lúc chạy (đã dính). Ảnh thật nằm ở `tab_file`, nối qua `tab_user.avatar_file_id`, và phải dựng lại đúng thứ tự ưu tiên `thumb_url or url` mà property kia đang dùng.
-- ⚠️ **Số bày cho người xem thì LỌC theo phạm vi dữ liệu** (`apply_scope` trên entity `employee`); **chốt chặn xóa thì KHÔNG** — đó là toàn vẹn dữ liệu, lọc theo phạm vi thì người chỉ thấy phòng mình xóa được chức vụ mà phòng khác đang giữ. Hai số lệch nhau được, nên câu chặn xóa nói rõ **«trên toàn công ty»**.
-- ⚠️ **Thiếu `employee.read` thì backend không ném 403** — nó lọc rồi trả rỗng. Giao diện phải tự tắt cột (`enabled: can(...)`), không thì mọi dòng hiện 0 và người đọc kết luận "chưa ai giữ chức vụ nào". Dấu «—» nói *không có thông tin*, chữ «Chưa ai giữ» nói *không có người*.
-- ⚠️ **«+N» tính từ `total`, không từ `holders.length`** — backend chỉ gửi 6 gương mặt mẫu; lấy độ dài mảng làm tổng thì chức vụ 40 người hiện ra «+2».
+- ⚠️ **Số bày cho người xem thì LỌC theo phạm vi dữ liệu** (`apply_scope` trên entity `employee`); **chốt chặn xóa thì KHÔNG** — đó là toàn vẹn dữ liệu, lọc theo phạm vi thì người chỉ thấy phòng mình xóa được chức vụ mà phòng khác đang giữ. Hai số lệch nhau được, nên câu chặn xóa nói rõ **trên toàn công ty**.
+- ⚠️ **Thiếu `employee.read` thì backend không ném 403** — nó lọc rồi trả rỗng. Giao diện phải tự tắt cột (`enabled: can(...)`), không thì mọi dòng hiện 0 và người đọc kết luận "chưa ai giữ chức vụ nào". Dấu **—** nói *không có thông tin*, chữ **Chưa ai giữ** nói *không có người*.
+- ⚠️ **"+N" tính từ `total`, không từ `holders.length`** — backend chỉ gửi 6 gương mặt mẫu; lấy độ dài mảng làm tổng thì chức vụ 40 người hiện ra **+2**.
 - ⚠️ **Đè ảnh nông lại `-space-x-1`** (mặc định của `AvatarGroup` là `-space-x-2`): vòng `size-6` đè 8px thì chỉ còn 16px lộ ra, **không đủ cho hai chữ viết tắt** — cả cụm đọc thành một vệt chữ dính nhau. Ảnh thật đè sâu vẫn đẹp, nhưng phần lớn hồ sơ **chưa có ảnh** (phải được cấp tài khoản mới có) nên chữ viết tắt là trường hợp thường gặp. Nền `bg-primary/10` vì viền của `AvatarGroup` là `ring-background`, tức trắng trên nền hàng trắng.
-- ⚠️ **Cột «Phòng ban đang giữ» xếp ảnh của PHÒNG BAN, không phải của người trong phòng** (sửa 08/09/2026, khách bấm thử). Bản đầu xếp gương mặt từng nhân viên theo phòng, và trên cùng một dòng nó **lặp lại đúng nhóm mặt của cột «Đang giữ» ngay bên cạnh** — hai cột nói cùng một điều, còn câu hỏi riêng của cột này (*phòng nào*) thì mất. Nay mỗi phòng là một vòng tròn mang chữ viết tắt tên phòng; tên đầy đủ ở `title` và ở tab «Người đang giữ». Kéo theo: `departments[].holders` bỏ khỏi API và `list_holder_faces` gom lại theo chức vụ (bản tách theo cặp *chức vụ × phòng ban* không còn ai đọc).
-- ⚠️ **Tab «Người đang giữ» phân trang THẬT** (sửa 08/09/2026). Bản đầu lấy 200 dòng một lượt rồi chỉ ghi một dòng chú thích khi vượt — nghĩa là chức vụ đông người thì phần đuôi **không xem được từ màn này**, phải sang màn Nhân sự lọc lại từ đầu; mà «Nhân viên» là chức vụ cả công ty cùng mang. Thanh công cụ của bảng có **ô tìm kiếm** (quét đồng thời mã NV · họ tên · email · SĐT qua `apply_keyword_search`, hoãn 350ms) + **ô lọc phòng ban** + **ô lọc tình trạng làm việc**, tất cả gom chung MỘT thẻ với bảng. Bản chip-một-thẻ-riêng đã bỏ: nó chiếm nguyên một khối chỉ để nói con số mà chân bảng đã nói, và dãy chip dài ra theo số phòng ban. ⚠️ Ô lọc tình trạng phải gửi **MÃ** chứ không phải nhãn — cột `status` lưu mã chuỗi (B-03); gửi nhãn thì backend vẫn nhận câu lọc, chỉ là trả về 0 dòng mà không báo lỗi gì (đúng bẫy CR-118). ⚠️ Câu «bảng rỗng» phải phân biệt *rỗng vì bộ lọc* với *rỗng vì thật sự chưa ai giữ*: một câu chung cho cả hai thì người vừa gõ nhầm một chữ đọc ra «chức vụ này chưa ai giữ» và tin là vậy.
-- ⚠️ Sentinel «mọi phòng ban» của ô lọc đó là **`-1`, không phải `0`** — nhóm giả «(Chưa gắn phòng ban)» mang đúng `id = 0`, lấy `0` làm «tất cả» thì chọn chính nhóm đó lại ra toàn bộ, và hồ sơ chưa gắn phòng thành thứ duy nhất không lọc ra được. Đổi **bất kỳ** bộ lọc nào cũng phải kéo trang về 1, nếu không đang đứng ở trang 4 mà lọc còn 3 người thì backend trả rỗng và người đọc hiểu là «phòng này không có ai». Dùng `usePageResetOnFilterChange` chứ không `useEffect(() => setPage(1), [...])`: effect chạy SAU khi commit nên lượt render đầu vẫn gọi API với số trang cũ — một request thừa vào trang không còn tồn tại; ESLint cũng chặn `setState` trong effect. Và theo dõi giá trị tìm kiếm **đã hoãn**, không theo ô nhập thô — theo ô nhập thì mỗi ký tự gõ ra một lần đặt lại trang, kể cả khi truy vấn chưa hề đổi.
+- ⚠️ **Cột "Phòng ban đang giữ" xếp ảnh của PHÒNG BAN, không phải của người trong phòng** (sửa 08/09/2026, khách bấm thử). Bản đầu xếp gương mặt từng nhân viên theo phòng, và trên cùng một dòng nó **lặp lại đúng nhóm mặt của cột "Đang giữ" ngay bên cạnh** — hai cột nói cùng một điều, còn câu hỏi riêng của cột này (*phòng nào*) thì mất. Nay mỗi phòng là một vòng tròn mang chữ viết tắt tên phòng; tên đầy đủ ở `title` và ở tab **Người đang giữ**. Kéo theo: `departments[].holders` bỏ khỏi API và `list_holder_faces` gom lại theo chức vụ (bản tách theo cặp *chức vụ × phòng ban* không còn ai đọc).
+- ⚠️ **Tab "Người đang giữ" phân trang THẬT** (sửa 08/09/2026). Bản đầu lấy 200 dòng một lượt rồi chỉ ghi một dòng chú thích khi vượt — nghĩa là chức vụ đông người thì phần đuôi **không xem được từ màn này**, phải sang màn Nhân sự lọc lại từ đầu; mà **Nhân viên** là chức vụ cả công ty cùng mang. Thanh công cụ của bảng có **ô tìm kiếm** (quét đồng thời mã NV · họ tên · email · SĐT qua `apply_keyword_search`, hoãn 350ms) + **ô lọc phòng ban** + **ô lọc tình trạng làm việc**, tất cả gom chung MỘT thẻ với bảng. Bản chip-một-thẻ-riêng đã bỏ: nó chiếm nguyên một khối chỉ để nói con số mà chân bảng đã nói, và dãy chip dài ra theo số phòng ban. ⚠️ Ô lọc tình trạng phải gửi **MÃ** chứ không phải nhãn — cột `status` lưu mã chuỗi (B-03); gửi nhãn thì backend vẫn nhận câu lọc, chỉ là trả về 0 dòng mà không báo lỗi gì (đúng bẫy CR-118). ⚠️ Câu **bảng rỗng** phải phân biệt *rỗng vì bộ lọc* với *rỗng vì thật sự chưa ai giữ*: một câu chung cho cả hai thì người vừa gõ nhầm một chữ đọc ra **chức vụ này chưa ai giữ** và tin là vậy.
+- ⚠️ Sentinel **mọi phòng ban** của ô lọc đó là **`-1`, không phải `0`** — nhóm giả **(Chưa gắn phòng ban)** mang đúng `id = 0`, lấy `0` làm **tất cả** thì chọn chính nhóm đó lại ra toàn bộ, và hồ sơ chưa gắn phòng thành thứ duy nhất không lọc ra được. Đổi **bất kỳ** bộ lọc nào cũng phải kéo trang về 1, nếu không đang đứng ở trang 4 mà lọc còn 3 người thì backend trả rỗng và người đọc hiểu là **phòng này không có ai**. Dùng `usePageResetOnFilterChange` chứ không `useEffect(() => setPage(1), [...])`: effect chạy SAU khi commit nên lượt render đầu vẫn gọi API với số trang cũ — một request thừa vào trang không còn tồn tại; ESLint cũng chặn `setState` trong effect. Và theo dõi giá trị tìm kiếm **đã hoãn**, không theo ô nhập thô — theo ô nhập thì mỗi ký tự gõ ra một lần đặt lại trang, kể cả khi truy vấn chưa hề đổi.
 - Trang chi tiết chạy **hết bề ngang** (`detailMaxWidth: 'max-w-none'`, cùng khuôn Sản phẩm · Nhà cung cấp · Phòng họp) — bó ở mức mặc định `max-w-5xl` thì bảng 4 cột nằm giữa hai khoảng trắng rộng bằng chính nó.
-- ⚠️ **Chữ viết tắt tên phòng lấy hai từ ĐẦU**, ngược với tên người (`nameInitials` lấy hai từ cuối) — và đó không phải bất nhất: tên người Việt xếp họ trước nên phần phân biệt nằm ở cuối, còn tên phòng đọc xuôi nên phần phân biệt nằm ngay đầu. Lấy hai từ cuối thì «Công nghệ thông tin» ra «TT», trùng với «Truyền thông». Cũng bỏ tiền tố *Phòng / Ban / Bộ phận…* trước khi viết tắt, không thì vòng tròn nào cũng bắt đầu bằng «P». Xem `shared/utils/name-initials.ts`.
+- ⚠️ **Chữ viết tắt tên phòng lấy hai từ ĐẦU**, ngược với tên người (`nameInitials` lấy hai từ cuối) — và đó không phải bất nhất: tên người Việt xếp họ trước nên phần phân biệt nằm ở cuối, còn tên phòng đọc xuôi nên phần phân biệt nằm ngay đầu. Lấy hai từ cuối thì **Công nghệ thông tin** ra **TT**, trùng với **Truyền thông**. Cũng bỏ tiền tố *Phòng / Ban / Bộ phận…* trước khi viết tắt, không thì vòng tròn nào cũng bắt đầu bằng **P**. Xem `shared/utils/name-initials.ts`.
 - **Bộ lọc nâng cao** (`filterConfig`: tên · mã · ghi chú · trạng thái). ⚠️ Mọi `name` phải nằm trong `filterable=[...]` của controller — tên ngoài danh sách bị `apply_filters` **bỏ qua trong im lặng**: người dùng đặt điều kiện, bấm Áp dụng, và nhận về nguyên danh sách cũ mà không có lỗi nào để lần.
 - `authorInitials` của diễn đàn dời lên `shared/utils/name-initials.ts` (6 tệp forum đổi import). Lấy hai chữ **cuối** vì họ người Việt đứng trước — "NV" trùng nhau ở nửa danh bạ công ty.
 - Bài kiểm bất biến **BB4 bắt được một việc thật**: `employee/position_controller.py` nay gọi `apply_scope`, nên phải rút tên nó khỏi danh sách miễn trừ.
@@ -454,13 +454,13 @@ Test: `test_danh_muc_chuc_vu.py` (**20 ca**) + sửa số đếm entity ở `tes
 | Nơi | Nội dung | Vì sao ở đó |
 |---|---|---|
 | `assistant/packs/60-nhan-su-ho-so.md` (~1 260 token) | Luật trợ lý **không được nói sai** + nhóm trường cấm đọc | Gói đi vào **mọi** câu hỏi, kể cả câu chẳng liên quan — nên chỉ nhét thứ mà nói sai là người dùng làm hỏng dữ liệu thật |
-| Bài HDSD *«Chức vụ & Hồ sơ nhân sự»* (`tab_help_article` id 139) | Các bước thêm · sửa tên · dẹp · nhập CSV · vì sao có ô không xem được | Chỉ nạp khi đúng chủ đề, qua `search_docs` |
+| Bài HDSD *Chức vụ & Hồ sơ nhân sự* (`tab_help_article` id 139) | Các bước thêm · sửa tên · dẹp · nhập CSV · vì sao có ô không xem được | Chỉ nạp khi đúng chủ đề, qua `search_docs` |
 
 ⚠️ Hai điều **chưa xong**, không phải sót:
 - **Chưa lập chỉ mục RAG cho bài đó.** `qdrant-client==1.12.1` có trong `requirements.txt` nhưng **chưa cài trong image `api` đang chạy** (image cũ hơn tệp requirements), nên `indexer.reindex_source` ném `ModuleNotFoundError`. Phải `docker compose up --build api` rồi gọi `POST /api/assistant/rag/reindex`. Trước khi làm việc đó, trợ lý **không** tra ra bài này bằng `search_docs` — nó chỉ biết phần luật trong gói.
 - **Bài HDSD mới chỉ nằm ở DB local.** Đưa sang dev-UAT/prod bằng cặp `scripts/hdsd_dump.py` → `hdsd_load.py` có sẵn, không cần viết script mới.
 
-⚠️ Trợ lý đọc hồ sơ nhân sự **chỉ 5 trường** của chính người hỏi (`assistant/service.py`, hàm dựng chân dung: họ tên · mã NV · **chức vụ** · phòng ban · công ty) và `full_name` của người duyệt. Không trường nhạy cảm nào, nên đường này không cần `sensitive.mask` — nhưng **thêm trường vào chân dung người hỏi thì phải kiểm lại đúng chỗ đó**. Lưu ý ô «chức vụ» nó đọc là `emp.position`, tức **nhãn đã chép**, không phải khóa.
+⚠️ Trợ lý đọc hồ sơ nhân sự **chỉ 5 trường** của chính người hỏi (`assistant/service.py`, hàm dựng chân dung: họ tên · mã NV · **chức vụ** · phòng ban · công ty) và `full_name` của người duyệt. Không trường nhạy cảm nào, nên đường này không cần `sensitive.mask` — nhưng **thêm trường vào chân dung người hỏi thì phải kiểm lại đúng chỗ đó**. Lưu ý ô **chức vụ** nó đọc là `emp.position`, tức **nhãn đã chép**, không phải khóa.
 
 
 ### 7.8. Chức vụ ở khổ điện thoại (duoc-CR-344 + duoc-CR-345, 10/09/2026)
@@ -468,7 +468,7 @@ Test: `test_danh_muc_chuc_vu.py` (**20 ca**) + sửa số đếm entity ở `tes
 Hai đợt bấm tay ở 390×844. Bốn điều đáng nhớ, **hai trong số đó không thuộc màn
 này** — chúng nằm ở tầng dùng chung nên chạm mọi trang chi tiết CRUD.
 
-**Danh sách + tab «Người đang giữ»: THẺ thay bảng, khai `mobileCard` HAI CHỖ.**
+**Danh sách + tab "Người đang giữ": THẺ thay bảng, khai `mobileCard` HAI CHỖ.**
 Bảng danh sách đi qua khung CRUD (`CrudConfig.mobileCard`), còn tab người đang
 giữ là một `DataTable` **dựng tay** trong `job-position-holders-panel.tsx` nên
 khung CRUD không với tới. Sửa mỗi chỗ đầu thì trang chi tiết vẫn cuộn ngang y
@@ -487,17 +487,17 @@ khi mọc huy hiệu số, nên ô tìm tụt 141→117px: bản vừa khít lú
 đuôi đúng lúc người dùng vừa chọn một bộ lọc — tức đúng lúc họ đang nhìn vào nó.
 
 ⚠️ **`getItemName` KHÔNG phải tiêu đề thẻ danh tính** — nó khai ra để trả lời câu
-*«xóa bản ghi nào»*, nên nó đính kèm mã. Thẻ danh tính đã bày chính cái mã ấy
+*xóa bản ghi nào*, nên nó đính kèm mã. Thẻ danh tính đã bày chính cái mã ấy
 thành huy hiệu ngay bên dưới, nên dùng lại nó là in hai lần một điều, và ở 390px
-tiêu đề cụt thành «…(Demo) (tru…» — phần bị hy sinh chính là phần trùng.
+tiêu đề cụt thành **…(Demo) (tru…** — phần bị hy sinh chính là phần trùng.
 `CrudDetailPage` nay tách đôi: thẻ dùng tên trần, câu xác nhận Xóa giữ bản đầy đủ.
 `RecordIdentityCard` cũng đổi `truncate` → `line-clamp-2`: tên là thứ duy nhất
 nói người ta đang mở bản ghi nào, cắt nó ở một dòng là cắt nhầm chỗ.
 
 ⚠️ **Thứ không điều khiển được gì thì đừng dựng** (duoc-CR-346, 10/09/2026 —
-luật chung, không riêng màn này). Chức vụ một người mở tab *«Người đang giữ»* ra
+luật chung, không riêng màn này). Chức vụ một người mở tab *Người đang giữ* ra
 là sáu ô điều khiển vây quanh một dòng nội dung: ô tìm · *Bộ lọc* · *Tải lại* ·
-ô «Hiển thị 20 dòng» · ba nút trang, trong đó hai nút xám và nút «1» bấm vào
+ô **Hiển thị 20 dòng** · ba nút trang, trong đó hai nút xám và nút **1** bấm vào
 đứng nguyên chỗ cũ. Nay `DataTablePagination` **im hẳn khi bảng rỗng** và **chỉ
 giữ con số tổng khi vừa đúng một trang** (chạm chân bảng của MỌI màn danh sách);
 thanh công cụ của tab tự tắt khi chức vụ chỉ có một người, và ô chọn phòng ban
@@ -510,12 +510,12 @@ nhất để bỏ lọc cũng biến mất theo.
 ⚠️ **Cùng cái bẫy đó suýt dính lần hai, ở chính chân bảng.** Ô chọn số dòng chết
 theo điều kiện KHÁC dãy nút trang, gộp lại là: chọn *100 dòng/trang* trên danh
 sách 80 dòng → còn một trang → ô chọn biến mất → không còn đường về 20 dòng/trang.
-Mốc đúng là *«có lựa chọn nào chia nổi danh sách này thành hai trang không»*, tức
+Mốc đúng là *có lựa chọn nào chia nổi danh sách này thành hai trang không*, tức
 so với **cỡ trang nhỏ nhất** (10), không so với cỡ trang đang dùng. Danh sách dài
 hơn một trang thì phân trang y như cũ — 200 người / 20 dòng vẫn ra 10 trang.
 
-**Ghim thanh công cụ trong tab** (duoc-CR-347, 10/09/2026). Tab *«Người đang
-giữ»* dùng `DETAIL_TOOLBAR_STICKY`, mốc **`top-[61px]`** = chiều cao hàng nút
+**Ghim thanh công cụ trong tab** (duoc-CR-347, 10/09/2026). Tab *Người đang
+giữ* dùng `DETAIL_TOOLBAR_STICKY`, mốc **`top-[61px]`** = chiều cao hàng nút
 *Lưu/Xóa* mà `CrudDetailPage` đã ghim sẵn ở `top-0`. Sửa cỡ nút hay đệm hàng đó
 thì phải đo lại số này. Cố ý **không ghim dải tab**: ghim cả hai là 166px trên
 788px nhìn thấy được.
@@ -529,8 +529,8 @@ kịp lượt đầu. Nay truyền `nodeKey` để hook dò lại.
 
 **Tab nhớ ở URL** (duoc-CR-348, 10/09/2026). `CrudDetailPage` nay đồng bộ tab
 đang mở vào `?tab=`, cùng khuôn với màn Hồ sơ nhân sự. Lý do không phải để có
-link đẹp: bấm một dòng trong tab *«Người đang giữ»* là **rời trang** sang hồ sơ
-nhân sự, và trước đó bấm Lùi thì tab nhảy về *«Thông tin»* — xem mười hai người
+link đẹp: bấm một dòng trong tab *Người đang giữ* là **rời trang** sang hồ sơ
+nhân sự, và trước đó bấm Lùi thì tab nhảy về *Thông tin* — xem mười hai người
 là mười hai lần mở lại tab, cuộn lại, lọc lại.
 
 ⚠️ Ghi bằng `replace` chứ không `push`, và **phải chốt lại theo danh sách tab CÓ
@@ -540,10 +540,10 @@ tới đó, không phải chuyện hiếm.
 
 ⚠️ **Nút lùi trong màn KHÁC nút Back của trình duyệt — kiểm phải bấm cả hai**
 (duoc-CR-349, 10/09/2026). CR trước sửa xong, đo bằng nút Back của trình duyệt
-và ra đúng; khách bấm nút **«← Danh sách nhân sự»** trong màn hình — thứ mà trên
+và ra đúng; khách bấm nút **← Danh sách nhân sự** trong màn hình — thứ mà trên
 điện thoại là nút lùi duy nhất trong tầm mắt — và nó vẫn ném về danh sách nhân
-sự. Nay hồ sơ nhân sự dùng `useBackTarget`: đến từ tab *«Người đang giữ»* của
-một chức vụ hay bảng thành viên của một phòng ban thì nút ghi **«Quay lại»** và
+sự. Nay hồ sơ nhân sự dùng `useBackTarget`: đến từ tab *Người đang giữ* của
+một chức vụ hay bảng thành viên của một phòng ban thì nút ghi **Quay lại** và
 trỏ đúng chỗ cũ (kèm `?tab=`); gõ thẳng URL thì vẫn về danh sách.
 
 ⚠️ Đường quay lại đi bằng **`state` của router, không bằng `?from=`**: đưa lên
@@ -564,7 +564,7 @@ kẻ chân làm neo đó. Hằng dùng chung ở `shared/ui/tab-underline.ts` (d
 
 Khách chốt 28/09/2026: mọi người dùng đã gắn hồ sơ nhân sự (`user.employee_id > 0`)
 **tự sửa được nhóm LIÊN HỆ của chính mình** ngay trên Trang cá nhân (`/me`, tab
-«Thông tin cá nhân»), không cần khóa `employee.write`. Lưu là **áp ngay**, không gửi
+**Thông tin cá nhân**), không cần khóa `employee.write`. Lưu là **áp ngay**, không gửi
 thông báo cho phòng Nhân sự, nhưng vẫn để lại dấu trong lịch sử hồ sơ như mọi lần
 sửa khác. Đây là phần đầu của C6 (§5.1) — chỉ nhóm liên hệ, không có bước duyệt lại.
 
@@ -591,38 +591,38 @@ phòng ban, chức vụ, tình trạng làm việc và mọi ô còn lại — v
   `user.employee_id` của phiên — không nhận id nào từ URL hay thân yêu cầu, nên
   không có cách trỏ sang hồ sơ người khác. Cùng lý lẽ với `GET /api/employees/me`
   (duoc-CR-378). Ba đường khai **trước** `/{eid}` và `/{eid}/contacts`, không thì
-  «me» rơi vào `eid: int` và ra 422.
+  **me** rơi vào `eid: int` và ra 422.
 - ⚠️ Khuôn dữ liệu `SelfContactUpdate` / `SelfContactsIn` khai **`extra="forbid"`**:
   gửi kèm `department_id`, `bank_account_no`, `company_id`… là **422**, không ô nào
-  được ghi. Cố ý không «lờ khóa lạ» — cửa mở cho mọi tài khoản thì phải từ chối to
+  được ghi. Cố ý không **lờ khóa lạ** — cửa mở cho mọi tài khoản thì phải từ chối to
   tiếng. Độ dài dùng đúng bí danh `Str25` / `Str500` của `EmployeeUpdate`.
-- Tài khoản chưa gắn hồ sơ nhân sự nhận **400** kèm câu «chưa gắn hồ sơ nhân sự»;
+- Tài khoản chưa gắn hồ sơ nhân sự nhận **400** kèm câu **chưa gắn hồ sơ nhân sự**;
   tài khoản trỏ tới hồ sơ đã xóa nhận **404**. Giao diện không dựng thẻ sửa cho hai
   trường hợp này.
-- **Nhật ký:** `core/audit.record` ghi một dòng trên entity `employee` («Tự sửa liên
-  hệ ở Trang cá nhân: số điện thoại, …» — chỉ kể ô ĐỔI THẬT; bấm Lưu mà không đổi gì
+- **Nhật ký:** `core/audit.record` ghi một dòng trên entity `employee` (**Tự sửa liên
+  hệ ở Trang cá nhân: số điện thoại, …** — chỉ kể ô ĐỔI THẬT; bấm Lưu mà không đổi gì
   thì không ghi), và lớp ORM `core/change_tracker` tự ghi giá trị trước/sau như mọi
   lần sửa hồ sơ.
-- **Giao diện:** thẻ «Địa chỉ» chỉ-xem cũ ở `/me` đổi thành thẻ **«Liên hệ»**
-  (`ProfileContactCard`) gồm ba ô kèm nút **«Sửa»** mở hộp thoại; ngay dưới là bảng
-  **«Người báo tin…»** dùng lại nguyên `EmployeePeopleEditor` của hồ sơ nhân sự (cùng
+- **Giao diện:** thẻ **Địa chỉ** chỉ-xem cũ ở `/me` đổi thành thẻ **Liên hệ**
+  (`ProfileContactCard`) gồm ba ô kèm nút **Sửa** mở hộp thoại; ngay dưới là bảng
+  **Người báo tin…** dùng lại nguyên `EmployeePeopleEditor` của hồ sơ nhân sự (cùng
   bộ cột `hr/config/employee-contact-columns.ts`, cùng trần 30 dòng, cùng chốt phím
   Enter). Hai nút lưu chặn bấm đúp bằng `useRef`. Lưu xong nạp lại Trang cá nhân,
   màn hồ sơ bên Nhân sự, danh sách nhân sự và phiên đăng nhập (số điện thoại ở thẻ
-  «Tài khoản»).
+  **Tài khoản**).
 - Không migration, không khóa quyền mới.
 
 ### 7.10. Đối chiếu với mã nguồn — đã có và còn treo (03/10/2026)
 
 Rà toàn bộ mục C/K/U của tài liệu này với mã nguồn nhánh `erp-v2` (HEAD sau duoc-CR-585). Chỉ ghi
-«đã có» khi tìm được chỗ trong mã.
+**đã có** khi tìm được chỗ trong mã.
 
 **Bốn quyết định của Quá trình công tác chốt 03/10/2026 (duoc-CR-585):**
 
 | # | Câu hỏi | Chốt |
 |---|---|---|
 | Q1 | Ngày hiệu lực vs Từ ngày | **GỘP**: `from_date` = ngày hiệu lực; `decision_date` (ngày ký QĐ) giữ riêng |
-| Q2 | Dòng «Thôi việc» có áp hồ sơ? | **CÓ** — hỏi «Chuyển hồ sơ sang nghỉ việc?» (hộp xác nhận riêng, nói rõ hệ quả khóa TK + đăng xuất); đồng ý → `update_employee` (nhánh `has_left_company` → `lock_linked_users`), `resign_date` = `from_date` của dòng |
+| Q2 | Dòng **Thôi việc** có áp hồ sơ? | **CÓ** — hỏi **Chuyển hồ sơ sang nghỉ việc?** (hộp xác nhận riêng, nói rõ hệ quả khóa TK + đăng xuất); đồng ý → `update_employee` (nhánh `has_left_company` → `lock_linked_users`), `resign_date` = `from_date` của dòng |
 | Q3 | HR tự sửa quá trình của mình | **CHẶN**, trừ quản trị hệ thống (`is_system_admin`) |
 | Q4 | Mở tệp QĐ của người khác | **Cần thêm `employee_sensitive.read`** (ngoài `employee.read` + phạm vi). Dòng lịch sử vẫn hiện; tệp được gác. Chính chủ luôn mở được tệp của mình |
 
@@ -631,29 +631,29 @@ Rà toàn bộ mục C/K/U của tài liệu này với mã nguồn nhánh `erp-
 | Mục | Hiện trạng | Chỗ trong mã |
 |---|---|---|
 | **Quá trình công tác (V1-8 bản gọn)** | Lịch sử công tác ghi tay theo người, tệp QĐ, áp hồ sơ; bốn quyết định (Q1–Q4) chốt 03/10/2026 | `employee/work_history_*.py` (7 tệp service/schema) · `frontend-v2/src/modules/hr/components/employee-tab-work-history.tsx` + 10 tệp khác · bộ mã `WorkEventType` ở `hr_work_history_codes.py` |
-| U1 | Tab «Tài khoản»: có/chưa có tài khoản, email, vai trò, trạng thái khóa, phiên và lịch sử đăng nhập | `hr/components/employee-account-card.tsx` (bao-CR-395) |
-| U2 | **Làm khác đặc tả:** nhân sự tự đặt mật khẩu, hệ tự tạo `tab_user` kèm vai trò mặc định «Nhân sự», không bắt đổi mật khẩu lần đầu | `employee/controller.py` `set_password` → `provision_user` (CR-022, CR-037, bao-CR-405) |
-| U3 | Chuyển «Đã nghỉ việc» hoặc tắt «Đang làm việc» thì tự khóa tài khoản, đá phiên, thu quyền bot | `employee/service.py` `has_left_company`, `lock_linked_users` (bao-CR-400) |
+| U1 | Tab **Tài khoản**: có/chưa có tài khoản, email, vai trò, trạng thái khóa, phiên và lịch sử đăng nhập | `hr/components/employee-account-card.tsx` (bao-CR-395) |
+| U2 | **Làm khác đặc tả:** nhân sự tự đặt mật khẩu, hệ tự tạo `tab_user` kèm vai trò mặc định **Nhân sự**, không bắt đổi mật khẩu lần đầu | `employee/controller.py` `set_password` → `provision_user` (CR-022, CR-037, bao-CR-405) |
+| U3 | Chuyển **Đã nghỉ việc** hoặc tắt **Đang làm việc** thì tự khóa tài khoản, đá phiên, thu quyền bot | `employee/service.py` `has_left_company`, `lock_linked_users` (bao-CR-400) |
 | U4, U5 | Đồng bộ email đăng nhập; mỗi nhân viên một tài khoản (chặn ở tầng ứng dụng) | `_sync_user_email_from_employee`; `user/service.py` |
 | C7 | Xuất CSV/XLSX chỉ có cột thường, lọc theo phạm vi | `employee/controller.py` `/export/csv`, `/export/xlsx` |
 | Kiêm nhiệm | Một nhân sự nhiều phòng ban (§4 đã sửa) | `employee/department_model.py` (CR-167) |
-| Báo cáo | «Biến động nhân sự», «Tình hình nghỉ phép», «Quỹ phép năm» ở phân hệ Báo cáo | `employee/report_*.py`, `leave/report_*.py` (duoc-CR-548) |
+| Báo cáo | **Biến động nhân sự**, **Tình hình nghỉ phép**, **Quỹ phép năm** ở phân hệ Báo cáo | `employee/report_*.py`, `leave/report_*.py` (duoc-CR-548) |
 
 **Còn treo:**
 
 | Ưu tiên | Mục | Tình trạng |
 |---|---|---|
-| ~~Cao~~ | **K3** — `APPROVER_DIRECT_MANAGER` | **Xong 01/10/2026 (duoc-CR-553).** Loại người duyệt thứ 8 «Quản lý trực tiếp người nộp» đọc `Employee.manager_id`; chưa gán / đã nghỉ / mọi tài khoản khóa / trỏ về chính mình thì lùi về trưởng bộ phận, màn xem trước luồng ghi rõ lý do lùi. ⚠️ Luồng duyệt **đang có** (kể cả luồng nghỉ phép seed sẵn) **không tự đổi** — muốn đơn đi quản lý trực tiếp thì sửa bước trong màn Luồng duyệt |
+| ~~Cao~~ | **K3** — `APPROVER_DIRECT_MANAGER` | **Xong 01/10/2026 (duoc-CR-553).** Loại người duyệt thứ 8 **Quản lý trực tiếp người nộp** đọc `Employee.manager_id`; chưa gán / đã nghỉ / mọi tài khoản khóa / trỏ về chính mình thì lùi về trưởng bộ phận, màn xem trước luồng ghi rõ lý do lùi. ⚠️ Luồng duyệt **đang có** (kể cả luồng nghỉ phép seed sẵn) **không tự đổi** — muốn đơn đi quản lý trực tiếp thì sửa bước trong màn Luồng duyệt |
 | **Cao** | **Q3** — Chặn HR tự sửa quá trình của mình | **Xong 03/10/2026 (duoc-CR-585).** Backend: `work_history_access.block_self_write`, chặn khi `created_by = user_id` và thiếu `is_system_admin`. Frontend: cờ `can_edit` từ backend, bấm Sửa/Xóa đẩy người dùng lên danh sách nếu không được phép |
 | ~~Cao~~ | ~~**U3 / V0-4** — màn kiểm việc duyệt đang treo trước khi khóa~~ | **Xong 22/10/2026** (duoc-CR-665, §7.13): hộp liệt kê việc người nghỉ đang giữ, chuyển từng việc / chuyển hết |
 | ~~Cao~~ | Nhật ký hệ thống lưu nguyên văn trường nhạy cảm | **Xong 02/10/2026 (duoc-CR-554)** cho dòng ghi MỚI. `tab_request_log`: mọi đường `/api/employees…` che 15 trường của `SENSITIVE_FIELDS` (cả thân gửi lên lẫn thân lỗi), hai cửa bảng con `/contacts`, `/families` che trọn `items`. `tab_change_log`: `tab_employee` che đúng 15 cột đó (vẫn ghi TÊN ô đổi, `is_masked = 1`); hai bảng con chỉ giữ `relation`, `gender`, `sort_order`, `employee_id`. Che theo đường dẫn / bảng chứ không theo tên ô, vì `tax_code`, `bank_account_no` của **nhà cung cấp** phải giữ giá trị. ⚠️ **Dòng cũ đã ghi trước 02/10 vẫn còn nguyên văn** — chưa dọn |
-| ~~TB~~ | ~~**C5** — in «Phiếu thông tin nhân viên» BM00../QT01/NS~~ | **Xong 23/10/2026** (duoc-CR-676, §7.14). Khuôn dựng theo danh sách trường vì chưa có tệp mẫu gốc |
+| ~~TB~~ | ~~**C5** — in **Phiếu thông tin nhân viên** BM00../QT01/NS~~ | **Xong 23/10/2026** (duoc-CR-676, §7.14). Khuôn dựng theo danh sách trường vì chưa có tệp mẫu gốc |
 | TB | **U2** — chốt theo đặc tả hay giữ cách hiện tại | Chờ quyết định |
 | ~~TB~~ | ~~CSV nhân sự gác bằng `read`~~ | **Xong 23/10/2026** (duoc-CR-660): cả CSV lẫn XLSX gác `export`, lọc theo phạm vi Xuất, che cột nhạy cảm |
 | ~~TB~~ | ~~**C6** — tự khai đầy đủ + nhân sự duyệt~~ | **Xong 23/10/2026** (duoc-CR-676, §7.14): bốn nhóm Cá nhân · Ngân hàng · Giấy tờ · Hộ gia đình đi qua đề nghị, phòng Nhân sự duyệt rồi mới áp; Liên hệ vẫn áp ngay (§7.9) |
 | Thấp | Ô nhập `extra_fields` | Backend có, frontend-v2 chưa có ô |
 | Thấp | U5 ở tầng dữ liệu | Cột chưa có ràng buộc duy nhất — hai lượt cấp cùng lúc có thể ra hai tài khoản |
-| Chờ chính sách | Người có `employee.write` phạm vi «tất cả» đặt được mật khẩu của người quyền cao hơn | Ghi chú tự nêu trong `_block_set_password_out_of_scope` |
+| Chờ chính sách | Người có `employee.write` phạm vi **tất cả** đặt được mật khẩu của người quyền cao hơn | Ghi chú tự nêu trong `_block_set_password_out_of_scope` |
 
 Các bước lớn tiếp theo của phân hệ (ngoài tài liệu này) đều **chưa bắt đầu hoặc làm dở**: Quyết định điều chuyển/bổ nhiệm **đầy đủ (V1-8)** — bản gọn đã có (duoc-CR-585), còn phiếu nhiều người · tờ trình · duyệt · thay thế cho, ~~Sơ đồ tổ chức (V2-6)~~ (xong 22/10/2026, §7.12) — tình trạng từng mục của lộ
 trình xem [`tham-khao-hrm/10-de-xuat-ap-dung.md` §0](../tham-khao-hrm/10-de-xuat-ap-dung.md).
@@ -686,14 +686,14 @@ trình xem [`tham-khao-hrm/10-de-xuat-ap-dung.md` §0](../tham-khao-hrm/10-de-xu
 | Bổ nhiệm | APPOINT | 3 | position | `update_employee` (chính) | Đổi chức vụ; nếu công ty/phòng khác cấp công ty/phòng trước |
 | Kiêm nhiệm | CONCURRENT | 4 | thêm dept/position | `set_extra_departments` | Thêm vào `tab_employee_department` (bảng con kiêm nhiệm) dòng `from_date`–`to_date` này; `to_date` rỗng → vẫn đang kiêm. Dòng kiêm này CHỈ sống ở lịch sử (không có form kiêm thường) |
 | Loại bỏ từ danh sách | DISMISS | 5 | company / dept / position → 0 | `update_employee` (chính) | Gỡ khỏi công ty / phòng ban / chức vụ; cần rõ ràng **không phải đã thôi việc** — vẫn còn làm |
-| **Thôi việc** | **RESIGN** | **6** | `has_left_company = True`, `resign_date = from_date` | `update_employee` (chính) + `lock_linked_users` | **Hộp xác nhận riêng** — lịch sử không thể phục hồi từ bước này. Nói rõ: «Chuyển hồ sơ sang đã nghỉ việc? Tài khoản sẽ bị khóa + thu hồi phiên + huỷ tất cả share docs.» |
+| **Thôi việc** | **RESIGN** | **6** | `has_left_company = True`, `resign_date = from_date` | `update_employee` (chính) + `lock_linked_users` | **Hộp xác nhận riêng** — lịch sử không thể phục hồi từ bước này. Nói rõ: **Chuyển hồ sơ sang đã nghỉ việc? Tài khoản sẽ bị khóa + thu hồi phiên + huỷ tất cả share docs.** |
 | Khác | OTHER | 9 | (không đổi hồ sơ) | Ghi chú hoàn toàn | |
 
 **Quyền và bộ lọc:**
 
 - `employee.write` (+ phạm vi như thường) để tạo/sửa/xóa dòng và áp hồ sơ.
 - **Q3 — Chặn HR tự sửa quá trình của mình** (`block_self_write`): người được ghi trong `created_by` không sửa được, trừ quản trị hệ thống.
-- **Q4 — Tệp QĐ** gác bằng `employee_sensitive.read` (cộng với `employee.read` + phạm vi). Dòng lịch sử vẫn hiện được; cột «Tệp đính kèm» nói rõ «Có N tệp» nhưng nút xem tắt. Chính chủ (`/me`) luôn xem được tệp của mình mà không cần `employee_sensitive.read`.
+- **Q4 — Tệp QĐ** gác bằng `employee_sensitive.read` (cộng với `employee.read` + phạm vi). Dòng lịch sử vẫn hiện được; cột **Tệp đính kèm** nói rõ **Có N tệp** nhưng nút xem tắt. Chính chủ (`/me`) luôn xem được tệp của mình mà không cần `employee_sensitive.read`.
 - **A9 — Cờ `can_edit` + `can_open_files`** tính ở backend, trả kèm danh sách. Frontend không tự ghép từ `can() + so id`.
 
 **Nâng lên V1-8 đầy đủ sau:**
@@ -713,38 +713,39 @@ DELETE /api/employees/{eid}/work-history/{hid}         (xóa)
 POST   /api/employees/{eid}/work-history/{hid}/apply   (áp vào hồ sơ)
 ```
 
-**Dòng tương lai (từ `from_date` > hôm nay):** lưu được, nhưng không cho áp. Nút Áp tắt kèm tooltip «Ngày hiệu lực phải bằng hoặc trước hôm nay». Khi tới ngày, HR bấm Áp để thực thi.
+**Dòng tương lai (từ `from_date` > hôm nay):** lưu được, nhưng không cho áp. Nút Áp tắt kèm tooltip **Ngày hiệu lực phải bằng hoặc trước hôm nay**. Khi tới ngày, HR bấm Áp để thực thi.
 
 
 
-**Bổ sung 03/10/2026 (đại ca xem bản đầu, rồi chốt tách tab):** bản đầu gộp hai khu vào MỘT tab «Quá trình công tác & Quyết định»; đại ca thấy gom một tab khó nhìn nên chốt TÁCH thành HAI TAB RIÊNG đứng cạnh nhau — «Quá trình công tác» (giá trị `work-history`, giữ nguyên để link cũ không gãy; mọi dòng, có thao tác) và «Quyết định bổ nhiệm» (giá trị `decisions`, chỉ dòng có `decision_no`, CHỈ XEM — rỗng thì có nút «Thêm ở tab Quá trình công tác» khi còn quyền sửa, bấm vào nhảy sang tab kia). Hai tab dùng CHUNG một truy vấn (`useEmployeeWorkHistory`) — TanStack Query cache theo key là đủ, không gọi API hai lần trong 30 giây. Mỗi tab tự có nút «Bảng | Dòng thời gian», giữ trên URL (`whView`/`decView`), mặc định Bảng. Một component dòng thời gian dùng chung cho cả hai tab (`hr/components/employee-work-history-timeline.tsx`); ở trang /me, hai khu nay là HAI TAB CON bên trong thẻ (`profile-work-history-card.tsx`), chỉ xem, không lưu lựa chọn vào URL. Backend không đổi.
+**Bổ sung 03/10/2026 (đại ca xem bản đầu, rồi chốt tách tab):** bản đầu gộp hai khu vào MỘT tab **Quá trình công tác & Quyết định**; đại ca thấy gom một tab khó nhìn nên chốt TÁCH thành HAI TAB RIÊNG đứng cạnh nhau — **Quá trình công tác** (giá trị `work-history`, giữ nguyên để link cũ không gãy; mọi dòng, có thao tác) và **Quyết định bổ nhiệm** (giá trị `decisions`, chỉ dòng có `decision_no`, CHỈ XEM — rỗng thì có nút **Thêm ở tab Quá trình công tác** khi còn quyền sửa, bấm vào nhảy sang tab kia). Hai tab dùng CHUNG một truy vấn (`useEmployeeWorkHistory`) — TanStack Query cache theo key là đủ, không gọi API hai lần trong 30 giây. Mỗi tab tự có nút **Bảng | Dòng thời gian**, giữ trên URL (`whView`/`decView`), mặc định Bảng. Một component dòng thời gian dùng chung cho cả hai tab (`hr/components/employee-work-history-timeline.tsx`); ở trang /me, hai khu nay là HAI TAB CON bên trong thẻ (`profile-work-history-card.tsx`), chỉ xem, không lưu lựa chọn vào URL. Backend không đổi.
 
 ### 7.12. Sơ đồ tổ chức vẽ từ dữ liệu (V2-6, duoc-CR-669, 22/10/2026)
 
 Menu **Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức** (`/hr/org-chart`). **Không lưu bản vẽ**: mỗi lần mở là đọc thẳng pháp nhân · phòng ban · nhân sự, nên đổi phòng hay đổi người quản lý xong sơ đồ tự đúng.
 
-- API `GET /api/org-chart` trả **dữ liệu phẳng** (pháp nhân · phòng ban có `parent` · nhân sự có `manager_id`), **5 truy vấn cố định**; giao diện dựng cây: pháp nhân › phòng ban (phòng con thụt vào) › người (cấp dưới thụt dưới người quản lý cùng phòng). Thẻ phòng gấp / mở được, mở sẵn hai tầng; đầu thẻ có «Trưởng phòng: …» và số người. Chịu được vòng `parent` / `manager` trong dữ liệu cũ (không treo).
+- API `GET /api/org-chart` trả **dữ liệu phẳng** (pháp nhân · phòng ban có `parent` · nhân sự có `manager_id`), **5 truy vấn cố định**; giao diện dựng cây: pháp nhân › phòng ban (phòng con thụt vào) › người (cấp dưới thụt dưới người quản lý cùng phòng). Thẻ phòng gấp / mở được, mở sẵn hai tầng; đầu thẻ có **Trưởng phòng: …** và số người. Chịu được vòng `parent` / `manager` trong dữ liệu cũ (không treo).
 - **Phạm vi người xem:** chỉ vẽ nhân sự trong `employee` scope; quản lý / trưởng phòng ngoài phạm vi bị ẩn danh (id `0`, không lộ tên); phòng ban hiện nếu trong phạm vi hoặc có người xem được ở đó, kèm chuỗi phòng cha. Người đã nghỉ việc / ngưng hoạt động không vẽ. Chỉ lấy cột công việc, không đụng nhóm nhạy cảm.
 - Quyền: `employee.read` (cả route lẫn API). Bài kiểm `test_so_do_to_chuc_cr669.py`.
+- **Công tắc "Sơ đồ tổ chức cho mọi nhân viên"** (Cài đặt nhân sự, duoc-CR-713, §7.17): khóa `org_chart_visible_to_all` mặc định BẬT. TẮT thì `/api/org-chart` trả 403 trừ người có `scope_condition(Employee, "employee", ...) is None` (không giới hạn công ty / phòng / người); giao diện hiện *Sơ đồ tổ chức chưa mở cho bạn*.
 
 ### 7.13. Kiểm việc duyệt đang treo trước khi khóa tài khoản (V0-4 / U3, duoc-CR-665, 22/10/2026)
 
-`GET /api/employees/{eid}/pending-work` (gác `employee.read` + `get_scoped`; che mã / tên phiếu mà người xem không đọc được) trả: việc duyệt còn chờ người này, và bước luồng duyệt chỉ đích danh người này (vai «người duyệt» hay «người dự phòng»).
+`GET /api/employees/{eid}/pending-work` (gác `employee.read` + `get_scoped`; che mã / tên phiếu mà người xem không đọc được) trả: việc duyệt còn chờ người này, và bước luồng duyệt chỉ đích danh người này (vai **người duyệt** hay **người dự phòng**).
 
-- Hộp «việc đang giữ» chen vào **bốn lối khóa**: lưu hồ sơ sang nghỉ việc, nút khóa ở tab Tài khoản, ổ khóa ở danh sách tài khoản (Quản trị ▸ Phân quyền tài khoản ▸ Người dùng), và dòng «Thôi việc» ở Quá trình công tác.
-- Chuyển việc đi **đường `reassign` / `handover` sẵn có** của bộ máy duyệt (từng việc, hoặc «Chuyển hết (N)»); cần quyền ghi `approval_flow`, không có thì hộp chỉ nêu và nhờ quản trị luồng.
-- **Cho qua có xác nhận, không chặn cứng** (tài liệu không đòi chặn; có người nghỉ đột xuất cần khóa ngay): còn việc treo thì nút đổi thành «Vẫn khóa … (còn việc treo)». Bước luồng chỉ nêu và dẫn tới luồng, không sửa tại hộp.
+- Hộp **việc đang giữ** chen vào **bốn lối khóa**: lưu hồ sơ sang nghỉ việc, nút khóa ở tab Tài khoản, ổ khóa ở danh sách tài khoản (Quản trị ▸ Phân quyền tài khoản ▸ Người dùng), và dòng **Thôi việc** ở Quá trình công tác.
+- Chuyển việc đi **đường `reassign` / `handover` sẵn có** của bộ máy duyệt (từng việc, hoặc **Chuyển hết (N)**); cần quyền ghi `approval_flow`, không có thì hộp chỉ nêu và nhờ quản trị luồng.
+- **Cho qua có xác nhận, không chặn cứng** (tài liệu không đòi chặn; có người nghỉ đột xuất cần khóa ngay): còn việc treo thì nút đổi thành **Vẫn khóa … (còn việc treo)**. Bước luồng chỉ nêu và dẫn tới luồng, không sửa tại hộp.
 - Bài kiểm `test_viec_treo_truoc_khoa_cr665.py`.
 
 ### 7.14. In Phiếu thông tin nhân viên và nhân viên tự đề nghị sửa hồ sơ (C5 + C6, duoc-CR-676, 23/10/2026)
 
-**In phiếu (C5).** Nút «In phiếu thông tin» có ở màn chi tiết nhân sự và ở Trang cá nhân. Phiếu khổ A4 có tên công ty, mã biểu mẫu BM00../QT01/NS, ngày ban hành 01/06/2025, bảy mục (Thông tin cá nhân · Công việc · Liên hệ · Ngân hàng · Giấy tờ và BHXH/BHYT · Người báo tin · Hộ gia đình) và hàng ký «Người khai» / «Phòng Nhân sự».
+**In phiếu (C5).** Nút **In phiếu thông tin** có ở màn chi tiết nhân sự và ở Trang cá nhân. Phiếu khổ A4 có tên công ty, mã biểu mẫu BM00../QT01/NS, ngày ban hành 01/06/2025, bảy mục (Thông tin cá nhân · Công việc · Liên hệ · Ngân hàng · Giấy tờ và BHXH/BHYT · Người báo tin · Hộ gia đình) và hàng ký **Người khai** / **Phòng Nhân sự**.
 
 - Hai đường in: `/print/employee-info/:id` gác `employee.read` như mọi trang in khác (luật `/print/` của `print-route-access.ts`), `/print/my-employee-info` cho chính chủ (chỉ đòi đăng nhập, đọc `/me`, `/me/contacts`, `/me/families`).
-- Ô nhạy cảm bị API che thì in thành ô trống, không in chữ «null»; hai bảng người báo tin và hộ gia đình chừa ít nhất 3 dòng để điền tay.
+- Ô nhạy cảm bị API che thì in thành ô trống, không in chữ **null**; hai bảng người báo tin và hộ gia đình chừa ít nhất 3 dòng để điền tay.
 - Chưa có tệp mẫu gốc: thứ tự mục và ô nằm trong một mảng cấu hình `hr/config/employee-info-print-sections.ts` — có tệp mẫu thì sửa đúng tệp đó.
 
-**Tự đề nghị sửa hồ sơ (C6).** Ở Trang cá nhân, thẻ «Đề nghị sửa hồ sơ» mở hộp thoại bốn tab, điền sẵn giá trị hiện tại, chỉ gửi những ô đã đổi. Phòng Nhân sự duyệt rồi hệ mới ghi vào hồ sơ. Nhóm Liên hệ (§7.9) không đổi: vẫn áp ngay.
+**Tự đề nghị sửa hồ sơ (C6).** Ở Trang cá nhân, thẻ **Đề nghị sửa hồ sơ** mở hộp thoại bốn tab, điền sẵn giá trị hiện tại, chỉ gửi những ô đã đổi. Phòng Nhân sự duyệt rồi hệ mới ghi vào hồ sơ. Nhóm Liên hệ (§7.9) không đổi: vẫn áp ngay.
 
 | Nhóm | Ô được đề nghị |
 |---|---|
@@ -754,8 +755,8 @@ Menu **Nhân sự ▸ Danh mục ▸ Sơ đồ tổ chức** (`/hr/org-chart`). 
 | Hộ gia đình | thay cả danh sách `tab_employee_family` |
 
 - Bảng `tab_employee_change_request` (migration `cr676chgreq01`): `status` SMALLINT theo `EmployeeChangeRequestStatus` (1 chờ duyệt · 2 đã duyệt · 3 từ chối · 4 đã rút), `changes` JSON (nhóm, ô, giá trị lúc gửi, giá trị đề nghị), `families` JSON, ghi chú, lý do từ chối, người và lúc quyết.
-- Mỗi người chỉ có **một** đề nghị đang chờ (gửi thêm → 409); không đổi gì → 400 «Không có thay đổi nào để gửi»; khóa lạ hoặc ô ngoài danh sách → 422. Chốt «một đề nghị chờ» nằm ở tầng ứng dụng, chưa có chỉ mục duy nhất.
-- Màn «Duyệt sửa hồ sơ» (`/hr/profile-change-requests`, gác `employee.write`, huy hiệu đếm số chờ trên menu): danh sách chỉ gồm người nằm trong phạm vi GHI của người xem; màn chi tiết so ba cột Lúc gửi · Hiện tại · Đề nghị, ô đã bị sửa sau lúc gửi được tô màu.
+- Mỗi người chỉ có **một** đề nghị đang chờ (gửi thêm → 409); không đổi gì → 400 **Không có thay đổi nào để gửi**; khóa lạ hoặc ô ngoài danh sách → 422. Chốt **một đề nghị chờ** nằm ở tầng ứng dụng, chưa có chỉ mục duy nhất.
+- Màn **Duyệt sửa hồ sơ** (`/hr/profile-change-requests`, gác `employee.write`, huy hiệu đếm số chờ trên menu): danh sách chỉ gồm người nằm trong phạm vi GHI của người xem; màn chi tiết so ba cột Lúc gửi · Hiện tại · Đề nghị, ô đã bị sửa sau lúc gửi được tô màu.
 - **Ai duyệt được:** có `employee.write` trong phạm vi; không tự duyệt đề nghị của chính mình, trừ quản trị hệ thống (cùng lý lẽ Q3 của §7.10); đề nghị đụng ô nhạy cảm (ngân hàng, giấy tờ, hộ gia đình, ngày sinh) thì người duyệt phải có `employee_sensitive.read`. Từ chối theo cùng luật và bắt buộc ghi lý do (tối đa 500 ký tự). Duyệt hay từ chối đều báo chuông cho người gửi.
 - Duyệt chạy trong **một giao dịch** qua đúng đường ghi hồ sơ sẵn có (`update_employee`, hàm đặt lại hộ gia đình), nên nhật ký thay đổi ghi trước / sau như mọi lần sửa; lỗi giữa chừng thì cả hồ sơ lẫn trạng thái đề nghị cùng lùi.
 - **Che thông tin nhạy cảm:** người xem không phải chính chủ và thiếu `employee_sensitive.read` nhận giá trị rỗng kèm cờ `masked` (hộ gia đình trả `null`); `tab_change_log` che nội dung JSON, ghi chú và lý do của bảng mới; nhật ký yêu cầu che các ô nhạy cảm lồng trong thân gửi lên.
@@ -772,9 +773,9 @@ Không có khóa quyền mới. Bài kiểm `test_yeu_cau_sua_ho_so_cr676.py` (3
 
 Anh Được chốt: lương nhập bằng **một chỗ trên hồ sơ** thay vì phải lập hợp đồng; **chỉ chính nhân sự đó xem được số**.
 
-- `tab_employee` + `salary_monthly`, `allowance_monthly` (đồng / tháng, 0 = chưa nhập), `salary_updated_at`. Màn: tab «Chung» › mục «Công việc» › nhóm «Lương».
-- **Đọc:** chính chủ thấy số (ở hồ sơ của mình và thẻ «Lương của tôi» ở Trang cá nhân, che mặc định, bấm con mắt). Mọi người khác — kể cả người nhập, admin, người có `employee_sensitive` hay `labor_contract` — chỉ thấy «Đã nhập (ẩn)» / «Chưa nhập» (cờ `salary_set`). Chốt che duy nhất ở `employee/sensitive.py` (`SALARY_FIELDS`, `is_self`).
-- **Ghi:** người có `employee.write` trong phạm vi; gõ số mới để thay, «Xóa số đã nhập» để xóa; để trống = giữ nguyên. Không ai tự đổi lương của mình. Không sắp xếp danh sách theo lương; nhập Excel bỏ qua cột lương; nhật ký / audit không giữ số.
+- `tab_employee` + `salary_monthly`, `allowance_monthly` (đồng / tháng, 0 = chưa nhập), `salary_updated_at`. Màn: tab **Chung** › mục **Công việc** › nhóm **Lương**.
+- **Đọc:** chính chủ thấy số (ở hồ sơ của mình và thẻ **Lương của tôi** ở Trang cá nhân, che mặc định, bấm con mắt). Mọi người khác — kể cả người nhập, admin, người có `employee_sensitive` hay `labor_contract` — chỉ thấy **Đã nhập (ẩn)** / **Chưa nhập** (cờ `salary_set`). Chốt che duy nhất ở `employee/sensitive.py` (`SALARY_FIELDS`, `is_self`).
+- **Ghi:** người có `employee.write` trong phạm vi; gõ số mới để thay, **Xóa số đã nhập** để xóa; để trống = giữ nguyên. Không ai tự đổi lương của mình. Không sắp xếp danh sách theo lương; nhập Excel bỏ qua cột lương; nhật ký / audit không giữ số.
 - **Ký HĐLĐ** (Nháp → Đã ký) tự chép lương cơ bản / phụ cấp của HĐ sang ô hồ sơ nếu HĐ đó là HĐ hiệu lực mới nhất. HĐ ký trước nhưng hiệu lực tương lai: tới ngày hiệu lực **chưa tự cập nhật** (chưa có việc chạy định kỳ) — sửa tay ô lương.
 - **Báo cáo Quỹ lương** (khóa 21) đọc ô này: ảnh chụp hiện tại, chỉ TỔNG theo pháp nhân · phòng ban · toàn công ty, nhóm dưới 3 người bị che, bấm số chỉ ra danh sách tên không kèm tiền; gác `employee.read` + được giao báo cáo 21. Xem `05-bao-cao-nhan-su.md` A5.
 
@@ -782,8 +783,25 @@ Anh Được chốt: lương nhập bằng **một chỗ trên hồ sơ** thay v
 
 - Cột `phone` giữ làm **số chính** (khoảng 15 chỗ đang đọc: tìm kiếm, phiếu in, trợ lý AI, đặt xe…) + `phone_label` (nhãn số chính) + `extra_phones` JSON: tối đa 4 số phụ `{number, label}`. Migration `emp_phones01`.
 - Luật số (`employee/phone_rules.py`): chữ số, khoảng trắng và `+ . - ( )`, 8–15 chữ số; không trùng nhau (bỏ ký tự phân cách rồi so), không trùng số chính. Không phải trường nhạy cảm (như `phone`).
-- Màn tab «Liên hệ & Ngân hàng» và hộp tự sửa liên hệ ở Trang cá nhân (§7.9): một danh sách «Số điện thoại» (nhãn + số, «Số chính» / «Đặt làm chính» / xóa, «+ Thêm số»), bên dưới một hàng hai ô địa chỉ (thường trú | tạm trú) + nút «Giống địa chỉ thường trú».
-- Tìm nhân sự theo số khớp cả số phụ (chỉ khi từ khóa toàn chữ số / ký tự phân cách, ≥ 3 chữ số). Xuất / nhập Excel có cột «Số điện thoại khác» dạng «số (nhãn); số».
+- Màn tab **Liên hệ & Ngân hàng** và hộp tự sửa liên hệ ở Trang cá nhân (§7.9): một danh sách **Số điện thoại** (nhãn + số, **Số chính** / **Đặt làm chính** / xóa, **+ Thêm số**), bên dưới một hàng hai ô địa chỉ (thường trú | tạm trú) + nút **Giống địa chỉ thường trú**.
+- Tìm nhân sự theo số khớp cả số phụ (chỉ khi từ khóa toàn chữ số / ký tự phân cách, ≥ 3 chữ số). Xuất / nhập Excel có cột **Số điện thoại khác** dạng **số (nhãn); số**.
+
+### 7.17. Cài đặt nhân sự — tab Nhân viên (duoc-CR-713, 02/11/2026)
+
+Trang **Cài đặt nhân sự** (`/hr/settings`, menu *Nhân sự ▸ Master ▸ Cài đặt nhân sự*) chép bố cục HR Settings của
+ERPNext: dải tab *Nhân viên · Nghỉ phép · Hợp đồng lao động*, nút *Lưu* ở đầu phải dải tab lưu cả ba tab. Gác
+`setting.read` / `setting.write`, lưu qua `PUT /api/settings` (nhóm khóa `hr`, chung nhật ký *Lịch sử thay đổi* của Cấu
+hình hệ thống), bộ đệm 30 giây. Tab *Nghỉ phép*: [02-nghi-phep.md §14](02-nghi-phep.md); tab *Hợp đồng lao động*:
+[04-hop-dong-lao-dong.md §A.8](04-hop-dong-lao-dong.md). Bài HDSD: *Nhân sự — Cài đặt nhân sự: mã nhân sự, sơ đồ tổ
+chức, nghỉ phép, hợp đồng* (`backend/scripts/seed_help_nhan_su.py`) — nội dung ở đây và ở seed phải khớp nhau.
+
+| Khóa | Nhãn trên màn | Mặc định | Luật | Đọc ở đâu |
+|---|---|---|---|---|
+| `employee_code_prefix` | Tiền tố mã nhân sự | `NSU` (để trống = NSU) | 2–10 chữ cái in hoa, không dấu, không số. Chỉ áp cho hồ sơ MỚI (tạo tay hoặc nhập Excel để trống Mã NV), mã = tiền tố + số tăng dần; mã đã cấp không đổi | `employee/service.employee_code_prefix()` — đừng gõ lại chuỗi "NSU" ở đường tạo hồ sơ mới |
+| `org_chart_visible_to_all` | Sơ đồ tổ chức cho mọi nhân viên | BẬT | TẮT → chỉ người xem được toàn bộ hồ sơ nhân sự mở được sơ đồ (§7.12) | `employee/org_chart_controller.py` |
+| `employee_anniversary_years` | Mốc kỷ niệm vào làm (năm) | `1, 3, 5, 10` | Số cách nhau bằng dấu phẩy, mỗi số 1–60, tối đa 10 mốc. Ô *Lịch nhắc trong tháng* ở Tổng quan Nhân sự liệt kê người tròn đúng các mốc | `employee/monthly_reminders_service.anniversary_years()` |
+
+Bài kiểm: `test/backend/test_cai_dat_nhan_su_cr713.py`; vitest `hr/components/hr-settings-form.test.tsx`.
 
 ## Hợp đồng lao động
 

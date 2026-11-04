@@ -124,6 +124,11 @@ celery_app.conf.update(
         },
         #  bao-CR-699: gộp dòng hàng hải quan trùng nửa tháng một lần — ngày 1 và 16 lúc 03:30 (sau đóng gói tháng 03:00
         #  ngày 1, trước dọn GET 03:40). Có công tắc customs_line_merge_enabled.
+        #  bao-CR-718: dọn tệp lô xuất toàn bộ tra cứu thị trường quá hạn + lô kẹt — 02:50, ngay sau dọn nhật ký dòng.
+        "cleanup-customs-export-batches": {
+            "task": "customs.cleanup_export_batches",
+            "schedule": crontab(hour=2, minute=50),
+        },
         "merge-customs-duplicate-lines": {
             "task": "customs.merge_duplicate_lines",
             "schedule": crontab(day_of_month="1,16", hour=3, minute=30),
@@ -181,7 +186,7 @@ celery_app.conf.update(
         # POS365_HARD_OFF: khi tắt thì không đưa các task này vào lịch beat.
         # coffee.mirror_balance (D-07) CHƯA có lịch — bật sau khi POC P5 xác nhận
         # PartnerSave ghi được Point.
-        # --- App đặt xe / duyệt dấu cũ (doc/dong-bo-dat-xe-duyet-dau/ §11).
+        # --- App đặt xe / duyệt dấu cũ (doc/erp/dat-xe/tai-lieu-ky-thuat/dong-bo-app-cu/ §11).
         # Đường chính là cái móc bên app cũ gọi thẳng vào ERP; hai vòng này là
         # lưới an toàn. Chưa bật SYNC_DATXE_ENABLED hoặc chưa khai khóa đọc
         # Firebase thì chúng kết thúc ngay bằng một dòng sổ SKIPPED.

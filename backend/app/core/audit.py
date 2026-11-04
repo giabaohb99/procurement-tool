@@ -40,7 +40,7 @@ def record(db: Session, user_id: int, entity: str, entity_id: int, action: str, 
     commit trước, nhưng "phần lớn" không đủ để đổi một nhịp đang chạy thật.
     P4 vì thế đóng lỗ dấu-vết-ma ở **lớp thay đổi** (`core/change_tracker.py`
     chỉ ghi thứ đã commit) chứ không đụng lớp này. BM-013 còn mở, đường đi đã
-    ghi ở `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md`.
+    ghi ở `doc/tai-lieu-ky-thuat/van-hanh/so-ghi-nhan-loi-bao-mat.md`.
     """
     from app.modules.audit.model import AuditLog
 

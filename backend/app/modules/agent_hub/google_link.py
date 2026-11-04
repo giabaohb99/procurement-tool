@@ -30,6 +30,7 @@ from app.core import app_settings
 from app.core.config import settings
 
 from .model import AgentGoogleLink
+import contextlib
 
 log = logging.getLogger("app.agent_hub.google")
 
@@ -181,10 +182,8 @@ def access_token(db: Session, link: AgentGoogleLink) -> str:
 def revoke(db: Session, link: AgentGoogleLink) -> None:
     token = app_settings._decrypt(link.refresh_token_enc or "", "google.refresh_token")
     if token:
-        try:
+        with contextlib.suppress(requests.RequestException):
             requests.post(REVOKE_URL, params={"token": token}, timeout=TIMEOUT)
-        except requests.RequestException:
-            pass
     link.revoked_at = datetime.now()
     db.commit()
 

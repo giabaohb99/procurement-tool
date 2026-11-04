@@ -7,8 +7,8 @@ Hai thứ mới của CR-159 ngoài chuyện hiển thị:
   tháng nữa không ai biết trong đó có gì và module Nghỉ phép đọc ra rác.
 
 * `APPROVER_DEPT_HEAD_OF` — trưởng bộ phận của phòng ban CHỈ ĐỊNH. Trước đây chỉ
-  có "trưởng bộ phận của người nộp", nên không khai nổi bước có thật như «đơn
-  nghỉ phép của mọi phòng đều qua trưởng phòng Nhân sự».
+  có "trưởng bộ phận của người nộp", nên không khai nổi bước có thật như "đơn
+  nghỉ phép của mọi phòng đều qua trưởng phòng Nhân sự".
 """
 import pytest
 from fastapi import HTTPException
@@ -48,7 +48,7 @@ def test_loai_chua_khai_hinh_dang_thi_khong_luu_gi(db):
 
 
 def test_gui_rong_thi_khong_luu_de_con_luu_duoc_ban_nhap(db):
-    """Chốt «phải nhập đủ» đặt ở lúc GỬI DUYỆT, không phải lúc lưu nháp."""
+    """Chốt "phải nhập đủ" đặt ở lúc GỬI DUYỆT, không phải lúc lưu nháp."""
     assert type_metadata.sanitize("GNP", {}, 7) is None
     assert type_metadata.sanitize("GNP", None, 7) is None
 
@@ -71,7 +71,7 @@ def test_loai_nghi_khong_co_trong_danh_muc_bi_chan(db):
 
 
 def test_nghi_tu_chieu_den_sang_cung_ngay_la_khoang_trong(db):
-    """Nửa ngày phải khai được, nhưng «chiều → sáng» cùng ngày thì vô nghĩa."""
+    """Nửa ngày phải khai được, nhưng "chiều → sáng" cùng ngày thì vô nghĩa."""
     with pytest.raises(HTTPException):
         type_metadata.sanitize("GNP", _don(
             from_date="2026-09-01", to_date="2026-09-01",
@@ -229,7 +229,7 @@ def test_nguoi_nop_o_phong_khac_van_ra_dung_truong_phong_da_khai(db, departments
 
 
 def test_khai_nhieu_phong_thi_giu_dung_thu_tu_khai(db, departments):
-    """Bước «lần lượt» đọc thứ tự này — `IN (...)` không hứa thứ tự trả về."""
+    """Bước "lần lượt" đọc thứ tự này — `IN (...)` không hứa thứ tự trả về."""
     ref = f"{departments['TC']['phong']},{departments['NS']['phong']}"
     assert approver_resolver.resolve(db, _buoc(ref), {}, None) == [
         departments["TC"]["truong"], departments["NS"]["truong"]]

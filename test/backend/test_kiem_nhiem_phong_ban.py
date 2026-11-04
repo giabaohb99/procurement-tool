@@ -107,7 +107,7 @@ def test_go_khoi_moi_phong_van_hop_le(db, san):
 def test_nhan_su_cua_phong_tinh_ca_nguoi_KIEM_NHIEM(db, san):
     """Truy vấn cũ lọc `Employee.department_id == X` nên bỏ sót người kiêm nhiệm.
 
-    Hệ quả: thông báo gửi cho «trưởng phòng CNTT» không tới người kiêm nhiệm
+    Hệ quả: thông báo gửi cho "trưởng phòng CNTT" không tới người kiêm nhiệm
     phòng đó, và quân số phòng đếm thiếu.
     """
     dv.set_departments(db, san["nguoi"], [san["phong"]["P_KT"], san["phong"]["P_IT"]], ACTOR)
@@ -150,9 +150,9 @@ def test_khong_tu_doi_phong_ban_cua_chinh_minh(db, san):
 def test_self_edit_profile_keeping_same_department_is_allowed(db, san):
     """bao-CR-507 — màn hồ sơ gửi lại MỌI ô mỗi lần lưu, kể cả ô phòng ban.
 
-    Trước đây cửa PATCH chặn theo «có gửi department_id» nên người có
-    `employee.write` sửa số điện thoại của CHÍNH MÌNH ăn câu «không tự đổi phòng
-    ban» dù không đổi gì ở đó (đại ca báo 28/09/2026). Giữ nguyên phòng = cho qua;
+    Trước đây cửa PATCH chặn theo "có gửi department_id" nên người có
+    `employee.write` sửa số điện thoại của CHÍNH MÌNH ăn câu "không tự đổi phòng
+    ban" dù không đổi gì ở đó (đại ca báo 28/09/2026). Giữ nguyên phòng = cho qua;
     đổi phòng thật = vẫn chặn.
     """
     from app.core.auth import perm_cache_clear
@@ -292,7 +292,7 @@ def test_doi_phong_ban_thi_XOA_CACHE_quyen(db, san):
 
 
 def test_chia_van_ban_theo_phong_tinh_ca_phong_kiem_nhiem(db, san):
-    """Chia văn bản cho «phòng Kế toán» thì người kiêm nhiệm phòng đó phải nhận,
+    """Chia văn bản cho "phòng Kế toán" thì người kiêm nhiệm phòng đó phải nhận,
     dù phòng CHÍNH của họ là phòng khác."""
     from app.modules.document.access_model import SUBJECT_DEPARTMENT
     from app.modules.document.access_service import subject_pairs
@@ -342,6 +342,61 @@ def test_doi_phong_chinh_KHONG_lam_mat_phong_kiem_nhiem(db, san):
     remaining = dv.departments_of(db, san["nguoi"].id)
     assert remaining[0] == san["phong"]["P_IT"], "phòng chính đổi theo"
     assert san["phong"]["P_NS"] in remaining, "phòng kiêm nhiệm phải còn"
+    assert san["phong"]["P_KT"] not in remaining, "phòng chính CŨ bị gỡ (bao-CR-709)"
+
+
+# ── bao-CR-709: đổi phòng chính thì phòng cũ gỡ hay giữ ──────────────────────
+
+def _move_to_it(db, san, **extra):
+    from app.modules.employee import service as emp_service
+    from app.modules.employee.schema import EmployeeUpdate
+
+    obj = db.get(Employee, san["nguoi"].id)
+    out = emp_service.update_employee_core(
+        db, obj, EmployeeUpdate(department_id=san["phong"]["P_IT"], **extra), ACTOR)
+    db.commit()
+    return out
+
+
+def test_doi_phong_chinh_mac_dinh_GO_phong_cu(db, san):
+    """Ca NSU012 (31/10/2026): chuyển phòng mà phòng cũ âm thầm thành kiêm nhiệm thì
+    người đó vẫn thấy phiếu của phòng cũ. Mặc định phải gỡ."""
+    out = _move_to_it(db, san)
+
+    assert dv.departments_of(db, san["nguoi"].id) == [san["phong"]["P_IT"]]
+    perm_cache_clear(san["tai_khoan"].id)
+    assert get_perm_profile(db, san["tai_khoan"])["dept_ids"] == [san["phong"]["P_IT"]]
+    assert 'Đổi phòng chính — gỡ phòng cũ "Phòng Kế toán"' in out.notes
+
+
+def test_doi_phong_chinh_chon_GIU_thi_phong_cu_thanh_kiem_nhiem(db, san):
+    out = _move_to_it(db, san, keep_old_department=True)
+
+    assert dv.departments_of(db, san["nguoi"].id) == [san["phong"]["P_IT"], san["phong"]["P_KT"]]
+    assert dv.extra_departments_of(db, san["nguoi"].id) == [san["phong"]["P_KT"]]
+    assert 'Đổi phòng chính — giữ phòng cũ "Phòng Kế toán" làm kiêm nhiệm' in out.notes
+
+
+def test_co_giu_phong_cu_KHONG_thanh_cot_ho_so(db, san):
+    """`keep_old_department` là cờ điều khiển — không được `setattr` lên bản ghi."""
+    _move_to_it(db, san, keep_old_department=True)
+    assert "keep_old_department" not in vars(db.get(Employee, san["nguoi"].id))
+
+
+def test_luu_lai_cung_phong_KHONG_go_kiem_nhiem(db, san):
+    """Màn hồ sơ gửi lại MỌI ô mỗi lần lưu — phòng không đổi thì không đụng gì."""
+    from app.modules.employee import service as emp_service
+    from app.modules.employee.schema import EmployeeUpdate
+
+    dv.set_departments(db, san["nguoi"], [san["phong"]["P_KT"], san["phong"]["P_NS"]], ACTOR)
+    db.commit()
+    obj = db.get(Employee, san["nguoi"].id)
+    out = emp_service.update_employee_core(
+        db, obj, EmployeeUpdate(department_id=san["phong"]["P_KT"]), ACTOR)
+    db.commit()
+
+    assert dv.departments_of(db, san["nguoi"].id) == [san["phong"]["P_KT"], san["phong"]["P_NS"]]
+    assert not any("phòng chính" in n for n in out.notes)
 
 
 def test_tao_moi_nhan_su_co_luon_dong_kiem_nhiem(db, seed, san):
@@ -359,8 +414,8 @@ def test_tao_moi_nhan_su_co_luon_dong_kiem_nhiem(db, seed, san):
 # ── Kiêm nhiệm là thứ RIÊNG, không gộp với phòng chính ───────────────────────
 
 def test_kiem_nhiem_KHONG_gom_phong_chinh(db, san):
-    """Phòng chính là ô «Phòng ban» của hồ sơ, kiêm nhiệm là các phòng phụ trách
-    THÊM. Gộp hai cái vào một danh sách rồi quy ước «phần tử đầu là phòng chính»
+    """Phòng chính là ô "Phòng ban" của hồ sơ, kiêm nhiệm là các phòng phụ trách
+    THÊM. Gộp hai cái vào một danh sách rồi quy ước "phần tử đầu là phòng chính"
     là dựng ra một luật ngầm mà người dùng không có cách nào biết."""
     dv.set_extra_departments(db, san["nguoi"],
                       [san["phong"]["P_IT"], san["phong"]["P_NS"]], ACTOR)

@@ -1,4 +1,4 @@
-"""bao-CR-522 — cột «Tên trên hóa đơn» ở popup Lịch sử mua hàng của ĐMH.
+"""bao-CR-522 — cột "Tên trên hóa đơn" ở popup Lịch sử mua hàng của ĐMH.
 
 Lần mua qua ĐMH trên hệ có sẵn tên trong `extra.invoice_name`; dòng dữ liệu cũ (nạp Excel) không
 có, nên lùi về tên đang khai ở danh mục sản phẩm và GẮN CỜ để giao diện không trình bày nó như

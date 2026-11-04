@@ -70,7 +70,7 @@ def test_ban_in_tra_co_prepay(db, seed, payable, cap_quyen):
 
     Phải cấp quyền thật cho người in: từ 05/09/2026 route `/print` nạp phiếu qua
     `get_scoped` (P0 #4), nên `user=None` không còn qua cổng. Bài này canh NỘI DUNG bản
-    in, không canh phân quyền — cấp phạm vi «tất cả» cho khỏi vướng.
+    in, không canh phân quyền — cấp phạm vi "tất cả" cho khỏi vướng.
     """
     from types import SimpleNamespace
 

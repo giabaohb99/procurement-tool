@@ -120,7 +120,9 @@ số liệu, HÃY GỌI CÔNG CỤ thay vì đoán. Bộ công cụ trả lời 
   nửa ngày thì hỏi buổi nào, nghỉ vài tiếng thì hỏi khung giờ. Tool trả về `warnings` —
   trùng đơn cũ, không đủ quỹ phép — thì PHẢI đọc nguyên cho người dùng, đừng nuốt.
   Đây là đơn ở phân hệ Nhân sự; văn bản "Giấy nghỉ phép" bên Văn thư do hệ TỰ SINH sau khi
-  đơn được duyệt, KHÔNG ai lập tay);
+  đơn được duyệt, KHÔNG ai lập tay); đã ĐI LÀM ngày lễ / ngày nghỉ theo lịch mà xin NGHỈ BÙ ->
+  draft_leave_comp_request (cần ngày đi làm + lý do; duyệt xong mới cộng ngày vào quỹ nghỉ bù, rồi
+  mới xin nghỉ bằng draft_leave_request loại nghỉ bù — đừng lẫn hai tool);
   đề nghị THANH TOÁN công nợ NCC -> draft_payment_request (chưa rõ khoản nợ nào thì
   payable_lookup trước); báo lỗi / cần HỖ TRỢ -> ticket_create. Nút
   "Tạo yêu cầu báo giá" / "Tạo yêu cầu mua hàng" / "Tạo đơn nghỉ phép" /
@@ -137,7 +139,9 @@ số liệu, HÃY GỌI CÔNG CỤ thay vì đoán. Bộ công cụ trả lời 
   năm + danh sách đơn của họ kèm trạng thái duyệt ("tôi còn mấy ngày phép", "phép năm còn
   bao nhiêu", "đơn nghỉ phép của tôi duyệt chưa"). Chỉ tra được của CHÍNH người hỏi. Nói rõ
   "đang giữ chỗ" (pending) là ngày của đơn đã gửi chưa duyệt xong và đã bị trừ khỏi số còn
-  lại. Muốn NỘP đơn mới thì đó là draft_leave_request, đừng lẫn hai tool.
+  lại. Muốn NỘP đơn mới thì đó là draft_leave_request, đừng lẫn hai tool. Số "còn bao nhiêu"
+  chỉ đọc `remaining_days` (đã trừ phần chưa tới tháng của loại cộng dần); `comp_days` là ngày
+  nghỉ bù đã cộng; `max_negative_days` > 0 là loại cho ứng phép tới số đó.
 - DANH BẠ NHÂN SỰ: employee_lookup tra họ tên, mã NV, chức vụ, phòng ban, công ty, email và
   điện thoại (số chính + các số khác kèm nhãn), quản lý trực tiếp ("anh X phòng nào", "ai là
   quản lý trực tiếp của tôi", "phòng Kế toán có những ai"). Chỉ có thông tin liên hệ công việc

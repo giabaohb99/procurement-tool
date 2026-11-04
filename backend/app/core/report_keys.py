@@ -9,7 +9,7 @@ Luật bất biến — đọc trước khi sửa:
   - Số đã cấp cho một báo cáo thì GIỮ NGUYÊN mãi mãi, không gán lại cho báo cáo
     khác (một dòng `tab_report_access` cũ sẽ áp NHẦM báo cáo nếu số bị tái dùng).
   - Báo cáo bị bỏ thì để TRỐNG số đó (không dồn số xuống) — cùng luật với
-    `product_code` (xem `doc/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`).
+    `product_code` (xem `doc/erp/mat-hang/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`).
   - Báo cáo mới → cấp số TIẾP THEO sau số lớn nhất đang có, không chèn vào giữa.
 
 Thuần stdlib (không import SQLAlchemy) vì `code_sets.py` phải nạp được ở máy
@@ -28,7 +28,7 @@ from app.core.status_catalog import Code, CodeSet, register
 
 
 class ReportKey(IntEnum):
-    """28 báo cáo đang chạy (số 25 đã bỏ, để trống) của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
+    """29 báo cáo đang chạy (số 25 đã bỏ, để trống) của phân hệ Báo cáo — bảng khóa ↔ tệp controller nằm ở
     phase-02 của plan `261002-0836-phan-quyen-tung-bao-cao`."""
 
     PURCHASE_REPORT = 1      # Báo cáo mua hàng (Thu mua)
@@ -60,6 +60,7 @@ class ReportKey(IntEnum):
     PROFILE_CHANGES = 27      # Yêu cầu sửa hồ sơ (Nhân sự) — duoc-CR-689
     ROOM_USAGE = 28           # Sử dụng phòng họp (Nhân sự) — duoc-CR-689
     LEGAL_WATCH = 29          # Đối tượng cần chú ý theo luật (Nhân sự) — duoc-CR-689; có ngày sinh, con nhỏ
+    HOLIDAY_WORK = 30         # Làm việc vào ngày lễ, ngày nghỉ (Nhân sự) — duoc-CR-717; nguồn phiếu nghỉ bù
 
 
 #  Số đã cấp rồi BỎ (để trống, không tái cấp) — test "khóa liên tục" cho phép đúng các khoảng trống này.
@@ -97,6 +98,7 @@ REPORT_META: dict[ReportKey, tuple[str, str]] = {
     ReportKey.PROFILE_CHANGES: ("Yêu cầu sửa hồ sơ", "Nhân sự"),
     ReportKey.ROOM_USAGE: ("Sử dụng phòng họp", "Nhân sự"),
     ReportKey.LEGAL_WATCH: ("Đối tượng cần chú ý theo luật", "Nhân sự"),
+    ReportKey.HOLIDAY_WORK: ("Làm việc vào ngày lễ, ngày nghỉ", "Nhân sự"),
 }
 
 #  `value` là SỐ VIẾT DƯỚI DẠNG CHUỖI — khung `status_catalog` dùng mã chuỗi,

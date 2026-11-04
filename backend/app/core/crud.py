@@ -52,7 +52,7 @@ def commit_or_conflict(db: Session, message: str) -> None:
 def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchema,
                      filterable, unique_field="code", code_prefix=None, csv_headers=None,
                      before_create=None, before_update=None, before_delete=None,
-                     sort_nulls_last=(), csv_import=True):
+                     sort_nulls_last=(), csv_import=True, audit_entity=None):
     """Ba chốt chặn riêng của từng danh mục, đều tùy chọn.
 
     - `before_create(db, data)` — gọi trước khi dựng bản ghi. Dùng cho ràng buộc
@@ -79,6 +79,9 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
     danh mục CÓ chiều pháp nhân sau này không phải nhớ tự thêm.
     """
     router = APIRouter(prefix=prefix, tags=[entity])
+    #  duoc-CR-717: danh mục mượn khóa quyền của danh mục khác (Chính sách nghỉ phép, Ngày cấm nghỉ gác bằng `leave_type`)
+    #  phải ghi nhật ký dưới tên RIÊNG, không thì nhật ký của chính sách #2 hiện lẫn ở trang Loại nghỉ #2.
+    log_entity = audit_entity or entity
 
     def out(o):
         d = OutSchema.model_validate(o).model_dump()
@@ -125,7 +128,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         commit_or_conflict(db, f"{unique_field} đã tồn tại" if unique_field
                            else "Dữ liệu vi phạm ràng buộc duy nhất")
         db.refresh(o)
-        record(db, user.id, entity, o.id, "create")
+        record(db, user.id, log_entity, o.id, "create")
         return success(out(o), "Đã tạo", 201)
 
     @router.patch("/{oid}")
@@ -143,7 +146,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         commit_or_conflict(db, f"{unique_field} đã tồn tại" if unique_field
                            else "Dữ liệu vi phạm ràng buộc duy nhất")
         db.refresh(o)
-        record(db, user.id, entity, oid, "update")
+        record(db, user.id, log_entity, oid, "update")
         return success(out(o), "Đã cập nhật")
 
     @router.delete("/{oid}")
@@ -157,7 +160,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         reference_guard.ensure_deletable(db, entity, o)      # ai-CR-189: đang được tham chiếu → chỉ ngưng dùng
         soft = remove_or_mark_deleted(db, o, user.id)
         db.commit()
-        record(db, user.id, entity, oid, "delete", "Xóa mềm" if soft else "")
+        record(db, user.id, log_entity, oid, "delete", "Xóa mềm" if soft else "")
         return success(None, "Đã xóa")
 
     if csv_headers:
@@ -255,6 +258,9 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
                 else:
                     if not is_active: continue
                     if not code and code_prefix:
+                        #  Nhập CSV dòng mới không có mã: trước đây gọi `generate_code` mà không import
+                        #  (chỉ nhánh tạo đơn lẻ ở trên có import cục bộ) → NameError, cả lô hỏng.
+                        from app.core.utils import generate_code
                         data["code"] = generate_code(db, Model, code_prefix)
                     
                     new_obj = Model(**data, is_active=is_active, created_by=user.id, updated_by=user.id)

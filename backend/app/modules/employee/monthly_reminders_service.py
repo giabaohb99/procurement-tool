@@ -20,6 +20,7 @@ from datetime import date
 from sqlalchemy import extract
 from sqlalchemy.orm import Session
 
+from app.core import app_settings
 from app.core.labor_contract_codes import LaborContractType
 from app.modules.department.model import Department
 from app.modules.labor_contract.expiry_service import MAX_WINDOW_DAYS, find_expiring
@@ -29,6 +30,13 @@ from .service import STATUS_RESIGNED
 
 GROUP_CAP = 200
 ANNIVERSARY_YEARS = (1, 3, 5, 10)
+
+
+def anniversary_years() -> tuple[int, ...]:
+    """Mốc kỷ niệm vào làm — Cài đặt nhân sự (duoc-CR-713); trống / hỏng thì về `ANNIVERSARY_YEARS`."""
+    raw = str(app_settings.get("employee_anniversary_years") or "")
+    years = sorted({int(p) for p in raw.split(",") if p.strip().isdigit() and 1 <= int(p) <= 60})
+    return tuple(years) or ANNIVERSARY_YEARS
 
 
 def _group(rows: list[dict], allowed: bool = True) -> dict:
@@ -55,7 +63,7 @@ def build(db: Session, employees_q, *, year: int, month: int, today: date, with_
         birthdays = sorted((person(e, day=e.date_of_birth.day, month=month) for e in rows),
                            key=lambda p: (p["day"], p["employee_code"]))
 
-    wanted = {year - n: n for n in ANNIVERSARY_YEARS}
+    wanted = {year - n: n for n in anniversary_years()}
     rows = (_working(employees_q).filter(extract("month", Employee.hire_date) == month,
                                          extract("year", Employee.hire_date).in_(list(wanted)))
             .with_entities(*cols, Employee.hire_date).all())

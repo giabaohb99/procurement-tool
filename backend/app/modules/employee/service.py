@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core import reference_guard
 from app.core.audit import record
+from app.core import app_settings
 from app.core.utils import generate_code
 
 from app.modules.department.model import Department
@@ -38,6 +39,13 @@ ENTITY = "employee"
 # điện thoại. Khác apply_filters (mỗi tham số lọc riêng một cột rồi ghép AND) — ở đây
 # nhập "0912" hay "an@" hay "NV001" đều ra, khỏi cần biết dữ liệu nằm ở cột nào.
 SEARCH_FIELDS = ("code", "full_name", "email", "phone")
+
+
+def employee_code_prefix() -> str:
+    """Tiền tố mã hồ sơ mới — Cài đặt nhân sự (duoc-CR-713), mặc định "NSU". Cửa lưu đã kiểm 2–10 chữ in hoa; ở đây
+    chỉ phòng giá trị hỏng nằm sẵn dưới DB / `.env` (rơi về NSU chứ không sinh mã lạ)."""
+    raw = str(app_settings.get("employee_code_prefix") or "").strip().upper()
+    return raw if re.fullmatch(r"[A-Z]{2,10}", raw) else "NSU"
 
 
 def apply_keyword_search(query, keyword: str | None):
@@ -226,7 +234,7 @@ def create_employee_core(db: Session, data: EmployeeCreate, user_id: int) -> Emp
     BM-013) — bên gọi tự quyết giao dịch. duoc-CR-628: nhập Excel gọi lõi này trong SAVEPOINT từng dòng
     để dry-run rollback được; `create_employee` là vỏ commit + audit của màn hồ sơ."""
     if not data.code:
-        data.code = generate_code(db, Employee, "NSU")
+        data.code = generate_code(db, Employee, employee_code_prefix())
     elif db.query(Employee).filter(Employee.code == data.code).first():
         raise HTTPException(400, "Mã nhân viên đã tồn tại")
     #  Hồ sơ chưa có id nên không thể tự trỏ vào chính mình; chỉ còn phải kiểm
@@ -258,7 +266,8 @@ def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee
     return obj
 
 
-def _sync_primary_department(db: Session, obj: Employee, user_id: int) -> None:
+def _sync_primary_department(db: Session, obj: Employee, user_id: int, *,
+                             old_primary: int = 0, keep_old: bool = False) -> str:
     """Giữ `tab_employee_department` khớp với `tab_employee.department_id`.
 
     ⚠️ KIÊM NHIỆM (CR-167) có HAI nguồn ghi phòng ban: cửa riêng
@@ -267,20 +276,35 @@ def _sync_primary_department(db: Session, obj: Employee, user_id: int) -> None:
     hồ sơ hiện một phòng, phạm vi dữ liệu chạy theo phòng khác, mà không chỗ nào
     báo.
 
-    Ở đây chỉ đụng tới PHÒNG CHÍNH: đổi `department_id` là đổi dòng `is_primary`,
-    các phòng kiêm nhiệm khác giữ nguyên. Đổi cả danh sách thì dùng cửa riêng —
-    nó có ba chốt chống vượt quyền, cột này thì không.
+    Đổi phòng chính thì PHÒNG CŨ (`old_primary`) bị GỠ, trừ khi `keep_old` — người
+    thao tác chọn giữ nó làm kiêm nhiệm (bao-CR-709). Trước đây phòng cũ luôn bị hạ
+    xuống kiêm nhiệm một cách âm thầm, nên người vừa chuyển phòng vẫn thấy phiếu của
+    phòng cũ (NSU012 về nhà máy 31/10 vẫn thấy phiếu Sản xuất - Thu mua). Các phòng
+    kiêm nhiệm KHÁC giữ nguyên. Đổi cả danh sách thì dùng cửa riêng — nó có ba chốt
+    chống vượt quyền, cột này thì không.
+
+    Trả về một câu cho nhật ký thao tác (rỗng nếu phòng chính không đổi).
     """
     from .department_service import set_departments, departments_of
 
     existing = departments_of(db, obj.id)
     new = obj.department_id or 0
-    if existing and existing[0] == new:
-        return                        # phòng chính không đổi
+    moved = bool(old_primary) and old_primary != new
+    drop = old_primary if moved and not keep_old else 0
+    if existing and existing[0] == new and drop not in existing:
+        return ""                     # phòng chính không đổi, không có gì để gỡ
 
-    remaining = [x for x in existing if x != new]
+    remaining = [x for x in existing if x != new and x != drop]
     set_departments(db, obj, ([new] if new else []) + remaining, user_id,
                   primary_department=new or None)
+    if not moved:
+        return ""
+    from app.modules.department.model import Department
+    old = db.get(Department, old_primary)
+    label = old.name if old else str(old_primary)
+    if drop:
+        return f'Đổi phòng chính — gỡ phòng cũ "{label}"'
+    return f'Đổi phòng chính — giữ phòng cũ "{label}" làm kiêm nhiệm'
 
 
 def clear_perm_cache_of(db: Session, employee_id: int) -> None:
@@ -411,6 +435,8 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
         block_manager_cycle(db, obj.id, fields["manager_id"])
     if "email" in fields:
         fields["email"] = ensure_email_unique(db, fields["email"] or "", exclude_id=obj.id)
+    #  bao-CR-709: cờ điều khiển, không phải cột hồ sơ — bóc ra trước vòng `setattr`.
+    keep_old_department = bool(fields.pop("keep_old_department", False))
     for key, value in fields.items():
         setattr(obj, key, value)
     if "phone" in fields or "extra_phones" in fields:
@@ -434,8 +460,10 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
         from .department_service import detach_other_company_departments
         dropped_departments = detach_other_company_departments(db, obj, user_id)
 
+    department_note = ""
     if "department_id" in fields:
-        _sync_primary_department(db, obj, user_id)
+        department_note = _sync_primary_department(db, obj, user_id, old_primary=old_scope[1],
+                                                   keep_old=keep_old_department)
 
     # CR-022: hồ sơ nhân sự KHÔNG còn cấp quyền cho tài khoản đăng nhập. Quyền thật của tài khoản
     # chỉ gán ở màn "Phân quyền tài khoản" (tab_user_role).
@@ -460,6 +488,8 @@ def update_employee_core(db: Session, obj: Employee, data: EmployeeUpdate, user_
     notes = []
     if salary_changed:
         notes.append("Cập nhật lương")      # KHÔNG kèm số — lương không vào nhật ký
+    if department_note:
+        notes.append(department_note)
     if dropped_departments:
         notes.append("Đổi pháp nhân — gỡ khỏi phòng ban của pháp nhân cũ: "
                      + ", ".join(dropped_departments))

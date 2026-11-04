@@ -172,6 +172,15 @@ export const employeeProfileSchema = employeeSchema
 
 export type EmployeeProfileFormValues = z.infer<typeof employeeProfileSchema>
 
+/**
+ * Thân PATCH hồ sơ: các ô của form (đã lọc qua `pickWritableProfile`) cộng cờ điều khiển không nằm
+ * trong form. `keep_old_department` (bao-CR-709): đổi phòng chính thì giữ phòng cũ làm kiêm nhiệm hay
+ * gỡ — vắng = gỡ.
+ */
+export type EmployeeProfileUpdate = Partial<EmployeeProfileFormValues> & {
+  keep_old_department?: boolean
+}
+
 export const EMPTY_EMPLOYEE_PROFILE_FORM: EmployeeProfileFormValues = {
   ...EMPTY_EMPLOYEE_FORM,
   place_of_birth: '',

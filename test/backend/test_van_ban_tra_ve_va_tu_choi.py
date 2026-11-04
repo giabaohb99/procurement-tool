@@ -10,13 +10,13 @@ Bài kiểm ở đây canh bốn ranh giới dễ hỏng nhất:
 
 1. **Bản 2.0 trở đi bị trả thì VĂN BẢN KHÔNG ĐỔI trạng thái.** Bản 1.0 vẫn đang
    có hiệu lực trong lúc bản 2.0 chờ duyệt (`van-thu/02` chỗ dễ sai số 7), nên
-   kéo văn bản sang «Trả về» là cả công ty thấy quy chế biến mất. Lúc đó chỗ duy
+   kéo văn bản sang "Trả về" là cả công ty thấy quy chế biến mất. Lúc đó chỗ duy
    nhất nói được "bản 2.0 vừa bị trả" là chính dòng phiên bản.
 2. **Bản bị trả về VẪN giữ `open_slot`.** Nhả chỗ là `submit()` không tìm thấy
    bản nào để gửi lại, mà giao diện thì vẫn bày nút *Gửi duyệt*.
 3. **Bản bị từ chối thì NHẢ `open_slot`** — giữ chỗ là văn bản bị một phiên bản
    chết chặn vĩnh viễn, không mở nổi bản mới.
-4. **Xóa được ở «Trả về», không xóa được ở «Đã từ chối»** (bản đã từ chối khóa
+4. **Xóa được ở "Trả về", không xóa được ở "Đã từ chối"** (bản đã từ chối khóa
    hẳn; muốn làm lại thì *Sao chép*).
 
 Gọi thẳng tầng dịch vụ, đúng như một người gọi thẳng API sẽ làm.
@@ -84,7 +84,7 @@ def test_tu_choi_ban_dau_thi_van_ban_sang_da_tu_choi(db, doc):
 
 
 def test_rut_phieu_thi_ve_nhap_chu_khong_phai_bi_tra(db, doc):
-    """Người nộp tự rút thì không ai trả gì cho ai — đừng treo lên phiếu chữ «Trả về»."""
+    """Người nộp tự rút thì không ai trả gì cho ai — đừng treo lên phiếu chữ "Trả về"."""
     service.submit(db, doc, ACTOR)
     service.withdraw_document(db, doc, "Gửi sớm quá, cần bổ sung phụ lục", ACTOR)
 
@@ -95,7 +95,7 @@ def test_rut_phieu_thi_ve_nhap_chu_khong_phai_bi_tra(db, doc):
 
 
 def test_tra_ve_roi_gui_duyet_lai_duoc_ngay(db, doc):
-    """Cả mục đích của trạng thái «Trả về»: sửa xong gửi lại trên chính văn bản đó."""
+    """Cả mục đích của trạng thái "Trả về": sửa xong gửi lại trên chính văn bản đó."""
     service.submit(db, doc, ACTOR)
     service.send_back(db, doc, "Sửa lại mục 2", ACTOR)
 
@@ -154,7 +154,7 @@ def test_tu_choi_ban_hai_thi_van_ban_van_co_hieu_luc(db, doc):
 
     assert doc.status == STATUS_EFFECTIVE
     assert _ban_dang_mo(db, doc) is None, "Bản 2.0 bị từ chối phải nhả chỗ cho bản khác"
-    #  Và mở được bản mới — đây chính là lý do «Đã từ chối» không nằm trong OPEN_STATUSES.
+    #  Và mở được bản mới — đây chính là lý do "Đã từ chối" không nằm trong OPEN_STATUSES.
     version_service.open_new_version(db, doc, VersionCreate(
         change_kind=CHANGE_MAJOR, change_summary="Làm lại chương II",
         change_reason="Bản trước bị từ chối",
@@ -188,7 +188,7 @@ def test_khong_co_ban_nao_dang_cho_duyet_thi_khong_tra_ve_duoc(db, doc):
 def test_xoa_van_ban_thi_don_luon_phieu_duyet(db, doc):
     """L-04 — xóa chứng từ mà để phiếu duyệt nằm lại là đẻ rác trỏ vào hư không.
 
-    Dựng lại được 24/08/2026 trên đường HỢP LỆ: văn bản ở «Trả về» thì gần như
+    Dựng lại được 24/08/2026 trên đường HỢP LỆ: văn bản ở "Trả về" thì gần như
     luôn có một phiếu duyệt đã đóng, mà luật lại cho xóa văn bản ở trạng thái đó.
     """
     from app.modules.approval.instance_model import (ApprovalAction,
@@ -227,7 +227,7 @@ def test_xoa_van_ban_thi_don_luon_QUAN_HE(db, doc):
     """Xóa chứng từ mà để quan hệ nằm lại là đẻ dòng trỏ vào chỗ trống.
 
     Tìm ra khi soi dữ liệu dev 24/08/2026: hai dòng quan hệ mồ côi có từ 19/08 và
-    21/08. Văn bản còn sống mở tab «Quan hệ» ra thì thấy một dòng *Có kèm theo*
+    21/08. Văn bản còn sống mở tab "Quan hệ" ra thì thấy một dòng *Có kèm theo*
     trỏ vào `document: null` — không biết nó từng là gì, cũng không bấm đi đâu được.
     """
     from app.modules.doc_catalog.link_rule_model import RELATION_REFERENCE
@@ -248,7 +248,7 @@ def test_xoa_van_ban_thi_don_luon_QUAN_HE(db, doc):
     service.delete_document(db, doc)
 
     #  ai-CR-177: xóa MỀM — dòng quan hệ GIỮ trong DB (cha còn hàng, không mồ côi), nhưng tab
-    #  «Quan hệ» của văn bản còn sống KHÔNG bày dòng trỏ vào văn bản đã xóa (cả hai chiều).
+    #  "Quan hệ" của văn bản còn sống KHÔNG bày dòng trỏ vào văn bản đã xóa (cả hai chiều).
     from app.modules.document import link_service
 
     con = (db.query(DocumentLink)
@@ -308,11 +308,11 @@ def test_khong_tu_cam_chinh_minh_duoc(db, doc, seed):
 
 
 def test_tu_bo_duoc_ban_nhap_cua_minh_du_khong_co_quyen_xoa(db, doc):
-    """Nút «Hủy» ở màn Tạo văn bản phải dọn được bản nháp nó vừa sinh ra.
+    """Nút "Hủy" ở màn Tạo văn bản phải dọn được bản nháp nó vừa sinh ra.
 
-    Từ 24/08/2026 bấm «Tiếp tục» là ghi một bản nháp THẬT xuống CSDL để quay lại
+    Từ 24/08/2026 bấm "Tiếp tục" là ghi một bản nháp THẬT xuống CSDL để quay lại
     không mất dữ liệu. Nhưng vai trò soạn thảo tiêu chuẩn (`vanban_sua`) cố ý
-    không có `delete`, nên nút «Hủy» gọi `DELETE /documents/{id}` ăn **403** —
+    không có `delete`, nên nút "Hủy" gọi `DELETE /documents/{id}` ăn **403** —
     dựng lại được: bản nháp nằm lại vĩnh viễn, chính người tạo cũng không xóa nổi.
 
     Cửa `bo_ban_nhap_cua_minh` hẹp ở đúng ba chốt, kiểm cả ba dưới đây.
@@ -325,7 +325,7 @@ def test_tu_bo_duoc_ban_nhap_cua_minh_du_khong_co_quyen_xoa(db, doc):
         service.discard_own_draft(db, doc, actor=8)
     assert error.value.status_code == 403
 
-    #  Không phải Nháp thì không — «Trả về» đã qua tay người duyệt, bỏ nó là xóa
+    #  Không phải Nháp thì không — "Trả về" đã qua tay người duyệt, bỏ nó là xóa
     #  thật nên vẫn phải có quyền `delete`.
     doc.status = STATUS_RETURNED
     db.commit()

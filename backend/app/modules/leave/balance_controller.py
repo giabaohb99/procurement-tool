@@ -33,11 +33,15 @@ ENTITY = "leave_balance"
 FILTERABLE = ["employee_id", "year", "leave_type_id", "company_id"]
 
 
-def _dump(obj: LeaveBalance, names: dict[int, str], types: dict[int, str]) -> dict:
+def _dump(db: Session, obj: LeaveBalance, names: dict[int, str], types: dict[int, str],
+          available: dict[int, float] | None = None) -> dict:
     data = LeaveBalanceResponse.model_validate(obj).model_dump()
     #  Hai số dẫn xuất — `model_validate` không lấy được `@property` nên gán tay.
     data["total_days"] = obj.total_days
-    data["remaining_days"] = obj.remaining_days
+    #  duoc-CR-715: loại cộng dần trừ phần chưa tới tháng — cùng số với ô "còn lại" trên form.
+    #  `available` = bản đã tính một lượt cho cả danh sách (không tra từng dòng).
+    data["remaining_days"] = (available[obj.id] if available and obj.id in available
+                              else balance_service.available_days(db, obj))
     data["employee_name"] = names.get(obj.employee_id, "")
     data["leave_type_name"] = types.get(obj.leave_type_id, "")
     return data
@@ -117,7 +121,8 @@ def list_balances(request: Request, pg: dict = Depends(pagination),
 
     names = _names(db, {i.employee_id for i in items})
     types = _type_names(db)
-    return success({"total": total, "items": [_dump(i, names, types) for i in items]})
+    avail = balance_service.available_days_map(db, items)
+    return success({"total": total, "items": [_dump(db, i, names, types, avail) for i in items]})
 
 
 @router.get("/{bid}")
@@ -127,7 +132,7 @@ def get_balance(bid: int, db: Session = Depends(get_db),
     if obj is None:
         raise HTTPException(404, "Không tìm thấy dòng quỹ phép")
     _expire_then_commit(db, [obj])
-    return success(_dump(obj, _names(db, {obj.employee_id}), _type_names(db)))
+    return success(_dump(db, obj, _names(db, {obj.employee_id}), _type_names(db)))
 
 
 @router.patch("/{bid}/adjust")
@@ -158,7 +163,7 @@ def adjust_balance(bid: int, data: LeaveBalanceAdjust, db: Session = Depends(get
     audit_record(db, user.id, ENTITY, obj.id, "update",
                  f"Điều chỉnh quỹ phép: {truoc} → {obj.adjusted_days} ngày. "
                  f"Lý do: {obj.note}")
-    return success(_dump(obj, _names(db, {obj.employee_id}), _type_names(db)),
+    return success(_dump(db, obj, _names(db, {obj.employee_id}), _type_names(db)),
                    "Đã điều chỉnh quỹ phép")
 
 
@@ -191,6 +196,11 @@ def allocate(data: LeaveBalanceAllocate, db: Session = Depends(get_db),
     employees = db.query(Employee).filter(Employee.is_active.is_(True))
     if data.employee_ids:
         employees = employees.filter(Employee.id.in_(data.employee_ids))
+    #  duoc-CR-717: lọc theo pháp nhân / phòng / hình thức / cấp bậc — chỉ THU HẸP, chạy TRƯỚC apply_scope.
+    for column, value in ((Employee.company_id, data.company_id), (Employee.department_id, data.department_id),
+                          (Employee.employment_type, data.employment_type), (Employee.job_level, data.job_level)):
+        if value:
+            employees = employees.filter(column == value)
     employees = apply_scope(employees, Employee, "employee", user,
                             get_perm_profile(db, user)).all()
 
@@ -311,10 +321,11 @@ def balance_summary(employee_id: int = 0, year: int = Query(0),
     _expire_then_commit(db, rows)
 
     names, types = _names(db, {target}), _type_names(db)
+    avail = balance_service.available_days_map(db, rows)
     return success({
         "employee_id": target,
         "employee_name": names.get(target, ""),
         "year": year,
-        "items": [_dump(r, names, types) for r in rows],
-        "total_remaining": round(sum(r.remaining_days for r in rows), 2),
+        "items": [_dump(db, r, names, types, avail) for r in rows],
+        "total_remaining": round(sum(avail.values()), 2),
     })

@@ -1,16 +1,16 @@
 """bao-CR-483 — Bảng công việc tải THEO TRANG: `board(per_section, light)` + `section_tasks`.
 
 Đo trên dev 24/09/2026: mở một dự án 177 việc kéo 545 KB một lượt, 88% là phần mô
-tả mà thẻ kanban không vẽ tới, cột «Xong» chứa 160 thẻ. Nay bảng có chế độ NHẸ:
+tả mà thẻ kanban không vẽ tới, cột "Xong" chứa 160 thẻ. Nay bảng có chế độ NHẸ:
 mỗi cột tối đa `per_section` việc, không mô tả, phần dư ghi ở `remaining` để giao
 diện tải tiếp theo cột. Bốn thứ tệp này canh:
 
 1. Cắt ĐÚNG THỨ TỰ kanban (`sort_order, id`) và cắt THEO CỘT, không cắt toàn bảng —
    cắt toàn bảng thì cột cuối trống trơn dù có việc.
 2. `remaining[cột] = {count, next_task_id}` với `next_task_id` là việc đầu tiên CHƯA
-   tải: giao diện neo cú thả «xuống cuối cột» vào nó. Sai một thẻ là thẻ vừa thả
+   tải: giao diện neo cú thả "xuống cuối cột" vào nó. Sai một thẻ là thẻ vừa thả
    biến khỏi màn hình sau khi nạp lại.
-3. `section_tasks` nối tiếp đúng từ `offset`, `section_id = 0` là «Chưa phân cột»,
+3. `section_tasks` nối tiếp đúng từ `offset`, `section_id = 0` là "Chưa phân cột",
    người ngoài dự án ăn 403 y như bảng.
 4. `light` bỏ mô tả nhưng giữ cờ `has_description`; chế độ đầy đủ KHÔNG đổi gì so
    với trước (Gantt, tìm kiếm, bộ lọc vẫn ăn đủ dữ liệu).
@@ -49,7 +49,7 @@ def sections(db, owner, work_list):
 def _fill(db, owner, list_id, section_id, n, prefix="V"):
     """Tạo n việc nối đuôi vào một cột; trả id theo đúng thứ tự tạo (= thứ tự bảng).
 
-    `create_task` tự gán cột đầu tiên khi không truyền cột, nên «Chưa phân cột»
+    `create_task` tự gán cột đầu tiên khi không truyền cột, nên "Chưa phân cột"
     phải gỡ cột trực tiếp dưới DB — đúng cảnh dữ liệu cũ / cột đã xóa.
     """
     ids = [task_service.create_task(db, owner, schema.TaskCreate(
@@ -89,7 +89,7 @@ def test_light_mode_slices_each_section_and_reports_next_unloaded_task(db, owner
     assert board["light"] is True
     assert _ids_of(board, sections[0]) == a[:3], "cắt theo thứ tự bảng, không phải ngẫu nhiên"
     assert _ids_of(board, sections[1]) == b, "cột ít hơn trần thì đủ nguyên"
-    assert _ids_of(board, None) == c[:3], "«Chưa phân cột» cũng được cắt, khóa 0"
+    assert _ids_of(board, None) == c[:3], "\"Chưa phân cột\" cũng được cắt, khóa 0"
     assert board["remaining"] == {
         sections[0]: {"count": 2, "next_task_id": a[3]},
         0: {"count": 1, "next_task_id": c[3]},

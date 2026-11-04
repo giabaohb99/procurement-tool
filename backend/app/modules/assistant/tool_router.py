@@ -48,8 +48,10 @@ GROUPS: tuple[tuple[str, frozenset[str], str], ...] = (
     ("approval", frozenset({"my_approval_tasks", "my_requests_status", "approval_flow_lookup", "propose_approval",
                             "pending_procurement_approvals"}),
      r"duyet|phe duyet|trinh ky|luong duyet|cho ky"),
-    ("leave", frozenset({"my_leave_summary", "draft_leave_request"}),
-     r"nghi phep|\bphep\b|xin nghi|don nghi|nghi (thu|ngay|sang|chieu|ca)|\bnp\d+|quy phep|ngay nghi"),
+    #  duoc-CR-715 C: "nghỉ bù / đi làm ngày lễ, Chủ nhật / làm bù" kéo theo phiếu xin nghỉ bù; "ứng phép" về quỹ phép.
+    ("leave", frozenset({"my_leave_summary", "draft_leave_request", "draft_leave_comp_request"}),
+     r"nghi phep|\bphep\b|xin nghi|don nghi|nghi (thu|ngay|sang|chieu|ca)|\bnp\d+|\bnb\d+|quy phep|ngay nghi|nghi bu"
+     r"|lam bu|(di )?lam (ngay )?(le|chu nhat|cn|thu bay|t7)\b|truc (le|tet|chu nhat)|ung phep|ngay cam nghi"),
     ("work", frozenset({"my_work_tasks", "draft_work_task", "draft_work_plan"}),
      r"\bviec\b|\btask\b|cong viec|du an|giao viec|han chot|deadline|viec hom nay|viec cua (toi|anh|em)|con gi|qua han"),
     #  kh-AI1-2: năng lực đội / tốc độ theo loại việc — nhóm RIÊNG, không nhét vào "work" (lõi bot coi nhóm thiếu công cụ là

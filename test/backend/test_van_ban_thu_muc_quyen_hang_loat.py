@@ -1,4 +1,4 @@
-"""HỘP «CHIA SẺ» KIỂU DRIVE — cấp quyền thư mục HÀNG LOẠT + đổi mức tại chỗ
+"""HỘP "CHIA SẺ" KIỂU DRIVE — cấp quyền thư mục HÀNG LOẠT + đổi mức tại chỗ
 (phase 10B, đặc tả §C, duoc-CR-476 bổ sung 23/09/2026).
 
 `POST /api/doc-folders/{id}/access/bulk` + `PATCH /api/doc-folders/{id}/access/{access_id}`

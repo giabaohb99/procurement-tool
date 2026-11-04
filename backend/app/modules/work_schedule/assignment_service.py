@@ -142,7 +142,7 @@ def create_assignment(db: Session, data: AssignmentCreate, user) -> WorkSchedule
         db.flush()   # cần `obj.id` để đánh dấu dòng bị đóng/nối (xóa dòng này sẽ mở lại, M4)
     except IntegrityError:
         db.rollback()
-        raise HTTPException(400, CONFLICT_MESSAGE)
+        raise HTTPException(400, CONFLICT_MESSAGE) from None
     for a in (*closable, *resumes):
         a.linked_assignment_id = obj.id
     db.add_all(resumes)
@@ -173,7 +173,7 @@ def update_assignment(db: Session, obj: WorkScheduleAssignment, data: Assignment
         check_target(level, target_id)
         check_period(start, end)
     except ValueError as exc:
-        raise HTTPException(400, str(exc))
+        raise HTTPException(400, str(exc)) from exc
     if (level, target_id) != (obj.target_level, obj.target_id):
         _check_target_exists(db, level, target_id)
     if "schedule_id" in values and values["schedule_id"] != obj.schedule_id:

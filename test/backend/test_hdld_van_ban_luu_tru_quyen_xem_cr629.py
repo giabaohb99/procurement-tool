@@ -4,7 +4,7 @@ Luật: CHỈ người có `labor_contract.read` trong phạm vi của HĐ đó.
 *tất cả*), admin không có `labor_contract`, người được chia đích danh, thành viên sổ — KHÔNG thấy ở đâu cả
 (danh sách, chi tiết, tệp, tìm, tổng quan, trợ lý AI, ô chọn quan hệ). Bản lưu trữ chỉ đọc.
 
-Mỗi bài có cặp đối chứng trên văn bản THƯỜNG để chứng minh «chặn đúng chỗ» chứ không «chặn tất».
+Mỗi bài có cặp đối chứng trên văn bản THƯỜNG để chứng minh "chặn đúng chỗ" chứ không "chặn tất".
 """
 import pytest
 from sqlalchemy import func
@@ -183,7 +183,7 @@ def test_tong_quan_khong_dem_ban_luu_tru(ctx):
     total_all = dashboard_service.overview(db, user, prof, DashboardFilters(
         company_id=None, department_id=None, from_date=None, to_date=None))
     for out in (total_a3, total_all):
-        assert "HĐLĐ" not in str(out)            # tiêu đề bản lưu trữ bắt đầu bằng «HĐLĐ»
+        assert "HĐLĐ" not in str(out)            # tiêu đề bản lưu trữ bắt đầu bằng "HĐLĐ"
         assert "Công văn HĐ-A2-TOPSECRET thường" in str(out)   # đối chứng: văn bản thường vẫn được tính
 
 

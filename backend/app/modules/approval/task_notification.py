@@ -37,6 +37,7 @@ ENTITY_LABELS = {
     "survey_request": "Yêu cầu báo giá",
     "payment_request": "Yêu cầu thanh toán",
     "leave_request": "Đơn nghỉ phép",
+    "leave_comp_request": "Phiếu nghỉ bù",
     "room_booking": "Phiếu đặt phòng họp",
     #  Đặt xe có ĐỦ hook (`register_hooks` + `register_subject` + `register_reader`
     #  trong `vehicle_booking/approval_bridge.py`) nhưng bị quên ở hai bảng này,
@@ -62,6 +63,7 @@ ENTITY_LINKS = {
     #  phải tự mò vào menu tìm tờ đơn. Đúng lỗi mà `notification-link.ts` đã
     #  phải vá cho phân hệ Văn thư ngày 20/08/2026, chỉ khác chỗ hỏng.
     "leave_request": "/hr/leave-requests/{id}",
+    "leave_comp_request": "/hr/leave-comp-requests/{id}",
     #  Đặt phòng cũng chỉ tồn tại ở app v2 — xem cảnh báo ngay trên.
     "room_booking": "/hr/room-bookings/{id}",
     #  Đặt xe cũng chỉ có ở app v2 (`appRoutes.vehicleBooking.detail`), và
@@ -132,6 +134,9 @@ def notify_new_tasks(db: Session, instance: ApprovalInstance,
     try:
         for task in tasks:
             if task.status != TASK_PENDING or not task.assignee_employee_id:
+                continue
+            #  duoc-CR-706: phân hệ có thể chỉ báo một phần người được giao (vd đặt xe chỉ báo người được chọn).
+            if not entity_hooks.should_notify_task(db, instance, task):
                 continue
             link = ENTITY_LINKS.get(instance.entity, "").format(id=instance.entity_id)
             title = f"Chờ bạn duyệt: {instance.entity_title or instance.entity_code}"

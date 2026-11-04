@@ -15,7 +15,7 @@ Không thêm bài vitest (không có hành vi FE mới). Kiểm tay trên `local
 ## Tài liệu (sở hữu phase này)
 - `doc/tai-lieu-ky-thuat/change-log.md`: dòng `duoc-CR-629b` — thêm «Bước B» (STI, giữ id HĐLĐ, dời id mẫu VB khi trùng, `lbrct03`, bảng bak, downgrade) hoặc dòng hậu tố riêng nếu dòng cũ đã «Xong (bước A)».
 - `doc/tai-lieu-ky-thuat/nhat-ky-task.md`: mục MỚI, mã duy nhất (hậu tố `-buoc-b`), câu tiếng Việt trọn vẹn, `Mã nguồn:` dòng cuối.
-- `doc/erp/hrm/01-ho-so-nhan-su.md` + `doc/tai-lieu-chuc-nang/14-van-thu-van-ban.md` §16: mẫu HĐLĐ nay nằm trong bảng `tab_document_template` (`template_kind=2`), quyền không đổi.
+- `doc/erp/hrm/01-ho-so-nhan-su.md` + `doc/erp/van-thu/chuc-nang/10-van-thu-van-ban.md` §16: mẫu HĐLĐ nay nằm trong bảng `tab_document_template` (`template_kind=2`), quyền không đổi.
 - `.claude/rules/hr-employee-profile.md` hoặc `document-folders-search.md`: 2 dòng «CẤM `query(TemplateRecord)`; thêm loại mẫu mới = thêm lớp con STI + mã `DocumentTemplateKind`».
 - Comment bảng trong `labor_contract/model.py` (`template_id` FK mềm → `tab_document_template.id`, loại 2).
 

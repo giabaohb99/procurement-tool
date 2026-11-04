@@ -25,6 +25,7 @@ vi.mock('@/core/authorization/use-permission', () => ({
 //  Dấu vết là màn con tự gọi API riêng — không phải thứ bài này chịu trách nhiệm.
 vi.mock('@/shared/audit', () => ({
   AuditTimeline: () => <div>dấu vết</div>,
+  AuditActivityFeed: () => <div>hoạt động</div>,
 }))
 
 interface LeaveType extends CrudRecord {
@@ -201,5 +202,40 @@ describe('CrudDetailPage — id ngoài phạm vi (D5)', () => {
     build('/hr/leave-types/999999')
 
     expect(await screen.findByText('Không tìm thấy loại nghỉ')).toBeInTheDocument()
+  })
+})
+
+/**
+ * ─── Bố cục PHẲNG (duoc-CR-716): nút Lưu / Xóa ở hàng tiêu đề chỉ sống ở tab "Thông tin" ───
+ *
+ * LỖI REVIEW M4 (duoc-CR-717): nút Lưu là `type=submit form="crud-detail-form"`, mà biểu mẫu chỉ có
+ * trong tab "Thông tin" (Radix hủy mount tab ẩn). Đứng ở tab khác bấm Lưu thì không có gì xảy ra —
+ * và tab đó lại có nút Lưu riêng của bảng con, hai nút Lưu cạnh nhau một cái chết.
+ */
+describe('CrudDetailPage — bố cục phẳng', () => {
+  const FLAT: CrudConfig<LeaveType> = {
+    ...CONFIG,
+    detailLayout: 'flat',
+    tabs: [{ key: 'lines', label: 'Dòng con', render: () => <div>nội dung dòng con</div> }],
+  }
+
+  it('shows the header Lưu / Xóa on the info tab and hides both on another tab', async () => {
+    build('/hr/leave-types/5', FLAT)
+    expect(await screen.findByRole('button', { name: 'Lưu' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Xóa/ })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Dòng con' }))
+    expect(await screen.findByText('nội dung dòng con')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Lưu' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Xóa/ })).toBeNull()
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Thông tin' }))
+    expect(await screen.findByRole('button', { name: 'Lưu' })).toBeInTheDocument()
+  })
+
+  it('opening a deep link straight into a sub-tab (?tab=) also hides the dead header Lưu', async () => {
+    build('/hr/leave-types/5?tab=lines', FLAT)
+    expect(await screen.findByText('nội dung dòng con')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Lưu' })).toBeNull()
   })
 })

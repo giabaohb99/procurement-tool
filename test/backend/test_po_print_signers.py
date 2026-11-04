@@ -9,7 +9,7 @@ cũ vẫn nằm trên bản in — thành ra một đơn CHƯA ai duyệt lại 
 """
 from app.core.audit import record
 from app.modules.employee.model import Employee
-from app.modules.purchase_order.controller import resolve_print_signers
+from app.modules.purchase_order.serializer import resolve_print_signers
 from app.modules.purchase_order.model import PurchaseOrder
 from app.modules.user.model import User
 

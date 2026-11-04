@@ -3,11 +3,11 @@
 Vòng kiểm đầu chỉ đi đường đẹp nên cả bốn đều lọt. Ép hai người cùng bấm, nhấp
 đúp, dán một đoạn quá khổ, rồi xóa chứng từ đi thì mới lộ ra:
 
-  L-01  nhấp đúp «Gửi duyệt» → HAI phiếu duyệt cùng chạy trên một chứng từ;
+  L-01  nhấp đúp "Gửi duyệt" → HAI phiếu duyệt cùng chạy trên một chứng từ;
   L-02  hai người thao tác cùng lúc → một người nhận `500` (kẹt khóa CSDL);
   L-03  lý do dài quá bề rộng cột → `500` trần;
   L-04  xóa chứng từ xong, phiếu duyệt nằm lại trỏ vào chứng từ không còn;
-  L-05  nhấp đúp «Duyệt» ở bước cuối -> CẢ HAI cú ăn, dấu vết ghi ký hai lần.
+  L-05  nhấp đúp "Duyệt" ở bước cuối -> CẢ HAI cú ăn, dấu vết ghi ký hai lần.
 
 ⚠️ L-01 và L-02 là chuyện CẠNH TRANH THẬT giữa hai kết nối, mà bộ kiểm này chạy
 SQLite một luồng nên không dựng lại được cảnh đó. Cái kiểm được ở đây — và cũng
@@ -51,7 +51,7 @@ def _phien(db, entity: str, entity_id: int, status: int) -> ApprovalInstance:
 def test_khong_the_co_hai_phieu_dang_chay_cho_mot_chung_tu(db):
     """Chốt ở TẦNG DỮ LIỆU, không phải câu `SELECT` kiểm trước.
 
-    Nhấp đúp «Gửi duyệt» thì hai lượt cùng đọc thấy "chưa có phiếu nào" rồi cùng
+    Nhấp đúp "Gửi duyệt" thì hai lượt cùng đọc thấy "chưa có phiếu nào" rồi cùng
     ghi — chỉ ràng buộc UNIQUE mới chặn được.
     """
     from sqlalchemy.exc import IntegrityError
@@ -163,10 +163,10 @@ def _viec(db, status: int = TASK_PENDING) -> ApprovalTask:
 
 
 def test_chiem_viec_lan_hai_bi_chan(db):
-    """Nhấp đúp «Duyệt» → cú thứ hai phải trượt, không được ghi thêm chữ ký.
+    """Nhấp đúp "Duyệt" → cú thứ hai phải trượt, không được ghi thêm chữ ký.
 
     Lỗi dựng lại được 24/08/2026: gán thẳng `task.status = …` là đọc rồi mới
-    ghi, hai lượt cùng đọc thấy «Đang chờ» rồi cùng ghi — dấu vết ra HAI dòng
+    ghi, hai lượt cùng đọc thấy "Đang chờ" rồi cùng ghi — dấu vết ra HAI dòng
     *Duyệt* và HAI dòng *Kết thúc* cho một người bấm một lần.
     """
     task = _viec(db)
