@@ -6,6 +6,7 @@ import { useAuth } from '@/core/auth/use-auth'
 import { canOpenModule } from '@/app/router/module-visibility'
 import { useNavContext, usePermission } from '@/core/authorization/use-permission'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { ReleaseVersionLink } from '@/shared/release/release-version-link'
 import { Input } from '@/shared/ui/input'
 import { formatWeekdayDate } from '@/shared/utils/format-date'
 import { matchesVietnamese } from '@/shared/utils/vn-text'
@@ -140,8 +141,10 @@ export function ModuleLauncherPage() {
 
       {/* `pl-20` trên điện thoại: bong bóng Trợ lý AI neo ở góc trái dưới, đè
           đúng đầu dòng này khi cuộn tới đáy. */}
+      {/* bao-CR-722: trang chủ không có menu trái nên phiên bản đứng ở đây, nối vào dòng đếm. */}
       <p className="mt-5 pl-20 text-xs text-muted-foreground sm:mt-6 sm:pl-0">
         {readyCount} phân hệ đang dùng · {comingSoonCount} sắp có
+        <ReleaseVersionLink className="before:mr-1.5 before:content-['·'] ml-1.5" />
       </p>
     </div>
   )

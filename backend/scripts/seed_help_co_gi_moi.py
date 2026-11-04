@@ -23,28 +23,29 @@ ARTICLES = [
 bỏ gì, ở phân hệ nào. Trang <strong>Có gì mới</strong> cho mọi người đọc các mục đó mà không cần hỏi.</p>
 <h3>1. Mở trang</h3>
 <ul>
-<li>Bấm vào dòng <strong>Phiên bản 2.12.0</strong> ở chân menu trái (rê chuột lên dòng này thấy mã bản dựng và giờ dựng) của bất kỳ phân hệ nào, hoặc mở menu tài khoản
-(ảnh đại diện góc phải) rồi chọn <strong>Có gì mới</strong>. Đường dẫn: <code>/whats-new</code>.</li>
+<li>Bấm vào dòng <strong>Phiên bản 2.12.0</strong> ở cuối trang chủ (màn chọn phân hệ) hay ở chân menu trái của bất kỳ phân hệ nào
+(rê chuột lên dòng này thấy mã bản dựng và giờ dựng), hoặc mở menu tài khoản (ảnh đại diện góc phải) rồi chọn <strong>Có gì mới</strong>.
+Đường dẫn: <code>/whats-new</code>.</li>
 <li>Ai đăng nhập cũng xem được, không cần quyền riêng.</li>
 </ul>
 <h3>2. Đọc trang</h3>
 <ul>
 <li>Dòng đầu ghi <strong>phiên bản đang chạy</strong> dạng 2.X.Y (2 là ERP thế hệ hai, X tăng mỗi đợt có tính năng mới, Y tăng khi
 đợt chỉ sửa lỗi, ví dụ 2.12.0), ngày phát hành, mã bản dựng của máy chủ, giờ dựng và môi trường. Chỗ nào ghi <em>không rõ</em> là bản dựng không kèm thông tin đó, không phải lỗi.</li>
-<li>Các đợt xếp <strong>mới nhất trước</strong>, đợt đầu có nhãn <strong>Mới nhất</strong>. Trong mỗi đợt, từng dòng có nhãn
-<strong>Thêm</strong> (xanh lá), <strong>Sửa</strong> (xanh dương) hay <strong>Bỏ</strong> (đỏ), tên phân hệ, câu mô tả và mã thay đổi để
-tra khi cần.</li>
+<li>Các đợt xếp <strong>mới nhất trước</strong>, mỗi đợt một dòng gồm số bản, ngày và tiêu đề; đợt mới nhất mở sẵn và có nhãn
+<strong>Mới nhất</strong>, các đợt khác bấm vào dòng để sổ xuống. Trong mỗi đợt, từng dòng có nhãn <strong>Thêm</strong> (xanh lá),
+<strong>Sửa</strong> (xanh dương) hay <strong>Bỏ</strong> (đỏ), tên phân hệ và câu mô tả.</li>
 <li>Khung <strong>Lưu ý</strong> ở cuối đợt ghi điều cần biết thêm, ví dụ có thay đổi dữ liệu hay bài hướng dẫn mới.</li>
 <li>Ô chọn <strong>Phân hệ</strong> ở góc phải lọc đúng phân hệ mình dùng; đợt không có thay đổi của phân hệ đó thì ẩn.</li>
 </ul>
 <h3>3. Chấm đỏ</h3>
-<p>Khi hệ vừa lên bản mới mà bạn chưa mở trang, một <strong>chấm đỏ nhỏ</strong> hiện trước dòng phiên bản ở chân menu trái và cạnh
+<p>Khi hệ vừa lên bản mới mà bạn chưa mở trang, một <strong>chấm đỏ nhỏ</strong> hiện trước dòng phiên bản ở cuối trang chủ, ở chân menu trái và cạnh
 mục Có gì mới trong menu tài khoản. Mở trang một lần là chấm tắt, hệ nhớ theo tài khoản nên đổi máy vẫn đúng.</p>
 <h3>4. Hay gặp</h3>
 <table>
 <thead><tr><th>Hiện tượng</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
 <tbody>
-<tr><td>Chân menu không có dòng phiên bản</td><td>Menu đang thu gọn, hoặc máy chủ chưa trả được phiên bản</td><td>Mở rộng menu; vẫn không có thì tải lại trang.</td></tr>
+<tr><td>Không thấy dòng phiên bản</td><td>Menu trái đang thu gọn, hoặc máy chủ chưa trả được phiên bản</td><td>Về trang chủ xem dòng cuối, hoặc mở rộng menu; vẫn không có thì tải lại trang.</td></tr>
 <tr><td>Phiên bản ghi <em>không rõ</em> ở mã bản dựng</td><td>Bản dựng không kèm mã</td><td>Không ảnh hưởng gì; số phiên bản vẫn đúng.</td></tr>
 <tr><td>Thấy chức năng mới trên màn nhưng trang chưa ghi</td><td>Ghi chú đợt đó chưa cập nhật</td><td>Báo bộ phận kỹ thuật bổ sung mục.</td></tr>
 </tbody>

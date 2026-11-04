@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -113,21 +114,33 @@ describe('filterReleases', () => {
 })
 
 describe('WhatsNewPage', () => {
-  it('in các đợt mới nhất trước, nhãn loại, lưu ý; mở trang thì ghi đã xem bản đang chạy', async () => {
+  it('đợt mới nhất mở sẵn, đợt khác đóng; không hiện mã CR; mở trang thì ghi đã xem bản đang chạy', async () => {
     dung()
-    expect(await screen.findByText('Bản 2.12.0')).toBeInTheDocument()
-    expect(screen.getByText('Bản 2.10.0')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Bản 2.12.0' })).toHaveAttribute('data-state', 'open')
+    expect(screen.getByRole('button', { name: 'Bản 2.10.0' })).toHaveAttribute('data-state', 'closed')
     expect(screen.getByText('Mới nhất')).toBeInTheDocument()
-    expect(screen.getAllByText('Thêm').length).toBe(2)
+    //  Nội dung đợt đầu hiện; đợt đóng không có nội dung trong tài liệu.
+    expect(screen.getByText('Phiếu nghỉ bù.')).toBeInTheDocument()
     expect(screen.getByText('Có tám thay đổi cấu trúc dữ liệu.')).toBeInTheDocument()
+    expect(screen.queryByText('Thêm cột Phòng xử lý.')).not.toBeInTheDocument()
+    //  Mã CR chỉ để nội bộ, không in cho người dùng.
+    expect(screen.queryByText(/duoc-CR-715|bao-CR-721|bao-CR-705/)).not.toBeInTheDocument()
     await waitFor(() => expect(apiPut).toHaveBeenCalledTimes(1))
     expect(apiPut.mock.calls[0][1]).toEqual({ values: { release_seen_version: '2.12.0' } })
+  })
+
+  it('bấm đợt đang đóng thì sổ xuống nội dung của đợt đó', async () => {
+    const user = userEvent.setup()
+    dung()
+    await user.click(await screen.findByRole('button', { name: 'Bản 2.10.0' }))
+    expect(await screen.findByText('Thêm cột Phòng xử lý.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Bản 2.10.0' })).toHaveAttribute('data-state', 'open')
   })
 
   it('đã xem bản đang chạy rồi thì không ghi lại', async () => {
     seenVersion = '2.12.0'
     dung()
-    expect(await screen.findByText('Bản 2.12.0')).toBeInTheDocument()
+    await screen.findByRole('button', { name: 'Bản 2.12.0' })
     await new Promise((r) => setTimeout(r, 50))
     expect(apiPut).not.toHaveBeenCalled()
   })

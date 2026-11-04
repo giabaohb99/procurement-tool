@@ -139,6 +139,10 @@ số dòng chức năng trùng của bao-CR-721.
 2.0.0), X tăng mỗi đợt có tính năng, Y tăng khi đợt chỉ vá lỗi. Đã đánh lại lịch sử theo các đợt prod đã ghi nhớ: 30/10 là
 2.9.0, 31/10 là 2.10.0, 02/11 là 2.11.0, 04/11 là 2.12.0 (các đợt trước ghi trong chú thích của tệp, chưa có mục). Chân menu chỉ
 hiện số phiên bản; mã commit và giờ build hiện khi rê chuột và trong trang. Ngày phát hành vẫn ghi ở từng mục.
+**Bổ sung 04/11 lần hai (góp ý sau khi soát dev):** trang chủ chọn phân hệ không có menu trái nên dòng cuối trang nối thêm
+liên kết Phiên bản kèm chấm đỏ; trang Có gì mới chuyển sang danh sách thu gọn, mỗi đợt một dòng gồm số bản, ngày, tiêu
+đề, đợt mới nhất mở sẵn, các đợt khác bấm để sổ; bỏ mã thay đổi ở cuối mỗi dòng (vẫn giữ trong tệp cho nội bộ). Thêm
+thành phần accordion dùng chung. Vitest 3 bài trang cập nhật, cụm layouts 30 đạt, typecheck và eslint sạch.
 **Còn lại:** mỗi đợt đẩy prod A1 thêm một mục vào release_notes.json và đặt hai biến build trước khi dựng ảnh; prod đợt sau.
 Mã nguồn: backend/app/data/release_notes.json, backend/app/modules/release_info, backend/app/core/config.py, docker/Dockerfile.api, docker/Dockerfile.erp.prod, docker-compose.production.yml, docker-compose.dev.yml, frontend-v2/src/app/pages/whats-new-page.tsx, frontend-v2/src/app/layouts/sidebar-version-footer.tsx, frontend-v2/src/shared/release, test/backend/test_phien_ban_va_ghi_chu_phat_hanh_cr722.py, backend/scripts/seed_help_co_gi_moi.py, doc/erp/nen-tang, doc/tai-lieu-ky-thuat/van-hanh/quy-trinh-nhanh-va-deploy.md
 Commit: f8bcd696 (đặt chỗ), 67f0b71f
