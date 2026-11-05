@@ -146,6 +146,12 @@ hải quan đạt, ruff sạch. Đã đẩy lên erp-v2, chưa lên dev và prod
 **Còn lại:** sau khi bản này lên prod, chạy script gắn lại hoạt chất một lần (chạy thử trước, xem số dòng rồi mới ghi
 thật). Nút **Gắn lại nhãn** trên màn vẫn đọc cả bảng một lần trong tiến trình API, chưa đổi.
 
+**Bài kiểm đỏ ngoài phạm vi (kiểm ngày 05/11):** một lần lỡ chạy cả bộ bài kiểm backend ra 8 bài đỏ, đều ngoài phần hải
+quan. Chạy riêng trên mã prod và trên erp-v2 cho thấy không bài nào do việc này gây ra. Năm bài phân vùng nhật ký đỏ sẵn
+từ bao-CR-732 (gọi hàm dump đã đổi tên) và đã được sửa riêng. Bài hồ sơ trường riêng chỉ đỏ vì lần chạy đó thiếu thư mục
+giao diện. Bài **tệp quá 20 MB không trích** xanh khi chạy riêng, nghi chập chờn do thiếu bộ nhớ khi chạy cả bộ ba luồng
+trong 2 GB, chưa sửa. Bài thứ tám không còn ghi được tên vì nhật ký bị cắt.
+
 Mã nguồn: `backend/app/modules/customs/dedupe.py`, `importer.py`, `reader.py`, `row_log.py`, `ingredient.py`
 (`retag_changed`), `backend/scripts/gan_lai_hoat_chat_cr733.py`.
 Kiểm: `test/backend/test_chup_ket_qua_chong_trung_cr733.py`, `test/backend/du_lieu_chup_chong_trung_cr733.py`.
