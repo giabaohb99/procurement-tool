@@ -6,12 +6,19 @@
 // dòng là sang TRANG chi tiết, bấm lùi phải về đúng bộ lọc đang xem. Không dùng bộ lọc dòng hàng
 // của trang (nó là state khác, cho các mục khác). Mặc định lọc "Còn hiệu lực" — thuốc hết hiệu lực
 // vẫn có, bỏ lọc là thấy. Số trang không lên URL: quay lại thì về trang 1.
+//
+// bao-CR-734 — đồng bộ bảng với v2 (`customs-pesticide-columns.tsx`): menu "Cột" ẩn/hiện cột (nhớ
+// theo trình duyệt), thêm cột "Lĩnh vực" (mặc định ẩn, như v2), cột "Tên thuốc" GHIM bên trái khi
+// cuộn ngang.
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client'
 import { useAuth } from '../../auth/AuthContext'
 import Pagination from '../Pagination'
+import TableHead, { TableCells } from '../TableHead'
 import TableScroll from '../TableScroll'
+import TableToolbar from '../TableToolbar'
+import { TableColumn, useTableColumns } from '../../hooks/useTableColumns'
 import { fmtDate } from './customs-shared'
 import CustomsPesticideExportMenu from './CustomsPesticideExportMenu'
 import CustomsPesticideFilterBar from './CustomsPesticideFilterBar'
@@ -21,8 +28,44 @@ import {
   BANNED_ONLY, DEFAULT_PESTICIDE_FILTERS, PesticideFilters, buildPesticideParams,
   pesticideStatusBadgeClass, resolvePesticideEmptyMessage,
 } from '../../utils/customs-pesticide'
+import { toSentenceCaseIfShouting } from '../../utils/customs-pesticide-display'
 
 const PAGE_SIZE = 50
+
+//  bao-CR-734 — cột "Tên thuốc" ghim trái: nền đặc để chữ các cột cuộn qua bên dưới không lộ ra.
+//  Ô dữ liệu lấy nền của HÀNG (`inherit`) để vẫn đổi màu theo dòng chẵn lẻ và khi rê chuột — vì thế
+//  dòng lẻ phải tự đặt nền trắng (CSS chung để trong suốt), xem `<tr style>` bên dưới.
+const PINNED_EDGE = 'inset -1px 0 0 #e9edf7'
+const PINNED_TH: React.CSSProperties = { position: 'sticky', left: 0, zIndex: 2, boxShadow: PINNED_EDGE }
+const PINNED_TD: React.CSSProperties = { position: 'sticky', left: 0, zIndex: 1, background: 'inherit', boxShadow: PINNED_EDGE }
+
+//  Thứ tự + tiêu đề theo v2. Đổi thứ tự / thêm bớt cột thì đổi luôn `PESTICIDE_TABLE_KEY` cho bản lưu
+//  ẩn/hiện cũ khỏi lệch (cột mới khai `defaultHidden` thì `useTableColumns` tự ẩn, không cần đổi khóa).
+const PESTICIDE_TABLE_KEY = 'customs-pesticides'
+const COLS: TableColumn[] = [
+  { key: 'trade_name', label: 'Tên thuốc', fixed: true, th: PINNED_TH, td: PINNED_TD, cell: (r) => (
+    <>
+      <b>{r.trade_name}</b>
+      {r.is_manual && <span className="badge gray" style={{ marginLeft: 6 }}>Tự thêm</span>}
+    </>
+  ) },
+  { key: 'active_ingredient', label: 'Hoạt chất' },
+  { key: 'banned', label: 'Hoạt chất cấm', cell: (r) => r.banned?.length > 0 && (
+    <span style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+      {r.banned.map((b: any) => <span key={b.id} className="badge err">{b.name}</span>)}
+    </span>
+  ) },
+  { key: 'concentration', label: 'Hàm lượng' },
+  { key: 'pest_group', label: 'Phân nhóm' },
+  { key: 'registrant', label: 'Công ty đăng ký' },
+  { key: 'registration_no', label: 'Số đăng ký' },
+  { key: 'expires_on', label: 'Hết hạn đăng ký', cell: (r) => fmtDate(r.expires_on) },
+  { key: 'status', label: 'Tình trạng', cell: (r) => (
+    <span className={`badge ${pesticideStatusBadgeClass(r.status)}`}>{r.status_label || 'Chưa rõ'}</span>
+  ) },
+  { key: 'use_count', label: 'Phạm vi sử dụng', align: 'right', cell: (r) => r.use_count || '' },
+  { key: 'sector', label: 'Lĩnh vực', defaultHidden: true, cell: (r) => toSentenceCaseIfShouting(r.sector || '') },
+]
 
 export default function CustomsPesticideTab() {
   const { can } = useAuth()
@@ -52,6 +95,7 @@ export default function CustomsPesticideTab() {
   const [options, setOptions] = useState<any>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const table = useTableColumns(PESTICIDE_TABLE_KEY, COLS)
 
   const loadOptions = useCallback(() => {
     api.get('/api/customs/pesticides/options').then((r) => setOptions(r.data.data))
@@ -126,38 +170,19 @@ export default function CustomsPesticideTab() {
       </div>
 
       <div className="card table-card">
+        <TableToolbar {...table} onRefresh={refresh} />
         <TableScroll>
           <table>
-            <thead><tr>
-              <th>Tên thuốc</th><th>Hoạt chất</th><th>Hoạt chất cấm</th><th>Hàm lượng</th><th>Phân nhóm</th>
-              <th>Công ty đăng ký</th><th>Số đăng ký</th><th>Hết hạn đăng ký</th><th>Tình trạng</th><th>Phạm vi sử dụng</th>
-            </tr></thead>
+            <TableHead {...table} />
             <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="clickable" onClick={() => openDetail(r.id)}>
-                  <td>
-                    <b>{r.trade_name}</b>
-                    {r.is_manual && <span className="badge gray" style={{ marginLeft: 6 }}>Tự thêm</span>}
-                  </td>
-                  <td>{r.active_ingredient}</td>
-                  <td>
-                    {r.banned?.length > 0 && (
-                      <span style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                        {r.banned.map((b: any) => <span key={b.id} className="badge err">{b.name}</span>)}
-                      </span>
-                    )}
-                  </td>
-                  <td>{r.concentration}</td>
-                  <td>{r.pest_group}</td>
-                  <td>{r.registrant}</td>
-                  <td>{r.registration_no}</td>
-                  <td>{fmtDate(r.expires_on)}</td>
-                  <td><span className={`badge ${pesticideStatusBadgeClass(r.status)}`}>{r.status_label || 'Chưa rõ'}</span></td>
-                  <td style={{ textAlign: 'right' }}>{r.use_count || ''}</td>
+              {rows.map((r, i) => (
+                <tr key={r.id} className="clickable" onClick={() => openDetail(r.id)}
+                  style={i % 2 === 0 ? { background: '#fff' } : undefined}>
+                  <TableCells columns={table.columns} row={r} index={i} />
                 </tr>
               ))}
               {!loading && rows.length === 0 && (
-                <tr><td colSpan={10} className="table-empty">{emptyMessage}</td></tr>
+                <tr><td colSpan={table.columns.length} className="table-empty">{emptyMessage}</td></tr>
               )}
             </tbody>
           </table>

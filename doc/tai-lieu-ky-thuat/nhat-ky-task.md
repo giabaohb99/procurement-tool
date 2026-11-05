@@ -114,6 +114,76 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-734 | Đồng bộ màn Tra cứu thị trường giao diện cũ với giao diện mới
+- status: xong
+- date: 2026-11-05
+- list: Sản xuất - Thu mua
+- tag: Agent 4
+
+**Đã làm (giao diện cũ, ngoại lệ được người chủ cho phép):** bộ lọc nằm trên đường dẫn nên gửi link, tải lại trang hay quay lại vẫn giữ; chọn là lọc ngay, gõ chữ thì lọc khi ngưng gõ. Link cũ dạng thẻ tự chuyển đúng mục; hàng Lọc thêm thu gọn được. Bảng thuốc bảo vệ thực vật có menu chọn cột, cột Lĩnh vực, cột tên đứng yên khi cuộn ngang. Hộp nạp tệp kéo thả được, thêm dồn và bỏ từng tệp, báo rõ khi mọi tệp hỏng, khóa nút khi đang ghi. Nhật ký lô chia hai thẻ, chọn được số dòng mỗi trang, nút hoàn tác không bấm đúp được; chi tiết dòng có trạng thái đang tải và báo rõ khi dòng vừa bị hoàn tác; trang thuốc trên màn hẹp mở phần tra cứu trong ngăn kéo. Còn lại: bảng danh sách dùng bảng chung có kéo, ghim cột.
+
+Mã nguồn: frontend/src/pages/CustomsPrices.tsx, hooks/useCustomsUrlFilters.ts, components/customs/ (ImportDialog, HistoryPanel, LineDetail, PesticideTab, PesticideLookup, PesticideLookupDrawer), pages/CustomsPesticideDetailPage.tsx; HDSD seed_help_customs_prices.py.
+
+## bao-CR-728-xuat-lo-tra-cuu-thi-truong-v1 | Tra cứu thị trường v1: xuất toàn bộ chạy nền, Lô xuất của tôi, trần dung lượng tệp nạp
+- status: xong
+- date: 2026-11-05
+- list: Sản xuất - Thu mua
+- tag: Hải quan
+**Bối cảnh:** bao-CR-718 làm xuất toàn bộ / theo bộ lọc chạy nền chia tệp 50.000 dòng nhưng chỉ ở giao diện v2; người
+dùng thu mua vẫn làm trên v1 nên không xuất được quá 50.000 dòng, và chuông **Xuất tra cứu thị trường xong** trỏ đường
+của v2. Người chủ yêu cầu đồng bộ sang v1 (ngoại lệ của luật đóng băng `frontend/`). Cửa nạp tệp Tra cứu thị trường
+cũng chưa có trần dung lượng.
+
+**Việc:** thêm menu xuất ba mục và hai màn lô xuất trên v1 gọi đúng API của v2, cho chuông bấm được từ v1, đặt trần dung
+lượng tệp nạp, rồi thử trọn vòng xuất, sửa, nạp lại, hoàn tác trên 50.000 dòng ở máy local.
+
+**Kết quả:** v1 có nút **Xuất dữ liệu** dạng menu (Xuất ngay tối đa 50.000 dòng, Xuất toàn bộ theo bộ lọc chạy nền có hộp
+xác nhận nêu bộ lọc, số dòng, số tệp dự kiến, Lô xuất của tôi), màn danh sách lô và màn chi tiết lô (tiến độ, tải từng
+tệp, dừng lô, câu lỗi, lô quá hạn, tự hỏi lại mỗi 3 giây khi lô còn chạy). Đường v2 của chuông được v1 chuyển thẳng về
+màn lô của v1, nên chuông, trang Thông báo và thông báo đẩy đều tới đúng màn mà không đổi link phía backend. Cửa nạp
+nhận tối đa 30 MB mỗi tệp, đọc tối đa trần cộng một byte, vượt thì báo 413 bằng câu tiếng Việt. Lượt thử trọn vòng lộ
+ra hai lỗi và đã sửa: bước kiểm tiêu đề đọc trọn tệp ngay trong lời gọi API (tệp 50.000 dòng mất 18,8 giây và khoảng
+500 MB bộ nhớ, nay 0,02 giây), và bộ gắn hoạt chất theo tên thương mại cho kết quả khác nhau giữa các tiến trình (nạp lại
+tệp chỉ sửa 7 dòng mà lô báo 11 đến 19 dòng ghi đè, đổi cả hoạt chất). Sau khi sửa, lô nạp lại ghi đè đúng 7 dòng, xóa
+đúng 5 dòng, 49.988 dòng còn lại giữ nguyên dấu kiểm, hoàn tác trả cả bảng về y như trước. Bài HDSD Tra cứu thị trường
+thêm phần xuất dữ liệu, sửa hàng loạt bằng tệp xuất và trần 30 MB.
+
+**Kiểm:** 7 bài kiểm mới và 354 bài hải quan đạt, ruff sạch; v1 kiểm kiểu giữ đúng 4 lỗi cũ, build đạt; soát v1 trong
+trình duyệt ở local (tạo lô, tiến độ, xong, dừng lô, 409, chuyển link chuông, tải tệp, 413).
+
+**Còn lại:** tác vụ nạp tệp 50.000 dòng dùng khoảng 1 GB bộ nhớ worker (sát trần 1 GB của worker local) vì bước chống
+trùng nạp mọi dòng trong khoảng ngày cùng lúc, nên tách CR riêng; ghi đè qua tệp đặt lại dấu đã vá ngày; sau khi lên môi
+trường nên bấm **Gắn lại nhãn** một lần; bảng chênh tính năng v1 / v2 còn lại ghi ở kế hoạch bao-CR-728 mục 6, chờ người
+chủ chọn; chưa seed bài HDSD lên dev.
+
+## bao-CR-729-tran-tan-suat-api | Bật trần tần suất gọi API nghiệp vụ (BM-020)
+- status: xong
+- date: 2026-11-05
+- list: Nền tảng
+- tag: Bảo mật
+**Bối cảnh:** sổ bảo mật ghi BM-020: trần 300 lượt mỗi phút đã khai trong mã nhưng chưa có hiệu lực, chỉ bốn đường đăng
+nhập có trần, nên một tài khoản hợp lệ rút được toàn bộ dữ liệu trong phạm vi của mình ở tốc độ tối đa. Được giao 05/11
+theo phương án đã chốt: đếm theo tài khoản chứ không theo IP vì cả công ty chung một IP văn phòng.
+
+**Việc:** thêm lớp chặn tần suất cho mọi đường API, đếm theo tài khoản ở Redis, đường nặng chặt hơn, có công tắc tắt và
+chế độ chỉ ghi log để đo trước trên dev.
+
+**Kết quả:** mỗi lượt gọi API được đếm theo mã tài khoản lấy từ vé đăng nhập đã giải mã sẵn ở lớp ghi nhật ký (không giải
+mã lần hai, không đụng cơ sở dữ liệu); lượt chưa đăng nhập đếm theo IP thật. Bộ đếm cửa sổ một phút nằm ở Redis nên mọi
+tiến trình máy chủ đếm chung; Redis hỏng thì cho đi qua, ghi cảnh báo và nghỉ đếm 30 giây. Mức chung 300 lượt mỗi phút mỗi
+tài khoản; ba nhóm đường nặng mỗi nhóm 20 lượt mỗi phút và vẫn tính vào mức chung: xuất tệp (mọi đường xuất Excel, CSV,
+Word, lô xuất tra cứu thị trường, màn Xuất dữ liệu), tìm kiếm tra cứu thị trường (danh sách dòng và ba thẻ tổng hợp), gửi
+lệnh cho Trợ lý AI. Miễn trần có ghi lý do từng dòng: kiểm sức khỏe, cổng máy gọi máy của dịch vụ AI và app đặt xe cũ (ký
+HMAC), cổng MCP (đã có trần riêng theo khóa và cần câu lỗi dạng JSON-RPC), phần đọc công khai của Trung tâm trợ giúp và
+FAQ. Vượt mức trả 429 đúng phong bì chuẩn với câu **Thao tác quá nhanh, vui lòng thử lại sau ít giây** kèm thời gian chờ,
+và ghi log riêng. Các mức chỉnh bằng biến môi trường, không cần build. Trần riêng cũ của đăng nhập và thu sự kiện giữ
+nguyên. Sổ bảo mật lên bản 2.9, BM-020 chuyển **Đã vá (dev, log-only)**.
+
+Kiểm: 40 bài kiểm mới đạt; 17 tệp bài kiểm cũ về đăng nhập, nhật ký, thu sự kiện, bộ đệm báo cáo, IP thật đạt 658 bài;
+ruff sạch phần sửa.
+Mã nguồn: backend/app/core/rate_limit.py (mới), backend/app/core/config.py, backend/app/core/limiter.py, backend/app/main.py, .env.example, test/backend/conftest.py, test/backend/test_tran_tan_suat_cr729.py, doc/tai-lieu-ky-thuat/van-hanh/so-ghi-nhan-loi-bao-mat.md
+Còn lại: dựng dev với `RATE_LIMIT_LOG_ONLY=true`, đo một tuần qua log `app.rate_limit` rồi chỉnh mức trước khi bật chặn và lên prod.
+
 ## bao-CR-727-gui-lai-email | Nút Gửi lại trên màn Nhật ký email
 - status: xong
 - date: 2026-11-04
@@ -507,7 +577,7 @@ có chỗ nào cho biết việc nào đã chạy, chạy bao lâu, thành công
 ---
 
 ## bao-CR-703-giao-dien | Màn Việc chạy ngầm ở phân hệ Quản trị (giao diện)
-- status: dang-lam
+- status: xong
 - date: 2026-10-30
 - list: Kế hoạch hệ agent
 - tag: Agent 3
@@ -531,6 +601,7 @@ tải được dữ liệu.
 
 Mã nguồn: `frontend-v2/src/modules/system/pages/background-job-list-page.tsx`,
 `frontend-v2/src/modules/system/components/job-run-history-sheet.tsx`, `frontend-v2/src/modules/system/api/job-run-api.ts`
+**Rà 05/11/2026:** màn Việc chạy ngầm đã lên prod (commit 699b869f có trên main, ghi chú phát hành 2.11.0 ngày 02/11).
 
 ## bao-CR-697 | App đặt xe cũ: trò chuyện chưa có tin không làm hỏng màn, gỡ listener readStatus thừa
 - status: xong
@@ -4600,6 +4671,7 @@ prod tối 14/09 trong đợt 5abd5dc3 — đợt đó đóng ba lỗ BM-002, BM
 prod. Còn treo đúng một việc: quản trị tick khóa quyền phiên đăng nhập cho các vai trò
 ngoài quản trị, ở cả dev và prod.
 **Còn:** chưa có bằng chứng đã tick khóa quyền phiên đăng nhập cho các vai trò ngoài quản trị trên dev và prod; việc này làm tay ở màn Phân quyền, không dùng đường nạp lại quyền hàng loạt.
+**Rà 05/11/2026 (còn tồn):** chưa có bằng chứng đã tick quyền xem phiên đăng nhập cho vai trò ngoài quản trị trên prod; lần rà này không được đọc CSDL prod, cần quản trị mở màn Phân quyền xác nhận.
 
 ## bao-CR-397 | Bản in phiếu yêu cầu mua hàng: ô trưởng phòng mua hàng in đúng người
 - status: xong
@@ -4949,6 +5021,7 @@ dev lên prod; (7) cho dev một khóa riêng — xong 14/09, xem việc con
 ra-soat-bao-mat-1409-doi-khoa-dev.
 Tham chiếu: Việc 5 của sổ ghi nhận lỗi bảo mật.
 **Còn:** theo sổ ghi nhận lỗi bảo mật: BM-018 và BM-022 đã đo, prod sạch; BM-019, BM-021, BM-023 đã vá ở bao-CR-655 (commit bfa4149f trên erp-v2), chờ lên prod; BM-020 (trần tần suất cho đường nghiệp vụ) vẫn mở, chưa cấp số CR.
+**Rà 05/11/2026:** BM-019, BM-021, BM-023 nay đã lên prod (bao-CR-655 bfa4149f có trên main); chỉ còn BM-020 (trần tần suất cho đường nghiệp vụ) đang mở trong sổ bảo mật, chưa cấp số CR.
 
 ### ra-soat-bao-mat-1409-tai-tep | Rà khâu tải tệp lên, ra thêm 7 lỗ BM-025 đến BM-031
 - status: xong
@@ -5058,6 +5131,7 @@ trước. Đang chờ chỉ đạo xem có xử ngay không.
 Mã nguồn: `test/backend/test_pham_vi_duong_vong.py`; hai tệp thiếu là
 `login_session/controller.py` và `survey_request/report_controller.py`.
 **Còn:** nợ (1) vẫn mở — mật khẩu yếu đang có chưa được quét, muốn sạch phải ép đổi mật khẩu và chưa cấp số CR. Nợ (2) đã hết: bảng kiểm `test_pham_vi_duong_vong.py` nay đã khai đủ `login_session/controller.py` và `survey_request/report_controller.py`.
+**Rà 05/11/2026 (còn tồn):** nợ (2) đã hết; còn nợ (1) quét mật khẩu yếu cũ, cần quyết định chính sách ép đổi mật khẩu rồi mới cấp số CR.
 
 ## bao-CR-310 | Xử lý báo giá (phương án) trên Yêu cầu mua hàng
 - status: xong
@@ -6666,6 +6740,7 @@ Mã nguồn: bảng `tab_warehouse` với `code` và `name`, cột đề xuất 
 mang mã kho là `tab_po_item` 240 dòng, `tab_po_delivery` 178, `tab_goods_receipt` 177,
 `tab_inventory` 156, `tab_inventory_move` 177.
 **Còn:** đã chốt ngày 16/09/2026 ghi sổ để làm sau; chưa làm bước nào (chưa thêm cột tên viết tắt, chưa đổi mã kho).
+**Rà 05/11/2026 (còn tồn):** vẫn theo chốt 16/09 là để sau; chưa thêm cột tên viết tắt, chưa đổi mã kho.
 
 ## bao-CR-413 | Deploy prod 16/09/2026: tách RIÊNG ba ticket ra khỏi cụm chưa xong
 - status: xong
@@ -16670,7 +16745,7 @@ Mã nguồn: `frontend-v2/src/modules/system/pages/backup-list-page.tsx` · `api
 Commit: đẩy thẳng lên erp-v2 (xem lịch sử git, thông điệp có mã kh-SL-nut-chap-nhan)
 
 ## kh-AI1-1 | Thử lại bộ D1 trên deverp để đưa lên prod đợt năm
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -16683,6 +16758,7 @@ Commit: đẩy thẳng lên erp-v2 (xem lịch sử git, thông điệp có mã 
 **Điều kiện xong:** có xác nhận đạt; Agent 1 chốt giờ cắt đợt prod năm với Ban điều hành.
 
 Mã nguồn: kế hoạch `doc/plans/00-ke-hoach-theo-module.md` mục AI1-1
+**Rà 05/11/2026:** duoc-CR-655, 656, 657 đã lên prod trong đợt 5 ngày 26/10 (5daac31d, 565a38a4, 50631c03 có trên main).
 
 ## kh-HR1-1 | Chặn xuất CSV nhân sự chỉ cần quyền xem, che cột nhạy cảm khi xuất
 - status: xong
@@ -16726,9 +16802,10 @@ Viết bộ bài kiểm mới cho quyền xuất, quyền nhập và việc che 
 Mã nguồn: `test/backend/test_quyen_xuat_nhap_cr660.py` · `test_chong_mat_du_lieu_xoa_cung_cr169.py` · `test_chot_xoa_danh_muc_chung_cr191.py` · `test_van_thu_nhan_su_xoa_mem_cr177.py`.
 
 ### kh-HR1-1-5 | Lên prod: tick lại quyền Xuất cho các vai trò đang cần xuất tệp nhân sự
-- status: dang-lam
+- status: xong
 Mã đã lên nhánh erp-v2 nhưng chưa lên prod. Ngày deploy, các vai trò trên prod hiện chỉ có quyền Xem nhân sự sẽ mất nút xuất; quản trị phải vào màn *Phân quyền* tick ô **Xuất** cho đúng những vai trò cần tải tệp (thường là vai trò Nhân sự). Seed không tự làm việc này vì không được ghi đè phân quyền đã chỉnh trên giao diện.
 Deploy: chưa lên prod.
+**Rà 05/11/2026:** đợt prod 26/10 đã cấp quyền Xuất cho các dòng quyền có Xem ở nhân sự (bao gồm trong 42 dòng của CR-660, trừ vai trò nhân viên và quản trị điểm cà phê theo chủ ý).
 
 ## kh-HR1-2 | Cờ bắt buộc đính kèm của loại nghỉ phải chặn lúc gửi đơn
 - status: xong
@@ -16748,7 +16825,7 @@ Deploy: chưa lên prod.
 Mã nguồn: kế hoạch mục HR1-2 · `doc/erp/hrm/02-nghi-phep.md` §10 · duoc-CR-661 · backend/app/modules/leave/request_service.py · test/backend/test_nghi_phep_dinh_kem_bat_buoc_cr661.py
 
 ## kh-HR1-3 | Đề xuất người duyệt nghỉ phép cho các công ty ngoài AGC
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -16761,6 +16838,7 @@ Mã nguồn: kế hoạch mục HR1-2 · `doc/erp/hrm/02-nghi-phep.md` §10 · d
 **Điều kiện xong:** mỗi công ty có người dùng có luồng; đơn gửi đi có chuông tới đúng người duyệt.
 
 Mã nguồn: kế hoạch mục HR1-3
+**Rà 05/11/2026:** đợt prod 02/11 dựng luồng chung NP-CHUNG (không gắn công ty) nên mọi công ty ngoài AGC đã có luồng và chuông tới người duyệt; ca Trưởng phòng Nhân sự tự xin nghỉ chuyển sang mục hrm-0211-viec-tiep-nghi-phep.
 
 ## kh-HR1-4 | Màn kiểm việc duyệt đang treo trước khi khóa tài khoản người nghỉ
 - status: xong
@@ -16779,7 +16857,7 @@ Mã nguồn: kế hoạch mục HR1-3
 Mã nguồn: kế hoạch mục HR1-4 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-dung.md` §0 · duoc-CR-665 · backend/app/modules/employee/pending_work_service.py · test/backend/test_viec_treo_truoc_khoa_cr665.py
 
 ## kh-HR1-5 | Tài liệu hợp đồng lao động và nhập bù ngày vào làm
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -16792,6 +16870,7 @@ Mã nguồn: kế hoạch mục HR1-4 · `doc/erp/tham-khao-hrm/10-de-xuat-ap-du
 **Kết quả (23/10/2026):** Phần tài liệu đã xong (duoc-CR-673). Tệp mới `04-hop-dong-lao-dong.md` gom ba chức năng trước đây chưa có tài liệu riêng: hợp đồng lao động, quyền mặc định theo chức vụ và nhập Excel nhân sự; hai mục hợp đồng ở cuối tệp hồ sơ nhân sự đã chuyển sang đó. README Nhân sự hết bảng chức năng chưa có tài liệu, kế hoạch theo phân hệ mục Nhân sự được cập nhật cho khớp các việc đã làm ngày 22/10. Còn lại việc nhập bù ngày vào làm cho hồ sơ cũ, chờ phòng Nhân sự gửi dữ liệu; cách nhanh nhất là cột **Ngày vào làm** của màn Nhập Excel.
 
 Mã nguồn: kế hoạch mục HR1-5 · `doc/erp/hrm/README.md` §2, §5 · duoc-CR-673 · doc/erp/hrm/04-hop-dong-lao-dong.md
+**Rà 05/11/2026:** phần tài liệu xong ở duoc-CR-673 (đã lên prod); phần nhập bù ngày vào làm gộp vào mục hrm-0211-viec-tiep-nghi-phep.
 
 ### kh-HR1-5-1 | Viết tài liệu hợp đồng lao động
 - status: xong
@@ -16824,8 +16903,9 @@ Mã nguồn: `doc/plans/00-ke-hoach-theo-module.md` mục 5.
 Commit: 5d0bcb60
 
 ### kh-HR1-5-6 | Nhập bù ngày vào làm cho hồ sơ cũ
-- status: dang-lam
+- status: huy
 Hồ sơ tạo trước 07/09/2026 phần lớn trống ngày vào làm vì lúc đó màn hình chưa có ô nhập. Thiếu ngày này thì thâm niên phép tính bằng 0 (người làm lâu năm không được cộng phép theo bậc), và báo cáo biến động nhân sự lấy ngày tạo hồ sơ thay cho ngày vào làm. Đang chờ phòng Nhân sự gửi dữ liệu; cách nhập là cột **Ngày vào làm** ở màn *Nhập Excel* của danh sách nhân sự. Nên xong trước khi cấp quỹ phép năm 2027.
+**Rà 05/11/2026:** gộp vào mục hrm-0211-viec-tiep-nghi-phep (cùng việc nhập ngày vào làm rồi chạy lại cấp phép thâm niên), tránh theo dõi hai nơi.
 
 ## kh-NT1-1 | Quyền xuất và nhập riêng cho mọi màn danh mục (đi cùng HR1-1)
 - status: xong
@@ -16879,6 +16959,7 @@ Commit: a18dd75f · đẩy lên erp-v2 ngày 23/10/2026.
 - status: dang-lam
 Ngày deploy, quản trị vào màn *Phân quyền* tick **Xuất** cho vai trò cần tải tệp danh mục và **Nhập** cho vai trò cần nhập CSV; vai trò cũ không tự có hai ô này. Kiểm lại sau deploy: một tài khoản chỉ có quyền Xem không còn thấy nút Xuất. Từ duoc-CR-675 còn thêm ba vai trò đặt xe: *Điều phối viên (Đặt xe)* tick Xuất cho đặt xe, xe, tài xế; *Tài xế (Đặt xe)* tick Xuất cho đặt xe (phạm vi được giao), xe, tài xế; *Người đặt xe* tick Xuất cho đặt xe (phạm vi của mình).
 Deploy: chưa lên prod.
+**Rà 05/11/2026 (còn tồn):** quyền Xuất cho danh mục mặt hàng, nhà cung cấp, phòng ban đã cấp trên prod ngày 26/10 (CR-660); chưa có bằng chứng đã tick quyền Nhập và quyền Xuất cho ba vai trò đặt xe của duoc-CR-675.
 
 ## kh-TM1-1 | Tìm vì sao đơn mua hàng và yêu cầu thanh toán không báo người duyệt
 - status: xong
@@ -16913,6 +16994,7 @@ Mã nguồn: kế hoạch mục TM1-1 · duoc-CR-662 · backend/app/modules/noti
 **Điều kiện xong:** người thiếu mức không thấy văn bản mật ở danh sách, chi tiết, tìm kiếm, tải tệp; đủ 8 bài kiểm.
 
 Mã nguồn: kế hoạch mục VT1-1 · `doc/erp/van-thu/plans/02-lo-trinh-phat-trien.md` P5
+**Rà 05/11/2026 (còn tồn):** chưa làm: controller văn bản vẫn ghi lớp kiểm mức mật chưa có; phải xong trước khi nạp văn bản thật.
 
 ## kh-CV1-1 | Chuông báo cho phân hệ Công việc
 - status: xong
@@ -16985,7 +17067,7 @@ Mã nguồn: kế hoạch mục NT1-4 · duoc-CR-663 · migration cr663hdname01 
 Mã nguồn: kế hoạch mục NT1-5 · duoc-CR-668 · frontend-v2/src/app/router/print-route-access.ts · print-route-guard.test.tsx
 
 ## kh-HR2-2 | In phiếu thông tin nhân viên và cho nhân viên tự khai hồ sơ
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU265
 - tag: Được
@@ -16998,6 +17080,7 @@ Mã nguồn: kế hoạch mục NT1-5 · duoc-CR-668 · frontend-v2/src/app/rout
 **Điều kiện xong:** in được phiếu đúng mẫu; nhân viên tự sửa được các nhóm đã chốt.
 
 Mã nguồn: kế hoạch mục HR2-2 · `doc/erp/hrm/01-ho-so-nhan-su.md` §7.9, §7.10
+**Rà 05/11/2026:** duoc-CR-676 (6d581e8d, đã lên prod) làm in phiếu thông tin nhân viên mẫu BM00 và cho nhân viên tự đề nghị sửa hồ sơ có Nhân sự duyệt.
 
 ## kh-HR2-3 | Báo cáo đối chiếu phép trước và sau kết sổ
 - status: xong
@@ -17271,10 +17354,11 @@ Commit: nhánh agent3/kh-TM2-1, chưa đẩy
 **Điều kiện xong:** ba việc chạy trên dev, có bài kiểm; gửi hợp đồng API cho Agent 1 để Agent 3 làm phần giao diện; xin duyệt trước khi commit (có bảng mới và đụng phân quyền tệp).
 
 Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/nghien-cuu/01-brief-bao-cao-thuc-hien-ycbg.md` §6 · backend/app/core/file_registry.py · backend/app/core/attachment_scope.py · backend/app/modules/survey_request/report_constants.py · report_controller.py · report_model.py
+**Rà 05/11/2026 (còn tồn):** chưa có bảng mẫu báo cáo, chưa có tác vụ nhắc hạn, chưa có loại tệp đính kèm cho hồ sơ báo cáo; phần giao diện nhớ gấp / mở đã xong ở mục kh-TM2-1.
 
 ## kh-NT2-8 | Biểu đồ dashboard Tồn kho và màn lỗi tác vụ nền
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 3
@@ -17298,6 +17382,7 @@ Mã nguồn: kế hoạch TM2-1 · `doc/erp/thu-mua/nghien-cuu/01-brief-bao-cao-
 
 Mã nguồn: kế hoạch NT2-8 · `frontend-v2/src/modules/inventory/pages/inventory-dashboard-page.tsx` · `inventory/utils/warehouse-value-bars.ts` · kiểu `InventoryByWarehouse` ở `procurement/api/procurement-dashboard-api.ts`
 Commit: nhánh agent3/kh-NT2-8-giao-dien, chưa đẩy
+**Rà 05/11/2026:** biểu đồ giá trị tồn theo kho đã có cả máy chủ (khóa kpi_inv_by_warehouse) và giao diện trên main; màn xem lỗi tác vụ nền được thay bằng màn Việc chạy ngầm của bao-CR-703 (đã lên prod 02/11, có lịch sử chạy và câu lỗi).
 
 ## kh-CP-P1-2 | Điểm cà phê: nhập và xuất danh sách thành viên bằng Excel
 - list: Kế hoạch hệ agent
@@ -17314,10 +17399,11 @@ Commit: nhánh agent3/kh-NT2-8-giao-dien, chưa đẩy
 **Điều kiện xong:** nhập được danh sách gán cấp, xuất lại khớp; có bài kiểm.
 
 Mã nguồn: kế hoạch CP-P1-2 · `doc/erp/diem-ca-phe/plans/06-lo-trinh-phase.md`
+**Rà 05/11/2026 (còn tồn):** chưa làm: phân hệ Điểm cà phê chưa có đường nhập hay xuất thành viên.
 
 ## kh-AI1-1-hdsd | Soát trên dev và viết hướng dẫn cho các màn mới của anh Dược
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: huy
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 2
@@ -17332,6 +17418,7 @@ Mã nguồn: kế hoạch CP-P1-2 · `doc/erp/diem-ca-phe/plans/06-lo-trinh-phas
 **Điều kiện xong:** có biên bản soát; bài hướng dẫn nạp trên dev.
 
 Mã nguồn: kế hoạch AI1-1
+**Rà 05/11/2026:** phần soát trước đợt prod năm hết ý nghĩa vì các màn đã lên prod 26/10; phần viết bài hướng dẫn cho các màn chưa có bài gộp vào mục td-0311-tai-lieu-api-chuc-nang-hdsd.
 
 ## kh-DX2-1 | Kiểm thử tự động Playwright cho duyệt dấu và đặt xe
 - list: Kế hoạch hệ agent
@@ -17350,10 +17437,11 @@ Mã nguồn: kế hoạch AI1-1
 **Điều kiện xong:** chạy một lệnh ra kết quả xanh/đỏ trên dev.
 
 Mã nguồn: kế hoạch DX2-1
+**Rà 05/11/2026 (còn tồn):** chưa bắt đầu: kho mã chưa có cấu hình Playwright; là mã chạy nên phải xin duyệt trước khi commit.
 
 ## kh-tai-lieu-agc | Cập nhật tài liệu chức năng sau đợt AGC và luồng duyệt riêng
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 2
@@ -17380,10 +17468,11 @@ Mã nguồn: `doc/erp/thu-mua/chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-ha
 **Điều kiện xong:** tài liệu khớp hiện trạng prod; hai kịch bản dùng thử sẵn sàng.
 
 Mã nguồn: kế hoạch mục 5, 6, 8, 9
+**Rà 05/11/2026:** tài liệu chức năng và hai kịch bản dùng thử đã lên erp-v2 (f9d22a49); phần còn lại là mục X của bài hướng dẫn lập bộ tài khoản (chưa vào tệp seed) chuyển sang mục td-0311-tai-lieu-api-chuc-nang-hdsd, cụm Thu mua.
 
 ## kh-dot-prod-5 | Đợt prod năm: D1 của anh Dược cùng các bản vá
 - list: Kế hoạch hệ agent
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - pic: NSU209
 - tag: Agent 1
@@ -17396,6 +17485,7 @@ Mã nguồn: kế hoạch mục 5, 6, 8, 9
 **Điều kiện xong:** prod chạy bản mới, kiểm sau phát hành đạt.
 
 Mã nguồn: kế hoạch AI1-1
+**Rà 05/11/2026:** đợt prod năm đã chạy ngày 26/10, main bằng erp-v2 51c9a2b6, gồm duoc-CR-655..657 và bao-CR-651, 652.
 
 ## kh-van-hanh-a1 | Vận hành: khóa model prod, thử khôi phục sao lưu, nạp lại hướng dẫn tra cứu thị trường
 - list: Kế hoạch hệ agent
@@ -17413,6 +17503,7 @@ Mã nguồn: kế hoạch AI1-1
 **Điều kiện xong:** ba việc có biên bản kết quả.
 
 Mã nguồn: kế hoạch AI1-4, NT1-6, NK1-1
+**Rà 05/11/2026 (còn tồn):** nạp lại hướng dẫn tra cứu thị trường đã xong (seed_help_customs_prices chạy trên prod 04/11 cùng 12 bài, đã nạp lại chỉ mục AI); thử khôi phục bản sao lưu: người chủ tự thử ngày 05/11, đạt. Chỉ còn khóa model riêng cho prod, chưa có bằng chứng.
 
 ## kh-du-lieu-a1 | Dữ liệu: lịch sử app đặt xe cũ, phân công người mua AGC, gắn công ty cho nhân sự
 - list: Kế hoạch hệ agent
@@ -17430,6 +17521,7 @@ Mã nguồn: kế hoạch AI1-4, NT1-6, NK1-1
 **Điều kiện xong:** dữ liệu nạp đúng, có đối chiếu.
 
 Mã nguồn: kế hoạch DX1-1, TM1-2, NT1-3
+**Rà 05/11/2026 (còn tồn):** chưa có bằng chứng đã nạp lịch sử app đặt xe cũ lên prod, phân công người mua AGC hay gắn công ty cho hồ sơ; việc dữ liệu chờ phòng ban đưa danh sách.
 
 ## kh-NT1-2 | CI tối thiểu: tự chạy migration và bài kiểm mỗi lần đẩy mã
 - list: Kế hoạch hệ agent
@@ -17446,9 +17538,10 @@ Mã nguồn: kế hoạch DX1-1, TM1-2, NT1-3
 **Điều kiện xong:** đẩy mã lên erp-v2 là có kết quả xanh/đỏ.
 
 Mã nguồn: kế hoạch NT1-2
+**Rà 05/11/2026 (còn tồn):** chưa làm: kho mã chưa có thư mục quy trình tự chạy (.github/workflows).
 
 ## bao-CR-655 | Vá ba lỗ bảo mật BM-019, BM-021, BM-023 và cập nhật sổ bảo mật
-- status: dang-lam
+- status: xong
 - date: 2026-10-22
 - tag: Agent 1
 **Bối cảnh:** cụm AN1-1…AN1-4 trong kế hoạch, đã giao 22/10.
@@ -17464,6 +17557,7 @@ Mã nguồn: kế hoạch NT1-2
 **Còn lại:** chờ duyệt commit; lưu ý chưa lên prod.
 
 Mã nguồn: core/app_settings.py · main.py · docker/nginx.*.prod.conf · so-ghi-nhan-loi-bao-mat.md
+**Rà 05/11/2026:** đã commit bfa4149f và lên prod (có trên main từ đợt 26/10); BM-019, BM-021, BM-023 đóng.
 
 ## duoc-CR-670 | Cập nhật hướng dẫn sử dụng và dữ liệu cho trợ lý AI theo các tính năng mới ngày 22/10
 - status: xong
@@ -18456,6 +18550,41 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 - Gán quản lý trực tiếp trên hồ sơ nhân viên; gán trưởng phòng cho tám phòng còn trống (N2AGRO, Dego Holding, Agricare, N2AGRO-KT, Mua Hàng, Dego Agrochem, Pháp Lý, R&D).
 - Chốt người duyệt chặng một khi chính Trưởng phòng Nhân sự xin nghỉ.
 - Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
+**Rà 05/11/2026 (còn tồn):** nhận thêm việc nhập bù ngày vào làm từ kh-HR1-5-6; việc dữ liệu chờ phòng Nhân sự, lần rà này không đọc được CSDL prod để đếm hồ sơ còn thiếu.
+
+## bao-CR-732 | Tối ưu sao lưu cơ sở dữ liệu ERP
+- status: xong
+- date: 2026-11-05
+- list: Nền tảng
+- tag: Agent 4
+
+**Bối cảnh:** cơ sở dữ liệu prod khoảng 1 GB, mỗi bản sao lưu nén khoảng 90 MB, và lúc sao lưu cả bản nằm trong bộ nhớ của tiến trình chạy nền.
+
+**Đã làm:** sao lưu ghi thẳng ra tệp tạm theo từng khúc nên bộ nhớ không tăng theo cỡ dữ liệu. Các bảng nhật ký do máy ghi chỉ giữ cấu trúc. Dữ liệu tra cứu thị trường tách thành bản riêng, chụp mỗi sáng và bỏ qua khi không đổi, giữ 7 bản. Màn Sao lưu ghi rõ khôi phục cần bản chính và bản tra cứu thị trường mới nhất; script khôi phục tự nạp cả hai đúng thứ tự. Đo trên máy local: bộ nhớ đỉnh từ thêm 291 MB còn thêm 3 MB, tệp bản chính nhỏ hơn bốn lần.
+
+Mã nguồn: backup/service.py, backup/model.py, backup/tasks.py, backup/controller.py, core/celery_app.py, migration bkpart732, scripts/restore_backup.py, frontend-v2 backup-list-page.tsx + types/backup.ts; bài kiểm test_toi_uu_sao_luu_cr732.py, test_backup_dump_mysql_cr.py.
+
+## bao-CR-731 | Lịch tự dọn nhật ký do máy ghi
+- status: xong
+- date: 2026-11-05
+- list: Nền tảng
+- tag: Agent 4
+
+**Bối cảnh:** đo prod ngày 05/11, các bảng nhật ký do máy tự ghi (truy cập, nạp tệp, đồng bộ đặt xe, lịch sử thay đổi) chiếm hơn nửa cơ sở dữ liệu và tăng theo ngày.
+
+**Đã làm:** thêm việc dọn hằng đêm lúc 4 giờ. Sổ đồng bộ bỏ dòng bỏ qua sau 14 ngày và dòng thành công sau 90 ngày, giữ dòng lỗi và dòng mới nhất của từng phiếu. Nhật ký thư xóa nội dung thư sau 90 ngày, giữ người nhận, tiêu đề, trạng thái. Nhật ký nạp tệp bỏ dòng thông tin sau 30 ngày, giữ cảnh báo và lỗi; màn nhật ký lô cũ báo rõ phần đã dọn. Thôi ghi lịch sử thay đổi cho các bảng nhật ký máy. Nhật ký truy cập dạng xem giữ 30 ngày thay vì 90. Có script đếm trước để xem số rồi mới dọn thật lần đầu trên prod.
+
+Mã nguồn: system_log/machine_cleanup.py, system_log/tasks.py, core/logging_policy.py, core/config.py, request_log/tasks.py, job_run/registry.py, core/celery_app.py, notification/email_log_controller.py, import_tool/service.py + controller.py, customs/controller.py, sync_log model + controller, scripts/don_nhat_ky_may.py, frontend-v2 import-detail-page.tsx + customs-history-panel.tsx; bài kiểm test_don_nhat_ky_may_cr731.py.
+
+## bao-CR-730 | Báo cáo bảo mật tổng hợp tháng 11/2026 cho người chủ
+- status: xong
+- date: 2026-11-05
+- list: Nền tảng
+- tag: Bảo mật, Agent 4
+
+**Đã làm:** Soạn một báo cáo dễ đọc gom ba mươi sáu mục trong sổ lỗi bảo mật: tóm tắt một trang, những gì đã vá theo chín nhóm (đăng nhập, phân quyền, nhật ký, tệp, xuất Excel, bí mật, AI, thư, hạ tầng) có đối chiếu đã lên prod, những gì còn mở, tám nhóm rủi ro về sau kèm dấu hiệu sớm và việc nên làm, và lộ trình ba tháng. Đính chính sổ lỗi bảo mật: các mục còn ghi chờ deploy đều đã lên prod.
+
+Tài liệu: doc/tai-lieu-ky-thuat/van-hanh/bao-cao-bao-mat-tong-hop-2611.md, so-ghi-nhan-loi-bao-mat.md bản 2.8.
 
 ## bao-CR-726 | Chặn chèn công thức ở các tệp Excel / CSV xuất ra còn lại
 - status: xong
@@ -18503,6 +18632,8 @@ Mã nguồn: backend/app/main.py build_docs_urls, core/config.py API_DOCS_ENABLE
 - Viết hoặc cập nhật bài hướng dẫn sử dụng trên Trung tâm trợ giúp cho khớp màn hình.
 - Đồng bộ cho trợ lý AI và bot đọc được: chạy lại nạp bài hướng dẫn, cập nhật cẩm nang trợ lý và nạp lại chỉ mục tìm kiếm trên dev rồi prod.
 - Ưu tiên cụm thu mua và các đường mà công cụ MCP đang dùng, làm sau khi đợt làm gọn controller thu mua xong.
+**Rà 05/11/2026 (còn tồn):** bắt đầu 05/11 theo từng phân hệ (Thu mua, Nhân sự / Nghỉ phép, Tra cứu thị trường, Quản trị trước); nhận thêm bài hướng dẫn cho các màn của kh-AI1-1-hdsd và mục X bài lập bộ tài khoản của kh-tai-lieu-agc.
+**Bước 0 (05/11/2026):** thêm script `backend/scripts/dung_bang_api.py` dựng lại bảng mục 1 của mọi api.md từ mã, chạy lại nhiều lần không đổi gì, giữ cột Phạm vi / Ai gọi ghi tay, tự dò cột Ai gọi từ frontend-v2 và cổng MCP; ghi lệnh chạy vào luật tài liệu. Bộ dựng CRUD chung có câu mô tả tiếng Việt cho bảy đường (148 đường sinh ra). Kết quả: 1.002 dòng ở 12 api.md, cột Ai gọi có chữ ở 816 dòng (trước gần như trống), ô Mục đích còn tên hàm tiếng Anh giảm còn 477. Chín ô Mục đích ghi tay chi tiết chuyển xuống mục 2 của api.md Tra cứu thị trường và Nền tảng. Vá kèm bài đếm db.get đỏ sẵn sau bao-CR-727.
 
 ## bao-CR-709 | Hỏi giữ phòng cũ làm kiêm nhiệm khi đổi phòng chính
 - status: xong

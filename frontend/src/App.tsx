@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { ToastHost } from './components/toast'
 import { ConfirmHost } from './components/confirm'
@@ -26,6 +26,9 @@ import Reports from './pages/Reports'
 import PrLinesReportPage from './pages/PrLinesReportPage'
 import CustomsPrices from './pages/CustomsPrices'
 import CustomsPesticideDetailPage from './pages/CustomsPesticideDetailPage'
+import CustomsExportBatches from './pages/CustomsExportBatches'
+import CustomsExportBatchDetail from './pages/CustomsExportBatchDetail'
+import { CUSTOMS_EXPORTS_PATH, customsExportPath } from './utils/customs-export'
 import SurveyReport from './pages/SurveyReport'
 import CategoryAssignees from './pages/CategoryAssignees'
 import CategoryAssigneeNew from './pages/CategoryAssigneeNew'
@@ -47,6 +50,13 @@ import SurveyProgress from './pages/SurveyProgress'
 import TicketList from './pages/TicketList'
 import TicketDetail from './pages/TicketDetail'
 import { TICKET_ENABLED } from './config/features'
+
+// bao-CR-728 — chuông "xuất xong" của lô xuất Tra cứu thị trường (bao-CR-718) ghi link đường v2
+// `/procurement/customs-prices/exports/<id>`; người dùng bản cũ bấm chuông thì chuyển sang màn lô của bản này.
+function CustomsExportLinkRedirect() {
+  const { id } = useParams()
+  return <Navigate to={id ? customsExportPath(id) : CUSTOMS_EXPORTS_PATH} replace />
+}
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user } = useAuth()
@@ -106,6 +116,10 @@ export default function App() {
             <Route path="customs-prices/:section?" element={<CustomsPrices />} />
             {/* duoc-CR-493: chi tiết một thuốc BVTV là TRANG riêng (đồng bộ bản v2). */}
             <Route path="customs-prices/pesticides/:id" element={<CustomsPesticideDetailPage />} />
+            {/* bao-CR-728: lô xuất toàn bộ chạy nền (bê bao-CR-718 bản v2). Route tĩnh thắng `:section?`. */}
+            <Route path="customs-prices/exports" element={<CustomsExportBatches />} />
+            <Route path="customs-prices/exports/:id" element={<CustomsExportBatchDetail />} />
+            <Route path="procurement/customs-prices/exports/:id?" element={<CustomsExportLinkRedirect />} />
             <Route path="survey-report" element={<SurveyReport />} />
             <Route path="category-assignees" element={<CategoryAssignees />} />
             <Route path="category-assignees/new" element={<CategoryAssigneeNew />} />

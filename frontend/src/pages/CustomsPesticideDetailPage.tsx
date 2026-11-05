@@ -5,6 +5,8 @@
 // trang. Nút lùi quay về ĐÚNG chỗ đã mở trang (bộ lọc của thẻ Thuốc BVTV nằm trên URL, hoặc mục
 // Pháp lý) nhờ `state.from`; mở thẳng link thì về thẻ Thuốc BVTV.
 // Quyền: xem theo `customs_price.read`; Sửa / Xóa theo khóa riêng `customs_pesticide` (duoc-CR-490).
+// bao-CR-734: màn hẹp hơn 1280px không bày cột "Tra cứu" xuống cuối trang nữa — nút "Tra cứu" ở thẻ
+// đầu trang mở ngăn kéo bên phải (đồng bộ v2).
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
@@ -17,6 +19,7 @@ import { toast } from '../components/toast'
 import CustomsPesticideForm from '../components/customs/CustomsPesticideForm'
 import CustomsPesticideInfoCard from '../components/customs/CustomsPesticideInfoCard'
 import CustomsPesticideLookup from '../components/customs/CustomsPesticideLookup'
+import CustomsPesticideLookupDrawer, { useWideLookupLayout } from '../components/customs/CustomsPesticideLookupDrawer'
 import CustomsPesticideRelated from '../components/customs/CustomsPesticideRelated'
 import { customsSectionPath } from '../config/customs-sections'
 import { extractPesticideErrorMessage } from '../utils/customs-pesticide'
@@ -38,6 +41,12 @@ export default function CustomsPesticideDetailPage() {
   const [files, setFiles] = useState<any[]>([])
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
+  //  bao-CR-734 — màn rộng: cột tra cứu cố định bên phải; màn hẹp: nút "Tra cứu" mở ngăn kéo.
+  const wideLayout = useWideLookupLayout()
+  const [lookupOpen, setLookupOpen] = useState(false)
+  const closeLookup = useCallback(() => setLookupOpen(false), [])
+  //  Kéo cửa sổ rộng ra khi ngăn kéo đang mở thì đóng nó — cột bên phải đã hiện lại.
+  useEffect(() => { if (wideLayout) setLookupOpen(false) }, [wideLayout])
 
   const load = useCallback(() => {
     api.get(`/api/customs/pesticides/${pesticideId}`, { _silent: true } as any)
@@ -113,8 +122,12 @@ export default function CustomsPesticideDetailPage() {
 
   const manual = !!data.is_manual
   //  01/10/2026 — Sửa / Xóa nằm trong thẻ đầu trang (đồng bộ v2), không còn hàng tiêu đề rời.
-  const actions = (canWrite || canDelete) ? (
+  const actions = (!wideLayout || canWrite || canDelete) ? (
     <>
+      {/*  Màn hẹp không có cột tra cứu — mở nó trong ngăn kéo. */}
+      {!wideLayout && (
+        <button className="btn ghost" onClick={() => setLookupOpen(true)}><i className="ti ti-search" />Tra cứu</button>
+      )}
       {canWrite && <button className="btn ghost" onClick={() => setEditing(true)}><i className="ti ti-edit" />Sửa</button>}
       {canDelete && (
         <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }} disabled={busy} onClick={remove}>
@@ -126,8 +139,8 @@ export default function CustomsPesticideDetailPage() {
   return (
     <div>
       {/* 01/10/2026 — bố cục đồng bộ v2: THẺ ĐẦU TRANG + hai tab (Sử dụng & tài liệu · Thuốc liên quan);
-          cột "Tìm thuốc khác" + "Tra cứu nhanh" bên phải, màn hẹp xuống cuối trang
-          (`pesticide-detail-layout` trong index.css). */}
+          cột "Tìm thuốc khác" + "Tra cứu nhanh" bên phải (`pesticide-detail-layout` trong index.css);
+          bao-CR-734: màn hẹp không bày cột này nữa, nút "Tra cứu" mở ngăn kéo. */}
       <div className="pesticide-detail-layout">
       <div style={{ minWidth: 0 }}>
       {data.banned?.length > 0 && (
@@ -210,10 +223,13 @@ export default function CustomsPesticideDetailPage() {
 
       {tab === 'related' && <CustomsPesticideRelated pesticideId={data.id} registrant={data.registrant || ''} />}
       </div>
-      <aside className="pesticide-detail-aside">
-        <CustomsPesticideLookup currentPestGroup={data.pest_group || ''} />
-      </aside>
+      {wideLayout && (
+        <aside className="pesticide-detail-aside">
+          <CustomsPesticideLookup currentPestGroup={data.pest_group || ''} />
+        </aside>
+      )}
       </div>
+      <CustomsPesticideLookupDrawer open={lookupOpen} onClose={closeLookup} currentPestGroup={data.pest_group || ''} />
 
       {editing && (
         <CustomsPesticideForm pesticideId={pesticideId} onClose={() => setEditing(false)}

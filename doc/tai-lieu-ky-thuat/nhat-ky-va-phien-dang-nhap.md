@@ -223,7 +223,7 @@ ra. Log của nginx / Cloudflare (lượt chưa tới API) **vẫn ở ngoài**,
 
 **Cái giá, và đã trả bằng gì.** Ghi hết là ~3.000 dòng/ngày thay vì ~265. Ba khoản trả:
 
-- **Dung lượng** → cơ chế dọn dòng GET quá **90 ngày** (§4.1.1 ngay dưới).
+- **Dung lượng** → cơ chế dọn dòng GET quá **30 ngày** (90 ngày tới bao-CR-731; §4.1.1 ngay dưới).
 - **Nhân đôi dữ liệu nhạy cảm** → GET thành công **không lưu `response_body`**. Chép thân
   trả về của lượt đọc là sao nguyên phần dữ liệu đó sang một bảng **không có
   `employee_sensitive` gác cửa**. Vẫn tra được *"ai xem gì"* qua `path` + `query_string`.
@@ -258,7 +258,9 @@ trừ** (*"dấu vẫn thế, khỏi xét"*), không phải để định danh m
 > dữ liệu ĐO để gom, không phải chứng cứ; bản bền của nó là `tab_usage_daily` (giữ 3 năm). Việc dọn `usage.cleanup_ui_events` 04:20, xóa theo lô 2.000 dòng. Cột
 > `tab_notification.read_at` (mốc đánh dấu đã đọc, chỉ từ ngày deploy) cũng thêm ở CR này. Chi tiết: [`tracking-nguoi-dung-ho-so-ca-nhan.md`](tracking-nguoi-dung-ho-so-ca-nhan.md).
 
-#### 4.1.1. Dọn dòng GET quá 90 ngày — điều kiện ĐI KÈM, không phải tối ưu
+#### 4.1.1. Dọn dòng GET quá 30 ngày — điều kiện ĐI KÈM, không phải tối ưu
+
+> **bao-CR-731 (05/11/2026):** hạn GET hạ từ 90 xuống **30 ngày** (đo prod 05/11: 326 nghìn dòng GET / 197 MB), đổi qua biến `REQUEST_LOG_GET_KEEP_DAYS`; mốc dọn không bao giờ vượt đầu tháng hiện tại, để tháng chưa đóng gói R2 không bị xóa. Bảng dưới giữ số cũ làm lịch sử.
 
 `request_log.cleanup`, chạy **03:40 mỗi ngày** (`core/celery_app.py`).
 

@@ -35,13 +35,26 @@ mỗi đêm dump lâu thêm, hai lần một ngày.
 Đánh đổi đã biết và đã chấp nhận: **phục hồi từ bản sao lưu sẽ ra một hệ thống
 trắng nhật ký**. Nhật ký để truy trách nhiệm, không phải để khôi phục dữ liệu;
 muốn có lại thì nạp từ gói R2. Khôi phục: `backend/scripts/restore_backup.py`.
+
+**bao-CR-732 — tối ưu (người chủ gật 05/11/2026).** Đo prod 05/11: CSDL ~1.020 MB, mỗi bản nén ~90 MB, và bản dump cũ
+nằm trọn trong RAM worker ba lần (bytes thô + gzip + BytesIO). Ba đổi:
+1. **Dump luồng** (`dump_main_to` / `dump_customs_to`): stdout của mysqldump đọc từng khúc 1 MB, nén thẳng vào tệp tạm,
+   đẩy R2 từ tệp (boto3 tự chia phần) — RAM không còn tỷ lệ với cỡ CSDL. Vẫn hai lượt (`--ignore-table` + `--no-data`).
+2. **Bảng nhật ký máy chỉ lấy cấu trúc** (`MACHINE_DATA_TABLES`: sổ đồng bộ, nhật ký nạp tệp, sự kiện giao diện thô) —
+   cùng lý với bốn bảng nhật ký ở trên: là vết máy ghi, khôi phục ra rỗng thì hệ vẫn chạy đúng.
+3. **Dữ liệu tra cứu thị trường tách bản riêng** (`CUSTOMS_DATA_TABLES`, `part = 'customs'`): bản chính chỉ lấy cấu trúc
+   các bảng đó; bản riêng chỉ lấy DỮ LIỆU (`--no-create-info --complete-insert`, nạp được vào cấu trúc của bản chính kể
+   cả khi bảng có thêm cột), chụp ở lượt sáng, BỎ QUA nếu dấu vân tay (phiên bản alembic + số dòng / id lớn nhất / lần
+   sửa cuối của từng bảng) không đổi, giữ `CUSTOMS_KEEP` bản. Đổi cấu trúc (migration) thì lượt nào cũng chụp lại.
+   **Khôi phục = bản chính + bản tra cứu thị trường mới nhất**, đúng thứ tự đó (bản chính dựng lại bảng rỗng).
 """
 import gzip
-import io
+import hashlib
 import logging
 import os
 import statistics
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Callable
@@ -72,6 +85,20 @@ SUSPECT_NOTE_PREFIX = "Bỏ qua dọn bản cũ:"
 ACCEPTED_NOTE_PREFIX = "Đã chấp nhận cỡ mới:"
 #  Màn Sao lưu ở ERP v2 (frontend-v2 `appRoutes.system.backups`) — đích của chuông báo.
 BACKUP_SCREEN_LINK = "/system/backups"
+
+#  bao-CR-732 — bảng nhật ký do máy ghi: mọi bản chỉ lấy CẤU TRÚC. Đo prod 05/11/2026: sổ đồng bộ 173 MB, nhật ký nạp tệp
+#  183 MB. Cố ý KHÔNG có `tab_import_change` (ảnh chụp để hoàn tác lô nạp) và bảng số dùng theo ngày / tuần (gom từ nguồn
+#  thô đã bị dọn, mất là không dựng lại được).
+MACHINE_DATA_TABLES = ("tab_sync_log", "tab_import_log", "tab_ui_event")
+#  Dữ liệu tra cứu thị trường nạp từ tệp ngoài, to và ít đổi: dòng hàng 306 MB trên prod. Bảng cấu hình nhỏ do người sửa
+#  (bộ lọc lưu, từ đồng nghĩa, văn bản, mã dạng) vẫn ở bản chính để không chịu nhịp một lần mỗi ngày.
+CUSTOMS_DATA_TABLES = ("tab_customs_line", "tab_customs_line_change", "tab_customs_party", "tab_customs_tariff",
+                       "tab_customs_pesticide", "tab_customs_pesticide_use")
+PART_MAIN = "main"
+PART_CUSTOMS = "customs"
+PART_LABELS = {PART_MAIN: "Bản chính", PART_CUSTOMS: "Tra cứu thị trường"}
+CUSTOMS_KEEP = 7
+DUMP_CHUNK_BYTES = 1 << 20
 
 log = logging.getLogger(__name__)
 
@@ -139,10 +166,6 @@ def run_dump_pass(cmd: list[str], exe: str, label: str) -> bytes:
     return _strip_sandbox_lines(p.stdout)
 
 
-def _dump_sql() -> bytes:
-    return dump_sql(settings.DB_NAME, LOG_TABLES)
-
-
 def dump_sql(db_name: str, log_tables: tuple[str, ...] = ()) -> bytes:
     """Dump HAI LƯỢT rồi nối lại thành một tệp .sql (QĐ-C).
 
@@ -174,6 +197,123 @@ def dump_sql(db_name: str, log_tables: tuple[str, ...] = ()) -> bytes:
     schema_sql = run_dump_pass(base + ["--no-data", db_name, *log_tables],
                                exe, "cấu trúc bảng nhật ký")
     return data_sql + b"\n" + schema_sql
+
+
+def stream_dump_pass(cmd: list[str], exe: str, label: str, out) -> int:
+    """Chạy một lượt dump, chép stdout từng khúc vào `out` (cắt dòng sandbox ở khúc đầu). Trả số byte thô (bao-CR-732).
+
+    stderr ghi ra tệp tạm chứ không qua PIPE: PIPE đầy (mysqldump báo nhiều cảnh báo) mà không ai đọc thì hai tiến
+    trình treo chờ nhau."""
+    env = dict(os.environ)
+    env["MYSQL_PWD"] = settings.DB_PASSWORD  # tránh lộ mật khẩu trên dòng lệnh
+    written = 0
+    with tempfile.TemporaryFile() as err:
+        proc = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=err)
+        try:
+            first = True
+            while True:
+                chunk = proc.stdout.read(DUMP_CHUNK_BYTES)
+                if not chunk:
+                    break
+                if first:
+                    chunk, first = _strip_sandbox_lines(chunk), False
+                out.write(chunk)
+                written += len(chunk)
+        finally:
+            proc.stdout.close()
+            code = proc.wait()
+        if code != 0:
+            err.seek(0)
+            msg = err.read(500).decode("utf-8", errors="ignore")
+            raise RuntimeError(f"{exe} lỗi ở lượt {label} (mã {code}): {msg}")
+    if not written:
+        raise RuntimeError(f"Dump rỗng ở lượt {label} — không nhận được dữ liệu")
+    return written
+
+
+def _checked_exe() -> str:
+    exe = resolve_dump_exe()
+    if is_mariadb_client(exe):
+        raise RuntimeError(
+            f"Client dump là MariaDB ({exe}) — bản dump của nó KHÔNG khôi phục được vào "
+            "MySQL 8.4 (lỗi 3105 ở cột sinh). Dựng lại image api để có mysqldump của MySQL "
+            "(docker/Dockerfile.api) rồi chạy lại sao lưu.")
+    return exe
+
+
+def main_schema_only_tables() -> tuple[str, ...]:
+    """Bảng mà bản CHÍNH chỉ lấy cấu trúc: bốn bảng nhật ký (gói R2), nhật ký máy, dữ liệu tra cứu thị trường."""
+    return LOG_TABLES + MACHINE_DATA_TABLES + CUSTOMS_DATA_TABLES
+
+
+def dump_main_to(out, db_name: str) -> int:
+    """Bản CHÍNH, hai lượt nối vào cùng luồng `out` (`dump_sql` giải thích vì sao KHÔNG được bỏ lượt 2)."""
+    exe = _checked_exe()
+    base = build_dump_command(exe)
+    skip = main_schema_only_tables()
+    raw = stream_dump_pass(base + [f"--ignore-table={db_name}.{t}" for t in skip] + [db_name], exe,
+                           "dữ liệu nghiệp vụ", out)
+    out.write(b"\n")
+    return raw + 1 + stream_dump_pass(base + ["--no-data", db_name, *skip], exe, "cấu trúc bảng chỉ lấy khung", out)
+
+
+def dump_customs_to(out, db_name: str) -> int:
+    """Bản TRA CỨU THỊ TRƯỜNG: chỉ dữ liệu, câu INSERT ghi rõ tên cột — nạp SAU bản chính, vào bảng bản chính dựng."""
+    exe = _checked_exe()
+    cmd = build_dump_command(exe) + ["--no-create-info", "--complete-insert", db_name, *CUSTOMS_DATA_TABLES]
+    return stream_dump_pass(cmd, exe, "dữ liệu tra cứu thị trường", out)
+
+
+def dump_to_gzip_file(dump_fn, db_name: str):
+    """Chạy `dump_fn(out, db_name)` nén thẳng vào tệp tạm. Trả (tệp đã tua về đầu, cỡ gzip) — bên gọi đóng tệp."""
+    tmp = tempfile.TemporaryFile()
+    try:
+        with gzip.GzipFile(fileobj=tmp, mode="wb", compresslevel=6) as gz:
+            dump_fn(gz, db_name)
+        size = tmp.tell()
+        tmp.seek(0)
+        return tmp, size
+    except Exception:
+        tmp.close()
+        raise
+
+
+def customs_fingerprint(db) -> str:
+    """'<phiên bản alembic>:<sha1>' của dữ liệu tra cứu thị trường — đổi khi có dòng thêm / xóa / sửa hoặc có migration.
+
+    Mỗi bảng: số dòng, id lớn nhất, lần sửa cuối (nếu bảng có `updated_at`). Đếm bảng 300 nghìn dòng theo khóa chính
+    chỉ mất phần nhỏ giây — rẻ hơn nhiều so với dump lại 300 MB không cần."""
+    from sqlalchemy import text
+
+    from app.core.base_model import Base
+    try:
+        version = db.execute(text("SELECT version_num FROM alembic_version")).scalar() or ""
+    except Exception:  # noqa: BLE001 — CSDL bài kiểm không có bảng alembic
+        db.rollback()
+        version = ""
+    parts = []
+    for name in CUSTOMS_DATA_TABLES:
+        table = Base.metadata.tables.get(name)
+        if table is None:
+            continue
+        upd = ", MAX(updated_at)" if "updated_at" in table.c else ""
+        row = db.execute(text(f"SELECT COUNT(*), MAX(id){upd} FROM {name}")).first()
+        parts.append(f"{name}={'/'.join(str(v) for v in row)}")
+    return f"{version}:{hashlib.sha1(';'.join(parts).encode()).hexdigest()}"
+
+
+def customs_due(last, fingerprint: str, *, daily: bool) -> str:
+    """Lý do phải chụp bản tra cứu thị trường lượt này; chuỗi rỗng = bỏ qua.
+
+    `last`: bản 'customs' thành công gần nhất (hoặc None). `daily`: lượt sáng / bấm tay — lượt chiều chỉ chụp khi đổi
+    cấu trúc, để bản chính mới không bao giờ phải đi cùng dữ liệu chụp trên cấu trúc cũ."""
+    if last is None:
+        return "chưa có bản nào"
+    if (last.fingerprint or "") == fingerprint:
+        return ""
+    if (last.fingerprint or "").split(":", 1)[0] != fingerprint.split(":", 1)[0]:
+        return "cấu trúc CSDL đổi (migration)"
+    return "dữ liệu đổi" if daily else ""
 
 
 def _strip_sandbox_lines(sql: bytes) -> bytes:
@@ -338,28 +478,34 @@ def notify_backup_admins(db, text_: str) -> int:
     return len(users)
 
 
-def _backup_items(db) -> list[PruneItem]:
+def _backup_items(db, part: str = PART_MAIN) -> list[PruneItem]:
+    """Sổ của MỘT phần (bản chính / tra cứu thị trường) — hai phần dọn và so cỡ riêng, không lấy nhau làm mốc."""
     from .model import DbBackup
-    rows = db.query(DbBackup).order_by(DbBackup.id.desc()).all()
+    rows = db.query(DbBackup).filter(DbBackup.part == part).order_by(DbBackup.id.desc()).all()
     return [to_prune_item(r, r.status == "success") for r in rows]
 
 
 def _prune(db, new_rec) -> int:
-    """Dọn sổ sao lưu ERP sau một lượt thành công (xem `prune_backups`)."""
-    return prune_backups(db, new_rec, _backup_items(db), keep=keep_count(), now=datetime.now(),
+    """Dọn sổ sao lưu ERP sau một lượt thành công (xem `prune_backups`), riêng từng phần."""
+    part = new_rec.part or PART_MAIN
+    keep = CUSTOMS_KEEP if part == PART_CUSTOMS else keep_count()
+    return prune_backups(db, new_rec, _backup_items(db, part), keep=keep, now=datetime.now(),
                          remove_file=delete_key, notify=lambda t: notify_backup_admins(db, t))
 
 
 def accept_new_size(db, actor_id: int) -> int:
-    """Quản trị xác nhận CSDL thu nhỏ hợp lệ — xem `accept_suspect_streak`."""
-    return accept_suspect_streak(db, _backup_items(db), actor_id=actor_id, now=datetime.now())
+    """Quản trị xác nhận CSDL thu nhỏ hợp lệ — xem `accept_suspect_streak`. Gỡ dấu cho cả hai phần."""
+    now = datetime.now()
+    return sum(accept_suspect_streak(db, _backup_items(db, part), actor_id=actor_id, now=now)
+               for part in (PART_MAIN, PART_CUSTOMS))
 
 
-def run_backup(db, actor_id: int = 0, source: str = "auto"):
-    """Thực hiện 1 lần sao lưu. Ghi bản ghi running -> success/failed. Trả về DbBackup."""
+def _run_part(db, *, part: str, actor_id: int, source: str, dump_fn, fingerprint: str = ""):
+    """Một lượt sao lưu của MỘT phần: dòng running -> dump luồng ra tệp tạm -> R2 -> success / failed -> dọn."""
     from .model import DbBackup
     started = datetime.now()
-    rec = DbBackup(source=source, status="running", started_at=started, created_by=actor_id)
+    rec = DbBackup(source=source, status="running", started_at=started, created_by=actor_id, part=part,
+                   fingerprint=fingerprint)
     db.add(rec)
     db.commit()
     db.refresh(rec)
@@ -369,13 +515,16 @@ def run_backup(db, actor_id: int = 0, source: str = "auto"):
             #  /api/uploads. Bản sao lưu CSDL tuyệt đối không được nằm ở đó.
             raise RuntimeError("Chưa cấu hình R2 — bản sao lưu không có chỗ cất an toàn "
                                "(không ghi vào uploads/ vì thư mục đó phục vụ công khai)")
-        raw = _dump_sql()
-        gz = gzip.compress(raw, compresslevel=6)
-        # {env}/backup/{tên DB}-{thời điểm}.sql.gz → prod và dev không lẫn file backup.
-        key = f"{env_prefix()}/backup/{settings.DB_NAME}-{started.strftime('%Y%m%d-%H%M%S')}.sql.gz"
-        upload_fileobj(io.BytesIO(gz), key, "application/gzip")
+        tmp, size = dump_to_gzip_file(dump_fn, settings.DB_NAME)
+        try:
+            # {env}/backup/{tên DB}[-customs]-{thời điểm}.sql.gz → prod và dev không lẫn file backup.
+            tag = "" if part == PART_MAIN else f"-{part}"
+            key = f"{env_prefix()}/backup/{settings.DB_NAME}{tag}-{started.strftime('%Y%m%d-%H%M%S')}.sql.gz"
+            upload_fileobj(tmp, key, "application/gzip")
+        finally:
+            tmp.close()
         rec.file_key = key
-        rec.size_bytes = len(gz)
+        rec.size_bytes = size
         rec.status = "success"
         rec.finished_at = datetime.now()
         db.commit()
@@ -395,6 +544,36 @@ def run_backup(db, actor_id: int = 0, source: str = "auto"):
     except Exception:  # noqa: BLE001
         db.rollback()
         log.exception("sao lưu: dọn bản cũ lỗi, bản #%s vẫn thành công", rec.id)
+    db.refresh(rec)
+    return rec
+
+
+def run_customs_backup(db, *, actor_id: int = 0, source: str = "auto", daily: bool = True):
+    """Bản tra cứu thị trường nếu tới hạn (`customs_due`); trả DbBackup hoặc None khi bỏ qua."""
+    from .model import DbBackup
+    fingerprint = customs_fingerprint(db)
+    last = (db.query(DbBackup).filter(DbBackup.part == PART_CUSTOMS, DbBackup.status == "success")
+            .order_by(DbBackup.id.desc()).first())
+    reason = customs_due(last, fingerprint, daily=daily)
+    if not reason:
+        log.info("sao lưu: bỏ qua bản tra cứu thị trường (không đổi từ bản #%s)", last.id if last else 0)
+        return None
+    log.info("sao lưu: chụp bản tra cứu thị trường — %s", reason)
+    return _run_part(db, part=PART_CUSTOMS, actor_id=actor_id, source=source, dump_fn=dump_customs_to,
+                     fingerprint=fingerprint)
+
+
+def run_backup(db, actor_id: int = 0, source: str = "auto", with_customs: bool = True):
+    """Một lần sao lưu: bản chính, rồi bản tra cứu thị trường nếu tới hạn. Trả DbBackup của bản chính.
+
+    `with_customs=False` (lượt chiều): bản tra cứu thị trường chỉ chụp khi cấu trúc đổi. Bản phụ hỏng thì ghi
+    `failed` ở dòng của nó, KHÔNG làm hỏng bản chính vừa xong."""
+    rec = _run_part(db, part=PART_MAIN, actor_id=actor_id, source=source, dump_fn=dump_main_to)
+    try:
+        run_customs_backup(db, actor_id=actor_id, source=source, daily=with_customs)
+    except Exception:  # noqa: BLE001
+        db.rollback()
+        log.exception("sao lưu: bản tra cứu thị trường lỗi, bản chính #%s vẫn thành công", rec.id)
     db.refresh(rec)
     return rec
 
