@@ -186,3 +186,98 @@ Lấy từ lần chạy trên erp-v2 74401971, TRƯỚC khi `dedupe.load_existin
 thì chụp lại (`CR733_GHI_CHUP=1`) và ghi mã CR vào đây.
 """
 # ruff: noqa: E501'''
+
+
+# ── Sau khi sửa (bao-CR-733) ────────────────────────────────────────────────
+
+def _seed_plain(db, *rows):
+    b = _batch(db)
+    importer.run(db, b, _file(list(rows), with_id=False, with_optional=False), apply=True)
+    db.expire_all()
+    return b, db.query(CustomsLine).order_by(CustomsLine.id).all()
+
+
+def test_overwrite_keeps_date_fixed_when_date_unchanged(db):
+    """Việc 4a: tệp xuất ghi ngày ĐÃ vá nên nạp lại không còn gì để vá — ghi đè không được xóa dấu lịch cam."""
+    _, (kept, moved) = _seed_plain(db, _row(), _row(line_no=2))
+    db.query(CustomsLine).update({CustomsLine.date_fixed: 1})
+    db.commit()
+    b = _batch(db)
+    importer.run(db, b, _file([{**_row(price_usd=42), "id": kept.id},
+                               {**_row(line_no=2, reg_date="14-01-2026", price_usd=43), "id": moved.id}]), apply=True)
+    assert b.updated_count == 2
+    db.expire_all()
+    assert db.get(CustomsLine, kept.id).date_fixed == 1, "ngày không đổi → giữ dấu đã vá"
+    assert db.get(CustomsLine, kept.id).price_usd == Decimal("42")
+    assert db.get(CustomsLine, moved.id).date_fixed == 0, "người sửa gõ ngày mới → lấy dấu của lần đọc này"
+
+
+def test_reimport_of_stale_multi_trade_tag_needs_one_retag(db):
+    """Việc 4b: dòng đã lưu mang hoạt chất gắn theo thứ tự `set` cũ (tên hàng có hai tên thương mại). Nạp lại tệp xuất
+    KHÔNG sửa gì vẫn báo "Ghi đè" và đổi hoạt chất — đúng hiện tượng 7 dòng sửa mà báo 11. Gắn lại một lần là hết."""
+    from app.modules.customs.ingredient import retag_changed
+    _seed_catalog(db)
+    _, (line, other) = _seed_plain(db, _row(product_name="VIBAMEC ANVIL 5SC"), _row(line_no=2))
+    assert line.active_ingredient == "Abamectin", "bản sửa bao-CR-728: tên đứng trước thắng"
+    #  Giả dữ liệu cũ: tiến trình nạp trước kia chọn tên thương mại thứ hai.
+    db.query(CustomsLine).filter(CustomsLine.id == line.id).update({CustomsLine.active_ingredient: "Hexaconazole"})
+    db.commit()
+    export_like = _file([{**_row(product_name="VIBAMEC ANVIL 5SC", active_ingredient="Hexaconazole"), "id": line.id},
+                         {**_row(line_no=2), "id": other.id}])
+    dry = _batch(db, mode=ImportMode.DRY_RUN)
+    importer.run(db, dry, export_like, apply=False)
+    assert dry.updated_count == 1, "chưa gắn lại: dòng không sửa vẫn thành Ghi đè"
+
+    assert retag_changed(db)["changed"] == 1, "chạy thử chỉ đếm"
+    db.expire_all()
+    assert db.get(CustomsLine, line.id).active_ingredient == "Hexaconazole", "chạy thử không ghi"
+    done = retag_changed(db, apply=True, chunk=1)
+    assert (done["changed"], done["active"], done["total"]) == (1, 1, 2)
+    assert done["examples"][0]["active_after"] == "Abamectin"
+    assert retag_changed(db)["changed"] == 0, "chạy lại ra 0 — idempotent"
+
+    export_like = _file([{**_row(product_name="VIBAMEC ANVIL 5SC", active_ingredient="Abamectin"), "id": line.id},
+                         {**_row(line_no=2), "id": other.id}])
+    again = _batch(db, mode=ImportMode.DRY_RUN)
+    importer.run(db, again, export_like, apply=False)
+    assert again.updated_count == 0
+
+
+def test_retag_changed_keeps_values_from_file(db):
+    from app.modules.customs.ingredient import retag_changed
+    _seed_catalog(db)
+    b = _batch(db)
+    importer.run(db, b, _file([_row(product_name="VIBAMEC 5SC", active_ingredient="Tay nhập")], with_id=False),
+                 apply=True)
+    assert retag_changed(db, apply=True)["changed"] == 0
+    db.expire_all()
+    assert db.query(CustomsLine).one().active_ingredient == "Tay nhập"
+
+
+def _count_queries(db, fn) -> int:
+    from sqlalchemy import event
+    seen = []
+
+    def on_execute(*_args):
+        seen.append(1)
+    engine = db.get_bind()
+    event.listen(engine, "before_cursor_execute", on_execute)
+    try:
+        fn()
+    finally:
+        event.remove(engine, "before_cursor_execute", on_execute)
+    return len(seen)
+
+
+@pytest.mark.parametrize("size", [6])
+def test_query_count_does_not_grow_with_rows(db, size):
+    """Đọc theo khúc không được thành truy vấn từng dòng: gấp ba số dòng (sẵn có lẫn trong tệp, có ID) mà số câu
+    truy vấn không đổi khi mọi thứ vừa một khúc."""
+    def run(n: int, offset: int) -> int:
+        _, lines = _seed_plain(db, *[_row(line_no=offset + i) for i in range(n)])
+        lines = lines[-n:]
+        rows = [{**_row(line_no=offset + i, price_usd=50 + i), "id": x.id} for i, x in enumerate(lines)]
+        rows += [_row(line_no=offset + 500 + i) for i in range(n)]
+        dry = _batch(db, mode=ImportMode.DRY_RUN)
+        return _count_queries(db, lambda: importer.run(db, dry, _file(rows), apply=False))
+    assert run(size, 0) == run(size * 3, 1000)

@@ -114,6 +114,42 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-733-bo-nho-nap-tra-cuu-thi-truong | Tra cứu thị trường: giảm bộ nhớ khi nạp tệp lớn, giữ dấu vá ngày khi ghi đè
+- status: xong
+- date: 2026-11-05
+- list: Sản xuất - Thu mua
+- tag: Hải quan
+**Bối cảnh:** lượt thử của bao-CR-728 cho thấy nạp lại tệp xuất 50.000 dòng đẩy tác vụ nền lên khoảng 1 GB bộ nhớ, trong
+khi prod chạy hai tác vụ nền cùng lúc trên máy chỉ còn khoảng 3,3 GB trống. Điều phối giao việc giảm bộ nhớ mà giữ nguyên
+kết quả chống trùng, kèm hai việc nhỏ: ghi đè qua tệp làm mất dấu lịch cam (ngày đã vá), và xét có cần gắn lại nhãn hoạt
+chất sau bao-CR-728 không.
+
+**Đã làm**
+- Viết bài kiểm **chụp kết quả** trên mã cũ trước khi sửa: một kịch bản đủ các ca (trùng hẳn, trùng trong tệp, nghi sửa
+  giá, cùng tờ khai giá lượng có và không xung đột, ghi đè theo ID, ID không có, xóa đúng và xóa hỏng, hỏng ngày, dải nhiều
+  ngày, nhãn hoạt chất), so từng con số của lô, từng dòng nhật ký và mọi cột của mọi dòng sau chạy thử và ghi thật. Bài này
+  đạt trên mã cũ và vẫn đạt sau khi sửa.
+- Bước chống trùng đọc dòng sẵn có **theo khúc 2.000 dòng**, chỉ các cột cần, và chỉ giữ mã có trong tệp; ô chuẩn để so
+  xung đột chỉ đọc lại khi thật cần. Dòng có ô ID được tra theo cụm 1.000 và chỉ giữ dòng sắp ghi đè hoặc xóa để chụp.
+- Bộ đọc tệp đọc **từng dòng** thay vì dựng cả lưới ô, số và chữ lặp lại dùng chung một bản; nhật ký từng dòng và gói chèn
+  dòng mới dựng theo khúc.
+- Ghi đè theo ID mà ngày không đổi thì **giữ dấu đã vá ngày** của dòng cũ.
+- Tìm ra vì sao lô sửa 7 dòng mà báo ghi đè 11 dòng: hoạt chất đã lưu của dòng có tên hàng chứa hai tên thương mại được
+  gắn theo thứ tự ngẫu nhiên cũ, nạp lại thì bộ gắn mới (ổn định) ra giá trị khác nên dòng không sửa cũng thành **Ghi
+  đè**. Viết script chạy một lần để gắn lại, có chế độ chạy thử đếm số dòng sẽ đổi, chỉ ghi dòng khác, chạy lại ra 0.
+
+**Kết quả:** đo ở máy local trên bảng 50.000 dòng, MySQL riêng: nạp lại tệp xuất từ 45 giây và 1.014 MB xuống 33 giây và
+389 MB (chạy thử), ghi thật từ 41 giây và 1.014 MB xuống 34 giây và 391 MB; tệp 50.000 dòng mới từ 879 MB xuống 365 MB,
+nhanh hơn 11 đến 12 giây. Số dòng thêm, trùng, đã có, ghi đè, xóa trùng khớp trước và sau; hoàn tác trả đủ. 369 bài kiểm
+hải quan đạt, ruff sạch. Đã đẩy lên erp-v2, chưa lên dev và prod.
+
+**Còn lại:** sau khi bản này lên prod, chạy script gắn lại hoạt chất một lần (chạy thử trước, xem số dòng rồi mới ghi
+thật). Nút **Gắn lại nhãn** trên màn vẫn đọc cả bảng một lần trong tiến trình API, chưa đổi.
+
+Mã nguồn: `backend/app/modules/customs/dedupe.py`, `importer.py`, `reader.py`, `row_log.py`, `ingredient.py`
+(`retag_changed`), `backend/scripts/gan_lai_hoat_chat_cr733.py`.
+Kiểm: `test/backend/test_chup_ket_qua_chong_trung_cr733.py`, `test/backend/du_lieu_chup_chong_trung_cr733.py`.
+
 ## bao-CR-728-xuat-lo-tra-cuu-thi-truong-v1 | Tra cứu thị trường v1: xuất toàn bộ chạy nền, Lô xuất của tôi, trần dung lượng tệp nạp
 - status: xong
 - date: 2026-11-05

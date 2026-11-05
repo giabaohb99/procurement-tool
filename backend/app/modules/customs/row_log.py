@@ -29,7 +29,7 @@ from app.modules.import_tool.model import (IMPORT_ROW_STATUS_LABELS, ImportBatch
                                            ImportRowStatus, LogLevel)
 
 from .constants import COLUMNS, INSERT_CHUNK, REF_ID_KEY
-from .dedupe import ExistingIndex, conflict_fields
+from .dedupe import ExistingIndex, canon_values, conflict_fields
 from .reader import ParseResult
 
 SHEET = "GTT02"
@@ -56,10 +56,10 @@ class Classification:
 def classify_rows(res: ParseResult, identities: list[str], existing: ExistingIndex,
                   target_ids: frozenset[int] | set[int] = frozenset(),
                   unchanged_rows: frozenset[int] | set[int] = frozenset(),
-                  matches: list[tuple[str, tuple[str, ...]]] | None = None) -> Classification:
+                  matches: list[str] | None = None) -> Classification:
     """Phân loại từng dòng của tệp theo THỨ TỰ DÒNG.
 
-    `res.rows` phải đã qua `dedupe.stamp_rows` (có `row_hash`); `identities` cùng thứ tự.
+    `res.rows` phải đã qua `dedupe.stamp_file_rows` (có `row_hash`); `identities` cùng thứ tự.
     Dòng lỗi lấy từ `res.logs` (mức ERROR, có số dòng).
 
     bao-CR-608: `target_ids` = các id mà ô "ID" của tệp trỏ tới VÀ có thật trong bảng;
@@ -70,9 +70,10 @@ def classify_rows(res: ParseResult, identities: list[str], existing: ExistingInd
       · ô ID có số mà không có → THÊM MỚI như dòng thường (vẫn qua chống trùng), kèm cảnh báo;
       · một ID xuất hiện ở nhiều dòng → dòng ĐẦU TIÊN thắng, các dòng sau BỎ QUA kèm cảnh báo.
 
-    bao-CR-699: `matches` (cùng thứ tự `res.rows`, từ `dedupe.match_rows`) — dòng khác mã băm nhưng cùng tờ khai +
-    giá + lượng với một dòng đã lưu / dòng phía trên trong tệp, và KHÔNG xung đột ô nào (bằng nhau hoặc một bên trống)
-    → "Đã có" / "Trùng"; có xung đột → vẫn THÊM, ghi chú cần rà.
+    bao-CR-699: `matches` (mã khớp, cùng thứ tự `res.rows`, từ `dedupe.stamp_file_rows`) — dòng khác mã băm nhưng cùng
+    tờ khai + giá + lượng với một dòng đã lưu / dòng phía trên trong tệp, và KHÔNG xung đột ô nào (bằng nhau hoặc một
+    bên trống) → "Đã có" / "Trùng"; có xung đột → vẫn THÊM, ghi chú cần rà. bao-CR-733: ô chuẩn của dòng tệp chỉ tính
+    khi có dòng để so (không giữ sẵn ~30 chuỗi cho mọi dòng).
     """
     out = Classification()
     for row_no, level, message in res.logs:
@@ -83,7 +84,7 @@ def classify_rows(res: ParseResult, identities: list[str], existing: ExistingInd
     items += [(d["source_row"], True, d, "") for d in res.deletes]
     items.sort(key=lambda t: t[0])
     first_seen: dict[str, int] = {}
-    first_match: dict[str, tuple[int, tuple[str, ...]]] = {}     # mã khớp → (dòng trong tệp, các ô chuẩn hóa)
+    first_match: dict[str, tuple[int, dict]] = {}     # mã khớp → (số dòng trong tệp, dòng đó)
     claimed: dict[int, int] = {}          # id → dòng đã xử lý nó
 
     def skip(row_no: int, name: str, message: str) -> None:
@@ -132,22 +133,23 @@ def classify_rows(res: ParseResult, identities: list[str], existing: ExistingInd
             out.statuses.append((row_no, int(ImportRowStatus.DUPLICATE),
                                  f"{prefix}Giống hệt dòng {first_seen[h]} trong cùng tệp — bỏ qua", name))
         else:
-            match_key, canon = match_of.get(id(r), ("", ()))
+            match_key = match_of.get(id(r), "")
             stored = existing.by_match.get(match_key) if match_key else None
             earlier = first_match.get(match_key) if match_key else None
+            canon = canon_values(r) if stored or earlier else ()
             if stored and not conflict_fields(canon, stored[1]):
                 out.statuses.append((row_no, int(ImportRowStatus.EXISTING),
                                      f"{prefix}Đã có trong bảng giá (cùng tờ khai, giá, lượng — lô #{stored[0]}) — bỏ qua",
                                      name))
                 continue
-            if earlier and not conflict_fields(canon, earlier[1]):
+            if earlier and not conflict_fields(canon, canon_values(earlier[1])):
                 out.statuses.append((row_no, int(ImportRowStatus.DUPLICATE),
                                      f"{prefix}Trùng dòng {earlier[0]} trong cùng tệp (cùng tờ khai, giá, lượng) — bỏ qua",
                                      name))
                 continue
             first_seen[h] = row_no
             if match_key:
-                first_match.setdefault(match_key, (row_no, canon))
+                first_match.setdefault(match_key, (row_no, r))
             out.to_insert.append(r)
             clash = conflict_fields(canon, stored[1]) if stored else []
             if clash:
@@ -171,12 +173,13 @@ def write_row_logs(db: Session, batch: ImportBatch, statuses: list[RowStatus]) -
     KHÔNG tăng các bộ đếm cảnh báo/lỗi của lô — dòng lỗi đã được `add_log` đếm ở mức ERROR
     rồi; ở đây chỉ thêm góc nhìn "mỗi dòng một kết cục".
     """
-    payload = [{"batch_id": batch.id, "sheet": SHEET, "row_no": row_no, "level": int(LogLevel.INFO),
-                "category": CATEGORY, "message": message, "ref_key": name[:120],
-                "row_status": status, "created_by": batch.created_by, "updated_by": batch.created_by}
-               for row_no, status, message, name in statuses]
-    for i in range(0, len(payload), INSERT_CHUNK):
-        db.execute(insert(ImportLog), payload[i:i + INSERT_CHUNK])
+    #  bao-CR-733: dựng gói chèn THEO KHÚC — tệp 50.000 dòng dựng một lần là 50.000 dict nằm cùng lúc (~35 MB).
+    for i in range(0, len(statuses), INSERT_CHUNK):
+        db.execute(insert(ImportLog), [
+            {"batch_id": batch.id, "sheet": SHEET, "row_no": row_no, "level": int(LogLevel.INFO),
+             "category": CATEGORY, "message": message, "ref_key": name[:120],
+             "row_status": status, "created_by": batch.created_by, "updated_by": batch.created_by}
+            for row_no, status, message, name in statuses[i:i + INSERT_CHUNK]])
     counts = dict.fromkeys(_COUNT_KEY.values(), 0)
     for _, status, _, _ in statuses:
         counts[_COUNT_KEY[status]] += 1

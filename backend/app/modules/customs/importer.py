@@ -22,7 +22,9 @@ kết xuất hàng chục nghìn dòng; `db.add` còn kích hoạt nhật ký tr
 hàng loạt còn nhanh hơn nhiều).
 """
 import json
+from collections import defaultdict
 from contextlib import contextmanager
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from types import SimpleNamespace
@@ -103,15 +105,16 @@ def _classify_and_write(db: Session, batch: ImportBatch, res: reader.ParseResult
     #  bao-CR-541: so trùng bằng mã băm với dòng đã lưu trong khoảng ngày của tệp (dòng cũ
     #  chưa có mã thì tính luôn), rồi chỉ giữ dòng thật sự mới. Chạy thử cũng so — người nạp
     #  thấy trước bao nhiêu dòng mới, bao nhiêu dòng đã có, bao nhiêu dòng trùng trong tệp.
-    identities = dedupe.stamp_rows(rows)
-    existing = dedupe.load_existing(db, date_from, date_to, exclude_batch_id=batch.id)
-    #  bao-CR-608: tra MỘT LẦN mọi id mà cột "ID" trỏ tới (từng cụm 1000), không truy vấn từng dòng.
-    wanted = {r[REF_ID_KEY] for r in rows if r.get(REF_ID_KEY)} | {d["ref_id"] for d in res.deletes if d["ref_id"]}
-    targets = line_change.load_lines_by_id(db, wanted)
-    taggers = _Taggers(db) if (targets or (apply and rows)) else None
-    unchanged = _tag_overwrites(db, rows, targets, taggers) if targets else set()
-    cls = row_log.classify_rows(res, identities, existing, frozenset(targets), unchanged,
-                                matches=dedupe.match_rows(rows))   # bao-CR-699: cùng tờ khai + giá + lượng
+    #  bao-CR-733: chỉ mục dòng sẵn có đọc theo khúc và chỉ giữ mã có trong tệp (`dedupe.load_existing`).
+    stamp = dedupe.stamp_file_rows(rows)
+    existing = dedupe.load_existing(db, date_from, date_to, exclude_batch_id=batch.id, wanted=stamp)
+    #  bao-CR-608: tra mọi id mà cột "ID" trỏ tới theo cụm 1000, không truy vấn từng dòng. bao-CR-733: chỉ GIỮ dòng
+    #  sẽ ghi đè / xóa (cần chụp); dòng không đổi xong cụm là bỏ — tệp xuất 50.000 dòng đều có ID.
+    overwrites = _scan_overwrites(db, rows, res.deletes)
+    taggers = overwrites.taggers or (_Taggers(db) if apply and rows else None)
+    targets = overwrites.lines
+    cls = row_log.classify_rows(res, stamp.identities, existing, overwrites.found, overwrites.unchanged,
+                                matches=stamp.matches)   # bao-CR-699: cùng tờ khai + giá + lượng
     for row_no, message in cls.warnings:
         add_log(db, batch, SHEET, row_no, LogLevel.WARNING, "customs", message)
     #  bao-CR-496: mỗi dòng dữ liệu một dòng nhật ký mang kết cục — ghi ở CẢ chạy thử lẫn ghi thật.
@@ -149,6 +152,8 @@ def _classify_and_write(db: Session, batch: ImportBatch, res: reader.ParseResult
                                          batch.id, user_id)
         for r in cls.to_insert:
             taggers.tag(r)
+        for r, line_id in cls.to_update:
+            _keep_date_fixed(r, targets[line_id])
         written = cls.to_insert + [r for r, _ in cls.to_update]
         if written:
             importer_ids = upsert_parties(db, PartyType.DOMESTIC, written)
@@ -230,26 +235,73 @@ def _same_decimal(a, b) -> bool:
     return Decimal(str(a)).quantize(Decimal("0.01")) == Decimal(str(b)).quantize(Decimal("0.01"))
 
 
-def _tag_overwrites(db: Session, rows: list[dict], targets: dict[int, CustomsLine], taggers: _Taggers) -> set[int]:
-    """Gắn nhãn cho các dòng có ID trỏ đúng dòng đã có; → số dòng (trong tệp) có dữ liệu Y HỆT dòng
-    đã lưu — những dòng đó bỏ qua, không chụp, không ghi (xuất → sửa vài dòng → nạp lại cả tệp
-    thì chỉ dòng thật sự sửa mới thành "Ghi đè")."""
-    hashes = dedupe.stored_hashes(db, list(targets.values()))
-    unchanged: set[int] = set()
+@dataclass
+class _Overwrites:
+    """bao-CR-733 — kết quả dò các dòng tệp có ô "ID" / "Thao tác = xóa" trỏ tới dòng đã có."""
+    found: set[int] = field(default_factory=set)            # id có thật trong bảng
+    unchanged: set[int] = field(default_factory=set)        # số dòng (trong tệp) có dữ liệu Y HỆT dòng đã lưu
+    lines: dict[int, CustomsLine] = field(default_factory=dict)   # CHỈ dòng sẽ ghi đè / xóa — để chụp
+    taggers: "_Taggers | None" = None
+
+
+def _scan_overwrites(db: Session, rows: list[dict], deletes: list[dict]) -> _Overwrites:
+    """Tra các dòng mà ô "ID" trỏ tới theo cụm (`line_change._CHUNK`), gắn nhãn cho dòng tệp trỏ đúng dòng đã có và
+    đánh dấu dòng có dữ liệu Y HỆT dòng đã lưu — những dòng đó bỏ qua, không chụp, không ghi (xuất → sửa vài dòng →
+    nạp lại cả tệp thì chỉ dòng thật sự sửa mới thành "Ghi đè").
+
+    bao-CR-733: bản trước nạp MỌI dòng được trỏ tới thành đối tượng ORM giữ tới cuối lô (tệp xuất 50.000 dòng đều có
+    ID → 50.000 đối tượng). Nay xong cụm nào bỏ cụm đó, chỉ giữ dòng có thể bị ghi đè / xóa. Kết quả y như cũ: nhãn
+    gắn theo đúng dòng trỏ tới, không phụ thuộc thứ tự dòng trong tệp."""
+    out = _Overwrites()
+    by_id: dict[int, list[dict]] = defaultdict(list)
     for r in rows:
-        line = targets.get(r.get(REF_ID_KEY) or 0)
-        if line is None:
+        if r.get(REF_ID_KEY):
+            by_id[r[REF_ID_KEY]].append(r)
+    delete_ids = {d["ref_id"] for d in deletes if d["ref_id"]}
+    wanted = sorted({int(i) for i in set(by_id) | delete_ids})
+    parties: dict[int, str] = {}
+    for i in range(0, len(wanted), line_change._CHUNK):
+        lines = line_change.load_lines_by_id(db, wanted[i:i + line_change._CHUNK])
+        if not lines:
             continue
-        taggers.tag(r, previous=line)
-        same = (r["row_hash"] == hashes[line.id]
-                and r["active_ingredient"] == (line.active_ingredient or "")
-                and r["formulation"] == (line.formulation or "")
-                and r["active_ingredient_from_file"] == bool(line.active_ingredient_from_file)
-                and r["formulation_from_file"] == bool(line.formulation_from_file)
-                and all(_same_decimal(r[k], getattr(line, k)) for k in _VND_KEYS))
-        if same:
-            unchanged.add(r["source_row"])
-    return unchanged
+        if out.taggers is None:
+            out.taggers = _Taggers(db)
+        hashes = dedupe.stored_hashes(db, list(lines.values()), parties)
+        for line_id, line in lines.items():
+            out.found.add(line_id)
+            touched = line_id in delete_ids
+            for r in by_id.get(line_id, ()):
+                #  Gắn nhãn trên BẢN SAO rồi mới so: dòng không đổi (gần hết tệp xuất nạp lại) giữ nguyên dict gốc,
+                #  không bị thêm khóa — thêm 3-4 khóa là dict ~40 khóa phải nới bảng băm, gấp đôi bộ nhớ mỗi dòng.
+                tagged = dict(r)
+                out.taggers.tag(tagged, previous=line)
+                if _same_as_stored(tagged, line, hashes[line_id]):
+                    out.unchanged.add(r["source_row"])
+                else:
+                    r.update(tagged)
+                    touched = True
+            if touched:
+                out.lines[line_id] = line
+    return out
+
+
+def _same_as_stored(r: dict, line: CustomsLine, stored_hash: str) -> bool:
+    return (r["row_hash"] == stored_hash
+            and r["active_ingredient"] == (line.active_ingredient or "")
+            and r["formulation"] == (line.formulation or "")
+            and r["active_ingredient_from_file"] == bool(line.active_ingredient_from_file)
+            and r["formulation_from_file"] == bool(line.formulation_from_file)
+            and all(_same_decimal(r[k], getattr(line, k)) for k in _VND_KEYS))
+
+
+def _keep_date_fixed(r: dict, previous: CustomsLine) -> None:
+    """bao-CR-733 — ghi đè giữ dấu "ngày đăng ký đã vá" (lịch cam trên màn) của dòng cũ khi ngày không đổi.
+
+    Tệp xuất ra từ màn này ghi ngày ĐÃ vá nên lúc nạp lại bộ đọc không còn thấy gì để vá (`date_fixed` = 0); ghi đè
+    thẳng là mất dấu ở mọi dòng sửa qua tệp. Ngày trong tệp KHÁC ngày đã lưu thì người sửa đã gõ ngày mới — lấy dấu
+    của lần đọc này."""
+    if r["reg_date"] == previous.reg_date:
+        r["date_fixed"] = 1 if (r.get("date_fixed") or previous.date_fixed) else 0
 
 
 def revert(db: Session, batch: ImportBatch) -> dict:
@@ -328,13 +380,14 @@ def party_ids_of(row: dict, importer_ids: dict[str, int], partner_ids: dict[str,
 
 def _insert_lines(db: Session, batch_id: int, rows: list[dict],
                   importer_ids: dict[str, int], partner_ids: dict[str, int]) -> None:
-    payload = []
-    for r in rows:
-        line = {k: v for k, v in r.items() if k not in _NON_COLUMN_KEYS}
-        line.update(batch_id=batch_id, **party_ids_of(r, importer_ids, partner_ids))
-        payload.append(line)
-    for i in range(0, len(payload), INSERT_CHUNK):
-        db.execute(insert(CustomsLine), payload[i:i + INSERT_CHUNK])
+    #  bao-CR-733: dựng gói chèn THEO KHÚC — dựng một lần là bản chép thứ hai của mọi dòng mới nằm cùng lúc.
+    for i in range(0, len(rows), INSERT_CHUNK):
+        payload = []
+        for r in rows[i:i + INSERT_CHUNK]:
+            line = {k: v for k, v in r.items() if k not in _NON_COLUMN_KEYS}
+            line.update(batch_id=batch_id, **party_ids_of(r, importer_ids, partner_ids))
+            payload.append(line)
+        db.execute(insert(CustomsLine), payload)
 
 
 def _update_lines(db: Session, pairs: list[tuple[dict, int]],

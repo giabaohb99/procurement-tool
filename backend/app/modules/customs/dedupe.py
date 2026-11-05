@@ -21,13 +21,18 @@ cùng trống một ô sẽ bị coi là khác. Băm sau chuẩn hóa thì ô tr
 LƯU: doanh nghiệp nhập khẩu quy về mã số thuế (DB chỉ giữ một tên cho mỗi mã số thuế), đối tác
 quy về khóa tên chuẩn hóa (`CustomsParty.dedupe_key`), số làm tròn đúng số chữ số lẻ của cột.
 Lệch một trong ba thứ đó là cùng một dòng mà hai mã khác nhau — chống trùng thủng im lặng.
+
+bao-CR-733 — bộ nhớ: `load_existing` từng nạp MỌI dòng trong dải ngày của tệp thành đối tượng ORM một lần (tệp 50.000
+dòng nạp lại: worker ~1 GB). Nay đọc theo khúc (`EXISTING_CHUNK` dòng, chỉ các cột cần, câu Core) và chỉ GIỮ mã nằm
+trong tệp (`FileKeys`) — chỉ mục chỉ được tra bằng mã của dòng trong tệp nên bỏ phần còn lại không đổi kết quả. Các ô
+chuẩn hóa (để so xung đột) chỉ tính khi thật cần, không giữ sẵn cho mọi dòng.
 """
 import hashlib
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
-from sqlalchemy import update
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.orm import Session
 
 from .constants import COLUMNS, DECIMAL_KEYS, INSERT_CHUNK
@@ -47,6 +52,11 @@ MATCH_FIELDS: tuple[str, ...] = IDENTITY_FIELDS + ("price_usd", "quantity")
 _NULL = "\x00"
 _SEP = "\x1f"
 _SCALES: dict[str, int] = {k: CustomsLine.__table__.c[k].type.scale for k in DECIMAL_KEYS}
+#  Vị trí các cột nhận diện / khớp trong `HASH_FIELDS` — tính ô chuẩn MỘT lần rồi rút ra ba mã.
+_IDENTITY_AT = tuple(HASH_FIELDS.index(k) for k in IDENTITY_FIELDS)
+_MATCH_AT = tuple(HASH_FIELDS.index(k) for k in MATCH_FIELDS)
+#  bao-CR-733: số dòng sẵn có đọc mỗi khúc khi dựng chỉ mục chống trùng (bài kiểm ép nhỏ để phủ nhiều khúc).
+EXISTING_CHUNK = 2000
 
 
 def canonical_value(key: str, value) -> str:
@@ -96,6 +106,15 @@ def conflict_fields(a: tuple[str, ...], b: tuple[str, ...]) -> list[str]:
     return [k for k, x, y in zip(HASH_FIELDS, a, b) if x != y and not is_blank(x) and not is_blank(y)]
 
 
+def row_keys(values: dict, importer_key: str, partner_key: str) -> tuple[str, str, str, list[str]]:
+    """(mã băm, mã nhận diện, mã khớp, các ô chuẩn) — tính ô chuẩn MỘT lần cho cả ba mã; ra đúng như
+    `compute_row_hash` / `compute_identity` / `compute_match` (cột nhận diện / khớp đều nằm trong `HASH_FIELDS`)."""
+    canon = [canonical_value(k, values.get(k)) for k in HASH_FIELDS]
+    head = [importer_key, partner_key]
+    return (_digest(head + canon), _digest(head + [canon[i] for i in _IDENTITY_AT]),
+            _digest(head + [canon[i] for i in _MATCH_AT]), canon)
+
+
 def file_party_keys(row: dict) -> tuple[str, str]:
     """(khóa doanh nghiệp nhập khẩu, khóa đối tác) của một dòng trong tệp — khớp `CustomsParty.dedupe_key`."""
     partner = row.get("partner_name") or ""
@@ -111,9 +130,33 @@ class ExistingIndex:
     by_match: dict[str, tuple[int, tuple[str, ...]]] = field(default_factory=dict)
 
 
-def _party_keys(db: Session, ids: set[int]) -> dict[int, str]:
-    out: dict[int, str] = {}
-    wanted = [i for i in ids if i]
+@dataclass
+class FileKeys:
+    """bao-CR-733 — mã của các dòng TRONG TỆP, cùng thứ tự dòng. Chỉ mục dòng sẵn có chỉ được tra bằng mấy mã
+    này, nên chỉ giữ mã nằm trong đây: tệp nhỏ nạp vào dải ngày lớn không kéo cả dải vào bộ nhớ."""
+    hashes: list[str]
+    identities: list[str]
+    matches: list[str]
+
+
+def stamp_file_rows(rows: list[dict]) -> FileKeys:
+    """Gắn `row_hash` vào từng dòng của tệp (cột thật của bảng); → ba mã của từng dòng cùng thứ tự `rows`.
+
+    bao-CR-733 gộp `stamp_rows` + `match_rows` cũ (ô chuẩn tính một lần cho cả ba mã) và KHÔNG giữ các ô chuẩn của
+    từng dòng nữa (~30 chuỗi mỗi dòng): bước phân loại cần thì tính lại từ chính dòng đó (`canon_values`)."""
+    out = FileKeys([], [], [])
+    for r in rows:
+        r["row_hash"], identity, match, _ = row_keys(r, *file_party_keys(r))
+        out.hashes.append(r["row_hash"])
+        out.identities.append(identity)
+        out.matches.append(match)
+    return out
+
+
+def _party_keys(db: Session, ids: set[int], cache: dict[int, str] | None = None) -> dict[int, str]:
+    """id đối tượng → khóa chống trùng. `cache` (bao-CR-733): dùng lại qua nhiều khúc, chỉ tra id chưa có."""
+    out: dict[int, str] = cache if cache is not None else {}
+    wanted = [i for i in ids if i and i not in out]
     for i in range(0, len(wanted), 1000):
         for pid, key in db.query(CustomsParty.id, CustomsParty.dedupe_key).filter(
                 CustomsParty.id.in_(wanted[i:i + 1000])):
@@ -125,60 +168,89 @@ def _stored_values(line: CustomsLine) -> dict:
     return {k: getattr(line, k) for k in HASH_FIELDS}
 
 
-def load_existing(db: Session, date_from, date_to, exclude_batch_id: int = 0) -> ExistingIndex:
-    """Đọc mã của mọi dòng đã lưu trong [date_from, date_to]; dòng cũ chưa có mã thì tính và
-    ghi luôn (dữ liệu nạp trước bao-CR-541 tự lành dần, không cần chờ script)."""
+_EXISTING_COLUMNS = (CustomsLine.id, CustomsLine.batch_id, CustomsLine.row_hash, CustomsLine.importer_id,
+                     CustomsLine.partner_id) + tuple(CustomsLine.__table__.c[k] for k in HASH_FIELDS)
+_FIRST_VALUE = 5          # cột dữ liệu đầu tiên trong `_EXISTING_COLUMNS`
+
+
+def load_existing(db: Session, date_from, date_to, exclude_batch_id: int = 0,
+                  wanted: FileKeys | None = None) -> ExistingIndex:
+    """Đọc mã của các dòng đã lưu trong [date_from, date_to]; dòng cũ chưa có mã thì tính và ghi luôn (dữ liệu nạp
+    trước bao-CR-541 tự lành dần, không cần chờ script).
+
+    bao-CR-733: đọc THEO KHÚC `EXISTING_CHUNK` dòng (khóa trang `(reg_date, id)`, đi theo chỉ mục `reg_date`), chỉ các
+    cột cần, câu Core — không dựng đối tượng ORM. `wanted` = mã của dòng trong tệp (`stamp_file_rows`): chỉ giữ mã
+    nằm trong đó (None = giữ hết, kèm ô chuẩn của mọi mã khớp). Dòng đầu tiên mang một mã vẫn thắng như cũ: ba mã đều
+    gói `reg_date` nên các dòng cùng mã cùng ngày, đi theo `id` tăng dần.
+
+    Ô chuẩn của mã khớp (để so xung đột, bao-CR-699) chỉ cần cho dòng tệp CHƯA trùng mã băm — dòng trùng mã băm dừng
+    ở "Đã có" trước bước so khớp. Nên khi có `wanted`, đọc hết rồi mới tra lại đúng các dòng đó theo id (cụm 1000)."""
     index = ExistingIndex()
     if date_from is None:
         return index
-    lines = (db.query(CustomsLine)
-             .filter(CustomsLine.reg_date >= date_from, CustomsLine.reg_date <= date_to,
-                     CustomsLine.batch_id != exclude_batch_id)
-             .all())
-    parties = _party_keys(db, {x.importer_id for x in lines} | {x.partner_id for x in lines})
-    healed = []
-    for x in lines:
-        imp, par = parties.get(x.importer_id, ""), parties.get(x.partner_id, "")
-        values = _stored_values(x)
-        row_hash = x.row_hash or compute_row_hash(values, imp, par)
-        if not x.row_hash:
-            healed.append({"id": x.id, "row_hash": row_hash})
-        index.by_hash.setdefault(row_hash, x.batch_id)
-        index.by_identity.setdefault(compute_identity(values, imp, par), x.batch_id)
-        index.by_match.setdefault(compute_match(values, imp, par), (x.batch_id, canon_values(values)))
-    for i in range(0, len(healed), INSERT_CHUNK):
-        db.execute(update(CustomsLine), healed[i:i + INSERT_CHUNK])
-    #  Đọc xong thì bỏ khỏi phiên — vài chục nghìn đối tượng ORM ngồi lại tới lúc commit là phí bộ nhớ.
-    for x in lines:
-        db.expunge(x)
+    parties: dict[int, str] = {}
+    first_of_match: dict[str, tuple[int, int]] = {}       # mã khớp → (lô, id dòng) của dòng đầu tiên
+    #  Mã của tệp → CHÍNH chuỗi đó: chỉ mục giữ lại chuỗi của tệp, không giữ thêm một bản đọc từ DB.
+    want_hash = {h: h for h in wanted.hashes} if wanted else None
+    want_identity = {h: h for h in wanted.identities} if wanted else None
+    want_match = {h: h for h in wanted.matches} if wanted else None
+    last: tuple | None = None
+    while True:
+        q = select(*_EXISTING_COLUMNS).where(CustomsLine.reg_date >= date_from, CustomsLine.reg_date <= date_to,
+                                             CustomsLine.batch_id != exclude_batch_id)
+        if last is not None:
+            q = q.where(CustomsLine.reg_date >= last[0],
+                        or_(CustomsLine.reg_date > last[0], and_(CustomsLine.reg_date == last[0],
+                                                                 CustomsLine.id > last[1])))
+        chunk = db.execute(q.order_by(CustomsLine.reg_date, CustomsLine.id).limit(EXISTING_CHUNK)).all()
+        if chunk:
+            _party_keys(db, {x.importer_id for x in chunk} | {x.partner_id for x in chunk}, parties)
+        healed = []
+        for x in chunk:
+            row_hash, identity, match, canon = row_keys(dict(zip(HASH_FIELDS, x[_FIRST_VALUE:])),
+                                                        parties.get(x.importer_id, ""), parties.get(x.partner_id, ""))
+            if x.row_hash:
+                row_hash = x.row_hash
+            else:
+                healed.append({"id": x.id, "row_hash": row_hash})
+            if want_hash is None:
+                index.by_hash.setdefault(row_hash, x.batch_id)
+                index.by_identity.setdefault(identity, x.batch_id)
+                index.by_match.setdefault(match, (x.batch_id, tuple(canon)))
+                continue
+            if row_hash in want_hash:
+                index.by_hash.setdefault(want_hash[row_hash], x.batch_id)
+            if identity in want_identity:
+                index.by_identity.setdefault(want_identity[identity], x.batch_id)
+            if match in want_match:
+                first_of_match.setdefault(want_match[match], (x.batch_id, x.id))
+        for i in range(0, len(healed), INSERT_CHUNK):
+            db.execute(update(CustomsLine), healed[i:i + INSERT_CHUNK])
+        if len(chunk) < EXISTING_CHUNK:
+            break
+        last = (chunk[-1].reg_date, chunk[-1].id)
+    if wanted is not None:
+        needed = {m for h, m in zip(wanted.hashes, wanted.matches) if h not in index.by_hash and m in first_of_match}
+        _fill_match_canon(db, index, {m: first_of_match[m] for m in needed})
     return index
 
 
-def stored_hashes(db: Session, lines: list[CustomsLine]) -> dict[int, str]:
+def _fill_match_canon(db: Session, index: ExistingIndex, wanted: dict[str, tuple[int, int]]) -> None:
+    """bao-CR-733 — đọc lại đúng các dòng đầu-tiên-của-mã-khớp còn cần so xung đột (theo id, cụm 1000)."""
+    match_of_line = {line_id: m for m, (_, line_id) in wanted.items()}
+    ids = sorted(match_of_line)
+    for i in range(0, len(ids), 1000):
+        for x in db.execute(select(*_EXISTING_COLUMNS).where(CustomsLine.id.in_(ids[i:i + 1000]))).all():
+            m = match_of_line[x.id]
+            index.by_match[m] = (wanted[m][0], canon_values(dict(zip(HASH_FIELDS, x[_FIRST_VALUE:]))))
+
+
+def stored_hashes(db: Session, lines: list[CustomsLine], party_cache: dict[int, str] | None = None) -> dict[int, str]:
     """bao-CR-608 — mã băm HIỆN TẠI của các dòng đã lưu (dòng cũ chưa có mã thì tính), để biết dòng
     trong tệp có cột "ID" có thật sự đổi gì so với dòng nó trỏ tới không."""
-    parties = _party_keys(db, {x.importer_id for x in lines} | {x.partner_id for x in lines})
+    parties = _party_keys(db, {x.importer_id for x in lines} | {x.partner_id for x in lines}, party_cache)
     return {x.id: x.row_hash or compute_row_hash(_stored_values(x), parties.get(x.importer_id, ""),
                                                  parties.get(x.partner_id, "")) for x in lines}
-
-
-def stamp_rows(rows: list[dict]) -> list[str]:
-    """Gắn `row_hash` vào từng dòng của tệp (cột thật của bảng); → mã nhận diện cùng thứ tự."""
-    identities = []
-    for r in rows:
-        imp, par = file_party_keys(r)
-        r["row_hash"] = compute_row_hash(r, imp, par)
-        identities.append(compute_identity(r, imp, par))
-    return identities
-
-
-def match_rows(rows: list[dict]) -> list[tuple[str, tuple[str, ...]]]:
-    """bao-CR-699 — (mã khớp, các ô chuẩn hóa) của từng dòng trong tệp, cùng thứ tự `rows`."""
-    out = []
-    for r in rows:
-        imp, par = file_party_keys(r)
-        out.append((compute_match(r, imp, par), canon_values(r)))
-    return out
 
 
 def backfill_hashes(db: Session, chunk: int = 5000) -> int:

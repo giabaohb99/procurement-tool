@@ -25,7 +25,7 @@ nhau gấp đôi).
 import re
 from collections import defaultdict
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from .constants import ProductKind
@@ -236,3 +236,52 @@ def _flush(db: Session, batch: list[dict]) -> None:
                         product_kind=bindparam("product_kind")))
         db.connection().execute(stmt, batch)
         batch.clear()
+
+
+def retag_changed(db: Session, apply: bool = False, chunk: int = 5000, examples: int = 10) -> dict:
+    """bao-CR-733 — gắn lại hoạt chất / hàm lượng / nhãn như `retag_all` nhưng ĐỌC THEO KHÚC (theo `id`) và CHỈ ghi
+    dòng có giá trị khác; `apply=False` chỉ đếm. Chạy lại lần hai ra 0 dòng đổi (idempotent).
+
+    Vì sao cần sau bao-CR-728: bộ gắn theo tên thương mại từng duyệt từ theo thứ tự `set` (đổi theo từng tiến trình),
+    nên dòng đã lưu có tên hàng chứa từ hai tên thương mại trở lên mang hoạt chất ngẫu nhiên. Bản sửa chọn ổn định
+    (tên đứng trước trong tên hàng thắng), nhưng dữ liệu cũ vẫn lệch: xuất rồi nạp lại tệp không sửa gì vẫn báo
+    "Ghi đè" ở các dòng đó và đổi hoạt chất của chúng. Giá trị lấy từ tệp / sửa tay (cờ `_from_file`) giữ nguyên.
+
+    Mỗi khúc commit riêng (gián đoạn giữa chừng thì chạy lại là tiếp phần còn lại). → số đếm + vài dòng mẫu."""
+    tagger = load_tagger(db)
+    kinds = load_kind_tagger(db)
+    cache: dict[str, tuple[str, str, int]] = {}
+    out = {"total": 0, "changed": 0, "active": 0, "formulation": 0, "kind": 0, "examples": [], "applied": apply}
+    last_id = 0
+    while True:
+        rows = db.execute(
+            select(CustomsLine.id, CustomsLine.product_name, CustomsLine.active_ingredient, CustomsLine.formulation,
+                   CustomsLine.active_ingredient_from_file, CustomsLine.formulation_from_file, CustomsLine.product_kind)
+            .where(CustomsLine.id > last_id).order_by(CustomsLine.id).limit(chunk)).all()
+        if not rows:
+            return out
+        batch: list[dict] = []
+        for line_id, name, active_now, form_now, active_from_file, form_from_file, kind_now in rows:
+            if name not in cache:
+                cache[name] = (*tagger.tag(name), kinds.tag(name))
+            active, form, kind = cache[name]
+            active = active_now if active_from_file else active
+            form = form_now if form_from_file else form
+            diff = [active != (active_now or ""), form != (form_now or ""), kind != (kind_now or 0)]
+            out["total"] += 1
+            if not any(diff):
+                continue
+            out["changed"] += 1
+            out["active"] += diff[0]
+            out["formulation"] += diff[1]
+            out["kind"] += diff[2]
+            if len(out["examples"]) < examples:
+                out["examples"].append({"id": line_id, "product_name": name, "active_before": active_now,
+                                        "active_after": active, "formulation_before": form_now,
+                                        "formulation_after": form, "kind_before": kind_now, "kind_after": kind})
+            batch.append({"line_id": line_id, "active_ingredient": active, "formulation": form,
+                          "product_kind": kind})
+        if apply and batch:
+            _flush(db, batch)
+            db.commit()
+        last_id = rows[-1][0]
