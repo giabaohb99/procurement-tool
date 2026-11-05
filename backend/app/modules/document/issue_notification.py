@@ -133,6 +133,8 @@ def notify_document_issued(
             "summary": _text(doc.summary),
             "link": _text(absolute_link),
         })
+        #  bao-CR-727: lưu nội dung để gửi lại được từ màn Nhật ký email (kể cả khi không xếp được vào hàng đợi).
+        email_log.keep_body(email_html)
         jobs.append((email_log.id, recipient.email, email_html))
 
     # Task nền dùng session khác nên EmailLog và thông báo phải tồn tại trước.

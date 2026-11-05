@@ -9,6 +9,7 @@ import {
   LogOut,
   Palette,
   Phone,
+  Sparkles,
   User,
 } from 'lucide-react'
 import { useRef, useState, type ChangeEvent } from 'react'
@@ -22,6 +23,7 @@ import { AvatarPostDialog } from '@/modules/forum/components/avatar-post-dialog'
 import { buildHelpCenterUrl } from '@/modules/help/routes'
 import { useTranslation } from '@/core/i18n/use-translation'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useReleaseUnseen } from '@/shared/release/use-release-info'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { ThemeSwitch } from '@/shared/ui/theme-switch'
 import { Button } from '@/shared/ui/button'
@@ -42,6 +44,8 @@ export function UserMenu() {
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false)
+  //  bao-CR-722: chấm đỏ khi phiên bản đang chạy khác bản đã xem.
+  const release = useReleaseUnseen()
   // Ảnh vừa đổi xong, đang chờ chủ nhân quyết "đăng lên diễn đàn hay thôi" (F10).
   const [sharing, setSharing] = useState<{ file: File; url: string } | null>(null)
 
@@ -179,6 +183,20 @@ export function UserMenu() {
             >
               <Palette className="size-4.5 text-navy dark:text-foreground" />
               Tuỳ chỉnh giao diện
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="min-h-10 gap-3 px-2.5 font-medium text-navy dark:text-foreground"
+              onSelect={() => navigate(appRoutes.whatsNew)}
+            >
+              <Sparkles className="size-4.5 text-navy dark:text-foreground" />
+              <span className="flex-1">Có gì mới</span>
+              {release.unseen && (
+                <span
+                  className="size-2 rounded-full bg-destructive"
+                  role="status"
+                  aria-label="Có đợt cập nhật chưa xem"
+                />
+              )}
             </DropdownMenuItem>
             {/*  Hướng dẫn sử dụng bỏ khỏi lưới chọn phân hệ và về đây (xem
                  `ErpModule.hiddenFromLauncher`): lưới trả lời câu "hôm nay tôi

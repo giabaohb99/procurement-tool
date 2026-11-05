@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
 from app.core.auth import get_perm_profile, user_has_permission
+from app.core.csv_utils import csv_escape
 from app.core.export_xlsx import xlsx_response
 from app.core.scoping import apply_scope
 from app.core.storage import dated_key, upload_fileobj
@@ -68,7 +69,11 @@ def can_download(db: Session, user, x) -> bool:
 def _csv_cell(col, value) -> str:
     if col.kind == "bool":
         return "Có" if value else "Không"   # rõ True/False -> import lại đọc đúng
-    return "" if value is None else str(value)
+    if value is None:
+        return ""
+    #  bao-CR-726 / BM-033: ô CHỮ mở đầu bằng = + - @ thêm dấu ' (Excel không chạy như công thức); nạp lại qua
+    #  Quản lý Import thì `import_tool.tasks._csv_to_workbook` gỡ đúng dấu đó. Số không thoát.
+    return csv_escape(str(value)) if isinstance(value, str) else str(value)
 
 
 def _code_map(db: Session, ref: str, self_model) -> dict:

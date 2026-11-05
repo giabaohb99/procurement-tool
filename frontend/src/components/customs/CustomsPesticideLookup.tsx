@@ -2,6 +2,7 @@
 // `customs-pesticide-lookup-sidebar.tsx`, bê theo cột trái của trang nguồn danhmuc.thuocbvtv.com):
 // đang đọc một thuốc mà muốn tra thuốc khác thì gõ / chọn ngay tại đây. Bấm "Lọc" hay một phân nhóm
 // là mở mục "Thuốc BVTV" với đúng bộ lọc đó (`buildPesticideListSearch`).
+// bao-CR-734: `bare` = bày trong ngăn kéo màn hẹp (`CustomsPesticideLookupDrawer`) — bỏ khung thẻ.
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
@@ -13,7 +14,10 @@ import { toSentenceCaseIfShouting } from '../../utils/customs-pesticide-display'
 const LIST_PATH = customsSectionPath('pesticides')
 const TITLE = { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 14, margin: '0 0 10px' } as const
 
-export default function CustomsPesticideLookup({ currentPestGroup }: { currentPestGroup: string }) {
+export default function CustomsPesticideLookup({ currentPestGroup, bare = false }: {
+  currentPestGroup: string
+  bare?: boolean
+}) {
   const navigate = useNavigate()
   const [options, setOptions] = useState<any>(null)
   const [q, setQ] = useState('')
@@ -31,7 +35,7 @@ export default function CustomsPesticideLookup({ currentPestGroup }: { currentPe
   }
 
   return (
-    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+    <div className={bare ? undefined : 'card'} style={{ padding: 0, overflow: 'hidden' }}>
       <form onSubmit={submit} style={{ padding: 16, borderBottom: '1px solid var(--border)', display: 'grid', gap: 10 }}>
         <div style={TITLE}><i className="ti ti-search" style={{ color: 'var(--muted)' }} />Tìm thuốc khác</div>
         <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Tìm thuốc BVTV"

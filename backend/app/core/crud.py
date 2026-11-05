@@ -9,6 +9,7 @@ from app.core import reference_guard
 from app.core.base_model import mark_deleted
 from app.core.base_controller import apply_filters, apply_sort, pagination
 from app.core.database import get_db
+from app.core.permissions import ENTITY_LABELS
 from app.core.response import success
 from app.core.scoping import apply_scope, get_perm_profile, get_scoped
 
@@ -49,6 +50,20 @@ def commit_or_conflict(db: Session, message: str) -> None:
         raise HTTPException(400, message)
 
 
+def _label(entity: str) -> str:
+    """Tên danh mục để ghép câu mô tả đường API: `Nhà cung cấp` -> `nhà cung cấp`, giữ nguyên chữ viết tắt (`YCMH`)."""
+    name = ENTITY_LABELS.get(entity, entity)
+    return name if len(name) > 1 and name[1].isupper() else name[:1].lower() + name[1:]
+
+
+def _doc(text: str):
+    """Gắn docstring cho hàm đường TRƯỚC khi router đăng ký (FastAPI đọc docstring lúc tạo route để làm mô tả Swagger)."""
+    def wrap(fn):
+        fn.__doc__ = text
+        return fn
+    return wrap
+
+
 def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchema,
                      filterable, unique_field="code", code_prefix=None, csv_headers=None,
                      before_create=None, before_update=None, before_delete=None,
@@ -79,6 +94,8 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
     danh mục CÓ chiều pháp nhân sau này không phải nhớ tự thêm.
     """
     router = APIRouter(prefix=prefix, tags=[entity])
+    #  td-0311: đường do bộ sinh này tạo phải có câu mô tả tiếng Việt (Swagger + bảng api.md dựng tự động).
+    lbl = _label(entity)
     #  duoc-CR-717: danh mục mượn khóa quyền của danh mục khác (Chính sách nghỉ phép, Ngày cấm nghỉ gác bằng `leave_type`)
     #  phải ghi nhật ký dưới tên RIÊNG, không thì nhật ký của chính sách #2 hiện lẫn ở trang Loại nghỉ #2.
     log_entity = audit_entity or entity
@@ -91,6 +108,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         return d
 
     @router.get("")
+    @_doc(f"Danh sách {lbl}, có lọc và phân trang.\n\nLọc theo các cột cho phép của danh mục, sắp xếp, đi qua phạm vi dữ liệu.")
     def list_items(request: Request, pg: dict = Depends(pagination),
                    sort_by: str | None = None, sort_dir: str = "asc",
                    db: Session = Depends(get_db), user=Depends(require(entity, "read"))):
@@ -104,6 +122,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         return success({"total": total, "items": [out(i) for i in items]})
 
     @router.get("/{oid}")
+    @_doc(f"Xem một dòng {lbl} theo id.")
     def get_item(oid: int, db: Session = Depends(get_db), user=Depends(require(entity, "read"))):
         o = get_scoped(db, Model, entity, oid, user, get_perm_profile(db, user))
         if not o:
@@ -111,6 +130,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         return success(out(o))
 
     @router.post("")
+    @_doc(f"Thêm một dòng {lbl}; chặn trùng mã, ghi nhật ký.")
     def create_item(data: CreateSchema, db: Session = Depends(get_db),
                     user=Depends(require(entity, "create"))):
         if code_prefix and hasattr(data, "code") and not data.code:
@@ -132,6 +152,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         return success(out(o), "Đã tạo", 201)
 
     @router.patch("/{oid}")
+    @_doc(f"Sửa một dòng {lbl}; chỉ ghi các ô gửi lên, ghi nhật ký.")
     def update_item(oid: int, data: UpdateSchema, db: Session = Depends(get_db),
                     user=Depends(require(entity, "write"))):
         o = get_scoped(db, Model, entity, oid, user, get_perm_profile(db, user), "write")
@@ -150,6 +171,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         return success(out(o), "Đã cập nhật")
 
     @router.delete("/{oid}")
+    @_doc(f"Xóa một dòng {lbl}; danh mục có xóa mềm thì chỉ đánh dấu, đang được nơi khác dùng thì chặn.")
     def delete_item(oid: int, db: Session = Depends(get_db),
                     user=Depends(require(entity, "delete"))):
         o = get_scoped(db, Model, entity, oid, user, get_perm_profile(db, user), "delete")
@@ -165,6 +187,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
 
     if csv_headers:
         @router.get("/export/csv")
+        @_doc(f"Xuất {lbl} ra tệp CSV theo bộ lọc đang chọn.")
         def export_csv(
             ids: str | None = None,
             request: Request = None,
@@ -197,6 +220,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
     #  schema cấm thẳng. Nên nó khai `csv_import=False`.
     if csv_headers and csv_import:
         @router.post("/import/csv")
+        @_doc(f"Nhập {lbl} hàng loạt từ tệp CSV (thêm, sửa, xóa theo cột hành động).")
         def import_csv(
             file: UploadFile = File(...),
             db: Session = Depends(get_db),
@@ -204,6 +228,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         ):
             import csv
             from io import StringIO
+            from app.core.csv_utils import unescape_row
             from app.core.scoping import scope_condition
             content = file.file.read().decode("utf-8")
             reader = csv.DictReader(StringIO(content))
@@ -215,7 +240,7 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
             # thì BỎ QUA và đếm riêng — không lặng lẽ ghi đè, cũng không dừng cả file.
             scope_cond = scope_condition(Model, entity, user, get_perm_profile(db, user), "import")
             created, updated, deleted, skipped = 0, 0, 0, 0
-            for row in reader:
+            for row in map(unescape_row, reader):   # bao-CR-726: gỡ dấu ' chống công thức của tệp xuất
                 action = row.get("Hành động", "").strip().lower()
                 is_active = action not in ["xóa", "delete", "ngừng"]
                 

@@ -211,6 +211,13 @@ export const router = createBrowserRouter([
                       Component: (await import('@/app/pages/profile-page')).ProfilePage,
                     }),
                   },
+                  {
+                    //  bao-CR-722: Có gì mới — dùng chung mọi phân hệ, cùng khung với Trang cá nhân.
+                    path: appRoutes.whatsNew,
+                    lazy: async () => ({
+                      Component: (await import('@/app/pages/whats-new-page')).WhatsNewPage,
+                    }),
+                  },
                   // Bắt mọi URL không khớp phân hệ nào — kể cả phân hệ đang tắt.
                   { path: '*', element: <NotFoundPage /> },
                 ],

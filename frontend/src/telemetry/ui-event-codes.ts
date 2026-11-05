@@ -14,6 +14,7 @@ export const UI_EVENT = {
   FORM_ABANDON: 5,
   SEARCH: 6,
   CLIENT_ERROR: 7,
+  UI_ACTION: 8, // duoc-CR-654: bấm chức năng — chỉ ERP v2 gửi, app cũ chưa gửi; chép để khớp Python
 } as const
 
 export const UI_FORM_CODE = {

@@ -23,7 +23,7 @@ from app.core.config import settings
 from app.modules.assistant.glossary import fold
 
 from . import channels, chat_link, telegram
-from .model import AgentChatLink, AgentGroup, AgentGroupMessage
+from .model import AgentGroup, AgentGroupMessage
 from .timeutil import now_utc, to_local
 
 log = logging.getLogger("app.agent_hub.groups")
@@ -138,20 +138,15 @@ def capture(db: Session, msg: dict) -> None:
 # Quyền đọc nhóm
 # ---------------------------------------------------------------------------
 def _tg_ids_of(db: Session, user_id: int) -> list[int]:
-    ids = []
-    for c in db.scalars(select(AgentChatLink.chat_id).where(AgentChatLink.user_id == int(user_id),
-                                                            AgentChatLink.revoked_at.is_(None))):
-        if c and str(c).isdigit():
-            ids.append(int(c))
-    return ids
+    #  ai-CR-234: chỉ chat ĐANG đăng nhập (chưa gỡ, chưa hết hạn) — trước đây quên hạn.
+    return [int(c) for c in chat_link.active_chat_ids_of(db, user_id) if str(c).isdigit()]
 
 
 def _zalo_member(db: Session, user_id: int, group: AgentGroup) -> bool:
     """Nhóm Zalo không có API hỏi thành viên: người từng nhắn trong nhóm (bằng tài khoản Zalo đã đăng nhập ERP) mới đọc
     được nhóm đó."""
-    ids = [channels.number_of(channels.raw_id(c)) for c in db.scalars(
-        select(AgentChatLink.chat_id).where(AgentChatLink.user_id == int(user_id), AgentChatLink.revoked_at.is_(None)))
-        if channels.is_zalo(c)]
+    ids = [channels.number_of(channels.raw_id(c)) for c in chat_link.active_chat_ids_of(db, user_id)
+           if channels.is_zalo(c)]
     if not ids:
         return False
     return db.scalar(select(AgentGroupMessage.id).where(AgentGroupMessage.group_id == group.id,
@@ -159,9 +154,8 @@ def _zalo_member(db: Session, user_id: int, group: AgentGroup) -> bool:
 
 
 def _zalo_uids_of(db: Session, user_id: int) -> set[str]:
-    return {channels.raw_id(c) for c in db.scalars(
-        select(AgentChatLink.chat_id).where(AgentChatLink.user_id == int(user_id), AgentChatLink.revoked_at.is_(None)))
-        if str(c or "").startswith(channels.ZALO_USER_PREFIX)}
+    return {channels.raw_id(c) for c in chat_link.active_chat_ids_of(db, user_id)
+            if str(c or "").startswith(channels.ZALO_USER_PREFIX)}
 
 
 def _zalo_account_member(db: Session, user_id: int, group: AgentGroup) -> bool:

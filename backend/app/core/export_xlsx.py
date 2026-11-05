@@ -56,6 +56,36 @@ _RIGHT = {"money", "price", "qty", "int", "percent", "decimal"}
 _FORMULA_TRIGGER_CHARS = ("=", "+", "-", "@", "\t", "\r")
 
 
+def guard_formula_row(ws, values) -> list:
+    """Một dòng cho `ws.append(...)` mà ô CHUỖI mở đầu bằng = + - @ (hay tab / xuống dòng) không bị Excel chạy như công
+    thức (bao-CR-723 / BM-033). Giá trị giữ NGUYÊN — chỉ ép kiểu ô về chuỗi, nên tệp xuất nạp lại vẫn ra đúng chữ.
+    Dùng được cho cả sổ thường lẫn sổ `write_only` (openpyxl nhận ô dựng sẵn trong `append`)."""
+    from openpyxl.cell import WriteOnlyCell
+
+    out = []
+    for v in values:
+        if isinstance(v, str) and v[:1] in _FORMULA_TRIGGER_CHARS:
+            c = WriteOnlyCell(ws, value=v)
+            c.data_type = "s"
+            out.append(c)
+        else:
+            out.append(v)
+    return out
+
+
+def guard_workbook(wb):
+    """Rà cả sổ (sổ thường, KHÔNG phải `write_only`) ngay trước khi lưu: ô nào openpyxl đã tự suy thành công thức
+    (chuỗi mở đầu bằng `=`) thì ép về chuỗi — giữ nguyên chữ (bao-CR-726 / BM-033). Dùng cho các bộ dựng sổ tự đặt ô
+    (báo cáo Excel, tệp mẫu nhập, sổ tải về) thay vì vá từng `ws.cell`. Chuỗi mở đầu bằng + - @ openpyxl đã lưu là
+    chuỗi nên vô hại. CHÚ Ý: sổ nào cố ý ghi công thức thật thì KHÔNG được gọi hàm này. Trả lại chính `wb`."""
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for c in row:
+                if c.data_type == "f" and isinstance(c.value, str):
+                    c.data_type = "s"
+    return wb
+
+
 class Col(NamedTuple):
     """Một cột trong file xuất. `kind` quyết định định dạng ô Excel."""
 

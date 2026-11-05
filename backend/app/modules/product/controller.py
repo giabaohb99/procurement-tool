@@ -144,6 +144,7 @@ def import_products_csv(
 ):
     import csv
     from io import StringIO
+    from app.core.csv_utils import unescape_row
     from fastapi import HTTPException
     from .model import Product
 
@@ -200,7 +201,7 @@ def import_products_csv(
 
     created = updated = deleted = skipped = 0
     seen = set()                              # mã đã xử lý trong lần chạy này (chống đếm trùng)
-    for raw in reader:
+    for raw in map(unescape_row, reader):   # bao-CR-726: gỡ dấu ' chống công thức của tệp xuất
         row = {(k or "").strip(): v for k, v in raw.items()}
         action = clean(row.get("Hành động", "")).lower()
         is_active = action not in ["xóa", "delete", "ngừng", "ẩn"]

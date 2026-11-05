@@ -28,6 +28,7 @@ import {
   useSidebar,
 } from '@/shared/ui/sidebar'
 import { SidebarResizeHandle } from './sidebar-resize-handle'
+import { SidebarVersionFooter } from './sidebar-version-footer'
 
 /**
  * Lớp sơn đè lên `SidebarMenuButton` mặc định của shadcn. Để ở đây (không sửa
@@ -219,6 +220,9 @@ export function ModuleSidebar({
           </SidebarGroup>
         ))}
       </SidebarContent>
+
+      {/* bao-CR-722: phiên bản đang chạy, bấm mở Có gì mới. */}
+      <SidebarVersionFooter />
 
       {/* Vạch mép phải: kéo để đổi bề rộng, bấm để thu/mở. */}
       <SidebarResizeHandle onResize={onResizeWidth} />

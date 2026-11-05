@@ -147,6 +147,12 @@ OK_KHONG_CAN = "OK-không cần"
 LO = "LỖ"
 
 DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
+    "notification/email_log_controller.py": [
+        (OK_DA_KIEM, "L209 `db.get(EmailLog, log_id)` — bao-CR-721: xem một dòng nhật ký email, gác `audit.read` "
+                     "(khóa toàn hệ, không có phạm vi phòng / người), nên không cần get_scoped."),
+        (OK_DA_KIEM, "L257 `db.get(EmailLog, log_id)` — bao-CR-727: nút Gửi lại, gác `audit.write` (khóa toàn hệ); "
+                     "chặn thư mật khẩu / thư không lưu nội dung / bấm lại trong 60 giây ở `can_resend`."),
+    ],
     # ── Bộ máy duyệt ─────────────────────────────────────────────────────────
     "approval/delegation_controller.py": [
         (OK_DA_KIEM, "L111 `_load(Delegation)` — chốt thật ở `delegation_service."
@@ -517,7 +523,7 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #    `service.company_by_id` (gọi từ `serializer._out_print`); bản in vẫn qua `_in_scope(..., "print")`.
     #  95 → 97 (bao-CR-718, khai muộn ở bao-CR-719): `customs/controller.py` +2 — lô xuất chạy nền: `_own_batch`
     #    (kiểm người tạo / phạm vi ngay sau) và tệp của lô đã qua `_own_batch`.
-    assert sum(that.values()) == 97, f"tổng phải là 97, đang là {sum(that.values())}"
+    assert sum(that.values()) == 99, f"tổng phải là 99, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():

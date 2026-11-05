@@ -5,7 +5,6 @@ import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/ui/card'
 import { DepartmentMultiSelect } from '@/shared/ui/department-multi-select'
-import { FormSection } from '@/shared/ui/form-section'
 import { SectionHeading } from '@/shared/ui/section-heading'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { useDepartments } from '../hooks/use-departments'
@@ -20,11 +19,6 @@ interface EmployeeDepartmentCardProps {
   canWrite: boolean
   /** Đúng tài khoản đang đăng nhập: khóa lại, không ai tự đổi phòng của mình. */
   isSelf: boolean
-  /**
-   * `card` (mặc định) = thẻ riêng. `section` = nhóm phẳng gập / mở được của màn hồ
-   * sơ kiểu ERPNext (duoc-CR-708); gập sẵn khi chưa kiêm nhiệm phòng nào.
-   */
-  variant?: 'card' | 'section'
   className?: string
 }
 
@@ -46,7 +40,6 @@ export function EmployeeDepartmentCard({
   primaryDepartmentId,
   canWrite,
   isSelf,
-  variant = 'card',
   className,
 }: EmployeeDepartmentCardProps) {
   const { data, isLoading } = useEmployeeDepartments(employeeId)
@@ -58,7 +51,9 @@ export function EmployeeDepartmentCard({
   //  ngay lượt render đầu, mà lượt đầu `useHasChanged` luôn trả `false` — thẻ
   //  hiện ra KHÔNG TICK phòng nào, và bấm Lưu là xóa sạch phòng kiêm nhiệm
   //  thật (bao-CR-492).
-  const [selection, setSelection] = useState<number[]>(() => data?.extra_department_ids ?? [])
+  const [selection, setSelection] = useState<number[]>(
+    () => data?.extra_department_ids ?? [],
+  )
   //  Chỉ đồng bộ khi người dùng CHƯA chọn dở — cùng lỗi đã gặp ở màn Phân quyền
   //  (CR-156): một lượt nạp lại rơi vào giữa lúc đang chọn là mất thứ vừa chọn.
   const [dangChonDo, setDangChonDo] = useState(false)
@@ -76,63 +71,6 @@ export function EmployeeDepartmentCard({
 
   if (isLoading) return <Skeleton className="h-40 w-full" />
 
-  const body = (
-    <>
-      {isSelf && (
-        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Đây là hồ sơ của chính bạn nên chỉ xem được — nhờ một quản trị khác đổi.
-        </p>
-      )}
-
-      <DepartmentMultiSelect
-        value={selection}
-        onChange={(ids) => {
-          setDangChonDo(true)
-          setSelection(ids)
-        }}
-        departments={selectable}
-        placeholder="Không kiêm nhiệm phòng nào"
-        disabled={!canWrite || isSelf}
-      />
-
-      {canWrite && !isSelf && (
-        <Button
-          // ⚠️ Cùng cái bẫy với nút ở `employee-account-card`: thẻ này nằm
-          // TRONG `<form>` của trang chi tiết, thiếu `type` là mặc định
-          // `submit` — bấm "Lưu kiêm nhiệm" kéo theo một lần lưu cả hồ sơ.
-          type="button"
-          size="sm"
-          onClick={() => save.mutate(selection, { onSuccess: () => setDangChonDo(false) })}
-          disabled={save.isPending}
-        >
-          {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-          Lưu kiêm nhiệm
-        </Button>
-      )}
-    </>
-  )
-
-  if (variant === 'section') {
-    const savedCount = data?.extra_department_ids?.length ?? 0
-    return (
-      <FormSection
-        title="Kiêm nhiệm"
-        variant="flat"
-        collapsible
-        defaultOpen={savedCount > 0}
-        summary={savedCount > 0 ? `${savedCount} phòng` : 'Không kiêm nhiệm phòng nào'}
-        className={className}
-      >
-        <div className="col-span-full space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Những phòng người này phụ trách thêm, ngoài phòng ban chính.
-          </p>
-          {body}
-        </div>
-      </FormSection>
-    )
-  }
-
   return (
     <Card className={className}>
       <CardHeader>
@@ -142,7 +80,39 @@ export function EmployeeDepartmentCard({
         </p>
       </CardHeader>
 
-      <CardContent className="space-y-3">{body}</CardContent>
+      <CardContent className="space-y-3">
+        {isSelf && (
+          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Đây là hồ sơ của chính bạn nên chỉ xem được — nhờ một quản trị khác đổi.
+          </p>
+        )}
+
+        <DepartmentMultiSelect
+          value={selection}
+          onChange={(ids) => {
+            setDangChonDo(true)
+            setSelection(ids)
+          }}
+          departments={selectable}
+          placeholder="Không kiêm nhiệm phòng nào"
+          disabled={!canWrite || isSelf}
+        />
+
+        {canWrite && !isSelf && (
+          <Button
+            // ⚠️ Cùng cái bẫy với nút ở `employee-account-card`: thẻ này nằm
+            // TRONG `<form>` của trang chi tiết, thiếu `type` là mặc định
+            // `submit` — bấm "Lưu kiêm nhiệm" kéo theo một lần lưu cả hồ sơ.
+            type="button"
+            size="sm"
+            onClick={() => save.mutate(selection, { onSuccess: () => setDangChonDo(false) })}
+            disabled={save.isPending}
+          >
+            {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+            Lưu kiêm nhiệm
+          </Button>
+        )}
+      </CardContent>
     </Card>
   )
 }

@@ -14,7 +14,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
-from app.core.export_xlsx import _FORMULA_TRIGGER_CHARS  # cùng bộ ký tự mở công thức với mọi tệp xuất khác
+from app.core.export_xlsx import _FORMULA_TRIGGER_CHARS, guard_workbook  # cùng bộ ký tự mở công thức với mọi tệp xuất khác
 from app.core.vn_time import vn_today
 from app.modules.company.model import Company
 
@@ -94,7 +94,7 @@ def money_text(n: int) -> str:
 
 def xlsx_download(wb: Workbook, filename: str) -> Response:
     buf = BytesIO()
-    wb.save(buf)
+    guard_workbook(wb).save(buf)   # bao-CR-726: lưới chung, ngoài `text_cell` từng ô
     return Response(
         content=buf.getvalue(),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

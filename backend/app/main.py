@@ -10,6 +10,7 @@ import os
 from app.core.config import settings
 from app.core.limiter import limiter
 from app.core.concurrency_gate import ConcurrencyGateMiddleware, resolve_limit
+from app.core.rate_limit import RateLimitMiddleware
 from app.core.report_cache import ReportSummaryCacheMiddleware
 from app.core.request_middleware import RequestContextMiddleware
 from app.core.response import error
@@ -20,6 +21,7 @@ from app.modules.auth.controller import router as auth_router
 from app.modules.login_session.controller import router as login_session_router
 from app.modules.system_log.controller import router as system_log_router
 from app.modules.job_run.controller import router as job_run_router
+from app.modules.release_info.controller import router as release_info_router
 from app.modules.doc_catalog.book_controller import router as document_book_router
 from app.modules.doc_catalog.issue_code_controller import router as issue_code_router
 from app.modules.doc_catalog.numbering_rule_controller import router as numbering_rule_router
@@ -129,6 +131,7 @@ from app.modules.notification.controller import router as notification_router
 from app.modules.notification.email_template_controller import router as email_template_router
 from app.modules.notification.email_exclusion_controller import router as email_exclusion_router
 from app.modules.notification.mailbox_controller import router as mailbox_router
+from app.modules.notification.email_log_controller import router as email_log_router
 from app.modules.push.controller import router as push_router
 from app.modules.category_assignee.controller import router as category_assignee_router
 from app.modules.survey_request.controller import router as survey_request_router
@@ -214,6 +217,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 #  TRONG CÙNG, một cache HIT vẫn chạy qua `RequestContextMiddleware` (ghi `tab_request_log`
 #  bình thường, nhanh hơn hẳn — tín hiệu để nhận ra cache có hoạt động) và CORS vẫn bọc đúng.
 app.add_middleware(ReportSummaryCacheMiddleware)
+#  bao-CR-729 / BM-020: trần tần suất nằm TRONG `RequestContextMiddleware` (đọc `user_id` từ ngữ cảnh nó đã dựng, không
+#  giải mã vé lần hai; lượt bị 429 vẫn có dòng `tab_request_log`) và NGOÀI cache báo cáo (lượt trúng cache vẫn bị đếm).
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestContextMiddleware)
 
 #  duoc-CR-671: cổng số lượt gọi đồng thời đăng ký SAU nhật ký, TRƯỚC CORS → bọc ngoài
@@ -364,6 +370,7 @@ app.include_router(audit_router)
 app.include_router(login_session_router)   # bao-CR-395: màn Phiên đăng nhập (P3b)
 app.include_router(system_log_router)      # bao-CR-407: màn Nhật ký hệ thống (P5)
 app.include_router(job_run_router)         # bao-CR-703: Việc chạy ngầm
+app.include_router(release_info_router)    # bao-CR-722: phiên bản + ghi chú phát hành
 app.include_router(dashboard_router)
 app.include_router(pr_router)
 app.include_router(attachment_router)
@@ -422,6 +429,7 @@ app.include_router(alert_router)
 app.include_router(setting_router)
 app.include_router(user_preference_router)
 app.include_router(notification_router)
+app.include_router(email_log_router)   # bao-CR-721: màn Nhật ký email (chỉ đọc)
 app.include_router(email_template_router)
 app.include_router(email_exclusion_router)
 app.include_router(mailbox_router)

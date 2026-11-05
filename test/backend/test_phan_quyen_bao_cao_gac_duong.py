@@ -10,6 +10,7 @@ import pytest
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
+from app.core.route_iter import api_routes
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.report_keys import ReportKey
@@ -179,7 +180,7 @@ PRESET_QS = {"preset": "this_month", "compare": "none"}
 
 
 def _summary_routes() -> list[APIRoute]:
-    return [r for r in app.routes if isinstance(r, APIRoute)
+    return [r for r in api_routes(app) if isinstance(r, APIRoute)
             and (r.path.endswith("/summary") or r.path.endswith("/summary/export")
                  or r.path.endswith("/summary/rows"))]
 

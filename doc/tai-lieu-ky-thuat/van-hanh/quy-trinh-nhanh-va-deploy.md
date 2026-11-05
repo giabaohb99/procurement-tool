@@ -202,6 +202,9 @@ Prod **bake code vào image** (`start.prod.sh`, không bind-mount), nên **khôn
 
 ```bash
 cd ~/procurement-tool
+# bao-CR-722: hai biến dưới bơm mã commit + giờ build vào image (hiện ở /api/system/version và trang Có gì mới).
+# Thiếu thì build vẫn chạy nhưng màn ghi "không rõ". Đặt một lần cho cả phiên shell trước mọi lệnh build.
+export BUILD_COMMIT=$(git rev-parse --short HEAD) BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 docker compose -f docker-compose.production.yml build api celery-worker celery-beat > /tmp/build.log 2>&1; tail -20 /tmp/build.log
 docker compose -f docker-compose.production.yml up -d api celery-worker celery-beat
 ```

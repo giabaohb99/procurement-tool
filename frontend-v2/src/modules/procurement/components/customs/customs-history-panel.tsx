@@ -305,6 +305,9 @@ function BatchLogsDialog({ batch, onClose }: { batch: CustomsImportBatch; onClos
             <CustomsBatchRowsPanel batchId={batch.id} className="flex min-h-0 flex-1 flex-col gap-3" />
           </TabsContent>
           <TabsContent value="notes" className="flex min-h-0 flex-1 flex-col">
+            {data?.pruned_note && (
+              <p className="text-muted-foreground mb-2 text-xs">{data.pruned_note}</p>
+            )}
             <div className="min-h-0 flex-1 overflow-y-auto">
               <DataTable
                 columns={columns}

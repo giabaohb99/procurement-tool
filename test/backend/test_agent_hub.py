@@ -8739,8 +8739,25 @@ def _xlsx_report_bytes(sheets: int = 8) -> bytes:
     return buf.getvalue()
 
 
-def test_excel_khong_luu_ket_qua_cong_thuc_thi_tu_tinh_va_doc_het_trang():
+def test_excel_mac_dinh_khong_chay_pycel_tren_tep_la(monkeypatch):
+    """bao-CR-723 / BM-032: pycel 1.0b30 thực thi được mã từ công thức của tệp không tin cậy (PYSEC-2025-177) — mặc
+    định KHÔNG tính, ô công thức chưa có kết quả thì in nguyên "=công thức"."""
     from app.modules.agent_hub import doc_text
+
+    def _boom(*a, **k):
+        raise AssertionError("không được gọi pycel khi cờ tắt")
+
+    import pycel
+    monkeypatch.setattr(pycel, "ExcelCompiler", _boom, raising=False)
+    text = doc_text.extract("bc.xlsx", "", _xlsx_report_bytes())
+    assert "=(B2-B3)/B2" in text and "đã tự tính 0 ô" in text.splitlines()[0]
+
+
+def test_excel_khong_luu_ket_qua_cong_thuc_thi_tu_tinh_va_doc_het_trang(monkeypatch):
+    from app.core.config import settings
+    from app.modules.agent_hub import doc_text
+
+    monkeypatch.setattr(settings, "AGENT_XLSX_EVAL_FORMULAS", True)   # bao-CR-723: tự tính nay phải bật tường minh
 
     text = doc_text.extract("bc.xlsx", "", _xlsx_report_bytes())
     #  Trước ai-CR-115: openpyxl đọc ô công thức ra rỗng → bot kết luận "tệp chưa có số".
@@ -8779,7 +8796,8 @@ def test_tep_roi_moi_hoi_chi_tra_loi_mot_lan_theo_cau_hoi(db, bot, seed, monkeyp
     assert asked == [] and service._doc_wait_log                  # chưa trả lời, đang chờ câu hỏi
     service.handle_message(db, _msg("phân tích báo cáo này"))
     assert len(asked) == 1 and asked[0].startswith("phân tích báo cáo này")
-    assert "Trả lời đầy đủ và chi tiết" in asked[0] and "0.1733" in asked[0]
+    #  Ô số thường, không ô công thức: từ bao-CR-723 (BM-032) công thức của tệp lạ mặc định KHÔNG tự tính.
+    assert "Trả lời đầy đủ và chi tiết" in asked[0] and "Doanh thu | 308.7" in asked[0]
     #  Hết giờ chờ: tệp đã được hỏi rồi thì vòng hẹn giờ không trả lời lần hai.
     assert service.flush_pending_doc(db, service._doc_wait_log[-1]) is False
     assert len(asked) == 1

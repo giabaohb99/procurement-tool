@@ -290,6 +290,9 @@ export function ImportDetailPage() {
 
           {/* Nhật ký từng dòng */}
           <Card className="flex min-h-0 flex-1 flex-col p-4">
+            {logData?.pruned_note && (
+              <p className="text-muted-foreground mb-2 text-xs">{logData.pruned_note}</p>
+            )}
             <DataTable
               fillHeight
               columns={logColumns}

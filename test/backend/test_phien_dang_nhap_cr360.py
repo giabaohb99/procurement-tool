@@ -79,7 +79,7 @@ def test_mo_phien_ghi_du_dau_vet_va_ve_mang_jti(db, seed):
     assert session.ip == "203.0.113.9" and session.last_seen_ip == "203.0.113.9"
     assert session.user_agent == CHROME_WINDOWS   # ở bảng này lưu NGUYÊN VĂN, khác request_log
 
-    from jose import jwt
+    import jwt
 
     from app.core.config import settings
     claims = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALG])

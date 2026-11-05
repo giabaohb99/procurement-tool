@@ -7,6 +7,7 @@ import {
   History,
   LayoutDashboard,
   MailCheck,
+  MailSearch,
   MonitorSmartphone,
   RefreshCcwDot,
   ScrollText,
@@ -66,6 +67,14 @@ export const systemModule: ErpModule = {
       manage: true,
       //  Trang con sửa nội dung nằm dưới đường dẫn này nên tự khớp, khai
       //  `matchPaths` là thừa.
+    },
+    {
+      //  bao-CR-721: thư hệ đã gửi / lỗi — đọc `tab_email_log`. Chỉ đọc, gác `audit.read` như
+      //  máy chủ (khóa Nhật ký hệ thống có sẵn, không thêm khóa mới), không `manage`.
+      label: 'Nhật ký email',
+      path: appRoutes.system.emailLogs,
+      icon: MailSearch,
+      entity: 'audit',
     },
     {
       label: 'Sao lưu CSDL',
@@ -193,6 +202,12 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.emailTemplate(':event'),
       lazy: async () => ({
         Component: (await import('./pages/email-template-editor-page')).EmailTemplateEditorPage,
+      }),
+    },
+    {
+      path: appRoutes.system.emailLogs,
+      lazy: async () => ({
+        Component: (await import('./pages/email-log-list-page')).EmailLogListPage,
       }),
     },
     {

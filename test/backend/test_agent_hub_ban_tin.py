@@ -202,3 +202,28 @@ def test_viec_du_an_toi_han_cua_toi(db, seed):
     ctx.can = lambda entity, action="read": False
     assert "error" in MY_WORK_TASKS_SPEC.handler(ctx, {}) or MY_WORK_TASKS_SPEC.handler(ctx, {}).get("denied")
     assert wt is not None
+
+
+def test_lien_ket_het_han_khong_nhan_ban_tin_ai_cr234(db, seed, sent):
+    """ai-CR-234 (dev 04/11/2026): chat có liên kết đã HẾT hạn vẫn nhận bản tin sáng (việc riêng của tài khoản cũ), trong
+    khi hỏi lại thì bot báo "chưa liên kết". Gửi bản tin / chọn chat riêng / quyền đọc nhóm phải cùng luật với
+    `get_active_link`: chưa gỡ VÀ chưa hết hạn."""
+    from app.modules.agent_hub import chat_link, groups
+    from app.modules.agent_hub.model import AgentChatLink, AgentGoogleLink
+
+    out, _ = sent
+    uid, other = seed.u_req_id, seed.u_nstm_id
+    db.add(AgentChatLink(user_id=uid, chat_id="777", linked_at=datetime.now() - timedelta(days=40), notify_mode=1,
+                         expires_at=datetime.now() - timedelta(days=10), created_by=0, updated_by=0))
+    db.add(AgentGoogleLink(user_id=other, email="b@x", created_by=0, updated_by=0))   # bản tin NGẦM theo Google
+    db.add(AgentChatLink(user_id=other, chat_id="888", linked_at=datetime.now() - timedelta(days=40), notify_mode=1,
+                         expires_at=datetime.now() - timedelta(days=1), created_by=0, updated_by=0))
+    db.commit()
+    bs.set_daily(db, uid, enabled=True)
+    assert chat_link.get_active_link(db, "777") is None
+    assert groups.private_chat_of(db, uid) == "" and chat_link.active_chat_ids_of(db, uid) == []
+    monday_0731 = datetime(2026, 10, 12, 7, 31)
+    bs.tick(db, now=_utc(monday_0731))
+    assert out == [], "liên kết hết hạn — không được gửi việc riêng vào chat đó"
+    _link(db, uid, "999")                          # đăng nhập lại → chat mới nhận
+    assert groups.private_chat_of(db, uid) == "999"

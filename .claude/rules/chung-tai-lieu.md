@@ -47,6 +47,14 @@ Mỗi `doc/erp/<phan-he>/` (kể cả `agent-hub/`) phải có đủ bốn tệp
   cứu đầy đủ, sinh từ mã. `api.md` không chép lại toàn bộ tham số: nó giữ phần Swagger không nói được (quyền, phạm vi,
   luật nghiệp vụ, ai gọi) và trỏ sang nhóm (tag) tương ứng trên `/api/docs`.
 - Thêm / đổi / bỏ chức năng hay đường API thì sửa `01`, `02`, `api.md` **trong cùng commit** với mã.
+- **Bảng mục 1 của `api.md` dựng bằng máy** (td-0311): sửa docstring đường API (câu đầu tiếng Việt) rồi chạy lại, đừng
+  sửa tay cột *Mục đích* / *Quyền*. Cột *Phạm vi* và *Ai gọi* ghi tay được giữ; chữ *tự dò:* là máy dò từ frontend-v2
+  và cổng MCP. Phân hệ nhận đường nào là theo dòng `Mã backend:` đầu tệp. Chạy lại bao nhiêu lần cũng được:
+
+  ```bash
+  docker run --rm -e PYTHONPATH=/app -v "$PWD/backend:/app" -v "$PWD:/repo" -w /app procurement-tool-api:latest \
+    python scripts/dung_bang_api.py --repo /repo          # thêm --kiem: chỉ báo tệp lệch, exit 1 nếu lệch
+  ```
 
 ## Mười luật
 

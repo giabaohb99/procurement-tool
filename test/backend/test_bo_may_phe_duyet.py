@@ -19,6 +19,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 
+from app.core.route_iter import api_routes
 from app.modules.approval import (action_service, flow_service,
                                   instance_service)
 from app.modules.approval.flow_model import (APPROVER_EMPLOYEE, APPROVER_FIELD,
@@ -398,12 +399,12 @@ def test_duong_dan_tinh_dang_ky_truoc_route_dong():
 
     PREFIX = "/api/approvals"
     vi_tri_dong = next(
-        (i for i, route in enumerate(app.routes)
+        (i for i, route in enumerate(api_routes(app))
          if getattr(route, "path", "") == PREFIX + "/{instance_id}"), None)
     assert vi_tri_dong is not None
 
     borrowed = [
-        route.path for i, route in enumerate(app.routes)
+        route.path for i, route in enumerate(api_routes(app))
         if i > vi_tri_dong and getattr(route, "path", "").startswith(PREFIX + "/")
         and len(route.path[len(PREFIX) + 1:].split("/")) == 1
         and "{" not in route.path[len(PREFIX) + 1:]

@@ -130,6 +130,7 @@ def import_suppliers_csv(
 ):
     import csv
     from io import StringIO
+    from app.core.csv_utils import unescape_row
     from fastapi import HTTPException
     from app.core.utils import generate_code
     from .model import Supplier
@@ -140,7 +141,7 @@ def import_suppliers_csv(
         raise HTTPException(400, "File CSV trống")
         
     created, updated, deleted = 0, 0, 0
-    for row in reader:
+    for row in map(unescape_row, reader):   # bao-CR-726: gỡ dấu ' chống công thức của tệp xuất
         action = row.get("Hành động", "").strip().lower()
         is_active = action not in ["xóa", "delete", "ngừng"]
         

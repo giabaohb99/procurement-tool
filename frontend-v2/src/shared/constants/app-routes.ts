@@ -16,6 +16,8 @@ export const appRoutes = {
    */
   notifications: '/notifications',
   me: '/me',
+  /** Có gì mới + phiên bản đang chạy (bao-CR-722) — dùng chung mọi phân hệ, ở khung launcher như `/me`. */
+  whatsNew: '/whats-new',
   /** Trang công khai hướng dẫn nối AI riêng (bao-CR-638) — không cần đăng nhập, không bao giờ chứa khóa. */
   connectAi: '/connect-ai',
   /**
@@ -417,6 +419,8 @@ export const appRoutes = {
     emailTemplates: '/system/email-templates',
     /** Trang con sửa nội dung một mẫu email theo bước. */
     emailTemplate: (event: string) => `/system/email-templates/${event}`,
+    /** Nhật ký email (bao-CR-721): thư hệ đã gửi / lỗi, chỉ đọc. `?status=` và `?id=` đi qua URL. */
+    emailLogs: '/system/email-logs',
     /** Quản lý sao lưu CSDL hệ thống. */
     backups: '/system/backups',
     /**

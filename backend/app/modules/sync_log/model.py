@@ -20,8 +20,10 @@ vi phạm một điều là sổ mất tác dụng:
    để lại dấu vết nào.
 2. **Một dòng = một sự kiện, không ghi đè lịch sử.** Phiếu đổi trạng thái năm lần
    thì có năm dòng. Nhìn vào sổ phải dựng lại được câu chuyện.
-3. **Không bao giờ xóa dòng lỗi.** Dọn sổ chỉ dọn dòng *thành công* cũ hơn sáu
-   tháng, bằng một việc chạy nền riêng, và phải ghi lại đã dọn bao nhiêu dòng.
+3. **Không bao giờ xóa dòng lỗi.** Dọn sổ chỉ dọn dòng *bỏ qua* quá 14 ngày và
+   *thành công* quá 90 ngày (bao-CR-731, trước là sáu tháng), luôn giữ dòng mới
+   nhất mỗi đối tượng, bằng việc nền `system_log.cleanup_machine_logs` có ghi số
+   dòng đã dọn — xem `system_log/machine_cleanup.py`.
 """
 from sqlalchemy import BigInteger, Index, Integer, SmallInteger, String, Text
 from sqlalchemy.dialects.mysql import MEDIUMTEXT

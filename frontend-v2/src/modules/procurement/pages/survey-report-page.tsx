@@ -870,7 +870,11 @@ function ExtraFilterFields({
  * đang nhìn. Bù lại, đây cũng là lý do danh sách cột phải khai một chỗ.
  */
 function downloadCsv(rows: SurveyReportLine[]) {
-  const quote = (text: string) => `"${(text || '').replace(/"/g, '""')}"`
+  //  bao-CR-726 / BM-033: ô mở đầu bằng = + - @ tab CR thêm dấu ' — Excel không chạy như công thức.
+  const quote = (text: string) => {
+    const safe = /^[=+\-@\t\r]/.test(text || '') ? `'${text}` : text || ''
+    return `"${safe.replace(/"/g, '""')}"`
+  }
 
   const csvContent = [
     REPORT_FIELDS.map((field) => quote(field.header)).join(','),

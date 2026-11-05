@@ -431,7 +431,7 @@ def _make_token(user_id: int, minutes: int) -> str:
     """Vé truy cập ký đúng khóa; `minutes` âm là vé ĐÃ hết hạn."""
     from datetime import timezone
 
-    from jose import jwt
+    import jwt
 
     from app.core.config import settings
 
@@ -543,7 +543,7 @@ def test_ve_het_han_van_ghi_user_id_va_ma_token_expired(client, db):
 
 def test_ve_hong_chu_ky_khong_duoc_coi_la_het_han(client, db):
     """Bỏ qua `exp` KHÔNG có nghĩa là bỏ qua chữ ký: vé ký sai khóa vẫn là vô danh."""
-    from jose import jwt
+    import jwt
 
     gia = jwt.encode({"sub": "7", "type": "access",
                       "exp": datetime.now() - timedelta(minutes=5)}, "khoa-khac", algorithm="HS256")

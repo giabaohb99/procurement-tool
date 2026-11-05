@@ -108,6 +108,7 @@ def test_send(event: str, background_tasks: BackgroundTasks, db: Session = Depen
     html = render_template(eff["body_html"], _SAMPLE)
     log = EmailLog(event=f"{event}_test", to_email=to_email, subject=subject,
                    status="pending", created_by=getattr(user, "id", 0))
+    log.keep_body(html)  # bao-CR-727
     db.add(log)
     db.flush()
     background_tasks.add_task(send_smtp_email, SessionLocal, log.id, to_email, subject, html, True)

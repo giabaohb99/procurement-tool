@@ -13,6 +13,8 @@ interface AppEnv {
    * `core/auth/pages/login-page.tsx`.
    */
   googleClientId: string
+  /** Mã commit ngắn của gói giao diện, bơm lúc build image (bao-CR-722). Rỗng = không rõ. */
+  buildCommit: string
   isDev: boolean
   isProd: boolean
   /** Chạy dưới Vitest — bộ thu hành vi (core/telemetry) tắt hẳn ở đây. */
@@ -23,6 +25,7 @@ export const env: AppEnv = {
   apiUrl: import.meta.env.VITE_API_URL ?? '',
   appName: import.meta.env.VITE_APP_NAME ?? 'DEGO ERP',
   googleClientId: import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '',
+  buildCommit: import.meta.env.VITE_BUILD_COMMIT ?? '',
   isDev: import.meta.env.DEV,
   isProd: import.meta.env.PROD,
   isTest: import.meta.env.MODE === 'test',

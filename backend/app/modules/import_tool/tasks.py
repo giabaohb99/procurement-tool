@@ -151,13 +151,15 @@ def _csv_to_workbook(raw: bytes):
     import csv
 
     import openpyxl
+
+    from app.core.csv_utils import csv_unescape
     text = raw.decode("utf-8-sig", errors="replace")
     header = next((ln for ln in text.splitlines() if ln.strip()), "")
     delim = max((";", "\t", ","), key=header.count)
     wb = openpyxl.Workbook()
     ws = wb.active
     for row in csv.reader(StringIO(text), delimiter=delim):
-        ws.append(row)
+        ws.append([csv_unescape(v) for v in row])   # bao-CR-726: gỡ dấu ' chống công thức của tệp CSV xuất
     return wb
 
 

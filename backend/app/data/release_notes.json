@@ -1,0 +1,282 @@
+{
+  "_huong_dan": "bao-CR-722. Mỗi đợt đẩy prod một mục, MỚI NHẤT ĐỨNG ĐẦU. version dạng SỐ 2.X.Y (đại ca chốt 04/11/2026): 2 = ERP v2 (11/09/2026 backend v2 lên prod = 2.0.0); X tăng 1 mỗi đợt prod có tính năng; Y tăng khi đợt chỉ vá lỗi. Lịch sử đã đánh: 2.1.0 14/09 bảo mật, 2.2.0 24/09, 2.3.0 28/09 trợ lý AI, 2.4.0 01/10 tra cứu thị trường, 2.5.0 02/10, 2.6.0 05/10, 2.7.0 19/10 kho skill + MCP, 2.7.1 22/10 vá sao lưu, 2.8.0 26/10, 2.9.0 30/10, 2.10.0 31/10, 2.11.0 02/11, 2.12.0 04/11 (chỉ ghi mục từ 30/10). Ghi bằng lời người dùng: thay đổi họ nhìn thấy, không ghi refactor / bài kiểm / tài liệu nội bộ. kind: them | sua | bo. module phải nằm trong app/modules/release_info/service.py MODULES. Bài kiểm test_phien_ban_va_ghi_chu_phat_hanh_cr722.py canh khuôn.",
+  "releases": [
+    {
+      "version": "2.14.0",
+      "date": "2026-11-05",
+      "title": "Gửi lại email, tệp xuất an toàn hơn, nâng cấp nền tảng",
+      "notes": [
+        {
+          "module": "Quản trị",
+          "kind": "them",
+          "cr": "bao-CR-727",
+          "text": "Nhật ký email có nút Gửi lại: mở một thư trong nhật ký, bấm Gửi lại để gửi y nguyên thư đó cho đúng người nhận; thư gửi lại hiện nhãn Gửi lại từ dòng gốc. Áp cho thư gửi từ đợt này trở đi, trừ thư mật khẩu."
+        },
+        {
+          "module": "Nền tảng",
+          "kind": "sua",
+          "cr": "bao-CR-726",
+          "text": "Mọi tệp Excel và CSV xuất ra không còn tự chạy công thức lạ nằm trong dữ liệu; xuất ra rồi nạp lại vẫn giữ đúng nội dung."
+        },
+        {
+          "module": "Nền tảng",
+          "kind": "sua",
+          "cr": "bao-CR-725",
+          "text": "Nâng cấp các thư viện nền của hệ thống lên bản mới đã vá lỗi bảo mật, hệ chạy ổn định và an toàn hơn."
+        }
+      ]
+    },
+    {
+      "version": "2.13.0",
+      "date": "2026-11-04",
+      "title": "Trang Phiên bản, màn hồ sơ nhân sự quen thuộc, vá bảo mật",
+      "notes": [
+        {
+          "module": "Nền tảng",
+          "kind": "them",
+          "cr": "bao-CR-722",
+          "text": "Trang Phiên bản và Có gì mới: cuối trang chủ và chân menu hiện số phiên bản, bấm vào xem danh sách các đợt cập nhật, mỗi đợt bấm để xem chi tiết."
+        },
+        {
+          "module": "Nhân sự",
+          "kind": "sua",
+          "cr": "bao-CR-724",
+          "text": "Màn chi tiết nhân sự trở lại giao diện quen thuộc trước đây: thẻ danh tính, nhóm thông tin rõ ràng, khối Lịch sử thao tác như cũ."
+        },
+        {
+          "module": "Quản trị",
+          "kind": "sua",
+          "cr": "bao-CR-721",
+          "text": "Nhật ký email hiện tên tiếng Việt cho mọi loại thư, kể cả thư duyệt, thư cấp văn bản, thư đặt lại mật khẩu và thư thử."
+        },
+        {
+          "module": "Tra cứu thị trường",
+          "kind": "sua",
+          "cr": "bao-CR-723",
+          "text": "Tệp Excel xuất ra không còn tự chạy công thức lạ nằm trong dữ liệu, mở tệp an toàn hơn."
+        },
+        {
+          "module": "Trợ lý AI",
+          "kind": "sua",
+          "cr": "ai-CR-234",
+          "text": "Bot không còn gửi bản tin hay việc riêng vào nhóm chat đã hết hạn liên kết; đọc tệp Excel đính kèm an toàn hơn."
+        }
+      ]
+    },
+    {
+      "version": "2.12.0",
+      "date": "2026-11-04",
+      "title": "Nghỉ phép theo chuẩn ERPNext, phân quyền rõ hơn, nhật ký email",
+      "notes": [
+        {
+          "module": "Nghỉ phép",
+          "kind": "them",
+          "cr": "duoc-CR-715",
+          "text": "Loại nghỉ có cách cộng phép mới: đủ đầu năm hoặc theo tỷ lệ tháng vào làm; đơn nghỉ không lùi ngày khi bật khóa; chặn tự duyệt đơn của mình."
+        },
+        {
+          "module": "Nghỉ phép",
+          "kind": "them",
+          "cr": "duoc-CR-715",
+          "text": "Phiếu nghỉ bù: đi làm ngày nghỉ thì lập phiếu xin nghỉ bù, có luồng duyệt riêng và không ai tự duyệt phiếu của mình."
+        },
+        {
+          "module": "Nghỉ phép",
+          "kind": "them",
+          "cr": "duoc-CR-717",
+          "text": "Chính sách nghỉ phép theo nhóm nhân sự, phân bổ phép, tổng hợp quỹ phép theo người; luật mới mặc định giữ nguyên số phép đang có."
+        },
+        {
+          "module": "Nghỉ phép",
+          "kind": "them",
+          "cr": "duoc-CR-719",
+          "text": "Thanh toán nghỉ phép: quy đổi ngày phép chưa nghỉ ra tiền, bật theo từng loại nghỉ, dùng cho phép dư cuối năm và khi nghỉ việc."
+        },
+        {
+          "module": "Nghỉ phép",
+          "kind": "them",
+          "cr": "bao-CR-708",
+          "text": "Tách năm loại nghỉ chế độ BHXH (khám thai, sảy thai, biện pháp tránh thai, con ốm, dưỡng sức) khỏi Nghỉ ốm và Thai sản, mỗi loại có trần ngày riêng."
+        },
+        {
+          "module": "Nhân sự",
+          "kind": "them",
+          "cr": "duoc-CR-713",
+          "text": "Trang Cài đặt nhân sự: công tắc chặn đơn nghỉ lùi ngày, chặn tự duyệt và các thiết lập chung của phân hệ."
+        },
+        {
+          "module": "Nhân sự",
+          "kind": "sua",
+          "cr": "duoc-CR-708",
+          "text": "Màn chi tiết nhân sự đổi bố cục phẳng theo ERPNext: tiêu đề dính, dải tab, ô nhập trải đều; khối Hoạt động thành dòng thời gian có gộp theo lượt sửa."
+        },
+        {
+          "module": "Nhân sự",
+          "kind": "sua",
+          "cr": "duoc-CR-711",
+          "text": "Sơ đồ tổ chức làm lại: khung vẽ kéo thả, thu phóng, thẻ người nối theo quản lý trực tiếp, tìm người."
+        },
+        {
+          "module": "Nhân sự",
+          "kind": "sua",
+          "cr": "duoc-CR-712",
+          "text": "Menu Nhân sự gom Phòng ban, Công ty, Chức vụ, Mẫu hợp đồng vào cụm Master."
+        },
+        {
+          "module": "Nhân sự",
+          "kind": "sua",
+          "cr": "bao-CR-709",
+          "text": "Đổi phòng chính nay mặc định gỡ phòng cũ; muốn giữ phòng cũ làm kiêm nhiệm thì tick ô hỏi trong hộp thoại."
+        },
+        {
+          "module": "Nền tảng",
+          "kind": "sua",
+          "cr": "duoc-CR-716",
+          "text": "Các màn danh mục (bắt đầu từ Loại nghỉ) chuyển sang bố cục phẳng: một mặt phẳng tràn khung, hàng tiêu đề dính, ô nhập trải đều."
+        },
+        {
+          "module": "Nền tảng",
+          "kind": "sua",
+          "cr": "duoc-CR-714",
+          "text": "Tiêu đề trang trùng với chữ cuối của thanh đường dẫn thì ẩn đi, đỡ lặp."
+        },
+        {
+          "module": "Đặt xe",
+          "kind": "sua",
+          "cr": "duoc-CR-706",
+          "text": "Phiếu đặt xe đã chọn người phê duyệt thì người khác cùng quyền duyệt đặt xe cũng duyệt được; chuông và thư chỉ báo người được chọn."
+        },
+        {
+          "module": "Quản trị",
+          "kind": "sua",
+          "cr": "bao-CR-716",
+          "text": "Màn Vai trò và quyền: dòng danh mục dùng chung (Nhà cung cấp, Sản phẩm, Kho...) khóa ô Phạm vi và ghi Toàn bộ (danh mục dùng chung), vì phạm vi không lọc được các danh mục này."
+        },
+        {
+          "module": "Quản trị",
+          "kind": "them",
+          "cr": "bao-CR-720",
+          "text": "Màn Vai trò và quyền: vai trò Nhân sự (mọi tài khoản mới tự nhận) được tick Xem hay Xuất ở nhà cung cấp, hợp đồng, công nợ... thì hiện dòng vàng nhắc số người sẽ thấy toàn bộ dữ liệu."
+        },
+        {
+          "module": "Quản trị",
+          "kind": "them",
+          "cr": "bao-CR-721",
+          "text": "Màn Nhật ký email: tra thư hệ thống đã gửi cho ai, lỗi gì; lọc người nhận, loại thư, trạng thái, khoảng ngày; đọc nguyên văn câu lỗi."
+        },
+        {
+          "module": "Quản trị",
+          "kind": "bo",
+          "cr": "bao-CR-713",
+          "text": "Trang tài liệu API công khai tắt trên prod, chỉ còn ở dev."
+        },
+        {
+          "module": "Tra cứu thị trường",
+          "kind": "sua",
+          "cr": "bao-CR-718",
+          "text": "Tìm kiếm nhanh hơn nhiều trên bảng lớn; xuất Excel lô lớn chạy nền rồi tải về khi xong."
+        },
+        {
+          "module": "Kho",
+          "kind": "sua",
+          "cr": "bao-CR-717",
+          "text": "Mỗi bộ công ty, kho, mã hàng chỉ còn một dòng tồn; hai lượt nhận hàng cùng lúc không sinh dòng trùng."
+        },
+        {
+          "module": "Thu mua",
+          "kind": "sua",
+          "cr": "bao-CR-711",
+          "text": "Tối ưu mã Yêu cầu mua hàng, Yêu cầu báo giá, Đơn mua hàng (các đợt R1 tới R3b), không đổi chức năng."
+        }
+      ],
+      "remarks": [
+        "Đợt này có tám thay đổi cấu trúc dữ liệu, hệ tự chạy lúc dựng; không cần thao tác gì thêm.",
+        "Bài hướng dẫn mới trên Trung tâm trợ giúp: Nghỉ phép kiểu ERPNext, Cài đặt nhân sự, Nhật ký email, ô Phạm vi khóa ở Phân quyền."
+      ]
+    },
+    {
+      "version": "2.11.0",
+      "date": "2026-11-02",
+      "title": "Diễn đàn nội bộ, việc chạy ngầm, nghỉ phép có quỹ",
+      "notes": [
+        {
+          "module": "Diễn đàn",
+          "kind": "them",
+          "cr": "bao-CR-707",
+          "text": "Quản trị diễn đàn có tab Bài viết: chuyển bài sang box khác, đổi nhãn, sửa bài; nhãn Thông báo chỉ quản trị dùng."
+        },
+        {
+          "module": "Diễn đàn",
+          "kind": "them",
+          "cr": "",
+          "text": "Mở diễn đàn với 12 box theo 4 nhóm, có bài ghim khám sức khỏe, lịch nghỉ lễ, sinh nhật tháng."
+        },
+        {
+          "module": "Quản trị",
+          "kind": "them",
+          "cr": "bao-CR-703",
+          "text": "Màn Việc chạy ngầm: việc hệ tự chạy theo lịch, lúc nào, bao lâu, thành công hay lỗi."
+        },
+        {
+          "module": "Nghỉ phép",
+          "kind": "them",
+          "cr": "",
+          "text": "Nạp loại nghỉ, lịch nghỉ lễ 2026, quỹ phép 12 ngày cho mọi nhân sự và luồng duyệt nghỉ phép chung."
+        }
+      ],
+      "remarks": []
+    },
+    {
+      "version": "2.10.0",
+      "date": "2026-10-31",
+      "title": "Đơn mua hàng thêm cột phòng xử lý",
+      "notes": [
+        {
+          "module": "Thu mua",
+          "kind": "them",
+          "cr": "bao-CR-705",
+          "text": "Danh sách Đơn mua hàng thêm cột Phòng xử lý và Trưởng phòng phê duyệt, cùng chín cột phụ ẩn sẵn bật được ở menu Cột."
+        }
+      ],
+      "remarks": []
+    },
+    {
+      "version": "2.9.0",
+      "date": "2026-10-30",
+      "title": "Chi tiết yêu cầu mua hàng, gom phân hệ AI, dọn dữ liệu hải quan",
+      "notes": [
+        {
+          "module": "Thu mua",
+          "kind": "sua",
+          "cr": "bao-CR-691",
+          "text": "Chi tiết yêu cầu mua hàng kéo xuống cạnh Tiến độ mua hàng, thêm cột đơn mua hàng, số lượng đã đặt, nhà cung cấp; dòng chưa tạo đơn vẫn hiện."
+        },
+        {
+          "module": "Trợ lý AI",
+          "kind": "sua",
+          "cr": "bao-CR-696",
+          "text": "Gom Trợ lý, Kho skill, Kết nối AI vào một phân hệ AI; bài hướng dẫn gộp lại."
+        },
+        {
+          "module": "Trợ lý AI",
+          "kind": "sua",
+          "cr": "ai-CR-233",
+          "text": "Trợ lý không bao giờ trả lương khi tra nhân sự, kể cả chính chủ."
+        },
+        {
+          "module": "Tra cứu thị trường",
+          "kind": "sua",
+          "cr": "bao-CR-699",
+          "text": "Gộp hơn 43 nghìn dòng tờ khai trùng; hệ tự gộp lại ngày 1 và 16 hằng tháng."
+        },
+        {
+          "module": "Nền tảng",
+          "kind": "sua",
+          "cr": "bao-CR-695",
+          "text": "Bỏ dấu ngoặc kép góc trong mọi câu chữ trên màn và bài hướng dẫn, thay bằng in đậm."
+        }
+      ],
+      "remarks": []
+    }
+  ]
+}
