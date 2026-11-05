@@ -561,6 +561,10 @@ export const appRoutes = {
     leaveCompRequests: '/hr/leave-comp-requests',
     leaveCompRequestNew: '/hr/leave-comp-requests/new',
     leaveCompRequestDetail: (id: number | string) => `/hr/leave-comp-requests/${id}`,
+    /** Phiếu thanh toán nghỉ phép (duoc-CR-719) — đổi ngày phép chưa nghỉ ra tiền (cuối năm / nghỉ việc). */
+    leaveEncashments: '/hr/leave-encashments',
+    leaveEncashmentNew: '/hr/leave-encashments/new',
+    leaveEncashmentDetail: (id: number | string) => `/hr/leave-encashments/${id}`,
     /** Lịch nghỉ — "tuần tới ai nghỉ". */
     leaveCalendar: '/hr/leave-calendar',
     /** Quỹ phép năm: cấp phát, chỉnh tay. */

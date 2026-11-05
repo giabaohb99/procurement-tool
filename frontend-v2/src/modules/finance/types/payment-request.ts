@@ -6,9 +6,34 @@
  * hoặc cả hàng hóa lẫn vận chuyển thì một lần bấm "Tạo" sinh ra nhiều phiếu.
  */
 
+import { PAYABLE_SOURCE_LABELS } from './payable'
+
 /** `goods` = nợ NCC bán hàng · `shipping` = nợ đơn vị vận chuyển (dùng lại của Công nợ). */
 export type { PayableSourceType as PaymentSourceType } from './payable'
-export { PAYABLE_SOURCE_LABELS as PAYMENT_SOURCE_LABELS } from './payable'
+
+/**
+ * Nguồn YCTT THANH TOÁN NGHỈ PHÉP (duoc-CR-719) — khớp `PAYMENT_SOURCE_LEAVE_ENCASHMENT` của
+ * `backend/app/modules/payment_request/hr_payout_guard.py`. Chỉ MÁY tạo (duyệt phiếu thanh toán nghỉ phép); API tạo
+ * phiếu trả 400 nếu gửi nguồn này, nên form tạo YCTT dùng `PAYABLE_SOURCE_LABELS`, không dùng bảng dưới.
+ */
+export const PAYMENT_SOURCE_LEAVE_ENCASHMENT = 'leave_encashment'
+
+/** Trần số tiền một YCTT nghỉ phép — khớp `MAX_PAYOUT_AMOUNT` của backend; ô nhập kẹp ngay lúc gõ, khỏi ăn 400. */
+export const MAX_PAYOUT_AMOUNT = 9_999_999_999_999
+
+/**
+ * Nhãn nguồn của YCTT = nguồn công nợ + nguồn nghỉ phép. Cố ý KHÔNG thêm vào `PAYABLE_SOURCE_LABELS`: màn Công nợ
+ * dựng ô lọc từ bảng đó và sẽ mọc một lựa chọn không bao giờ có dòng nào.
+ */
+export const PAYMENT_SOURCE_LABELS: Record<string, string> = {
+  ...PAYABLE_SOURCE_LABELS,
+  [PAYMENT_SOURCE_LEAVE_ENCASHMENT]: 'Thanh toán nghỉ phép',
+}
+
+/** YCTT sinh từ phiếu thanh toán nghỉ phép (người nhận là nhân sự, không có NCC / công nợ). */
+export function isLeaveEncashmentPayout(req: Pick<PaymentRequestSummary, 'source_type'> | undefined): boolean {
+  return req?.source_type === PAYMENT_SOURCE_LEAVE_ENCASHMENT
+}
 
 /** Chuyển khoản hay tiền mặt — quyết định bản in có in cụm "Thông tin chuyển khoản" (CR-035). */
 export type PaymentMethod = 'transfer' | 'cash'
@@ -173,6 +198,10 @@ export interface PaymentRequestSummary {
    */
   head_of_dept_id?: number
   head_of_dept?: string
+  /** duoc-CR-719 — id nhân sự nhận tiền; chỉ khác 0 ở YCTT thanh toán nghỉ phép. */
+  payee_employee_id?: number
+  /** duoc-CR-719 — id phiếu nguồn (phiếu thanh toán nghỉ phép); `0` ở YCTT thường. */
+  source_ref_id?: number
 }
 
 /** bao-CR-553 — một người trong ô "Trưởng bộ phận" (cùng dạng với YCMH/YCBG/ĐMH). */
@@ -207,6 +236,23 @@ export interface PaymentRequest extends PaymentRequestSummary {
    * Nháp / Chờ duyệt / Đã duyệt, không phải trả trước).
    */
   out_of_sync?: boolean
+  /**
+   * duoc-CR-719 — phiếu nguồn của YCTT thanh toán nghỉ phép (chỉ ngày, không lương, không STK). `null` khi phiếu
+   * nguồn đã mất; vắng ở YCTT thường.
+   */
+  leave_encashment?: PaymentLeaveEncashmentSource | null
+}
+
+/** Khối `leave_encashment` của `_out()` — khớp `leave_encashment_payout.leave_encashment_block`. */
+export interface PaymentLeaveEncashmentSource {
+  id: number
+  /** `TTP#####`. */
+  code: string
+  days: number
+  leave_type_name: string
+  balance_year: number
+  /** 1 Phép dư cuối năm · 2 Nghỉ việc. */
+  reason_kind: number
 }
 
 /** Dữ liệu bản in `/print` — kèm thông tin đơn vị, người lập và tài khoản nhận. */
@@ -220,6 +266,13 @@ export interface PaymentRequestPrint extends PaymentRequest {
   bank_name: string
   /** Kỳ công nợ, dạng `YYYY-MM`. */
   period: string
+  /** duoc-CR-719 — người nhận của YCTT thanh toán nghỉ phép (vắng ở YCTT thường). */
+  payee?: { employee_id: number; code: string; full_name: string }
+  /**
+   * duoc-CR-719 (D2a) — `true` = chuyển khoản nhưng người in KHÔNG được xem số tài khoản của nhân sự nhận
+   * (thiếu `employee_sensitive.read` và không phải chính chủ): bản in ghi "kế toán tự điền" thay vì để trống im lặng.
+   */
+  bank_hidden?: boolean
 }
 
 /** Một dòng trong payload TẠO / SỬA — chỉ gửi các ô người dùng nhập được. */

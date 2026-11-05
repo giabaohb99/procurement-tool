@@ -10,6 +10,8 @@ from app.modules.payable.model import Payable
 from app.modules.payable.service import recalc_status
 from app.modules.supplier.model import Supplier
 
+from . import leave_encashment_payout as payout
+from .hr_payout_guard import PAYMENT_SOURCE_LEAVE_ENCASHMENT
 from .model import PaymentRequest, PaymentRequestLine
 from .schema import PRequestCreate, PRequestUpdate
 
@@ -238,6 +240,10 @@ def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[Pay
     điều kiện đủ chỉ bị bắt lúc GỬI DUYỆT (xem `check_submit`)."""
     if not data.lines:
         raise HTTPException(400, "Chưa có dòng đề nghị thanh toán nào")
+    # duoc-CR-719: nguồn thanh toán nghỉ phép CHỈ do máy tạo (leave_encashment_payout), không qua API tạo phiếu.
+    if data.source_type == PAYMENT_SOURCE_LEAVE_ENCASHMENT:
+        raise HTTPException(400, "YCTT thanh toán nghỉ phép do hệ thống tự tạo khi duyệt phiếu thanh toán "
+                                 "nghỉ phép — không tạo tay được")
 
     # gom theo (supplier_code, source_type, company_id); dòng gõ tay (không gắn khoản nợ)
     # lấy theo phần đầu phiếu
@@ -367,6 +373,7 @@ def _keep_unsent_offsets(db: Session, rid: int, data_lines) -> None:
 
 def update_request(db: Session, rid: int, data: PRequestUpdate, user_id: int) -> PaymentRequest:
     req = get_request(db, rid)
+    payout.ensure_not_payee(db, req, user_id)       # duoc-CR-719 H1: người nhận không tự sửa YCTT của mình
     # CR-149: người dùng in phiếu SAU khi duyệt, nên câu chữ bản in phải sửa được ở
     # cả submitted/approved — nhưng chỉ khi payload KHÔNG đụng trường nào khác
     # (tiền, hóa đơn, hình thức... vẫn khóa cứng như CR-066). paid/cancelled khóa hẳn.
@@ -374,7 +381,13 @@ def update_request(db: Session, rid: int, data: PRequestUpdate, user_id: int) ->
     only_print_texts = set(fields) == {"print_texts"}
     if req.status != "draft" and not (only_print_texts and req.status in ("submitted", "approved")):
         raise HTTPException(400, EDIT_LOCK_MSG.get(req.status, "Phiếu không còn ở trạng thái nháp, không sửa được"))
+    is_pay = payout.is_payout(req)
+    if is_pay:
+        # duoc-CR-719: nguồn nghỉ phép chỉ nhận vài ô + số tiền của dòng duy nhất; mọi thứ khác 400.
+        payout.apply_payout_update(db, req, fields, data.lines, user_id)
     for k, v in data.model_dump(exclude_unset=True, exclude={"lines"}).items():
+        if is_pay and k == "prepay":
+            continue
         if k == "payment_method":
             v = norm_method(v)
         elif k == "prepay":                 # CR-146: chỉ nhận 0/1
@@ -384,7 +397,7 @@ def update_request(db: Session, rid: int, data: PRequestUpdate, user_id: int) ->
         setattr(req, k, v)
     if "head_of_dept_id" in fields or "head_of_dept" in fields:
         sync_head_of_dept(db, req)
-    if data.lines is not None:
+    if data.lines is not None and not is_pay:
         _keep_unsent_offsets(db, rid, data.lines)
         db.query(PaymentRequestLine).filter(PaymentRequestLine.request_id == rid).delete()
         rows = _line_rows(db, data.lines, req.supplier_code, fill_from_payable=False)
@@ -427,6 +440,8 @@ _SYNC_WATCH_STATUSES = ("draft", "submitted", "approved")
 
 def refresh_block_reason(req: PaymentRequest) -> str:
     """Lý do phiếu KHÔNG được nạp lại theo công nợ; rỗng = được."""
+    if payout.is_payout(req):
+        return "Phiếu thanh toán nghỉ phép không có công nợ, nên không cập nhật theo công nợ được"
     if req.prepay:
         return ("Phiếu thanh toán trước chưa gắn công nợ (tiền chi trước thành tiền treo), "
                 "nên không cập nhật theo công nợ được")
@@ -564,6 +579,9 @@ def check_submit(db: Session, req: PaymentRequest) -> None:
     CR-268 — NGOẠI LỆ phiếu THANH TOÁN TRƯỚC (prepay=1): chưa có công nợ để khớp là
     đúng bản chất (chi trước khi nhận hàng / tạm ứng NCC), nên miễn điều kiện khớp.
     Tiền chi ra thành TIỀN TREO, đối trừ sau (xem apply_prepay_offsets / offset_supplier_hanging)."""
+    if payout.is_payout(req):          # duoc-CR-719: nhánh nguồn nghỉ phép đứng ĐẦU, bỏ khớp công nợ
+        payout.check_payout_submit(db, req)
+        return
     lines = lines_of(db, req.id)
     if not lines:
         raise HTTPException(400, "Phiếu chưa có dòng đề nghị nào")
@@ -611,6 +629,8 @@ def check_submit(db: Session, req: PaymentRequest) -> None:
 
 def delete_request(db: Session, rid: int, user_id: int):
     req = get_request(db, rid)
+    if payout.is_payout(req):
+        raise HTTPException(400, payout.MSG_NO_DELETE)
     #  bao-CR-547 (đại ca chốt 01/10/2026): chỉ xóa được phiếu NHÁP. Trước đây chặn mỗi phiếu đã
     #  chi — phiếu chờ duyệt / đã duyệt mà chưa chi vẫn xóa được, mở xóa nhiều là xóa cả loạt.
     #  Phiếu đã gửi đi mà không dùng nữa thì Từ chối, không xóa.
@@ -641,6 +661,10 @@ def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "
     """`allow_any_source=True` chỉ dành cho công cụ nhập Misa (tạo phiếu rồi ghi Đã chi
     ngay, bỏ qua duyệt) — mọi đường người dùng bấm đều phải đi đúng thứ tự."""
     req = get_request(db, rid)
+    if payout.is_payout(req):
+        # duoc-CR-719: H1 người nhận không tự gửi/duyệt/từ chối/chi YCTT của mình; L2 khóa dòng + chặn dòng đã xóa mềm.
+        payout.ensure_not_payee(db, req, user_id)
+        req = payout.lock_live_payout(db, rid)
     allowed = ALLOWED_FROM.get(status)
     if not allow_any_source and allowed is not None and req.status not in allowed:
         raise HTTPException(
@@ -652,12 +676,16 @@ def set_status(db: Session, rid: int, status: str, user_id: int, reason: str = "
     # CR-260 — phần cấn trừ tiền treo ghi trên dòng phiếu THỰC THI đúng lúc DUYỆT
     # (trước đó chỉ là ý định, nháp sửa/xóa vô hại). Soát fail thì raise ngay tại
     # đây -> chưa commit gì, phiếu vẫn ở Chờ duyệt.
-    offset_applied = apply_line_offsets(db, req, user_id, affected_po_ids) if status == "approved" else 0.0
+    is_pay = payout.is_payout(req)     # duoc-CR-719: nguồn nghỉ phép không có cấn trừ / công nợ / tiến độ ĐMH
+    offset_applied = (apply_line_offsets(db, req, user_id, affected_po_ids)
+                      if status == "approved" and not is_pay else 0.0)
     req.status = status
     req.updated_by = user_id
     if status == "cancelled":
         req.reject_reason = reason
-    if status == "paid":
+    if status == "paid" and is_pay:
+        payout.mark_payout_paid(db, req)
+    elif status == "paid":
         # cộng tiền đã trả vào các khoản nợ (phân bổ theo po_code + invoice_no)
         for ln in lines_of(db, rid):
             rem_to_pay = float(ln.amount or 0)
@@ -1006,6 +1034,8 @@ def record_refund(db: Session, rid: int, amount: float, note: str, user_id: int)
     Chỉ áp cho phiếu prepay=1 ĐÃ CHI còn treo. amount <= 0 nghĩa là hoàn toàn bộ phần treo.
     Trần cứng: không vượt tiền treo còn lại. Hàm này COMMIT + ghi audit."""
     req = get_request(db, rid)
+    if payout.is_payout(req):
+        raise HTTPException(400, "YCTT thanh toán nghỉ phép không có tiền trả trước để hoàn")
     if req.status != "paid" or not req.prepay:
         raise HTTPException(400, "Chỉ ghi nhận hoàn tiền trên phiếu THANH TOÁN TRƯỚC đã chi")
     lines = [ln for ln in lines_of(db, rid) if line_hanging(ln) > 0.01]

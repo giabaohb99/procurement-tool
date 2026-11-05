@@ -158,6 +158,36 @@ def _stringify(value) -> str | None:
     return text
 
 
+#  duoc-CR-719 M3: số tiền YCTT thanh toán nghỉ phép (= lương ngày x số ngày). Che theo DÒNG chứ không theo bảng:
+#  YCTT mua hàng vẫn phải giữ giá trị trước/sau (đổi số tiền chi cho NCC là thứ cần dấu vết nhất).
+_PAYOUT_AMOUNT_COLUMNS = {
+    "tab_payment_request": frozenset({"total"}),
+    "tab_payment_request_line": frozenset({"amount", "allocated_amount"}),
+}
+_PAYOUT_SOURCE = "leave_encashment"    # = payment_request.hr_payout_guard.PAYMENT_SOURCE_LEAVE_ENCASHMENT
+
+
+def _row_denied_columns(session, obj, table_name: str) -> frozenset:
+    """Cột bị che THEO DÒNG (ngoài luật theo bảng) — hiện chỉ số tiền YCTT nguồn nghỉ phép."""
+    cols = _PAYOUT_AMOUNT_COLUMNS.get(table_name)
+    if cols is None:
+        return frozenset()
+    try:
+        if table_name == "tab_payment_request":
+            return cols if getattr(obj, "source_type", "") == _PAYOUT_SOURCE else frozenset()
+        parent_id = int(getattr(obj, "request_id", 0) or 0)
+        if not parent_id:
+            return frozenset()
+        from app.modules.payment_request.model import PaymentRequest
+
+        with session.no_autoflush:
+            parent = session.get(PaymentRequest, parent_id)
+        return cols if parent is not None and parent.source_type == _PAYOUT_SOURCE else frozenset()
+    except Exception:  # noqa: BLE001 — không xác định được nguồn thì CHE (an toàn hơn lộ lương)
+        log.warning("Không xác định được nguồn YCTT của %s", table_name, exc_info=True)
+        return cols
+
+
 def _is_allowed(table_name: str, column: str) -> bool:
     """Cột này có được ghi GIÁ TRỊ không (tên cột thì luôn được ghi)."""
     allow = TABLE_FIELD_ALLOWLIST.get(table_name)
@@ -168,7 +198,7 @@ def _is_allowed(table_name: str, column: str) -> bool:
     return not is_sensitive_column(column)
 
 
-def _snapshot(state, table_name: str) -> dict:
+def _snapshot(state, table_name: str, denied: frozenset = frozenset()) -> dict:
     """Chụp cả bản ghi, ĐÃ CHE — dùng cho `op = 1` / `op = 3`.
 
     Chỉ đi trên cột, không đụng quan hệ: chạm vào một `relationship` ở đây là
@@ -179,7 +209,7 @@ def _snapshot(state, table_name: str) -> dict:
         column = prop.columns[0].name
         if column in NOISE_COLUMNS:
             continue
-        if not _is_allowed(table_name, column):
+        if column in denied or not _is_allowed(table_name, column):
             out[column] = "***"
             continue
         out[column] = _stringify(getattr(state.obj(), prop.key, None))
@@ -271,7 +301,7 @@ def _collect(session, ctx) -> None:
         state = inspect(obj)
         ctx.changes.append(PendingChange(
             table_name=table_name, op=CHANGE_OP_ADD, owner=owner,
-            snapshot=_snapshot(state, table_name), pending_obj=obj,
+            snapshot=_snapshot(state, table_name, _row_denied_columns(session, obj, table_name)), pending_obj=obj,
         ))
 
     for obj in session.deleted:
@@ -284,7 +314,8 @@ def _collect(session, ctx) -> None:
         state = inspect(obj)
         ctx.changes.append(PendingChange(
             table_name=table_name, op=CHANGE_OP_DELETE, owner=owner,
-            row_id=_row_id(state), snapshot=_snapshot(state, table_name),
+            row_id=_row_id(state),
+            snapshot=_snapshot(state, table_name, _row_denied_columns(session, obj, table_name)),
         ))
 
     for obj in session.dirty:
@@ -323,8 +354,9 @@ def _collect(session, ctx) -> None:
                 log.warning("Không đọc lại được giá trị cũ của %s#%s", table_name, row_id,
                             exc_info=True)
 
+        denied = _row_denied_columns(session, obj, table_name)
         for column, history in changed:
-            allowed = _is_allowed(table_name, column)
+            allowed = column not in denied and _is_allowed(table_name, column)
             before = history.deleted[0] if history.deleted else old_values.get(column)
             ctx.changes.append(PendingChange(
                 table_name=table_name, op=CHANGE_OP_UPDATE, owner=owner, row_id=row_id,

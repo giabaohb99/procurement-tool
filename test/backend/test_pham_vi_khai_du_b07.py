@@ -198,9 +198,11 @@ def test_du_55_entity():
     `tab_headcount_plan`; nằm trong `_SYS_ENTITIES`.
     79 → 78 ngày 29/10/2026 (duoc-CR-692): BỎ "Kế hoạch nhân sự" — gỡ entity `headcount_plan`.
     78 → 79 ngày 02/11/2026 (duoc-CR-715 C): phiếu xin nghỉ bù (`leave_comp_request`) — owner + self như `leave_request`.
+    79 → 80 ngày 03/11/2026 (duoc-CR-719): phiếu thanh toán nghỉ phép (`leave_encashment`) — owner + self như
+    `leave_comp_request`; nằm trong `_SYS_ENTITIES`.
     """
-    assert len(ENTITIES) == 79
-    assert len(SCOPE_FIELDS) == 79
+    assert len(ENTITIES) == 80
+    assert len(SCOPE_FIELDS) == 80
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

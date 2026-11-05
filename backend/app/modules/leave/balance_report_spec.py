@@ -32,7 +32,8 @@ DRILLDOWN_METRICS = {"remaining": "Còn lại", "people_over_quota": "Số ngư�
 BAL_COLS = (LeaveBalance.company_id, LeaveBalance.leave_type_id, LeaveBalance.employee_id,
             LeaveBalance.allocated_days, LeaveBalance.seniority_days, LeaveBalance.carried_days,
             LeaveBalance.adjusted_days, LeaveBalance.comp_days, LeaveBalance.used_days, LeaveBalance.pending_days,
-            LeaveBalance.carried_out_days, LeaveBalance.carried_expired_days)
+            LeaveBalance.carried_out_days, LeaveBalance.carried_expired_days,
+            LeaveBalance.encashed_days)
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,7 @@ class BalanceRow:
     adjusted: float = 0.0
     comp: float = 0.0           # duoc-CR-717: nghỉ bù cộng thêm (cột `comp_days`, đã có trong BAL_COLS)
     carried_expired: float = 0.0
+    encashed: float = 0.0       # duoc-CR-719: đã thanh toán ra tiền (cột `encashed_days`, đã trừ ở `remaining`)
     #  Cờ THEO NGƯỜI (cộng mọi dòng quỹ của người đó): được cấp > 0 mà đã dùng + giữ chỗ = 0.
     person_unused: bool = False
 
@@ -117,7 +119,7 @@ def rows_of(db: Session, user, prof: dict, year: int, type_name: dict, emp_dept:
         held = accrual_service.accrual_holdback(
             r.allocated_days or 0.0, int(r.accrual_mode or 1), r.hire_date, year, today)
         remaining = round(granted - (r.used_days or 0) - (r.pending_days or 0)
-                          - (r.carried_out_days or 0) - held, 2)
+                          - (r.carried_out_days or 0) - (r.encashed_days or 0) - held, 2)
         out.append(BalanceRow(
             company_id=r.company_id or 0, department_id=emp_dept.get(r.employee_id, 0),
             leave_type_id=r.leave_type_id or 0, leave_type_name=type_name.get(r.leave_type_id, ""),
@@ -126,6 +128,7 @@ def rows_of(db: Session, user, prof: dict, year: int, type_name: dict, emp_dept:
             remaining=remaining, allocated=r.allocated_days or 0.0,
             seniority=r.seniority_days or 0.0, carried=r.carried_days or 0.0,
             adjusted=r.adjusted_days or 0.0, comp=r.comp_days or 0.0, carried_expired=r.carried_expired_days or 0.0,
+            encashed=r.encashed_days or 0.0,
             person_unused=(round(granted_sum[r.employee_id], 2) > 0
                            and round(spent_sum[r.employee_id], 2) == 0)))
     return out
@@ -143,6 +146,7 @@ def build_spec(company_name: dict, department_name: dict) -> ReportSpec:
         _days("carried", "Chuyển từ năm trước", "carried"), _days("adjusted", "Điều chỉnh", "adjusted"),
         _days("comp", "Nghỉ bù cộng thêm", "comp"),
         _days("carried_expired", "Phép chuyển đã hết hạn", "carried_expired"),
+        _days("encashed", "Đã thanh toán ra tiền", "encashed"),
         MetricSpec("people_over_quota", "Số người vượt quỹ", kind="int", good="down",
                   distinct_of=lambda r: r.employee_id if r.remaining < 0 else None),
         MetricSpec("people_unused", "Chưa nghỉ ngày nào", kind="int", good="down",

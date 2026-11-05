@@ -23,6 +23,7 @@ from .balance_model import LeaveBalance
 from .catalog_model import (Holiday, LeaveBlockPeriod, LeaveType, LeaveTypeQuota,
                             LeaveTypeSeniority)
 from .constants import YEAR_END_CONVERT
+from .encashment_model import LeaveEncashment
 from .request_model import LeaveRequest, LeaveRequestLine
 from .schema import (HolidayCreate, HolidayResponse, HolidayUpdate,
                      LeaveBlockPeriodCreate, LeaveBlockPeriodResponse,
@@ -49,6 +50,11 @@ def _block_delete_used_type(db: Session, obj: LeaveType) -> None:
     if db.query(LeaveBalance).filter(LeaveBalance.leave_type_id == obj.id).count():
         raise HTTPException(
             400, f"\"{obj.name}\" đang có quỹ phép đã cấp nên không xóa được.")
+    #  duoc-CR-719: phiếu thanh toán nghỉ phép (mọi trạng thái) trỏ vào loại này.
+    if db.query(LeaveEncashment).filter(LeaveEncashment.leave_type_id == obj.id).count():
+        raise HTTPException(
+            400, f"\"{obj.name}\" đang có phiếu thanh toán nghỉ phép nên không xóa được. "
+                 "Bỏ tick \"Đang dùng\" để ẩn khỏi ô chọn thay vì xóa.")
     #  Hỏi luôn chiều NGƯỢC: loại khác đang quy đổi VÀO nó. Xóa mất thì kết sổ
     #  cuối năm âm thầm bỏ qua những dòng đó và số dư của người ta mất trắng.
     pointing = (db.query(LeaveType)
@@ -91,7 +97,16 @@ def _check_year_end_config(db: Session, mode: int, target_id: int, ratio: float,
                                  "cho loại đó trước.")
 
 
+def _check_encashment_config(allow_encashment: bool, counts_balance: bool) -> None:
+    """duoc-CR-719: loại không trừ quỹ thì không có số dư để thanh toán — chặn lúc KHAI, không lúc lập phiếu."""
+    if allow_encashment and not counts_balance:
+        raise HTTPException(
+            422, "Loại nghỉ không trừ quỹ thì không có số dư để thanh toán — "
+                 "bật \"Trừ vào quỹ phép\" trước.")
+
+
 def _check_type_create(db: Session, data) -> None:
+    _check_encashment_config(data.allow_encashment, data.counts_balance)
     _check_year_end_config(db, data.year_end_mode, data.convert_to_type_id,
                            data.convert_ratio)
 
@@ -107,6 +122,8 @@ def _block_code_change(db: Session, obj: LeaveType, values: dict) -> None:
     if new_code and new_code != obj.code:
         raise HTTPException(400, "Không đổi được \"Mã loại nghỉ\" sau khi đã tạo.")
 
+    _check_encashment_config(values.get("allow_encashment", obj.allow_encashment),
+                             values.get("counts_balance", obj.counts_balance))
     #  Sửa lẻ một ô thì ba ô kia lấy giá trị ĐANG CÓ — người dùng bật chế độ quy
     #  đổi mà không gửi lại loại đích vẫn phải bị kiểm theo loại đích cũ.
     _check_year_end_config(

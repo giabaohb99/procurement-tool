@@ -114,7 +114,7 @@ const ACTION_TOAST: Record<PaymentRequestAction, string> = {
  * Chuyển trạng thái phiếu. Ghi nhận chi (`pay`) tác động cả sang Công nợ nên làm
  * mất hiệu lực toàn nhánh `finance` để bảng công nợ cũng nạp lại.
  */
-export function usePaymentRequestAction(id: number) {
+export function usePaymentRequestAction(id: number, options: { payToast?: string } = {}) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ action, reason }: { action: PaymentRequestAction; reason?: string }) => {
@@ -131,7 +131,8 @@ export function usePaymentRequestAction(id: number) {
     },
     onSuccess: (_data, { action }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.finance.all })
-      toast.success(ACTION_TOAST[action])
+      //  duoc-CR-719: YCTT nghỉ phép không có công nợ — câu "công nợ được trừ" là sai, nơi gọi đưa câu riêng.
+      toast.success(action === 'pay' && options.payToast ? options.payToast : ACTION_TOAST[action])
     },
   })
 }

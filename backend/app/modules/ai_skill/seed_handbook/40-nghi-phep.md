@@ -22,6 +22,7 @@ Phân hệ để nhân viên **nộp đơn nghỉ phép**, quản lý duyệt, v
 | **Giấy nghỉ phép (GNP)** | **Văn bản** trong phân hệ Văn thư, tự sinh **sau khi đơn đã duyệt**. Là hồ sơ lưu sổ, không phải thứ để nộp. |
 | **Loại nghỉ** | Danh mục cấu hình (Phép năm, Nghỉ ốm, Thai sản…). Sửa được luật mà không cần lập trình. Có sẵn năm loại chế độ BHXH riêng (BHXH chi trả, không trừ quỹ phép): Nghỉ khám thai, Nghỉ sảy thai/phá thai, Nghỉ thực hiện biện pháp tránh thai, Nghỉ chăm con ốm, Nghỉ dưỡng sức phục hồi sức khỏe — mức luật ghi ở ghi chú từng loại. |
 | **Quỹ phép** | Số ngày của **một người × một năm × một loại nghỉ**. |
+| **Phiếu thanh toán nghỉ phép** (`TTP…`) | Xin **đổi ngày phép chưa nghỉ ra tiền** (phép dư cuối năm hoặc khi nghỉ việc). Phiếu chỉ ghi **số ngày**; số tiền do kế toán nhập ở Yêu cầu thanh toán. |
 | **Phiếu nghỉ bù** (`NB…`) | Đã **đi làm** ngày lễ / ngày nghỉ theo lịch → xin **cộng thêm** ngày vào quỹ. **Không phải đơn nghỉ**: duyệt xong mới có ngày, rồi nộp đơn nghỉ loại nghỉ bù để dùng. |
 
 Người dùng hỏi "làm giấy nghỉ phép" thì họ muốn **nộp đơn** ở
@@ -40,9 +41,10 @@ sinh; tạo tay là ra một tờ giấy không gắn với quỹ phép nào.
   Nhưng **chỉ chính người nộp** mới hủy được đơn đang nằm trong luồng duyệt;
   người khác phải dùng *Trả lại* / *Từ chối* ở màn **Phê duyệt**.
 
-## Quỹ phép — năm con số cộng, hai con số trừ
+## Quỹ phép — năm con số cộng, ba con số trừ
 
     còn lại = (hạn mức + thâm niên + chuyển năm trước + điều chỉnh tay + nghỉ bù cộng thêm) − đã nghỉ − đang chờ duyệt
+              − đã thanh toán ra tiền
               (− phần CHƯA TỚI THÁNG nếu loại nghỉ cộng dần theo tháng)
 
 - ⚠️ **Hỏi "còn bao nhiêu phép" thì gọi `my_leave_summary` và đọc `remaining_days`** — đó là đúng con số form nộp
@@ -145,6 +147,39 @@ Menu *Nhân sự ▸ Nghỉ phép ▸ Nghỉ bù*, khóa quyền riêng `leave_c
   hộ thì truyền `employee` = mã nhân sự). Tool chạy trước đủ các chốt trên; có `error` thì **đọc nguyên câu**, đừng tự
   soạn tiếp. Người dùng đồng ý thì xác nhận nháp với kind **`leave_comp`** (submit=true để gửi duyệt luôn). **Đừng lẫn**
   với `draft_leave_request`: xin nghỉ bù = xin THÊM ngày; nghỉ bằng ngày bù đã có = đơn nghỉ.
+
+## Thanh toán nghỉ phép (từ 03/11/2026)
+
+Menu *Nhân sự ▸ Nghỉ phép ▸ Thanh toán nghỉ phép*, khóa quyền riêng `leave_encashment`. Đổi ngày phép **chưa nghỉ** ra tiền
+khi **cuối năm còn dư** hoặc khi **nghỉ việc** (Điều 113 khoản 3 Bộ luật Lao động: thôi việc mà chưa nghỉ hết phép thì
+được thanh toán số ngày chưa nghỉ).
+
+- ⚠️ **TUYỆT ĐỐI KHÔNG nói số tiền**, không ước tính, không nhân lương ngày, kể cả khi người hỏi là chính người được
+  thanh toán. Số tiền chia số ngày ra lương ngày; tool không trả tiền và trợ lý cũng không đi tìm (không đọc YCTT để lấy
+  tiền). Hỏi **được bao nhiêu tiền** thì nói: số tiền do kế toán nhập ở Yêu cầu thanh toán; chính người được thanh toán xem
+  ở khối **Thanh toán** trên trang chi tiết phiếu.
+- Chỉ loại nghỉ Nhân sự bật **Cho phép thanh toán nghỉ phép** mới thanh toán được (tool: `allow_encashment` của dòng
+  loại). `false` thì nói thẳng loại đó không đổi ra tiền, đừng hứa.
+- **Hỏi "tôi được thanh toán mấy ngày phép"**: gọi `my_leave_summary`, lấy `remaining_days` của đúng loại, rồi giải thích
+  theo luật của loại — **đừng chốt con số** như số cuối cùng, vì hệ còn trừ phần mang sang chưa dùng (tool không tách riêng
+  phần này) và làm tròn xuống nửa ngày. Con số chốt nằm ở hộp **Số ngày được thanh toán** khi lập phiếu.
+  - **Phép dư cuối năm**: còn lại − phần mang sang từ năm trước chưa dùng − `non_encashable_days` (số ngày phải giữ lại);
+    rồi không vượt `max_encashable_days` trừ `encashed_days` đã thanh toán trong năm (`max_encashable_days = 0` là không
+    trần); làm tròn xuống 0,5; âm thì 0.
+  - **Nghỉ việc**: hết số còn lại, kể cả phần mang sang, không giữ lại, không trần; hồ sơ phải có ngày nghỉ việc (thiếu
+    thì nhờ Nhân sự nhập trước).
+  - Nói dạng **khoảng tối đa N ngày, con số chính xác xem ở hộp Số ngày được thanh toán khi lập phiếu**.
+- Năm quỹ chỉ chọn **năm nay hoặc năm trước**; mỗi người, mỗi loại nghỉ, mỗi năm chỉ **một phiếu còn hiệu lực cho mỗi
+  lý do** (một phiếu cuối năm, một phiếu nghỉ việc; kể cả phiếu đã duyệt). Năm trước đã kết sổ thì không còn ngày để thanh toán.
+- Vòng đời: nhân viên lập (hoặc Nhân sự lập hộ) → gửi duyệt (giữ chỗ ngày) → **phòng Nhân sự duyệt** (không ai tự duyệt
+  phiếu của mình) → ngày bị trừ khỏi quỹ, hệ tạo YCTT cho kế toán → kế toán nhập tiền, duyệt, **Ghi nhận đã chi**. Trạng
+  thái chi đọc ở `payment_status_label` của từng phiếu trong `encashments`.
+- `payment_status = cancelled` mà phiếu vẫn **Đã duyệt** = **kế toán từ chối chi**: ngày vẫn đang bị trừ; bảo họ liên hệ
+  phòng Nhân sự để hủy phiếu (trả ngày về quỹ) rồi lập lại nếu cần. Phiếu đã chi thì không hủy được nữa.
+- Trợ lý **không soạn nháp** phiếu này (chưa có tool). Người muốn lập thì dẫn vào màn *Thanh toán nghỉ phép*, nút
+  **Lập phiếu thanh toán**. Đừng dùng `draft_leave_request` hay `draft_payment_request` thay thế.
+- Kế toán hỏi **không thấy YCTT nghỉ phép**: vai trò của họ cần quyền **đọc** *Nghỉ phép › Thanh toán nghỉ phép* phạm vi
+  công ty (ngoài quyền Yêu cầu thanh toán) — gợi ý quản trị tick ở *Quản trị ▸ Phân quyền tài khoản*.
 
 ## Cài đặt nhân sự — hai công tắc nghỉ phép (từ 02/11/2026)
 
@@ -286,6 +321,9 @@ soạn xong mới biết không đủ phép là bắt người ta làm lại.
   nói rõ lý do nào. Số **âm** = đang ứng phép (chỉ có khi `max_negative_days` > 0).
 - `comp_days` là ngày **nghỉ bù đã duyệt** cộng vào loại đó (đã nằm trong `total_days`);
   `comp_requests` là các phiếu xin nghỉ bù của họ kèm trạng thái.
+- `encashed_days` là ngày **đã thanh toán ra tiền** (phiếu thanh toán nghỉ phép đã duyệt), **đã trừ** khỏi
+  `remaining_days`; `encashments` là các phiếu thanh toán nghỉ phép của họ (số ngày, trạng thái, `payment_status_label`
+  = trạng thái chi). Không có số tiền — xem mục **Thanh toán nghỉ phép** dưới.
 - Hỏi "được ứng phép không / mới vào làm nghỉ phép năm được chưa" thì đọc `max_negative_days`
   và `applicable_after_days` của đúng loại — đừng đoán.
 - `allocated: false` nghĩa là **năm đó chưa ai cấp quỹ loại nghỉ này**, KHÔNG phải
@@ -333,12 +371,13 @@ nghỉ là chính người đang lập — ai cần lập hộ thì vào màn Đ
 không khai **nhiều loại nghỉ** trong một đơn (bấm *Thêm loại nghỉ* ngay trên form),
 và không tự bấm Lưu thay người dùng.
 
-## Năm khóa quyền — đừng gộp
+## Sáu khóa quyền — đừng gộp
 
 | Khóa | Mở màn nào |
 |---|---|
 | `leave_request` | Đơn nghỉ phép · Lịch nghỉ |
 | `leave_comp_request` | Nghỉ bù (phiếu xin nghỉ bù) |
+| `leave_encashment` | Thanh toán nghỉ phép (kèm quyền thấy YCTT nghỉ phép bên Tài chính) |
 | `leave_balance` | Quỹ phép năm (cấp phát, **điều chỉnh tay**) · Phân bổ chính sách |
 | `leave_type` | Thiết lập ▸ Loại nghỉ (kèm bậc thâm niên, hạn mức theo nhóm), Ngày cấm nghỉ, Chính sách nghỉ phép |
 | `holiday` | Thiết lập ▸ Lịch ngày lễ |
@@ -346,15 +385,15 @@ và không tự bấm Lưu thay người dùng.
 Tách như vậy vì **`leave_balance` ghi được nghĩa là tặng thêm ngày phép cho bất kỳ ai**.
 Đó là việc của phòng Nhân sự (vai trò mẫu **`hr_leave`**), không phải của người nộp đơn.
 
-⚠️ Bốn khóa đầu **mới thêm 03/09/2026**, `leave_comp_request` thêm **02/11/2026**. Trên hệ đang chạy,
-các vai trò cũ **không tự có** chúng — quản trị phải tick thêm ở *Nhân sự ▸ Phân quyền tài khoản*.
+⚠️ Bốn khóa đầu **mới thêm 03/09/2026**, `leave_comp_request` thêm **02/11/2026**, `leave_encashment` thêm **03/11/2026**. Trên hệ đang chạy,
+các vai trò cũ **không tự có** chúng — quản trị phải tick thêm ở *Quản trị ▸ Phân quyền tài khoản*.
 Người dùng báo "không thấy menu Nghỉ phép / Nghỉ bù" thì gần như chắc là do chỗ này.
 
 Luồng duyệt đơn có thể khai bước ***Người có quyền duyệt (theo phân quyền)*** (duoc-CR-680): người
 nhận việc là ai giữ vai trò được tick **Duyệt** trên `leave_request` với phạm vi Phòng ban, Công ty
 hoặc Tất cả, không tính vai trò Quản trị hệ thống, và phạm vi đó phủ được tờ đơn (phạm vi **Phòng ban** chỉ
 nhận đơn của phòng mình). Người dùng hỏi **sao đơn của tôi không tới ai duyệt** mà luồng khai cách này:
-gợi ý quản trị kiểm ở *Nhân sự ▸ Phân quyền tài khoản* xem có vai trò nào tick Duyệt nghỉ phép với
+gợi ý quản trị kiểm ở *Quản trị ▸ Phân quyền tài khoản* xem có vai trò nào tick Duyệt nghỉ phép với
 phạm vi phủ phòng / công ty của người nộp — đừng đoán tên người duyệt.
 
 ## Bảng từ dùng đúng
@@ -367,6 +406,7 @@ phạm vi phủ phòng / công ty của người nộp — đừng đoán tên n
 | Trả về chỉnh sửa | trả lại (dễ lẫn với Từ chối) |
 | Điều chỉnh tay | cộng phép, bù phép (đó là việc Nhân sự sửa quỹ) |
 | Phiếu xin nghỉ bù | đơn nghỉ bù, phiếu làm thêm |
+| Thanh toán nghỉ phép · phiếu thanh toán nghỉ phép | quy đổi phép, bán phép, trả lương phép |
 | Lịch ngày lễ | ngày nghỉ lễ (đó là danh mục, tên đúng là **Lịch ngày lễ**) |
 | Kết sổ cuối năm | chốt sổ, khóa sổ, chuyển phép tự động |
 | Mang sang năm sau | bảo lưu phép, cộng dồn phép |

@@ -30,6 +30,7 @@ from app.modules.document.signature_model import DocumentSignature
 from app.modules.dossier.model import Dossier
 from app.modules.dossier.progress_model import DossierProgress
 from app.modules.leave.balance_model import LeaveBalance
+from app.modules.leave.encashment_model import LeaveEncashment
 from app.modules.leave.request_model import LeaveHandover, LeaveRequest
 from app.modules.meeting_room.model import RoomBooking, RoomBookingAttendee
 from app.modules.notification.mailbox_model import MailboxMember
@@ -106,6 +107,8 @@ rg.register(ENTITY, "Nhân sự", [
     rg.Reference(LeaveRequest, "employee_id", "đơn nghỉ phép"),
     rg.Reference(LeaveHandover, "employee_id", "bàn giao nghỉ phép"),
     rg.Reference(LeaveBalance, "employee_id", "quỹ phép"),
+    rg.Reference(LeaveEncashment, "employee_id", "phiếu thanh toán nghỉ phép"),            # duoc-CR-719
+    rg.Reference(PaymentRequest, "payee_employee_id", "yêu cầu thanh toán (người nhận tiền nghỉ phép)"),   # duoc-CR-719
     rg.Reference(RoomBooking, "requester_employee_id", "lịch đặt phòng họp"),
     rg.Reference(RoomBookingAttendee, "employee_id", "người tham dự họp"),
     rg.Reference(VehicleBooking, "requester_id", "phiếu đặt xe (người yêu cầu)"),

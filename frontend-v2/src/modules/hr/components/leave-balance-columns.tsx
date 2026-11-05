@@ -125,6 +125,15 @@ export function buildLeaveBalanceColumns({
       defaultHidden: true,
     },
     {
+      key: 'encashed_days',
+      header: 'Đã thanh toán ra tiền',
+      //  duoc-CR-719: ngày đã đổi ra tiền (phiếu thanh toán nghỉ phép đã duyệt) — khoản TRỪ, đã trừ khỏi "Còn lại".
+      cell: (row) => <DayCount value={rowTotals(row).encashed_days ?? 0} />,
+      width: 170,
+      align: 'right',
+      defaultHidden: true,
+    },
+    {
       key: 'used_days',
       header: 'Đã nghỉ',
       cell: (row) => <DayCount value={rowTotals(row).used_days} />,

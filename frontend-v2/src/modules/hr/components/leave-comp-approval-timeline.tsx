@@ -9,8 +9,17 @@ import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { LEAVE_COMP_STATUS, type LeaveCompRequest } from '../types/leave-comp'
 
+/**
+ * Các trường luồng duyệt cần — khai dạng `Pick` để PHIẾU THANH TOÁN NGHỈ PHÉP (duoc-CR-719) dùng chung: hai loại phiếu
+ * cùng bộ mã trạng thái 1..6 và cùng hình dạng phiên duyệt / duyệt thẳng.
+ */
+type TimelineRequest = Pick<
+  LeaveCompRequest,
+  'code' | 'status' | 'approval_instance_id' | 'decided_at' | 'decision_note' | 'created_by_name' | 'created_at'
+>
+
 interface LeaveCompApprovalTimelineProps {
-  request: LeaveCompRequest
+  request: TimelineRequest
 }
 
 const OUTCOME: Record<number, { icon: LucideIcon; title: string; bad: boolean }> = {
@@ -20,7 +29,7 @@ const OUTCOME: Record<number, { icon: LucideIcon; title: string; bad: boolean }>
   [LEAVE_COMP_STATUS.CANCELLED]: { icon: Ban, title: 'Phiếu đã bị hủy', bad: true },
 }
 
-function createdEvent(request: LeaveCompRequest): TrailExtraEvent {
+function createdEvent(request: TimelineRequest): TrailExtraEvent {
   const actor = request.created_by_name?.trim()
   return {
     icon: FileText,

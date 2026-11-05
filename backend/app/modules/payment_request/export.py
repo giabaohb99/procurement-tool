@@ -21,7 +21,8 @@ from .model import PaymentRequest, PaymentRequestLine
 FILE_NAME = "yeu-cau-thanh-toan-chi-tiet"
 SHEET_TITLE = "YCTT theo dong"
 
-_SOURCE_LABEL = {"goods": "Hàng hóa", "shipping": "Vận chuyển", "import_cost": "Chi phí thu mua"}
+_SOURCE_LABEL = {"goods": "Hàng hóa", "shipping": "Vận chuyển", "import_cost": "Chi phí thu mua",
+                 "leave_encashment": "Thanh toán nghỉ phép"}
 _METHOD_LABEL = {"transfer": "Chuyển khoản", "cash": "Tiền mặt"}
 
 COLS = [

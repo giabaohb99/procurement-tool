@@ -43,3 +43,16 @@ describe('LeaveBalanceCard comp_days', () => {
     expect(container.querySelector('.text-lg')?.className).toContain('text-muted-foreground')
   })
 })
+
+describe('LeaveBalanceCard encashed_days (duoc-CR-719)', () => {
+  it('prints the encashed days as a deduction, without a plus sign', () => {
+    render(<LeaveBalanceCard balance={balance({ allocated_days: 12, total_days: 12, encashed_days: 4, remaining_days: 8 })} />)
+    expect(screen.getByText(/4 đã thanh toán/)).toBeInTheDocument()
+    expect(screen.queryByText(/\+4 đã thanh toán/)).not.toBeInTheDocument()
+  })
+
+  it('prints nothing about encashment when encashed_days is 0 or missing', () => {
+    render(<LeaveBalanceCard balance={balance({ encashed_days: 0 })} />)
+    expect(screen.queryByText(/đã thanh toán/)).not.toBeInTheDocument()
+  })
+})

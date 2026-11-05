@@ -237,3 +237,4 @@ Chưa có.
 | Ngày | CR | Đổi gì (thêm / sửa / bỏ đường) |
 |---|---|---|
 | 03/11/2026 | bao-CR-712 | Dựng bản đầu từ mã |
+| 03/11/2026 | duoc-CR-719 | YCTT nguồn `leave_encashment` (Thanh toán nghỉ phép): mọi đường `/api/payment-requests` lọc thêm chốt xem D1 trong `scope_condition` (cần `leave_encashment.read` phủ phiếu nguồn); `POST /` từ chối nguồn này; `PATCH` chỉ sửa một dòng tiền; `submit` 400 khi tiền 0; `DELETE` (một và nhiều), `refund`, `refresh-from-payables` chặn 400; `print` trả `payee` + `bank_hidden`; thêm trường `payee_employee_id`, `source_ref_id`, khối `leave_encashment`. Xem `doc/erp/hrm/02-nghi-phep.md` §16 |

@@ -247,3 +247,44 @@ LEAVE_POLICY_ASSIGNMENT_STATE_LABELS = {
     LeavePolicyAssignmentState.ACTIVE: "Đang hiệu lực",
     LeavePolicyAssignmentState.ENDED: "Đã kết thúc",
 }
+
+
+# --------------------------------------------------------------------------
+# PHIEU THANH TOAN NGHI PHEP (duoc-CR-719) — doi ngay phep chua nghi ra tien
+# --------------------------------------------------------------------------
+class LeaveEncashmentStatus(IntEnum):
+    """Bộ mã của phiếu thanh toán nghỉ phép — cùng số với `LeaveCompStatus` để người dùng không học lại."""
+
+    DRAFT = 1       # Nháp
+    PENDING = 2     # Chờ duyệt — ngày đã giữ chỗ (`pending_days`)
+    APPROVED = 3    # Đã duyệt — ngày đã trừ ở `encashed_days`, đã sinh YCTT
+    REJECTED = 4    # Từ chối
+    RETURNED = 5    # Trả về chỉnh sửa
+    CANCELLED = 6   # Đã hủy
+
+
+LEAVE_ENCASHMENT_STATUS_LABELS = {
+    LeaveEncashmentStatus.DRAFT: "Nháp",
+    LeaveEncashmentStatus.PENDING: "Chờ duyệt",
+    LeaveEncashmentStatus.APPROVED: "Đã duyệt",
+    LeaveEncashmentStatus.REJECTED: "Từ chối",
+    LeaveEncashmentStatus.RETURNED: "Trả về chỉnh sửa",
+    LeaveEncashmentStatus.CANCELLED: "Đã hủy",
+}
+ENCASH_EDITABLE_STATUSES = (LeaveEncashmentStatus.DRAFT, LeaveEncashmentStatus.RETURNED)
+#  Phiếu còn hiệu lực — tính vào luật "một phiếu / (người, loại, năm)" (khóa UNIQUE `active_key`).
+ENCASH_ACTIVE_STATUSES = (LeaveEncashmentStatus.DRAFT, LeaveEncashmentStatus.PENDING,
+                          LeaveEncashmentStatus.APPROVED, LeaveEncashmentStatus.RETURNED)
+
+
+class LeaveEncashmentReason(IntEnum):
+    """Lý do thanh toán: phép dư cuối năm hoặc nghỉ việc (Điều 113 khoản 3 BLLĐ)."""
+
+    YEAR_END = 1    # Phép dư cuối năm — áp trần theo năm + số ngày không được thanh toán
+    RESIGNATION = 2  # Nghỉ việc — trả hết ngày chưa nghỉ, bỏ qua hai trần
+
+
+LEAVE_ENCASHMENT_REASON_LABELS = {
+    LeaveEncashmentReason.YEAR_END: "Phép dư cuối năm",
+    LeaveEncashmentReason.RESIGNATION: "Nghỉ việc",
+}

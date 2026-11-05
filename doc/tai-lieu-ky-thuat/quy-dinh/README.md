@@ -32,7 +32,7 @@ trong cùng commit**; `backend/scripts/kiem_tai_lieu.py` chặn (exit 1) khi thi
 | [`frontend-v2-ui-conventions.md`](../../../.claude/rules/frontend-v2-ui-conventions.md) | `frontend-v2/src/**` | A3 Giao diện | `LinesTable`, ô chỉ xem, trường bắt buộc, bẫy biểu mẫu / bảng |
 | [`hr-employee-profile.md`](../../../.claude/rules/hr-employee-profile.md) | `employee/`, `hr/`, seed | Anh Dược | Hồ sơ nhân sự mở rộng, `employee_sensitive`, Chức vụ |
 | [`hr-labor-contract-variables.md`](../../../.claude/rules/hr-labor-contract-variables.md) | `labor_contract/`, `hr/`, test `*hdld*` | Anh Dược | Biến mẫu HĐLĐ động |
-| [`hr-leave.md`](../../../.claude/rules/hr-leave.md) | `leave/`, `approval/`, `hr/` | Anh Dược | Nghỉ phép: quyền, quỹ, đơn nhiều loại |
+| [`hr-leave.md`](../../../.claude/rules/hr-leave.md) | `leave/`, `approval/`, `hr/`, hai tệp YCTT nghỉ phép ở `payment_request/` | Anh Dược | Nghỉ phép: quyền, quỹ, đơn nhiều loại, thanh toán nghỉ phép |
 | [`backend/.claude/rules/naming.md`](../../../backend/.claude/rules/naming.md) | khi mở phiên trong `backend/` | A1 Điều phối | Chỉ trỏ sang luật chung |
 | [`frontend-v2/.claude/rules/components.md`](../../../frontend-v2/.claude/rules/components.md) | `frontend-v2/` | A3 Giao diện | Cách dựng component |
 | [`frontend-v2/.claude/rules/icons.md`](../../../frontend-v2/.claude/rules/icons.md) | `frontend-v2/` | A3 Giao diện | Bộ icon, cách dùng |

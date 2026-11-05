@@ -162,6 +162,7 @@ from app.modules.work.task_type_controller import router as work_task_type_route
 #  cộng bậc thâm niên đi kèm loại nghỉ.
 from app.modules.leave.request_controller import router as leave_request_router
 from app.modules.leave.comp_request_controller import router as leave_comp_request_router
+from app.modules.leave.encashment_controller import router as leave_encashment_router
 from app.modules.leave.inbox_controller import router as leave_inbox_router
 from app.modules.leave.balance_controller import router as leave_balance_router
 from app.modules.leave.policy_controller import (lines_router as leave_policy_lines_router,
@@ -189,6 +190,7 @@ from app.modules.document import approval_bridge  # noqa: F401
 #  không đổi trạng thái và quỹ phép không trừ, vì lúc đó chưa ai khai hàm.
 from app.modules.leave import approval_bridge as leave_approval_bridge  # noqa: F401
 from app.modules.leave import comp_approval_bridge as _leave_comp_bridge  # noqa: F401
+from app.modules.leave import encashment_approval_bridge as _leave_encashment_bridge  # noqa: F401
 from app.modules.vehicle_booking import approval_bridge as _vehicle_booking_bridge  # noqa: F401
 #  Cùng lý do, cho Duyệt dấu: nạp lười thì phiên duyệt đầu tiên chạy xong mà phiếu
 #  không đổi trạng thái, vì lúc đó chưa ai khai hàm hook.
@@ -472,6 +474,7 @@ app.include_router(work_task_type_router)   # duoc-CR-656: danh mục loại vi�
 app.include_router(leave_inbox_router)
 app.include_router(leave_request_router)
 app.include_router(leave_comp_request_router)
+app.include_router(leave_encashment_router)
 app.include_router(leave_balance_router)
 app.include_router(work_schedule_router)
 app.include_router(work_schedule_assignment_router)

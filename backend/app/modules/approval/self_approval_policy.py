@@ -17,12 +17,14 @@ from app.core import app_settings
 LEAVE_ENTITY = "leave_request"
 #  Phiếu nghỉ bù LUÔN chặn tự duyệt, bất kể công tắc: tự duyệt phiếu nghỉ bù là tự cộng ngày phép cho mình
 #  (duoc-CR-715 C, review). Đơn nghỉ thường vẫn theo công tắc `leave_prevent_self_approval`.
-ALWAYS_STRICT_ENTITIES = frozenset({"leave_comp_request"})
+#  Phiếu thanh toán nghỉ phép cũng LUÔN chặn: tự duyệt là tự đổi ngày phép của mình ra tiền (duoc-CR-719).
+ALWAYS_STRICT_ENTITIES = frozenset({"leave_comp_request", "leave_encashment"})
 
 SELF_APPROVAL_MESSAGE = (
     "Cài đặt nhân sự đang chặn tự duyệt: bạn không duyệt được đơn nghỉ của chính mình."
 )
 SELF_APPROVAL_COMP_MESSAGE = "Bạn không được tự duyệt phiếu nghỉ bù của chính mình."
+SELF_APPROVAL_ENCASHMENT_MESSAGE = "Bạn không được tự duyệt phiếu thanh toán nghỉ phép của chính mình."
 
 
 def strict_self_exclusion(entity: str | None) -> bool:
@@ -38,5 +40,7 @@ def ensure_not_self_approval(entity: str | None, actor_employee_id: int | None,
     if not actor_employee_id or actor_employee_id != submitter_employee_id:
         return
     if strict_self_exclusion(entity):
+        if entity == "leave_encashment":
+            raise HTTPException(403, SELF_APPROVAL_ENCASHMENT_MESSAGE)
         raise HTTPException(403, SELF_APPROVAL_COMP_MESSAGE if entity in ALWAYS_STRICT_ENTITIES
                             else SELF_APPROVAL_MESSAGE)

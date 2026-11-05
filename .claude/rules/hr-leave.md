@@ -5,6 +5,8 @@ paths:
   - "frontend-v2/src/modules/hr/**"
   - "test/backend/*nghi_phep*"
   - "doc/erp/hrm/02-nghi-phep.md"
+  - "backend/app/modules/payment_request/leave_encashment_payout.py"
+  - "backend/app/modules/payment_request/hr_payout_guard.py"
 ---
 # Phân hệ NGHỈ PHÉP (CR-259, 03/09/2026)
 
@@ -179,3 +181,37 @@ Chi tiết: `doc/erp/hrm/02-nghi-phep.md` §15. Module `leave/policy_*.py` — �
 - Báo cáo **ReportKey 30** `HOLIDAY_WORK` **Làm việc vào ngày lễ, ngày nghỉ**: nguồn phiếu nghỉ bù (không chấm công), gác kép
   `leave_comp_request` + `require_report(30)`; phòng ban = phòng ghi trên phiếu. Số 30 đã cấp, bỏ thì để trống, không tái dùng.
 - Kỳ nghỉ phép (Leave Period): **không làm** (anh Được bỏ 03/11/2026) — đừng đề xuất lại.
+
+#### Thanh toán nghỉ phép (duoc-CR-719, 03/11/2026)
+
+Phiếu `tab_leave_encashment` (`TTP…`, khóa `leave_encashment`) chỉ ghi SỐ NGÀY; duyệt xong trừ quỹ và sinh YCTT nguồn
+`leave_encashment` để kế toán nhập tiền. Tài liệu: `doc/erp/hrm/02-nghi-phep.md` §16.
+
+- ⚠️ **`encashed_days` là khoản TRỪ, đã nằm trong `remaining_days`** (nên cả `available_days` / `available_days_map`).
+  Mọi chỗ tự cộng trừ quỹ (báo cáo, kết sổ, nhập Excel, trợ lý AI) phải trừ nó, hoặc tốt hơn là đi qua `available_days`.
+  Duyệt: `pending −= days`, `encashed_days += days` (KHÔNG cộng `used_days`); hủy phiếu đã duyệt: `encashed_days −= days`.
+- ⚠️ **Chốt xem YCTT nghỉ phép nằm ở `core/scoping.scope_condition`** (vỏ bọc AND `hr_payout_guard.payout_visibility_cond`
+  khi `entity == "payment_request"`): cần `leave_encashment.read` phủ phiếu nguồn, vì tiền ÷ ngày = lương ngày. Đừng tự
+  lọc lại ở chỗ khác, đừng bỏ; đọc YCTT luôn qua `apply_scope` / `get_scoped` — **không bao giờ `db.get(PaymentRequest, id)`**
+  ở đường người dùng chạm tới (kể cả công cụ AI, xuất Excel, chuông). Đường đọc thẳng mới phải khai vào
+  `test_pham_vi_duong_vong.py` kèm lý do.
+- Bốn hàm hợp đồng ở `payment_request/leave_encashment_payout.py`: `create_payout_request` (flush, KHÔNG commit) ·
+  `payout_state` · `void_draft_payout` · `payout_allows_cancel`. YCTT được tạo **bên trong giao dịch duyệt**; chuông kế
+  toán `notify_payout_created` chạy **sau commit** (`after_commit` trong `approve_now`, phiên mới) — `trigger_notification`
+  luôn commit, gọi chung là commit lửng giao dịch duyệt.
+- Hủy phiếu Đã duyệt chỉ khi YCTT **Nháp** (xóa mềm theo) hoặc **Đã từ chối** (D7a); YCTT Chờ duyệt / Đã duyệt / Đã chi →
+  400. Đọc YCTT **có khóa dòng** (`payout_state(lock=True)`) trước khi trả ngày. Kế toán từ chối không tự hủy phiếu: phiếu giữ
+  Đã duyệt, màn hiện băng **Kế toán từ chối chi**.
+- Mọi đổi trạng thái đi qua `service.claim` (UPDATE … WHERE status IN …); thua → 409. Một phiếu còn hiệu lực / (người,
+  loại, năm, **lý do**) bằng `active_key` UNIQUE (D4) — NULL khi Từ chối / Đã hủy / xóa, Đã duyệt vẫn giữ khóa. Lý do nằm
+  trong khóa để phiếu nghỉ việc vẫn lập được sau phiếu cuối năm đã chi (BLLĐ Điều 113).
+- ⚠️ **Người nhận tiền không bao giờ tự xử lý YCTT của mình** (sửa / gửi / duyệt / chi / từ chối → 403, kể cả admin) —
+  chốt ở `payment_request/leave_encashment_payout.py`, không dựa vào quyền. Ngày mang sang đã thanh toán ghi riêng
+  (`encashed_carried_days`) để hủy ngày mang sang hết hạn không trừ lần hai (quỹ âm).
+- Nhật ký hệ thống che số tiền YCTT thanh toán nghỉ phép (`change_tracker` theo dòng; `logging_policy` che `amount` /
+  `total` trên mọi đường `/api/payment-requests/...`).
+- **Luôn chặn tự duyệt** (`ALWAYS_STRICT_ENTITIES`), như phiếu nghỉ bù.
+- `employee/references.py` chặn xóa nhân sự còn `LeaveEncashment.employee_id` hoặc là `PaymentRequest.payee_employee_id`;
+  loại nghỉ có phiếu (mọi trạng thái) không xóa được. Bật `allow_encashment` khi `counts_balance` tắt → 422.
+- Trợ lý AI chỉ đọc (D8): `my_leave_summary` trả ngày + trạng thái, **không bao giờ trả số tiền**; không có công cụ soạn nháp.
+- Khóa `leave_encashment` mới: hệ đang chạy phải tick tay (D-018), kể cả `read` phạm vi công ty cho vai trò Kế toán.

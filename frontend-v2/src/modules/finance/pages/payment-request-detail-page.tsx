@@ -77,6 +77,7 @@ import {
   PaymentRequestLinesTable,
   type EditablePaymentLine,
 } from '../components/payment-request-lines-table'
+import { PaymentRequestLeaveEncashmentView } from '../components/payment-request-leave-encashment-view'
 import { PaymentRequestRefreshDialog } from '../components/payment-request-refresh-dialog'
 import { PaymentRequestStatusBadge } from '../components/payment-request-status-badge'
 import {
@@ -89,8 +90,9 @@ import {
   useRefundPrepay,
   useUpdatePaymentRequest,
 } from '../hooks/use-payment-requests'
-import type { Payable } from '../types/payable'
+import { PAYABLE_SOURCE_LABELS, type Payable } from '../types/payable'
 import {
+  isLeaveEncashmentPayout,
   PAYMENT_METHOD_LABELS,
   PAYMENT_SOURCE_LABELS,
   type PaymentApprovalCandidate,
@@ -117,7 +119,26 @@ export function PaymentRequestDetailPage() {
   const { id } = useParams()
   const isNew = !id || id === 'new'
 
-  return isNew ? <PaymentRequestCreate /> : <PaymentRequestView paymentRequestId={Number(id)} />
+  return isNew ? <PaymentRequestCreate /> : <PaymentRequestViewSwitch paymentRequestId={Number(id)} />
+}
+
+/**
+ * duoc-CR-719: YCTT THANH TOÁN NGHỈ PHÉP rẽ SỚM sang khung riêng, ở cấp component — không chen nhánh vào giữa các
+ * hook NCC / công nợ của `PaymentRequestView`. Cùng khóa truy vấn nên `PaymentRequestView` đọc lại từ bộ đệm, không
+ * gọi API lần hai; lúc đang tải hiện khung xương để trang NCC không kịp mount rồi bị tháo.
+ */
+function PaymentRequestViewSwitch({ paymentRequestId }: { paymentRequestId: number }) {
+  const { data: req, isLoading } = usePaymentRequest(paymentRequestId)
+  if (isLoading) {
+    return (
+      <PageContainer>
+        <Skeleton className="mb-4 h-16 w-full" />
+        <Skeleton className="h-[420px] w-full" />
+      </PageContainer>
+    )
+  }
+  if (req && isLeaveEncashmentPayout(req)) return <PaymentRequestLeaveEncashmentView req={req} />
+  return <PaymentRequestView paymentRequestId={paymentRequestId} />
 }
 
 /** Khóa React ổn định cho dòng chưa lưu — chưa có id server. */
@@ -392,7 +413,7 @@ function PaymentRequestCreate() {
 
   function sourceDisplay(row: EditablePaymentLine): string {
     const source = row.payable_id ? row.source_type : headSource
-    return PAYMENT_SOURCE_LABELS[source] ?? source
+    return PAYABLE_SOURCE_LABELS[source] ?? source
   }
 
   function patchLine(index: number, patch: Partial<EditablePaymentLine>) {
@@ -567,7 +588,7 @@ function PaymentRequestCreate() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(PAYMENT_SOURCE_LABELS).map(([value, label]) => (
+                      {Object.entries(PAYABLE_SOURCE_LABELS).map(([value, label]) => (
                         <SelectItem key={value} value={value}>
                           {label}
                         </SelectItem>

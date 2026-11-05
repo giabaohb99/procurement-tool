@@ -14,6 +14,7 @@ from app.modules.company.model import Company
 from app.modules.payable.model import Payable
 from app.modules.supplier.model import Supplier
 
+from . import leave_encashment_payout as payout
 from . import service
 from .model import PaymentRequest
 from .schema import PRequestCreate, PRequestUpdate
@@ -23,7 +24,8 @@ router = APIRouter(prefix="/api/payment-requests", tags=["payment_request"])
 HEADER = ["id", "code", "supplier_code", "supplier_name", "company_id", "department_id",
           "source_type", "request_date", "payment_method", "prepay", "total", "note",
           "reject_reason", "status",   # department_id: cột ẩn bao-CR-414 GĐ4, bản in không đọc
-          "head_of_dept_id", "head_of_dept"]   # bao-CR-553
+          "head_of_dept_id", "head_of_dept",   # bao-CR-553
+          "payee_employee_id", "source_ref_id"]   # duoc-CR-719: chỉ khác 0 ở YCTT thanh toán nghỉ phép
 
 
 def _line(db, ln, misa_by_po: dict | None = None, sync: dict | None = None) -> dict:
@@ -82,7 +84,11 @@ def _out(db: Session, req: PaymentRequest) -> dict:
     # chối thì công nợ đổi là chuyện bình thường, cảnh báo chỉ gây nhiễu.
     sync_by_line: dict[int, dict] = {}
     d["out_of_sync"] = False
-    if not req.prepay and req.status in ("draft", "submitted", "approved"):
+    #  duoc-CR-719: YCTT nghỉ phép không có công nợ để so; kèm khối phiếu nguồn (không lương, không STK).
+    is_pay = payout.is_payout(req)
+    if is_pay:
+        d["leave_encashment"] = payout.leave_encashment_block(db, req)
+    if not req.prepay and not is_pay and req.status in ("draft", "submitted", "approved"):
         plan = service.plan_refresh(db, req)
         sync_by_line = {r["line_id"]: r for r in plan["lines"]}
         d["out_of_sync"] = plan["out_of_sync"]
@@ -242,6 +248,9 @@ def print_(rid: int, db: Session = Depends(get_db), user=Depends(require("paymen
     sup = db.query(Supplier).filter(Supplier.code == req.supplier_code).first() if req.supplier_code else None
     data["bank_account"] = (sup.bank_account if sup else "") if method == "transfer" else ""
     data["bank_name"] = (sup.bank_name if sup else "") if method == "transfer" else ""
+    if payout.is_payout(req):
+        #  duoc-CR-719 (D2a): người nhận là nhân sự — STK chỉ in khi người in có employee_sensitive.read hoặc là chính chủ.
+        data.update(payout.print_payee_info(db, req, get_perm_profile(db, user), method))
     data["period"] = (req.request_date or "")[:7]  # YYYY-MM
     return success(data)
 
@@ -319,6 +328,9 @@ def bulk_delete_requests(ids: str, db: Session = Depends(get_db), user=Depends(r
         PaymentRequest, "payment_request", user, get_perm_profile(db, user), "delete").all()
     if not rows:
         raise HTTPException(403, "Ngoài phạm vi được phép xóa")
+    #  duoc-CR-719: YCTT thanh toán nghỉ phép không xóa hàng loạt (kiểm trước, để báo câu rõ nghĩa).
+    if any(payout.is_payout(r) for r in rows):
+        raise HTTPException(400, payout.MSG_NO_DELETE)
     #  bao-CR-547: kiểm CẢ LÔ trước khi xóa phiếu nào — chỉ phiếu Nháp (đại ca chốt 01/10/2026).
     ensure_all_draft(rows, "phiếu yêu cầu thanh toán")
     in_scope = [r.id for r in rows]
@@ -332,6 +344,10 @@ def bulk_delete_requests(ids: str, db: Session = Depends(get_db), user=Depends(r
 
 
 def _notify_pay(db, background_tasks, r, event, reason=""):
+    if event in ("pay_paid", "pay_rejected") and payout.is_payout(r):
+        # YCTT nghỉ phép có created_by = 0: chuông riêng tới nhân sự nhận tiền / người duyệt phiếu nghỉ phép (CR-719)
+        payout.notify_payout_outcome(db, r, event, background_tasks, reason)
+        return
     trigger_notification(db=db, event=event, doc_type="payment_request", doc_code=r.code,
                          creator_id=r.created_by or 0, background_tasks=background_tasks,
                          reason=reason, link=f"/payment-requests/{r.id}",

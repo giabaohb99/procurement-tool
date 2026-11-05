@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Numeric, SmallInteger, String, Text
+from sqlalchemy import BigInteger, Index, Numeric, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base, SoftDeleteMixin
@@ -11,6 +11,9 @@ class PaymentRequest(Base, AuditMixin, SoftDeleteMixin):
     phiếu đã xóa giữ nguyên trong DB; `apply_scope` / `get_scoped` tự giấu phiếu."""
 
     __tablename__ = "tab_payment_request"
+    __table_args__ = (
+        Index("ix_payment_request_source_ref", "source_type", "source_ref_id"),
+    )
 
     code: Mapped[str] = mapped_column(String(50), default="")          # YCTT00045
     supplier_code: Mapped[str] = mapped_column(String(50), default="", index=True)
@@ -43,6 +46,11 @@ class PaymentRequest(Base, AuditMixin, SoftDeleteMixin):
     # (0/rỗng = trưởng phòng của người lập như trước). Chỉ để in, KHÔNG khóa ai được bấm Duyệt.
     head_of_dept_id: Mapped[int] = mapped_column(BigInteger, default=0)
     head_of_dept: Mapped[str] = mapped_column(String(255), default="")
+    # duoc-CR-719 — CHỈ dùng khi `source_type = leave_encashment` (YCTT thanh toán nghỉ phép):
+    # payee_employee_id = nhân sự nhận tiền (không có NCC); source_ref_id = id phiếu thanh toán nghỉ phép.
+    # Phiếu mua hàng / vận chuyển để 0. Chốt xem phiếu theo `source_ref_id` ở `hr_payout_guard`.
+    payee_employee_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    source_ref_id: Mapped[int] = mapped_column(BigInteger, default=0)
 
 
 class PaymentRequestLine(Base, AuditMixin):

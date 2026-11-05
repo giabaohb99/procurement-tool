@@ -293,6 +293,14 @@ export const queryKeys = {
       ['hr', 'leave-comp-requests', params ?? {}] as const,
     leaveCompRequest: (id: number) => ['hr', 'leave-comp-requests', 'detail', id] as const,
     leaveCompToApprove: () => ['hr', 'leave-comp-requests', 'to-approve'] as const,
+    //  ── Phiếu thanh toán nghỉ phép (duoc-CR-719) ──────────────────────────
+    //  Dưới `hr`: duyệt / hủy phiếu đổi `encashed_days` của quỹ phép, dọn chung qua `hr.all`.
+    leaveEncashments: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-encashments', params ?? {}] as const,
+    leaveEncashment: (id: number) => ['hr', 'leave-encashments', 'detail', id] as const,
+    leaveEncashmentToApprove: () => ['hr', 'leave-encashments', 'to-approve'] as const,
+    leaveEncashmentPreview: (params: Record<string, unknown>) =>
+      ['hr', 'leave-encashments', 'preview', params] as const,
     /** Tệp đính kèm của MỘT tờ đơn (bao-CR-505) — màn chi tiết và trang in dùng chung. */
     leaveAttachments: (id: number) =>
       ['hr', 'leave-requests', 'detail', id, 'attachments'] as const,

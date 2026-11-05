@@ -401,7 +401,7 @@ const DECISION_MESSAGES: Record<ApprovalDecision, string> = {
   reject: 'Đã từ chối đơn',
 }
 
-export function useLeaveApprovalDecision() {
+export function useLeaveApprovalDecision(options?: { alsoInvalidate?: readonly (readonly unknown[])[] }) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({
@@ -428,6 +428,10 @@ export function useLeaveApprovalDecision() {
       //  ghi "Đang chạy · Đang chờ phản hồi" — hai câu trái nhau trên cùng một
       //  màn hình, và người dùng tin câu bi quan hơn (NP141, 07/09/2026).
       void queryClient.invalidateQueries({ queryKey: queryKeys.approval.all })
+      //  Phiếu có hệ quả ở phân hệ khác (vd duyệt chặng cuối thanh toán nghỉ phép sinh YCTT bên Tài chính).
+      for (const queryKey of options?.alsoInvalidate ?? []) {
+        void queryClient.invalidateQueries({ queryKey })
+      }
     },
   })
 }

@@ -18,6 +18,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   seal_request: 'Duyệt dấu',
   leave_request: 'Nghỉ phép',
   leave_comp_request: 'Phiếu nghỉ bù',
+  leave_encashment: 'Thanh toán nghỉ phép',
   room_booking: 'Đặt phòng họp',
 }
 
@@ -32,6 +33,7 @@ const ENTITY_ROUTES: Record<string, (id: number) => string> = {
   seal_request: appRoutes.approvalSeal.detail,
   leave_request: appRoutes.hr.leaveRequestDetail,
   leave_comp_request: appRoutes.hr.leaveCompRequestDetail,
+  leave_encashment: appRoutes.hr.leaveEncashmentDetail,
   room_booking: appRoutes.hr.roomBookingDetail,
 }
 

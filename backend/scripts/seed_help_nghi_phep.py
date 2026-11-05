@@ -44,6 +44,16 @@ loại) sửa ở bài Hiểu số ngày phép còn lại, bài Loại nghỉ v�
 tháng vào làm thì áp cả năm theo số của chính sách; không ai trừ quản trị tự tạo / sửa / xóa phân bổ của chính mình;
 người được phân bổ phải nằm trong phạm vi GHI quỹ phép của người làm; người đã nghỉ việc không phân bổ được.
 
+Bản 8 (03/11/2026, duoc-CR-719): bài mới *Thanh toán nghỉ phép* (đổi ngày phép chưa nghỉ ra tiền cuối năm hoặc khi nghỉ
+việc: ai lập, hộp "Số ngày được thanh toán" và công thức, duyệt trừ quỹ + sinh YCTT cho kế toán, hủy theo trạng thái
+YCTT, băng "Kế toán từ chối chi", giữ kín lương). Menu Nghỉ phép bảy mục; bài Số phép còn lại và bài Quỹ phép của Nhân sự
+thêm khoản trừ "Đã thanh toán ra tiền"; bài Loại nghỉ thêm nhóm ô "Thanh toán nghỉ phép"; bài Phân quyền thêm khóa thứ
+sáu `leave_encashment` (D-018: vai trò Kế toán phải được tick xem phiếu thanh toán nghỉ phép phạm vi công ty, không thì
+không thấy YCTT nghỉ phép). Phần YCTT cho kế toán nằm ở `seed_help_yctt_thanh_toan_nghi_phep.py` (cây Thu mua dựng tay).
+Nhãn đối chiếu bằng đọc `hr/pages/leave-encashment-*.tsx`, `hr/components/leave-encashment-*.tsx`,
+`hr/config/leave-type-encashment-fields.ts`, `hr/components/leave-balance-columns.tsx`, câu báo lỗi ở
+`leave/encashment_service.py`, `encashment_transitions.py`, `encashment_serializer.py`, và màn thật localhost:8083.
+
 Chạy trong container api:
     docker compose exec -T api python scripts/seed_help_nghi_phep.py
     # rồi nạp bài mới vào kho tìm kiếm của trợ lý AI (seed ghi thẳng ORM nên hook không bắn):
@@ -108,6 +118,7 @@ LICH_NGHI = "Xem Lịch nghỉ của phòng ban"
 TINH_HUONG = "Mười tình huống nghỉ thường gặp"
 BAO_LOI = "Gặp câu báo lỗi thì làm gì"
 NGHI_BU = "Xin nghỉ bù"
+THANH_TOAN = "Thanh toán nghỉ phép"
 NS_QUY = "Nhân sự — Cấp và điều chỉnh quỹ phép"
 NS_CHINH_SACH = "Nhân sự — Chính sách nghỉ phép"
 NS_PHAN_BO = "Nhân sự — Phân bổ chính sách nghỉ phép cho từng người và hàng loạt"
@@ -118,25 +129,26 @@ NS_QUYEN = "Nhân sự — Phân quyền và luồng duyệt"
 TREE = {
     "title": ROOT_TITLE,
     "icon": "calendar",
-    "summary": "Nộp đơn nghỉ phép, xin nghỉ bù, xem quỹ phép còn lại, duyệt đơn, cấp quỹ, khai chính sách nghỉ phép và phân bổ cho nhân sự, khai ngày cấm nghỉ",
+    "summary": "Nộp đơn nghỉ phép, xin nghỉ bù, thanh toán ngày phép chưa nghỉ ra tiền, xem quỹ phép còn lại, duyệt đơn, cấp quỹ, khai chính sách nghỉ phép và phân bổ cho nhân sự, khai ngày cấm nghỉ",
     "content": f"""<h2>Nghỉ phép là gì?</h2>
-<p>Phân hệ để nhân viên <strong>nộp đơn nghỉ phép</strong> và <strong>xin nghỉ bù</strong>, người quản lý duyệt, và phòng Nhân sự cấp <strong>quỹ phép năm</strong>. Vào bằng menu <strong>Nhân sự ▸ Nghỉ phép</strong>.</p>
+<p>Phân hệ để nhân viên <strong>nộp đơn nghỉ phép</strong>, <strong>xin nghỉ bù</strong> và <strong>thanh toán ngày phép chưa nghỉ ra tiền</strong>, người quản lý duyệt, và phòng Nhân sự cấp <strong>quỹ phép năm</strong>. Vào bằng menu <strong>Nhân sự ▸ Nghỉ phép</strong>.</p>
 <p>Thứ đáng giá nhất ở đây không phải tờ đơn — mà là <strong>số ngày phép còn lại hiện ngay lúc bạn đang nhập</strong>. Toàn bộ phần quỹ phép, bậc thâm niên và lịch ngày lễ tồn tại để con số đó đúng.</p>
 
-<h2>Sáu mục trong menu Nghỉ phép</h2>
-<p>Bấm <strong>Nghỉ phép</strong> ở menu trái để mở sáu mục con:</p>
+<h2>Bảy mục trong menu Nghỉ phép</h2>
+<p>Bấm <strong>Nghỉ phép</strong> ở menu trái để mở bảy mục con:</p>
 <table>
 <thead><tr><th>Mục</th><th>Dùng để</th><th>Ai thấy</th></tr></thead>
 <tbody>
 <tr><td><strong>Đơn nghỉ phép</strong></td><td>Nộp đơn, theo dõi đơn của mình, duyệt đơn của người khác</td><td>Mọi người</td></tr>
 <tr><td><strong>Nghỉ bù</strong></td><td>Lập phiếu xin nghỉ bù khi đã đi làm vào ngày lễ hoặc ngày nghỉ, duyệt phiếu của người khác</td><td>Mọi người có quyền Phiếu nghỉ bù</td></tr>
+<tr><td><strong>Thanh toán nghỉ phép</strong></td><td>Lập phiếu đổi ngày phép chưa nghỉ ra tiền (phép dư cuối năm hoặc khi nghỉ việc), duyệt phiếu, theo dõi kế toán đã chi chưa</td><td>Mọi người có quyền Thanh toán nghỉ phép</td></tr>
 <tr><td><strong>Lịch nghỉ</strong></td><td>Ai nghỉ ngày nào — xem theo ngày / tuần / tháng</td><td>Mọi người</td></tr>
 <tr><td><strong>Quỹ phép năm</strong></td><td>Số ngày phép của từng người từng năm, cấp phát và điều chỉnh</td><td>Phòng Nhân sự</td></tr>
 <tr><td><strong>Phân bổ chính sách</strong></td><td>Gán một chính sách nghỉ phép cho từng người hoặc cả nhóm người trong một khoảng ngày</td><td>Phòng Nhân sự</td></tr>
 <tr><td><strong>Thiết lập</strong></td><td>Bốn thẻ chuyển qua lại ở đầu trang: <strong>Loại nghỉ</strong> (kèm bậc thâm niên và hạn mức theo nhóm), <strong>Lịch ngày lễ</strong>, <strong>Ngày cấm nghỉ</strong>, <strong>Chính sách nghỉ phép</strong></td><td>Phòng Nhân sự</td></tr>
 </tbody>
 </table>
-<p>Không thấy đủ sáu mục <strong>không phải lỗi</strong> — đó là phân quyền. Xem {ref(NS_QUYEN, "bài Phân quyền và luồng duyệt")}.</p>
+<p>Không thấy đủ bảy mục <strong>không phải lỗi</strong> — đó là phân quyền. Xem {ref(NS_QUYEN, "bài Phân quyền và luồng duyệt")}.</p>
 
 <h2>Bốn khái niệm đừng lẫn</h2>
 <table>
@@ -147,6 +159,7 @@ TREE = {
 <tr><td><strong>Loại nghỉ</strong></td><td>Danh mục: Phép năm, Nghỉ ốm, Thai sản, Nghỉ không lương… Mỗi loại một bộ luật riêng.</td></tr>
 <tr><td><strong>Quỹ phép</strong></td><td>Số ngày của <strong>một người × một năm × một loại nghỉ</strong>.</td></tr>
 <tr><td><strong>Phiếu nghỉ bù</strong></td><td>Chứng từ có số dạng <code>NB001</code>, xin cộng thêm ngày vào quỹ vì đã đi làm ngày lễ hoặc ngày nghỉ. Phiếu không phải đơn nghỉ: duyệt xong bạn mới có thêm ngày để nộp đơn nghỉ.</td></tr>
+<tr><td><strong>Phiếu thanh toán nghỉ phép</strong></td><td>Chứng từ có số dạng <code>TTP001</code>, xin đổi ngày phép chưa nghỉ ra tiền. Phiếu chỉ ghi <strong>số ngày</strong>; số tiền do kế toán nhập ở <strong>Yêu cầu thanh toán</strong> bên Tài chính.</td></tr>
 </tbody>
 </table>
 <p>⚠️ Muốn xin nghỉ thì <strong>nộp đơn</strong> ở đây, <strong>đừng</strong> vào Văn thư tạo <strong>Giấy nghỉ phép</strong> — làm tay ra một tờ giấy không gắn với quỹ phép nào, và không ai được báo để duyệt.</p>
@@ -170,8 +183,8 @@ Nháp  ─────────────────────►  Chờ
 </ul>
 
 <h2>Đọc theo việc bạn cần làm</h2>
-<p><strong>Người đi nghỉ:</strong> {ref(NOP_DON, "Nộp đơn")} · {ref(QUY_PHEP, "hiểu quỹ phép")} · {ref(THEO_DOI, "theo dõi, sửa, hủy")} · {ref(NGHI_BU, "xin nghỉ bù")} · {ref(TINH_HUONG, "tình huống thường gặp")} · {ref(BAO_LOI, "câu báo lỗi")}.</p>
-<p><strong>Người duyệt:</strong> {ref(DUYET, "Duyệt đơn nghỉ phép")} · {ref(NGHI_BU, "duyệt phiếu nghỉ bù")} · {ref(LICH_NGHI, "xem Lịch nghỉ")}.</p>
+<p><strong>Người đi nghỉ:</strong> {ref(NOP_DON, "Nộp đơn")} · {ref(QUY_PHEP, "hiểu quỹ phép")} · {ref(THEO_DOI, "theo dõi, sửa, hủy")} · {ref(NGHI_BU, "xin nghỉ bù")} · {ref(THANH_TOAN, "thanh toán nghỉ phép")} · {ref(TINH_HUONG, "tình huống thường gặp")} · {ref(BAO_LOI, "câu báo lỗi")}.</p>
+<p><strong>Người duyệt:</strong> {ref(DUYET, "Duyệt đơn nghỉ phép")} · {ref(NGHI_BU, "duyệt phiếu nghỉ bù")} · {ref(THANH_TOAN, "duyệt phiếu thanh toán nghỉ phép")} · {ref(LICH_NGHI, "xem Lịch nghỉ")}.</p>
 <p><strong>Phòng Nhân sự:</strong> {ref(NS_QUY, "cấp và điều chỉnh quỹ")} · {ref(NS_CHINH_SACH, "chính sách nghỉ phép")} · {ref(NS_PHAN_BO, "phân bổ chính sách")} · {ref(NS_DANH_MUC, "loại nghỉ, ngày lễ và ngày cấm nghỉ")} · {ref(NS_QUYEN, "phân quyền và luồng duyệt")}. Các công tắc chặn đơn lùi ngày, chặn tự duyệt và vai trò được duyệt qua ngày cấm nghỉ nằm ở <strong>Nhân sự ▸ Master ▸ Cài đặt nhân sự</strong>, tab <strong>Nghỉ phép</strong>.</p>""",
     "children": [
         {
@@ -296,12 +309,12 @@ Nháp  ─────────────────────►  Chờ
 
 <h2>Công thức</h2>
 <pre>còn lại = (hạn mức + thâm niên + chuyển năm trước + điều chỉnh tay + nghỉ bù cộng thêm)
-          − đã nghỉ − đang chờ duyệt</pre>
+          − đã nghỉ − đang chờ duyệt − đã thanh toán ra tiền</pre>
 <p><strong>Số còn lại không được lưu thành cột nào cả</strong> — nó luôn được tính lại. Lưu thêm thì có hai nguồn sự thật, và cái thứ hai chắc chắn sẽ lệch.</p>
 <p>Với loại nghỉ cấu hình <strong>Cộng dần theo tháng</strong>, phần hạn mức <em>chưa tới tháng</em> bị trừ khỏi số còn lại: hạn mức 12 ngày, đang tháng 5 thì mới dùng được 5 ngày (làm tròn xuống nửa ngày), sang tháng 6 là 6 ngày. Thâm niên, phép chuyển năm trước, điều chỉnh tay và ngày nghỉ bù không bị cộng dần. Số này giống nhau ở form nộp đơn, bảng Quỹ phép năm và báo cáo Quỹ phép năm.</p>
 <p>Loại nghỉ được phòng Nhân sự bật <strong>Cho ứng phép tối đa</strong> thì số còn lại được xuống thấp hơn 0 tới mức đã khai (ví dụ tới âm 3 ngày). Khi đó cột <strong>Còn lại</strong> hiện số âm, nghĩa là bạn đã dùng trước bấy nhiêu ngày.</p>
 
-<h2>Bảy con số cấu thành</h2>
+<h2>Tám con số cấu thành</h2>
 <table>
 <thead><tr><th>Cột trên bảng</th><th>Ở đâu ra</th></tr></thead>
 <tbody>
@@ -311,13 +324,14 @@ Nháp  ─────────────────────►  Chờ
 <tr><td><strong>Điều chỉnh tay</strong></td><td>Phòng Nhân sự sửa, cột duy nhất nhận <strong>số âm</strong>. Luôn kèm lý do.</td></tr>
 <tr><td><strong>Nghỉ bù cộng thêm</strong></td><td>Tổng ngày của các <strong>phiếu nghỉ bù đã duyệt</strong>, chỉ có ở loại nghỉ nhận ngày bù. Xem {ref(NGHI_BU, "bài Xin nghỉ bù")}.</td></tr>
 <tr><td><strong>Đã nghỉ</strong></td><td>Cộng dồn các đơn <strong>đã duyệt</strong>.</td></tr>
-<tr><td><strong>Chờ duyệt (đang giữ chỗ)</strong></td><td>Cộng dồn các đơn <strong>đang trong luồng duyệt</strong>.</td></tr>
+<tr><td><strong>Chờ duyệt (đang giữ chỗ)</strong></td><td>Cộng dồn các đơn <strong>đang trong luồng duyệt</strong>, kể cả số ngày của phiếu thanh toán nghỉ phép đang chờ duyệt.</td></tr>
+<tr><td><strong>Đã thanh toán ra tiền</strong></td><td>Tổng ngày của các <strong>phiếu thanh toán nghỉ phép đã duyệt</strong>: những ngày này đã đổi ra tiền nên không nghỉ được nữa. Chỉ hiện ở trang chi tiết dòng quỹ khi khác 0. Xem {ref(THANH_TOAN, "bài Thanh toán nghỉ phép")}.</td></tr>
 </tbody>
 </table>
 
 <h2>Ví dụ bằng số</h2>
 <p>Chị A vào làm được 11 năm, Phép năm hạn mức 12, năm ngoái không chuyển ngày nào, chưa từng bị điều chỉnh tay. Trong năm đã nghỉ 4 ngày, và đang có một đơn 3 ngày chờ sếp ký:</p>
-<pre>(12 hạn mức + 2 thâm niên + 0 chuyển + 0 điều chỉnh + 0 nghỉ bù) − 4 đã nghỉ − 3 chờ duyệt = 7 ngày</pre>
+<pre>(12 hạn mức + 2 thâm niên + 0 chuyển + 0 điều chỉnh + 0 nghỉ bù) − 4 đã nghỉ − 3 chờ duyệt − 0 đã thanh toán = 7 ngày</pre>
 <p>Chị A mở form nộp đơn ra sẽ thấy <strong>7</strong>, không phải 10. Ba ngày kia <em>chưa</em> nghỉ nhưng <em>đã</em> bị giữ chỗ.</p>
 
 <h2>Vì sao vừa nộp đơn đã thấy hụt ngày?</h2>
@@ -577,6 +591,144 @@ Nháp  ─────────────────────►  Chờ
 <p>Nhân viên thấy phiếu mình lập hoặc phiếu người khác lập hộ mình; trưởng bộ phận thấy phiếu của bộ phận mình; người đang có việc duyệt trên phiếu thì mở được phiếu đó. Khóa quyền riêng là <strong>Nghỉ phép › Phiếu nghỉ bù</strong>; không thấy mục <strong>Nghỉ bù</strong> trong menu thì xem {ref(NS_QUYEN, "bài Phân quyền và luồng duyệt")}.</p>""",
         },
         {
+            "title": THANH_TOAN,
+            "icon": "banknote",
+            "summary": "Đổi ngày phép chưa nghỉ ra tiền khi cuối năm còn dư hoặc khi nghỉ việc: ai lập phiếu, hộp Số ngày được thanh toán, duyệt xong trừ quỹ và kế toán nhập tiền, hủy phiếu, khi kế toán từ chối chi",
+            "content": f"""<h2>Thanh toán nghỉ phép</h2>
+<p>Còn ngày phép chưa nghỉ vào <strong>cuối năm</strong>, hoặc <strong>nghỉ việc</strong> khi chưa nghỉ hết phép, thì lập một <strong>phiếu thanh toán nghỉ phép</strong> để đổi số ngày đó ra tiền. Vào <strong>Nhân sự ▸ Nghỉ phép ▸ Thanh toán nghỉ phép</strong>.</p>
+<p>Phiếu <strong>chỉ ghi số ngày</strong>, không có ô tiền. Duyệt xong, số ngày bị trừ khỏi quỹ phép và hệ tự tạo một <strong>Yêu cầu thanh toán</strong> (YCTT) bên Tài chính để kế toán nhập số tiền và chi. Cách làm này giữ kín lương: người lập và người duyệt phiếu không cần biết lương của ai.</p>
+<p>Chỉ loại nghỉ được phòng Nhân sự bật <strong>Cho phép thanh toán nghỉ phép</strong> mới hiện trong ô chọn (thường là Phép năm). Chưa loại nào bật thì form báo <em>Chưa loại nghỉ nào bật Cho phép thanh toán nghỉ phép. Nhờ Nhân sự bật ở Thiết lập, Loại nghỉ.</em> Cách bật: {ref(NS_DANH_MUC, "bài Loại nghỉ")}.</p>
+
+<h2>Ai lập, ai duyệt</h2>
+<table>
+<thead><tr><th>Ai</th><th>Làm được gì</th></tr></thead>
+<tbody>
+<tr><td><strong>Nhân viên</strong></td><td>Lập phiếu cho <strong>chính mình</strong>, sửa, gửi duyệt, xóa phiếu nháp, theo dõi trạng thái chi.</td></tr>
+<tr><td><strong>Phòng Nhân sự</strong></td><td>Lập hộ bất kỳ ai trong phạm vi của mình (ô <strong>Người được thanh toán</strong>), duyệt, từ chối, hủy phiếu. Đây là cách làm của nexterp: nhân viên lập nháp, Nhân sự chốt.</td></tr>
+<tr><td><strong>Trưởng bộ phận, trưởng công ty</strong></td><td>Chỉ xem phiếu của người trong bộ phận hoặc công ty mình, không duyệt.</td></tr>
+<tr><td><strong>Kế toán</strong></td><td>Không làm gì trên phiếu; nhập số tiền và chi ở YCTT bên Tài chính (bài <em>Yêu cầu thanh toán nghỉ phép: nhập số tiền và chi</em> ở thư mục Dành cho Kho &amp; Kế toán).</td></tr>
+</tbody>
+</table>
+<p>⚠️ <strong>Không ai tự duyệt được phiếu thanh toán nghỉ phép của chính mình</strong>, bất kể công tắc ở Cài đặt nhân sự, vì duyệt phiếu là đổi ngày phép ra tiền. Người lập phiếu cho chính mình bấm duyệt sẽ nhận câu <em>Bạn không được tự duyệt phiếu thanh toán nghỉ phép của chính mình.</em></p>
+
+<h2>Lập phiếu</h2>
+<ol>
+<li>Vào <strong>Nhân sự ▸ Nghỉ phép ▸ Thanh toán nghỉ phép</strong>. Ô <strong>Phạm vi</strong> chọn <em>Của tôi</em>, <em>Cần tôi duyệt</em> (kèm số phiếu đang chờ bạn) hoặc <em>Tất cả trong phạm vi</em>; lọc thêm theo trạng thái và lý do.</li>
+<li>Bấm <strong>Lập phiếu thanh toán</strong> ở góc trên bên phải.</li>
+<li>Điền thẻ <strong>Phiếu thanh toán nghỉ phép</strong>:
+<ul>
+<li><strong>Người được thanh toán</strong>: để trống là lập cho chính bạn. Ô này chỉ hiện với người xem được danh bạ nhân sự; lập hộ người khác cần quyền lập phiếu trong phạm vi của người đó. Sau khi lưu thì không đổi được.</li>
+<li><strong>Loại nghỉ</strong>: chỉ có loại đã bật thanh toán.</li>
+<li><strong>Năm quỹ phép</strong>: năm nay hoặc năm trước.</li>
+<li><strong>Lý do thanh toán</strong>: <strong>Phép dư cuối năm</strong> hoặc <strong>Nghỉ việc</strong> (xem bảng so sánh dưới).</li>
+<li><strong>Số ngày thanh toán</strong>: theo bước nửa ngày (0,5), không vượt số trong hộp <strong>Số ngày được thanh toán</strong>. Lúc lập mới, để trống là lấy đúng số tối đa.</li>
+<li><strong>Ghi chú</strong>: tối đa 1000 ký tự.</li>
+</ul></li>
+<li>Bấm <strong>Lưu nháp</strong> để để dành, hoặc <strong>Gửi duyệt</strong> (hệ lưu rồi gửi luôn).</li>
+</ol>
+<p>Người, loại nghỉ và năm quỹ <strong>chốt lúc lưu lần đầu</strong>, sửa phiếu chỉ đổi được lý do, số ngày và ghi chú. Mỗi người, mỗi loại nghỉ, mỗi năm quỹ chỉ có <strong>một phiếu còn hiệu lực cho mỗi lý do</strong> (Nháp, Chờ duyệt, Trả về chỉnh sửa hoặc Đã duyệt): tối đa một phiếu <em>Phép dư cuối năm</em> và một phiếu <em>Nghỉ việc</em>, nên người đã được thanh toán phép dư rồi nghỉ việc trong cùng năm vẫn lập được phiếu nghỉ việc. Phiếu bị từ chối hoặc đã hủy thì không tính, lập lại được.</p>
+
+<h2>Hộp Số ngày được thanh toán</h2>
+<p>Chọn loại nghỉ xong, hộp xanh <strong>Số ngày được thanh toán</strong> hiện từng bước tính, từ số còn lại tới kết quả, để bạn khỏi tự trừ:</p>
+<ul>
+<li><em>Số ngày còn dùng được năm …</em>: đúng số còn lại của quỹ, xem {ref(QUY_PHEP, "bài Hiểu số ngày phép còn lại")}.</li>
+<li><em>Phần mang sang từ năm trước chưa dùng không được thanh toán</em>: chỉ hiện khi có.</li>
+<li><em>Phải giữ lại theo loại nghỉ</em>: số ngày Nhân sự khai ở ô <strong>Số ngày phải giữ lại</strong>.</li>
+<li><em>Trần mỗi năm …, đã thanh toán …, còn …</em>: chỉ hiện khi loại nghỉ có đặt trần.</li>
+<li>Dòng kết quả <strong>Được thanh toán tối đa: N ngày</strong> (làm tròn xuống theo nửa ngày), kèm nút <strong>Dùng hết N ngày</strong> để điền luôn vào ô số ngày.</li>
+</ul>
+<pre>Phép dư cuối năm:
+  được thanh toán = còn dùng được − phần mang sang chưa dùng − số ngày phải giữ lại
+  rồi không vượt phần trần năm còn lại (trần mỗi năm − đã thanh toán trong năm), làm tròn xuống 0,5
+
+Nghỉ việc:
+  được thanh toán = còn dùng được (kể cả phần mang sang), không giữ lại, không áp trần</pre>
+<p><strong>Ví dụ:</strong> chị B còn 11 ngày Phép năm 2026, loại nghỉ giữ lại 2 ngày, không đặt trần, không có phần mang sang → được thanh toán tối đa <strong>9</strong> ngày. Nếu loại nghỉ đặt trần 5 ngày mỗi năm và chị đã được thanh toán 2 ngày trong năm thì chỉ còn <strong>3</strong> ngày. Quỹ đang âm (ứng phép) thì kết quả là 0.</p>
+<p>Năm quỹ chưa có quỹ phép thì hộp báo <em>Chưa có quỹ phép năm … của loại nghỉ này nên chưa có ngày nào để thanh toán.</em> Con số trong hộp là số <strong>tại lúc xem</strong>; lúc gửi duyệt hệ tính lại một lần nữa và ghi vào dòng <strong>Lúc gửi duyệt</strong> trên bản chỉ xem của phiếu.</p>
+
+<h2>Phép dư cuối năm hay Nghỉ việc</h2>
+<table>
+<thead><tr><th></th><th>Phép dư cuối năm</th><th>Nghỉ việc</th></tr></thead>
+<tbody>
+<tr><td>Khi nào dùng</td><td>Cuối năm còn ngày phép chưa nghỉ và công ty đồng ý trả tiền</td><td>Người lao động thôi việc mà chưa nghỉ hết phép (Điều 113 khoản 3 Bộ luật Lao động: phải thanh toán số ngày chưa nghỉ)</td></tr>
+<tr><td>Phần mang sang từ năm trước chưa dùng</td><td>Không được thanh toán</td><td>Được thanh toán</td></tr>
+<tr><td>Số ngày phải giữ lại</td><td>Có trừ</td><td>Không trừ</td></tr>
+<tr><td>Trần mỗi năm</td><td>Có áp</td><td>Không áp</td></tr>
+<tr><td>Điều kiện</td><td>Người còn đang làm</td><td>Hồ sơ nhân sự đã ghi <strong>ngày nghỉ việc</strong>; người đã nghỉ việc chỉ chọn được lý do này</td></tr>
+</tbody>
+</table>
+<p>Năm trước đã kết sổ thì không còn ngày để thanh toán. Muốn trả tiền phép dư của năm cũ, lập và duyệt phiếu <strong>trước khi</strong> phòng Nhân sự bấm <strong>Kết sổ năm …</strong> (xem {ref(NS_QUY, "bài Cấp và điều chỉnh quỹ phép")}).</p>
+
+<h2>Gửi duyệt và duyệt</h2>
+<ul>
+<li><strong>Gửi duyệt</strong>: số ngày bị <strong>giữ chỗ</strong> ngay (vào cột Chờ duyệt của quỹ, trừ khỏi số còn lại), phiếu khóa không sửa được.</li>
+<li>Công ty đã khai <strong>luồng duyệt</strong> cho <em>Thanh toán nghỉ phép</em> ở phân hệ Phê duyệt thì người được giao mở phiếu (từ thông báo chuông hoặc phạm vi <em>Cần tôi duyệt</em>) và bấm <strong>Duyệt phiếu</strong>, <strong>Trả về</strong> hoặc <strong>Từ chối</strong>.</li>
+<li>Chưa khai luồng thì người có quyền duyệt (phòng Nhân sự) bấm thẳng <strong>Duyệt phiếu</strong> hoặc <strong>Từ chối</strong> trên trang chi tiết. Từ chối bắt ghi lý do (tối đa 500 ký tự).</li>
+<li><strong>Từ chối</strong>, <strong>Trả về</strong> hay hủy phiếu đang chờ duyệt đều <strong>trả lại</strong> số ngày đang giữ chỗ. Trả về thì sửa rồi gửi lại, vẫn số phiếu cũ; từ chối thì phiếu đóng hẳn, muốn làm lại thì lập phiếu mới.</li>
+</ul>
+
+<h2>Duyệt xong thì gì xảy ra</h2>
+<ol>
+<li>Số ngày bị <strong>trừ khỏi quỹ phép</strong> và hiện ở cột <strong>Đã thanh toán ra tiền</strong> của Quỹ phép năm; số còn lại giảm đúng chừng đó.</li>
+<li>Hệ tạo một <strong>Yêu cầu thanh toán</strong> ở trạng thái <em>Nháp</em>, loại <strong>Thanh toán nghỉ phép</strong>, người nhận là nhân sự trên phiếu, số tiền 0. Người có quyền duyệt YCTT nhận chuông <em>… — Thanh toán nghỉ phép cần nhập số tiền</em>.</li>
+<li>Kế toán nhập số tiền, gửi duyệt, duyệt rồi <strong>Ghi nhận đã chi</strong>. Người được thanh toán nhận chuông <em>… — Đã chi thanh toán nghỉ phép</em>.</li>
+</ol>
+<p>Trên trang chi tiết phiếu, khối <strong>Thanh toán</strong> cho biết tiền tới đâu:</p>
+<table>
+<thead><tr><th>Ô</th><th>Nghĩa</th></tr></thead>
+<tbody>
+<tr><td><strong>Yêu cầu thanh toán</strong></td><td>Mã YCTT. Bấm được để mở YCTT nếu bạn có quyền xem Yêu cầu thanh toán, không thì chỉ là chữ.</td></tr>
+<tr><td><strong>Trạng thái chi</strong></td><td>Nháp · Chờ duyệt · Đã duyệt · Đã chi · Đã từ chối, đọc thẳng từ YCTT. Ở danh sách phiếu cũng có cột <strong>Trạng thái chi</strong>.</td></tr>
+<tr><td><strong>Số tiền</strong></td><td>Chỉ hiện với <strong>chính người được thanh toán</strong> và người xem được YCTT đó. Kế toán chưa nhập thì ghi <em>Kế toán chưa nhập</em>. Người duyệt bên Nhân sự không thấy ô này.</td></tr>
+</tbody>
+</table>
+
+<h2>Sửa, xóa, hủy phiếu</h2>
+<table>
+<thead><tr><th>Phiếu đang ở</th><th>Làm được gì</th></tr></thead>
+<tbody>
+<tr><td><strong>Nháp</strong></td><td>Sửa lý do, số ngày, ghi chú; bấm <strong>Xóa phiếu</strong> để bỏ hẳn.</td></tr>
+<tr><td><strong>Trả về chỉnh sửa</strong></td><td>Sửa rồi <strong>Gửi duyệt</strong> lại, vẫn số phiếu cũ.</td></tr>
+<tr><td><strong>Chờ duyệt</strong></td><td>Không sửa được. Người có quyền hủy bấm <strong>Hủy phiếu</strong> (bắt ghi lý do), số ngày giữ chỗ được trả lại.</td></tr>
+<tr><td><strong>Đã duyệt</strong>, YCTT còn <em>Nháp</em></td><td><strong>Hủy phiếu</strong> được: ngày đã thanh toán trả về quỹ, YCTT Nháp bị xóa.</td></tr>
+<tr><td><strong>Đã duyệt</strong>, YCTT <em>Chờ duyệt</em> hoặc <em>Đã duyệt</em></td><td>Nút Hủy không hiện. Khối Thanh toán ghi <em>Chưa hủy được phiếu: YCTT … đang ở … — kế toán từ chối YCTT trước.</em> Nhờ kế toán từ chối YCTT rồi mới hủy.</td></tr>
+<tr><td><strong>Đã duyệt</strong>, YCTT <em>Đã chi</em></td><td>Không hủy được nữa (<em>YCTT … đã chi tiền — không hủy được phiếu</em>). Tiền đã trả thì ngày phép không trả lại.</td></tr>
+<tr><td><strong>Đã duyệt</strong>, YCTT <em>Đã từ chối</em></td><td><strong>Hủy phiếu</strong> được, xem mục dưới.</td></tr>
+</tbody>
+</table>
+<p>Nút <strong>Hủy phiếu</strong> cần quyền hủy phiếu thanh toán nghỉ phép, mặc định chỉ phòng Nhân sự có. Nhân viên muốn rút phiếu đã gửi thì nhờ phòng Nhân sự hủy hoặc trả về.</p>
+
+<h2>Khi kế toán từ chối chi</h2>
+<p>Kế toán từ chối YCTT thì phiếu thanh toán nghỉ phép <strong>vẫn ở Đã duyệt</strong> và số ngày <strong>vẫn đang bị trừ</strong> khỏi quỹ. Trang chi tiết phiếu hiện băng vàng <strong>Kế toán từ chối chi.</strong> <em>Hủy phiếu để trả lại N ngày phép vào quỹ, rồi lập phiếu mới nếu cần.</em> Người duyệt phiếu và người lập phiếu nhận chuông <em>… — Kế toán từ chối chi thanh toán nghỉ phép</em> kèm lý do kế toán ghi.</p>
+<p>Việc tiếp theo là của phòng Nhân sự: đọc lý do, bấm <strong>Hủy phiếu</strong> để trả ngày về quỹ, rồi lập phiếu mới với số đúng nếu vẫn cần thanh toán. Hệ cố ý không tự hủy phiếu: trả ngày về quỹ hay không là việc Nhân sự quyết.</p>
+<p>Ngược lại, YCTT còn <em>Nháp</em> thì kế toán không xóa hay từ chối được; muốn bỏ thì nhờ phòng Nhân sự hủy phiếu thanh toán nghỉ phép.</p>
+
+<h2>Giữ kín lương</h2>
+<ul>
+<li>Phiếu thanh toán nghỉ phép <strong>không có số tiền</strong>; danh sách phiếu cũng không có cột tiền.</li>
+<li>Số tiền chia cho số ngày là lương một ngày, nên YCTT loại Thanh toán nghỉ phép chỉ người <strong>vừa có quyền Yêu cầu thanh toán, vừa xem được phiếu thanh toán nghỉ phép đó</strong> mới thấy. Nhân viên thu mua và quản lý mua hàng xem danh sách YCTT không thấy các phiếu này.</li>
+<li>Trợ lý AI chỉ nói số ngày và trạng thái, không bao giờ nói số tiền.</li>
+</ul>
+
+<h2>Câu báo lỗi hay gặp</h2>
+<table>
+<thead><tr><th>Câu bạn nhìn thấy</th><th>Nghĩa là</th><th>Làm gì</th></tr></thead>
+<tbody>
+<tr><td><em>Loại nghỉ "…" không cho thanh toán ra tiền…</em></td><td>Loại nghỉ chưa bật thanh toán, hoặc không trừ quỹ phép.</td><td>Nhờ phòng Nhân sự bật <strong>Cho phép thanh toán nghỉ phép</strong> cho loại đó.</td></tr>
+<tr><td><em>Chỉ thanh toán được quỹ phép năm … hoặc năm …</em></td><td>Chọn năm quỹ ngoài năm nay và năm trước.</td><td>Chọn lại năm.</td></tr>
+<tr><td><em>Chưa có quỹ phép "…" năm … của người này để thanh toán</em></td><td>Năm đó chưa cấp quỹ loại này cho người này.</td><td>Nhờ phòng Nhân sự cấp quỹ trước.</td></tr>
+<tr><td><em>Hiện không còn ngày phép "…" nào được thanh toán (đã trừ phần giữ lại, phần mang sang chưa dùng và trần năm)</em></td><td>Sau khi trừ theo luật của loại nghỉ thì không còn ngày nào.</td><td>Xem lại hộp <strong>Số ngày được thanh toán</strong>; nghỉ việc thì chọn lý do <strong>Nghỉ việc</strong>.</td></tr>
+<tr><td><em>Số ngày thanh toán (…) vượt số được phép (… ngày) theo luật của loại nghỉ</em></td><td>Số bạn nhập lớn hơn số tối đa.</td><td>Nhập số nhỏ hơn hoặc bấm <strong>Dùng hết N ngày</strong>.</td></tr>
+<tr><td><em>Nhập ngày nghỉ việc trên hồ sơ nhân sự trước khi thanh toán phép theo lý do nghỉ việc</em></td><td>Chọn <strong>Nghỉ việc</strong> mà hồ sơ chưa có ngày nghỉ việc.</td><td>Phòng Nhân sự nhập ngày nghỉ việc trên hồ sơ rồi lập lại.</td></tr>
+<tr><td><em>Nhân sự đã nghỉ việc chỉ được thanh toán theo lý do Nghỉ việc</em></td><td>Người đã nghỉ việc mà chọn <strong>Phép dư cuối năm</strong>.</td><td>Đổi lý do sang <strong>Nghỉ việc</strong>.</td></tr>
+<tr><td><em>Đã có phiếu thanh toán nghỉ phép năm … lý do … còn hiệu lực của người này cho loại nghỉ này…</em></td><td>Người này đã có một phiếu cùng loại nghỉ, cùng năm, cùng lý do chưa bị từ chối hay hủy (kể cả phiếu đã duyệt).</td><td>Mở phiếu đó ra. Cần làm lại thì hủy phiếu cũ trước; chỉ hủy (hoặc bị từ chối) mới mở chỗ cho phiếu mới.</td></tr>
+<tr><td><em>Bạn không được tự duyệt phiếu thanh toán nghỉ phép của chính mình.</em></td><td>Bạn là người được thanh toán trên phiếu.</td><td>Để người khác trong phòng Nhân sự duyệt.</td></tr>
+<tr><td><em>Phiếu vừa được xử lý bởi lượt khác — tải lại trang</em></td><td>Bấm hai lần liền, hoặc người khác vừa xử lý phiếu cùng lúc.</td><td>Tải lại trang. Hệ chỉ ghi nhận một lượt, ngày không bị trừ hai lần.</td></tr>
+</tbody>
+</table>
+<p>Không thấy mục <strong>Thanh toán nghỉ phép</strong> trong menu thì xem {ref(NS_QUYEN, "bài Phân quyền và luồng duyệt")}.</p>""",
+        },
+        {
             "title": TINH_HUONG,
             "icon": "lightbulb",
             "summary": "Nghỉ ốm đột xuất, nửa buổi, cưới hỏi, thai sản, nghỉ quá quỹ, đổi ngày sau khi duyệt",
@@ -715,6 +867,7 @@ Nháp  ─────────────────────►  Chờ
 <tr><td><strong>Thâm niên</strong>, <strong>Chuyển năm trước</strong>, <strong>Đã chuyển đi</strong>, <strong>Hết hạn</strong> <em>(ẩn sẵn)</em></td><td>Cộng thêm theo bậc tính tại 01/01; phép tồn mang sang; phần đã chuyển đi khi kết sổ; phần phép mang sang đã quá hạn dùng.</td></tr>
 <tr><td><strong>Điều chỉnh tay</strong> <em>(ẩn sẵn)</em></td><td>Cột duy nhất nhận <strong>số âm</strong>; số dương hiện kèm dấu <code>+</code>.</td></tr>
 <tr><td><strong>Nghỉ bù cộng thêm</strong> <em>(ẩn sẵn)</em></td><td>Ngày của các phiếu nghỉ bù đã duyệt. Trang chi tiết một dòng quỹ tự hiện ô này khi có số.</td></tr>
+<tr><td><strong>Đã thanh toán ra tiền</strong> <em>(ẩn sẵn)</em></td><td>Ngày của các phiếu thanh toán nghỉ phép đã duyệt, là khoản <strong>trừ</strong> và đã trừ khỏi <strong>Còn lại</strong>. Trang chi tiết dòng quỹ hiện ô cùng tên ở nhóm <em>Đã dùng</em> khi khác 0. Hủy phiếu thanh toán đã duyệt thì số này giảm lại. Xem {ref(THANH_TOAN, "bài Thanh toán nghỉ phép")}.</td></tr>
 </tbody>
 </table>
 <p>Bộ lọc: ô tìm theo <strong>tên hoặc mã nhân sự</strong>, ô chọn <strong>loại nghỉ</strong>, ô chọn <strong>năm</strong>.</p>
@@ -781,7 +934,7 @@ Nháp  ─────────────────────►  Chờ
 
 <h2>Người dùng kêu <em>số phép của tôi sai</em></h2>
 <ol>
-<li>Mở dòng quỹ của họ, đọc <strong>đủ bảy số cấu thành</strong> — thường lệch ở <em>thâm niên</em> (thiếu ngày vào làm) hoặc <em>chuyển năm trước</em>. Hạn mức lạ thì đọc dòng <strong>Chính sách đang áp</strong> ngay trên.</li>
+<li>Mở dòng quỹ của họ, đọc <strong>đủ tám số cấu thành</strong> — thường lệch ở <em>thâm niên</em> (thiếu ngày vào làm), <em>chuyển năm trước</em>, hoặc ngày đã <em>thanh toán ra tiền</em> mà người dùng quên. Hạn mức lạ thì đọc dòng <strong>Chính sách đang áp</strong> ngay trên.</li>
 <li>Xem khối <strong>các đơn nghỉ</strong>: phần <em>đang chờ duyệt</em> cũng đã bị trừ, và người dùng hay quên điều này — xem {ref(QUY_PHEP, "bài Hiểu số ngày phép còn lại")}.</li>
 <li>Vẫn sai thì <strong>điều chỉnh tay</strong> kèm lý do nói rõ vì sao.</li>
 </ol>""",
@@ -912,7 +1065,7 @@ Nháp  ─────────────────────►  Chờ
 <h2>Thiết lập ▸ Loại nghỉ</h2>
 <p>Nút <strong>Thêm loại nghỉ</strong> mở <strong>một trang riêng</strong> chứ không mở hộp thoại, vì form dài. Trang làm theo kiểu ERPNext: một mặt phẳng trắng, hàng tiêu đề <strong>dính</strong> ở trên (mũi tên lùi về danh sách, tên loại nghỉ, nhãn trạng thái, nút <strong>Lưu</strong> — lúc thêm mới là <strong>Tạo loại nghỉ</strong>), ngay dưới là dải tab:</p>
 <ul>
-<li><strong>Thông tin</strong>: mã, tên và ba nhóm ô <strong>Quỹ phép và lương</strong> · <strong>Điều kiện áp dụng</strong> · <strong>Số dư cuối năm</strong>, mỗi nhóm bấm tiêu đề để gập / mở. Lời giải thích của từng ô nằm sau biểu tượng <strong>(i)</strong> cạnh nhãn (nút <em>Xem giải thích</em>) — bấm vào để đọc. Cuối tab có khối <strong>Hoạt động</strong> ghi ai đã sửa ô nào, lúc nào.</li>
+<li><strong>Thông tin</strong>: mã, tên và bốn nhóm ô <strong>Quỹ phép và lương</strong> · <strong>Điều kiện áp dụng</strong> · <strong>Số dư cuối năm</strong> · <strong>Thanh toán nghỉ phép</strong>, mỗi nhóm bấm tiêu đề để gập / mở. Lời giải thích của từng ô nằm sau biểu tượng <strong>(i)</strong> cạnh nhãn (nút <em>Xem giải thích</em>) — bấm vào để đọc. Cuối tab có khối <strong>Hoạt động</strong> ghi ai đã sửa ô nào, lúc nào.</li>
 <li><strong>Bậc thâm niên</strong> và <strong>Hạn mức theo nhóm</strong>: chỉ hiện <strong>sau khi đã tạo</strong> loại nghỉ (tạo xong mới có chỗ gắn bảng con).</li>
 </ul>
 <table>
@@ -931,11 +1084,15 @@ Nháp  ─────────────────────►  Chờ
 <tr><td><strong>Trừ ngày nghỉ theo lịch làm việc và ngày lễ</strong></td><td>Bật thì ngày nghỉ trong tuần theo lịch làm việc của người nghỉ (thường là Chủ nhật) và ngày lễ không tính vào số ngày. ⚠️ <strong>Thai sản phải TẮT</strong> — nghỉ dài liên tục thì đếm cả ngày nghỉ tuần.</td></tr>
 <tr><td><strong>Bắt buộc đính kèm</strong></td><td>Bật thì đơn thuộc loại này phải có ít nhất một tệp mới <strong>gửi duyệt</strong> được (lưu nháp thì không chặn). Mục <strong>Tệp đính kèm</strong> trên đơn hiện dấu bắt buộc và dòng nhắc đỏ. Nên bật cho Nghỉ ốm (giấy khám), Nghỉ vợ sinh con (giấy chứng sinh).</td></tr>
 <tr><td><strong>Cách xử lý số dư</strong></td><td>Ba nước: <strong>Hết năm là mất</strong> (mặc định), <strong>Mang sang năm sau</strong> (kèm ô <em>Hạn dùng phép mang sang</em>), <strong>Quy đổi sang loại nghỉ khác</strong> (kèm ô <em>Loại nghỉ nhận số ngày</em> và <em>Tỷ lệ quy đổi</em>). Chỉ chạy khi có người bấm <em>Kết sổ</em> ở Quỹ phép năm.</td></tr>
+<tr><td><strong>Cho phép thanh toán nghỉ phép</strong> <em>(nhóm Thanh toán nghỉ phép)</em></td><td>Bật thì loại này hiện trong ô chọn của phiếu thanh toán nghỉ phép, tức là được đổi ngày phép chưa nghỉ ra tiền khi cuối năm còn dư hoặc khi nghỉ việc. Mặc định tắt. Chỉ dùng được khi <strong>Trừ vào quỹ phép năm</strong> đang bật; tắt ô đó thì tắt cả công tắc này, không thì lưu sẽ báo lỗi. Xem {ref(THANH_TOAN, "bài Thanh toán nghỉ phép")}.</td></tr>
+<tr><td><strong>Tối đa mỗi năm (ngày)</strong></td><td>Chỉ hiện khi bật công tắc trên. Trần số ngày được thanh toán trong <strong>một năm quỹ</strong>, cộng dồn mọi phiếu đã duyệt của năm đó; <strong>0</strong> là không giới hạn. Phiếu lý do <em>Nghỉ việc</em> không bị trần này.</td></tr>
+<tr><td><strong>Số ngày phải giữ lại</strong></td><td>Chỉ hiện khi bật công tắc trên. Số ngày không được đổi ra tiền khi thanh toán <em>Phép dư cuối năm</em>: còn dư 10 ngày, giữ lại 4 thì được thanh toán 6. Phần mang sang từ năm trước không tính vào đây (nó vốn không được thanh toán cuối năm). Phiếu <em>Nghỉ việc</em> không giữ lại.</td></tr>
 <tr><td><strong>Đang dùng</strong></td><td>Tắt thì loại nghỉ ẩn khỏi ô chọn; đơn cũ giữ nguyên.</td></tr>
 </tbody>
 </table>
 <p>Hệ <strong>không còn</strong> luật "phải nộp trước N ngày" (bỏ từ 05/09/2026), nên form không có ô số ngày báo trước.</p>
-<p>⚠️ <strong>Đừng xóa một loại nghỉ đang có đơn.</strong> Ngừng dùng nó thì tắt công tắc <strong>Đang dùng</strong> — đơn cũ vẫn đọc được, còn người mới thì không chọn được nữa.</p>
+<p>Loại nghỉ bật thanh toán hiện thêm nhãn <strong>Cho thanh toán nghỉ phép</strong> ở danh sách Loại nghỉ. Đổi trần hay số ngày giữ lại chỉ áp cho phiếu gửi duyệt sau đó; phiếu đã duyệt giữ nguyên số ngày.</p>
+<p>⚠️ <strong>Đừng xóa một loại nghỉ đang có đơn.</strong> Loại nghỉ đã có phiếu thanh toán nghỉ phép (ở bất kỳ trạng thái nào) thì hệ chặn xóa. Ngừng dùng nó thì tắt công tắc <strong>Đang dùng</strong> — đơn cũ vẫn đọc được, còn người mới thì không chọn được nữa.</p>
 
 <h2>Các loại nghỉ chế độ BHXH</h2>
 <p>Ngoài các loại nghỉ công ty trả lương, hệ có sẵn <strong>năm loại nghỉ chế độ bảo hiểm xã hội</strong> tách riêng. Ở các loại này người lao động vẫn có tiền thay lương nhưng do <strong>BHXH chi trả, không phải công ty</strong>; chúng <strong>không trừ quỹ phép năm</strong> và bản in đơn đánh vào ô <em>Nghỉ chế độ bảo hiểm</em>.</p>
@@ -1000,16 +1157,17 @@ Nháp  ─────────────────────►  Chờ
         {
             "title": NS_QUYEN,
             "icon": "key-round",
-            "summary": "Năm khóa quyền (kể cả Phiếu nghỉ bù), phạm vi dữ liệu, và cách khai luồng duyệt cho khỏi kẹt",
+            "summary": "Sáu khóa quyền (kể cả Phiếu nghỉ bù, Thanh toán nghỉ phép), phạm vi dữ liệu, quyền của kế toán với YCTT nghỉ phép, và cách khai luồng duyệt cho khỏi kẹt",
             "content": f"""<h2>Nhân sự — Phân quyền và luồng duyệt</h2>
 
-<h2>Năm khóa quyền — đừng gộp</h2>
+<h2>Sáu khóa quyền — đừng gộp</h2>
 <table>
 <thead><tr><th>Khóa</th><th>Mở màn nào</th></tr></thead>
 <tbody>
 <tr><td><code>leave_request</code></td><td>Đơn nghỉ phép · Lịch nghỉ</td></tr>
 <tr><td><code>leave_balance</code></td><td>Quỹ phép năm (cấp phát, <strong>điều chỉnh tay</strong>) · Phân bổ chính sách (xem cần quyền xem, phân bổ / kết thúc / xóa cần quyền sửa)</td></tr>
 <tr><td><code>leave_comp_request</code> — nhãn <em>Nghỉ phép › Phiếu nghỉ bù</em></td><td>Nghỉ bù (lập, duyệt, hủy phiếu nghỉ bù)</td></tr>
+<tr><td><code>leave_encashment</code> — nhãn <em>Nghỉ phép › Thanh toán nghỉ phép</em></td><td>Thanh toán nghỉ phép (lập, duyệt, hủy phiếu); kèm theo là quyền <strong>thấy YCTT nghỉ phép</strong> bên Tài chính</td></tr>
 <tr><td><code>leave_type</code></td><td>Thiết lập ▸ Loại nghỉ (kèm bậc thâm niên, hạn mức theo nhóm), Thiết lập ▸ Ngày cấm nghỉ và Thiết lập ▸ Chính sách nghỉ phép</td></tr>
 <tr><td><code>holiday</code></td><td>Thiết lập ▸ Lịch ngày lễ</td></tr>
 </tbody>
@@ -1017,10 +1175,11 @@ Nháp  ─────────────────────►  Chờ
 <p>Chính sách nghỉ phép và phân bổ chính sách (từ 03/11/2026) <strong>không thêm khóa mới</strong> — vai trò đang có hai khóa trên tự thấy hai màn đó.</p>
 <p>Tách riêng vì <strong><code>leave_balance</code> ghi được nghĩa là tặng thêm ngày phép cho bất kỳ ai</strong>. Gộp nó với <code>leave_request</code> thì cho ai xem đơn của mình là cho họ tự cộng phép.</p>
 <p><strong>Phiếu nghỉ bù có khóa riêng</strong> vì duyệt một phiếu là <em>tạo thêm ngày phép</em>. Vì cùng lý do đó, phiếu nghỉ bù <strong>luôn chặn tự duyệt</strong>, không phụ thuộc công tắc ở Cài đặt nhân sự.</p>
+<p><strong>Thanh toán nghỉ phép có khóa riêng</strong> vì duyệt phiếu là <em>đổi ngày phép ra tiền</em>; phiếu này cũng <strong>luôn chặn tự duyệt</strong>.</p>
 <p>Có quyền sửa <strong>một trong hai</strong> danh mục (<code>leave_type</code> hoặc <code>holiday</code>) thì vẫn vào được mục <em>Thiết lập</em>; chỉ sửa được một thẻ thì hệ không dựng hàng thẻ con.</p>
 
 <h2><em>Không thấy menu Nghỉ phép</em></h2>
-<p>⚠️ Gần như <strong>luôn</strong> là phân quyền. Năm khóa trên là khóa <strong>mới</strong> (khóa <code>leave_comp_request</code> có từ 02/11/2026), mà seed cố ý <strong>không ghi đè</strong> phân quyền đã chỉnh tay trên hệ đang chạy — nên vai trò cũ <strong>không tự có</strong> chúng.</p>
+<p>⚠️ Gần như <strong>luôn</strong> là phân quyền. Sáu khóa trên là khóa <strong>mới</strong> (khóa <code>leave_comp_request</code> có từ 02/11/2026, <code>leave_encashment</code> từ 03/11/2026), mà seed cố ý <strong>không ghi đè</strong> phân quyền đã chỉnh tay trên hệ đang chạy — nên vai trò cũ <strong>không tự có</strong> chúng.</p>
 <p>Cách xử lý: vào <strong>Quản trị ▸ Phân quyền tài khoản</strong>, tick các khóa cho đúng vai trò, rồi nhờ người đó đăng xuất và đăng nhập lại. (Quản trị hệ thống có thể chạy một lần với cờ đồng bộ cưỡng bức, nhưng cách đó ghi đè cả những chỉnh tay khác — cân nhắc.)</p>
 
 <h2>Ai nên có gì</h2>
@@ -1028,8 +1187,11 @@ Nháp  ─────────────────────►  Chờ
 <thead><tr><th>Vai</th><th>Khóa</th><th>Hành động</th></tr></thead>
 <tbody>
 <tr><td>Nhân viên</td><td><code>leave_request</code>, <code>leave_comp_request</code></td><td>đọc · tạo · sửa · hủy</td></tr>
+<tr><td>Nhân viên</td><td><code>leave_encashment</code></td><td>đọc · tạo · sửa · xóa, phạm vi <strong>của mình</strong> (không duyệt, không hủy)</td></tr>
 <tr><td>Trưởng bộ phận</td><td><code>leave_request</code>, <code>leave_comp_request</code></td><td>thêm <strong>duyệt</strong>, phạm vi tới bộ phận mình</td></tr>
-<tr><td>Nhân sự phụ trách phép</td><td>đủ năm khóa</td><td>vai trò mẫu <code>hr_leave</code>, không gán tự động cho ai</td></tr>
+<tr><td>Trưởng bộ phận · trưởng công ty</td><td><code>leave_encashment</code></td><td>chỉ <strong>đọc · xuất</strong>, phạm vi bộ phận / công ty</td></tr>
+<tr><td>Nhân sự phụ trách phép</td><td>đủ sáu khóa</td><td>vai trò mẫu <code>hr_leave</code>, không gán tự động cho ai; là vai trò duy nhất duyệt và hủy được phiếu thanh toán nghỉ phép</td></tr>
+<tr><td>Kế toán chi tiền</td><td><code>payment_request</code> (đọc · sửa · duyệt · in) + <code>leave_encashment</code> <strong>đọc</strong></td><td>phạm vi <strong>công ty</strong> (hoặc tất cả) trên <code>leave_encashment</code>, nếu không thì không thấy YCTT nghỉ phép nào</td></tr>
 </tbody>
 </table>
 
@@ -1038,12 +1200,14 @@ Nháp  ─────────────────────►  Chờ
 <ul>
 <li><code>leave_request</code> và <code>leave_comp_request</code> khai cả <em>người lập</em> lẫn <em>người nghỉ</em> vào phạm vi <strong>của mình</strong> — vì hành chính lập hộ là việc có thật, và cả hai người đều phải thấy tờ đơn, tờ phiếu.</li>
 <li><code>leave_balance</code> chỉ khai theo <em>người sở hữu dòng quỹ</em>. Nhân viên thường <strong>không</strong> vào mục Quỹ phép năm; họ xem số của mình ngay trên form nộp đơn. Phân bổ chính sách cũng lọc theo phạm vi này: chỉ phân bổ được cho người nằm trong phạm vi <strong>ghi</strong> quỹ của bạn, và không ai trừ quản trị tự phân bổ cho chính mình.</li>
+<li><code>leave_encashment</code> khai cả <em>người lập</em> lẫn <em>người được thanh toán</em> vào phạm vi <strong>của mình</strong>, như đơn nghỉ.</li>
+<li>⚠️ <strong>YCTT loại Thanh toán nghỉ phép</strong> chỉ hiện với người có quyền xem Yêu cầu thanh toán <strong>và</strong> phạm vi xem <code>leave_encashment</code> phủ phiếu nguồn của nó (số tiền chia số ngày ra lương ngày). Vai trò Kế toán phải được tick <code>leave_encashment</code> <strong>đọc</strong> phạm vi công ty; vai trò mua hàng không tick thì không thấy, đúng ý đồ.</li>
 <li>Các danh mục (<em>Loại nghỉ</em>, <em>Lịch ngày lễ</em>, <em>Ngày cấm nghỉ</em>) là dữ liệu chung, không lọc theo phạm vi.</li>
 </ul>
 <p>Người duyệt <strong>không cần</strong> phạm vi rộng: đang có việc trên tờ đơn thì đọc được nó, ký xong quyền đó đóng lại. Nhờ vậy trưởng phòng Nhân sự ký chặng 2 cho nhân viên phòng khác mà không phải mở phạm vi toàn công ty.</p>
 
 <h2>Luồng duyệt</h2>
-<p>Khai ở phân hệ <strong>Phê duyệt</strong> cho loại chứng từ <em>Đơn nghỉ phép</em> (và riêng cho <em>Phiếu nghỉ bù</em> nếu muốn phiếu đi luồng). Luồng mẫu: <strong>trưởng bộ phận của người xin nghỉ → trưởng phòng Nhân sự</strong>.</p>
+<p>Khai ở phân hệ <strong>Phê duyệt</strong> cho loại chứng từ <em>Đơn nghỉ phép</em> (và riêng cho <em>Phiếu nghỉ bù</em>, <em>Thanh toán nghỉ phép</em> nếu muốn phiếu đi luồng; chưa khai thì phòng Nhân sự duyệt thẳng). Luồng mẫu: <strong>trưởng bộ phận của người xin nghỉ → trưởng phòng Nhân sự</strong>.</p>
 <ul>
 <li>⚠️ <strong>Mỗi chặng PHẢI khai người dự phòng.</strong> Hệ loại người nộp khỏi danh sách người ký, nên trưởng phòng tự xin nghỉ thì chặng đó rỗng và <strong>đơn kẹt vĩnh viễn</strong> — mà quản lý thì cũng phải nghỉ phép. Bật <strong>Chặn tự duyệt đơn nghỉ</strong> ở Cài đặt nhân sự thì cả bước khai đích danh cũng né người nghỉ, nên người dự phòng càng cần.</li>
 <li><strong>Chưa khai luồng nào thì vẫn nộp được</strong>: lúc đó người có quyền duyệt bấm <strong>Duyệt đơn</strong> thẳng ở màn chi tiết. Không có đường lùi này thì cài mới xong là không ai nghỉ nổi.</li>
@@ -1058,7 +1222,7 @@ Nháp  ─────────────────────►  Chờ
 <li>Nhập <strong>Lịch ngày lễ</strong> của năm hiện tại, <strong>kể cả Tết Âm</strong> — xem {ref(NS_DANH_MUC, "bài Loại nghỉ và Lịch ngày lễ")}.</li>
 <li>Rà lại <strong>hạn mức</strong> từng loại nghỉ (và phân bổ <strong>chính sách nghỉ phép</strong> cho nhóm người hưởng mức riêng nếu có), rồi mới bấm <strong>Cấp quỹ năm</strong> — xem {ref(NS_QUY, "bài Cấp và điều chỉnh quỹ phép")}.</li>
 <li>Khai <strong>luồng duyệt</strong> kèm người dự phòng.</li>
-<li>Tick <strong>năm khóa quyền</strong> cho các vai trò, và bật <strong>Loại nhận ngày nghỉ bù</strong> cho một loại nghỉ nếu dùng phiếu nghỉ bù.</li>
+<li>Tick <strong>sáu khóa quyền</strong> cho các vai trò (kể cả <code>leave_encashment</code> đọc phạm vi công ty cho vai trò Kế toán), bật <strong>Loại nhận ngày nghỉ bù</strong> cho một loại nghỉ nếu dùng phiếu nghỉ bù, bật <strong>Cho phép thanh toán nghỉ phép</strong> cho loại được đổi ra tiền.</li>
 </ol>""",
         },
     ],

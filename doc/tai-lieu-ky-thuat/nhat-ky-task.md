@@ -19045,6 +19045,29 @@ Mã nguồn: doc/, .claude/, frontend-v2/src, backend/app, backend/scripts, test
 
 Mã nguồn: frontend-v2/src/shared/crud/crud-field.tsx · crud-form-fields.tsx · crud-detail-page.tsx · types.ts · backend/app/core/crud.py · backend/app/modules/leave/policy_controller.py · catalog_controller.py · backend/app/modules/audit/controller.py
 
+## duoc-CR-719 | Thanh toán nghỉ phép: đổi ngày phép chưa nghỉ ra tiền khi cuối năm hoặc nghỉ việc
+- status: xong
+- date: 2026-11-03
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được yêu cầu làm chức năng thanh toán nghỉ phép, ai lập phiếu thì làm y như nexterp. Bốn ý đã chốt: bật theo từng loại nghỉ kèm trần, dùng cho phép dư cuối năm và cho người nghỉ việc (Bộ luật Lao động Điều 113 khoản 3); phiếu chỉ ghi số ngày, số tiền do kế toán nhập sau để không lộ lương; duyệt xong trừ quỹ phép và sinh YCTT (yêu cầu thanh toán) ở phân hệ Tài chính. Chín quyết định của kế hoạch đều theo phương án (a).
+
+**Đã làm**
+- Danh mục *Loại nghỉ* có thêm nhóm ô *Thanh toán nghỉ phép*: công tắc *Cho phép thanh toán nghỉ phép* (chỉ dùng được khi loại nghỉ trừ quỹ), ô *Tối đa mỗi năm (ngày)* và ô *Số ngày phải giữ lại*.
+- Thêm mục menu *Thanh toán nghỉ phép* trong Nghỉ phép với khóa quyền riêng: nhân viên lập phiếu cho chính mình, phòng Nhân sự lập hộ, duyệt và hủy; trưởng bộ phận và trưởng công ty chỉ xem; không ai tự duyệt được phiếu của chính mình. Mỗi người, mỗi loại nghỉ, mỗi năm chỉ có một phiếu còn hiệu lực; năm quỹ là năm nay hoặc năm trước.
+- Form lập phiếu có hộp *Số ngày được thanh toán* tính sẵn từng bước: cuối năm thì lấy số còn lại trừ phần mang sang chưa dùng và số ngày phải giữ lại, không vượt trần năm; nghỉ việc thì trả hết số chưa nghỉ, không trần, nhưng hồ sơ phải có ngày nghỉ việc. Kết quả làm tròn xuống nửa ngày.
+- Gửi duyệt thì giữ chỗ số ngày; duyệt xong số ngày bị trừ khỏi quỹ (cột mới *Đã thanh toán ra tiền* ở Quỹ phép năm và báo cáo) và hệ tạo một YCTT nháp loại *Thanh toán nghỉ phép* cho đúng nhân sự đó, kế toán nhận chuông nhập số tiền.
+- YCTT nghỉ phép có khung riêng bên Tài chính: chỉ nhập một số tiền, không gửi duyệt được khi bằng 0, không xóa, không hoàn tiền, không gắn công nợ. Chỉ người vừa có quyền YCTT vừa xem được phiếu nghỉ phép đó mới thấy loại YCTT này, để giữ kín lương; bản in chỉ in số tài khoản khi người in xem được thông tin nhạy cảm của nhân sự, không thì in chữ **kế toán tự điền**.
+- Hủy phiếu đã duyệt chỉ được khi YCTT còn nháp hoặc đã bị từ chối. Kế toán từ chối chi thì phiếu vẫn ở trạng thái đã duyệt, màn hình hiện băng vàng **Kế toán từ chối chi** để phòng Nhân sự hủy phiếu trả ngày về quỹ; người được thanh toán nhận chuông khi đã chi.
+- Trợ lý AI đọc được số ngày đã thanh toán, các phiếu và luật của từng loại nghỉ, không bao giờ trả số tiền; cẩm nang AI Nghỉ phép thêm mục hướng dẫn trả lời câu hỏi được thanh toán mấy ngày phép, đã xuất bản phiên bản 8 trên máy local.
+- Viết bài hướng dẫn mới *Thanh toán nghỉ phép*, sửa bài số phép còn lại, bài quỹ phép, bài loại nghỉ và bài phân quyền; thêm bài *Yêu cầu thanh toán nghỉ phép: nhập số tiền và chi* cho kế toán. Viết mục 16 của tài liệu chức năng Nghỉ phép, thêm nguồn mới vào tài liệu Yêu cầu thanh toán, đánh dấu chức năng này đã có trong tài liệu nghiên cứu nexterp, thêm luật cho trợ lý lập trình.
+
+**Kết quả:** 88 bài kiểm máy chủ mới của CR này xanh (16 bài nền, 37 bài YCTT nguồn nghỉ phép, 35 bài phiếu thanh toán), cùng các bộ kiểm phạm vi dữ liệu, YCTT và nghỉ phép liên quan; giao diện kiểm tra kiểu và kiểm lỗi cú pháp sạch, bộ kiểm phân hệ Nhân sự và Tài chính xanh. Cả vòng lập, duyệt, nhập tiền, từ chối chi, hủy phiếu đã chạy thử trên trình duyệt ở máy local. Hai script hướng dẫn chạy lại không lỗi (cây Nghỉ phép 15 bài, mọi liên kết chéo trỏ đúng bài). Commit lên erp-v2 ngày 05/11/2026 sau khi anh Được duyệt; khi ghép với nhánh chung, migration lvenc719 thành hai đầu với nhánh gửi lại thư và sao lưu (bao-CR-727, bao-CR-732) nên thêm migration gộp mrg719x732 không đổi bảng nào, và nâng số đếm lượt đọc thẳng của bài kiểm phạm vi từ 99 lên 100.
+
+**Còn lại:** chưa nạp lại kho tìm kiếm trợ giúp vì máy local tắt cờ RAG, sẽ chạy trên dev lúc deploy cùng script xuất bản cẩm nang; trên dev và prod phải tick quyền thanh toán nghỉ phép cho các vai trò, nhất là quyền xem phạm vi công ty cho vai trò Kế toán, không thì bên Tài chính không thấy YCTT nghỉ phép nào.
+
+Mã nguồn: backend/app/modules/leave/encashment_*.py · catalog_model.py · balance_model.py · constants.py · payment_request/hr_payout_guard.py · leave_encashment_payout.py · core/scoping.py · approval/self_approval_policy.py · assistant/tools/leave_encashment_tool.py · migration lvenc719 · frontend-v2/src/modules/hr (leave-encashment-*, leave-type-encashment-fields) · modules/finance (payment-request-leave-encashment-*) · backend/scripts/seed_help_nghi_phep.py · seed_help_yctt_thanh_toan_nghi_phep.py · ai_skill/seed_handbook/40-nghi-phep.md · doc/erp/hrm/02-nghi-phep.md
+
 ## duoc-CR-720 | Thu mua trên điện thoại: các bảng còn lại đổi sang dạng thẻ
 - status: xong
 - date: 2026-11-05

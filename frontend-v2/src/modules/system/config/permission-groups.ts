@@ -72,7 +72,14 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
   {
     id: 'leave',
     title: 'Nghỉ phép',
-    entities: ['leave_request', 'leave_comp_request', 'leave_balance', 'leave_type', 'holiday'],
+    entities: [
+      'leave_request',
+      'leave_comp_request',
+      'leave_encashment',
+      'leave_balance',
+      'leave_type',
+      'holiday',
+    ],
   },
   { id: 'dossier', title: 'Hồ sơ', entities: ['dossier', 'dossier_type'] },
   { id: 'room-booking', title: 'Đặt phòng họp', entities: ['room_booking', 'meeting_room'] },

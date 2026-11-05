@@ -158,6 +158,12 @@ export type LeaveType = {
   require_attachment: boolean
   /** Loại nhận ngày nghỉ bù (duoc-CR-715 phase C): phiếu nghỉ bù được duyệt sẽ cộng vào quỹ của loại này. */
   is_compensatory?: boolean
+  /** Cho đổi ngày phép chưa nghỉ ra tiền (duoc-CR-719). Chỉ bật được khi `counts_balance`. */
+  allow_encashment?: boolean
+  /** Trần số ngày thanh toán MỖI NĂM. `0` = không trần. Lý do nghỉ việc bỏ qua trần (D5). */
+  max_encashable_days?: number
+  /** Số ngày phải giữ lại, không được thanh toán (chỉ lý do cuối năm). */
+  non_encashable_days?: number
   /** Tính số ngày có trừ T7/CN và ngày lễ không. */
   exclude_holiday: boolean
   /** Cách cấp quỹ — xem `LEAVE_ACCRUAL_MODE`. */
@@ -228,6 +234,8 @@ export interface LeaveBalance {
   carried_out_days: number
   /** Phần mang sang đã HẾT HẠN. Chỉ để giải thích, không nằm trong công thức. */
   carried_expired_days: number
+  /** Ngày đã thanh toán ra tiền (duoc-CR-719) — khoản TRỪ, đã trừ khỏi `remaining_days`. Backend cũ: vắng. */
+  encashed_days?: number
   note: string
   total_days: number
   remaining_days: number

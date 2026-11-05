@@ -22,6 +22,8 @@ export interface LeaveBalanceTotals {
   carried_days: number
   adjusted_days: number
   comp_days: number
+  /** duoc-CR-719 — ngày đã thanh toán ra tiền (khoản trừ). */
+  encashed_days: number
   carried_out_days: number
   carried_expired_days: number
   used_days: number
@@ -69,6 +71,7 @@ const SUM_FIELDS = [
   'carried_days',
   'adjusted_days',
   'comp_days',
+  'encashed_days',
   'carried_out_days',
   'carried_expired_days',
   'used_days',
@@ -133,6 +136,7 @@ export function groupLeaveBalances(items: readonly LeaveBalance[] | undefined): 
           carried_days: 0,
           adjusted_days: 0,
           comp_days: 0,
+          encashed_days: 0,
           carried_out_days: 0,
           carried_expired_days: 0,
           used_days: 0,

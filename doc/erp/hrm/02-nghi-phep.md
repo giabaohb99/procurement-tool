@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Bản | 1.9 — 03/11/2026 (**chính sách nghỉ phép + phân bổ chính sách, báo cáo "Làm việc vào ngày lễ, ngày nghỉ", quỹ theo nhân sự, cấp quỹ có lọc** — duoc-CR-717: §15 mới; §3 · §5 · §9 · §10 · §13.7 sửa; Kỳ nghỉ phép (Leave Period) **không làm**) · 1.8 — 03/11/2026 (**nghỉ phép kiểu ERPNext** — duoc-CR-715: cách cấp quỹ, hạn mức theo nhóm, dùng sau N ngày, ứng phép, ngày cấm nghỉ, phiếu nghỉ bù — §13 mới; **Cài đặt nhân sự tab Nghỉ phép** — duoc-CR-713, §14 mới; trang Loại nghỉ bố cục phẳng — duoc-CR-716, §11; §3 · §5 · §9 · §10 · §11.1 · §12 sửa) · 1.7 — 26/10/2026 (**một đơn khai nhiều khoảng ngày không liền kề** — duoc-CR-683: §7.3 mới, §6 + §7 + §12 sửa; **bỏ HR3-3** ở §7.1) · 1.6 — 23/10/2026 (sửa dòng cờ **Bắt buộc đính kèm** ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ **Bắt buộc đính kèm** chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
-| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 · **duoc-CR-683** · duoc-CR-713 · **duoc-CR-715** · duoc-CR-716 · **duoc-CR-717** |
+| Bản | 2.0 — 03/11/2026 (**thanh toán nghỉ phép** (Leave Encashment) — duoc-CR-719: §16 mới; §3 · §5 · §9 · §10 · §11.1 sửa) · 1.9 — 03/11/2026 (**chính sách nghỉ phép + phân bổ chính sách, báo cáo "Làm việc vào ngày lễ, ngày nghỉ", quỹ theo nhân sự, cấp quỹ có lọc** — duoc-CR-717: §15 mới; §3 · §5 · §9 · §10 · §13.7 sửa; Kỳ nghỉ phép (Leave Period) **không làm**) · 1.8 — 03/11/2026 (**nghỉ phép kiểu ERPNext** — duoc-CR-715: cách cấp quỹ, hạn mức theo nhóm, dùng sau N ngày, ứng phép, ngày cấm nghỉ, phiếu nghỉ bù — §13 mới; **Cài đặt nhân sự tab Nghỉ phép** — duoc-CR-713, §14 mới; trang Loại nghỉ bố cục phẳng — duoc-CR-716, §11; §3 · §5 · §9 · §10 · §11.1 · §12 sửa) · 1.7 — 26/10/2026 (**một đơn khai nhiều khoảng ngày không liền kề** — duoc-CR-683: §7.3 mới, §6 + §7 + §12 sửa; **bỏ HR3-3** ở §7.1) · 1.6 — 23/10/2026 (sửa dòng cờ **Bắt buộc đính kèm** ở bảng Loại nghỉ cho khớp duoc-CR-661) · 1.5 — 22/10/2026 (cờ **Bắt buộc đính kèm** chặn lúc gửi duyệt — duoc-CR-661; bảng Đối chiếu kết sổ — duoc-CR-664) · 1.4 — 01/10/2026 (§10 đối chiếu lại với mã nguồn) · 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép — §8.1) |
+| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 · duoc-CR-661 · duoc-CR-664 · **duoc-CR-683** · duoc-CR-713 · **duoc-CR-715** · duoc-CR-716 · **duoc-CR-717** · **duoc-CR-719** |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Nghỉ phép* |
-| Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` · CR-715: `doc/erp/hrm/plans/261102-nghi-phep-kieu-erpnext-duoc-cr-715/plan.md` (+ `reports/review-fixes.md`) · CR-717: `doc/erp/hrm/plans/261103-nghi-phep-du-nhu-nexterp-duoc-cr-717/plan.md` |
-| Bài Help Center | `backend/scripts/seed_help_nghi_phep.py` (14 bài: thẻ + 13 bài con) · bài Cài đặt nhân sự ở `backend/scripts/seed_help_nhan_su.py` · báo cáo khóa 30 ở `backend/scripts/seed_help_bao_cao_nhan_su.py`. Nội dung ở đây và ở seed phải khớp nhau |
+| Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` · CR-715: `doc/erp/hrm/plans/261102-nghi-phep-kieu-erpnext-duoc-cr-715/plan.md` (+ `reports/review-fixes.md`) · CR-717: `doc/erp/hrm/plans/261103-nghi-phep-du-nhu-nexterp-duoc-cr-717/plan.md` · CR-719: `doc/erp/hrm/plans/261103-thanh-toan-nghi-phep-duoc-cr-719/plan.md` |
+| Bài Help Center | `backend/scripts/seed_help_nghi_phep.py` (15 bài: thẻ + 14 bài con) · bài YCTT nghỉ phép cho kế toán ở `backend/scripts/seed_help_yctt_thanh_toan_nghi_phep.py` · bài Cài đặt nhân sự ở `backend/scripts/seed_help_nhan_su.py` · báo cáo khóa 30 ở `backend/scripts/seed_help_bao_cao_nhan_su.py`. Nội dung ở đây và ở seed phải khớp nhau |
 | Nguồn nghiệp vụ | `doc/erp/tham-khao-hrm/02-don-tu-va-duyet.md` (DT1, DT6) · `10-de-xuat-ap-dung.md` (V1-6, V1-7) |
 
 ---
@@ -44,8 +44,8 @@ văn bản ở Văn thư. Tạo tay ở Văn thư là ra một tờ giấy **kh�
 
 ## 3. Chín màn hình
 
-Menu *Nhân sự ▸ Nghỉ phép* có sáu mục con: **Đơn nghỉ phép · Nghỉ bù · Lịch nghỉ · Quỹ phép năm · Phân bổ chính sách ·
-Thiết lập**. *Thiết lập* gom bốn màn danh mục, chuyển qua lại bằng hàng thẻ `LeaveSectionTabs` (mỗi thẻ chỉ hiện với
+Menu *Nhân sự ▸ Nghỉ phép* có bảy mục con: **Đơn nghỉ phép · Nghỉ bù · Thanh toán nghỉ phép · Lịch nghỉ · Quỹ phép năm ·
+Phân bổ chính sách · Thiết lập**. *Thiết lập* gom bốn màn danh mục, chuyển qua lại bằng hàng thẻ `LeaveSectionTabs` (mỗi thẻ chỉ hiện với
 người sửa được danh mục đó). Các đường dẫn `/hr/holidays`, `/hr/leave-blocks`, `/hr/leave-policies` và
 `/hr/leave-policy-assignments/bulk` có mục menu **ẩn** để route có gác quyền (gác điều hướng mặc định MỞ; trang hàng
 loạt gác `leave_balance` + `write`, mục ẩn dài hơn thắng).
@@ -54,6 +54,7 @@ loạt gác `leave_balance` + `write`, mục ẩn dài hơn thắng).
 |---|---|---|
 | Đơn nghỉ phép (danh sách + chi tiết + nộp mới) | `/hr/leave-requests` | `leave_request` |
 | Nghỉ bù — phiếu xin nghỉ bù (danh sách + chi tiết + lập mới) — §13.6 | `/hr/leave-comp-requests` | `leave_comp_request` |
+| Thanh toán nghỉ phép — phiếu đổi ngày phép ra tiền (danh sách + chi tiết + lập mới) — §16 | `/hr/leave-encashments` | `leave_encashment` |
 | Lịch nghỉ (theo tuần) | `/hr/leave-calendar` | `leave_request` |
 | Quỹ phép năm (thẻ *Theo dòng quỹ* · *Theo nhân sự* `?view=people`) — §15.6 | `/hr/leave-balances` | `leave_balance` |
 | Phân bổ chính sách (+ trang *Phân bổ chính sách hàng loạt* `/bulk`) — §15.3 | `/hr/leave-policy-assignments` | `leave_balance` (xem `read`, ghi `write`) |
@@ -184,7 +185,7 @@ cái vào một trạng thái thì người soạn mở đơn ra không biết m
 
 ```
 còn lại = (hạn mức + thâm niên + chuyển năm trước + điều chỉnh tay + nghỉ bù)
-          − đã nghỉ − đang chờ duyệt
+          − đã nghỉ − đang chờ duyệt − đã thanh toán ra tiền
 dùng được hôm nay = còn lại − phần chưa tới tháng (chỉ loại "Cộng dần theo tháng")
 ```
 
@@ -205,6 +206,8 @@ Sổ quỹ chạy theo bốn nhịp, khớp bốn kết cục của bộ máy du
 | `consume` | duyệt xong | `pending −= n`, `used += n` |
 | `release` | từ chối / trả về / rút / hủy | `pending −= n` |
 | `refund_used` | hủy một đơn **đã duyệt** | `used −= n` |
+
+Phiếu thanh toán nghỉ phép (duoc-CR-719, §16) đi đúng ba nhịp đầu nhưng nhịp duyệt ghi vào cột riêng: duyệt `pending −= n`, `encashed_days += n` (không cộng `used`); hủy phiếu đã duyệt `encashed_days −= n`. `remaining_days` đã trừ `encashed_days`, nên mọi chỗ đi qua `available_days` tự đúng.
 
 ⚠️ **Nhịp GIỮ CHỖ là bắt buộc.** Thiếu nó thì nộp mười đơn liền tay đều lọt, vì
 đơn nào cũng thấy quỹ còn nguyên — lỗi cổ điển của mọi hệ nghỉ phép, và nó chỉ lộ
@@ -598,12 +601,13 @@ sót:**
 bảng đó: bảng nhớ bố cục trong `localStorage`, có bản lưu là bản đó thắng. Muốn
 thấy đúng mặc định mới thì xóa khóa `erp.table.hr.leave-to-approve`.
 
-## 9. Phân quyền — năm khóa, đừng gộp
+## 9. Phân quyền — sáu khóa, đừng gộp
 
 | Khóa | Màn |
 |---|---|
 | `leave_request` | Đơn nghỉ phép · Lịch nghỉ |
 | `leave_comp_request` (nhãn *Nghỉ phép › Phiếu nghỉ bù*, duoc-CR-715) | Nghỉ bù |
+| `leave_encashment` (nhãn *Nghỉ phép › Thanh toán nghỉ phép*, duoc-CR-719) | Thanh toán nghỉ phép · kèm chốt xem YCTT nguồn nghỉ phép (§16.4) |
 | `leave_balance` | Quỹ phép năm · Phân bổ chính sách (duoc-CR-717) |
 | `leave_type` | Loại nghỉ (kèm bậc thâm niên, hạn mức theo nhóm) · Ngày cấm nghỉ · Chính sách nghỉ phép (duoc-CR-717) |
 | `holiday` | Lịch ngày lễ |
@@ -625,6 +629,10 @@ thì nhân viên không thấy quỹ của chính họ). Hai danh mục khai `PU
 
 `leave_comp_request` khai **cả `owner` (`created_by`) lẫn `self` (`employee_id`)** như `leave_request`, chặn
 `employee_id = 0`. Người đang có việc duyệt trên phiếu đọc được phiếu dù ngoài phạm vi (cùng luật CR-260).
+
+`leave_encashment` (duoc-CR-719) khai cùng khuôn: `company_id`, `department_id`, `owner` = `created_by`, `self` =
+`employee_id`. Khóa này còn gác **ai thấy YCTT nguồn nghỉ phép** bên Tài chính và cần tick tay trên hệ đang chạy — xem
+§16.4, §16.5.
 
 **Vai trò mẫu `hr_leave`** — Nhân sự quản lý nghỉ phép, có đủ năm khóa. Không gán
 tự động cho ai. Seed (`app/seed.py`) cấp `leave_comp_request` phạm vi **của mình** cho mọi vai trò, trưởng bộ phận
@@ -652,7 +660,8 @@ Người dùng báo "không thấy menu Nghỉ phép" thì gần như chắc là
 | ~~**Chính sách nghỉ phép** + **phân bổ** (Leave Policy / Leave Policy Assignment / Leave Control Panel)~~ | **ĐÃ CÓ 03/11/2026** (duoc-CR-717, §15.1–15.5) |
 | ~~Báo cáo **làm việc ngày lễ** (Employees working on a holiday) · quỹ **tổng hợp theo người** (Leave Balance Summary)~~ | **ĐÃ CÓ 03/11/2026** (duoc-CR-717, §15.6, §15.8) |
 | **Kỳ nghỉ phép** (Leave Period) | **Không làm** — anh Được bỏ 03/11/2026; quỹ giữ theo năm dương lịch |
-| Sổ **công nợ phép** khi ứng phép, quy đổi phép dư ra tiền (Leave Encashment) | Chưa có, chưa có yêu cầu. Ứng phép chỉ hiện số âm ở *Còn lại* |
+| ~~Quy đổi phép dư ra tiền (Leave Encashment)~~ | **ĐÃ CÓ 03/11/2026** (duoc-CR-719, §16) — phiếu ghi số ngày, duyệt trừ quỹ và sinh YCTT cho kế toán nhập tiền |
+| Sổ **công nợ phép** khi ứng phép | Chưa có, chưa có yêu cầu. Ứng phép chỉ hiện số âm ở *Còn lại* |
 | Nạp `hire_date` cho hồ sơ cũ | **Ô nhập đã có từ 07/09/2026** ở *Nhân sự ▸ chi tiết hồ sơ* (kèm ô *Giới tính*) — trước đó hai cột này có trong bảng nhưng không schema nào khai, nên không màn nào nhập được và thâm niên của cả công ty tính bằng 0. Việc còn lại là **nhập bù dữ liệu**, không phải dựng màn |
 
 ## 11. Danh mục **Loại nghỉ** — từng trường
@@ -698,6 +707,10 @@ thêm nhanh và mọi màn CRUD khác vẫn bố cục thẻ (`'card'`, mặc đ
 | Hạn dùng phép mang sang | `carry_over_expire_month` | chọn 13 mục | Đến hết tháng 3 năm sau | **Chỉ hiện khi** **Mang sang năm sau**. `0` = không hết hạn. Ô CHỌN chứ không phải ô gõ số: hạn này **lặp mỗi năm** nên không chốt cứng được thành một cặp ngày, mà tháng 2 còn nhảy 28/29 |
 | Loại nghỉ nhận số ngày | `convert_to_type_id` | chọn (nạp từ API) | 0 | **Chỉ hiện khi** **Quy đổi**. Phải khác chính nó và phải bật **Trừ vào quỹ phép năm** — backend chặn **ngay lúc lưu** |
 | Tỷ lệ quy đổi | `convert_ratio` | số | 1 | **Chỉ hiện khi** **Quy đổi**. 1 ngày dư đổi được mấy ngày ở loại nhận; hai đổi một thì ghi `0.5`. Phải > 0 |
+| *Cụm **Thanh toán nghỉ phép*** — xem §16 (duoc-CR-719, `hr/config/leave-type-encashment-fields.ts`) | | | | |
+| Cho phép thanh toán nghỉ phép | `allow_encashment` | công tắc | Tắt | **Luôn hiện** (cố ý không `showWhen`: khung CRUD vẫn gửi giá trị ô ẩn, ẩn công tắc khi tắt trừ quỹ thì `true` cũ đi lên ăn 422 mà hết chỗ gạt về). Bật mà `counts_balance` tắt → 422 lúc tạo / sửa. Danh sách Loại nghỉ hiện nhãn **Cho thanh toán nghỉ phép** |
+| Tối đa mỗi năm (ngày) | `max_encashable_days` | số | 0 | **Chỉ hiện khi** trừ quỹ + bật thanh toán. Trần THEO NĂM quỹ, cộng dồn `encashed_days` của dòng; `0` = không trần; 0–366. Lý do Nghỉ việc bỏ qua |
+| Số ngày phải giữ lại | `non_encashable_days` | số | 0 | **Chỉ hiện khi** trừ quỹ + bật thanh toán. Chỉ trừ ở lý do Phép dư cuối năm; 0–366 |
 | **Ghi chú** | `note` | nhiều dòng | rỗng | |
 | **Đang dùng** | `is_active` | công tắc | Bật | Tắt = ẩn khỏi ô chọn; đơn cũ giữ nguyên |
 
@@ -1090,3 +1103,161 @@ Chỉ đọc qua `policy_allocation.load_assignments` / `load_lines` (không kh�
 `test_assistant_nghi_phep_chinh_sach_cr717.py`; vitest các tệp `hr/**/leave-policy-*.test.tsx`,
 `leave-balance-{matrix-table,allocate-dialog,policy-note}.test.tsx`, `report/components/holiday-work-report-filters.test.tsx`,
 `app/router/module-visibility.test.ts`.
+
+## 16. Thanh toán nghỉ phép (duoc-CR-719, 03/11/2026)
+
+Leave Encashment của ERPNext: đổi ngày phép chưa nghỉ ra tiền khi **cuối năm còn dư** hoặc khi **nghỉ việc** (Điều 113
+khoản 3 Bộ luật Lao động). Anh Được chốt bốn ý (FINAL): bật theo **loại nghỉ** + trần; phiếu chỉ ghi **số ngày**, số tiền
+do người có quyền tài chính nhập sau, **không lộ lương** (không đụng phần lương, chốt 16/10/2026 vẫn giữ); duyệt xong
+**trừ quỹ** và **sinh YCTT** ở Tài chính; ai lập **y ERPNext**. Kế hoạch:
+`doc/erp/hrm/plans/261103-thanh-toan-nghi-phep-duoc-cr-719/plan.md` (nghiên cứu ERPNext ở `reports/research-erpnext-encashment.md`).
+Giao diện: mục menu *Thanh toán nghỉ phép* (`/hr/leave-encashments`, `/new`, `/:id`) + khung riêng của YCTT nghỉ phép bên
+Tài chính. Bài HDSD: **Thanh toán nghỉ phép** (`seed_help_nghi_phep.py`) và **Yêu cầu thanh toán nghỉ phép: nhập số tiền
+và chi** (`seed_help_yctt_thanh_toan_nghi_phep.py`, thư mục *Dành cho Kho & Kế toán*).
+
+### 16.1. Mô hình dữ liệu (migration `lvenc719`, down `hqx718b`, viết tay, chạy lại được)
+
+- **`tab_leave_encashment`** (`leave/encashment_model.py`): `code` **TTP…** UNIQUE · `company_id` · `department_id` ·
+  `employee_id` · `leave_type_id` · `balance_year` · `reason_kind` SMALLINT (`LeaveEncashmentReason`: `1` Phép dư cuối năm
+  · `2` Nghỉ việc) · `encashment_date` · `days` (bước 0,5) · `balance_snapshot` / `encashable_snapshot` (chụp lúc gửi) ·
+  `note` (1000) · `status` SMALLINT (`LeaveEncashmentStatus`: `1` Nháp · `2` Chờ duyệt · `3` Đã duyệt · `4` Từ chối ·
+  `5` Trả về chỉnh sửa · `6` Đã hủy) · `approval_instance_id` · `decided_at` · `decision_note` (500) ·
+  `payment_request_id` · `active_key` String(60) UNIQUE NULL · `is_deleted` (cột riêng, không `SoftDeleteMixin`) · audit.
+  Chỉ mục `(employee_id, balance_year)`. **Không có cột tiền.**
+- `tab_leave_type`: `allow_encashment` (bool, mặc định 0) · `max_encashable_days` (trần THEO NĂM, 0 = không trần) ·
+  `non_encashable_days` (giữ lại, chỉ lý do cuối năm) — §11.1.
+- `tab_leave_balance.encashed_days` — khoản **trừ**. `remaining_days` đã trừ nó; `available_days` / `available_days_map`
+  đi qua `remaining_days` nên tự đúng. Báo cáo **Quỹ phép năm** có chỉ số `encashed` *Đã thanh toán ra tiền* (không thêm
+  truy vấn); bảng quỹ có cột ẩn sẵn **Đã thanh toán ra tiền**, chi tiết dòng quỹ có ô cùng tên khi khác 0, thẻ quỹ ghi
+  `N đã thanh toán`.
+- `tab_payment_request`: `payee_employee_id` · `source_ref_id` (BigInteger, mặc định 0) + chỉ mục
+  `ix_payment_request_source_ref (source_type, source_ref_id)`. Nguồn mới `source_type = "leave_encashment"` (hằng
+  `payment_request.hr_payout_guard.PAYMENT_SOURCE_LEAVE_ENCASHMENT`), trạng thái YCTT giữ mã chuỗi thu mua cũ (QĐ-9).
+
+### 16.2. Luật tính số được thanh toán (`leave/encashment_math.py`, `encashment_balance.py`)
+
+```
+encashable = floor_0,5( clamp(base, 0, cap) )
+Phép dư cuối năm: base = available − phần mang sang chưa dùng − non_encashable_days
+                  cap  = max_encashable_days − encashed_days của dòng   (chỉ khi trần > 0)
+Nghỉ việc:        base = available, không trần, không giữ lại
+```
+
+Làm tròn **xuống** bước 0,5; quỹ âm (ứng phép) → 0. Năm quỹ = năm nay (tự cấp quỹ nếu chưa có) hoặc năm trước (không tự
+cấp, có `expire_carried`; năm đã kết sổ thì số dùng được về 0). `GET /preview` trả từng số để hộp **Số ngày được thanh
+toán** trên form đọc lại, giao diện **không** tự tính.
+
+### 16.3. API `/api/leave-encashments` (tag `leave`, khóa `leave_encashment`)
+
+| Phương thức | Đường | Quyền | Ghi chú |
+|---|---|---|---|
+| GET | `/` | `read` + phạm vi | lọc `status, employee_id, company_id, department_id, leave_type_id, balance_year, reason_kind`, `q`, `sort`; mỗi dòng có `payment_status` đọc từ YCTT |
+| GET | `/to-approve` | đăng nhập | việc duyệt đang chờ người gọi |
+| GET | `/preview` | `create` | chỉ đọc; lập hộ cần quyền lập trong phạm vi người đó |
+| GET | `/{id}` | `read`, hoặc có việc duyệt treo | thêm `payment` (`total` chỉ có với chính người nhận hoặc người đọc được YCTT, còn lại `null`) và `cancel_blocked_reason` |
+| POST | `/` | `create` | luôn ra Nháp; `days = null` = lấy số tối đa |
+| PATCH | `/{id}` | `write` | chỉ Nháp / Trả về; người, loại, năm không đổi |
+| DELETE | `/{id}` | `delete` | xóa mềm, chỉ Nháp |
+| POST | `/{id}/submit` | `write` | khóa dòng quỹ, tính lại, `pending += days`, chụp snapshot, trình luồng (không có luồng → Chờ duyệt, `approval_instance_id = 0`) |
+| POST | `/{id}/approve` | `approve` | duyệt thẳng; 400 nếu đang chạy luồng; 403 tự duyệt |
+| POST | `/{id}/reject?reason=` | `approve` | `reason` ≤ 500 |
+| POST | `/{id}/cancel?reason=` | `cancel` | xem §16.6 |
+
+Lỗi riêng: 422 loại nghỉ không cho thanh toán · năm ngoài {nay, trước} · chưa có quỹ · lý do Nghỉ việc mà hồ sơ thiếu ngày
+nghỉ việc · người đã nghỉ việc chọn lý do cuối năm · `days` lệch bước 0,5 hoặc vượt số được phép; 409 trùng phiếu còn hiệu
+lực (D4) hoặc *Phiếu vừa được xử lý bởi lượt khác — tải lại trang* (mọi đổi trạng thái đi qua `claim` nguyên tử); 400 sửa /
+xóa sai trạng thái, hủy bị YCTT chặn; 403 lập hộ ngoài phạm vi / tự duyệt.
+
+### 16.4. Phân quyền và chốt xem YCTT (D1a)
+
+Seed (`app/seed.py`): mọi vai trò `read, create, write, delete` phạm vi **của mình**; `dept_head` `read, export` phòng;
+`company_head` `read, export` công ty; `hr_leave` đủ bảy hành động phạm vi tất cả. Khóa nằm trong `_SYS_ENTITIES` (Quản lý
+thu mua không tự có `all`). `self_approval_policy.ALWAYS_STRICT_ENTITIES` có `leave_encashment`: **luôn chặn tự duyệt**,
+bất kể công tắc Cài đặt nhân sự. Cách duyệt 9 *theo quyền* (duoc-CR-680) mở cho entity này.
+
+**Chốt xem YCTT** nằm ở `core/scoping.scope_condition` (vỏ bọc; thân cũ là `_grant_scope_condition`): với
+`entity == "payment_request"` AND thêm `hr_payout_guard.payout_visibility_cond` — YCTT nguồn `leave_encashment` chỉ hiện
+khi phạm vi `leave_encashment.read` của người xem phủ phiếu nguồn (`source_ref_id IN (SELECT id FROM tab_leave_encashment
+WHERE <phạm vi>)`); không có quyền đó → chỉ còn YCTT nguồn khác. Phủ `apply_scope`, `get_scoped`,
+`get_approvers_for_entity` nên danh sách, chi tiết, in, xuất Excel, tập dữ liệu AI, việc chờ duyệt, chuông đều theo.
+Lý do: số tiền ÷ số ngày = lương ngày. Hệ quả có chủ đích: Quản lý / Nhân viên thu mua mặc định **không** thấy YCTT nghỉ phép.
+
+### 16.5. Khóa quyền trên hệ đang chạy (D-018)
+
+`seed_prod.py` không ghi đè phân quyền, nên dev / prod phải tick tay ở *Quản trị ▸ Phân quyền tài khoản* (hoặc
+`SEED_FORCE_SYNC=true` một lần rồi trả về `false`):
+
+- mọi vai trò nhân viên: `leave_encashment` `read, create, write, delete` phạm vi **của mình**;
+- `hr_leave`: đủ hành động phạm vi tất cả (người duy nhất duyệt / hủy được phiếu);
+- trưởng bộ phận / trưởng công ty: `read, export` phạm vi phòng / công ty;
+- **vai trò Kế toán**: `payment_request` `read, write, approve, print` **và** `leave_encashment` `read` phạm vi **công ty**
+  (hoặc tất cả). Thiếu khóa sau thì **không ai bên Tài chính thấy YCTT nghỉ phép**, chuông *cần nhập số tiền* rơi về quản trị.
+
+Muốn phiếu đi luồng thì bật bộ máy duyệt cho entity `leave_encashment` (nhãn *Thanh toán nghỉ phép*) ở Phê duyệt; chưa bật
+thì `hr_leave` duyệt thẳng. Người đang đăng nhập phải đăng xuất / đăng nhập lại để nhận map quyền mới.
+
+### 16.6. Vòng đời, YCTT đi kèm và ma trận hủy
+
+- **Gửi**: `pending_days += days`. **Từ chối / trả về / rút / hủy khi Chờ duyệt**: một hàm `release_and_set` trả `pending`.
+- **Duyệt** (bộ máy duyệt hoặc duyệt thẳng, cùng một giao dịch): `pending −= days`, `encashed_days += days`, gọi
+  `payment_request.leave_encashment_payout.create_payout_request` → YCTT **Nháp**, nguồn `leave_encashment`, người nhận =
+  nhân sự (`payee_employee_id`), một dòng tiền 0, `source_ref_id` = id phiếu; ghi `payment_request_id`. Hỏng giữa chừng
+  (`HookVeto`) thì cuộn cả giao dịch.
+- **YCTT nghỉ phép** (`leave_encashment_payout.py`): chỉ sửa ngày, ghi chú, hình thức, chữ in, trưởng bộ phận và đúng một
+  dòng tiền `0 ≤ amount ≤ 9.999.999.999.999`; gửi duyệt 400 *Nhập số tiền thanh toán nghỉ phép trước khi gửi duyệt* khi
+  bằng 0; cấm cấn trừ / trả trước / thêm dòng; chi (`paid`) không đụng công nợ hay ĐMH; chặn xóa (cả xóa nhiều), hoàn
+  tiền, cập nhật theo công nợ; API tạo YCTT từ chối `source_type = "leave_encashment"` (chỉ máy tạo). Bản in (D2a): số tài
+  khoản lấy từ hồ sơ nhân sự chỉ khi chuyển khoản **và** người in có `employee_sensitive.read` hoặc là chính chủ, không thì
+  `bank_hidden: true` → bản in ghi **kế toán tự điền**.
+- Phiếu **không lưu** trạng thái chi: đọc từ YCTT (`payout_state`) mỗi lần trả về.
+
+| Phiếu | YCTT | Hủy phiếu |
+|---|---|---|
+| Nháp | — | màn chỉ bày **Xóa phiếu** (xóa mềm, nhả `active_key`); API `cancel` vẫn nhận, ra Đã hủy |
+| Chờ duyệt · Trả về | — | được, trả `pending` (đang chạy luồng thì rút luồng trước) |
+| Đã duyệt | Nháp | được: `encashed_days −= days`, YCTT Nháp xóa mềm (`void_draft_payout`) |
+| Đã duyệt | Chờ duyệt · Đã duyệt | **chặn** 400 *YCTT … đang ở … — kế toán từ chối YCTT trước* (nút ẩn, `cancel_blocked_reason`) |
+| Đã duyệt | Đã chi | **chặn** *YCTT … đã chi tiền — không hủy được phiếu* |
+| Đã duyệt | Đã từ chối | được (D7a), YCTT giữ nguyên làm hồ sơ |
+| Từ chối · Đã hủy | — | 400 |
+
+YCTT được đọc **có khóa dòng** (`payout_state(lock=True)`) lúc hủy để kế toán không gửi duyệt chen giữa. Kế toán không bỏ
+được YCTT Nháp (không xóa, không từ chối từ Nháp) — Nhân sự hủy phiếu (D7a, chấp nhận 03/11/2026).
+
+### 16.7. Thông báo
+
+| Sự kiện | Ai nhận | Câu |
+|---|---|---|
+| `pay_leave_created` — phiếu duyệt xong, YCTT sinh ra | người duyệt YCTT thấy được phiếu (`get_approvers_for_entity`, đã qua chốt D1a), không có thì quản trị | *… — Thanh toán nghỉ phép cần nhập số tiền* |
+| `pay_leave_paid` — YCTT ghi nhận đã chi | tài khoản của nhân sự được thanh toán | *… — Đã chi thanh toán nghỉ phép* |
+| `pay_leave_rejected` — kế toán từ chối YCTT | người duyệt phiếu (`updated_by`) và người lập phiếu | *… — Kế toán từ chối chi thanh toán nghỉ phép*, kèm lý do |
+
+Chuông `pay_leave_created` gửi **sau commit** (đăng ký `after_commit` trong `approve_now`, chạy bằng phiên mới): gọi chung
+giao dịch duyệt thì `trigger_notification` commit lửng. Chữ chuông không có số tiền, không có số ngày. Việc duyệt phiếu:
+`task_notification.ENTITY_LABELS` = **Thanh toán nghỉ phép**, link `/hr/leave-encashments/{id}`.
+
+### 16.8. Quyết định D1–D9 (chốt 03/11/2026, tất cả phương án a)
+
+| # | Chốt |
+|---|---|
+| D1 | YCTT nghỉ phép chỉ hiện với người có quyền YCTT **và** `leave_encashment.read` phủ phiếu (chốt ở `scope_condition`) |
+| D2 | Số tài khoản trên bản in chỉ khi có `employee_sensitive.read` hoặc là chính chủ, không thì **kế toán tự điền** |
+| D3 | Mọi vai trò lập phạm vi của mình, Nhân sự lập hộ; `approve` chỉ `hr_leave`; trưởng bộ phận / công ty chỉ xem; luôn chặn tự duyệt |
+| D4 | Một phiếu còn hiệu lực (Nháp / Chờ duyệt / Đã duyệt / Trả về) cho mỗi (người, loại, năm, **lý do**) — `active_key = "<employee_id>:<leave_type_id>:<balance_year>:<reason_kind>"`, NULL khi Từ chối / Đã hủy / xóa. Thêm lý do vào khóa sau lượt rà mã (M2): đã thanh toán phép dư cuối năm rồi nghỉ việc trong cùng năm vẫn phải lập được phiếu nghỉ việc (BLLĐ Điều 113) |
+| D5 | Nghỉ việc: bỏ hai trần, tính cả phần mang sang; bắt hồ sơ có `resign_date` |
+| D6 | Cuối năm không đổi phần mang sang chưa dùng (như ERPNext) |
+| D7 | Kế toán từ chối YCTT: phiếu giữ Đã duyệt, màn hiện băng **Kế toán từ chối chi**, Nhân sự hủy phiếu để trả ngày |
+| D8 | Trợ lý AI chỉ đọc: `my_leave_summary` trả `encashed_days` mỗi dòng quỹ, `allow_encashment` / `max_encashable_days` / `non_encashable_days` mỗi loại, `encashments[]` (số ngày, trạng thái, trạng thái chi, **không tiền**); không có công cụ soạn nháp |
+| D9 | Năm quỹ là năm nay hoặc năm trước |
+
+Hành vi chấp nhận sau lượt soát màn (03/11/2026): người chỉ có `create` vẫn thấy nút **Gửi duyệt** (lưu nháp rồi ăn 403 ở
+bước gửi, như khuôn nghỉ bù); link YCTT trên phiếu chỉ dựa `payment_request.read` (ngoài phạm vi D1a thì mở ra 404).
+Xóa hồ sơ nhân sự bị chặn khi còn phiếu thanh toán nghỉ phép hoặc là người nhận YCTT (`employee/references.py`).
+
+### 16.9. Bài kiểm
+
+`test_thanh_toan_nghi_phep_nen_cr719.py` (16 — công thức quỹ, khóa quyền, chốt xem YCTT) ·
+`test_yctt_thanh_toan_nghi_phep_cr719.py` (37 — YCTT nguồn nghỉ phép, bản in D2a, rà đường đọc) ·
+`test_nghi_phep_thanh_toan_cr719.py` (35 — toán, vòng đời qua bộ máy thật, `HookVeto`, ma trận hủy, tự duyệt, chuông,
+`my_leave_summary` không tiền); `test_pham_vi_khai_du_b07.py` 80/80; vitest `hr/types/leave-encashment.test.ts`,
+`hr/components/leave-encashment-{form,payment-card}.test.tsx`, `finance/components/payment-request-leave-encashment-view.test.tsx`.

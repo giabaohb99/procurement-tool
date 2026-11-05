@@ -548,6 +548,20 @@ def trigger_notification(
     elif event == "pay_paid":
         subject = f"{doc_code} — Đã chi YCTT"
         body = f"Yêu cầu thanh toán {doc_code} đã được ghi nhận đã chi."
+    elif event == "pay_leave_created":
+        # duoc-CR-719: chữ trơn, KHÔNG số tiền / số ngày (số tiền chưa có, và tiền ÷ ngày = lương ngày)
+        subject = f"{doc_code} — Thanh toán nghỉ phép cần nhập số tiền"
+        body = f"YCTT {doc_code} — thanh toán nghỉ phép cần nhập số tiền."
+    elif event == "pay_leave_paid":
+        # duoc-CR-719: báo nhân sự nhận tiền, chữ trơn (không số tiền / số ngày)
+        subject = f"{doc_code} — Đã chi thanh toán nghỉ phép"
+        body = f"Khoản thanh toán nghỉ phép của bạn ({doc_code}) đã được ghi nhận đã chi."
+    elif event == "pay_leave_rejected":
+        # duoc-CR-719: báo Nhân sự (người duyệt / lập phiếu) để hủy phiếu trả ngày hoặc nhờ kế toán lập lại
+        subject = f"{doc_code} — Kế toán từ chối chi thanh toán nghỉ phép"
+        #  L6: KHÔNG chép lý do kế toán gõ (có thể chứa số tiền) — người duyệt phiếu nghỉ phép không được thấy tiền.
+        body = (f"Kế toán từ chối chi — xem lý do ở Yêu cầu thanh toán {doc_code}. "
+                "Mở phiếu thanh toán nghỉ phép để hủy (trả ngày về quỹ) hoặc liên hệ kế toán.")
     elif event == "survey_submitted":
         subject = f"{doc_code} — Yêu cầu phê duyệt khảo sát"
         body = f"Có một phiếu khảo sát mới (Mã số: {doc_code}) cần bạn phê duyệt."
@@ -574,7 +588,7 @@ def trigger_notification(
         # Trưởng bộ phận của phòng YC + mọi tk có vai trò dept_head thuộc phòng đó
         # (để người tạm quyền trưởng phòng cũng nhận báo duyệt)
         recipients = get_dept_approver_recipients(db, department, department_id)
-    elif event == "pay_submitted":
+    elif event in ("pay_submitted", "pay_leave_created"):
         # Yêu cầu thanh toán do người có quyền duyệt payment_request duyệt (QL/Admin TM)
         recipients = get_approvers_for_entity(db, "payment_request", doc_id, new_rules=True)
     elif event == "po_submitted":

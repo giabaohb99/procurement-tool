@@ -76,4 +76,12 @@ describe('LeaveBalanceBreakdownCard', () => {
     render(<LeaveBalanceBreakdownCard balance={balanceFixture({ note: dai })} />)
     expect(screen.getByText(new RegExp(dai.slice(0, 40)))).toHaveClass('break-words')
   })
+
+  it('shows the encashed days only when the balance has any (duoc-CR-719)', () => {
+    const { unmount } = render(<LeaveBalanceBreakdownCard balance={balanceFixture()} />)
+    expect(screen.queryByText('Đã thanh toán ra tiền')).not.toBeInTheDocument()
+    unmount()
+    render(<LeaveBalanceBreakdownCard balance={balanceFixture({ encashed_days: 4, remaining_days: 6 })} />)
+    expect(stat('Đã thanh toán ra tiền')).toBe('4')
+  })
 })

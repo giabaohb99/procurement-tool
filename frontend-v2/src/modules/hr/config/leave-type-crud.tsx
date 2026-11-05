@@ -1,10 +1,15 @@
-import { ArrowRightLeft, CalendarOff, CircleCheck, CircleX, Coins, Hash } from 'lucide-react'
+import { ArrowRightLeft, Banknote, CalendarOff, CircleCheck, CircleX, Coins, Hash } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import { CrudRecordCard, type CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
 import { LeaveTypeQuotaCard } from '../components/leave-type-quota-card'
 import { SeniorityTierCard } from '../components/seniority-tier-card'
+import {
+  ENCASHMENT_SECTION,
+  ENCASHMENT_SECTION_DESCRIPTION,
+  LEAVE_TYPE_ENCASHMENT_FIELDS,
+} from './leave-type-encashment-fields'
 import {
   GENDER,
   GENDER_LABELS,
@@ -92,6 +97,10 @@ const leaveTypeChips = (t: LeaveType) => [
           tone: 'muted' as const,
         },
       ]
+    : []),
+  //  duoc-CR-719: loại cho đổi phép ra tiền — chỉ hiện khi bật (mặc định tắt).
+  ...(t.counts_balance && t.allow_encashment
+    ? [{ icon: Banknote, text: 'Cho thanh toán nghỉ phép', tone: 'muted' as const }]
     : []),
   {
     icon: t.is_active ? CircleCheck : CircleX,
@@ -246,6 +255,7 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
     'Số dư cuối năm':
       'Ngày phép chưa dùng hết thì đi đâu khi sang năm mới. Chỉ chạy khi có người bấm ' +
       '"Kết sổ cuối năm" ở màn Quỹ phép — đêm 31/12 không có gì tự xảy ra.',
+    [ENCASHMENT_SECTION]: ENCASHMENT_SECTION_DESCRIPTION,
   },
 
   //  ⚠️ CHIA NHÓM, không bày 15 ô phẳng. Người khai danh mục là nhân sự, không
@@ -460,6 +470,9 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       showWhen: (values) => Number(values.year_end_mode) === YEAR_END_MODE.CONVERT,
       hint: '1 ngày dư ở loại này đổi được mấy ngày ở loại nhận — hai đổi một thì ghi 0.5. Phải lớn hơn 0.',
     },
+
+    // ── Thanh toán nghỉ phép (duoc-CR-719) — khai ở tệp riêng ──────────────────
+    ...LEAVE_TYPE_ENCASHMENT_FIELDS,
 
     //  Hai ô cuối KHÔNG gom thành nhóm: một cái ghi chú tự do, một cái bật/tắt —
     //  một tiêu đề chung cho cả hai chỉ là chữ thừa, đặt tên gì cũng không đúng cả hai.
