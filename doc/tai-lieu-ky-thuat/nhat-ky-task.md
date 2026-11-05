@@ -19027,3 +19027,19 @@ Mã nguồn: frontend-v2/src/shared/crud/crud-field.tsx · crud-form-fields.tsx 
 **Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ thu mua 123 tệp 1188 bài xanh. Soát bằng trình duyệt giả lập 390x844 trên ĐMH 348, 358, 37, PO00360, YCMH 86, YCBG 2927, Báo cáo mua hàng và Tra cứu thị trường (mục Pháp lý, Thuốc BVTV, Cấu hình). Các màn chưa có dữ liệu ở máy local (dòng tờ khai, doanh nghiệp, so sánh, biểu thuế, lịch sử nạp) mới có bài kiểm phủ, cần xem lại trên dev.
 
 Mã nguồn: frontend-v2/src/modules/procurement/components (purchase-order-*-card, process-option-card, available-survey-line-card, linked-*-card, purchase-history-card, report-*-card, survey-report/report-item-progress-card, customs/customs-*-card), pages/customs-price-page.tsx, pages/purchase-order-detail-page.tsx
+
+## duoc-CR-720-b | Thu mua trên điện thoại: rà bảng trong màn chi tiết, đổi nốt tab Giá vốn nhập khẩu
+- status: xong
+- date: 2026-11-05
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được nhắc các bảng bên trong màn chi tiết của phân hệ Thu mua cũng phải hiện tốt trên điện thoại.
+
+**Đã làm**
+- Mở mười hai màn chi tiết (YCMH, màn xử lý YCMH, YCBG, Phiếu khảo sát, ĐMH, chuỗi chứng từ ĐMH, Phân công ngành hàng, Loại chi phí) ở khổ 390px: không còn bảng hay khung cuộn ngang nào. Soát mã theo từng bảng, kể cả hộp thoại và component dùng chung nhúng vào các màn đó: chỉ còn sót tab Giá vốn nhập khẩu của Báo cáo mua hàng.
+- Tab Giá vốn nhập khẩu: dạng Theo lô hàng thành mỗi lô một thẻ (nhà cung cấp, mã đơn, ngày, tờ khai, tỷ giá, số lượng, khối lượng, tiền hàng, chi phí theo từng loại khác 0, tổng giá vốn, giá vốn theo kg), thẻ TỔNG ở cuối; dạng Chi tiết theo dòng hàng thành mỗi dòng một thẻ, thẻ TỔNG không có giá vốn theo đơn vị tính. Trang in giữ nguyên bảng.
+- Các trang in và bảng tính của Báo cáo thực hiện cố ý giữ bảng: trang in là khổ giấy A4, bảng tính đã tự lùi về dạng Xem tổng trên điện thoại.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ thu mua 1195 bài xanh.
+
+Mã nguồn: frontend-v2/src/modules/procurement/components (import-landed-cost-cards, import-landed-cost-card-parts, report-import-landed-cost-tab)
