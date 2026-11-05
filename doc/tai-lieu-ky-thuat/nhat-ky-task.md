@@ -19117,3 +19117,17 @@ Mã nguồn: frontend-v2/src/modules/procurement/components (import-landed-cost-
 **Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ nhân sự 1591 bài xanh. Quét hai mươi sáu màn nhân sự trên dev ở khổ 390px trước khi sửa để tìm bảng còn cuộn ngang; chỗ cuộn ngang còn lại chỉ là thanh tab, cố ý vuốt được.
 
 Mã nguồn: frontend-v2/src/modules/hr/components (profile-change-request-card, change-request-family-member-card, labor-contract-card, work-history-card, job-position-role-card, labor-contract-template-card, labor-contract-variable-card, leave-comp-request-card, leave-close-year-review-card, leave-policy-bulk-preview-card), utils/format-close-year-days.ts
+
+## duoc-CR-721-b | Nhân sự trên điện thoại: danh sách Thanh toán nghỉ phép đổi sang dạng thẻ
+- status: xong
+- date: 2026-11-05
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** lượt duoc-CR-721 chừa lại danh sách Thanh toán nghỉ phép vì duoc-CR-719 chưa commit. Anh Được duyệt commit duoc-CR-719 và bảo làm nốt; hai trang in và lưới lịch trực giữ bảng như đã chốt.
+
+**Đã làm**
+- Danh sách phiếu thanh toán nghỉ phép ở khổ dưới 768px hiện thành thẻ: người được thanh toán lên đầu, số phiếu và mã nhân sự ở dòng phụ, loại nghỉ, năm quỹ, lý do và số ngày gom một dòng, chữ Cần bạn duyệt khi phiếu đang chờ người xem. Trạng thái chi đọc từ yêu cầu thanh toán đứng dòng riêng; kế toán từ chối chi thì nổi màu vàng như cột của bảng. Thẻ không bao giờ in số tiền.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest các phân hệ Nhân sự, Tài chính, Phê duyệt, Quản trị 2453 bài xanh; bài kiểm của thẻ chặn việc in số tiền.
+
+Mã nguồn: frontend-v2/src/modules/hr/components/leave-encashment-card.tsx, pages/leave-encashment-list-page.tsx

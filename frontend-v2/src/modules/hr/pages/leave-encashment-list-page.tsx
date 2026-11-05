@@ -18,6 +18,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { buildLeaveEncashmentColumns } from '../components/leave-encashment-columns'
+import { LeaveEncashmentCard } from '../components/leave-encashment-card'
 import { useLeaveEncashments, useLeaveEncashmentToApprove } from '../hooks/use-leave-encashment'
 import {
   LEAVE_ENCASHMENT_REASON_LABELS,
@@ -78,7 +79,8 @@ export function LeaveEncashmentListPage() {
     () =>
       waiting.filter(
         (r) =>
-          !needle || [r.code, r.employee_name, r.note].some((v) => v?.toLowerCase().includes(needle)),
+          !needle ||
+          [r.code, r.employee_name, r.note].some((v) => v?.toLowerCase().includes(needle)),
       ),
     [waiting, needle],
   )
@@ -91,7 +93,8 @@ export function LeaveEncashmentListPage() {
   const waitingIds = useMemo(() => new Set(waiting.map((r) => r.id)), [waiting])
   const columns = useMemo(() => buildLeaveEncashmentColumns(waitingIds), [waitingIds])
 
-  const isFiltered = Boolean(debouncedValue) || (!isApproveScope && (status !== ALL || reason !== ALL))
+  const isFiltered =
+    Boolean(debouncedValue) || (!isApproveScope && (status !== ALL || reason !== ALL))
   const emptyMessage = isFiltered
     ? 'Không có phiếu nào khớp bộ lọc.'
     : isApproveScope
@@ -106,8 +109,8 @@ export function LeaveEncashmentListPage() {
         title="Thanh toán nghỉ phép"
         description={
           <span className="max-md:hidden">
-            Đổi ngày phép chưa nghỉ ra tiền khi cuối năm còn dư hoặc khi nghỉ việc. Duyệt xong, kế toán nhận yêu cầu
-            thanh toán để chi.
+            Đổi ngày phép chưa nghỉ ra tiền khi cuối năm còn dư hoặc khi nghỉ việc. Duyệt xong, kế
+            toán nhận yêu cầu thanh toán để chi.
           </span>
         }
         actions={
@@ -136,6 +139,9 @@ export function LeaveEncashmentListPage() {
           storageKey="hr.leave-encashments"
           onRowClick={(r) => navigate(appRoutes.hr.leaveEncashmentDetail(r.id))}
           getRowHref={(r) => appRoutes.hr.leaveEncashmentDetail(r.id)}
+          mobileCard={(r) => (
+            <LeaveEncashmentCard encashment={r} waitingForMe={waitingIds.has(r.id)} />
+          )}
           pagination={
             isApproveScope
               ? undefined
