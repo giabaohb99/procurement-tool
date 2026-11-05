@@ -8,7 +8,7 @@
 // số trang, lọc nhanh là state cục bộ; hộp Thêm/Sửa/Xóa dùng lại `CrudFormDialog` với đúng
 // cấu hình cũ (hộp tự ẩn nút Lưu / Xóa khi thiếu quyền, nên người chỉ xem vẫn mở ra đọc được).
 import { Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { CrudFormDialog, useCrudList, type CrudConfig, type CrudRecord } from '@/shared/crud'
@@ -24,6 +24,12 @@ import { CUSTOMS_FORMULATION_CODE_CRUD_CONFIG } from '../../config/customs-formu
 import { CUSTOMS_KIND_KEYWORD_CRUD_CONFIG } from '../../config/customs-kind-keyword-crud'
 import { CUSTOMS_REGULATION_CRUD_CONFIG } from '../../config/customs-regulation-crud'
 import { CUSTOMS_SEARCH_SYNONYM_CRUD_CONFIG } from '../../config/customs-search-synonym-crud'
+import {
+  renderFormulationCard,
+  renderKindKeywordCard,
+  renderRegulationCard,
+  renderSynonymCard,
+} from './customs-config-record-cards'
 
 const PAGE_SIZE = 10
 
@@ -41,15 +47,32 @@ export function CustomsConfigTab({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      {canConfigure && <CustomsCatalogCard config={CUSTOMS_KIND_KEYWORD_CRUD_CONFIG} />}
-      {canConfigure && <CustomsCatalogCard config={CUSTOMS_SEARCH_SYNONYM_CRUD_CONFIG} />}
-      {canConfigure && <CustomsCatalogCard config={CUSTOMS_FORMULATION_CODE_CRUD_CONFIG} />}
-      {canReadRegulations && <CustomsCatalogCard config={CUSTOMS_REGULATION_CRUD_CONFIG} />}
+      {canConfigure && (
+        <CustomsCatalogCard config={CUSTOMS_KIND_KEYWORD_CRUD_CONFIG} mobileCard={renderKindKeywordCard} />
+      )}
+      {canConfigure && (
+        <CustomsCatalogCard config={CUSTOMS_SEARCH_SYNONYM_CRUD_CONFIG} mobileCard={renderSynonymCard} />
+      )}
+      {canConfigure && (
+        <CustomsCatalogCard
+          config={CUSTOMS_FORMULATION_CODE_CRUD_CONFIG}
+          mobileCard={renderFormulationCard}
+        />
+      )}
+      {canReadRegulations && (
+        <CustomsCatalogCard config={CUSTOMS_REGULATION_CRUD_CONFIG} mobileCard={renderRegulationCard} />
+      )}
     </div>
   )
 }
 
-function CustomsCatalogCard<T extends CrudRecord>({ config }: { config: CrudConfig<T> }) {
+interface CustomsCatalogCardProps<T extends CrudRecord> {
+  config: CrudConfig<T>
+  /** Thẻ ở khổ điện thoại (< 768px); không truyền thì dùng `config.mobileCard` (nếu có). */
+  mobileCard?: (row: T) => ReactNode
+}
+
+function CustomsCatalogCard<T extends CrudRecord>({ config, mobileCard }: CustomsCatalogCardProps<T>) {
   const [keyword, setKeyword] = useState('')
   const debouncedKeyword = useDebouncedValue(keyword, 350)
   const [page, setPage] = useState(1)
@@ -101,6 +124,7 @@ function CustomsCatalogCard<T extends CrudRecord>({ config }: { config: CrudConf
         }
         storageKey={config.storageKey}
         onRowClick={(row: T) => setFormItem(row)}
+        mobileCard={mobileCard ?? config.mobileCard}
         pagination={{
           page,
           pageSize,

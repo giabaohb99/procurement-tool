@@ -7,6 +7,7 @@ import { cn } from '@/shared/utils/cn'
 
 import { useCustomsBatchRows, useCustomsBatchRowSummary } from '../../hooks/use-customs-saved-filters'
 import { CUSTOMS_ROW_STATUS, type CustomsBatchRow } from '../../types/customs-saved-filter'
+import { CustomsBatchLineCard } from './customs-batch-line-card'
 
 const PAGE_SIZE = 50
 
@@ -22,6 +23,14 @@ const ROW_STATUS_META: Record<number, { label: string; tone: string }> = {
   [CUSTOMS_ROW_STATUS.UPDATED]: { label: 'Ghi đè', tone: TONE_CLASS.progress },
   [CUSTOMS_ROW_STATUS.DELETED]: { label: 'Xóa', tone: TONE_CLASS.danger },
   [CUSTOMS_ROW_STATUS.IGNORED]: { label: 'Bỏ qua', tone: TONE_CLASS.pending },
+}
+
+/** Huy hiệu kết cục của một dòng — chung cho cột "Kết cục" và thẻ khổ điện thoại. */
+function renderRowStatusBadge(row: CustomsBatchRow) {
+  const meta = ROW_STATUS_META[row.row_status]
+  return (
+    <Badge className={cn(meta?.tone ?? TONE_CLASS.neutral)}>{meta?.label ?? row.row_status_label}</Badge>
+  )
 }
 
 /** bao-CR-608 — ba kết cục chỉ có khi tệp có cột "ID" / "Thao tác": ô đếm 0 thì không hiện cho đỡ rối. */
@@ -58,14 +67,7 @@ export function CustomsBatchRowsPanel({ batchId, className }: CustomsBatchRowsPa
         header: 'Kết cục',
         width: 130,
         hideable: false,
-        cell: (x) => {
-          const meta = ROW_STATUS_META[x.row_status]
-          return (
-            <Badge className={cn(meta?.tone ?? TONE_CLASS.neutral)}>
-              {meta?.label ?? x.row_status_label}
-            </Badge>
-          )
-        },
+        cell: renderRowStatusBadge,
       },
       { key: 'product_name', header: 'Tên hàng', width: 320, wrap: true, cell: (x) => x.product_name || '—' },
       { key: 'message', header: 'Ghi chú', width: 360, wrap: true, cell: (x) => x.message },
@@ -133,6 +135,14 @@ export function CustomsBatchRowsPanel({ batchId, className }: CustomsBatchRowsPa
           isLoading={rows.isLoading}
           isError={rows.isError}
           emptyMessage={status ? 'Không có dòng nào mang kết cục này.' : 'Lô này chưa có nhật ký từng dòng.'}
+          mobileCard={(x) => (
+            <CustomsBatchLineCard
+              rowNo={x.row_no}
+              badge={renderRowStatusBadge(x)}
+              productName={x.product_name}
+              message={x.message}
+            />
+          )}
           pagination={{
             page,
             pageSize,

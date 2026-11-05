@@ -5,11 +5,13 @@ import { toast } from 'sonner'
 import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { LinesTable } from '@/shared/data-table/lines-table'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useLineSelection } from '@/shared/hooks/use-line-selection'
 import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { Checkbox } from '@/shared/ui/checkbox'
 import { CopyButton } from '@/shared/ui/copy-button'
 import { Input } from '@/shared/ui/input'
 import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
@@ -33,6 +35,7 @@ import {
 } from '../hooks/use-purchase-request-support'
 import { ProgressStatusBadge } from './document-status-badge'
 import { PurchaseHistoryDialog } from './purchase-history-dialog'
+import { PurchaseOrderItemCard, type PurchaseOrderItemEditField } from './purchase-order-item-card'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
 import {
   isImportOrder,
@@ -208,6 +211,14 @@ interface PurchaseOrderItemsTableProps {
 const DOMESTIC_ONLY_COLUMNS = new Set(['vat', 'price_after_vat'])
 
 /**
+ * duoc-CR-720 — các cột bảng cho sửa tại chỗ mà hộp Chi tiết dòng KHÔNG có. Ở khổ
+ * điện thoại không có lưới, nên thẻ dòng phải bày đúng các ô này (xem
+ * `PurchaseOrderItemCard`). Thêm ô sửa tại chỗ mới vào bảng mà hộp không có thì
+ * thêm khóa vào đây; cột không có trong bộ cột (VAT ở đơn nhập khẩu) tự bị bỏ.
+ */
+const CARD_INLINE_EDIT_KEYS = ['code', 'qty', 'price', 'vat'] as const
+
+/**
  * Bảng dòng hàng của ĐMH hỗ trợ:
  * - Ghim cột cố định (default: No, Code, Name).
  * - Kéo thả trực tiếp tiêu đề cột trên bảng để đổi thứ tự.
@@ -252,6 +263,9 @@ export function PurchaseOrderItemsTable({
   /** Dòng đang xem lịch sử mua hàng; `null` = hộp thoại đang đóng. */
   const [historyIndex, setHistoryIndex] = useState<number | null>(null)
   const importMode = order ? isImportOrder(order) : false
+  //  CÙNG `useIsMobile` mà bảng dòng YCMH / YCBG dùng để đổi sang thẻ, nên mọi
+  //  bảng dòng chứng từ lật cùng một lúc ở cùng một bề rộng.
+  const asCards = useIsMobile()
   const orderCurrency = { currency: order?.currency ?? '', exchange_rate: order?.exchange_rate ?? 0 }
 
   const columns = useMemo<LinesTableColumn[]>(() => {
@@ -313,6 +327,34 @@ export function PurchaseOrderItemsTable({
       note: preferHistory(current.note, history.extra?.item_note),
     })
     toast.success('Đã điền giá và thông tin dòng từ lịch sử — bấm Lưu để ghi nhận')
+  }
+
+  //  Hai hàm dưới dùng chung cho nút ở cột Hành động và nút trên thẻ (khổ điện
+  //  thoại) — chép hai nơi là hai chỗ phải nhớ dời giỏ phiếu giao theo chỉ số.
+  function duplicateLine(index: number) {
+    const item = items[index]
+    if (!item) return
+    trackUiAction(UI_ACTION_CODE.COPY_LINE)
+    onChange([
+      ...items.slice(0, index + 1),
+      {
+        ...item,
+        id: undefined,
+        deliveries: [],
+        qty_received: 0,
+        qty_remaining: 0,
+        progress_status: 'not_ordered',
+        pause_reason: '',
+        status_before_pause: '',
+      },
+      ...items.slice(index + 1),
+    ])
+    onLineDuplicated?.(index)
+  }
+
+  function removeLine(index: number) {
+    onChange(items.filter((_, current) => current !== index))
+    onLineRemoved?.(index)
   }
 
   function renderCell(key: string, item: PurchaseOrderItem, index: number) {
@@ -550,50 +592,11 @@ export function PurchaseOrderItemsTable({
 
       case 'status':
         return (
-          <div className="text-center">
-            <ProgressStatusBadge status={item.progress_status ?? 'not_ordered'} />
-            {progressEditable && !!item.id && !locked && (
-              <div className="mt-1 flex flex-wrap items-center justify-center gap-1">
-                {item.progress_status === 'paused' ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => onProgressChange?.(item, '__resume__')}
-                  >
-                    <PlayCircle />
-                    Tiếp tục
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 px-2 text-xs"
-                      onClick={() => onProgressChange?.(item, 'paused')}
-                    >
-                      <PauseCircle />
-                      Tạm ngưng
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                      onClick={() => onProgressChange?.(item, 'cancelled')}
-                    >
-                      Hủy
-                    </Button>
-                  </>
-                )}
-              </div>
-            )}
-            {item.pause_reason &&
-              ['paused', 'cancelled'].includes(item.progress_status ?? '') && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Lý do: {item.pause_reason}
-                </p>
-              )}
-          </div>
+          <LineProgressCell
+            item={item}
+            controllable={progressEditable && !!item.id && !locked}
+            onProgressChange={onProgressChange}
+          />
         )
 
       case 'action':
@@ -602,28 +605,8 @@ export function PurchaseOrderItemsTable({
             editable={editable}
             locked={locked}
             onOpenDetail={onOpenDetail ? () => onOpenDetail(index) : undefined}
-            onDuplicate={() => {
-              trackUiAction(UI_ACTION_CODE.COPY_LINE)
-              onChange([
-                ...items.slice(0, index + 1),
-                {
-                  ...item,
-                  id: undefined,
-                  deliveries: [],
-                  qty_received: 0,
-                  qty_remaining: 0,
-                  progress_status: 'not_ordered',
-                  pause_reason: '',
-                  status_before_pause: '',
-                },
-                ...items.slice(index + 1),
-              ])
-              onLineDuplicated?.(index)
-            }}
-            onRemove={() => {
-              onChange(items.filter((_, current) => current !== index))
-              onLineRemoved?.(index)
-            }}
+            onDuplicate={() => duplicateLine(index)}
+            onRemove={() => removeLine(index)}
           />
         )
 
@@ -634,30 +617,146 @@ export function PurchaseOrderItemsTable({
 
   const historyItem = historyIndex === null ? null : items[historyIndex]
 
+  //  Nhãn lấy từ CHÍNH tiêu đề cột (bỏ đuôi " *" rồi vẽ dấu sao riêng) để thẻ và
+  //  bảng không lệch tên. Chỉ dòng sửa được (đơn còn sửa + dòng chưa khóa) mới có.
+  const cardEditFields = (item: PurchaseOrderItem, index: number): PurchaseOrderItemEditField[] => {
+    if (!editable || isLineLocked(item)) return []
+    return CARD_INLINE_EDIT_KEYS.flatMap((key) => {
+      const column = columns.find((current) => current.key === key)
+      if (!column) return []
+      const required = column.header.endsWith(' *')
+      return [
+        {
+          key,
+          label: required ? column.header.slice(0, -2) : column.header,
+          required,
+          content: renderCell(key, item, index),
+        },
+      ]
+    })
+  }
+
+  const bulkDeleteButton = (
+    <BulkDeleteButton
+      size="sm"
+      count={lineSelection.selectedIndexes.length}
+      unitLabel="dòng"
+      description="Các dòng bỏ khỏi đơn ngay trên màn hình; bấm Lưu mới ghi xuống."
+      onConfirm={removeSelectedLines}
+    />
+  )
+  const selection = lineSelection.selection
+
   return (
     <>
-      <LinesTable
-        columns={columns}
-        rows={items}
-        storageKey={TABLE_STORAGE_KEY}
-        rowKey={purchaseOrderRowKey}
-        renderCell={renderCell}
-        title={`Danh sách dòng hàng (${items.length} dòng)`}
-        emptyMessage="Chưa có dòng hàng nào."
-        selection={lineSelection.selection}
-        actions={
-          <BulkDeleteButton
-            size="sm"
-            count={lineSelection.selectedIndexes.length}
-            unitLabel="dòng"
-            description="Các dòng bỏ khỏi đơn ngay trên màn hình; bấm Lưu mới ghi xuống."
-            onConfirm={removeSelectedLines}
-          />
-        }
-        cellClassName={(key) =>
-          key === 'amount' || key === 'base_amount' ? 'bg-warning/8' : undefined
-        }
-      />
+      {asCards ? (
+        <div className="space-y-3">
+          {/*  Thanh đầu tự dựng như bảng dòng YCMH: ở chế độ thẻ không còn cột nào để
+               ẩn/hiện, ghim hay kéo giãn, nên chỉ giữ số dòng + nút thao tác. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium">{items.length} dòng</span>
+            {selection && items.length > 0 && (
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Checkbox
+                  checked={
+                    selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false
+                  }
+                  onCheckedChange={selection.onToggleAll}
+                />
+                Chọn tất cả
+              </label>
+            )}
+            {bulkDeleteButton}
+          </div>
+
+          <div className="overflow-hidden rounded-lg border">
+            {items.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Chưa có dòng hàng nào.
+              </p>
+            ) : (
+              <div className="divide-y">
+                {items.map((item, index) => {
+                  const locked = isLineLocked(item)
+                  const progress = item.id ? lineReport?.get(item.id) : undefined
+                  return (
+                    <PurchaseOrderItemCard
+                      key={purchaseOrderRowKey(item, index)}
+                      item={item}
+                      index={index}
+                      amount={renderCell('amount', item, index)}
+                      baseAmount={importMode ? renderCell('base_amount', item, index) : undefined}
+                      progress={
+                        <LineProgressCell
+                          align="start"
+                          item={item}
+                          controllable={progressEditable && !!item.id && !locked}
+                          onProgressChange={onProgressChange}
+                        />
+                      }
+                      report={
+                        progress && progress.total > 0
+                          ? renderCell('report', item, index)
+                          : undefined
+                      }
+                      editFields={cardEditFields(item, index)}
+                      onOpenDetail={onOpenDetail ? () => onOpenDetail(index) : undefined}
+                      selection={
+                        selection
+                          ? {
+                              checked: selection.isSelected(item, index),
+                              disabledReason: locked ? selection.unselectableReason : undefined,
+                              onToggle: () => selection.onToggle(item, index),
+                            }
+                          : undefined
+                      }
+                      actions={
+                        <>
+                          {/*  Dòng đang sửa thì ô Mã hàng đã kèm nút lịch sử; đừng vẽ hai nút. */}
+                          {!!item.product_code && (!editable || locked) && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-muted-foreground"
+                              title="Xem lịch sử mua hàng gần nhất"
+                              aria-label={`Xem lịch sử mua hàng của ${item.product_code}`}
+                              onClick={() => setHistoryIndex(index)}
+                            >
+                              <History />
+                            </Button>
+                          )}
+                          <LineActions
+                            editable={editable}
+                            locked={locked}
+                            onDuplicate={() => duplicateLine(index)}
+                            onRemove={() => removeLine(index)}
+                          />
+                        </>
+                      }
+                    />
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <LinesTable
+          columns={columns}
+          rows={items}
+          storageKey={TABLE_STORAGE_KEY}
+          rowKey={purchaseOrderRowKey}
+          renderCell={renderCell}
+          title={`Danh sách dòng hàng (${items.length} dòng)`}
+          emptyMessage="Chưa có dòng hàng nào."
+          selection={selection}
+          actions={bulkDeleteButton}
+          cellClassName={(key) =>
+            key === 'amount' || key === 'base_amount' ? 'bg-warning/8' : undefined
+          }
+        />
+      )}
 
       <PurchaseHistoryDialog
         open={historyIndex !== null}
@@ -712,6 +811,75 @@ function NumberCell({
   )
 }
 
+/**
+ * Huy hiệu tiến độ dòng + nút Tạm ngưng / Tiếp tục / Hủy + lý do. Dùng chung cho
+ * cột Trạng thái (canh giữa) và thẻ khổ điện thoại (canh trái).
+ */
+function LineProgressCell({
+  item,
+  controllable,
+  onProgressChange,
+  align = 'center',
+}: {
+  item: PurchaseOrderItem
+  /** Đơn đã duyệt trở đi, dòng đã lưu và chưa khóa. */
+  controllable: boolean
+  onProgressChange?: (item: PurchaseOrderItem, status: string) => void
+  align?: 'center' | 'start'
+}) {
+  return (
+    <div className={cn(align === 'center' ? 'text-center' : 'text-left')}>
+      <ProgressStatusBadge status={item.progress_status ?? 'not_ordered'} />
+      {controllable && (
+        <div
+          className={cn(
+            'mt-1 flex flex-wrap items-center gap-1',
+            align === 'center' ? 'justify-center' : 'justify-start',
+          )}
+        >
+          {item.progress_status === 'paused' ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => onProgressChange?.(item, '__resume__')}
+            >
+              <PlayCircle />
+              Tiếp tục
+            </Button>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => onProgressChange?.(item, 'paused')}
+              >
+                <PauseCircle />
+                Tạm ngưng
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                onClick={() => onProgressChange?.(item, 'cancelled')}
+              >
+                Hủy
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+      {item.pause_reason && ['paused', 'cancelled'].includes(item.progress_status ?? '') && (
+        <p className="mt-1 text-xs text-muted-foreground">Lý do: {item.pause_reason}</p>
+      )}
+    </div>
+  )
+}
+
 /** Mở chi tiết, nhân bản và xóa dòng. Tiến độ dòng nằm ở cột Trạng thái. */
 function LineActions({
   editable,
@@ -730,6 +898,7 @@ function LineActions({
     <div className="flex items-center justify-center gap-1">
       {onOpenDetail && (
         <Button
+          type="button"
           variant="ghost"
           size="icon-sm"
           title="Chi tiết dòng & các lần giao hàng"
@@ -741,10 +910,11 @@ function LineActions({
 
       {editable && !locked && (
         <>
-          <Button variant="ghost" size="icon-sm" title="Nhân bản dòng" onClick={onDuplicate}>
+          <Button type="button" variant="ghost" size="icon-sm" title="Nhân bản dòng" onClick={onDuplicate}>
             <Copy />
           </Button>
           <Button
+            type="button"
             variant="ghost"
             size="icon-sm"
             className="text-destructive hover:text-destructive"

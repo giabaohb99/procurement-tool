@@ -3,6 +3,7 @@ import { Fragment } from 'react'
 
 import type { ApplicableDossier } from '@/modules/dossier/types/dossier-applicability'
 import type { DossierType } from '@/modules/dossier/types/dossier-type'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import {
   Table,
   TableBody,
@@ -15,6 +16,7 @@ import {
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { ChecklistProgressBar, ChecklistRow } from './dossier-checklist-groups'
+import { ReportItemProgressCard } from './report-item-progress-card'
 import {
   EXPIRY_TONE_CLASS,
   expiryTone,
@@ -65,6 +67,43 @@ export function DossierChecklistTable({
   busy,
 }: DossierChecklistTableProps) {
   const doneCount = allDocs.filter(isDossierDone).length
+  //  Khổ điện thoại: bảng 6 cột thành thẻ dọc — cùng thẻ với dạng "Theo dòng hàng" của
+  //  khối Báo cáo thực hiện, vì hai bảng cùng một khuôn.
+  const asCards = useIsMobile()
+
+  if (asCards) {
+    return (
+      <div className="divide-y overflow-hidden rounded-lg border">
+        {rows.map((row) => (
+          <ReportItemProgressCard
+            key={row.key}
+            name={row.name}
+            docCount={row.docs.length}
+            doneCount={row.docs.filter(isDossierDone).length}
+            progress={<ChecklistProgressBar docs={row.docs} className="w-full" />}
+            expiry={<ChecklistExpiryChip docs={row.docs} />}
+            open={forceOpen || openRows.has(row.key)}
+            onToggle={() => onToggleRow(row.key)}
+          >
+            <ChecklistRowDetail
+              docs={row.docs}
+              types={types}
+              onEdit={onEdit}
+              onToggleDone={onToggleDone}
+              busy={busy}
+            />
+          </ReportItemProgressCard>
+        ))}
+        <ReportItemProgressCard
+          name="Tổng cả phiếu"
+          docCount={allDocs.length}
+          doneCount={doneCount}
+          progress={<ChecklistProgressBar docs={allDocs} className="w-full" />}
+          expiry={<ChecklistExpiryChip docs={allDocs} />}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="overflow-x-auto rounded-lg border">

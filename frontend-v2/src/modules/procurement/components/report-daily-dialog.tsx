@@ -1,3 +1,4 @@
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { ColumnChart } from '@/shared/ui/column-chart'
 import {
   Dialog,
@@ -18,6 +19,7 @@ import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
 import { useDailyReport } from '../hooks/use-purchase-report'
 import { shortMoney } from '../types/purchase-report'
+import { ReportDailyRowCard } from './report-daily-row-card'
 
 interface ReportDailyDialogProps {
   /** `'YYYY-MM'` — rỗng thì hộp thoại đóng và KHÔNG gọi API. */
@@ -43,6 +45,7 @@ export function ReportDailyDialog({
 }: ReportDailyDialogProps) {
   const { data, isLoading } = useDailyReport(month, companyId)
   const days = data?.days ?? []
+  const asCards = useIsMobile()
 
   return (
     <Dialog open={!!month} onOpenChange={(open) => !open && onClose()}>
@@ -69,32 +72,40 @@ export function ReportDailyDialog({
               formatValue={shortMoney}
             />
 
-            <Table>
-              <TableHeader className="bg-muted">
-                <TableRow className="hover:bg-muted">
-                  <TableHead>Ngày</TableHead>
-                  <TableHead className="text-right">Hàng hóa</TableHead>
-                  <TableHead className="text-right">Vận chuyển</TableHead>
-                  <TableHead className="text-right">Tổng</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            {asCards ? (
+              <div className="divide-y rounded-lg border">
                 {days.map((row) => (
-                  <TableRow key={row.date}>
-                    <TableCell>{formatDate(row.date)}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatMoney(row.goods)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatMoney(row.shipping)}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold tabular-nums">
-                      {formatMoney(row.amount)}
-                    </TableCell>
-                  </TableRow>
+                  <ReportDailyRowCard key={row.date} row={row} />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader className="bg-muted">
+                  <TableRow className="hover:bg-muted">
+                    <TableHead>Ngày</TableHead>
+                    <TableHead className="text-right">Hàng hóa</TableHead>
+                    <TableHead className="text-right">Vận chuyển</TableHead>
+                    <TableHead className="text-right">Tổng</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {days.map((row) => (
+                    <TableRow key={row.date}>
+                      <TableCell>{formatDate(row.date)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatMoney(row.goods)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatMoney(row.shipping)}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">
+                        {formatMoney(row.amount)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </>
         )}
       </DialogContent>

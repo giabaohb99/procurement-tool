@@ -46,6 +46,7 @@ import {
 } from '../../utils/customs'
 import { CustomsBatchStatusBadge } from './customs-batch-status-badge'
 import { CustomsNotice } from './customs-controls'
+import { CustomsImportBatchCard } from './customs-import-batch-card'
 
 const ACCEPTED = '.xls,.xlsx'
 
@@ -359,7 +360,15 @@ function BatchTable({ rows, applying }: { rows: CustomsImportBatch[]; applying: 
 
   return (
     <div className="flex flex-col gap-2">
-      <DataTable columns={columns} rows={rows} getRowId={(b) => b.id} />
+      <DataTable
+        columns={columns}
+        rows={rows}
+        getRowId={(b) => b.id}
+        //  Khổ điện thoại: mỗi tệp một thẻ, nhãn số đổi theo chạy thử / ghi thật như tiêu đề cột.
+        mobileCard={(b) => (
+          <CustomsImportBatchCard batch={b} context={applying ? 'apply' : 'dryRun'} />
+        )}
+      />
       {failed.length > 0 && (
         <ul className="space-y-0.5 text-xs text-destructive">
           {failed.map((batch) => (

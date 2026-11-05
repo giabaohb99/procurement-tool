@@ -144,6 +144,7 @@ def list_surveys(request: Request, pg: dict = Depends(pagination), db: Session =
           user=Depends(require("survey", "read"))):
     # `code` chỉ bị loại khỏi lọc TRẦN (nhường cho ô tìm kiếm đa trường ngay dưới), bộ lọc điều
     # kiện `code__contains=...` vẫn phải chạy -> truyền FILTERABLE đầy đủ cho vế operator.
+    """Danh sách phiếu khảo sát trong phạm vi được xem; tìm theo mã phiếu hoặc mã hàng."""
     filterable = [f for f in service.FILTERABLE if f != "code"]
     q = apply_filters(db.query(Survey), Survey, request, filterable,
                       operator_filterable=service.FILTERABLE)
@@ -158,6 +159,7 @@ def list_surveys(request: Request, pg: dict = Depends(pagination), db: Session =
 
 @router.get("/{sid}")
 def get_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey", "read"))):
+    """Chi tiết một phiếu khảo sát."""
     s = apply_scope(db.query(Survey).filter(Survey.id == sid),
                     Survey, "survey", user, get_perm_profile(db, user)).first()
     if not s:
@@ -167,17 +169,20 @@ def get_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey",
 
 @router.post("")
 def create_(data: SurveyCreate, db: Session = Depends(get_db), user=Depends(require("survey", "create"))):
+    """Tạo phiếu khảo sát mới."""
     return success(_out(db, service.create_survey(db, data, user.id)), "Đã tạo", 201)
 
 
 @router.patch("/{sid}")
 def update_(sid: int, data: SurveyUpdate, db: Session = Depends(get_db), user=Depends(require("survey", "write"))):
+    """Sửa phiếu khảo sát."""
     _in_scope(db, sid, user, "write")
     return success(_out(db, service.update_survey(db, sid, data, user.id)), "Đã cập nhật")
 
 
 @router.post("/{sid}/clone")
 def clone_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey", "create"))):
+    """Nhân bản phiếu khảo sát thành phiếu Nháp mới."""
     _in_scope(db, sid, user, "create")
     """Nhân bản phiếu khảo sát thành phiếu nháp mới."""
     return success(_out(db, service.copy_survey(db, sid, user.id)), "Đã nhân bản thành phiếu Nháp mới", 201)
@@ -185,6 +190,7 @@ def clone_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey
 
 @router.delete("/{sid}")
 def delete_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey", "delete"))):
+    """Xóa phiếu khảo sát ở trạng thái Nháp, Bị trả lại hoặc Đã hủy."""
     s = _in_scope(db, sid, user, "delete")
     if s.status not in ("draft", "cancelled", "rejected"):
         raise HTTPException(400, "Chỉ được xóa phiếu khảo sát ở trạng thái Nháp / Bị trả lại / Đã hủy")
@@ -194,6 +200,7 @@ def delete_(sid: int, db: Session = Depends(get_db), user=Depends(require("surve
 
 @router.delete("")
 def bulk_delete_surveys(ids: str, db: Session = Depends(get_db), user=Depends(require("survey", "delete"))):
+    """Xóa nhiều phiếu khảo sát theo danh sách id trong phạm vi được xóa."""
     id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
     if not id_list:
         raise HTTPException(400, "Không có ID hợp lệ")
@@ -218,6 +225,7 @@ def bulk_delete_surveys(ids: str, db: Session = Depends(get_db), user=Depends(re
 @router.post("/{sid}/submit")
 def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
             user=Depends(require("survey", "write"))):
+    """Gửi duyệt phiếu khảo sát và báo người duyệt."""
     _in_scope(db, sid, user, "write")
     s = service.set_status(db, sid, "submitted", user.id)
     trigger_notification(db=db, event="survey_submitted", doc_type="survey", doc_code=s.code,
@@ -240,6 +248,7 @@ def _sync_ycks_options(db: Session, s, user_id: int) -> None:
 @router.patch("/{sid}/line-approve")
 def line_approve_(sid: int, data: LineApproveCombined, db: Session = Depends(get_db),
                   user=Depends(require("survey", "approve"))):
+    """Lưu quyết định duyệt từng dòng của phiếu khảo sát và đồng bộ phương án sang YCBG."""
     _in_scope(db, sid, user, "approve")
     s = service.approve_lines(db, sid, data, user.id)
     _sync_ycks_options(db, s, user.id)
@@ -249,6 +258,7 @@ def line_approve_(sid: int, data: LineApproveCombined, db: Session = Depends(get
 @router.post("/{sid}/approve")
 def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
              user=Depends(require("survey", "approve"))):
+    """Duyệt phiếu khảo sát khi mọi dòng đã có quyết định; đồng bộ phương án sang YCBG."""
     _in_scope(db, sid, user, "approve")
     service.check_lines_decided(db, sid)   # bao-CR-554
     s = service.set_status(db, sid, "approved", user.id)
@@ -265,6 +275,7 @@ def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
     # "Trả lại" = đưa phiếu về trạng thái BỊ TRẢ LẠI (rejected) để NSPT sửa & gửi duyệt lại
     # (đồng bộ với Yêu cầu khảo sát: rejected = sửa lại được, khác với cancelled = khóa hẳn).
     # bao-CR-554: trả về được cả phiếu ĐÃ DUYỆT (hủy duyệt để nhân viên sửa rồi gửi lại).
+    """Trả về phiếu khảo sát đang chờ duyệt hoặc đã duyệt; gỡ các phương án đã đẩy sang YCBG."""
     s = _in_scope(db, sid, user, "approve")
     if s.status not in service.RETURNABLE_STATUSES:
         raise HTTPException(400, "Chỉ trả về được phiếu đang chờ duyệt hoặc đã duyệt")
@@ -382,6 +393,7 @@ def report_lines_(kind: str | None = Query(None), line_approve: str | None = Que
                   sort_by: str = Query(""), sort_dir: str = Query("asc"),
                   pg: dict = Depends(pagination), db: Session = Depends(get_db),
                   user=Depends(require("survey", "read"))):
+    """Bảng dòng khảo sát cho báo cáo khảo sát, lọc theo loại, phân loại, NCC, ngày và người khảo sát."""
     base = apply_scope(db.query(Survey), Survey, "survey", user, get_perm_profile(db, user))
     rows = service.report_rows(db, base)
 

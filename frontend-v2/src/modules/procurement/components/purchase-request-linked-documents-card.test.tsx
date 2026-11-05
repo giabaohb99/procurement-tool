@@ -16,6 +16,12 @@ import { PurchaseRequestLinkedDocumentsCard } from './purchase-request-linked-do
  */
 
 let grantedPermissions: string[] = []
+//  Khổ màn: `false` = bảng (mặc định), `true` = thẻ dọc của khổ điện thoại (duoc-CR-720).
+let mobile = false
+
+vi.mock('@/shared/hooks/use-mobile', () => ({
+  useIsMobile: () => mobile,
+}))
 
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
@@ -80,6 +86,7 @@ describe('PurchaseRequestLinkedDocumentsCard', () => {
     mockOrdersLoading = false
     mockOrdersError = false
     relatedOrdersCalls.length = 0
+    mobile = false
   })
 
   it('still says so when the request has neither a source quote nor any order', () => {
@@ -163,6 +170,39 @@ describe('PurchaseRequestLinkedDocumentsCard', () => {
     renderCard([buildSurveyRequest()])
 
     expect(screen.getByRole('link', { name: /YCBG05092601/ })).toBeInTheDocument()
+    expect(
+      screen.getByText('Chưa đọc được danh sách đơn mua hàng, thử tải lại trang.'),
+    ).toBeInTheDocument()
+  })
+
+  it('on a phone both lists become cards that keep every link, amount and status', () => {
+    //  Bảng ĐMH ~620px trong khung 322px giấu mất Tổng tiền và Trạng thái ngoài mép phải.
+    mobile = true
+    mockOrders = [buildOrder()]
+    renderCard([buildSurveyRequest()])
+
+    expect(screen.queryByRole('table')).toBeNull()
+    expect(screen.getByText('Nguyễn Văn A')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /YCBG05092601/ })).toHaveAttribute(
+      'href',
+      '/procurement/survey-requests/501',
+    )
+    expect(screen.getByText('CÔNG TY A')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /DMH-2026-091/ })).toHaveAttribute(
+      'href',
+      '/procurement/purchase-orders/91',
+    )
+    expect(screen.getByText('1.500.000 đ')).toBeInTheDocument()
+  })
+
+  it('on a phone the empty and error sentences stay exactly the same', () => {
+    mobile = true
+    mockOrdersError = true
+    renderCard([])
+
+    expect(
+      screen.getByText('Phiếu này lập tay, không sinh ra từ yêu cầu báo giá nào.'),
+    ).toBeInTheDocument()
     expect(
       screen.getByText('Chưa đọc được danh sách đơn mua hàng, thử tải lại trang.'),
     ).toBeInTheDocument()

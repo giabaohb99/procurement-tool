@@ -11,7 +11,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
@@ -53,6 +53,8 @@ import type {
   SurveyProcessOption,
 } from '../types/survey-request-process'
 import { isSurveyRequestProcessable } from '../types/survey-request-process'
+import { AvailableSurveyLineCard } from './available-survey-line-card'
+import { ProcessOptionCard } from './process-option-card'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
 
 /** Trùng AVAIL_PAGE_SIZE của bản v1 — 8 dòng khảo sát mỗi trang. */
@@ -316,6 +318,67 @@ function OptionsTable({
   const removeMutation = useRemoveProcessOption(surveyRequestId)
   const updateMutation = useUpdateProcessOption(surveyRequestId)
 
+  //  Ô mã SP / ghi chú / nút xóa dựng MỘT chỗ cho cả bảng lẫn thẻ (khổ điện thoại) — hai
+  //  bản chép là hai đường phải sửa song song mỗi lần luật sửa phương án đổi.
+  const renderSystemCode = useCallback(
+    (option: SurveyProcessOption) =>
+      editable ? (
+        <PurchaseRequestProductPicker
+          code={option.system_product_code}
+          name=""
+          onPick={(product) =>
+            updateMutation.mutate({
+              lineId: line.id,
+              optionId: option.id,
+              payload: { system_product_code: product?.code ?? '' },
+            })
+          }
+        />
+      ) : (
+        option.system_product_code || '—'
+      ),
+    [editable, line.id, updateMutation],
+  )
+
+  const renderNote = useCallback(
+    (option: SurveyProcessOption) =>
+      editable ? (
+        <OptionNoteCell
+          option={option}
+          onSave={(note) =>
+            updateMutation.mutate({
+              lineId: line.id,
+              optionId: option.id,
+              payload: { nstm_note: note },
+            })
+          }
+        />
+      ) : (
+        option.nstm_note || '—'
+      ),
+    [editable, line.id, updateMutation],
+  )
+
+  const renderRemove = useCallback(
+    (option: SurveyProcessOption) => (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="text-destructive hover:text-destructive"
+        title={
+          option.is_chosen
+            ? 'Phương án đang được người YC chọn — xóa sẽ bỏ lựa chọn của họ'
+            : 'Xóa phương án'
+        }
+        onClick={() => removeMutation.mutate({ lineId: line.id, optionId: option.id })}
+      >
+        <Trash2 />
+      </Button>
+    ),
+    [line.id, removeMutation],
+  )
+
   // Dùng DataTable để có kéo giãn + kéo đổi vị trí cột như màn danh sách.
   // Mọi cột khai `hideable: false` là CỐ Ý: bảng con nằm trong thẻ, mỗi dòng
   // YCBG một bảng — đủ điều kiện đó DataTable mới giấu thanh công cụ
@@ -396,43 +459,14 @@ function OptionsTable({
         header: 'Mã SP hệ thống',
         width: 220,
         hideable: false,
-        cell: (option) =>
-          editable ? (
-            <PurchaseRequestProductPicker
-              code={option.system_product_code}
-              name=""
-              onPick={(product) =>
-                updateMutation.mutate({
-                  lineId: line.id,
-                  optionId: option.id,
-                  payload: { system_product_code: product?.code ?? '' },
-                })
-              }
-            />
-          ) : (
-            option.system_product_code || '—'
-          ),
+        cell: renderSystemCode,
       },
       {
         key: 'note',
         header: 'Ghi chú NSTM',
         width: 190,
         hideable: false,
-        cell: (option) =>
-          editable ? (
-            <OptionNoteCell
-              option={option}
-              onSave={(note) =>
-                updateMutation.mutate({
-                  lineId: line.id,
-                  optionId: option.id,
-                  payload: { nstm_note: note },
-                })
-              }
-            />
-          ) : (
-            option.nstm_note || '—'
-          ),
+        cell: renderNote,
       },
       {
         key: 'status',
@@ -455,25 +489,11 @@ function OptionsTable({
         header: '',
         width: 56,
         hideable: false,
-        cell: (option) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            title={
-              option.is_chosen
-                ? 'Phương án đang được người YC chọn — xóa sẽ bỏ lựa chọn của họ'
-                : 'Xóa phương án'
-            }
-            onClick={() => removeMutation.mutate({ lineId: line.id, optionId: option.id })}
-          >
-            <Trash2 />
-          </Button>
-        ),
+        cell: renderRemove,
       })
     }
     return base
-  }, [editable, line.id, removeMutation, updateMutation])
+  }, [editable, renderSystemCode, renderNote, renderRemove])
 
   return (
     <DataTable
@@ -482,6 +502,23 @@ function OptionsTable({
       getRowId={(option) => option.id}
       storageKey="procurement.survey-process.options"
       emptyMessage="Chưa có phương án nào cho sản phẩm này."
+      //  Khổ điện thoại: bảng 10 cột ~1400px thành thẻ dọc. Không khai `onRowClick` nên
+      //  thẻ là `div`, ô chọn mã SP, ô ghi chú và nút xóa nằm trong được.
+      mobileCard={(option) => (
+        <ProcessOptionCard
+          option={option}
+          labelPrefix="Option"
+          fields={[
+            ...(editable || option.system_product_code
+              ? [{ label: 'Mã SP hệ thống', content: renderSystemCode(option) }]
+              : []),
+            ...(editable || option.nstm_note
+              ? [{ label: 'Ghi chú NSTM', content: renderNote(option) }]
+              : []),
+          ]}
+          actions={editable ? renderRemove(option) : undefined}
+        />
+      )}
     />
   )
 }
@@ -781,6 +818,15 @@ function AvailableLinesPicker({
           rows={rows}
           getRowId={(row) => row.id}
           storageKey="procurement.survey-process.available"
+          mobileCard={(row) => (
+            <AvailableSurveyLineCard
+              row={row}
+              lineItemGroup={line.item_group || ''}
+              documentLabel="YCBG"
+              attaching={addMutation.isPending}
+              onAttach={() => addMutation.mutate({ lineId: line.id, productSurveyLineId: row.id })}
+            />
+          )}
         />
       )}
 

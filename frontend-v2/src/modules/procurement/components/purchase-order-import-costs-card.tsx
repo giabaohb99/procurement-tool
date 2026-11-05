@@ -23,6 +23,7 @@ import type { Supplier } from '@/modules/production/types/supplier'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import {
   AlertDialog,
@@ -116,6 +117,13 @@ import {
   setManualAllocation,
   switchAllocationMethod,
 } from '../utils/purchase-order-import-cost'
+import { PurchaseOrderImportCostAllocationLineCard } from './purchase-order-import-cost-allocation-line-card'
+import { PurchaseOrderImportCostAllocationShareCard } from './purchase-order-import-cost-allocation-share-card'
+import {
+  PurchaseOrderImportCostLineCard,
+  type ImportCostStageFigure,
+} from './purchase-order-import-cost-line-card'
+import { PurchaseOrderImportCostSupplierPaymentCards } from './purchase-order-import-cost-supplier-payment-cards'
 
 /**
  * Có hậu tố `-v2` vì khóa cũ `erp.table.purchase-order-import-costs` còn giữ bố cục
@@ -282,6 +290,15 @@ const STAGE_LABEL_TONE: Record<number, string> = {
   [COST_STAGE_FINAL]: 'text-red-700 dark:text-red-300',
 }
 
+/** Ba số giai đoạn của một khoản cho thẻ khổ điện thoại — cùng luật "chưa nhập" với ô trên bảng. */
+function buildStageFigures(cost: PurchaseOrderImportCost): ImportCostStageFigure[] {
+  return COST_STAGES.map((stage) => ({
+    label: COST_STAGE_LABELS[stage],
+    amount: hasStageValue(cost, stage) ? stageBaseOf(cost, stage) : null,
+    labelClassName: STAGE_LABEL_TONE[stage],
+  }))
+}
+
 const TICK_COLUMN: LinesTableColumn = {
   key: 'tick',
   header: 'Chọn',
@@ -340,6 +357,9 @@ export function PurchaseOrderImportCostsCard({
 }: PurchaseOrderImportCostsCardProps) {
   const navigate = useNavigate()
   const { can } = usePermission()
+  //  duoc-CR-720: khổ điện thoại đổi cả bốn bảng của thẻ này sang thẻ xếp dọc —
+  //  CÙNG `useIsMobile` với bảng dòng ĐMH nên mọi bảng trên màn lật cùng lúc.
+  const asCards = useIsMobile()
   // Giữ cùng một mảng giữa các lượt render khi đơn chưa có khoản nào — `?? []` tạo mảng
   // mới mỗi lần nên các useMemo bên dưới sẽ tính lại vô ích.
   const rawCosts = order.import_costs
@@ -920,73 +940,87 @@ export function PurchaseOrderImportCostsCard({
         ) : (
           cost.note || null
         )
-      case 'action': {
-        const lineStage = cost.line_stage ?? 0
-        // bao-CR-469: nút "Quyết toán dòng này" ở đây đã BỎ — chốt nay đi bằng ô tick đầu
-        // dòng cộng hai nút trên đầu thẻ (chốt các dòng đã tick · chốt tất cả). Một thao tác
-        // sinh công nợ thật thì nên có chỗ nhìn thấy số dòng trước khi bấm, chứ không nấp
-        // trong menu ba chấm của từng dòng. Mở lại thì vẫn theo DÒNG, giữ nguyên chỗ này.
-        const canReopenLine =
-          approved &&
-          lineStage >= COST_STAGE_FINAL &&
-          can('purchase_order', 'approve') &&
-          cost.id !== undefined
-        const hasLineStageAction = canReopenLine
-        return (
-          <div className="flex items-center justify-center gap-0.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              title="Chi tiết khoản chi phí"
-              aria-label={`Chi tiết khoản chi phí ${index + 1}`}
-              onClick={() => setDetailIndex(index)}
-            >
-              <Pencil />
-            </Button>
-            {isRowEditable(cost) && !hasPayable && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                className="text-destructive hover:text-destructive"
-                title="Xóa dòng chi phí"
-                aria-label={`Xóa dòng chi phí ${index + 1}`}
-                onClick={() => void removeCost(index)}
-              >
-                <Trash2 />
-              </Button>
-            )}
-            {hasLineStageAction && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button type="button" variant="ghost" size="icon-sm" aria-label="Thao tác giai đoạn">
-                    <MoreHorizontal />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {canReopenLine && (
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (cost.id) {
-                          setPendingLineAction({ type: 'reopen', costId: cost.id })
-                          setLineReopenReason('')
-                        }
-                      }}
-                    >
-                      <RotateCcw className="size-4" />
-                      Mở lại dòng
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        )
-      }
+      case 'action':
+        return renderCostActions(cost, index, true)
       default:
         return null
     }
+  }
+
+  /**
+   * Nút thao tác của một khoản. Bảng có thêm bút chì mở popup chi tiết; thẻ ở khổ
+   * điện thoại thì chính vùng chạm đã mở popup đó nên bỏ bút chì (`withDetailButton`).
+   */
+  function renderCostActions(
+    cost: PurchaseOrderImportCost,
+    index: number,
+    withDetailButton: boolean,
+  ) {
+    const hasPayable = Boolean(cost.payable_id)
+    const lineStage = cost.line_stage ?? 0
+    // bao-CR-469: nút "Quyết toán dòng này" ở đây đã BỎ — chốt nay đi bằng ô tick đầu
+    // dòng cộng hai nút trên đầu thẻ (chốt các dòng đã tick · chốt tất cả). Một thao tác
+    // sinh công nợ thật thì nên có chỗ nhìn thấy số dòng trước khi bấm, chứ không nấp
+    // trong menu ba chấm của từng dòng. Mở lại thì vẫn theo DÒNG, giữ nguyên chỗ này.
+    const canReopenLine =
+      approved &&
+      lineStage >= COST_STAGE_FINAL &&
+      can('purchase_order', 'approve') &&
+      cost.id !== undefined
+    const hasLineStageAction = canReopenLine
+    return (
+      <div className="flex items-center justify-center gap-0.5">
+        {withDetailButton && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            title="Chi tiết khoản chi phí"
+            aria-label={`Chi tiết khoản chi phí ${index + 1}`}
+            onClick={() => setDetailIndex(index)}
+          >
+            <Pencil />
+          </Button>
+        )}
+        {isRowEditable(cost) && !hasPayable && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="text-destructive hover:text-destructive"
+            title="Xóa dòng chi phí"
+            aria-label={`Xóa dòng chi phí ${index + 1}`}
+            onClick={() => void removeCost(index)}
+          >
+            <Trash2 />
+          </Button>
+        )}
+        {hasLineStageAction && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="icon-sm" aria-label="Thao tác giai đoạn">
+                <MoreHorizontal />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canReopenLine && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (cost.id) {
+                      setPendingLineAction({ type: 'reopen', costId: cost.id })
+                      setLineReopenReason('')
+                    }
+                  }}
+                >
+                  <RotateCcw className="size-4" />
+                  Mở lại dòng
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    )
   }
 
   function renderAllocationTarget(cost: PurchaseOrderImportCost, index: number) {
@@ -1039,16 +1073,18 @@ export function PurchaseOrderImportCostsCard({
       }}
     />
   )
-  const columns: LinesTableColumn[] =
-    payReady || finalizableIds.length > 0
-      ? [{ ...TICK_COLUMN, headerContent: tickHeader }, ...BASE_COLUMNS]
-      : BASE_COLUMNS
+  const hasTickColumn = payReady || finalizableIds.length > 0
+  const columns: LinesTableColumn[] = hasTickColumn
+    ? [{ ...TICK_COLUMN, headerContent: tickHeader }, ...BASE_COLUMNS]
+    : BASE_COLUMNS
 
   return (
     <>
       <Card className="gap-4 py-4">
-        <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3!">
-          <CardTitle className="flex items-center gap-2 text-base text-navy dark:text-foreground">
+        {/*  `flex-wrap` + tiêu đề `shrink-0`: ở khổ điện thoại cụm 3-5 nút không vừa một
+             hàng, thiếu hai lớp này thì tiêu đề bị ép xuống còn một chữ mỗi dòng. */}
+        <CardHeader className="min-h-9 flex flex-row flex-wrap items-center justify-between gap-3 border-b px-4 pb-3!">
+          <CardTitle className="flex shrink-0 items-center gap-2 text-base text-navy dark:text-foreground">
             <Receipt className="size-4" />
             Chi phí thu mua
           </CardTitle>
@@ -1170,17 +1206,60 @@ export function PurchaseOrderImportCostsCard({
             đơn đã duyệt (hóa đơn cước, tờ khai thuế, phí lưu bãi đều có sau).
           </p>
 
-          <LinesTable
-            columns={columns}
-            rows={costs}
-            storageKey={TABLE_STORAGE_KEY}
-            rowKey={(cost, index) => cost.id ?? `new-${index}`}
-            renderCell={renderCell}
-            title={<span className="text-sm font-medium">Khoản chi phí</span>}
-            emptyMessage="Chưa khai chi phí nào cho lô hàng này"
-            defaultCompact
-            cellClassName={(key) => (key === 'base_amount' ? 'bg-warning/8' : undefined)}
-          />
+          {asCards ? (
+            <div className="space-y-2">
+              {/*  Thanh đầu chỉ đếm khoản + ô tick hết: cụm nút Quyết toán / Tạo YCTT /
+                   Thêm chi phí vốn nằm ở đầu thẻ, dùng chung cho cả hai lối bày. */}
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm font-medium">Khoản chi phí ({costs.length})</span>
+                {hasTickColumn && (
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    {tickHeader}
+                    Tick hết
+                  </label>
+                )}
+              </div>
+              <div className="overflow-hidden rounded-lg border">
+                {costs.length === 0 ? (
+                  <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    Chưa khai chi phí nào cho lô hàng này
+                  </p>
+                ) : (
+                  <div className="divide-y">
+                    {costs.map((cost, index) => (
+                      <PurchaseOrderImportCostLineCard
+                        key={cost.id ?? `new-${index}`}
+                        cost={cost}
+                        index={index}
+                        stages={buildStageFigures(cost)}
+                        baseAmount={displayCostBaseAmount(cost)}
+                        paid={cost.payable_id ? renderCell('paid_amount', cost, index) : null}
+                        remaining={renderCell('remaining', cost, index)}
+                        //  Theo đúng giai đoạn của DÒNG: `isLineLocked` còn bật khi cả ĐƠN đã ở
+                        //  Quyết toán mà dòng chưa chốt — cờ lúc đó nói sai.
+                        finalized={(cost.line_stage ?? 0) >= COST_STAGE_FINAL}
+                        tick={hasTickColumn ? renderCell('tick', cost, index) : null}
+                        actions={renderCostActions(cost, index, false)}
+                        onOpenDetail={() => setDetailIndex(index)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <LinesTable
+              columns={columns}
+              rows={costs}
+              storageKey={TABLE_STORAGE_KEY}
+              rowKey={(cost, index) => cost.id ?? `new-${index}`}
+              renderCell={renderCell}
+              title={<span className="text-sm font-medium">Khoản chi phí</span>}
+              emptyMessage="Chưa khai chi phí nào cho lô hàng này"
+              defaultCompact
+              cellClassName={(key) => (key === 'base_amount' ? 'bg-warning/8' : undefined)}
+            />
+          )}
 
           <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(190px,1fr))]">
             <StatCard label="Tiền hàng (quy đổi)" value={goodsBase} tone="navy" />
@@ -1255,97 +1334,105 @@ export function PurchaseOrderImportCostsCard({
                   các khoản còn phải chi của NCC đó.
                 </p>
               </div>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {/* `w-full` cho cột NCC nuốt hết chỗ thừa, các cột số bám sát nhau. */}
-                      <TableHead className="w-full">Nhà cung cấp</TableHead>
-                      <TableHead className="w-[64px] text-center whitespace-nowrap">Số khoản</TableHead>
-                      <TableHead className="w-[120px] text-right whitespace-nowrap">Phải trả</TableHead>
-                      <TableHead className="w-[110px] text-right whitespace-nowrap">Đã chi</TableHead>
-                      <TableHead className="w-[120px] text-right whitespace-nowrap">Còn lại</TableHead>
-                      <TableHead className="w-[104px] text-right" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {bySupplierPayable.map((group) => {
-                      const settled = group.remaining <= 0.01
-                      return (
-                        <TableRow key={group.supplier_code || '__empty__'}>
-                          <TableCell>
-                            {group.supplier_code ? (
-                              <>
-                                <span className="font-medium">{group.supplier_code}</span>
-                                {group.supplier_name && (
-                                  <span className="text-muted-foreground"> — {group.supplier_name}</span>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-muted-foreground">
-                                (chưa chọn NCC — chưa thành công nợ)
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-center tabular-nums">{group.count}</TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatMoney(group.base_amount)} đ
-                          </TableCell>
-                          <TableCell className="text-right text-success tabular-nums">
-                            {formatMoney(group.paid_amount)} đ
-                          </TableCell>
-                          <TableCell
-                            className={cn(
-                              'text-right font-semibold tabular-nums',
-                              settled ? 'text-muted-foreground' : 'text-destructive',
-                            )}
-                          >
-                            {formatMoney(group.remaining)} đ
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {settled ? (
-                              <Badge variant="outline">Đã chi đủ</Badge>
-                            ) : (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                disabled={group.unpaid_payable_ids.length === 0}
-                                onClick={() => goCreatePaymentRequest(group.unpaid_payable_ids)}
-                              >
-                                Tạo YCTT
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                  <TableFooter>
-                    <TableRow>
-                      <TableCell className="font-semibold">Tổng cộng</TableCell>
-                      <TableCell className="text-center tabular-nums">
-                        {payableTotals.count}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold tabular-nums">
-                        {formatMoney(payableTotals.base)} đ
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-success tabular-nums">
-                        {formatMoney(payableTotals.paid)} đ
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          'text-right font-semibold tabular-nums',
-                          payableTotals.remaining > 0.01 ? 'text-destructive' : 'text-muted-foreground',
-                        )}
-                      >
-                        {formatMoney(payableTotals.remaining)} đ
-                      </TableCell>
-                      <TableCell />
-                    </TableRow>
-                  </TableFooter>
-                </Table>
-              </div>
+              {asCards ? (
+                <PurchaseOrderImportCostSupplierPaymentCards
+                  groups={bySupplierPayable}
+                  totals={payableTotals}
+                  onCreatePaymentRequest={goCreatePaymentRequest}
+                />
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {/* `w-full` cho cột NCC nuốt hết chỗ thừa, các cột số bám sát nhau. */}
+                        <TableHead className="w-full">Nhà cung cấp</TableHead>
+                        <TableHead className="w-[64px] text-center whitespace-nowrap">Số khoản</TableHead>
+                        <TableHead className="w-[120px] text-right whitespace-nowrap">Phải trả</TableHead>
+                        <TableHead className="w-[110px] text-right whitespace-nowrap">Đã chi</TableHead>
+                        <TableHead className="w-[120px] text-right whitespace-nowrap">Còn lại</TableHead>
+                        <TableHead className="w-[104px] text-right" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {bySupplierPayable.map((group) => {
+                        const settled = group.remaining <= 0.01
+                        return (
+                          <TableRow key={group.supplier_code || '__empty__'}>
+                            <TableCell>
+                              {group.supplier_code ? (
+                                <>
+                                  <span className="font-medium">{group.supplier_code}</span>
+                                  {group.supplier_name && (
+                                    <span className="text-muted-foreground"> — {group.supplier_name}</span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  (chưa chọn NCC — chưa thành công nợ)
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center tabular-nums">{group.count}</TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {formatMoney(group.base_amount)} đ
+                            </TableCell>
+                            <TableCell className="text-right text-success tabular-nums">
+                              {formatMoney(group.paid_amount)} đ
+                            </TableCell>
+                            <TableCell
+                              className={cn(
+                                'text-right font-semibold tabular-nums',
+                                settled ? 'text-muted-foreground' : 'text-destructive',
+                              )}
+                            >
+                              {formatMoney(group.remaining)} đ
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {settled ? (
+                                <Badge variant="outline">Đã chi đủ</Badge>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={group.unpaid_payable_ids.length === 0}
+                                  onClick={() => goCreatePaymentRequest(group.unpaid_payable_ids)}
+                                >
+                                  Tạo YCTT
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                    <TableFooter>
+                      <TableRow>
+                        <TableCell className="font-semibold">Tổng cộng</TableCell>
+                        <TableCell className="text-center tabular-nums">
+                          {payableTotals.count}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold tabular-nums">
+                          {formatMoney(payableTotals.base)} đ
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-success tabular-nums">
+                          {formatMoney(payableTotals.paid)} đ
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            'text-right font-semibold tabular-nums',
+                            payableTotals.remaining > 0.01 ? 'text-destructive' : 'text-muted-foreground',
+                          )}
+                        >
+                          {formatMoney(payableTotals.remaining)} đ
+                        </TableCell>
+                        <TableCell />
+                      </TableRow>
+                    </TableFooter>
+                  </Table>
+                </div>
+              )}
             </div>
             )}
 
@@ -1379,7 +1466,7 @@ export function PurchaseOrderImportCostsCard({
 
       {!isNew && allocation && (
         <Card className="gap-4 py-4">
-          <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3!">
+          <CardHeader className="min-h-9 flex flex-row flex-wrap items-center justify-between gap-3 border-b px-4 pb-3!">
             <div className="min-w-0 space-y-0.5">
               <CardTitle className="text-base text-navy dark:text-foreground">
                 Chi phí theo dòng hàng
@@ -1420,103 +1507,154 @@ export function PurchaseOrderImportCostsCard({
               </div>
             )}
 
-            <div className="overflow-x-auto rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-8" />
-                    <TableHead>Mã hàng</TableHead>
-                    <TableHead>Tên hàng</TableHead>
-                    <TableHead className="text-right">SL đặt</TableHead>
-                    <TableHead className="text-right">KL (kg)</TableHead>
-                    <TableHead className="text-right">Tiền hàng (quy đổi)</TableHead>
-                    <TableHead className="text-right">Chi phí phân bổ</TableHead>
-                    <TableHead className="text-right">Tổng giá trị</TableHead>
-                    <TableHead className="text-right">Tỷ lệ chi phí</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allocationLines.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground">
-                        Đơn chưa có dòng hàng
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {allocationLines.map((line) => {
-                    const open = openLineIds.has(line.item_id)
-                    return (
-                      <Fragment key={line.item_id}>
-                        <TableRow
-                          className="cursor-pointer"
-                          onClick={() => toggleLine(line.item_id)}
-                        >
-                          <TableCell className="text-muted-foreground">
-                            {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                          </TableCell>
-                          <TableCell className="font-medium">{line.product_code}</TableCell>
-                          <TableCell>{line.product_name}</TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatQuantity(line.qty_order)}
-                            {line.unit && <span className="text-muted-foreground"> {line.unit}</span>}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {line.weight_kg ? formatQuantity(line.weight_kg) : ''}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatMoney(line.goods_base)} đ
-                          </TableCell>
-                          <TableCell className="text-right font-semibold text-amber-600 tabular-nums dark:text-amber-500">
-                            {formatMoney(line.cost_base)} đ
-                          </TableCell>
-                          <TableCell className="text-right font-semibold tabular-nums">
-                            {formatMoney(line.landed_base)} đ
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {line.goods_base > 0 ? `${percentOf(line.cost_base, line.goods_base).toFixed(1)}%` : '-'}
-                          </TableCell>
-                        </TableRow>
-                        {open && (
-                          <TableRow className="hover:bg-transparent">
-                            <TableCell colSpan={9} className="bg-muted/40 p-3">
-                              <AllocationLineDetail
-                                line={line}
-                                costs={costs}
-                                editable={editable}
-                                onReplaceCost={replaceCost}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </Fragment>
-                    )
-                  })}
-                </TableBody>
-                {allocationLines.length > 0 && (
-                  <TableFooter>
-                    <TableRow>
-                      <TableCell colSpan={5} className="font-semibold">
-                        Tổng toàn đơn
-                      </TableCell>
-                      <TableCell className="text-right font-semibold tabular-nums">
+            {asCards ? (
+              <div className="overflow-hidden rounded-md border">
+                {allocationLines.length === 0 ? (
+                  <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                    Đơn chưa có dòng hàng
+                  </p>
+                ) : (
+                  <div className="divide-y">
+                    {allocationLines.map((line) => (
+                      <PurchaseOrderImportCostAllocationLineCard
+                        key={line.item_id}
+                        line={line}
+                        open={openLineIds.has(line.item_id)}
+                        onToggle={() => toggleLine(line.item_id)}
+                      >
+                        <AllocationLineDetail
+                          asCards
+                          line={line}
+                          costs={costs}
+                          editable={editable}
+                          onReplaceCost={replaceCost}
+                        />
+                      </PurchaseOrderImportCostAllocationLineCard>
+                    ))}
+                    {/*  Chân bảng "Tổng toàn đơn" giữ lại thành khối cuối danh sách. */}
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 bg-muted/40 px-3 py-2.5 text-xs">
+                      <dt className="col-span-2 text-sm font-semibold">Tổng toàn đơn</dt>
+                      <dt className="text-muted-foreground">Tiền hàng</dt>
+                      <dd className="text-right font-semibold tabular-nums">
                         {formatMoney(allocation.goods_base_total)} đ
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-amber-600 tabular-nums dark:text-amber-500">
+                      </dd>
+                      <dt className="text-muted-foreground">Chi phí phân bổ</dt>
+                      <dd className="text-right font-semibold tabular-nums text-amber-600 dark:text-amber-500">
                         {formatMoney(allocation.cost_total)} đ
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-teal-600 tabular-nums dark:text-teal-400">
+                      </dd>
+                      <dt className="text-muted-foreground">Tổng giá trị</dt>
+                      <dd className="text-right font-semibold tabular-nums text-teal-600 dark:text-teal-400">
                         {formatMoney(allocation.landed_total)} đ
-                      </TableCell>
-                      <TableCell className="text-right font-semibold tabular-nums">
+                      </dd>
+                      <dt className="text-muted-foreground">Tỷ lệ chi phí</dt>
+                      <dd className="text-right font-semibold tabular-nums">
                         {allocation.goods_base_total > 0
                           ? `${percentOf(allocation.cost_total, allocation.goods_base_total).toFixed(1)}%`
                           : '-'}
-                      </TableCell>
-                    </TableRow>
-                  </TableFooter>
+                      </dd>
+                    </dl>
+                  </div>
                 )}
-              </Table>
-            </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-8" />
+                      <TableHead>Mã hàng</TableHead>
+                      <TableHead>Tên hàng</TableHead>
+                      <TableHead className="text-right">SL đặt</TableHead>
+                      <TableHead className="text-right">KL (kg)</TableHead>
+                      <TableHead className="text-right">Tiền hàng (quy đổi)</TableHead>
+                      <TableHead className="text-right">Chi phí phân bổ</TableHead>
+                      <TableHead className="text-right">Tổng giá trị</TableHead>
+                      <TableHead className="text-right">Tỷ lệ chi phí</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allocationLines.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center text-muted-foreground">
+                          Đơn chưa có dòng hàng
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {allocationLines.map((line) => {
+                      const open = openLineIds.has(line.item_id)
+                      return (
+                        <Fragment key={line.item_id}>
+                          <TableRow
+                            className="cursor-pointer"
+                            onClick={() => toggleLine(line.item_id)}
+                          >
+                            <TableCell className="text-muted-foreground">
+                              {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                            </TableCell>
+                            <TableCell className="font-medium">{line.product_code}</TableCell>
+                            <TableCell>{line.product_name}</TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {formatQuantity(line.qty_order)}
+                              {line.unit && <span className="text-muted-foreground"> {line.unit}</span>}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {line.weight_kg ? formatQuantity(line.weight_kg) : ''}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {formatMoney(line.goods_base)} đ
+                            </TableCell>
+                            <TableCell className="text-right font-semibold text-amber-600 tabular-nums dark:text-amber-500">
+                              {formatMoney(line.cost_base)} đ
+                            </TableCell>
+                            <TableCell className="text-right font-semibold tabular-nums">
+                              {formatMoney(line.landed_base)} đ
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {line.goods_base > 0 ? `${percentOf(line.cost_base, line.goods_base).toFixed(1)}%` : '-'}
+                            </TableCell>
+                          </TableRow>
+                          {open && (
+                            <TableRow className="hover:bg-transparent">
+                              <TableCell colSpan={9} className="bg-muted/40 p-3">
+                                <AllocationLineDetail
+                                  line={line}
+                                  costs={costs}
+                                  editable={editable}
+                                  onReplaceCost={replaceCost}
+                                />
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Fragment>
+                      )
+                    })}
+                  </TableBody>
+                  {allocationLines.length > 0 && (
+                    <TableFooter>
+                      <TableRow>
+                        <TableCell colSpan={5} className="font-semibold">
+                          Tổng toàn đơn
+                        </TableCell>
+                        <TableCell className="text-right font-semibold tabular-nums">
+                          {formatMoney(allocation.goods_base_total)} đ
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-amber-600 tabular-nums dark:text-amber-500">
+                          {formatMoney(allocation.cost_total)} đ
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-teal-600 tabular-nums dark:text-teal-400">
+                          {formatMoney(allocation.landed_total)} đ
+                        </TableCell>
+                        <TableCell className="text-right font-semibold tabular-nums">
+                          {allocation.goods_base_total > 0
+                            ? `${percentOf(allocation.cost_total, allocation.goods_base_total).toFixed(1)}%`
+                            : '-'}
+                        </TableCell>
+                      </TableRow>
+                    </TableFooter>
+                  )}
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -1833,11 +1971,14 @@ function AllocationLineDetail({
   costs,
   editable,
   onReplaceCost,
+  asCards = false,
 }: {
   line: ImportCostAllocationLine
   costs: PurchaseOrderImportCost[]
   editable: boolean
   onReplaceCost: (index: number, next: PurchaseOrderImportCost) => void
+  /** Khổ điện thoại: bảng con 6 cột đổi thành khối xếp dọc (duoc-CR-720). */
+  asCards?: boolean
 }) {
   const manualEntries = costs
     .map((cost, index) => ({ cost, index }))
@@ -1849,6 +1990,52 @@ function AllocationLineDetail({
   if (shares.length === 0 && manualEntries.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">Dòng này không được phân bổ khoản chi phí nào.</p>
+    )
+  }
+
+  const supplierText = (code: string, name: string) =>
+    code ? `${code}${name ? ` — ${name}` : ''}` : ''
+  //  Ô gõ số cho khoản Nhập tay — một bản cho cả bảng con lẫn khối ở khổ điện thoại.
+  const manualInput = (cost: PurchaseOrderImportCost, index: number, value: number) => (
+    <NumberInput
+      className="px-2 text-right"
+      aria-label={`Số tiền nhập tay dòng ${line.product_code}`}
+      value={value}
+      disabled={!editable}
+      onChange={(next) => onReplaceCost(index, setManualAllocation(cost, line.item_id, next))}
+    />
+  )
+
+  if (asCards) {
+    return (
+      <div className="space-y-1">
+        {shares.map((share) => (
+          <PurchaseOrderImportCostAllocationShareCard
+            key={share.cost_id}
+            typeLabel={share.cost_type_label}
+            description={share.description || ''}
+            supplier={supplierText(share.supplier_code, share.supplier_name)}
+            method={shareMethodLabel(share)}
+            ratio={`${(share.ratio * 100).toFixed(2)}%`}
+            amount={`${formatMoney(share.base_amount)} đ`}
+          />
+        ))}
+        {manualEntries.map(({ cost, index }) => {
+          const value = Number(cost.manual_allocation?.[String(line.item_id)] ?? 0)
+          return (
+            <PurchaseOrderImportCostAllocationShareCard
+              key={`manual-${cost.id}`}
+              manual
+              typeLabel={cost.cost_type_label || importCostTypeLabel(cost.cost_type)}
+              description={cost.description || ''}
+              supplier={supplierText(cost.supplier_code, cost.supplier_name)}
+              method="Nhập tay"
+              ratio={`${percentOf(value, costBaseAmount(cost)).toFixed(2)}%`}
+              amount={<span className="block w-36">{manualInput(cost, index, value)}</span>}
+            />
+          )
+        })}
+      </div>
     )
   }
 
@@ -1869,11 +2056,7 @@ function AllocationLineDetail({
           <TableRow key={share.cost_id}>
             <TableCell className="font-medium">{share.cost_type_label}</TableCell>
             <TableCell>{share.description || ''}</TableCell>
-            <TableCell>
-              {share.supplier_code
-                ? `${share.supplier_code}${share.supplier_name ? ` — ${share.supplier_name}` : ''}`
-                : ''}
-            </TableCell>
+            <TableCell>{supplierText(share.supplier_code, share.supplier_name)}</TableCell>
             <TableCell>{shareMethodLabel(share)}</TableCell>
             <TableCell className="text-right tabular-nums">{(share.ratio * 100).toFixed(2)}%</TableCell>
             <TableCell className="text-right font-medium tabular-nums">
@@ -1889,23 +2072,13 @@ function AllocationLineDetail({
                 {cost.cost_type_label || importCostTypeLabel(cost.cost_type)}
               </TableCell>
               <TableCell>{cost.description || ''}</TableCell>
-              <TableCell>
-                {cost.supplier_code
-                  ? `${cost.supplier_code}${cost.supplier_name ? ` — ${cost.supplier_name}` : ''}`
-                  : ''}
-              </TableCell>
+              <TableCell>{supplierText(cost.supplier_code, cost.supplier_name)}</TableCell>
               <TableCell>Nhập tay</TableCell>
               <TableCell className="text-right tabular-nums">
                 {percentOf(value, costBaseAmount(cost)).toFixed(2)}%
               </TableCell>
               <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
-                <NumberInput
-                  className="px-2 text-right"
-                  aria-label={`Số tiền nhập tay dòng ${line.product_code}`}
-                  value={value}
-                  disabled={!editable}
-                  onChange={(next) => onReplaceCost(index, setManualAllocation(cost, line.item_id, next))}
-                />
+                {manualInput(cost, index, value)}
               </TableCell>
             </TableRow>
           )

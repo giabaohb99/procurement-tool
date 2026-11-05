@@ -7,6 +7,7 @@ import { DataTable } from '@/shared/data-table'
 import { CUSTOMS_REGULATION_COLUMNS } from '../../config/customs-regulation-columns'
 import type { CustomsRegulationHit } from '../../types/customs'
 import { sortRegulationsBySeverity } from '../../utils/customs'
+import { CustomsRegulationCard } from './customs-regulation-card'
 
 interface CustomsRegulationAlertTableProps {
   items: CustomsRegulationHit[]
@@ -23,6 +24,7 @@ export function CustomsRegulationAlertTable({ items }: CustomsRegulationAlertTab
       //  nội bộ của DB, không có trong văn bản, và luôn chen lên trước mọi cột → tắt riêng ở bảng này.
       idColumn={false}
       emptyMessage="Không có mục nào."
+      mobileCard={(row) => <CustomsRegulationCard row={row} />}
     />
   )
 }

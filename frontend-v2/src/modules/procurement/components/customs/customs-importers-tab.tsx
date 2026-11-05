@@ -14,6 +14,7 @@ import { useCustomsImporters } from '../../hooks/use-customs'
 import type { CustomsFilters, CustomsImporterRow } from '../../types/customs'
 import { buildCustomsParams, formatCustomsUnit, formatUsd } from '../../utils/customs'
 import { CustomsUnitChips } from './customs-controls'
+import { CustomsImporterCard } from './customs-importer-card'
 
 interface CustomsImportersTabProps {
   filters: CustomsFilters
@@ -127,6 +128,7 @@ export function CustomsImportersTab({ filters, onPickImporter }: CustomsImporter
           errorMessage={extractErrorMessage(error)}
           emptyMessage="Không có doanh nghiệp nào khớp bộ lọc."
           onRowClick={(r) => onPickImporter(r.importer_id, r.name)}
+          mobileCard={(r) => <CustomsImporterCard row={r} unit={unit} />}
         />
       </Card>
     </div>

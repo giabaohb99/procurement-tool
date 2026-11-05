@@ -8,8 +8,13 @@
 //
 // bao-CR-608 (đại ca 07/10/2026): cột "ID" (tùy chọn) có thật → GHI ĐÈ đúng dòng đó; cột "Thao tác"
 // = xóa → XÓA dòng có ID đó. Lô chỉ ghi đè / chỉ xóa cũng là lô có việc để áp dụng.
-import { useEffect, useRef, useState } from 'react'
+//
+// bao-CR-734 (bê từ v2): kéo thả tệp vào hộp; chọn thêm thì CỘNG dồn (bỏ tệp trùng tên + dung
+// lượng); bỏ từng tệp khỏi danh sách; mọi tệp đều lỗi thì nói rõ như v2; nút Áp dụng khóa trong
+// lúc đang ghi.
+import { DragEvent, useEffect, useRef, useState } from 'react'
 import { api } from '../../api/client'
+import FileDropzone from '../FileDropzone'
 import { toast } from '../toast'
 import CustomsModal from './CustomsModal'
 import { fmtDate } from './customs-shared'
@@ -19,12 +24,23 @@ const running = (b: any) => b.status === STATUS.QUEUED || b.status === STATUS.RU
 // bao-CR-608 — lô chạy thử xong mà có việc: thêm mới, ghi đè (cột ID) hoặc xóa (cột Thao tác).
 const usableBatch = (b: any) => b.status === STATUS.DONE
   && (b.created_count || 0) + (b.updated_count || 0) + (b.deleted_count || 0) > 0
+const fileKey = (f: File) => `${f.name}|${f.size}`
+/** bao-CR-734 — gộp tệp mới chọn vào danh sách, bỏ tệp trùng tên + dung lượng (chọn lại cùng tệp). */
+function mergeFiles(current: File[], picked: File[]): File[] {
+  const seen = new Set(current.map(fileKey))
+  const out = [...current]
+  for (const f of picked) {
+    if (!seen.has(fileKey(f))) { seen.add(fileKey(f)); out.push(f) }
+  }
+  return out
+}
 
 export default function CustomsImportDialog({ onClose, onApplied }: { onClose: () => void; onApplied: () => void }) {
   const [files, setFiles] = useState<File[]>([])
   const [dry, setDry] = useState<any[]>([])        // lô chạy thử
   const [applied, setApplied] = useState<any[]>([]) // lô ghi thật
   const [uploading, setUploading] = useState(false)
+  const [applying, setApplying] = useState(false)  // bao-CR-734 — khóa nút Áp dụng trong lúc ghi
   const busy = useRef(false)                       // chặn bấm đúp: state React chậm một nhịp render
 
   // Hỏi lại trạng thái các lô đang chạy mỗi 1,5 giây
@@ -75,6 +91,7 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
   async function apply() {
     if (busy.current) return
     busy.current = true
+    setApplying(true)
     try {
       const out = []
       for (const b of dry.filter(usableBatch)) {
@@ -84,7 +101,18 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
       setApplied(out)
     } catch { /* interceptor đã báo lỗi */ } finally {
       busy.current = false
+      setApplying(false)
     }
+  }
+
+  const addFiles = (picked: File[]) => setFiles((current) => mergeFiles(current, picked))
+  // bao-CR-734 — thả tệp vào BẤT KỲ chỗ nào của hộp ở bước chọn tệp (không chỉ vùng thả): chặn
+  // trình duyệt mở tệp. Vùng thả đã tự nhận tệp (preventDefault trước) thì bỏ qua để khỏi cộng hai lần.
+  const dragOver = (e: DragEvent) => e.preventDefault()
+  const drop = (e: DragEvent) => {
+    if (e.nativeEvent.defaultPrevented) return
+    e.preventDefault()
+    if (e.dataTransfer.files?.length) addFiles(Array.from(e.dataTransfer.files))
   }
 
   const dryDone = dry.length > 0 && dry.every((b) => !running(b))
@@ -94,6 +122,8 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
   const skippedDuplicate = doneDry.reduce((s, b) => s + (b.duplicate_rows || 0), 0)
   const suspect = doneDry.reduce((s, b) => s + (b.suspect_rows || 0), 0)
   const nothingNew = dryDone && !usable.length && dry.every((b) => b.status === STATUS.DONE)
+  // bao-CR-734 — chạy thử xong mà không tệp nào dùng được, và không phải vì "đã có hết": báo như v2.
+  const noneUsable = dryDone && !usable.length && !nothingNew
   const stage = applied.length ? 'apply' : dry.length ? 'dry' : 'pick'
 
   return (
@@ -106,13 +136,13 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
           </button>
         )}
         {stage === 'dry' && (
-          <button className="btn" disabled={!dryDone || !usable.length} onClick={apply}>
-            <i className="ti ti-check" />Áp dụng {usable.length} tệp
+          <button className="btn" disabled={!dryDone || !usable.length || applying} onClick={apply}>
+            <i className="ti ti-check" />{applying ? 'Đang áp dụng…' : `Áp dụng ${usable.length} tệp`}
           </button>
         )}
       </>}>
       {stage === 'pick' && (
-        <div>
+        <div onDragOver={dragOver} onDrop={drop}>
           <p style={{ marginTop: 0, fontSize: 13 }}>
             Chọn một hoặc nhiều tệp <b>.xls / .xlsx</b> xuất từ hệ thống hải quan (mẫu GTT02 — đủ 32 cột).
             Mỗi tệp chạy thử riêng; chưa có gì ghi vào dữ liệu cho tới khi bấm <b>Áp dụng</b>.
@@ -133,10 +163,21 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
             chỉ cần ô ID. Excel xuất từ màn này có sẵn cột ID ở đầu và cột Thao tác trống ở cuối: xuất → sửa → nạp lại.
             Hoàn tác lô trả lại đủ dòng đã ghi đè / xóa.
           </p>
-          <input type="file" multiple accept=".xls,.xlsx" onChange={(e) => setFiles(Array.from(e.target.files || []))} />
+          <FileDropzone accept=".xls,.xlsx" onFiles={addFiles}
+            hint="Tệp GTT02 .xls / .xlsx — chọn được nhiều tệp, chọn thêm thì cộng vào danh sách" />
           {files.length > 0 && (
-            <ul style={{ fontSize: 13, marginBottom: 0 }}>
-              {files.map((f) => <li key={f.name}>{f.name} — {(f.size / 1024 / 1024).toFixed(1)} MB</li>)}
+            <ul style={{ fontSize: 13, margin: '10px 0 0', padding: 0, listStyle: 'none' }}>
+              {files.map((f) => (
+                <li key={fileKey(f)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 0' }}>
+                  <i className="ti ti-file-spreadsheet" style={{ color: 'var(--muted)' }} />
+                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+                  <button type="button" className="btn ghost" style={{ padding: '2px 6px' }} title={`Bỏ tệp ${f.name}`}
+                    aria-label={`Bỏ tệp ${f.name}`} onClick={() => setFiles((current) => current.filter((x) => x !== f))}>
+                    <i className="ti ti-x" />
+                  </button>
+                </li>
+              ))}
             </ul>
           )}
           <div style={{ marginTop: 12, fontSize: 12, color: 'var(--muted)' }}>
@@ -169,7 +210,14 @@ export default function CustomsImportDialog({ onClose, onApplied }: { onClose: (
               Mọi dòng trong các tệp này đã có trong bảng giá — không có gì để thêm, ghi đè hay xóa.
             </div>
           )}
+          {stage === 'dry' && noneUsable && (
+            <div style={{ marginTop: 12, border: '1px solid #fecaca', background: '#fef2f2', color: '#b91c1c',
+              borderRadius: 8, padding: '8px 12px', fontSize: 13 }}>
+              <i className="ti ti-alert-triangle" /> Không tệp nào dùng được — xem cột Trạng thái và dòng lỗi bên dưới bảng.
+            </div>
+          )}
           {stage === 'dry' && !dryDone && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--muted)' }}>Đang chạy thử…</div>}
+          {stage === 'apply' && !appliedDone && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--muted)' }}>Đang ghi dữ liệu…</div>}
         </>
       )}
     </CustomsModal>

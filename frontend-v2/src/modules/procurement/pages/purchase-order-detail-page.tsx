@@ -785,7 +785,9 @@ export function PurchaseOrderDetailPage() {
             )}
             {afterApproveEditable && (
               <p className="rounded-md border border-info/30 bg-info/8 px-3 py-1.5 text-xs text-muted-foreground">
-                Đơn đã duyệt — nội dung đã ký khóa lại. Mở nút bút chì ở cột Hành động để sửa:{' '}
+                {/*  Khổ điện thoại không còn cột Hành động — bảng đã thành thẻ, chạm thẻ mở hộp chi tiết dòng. */}
+                Đơn đã duyệt — nội dung đã ký khóa lại.{' '}
+                {isMobile ? 'Chạm vào thẻ dòng hàng' : 'Mở nút bút chì ở cột Hành động'} để sửa:{' '}
                 {PO_FIELDS_EDITABLE_AFTER_APPROVE}.{PO_MISA_AFTER_APPROVE_HINT}
                 {canUnapprove && ' Muốn đổi phần khác thì bấm Hủy duyệt để đưa đơn về Nháp.'}
               </p>

@@ -8,8 +8,11 @@
 | Brief nghiệp vụ | [`doc/erp/thu-mua/nghien-cuu/01-brief-bao-cao-thuc-hien-ycbg.md`](../nghien-cuu/01-brief-bao-cao-thuc-hien-ycbg.md) |
 | Thiết kế kỹ thuật | [`doc/erp/thu-mua/tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md`](../tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md) |
 | Tài liệu YCBG gốc | [`02-yeu-cau-khao-sat.md`](11-yeu-cau-khao-sat.md) |
+| Bài HDSD | *Báo cáo thực hiện trên YCBG và Đơn mua hàng: theo dõi hồ sơ sau khi duyệt* (thẻ *Dành cho Nhân viên Mua hàng*, seed `backend/scripts/seed_help_bao_cao_thuc_hien.py`, td-0311). Nội dung ở đây và ở seed phải khớp nhau |
 
 ---
+
+> **Cập nhật 05/11/2026 (td-0311, đối chiếu mã `frontend-v2/src/modules/procurement/components/survey-report/`).** Sau bản 1.0 khối đã đổi: (1) có cả trên **chi tiết Đơn mua hàng** (bao-CR-602) — ghi khi sửa được đơn, dòng hàng tự sinh theo dòng đơn, đơn Hoàn thành / Hủy thì chỉ xem; (2) **Khởi tạo báo cáo mẫu** mở hộp chọn một trong hai mẫu: *Mẫu chung hồ sơ nhập khẩu* và *Tiến độ kế hoạch công việc nhập khẩu* (duoc-CR-614); (3) khối rỗng có ba nút **Khởi tạo báo cáo mẫu · Thêm hồ sơ · Thêm giai đoạn**; (4) thêm dạng xem **Bảng** (sửa ngay trên ô) cạnh *Xem tổng* và *Theo dòng hàng*; (5) chọn nhiều hồ sơ rồi **Xóa đã chọn**, xóa cả cụm hồ sơ của một dòng hàng (duoc-CR-611); (6) nút xóa **cả báo cáo**, hoàn tác ở Lịch sử thao tác; (7) bốn ô ngày / người đã có trên hộp sửa, gấp mở và dạng xem được trình duyệt nhớ; (8) nút **Chuyển Hoàn thành** của YCBG tắt khi còn hồ sơ bắt buộc chưa xong. Mục *Những thứ CHƯA có* bên dưới giữ nguyên chữ của bản 1.0; hai dòng *ô nhập ngày* và *nhớ gấp mở* nay đã có.
 
 ## Mục đích
 

@@ -15,6 +15,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/shared/ui/toggle-group'
 
 import { useCustomsPesticideRelated } from '../../hooks/use-customs-pesticides'
 import { PESTICIDE_STATUS, type CustomsPesticideBrief } from '../../types/customs-pesticide'
+import { CustomsPesticideCard } from './customs-pesticide-card'
 import { CustomsPesticideStatusBadge } from './customs-pesticide-status-badge'
 
 //  Lấy một lần đủ cả hai khối (trần backend 300 — công ty nhiều thuốc nhất có 219), phân trang ở
@@ -127,6 +128,11 @@ export function CustomsPesticideRelatedCards({
           state: fromHere(location),
         })
       }
+      //  Khổ điện thoại: cùng thẻ thuốc với danh sách, giữ đúng hai luật của bộ cột ở đây — tab
+      //  "Cùng công ty" bỏ tên công ty, nhãn tình trạng chỉ hiện khi KHÔNG còn hiệu lực.
+      mobileCard={(row) => (
+        <CustomsPesticideCard row={row} hideRegistrant={tab === 'registrant'} hideActiveStatus />
+      )}
       pagination={
         items.length > DEFAULT_PAGE_SIZE
           ? {

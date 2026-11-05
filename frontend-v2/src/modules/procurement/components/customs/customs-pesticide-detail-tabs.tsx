@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import type { CustomsPesticideDetail, CustomsPesticideUse } from '../../types/customs-pesticide'
 import { DocumentAttachmentsCard } from '../document-attachments-card'
 import { CustomsPesticideRelatedCards } from './customs-pesticide-related-cards'
+import { CustomsPesticideUseCard } from './customs-pesticide-use-card'
 
 const USE_COLUMNS: DataTableColumn<CustomsPesticideUse>[] = [
   { key: 'crop', header: 'Cây trồng', width: 150, wrap: true, cell: (row) => row.crop },
@@ -74,6 +75,7 @@ export function CustomsPesticideDetailTabs({
               : 'Nguồn không ghi phạm vi sử dụng cho thuốc này.'
           }
           storageKey="procurement.customs-pesticide-uses-v2"
+          mobileCard={(use) => <CustomsPesticideUseCard row={use} />}
           //  Bảng vài dòng trong trang chi tiết: "Tải lại" / "Cột" chỉ thêm rối, ẩn đi.
           toolbarActionsClassName="hidden"
           //  Tiêu đề NGAY trên bảng (đại ca góp ý 29/09: phải nói rõ bảng này là gì).

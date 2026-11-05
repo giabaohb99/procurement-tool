@@ -15,6 +15,7 @@ import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney, formatPercent, formatQuantity } from '@/shared/utils/format-money'
 import { useShippingDetail } from '../hooks/use-purchase-report'
 import { ReportMetricTable } from './report-metric-table'
+import { ReportShippingDetailCard } from './report-shipping-detail-card'
 import {
   nextSort,
   SHIPPING_METRICS,
@@ -186,6 +187,8 @@ export function ReportShippingTab({
               : 'Chưa có chi phí vận chuyển.'
           }
           storageKey="procurement.purchase-report.shipping"
+          //  Khổ điện thoại: 11 cột ~1600px thành thẻ dọc; bộ lọc + phân trang vẫn của bảng.
+          mobileCard={(row) => <ReportShippingDetailCard row={row} />}
           //  Bộ lọc của BẢNG này nằm ở state cục bộ chứ không lên URL, nên phải
           //  tự khai. Cố ý không đụng tới pháp nhân / kỳ / năm: đó là bộ lọc của
           //  cả trang báo cáo, nằm ở đầu trang chứ không thuộc bảng này.

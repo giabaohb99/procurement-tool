@@ -150,6 +150,16 @@ Mã nguồn: `backend/app/modules/customs/dedupe.py`, `importer.py`, `reader.py`
 (`retag_changed`), `backend/scripts/gan_lai_hoat_chat_cr733.py`.
 Kiểm: `test/backend/test_chup_ket_qua_chong_trung_cr733.py`, `test/backend/du_lieu_chup_chong_trung_cr733.py`.
 
+## bao-CR-734 | Đồng bộ màn Tra cứu thị trường giao diện cũ với giao diện mới
+- status: xong
+- date: 2026-11-05
+- list: Sản xuất - Thu mua
+- tag: Agent 4
+
+**Đã làm (giao diện cũ, ngoại lệ được người chủ cho phép):** bộ lọc nằm trên đường dẫn nên gửi link, tải lại trang hay quay lại vẫn giữ; chọn là lọc ngay, gõ chữ thì lọc khi ngưng gõ. Link cũ dạng thẻ tự chuyển đúng mục; hàng Lọc thêm thu gọn được. Bảng thuốc bảo vệ thực vật có menu chọn cột, cột Lĩnh vực, cột tên đứng yên khi cuộn ngang. Hộp nạp tệp kéo thả được, thêm dồn và bỏ từng tệp, báo rõ khi mọi tệp hỏng, khóa nút khi đang ghi. Nhật ký lô chia hai thẻ, chọn được số dòng mỗi trang, nút hoàn tác không bấm đúp được; chi tiết dòng có trạng thái đang tải và báo rõ khi dòng vừa bị hoàn tác; trang thuốc trên màn hẹp mở phần tra cứu trong ngăn kéo. Còn lại: bảng danh sách dùng bảng chung có kéo, ghim cột.
+
+Mã nguồn: frontend/src/pages/CustomsPrices.tsx, hooks/useCustomsUrlFilters.ts, components/customs/ (ImportDialog, HistoryPanel, LineDetail, PesticideTab, PesticideLookup, PesticideLookupDrawer), pages/CustomsPesticideDetailPage.tsx; HDSD seed_help_customs_prices.py.
+
 ## bao-CR-728-xuat-lo-tra-cuu-thi-truong-v1 | Tra cứu thị trường v1: xuất toàn bộ chạy nền, Lô xuất của tôi, trần dung lượng tệp nạp
 - status: xong
 - date: 2026-11-05
@@ -18660,6 +18670,7 @@ Mã nguồn: backend/app/main.py build_docs_urls, core/config.py API_DOCS_ENABLE
 - Ưu tiên cụm thu mua và các đường mà công cụ MCP đang dùng, làm sau khi đợt làm gọn controller thu mua xong.
 **Rà 05/11/2026 (còn tồn):** bắt đầu 05/11 theo từng phân hệ (Thu mua, Nhân sự / Nghỉ phép, Tra cứu thị trường, Quản trị trước); nhận thêm bài hướng dẫn cho các màn của kh-AI1-1-hdsd và mục X bài lập bộ tài khoản của kh-tai-lieu-agc.
 **Bước 0 (05/11/2026):** thêm script `backend/scripts/dung_bang_api.py` dựng lại bảng mục 1 của mọi api.md từ mã, chạy lại nhiều lần không đổi gì, giữ cột Phạm vi / Ai gọi ghi tay, tự dò cột Ai gọi từ frontend-v2 và cổng MCP; ghi lệnh chạy vào luật tài liệu. Bộ dựng CRUD chung có câu mô tả tiếng Việt cho bảy đường (148 đường sinh ra). Kết quả: 1.002 dòng ở 12 api.md, cột Ai gọi có chữ ở 816 dòng (trước gần như trống), ô Mục đích còn tên hàm tiếng Anh giảm còn 477. Chín ô Mục đích ghi tay chi tiết chuyển xuống mục 2 của api.md Tra cứu thị trường và Nền tảng. Vá kèm bài đếm db.get đỏ sẵn sau bao-CR-727.
+**Cụm Thu mua (05/11/2026):** thêm câu mô tả tiếng Việt cho 105 đường API Thu mua còn thiếu (YCBG, YCMH, phiếu khảo sát, ĐMH, YCTT, công nợ, NCC, hợp đồng, phân công, tiến độ, lịch sử mua, Báo cáo thực hiện); api.md Thu mua dựng lại, hết ô Mục đích mang tên hàm. Tài liệu chức năng Thu mua: cột Trạng thái ghi có trên prod 05/11 theo main trùng erp-v2, mã vai trò lấy từ seed (người yêu cầu employee, trưởng bộ phận dept_head, kế toán không có vai trò chuẩn). Bài HDSD mới Báo cáo thực hiện trên YCBG và Đơn mua hàng; bài Lập bộ tài khoản phòng tự mua hàng thêm mục X Bộ tài khoản cho một công ty con; cả hai đã nạp dev và nạp lại chỉ mục (156 bài). Tài liệu 19 ghi phần giao diện đổi sau bản 1.0. Chưa soát màn ERP bằng trình duyệt vì phiên đăng nhập dev đã hết; bài viết theo nhãn trong mã.
 
 ## bao-CR-709 | Hỏi giữ phòng cũ làm kiêm nhiệm khi đổi phòng chính
 - status: xong
@@ -18992,3 +19003,21 @@ Mã nguồn: doc/, .claude/, frontend-v2/src, backend/app, backend/scripts, test
 **Còn lại:** dòng nhật ký cũ đã ghi trước khi sửa vẫn nằm dưới tên loại nghỉ (chỉ có ở máy local và dev); ba điểm nhỏ ghi trong báo cáo test chưa sửa.
 
 Mã nguồn: frontend-v2/src/shared/crud/crud-field.tsx · crud-form-fields.tsx · crud-detail-page.tsx · types.ts · backend/app/core/crud.py · backend/app/modules/leave/policy_controller.py · catalog_controller.py · backend/app/modules/audit/controller.py
+
+## duoc-CR-720 | Thu mua trên điện thoại: các bảng còn lại đổi sang dạng thẻ
+- status: xong
+- date: 2026-11-05
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được yêu cầu nghiên cứu đổi các bảng của phân hệ Thu mua sang dạng thẻ khi xem trên điện thoại. Mười một màn danh sách và bảng dòng của YCMH, YCBG, Phiếu khảo sát đã có thẻ từ duoc-CR-394; đợt này làm nốt khoảng ba mươi bảng còn cuộn ngang. Màn rộng từ 768px trở lên giữ nguyên bảng.
+
+**Đã làm**
+- Chi tiết ĐMH: dòng hàng thành thẻ có tên hàng, SL nhân giá, thành tiền đủ chữ số, trạng thái tiến độ cùng các nút tạm dừng, tiếp tục, hủy; dòng còn sửa được thì chọn hàng, nhập SL đặt, đơn giá, VAT ngay trên thẻ, các ô khác sửa qua hộp chi tiết dòng; giữ ô tick chọn để xóa nhiều dòng. Các lần giao, chi phí thu mua, chi phí theo dòng hàng, thanh toán theo NCC, YCTT của đơn và hộp Tạo YCTT cũng thành thẻ, giữ dòng tổng cộng.
+- YCMH và YCBG: phương án ở màn xử lý, kết quả khảo sát chọn được, chứng từ liên quan và hộp lịch sử mua hàng thành thẻ; mã phiếu vẫn bấm sang phiếu khác được. Thẻ lịch sử mua hàng in giá số trơn như bảng, không gắn chữ đồng vì giá ĐMH nhập khẩu lưu bằng nguyên tệ.
+- Báo cáo: chi tiết chi phí vận chuyển, chi phí theo ngày, tiến độ theo dòng hàng và bảng hồ sơ cần có của Báo cáo thực hiện thành thẻ. Dạng xem Bảng của Báo cáo thực hiện (bảng tính 14 cột) không làm thẻ: trên điện thoại màn tự lùi về dạng Xem tổng, lựa chọn đã lưu không mất.
+- Tra cứu thị trường: mười chín bảng (dòng tờ khai, thuốc BVTV, phạm vi sử dụng, hóa chất theo văn bản, doanh nghiệp nhập khẩu, so sánh, số liệu dưới biểu đồ, biểu thuế, lịch sử nạp, nhật ký lô, bốn danh mục cấu hình) thành thẻ, nhiều bảng cùng kiểu dùng chung một thẻ.
+- Sửa kèm: hàng ba nút ở trạng thái chưa có Báo cáo thực hiện tràn hai mép trên điện thoại, nay xuống dòng; tiêu đề Chi phí thu mua bị bóp mỗi chữ một dòng; câu nhắc sửa đơn đã duyệt đổi theo khổ màn hình.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ thu mua 123 tệp 1188 bài xanh. Soát bằng trình duyệt giả lập 390x844 trên ĐMH 348, 358, 37, PO00360, YCMH 86, YCBG 2927, Báo cáo mua hàng và Tra cứu thị trường (mục Pháp lý, Thuốc BVTV, Cấu hình). Các màn chưa có dữ liệu ở máy local (dòng tờ khai, doanh nghiệp, so sánh, biểu thuế, lịch sử nạp) mới có bài kiểm phủ, cần xem lại trên dev.
+
+Mã nguồn: frontend-v2/src/modules/procurement/components (purchase-order-*-card, process-option-card, available-survey-line-card, linked-*-card, purchase-history-card, report-*-card, survey-report/report-item-progress-card, customs/customs-*-card), pages/customs-price-page.tsx, pages/purchase-order-detail-page.tsx

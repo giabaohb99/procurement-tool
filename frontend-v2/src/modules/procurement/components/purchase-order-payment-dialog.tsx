@@ -8,6 +8,7 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { usePrepayHanging } from '@/modules/finance/hooks/use-payment-requests'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import {
@@ -28,6 +29,7 @@ import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
 import type { PurchaseOrderDetail } from '../types/purchase-order-detail'
 import { buildPrepayPayable } from '../utils/build-prepay-payable'
+import { PurchaseOrderPaymentPayableCard } from './purchase-order-payment-payable-card'
 import {
   useCreatePaymentRequest,
   usePurchaseOrderPayables,
@@ -81,6 +83,8 @@ export function PurchaseOrderPaymentDialog({
   const createPaymentRequest = useCreatePaymentRequest()
   const navigate = useNavigate()
   const { can } = usePermission()
+  //  Khổ điện thoại: bảng 7 cột thành thẻ có ô tick (duoc-CR-720).
+  const asCards = useIsMobile()
 
   const [tab, setTab] = useState<SourceTab>('goods')
   const [selected, setSelected] = useState<number[]>([])
@@ -142,6 +146,12 @@ export function PurchaseOrderPaymentDialog({
   const effectiveOffset = useOffset && canOffset ? offsetApplicable : 0
   /** Số thật sự phải chi thêm sau khi trừ tiền trả trước. */
   const payTotal = Math.max(0, total - effectiveOffset)
+
+  function togglePayable(payableId: number, checked: boolean) {
+    setSelected((current) =>
+      checked ? [...current, payableId] : current.filter((id) => id !== payableId),
+    )
+  }
 
   function toggleAll(checked: boolean) {
     const ids = rows.map((row) => row.id)
@@ -276,6 +286,35 @@ export function PurchaseOrderPaymentDialog({
 
             {isLoading ? (
               <Skeleton className="h-40 w-full" />
+            ) : asCards ? (
+              <div className="space-y-2">
+                {rows.length > 0 && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={allChecked}
+                      onCheckedChange={(checked) => toggleAll(checked === true)}
+                    />
+                    Chọn tất cả ({rows.length} khoản)
+                  </label>
+                )}
+                <div className="divide-y overflow-hidden rounded-lg border">
+                  {rows.length === 0 ? (
+                    <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                      Không có khoản nợ nào cần thanh toán.
+                    </p>
+                  ) : (
+                    rows.map((payable) => (
+                      <PurchaseOrderPaymentPayableCard
+                        key={payable.id}
+                        payable={payable}
+                        supplierLabel={SOURCE_SUPPLIER_HEADERS[tab]}
+                        checked={selected.includes(payable.id)}
+                        onCheckedChange={(checked) => togglePayable(payable.id, checked)}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
             ) : (
               <div className="overflow-x-auto rounded-lg border">
                 <Table>
@@ -309,13 +348,7 @@ export function PurchaseOrderPaymentDialog({
                         <TableCell className="text-center">
                           <Checkbox
                             checked={selected.includes(payable.id)}
-                            onCheckedChange={(checked) =>
-                              setSelected((current) =>
-                                checked === true
-                                  ? [...current, payable.id]
-                                  : current.filter((id) => id !== payable.id),
-                              )
-                            }
+                            onCheckedChange={(checked) => togglePayable(payable.id, checked === true)}
                             aria-label={`Chọn hóa đơn ${payable.invoice_no || payable.id}`}
                           />
                         </TableCell>

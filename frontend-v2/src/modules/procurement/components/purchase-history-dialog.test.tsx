@@ -1,8 +1,15 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PurchaseHistoryDialog } from './purchase-history-dialog'
+
+//  Khổ màn: `false` = bảng (mặc định), `true` = thẻ dọc của khổ điện thoại (duoc-CR-720).
+let mobile = false
+
+vi.mock('@/shared/hooks/use-mobile', () => ({
+  useIsMobile: () => mobile,
+}))
 
 // Màn này chỉ nói về CÁCH HIỆN lịch sử mua hàng, không nói về mạng — thay lượt
 // gọi API bằng đúng một dòng dữ liệu tĩnh.
@@ -56,6 +63,10 @@ function renderDialog(props: Partial<Parameters<typeof PurchaseHistoryDialog>[0]
 }
 
 describe('PurchaseHistoryDialog', () => {
+  beforeEach(() => {
+    mobile = false
+  })
+
   it('phiếu đang sửa thì chọn được một lần mua cũ để điền giá', async () => {
     const user = userEvent.setup()
     const { onPick, onOpenChange } = renderDialog()
@@ -83,5 +94,27 @@ describe('PurchaseHistoryDialog', () => {
     // Bấm cả dòng cũng không được điền — v1 để dòng bấm được nên hay lỡ tay.
     await user.click(screen.getByText('PO-2026-001'))
     expect(onPick).not.toHaveBeenCalled()
+  })
+
+  it('on a phone each purchase is a card and "Dùng giá này" still fills the price', async () => {
+    mobile = true
+    const user = userEvent.setup()
+    const { onPick, onOpenChange } = renderDialog()
+
+    expect(screen.queryByRole('table')).toBeNull()
+    expect(screen.getByText('CÔNG TY A')).toBeInTheDocument()
+    expect(screen.getByText('12.000/Cái')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Dùng giá này' }))
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: 11, price: 12000 }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('on a phone read-only mode offers no pick button either', () => {
+    mobile = true
+    renderDialog({ readOnly: true })
+
+    expect(screen.getByText('PO-2026-001')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Dùng giá này' })).toBeNull()
   })
 })

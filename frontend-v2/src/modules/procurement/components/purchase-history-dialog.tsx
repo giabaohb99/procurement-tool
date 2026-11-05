@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -29,6 +30,7 @@ import {
 import { cn } from '@/shared/utils/cn'
 import type { PurchaseHistoryRow } from '../api/purchase-request-support-api'
 import { useProductPurchaseHistory } from '../hooks/use-purchase-request-support'
+import { PurchaseHistoryCard } from './purchase-history-card'
 
 const PAGE_SIZE = 20
 
@@ -95,6 +97,23 @@ export function PurchaseHistoryDialog({
   const start = total ? (page - 1) * PAGE_SIZE + 1 : 0
   const end = Math.min(page * PAGE_SIZE, total)
   const columnCount = readOnly ? 10 : 11
+  //  Khổ điện thoại: bảng 11 cột `min-w-[940px]` thành thẻ dọc — trong khung ~350px
+  //  phần nhìn thấy là Ngày · Mã PO · NCC, còn đơn giá (thứ người ta mở hộp để tìm) ở ngoài.
+  const asCards = useIsMobile()
+
+  //  Câu rỗng dùng chung cho bảng lẫn thẻ: phân biệt đang tải / lỗi / rỗng vì từ khóa /
+  //  mã hàng chưa từng mua — một câu chung thì người gõ nhầm chữ tưởng là chưa mua bao giờ.
+  const emptyState = history.isLoading ? (
+    <span className="inline-flex items-center gap-2">
+      <Loader2 className="size-4 animate-spin" /> Đang tải...
+    </span>
+  ) : history.isError ? (
+    'Không tải được lịch sử mua hàng.'
+  ) : debouncedSearch ? (
+    'Không có kết quả khớp từ khóa.'
+  ) : (
+    'Mã hàng này chưa có lịch sử mua hàng.'
+  )
 
   function pick(row: PurchaseHistoryRow) {
     if (readOnly) return
@@ -123,106 +142,112 @@ export function PurchaseHistoryDialog({
         </div>
 
         <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
-          <div className="overflow-hidden rounded-md border">
-            <Table className="min-w-[940px] [&_td]:border-r [&_td:last-child]:border-r-0 [&_th]:border-r [&_th:last-child]:border-r-0">
-              <TableHeader className="bg-muted">
-                <TableRow>
-                  <TableHead>Ngày đặt</TableHead>
-                  <TableHead>Mã PO</TableHead>
-                  <TableHead>Nhà cung cấp</TableHead>
-                  <TableHead className="min-w-44">Tên trên hóa đơn</TableHead>
-                  <TableHead>ĐVT</TableHead>
-                  <TableHead className="text-right">SL đặt</TableHead>
-                  <TableHead className="text-right">Đơn giá</TableHead>
-                  <TableHead className="text-right">VAT%</TableHead>
-                  <TableHead className="text-right">Thành tiền</TableHead>
-                  <TableHead>Công ty</TableHead>
-                  {!readOnly && <TableHead className="w-28 text-center">Chọn</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className={readOnly ? undefined : 'cursor-pointer'}
-                    onClick={() => pick(row)}
-                  >
-                    <TableCell className="whitespace-nowrap">
-                      {formatDate(row.order_date) || row.order_date || '—'}
-                    </TableCell>
-                    <TableCell>
-                      {row.po_code || (
-                        <span className="text-xs text-muted-foreground">Dữ liệu cũ</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{row.supplier_name || row.supplier_code || '—'}</TableCell>
-                    {/*  bao-CR-522: dòng dữ liệu cũ không có tên trên hóa đơn — backend lùi về tên
-                         đang khai ở danh mục sản phẩm; in nghiêng mờ để không lẫn với tên đã xuất. */}
-                    <TableCell
-                      className={cn(row.invoice_name_from_catalog && 'text-muted-foreground italic')}
-                      title={
-                        row.invoice_name_from_catalog
-                          ? 'Dữ liệu cũ không có — lấy theo danh mục sản phẩm'
-                          : undefined
-                      }
-                    >
-                      {row.invoice_name || '—'}
-                    </TableCell>
-                    <TableCell>{row.unit || '—'}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatQuantity(row.qty_order)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">
-                      {formatUnitPrice(row.price)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatQuantity(row.vat)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatMoney(row.amount)}
-                    </TableCell>
-                    <TableCell>{row.company_name || '—'}</TableCell>
-                    {!readOnly && (
-                      <TableCell className="text-center">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="xs"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            pick(row)
-                          }}
-                        >
-                          Dùng giá này
-                        </Button>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-
-                {!rows.length && (
+          {asCards ? (
+            <div className="divide-y overflow-hidden rounded-md border">
+              {rows.map((row) => (
+                <PurchaseHistoryCard
+                  key={row.id}
+                  row={row}
+                  readOnly={readOnly}
+                  onPick={() => pick(row)}
+                />
+              ))}
+              {!rows.length && (
+                <p className="px-4 py-8 text-center text-sm text-muted-foreground">{emptyState}</p>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-md border">
+              <Table className="min-w-[940px] [&_td]:border-r [&_td:last-child]:border-r-0 [&_th]:border-r [&_th:last-child]:border-r-0">
+                <TableHeader className="bg-muted">
                   <TableRow>
-                    <TableCell
-                      colSpan={columnCount}
-                      className="h-24 text-center text-muted-foreground"
-                    >
-                      {history.isLoading ? (
-                        <span className="inline-flex items-center gap-2">
-                          <Loader2 className="size-4 animate-spin" /> Đang tải...
-                        </span>
-                      ) : history.isError ? (
-                        'Không tải được lịch sử mua hàng.'
-                      ) : debouncedSearch ? (
-                        'Không có kết quả khớp từ khóa.'
-                      ) : (
-                        'Mã hàng này chưa có lịch sử mua hàng.'
-                      )}
-                    </TableCell>
+                    <TableHead>Ngày đặt</TableHead>
+                    <TableHead>Mã PO</TableHead>
+                    <TableHead>Nhà cung cấp</TableHead>
+                    <TableHead className="min-w-44">Tên trên hóa đơn</TableHead>
+                    <TableHead>ĐVT</TableHead>
+                    <TableHead className="text-right">SL đặt</TableHead>
+                    <TableHead className="text-right">Đơn giá</TableHead>
+                    <TableHead className="text-right">VAT%</TableHead>
+                    <TableHead className="text-right">Thành tiền</TableHead>
+                    <TableHead>Công ty</TableHead>
+                    {!readOnly && <TableHead className="w-28 text-center">Chọn</TableHead>}
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      className={readOnly ? undefined : 'cursor-pointer'}
+                      onClick={() => pick(row)}
+                    >
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(row.order_date) || row.order_date || '—'}
+                      </TableCell>
+                      <TableCell>
+                        {row.po_code || (
+                          <span className="text-xs text-muted-foreground">Dữ liệu cũ</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{row.supplier_name || row.supplier_code || '—'}</TableCell>
+                      {/*  bao-CR-522: dòng dữ liệu cũ không có tên trên hóa đơn — backend lùi về tên
+                           đang khai ở danh mục sản phẩm; in nghiêng mờ để không lẫn với tên đã xuất. */}
+                      <TableCell
+                        className={cn(row.invoice_name_from_catalog && 'text-muted-foreground italic')}
+                        title={
+                          row.invoice_name_from_catalog
+                            ? 'Dữ liệu cũ không có — lấy theo danh mục sản phẩm'
+                            : undefined
+                        }
+                      >
+                        {row.invoice_name || '—'}
+                      </TableCell>
+                      <TableCell>{row.unit || '—'}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatQuantity(row.qty_order)}
+                      </TableCell>
+                      <TableCell className="text-right font-medium tabular-nums">
+                        {formatUnitPrice(row.price)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatQuantity(row.vat)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatMoney(row.amount)}
+                      </TableCell>
+                      <TableCell>{row.company_name || '—'}</TableCell>
+                      {!readOnly && (
+                        <TableCell className="text-center">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="xs"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              pick(row)
+                            }}
+                          >
+                            Dùng giá này
+                          </Button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+
+                  {!rows.length && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columnCount}
+                        className="h-24 text-center text-muted-foreground"
+                      >
+                        {emptyState}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </div>
 
         <div className="border-t px-5 py-3">
