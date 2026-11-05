@@ -10,6 +10,7 @@ import { CollapsibleNote } from '@/shared/ui/collapsible-note'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
 import { purchaseReportApi } from '../api/purchase-report-api'
@@ -20,6 +21,7 @@ import {
   LandedCostPivotTable,
   LandedCostWarnings,
 } from './import-landed-cost-tables'
+import { LandedCostItemCards, LandedCostOrderCards } from './import-landed-cost-cards'
 import {
   buildLandedCostParams,
   LANDED_COST_VIEWS,
@@ -50,6 +52,7 @@ export function ReportImportLandedCostTab({ companyId }: ReportImportLandedCostT
   const [draft, setDraft] = useState<LandedCostFilter>(defaultFilter)
   const [applied, setApplied] = useState<LandedCostFilter>(defaultFilter)
   const [view, setView] = useState<LandedCostView>('orders')
+  const isMobile = useIsMobile()
 
   const params = useMemo(() => buildLandedCostParams(applied, companyId), [applied, companyId])
   const { data, isLoading, isError } = useImportLandedCost(params)
@@ -216,8 +219,11 @@ export function ReportImportLandedCostTab({ companyId }: ReportImportLandedCostT
         )}
         {data && !isLoading && (
           <>
+            {/*  Khổ điện thoại: thẻ thay bảng (duoc-CR-720). Trang in vẫn dùng bảng. */}
             {view === 'orders' ? (
-              <LandedCostPivotTable data={data} />
+              isMobile ? <LandedCostOrderCards data={data} /> : <LandedCostPivotTable data={data} />
+            ) : isMobile ? (
+              <LandedCostItemCards data={data} />
             ) : (
               <LandedCostItemTable data={data} />
             )}
