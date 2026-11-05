@@ -144,6 +144,7 @@ def _list_query(db: Session, request: Request, user, action: str = "read"):
 @router.get("")
 def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
           user=Depends(require("payment_request", "read"))):
+    """Danh sách yêu cầu thanh toán (YCTT) trong phạm vi được xem, có lọc và phân trang."""
     q = _list_query(db, request, user)
     total = q.count()
     q = apply_sort_from_request(q, PaymentRequest, request, default=PaymentRequest.id.desc())
@@ -207,6 +208,7 @@ def department_managers_(db: Session = Depends(get_db),
 
 @router.get("/{rid}")
 def get_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_request", "read"))):
+    """Chi tiết một YCTT."""
     req = apply_scope(db.query(PaymentRequest).filter(PaymentRequest.id == rid),
                       PaymentRequest, "payment_request", user, get_perm_profile(db, user)).first()
     if not req:
@@ -219,6 +221,7 @@ def print_(rid: int, db: Session = Depends(get_db), user=Depends(require("paymen
     # Khóa `print` chỉ trả lời "được in hay không", không trả lời "được in phiếu NÀO":
     # bản in còn RỘNG hơn màn chi tiết (tên pháp nhân, MST, **số tài khoản ngân hàng NCC**,
     # chức vụ + trưởng phòng người lập), nên nó phải chịu phạm vi ít nhất bằng đường xem.
+    """Dữ liệu in một YCTT kèm thông tin công ty."""
     req = _scoped(db, rid, user, "print")
     data = _out(db, req)
     company = db.get(Company, req.company_id) if req.company_id else None
@@ -249,6 +252,7 @@ def create_(data: PRequestCreate, db: Session = Depends(get_db),
     # bao-CR-274 — khoản nợ gắn vào phiếu phải nằm trong phạm vi `payable` người tạo được
     # xem: service lấy theo id (`db.get`) nên bỏ qua lọc phạm vi, gõ thẳng id qua API là
     # kéo được nợ của pháp nhân khác vào phiếu dù màn Công nợ không hiển thị khoản đó.
+    """Tạo YCTT từ các dòng công nợ trong phạm vi được xem."""
     from app.modules.payable.model import Payable
 
     ids = {ln.payable_id for ln in data.lines if ln.payable_id}
@@ -267,6 +271,7 @@ def create_(data: PRequestCreate, db: Session = Depends(get_db),
 @router.patch("/{rid}")
 def update_(rid: int, data: PRequestUpdate, db: Session = Depends(get_db),
             user=Depends(require("payment_request", "write"))):
+    """Sửa YCTT."""
     _scoped(db, rid, user, "write")
     return success(_out(db, service.update_request(db, rid, data, user.id)), "Đã cập nhật")
 
@@ -295,6 +300,7 @@ def refresh_apply_(rid: int, db: Session = Depends(get_db),
 
 @router.delete("/{rid}")
 def delete_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_request", "delete"))):
+    """Xóa một YCTT."""
     _scoped(db, rid, user, "delete")
     service.delete_request(db, rid, user.id)
     return success(None, "Đã xóa")
@@ -302,6 +308,7 @@ def delete_(rid: int, db: Session = Depends(get_db), user=Depends(require("payme
 
 @router.delete("")
 def bulk_delete_requests(ids: str, db: Session = Depends(get_db), user=Depends(require("payment_request", "delete"))):
+    """Xóa nhiều YCTT theo danh sách id trong phạm vi được xóa."""
     id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
     if not id_list:
         raise HTTPException(400, "Không có ID hợp lệ")
@@ -334,6 +341,7 @@ def _notify_pay(db, background_tasks, r, event, reason=""):
 @router.post("/{rid}/submit")
 def submit_(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
             user=Depends(require("payment_request", "write"))):
+    """Gửi duyệt YCTT và báo người duyệt."""
     _scoped(db, rid, user, "write")
     r = service.set_status(db, rid, "submitted", user.id)
     _notify_pay(db, background_tasks, r, "pay_submitted")
@@ -343,6 +351,7 @@ def submit_(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
 @router.post("/{rid}/approve")
 def approve_(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
              user=Depends(require("payment_request", "approve"))):
+    """Duyệt YCTT và báo người liên quan."""
     _scoped(db, rid, user, "approve")
     r = service.set_status(db, rid, "approved", user.id)
     _notify_pay(db, background_tasks, r, "pay_approved")
@@ -363,6 +372,7 @@ def reject_(rid: int, data: dict, background_tasks: BackgroundTasks, db: Session
 @router.post("/{rid}/pay")
 def pay_(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
          user=Depends(require("payment_request", "write"))):
+    """Ghi nhận đã chi cho YCTT đã duyệt và báo người liên quan."""
     _scoped(db, rid, user, "write")
     r = service.set_status(db, rid, "paid", user.id)
     _notify_pay(db, background_tasks, r, "pay_paid")

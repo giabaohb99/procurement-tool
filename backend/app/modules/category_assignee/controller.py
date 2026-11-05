@@ -139,18 +139,21 @@ def list_(
 
 @router.get("/{cid}")
 def get_(cid: int, db: Session = Depends(get_db), user=Depends(require("category_assignee", "read"))):
+    """Xem một dòng phân công phụ trách theo phân loại hàng."""
     return success(_out(db, service.get(db, cid)))
 
 
 @router.post("")
 def create_(data: CategoryAssigneeCreate, db: Session = Depends(get_db),
             user=Depends(require("category_assignee", "create"))):
+    """Thêm phân công người phụ trách chính và dự phòng cho một phân loại hàng."""
     return success(_out(db, service.create(db, data, user.id)), "Đã tạo phân công", 201)
 
 
 @router.post("/bulk")
 def bulk_(data: CategoryAssigneeBulk, db: Session = Depends(get_db),
           user=Depends(require("category_assignee", "create"))):
+    """Gán cùng người phụ trách chính, dự phòng cho nhiều phân loại một lần."""
     n = service.bulk_upsert(db, data.item_group_ids, data.primary_employee_id, data.backup_employee_id,
                             user.id, department_id=data.department_id)
     return success({"count": n}, f"Đã gán cho {n} phân loại")
@@ -159,11 +162,13 @@ def bulk_(data: CategoryAssigneeBulk, db: Session = Depends(get_db),
 @router.patch("/{cid}")
 def update_(cid: int, data: CategoryAssigneeUpdate, db: Session = Depends(get_db),
             user=Depends(require("category_assignee", "write"))):
+    """Sửa một dòng phân công phụ trách."""
     return success(_out(db, service.update(db, cid, data, user.id)), "Đã cập nhật")
 
 
 @router.delete("/{cid}")
 def delete_(cid: int, db: Session = Depends(get_db),
             user=Depends(require("category_assignee", "delete"))):
+    """Xóa một dòng phân công phụ trách."""
     service.delete(db, cid, user.id)
     return success(None, "Đã xóa")

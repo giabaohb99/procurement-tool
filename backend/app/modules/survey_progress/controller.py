@@ -347,6 +347,7 @@ def _decorate(db: Session, rows, show_supplier: bool, start: int) -> list[dict]:
 @router.get("")
 def list_progress(request: Request, pg: dict = Depends(pagination),
                   db: Session = Depends(get_db), user=Depends(_require_progress)):
+    """Bảng tiến độ báo giá theo từng dòng YCBG, có lọc và phân trang; cột NCC ẩn với người không được xem."""
     prof = get_perm_profile(db, user)
     show_supplier = _show_supplier(db, user)
     q = _build_query(request, db, user, prof, show_supplier)
