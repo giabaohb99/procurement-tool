@@ -18482,6 +18482,18 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 - Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
 **Rà 05/11/2026 (còn tồn):** nhận thêm việc nhập bù ngày vào làm từ kh-HR1-5-6; việc dữ liệu chờ phòng Nhân sự, lần rà này không đọc được CSDL prod để đếm hồ sơ còn thiếu.
 
+## bao-CR-731 | Lịch tự dọn nhật ký do máy ghi
+- status: xong
+- date: 2026-11-05
+- list: Nền tảng
+- tag: Agent 4
+
+**Bối cảnh:** đo prod ngày 05/11, các bảng nhật ký do máy tự ghi (truy cập, nạp tệp, đồng bộ đặt xe, lịch sử thay đổi) chiếm hơn nửa cơ sở dữ liệu và tăng theo ngày.
+
+**Đã làm:** thêm việc dọn hằng đêm lúc 4 giờ. Sổ đồng bộ bỏ dòng bỏ qua sau 14 ngày và dòng thành công sau 90 ngày, giữ dòng lỗi và dòng mới nhất của từng phiếu. Nhật ký thư xóa nội dung thư sau 90 ngày, giữ người nhận, tiêu đề, trạng thái. Nhật ký nạp tệp bỏ dòng thông tin sau 30 ngày, giữ cảnh báo và lỗi; màn nhật ký lô cũ báo rõ phần đã dọn. Thôi ghi lịch sử thay đổi cho các bảng nhật ký máy. Nhật ký truy cập dạng xem giữ 30 ngày thay vì 90. Có script đếm trước để xem số rồi mới dọn thật lần đầu trên prod.
+
+Mã nguồn: system_log/machine_cleanup.py, system_log/tasks.py, core/logging_policy.py, core/config.py, request_log/tasks.py, job_run/registry.py, core/celery_app.py, notification/email_log_controller.py, import_tool/service.py + controller.py, customs/controller.py, sync_log model + controller, scripts/don_nhat_ky_may.py, frontend-v2 import-detail-page.tsx + customs-history-panel.tsx; bài kiểm test_don_nhat_ky_may_cr731.py.
+
 ## bao-CR-730 | Báo cáo bảo mật tổng hợp tháng 11/2026 cho người chủ
 - status: xong
 - date: 2026-11-05

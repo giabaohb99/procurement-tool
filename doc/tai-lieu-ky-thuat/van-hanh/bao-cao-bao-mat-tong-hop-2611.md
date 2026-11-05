@@ -2,7 +2,7 @@
 
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|
-| 1.1 | 05/11/2026 | Agent 4 (soạn), A1 Điều phối (chuyển người chủ) | Hiệu lực | bao-CR-730 |
+| 1.2 | 05/11/2026 | Agent 4 (soạn), A1 Điều phối (chuyển người chủ) | Hiệu lực | bao-CR-730 |
 
 Tài liệu này viết cho người chủ đọc, không cần biết kỹ thuật. Nó tóm lại từ hai nơi: sổ chi tiết từng lỗ
 [`so-ghi-nhan-loi-bao-mat.md`](so-ghi-nhan-loi-bao-mat.md) (BM-001 đến BM-036) và sổ thay đổi `change-log-bao.md`. Trạng thái
@@ -160,24 +160,23 @@ chưa đo.
 | Bảng (prod) | Dòng | Dung lượng | Đang dọn chưa |
 |---|---|---|---|
 | Dòng hàng tra cứu thị trường (`tab_customs_line`) | ~317 nghìn | 306 MB | Dữ liệu nghiệp vụ, không dọn; tăng theo mỗi lần nạp tờ khai (bao-CR-718 đã làm nhanh tìm kiếm và xuất) |
-| Nhật ký request (`tab_request_log`) | ~333 nghìn (326 nghìn là lượt đọc, 150 nghìn đã quá 30 ngày) | 197 MB | Có: lượt đọc dọn sau 90 ngày (dữ liệu bắt đầu từ 10/09 nên chưa tới hạn), còn lại sau 16 tháng |
-| Nhật ký nạp tệp (`tab_import_log`) | ~187 nghìn, gần hết ở mức INFO trong 30 ngày qua | 183 MB | **Chỉ dọn một phần** dòng nạp tờ khai hải quan sau 7 ngày; loại khác chưa dọn |
-| Sổ đồng bộ đặt xe (`tab_sync_log`) | ~82–98 nghìn, trong đó 61 nghìn dòng *bỏ qua* (mỗi phút một dòng không có gì mới, từ 28/09) | 173 MB | **Chưa dọn** |
-| Nhật ký thay đổi (`tab_change_log`) | ~71 nghìn | 54 MB | Có, sau 16 tháng; nhưng đang ghi thừa thay đổi của chính hai bảng máy `tab_sync_log` (7.461 dòng) và `tab_email_log` (4.677 dòng) |
+| Nhật ký request (`tab_request_log`) | ~333 nghìn (326 nghìn là lượt đọc, 150 nghìn đã quá 30 ngày) | 197 MB | Có: lượt đọc dọn sau **30 ngày** từ bao-CR-731 (trước 90), còn lại sau 16 tháng |
+| Nhật ký nạp tệp (`tab_import_log`) | ~187 nghìn, gần hết ở mức INFO trong 30 ngày qua | 183 MB | Từ bao-CR-731: dòng Thông tin của mọi loại nạp dọn sau 30 ngày; cảnh báo / lỗi giữ; dòng kết cục lô hải quan theo luật riêng |
+| Sổ đồng bộ đặt xe (`tab_sync_log`) | ~82–98 nghìn, trong đó 61 nghìn dòng *bỏ qua* (mỗi phút một dòng không có gì mới, từ 28/09) | 173 MB | Từ bao-CR-731: *Bỏ qua* 14 ngày, *Thành công* 90 ngày, giữ dòng mới nhất mỗi đối tượng, lỗi giữ mãi |
+| Nhật ký thay đổi (`tab_change_log`) | ~71 nghìn | 54 MB | Có, sau 16 tháng. Từ bao-CR-731 thôi ghi (và xóa dòng cũ) cho bảng nhật ký máy — trước đó có 7.461 dòng của `tab_sync_log` và 4.677 dòng của `tab_email_log` |
 | Nhật ký thao tác (`tab_audit_log`) | ~26 nghìn | 13 MB | Có: đóng gói R2 hằng tháng, xóa khỏi CSDL sau 16 tháng |
-| Nhật ký thư (`tab_email_log`) | ~6.240 (từ 01/08/2026) | nhỏ | **Chưa dọn**; từ 2.14.0 lưu cả **thân thư** (cột MEDIUMTEXT) nên sẽ to nhanh |
+| Nhật ký thư (`tab_email_log`) | ~6.240 (từ 01/08/2026) | nhỏ | Từ bao-CR-731: nội dung thư dọn sau 90 ngày, dòng nhật ký giữ 16 tháng |
 
 **Điểm chính:** bốn bảng nhật ký do máy tự ghi (request, nạp tệp, đồng bộ, thay đổi) đã chiếm khoảng **600 MB, hơn nửa CSDL
 prod**, và tăng theo ngày chứ không theo việc kinh doanh. Riêng phần ghi thừa (dòng đồng bộ *bỏ qua*, dòng nạp tệp mức INFO,
-thay đổi của bảng máy) dọn được khoảng **200 MB ngay** mà không mất thông tin có ích. A1 đang đề xuất một CR dọn và lịch tự dọn.
+thay đổi của bảng máy) dọn được khoảng **200 MB ngay** mà không mất thông tin có ích. Đã làm ở **bao-CR-731** (dev 05/11): lịch tự dọn 04:00 hằng đêm, kèm script đếm trước `backend/scripts/don_nhat_ky_may.py` để chạy lần đầu trên prod sau khi người chủ xem số.
 
 - **Khả năng:** chắc chắn — dữ liệu chỉ tăng.
 - **Hậu quả:** màn tìm kiếm và báo cáo chậm dần; bản sao lưu to lên nên mỗi lần sao lưu lâu hơn, tốn chỗ hơn, và khôi phục khi
   có sự cố cũng lâu hơn; ổ đĩa máy chủ đầy thì CSDL dừng ghi, cả hệ đứng.
 - **Dấu hiệu sớm:** bản sao lưu nén vượt 150 MB; ổ đĩa máy chủ vượt 70%; màn tra cứu thị trường hay nhật ký chậm hơn 1 giây.
-- **Việc nên làm:** CR dọn bốn bảng nhật ký máy (không ghi dòng đồng bộ *bỏ qua*, giữ dòng nạp tệp mức INFO 30 ngày, bỏ hai bảng
-  máy khỏi nhật ký thay đổi); dọn thân thư của nhật ký thư sau 90 ngày, giữ dòng tiêu đề; một tin vận hành hằng tuần báo dung
-  lượng các bảng lớn nhất và ổ đĩa; khi tra cứu thị trường qua khoảng 1 triệu dòng thì xem lại chia bảng theo năm.
+- **Việc nên làm:** đưa bao-CR-731 lên prod và chạy lần dọn đầu (đếm trước, gật rồi mới xóa, sau đó `OPTIMIZE TABLE`
+  vào giờ vắng); tối ưu sao lưu (bao-CR-732); một tin vận hành hằng tuần báo dung lượng các bảng lớn nhất và ổ đĩa; khi tra cứu thị trường qua khoảng 1 triệu dòng thì xem lại chia bảng theo năm.
 - **Ưu tiên:** 1.
 
 ### 4.2 Hiệu năng và quá tải do chính người dùng hợp lệ
@@ -270,7 +269,7 @@ thay đổi của bảng máy) dọn được khoảng **200 MB ngay** mà khôn
 | Tháng | Việc | Liên quan |
 |---|---|---|
 | **11/2026** | Bật trần tốc độ gọi cho đường nghiệp vụ (bao-CR-729) | BM-020, mục 4.2 |
-| | CR dọn bốn bảng nhật ký máy + lịch tự dọn (khoảng 200 MB ngay); dọn thân thư nhật ký thư | Mục 4.1 |
+| | bao-CR-731 dọn nhật ký máy + lịch tự dọn (khoảng 200 MB ngay); bao-CR-732 tối ưu sao lưu | Mục 4.1 |
 | | Khôi phục thử CSDL ERP: đã thử 05/11 (người chủ), lặp lại mỗi tháng; chốt báo sao lưu quá 24 giờ | Mục 4.3 |
 | | Bắt đổi mật khẩu yếu cũ lúc đăng nhập | Mục 3 |
 | **12/2026** | Chính sách chặn script ở chế độ chỉ báo trên dev, đọc báo cáo, rồi bật trên prod | BM-035 |

@@ -157,7 +157,8 @@ def get_import_logs(bid: int, level: int | None = Query(None),
                     pg: dict = Depends(pagination), db: Session = Depends(get_db), user=Depends(get_current_user)):
     _guard_view(db, user)
     total, items = service.get_logs(db, bid, level, pg)
-    return success({"total": total, "items": [_log_out(x) for x in items]})
+    return success({"total": total, "items": [_log_out(x) for x in items],
+                    "pruned_note": service.pruned_note(service.get_batch(db, bid))})
 
 
 @router.delete("/dev/surveys")

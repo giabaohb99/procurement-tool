@@ -144,6 +144,12 @@ celery_app.conf.update(
         },
         #  Dọn BỐN bảng nhật ký quá 16 tháng, theo tháng, chỉ tháng đã có gói R2
         #  (bao-CR-448). Đặt sau request_log.cleanup 03:40 cùng lý do ở trên.
+        #  bao-CR-731: dọn nhật ký do máy ghi (sổ đồng bộ, nội dung thư, dòng thông tin nạp tệp, change_log của bảng
+        #  máy). Sau hai việc dọn 03:40 / 03:50, trước 04:10; xa hai giờ sao lưu 01:00 / 13:00.
+        "cleanup-machine-logs": {
+            "task": "system_log.cleanup_machine_logs",
+            "schedule": crontab(hour=4, minute=0),  # 04:00 VN, mỗi ngày
+        },
         "cleanup-expired-logs": {
             "task": "system_log.cleanup_expired",
             "schedule": crontab(hour=3, minute=50),  # 03:50 VN, mỗi ngày

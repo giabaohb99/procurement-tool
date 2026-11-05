@@ -186,6 +186,12 @@ class Settings(BaseSettings):
     CUSTOMS_LINE_MERGE_ENABLED: bool = True
     # bao-CR-703: sổ việc chạy ngầm (tab_job_run) giữ N ngày; 0 = tắt dọn.
     JOB_RUN_KEEP_DAYS: int = 90
+    #  bao-CR-731 — hạn giữ nhật ký do máy ghi (đổi qua .env, không cần dựng ảnh). Xem system_log/machine_cleanup.py.
+    REQUEST_LOG_GET_KEEP_DAYS: int = 30     # dòng GET của tab_request_log (trước là 90)
+    SYNC_LOG_SKIPPED_KEEP_DAYS: int = 14    # sổ đồng bộ: dòng Bỏ qua
+    SYNC_LOG_SUCCESS_KEEP_DAYS: int = 90    # sổ đồng bộ: dòng Thành công (dòng mới nhất mỗi đối tượng luôn giữ)
+    EMAIL_BODY_KEEP_DAYS: int = 90          # nhật ký thư: nội dung thư (dòng nhật ký giữ 16 tháng)
+    IMPORT_INFO_LOG_KEEP_DAYS: int = 30     # nhật ký nạp tệp: dòng mức Thông tin (cảnh báo / lỗi giữ theo lô)
 
     # --- Trợ lý AI (Phase 0: nền lớp provider) ---
     # Tắt mặc định — bật ở .env môi trường muốn dùng. Off thì endpoint /api/assistant trả 403.

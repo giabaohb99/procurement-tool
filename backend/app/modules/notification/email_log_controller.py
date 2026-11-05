@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.auth import require
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.permissions import ENTITY_LABELS
 from app.core.response import success
@@ -85,6 +86,10 @@ def resend_block_reason(r: EmailLog, first_kept_at: datetime | None) -> str:
     """Vì sao dòng này KHÔNG gửi lại được; rỗng = gửi lại được."""
     if is_secret_email_event(r.event):
         return SECRET_BLOCK_REASON
+    if r.html_body == "":
+        #  bao-CR-731: "" = đã lưu rồi bị việc dọn đêm xóa nội dung (NULL mới là chưa bao giờ lưu).
+        return (f"Thư quá {settings.EMAIL_BODY_KEEP_DAYS} ngày đã dọn nội dung (chỉ giữ người nhận, tiêu đề, trạng thái) "
+                "nên không gửi lại được.")
     if not r.html_body:
         if first_kept_at and (r.created_at is None or r.created_at < first_kept_at):
             return f"Thư gửi trước ngày {first_kept_at:%d/%m/%Y} không lưu nội dung nên không gửi lại được."
