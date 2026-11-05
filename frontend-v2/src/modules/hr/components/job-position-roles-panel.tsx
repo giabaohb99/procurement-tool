@@ -2,6 +2,7 @@ import { Loader2, Plus, Save, Trash2, Users } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { usePermission } from '@/core/authorization/use-permission'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
@@ -20,6 +21,7 @@ import {
   useSaveJobPositionRoles,
 } from '../hooks/use-job-position-roles'
 import { useRoles } from '../hooks/use-roles'
+import { JobPositionRoleCard } from './job-position-role-card'
 
 /** Vai trò Quản trị hệ thống không bao giờ vào gói (backend cũng chặn). */
 const ADMIN_ROLE_CODE = 'admin'
@@ -42,6 +44,8 @@ export function JobPositionRolesPanel({ positionId }: { positionId: number }) {
   const { data: allRoles } = useRoles()
   const save = useSaveJobPositionRoles(positionId)
   const apply = useApplyJobPositionRoles(positionId)
+  //  Khổ điện thoại: bảng hai cột thành danh sách thẻ (duoc-CR-721) — cột Mã rộng cứng ép tên dài xuống nhiều hàng.
+  const asCards = useIsMobile()
 
   //  Bản nháp: null = chưa sửa gì, hiện thẳng dữ liệu đã lưu.
   const [draft, setDraft] = useState<number[] | null>(null)
@@ -69,6 +73,14 @@ export function JobPositionRolesPanel({ positionId }: { positionId: number }) {
     .filter((r) => r.code !== ADMIN_ROLE_CODE && !current.includes(r.id))
     .map((r) => ({ value: String(r.id), label: `${r.name} (${r.code})` }))
   const holders = bundle.data.eligible_holders
+  //  Tên + mã của một vai trò trong gói: ưu tiên danh mục vai trò, thiếu thì lấy bản backend gửi kèm gói.
+  const describeRole = (id: number) => {
+    const role = byId.get(id)
+    const fromServer = bundle.data.roles.find((x) => x.role_id === id)
+    return { name: role?.name ?? fromServer?.role_name ?? `#${id}`, code: role?.code ?? fromServer?.role_code ?? '' }
+  }
+  const removeRole = (id: number) => setDraft(current.filter((x) => x !== id))
+  const emptyText = 'Chưa có vai trò nào trong gói.'
 
   const add = () => {
     if (!pick) return
@@ -113,49 +125,63 @@ export function JobPositionRolesPanel({ positionId }: { positionId: number }) {
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Vai trò</TableHead>
-              <TableHead className="w-40">Mã</TableHead>
-              {canWrite && <TableHead className="w-16" />}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {current.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={canWrite ? 3 : 2} className="text-muted-foreground">
-                  Chưa có vai trò nào trong gói.
-                </TableCell>
-              </TableRow>
-            )}
+        {asCards ? (
+          <div className="divide-y rounded-lg border">
+            {current.length === 0 && <p className="p-3 text-sm text-muted-foreground">{emptyText}</p>}
             {current.map((id) => {
-              const r = byId.get(id)
-              const fromServer = bundle.data.roles.find((x) => x.role_id === id)
+              const { name, code } = describeRole(id)
               return (
-                <TableRow key={id}>
-                  <TableCell className="font-medium">{r?.name ?? fromServer?.role_name ?? `#${id}`}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {r?.code ?? fromServer?.role_code}
-                  </TableCell>
-                  {canWrite && (
-                    <TableCell>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Bỏ vai trò khỏi gói"
-                        onClick={() => setDraft(current.filter((x) => x !== id))}
-                      >
-                        <Trash2 />
-                      </Button>
-                    </TableCell>
-                  )}
-                </TableRow>
+                <JobPositionRoleCard
+                  key={id}
+                  name={name}
+                  code={code}
+                  onRemove={canWrite ? () => removeRole(id) : undefined}
+                />
               )
             })}
-          </TableBody>
-        </Table>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Vai trò</TableHead>
+                <TableHead className="w-40">Mã</TableHead>
+                {canWrite && <TableHead className="w-16" />}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {current.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={canWrite ? 3 : 2} className="text-muted-foreground">
+                    {emptyText}
+                  </TableCell>
+                </TableRow>
+              )}
+              {current.map((id) => {
+                const { name, code } = describeRole(id)
+                return (
+                  <TableRow key={id}>
+                    <TableCell className="font-medium">{name}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{code}</TableCell>
+                    {canWrite && (
+                      <TableCell>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Bỏ vai trò khỏi gói"
+                          onClick={() => removeRole(id)}
+                        >
+                          <Trash2 />
+                        </Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        )}
 
         {canWrite && (
           <div className="flex flex-wrap items-center gap-2">

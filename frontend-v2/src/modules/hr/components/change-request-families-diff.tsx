@@ -9,6 +9,7 @@ import type {
 } from '../types/employee-change-request'
 import { isFamiliesChangedSinceSubmit } from '../utils/employee-change-request-review'
 import { formatPeopleCell } from '../utils/format-people-cell'
+import { ChangeRequestFamilyMemberCard } from './change-request-family-member-card'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
 import { SectionHeading } from '@/shared/ui/section-heading'
@@ -31,6 +32,8 @@ function indexRows(rows: readonly ChangeRequestFamilyRow[] | null | undefined): 
  * trả 409 (review M3) — duyệt thì GHI ĐÈ mất bản sửa kia.
  *
  * Bảng xếp DỌC chứ không cạnh nhau: ba bảng sáu cột chia ba bề ngang thì cột nào cũng cụt chữ.
+ * Khổ điện thoại (duoc-CR-721): mỗi dòng thành một thẻ (`ChangeRequestFamilyMemberCard`), ba khối
+ * và tiêu đề Lúc gửi / Hiện tại / Đề nghị giữ nguyên nên thứ tự cũ → mới không đổi.
  */
 export function ChangeRequestFamiliesDiff({ families }: { families: ChangeRequestFamilies }) {
   const columns = useMemo<DataTableColumn<IndexedFamilyRow>[]>(
@@ -108,6 +111,7 @@ export function ChangeRequestFamiliesDiff({ families }: { families: ChangeReques
             idColumn={false}
             getRowId={(row) => row.index}
             emptyMessage="Không khai ai."
+            mobileCard={(row) => <ChangeRequestFamilyMemberCard member={row} index={row.index} />}
           />
         </div>
       ))}

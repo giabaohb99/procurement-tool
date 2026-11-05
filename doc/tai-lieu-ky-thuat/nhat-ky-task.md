@@ -19043,3 +19043,19 @@ Mã nguồn: frontend-v2/src/modules/procurement/components (purchase-order-*-ca
 **Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ thu mua 1195 bài xanh.
 
 Mã nguồn: frontend-v2/src/modules/procurement/components (import-landed-cost-cards, import-landed-cost-card-parts, report-import-landed-cost-tab)
+
+## duoc-CR-721 | Nhân sự trên điện thoại: các bảng còn lại đổi sang dạng thẻ
+- status: xong
+- date: 2026-11-05
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được yêu cầu làm phân hệ Nhân sự giống Thu mua: các bảng phải hiện tốt trên điện thoại. Danh sách nhân sự, phòng ban, pháp nhân, nghỉ phép, quỹ phép, phòng họp đã có thẻ từ trước; đợt này làm nốt mười bốn bảng còn cuộn ngang. Màn rộng từ 768px trở lên giữ nguyên bảng.
+
+**Đã làm**
+- Hồ sơ và hợp đồng: tab Hợp đồng trong hồ sơ nhân sự (lương chỉ hiện khi có quyền xem hợp đồng, đủ thao tác của nút ba chấm), Quá trình công tác và Quyết định bổ nhiệm dùng chung một thẻ, quyền mặc định của chức vụ, danh mục mẫu hợp đồng, danh sách biến mẫu hợp đồng, danh sách duyệt sửa hồ sơ và khối so sánh hộ gia đình (vẫn xếp Lúc gửi, Hiện tại, Đề nghị; ô trống in gạch ngang).
+- Nghỉ phép và phòng họp: danh sách phiếu nghỉ bù, hộp đối chiếu kết sổ năm (số cũ, số mới, phần chênh, phần chuyển sang năm sau), tab Đang phân bổ của chính sách, bảng xem trước phân bổ hàng loạt (giữ ô chọn và nút chọn tất cả), lịch Sắp tới và Đã qua của chi tiết phòng họp. Thẻ trong trang của chính một phòng hay một chính sách thì không lặp tên phòng, tên chính sách.
+- Cố ý giữ bảng: hai trang in (thông tin nhân sự, phiếu nghỉ) và lưới lịch trực. Danh sách Thanh toán nghỉ phép thuộc duoc-CR-719 chưa commit nên chưa làm.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ nhân sự 1591 bài xanh. Quét hai mươi sáu màn nhân sự trên dev ở khổ 390px trước khi sửa để tìm bảng còn cuộn ngang; chỗ cuộn ngang còn lại chỉ là thanh tab, cố ý vuốt được.
+
+Mã nguồn: frontend-v2/src/modules/hr/components (profile-change-request-card, change-request-family-member-card, labor-contract-card, work-history-card, job-position-role-card, labor-contract-template-card, labor-contract-variable-card, leave-comp-request-card, leave-close-year-review-card, leave-policy-bulk-preview-card), utils/format-close-year-days.ts

@@ -6,12 +6,14 @@ import { DataTable } from '@/shared/data-table'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { toDateInputValue } from '@/shared/utils/format-date'
 import { buildEmployeeWorkHistoryDecisionColumns } from '../config/employee-work-history-decision-columns'
 import type { EmployeeWorkHistory } from '../types/employee-work-history'
 import { filterDecisionRows } from '../utils/employee-work-history-display'
 import { EmployeeWorkHistoryTimeline } from './employee-work-history-timeline'
 import { EmployeeWorkHistoryTimelineToolbar, EmployeeWorkHistoryToolbarTitle } from './employee-work-history-toolbar'
 import type { WorkHistoryViewMode } from './employee-work-history-view-toggle'
+import { WorkHistoryCard } from './work-history-card'
 
 const TITLE = 'Quyết định bổ nhiệm'
 const EMPTY_MESSAGE = 'Chưa có quyết định nào.'
@@ -118,6 +120,17 @@ export function EmployeeWorkHistoryDecisionSection({
           //  Cùng lý do đã ghi ở khu Quá trình công tác: `decView` trên URL
           //  không phải bộ lọc, đừng để `FilterResetButton` tự suy nhầm.
           filtersActive={false}
+          //  Khổ điện thoại (duoc-CR-721): mỗi dòng một thẻ. "Hôm nay" tính trong hàm vẽ thẻ như ô
+          //  Đến ngày của bảng, không tính ở thân component.
+          mobileCard={(row) => (
+            <WorkHistoryCard
+              row={row}
+              variant="decision"
+              canOpenFiles={canOpenFiles}
+              onOpenFiles={onOpenFiles}
+              today={toDateInputValue(new Date())}
+            />
+          )}
           toolbar={<EmployeeWorkHistoryToolbarTitle title={TITLE} view={view} onChange={setView} />}
           toolbarEnd={addButton}
         />

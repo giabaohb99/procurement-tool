@@ -16,11 +16,8 @@ import {
 import { closeYearReviewExportUrl } from '../api/leave-api'
 import { useCloseYearReview } from '../hooks/use-leave'
 import type { LeaveCloseYearReviewRow } from '../types/leave'
-
-/** Số ngày: tối đa 2 số lẻ, bỏ đuôi `.00` — `8` chứ không `8.00`. */
-function formatDays(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0$/, '')
-}
+import { formatCloseYearDays as formatDays } from '../utils/format-close-year-days'
+import { LeaveCloseYearReviewCard } from './leave-close-year-review-card'
 
 interface LeaveCloseYearReviewDialogProps {
   /** Năm VỪA kết sổ (năm cũ). `null` = đóng hộp. */
@@ -92,6 +89,7 @@ export function LeaveCloseYearReviewDialog({ year, onClose }: LeaveCloseYearRevi
           isError={isError}
           emptyMessage={`Chưa có dòng nào được kết sổ cho năm ${year}.`}
           storageKey="hr.leave-close-year-review"
+          mobileCard={(r) => <LeaveCloseYearReviewCard row={r} />}
           toolbarEnd={
             can('leave_balance', 'export') && (
               <Button variant="outline" size="sm" onClick={() => void exportExcel()}

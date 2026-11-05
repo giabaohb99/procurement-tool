@@ -9,6 +9,7 @@ import {
   summarizeQuotaChanges,
   type LeaveTypeNameLookup,
 } from '../utils/leave-policy-display'
+import { LeavePolicyBulkPreviewCard } from './leave-policy-bulk-preview-card'
 
 /** Dòng "ngoài phạm vi" (`conflict: 'scope'`) không có tên — vẫn phải gọi được người đó là ai. */
 function displayName(item: PolicyPreviewItem): string {
@@ -37,7 +38,8 @@ export function LeavePolicyBulkPreviewTable({
   typeName,
 }: LeavePolicyBulkPreviewTableProps) {
   const selectable = useMemo(() => items.filter((i) => !i.conflict), [items])
-  const allSelected = selectable.length > 0 && selectable.every((i) => selectedIds.has(i.employee_id))
+  const allSelected =
+    selectable.length > 0 && selectable.every((i) => selectedIds.has(i.employee_id))
   const someSelected = selectable.some((i) => selectedIds.has(i.employee_id))
 
   const columns = useMemo<DataTableColumn<PolicyPreviewItem>[]>(
@@ -69,8 +71,19 @@ export function LeavePolicyBulkPreviewTable({
           </span>
         ),
       },
-      { key: 'code', header: 'Mã', width: 110, cell: (i) => <span className="tabular-nums">{i.code}</span> },
-      { key: 'name', header: 'Tên', width: 200, hideable: false, cell: (i) => <span className="font-medium">{displayName(i)}</span> },
+      {
+        key: 'code',
+        header: 'Mã',
+        width: 110,
+        cell: (i) => <span className="tabular-nums">{i.code}</span>,
+      },
+      {
+        key: 'name',
+        header: 'Tên',
+        width: 200,
+        hideable: false,
+        cell: (i) => <span className="font-medium">{displayName(i)}</span>,
+      },
       { key: 'department', header: 'Phòng', width: 170, cell: (i) => i.department_name },
       {
         key: 'hire_date',
@@ -107,7 +120,9 @@ export function LeavePolicyBulkPreviewTable({
         cell: (i) =>
           i.conflict ? (
             <span className="text-destructive">
-              {i.conflict === 'self' ? 'Không tự phân bổ chính sách cho chính mình.' : i.conflict_message}
+              {i.conflict === 'self'
+                ? 'Không tự phân bổ chính sách cho chính mình.'
+                : i.conflict_message}
             </span>
           ) : (
             ''
@@ -118,12 +133,37 @@ export function LeavePolicyBulkPreviewTable({
   )
 
   return (
-    <DataTable
-      columns={columns}
-      rows={items}
-      getRowId={(i) => i.employee_id}
-      emptyMessage="Không có nhân sự nào khớp bộ lọc (hoặc tất cả đã có chính sách hiệu lực)."
-      storageKey="hr.leave-policy-bulk-preview"
-    />
+    <>
+      {/*  Khổ điện thoại: thẻ thay bảng nên ô "Chọn tất cả" ở đầu cột mất theo — dựng lại ngay trên danh
+           sách. `md:hidden` khớp ngưỡng 768px của `useIsMobile` mà `DataTable` dùng để đổi sang thẻ. */}
+      {selectable.length > 0 && (
+        <div className="flex items-center gap-2 text-sm md:hidden">
+          <Checkbox
+            id="bulk-preview-select-all"
+            checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+            onCheckedChange={onToggleAll}
+          />
+          <label htmlFor="bulk-preview-select-all">
+            {allSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả người phân bổ được'} ({selectable.length}
+            )
+          </label>
+        </div>
+      )}
+      <DataTable
+        columns={columns}
+        rows={items}
+        getRowId={(i) => i.employee_id}
+        emptyMessage="Không có nhân sự nào khớp bộ lọc (hoặc tất cả đã có chính sách hiệu lực)."
+        storageKey="hr.leave-policy-bulk-preview"
+        mobileCard={(i) => (
+          <LeavePolicyBulkPreviewCard
+            item={i}
+            checked={selectedIds.has(i.employee_id)}
+            onToggle={onToggle}
+            typeName={typeName}
+          />
+        )}
+      />
+    </>
   )
 }

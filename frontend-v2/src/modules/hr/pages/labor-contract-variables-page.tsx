@@ -22,7 +22,11 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { LaborContractVariableFormDialog } from '../components/labor-contract-variable-form-dialog'
-import { buildLaborContractVariableColumns } from '../config/labor-contract-variable-columns'
+import { LaborContractVariableCard } from '../components/labor-contract-variable-card'
+import {
+  buildLaborContractVariableColumns,
+  type LaborContractVariableColumnActions,
+} from '../config/labor-contract-variable-columns'
 import {
   useDeleteLaborContractVariable,
   useLaborContractVariables,
@@ -58,49 +62,50 @@ export function LaborContractVariablesPage() {
   const canManage = data?.can_manage ?? false
   const canDelete = data?.can_delete ?? false
 
-  const columns = useMemo(
-    () =>
-      buildLaborContractVariableColumns({
-        canManage,
-        canDelete,
-        onEdit: setEditing,
-        //  Danh mục dùng chung mọi pháp nhân: đổi trạng thái là ảnh hưởng ô nhập / khung chèn biến của mọi HR → hỏi lại.
-        onToggleActive: async (v) => {
-          const stopping = v.is_active
-          const ok = await confirm({
-            title: stopping ? 'Ngừng dùng biến' : 'Bật lại biến',
-            message: stopping
-              ? `Ngừng dùng biến "${v.label}"? Biến biến mất khỏi ô nhập và khung "Chèn biến"; mẫu mới không nhận được biến này. Mẫu cũ và giá trị đã nhập vẫn giữ nguyên.`
-              : `Bật lại biến "${v.label}"? Biến hiện lại ở ô nhập hợp đồng và khung "Chèn biến".`,
-            confirmLabel: stopping ? 'Ngừng dùng' : 'Bật lại',
-          })
-          if (ok) update.mutate({ id: v.id, payload: { is_active: !v.is_active } })
-        },
-        onToggleHidden: async (v) => {
-          const hiding = !v.is_hidden
-          const ok = await confirm({
-            title: hiding ? 'Ẩn biến khỏi danh sách' : 'Hiện lại biến',
-            message: hiding
-              ? `Ẩn biến "${v.label}" khỏi khung "Chèn biến"? Biến vẫn dùng được trong mẫu.`
-              : `Hiện lại biến "${v.label}" ở khung "Chèn biến"?`,
-            confirmLabel: hiding ? 'Ẩn' : 'Hiện',
-          })
-          if (ok) update.mutate({ id: v.id, payload: { is_hidden: hiding } })
-        },
-        onDelete: async (v) => {
-          const ok = await confirm({
-            title: 'Xóa biến',
-            message: `Xóa biến "${v.label}"? Biến đang dùng trong mẫu hoặc đã có hợp đồng nhập giá trị sẽ không xóa được, khi đó hãy chọn "Ngừng dùng".`,
-            confirmLabel: 'Xóa',
-          })
-          //  Lỗi 409 (đang dùng) đã được http-client toast đúng câu của backend (số mẫu / hợp đồng).
-          if (ok) remove.mutate(v.id)
-        },
-      }),
+  //  Dùng CHUNG cho cột Thao tác của bảng và nút của thẻ khổ điện thoại (duoc-CR-721).
+  const actions = useMemo<LaborContractVariableColumnActions>(
+    () => ({
+      canManage,
+      canDelete,
+      onEdit: setEditing,
+      //  Danh mục dùng chung mọi pháp nhân: đổi trạng thái là ảnh hưởng ô nhập / khung chèn biến của mọi HR → hỏi lại.
+      onToggleActive: async (v) => {
+        const stopping = v.is_active
+        const ok = await confirm({
+          title: stopping ? 'Ngừng dùng biến' : 'Bật lại biến',
+          message: stopping
+            ? `Ngừng dùng biến "${v.label}"? Biến biến mất khỏi ô nhập và khung "Chèn biến"; mẫu mới không nhận được biến này. Mẫu cũ và giá trị đã nhập vẫn giữ nguyên.`
+            : `Bật lại biến "${v.label}"? Biến hiện lại ở ô nhập hợp đồng và khung "Chèn biến".`,
+          confirmLabel: stopping ? 'Ngừng dùng' : 'Bật lại',
+        })
+        if (ok) update.mutate({ id: v.id, payload: { is_active: !v.is_active } })
+      },
+      onToggleHidden: async (v) => {
+        const hiding = !v.is_hidden
+        const ok = await confirm({
+          title: hiding ? 'Ẩn biến khỏi danh sách' : 'Hiện lại biến',
+          message: hiding
+            ? `Ẩn biến "${v.label}" khỏi khung "Chèn biến"? Biến vẫn dùng được trong mẫu.`
+            : `Hiện lại biến "${v.label}" ở khung "Chèn biến"?`,
+          confirmLabel: hiding ? 'Ẩn' : 'Hiện',
+        })
+        if (ok) update.mutate({ id: v.id, payload: { is_hidden: hiding } })
+      },
+      onDelete: async (v) => {
+        const ok = await confirm({
+          title: 'Xóa biến',
+          message: `Xóa biến "${v.label}"? Biến đang dùng trong mẫu hoặc đã có hợp đồng nhập giá trị sẽ không xóa được, khi đó hãy chọn "Ngừng dùng".`,
+          confirmLabel: 'Xóa',
+        })
+        //  Lỗi 409 (đang dùng) đã được http-client toast đúng câu của backend (số mẫu / hợp đồng).
+        if (ok) remove.mutate(v.id)
+      },
+    }),
     // `mutate` ổn định; không đưa cả object mutation vào deps kẻo bảng dựng lại mỗi lượt.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [canManage, canDelete],
   )
+  const columns = useMemo(() => buildLaborContractVariableColumns(actions), [actions])
 
   if (!canRead) {
     return (
@@ -155,6 +160,7 @@ export function LaborContractVariablesPage() {
             isFiltering ? 'Không có biến nào khớp bộ lọc.' : 'Chưa có biến tùy chỉnh. Bấm "Thêm biến".'
           }
           storageKey="hr.labor-contract-variables"
+          mobileCard={(v) => <LaborContractVariableCard variable={v} actions={actions} />}
           pagination={{
             page,
             pageSize,

@@ -8,6 +8,7 @@ import { formatDate } from '@/shared/utils/format-date'
 import { useRoomBookings } from '../hooks/use-room'
 import { BLOCKING_ROOM_STATUSES, type RoomBooking } from '../types/room'
 import { formatTimeRange, toApiTime, toLocalInput } from '../utils/room-time'
+import { RoomBookingCard } from './room-booking-card'
 import { RoomStatusBadge } from './room-status-badge'
 
 /**
@@ -86,6 +87,10 @@ export function RoomScheduleCard({ roomId }: { roomId: number }) {
     [],
   )
 
+  //  Khổ điện thoại (duoc-CR-721): thẻ phiếu đặt phòng dùng chung, bỏ dòng tên phòng — cả hai danh sách là
+  //  của chính phòng đang mở. Cả thẻ là vùng bấm sang chi tiết phiếu, như dòng bảng.
+  const renderCard = (b: RoomBooking) => <RoomBookingCard booking={b} showRoom={false} />
+
   //  Phiếu ĐÃ HỦY / bị từ chối vẫn nằm trong bảng "Đã qua" — chúng là lịch sử
   //  thật của phòng. Nhưng ở "Sắp tới" thì bỏ: phòng không bị giữ, hiện ra chỉ
   //  làm người xếp lịch tưởng nó đã kín.
@@ -110,6 +115,7 @@ export function RoomScheduleCard({ roomId }: { roomId: number }) {
           emptyMessage="Phòng này chưa có ai giữ trong thời gian tới."
           storageKey="hr.room-schedule-upcoming"
           onRowClick={(b) => navigate(appRoutes.hr.roomBookingDetail(b.id))}
+          mobileCard={renderCard}
         />
       </TabsContent>
 
@@ -123,6 +129,7 @@ export function RoomScheduleCard({ roomId }: { roomId: number }) {
           emptyMessage="Phòng này chưa từng được đặt."
           storageKey="hr.room-schedule-past"
           onRowClick={(b) => navigate(appRoutes.hr.roomBookingDetail(b.id))}
+          mobileCard={renderCard}
         />
       </TabsContent>
     </Tabs>

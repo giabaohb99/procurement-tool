@@ -18,6 +18,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { formatDate } from '@/shared/utils/format-date'
+import { LeaveCompRequestCard } from '../components/leave-comp-request-card'
 import { LeaveStatusBadge } from '../components/leave-status-badge'
 import { formatCompDays } from '../utils/format-comp-days'
 import { useLeaveCompRequests, useLeaveCompToApprove } from '../hooks/use-leave-comp'
@@ -200,6 +201,7 @@ export function LeaveCompRequestListPage() {
           storageKey="hr.leave-comp-requests"
           onRowClick={(r) => navigate(appRoutes.hr.leaveCompRequestDetail(r.id))}
           getRowHref={(r) => appRoutes.hr.leaveCompRequestDetail(r.id)}
+          mobileCard={(r) => <LeaveCompRequestCard request={r} waitingForMe={waitingIds.has(r.id)} />}
           pagination={
             isApproveScope
               ? undefined

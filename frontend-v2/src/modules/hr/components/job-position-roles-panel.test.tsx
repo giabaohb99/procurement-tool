@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { JobPositionRolesPanel } from './job-position-roles-panel'
 
@@ -144,5 +144,42 @@ describe('JobPositionRolesPanel', () => {
     build()
     expect(screen.getByText(/cần quyền xem Vai trò/)).toBeInTheDocument()
     expect(apiGet).not.toHaveBeenCalledWith('/api/job-positions/7/roles', expect.anything())
+  })
+})
+
+//  duoc-CR-721: khổ điện thoại đổi bảng hai cột thành thẻ — nút bỏ vai trò phải theo sang thẻ.
+describe('JobPositionRolesPanel ở khổ điện thoại', () => {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }))
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('bày thẻ thay bảng; bỏ vai trò trên thẻ chỉ sửa bản nháp, Lưu mới bật', async () => {
+    const nguoi = userEvent.setup()
+    build()
+    expect(await screen.findByText('Nhân sự')).toBeInTheDocument()
+    expect(screen.getByText('employee')).toBeInTheDocument()
+    expect(screen.queryByRole('table')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Lưu' })).toBeDisabled()
+
+    await nguoi.click(screen.getByRole('button', { name: 'Bỏ vai trò Nhân sự khỏi gói' }))
+
+    expect(screen.getByText('Chưa có vai trò nào trong gói.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Lưu' })).toBeEnabled()
+    expect(httpPut).not.toHaveBeenCalled()
+  })
+
+  it('không có quyền ghi thì thẻ không có nút bỏ', async () => {
+    perms = { read: true, write: false }
+    build()
+    expect(await screen.findByText('Nhân sự')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Bỏ vai trò/ })).toBeNull()
   })
 })

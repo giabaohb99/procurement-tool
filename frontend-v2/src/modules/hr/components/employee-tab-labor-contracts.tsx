@@ -13,8 +13,10 @@ import {
 } from '../hooks/use-employee-labor-contracts'
 import type { EmployeeDetail } from '../types/employee'
 import type { LaborContract } from '../types/labor-contract'
+import { LaborContractCard } from './labor-contract-card'
 import { LaborContractFormDialog } from './labor-contract-form-dialog'
 import { LaborContractGenerateDialog } from './labor-contract-generate-dialog'
+import type { LaborContractRowActionHandlers } from './labor-contract-row-actions'
 import { LaborContractTransitionDialog, type PendingTransition } from './labor-contract-transition-dialog'
 
 interface EmployeeTabLaborContractsProps {
@@ -58,34 +60,43 @@ export function EmployeeTabLaborContracts({ employee }: EmployeeTabLaborContract
     }
   }, [])
 
+  //  Bộ hàm thao tác dùng CHUNG cho cột Thao tác của bảng và nút "⋯" của thẻ khổ điện thoại — hai
+  //  lối bày một dòng phải gọi đúng một luồng (xác nhận xóa, khóa nút khi đang chạy).
+  const handlers = useMemo<LaborContractRowActionHandlers>(
+    () => ({
+      onEdit: (r) => {
+        setEditRow(r)
+        setFormOpen(true)
+      },
+      onGenerate: setGenerateRow,
+      onDownloadDocument: (r) =>
+        void runOnRow(r.id, () => laborContractApi.downloadDocument(r.id, fallbackName(r, 'docx'))),
+      onUploadSigned: (r, file) =>
+        void runOnRow(r.id, () => uploadMutation.mutateAsync({ id: r.id, file })),
+      onDownloadSigned: (r) =>
+        void runOnRow(r.id, () => laborContractApi.downloadSignedFile(r.id, fallbackName(r, 'pdf'))),
+      onTransition: (row, spec) => setPending({ row, spec }),
+      onDelete: (r) =>
+        void runOnRow(r.id, async () => {
+          const ok = await confirm({
+            title: 'Xóa hợp đồng',
+            message: `Xóa hợp đồng ${r.contract_no || r.code}? Tệp đã sinh và bản ký (nếu có) cũng bị xóa.`,
+            confirmLabel: 'Xóa',
+          })
+          if (ok) await deleteMutation.mutateAsync(r.id)
+        }),
+    }),
+    [runOnRow, uploadMutation, deleteMutation],
+  )
+
   const columns = useMemo(
     () =>
       buildEmployeeLaborContractColumns({
         isBusy: (r) => busyIds.has(r.id),
         canReadSigned: true,
-        onEdit: (r) => {
-          setEditRow(r)
-          setFormOpen(true)
-        },
-        onGenerate: setGenerateRow,
-        onDownloadDocument: (r) =>
-          void runOnRow(r.id, () => laborContractApi.downloadDocument(r.id, fallbackName(r, 'docx'))),
-        onUploadSigned: (r, file) =>
-          void runOnRow(r.id, () => uploadMutation.mutateAsync({ id: r.id, file })),
-        onDownloadSigned: (r) =>
-          void runOnRow(r.id, () => laborContractApi.downloadSignedFile(r.id, fallbackName(r, 'pdf'))),
-        onTransition: (row, spec) => setPending({ row, spec }),
-        onDelete: (r) =>
-          void runOnRow(r.id, async () => {
-            const ok = await confirm({
-              title: 'Xóa hợp đồng',
-              message: `Xóa hợp đồng ${r.contract_no || r.code}? Tệp đã sinh và bản ký (nếu có) cũng bị xóa.`,
-              confirmLabel: 'Xóa',
-            })
-            if (ok) await deleteMutation.mutateAsync(r.id)
-          }),
+        ...handlers,
       }),
-    [busyIds, runOnRow, uploadMutation, deleteMutation],
+    [busyIds, handlers],
   )
 
   function openCreate() {
@@ -104,6 +115,7 @@ export function EmployeeTabLaborContracts({ employee }: EmployeeTabLaborContract
         errorMessage="Không tải được danh sách hợp đồng."
         emptyMessage="Nhân sự này chưa có hợp đồng lao động nào."
         storageKey="hr.employee-labor-contracts"
+        mobileCard={(r) => <LaborContractCard row={r} busy={busyIds.has(r.id)} canReadSigned {...handlers} />}
         filtersActive={false}
         toolbar={<h3 className="text-sm font-semibold">Hợp đồng lao động</h3>}
         toolbarEnd={
