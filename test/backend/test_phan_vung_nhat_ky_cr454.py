@@ -112,7 +112,10 @@ class _FakeProcess:
 
 @pytest.fixture
 def dump(monkeypatch):
-    """Ghi lại mọi dòng lệnh mà `_dump_sql` gọi, không đụng tới mysqldump thật."""
+    """Ghi lại mọi dòng lệnh mà `dump_sql` gọi, không đụng tới mysqldump thật.
+
+    bao-CR-732 bỏ `_dump_sql()` (bản chính nay dump luồng qua `dump_main_to`); bài này gọi thẳng
+    `dump_sql(DB_NAME, LOG_TABLES)` — đúng thân của hàm cũ — để vẫn canh luật hai lượt QĐ-C."""
     calls: list[list[str]] = []
 
     def _fake_run(cmd, **kwargs):
@@ -127,13 +130,13 @@ def dump(monkeypatch):
 
 
 def test_dump_chay_dung_hai_luot(dump):
-    out = backup_service._dump_sql()
+    out = backup_service.dump_sql(settings.DB_NAME, backup_service.LOG_TABLES)
     assert len(dump) == 2, "Gộp về một lượt là mất CREATE TABLE của bốn bảng nhật ký"
     assert out == b"-- luot 1\n\n-- luot 2\n"
 
 
 def test_luot_mot_bo_du_lieu_bon_bang_nhat_ky(dump):
-    backup_service._dump_sql()
+    backup_service.dump_sql(settings.DB_NAME, backup_service.LOG_TABLES)
     data_pass = dump[0]
     for table in backup_service.LOG_TABLES:
         assert f"--ignore-table={settings.DB_NAME}.{table}" in data_pass
@@ -145,7 +148,7 @@ def test_luot_mot_bo_du_lieu_bon_bang_nhat_ky(dump):
 
 
 def test_luot_hai_chi_lay_cau_truc_bon_bang(dump):
-    backup_service._dump_sql()
+    backup_service.dump_sql(settings.DB_NAME, backup_service.LOG_TABLES)
     schema_pass = dump[1]
     assert "--no-data" in schema_pass
     assert schema_pass[-len(backup_service.LOG_TABLES) - 1:] == [settings.DB_NAME,
@@ -165,7 +168,7 @@ def test_dump_hong_mot_luot_thi_bao_ro_luot_nao(monkeypatch):
     monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
     monkeypatch.setattr("app.modules.backup.service.subprocess.run", _fail)
     with pytest.raises(RuntimeError) as err:
-        backup_service._dump_sql()
+        backup_service.dump_sql(settings.DB_NAME, backup_service.LOG_TABLES)
     assert "dữ liệu nghiệp vụ" in str(err.value)
 
 
@@ -179,7 +182,7 @@ def test_dump_rong_thi_ne_m_loi_thay_vi_day_len_r2(monkeypatch):
     monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
     monkeypatch.setattr("app.modules.backup.service.subprocess.run", _empty)
     with pytest.raises(RuntimeError) as err:
-        backup_service._dump_sql()
+        backup_service.dump_sql(settings.DB_NAME, backup_service.LOG_TABLES)
     assert "rỗng" in str(err.value)
 
 
