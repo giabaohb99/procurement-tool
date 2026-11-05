@@ -734,6 +734,8 @@ def revert(db: Session, module: int, changes, user_id: int) -> tuple[int, int]:
 def build_template(module: int) -> bytes:
     """File .xlsx mẫu: một sheet, cột Mã phiếu + đầu phiếu + (dòng hàng) + suy diễn + tệp."""
     import openpyxl
+
+    from app.core.export_xlsx import guard_workbook
     from io import BytesIO
     adapter = DOC_ADAPTERS[module]
     wb = openpyxl.Workbook()
@@ -749,5 +751,5 @@ def build_template(module: int) -> bytes:
         ws.cell(row=1, column=i, value=h)
         ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = max(14, len(h) + 2)
     bio = BytesIO()
-    wb.save(bio)
+    guard_workbook(wb).save(bio)   # bao-CR-726: nhãn cột / ghi chú hướng dẫn lỡ mở đầu bằng =
     return bio.getvalue()

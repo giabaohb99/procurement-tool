@@ -294,6 +294,7 @@ def send_event_email(db: Session, event: str, background_tasks, recipients: list
             html = render_template(eff["body_html"], ctx)
             log = EmailLog(event=event, to_email=to_email, subject=subject,
                            status="pending", created_by=actor_id)
+            log.keep_body(html)  # bao-CR-727
             db.add(log)
             db.flush()
             if background_tasks is not None:

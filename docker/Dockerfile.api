@@ -46,7 +46,8 @@ RUN set -e; \
 
 # Cài dependency trước -> tận dụng cache, chỉ build lại khi requirements đổi
 COPY backend/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# bao-CR-725: nang pip truoc (pip 25.0.1 cua anh goc co 6 lo pip-audit)
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r /app/requirements.txt
 
 # Đồ chạy bài kiểm — CHỈ local bật (docker-compose.yml: INSTALL_TEST_DEPS=1). Dev/prod để 0 nên
 # image chạy thật không mang pytest. Đặt SAU bước trên để đổi cờ không làm mất bộ đệm của nó.

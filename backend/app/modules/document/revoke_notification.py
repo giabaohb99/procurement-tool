@@ -87,14 +87,17 @@ def notify_clones_revoked(db: Session, source: Document, reason: str, actor: int
             )
             db.add(email_log)
             db.flush()
-            jobs.append((email_log.id, email, render_template(DOCUMENT_REVOKED_TEMPLATE, {
+            email_html = render_template(DOCUMENT_REVOKED_TEMPLATE, {
                 "subject": _text(subject),
                 "doc_code": _text(origin),
                 "document_title": _text(source.title),
                 "clone_title": _text(clone.title),
                 "reason": _text(reason),
                 "link": _text(_abs_link(f"/document/documents/{clone.id}")),
-            })))
+            })
+            #  bao-CR-727: lưu nội dung để gửi lại được từ màn Nhật ký email.
+            email_log.keep_body(email_html)
+            jobs.append((email_log.id, email, email_html))
 
     # Task nền dùng session khác nên EmailLog phải tồn tại trước khi xếp hàng.
     db.commit()

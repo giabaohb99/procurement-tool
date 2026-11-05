@@ -6,6 +6,8 @@ from io import BytesIO
 
 from openpyxl import Workbook
 
+from app.core.export_xlsx import guard_workbook
+
 from . import styles as S
 from .pivot import build_pivot_sheet
 from .sheet_import_landed_cost import (build_import_landed_cost_item_sheet,
@@ -95,7 +97,7 @@ def build_report_workbook(data: dict, sheet: str) -> BytesIO:
             raise ValueError(f"sheet không hợp lệ: {sheet}")
 
     buf = BytesIO()
-    wb.save(buf)
+    guard_workbook(wb).save(buf)   # bao-CR-726 / BM-033: tên NCC, phòng ban, nhóm hàng do người gõ
     buf.seek(0)
     return buf
 
@@ -112,6 +114,6 @@ def build_import_landed_cost_workbook(data: dict) -> BytesIO:
     build_import_landed_cost_sheet(ws, data)
     build_import_landed_cost_item_sheet(wb.create_sheet("THEO DONG HANG"), data)
     buf = BytesIO()
-    wb.save(buf)
+    guard_workbook(wb).save(buf)   # bao-CR-726 / BM-033: tên NCC, phòng ban, nhóm hàng do người gõ
     buf.seek(0)
     return buf

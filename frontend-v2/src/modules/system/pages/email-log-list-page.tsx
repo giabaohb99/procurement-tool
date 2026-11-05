@@ -29,7 +29,7 @@ const STAT_DAYS = 7
  * NHẬT KÝ EMAIL — `/system/email-logs` (bao-CR-721).
  *
  * Trả lời câu "hệ đã gửi thư cho ai chưa, lỗi gì": mỗi dòng một thư, mới nhất trước,
- * bấm dòng mở ngăn đọc nguyên văn câu lỗi. Chỉ đọc, không gửi lại.
+ * bấm dòng mở ngăn đọc nguyên văn câu lỗi. Nút Gửi lại nằm trong ngăn (bao-CR-727).
  *
  * `status` và `id` đi qua URL để thẻ đếm đầu màn liên kết được tới danh sách đã lọc
  * và để chép đường dẫn một thư cho người khác xem. Các ô còn lại là state thường.
@@ -99,8 +99,15 @@ export function EmailLogListPage() {
       header: 'Tiêu đề',
       width: 320,
       cell: (r) => (
-        <span className="truncate" title={r.subject}>
-          {r.subject || <span>—</span>}
+        <span className="flex min-w-0 items-center gap-1.5">
+          {r.resent_from_id && (
+            <Badge variant="secondary" className="shrink-0">
+              Gửi lại từ #{r.resent_from_id}
+            </Badge>
+          )}
+          <span className="truncate" title={r.subject}>
+            {r.subject || <span>—</span>}
+          </span>
         </span>
       ),
     },

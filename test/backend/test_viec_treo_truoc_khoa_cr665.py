@@ -6,6 +6,8 @@ chuyển không để phiếu kẹt · người ngoài phạm vi không xem đư
 import pytest
 from fastapi import HTTPException
 
+from app.core.route_iter import api_routes
+
 from app.modules.approval import action_service, instance_service
 from app.modules.approval.flow_model import (APPROVER_EMPLOYEE, SKIP_NONE, ApprovalFlow,
                                              ApprovalNode)
@@ -154,5 +156,5 @@ def test_nguoi_co_pham_vi_tat_ca_xem_duoc_viec_cua_nguoi_khac(db, seed, person, 
 def test_duong_api_duoc_dang_ky_va_gac_employee_read():
     import app.main  # noqa: F401
     from app.main import app
-    paths = {r.path for r in app.routes}
+    paths = {r.path for r in api_routes(app)}
     assert "/api/employees/{eid}/pending-work" in paths

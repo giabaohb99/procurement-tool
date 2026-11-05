@@ -735,6 +735,8 @@ def revert(db: Session, module: int, changes, user_id: int) -> tuple[int, int]:
 def build_template(module: int) -> bytes:
     """Sinh file .xlsx mẫu: đúng bộ cột của adapter (một dòng tiêu đề)."""
     import openpyxl
+
+    from app.core.export_xlsx import guard_workbook
     adapter = ADAPTERS[module]
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -756,5 +758,5 @@ def build_template(module: int) -> bytes:
         gd.column_dimensions["A"].width = 34
         gd.column_dimensions["B"].width = 100
     bio = BytesIO()
-    wb.save(bio)
+    guard_workbook(wb).save(bio)   # bao-CR-726: nhãn cột / ghi chú hướng dẫn lỡ mở đầu bằng =
     return bio.getvalue()

@@ -14,6 +14,7 @@ import pytest
 from fastapi import HTTPException
 from fastapi.routing import APIRoute
 
+from app.core.route_iter import api_routes
 from app.modules.customs import line_export
 from app.modules.customs.constants import CustomsExportStatus
 from app.modules.customs.model import CustomsExportBatch, CustomsLine
@@ -157,7 +158,7 @@ def test_failed_batch_notifies_and_frees_the_user(db, store):
 def test_export_batch_routes_require_customs_export():
     from app.main import app
     seen = {}
-    for r in app.routes:
+    for r in api_routes(app):
         if isinstance(r, APIRoute) and r.path.startswith("/api/customs/export-batches"):
             perms = set()
             for d in r.dependant.dependencies:

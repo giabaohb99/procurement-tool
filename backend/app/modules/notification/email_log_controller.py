@@ -1,10 +1,13 @@
-"""Nhật ký email — `/api/email-logs` (bao-CR-721). CHỈ ĐỌC.
+"""Nhật ký email — `/api/email-logs` (bao-CR-721) + nút Gửi lại (bao-CR-727).
 
 `tab_email_log` ghi mọi thư hệ gửi (sự kiện, người nhận, tiêu đề, trạng thái, lỗi, hộp thư gửi) nhưng tới 03/11/2026 không
 có API hay màn nào đọc (prod 6.170 dòng) — người quản trị không tra được "đã gửi thư cho ai chưa, lỗi gì". Màn
 `/system/email-logs` của phân hệ Quản trị đọc qua đây.
 
-- Quyền: `audit.read` (khóa Nhật ký hệ thống có sẵn, không thêm entity). Không có đường ghi / gửi lại.
+- Quyền: `audit.read` (khóa Nhật ký hệ thống có sẵn, không thêm entity). Đường ghi duy nhất là
+  `POST /{id}/resend` (bao-CR-727), đòi `audit.write` — cùng khóa, cùng kiểu `sync_log.write` = nút Chạy lại.
+- Gửi lại sinh DÒNG MỚI (`resent_from_id` = dòng đã bấm), không sửa dòng cũ. Chỉ gửi lại được thư có lưu nội dung
+  (`html_body`, lưu từ bao-CR-727); thư đặt lại mật khẩu / cấp tài khoản không bao giờ lưu nên không gửi lại được.
 - `status` giữ nguyên chuỗi cũ của cột (`pending` / `sent` / `failed` / `disabled`), nhãn tiếng Việt trả kèm.
 - Nhãn sự kiện lấy từ danh mục mẫu email (`email_template_service.event_display`); sự kiện không có trong danh mục (thư
   gửi thẳng, thư thử) trả nguyên mã.
@@ -12,17 +15,19 @@ có API hay màn nào đọc (prod 6.170 dòng) — người quản trị không
 """
 from datetime import datetime, time, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from app.core.audit import record
 from app.core.auth import require
 from app.core.database import get_db
 from app.core.permissions import ENTITY_LABELS
 from app.core.response import success
 
 from . import email_template_service
-from .model import EmailLog
+from . import service as notification_service
+from .model import EmailLog, is_secret_email_event
 
 router = APIRouter(prefix="/api/email-logs", tags=["email-log"])
 
@@ -59,7 +64,51 @@ def status_label(status: str) -> str:
     return STATUS_LABELS.get(status or "", status or "")
 
 
-def _format(r: EmailLog) -> dict:
+#  Chặn bấm liên tục: cùng một thư (dòng gốc hay các bản gửi lại của nó) đã gửi lại trong khoảng này thì từ chối.
+RESEND_COOLDOWN_SECONDS = 60
+SECRET_BLOCK_REASON = ("Thư đặt lại mật khẩu / cấp tài khoản chứa liên kết đặt mật khẩu nên hệ không lưu nội dung và "
+                       "không gửi lại được. Người nhận tự bấm Quên mật khẩu ở màn đăng nhập để nhận liên kết mới.")
+
+
+def _first_kept_body_at(db: Session) -> datetime | None:
+    """Lúc ghi của thư SỚM NHẤT có lưu nội dung — mốc "thư gửi trước ngày này không lưu nội dung".
+
+    Đi từ id nhỏ lên và dừng ở dòng đầu tiên có nội dung: số dòng phải lướt qua chỉ bằng số thư cũ trước đợt
+    bao-CR-727 (cố định), không lớn dần theo bảng.
+    """
+    row = (db.query(EmailLog.created_at).filter(EmailLog.html_body.isnot(None))
+           .order_by(EmailLog.id.asc()).limit(1).first())
+    return row[0] if row else None
+
+
+def resend_block_reason(r: EmailLog, first_kept_at: datetime | None) -> str:
+    """Vì sao dòng này KHÔNG gửi lại được; rỗng = gửi lại được."""
+    if is_secret_email_event(r.event):
+        return SECRET_BLOCK_REASON
+    if not r.html_body:
+        if first_kept_at and (r.created_at is None or r.created_at < first_kept_at):
+            return f"Thư gửi trước ngày {first_kept_at:%d/%m/%Y} không lưu nội dung nên không gửi lại được."
+        return "Thư này không lưu nội dung nên không gửi lại được."
+    if not (r.to_email or "").strip():
+        return "Thư không có địa chỉ người nhận nên không gửi lại được."
+    return ""
+
+
+class _KeptAt:
+    """Tra mốc `_first_kept_body_at` TỐI ĐA một lần mỗi request, và chỉ khi có dòng thiếu nội dung cần tới nó."""
+
+    def __init__(self, db: Session):
+        self.db, self.done, self.value = db, False, None
+
+    def get(self) -> datetime | None:
+        if not self.done:
+            self.value, self.done = _first_kept_body_at(self.db), True
+        return self.value
+
+
+def _format(r: EmailLog, kept_at: _KeptAt | None = None) -> dict:
+    needs_mark = not r.html_body and not is_secret_email_event(r.event)
+    reason = resend_block_reason(r, kept_at.get() if (kept_at and needs_mark) else None)
     return {
         "id": r.id,
         "event": r.event or "",
@@ -74,6 +123,11 @@ def _format(r: EmailLog) -> dict:
         "from_email": r.from_email or "",
         "created_at": r.created_at,
         "created_by": r.created_by,
+        #  bao-CR-727. KHÔNG trả `html_body` ở đây: danh sách 50 dòng × vài KB mỗi dòng là thừa.
+        "resent_from_id": r.resent_from_id,
+        "has_body": bool(r.html_body),
+        "can_resend": not reason,
+        "resend_block_reason": reason,
     }
 
 
@@ -144,7 +198,9 @@ def list_email_logs(
         query = query.filter(EmailLog.created_at <= datetime.combine(td.date(), time.max))
     total = query.count()
     items = query.order_by(EmailLog.id.desc()).offset((page - 1) * page_size).limit(page_size).all()
-    return success({"total": total, "items": [_format(r) for r in items], "page": page, "page_size": page_size})
+    kept_at = _KeptAt(db)
+    return success({"total": total, "items": [_format(r, kept_at) for r in items], "page": page,
+                    "page_size": page_size})
 
 
 @router.get("/{log_id}")
@@ -153,4 +209,76 @@ def get_email_log(log_id: int, db: Session = Depends(get_db), user=Depends(requi
     row = db.get(EmailLog, log_id)
     if row is None:
         raise HTTPException(404, "Không tìm thấy dòng nhật ký email")
-    return success(_format(row))
+    return success(_format(row, _KeptAt(db)))
+
+
+def _send_flags(event: str) -> tuple[bool, bool]:
+    """`(force, apply_override)` của lượt gửi lại — giữ đúng cách lượt gửi gốc đã gửi.
+
+    - Thư luồng duyệt (`workflow_*`) gốc gửi `force=True, apply_override=False`: chỉ có khi EMAIL_WORKFLOW_ENABLED,
+      địa chỉ đã định tuyến về hộp thư test theo vai trò — không gộp về một địa chỉ override.
+    - Thư gửi thử (`*_test`) gốc gửi `force=True`.
+    - Còn lại tôn trọng công tắc `email_enabled` và địa chỉ override như lượt gốc. `EMAIL_HARD_OFF` luôn thắng.
+    """
+    if (event or "").startswith("workflow_"):
+        return True, False
+    if (event or "").endswith("_test"):
+        return True, True
+    return False, True
+
+
+def _recent_resend(db: Session, row: EmailLog) -> EmailLog | None:
+    """Bản gửi lại của CÙNG thư trong `RESEND_COOLDOWN_SECONDS` giây qua (bấm từ dòng gốc hay từ bản gửi lại)."""
+    since = datetime.now() - timedelta(seconds=RESEND_COOLDOWN_SECONDS)
+    family = {row.id}
+    if row.resent_from_id:
+        family.add(row.resent_from_id)
+    return (db.query(EmailLog)
+            .filter(EmailLog.created_at >= since,
+                    or_(EmailLog.resent_from_id.in_(family),
+                        #  Bấm Gửi lại trên chính một bản gửi lại vừa sinh ra.
+                        (EmailLog.id == row.id) & EmailLog.resent_from_id.isnot(None)))
+            .order_by(EmailLog.id.desc()).first())
+
+
+@router.post("/{log_id}/resend")
+def resend_email_log(log_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
+                     user=Depends(require("audit", "write"))):
+    """Gửi lại y nguyên một thư đã ghi: cùng người nhận, tiêu đề, nội dung, hộp thư gửi danh nghĩa (bao-CR-727).
+
+    - Quyền: `audit.write` (màn đọc gác `audit.read`; khóa này chỉ quản trị hệ thống có sẵn).
+    - Sinh DÒNG NHẬT KÝ MỚI ở trạng thái chờ, `resent_from_id` = dòng đã bấm; dòng cũ giữ nguyên. Gửi nền qua đường
+      gửi chung `send_smtp_email` nên công tắc tắt email / chặn cứng / địa chỉ override vẫn áp như thư gốc.
+    - Thư hệ không có tệp đính kèm (mọi mẫu chỉ có thân HTML + liên kết) nên gửi lại là gửi trọn thư.
+    - 400: thư không lưu nội dung (thư cũ trước đợt này, thư đặt lại mật khẩu / cấp tài khoản), thiếu người nhận.
+    - 429: cùng thư đã được gửi lại trong 60 giây qua.
+    - Ghi nhật ký thao tác `email_log` / `resend`.
+    """
+    row = db.get(EmailLog, log_id)
+    if row is None:
+        raise HTTPException(404, "Không tìm thấy dòng nhật ký email")
+    reason = resend_block_reason(row, _first_kept_body_at(db) if not row.html_body else None)
+    if reason:
+        raise HTTPException(400, reason)
+    recent = _recent_resend(db, row)
+    if recent is not None:
+        raise HTTPException(429, f"Thư này vừa được gửi lại (dòng #{recent.id}). "
+                                 f"Đợi {RESEND_COOLDOWN_SECONDS} giây rồi hãy bấm lại.")
+
+    actor_id = getattr(user, "id", 0) or 0
+    fresh = EmailLog(event=row.event, to_email=row.to_email, subject=row.subject, status="pending",
+                     mailbox_id=row.mailbox_id, from_email="", html_body=row.html_body, resent_from_id=row.id,
+                     created_by=actor_id)
+    db.add(fresh)
+    db.flush()
+    #  `record` tự commit: dòng mới có thật trong DB trước khi tác vụ nền (phiên mới) đọc nó.
+    record(db, actor_id, "email_log", fresh.id, "resend",
+           f"Gửi lại thư #{row.id} tới {row.to_email} (dòng mới #{fresh.id}): {row.subject}")
+
+    from app.core.database import SessionLocal
+
+    force, apply_override = _send_flags(row.event)
+    background_tasks.add_task(notification_service.send_smtp_email, SessionLocal, fresh.id, fresh.to_email,
+                              fresh.subject, fresh.html_body, force, apply_override)
+    db.refresh(fresh)
+    return success(_format(fresh), f"Đã xếp gửi lại thư tới {fresh.to_email}")

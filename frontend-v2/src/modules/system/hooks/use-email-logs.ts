@@ -1,4 +1,5 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import {
@@ -6,6 +7,7 @@ import {
   fetchEmailLogMeta,
   fetchEmailLogStats,
   fetchEmailLogs,
+  resendEmailLog,
   type EmailLogFilters,
 } from '../api/email-log-api'
 
@@ -44,5 +46,23 @@ export function useEmailLogDetail(id: number | null) {
     queryFn: () => fetchEmailLogDetail(id ?? 0),
     enabled: id !== null,
     staleTime: Infinity,
+  })
+}
+
+/**
+ * Gửi lại một thư (bao-CR-727) — cần `audit.write`.
+ *
+ * Toast nói rõ là ĐÃ XẾP GỬI và chỉ ra dòng mới: dòng cũ giữ nguyên trạng thái (vd *Lỗi*), người ta phải nhìn
+ * dòng mới để biết lần này tới chưa. Lỗi (400 thư không lưu nội dung, 429 bấm liên tục) do http-client toast sẵn.
+ */
+export function useResendEmailLog() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => resendEmailLog(id),
+    onSuccess: (fresh) => {
+      toast.success(`Đã xếp gửi lại thư tới ${fresh?.to_email ?? ''} (dòng mới #${fresh?.id ?? '?'}).`)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.emailLogs() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.emailLogStats(7) })
+    },
   })
 }

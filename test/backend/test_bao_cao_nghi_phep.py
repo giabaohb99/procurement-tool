@@ -14,6 +14,7 @@ from fastapi import HTTPException
 from sqlalchemy import event
 from starlette.datastructures import QueryParams
 
+from app.core.route_iter import api_routes
 from app.core.report_period import parse_period
 from app.main import app
 from app.modules.employee.model import Employee
@@ -187,11 +188,11 @@ class TestBreakdownLoaiNghiXepTheoNgay:
 
 class TestThuTuRoute:
     def test_leave_request_summary_truoc_duong_dong_id(self):
-        paths = [r.path for r in app.routes if getattr(r, "path", "").startswith("/api/leave-requests")]
+        paths = [r.path for r in api_routes(app) if getattr(r, "path", "").startswith("/api/leave-requests")]
         assert paths.index("/api/leave-requests/summary") < paths.index("/api/leave-requests/{rid}")
 
     def test_leave_balance_summary_truoc_duong_dong_id(self):
-        paths = [r.path for r in app.routes if getattr(r, "path", "").startswith("/api/leave-balances")]
+        paths = [r.path for r in api_routes(app) if getattr(r, "path", "").startswith("/api/leave-balances")]
         assert paths.index("/api/leave-balances/summary") < paths.index("/api/leave-balances/{bid}")
 
 

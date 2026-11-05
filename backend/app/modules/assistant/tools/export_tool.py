@@ -343,7 +343,7 @@ def render_xlsx(sheets: list[dict]) -> bytes:
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
 
-    from app.core.export_xlsx import HEAD_BG, HEAD_TEXT
+    from app.core.export_xlsx import HEAD_BG, HEAD_TEXT, guard_workbook
 
     wb = Workbook()
     wb.remove(wb.active)
@@ -370,7 +370,7 @@ def render_xlsx(sheets: list[dict]) -> bytes:
         ws.auto_filter.ref = f"A1:{get_column_letter(len(sheet['columns']))}{len(sheet['rows']) + 1}"
 
     buf = BytesIO()
-    wb.save(buf)
+    guard_workbook(wb).save(buf)   # bao-CR-726: ô do model soạn (lấy từ dữ liệu người gõ) không thành công thức
     return buf.getvalue()
 
 

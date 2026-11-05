@@ -1,7 +1,7 @@
-import { apiGet } from '@/core/api'
+import { apiGet, apiPost } from '@/core/api'
 
 /**
- * NHẬT KÝ EMAIL — `/api/email-logs` (bao-CR-721). CHỈ ĐỌC.
+ * NHẬT KÝ EMAIL — `/api/email-logs` (bao-CR-721) + nút Gửi lại (bao-CR-727).
  *
  * Một dòng = một thư hệ đã (định) gửi: sự kiện (mẫu email nào), người nhận, tiêu đề,
  * trạng thái, câu lỗi nguyên văn của máy chủ thư, hộp thư gửi danh nghĩa. Màn này trả
@@ -11,8 +11,9 @@ import { apiGet } from '@/core/api'
  * ⚠️ Mọi nhãn (sự kiện, trạng thái) do BACKEND trả kèm (`*_label`, `fetchEmailLogMeta`).
  * Thêm mẫu email mới ở `email_template_service.DEFAULTS` là ô lọc tự có.
  *
- * Không có gửi lại: thư lỗi thì sửa cấu hình / hộp thư rồi để luồng nghiệp vụ gửi lại,
- * không gửi tay từ nhật ký.
+ * Gửi lại (bao-CR-727, quyền `audit.write`): sinh DÒNG MỚI gửi y nguyên thư cũ (`resent_from_id` trỏ về
+ * dòng đã bấm). Chỉ thư có lưu nội dung mới gửi lại được — backend trả sẵn `can_resend` và câu lý do
+ * `resend_block_reason` (thư cũ trước đợt lưu nội dung, thư đặt lại mật khẩu / cấp tài khoản).
  */
 
 /** Trạng thái là CHUỖI cũ của cột, không đổi (`pending` / `sent` / `failed` / `disabled`). */
@@ -38,6 +39,13 @@ export interface EmailLogItem {
   from_email: string
   created_at: string
   created_by: number
+  /** Dòng này là bản gửi lại của dòng nào; `null` = thư gốc của nghiệp vụ. */
+  resent_from_id: number | null
+  /** Có lưu nội dung thư (từ bao-CR-727). */
+  has_body: boolean
+  can_resend: boolean
+  /** Vì sao không gửi lại được — rỗng khi `can_resend`. */
+  resend_block_reason: string
 }
 
 export interface EmailLogListResult {
@@ -112,4 +120,9 @@ export function fetchEmailLogMeta() {
 
 export function fetchEmailLogStats(days: number) {
   return apiGet<EmailLogStats>(`${BASE_URL}/stats?days=${days}`)
+}
+
+/** Gửi lại y nguyên một thư — trả dòng nhật ký MỚI (trạng thái chờ). Cần `audit.write`. */
+export function resendEmailLog(id: number) {
+  return apiPost<EmailLogItem>(`${BASE_URL}/${id}/resend`, {})
 }

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Nạp bài HDSD màn Nhật ký email (bao-CR-721) dưới thẻ "Quản trị Hệ thống" — MỘT LỆNH, chạy lại vô hại.
+"""Nạp bài HDSD màn Nhật ký email (bao-CR-721, nút Gửi lại bao-CR-727) dưới thẻ "Quản trị Hệ thống" — MỘT LỆNH, chạy lại vô hại.
 
 Thẻ cha "Quản trị Hệ thống" dựng tay trên giao diện (không script nào sở hữu), nên script chỉ thêm / ghi đè đúng bài cùng
 tiêu đề qua `help_seed_common.upsert_articles`.
@@ -10,7 +10,7 @@ Chạy trong container api:
 Sau đó: python scripts/reindex_help_rag.py --purge-orphans
 
 Nội dung phải khớp màn `/system/email-logs` (frontend-v2/src/modules/system/pages/email-log-list-page.tsx) và API
-`/api/email-logs` (quyền audit.read, chỉ đọc, không gửi lại).
+`/api/email-logs` (quyền audit.read; nút Gửi lại `POST /api/email-logs/{id}/resend` đòi audit.write, bao-CR-727).
 """
 from help_seed_common import run_article_upsert
 
@@ -20,7 +20,7 @@ TITLE = "Nhật ký email: tra thư hệ thống đã gửi cho ai, lỗi gì"
 ARTICLES = [
     (ADMIN_ROOT, TITLE,
      "Màn Quản trị > Nhật ký email: xem từng thư hệ thống đã gửi hoặc gửi lỗi, lọc theo người nhận, loại thư, trạng thái, "
-     "khoảng ngày; đọc nguyên văn câu lỗi của máy chủ thư. Chỉ đọc, không gửi lại.",
+     "khoảng ngày; đọc nguyên văn câu lỗi của máy chủ thư; gửi lại y nguyên một thư đã gửi.",
      """<h2>Nhật ký email: tra thư hệ thống đã gửi cho ai, lỗi gì</h2>
 <p>Mỗi khi hệ thống gửi thư (gửi duyệt, duyệt xong, trả về, điều phối xe, đóng dấu xong...), nó ghi một dòng vào nhật ký email:
 gửi cho ai, tiêu đề gì, lúc nào, thành công hay lỗi, và nếu lỗi thì máy chủ thư trả lời gì. Màn này cho người quản trị đọc
@@ -30,8 +30,8 @@ nhật ký đó để trả lời câu hỏi thường gặp: <em>Người A nó
 <li>Vào <strong>Quản trị ▸ Nhật ký email</strong> (đường dẫn <code>/system/email-logs</code>).</li>
 <li>Cần quyền <strong>Xem</strong> ở khóa <strong>Nhật ký hệ thống</strong> (<code>audit</code>), cùng khóa với màn Nhật ký hệ thống.
 Không có quyền thì không thấy mục trong menu.</li>
-<li>Màn <strong>chỉ đọc</strong>: không có nút gửi lại. Thư lỗi thì sửa nguyên nhân (hộp thư gửi, địa chỉ người nhận trong hồ sơ
-nhân sự, cấu hình thư) rồi để bước nghiệp vụ gửi lại.</li>
+<li>Nút <strong>Gửi lại</strong> (mục 5) cần thêm quyền <strong>Sửa</strong> ở cùng khóa <strong>Nhật ký hệ thống</strong>. Chỉ có quyền
+Xem thì ngăn chi tiết không hiện nút.</li>
 </ul>
 <h3>2. Đọc màn</h3>
 <ul>
@@ -43,6 +43,7 @@ Người gửi (hộp thư gửi danh nghĩa; trống nghĩa là dùng SMTP chun
 <strong>Tắt gửi</strong> (xám, thư bị công tắc email chặn nên không gửi).</li>
 <li><strong>Bấm một dòng</strong> mở ngăn chi tiết: đủ địa chỉ, loại thư kèm mã kỹ thuật, và <strong>nguyên văn câu lỗi</strong> của máy
 chủ thư, có nút chép để dán vào phiếu hỗ trợ.</li>
+<li>Dòng có nhãn <strong>Gửi lại từ #id</strong> là bản gửi lại của dòng mang số đó (xem mục 5).</li>
 </ul>
 <h3>3. Lọc</h3>
 <table>
@@ -67,10 +68,30 @@ hoặc địa chỉ nằm trong danh sách loại trừ</td><td>Xem bài về c�
 <tr><td>Nhiều dòng <strong>Lỗi</strong> cùng một câu như <em>authentication failed</em></td><td>Hộp thư gửi sai mật khẩu hoặc bị khóa</td><td>Vào
 <strong>Quản trị ▸ Hộp thư gửi</strong> kiểm lại, hoặc bấm <em>Thử gửi thư</em> ở Cấu hình hệ thống.</td></tr>
 <tr><td>Dòng <strong>Đang chờ</strong> lâu không đổi</td><td>Hàng đợi gửi thư nền không chạy</td><td>Báo kỹ thuật kiểm dịch vụ chạy ngầm (màn <em>Việc chạy ngầm</em>).</td></tr>
+<tr><td>Thư <strong>Lỗi</strong> vì hộp thư gửi hỏng, nay đã sửa xong</td><td>Thư cũ không tự gửi lại</td><td>Mở dòng, bấm
+<strong>Gửi lại</strong> (mục 5).</td></tr>
 </tbody>
-</table>"""),
+</table>
+<h3>5. Gửi lại một thư</h3>
+<ul>
+<li>Bấm dòng để mở ngăn chi tiết, bấm <strong>Gửi lại</strong> ở chân ngăn. Hộp xác nhận ghi rõ <strong>người nhận</strong> và
+<strong>tiêu đề</strong>; bấm <strong>Gửi lại</strong> để gửi, <strong>Hủy</strong> để thôi.</li>
+<li>Hệ gửi lại <strong>y nguyên</strong> thư cũ: cùng người nhận, tiêu đề, nội dung, hộp thư gửi danh nghĩa. Thư hệ thống không có tệp đính
+kèm, nên gửi lại là gửi trọn thư.</li>
+<li>Gửi lại tạo <strong>một dòng mới</strong> ở trạng thái <strong>Đang chờ</strong>, mang nhãn <strong>Gửi lại từ #id</strong>; dòng cũ giữ
+nguyên trạng thái (ví dụ vẫn là <strong>Lỗi</strong>). Xem dòng mới để biết lần này tới chưa.</li>
+<li>Công tắc email toàn hệ vẫn áp: email đang tắt thì dòng mới chuyển <strong>Tắt gửi</strong>.</li>
+<li>Cùng một thư vừa gửi lại thì phải đợi <strong>60 giây</strong> mới bấm lại được, tránh bấm liên tục làm người nhận nhận nhiều thư.</li>
+<li>Nút bị <strong>tắt</strong> kèm lý do ở chân ngăn khi:
+<ul>
+<li>thư gửi trước đợt cập nhật lưu nội dung thư (ngày ghi trong câu báo): hệ không còn nội dung để gửi lại;</li>
+<li>thư <strong>đặt lại mật khẩu</strong> hoặc <strong>cấp tài khoản</strong>: thư chứa liên kết đặt mật khẩu nên hệ không bao giờ lưu nội
+dung. Người nhận tự bấm <em>Quên mật khẩu</em> ở màn đăng nhập để nhận liên kết mới.</li>
+</ul></li>
+<li>Mỗi lần gửi lại được ghi vào <strong>Nhật ký hệ thống</strong> (ai gửi lại thư nào, lúc nào).</li>
+</ul>"""),
 ]
 
 
 if __name__ == "__main__":
-    run_article_upsert(ARTICLES, "Nạp bài HDSD màn Nhật ký email (bao-CR-721) + kho vector")
+    run_article_upsert(ARTICLES, "Nạp bài HDSD màn Nhật ký email (bao-CR-721, bao-CR-727) + kho vector")

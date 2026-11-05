@@ -25,7 +25,7 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 
 # Cùng requirements với máy chủ + pytest để chạy cổng kiểm ngay trong worktree.
 COPY backend/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt pytest
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r /app/requirements.txt pytest
 
 # Người dùng thường chạy git / claude / pytest. Worker Celery chạy root và hạ tiến trình con
 # xuống người dùng này (coder.build_env + AGENT_RUNNER_USER) để tiến trình con không đọc được
