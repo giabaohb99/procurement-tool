@@ -19,6 +19,7 @@ import { Fragment, useImperativeHandle, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/core/auth/use-auth'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/utils/cn'
 import { formatDate, parseLocalDate, toDateInputValue } from '@/shared/utils/format-date'
 import { nameInitials } from '@/shared/utils/name-initials'
@@ -73,6 +74,7 @@ import {
   reportPercent,
   reportPlanLateDays,
 } from '../../utils/survey-report-helpers'
+import { ReportItemProgressCard } from './report-item-progress-card'
 import { SurveyReportDocDialog } from './survey-report-doc-dialog'
 import { SurveyReportDocSelectionBar } from './survey-report-doc-selection-bar'
 import { ReportDocSheetTable } from './survey-report-doc-sheet-table'
@@ -177,7 +179,18 @@ export function SurveyReportCard({
 
   /** Cả khối đang sổ ra chưa — mặc định GẤP. */
   const [cardOpen, setCardOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<ReportViewMode>(readViewMode)
+  const [storedViewMode, setViewMode] = useState<ReportViewMode>(readViewMode)
+  /**
+   * Khổ điện thoại KHÔNG có dạng "Bảng" — dạng đó là bảng tính 14 cột ~2100px sửa tại
+   * chỗ, ba cột ghim đã ăn 312px thì máy 390px chỉ còn một khe cuộn ngang. Đổi nó thành
+   * thẻ thì mỗi hồ sơ một thẻ xếp theo giai đoạn — đúng bằng dạng "Xem tổng" đã có sẵn
+   * (sửa từng hồ sơ qua hộp ✎, đổi trạng thái, tick xong, xóa, thêm theo giai đoạn).
+   * Nên ở khổ hẹp "Bảng" lùi về "Xem tổng" và nút gạt giấu lựa chọn đó; lựa chọn đã
+   * lưu KHÔNG bị ghi đè, mở lại trên máy tính vẫn là "Bảng".
+   */
+  const isMobile = useIsMobile()
+  const viewMode: ReportViewMode =
+    isMobile && storedViewMode === 'table' ? 'phase' : storedViewMode
   const [statusFilter, setStatusFilter] = useState(REPORT_STATUS_FILTER_ALL)
   const [query, setQuery] = useState('')
   /** Các dòng hàng đang SỔ (hiện hồ sơ con). Nút trên header gạt cả loạt. */
@@ -480,13 +493,15 @@ export function SurveyReportCard({
                 icon={<Rows3 className="size-3.5" />}
                 onClick={() => changeViewMode('item')}
               />
-              <ViewModeButton
-                active={viewMode === 'table'}
-                label="Bảng"
-                title="Dạng bảng: mỗi hồ sơ một hàng, bấm vào ô để sửa ngay trên hàng"
-                icon={<Sheet className="size-3.5" />}
-                onClick={() => changeViewMode('table')}
-              />
+              {!isMobile && (
+                <ViewModeButton
+                  active={viewMode === 'table'}
+                  label="Bảng"
+                  title="Dạng bảng: mỗi hồ sơ một hàng, bấm vào ô để sửa ngay trên hàng"
+                  icon={<Sheet className="size-3.5" />}
+                  onClick={() => changeViewMode('table')}
+                />
+              )}
             </div>
             <SearchField
               value={query}
@@ -566,7 +581,9 @@ export function SurveyReportCard({
                 sau.
                 {itemsLocked && ' Nút dòng hàng bám theo dòng của đơn: thêm/bớt dòng trên đơn là khối tự theo.'}
               </p>
-              <div className="flex gap-2">
+              {/*  `flex-wrap`: ba nút dài ~560px, khung máy 390px chỉ ~320px; không
+                   xuống dòng thì cụm canh giữa tràn CẢ HAI mép, mất chữ đầu nút đầu. */}
+              <div className="flex flex-wrap justify-center gap-2">
                 <Button disabled={busy} onClick={() => setInitOpen(true)}>
                   <Sparkles />
                   Khởi tạo báo cáo mẫu
@@ -1047,6 +1064,143 @@ function ReportItemTable({
   onSetDocStatus,
 }: ReportItemTableProps) {
   const doneCount = report.docs.filter(isReportDocDone).length
+  //  Khổ điện thoại: bảng 6 cột thành thẻ dọc (xem `ReportItemProgressCard`).
+  const asCards = useIsMobile()
+
+  //  Cụm nút, dải sổ và khối giai đoạn mồ côi dựng MỘT chỗ cho cả bảng lẫn thẻ — hai bản
+  //  chép là hai đường phải sửa song song mỗi lần luật sửa nút / xóa cụm đổi.
+  const renderRowActions = (row: ReportItemRow, rowDocs: SurveyReportDoc[]) => (
+    <>
+      {row.item && canEdit && !itemsLocked && (
+        <button
+          type="button"
+          title={`Sửa nút "${row.name}"`}
+          aria-label={`Sửa nút "${row.name}"`}
+          className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+          onClick={(event) => {
+            event.stopPropagation()
+            if (row.item) onEditItem(row.item)
+          }}
+        >
+          <Pencil className="size-3.5" />
+        </button>
+      )}
+      {/* duoc-CR-611 — "Xóa cụm": xóa mọi hồ sơ của dòng hàng này (đang lọc thì
+          chỉ những hồ sơ khớp bộ lọc — đúng thứ đang bày). Nút dòng hàng giữ
+          nguyên: xóa NÚT là việc khác, nằm trong hộp sửa nút. */}
+      {canEdit && (
+        <ClusterDeleteButton
+          label={`"${row.name}"`}
+          count={rowDocs.length}
+          busy={busy}
+          onClick={() =>
+            void onDeleteDocs(
+              rowDocs,
+              rowDocs.length < row.docs.length
+                ? `đang khớp bộ lọc của "${row.name}"`
+                : `của "${row.name}"`,
+            )
+          }
+        />
+      )}
+    </>
+  )
+  const renderRowDetail = (row: ReportItemRow, rowDocs: SurveyReportDoc[]) => (
+    <ReportRowDetail
+      report={report}
+      docs={rowDocs}
+      docsById={docsById}
+      canEdit={canEdit}
+      busy={busy}
+      addLabel={row.item ? `Thêm hồ sơ cho "${row.name}"` : 'Thêm hồ sơ chung'}
+      templateLabel={row.item ? `Tạo mẫu cho "${row.name}"` : 'Tạo mẫu vào hồ sơ chung'}
+      onAddDoc={() => onAddDoc(row.id)}
+      onApplyTemplate={() => onApplyTemplate(row.id)}
+      onEditDoc={onEditDoc}
+      onDeleteDoc={onDeleteDoc}
+      onDeleteSelected={(docs) => onDeleteDocs(docs, `đã chọn của "${row.name}"`)}
+      onDeleteCluster={(docs, scope) => onDeleteDocs(docs, `của "${row.name}" ${scope}`)}
+      onEditPhase={onEditPhase}
+      onToggleDoc={onToggleDoc}
+      onSetDocStatus={onSetDocStatus}
+    />
+  )
+  const orphanBlock = (
+    <>
+      {/* Giai đoạn CHƯA CÓ hồ sơ nào không lọt vào dải sổ của dòng hàng nào cả —
+          bày riêng, không thì nó thành bản ghi mồ côi không đường sửa/xóa. Dạng
+          xem tổng không cần cụm này: ở đó giai đoạn rỗng vẫn đứng đúng chỗ. */}
+      {orphanPhases.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span>Giai đoạn chưa có hồ sơ:</span>
+          {orphanPhases.map((phase) => (
+            <span
+              key={phase.id}
+              className="inline-flex items-center gap-1 rounded-md border bg-muted/40 py-0.5 pr-1 pl-2 font-medium"
+            >
+              {phase.name}
+              {canEdit && (
+                <button
+                  type="button"
+                  title={`Sửa giai đoạn "${phase.name}"`}
+                  aria-label={`Sửa giai đoạn "${phase.name}"`}
+                  className="rounded-md p-0.5 hover:text-foreground"
+                  onClick={() => onEditPhase(phase)}
+                >
+                  <Pencil className="size-3" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+    </>
+  )
+
+  if (asCards) {
+    return (
+      <>
+        <div className="divide-y overflow-hidden rounded-lg border">
+          {rows.map((row) => {
+            const rowDocs = row.docs.filter(matchesFilter)
+            return (
+              <ReportItemProgressCard
+                key={row.id}
+                name={row.name}
+                docCount={row.docs.length}
+                doneCount={row.docs.filter(isReportDocDone).length}
+                progress={<PhaseProgressBar docs={row.docs} className="w-full" />}
+                expiry={<ExpiryChip expiry={nearestExpiry(row.docs)} />}
+                open={forceOpen || openRows.has(row.id)}
+                onToggle={() => onToggleRow(row.id)}
+                actions={canEdit ? renderRowActions(row, rowDocs) : undefined}
+              >
+                {renderRowDetail(row, rowDocs)}
+              </ReportItemProgressCard>
+            )
+          })}
+          {canEdit && !itemsLocked && (
+            <div className="px-1.5 py-1">
+              <Button variant="ghost" size="sm" disabled={busy} onClick={onAddItem}>
+                <Plus />
+                Thêm nút dòng hàng
+              </Button>
+            </div>
+          )}
+          {/*  Dòng TỔNG của bảng: không gập / sổ, nền đậm hơn để không đọc nhầm là một dòng hàng. */}
+          <ReportItemProgressCard
+            name={`Tổng cả ${ownerLabel}`}
+            docCount={report.docs.length}
+            doneCount={doneCount}
+            progress={<PhaseProgressBar docs={report.docs} className="w-full" />}
+            expiry={<ExpiryChip expiry={nearestExpiry(report.docs)} />}
+          />
+        </div>
+        {orphanBlock}
+      </>
+    )
+  }
+
   return (
     <>
       <div className="overflow-x-auto rounded-lg border">
@@ -1078,38 +1232,7 @@ function ReportItemTable({
                     <TableCell>
                       <span className="flex items-center gap-1.5">
                         <span className="font-medium">{row.name}</span>
-                        {row.item && canEdit && !itemsLocked && (
-                          <button
-                            type="button"
-                            title={`Sửa nút "${row.name}"`}
-                            aria-label={`Sửa nút "${row.name}"`}
-                            className="rounded-md p-1 text-muted-foreground hover:text-foreground"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              if (row.item) onEditItem(row.item)
-                            }}
-                          >
-                            <Pencil className="size-3.5" />
-                          </button>
-                        )}
-                        {/* duoc-CR-611 — "Xóa cụm": xóa mọi hồ sơ của dòng hàng này (đang lọc thì
-                            chỉ những hồ sơ khớp bộ lọc — đúng thứ đang bày). Nút dòng hàng giữ
-                            nguyên: xóa NÚT là việc khác, nằm trong hộp sửa nút. */}
-                        {canEdit && (
-                          <ClusterDeleteButton
-                            label={`"${row.name}"`}
-                            count={rowDocs.length}
-                            busy={busy}
-                            onClick={() =>
-                              void onDeleteDocs(
-                                rowDocs,
-                                rowDocs.length < row.docs.length
-                                  ? `đang khớp bộ lọc của "${row.name}"`
-                                  : `của "${row.name}"`,
-                              )
-                            }
-                          />
-                        )}
+                        {canEdit && renderRowActions(row, rowDocs)}
                       </span>
                     </TableCell>
                     <TableCell className="text-center tabular-nums">{row.docs.length}</TableCell>
@@ -1126,28 +1249,7 @@ function ReportItemTable({
                   {open && (
                     <TableRow className="hover:bg-transparent">
                       <TableCell colSpan={ITEM_TABLE_COLUMNS} className="bg-muted/40 p-3">
-                        <ReportRowDetail
-                          report={report}
-                          docs={rowDocs}
-                          docsById={docsById}
-                          canEdit={canEdit}
-                          busy={busy}
-                          addLabel={
-                            row.item ? `Thêm hồ sơ cho "${row.name}"` : 'Thêm hồ sơ chung'
-                          }
-                          templateLabel={
-                            row.item ? `Tạo mẫu cho "${row.name}"` : 'Tạo mẫu vào hồ sơ chung'
-                          }
-                          onAddDoc={() => onAddDoc(row.id)}
-                          onApplyTemplate={() => onApplyTemplate(row.id)}
-                          onEditDoc={onEditDoc}
-                          onDeleteDoc={onDeleteDoc}
-                          onDeleteSelected={(docs) => onDeleteDocs(docs, `đã chọn của "${row.name}"`)}
-                          onDeleteCluster={(docs, scope) => onDeleteDocs(docs, `của "${row.name}" ${scope}`)}
-                          onEditPhase={onEditPhase}
-                          onToggleDoc={onToggleDoc}
-                          onSetDocStatus={onSetDocStatus}
-                        />
+                        {renderRowDetail(row, rowDocs)}
                       </TableCell>
                     </TableRow>
                   )}
@@ -1187,33 +1289,7 @@ function ReportItemTable({
         </Table>
       </div>
 
-      {/* Giai đoạn CHƯA CÓ hồ sơ nào không lọt vào dải sổ của dòng hàng nào cả —
-          bày riêng, không thì nó thành bản ghi mồ côi không đường sửa/xóa. Dạng
-          xem tổng không cần cụm này: ở đó giai đoạn rỗng vẫn đứng đúng chỗ. */}
-      {orphanPhases.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>Giai đoạn chưa có hồ sơ:</span>
-          {orphanPhases.map((phase) => (
-            <span
-              key={phase.id}
-              className="inline-flex items-center gap-1 rounded-md border bg-muted/40 py-0.5 pr-1 pl-2 font-medium"
-            >
-              {phase.name}
-              {canEdit && (
-                <button
-                  type="button"
-                  title={`Sửa giai đoạn "${phase.name}"`}
-                  aria-label={`Sửa giai đoạn "${phase.name}"`}
-                  className="rounded-md p-0.5 hover:text-foreground"
-                  onClick={() => onEditPhase(phase)}
-                >
-                  <Pencil className="size-3" />
-                </button>
-              )}
-            </span>
-          ))}
-        </div>
-      )}
+      {orphanBlock}
     </>
   )
 }

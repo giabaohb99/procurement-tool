@@ -24,6 +24,7 @@ import type { CustomsRegulationHit } from '../../types/customs'
 import { buildRegulationParams, resolveRegulationEmptyMessage } from '../../utils/customs-regulation'
 import { CustomsBannedPesticideDialog } from './customs-banned-pesticide-dialog'
 import { CustomsRegulationAlertTable } from './customs-regulation-alert-table'
+import { CustomsRegulationCard } from './customs-regulation-card'
 
 const ALL = 'all'
 const DEFAULT_PAGE_SIZE = 50
@@ -89,6 +90,8 @@ export function CustomsRegulationTab({ keyword, alerts }: CustomsRegulationTabPr
           isError={list.isError}
           emptyMessage={resolveRegulationEmptyMessage(options.data?.total ?? 0)}
           storageKey={STORAGE_KEY}
+          //  Khổ điện thoại: thẻ dọc; nút "N thuốc" của cột "Thuốc BVTV chứa" đi theo vào thẻ.
+          mobileCard={(row) => <CustomsRegulationCard row={row} onOpenPesticides={setPesticidesOf} />}
           filtersActive={filtersActive}
           onResetFilters={() => {
             setSearch('')

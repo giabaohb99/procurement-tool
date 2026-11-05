@@ -15,13 +15,11 @@
 //
 // bao-CR-608: thêm cột "Ghi đè" / "Xóa" (tệp có cột "ID" + "Thao tác"). Lô ghi đè / xóa có bản
 // chụp nên VẪN hoàn tác được: trả dòng ghi đè về bản cũ, dựng lại dòng đã xóa đúng id cũ.
-import { Download, ListTree, Undo2 } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import {
@@ -31,13 +29,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
-import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { TONE_CLASS } from '@/shared/ui/status-tone'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import { cn } from '@/shared/utils/cn'
 
-import { downloadCustomsBatchFile } from '../../api/customs-api'
 import {
   useCustomsBatches,
   useCustomsBatchLogs,
@@ -45,13 +41,16 @@ import {
   useRevertCustomsBatch,
 } from '../../hooks/use-customs'
 import {
-  CUSTOMS_BATCH_MODE,
+  CUSTOMS_BATCH_MODE_LABELS,
   type CustomsBatchLog,
   type CustomsImportBatch,
 } from '../../types/customs'
-import { formatRevertConfirm, resolveRevertState } from '../../utils/customs'
+import { formatRevertConfirm } from '../../utils/customs'
+import { CustomsBatchHistoryActions } from './customs-batch-history-actions'
+import { CustomsBatchLineCard } from './customs-batch-line-card'
 import { CustomsBatchRowsPanel } from './customs-batch-rows-panel'
 import { CustomsBatchStatusBadge } from './customs-batch-status-badge'
+import { CustomsImportBatchCard } from './customs-import-batch-card'
 
 const HISTORY_PAGE_SIZE = 20
 const LOG_PAGE_SIZE = 50
@@ -62,6 +61,16 @@ const LOG_LEVELS: Record<number, { label: string; tone: string }> = {
   1: { label: 'Cảnh báo', tone: TONE_CLASS.pending },
   2: { label: 'Cần rà', tone: TONE_CLASS.progress },
   3: { label: 'Lỗi', tone: TONE_CLASS.danger },
+}
+
+/** Huy hiệu mức của một dòng nhật ký — chung cho cột "Mức" và thẻ khổ điện thoại. */
+function renderLogLevelBadge(log: CustomsBatchLog) {
+  const level = LOG_LEVELS[log.level]
+  return (
+    <Badge className={cn(level?.tone ?? TONE_CLASS.neutral)}>
+      {level?.label ?? String(log.level)}
+    </Badge>
+  )
 }
 
 function formatRange(batch: CustomsImportBatch): string {
@@ -77,7 +86,9 @@ export function CustomsHistoryPanel() {
   const revert = useRevertCustomsBatch()
   const reverting = useRef(false)
 
-  const columns = useMemo<DataTableColumn<CustomsImportBatch>[]>(() => {
+  //  Cột "Thao tác" và thẻ khổ điện thoại dùng CHUNG một hàm vẽ nút — dựng cùng lượt với cột để
+  //  `revertBatch` (đọc ref chặn bấm đúp + mutation) chỉ có một bản.
+  const { columns, renderActions } = useMemo(() => {
     async function revertBatch(batch: CustomsImportBatch) {
       if (reverting.current) return
       const ok = await confirm({
@@ -97,7 +108,17 @@ export function CustomsHistoryPanel() {
       }
     }
 
-    return [
+    const renderActions = (b: CustomsImportBatch) => (
+      <CustomsBatchHistoryActions
+        batch={b}
+        canRevert={canRevert}
+        revertPending={revert.isPending}
+        onOpenLogs={setLogsOf}
+        onRevert={(batch) => void revertBatch(batch)}
+      />
+    )
+
+    const columns: DataTableColumn<CustomsImportBatch>[] = [
       { key: 'id', header: '#', width: 64, align: 'right', hideable: false, cell: (b) => b.id },
       {
         key: 'filename',
@@ -112,7 +133,7 @@ export function CustomsHistoryPanel() {
         header: 'Loại',
         width: 90,
         hideable: false,
-        cell: (b) => (b.mode === CUSTOMS_BATCH_MODE.dryRun ? 'Chạy thử' : 'Ghi thật'),
+        cell: (b) => CUSTOMS_BATCH_MODE_LABELS[b.mode],
       },
       {
         key: 'status',
@@ -185,67 +206,10 @@ export function CustomsHistoryPanel() {
         width: 130,
         hideable: false,
         stickyRight: true,
-        cell: (b) => {
-          const revertState = canRevert ? resolveRevertState(b) : 'hidden'
-          return (
-            <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
-              {b.has_file && (
-                <IconTooltip label="Tải lại tệp gốc đã nạp">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Tải lại tệp gốc đã nạp"
-                    onClick={() =>
-                      downloadCustomsBatchFile(b.id, b.filename).catch((error: Error) =>
-                        toast.error(error.message),
-                      )
-                    }
-                  >
-                    <Download className="size-4" />
-                  </Button>
-                </IconTooltip>
-              )}
-              <IconTooltip label="Nhật ký lô — kết quả từng dòng, lỗi, cảnh báo">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Nhật ký lô — kết quả từng dòng, lỗi, cảnh báo"
-                  onClick={() => setLogsOf(b)}
-                >
-                  <ListTree className="size-4" />
-                </Button>
-              </IconTooltip>
-              {revertState !== 'hidden' && (
-                <IconTooltip
-                  label={
-                    revertState === 'blocked'
-                      ? `Lô này nạp theo cách cũ, đã thay ${b.deleted_count} dòng cũ nên không hoàn tác được.`
-                      : 'Hoàn tác: xóa dòng lô này đã thêm, trả lại dòng lô đã ghi đè / xóa'
-                  }
-                >
-                  {/*  Bọc `span`: nút `disabled` không nhận sự kiện chuột nên tooltip
-                       giải thích VÌ SAO bị khóa sẽ không bao giờ hiện nếu gắn thẳng. */}
-                  <span className="inline-flex">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Hoàn tác lô nạp"
-                      disabled={revertState === 'blocked' || revert.isPending}
-                      onClick={() => void revertBatch(b)}
-                    >
-                      <Undo2 className="size-4" />
-                    </Button>
-                  </span>
-                </IconTooltip>
-              )}
-            </div>
-          )
-        },
+        cell: renderActions,
       },
     ]
+    return { columns, renderActions }
   }, [canRevert, revert])
 
   return (
@@ -265,6 +229,10 @@ export function CustomsHistoryPanel() {
         isLoading={isLoading}
         isError={isError}
         emptyMessage="Chưa nạp lần nào."
+        //  Khổ điện thoại: thẻ dọc, nút thao tác nằm TRONG thẻ (bảng không có `onRowClick`).
+        mobileCard={(b) => (
+          <CustomsImportBatchCard batch={b} context="history" actions={renderActions(b)} />
+        )}
         pagination={{
           page,
           pageSize,
@@ -305,14 +273,7 @@ function BatchLogsDialog({ batch, onClose }: { batch: CustomsImportBatch; onClos
         header: 'Mức',
         width: 110,
         hideable: false,
-        cell: (x) => {
-          const level = LOG_LEVELS[x.level]
-          return (
-            <Badge className={cn(level?.tone ?? TONE_CLASS.neutral)}>
-              {level?.label ?? String(x.level)}
-            </Badge>
-          )
-        },
+        cell: renderLogLevelBadge,
       },
       { key: 'message', header: 'Nội dung', width: 520, hideable: false, wrap: true, cell: (x) => x.message },
     ],
@@ -352,6 +313,13 @@ function BatchLogsDialog({ batch, onClose }: { batch: CustomsImportBatch; onClos
                 isLoading={isLoading}
                 isError={isError}
                 emptyMessage="Không có ghi chú nào — mọi dòng đọc được bình thường."
+                mobileCard={(x) => (
+                  <CustomsBatchLineCard
+                    rowNo={x.row_no}
+                    badge={renderLogLevelBadge(x)}
+                    message={x.message}
+                  />
+                )}
                 pagination={{
                   page,
                   pageSize,

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import {
@@ -19,6 +20,8 @@ import { useRelatedPurchaseOrders } from '../hooks/use-purchase-request-support'
 import { PO_STATUS_LABELS, SR_STATUS_LABELS } from '../types/purchase-document'
 import type { PurchaseRequestDetail } from '../types/purchase-request-detail'
 import { StatusBadge } from './document-status-badge'
+import { LinkedPurchaseOrderCard } from './linked-purchase-order-card'
+import { LinkedSurveyRequestCard } from './linked-survey-request-card'
 
 /**
  * bao-CR-422 — thẻ "Chứng từ liên quan" trên phiếu YCMH.
@@ -41,6 +44,9 @@ export function PurchaseRequestLinkedDocumentsCard({ data }: { data: LinkedDocum
   const { can } = usePermission()
   const canReadSurveyRequest = can('survey_request', 'read')
   const canReadPurchaseOrder = can('purchase_order', 'read')
+  //  Khổ điện thoại: hai bảng 4–5 cột thành thẻ dọc — bảng ĐMH ~620px trong khung 322px
+  //  giấu mất cột Tổng tiền và Trạng thái ngoài mép phải.
+  const asCards = useIsMobile()
 
   const surveyRequests = data.survey_requests ?? []
   const {
@@ -67,6 +73,16 @@ export function PurchaseRequestLinkedDocumentsCard({ data }: { data: LinkedDocum
             <p className="text-muted-foreground text-sm">
               Phiếu này lập tay, không sinh ra từ yêu cầu báo giá nào.
             </p>
+          ) : asCards ? (
+            <div className="divide-y rounded-lg border">
+              {surveyRequests.map((surveyRequest) => (
+                <LinkedSurveyRequestCard
+                  key={surveyRequest.id}
+                  surveyRequest={surveyRequest}
+                  canOpen={canReadSurveyRequest}
+                />
+              ))}
+            </div>
           ) : (
             <div className="overflow-x-auto rounded-lg border">
               <Table>
@@ -121,6 +137,12 @@ export function PurchaseRequestLinkedDocumentsCard({ data }: { data: LinkedDocum
               <p className="text-muted-foreground text-sm">
                 Chưa có đơn mua hàng nào được lập từ phiếu này.
               </p>
+            ) : asCards ? (
+              <div className="divide-y rounded-lg border">
+                {orders.map((order) => (
+                  <LinkedPurchaseOrderCard key={order.id} order={order} />
+                ))}
+              </div>
             ) : (
               <div className="overflow-x-auto rounded-lg border">
                 <Table>

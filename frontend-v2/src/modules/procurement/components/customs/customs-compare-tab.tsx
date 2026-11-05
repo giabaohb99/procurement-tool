@@ -35,6 +35,7 @@ import {
   mergeCompareSeries,
   type CompareRow,
 } from '../../utils/customs'
+import { CustomsComparePeriodCard } from './customs-compare-period-card'
 import { CustomsSegmentedChoice, CustomsUnitChips } from './customs-controls'
 
 /** Năm màu cố định theo THỨ TỰ ô nhập — xóa một ô thì màu các ô sau không nhảy lung tung. */
@@ -198,6 +199,14 @@ export function CustomsCompareTab({ filters }: CustomsCompareTabProps) {
               rows={rows}
               getRowId={(r) => r.period}
               emptyMessage="Không có kỳ nào để so sánh."
+              mobileCard={(r) => (
+                <CustomsComparePeriodCard
+                  row={r}
+                  terms={data.terms.map((term) => term.term)}
+                  colors={COMPARE_COLORS}
+                  unit={unit}
+                />
+              )}
             />
             <p className="text-sm font-medium">
               Cả khoảng:{' '}

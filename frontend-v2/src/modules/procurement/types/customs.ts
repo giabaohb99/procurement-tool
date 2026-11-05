@@ -290,6 +290,12 @@ export const CUSTOMS_BATCH_MODE = {
   apply: 1,
 } as const
 
+/** Nhãn loại lô — một chỗ cho cả bảng Lịch sử nạp lẫn thẻ lô ở khổ điện thoại. */
+export const CUSTOMS_BATCH_MODE_LABELS: Record<number, string> = {
+  [CUSTOMS_BATCH_MODE.dryRun]: 'Chạy thử',
+  [CUSTOMS_BATCH_MODE.apply]: 'Ghi thật',
+}
+
 export interface CustomsImportBatch {
   id: number
   mode: number

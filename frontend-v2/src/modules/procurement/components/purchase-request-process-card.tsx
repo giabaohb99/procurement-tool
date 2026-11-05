@@ -11,7 +11,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/core/auth/use-auth'
@@ -57,6 +57,8 @@ import {
   PR_OPTION_SOURCE_ORIGINAL,
   PR_OPTION_SOURCE_SURVEY,
 } from '../types/purchase-request-options'
+import { AvailableSurveyLineCard } from './available-survey-line-card'
+import { ProcessOptionCard } from './process-option-card'
 import { PurchaseRequestOptionEditDialog } from './purchase-request-option-edit-dialog'
 
 /** Trùng cỡ trang của màn xử lý YCBG (CR-222) — 8 dòng khảo sát mỗi trang. */
@@ -379,6 +381,64 @@ function OptionsTable({
     { enabled: canEditDetails },
   )
 
+  //  Ô ghi chú và cụm nút dựng MỘT chỗ cho cả bảng lẫn thẻ (khổ điện thoại) — hai bản
+  //  chép là hai đường phải sửa song song mỗi lần luật sửa / gỡ phương án đổi.
+  const renderNote = useCallback(
+    (option: PurchaseRequestOption) =>
+      editable ? (
+        <OptionNoteCell
+          option={option}
+          onSave={(note) =>
+            updateMutation.mutate({
+              itemId: item.id,
+              optionId: option.id,
+              payload: { nstm_note: note },
+            })
+          }
+        />
+      ) : (
+        option.nstm_note || '—'
+      ),
+    [editable, item.id, updateMutation],
+  )
+
+  const renderActions = useCallback(
+    (option: PurchaseRequestOption) => (
+      <div className="flex items-center gap-0.5">
+        {/* bao-CR-583: "phương án 0 xem như phương án nhập tay và chỉnh sửa lại được" —
+            phương án khảo sát không sửa ở đây (thông số là kết quả khảo sát). */}
+        {canEditDetails && option.source !== PR_OPTION_SOURCE_SURVEY && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={`Sửa ${option.display_label || `Phương án ${option.public_id}`}`}
+            title="Sửa thông tin phương án"
+            onClick={() => setEditingOption(option)}
+          >
+            <PenLine />
+          </Button>
+        )}
+        {/* Phương án 0 là chính dòng yêu cầu — backend không cho gỡ, nên không bày nút. */}
+        {option.source !== PR_OPTION_SOURCE_ORIGINAL && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="text-destructive hover:text-destructive"
+            title={
+              option.is_chosen ? 'Phương án đang được chốt — gỡ sẽ bỏ lựa chọn đó' : 'Gỡ phương án'
+            }
+            onClick={() => removeMutation.mutate({ itemId: item.id, optionId: option.id })}
+          >
+            <Trash2 />
+          </Button>
+        )}
+      </div>
+    ),
+    [canEditDetails, item.id, removeMutation],
+  )
+
   // Dùng DataTable để có kéo giãn + đổi vị trí cột. Mọi cột `hideable: false`
   // là CỐ Ý: mỗi dòng YCMH một bảng con — đủ điều kiện đó DataTable mới giấu
   // thanh công cụ, không thì mỗi bảng mọc một thanh rất loạn.
@@ -477,21 +537,7 @@ function OptionsTable({
         header: 'Ghi chú NSTM',
         width: 190,
         hideable: false,
-        cell: (option) =>
-          editable ? (
-            <OptionNoteCell
-              option={option}
-              onSave={(note) =>
-                updateMutation.mutate({
-                  itemId: item.id,
-                  optionId: option.id,
-                  payload: { nstm_note: note },
-                })
-              }
-            />
-          ) : (
-            option.nstm_note || '—'
-          ),
+        cell: renderNote,
       },
       {
         // Đợt 3b: chọn phương án dời sang màn CHI TIẾT phiếu — ở đây NSTM chỉ
@@ -516,45 +562,11 @@ function OptionsTable({
         header: '',
         width: 88,
         hideable: false,
-        cell: (option) => (
-          <div className="flex items-center gap-0.5">
-            {/* bao-CR-583: "phương án 0 xem như phương án nhập tay và chỉnh sửa lại được" —
-                phương án khảo sát không sửa ở đây (thông số là kết quả khảo sát). */}
-            {canEditDetails && option.source !== PR_OPTION_SOURCE_SURVEY && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={`Sửa ${option.display_label || `Phương án ${option.public_id}`}`}
-                title="Sửa thông tin phương án"
-                onClick={() => setEditingOption(option)}
-              >
-                <PenLine />
-              </Button>
-            )}
-            {/* Phương án 0 là chính dòng yêu cầu — backend không cho gỡ, nên không bày nút. */}
-            {option.source !== PR_OPTION_SOURCE_ORIGINAL && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="text-destructive hover:text-destructive"
-                title={
-                  option.is_chosen
-                    ? 'Phương án đang được chốt — gỡ sẽ bỏ lựa chọn đó'
-                    : 'Gỡ phương án'
-                }
-                onClick={() => removeMutation.mutate({ itemId: item.id, optionId: option.id })}
-              >
-                <Trash2 />
-              </Button>
-            )}
-          </div>
-        ),
+        cell: renderActions,
       })
     }
     return base
-  }, [editable, canEditDetails, item.id, ctx.canSeeSupplier, removeMutation, updateMutation])
+  }, [editable, ctx.canSeeSupplier, renderNote, renderActions])
 
   return (
     <>
@@ -566,6 +578,22 @@ function OptionsTable({
       emptyMessage="Chưa có phương án nào cho dòng hàng này."
       //  Bảng con theo từng dòng — nhãn "Phương án n" đã là định danh, cột ID (bao-CR-578) thừa.
       idColumn={false}
+      //  Khổ điện thoại: bảng 11 cột ~1300px thành thẻ dọc. Không khai `onRowClick` nên
+      //  thẻ là `div`, ô ghi chú và nút sửa / gỡ nằm trong được.
+      mobileCard={(option) => (
+        <ProcessOptionCard
+          option={option}
+          labelPrefix="Phương án"
+          showSupplier={ctx.canSeeSupplier}
+          sourceLabel={option.source_label}
+          fields={
+            editable || option.nstm_note
+              ? [{ label: 'Ghi chú NSTM', content: renderNote(option) }]
+              : []
+          }
+          actions={editable ? renderActions(option) : undefined}
+        />
+      )}
     />
     {editingOption && (
       <PurchaseRequestOptionEditDialog
@@ -883,6 +911,17 @@ function AvailableSurveyLinesPicker({
           rows={rows}
           getRowId={(row) => row.id}
           storageKey="procurement.pr-process.available"
+          mobileCard={(row) => (
+            <AvailableSurveyLineCard
+              row={row}
+              lineItemGroup={item.item_group || ''}
+              documentLabel="YCMH"
+              attaching={attachMutation.isPending}
+              onAttach={() =>
+                attachMutation.mutate({ itemId: item.id, productSurveyLineId: row.id })
+              }
+            />
+          )}
         />
       )}
 

@@ -18682,3 +18682,21 @@ Mã nguồn: doc/, .claude/, frontend-v2/src, backend/app, backend/scripts, test
 **Còn lại:** dòng nhật ký cũ đã ghi trước khi sửa vẫn nằm dưới tên loại nghỉ (chỉ có ở máy local và dev); ba điểm nhỏ ghi trong báo cáo test chưa sửa.
 
 Mã nguồn: frontend-v2/src/shared/crud/crud-field.tsx · crud-form-fields.tsx · crud-detail-page.tsx · types.ts · backend/app/core/crud.py · backend/app/modules/leave/policy_controller.py · catalog_controller.py · backend/app/modules/audit/controller.py
+
+## duoc-CR-720 | Thu mua trên điện thoại: các bảng còn lại đổi sang dạng thẻ
+- status: xong
+- date: 2026-11-05
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được yêu cầu nghiên cứu đổi các bảng của phân hệ Thu mua sang dạng thẻ khi xem trên điện thoại. Mười một màn danh sách và bảng dòng của YCMH, YCBG, Phiếu khảo sát đã có thẻ từ duoc-CR-394; đợt này làm nốt khoảng ba mươi bảng còn cuộn ngang. Màn rộng từ 768px trở lên giữ nguyên bảng.
+
+**Đã làm**
+- Chi tiết ĐMH: dòng hàng thành thẻ có tên hàng, SL nhân giá, thành tiền đủ chữ số, trạng thái tiến độ cùng các nút tạm dừng, tiếp tục, hủy; dòng còn sửa được thì chọn hàng, nhập SL đặt, đơn giá, VAT ngay trên thẻ, các ô khác sửa qua hộp chi tiết dòng; giữ ô tick chọn để xóa nhiều dòng. Các lần giao, chi phí thu mua, chi phí theo dòng hàng, thanh toán theo NCC, YCTT của đơn và hộp Tạo YCTT cũng thành thẻ, giữ dòng tổng cộng.
+- YCMH và YCBG: phương án ở màn xử lý, kết quả khảo sát chọn được, chứng từ liên quan và hộp lịch sử mua hàng thành thẻ; mã phiếu vẫn bấm sang phiếu khác được. Thẻ lịch sử mua hàng in giá số trơn như bảng, không gắn chữ đồng vì giá ĐMH nhập khẩu lưu bằng nguyên tệ.
+- Báo cáo: chi tiết chi phí vận chuyển, chi phí theo ngày, tiến độ theo dòng hàng và bảng hồ sơ cần có của Báo cáo thực hiện thành thẻ. Dạng xem Bảng của Báo cáo thực hiện (bảng tính 14 cột) không làm thẻ: trên điện thoại màn tự lùi về dạng Xem tổng, lựa chọn đã lưu không mất.
+- Tra cứu thị trường: mười chín bảng (dòng tờ khai, thuốc BVTV, phạm vi sử dụng, hóa chất theo văn bản, doanh nghiệp nhập khẩu, so sánh, số liệu dưới biểu đồ, biểu thuế, lịch sử nạp, nhật ký lô, bốn danh mục cấu hình) thành thẻ, nhiều bảng cùng kiểu dùng chung một thẻ.
+- Sửa kèm: hàng ba nút ở trạng thái chưa có Báo cáo thực hiện tràn hai mép trên điện thoại, nay xuống dòng; tiêu đề Chi phí thu mua bị bóp mỗi chữ một dòng; câu nhắc sửa đơn đã duyệt đổi theo khổ màn hình.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ thu mua 123 tệp 1188 bài xanh. Soát bằng trình duyệt giả lập 390x844 trên ĐMH 348, 358, 37, PO00360, YCMH 86, YCBG 2927, Báo cáo mua hàng và Tra cứu thị trường (mục Pháp lý, Thuốc BVTV, Cấu hình). Các màn chưa có dữ liệu ở máy local (dòng tờ khai, doanh nghiệp, so sánh, biểu thuế, lịch sử nạp) mới có bài kiểm phủ, cần xem lại trên dev.
+
+Mã nguồn: frontend-v2/src/modules/procurement/components (purchase-order-*-card, process-option-card, available-survey-line-card, linked-*-card, purchase-history-card, report-*-card, survey-report/report-item-progress-card, customs/customs-*-card), pages/customs-price-page.tsx, pages/purchase-order-detail-page.tsx

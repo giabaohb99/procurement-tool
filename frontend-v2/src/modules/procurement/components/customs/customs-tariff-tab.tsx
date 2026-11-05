@@ -14,6 +14,7 @@ import { Input } from '@/shared/ui/input'
 import { useCustomsTariff } from '../../hooks/use-customs'
 import type { CustomsFilters, CustomsTariffRow } from '../../types/customs'
 import { isValidHsLookup } from '../../utils/customs'
+import { CustomsTariffCard } from './customs-tariff-card'
 
 interface CustomsTariffTabProps {
   filters: CustomsFilters
@@ -167,11 +168,17 @@ function TariffTables({
         getRowId={(r) => r.hs_code}
         isLoading={isLoading}
         emptyMessage="Không có mã này trong biểu thuế đã nạp."
+        mobileCard={(r) => <CustomsTariffCard row={r} />}
       />
       {ftaKeys.length > 0 && (
         <>
           <p className="text-sm font-semibold">Thuế suất theo hiệp định thương mại tự do (%)</p>
-          <DataTable columns={ftaColumns} rows={leaves} getRowId={(r) => r.hs_code} />
+          <DataTable
+            columns={ftaColumns}
+            rows={leaves}
+            getRowId={(r) => r.hs_code}
+            mobileCard={(r) => <CustomsTariffCard row={r} ftaKeys={ftaKeys} />}
+          />
         </>
       )}
     </div>

@@ -58,6 +58,7 @@ import {
   type PriceAxis,
 } from '../../utils/customs'
 import { CustomsNotice, CustomsSegmentedChoice, CustomsUnitChips } from './customs-controls'
+import { CustomsPricePeriodCard } from './customs-price-period-card'
 
 
 const PRICE_COLOR = 'var(--chart-1)'
@@ -184,13 +185,7 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
         wrap: true,
         cell: (p) => (
           <span className={cn('text-xs', p.isBest ? 'font-medium text-success' : 'text-muted-foreground')}>
-            {p.count === 0
-              ? 'Không có dữ liệu'
-              : p.isBest
-                ? 'Giá tốt nhất (đủ dữ liệu)'
-                : p.low_data
-                  ? `Ít dữ liệu (< ${minLines} dòng)`
-                  : ''}
+            {formatPeriodNote(p, minLines)}
           </span>
         ),
       },
@@ -304,6 +299,15 @@ export function CustomsPriceChart({ filters }: CustomsPriceChartProps) {
               : undefined
           }
           emptyMessage="Không có kỳ nào để hiện."
+          //  Khổ điện thoại: mỗi kỳ một thẻ — biểu đồ phía trên giữ nguyên.
+          mobileCard={(point) => (
+            <CustomsPricePeriodCard
+              point={point}
+              unit={unit}
+              commonRange={formatCommonRange(point)}
+              note={formatPeriodNote(point, minLines)}
+            />
+          )}
         />
       </Card>
     </div>
@@ -461,6 +465,13 @@ function QuantityChart({ points }: { points: ChartPoint[] }) {
       </BarChart>
     </ResponsiveContainer>
   )
+}
+
+/** Câu ghi chú của một kỳ — chung cho cột "Ghi chú" và thẻ khổ điện thoại. */
+function formatPeriodNote(point: ChartPoint, minLines: number): string {
+  if (point.count === 0) return 'Không có dữ liệu'
+  if (point.isBest) return 'Giá tốt nhất (đủ dữ liệu)'
+  return point.low_data ? `Ít dữ liệu (< ${minLines} dòng)` : ''
 }
 
 /** "p25 – p75", hoặc gạch ngang khi kỳ không có giá. */
