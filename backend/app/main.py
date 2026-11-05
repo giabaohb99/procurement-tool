@@ -10,6 +10,7 @@ import os
 from app.core.config import settings
 from app.core.limiter import limiter
 from app.core.concurrency_gate import ConcurrencyGateMiddleware, resolve_limit
+from app.core.rate_limit import RateLimitMiddleware
 from app.core.report_cache import ReportSummaryCacheMiddleware
 from app.core.request_middleware import RequestContextMiddleware
 from app.core.response import error
@@ -216,6 +217,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 #  TRONG CÙNG, một cache HIT vẫn chạy qua `RequestContextMiddleware` (ghi `tab_request_log`
 #  bình thường, nhanh hơn hẳn — tín hiệu để nhận ra cache có hoạt động) và CORS vẫn bọc đúng.
 app.add_middleware(ReportSummaryCacheMiddleware)
+#  bao-CR-729 / BM-020: trần tần suất nằm TRONG `RequestContextMiddleware` (đọc `user_id` từ ngữ cảnh nó đã dựng, không
+#  giải mã vé lần hai; lượt bị 429 vẫn có dòng `tab_request_log`) và NGOÀI cache báo cáo (lượt trúng cache vẫn bị đếm).
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestContextMiddleware)
 
 #  duoc-CR-671: cổng số lượt gọi đồng thời đăng ký SAU nhật ký, TRƯỚC CORS → bọc ngoài

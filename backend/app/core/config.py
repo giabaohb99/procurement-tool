@@ -28,6 +28,14 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: str = "http://localhost:8080,http://localhost:5173"
     LOGIN_RATE_LIMIT: str = "10/minute"  # chống brute-force đăng nhập
+    # bao-CR-729 / BM-020: trần tần suất mọi /api, đếm theo TÀI KHOẢN (chưa đăng nhập thì theo IP), cửa sổ một phút,
+    # bộ đếm ở Redis chung mọi worker — xem `core/rate_limit.py`. LOG_ONLY = chỉ ghi log `app.rate_limit`, không chặn
+    # (dùng để đo trước trên dev). Số lượt/phút: 0 = không chặn mức đó.
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_LOG_ONLY: bool = False
+    RATE_LIMIT_PER_MINUTE: int = 300          # mức chung mỗi tài khoản
+    RATE_LIMIT_ANON_PER_MINUTE: int = 300     # lượt chưa đăng nhập, đếm theo IP (cả văn phòng chung một IP)
+    RATE_LIMIT_HEAVY_PER_MINUTE: int = 20     # đường nặng (xuất tệp, tìm tra cứu thị trường, Trợ lý), mỗi nhóm một bộ đếm
     # bao-CR-394 / BM-014: chỉ tin `CF-Connecting-IP` / `X-Forwarded-For` khi đầu TCP đối
     # diện (`request.client.host`) nằm trong các dải này — mặc định = mạng Docker + loopback,
     # nơi nginx và cloudflared đứng. Gọi thẳng cổng 8000 từ ngoài thì header tự khai bị bỏ,

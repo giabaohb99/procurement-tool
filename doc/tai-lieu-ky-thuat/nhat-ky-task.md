@@ -114,6 +114,34 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-729-tran-tan-suat-api | Bật trần tần suất gọi API nghiệp vụ (BM-020)
+- status: xong
+- date: 2026-11-05
+- list: Nền tảng
+- tag: Bảo mật
+**Bối cảnh:** sổ bảo mật ghi BM-020: trần 300 lượt mỗi phút đã khai trong mã nhưng chưa có hiệu lực, chỉ bốn đường đăng
+nhập có trần, nên một tài khoản hợp lệ rút được toàn bộ dữ liệu trong phạm vi của mình ở tốc độ tối đa. Được giao 05/11
+theo phương án đã chốt: đếm theo tài khoản chứ không theo IP vì cả công ty chung một IP văn phòng.
+
+**Việc:** thêm lớp chặn tần suất cho mọi đường API, đếm theo tài khoản ở Redis, đường nặng chặt hơn, có công tắc tắt và
+chế độ chỉ ghi log để đo trước trên dev.
+
+**Kết quả:** mỗi lượt gọi API được đếm theo mã tài khoản lấy từ vé đăng nhập đã giải mã sẵn ở lớp ghi nhật ký (không giải
+mã lần hai, không đụng cơ sở dữ liệu); lượt chưa đăng nhập đếm theo IP thật. Bộ đếm cửa sổ một phút nằm ở Redis nên mọi
+tiến trình máy chủ đếm chung; Redis hỏng thì cho đi qua, ghi cảnh báo và nghỉ đếm 30 giây. Mức chung 300 lượt mỗi phút mỗi
+tài khoản; ba nhóm đường nặng mỗi nhóm 20 lượt mỗi phút và vẫn tính vào mức chung: xuất tệp (mọi đường xuất Excel, CSV,
+Word, lô xuất tra cứu thị trường, màn Xuất dữ liệu), tìm kiếm tra cứu thị trường (danh sách dòng và ba thẻ tổng hợp), gửi
+lệnh cho Trợ lý AI. Miễn trần có ghi lý do từng dòng: kiểm sức khỏe, cổng máy gọi máy của dịch vụ AI và app đặt xe cũ (ký
+HMAC), cổng MCP (đã có trần riêng theo khóa và cần câu lỗi dạng JSON-RPC), phần đọc công khai của Trung tâm trợ giúp và
+FAQ. Vượt mức trả 429 đúng phong bì chuẩn với câu **Thao tác quá nhanh, vui lòng thử lại sau ít giây** kèm thời gian chờ,
+và ghi log riêng. Các mức chỉnh bằng biến môi trường, không cần build. Trần riêng cũ của đăng nhập và thu sự kiện giữ
+nguyên. Sổ bảo mật lên bản 2.8, BM-020 chuyển **Đã vá (dev, log-only)**.
+
+Kiểm: 40 bài kiểm mới đạt; 17 tệp bài kiểm cũ về đăng nhập, nhật ký, thu sự kiện, bộ đệm báo cáo, IP thật đạt 658 bài;
+ruff sạch phần sửa.
+Mã nguồn: backend/app/core/rate_limit.py (mới), backend/app/core/config.py, backend/app/core/limiter.py, backend/app/main.py, .env.example, test/backend/conftest.py, test/backend/test_tran_tan_suat_cr729.py, doc/tai-lieu-ky-thuat/van-hanh/so-ghi-nhan-loi-bao-mat.md
+Còn lại: dựng dev với `RATE_LIMIT_LOG_ONLY=true`, đo một tuần qua log `app.rate_limit` rồi chỉnh mức trước khi bật chặn và lên prod.
+
 ## bao-CR-727-gui-lai-email | Nút Gửi lại trên màn Nhật ký email
 - status: xong
 - date: 2026-11-04
