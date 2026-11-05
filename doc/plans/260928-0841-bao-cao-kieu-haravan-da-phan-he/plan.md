@@ -1,7 +1,7 @@
 ---
 title: "Báo cáo kiểu Haravan Analytics — đa phân hệ"
 description: "Khung báo cáo chung (kỳ + so sánh + Xem theo + Xuất Excel), dời 5 trang Thu mua, thêm báo cáo Nhân sự/Nghỉ phép, Hành chính, Công việc."
-status: pending
+status: in_progress
 priority: P2
 effort: 46h
 branch: erp-v2
@@ -28,12 +28,12 @@ dòng Tổng, cột so sánh, Xuất Excel). Toàn bộ trạng thái lọc nằ
 ## Phases
 | # | Phase | Effort | Status | Phụ thuộc |
 |---|-------|--------|--------|-----------|
-| 01 | [Khung backend: kỳ · so sánh · gom nhóm · Excel · thời gian duyệt](phase-01-backend-report-framework.md) | 6h | pending | — |
-| 02 | [Khung frontend: bộ chọn kỳ · trang báo cáo chung · bảng Xem theo](phase-02-frontend-report-framework.md) | 8h | pending | 01 (hợp đồng) |
-| 03 | [Dời 5 trang Thu mua + trang Tổng quan](phase-03-migrate-procurement-and-overview.md) | 9h | pending | 01, 02 |
-| 04 | [Nhân sự + Nghỉ phép](phase-04-hr-leave-reports.md) | 7h | pending | 01, 02 |
-| 05 | [Hành chính: Đặt xe · Đóng dấu · Văn bản · Phê duyệt](phase-05-admin-reports.md) | 9h | pending | 01, 02 |
-| 06 | [Công việc / Dự án](phase-06-work-reports.md) | 4h | pending | 01, 02 |
+| 01 | [Khung backend: kỳ · so sánh · gom nhóm · Excel · thời gian duyệt](phase-01-backend-report-framework.md) | 6h | done | — |
+| 02 | [Khung frontend: bộ chọn kỳ · trang báo cáo chung · bảng Xem theo](phase-02-frontend-report-framework.md) | 8h | done | 01 (hợp đồng) |
+| 03 | [Dời 5 trang Thu mua + trang Tổng quan](phase-03-migrate-procurement-and-overview.md) | 9h | done | 01, 02 |
+| 04 | [Nhân sự + Nghỉ phép](phase-04-hr-leave-reports.md) | 7h | in_progress | 01, 02 |
+| 05 | [Hành chính: Đặt xe · Đóng dấu · Văn bản · Phê duyệt](phase-05-admin-reports.md) | 9h | in_progress | 01, 02 |
+| 06 | [Công việc / Dự án](phase-06-work-reports.md) | 4h | in_progress | 01, 02 |
 | 07 | [Kiểm thử chéo · tài liệu · nhật ký task](phase-07-tests-docs-journal.md) | 3h | pending | 03–06 |
 
 04 · 05 · 06 chạy SONG SONG được: 01 dựng sẵn router rỗng + đăng ký `main.py`, 02 dựng sẵn tệp
@@ -64,6 +64,13 @@ Phase 03 giữ tham số `year` ở các `/summary` cũ → trang bảng gốc k
 - Q4.1 Đơn nghỉ vắt kỳ: tính theo **ngày bắt đầu**.
 - Q4.2 Không lịch sử điều chuyển: dùng phòng ban hiện tại + ghi chú "Phòng ban theo hiện tại" trên trang.
 
-## Câu hỏi còn mở
-Q4.3, Q5.x, Q6.1, Q0.3 — hỏi lại trước khi làm 04–06. Danh sách ở
-[phase-07](phase-07-tests-docs-journal.md#câu-hỏi-còn-mở-tổng-hợp).
+## Quyết định đã chốt (01/10/2026) — mở 04–06
+- Phạm vi: đúng 8 báo cáo của 04–06; Tài chính / Kho / Hỗ trợ / Phòng họp chưa làm (Q0.3: không).
+- Q4.3 "Đang làm việc" = `status ≠ resigned`, bỏ qua `is_active`.
+- Q5.1 Đặt xe theo ngày đi (`start_time`). Q5.2 Văn bản theo ngày tạo, "Đã ban hành" theo `issued_at`.
+- Q5.3 Báo cáo Văn bản gác `document.read` (chặt hơn menu) — chấp nhận.
+- Q5.4 Báo cáo Phê duyệt gác `approval_flow.read`, số vẫn lọc theo quyền đọc từng loại chứng từ.
+- Q6.1 Dự án không đếm việc con và mốc.
+- Khung dùng chung đã dựng sẵn (01/10): 8 router rỗng `*/report_controller.py` (+ `leave/balance_report_controller.py`)
+  đăng ký đầu `main.py`; `approval/report_turnaround.py`; route `appRoutes.report.*`; 3 tệp danh mục rỗng
+  `report-catalog-{hr,admin,work}.ts`; test danh mục so khóa với khóa PHÂN HỆ khi mục menu không khai `entity`.
