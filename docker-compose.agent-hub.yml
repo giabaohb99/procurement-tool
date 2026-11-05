@@ -29,10 +29,28 @@ x-agent-base: &agent-base
     - dego-db
     - erp-internal
 
+# bao-CR-735 chống treo: như docker-compose.production.yml — healthcheck + nhãn dego.autoheal, bộ tự chữa trên máy chủ
+# (backend/scripts/ops/autoheal.sh) docker restart container `unhealthy`. Beat / poller chưa có healthcheck.
+x-health-agent-api: &health-agent-api
+  test: ["CMD", "python", "healthcheck.py", "api"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 90s
+x-health-agent-worker: &health-agent-worker
+  test: ["CMD", "python", "healthcheck.py", "celery", "agent-worker"]   # tên worker agent-worker@%h
+  interval: 60s
+  timeout: 20s
+  retries: 3
+  start_period: 60s
+
 services:
   agent-api:
     <<: *agent-base
     command: ["sh", "start.agent.sh"]
+    healthcheck: *health-agent-api
+    labels:
+      dego.autoheal: "true"
     volumes:
       - agent_files:/agent-files
       - ./doc/agent-hub:/agent-docs
@@ -46,6 +64,9 @@ services:
   agent-worker:
     <<: *agent-base
     command: celery -A app.core.celery_app worker -l info -c 2 -n agent-worker@%h
+    healthcheck: *health-agent-worker
+    labels:
+      dego.autoheal: "true"
     volumes:
       - agent_files:/agent-files
       - ./doc/agent-hub:/agent-docs:ro

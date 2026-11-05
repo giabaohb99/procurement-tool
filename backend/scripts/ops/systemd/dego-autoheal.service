@@ -1,0 +1,15 @@
+# bao-CR-735 — bộ tự chữa container treo. Cài: xem doc/tai-lieu-ky-thuat/van-hanh/chong-treo-prod.md
+[Unit]
+Description=DEGO tu khoi dong lai container unhealthy (bao-CR-735)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/dego-autoheal
+StateDirectory=dego-autoheal
+Environment=AUTOHEAL_STATE=/var/lib/dego-autoheal/restarts.log
+# Đổi nhãn máy trong tin báo / trần lần mỗi giờ thì đặt ở đây hoặc /etc/dego/autoheal.env
+EnvironmentFile=-/etc/dego/autoheal.env
+EnvironmentFile=-/etc/dego/alert.env
+TimeoutStartSec=10min

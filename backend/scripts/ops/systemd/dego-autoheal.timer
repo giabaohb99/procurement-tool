@@ -1,0 +1,11 @@
+# bao-CR-735 — mỗi 30 giây
+[Unit]
+Description=DEGO bo tu chua container moi 30 giay (bao-CR-735)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=30s
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target
