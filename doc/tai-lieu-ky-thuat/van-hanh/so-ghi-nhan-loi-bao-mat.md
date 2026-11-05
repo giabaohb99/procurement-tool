@@ -110,6 +110,7 @@ khoản, không mật khẩu, không tạo vai trò. Lý do ghi vào sổ: lần
 **Bản 2.7 — 04/11/2026 (chiều).** **BM-034 đã vá phần lớn trên dev** (bao-CR-725): backend đổi python-jose sang PyJWT, nâng fastapi 0.115.2 → 0.162.0 kèm starlette 1.10.0, python-multipart, pypdf, cryptography, requests, nâng pip lúc dựng ảnh; pip-audit từ 13 gói có lỗ xuống 1 (pycel chưa có bản vá, đã tắt ở BM-032; ecdsa đi theo python-jose nên biến mất). Giao diện: frontend-v2 61 → 17, frontend 26 → 16, help-center 11 → 7; phần còn lại đều đòi nâng bản lớn (zod 4, minimatch 11, vite 6 + esbuild, quill 2) — để đợt hai. Chưa lên prod.
 
 **Bản 2.6 — 04/11/2026.** bao-CR-726: **BM-033 đã vá trọn** — chặn chèn công thức ở các đường xuất Excel / CSV còn lại (báo cáo mua hàng, sổ lao động + phúc lợi, tệp mẫu nhập, tệp Excel Trợ lý, CSV danh mục có bộ nạp gỡ dấu, CSV báo cáo khảo sát).
+**Bản 2.8 — 05/11/2026.** bao-CR-730 đối chiếu lịch sử nhánh `main` (bản 2.14.0, `dae5957b`): mọi bản vá trong sổ đã lên prod. Các chữ *chờ deploy* / *dev chưa deploy* / *chờ đợt prod kế* còn ở BM-005, BM-019, BM-021, BM-023, BM-032, BM-034 nay hết hạn (`bfa4149f` bao-CR-655, `454ec550` bao-CR-723, `2511d697` bao-CR-725 đều là tổ tiên của `main`). BM-003 phần còn thiếu (phiên phía máy chủ) đã đóng ở BM-002. Báo cáo tổng hợp cho người chủ: [`bao-cao-bao-mat-tong-hop-2611.md`](bao-cao-bao-mat-tong-hop-2611.md).
 ## 0. Vì sao có tệp này
 
 Ngày 07/09/2026 khách báo một phiếu Yêu cầu báo giá hiện kết quả khảo sát của mặt hàng khác.
