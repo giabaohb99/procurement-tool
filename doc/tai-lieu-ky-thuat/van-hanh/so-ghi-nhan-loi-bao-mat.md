@@ -111,7 +111,9 @@ khoản, không mật khẩu, không tạo vai trò. Lý do ghi vào sổ: lần
 
 **Bản 2.6 — 04/11/2026.** bao-CR-726: **BM-033 đã vá trọn** — chặn chèn công thức ở các đường xuất Excel / CSV còn lại (báo cáo mua hàng, sổ lao động + phúc lợi, tệp mẫu nhập, tệp Excel Trợ lý, CSV danh mục có bộ nạp gỡ dấu, CSV báo cáo khảo sát).
 
-**Bản 2.8 — 05/11/2026.** bao-CR-729: **BM-020 đã vá trên dev, chạy chế độ chỉ ghi log** — trần tần suất mọi `/api` đếm theo tài khoản ở Redis (`core/rate_limit.py`), mức chung 300 lượt/phút, đường nặng (xuất tệp, tìm tra cứu thị trường, Trợ lý) 20 lượt/phút mỗi nhóm; chưa đăng nhập đếm theo IP. Dev đo một tuần ở `RATE_LIMIT_LOG_ONLY=true` rồi mới bật chặn; chưa lên prod.
+**Bản 2.8 — 05/11/2026.** bao-CR-730 đối chiếu lịch sử nhánh `main` (bản 2.14.0, `dae5957b`): mọi bản vá trong sổ đã lên prod. Các chữ *chờ deploy* / *dev chưa deploy* / *chờ đợt prod kế* còn ở BM-005, BM-019, BM-021, BM-023, BM-032, BM-034 nay hết hạn (`bfa4149f` bao-CR-655, `454ec550` bao-CR-723, `2511d697` bao-CR-725 đều là tổ tiên của `main`). BM-003 phần còn thiếu (phiên phía máy chủ) đã đóng ở BM-002. Báo cáo tổng hợp cho người chủ: [`bao-cao-bao-mat-tong-hop-2611.md`](bao-cao-bao-mat-tong-hop-2611.md).
+
+**Bản 2.9 — 05/11/2026.** bao-CR-729: **BM-020 đã vá trên dev, chạy chế độ chỉ ghi log** — trần tần suất mọi `/api` đếm theo tài khoản ở Redis (`core/rate_limit.py`), mức chung 300 lượt/phút, đường nặng (xuất tệp, tìm tra cứu thị trường, Trợ lý) 20 lượt/phút mỗi nhóm; chưa đăng nhập đếm theo IP. Dev đo một tuần ở `RATE_LIMIT_LOG_ONLY=true` rồi mới bật chặn; chưa lên prod.
 
 ## 0. Vì sao có tệp này
 

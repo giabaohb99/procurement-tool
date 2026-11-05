@@ -135,7 +135,7 @@ lệnh cho Trợ lý AI. Miễn trần có ghi lý do từng dòng: kiểm sức
 HMAC), cổng MCP (đã có trần riêng theo khóa và cần câu lỗi dạng JSON-RPC), phần đọc công khai của Trung tâm trợ giúp và
 FAQ. Vượt mức trả 429 đúng phong bì chuẩn với câu **Thao tác quá nhanh, vui lòng thử lại sau ít giây** kèm thời gian chờ,
 và ghi log riêng. Các mức chỉnh bằng biến môi trường, không cần build. Trần riêng cũ của đăng nhập và thu sự kiện giữ
-nguyên. Sổ bảo mật lên bản 2.8, BM-020 chuyển **Đã vá (dev, log-only)**.
+nguyên. Sổ bảo mật lên bản 2.9, BM-020 chuyển **Đã vá (dev, log-only)**.
 
 Kiểm: 40 bài kiểm mới đạt; 17 tệp bài kiểm cũ về đăng nhập, nhật ký, thu sự kiện, bộ đệm báo cáo, IP thật đạt 658 bài;
 ruff sạch phần sửa.
@@ -18509,6 +18509,16 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 - Chốt người duyệt chặng một khi chính Trưởng phòng Nhân sự xin nghỉ.
 - Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
 **Rà 05/11/2026 (còn tồn):** nhận thêm việc nhập bù ngày vào làm từ kh-HR1-5-6; việc dữ liệu chờ phòng Nhân sự, lần rà này không đọc được CSDL prod để đếm hồ sơ còn thiếu.
+
+## bao-CR-730 | Báo cáo bảo mật tổng hợp tháng 11/2026 cho người chủ
+- status: xong
+- date: 2026-11-05
+- list: Nền tảng
+- tag: Bảo mật, Agent 4
+
+**Đã làm:** Soạn một báo cáo dễ đọc gom ba mươi sáu mục trong sổ lỗi bảo mật: tóm tắt một trang, những gì đã vá theo chín nhóm (đăng nhập, phân quyền, nhật ký, tệp, xuất Excel, bí mật, AI, thư, hạ tầng) có đối chiếu đã lên prod, những gì còn mở, tám nhóm rủi ro về sau kèm dấu hiệu sớm và việc nên làm, và lộ trình ba tháng. Đính chính sổ lỗi bảo mật: các mục còn ghi chờ deploy đều đã lên prod.
+
+Tài liệu: doc/tai-lieu-ky-thuat/van-hanh/bao-cao-bao-mat-tong-hop-2611.md, so-ghi-nhan-loi-bao-mat.md bản 2.8.
 
 ## bao-CR-726 | Chặn chèn công thức ở các tệp Excel / CSV xuất ra còn lại
 - status: xong
