@@ -145,6 +145,7 @@ def _items_editable(entity: str) -> None:
 @report_router.get("")
 def get_report_(entity: str, owner_id: int, db: Session = Depends(get_db),
                 user=Depends(_require_owner("read"))):
+    """Đọc khối Báo cáo thực hiện của một YCBG hoặc ĐMH (nút, giai đoạn, hồ sơ)."""
     _, report_id = _readable(db, entity, owner_id, user)
     return success(report_service.get_report_payload(db, report_id))
 
@@ -162,6 +163,7 @@ def list_templates_(entity: str, owner_id: int, db: Session = Depends(get_db),
 def init_report_(entity: str, owner_id: int,
                  data: ReportInitIn = Body(default_factory=ReportInitIn),
                  db: Session = Depends(get_db), user=Depends(_require_owner("write"))):
+    """Dựng khung Báo cáo thực hiện theo mẫu từ các dòng hàng của phiếu."""
     parent, report_id = _writable(db, entity, owner_id, user)
     lines = _rule_of(entity).lines(db, parent)
     added = report_service.init_report(db, report_id, lines, user.id, data.template)
@@ -232,6 +234,7 @@ def restore_report_(entity: str, owner_id: int, db: Session = Depends(get_db),
 @report_router.post("/items")
 def create_item_(entity: str, owner_id: int, data: ReportItemIn, db: Session = Depends(get_db),
                  user=Depends(_require_owner("write"))):
+    """Thêm một nút (nhóm hồ sơ) vào Báo cáo thực hiện."""
     _items_editable(entity)
     parent, report_id = _writable(db, entity, owner_id, user)
     report_service.create_item(db, report_id, data.name, user.id)
@@ -241,6 +244,7 @@ def create_item_(entity: str, owner_id: int, data: ReportItemIn, db: Session = D
 @report_router.patch("/items/{item_id}")
 def rename_item_(entity: str, owner_id: int, item_id: int, data: ReportItemIn,
                  db: Session = Depends(get_db), user=Depends(_require_owner("write"))):
+    """Đổi tên một nút của Báo cáo thực hiện."""
     _items_editable(entity)
     parent, report_id = _writable(db, entity, owner_id, user)
     report_service.rename_item(db, report_id, item_id, data.name, user.id)
@@ -250,6 +254,7 @@ def rename_item_(entity: str, owner_id: int, item_id: int, data: ReportItemIn,
 @report_router.delete("/items/{item_id}")
 def delete_item_(entity: str, owner_id: int, item_id: int, db: Session = Depends(get_db),
                  user=Depends(_require_owner("write"))):
+    """Xóa một nút của Báo cáo thực hiện; hồ sơ gắn nút đó chuyển về nút Chung."""
     _items_editable(entity)
     parent, report_id = _writable(db, entity, owner_id, user)
     name = report_service.delete_item(db, report_id, item_id, user.id)
@@ -261,6 +266,7 @@ def delete_item_(entity: str, owner_id: int, item_id: int, db: Session = Depends
 @report_router.post("/phases")
 def create_phase_(entity: str, owner_id: int, data: ReportPhaseIn, db: Session = Depends(get_db),
                   user=Depends(_require_owner("write"))):
+    """Thêm một giai đoạn vào Báo cáo thực hiện."""
     parent, report_id = _writable(db, entity, owner_id, user)
     report_service.create_phase(db, report_id, data.name, data.location, user.id)
     return _done(db, entity, parent, report_id, user, f"Báo cáo: thêm giai đoạn '{data.name}'")
@@ -269,6 +275,7 @@ def create_phase_(entity: str, owner_id: int, data: ReportPhaseIn, db: Session =
 @report_router.patch("/phases/{phase_id}")
 def update_phase_(entity: str, owner_id: int, phase_id: int, data: ReportPhaseIn,
                   db: Session = Depends(get_db), user=Depends(_require_owner("write"))):
+    """Sửa tên, nơi thực hiện của một giai đoạn."""
     parent, report_id = _writable(db, entity, owner_id, user)
     report_service.update_phase(db, report_id, phase_id, data.name, data.location, user.id)
     return _done(db, entity, parent, report_id, user, f"Báo cáo: sửa giai đoạn '{data.name}'")
@@ -277,6 +284,7 @@ def update_phase_(entity: str, owner_id: int, phase_id: int, data: ReportPhaseIn
 @report_router.delete("/phases/{phase_id}")
 def delete_phase_(entity: str, owner_id: int, phase_id: int, db: Session = Depends(get_db),
                   user=Depends(_require_owner("write"))):
+    """Xóa một giai đoạn của Báo cáo thực hiện."""
     parent, report_id = _writable(db, entity, owner_id, user)
     name = report_service.delete_phase(db, report_id, phase_id)
     return _done(db, entity, parent, report_id, user, f"Báo cáo: xóa giai đoạn '{name}'")
@@ -286,6 +294,7 @@ def delete_phase_(entity: str, owner_id: int, phase_id: int, db: Session = Depen
 @report_router.post("/docs")
 def create_doc_(entity: str, owner_id: int, data: ReportDocIn, db: Session = Depends(get_db),
                 user=Depends(_require_owner("write"))):
+    """Thêm một hồ sơ vào Báo cáo thực hiện."""
     parent, report_id = _writable(db, entity, owner_id, user)
     report_service.create_doc(db, report_id, data, user.id)
     return _done(db, entity, parent, report_id, user, f"Báo cáo: thêm hồ sơ '{data.title}'")
@@ -294,6 +303,7 @@ def create_doc_(entity: str, owner_id: int, data: ReportDocIn, db: Session = Dep
 @report_router.patch("/docs/{doc_id}")
 def update_doc_(entity: str, owner_id: int, doc_id: int, data: ReportDocPatch,
                 db: Session = Depends(get_db), user=Depends(_require_owner("write"))):
+    """Cập nhật một hồ sơ của Báo cáo thực hiện."""
     parent, report_id = _writable(db, entity, owner_id, user)
     doc = report_service.update_doc(db, report_id, doc_id, data, user.id)
     return _done(db, entity, parent, report_id, user, f"Báo cáo: cập nhật hồ sơ '{doc.title}'")
@@ -302,6 +312,7 @@ def update_doc_(entity: str, owner_id: int, doc_id: int, data: ReportDocPatch,
 @report_router.delete("/docs/{doc_id}")
 def delete_doc_(entity: str, owner_id: int, doc_id: int, db: Session = Depends(get_db),
                 user=Depends(_require_owner("write"))):
+    """Xóa một hồ sơ của Báo cáo thực hiện."""
     parent, report_id = _writable(db, entity, owner_id, user)
     title = report_service.delete_doc(db, report_id, doc_id, user.id)
     return _done(db, entity, parent, report_id, user, f"Báo cáo: xóa hồ sơ '{title}'")
@@ -312,6 +323,7 @@ def delete_doc_(entity: str, owner_id: int, doc_id: int, db: Session = Depends(g
 @report_router.post("/docs/bulk-delete")
 def delete_docs_(entity: str, owner_id: int, data: ReportDocBulkDeleteIn,
                  db: Session = Depends(get_db), user=Depends(_require_owner("write"))):
+    """Xóa nhiều hồ sơ của Báo cáo thực hiện một lần."""
     parent, report_id = _writable(db, entity, owner_id, user)
     titles = report_service.delete_docs(db, report_id, data.doc_ids, user.id)
     #  Một dòng lịch sử cho cả lượt; liệt kê tối đa 5 tên, còn lại gộp "+n".
@@ -339,6 +351,7 @@ def first_doc_options_(entity: str, owner_id: int, db: Session = Depends(get_db)
 @report_router.post("/first-doc")
 def create_first_doc_(entity: str, owner_id: int, data: ReportFirstDocIn,
                       db: Session = Depends(get_db), user=Depends(_require_owner("write"))):
+    """Thêm hồ sơ đầu tiên và dựng khung năm giai đoạn cho Báo cáo thực hiện còn trống."""
     parent, report_id = _writable(db, entity, owner_id, user)
     lines = _rule_of(entity).lines(db, parent)
     report_service.create_first_doc(db, report_id, lines, data, user.id)

@@ -22,6 +22,7 @@ def list_suppliers(
     db: Session = Depends(get_db),
     user=Depends(require("supplier", "read")),
 ):
+    """Danh sách nhà cung cấp, có lọc, sắp xếp và phân trang."""
     query = apply_filters(db.query(Supplier), Supplier, request, service.FILTERABLE)
     query = apply_sort_from_request(query, Supplier, request)
     total, items = service.list_suppliers(db, query, pg)
@@ -33,6 +34,7 @@ def list_suppliers(
 
 @router.get("/{sid}")
 def get_supplier(sid: int, db: Session = Depends(get_db), user=Depends(require("supplier", "read"))):
+    """Xem một nhà cung cấp theo id."""
     return success(SupplierOut.model_validate(service.get_supplier(db, sid)).model_dump())
 
 
@@ -41,6 +43,7 @@ def create_supplier(
     data: SupplierCreate, db: Session = Depends(get_db),
     user=Depends(require("supplier", "create")),
 ):
+    """Thêm nhà cung cấp."""
     obj = service.create_supplier(db, data, user.id)
     return success(SupplierOut.model_validate(obj).model_dump(), "Đã tạo NCC", 201)
 
@@ -50,6 +53,7 @@ def update_supplier(
     sid: int, data: SupplierUpdate, db: Session = Depends(get_db),
     user=Depends(require("supplier", "write")),
 ):
+    """Sửa nhà cung cấp; chỉ ghi các ô gửi lên."""
     obj = service.update_supplier(db, sid, data, user.id)
     return success(SupplierOut.model_validate(obj).model_dump(), "Đã cập nhật")
 
@@ -59,6 +63,7 @@ def delete_supplier(
     sid: int, db: Session = Depends(get_db), user=Depends(require("supplier", "delete"))
 ):
     # ai-CR-169: lấy một dòng phải qua phạm vi (`get_scoped`), như mọi controller khác.
+    """Xóa một nhà cung cấp trong phạm vi được xóa."""
     obj = get_scoped(db, Supplier, "supplier", sid, user, get_perm_profile(db, user), "delete")
     if not obj:
         raise HTTPException(404, "Không tìm thấy nhà cung cấp")
@@ -68,6 +73,7 @@ def delete_supplier(
 
 @router.delete("")
 def bulk_delete_suppliers(ids: str, db: Session = Depends(get_db), user=Depends(require("supplier", "delete"))):
+    """Xóa nhiều nhà cung cấp theo danh sách id (tham số `ids` cách nhau dấu phẩy)."""
     id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
     if not id_list:
         raise HTTPException(400, "Không có ID hợp lệ")
@@ -95,6 +101,7 @@ def export_suppliers_csv(
     db: Session = Depends(get_db),
     user=Depends(require("supplier", "export")),
 ):
+    """Xuất nhà cung cấp ra tệp CSV theo bộ lọc hoặc theo các id đã chọn."""
     from app.core.csv_utils import export_csv_response
 
     query = apply_filters(db.query(Supplier), Supplier, request, service.FILTERABLE)
@@ -128,6 +135,7 @@ def import_suppliers_csv(
     db: Session = Depends(get_db),
     user=Depends(require("supplier", "import")),
 ):
+    """Nhập nhà cung cấp hàng loạt từ tệp CSV; mã trống thì hệ tự sinh."""
     import csv
     from io import StringIO
     from app.core.csv_utils import unescape_row

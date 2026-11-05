@@ -129,6 +129,7 @@ def _filtered(db: Session, request: Request, user, scoped: bool = True):
 @router.get("")
 def list_payables(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
                   user=Depends(require("payable", "read"))):
+    """Danh sách công nợ phải trả, sắp theo hạn trả gần nhất, kèm mã MISA của đơn."""
     q = _filtered(db, request, user)
     total = q.count()
     rows = (q.order_by(Payable.due_date.asc(), Payable.id.desc())

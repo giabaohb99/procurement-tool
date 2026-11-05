@@ -80,6 +80,7 @@ def list_pr(
     request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
     user=Depends(require("purchase_request", "read")),
 ):
+    """Danh sách yêu cầu mua hàng (YCMH) trong phạm vi được xem, có lọc và phân trang."""
     query = _list_query(request, db, user)
     total, items = service.list_pr(db, query, pg)
     return success({"total": total, "items": _out_list(db, items, user)})
@@ -204,6 +205,7 @@ def dept_head_candidates(pid: int, db: Session = Depends(get_db),
 
 @router.get("/{pid}")
 def get_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    """Chi tiết một YCMH; người chỉ phụ trách một số dòng chỉ thấy dòng của mình."""
     profile = get_perm_profile(db, user)
     pr = _read_scoped_or_403(db, pid, user, profile)
     data = _out(db, pr, user)
@@ -227,24 +229,28 @@ def order_progress(pid: int, db: Session = Depends(get_db), user=Depends(require
 
 @router.post("")
 def create_pr(data: PRCreate, db: Session = Depends(get_db), user=Depends(require("purchase_request", "create"))):
+    """Tạo YCMH mới ở trạng thái Nháp; cụm nhà cung cấp thu mua chỉ người có quyền sửa NCC mới ghi."""
     can_pur = user_has_permission(db, user, "supplier", "write")   # Task 4: chỉ QL/Admin sửa cụm NCC thu mua
     return success(_out(db, service.create_pr(db, data, user.id, can_pur), user), "Đã tạo yêu cầu mua", 201)
 
 
 @router.post("/{pid}/copy")
 def copy_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "create"))):
+    """Nhân bản một YCMH thành phiếu Nháp mới."""
     _in_scope(db, pid, user, "create")
     return success(_out(db, service.copy_pr(db, pid, user.id), user), "Đã nhân bản thành phiếu Nháp mới", 201)
 
 
 @router.post("/{pid}/clone")   # alias để nút Nhân bản ở danh sách (CrudList) dùng chung 1 đường dẫn
 def clone_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "create"))):
+    """Nhân bản một YCMH thành phiếu Nháp mới (tên cũ của đường `/copy`, giữ cho màn cũ)."""
     _in_scope(db, pid, user, "create")
     return success(_out(db, service.copy_pr(db, pid, user.id), user), "Đã nhân bản thành phiếu Nháp mới", 201)
 
 
 @router.patch("/{pid}/assign")
 def assign_pr(pid: int, data: AssignIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
+    """Giao người phụ trách mua cho YCMH đã duyệt và báo chuông người được giao."""
     _in_scope(db, pid, user, "approve")
     pr = service.assign(db, pid, data, user.id)
     # Thông báo "được phân công phụ trách" cho NSTM (NSTM header + NSTM từng dòng)
@@ -266,6 +272,7 @@ def set_urgent(pid: int, data: UrgentIn, db: Session = Depends(get_db), user=Dep
 
 @router.patch("/{pid}/item-status")
 def update_item_status(pid: int, data: ItemStatusIn, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    """Cập nhật trạng thái một dòng hàng của YCMH; quản lý sửa mọi dòng, người phụ trách chỉ dòng của mình."""
     _in_scope(db, pid, user, "read")   # bảng dòng lọc theo phiếu cha — phiếu cha phải lọc phạm vi
     prof = get_perm_profile(db, user)
     pr_perm = prof["perms_union"].get("purchase_request", {})
@@ -293,6 +300,7 @@ def _ensure_can_return_or_reject(db: Session, user, pr: PurchaseRequest):
 
 @router.post("/{pid}/cancel")
 def cancel_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    """Hủy YCMH kèm lý do và báo người tạo."""
     _ensure_can_return_or_reject(db, user, service.get_pr(db, pid))
     pr = service.cancel_pr(db, pid, data.reason, user.id)
     trigger_notification(db=db, event="pr_cancelled", doc_type="purchase_request", doc_code=pr.code,
@@ -303,6 +311,7 @@ def cancel_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: S
 
 @router.post("/{pid}/return")
 def return_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    """Trả YCMH về người yêu cầu để sửa; chỉ khi phiếu chờ duyệt hoặc đã duyệt mà chưa dòng nào lên đơn mua."""
     pr = service.get_pr(db, pid)
     if not _can_return_requester(db, user, pr):   # bao-CR-554: cùng cờ với nút trên giao diện
         if pr.status not in ("submitted",) + service.TRANSFERABLE_STATUSES or not service.can_return_requester(db, pr):
@@ -363,6 +372,7 @@ def return_dept_(pid: int, data: TransferDeptIn, background_tasks: BackgroundTas
 
 @router.post("/{pid}/complete")
 def complete_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "cancel"))):
+    """Chuyển YCMH sang Hoàn thành."""
     _in_scope(db, pid, user, "cancel")
     return success(_out(db, service.complete_pr(db, pid, user.id), user), "Đã hoàn thành phiếu")
 
@@ -380,6 +390,7 @@ def update_pr(pid: int, data: PRUpdate, db: Session = Depends(get_db), user=Depe
     # Phạm vi đi theo `read` (đúng `require` của route): người YÊU CẦU thường chỉ được cấp
     # read+create trên YCMH (vai trò `employee` trong seed), lọc bằng `write` là khóa luôn
     # đường sửa phiếu nháp của chính họ.
+    """Sửa YCMH; chỉ người tạo khi phiếu còn sửa được, hoặc người có quyền sửa."""
     pr = _in_scope(db, pid, user, "read")
     if not _can_edit_own(db, pr, user):
         raise HTTPException(403, "Không có quyền sửa phiếu này")
@@ -389,6 +400,7 @@ def update_pr(pid: int, data: PRUpdate, db: Session = Depends(get_db), user=Depe
 
 @router.delete("/{pid}")
 def delete_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "delete"))):
+    """Xóa một YCMH."""
     _in_scope(db, pid, user, "delete")
     service.delete_pr(db, pid, user.id)
     return success(None, "Đã xóa")
@@ -396,6 +408,7 @@ def delete_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("pur
 
 @router.delete("")
 def bulk_delete_prs(ids: str, db: Session = Depends(get_db), user=Depends(require("purchase_request", "delete"))):
+    """Xóa nhiều YCMH theo danh sách id trong phạm vi được xóa."""
     id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
     if not id_list:
         raise HTTPException(400, "Không có ID hợp lệ")
@@ -419,6 +432,7 @@ def bulk_delete_prs(ids: str, db: Session = Depends(get_db), user=Depends(requir
 
 @router.post("/{pid}/submit")
 def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
+    """Gửi duyệt YCMH ở trạng thái Nháp hoặc Bị trả lại."""
     pr = _in_scope(db, pid, user, "read")   # cùng lẽ với `update_pr`: phạm vi theo `require`
     if not _can_edit_own(db, pr, user):
         raise HTTPException(403, "Không có quyền gửi duyệt phiếu này")
@@ -464,6 +478,7 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
 def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
     # Duyệt lần 1 (trưởng phòng) — chỉ trong phạm vi được phép duyệt. Phạm vi 'proc' (Admin thu mua)
     # không thấy phiếu 'submitted' nên tự động bị loại: họ chỉ điều phối, không duyệt thay trưởng phòng.
+    """Duyệt YCMH; phiếu thuộc diện bỏ qua điều phối thì tự chuyển sang bước kế."""
     if not _in_approve_scope(db, user, pid):
         raise HTTPException(403, "Ngoài phạm vi được phép duyệt")
     # CR-071 — KHÔNG chặn theo `head_of_dept_id`: ô TBP chỉ để lưu + in, luật duyệt giữ như cũ.
@@ -547,6 +562,7 @@ def dispatch_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depen
 
 @router.post("/{pid}/reject")
 def reject_pr(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
+    """Từ chối YCMH kèm lý do và báo người tạo."""
     _in_scope(db, pid, user, "approve")
     pr = service.set_status(db, pid, "rejected", user.id, data.reason)
     trigger_notification(
@@ -587,6 +603,7 @@ def _open_line(db: Session, pid: int, item_id: int, user, action: str):
 @router.get("/{pid}/items/{item_id}/options")
 def list_options(pid: int, item_id: int, db: Session = Depends(get_db),
                  user=Depends(require("purchase_request", "read"))):
+    """Danh sách phương án (giá, nhà cung cấp) của một dòng YCMH."""
     pr = _in_scope(db, pid, user, "read")
     item = option_service.get_item(db, pr, item_id)
     # Đọc thì KHÔNG chặn theo giai đoạn phiếu (xem lại phiếu đã đóng vẫn phải thấy phương
@@ -631,6 +648,7 @@ def available_survey_lines(pid: int, item_id: int, supplier_code: str = "", item
 def add_option_from_survey(pid: int, item_id: int, data: PROptionSurveyIn,
                            db: Session = Depends(get_db),
                            user=Depends(require("purchase_request", "write"))):
+    """Gắn một phương án vào dòng YCMH lấy từ dòng phiếu khảo sát đã duyệt."""
     pr, item = _open_line(db, pid, item_id, user, "write")
     option_service.ensure_line_not_done(item)
     o = option_service.create_from_survey(db, pr, item, data.product_survey_line_id, user.id)
@@ -719,6 +737,7 @@ def assign_supplier_bulk(pid: int, data: PRAssignSupplierIn, db: Session = Depen
 def update_option(pid: int, item_id: int, oid: int, data: PROptionUpdateIn,
                   db: Session = Depends(get_db),
                   user=Depends(require("purchase_request", "write"))):
+    """Sửa một phương án của dòng YCMH; dòng đã chốt thì chỉ thu mua có quyền xem NCC mới sửa được giá."""
     pr, item = _open_line(db, pid, item_id, user, "write")
     if item.options_done:
         # H.10.4 — khe nới duy nhất sau chốt: sửa GIÁ của mọi phương án, dành cho
@@ -737,6 +756,7 @@ def update_option(pid: int, item_id: int, oid: int, data: PROptionUpdateIn,
 @router.delete("/{pid}/items/{item_id}/options/{oid}")
 def delete_option(pid: int, item_id: int, oid: int, db: Session = Depends(get_db),
                   user=Depends(require("purchase_request", "write"))):
+    """Gỡ một phương án khỏi dòng YCMH chưa chốt."""
     pr, item = _open_line(db, pid, item_id, user, "write")
     option_service.ensure_line_not_done(item)
     option_service.delete_option(db, pr, item.id, oid, user.id)
