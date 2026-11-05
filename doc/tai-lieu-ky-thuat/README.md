@@ -8,6 +8,7 @@ Thư mục gom toàn bộ tài liệu mô tả kỹ thuật của hệ thống.
 |---|---|---|
 | [quy-trinh-nhanh-va-deploy.md](van-hanh/quy-trinh-nhanh-va-deploy.md) | **Quy trình (BẮT BUỘC)** | **Luật nhánh `main` / `erp-v2` + cách build & deploy prod/dev. Đọc trước mỗi lần đụng `main` hoặc vào VPS.** |
 | [gioi-han-tai-nguyen-docker.md](van-hanh/gioi-han-tai-nguyen-docker.md) | **Môi trường (máy local)** | **Chặn Docker ăn hết CPU/RAM làm đơ máy: `.wslconfig` + trần từng container + luật chạy test cho trợ lý AI. Đọc khi máy đơ lúc chạy test, hoặc trước khi định gỡ `mem_limit`.** |
+| [chong-treo-prod.md](van-hanh/chong-treo-prod.md) | Vận hành | bao-CR-735: healthcheck từng container, bộ tự chữa (systemd timer khởi động lại container `unhealthy`), canh prod từ VPS 2 báo Telegram. Các bước cài tay trên prod / VPS 2 |
 | [bao-cao-bao-mat-tong-hop-2611.md](van-hanh/bao-cao-bao-mat-tong-hop-2611.md) | Báo cáo (người chủ) | Bảo mật tổng hợp 11/2026: đã vá gì theo nhóm, còn mở gì, rủi ro tương lai (dữ liệu lớn, một máy chủ, phụ thuộc ngoài, con người), lộ trình ba tháng. Chi tiết từng lỗ ở [so-ghi-nhan-loi-bao-mat.md](van-hanh/so-ghi-nhan-loi-bao-mat.md) |
 | [technical-design.md](kien-truc/technical-design.md) | TDD (tổng quan) | Mục tiêu, phạm vi, kiến trúc, luồng nghiệp vụ, module, phân quyền — mức cao |
 | [thiet-ke-ky-thuat-chi-tiet.md](kien-truc/thiet-ke-ky-thuat-chi-tiet.md) | LLD (chi tiết) | Từ điển dữ liệu 39 bảng (cột + kiểu + liên kết) + RBAC chi tiết |

@@ -114,6 +114,41 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-735-chong-treo-prod | Chống treo prod: healthcheck, tự khởi động lại container treo, canh prod từ ngoài
+- status: xong
+- date: 2026-11-05
+- list: Sản xuất - Thu mua
+- tag: Agent 4
+**Bối cảnh:** mọi container prod tự lên lại khi **chết** (20 đến 30 giây), nhưng khi **treo** mà còn sống thì đứng mãi: chỉ
+CSDL có healthcheck, Docker không tự khởi động lại container hỏng healthcheck, và chưa có gì canh prod từ ngoài. Đã chốt
+ngày 05/11 cho prod tự khởi động lại khi treo và tự báo khi prod đứng.
+
+**Đã làm**
+- Healthcheck cho api, celery-worker, web, erp, help (bộ prod và bộ dev) và agent-api, agent-worker (cụm Agent Hub). api
+  gọi `/api/health`, lúc đang chạy migration và seed thì coi là khỏe để một migration dài không bị giết giữa chừng; celery
+  ping đúng worker của container qua Redis, worker bận việc dài vẫn trả lời; nginx kiểm trang tĩnh, không qua `/api`. Phải
+  hỏng 3 lượt liền mới tính là hỏng, để lúc sao lưu hay nạp lô lớn không bị giết oan.
+- Bộ tự chữa chạy trên máy chủ mỗi 30 giây: khởi động lại container hỏng có nhãn riêng, tối đa 3 lần mỗi giờ cho mỗi
+  container rồi thôi và báo **cần người xem**, báo Telegram mỗi lần tự chữa nếu máy có tệp khóa báo. Chọn script trong repo
+  thay vì image autoheal bên ngoài để không thêm image lạ cầm quyền điều khiển Docker (tương đương quyền root máy chủ).
+- Bộ canh prod chạy trên VPS 2 mỗi phút, gọi đúng tên miền người dùng gọi: hỏng 2 lượt liền thì báo một tin, còn hỏng thì
+  nhắc mỗi 60 phút, trả lời lại thì báo kèm số phút đứng; gửi tin hỏng thì lượt sau gửi lại.
+- Tài liệu vận hành mới kèm các bước cài tay trên prod và VPS 2.
+
+**Kết quả (đo trên dev):** treo cả container nginx thì sau 1 phút 31 giây bị đánh dấu hỏng, tự khởi động lại và phục vụ lại
+sau 2 phút 19 giây. Bộ canh gửi tin cảnh báo khoảng 2 phút sau khi dev đứng, không gửi lặp, gửi tin đã hồi ngay lượt kiểm
+đầu tiên sau khi hồi. Phát hiện uvicorn 0.30 đã tự thay worker api bị treo sau vài giây. Ước tính api treo cả container trên
+prod lên lại sau 2,5 đến 3 phút.
+
+**Còn lại:** cài lên prod theo tài liệu (dựng image mới trước, bật bộ tự chữa sau) và cài bộ canh trên VPS 2; lệnh cài
+systemd và tệp khóa báo chưa làm vì cần quyền cài dịch vụ trên máy chủ. celery-beat, agent-poller chưa có healthcheck.
+Chưa giả treo celery-worker dev. VPS 2 đứng thì không ai canh prod.
+
+Mã nguồn: `backend/healthcheck.py`, `backend/scripts/ops/autoheal.sh`, `backend/scripts/ops/prod_watch.py`,
+`backend/scripts/ops/systemd/`, `docker-compose.production.yml`, `docker-compose.dev.yml`, `docker-compose.agent-hub.yml`.
+Kiểm: `test/backend/test_chong_treo_cr735.py` (18 bài).
+Tài liệu: `doc/tai-lieu-ky-thuat/van-hanh/chong-treo-prod.md`.
+
 ## bao-CR-733-bo-nho-nap-tra-cuu-thi-truong | Tra cứu thị trường: giảm bộ nhớ khi nạp tệp lớn, giữ dấu vá ngày khi ghi đè
 - status: xong
 - date: 2026-11-05
