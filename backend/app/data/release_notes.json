@@ -2,6 +2,31 @@
   "_huong_dan": "bao-CR-722. Mỗi đợt đẩy prod một mục, MỚI NHẤT ĐỨNG ĐẦU. version dạng SỐ 2.X.Y (đại ca chốt 04/11/2026): 2 = ERP v2 (11/09/2026 backend v2 lên prod = 2.0.0); X tăng 1 mỗi đợt prod có tính năng; Y tăng khi đợt chỉ vá lỗi. Lịch sử đã đánh: 2.1.0 14/09 bảo mật, 2.2.0 24/09, 2.3.0 28/09 trợ lý AI, 2.4.0 01/10 tra cứu thị trường, 2.5.0 02/10, 2.6.0 05/10, 2.7.0 19/10 kho skill + MCP, 2.7.1 22/10 vá sao lưu, 2.8.0 26/10, 2.9.0 30/10, 2.10.0 31/10, 2.11.0 02/11, 2.12.0 04/11 (chỉ ghi mục từ 30/10). Ghi bằng lời người dùng: thay đổi họ nhìn thấy, không ghi refactor / bài kiểm / tài liệu nội bộ. kind: them | sua | bo. module phải nằm trong app/modules/release_info/service.py MODULES. Bài kiểm test_phien_ban_va_ghi_chu_phat_hanh_cr722.py canh khuôn.",
   "releases": [
     {
+      "version": "2.14.0",
+      "date": "2026-11-05",
+      "title": "Gửi lại email, tệp xuất an toàn hơn, nâng cấp nền tảng",
+      "notes": [
+        {
+          "module": "Quản trị",
+          "kind": "them",
+          "cr": "bao-CR-727",
+          "text": "Nhật ký email có nút Gửi lại: mở một thư trong nhật ký, bấm Gửi lại để gửi y nguyên thư đó cho đúng người nhận; thư gửi lại hiện nhãn Gửi lại từ dòng gốc. Áp cho thư gửi từ đợt này trở đi, trừ thư mật khẩu."
+        },
+        {
+          "module": "Nền tảng",
+          "kind": "sua",
+          "cr": "bao-CR-726",
+          "text": "Mọi tệp Excel và CSV xuất ra không còn tự chạy công thức lạ nằm trong dữ liệu; xuất ra rồi nạp lại vẫn giữ đúng nội dung."
+        },
+        {
+          "module": "Nền tảng",
+          "kind": "sua",
+          "cr": "bao-CR-725",
+          "text": "Nâng cấp các thư viện nền của hệ thống lên bản mới đã vá lỗi bảo mật, hệ chạy ổn định và an toàn hơn."
+        }
+      ]
+    },
+    {
       "version": "2.13.0",
       "date": "2026-11-04",
       "title": "Trang Phiên bản, màn hồ sơ nhân sự quen thuộc, vá bảo mật",
