@@ -110,7 +110,11 @@ khoản, không mật khẩu, không tạo vai trò. Lý do ghi vào sổ: lần
 **Bản 2.7 — 04/11/2026 (chiều).** **BM-034 đã vá phần lớn trên dev** (bao-CR-725): backend đổi python-jose sang PyJWT, nâng fastapi 0.115.2 → 0.162.0 kèm starlette 1.10.0, python-multipart, pypdf, cryptography, requests, nâng pip lúc dựng ảnh; pip-audit từ 13 gói có lỗ xuống 1 (pycel chưa có bản vá, đã tắt ở BM-032; ecdsa đi theo python-jose nên biến mất). Giao diện: frontend-v2 61 → 17, frontend 26 → 16, help-center 11 → 7; phần còn lại đều đòi nâng bản lớn (zod 4, minimatch 11, vite 6 + esbuild, quill 2) — để đợt hai. Chưa lên prod.
 
 **Bản 2.6 — 04/11/2026.** bao-CR-726: **BM-033 đã vá trọn** — chặn chèn công thức ở các đường xuất Excel / CSV còn lại (báo cáo mua hàng, sổ lao động + phúc lợi, tệp mẫu nhập, tệp Excel Trợ lý, CSV danh mục có bộ nạp gỡ dấu, CSV báo cáo khảo sát).
+
 **Bản 2.8 — 05/11/2026.** bao-CR-730 đối chiếu lịch sử nhánh `main` (bản 2.14.0, `dae5957b`): mọi bản vá trong sổ đã lên prod. Các chữ *chờ deploy* / *dev chưa deploy* / *chờ đợt prod kế* còn ở BM-005, BM-019, BM-021, BM-023, BM-032, BM-034 nay hết hạn (`bfa4149f` bao-CR-655, `454ec550` bao-CR-723, `2511d697` bao-CR-725 đều là tổ tiên của `main`). BM-003 phần còn thiếu (phiên phía máy chủ) đã đóng ở BM-002. Báo cáo tổng hợp cho người chủ: [`bao-cao-bao-mat-tong-hop-2611.md`](bao-cao-bao-mat-tong-hop-2611.md).
+
+**Bản 2.9 — 05/11/2026.** bao-CR-729: **BM-020 đã vá trên dev, chạy chế độ chỉ ghi log** — trần tần suất mọi `/api` đếm theo tài khoản ở Redis (`core/rate_limit.py`), mức chung 300 lượt/phút, đường nặng (xuất tệp, tìm tra cứu thị trường, Trợ lý) 20 lượt/phút mỗi nhóm; chưa đăng nhập đếm theo IP. Dev đo một tuần ở `RATE_LIMIT_LOG_ONLY=true` rồi mới bật chặn; chưa lên prod.
+
 ## 0. Vì sao có tệp này
 
 Ngày 07/09/2026 khách báo một phiếu Yêu cầu báo giá hiện kết quả khảo sát của mặt hàng khác.
@@ -176,7 +180,7 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 | BM-017 | Thấp | Không có **xác thực hai lớp**, kể cả cho nhóm tài khoản quản trị đọc được nhật ký toàn hệ | **Chấp nhận rủi ro — đại ca chốt 14/09/2026.** Đây là lớp *tăng cường*, không phải lỗ đang hở; ghi vào sổ để lần rà sau không phải phát hiện lại |
 | BM-018 | Thấp *(hạ mức sau khi đo)* | `JWT_SECRET` có giá trị mặc định `change_me_please` và **không có chốt nào chặn app khởi động với nó**. Môi trường nào quên đặt thì bất kỳ ai cũng **tự ký được vé hợp lệ cho bất kỳ tài khoản nào** — mất sạch mọi lớp phòng thủ phía trên | **ĐÃ ĐO 14/09/2026 trên VPS — prod SẠCH:** không phải giá trị mặc định, dài ≥ 32 ký tự, đo cả ở `.env` lẫn trong tiến trình đang chạy; dev cũng không phải mặc định. Điều kiện kích hoạt **không đúng**, nên mức hạ từ *Cao (có điều kiện)* xuống **Thấp**. **Vẫn còn mở phần chốt khởi động** (`core/config.py:13`) — canh cho những lần deploy sau. **KHÔNG xoay khóa** (kéo theo BM-023). ⚠️ Lần đo này lòi ra **BM-024** |
 | BM-019 | Trung bình | Hai tệp nginx của prod **không đặt một header bảo mật nào** — trang ERP **nhúng iframe được** vào site bất kỳ (clickjacking), không HSTS, không `nosniff`, không `Referrer-Policy` | **ĐÃ VÁ (bao-CR-655, 22/10/2026) — chờ deploy.** ERP v2 + thumua + help thêm `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Strict-Transport-Security: max-age=31536000` (không `includeSubDomains`); thumua thêm `X-Frame-Options: SAMEORIGIN` + `frame-ancestors 'self'` (ERP v2 đã có từ ai-CR-222); help KHÔNG chặn nhúng. Location có `add_header` riêng (`/sw.js`, `/manifest.webmanifest`, `/registerSW.js`, `/oauth/consent/`) đã chép lại khối header. Kiểm bằng `nginx -t` + `curl -I` trên container thật. *Bằng chứng gốc:* `docker/nginx.prod.conf` + `docker/nginx.erp.prod.conf` chỉ có `Cache-Control`. Nghịch lý đáng ghi: cửa **xem tệp đính kèm** làm rất kỹ (`attachment/controller.py:490` + `:493` — CSP `sandbox` + `nosniff`), còn cả ứng dụng thì trống |
-| BM-020 | Trung bình | Trần tần suất cho endpoint **nghiệp vụ** đã khai nhưng **chưa có hiệu lực** — một tài khoản hợp lệ rút sạch dữ liệu trong phạm vi của mình ở tốc độ tối đa, không lớp nào cản | **Mở.** Bằng chứng: `core/limiter.py:13-16` — `default_limits=["300/minute"]` kèm **chính comment trong mã ghi là CHƯA có hiệu lực**; `main.py:115` chỉ gắn `state.limiter` + handler. Toàn hệ chỉ **4 endpoint** của `auth` có `@limiter.limit` |
+| BM-020 | Trung bình | Trần tần suất cho endpoint **nghiệp vụ** đã khai nhưng **chưa có hiệu lực** — một tài khoản hợp lệ rút sạch dữ liệu trong phạm vi của mình ở tốc độ tối đa, không lớp nào cản | **ĐÃ VÁ (dev, log-only) — bao-CR-729, 05/11/2026.** Middleware `core/rate_limit.py` gắn trong `main.py`: đếm theo `user_id` (chưa đăng nhập: IP) ở Redis, 300/phút mức chung, 20/phút mỗi nhóm đường nặng, 429 phong bì chuẩn + `Retry-After`, Redis hỏng thì cho qua. Công tắc `RATE_LIMIT_ENABLED` / `RATE_LIMIT_LOG_ONLY`. Bằng chứng cũ: `default_limits` của `core/limiter.py` khai mà không có hiệu lực; toàn hệ chỉ 4 đường auth có trần |
 | BM-021 | Thấp | `/api/uploads` được gắn bằng `StaticFiles`, **không kiểm quyền** — thứ gì rơi vào thư mục đó là công khai với mọi người | **ĐÃ VÁ (bao-CR-655, 22/10/2026) — chờ deploy.** `main.py` chỉ gắn `/api/uploads` khi `DEV_MODE` (máy local không có R2). Dev và prod đều chạy R2, thư mục `uploads/` rỗng (đếm 22/10/2026) nên gỡ không mất tệp nào; R2 hỏng mà tệp lùi về đây thì trả 404 thay vì lộ công khai. Bài kiểm `test_bao_mat_bm021_bm023_cr655.py`. *Bằng chứng gốc:* `main.py:134`. Mã nguồn **tự cảnh báo ở ba chỗ**: `core/storage.py:53-54`, `core/file_registry.py:71`, `audit/tasks.py:123-131`. Prod dùng R2 nên đường lùi ghi-local không chạy — rủi ro là *ai đó ghi nhầm vào đó về sau* |
 | BM-022 | Thấp *(hạ mức sau khi đo)* | CORS bật `allow_credentials=True` với `allow_origins` đọc từ `.env` — **giá trị thật trên prod chưa ai xác minh** | **ĐÃ ĐO 14/09/2026 trên VPS — prod SẠCH, đóng dòng này.** Không phải `*`, không chứa `*` ở bất kỳ đâu, đúng **1 origin** là tên miền thật, không có `localhost`, không có `http://` trần. Đo cả trong tiến trình đang chạy. Dev cũng không phải `*` |
 | BM-023 | Trung bình | Bí mật lưu trong DB (**mật khẩu SMTP, khóa R2**) giải mã hỏng thì **im lặng tuyệt đối**: `_decrypt` nuốt *mọi* lỗi trả chuỗi rỗng, `get()` lặng lẽ rơi về `.env`, `.env` trống thì trả rỗng. Hậu quả nặng nhất không phải mail chết mà là **sao lưu tự động lên R2 chết mà không ai biết** — phát hiện ra đúng vào lúc cần khôi phục | **ĐÃ VÁ (bao-CR-655, 22/10/2026) — chờ deploy.** `_decrypt(s, label)` vẫn trả `""` để không gãy nơi gọi, nhưng giải mã hỏng thì `log.error` ở logger `app.secrets` (CHỈ tên khóa, không giá trị), mỗi khóa một lần mỗi tiến trình; `decrypt_failures()` trả danh sách khóa hỏng. Mọi nơi gọi đã truyền nhãn (`r2_*`, `smtp`, `mailbox.smtp_password`, `ai_key`, `google.*`, `mcp_key.*`). Chưa có màn sức khỏe hiển thị — việc sau. *Bằng chứng gốc:* `core/app_settings.py:55-59` (`except (InvalidToken, Exception): return ""`) + `:95-100` (nhánh `if dec:` rơi về `.env`). Phát hiện khi trả lời câu hỏi về xoay `JWT_SECRET` |
@@ -893,6 +897,24 @@ Toàn hệ vì thế chỉ có **4 endpoint** thực sự bị chặn, đều th
 nào**: một tài khoản hợp lệ rút sạch dữ liệu trong phạm vi của mình ở tốc độ tối đa. Phân
 quyền vẫn đúng — nó chặn *lấy cái gì*, không chặn *lấy nhanh tới đâu*.
 
+**Đã vá — bao-CR-729 (05/11/2026), dev, chế độ chỉ ghi log.**
+
+- **Cách gắn.** Middleware ASGI thuần `RateLimitMiddleware` (`core/rate_limit.py`), không dùng `SlowAPIMiddleware`: slowapi đếm
+  trong bộ nhớ từng worker, theo IP, không có chế độ chỉ ghi log, không fail-open và trả 429 sai phong bì; gắn nó còn áp
+  `default_limits` lên bốn đường auth vốn có trần riêng. Middleware nằm trong `RequestContextMiddleware` để đọc `user_id`
+  từ ngữ cảnh đã giải mã vé (không giải mã lần hai, không đụng DB) và để lượt bị 429 vẫn có dòng `tab_request_log`.
+- **Khóa đếm.** `rl729:<nhóm>:u:<user_id>:<phút>` ở Redis (`INCR` + `EXPIRE`, cửa sổ cố định một phút), chung mọi worker.
+  Chưa đăng nhập: `ip:<IP thật>`. Redis hỏng thì cho qua, ghi cảnh báo, nghỉ đếm 30 giây.
+- **Mức.** `RATE_LIMIT_PER_MINUTE=300` mỗi tài khoản, `RATE_LIMIT_ANON_PER_MINUTE=300` mỗi IP chưa đăng nhập,
+  `RATE_LIMIT_HEAVY_PER_MINUTE=20` mỗi nhóm đường nặng (xuất tệp · tìm tra cứu thị trường · POST Trợ lý), cộng thêm vào mức
+  chung. Bảng đường nặng và bảng miễn trần (health, cổng B `agent-gw`, đồng bộ đặt xe, cổng MCP có trần riêng ai-CR-209,
+  GET Trung tâm trợ giúp / FAQ công khai) nằm một chỗ ở đầu tệp, mỗi dòng miễn có lý do.
+- **Vượt mức.** 429 `{success:false, error:{code:"rate_limited", message:"Thao tác quá nhanh, vui lòng thử lại sau ít giây"}}`
+  kèm `Retry-After` tới đầu phút sau; log `app.rate_limit` (chủ thể, nhóm, mức, số đếm, đường) ở lượt vượt đầu tiên và mỗi
+  bội số của mức. `RATE_LIMIT_LOG_ONLY=true` chỉ ghi log, không chặn; `RATE_LIMIT_ENABLED=false` tắt hẳn.
+- **Bài kiểm.** `test/backend/test_tran_tan_suat_cr729.py` (40 ca). conftest tắt trần cho các bài khác.
+- **Còn lại.** Dev đo một tuần ở log-only (grep `app.rate_limit` trong log api) rồi chỉnh mức trước khi bật chặn và lên prod.
+
 ### BM-021 — `/api/uploads` phục vụ tĩnh, không kiểm quyền
 
 `main.py:134` gắn `StaticFiles(directory="uploads")` vào `/api/uploads`. Không đi qua
@@ -1535,7 +1557,7 @@ làm được"*, chứ không phải *"người có quyền thì làm được"*
 | **BM-023** | `test_ba_trang_thai_bi_mat_khac_nhau` | Ba ca: chưa có dòng · có dòng đọc tốt · có dòng đọc hỏng → **ba kết quả khác nhau**. Hôm nay cả ba ra `""` |
 | **BM-021** | `test_uploads_khong_lo_tep_cho_nguoi_la` | `client.get("/api/uploads/<tên tệp có thật>")` **không kèm token** → phải **401/403/404**, tuyệt đối không phải 200 kèm nội dung |
 | **BM-022** | `test_cors_tu_choi_origin_la` | Gửi `Origin: https://ke-xau.example` → phần hồi đáp **không** được có `Access-Control-Allow-Origin` khớp origin đó. Kèm ca ngược: origin thật trong `CORS_ORIGINS` thì được |
-| **BM-020** | `test_tran_tan_suat_co_hieu_luc` | Gọi một endpoint nghiệp vụ quá ngưỡng trong một phút → phải có **429**. Đây là bài duy nhất cần `TestClient` thật + đặt lại bộ đếm của limiter giữa các ca, nên tách riêng kẻo làm giòn cả tệp |
+| **BM-020** | `test_tran_tan_suat_cr729.py` *(đã viết, bao-CR-729)* | Gọi một endpoint nghiệp vụ quá ngưỡng trong một phút → phải có **429**. Đây là bài duy nhất cần `TestClient` thật + đặt lại bộ đếm của limiter giữa các ca, nên tách riêng kẻo làm giòn cả tệp |
 | **BM-024** | `test_ve_ky_dung_khoa_nhung_khong_co_phien_thi_tu_choi` | Tự ký một vé **đúng khóa, đúng `ver`**, `jti` là một chuỗi **không có** trong `tab_login_session` → `get_current_user` phải **401**. Đây là bài canh cho chốt duy nhất chặn được vế ký vé giả khi hai môi trường dùng chung khóa; ai gỡ `_check_session` ra khỏi đường xác thực là test đỏ. Kèm ca ngược: có phiên còn sống thì đi qua |
 
 Đợt tải tệp lên đặt riêng một tệp `test/backend/test_bao_mat_tai_tep.py` — **đã viết xong, 11

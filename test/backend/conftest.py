@@ -164,6 +164,15 @@ def _tat_cache_bao_cao(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _tat_tran_tan_suat(monkeypatch):
+    """bao-CR-729: `core.rate_limit.RateLimitMiddleware` bọc cả app THẬT và đếm ở REDIS THẬT theo `user_id` — mà mỗi bài
+    dựng DB mới với id đếm lại từ 1, nên cả bộ test dồn chung vài bộ đếm `u:1`, `u:2`... và bài thứ 300 trong phút đó
+    nhận 429. Tắt mặc định; bài của chính trần tần suất (`test_tran_tan_suat_cr729.py`) tự bật lại + cắm Redis giả."""
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "RATE_LIMIT_ENABLED", False)
+
+
+@pytest.fixture(autouse=True)
 def _xoa_dem_cau_hinh_mcp():
     """ai-CR-216: cấu hình cổng MCP (`agent_hub.mcp_settings`) có bộ đệm 60 giây trong tiến trình — không xóa thì cấu hình
     một bài vừa lưu rò sang bài sau (mỗi bài một DB SQLite riêng)."""

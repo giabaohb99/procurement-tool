@@ -10,7 +10,9 @@ from app.core.client_ip import get_client_ip
 #  (14.400 lượt/ngày) vừa chặn nhầm người thật lúc cao điểm. Nay khóa theo IP thật
 #  (`core/client_ip.py`, ưu tiên `CF-Connecting-IP`).
 #
-#  `default_limits` CHƯA có hiệu lực: `main.py` chỉ gắn `app.state.limiter` + handler,
-#  không gắn `SlowAPIMiddleware`. Đừng gắn thêm middleware đó mà chưa đo lại số lượt
-#  thật mỗi IP — 300/phút cho một văn phòng chung NAT là chặn nhầm.
+#  `default_limits` KHÔNG có hiệu lực và cố ý để vậy: `main.py` chỉ gắn `app.state.limiter`
+#  + handler, không gắn `SlowAPIMiddleware`. Limiter này chỉ còn phục vụ các `@limiter.limit`
+#  riêng (auth, telemetry). Trần chung cho mọi /api là `core/rate_limit.py` (bao-CR-729,
+#  BM-020) — đếm theo TÀI KHOẢN ở Redis; đừng gắn thêm `SlowAPIMiddleware` (đếm theo IP,
+#  300/phút cho một văn phòng chung NAT là chặn nhầm cả công ty).
 limiter = Limiter(key_func=get_client_ip, default_limits=["300/minute"])
