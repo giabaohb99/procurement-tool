@@ -7,10 +7,11 @@ from . import service
 
 
 @celery_app.task(name="backup.run")
-def run_backup_task(source: str = "auto", actor_id: int = 0) -> dict:
+def run_backup_task(source: str = "auto", actor_id: int = 0, with_customs: bool = True) -> dict:
+    """`with_customs=False` ở lượt chiều: bản tra cứu thị trường chỉ chụp khi đổi cấu trúc (bao-CR-732)."""
     db = SessionLocal()
     try:
-        rec = service.run_backup(db, actor_id=actor_id, source=source)
+        rec = service.run_backup(db, actor_id=actor_id, source=source, with_customs=with_customs)
         return {"status": "success", "id": rec.id, "key": rec.file_key, "size": rec.size_bytes}
     except Exception as e:  # noqa: BLE001
         return {"status": "failed", "error": str(e)}

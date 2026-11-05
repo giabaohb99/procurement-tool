@@ -18510,6 +18510,18 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 - Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
 **Rà 05/11/2026 (còn tồn):** nhận thêm việc nhập bù ngày vào làm từ kh-HR1-5-6; việc dữ liệu chờ phòng Nhân sự, lần rà này không đọc được CSDL prod để đếm hồ sơ còn thiếu.
 
+## bao-CR-732 | Tối ưu sao lưu cơ sở dữ liệu ERP
+- status: xong
+- date: 2026-11-05
+- list: Nền tảng
+- tag: Agent 4
+
+**Bối cảnh:** cơ sở dữ liệu prod khoảng 1 GB, mỗi bản sao lưu nén khoảng 90 MB, và lúc sao lưu cả bản nằm trong bộ nhớ của tiến trình chạy nền.
+
+**Đã làm:** sao lưu ghi thẳng ra tệp tạm theo từng khúc nên bộ nhớ không tăng theo cỡ dữ liệu. Các bảng nhật ký do máy ghi chỉ giữ cấu trúc. Dữ liệu tra cứu thị trường tách thành bản riêng, chụp mỗi sáng và bỏ qua khi không đổi, giữ 7 bản. Màn Sao lưu ghi rõ khôi phục cần bản chính và bản tra cứu thị trường mới nhất; script khôi phục tự nạp cả hai đúng thứ tự. Đo trên máy local: bộ nhớ đỉnh từ thêm 291 MB còn thêm 3 MB, tệp bản chính nhỏ hơn bốn lần.
+
+Mã nguồn: backup/service.py, backup/model.py, backup/tasks.py, backup/controller.py, core/celery_app.py, migration bkpart732, scripts/restore_backup.py, frontend-v2 backup-list-page.tsx + types/backup.ts; bài kiểm test_toi_uu_sao_luu_cr732.py, test_backup_dump_mysql_cr.py.
+
 ## bao-CR-731 | Lịch tự dọn nhật ký do máy ghi
 - status: xong
 - date: 2026-11-05

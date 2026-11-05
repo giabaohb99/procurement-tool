@@ -26,12 +26,17 @@ export interface DbBackupItem {
   created_at: string
   created_by: number | null
   created_by_name: string
+  /** bao-CR-732, chỉ DB ERP: `main` = bản chính, `customs` = dữ liệu tra cứu thị trường. Khôi phục cần cả hai. */
+  part?: 'main' | 'customs'
+  part_label?: string
 }
 
 export interface DbBackupListResponse {
   total: number
   items: DbBackupItem[]
   keep: number
+  /** bao-CR-732: số bản tra cứu thị trường giữ lại (chỉ DB ERP). */
+  customs_keep?: number
   /** Chỉ DB bot: false = bot chạy chung DB ERP, bản sao lưu ERP đã gồm bảng bot. */
   enabled?: boolean
   db_name?: string

@@ -118,6 +118,7 @@ export function BackupListPage() {
             {r.source === 'manual' ? 'Bấm tay' : 'Tự động'}
           </Badge>
           {r.kind === 'restore_test' && <Badge variant="outline">Khôi phục thử</Badge>}
+          {r.part === 'customs' && <Badge variant="outline">{r.part_label || 'Tra cứu thị trường'}</Badge>}
         </div>
       ),
     },
@@ -223,7 +224,11 @@ export function BackupListPage() {
     <PageContainer fill>
       <PageHeader
         title="Sao lưu CSDL"
-        description="Quản lý và tạo bản sao lưu cơ sở dữ liệu hệ thống"
+        description={
+          isAgent
+            ? 'Quản lý và tạo bản sao lưu cơ sở dữ liệu hệ thống'
+            : 'Bản chính sao lưu hai lần mỗi ngày; dữ liệu tra cứu thị trường tách bản riêng mỗi sáng (bỏ qua nếu không đổi). Khôi phục cần nạp bản chính rồi bản tra cứu thị trường mới nhất.'
+        }
         actions={
           <div className="flex items-center gap-2">
             <ToggleGroup

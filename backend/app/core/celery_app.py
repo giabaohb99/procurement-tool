@@ -38,7 +38,8 @@ if not settings.BACKUP_ONCE_DAILY:
     _backup_schedule["backup-db-chieu"] = {
         "task": "backup.run",
         "schedule": crontab(hour=13, minute=0),  # 13:00 VN
-        "kwargs": {"source": "auto", "actor_id": 0},
+        #  bao-CR-732: bản tra cứu thị trường chỉ chụp ở lượt sáng (trừ khi đổi cấu trúc).
+        "kwargs": {"source": "auto", "actor_id": 0, "with_customs": False},
     }
 
 celery_app.conf.update(

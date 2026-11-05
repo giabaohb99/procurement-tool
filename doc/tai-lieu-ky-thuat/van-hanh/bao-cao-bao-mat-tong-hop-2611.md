@@ -2,7 +2,7 @@
 
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|
-| 1.2 | 05/11/2026 | Agent 4 (soạn), A1 Điều phối (chuyển người chủ) | Hiệu lực | bao-CR-730 |
+| 1.3 | 05/11/2026 | Agent 4 (soạn), A1 Điều phối (chuyển người chủ) | Hiệu lực | bao-CR-730 |
 
 Tài liệu này viết cho người chủ đọc, không cần biết kỹ thuật. Nó tóm lại từ hai nơi: sổ chi tiết từng lỗ
 [`so-ghi-nhan-loi-bao-mat.md`](so-ghi-nhan-loi-bao-mat.md) (BM-001 đến BM-036) và sổ thay đổi `change-log-bao.md`. Trạng thái
@@ -196,7 +196,9 @@ thay đổi của bảng máy) dọn được khoảng **200 MB ngay** mà khôn
 - **Khả năng:** thấp mỗi tháng, nhưng một năm thì đáng kể (hỏng ổ, nhà cung cấp VPS sự cố, lỗi cập nhật).
 - **Hậu quả:** cả hệ ngừng tới khi dựng lại máy mới và nạp bản sao lưu; mất tối đa dữ liệu khoảng 12 giờ (khoảng cách giữa hai
   lần sao lưu).
-- **Đã có:** sao lưu hai lần mỗi ngày lên R2, nằm ngoài máy chủ; có công cụ khôi phục (`backend/scripts/restore_backup.py`).
+- **Đã có:** sao lưu hai lần mỗi ngày lên R2, nằm ngoài máy chủ; có công cụ khôi phục (`backend/scripts/restore_backup.py`). Từ bao-CR-732
+  (dev 05/11): sao lưu ghi theo luồng (bộ nhớ không tăng theo cỡ CSDL), bảng nhật ký máy chỉ giữ cấu trúc, dữ liệu tra cứu thị
+  trường tách bản riêng mỗi sáng; khôi phục = bản chính + bản tra cứu thị trường mới nhất.
   CSDL của dịch vụ AI có lượt **khôi phục thử tự động mỗi tuần**. CSDL ERP chính: **người chủ đã tự khôi phục thử ngày
   05/11/2026, đạt**; chưa có lịch lặp lại.
 - **Dấu hiệu sớm:** sao lưu thất bại hoặc dung lượng bản sao lưu tụt bất thường; máy chủ báo lỗi ổ đĩa.
