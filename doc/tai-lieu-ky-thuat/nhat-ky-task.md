@@ -17433,7 +17433,7 @@ Mã nguồn: kế hoạch AI1-1
 **Điều kiện xong:** ba việc có biên bản kết quả.
 
 Mã nguồn: kế hoạch AI1-4, NT1-6, NK1-1
-**Rà 05/11/2026 (còn tồn):** chưa tìm thấy biên bản cho ba việc (khóa model riêng prod, thử khôi phục bản sao lưu R2, nạp lại hướng dẫn mục IX); Agent 1 xác nhận việc nào đã làm.
+**Rà 05/11/2026 (còn tồn):** nạp lại hướng dẫn tra cứu thị trường đã xong (seed_help_customs_prices chạy trên prod 04/11 cùng 12 bài, đã nạp lại chỉ mục AI); thử khôi phục bản sao lưu: người chủ tự thử ngày 05/11, đạt. Chỉ còn khóa model riêng cho prod, chưa có bằng chứng.
 
 ## kh-du-lieu-a1 | Dữ liệu: lịch sử app đặt xe cũ, phân công người mua AGC, gắn công ty cho nhân sự
 - list: Kế hoạch hệ agent
@@ -18529,6 +18529,7 @@ Mã nguồn: backend/app/main.py build_docs_urls, core/config.py API_DOCS_ENABLE
 - Đồng bộ cho trợ lý AI và bot đọc được: chạy lại nạp bài hướng dẫn, cập nhật cẩm nang trợ lý và nạp lại chỉ mục tìm kiếm trên dev rồi prod.
 - Ưu tiên cụm thu mua và các đường mà công cụ MCP đang dùng, làm sau khi đợt làm gọn controller thu mua xong.
 **Rà 05/11/2026 (còn tồn):** bắt đầu 05/11 theo từng phân hệ (Thu mua, Nhân sự / Nghỉ phép, Tra cứu thị trường, Quản trị trước); nhận thêm bài hướng dẫn cho các màn của kh-AI1-1-hdsd và mục X bài lập bộ tài khoản của kh-tai-lieu-agc.
+**Bước 0 (05/11/2026):** thêm script `backend/scripts/dung_bang_api.py` dựng lại bảng mục 1 của mọi api.md từ mã, chạy lại nhiều lần không đổi gì, giữ cột Phạm vi / Ai gọi ghi tay, tự dò cột Ai gọi từ frontend-v2 và cổng MCP; ghi lệnh chạy vào luật tài liệu. Bộ dựng CRUD chung có câu mô tả tiếng Việt cho bảy đường (148 đường sinh ra). Kết quả: 1.002 dòng ở 12 api.md, cột Ai gọi có chữ ở 816 dòng (trước gần như trống), ô Mục đích còn tên hàm tiếng Anh giảm còn 477. Chín ô Mục đích ghi tay chi tiết chuyển xuống mục 2 của api.md Tra cứu thị trường và Nền tảng. Vá kèm bài đếm db.get đỏ sẵn sau bao-CR-727.
 
 ## bao-CR-709 | Hỏi giữ phòng cũ làm kiêm nhiệm khi đổi phòng chính
 - status: xong
