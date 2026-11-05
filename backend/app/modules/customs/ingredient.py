@@ -134,7 +134,10 @@ class IngredientTagger:
                         break
         active = " + ".join(found)
         if not active:
-            for word in set(_WORD.findall(up)):
+            #  bao-CR-728: duyệt từ theo THỨ TỰ trong tên hàng (bỏ trùng), không theo `set` — thứ tự của `set` chữ
+            #  đổi theo từng tiến trình (băm ngẫu nhiên), nên tên chứa hai tên thương mại ra hoạt chất khác nhau giữa
+            #  hai lần chạy: xuất rồi nạp lại tệp không sửa gì vẫn báo "Ghi đè" và đổi hoạt chất của dòng.
+            for word in dict.fromkeys(_WORD.findall(up)):
                 hit = next((a for k, a in self.trades.get(word, []) if k in up), None)
                 if hit:
                     active = hit

@@ -86,7 +86,8 @@ def test_h1_don_nghi_phep_tu_lap_khong_phai_bam_ho_con_lap_ho_thi_co(db):
 
 def test_h3_gom_lai_ngay_qua_han_giu_nguon_bi_tu_choi_va_khong_xoa_so_cu(db, monkeypatch):
     """Bug H3: gom lại ngày cũ DELETE+INSERT từ nguồn đã bị dọn → số tốt thành 0."""
-    monkeypatch.setattr(daily_builder, "vn_today", lambda: MON + timedelta(days=90))
+    #  bao-CR-731: hạn GET 90 -> 30 ngày, mốc gom lại theo đó — đọc hằng số thay vì ghi cứng 90.
+    monkeypatch.setattr(daily_builder, "vn_today", lambda: MON + timedelta(days=daily_builder.MAX_REAGGREGATE_AGE_DAYS + 1))
     user, emp = make_person(db, "H3A")
     db.add(UsageDaily(user_id=user.id, day=MON, employee_id=emp.id, api_reads=77))
     db.commit()
@@ -95,7 +96,7 @@ def test_h3_gom_lai_ngay_qua_han_giu_nguon_bi_tu_choi_va_khong_xoa_so_cu(db, mon
     with pytest.raises(DayTooOldError):
         write_rows(db, MON, [])
     assert db.query(UsageDaily).filter_by(user_id=user.id, day=MON).one().api_reads == 77
-    #  ngày 89 ngày trước vẫn được; force bỏ qua kiểm tra và ghi cảnh báo
+    #  ngày đúng mốc vẫn được; force bỏ qua kiểm tra và ghi cảnh báo
     aggregate_day(db, MON + timedelta(days=1))
     assert aggregate_day(db, MON, force=True) >= 0
 

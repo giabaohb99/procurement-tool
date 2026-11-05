@@ -22,6 +22,9 @@ def _out(db, r: DbBackup) -> dict:
         "started_at": r.started_at, "finished_at": r.finished_at,
         "created_at": r.created_at, "created_by": r.created_by,
         "created_by_name": resolve_actor(db, r.created_by) if r.created_by else "Hệ thống (tự động)",
+        #  bao-CR-732: bản chính / bản tra cứu thị trường — khôi phục cần CẢ HAI (bản chính trước).
+        "part": r.part or service.PART_MAIN,
+        "part_label": service.PART_LABELS.get(r.part or service.PART_MAIN, r.part or ""),
     }
 
 
@@ -31,7 +34,8 @@ def list_(pg: dict = Depends(pagination), db: Session = Depends(get_db),
     q = db.query(DbBackup)
     total = q.count()
     items = q.order_by(DbBackup.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
-    return success({"total": total, "items": [_out(db, r) for r in items], "keep": service.keep_count()})
+    return success({"total": total, "items": [_out(db, r) for r in items], "keep": service.keep_count(),
+                    "customs_keep": service.CUSTOMS_KEEP})
 
 
 @router.post("/run")

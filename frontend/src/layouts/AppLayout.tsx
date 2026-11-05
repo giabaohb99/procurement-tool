@@ -18,6 +18,7 @@ import {
   canSeeCustomsSection,
   customsSectionPath,
 } from "../config/customs-sections";
+import { CUSTOMS_EXPORTS_PATH } from "../utils/customs-export";
 
 // Trung tâm Hướng dẫn sử dụng là app riêng (thư mục help-center/, cổng 8082) — mở ở tab mới.
 // Khu người dùng bên đó CÔNG KHAI, không cần đăng nhập.
@@ -149,7 +150,8 @@ const NAV_GROUPS: NavGroup[] = [
             label: CUSTOMS_TAB_GROUP_LABEL,
             icon: "ti-list",
             isDefault: true,
-            matchPaths: CUSTOMS_TAB_SECTIONS.map((sec) => customsSectionPath(sec.key)),
+            // bao-CR-728: màn Lô xuất của tôi (`/customs-prices/exports`) cũng sáng mục này, như bản v2.
+            matchPaths: [...CUSTOMS_TAB_SECTIONS.map((sec) => customsSectionPath(sec.key)), CUSTOMS_EXPORTS_PATH],
           },
           ...CUSTOMS_SECTIONS.filter((sec) => !sec.tabbed).map((sec) => ({
             to: customsSectionPath(sec.key),

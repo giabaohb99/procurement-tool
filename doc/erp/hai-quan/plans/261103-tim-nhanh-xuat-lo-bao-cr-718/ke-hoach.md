@@ -113,7 +113,10 @@ khi chạy qua Celery). Lọc *abamectin* 5.724 dòng: 1 tệp, 2,8 giây.
   chỉ đường sang *Lô xuất của tôi*) · *Lô xuất của tôi*.
 - Màn `/procurement/customs-prices/exports` (lô của mình) và `/exports/:id` (tiến độ, tải từng tệp, dừng lô; hỏi lại 3 giây
   khi lô còn chạy). Gác `customs_price.export`; menu trái không thêm mục (mục ẩn, sáng *Giá thị trường*).
-- v1 (`frontend/`) không đổi — A1 chốt 03/11: xuất lô chỉ ở v2; phần tìm nhanh có hiệu lực cả v1 vì chung backend.
+- v1 (`frontend/`): A1 chốt 03/11 xuất lô chỉ ở v2 (phần tìm nhanh có hiệu lực cả v1 vì chung backend). Ngày 05/11 người
+  chủ yêu cầu đồng bộ sang v1 (ngoại lệ đóng băng) — làm ở bao-CR-728: cùng menu ba mục, màn `/customs-prices/exports`
+  + `/exports/:id`, route `/procurement/customs-prices/exports/:id?` chuyển về màn v1 để chuông bấm được. Xem
+  [`../261105-xuat-lo-v1-bao-cr-728/ke-hoach.md`](../261105-xuat-lo-v1-bao-cr-728/ke-hoach.md).
 
 ## 7. Lên môi trường
 

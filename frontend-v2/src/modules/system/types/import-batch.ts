@@ -61,4 +61,6 @@ export interface ImportListResponse {
 export interface ImportLogListResponse {
   total: number
   items: ImportLog[]
+  /** bao-CR-731: lô quá hạn giữ thì dòng mức Thông tin đã dọn — câu báo, rỗng nếu chưa dọn. */
+  pruned_note?: string
 }

@@ -11,11 +11,13 @@ Ba nhóm luật sống chung ở đây vì cả ba đều là câu trả lời c
 3. **Che dữ liệu nhạy cảm** — theo tên khóa cho body, theo tên cột cho ORM, và
    theo MỐC CHUỖI cho vết lỗi. Ghi nhầm MỘT lần là chuỗi băm mật khẩu nằm trong
    nhật ký vĩnh viễn.
-4. **Giữ bao lâu** — dòng đọc 90 ngày, dòng ghi 16 tháng.
+4. **Giữ bao lâu** — dòng đọc 30 ngày (bao-CR-731, trước là 90), dòng ghi 16 tháng.
 
 Tài liệu gốc: `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` §6.
 """
 import re
+
+from app.core.config import settings
 
 MASKED = "***"
 
@@ -160,7 +162,30 @@ NO_LOG_TABLES = frozenset({
     #  bao-CR-608: chính nó LÀ bản chụp trước/sau của dòng hàng (lô nạp ghi đè hàng nghìn dòng).
     "tab_customs_line_change",
     "tab_setting",
+})   # + MACHINE_LOG_TABLES, nối ở dưới
+
+#  bao-CR-731 — bảng NHẬT KÝ DO MÁY GHI: mỗi dòng của chúng đã LÀ một bản ghi sự kiện, chép thêm sang
+#  `tab_change_log` là ghi hai lần cùng một chuyện. Đo prod 05/11/2026: change_log đang giữ 7.461 dòng của
+#  `tab_sync_log` (mỗi phút một lượt đồng bộ) và 4.677 dòng của `tab_email_log`. Bảng có người sửa tay thì KHÔNG
+#  thuộc nhóm này (phiếu, danh mục, cấu hình). Thêm bảng nhật ký máy mới thì khai vào đây; việc dọn
+#  `system_log.cleanup_machine_logs` cũng xóa dòng change_log cũ của các bảng này.
+MACHINE_LOG_TABLES = frozenset({
+    "tab_sync_log",
+    "tab_email_log",
+    "tab_import_log",
+    "tab_export_log",
+    "tab_job_run",
+    "tab_db_backup",
+    "tab_ui_event",
+    "tab_usage_daily",
+    "tab_feature_usage_daily",
+    "tab_ai_usage_daily",
+    "tab_user_usage_snapshot",
+    "tab_work_cycle",
+    "tab_customs_export_batch",
+    "tab_agent_mcp_call_daily",
 })
+NO_LOG_TABLES = NO_LOG_TABLES | MACHINE_LOG_TABLES
 
 # --------------------------------------------------------------------------
 # 3. Che dữ liệu nhạy cảm
@@ -453,7 +478,9 @@ def summarize_success(data):
 #  16 tháng đứng trên tập dữ liệu hồi đó, mà hồi đó tập đó không có GET nào.
 #  Bản đẩy lên R2 hằng tháng vẫn giữ NGUYÊN VẸN cả hai loại trước khi dọn, nên
 #  90 ngày là hạn của bản TRA NHANH, không phải hạn của chứng cứ.
-GET_RETENTION_DAYS = 90
+#  bao-CR-731 (người chủ gật 05/11/2026): GET còn **30 ngày** — đo prod 05/11 bảng request 333 nghìn dòng / 197 MB,
+#  326 nghìn là GET. Đổi số không cần dựng ảnh: biến `REQUEST_LOG_GET_KEEP_DAYS` trong `.env` rồi `up -d`.
+GET_RETENTION_DAYS = max(1, int(settings.REQUEST_LOG_GET_KEEP_DAYS))
 LOG_RETENTION_MONTHS = 16
 
 #  Xóa theo lô. `DELETE` một phát vài trăm nghìn dòng khóa bảng đủ lâu để mọi

@@ -39,10 +39,14 @@ JOBS: dict[str, JobInfo] = {
     "customs.cleanup_export_batches": JobInfo("Dọn lô xuất tra cứu thị trường",
                                               "Xóa tệp của lô xuất toàn bộ quá số ngày giữ; lô kẹt quá 2 giờ thì dừng.",
                                               "cleanup"),
-    "request_log.cleanup": JobInfo("Dọn nhật ký truy cập GET", "Xóa dòng truy cập GET quá 90 ngày (đã có gói R2).",
+    "request_log.cleanup": JobInfo("Dọn nhật ký truy cập GET", "Xóa dòng truy cập GET quá 30 ngày (đã có gói R2).",
                                    "cleanup"),
     "system_log.cleanup_expired": JobInfo("Dọn nhật ký quá 16 tháng",
                                           "Xóa bốn bảng nhật ký quá 16 tháng, chỉ tháng đã có gói R2.", "cleanup"),
+    "system_log.cleanup_machine_logs": JobInfo(
+        "Dọn nhật ký do máy ghi",
+        "Sổ đồng bộ (Bỏ qua 14 ngày, Thành công 90 ngày), nội dung thư 90 ngày, dòng thông tin nạp tệp 30 ngày, "
+        "nhật ký thay đổi của bảng nhật ký máy.", "cleanup"),
     "attachment.purge_orphans": JobInfo("Dọn tệp đính kèm mồ côi",
                                         "Xóa tệp tải lên mà không gắn vào phiếu nào sau 7 ngày.", "cleanup"),
     "usage.cleanup_ui_events": JobInfo("Dọn sự kiện giao diện thô",

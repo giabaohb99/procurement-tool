@@ -300,13 +300,19 @@ def upload_files(files: list[UploadFile] = File(...), db: Session = Depends(get_
 
     Kiểm đủ tiêu đề của MỌI tệp trước rồi mới lưu tệp nào — một tệp hỏng thì cả
     lượt tải bị từ chối, không để lại nửa bộ lô.
+
+    Lỗi riêng: 400 sai đuôi / sai tiêu đề; 413 một tệp vượt `reader.MAX_UPLOAD_BYTES` (30 MB, bao-CR-728).
     """
     raws = []
     for f in files:
         name = f.filename or ""
         if not name.lower().endswith(_ACCEPTED):
             raise HTTPException(400, f"\"{name}\": chỉ nhận tệp .xls hoặc .xlsx")
-        raw = f.file.read()
+        #  bao-CR-728: đọc tối đa trần + 1 byte — tệp quá trần dừng ngay, không đọc trọn vào bộ nhớ.
+        raw = f.file.read(reader.MAX_UPLOAD_BYTES + 1)
+        if len(raw) > reader.MAX_UPLOAD_BYTES:
+            raise HTTPException(413, f"\"{name}\": tệp quá lớn (tối đa {reader.MAX_UPLOAD_LABEL} mỗi tệp) — "
+                                     "chia nhỏ tệp rồi nạp lại")
         f.file.seek(0)
         try:
             reader.check_headers(raw, name)
@@ -386,7 +392,8 @@ def download_batch_file(bid: int, db: Session = Depends(get_db), user=Depends(re
 @router.get("/imports/{bid}/logs")
 def get_batch_logs(bid: int, level: int | None = Query(None), pg: dict = Depends(pagination),
                    db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
-    _get_batch(db, bid)
+    batch = _get_batch(db, bid)
     total, items = import_service.get_logs(db, bid, level, pg)
     return success({"total": total, "items": [
-        {"id": x.id, "row_no": x.row_no, "level": x.level, "message": x.message} for x in items]})
+        {"id": x.id, "row_no": x.row_no, "level": x.level, "message": x.message} for x in items],
+        "pruned_note": import_service.pruned_note(batch)})

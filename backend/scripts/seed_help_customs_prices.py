@@ -47,8 +47,10 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 
 <h2>IV. Tìm và lọc</h2>
 <ul>
-<li><strong>Tên hàng / hoạt chất</strong>: gõ rồi Enter, ví dụ <em>ATRAZINE</em>, <em>mancozeb</em>. Khớp cả tên hàng lẫn hoạt chất đã suy ra.</li>
-<li><strong>Mã HS · Xuất xứ · Đơn vị tính · Hàm lượng / dạng · Từ tháng · Đến tháng</strong>: chọn xong bấm <em>Tìm</em>.</li>
+<li><strong>Tên hàng / hoạt chất</strong>: gõ, ví dụ <em>ATRAZINE</em>, <em>mancozeb</em>; ngưng gõ một chút là bảng tự lọc (Enter để lọc ngay). Khớp cả tên hàng lẫn hoạt chất đã suy ra.</li>
+<li><strong>Mã HS · Xuất xứ · Đơn vị tính · Phân loại · Hàm lượng / dạng · Ngày đăng ký</strong>: chọn xong là bảng lọc ngay, không cần bấm nút.</li>
+<li><strong>Lọc thêm</strong> mở sáu ô phụ (nguyên tệ, giao hàng, tệp nguồn, ba khoảng số); thu gọn lại được cả khi đang có giá trị, số ô đang áp hiện cạnh nút.</li>
+<li>Bộ lọc nằm trên <strong>địa chỉ trang</strong>: gửi đường dẫn cho người khác là họ thấy đúng kết quả; tải lại trang hay bấm Quay lại vẫn giữ bộ lọc.</li>
 <li>Muốn xem riêng một doanh nghiệp: sang thẻ <em>Doanh nghiệp</em>, bấm vào dòng của doanh nghiệp đó. Thẻ nhỏ <em>Doanh nghiệp: ...</em> hiện dưới thanh lọc, bấm dấu x để bỏ.</li>
 </ul>
 <p>Bảng trống có hai câu khác nhau: <em>Chưa có dữ liệu hải quan</em> nghĩa là chưa ai nạp gì; <em>Không có dòng hàng nào khớp bộ lọc</em> nghĩa là bộ lọc quá hẹp hoặc gõ sai chữ.</p>
@@ -57,7 +59,7 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 <table>
 <thead><tr><th>Thẻ</th><th>Cho biết gì</th></tr></thead>
 <tbody>
-<tr><td><strong>Danh sách</strong></td><td>Các dòng hàng khớp bộ lọc, mới nhất lên đầu. Bấm một dòng để xem đủ 32 trường. Nút <em>Xuất Excel</em> xuất đúng các dòng đang lọc (tối đa 50.000 dòng).</td></tr>
+<tr><td><strong>Danh sách</strong></td><td>Các dòng hàng khớp bộ lọc, mới nhất lên đầu. Bấm một dòng để xem đủ 32 trường. Nút <em>Xuất dữ liệu</em> có ba mục: <em>Xuất ngay</em> tải về một tệp đúng các dòng đang lọc (tối đa 50.000 dòng); <em>Xuất toàn bộ theo bộ lọc (chạy nền)</em> xuất hết các dòng khớp bộ lọc, chia mỗi tệp 50.000 dòng, xong thì chuông báo; <em>Lô xuất của tôi</em> liệt kê các lần xuất đó, xem tiến độ và tải từng tệp (tệp giữ 7 ngày rồi tự xóa). Mỗi người chỉ chạy một lô xuất một lúc.</td></tr>
 <tr><td><strong>Biểu đồ</strong></td><td>Giá thấp nhất, bình quân, cao nhất và lượng nhập theo <strong>tháng / quý / năm</strong>. Chỉ hiện khi đã nhập từ khóa hoặc chọn mã HS.</td></tr>
 <tr><td><strong>Doanh nghiệp</strong></td><td>20 doanh nghiệp nhập nhiều nhất mặt hàng đang lọc: số dòng, tổng lượng, thị phần, giá bình quân, lần nhập gần nhất. Gộp theo mã số thuế.</td></tr>
 <tr><td><strong>So sánh</strong></td><td>Đặt 2–5 mặt hàng hoặc hoạt chất cạnh nhau trên cùng một biểu đồ, cùng một đơn vị tính.</td></tr>
@@ -85,8 +87,10 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 <li>Bấm <strong>Áp dụng</strong>. Hệ thống báo khi ghi xong.</li>
 </ol>
 <ul>
-<li>Hệ thống tự so trùng: dòng giống hệt một dòng đã có trong bảng giá, hoặc lặp lại một dòng phía trên trong cùng tệp, sẽ <strong>được bỏ qua</strong> — nạp lại một tệp hay nạp các tệp chồng ngày nhau không làm nhân đôi dữ liệu. Không dòng cũ nào bị xóa hay ghi đè.</li>
+<li>Hệ thống tự so trùng: dòng giống hệt một dòng đã có trong bảng giá, hoặc lặp lại một dòng phía trên trong cùng tệp, sẽ <strong>được bỏ qua</strong> — nạp lại một tệp hay nạp các tệp chồng ngày nhau không làm nhân đôi dữ liệu. Tệp GTT02 không có cột <em>ID</em> thì không dòng cũ nào bị xóa hay ghi đè.</li>
 <li>Dòng mới trùng ngày, doanh nghiệp, đối tác, mã HS, số thứ tự và tên hàng với một dòng đã có nhưng <strong>khác giá hoặc số lượng</strong> vẫn được thêm (thường là một lô hàng khác), kèm ghi chú <em>nghi sửa giá</em> trong nhật ký lô để người nạp rà. Nếu đúng là nguồn sửa số liệu thì hoàn tác lần nạp cũ rồi nạp lại tệp đúng.</li>
+<li><strong>Sửa hàng loạt bằng tệp xuất:</strong> tệp xuất từ màn này có cột <em>ID</em> và <em>Thao tác</em>. Sửa ô của dòng nào rồi nạp lại cả tệp thì chỉ dòng đã sửa được <strong>ghi đè</strong> (dòng không đổi được bỏ qua); gõ <em>xóa</em> ở cột <em>Thao tác</em> thì dòng có ID đó bị xóa. Hoàn tác lần nạp trả các dòng đó về như trước.</li>
+<li>Mỗi tệp nạp tối đa <strong>30 MB</strong> (một tệp xuất 50.000 dòng khoảng 13 MB); tệp lớn hơn bị từ chối, chia nhỏ rồi nạp lại.</li>
 <li>Cột ngày đăng ký trong tệp xuất đôi khi bị Excel đảo ngày và tháng; hệ thống tự nhận ra và đọc lại. Ô ngày có dấu lịch màu cam là dòng đã được sửa.</li>
 <li><strong>Lịch sử nạp</strong> liệt kê mọi lần nạp, ai nạp, lúc nào, số dòng bỏ qua vì trùng, kèm nhật ký từng dòng. Hoàn tác một lần nạp chỉ xóa đúng các dòng lần đó đã thêm. Riêng các lần nạp cũ (trước khi có so trùng) đã thay dòng cũ thì không hoàn tác được.</li>
 </ul>

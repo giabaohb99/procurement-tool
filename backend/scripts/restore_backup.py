@@ -1,5 +1,8 @@
 """Script phục hồi CSDL từ bản sao lưu R2 (ví dụ #72) và chạy lại đồng bộ dữ liệu sạch.
 
+**bao-CR-732:** khôi phục = bản CHÍNH (`--id`) + bản dữ liệu tra cứu thị trường mới nhất (tự tìm, hoặc `--customs-id`),
+nạp đúng thứ tự đó. Bản chính chỉ dựng bảng tra cứu thị trường rỗng; `--skip-customs` để bỏ qua bản phụ.
+
 Chạy:
   docker compose -f docker-compose.dev.yml --env-file .env.dev exec api python -m scripts.restore_backup --id 72
 
@@ -142,9 +145,58 @@ def ensure_fulltext_stopwords_off() -> None:
         db.close()
 
 
+def latest_customs_backup(db):
+    """bao-CR-732: bản dữ liệu tra cứu thị trường thành công mới nhất (hoặc None)."""
+    return (db.query(DbBackup).filter(DbBackup.part == "customs", DbBackup.status == "success")
+            .order_by(DbBackup.id.desc()).first())
+
+
+def fetch_checked_dump(rec, label: str) -> bytes:
+    """Tải + giải nén + kiểm trọn vẹn một bản sao lưu — TRƯỚC khi đụng CSDL. Hỏng thì thoát mã 1."""
+    print(f"   Đang tải {label} #{rec.id} ({rec.file_key}) từ Cloudflare R2...")
+    try:
+        sql = gzip.decompress(download_bytes(rec.file_key))
+        print(f"   --> Đã giải nén tệp SQL ({len(sql):,} bytes)")
+    except Exception as e:  # noqa: BLE001
+        print(f"LỖI: Không tải/giải nén được tệp từ R2: {e}")
+        sys.exit(1)
+    #  Kiểm TRƯỚC khi ngắt kết nối / nạp: bản cụt thì CSDL đang chạy còn nguyên.
+    broken = check_dump_complete(sql)
+    if broken:
+        print(f"LỖI: Bản sao lưu #{rec.id} không nạp được — {broken}. CSDL chưa bị đụng tới.")
+        sys.exit(1)
+    return sql
+
+
+def load_sql(sql: bytes, label: str) -> None:
+    """Nạp một tệp .sql vào CSDL bằng client mysql (dừng ở lỗi đầu tiên). Hỏng thì thoát mã 1."""
+    tmp_path = "/tmp/restore_target.sql"
+    with open(tmp_path, "wb") as f:
+        f.write(sql)
+    exe = shutil.which("mysql") or shutil.which("mariadb") or "mysql"
+    env = dict(os.environ)
+    env["MYSQL_PWD"] = settings.DB_PASSWORD
+    try:
+        with open(tmp_path, "rb") as f_in:
+            p = subprocess.run(build_restore_command(exe), env=env, stdin=f_in, capture_output=True, text=True)
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+    if p.returncode != 0:
+        print(f"LỖI: Phục hồi {label} THẤT BẠI (mã {p.returncode}) — CSDL có thể đang nạp dở, "
+              f"KHÔNG dùng cho tới khi nạp lại được:\n{p.stderr}")
+        sys.exit(1)
+    if p.stderr and p.stderr.strip():
+        print(f"   --> Client báo (không phải lỗi):\n{p.stderr.strip()}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Phục hồi CSDL từ bản sao lưu R2")
-    parser.add_argument("--id", type=int, default=72, help="ID bản sao lưu (mặc định 72)")
+    parser.add_argument("--id", type=int, default=72, help="ID bản sao lưu CHÍNH (mặc định 72)")
+    parser.add_argument("--customs-id", type=int, default=0,
+                        help="ID bản dữ liệu tra cứu thị trường (mặc định: bản thành công mới nhất)")
+    parser.add_argument("--skip-customs", action="store_true",
+                        help="Không nạp bản tra cứu thị trường (bảng tra cứu thị trường sẽ rỗng)")
     parser.add_argument("--sync", action="store_true", default=True, help="Chạy lại pull_updated sau restore")
     args = parser.parse_args()
 
@@ -156,58 +208,39 @@ def main():
     if rec.status != "success" or not rec.file_key:
         print(f"LỖI: Bản sao lưu #{rec.id} không ở trạng thái thành công (status={rec.status!r}), không nạp.")
         sys.exit(1)
-
-    print(f"1. Đang tải tệp sao lưu #{rec.id} ({rec.file_key}) từ Cloudflare R2...")
-    try:
-        gz_data = download_bytes(rec.file_key)
-        sql = gzip.decompress(gz_data)
-        print(f"   --> Đã giải nén tệp SQL ({len(sql):,} bytes)")
-    except Exception as e:
-        print(f"LỖI: Không tải/giải nén được tệp từ R2: {e}")
+    if getattr(rec, "part", "main") == "customs":
+        print(f"LỖI: #{rec.id} là bản tra cứu thị trường — truyền --id là bản CHÍNH, bản này đi kèm qua --customs-id.")
         sys.exit(1)
+    #  bao-CR-732: bản chính chỉ có CẤU TRÚC các bảng tra cứu thị trường; dữ liệu nằm ở bản riêng, tra NGAY BÂY GIỜ vì
+    #  nạp bản chính xong thì sổ sao lưu cũng quay về lúc chụp.
+    customs = None
+    if not args.skip_customs:
+        customs = db.get(DbBackup, args.customs_id) if args.customs_id else latest_customs_backup(db)
+        if customs is not None and (customs.status != "success" or not customs.file_key):
+            print(f"LỖI: Bản tra cứu thị trường #{customs.id} không ở trạng thái thành công, không nạp.")
+            sys.exit(1)
+        if customs is None:
+            print("   CHÚ Ý: chưa có bản tra cứu thị trường nào — bảng tra cứu thị trường sẽ RỖNG sau khi khôi phục.")
 
-    #  Kiểm TRƯỚC khi ngắt kết nối / nạp: bản cụt thì CSDL đang chạy còn nguyên.
-    broken = check_dump_complete(sql)
-    if broken:
-        print(f"LỖI: Bản sao lưu #{rec.id} không nạp được — {broken}. CSDL chưa bị đụng tới.")
-        sys.exit(1)
+    print("1. Tải và kiểm bản sao lưu (chưa đụng CSDL)...")
+    sql = fetch_checked_dump(rec, "bản chính")
     expected_tables = dump_table_names(sql)
     print(f"   --> Bản dump đủ, sẽ tạo {len(expected_tables)} bảng")
-
-    tmp_path = "/tmp/restore_target.sql"
-    with open(tmp_path, "wb") as f:
-        f.write(sql)
-
+    customs_sql = fetch_checked_dump(customs, "bản tra cứu thị trường") if customs is not None else None
     db.close()
 
-    print("2. Đóng kết nối cũ & phục hồi dữ liệu vào MySQL (dừng ngay ở lỗi đầu tiên)...")
+    print("2. Đóng kết nối cũ & phục hồi bản chính vào MySQL (dừng ngay ở lỗi đầu tiên)...")
     kill_other_connections()
-
-    exe = shutil.which("mysql") or shutil.which("mariadb") or "mysql"
-    cmd = build_restore_command(exe)
-    env = dict(os.environ)
-    env["MYSQL_PWD"] = settings.DB_PASSWORD
-
-    try:
-        with open(tmp_path, "rb") as f_in:
-            p = subprocess.run(cmd, env=env, stdin=f_in, capture_output=True, text=True)
-    finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
-
-    if p.returncode != 0:
-        print(f"LỖI: Phục hồi CSDL THẤT BẠI (mã {p.returncode}) — CSDL có thể đang nạp dở, "
-              f"KHÔNG dùng cho tới khi nạp lại được:\n{p.stderr}")
-        sys.exit(1)
-    if p.stderr and p.stderr.strip():
-        print(f"   --> Client báo (không phải lỗi):\n{p.stderr.strip()}")
-
+    load_sql(sql, "bản chính")
     missing = sorted(expected_tables - live_table_names())
     if missing:
         print(f"LỖI: Nạp xong nhưng thiếu {len(missing)}/{len(expected_tables)} bảng có trong bản dump: "
               f"{', '.join(missing[:20])}")
         sys.exit(1)
     print(f"   --> Đủ {len(expected_tables)} bảng của bản dump")
+    if customs_sql is not None:
+        print(f"2b. Nạp dữ liệu tra cứu thị trường từ bản #{customs.id} (SAU bản chính)...")
+        load_sql(customs_sql, "bản tra cứu thị trường")
 
     print("3. Kiểm chỉ mục tìm văn bản (từ dừng FULLTEXT)...")
     try:
@@ -216,7 +249,8 @@ def main():
         print(f"LỖI: Đã nạp dữ liệu nhưng chỉ mục tìm văn bản hỏng: {e}")
         sys.exit(1)
 
-    print(f"XONG: Phục hồi CSDL về bản sao lưu #{rec.id}.")
+    extra = f" + bản tra cứu thị trường #{customs.id}" if customs_sql is not None else ""
+    print(f"XONG: Phục hồi CSDL về bản sao lưu #{rec.id}{extra}.")
 
     if args.sync:
         print("4. Đang tự động chạy đồng bộ lại dữ liệu Datxe / Duyệt dấu mới nhất...")

@@ -6,7 +6,10 @@
 // và thêm nút tải lại tệp GTT02 gốc — chỉ lô nạp qua màn hình có tệp (`has_file`).
 // bao-CR-608: thêm cột Ghi đè / Xóa (tệp có cột "ID" + "Thao tác"). Lô ghi đè / xóa có bản chụp
 // nên VẪN hoàn tác được — backend báo lô cũ không hoàn tác được bằng `legacy_replace`.
-import { useCallback, useEffect, useState } from 'react'
+// bao-CR-734 (bê từ v2): chọn số dòng / trang ở danh sách lô và ở nhật ký; hộp Nhật ký lô chia hai
+// thẻ "Kết quả từng dòng" / "Ghi chú lỗi / cảnh báo" thay vì xếp dọc hai bảng; nút Hoàn tác chặn
+// bấm đúp; hiện `pruned_note` (bao-CR-731) trên bảng ghi chú khi backend đã dọn nhật ký chi tiết.
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../../api/client'
 import { useAuth } from '../../auth/AuthContext'
 import { askConfirm } from '../confirm'
@@ -25,15 +28,20 @@ export default function CustomsHistoryPanel({ onChanged }: { onChanged: () => vo
   const [rows, setRows] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [logsOf, setLogsOf] = useState<any>(null)
+  // bao-CR-734 — chặn bấm đúp Hoàn tác: ref chặn ngay trong lượt bấm, state để khóa nút khi vẽ lại.
+  const reverting = useRef(false)
+  const [revertingId, setRevertingId] = useState<number | null>(null)
 
   const load = useCallback(() => {
-    api.get('/api/customs/imports', { params: { page, page_size: 20 } })
+    api.get('/api/customs/imports', { params: { page, page_size: pageSize } })
       .then((r) => { setRows(r.data.data.items); setTotal(r.data.data.total) })
-  }, [page])
+  }, [page, pageSize])
   useEffect(() => { load() }, [load])
 
   async function revert(b: any) {
+    if (reverting.current) return
     // bao-CR-608 — nói đủ ba việc hoàn tác sẽ làm (như `formatRevertConfirm` bản v2).
     const parts = [`xóa ${b.created_count} dòng lô này đã thêm`]
     if (b.updated_count) parts.push(`trả ${b.updated_count} dòng lô đã ghi đè về bản trước lô`)
@@ -44,14 +52,21 @@ export default function CustomsHistoryPanel({ onChanged }: { onChanged: () => vo
         + (b.updated_count ? ' Dòng bị sửa tiếp sau lô này cũng trả về bản trước lô — phần sửa sau sẽ mất.' : ''),
       confirmText: 'Hoàn tác',
     })
-    if (!ok) return
+    if (!ok || reverting.current) return
+    reverting.current = true
+    setRevertingId(b.id)
     try {
       const r = await api.post(`/api/customs/imports/${b.id}/revert`)
       toast.success(r.data.message || 'Đã hoàn tác')
       load()
       onChanged()
-    } catch { /* interceptor đã báo lỗi */ }
+    } catch { /* interceptor đã báo lỗi */ } finally {
+      reverting.current = false
+      setRevertingId(null)
+    }
   }
+  // bao-CR-734 — đổi cỡ trang thì về trang 1 (Pagination gọi onChange(1, cỡ mới)).
+  const changePage = (p: number, size: number) => { setPageSize(size); setPage(p) }
 
   async function downloadSource(b: any) {
     try {
@@ -95,11 +110,11 @@ export default function CustomsHistoryPanel({ onChanged }: { onChanged: () => vo
                     <i className="ti ti-download" />
                   </button>
                 )}
-                <button className="btn ghost" title="Nhật ký dòng lỗi / cảnh báo" onClick={() => setLogsOf(b)}>
+                <button className="btn ghost" title="Nhật ký lô — kết quả từng dòng, lỗi, cảnh báo" onClick={() => setLogsOf(b)}>
                   <i className="ti ti-list-details" />
                 </button>
                 {b.mode === 1 && b.status === 2 && can('customs_price', 'delete') && (
-                  <button className="btn ghost" disabled={legacy(b)} onClick={() => revert(b)}
+                  <button className="btn ghost" disabled={legacy(b) || revertingId !== null} onClick={() => revert(b)}
                     title={legacy(b)
                       ? `Lô này nạp theo cách cũ, đã thay ${b.deleted_count} dòng cũ nên không hoàn tác được.`
                       : 'Hoàn tác: xóa dòng lô này đã thêm, trả lại dòng lô đã ghi đè / xóa'}>
@@ -113,7 +128,7 @@ export default function CustomsHistoryPanel({ onChanged }: { onChanged: () => vo
         </tbody>
       </table></div>
       <div className="table-foot">
-        <Pagination page={page} pageSize={20} total={total} hideSize onChange={(p) => setPage(p)} />
+        <Pagination page={page} pageSize={pageSize} total={total} onChange={changePage} />
       </div>
       {logsOf && <BatchLogs batch={logsOf} onClose={() => setLogsOf(null)} />}
     </div>
@@ -137,14 +152,15 @@ function BatchRows({ batchId }: { batchId: number }) {
   const [rows, setRows] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(50)
   useEffect(() => {
     api.get(`/api/customs/imports/${batchId}/rows/summary`).then((r) => setSummary(r.data.data)).catch(() => setSummary(null))
   }, [batchId])
   useEffect(() => {
-    api.get(`/api/customs/imports/${batchId}/rows`, { params: { page, page_size: 50, row_status: status } })
+    api.get(`/api/customs/imports/${batchId}/rows`, { params: { page, page_size: pageSize, row_status: status } })
       .then((r) => { setRows(r.data.data.items); setTotal(r.data.data.total) })
       .catch(() => { setRows([]); setTotal(0) })
-  }, [batchId, page, status])
+  }, [batchId, page, pageSize, status])
   const chips: [number | undefined, string, number][] = summary ? [
     [undefined, 'Tất cả', summary.total], [1, 'Thêm mới', summary.new], [2, 'Lỗi', summary.error], [3, 'Trùng trong tệp', summary.duplicate], [4, 'Đã có', summary.existing || 0],
     // bao-CR-608 — chỉ hiện khi lô có dòng mang kết cục đó.
@@ -152,18 +168,17 @@ function BatchRows({ batchId }: { batchId: number }) {
       .filter(([, , n]) => n > 0),
   ] : []
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>Từng dòng của tệp</div>
+    <div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8, fontSize: 12 }}>
         {chips.map(([v, label, n]) => (
           <button key={label} type="button" className={status === v ? 'btn' : 'btn ghost'} style={{ padding: '2px 10px' }}
             onClick={() => { setStatus(v); setPage(1) }}>{label}: {Number(n || 0).toLocaleString('vi-VN')}</button>
         ))}
         {summary && summary.total === 0 && (
-          <span style={{ color: 'var(--muted)' }}>Lô này nạp trước khi có nhật ký từng dòng — chỉ có ghi chú ở bảng dưới.</span>
+          <span style={{ color: 'var(--muted)' }}>Lô này nạp trước khi có nhật ký từng dòng — xem thẻ <em>Ghi chú lỗi / cảnh báo</em>.</span>
         )}
       </div>
-      <div className="table-scroll" style={{ maxHeight: 320 }}><table>
+      <div className="table-scroll" style={{ maxHeight: '55vh' }}><table>
         <thead><tr><th style={{ width: 70 }}>Dòng</th><th style={{ width: 120 }}>Kết cục</th><th>Tên hàng</th><th>Ghi chú</th></tr></thead>
         <tbody>
           {rows.map((x) => (
@@ -178,40 +193,66 @@ function BatchRows({ batchId }: { batchId: number }) {
         </tbody>
       </table></div>
       <div className="table-foot">
-        <Pagination page={page} pageSize={50} total={total} hideSize onChange={(p) => setPage(p)} />
+        <Pagination page={page} pageSize={pageSize} total={total}
+          onChange={(p, size) => { setPageSize(size); setPage(p) }} />
       </div>
     </div>
   )
 }
 
+type LogTab = 'rows' | 'notes'
+const LOG_TABS: [LogTab, string][] = [['rows', 'Kết quả từng dòng'], ['notes', 'Ghi chú lỗi / cảnh báo']]
+
 function BatchLogs({ batch, onClose }: { batch: any; onClose: () => void }) {
+  // bao-CR-734 — hai thẻ như v2 (bao-CR-496): hộp chỉ cao 90% màn hình, xếp dọc thì mỗi bảng còn vài dòng.
+  const [tab, setTab] = useState<LogTab>('rows')
   const [rows, setRows] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(50)
+  const [prunedNote, setPrunedNote] = useState('')
   useEffect(() => {
-    api.get(`/api/customs/imports/${batch.id}/logs`, { params: { page, page_size: 50 } })
-      .then((r) => { setRows(r.data.data.items); setTotal(r.data.data.total) })
-  }, [batch.id, page])
+    api.get(`/api/customs/imports/${batch.id}/logs`, { params: { page, page_size: pageSize } })
+      .then((r) => {
+        setRows(r.data.data.items)
+        setTotal(r.data.data.total)
+        setPrunedNote(r.data.data.pruned_note || '')   // bao-CR-731 — rỗng khi chưa dọn
+      })
+  }, [batch.id, page, pageSize])
   return (
     <CustomsModal title={`Nhật ký lô #${batch.id} — ${batch.filename}`} width={1000} onClose={onClose}>
       {batch.error_summary && <div style={{ color: '#b91c1c', fontSize: 13, whiteSpace: 'pre-wrap', marginBottom: 10 }}>{batch.error_summary.split('\n')[0]}</div>}
-      <BatchRows batchId={batch.id} />
-      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>Ghi chú khi đọc tệp</div>
-      <div className="table-scroll"><table>
-        <thead><tr><th style={{ width: 80 }}>Dòng</th><th style={{ width: 110 }}>Mức</th><th>Nội dung</th></tr></thead>
-        <tbody>
-          {rows.map((x) => (
-            <tr key={x.id}>
-              <td>{x.row_no || '—'}</td>
-              <td><span className={`badge ${LEVELS[x.level]?.[1] || 'gray'}`}>{LEVELS[x.level]?.[0] || x.level}</span></td>
-              <td>{x.message}</td>
-            </tr>
-          ))}
-          {!rows.length && <tr><td colSpan={3} className="table-empty">Không có ghi chú nào — mọi dòng đọc được bình thường</td></tr>}
-        </tbody>
-      </table></div>
-      <div className="table-foot">
-        <Pagination page={page} pageSize={50} total={total} hideSize onChange={(p) => setPage(p)} />
+      <div role="tablist" style={{ display: 'flex', gap: 4, borderBottom: '1px solid #e5e7eb', marginBottom: 12 }}>
+        {LOG_TABS.map(([key, label]) => (
+          <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '8px 14px', fontSize: 13, marginBottom: -1,
+              borderBottom: `2px solid ${tab === key ? 'var(--teal)' : 'transparent'}`,
+              color: tab === key ? 'var(--navy)' : 'var(--muted)', fontWeight: tab === key ? 600 : 400 }}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {/* Giữ cả hai thẻ trong cây (chỉ ẩn) để đổi thẻ không mất trang / bộ lọc đang xem. */}
+      <div role="tabpanel" hidden={tab !== 'rows'}><BatchRows batchId={batch.id} /></div>
+      <div role="tabpanel" hidden={tab !== 'notes'}>
+        {prunedNote && <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>{prunedNote}</div>}
+        <div className="table-scroll" style={{ maxHeight: '55vh' }}><table>
+          <thead><tr><th style={{ width: 80 }}>Dòng</th><th style={{ width: 110 }}>Mức</th><th>Nội dung</th></tr></thead>
+          <tbody>
+            {rows.map((x) => (
+              <tr key={x.id}>
+                <td>{x.row_no || '—'}</td>
+                <td><span className={`badge ${LEVELS[x.level]?.[1] || 'gray'}`}>{LEVELS[x.level]?.[0] || x.level}</span></td>
+                <td>{x.message}</td>
+              </tr>
+            ))}
+            {!rows.length && <tr><td colSpan={3} className="table-empty">Không có ghi chú nào — mọi dòng đọc được bình thường</td></tr>}
+          </tbody>
+        </table></div>
+        <div className="table-foot">
+          <Pagination page={page} pageSize={pageSize} total={total}
+            onChange={(p, size) => { setPageSize(size); setPage(p) }} />
+        </div>
       </div>
     </CustomsModal>
   )

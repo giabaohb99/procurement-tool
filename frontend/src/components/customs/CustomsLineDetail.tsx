@@ -93,16 +93,27 @@ export default function CustomsLineDetail({ id, onClose, onFilterImporter, onFil
       deleting.current = false
     }
   }
-  const closeRef = useRef(onClose)
-  closeRef.current = onClose
-  // Chỉ tải lại khi đổi dòng — `onClose` của trang là hàm mới mỗi lượt render.
+  // bao-CR-734 (bê từ v2): khung chờ khi đang tải; đọc lỗi (vd 404 vì lô chứa dòng vừa hoàn tác /
+  // dòng vừa bị xóa) thì báo trong hộp như v2 thay vì lặng lẽ đóng hộp.
+  const [failed, setFailed] = useState(false)
+  // Chỉ tải lại khi đổi dòng.
   useEffect(() => {
-    api.get(`/api/customs/lines/${id}`).then((r) => setRow(r.data.data)).catch(() => closeRef.current())
+    let alive = true
+    setRow(null)
+    setFailed(false)
+    api.get(`/api/customs/lines/${id}`)
+      .then((r) => { if (alive) setRow(r.data.data) })
+      .catch(() => { if (alive) setFailed(true) })
+    return () => { alive = false }
   }, [id])
   return (
     <CustomsModal title={<>{editing ? 'Sửa dòng hàng' : 'Chi tiết dòng hàng'}{row && <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 400, color: 'var(--muted)' }}>ID {row.id}</span>}</>}
       width={860} onClose={onClose}>
-      {!row ? <div style={{ color: 'var(--muted)' }}>Đang tải…</div> : editing ? (
+      {failed ? (
+        <p style={{ margin: 0, border: '1px dashed var(--border)', borderRadius: 8, padding: 16, textAlign: 'center', fontSize: 13, color: 'var(--muted)' }}>
+          Không đọc được dòng hàng này — có thể lô nạp chứa nó vừa được hoàn tác.
+        </p>
+      ) : !row ? <LoadingSkeleton /> : editing ? (
         <CustomsLineEditForm row={row} onCancel={() => setEditing(false)}
           onSaved={(fresh) => { setRow(fresh); setEditing(false); onChanged?.() }} />
       ) : (
@@ -152,5 +163,19 @@ export default function CustomsLineDetail({ id, onClose, onFilterImporter, onFil
         </>
       )}
     </CustomsModal>
+  )
+}
+
+/** bao-CR-734 — khung chờ (như Skeleton của v2): hai khối xám nhạt + chữ "Đang tải…" cho trình đọc màn hình. */
+function LoadingSkeleton() {
+  const block = (height: number) => (
+    <div style={{ height, borderRadius: 8, background: '#eef1f5', marginBottom: 12 }} />
+  )
+  return (
+    <div aria-busy="true" aria-label="Đang tải…">
+      {block(96)}
+      {block(160)}
+      <div style={{ fontSize: 13, color: 'var(--muted)' }}>Đang tải…</div>
+    </div>
   )
 }

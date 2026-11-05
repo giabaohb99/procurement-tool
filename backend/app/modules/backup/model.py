@@ -22,3 +22,9 @@ class DbBackup(Base, AuditMixin):
     message: Mapped[str] = mapped_column(Text, default="")              # thông báo lỗi nếu FAILED
     started_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    #  bao-CR-732: 'main' = bản chính (2 lần/ngày) | 'customs' = dữ liệu tra cứu thị trường (1 lần/ngày, bỏ qua nếu
+    #  không đổi). Khôi phục = bản chính + bản 'customs' mới nhất. Không đặt tên `kind`: màn Sao lưu dùng `kind` cho
+    #  dòng khôi phục thử của DB bot.
+    part: Mapped[str] = mapped_column(String(20), default="main", server_default="main", index=True)
+    #  Dấu vân tay dữ liệu tra cứu thị trường lúc sao lưu ('<alembic>:<sha1>'), chỉ bản 'customs' điền.
+    fingerprint: Mapped[str] = mapped_column(String(120), default="", server_default="")
