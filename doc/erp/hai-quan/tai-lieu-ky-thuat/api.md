@@ -27,7 +27,7 @@ Mã backend: `customs`; danh mục dựng bằng `make_crud_router`: `/api/custo
 | GET | `/api/customs/coverage` | get coverage | `customs_price.read` |  | |
 | GET | `/api/customs/importers` | get importers | `customs_price.read` |  | |
 | GET | `/api/customs/imports` | list batches | `customs_price.read` |  | |
-| POST | `/api/customs/imports` | Tải lên MỘT hoặc NHIỀU tệp của cùng một lần kết xuất → mỗi tệp một lô CHẠY THỬ. | `customs_price.write` |  | |
+| POST | `/api/customs/imports` | Tải lên MỘT hoặc NHIỀU tệp của cùng một lần kết xuất → mỗi tệp một lô CHẠY THỬ. Mỗi tệp tối đa 30 MB (`reader.MAX_UPLOAD_BYTES`, bao-CR-728): vượt thì 413, cả lượt bị từ chối. | `customs_price.write` |  | |
 | GET | `/api/customs/imports/{bid}` | get batch | `customs_price.read` |  | |
 | POST | `/api/customs/imports/{bid}/commit` | Ghi thật từ một lô chạy thử đã xong — dùng lại đúng tệp, không tải lại. | `customs_price.write` |  | |
 | GET | `/api/customs/imports/{bid}/file` | Tải lại tệp GTT02 đã nạp (bao-CR-493, đề xuất đại ca 25/09). Lô nạp bằng script (không | `customs_price.read` |  | |

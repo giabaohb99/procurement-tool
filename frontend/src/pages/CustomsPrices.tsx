@@ -20,19 +20,19 @@ import SearchSelect from '../components/SearchSelect'
 import TableHead, { TableCells } from '../components/TableHead'
 import TableScroll from '../components/TableScroll'
 import TableToolbar from '../components/TableToolbar'
-import { toast } from '../components/toast'
 import CustomsChart from '../components/customs/CustomsChart'
 import CustomsConfigTab from '../components/customs/CustomsConfigTab'
 import CustomsHistoryPanel from '../components/customs/CustomsHistoryPanel'
 import CustomsImportDialog from '../components/customs/CustomsImportDialog'
 import CustomsLineDetail from '../components/customs/CustomsLineDetail'
+import CustomsLineExportMenu from '../components/customs/CustomsLineExportMenu'
 import CustomsPartyPicker from '../components/customs/CustomsPartyPicker'
 import CustomsPesticideTab from '../components/customs/CustomsPesticideTab'
 import CustomsRegulationBrowse from '../components/customs/CustomsRegulationBrowse'
 import CustomsSavedFilters from '../components/customs/CustomsSavedFilters'
 import { CustomsCompare, CustomsImporters, CustomsTariff } from '../components/customs/CustomsTabs'
 import {
-  addNamedId, blobErrorMessage, CustomsFilters, downloadBlob, EMPTY_FILTERS, EXTRA_FILTER_KEYS, fmtDate, fmtQty,
+  addNamedId, CustomsFilters, EMPTY_FILTERS, EXTRA_FILTER_KEYS, fmtDate, fmtQty,
   fmtUsd, fmtVnd, hasChartFilter, NEED_FILTER_MSG, PRODUCT_KIND_OPTIONS, removeNamedId, splitNamedIds, toParams,
 } from '../components/customs/customs-shared'
 import {
@@ -40,6 +40,7 @@ import {
   isCustomsTabSection, resolveCustomsSection,
 } from '../config/customs-sections'
 import { TableColumn, useTableColumns } from '../hooks/useTableColumns'
+import { describeCustomsFilters } from '../utils/customs-export'
 import { formatBannedLabel, formatThresholdKg, sortRegulationsBySeverity } from '../utils/customs-regulation'
 
 
@@ -124,7 +125,6 @@ export default function CustomsPrices() {
   const [detailId, setDetailId] = useState<number | null>(null)
   const [importOpen, setImportOpen] = useState(false)
   const [extraOpen, setExtraOpen] = useState(false)
-  const [exporting, setExporting] = useState(false)
   const table = useTableColumns('customs-lines-full', COLS)
 
   const loadMeta = useCallback(() => {
@@ -209,18 +209,6 @@ export default function CustomsPrices() {
     loadLines()
   }
 
-  async function exportXlsx() {
-    if (exporting) return
-    setExporting(true)
-    try {
-      await downloadBlob(api, '/api/customs/lines/export', 'tra-cuu-gia-hai-quan.xlsx', toParams(filters))
-    } catch (e: any) {
-      toast.error(await blobErrorMessage(e, 'Không xuất được tệp Excel'))
-    } finally {
-      setExporting(false)
-    }
-  }
-
   const set = (k: keyof CustomsFilters) => (v: string) => setDraft((s) => ({ ...s, [k]: v }))
   const optionList = (key: string) => (options?.[key] || []).map((o: any) => ({ value: o.value, label: `${o.label ?? o.value} (${o.count})` }))
   const importerChips = useMemo(() => splitNamedIds(filters.importer_id, filters.importer_name), [filters.importer_id, filters.importer_name])
@@ -258,12 +246,12 @@ export default function CustomsPrices() {
           {isCustomsTabSection(tab) ? CUSTOMS_TAB_GROUP_LABEL : sectionLabel}
         </h2>
         <button className="btn ghost" onClick={() => setTab('history')}><i className="ti ti-history" />Lịch sử nạp</button>
-        {/* 06/10/2026 — nút xuất dời từ thanh công cụ của bảng lên đây, đứng kế "Nạp dữ liệu". */}
+        {/* 06/10/2026 — nút xuất dời từ thanh công cụ của bảng lên đây, đứng kế "Nạp dữ liệu".
+             bao-CR-728: thành menu (xuất ngay · xuất toàn bộ chạy nền · Lô xuất của tôi), như bản v2. */}
         {tab === 'list' && can('customs_price', 'export') && (
-          <button className="btn ghost" disabled={exporting || !total} onClick={exportXlsx}
-            title="Xuất đúng các dòng đang lọc (tối đa 50.000 dòng)">
-            <i className="ti ti-file-spreadsheet" />{exporting ? 'Đang xuất…' : 'Xuất dữ liệu'}
-          </button>
+          <CustomsLineExportMenu params={toParams(filters)} totalRows={total}
+            filterSummary={describeCustomsFilters(toParams(filters),
+              { importer: filters.importer_name, partner: filters.partner_name })} />
         )}
         {can('customs_price', 'write') && (
           <button className="btn" onClick={() => setImportOpen(true)}><i className="ti ti-upload" />Nạp dữ liệu</button>

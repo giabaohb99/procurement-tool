@@ -300,13 +300,19 @@ def upload_files(files: list[UploadFile] = File(...), db: Session = Depends(get_
 
     Kiểm đủ tiêu đề của MỌI tệp trước rồi mới lưu tệp nào — một tệp hỏng thì cả
     lượt tải bị từ chối, không để lại nửa bộ lô.
+
+    Lỗi riêng: 400 sai đuôi / sai tiêu đề; 413 một tệp vượt `reader.MAX_UPLOAD_BYTES` (30 MB, bao-CR-728).
     """
     raws = []
     for f in files:
         name = f.filename or ""
         if not name.lower().endswith(_ACCEPTED):
             raise HTTPException(400, f"\"{name}\": chỉ nhận tệp .xls hoặc .xlsx")
-        raw = f.file.read()
+        #  bao-CR-728: đọc tối đa trần + 1 byte — tệp quá trần dừng ngay, không đọc trọn vào bộ nhớ.
+        raw = f.file.read(reader.MAX_UPLOAD_BYTES + 1)
+        if len(raw) > reader.MAX_UPLOAD_BYTES:
+            raise HTTPException(413, f"\"{name}\": tệp quá lớn (tối đa {reader.MAX_UPLOAD_LABEL} mỗi tệp) — "
+                                     "chia nhỏ tệp rồi nạp lại")
         f.file.seek(0)
         try:
             reader.check_headers(raw, name)

@@ -36,6 +36,12 @@ _ZIP_MAGIC = b"PK"                  # .xlsx
 
 EMPTY, TEXT, NUMBER, DATE = "empty", "text", "number", "date"
 
+#  bao-CR-728 — trần dung lượng MỖI tệp nạp (trước đây không có trần: tệp nhầm vài trăm MB đọc trọn vào bộ nhớ
+#  container api 2 GB). Cùng số với `pesticide_reader.MAX_UPLOAD_BYTES`. Tệp GTT02 gốc ~3 MB; tệp xuất 50.000 dòng
+#  của lô xuất (bao-CR-718) ~12,8 MB phải nạp lại được (xuất, sửa, nạp lại) nên trần để 30 MB.
+MAX_UPLOAD_BYTES = 30 * 1024 * 1024
+MAX_UPLOAD_LABEL = "30 MB"
+
 
 class CustomsFileError(ImportValidationError):
     """Tệp không dùng được (sai định dạng, thiếu cột, mã lạ) — từ chối CẢ LÔ.
@@ -44,7 +50,8 @@ class CustomsFileError(ImportValidationError):
     thân thiện vào lô, không kèm vết lỗi."""
 
 
-@dataclass
+#  bao-CR-728: `slots` — một tệp 50.000 dòng là ~2,4 triệu ô; bỏ `__dict__` từng ô bớt hẳn bộ nhớ của tác vụ nạp.
+@dataclass(slots=True)
 class Cell:
     kind: str
     value: object = None
@@ -96,12 +103,14 @@ def hash_name(value: object) -> str:
 
 
 # ── Đọc tệp thành lưới ô ────────────────────────────────────────────────────
-def load_cells(raw: bytes, filename: str = "") -> list[list[Cell]]:
-    """Tệp → lưới `Cell`. Hai định dạng đi chung một đầu ra để luật đọc chỉ viết một lần."""
+def load_cells(raw: bytes, filename: str = "", max_rows: int | None = None) -> list[list[Cell]]:
+    """Tệp → lưới `Cell`. Hai định dạng đi chung một đầu ra để luật đọc chỉ viết một lần.
+
+    `max_rows` (bao-CR-728): chỉ đọc chừng ấy dòng đầu — áp cho .xlsx (đọc từng dòng được); dạng khác vẫn đọc trọn."""
     if raw[:4] == _OLE2_MAGIC:
         return _cells_from_xls(raw)
     if raw[:2] == _ZIP_MAGIC:
-        return _cells_from_xlsx(raw)
+        return _cells_from_xlsx(raw, max_rows)
     #  bao-CR-662: hệ thống hải quan có lúc kết xuất tệp HTML hoặc XML (SpreadsheetML) nhưng đặt
     #  đuôi .xls — Excel mở được, còn chữ ký đầu tệp thì không phải Excel. Nhận cả hai dạng đó;
     #  mọi ô đọc thành TEXT, vì luật từng ô đã biết đọc ngày và số từ chữ.
@@ -237,14 +246,14 @@ def cells_from_xlrd_sheet(sheet, datemode: int) -> list[list[Cell]]:
     return grid
 
 
-def _cells_from_xlsx(raw: bytes) -> list[list[Cell]]:
+def _cells_from_xlsx(raw: bytes, max_rows: int | None = None) -> list[list[Cell]]:
     import openpyxl
     try:
         wb = openpyxl.load_workbook(io.BytesIO(raw), data_only=True, read_only=True)
     except Exception as e:  # noqa: BLE001
         raise CustomsFileError(f"Không đọc được tệp .xlsx: {e}") from e
     grid = []
-    for values in wb.worksheets[0].iter_rows(values_only=True):
+    for values in wb.worksheets[0].iter_rows(max_row=max_rows, values_only=True):
         row = []
         for v in values:
             if isinstance(v, datetime):
@@ -302,8 +311,11 @@ def control_columns_of(col_of: dict[str, int]) -> list[str]:
 
 
 def check_headers(raw: bytes, filename: str = "") -> None:
-    """Kiểm đồng bộ ngay lúc tải lên — sai là báo liền, không tạo lô."""
-    grid = load_cells(raw, filename)
+    """Kiểm đồng bộ ngay lúc tải lên — sai là báo liền, không tạo lô.
+
+    bao-CR-728: với .xlsx chỉ đọc DÒNG TIÊU ĐỀ. Trước đây đọc trọn lưới ngay trong lời gọi API: tệp xuất 50.000 dòng
+    (12,8 MB) tốn ~19 giây và ~500 MB bộ nhớ tiến trình api chỉ để xem tiêu đề; đọc trọn là việc của tác vụ nền."""
+    grid = load_cells(raw, filename, max_rows=1)
     if not grid:
         raise CustomsFileError(f"Tệp \"{filename}\" rỗng.")
     map_header(grid[0])

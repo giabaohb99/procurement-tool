@@ -114,6 +114,38 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-728-xuat-lo-tra-cuu-thi-truong-v1 | Tra cứu thị trường v1: xuất toàn bộ chạy nền, Lô xuất của tôi, trần dung lượng tệp nạp
+- status: xong
+- date: 2026-11-05
+- list: Sản xuất - Thu mua
+- tag: Hải quan
+**Bối cảnh:** bao-CR-718 làm xuất toàn bộ / theo bộ lọc chạy nền chia tệp 50.000 dòng nhưng chỉ ở giao diện v2; người
+dùng thu mua vẫn làm trên v1 nên không xuất được quá 50.000 dòng, và chuông **Xuất tra cứu thị trường xong** trỏ đường
+của v2. Người chủ yêu cầu đồng bộ sang v1 (ngoại lệ của luật đóng băng `frontend/`). Cửa nạp tệp Tra cứu thị trường
+cũng chưa có trần dung lượng.
+
+**Việc:** thêm menu xuất ba mục và hai màn lô xuất trên v1 gọi đúng API của v2, cho chuông bấm được từ v1, đặt trần dung
+lượng tệp nạp, rồi thử trọn vòng xuất, sửa, nạp lại, hoàn tác trên 50.000 dòng ở máy local.
+
+**Kết quả:** v1 có nút **Xuất dữ liệu** dạng menu (Xuất ngay tối đa 50.000 dòng, Xuất toàn bộ theo bộ lọc chạy nền có hộp
+xác nhận nêu bộ lọc, số dòng, số tệp dự kiến, Lô xuất của tôi), màn danh sách lô và màn chi tiết lô (tiến độ, tải từng
+tệp, dừng lô, câu lỗi, lô quá hạn, tự hỏi lại mỗi 3 giây khi lô còn chạy). Đường v2 của chuông được v1 chuyển thẳng về
+màn lô của v1, nên chuông, trang Thông báo và thông báo đẩy đều tới đúng màn mà không đổi link phía backend. Cửa nạp
+nhận tối đa 30 MB mỗi tệp, đọc tối đa trần cộng một byte, vượt thì báo 413 bằng câu tiếng Việt. Lượt thử trọn vòng lộ
+ra hai lỗi và đã sửa: bước kiểm tiêu đề đọc trọn tệp ngay trong lời gọi API (tệp 50.000 dòng mất 18,8 giây và khoảng
+500 MB bộ nhớ, nay 0,02 giây), và bộ gắn hoạt chất theo tên thương mại cho kết quả khác nhau giữa các tiến trình (nạp lại
+tệp chỉ sửa 7 dòng mà lô báo 11 đến 19 dòng ghi đè, đổi cả hoạt chất). Sau khi sửa, lô nạp lại ghi đè đúng 7 dòng, xóa
+đúng 5 dòng, 49.988 dòng còn lại giữ nguyên dấu kiểm, hoàn tác trả cả bảng về y như trước. Bài HDSD Tra cứu thị trường
+thêm phần xuất dữ liệu, sửa hàng loạt bằng tệp xuất và trần 30 MB.
+
+**Kiểm:** 7 bài kiểm mới và 354 bài hải quan đạt, ruff sạch; v1 kiểm kiểu giữ đúng 4 lỗi cũ, build đạt; soát v1 trong
+trình duyệt ở local (tạo lô, tiến độ, xong, dừng lô, 409, chuyển link chuông, tải tệp, 413).
+
+**Còn lại:** tác vụ nạp tệp 50.000 dòng dùng khoảng 1 GB bộ nhớ worker (sát trần 1 GB của worker local) vì bước chống
+trùng nạp mọi dòng trong khoảng ngày cùng lúc, nên tách CR riêng; ghi đè qua tệp đặt lại dấu đã vá ngày; sau khi lên môi
+trường nên bấm **Gắn lại nhãn** một lần; bảng chênh tính năng v1 / v2 còn lại ghi ở kế hoạch bao-CR-728 mục 6, chờ người
+chủ chọn; chưa seed bài HDSD lên dev.
+
 ## bao-CR-727-gui-lai-email | Nút Gửi lại trên màn Nhật ký email
 - status: xong
 - date: 2026-11-04
