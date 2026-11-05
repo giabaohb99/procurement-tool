@@ -2,7 +2,7 @@
 
 | Bản | Ngày | Người phụ trách | Trạng thái | CR liên quan |
 |---|---|---|---|---|
-| 1.0 | 05/11/2026 | Agent 4 (soạn), A1 Điều phối (chuyển người chủ) | Hiệu lực | bao-CR-730 |
+| 1.1 | 05/11/2026 | Agent 4 (soạn), A1 Điều phối (chuyển người chủ) | Hiệu lực | bao-CR-730 |
 
 Tài liệu này viết cho người chủ đọc, không cần biết kỹ thuật. Nó tóm lại từ hai nơi: sổ chi tiết từng lỗ
 [`so-ghi-nhan-loi-bao-mat.md`](so-ghi-nhan-loi-bao-mat.md) (BM-001 đến BM-036) và sổ thay đổi `change-log-bao.md`. Trạng thái
@@ -38,7 +38,8 @@ lại là lớp tăng cường (chặn tốc độ gọi, chính sách chặn sc
   BM-034) nay đều đã có trên `main`. Sổ chi tiết bản 2.8 ghi lại việc này.
 
 **Rủi ro lớn nhất về sau không còn là lỗ trong mã** mà là vận hành: dữ liệu và nhật ký phình dần, một máy chủ prod duy nhất,
-phụ thuộc dịch vụ bên ngoài, và tài khoản quyền rộng. Mục 4 đi từng rủi ro, mục 5 là lộ trình ba tháng.
+phụ thuộc dịch vụ bên ngoài, và tài khoản quyền rộng. Riêng nhật ký do máy tự ghi đã chiếm hơn nửa CSDL prod (khoảng 600 trên
+1.020 MB, mục 4.1). Mục 4 đi từng rủi ro, mục 5 là lộ trình ba tháng.
 
 ---
 
@@ -148,26 +149,36 @@ Gom theo nhóm dễ hiểu. Cột *Prod* là đã chạy trên hệ thật hay c
 ## 4. Rủi ro tương lai
 
 Mỗi rủi ro ghi: khả năng xảy ra, hậu quả, dấu hiệu sớm để nhận ra, việc nên làm, mức ưu tiên (1 là làm trước). Số đo lấy từ tài
-liệu và mã nguồn; không chạy truy vấn nặng trên prod.
+liệu, mã nguồn và lượt đo 05/11/2026 của A1; không chạy truy vấn nặng trên prod.
 
 ### 4.1 Dữ liệu lớn dần
 
-| Mục | Hiện trạng đo được | Ghi chú |
-|---|---|---|
-| Dòng hàng tra cứu thị trường (`tab_customs_line`) | Khoảng **328 nghìn dòng** trên prod (03/11/2026), tăng theo mỗi lần nạp tờ khai | Đã thêm chỉ mục ngày, nhớ tạm số đếm, xuất toàn bộ chạy nền chia tệp 50.000 dòng (bao-CR-718) |
-| Nhật ký request / thao tác / thay đổi | Giữ trên CSDL tới 16 tháng; lượt đọc dọn sau 90 ngày; đóng gói ra R2 hằng tháng | Có lịch dọn tự động |
-| Nhật ký thư (`tab_email_log`) | Từ bao-CR-727 lưu cả **thân thư** (cột MEDIUMTEXT, tới 16 MB mỗi dòng); **chưa có lịch dọn** | Phình nhanh nhất về sau |
-| Tệp trên R2 | Đính kèm, sao lưu CSDL (30 bản), gói nhật ký tháng, tệp xuất (giữ 7 ngày) | Sao lưu tự dọn theo số bản |
+**Số đo 05/11/2026** (A1 đo; prod chỉ đọc số ước lượng của MySQL, không chạy truy vấn đếm nặng). CSDL prod khoảng **1.020 MB**;
+đĩa máy chủ 56 GB, đã dùng 27 GB (**51%**); thư mục sao lưu trên máy 2,0 GB, mỗi bản sao lưu nén khoảng 90 MB. Dung lượng R2
+chưa đo.
+
+| Bảng (prod) | Dòng | Dung lượng | Đang dọn chưa |
+|---|---|---|---|
+| Dòng hàng tra cứu thị trường (`tab_customs_line`) | ~317 nghìn | 306 MB | Dữ liệu nghiệp vụ, không dọn; tăng theo mỗi lần nạp tờ khai (bao-CR-718 đã làm nhanh tìm kiếm và xuất) |
+| Nhật ký request (`tab_request_log`) | ~333 nghìn (326 nghìn là lượt đọc, 150 nghìn đã quá 30 ngày) | 197 MB | Có: lượt đọc dọn sau 90 ngày (dữ liệu bắt đầu từ 10/09 nên chưa tới hạn), còn lại sau 16 tháng |
+| Nhật ký nạp tệp (`tab_import_log`) | ~187 nghìn, gần hết ở mức INFO trong 30 ngày qua | 183 MB | **Chỉ dọn một phần** dòng nạp tờ khai hải quan sau 7 ngày; loại khác chưa dọn |
+| Sổ đồng bộ đặt xe (`tab_sync_log`) | ~82–98 nghìn, trong đó 61 nghìn dòng *bỏ qua* (mỗi phút một dòng không có gì mới, từ 28/09) | 173 MB | **Chưa dọn** |
+| Nhật ký thay đổi (`tab_change_log`) | ~71 nghìn | 54 MB | Có, sau 16 tháng; nhưng đang ghi thừa thay đổi của chính hai bảng máy `tab_sync_log` (7.461 dòng) và `tab_email_log` (4.677 dòng) |
+| Nhật ký thao tác (`tab_audit_log`) | ~26 nghìn | 13 MB | Có: đóng gói R2 hằng tháng, xóa khỏi CSDL sau 16 tháng |
+| Nhật ký thư (`tab_email_log`) | ~6.240 (từ 01/08/2026) | nhỏ | **Chưa dọn**; từ 2.14.0 lưu cả **thân thư** (cột MEDIUMTEXT) nên sẽ to nhanh |
+
+**Điểm chính:** bốn bảng nhật ký do máy tự ghi (request, nạp tệp, đồng bộ, thay đổi) đã chiếm khoảng **600 MB, hơn nửa CSDL
+prod**, và tăng theo ngày chứ không theo việc kinh doanh. Riêng phần ghi thừa (dòng đồng bộ *bỏ qua*, dòng nạp tệp mức INFO,
+thay đổi của bảng máy) dọn được khoảng **200 MB ngay** mà không mất thông tin có ích. A1 đang đề xuất một CR dọn và lịch tự dọn.
 
 - **Khả năng:** chắc chắn — dữ liệu chỉ tăng.
 - **Hậu quả:** màn tìm kiếm và báo cáo chậm dần; bản sao lưu to lên nên mỗi lần sao lưu lâu hơn, tốn chỗ hơn, và khôi phục khi
   có sự cố cũng lâu hơn; ổ đĩa máy chủ đầy thì CSDL dừng ghi, cả hệ đứng.
-- **Dấu hiệu sớm:** dung lượng bản sao lưu tăng đều qua các tuần; màn tra cứu thị trường hay nhật ký chậm hơn 1 giây; ổ đĩa máy
-  chủ vượt 70%.
-- **Việc nên làm:** thêm lịch dọn thân thư của nhật ký thư (giữ thân thư 90 ngày, giữ dòng tiêu đề lâu hơn); một màn hoặc tin
-  vận hành hằng tuần báo dung lượng các bảng lớn nhất và ổ đĩa; khi tra cứu thị trường qua khoảng 1 triệu dòng thì xem lại chia
-  bảng theo năm.
-- **Ưu tiên:** 2.
+- **Dấu hiệu sớm:** bản sao lưu nén vượt 150 MB; ổ đĩa máy chủ vượt 70%; màn tra cứu thị trường hay nhật ký chậm hơn 1 giây.
+- **Việc nên làm:** CR dọn bốn bảng nhật ký máy (không ghi dòng đồng bộ *bỏ qua*, giữ dòng nạp tệp mức INFO 30 ngày, bỏ hai bảng
+  máy khỏi nhật ký thay đổi); dọn thân thư của nhật ký thư sau 90 ngày, giữ dòng tiêu đề; một tin vận hành hằng tuần báo dung
+  lượng các bảng lớn nhất và ổ đĩa; khi tra cứu thị trường qua khoảng 1 triệu dòng thì xem lại chia bảng theo năm.
+- **Ưu tiên:** 1.
 
 ### 4.2 Hiệu năng và quá tải do chính người dùng hợp lệ
 
@@ -187,9 +198,10 @@ liệu và mã nguồn; không chạy truy vấn nặng trên prod.
 - **Hậu quả:** cả hệ ngừng tới khi dựng lại máy mới và nạp bản sao lưu; mất tối đa dữ liệu khoảng 12 giờ (khoảng cách giữa hai
   lần sao lưu).
 - **Đã có:** sao lưu hai lần mỗi ngày lên R2, nằm ngoài máy chủ; có công cụ khôi phục (`backend/scripts/restore_backup.py`).
-  CSDL của dịch vụ AI có lượt **khôi phục thử tự động mỗi tuần**; CSDL ERP chính **chưa có lượt khôi phục thử định kỳ**.
+  CSDL của dịch vụ AI có lượt **khôi phục thử tự động mỗi tuần**. CSDL ERP chính: **người chủ đã tự khôi phục thử ngày
+  05/11/2026, đạt**; chưa có lịch lặp lại.
 - **Dấu hiệu sớm:** sao lưu thất bại hoặc dung lượng bản sao lưu tụt bất thường; máy chủ báo lỗi ổ đĩa.
-- **Việc nên làm:** khôi phục thử CSDL ERP mỗi tháng lên máy dev, ghi thời gian khôi phục; có chốt *quá 24 giờ chưa có bản
+- **Việc nên làm:** lặp lại khôi phục thử CSDL ERP mỗi tháng (lên máy dev), ghi thời gian khôi phục; có chốt *quá 24 giờ chưa có bản
   sao lưu thành công thì báo*; viết một trang các bước dựng lại prod từ đầu và đo thử một lần.
 - **Ưu tiên:** 1.
 
@@ -258,8 +270,8 @@ liệu và mã nguồn; không chạy truy vấn nặng trên prod.
 | Tháng | Việc | Liên quan |
 |---|---|---|
 | **11/2026** | Bật trần tốc độ gọi cho đường nghiệp vụ (bao-CR-729) | BM-020, mục 4.2 |
-| | Khôi phục thử CSDL ERP lần đầu lên dev, đo thời gian; chốt báo sao lưu quá 24 giờ | Mục 4.3 |
-| | Lịch dọn thân thư của nhật ký thư | Mục 4.1 |
+| | CR dọn bốn bảng nhật ký máy + lịch tự dọn (khoảng 200 MB ngay); dọn thân thư nhật ký thư | Mục 4.1 |
+| | Khôi phục thử CSDL ERP: đã thử 05/11 (người chủ), lặp lại mỗi tháng; chốt báo sao lưu quá 24 giờ | Mục 4.3 |
 | | Bắt đổi mật khẩu yếu cũ lúc đăng nhập | Mục 3 |
 | **12/2026** | Chính sách chặn script ở chế độ chỉ báo trên dev, đọc báo cáo, rồi bật trên prod | BM-035 |
 | | Chốt không cho chạy khi khóa ký vé là mặc định; màn sức khỏe hệ thống (giải mã bí mật, sao lưu, ổ đĩa, bảng lớn) | BM-018, BM-023, mục 4.1 |
@@ -268,4 +280,4 @@ liệu và mã nguồn; không chạy truy vấn nặng trên prod.
 | **01/2027** | Xác thực hai lớp cho nhóm quản trị; rà danh sách tài khoản quản trị | BM-017, mục 4.6 |
 | | Kế hoạch tách khóa ký vé khỏi khóa mã hóa bí mật | Mục 4.5 |
 | | Hạ trần dung lượng tải lên theo từng đường ở nginx | BM-030 |
-| | Rà thư viện tháng 1; khôi phục thử CSDL lần ba; trang dựng lại prod từ đầu | Mục 4.3, 4.4 |
+| | Rà thư viện tháng 1; khôi phục thử CSDL tháng 1; trang dựng lại prod từ đầu | Mục 4.3, 4.4 |
