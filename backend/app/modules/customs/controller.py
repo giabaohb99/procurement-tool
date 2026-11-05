@@ -392,7 +392,8 @@ def download_batch_file(bid: int, db: Session = Depends(get_db), user=Depends(re
 @router.get("/imports/{bid}/logs")
 def get_batch_logs(bid: int, level: int | None = Query(None), pg: dict = Depends(pagination),
                    db: Session = Depends(get_db), user=Depends(require(ENTITY, "read"))):
-    _get_batch(db, bid)
+    batch = _get_batch(db, bid)
     total, items = import_service.get_logs(db, bid, level, pg)
     return success({"total": total, "items": [
-        {"id": x.id, "row_no": x.row_no, "level": x.level, "message": x.message} for x in items]})
+        {"id": x.id, "row_no": x.row_no, "level": x.level, "message": x.message} for x in items],
+        "pruned_note": import_service.pruned_note(batch)})

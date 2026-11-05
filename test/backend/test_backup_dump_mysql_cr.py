@@ -11,6 +11,7 @@ Bốn chốt chặn kiểm ở đây:
 3. Bản mới nhỏ bất thường (< 50% bản thành công trước) → không dọn bản cũ.
 4. Script khôi phục không dùng cờ bỏ qua lỗi, lỗi thì thoát mã khác 0.
 """
+import io
 from datetime import datetime, timedelta
 
 import pytest
@@ -40,8 +41,19 @@ def _fake_client(monkeypatch, version: bytes, dump_out: bytes = b"-- dump\n") ->
         calls.append(list(cmd))
         return _FakeProcess(dump_out)
 
+    class _Popen:
+        """bao-CR-732: sao lưu ERP đọc stdout của mysqldump theo luồng (`stream_dump_pass`)."""
+
+        def __init__(self, cmd, **kwargs):
+            calls.append(list(cmd))
+            self.stdout = io.BytesIO(dump_out)
+
+        def wait(self):
+            return 0
+
     monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
     monkeypatch.setattr(backup_service.subprocess, "run", _run)
+    monkeypatch.setattr(backup_service.subprocess, "Popen", _Popen)
     return calls
 
 
@@ -53,6 +65,8 @@ def storage(monkeypatch):
                         lambda f, key, ct="": uploads.__setitem__(key, f.read()) or key)
     monkeypatch.setattr(backup_service, "delete_key", lambda key: deleted.append(key))
     monkeypatch.setattr(backup_service, "is_remote_storage_ready", lambda: True)
+    #  bao-CR-732: các bài ở đây đếm dòng sổ của BẢN CHÍNH — bản tra cứu thị trường có bài riêng (test_toi_uu_sao_luu_cr732).
+    monkeypatch.setattr(backup_service, "run_customs_backup", lambda db, **kw: None)
     return uploads, deleted
 
 
@@ -343,6 +357,7 @@ def _patch_restore(monkeypatch, rb, *, dump: bytes, live_tables: set[str],
     monkeypatch.setattr(rb, "ensure_fulltext_stopwords_off", lambda: steps.append("ft"))
     monkeypatch.setattr(rb, "pull_updated", lambda *a, **k: steps.append("sync"))
     monkeypatch.setattr(rb, "live_table_names", lambda: set(live_tables))
+    monkeypatch.setattr(rb, "latest_customs_backup", lambda db: None)   # bao-CR-732: chưa có bản tra cứu thị trường
 
     def _run(cmd, **kwargs):
         steps.append("load")

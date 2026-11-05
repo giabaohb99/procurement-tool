@@ -8,7 +8,7 @@ dựng ra để tra nó.
 
 Hai luật, và luật thứ hai mới là luật quan trọng:
 
-1. Chỉ xóa dòng `method = 'GET'` cũ hơn `GET_RETENTION_DAYS`. Dòng ghi (POST /
+1. Chỉ xóa dòng `method = 'GET'` cũ hơn `GET_RETENTION_DAYS` (30 ngày từ bao-CR-731). Dòng ghi (POST /
    PATCH / PUT / DELETE) **không bao giờ** bị đụng tới ở đây.
 2. **Chỉ xóa thứ đã có bản sao ngoài máy.** Việc đóng gói tháng
    (`audit.archive`) chép nguyên vẹn cả bảng lên R2 kèm mã băm; chưa cấu hình
@@ -32,6 +32,16 @@ from .model import RequestLog
 log = logging.getLogger("app.request_log.cleanup")
 
 
+def get_cutoff(now: datetime, days: int = 0) -> datetime:
+    """Mốc dọn GET: `days` (mặc định `GET_RETENTION_DAYS`) trước `now`, nhưng KHÔNG vượt quá đầu tháng hiện tại.
+
+    bao-CR-731 hạ hạn từ 90 xuống 30 ngày, sát nhịp đóng gói tháng (`audit.archive` 03:00 ngày 1 gói tháng TRƯỚC). Chặn ở
+    đầu tháng thì dòng của tháng chưa đóng gói không bao giờ bị xóa (luật 2 ở trên), kể cả khi ai đó hạ hạn thấp hơn nữa.
+    """
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    return min(now - timedelta(days=days or GET_RETENTION_DAYS), month_start)
+
+
 @celery_app.task(name="request_log.cleanup")
 def cleanup_get_logs_task(days: int = 0, dry_run: bool = False) -> dict:
     """Xóa theo LÔ các dòng GET quá hạn. Trả về số dòng đã xóa.
@@ -44,7 +54,7 @@ def cleanup_get_logs_task(days: int = 0, dry_run: bool = False) -> dict:
         log.info("Bỏ qua dọn nhật ký GET: chưa cấu hình R2 nên chưa có bản sao ngoài máy.")
         return {"status": "skipped", "reason": "no_remote_archive", "deleted": 0}
 
-    cutoff = datetime.now() - timedelta(days=days or GET_RETENTION_DAYS)
+    cutoff = get_cutoff(datetime.now(), days)
     db = SessionLocal()
     try:
         condition = (RequestLog.method == "GET") & (RequestLog.created_at < cutoff)

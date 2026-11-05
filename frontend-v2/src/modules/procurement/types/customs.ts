@@ -348,6 +348,8 @@ export interface CustomsBatchLog {
 export interface CustomsBatchLogList {
   total: number
   items: CustomsBatchLog[]
+  /** bao-CR-731: lô quá hạn giữ thì dòng mức Thông tin đã dọn — câu báo, rỗng nếu chưa dọn. */
+  pruned_note?: string
 }
 
 /** Bản ghi danh mục hóa chất theo văn bản (`/api/customs-regulations`). */

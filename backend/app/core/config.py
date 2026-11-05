@@ -28,6 +28,14 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: str = "http://localhost:8080,http://localhost:5173"
     LOGIN_RATE_LIMIT: str = "10/minute"  # chống brute-force đăng nhập
+    # bao-CR-729 / BM-020: trần tần suất mọi /api, đếm theo TÀI KHOẢN (chưa đăng nhập thì theo IP), cửa sổ một phút,
+    # bộ đếm ở Redis chung mọi worker — xem `core/rate_limit.py`. LOG_ONLY = chỉ ghi log `app.rate_limit`, không chặn
+    # (dùng để đo trước trên dev). Số lượt/phút: 0 = không chặn mức đó.
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_LOG_ONLY: bool = False
+    RATE_LIMIT_PER_MINUTE: int = 300          # mức chung mỗi tài khoản
+    RATE_LIMIT_ANON_PER_MINUTE: int = 300     # lượt chưa đăng nhập, đếm theo IP (cả văn phòng chung một IP)
+    RATE_LIMIT_HEAVY_PER_MINUTE: int = 20     # đường nặng (xuất tệp, tìm tra cứu thị trường, Trợ lý), mỗi nhóm một bộ đếm
     # bao-CR-394 / BM-014: chỉ tin `CF-Connecting-IP` / `X-Forwarded-For` khi đầu TCP đối
     # diện (`request.client.host`) nằm trong các dải này — mặc định = mạng Docker + loopback,
     # nơi nginx và cloudflared đứng. Gọi thẳng cổng 8000 từ ngoài thì header tự khai bị bỏ,
@@ -186,6 +194,12 @@ class Settings(BaseSettings):
     CUSTOMS_LINE_MERGE_ENABLED: bool = True
     # bao-CR-703: sổ việc chạy ngầm (tab_job_run) giữ N ngày; 0 = tắt dọn.
     JOB_RUN_KEEP_DAYS: int = 90
+    #  bao-CR-731 — hạn giữ nhật ký do máy ghi (đổi qua .env, không cần dựng ảnh). Xem system_log/machine_cleanup.py.
+    REQUEST_LOG_GET_KEEP_DAYS: int = 30     # dòng GET của tab_request_log (trước là 90)
+    SYNC_LOG_SKIPPED_KEEP_DAYS: int = 14    # sổ đồng bộ: dòng Bỏ qua
+    SYNC_LOG_SUCCESS_KEEP_DAYS: int = 90    # sổ đồng bộ: dòng Thành công (dòng mới nhất mỗi đối tượng luôn giữ)
+    EMAIL_BODY_KEEP_DAYS: int = 90          # nhật ký thư: nội dung thư (dòng nhật ký giữ 16 tháng)
+    IMPORT_INFO_LOG_KEEP_DAYS: int = 30     # nhật ký nạp tệp: dòng mức Thông tin (cảnh báo / lỗi giữ theo lô)
 
     # --- Trợ lý AI (Phase 0: nền lớp provider) ---
     # Tắt mặc định — bật ở .env môi trường muốn dùng. Off thì endpoint /api/assistant trả 403.

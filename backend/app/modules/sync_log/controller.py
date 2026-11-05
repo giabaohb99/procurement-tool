@@ -4,8 +4,8 @@ Người xem: nhóm quản trị hệ thống (`sync_log.read`). Nút "Chạy l�
 `sync_log.write` — bấm nó là gọi lại sang hệ ngoài, không phải chỉ đọc.
 
 Cố ý KHÔNG có cửa xóa. Luật §3.2: không bao giờ xóa dòng lỗi; việc dọn dòng
-*thành công* cũ hơn sáu tháng chạy nền qua `service.purge_success`, có ghi lại
-đã dọn bao nhiêu dòng.
+*bỏ qua* / *thành công* cũ chạy nền qua `system_log.cleanup_machine_logs`
+(bao-CR-731), có ghi lại đã dọn bao nhiêu dòng.
 """
 from datetime import datetime, timedelta
 

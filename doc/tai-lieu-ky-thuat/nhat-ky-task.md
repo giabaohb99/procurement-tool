@@ -146,6 +146,34 @@ trùng nạp mọi dòng trong khoảng ngày cùng lúc, nên tách CR riêng; 
 trường nên bấm **Gắn lại nhãn** một lần; bảng chênh tính năng v1 / v2 còn lại ghi ở kế hoạch bao-CR-728 mục 6, chờ người
 chủ chọn; chưa seed bài HDSD lên dev.
 
+## bao-CR-729-tran-tan-suat-api | Bật trần tần suất gọi API nghiệp vụ (BM-020)
+- status: xong
+- date: 2026-11-05
+- list: Nền tảng
+- tag: Bảo mật
+**Bối cảnh:** sổ bảo mật ghi BM-020: trần 300 lượt mỗi phút đã khai trong mã nhưng chưa có hiệu lực, chỉ bốn đường đăng
+nhập có trần, nên một tài khoản hợp lệ rút được toàn bộ dữ liệu trong phạm vi của mình ở tốc độ tối đa. Được giao 05/11
+theo phương án đã chốt: đếm theo tài khoản chứ không theo IP vì cả công ty chung một IP văn phòng.
+
+**Việc:** thêm lớp chặn tần suất cho mọi đường API, đếm theo tài khoản ở Redis, đường nặng chặt hơn, có công tắc tắt và
+chế độ chỉ ghi log để đo trước trên dev.
+
+**Kết quả:** mỗi lượt gọi API được đếm theo mã tài khoản lấy từ vé đăng nhập đã giải mã sẵn ở lớp ghi nhật ký (không giải
+mã lần hai, không đụng cơ sở dữ liệu); lượt chưa đăng nhập đếm theo IP thật. Bộ đếm cửa sổ một phút nằm ở Redis nên mọi
+tiến trình máy chủ đếm chung; Redis hỏng thì cho đi qua, ghi cảnh báo và nghỉ đếm 30 giây. Mức chung 300 lượt mỗi phút mỗi
+tài khoản; ba nhóm đường nặng mỗi nhóm 20 lượt mỗi phút và vẫn tính vào mức chung: xuất tệp (mọi đường xuất Excel, CSV,
+Word, lô xuất tra cứu thị trường, màn Xuất dữ liệu), tìm kiếm tra cứu thị trường (danh sách dòng và ba thẻ tổng hợp), gửi
+lệnh cho Trợ lý AI. Miễn trần có ghi lý do từng dòng: kiểm sức khỏe, cổng máy gọi máy của dịch vụ AI và app đặt xe cũ (ký
+HMAC), cổng MCP (đã có trần riêng theo khóa và cần câu lỗi dạng JSON-RPC), phần đọc công khai của Trung tâm trợ giúp và
+FAQ. Vượt mức trả 429 đúng phong bì chuẩn với câu **Thao tác quá nhanh, vui lòng thử lại sau ít giây** kèm thời gian chờ,
+và ghi log riêng. Các mức chỉnh bằng biến môi trường, không cần build. Trần riêng cũ của đăng nhập và thu sự kiện giữ
+nguyên. Sổ bảo mật lên bản 2.9, BM-020 chuyển **Đã vá (dev, log-only)**.
+
+Kiểm: 40 bài kiểm mới đạt; 17 tệp bài kiểm cũ về đăng nhập, nhật ký, thu sự kiện, bộ đệm báo cáo, IP thật đạt 658 bài;
+ruff sạch phần sửa.
+Mã nguồn: backend/app/core/rate_limit.py (mới), backend/app/core/config.py, backend/app/core/limiter.py, backend/app/main.py, .env.example, test/backend/conftest.py, test/backend/test_tran_tan_suat_cr729.py, doc/tai-lieu-ky-thuat/van-hanh/so-ghi-nhan-loi-bao-mat.md
+Còn lại: dựng dev với `RATE_LIMIT_LOG_ONLY=true`, đo một tuần qua log `app.rate_limit` rồi chỉnh mức trước khi bật chặn và lên prod.
+
 ## bao-CR-727-gui-lai-email | Nút Gửi lại trên màn Nhật ký email
 - status: xong
 - date: 2026-11-04
@@ -17465,7 +17493,7 @@ Mã nguồn: kế hoạch AI1-1
 **Điều kiện xong:** ba việc có biên bản kết quả.
 
 Mã nguồn: kế hoạch AI1-4, NT1-6, NK1-1
-**Rà 05/11/2026 (còn tồn):** chưa tìm thấy biên bản cho ba việc (khóa model riêng prod, thử khôi phục bản sao lưu R2, nạp lại hướng dẫn mục IX); Agent 1 xác nhận việc nào đã làm.
+**Rà 05/11/2026 (còn tồn):** nạp lại hướng dẫn tra cứu thị trường đã xong (seed_help_customs_prices chạy trên prod 04/11 cùng 12 bài, đã nạp lại chỉ mục AI); thử khôi phục bản sao lưu: người chủ tự thử ngày 05/11, đạt. Chỉ còn khóa model riêng cho prod, chưa có bằng chứng.
 
 ## kh-du-lieu-a1 | Dữ liệu: lịch sử app đặt xe cũ, phân công người mua AGC, gắn công ty cho nhân sự
 - list: Kế hoạch hệ agent
@@ -18514,6 +18542,40 @@ Deploy: prod 02/11/2026; script D:/tmp/agc/nap_nghi_phep_va_quyen_dien_dan.py, l
 - Nhập lịch Tết Nguyên đán và Giỗ Tổ năm 2027 khi có lịch chính thức; nhập ngày sinh để bài chúc mừng sinh nhật có tên.
 **Rà 05/11/2026 (còn tồn):** nhận thêm việc nhập bù ngày vào làm từ kh-HR1-5-6; việc dữ liệu chờ phòng Nhân sự, lần rà này không đọc được CSDL prod để đếm hồ sơ còn thiếu.
 
+## bao-CR-732 | Tối ưu sao lưu cơ sở dữ liệu ERP
+- status: xong
+- date: 2026-11-05
+- list: Nền tảng
+- tag: Agent 4
+
+**Bối cảnh:** cơ sở dữ liệu prod khoảng 1 GB, mỗi bản sao lưu nén khoảng 90 MB, và lúc sao lưu cả bản nằm trong bộ nhớ của tiến trình chạy nền.
+
+**Đã làm:** sao lưu ghi thẳng ra tệp tạm theo từng khúc nên bộ nhớ không tăng theo cỡ dữ liệu. Các bảng nhật ký do máy ghi chỉ giữ cấu trúc. Dữ liệu tra cứu thị trường tách thành bản riêng, chụp mỗi sáng và bỏ qua khi không đổi, giữ 7 bản. Màn Sao lưu ghi rõ khôi phục cần bản chính và bản tra cứu thị trường mới nhất; script khôi phục tự nạp cả hai đúng thứ tự. Đo trên máy local: bộ nhớ đỉnh từ thêm 291 MB còn thêm 3 MB, tệp bản chính nhỏ hơn bốn lần.
+
+Mã nguồn: backup/service.py, backup/model.py, backup/tasks.py, backup/controller.py, core/celery_app.py, migration bkpart732, scripts/restore_backup.py, frontend-v2 backup-list-page.tsx + types/backup.ts; bài kiểm test_toi_uu_sao_luu_cr732.py, test_backup_dump_mysql_cr.py.
+
+## bao-CR-731 | Lịch tự dọn nhật ký do máy ghi
+- status: xong
+- date: 2026-11-05
+- list: Nền tảng
+- tag: Agent 4
+
+**Bối cảnh:** đo prod ngày 05/11, các bảng nhật ký do máy tự ghi (truy cập, nạp tệp, đồng bộ đặt xe, lịch sử thay đổi) chiếm hơn nửa cơ sở dữ liệu và tăng theo ngày.
+
+**Đã làm:** thêm việc dọn hằng đêm lúc 4 giờ. Sổ đồng bộ bỏ dòng bỏ qua sau 14 ngày và dòng thành công sau 90 ngày, giữ dòng lỗi và dòng mới nhất của từng phiếu. Nhật ký thư xóa nội dung thư sau 90 ngày, giữ người nhận, tiêu đề, trạng thái. Nhật ký nạp tệp bỏ dòng thông tin sau 30 ngày, giữ cảnh báo và lỗi; màn nhật ký lô cũ báo rõ phần đã dọn. Thôi ghi lịch sử thay đổi cho các bảng nhật ký máy. Nhật ký truy cập dạng xem giữ 30 ngày thay vì 90. Có script đếm trước để xem số rồi mới dọn thật lần đầu trên prod.
+
+Mã nguồn: system_log/machine_cleanup.py, system_log/tasks.py, core/logging_policy.py, core/config.py, request_log/tasks.py, job_run/registry.py, core/celery_app.py, notification/email_log_controller.py, import_tool/service.py + controller.py, customs/controller.py, sync_log model + controller, scripts/don_nhat_ky_may.py, frontend-v2 import-detail-page.tsx + customs-history-panel.tsx; bài kiểm test_don_nhat_ky_may_cr731.py.
+
+## bao-CR-730 | Báo cáo bảo mật tổng hợp tháng 11/2026 cho người chủ
+- status: xong
+- date: 2026-11-05
+- list: Nền tảng
+- tag: Bảo mật, Agent 4
+
+**Đã làm:** Soạn một báo cáo dễ đọc gom ba mươi sáu mục trong sổ lỗi bảo mật: tóm tắt một trang, những gì đã vá theo chín nhóm (đăng nhập, phân quyền, nhật ký, tệp, xuất Excel, bí mật, AI, thư, hạ tầng) có đối chiếu đã lên prod, những gì còn mở, tám nhóm rủi ro về sau kèm dấu hiệu sớm và việc nên làm, và lộ trình ba tháng. Đính chính sổ lỗi bảo mật: các mục còn ghi chờ deploy đều đã lên prod.
+
+Tài liệu: doc/tai-lieu-ky-thuat/van-hanh/bao-cao-bao-mat-tong-hop-2611.md, so-ghi-nhan-loi-bao-mat.md bản 2.8.
+
 ## bao-CR-726 | Chặn chèn công thức ở các tệp Excel / CSV xuất ra còn lại
 - status: xong
 - date: 2026-11-04
@@ -18561,6 +18623,7 @@ Mã nguồn: backend/app/main.py build_docs_urls, core/config.py API_DOCS_ENABLE
 - Đồng bộ cho trợ lý AI và bot đọc được: chạy lại nạp bài hướng dẫn, cập nhật cẩm nang trợ lý và nạp lại chỉ mục tìm kiếm trên dev rồi prod.
 - Ưu tiên cụm thu mua và các đường mà công cụ MCP đang dùng, làm sau khi đợt làm gọn controller thu mua xong.
 **Rà 05/11/2026 (còn tồn):** bắt đầu 05/11 theo từng phân hệ (Thu mua, Nhân sự / Nghỉ phép, Tra cứu thị trường, Quản trị trước); nhận thêm bài hướng dẫn cho các màn của kh-AI1-1-hdsd và mục X bài lập bộ tài khoản của kh-tai-lieu-agc.
+**Bước 0 (05/11/2026):** thêm script `backend/scripts/dung_bang_api.py` dựng lại bảng mục 1 của mọi api.md từ mã, chạy lại nhiều lần không đổi gì, giữ cột Phạm vi / Ai gọi ghi tay, tự dò cột Ai gọi từ frontend-v2 và cổng MCP; ghi lệnh chạy vào luật tài liệu. Bộ dựng CRUD chung có câu mô tả tiếng Việt cho bảy đường (148 đường sinh ra). Kết quả: 1.002 dòng ở 12 api.md, cột Ai gọi có chữ ở 816 dòng (trước gần như trống), ô Mục đích còn tên hàm tiếng Anh giảm còn 477. Chín ô Mục đích ghi tay chi tiết chuyển xuống mục 2 của api.md Tra cứu thị trường và Nền tảng. Vá kèm bài đếm db.get đỏ sẵn sau bao-CR-727.
 
 ## bao-CR-709 | Hỏi giữ phòng cũ làm kiêm nhiệm khi đổi phòng chính
 - status: xong

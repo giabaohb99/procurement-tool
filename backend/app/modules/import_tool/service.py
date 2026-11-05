@@ -158,6 +158,19 @@ def get_batch(db: Session, bid: int) -> ImportBatch | None:
     return db.get(ImportBatch, bid)
 
 
+def pruned_note(batch: ImportBatch | None, now=None) -> str:
+    """bao-CR-731: lô cũ hơn hạn giữ thì dòng mức Thông tin đã bị việc dọn đêm xóa — nói ra để người xem không tưởng
+    lô đó không có gì. Cảnh báo / Cần rà / Lỗi vẫn còn đủ."""
+    from datetime import datetime, timedelta
+
+    from app.core.config import settings
+    days = settings.IMPORT_INFO_LOG_KEEP_DAYS
+    created = getattr(batch, "created_at", None)
+    if not created or created >= (now or datetime.now()) - timedelta(days=days):
+        return ""
+    return f"Dòng mức Thông tin của lô quá {days} ngày đã được dọn; cảnh báo, cần rà và lỗi vẫn giữ đủ."
+
+
 def get_logs(db: Session, batch_id: int, level: int | None, pg: dict):
     #  CHỈ dòng nhật ký thường (`row_status = 0`). Từ bao-CR-496, nạp hải quan ghi thêm MỖI dòng
     #  dữ liệu một dòng kết cục vào cùng bảng này (tệp GTT02 cỡ 18.000 dòng) — không lọc thì

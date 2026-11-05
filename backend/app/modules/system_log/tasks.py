@@ -17,6 +17,7 @@ from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.core.storage import is_remote_storage_ready
 
+from . import machine_cleanup
 from .anomaly import run_detection
 from .retention import cleanup_expired
 
@@ -47,5 +48,18 @@ def cleanup_expired_logs_task(months: int = 0, dry_run: bool = False) -> dict:
         result = cleanup_expired(db, now=datetime.now(), months=months, dry_run=dry_run)
         log.info("Dọn nhật ký quá %s tháng: %s", months or "16", result)
         return result
+    finally:
+        db.close()
+
+
+@celery_app.task(name="system_log.cleanup_machine_logs")
+def cleanup_machine_logs_task(dry_run: bool = False) -> dict:
+    """bao-CR-731: dọn nhật ký do máy ghi theo `machine_cleanup.rules()`. `dry_run=True` chỉ đếm số dòng SẼ dọn.
+
+    Không cần R2: các luật ở đây không đụng chứng cứ thao tác của người dùng (GET request_log có việc riêng).
+    """
+    db = SessionLocal()
+    try:
+        return machine_cleanup.run(db, dry_run=dry_run)
     finally:
         db.close()
