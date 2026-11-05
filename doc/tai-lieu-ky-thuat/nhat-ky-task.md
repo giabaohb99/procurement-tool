@@ -114,6 +114,16 @@ duyệt việc, đọc trên điện thoại, không phải người viết mã.
 
 ---
 
+## bao-CR-734 | Đồng bộ màn Tra cứu thị trường giao diện cũ với giao diện mới
+- status: xong
+- date: 2026-11-05
+- list: Sản xuất - Thu mua
+- tag: Agent 4
+
+**Đã làm (giao diện cũ, ngoại lệ được người chủ cho phép):** bộ lọc nằm trên đường dẫn nên gửi link, tải lại trang hay quay lại vẫn giữ; chọn là lọc ngay, gõ chữ thì lọc khi ngưng gõ. Link cũ dạng thẻ tự chuyển đúng mục; hàng Lọc thêm thu gọn được. Bảng thuốc bảo vệ thực vật có menu chọn cột, cột Lĩnh vực, cột tên đứng yên khi cuộn ngang. Hộp nạp tệp kéo thả được, thêm dồn và bỏ từng tệp, báo rõ khi mọi tệp hỏng, khóa nút khi đang ghi. Nhật ký lô chia hai thẻ, chọn được số dòng mỗi trang, nút hoàn tác không bấm đúp được; chi tiết dòng có trạng thái đang tải và báo rõ khi dòng vừa bị hoàn tác; trang thuốc trên màn hẹp mở phần tra cứu trong ngăn kéo. Còn lại: bảng danh sách dùng bảng chung có kéo, ghim cột.
+
+Mã nguồn: frontend/src/pages/CustomsPrices.tsx, hooks/useCustomsUrlFilters.ts, components/customs/ (ImportDialog, HistoryPanel, LineDetail, PesticideTab, PesticideLookup, PesticideLookupDrawer), pages/CustomsPesticideDetailPage.tsx; HDSD seed_help_customs_prices.py.
+
 ## bao-CR-728-xuat-lo-tra-cuu-thi-truong-v1 | Tra cứu thị trường v1: xuất toàn bộ chạy nền, Lô xuất của tôi, trần dung lượng tệp nạp
 - status: xong
 - date: 2026-11-05

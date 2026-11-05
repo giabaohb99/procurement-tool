@@ -47,8 +47,10 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 
 <h2>IV. Tìm và lọc</h2>
 <ul>
-<li><strong>Tên hàng / hoạt chất</strong>: gõ rồi Enter, ví dụ <em>ATRAZINE</em>, <em>mancozeb</em>. Khớp cả tên hàng lẫn hoạt chất đã suy ra.</li>
-<li><strong>Mã HS · Xuất xứ · Đơn vị tính · Hàm lượng / dạng · Từ tháng · Đến tháng</strong>: chọn xong bấm <em>Tìm</em>.</li>
+<li><strong>Tên hàng / hoạt chất</strong>: gõ, ví dụ <em>ATRAZINE</em>, <em>mancozeb</em>; ngưng gõ một chút là bảng tự lọc (Enter để lọc ngay). Khớp cả tên hàng lẫn hoạt chất đã suy ra.</li>
+<li><strong>Mã HS · Xuất xứ · Đơn vị tính · Phân loại · Hàm lượng / dạng · Ngày đăng ký</strong>: chọn xong là bảng lọc ngay, không cần bấm nút.</li>
+<li><strong>Lọc thêm</strong> mở sáu ô phụ (nguyên tệ, giao hàng, tệp nguồn, ba khoảng số); thu gọn lại được cả khi đang có giá trị, số ô đang áp hiện cạnh nút.</li>
+<li>Bộ lọc nằm trên <strong>địa chỉ trang</strong>: gửi đường dẫn cho người khác là họ thấy đúng kết quả; tải lại trang hay bấm Quay lại vẫn giữ bộ lọc.</li>
 <li>Muốn xem riêng một doanh nghiệp: sang thẻ <em>Doanh nghiệp</em>, bấm vào dòng của doanh nghiệp đó. Thẻ nhỏ <em>Doanh nghiệp: ...</em> hiện dưới thanh lọc, bấm dấu x để bỏ.</li>
 </ul>
 <p>Bảng trống có hai câu khác nhau: <em>Chưa có dữ liệu hải quan</em> nghĩa là chưa ai nạp gì; <em>Không có dòng hàng nào khớp bộ lọc</em> nghĩa là bộ lọc quá hẹp hoặc gõ sai chữ.</p>

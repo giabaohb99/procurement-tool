@@ -8,8 +8,11 @@
 // "Thuốc BVTV" còn có khóa SỬA riêng `customs_pesticide` (duoc-CR-490, 29/09/2026).
 // bao-CR-493 (yêu cầu phòng Thu mua 25/09, bê từ bản v2): thẻ "Lịch sử nạp" thay hộp thoại;
 // hàng "Lọc thêm" sáu ô; doanh nghiệp chọn NHIỀU (chip cộng dồn); hai cột VND ở cuối bảng.
+// bao-CR-734 (ngoại lệ người chủ cho phép mở frontend/ đóng băng, 05/11/2026): bộ lọc dòng hàng nằm trên URL
+// và tự áp khi đổi (ô gõ chữ chờ ngưng gõ), link cũ `?tab=` tự chuyển sang `/customs-prices/<mục>`, hàng
+// "Lọc thêm" thu gọn được cả khi đang có giá trị, câu mô tả dưới tiêu đề — khớp bản v2.
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import DateRangePicker from '../components/DateRangePicker'
@@ -39,6 +42,7 @@ import {
   CUSTOMS_SECTIONS, CUSTOMS_TAB_GROUP_LABEL, CUSTOMS_TAB_SECTIONS, CustomsSectionKey, customsSectionPath,
   isCustomsTabSection, resolveCustomsSection,
 } from '../config/customs-sections'
+import { mergeFilterParams, useCustomsUrlFilters } from '../hooks/useCustomsUrlFilters'
 import { TableColumn, useTableColumns } from '../hooks/useTableColumns'
 import { describeCustomsFilters } from '../utils/customs-export'
 import { formatBannedLabel, formatThresholdKg, sortRegulationsBySeverity } from '../utils/customs-regulation'
@@ -106,14 +110,19 @@ const COLS: TableColumn[] = [
 
 export default function CustomsPrices() {
   const { can } = useAuth()
-  const [draft, setDraft] = useState<CustomsFilters>({ ...EMPTY_FILTERS })   // ô đang gõ
-  const [filters, setFilters] = useState<CustomsFilters>({ ...EMPTY_FILTERS }) // bộ lọc đã áp
+  //  bao-CR-734 — bộ lọc ĐÃ ÁP là chính URL; `draft` là chữ đang hiện trong các ô (ô gõ chữ đi trước URL một nhịp).
+  const { filters, draft, searchParams, setField, setFields, setDraftFields, flush, clear } = useCustomsUrlFilters()
   //  duoc-CR-491 — mục đang xem nằm trên URL (`/customs-prices/<mục>`), chọn từ menu con bên trái.
-  //  Đổi mục chỉ đổi tham số của CÙNG một Route nên trang không dựng lại: bộ lọc đang áp vẫn giữ.
+  //  Đổi mục chỉ đổi tham số của CÙNG một Route nên trang không dựng lại; bộ lọc (chuỗi `?…`) đi theo.
   const navigate = useNavigate()
   const { section } = useParams()
-  const tab = resolveCustomsSection(section, can)
-  const setTab = (key: CustomsSectionKey) => navigate(customsSectionPath(key))
+  //  Link cũ (trước khi thẻ thành menu con) mang `?tab=chart` trên đường gốc — đọc được rồi chuyển hẳn ở dưới.
+  const legacyTab = section ? null : searchParams.get('tab')
+  const tab = resolveCustomsSection(section ?? legacyTab ?? undefined, can)
+  /** Sang mục khác, GIỮ bộ lọc đang áp (cộng thêm `patch` nếu có). */
+  const openSection = (key: CustomsSectionKey, patch: Partial<CustomsFilters> = {}) =>
+    navigate({ pathname: customsSectionPath(key), search: mergeFilterParams(searchParams, patch).toString() })
+  const setTab = (key: CustomsSectionKey) => openSection(key)
   const [coverage, setCoverage] = useState<any>(null)
   const [options, setOptions] = useState<any>(null)
   const [alerts, setAlerts] = useState<any[]>([])
@@ -124,8 +133,12 @@ export default function CustomsPrices() {
   const [loading, setLoading] = useState(false)
   const [detailId, setDetailId] = useState<number | null>(null)
   const [importOpen, setImportOpen] = useState(false)
-  const [extraOpen, setExtraOpen] = useState(false)
+  //  bao-CR-734 — hàng "Lọc thêm" tự mở khi vào trang bằng link có giá trị ở đó, rồi đóng / mở tự do (trước bị ép mở).
+  const [extraOpen, setExtraOpen] = useState(() => EXTRA_FILTER_KEYS.some((k) => filters[k]))
   const table = useTableColumns('customs-lines-full', COLS)
+  //  Đổi bộ lọc là về trang 1.
+  const filterKey = JSON.stringify(toParams(filters))
+  useEffect(() => { setPage(1) }, [filterKey])
 
   const loadMeta = useCallback(() => {
     api.get('/api/customs/coverage').then((r) => setCoverage(r.data.data))
@@ -155,66 +168,52 @@ export default function CustomsPrices() {
     api.get('/api/customs/alerts', { params: toParams(filters) }).then((r) => setAlerts(r.data.data)).catch(() => setAlerts([]))
   }, [filters])
 
-  function apply(next: CustomsFilters = draft) {
-    setPage(1)
-    setFilters({ ...next })
-  }
-  function clearAll() {
-    setDraft({ ...EMPTY_FILTERS })
-    apply({ ...EMPTY_FILTERS })
-  }
-  // bao-CR-493: chọn thêm từ thẻ Nhà nhập khẩu là CỘNG DỒN vào bộ lọc, không thay thế.
+  // bao-CR-493: chọn thêm từ thẻ Nhà nhập khẩu là CỘNG DỒN vào bộ lọc, không thay thế — rồi về Danh sách.
   function pickImporter(id: number, name: string) {
     const merged = addNamedId(filters.importer_id, filters.importer_name, id, name)
-    const next = { ...draft, importer_id: merged.ids, importer_name: merged.names }
-    setDraft(next)
-    apply(next)
-    setTab('list')
+    openSection('list', { importer_id: merged.ids, importer_name: merged.names })
   }
   // bao-CR-503 — thêm từ ô gợi ý trên thanh lọc: cộng dồn như trên nhưng GIỮ thẻ đang mở.
   function addImporterFilter(id: number, name: string) {
     const merged = addNamedId(filters.importer_id, filters.importer_name, id, name)
-    const next = { ...draft, importer_id: merged.ids, importer_name: merged.names }
-    setDraft(next)
-    apply(next)
+    setFields({ importer_id: merged.ids, importer_name: merged.names })
   }
   function addPartnerFilter(id: number, name: string) {
     const merged = addNamedId(filters.partner_id, filters.partner_name, id, name)
-    const next = { ...draft, partner_id: merged.ids, partner_name: merged.names }
-    setDraft(next)
-    apply(next)
+    setFields({ partner_id: merged.ids, partner_name: merged.names })
   }
   function dropImporter(id: string) {
     const merged = removeNamedId(filters.importer_id, filters.importer_name, id)
-    const next = { ...draft, importer_id: merged.ids, importer_name: merged.names }
-    setDraft(next)
-    apply(next)
+    setFields({ importer_id: merged.ids, importer_name: merged.names })
   }
   function pickPartner(id: number, name: string) {
     const merged = addNamedId(filters.partner_id, filters.partner_name, id, name)
-    const next = { ...draft, partner_id: merged.ids, partner_name: merged.names }
-    setDraft(next)
-    apply(next)
     setDetailId(null)
-    setTab('list')
+    openSection('list', { partner_id: merged.ids, partner_name: merged.names })
   }
   function dropPartner(id: string) {
     const merged = removeNamedId(filters.partner_id, filters.partner_name, id)
-    const next = { ...draft, partner_id: merged.ids, partner_name: merged.names }
-    setDraft(next)
-    apply(next)
+    setFields({ partner_id: merged.ids, partner_name: merged.names })
   }
   function refreshAll() {
     loadMeta()
     loadLines()
   }
 
-  const set = (k: keyof CustomsFilters) => (v: string) => setDraft((s) => ({ ...s, [k]: v }))
+  const set = (k: keyof CustomsFilters) => (v: string) => setField(k, v)
+  const onEnter = (e: { key: string }) => { if (e.key === 'Enter') flush() }
   const optionList = (key: string) => (options?.[key] || []).map((o: any) => ({ value: o.value, label: `${o.label ?? o.value} (${o.count})` }))
   const importerChips = useMemo(() => splitNamedIds(filters.importer_id, filters.importer_name), [filters.importer_id, filters.importer_name])
   const partnerChips = useMemo(() => splitNamedIds(filters.partner_id, filters.partner_name), [filters.partner_id, filters.partner_name])
-  const extraActive = EXTRA_FILTER_KEYS.some((k) => draft[k] || filters[k])
+  const extraCount = EXTRA_FILTER_KEYS.filter((k) => filters[k]).length
   const dirty = useMemo(() => Object.values(filters).some((v) => v), [filters])
+  //  Link cũ `?tab=` hoặc mục không được xem → về đúng đường của mục đang hiện, giữ bộ lọc. `replace` để
+  //  nút Back không quay lại link hỏng.
+  if (legacyTab !== null) {
+    const next = new URLSearchParams(searchParams)
+    next.delete('tab')
+    return <Navigate replace to={{ pathname: customsSectionPath(tab), search: next.toString() }} />
+  }
   // Gõ thẳng đường dẫn mà thiếu quyền: nói đúng lý do, đừng để bảng rỗng trông như "không khớp bộ lọc".
   // (Chặn thật nằm ở backend — mọi đường /api/customs đều require('customs_price', ...).)
   if (!can('customs_price', 'read')) return (
@@ -230,8 +229,7 @@ export default function CustomsPrices() {
   const canReadRegulations = can('customs_regulation', 'read')
   const showConfigTab = canConfigure || canReadRegulations
   const sectionLabel = CUSTOMS_SECTIONS.find((s) => s.key === tab)?.label ?? ''
-  // Khóa theo bộ lọc: đổi lọc là dựng lại thẻ biểu đồ / xếp hạng với đơn vị mặc định — một lượt gọi API thay vì hai.
-  const filterKey = JSON.stringify(toParams(filters))
+  // Khóa theo bộ lọc (`filterKey` ở trên): đổi lọc là dựng lại thẻ biểu đồ / xếp hạng với đơn vị mặc định.
   const empty = coverage && coverage.total === 0
   //  06/10/2026 — mục "Tra cứu hóa chất" chỉ còn tiêu đề + hai nút + bảng hóa chất: dải phủ dữ liệu
   //  hải quan và cụm lọc dòng hàng không dùng cho bảng này, để lại chỉ làm rối (đại ca chốt).
@@ -242,9 +240,17 @@ export default function CustomsPrices() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         {/* 06/10/2026 — tiêu đề = ĐÚNG tên mục đang sáng ở menu trái (năm thẻ tra giá → "Giá thị
              trường"); ngữ cảnh "Tra cứu thị trường" đã nằm ở breadcrumb. */}
-        <h2 className="page-title" style={{ margin: 0, flex: 1 }}>
-          {isCustomsTabSection(tab) ? CUSTOMS_TAB_GROUP_LABEL : sectionLabel}
-        </h2>
+        <div style={{ flex: 1 }}>
+          <h2 className="page-title" style={{ margin: 0 }}>
+            {isCustomsTabSection(tab) ? CUSTOMS_TAB_GROUP_LABEL : sectionLabel}
+          </h2>
+          {/* bao-CR-734 — câu mô tả dưới tiêu đề như bản v2 (mục Tra cứu hóa chất không có: câu này nói về tệp GTT02). */}
+          {!isLegal && (
+            <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
+              Giá thị trường theo dữ liệu hải quan (tệp GTT02) — tra theo tên hàng, hoạt chất hoặc mã HS.
+            </div>
+          )}
+        </div>
         <button className="btn ghost" onClick={() => setTab('history')}><i className="ti ti-history" />Lịch sử nạp</button>
         {/* 06/10/2026 — nút xuất dời từ thanh công cụ của bảng lên đây, đứng kế "Nạp dữ liệu".
              bao-CR-728: thành menu (xuất ngay · xuất toàn bộ chạy nền · Lô xuất của tôi), như bản v2. */}
@@ -264,12 +270,12 @@ export default function CustomsPrices() {
            dòng hàng: ẩn cả cụm lọc (state giữ nguyên ở trang; các thẻ này lọc bằng state cục bộ riêng). */}
       {tab !== 'config' && tab !== 'pesticides' && !isLegal && (<>
       {/* bao-CR-496 — bộ lọc đã lưu RIÊNG từng tài khoản, chung kho với bản v2. */}
-      <CustomsSavedFilters filters={filters} onApply={(next) => { setDraft(next); apply(next) }} />
+      <CustomsSavedFilters filters={filters} onApply={(next) => setFields({ ...EMPTY_FILTERS, ...next })} />
 
-      <FilterPanel canClear={dirty || Object.values(draft).some((v) => v)} onClear={clearAll}
-        extra={<button className="btn" onClick={() => apply()}><i className="ti ti-search" />Tìm</button>}>
+      {/* bao-CR-734 — bỏ nút "Tìm": ô chọn áp ngay, ô gõ chữ áp khi ngưng gõ (Enter để áp liền). */}
+      <FilterPanel canClear={dirty || Object.values(draft).some((v) => v)} onClear={clear}>
         <FilterItem label="Tên hàng / hoạt chất" grow>
-          <input value={draft.q} onChange={(e) => set('q')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()}
+          <input value={draft.q} onChange={(e) => set('q')(e.target.value)} onKeyDown={onEnter}
             placeholder="vd ATRAZINE, mancozeb, glyphosate…" />
         </FilterItem>
         <FilterItem label="Mã HS" width={150}>
@@ -296,15 +302,18 @@ export default function CustomsPrices() {
              kho, lưu ở v2 ra ngày cụ thể mà ô tháng không hiện được — bảng lọc mà ô trông như trống. */}
         <FilterItem label="Ngày đăng ký" width={230}>
           <DateRangePicker block value={{ from: draft.date_from, to: draft.date_to }}
-            onChange={(v) => setDraft((s) => ({ ...s, date_from: v.from, date_to: v.to }))}
-            onApply={(v) => apply({ ...draft, date_from: v.from, date_to: v.to })} />
+            onChange={(v) => (v.from || v.to ? setDraftFields({ date_from: v.from, date_to: v.to })
+              : setFields({ date_from: '', date_to: '' }))}
+            onApply={(v) => setFields({ date_from: v.from, date_to: v.to })} />
         </FilterItem>
-        <FilterItem label=" " width={110}>
-          <button className="btn ghost" type="button" onClick={() => setExtraOpen((o) => !o)}>
-            <i className={`ti ${extraOpen || extraActive ? 'ti-chevron-up' : 'ti-chevron-down'}`} />Lọc thêm
+        <FilterItem label=" " width={130}>
+          <button className="btn ghost" type="button" onClick={() => setExtraOpen((o) => !o)}
+            title={!extraOpen && extraCount ? `${extraCount} ô lọc thêm đang áp` : undefined}>
+            <i className={`ti ${extraOpen ? 'ti-chevron-up' : 'ti-chevron-down'}`} />Lọc thêm
+            {!extraOpen && extraCount > 0 && <span className="badge info" style={{ marginLeft: 4 }}>{extraCount}</span>}
           </button>
         </FilterItem>
-        {(extraOpen || extraActive) && (
+        {extraOpen && (
           /* bao-CR-493 — sáu ô theo sheet 4 yêu cầu phòng Thu mua. Khoảng số nhập chữ, backend bỏ ô rác;
              giá so trên GIÁ HIỆU LỰC (điều chỉnh nếu có). */
           <>
@@ -332,20 +341,20 @@ export default function CustomsPrices() {
             </FilterItem>
             <FilterItem label="Đơn giá USD từ – tới" width={190}>
               <div style={{ display: 'flex', gap: 4 }}>
-                <input inputMode="decimal" placeholder="từ" value={draft.price_min} onChange={(e) => set('price_min')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} />
-                <input inputMode="decimal" placeholder="tới" value={draft.price_max} onChange={(e) => set('price_max')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} />
+                <input inputMode="decimal" placeholder="từ" value={draft.price_min} onChange={(e) => set('price_min')(e.target.value)} onKeyDown={onEnter} />
+                <input inputMode="decimal" placeholder="tới" value={draft.price_max} onChange={(e) => set('price_max')(e.target.value)} onKeyDown={onEnter} />
               </div>
             </FilterItem>
             <FilterItem label="Lượng từ – tới" width={190}>
               <div style={{ display: 'flex', gap: 4 }}>
-                <input inputMode="decimal" placeholder="từ" value={draft.qty_min} onChange={(e) => set('qty_min')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} />
-                <input inputMode="decimal" placeholder="tới" value={draft.qty_max} onChange={(e) => set('qty_max')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} />
+                <input inputMode="decimal" placeholder="từ" value={draft.qty_min} onChange={(e) => set('qty_min')(e.target.value)} onKeyDown={onEnter} />
+                <input inputMode="decimal" placeholder="tới" value={draft.qty_max} onChange={(e) => set('qty_max')(e.target.value)} onKeyDown={onEnter} />
               </div>
             </FilterItem>
             <FilterItem label="Tỷ giá USD từ – tới" width={190}>
               <div style={{ display: 'flex', gap: 4 }}>
-                <input inputMode="decimal" placeholder="từ" value={draft.rate_min} onChange={(e) => set('rate_min')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} />
-                <input inputMode="decimal" placeholder="tới" value={draft.rate_max} onChange={(e) => set('rate_max')(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && apply()} />
+                <input inputMode="decimal" placeholder="từ" value={draft.rate_min} onChange={(e) => set('rate_min')(e.target.value)} onKeyDown={onEnter} />
+                <input inputMode="decimal" placeholder="tới" value={draft.rate_max} onChange={(e) => set('rate_max')(e.target.value)} onKeyDown={onEnter} />
               </div>
             </FilterItem>
           </>
