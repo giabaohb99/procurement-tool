@@ -86,19 +86,33 @@ export function VehicleBookingDetailPage() {
                   (đều là việc phụ), để một cái có viền một cái không thì dải nút
                   đọc ra ba kiểu khác nhau. Thứ bậc đã nằm ở chỗ khác: chỉ nút
                   quyết định (Duyệt · Chấp nhận) được tô đặc. */}
-              <Button variant="outline" onClick={() => {
+              {/*  Khổ hẹp hai nút phụ (In phiếu · Nhân bản) chỉ còn biểu tượng, để cả dải nút nằm MỘT hàng dưới
+                  tiêu đề thay vì gãy hai hàng (duoc-CR-722). Chữ vẫn có cho trình đọc màn hình và khi rê chuột. */}
+              <Button
+                variant="outline"
+                className="max-md:px-2.5"
+                aria-label="In phiếu"
+                title="In phiếu"
+                onClick={() => {
                   trackUiAction(UI_ACTION_CODE.PRINT)
                   navigate(appRoutes.vehicleBooking.print(data.id))
-                }}>
+                }}
+              >
                 <Printer className="size-4" />
-                In phiếu
+                <span className="max-md:sr-only">In phiếu</span>
               </Button>
               {/*  Nhân bản có ở cột Thao tác của danh sách; khổ điện thoại danh sách thành thẻ (cả thẻ là vùng
                   chạm mở chi tiết, không chứa nút) nên đường nhân bản DUY NHẤT ở đó là nút này (duoc-CR-722). */}
               {can('vehicle_booking', 'create') && (
-                <Button variant="outline" onClick={() => navigate(`${appRoutes.vehicleBooking.new}?from=${data.id}`)}>
+                <Button
+                  variant="outline"
+                  className="max-md:px-2.5"
+                  aria-label="Nhân bản"
+                  title="Nhân bản"
+                  onClick={() => navigate(`${appRoutes.vehicleBooking.new}?from=${data.id}`)}
+                >
                   <Copy className="size-4" />
-                  Nhân bản
+                  <span className="max-md:sr-only">Nhân bản</span>
                 </Button>
               )}
             </>

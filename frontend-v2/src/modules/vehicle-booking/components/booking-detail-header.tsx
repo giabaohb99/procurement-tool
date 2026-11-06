@@ -87,23 +87,38 @@ export function BookingDetailHeader({
       <Button
         variant="outline"
         size="icon"
-        className="shrink-0"
+        //  Khổ hẹp: bám đỉnh để thẳng hàng dòng đầu của tiêu đề (tiêu đề có thể hai dòng).
+        className="shrink-0 max-md:self-start"
         aria-label="Về danh sách yêu cầu đặt xe"
         onClick={onBack}
       >
         <ArrowLeft className="size-4" />
       </Button>
 
-      {/* Hàng 1, cột 2: TIÊU ĐỀ (trái) · cụm nút (phải) */}
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      {/* Hàng 1, cột 2: TIÊU ĐỀ (trái) · cụm nút (phải).
+
+          ⚠️ KHỔ HẸP BỐ TRÍ KHÁC (duoc-CR-722): `max-md:contents` gỡ khung này để tiêu đề và cụm nút thành ô
+          lưới riêng — tiêu đề nằm cạnh nút quay lại, cụm nút tụt xuống CUỐI (`order-last`, trải hai cột) sau
+          dải thông tin. Đọc từ trên xuống: phiếu gì → mã / trạng thái / chuyến → làm gì với nó. Để cụm nút
+          chen giữa tiêu đề và mã phiếu thì nó tách đôi hai thứ vốn cùng một câu trả lời "đây là phiếu nào".
+          Dùng CSS chứ không dựng cụm nút hai lần: dựng hai lần là hai bộ hộp thoại / truy vấn chạy song song. */}
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 max-md:contents">
         {/*  `line-clamp-2` chứ không `truncate`: mục đích chuyến hay là một câu dài
             ("Tự lái đi công tác miền Tây: làm việc với ba nhà cung cấp…"), cắt về
             một dòng thì mất phần nói rõ chuyến đi đâu làm gì. `min-w-0 flex-1` giữ
-            cụm nút luôn sát mép phải kể cả khi tiêu đề xuống hai dòng. */}
-        <h1 className="line-clamp-2 min-w-0 flex-1 text-xl font-semibold tracking-tight text-navy dark:text-foreground">
+            cụm nút luôn sát mép phải kể cả khi tiêu đề xuống hai dòng.
+
+            ⚠️ `max-md:basis-full`: `flex-1` là nền 0, nên ở khổ hẹp hàng nút (Điều phối · ⋯ · In phiếu ·
+            Nhân bản) không bị đẩy xuống dòng mà BÓP tiêu đề về 0 — chỉ còn một dấu chấm (duoc-CR-722).
+            Khổ hẹp tiêu đề chiếm trọn hàng, cụm nút xuống hàng dưới. */}
+        <h1 className="line-clamp-2 min-w-0 flex-1 text-xl font-semibold tracking-tight text-navy max-md:basis-full dark:text-foreground">
           {booking.purpose || `Yêu cầu đặt xe ${booking.code}`}
         </h1>
-        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+        {actions && (
+          <div className="flex flex-wrap items-center gap-2 max-md:order-last max-md:col-span-2 max-md:border-t max-md:pt-3">
+            {actions}
+          </div>
+        )}
       </div>
 
       {/*  Hàng 2, cột 2: DẢI THÔNG TIN PHỤ — định danh phiếu rồi tới tóm tắt chuyến.

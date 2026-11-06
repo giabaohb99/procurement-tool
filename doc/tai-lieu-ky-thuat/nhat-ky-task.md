@@ -19148,3 +19148,18 @@ Mã nguồn: frontend-v2/src/modules/hr/components/leave-encashment-card.tsx, pa
 **Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Đặt xe 120 bài xanh, có bài kiểm thẻ không chứa nút nào.
 
 Mã nguồn: frontend-v2/src/modules/vehicle-booking/components (vehicle-booking-card, booking-queue-table, booking-detail-header), pages (vehicle-booking-list-page, vehicle-booking-detail-page)
+
+## duoc-CR-722-b | Đặt xe trên điện thoại: bố trí lại đầu trang chi tiết phiếu
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được báo đầu trang chi tiết phiếu đặt xe vỡ giao diện trên điện thoại sau lượt duoc-CR-722: tiêu đề bị bóp chỉ còn một dấu chấm vì hàng nút (Điều phối, ba chấm, In phiếu, Nhân bản) chiếm hết hàng, và yêu cầu bố trí lại cho hợp.
+
+**Đã làm**
+- Nguyên nhân: tiêu đề khai co giãn với nền rộng bằng 0 nên khi hàng nút đầy, trình duyệt bóp tiêu đề về 0 thay vì đẩy nút xuống dòng; nút Nhân bản thêm ở lượt trước làm lộ lỗi.
+- Khổ dưới 768px nay đọc từ trên xuống: nút quay lại cạnh tiêu đề, rồi loại, mã, trạng thái, chặng duyệt, thời gian, lộ trình, xe; dải nút thao tác xuống cuối, ngăn bằng một đường kẻ, nằm một hàng. Hai nút phụ In phiếu và Nhân bản chỉ còn biểu tượng (vẫn có nhãn cho trình đọc màn hình và khi rê chuột). Đổi bằng CSS nên cụm nút không bị dựng hai lần. Khổ rộng giữ nguyên.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Đặt xe 120 bài xanh; soát trên trình duyệt ở khổ 390px và 1440px với phiếu DX001987.
+
+Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-detail-header.tsx, pages/vehicle-booking-detail-page.tsx
