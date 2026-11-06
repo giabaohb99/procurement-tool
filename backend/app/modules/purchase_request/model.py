@@ -63,7 +63,7 @@ class PurchaseRequest(Base, AuditMixin):
     # Rỗng = thu mua CHƯA tiếp nhận. Chỉ `dispatch_pr` được ghi, người dùng không sửa tay.
     received_date: Mapped[str] = mapped_column(String(10), default="")     # ngày TIẾP NHẬN (YYYY-MM-DD)
     need_date: Mapped[str] = mapped_column(String(10), default="")         # ngày cần hàng
-    status: Mapped[str] = mapped_column(String(30), default="draft")       # draft|submitted|approved|rejected
+    status: Mapped[str] = mapped_column(String(30), default="draft", index=True)       # draft|submitted|approved|rejected
     is_urgent: Mapped[bool] = mapped_column(Boolean, default=False)
     vat_rate: Mapped[float] = mapped_column(Numeric(5, 4), default=0.08)
     assignee_id: Mapped[int] = mapped_column(BigInteger, default=0)

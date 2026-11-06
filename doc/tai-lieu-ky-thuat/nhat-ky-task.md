@@ -19208,3 +19208,18 @@ Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-detail-h
 **Kiểm:** ba bài kiểm máy chủ mới (chỉ đếm phiếu chờ duyệt, vắng khóa khi thiếu quyền, số menu khớp thẻ Trang chủ) cùng các bài kiểm Trang chủ và các bài canh toàn bộ đường API đều xanh; ruff không lỗi; kiểm tra kiểu giao diện cũ không thêm lỗi mới (bảy lỗi có sẵn đều ở tệp khác).
 
 Mã nguồn: backend/app/modules/dashboard (menu_badge_service.py, controller.py: đường /api/dashboard/menu-badges, kpi po_pending), frontend/src (hooks/useMenuBadges.ts, components/NavIcon.tsx, layouts/AppLayout.tsx, pages/Dashboard.tsx, index.css), test/backend/test_bong_dem_cho_duyet_menu_cr723.py
+
+## duoc-CR-723-b | Bóng đếm chờ duyệt: thêm chỉ mục trạng thái và dừng gọi khi tab ẩn
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được hỏi đếm nhiều có làm chậm không. Đo trên dev: bốn câu đếm mất khoảng 5 mili giây, nhưng phiếu khảo sát không có chỉ mục trên cột trạng thái nên phải quét cả bảng, yêu cầu mua hàng và đơn mua hàng chỉ có chỉ mục ghép không dùng được cho câu đếm này. Anh duyệt làm cứng thêm cho lâu dài.
+
+**Đã làm**
+- Migration thêm chỉ mục cột trạng thái cho phiếu khảo sát, yêu cầu mua hàng và đơn mua hàng, chỉ tạo khi chưa có nên chạy lại được; khai chỉ mục trên model cho khớp. Sau khi thêm, cả bốn câu đếm đều tra thẳng qua chỉ mục, chỉ đọc đúng các dòng chờ duyệt.
+- Giao diện cũ không gọi đếm định kỳ khi tab trình duyệt đang ẩn, quay lại tab thì nạp ngay một lần.
+
+**Kiểm:** migration chạy lên, xuống, lên lại trên máy local; bài kiểm bóng đếm và Trang chủ xanh; kiểm tra kiểu giao diện cũ không thêm lỗi mới.
+
+Mã nguồn: backend/migrations/versions/stix723_chi_muc_trang_thai_dem_cho_duyet.py, model status của survey / purchase_request / purchase_order, frontend/src/hooks/useMenuBadges.ts

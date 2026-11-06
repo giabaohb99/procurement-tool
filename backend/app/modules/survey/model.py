@@ -34,7 +34,7 @@ class Survey(Base, AuditMixin, SoftDeleteMixin):
     # rejected) ĐÃ BỎ — không màn hình nào đọc, chỉ là bản sao của `status` sau khi bao-CR-554 cho
     # trả về cả phiếu đã duyệt. Lý do trả về / từ chối vẫn ở `approve_note`.
     approve_note: Mapped[str] = mapped_column(Text, default="")
-    status: Mapped[str] = mapped_column(String(30), default="draft")
+    status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
     import_key: Mapped[str] = mapped_column(String(160), default="", index=True)  # khoá idempotent khi import (phân loại::NCC)
 
 
