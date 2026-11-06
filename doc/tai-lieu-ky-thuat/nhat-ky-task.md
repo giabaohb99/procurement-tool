@@ -19178,3 +19178,17 @@ Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-detail-h
 **Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Đặt xe 120 bài xanh; soát trên trình duyệt khổ 390px và 1440px với phiếu đã duyệt DX001987 (có nút Điều phối) và phiếu chờ duyệt DX001984 (không có nút quyết định), khung tóm tắt thẳng mép với dải nút, trang không cuộn ngang.
 
 Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-detail-header.tsx, pages/vehicle-booking-detail-page.tsx
+
+## duoc-CR-722-d | Đặt xe trên điện thoại: gom nút thao tác lên thanh trên cùng của trang chi tiết
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được chê nút Điều phối giãn hết bề ngang ở lượt c là xấu. Đưa ba hướng kèm hình minh họa (gom lên thanh trên, thanh nút dính đáy màn, gộp hết vào nút ba chấm), anh chọn gom lên thanh trên.
+
+**Đã làm**
+- Khổ dưới 768px: nút quay lại bên trái, nút quyết định cỡ thường có chữ, nút ba chấm, In phiếu và Nhân bản dạng biểu tượng cùng nằm trên một hàng trên cùng; bên dưới là tiêu đề trải ngang, loại, mã, trạng thái và khung tóm tắt chuyến. Bỏ hàng nút giãn hết bề ngang ở cuối. Người không có nút quyết định thì hàng trên chỉ còn nút quay lại và hai công cụ. Khổ rộng giữ nguyên.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Đặt xe 120 bài xanh; soát khổ 390px (DX001987 có nút Điều phối, DX001984 không có nút quyết định) và 1440px, trang không cuộn ngang.
+
+Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-detail-header.tsx, pages/vehicle-booking-detail-page.tsx

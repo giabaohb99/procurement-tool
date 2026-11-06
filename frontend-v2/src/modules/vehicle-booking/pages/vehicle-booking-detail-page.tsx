@@ -90,8 +90,8 @@ export function VehicleBookingDetailPage() {
                   (đều là việc phụ), để một cái có viền một cái không thì dải nút
                   đọc ra ba kiểu khác nhau. Thứ bậc đã nằm ở chỗ khác: chỉ nút
                   quyết định (Duyệt · Chấp nhận) được tô đặc. */}
-              {/*  Khổ hẹp hai nút phụ (In phiếu · Nhân bản) chỉ còn biểu tượng, đứng trên thanh trên cùng cạnh
-                  nút quay lại (duoc-CR-722). Chữ vẫn có cho trình đọc màn hình và khi rê chuột. */}
+              {/*  Khổ hẹp hai nút phụ (In phiếu · Nhân bản) chỉ còn biểu tượng, cuối thanh trên cùng cạnh nút
+                  quyết định (duoc-CR-722). Chữ vẫn có cho trình đọc màn hình và khi rê chuột. */}
               <Button
                 variant="outline"
                 className="max-md:px-2.5"

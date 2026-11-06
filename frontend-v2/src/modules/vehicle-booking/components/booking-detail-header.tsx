@@ -88,15 +88,15 @@ export function BookingDetailHeader({
     //  ⚠️ HAI BỐ CỤC TRÊN MỘT LƯỚI (duoc-CR-722): đặt tên vùng (`grid-template-areas`) rồi mỗi khổ xếp vùng
     //  một kiểu — nút chỉ dựng MỘT lần (dựng hai bản ẩn/hiện là hai bộ hộp thoại / truy vấn chạy song song).
     //
-    //  · Khổ hẹp, kiểu đầu trang ứng dụng: thanh trên [← … In phiếu · Nhân bản] · tiêu đề trải hết bề
-    //    ngang (không thụt lề dưới nút quay lại) · loại / mã / trạng thái · tóm tắt chuyến trong một khung ·
-    //    nút quyết định trải hết bề ngang ở cuối. Bản trước nhét cả bốn nút cạnh tiêu đề nên tiêu đề bị bóp
-    //    về 0, rồi bản vá dồn chúng xuống cuối thành một hàng ô vuông lẻ loi.
+    //  · Khổ hẹp, kiểu đầu trang ứng dụng: thanh trên [← … nút quyết định · ⋯ · In phiếu · Nhân bản] ·
+    //    tiêu đề trải hết bề ngang (không thụt lề dưới nút quay lại) · loại / mã / trạng thái · tóm tắt chuyến
+    //    trong một khung. Anh Được chọn kiểu này (06/11/2026) sau ba bản bị chê: nhét bốn nút cạnh tiêu đề
+    //    (tiêu đề bị bóp về 0), dồn xuống cuối thành hàng ô vuông lẻ loi, rồi một nút to giãn hết bề ngang.
     //  · Khổ rộng giữ như cũ: [← tiêu đề … nút quyết định · công cụ], dải thông tin bên dưới.
     <header
       className={cn(
         'static top-0 z-20 -mx-4 -mt-4 mb-4 grid items-center gap-x-3 gap-y-2.5 bg-canvas px-4 pt-4 pb-3 lg:sticky lg:-mx-6 lg:-mt-6 lg:px-6 lg:pt-6',
-        "grid-cols-[auto_minmax(0,1fr)_auto] [grid-template-areas:'back_._tools'_'title_title_title'_'meta_meta_meta']",
+        "grid-cols-[auto_minmax(0,1fr)_auto_auto] [grid-template-areas:'back_._actions_tools'_'title_title_title_title'_'meta_meta_meta_meta']",
         "md:grid-cols-[auto_minmax(0,1fr)_auto_auto] md:gap-y-2 md:[grid-template-areas:'back_title_actions_tools'_'._meta_meta_meta']",
       )}
     >
@@ -117,19 +117,14 @@ export function BookingDetailHeader({
         {booking.purpose || `Yêu cầu đặt xe ${booking.code}`}
       </h1>
 
-      {/*  Nút quyết định (Điều phối · Duyệt… + ⋯). Khổ hẹp: mọi nút trừ ⋯ (Radix gắn `aria-haspopup`) giãn
-          hết chỗ — một vệt bấm rộng cho việc chính, ngón tay không phải nhắm.
-
-          Khổ hẹp KHÔNG khai vùng tên cho nó trong khuôn lưới mà để tự rơi xuống một hàng ngầm ở cuối
-          (`col-span-full`): người xem không có nút nào (không phải người duyệt) thì khối rỗng, `empty:hidden`
-          gỡ nó và hàng ngầm không sinh ra — khai sẵn hàng tên thì vẫn còn một khe hở trống dưới tóm tắt. */}
+      {/*  Nút quyết định (Điều phối · Duyệt… + ⋯) — mọi khổ đều đứng trên hàng đầu, cạnh công cụ phụ. */}
       {actions && (
-        <div className="flex items-center gap-2 empty:hidden max-md:order-last max-md:col-span-full max-md:pt-1 max-md:[&>button:not([aria-haspopup])]:flex-1 md:[grid-area:actions]">
+        <div className="flex items-center justify-end gap-2 [grid-area:actions] empty:hidden">
           {actions}
         </div>
       )}
 
-      {/*  Công cụ phụ (In phiếu · Nhân bản): khổ hẹp chỉ còn biểu tượng, lên thanh trên cùng cạnh nút quay lại. */}
+      {/*  Công cụ phụ (In phiếu · Nhân bản): khổ hẹp chỉ còn biểu tượng, cuối thanh trên cùng. */}
       {tools && (
         <div className="flex items-center justify-end gap-2 [grid-area:tools] empty:hidden">{tools}</div>
       )}
