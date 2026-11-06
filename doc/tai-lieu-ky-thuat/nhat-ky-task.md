@@ -19163,3 +19163,18 @@ Mã nguồn: frontend-v2/src/modules/vehicle-booking/components (vehicle-booking
 **Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Đặt xe 120 bài xanh; soát trên trình duyệt ở khổ 390px và 1440px với phiếu DX001987.
 
 Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-detail-header.tsx, pages/vehicle-booking-detail-page.tsx
+
+## duoc-CR-722-c | Đặt xe trên điện thoại: làm lại đầu trang chi tiết phiếu kiểu đầu trang ứng dụng
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được xem bản bố trí ở lượt b và chê xấu: dải thông tin thụt lề dưới nút quay lại, nút In phiếu và Nhân bản thành mấy ô vuông nhỏ đứng lẻ, cả khối không có điểm nhấn.
+
+**Đã làm**
+- Khổ dưới 768px dựng theo kiểu đầu trang ứng dụng: thanh trên cùng có nút quay lại bên trái, In phiếu và Nhân bản dạng biểu tượng bên phải cùng cỡ; tiêu đề trải hết bề ngang; loại, mã, trạng thái và chặng duyệt; thời gian, lộ trình, xe gom trong một khung nền trắng; nút quyết định (Điều phối, Duyệt…) giãn hết bề ngang ở cuối, nút ba chấm bên cạnh. Người xem không có nút quyết định nào thì không chừa khe trống.
+- Đầu trang nhận hai nhóm nút riêng (nút quyết định và công cụ phụ) và xếp bằng lưới có đặt tên vùng, mỗi khổ một kiểu, nên nút chỉ dựng một lần. Khổ rộng giữ nguyên như cũ.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Đặt xe 120 bài xanh; soát trên trình duyệt khổ 390px và 1440px với phiếu đã duyệt DX001987 (có nút Điều phối) và phiếu chờ duyệt DX001984 (không có nút quyết định), khung tóm tắt thẳng mép với dải nút, trang không cuộn ngang.
+
+Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-detail-header.tsx, pages/vehicle-booking-detail-page.tsx

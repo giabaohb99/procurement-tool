@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 
 import { ApprovalStageNote } from '@/modules/approval/components/approval-stage-note'
 import { Button } from '@/shared/ui/button'
+import { cn } from '@/shared/utils/cn'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 
 import { REQUEST_TYPE, type VehicleBooking } from '../types/vehicle-booking'
@@ -28,11 +29,14 @@ export function BookingDetailHeader({
   booking,
   onBack,
   actions,
+  tools,
 }: {
   booking: VehicleBooking
   onBack: () => void
-  /** Cụm nút thao tác — dồn phải, xuống hàng riêng ở khổ hẹp. */
+  /** Nút quyết định (Điều phối · Duyệt… + ⋯) — khổ hẹp trải hết bề ngang ở cuối đầu trang. */
   actions?: ReactNode
+  /** Công cụ phụ (In phiếu · Nhân bản) — khổ hẹp lên thanh trên cùng cạnh nút quay lại. */
+  tools?: ReactNode
 }) {
   const TypeIcon =
     booking.request_type === REQUEST_TYPE.delivery ? DeliveryBookingIcon : CarBookingIcon
@@ -81,52 +85,58 @@ export function BookingDetailHeader({
     //  xuống hàng riêng và dải tóm tắt gãy làm bốn — thành 176px, tức **18–21%
     //  màn hình** bị khoá vĩnh viễn. Trên điện thoại đó là cái giá quá đắt cho
     //  một dải nút; ở đó cuộn bình thường.
+    //  ⚠️ HAI BỐ CỤC TRÊN MỘT LƯỚI (duoc-CR-722): đặt tên vùng (`grid-template-areas`) rồi mỗi khổ xếp vùng
+    //  một kiểu — nút chỉ dựng MỘT lần (dựng hai bản ẩn/hiện là hai bộ hộp thoại / truy vấn chạy song song).
+    //
+    //  · Khổ hẹp, kiểu đầu trang ứng dụng: thanh trên [← … In phiếu · Nhân bản] · tiêu đề trải hết bề
+    //    ngang (không thụt lề dưới nút quay lại) · loại / mã / trạng thái · tóm tắt chuyến trong một khung ·
+    //    nút quyết định trải hết bề ngang ở cuối. Bản trước nhét cả bốn nút cạnh tiêu đề nên tiêu đề bị bóp
+    //    về 0, rồi bản vá dồn chúng xuống cuối thành một hàng ô vuông lẻ loi.
+    //  · Khổ rộng giữ như cũ: [← tiêu đề … nút quyết định · công cụ], dải thông tin bên dưới.
     <header
-      className="static top-0 z-20 -mx-4 -mt-4 mb-4 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 bg-canvas px-4 pt-4 pb-3 lg:sticky lg:-mx-6 lg:-mt-6 lg:px-6 lg:pt-6"
+      className={cn(
+        'static top-0 z-20 -mx-4 -mt-4 mb-4 grid items-center gap-x-3 gap-y-2.5 bg-canvas px-4 pt-4 pb-3 lg:sticky lg:-mx-6 lg:-mt-6 lg:px-6 lg:pt-6',
+        "grid-cols-[auto_minmax(0,1fr)_auto] [grid-template-areas:'back_._tools'_'title_title_title'_'meta_meta_meta']",
+        "md:grid-cols-[auto_minmax(0,1fr)_auto_auto] md:gap-y-2 md:[grid-template-areas:'back_title_actions_tools'_'._meta_meta_meta']",
+      )}
     >
       <Button
         variant="outline"
         size="icon"
-        //  Khổ hẹp: bám đỉnh để thẳng hàng dòng đầu của tiêu đề (tiêu đề có thể hai dòng).
-        className="shrink-0 max-md:self-start"
+        className="shrink-0 [grid-area:back]"
         aria-label="Về danh sách yêu cầu đặt xe"
         onClick={onBack}
       >
         <ArrowLeft className="size-4" />
       </Button>
 
-      {/* Hàng 1, cột 2: TIÊU ĐỀ (trái) · cụm nút (phải).
+      {/*  `line-clamp-2` chứ không `truncate`: mục đích chuyến hay là một câu dài
+          ("Tự lái đi công tác miền Tây: làm việc với ba nhà cung cấp…"), cắt về
+          một dòng thì mất phần nói rõ chuyến đi đâu làm gì. */}
+      <h1 className="line-clamp-2 min-w-0 text-xl font-semibold tracking-tight text-navy [grid-area:title] dark:text-foreground">
+        {booking.purpose || `Yêu cầu đặt xe ${booking.code}`}
+      </h1>
 
-          ⚠️ KHỔ HẸP BỐ TRÍ KHÁC (duoc-CR-722): `max-md:contents` gỡ khung này để tiêu đề và cụm nút thành ô
-          lưới riêng — tiêu đề nằm cạnh nút quay lại, cụm nút tụt xuống CUỐI (`order-last`, trải hai cột) sau
-          dải thông tin. Đọc từ trên xuống: phiếu gì → mã / trạng thái / chuyến → làm gì với nó. Để cụm nút
-          chen giữa tiêu đề và mã phiếu thì nó tách đôi hai thứ vốn cùng một câu trả lời "đây là phiếu nào".
-          Dùng CSS chứ không dựng cụm nút hai lần: dựng hai lần là hai bộ hộp thoại / truy vấn chạy song song. */}
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 max-md:contents">
-        {/*  `line-clamp-2` chứ không `truncate`: mục đích chuyến hay là một câu dài
-            ("Tự lái đi công tác miền Tây: làm việc với ba nhà cung cấp…"), cắt về
-            một dòng thì mất phần nói rõ chuyến đi đâu làm gì. `min-w-0 flex-1` giữ
-            cụm nút luôn sát mép phải kể cả khi tiêu đề xuống hai dòng.
+      {/*  Nút quyết định (Điều phối · Duyệt… + ⋯). Khổ hẹp: mọi nút trừ ⋯ (Radix gắn `aria-haspopup`) giãn
+          hết chỗ — một vệt bấm rộng cho việc chính, ngón tay không phải nhắm.
 
-            ⚠️ `max-md:basis-full`: `flex-1` là nền 0, nên ở khổ hẹp hàng nút (Điều phối · ⋯ · In phiếu ·
-            Nhân bản) không bị đẩy xuống dòng mà BÓP tiêu đề về 0 — chỉ còn một dấu chấm (duoc-CR-722).
-            Khổ hẹp tiêu đề chiếm trọn hàng, cụm nút xuống hàng dưới. */}
-        <h1 className="line-clamp-2 min-w-0 flex-1 text-xl font-semibold tracking-tight text-navy max-md:basis-full dark:text-foreground">
-          {booking.purpose || `Yêu cầu đặt xe ${booking.code}`}
-        </h1>
-        {actions && (
-          <div className="flex flex-wrap items-center gap-2 max-md:order-last max-md:col-span-2 max-md:border-t max-md:pt-3">
-            {actions}
-          </div>
-        )}
-      </div>
+          Khổ hẹp KHÔNG khai vùng tên cho nó trong khuôn lưới mà để tự rơi xuống một hàng ngầm ở cuối
+          (`col-span-full`): người xem không có nút nào (không phải người duyệt) thì khối rỗng, `empty:hidden`
+          gỡ nó và hàng ngầm không sinh ra — khai sẵn hàng tên thì vẫn còn một khe hở trống dưới tóm tắt. */}
+      {actions && (
+        <div className="flex items-center gap-2 empty:hidden max-md:order-last max-md:col-span-full max-md:pt-1 max-md:[&>button:not([aria-haspopup])]:flex-1 md:[grid-area:actions]">
+          {actions}
+        </div>
+      )}
 
-      {/*  Hàng 2, cột 2: DẢI THÔNG TIN PHỤ — định danh phiếu rồi tới tóm tắt chuyến.
-          Loại · mã · trạng thái nằm ở đây chứ không phải trên tiêu đề: chúng là
-          thông tin tra cứu, cùng hạng với thời gian/lộ trình/xe, nên gom về một
-          dải duy nhất để hàng đầu chỉ còn đúng hai thứ — phiếu này là gì, và làm
-          gì với nó. */}
-      <div className="col-start-2 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      {/*  Công cụ phụ (In phiếu · Nhân bản): khổ hẹp chỉ còn biểu tượng, lên thanh trên cùng cạnh nút quay lại. */}
+      {tools && (
+        <div className="flex items-center justify-end gap-2 [grid-area:tools] empty:hidden">{tools}</div>
+      )}
+
+      {/*  DẢI THÔNG TIN PHỤ — định danh phiếu rồi tới tóm tắt chuyến. Loại · mã · trạng thái nằm ở đây chứ
+          không phải trên tiêu đề: chúng là thông tin tra cứu, cùng hạng với thời gian / lộ trình / xe. */}
+      <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground [grid-area:meta] max-md:flex-col max-md:flex-nowrap max-md:items-stretch max-md:gap-2">
         {/*  `shrink-0` CHỈ từ md: ở khổ điện thoại khối này phải xuống dòng được, không thì dòng chặng duyệt
               (~250px) cộng loại · mã · huy hiệu đẩy CẢ TRANG rộng ra 622px trong máy 390px (duoc-CR-722). */}
         <div className="flex max-w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1 md:shrink-0">
@@ -139,9 +149,9 @@ export function BookingDetailHeader({
           <ApprovalStageNote summary={booking.approval_summary} className="max-w-full md:max-w-[260px]" />
         </div>
 
-        {/*  Tóm tắt chuyến. `flex-wrap` + `min-w-0` trên từng mục để lộ trình dài
-              cắt bớt chứ không đẩy cả hàng tràn ra ngoài. */}
-        <dl className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
+        {/*  Tóm tắt chuyến. Khổ rộng: một dải ngang, `flex-wrap` + `min-w-0` để lộ trình dài cắt bớt chứ
+              không đẩy cả hàng tràn. Khổ hẹp: gom vào một khung nền trắng, mỗi mục một dòng, chữ to hơn. */}
+        <dl className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 max-md:flex-col max-md:items-stretch max-md:gap-1.5 max-md:rounded-lg max-md:border max-md:bg-card max-md:p-3 max-md:text-sm max-md:text-foreground/80">
           <MetaItem icon={<Clock className="size-3.5" />} label="Thời gian">
             <span className="tabular-nums">
               {formatTripTime(booking.start_time, booking.end_time)}

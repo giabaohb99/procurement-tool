@@ -81,13 +81,17 @@ export function VehicleBookingDetailPage() {
                   bước cũ / luồng nhiều bước) — cùng một bộ nút, xem chú thích đầu
                   `booking-workflow-actions.tsx`. */}
               <BookingWorkflowActions booking={data} layout="menu" onDispatch={() => setDispatchOpen(true)} />
+            </>
+          }
+          tools={
+            <>
               {/*  Không có nút "Sửa": phiếu sửa được đã mở thẳng vào biểu mẫu ở trên.
                   `outline` cho KHỚP nút `⋯` ngay bên trái — hai nút này cùng cấp
                   (đều là việc phụ), để một cái có viền một cái không thì dải nút
                   đọc ra ba kiểu khác nhau. Thứ bậc đã nằm ở chỗ khác: chỉ nút
                   quyết định (Duyệt · Chấp nhận) được tô đặc. */}
-              {/*  Khổ hẹp hai nút phụ (In phiếu · Nhân bản) chỉ còn biểu tượng, để cả dải nút nằm MỘT hàng dưới
-                  tiêu đề thay vì gãy hai hàng (duoc-CR-722). Chữ vẫn có cho trình đọc màn hình và khi rê chuột. */}
+              {/*  Khổ hẹp hai nút phụ (In phiếu · Nhân bản) chỉ còn biểu tượng, đứng trên thanh trên cùng cạnh
+                  nút quay lại (duoc-CR-722). Chữ vẫn có cho trình đọc màn hình và khi rê chuột. */}
               <Button
                 variant="outline"
                 className="max-md:px-2.5"
