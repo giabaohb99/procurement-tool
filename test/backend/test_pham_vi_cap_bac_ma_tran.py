@@ -97,6 +97,12 @@ def expect_outcome(entity: str, scope: str, profile: dict, model):
         dept_names = [x for x in (profile.get("dept_names") or []) if x] \
             or ([profile["dept_name"]] if profile.get("dept_name") else [])
         dept_cols = []
+        if entity == "purchase_order":
+            #  bao-CR-736: ĐMH bậc `dept_proc` chỉ khớp phòng XỬ LÝ (`_handler_match`), bỏ vế phòng
+            #  yêu cầu; chưa gắn phòng thì `_chan`.
+            if not (f.get("handler_dept") and dept_ids):
+                return BLOCK, (), True
+            return COND, ("created_by", f["handler_dept"]), False
         if f.get("dept_id") and dept_ids:
             dept_cols.append(f["dept_id"])
         if f.get("dept_name") and dept_names:
