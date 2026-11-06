@@ -27,6 +27,7 @@ function formatDateTime(value: string): string {
 }
 
 function fieldValue(row: VehicleBooking, key: string): string | number {
+  if (key === 'id') return row.id // cột ID tự thêm của bảng sắp theo khóa chính (duoc-CR-738)
   if (key === 'status') return row.status
   if (key === 'start_time') return row.start_time || ''
   if (key === 'code') return row.code || ''

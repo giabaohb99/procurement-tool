@@ -474,3 +474,52 @@ describe('DataTable — toolbarEnd', () => {
     expect(screen.getByText('Thêm dòng')).toBeInTheDocument()
   })
 })
+
+/** duoc-CR-738 — `sortKey` tách khóa gửi backend khỏi khóa cột; cột ID tự thêm sắp được theo `id`. */
+describe('DataTable — sortKey và cột ID sắp xếp được', () => {
+  function buildWithSort(sortBy = '', sortDir: 'asc' | 'desc' = 'asc', withSort = true) {
+    const onSortChange = vi.fn()
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <DataTable
+          columns={[
+            { key: 'supplier', header: 'Nhà cung cấp', cell: (r: Row) => r.name, sortable: true, sortKey: 'supplier_name' },
+          ]}
+          rows={ROWS}
+          getRowId={(r) => r.id}
+          idColumn
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={withSort ? onSortChange : undefined}
+        />
+      </QueryClientProvider>,
+    )
+    return { onSortChange }
+  }
+
+  it('sends sortKey (not key) and continues the cycle when sortBy equals sortKey', async () => {
+    const user = userEvent.setup()
+    const first = buildWithSort()
+    await user.click(screen.getByText('Nhà cung cấp'))
+    expect(first.onSortChange).toHaveBeenCalledWith('supplier_name', 'asc')
+
+    const second = buildWithSort('supplier_name', 'asc')
+    await user.click(screen.getAllByText('Nhà cung cấp')[1])
+    expect(second.onSortChange).toHaveBeenCalledWith('supplier_name', 'desc')
+  })
+
+  it('makes the auto ID header sort by id when a sort handler is given', async () => {
+    const user = userEvent.setup()
+    const { onSortChange } = buildWithSort()
+    await user.click(screen.getByText('ID'))
+    expect(onSortChange).toHaveBeenCalledWith('id', 'asc')
+  })
+
+  it('does not make the ID header clickable without a sort handler', async () => {
+    const user = userEvent.setup()
+    const { onSortChange } = buildWithSort('', 'asc', false)
+    await user.click(screen.getByText('ID'))
+    expect(onSortChange).not.toHaveBeenCalled()
+  })
+})

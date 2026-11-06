@@ -188,6 +188,8 @@ def available_survey_lines(db: Session, supplier_code: "str | list[str]" = "",
     page_size = max(1, min(page_size, 100))
     # Sắp xếp theo cột (whitelist khớp các cột hiển thị ở FE; Mã VTBB nằm ở Survey cha)
     sort_cols = {
+        #  duoc-CR-738: cột ID tự thêm của bảng chọn ở giao diện v2 gửi `sort_by=id`.
+        "id": SurveyProductLine.id,
         "supplier_code": SurveyProductLine.supplier_code,
         "product_name": SurveyProductLine.product_name,
         "result_date": SurveyProductLine.result_date,

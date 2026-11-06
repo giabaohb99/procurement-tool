@@ -327,8 +327,8 @@ function PurchaseRequestListContent() {
         sortable: true,
         cell: (pr) => formatDateTime(pr.created_at) || '',
       },
-      { key: 'requester', header: 'Người yêu cầu', width: 200, cell: (pr) => pr.requester || '' },
-      { key: 'department', header: 'Bộ phận', width: 180, cell: (pr) => pr.department || '' },
+      { key: 'requester', sortable: true, header: 'Người yêu cầu', width: 200, cell: (pr) => pr.requester || '' },
+      { key: 'department', sortable: true, header: 'Bộ phận', width: 180, cell: (pr) => pr.department || '' },
       {
         key: 'need_date',
         header: 'Cần hàng',
@@ -338,6 +338,7 @@ function PurchaseRequestListContent() {
       },
       {
         key: 'total',
+        sortable: true,
         header: 'Tổng tiền',
         width: 140,
         align: 'right',

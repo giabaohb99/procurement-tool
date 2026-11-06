@@ -116,20 +116,21 @@ function textCell(value: string | number | null | undefined) {
  * chúng ẩn, khỏi vỡ bảng đang quen (docs/ui/table.md §4).
  */
 const HIDDEN_EXTRA_COLUMN_LIST: DataTableColumn<PurchaseOrder>[] = [
-  { key: 'department', header: 'Phòng lập', width: 170, cell: (po) => textCell(po.department) },
-  { key: 'company_name', header: 'Công ty nhận hóa đơn', width: 230, cell: (po) => textCell(po.company_name) },
-  { key: 'created_by_name', header: 'Người tạo', width: 170, cell: (po) => textCell(po.created_by_name) },
-  { key: 'payment_terms', header: 'Hình thức thanh toán', width: 190, cell: (po) => textCell(po.payment_terms) },
-  { key: 'currency', header: 'Tiền tệ', width: 90, cell: (po) => textCell(po.currency) },
+  { key: 'department', sortable: true, header: 'Phòng lập', width: 170, cell: (po) => textCell(po.department) },
+  { key: 'company_name', sortable: true, header: 'Công ty nhận hóa đơn', width: 230, cell: (po) => textCell(po.company_name) },
+  { key: 'created_by_name', sortable: true, header: 'Người tạo', width: 170, cell: (po) => textCell(po.created_by_name) },
+  { key: 'payment_terms', sortable: true, header: 'Hình thức thanh toán', width: 190, cell: (po) => textCell(po.payment_terms) },
+  { key: 'currency', sortable: true, header: 'Tiền tệ', width: 90, cell: (po) => textCell(po.currency) },
   {
     key: 'exchange_rate',
+    sortable: true,
     header: 'Tỷ giá',
     width: 110,
     align: 'right',
     cell: (po) => textCell(po.exchange_rate ? formatUnitPrice(po.exchange_rate) : ''),
   },
-  { key: 'etd_date', header: 'Ngày ETD', width: 120, cell: (po) => textCell(po.etd_date) },
-  { key: 'customs_decl_no', header: 'Số tờ khai HQ', width: 150, cell: (po) => textCell(po.customs_decl_no) },
+  { key: 'etd_date', sortable: true, header: 'Ngày ETD', width: 120, cell: (po) => textCell(po.etd_date) },
+  { key: 'customs_decl_no', sortable: true, header: 'Số tờ khai HQ', width: 150, cell: (po) => textCell(po.customs_decl_no) },
 ]
 const HIDDEN_EXTRA_COLUMNS: DataTableColumn<PurchaseOrder>[] = HIDDEN_EXTRA_COLUMN_LIST.map(
   (column) => ({ ...column, defaultHidden: true, hiddenForOlderLayouts: true }),
@@ -424,6 +425,7 @@ function PurchaseOrderListContent() {
       },
       {
         key: 'supplier',
+        sortable: true,
         header: 'Nhà cung cấp',
         width: 240,
         cell: (po) => (
@@ -432,17 +434,19 @@ function PurchaseOrderListContent() {
           </span>
         ),
       },
-      { key: 'pr_code', header: 'Mã PYC', width: 140, cell: (po) => po.pr_code || '' },
+      { key: 'pr_code', sortable: true, header: 'Mã PYC', width: 140, cell: (po) => po.pr_code || '' },
       //  bao-CR-705: hai cột HIỆN sẵn (phòng đang xử lý, người duyệt) + cụm cột phụ ẨN sẵn — người
       //  dùng tick trong menu "Cột" mới hiện. Key trùng tên trường API để tệp Excel xuất đúng cột.
       {
         key: 'handler_dept_name',
+        sortable: true,
         header: 'Phòng xử lý',
         width: 170,
         cell: (po) => textCell(po.handler_dept_name),
       },
       {
         key: 'approver_name',
+        sortable: true,
         header: 'Trưởng phòng phê duyệt',
         width: 190,
         cell: (po) => textCell(po.approver_name),
@@ -452,6 +456,7 @@ function PurchaseOrderListContent() {
         //  Ẩn mặc định vì ghi chú thường dài, nhưng phải CÓ cột thì người dùng
         //  mới bật lên để kéo nó vào file Excel được (bản v1 vẫn có cột này).
         key: 'note',
+        sortable: true,
         header: 'Ghi chú',
         width: 220,
         defaultHidden: true,
@@ -461,9 +466,10 @@ function PurchaseOrderListContent() {
           </span>
         ),
       },
-      { key: 'nspt', header: 'NSPT', width: 170, defaultHidden: true, cell: (po) => po.nspt || '' },
+      { key: 'nspt', sortable: true, header: 'NSPT', width: 170, defaultHidden: true, cell: (po) => po.nspt || '' },
       {
         key: 'amount',
+        sortable: true,
         header: 'Tiền hàng',
         width: 150,
         align: 'right',
@@ -484,6 +490,7 @@ function PurchaseOrderListContent() {
       {
         // bao-CR-319 — đơn nhập khẩu có nhãn riêng; đơn trong nước để trống cho đỡ rối.
         key: 'order_type',
+        sortable: true,
         header: 'Loại đơn',
         width: 110,
         cell: (po) =>
@@ -495,6 +502,7 @@ function PurchaseOrderListContent() {
       },
       {
         key: 'document_status',
+        sortable: true,
         header: 'Hồ sơ',
         width: 130,
         cell: (po) => <DocumentStatusBadge status={po.document_status} />,

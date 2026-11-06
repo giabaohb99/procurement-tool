@@ -15,6 +15,7 @@ from . import option_service, service
 #  `serializer.py`, truy vấn ở `service.py`. Controller chỉ còn nhận · gác · gọi · trả.
 from .access import _can_dispatch, _can_return_requester, _in_approve_scope, _scope_ok
 from .model import PurchaseRequest
+from .sort_expressions import list_sort_allow
 from .schema import (ApproveIn, AssignIn, ItemStatusIn, PRAssignSupplierIn, PRCreate,
                      PROptionCompleteIn, PROptionManualIn, PROptionDetailsIn, PROptionSupplierIn,
                      PROptionSurveyIn, PROptionUpdateIn, PRUpdate,
@@ -72,7 +73,8 @@ def _list_query(request: Request, db: Session, user):
     """Câu truy vấn danh sách (lọc + phạm vi + sắp xếp) — dùng chung cho màn danh sách và xuất Excel."""
     query = service.build_list_query(db, request)
     query = apply_scope(query, PurchaseRequest, "purchase_request", user, get_perm_profile(db, user))
-    return apply_sort_from_request(query, PurchaseRequest, request)
+    # duoc-CR-738: cột tính toán (`total`) sắp được nhờ biểu thức SQL riêng
+    return apply_sort_from_request(query, PurchaseRequest, request, allow=list_sort_allow())
 
 
 @router.get("")

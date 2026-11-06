@@ -15,6 +15,7 @@ from . import service
 from .model import POItem, PurchaseOrder
 from .schema import (CostLinesFinalizeIn, CostStageAdvanceIn, CostStageReopenIn, DocumentStatusIn,
                      ItemProgressIn, POCreate, POUpdate, RejectIn)
+from .sort_expressions import list_sort_allow
 from .serializer import _out, _out_lines, _out_list, _out_print, _stage_label
 
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
@@ -58,7 +59,8 @@ def _list_query(request: Request, db: Session, user):
     """Bộ lọc + phạm vi của màn danh sách — dùng chung cho danh sách và xuất Excel (CR-068)."""
     q = service.build_list_query(db, request)
     q = apply_scope(q, PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
-    return apply_sort_from_request(q, PurchaseOrder, request)
+    # duoc-CR-738: cột tính toán / join (amount, supplier, handler_dept_name, approver_name)
+    return apply_sort_from_request(q, PurchaseOrder, request, allow=list_sort_allow(db))
 
 
 @router.get("")

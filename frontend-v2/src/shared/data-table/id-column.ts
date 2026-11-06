@@ -54,6 +54,9 @@ export function withIdColumn<T>(columns: DataTableColumn<T>[], show: boolean): D
     minWidth: 56,
     cell: (row) => readRowId(row) ?? '',
     placeAtStartWhenNew: true,
+    //  Sắp theo khóa chính `id` — mọi danh sách backend đều có cột này (duoc-CR-738).
+    sortable: true,
+    sortKey: 'id',
   }
   const at = leadingColumnCount(columns.map((column) => column.key))
   return [...columns.slice(0, at), idColumn, ...columns.slice(at)]

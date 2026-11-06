@@ -23,7 +23,7 @@ def type_out(t: WorkTaskType, used: int = 0) -> dict:
 
 
 #  Cột cho phép sắp xếp (whitelist — tên lạ bị bỏ qua, về thứ tự mặc định).
-SORT_COLUMNS = {"code": WorkTaskType.code, "name": WorkTaskType.name, "sort_order": WorkTaskType.sort_order,
+SORT_COLUMNS = {"id": WorkTaskType.id, "code": WorkTaskType.code, "name": WorkTaskType.name, "sort_order": WorkTaskType.sort_order,
                 "is_active": WorkTaskType.is_active, "updated_at": WorkTaskType.updated_at}
 MAX_PAGE_SIZE = 500
 

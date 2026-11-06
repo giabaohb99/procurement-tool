@@ -53,6 +53,12 @@ describe('shouldShowIdColumn', () => {
 })
 
 describe('withIdColumn', () => {
+  it('is sortable by the real id field (duoc-CR-738)', () => {
+    const idColumn = withIdColumn([col('code')], true)[0]
+    expect(idColumn.sortable).toBe(true)
+    expect(idColumn.sortKey).toBe('id')
+  })
+
   it('puts the id column first', () => {
     const keys = withIdColumn([col('code'), col('name')], true).map((column) => column.key)
     expect(keys).toEqual([ID_COLUMN_KEY, 'code', 'name'])

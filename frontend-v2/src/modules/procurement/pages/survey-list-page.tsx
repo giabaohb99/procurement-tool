@@ -263,9 +263,10 @@ function SurveyListContent() {
           </Badge>
         ),
       },
-      { key: 'sr_code', header: 'Mã YCBG', width: 140, cell: (survey) => survey.sr_code || '' },
+      { key: 'sr_code', sortable: true, header: 'Mã YCBG', width: 140, cell: (survey) => survey.sr_code || '' },
       {
         key: 'main_content',
+        sortable: true,
         header: 'Nội dung chính',
         width: 280,
         cell: (survey) => (
@@ -274,14 +275,15 @@ function SurveyListContent() {
           </span>
         ),
       },
-      { key: 'item_code', header: 'Mã hàng', width: 140, cell: (survey) => survey.item_code || '' },
+      { key: 'item_code', sortable: true, header: 'Mã hàng', width: 140, cell: (survey) => survey.item_code || '' },
       {
         key: 'item_group',
+        sortable: true,
         header: 'Nhóm hàng',
         width: 160,
         cell: (survey) => survey.item_group || '',
       },
-      { key: 'nspt', header: 'NSPT', width: 170, cell: (survey) => survey.nspt || '' },
+      { key: 'nspt', sortable: true, header: 'NSPT', width: 170, cell: (survey) => survey.nspt || '' },
       {
         key: 'created_at',
         header: 'Ngày tạo',

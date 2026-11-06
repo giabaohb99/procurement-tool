@@ -19292,3 +19292,28 @@ Kiểm: typecheck 0 lỗi, lint 0 lỗi, vitest trang Thu mua và giao diện d�
 
 Mã nguồn: `frontend-v2/src/shared/ui/action-tone.ts` (thêm tông `neutral`), ba trang chi tiết YCMH, YCBG, ĐMH.
 
+## duoc-CR-738 | Bảng danh sách giao diện mới: bấm tiêu đề để sắp xếp ở mọi cột dữ liệu
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** nhiều cột ở bảng danh sách giao diện mới không bấm tiêu đề để sắp xếp được, kể cả cột ID tự thêm ở mọi bảng.
+
+**Đã làm**
+- Cột ID tự thêm ở mọi bảng danh sách bấm được để sắp xếp. Đã rà mọi màn có sắp xếp: màn Loại việc (phân hệ Dự án) chưa nhận sắp theo ID ở server, màn hàng chờ Đặt xe sắp ở trình duyệt chưa biết cột ID; cả hai đã bổ sung.
+- Bốn màn danh sách Thu mua sắp được mọi cột dữ liệu. Yêu cầu mua hàng thêm Người yêu cầu, Bộ phận, Tổng tiền. Yêu cầu báo giá thêm Mục đích, Người yêu cầu, Bộ phận. Phiếu khảo sát thêm Mã YCBG, Nội dung chính, Mã hàng, Nhóm hàng, NSPT. Đơn mua hàng thêm Nhà cung cấp, Mã PYC, Phòng xử lý, Trưởng phòng phê duyệt, Ghi chú, NSPT, Tiền hàng, Loại đơn, Hồ sơ cùng tám cột phụ đang ẩn.
+- Cột tính ra (Tổng tiền, Tiền hàng gồm thuế và tỷ giá, Phòng xử lý, Trưởng phòng phê duyệt, Công ty, Người tạo) sắp ngay ở server, nên thứ tự đúng trên toàn danh sách chứ không chỉ trong trang đang xem, và khớp đúng con số hiện trên màn. Xuất Excel đi cùng câu truy vấn nên cũng theo thứ tự đã chọn.
+
+**Kiểm:** bài kiểm server 7 bài mới xanh cùng các bài danh sách liên quan, ruff sạch, typecheck 0 lỗi, lint 0 lỗi, vitest bảng dùng chung, trang Thu mua và Đặt xe 484 bài xanh. Bấm thử trên trình duyệt màn Đơn mua hàng: Tiền hàng giảm dần, Nhà cung cấp A đến Z, ID tăng dần đều đúng.
+
+Mã nguồn: `frontend-v2/src/shared/data-table/` (thêm `sortKey`, cột ID sắp được), bốn trang danh sách Thu mua, `backend/app/modules/purchase_request/sort_expressions.py`, `backend/app/modules/purchase_order/sort_expressions.py`, `backend/app/modules/work/task_type_service.py`, `frontend-v2/src/modules/vehicle-booking/components/booking-queue-table.tsx`.
+Kiểm: `test/backend/test_sap_xep_cot_danh_sach_thu_mua_cr738.py`.
+
+### duoc-CR-738-b | Màn Xử lý khảo sát và Xử lý phương án: bảng chọn kết quả khảo sát sắp xếp được như giao diện cũ
+- status: xong
+Rà các bảng trong trang chi tiết Thu mua: bảng dòng của bốn phiếu giao diện cũ cũng không sắp xếp (thứ tự dòng là thứ tự nhập, sửa và xóa dòng dựa theo vị trí) nên giữ nguyên; riêng bảng chọn kết quả khảo sát đã duyệt ở màn Xử lý khảo sát giao diện cũ bấm tiêu đề sắp được mà giao diện mới thiếu. Đã bổ sung cho cả màn Xử lý khảo sát (YCBG) và Xử lý phương án (YCMH): sắp theo NCC, Tên SP, Đơn giá, MOQ, ĐVT, Ngày khảo sát và cột ID, sắp ở server, đổi cách sắp thì về trang 1 và giữ bộ lọc, mỗi dòng sản phẩm sắp riêng. Server thêm sắp theo ID cho bảng này.
+
+Kiểm: bài kiểm server 30 bài xanh (thêm bài sắp theo ID và đơn giá), vitest hai thẻ xử lý thêm 7 bài; thử trên trình duyệt màn Xử lý khảo sát: bấm Đơn giá tăng rồi giảm đúng, về trang 1.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/utils/available-survey-line-sort.ts`, `survey-request-process-card.tsx`, `purchase-request-process-card.tsx`, `backend/app/modules/survey_request/line_service.py`.
+

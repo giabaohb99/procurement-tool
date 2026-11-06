@@ -47,6 +47,12 @@ import {
   hasAvailableLinesCriteria,
   isLineGroupOnly,
 } from '../utils/survey-process-filter'
+import {
+  NO_AVAILABLE_SURVEY_LINE_SORT,
+  toAvailableSurveyLineSortParams,
+  withAvailableSurveyLineSort,
+  type AvailableSurveyLineSort,
+} from '../utils/available-survey-line-sort'
 import type {
   AvailableSurveyLine,
   SurveyProcessLine,
@@ -558,6 +564,8 @@ function AvailableLinesPicker({
   const [itemGroups, setItemGroups] = useState<string[]>(() => defaultItemGroups(line.item_group))
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  //  duoc-CR-738: sắp xếp RIÊNG từng dòng sản phẩm (mỗi dòng một bộ chọn), như bản v1.
+  const [sort, setSort] = useState<AvailableSurveyLineSort>(NO_AVAILABLE_SURVEY_LINE_SORT)
   const debouncedSearch = useDebouncedValue(search, 300)
 
   const suppliersQuery = useSuppliers(
@@ -566,6 +574,11 @@ function AvailableLinesPicker({
   )
   const itemGroupsQuery = usePurchaseRequestItemGroups()
   const addMutation = useAddProcessOption(surveyRequestId)
+  //  Đổi sắp xếp: về trang 1 (thứ tự mới, trang cũ không còn nghĩa), giữ nguyên bộ lọc.
+  const changeSort = (sortBy: string, sortDir: 'asc' | 'desc') => {
+    setSort({ sortBy, sortDir })
+    setPage(1)
+  }
 
   const hasCriteria = hasAvailableLinesCriteria({ supplierCodes, itemGroups, search: debouncedSearch })
   // Nút "Bỏ lọc" nhìn theo ô đang gõ, không đợi debounce — bấm là sạch ngay.
@@ -585,6 +598,7 @@ function AvailableLinesPicker({
       search: debouncedSearch.trim(),
       page,
       page_size: AVAILABLE_PAGE_SIZE,
+      ...toAvailableSurveyLineSortParams(sort),
     },
     hasCriteria,
   )
@@ -602,7 +616,7 @@ function AvailableLinesPicker({
   // Toàn bộ cột `hideable: false` để DataTable giấu thanh công cụ (lý do xem
   // OptionsTable); phân trang giữ footer thủ công bên dưới vì cỡ trang cố định.
   const columns = useMemo<DataTableColumn<AvailableSurveyLine>[]>(
-    () => [
+    () => withAvailableSurveyLineSort<AvailableSurveyLine>([
       {
         key: 'supplier',
         header: 'NCC',
@@ -710,7 +724,7 @@ function AvailableLinesPicker({
           </Button>
         ),
       },
-    ],
+    ]),
     [addMutation, line.id, line.item_group],
   )
 
@@ -815,6 +829,9 @@ function AvailableLinesPicker({
           rows={rows}
           getRowId={(row) => row.id}
           storageKey="procurement.survey-process.available"
+          sortBy={sort.sortBy}
+          sortDir={sort.sortDir}
+          onSortChange={changeSort}
           mobileCard={(row) => (
             <AvailableSurveyLineCard
               row={row}
@@ -836,6 +853,7 @@ function AvailableLinesPicker({
             variant="outline"
             size="icon"
             className="size-7"
+            aria-label="Trang trước"
             disabled={page <= 1}
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
           >
@@ -845,6 +863,7 @@ function AvailableLinesPicker({
             variant="outline"
             size="icon"
             className="size-7"
+            aria-label="Trang sau"
             disabled={page >= totalPages}
             onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
           >

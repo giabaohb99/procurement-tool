@@ -57,6 +57,12 @@ import {
   PR_OPTION_SOURCE_ORIGINAL,
   PR_OPTION_SOURCE_SURVEY,
 } from '../types/purchase-request-options'
+import {
+  NO_AVAILABLE_SURVEY_LINE_SORT,
+  toAvailableSurveyLineSortParams,
+  withAvailableSurveyLineSort,
+  type AvailableSurveyLineSort,
+} from '../utils/available-survey-line-sort'
 import { AvailableSurveyLineCard } from './available-survey-line-card'
 import { ProcessOptionCard } from './process-option-card'
 import { PurchaseRequestOptionEditDialog } from './purchase-request-option-edit-dialog'
@@ -650,6 +656,8 @@ function AvailableSurveyLinesPicker({
   const [itemGroup, setItemGroup] = useState(item.item_group || '')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  //  duoc-CR-738: sắp xếp RIÊNG từng dòng YCMH (mỗi dòng một bộ chọn), như bản v1.
+  const [sort, setSort] = useState<AvailableSurveyLineSort>(NO_AVAILABLE_SURVEY_LINE_SORT)
   const [manualOpen, setManualOpen] = useState(false)
   const debouncedSearch = useDebouncedValue(search, 300)
 
@@ -659,6 +667,11 @@ function AvailableSurveyLinesPicker({
   )
   const itemGroupsQuery = usePurchaseRequestItemGroups()
   const attachMutation = useAttachSurveyOption(purchaseRequestId)
+  //  Đổi sắp xếp: về trang 1 (thứ tự mới, trang cũ không còn nghĩa), giữ nguyên bộ lọc.
+  const changeSort = (sortBy: string, sortDir: 'asc' | 'desc') => {
+    setSort({ sortBy, sortDir })
+    setPage(1)
+  }
 
   const effectiveSupplier = supplierCode === ALL_SUPPLIERS ? '' : supplierCode
   const hasCriteria = !!effectiveSupplier || !!itemGroup || !!debouncedSearch.trim()
@@ -675,6 +688,7 @@ function AvailableSurveyLinesPicker({
       search: debouncedSearch.trim(),
       page,
       page_size: AVAILABLE_PAGE_SIZE,
+      ...toAvailableSurveyLineSortParams(sort),
     },
     hasCriteria,
   )
@@ -697,7 +711,7 @@ function AvailableSurveyLinesPicker({
   // Toàn bộ cột `hideable: false` để DataTable giấu thanh công cụ (lý do xem
   // OptionsTable); phân trang giữ footer thủ công bên dưới vì cỡ trang cố định.
   const columns = useMemo<DataTableColumn<AvailablePrSurveyLine>[]>(
-    () => [
+    () => withAvailableSurveyLineSort<AvailablePrSurveyLine>([
       {
         key: 'add',
         header: '',
@@ -807,7 +821,7 @@ function AvailableSurveyLinesPicker({
         hideable: false,
         cell: (row) => row.survey_code || '—',
       },
-    ],
+    ]),
     [attachMutation, item.id, item.item_group],
   )
 
@@ -911,6 +925,9 @@ function AvailableSurveyLinesPicker({
           rows={rows}
           getRowId={(row) => row.id}
           storageKey="procurement.pr-process.available"
+          sortBy={sort.sortBy}
+          sortDir={sort.sortDir}
+          onSortChange={changeSort}
           mobileCard={(row) => (
             <AvailableSurveyLineCard
               row={row}
@@ -935,6 +952,7 @@ function AvailableSurveyLinesPicker({
             variant="outline"
             size="icon"
             className="size-7"
+            aria-label="Trang trước"
             disabled={page <= 1}
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
           >
@@ -945,6 +963,7 @@ function AvailableSurveyLinesPicker({
             variant="outline"
             size="icon"
             className="size-7"
+            aria-label="Trang sau"
             disabled={page >= totalPages}
             onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
           >

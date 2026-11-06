@@ -305,9 +305,9 @@ function SurveyRequestListContent() {
         //  bao-CR-693: link thật — chuột phải / Ctrl + bấm mở phiếu ở tab mới.
         cell: (sr) => <RowLink to={appRoutes.procurement.surveyRequestDetail(sr.id)}>{sr.code}</RowLink>,
       },
-      { key: 'purpose', header: 'Mục đích', width: 280, cell: (sr) => sr.purpose || '' },
-      { key: 'requester', header: 'Người yêu cầu', width: 200, cell: (sr) => sr.requester || '' },
-      { key: 'department', header: 'Bộ phận', width: 180, cell: (sr) => sr.department || '' },
+      { key: 'purpose', sortable: true, header: 'Mục đích', width: 280, cell: (sr) => sr.purpose || '' },
+      { key: 'requester', sortable: true, header: 'Người yêu cầu', width: 200, cell: (sr) => sr.requester || '' },
+      { key: 'department', sortable: true, header: 'Bộ phận', width: 180, cell: (sr) => sr.department || '' },
       {
         key: 'request_date',
         header: 'Ngày tạo',
