@@ -19192,3 +19192,19 @@ Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-detail-h
 **Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Đặt xe 120 bài xanh; soát khổ 390px (DX001987 có nút Điều phối, DX001984 không có nút quyết định) và 1440px, trang không cuộn ngang.
 
 Mã nguồn: frontend-v2/src/modules/vehicle-booking/components/booking-detail-header.tsx, pages/vehicle-booking-detail-page.tsx
+
+## duoc-CR-723 | Giao diện thu mua cũ: bóng đỏ đếm phiếu chờ duyệt trên menu trái và thẻ Đơn mua hàng chờ duyệt
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** phiếu hỗ trợ TK06112601 của anh Đoàn Minh Khôi (Dego Organic), anh Được giao làm thẳng trên giao diện thu mua cũ (thumua). Đây là ngoại lệ mở giao diện cũ đang đóng băng theo yêu cầu trực tiếp của anh Được, cùng tiền lệ bao-CR-734. Phiếu đang giao cho anh Bảo nhưng chưa có mã nào cho nó trên nhánh chung.
+
+**Đã làm**
+- Thêm đường API đếm số phiếu đang chờ duyệt cho menu trái: Yêu cầu báo giá, Yêu cầu mua hàng, Đơn mua hàng và Phiếu khảo sát, đếm trong phạm vi dữ liệu của người xem như thẻ thống kê Trang chủ; mục người xem không có quyền đọc thì không trả về. Bốn câu đếm, số truy vấn cố định.
+- Menu trái của giao diện cũ hiện bóng tròn nền đỏ chữ trắng ở góc trên bên phải biểu tượng bốn mục đó khi có phiếu chờ duyệt, quá 99 thì ghi 99+. Số được nạp lại mỗi khi đổi trang và mỗi 60 giây.
+- Trang chủ đổi thẻ Đơn hàng hoạt động (POs) thành Đơn mua hàng chờ duyệt (POs), bấm vào ra danh sách đơn đang chờ duyệt; API Trang chủ trả thêm số đơn chờ duyệt, giữ số cũ vì giao diện mới và báo cáo còn đọc.
+
+**Kiểm:** ba bài kiểm máy chủ mới (chỉ đếm phiếu chờ duyệt, vắng khóa khi thiếu quyền, số menu khớp thẻ Trang chủ) cùng các bài kiểm Trang chủ và các bài canh toàn bộ đường API đều xanh; ruff không lỗi; kiểm tra kiểu giao diện cũ không thêm lỗi mới (bảy lỗi có sẵn đều ở tệp khác).
+
+Mã nguồn: backend/app/modules/dashboard (menu_badge_service.py, controller.py: đường /api/dashboard/menu-badges, kpi po_pending), frontend/src (hooks/useMenuBadges.ts, components/NavIcon.tsx, layouts/AppLayout.tsx, pages/Dashboard.tsx, index.css), test/backend/test_bong_dem_cho_duyet_menu_cr723.py

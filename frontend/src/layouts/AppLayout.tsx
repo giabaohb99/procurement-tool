@@ -4,6 +4,8 @@ import { useAuth } from "../auth/AuthContext";
 import { toast } from "../components/toast";
 import { api } from "../api/client";
 import NotificationBell from "../components/NotificationBell";
+import NavIcon from "../components/NavIcon";
+import { useMenuBadges } from "../hooks/useMenuBadges";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
 import TicketCreateModal from "../components/TicketCreateModal";
 import RouteTelemetry from "../telemetry/RouteTelemetry";
@@ -51,6 +53,7 @@ type NavItem = {
   anyEntity?: string[];   // hiện nếu có read trên BẤT KỲ entity nào (OR)
   external?: boolean;     // link ra ngoài app (mở tab mới) thay vì route nội bộ
   children?: NavChild[];  // menu con — sổ ra khi đang ở trong mục cha (duoc-CR-491)
+  badge?: string;         // khóa số đếm chờ duyệt ở /api/dashboard/menu-badges → bóng đỏ trên biểu tượng (duoc-CR-723)
 };
 type NavChild = {
   to: string;
@@ -102,6 +105,7 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Yêu cầu báo giá",
         icon: "ti-clipboard-list",
         entity: "survey_request",
+        badge: "survey_request",
       },
       {
         // CR-075 — song sinh của "Tiến độ đơn mua hàng" nhưng đọc chuỗi yêu cầu báo giá
@@ -115,12 +119,14 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Yêu cầu mua hàng",
         icon: "ti-file-text",
         entity: "purchase_request",
+        badge: "purchase_request",
       },
       {
         to: "/purchase-orders",
         label: "Đơn mua hàng",
         icon: "ti-shopping-cart",
         entity: "purchase_order",
+        badge: "purchase_order",
       },
       {
         to: "/purchase-progress",
@@ -172,6 +178,7 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Phiếu khảo sát",
         icon: "ti-clipboard-search",
         entity: "survey",
+        badge: "survey",
       },
       {
         to: "/survey-report",
@@ -417,6 +424,8 @@ export default function AppLayout() {
     );
   const nav = useNavigate();
   const loc = useLocation();
+  // Bóng đỏ đếm phiếu chờ duyệt trên menu trái (duoc-CR-723) — nạp lại mỗi lần đổi trang.
+  const badges = useMenuBadges(loc.pathname);
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   // Nút "Cài ứng dụng" trong menu — hiện khi trình duyệt cho cài (Edge/Chrome/Android)
@@ -586,7 +595,7 @@ export default function AppLayout() {
                         (isActive(loc.pathname, n.to) ? " active" : "")
                       }
                     >
-                      <i className={"ti " + n.icon} />
+                      <NavIcon icon={n.icon} count={n.badge ? badges[n.badge] : 0} />
                       {n.label}
                     </Link>
                   ),
