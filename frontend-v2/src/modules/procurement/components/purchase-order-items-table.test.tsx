@@ -4,6 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PRODUCT_LOCK_HINT, type PurchaseOrderItem } from '../types/purchase-order-detail'
 import type { LineReportProgress } from '../utils/survey-report-helpers'
+import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
+
+import { usePurchaseOrderLineSelection } from '../hooks/use-purchase-order-line-selection'
 import { PurchaseOrderItemsTable } from './purchase-order-items-table'
 
 // Bảng này nói về CÁCH HIỆN dòng hàng, không nói về mạng — cắt lượt gọi danh mục.
@@ -62,6 +65,27 @@ function renderTable(props: Partial<Parameters<typeof PurchaseOrderItemsTable>[0
       onChange={vi.fn()}
       {...props}
     />,
+  )
+}
+
+/** Trang giữ trạng thái tick (duoc-CR-737) — dựng lại đúng cách nối hook với bảng. */
+function SelectableTable({ items }: { items: PurchaseOrderItem[] }) {
+  const lineSelection = usePurchaseOrderLineSelection(items, true)
+  return (
+    <>
+      <PurchaseOrderItemsTable
+        items={items}
+        editable
+        progressEditable={false}
+        onChange={vi.fn()}
+        selection={lineSelection.selection}
+      />
+      <BulkDeleteButton
+        count={lineSelection.selectedIndexes.length}
+        unitLabel="dòng"
+        onConfirm={vi.fn()}
+      />
+    </>
   )
 }
 
@@ -205,11 +229,13 @@ describe('PurchaseOrderItemsTable — khổ điện thoại', () => {
   })
 
   it('keeps bulk delete reachable: select-all ticks every unlocked line', async () => {
-    renderTable({
-      editable: true,
-      bulkRemovable: true,
-      items: [ITEMS[0], item({ id: 502, product_name: 'Dầu khoáng', progress_status: 'completed' })],
-    })
+    //  duoc-CR-737: trạng thái chọn nằm ở TRANG (nút Xóa đã chọn đứng ở tiêu đề thẻ),
+    //  nên bài kiểm dựng lại đúng cách trang nối hook với bảng.
+    render(
+      <SelectableTable
+        items={[ITEMS[0], item({ id: 502, product_name: 'Dầu khoáng', progress_status: 'completed' })]}
+      />,
+    )
 
     expect(screen.getByRole('checkbox', { name: 'Chọn dòng 2' })).toBeDisabled()
     await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả' }))

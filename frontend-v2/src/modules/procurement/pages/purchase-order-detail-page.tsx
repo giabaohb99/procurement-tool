@@ -5,7 +5,6 @@ import {
   Check,
   ChevronDown,
   CircleCheck,
-  Copy,
   CornerUpLeft,
   FileText,
   Loader2,
@@ -52,9 +51,11 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { confirm as confirmDialog } from '@/shared/ui/confirm-dialog'
+import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
+import { ACTION_TONE_CLASS } from '@/shared/ui/action-tone'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
+import { DetailPageHeader, type HeaderActionList } from '@/shared/ui/detail-page-header'
 import { ErrorState } from '@/shared/ui/error-state'
-import { HeaderActionsPopover } from '@/shared/ui/header-actions-popover'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { DocumentAttachmentsCard } from '../components/document-attachments-card'
@@ -84,6 +85,7 @@ import {
   type PendingDeliveryFiles,
 } from '../helpers/pending-delivery-files'
 import { useApproverCandidates } from '../hooks/use-approver-candidates'
+import { usePurchaseOrderLineSelection } from '../hooks/use-purchase-order-line-selection'
 import { usePurchaseRequests } from '../hooks/use-purchase-documents'
 import { useUploadDeliveryFiles } from '../hooks/use-purchase-request-support'
 import {
@@ -121,6 +123,9 @@ import {
   type PurchaseOrderDetail,
   type PurchaseOrderItem,
 } from '../types/purchase-order-detail'
+
+/** Mảng rỗng cố định — để lượt vẽ lúc đang tải không đẻ mảng mới mỗi lần. */
+const NO_ITEMS: PurchaseOrderItem[] = []
 
 /** Thao tác cần lý do — mở hộp nhập trước khi gọi API. */
 type ReasonAction = Extract<PurchaseOrderAction, 'return' | 'reject' | 'unapprove' | 'cancel'>
@@ -218,11 +223,18 @@ export function PurchaseOrderDetailPage() {
   /** Chặn bấm đúp "Gửi duyệt" ngay trong tick (bao-CR-590). */
   const submittingRef = useRef(false)
 
-  //  Chọn khung bọc cho nhóm lệnh phụ của đầu trang — xem `HeaderActionsPopover`.
+  //  Khổ hẹp: câu nhắc dưới bảng dòng hàng nói "chạm vào thẻ" thay vì "nút bút chì".
   //
   //  ⚠️ Khai TRÊN mọi `return` sớm (đang tải / lỗi / không thấy đơn). Hook gọi
   //  sau một nhánh thoát là thứ tự hook đổi giữa các lượt vẽ.
   const isMobile = useIsMobile()
+  //  bao-CR-547 + duoc-CR-737: tick nhiều dòng rồi "Xóa đã chọn" — chỉ ở form tạo hoặc
+  //  đơn Nháp (đại ca chốt 01/10/2026; đơn Bị trả lại vẫn xóa từng dòng). Trạng thái
+  //  chọn giữ ở trang vì nút nằm ở tiêu đề thẻ Dòng hàng, cột tick nằm trong bảng.
+  const lineSelection = usePurchaseOrderLineSelection(
+    draft?.items ?? NO_ITEMS,
+    (isNew || draft?.status === 'draft') && can('purchase_order', isNew ? 'create' : 'write'),
+  )
   /**
    * Phiếu giao chọn cho lần giao CHƯA LƯU — giữ hộ tới khi bấm Lưu đơn. Không có
    * nó thì người nhập phải lưu đơn trước rồi mới quay lại đính từng phiếu.
@@ -424,7 +436,6 @@ export function PurchaseOrderDetailPage() {
   }
 
   async function handleAction(action: PurchaseOrderAction) {
-    if (action === 'copy') trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
     if (
       action === 'return' ||
       action === 'reject' ||
@@ -469,24 +480,53 @@ export function PurchaseOrderDetailPage() {
       })
       if (!proceed) return
     }
-    const result = await runAction.mutateAsync({ action })
-    if (action === 'copy' && result?.id) {
-      navigate(appRoutes.procurement.purchaseOrderDetail(result.id))
-    }
+    await runAction.mutateAsync({ action })
   }
 
   /**
-   * Lệnh PHỤ của đầu trang — khổ rộng bày thẳng, khổ hẹp gom vào nút `⋯`.
+   * Nút đầu trang theo ĐÚNG THỨ TỰ BẢN V1 (duoc-CR-737) — người dùng dời từ v1 sang tìm
+   * nút ở chỗ cũ. Tiện ích (trái vạch ngăn): Tạo yêu cầu thanh toán · In · Hủy đơn ·
+   * Xóa. Quy trình (phải): Gửi duyệt · Duyệt · Trả về · Từ chối · Hủy duyệt · Hoàn
+   * thành · Mở lại · Lưu / Tạo đơn — Lưu LUÔN đứng cuối, mép phải. Nút Nhân bản cả đơn
+   * đã bỏ khỏi đầu trang (duoc-CR-737) — chép đơn dùng biểu tượng chép ở màn danh sách.
    *
-   * Dựng thành BIẾN chứ không viết thẳng hai lần: mỗi nút ở đây kéo theo state
-   * hoặc mutation riêng (hộp thanh toán, `DeleteConfirmButton`), chép ra hai bản
-   * là hai bộ state song song cho cùng một lệnh.
+   * Nút viền mang MÀU của nút cùng tên ở v1 (`ACTION_TONE_CLASS`): Tạo yêu cầu thanh
+   * toán, Hoàn thành chữ xanh; Trả về, Hủy duyệt hổ phách; Hủy đơn, Từ chối, Xóa đỏ;
+   * In, Mở lại để trơn.
+   *
+   * `primary` = nút nền đặc (Gửi duyệt · Duyệt · Lưu): khổ hẹp vẫn để ngoài, còn lại vào
+   * `⋯`. Mỗi nút dựng MỘT LẦN — nhiều nút kéo theo state / mutation riêng (hộp thanh
+   * toán, `DeleteConfirmButton`), chép hai bản là hai bộ state song song cho một lệnh.
    */
-  const secondaryActions = (
-    <>
-        {/* bao-CR-498: gom mọi bản in vào MỘT nút "In" thả xuống như bản v1 — trước đó năm nút
-            in rời chiếm cả hàng tiêu đề, người dùng phải đọc từng nút để tìm bản cần in. */}
-        {!isNew && can('purchase_order', 'print') && (
+  const headerActions: HeaderActionList = [
+    /*
+      CỐ Ý không gác theo `unpaid_total > 0.01`: đơn chưa nhận hàng thì chưa
+      có công nợ, nhưng vẫn phải lập được phiếu THANH TOÁN TRƯỚC (CR-067) —
+      hộp thoại tự đổi sang luồng đó. Bản v1 cũng đã bỏ điều kiện này.
+    */
+    !isNew &&
+      ['approved', 'partial', 'received', 'completed'].includes(data.status) &&
+      can('payment_request', 'create') && {
+        key: 'payment-request',
+        group: 'utility',
+        node: (
+          <Button
+            variant="outline"
+            className={ACTION_TONE_CLASS.accent}
+            onClick={() => setPaymentOpen(true)}
+          >
+            <Receipt />
+            Tạo yêu cầu thanh toán
+          </Button>
+        ),
+      },
+    /* bao-CR-498: gom mọi bản in vào MỘT nút "In" thả xuống như bản v1 — trước đó năm nút
+       in rời chiếm cả hàng tiêu đề, người dùng phải đọc từng nút để tìm bản cần in. */
+    !isNew &&
+      can('purchase_order', 'print') && {
+        key: 'print',
+        group: 'utility',
+        node: (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
@@ -549,184 +589,183 @@ export function PurchaseOrderDetailPage() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        )}
-
-        {/*
-          CỐ Ý không gác theo `unpaid_total > 0.01`: đơn chưa nhận hàng thì chưa
-          có công nợ, nhưng vẫn phải lập được phiếu THANH TOÁN TRƯỚC (CR-067) —
-          hộp thoại tự đổi sang luồng đó. Bản v1 cũng đã bỏ điều kiện này.
-        */}
-        {!isNew &&
-          ['approved', 'partial', 'received', 'completed'].includes(data.status) &&
-          can('payment_request', 'create') && (
-            <Button variant="outline" onClick={() => setPaymentOpen(true)}>
-              <Receipt />
-              Tạo yêu cầu thanh toán
-            </Button>
-          )}
-
-
-        {!isNew && data.status === 'submitted' && can('purchase_order', 'approve') && (
-          <>
-            <Button variant="outline" onClick={() => void handleAction('return')}>
-              <CornerUpLeft />
-              Trả về
-            </Button>
-            <Button
-              variant="outline"
-              className="text-destructive hover:text-destructive"
-              onClick={() => void handleAction('reject')}
-            >
-              <Ban />
-              Từ chối
-            </Button>
-          </>
-        )}
-
-        {canUnapprove && (
-          <Button variant="outline" onClick={() => void handleAction('unapprove')}>
-            <RotateCcw />
-            Hủy duyệt
-          </Button>
-        )}
-
-        {/* Chỉ hiện từ khi có hàng về. Đơn mới duyệt mà chưa nhận dòng nào thì
-            backend chặn `/complete` (400 "Còn N dòng chưa Hoàn thành/Hủy") —
-            để nút ở đó chỉ tổ mời người dùng bấm vào một lỗi. */}
-        {!isNew && ['partial', 'received'].includes(data.status) && canWrite && (
-          <Button variant="outline" onClick={() => void handleAction('complete')}>
-            <CircleCheck />
-            Hoàn thành
-          </Button>
-        )}
-
-        {!isNew && data.status === 'completed' && canWrite && (
-          <Button variant="outline" onClick={() => void handleAction('reopen')}>
-            <LockOpen />
-            Mở lại
-          </Button>
-        )}
-
-        {!isNew && isDeliveryStage(data.status) && can('purchase_order', 'cancel') && (
+        ),
+      },
+    !isNew &&
+      isDeliveryStage(data.status) &&
+      can('purchase_order', 'cancel') && {
+        key: 'cancel',
+        group: 'utility',
+        node: (
           <Button
             variant="outline"
-            className="text-destructive hover:text-destructive"
+            className={ACTION_TONE_CLASS.danger}
             onClick={() => void handleAction('cancel')}
           >
             <Ban />
             Hủy đơn
           </Button>
-        )}
-
-        {!isNew && can('purchase_order', 'create') && (
-          <Button variant="outline" onClick={() => void handleAction('copy')}>
-            <Copy />
-            Nhân bản
-          </Button>
-        )}
-
-        {canDelete && can('purchase_order', 'delete') && (
+        ),
+      },
+    canDelete &&
+      can('purchase_order', 'delete') && {
+        key: 'delete',
+        group: 'utility',
+        node: (
           <DeleteConfirmButton
             recordName={data.code || `#${data.id}`}
             pending={deletePurchaseOrder.isPending}
+            className={ACTION_TONE_CLASS.danger}
             warning="Đơn và các dòng hàng kèm theo sẽ bị xóa."
             onConfirm={async () => {
               await deletePurchaseOrder.mutateAsync(data.id)
               navigate(appRoutes.procurement.purchaseOrders)
             }}
           />
-        )}
-    </>
-  )
+        ),
+      },
+    !isNew &&
+      ['draft', 'rejected'].includes(data.status) &&
+      canWrite && {
+        key: 'submit',
+        primary: true,
+        node: (
+          <Button
+            onClick={() => void handleSubmit()}
+            disabled={runAction.isPending || savePurchaseOrder.isPending}
+          >
+            <Send />
+            Gửi duyệt
+          </Button>
+        ),
+      },
+    ...(!isNew && data.status === 'submitted' && can('purchase_order', 'approve')
+      ? [
+          {
+            key: 'approve',
+            primary: true,
+            node: (
+              <Button onClick={() => void handleAction('approve')} disabled={runAction.isPending}>
+                <Check />
+                Duyệt
+              </Button>
+            ),
+          },
+          {
+            key: 'return',
+            node: (
+              <Button
+                variant="outline"
+                className={ACTION_TONE_CLASS.warning}
+                onClick={() => void handleAction('return')}
+              >
+                <CornerUpLeft />
+                Trả về
+              </Button>
+            ),
+          },
+          {
+            key: 'reject',
+            node: (
+              <Button
+                variant="outline"
+                className={ACTION_TONE_CLASS.danger}
+                onClick={() => void handleAction('reject')}
+              >
+                <Ban />
+                Từ chối
+              </Button>
+            ),
+          },
+        ]
+      : []),
+    canUnapprove && {
+      key: 'unapprove',
+      node: (
+        <Button
+          variant="outline"
+          className={ACTION_TONE_CLASS.warning}
+          onClick={() => void handleAction('unapprove')}
+        >
+          <RotateCcw />
+          Hủy duyệt
+        </Button>
+      ),
+    },
+    /* Chỉ hiện từ khi có hàng về. Đơn mới duyệt mà chưa nhận dòng nào thì
+       backend chặn `/complete` (400 "Còn N dòng chưa Hoàn thành/Hủy") —
+       để nút ở đó chỉ tổ mời người dùng bấm vào một lỗi. */
+    !isNew &&
+      ['partial', 'received'].includes(data.status) &&
+      canWrite && {
+        key: 'complete',
+        node: (
+          <Button
+            variant="outline"
+            className={ACTION_TONE_CLASS.accent}
+            onClick={() => void handleAction('complete')}
+          >
+            <CircleCheck />
+            Hoàn thành
+          </Button>
+        ),
+      },
+    !isNew &&
+      data.status === 'completed' &&
+      canWrite && {
+        key: 'reopen',
+        node: (
+          <Button variant="outline" onClick={() => void handleAction('reopen')}>
+            <LockOpen />
+            Mở lại
+          </Button>
+        ),
+      },
+    /* Đơn đã duyệt vẫn cần nút Lưu: mấy ô mở sau khi duyệt nằm trong popup
+       chi tiết dòng, sửa xong phải ghi xuống được. */
+    (headerEditable || afterApproveEditable) && {
+      key: 'save',
+      primary: true,
+      node: (
+        <Button onClick={() => void handleSave()} disabled={savePurchaseOrder.isPending}>
+          {savePurchaseOrder.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+          {isNew ? 'Tạo đơn' : 'Lưu'}
+        </Button>
+      ),
+    },
+  ]
+
+  /** Bỏ các dòng đang tick khỏi đơn (chỉ trên màn hình — bấm Lưu mới ghi xuống). */
+  function removeSelectedLines() {
+    const drop = new Set(lineSelection.selectedIndexes)
+    patch({ items: data.items.filter((_, index) => !drop.has(index)) })
+    //  Báo từng chỉ số từ CAO xuống THẤP: phiếu giao chờ lưu giữ theo chỉ số dòng.
+    for (const index of [...lineSelection.selectedIndexes].sort((a, b) => b - a)) {
+      setPendingFiles((current) => shiftPendingAfterLineRemove(current, index))
+    }
+    lineSelection.clear()
+  }
 
   return (
     <PageContainer className="bg-slate-50/70 lg:p-4">
-      {/*  ⚠️ **Cụm nút ở LẠI hàng đầu, huy hiệu mới là thứ được phép xuống
-           dòng.** Bản trước để tiêu đề và huy hiệu nằm chung một hàng `flex-wrap`
-           với cụm nút, nên số huy hiệu quyết định nút rơi đi đâu: đơn một huy
-           hiệu thì nút ở hàng đầu, đơn vừa *Đã nhận một phần* vừa *Đơn gấp* (như
-           PO00143) thì đẩy nút xuống hàng hai. Vị trí nút Lưu đổi theo DỮ LIỆU
-           là thứ người dùng không đoán được — mở hai đơn liền nhau, quen tay bấm
-           một chỗ thì trúng chỗ khác.
-
-           Gom tiêu đề + huy hiệu vào MỘT ô `flex-1 min-w-0` tự xuống dòng bên
-           trong; cụm nút là anh em của ô đó nên luôn ở hàng đầu. `items-start`
-           để nó bám mép trên chứ không trôi xuống giữa khi huy hiệu xuống dòng. */}
-      <div className="mb-4 flex flex-wrap items-start gap-3">
-        <Button
-          variant="outline"
-          size="icon"
-          asChild
-          className="shrink-0"
-          aria-label="Về danh sách đơn mua hàng"
-        >
-          <Link to={appRoutes.procurement.purchaseOrders}>
-            <ArrowLeft />
-          </Link>
-        </Button>
-
-        {/*  ⚠️ KHÔNG `min-w-0` ở ô tiêu đề. `min-w-0` cho nó co về 0, nên khi
-             cụm nút rộng (nút chính *Tạo đơn mua hàng* ~210px) trình duyệt chọn
-             CO TIÊU ĐỀ thay vì đẩy cụm nút xuống hàng — mã phiếu bị cắt cụt
-             ngay giữa chữ. Để min-content của mã phiếu được tôn trọng thì lớp
-             ngoài `flex-wrap` mới có cớ xuống dòng, và mã phiếu luôn đọc đủ. */}
-        <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1.5">
-          <h1 className="text-xl font-semibold tracking-tight text-navy dark:text-foreground">
-            {isNew ? 'Tạo Đơn mua hàng mới' : data.code || 'Đơn nháp'}
-          </h1>
-          {!isNew && <StatusBadge status={data.status} labels={PO_STATUS_LABELS} />}
-          {data.is_urgent && (
-            <Badge variant="secondary" className="border-0 bg-warning/10 text-warning">
-              Đơn gấp
-            </Badge>
-          )}
-        </div>
-
-        {/*  ⚠️ Nhóm phụ dựng MỘT LẦN, `useIsMobile` chỉ chọn khung BỌC — đừng
-             dựng hai bản rồi ẩn một bằng CSS. Mấy nút này mang hộp xác nhận và
-             mutation riêng (`DeleteConfirmButton`, hộp thanh toán): bản bị ẩn
-             vẫn gắn kết, vẫn giữ state, vẫn bắn được request. Cùng luật
-             `detail-page-shell` của phân hệ Văn bản.
-
-             Chia chính/phụ ĐÚNG THEO DÁNG NÚT: nút nền đặc là việc người mở
-             trang đang định làm — *Gửi duyệt* khi còn nháp, *Duyệt* khi đang
-             cầm đơn chờ duyệt, *Lưu* khi sửa được. Đầu trang này có tới ~15
-             lệnh; bày hết ra thì ở khổ hẹp chúng tràn BA hàng ngay dưới tiêu
-             đề. */}
-        <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
-          {!isNew && ['draft', 'rejected'].includes(data.status) && canWrite && (
-            <Button
-              onClick={() => void handleSubmit()}
-              disabled={runAction.isPending || savePurchaseOrder.isPending}
-            >
-              <Send />
-              Gửi duyệt
-            </Button>
-          )}
-
-          {!isNew && data.status === 'submitted' && can('purchase_order', 'approve') && (
-            <Button onClick={() => void handleAction('approve')} disabled={runAction.isPending}>
-              <Check />
-              Duyệt
-            </Button>
-          )}
-
-          {/* Đơn đã duyệt vẫn cần nút Lưu: mấy ô mở sau khi duyệt nằm trong popup
-              chi tiết dòng, sửa xong phải ghi xuống được. */}
-          {(headerEditable || afterApproveEditable) && (
-            <Button onClick={() => void handleSave()} disabled={savePurchaseOrder.isPending}>
-              {savePurchaseOrder.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-              {isNew ? 'Tạo đơn' : 'Lưu'}
-            </Button>
-          )}
-
-          {isMobile ? (
-            <HeaderActionsPopover>{secondaryActions}</HeaderActionsPopover>
-          ) : (
-            secondaryActions
-          )}
-        </div>
-      </div>
+      {/*  Khung dải đầu dùng chung — luật "cụm nút ở lại hàng đầu, huy hiệu mới là thứ
+           xuống dòng" và "nhóm phụ dựng một lần" nằm ở `DetailPageHeader`. */}
+      <DetailPageHeader
+        backTo={appRoutes.procurement.purchaseOrders}
+        backLabel="Về danh sách đơn mua hàng"
+        title={isNew ? 'Tạo Đơn mua hàng mới' : data.code || 'Đơn nháp'}
+        badges={
+          <>
+            {!isNew && <StatusBadge status={data.status} labels={PO_STATUS_LABELS} />}
+            {data.is_urgent && (
+              <Badge variant="secondary" className="border-0 bg-warning/10 text-warning">
+                Đơn gấp
+              </Badge>
+            )}
+          </>
+        }
+        actions={headerActions}
+      />
 
       <div className="min-w-0 space-y-4">
         <PurchaseOrderInfoCard
@@ -751,18 +790,31 @@ export function PurchaseOrderDetailPage() {
               `purchase-request-attachments-card.tsx`. */}
           <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3!">
             <CardTitle className="text-base text-navy dark:text-foreground">Dòng hàng</CardTitle>
-            {headerEditable && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  patch({ items: [...data.items, createEmptyPurchaseOrderItem(data.vat_rate)] })
-                }
-              >
-                <Plus />
-                Thêm dòng
-              </Button>
-            )}
+            {/*  duoc-CR-737: cụm nút của bảng dòng ở góc phải tiêu đề thẻ như bản v1 —
+                 Xóa đã chọn (n) · Thêm dòng. */}
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {lineSelection.selection && (
+                <BulkDeleteButton
+                  size="sm"
+                  count={lineSelection.selectedIndexes.length}
+                  unitLabel="dòng"
+                  description="Các dòng bỏ khỏi đơn ngay trên màn hình; bấm Lưu mới ghi xuống."
+                  onConfirm={removeSelectedLines}
+                />
+              )}
+              {headerEditable && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    patch({ items: [...data.items, createEmptyPurchaseOrderItem(data.vat_rate)] })
+                  }
+                >
+                  <Plus />
+                  Thêm dòng
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4 px-4">
             {overOrders.length > 0 && (
@@ -796,7 +848,7 @@ export function PurchaseOrderDetailPage() {
               items={data.items}
               order={data}
               editable={headerEditable}
-              bulkRemovable={isNew || data.status === 'draft'}
+              selection={lineSelection.selection}
               progressEditable={progressEditable}
               onChange={(items) => patch({ items })}
               onOpenDetail={setLineIndex}

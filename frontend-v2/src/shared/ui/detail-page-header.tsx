@@ -1,11 +1,28 @@
 import { ArrowLeft } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import { HeaderActionsPopover } from '@/shared/ui/header-actions-popover'
 import { cn } from '@/shared/utils/cn'
+
+/**
+ * Một nút của dải đầu trang khi xếp theo THỨ TỰ BẢN V1 (duoc-CR-737).
+ *
+ * `group: 'utility'` = nhóm tiện ích bên trái vạch ngăn (In · Nhân bản · Xóa…);
+ * mặc định `'workflow'` = các nút đi theo bước quy trình, bên phải vạch ngăn.
+ * `primary` = nút nền đặc: khổ hẹp vẫn để ngoài, còn lại gom vào `⋯`.
+ */
+export interface HeaderAction {
+  key: string
+  node: ReactNode
+  primary?: boolean
+  group?: 'utility' | 'workflow'
+}
+
+/** Cho phép khai mảng kèm điều kiện: `[cond && {...}]` — giá trị rỗng bị bỏ. */
+export type HeaderActionList = ReadonlyArray<HeaderAction | false | null | undefined>
 
 export interface DetailPageHeaderProps {
   /** Đường về danh sách của phân hệ. */
@@ -19,6 +36,13 @@ export interface DetailPageHeaderProps {
   primaryActions?: ReactNode
   /** Nút viền: khổ rộng bày thẳng, khổ hẹp gom vào `⋯`. */
   secondaryActions?: ReactNode
+  /**
+   * Xếp nút theo ĐÚNG THỨ TỰ BẢN V1 (duoc-CR-737): nhóm tiện ích · vạch ngăn ·
+   * nút quy trình, nút đặc và nút viền xen nhau theo bước. Người dùng dời từ v1
+   * sang v2 tìm nút ở đúng chỗ cũ. Khai `actions` thì bỏ qua `primaryActions` /
+   * `secondaryActions`. Khổ hẹp: nút `primary` ở ngoài, còn lại vào `⋯` (giữ thứ tự).
+   */
+  actions?: HeaderActionList
   /**
    * Ghim dải đầu trang ở khổ hẹp. Dùng cho màn dài mà lệnh hay phải với tới
    * giữa chừng (Phiếu khảo sát). Mặc định tắt: ghim là ăn vĩnh viễn ~60px của
@@ -66,6 +90,7 @@ export function DetailPageHeader({
   badges,
   primaryActions,
   secondaryActions,
+  actions,
   sticky = false,
   className,
 }: DetailPageHeaderProps) {
@@ -102,15 +127,70 @@ export function DetailPageHeader({
       </div>
 
       <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
-        {primaryActions}
-        {secondaryActions &&
-          (isMobile ? (
-            <HeaderActionsPopover>{secondaryActions}</HeaderActionsPopover>
-          ) : (
-            secondaryActions
-          ))}
+        {actions ? (
+          <OrderedHeaderActions actions={actions} isMobile={isMobile} />
+        ) : (
+          <>
+            {primaryActions}
+            {secondaryActions &&
+              (isMobile ? (
+                <HeaderActionsPopover>{secondaryActions}</HeaderActionsPopover>
+              ) : (
+                secondaryActions
+              ))}
+          </>
+        )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Cụm nút xếp theo thứ tự bản v1. Mỗi nút dựng MỘT LẦN — `isMobile` chỉ chọn
+ * nó đứng ngoài hay trong `⋯` (xem ghi chú "Nhóm phụ dựng MỘT LẦN" ở trên).
+ */
+function OrderedHeaderActions({
+  actions,
+  isMobile,
+}: {
+  actions: HeaderActionList
+  isMobile: boolean
+}) {
+  const items = actions.filter((item): item is HeaderAction => Boolean(item))
+  const utility = items.filter((item) => item.group === 'utility')
+  const workflow = items.filter((item) => item.group !== 'utility')
+
+  if (isMobile) {
+    const outside = items.filter((item) => item.primary)
+    const menu = [...utility, ...workflow].filter((item) => !item.primary)
+    return (
+      <>
+        {outside.map((item) => (
+          <Fragment key={item.key}>{item.node}</Fragment>
+        ))}
+        {menu.length > 0 && (
+          <HeaderActionsPopover>
+            {menu.map((item) => (
+              <Fragment key={item.key}>{item.node}</Fragment>
+            ))}
+          </HeaderActionsPopover>
+        )}
+      </>
+    )
+  }
+
+  return (
+    <>
+      {utility.map((item) => (
+        <Fragment key={item.key}>{item.node}</Fragment>
+      ))}
+      {utility.length > 0 && workflow.length > 0 && (
+        <span aria-hidden className="mx-1 h-6 w-px self-center bg-border" data-testid="header-actions-divider" />
+      )}
+      {workflow.map((item) => (
+        <Fragment key={item.key}>{item.node}</Fragment>
+      ))}
+    </>
   )
 }
 

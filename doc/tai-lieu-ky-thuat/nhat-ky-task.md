@@ -19252,3 +19252,34 @@ Mã nguồn: frontend-v2/src/modules/procurement (components/procurement-pending
 **Kiểm:** typecheck 0 lỗi, lint 0 lỗi, bài kiểm khung menu và viên số xanh; xem trên máy local ở cả hai trạng thái thu gọn và mở rộng.
 
 Mã nguồn: frontend-v2/src/app/layouts/module-sidebar.tsx
+
+## duoc-CR-737 | Giao diện mới Thu mua: xếp nút thao tác đúng vị trí và thứ tự của giao diện cũ
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** người dùng chuyển từ giao diện cũ sang giao diện mới thấy các nút thao tác ở màn Thu mua nằm lộn chỗ, phải dò lại từng nút. Giao diện mới luôn xếp nút nền đặc trước rồi mới đến nút viền, nên **Duyệt** tách khỏi **Trả về** / **Từ chối**, còn **Lưu** của Đơn mua hàng nằm giữa thay vì ở cuối bên phải. Đã chốt chỉ đổi vị trí và thứ tự, giữ kiểu nút và nhãn của giao diện mới; các nút giao diện cũ có mà giao diện mới thiếu để đợt sau.
+
+**Đã làm**
+- Khung đầu trang chi tiết dùng chung có thêm cách xếp theo thứ tự giao diện cũ: nhóm tiện ích bên trái, vạch ngăn, các nút đi theo bước quy trình bên phải. Trên điện thoại vẫn để nút nền đặc ở ngoài và gom nút viền vào nút ba chấm như cũ.
+- Chi tiết Yêu cầu mua hàng: **In phiếu**, **Nhân bản**, **Xóa** đứng đầu bên trái và hiện cả lúc đang sửa phiếu đã lưu (trước đây phiếu nháp không thấy ba nút này); các nút quy trình xếp Sửa, Gửi duyệt, Duyệt, Trả về, Từ chối, Duyệt điều phối, Chuyển phòng xử lý, Xử lý phương án, Tạo đơn, Hoàn thành.
+- Chi tiết Yêu cầu báo giá, Phiếu khảo sát, Đơn mua hàng xếp lại đúng thứ tự giao diện cũ; Đơn mua hàng có nhóm tiện ích Tạo yêu cầu thanh toán, In, Nhân bản, Hủy đơn, Xóa và nút **Lưu** luôn ở cuối bên phải. Đầu trang Phiếu khảo sát bỏ nút **Lưu duyệt dòng**, nút này vẫn có trong cửa sổ chi tiết dòng như giao diện cũ.
+- Cụm nút của bảng dòng (Xóa đã chọn, Thêm dòng, Thêm nhiều) lên góc phải tiêu đề thẻ ở cả bốn phiếu; Yêu cầu mua hàng để **Thêm nhiều** dưới bảng như giao diện cũ và bỏ nút **Thêm dòng** trùng việc với **Thêm SP**.
+- Thẻ chi phí thu mua của Đơn mua hàng xếp lại thứ tự nút, nút **Mở lại dòng** ra thẳng giữa **Chi tiết** và **Xóa**.
+- Xử lý khảo sát: **Lấy từ khảo sát** lên góc phải đầu trang, **Chốt hoàn thành khảo sát** canh phải ở chân và chừa đáy để bong bóng Trợ lý không che; bộ lọc và bảng kết quả đứng trước bảng phương án đã gắn, cột thêm phương án là cột cuối.
+- Rà mã phát hiện: tick dòng rồi rời chế độ sửa thì nút **Xóa đã chọn** vẫn đếm dòng ở chế độ chỉ xem. Đã sửa ở bộ chọn dòng dùng chung: tắt chọn là bỏ hết dấu tick.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Thu mua và khu giao diện dùng chung 1505 bài xanh, thêm bài cho khung đầu trang và bộ chọn dòng; soát trên trình duyệt khổ 1440 và 390.
+
+**Còn lại:** các nút giao diện cũ có mà giao diện mới thiếu (Tạo yêu cầu báo giá từ phiếu mua bị từ chối, Nhân đôi dòng, Thêm nhiều dòng Đơn mua hàng, Tạm ngưng / Hủy / Tiếp tục trong cửa sổ dòng, tick nhiều kết quả để gắn phương án, tick dòng để xuất Excel) ghi trong kế hoạch, làm đợt sau.
+
+Mã nguồn: `frontend-v2/src/shared/ui/detail-page-header.tsx`, `frontend-v2/src/shared/hooks/use-line-selection.ts`, `frontend-v2/src/modules/procurement/pages/*-detail-page.tsx`, `survey-request-process-page.tsx`, các bảng dòng trong `frontend-v2/src/modules/procurement/components/`, `hooks/use-purchase-order-line-selection.ts`.
+Kế hoạch: `doc/erp/thu-mua/plans/261106-dong-bo-vi-tri-nut-v1-v2-duoc-CR-737/plan.md`.
+
+### duoc-CR-737-b | Ẩn nút Nhân bản ở đầu trang chi tiết và tô màu nút theo giao diện cũ
+- status: xong
+Đầu trang chi tiết Yêu cầu mua hàng, Yêu cầu báo giá, Đơn mua hàng bỏ nút **Nhân bản** cả phiếu; nhân bản vẫn làm được từ biểu tượng ở từng dòng màn danh sách, nút nhân bản dòng trong bảng giữ nguyên. Các nút viền ở bốn màn chi tiết và thẻ chi phí nhập khẩu mang màu theo nghĩa như giao diện cũ: chữ xanh cho bước quy trình phụ (Gửi duyệt, Hoàn thành, Tạo yêu cầu thanh toán, Tạo phiếu khảo sát), cam cho Trả về / Hủy duyệt / Mở lại chặng, đỏ cho Từ chối / Hủy đơn / Xóa, xanh lá cho Đã tạo phiếu YCMH / Quyết toán tất cả; nút nền đặc giữ nguyên. Bảng tông màu đặt một chỗ dùng chung.
+
+Kiểm: typecheck 0 lỗi, lint 0 lỗi (không thêm cảnh báo), vitest 623 bài xanh; ảnh chụp bốn màn ở khổ 1440 và Đơn mua hàng ở khổ 390. Thẻ chi phí nhập khẩu chưa xem được trên trình duyệt vì máy local không có đơn nhập khẩu.
+
+Mã nguồn: `frontend-v2/src/shared/ui/action-tone.ts`, `frontend-v2/src/shared/ui/delete-confirm-button.tsx`, bốn trang chi tiết Thu mua, `purchase-order-import-costs-card.tsx`, `purchase-order-import-cost-supplier-payment-cards.tsx`.

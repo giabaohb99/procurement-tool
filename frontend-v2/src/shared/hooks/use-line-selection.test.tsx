@@ -74,6 +74,24 @@ describe('useLineSelection', () => {
     expect(result.current.selectedIndexes).toEqual([])
   })
 
+  it('tắt chọn thì bỏ hết dấu tick, bật lại không sống dậy (duoc-CR-737)', () => {
+    //  Tick hai dòng, bấm *Hủy sửa* / *Lưu & gửi duyệt* => enabled false. Nút
+    //  *Xóa đã chọn (n)* đứng ở tiêu đề thẻ, ngoài bảng, nên không được đếm dòng nữa.
+    const { result, rerender } = renderHook(
+      ({ enabled }) => useLineSelection<Line>({ rows, rowKey, enabled }),
+      { initialProps: { enabled: true } },
+    )
+    act(() => result.current.selection?.onToggle(rows[0], 0))
+    act(() => result.current.selection?.onToggle(rows[1], 1))
+    expect(result.current.selectedIndexes).toEqual([0, 1])
+
+    rerender({ enabled: false })
+    expect(result.current.selectedIndexes).toEqual([])
+
+    rerender({ enabled: true })
+    expect(result.current.selectedIndexes).toEqual([])
+  })
+
   it('an unsaved row keeps its tick while its index is stable, nothing more', () => {
     //  Khóa dòng chưa lưu là chỉ số: hai dòng mới liên tiếp phải là hai khóa khác nhau.
     const { result } = setup([{ code: 'X' }, { code: 'Y' }])

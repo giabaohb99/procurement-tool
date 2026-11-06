@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo } from 'react'
 import { Copy, FilePlus2, Pencil, Trash2 } from 'lucide-react'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
@@ -48,8 +48,6 @@ interface SurveyLinesTableProps {
   selected: Set<number>
   /** Được phép mở popup "Bổ sung" cho dòng bị TP/QL báo thiếu thông tin. */
   canFill: boolean
-  /** Nút riêng của trang (Thêm dòng, Thêm nhiều, Xóa dòng đã chọn). */
-  actions?: ReactNode
   onSelectedChange: (next: Set<number>) => void
   onChangeLine: (index: number, changes: Partial<SurveyLine>) => void
   onOpenLine: (index: number, mode: 'edit' | 'fill') => void
@@ -84,7 +82,6 @@ export function SurveyLinesTable({
   catalog,
   selected,
   canFill,
-  actions,
   onSelectedChange,
   onChangeLine,
   onOpenLine,
@@ -266,7 +263,6 @@ export function SurveyLinesTable({
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium">{lines.length} dòng</span>
             {selectAllLabel}
-            {actions}
           </div>
 
           <div className="overflow-hidden rounded-lg border">
@@ -307,12 +303,7 @@ export function SurveyLinesTable({
           renderCell={renderCell}
           defaultCompact
           title={`${lines.length} dòng`}
-          actions={
-            <>
-              {selectAllLabel}
-              {actions}
-            </>
-          }
+          actions={selectAllLabel}
           emptyMessage="Chưa có dòng nào."
           cellClassName={(key) =>
             key === SELECT_KEY || key === NO_KEY ? 'align-top pt-3' : 'align-top'

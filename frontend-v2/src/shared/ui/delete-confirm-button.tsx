@@ -22,6 +22,8 @@ interface DeleteConfirmButtonProps {
   pending?: boolean
   /** Câu cảnh báo thêm (vd "Tài khoản đăng nhập kèm theo sẽ bị khóa"). */
   warning?: string
+  /** Ghép cuối vào nút mở hộp (vd tông `ACTION_TONE_CLASS.danger` cho viền đỏ như v1). */
+  className?: string
 }
 
 /**
@@ -33,6 +35,7 @@ export function DeleteConfirmButton({
   onConfirm,
   pending,
   warning,
+  className,
 }: DeleteConfirmButtonProps) {
   const [open, setOpen] = useState(false)
   //  Tên bản ghi có thể rất dài (vd mục đích phiếu là cả đoạn văn) → cắt gọn + "…" để
@@ -55,7 +58,7 @@ export function DeleteConfirmButton({
       <Button
         type="button"
         variant="outline"
-        className="text-destructive hover:text-destructive"
+        className={cn('text-destructive hover:text-destructive', className)}
         onClick={() => setOpen(true)}
         disabled={pending}
       >

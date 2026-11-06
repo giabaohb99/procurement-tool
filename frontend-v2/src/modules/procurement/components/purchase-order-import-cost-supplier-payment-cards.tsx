@@ -1,3 +1,4 @@
+import { ACTION_TONE_CLASS } from '@/shared/ui/action-tone'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
@@ -87,7 +88,7 @@ export function PurchaseOrderImportCostSupplierPaymentCards({
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="shrink-0"
+                  className={cn('shrink-0', ACTION_TONE_CLASS.accent)}
                   disabled={group.unpaid_payable_ids.length === 0}
                   onClick={() => onCreatePaymentRequest(group.unpaid_payable_ids)}
                 >

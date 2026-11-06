@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -74,7 +74,16 @@ describe('PurchaseRequestItemsTable', () => {
     unmount()
 
     renderTable({ editing: true })
-    expect(screen.getByRole('button', { name: /Thêm dòng/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Thêm nhiều/ })).toBeInTheDocument()
+  })
+
+  /**
+   * duoc-CR-737: bảng từng có nút *Thêm dòng* trên thanh tiêu đề, làm ĐÚNG việc của
+   * *Thêm SP* ở tiêu đề thẻ ngay phía trên — hai nút một lệnh. V1 chỉ có *Thêm SP*.
+   */
+  it('does not render its own add-one-row button — the card header owns "Thêm SP"', () => {
+    renderTable({ editing: true })
+    expect(screen.queryByRole('button', { name: /^Thêm dòng$/ })).toBeNull()
   })
 
   /**
@@ -175,5 +184,69 @@ describe('PurchaseRequestItemsTable — xóa nhiều dòng (bao-CR-547)', () => 
     await userEvent.click(screen.getByRole('button', { name: 'Xóa 2 dòng' }))
 
     expect(onChange).toHaveBeenCalledWith([])
+  })
+})
+
+/**
+ * duoc-CR-737 — vị trí nút như bản v1: *Xóa đã chọn (n)* ở góc phải tiêu đề THẺ, *Thêm
+ * nhiều* ở DƯỚI bảng. Trang xếp khung qua `renderFrame`; nút lọt lại vào thanh tiêu đề của
+ * `LinesTable` là người dời từ v1 sang không tìm thấy.
+ */
+describe('PurchaseRequestItemsTable — vị trí nút theo v1 (duoc-CR-737)', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => localStorage.clear())
+
+  const second: PurchaseRequestItem = { ...ITEMS[0], id: 8, product_code: 'NAP0030', product_name: 'Nắp nhựa phi 30' }
+
+  function renderFramed(props: Partial<Parameters<typeof PurchaseRequestItemsTable>[0]> = {}) {
+    return renderTable({
+      items: [ITEMS[0], second],
+      editing: true,
+      bulkRemovable: true,
+      renderFrame: ({ headerActions, body }) => (
+        <>
+          <div role="toolbar" aria-label="Tiêu đề thẻ">
+            {headerActions}
+          </div>
+          <div role="region" aria-label="Thân thẻ">
+            {body}
+          </div>
+        </>
+      ),
+      ...props,
+    })
+  }
+
+  it('puts "Xóa đã chọn (n)" in the card header slot, not inside the table body', async () => {
+    const onChange = vi.fn()
+    renderFramed({ onChange })
+
+    const header = screen.getByRole('toolbar', { name: 'Tiêu đề thẻ' })
+    const body = screen.getByRole('region', { name: 'Thân thẻ' })
+    expect(within(header).queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn dòng 1' }))
+    expect(within(header).getByRole('button', { name: 'Xóa đã chọn (1)' })).toBeInTheDocument()
+    expect(within(body).queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
+
+    await userEvent.click(within(header).getByRole('button', { name: 'Xóa đã chọn (1)' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa 1 dòng' }))
+    expect(onChange).toHaveBeenCalledWith([second])
+  })
+
+  it('puts "Thêm nhiều" below the table, after the last row', () => {
+    renderFramed()
+
+    const body = screen.getByRole('region', { name: 'Thân thẻ' })
+    const addMany = within(body).getByRole('button', { name: /Thêm nhiều/ })
+    const table = within(body).getByRole('table')
+    // DOCUMENT_POSITION_FOLLOWING: nút đứng SAU bảng trong thứ tự tài liệu.
+    expect(table.compareDocumentPosition(addMany) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(screen.getByRole('toolbar', { name: 'Tiêu đề thẻ' })).queryByRole('button')).toBeNull()
+  })
+
+  it('hides "Thêm nhiều" while only viewing the ticket', () => {
+    renderFramed({ editing: false })
+    expect(screen.queryByRole('button', { name: /Thêm nhiều/ })).toBeNull()
   })
 })

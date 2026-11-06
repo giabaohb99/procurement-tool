@@ -4,7 +4,6 @@ import {
   ChevronRight,
   Copy,
   Lock,
-  MoreHorizontal,
   Pencil,
   Plus,
   Receipt,
@@ -35,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
+import { ACTION_TONE_CLASS } from '@/shared/ui/action-tone'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -50,12 +50,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
@@ -961,13 +955,14 @@ export function PurchaseOrderImportCostsCard({
     // bao-CR-469: nút "Quyết toán dòng này" ở đây đã BỎ — chốt nay đi bằng ô tick đầu
     // dòng cộng hai nút trên đầu thẻ (chốt các dòng đã tick · chốt tất cả). Một thao tác
     // sinh công nợ thật thì nên có chỗ nhìn thấy số dòng trước khi bấm, chứ không nấp
-    // trong menu ba chấm của từng dòng. Mở lại thì vẫn theo DÒNG, giữ nguyên chỗ này.
+    // trong menu của từng dòng. Mở lại thì vẫn theo DÒNG, giữ nguyên chỗ này.
     const canReopenLine =
       approved &&
       lineStage >= COST_STAGE_FINAL &&
       can('purchase_order', 'approve') &&
       cost.id !== undefined
-    const hasLineStageAction = canReopenLine
+    //  duoc-CR-737: thứ tự nút theo bản v1 — Chi tiết · Mở lại dòng · Xóa. Mở lại dòng
+    //  trước nấp trong menu ba chấm (menu chỉ có đúng một mục) nay là nút biểu tượng.
     return (
       <div className="flex items-center justify-center gap-0.5">
         {withDetailButton && (
@@ -975,6 +970,7 @@ export function PurchaseOrderImportCostsCard({
             type="button"
             variant="ghost"
             size="icon-sm"
+            className={ACTION_TONE_CLASS.accent}
             title="Chi tiết khoản chi phí"
             aria-label={`Chi tiết khoản chi phí ${index + 1}`}
             onClick={() => setDetailIndex(index)}
@@ -982,42 +978,36 @@ export function PurchaseOrderImportCostsCard({
             <Pencil />
           </Button>
         )}
+        {canReopenLine && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className={ACTION_TONE_CLASS.warning}
+            title="Mở lại dòng"
+            aria-label={`Mở lại dòng chi phí ${index + 1}`}
+            onClick={() => {
+              if (cost.id) {
+                setPendingLineAction({ type: 'reopen', costId: cost.id })
+                setLineReopenReason('')
+              }
+            }}
+          >
+            <RotateCcw />
+          </Button>
+        )}
         {isRowEditable(cost) && !hasPayable && (
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="text-destructive hover:text-destructive"
+            className={ACTION_TONE_CLASS.danger}
             title="Xóa dòng chi phí"
             aria-label={`Xóa dòng chi phí ${index + 1}`}
             onClick={() => void removeCost(index)}
           >
             <Trash2 />
           </Button>
-        )}
-        {hasLineStageAction && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="icon-sm" aria-label="Thao tác giai đoạn">
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {canReopenLine && (
-                <DropdownMenuItem
-                  onClick={() => {
-                    if (cost.id) {
-                      setPendingLineAction({ type: 'reopen', costId: cost.id })
-                      setLineReopenReason('')
-                    }
-                  }}
-                >
-                  <RotateCcw className="size-4" />
-                  Mở lại dòng
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
         )}
       </div>
     )
@@ -1088,6 +1078,9 @@ export function PurchaseOrderImportCostsCard({
             <Receipt className="size-4" />
             Chi phí thu mua
           </CardTitle>
+          {/*  duoc-CR-737: nút viền mang màu của nút cùng tên ở v1 (`ACTION_TONE_CLASS`) —
+               Quyết toán tất cả xanh lá, Mở lại hổ phách; hai nút chép số và Thêm chi phí
+               để trơn (v1 là `btn ghost`). */}
           <div className="flex flex-wrap items-center justify-end gap-2">
             {/* bao-CR-453 — nút chốt / mở lại giai đoạn. Nút CHỐT tạm ẩn (bao-CR-473), xem
                 `STAGE_ADVANCE_ENABLED`; nút Mở lại vẫn giữ cho đơn đã chốt giai đoạn từ trước. */}
@@ -1101,18 +1094,6 @@ export function PurchaseOrderImportCostsCard({
               >
                 <Lock className="size-4" />
                 {order.cost_stage === COST_STAGE_ESTIMATE ? 'Chốt tạm tính' : 'Chốt quyết toán'}
-              </Button>
-            )}
-            {approved && (order.cost_stage ?? 0) > COST_STAGE_ESTIMATE && can('purchase_order', 'approve') && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={reopenStageMutation.isPending}
-                onClick={() => setReopenDialogOpen(true)}
-              >
-                <RotateCcw className="size-4" />
-                Mở lại
               </Button>
             )}
             {/* bao-CR-478: chép số hàng loạt — bấm một cái thay vì gõ lại từng dòng. */}
@@ -1166,6 +1147,7 @@ export function PurchaseOrderImportCostsCard({
                   type="button"
                   variant="outline"
                   size="sm"
+                  className={ACTION_TONE_CLASS.success}
                   disabled={finalizeLinesMutation.isPending}
                   // bao-CR-476: gửi ĐÚNG danh sách đã đếm trên nút chứ không gửi rỗng ("chốt hết"
                   // phía backend): lượt lưu kèm theo có thể đẻ thêm dòng mới, và dòng đó không được
@@ -1178,6 +1160,20 @@ export function PurchaseOrderImportCostsCard({
                   Quyết toán tất cả ({finalizableIds.length} dòng)
                 </Button>
               </>
+            )}
+            {/* duoc-CR-737: Mở lại giai đoạn đứng sau cụm Quyết toán, trước Tạo YCTT — đúng chỗ bản v1. */}
+            {approved && (order.cost_stage ?? 0) > COST_STAGE_ESTIMATE && can('purchase_order', 'approve') && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={ACTION_TONE_CLASS.warning}
+                disabled={reopenStageMutation.isPending}
+                onClick={() => setReopenDialogOpen(true)}
+              >
+                <RotateCcw className="size-4" />
+                Mở lại
+              </Button>
             )}
             {payReady && selectablePayableIds.length > 0 && (
               <>
@@ -1396,6 +1392,7 @@ export function PurchaseOrderImportCostsCard({
                                   type="button"
                                   size="sm"
                                   variant="outline"
+                                  className={ACTION_TONE_CLASS.accent}
                                   disabled={group.unpaid_payable_ids.length === 0}
                                   onClick={() => goCreatePaymentRequest(group.unpaid_payable_ids)}
                                 >

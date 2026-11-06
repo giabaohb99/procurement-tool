@@ -85,6 +85,75 @@ describe('DetailPageHeader', () => {
   })
 })
 
+describe('DetailPageHeader — xếp theo thứ tự bản v1 (duoc-CR-737)', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  function renderOrdered() {
+    const show = false
+    return render(
+      <MemoryRouter>
+        <DetailPageHeader
+          backTo="/x"
+          backLabel="Về"
+          title="PO260914001"
+          actions={[
+            { key: 'print', group: 'utility', node: <Button variant="outline">In</Button> },
+            { key: 'delete', group: 'utility', node: <Button variant="outline">Xóa</Button> },
+            { key: 'submit', node: <Button variant="outline">Gửi duyệt</Button> },
+            { key: 'approve', primary: true, node: <Button>Duyệt</Button> },
+            show && { key: 'hidden', node: <Button>Ẩn</Button> },
+            { key: 'reject', node: <Button variant="outline">Từ chối</Button> },
+            { key: 'save', primary: true, node: <Button>Lưu</Button> },
+          ]}
+        />
+      </MemoryRouter>,
+    )
+  }
+
+  it('khổ rộng: tiện ích · vạch ngăn · quy trình, nút đặc và viền xen đúng thứ tự khai', () => {
+    renderOrdered()
+
+    const names = screen
+      .getAllByRole('button')
+      .map((button) => button.textContent)
+    expect(names).toEqual(['In', 'Xóa', 'Gửi duyệt', 'Duyệt', 'Từ chối', 'Lưu'])
+    expect(screen.getByTestId('header-actions-divider')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ẩn' })).toBeNull()
+  })
+
+  it('khổ hẹp: nút đặc ở ngoài, còn lại vào ⋯', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }))
+
+    renderOrdered()
+
+    expect(screen.getByRole('button', { name: 'Duyệt' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Lưu' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Lệnh khác' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Gửi duyệt' })).toBeNull()
+    expect(screen.queryByTestId('header-actions-divider')).toBeNull()
+  })
+
+  it('không có nhóm tiện ích thì không vẽ vạch ngăn', () => {
+    render(
+      <MemoryRouter>
+        <DetailPageHeader
+          backTo="/x"
+          backLabel="Về"
+          title="PO260914001"
+          actions={[{ key: 'save', primary: true, node: <Button>Lưu</Button> }]}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.queryByTestId('header-actions-divider')).toBeNull()
+  })
+})
+
 describe('ResponsiveLabel', () => {
   it('dựng CẢ HAI bản, để CSS chọn — bản ngắn cho khổ hẹp', () => {
     //  Đổi bằng CSS được vì nhãn là nút DOM (khác `placeholder` của SearchField).

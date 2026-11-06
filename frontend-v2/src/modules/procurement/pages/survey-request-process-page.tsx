@@ -10,7 +10,10 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatDate } from '@/shared/utils/format-date'
 import { StatusBadge } from '../components/document-status-badge'
-import { SurveyRequestProcessCard } from '../components/survey-request-process-card'
+import {
+  SurveyRequestProcessCard,
+  SurveyRequestSyncOptionsButton,
+} from '../components/survey-request-process-card'
 import { useSurveyRequest } from '../hooks/use-survey-request'
 import { SR_STATUS_LABELS } from '../types/purchase-document'
 import { isSurveyRequestProcessable } from '../types/survey-request-process'
@@ -67,7 +70,10 @@ export function SurveyRequestProcessPage() {
   }
 
   return (
-    <PageContainer className="bg-slate-50/70 lg:p-4">
+    //  `pb-28`: nút *Chốt hoàn thành khảo sát* canh phải ở chân (như v1, duoc-CR-737)
+    //  đúng chỗ bong bóng Trợ lý nổi (`assistant-widget`, cách đáy ~5rem). Chừa đáy
+    //  để cuộn hết trang thì nút nằm TRÊN bong bóng, không bị che.
+    <PageContainer className="bg-slate-50/70 pb-28 lg:p-4 lg:pb-28">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <Button variant="outline" size="icon" asChild aria-label="Về chi tiết yêu cầu báo giá">
           <Link to={appRoutes.procurement.surveyRequestDetail(data.id)}>
@@ -78,6 +84,10 @@ export function SurveyRequestProcessPage() {
           Xử lý khảo sát — {data.code || `#${data.id}`}
         </h1>
         <StatusBadge status={data.status} labels={SR_STATUS_LABELS} />
+        {/*  duoc-CR-737: *Lấy từ khảo sát* ở góc phải đầu trang như bản v1. */}
+        <div className="ml-auto">
+          <SurveyRequestSyncOptionsButton surveyRequestId={data.id} status={data.status} />
+        </div>
       </div>
 
       <p className="mb-4 text-sm text-muted-foreground">

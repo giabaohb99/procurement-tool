@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -145,5 +145,50 @@ describe('SurveyRequestLinesTable — khổ điện thoại', () => {
     renderTable({ editing: true })
     expect(screen.getByRole('button', { name: /Xóa dòng 1/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Nhân bản dòng 1/ })).toBeInTheDocument()
+  })
+})
+
+/**
+ * duoc-CR-737 — *Xóa đã chọn (n)* đứng ở góc phải tiêu đề THẺ cạnh *Thêm dòng* như bản
+ * v1, không còn ở thanh tiêu đề của `LinesTable`. Trang xếp khung qua `renderFrame`.
+ */
+describe('SurveyRequestLinesTable — Xóa đã chọn ở tiêu đề thẻ (duoc-CR-737)', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => localStorage.clear())
+
+  const second: SurveyRequestLine = { ...LINES[0], id: 6, requirement_detail: 'Băng keo trong 48mm' }
+
+  it('moves the bulk-delete button into the header slot and still drops ticked lines', async () => {
+    const onChange = vi.fn()
+    const onLineRemoved = vi.fn()
+    renderTable({
+      lines: [LINES[0], second],
+      editing: true,
+      bulkRemovable: true,
+      onChange,
+      onLineRemoved,
+      renderFrame: ({ headerActions, body }) => (
+        <>
+          <div role="toolbar" aria-label="Tiêu đề thẻ">
+            {headerActions}
+          </div>
+          <div role="region" aria-label="Thân thẻ">
+            {body}
+          </div>
+        </>
+      ),
+    })
+
+    const header = screen.getByRole('toolbar', { name: 'Tiêu đề thẻ' })
+    const body = screen.getByRole('region', { name: 'Thân thẻ' })
+    expect(within(header).queryByRole('button')).toBeNull()
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn dòng 2' }))
+    expect(within(body).queryByRole('button', { name: /Xóa đã chọn/ })).toBeNull()
+    await userEvent.click(within(header).getByRole('button', { name: 'Xóa đã chọn (1)' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa 1 dòng' }))
+
+    expect(onChange).toHaveBeenCalledWith([LINES[0]])
+    expect(onLineRemoved).toHaveBeenCalledWith(1)
   })
 })

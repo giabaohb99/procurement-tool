@@ -84,7 +84,6 @@ export function SurveyRequestProcessCard({
     surveyRequestId,
     isSurveyRequestProcessable(status),
   )
-  const syncMutation = useSyncProcessOptions(surveyRequestId)
   const completeMutation = useCompleteProcess(surveyRequestId)
 
   const [emptyDialogOpen, setEmptyDialogOpen] = useState(false)
@@ -110,7 +109,8 @@ export function SurveyRequestProcessCard({
   }
   if (!process) return null
 
-  const canFinish = myLines.length > 0 && !myLines.every((line) => line.is_completed)
+  const allMineCompleted = myLines.length > 0 && myLines.every((line) => line.is_completed)
+  const canFinish = myLines.length > 0 && !allMineCompleted
 
   const startComplete = () => {
     //  bao-CR-565 (02/10/2026): bỏ chốt chặn "mọi phương án phải có Mã SP hệ thống" — đại ca chốt
@@ -156,35 +156,28 @@ export function SurveyRequestProcessCard({
           />
         ))}
 
-        <div className="flex flex-wrap items-center gap-2 border-t pt-4">
-          {status === 'processing' && myLines.length > 0 && (
-            <Button
-              variant="outline"
-              disabled={syncMutation.isPending}
-              title="Lấy phương án tự động từ các Phiếu khảo sát đã duyệt liên kết với YCBG này"
-              onClick={() => syncMutation.mutate()}
-            >
-              {syncMutation.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-              Lấy từ khảo sát
-            </Button>
-          )}
-          {canFinish && (
-            <Button disabled={completeMutation.isPending} onClick={startComplete}>
-              {completeMutation.isPending ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <CheckCircle2 />
-              )}
-              Chốt hoàn thành khảo sát
-            </Button>
-          )}
-          {myLines.length > 0 && myLines.every((line) => line.is_completed) && (
-            <p className="flex items-center gap-2 text-sm text-success">
-              <CheckCircle2 className="size-4" />
-              Bạn đã chốt xong phần khảo sát của mình.
-            </p>
-          )}
-        </div>
+        {/*  duoc-CR-737: chân khu canh PHẢI như bản v1. *Lấy từ khảo sát* đã lên góc phải
+             đầu trang (`SurveyRequestSyncOptionsButton`). */}
+        {(canFinish || allMineCompleted) && (
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-4">
+            {canFinish && (
+              <Button disabled={completeMutation.isPending} onClick={startComplete}>
+                {completeMutation.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <CheckCircle2 />
+                )}
+                Chốt hoàn thành khảo sát
+              </Button>
+            )}
+            {allMineCompleted && (
+              <p className="flex items-center gap-2 text-sm text-success">
+                <CheckCircle2 className="size-4" />
+                Bạn đã chốt xong phần khảo sát của mình.
+              </p>
+            )}
+          </div>
+        )}
       </CardContent>
 
       <Dialog open={emptyDialogOpen} onOpenChange={setEmptyDialogOpen}>
@@ -293,6 +286,10 @@ function ProcessLineSection({
         )}
       </div>
 
+      {/*  duoc-CR-737: thứ tự bản v1 — bộ lọc + bảng kết quả khảo sát TRƯỚC, bảng
+           phương án đã gắn SAU. */}
+      {editable && <AvailableLinesPicker surveyRequestId={surveyRequestId} line={line} />}
+
       {options.length > 0 ? (
         <OptionsTable surveyRequestId={surveyRequestId} line={line} editable={editable} />
       ) : (
@@ -300,8 +297,6 @@ function ProcessLineSection({
           Chưa có phương án nào cho sản phẩm này.
         </p>
       )}
-
-      {editable && <AvailableLinesPicker surveyRequestId={surveyRequestId} line={line} />}
     </section>
   )
 }
@@ -609,24 +604,6 @@ function AvailableLinesPicker({
   const columns = useMemo<DataTableColumn<AvailableSurveyLine>[]>(
     () => [
       {
-        key: 'add',
-        header: '',
-        width: 48,
-        hideable: false,
-        cell: (row) => (
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-7"
-            title="Gắn làm phương án"
-            disabled={addMutation.isPending}
-            onClick={() => addMutation.mutate({ lineId: line.id, productSurveyLineId: row.id })}
-          >
-            <Plus />
-          </Button>
-        ),
-      },
-      {
         key: 'supplier',
         header: 'NCC',
         width: 200,
@@ -714,6 +691,25 @@ function AvailableLinesPicker({
         hideable: false,
         cell: (row) => row.survey_code || '—',
       },
+      //  duoc-CR-737: cột (+) gắn phương án là cột CUỐI như bản v1.
+      {
+        key: 'add',
+        header: '',
+        width: 48,
+        hideable: false,
+        cell: (row) => (
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7"
+            title="Gắn làm phương án"
+            disabled={addMutation.isPending}
+            onClick={() => addMutation.mutate({ lineId: line.id, productSurveyLineId: row.id })}
+          >
+            <Plus />
+          </Button>
+        ),
+      },
     ],
     [addMutation, line.id, line.item_group],
   )
@@ -727,7 +723,27 @@ function AvailableLinesPicker({
       <div className="flex flex-wrap items-center gap-2">
         {/* Danh mục NCC / phân loại dài hàng chục-hàng trăm dòng — Select thường cuộn tay
             không nổi (khách báo 29/08). bao-CR-487: chọn được NHIỀU, gõ tìm được (MultiPicker
-            như CR-423). MultiPicker tự chiếm trọn thẻ bọc nên bề rộng đặt ở div ngoài. */}
+            như CR-423). MultiPicker tự chiếm trọn thẻ bọc nên bề rộng đặt ở div ngoài.
+            duoc-CR-737: thứ tự bản v1 — Phân loại · NCC · ô tìm · Về phân loại dòng · Bỏ lọc. */}
+        <div className="w-56" aria-label="Lọc theo phân loại">
+          <MultiPicker
+            value={itemGroups}
+            onChange={(ids) => {
+              setItemGroups(ids)
+              setPage(1)
+            }}
+            options={(itemGroupsQuery.data?.items ?? []).map((group) => ({
+              id: group.name,
+              label: group.name,
+            }))}
+            placeholder="Tất cả phân loại"
+            searchPlaceholder="Tìm phân loại…"
+            emptyMessage="Không tìm thấy phân loại nào."
+            summaryInTrigger
+            clearInTrigger
+          />
+        </div>
+
         <div className="w-64" aria-label="Lọc theo nhà cung cấp">
           <MultiPicker
             value={supplierCodes}
@@ -748,24 +764,15 @@ function AvailableLinesPicker({
           />
         </div>
 
-        <div className="w-56" aria-label="Lọc theo phân loại">
-          <MultiPicker
-            value={itemGroups}
-            onChange={(ids) => {
-              setItemGroups(ids)
-              setPage(1)
-            }}
-            options={(itemGroupsQuery.data?.items ?? []).map((group) => ({
-              id: group.name,
-              label: group.name,
-            }))}
-            placeholder="Tất cả phân loại"
-            searchPlaceholder="Tìm phân loại…"
-            emptyMessage="Không tìm thấy phân loại nào."
-            summaryInTrigger
-            clearInTrigger
-          />
-        </div>
+        <Input
+          className="w-64"
+          value={search}
+          placeholder="Tìm theo tên SP / mã / NCC..."
+          onChange={(event) => {
+            setSearch(event.target.value)
+            setPage(1)
+          }}
+        />
 
         {!!line.item_group && !isLineGroupOnly(itemGroups, line.item_group) && (
           <Button
@@ -780,16 +787,6 @@ function AvailableLinesPicker({
             Về phân loại dòng
           </Button>
         )}
-
-        <Input
-          className="w-64"
-          value={search}
-          placeholder="Tìm theo tên SP / mã / NCC..."
-          onChange={(event) => {
-            setSearch(event.target.value)
-            setPage(1)
-          }}
-        />
 
         {filterActive && (
           <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
@@ -856,5 +853,36 @@ function AvailableLinesPicker({
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Nút *Lấy từ khảo sát* — duoc-CR-737 dời lên góc phải ĐẦU TRANG Xử lý khảo sát như bản
+ * v1 (trước nằm ở chân thẻ). Điều kiện giữ nguyên: phiếu Đang xử lý và người xem có dòng
+ * mình phụ trách. Đọc cùng khóa truy vấn với `SurveyRequestProcessCard` nên không gọi
+ * thêm API; backend trả lỗi (không phải NSTM) thì nút ẩn theo thẻ.
+ */
+export function SurveyRequestSyncOptionsButton({
+  surveyRequestId,
+  status,
+}: SurveyRequestProcessCardProps) {
+  const processQuery = useSurveyRequestProcess(
+    surveyRequestId,
+    isSurveyRequestProcessable(status),
+  )
+  const syncMutation = useSyncProcessOptions(surveyRequestId)
+  const hasMyLines = (processQuery.data?.lines ?? []).some((line) => line.can_process)
+
+  if (status !== 'processing' || !hasMyLines) return null
+  return (
+    <Button
+      variant="outline"
+      disabled={syncMutation.isPending}
+      title="Lấy phương án tự động từ các Phiếu khảo sát đã duyệt liên kết với YCBG này"
+      onClick={() => syncMutation.mutate()}
+    >
+      {syncMutation.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+      Lấy từ khảo sát
+    </Button>
   )
 }

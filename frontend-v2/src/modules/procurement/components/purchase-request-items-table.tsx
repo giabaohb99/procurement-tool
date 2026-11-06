@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { History, Pencil, Plus, PlusCircle, Trash2 } from 'lucide-react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { History, Pencil, PlusCircle, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
@@ -89,6 +89,14 @@ interface ItemsTableProps {
     expectedDate: string,
     originalDate: string,
   ) => void
+  /**
+   * duoc-CR-737 — cụm nút của bảng đứng ở GÓC PHẢI TIÊU ĐỀ THẺ như bản v1, không ở
+   * thanh tiêu đề của `LinesTable`. Bảng giữ state tick dòng nên trao hai mảnh cho
+   * trang tự xếp vào khung `Card`: `headerActions` (*Xóa đã chọn (n)*, chỉ dựng khi có
+   * dòng đang tick) và `body` (bảng + nút *Thêm nhiều* bên dưới). Bỏ trống thì hai
+   * mảnh đứng liền nhau.
+   */
+  renderFrame?: (parts: { headerActions: ReactNode; body: ReactNode }) => ReactNode
 }
 
 /** Dòng trống khi bấm "Thêm dòng". */
@@ -135,6 +143,12 @@ export function PurchaseRequestItemsTable({
   canEditLine,
   onAssigneeChange,
   onExpectedDateCommit,
+  renderFrame = ({ headerActions, body }) => (
+    <>
+      {headerActions}
+      {body}
+    </>
+  ),
 }: ItemsTableProps) {
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const lineSelection = useLineSelection({
@@ -607,31 +621,29 @@ export function PurchaseRequestItemsTable({
   // Nút "Sửa dòng hàng" cũ đã bỏ (QA 29/08): phiếu còn sửa được thì trang mở
   // thẳng chế độ sửa, bảng nhập trực tiếp như bản v1.
   //
-  // ⚠️ Dựng thành BIẾN chứ không viết hai lần cho hai lối bày: hai bản chép là
-  // hai đường thêm dòng phải sửa song song mỗi lần luật đổi.
-  const addActions = editing && (
-    <>
-      <Button
-        type="button"
-        size="sm"
-        onClick={() => onChange([...items, { ...EMPTY_PURCHASE_REQUEST_ITEM }])}
-      >
-        <Plus /> Thêm dòng
-      </Button>
+  // duoc-CR-737: thanh nút cũ trên tiêu đề `LinesTable` (Thêm dòng · Thêm nhiều ·
+  // Xóa đã chọn) tách về đúng chỗ của v1 — *Xóa đã chọn* lên góc phải tiêu đề thẻ
+  // (cạnh *Thêm SP* của trang), *Thêm nhiều* xuống dưới bảng. *Thêm dòng* bỏ hẳn:
+  // nó làm đúng việc của *Thêm SP* trên tiêu đề thẻ (thêm một dòng trống cuối bảng),
+  // để cả hai là hai nút cùng một lệnh đứng cách nhau một hàng.
+  const bulkDeleteAction = (
+    <BulkDeleteButton
+      size="sm"
+      count={lineSelection.selectedIndexes.length}
+      unitLabel="dòng"
+      description="Các dòng bỏ khỏi phiếu ngay trên màn hình; bấm Lưu mới ghi xuống."
+      onConfirm={removeSelectedLines}
+    />
+  )
+  const addManyAction = editing && (
+    <div className="flex">
       <Button type="button" size="sm" variant="outline" onClick={() => setBulkDialogOpen(true)}>
         <PlusCircle /> Thêm nhiều
       </Button>
-      <BulkDeleteButton
-        size="sm"
-        count={lineSelection.selectedIndexes.length}
-        unitLabel="dòng"
-        description="Các dòng bỏ khỏi phiếu ngay trên màn hình; bấm Lưu mới ghi xuống."
-        onConfirm={removeSelectedLines}
-      />
-    </>
+    </div>
   )
 
-  return (
+  const body = (
     <>
       {asCards ? (
         <div className="space-y-3">
@@ -642,12 +654,8 @@ export function PurchaseRequestItemsTable({
                cho bảng dòng khảo sát. */}
           {/*  Chỉ đếm dòng, KHÔNG lặp lại "Danh sách sản phẩm": thẻ bọc ngoài đã
                có tiêu đề *Danh sách Sản phẩm Yêu cầu* ngay bên trên, ở khổ hẹp hai
-               dòng chữ gần giống nhau xếp chồng đọc như bị lặp. Khổ rộng thì tiêu
-               đề của `LinesTable` nằm cùng hàng với cụm nút nên không va nhau. */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium">{items.length} dòng</span>
-            {addActions}
-          </div>
+               dòng chữ gần giống nhau xếp chồng đọc như bị lặp. */}
+          <span className="block text-sm font-medium">{items.length} dòng</span>
 
           <div className="overflow-hidden rounded-lg border">
             {items.length === 0 ? (
@@ -692,9 +700,15 @@ export function PurchaseRequestItemsTable({
           rowClassName={(item) =>
             item.line_status === 'cancelled' ? 'opacity-60' : undefined
           }
-          actions={addActions}
         />
       )}
+      {addManyAction}
+    </>
+  )
+
+  return (
+    <>
+      {renderFrame({ headerActions: bulkDeleteAction, body })}
 
       <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
         <DialogContent className="sm:max-w-sm">

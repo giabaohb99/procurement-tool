@@ -6,7 +6,6 @@ import {
   CheckCheck,
   ClipboardCheck,
   ClipboardList,
-  Copy,
   CornerUpLeft,
   FileCheck,
   FilePlus,
@@ -18,8 +17,6 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
-import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { useFormTelemetry } from '@/core/telemetry/use-form-telemetry'
 import { UI_FORM_CODE } from '@/core/telemetry/ui-event-codes'
 import { useQueryClient } from '@tanstack/react-query'
@@ -37,7 +34,11 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
-import { DetailPageHeader, ResponsiveLabel } from '@/shared/ui/detail-page-header'
+import {
+  DetailPageHeader,
+  ResponsiveLabel,
+  type HeaderActionList,
+} from '@/shared/ui/detail-page-header'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,6 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
+import { ACTION_TONE_CLASS } from '@/shared/ui/action-tone'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
@@ -536,78 +538,130 @@ export function SurveyRequestDetailPage() {
   }
 
   /**
-   * Lệnh CHÍNH của đầu trang — nút nền đặc, luôn ở ngoài.
+   * Cụm nút đầu trang, xếp ĐÚNG THỨ TỰ BẢN V1 (duoc-CR-737) và đứng thành MỘT
+   * dãy — v1 không có vạch ngăn tiện ích / quy trình ở màn này: Lưu · Gửi duyệt ·
+   * Duyệt · Từ chối · Xử lý khảo sát · Chuyển phòng xử lý · Trả về · Tạo phiếu
+   * khảo sát · Tạo YCMH · Chuyển Hoàn thành · Đã tạo N phiếu YCMH · Xóa. Nút Nhân
+   * bản cả phiếu đã bỏ khỏi đầu trang (duoc-CR-737) — chép phiếu dùng biểu tượng
+   * chép ở từng dòng của màn danh sách.
    *
-   * Chia theo DÁNG NÚT, không theo cảm tính: nền đặc là việc người mở trang đang
-   * định làm (*Lưu* khi đang sửa, *Duyệt* / *Tạo yêu cầu mua* theo từng chặng).
-   * Giấu chúng sau `⋯` là bắt thêm một chạm cho thao tác thường xuyên nhất.
+   * Nút viền mang MÀU của nút cùng tên ở v1 (`ACTION_TONE_CLASS`): Gửi duyệt, Xử lý
+   * khảo sát, Tạo phiếu khảo sát, Chuyển Hoàn thành chữ xanh; Trả về hổ phách; Từ
+   * chối, Xóa đỏ; Đã tạo N phiếu YCMH xanh lá; Chuyển phòng xử lý để trơn.
+   *
+   * `primary` đánh dấu nút nền đặc: việc người mở trang đang định làm (*Lưu* khi
+   * đang sửa, *Duyệt* / *Tạo yêu cầu mua* theo từng chặng). Khổ hẹp nút đặc ở
+   * ngoài, nút viền vào `⋯` — giấu nút đặc sau `⋯` là bắt thêm một chạm cho thao
+   * tác thường xuyên nhất.
+   *
+   * ⚠️ Dựng thành MỘT mảng chứ không viết hai lần: mỗi nút kéo theo state hoặc
+   * mutation riêng (`DeleteConfirmButton` có hộp xác nhận của nó), chép ra hai
+   * bản là hai bộ state song song cho cùng một lệnh.
    */
-  const primaryActions = (
-    <>
-      {editable && (
+  const headerActions: HeaderActionList = [
+    editable && {
+      key: 'save',
+      primary: true,
+      node: (
         <Button onClick={() => void handleSave()} disabled={saveSurveyRequest.isPending}>
           {saveSurveyRequest.isPending ? <Loader2 className="animate-spin" /> : <Save />}
           Lưu
         </Button>
-      )}
-
-      {!isNew && status === 'submitted' && can('survey_request', 'approve') && (
-        <Button
-          onClick={() =>
-            void runAction.mutateAsync({ action: 'approve' }).then(() => {
-              dirtyRef.current = false
-            })
-          }
-          disabled={runAction.isPending}
-        >
-          <Check />
-          Duyệt
-        </Button>
-      )}
-
-      {!isNew && CREATE_PR_STATUSES.includes(status) && canCreatePr && (
-        <Button
-          disabled={!anyChosen || createPurchaseRequests.isPending}
-          title={anyChosen ? '' : 'Chọn ít nhất 1 phương án ở phần Kết quả khảo sát'}
-          onClick={() => setConfirmAction('createPrs')}
-        >
-          <FilePlus />
-          {/*  Nhãn NGẮN ở khổ hẹp: bản đầy đủ rộng 158px, đúng phần đẩy cụm nút
-               rớt xuống hàng riêng trên máy 390px. "YCMH" là từ viết tắt người
-               dùng đang dùng hằng ngày, không phải chữ nghĩ ra cho vừa chỗ. */}
-          <ResponsiveLabel short="Tạo YCMH" long="Tạo yêu cầu mua" />
-        </Button>
-      )}
-    </>
-  )
-
-  /**
-   * Lệnh PHỤ — khổ rộng bày thẳng, khổ hẹp gom vào nút `⋯`.
-   *
-   * ⚠️ Dựng thành BIẾN chứ không viết hai lần: mỗi nút kéo theo state hoặc
-   * mutation riêng (`DeleteConfirmButton` có hộp xác nhận của nó), chép ra hai
-   * bản là hai bộ state song song cho cùng một lệnh.
-   */
-  const secondaryActions = (
-    <>
-      {editable && (
+      ),
+    },
+    editable && {
+      key: 'submit',
+      node: (
         <Button
           variant="outline"
+          className={ACTION_TONE_CLASS.accent}
           onClick={() => void handleSave(true)}
           disabled={saveSurveyRequest.isPending}
         >
           <Send />
           Gửi duyệt
         </Button>
-      )}
-
-      {/* bao-CR-498: MỘT nút "Trả về" cho hai đường (trả người lập sửa lại / trả phòng lập tự
-          xử lý — bao-CR-414). Cả hai đường cùng mở thì hỏi; một đường thì đi thẳng. */}
-      {returnResolution !== null && (
+      ),
+    },
+    !isNew &&
+      status === 'submitted' &&
+      can('survey_request', 'approve') && {
+        key: 'approve',
+        primary: true,
+        node: (
+          <Button
+            onClick={() =>
+              void runAction.mutateAsync({ action: 'approve' }).then(() => {
+                dirtyRef.current = false
+              })
+            }
+            disabled={runAction.isPending}
+          >
+            <Check />
+            Duyệt
+          </Button>
+        ),
+      },
+    !isNew &&
+      status === 'submitted' &&
+      can('survey_request', 'approve') && {
+        key: 'reject',
+        node: (
+          <Button
+            variant="outline"
+            className={ACTION_TONE_CLASS.danger}
+            title="Khóa phiếu hẳn — không sửa được, phải lập phiếu mới"
+            onClick={() => {
+              setReason('')
+              setReasonFor('cancel')
+            }}
+          >
+            <Ban />
+            Từ chối
+          </Button>
+        ),
+      },
+    // Dẫn sang MÀN RIÊNG Xử lý khảo sát như bản v1 — bản gộp thẻ vào trang này
+    // (QĐ doc/erp/12 mục 2.7) đã bỏ theo yêu cầu khách 29/08.
+    !isNew &&
+      canViewNstm &&
+      isSurveyRequestProcessable(status) && {
+        key: 'process',
+        node: (
+          <Button variant="outline" className={ACTION_TONE_CLASS.accent} asChild>
+            <Link to={appRoutes.procurement.surveyRequestProcess(data.id)}>
+              <ClipboardList />
+              Xử lý khảo sát
+            </Link>
+          </Button>
+        ),
+      },
+    // bao-CR-414 GĐ5: backend đã tính sẵn hai cờ theo trạng thái phiếu, dòng chưa
+    // hoàn tất / chưa chọn phương án và vai trò người xem — giao diện chỉ bày nút.
+    !isNew &&
+      data.can_transfer_dept && {
+        key: 'transfer-dept',
+        node: (
+          <Button
+            type="button"
+            variant="outline"
+            title="Đẩy cả phiếu sang phòng khác xử lý"
+            onClick={() => setTransferMode('transfer')}
+          >
+            <ArrowRightLeft />
+            Chuyển phòng xử lý
+          </Button>
+        ),
+      },
+    // bao-CR-498: MỘT nút "Trả về" cho hai đường (trả người lập sửa lại / trả phòng lập tự
+    // xử lý — bao-CR-414). Cả hai đường cùng mở thì hỏi; một đường thì đi thẳng.
+    returnResolution !== null && {
+      key: 'return',
+      node: (
         <Button
           type="button"
           variant="outline"
-          className="text-warning hover:text-warning"
+          className={ACTION_TONE_CLASS.warning}
           title={
             returnResolution === 'department'
               ? 'Trả cả phiếu về phòng thu mua mặc định'
@@ -618,127 +672,104 @@ export function SurveyRequestDetailPage() {
           <CornerUpLeft />
           Trả về
         </Button>
-      )}
-      {!isNew && status === 'submitted' && can('survey_request', 'approve') && (
-        <Button
-          variant="outline"
-          className="text-destructive hover:text-destructive"
-          title="Khóa phiếu hẳn — không sửa được, phải lập phiếu mới"
-          onClick={() => {
-            setReason('')
-            setReasonFor('cancel')
-          }}
-        >
-          <Ban />
-          Từ chối
-        </Button>
-      )}
-
-      {/* Dẫn sang MÀN RIÊNG Xử lý khảo sát như bản v1 — bản gộp thẻ vào
-          trang này (QĐ doc/erp/12 mục 2.7) đã bỏ theo yêu cầu khách 29/08. */}
-      {!isNew && canViewNstm && isSurveyRequestProcessable(status) && (
-        <Button variant="outline" asChild>
-          <Link to={appRoutes.procurement.surveyRequestProcess(data.id)}>
-            <ClipboardList />
-            Xử lý khảo sát
-          </Link>
-        </Button>
-      )}
-
-      {/* bao-CR-414 GĐ5: backend đã tính sẵn hai cờ theo trạng thái phiếu, dòng
-          chưa hoàn tất / chưa chọn phương án và vai trò người xem — giao diện chỉ bày nút. */}
-      {!isNew && data.can_transfer_dept && (
-        <Button
-          type="button"
-          variant="outline"
-          title="Đẩy cả phiếu sang phòng khác xử lý"
-          onClick={() => setTransferMode('transfer')}
-        >
-          <ArrowRightLeft />
-          Chuyển phòng xử lý
-        </Button>
-      )}
-      {/* Chỉ nhân sự thu mua, và chỉ khi phiếu ĐANG XỬ LÝ — đúng lúc đó mới
-          biết cần khảo sát cái gì. Mã YCBG đưa sang theo URL để phiếu khảo sát
-          mới neo sẵn về phiếu nguồn. */}
-      {!isNew && status === 'processing' && can('survey_request', 'process') && (
-        <PermissionGate entity="survey" action="create">
+      ),
+    },
+    // Chỉ nhân sự thu mua, và chỉ khi phiếu ĐANG XỬ LÝ — đúng lúc đó mới biết cần
+    // khảo sát cái gì. Mã YCBG đưa sang theo URL để phiếu khảo sát mới neo sẵn về
+    // phiếu nguồn.
+    !isNew &&
+      status === 'processing' &&
+      can('survey_request', 'process') && {
+        key: 'create-survey',
+        node: (
+          <PermissionGate entity="survey" action="create">
+            <Button
+              variant="outline"
+              className={ACTION_TONE_CLASS.accent}
+              onClick={() =>
+                navigate(
+                  `${appRoutes.procurement.surveyNew}?sr=${data.id}&sr_code=${encodeURIComponent(data.code)}`,
+                )
+              }
+            >
+              <ClipboardCheck />
+              Tạo phiếu khảo sát
+            </Button>
+          </PermissionGate>
+        ),
+      },
+    !isNew &&
+      CREATE_PR_STATUSES.includes(status) &&
+      canCreatePr && {
+        key: 'create-prs',
+        primary: true,
+        node: (
+          <Button
+            disabled={!anyChosen || createPurchaseRequests.isPending}
+            title={anyChosen ? '' : 'Chọn ít nhất 1 phương án ở phần Kết quả khảo sát'}
+            onClick={() => setConfirmAction('createPrs')}
+          >
+            <FilePlus />
+            {/*  Nhãn NGẮN ở khổ hẹp: bản đầy đủ rộng 158px, đúng phần đẩy cụm nút
+                 rớt xuống hàng riêng trên máy 390px. "YCMH" là từ viết tắt người
+                 dùng đang dùng hằng ngày, không phải chữ nghĩ ra cho vừa chỗ. */}
+            <ResponsiveLabel short="Tạo YCMH" long="Tạo yêu cầu mua" />
+          </Button>
+        ),
+      },
+    !isNew &&
+      ['survey_done', 'pr_created'].includes(status) &&
+      canFinalize && {
+        key: 'finalize',
+        node: (
           <Button
             variant="outline"
-            onClick={() =>
-              navigate(
-                `${appRoutes.procurement.surveyNew}?sr=${data.id}&sr_code=${encodeURIComponent(data.code)}`,
-              )
+            className={ACTION_TONE_CLASS.accent}
+            disabled={reportRequiredPending > 0}
+            title={
+              reportRequiredPending > 0
+                ? `Còn ${reportRequiredPending} hồ sơ báo cáo thực hiện bắt buộc chưa hoàn tất`
+                : undefined
             }
+            onClick={() => setConfirmAction('finalize')}
           >
-            <ClipboardCheck />
-            Tạo phiếu khảo sát
+            <CheckCheck />
+            Chuyển Hoàn thành
           </Button>
-        </PermissionGate>
-      )}
-
-      {!isNew && ['survey_done', 'pr_created'].includes(status) && canFinalize && (
+        ),
+      },
+    createdPrs.length > 0 && {
+      key: 'created-prs',
+      node: (
         <Button
           variant="outline"
-          disabled={reportRequiredPending > 0}
-          title={
-            reportRequiredPending > 0
-              ? `Còn ${reportRequiredPending} hồ sơ báo cáo thực hiện bắt buộc chưa hoàn tất`
-              : undefined
-          }
-          onClick={() => setConfirmAction('finalize')}
-        >
-          <CheckCheck />
-          Chuyển Hoàn thành
-        </Button>
-      )}
-
-      {/* Nhân bản: chép đầu phiếu + dòng thành phiếu NHÁP mới (không chép kết quả
-          khảo sát) — dùng khi mua lặp lại. Hiện ở mọi trạng thái, giống bản v1. */}
-      {!isNew && (
-        <PermissionGate entity="survey_request" action="create">
-          <Button
-            variant="outline"
-            disabled={runAction.isPending}
-            onClick={() => {
-              trackUiAction(UI_ACTION_CODE.COPY_DOCUMENT)
-              void runAction.mutateAsync({ action: 'clone' }).then((cloned) => {
-                if (cloned?.id) navigate(appRoutes.procurement.surveyRequestDetail(cloned.id))
-              })
-            }}
-          >
-            <Copy />
-            Nhân bản
-          </Button>
-        </PermissionGate>
-      )}
-
-      {createdPrs.length > 0 && (
-        <Button
-          variant="outline"
-          className="text-success hover:text-success"
+          className={ACTION_TONE_CLASS.success}
           onClick={() => setShowCreatedPrs(true)}
         >
           <FileCheck />
           Đã tạo {createdPrs.length} phiếu YCMH
         </Button>
-      )}
-
-      {!isNew && ['draft', 'rejected', 'cancelled'].includes(status) && (
-        <PermissionGate entity="survey_request" action="delete">
-          <DeleteConfirmButton
-            recordName={data.code || `#${data.id}`}
-            pending={deleteSurveyRequest.isPending}
-            warning="Phiếu và các dòng cần khảo sát kèm theo sẽ bị xóa."
-            onConfirm={async () => {
-              await deleteSurveyRequest.mutateAsync(data.id)
-              navigate(appRoutes.procurement.surveyRequests)
-            }}
-          />
-        </PermissionGate>
-      )}
-    </>
-  )
+      ),
+    },
+    !isNew &&
+      ['draft', 'rejected', 'cancelled'].includes(status) && {
+        key: 'delete',
+        node: (
+          <PermissionGate entity="survey_request" action="delete">
+            <DeleteConfirmButton
+              recordName={data.code || `#${data.id}`}
+              pending={deleteSurveyRequest.isPending}
+              className={ACTION_TONE_CLASS.danger}
+              warning="Phiếu và các dòng cần khảo sát kèm theo sẽ bị xóa."
+              onConfirm={async () => {
+                await deleteSurveyRequest.mutateAsync(data.id)
+                navigate(appRoutes.procurement.surveyRequests)
+              }}
+            />
+          </PermissionGate>
+        ),
+      },
+  ]
 
   return (
     <PageContainer className="bg-slate-50/70 lg:p-4">
@@ -747,8 +778,7 @@ export function SurveyRequestDetailPage() {
         backLabel="Về danh sách yêu cầu báo giá"
         title={isNew ? 'Tạo Yêu cầu báo giá mới' : data.code || 'Phiếu nháp'}
         badges={!isNew && <StatusBadge status={status} labels={SR_STATUS_LABELS} />}
-        primaryActions={primaryActions}
-        secondaryActions={secondaryActions}
+        actions={headerActions}
       />
 
       {!isNew && !!data.reject_reason && ['rejected', 'cancelled'].includes(status) && (
@@ -771,57 +801,62 @@ export function SurveyRequestDetailPage() {
           onChange={patch}
         />
 
-        <Card className="gap-4 py-4">
-          {/*  ⚠️ `flex-col` ở khổ hẹp, `flex-row` từ `sm`. Câu nhắc bên phải dài
-               ba dòng, mà `justify-between` trên một hàng thì nó ép tiêu đề co
-               xuống còn ~150px — "Danh sách Sản phẩm cần Khảo sát" vỡ thành ba
-               dòng đứng cạnh ba dòng chữ mờ, đọc ra như hai cột văn bản rời. */}
-          <CardHeader className="min-h-9 flex flex-col gap-1.5 border-b px-4 pb-3! sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-            <CardTitle className="text-base text-navy dark:text-foreground">
-              Danh sách Sản phẩm cần Khảo sát
-            </CardTitle>
-            {editable ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="max-sm:self-start"
-                onClick={() =>
-                  patch({ lines: [...loadedDraft.lines, { ...EMPTY_SURVEY_REQUEST_LINE }] })
-                }
-              >
-                <Plus />
-                Thêm dòng
-              </Button>
-            ) : (
-              showNstmColumns && (
-                <span className="text-xs text-muted-foreground">
-                  Thay đổi nhân sự phụ trách được lưu ngay, không cần bấm Lưu.
-                </span>
-              )
-            )}
-          </CardHeader>
-          <CardContent className="px-4">
-            <SurveyRequestLinesTable
-              lines={loadedDraft.lines}
-              editing={editable}
-              bulkRemovable={isNew || status === 'draft'}
-              showNstmColumns={showNstmColumns}
-              showStatus={showStatus}
-              canAssignNstm={canAssignNstm}
-              invalid={invalid}
-              purchasers={purchasers}
-              onChange={(lines) => patch({ lines })}
-              onOpenDetail={setLineIndex}
-              onAssigneeChange={handleAssigneeChange}
-              onLineRemoved={(index) =>
-                setPendingFiles((current) => shiftPendingAfterRemove(current, index))
-              }
-              onLineDuplicated={(index) =>
-                setPendingFiles((current) => shiftPendingAfterInsert(current, index))
-              }
-            />
-          </CardContent>
-        </Card>
+        <SurveyRequestLinesTable
+          lines={loadedDraft.lines}
+          editing={editable}
+          bulkRemovable={isNew || status === 'draft'}
+          showNstmColumns={showNstmColumns}
+          showStatus={showStatus}
+          canAssignNstm={canAssignNstm}
+          invalid={invalid}
+          purchasers={purchasers}
+          onChange={(lines) => patch({ lines })}
+          onOpenDetail={setLineIndex}
+          onAssigneeChange={handleAssigneeChange}
+          onLineRemoved={(index) =>
+            setPendingFiles((current) => shiftPendingAfterRemove(current, index))
+          }
+          onLineDuplicated={(index) =>
+            setPendingFiles((current) => shiftPendingAfterInsert(current, index))
+          }
+          // duoc-CR-737: góc phải tiêu đề thẻ như v1 — Xóa đã chọn (n) · Thêm dòng.
+          // State tick dòng nằm trong bảng nên bảng trao lại nút, trang chỉ xếp chỗ.
+          renderFrame={({ headerActions, body }) => (
+            <Card className="gap-4 py-4">
+              {/*  ⚠️ `flex-col` ở khổ hẹp, `flex-row` từ `sm`. Câu nhắc bên phải dài
+                   ba dòng, mà `justify-between` trên một hàng thì nó ép tiêu đề co
+                   xuống còn ~150px — "Danh sách Sản phẩm cần Khảo sát" vỡ thành ba
+                   dòng đứng cạnh ba dòng chữ mờ, đọc ra như hai cột văn bản rời. */}
+              <CardHeader className="min-h-9 flex flex-col gap-1.5 border-b px-4 pb-3! sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <CardTitle className="text-base text-navy dark:text-foreground">
+                  Danh sách Sản phẩm cần Khảo sát
+                </CardTitle>
+                {editable ? (
+                  <div className="flex flex-wrap items-center gap-2 max-sm:self-start sm:justify-end">
+                    {headerActions}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        patch({ lines: [...loadedDraft.lines, { ...EMPTY_SURVEY_REQUEST_LINE }] })
+                      }
+                    >
+                      <Plus />
+                      Thêm dòng
+                    </Button>
+                  </div>
+                ) : (
+                  showNstmColumns && (
+                    <span className="text-xs text-muted-foreground">
+                      Thay đổi nhân sự phụ trách được lưu ngay, không cần bấm Lưu.
+                    </span>
+                  )
+                )}
+              </CardHeader>
+              <CardContent className="px-4">{body}</CardContent>
+            </Card>
+          )}
+        />
 
         {showResult && result && (
           <SurveyRequestResultCard

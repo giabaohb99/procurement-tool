@@ -6,8 +6,7 @@ import { UI_ACTION_CODE } from '@/core/telemetry/ui-event-codes'
 import { trackUiAction } from '@/core/telemetry/track-ui-action'
 import { LinesTable } from '@/shared/data-table/lines-table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
-import { useLineSelection } from '@/shared/hooks/use-line-selection'
-import { BulkDeleteButton } from '@/shared/ui/bulk-delete-button'
+import type { LinesTableSelection } from '@/shared/data-table/lines-table'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -37,6 +36,7 @@ import { ProgressStatusBadge } from './document-status-badge'
 import { PurchaseHistoryDialog } from './purchase-history-dialog'
 import { PurchaseOrderItemCard, type PurchaseOrderItemEditField } from './purchase-order-item-card'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
+import { purchaseOrderRowKey } from '../hooks/use-purchase-order-line-selection'
 import {
   isImportOrder,
   isLineLocked,
@@ -163,24 +163,16 @@ function preferHistory(previous: string, historyValue?: string): string {
   return (historyValue ?? '').trim() || previous || ''
 }
 
-//  Khóa dòng: dòng chưa lưu chưa có id nên lấy chỉ số — khai cấp module để tham chiếu không đổi.
-function purchaseOrderRowKey(item: PurchaseOrderItem, index: number): string | number {
-  return item.id ?? `new-${index}`
-}
-
-function isLineUnlocked(item: PurchaseOrderItem): boolean {
-  return !isLineLocked(item)
-}
-
 interface PurchaseOrderItemsTableProps {
   items: PurchaseOrderItem[]
   /** Sửa được nội dung dòng (đơn chưa chốt + có quyền ghi). */
   editable: boolean
   /**
-   * bao-CR-547 — cho tick nhiều dòng rồi "Xóa đã chọn". Trang bật khi phiếu là form tạo hoặc
-   * đang Nháp (đại ca chốt 01/10/2026); phiếu Bị trả lại vẫn xóa từng dòng như cũ.
+   * bao-CR-547 — cột tick để "Xóa đã chọn". Trang giữ trạng thái chọn
+   * (`usePurchaseOrderLineSelection`) vì nút *Xóa đã chọn (n)* đứng ở tiêu đề thẻ, không
+   * nằm trong bảng (duoc-CR-737). Không truyền = không có cột tick.
    */
-  bulkRemovable?: boolean
+  selection?: LinesTableSelection<PurchaseOrderItem>
   /** Cập nhật tiến độ dòng (đơn đã duyệt trở đi). */
   progressEditable: boolean
   onChange: (items: PurchaseOrderItem[]) => void
@@ -228,7 +220,7 @@ const CARD_INLINE_EDIT_KEYS = ['code', 'qty', 'price', 'vat'] as const
 export function PurchaseOrderItemsTable({
   items,
   editable,
-  bulkRemovable = false,
+  selection,
   progressEditable,
   onChange,
   onProgressChange,
@@ -240,21 +232,6 @@ export function PurchaseOrderItemsTable({
   onOpenLineReport,
 }: PurchaseOrderItemsTableProps) {
   const { data: units } = usePurchaseRequestUnits(editable)
-  const lineSelection = useLineSelection({
-    rows: items,
-    rowKey: purchaseOrderRowKey,
-    enabled: editable && bulkRemovable,
-    //  Dòng đã hoàn thành / đã hủy khóa như nút xóa từng dòng.
-    isSelectable: isLineUnlocked,
-    unselectableReason: 'Dòng đã hoàn thành hoặc đã hủy — không xóa được',
-  })
-  const removeSelectedLines = () => {
-    const drop = new Set(lineSelection.selectedIndexes)
-    onChange(items.filter((_, index) => !drop.has(index)))
-    //  Báo từng chỉ số từ CAO xuống THẤP: trang dời phiếu giao chờ lưu theo chỉ số.
-    for (const index of [...lineSelection.selectedIndexes].sort((a, b) => b - a)) onLineRemoved?.(index)
-    lineSelection.clear()
-  }
   const { data: itemGroups } = usePurchaseRequestItemGroups(editable)
   const itemGroupOptions = useMemo(
     () => (itemGroups?.items ?? []).map((group) => ({ value: group.name, label: group.name })),
@@ -636,23 +613,13 @@ export function PurchaseOrderItemsTable({
     })
   }
 
-  const bulkDeleteButton = (
-    <BulkDeleteButton
-      size="sm"
-      count={lineSelection.selectedIndexes.length}
-      unitLabel="dòng"
-      description="Các dòng bỏ khỏi đơn ngay trên màn hình; bấm Lưu mới ghi xuống."
-      onConfirm={removeSelectedLines}
-    />
-  )
-  const selection = lineSelection.selection
-
   return (
     <>
       {asCards ? (
         <div className="space-y-3">
           {/*  Thanh đầu tự dựng như bảng dòng YCMH: ở chế độ thẻ không còn cột nào để
-               ẩn/hiện, ghim hay kéo giãn, nên chỉ giữ số dòng + nút thao tác. */}
+               ẩn/hiện, ghim hay kéo giãn, nên chỉ giữ số dòng + ô chọn tất cả. Nút
+               *Xóa đã chọn* ở tiêu đề thẻ của trang (duoc-CR-737). */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium">{items.length} dòng</span>
             {selection && items.length > 0 && (
@@ -666,7 +633,6 @@ export function PurchaseOrderItemsTable({
                 Chọn tất cả
               </label>
             )}
-            {bulkDeleteButton}
           </div>
 
           <div className="overflow-hidden rounded-lg border">
@@ -751,7 +717,6 @@ export function PurchaseOrderItemsTable({
           title={`Danh sách dòng hàng (${items.length} dòng)`}
           emptyMessage="Chưa có dòng hàng nào."
           selection={selection}
-          actions={bulkDeleteButton}
           cellClassName={(key) =>
             key === 'amount' || key === 'base_amount' ? 'bg-warning/8' : undefined
           }

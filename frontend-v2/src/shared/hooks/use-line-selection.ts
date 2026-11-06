@@ -28,14 +28,23 @@ export function useLineSelection<T>({
   unselectableReason,
 }: UseLineSelectionOptions<T>) {
   const [selectedKeys, setSelectedKeys] = useState<Set<string | number>>(new Set())
+  // Tắt chọn (rời chế độ sửa, phiếu đã gửi duyệt) thì BỎ HẾT dấu tick: cột tick đã ẩn
+  // mà khóa cũ còn đó thì nút *Xóa đã chọn (n)* vẫn đếm được dòng ở chế độ chỉ xem
+  // (duoc-CR-737). Đặt lại ngay trong lúc dựng theo mẫu "giá trị trước" của React,
+  // không dùng effect.
+  const [wasEnabled, setWasEnabled] = useState(enabled)
+  if (wasEnabled !== enabled) {
+    setWasEnabled(enabled)
+    if (!enabled) setSelectedKeys(new Set())
+  }
 
   const selectableIndexes = useMemo(
     () => rows.map((_, index) => index).filter((index) => !isSelectable || isSelectable(rows[index], index)),
     [rows, isSelectable],
   )
   const selectedIndexes = useMemo(
-    () => selectableIndexes.filter((index) => selectedKeys.has(rowKey(rows[index], index))),
-    [selectableIndexes, selectedKeys, rows, rowKey],
+    () => (enabled ? selectableIndexes.filter((index) => selectedKeys.has(rowKey(rows[index], index))) : []),
+    [enabled, selectableIndexes, selectedKeys, rows, rowKey],
   )
 
   const clear = useCallback(() => setSelectedKeys(new Set()), [])
