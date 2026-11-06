@@ -19223,3 +19223,18 @@ Mã nguồn: backend/app/modules/dashboard (menu_badge_service.py, controller.py
 **Kiểm:** migration chạy lên, xuống, lên lại trên máy local; bài kiểm bóng đếm và Trang chủ xanh; kiểm tra kiểu giao diện cũ không thêm lỗi mới.
 
 Mã nguồn: backend/migrations/versions/stix723_chi_muc_trang_thai_dem_cho_duyet.py, model status của survey / purchase_request / purchase_order, frontend/src/hooks/useMenuBadges.ts
+
+## duoc-CR-723-c | Giao diện mới: viên số chờ duyệt trên menu Thu mua và thẻ Đơn mua hàng chờ duyệt
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được bảo giao diện mới cũng làm thông báo giống giao diện cũ ở phân hệ Thu mua, nối tiếp phiếu hỗ trợ TK06112601.
+
+**Đã làm**
+- Bốn mục menu Thu mua (Yêu cầu báo giá, Yêu cầu mua hàng, Đơn mua hàng, Phiếu khảo sát) có viên số nền đỏ chữ trắng ở cuối dòng, đếm phiếu đang chờ duyệt, dùng chung đường API đếm của giao diện cũ và đúng khuôn viên số có sẵn của menu (không có việc thì không hiện, quá 99 ghi 99+). Cả bốn viên dùng chung một lượt gọi, nạp lại khi đổi trang và mỗi 60 giây chỉ khi tab đang hiện; khóa bộ nhớ đệm nằm dưới nhánh Thu mua nên duyệt phiếu xong số tự nạp lại theo.
+- Tổng quan Thu mua đổi thẻ Đơn hàng hoạt động thành ĐMH chờ duyệt, câu gợi ý theo vai như thẻ YCMH chờ duyệt.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi; ba bài kiểm mới (mỗi mục đúng số của nó từ một lượt gọi, không hiện khi bằng 0 hoặc thiếu quyền, chặn 99+) cùng bài kiểm router và Tổng quan xanh; xem trên máy local thấy đủ bốn viên số khớp giao diện cũ.
+
+Mã nguồn: frontend-v2/src/modules/procurement (components/procurement-pending-nav-badge.tsx, hooks/use-procurement-menu-badges.ts, routes.tsx, pages/procurement-dashboard-page.tsx, api/procurement-dashboard-api.ts), shared/constants/query-keys.ts

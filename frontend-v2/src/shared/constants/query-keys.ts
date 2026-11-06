@@ -152,6 +152,11 @@ export const queryKeys = {
 
     /** Số liệu trang Tổng quan Thu mua (`/api/dashboard/overview`). */
     dashboard: () => ['procurement', 'dashboard'] as const,
+    /**
+     * Số phiếu chờ duyệt cho viên số trên menu Thu mua (`/api/dashboard/menu-badges`, duoc-CR-723). Nằm DƯỚI
+     * `['procurement']` để chỗ nào xóa cả nhánh Thu mua sau khi duyệt / gửi phiếu thì số trên menu nạp lại theo.
+     */
+    menuBadges: () => ['procurement', 'menu-badges'] as const,
     /** bao-CR-453 — danh mục loại chi phí thu mua (`/api/po-cost-types`). */
     poCostTypes: (params?: Record<string, unknown>) =>
       ['procurement', 'po-cost-types', params ?? {}] as const,

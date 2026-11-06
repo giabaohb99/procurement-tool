@@ -75,6 +75,7 @@ export function ProcurementDashboardPage() {
   const canPayable = can('payable', 'read')
   const canApprovePR = can('purchase_request', 'approve')
   const canApproveSR = can('survey_request', 'approve')
+  const canApprovePO = can('purchase_order', 'approve')
 
   // Người KHÔNG thuộc phòng thu mua (không quyền ĐMH) vào tổng quan chủ yếu để
   // tạo phiếu mới — thêm thẻ lối tắt cho họ; dân thu mua đã đủ 5 thẻ, không chen.
@@ -183,11 +184,20 @@ export function ProcurementDashboardPage() {
           </Card>
         )}
         {canPO && (
+          //  duoc-CR-723 (phiếu TK06112601): thay thẻ "Đơn hàng hoạt động" — cùng số với viên số của mục
+          //  Đơn mua hàng trên menu, và cùng thẻ bên giao diện cũ.
           <StatCard
             icon={ShoppingCart}
-            label="Đơn hàng hoạt động"
-            value={kpi?.po_ordered ?? 0}
-            hint="Đang theo dõi tiến độ"
+            label="ĐMH chờ duyệt"
+            value={kpi?.po_pending ?? 0}
+            hint={
+              kpi?.po_pending
+                ? canApprovePO
+                  ? 'Cần phê duyệt'
+                  : 'Đang chờ duyệt'
+                : 'Không tồn đọng'
+            }
+            tone={kpi?.po_pending ? 'warning' : undefined}
             loading={isLoading}
           />
         )}

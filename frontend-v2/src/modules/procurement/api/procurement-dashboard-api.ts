@@ -69,6 +69,8 @@ export interface DashboardOverview {
     pr_pending?: number
     sr_pending?: number
     po_ordered?: number
+    /** Đơn mua hàng đang chờ duyệt (`submitted`) — thẻ "Đơn mua hàng chờ duyệt" (duoc-CR-723). */
+    po_pending?: number
     late_deliveries?: number
     survey_pending?: number
     due_soon?: number
@@ -100,6 +102,15 @@ export interface DashboardOverview {
   can: Record<string, boolean>
 }
 
+/**
+ * Số phiếu CHỜ DUYỆT cho viên số trên menu Thu mua (duoc-CR-723). Khóa = entity của mục menu; khóa vắng mặt khi
+ * người xem không có quyền đọc mục đó.
+ */
+export type MenuBadgeCounts = Partial<
+  Record<'survey_request' | 'purchase_request' | 'purchase_order' | 'survey', number>
+>
+
 export const procurementDashboardApi = {
   getOverview: () => apiGet<DashboardOverview>('/api/dashboard/overview'),
+  getMenuBadges: () => apiGet<MenuBadgeCounts>('/api/dashboard/menu-badges'),
 }
