@@ -386,6 +386,17 @@ def _dept_match(model, f, dept_ids, dept_names, central_handler: bool = False):
     return or_(*cs) if len(cs) > 1 else cs[0]
 
 
+def _handler_match(model, f, dept_ids):
+    """Chỉ vế "phòng đang XỬ LÝ phiếu là phòng mình" của `_dept_match(central_handler=True)` — bao-CR-736.
+    Phiếu cũ `handler_dept_id = 0` tính là của phòng thu mua mặc định. None = không có gì để so."""
+    col = f.get("handler_dept")
+    if not col or not dept_ids:
+        return None
+    handler = getattr(model, col)
+    ids = list(dept_ids)
+    return or_(handler.in_(ids), and_(handler == 0, _central_dept_expr().in_(ids)))
+
+
 def approves_only_in_dept_proc(profile: dict, entity: str) -> bool:
     """Người này duyệt/điều phối `entity` CHỈ bằng bậc `dept_proc` (phòng tự mua) — bao-CR-414.
 
@@ -569,6 +580,21 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             # ĐMH: thấy đơn MÌNH tạo HOẶC đơn có NSPT phụ trách = mình.
             # CR-087: khớp bằng `nspt_id`; tên chỉ còn là đường lùi cho đơn cũ (`nspt_id = 0`).
             conds = [model.created_by == user.id]
+            if in_dept_proc:
+                # bao-CR-736 (người chủ chốt 06/11): người mua của phòng tự mua (nhà máy) chỉ "nhặt"
+                # đơn do CHÍNH PHÒNG MÌNH XỬ LÝ. Đơn phòng mình YÊU CẦU nhưng phòng thu mua chung xử lý
+                # (vd PO00890: YCMH của Dego Organic, SX - Thu mua mua) KHÔNG còn hiện, trừ khi mình lập
+                # đơn hoặc là NSPT. Trước đây nhánh này AND với `_dept_match` nên vế "phòng lập phiếu"
+                # lọt cả đơn của thu mua chung. Người yêu cầu xem tiến độ ở YCMH của mình (không đổi).
+                hm = _handler_match(model, f, dept_ids)
+                if hm is None:
+                    return _chan(entity, scope, user, "bac dept_proc nhung nhan su chua gan phong ban")
+                from app.modules.purchase_order.model import STATUS_AFTER_APPROVE as PO_AFTER_APPROVE
+                ec = _emp_match(model, "nspt_id", "nspt",
+                                profile.get("employee_id") or 0, profile.get("emp_name") or "")
+                if ec is not None:
+                    conds.append(ec)
+                return or_(*conds, and_(_proc_status_cond(model, list(PO_AFTER_APPROVE)), hm))
             if is_proc:
                 # bao-CR-371: cùng lỗi với YCMH — nhận hàng xong (`partial`/`received`/
                 # `completed`) thì đơn không được biến mất khỏi mắt người thu mua đang theo nó.
