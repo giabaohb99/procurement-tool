@@ -742,7 +742,7 @@ export function PurchaseRequestDetailPage() {
         key: 'cancel-edit',
         node: (
           <Button
-            variant="outline"
+            variant="outline" className={ACTION_TONE_CLASS.neutral}
             onClick={() => {
               if (isNew) {
                 navigate(appRoutes.procurement.purchaseRequests)
@@ -770,7 +770,7 @@ export function PurchaseRequestDetailPage() {
       editable && {
         key: 'edit',
         node: (
-          <Button variant="outline" onClick={() => setEditing(true)}>
+          <Button variant="outline" className={ACTION_TONE_CLASS.neutral} onClick={() => setEditing(true)}>
             <Pencil />
             Sửa
           </Button>
@@ -851,7 +851,7 @@ export function PurchaseRequestDetailPage() {
           node: (
             <Button
               type="button"
-              variant="outline"
+              variant="outline" className={ACTION_TONE_CLASS.neutral}
               title="Đẩy cả phiếu sang phòng khác xử lý"
               onClick={() => setTransferMode('transfer')}
             >
@@ -873,7 +873,7 @@ export function PurchaseRequestDetailPage() {
         can('purchase_request', 'write') && {
           key: 'process-options',
           node: (
-            <Button variant="outline" asChild>
+            <Button variant="outline" className={ACTION_TONE_CLASS.neutral} asChild>
               <Link to={appRoutes.procurement.purchaseRequestProcess(data.id)}>
                 <ListChecks />
                 Xử lý phương án
@@ -991,7 +991,7 @@ export function PurchaseRequestDetailPage() {
         // Bản tách theo nhà cung cấp chọn ngay trong ô "Mẫu in" của trang in (nhóm "Tách theo
         // nhà cung cấp", chỉ người có quyền xem NCC thấy) — hai người ngồi cạnh nhau bấm cùng một
         // nút là ra cùng một tờ.
-        <Button variant="outline" asChild>
+        <Button variant="outline" className={ACTION_TONE_CLASS.neutral} asChild>
           <Link to={appRoutes.procurement.purchaseRequestPrint(data.id)} onClick={() => trackUiAction(UI_ACTION_CODE.PRINT)} target="_blank" rel="noreferrer">
             <Printer />
             In phiếu

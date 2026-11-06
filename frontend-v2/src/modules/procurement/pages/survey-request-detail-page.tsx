@@ -644,7 +644,7 @@ export function SurveyRequestDetailPage() {
         node: (
           <Button
             type="button"
-            variant="outline"
+            variant="outline" className={ACTION_TONE_CLASS.neutral}
             title="Đẩy cả phiếu sang phòng khác xử lý"
             onClick={() => setTransferMode('transfer')}
           >

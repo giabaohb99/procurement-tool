@@ -19283,3 +19283,12 @@ Kế hoạch: `doc/erp/thu-mua/plans/261106-dong-bo-vi-tri-nut-v1-v2-duoc-CR-737
 Kiểm: typecheck 0 lỗi, lint 0 lỗi (không thêm cảnh báo), vitest 623 bài xanh; ảnh chụp bốn màn ở khổ 1440 và Đơn mua hàng ở khổ 390. Thẻ chi phí nhập khẩu chưa xem được trên trình duyệt vì máy local không có đơn nhập khẩu.
 
 Mã nguồn: `frontend-v2/src/shared/ui/action-tone.ts`, `frontend-v2/src/shared/ui/delete-confirm-button.tsx`, bốn trang chi tiết Thu mua, `purchase-order-import-costs-card.tsx`, `purchase-order-import-cost-supplier-payment-cards.tsx`.
+
+### duoc-CR-737-c | Chỉnh màu nút đầu trang cho khớp ảnh giao diện cũ
+- status: xong
+Đối chiếu ảnh giao diện cũ của phiếu PYC07082603: nút tiện ích (In phiếu, Sửa, Hủy sửa, Chuyển phòng xử lý, Xử lý phương án, In, Mở lại) chữ xám và không nền như giao diện cũ; nút Trả về, Từ chối, Hủy đơn, Xóa cũng bỏ nền trắng; viền Từ chối / Xóa đỏ đậm, viền Trả về vàng nhạt. Nút chữ xanh (Hoàn thành, Gửi duyệt…) giữ nền trắng như giao diện cũ.
+
+Kiểm: typecheck 0 lỗi, lint 0 lỗi, vitest trang Thu mua và giao diện dùng chung xanh; ảnh trước và sau ở `plans/reports/screenshots-cr737/`.
+
+Mã nguồn: `frontend-v2/src/shared/ui/action-tone.ts` (thêm tông `neutral`), ba trang chi tiết YCMH, YCBG, ĐMH.
+

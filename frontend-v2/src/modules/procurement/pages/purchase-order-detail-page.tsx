@@ -529,7 +529,7 @@ export function PurchaseOrderDetailPage() {
         node: (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">
+              <Button variant="outline" className={ACTION_TONE_CLASS.neutral}>
                 <Printer />
                 In
                 <ChevronDown className="size-4 opacity-60" />
@@ -715,7 +715,7 @@ export function PurchaseOrderDetailPage() {
       canWrite && {
         key: 'reopen',
         node: (
-          <Button variant="outline" onClick={() => void handleAction('reopen')}>
+          <Button variant="outline" className={ACTION_TONE_CLASS.neutral} onClick={() => void handleAction('reopen')}>
             <LockOpen />
             Mở lại
           </Button>
