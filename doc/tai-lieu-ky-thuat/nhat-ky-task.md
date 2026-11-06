@@ -19131,3 +19131,20 @@ Mã nguồn: frontend-v2/src/modules/hr/components (profile-change-request-card,
 **Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest các phân hệ Nhân sự, Tài chính, Phê duyệt, Quản trị 2453 bài xanh; bài kiểm của thẻ chặn việc in số tiền.
 
 Mã nguồn: frontend-v2/src/modules/hr/components/leave-encashment-card.tsx, pages/leave-encashment-list-page.tsx
+
+## duoc-CR-722 | Đặt xe trên điện thoại: danh sách phiếu và hàng chờ đổi sang dạng thẻ
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được bảo làm tiếp phân hệ Đặt xe giống Thu mua và Nhân sự: các bảng phải hiện tốt trên điện thoại. Quét mười một màn Đặt xe trên dev ở khổ 390px trước khi sửa: chỉ danh sách phiếu còn bảng cuộn ngang (mười cột, rộng khoảng 1460px), và trang chi tiết phiếu bị kéo rộng 622px.
+
+**Đã làm**
+- Danh sách phiếu đặt xe và khối hàng chờ ở trang Tổng quan dùng chung một thẻ ở khổ dưới 768px: mục đích chuyến lên đầu kèm huy hiệu trạng thái, loại và mã phiếu ở dòng phụ, thời gian, lộ trình gồm cả điểm dừng, người tạo cùng xe và tài xế (tự lái hoặc chưa bố trí xe thì nói thẳng), ghi chú chặng duyệt. Khối hàng chờ bỏ dòng người tạo và xe vì bảng của khối đó cũng không có hai cột này.
+- Nút Nhân bản ở cột Thao tác của danh sách không đặt được trong thẻ (cả thẻ là vùng chạm mở chi tiết), nên thêm nút Nhân bản lên đầu trang chi tiết phiếu, chỉ hiện khi có quyền tạo phiếu.
+- Sửa đầu trang chi tiết phiếu: dòng chặng duyệt nằm trong khối không co được nên kéo cả trang rộng 622px trên máy 390px; nay khối đó xuống dòng ở khổ điện thoại, khổ rộng giữ nguyên.
+- Giữ bảng: hai bảng thống kê theo xe và theo tài xế ở Tổng quan (ba cột, vừa khung), lịch tháng và trang in.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, vitest phân hệ Đặt xe 120 bài xanh, có bài kiểm thẻ không chứa nút nào.
+
+Mã nguồn: frontend-v2/src/modules/vehicle-booking/components (vehicle-booking-card, booking-queue-table, booking-detail-header), pages (vehicle-booking-list-page, vehicle-booking-detail-page)

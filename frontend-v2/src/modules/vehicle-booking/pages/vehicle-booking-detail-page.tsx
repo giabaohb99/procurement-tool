@@ -1,4 +1,4 @@
-import { Printer } from 'lucide-react'
+import { Copy, Printer } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -93,6 +93,14 @@ export function VehicleBookingDetailPage() {
                 <Printer className="size-4" />
                 In phiếu
               </Button>
+              {/*  Nhân bản có ở cột Thao tác của danh sách; khổ điện thoại danh sách thành thẻ (cả thẻ là vùng
+                  chạm mở chi tiết, không chứa nút) nên đường nhân bản DUY NHẤT ở đó là nút này (duoc-CR-722). */}
+              {can('vehicle_booking', 'create') && (
+                <Button variant="outline" onClick={() => navigate(`${appRoutes.vehicleBooking.new}?from=${data.id}`)}>
+                  <Copy className="size-4" />
+                  Nhân bản
+                </Button>
+              )}
             </>
           }
         />

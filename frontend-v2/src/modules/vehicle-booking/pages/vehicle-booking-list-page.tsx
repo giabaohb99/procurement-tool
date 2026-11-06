@@ -32,6 +32,7 @@ import {
 } from '@/shared/ui/select'
 import { CarBookingIcon, DeliveryBookingIcon } from '../components/booking-type-icons'
 import { BookingStatusBadge } from '../components/status-pill'
+import { VehicleBookingCard } from '../components/vehicle-booking-card'
 import { VEHICLE_BOOKING_FILTER_FIELDS } from '../config/vehicle-booking-filter-fields'
 import { useVehicleBookings } from '../hooks/use-vehicle-bookings'
 import { BOOKING_STATUS_LABELS, REQUEST_TYPE, type VehicleBooking } from '../types/vehicle-booking'
@@ -373,6 +374,7 @@ function VehicleBookingListContent() {
           rows={data?.items}
           getRowId={(r) => r.id}
           onRowClick={(r) => navigate(appRoutes.vehicleBooking.detail(r.id))}
+          mobileCard={(r) => <VehicleBookingCard booking={r} />}
           isLoading={isLoading}
           isError={isError}
           emptyMessage="Chưa có yêu cầu đặt xe nào."

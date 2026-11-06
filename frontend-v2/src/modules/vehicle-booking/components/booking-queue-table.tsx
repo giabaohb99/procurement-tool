@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { BookingStatusBadge } from './status-pill'
+import { VehicleBookingCard } from './vehicle-booking-card'
 import { BOOKING_STATUS_LABELS, type VehicleBooking } from '../types/vehicle-booking'
 
 const ALL = 'all'
@@ -129,6 +130,8 @@ export function BookingQueueTable({
       getRowId={(r) => r.id}
       isLoading={isLoading}
       onRowClick={(r) => navigate(appRoutes.vehicleBooking.detail(r.id))}
+      //  Khối hàng chờ gọn: thẻ bỏ dòng người tạo / xe — bảng của khối này cũng không có hai cột đó.
+      mobileCard={(r) => <VehicleBookingCard booking={r} showPeople={false} />}
       emptyMessage={emptyMessage ?? 'Không có phiếu nào.'}
       sortBy={sortBy}
       sortDir={sortDir}
