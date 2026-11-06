@@ -19238,3 +19238,17 @@ Mã nguồn: backend/migrations/versions/stix723_chi_muc_trang_thai_dem_cho_duye
 **Kiểm:** typecheck 0 lỗi, lint 0 lỗi; ba bài kiểm mới (mỗi mục đúng số của nó từ một lượt gọi, không hiện khi bằng 0 hoặc thiếu quyền, chặn 99+) cùng bài kiểm router và Tổng quan xanh; xem trên máy local thấy đủ bốn viên số khớp giao diện cũ.
 
 Mã nguồn: frontend-v2/src/modules/procurement (components/procurement-pending-nav-badge.tsx, hooks/use-procurement-menu-badges.ts, routes.tsx, pages/procurement-dashboard-page.tsx, api/procurement-dashboard-api.ts), shared/constants/query-keys.ts
+
+## duoc-CR-723-d | Giao diện mới: viên số vẫn hiện khi thu gọn menu
+- status: xong
+- date: 2026-11-06
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** anh Được báo thu gọn menu thì không thấy số chờ duyệt: khung menu co mỗi mục về ô 32 điểm ảnh và cắt phần tràn, viên số ở cuối dòng bị cắt mất.
+
+**Đã làm**
+- Khi menu thu gọn, viên số được kéo lên đè góc trên bên phải biểu tượng và thu nhỏ còn chín phần mười, giống bóng đỏ trên menu giao diện cũ; menu mở rộng giữ nguyên ở cuối dòng. Sửa ở khung menu chung nên mọi viên số đều theo, kể cả Duyệt sửa hồ sơ và Văn bản chờ duyệt.
+
+**Kiểm:** typecheck 0 lỗi, lint 0 lỗi, bài kiểm khung menu và viên số xanh; xem trên máy local ở cả hai trạng thái thu gọn và mở rộng.
+
+Mã nguồn: frontend-v2/src/app/layouts/module-sidebar.tsx
