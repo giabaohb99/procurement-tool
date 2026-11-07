@@ -19317,3 +19317,21 @@ Kiểm: bài kiểm server 30 bài xanh (thêm bài sắp theo ID và đơn giá
 
 Mã nguồn: `frontend-v2/src/modules/procurement/utils/available-survey-line-sort.ts`, `survey-request-process-card.tsx`, `purchase-request-process-card.tsx`, `backend/app/modules/survey_request/line_service.py`.
 
+### duoc-CR-737-d | Thẻ phương án trải hết bề ngang trên màn hẹp
+- status: xong
+- date: 2026-11-07
+Ở khổ điện thoại lớn và máy tính bảng dọc (khoảng 400 đến 768px), thẻ phương án trong khu **Kết quả khảo sát** của Yêu cầu báo giá và khu **Chọn phương án** của Yêu cầu mua hàng dừng ở 352px, chừa một mảng trống bên phải. Nguyên nhân là lưới ghim mỗi thẻ tối đa 22rem nên khi chỉ xếp được một cột thì thẻ không giãn ra. Dưới khổ 768px nay xếp một cột trải hết bề ngang; từ 768px trở lên giữ lưới nhiều thẻ mỗi hàng như cũ.
+
+Kiểm: khổ 480 thẻ rộng 414/414px, không tràn ngang; khổ 1440 vẫn hai cột 352px; typecheck, eslint sạch, vitest 17 bài xanh.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-request-result-card.tsx`, `purchase-request-choose-card.tsx`.
+
+### duoc-CR-737-e | Khối Báo cáo thực hiện và Hồ sơ cần hoàn thành gọn trên điện thoại
+- status: xong
+- date: 2026-11-07
+Ở khổ điện thoại, khối **Báo cáo thực hiện** (Yêu cầu báo giá) rối: thanh công cụ dồn lề phải rớt ba hàng lởm chởm, bốn ô tổng mỗi ô một hàng chiếm nửa màn, tên giai đoạn bị bóp gãy ba dòng. Dưới 768px nay: thanh công cụ ba hàng canh trái (công tắc dạng xem chia đôi bề ngang; ô tìm cạnh ô lọc trạng thái; hàng nút Thu gọn chỉ biểu tượng, Giai đoạn, Hồ sơ, Xóa), bốn ô tổng lưới hai cột, tên giai đoạn một hàng riêng với nút gọn bên phải, ghi chú giai đoạn và thanh tiến độ xuống hàng hai, dòng hồ sơ để tên đủ một hàng và đưa trạng thái cùng nút sửa, xóa xuống dưới. Khối **Hồ sơ cần hoàn thành** dùng cùng khuôn nên sửa theo. Khổ máy tính giữ nguyên, riêng tiêu đề khối không còn bị ép gãy bốn dòng khi mở thanh menu trái (lỗi có sẵn).
+
+Kiểm: typecheck, eslint sạch, vitest khối báo cáo 59 bài xanh; đo vị trí phần tử ở khổ 1440 và 800 trùng bản cũ; ảnh trước, sau ở `plans/reports/screenshots-cr737/bao-cao-thuc-hien-*.png`.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/` (`survey-report-card.tsx`, `dossier-checklist-card.tsx`, `dossier-checklist-groups.tsx`, mới `report-mobile-layout-classes.ts`, `report-toggle-all-button.tsx`).
+

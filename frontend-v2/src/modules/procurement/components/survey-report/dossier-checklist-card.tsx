@@ -22,6 +22,7 @@ import {
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { ResponsiveLabel } from '@/shared/ui/detail-page-header'
 import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
@@ -35,6 +36,18 @@ import { formatDate } from '@/shared/utils/format-date'
 import { ChecklistProgressBar, DossierChecklistGroups } from './dossier-checklist-groups'
 import { DossierChecklistTable } from './dossier-checklist-table'
 import { DossierQuickEditDialog } from './dossier-quick-edit-dialog'
+import {
+  REPORT_SEARCH_CLASS,
+  REPORT_SUMMARY_GRID_CLASS,
+  REPORT_SUMMARY_TILE_CLASS,
+  REPORT_SUMMARY_VALUE_CLASS,
+  REPORT_TOOLBAR_BUTTON_MOBILE_CLASS,
+  REPORT_TOOLBAR_CLASS,
+  REPORT_TOOLBAR_ROW_CLASS,
+  REPORT_VIEW_MODE_BUTTON_MOBILE_CLASS,
+  REPORT_VIEW_TOGGLE_CLASS,
+} from './report-mobile-layout-classes'
+import { ReportToggleAllButton } from './report-toggle-all-button'
 import { DossierChecklistTracking } from './dossier-checklist-tracking'
 import {
   CHECKLIST_STATUS_ALL,
@@ -218,7 +231,7 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
         <button
           type="button"
           aria-expanded={cardOpen}
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
+          className="flex min-w-0 flex-1 basis-auto cursor-pointer items-center gap-2 text-left"
           onClick={() => setCardOpen((current) => !current)}
         >
           <ChevronDown
@@ -236,13 +249,15 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
         </button>
 
         {cardOpen && (
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <div className="flex items-center rounded-md border p-0.5">
+          //  duoc-CR-737: cùng khuôn điện thoại với khối Báo cáo thực hiện.
+          <div className={REPORT_TOOLBAR_CLASS}>
+            <div className={REPORT_VIEW_TOGGLE_CLASS}>
               <ViewModeButton
                 active={viewMode === 'phase'}
                 label="Xem tổng"
                 title="Xem tổng: hồ sơ xếp theo giai đoạn (= Loại hồ sơ)"
                 icon={<LayoutList className="size-3.5" />}
+                className={REPORT_VIEW_MODE_BUTTON_MOBILE_CLASS}
                 onClick={() => changeViewMode('phase')}
               />
               <ViewModeButton
@@ -250,42 +265,50 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
                 label="Theo dòng hàng"
                 title="Xem theo dòng hàng: gom theo điều kiện áp dụng của từng tờ hồ sơ"
                 icon={<Rows3 className="size-3.5" />}
+                className={REPORT_VIEW_MODE_BUTTON_MOBILE_CLASS}
                 onClick={() => changeViewMode('item')}
               />
             </div>
-            <SearchField
-              value={query}
-              onChange={setQuery}
-              placeholder="Tìm hồ sơ, mã, lý do..."
-              placeholderShort="Tìm hồ sơ..."
-              className="h-8 w-48 flex-none"
-              aria-label="Tìm hồ sơ trong danh sách"
-            />
-            <Select
-              value={String(statusFilter)}
-              onValueChange={(value) => setStatusFilter(Number(value))}
-            >
-              <SelectTrigger size="sm" aria-label="Lọc theo trạng thái hồ sơ">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={String(CHECKLIST_STATUS_ALL)}>Mọi trạng thái</SelectItem>
-                {CHECKLIST_STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={String(option.value)}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" onClick={toggleAll}>
-              {allOpen ? 'Thu gọn' : 'Mở tất cả'}
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link to={appRoutes.dossier.list} target="_blank" rel="noreferrer">
-                <ExternalLink />
-                Kho hồ sơ
-              </Link>
-            </Button>
+            <div className={REPORT_TOOLBAR_ROW_CLASS}>
+              <SearchField
+                value={query}
+                onChange={setQuery}
+                placeholder="Tìm hồ sơ, mã, lý do..."
+                placeholderShort="Tìm hồ sơ..."
+                className={REPORT_SEARCH_CLASS}
+                aria-label="Tìm hồ sơ trong danh sách"
+              />
+              <Select
+                value={String(statusFilter)}
+                onValueChange={(value) => setStatusFilter(Number(value))}
+              >
+                <SelectTrigger size="sm" aria-label="Lọc theo trạng thái hồ sơ">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={String(CHECKLIST_STATUS_ALL)}>Mọi trạng thái</SelectItem>
+                  {CHECKLIST_STATUS_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={String(option.value)}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className={REPORT_TOOLBAR_ROW_CLASS}>
+              <ReportToggleAllButton allOpen={allOpen} onClick={toggleAll} />
+              <Button
+                variant="outline"
+                size="sm"
+                className={REPORT_TOOLBAR_BUTTON_MOBILE_CLASS}
+                asChild
+              >
+                <Link to={appRoutes.dossier.list} target="_blank" rel="noreferrer">
+                  <ExternalLink />
+                  Kho hồ sơ
+                </Link>
+              </Button>
+            </div>
           </div>
         )}
       </CardHeader>
@@ -293,9 +316,9 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
       {cardOpen && (
         <CardContent className="space-y-4 px-4">
           {/* Bốn ô tổng — cùng khuôn, cùng thứ tự với khối Báo cáo thực hiện. */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={REPORT_SUMMARY_GRID_CLASS}>
             <SummaryTile label="Tổng hồ sơ" value={String(docs.length)} />
-            <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+            <div className={REPORT_SUMMARY_TILE_CLASS}>
               <p className="text-xs text-muted-foreground">Đã hoàn thành</p>
               <ChecklistProgressBar
                 docs={docs}
@@ -304,7 +327,7 @@ export function DossierChecklistCard({ surveyRequestId }: { surveyRequestId: num
               />
             </div>
             <SummaryTile
-              label="Hết hiệu lực gần nhất"
+              label={<ResponsiveLabel short="Hạn gần nhất" long="Hết hiệu lực gần nhất" />}
               icon={<CalendarClock className="size-3" />}
               value={expiry ? formatDate(expiry) : '—'}
               note={expiring > 0 ? `${expiring} tờ cần để mắt` : undefined}
@@ -405,12 +428,14 @@ function ViewModeButton({
   label,
   title,
   icon,
+  className,
   onClick,
 }: {
   active: boolean
   label: string
   title: string
   icon: React.ReactNode
+  className?: string
   onClick: () => void
 }) {
   return (
@@ -421,6 +446,7 @@ function ViewModeButton({
       className={cn(
         'flex h-7 cursor-pointer items-center gap-1.5 rounded-sm px-2 text-xs font-medium whitespace-nowrap transition-colors',
         active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground',
+        className,
       )}
       onClick={onClick}
     >
@@ -438,21 +464,21 @@ function SummaryTile({
   note,
   tone,
 }: {
-  label: string
+  label: React.ReactNode
   value: string
   icon?: React.ReactNode
   note?: string
   tone?: ExpiryTone
 }) {
   return (
-    <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+    <div className={REPORT_SUMMARY_TILE_CLASS}>
       <p className="flex items-center gap-1 text-xs text-muted-foreground">
         {icon}
         {label}
       </p>
       <p
         className={cn(
-          'text-lg font-semibold tabular-nums',
+          REPORT_SUMMARY_VALUE_CLASS,
           tone === 'overdue' && 'text-destructive',
           tone === 'soon' && 'text-warning',
         )}

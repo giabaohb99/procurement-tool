@@ -204,7 +204,10 @@ function ResultLineBlock({
         //  rộng thì xếp nhiều option/hàng, còn dòng chỉ có MỘT phương án cũng
         //  không kéo dài nửa màn (lỗi "to đùng" trên màn ultrawide). Không dùng
         //  1fr để cột lẻ khỏi giãn hết chỗ trống.
-        <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(18rem,22rem))]">
+        //  Khổ hẹp (dưới md) MỘT cột trải hết bề ngang: ghim 22rem thì ở màn
+        //  400–600px lưới chỉ xếp được một cột mà thẻ dừng ở 352px, chừa mảng trống
+        //  bên phải (duoc-CR-737, ảnh anh Được 07/11/2026).
+        <div className="grid grid-cols-1 gap-3 md:[grid-template-columns:repeat(auto-fill,minmax(18rem,22rem))]">
           {options.map((option) => (
             <OptionCard
               key={option.id}

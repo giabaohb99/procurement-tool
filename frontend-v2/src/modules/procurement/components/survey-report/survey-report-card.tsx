@@ -27,6 +27,7 @@ import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { confirm } from '@/shared/ui/confirm-dialog'
+import { ResponsiveLabel } from '@/shared/ui/detail-page-header'
 import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
@@ -75,6 +76,24 @@ import {
   reportPlanLateDays,
 } from '../../utils/survey-report-helpers'
 import { ReportItemProgressCard } from './report-item-progress-card'
+import { ReportToggleAllButton } from './report-toggle-all-button'
+import {
+  REPORT_GROUP_ACTIONS_CLASS,
+  REPORT_GROUP_HEADER_CLASS,
+  REPORT_GROUP_META_CLASS,
+  REPORT_GROUP_META_INDENT_NUMBER_ONLY,
+  REPORT_GROUP_META_INDENT_WITH_TOGGLE,
+  REPORT_GROUP_TITLE_CLASS,
+  REPORT_SEARCH_CLASS,
+  REPORT_SUMMARY_GRID_CLASS,
+  REPORT_SUMMARY_TILE_CLASS,
+  REPORT_SUMMARY_VALUE_CLASS,
+  REPORT_TOOLBAR_BUTTON_MOBILE_CLASS,
+  REPORT_TOOLBAR_CLASS,
+  REPORT_TOOLBAR_ROW_CLASS,
+  REPORT_VIEW_MODE_BUTTON_MOBILE_CLASS,
+  REPORT_VIEW_TOGGLE_CLASS,
+} from './report-mobile-layout-classes'
 import { SurveyReportDocDialog } from './survey-report-doc-dialog'
 import { SurveyReportDocSelectionBar } from './survey-report-doc-selection-bar'
 import { ReportDocSheetTable } from './survey-report-doc-sheet-table'
@@ -450,12 +469,16 @@ export function SurveyReportCard({
   return (
     <Card ref={cardRef} className="scroll-mt-4 gap-4 py-4">
       <CardHeader className="min-h-9 flex flex-row flex-wrap items-center justify-between gap-3 border-b px-4 pb-3!">
+        {/* `basis-auto` (duoc-CR-737): `flex-1` trơn là `flex-basis: 0`, nên hàng không bao giờ
+            thấy cần xuống dòng — thanh công cụ dài ăn hết chỗ, tiêu đề bị ép còn ~11px, gãy 4
+            dòng và đè lên dãy nút ở khổ 1440. Tính theo bề rộng chữ thì thanh công cụ tự
+            xuống hàng hai khi không đủ chỗ, đúng ý `flex-wrap` từ đầu. */}
         <button
           type="button"
           aria-expanded={showBody}
           disabled={isEmpty}
           title={showBody ? 'Thu gọn báo cáo thực hiện' : 'Mở báo cáo thực hiện'}
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          className="flex min-w-0 flex-1 basis-auto items-center gap-2 text-left"
           onClick={() => setCardOpen((current) => !current)}
         >
           <ChevronDown
@@ -474,16 +497,19 @@ export function SurveyReportCard({
           )}
         </button>
         {showBody && !isEmpty && (
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          //  duoc-CR-737: điện thoại xếp ba hàng canh trái (công tắc dạng xem · tìm + lọc ·
+          //  cụm nút) thay vì canh phải tự xuống dòng lởm chởm; khổ rộng giữ nguyên.
+          <div className={REPORT_TOOLBAR_CLASS}>
             {/* Nút gạt hai dạng xem. Tự dựng chứ không lấy `Tabs`: đây không phải
                 hai trang nội dung mà là một công tắc trong thanh công cụ, đứng
                 cạnh các nút khác — `shared/ui/` chưa có toggle-group. */}
-            <div className="flex items-center rounded-md border p-0.5">
+            <div className={REPORT_VIEW_TOGGLE_CLASS}>
               <ViewModeButton
                 active={viewMode === 'phase'}
                 label="Xem tổng"
                 title="Xem tổng: hồ sơ xếp theo giai đoạn"
                 icon={<LayoutList className="size-3.5" />}
+                className={REPORT_VIEW_MODE_BUTTON_MOBILE_CLASS}
                 onClick={() => changeViewMode('phase')}
               />
               <ViewModeButton
@@ -491,6 +517,7 @@ export function SurveyReportCard({
                 label="Theo dòng hàng"
                 title="Xem theo dòng hàng: mỗi dòng hàng một dòng, bấm để sổ hồ sơ"
                 icon={<Rows3 className="size-3.5" />}
+                className={REPORT_VIEW_MODE_BUTTON_MOBILE_CLASS}
                 onClick={() => changeViewMode('item')}
               />
               {!isMobile && (
@@ -503,69 +530,77 @@ export function SurveyReportCard({
                 />
               )}
             </div>
-            <SearchField
-              value={query}
-              onChange={setQuery}
-              placeholder="Tìm hồ sơ, mô tả, tệp..."
-              placeholderShort="Tìm hồ sơ..."
-              className="h-8 w-48 flex-none"
-              aria-label="Tìm hồ sơ trong báo cáo"
-            />
-            <Select
-              value={String(statusFilter)}
-              onValueChange={(value) => setStatusFilter(Number(value))}
-            >
-              <SelectTrigger size="sm" aria-label="Lọc theo trạng thái hồ sơ">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={String(REPORT_STATUS_FILTER_ALL)}>Mọi trạng thái</SelectItem>
-                {Object.entries(REPORT_DOC_STATUS_LABELS).map(([code, label]) => (
-                  <SelectItem key={code} value={code}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {/* Dạng bảng không gấp / sổ gì — nút này chỉ có nghĩa ở hai dạng kia. */}
-            {viewMode !== 'table' && (
-              <Button variant="outline" size="sm" onClick={toggleAll}>
-                {allOpen ? 'Thu gọn' : 'Mở tất cả'}
-              </Button>
-            )}
-            {canEdit && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={busy}
-                  onClick={() => setPhaseDialog({ phase: null })}
-                >
-                  <ListPlus />
-                  Thêm giai đoạn
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={busy || report.phases.length === 0}
-                  title={report.phases.length === 0 ? 'Thêm giai đoạn trước' : ''}
-                  onClick={() => setDocDialog({ doc: null, itemId: COMMON_ROW_ID })}
-                >
-                  <Plus />
-                  Thêm hồ sơ
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="px-2 text-destructive hover:text-destructive"
-                  disabled={busy}
-                  aria-label="Xóa báo cáo thực hiện"
-                  title="Xóa toàn bộ báo cáo thực hiện (hoàn tác được ở Lịch sử thao tác)"
-                  onClick={handleDeleteReport}
-                >
-                  <Trash2 />
-                </Button>
-              </>
-            )}
+            <div className={REPORT_TOOLBAR_ROW_CLASS}>
+              <SearchField
+                value={query}
+                onChange={setQuery}
+                placeholder="Tìm hồ sơ, mô tả, tệp..."
+                placeholderShort="Tìm hồ sơ..."
+                className={REPORT_SEARCH_CLASS}
+                aria-label="Tìm hồ sơ trong báo cáo"
+              />
+              <Select
+                value={String(statusFilter)}
+                onValueChange={(value) => setStatusFilter(Number(value))}
+              >
+                <SelectTrigger size="sm" aria-label="Lọc theo trạng thái hồ sơ">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={String(REPORT_STATUS_FILTER_ALL)}>Mọi trạng thái</SelectItem>
+                  {Object.entries(REPORT_DOC_STATUS_LABELS).map(([code, label]) => (
+                    <SelectItem key={code} value={code}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className={REPORT_TOOLBAR_ROW_CLASS}>
+              {/* Dạng bảng không gấp / sổ gì — nút này chỉ có nghĩa ở hai dạng kia. */}
+              {viewMode !== 'table' && (
+                <ReportToggleAllButton allOpen={allOpen} onClick={toggleAll} />
+              )}
+              {canEdit && (
+                <>
+                  {/* Điện thoại 358px không đủ chỗ cho bốn nút chữ dài: bỏ chữ "Thêm" (biểu
+                      tượng đã nói), `aria-label` giữ tên đầy đủ cho trình đọc màn hình. */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={REPORT_TOOLBAR_BUTTON_MOBILE_CLASS}
+                    disabled={busy}
+                    aria-label="Thêm giai đoạn"
+                    onClick={() => setPhaseDialog({ phase: null })}
+                  >
+                    <ListPlus />
+                    <ResponsiveLabel short="Giai đoạn" long="Thêm giai đoạn" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    className={REPORT_TOOLBAR_BUTTON_MOBILE_CLASS}
+                    disabled={busy || report.phases.length === 0}
+                    aria-label="Thêm hồ sơ"
+                    title={report.phases.length === 0 ? 'Thêm giai đoạn trước' : ''}
+                    onClick={() => setDocDialog({ doc: null, itemId: COMMON_ROW_ID })}
+                  >
+                    <Plus />
+                    <ResponsiveLabel short="Hồ sơ" long="Thêm hồ sơ" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="px-2 text-destructive hover:text-destructive"
+                    disabled={busy}
+                    aria-label="Xóa báo cáo thực hiện"
+                    title="Xóa toàn bộ báo cáo thực hiện (hoàn tác được ở Lịch sử thao tác)"
+                    onClick={handleDeleteReport}
+                  >
+                    <Trash2 />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         )}
       </CardHeader>
@@ -793,12 +828,14 @@ function ViewModeButton({
   label,
   title,
   icon,
+  className,
   onClick,
 }: {
   active: boolean
   label: string
   title: string
   icon: React.ReactNode
+  className?: string
   onClick: () => void
 }) {
   return (
@@ -811,6 +848,7 @@ function ViewModeButton({
         active
           ? 'bg-accent text-accent-foreground'
           : 'text-muted-foreground hover:text-foreground',
+        className,
       )}
       onClick={onClick}
     >
@@ -881,7 +919,9 @@ function ReportPhaseList({
         const collapsed = !forceOpen && collapsedPhases.has(phase.id)
         return (
           <div key={phase.id} className="space-y-2">
-            <div className="flex items-center gap-2.5">
+            {/* duoc-CR-737: điện thoại cho tên giai đoạn trọn hàng đầu (cạnh cụm nút),
+                ghi chú + thanh tiến độ xuống hàng hai — trước đó tên bị ép còn ~70px. */}
+            <div className={REPORT_GROUP_HEADER_CLASS}>
               <button
                 type="button"
                 aria-expanded={!collapsed}
@@ -896,13 +936,15 @@ function ReportPhaseList({
               <span className="grid size-6 place-items-center rounded-md bg-navy text-xs font-semibold text-white dark:bg-muted dark:text-foreground">
                 {index + 1}
               </span>
-              <span className="text-sm font-semibold">{phase.name}</span>
-              {phase.location && (
-                <span className="text-xs text-muted-foreground">{phase.location}</span>
-              )}
-              <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
+              <span className={REPORT_GROUP_TITLE_CLASS}>{phase.name}</span>
+              <div className={cn(REPORT_GROUP_META_CLASS, REPORT_GROUP_META_INDENT_WITH_TOGGLE)}>
+                {phase.location && (
+                  <span className="text-xs text-muted-foreground">{phase.location}</span>
+                )}
+                <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
+              </div>
               {canEdit && (
-                <>
+                <div className={REPORT_GROUP_ACTIONS_CLASS}>
                   {/* Đường vào NGẮN NHẤT để khai hồ sơ: bấm ngay tại giai đoạn
                       đang đọc, hộp điền sẵn giai đoạn đó — khỏi phải lên nút
                       chung ở đầu khối rồi tự chọn lại trong ô. */}
@@ -947,7 +989,7 @@ function ReportPhaseList({
                   >
                     <Pencil className="size-3.5" />
                   </button>
-                </>
+                </div>
               )}
             </div>
             {collapsed ? null : phaseDocs.length === 0 ? (
@@ -1382,15 +1424,17 @@ function ReportRowDetail({
           if (phaseDocs.length === 0) return null
           return (
             <div key={phase.id} className="space-y-2">
-              <div className="flex items-center gap-2.5">
+              <div className={REPORT_GROUP_HEADER_CLASS}>
                 <span className="grid size-6 place-items-center rounded-md bg-navy text-xs font-semibold text-white dark:bg-muted dark:text-foreground">
                   {index + 1}
                 </span>
-                <span className="text-sm font-semibold">{phase.name}</span>
-                {phase.location && (
-                  <span className="text-xs text-muted-foreground">{phase.location}</span>
-                )}
-                <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
+                <span className={REPORT_GROUP_TITLE_CLASS}>{phase.name}</span>
+                <div className={cn(REPORT_GROUP_META_CLASS, REPORT_GROUP_META_INDENT_NUMBER_ONLY)}>
+                  {phase.location && (
+                    <span className="text-xs text-muted-foreground">{phase.location}</span>
+                  )}
+                  <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
+                </div>
                 {canEdit && (
                   <ClusterDeleteButton
                     label={`giai đoạn "${phase.name}"`}
@@ -1577,12 +1621,13 @@ function ReportSummary({ docs }: { docs: SurveyReportDoc[] }) {
   const planned = latestPlannedDate(docs)
   const plan = planned ? plannedMeta(planned, docs) : null
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+    //  duoc-CR-737: điện thoại lưới 2 x 2 (trước một cột, 4 ô gần trống chiếm nửa màn).
+    <div className={REPORT_SUMMARY_GRID_CLASS}>
+      <div className={REPORT_SUMMARY_TILE_CLASS}>
         <p className="text-xs text-muted-foreground">Tổng hồ sơ</p>
-        <p className="text-lg font-semibold tabular-nums">{total}</p>
+        <p className={REPORT_SUMMARY_VALUE_CLASS}>{total}</p>
       </div>
-      <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+      <div className={REPORT_SUMMARY_TILE_CLASS}>
         <p className="text-xs text-muted-foreground">Đã hoàn thành</p>
         <PhaseProgressBar
           docs={docs}
@@ -1590,14 +1635,16 @@ function ReportSummary({ docs }: { docs: SurveyReportDoc[] }) {
           labelClassName="text-xs text-foreground"
         />
       </div>
-      <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+      <div className={REPORT_SUMMARY_TILE_CLASS}>
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
           <CalendarClock className="size-3" />
-          Hết hiệu lực gần nhất
+          {/* Ô điện thoại chỉ ~170px: nhãn dài gãy 2 dòng làm lệch hàng ô. "Hạn gần nhất"
+              là chữ cột đã dùng ở bảng dòng hàng. */}
+          <ResponsiveLabel short="Hạn gần nhất" long="Hết hiệu lực gần nhất" />
         </p>
         <p
           className={cn(
-            'text-lg font-semibold tabular-nums',
+            REPORT_SUMMARY_VALUE_CLASS,
             meta?.tone === 'overdue' && 'text-destructive',
             meta?.tone === 'soon' && 'text-warning',
           )}
@@ -1606,14 +1653,14 @@ function ReportSummary({ docs }: { docs: SurveyReportDoc[] }) {
           {meta && <span className="ml-1.5 text-xs font-medium">· {meta.note}</span>}
         </p>
       </div>
-      <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+      <div className={REPORT_SUMMARY_TILE_CLASS}>
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
           <CalendarCheck className="size-3" />
           Dự định hoàn tất
         </p>
         <p
           className={cn(
-            'text-lg font-semibold tabular-nums',
+            REPORT_SUMMARY_VALUE_CLASS,
             plan?.tone === 'overdue' && 'text-destructive',
             plan?.tone === 'soon' && 'text-warning',
           )}
@@ -1762,6 +1809,9 @@ function ReportDocRow({
     <div
       className={cn(
         'grid grid-cols-[1.25rem_minmax(0,1fr)_auto] items-start gap-x-2.5 rounded-lg border bg-card px-3 py-2',
+        //  duoc-CR-737: điện thoại bỏ cột phải — trạng thái + sửa + xóa xuống dưới cột giữa,
+        //  để tên hồ sơ có trọn bề ngang thay vì gãy 3 dòng trong ~150px.
+        'max-md:grid-cols-[1.25rem_minmax(0,1fr)]',
         locked && 'opacity-70',
       )}
     >
@@ -1861,7 +1911,7 @@ function ReportDocRow({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1 max-md:col-start-2 max-md:mt-1.5">
         <ReportDocStatusSelect
           doc={doc}
           locked={locked}

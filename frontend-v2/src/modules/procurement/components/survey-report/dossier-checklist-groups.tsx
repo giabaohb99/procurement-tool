@@ -25,6 +25,12 @@ import {
   isDossierDone,
   type ChecklistGroup,
 } from '../../utils/dossier-checklist-helpers'
+import {
+  REPORT_GROUP_HEADER_CLASS,
+  REPORT_GROUP_META_CLASS,
+  REPORT_GROUP_META_INDENT_WITH_TOGGLE,
+  REPORT_GROUP_TITLE_CLASS,
+} from './report-mobile-layout-classes'
 
 interface DossierChecklistGroupsProps {
   groups: ChecklistGroup[]
@@ -84,7 +90,9 @@ export function DossierChecklistGroups({
         const open = !collapsed.has(group.key)
         return (
           <div key={group.key} className="space-y-2">
-            <div className="flex items-center gap-2.5">
+            {/* duoc-CR-737: điện thoại cho tên nhóm trọn hàng đầu, ghi chú + thanh tiến độ
+                xuống hàng hai — cùng khuôn với tiêu đề giai đoạn của Báo cáo thực hiện. */}
+            <div className={REPORT_GROUP_HEADER_CLASS}>
               <button
                 type="button"
                 aria-expanded={open}
@@ -97,11 +105,11 @@ export function DossierChecklistGroups({
               <span className="grid size-6 place-items-center rounded-md bg-navy text-xs font-semibold text-white dark:bg-muted dark:text-foreground">
                 {index + 1}
               </span>
-              <span className="text-sm font-semibold">{group.name}</span>
-              {group.hint && (
-                <span className="text-xs text-muted-foreground">{group.hint}</span>
-              )}
-              <ChecklistProgressBar docs={group.docs} className="ml-auto" />
+              <span className={REPORT_GROUP_TITLE_CLASS}>{group.name}</span>
+              <div className={cn(REPORT_GROUP_META_CLASS, REPORT_GROUP_META_INDENT_WITH_TOGGLE)}>
+                {group.hint && <span className="text-xs text-muted-foreground">{group.hint}</span>}
+                <ChecklistProgressBar docs={group.docs} className="ml-auto" />
+              </div>
             </div>
 
             {open &&
@@ -279,6 +287,10 @@ export function ChecklistRow({
     <div
       className={cn(
         'flex items-center gap-2 rounded-lg border bg-card py-1.5 pr-1.5 pl-3',
+        //  duoc-CR-737: điện thoại cho dòng tự xuống hàng — một hàng 12 thứ trong 358px thì
+        //  tên bị cắt còn vài chữ. Ô tick + tên chiếm trọn hàng đầu (tên được xuống dòng), nhãn,
+        //  ngày, trạng thái, nút xếp hàng sau, mô tả xuống cuối thẻ.
+        'max-md:flex-wrap max-md:gap-y-1.5',
         //  Làm mờ CẢ DÒNG khi đang khóa, chép bản gốc: mắt lướt danh sách nhận
         //  ra ngay đâu là việc làm được, khỏi đọc từng biểu tượng.
         doc.locked && 'opacity-70',
@@ -305,7 +317,7 @@ export function ChecklistRow({
           //  Khóa nút là để tiện, KHÔNG phải để gác: backend chặn lại lần nữa.
           disabled={busy || doc.locked}
           className={cn(
-            'grid size-5 shrink-0 place-items-center rounded-md border-2 transition-colors',
+            'grid size-5 shrink-0 place-items-center rounded-md border-2 transition-colors max-md:order-first',
             done
               ? 'border-success bg-success text-white'
               : 'border-input bg-muted/50 text-transparent hover:border-success/60',
@@ -319,7 +331,7 @@ export function ChecklistRow({
         <span
           title={done ? 'Đã hoàn thành cho phiếu này' : 'Chưa hoàn thành cho phiếu này'}
           className={cn(
-            'grid size-5 shrink-0 place-items-center rounded-md border-2',
+            'grid size-5 shrink-0 place-items-center rounded-md border-2 max-md:order-first',
             done
               ? 'border-success bg-success text-white'
               : 'border-input bg-muted/50 text-transparent',
@@ -341,7 +353,10 @@ export function ChecklistRow({
         </span>
       )}
 
-      <span className="max-w-[45%] shrink-0 truncate text-sm font-medium" title={doc.name}>
+      <span
+        className="max-w-[45%] shrink-0 truncate text-sm font-medium max-md:order-first max-md:max-w-none max-md:min-w-0 max-md:flex-1 max-md:basis-[calc(100%-1.75rem)] max-md:whitespace-normal max-md:[overflow-wrap:anywhere]"
+        title={doc.name}
+      >
         {doc.name}
       </span>
       {doc.required && (
@@ -355,7 +370,7 @@ export function ChecklistRow({
            giấy: người vừa gõ ghi chú cho phiếu này phải thấy nó ở đây, không
            thì họ tưởng gõ xong không lưu. */}
       <span
-        className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
+        className="min-w-0 flex-1 truncate text-xs text-muted-foreground max-md:order-last max-md:basis-full max-md:empty:hidden"
         title={doc.progress_note || doc.note}
       >
         {doc.progress_note || doc.note}
