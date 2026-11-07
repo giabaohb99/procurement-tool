@@ -19344,3 +19344,20 @@ Kiểm: typecheck, eslint sạch, vitest khối báo cáo 59 bài xanh; ảnh `p
 
 Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/survey-report-doc-dialog.tsx`, `dossier-quick-edit-dialog.tsx`.
 
+## duoc-CR-723-e | Bóng đếm trên menu Thu mua: chỉ đếm phiếu chờ mình duyệt
+- status: xong
+- date: 2026-11-07
+- pic: NSU231
+- tag: Được
+**Bối cảnh:** bóng đỏ trên menu Thu mua (phiếu hỗ trợ TK06112601) đếm mọi phiếu chờ duyệt trong phạm vi XEM, nên tài khoản xem toàn hệ thấy toàn bộ phiếu chờ duyệt của công ty, người chỉ có quyền xem cũng có bóng cho phiếu mình không duyệt được. Đã chốt bóng chỉ đếm phiếu chờ chính người đó duyệt.
+
+**Đã làm**
+- Bóng chỉ hiện khi người xem có quyền **Duyệt** trên loại phiếu đó, và chỉ đếm phiếu chờ duyệt nằm trong phạm vi DUYỆT của người đó, đúng cổng của nút Duyệt ở cả bốn loại phiếu (Yêu cầu báo giá, Yêu cầu mua hàng, Đơn mua hàng, Phiếu khảo sát).
+- Yêu cầu mua hàng cộng thêm phiếu chờ **Duyệt điều phối** cho người điều phối được (quản lý thu mua) khi bước điều phối đang bật; trưởng phòng chỉ duyệt bước 1 nên không đếm phiếu này.
+- Áp cho cả giao diện cũ lẫn giao diện mới vì cùng một đường API. Thẻ thống kê Đơn mua hàng chờ duyệt ở Trang chủ giữ cách đếm theo phạm vi xem vì đó là số liệu, không phải việc cần làm.
+
+**Kiểm:** bài kiểm bóng đếm 10 bài xanh, thêm bốn bài (chỉ có quyền xem thì không có bóng; xem toàn hệ nhưng chỉ duyệt phiếu của mình; người điều phối đếm cả phiếu chờ điều phối và tắt bước điều phối thì thôi; trưởng phòng không đếm phiếu chờ điều phối); ruff sạch. Thử trên dữ liệu local: người yêu cầu và nhân viên không còn bóng, trưởng phòng chỉ thấy phiếu phòng mình, quản trị thấy Yêu cầu mua hàng 2 gồm 1 chờ duyệt và 1 chờ điều phối.
+
+Mã nguồn: `backend/app/modules/dashboard/menu_badge_service.py`, `backend/app/modules/dashboard/controller.py`.
+Kiểm: `test/backend/test_bong_dem_cho_duyet_menu_cr723.py`.
+
