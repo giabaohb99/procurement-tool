@@ -279,9 +279,22 @@ def list_progress(request: Request, pg: dict = Depends(pagination),
     rows = q.offset(pg["offset"]).limit(pg["limit"]).all()
     # STT liên tục theo trang
     base = pg["offset"]
-    out = [{"stt": base + i + 1, **_row(po, it, dl, show_supplier)}
+    pr_ids = _pr_ids_by_code(db, {po.pr_code for po, _, _ in rows if po.pr_code})
+    out = [{"stt": base + i + 1, **_row(po, it, dl, show_supplier), "pr_id": pr_ids.get(po.pr_code)}
            for i, (po, it, dl) in enumerate(rows)]
     return success({"total": total, "items": out, "show_supplier": show_supplier})
+
+
+def _pr_ids_by_code(db: Session, pr_codes: set[str]) -> dict[str, int]:
+    """bao-CR-739: mã YCMH -> id phiếu (bỏ phiếu đã xóa mềm) cho các dòng của MỘT trang, để giao diện
+    bấm mã PYC sang màn chi tiết YCMH. Chỉ tra id, không đổi phạm vi dữ liệu của màn: phiếu ngoài phạm vi
+    người xem thì màn chi tiết tự trả 403."""
+    if not pr_codes:
+        return {}
+    from app.modules.purchase_request.model import PurchaseRequest
+
+    return dict(db.query(PurchaseRequest.code, PurchaseRequest.id)
+                .filter(PurchaseRequest.code.in_(list(pr_codes)), PurchaseRequest.is_deleted.is_(False)).all())
 
 
 def _require_progress_export(user=Depends(get_current_user), db: Session = Depends(get_db)):

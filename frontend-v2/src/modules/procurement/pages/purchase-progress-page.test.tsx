@@ -33,11 +33,13 @@ vi.mock('@/modules/hr/hooks/use-departments', () => ({
 let canExportPurchaseOrder = true
 let canExportPurchaseRequest = false
 let canReadSupplier = true
+let canReadPurchaseRequest = true
 
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
     can: (entity: string, action: string) => {
       if (entity === 'supplier' && action === 'read') return canReadSupplier
+      if (entity === 'purchase_request' && action === 'read') return canReadPurchaseRequest
       if (action !== 'export') return true
       if (entity === 'purchase_order') return canExportPurchaseOrder
       if (entity === 'purchase_request') return canExportPurchaseRequest
@@ -57,6 +59,8 @@ const rows: PurchaseProgressRow[] = [
   {
     po_id: 1,
     po_code: 'PO-0001',
+    pr_code: 'PYC-0009',
+    pr_id: 9,
     company_id: 7,
     order_date: '2026-08-05',
     received_date: '2026-09-02',
@@ -92,6 +96,7 @@ beforeEach(() => {
   canExportPurchaseOrder = true
   canExportPurchaseRequest = false
   canReadSupplier = true
+  canReadPurchaseRequest = true
 })
 
 describe('PurchaseProgressPage — khoảng ngày', () => {
@@ -343,5 +348,22 @@ describe('PurchaseProgressPage — xuất Excel (bao-CR-442)', () => {
     //  Khóa cột của bảng trùng khóa cột trong `purchase_progress/export.py`, nên
     //  gửi thẳng được — cột `defaultHidden` không nằm trong danh sách này.
     expect(cols).not.toContain('misa_code')
+  })
+})
+
+describe('PurchaseProgressPage — mã PYC (bao-CR-739)', () => {
+  it('links the PYC code to the purchase request detail when the user can read YCMH', () => {
+    build()
+
+    const link = screen.getByRole('link', { name: 'PYC-0009' })
+    expect(link).toHaveAttribute('href', '/procurement/purchase-requests/9')
+  })
+
+  it('keeps the PYC code as plain text without purchase_request.read', () => {
+    canReadPurchaseRequest = false
+    build()
+
+    expect(screen.getByText('PYC-0009')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'PYC-0009' })).not.toBeInTheDocument()
   })
 })

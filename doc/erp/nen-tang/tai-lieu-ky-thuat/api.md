@@ -183,7 +183,7 @@ Mã backend: `approval`, `notification`, `comment`, `ticket`, `attachment`, `imp
 | GET | `/api/reports/import-landed-cost/export` | Xuất báo cáo giá vốn lô hàng ra Excel — hai sheet, theo lô và theo dòng hàng; nhận cùng bộ tham số `stage` / `include_domestic` với đường đọc. | `report.export` |  |  |
 | GET | `/api/reports/matrix` | Báo cáo ma trận (NCC/phân loại/NSPT/bộ phận/vận chuyển) — stale-while-revalidate. | `report.read` |  | tự dò: v2 `production` |
 | GET | `/api/reports/nspt-range` | Giao hàng theo NSPT trong khoảng NGÀY (date_from, date_to = YYYY-MM-DD). | `report.read` |  | tự dò: v2 `procurement` |
-| GET | `/api/reports/pr-lines` | Báo cáo Yêu cầu mua hàng theo DÒNG hàng (bao-CR-295) — phân trang server (50/trang). | `report.read` |  |  |
+| GET | `/api/reports/pr-lines` | Báo cáo Yêu cầu mua hàng theo DÒNG hàng (bao-CR-295) — phân trang server (50/trang). bao-CR-739: có `report.read` thì lọc phạm vi phòng ban cũ; chỉ có `purchase_request.read` thì lọc đúng phạm vi YCMH của người xem. | `report.read` hoặc `purchase_request.read` |  |  |
 | GET | `/api/reports/pr-lines/export` | bao-CR-691: xuất Excel bảng Chi tiết YC mua hàng — cùng bộ lọc với `/pr-lines`, không phân trang, trần `export_xlsx.MAX_ROWS` dòng. | `report.export` |  |  |
 | GET | `/api/reports/pr-lines/summary` | Tổng hợp của báo cáo Chi tiết YC mua hàng (theo tiến độ / tháng / bộ phận / nhóm hàng / NSTM) cho màn biểu đồ. | `báo cáo 2`, `report.read` |  | tự dò: v2 `report` |
 | GET | `/api/reports/pr-lines/summary/export` | Xuất Excel bản THEO KỲ của báo cáo Chi tiết YC mua hàng (P03) — cùng bộ lọc với `/summary`. | `báo cáo 2`, `report.export` |  | tự dò: v2 `report` |
