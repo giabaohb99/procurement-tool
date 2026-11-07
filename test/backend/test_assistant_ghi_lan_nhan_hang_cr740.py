@@ -158,6 +158,10 @@ def test_giao_du_vuot_moi_don_va_ma_la(kho):
     plan = _plan(out)
     assert plan[("PO00807", "CPT0234")] == 3500 and sum(plan.values()) == 5000   # dư 300 dồn dòng chia sau cùng
     assert any(w.startswith("GIAO DƯ 300") for w in out["warnings"])
+    #  Số kiểu Việt: chấm ngăn nghìn, bỏ ,0 thừa — không in dạng khoa học (1e+06).
+    assert any("đã nhận 3.500 / đặt 3.200." in w for w in out["warnings"])
+    from app.modules.assistant.tools.po_receipt_tool import vn
+    assert (vn(1_000_000.0), vn(990000), vn(12.5), vn(0.125)) == ("1.000.000", "990.000", "12,5", "0,125")
     assert any("ZZZ999" in w and "danh mục" in w for w in out["warnings"])
     assert any("KHAC01" in w and "không có dòng ĐMH" in w for w in out["warnings"])
 

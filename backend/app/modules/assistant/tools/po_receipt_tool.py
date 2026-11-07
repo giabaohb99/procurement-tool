@@ -72,6 +72,17 @@ def _num(v) -> float:
     return round(float(v or 0), 3)
 
 
+def vn(v) -> str:
+    """Số kiểu Việt cho câu chữ: 1000000 → "1.000.000", 12.5 → "12,5" (bỏ ,0 thừa, tối đa 3 số lẻ)."""
+    try:
+        n = round(float(v or 0), 3)
+    except (TypeError, ValueError):
+        return str(v)
+    whole, _, frac = f"{abs(n):,.3f}".partition(".")
+    frac = frac.rstrip("0")
+    return ("-" if n < 0 else "") + whole.replace(",", ".") + ("," + frac if frac else "")
+
+
 def parse_qty(v) -> float | None:
     """Số lượng trên phiếu: số, hoặc chuỗi kiểu Việt "3.780" / "3,780" (nghìn) / "12,5" (lẻ). Sai / ≤ 0 → None."""
     if isinstance(v, bool):
@@ -451,11 +462,11 @@ def draft_po_receipt(ctx: ToolContext, args: dict) -> dict:
         used = _apply_assign(plan, pool, read_pool, ln, warnings) if ln["assign"] else 0.0
         left = round(qty - used, 3)
         if left < -EPS:
-            warnings.append(f"Mã {code}: chỉ định {used:g} nhiều hơn SL trên phiếu {qty:g}.")
+            warnings.append(f"Mã {code}: chỉ định {vn(used)} nhiều hơn SL trên phiếu {vn(qty)}.")
         elif left > EPS:
             rest = _auto_allocate(plan, pool, code, left, codes, kit)
             if rest > EPS:
-                warnings.append(f"Mã {code}: các dòng ĐMH mở đều đã nhận đủ — {rest:g} chưa chia. Muốn ghi dư thì chỉ "
+                warnings.append(f"Mã {code}: các dòng ĐMH mở đều đã nhận đủ — {vn(rest)} chưa chia. Muốn ghi dư thì chỉ "
                                 "định ĐMH (assign).")
     default_wh = _text(args.get("warehouse_code"), 50)
     rows = _rows(plan, slip_date, default_wh)
@@ -463,8 +474,8 @@ def draft_po_receipt(ctx: ToolContext, args: dict) -> dict:
         return {"error": "Không chia được dòng nào vào ĐMH.", "warnings": warnings}
     for r in rows:
         if r["over"] > EPS:
-            warnings.append(f"GIAO DƯ {r['over']:g} {r['unit']} mã {r['product_code']} ở {r['po_code']}: sau khi ghi đã "
-                            f"nhận {r['line_received_after']:g} / đặt {r['qty_order']:g}.")
+            warnings.append(f"GIAO DƯ {vn(r['over'])} {r['unit']} mã {r['product_code']} ở {r['po_code']}: sau khi ghi đã "
+                            f"nhận {vn(r['line_received_after'])} / đặt {vn(r['qty_order'])}.")
     others = sorted({r["po_code"] for r in read_pool if r["product_code"] in codes} - {r["po_code"] for r in pool})
     if others:
         warnings.append(f"Có ĐMH mở của NCC này bạn chỉ được xem, không được ghi: {', '.join(others[:10])} — không chia vào.")
@@ -533,7 +544,7 @@ def _check_po(db, user, profile, po_id: int, rows: list[dict], supplier_code: st
             raise _err(f"Dòng {r['product_code']} của {po.code} đã Hoàn thành / Hủy — chưa ghi gì.")
         if abs(_num(it.qty_received) - r["line_received_before"]) > EPS:
             raise _err(f"Dòng {r['product_code']} của {po.code} đã có người ghi nhận hàng sau lúc soạn nháp (đã nhận "
-                       f"{_num(it.qty_received):g}) — gọi lại draft_po_receipt để soạn nháp mới. Chưa ghi gì.")
+                       f"{vn(_num(it.qty_received))}) — gọi lại draft_po_receipt để soạn nháp mới. Chưa ghi gì.")
         if r["op"] == "update":
             d = next((x for x in deliveries_of(db, it.id) if x.id == r["delivery_id"]), None)
             if d is None or abs(_num(d.received_qty) - r["delivery_received_before"]) > EPS:
@@ -586,7 +597,7 @@ def _payload(db, po, rows: list[dict], note: str):
 
 
 def _summary(po, rows: list[dict]) -> str:
-    parts = [f"{r['product_code']} {'+' if r['op'] == 'add' else 'lần giao #' + str(r['delivery_id']) + ' = '}{r['qty']:g}"
+    parts = [f"{r['product_code']} {'+' if r['op'] == 'add' else 'lần giao #' + str(r['delivery_id']) + ' = '}{vn(r['qty'])}"
              for r in rows]
     return f"{po.code}: " + "; ".join(parts)
 
@@ -648,8 +659,8 @@ def created_details(db, po_id: int) -> list[str]:
     out = [f"{po.code}{' · MISA ' + po.misa_code if po.misa_code else ''} · {_STATUS_LABELS.get(po.status, po.status)}"]
     for it in items_of(db, po.id):
         got, need = _num(it.qty_received), _num(it.qty_order)
-        tail = f" (dư {got - need:g})" if got - need > EPS else (f" (còn thiếu {need - got:g})" if need - got > EPS else "")
-        out.append(f"- {it.product_code}: đã nhận {got:g} / đặt {need:g}{tail}")
+        tail = f" (dư {vn(got - need)})" if got - need > EPS else (f" (còn thiếu {vn(need - got)})" if need - got > EPS else "")
+        out.append(f"- {it.product_code}: đã nhận {vn(got)} / đặt {vn(need)}{tail}")
     return out
 
 
@@ -659,7 +670,7 @@ def summary_lines(draft: dict) -> list[str]:
            f"Phiếu xuất kho: {draft.get('slip_no') or '(không số)'} · ngày {draft.get('slip_date') or '?'}"]
     for r in (draft.get("rows") or [])[:12]:
         how = "thêm lần giao" if r.get("op") == "add" else f"điền lần giao số {r.get('delivery_no')}"
-        out.append(f"- {r.get('po_code')} · {r.get('product_code')}: {r.get('qty')} ({how})")
+        out.append(f"- {r.get('po_code')} · {r.get('product_code')}: {vn(r.get('qty'))} ({how})")
     return out
 
 
