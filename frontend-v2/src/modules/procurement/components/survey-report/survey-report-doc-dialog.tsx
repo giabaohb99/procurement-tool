@@ -203,12 +203,17 @@ export function SurveyReportDocDialog({
       <DialogContent
         //  Rộng hơn mặc định (bao-CR-602): ba ô ngày đứng chung một hàng mà nhãn không
         //  xuống dòng, tên dòng hàng dài có chỗ hiện — đại ca soi 06/10 thấy lệch.
-        className="sm:max-w-2xl"
+        //  Khổ hẹp (duoc-CR-737): khung chung vừa đệm lớp ngoài 16px vừa trừ `2rem` ở
+        //  `max-w` nên hộp chỉ còn 326/390px — bỏ phần trừ thứ hai (`max-w-full`), và
+        //  đệm trong 16px thay 24px.
+        className="max-sm:max-w-full max-sm:gap-3 max-sm:p-4 sm:max-w-2xl"
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
       >
-        <DialogHeader>
+        {/*  Tiêu đề canh trái ở MỌI khổ: khung chung canh giữa ở khổ hẹp, đứng trên
+             một cột nhãn canh trái thì trông lệch. */}
+        <DialogHeader className="text-left">
           <DialogTitle>{doc ? 'Chỉnh sửa hồ sơ' : 'Thêm hồ sơ mới'}</DialogTitle>
         </DialogHeader>
 
@@ -309,13 +314,15 @@ export function SurveyReportDocDialog({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          {/*  Khổ hẹp: hai mốc kế hoạch chung một hàng, ngày hết hiệu lực một hàng
+               riêng — ba ô xếp dọc thì một khối ngày chiếm gần nửa hộp. */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
             <div className="space-y-1.5">
               <Label>Ngày bắt đầu</Label>
               <DatePicker
                 value={draft.start_date}
                 onChange={(value) => patch({ start_date: value })}
-                placeholder="Chọn ngày bắt đầu"
+                placeholder="Chọn ngày"
               />
             </div>
             <div className="space-y-1.5">
@@ -323,10 +330,10 @@ export function SurveyReportDocDialog({
               <DatePicker
                 value={draft.planned_date}
                 onChange={(value) => patch({ planned_date: value })}
-                placeholder="Chọn ngày dự định"
+                placeholder="Chọn ngày"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 max-sm:col-span-2">
               <Label>Ngày hết hiệu lực</Label>
               <DatePicker
                 value={draft.expires_at}
@@ -399,7 +406,9 @@ export function SurveyReportDocDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:justify-between">
+        {/*  MỘT hàng ở mọi khổ (duoc-CR-737): Xóa bên trái, Hủy + Lưu bên phải. Khung
+             chung xếp cột đảo ngược ở khổ hẹp nên Hủy/Lưu và Xóa rớt thành hai hàng lệch. */}
+        <DialogFooter className="flex-row items-center justify-between gap-2">
           <div>
             {doc && (
               <Button
@@ -418,7 +427,7 @@ export function SurveyReportDocDialog({
             <Button type="button" variant="outline" disabled={pending} onClick={attemptClose}>
               Hủy
             </Button>
-            <Button type="button" disabled={pending} onClick={handleSave}>
+            <Button type="button" className="min-w-20" disabled={pending} onClick={handleSave}>
               {pending && <Loader2 className="animate-spin" />}
               Lưu
             </Button>

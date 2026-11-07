@@ -172,7 +172,8 @@ export function DossierQuickEditDialog({
   return (
     <Dialog open={Boolean(doc)} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="sm:max-w-xl"
+        //  Khổ hẹp: đệm 16px như hộp sửa hồ sơ của Báo cáo thực hiện (duoc-CR-737).
+        className="max-sm:max-w-full max-sm:gap-3 max-sm:p-4 sm:max-w-xl"
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
@@ -314,7 +315,7 @@ function QuickEditBody({
 
   return (
     <>
-      <DialogHeader>
+      <DialogHeader className="text-left">
         <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
         <DialogDescription>
           {doc.code} — phần lớn các ô chỉ tính cho <strong>phiếu đang mở</strong>. Cụm
@@ -590,7 +591,7 @@ function QuickEditBody({
         </div>
       )}
 
-      <DialogFooter>
+      <DialogFooter className="flex-row justify-end gap-2">
         <Button variant="outline" onClick={attemptClose} disabled={save.isPending}>
           Hủy
         </Button>

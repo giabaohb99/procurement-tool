@@ -19335,3 +19335,12 @@ Kiểm: typecheck, eslint sạch, vitest khối báo cáo 59 bài xanh; đo vị
 
 Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/` (`survey-report-card.tsx`, `dossier-checklist-card.tsx`, `dossier-checklist-groups.tsx`, mới `report-mobile-layout-classes.ts`, `report-toggle-all-button.tsx`).
 
+### duoc-CR-737-f | Hộp Chỉnh sửa hồ sơ gọn trên điện thoại
+- status: xong
+- date: 2026-11-07
+Hộp **Chỉnh sửa hồ sơ** của khối Báo cáo thực hiện trên điện thoại: hộp chỉ rộng 326 trên 390px vì khung chung vừa đệm lớp ngoài vừa trừ thêm bề rộng, nút Hủy, Lưu nhỏ lệch trái còn Xóa rớt xuống một hàng riêng, tiêu đề canh giữa trên cột nhãn canh trái. Nay dưới khổ 640px hộp rộng 358px với đệm trong 16px, tiêu đề canh trái, chân hộp một hàng (Xóa bên trái, Hủy và Lưu bên phải), hai mốc Ngày bắt đầu và Dự định hoàn tất chung một hàng còn Ngày hết hiệu lực một hàng riêng, chữ gợi ý ô ngày rút thành "Chọn ngày" cho khỏi bị cắt. Hộp sửa hồ sơ của khối Hồ sơ cần hoàn thành sửa theo cùng khuôn. Khổ máy tính giữ nguyên.
+
+Kiểm: typecheck, eslint sạch, vitest khối báo cáo 59 bài xanh; ảnh `plans/reports/screenshots-cr737/hop-sua-ho-so-390-sau.png`.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/survey-report-doc-dialog.tsx`, `dossier-quick-edit-dialog.tsx`.
+
